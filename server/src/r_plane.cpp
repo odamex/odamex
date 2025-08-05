@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,7 +26,7 @@
 
 #include "r_local.h"
 
-BOOL R_AlignFlat (int linenum, int side, int fc)
+bool R_AlignFlat (int linenum, int side, int fc)
 {
 	line_t *line = lines + linenum;
 	sector_t *sec = side ? line->backsector : line->frontsector;

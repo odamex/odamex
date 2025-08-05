@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,7 +35,7 @@ class DEarthquake : public DThinker
 	DECLARE_SERIAL (DEarthquake, DThinker);
 public:
 	DEarthquake (AActor *center, int intensity, int duration, int damrad, int tremrad);
-	virtual void RunThink ();
+	void RunThink () override;
 	virtual void DestroyedPointer(DObject *obj);
 
 	AActor *m_Spot;
@@ -77,14 +77,14 @@ void DEarthquake::RunThink ()
 {
 	if (level.time % 48 == 0)
 		S_Sound (m_Spot, CHAN_BODY, "world/quake", 1, ATTN_NORM);
-		
+
 	if (serverside)
 	{
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (auto& player : players)
 		{
-			if (it->ingame() && !(it->cheats & CF_NOCLIP))
+			if (player.ingame() && !(player.cheats & CF_NOCLIP))
 			{
-				AActor *mo = it->mo;
+				AActor *mo = player.mo;
 
 				if (!(level.time & 7) &&
 					 mo->x >= m_DamageBox[BOXLEFT] && mo->x < m_DamageBox[BOXRIGHT] &&
@@ -99,7 +99,7 @@ void DEarthquake::RunThink ()
 				if (mo->x >= m_TremorBox[BOXLEFT] && mo->x < m_TremorBox[BOXRIGHT] &&
 					 mo->y >= m_TremorBox[BOXTOP] && mo->y < m_TremorBox[BOXBOTTOM])
 				{
-					it->xviewshift = m_Intensity;
+					player.xviewshift = m_Intensity;
 				}
 			}
 		}
@@ -133,10 +133,10 @@ DEarthquake::DEarthquake (AActor *center, int intensity, int duration,
 	m_Countdown = duration;
 }
 
-BOOL P_StartQuake (int tid, int intensity, int duration, int damrad, int tremrad)
+bool P_StartQuake (int tid, int intensity, int duration, int damrad, int tremrad)
 {
 	AActor *center = NULL;
-	BOOL res = false;
+	bool res = false;
 
 	if (intensity > 9)
 		intensity = 9;
@@ -148,6 +148,6 @@ BOOL P_StartQuake (int tid, int intensity, int duration, int damrad, int tremrad
 		res = true;
 		new DEarthquake (center, intensity, duration, damrad, tremrad);
 	}
-	
+
 	return res;
 }

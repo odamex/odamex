@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -43,7 +43,7 @@ void TypeInfo::RegisterType ()
 	if (m_NumTypes == m_MaxTypes)
 	{
 		m_MaxTypes = m_MaxTypes ? m_MaxTypes*2 : 32;
-		m_Types = (TypeInfo **)Realloc (m_Types, m_MaxTypes * sizeof(*m_Types));
+		m_Types = (TypeInfo **)M_Realloc (m_Types, m_MaxTypes * sizeof(*m_Types));
 	}
 	m_Types[m_NumTypes] = this;
 	TypeIndex = m_NumTypes;
@@ -90,9 +90,7 @@ DObject::~DObject ()
 			// object is queued for deletion, but is not being deleted
 			// by the destruction process, so remove it from the
 			// ToDestroy array and do other necessary stuff.
-			int i;
-
-			for (i = ToDestroy.Size() - 1; i >= 0; i--)
+			for (size_t i = ToDestroy.Size() - 1; i >= 0; i--)
 			{
 				if (ToDestroy[i] == this)
 				{
@@ -148,7 +146,7 @@ void DObject::RemoveFromArray ()
 	// so there's really no telling which is destroyed first, better to bail
 	if(Inactive)
 		return;
-	
+
 	if (Objects.Size () == Index + 1)
 	{
 		DObject *dummy;

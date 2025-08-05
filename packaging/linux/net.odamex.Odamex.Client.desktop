@@ -1,0 +1,15 @@
+[Desktop Entry]
+# this is the desktop entry spec version NOT the odamex version
+Version=1.5
+Type=Application
+
+Name=Odamex
+Comment=A DOOM source port with online multiplayer, a 32-bit renderer, and much more.
+Categories=Amusement;Game;ActionGame;AdventureGame;ArcadeGame;
+Keywords=doom;shooter;multiplayer;iwad;pwad;
+
+Icon=net.odamex.Odamex.Client
+Exec=odamex %u
+MimeType=x-scheme-handler/odamex;application/odamex-demo;application/x-doom-wad
+Terminal=false
+StartupWMClass=odamex

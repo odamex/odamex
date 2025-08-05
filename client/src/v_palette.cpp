@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -128,9 +128,7 @@ shaderef_t::shaderef_t(const shademap_t* const colors, const int mapnum) :
 	// NOTE(jsd): Arbitrary value picked here because we don't record the max number of colormaps for dynamic ones... or do we?
 	if (m_mapnum >= 8192)
 	{
-		char tmp[100];
-		sprintf(tmp, "32bpp: shaderef_t::shaderef_t() called with mapnum = %d, which looks too large", m_mapnum);
-		throw CFatalError(tmp);
+		throw CFatalError(fmt::format("32bpp: shaderef_t::shaderef_t() called with mapnum = {}, which looks too large", m_mapnum));
 	}
 	#endif
 
@@ -211,17 +209,17 @@ public:
 class DoomGammaStrategy : public GammaStrategy
 {
 public:
-	float min() const
+	float min() const override
 	{
 		return 0.0f;
 	}
 
-	float max() const
+	float max() const override
 	{
 		return 7.0f;
 	}
 
-	float increment(float level) const
+	float increment(float level) const override
 	{
 		level += 1.0f;
 		if (level > max())
@@ -229,7 +227,7 @@ public:
 		return level;
 	}
 
-	void generateGammaTable(byte* table, float level) const
+	void generateGammaTable(byte* table, float level) const override
 	{
 		// [SL] Use vanilla Doom's gamma table
 		//
@@ -250,17 +248,17 @@ public:
 class ZDoomGammaStrategy : public GammaStrategy
 {
 public:
-	float min() const
+	float min() const override
 	{
 		return 0.5f;
 	}
 
-	float max() const
+	float max() const override
 	{
 		return 3.0f;
 	}
 
-	float increment(float level) const
+	float increment(float level) const override
 	{
 		level += 0.1f;
 		if (level > max())
@@ -268,14 +266,14 @@ public:
 		return level;
 	}
 
-	void generateGammaTable(byte* table, float level) const
+	void generateGammaTable(byte* table, float level) const override
 	{
 		// [SL] Use ZDoom 1.22 gamma correction
 
 		// [RH] I found this formula on the web at
 		// http://panda.mostang.com/sane/sane-gamma.html
 
-		double invgamma = 1.0 / level;
+		const double invgamma = 1.0 / level;
 
 		for (int i = 0; i < 256; i++)
 			table[i] = (byte)(255.0 * pow(double(i) / 255.0, invgamma));
@@ -494,7 +492,7 @@ static std::string V_GetColorStringByName(const std::string& name)
 	 * with a NULL byte. This is so that COM_Parse is able to
 	 * detect the end of the lump.
 	 */
-	char *rgbNames, *data, descr[5*3];
+	char *rgbNames, *data;
 	int c[3], step;
 
 	if (!(rgbNames = (char*)W_CacheLumpName("X11R6RGB", PU_CACHE)))
@@ -527,11 +525,10 @@ static std::string V_GetColorStringByName(const std::string& name)
 
 			if (!stricmp(com_token, name.c_str()))
 			{
-				snprintf(descr, 15, "%04x %04x %04x",
-						 (c[0] << 8) | c[0],
-						 (c[1] << 8) | c[1],
-						 (c[2] << 8) | c[2]);
-				return descr;
+				return fmt::format("{:04x} {:04x} {:04x}",
+				                   (c[0] << 8) | c[0],
+				                   (c[1] << 8) | c[1],
+				                   (c[2] << 8) | c[2]);
 			}
 		}
 	}
@@ -609,7 +606,7 @@ void V_InitPalette(const char* lumpname)
 
 	const int lumpnum = W_GetNumForName(palette_lumpname);
 	if (lumpnum < 0)
-		I_FatalError("Could not initialize %s palette", palette_lumpname.c_str());
+		I_FatalError("Could not initialize {} palette", palette_lumpname);
 
 	current_palette_num = -1;
 
@@ -687,8 +684,7 @@ static float lightScale(float a)
 	static float e1 = exp(1.0f);
 	static float e1sube0 = e1 - exp(-1.0f);
 
-	float newa = clamp(1.0f - (e1 - (float)exp(a * 2.0f - 1.0f)) / e1sube0, 0.0f, 1.0f);
-	return newa;
+	return clamp(1.0f - (e1 - (float)exp(a * 2.0f - 1.0f)) / e1sube0, 0.0f, 1.0f);
 }
 
 void BuildLightRamp (shademap_t &maps)
@@ -711,7 +707,7 @@ void BuildDefaultColorAndShademap(const palette_t* pal, shademap_t& maps)
 
 	const argb_t* palette = pal->basecolors;
 	argb_t fadecolor(level.fadeto_color[0], level.fadeto_color[1], level.fadeto_color[2], level.fadeto_color[3]);
-	
+
 	palindex_t* colormap = maps.colormap;
 	argb_t* shademap = maps.shademap;
 
@@ -740,9 +736,9 @@ void BuildDefaultColorAndShademap(const palette_t* pal, shademap_t& maps)
 						 palette[c].getg() * 0.00229296875f +
 			 			 palette[c].getb() * 0.0005625f), 0.0f, 1.0f));
 
-		argb_t color(255, grayint, grayint, grayint); 
+		argb_t color(255, grayint, grayint, grayint);
 		colormap[c] = V_BestColor(palette, color);
-		shademap[c] = V_GammaCorrect(color); 
+		shademap[c] = V_GammaCorrect(color);
 	}
 }
 
@@ -755,7 +751,7 @@ void BuildDefaultShademap(const palette_t* pal, shademap_t& maps)
 
 	const argb_t* palette = pal->basecolors;
 	argb_t fadecolor(level.fadeto_color[0], level.fadeto_color[1], level.fadeto_color[2], level.fadeto_color[3]);
-	
+
 	argb_t* shademap = maps.shademap;
 
 	for (int i = 0; i < NUMCOLORMAPS; i++, shademap += 256)
@@ -782,8 +778,8 @@ void BuildDefaultShademap(const palette_t* pal, shademap_t& maps)
 						 palette[c].getg() * 0.00229296875f +
 			 			 palette[c].getb() * 0.0005625f), 0.0f, 1.0f));
 
-		argb_t color(255, grayint, grayint, grayint); 
-		shademap[c] = V_GammaCorrect(color); 
+		argb_t color(255, grayint, grayint, grayint);
+		shademap[c] = V_GammaCorrect(color);
 	}
 }
 
@@ -940,7 +936,7 @@ fahsv_t V_RGBtoHSV(const fargb_t &color)
 	float largest = std::max(std::max(r, g), b);
 	float delta = largest - smallest;
 
-	if (delta == 0.0f)	
+	if (delta == 0.0f)
 		return fahsv_t(a, 0, 0, largest);
 
 	float hue;
@@ -1168,20 +1164,6 @@ void V_DoPaletteEffects()
 		V_AddBlend(blend, R_GetSectorBlend());
 		V_AddBlend(blend, plyr->blend_color);
 
-		float greendamagecolor;
-		float reddamagecolor;
-
-		if (gamemode == retail_chex)
-		{
-			reddamagecolor = 0.0f;
-			greendamagecolor = 255.0f / 255.0f;
-		}
-		else
-		{
-			reddamagecolor = 255.0f / 255.0f;
-			greendamagecolor = 0.0f;
-		}
-
 		// red tint for pain / berzerk power
 		if (plyr->damagecount || plyr->powers[pw_strength])
 		{
@@ -1198,9 +1180,9 @@ void V_DoPaletteEffects()
 				red_amount = MIN(red_amount, 56.0f);
 				float alpha = (red_amount + 8.0f) / 72.0f;
 
-				static const float red = reddamagecolor;
-				static const float green = greendamagecolor;
-				static const float blue = 0.0f;
+				const float red = gamemode == retail_chex ? 0.0f : 1.0f;
+				const float green = gamemode == retail_chex ? 1.0f : 0.0f;
+				static constexpr float blue = 0.0f;
 				V_AddBlend(blend, fargb_t(alpha, red, green, blue));
 			}
 		}
@@ -1212,11 +1194,11 @@ void V_DoPaletteEffects()
 			if (bonus_amount > 0.0f)
 			{
 				bonus_amount = MIN(bonus_amount, 24.0f);
-				float alpha = (bonus_amount + 8.0f) / 64.0f;				
+				float alpha = (bonus_amount + 8.0f) / 64.0f;
 
-				static const float red = 215.0f / 255.0f;
-				static const float green = 186.0f / 255.0f;
-				static const float blue = 69.0f / 255.0f;
+				static constexpr float red = 215.0f / 255.0f;
+				static constexpr float green = 186.0f / 255.0f;
+				static constexpr float blue = 69.0f / 255.0f;
 				V_AddBlend(blend, fargb_t(alpha, red, green, blue));
 			}
 		}
@@ -1224,10 +1206,10 @@ void V_DoPaletteEffects()
 		// green tint for radiation suit
 		if (plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet] & 8)
 		{
-			static const float alpha = 1.0f / 8.0f;
-			static const float red = 0.0f;
-			static const float green = 255.0f / 255.0f;
-			static const float blue = 0.0f;
+			static constexpr float alpha = 1.0f / 8.0f;
+			static constexpr float red = 0.0f;
+			static constexpr float green = 255.0f / 255.0f;
+			static constexpr float blue = 0.0f;
 			V_AddBlend(blend, fargb_t(alpha, red, green, blue));
 		}
 
@@ -1247,7 +1229,7 @@ void V_ResetPalette()
 	{
 		game_palette = default_palette;
 		I_SetPalette(game_palette.colors);
-		fargb_t blend(0.0f, 0.0f, 0.0f, 0.0f);
+		const fargb_t blend(0.0f, 0.0f, 0.0f, 0.0f);
 		V_SetBlend(blend);
 	}
 }

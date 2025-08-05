@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,6 +25,7 @@
 #include "odamex.h"
 
 #include <stdarg.h>
+#include <cmath>
 
 #include "m_alloc.h"
 #include "m_memio.h"
@@ -57,13 +58,11 @@
 #include "nx_io.h"
 #endif
 
-// These functions are standardized in C++11, POSIX standard otherwise
-#if defined(_WIN32) && (__cplusplus <= 199711L)
-#	define vsnprintf _vsnprintf
-#	define snprintf  _snprintf
-#endif
+#include "cl_demo.h"
 
-static const int MAX_LINE_LENGTH = 8192;
+extern NetDemo netdemo;
+
+static constexpr int MAX_LINE_LENGTH = 8192;
 
 static bool ShouldTabCycle = false;
 static size_t NextCycleIndex = 0;
@@ -73,7 +72,7 @@ static IWindowSurface* background_surface;
 
 extern int		gametic;
 
-static unsigned int		ConRows, ConCols, PhysRows;
+static unsigned int		ConRows, ConCols, ConCharSize, ConScale;
 
 static bool				cursoron = false;
 static int				ConBottom = 0;
@@ -97,6 +96,7 @@ static bool midprinting;
 #define SCROLLDN 2
 #define SCROLLNO 0
 
+EXTERN_CVAR(con_scaletext)
 EXTERN_CVAR(con_coloredmessages)
 EXTERN_CVAR(con_buffersize)
 EXTERN_CVAR(show_messages)
@@ -125,18 +125,18 @@ static struct NotifyText
 
 // Default Printlevel
 #define PRINTLEVELS 9 //(5 + 3)
-int PrintColors[PRINTLEVELS] = 
+int PrintColors[PRINTLEVELS] =
 {	CR_RED,		// Pickup
 	CR_GOLD,	// Obituaries
 	CR_GRAY,	// Messages
-	CR_GREEN,	// Chat 
+	CR_GREEN,	// Chat
 	CR_GREEN,	// Team chat
 
 	CR_GOLD,	// Server chat
 	CR_YELLOW,	// Warning messages
 	CR_RED,		// Critical messages
 	CR_GOLD,	// Centered Messages
-};	
+};
 
 
 // ============================================================================
@@ -156,7 +156,7 @@ public:
 
 	void join(const ConsoleLine& other);
 	ConsoleLine split(size_t max_width);
-	bool expired() const;
+	[[nodiscard]] bool expired() const;
 
 	std::string		text;
 	std::string		color_code;
@@ -224,8 +224,7 @@ ConsoleLine ConsoleLine::split(size_t max_width)
 		else if (*s == '-')
 			break_pos = s + 1 - text.c_str();
 
-		const size_t character_width = 8;
-		if (width + character_width > max_width)
+		if (width + ConCharSize > max_width)
 		{
 			// Is this word is too long to fit on the line?
 			// Breaking it here is the only option.
@@ -251,7 +250,7 @@ ConsoleLine ConsoleLine::split(size_t max_width)
 		}
 
 		s++;
-		width += character_width;
+		width += ConCharSize;
 	}
 
 	// didn't have to wrap
@@ -366,7 +365,7 @@ void ConsoleCommandLine::moveCursorLeftWord()
 
 	bool firstSpacesCleared = false;
 	bool spaceWord = false;
-	
+
 	if (cursor_position > 0 && isspace(str[cursor_position]))
 		firstSpacesCleared = true;
 
@@ -410,7 +409,7 @@ void ConsoleCommandLine::moveCursorRightWord()
 
 	if (cursor_position == std::string::npos)
 		cursor_position = text.length();
-	
+
 	doScrolling();
 }
 
@@ -519,7 +518,7 @@ void ConsoleCommandLine::deleteRightWord()
 
 	size_t word = 0;
 	size_t wordLength = 0;
-	
+
 	if (spaceWord)
 	{
 		word = text.find_first_not_of(' ', cursor_position);
@@ -554,7 +553,7 @@ void ConsoleCommandLine::backspace()
 // ConsoleHistory class interface
 //
 // Stores a copy of each line of text entered on the command line and provides
-// iteration functions to recall previous command lines entered. 
+// iteration functions to recall previous command lines entered.
 //
 // ============================================================================
 
@@ -568,7 +567,7 @@ public:
 	void resetPosition();
 
 	void addString(const std::string& str);
-	const std::string& getString() const;
+	[[nodiscard]] const std::string& getString() const;
 
 	void movePositionUp();
 	void movePositionDown();
@@ -576,7 +575,7 @@ public:
 	void dump();
 
 private:
-	static const size_t MAX_HISTORY_ITEMS = 50;
+	static constexpr size_t MAX_HISTORY_ITEMS = 50;
 
 	typedef std::list<std::string> ConsoleHistoryList;
 	ConsoleHistoryList					history;
@@ -639,11 +638,11 @@ void ConsoleHistory::movePositionDown()
 	if (history_it != history.end())
 		++history_it;
 }
-		
+
 void ConsoleHistory::dump()
 {
-	for (ConsoleHistoryList::const_iterator it = history.begin(); it != history.end(); ++it)
-		Printf(PRINT_HIGH, "   %s\n", it->c_str());
+	for (const auto& it : history)
+		Printf(PRINT_HIGH, "   %s\n", it);
 }
 
 class ConsoleCompletions
@@ -659,7 +658,7 @@ class ConsoleCompletions
 			_maxlen = completion.length();
 	}
 
-	const std::string& at(size_t index) const
+	[[nodiscard]] const std::string& at(size_t index) const
 	{
 		return _completions.at(index);
 	}
@@ -670,7 +669,7 @@ class ConsoleCompletions
 		_maxlen = 0;
 	}
 
-	bool empty() const
+	[[nodiscard]] bool empty() const
 	{
 		return _completions.empty();
 	}
@@ -678,7 +677,7 @@ class ConsoleCompletions
 	//
 	// Get longest common substring of completions.
 	//
-	std::string getCommon() const
+	[[nodiscard]] std::string getCommon() const
 	{
 		bool diff = false;
 		std::string common;
@@ -687,10 +686,9 @@ class ConsoleCompletions
 		{
 			char compare = '\xFF';
 
-			std::vector<std::string>::const_iterator it = _completions.begin();
-			for (; it != _completions.end(); ++it)
+			for (const auto& comp : _completions)
 			{
-				if (index >= it->length())
+				if (index >= comp.length())
 				{
 					// End of string, this is an implicit failed match.
 					diff = true;
@@ -700,9 +698,9 @@ class ConsoleCompletions
 				if (compare == '\xFF')
 				{
 					// Set character to compare against.
-					compare = it->at(index);
+					compare = comp.at(index);
 				}
-				else if (compare != it->at(index))
+				else if (compare != comp.at(index))
 				{
 					// Found a different character.
 					diff = true;
@@ -721,12 +719,12 @@ class ConsoleCompletions
 		return common;
 	}
 
-	size_t getMaxLen() const
+	[[nodiscard]] size_t getMaxLen() const
 	{
 		return _maxlen;
 	}
 
-	size_t size() const
+	[[nodiscard]] size_t size() const
 	{
 		return _completions.size();
 	}
@@ -758,7 +756,7 @@ tabcommand_map_t& TabCommands()
 
 void C_AddTabCommand(const char* name)
 {
-	tabcommand_map_t::iterator it = TabCommands().find(StdStringToLower(name));
+	const tabcommand_map_t::iterator it = TabCommands().find(StdStringToLower(name));
 
 	if (it != TabCommands().end())
 		TabCommands()[name]++;
@@ -768,7 +766,7 @@ void C_AddTabCommand(const char* name)
 
 void C_RemoveTabCommand(const char* name)
 {
-	tabcommand_map_t::iterator it = TabCommands().find(StdStringToLower(name));
+	const tabcommand_map_t::iterator it = TabCommands().find(StdStringToLower(name));
 
 	if (it != TabCommands().end())
 		if (!--it->second)
@@ -833,13 +831,13 @@ static void TabComplete(TabCompleteDirection dir)
 	{
 		if (dir == TAB_COMPLETE_FORWARD)
 		{
-			size_t index = ::NextCycleIndex;
+			const size_t index = ::NextCycleIndex;
 			::CmdLine.replaceString(::CmdCompletions.at(index));
 			TabCycleSet(index);
 		}
 		else if (dir == TAB_COMPLETE_BACKWARD)
 		{
-			size_t index = ::PrevCycleIndex;
+			const size_t index = ::PrevCycleIndex;
 			::CmdLine.replaceString(::CmdCompletions.at(index));
 			TabCycleSet(index);
 		}
@@ -856,14 +854,14 @@ static void TabComplete(TabCompleteDirection dir)
 	size_t tabEnd = ::CmdLine.text.find(' ', 0);
 	if (tabEnd == std::string::npos)
 		tabEnd = ::CmdLine.text.length();
-	size_t tabLen = tabEnd - tabStart;
+	const size_t tabLen = tabEnd - tabStart;
 
 	// Don't complete if the cursor is past the command.
 	if (::CmdLine.cursor_position >= tabEnd + 1)
 		return;
 
 	// Find all substrings.
-	std::string sTabPos = StdStringToLower(::CmdLine.text.substr(tabStart, tabLen));
+	const std::string sTabPos = StdStringToLower(::CmdLine.text.substr(tabStart, tabLen));
 	const char* cTabPos = sTabPos.c_str();
 	tabcommand_map_t::iterator it = TabCommands().lower_bound(sTabPos);
 	for (; it != TabCommands().end(); ++it)
@@ -875,7 +873,7 @@ static void TabComplete(TabCompleteDirection dir)
 	if (::CmdCompletions.size() > 1)
 	{
 		// Get common substring of all completions.
-		std::string common = ::CmdCompletions.getCommon();
+		const std::string common = ::CmdCompletions.getCommon();
 		::CmdLine.replaceString(common);
 	}
 	else if (::CmdCompletions.size() == 1)
@@ -923,6 +921,11 @@ CVAR_FUNC_IMPL(msgmidcolor)
 	setmsgcolor(PRINTLEVELS-1, var.cstring());
 }
 
+CVAR_FUNC_IMPL(con_scaletext)
+{
+	C_NewModeAdjust();
+}
+
 // NES - Activating this locks the scroll position in place when
 //       scrolling up. Otherwise, any new messages will
 //       automatically pull the console back to the bottom.
@@ -952,11 +955,11 @@ void C_InitConCharsFont()
 		memset(temp_surface->getBuffer() + y * temp_surface->getPitchInPixels(), transcolor, 128);
 
 	// paste the patch into the linear byte bufer
-	DCanvas* canvas = temp_surface->getDefaultCanvas();
+	const DCanvas* canvas = temp_surface->getDefaultCanvas();
 	canvas->DrawPatch(W_CachePatch("CONCHARS"), 0, 0);
 
 	ConChars = new byte[256*8*8*2];
-	byte* dest = ConChars;	
+	byte* dest = ConChars;
 
 	for (int y = 0; y < 16; y++)
 	{
@@ -967,7 +970,7 @@ void C_InitConCharsFont()
 			{
 				for (int a = 0; a < 8; a++)
 				{
-					byte val = source[a];
+					const byte val = source[a];
 					if (val == transcolor)
 					{
 						dest[a] = 0x00;
@@ -1008,7 +1011,7 @@ void STACK_ARGS C_ShutdownConCharsFont()
 static int C_StringWidth(const char* str)
 {
 	int width = 0;
-	
+
 	while (*str)
 	{
 		// skip over color markup escape codes
@@ -1018,7 +1021,7 @@ static int C_StringWidth(const char* str)
 			continue;
 		}
 
-		width += 8; 
+		width += ConCharSize;
 		str++;
 	}
 
@@ -1085,12 +1088,11 @@ void C_InitConsole()
 //
 static void C_SetConsoleDimensions(int width, int height)
 {
-	static int old_width = -1, old_height = -1;
+	static int old_width = -1, old_height = -1, old_scale = -1;
 
-	if (width != old_width || height != old_height)
+	if (width != old_width || height != old_height || ConScale != old_scale)
 	{
-		ConCols = width / 8 - 2;
-		PhysRows = height / 8;
+		ConCols = width / ConCharSize - 2;
 
 		// ConCols has changed so any lines of text that are currently wrapped
 		// need to be adjusted.
@@ -1112,18 +1114,19 @@ static void C_SetConsoleDimensions(int width, int height)
 				}
 			}
 
-			if ((unsigned)C_StringWidth(current_line_it->text.c_str()) > ConCols*8)
+			if ((unsigned)C_StringWidth(current_line_it->text.c_str()) > ConCols*ConCharSize)
 			{
 				ConsoleLineList::iterator next_line_it = current_line_it;
 				++next_line_it;
 
-				ConsoleLine new_line = current_line_it->split(ConCols*8);
+				ConsoleLine new_line = current_line_it->split(ConCols*ConCharSize);
 				Lines.insert(next_line_it, new_line);
 			}
 		}
 
 		old_width = width;
 		old_height = height;
+		old_scale = ConScale;
 	}
 }
 
@@ -1154,7 +1157,7 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 	char work[MAX_LINE_LENGTH];
 	brokenlines_t *lines;
 
-	size_t len = strlen(source);
+	const size_t len = strlen(source);
 
 	if ((printlevel != 128 && !show_messages) || len == 0 ||
 		(gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) )
@@ -1164,7 +1167,7 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 	if (printlevel == PRINT_FILTERCHAT)
 		return;
 
-	int width = I_GetSurfaceWidth() / V_TextScaleXAmount();
+	const int width = I_GetSurfaceWidth() / V_TextScaleXAmount();
 
 	if (addtype == APPENDLINE && NotifyStrings[NUMNOTIFIES-1].printlevel == printlevel)
 	{
@@ -1184,7 +1187,7 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 	{
 		if (addtype == NEWLINE)
 			memmove(&NotifyStrings[0], &NotifyStrings[1], sizeof(struct NotifyText) * (NUMNOTIFIES-1));
-		strcpy((char *)NotifyStrings[NUMNOTIFIES-1].text, lines[i].string);
+		M_StringCopy((char *)NotifyStrings[NUMNOTIFIES-1].text, lines[i].string, 256);
 		NotifyStrings[NUMNOTIFIES-1].timeout = gametic + (con_notifytime.asInt() * TICRATE);
 		NotifyStrings[NUMNOTIFIES-1].printlevel = printlevel;
 		addtype = NEWLINE;
@@ -1217,7 +1220,7 @@ static size_t C_PrintStringStdOut(const char* str)
 	std::string sanitized_str(str);
 	StripColorCodes(sanitized_str);
 
-	printf("%s", sanitized_str.c_str());
+	fmt::print("{}", sanitized_str);
 	fflush(stdout);
 
 	return sanitized_str.length();
@@ -1229,7 +1232,7 @@ static size_t C_PrintStringStdOut(const char* str)
 //
 // Provide our own Printf() that is sensitive of the
 // console status (in or out of game).
-// 
+//
 static size_t C_PrintString(int printlevel, const char* color_code, const char* outline)
 {
 	if (I_VideoInitialized() && !midprinting)
@@ -1272,24 +1275,24 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 		strncpy(str, line_start, len);
 		str[len] = '\0';
 
-		bool wrap_new_line = *line_end != '\n';
-		ConsoleLine new_line(str, color_code, wrap_new_line); 
-		
+		const bool wrap_new_line = *line_end != '\n';
+		ConsoleLine new_line(str, color_code, wrap_new_line);
+
 		// Add a new line to ConsoleLineList if the last line in ConsoleLineList
 		// ends in \n, or add onto the last line if does not.
 		if (!Lines.empty() && Lines.back().wrapped)
 			Lines.back().join(new_line);
 		else
 			Lines.push_back(new_line);
- 
+
 		// Wrap the current line if it's too long.
-		unsigned int line_width = C_StringWidth(Lines.back().text.c_str());
-		if (line_width > ConCols*8)
+		const unsigned int line_width = C_StringWidth(Lines.back().text.c_str());
+		if (line_width > ConCols*ConCharSize)
 		{
-			new_line = Lines.back().split(ConCols*8);
+			new_line = Lines.back().split(ConCols*ConCharSize);
 			Lines.push_back(new_line);
 		}
-		
+
 		if (con_scrlock > 0 && RowAdjust != 0)
 			RowAdjust++;
 		else
@@ -1303,36 +1306,33 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 	return strlen(outline);
 }
 
-static size_t VPrintf(int printlevel, const char* color_code, const char* format, va_list parms)
+size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str)
 {
-	char outline[MAX_LINE_LENGTH], outlinelog[MAX_LINE_LENGTH];
-
-	extern BOOL gameisdead;
+	extern bool gameisdead;
 	if (gameisdead)
 		return 0;
 
-	vsnprintf(outline, ARRAY_LENGTH(outline), format, parms);
+	std::string newStr = str;
 
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
-	// ToDo: there may be more characters not allowed on a consoleprint, 
+	// ToDo: there may be more characters not allowed on a consoleprint,
 	// maybe restrict a few ASCII stuff later on ?
-	size_t len = strlen(outline);
-	for (size_t i = 0; i < len; i++)
+	for (auto& c : newStr)
 	{
-		if (outline[i] == 0x07)
-			outline[i] = '.';
+		if (c == 0x07)
+			c = '.';
 	}
 
 	// Prevents writing a whole lot of new lines to the log file
 	if (gamestate != GS_FORCEWIPE)
 	{
-		strcpy(outlinelog, outline);
+		std::string logStr = newStr;
 
 		// [Nes] - Horizontal line won't show up as-is in the logfile.
-		for (size_t i = 0; i < len; i++)
+		for (auto& c : logStr)
 		{
-			if (outlinelog[i] == '\35' || outlinelog[i] == '\36' || outlinelog[i] == '\37')
-				outlinelog[i] = '=';
+			if (c == '\35' || c == '\36' || c == '\37')
+				c = '=';
 		}
 
 		// Up the row buffer for the console.
@@ -1341,101 +1341,49 @@ static size_t VPrintf(int printlevel, const char* color_code, const char* format
 
 		// We need to know if there were any new lines being printed
 		// in our string.
-
-		int newLineCount = std::count(outline, outline + strlen(outline), '\n');
+		const int newLineCount = std::count(logStr.begin(), logStr.end(), '\n');
 
 		if (ConRows < (unsigned int)con_buffersize.asInt())
 			ConRows += (newLineCount > 1) ? newLineCount + 1 : 1;
 	}
 
 	if (print_stdout && gamestate != GS_FORCEWIPE)
-		C_PrintStringStdOut(outline);
-
-	std::string sanitized_str(outline);
+		C_PrintStringStdOut(newStr.c_str());
 
 	if (!con_coloredmessages)
-		StripColorCodes(sanitized_str);
+		StripColorCodes(newStr);
 
-	C_PrintString(printlevel, color_code, sanitized_str.c_str());
+	C_PrintString(printlevel, color_code, newStr.c_str());
 
-	// Once done, log 
+	// Once done, log
 	if (LOG.is_open())
 	{
 		// Strip if not already done
 		if (con_coloredmessages)
-			StripColorCodes(sanitized_str);
+			StripColorCodes(newStr);
 
-		LOG << sanitized_str;
+		LOG << newStr;
 		LOG.flush();
 	}
 
 #if defined (_WIN32) && defined(_DEBUG)
 	// [AM] Since we don't have stdout/stderr in a non-console Win32 app,
 	//      this outputs the string to the "Output" window.
-	OutputDebugStringA(sanitized_str.c_str());
+	OutputDebugStringA(newStr.c_str());
 #endif
 
-	return len;
-}
-
-FORMAT_PRINTF(1, 2) int STACK_ARGS Printf(const char* format, ...)
-{
-	va_list argptr;
-	int count;
-
-	va_start(argptr, format);
-	count = VPrintf(PRINT_HIGH, TEXTCOLOR_NORMAL, format, argptr);
-	va_end(argptr);
-
-	return count;
-}
-
-FORMAT_PRINTF(2, 3) int STACK_ARGS Printf(int printlevel, const char* format, ...)
-{
-	va_list argptr;
-
-	va_start(argptr, format);
-	int count = VPrintf(printlevel, TEXTCOLOR_NORMAL, format, argptr);
-	va_end(argptr);
-
-	return count;
-}
-
-FORMAT_PRINTF(1, 2) int STACK_ARGS Printf_Bold(const char* format, ...)
-{
-	va_list argptr;
-
-	va_start(argptr, format);
-	int count = VPrintf(PRINT_HIGH, TEXTCOLOR_BOLD, format, argptr);
-	va_end(argptr);
-
-	return count;
-}
-
-FORMAT_PRINTF(1, 2) int STACK_ARGS DPrintf(const char* format, ...)
-{
-	if (developer || devparm)
-	{
-		va_list argptr;
-
-		va_start(argptr, format);
-		int count = VPrintf(PRINT_WARNING, TEXTCOLOR_NORMAL, format, argptr);
-		va_end(argptr);
-		return count;
-	}
-
-	return 0;
+	return newStr.length();
 }
 
 void C_FlushDisplay()
 {
-	for (int i = 0; i < NUMNOTIFIES; i++)
-		NotifyStrings[i].timeout = 0;
+	for (auto& notify : NotifyStrings)
+		notify.timeout = 0;
 }
 
 void C_Ticker()
 {
-	int surface_height = I_GetSurfaceHeight();
+	const int surface_height = I_GetSurfaceHeight();
 
 	if (ConsoleState == c_falling)
 	{
@@ -1471,24 +1419,24 @@ void C_Ticker()
 			else
 				RowAdjust++;
 
-			if (RowAdjust > ConRows - ConBottom / 8)
-				RowAdjust = ConRows - ConBottom / 8;
+			if (RowAdjust > ConRows - ConBottom / ConCharSize)
+				RowAdjust = ConRows - ConBottom / ConCharSize;
 		}
 		else if (ScrollState == SCROLLDN)
 		{
 			if (KeysCtrl)
 			{
-				RowAdjust-=16;				
+				RowAdjust-=16;
 				ScrollState = SCROLLNO;
-			} else 
+			} else
 				RowAdjust--;
 
 			if (RowAdjust < 0)
 				RowAdjust = 0;
 		}
 
-		if (RowAdjust + (ConBottom/8) + 1 > (unsigned int)con_buffersize.asInt())
-			RowAdjust = con_buffersize.asInt() - ConBottom;
+		if (RowAdjust + (ConBottom/ConCharSize) + 1 > (unsigned int)con_buffersize.asInt())
+			RowAdjust = con_buffersize.asInt() - (ConBottom/ConCharSize);
 	}
 
 	if (--CursorTicker <= 0)
@@ -1513,20 +1461,20 @@ static void C_DrawNotifyText()
 		return;
 
 	int ypos = 0;
-	for (int i = 0; i < NUMNOTIFIES; i++)
+	for (const auto& notify : NotifyStrings)
 	{
-		if (NotifyStrings[i].timeout > gametic)
+		if (notify.timeout > gametic)
 		{
-			if (!show_messages && NotifyStrings[i].printlevel != 128)
+			if (!show_messages && notify.printlevel != 128)
 				continue;
 
 			int color;
-			if (NotifyStrings[i].printlevel >= PRINTLEVELS)
+			if (notify.printlevel >= PRINTLEVELS)
 				color = CR_RED;
 			else
-				color = PrintColors[NotifyStrings[i].printlevel];
+				color = PrintColors[notify.printlevel];
 
-			screen->DrawTextStretched(color, 0, ypos, NotifyStrings[i].text,
+			screen->DrawTextStretched(color, 0, ypos, notify.text,
 						V_TextScaleXAmount(), V_TextScaleYAmount());
 			ypos += 8 * V_TextScaleYAmount();
 		}
@@ -1567,12 +1515,12 @@ static bool C_UseFullConsole()
 //
 void C_AdjustBottom()
 {
-	unsigned int surface_height = I_GetSurfaceHeight();
+	const unsigned int surface_height = I_GetSurfaceHeight();
 
 	if (ConsoleState == c_up)
 		ConBottom = 0;
 	else if (C_UseFullConsole())
-		ConBottom = surface_height; 
+		ConBottom = surface_height;
 	else if (ConsoleState == c_down || ConBottom > surface_height / 2)
 		ConBottom = surface_height / 2;
 
@@ -1588,12 +1536,15 @@ void C_AdjustBottom()
 //
 void C_NewModeAdjust()
 {
-	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+
+	ConScale = con_scaletext ? con_scaletext : MAX(1, static_cast<int>(std::round(surface_height / 450.0f)));
+	ConCharSize = 8 * ConScale;
 
 	if (I_VideoInitialized())
 		C_SetConsoleDimensions(surface_width, surface_height);
 	else
-		C_SetConsoleDimensions(80 * 8, 25 * 8);
+		C_SetConsoleDimensions(80 * ConCharSize, 25 * ConCharSize);
 
 	// clear HUD notify text
 	C_FlushDisplay();
@@ -1657,6 +1608,23 @@ void C_HideConsole()
 }
 
 
+static void PauseResumeSound(bool pause_sound)
+{
+	if (gamestate != GS_LEVEL || multiplayer || demoplayback || netdemo.isPlaying())
+	{
+		return;
+	}
+
+	if (pause_sound)
+	{
+		S_PauseSound();
+	}
+	else
+	{
+		S_ResumeSound();
+	}
+}
+
 //
 // C_ToggleConsole
 //
@@ -1668,7 +1636,7 @@ void C_ToggleConsole()
 	if (C_UseFullConsole())
 		return;
 
-	bool bring_console_down =
+	const bool bring_console_down =
 				(ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull);
 
 	if (bring_console_down)
@@ -1682,7 +1650,7 @@ void C_ToggleConsole()
 	}
 	else
 	{
-		if (ConBottom == static_cast<unsigned int>(I_GetSurfaceHeight()))
+		if (ConBottom == I_GetSurfaceHeight())
 			ConsoleState = c_risefull;
 		else
 			ConsoleState = c_rising;
@@ -1693,6 +1661,7 @@ void C_ToggleConsole()
 	CmdLine.clear();
 	CmdCompletions.clear();
 	History.resetPosition();
+	PauseResumeSound(bring_console_down);
 }
 
 
@@ -1709,7 +1678,7 @@ void C_DisplayTicker()
 	// Attaching ConBottom to gametic will still cause falling/rising to
 	// be pinned to the gametic i.e. 35fps.
 
-	// Interp where the console bottom should be based on current and previous 
+	// Interp where the console bottom should be based on current and previous
 	fixed_t bottom =
 		OInterpolation::getInstance().getInterpolatedConsoleBottom(render_lerp_amount);
 
@@ -1754,27 +1723,30 @@ void C_DisplayTicker()
 		}
 	}
 
-	if (RowAdjust + (ConBottom / 8) + 1 > (unsigned int)con_buffersize.asInt())
-		RowAdjust = con_buffersize.asInt() - ConBottom;
+	if (RowAdjust + (ConBottom / ConCharSize) + 1 > (unsigned int)con_buffersize.asInt())
+		RowAdjust = con_buffersize.asInt() - (ConBottom / ConCharSize);
 }
+
 
 //
 // C_DrawConsole
 //
 void C_DrawConsole()
 {
+	#define CONPX(A) ((A) * ConScale)
+
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	int primary_surface_width = primary_surface->getWidth();
 	int primary_surface_height = primary_surface->getHeight();
 
-	int left = 8;
-	size_t lines = (ConBottom - 12) / 8;
+	int left = CONPX(8);
+	int lines = (ConBottom - CONPX(12)) / CONPX(8);
 
 	int offset;
-	if (lines * 8 > ConBottom - 16)
-		offset = -16;
+	if (lines * CONPX(8) > ConBottom - CONPX(16))
+		offset = CONPX(-16);
 	else
-		offset = -12;
+		offset = CONPX(-12);
 
 	if (ConsoleState == c_up || ConBottom == 0)
 	{
@@ -1804,25 +1776,16 @@ void C_DrawConsole()
 		background_surface->unlock();
 	}
 
-	if (ConBottom >= 12)
+	if (ConBottom >= CONPX(12))
 	{
-		const char* version = NiceVersion();
-
-		// print the Odamex version in gold in the bottom right corner of console
-		screen->PrintStr(primary_surface_width - 8 - C_StringWidth(version),
-		                 ConBottom - 12, version, CR_ORANGE);
-
-		// Amount of space remaining.
-		int remain = primary_surface_width - 16 - C_StringWidth(version);
-
 		if (CL_IsDownloading())
 		{
 			// Use the remaining space for a download bar.
-			size_t chars = remain / C_StringWidth(" ");
+			size_t chars = (primary_surface_width - CONPX(8)) / C_StringWidth(" ");
 			std::string download;
 
 			// Stamp out the text bits.
-			std::string filename = CL_DownloadFilename();
+			std::string filename = M_ExtractFileName(CL_DownloadFilename());
 			if (filename.empty())
 				filename = "...";
 			OTransferProgress progress = CL_DownloadProgress();
@@ -1830,8 +1793,8 @@ void C_DrawConsole()
 			StrFormatBytes(dlnow, progress.dlnow);
 			std::string dltotal;
 			StrFormatBytes(dltotal, progress.dltotal);
-			StrFormat(download, "%s: %s/%s", filename.c_str(), dlnow.c_str(),
-			          dltotal.c_str());
+			download = fmt::sprintf("%s: %s/%s", filename.c_str(), dlnow.c_str(),
+			                        dltotal.c_str());
 
 			// Avoid divide by zero.
 			if (progress.dltotal == 0)
@@ -1842,7 +1805,7 @@ void C_DrawConsole()
 			size_t dltxtlen = download.length();
 			size_t barchars = chars - dltxtlen;
 
-			if (barchars >= 2)
+			if (barchars >= 2 && barchars <= chars)
 			{
 				download.resize(chars);
 				for (size_t i = 0; i < barchars; i++)
@@ -1864,13 +1827,21 @@ void C_DrawConsole()
 			}
 
 			// Draw the thing.
-			screen->PrintStr(left + 2, ConBottom - 12, download.c_str(), CR_GREEN);
+			screen->PrintStr(left + CONPX(2), ConBottom - CONPX(12), download.c_str(), CR_GREEN, true, ConScale);
+		}
+		else
+		{
+			const char* version = NiceVersion();
+
+			// print the Odamex version in gold in the bottom right corner of console
+			screen->PrintStr(primary_surface_width - CONPX(8) - C_StringWidth(version),
+			                 ConBottom - CONPX(12), version, CR_ORANGE, true, ConScale);
 		}
 
 		if (TickerMax)
 		{
 			char tickstr[256];
-			size_t i, tickend = ConCols - primary_surface_width / 90 - 6;
+			size_t i, tickend = ConCols - primary_surface_width / CONPX(90) - 6;
 			size_t tickbegin = 0;
 
 			if (TickerLabel)
@@ -1891,7 +1862,7 @@ void C_DrawConsole()
 			tickstr[i] = -125;
 			size_t buflen = 256 - tickend - 3;
 			snprintf(tickstr + tickend + 3, buflen, "%u%%", (TickerAt * 100) / TickerMax);
-			screen->PrintStr(8, ConBottom - 12, tickstr);
+			screen->PrintStr(CONPX(8), ConBottom - CONPX(12), tickstr, -1, true, ConScale);
 		}
 	}
 
@@ -1965,8 +1936,8 @@ void C_DrawConsole()
 						rowstring[col - 1] = ' ';
 				}
 
-				screen->PrintStr(left, offset + (lines + l + 1) * 8, rowstring,
-				                 CR_YELLOW);
+				screen->PrintStr(left, offset + (lines + l + 1) * CONPX(8), rowstring,
+				                 CR_YELLOW, true, ConScale);
 			}
 
 			// Render an overflow message if necessary.
@@ -1974,8 +1945,8 @@ void C_DrawConsole()
 			{
 				snprintf(rowstring, ARRAY_LENGTH(rowstring), "...and %zu more...",
 				         ::CmdCompletions.size() - (cLines * cColumns));
-				screen->PrintStr(left, offset + (lines + cLines + 1) * 8, rowstring,
-				                 CR_YELLOW);
+				screen->PrintStr(left, offset + (lines + cLines + 1) * CONPX(8), rowstring,
+				                 CR_YELLOW, true, ConScale);
 			}
 		}
 
@@ -1983,19 +1954,19 @@ void C_DrawConsole()
 		ConsoleLineList::reverse_iterator current_line_it = Lines.rbegin();
 		for (unsigned i = 0; i < RowAdjust && current_line_it != Lines.rend(); i++)
 			++current_line_it;
-	
+
 		// print as many ConsoleLines as will fit in the screen, starting at the bottom
 		for (; lines > 1 && current_line_it != Lines.rend(); lines--, ++current_line_it)
 		{
 			const char* str = current_line_it->text.c_str();
 			const char* color_code = current_line_it->color_code.c_str();
 			int color = color_code[0] != '\0' ? V_GetTextColor(color_code) : CR_GRAY;
-			screen->PrintStr(left, offset + lines * 8, str, color);
+			screen->PrintStr(left, offset + lines * CONPX(8), str, color, true, ConScale);
 		}
 
-		if (ConBottom >= 20)
+		if (ConBottom >= CONPX(20))
 		{
-			screen->PrintStr(left, ConBottom - 20, "]", CR_TAN);
+			screen->PrintStr(left, ConBottom - CONPX(20), "]", CR_TAN, true, ConScale);
 
 			size_t cmdline_len = std::min<size_t>(CmdLine.text.length() - CmdLine.scrolled_columns, ConCols - 1);
 			if (cmdline_len)
@@ -2004,33 +1975,35 @@ void C_DrawConsole()
 				strncpy(str, CmdLine.text.c_str() + CmdLine.scrolled_columns, cmdline_len);
 				str[cmdline_len] = '\0';
 				bool use_color_codes = false;
-				screen->PrintStr(left + 8, ConBottom - 20, str, CR_GRAY, use_color_codes);
+				screen->PrintStr(left + CONPX(8), ConBottom - CONPX(20), str, CR_GRAY, use_color_codes, ConScale);
 			}
 
 			if (cursoron)
 			{
 				const char str[] = "_";
 				size_t cursor_offset = CmdLine.cursor_position - CmdLine.scrolled_columns;
-				screen->PrintStr(left + 8 + 8 * cursor_offset, ConBottom - 20, str, CR_TAN);
+				screen->PrintStr(left + CONPX(8) + CONPX(8) * cursor_offset, ConBottom - CONPX(20), str, CR_TAN, true, ConScale);
 			}
 
-			if (RowAdjust && ConBottom >= 28)
+			if (RowAdjust && ConBottom >= CONPX(28))
 			{
 				// Indicate that the view has been scrolled up (10)
 				// and if we can scroll no further (12)
 				const char scrolled_up_str[] = "\012";		// 10 = \012 octal
 				const char no_scroll_str[] = "\014";		// 12 = \014 octal
-				const char* str = (RowAdjust + ConBottom/8 < ConRows) ? scrolled_up_str : no_scroll_str;
-				screen->PrintStr(0, ConBottom - 28, str);
+				const char* str = (RowAdjust + ConBottom/CONPX(8) < ConRows) ? scrolled_up_str : no_scroll_str;
+				screen->PrintStr(0, ConBottom - CONPX(28), str, -1, true, ConScale);
 			}
 		}
 	}
+
+	#undef CONPX
 }
 
 
 static bool C_HandleKey(const event_t* ev)
 {
-	int ch = ev->data1;
+	const int ch = ev->data1;
 	const char* cmd = Bindings.GetBind(ev->data1).c_str();
 
 	if (Key_IsMenuKey(ch) || (cmd && stricmp(cmd, "toggleconsole") == 0))
@@ -2046,10 +2019,10 @@ static bool C_HandleKey(const event_t* ev)
 
 #ifdef __SWITCH__
 	if (ev->data1 == OKEY_JOY3)
-{
-	char oldtext[64], text[64], fulltext[65];		
+	{
+		char oldtext[64], text[64], fulltext[65];
 
-		strcpy (text, CmdLine.text.c_str());
+		M_StringCopy(text, CmdLine.text.c_str(), 64);
 
 		// Initiate the console
 		NX_SetKeyboard(text, 64);
@@ -2061,11 +2034,11 @@ static bool C_HandleKey(const event_t* ev)
 				// add command line text to history
 		History.addString(text);
 		History.resetPosition();
-	
+
 		Printf(127, "]%s\n", text);
 		AddCommandString(text);
 		CmdLine.clear();
-}
+	}
 #endif
 
 	// Add modifiers for these keys
@@ -2126,11 +2099,11 @@ static bool C_HandleKey(const event_t* ev)
 		}
 		else if (Key_IsPageUpKey(ch, NumLockEnabled))
 		{
-			if ((int)(ConRows) > (int)(ConBottom / 8))
+			if ((int)(ConRows) > (int)(ConBottom / ConCharSize))
 			{
 				if (KeysShifted)
 					// Move to top of console buffer
-					RowAdjust = ConRows - ConBottom / 8;
+					RowAdjust = ConRows - ConBottom / ConCharSize;
 				else
 					// Start scrolling console buffer up
 					ScrollState = SCROLLUP;
@@ -2192,7 +2165,7 @@ static bool C_HandleKey(const event_t* ev)
 			// add command line text to history
 			History.addString(CmdLine.text);
 			History.resetPosition();
-		
+
 			Printf(127, "]%s\n", CmdLine.text.c_str());
 			AddCommandString(CmdLine.text.c_str());
 			CmdLine.clear();
@@ -2238,7 +2211,7 @@ static bool C_HandleKey(const event_t* ev)
 	}
 
 	if (keytext)
-	{	
+	{
 		// Add keypress to command line
 		CmdLine.insertCharacter(keytext);
 		TabCycleClear();
@@ -2246,7 +2219,7 @@ static bool C_HandleKey(const event_t* ev)
 	return true;
 }
 
-BOOL C_Responder(event_t *ev)
+bool C_Responder(event_t *ev)
 {
 	if (ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull || menuactive)
 		return false;
@@ -2295,7 +2268,7 @@ BEGIN_COMMAND(echo)
 {
 	if (argc > 1)
 	{
-		std::string str = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		const std::string str = C_ArgCombine(argc - 1, (const char **)(argv + 1));
 		Printf(PRINT_HIGH, "%s\n", str.c_str());
 	}
 }
@@ -2352,7 +2325,7 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 			MidLines = i;
 		}
 
-		free(newmsg);
+		M_Free(newmsg);
 	}
 	else
 		MidMsg = NULL;
@@ -2362,17 +2335,17 @@ void C_DrawMid()
 {
 	if (MidMsg)
 	{
-		int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+		const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
-		int xscale = V_TextScaleXAmount();
-		int yscale = V_TextScaleYAmount();
+		const int xscale = V_TextScaleXAmount();
+		const int yscale = V_TextScaleYAmount();
 
 		const int line_height = 8 * yscale;
 
-		int bottom = R_StatusBarVisible()
-			? ST_StatusBarY(surface_width, surface_height) : surface_height;
+		const int bottom = R_StatusBarVisible()
+			                   ? ST_StatusBarY(surface_width, surface_height) : surface_height;
 
-		int x = surface_width / 2;
+		const int x = surface_width / 2;
 		int y = (bottom - line_height * MidLines) / 2;
 
 		for (int i = 0; i < MidLines; i++, y += line_height)
@@ -2431,7 +2404,7 @@ void C_GMidPrint(const char* msg, int color, int msgtime)
 		}
 
 		GameColor = color;
-		free(newmsg);
+		M_Free(newmsg);
 	}
 	else
 	{
@@ -2444,17 +2417,17 @@ void C_DrawGMid()
 {
 	if (GameMsg)
 	{
-		int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+		const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
-		int xscale = V_TextScaleXAmount();
-		int yscale = V_TextScaleYAmount();
+		const int xscale = V_TextScaleXAmount();
+		const int yscale = V_TextScaleYAmount();
 
 		const int line_height = 8 * yscale;
 
-		int bottom = R_StatusBarVisible()
-			? ST_StatusBarY(surface_width, surface_height) : surface_height;
+		const int bottom = R_StatusBarVisible()
+			                   ? ST_StatusBarY(surface_width, surface_height) : surface_height;
 
-		int x = surface_width / 2;
+		const int x = surface_width / 2;
 		int y = (bottom / 2 - line_height * GameLines) / 2;
 
 		for (int i = 0; i < GameLines; i++, y += line_height)

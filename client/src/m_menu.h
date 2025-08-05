@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -143,13 +143,13 @@ typedef struct menuitem_s {
 } menuitem_t;
 
 typedef struct menu_s {
-	char			title[9];
+	OLumpName		title;
 	int				lastOn;
 	int				numitems;
 	int				indent;
 	menuitem_t	   *items;
 	int				scrolltop;
-	int				scrollpos;	
+	int				scrollpos;
 	void			(*refreshfunc)();	// Callback func for M_OptResponder
 } menu_t;
 
@@ -163,7 +163,7 @@ typedef struct
 	// -1 = no cursor here, 1 = ok, 2 = arrows ok
 	short		status;
 
-	char		name[10];
+	OLumpName	name;
 	char		textname[32];
 
 	// choice = menu item #.

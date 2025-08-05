@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -78,7 +78,7 @@ void R_DrawSpanD_SSE2 (void)
 	argb_t* dest = (argb_t*)dspan.destination + dspan.y * dspan.pitch_in_pixels + dspan.x1;
 
 	shaderef_t colormap = dspan.colormap;
-	
+
 	const int texture_width_bits = 6, texture_height_bits = 6;
 
 	const unsigned int umask = ((1 << texture_width_bits) - 1) << texture_height_bits;
@@ -98,7 +98,7 @@ void R_DrawSpanD_SSE2 (void)
 	while (align--)
 	{
 		// Current texture index in u,v.
-		const unsigned int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask); 
+		const unsigned int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask);
 
 		// Lookup pixel from flat texture tile,
 		//  re-index using light/colormap.
@@ -122,10 +122,10 @@ void R_DrawSpanD_SSE2 (void)
 	while (batches--)
 	{
 //		[SL] The below SSE2 intrinsics are equivalent to the following block:
-//		const int spot0 = (((ufrac + ustep*0) >> ushift) & umask) | (((vfrac + vstep*0) >> vshift) & vmask); 
-//		const int spot1 = (((ufrac + ustep*1) >> ushift) & umask) | (((vfrac + vstep*1) >> vshift) & vmask); 
-//		const int spot2 = (((ufrac + ustep*2) >> ushift) & umask) | (((vfrac + vstep*2) >> vshift) & vmask); 
-//		const int spot3 = (((ufrac + ustep*3) >> ushift) & umask) | (((vfrac + vstep*3) >> vshift) & vmask); 
+//		const int spot0 = (((ufrac + ustep*0) >> ushift) & umask) | (((vfrac + vstep*0) >> vshift) & vmask);
+//		const int spot1 = (((ufrac + ustep*1) >> ushift) & umask) | (((vfrac + vstep*1) >> vshift) & vmask);
+//		const int spot2 = (((ufrac + ustep*2) >> ushift) & umask) | (((vfrac + vstep*2) >> vshift) & vmask);
+//		const int spot3 = (((ufrac + ustep*3) >> ushift) & umask) | (((vfrac + vstep*3) >> vshift) & vmask);
 
 		__m128i u = _mm_and_si128(_mm_srli_epi32(mufrac, ushift), mumask);
 		__m128i v = _mm_and_si128(_mm_srli_epi32(mvfrac, vshift), mvmask);
@@ -162,7 +162,7 @@ void R_DrawSpanD_SSE2 (void)
 	while (remainder--)
 	{
 		// Current texture index in u,v.
-		const int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask); 
+		const int spot = ((ufrac >> ushift) & umask) | ((vfrac >> vshift) & vmask);
 
 		// Lookup pixel from flat texture tile,
 		//  re-index using light/colormap.
@@ -181,24 +181,24 @@ void R_DrawSlopeSpanD_SSE2 (void)
 	if (count <= 0)
 		return;
 
-#ifdef RANGECHECK 
+#ifdef RANGECHECK
 	if (dspan.x2 < dspan.x1
 		|| dspan.x1 < 0
 		|| dspan.x2 >= I_GetSurfaceWidth()
 		|| dspan.y >= I_GetSurfaceHeight())
 	{
-		I_Error ("R_DrawSlopeSpan: %i to %i at %i",
-				 dspan.x1, dspan.x2, dspan.y);
+		I_Error("R_DrawSlopeSpan: {} to {} at {}",
+				dspan.x1, dspan.x2, dspan.y);
 	}
 #endif
 
 	float iu = dspan.iu, iv = dspan.iv;
 	float ius = dspan.iustep, ivs = dspan.ivstep;
 	float id = dspan.id, ids = dspan.idstep;
-	
-	// framebuffer	
+
+	// framebuffer
 	argb_t* dest = (argb_t*)dspan.destination + dspan.y * dspan.pitch_in_pixels + dspan.x1;
-	
+
 	// texture data
 	byte *src = dspan.source;
 
@@ -369,10 +369,10 @@ void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, 
 			__m128i vec_upper1 = _mm_unpackhi_epi8(vec_input1, _mm_setzero_si128());
 
 			// ((input * invAlpha) + (color * Alpha)) >> 8
-			vec_lower0 = _mm_srli_epi16(_mm_add_epi16(_mm_mullo_epi16(vec_lower0, vec_invalpha), vec_alphacolor), 8); 
-			vec_upper0 = _mm_srli_epi16(_mm_add_epi16(_mm_mullo_epi16(vec_upper0, vec_invalpha), vec_alphacolor), 8); 
-			vec_lower1 = _mm_srli_epi16(_mm_add_epi16(_mm_mullo_epi16(vec_lower1, vec_invalpha), vec_alphacolor), 8); 
-			vec_upper1 = _mm_srli_epi16(_mm_add_epi16(_mm_mullo_epi16(vec_upper1, vec_invalpha), vec_alphacolor), 8); 
+			vec_lower0 = _mm_srli_epi16(_mm_add_epi16(_mm_mullo_epi16(vec_lower0, vec_invalpha), vec_alphacolor), 8);
+			vec_upper0 = _mm_srli_epi16(_mm_add_epi16(_mm_mullo_epi16(vec_upper0, vec_invalpha), vec_alphacolor), 8);
+			vec_lower1 = _mm_srli_epi16(_mm_add_epi16(_mm_mullo_epi16(vec_lower1, vec_invalpha), vec_alphacolor), 8);
+			vec_upper1 = _mm_srli_epi16(_mm_add_epi16(_mm_mullo_epi16(vec_upper1, vec_invalpha), vec_alphacolor), 8);
 
 			// Compress the width of each color channel to 8-bits again and store in dest
 			_mm_store_si128((__m128i*)(dest + 0), _mm_packus_epi16(vec_lower0, vec_upper0));

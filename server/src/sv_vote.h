@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,6 +24,7 @@
 
 #include "c_vote.h"
 #include "d_player.h"
+#include <map>
 
 class Vote
 {
@@ -39,29 +40,17 @@ public:
 	virtual ~Vote() { };
 	const char* name;
 	const cvar_t* cvar;
-	unsigned int get_countdown() const
-	{
-		return this->countdown;
-	}
-	std::string get_error() const
-	{
-		return this->error;
-	}
-	vote_result_t get_result() const
-	{
-		return this->result;
-	}
-	std::string get_votestring() const
-	{
-		return this->votestring;
-	}
+	[[nodiscard]] unsigned int get_countdown() const { return this->countdown; }
+	[[nodiscard]] std::string get_error() const { return this->error; }
+	[[nodiscard]] vote_result_t get_result() const { return this->result; }
+	[[nodiscard]] std::string get_votestring() const { return this->votestring; }
 	vote_result_t check();
-	size_t count_yes() const;
-	size_t count_no() const;
-	size_t count_abs() const;
-	size_t calc_yes(const bool noabs = false) const;
-	size_t calc_no() const;
-	vote_state_t serialize() const;
+	[[nodiscard]] size_t count_yes() const;
+	[[nodiscard]] size_t count_no() const;
+	[[nodiscard]] size_t count_abs() const;
+	[[nodiscard]] size_t calc_yes(const bool noabs = false) const;
+	[[nodiscard]] size_t calc_no() const;
+	[[nodiscard]] vote_state_t serialize() const;
 	void ev_disconnect(player_t &player);
 	bool ev_tic();
 	bool init(const std::vector<std::string> &args, const player_t &player);

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -68,6 +68,11 @@ enum WDLEvents {
 	//WDL_EVENT_EXITLEVEL,
 };
 
+inline auto format_as(WDLEvents eEvent)
+{
+	return fmt::underlying(eEvent);
+}
+
 enum WDLPowerups {
 	WDL_PICKUP_SOULSPHERE,
 	WDL_PICKUP_MEGASPHERE,
@@ -109,6 +114,11 @@ enum WDLPowerups {
 	WDL_PICKUP_POWERUPSPAWNER,
 	WDL_PICKUP_UNKNOWN,
 };
+
+inline auto format_as(WDLPowerups ePowerup)
+{
+	return fmt::underlying(ePowerup);
+}
 
 void M_StartWDLLog(bool newmap);
 void M_LogWDLEvent(

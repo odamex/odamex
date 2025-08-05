@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -67,6 +67,7 @@ extern bool predicting, step_mode;
 
 static player_t nullplayer;		// used to indicate 'player not found' when searching
 EXTERN_CVAR (sv_allowmovebob)
+EXTERN_CVAR (sv_showplayerpowerups)
 EXTERN_CVAR (cl_movebob)
 
 player_t &idplayer(byte id)
@@ -74,11 +75,11 @@ player_t &idplayer(byte id)
 	// Put a cached lookup mechanism in here.
 
 	// full search
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
 		// Add to the cache while we search
-		if (it->id == id)
-			return *it;
+		if (player.id == id)
+			return player;
 	}
 
 	return nullplayer;
@@ -86,22 +87,22 @@ player_t &idplayer(byte id)
 
 /**
  * Find player by netname.  Note that this search is case-insensitive.
- * 
+ *
  * @param  netname Name of player to look for.
  * @return         Player reference of found player, or nullplayer.
  */
 player_t &nameplayer(const std::string &netname)
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		if (iequals(netname, it->userinfo.netname))
-			return *it;
+		if (iequals(netname, player.userinfo.netname))
+			return player;
 	}
 
 	return nullplayer;
 }
 
-bool validplayer(player_t &ref)
+bool validplayer(const player_t &ref)
 {
 	if (&ref == &nullplayer)
 		return false;
@@ -114,7 +115,7 @@ bool validplayer(player_t &ref)
 
 /**
  * @brief Clear all cards from a player.
- * 
+ *
  * @param p Player to clear.
 */
 void P_ClearPlayerCards(player_t& p)
@@ -136,7 +137,7 @@ void P_ClearPlayerPowerups(player_t& p)
 
 /**
  * @brief Clear all scores from a player.
- * 
+ *
  * @param p Player to clear.
  * @param wins True if a player's wins should be cleared as well - should
  *             usually be True unless it's a reset across rounds.
@@ -190,33 +191,33 @@ PlayerResults PlayerQuery::execute()
 	PlayerResults results;
 
 	// Construct a base result set from all ingame players, possibly filtered.
-	for (Players::iterator it = ::players.begin(); it != players.end(); ++it)
+	for (auto& player : ::players)
 	{
-		if (!it->ingame() || it->spectator)
+		if (!player.ingame() || player.spectator)
 			continue;
 
 		results.total += 1;
-		if (it->userinfo.team != TEAM_NONE)
+		if (player.userinfo.team != TEAM_NONE)
 		{
-			results.teamTotal[it->userinfo.team] += 1;
+			results.teamTotal[player.userinfo.team] += 1;
 		}
 
-		if (m_ready && !it->ready)
+		if (m_ready && !player.ready)
 			continue;
 
-		if (m_health && it->health <= 0)
+		if (m_health && player.health <= 0)
 			continue;
 
-		if (m_lives && it->lives <= 0)
+		if (m_lives && player.lives <= 0)
 			continue;
 
-		if (m_notLives && it->lives > 0)
+		if (m_notLives && player.lives > 0)
 			continue;
 
-		if (m_team != TEAM_NONE && it->userinfo.team != m_team)
+		if (m_team != TEAM_NONE && player.userinfo.team != m_team)
 			continue;
 
-		results.players.push_back(&*it);
+		results.players.push_back(&player);
 	}
 
 	// We have no filtered players, we have our totals, there is no more
@@ -300,11 +301,10 @@ PlayerResults PlayerQuery::execute()
 	}
 
 	// Get the final totals.
-	for (PlayersView::iterator it = results.players.begin(); it != results.players.end();
-	     ++it)
+	for (const auto& player : results.players)
 	{
 		results.count += 1;
-		results.teamCount[(*it)->userinfo.team] += 1;
+		results.teamCount[player->userinfo.team] += 1;
 	}
 
 	return results;
@@ -319,15 +319,15 @@ PlayersView SpecQuery::execute()
 {
 	PlayersView rvo;
 
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	for (auto& player : ::players)
 	{
-		if (!it->ingame() || !it->spectator)
+		if (!player.ingame() || !player.spectator)
 			continue;
 
-		if (m_onlyInQueue && it->QueuePosition == 0)
+		if (m_onlyInQueue && player.QueuePosition == 0)
 			continue;
 
-		rvo.push_back(&*it);
+		rvo.push_back(&player);
 	}
 
 	return rvo;
@@ -801,22 +801,9 @@ void P_DeathThink (player_t *player)
 			player->playerstate = PST_REBORN;
 		}
 	}
-
-	if (clientside)
-	{
-		// [AM] If the player runs out of lives in an LMS gamemode, having
-		//      them spectate another player after a beat is expected.
-		if (::g_lives && player->lives < 1 && &consoleplayer() == &displayplayer() &&
-		    level.time >= player->death_time + (TICRATE * 2))
-		{
-			// CL_SpyCycle is located in cl and templated, so we use this
-			// instead.
-			AddCommandString("spynext");
-		}
-	}
 }
 
-bool P_AreTeammates(player_t &a, player_t &b)
+bool P_AreTeammates(const player_t &a, const player_t &b)
 {
 	// not your own teammate (at least for friendly fire, etc)
 	if (a.id == b.id)
@@ -886,6 +873,75 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 
 void SV_SendPlayerInfo(player_t &);
 
+void P_SetPlayerInvulnBleed(player_t* player, int powers[NUMPOWERS])
+{
+	if (sv_showplayerpowerups)
+	{
+		// Don't show blood if the player is invuln
+		if (powers[pw_invulnerability])
+			player->mo->flags |= MF_NOBLOOD;
+		else
+			player->mo->flags &= ~MF_NOBLOOD;
+	}
+}
+
+void P_SwitchSpyOnNoLives(player_t* player)
+{
+	if (clientside)
+	{
+		// [AM] If the player runs out of lives in an LMS gamemode, having
+		//      them spectate another player after a beat is expected.
+		if (::g_lives && player->lives < 1 &&
+		    player->id == displayplayer_id &&
+		    level.time >= player->death_time + (TICRATE * 2) &&
+		    ::levelstate.getState() == LevelState::INGAME)
+		{
+			// CL_SpyCycle is located in cl and templated, so we use this
+			// instead.
+			AddCommandString("spynext");
+		}
+	}
+}
+
+void P_SetPlayerPowerupStatuses(player_t* player, int powers[NUMPOWERS])
+{
+	if (powers[pw_strength])
+		player->mo->statusflags |= SF_BERSERK;
+	else
+		player->mo->statusflags &= ~SF_BERSERK;
+
+	if (powers[pw_invulnerability] > 4 * 32 ||
+		        powers[pw_invulnerability] & 8)
+		player->mo->statusflags |= SF_INVULN;
+	else
+		player->mo->statusflags &= ~SF_INVULN;
+
+	if (powers[pw_invisibility] > 4 * 32 ||
+			powers[pw_invisibility] & 8)
+		player->mo->statusflags |= SF_INVIS;
+	else
+		player->mo->statusflags &= ~SF_INVIS;
+
+	if (powers[pw_infrared] > 4 * 32 ||
+			powers[pw_infrared] & 8)
+		player->mo->statusflags |= SF_INFRARED;
+	else
+		player->mo->statusflags &= ~SF_INFRARED;
+
+	if (powers[pw_ironfeet] > 4 * 32 ||
+			powers[pw_ironfeet] & 8)
+		player->mo->statusflags |= SF_IRONFEET;
+	else
+		player->mo->statusflags &= ~SF_IRONFEET;
+
+		if (powers[pw_allmap])
+		player->mo->statusflags |= SF_ALLMAP;
+	else
+		player->mo->statusflags &= ~SF_ALLMAP;
+
+	P_SetPlayerInvulnBleed(player, powers);
+}
+
 //
 // P_PlayerThink
 //
@@ -898,12 +954,12 @@ void P_PlayerThink (player_t *player)
 	// hope the client receives the spawn message at a later time.
 	if (!player->mo && clientside && multiplayer)
 	{
-		DPrintf("Warning: P_PlayerThink called for player %s without a valid Actor.\n",
-				player->userinfo.netname.c_str());
+		DPrintFmt("Warning: P_PlayerThink called for player {} without a valid Actor.\n",
+				  player->userinfo.netname);
 		return;
 	}
 	else if (!player->mo)
-		I_Error ("No player %d start\n", player->id);
+		I_Error("No player {} start\n", player->id);
 
 	player->xviewshift = 0;		// [RH] Make sure view is in right place
 	player->prevviewz = player->viewz;
@@ -933,6 +989,7 @@ void P_PlayerThink (player_t *player)
 	if (player->playerstate == PST_DEAD)
 	{
 		P_DeathThink(player);
+		P_SwitchSpyOnNoLives(player);
 		return;
 	}
 
@@ -1025,6 +1082,9 @@ void P_PlayerThink (player_t *player)
 	if (player->powers[pw_ironfeet])
 		player->powers[pw_ironfeet]--;
 
+	// For offline/chase cam
+	P_SetPlayerPowerupStatuses(player, player->powers);
+
 	if (player->damagecount)
 		player->damagecount--;
 
@@ -1068,9 +1128,9 @@ void P_PlayerThink (player_t *player)
 	// Handle air supply
 	if (player->mo->waterlevel < 3 || player->powers[pw_ironfeet] || player->cheats & CF_GODMODE)
 	{
-		player->air_finished = level.time + 10*TICRATE;
+		player->air_finished = level.time + level.airsupply * TICRATE;
 	}
-	else if (player->air_finished <= level.time && !(level.time & 31))
+	else if (level.airsupply != 0 && player->air_finished <= level.time && !(level.time & 31))
 	{
 		P_DamageMobj (player->mo, NULL, NULL, 2 + 2*((level.time-player->air_finished)/TICRATE), MOD_WATER, DMG_NO_ARMOR);
 	}
@@ -1170,7 +1230,7 @@ BEGIN_COMMAND(cheat_players)
 			if (mo->player)
 			{
 				Printf("%.3u: %s\n", mo->player->id,
-				       mo->player->userinfo.netname.c_str());
+				       mo->player->userinfo.netname);
 			}
 			else
 			{
@@ -1220,6 +1280,7 @@ void player_s::Serialize (FArchive &arc)
 			<< secretcount
 			<< damagecount
 			<< bonuscount
+			<< didsecret
 			<< points
 			/*<< attacker->netid*/
 			<< extralight
@@ -1273,6 +1334,7 @@ void player_s::Serialize (FArchive &arc)
 			>> secretcount
 			>> damagecount
 			>> bonuscount
+			>> didsecret
 			>> points
 			/*>> attacker->netid*/
 			>> extralight

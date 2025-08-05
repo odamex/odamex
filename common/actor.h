@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,9 +41,6 @@
 #include "info.h"
 
 #include "szp.h"
-
-// STL
-#include <map>
 
 //
 // NOTES: AActor
@@ -111,12 +108,12 @@
 
 //
 // [SL] 2012-04-30 - A bit field to store a bool value for every player.
-// 
+//
 class PlayerBitField
 {
 public:
 	PlayerBitField() { clear(); }
-	
+
 	void clear()
 	{
 		memset(bitfield, 0, sizeof(bitfield));
@@ -126,33 +123,33 @@ public:
 	{
 		int bytenum = id >> 3;
 		int bitnum = id & bytemask;
-	
+
 		bitfield[bytenum] |= (1 << bitnum);
 	}
-	
+
 	void unset(byte id)
 	{
 		int bytenum = id >> 3;
 		int bitnum = id & bytemask;
-	
+
 		bitfield[bytenum] &= ~(1 << bitnum);
 	}
-	
-	bool get(byte id) const
+
+	[[nodiscard]] bool get(byte id) const
 	{
 		int bytenum = id >> 3;
-		int bitnum = id & bytemask;	
-	
+		int bitnum = id & bytemask;
+
 		return ((bitfield[bytenum] & (1 << bitnum)) != 0);
 	}
-	
+
 private:
-	static const int bytesize = 8*sizeof(byte);
-	static const int bytemask = bytesize - 1;
-	
+	static constexpr int bytesize = 8 * sizeof(byte);
+	static constexpr int bytemask = bytesize - 1;
+
 	// Hacky way of getting ceil() at compile-time
-	static const size_t fieldsize = (MAXPLAYERS + bytemask) / bytesize;
-	
+	static constexpr size_t fieldsize = (MAXPLAYERS + bytemask) / bytesize;
+
 	byte	bitfield[fieldsize];
 };
 
@@ -206,6 +203,8 @@ enum mobjflag_t
 	MF_TOUCHY  = BIT(28), // MBF - UNUSED FOR NOW
 	MF_BOUNCES = BIT(29), // MBF - PARTIAL IMPLEMENTATION
 	MF_FRIEND  = BIT(30), // MBF - UNUSED FOR NOW
+
+	MF_TRANSLUCENT = BIT(31),
 
 	// --- mobj.flags2 ---
 	// Heretic flags
@@ -286,6 +285,21 @@ enum mobjflag_t
 	MFO_FALLING			= BIT(10),	// [INTERNAL] for falling
 };
 
+//
+// Status flags
+// Flags to set when you want to indicate the status of a player to other players
+// Like powerups, lagging, etc
+//
+enum statusflag_t
+{
+	SF_INVULN = BIT(0),
+	SF_BERSERK = BIT(1),
+	SF_IRONFEET = BIT(2),
+	SF_INVIS = BIT(3),
+	SF_ALLMAP = BIT(4),
+	SF_INFRARED = BIT(5)
+};
+
 #define MF_TRANSSHIFT	0x1A
 
 #define TRANSLUC25			(FRACUNIT/4)
@@ -310,18 +324,18 @@ struct baseline_t
 	byte rndindex;
 
 	// Flags are a varint, so order from most to least likely.
-	static const uint32_t POSX = BIT(0);
-	static const uint32_t POSY = BIT(1);
-	static const uint32_t POSZ = BIT(2);
-	static const uint32_t ANGLE = BIT(3);
-	static const uint32_t MOVEDIR = BIT(4);
-	static const uint32_t MOVECOUNT = BIT(5);
-	static const uint32_t RNDINDEX = BIT(6);
-	static const uint32_t TARGET = BIT(7);
-	static const uint32_t TRACER = BIT(8);
-	static const uint32_t MOMX = BIT(9);
-	static const uint32_t MOMY = BIT(10);
-	static const uint32_t MOMZ = BIT(11);
+	static constexpr uint32_t POSX = BIT(0);
+	static constexpr uint32_t POSY = BIT(1);
+	static constexpr uint32_t POSZ = BIT(2);
+	static constexpr uint32_t ANGLE = BIT(3);
+	static constexpr uint32_t MOVEDIR = BIT(4);
+	static constexpr uint32_t MOVECOUNT = BIT(5);
+	static constexpr uint32_t RNDINDEX = BIT(6);
+	static constexpr uint32_t TARGET = BIT(7);
+	static constexpr uint32_t TRACER = BIT(8);
+	static constexpr uint32_t MOMX = BIT(9);
+	static constexpr uint32_t MOMY = BIT(10);
+	static constexpr uint32_t MOMZ = BIT(11);
 
 	baseline_t()
 	    : angle(0), targetid(0), tracerid(0), movecount(0), movedir(0), rndindex(0)
@@ -399,11 +413,28 @@ class AActor : public DThinker
 			return ptr;
 		}
 
+		operator const AActorPtr() const
+		{
+			return ptr;
+		}
+		operator const AActor*() const
+		{
+			return ptr;
+		}
+
 		AActor &operator *()
 		{
 			return *ptr;
 		}
 		AActor *operator ->()
+		{
+			return ptr;
+		}
+		const AActor &operator *() const
+		{
+			return *ptr;
+		}
+		const AActor *operator ->() const
 		{
 			return ptr;
 		}
@@ -414,10 +445,10 @@ public:
 	AActor (const AActor &other);
 	AActor &operator= (const AActor &other);
 	AActor (fixed_t x, fixed_t y, fixed_t z, mobjtype_t type);
-	void Destroy ();
+	void Destroy() override;
 	~AActor ();
 
-	virtual void RunThink ();
+	void RunThink () override;
 
     // Info for drawing: position.
     fixed_t		x;
@@ -466,11 +497,12 @@ public:
     mobjinfo_t*		info;	// &mobjinfo[mobj->type]
     int				tics;	// state tic counter
 	state_t			*state;
-	int				damage;			// For missiles	
+	int				damage;			// For missiles
 	int				flags;
 	int				flags2;	// Heretic flags
 	int				flags3;	// MBF21 flags
 	int				oflags;			// Odamex flags
+	int				statusflags; // Flags indicating a players status to other players
 	int				special1;		// Special info
 	int				special2;		// Special info
 	int 			health;
@@ -534,10 +566,10 @@ public:
 	static void ClearTIDHashes ();
 	void AddToHash ();
 	void RemoveFromHash ();
-	AActor *FindByTID (int tid) const;
-	static AActor *FindByTID (const AActor *first, int tid);
-	AActor *FindGoal (int tid, int kind) const;
-	static AActor *FindGoal (const AActor *first, int tid, int kind);
+	[[nodiscard]] AActor *FindByTID (int tid) const;
+	[[nodiscard]] static AActor *FindByTID (const AActor *first, int tid);
+	[[nodiscard]] AActor *FindGoal (int tid, int kind) const;
+	[[nodiscard]] static AActor *FindGoal (const AActor *first, int tid, int kind);
 
 	uint32_t		netid;          // every object has its own netid
 	short			tid;			// thing identifier
@@ -545,8 +577,8 @@ public:
 	bool			baseline_set;	// Have we set our baseline yet?
 
 private:
-	static const size_t TIDHashSize = 256;
-	static const size_t TIDHashMask = TIDHashSize - 1;
+	static constexpr size_t TIDHashSize = 256;
+	static constexpr size_t TIDHashMask = TIDHashSize - 1;
 	static AActor *TIDHash[TIDHashSize];
 	static inline int TIDHASH (int key) { return key & TIDHashMask; }
 
@@ -559,7 +591,7 @@ public:
 	void SetOrigin (fixed_t x, fixed_t y, fixed_t z);
 
 	AActorPtr ptr(){ return self; }
-	
+
 	//
 	// ActorBlockMapListNode
 	//
@@ -579,12 +611,12 @@ public:
 	private:
 		void clear();
 		size_t getIndex(int bmx, int bmy);
-		
-		static const size_t BLOCKSX = 3;
-		static const size_t BLOCKSY = 3;
+
+		static constexpr size_t BLOCKSX = 3;
+		static constexpr size_t BLOCKSY = 3;
 
 		AActor		*actor;
-			
+
 		// the top-left blockmap the actor is in
 		int			originx;
 		int			originy;
@@ -597,7 +629,7 @@ public:
 		AActor		*next[BLOCKSX * BLOCKSY];
 		AActor		**prev[BLOCKSX * BLOCKSY];
 	};
-	
+
 	ActorBlockMapListNode bmapnode;
 };
 

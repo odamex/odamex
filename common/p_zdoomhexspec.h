@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,15 +27,15 @@
 void OnChangedSwitchTexture(line_t* line, int useAgain);
 void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
                         const LineActivationType activationType, const bool bossaction);
-BOOL EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
+bool EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
                     byte speed_byte, int topwait, zdoom_lock_t lock, byte lightTag,
                     bool boomgen, int topcountdown);
 bool EV_DoZDoomPillar(DPillar::EPillar type, line_t* line, int tag, fixed_t speed,
                       fixed_t floordist, fixed_t ceilingdist, int crush, bool hexencrush);
 bool EV_DoZDoomElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
                         fixed_t height, int tag);
-BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
-BOOL EV_ZDoomCeilingCrushStop(int tag, bool remove);
+bool EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
+bool EV_ZDoomCeilingCrushStop(int tag, bool remove);
 void P_HealMobj(AActor* mo, int num);
 void EV_LightSetMinNeighbor(int tag);
 void EV_LightSetMaxNeighbor(int tag);
@@ -55,10 +55,10 @@ bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
                              unsigned int activationType);
 bool P_ExecuteZDoomLineSpecial(int special, short* args, line_t* line, int side,
                                AActor* mo);
-BOOL EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
+bool EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
                      fixed_t height, int crush, int change, bool hexencrush,
                      bool hereticlower);
-BOOL EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t speed,
+bool EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t speed,
                        fixed_t speed2, fixed_t height, int crush, byte silent, int change,
                        crushmode_e crushmode);
 void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd);

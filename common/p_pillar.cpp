@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,11 +37,11 @@ void P_SetPillarDestroy(DPillar *pillar)
 		return;
 
 	pillar->m_Status = DPillar::destroy;
-	
+
 	if (clientside && pillar->m_Sector)
 	{
 		pillar->m_Sector->ceilingdata = NULL;
-		pillar->m_Sector->floordata = NULL;		
+		pillar->m_Sector->floordata = NULL;
 		pillar->Destroy();
 	}
 }
@@ -82,7 +82,7 @@ void DPillar::PlayPillarSound()
 {
 	if (predicting || !m_Sector)
 		return;
-	
+
 	if (m_Status == init)
 		S_Sound(m_Sector->soundorg, CHAN_BODY, "plats/pt1_mid", 1, ATTN_NORM);
 	else if (m_Status == finished)
@@ -201,10 +201,10 @@ DPillar* DPillar::Clone(sector_t* sec) const
 	return pillar;
 }
 
-BOOL EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
+bool EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
 				  fixed_t height2, bool crush)
 {
-	BOOL rtn = false;
+	bool rtn = false;
 	int secnum = -1;
 
 	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)

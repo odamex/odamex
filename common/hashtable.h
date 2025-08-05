@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,6 +25,7 @@
 
 #include <cassert>
 #include <utility>
+#include <memory>
 
 // ============================================================================
 //
@@ -177,7 +178,7 @@ static inline unsigned int __hash_cstring(const char* str)
 	unsigned int val = 0;
 	while (*str != 0)
 		val = val * 101 + *str++;
-	return val;	
+	return val;
 }
 
 template <> struct hashfunc<char*>
@@ -206,8 +207,8 @@ private:
 	typedef OHashTable<KT, VT, HF> HashTableType;
 
 	typedef unsigned int IndexType;
-	static const unsigned int MAX_CAPACITY	= 65536;
-	static const IndexType NOT_FOUND		= HashTableType::MAX_CAPACITY;
+	static constexpr unsigned int MAX_CAPACITY	= 65536;
+	static constexpr IndexType NOT_FOUND		= HashTableType::MAX_CAPACITY;
 
 	struct Bucket
 	{
@@ -230,7 +231,7 @@ public:
 	typedef generic_iterator<const HashPairType, const HashTableType> const_iterator;
 
 	template <typename IVT, typename IHTT>
-	class generic_iterator : public std::iterator<std::forward_iterator_tag, OHashTable>
+	class generic_iterator
 	{
 	private:
 		// typedef for easier-to-read code
@@ -238,6 +239,12 @@ public:
 		typedef generic_iterator<const IVT, const IHTT> ConstThisClass;
 
 	public:
+		using iterator_category = std::forward_iterator_tag;
+		using value_type = OHashTable;
+		using difference_type = std::ptrdiff_t;
+		using pointer = value_type*;
+		using reference = value_type&;
+
 		generic_iterator() :
 			mBucketNum(IHTT::NOT_FOUND), mHashTable(NULL)
 		{ }
@@ -248,6 +255,7 @@ public:
 			return ConstThisClass(mBucketNum, mHashTable);
 		}
 
+		[[nodiscard]]
 		bool operator== (const ThisClass& other) const
 		{
 			return mBucketNum == other.mBucketNum && mHashTable == other.mHashTable;
@@ -273,7 +281,7 @@ public:
 			do {
 				mBucketNum++;
 			} while (mBucketNum < mHashTable->mSize && mHashTable->emptyBucket(mBucketNum));
-			
+
 			if (mBucketNum >= mHashTable->mSize)
 				mBucketNum = IHTT::NOT_FOUND;
 			return *this;
@@ -311,21 +319,18 @@ public:
 	// ------------------------------------------------------------------------
 
 	OHashTable(unsigned int size = 256) :
-		mSize(0), mSizeMask(0), mUsed(0), mElements(NULL), mNextOrder(1)
+		mSize(0), mSizeMask(0), mUsed(0), mElements(nullptr), mNextOrder(1)
 	{
 		resize(size);
 	}
 
 	OHashTable(const HashTableType& other) :
-		mSize(0), mSizeMask(0), mUsed(0), mElements(NULL), mNextOrder(1)
+		mSize(0), mSizeMask(0), mUsed(0), mElements(nullptr), mNextOrder(1)
 	{
 		copyFromOther(other);
 	}
 
-	~OHashTable()
-	{
-		delete [] mElements;
-	}
+	~OHashTable() = default;
 
 	OHashTable& operator= (const HashTableType& other)
 	{
@@ -379,7 +384,7 @@ public:
 	inline const_iterator end() const
 	{
 		return const_iterator(NOT_FOUND, this);
-	}	
+	}
 
 	inline iterator find(const KT& key)
 	{
@@ -407,7 +412,7 @@ public:
 
 	std::pair<iterator, bool> insert(const HashPairType& hp)
 	{
-		unsigned int oldused = mUsed;	
+		unsigned int oldused = mUsed;
 		IndexType bucketnum = insertElement(hp.first, hp.second);
 		return std::pair<iterator, bool>(iterator(bucketnum, this), mUsed > oldused);
 	}
@@ -422,9 +427,18 @@ public:
 		}
 	}
 
+	template <typename... Args>
+	std::pair<iterator, bool> emplace(Args&&... args)
+	{
+		auto hp = std::pair(std::forward<Args>(args)...);
+		unsigned int oldused = mUsed;
+		IndexType bucketnum = insertElement(hp.first, hp.second);
+		return std::pair<iterator, bool>(iterator(bucketnum, this), mUsed > oldused);
+	}
+
 	void erase(iterator it)
 	{
-		eraseBucket(it.mBucketNum);	
+		eraseBucket(it.mBucketNum);
 	}
 
 	unsigned int erase(const KT& key)
@@ -440,8 +454,29 @@ public:
 	{
 		while (it1 != it2)
 		{
-			eraseBucket(it1.mBucketNum);
+			mElements[it1.mBucketNum].order = 0;
+			mElements[it1.mBucketNum].pair = HashPairType();
+			mUsed--;
 			++it1;
+		}
+		// Rehash all of the non-empty buckets that follow the erased buckets.
+		IndexType bucketnum = it2.mBucketNum & mSizeMask;
+		while (!emptyBucket(bucketnum))
+		{
+			const KT& key = mElements[bucketnum].pair.first;
+			unsigned int order = mElements[bucketnum].order;
+			mElements[bucketnum].order = 0;
+
+			IndexType new_bucketnum = findBucket(key);
+			mElements[new_bucketnum].order = order;
+
+			if (new_bucketnum != bucketnum)
+			{
+				mElements[new_bucketnum].pair = mElements[bucketnum].pair;
+				mElements[bucketnum].pair = HashPairType();
+			}
+
+			bucketnum = (bucketnum + 1) & mSizeMask;
 		}
 	}
 
@@ -472,8 +507,8 @@ private:
 		mSizeMask = mSize - 1;
 		assert(mSize > oldsize);
 
-		Bucket* oldelements = mElements;
-		mElements = new Bucket[mSize];
+		auto oldelements = std::move(mElements);
+		mElements = std::make_unique<Bucket[]>(mSize);
 
 		mUsed = 0;
 		mNextOrder = 1;
@@ -486,9 +521,7 @@ private:
 		// TODO: go through iteration list instead
 		for (unsigned int i = 0; i < oldsize; i++)
 			if (oldelements[i].order)
-				insertElement(oldelements[i].pair.first, oldelements[i].pair.second);
-
-		delete [] oldelements;
+				insertElement(oldelements[i].pair.first, std::move(oldelements[i].pair.second));
 	}
 
 	void copyFromOther(const HashTableType& other)
@@ -507,11 +540,36 @@ private:
 
 	inline IndexType findBucket(const KT& key) const
 	{
-		IndexType bucketnum = (mHashFunc(key) * 2654435761u) & mSizeMask; 
+		IndexType bucketnum = (mHashFunc(key) * 2654435761u) & mSizeMask;
 
 		// [SL] NOTE: this can loop infinitely if there is no match and the table is full!
 		while (!emptyBucket(bucketnum) && mElements[bucketnum].pair.first != key)
 			bucketnum = (bucketnum + 1) & mSizeMask;
+		return bucketnum;
+	}
+
+	IndexType insertElement(const KT& key, VT&& value)
+	{
+		// double the capacity if we're going to exceed 75% load
+		if (4 * (mUsed + 1) > 3 * mSize)
+			resize(2 * mSize);
+
+		IndexType bucketnum = findBucket(key);
+
+		if (emptyBucket(bucketnum))
+		{
+			// add key and value pair
+			mElements[bucketnum].order = mNextOrder++;
+			mElements[bucketnum].pair.first = key;
+			mElements[bucketnum].pair.second = std::move(value);
+			mUsed++;
+		}
+		else
+		{
+			// key already exists so just update the value
+			mElements[bucketnum].pair.second = std::move(value);
+		}
+
 		return bucketnum;
 	}
 
@@ -560,7 +618,7 @@ private:
 			if (new_bucketnum != bucketnum)
 			{
 				mElements[new_bucketnum].pair = mElements[bucketnum].pair;
-				mElements[bucketnum].pair = HashPairType();	
+				mElements[bucketnum].pair = HashPairType();
 			}
 
 			bucketnum = (bucketnum + 1) & mSizeMask;
@@ -571,7 +629,7 @@ private:
 	unsigned int	mSizeMask;
 	unsigned int	mUsed;
 
-	Bucket*			mElements;
+	std::unique_ptr<Bucket[]> mElements;
 	unsigned int	mNextOrder;
 
 	HF				mHashFunc;		// hash key generation functor

@@ -339,15 +339,30 @@ if(USE_INTERNAL_DEUTEX)
     # In our case, our "interal" DeuTex is downloaded from github.
     file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex")
     file(DOWNLOAD
-      "https://github.com/Doom-Utils/deutex/releases/download/v5.2.2/deutex-5.2.2_w32.zip"
-      "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.2_w32.zip"
-      EXPECTED_HASH SHA256=6ac7a70811d1a7488682d0acf6abe7e0f25ce58344708815494fe550cad9931e)
+      "https://github.com/Doom-Utils/deutex/releases/download/v5.2.3/deutex-5.2.3_w32.zip"
+      "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.3_w32.zip"
+      EXPECTED_HASH SHA256=9c07f354fd81384a0e91844b7c152114da1a3566343de846db443de38b82a1ad)
     execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
-      "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.2_w32.zip"
+      "${CMAKE_CURRENT_BINARY_DIR}/deutex-5.2.3_w32.zip"
       WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex")
     find_program(DEUTEX_EXECUTABLE deutex
       PATHS "${CMAKE_CURRENT_BINARY_DIR}/deutex"
-      NO_DEFAULT_PATH)  
+      NO_DEFAULT_PATH)
+  else()
+    # Check if deutex is unzipped in the source dir and if it is, bring it over
+    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/deutex")
+      file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/deutex"
+        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+      execute_process(COMMAND sh bootstrap
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex")
+      execute_process(COMMAND sh configure
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex")
+      execute_process(COMMAND make
+        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deutex")
+      find_program(DEUTEX_EXECUTABLE deutex
+        PATHS "${CMAKE_CURRENT_BINARY_DIR}/deutex/src"
+        NO_DEFAULT_PATH)
+    endif()
   endif()
 else()
   find_program(DEUTEX_EXECUTABLE deutex

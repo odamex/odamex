@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2021 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,5 +26,6 @@
 #include "info.h"
 
 mobjtype_t P_NameToMobj(const std::string& name);
+mobjtype_t P_INameToMobj(const std::string& name);
 weapontype_t P_NameToWeapon(const std::string& name);
-std::string P_MobjToName(const mobjtype_t name);
+std::string P_MobjToName(const mobjtype_t type);

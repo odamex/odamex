@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -49,7 +49,7 @@ int maxframe;
 
 void R_CacheSprite(spritedef_t *sprite)
 {
-	DPrintf ("cache sprite %s\n",
+	DPrintFmt("cache sprite {}\n",
 		sprite - sprites < NUMSPRITES ? sprnames[sprite - sprites] : "");
 	for (int i = 0; i < sprite->numframes; i++)
 	{
@@ -58,7 +58,7 @@ void R_CacheSprite(spritedef_t *sprite)
 			if (sprite->spriteframes[i].width[r] == SPRITE_NEEDS_INFO)
 			{
 				if (sprite->spriteframes[i].lump[r] == -1)
-					I_Error ("Sprite %d, rotation %d has no lump", i, r);
+					I_Error("Sprite {}, rotation {} has no lump", i, r);
 				patch_t* patch = W_CachePatch(sprite->spriteframes[i].lump[r]);
 				sprite->spriteframes[i].width[r] = patch->width()<<FRACBITS;
 				sprite->spriteframes[i].offset[r] = patch->leftoffset()<<FRACBITS;
@@ -75,7 +75,7 @@ void R_CacheSprite(spritedef_t *sprite)
 // [RH] Removed checks for coexistance of rotation 0 with other
 //		rotations and made it look more like BOOM's version.
 //
-static void R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, BOOL flipped)
+static void R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, bool flipped)
 {
 	unsigned rotation;
 
@@ -83,9 +83,9 @@ static void R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, BOOL fli
 		rotation = rot;
 	else
 		rotation = (rot >= 17) ? rot - 7 : 17;
-	
+
 	if (frame >= MAX_SPRITE_FRAMES || rotation > 16)
-		I_FatalError("R_InstallSpriteLump: Bad frame characters in lump %i", lump);
+		I_FatalError("R_InstallSpriteLump: Bad frame characters in lump {}", lump);
 
 	if (static_cast<int>(frame) > maxframe)
 		maxframe = frame;
@@ -99,23 +99,23 @@ static void R_InstallSpriteLump(int lump, unsigned frame, unsigned rot, BOOL fli
 		{
 			if (sprtemp[frame].lump[r] == -1)
 			{
-				sprtemp[frame].lump[r] = static_cast<short>(lump);
-				sprtemp[frame].flip[r] = static_cast<byte>(flipped);
+				sprtemp[frame].lump[r] = lump;
+				sprtemp[frame].flip[r] = flipped;
 				sprtemp[frame].rotate = false;
 				sprtemp[frame].width[r] = SPRITE_NEEDS_INFO;
 			}
 		}
-		
+
 		return;
 	}
 
 	rotation = (rotation <= 8 ? (rotation - 1) * 2 : (rotation - 9) * 2 + 1);
-	
+
 	if (sprtemp[frame].lump[rotation] == -1)
 	{
 		// the lump is only used for one rotation
-		sprtemp[frame].lump[rotation] = static_cast<short>(lump);
-		sprtemp[frame].flip[rotation] = static_cast<byte>(flipped);
+		sprtemp[frame].lump[rotation] = lump;
+		sprtemp[frame].flip[rotation] = flipped;
 		sprtemp[frame].rotate = true;
 		sprtemp[frame].width[rotation] = SPRITE_NEEDS_INFO;
 	}
@@ -143,7 +143,7 @@ static void R_InstallSprite(const char *name, int num)
 		{
 		  case -1:
 			// no rotations were found for that frame at all
-			I_FatalError ("R_InstallSprite: No patches found for %s frame %c", sprname, frame+'A');
+			I_FatalError ("R_InstallSprite: No patches found for {} frame {:c}", sprname, frame+'A');
 			break;
 
 		  case 0:
@@ -161,7 +161,7 @@ static void R_InstallSprite(const char *name, int num)
 					sprtemp[frame].flip[rotation + 1] = sprtemp[frame].flip[rotation];
 					sprtemp[frame].width[rotation + 1] = SPRITE_NEEDS_INFO;
 				}
-				
+
 				if (sprtemp[frame].lump[rotation] == -1)
 				{
 					sprtemp[frame].lump[rotation] = sprtemp[frame].lump[rotation + 1];
@@ -174,7 +174,7 @@ static void R_InstallSprite(const char *name, int num)
 		  	{
 				if (sprtemp[frame].lump[rotation] == -1)
 				{
-					I_FatalError("R_InstallSprite: Sprite %s frame %c is missing rotations",
+					I_FatalError("R_InstallSprite: Sprite {} frame {:c} is missing rotations",
 						sprname, frame + 'A');
 				}
 		  	}
@@ -273,7 +273,7 @@ void R_InitSprites(const char **namelist)
 
 	M_Free(vissprites);
 
-	vissprites = (vissprite_t *)Malloc(MaxVisSprites * sizeof(vissprite_t));
+	vissprites = (vissprite_t *) M_Malloc(MaxVisSprites * sizeof(vissprite_t));
 	lastvissprite = &vissprites[MaxVisSprites];
 
 	R_InitSpriteDefs (namelist);

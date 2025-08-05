@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -374,7 +374,7 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 	if (MusicSequenceLoadSMFDataWithFlags(m_sequence, (CFDataRef)m_cfd, 0) != noErr)
 #endif
 #else /* MusicSequenceFileLoadData() requires 10.5 or later. */
-	if (MusicSequenceFileLoadData(m_sequence, (CFDataRef)m_cfd, 0, 0) != noErr)
+	if (MusicSequenceFileLoadData(m_sequence, (CFDataRef)m_cfd, (MusicSequenceFileTypeID)0, 0) != noErr)
 #endif
 	{
 		DisposeMusicSequence(m_sequence);

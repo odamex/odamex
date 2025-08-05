@@ -52,7 +52,7 @@ class OResFile
 	std::string m_basename;
 
   public:
-	bool operator==(const OResFile& other) const { return m_md5 == other.m_md5; }
+	[[nodiscard]] bool operator==(const OResFile& other) const { return m_md5 == other.m_md5; }
 	bool operator!=(const OResFile& other) const { return !(operator==(other)); }
 
 	/**

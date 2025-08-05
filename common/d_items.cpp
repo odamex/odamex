@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -42,6 +42,12 @@
 // readystate
 // atkstate, i.e. attack/fire/hit frame
 // flashstate, muzzle flash
+// droptype
+// ammouse
+// minammo
+// mbf21 flags
+// ammopershot
+// internal flags
 //
 weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 {
@@ -56,8 +62,10 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		(mobjtype_t)0,
 		0,
 		0,
-		WPF_FLEEMELEE | WPF_AUTOSWITCHFROM | WPF_NOAUTOSWITCHTO
-		},	
+		WPF_FLEEMELEE | WPF_AUTOSWITCHFROM | WPF_NOAUTOSWITCHTO,
+		1,
+		WIF_NOFLAG
+	},
 	{
 		// pistol
 		am_clip,
@@ -69,8 +77,10 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		MT_CLIP,
 		1,
 		1,
-		WPF_AUTOSWITCHFROM
-	},	
+		WPF_AUTOSWITCHFROM,
+		1,
+		WIF_NOFLAG
+	},
 	{
 		// shotgun
 		am_shell,
@@ -82,7 +92,9 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		MT_SHOTGUN,
 		1,
 		1,
-		WPF_NOFLAG
+		WPF_NOFLAG,
+		1,
+		WIF_NOFLAG
 	},
 	{
 		// chaingun
@@ -95,7 +107,9 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		MT_CHAINGUN,
 		1,
 		1,
-		WPF_NOFLAG
+		WPF_NOFLAG,
+		1,
+		WIF_NOFLAG
 	},
 	{
 		// missile launcher
@@ -108,7 +122,9 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		MT_MISC27,
 		1,
 		1,
-		WPF_NOAUTOFIRE
+		WPF_NOAUTOFIRE,
+		1,
+		WIF_NOFLAG
 	},
 	{
 		// plasma rifle
@@ -121,7 +137,9 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		MT_MISC28,
 		1,
 		1,
-		WPF_NOFLAG
+		WPF_NOFLAG,
+		1,
+		WIF_NOFLAG
 	},
 	{
 		// bfg 9000
@@ -134,7 +152,9 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		MT_MISC25,
 		40,
 		40,
-		WPF_NOAUTOFIRE
+		WPF_NOAUTOFIRE,
+		40,
+		WIF_NOFLAG
 	},
 	{
 		// chainsaw
@@ -147,7 +167,9 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		MT_MISC26,
 		0,
 		0,
-		WPF_NOTHRUST | WPF_FLEEMELEE | WPF_NOAUTOSWITCHTO
+		WPF_NOTHRUST | WPF_FLEEMELEE | WPF_NOAUTOSWITCHTO,
+		1,
+		WIF_NOFLAG
 	},
 	{
 		// super shotgun
@@ -160,7 +182,9 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		MT_SUPERSHOTGUN,
 		2,
 		2,
-		WPF_NOFLAG
+		WPF_NOFLAG,
+		2,
+		WIF_NOFLAG
 	},
 	{
 		//NUMWEAPONS (player has no weapon including fist, ClearInventory)
@@ -173,7 +197,9 @@ weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
 		MT_MISC26,
 		0,
 		0,
-		WPF_NOFLAG
+		WPF_NOFLAG,
+		0,
+		WIF_NOFLAG
 	},
 };
 
@@ -322,7 +348,7 @@ gitem_t itemlist[] = {
 		0,
 		"Pistol"
 	},
-	
+
 	{
 		"weapon_shotgun",
 		NULL,
@@ -562,8 +588,8 @@ gitem_t itemlist[] = {
 		0,
 		"Blue Flag"
 	},
-	
-	
+
+
 	{
 		"red_flag",
 		NULL,

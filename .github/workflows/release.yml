@@ -1,0 +1,439 @@
+# Runs when a release is published
+# Contains every package required for a release except:
+# - MacOS package
+name: Release
+
+on:
+  release:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+"
+    types: [published]
+
+jobs:
+  pre_job:
+    name: Build Preparation
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.get_release.outputs.upload_url }}
+      new_version: ${{ steps.gitversion.outputs.majorMinorPatch }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0.9.7
+        with:
+          versionSpec: '5.x'
+      - name: Determine Version
+        id:   gitversion
+        uses: gittools/actions/gitversion/execute@v0.9.7
+      - name: Display GitVersion outputs
+        run: |
+          echo "Major: ${{ steps.gitversion.outputs.major }}"
+          echo "Minor: ${{ steps.gitversion.outputs.minor }}"
+          echo "Patch: ${{ steps.gitversion.outputs.patch }}"
+          echo "PreReleaseTag: ${{ steps.gitversion.outputs.preReleaseTag }}"
+          echo "PreReleaseTagWithDash: ${{ steps.gitversion.outputs.preReleaseTagWithDash }}"
+          echo "PreReleaseLabel: ${{ steps.gitversion.outputs.preReleaseLabel }}"
+          echo "PreReleaseNumber: ${{ steps.gitversion.outputs.preReleaseNumber }}"
+          echo "WeightedPreReleaseNumber: ${{ steps.gitversion.outputs.weightedPreReleaseNumber }}"
+          echo "BuildMetaData: ${{ steps.gitversion.outputs.buildMetaData }}"
+          echo "BuildMetaDataPadded: ${{ steps.gitversion.outputs.buildMetaDataPadded }}"
+          echo "FullBuildMetaData: ${{ steps.gitversion.outputs.fullBuildMetaData }}"
+          echo "MajorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}"
+          echo "SemVer: ${{ steps.gitversion.outputs.semVer }}"
+          echo "LegacySemVer: ${{ steps.gitversion.outputs.legacySemVer }}"
+          echo "LegacySemVerPadded: ${{ steps.gitversion.outputs.legacySemVerPadded }}"
+          echo "AssemblySemVer: ${{ steps.gitversion.outputs.assemblySemVer }}"
+          echo "AssemblySemFileVer: ${{ steps.gitversion.outputs.assemblySemFileVer }}"
+          echo "FullSemVer: ${{ steps.gitversion.outputs.fullSemVer }}"
+          echo "InformationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}"
+          echo "BranchName: ${{ steps.gitversion.outputs.branchName }}"
+          echo "EscapedBranchName: ${{ steps.gitversion.outputs.escapedBranchName }}"
+          echo "Sha: ${{ steps.gitversion.outputs.sha }}"
+          echo "ShortSha: ${{ steps.gitversion.outputs.shortSha }}"
+          echo "NuGetVersionV2: ${{ steps.gitversion.outputs.nuGetVersionV2 }}"
+          echo "NuGetVersion: ${{ steps.gitversion.outputs.nuGetVersion }}"
+          echo "NuGetPreReleaseTagV2: ${{ steps.gitversion.outputs.nuGetPreReleaseTagV2 }}"
+          echo "NuGetPreReleaseTag: ${{ steps.gitversion.outputs.nuGetPreReleaseTag }}"
+          echo "VersionSourceSha: ${{ steps.gitversion.outputs.versionSourceSha }}"
+          echo "CommitsSinceVersionSource: ${{ steps.gitversion.outputs.commitsSinceVersionSource }}"
+          echo "CommitsSinceVersionSourcePadded: ${{ steps.gitversion.outputs.commitsSinceVersionSourcePadded }}"
+          echo "UncommittedChanges: ${{ steps.gitversion.outputs.uncommittedChanges }}"
+          echo "CommitDate: ${{ steps.gitversion.outputs.commitDate }}"
+  build-windows:
+    name: Windows Build (Visual Studio)
+    needs: pre_job
+    runs-on: windows-latest
+    env:
+      upload_url: ${{ needs.pre_job.outputs.upload_url }}
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Turn on problem matcher
+      uses: ammaraskar/msvc-problem-matcher@master
+    - name: Remove .git folders
+      shell: bash
+      run: rm -rf .git
+    - name: Run build powershell
+      shell: pwsh
+      run: |
+        .\ci\win-release-x64.ps1
+    - name: Install Python packages
+      uses: insightsengineering/pip-action@v2
+      with:
+        packages: |
+          b2sdk
+    - name: Upload artifact to B2
+      run: python .\ci\upload-b2.py .\Output\zip Win-x64
+      env:
+        B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
+        B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
+        B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+    - name: Archive x64 build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-Win-x64
+        path: Output/zip/*.zip
+    - name: Archive x64 pdb artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-Win-x64-pdb
+        path: Output/pdb/*.zip
+    - name: Upload release binary (x64)
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: ./Output/zip/odamex-win64-${{env.new_version}}.zip
+        asset_name: odamex-win64-${{env.new_version}}.zip
+        asset_content_type: application/zip
+    - name: Upload debug pdb (x64)
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: ./Output/pdb/odamex-debug-pdb-${{env.new_version}}-x64.zip
+        asset_name: odamex-debug-pdb-${{env.new_version}}-x64.zip
+        asset_content_type: application/zip
+  build-windows-x32:
+    name: Windows Build (Visual Studio, 32-bit)
+    needs: pre_job
+    runs-on: windows-latest
+    env:
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+      upload_url: ${{ needs.pre_job.outputs.upload_url }}
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Turn on problem matcher
+      uses: ammaraskar/msvc-problem-matcher@master
+    - name: Remove .git folders
+      shell: bash
+      run: rm -rf .git
+    - name: Run build-x32 powershell
+      shell: pwsh
+      run: |
+        .\ci\win-release-x86.ps1
+    - name: Install Python packages
+      uses: insightsengineering/pip-action@v2
+      with:
+        packages: |
+          b2sdk
+    - name: Upload artifact to B2
+      run: python .\ci\upload-b2.py .\Output\zip Win-x32
+      env:
+        B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
+        B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
+        B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+    - name: Archive x86 build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-Win-x86
+        path: Output/zip/*.zip
+    - name: Archive x86 pdb artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-Win-x86-pdb
+        path: Output/pdb/*.zip
+    - name: Upload release binary (x86)
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: ./Output/zip/odamex-win32-${{env.new_version}}.zip
+        asset_name: odamex-win32-${{env.new_version}}.zip
+        asset_content_type: application/zip
+    - name: Upload debug pdb (x86)
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: ./Output/pdb/odamex-debug-pdb-${{env.new_version}}-x86.zip
+        asset_name: odamex-debug-pdb-${{env.new_version}}-x86.zip
+        asset_content_type: application/zip
+  build-flatpak:
+    name: Build Flatpak (Ubuntu Latest)
+    needs: pre_job
+    runs-on: ubuntu-latest
+    env:
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+      upload_url: ${{ needs.pre_job.outputs.upload_url }}
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Update metainfo dates
+      shell: bash
+      run: |
+        DATE=$(date +'%Y-%m-%d')
+        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Install flatpak
+      run: sudo apt update && sudo apt install flatpak flatpak-builder
+    - name: Create escaped branch name
+      env:
+        name: "${{ github.ref_name }}"
+      run: |
+        echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
+    - name: Remove .git folders
+      shell: bash
+      run: rm -rf .git
+    - name: Set flatpak repo
+      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    - name: Run build
+      run: |
+        flatpak-builder --force-clean --user --install-deps-from=flathub \
+        --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
+        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
+    - name: Pack flatpak
+      run: |
+        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
+        --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-Flatpak-x86_64
+        path: odamex.flatpak
+    - name: Upload release binary (x86_64)
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: odamex.flatpak
+        asset_name: odamex-linux-x86_64-${{ env.new_version }}.flatpak
+        asset_content_type: application/octet-stream
+  build-flatpak-arm:
+    name: Build Flatpak (Ubuntu 24.04 ARM)
+    needs: pre_job
+    runs-on: ubuntu-24.04-arm
+    env:
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+      upload_url: ${{ needs.pre_job.outputs.upload_url }}
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Update metainfo dates
+      shell: bash
+      run: |
+        DATE=$(date +'%Y-%m-%d')
+        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Install flatpak
+      run: sudo apt update && sudo apt install flatpak flatpak-builder
+    - name: Create escaped branch name
+      env:
+        name: "${{ github.ref_name }}"
+      run: |
+        echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
+    - name: Remove .git folders
+      shell: bash
+      run: rm -rf .git
+    - name: Set flatpak repo
+      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    - name: Run build
+      run: |
+        flatpak-builder --force-clean --user --install-deps-from=flathub \
+        --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
+        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
+    - name: Pack flatpak
+      run: |
+        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
+        --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-Flatpak-ARM64
+        path: odamex.flatpak
+    - name: Upload release binary (ARM64)
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: odamex.flatpak
+        asset_name: odamex-linux-arm64-${{ env.new_version }}.flatpak
+        asset_content_type: application/octet-stream
+  package-and-upload-windows:
+    name: Package and Upload Artifacts
+    runs-on: windows-latest
+    needs: [pre_job, build-windows, build-windows-x32]
+    env:
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+      upload_url: ${{ needs.pre_job.outputs.upload_url }}
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Remove .git folders
+      shell: bash
+      run: rm -rf .git
+    - name: Create zip
+      shell: pwsh
+      run: |
+        Copy-Item -Recurse -Force -Path "." -Destination "..\odamex-src-${{ env.new_version }}" -Exclude "*.zip","*.tar.gz","*.tar.xz"
+        Remove-Item -Path "..\odamex-src-${{ env.new_version }}\.git*" -Recurse -Force
+        Compress-Archive -Path "..\odamex-src-${{ env.new_version }}" -DestinationPath "odamex-src-${{ env.new_version }}.zip"
+    - name: Download x86 artifacats
+      uses: actions/download-artifact@v4
+      with:
+        name: Odamex-Win-x86
+    - name: Download x64 artifacats
+      uses: actions/download-artifact@v4
+      with:
+        name: Odamex-Win-x64
+    - name: List directory contents
+      run: ls
+    - name: Stage and run setup compiler
+      shell: pwsh
+      run: |
+        .\ci\stage-inno-setup-and-run.ps1
+    - name: Upload setup installer to Github
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-Installer
+        path: 'Output/*.exe'
+    - name: Upload zip
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-src-zip
+        path: './odamex-src-${{ env.new_version }}.zip'
+    - name: Upload zip to Github Release Artifacts
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: ./odamex-src-${{env.new_version}}.zip
+        asset_name: odamex-src-${{env.new_version}}.zip
+        asset_content_type: application/zip
+    - name: Upload installer
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: ./Output/odamex-win-${{env.new_version}}.exe
+        asset_name: odamex-win-${{env.new_version}}.exe
+        asset_content_type: application/octet-stream
+  package-and-upload-unix:
+    name: Package and Upload Artifacts
+    runs-on: ubuntu-latest
+    needs: [pre_job]
+    env:
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+      upload_url: ${{ needs.pre_job.outputs.upload_url }}
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Remove .git folders
+      shell: bash
+      run: rm -rf .git
+    - name: Create tar.gz
+      shell: bash
+      run: |
+        touch odamex-src-${{ env.new_version }}.tar.gz
+        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -czvf odamex-src-${{ env.new_version }}.tar.gz **
+    - name: Create tar.xz
+      shell: bash
+      run: |
+        touch odamex-src-${{ env.new_version }}.tar.xz
+        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -cJvf odamex-src-${{ env.new_version }}.tar.xz **
+    - name: Upload tar.xz
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-tar-xz
+        path: './*.tar.xz'
+    - name: Upload tar.gz
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-tar-gz
+        path: './*.tar.gz'
+    - name: Upload tar.gz to Github Release Artifacts
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: ./odamex-src-${{env.new_version}}.tar.gz
+        asset_name: odamex-src-${{env.new_version}}.tar.gz
+        asset_content_type: application/x-gzip
+    - name: Upload tar.xz to Github Release Artifacts
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: ./odamex-src-${{env.new_version}}.tar.xz
+        asset_name: odamex-src-${{env.new_version}}.tar.xz
+        asset_content_type: application/x-xz
+  update-winget:
+    name: Update WinGet package
+    needs: package-and-upload
+    runs-on: windows-latest
+    steps:
+      - uses: vedantmgoyal9/winget-releaser@main
+        if: ${{ github.repository_owner }} == 'odamex'
+        with:
+          identifier: Odamex.Odamex
+          token: ${{ secrets.WINGET_TOKEN }}
+  pr-to-stable:
+    name: Create Pull Request to stable
+    needs: pre_job
+    runs-on: windows-latest
+    env:
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+    steps:
+      - id: check-branch-exists
+        name: Check if release branch exists
+        uses: GuillaumeFalourd/branch-exists@v1
+        with:
+          branch: release/${{env.new_version}}
+      - name: Create Pull Request
+        if: steps.check-branch-exists.outputs.exists == 'true'
+        run: gh pr create --head "release/$env:NEW_VERSION" --base "$env:BASE" --body "$env:BODY" --title "$env:TITLE"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BASE: stable
+          TITLE: Merge release/${{env.new_version}} to stable
+          BODY: This PR covers the task of merging the release branch to stable, the final step in releasing a new version.
+          NEW_VERSION: ${{ env.new_version }}

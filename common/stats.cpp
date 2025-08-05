@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,7 +41,7 @@ FStat::FStat (const char *cname)
 FStat::~FStat ()
 {
 	std::vector<FStat*>::iterator i = std::find(stats.begin(), stats.end(), this);
-	
+
 	if(i != stats.end())
 		stats.erase(i);
 }
@@ -81,7 +81,7 @@ void FStat::dumpstat(std::string which)
 
 void FStat::dump()
 {
-	Printf(PRINT_HIGH, "%s: %llums\n", name.c_str(), last_elapsed);
+	Printf(PRINT_HIGH, "%s: %llums\n", name, last_elapsed);
 }
 
 BEGIN_COMMAND (stat)

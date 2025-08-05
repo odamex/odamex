@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,6 +28,7 @@
 
 #include <stdarg.h>
 
+#include "m_fileio.h"
 #include "m_memio.h"
 #include "c_console.h"
 #include "c_dispatch.h"
@@ -98,104 +99,56 @@ char *TimeStamp()
 	return stamp;
 }
 
-/* Provide our own Printf() that is sensitive of the
- * console status (in or out of game)
- */
-extern int PrintString (int printlevel, const char *outline);
-
-extern BOOL gameisdead;
-
-int VPrintf(int printlevel, const char* format, va_list parms)
+static int PrintString(int printlevel, const std::string& str)
 {
-	char outline[MAX_LINE_LENGTH];
+	std::string sanitized_str(str);
+	StripColorCodes(sanitized_str);
 
+	fwrite(sanitized_str.data(), 1, sanitized_str.length(), stdout);
+
+	if (LOG.is_open())
+	{
+		LOG << sanitized_str;
+		LOG.flush();
+	}
+
+	return sanitized_str.length();
+}
+
+extern bool gameisdead;
+
+size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str)
+{
+	(void)color_code;
 	if (gameisdead)
 		return 0;
 
-	vsnprintf(outline, ARRAY_LENGTH(outline), format, parms);
+	std::string newStr = str;
 
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
-	size_t len = strlen(outline);
-	for(size_t i = 0; i < len; i++)
-		if (outline[i] == 0x07)
-			outline[i] = '.';
+	for (auto& c : newStr)
+		if (c == 0x07)
+			c = '.';
 
-	std::string str(TimeStamp());
-	str.append(" ");
-	str.append(outline);
+	newStr = std::string(TimeStamp()) + " " + newStr;
 
-	if (str[str.length() - 1] != '\n')
-		str += '\n';
+	if (newStr[newStr.length() - 1] != '\n')
+		newStr += '\n';
 
 	// Only allow sending internal messages to RCON players that are PRINT_HIGH
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& player : players)
 	{
-		client_t* cl = &(it->client);
+		client_t* cl = &(player.client);
 
 		// Only allow RCON messages that are PRINT_HIGH
 		if (cl->allow_rcon && (printlevel == PRINT_HIGH || printlevel == PRINT_WARNING ||
 		                       printlevel == PRINT_ERROR))
 		{
-			MSG_WriteSVC(&cl->reliablebuf, SVC_Print(PRINT_WARNING, str));
+			MSG_WriteSVC(&cl->reliablebuf, SVC_Print(PRINT_WARNING, newStr));
 		}
 	}
 
-	return PrintString(printlevel, str.c_str());
-}
-
-FORMAT_PRINTF(1, 2) int STACK_ARGS Printf(const char* format, ...)
-{
-	va_list argptr;
-	int count;
-
-	va_start(argptr, format);
-	count = VPrintf(PRINT_HIGH, format, argptr);
-	va_end(argptr);
-
-	return count;
-}
-
-FORMAT_PRINTF(2, 3) int STACK_ARGS Printf(int printlevel, const char* format, ...)
-{
-	va_list argptr;
-	int count;
-
-	va_start (argptr, format);
-	count = VPrintf (printlevel, format, argptr);
-	va_end (argptr);
-
-	return count;
-}
-
-FORMAT_PRINTF(1, 2) int STACK_ARGS Printf_Bold(const char* format, ...)
-{
-	va_list argptr;
-	int count;
-
-	printxormask = 0x80;
-	va_start (argptr, format);
-	count = VPrintf (PRINT_NORCON, format, argptr);
-	va_end (argptr);
-
-	return count;
-}
-
-FORMAT_PRINTF(1, 2) int STACK_ARGS DPrintf(const char* format, ...)
-{
-	va_list argptr;
-	int count;
-
-	if (developer || devparm)
-	{
-		va_start (argptr, format);
-		count = VPrintf (PRINT_WARNING, format, argptr);
-		va_end (argptr);
-		return count;
-	}
-	else
-	{
-		return 0;
-	}
+	return PrintString(printlevel, newStr);
 }
 
 BEGIN_COMMAND (history)
@@ -215,7 +168,7 @@ BEGIN_COMMAND (echo)
 	if (argc > 1)
 	{
 		std::string text = C_ArgCombine(argc - 1, (const char **)(argv + 1));
-		Printf(PRINT_HIGH, "%s\n", text.c_str());
+		Printf(PRINT_HIGH, "%s\n", text);
 	}
 }
 END_COMMAND (echo)

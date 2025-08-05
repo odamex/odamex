@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -88,8 +88,6 @@ static lumpHandle_t FlagIconDropped[NUMTEAMS];
 static lumpHandle_t LivesIcon[NUMTEAMS];
 static lumpHandle_t ToastIcon[NUMMODS];
 
-static int		NameUp = -1;
-
 extern lumpHandle_t negminus;
 extern lumpHandle_t tallnum[10];
 extern lumpHandle_t faces[];
@@ -146,7 +144,7 @@ void ST_initNew()
 
 	for (size_t i = 0; i < ARRAY_LENGTH(::tallnum); i++)
 	{
-		patch_t* talli = W_ResolvePatchHandle(::tallnum[i]);
+		const patch_t* talli = W_ResolvePatchHandle(::tallnum[i]);
 		if (talli->width() > widest)
 			widest = talli->width();
 	}
@@ -175,10 +173,6 @@ void ST_initNew()
 	::widest_num = widest;
 	::num_height = W_ResolvePatchHandle(::tallnum[0])->height();
 
-	// [AM] FIXME: What does this do, exactly?
-	if (multiplayer && (sv_gametype == GM_COOP || demoplayback) && level.time)
-		NameUp = level.time + 2 * TICRATE;
-
 	::flagiconteam = W_CachePatchHandle("FLAGIT", PU_STATIC);
 	::flagiconteamoffense = W_CachePatchHandle("FLAGITO", PU_STATIC);
 	::flagiconteamdefense = W_CachePatchHandle("FLAGITD", PU_STATIC);
@@ -192,18 +186,16 @@ void ST_initNew()
 	::line_rightempty = W_CachePatchHandle("ODABARRE", PU_STATIC);
 	::line_rightfull = W_CachePatchHandle("ODABARRF", PU_STATIC);
 
-	std::string buffer;
 	for (size_t i = 0; i < NUMMODS; i++)
 	{
-		StrFormat(buffer, "ODAMOD%lu", i);
-		::ToastIcon[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
+		::ToastIcon[i] = W_CachePatchHandle(fmt::sprintf("ODAMOD%lu", i), PU_STATIC);
 	}
 }
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 {
 	char digits[11], *d;
-	patch_t* minus = W_ResolvePatchHandle(negminus);
+	const patch_t* minus = W_ResolvePatchHandle(negminus);
 
 	if (num < 0)
 	{
@@ -227,7 +219,7 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 	{
 		if (*d >= '0' && *d <= '9')
 		{
-			patch_t* numpatch = W_ResolvePatchHandle(tallnum[*d - '0']);
+			const patch_t* numpatch = W_ResolvePatchHandle(tallnum[*d - '0']);
 			if (hud_scale)
 			{
 				scrn->DrawLucentPatchCleanNoMove(numpatch, x, y);
@@ -246,7 +238,7 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
 {
 	int d = abs(num);
-	int xscale = hud_scale ? CleanXfac : 1;
+	const int xscale = hud_scale ? CleanXfac : 1;
 
 	do {
 		x -= W_ResolvePatchHandle(tallnum[d % 10])->width() * xscale;
@@ -274,7 +266,7 @@ void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
 void ST_DrawBar (int normalcolor, unsigned int value, unsigned int total,
 				 int x, int y, int width, bool reverse = false,
 				 bool cutleft = false, bool cutright = false) {
-	int xscale = hud_scale ? CleanXfac : 1;
+	const int xscale = hud_scale ? CleanXfac : 1;
 
 	if (normalcolor > NUM_TEXT_COLORS || normalcolor == CR_GREY) {
 		normalcolor = CR_RED;
@@ -285,7 +277,7 @@ void ST_DrawBar (int normalcolor, unsigned int value, unsigned int total,
 	}
 	width -= (width % (2 * xscale));
 
-	int bar_width = width / (2 * xscale);
+	const int bar_width = width / (2 * xscale);
 
 	int bar_filled;
 	if (value == 0) {
@@ -354,7 +346,7 @@ void ST_DrawBar (int normalcolor, unsigned int value, unsigned int total,
 			}
 		}
 
-		int xi = x + (i * xscale * 2);
+		const int xi = x + (i * xscale * 2);
 		if (hud_scale) {
 			screen->DrawTranslatedPatchCleanNoMove(linepatch, xi, y);
 		} else {
@@ -408,7 +400,7 @@ void ST_voteDraw (int y) {
 		return;
 	}
 
-	size_t x1, x2;
+	int x1, x2;
 	x1 = (I_GetSurfaceWidth() - V_StringWidth(result_string.c_str()) * xscale) >> 1;
 	if (hud_scale) {
 		screen->DrawTextClean(result_color, x1, y, result_string.c_str());
@@ -495,19 +487,18 @@ static bool TeamHUDShowsRoundWins()
  */
 static void drawTeamGametype()
 {
-	const int SCREEN_BORDER = 4;
-	const int FLAG_ICON_HEIGHT = 18;
-	const int LIVES_HEIGHT = 12;
+	static constexpr int SCREEN_BORDER = 4;
+	static constexpr int FLAG_ICON_HEIGHT = 18;
+	static constexpr int LIVES_HEIGHT = 12;
 
-	std::string buffer;
-	player_t* plyr = &consoleplayer();
-	int xscale = hud_scale ? CleanXfac : 1;
-	int yscale = hud_scale ? CleanYfac : 1;
+	const player_t* plyr = &consoleplayer();
+	const int xscale = hud_scale ? CleanXfac : 1;
+	const int yscale = hud_scale ? CleanYfac : 1;
 
 	int patchPosY = ::hud_bigfont ? 53 : 43;
 
-	bool shouldShowScores = G_IsTeamGame();
-	bool shouldShowLives = G_IsLivesGame();
+	const bool shouldShowScores = G_IsTeamGame();
+	const bool shouldShowLives = G_IsLivesGame();
 
 	if (shouldShowScores)
 	{
@@ -590,8 +581,8 @@ static void drawTeamGametype()
 			               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM,
 			               W_ResolvePatchHandle(::LivesIcon[i]));
 
-			StrFormat(buffer, "%d", teamInfo->LivesPool());
-			int color = (i % 2) ? CR_GOLD : CR_GREY;
+			std::string buffer = fmt::sprintf("%d", teamInfo->LivesPool());
+			const int color = (i % 2) ? CR_GOLD : CR_GREY;
 			hud::DrawText(SCREEN_BORDER + 12, patchPosY + 3, hud_scale, hud::X_RIGHT,
 			              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, buffer.c_str(),
 			              color);
@@ -601,10 +592,10 @@ static void drawTeamGametype()
 
 static void drawHordeGametype()
 {
-	const int SCREEN_BORDER = 4;
-	const int ABOVE_AMMO = 24;
+	static constexpr int SCREEN_BORDER = 4;
+	static constexpr int ABOVE_AMMO = 24;
 	const int LINE_SPACING = V_LineHeight() + 1;
-	const int BAR_BORDER = 5;
+	static constexpr int BAR_BORDER = 5;
 
 	const hordeInfo_t& info = P_HordeInfo();
 	const hordeDefine_t& define = G_HordeDefine(info.defineID);
@@ -612,11 +603,11 @@ static void drawHordeGametype()
 	std::string waverow, killrow;
 	if (::g_horde_waves.asInt() != 0)
 	{
-		StrFormat(waverow, "WAVE:%d/%d", info.wave, ::g_horde_waves.asInt());
+		waverow = fmt::sprintf("WAVE:%d/%d", info.wave, ::g_horde_waves.asInt());
 	}
 	else
 	{
-		StrFormat(waverow, "WAVE:%d", info.wave);
+		waverow = fmt::sprintf("WAVE:%d", info.wave);
 	}
 
 	float killPct = 0.0f;
@@ -657,11 +648,11 @@ static void drawHordeGametype()
 		}
 		else
 		{
-			StrFormat(buf2, "%d-%d sec", min, max);
+			buf2 = fmt::sprintf("%d-%d sec", min, max);
 		}
-		StrFormat(buf, "Min HP: %d\nAlive HP: %d\nMax HP: %d\nSpawn: %s",
-		          define.minTotalHealth(), info.alive(), define.maxTotalHealth(),
-		          buf2.c_str());
+		buf = fmt::sprintf("Min HP: %d\nAlive HP: %d\nMax HP: %d\nSpawn: %s",
+		                   define.minTotalHealth(), info.alive(), define.maxTotalHealth(),
+		                   buf2);
 		hud::DrawText(SCREEN_BORDER, 64, ::hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
 		              hud::X_LEFT, hud::Y_BOTTOM, buf.c_str(), CR_GREY);
 
@@ -701,12 +692,12 @@ void drawProtos()
 	// Starting y is five rows from the top.
 	int y = 7 * 5;
 
-	const double scale = 0.75;
 	const int indent = V_StringWidth(" >");
 
 	for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
 	{
-		bool selected = proto_selected == (it - protos.begin());
+		static constexpr double scale = 0.75;
+		const bool selected = proto_selected == (it - protos.begin());
 
 		if (selected)
 		{
@@ -749,8 +740,8 @@ void drawNetdemo() {
 	if (!hud_demobar || R_DemoBarInvisible())
 		return;
 
-	int xscale = hud_scale ? CleanXfac : 1;
-	int yscale = hud_scale ? CleanYfac : 1;
+	const int xscale = hud_scale ? CleanXfac : 1;
+	const int yscale = hud_scale ? CleanYfac : 1;
 
 	V_SetFont("DIGFONT");
 
@@ -824,8 +815,8 @@ static void drawLevelStats()
 
 	if (G_IsHordeMode())
 	{
-		StrFormat(line, TEXTCOLOR_RED "K" TEXTCOLOR_NORMAL " %d",
-	        level.killed_monsters);
+		line = fmt::sprintf(TEXTCOLOR_RED "K" TEXTCOLOR_NORMAL " %d",
+	                        level.killed_monsters);
 
 		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
 	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, line.c_str(), CR_GREY);
@@ -843,16 +834,16 @@ static void drawLevelStats()
 		hud::DrawText(x, y + LINE_SPACING * 2, ::hud_scale, hud::X_LEFT,
 	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "K", CR_GREY);
 
-		StrFormat(killrow, "%s" " %d/%d",
-		          (level.killed_monsters >= (level.total_monsters + level.respawned_monsters) ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
-		   	      level.killed_monsters,
-		   	      (level.total_monsters + level.respawned_monsters));
-		StrFormat(itemrow, "%s" " %d/%d",
-		          (level.found_items >= level.total_items ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
-		          level.found_items, level.total_items);
-		StrFormat(secretrow, "%s" " %d/%d",
-		          (level.found_secrets >= level.total_secrets ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
-		          level.found_secrets, level.total_secrets);
+		killrow = fmt::sprintf("%s %d/%d",
+		                       (level.killed_monsters >= (level.total_monsters + level.respawned_monsters) ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		   	                   level.killed_monsters,
+		   	                   (level.total_monsters + level.respawned_monsters));
+		itemrow = fmt::sprintf("%s %d/%d",
+		                       (level.found_items >= level.total_items ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		                       level.found_items, level.total_items);
+		secretrow = fmt::sprintf("%s %d/%d",
+		                         (level.found_secrets >= level.total_secrets ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		                         level.found_secrets, level.total_secrets);
 
 		x += 9 - font_offset * 4;
 
@@ -866,16 +857,16 @@ static void drawLevelStats()
 	}
 	else
 	{
-		StrFormat(line, TEXTCOLOR_RED "K" "%s" " %d/%d "
-					    TEXTCOLOR_RED "I" "%s" " %d/%d "
-					    TEXTCOLOR_RED "S" "%s" " %d/%d",
-		                (level.killed_monsters >= (level.total_monsters + level.respawned_monsters) ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
-		                level.killed_monsters,
-		                (level.total_monsters + level.respawned_monsters),
-		                (level.found_items >= level.total_items ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
-		                level.found_items, level.total_items,
-		                (level.found_secrets >= level.total_secrets ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
-		                level.found_secrets, level.total_secrets);
+		line = fmt::sprintf(TEXTCOLOR_RED "K" "%s %d/%d "
+					        TEXTCOLOR_RED "I" "%s %d/%d "
+					        TEXTCOLOR_RED "S" "%s %d/%d",
+		                    (level.killed_monsters >= (level.total_monsters + level.respawned_monsters) ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		                    level.killed_monsters,
+		                    (level.total_monsters + level.respawned_monsters),
+		                    (level.found_items >= level.total_items ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		                    level.found_items, level.total_items,
+		                    (level.found_secrets >= level.total_secrets ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		                    level.found_secrets, level.total_secrets);
 
 		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
 		    hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, line.c_str(), CR_GREY);
@@ -887,7 +878,7 @@ static void drawLevelStats()
 // [ML] 9/29/2011: New fullscreen HUD, based on Ralphis's work
 void OdamexHUD() {
 	std::string buf;
-	player_t *plyr = &displayplayer();
+	const player_t *plyr = &displayplayer();
 
 	// TODO: I can probably get rid of these invocations once I put a
 	//       copy of ST_DrawNumRight into the hud namespace. -AM
@@ -937,13 +928,13 @@ void OdamexHUD() {
 		if (plyr->lives <= 0)
 			lives_color = CR_DARKGREY;
 
-		StrFormat(buf, "x%d", plyr->lives);
+		buf = fmt::sprintf("x%d", plyr->lives);
 		hud::DrawText(text_ax + 48 + 2 + 20 + 2, 10 + 2, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
 		              hud::X_LEFT, hud::Y_MIDDLE, buf.c_str(), lives_color, false);
 	}
 
 	// Draw Ammo
-	ammotype_t ammotype = weaponinfo[plyr->readyweapon].ammotype;
+	const ammotype_t ammotype = weaponinfo[plyr->readyweapon].ammotype;
 	if (ammotype < NUMAMMO) {
 		const patch_t *ammopatch;
 		// Use big ammo if the player has a backpack.
@@ -993,7 +984,7 @@ void OdamexHUD() {
 		if (::hud_bigfont)
 			V_SetFont("BIGFONT");
 
-		StrFormat(buf, "%d" TEXTCOLOR_DARKGREY "ups",
+		buf = fmt::sprintf("%d" TEXTCOLOR_DARKGREY "ups",
 		          static_cast<int>(HU_GetPlayerSpeed()));
 		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, buf.c_str(), CR_GREY);
@@ -1096,10 +1087,10 @@ void DrawToasts()
 	int y = 0;
 
 	const float oldtrans = ::hud_transparency;
-	for (drawToasts_t::const_iterator it = g_Toasts.begin(); it != g_Toasts.end(); ++it)
+	for (const auto& toast : g_Toasts)
 	{
 		// Fade the toast out.
-		int tics = ::gametic - it->tic;
+		int tics = ::gametic - toast.tic;
 		if (tics < fadeOutTics)
 		{
 			::hud_transparency.ForceSet(1.0);
@@ -1118,11 +1109,11 @@ void DrawToasts()
 
 		// Right-hand side.
 		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
-		              hud::Y_TOP, it->right.c_str(), CR_GREY);
-		x += V_StringWidth(it->right.c_str()) + 1;
+		              hud::Y_TOP, toast.right.c_str(), CR_GREY);
+		x += V_StringWidth(toast.right.c_str()) + 1;
 
 		// Icon
-		patch_t* icon = W_ResolvePatchHandle(it->icon);
+		const patch_t* icon = W_ResolvePatchHandle(toast.icon);
 		const double yoff =
 		    (static_cast<double>(TOAST_HEIGHT) - static_cast<double>(icon->height())) /
 		    2.0;
@@ -1133,7 +1124,7 @@ void DrawToasts()
 
 		// Left-hand side.
 		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
-		              hud::Y_TOP, it->left.c_str(), CR_GREY);
+		              hud::Y_TOP, toast.left.c_str(), CR_GREY);
 
 		y += TOAST_HEIGHT;
 	}
@@ -1150,7 +1141,7 @@ void ToastTicker()
 	drawToasts_t::iterator it = g_Toasts.begin();
 	while (it != g_Toasts.end())
 	{
-		int tics = ::gametic - it->tic;
+		const int tics = ::gametic - it->tic;
 
 		if (tics >= fadeDoneTics)
 		{
@@ -1242,12 +1233,12 @@ static std::string WinToColorString(const WinInfo& win)
 		const player_t& pl = idplayer(win.id);
 		if (pl.userinfo.netname.empty())
 		{
-			StrFormat(buf, TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
+			buf = fmt::sprintf(TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
 		}
 		else
 		{
-			StrFormat(buf, TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL,
-			          pl.userinfo.netname.c_str());
+			buf = fmt::sprintf(TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL,
+			                   pl.userinfo.netname);
 		}
 		return buf;
 	}
@@ -1256,17 +1247,17 @@ static std::string WinToColorString(const WinInfo& win)
 		const TeamInfo& tm = *GetTeamInfo((team_t)win.id);
 		if (tm.Team == TEAM_NONE)
 		{
-			StrFormat(buf, TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
+			buf = fmt::sprintf(TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
 		}
 		else
 		{
-			StrFormat(buf, "%s%s" TEXTCOLOR_NORMAL, tm.TextColor.c_str(),
-			          tm.ColorString.c_str());
+			buf = fmt::sprintf("%s%s" TEXTCOLOR_NORMAL, tm.TextColor,
+			                   tm.ColorString);
 		}
 		return buf;
 	}
 
-	StrFormat(buf, TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
+	buf = fmt::sprintf(TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
 	return buf;
 }
 
@@ -1319,20 +1310,20 @@ static void LevelStateHorde(levelStateLines_t& lines)
 	{
 		if (::g_horde_waves.asInt() != 0)
 		{
-			StrFormat(lines.title,
+			lines.title = fmt::sprintf(
 			          "Wave " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "of " TEXTCOLOR_YELLOW
 			          "%d",
 			          info.wave, ::g_horde_waves.asInt());
 		}
 		else
 		{
-			StrFormat(lines.title, "Wave " TEXTCOLOR_YELLOW "%d", info.wave);
+			lines.title = fmt::sprintf("Wave " TEXTCOLOR_YELLOW "%d", info.wave);
 		}
 
-		StrFormat(lines.subtitle[0], "\"" TEXTCOLOR_YELLOW "%s" TEXTCOLOR_GREY "\"",
-		          define.name.c_str());
+		lines.subtitle[0] = fmt::sprintf("\"" TEXTCOLOR_YELLOW "%s" TEXTCOLOR_GREY "\"",
+		                                 define.name);
 
-		StrFormat(lines.subtitle[1], "Difficulty: %s", define.difficulty(true));
+		lines.subtitle[1] = fmt::sprintf("Difficulty: %s", define.difficulty(true));
 
 		// Detect when there are new weapons to pick up.
 		StringTokens weapList;
@@ -1348,8 +1339,8 @@ static void LevelStateHorde(levelStateLines_t& lines)
 
 		if (!weapList.empty())
 		{
-			StrFormat(lines.subtitle[3], TEXTCOLOR_GREY "Weapons: " TEXTCOLOR_GREEN "%s",
-			          JoinStrings(weapList, " ").c_str());
+			lines.subtitle[3] = fmt::sprintf(TEXTCOLOR_GREY "Weapons: " TEXTCOLOR_GREEN "%s",
+			          JoinStrings(weapList, " "));
 		}
 
 		tics = ::level.time - info.waveTime;
@@ -1386,10 +1377,10 @@ void LevelStateHUD()
 			}
 			else
 			{
-				StrFormat(lines.subtitle[0],
+				lines.subtitle[0] = fmt::sprintf(
 				          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
 				          " when ready to play",
-				          ::Bindings.GetKeynameFromCommand("ready").c_str());
+				          ::Bindings.GetKeynameFromCommand("ready"));
 			}
 		}
 		else
@@ -1401,22 +1392,22 @@ void LevelStateHUD()
 	}
 	case LevelState::WARMUP_COUNTDOWN:
 	case LevelState::WARMUP_FORCED_COUNTDOWN: {
-		StrFormat(lines.title, "%s", G_GametypeName().c_str());
-		StrFormat(lines.subtitle[0], "Match begins in " TEXTCOLOR_GREEN "%d",
-		          ::levelstate.getCountdown());
+		lines.title = fmt::sprintf("%s", G_GametypeName());
+		lines.subtitle[0] = fmt::sprintf("Match begins in " TEXTCOLOR_GREEN "%d",
+		                                 ::levelstate.getCountdown());
 		break;
 	}
 	case LevelState::PREROUND_COUNTDOWN: {
-		StrFormat(lines.title, "Round " TEXTCOLOR_YELLOW " %d", ::levelstate.getRound());
+		lines.title = fmt::sprintf("Round " TEXTCOLOR_YELLOW " %d", ::levelstate.getRound());
 		if (g_preroundreset)
 		{
-			StrFormat(lines.subtitle[0], "Round begins in " TEXTCOLOR_GREEN "%d",
-			          ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Round begins in " TEXTCOLOR_GREEN "%d",
+			                                 ::levelstate.getCountdown());
 		}
 		else
 		{
-			StrFormat(lines.subtitle[0], "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
-			          ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Weapons unlocked in " TEXTCOLOR_GREEN "%d",
+			                                 ::levelstate.getCountdown());
 		}
 		break;
 	}
@@ -1449,7 +1440,7 @@ void LevelStateHUD()
 				lines.title = "GO!\n";
 				if (G_IsRoundsGame() && g_roundlimit)
 				{
-					StrFormat(lines.subtitle[0],
+					lines.subtitle[0] = fmt::sprintf(
 					          TEXTCOLOR_GREEN "%d" TEXTCOLOR_GREY " attempts left",
 					          g_roundlimit.asInt() - ::levelstate.getRound() + 1);
 				}
@@ -1467,29 +1458,29 @@ void LevelStateHUD()
 	}
 	case LevelState::ENDROUND_COUNTDOWN: {
 		if (G_IsCoopGame() || G_IsHordeMode())
-			StrFormat(lines.title,
+			lines.title = fmt::sprintf(
 				"Attempt " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
 				::levelstate.getRound());
 		else
-			StrFormat(lines.title,
+			lines.title = fmt::sprintf(
 				"Round " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
 				::levelstate.getRound());
 
-		WinInfo win = ::levelstate.getWinInfo();
+		const WinInfo win = ::levelstate.getWinInfo();
 		if (win.type == WinInfo::WIN_DRAW)
-			StrFormat(lines.subtitle[0], "Tied at the end of the round");
+			lines.subtitle[0] = fmt::sprintf("Tied at the end of the round");
 		else if (win.type == WinInfo::WIN_PLAYER)
-			StrFormat(lines.subtitle[0], "%s wins the round",
-			          WinToColorString(win).c_str());
+			lines.subtitle[0] = fmt::sprintf("%s wins the round",
+			                                 WinToColorString(win));
 		else if (win.type == WinInfo::WIN_TEAM)
-			StrFormat(lines.subtitle[0], "%s team wins the round",
-			          WinToColorString(win).c_str());
+			lines.subtitle[0] = fmt::sprintf("%s team wins the round",
+			                                 WinToColorString(win));
 		else if (G_IsCoopGame() || G_IsHordeMode())
-			StrFormat(lines.subtitle[0], "Next attempt in " TEXTCOLOR_GREEN "%d",
-			          ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Next attempt in " TEXTCOLOR_GREEN "%d",
+			                                 ::levelstate.getCountdown());
 		else
-			StrFormat(lines.subtitle[0], "Next round in " TEXTCOLOR_GREEN "%d",
-			          ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Next round in " TEXTCOLOR_GREEN "%d",
+			                                 ::levelstate.getCountdown());
 		break;
 	}
 	case LevelState::ENDGAME_COUNTDOWN: {
@@ -1497,23 +1488,23 @@ void LevelStateHUD()
 		//Upper Text
 		if
 			(win.type == WinInfo::WIN_EVERYBODY)
-			StrFormat(lines.title, TEXTCOLOR_YELLOW "Mission Success!");
+			lines.title = fmt::sprintf(TEXTCOLOR_YELLOW "Mission Success!");
 		else if
 			(win.type == WinInfo::WIN_NOBODY)
-			StrFormat(lines.title, TEXTCOLOR_RED "Mission Failed!");
+			lines.title = fmt::sprintf(TEXTCOLOR_RED "Mission Failed!");
 		else
-			StrFormat(lines.title, "Match complete");
+			lines.title = fmt::sprintf("Match complete");
 
 		// Lower Text
 		if (win.type == WinInfo::WIN_DRAW)
-			StrFormat(lines.subtitle[0], "The game ends in a tie");
+			lines.subtitle[0] = fmt::sprintf("The game ends in a tie");
 		else if (win.type == WinInfo::WIN_PLAYER)
-			StrFormat(lines.subtitle[0], "%s wins!", WinToColorString(win).c_str());
+			lines.subtitle[0] = fmt::sprintf("%s wins!", WinToColorString(win));
 		else if (win.type == WinInfo::WIN_TEAM)
-			StrFormat(lines.subtitle[0], "%s team wins!", WinToColorString(win).c_str());
+			lines.subtitle[0] = fmt::sprintf("%s team wins!", WinToColorString(win));
 		else
-			StrFormat(lines.subtitle[0], "Intermission in " TEXTCOLOR_GREEN "%d",
-			          ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Intermission in " TEXTCOLOR_GREEN "%d",
+			                                 ::levelstate.getCountdown());
 		break;
 	}
 	default:
@@ -1522,7 +1513,7 @@ void LevelStateHUD()
 
 	V_SetFont("BIGFONT");
 
-	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 	int w = V_StringWidth(lines.title.c_str()) * CleanYfac;
 	int h = 12 * CleanYfac;
 
@@ -1537,7 +1528,7 @@ void LevelStateHUD()
 	}
 
 	V_SetFont("SMALLFONT");
-	int height = V_StringHeight("M") + 1;
+	const int height = V_StringHeight("M") + 1;
 
 	for (size_t i = 0; i < ARRAY_LENGTH(lines.subtitle); i++)
 	{
@@ -1606,8 +1597,8 @@ void DoomHUD()
 	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
 	{
 		std::string buf;
-		StrFormat(buf, "%d" TEXTCOLOR_DARKGREY "ups",
-		          static_cast<int>(HU_GetPlayerSpeed()));
+		buf = fmt::sprintf("%d" TEXTCOLOR_DARKGREY "ups",
+		                   static_cast<int>(HU_GetPlayerSpeed()));
 		hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, buf.c_str(), CR_GREY);
 		st_y += V_LineHeight() + 1;

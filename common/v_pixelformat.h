@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -83,6 +83,7 @@ public:
 			mALoss(8 - abits), mRLoss(8 - rbits), mGLoss(8 - gbits), mBLoss(8 - bbits)
 	{ }
 
+	[[nodiscard]]
 	inline bool operator==(const PixelFormat& other) const
 	{	return memcmp(this, &other, sizeof(PixelFormat)) == 0;	}
 

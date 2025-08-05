@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -18,7 +18,7 @@
 //
 // DESCRIPTION:
 //	F_FINALE
-//    
+//
 //-----------------------------------------------------------------------------
 
 #pragma once
@@ -30,20 +30,20 @@
 //
 
 // Called by main loop.
-BOOL F_Responder (event_t* ev);
+bool F_Responder(event_t* ev);
 
 // Called by main loop.
-void F_Ticker (void);
+void F_Ticker();
 
 // Called by main loop.
-void F_Drawer (void);
+void F_Drawer();
 
 struct finale_options_t
 {
-	const char* music;
-	const char* flat;
-	const char* text;
-	const char* pic;
+	OLumpName music;
+	OLumpName flat;
+	std::string text;
+	OLumpName pic;
 };
 
 void F_StartFinale(finale_options_t& options);

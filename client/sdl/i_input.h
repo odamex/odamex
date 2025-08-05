@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -38,7 +38,7 @@ void STACK_ARGS I_ShutdownInput (void);
 void I_ForceUpdateGrab();
 void I_FlushInput();
 
-int I_GetJoystickCount();
+size_t I_GetJoystickCount();
 std::string I_GetJoystickNameFromIndex (int index);
 bool I_OpenJoystick();
 void I_CloseJoystick();
@@ -60,7 +60,7 @@ public:
 	virtual ~IInputDevice() { }
 
 	virtual bool active() const = 0;
-	virtual void pause() = 0; 
+	virtual void pause() = 0;
 	virtual void resume() = 0;
 	virtual void reset() = 0;
 
@@ -137,15 +137,15 @@ public:
 	virtual void gatherMouseEvents();
 	virtual void getEvent(event_t* ev);
 
-	virtual std::vector<IInputDeviceInfo> getKeyboardDevices() const = 0; 
+	virtual std::vector<IInputDeviceInfo> getKeyboardDevices() const = 0;
 	virtual void initKeyboard(int id) = 0;
 	virtual void shutdownKeyboard(int id) = 0;
 
-	virtual std::vector<IInputDeviceInfo> getMouseDevices() const = 0; 
+	virtual std::vector<IInputDeviceInfo> getMouseDevices() const = 0;
 	virtual void initMouse(int id) = 0;
 	virtual void shutdownMouse(int id) = 0;
 
-	virtual std::vector<IInputDeviceInfo> getJoystickDevices() const = 0; 
+	virtual std::vector<IInputDeviceInfo> getJoystickDevices() const = 0;
 	virtual void initJoystick(int id) = 0;
 	virtual void shutdownJoystick(int id) = 0;
 

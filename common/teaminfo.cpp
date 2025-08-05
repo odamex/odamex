@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -116,11 +116,10 @@ void InitTeamInfo()
 void TeamInfo_ResetScores(bool fullreset)
 {
 	// Clear teamgame state.
-	Players::iterator it;
 	for (size_t i = 0; i < NUMTEAMS; i++)
 	{
-		for (it = players.begin(); it != players.end(); ++it)
-			it->flags[i] = false;
+		for (auto& player : players)
+			player.flags[i] = false;
 
 		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
 		teamInfo->FlagData.flagger = 0;
@@ -247,27 +246,21 @@ TeamsView TeamQuery::execute()
 
 std::string V_GetTeamColor(team_t ateam)
 {
-	std::string buf;
 	TeamInfo* team = GetTeamInfo(ateam);
-	StrFormat(buf, "%s%s%s", team->TextColor.c_str(), team->ColorStringUpper.c_str(),
-	          TEXTCOLOR_NORMAL);
-	return buf;
+	return fmt::sprintf("%s%s%s", team->TextColor, team->ColorStringUpper,
+	                    TEXTCOLOR_NORMAL);
 }
 
 std::string V_GetTeamColor(UserInfo userinfo)
 {
-	std::string buf;
 	TeamInfo* team = GetTeamInfo(userinfo.team);
-	StrFormat(buf, "%s%s%s", team->TextColor.c_str(), team->ColorStringUpper.c_str(), TEXTCOLOR_NORMAL);
-	return buf;
+	return fmt::sprintf("%s%s%s", team->TextColor, team->ColorStringUpper, TEXTCOLOR_NORMAL);
 }
 
 const std::string TeamInfo::ColorizedTeamName()
 {
-	std::string buf;
-	StrFormat(buf, "%s%s%s", TextColor.c_str(), ColorStringUpper.c_str(),
-	          TEXTCOLOR_NORMAL);
-	return buf;
+	return fmt::sprintf("%s%s%s", TextColor, ColorStringUpper,
+	                    TEXTCOLOR_NORMAL);
 }
 
 int TeamInfo::LivesPool()
@@ -275,14 +268,13 @@ int TeamInfo::LivesPool()
 	int pool = 0;
 	PlayerResults pr = PlayerQuery().hasLives().execute();
 
-	for (PlayersView::const_iterator it = pr.players.begin(); it != pr.players.end();
-	     ++it)
+	for (const auto& player : pr.players)
 	{
-		team_t team = (*it)->userinfo.team;
+		team_t team = player->userinfo.team;
 		if (team != Team)
 			continue;
 
-		pool += (*it)->lives;
+		pool += player->lives;
 	}
 
 	return pool;

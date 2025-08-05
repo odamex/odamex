@@ -1,0 +1,176 @@
+// Emacs style mode select   -*- C++ -*-
+//-----------------------------------------------------------------------------
+//
+// $Id$
+//
+// Copyright (C) 1993-1996 by id Software, Inc.
+// Copyright (C) 2006-2025 by The Odamex Team.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//   Functions that should be used everywhere.
+//
+//-----------------------------------------------------------------------------
+
+#pragma once
+
+#include "v_textcolors.h"
+
+#ifdef SERVER_APP
+void SV_BasePrintAllPlayers(const int printlevel, const std::string& str);
+void SV_BasePrintButPlayer(const int printlevel, const int player_id, const std::string& str);
+#endif
+
+size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str);
+
+template <typename... ARGS>
+[[deprecated("Please use PrintFmt() instead.")]]
+size_t Printf(const fmt::string_view format, const ARGS&... args)
+{
+	return C_BasePrint(PRINT_HIGH, TEXTCOLOR_NORMAL, fmt::sprintf(format, args...));
+}
+
+template <typename... ARGS>
+[[deprecated("Please use PrintFmt() instead.")]]
+size_t Printf(const int printlevel, const fmt::string_view format, const ARGS&... args)
+{
+	return C_BasePrint(printlevel, TEXTCOLOR_NORMAL, fmt::sprintf(format, args...));
+}
+
+template <typename... ARGS>
+size_t PrintFmt(const fmt::string_view format, const ARGS&... args)
+{
+	return C_BasePrint(PRINT_HIGH, TEXTCOLOR_NORMAL, fmt::format(format, args...));
+}
+
+template <typename... ARGS>
+size_t PrintFmt(const int printlevel, const fmt::string_view format, const ARGS&... args)
+{
+	return C_BasePrint(printlevel, TEXTCOLOR_NORMAL, fmt::format(format, args...));
+}
+
+template <typename... ARGS>
+size_t PrintFmt_Bold(const fmt::string_view format, const ARGS&... args)
+{
+	return C_BasePrint(PRINT_HIGH, TEXTCOLOR_BOLD, fmt::format(format, args...));
+}
+
+template <typename... ARGS>
+size_t DPrintFmt(const fmt::string_view format, const ARGS&... args)
+{
+	if (::developer || ::devparm)
+	{
+		return C_BasePrint(PRINT_WARNING, TEXTCOLOR_NORMAL, fmt::format(format, args...));
+	}
+
+	return 0;
+}
+
+/**
+ * @brief Print to all clients in a server, or to the local player offline.
+ *
+ * @note This could really use a new name, like "ServerPrintf".
+ *
+ * @param printlevel PRINT_* constant designating what kind of print this is.
+ * @param format printf-style format string.
+ * @param args printf-style arguments.
+ */
+template <typename... ARGS>
+void SV_BroadcastPrintFmt(int printlevel, const fmt::string_view format, const ARGS&... args)
+{
+	if (!serverside)
+		return;
+
+	std::string string = fmt::format(format, args...);
+	C_BasePrint(printlevel, TEXTCOLOR_NORMAL, string);
+
+	#ifdef SERVER_APP
+	// Hacky code to display messages as normal ones to clients
+	if (printlevel == PRINT_NORCON)
+		printlevel = PRINT_HIGH;
+
+	SV_BasePrintAllPlayers(printlevel, string);
+	#endif
+}
+
+/**
+ * @brief Print to all clients in a server, or to the local player offline.
+ *
+ * @note This could really use a new name, like "ServerPrintf".
+ *
+ * @param format printf-style format string.
+ * @param args printf-style arguments.
+ */
+template <typename... ARGS>
+void SV_BroadcastPrintFmt(const fmt::string_view format, const ARGS&... args)
+{
+	SV_BroadcastPrintFmt(PRINT_NORCON, format, args...);
+}
+
+#ifdef SERVER_APP
+template <typename... ARGS>
+void SV_BroadcastPrintFmtButPlayer(int printlevel, int player_id, const fmt::string_view format, const ARGS&... args)
+{
+	std::string string = fmt::format(format, args...);
+	C_BasePrint(printlevel, TEXTCOLOR_NORMAL, string); // print to the console
+
+	// Hacky code to display messages as normal ones to clients
+	if (printlevel == PRINT_NORCON)
+		printlevel = PRINT_HIGH;
+
+	SV_BasePrintButPlayer(printlevel, player_id, string);
+}
+#endif
+
+namespace OUtil
+{
+
+// Wrapper for easy iteration over containers in reverse with ranged for loops
+template <typename T>
+struct reverse_wrapper
+{
+    T& iterable;
+    inline auto begin() { return std::rbegin(iterable); }
+    inline auto end() { return std::rend(iterable); }
+};
+
+/**
+ * @brief Reverse the iteration in a range-based for loop
+ */
+template <typename T>
+inline reverse_wrapper<T> reverse(T&& iterable) { return { iterable }; }
+
+// Wrapper for skipping the first N elements in a range-based for loop
+template <typename T>
+struct drop_wrapper
+{
+    T& iterable;
+    size_t count;
+
+    auto begin() {
+        auto it = std::begin(iterable);
+        auto end_it = std::end(iterable);
+        for (size_t i = 0; i < count && it != end_it; ++i)
+            ++it;
+        return it;
+    }
+
+    inline auto end() { return std::end(iterable); }
+};
+
+/**
+ * @brief Skip the first `count` elements in a range-based for loop
+ */
+template <typename T>
+inline drop_wrapper<T> drop(T&& iterable, std::size_t count) { return { iterable, count }; }
+
+}

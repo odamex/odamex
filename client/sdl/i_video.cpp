@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,7 +37,7 @@
 #include "i_video_sdl12.h"
 #elif defined(SDL20)
 #include "i_video_sdl20.h"
-#else 
+#else
 #error "no video subsystem selected"
 #endif
 
@@ -125,7 +125,7 @@ IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelForma
 	mPalette(V_GetDefaultPalette()->colors), mPixelFormat(*format),
 	mWidth(width), mHeight(height), mPitch(pitch), mLocks(0)
 {
-	const uintptr_t alignment = 16;
+	static constexpr uintptr_t alignment = 16;
 
 	// Not given a pitch? Just base pitch on the given width
 	if (pitch == 0)
@@ -194,8 +194,8 @@ IWindowSurface::IWindowSurface(IWindowSurface* base_surface, uint16_t width, uin
 IWindowSurface::~IWindowSurface()
 {
 	// free all DCanvas objects allocated by this surface
-	for (DCanvasCollection::iterator it = mCanvasStore.begin(); it != mCanvasStore.end(); ++it)
-		delete *it;
+	for (auto& canvas : mCanvasStore)
+		delete canvas;
 
 	// calculate the buffer's original address when freeing mSurfaceBuffer
 	if (mOwnsSurfaceBuffer)
@@ -426,8 +426,8 @@ void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, in
 		    (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
 		palindex_t* dest = (palindex_t*)getBuffer() + buffery * destpitchpixels + bufferx;
 
-		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels, 
-			destw, desth, 
+		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels,
+			destw, desth,
 			off_top, off_bottom, off_left, off_right,
 			xstep, ystep, palette);
 	}
@@ -440,7 +440,7 @@ void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, in
 		    (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
 		argb_t* dest = (argb_t*)getBuffer() + buffery * destpitchpixels + bufferx;
 
-		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels, 
+		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels,
 				destw, desth,
 				off_top, off_bottom, off_left, off_right,
 				xstep, ystep, palette);
@@ -456,7 +456,7 @@ void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, in
 		    (argb_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
 		argb_t* dest = (argb_t*)getBuffer() + buffery * destpitchpixels + bufferx;
 
-		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels, 
+		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels,
 			destw, desth,
 			off_top, off_bottom, off_left, off_right,
 			xstep, ystep, palette);
@@ -469,7 +469,7 @@ void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, in
 //
 // Blits a surface into this surface, automatically scaling the source image
 // to fit the destination dimensions.
-// 
+//
 void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int srcy, int srcw, int srch,
 			int destx, int desty, int destw, int desth)
 {
@@ -522,7 +522,7 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	int destbits = getBitsPerPixel();
 	int srcpitchpixels = source_surface->getPitchInPixels();
 	int destpitchpixels = getPitchInPixels();
-	
+
 	const argb_t* palette = source_surface->getPalette();
 
 	if (srcbits == 8 && destbits == 8)
@@ -666,9 +666,7 @@ std::string I_GetVideoModeString(const IVideoMode& mode)
 		"full screen window"
 	};
 
-	std::string str;
-	StrFormat(str, "%dx%d %dbpp (%s)", mode.width, mode.height, mode.bpp, window_strs[I_GetWindow()->getWindowMode()]);
-	return str;
+	return fmt::sprintf("%dx%d %dbpp (%s)", mode.width, mode.height, mode.bpp, window_strs[I_GetWindow()->getWindowMode()]);
 }
 
 
@@ -681,12 +679,7 @@ std::string I_GetVideoModeString(const IVideoMode& mode)
 static bool I_IsModeSupported(uint8_t bpp, EWindowMode window_mode)
 {
 	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
-
-	for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
-		if (it->bpp == bpp && it->window_mode == window_mode)
-			return true;
-
-	return false;
+	return std::any_of(modelist->cbegin(), modelist->cend(), [bpp, window_mode](const auto& mode){ return mode.bpp == bpp && mode.window_mode == window_mode; });
 }
 
 
@@ -720,7 +713,7 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode& mode)
 	// check if the given bit-depth is supported
 	if (!I_IsModeSupported(desired_mode.bpp, desired_mode.window_mode))
 	{
-		// mode is not supported -- check a different bit depth 
+		// mode is not supported -- check a different bit depth
 		desired_mode.bpp = desired_mode.bpp ^ (32 | 8);
 		if (!I_IsModeSupported(desired_mode.bpp, desired_mode.window_mode))
 			return invalid_mode;
@@ -729,26 +722,26 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode& mode)
 	unsigned int closest_dist = UINT_MAX;
 	const IVideoMode* closest_mode = NULL;
 
-	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
+	const IVideoModeList& modelist = *I_GetVideoCapabilities()->getSupportedVideoModes();
 	for (int iteration = 0; iteration < 2; iteration++)
 	{
-		for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
+		for (const auto& mode : modelist)
 		{
-			if (*it == desired_mode)		// perfect match?
-				return *it;
+			if (mode == desired_mode)		// perfect match?
+				return mode;
 
-			if (it->bpp == desired_mode.bpp && it->window_mode == desired_mode.window_mode)
+			if (mode.bpp == desired_mode.bpp && mode.window_mode == desired_mode.window_mode)
 			{
-				if (iteration == 0 && (it->width < desired_mode.width || it->height < desired_mode.height))
+				if (iteration == 0 && (mode.width < desired_mode.width || mode.height < desired_mode.height))
 					continue;
 
-				unsigned int dist = (it->width - desired_mode.width) * (it->width - desired_mode.width)
-						+ (it->height - desired_mode.height) * (it->height - desired_mode.height);
+				unsigned int dist = (mode.width - desired_mode.width) * (mode.width - desired_mode.width)
+						+ (mode.height - desired_mode.height) * (mode.height - desired_mode.height);
 
 				if (dist < closest_dist)
 				{
 					closest_dist = dist;
-					closest_mode = &(*it);
+					closest_mode = &mode;
 				}
 			}
 		}
@@ -781,7 +774,7 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 
 	// [SL] 2011-11-30 - Prevent the player's view angle from moving
 	I_FlushInput();
-		
+
 	// Set up the primary and emulated surfaces
 	primary_surface = window->getPrimarySurface();
 	int surface_width = primary_surface->getWidth(), surface_height = primary_surface->getHeight();
@@ -860,7 +853,7 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 	// Ensure matted surface dimensions are sane and sanitized.
 	surface_width = clamp<uint16_t>(surface_width, 320, MAXWIDTH);
 	surface_height = clamp<uint16_t>(surface_height, 200, MAXHEIGHT);
-	
+
 	// Is matting being used? Create matted_surface based on the primary_surface.
 	if (surface_width != primary_surface->getWidth() ||
 		surface_height != primary_surface->getHeight())
@@ -886,12 +879,12 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 	assert(I_VideoInitialized());
 
 	if (window->getVideoMode() != requested_mode)
-		DPrintf("I_SetVideoMode: could not set video mode to %s. Using %s instead.\n",
-						I_GetVideoModeString(requested_mode).c_str(),
-						I_GetVideoModeString(window->getVideoMode()).c_str());
+		DPrintFmt("I_SetVideoMode: could not set video mode to {}. Using {} instead.\n",
+						I_GetVideoModeString(requested_mode),
+						I_GetVideoModeString(window->getVideoMode()));
 	else
-		DPrintf("I_SetVideoMode: set video mode to %s\n",
-					I_GetVideoModeString(window->getVideoMode()).c_str());
+		DPrintFmt("I_SetVideoMode: set video mode to {}\n",
+					I_GetVideoModeString(window->getVideoMode()));
 
 	const argb_t* palette = V_GetGamePalette()->colors;
 	if (matted_surface)
@@ -949,7 +942,7 @@ void I_InitHardware()
 		assert(video_subsystem != NULL);
 
 		const IVideoMode& native_mode = I_GetVideoCapabilities()->getNativeMode();
-		Printf(PRINT_HIGH, "I_InitHardware: native resolution: %s\n", I_GetVideoModeString(native_mode).c_str());
+		PrintFmt(PRINT_HIGH, "I_InitHardware: native resolution: {:s}\n", I_GetVideoModeString(native_mode));
 	}
 }
 

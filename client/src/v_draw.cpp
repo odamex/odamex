@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -551,7 +551,7 @@ void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, 
 
 /**
  * @brief Masks a column based masked pic to the screen.
- * 
+ *
  * @param drawer Draw code to use.
  * @param patch Patch to draw.  Attempting to draw a NULL patch will have no effect.
  * @param x X coordinate of patch.
@@ -576,11 +576,11 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t* patch, int x, int 
 		x += (patch->width() - 320) / 2;
 
 #ifdef RANGECHECK
-	if (x < 0 ||x + patch->width() > surface_width || y < 0 || y + patch->height() > surface_height)
+	if (x < 0 || x + patch->width() > surface_width || y < 0 || y + patch->height() > surface_height)
 	{
 	  // Printf (PRINT_HIGH, "Patch at %d,%d exceeds LFB\n", x,y );
 	  // No I_Error abort - what is up with TNT.WAD?
-	  DPrintf ("DCanvas::DrawWrapper: bad patch (ignored)\n");
+	  DPrintFmt("DCanvas::DrawWrapper: bad patch (ignored)\n");
 	  return;
 	}
 #endif
@@ -615,13 +615,13 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t* patch, int x, int 
 
 /**
  * @brief Masks a column based masked pic to the screen stretching it to fit the given dimensions.
- * 
+ *
  * @param drawer Draw code to use.
- * @param patch 
- * @param x0 
- * @param y0 
- * @param destwidth 
- * @param destheight 
+ * @param patch
+ * @param x0
+ * @param y0
+ * @param destwidth
+ * @param destheight
  */
 void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, int y0,
                            const int destwidth, const int destheight) const
@@ -666,7 +666,7 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 #ifdef RANGECHECK
 	if (x0 < 0 || x0 + destwidth > surface_width || y0 < 0 || y0 + destheight > surface_height)
 	{
-		DPrintf("DCanvas::DrawSWrapper: bad patch (ignored)\n");
+		DPrintFmt("DCanvas::DrawSWrapper: bad patch (ignored)\n");
 		return;
 	}
 #endif
@@ -770,10 +770,77 @@ void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const patch_t *patch, int x0, 
 // Masks a column based masked pic to the screen.
 // Flips horizontally, e.g. to mirror face.
 //
+// Like V_DrawWrapper except it only uses one drawing function and draws
+// the patch flipped horizontally.
+//
+void DCanvas::DrawPatchFlipped(const patch_t *patch, int x, int y) const
+{
+	if (patch == NULL)
+		return;
+
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	int surface_pitch = mSurface->getPitch();
+	int colstep = mSurface->getBytesPerPixel();
+	vdrawfunc	drawfunc;
+
+	if (patch->width() <= 0 || patch->height() <= 0)
+		return;
+
+	// [FG] automatically center wide patches without horizontal offset
+	// (taken from dsda but inverted since we center above this)
+	if (patch->width() > 320 && patch->leftoffset() != 0)
+		x += (patch->width() - 320) / 2;
+
+	y -= patch->topoffset();
+	x -= (patch->width() - patch->leftoffset());
+
+#ifdef RANGECHECK
+	if (x < 0 || x + patch->width() > surface_width || y < 0 || y + patch->height() > surface_height)
+	{
+		//Printf ("Patch at %d,%d exceeds LFB\n", x0,y0 );
+		DPrintFmt("DCanvas::DrawPatchFlipped: bad patch (ignored)\n");
+		return;
+	}
+#endif
+
+	if (mSurface->getBitsPerPixel() == 8)
+		drawfunc = Pfuncs[EWrapper_Normal];
+	else
+		drawfunc = Dfuncs[EWrapper_Normal];
+
+	if (mSurface == I_GetPrimarySurface())
+		V_MarkRect(x, y, patch->width(), patch->height());
+
+	byte* desttop = mSurface->getBuffer() + y * surface_pitch + x * colstep;
+
+	int patchwidth = patch->width();
+
+	for (int col = (patchwidth - 1); col >= 0 ; col--, desttop += colstep)
+	{
+		tallpost_t *post =
+				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
+
+		// step through the posts in a column
+		while (!post->end())
+		{
+			drawfunc (post->data(), desttop + (((post->topdelta))) * surface_pitch,
+					  (post->length), surface_pitch);
+
+			post = post->next();
+		}
+	}
+}
+
+
+//
+// V_DrawPatchIndirectFlipped
+// Masks a column based masked pic to the screen.
+// Flips horizontally, e.g. to mirror face.
+//
 // Like V_DrawIWrapper except it only uses one drawing function and draws
 // the patch flipped horizontally.
 //
-void DCanvas::DrawPatchFlipped(const patch_t *patch, int x0, int y0) const
+void DCanvas::DrawPatchIndirectFlipped(const patch_t *patch, int x0, int y0) const
 {
 	if (patch == NULL)
 		return;
@@ -799,13 +866,13 @@ void DCanvas::DrawPatchFlipped(const patch_t *patch, int x0, int y0) const
 	int ymul = (destheight << 16) / patch->height();
 
 	y0 -= (patch->topoffset() * ymul) >> 16;
-	x0 -= (patch->leftoffset() * xmul) >> 16;
+	x0 -= ((patch->width() - patch->leftoffset()) * xmul) >> 16;
 
 #ifdef RANGECHECK
 	if (x0 < 0 || x0 + destwidth > surface_width || y0 < 0 || y0 + destheight > surface_height)
 	{
 		//Printf ("Patch at %d,%d exceeds LFB\n", x0,y0 );
-		DPrintf ("DCanvas::DrawPatchFlipped: bad patch (ignored)\n");
+		DPrintFmt("DCanvas::DrawPatchFlipped: bad patch (ignored)\n");
 		return;
 	}
 #endif

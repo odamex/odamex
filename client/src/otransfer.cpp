@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -56,9 +56,9 @@ static size_t curlHeader(char* buffer, size_t size, size_t nitems, void* userdat
 	if (pos == 0)
 	{
 		// Found Content-Type, see if it's the correct one.
-		for (size_t i = 0; i < ARRAY_LENGTH(WANTED_TYPES); i++)
+		for (const auto& wantedtype : WANTED_TYPES)
 		{
-			size_t pos2 = str.find(WANTED_TYPES[i]);
+			size_t pos2 = str.find(wantedtype);
 			if (pos2 == 0)
 			{
 				// Ding, right answer.
@@ -448,12 +448,9 @@ bool OTransfer::tick()
 		std::string path, base, ext, fallback;
 		M_ExtractFilePath(m_filename, path);
 		M_ExtractFileBase(m_filename, base);
-		if (M_ExtractFileExtension(m_filename, ext))
-		{
-			ext = std::string(".") + ext;
-		}
-		StrFormat(fallback, "%s%s%s.%s%s", path.c_str(), PATHSEP, base.c_str(),
-		          actualHash.getHexStr().substr(0, 6).c_str(), ext.c_str());
+		M_ExtractFileExtension(m_filename, ext);
+		fallback = fmt::sprintf("%s%s%s.%s%s", path, PATHSEP, base,
+		                        actualHash.getHexStr().substr(0, 6), ext);
 
 		// Try one more time.
 		ok = rename(m_filePart.c_str(), fallback.c_str());
@@ -462,18 +459,17 @@ bool OTransfer::tick()
 			// Something is seriously wrong with our writable directory.
 			m_shouldCheckAgain = false;
 
-			std::string buf;
-			StrFormat(buf, "File %s could not be renamed to %s - %s", m_filePart.c_str(),
-			          m_filename.c_str(), strerror(errno));
+			std::string buf = fmt::sprintf("File %s could not be renamed to %s - %s", m_filePart,
+			                               m_filename, strerror(errno));
 			m_errorProc(buf.c_str());
 			return false;
 		}
 
-		Printf("Saved to fallback location \"%s\".\n", fallback.c_str());
+		Printf("Saved to fallback location \"%s\".\n", fallback);
 	}
 	else
 	{
-		Printf("Saved to location \"%s\".\n", m_filename.c_str());
+		Printf("Saved to location \"%s\".\n", m_filename);
 	}
 
 	m_shouldCheckAgain = false;
