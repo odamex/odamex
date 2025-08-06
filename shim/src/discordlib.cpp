@@ -152,5 +152,9 @@ void ODiscordLib::updateRichPresence(const StatusUpdate& update)
 void ODiscordLib::runCallbacks(void)
 {
 	if (core)
-		core->RunCallbacks();
+	{
+		auto result = core->RunCallbacks();
+		if (result == discord::Result::NotRunning)
+			initializeDiscordSdk();
+	}
 }
