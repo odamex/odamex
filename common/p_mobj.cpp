@@ -77,6 +77,7 @@ EXTERN_CVAR(sv_itemsrespawn)
 EXTERN_CVAR(sv_respawnsuper)
 EXTERN_CVAR(sv_itemrespawntime)
 EXTERN_CVAR(co_zdoomphys)
+EXTERN_CVAR(co_mbfphys)
 EXTERN_CVAR(co_realactorheight)
 EXTERN_CVAR(sv_teamspawns)
 EXTERN_CVAR(sv_nomonsters)
@@ -1338,7 +1339,7 @@ void P_XYMovement(AActor *mo)
 			ptryx = mo->x + xmove;
 			ptryy = mo->y + ymove;
 		}
-		else if (!co_zdoomphys && (xmove > maxmove || ymove > maxmove))
+		else if (!co_zdoomphys && ((xmove > maxmove || ymove > maxmove) || (co_mbfphys && (xmove < -maxmove || ymove < -maxmove))))
 		{
 			ptryx = mo->x + xmove / 2;
 			ptryy = mo->y + ymove / 2;
