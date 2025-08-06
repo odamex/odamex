@@ -7,7 +7,7 @@
 //
 // Permission is hereby granted, free of charge,
 // to any person obtaining a copy of this software and associated documentation
-// files(the “Software”),
+// files(the ï¿½Softwareï¿½),
 // to deal in the Software without restriction,
 // including without limitation the rights to use, copy, modify, merge, publish,
 // distribute, sublicense, and / or sell copies of the Software,
@@ -18,7 +18,7 @@
 // or
 // substantial portions of the Software.
 //
-// THE SOFTWARE IS PROVIDED “AS IS”,
+// THE SOFTWARE IS PROVIDED ï¿½AS ISï¿½,
 // WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
 // INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
@@ -41,6 +41,8 @@
 ODiscordLib& ODiscordLib::getInstance()
 {
 	static ODiscordLib instance;
+	if (!instance.core)
+		instance.initializeDiscordSdk();
 	return instance;
 }
 
@@ -60,13 +62,14 @@ void ODiscordLib::Run_Callbacks(void)
 }
 
 void ODiscordLib::initializeDiscordSdk(void)
-{ 
+{
 	discord::Core* newcore{};
-	auto result =	discord::Core::Create(OdamexDiscordAppId, DiscordCreateFlags_Default, &newcore);
+	auto result = discord::Core::Create(OdamexDiscordAppId, DiscordCreateFlags_NoRequireDiscord, &newcore);
 	core.reset(newcore);
 	if (!core)
 	{
 		printf("Failed to instantiate discord core! (error %d)\n", static_cast<int>(result));
+		return;
 	}
 
 	core->SetLogHook(discord::LogLevel::Debug, [](discord::LogLevel level, const char* message)
@@ -94,6 +97,9 @@ void ODiscordLib::initializeDiscordSdk(void)
 
 void ODiscordLib::updateRichPresence(const StatusUpdate& update)
 {
+	if (!core)
+		return;
+
 	discord::Activity activity{};
 
 	// Set details and state
@@ -145,5 +151,6 @@ void ODiscordLib::updateRichPresence(const StatusUpdate& update)
 
 void ODiscordLib::runCallbacks(void)
 {
-	core->RunCallbacks();
+	if (core)
+		core->RunCallbacks();
 }
