@@ -712,9 +712,7 @@ std::string G_GetWadMapSummary()
 
 	if (level.levelnum > 0)
 	{
-		std::string mapnum = fmt::format("MAP{:02d}");
-
-		wadlevelstr += " | " + mapnum + " - " + std::string(level.level_name);
+		wadlevelstr +=  fmt::format(" | {} - {}", level.mapname, level.level_name);
 	}
 	return wadlevelstr;
 }
