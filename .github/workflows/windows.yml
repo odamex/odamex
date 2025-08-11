@@ -82,6 +82,8 @@ jobs:
         path: 'build/artifact/*'
   build-x32:
     name: Build (Visual Studio, 32-bit)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: windows-latest
     steps:
     - name: Checkout source

@@ -42,7 +42,7 @@ if GITHUB_REPOSITORY_OWNER != "odamex":
     sys.exit(0)
 
 # Load up JSON so we can grab a message
-with open(os.getenv("GITHUB_EVENT_PATH")) as fh:
+with open(os.getenv("GITHUB_EVENT_PATH"), encoding="utf-8") as fh:
     event_data = json.load(fh)
 
 if GITHUB_EVENT_NAME == "push":

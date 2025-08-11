@@ -32,7 +32,7 @@ jobs:
         shell: pwsh
         run: |
           $commits = git rev-list HEAD --count
-          Write-Output "totalCommits=$commits" >> $GITHUB_OUTPUT
+          Write-Output "totalCommits=$commits" >> $env:GITHUB_OUTPUT
       - name: Display GitVersion outputs
         run: |
           echo "Major: ${{ steps.gitversion.outputs.major }}"
