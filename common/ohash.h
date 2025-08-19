@@ -32,7 +32,7 @@ class OHash
 
   public:
 	virtual ~OHash() { }
-	bool operator==(const OHash& other) const { return m_hash == other.m_hash; }
+	[[nodiscard]] bool operator==(const OHash& other) const { return m_hash == other.m_hash; }
 	bool operator!=(const OHash& other) const { return !(operator==(other)); }
 	const std::string& getHexStr() const { return m_hash; }
 	const char* getHexCStr() const { return m_hash.c_str(); }

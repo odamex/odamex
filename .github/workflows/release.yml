@@ -1,12 +1,11 @@
 # Runs when a release is published
 # Contains every package required for a release except:
 # - MacOS package
-# - Flatpak or any other linux packaging 
-name: Windows-Release
+name: Release
 
 on:
   release:
-    tags: 
+    tags:
       - "[0-9]+.[0-9]+.[0-9]+"
     types: [published]
 
@@ -67,8 +66,8 @@ jobs:
           echo "CommitsSinceVersionSourcePadded: ${{ steps.gitversion.outputs.commitsSinceVersionSourcePadded }}"
           echo "UncommittedChanges: ${{ steps.gitversion.outputs.uncommittedChanges }}"
           echo "CommitDate: ${{ steps.gitversion.outputs.commitDate }}"
-  build:
-    name: Build (Visual Studio)
+  build-windows:
+    name: Windows Build (Visual Studio)
     needs: pre_job
     runs-on: windows-latest
     env:
@@ -89,7 +88,7 @@ jobs:
       run: |
         .\ci\win-release-x64.ps1
     - name: Install Python packages
-      uses: BSFishy/pip-action@v1
+      uses: insightsengineering/pip-action@v2
       with:
         packages: |
           b2sdk
@@ -127,8 +126,8 @@ jobs:
         asset_path: ./Output/pdb/odamex-debug-pdb-${{env.new_version}}-x64.zip
         asset_name: odamex-debug-pdb-${{env.new_version}}-x64.zip
         asset_content_type: application/zip
-  build-x32:
-    name: Build (Visual Studio, 32-bit)
+  build-windows-x32:
+    name: Windows Build (Visual Studio, 32-bit)
     needs: pre_job
     runs-on: windows-latest
     env:
@@ -149,7 +148,7 @@ jobs:
       run: |
         .\ci\win-release-x86.ps1
     - name: Install Python packages
-      uses: BSFishy/pip-action@v1
+      uses: insightsengineering/pip-action@v2
       with:
         packages: |
           b2sdk
@@ -187,10 +186,114 @@ jobs:
         asset_path: ./Output/pdb/odamex-debug-pdb-${{env.new_version}}-x86.zip
         asset_name: odamex-debug-pdb-${{env.new_version}}-x86.zip
         asset_content_type: application/zip
-  package-and-upload:
+  build-flatpak:
+    name: Build Flatpak (Ubuntu Latest)
+    needs: pre_job
+    runs-on: ubuntu-latest
+    env:
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+      upload_url: ${{ needs.pre_job.outputs.upload_url }}
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Update metainfo dates
+      shell: bash
+      run: |
+        DATE=$(date +'%Y-%m-%d')
+        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Install flatpak
+      run: sudo apt update && sudo apt install flatpak flatpak-builder
+    - name: Create escaped branch name
+      env:
+        name: "${{ github.ref_name }}"
+      run: |
+        echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
+    - name: Remove .git folders
+      shell: bash
+      run: rm -rf .git
+    - name: Set flatpak repo
+      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    - name: Run build
+      run: |
+        flatpak-builder --force-clean --user --install-deps-from=flathub \
+        --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
+        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
+    - name: Pack flatpak
+      run: |
+        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
+        --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-Flatpak-x86_64
+        path: odamex.flatpak
+    - name: Upload release binary (x86_64)
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: odamex.flatpak
+        asset_name: odamex-linux-x86_64-${{ env.new_version }}.flatpak
+        asset_content_type: application/octet-stream
+  build-flatpak-arm:
+    name: Build Flatpak (Ubuntu 24.04 ARM)
+    needs: pre_job
+    runs-on: ubuntu-24.04-arm
+    env:
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+      upload_url: ${{ needs.pre_job.outputs.upload_url }}
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Update metainfo dates
+      shell: bash
+      run: |
+        DATE=$(date +'%Y-%m-%d')
+        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Install flatpak
+      run: sudo apt update && sudo apt install flatpak flatpak-builder
+    - name: Create escaped branch name
+      env:
+        name: "${{ github.ref_name }}"
+      run: |
+        echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
+    - name: Remove .git folders
+      shell: bash
+      run: rm -rf .git
+    - name: Set flatpak repo
+      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    - name: Run build
+      run: |
+        flatpak-builder --force-clean --user --install-deps-from=flathub \
+        --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
+        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
+    - name: Pack flatpak
+      run: |
+        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
+        --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-Flatpak-ARM64
+        path: odamex.flatpak
+    - name: Upload release binary (ARM64)
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: odamex.flatpak
+        asset_name: odamex-linux-arm64-${{ env.new_version }}.flatpak
+        asset_content_type: application/octet-stream
+  package-and-upload-windows:
     name: Package and Upload Artifacts
     runs-on: windows-latest
-    needs: [pre_job, build, build-x32]
+    needs: [pre_job, build-windows, build-windows-x32]
     env:
       new_version: ${{ needs.pre_job.outputs.new_version }}
       upload_url: ${{ needs.pre_job.outputs.upload_url }}
@@ -202,16 +305,6 @@ jobs:
     - name: Remove .git folders
       shell: bash
       run: rm -rf .git
-    - name: Create tar.gz
-      shell: bash
-      run: |
-        touch odamex-src-${{ env.new_version }}.tar.gz
-        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -czvf odamex-src-${{ env.new_version }}.tar.gz **
-    - name: Create tar.xz
-      shell: bash
-      run: |
-        touch odamex-src-${{ env.new_version }}.tar.xz
-        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -cJvf odamex-src-${{ env.new_version }}.tar.xz **
     - name: Create zip
       shell: pwsh
       run: |
@@ -237,16 +330,6 @@ jobs:
       with:
         name: Odamex-Installer
         path: 'Output/*.exe'
-    - name: Upload tar.xz
-      uses: actions/upload-artifact@v4
-      with:
-        name: Odamex-tar-xz
-        path: './*.tar.xz'
-    - name: Upload tar.gz
-      uses: actions/upload-artifact@v4
-      with:
-        name: Odamex-tar-gz
-        path: './*.tar.gz'
     - name: Upload zip
       uses: actions/upload-artifact@v4
       with:
@@ -261,6 +344,50 @@ jobs:
         asset_path: ./odamex-src-${{env.new_version}}.zip
         asset_name: odamex-src-${{env.new_version}}.zip
         asset_content_type: application/zip
+    - name: Upload installer
+      uses: actions/upload-release-asset@v1.0.2
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ env.upload_url }}
+        asset_path: ./Output/odamex-win-${{env.new_version}}.exe
+        asset_name: odamex-win-${{env.new_version}}.exe
+        asset_content_type: application/octet-stream
+  package-and-upload-unix:
+    name: Package and Upload Artifacts
+    runs-on: ubuntu-latest
+    needs: [pre_job]
+    env:
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+      upload_url: ${{ needs.pre_job.outputs.upload_url }}
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Remove .git folders
+      shell: bash
+      run: rm -rf .git
+    - name: Create tar.gz
+      shell: bash
+      run: |
+        touch odamex-src-${{ env.new_version }}.tar.gz
+        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -czvf odamex-src-${{ env.new_version }}.tar.gz **
+    - name: Create tar.xz
+      shell: bash
+      run: |
+        touch odamex-src-${{ env.new_version }}.tar.xz
+        tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -cJvf odamex-src-${{ env.new_version }}.tar.xz **
+    - name: Upload tar.xz
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-tar-xz
+        path: './*.tar.xz'
+    - name: Upload tar.gz
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-tar-gz
+        path: './*.tar.gz'
     - name: Upload tar.gz to Github Release Artifacts
       uses: actions/upload-release-asset@v1.0.2
       env:
@@ -279,15 +406,25 @@ jobs:
         asset_path: ./odamex-src-${{env.new_version}}.tar.xz
         asset_name: odamex-src-${{env.new_version}}.tar.xz
         asset_content_type: application/x-xz
-    - name: Upload installer
-      uses: actions/upload-release-asset@v1.0.2
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
-      with:
-        upload_url: ${{ env.upload_url }}
-        asset_path: ./Output/odamex-win-${{env.new_version}}.exe
-        asset_name: odamex-win-${{env.new_version}}.exe
-        asset_content_type: application/octet-stream
+  update-winget:
+    name: Update WinGet package
+    needs: package-and-upload-windows
+    runs-on: windows-latest
+    steps:
+      - name: Check if WinGet release should run
+        id: check
+        run: |
+          if [[ "${{ github.repository_owner }}" != "odamex" || -z "${{ secrets.WINGET_TOKEN }}" ]]; then
+            echo "run=false" >> $GITHUB_OUTPUT
+          else
+            echo "run=true" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+      - uses: vedantmgoyal9/winget-releaser@main
+        if: steps.check.outputs.run == 'true'
+        with:
+          identifier: Odamex.Odamex
+          token: ${{ secrets.WINGET_TOKEN }}
   pr-to-stable:
     name: Create Pull Request to stable
     needs: pre_job
@@ -309,19 +446,3 @@ jobs:
           TITLE: Merge release/${{env.new_version}} to stable
           BODY: This PR covers the task of merging the release branch to stable, the final step in releasing a new version.
           NEW_VERSION: ${{ env.new_version }}
-# build-mingw:
-#   name: Build (MinGW)
-#   runs-on: windows-latest
-#   steps:
-#   - name: Checkout source
-#     uses: actions/checkout@v4
-#   - name: Checkout submodules
-#     run: git submodule update --init --recursive
-#   - name: Install packages
-#     uses: crazy-max/ghaction-chocolatey@v1
-#     with:
-#       args: install ninja
-#   - name: Prepare build
-#     run: .\ci\win-mingw-buildgen.ps1
-#   - name: Run build
-#     run: cmake --build .\build-gcc\

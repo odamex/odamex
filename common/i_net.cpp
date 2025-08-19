@@ -189,8 +189,7 @@ void init_upnp (void)
 	if (descXML)
 	{
 		parserootdesc (descXML, descXMLsize, &data);
-		free (descXML);
-		descXML = NULL;
+		M_Free(descXML);
 		GetUPNPUrls (&urls, &data, dev->descURL, 0);
 	}
 
@@ -220,16 +219,13 @@ void init_upnp (void)
 
 void upnp_add_redir (const char * addr, int port)
 {
-	char port_str[16];
-	int r;
-
 	if (!sv_upnp || !is_upnp_ok)
 		return;
 
 	if (urls.controlURL == NULL)
 		return;
 
-	snprintf(port_str, 16, "%d", port);
+	const std::string port_str = fmt::format("{}", port);
 
 	// Set a description if none exists
 	if (!sv_upnp_description.cstring()[0])
@@ -241,19 +237,19 @@ void upnp_add_redir (const char * addr, int port)
 		sv_upnp_description.Set(desc.str().c_str());
 	}
 
-	r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
-			port_str, port_str, addr, sv_upnp_description.cstring(), "UDP", NULL, 0);
+	const int r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
+		port_str.c_str(), port_str.c_str(), addr, sv_upnp_description.cstring(), "UDP", NULL, 0);
 
 	if (r != 0)
 	{
-		Printf(PRINT_HIGH, "UPnP: AddPortMapping failed: %d\n", r);
+		PrintFmt(PRINT_HIGH, "UPnP: AddPortMapping failed: {}\n", r);
 
 		is_upnp_ok = false;
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "UPnP: Port mapping added to router: %s",
-			sv_upnp_description.cstring());
+		PrintFmt(PRINT_HIGH, "UPnP: Port mapping added to router: {}",
+			sv_upnp_description.str());
 
 		is_upnp_ok = true;
 	}
@@ -261,22 +257,19 @@ void upnp_add_redir (const char * addr, int port)
 
 void upnp_rem_redir (int port)
 {
-	char port_str[16];
-	int r;
-
 	if (!is_upnp_ok)
 		return;
 
 	if(urls.controlURL == NULL)
 		return;
 
-	snprintf(port_str, 16, "%d", port);
-	r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype,
-		port_str, "UDP", 0);
+	const std::string port_str = fmt::format("{}", port);
+	const int r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype,
+		port_str.c_str(), "UDP", 0);
 
 	if (r != 0)
 	{
-		Printf(PRINT_HIGH, "UPnP: DeletePortMapping failed: %d\n", r);
+		PrintFmt(PRINT_HIGH, "UPnP: DeletePortMapping failed: {}\n", r);
 		is_upnp_ok = false;
 	}
 	else
@@ -337,7 +330,7 @@ void BindToLocalPort (SOCKET s, u_short wanted)
     {
         sv_upnp_internalip.Set(ip.c_str());
 
-        Printf(PRINT_HIGH, "UPnP: Internal IP address is: %s\n", ip.c_str());
+        Printf(PRINT_HIGH, "UPnP: Internal IP address is: %s\n", ip);
 
         upnp_add_redir(ip.c_str(), next - 1);
     }
@@ -550,7 +543,7 @@ std::string NET_GetLocalAddress (void)
         addr.s_addr = *(u_long *)ent->h_addr_list[0];
 
 		std::string ipstr = inet_ntoa(addr);
-		Printf(PRINT_HIGH, "Bound to IP: %s\n", ipstr.c_str());
+		Printf(PRINT_HIGH, "Bound to IP: %s\n", ipstr);
 		return ipstr;
     }
 	else
@@ -630,7 +623,7 @@ void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
 		Printf(
 		    PRINT_WARNING,
 		    "WARNING: Could not serialize message \"%s\".  This is most likely a bug.\n",
-		    msg.GetDescriptor()->full_name().c_str());
+		    msg.GetDescriptor()->full_name());
 		return;
 	}
 
@@ -645,14 +638,14 @@ void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
 		Printf(PRINT_WARNING,
 		       "WARNING: Could not find svc header for message \"%s\".  This is most "
 		       "likely a bug.\n",
-		       msg.GetDescriptor()->full_name().c_str());
+		       msg.GetDescriptor()->full_name());
 		return;
 	}
 
 #if 0
 	Printf("%s (%d)\n, %s\n",
 		::svc_info[header].getName(), msg.ByteSize(),
-		msg.ShortDebugString().c_str());
+		msg.ShortDebugString());
 #endif
 
 	b->WriteByte(header);
@@ -662,7 +655,7 @@ void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
 
 /**
  * @brief Broadcast message to all players.
- * 
+ *
  * @param buf Type of buffer to broadcast in, per player.
  * @param msg Message to broadcast to all players.
  * @param skip If passed, skip this player id.
@@ -679,7 +672,7 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
 		Printf(
 		    PRINT_WARNING,
 		    "WARNING: Could not serialize message \"%s\".  This is most likely a bug.\n",
-		    msg.GetDescriptor()->full_name().c_str());
+		    msg.GetDescriptor()->full_name());
 		return;
 	}
 
@@ -689,20 +682,20 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
 		Printf(PRINT_WARNING,
 		       "WARNING: Could not find svc header for message \"%s\".  This is most "
 		       "likely a bug.\n",
-		       msg.GetDescriptor()->full_name().c_str());
+		       msg.GetDescriptor()->full_name());
 		return;
 	}
 
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	for (auto& player : players)
 	{
-		if (!it->ingame())
+		if (!player.ingame())
 			continue;
 
-		if (static_cast<int>(it->id) == skipPlayer)
+		if (static_cast<int>(player.id) == skipPlayer)
 			continue;
 
 		// Select the correct buffer.
-		buf_t* b = buf == CLBUF_RELIABLE ? &it->client.reliablebuf : &it->client.netbuf;
+		buf_t* b = buf == CLBUF_RELIABLE ? &player.client.reliablebuf : &player.client.netbuf;
 
 		// Do we actaully have room for this upcoming message?
 		const size_t MAX_HEADER_SIZE = 4; // header + 3 bytes for varint size.
@@ -768,7 +761,7 @@ void MSG_WriteFloat(buf_t *b, float Float)
 
     StringStream << Float;
 
-	MSG_WriteString(b, (char *)StringStream.str().c_str());
+	MSG_WriteString(b, StringStream.str().c_str());
 }
 
 //
@@ -999,7 +992,7 @@ bool MSG_ReadBool(void)
 
     if (Value < 0 || Value > 1)
     {
-        DPrintf("MSG_ReadBool: Value is not 0 or 1, possibly corrupted packet");
+        DPrintFmt("MSG_ReadBool: Value is not 0 or 1, possibly corrupted packet");
 
         return (Value ? true : false);
     }
@@ -1034,7 +1027,7 @@ float MSG_ReadFloat(void)
 
 /**
  * @brief Initialize a svc_info member.
- * 
+ *
  * @detail do-while is used to force a semicolon afterwards.
  */
 #define SVC_INFO(n)                    \
@@ -1204,7 +1197,7 @@ void InitNetCommon(void)
 
    BindToLocalPort (inet_socket, localport);
    if (ioctlsocket(inet_socket, FIONBIO, &_true) == -1)
-       I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
+       I_FatalError ("UDPsocket: ioctl FIONBIO: {}", strerror(errno));
 
 	// enter message information into message info structs
 	InitNetMessageFormats();

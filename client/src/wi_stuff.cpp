@@ -217,33 +217,70 @@ static bool WI_checkConditions(const std::vector<interlevelcond_t>& conditions,
 	bool conditionsmet = true;
 
 	LevelInfos& levels = getLevelInfos();
-	level_pwad_info_t& exitinglevel = levels.findByName(wbs->current);
-	level_pwad_info_t& enteringlevel = levels.findByName(wbs->next);
-	level_pwad_info_t& currentlevel = enteringcondition ? enteringlevel : exitinglevel;
-	int map_number = currentlevel.levelnum;
+	const level_pwad_info_t& exitinglevel = levels.findByName(wbs->current);
+	const level_pwad_info_t& enteringlevel = levels.findByName(wbs->next);
+	const level_pwad_info_t& currentlevel = enteringcondition ? enteringlevel : exitinglevel;
+	const int mapnum = currentlevel.mapnum;
+	const OLumpName& mapname = currentlevel.mapname;
 
 	for (const auto& cond : conditions)
 	{
 		switch (cond.condition)
 		{
 			case animcondition_t::CurrMapGreater:
-				conditionsmet = conditionsmet && (map_number > cond.param1);
+				conditionsmet = conditionsmet && (mapnum > cond.param);
 				break;
 
 			case animcondition_t::CurrMapEqual:
-				conditionsmet = conditionsmet && (map_number == cond.param1);
+				if (cond.isZDoom)
+					conditionsmet = conditionsmet && (mapname == cond.mapname1);
+				else
+					conditionsmet = conditionsmet && (mapnum == cond.param);
 				break;
 
 			case animcondition_t::CurrMapNotEqual:
-				conditionsmet = conditionsmet && !(map_number == cond.param1);
+				if (cond.isZDoom)
+					conditionsmet = conditionsmet && (mapname != cond.mapname1);
+				else
+					conditionsmet = conditionsmet && (mapnum != cond.param);
 				break;
 
 			case animcondition_t::MapVisited:
-				conditionsmet = conditionsmet && levels.findByNum(cond.param1).flags & LEVEL_VISITED;
+				if (cond.isZDoom)
+					conditionsmet = conditionsmet && levels.findByName(cond.mapname1).flags & LEVEL_VISITED;
+				else
+				{
+					bool res = false;
+					for (size_t i = 0; i < levels.size(); i++)
+					{
+						const level_pwad_info_t& level = levels.at(i);
+						if ((level.mapnum == cond.param) && (level.flags & LEVEL_VISITED))
+						{
+							res = true;
+							break;
+						}
+					}
+					conditionsmet = conditionsmet && res;
+				}
 				break;
 
 			case animcondition_t::MapNotVisited:
-				conditionsmet = conditionsmet && !(levels.findByNum(cond.param1).flags & LEVEL_VISITED);
+				if (cond.isZDoom)
+					conditionsmet = conditionsmet && !(levels.findByName(cond.mapname1).flags & LEVEL_VISITED);
+				else
+				{
+					bool res = true;
+					for (size_t i = 0; i < levels.size(); i++)
+					{
+						const level_pwad_info_t& level = levels.at(i);
+						if ((level.mapnum == cond.param) && (level.flags & LEVEL_VISITED))
+						{
+							res = false;
+							break;
+						}
+					}
+					conditionsmet = conditionsmet && res;
+				}
 				break;
 
 			case animcondition_t::CurrMapNotSecret:
@@ -263,11 +300,11 @@ static bool WI_checkConditions(const std::vector<interlevelcond_t>& conditions,
 				break;
 
 			case animcondition_t::TravelingBetween:
-				conditionsmet = conditionsmet && (exitinglevel.levelnum == cond.param1) && (enteringlevel.levelnum == cond.param2);
+				conditionsmet = conditionsmet && (exitinglevel.mapname == cond.mapname1) && (enteringlevel.mapname == cond.mapname2);
 				break;
 
 			case animcondition_t::NotTravelingBetween:
-				conditionsmet = conditionsmet && !((exitinglevel.levelnum == cond.param1) && (enteringlevel.levelnum == cond.param2));
+				conditionsmet = conditionsmet && !((exitinglevel.mapname == cond.mapname1) && (enteringlevel.mapname == cond.mapname2));
 				break;
 
 			default:
@@ -338,7 +375,7 @@ static void WI_updateAnimation(bool enteringcondition)
 	{
 		animation.states = &animation.exiting_states;
 	}
-	else if (enteranim)
+	else if (enteringcondition && enteranim)
 	{
 		animation.states = &animation.entering_states;
 	}
@@ -522,8 +559,7 @@ static int WI_DrawSmallName(const char* str, int x, int y)
 
 	while (*str)
 	{
-		char charname[9];
-		snprintf(charname, 9, "STCFN%.3d", HU_FONTSTART + (toupper(*str) - 32) - 1);
+		const OLumpName charname = fmt::format("STCFN{:03d}", HU_FONTSTART + (toupper(*str) - 32) - 1);
 		int lump = W_CheckNumForName(charname);
 
 		if (lump != -1)
@@ -762,7 +798,7 @@ void WI_drawNoState()
 	WI_drawShowNextLoc();
 }
 
-int WI_fragSum (player_t &player)
+int WI_fragSum (const player_t &player)
 {
 	return player.fragcount;
 }
@@ -790,9 +826,9 @@ void WI_initNetgameStats()
 	cnt_secret_c.clear();
 	cnt_frags_c.clear();
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (const auto& player : players)
 	{
-		if (!(it->ingame()))
+		if (!(player.ingame()))
 			continue;
 
 		cnt_kills_c.push_back(0);
@@ -800,7 +836,7 @@ void WI_initNetgameStats()
 		cnt_secret_c.push_back(0);
 		cnt_frags_c.push_back(0);
 
-		dofrags += WI_fragSum(*it);
+		dofrags += WI_fragSum(player);
 	}
 
 	dofrags = !!dofrags;
@@ -1153,7 +1189,7 @@ void WI_updateStats()
 				else
 					S_ChangeMusic(gameinfo.intermissionMusic.c_str(), true);
 				// background
-				const char* bg_lump = enteranim == nullptr ? enterpic.c_str() : enteranim->backgroundlump.c_str();
+				const OLumpName& bg_lump = enteranim == nullptr ? enterpic : enteranim->backgroundlump;
 				const patch_t* bg_patch = W_CachePatch(bg_lump);
 
 				inter_width = bg_patch->width();
@@ -1230,28 +1266,26 @@ void WI_checkForAccelerate()
 		return;
 
 	// check for button presses to skip delays
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		if (it->ingame())
+		if (player.ingame())
 		{
-			player_t *player = &*it;
-
-			if (player->cmd.buttons & BT_ATTACK)
+			if (player.cmd.buttons & BT_ATTACK)
 			{
-				if (!player->attackdown)
+				if (!player.attackdown)
 					acceleratestage = 1;
-				player->attackdown = true;
+				player.attackdown = true;
 			}
 			else
-				player->attackdown = false;
-			if (player->cmd.buttons & BT_USE)
+				player.attackdown = false;
+			if (player.cmd.buttons & BT_USE)
 			{
-				if (!player->usedown)
+				if (!player.usedown)
 					acceleratestage = 1;
-				player->usedown = true;
+				player.usedown = true;
 			}
 			else
-				player->usedown = false;
+				player.usedown = false;
 		}
 	}
 }
@@ -1330,8 +1364,7 @@ static int WI_CalcWidth (const char *str)
 
 	while (*str)
 	{
-		char charname[9];
-		snprintf (charname, 9, "FONTB%02u", toupper(*str) - 32);
+		const OLumpName charname = fmt::format("FONTB{:02d}", toupper(*str) - 32);
 		int lump = W_CheckNumForName(charname);
 
 		if (lump != -1)
@@ -1404,9 +1437,9 @@ void WI_loadData()
 
 	for (int i = 0, j; i < 2; i++)
 	{
-		char *lname = (i == 0 ? wbs->lname0 : wbs->lname1);
+		const OLumpName& lname = (i == 0 ? wbs->lname0 : wbs->lname1);
 
-		if (lname)
+		if (!lname.empty())
 			j = W_CheckNumForName (lname);
 		else
 			j = -1;
@@ -1511,7 +1544,7 @@ void WI_loadData()
 	for (int i = 0; i < 4; i++)
 	{
 		name = fmt::format("STPB{}", i);
-		faceclassic[i] = W_CachePatchHandle(name.c_str(), PU_STATIC);
+		faceclassic[i] = W_CachePatchHandle(name, PU_STATIC);
 	}
 }
 

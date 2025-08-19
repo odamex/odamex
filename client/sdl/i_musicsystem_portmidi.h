@@ -35,23 +35,23 @@ class PortMidiMusicSystem : public MidiMusicSystem
 {
   public:
 	PortMidiMusicSystem();
-	virtual ~PortMidiMusicSystem();
+	~PortMidiMusicSystem() override;
 
-	virtual void startSong(byte *data, size_t length, bool loop);
-	virtual void stopSong();
-	virtual void pauseSong();
-	virtual void restartSong();
+	void startSong(byte *data, size_t length, bool loop) override;
+	void stopSong() override;
+	void pauseSong() override;
+	void restartSong() override;
 
-	virtual void setVolume(float volume);
+	void setVolume(float volume) override;
 
-	virtual void writeVolume(int time, byte channel, byte volume);
-	virtual void writeControl(int time, byte channel, byte control, byte value);
-	virtual void writeChannel(int time, byte channel, byte status, byte param1, byte param2 = 0);
-	virtual void writeSysEx(int time, const byte *data, size_t length = 0);
-	virtual void allNotesOff();
-	virtual void allSoundOff();
+	void writeVolume(int time, byte channel, byte volume) override;
+	void writeControl(int time, byte channel, byte control, byte value) override;
+	void writeChannel(int time, byte channel, byte status, byte param1, byte param2 = 0) override;
+	void writeSysEx(int time, const byte *data, size_t length = 0) override;
+	void allNotesOff() override;
+	void allSoundOff() override;
 
-	virtual bool isInitialized() const { return m_isInitialized; }
+	bool isInitialized() const override { return m_isInitialized; }
 
   private:
 	static constexpr int cLatency = 80;

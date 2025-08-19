@@ -89,7 +89,7 @@ class LevelState
 	void endRound();
 	void endGame();
 	void tic();
-	SerializedLevelState serialize() const;
+	[[nodiscard]] SerializedLevelState serialize() const;
 	void unserialize(SerializedLevelState serialized);
 
   private:

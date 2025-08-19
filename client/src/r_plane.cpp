@@ -275,7 +275,7 @@ static visplane_t *new_visplane(unsigned hash)
 
 	if (!check)
 	{
-		check = (visplane_t *)Calloc(1, sizeof(*check) + sizeof(*check->top)*2*I_GetSurfaceWidth());
+		check = (visplane_t *)M_Calloc(1, sizeof(*check) + sizeof(*check->top)*2*I_GetSurfaceWidth());
 		check->bottom = &check->top[I_GetSurfaceWidth() + 2];
 	}
 	else
@@ -299,7 +299,7 @@ visplane_t *R_FindPlane (plane_t secplane, int picnum, int lightlevel,
 	visplane_t *check;
 	unsigned hash;						// killough
 
-	if (picnum == skyflatnum || picnum & PL_SKYFLAT)  // killough 10/98
+	if (R_IsSkyFlat(picnum) || picnum & PL_SKYFLAT)  // killough 10/98
 		lightlevel = 0;		// most skies map together
 
 	// New visplane algorithm uses hash table -- killough
@@ -613,7 +613,7 @@ void R_DrawPlanes (void)
 				continue;
 
 			// sky flat
-			if (pl->picnum == skyflatnum || pl->picnum & PL_SKYFLAT || R_IsSkyFlat(pl->picnum))
+			if (R_IsSkyFlat(pl->picnum) || pl->picnum & PL_SKYFLAT)
 			{
 				R_RenderSkyRange(pl);
 			}
@@ -741,7 +741,7 @@ bool R_PlaneInitData(IWindowSurface* surface)
 //
 // R_AlignFlat
 //
-BOOL R_AlignFlat (int linenum, int side, int fc)
+bool R_AlignFlat (int linenum, int side, int fc)
 {
 	line_t *line = lines + linenum;
 	sector_t *sec = side ? line->backsector : line->frontsector;

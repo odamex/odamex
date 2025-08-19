@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -31,7 +31,7 @@
 #include "cl_demo.h"
 
 extern netadr_t  serveraddr;
-extern BOOL      connected;
+extern bool      connected;
 extern int       connecttimeout;
 
 extern bool      noservermsgs;

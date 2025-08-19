@@ -791,7 +791,7 @@ void DCanvas::DrawPatchFlipped(const patch_t *patch, int x, int y) const
 	if (x < 0 || x + patch->width() > surface_width || y < 0 || y + patch->height() > surface_height)
 	{
 		//Printf ("Patch at %d,%d exceeds LFB\n", x0,y0 );
-		DPrintf ("DCanvas::DrawPatchFlipped: bad patch (ignored)\n");
+		DPrintFmt("DCanvas::DrawPatchFlipped: bad patch (ignored)\n");
 		return;
 	}
 #endif
@@ -865,7 +865,7 @@ void DCanvas::DrawPatchIndirectFlipped(const patch_t *patch, int x0, int y0) con
 	if (x0 < 0 || x0 + destwidth > surface_width || y0 < 0 || y0 + destheight > surface_height)
 	{
 		//Printf ("Patch at %d,%d exceeds LFB\n", x0,y0 );
-		DPrintf ("DCanvas::DrawPatchFlipped: bad patch (ignored)\n");
+		DPrintFmt("DCanvas::DrawPatchFlipped: bad patch (ignored)\n");
 		return;
 	}
 #endif

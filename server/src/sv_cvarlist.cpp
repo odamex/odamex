@@ -181,6 +181,9 @@ CVAR_RANGE(		sv_vote_timeout, "60", "Timeout between votes in seconds.",
 CVAR(			sv_callvote_coinflip, "0", "Clients can flip a coin.",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
+CVAR(			sv_callvote_lives, "0", "Clients can vote to change the number of lives.",
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+
 CVAR(			sv_callvote_kick, "0", "Clients can votekick other players.",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 

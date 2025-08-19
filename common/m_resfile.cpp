@@ -137,7 +137,7 @@ bool OWantFile::make(OWantFile& out, const std::string& file, const ofile_t type
 	out.m_wantedpath = file;
 	out.m_wantedtype = type;
 	out.m_basename = basename;
-	out.m_extension = std::string(".") + extension;
+	out.m_extension = extension;
 	return true;
 }
 
@@ -179,9 +179,9 @@ std::string M_ResFilesToString(const OResFiles& files)
 {
 	std::vector<std::string> strings;
 	strings.reserve(files.size());
-	for (OResFiles::const_iterator it = files.begin(); it != files.end(); ++it)
+	for (const auto& file : files)
 	{
-		strings.push_back(it->getBasename());
+		strings.push_back(file.getBasename());
 	}
 	return JoinStrings(strings, ", ");
 }
@@ -237,6 +237,8 @@ std::vector<std::string> M_FileSearchDirs()
 	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), PATHLISTSEPCHAR);
 	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR);
 	D_AddSearchDir(dirs, ::waddirs.cstring(), PATHLISTSEPCHAR);
+	dirs.push_back(M_CleanPath(M_GetUserDir() + PATHSEP "downloads"));
+	dirs.push_back(M_CleanPath(M_GetBinaryDir() + PATHSEP "downloads"));
 	dirs.push_back(M_GetUserDir());
 	dirs.push_back(M_GetCWD());
 	dirs.push_back(M_GetBinaryDir());
@@ -283,33 +285,33 @@ bool M_ResolveWantedFile(OResFile& out, const OWantFile& wanted)
 		// Not a match, keep trying.
 	}
 
-	std::string dir, basename, strext;
+	std::string subdir, basename, strext;
 	std::vector<std::string> exts;
 	std::string path = M_CleanPath(wanted.getWantedPath());
-	M_ExtractFilePath(path, dir);
+	M_ExtractFilePath(path, subdir);
 	M_ExtractFileBase(path, basename);
 	if (M_ExtractFileExtension(path, strext))
 	{
-		exts.push_back("." + strext);
+		exts.push_back(strext);
 	}
 	else
 	{
 		const std::vector<std::string>& ftexts = M_FileTypeExts(wanted.getWantedType());
 		exts.insert(exts.end(), ftexts.begin(), ftexts.end());
 	}
-	std::unique(exts.begin(), exts.end());
+	exts.erase(std::unique(exts.begin(), exts.end()), exts.end());
 
 	// And now...we resolve.
 	const std::vector<std::string> dirs = M_FileSearchDirs();
-	for (std::vector<std::string>::const_iterator it = dirs.begin(); it != dirs.end();
-	     ++it)
+	for (const auto& dir : dirs)
 	{
+		const std::string searchpath = M_JoinPath(dir, subdir);
 		const std::string result =
-		    M_BaseFileSearchDir(*it, basename, exts, wanted.getWantedMD5());
+		    M_BaseFileSearchDir(searchpath, basename, exts, wanted.getWantedMD5());
 		if (!result.empty())
 		{
 			// Found a file.
-			const std::string fullpath = *it + PATHSEP + result;
+			const std::string fullpath = M_JoinPath(searchpath, result);
 			return OResFile::make(out, fullpath);
 		}
 	}
@@ -339,12 +341,12 @@ std::vector<scannedIWAD_t> M_ScanIWADs()
 	std::vector<scannedIWAD_t> rvo;
 	OHashTable<OCRC32Sum, bool> found;
 
-	for (size_t i = 0; i < dirs.size(); i++)
+	for (const auto& dir : dirs)
 	{
-		std::vector<std::string> files = M_BaseFilesScanDir(dirs[i], iwads);
-		for (size_t j = 0; j < files.size(); j++)
+		std::vector<std::string> files = M_BaseFilesScanDir(dir, iwads);
+		for (const auto& file : files)
 		{
-			const std::string fullpath = dirs[i] + PATHSEP + files[j];
+			const std::string fullpath = dir + PATHSEP + file;
 
 			// Check to see if we got a real IWAD.
 			const OCRC32Sum crc32 = W_CRC32(fullpath);
@@ -383,15 +385,11 @@ std::vector<scannedPWAD_t> M_ScanPWADs()
 	std::vector<scannedPWAD_t> rvo;
 	OHashTable<std::string, bool> found;
 
-	for (StringTokens::const_iterator dit = dirs.begin(); dit != dirs.end(); ++dit)
+	for (const auto& dir : dirs)
 	{
-		const std::string& dir = *dit;
-
 		const StringTokens files = M_PWADFilesScanDir(dir);
-		for (StringTokens::const_iterator fit = files.begin(); fit != files.end(); ++fit)
+		for (const auto& filename : files)
 		{
-			const std::string& filename = *fit;
-
 			// [AM] Don't include odamex.wad or IWADs.
 			if (iequals(filename, "odamex.wad"))
 				continue;
@@ -432,10 +430,10 @@ std::string M_GetCurrentWadHashes()
 {
 	std::string builder = "";
 
-	for (OResFiles::const_iterator it = ::wadfiles.begin(); it != ::wadfiles.end(); ++it)
+	for (const auto& file : ::wadfiles)
 	{
-		std::string base = it->getBasename().c_str();
-		std::string hash = it->getMD5().getHexCStr();
+		std::string base = file.getBasename();
+		std::string hash = file.getMD5().getHexStr();
 		std::string line = base + ',' + hash + '\n';
 
 		builder += line;
@@ -456,8 +454,8 @@ BEGIN_COMMAND(whereis)
 	if (M_ResolveWantedFile(res, want))
 	{
 		Printf("basename: %s\nfullpath: %s\nCRC32: %s\nMD5: %s\n",
-		       res.getBasename().c_str(), res.getFullpath().c_str(),
-		       W_CRC32(res.getFullpath()).getHexCStr(), res.getMD5().getHexCStr());
+		       res.getBasename(), res.getFullpath(),
+		       W_CRC32(res.getFullpath()).getHexStr(), res.getMD5().getHexStr());
 		return;
 	}
 
@@ -467,19 +465,18 @@ END_COMMAND(whereis)
 
 BEGIN_COMMAND(loaded)
 {
-	for (OResFiles::const_iterator it = ::wadfiles.begin(); it != ::wadfiles.end(); ++it)
+	for (const auto& file : ::wadfiles)
 	{
-		Printf("%s\n", it->getBasename().c_str());
-		Printf("  PATH: %s\n", it->getFullpath().c_str());
-		Printf("  MD5:  %s\n", it->getMD5().getHexCStr());
+		PrintFmt("{}\n", file.getBasename());
+		PrintFmt("  PATH: {}\n", file.getFullpath());
+		PrintFmt("  MD5:  {}\n", file.getMD5().getHexStr());
 	}
 
-	for (OResFiles::const_iterator it = ::patchfiles.begin(); it != ::patchfiles.end();
-	     ++it)
+	for (const auto& file : ::patchfiles)
 	{
-		Printf("%s\n", it->getBasename().c_str());
-		Printf("  PATH: %s\n", it->getFullpath().c_str());
-		Printf("  MD5:  %s\n", it->getMD5().getHexCStr());
+		PrintFmt("{}\n", file.getBasename());
+		PrintFmt("  PATH: {}\n", file.getFullpath());
+		PrintFmt("  MD5:  {}\n", file.getMD5().getHexStr());
 	}
 }
 END_COMMAND(loaded)
@@ -488,10 +485,9 @@ BEGIN_COMMAND(searchdirs)
 {
 	Printf("Search Directories:\n");
 	std::vector<std::string> dirs = M_FileSearchDirs();
-	for (std::vector<std::string>::const_iterator it = dirs.begin(); it != dirs.end();
-	     ++it)
+	for (const auto& dir : dirs)
 	{
-		Printf("  %s\n", it->c_str());
+		PrintFmt("  {}\n", dir);
 	}
 }
 END_COMMAND(searchdirs)

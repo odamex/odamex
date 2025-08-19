@@ -32,7 +32,7 @@
 // killough 10/98: special mask indicates sky flat comes from sidedef
 #define PL_SKYFLAT (0x80000000)
 
-BOOL R_AlignFlat (int linenum, int side, int fc);
+bool R_AlignFlat (int linenum, int side, int fc);
 
 extern int negonearray[MAXWIDTH];
 extern int viewheightarray[MAXWIDTH];
@@ -40,8 +40,8 @@ extern int viewheightarray[MAXWIDTH];
 //
 // POV related.
 //
-extern fixed_t			viewcos;
-extern fixed_t			viewsin;
+inline fixed_t			viewcos;
+inline fixed_t			viewsin;
 
 extern int				viewwidth;
 extern int				viewheight;
@@ -51,21 +51,23 @@ extern int				viewwindowy;
 extern bool				r_fakingunderwater;
 extern bool				r_underwater;
 
-extern int				centerx;
-extern int				centery;
+inline int				centerx;
+inline int				centery;
 
-extern fixed_t			centerxfrac;
-extern fixed_t			centeryfrac;
-extern fixed_t			yaspectmul;
+inline fixed_t			centerxfrac;
+inline fixed_t			centeryfrac;
+inline fixed_t			yaspectmul;
 
 extern shaderef_t		basecolormap;	// [RH] Colormap for sector currently being drawn
 
-extern int				validcount;
+// increment every time a check is made
+inline int				validcount = 1;
 
-extern int				linecount;
-extern int				loopcount;
+// just for profiling purposes
+inline int				linecount;
+inline int				loopcount;
 
-extern fixed_t			render_lerp_amount;
+inline fixed_t			render_lerp_amount;
 
 // [SL] Current color blending values (including palette effects)
 extern fargb_t blend_color;
@@ -96,8 +98,11 @@ extern int				scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 extern int				scalelightfixed[MAXLIGHTSCALE];
 extern int				zlight[LIGHTLEVELS][MAXLIGHTZ];
 
-extern int				extralight;
-extern BOOL				foggy;
+// bumped light from gun blasts
+inline int				extralight;
+// [RH] ignore extralight and fullbright
+inline bool				foggy;
+
 extern int				fixedlightlev;
 extern shaderef_t		fixedcolormap;
 
@@ -228,8 +233,8 @@ extern argb_t translationRGB[MAXPLAYERS+1][16];
 
 inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte c) const
 {
-	constexpr palindex_t range_start = 0x70;
-	constexpr palindex_t range_stop = 0x7F;
+	static constexpr palindex_t range_start = 0x70;
+	static constexpr palindex_t range_stop = 0x7F;
 
 	const int pid = translation.getPlayerID();
 

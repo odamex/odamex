@@ -1,0 +1,36 @@
+# use .env later
+services:
+    odamex:
+        container_name: odamex
+        image: "docker.io/odamex-team/odamex-server:testing"
+        restart: unless-stopped
+        network_mode: host
+        volumes:
+            - doomIWADS:/wads
+            - doomWADS:/other_wads
+            - ./configs:/configs:ro
+            - odahome:/home/doomguy/.odamex
+        command: >
+            -iwad /wads/DOOM2.WAD
+            -waddir /other_wads
+            +exec /configs/config.cfg
+
+volumes:
+    doomIWADS:
+        driver: local
+        driver_opts:
+            o: bind
+            type: none
+            device: "${DOOM_BASE}/IWADS"
+    doomWADS:
+        driver: local
+        driver_opts:
+            o: bind
+            type: none
+            device: "${DOOM_BASE}/WADS"
+    odahome:
+        driver: local
+        driver_opts:
+            o: bind
+            type: none
+            device: "./odahome"

@@ -64,12 +64,14 @@ static int lockglow = 0;
 
 EXTERN_CVAR(am_rotate)
 EXTERN_CVAR(am_overlay)
+EXTERN_CVAR(am_thickness)
 EXTERN_CVAR(am_showsecrets)
 EXTERN_CVAR(am_showmonsters)
 EXTERN_CVAR(am_showitems)
 EXTERN_CVAR(am_showtime)
 EXTERN_CVAR(am_classicmapstring)
 EXTERN_CVAR(am_usecustomcolors)
+EXTERN_CVAR(am_showlocked)
 EXTERN_CVAR(am_ovshare)
 
 EXTERN_CVAR(am_backcolor)
@@ -120,6 +122,12 @@ BEGIN_COMMAND(resetcustomcolors)
 	am_fdwallcolor = "1a 1a 8a";
 	am_cdwallcolor = "00 00 5a";
 	am_thingcolor = "9f d3 ff";
+	am_thingcolor_item = "navy";
+	am_thingcolor_countitem = "sky blue";
+	am_thingcolor_monster = "74 fc 6c";
+	am_thingcolor_nocountmonster = "yellow";
+	am_thingcolor_friend = "dark green";
+	am_thingcolor_projectile = "orange";
 	am_gridcolor = "44 44 88";
 	am_xhaircolor = "80 80 80";
 	am_notseencolor = "00 22 6e";
@@ -133,13 +141,20 @@ BEGIN_COMMAND(resetcustomcolors)
 	am_ovfdwallcolor = "1a 1a 8a";
 	am_ovcdwallcolor = "00 00 5a";
 	am_ovthingcolor = "9f d3 ff";
+	am_ovthingcolor_item = "navy";
+	am_ovthingcolor_countitem = "sky blue";
+	am_ovthingcolor_monster = "74 fc 6c";
+	am_ovthingcolor_nocountmonster = "yellow";
+	am_ovthingcolor_friend = "dark green";
+	am_ovthingcolor_projectile = "orange";
 	am_ovgridcolor = "44 44 88";
 	am_ovxhaircolor = "80 80 80";
 	am_ovnotseencolor = "00 22 6e";
 	am_ovlockedcolor = "bb bb bb";
 	am_ovexitcolor = "ff ff 00";
 	am_ovteleportcolor = "ff a3 00";
-	Printf(PRINT_HIGH, "Custom automap colors reset to default.\n");
+
+	PrintFmt(PRINT_HIGH, "Custom automap colors reset to default.\n");
 }
 END_COMMAND(resetcustomcolors)
 
@@ -164,9 +179,6 @@ EXTERN_CVAR(screenblocks)
 #define FTOM(x) FixedMul64((INT2FIXED64((x))), scale_ftom)
 #define MTOF(x) FIXED642INT(FixedMul64((x), scale_mtof))
 
-#define PUTDOTP(xx, yy, cc) fb[(yy)*f_p + (xx)] = (cc)
-#define PUTDOTD(xx, yy, cc) *((argb_t*)(fb + (yy)*f_p + ((xx) << 2))) = (cc)
-
 typedef v2int_t fpoint_t;
 
 typedef struct
@@ -185,13 +197,10 @@ std::vector<mline_t> thinrectangle_guy;
 
 am_default_colors_t AutomapDefaultColors;
 am_colors_t AutomapDefaultCurrentColors;
-int am_cheating = 0;
 static bool grid = false;
 static bool bigstate = false; // Bigmode
 
 static bool leveljuststarted = true; // kluge until AM_LevelInit() is called
-
-bool automapactive = false;
 
 // location of window on screen
 static v2int_t f;
@@ -312,16 +321,6 @@ int CXMTOF(fixed64_t x)
 int CYMTOF(fixed64_t y)
 {
 	return f_h - MTOF((y)-m_ll.y);
-}
-
-bool AM_ClassicAutomapVisible()
-{
-	return automapactive && !viewactive;
-}
-
-bool AM_OverlayAutomapVisible()
-{
-	return automapactive && viewactive;
 }
 
 //
@@ -481,11 +480,11 @@ void AM_initVariables()
 	player_t* pl = &displayplayer();
 	if (!pl->ingame())
 	{
-		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		for (auto& player : players)
 		{
-			if (it->ingame())
+			if (player.ingame())
 			{
-				pl = &*it;
+				pl = &player;
 				break;
 			}
 		}
@@ -504,7 +503,7 @@ void AM_initVariables()
 	ST_Responder(&st_notify);
 }
 
-am_color_t AM_GetColorFromString(const argb_t* palette_colors, const char* colorstring)
+am_color_t AM_GetColorFromString(const argb_t* palette_colors, const std::string& colorstring)
 {
 	am_color_t c;
 	c.rgb = V_GetColorFromString(colorstring);
@@ -658,43 +657,49 @@ void AM_initColors(const bool overlayed)
 	else
 	{
 		gameinfo.currentAutomapColors.Background =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.Background.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.Background);
 		gameinfo.currentAutomapColors.YourColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.YourColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.YourColor);
 		gameinfo.currentAutomapColors.AlmostBackground =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.AlmostBackground.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.AlmostBackground);
 		gameinfo.currentAutomapColors.SecretWallColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.SecretWallColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.SecretWallColor);
 		gameinfo.currentAutomapColors.WallColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.WallColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.WallColor);
 		gameinfo.currentAutomapColors.TSWallColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.TSWallColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.TSWallColor);
 		gameinfo.currentAutomapColors.FDWallColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.FDWallColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.FDWallColor);
 		gameinfo.currentAutomapColors.LockedColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.LockedColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.LockedColor);
 		gameinfo.currentAutomapColors.CDWallColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.CDWallColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.CDWallColor);
 		gameinfo.currentAutomapColors.ThingColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor);
 		gameinfo.currentAutomapColors.ThingColor_Item =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Item.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Item);
 		gameinfo.currentAutomapColors.ThingColor_CountItem =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_CountItem.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_CountItem);
 		gameinfo.currentAutomapColors.ThingColor_Monster =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Monster.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Monster);
 		gameinfo.currentAutomapColors.ThingColor_NoCountMonster =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_NoCountMonster.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_NoCountMonster);
 		gameinfo.currentAutomapColors.ThingColor_Friend =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Friend.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Friend);
 		gameinfo.currentAutomapColors.ThingColor_Projectile =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Projectile.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.ThingColor_Projectile);
 		gameinfo.currentAutomapColors.GridColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.GridColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.GridColor);
 		gameinfo.currentAutomapColors.XHairColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.XHairColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.XHairColor);
 		gameinfo.currentAutomapColors.NotSeenColor =
-			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.NotSeenColor.c_str());
+			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.NotSeenColor);
+	}
+
+	if (am_showlocked)
+	{
+		gameinfo.currentAutomapColors.LockedColor =
+			AM_GetColorFromString(palette_colors, "ff ff ff");
 	}
 }
 
@@ -711,8 +716,8 @@ void AM_loadPics()
 
 void AM_unloadPics()
 {
-	for (int i = 0; i < 10; i++)
-		marknums[i].clear();
+	for (auto& marknum : marknums)
+		marknum.clear();
 }
 
 void AM_clearMarks()
@@ -828,7 +833,7 @@ END_COMMAND(togglemap)
 //
 // Handle events (user inputs) in automap mode
 //
-BOOL AM_Responder(event_t* ev)
+bool AM_Responder(event_t* ev)
 {
 	if (automapactive && (ev->type == ev_keydown || ev->type == ev_keyup))
 	{
@@ -836,7 +841,7 @@ BOOL AM_Responder(event_t* ev)
 		{
 			// check for am_pan* and ignore in follow mode
 			const std::string defbind = AutomapBindings.Binds[ev->data1];
-			if (!strnicmp(defbind.c_str(), "+am_pan", 7))
+			if (iequals(defbind, "+am_pan"))
 				return false;
 		}
 
@@ -844,7 +849,7 @@ BOOL AM_Responder(event_t* ev)
 		{
 			const std::string defbind = Bindings.Binds[ev->data1];
 			// Check for automap, in order not to be stuck
-			if (!strnicmp(defbind.c_str(), "togglemap", 9))
+			if (iequals(defbind, "togglemap"))
 				return false;
 		}
 
@@ -856,7 +861,7 @@ BOOL AM_Responder(event_t* ev)
 			const std::string defbind = Bindings.Binds[ev->data1];
 
 			// Check for automap, in order not to be stuck
-			if (!strnicmp(defbind.c_str(), "togglemap", 9))
+			if (iequals(defbind, "togglemap"))
 				return false;
 
 			return (defbind[0] != '+'); // Let G_Responder handle button releases
@@ -1093,13 +1098,66 @@ bool AM_clipMline(mline_t* ml, fline_t* fl)
 }
 #undef DOOUTCODE
 
+// [EB] adapted from International Doom am_map.c
+template <typename PIXEL_T>
+static inline void PUTDOT_THICK(
+	int x, int y,
+	PIXEL_T color,
+	void (*PUTDOT)(int, int, PIXEL_T),
+	PIXEL_T* fbuf,
+	int pitch)
+{
+	// Thin point fast path
+	if (am_thickness.asInt() == 1)
+	{
+		PUTDOT(x, y, color);
+		return;
+	}
+
+	// Thickness: 0 == auto (depends on resolution)
+	const int thickness = (am_thickness == 0) ? (CleanXfac >> 2) : am_thickness.asInt() - 1;
+
+	// Clamp bbox once
+	const int fwm1 = f_w - 1, fhm1 = f_h - 1;
+	int minx = x - thickness; if (minx < 0)   minx = 0;
+	int maxx = x + thickness; if (maxx > fwm1) maxx = fwm1;
+	int miny = y - thickness; if (miny < 0)   miny = 0;
+	int maxy = y + thickness; if (maxy > fhm1) maxy = fhm1;
+
+	const int thick_sq = thickness * thickness;
+
+	for (int nx = minx; nx <= maxx; ++nx)
+	{
+		const int dx  = nx - x;
+		const int dx2 = dx * dx;
+
+		PIXEL_T* pix = fbuf + miny * pitch + nx;
+
+		for (int ny = miny; ny <= maxy; ++ny, pix += pitch)
+		{
+			const int dy = ny - y;
+			if (dx2 + dy * dy > thick_sq) continue;
+			*pix = color;
+		}
+	}
+}
+
+static inline void PUTDOT_THICK(int x, int y, argb_t color)
+{
+	PUTDOT_THICK<argb_t>(x, y, color, [](int x, int y, argb_t color){ *((argb_t*)(fb + y * f_p + (x << 2))) = color; }, reinterpret_cast<argb_t*>(fb), f_p >> 2);
+}
+
+static inline void PUTDOT_THICK(int x, int y, byte color)
+{
+	PUTDOT_THICK<byte>(x, y, color, [](int x, int y, byte color){ fb[y * f_p + x] = color; }, fb, f_w);
+}
+
 //
 // Classic Bresenham w/ whatever optimizations needed for speed
 //
 
-// Palettized (8bpp) version:
-
-void AM_drawFlineP(fline_t* fl, byte color)
+template<typename PIXEL_T>
+void AM_drawFline(fline_t* fl, PIXEL_T color)
 {
 	fl->a.x += f.x;
 	fl->a.y += f.y;
@@ -1122,7 +1180,7 @@ void AM_drawFlineP(fline_t* fl, byte color)
 		int d = ay - ax / 2;
 		while (true)
 		{
-			PUTDOTP(x, y, (byte)color);
+			PUTDOT_THICK(x, y, color);
 			if (x == fl->b.x)
 				return;
 			if (d >= 0)
@@ -1139,66 +1197,7 @@ void AM_drawFlineP(fline_t* fl, byte color)
 		int d = ax - ay / 2;
 		while (true)
 		{
-			PUTDOTP(x, y, (byte)color);
-			if (y == fl->b.y)
-				return;
-			if (d >= 0)
-			{
-				x += sx;
-				d -= ay;
-			}
-			y += sy;
-			d += ax;
-		}
-	}
-}
-
-// Direct (32bpp) version:
-
-void AM_drawFlineD(fline_t* fl, argb_t color)
-{
-	fl->a.x += f.x;
-	fl->b.x += f.x;
-	fl->a.y += f.y;
-	fl->b.y += f.y;
-
-	const int dx = fl->b.x - fl->a.x;
-	const int ax = 2 * (dx < 0 ? -dx : dx);
-	const int sx = dx < 0 ? -1 : 1;
-
-	const int dy = fl->b.y - fl->a.y;
-	const int ay = 2 * (dy < 0 ? -dy : dy);
-	const int sy = dy < 0 ? -1 : 1;
-
-	int x = fl->a.x;
-	int y = fl->a.y;
-
-	int d;
-
-	if (ax > ay)
-	{
-		d = ay - ax / 2;
-
-		while (true)
-		{
-			PUTDOTD(x, y, color);
-			if (x == fl->b.x)
-				return;
-			if (d >= 0)
-			{
-				y += sy;
-				d -= ax;
-			}
-			x += sx;
-			d += ay;
-		}
-	}
-	else
-	{
-		d = ax - ay / 2;
-		while (true)
-		{
-			PUTDOTD(x, y, color);
+			PUTDOT_THICK(x, y, color);
 			if (y == fl->b.y)
 				return;
 			if (d >= 0)
@@ -1223,9 +1222,9 @@ void AM_drawMline(mline_t* ml, am_color_t color)
 	{
 		// draws it on frame buffer using fb coords
 		if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
-			AM_drawFlineP(&fl, color.index);
+			AM_drawFline<byte>(&fl, color.index);
 		else
-			AM_drawFlineD(&fl, color.rgb);
+			AM_drawFline<argb_t>(&fl, color.rgb);
 	}
 }
 
@@ -1245,7 +1244,7 @@ void AM_drawGrid(am_color_t color)
 	centerp.x = FixedDiv64(m_ur.x + m_ll.x, INT2FIXED64(2));
 	centerp.y = FixedDiv64(m_ur.y + m_ll.y, INT2FIXED64(2));
 
-	constexpr fixed64_t w = INT2FIXED(MAPBLOCKUNITS);
+	static constexpr fixed64_t w = INT2FIXED(MAPBLOCKUNITS);
 	const fixed64_t minimum_x = centerp.x - half_dist;
 	const fixed64_t maximum_x = centerp.x + half_dist;
 	const fixed64_t minimum_y = centerp.y - half_dist;
@@ -1365,7 +1364,7 @@ void AM_drawWalls()
 						g = gameinfo.currentAutomapColors.LockedColor.rgb.getg();
 						b = gameinfo.currentAutomapColors.LockedColor.rgb.getb();
 
-						if (am_usecustomcolors)
+						if (am_usecustomcolors || am_showlocked)
 						{
 							if (lines[i].args[3] == (zk_blue_card | zk_blue))
 							{
@@ -1413,7 +1412,7 @@ void AM_drawWalls()
 						g = gameinfo.currentAutomapColors.LockedColor.rgb.getg();
 						b = gameinfo.currentAutomapColors.LockedColor.rgb.getb();
 
-						if (am_usecustomcolors)
+						if (am_usecustomcolors || am_showlocked)
 						{
 							if (P_IsCompatibleBlueDoorLine(lines[i].special))
 							{
@@ -1516,10 +1515,10 @@ void AM_rotatePoint(mpoint_t& pt)
 void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed64_t scale,
                           angle_t angle, am_color_t color, fixed64_t x, fixed64_t y)
 {
-	for (std::vector<mline_t>::const_iterator it = lineguy.begin(); it != lineguy.end(); ++it)
+	for (const auto& mline : lineguy)
 	{
 		mline_t l;
-		M_SetVec2Fixed64(&l.a, it->a.x, it->a.y);
+		M_SetVec2Fixed64(&l.a, mline.a.x, mline.a.y);
 
 		if (scale)
 			M_ScaleVec2Fixed64(&l.a, &l.a, scale);
@@ -1530,7 +1529,7 @@ void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed64_t scale,
 		l.a.x += x;
 		l.a.y += y;
 
-		M_SetVec2Fixed64(&l.b, it->b.x, it->b.y);
+		M_SetVec2Fixed64(&l.b, mline.b.x, mline.b.y);
 
 		if (scale)
 			M_ScaleVec2Fixed64(&l.b, &l.b, scale);
@@ -1592,22 +1591,21 @@ void AM_drawPlayers()
 		return;
 	}
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& p : players)
 	{
-		player_t* p = &*it;
 		am_color_t color;
 
-		if (!(it->ingame()) || !p->mo ||
-		    (((G_IsFFAGame() && p != &conplayer) ||
-		      (G_IsTeamGame() && p->userinfo.team != conplayer.userinfo.team)) &&
+		if (!(p.ingame()) || !p.mo ||
+		    (((G_IsFFAGame() && &p != &conplayer) ||
+		      (G_IsTeamGame() && p.userinfo.team != conplayer.userinfo.team)) &&
 		     !(netdemo.isPlaying() || netdemo.isPaused()) && !demoplayback &&
 		     !(conplayer.spectator)) ||
-		    p->spectator)
+		    p.spectator)
 		{
 			continue;
 		}
 
-		if (p->powers[pw_invisibility])
+		if (p.powers[pw_invisibility])
 		{
 			color = gameinfo.currentAutomapColors.AlmostBackground;
 		}
@@ -1615,7 +1613,7 @@ void AM_drawPlayers()
 		{
 			const argb_t* palette = V_GetDefaultPalette()->colors;
 
-			switch (it->id)
+			switch (p.id)
 			{
 			case 1:
 				color = AM_GetColorFromString(palette, "00 FF 00");
@@ -1635,7 +1633,7 @@ void AM_drawPlayers()
 		}
 		else
 		{
-			color.rgb = CL_GetPlayerColor(p);
+			color.rgb = CL_GetPlayerColor(&p);
 			color.index = V_BestColor(V_GetDefaultPalette()->basecolors, color.rgb);
 		}
 
@@ -1647,15 +1645,15 @@ void AM_drawPlayers()
 
 		if (oi.enabled())
 		{
-			moangle = p->mo->prevangle + FixedMul(p->mo->angle - p->mo->prevangle, render_lerp_amount);
-			mox = p->mo->prevx + FixedMul(p->mo->x - p->mo->prevx, render_lerp_amount);
-			moy = p->mo->prevy + FixedMul(p->mo->y - p->mo->prevy, render_lerp_amount);
+			moangle = p.mo->prevangle + FixedMul(p.mo->angle - p.mo->prevangle, render_lerp_amount);
+			mox = p.mo->prevx + FixedMul(p.mo->x - p.mo->prevx, render_lerp_amount);
+			moy = p.mo->prevy + FixedMul(p.mo->y - p.mo->prevy, render_lerp_amount);
 		}
 		else
 		{
-			moangle = p->mo->angle;
-			mox = p->mo->x;
-			moy = p->mo->y;
+			moangle = p.mo->angle;
+			mox = p.mo->x;
+			moy = p.mo->y;
 		}
 
 		M_SetVec2Fixed64(&pt, FIXED2FIXED64(mox), FIXED2FIXED64(moy));
@@ -1838,8 +1836,8 @@ void AM_drawMarks()
 
 			//      w = LESHORT(marknums[i]->width);
 			//      h = LESHORT(marknums[i]->height);
-			constexpr int w = 5; // because something's wrong with the wad, i guess
-			constexpr int h = 6; // because something's wrong with the wad, i guess
+			static constexpr int w = 5; // because something's wrong with the wad, i guess
+			static constexpr int h = 6; // because something's wrong with the wad, i guess
 
 			if (fx >= f.x && fx <= f_w - w && fy >= f.y && fy <= f_h - h)
 			{
@@ -1853,9 +1851,9 @@ void AM_drawCrosshair(am_color_t color)
 {
 	// single point for now
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
-		PUTDOTP(f_w / 2, (f_h + 1) / 2, (byte)color.index);
+		PUTDOT_THICK(f_w / 2, (f_h + 1) / 2, (byte)color.index);
 	else
-		PUTDOTD(f_w / 2, (f_h + 1) / 2, color.rgb);
+		PUTDOT_THICK(f_w / 2, (f_h + 1) / 2, color.rgb);
 }
 
 //

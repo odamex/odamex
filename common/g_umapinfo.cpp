@@ -101,14 +101,14 @@ void MustGetIdentifier(OScanner& os)
 
 bool pnamemodified;
 
-int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
+bool ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 {
 	// find the next line with content.
 	// this line is no property.
 
 	if (!os.isIdentifier())
 	{
-		os.error("Expected identifier, got \"%s\".", os.getToken().c_str());
+		os.error("Expected identifier, got \"{}\".", os.getToken());
 	}
 	std::string pname = os.getToken();
 	os.mustScan();
@@ -143,8 +143,8 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		ParseOLumpName(os, mape->nextmap);
 		if (!ValidateMapName(mape->nextmap))
 		{
-			os.error("Invalid map name %s.", mape->nextmap.c_str());
-			return 0;
+			os.error("Invalid map name {}", mape->nextmap);
+			return false;
 		}
 	}
 	else if (!stricmp(pname.c_str(), "nextsecret"))
@@ -152,8 +152,8 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		ParseOLumpName(os, mape->secretmap);
 		if (!ValidateMapName(mape->secretmap))
 		{
-			os.error("Invalid map name %s", mape->nextmap.c_str());
-			return 0;
+			os.error("Invalid map name {}", mape->nextmap);
+			return false;
 		}
 	}
 	else if (!stricmp(pname.c_str(), "levelpic"))
@@ -240,14 +240,14 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		const std::string lname = ParseMultiString(os);
 		if (lname.empty())
-			return 0;
+			return false;
 		mape->intertext = lname;
 	}
 	else if (!stricmp(pname.c_str(), "intertextsecret"))
 	{
 		const std::string lname = ParseMultiString(os);
 		if (lname.empty())
-			return 0;
+			return false;
 		mape->intertextsecret = lname;
 	}
 	else if (!stricmp(pname.c_str(), "interbackdrop"))
@@ -272,7 +272,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 
 		const std::string lname = ParseMultiString(os);
 		if (lname.empty())
-			return 0;
+			return false;
 
 		if (lname == "-") // means "clear"
 		{
@@ -282,8 +282,11 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		{
 			const StringTokens tokens = TokenizeString(lname, "\n");
 
-			if (episodenum >= 8)
-				return 0;
+			if (episodenum >= MAX_EPISODES)
+			{
+				os.error("Maximum episode definitions ({}) exceeded.", MAX_EPISODES);
+				return false;
+			}
 
 			EpisodeMaps[episodenum] = mape->mapname;
 			EpisodeInfos[episodenum].pic_name = tokens[0];
@@ -309,8 +312,8 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 			const mobjtype_t i = P_INameToMobj(actor_name);
 			if (i == MT_NULL)
 			{
-				os.error("Unknown thing type %s", os.getToken().c_str());
-				return 0;
+				os.error("Unknown thing type {}", os.getToken());
+				return false;
 			}
 
 			// skip comma token
@@ -368,7 +371,7 @@ void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
 	{
 		if (!os.compareTokenNoCase("map"))
 		{
-			os.error("Expected map definition, got %s", os.getToken().c_str());
+			os.error("Expected map definition, got {}", os.getToken());
 		}
 
 		os.mustScan(8);
@@ -376,7 +379,7 @@ void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
 
 		if (!ValidateMapName(mapname))
 		{
-			os.error("Invalid map name %s", mapname.c_str());
+			os.error("Invalid map name {}", mapname);
 		}
 
 		// Find the level.
@@ -397,6 +400,7 @@ void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
 		info.mapname = mapname;
 
 		G_MapNameToLevelNum(info);
+		G_MapNameToID24LevelNum(info);
 
 		os.mustScan();
 		os.assertTokenNoCaseIs("{");
@@ -404,11 +408,8 @@ void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
 		os.scan();
 		while (!os.compareToken("}"))
 		{
+			// TODO: should this be actually checking the return value here?
 			ParseStandardUmapInfoProperty(os, &info);
-		}
-		// if an episode title patch is missing, fall back on text name
-		for (int i = 0; i < MAX_EPISODES; i++) {
-			EpisodeInfos[i].fulltext = EpisodeInfos[i].pic_name.empty();
 		}
 
 		// Set default level progression here to simplify the checks elsewhere.
@@ -460,5 +461,9 @@ void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
 				}
 			}
 		}
+	}
+	// if an episode title patch is missing or invalid, fall back on text name
+	for (auto& episode : EpisodeInfos) {
+		episode.fulltext = episode.pic_name.empty() || W_CheckNumForName(episode.pic_name) == -1;
 	}
 }

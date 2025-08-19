@@ -55,10 +55,10 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 
 	// Track all eligible players.
 	std::vector<player_t*> eligible;
-	for (Players::iterator it = players.begin(); it != players.end(); ++it) {
-		if (validplayer(*it) && it->ingame() &&
-		    (!(it->spectator) || (it->spectator && it->ready))) {
-			eligible.push_back(&*it);
+	for (auto& player : players) {
+		if (validplayer(player) && player.ingame() &&
+		    (!(player.spectator) || (player.spectator && player.ready))) {
+			eligible.push_back(&player);
 		}
 	}
 
@@ -110,12 +110,13 @@ bool Pickup_DistributePlayers(size_t num_players, std::string &error) {
 		int iTeam = dest_team;
 		iTeam = ++iTeam % teamCount;
 		dest_team = (team_t)iTeam;
+		i++;
 	}
 
 	// Force-spectate everyone who is not eligible.
-	for (Players::iterator it = players.begin();it != players.end();++it) {
-		if (std::find(eligible.begin(), eligible.end(), &*it) == eligible.end()) {
-			SV_SetPlayerSpec(*it, true, true);
+	for (auto& player : players) {
+		if (std::find(eligible.begin(), eligible.end(), &player) == eligible.end()) {
+			SV_SetPlayerSpec(player, true, true);
 		}
 	}
 
@@ -146,18 +147,18 @@ BEGIN_COMMAND (randpickup) {
 
 	size_t num_players;
 	if (!CMD_RandpickupCheck(arguments, error, num_players)) {
-		Printf(PRINT_HIGH, "%s\n", error.c_str());
+		Printf(PRINT_HIGH, "%s\n", error);
 		return;
 	}
 
 	if (!Pickup_DistributePlayers(num_players, error)) {
-		Printf(PRINT_HIGH, "%s\n", error.c_str());
+		Printf(PRINT_HIGH, "%s\n", error);
 	}
 } END_COMMAND (randpickup)
 
 BEGIN_COMMAND (randcaps) {
 	std::string error;
 	if (!Pickup_DistributePlayers(2, error)) {
-		Printf(PRINT_HIGH, "%s\n", error.c_str());
+		Printf(PRINT_HIGH, "%s\n", error);
 	}
 } END_COMMAND (randcaps)

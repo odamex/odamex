@@ -1070,16 +1070,16 @@ odaproto::svc::CTFRefresh SVC_CTFRefresh(const TeamsView& teams, const bool full
 
 	msg.set_full(full);
 
-	for (TeamsView::const_iterator it = teams.begin(); it != teams.end(); ++it)
+	for (const auto& team : teams)
 	{
 		odaproto::svc::CTFRefresh_TeamInfo* info = msg.add_team_info();
 
-		info->set_points((*it)->Points);
+		info->set_points(team->Points);
 
 		if (full)
 		{
-			info->set_flag_state((*it)->FlagData.state);
-			info->set_flag_flagger((*it)->FlagData.flagger);
+			info->set_flag_state(team->FlagData.state);
+			info->set_flag_flagger(team->FlagData.flagger);
 		}
 	}
 
@@ -1094,8 +1094,7 @@ odaproto::svc::CTFEvent SVC_CTFEvent(const flag_score_t event, const team_t targ
 	msg.set_event(event);
 	msg.set_target_team(target);
 
-	// [AM] FIXME: validplayer shouldn't need a const I don't think...
-	if (validplayer(const_cast<player_t&>(player)))
+	if (validplayer(player))
 	{
 		msg.set_player_team(player.userinfo.team);
 		msg.set_player_id(player.id);
@@ -1271,6 +1270,9 @@ odaproto::svc::SectorProperties SVC_SectorProperties(sector_t& sector)
 			secmsg->set_base_floor_angle(sector.base_floor_angle);
 			secmsg->set_base_floor_yoffs(sector.base_floor_yoffs);
 			break;
+		case SPC_Special:
+			secmsg->set_special(sector.special);
+			break;
 		default:
 			break;
 		}
@@ -1379,9 +1381,9 @@ odaproto::svc::ExecuteACSSpecial SVC_ExecuteACSSpecial(const byte special,
 		msg.set_print(print);
 	}
 
-	for (std::vector<int>::const_iterator it = args.begin(); it != args.end(); ++it)
+	for (const auto& arg : args)
 	{
-		msg.add_args(*it);
+		msg.add_args(arg);
 	}
 
 	return msg;
@@ -1505,38 +1507,35 @@ odaproto::svc::MaplistUpdate SVC_MaplistUpdate(const maplist_status_t status,
 		// are already known on the receiving end.
 		OStringIndexer indexer = OStringIndexer::maplistFactory();
 
-		for (maplist_qrows_t::const_iterator it = maplist->begin(); it != maplist->end();
-		     ++it)
+		for (const auto& [_, entry] : *maplist)
 		{
 			// Create a row and add an indexed map to it.
 			odaproto::svc::MaplistUpdate::Row* row = msg.add_maplist();
-			const std::string& map = it->second->map;
+			const std::string& map = entry->map;
 			const uint32_t mapidx = indexer.getIndex(map);
 			row->set_map(mapidx);
 
-			const std::string& lastmap = it->second->lastmap;
-			const uint32_t lastmapidx = indexer.getIndex(lastmap);
+			const std::string lastmaps = fmt::format("{}", entry->lastmaps);
+			const uint32_t lastmapidx = indexer.getIndex(lastmaps);
 			row->set_lastmap(lastmapidx);
 
-			for (std::vector<std::string>::iterator itr = it->second->wads.begin();
-			     itr != it->second->wads.end(); ++itr)
+			for (const auto& wad : entry->wads)
 			{
 				// Push an indexed WAD into the message.
-				std::string filename = D_CleanseFileName(*itr);
+				std::string filename = D_CleanseFileName(wad);
 				const uint32_t wadidx = indexer.getIndex(filename);
 				row->add_wads(wadidx);
 			}
 		}
 
 		// Populate the dictionary.
-		for (OStringIndexer::Indexes::const_iterator it = indexer.indexes.begin();
-		     it != indexer.indexes.end(); ++it)
+		for (const auto& [string, idx] : indexer.indexes)
 		{
-			if (!indexer.shouldTransmit(it->second))
+			if (!indexer.shouldTransmit(idx))
 				continue;
 
 			typedef google::protobuf::MapPair<uint32_t, std::string> DictPair;
-			msg.mutable_dict()->insert(DictPair(it->second, it->first));
+			msg.mutable_dict()->insert(DictPair(idx, string));
 		}
 	}
 

@@ -7,7 +7,7 @@
 
 #
 # These parameters can and should be changed for new versions.
-# 
+#
 
 Set-Variable -Name "CurrentDir" -Value (Get-Location) # cd to the base odamex git path before executing
 
@@ -46,7 +46,7 @@ function BuildX64 {
     }
     New-Item  -Force -ItemType "directory" -Path "${CurrentDir}\BuildX64"
     Set-Location -Path "${CurrentDir}\BuildX64"
-    
+
     cmake.exe -G "Visual Studio 17 2022" -A "x64" "${CurrentDir}" `
         -DBUILD_OR_FAIL=1 `
         -DBUILD_CLIENT=1 -DBUILD_SERVER=1 `
@@ -95,18 +95,22 @@ function CopyFilesX64 {
         -Destination "${CommonDir}\README.txt"
     Copy-Item -Force -Path "${CurrentDir}\BuildX64\wad\odamex.wad" `
         -Destination "${CommonDir}"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.6.2\LICENSE.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.1\LICENSE.txt" `
         -Destination "${CommonDir}\licenses\COPYING.SDL2_mixer.txt"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.6.2\lib\x64\optional\LICENSE.modplug.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.1\lib\x64\optional\LICENSE.xmp.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.6.2\lib\x64\optional\LICENSE.ogg-vorbis.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.1\lib\x64\optional\LICENSE.ogg-vorbis.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.6.2\lib\x64\optional\LICENSE.opus.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.1\lib\x64\optional\LICENSE.opus.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.6.2\lib\x64\optional\LICENSE.opusfile.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.1\lib\x64\optional\LICENSE.opusfile.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2-2.0.20\COPYING.txt" `
-        -Destination "${CommonDir}\licenses\COPYING.SDL2.txt"
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.1\lib\x64\optional\LICENSE.wavpack.txt" `
+        -Destination "${CommonDir}\licenses"
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2_mixer-2.8.1\lib\x64\optional\LICENSE.gme.txt" `
+        -Destination "${CommonDir}\licenses"
+    Copy-Item -Force -Path "${CurrentDir}\BuildX64\libraries\SDL2-2.32.8\LICENSE.txt" `
+        -Destination "${CommonDir}\licenses\LICENSE.SDL2.txt"
 
     ########################################
     ## 64-BIT FILES
@@ -116,7 +120,9 @@ function CopyFilesX64 {
     New-Item -Force -ItemType "directory" -Path "${X64Dir}\redist"
 
     Copy-Item -Force -Path `
-        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libmodplug-1.dll", `
+        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libgme.dll", `
+        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libwavpack-1.dll", `
+        "${CurrentDir}\BuildX64\client\RelWithDebInfo\libxmp.dll", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\libogg-0.dll", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\libopus-0.dll", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\libopusfile-0.dll", `

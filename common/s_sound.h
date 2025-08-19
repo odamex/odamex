@@ -25,6 +25,8 @@
 
 #include "m_fixed.h"
 
+#include <map>
+
 #define MAX_SNDNAME 63
 
 class AActor;
@@ -55,10 +57,10 @@ struct sfxinfo_struct
 };
 
 // the complete set of sound effects
-extern std::vector<sfxinfo_t> S_sfx;
+inline std::vector<sfxinfo_t> S_sfx;
 
 // map of every sound id for sounds that have randomized variants
-extern std::map<int, std::vector<int> > S_rnd;
+inline std::map<int, std::vector<int>> S_rnd;
 
 // Initializes sound stuff, including volume
 // Sets channels, SFX and music volume,
@@ -105,6 +107,7 @@ void S_LoopedSoundID(fixed_t* pt, int channel, int sfxid, float volume, int atte
 #define CHAN_ANNOUNCER 5
 #define CHAN_GAMEINFO 6
 #define CHAN_INTERFACE 7
+#define CHAN_AMBIENT 8
 
 // modifier flags
 //#define CHAN_NO_PHS_ADD		8	// send to all clients, not just ones in PHS (ATTN 0 will
@@ -125,6 +128,10 @@ void S_StopSound(fixed_t* pt);
 // Stop sound for all channels
 void S_StopAllChannels();
 
+void S_StopAmbientSound();
+void S_PauseSound();
+void S_ResumeSound();
+
 // Is the sound playing on one of the entity's channels?
 bool S_GetSoundPlayingInfo(AActor* ent, int sound_id);
 bool S_GetSoundPlayingInfo(fixed_t* pt, int sound_id);
@@ -136,14 +143,14 @@ void S_RelinkSound(AActor* from, AActor* to);
 void S_StartMusic(const char* music_name);
 
 // Start music using <music_name>, and set whether looping
-void S_ChangeMusic(std::string music_name, int looping);
+void S_ChangeMusic(std::string music_name, bool looping);
 
 // Stops the music fer sure.
 void S_StopMusic();
 
 // Stop and resume music, during game PAUSE.
-void S_PauseSound();
-void S_ResumeSound();
+void S_PauseMusic();
+void S_ResumeMusic();
 
 //
 // Updates music & sounds

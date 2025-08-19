@@ -1,6 +1,11 @@
 name: Linux
 
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore:
+    - 'release/[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
+
 
 jobs:
   pre_job:
@@ -86,7 +91,7 @@ jobs:
       uses: ammaraskar/gcc-problem-matcher@master
     - name: Run build
       run: cmake --build ./build/
-  build-centos:
+  build-fedora:
     name: Build (Fedora 32)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
@@ -98,7 +103,7 @@ jobs:
       run: git submodule update --init --recursive
     - name: Run build
       run: bash ci/fedora-buildgen.sh
-  build-ubuntu-bionic:
+  build-ubuntu-focal:
     name: Build (Ubuntu 20.04 LTS)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
@@ -110,3 +115,79 @@ jobs:
       run: git submodule update --init --recursive
     - name: Run build
       run: bash ci/ubuntu-focal-buildgen.sh
+  build-flatpak:
+    name: Build Flatpak (Ubuntu Latest)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Update metainfo dates
+      shell: bash
+      run: |
+        DATE=$(date +'%Y-%m-%d')
+        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Install flatpak
+      run: sudo apt update && sudo apt install flatpak flatpak-builder
+    - name: Create escaped branch name
+      env:
+        name: "${{ github.ref_name }}"
+      run: |
+        echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
+    - name: Set flatpak repo
+      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    - name: Run build
+      run: |
+        flatpak-builder --force-clean --user --install-deps-from=flathub \
+        --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
+        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
+    - name: Pack flatpak
+      run: |
+        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
+        --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-Flatpak-x86_64
+        path: odamex.flatpak
+  build-flatpak-arm:
+    name: Build Flatpak (Ubuntu 24.04 ARM)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Update metainfo dates
+      shell: bash
+      run: |
+        DATE=$(date +'%Y-%m-%d')
+        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Install flatpak
+      run: sudo apt update && sudo apt install flatpak flatpak-builder
+    - name: Create escaped branch name
+      env:
+        name: "${{ github.ref_name }}"
+      run: |
+        echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
+    - name: Set flatpak repo
+      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    - name: Run build
+      run: |
+        flatpak-builder --force-clean --user --install-deps-from=flathub \
+        --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
+        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
+    - name: Pack flatpak
+      run: |
+        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
+        --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-Flatpak-ARM64
+        path: odamex.flatpak

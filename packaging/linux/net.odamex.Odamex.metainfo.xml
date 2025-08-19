@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Generator for metainfo & .desktop files:
+    https://www.freedesktop.org/software/appstream/metainfocreator/#/
+-->
+<component type="desktop-application">
+  <id>net.odamex.Odamex</id>
+  <name>Odamex</name>
+  <summary>Fast, faithful Classic DOOM action &#x2014; solo or online</summary>
+  <developer id="net.odamex">
+    <name>The Odamex Team</name>
+  </developer>
+  <url type="homepage">https://odamex.net</url>
+  <url type="vcs-browser">https://github.com/odamex/odamex</url>
+  <url type="bugtracker">https://github.com/odamex/odamex/issues</url>
+  <url type="help">https://github.com/odamex/odamex/wiki</url>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0-or-later</project_license>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>gamepad</control>
+  </supports>
+  <description>
+    <p>
+      Odamex is a multiplayer-oriented DOOM port with a focus on classic DOOM gameplay. Perfect for playing with friends or alone,
+      Odamex is faithful to the original DOOM games. It has the ability to play back vanilla demos,
+      while also providing an enhanced experience with modern quality-of-life features and expanded modding capabilites.
+    </p>
+    <p>Features include:</p>
+    <p>General Improvements on the Original Games:</p>
+    <ul>
+      <li>Can play many DOOM engine games, including Ultimate DOOM, DOOM II, Final DOOM, Freedoom, Chex Quest, Hacx, and REKKR</li>
+      <li>Supports many modern editing features, such as “limit removing”, Boom, MBF, MBF21, and ID24</li>
+      <li>Supports Hexen format and older ZDoom format maps</li>
+      <li>Uncapped framerate</li>
+      <li>High resolutions</li>
+      <li>Widescreen support up to 32:9 ratio (ultra widescreen)</li>
+      <li>32-bit color renderer</li>
+      <li>Multiple ways to playback MIDI music, including an FM Synth emulator to rekindle those 1990s memories</li>
+      <li>Supports MOD and other tracker music, MP3, and OGG in custom wads</li>
+      <li>Quake-style console and key bindings</li>
+      <li>Crosshairs</li>
+      <li>Extended HUD</li>
+      <li>Mouselook, jumping, swimming, and flying</li>
+      <li>Walk over/under monsters and other things</li>
+    </ul>
+    <p>Unmatched Online Experience:</p>
+    <ul>
+      <li>Support for up to 255 players at once</li>
+      <li>Top tier network code. Play with your friends on the other side of the world!</li>
+      <li>Unlagged - Odamex will compensate for poor network conditions</li>
+      <li>In-game wad downloading</li>
+      <li>On-the-fly wad loading (servers can run hundreds of wads without you disconnecting!)</li>
+      <li>Vote to change server settings such as fraglimit, timelimit, map, and more (must be enabled on server)</li>
+      <li>Custom player colors</li>
+    </ul>
+    <p>Exciting Multiplayer Gamemodes:</p>
+    <ul>
+      <li>Cooperative &amp; Survival</li>
+      <li>Deathmatch / Team Deathmatch</li>
+      <li>Last Man Standing / Team Last Man Standing</li>
+      <li>Capture the Flag</li>
+      <li>The Cacoward winning Horde mode</li>
+      <li>And more!</li>
+    </ul>
+    <p>To use your own Timidity config file, use this command: <code>flatpak override net.odamex.Odamex --env=TIMIDITY_CFG=&lt;config location&gt;</code></p>
+    <p><em>Note: The included version of Timidity does NOT support soundfonts, only GUS patches.</em></p>
+    <p>A copy of DOOM, DOOM II, Final DOOM, Freedoom, Hacx, REKKR, or Chex Quest is required. If you do not own DOOM, it can be purchased on GOG or Steam.</p>
+  </description>
+  <screenshots>
+      <screenshot  type="default">
+          <image>https://raw.githubusercontent.com/odamex/odamex/refs/tags/11.1.0/packaging/flatpak/screenshots/doom-e1m1.png</image>
+          <caption>Experience classic DOOM multiplayer with your friends!</caption>
+      </screenshot>
+      <screenshot>
+          <image>https://raw.githubusercontent.com/odamex/odamex/refs/tags/11.1.0/packaging/flatpak/screenshots/wdl2021-map01.png</image>
+          <caption>A host of multiplayer gamemodes including Co-op, Deathmatch, Capture the Flag, and more!</caption>
+      </screenshot>
+      <screenshot>
+          <image>https://raw.githubusercontent.com/odamex/odamex/refs/tags/11.1.0/packaging/flatpak/screenshots/odahorde-map02.png</image>
+          <caption>Face down waves of enemies in Horde Mode!</caption>
+      </screenshot>
+      <screenshot>
+          <image>https://raw.githubusercontent.com/odamex/odamex/refs/tags/11.1.0/packaging/flatpak/screenshots/hordamex-wdl2022-merged.png</image>
+          <caption>32-bit truecolor rendering!</caption>
+      </screenshot>
+      <screenshot>
+          <image>https://raw.githubusercontent.com/odamex/odamex/refs/tags/11.1.0/packaging/flatpak/screenshots/vesperdm-map01.png</image>
+          <caption>Enhanced modding capabilites with MBF21!</caption>
+      </screenshot>
+  </screenshots>
+  <launchable type="desktop-id">net.odamex.Odamex.Client.desktop</launchable>
+  <content_rating type="oars-1.1">
+    <content_attribute id="violence-realistic">moderate</content_attribute>
+    <content_attribute id="violence-bloodshed">moderate</content_attribute>
+    <content_attribute id="violence-desecration">moderate</content_attribute>
+    <content_attribute id="social-chat">intense</content_attribute>
+  </content_rating>
+  <branding>
+    <color type="primary" scheme_preference="light">#a0a0a7</color>
+    <color type="primary" scheme_preference="dark">#404042</color>
+  </branding>
+  <releases>
+    <release version="11.1.0" date="YYYY-MM-DD" />
+  </releases>
+</component>

@@ -151,7 +151,8 @@ enum SectorPropChanges
 	SPC_Scale = 64,
 	SPC_Rotation = 128,
 	SPC_AlignBase = 256,
-	SPC_Max = 512,
+	SPC_Special = 512,
+	SPC_Max = 1024,
 };
 
 enum SideDefPropChanges
@@ -402,7 +403,7 @@ typedef struct msecnode_s
 	msecnode_s	*m_tnext;	// next msecnode_t for this thing
 	msecnode_s	*m_sprev;	// prev msecnode_t for this sector
 	msecnode_s	*m_snext;	// next msecnode_t for this sector
-	BOOL visited;	// killough 4/4/98, 4/7/98: used in search algorithms
+	bool visited;	// killough 4/4/98, 4/7/98: used in search algorithms
 } msecnode_t;
 
 //
@@ -441,7 +442,7 @@ typedef struct FPolyObj
 	int			tag;			// reference tag assigned in HereticEd
 	int			bbox[4];
 	int			validcount;
-	BOOL		crush; 			// should the polyobj attempt to crush mobjs?
+	bool		crush; 			// should the polyobj attempt to crush mobjs?
 	int			seqType;
 	fixed_t		size;			// polyobj size (area of POLY_AREAUNIT == size of FRACUNIT)
 	DThinker	*specialdata;	// pointer to a thinker, if the poly is moving

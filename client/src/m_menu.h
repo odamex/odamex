@@ -163,7 +163,7 @@ typedef struct
 	// -1 = no cursor here, 1 = ok, 2 = arrows ok
 	short		status;
 
-	char		name[10];
+	OLumpName	name;
 	char		textname[32];
 
 	// choice = menu item #.
@@ -211,9 +211,3 @@ extern short	 itemOn;
 extern oldmenu_t *currentMenu;
 
 size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length);
-
-#define MAX_EPISODES	8
-
-extern oldmenuitem_t EpisodeMenu[MAX_EPISODES];
-extern OLumpName EpisodeMaps[MAX_EPISODES];
-extern oldmenu_t EpiDef;

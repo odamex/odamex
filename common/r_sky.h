@@ -25,15 +25,12 @@
 
 
 // SKY, store the number for name.
-extern OLumpName SKYFLATNAME;
+inline OLumpName SKYFLATNAME = "F_SKY1";
 
-extern int      sky1texture;
-extern int      sky2texture;
-extern fixed_t	sky2scrollxdelta;
-extern fixed_t	sky2columnoffset;
-extern int		skystretch;
-extern fixed_t	skyiscale;
-extern fixed_t	skyheight;
+inline int      sky1texture;
+inline int      sky2texture;
+inline fixed_t	sky2scrollxdelta;
+inline fixed_t	sky2columnoffset;
 
 EXTERN_CVAR (r_stretchsky)
 

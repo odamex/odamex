@@ -1,19 +1,24 @@
 ### FLTK (dep: libpng) ###
 
-if(BUILD_CLIENT)
+if(BUILD_CLIENT AND USE_INTERNAL_FLTK)
   set(_FLTK_BUILDGEN_PARAMS
-    "-DOPTION_USE_SYSTEM_LIBJPEG=OFF"
-    "-DOPTION_USE_SYSTEM_LIBPNG=OFF"
-    "-DOPTION_USE_SYSTEM_ZLIB=OFF"
-    "-DOPTION_PRINT_SUPPORT=OFF"
-    "-DOPTION_USE_GL=OFF"
+    "-DFLTK_USE_SYSTEM_LIBJPEG=OFF"
+    "-DFLTK_USE_SYSTEM_LIBPNG=OFF"
+    "-DFLTK_USE_SYSTEM_ZLIB=OFF"
+    "-DFLTK_OPTION_PRINT_SUPPORT=OFF"
+    "-DFLTK_BUILD_GL=OFF"
 
     "-DFLTK_BUILD_TEST=OFF")
 
   if(USE_INTERNAL_ZLIB)
     # FLTK defaults to the dynamic library, but we want the static lib.
-    list(APPEND _FLTK_BUILDGEN_PARAMS
-      "-DZLIB_LIBRARY_RELEASE=${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}zlibstatic${libsuffix}")
+    if(WIN32)
+      list(APPEND _FLTK_BUILDGEN_PARAMS
+        "-DZLIB_LIBRARY_RELEASE=${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}libzstatic${libsuffix}")
+    else()
+      list(APPEND _FLTK_BUILDGEN_PARAMS
+        "-DZLIB_LIBRARY_RELEASE=${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}z${libsuffix}")
+    endif()
   endif()
 
   if(USE_INTERNAL_PNG)

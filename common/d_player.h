@@ -116,7 +116,7 @@ class player_s
 public:
 	void Serialize (FArchive &arc);
 
-	bool ingame() const
+	[[nodiscard]] bool ingame() const
 	{
 		return playerstate == PST_LIVE ||
 				playerstate == PST_DEAD ||
@@ -335,10 +335,10 @@ public:
 			memset(&address, 0, sizeof(netadr_t));
 			version = 0;
 			packedversion = 0;
-			for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
+			for (auto& [sequence, data] : oldpackets)
 			{
-				oldpackets[i].sequence = -1;
-				oldpackets[i].data.resize(MAX_UDP_PACKET);
+				sequence = -1;
+				data.resize(MAX_UDP_PACKET);
 			}
 			sequence = 0;
 			last_sequence = 0;
@@ -390,7 +390,7 @@ public:
 
 	struct ticcmd_t netcmds[BACKUPTICS];
 
-	int GetPlayerNumber() const
+	[[nodiscard]] int GetPlayerNumber() const
 	{
 		return id - 1;
 	}
@@ -416,7 +416,7 @@ player_t		&displayplayer();
 player_t		&listenplayer();
 player_t		&idplayer(byte id);
 player_t		&nameplayer(const std::string &netname);
-bool			validplayer(player_t &ref);
+bool			validplayer(const player_t &ref);
 
 /**
  * @brief A collection of pointers to players, commonly called a "view".
@@ -455,10 +455,8 @@ struct PlayerResults
 
 	PlayerResults() : count(0), total(0)
 	{
-		for (size_t i = 0; i < ARRAY_LENGTH(teamCount); i++)
-			teamCount[i] = 0;
-		for (size_t i = 0; i < ARRAY_LENGTH(teamTotal); i++)
-			teamTotal[i] = 0;
+		ArrayInit(teamCount, 0);
+		ArrayInit(teamTotal, 0);
 	}
 };
 
@@ -656,7 +654,7 @@ extern byte displayplayer_id;
 //
 typedef struct wbplayerstruct_s
 {
-	BOOL		in;			// whether the player is in game
+	bool		in;			// whether the player is in game
 
 	// Player stats, kills, collected items etc.
 	int			skills;
@@ -672,11 +670,11 @@ typedef struct wbstartstruct_s
 {
 	int			epsd;	// episode # (0-2)
 
-	char		current[9];	// [RH] Name of map just finished
-	char		next[9];	// next level, [RH] actual map name
+	OLumpName	current;	// [RH] Name of map just finished
+	OLumpName	next;	// next level, [RH] actual map name
 
-	char		lname0[9];
-	char		lname1[9];
+	OLumpName	lname0;
+	OLumpName	lname1;
 
 	int			maxkills;
 	int			maxitems;

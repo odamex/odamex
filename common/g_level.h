@@ -24,6 +24,7 @@
 #pragma once
 
 #include "cmdlib.h"
+#include "c_maplist.h"
 #include "m_fixed.h"
 #include "m_resfile.h"
 #include "olumpname.h"
@@ -52,7 +53,7 @@ constexpr static levelFlags_t LEVEL_SPIDERSPECIAL = BIT(7);
 
 constexpr static levelFlags_t LEVEL_SPECLOWERFLOOR = BIT(8);
 constexpr static levelFlags_t LEVEL_SPECOPENDOOR = BIT(9);
-const static levelFlags_t LEVEL_SPECACTIONSMASK = BIT_MASK(LEVEL_SPECLOWERFLOOR, LEVEL_SPECOPENDOOR);
+constexpr static levelFlags_t LEVEL_SPECACTIONSMASK = BIT_MASK(8, 9);
 constexpr static levelFlags_t LEVEL_MONSTERSTELEFRAG = BIT(10);
 constexpr static levelFlags_t LEVEL_EVENLIGHTING = BIT(11);
 
@@ -84,34 +85,34 @@ constexpr static levelFlags_t LEVEL_CHANGEMAPCHEAT = BIT(30);
 // Used for intermission map
 constexpr static levelFlags_t LEVEL_VISITED = BIT(31);
 
+constexpr static levelFlags_t LEVEL2_NORMALINFIGHTING = BIT(0);
+constexpr static levelFlags_t LEVEL2_NOINFIGHTING = BIT(1);
+constexpr static levelFlags_t LEVEL2_TOTALINFIGHTING = BIT(2);
+constexpr static levelFlags_t LEVEL2_INFIGHTINGMASK = BIT_MASK(0, 2);
+
 struct acsdefered_s;
 class FBehavior;
 struct bossaction_t;
 
 struct level_info_t
 {
-	OLumpName		mapname;
-	int				levelnum;
-	std::string		level_name;
-	byte			level_fingerprint[16];
-	OLumpName		pname;
-	OLumpName		nextmap;
-	OLumpName		secretmap;
-	int				partime;
-	OLumpName		skypic;
-	OLumpName		music;
-	levelFlags_t	flags;
-	int				cluster;
-	FLZOMemFile*	snapshot;
-	acsdefered_s*	defered;
-
-	level_info_t()
-	    : mapname(""), levelnum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
-	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
-	      defered(NULL)
-	{
-		ArrayInit(level_fingerprint, 0);
-	}
+	OLumpName     mapname    = "";
+	int           levelnum   = 0;
+	int           mapnum     = 0;
+	int           episodenum = 0;
+	std::string   level_name = "";
+	byte          level_fingerprint[16] = { 0 };
+	OLumpName     pname      = "";
+	OLumpName     nextmap    = "";
+	OLumpName     secretmap  = "";
+	int           partime    = 0;
+	OLumpName     skypic     = "";
+	OLumpName     music      = "";
+	levelFlags_t  flags      = 0;
+	levelFlags_t  flags2     = 0;
+	int           cluster    = 0;
+	FLZOMemFile*  snapshot   = nullptr;
+	acsdefered_s* defered    = nullptr;
 
 	bool exists() const
 	{
@@ -128,6 +129,7 @@ struct fhfprint_s
 	{
 		ArrayInit(fingerprint, 0);
 	}
+	[[nodiscard]]
 	bool operator==(const fhfprint_s& other)
 	{
 		return fingerprint == other.fingerprint;
@@ -139,8 +141,10 @@ struct level_pwad_info_t
 	// level_info_t
 	OLumpName		mapname;
 	int				levelnum;
+	int				mapnum;
+	int				episodenum;
 	std::string		level_name;
-	byte			level_fingerprint[16];
+	byte			level_fingerprint[16] = { 0 };
 	OLumpName		pname;
 	OLumpName		nextmap;
 	OLumpName		secretmap;
@@ -148,6 +152,7 @@ struct level_pwad_info_t
 	OLumpName		skypic;
 	OLumpName		music;
 	levelFlags_t	flags;
+	levelFlags_t	flags2;
 	int				cluster;
 	FLZOMemFile*	snapshot;
 	acsdefered_s*	defered;
@@ -193,13 +198,13 @@ struct level_pwad_info_t
 	std::string		author;
 
 	level_pwad_info_t()
-	    : mapname(""), levelnum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
-	      partime(0), skypic(""), music(""), flags(0), cluster(0), snapshot(NULL),
+	    : mapname(""), levelnum(0), mapnum(0), episodenum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
+	      partime(0), skypic(""), music(""), flags(0), flags2(0), cluster(0), snapshot(NULL),
 	      defered(NULL), fadetable("COLORMAP"), skypic2(""), gravity(0.0f),
 	      aircontrol(0.0f), airsupply(10),
-		    exitpic(""), enterpic(""), exitscript(""), enterscript(""), exitanim(""), enteranim(""), endpic(""), intertext(""),
+	      exitpic(""), enterpic(""), exitscript(""), enterscript(""), exitanim(""), enteranim(""), endpic(""), intertext(""),
 	      intertextsecret(""), interbackdrop(""), intermusic(""), zintermusic(""),
-	      sky1ScrollDelta(0), sky2ScrollDelta(0), bossactions(), label(),
+	      sky1ScrollDelta(0), sky2ScrollDelta(0), bossactions(), label(""),
 	      clearlabel(false), author()
 	{
 		ArrayInit(fadeto_color, 0);
@@ -209,15 +214,15 @@ struct level_pwad_info_t
 	}
 
 	level_pwad_info_t(const level_info_t& other)
-	    : mapname(other.mapname), levelnum(other.levelnum), level_name(other.level_name),
-	      pname(other.pname), nextmap(other.nextmap),
+	    : mapname(other.mapname), levelnum(other.levelnum), mapnum(other.mapnum), episodenum(other.episodenum),
+	      level_name(other.level_name), pname(other.pname), nextmap(other.nextmap),
 	      secretmap(other.secretmap), partime(other.partime), skypic(other.skypic),
-	      music(other.music), flags(other.flags), cluster(other.cluster),
+	      music(other.music), flags(other.flags), flags2(other.flags2), cluster(other.cluster),
 	      snapshot(other.snapshot), defered(other.defered), fadetable("COLORMAP"),
 	      skypic2(""), gravity(0.0f), aircontrol(0.0f), airsupply(10),
-		    exitpic(""), enterpic(""), exitscript(""), enterscript(""), exitanim(""), enteranim(""),
+	      exitpic(""), enterpic(""), exitscript(""), enterscript(""), exitanim(""), enteranim(""),
 	      endpic(""), intertext(""), intertextsecret(""), interbackdrop(""), intermusic(""), zintermusic(""),
-	      sky1ScrollDelta(0), sky2ScrollDelta(0), bossactions(), label(),
+	      sky1ScrollDelta(0), sky2ScrollDelta(0), bossactions(), label(""),
 	      clearlabel(false), author()
 	{
 		ArrayInit(fadeto_color, 0);
@@ -241,6 +246,7 @@ struct level_pwad_info_t
 		skypic = other.skypic;
 		music = other.music;
 		flags = other.flags;
+		flags2 = other.flags2;
 		cluster = other.cluster;
 		snapshot = other.snapshot;
 		defered = other.defered;
@@ -300,7 +306,8 @@ struct level_locals_t
 	OLumpName		nextmap;				// go here when sv_fraglimit is hit
 	OLumpName		secretmap;				// map to go to when used secret exit
 
-	DWORD			flags;
+	levelFlags_t	flags;
+	levelFlags_t	flags2;
 
 	// [SL] use 4 bytes for color types instead of argb_t so that the struct
 	// can consist of only plain-old-data types. It is also important to have
@@ -382,13 +389,13 @@ struct cluster_info_t
 	int				cluster;
 	OLumpName		messagemusic;
 	OLumpName		finaleflat;
-	char*			exittext;
-	char*			entertext;
+	std::string		exittext;
+	std::string		entertext;
 	int				flags;
 	OLumpName		finalepic;
 
 	cluster_info_t()
-	    : cluster(0), messagemusic(""), finaleflat(""), exittext(NULL), entertext(NULL),
+	    : cluster(0), messagemusic(""), finaleflat(""), exittext(""), entertext(""),
 	      flags(0)
 	{
 	}
@@ -440,12 +447,15 @@ public:
 
 typedef OHashTable<int, int> ACSWorldGlobalArray;
 
-extern int ACS_WorldVars[NUM_WORLDVARS];
-extern int ACS_GlobalVars[NUM_GLOBALVARS];
-extern ACSWorldGlobalArray ACS_WorldArrays[NUM_WORLDVARS];
-extern ACSWorldGlobalArray ACS_GlobalArrays[NUM_GLOBALVARS];
+// ACS variables with world scope
+inline std::array<int, NUM_WORLDVARS> ACS_WorldVars;
+inline std::array<ACSWorldGlobalArray, NUM_WORLDVARS> ACS_WorldArrays;
 
-extern BOOL savegamerestore;
+// ACS variables with global scope
+inline std::array<int, NUM_GLOBALVARS> ACS_GlobalVars;
+inline std::array<ACSWorldGlobalArray, NUM_GLOBALVARS> ACS_GlobalArrays;
+
+extern bool savegamerestore;
 
 void G_InitNew(const char *mapname);
 inline void G_InitNew(const OLumpName& mapname) { G_InitNew(mapname.c_str()); }
@@ -489,7 +499,7 @@ void P_RemoveDefereds();
 
 bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
                const std::string& mapname = "");
-bool G_LoadWadString(const std::string& str, const std::string& mapname = "", const std::string& lastmap = "");
+bool G_LoadWadString(const std::string& str, const std::string& mapname = "", const maplist_lastmaps_t& lastmaps = {});
 
 LevelInfos& getLevelInfos();
 ClusterInfos& getClusterInfos();

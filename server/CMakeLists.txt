@@ -46,10 +46,10 @@ if(WIN32)
   target_include_directories(odasrv PRIVATE win32)
 endif()
 
-target_link_libraries(odasrv fmt::fmt tinylibs ZLIB::ZLIB odamex-common odaproto minilzo)
+target_link_libraries(odasrv fmt::fmt tinylibs ZLIB::ZLIB odamex-common odaproto minilzo cpptrace::cpptrace)
 
 if(USE_INTERNAL_JSONCPP)
-  target_link_libraries(odasrv jsoncpp_lib_static)
+  target_link_libraries(odasrv jsoncpp_static)
 else()
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(JSONCPP jsoncpp REQUIRED IMPORTED_TARGET)

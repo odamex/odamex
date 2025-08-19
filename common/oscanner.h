@@ -71,30 +71,30 @@ class OScanner
 	void mustScanBool();
 	void unScan();
 
-	std::string getToken() const;
-	int getTokenInt() const;
-	float getTokenFloat() const;
-	bool getTokenBool() const;
+	[[nodiscard]] std::string getToken() const;
+	[[nodiscard]] int getTokenInt() const;
+	[[nodiscard]] float getTokenFloat() const;
+	[[nodiscard]] bool getTokenBool() const;
 
-	bool &crossed();
-	bool isQuotedString() const;
-	bool isIdentifier() const;
+	[[nodiscard]] bool &crossed();
+	[[nodiscard]] bool isQuotedString() const;
+	[[nodiscard]] bool isIdentifier() const;
 	void assertTokenIs(const char* string) const;
 	void assertTokenNoCaseIs(const char* string) const;
-	bool compareToken(const char* string) const;
-	bool compareTokenNoCase(const char* string) const;
+	[[nodiscard]] bool compareToken(const char* string) const;
+	[[nodiscard]] bool compareTokenNoCase(const char* string) const;
 
 	template <typename... ARGS>
 	void warning(const fmt::string_view format, const ARGS&... args) const
 	{
 		PrintFmt(PRINT_WARNING, "Parse Warning: {}:{}: {}\n", m_config.lumpName,
-		       m_lineNumber, fmt::sprintf(format, args...));
+		       m_lineNumber, fmt::format(format, args...));
 	}
 
 	template <typename... ARGS>
 	void error(const fmt::string_view format, const ARGS&... args) const
 	{
-		I_Error("Parse Error: %s:%d: %s", m_config.lumpName.c_str(), m_lineNumber,
-		        fmt::sprintf(format, args...));
+		I_Error("Parse Error: {}:{}: {}", m_config.lumpName, m_lineNumber,
+		        fmt::format(format, args...));
 	}
 };

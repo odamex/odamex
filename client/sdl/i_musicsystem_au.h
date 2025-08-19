@@ -41,20 +41,20 @@ class AuMusicSystem : public MusicSystem
 {
   public:
 	AuMusicSystem();
-	virtual ~AuMusicSystem();
+	~AuMusicSystem() override;
 
-	virtual void startSong(byte* data, size_t length, bool loop);
-	virtual void stopSong();
-	virtual void pauseSong();
-	virtual void resumeSong();
-	virtual void playChunk() { }
-	virtual void setVolume(float volume);
+	void startSong(byte* data, size_t length, bool loop) override;
+	void stopSong() override;
+	void pauseSong() override;
+	void resumeSong() override;
+	void playChunk() override { }
+	void setVolume(float volume) override;
 
-	virtual bool isInitialized() const { return m_isInitialized; }
+	bool isInitialized() const override { return m_isInitialized; }
 
 	// Only plays midi-type music
-	virtual bool isMusCapable() const { return true; }
-	virtual bool isMidiCapable() const { return true; }
+	bool isMusCapable() const override { return true; }
+	bool isMidiCapable() const override { return true; }
 
   private:
 	bool m_isInitialized;

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -418,7 +418,7 @@ typedef enum {
 	dDamage_LavaHefty = 83,
 	dScroll_EastLavaDamage = 84,
 	hDamage_Sludge = 85,
-	
+
 	sLight_Strobe_Hurt = 104,
 	sDamage_Hellslime = 105,
 	Damage_InstantDeath = 115,
@@ -513,7 +513,7 @@ typedef struct
 struct line_s;
 class AActor;
 
-typedef BOOL (*lnSpecFunc)(struct line_s	*line,
+typedef bool (*lnSpecFunc)(struct line_s	*line,
 						   class AActor		*activator,
 						   int				arg1,
 						   int				arg2,
@@ -523,10 +523,10 @@ typedef BOOL (*lnSpecFunc)(struct line_s	*line,
 
 extern lnSpecFunc LineSpecials[283];
 
-BOOL EV_CeilingCrushStop (int tag);
+bool EV_CeilingCrushStop (int tag);
 void EV_StopPlat (int tag);
-BOOL EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
-BOOL EV_ZDoomCeilingCrushStop(int tag, bool remove);
+bool EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
+bool EV_ZDoomCeilingCrushStop(int tag, bool remove);
 
 bool P_LineSpecialMovesSector(short special);
 bool P_CanActivateSpecials(AActor* mo, line_t* line);

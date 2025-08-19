@@ -318,14 +318,12 @@ CVAR_FUNC_IMPL(vid_maxfps)
 //
 BEGIN_COMMAND(vid_listmodes)
 {
-	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
-
-	for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
+	for (const auto& mode : *I_GetVideoCapabilities()->getSupportedVideoModes())
 	{
-		if (*it == I_GetWindow()->getVideoMode())
-			Printf_Bold("%s\n", I_GetVideoModeString(*it).c_str());
+		if (mode == I_GetWindow()->getVideoMode())
+			PrintFmt_Bold("{}\n", I_GetVideoModeString(mode));
 		else
-			Printf(PRINT_HIGH, "%s\n", I_GetVideoModeString(*it).c_str());
+			PrintFmt(PRINT_HIGH, "{}\n", I_GetVideoModeString(mode));
 	}
 }
 END_COMMAND(vid_listmodes)
@@ -360,7 +358,7 @@ BEGIN_COMMAND(vid_currentmode)
 
 	const IVideoMode& mode = I_GetWindow()->getVideoMode();
 	Printf(PRINT_HIGH, "%s %s surface\n",
-			I_GetVideoModeString(mode).c_str(), pixel_string.c_str());
+			I_GetVideoModeString(mode), pixel_string);
 }
 END_COMMAND(vid_currentmode)
 
@@ -508,7 +506,7 @@ void V_Init()
 
 		V_DoSetResolution();
 
-		Printf(PRINT_HIGH, "V_Init: using %s video driver.\n", I_GetVideoDriverName().c_str());
+		Printf(PRINT_HIGH, "V_Init: using %s video driver.\n", I_GetVideoDriverName());
 	}
 
 	if (!I_VideoInitialized())
@@ -816,8 +814,8 @@ void V_DrawFPSTicker()
 
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 	{
-		constexpr palindex_t oncolor = 255;
-		constexpr palindex_t offcolor = 0;
+		static constexpr palindex_t oncolor = 255;
+		static constexpr palindex_t offcolor = 0;
 
 		int n = 0;
 		for (n = 0; n < tics; n++)

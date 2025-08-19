@@ -40,7 +40,7 @@
 // ------------------------
 // Command line parameters.
 //
-extern	BOOL			devparm;		// DEBUG: launched with -devparm
+extern	bool			devparm;		// DEBUG: launched with -devparm
 
 
 // -----------------------------------------------------
@@ -50,7 +50,7 @@ extern GameMode_t		gamemode;
 extern GameMission_t	gamemission;
 
 // Set if homebrew PWAD stuff has been added.
-extern	BOOL			modifiedgame;
+extern	bool			modifiedgame;
 
 
 // -------------------------------------------
@@ -59,15 +59,15 @@ extern	BOOL			modifiedgame;
 
 extern OLumpName startmap; // [RH] Actual map name now
 
-extern BOOL autostart;
+extern bool autostart;
 
 // Selected by user.
 EXTERN_CVAR (sv_skill)
 
 // Bot game? Like netgame, but doesn't involve network communication.
-extern	BOOL			multiplayer;
+extern	bool			multiplayer;
 
-extern BOOL            network_game;
+extern bool            network_game;
 
 // Game mode
 EXTERN_CVAR (sv_gametype)
@@ -103,13 +103,13 @@ EXTERN_CVAR (sv_maxplayers)
 // Depending on view size - no status bar?
 // Note that there is no way to disable the
 //	status bar explicitely.
-extern	BOOL			statusbaractive;
+extern	bool			statusbaractive;
 
-extern	BOOL			menuactive; 	// Menu overlayed?
-extern	BOOL			paused; 		// Game Pause?
+extern	bool			menuactive; 	// Menu overlayed?
+extern	bool			paused; 		// Game Pause?
 
 
-extern	BOOL			viewactive;
+extern	bool			viewactive;
 
 extern	bool	 		nodrawers;
 extern	bool	 		noblit;
@@ -127,12 +127,12 @@ extern level_locals_t level;
 // DEMO playback/recording related stuff.
 // No demo, there is a human player in charge?
 // Disable save/end game?
-extern	BOOL			usergame;
+extern	bool			usergame;
 
-extern	BOOL			demoplayback;
+extern	bool			demoplayback;
 
 // Quit after playing a demo from cmdline.
-extern	BOOL			singledemo;
+extern	bool			singledemo;
 
 
 
@@ -176,7 +176,7 @@ extern	int 			maxammo[NUMAMMO];
 //
 
 // if true, load all graphics at level load
-extern	BOOL	 		precache;
+extern	bool	 		precache;
 
 // wipegamestate can be set to -1
 //	to force a wipe on the next draw
@@ -187,7 +187,7 @@ EXTERN_CVAR (mouse_sensitivity) // removeme // ?
 // Needed to store the number of the dummy sky flat.
 // Used for rendering,
 //	as well as tracking projectiles etc.
-extern int				skyflatnum;
+inline int				skyflatnum;
 
 // ---- [RH] ----
 EXTERN_CVAR (developer) // removeme
@@ -195,21 +195,22 @@ EXTERN_CVAR (developer) // removeme
 // [RH] Miscellaneous info for DeHackEd support
 struct DehInfo
 {
-	int StartHealth;
-	int StartBullets;
-	int MaxHealth;
-	int MaxArmor;
-	int GreenAC;
-	int BlueAC;
-	int MaxSoulsphere;
-	int SoulsphereHealth;
-	int MegasphereHealth;
-	int GodHealth;
-	int FAArmor;
-	int FAAC;
-	int KFAArmor;
-	int KFAAC;
-	int BFGCells;
-	int Infight;
+	int StartHealth      = 100;
+	int StartBullets     = 50;
+	int MaxHealth        = 100;
+	int MaxArmor         = 200;
+	int GreenAC          = 1;
+	int BlueAC           = 2;
+	int MaxSoulsphere    = 200;
+	int SoulsphereHealth = 100;
+	int MegasphereHealth = 200;
+	int GodHealth        = 100;
+	int FAArmor          = 200;
+	int FAAC             = 2;
+	int KFAArmor         = 200;
+	int KFAAC            = 2;
+	int BFGCells         = 40;
+	int Infight          = 0;
+	bool ZDAmmo          = false;
 };
-extern struct DehInfo deh;
+inline DehInfo deh{};

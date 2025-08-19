@@ -252,8 +252,8 @@ const char* NiceVersionDetails()
 	const char* debug = ", Debug Build";
 #endif
 
-	// We ignore this branch prefix.
-	const char RELEASE_PREFIX[] = "release";
+	static constexpr std::string_view RELEASE_PREFIX = "release";
+
 
 	if (NoGitVersion())
 	{
@@ -264,7 +264,7 @@ const char* NiceVersionDetails()
 			version = "Debug Build";
 		}
 	}
-	else if (!strncmp(GitBranch(), "release", ARRAY_LENGTH(RELEASE_PREFIX) - 1))
+	else if (!strncmp(GitBranch(), RELEASE_PREFIX.data(), RELEASE_PREFIX.length()))
 	{
 		// "Release" branch shows total revisions as a build number
 		version = fmt::sprintf("-prerelease.%s%s", GitRevCount(), debug);
@@ -287,7 +287,7 @@ const char* NiceVersion()
 {
 	static std::string version;
 	static bool tried = false;
-	const char RELEASE_PREFIX[] = "release";
+	static constexpr std::string_view RELEASE_PREFIX = "release";
 
 	if (tried)
 	{
@@ -305,7 +305,7 @@ const char* NiceVersion()
 	else
 	{
 		// Release candidates show everything together
-		if (!strncmp(GitBranch(), "release", ARRAY_LENGTH(RELEASE_PREFIX) - 1))
+		if (!strncmp(GitBranch(), RELEASE_PREFIX.data(), RELEASE_PREFIX.length()))
 		{
 			version = fmt::sprintf("%s%s", DOTVERSIONSTR, details);
 		}
@@ -336,7 +336,7 @@ BEGIN_COMMAND(version)
 		}
 		else
 		{
-			PrintFmt("{}", it->second.c_str());
+			PrintFmt("{}", it->second);
 		}
 	}
 }
@@ -344,10 +344,9 @@ END_COMMAND(version)
 
 BEGIN_COMMAND(listsourcefiles)
 {
-	for (source_files_t::const_iterator it = get_source_files().begin();
-	     it != get_source_files().end(); ++it)
+	for (const auto& file : get_source_files())
 	{
-		Printf(PRINT_HIGH, "%s %s\n", it->first.c_str(), it->second.c_str());
+		PrintFmt(PRINT_HIGH, "{} {}\n", file.first, file.second);
 	}
 }
 END_COMMAND(listsourcefiles)

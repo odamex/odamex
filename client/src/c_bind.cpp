@@ -198,7 +198,7 @@ void OKeyBindings::UnbindKey(const char* key)
 	if (keycode)
 		Binds.erase(keycode);
 	else
-		Printf(PRINT_WARNING, "Unknown key %s\n", C_QuoteString(key).c_str());
+		PrintFmt(PRINT_WARNING, "Unknown key {:s}\n", C_QuoteString(key));
 }
 
 void OKeyBindings::UnbindAll()
@@ -214,25 +214,23 @@ void OKeyBindings::BindAKey(size_t argc, char** argv, const char* msg)
 		int key = I_GetKeyFromName(key_name);
 		if (!key)
 		{
-			Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
+			PrintFmt(PRINT_HIGH, "Unknown key {:s}\n", C_QuoteString(argv[1]));
 		}
 		else
 		{
 			if (argc == 2)
-				Printf(PRINT_HIGH, "%s = %s\n", key_name.c_str(), C_QuoteString(Binds[key]).c_str());
+				PrintFmt(PRINT_HIGH, "{:s} = {:s}\n", key_name, C_QuoteString(Binds[key]));
 			else
 				Binds[key] = argv[2];
 		}
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "%s\n", msg);
-		for (BindingTable::const_iterator it = Binds.begin(); it != Binds.end(); ++it)
+		PrintFmt(PRINT_HIGH, "{:s}\n", msg);
+		for (const auto& [key, binding] : Binds)
 		{
-			int key = it->first;
-			const std::string& binding = it->second;
 			if (!binding.empty())
-				Printf(PRINT_HIGH, "%s = %s\n", I_GetKeyName(key).c_str(), C_QuoteString(binding).c_str());
+				PrintFmt(PRINT_HIGH, "{:s} = {:s}\n", I_GetKeyName(key), C_QuoteString(binding));
 		}
 	}
 }
@@ -401,10 +399,8 @@ bool C_DoKey(event_t* ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 //
 void C_ReleaseKeys()
 {
-	for (KeyStateTable::iterator it = KeyStates.begin(); it != KeyStates.end(); ++it)
+	for (auto& [key, key_state] : KeyStates)
 	{
-		int key = it->first;
-		KeyState& key_state = it->second;
 		if (key_state.key_down)
 		{
 			key_state.key_down = false;
@@ -427,12 +423,10 @@ void C_ReleaseKeys()
 
 void OKeyBindings::ArchiveBindings(FILE* f)
 {
-	for (BindingTable::const_iterator it = Binds.begin(); it != Binds.end(); ++it)
+	for (const auto& [key, binding] : Binds)
 	{
-		const int key = it->first;
-		const std::string& binding = it->second;
 		if (!binding.empty())
-			fprintf(f, "%s %s %s\n", command.c_str(), C_QuoteString(I_GetKeyName(key)).c_str(), C_QuoteString(binding).c_str());
+			fmt::print(f, "{} {} {}\n", command, C_QuoteString(I_GetKeyName(key)), C_QuoteString(binding));
 	}
 }
 
@@ -442,10 +436,8 @@ int OKeyBindings::GetKeysForCommand(const char* cmd, int* first, int* second)
 	int c = 0;
 	*first = *second = 0;
 
-	for (BindingTable::const_iterator it = Binds.begin(); it != Binds.end(); ++it)
+	for (const auto& [key, binding] : Binds)
 	{
-		int key = it->first;
-		const std::string& binding = it->second;
 		if (!binding.empty() && stricmp(cmd, binding.c_str()) == 0)
 		{
 			c++;
@@ -592,9 +584,7 @@ BEGIN_COMMAND(unbind)
 		return;
 	}
 
-	std::string lostr = StdStringToLower(argv[1]);
-
-	if (iequals(lostr, "all"))
+	if (iequals(argv[1], "all"))
 		Bindings.UnbindAll();
 	else
 		Bindings.UnbindKey(argv[1]);
@@ -618,9 +608,7 @@ BEGIN_COMMAND(undoublebind)
 		return;
 	}
 
-	std::string lostr = StdStringToLower(argv[1]);
-
-	if (iequals(lostr, "all"))
+	if (iequals(argv[1], "all"))
 		DoubleBindings.UnbindAll();
 	else
 		DoubleBindings.UnbindKey(argv[1]);
@@ -643,11 +631,9 @@ BEGIN_COMMAND(unambind)
 		return;
 	}
 
-	if (argc > 1) {
-
-		std::string lostr = StdStringToLower(argv[1]);
-
-		if (iequals(lostr, "all"))
+	if (argc > 1)
+	{
+		if (iequals(argv[1], "all"))
 			AutomapBindings.UnbindAll();
 		else
 			AutomapBindings.UnbindKey(argv[1]);
@@ -674,10 +660,7 @@ BEGIN_COMMAND(unnetdemobind)
 
 	if (argc > 1)
 	{
-
-		std::string lostr = StdStringToLower(argv[1]);
-
-		if (iequals(lostr, "all"))
+		if (iequals(argv[1], "all"))
 			NetDemoBindings.UnbindAll();
 		else
 			NetDemoBindings.UnbindKey(argv[1]);

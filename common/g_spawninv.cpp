@@ -263,9 +263,9 @@ static bool InvSetWeapons(spawnInventory_t& inv, const std::string& value)
 	bool newowned[NUMWEAPONS];
 	ArrayInit(newowned, false);
 
-	for (std::string::const_iterator it = value.begin(); it != value.end(); ++it)
+	for (const auto c : value)
 	{
-		int owned = WeaponTypeFromChar(*it);
+		int owned = WeaponTypeFromChar(c);
 		if (owned == MININT)
 			return false;
 
@@ -332,52 +332,52 @@ static std::string SpawnInvSerialize(const spawnInventory_t& inv)
 	StringTokens params;
 	std::string buf;
 
-	buf = fmt::sprintf("health:%s", InvHealthStr(inv).c_str());
+	buf = fmt::sprintf("health:%s", InvHealthStr(inv));
 	params.push_back(buf);
 
 	if (inv.armortype > 0 && inv.armortype <= 2 && inv.armorpoints > 0)
 	{
 		if (inv.armortype == 1)
-			buf = fmt::sprintf("armor1:%s", InvArmorPointsStr(inv).c_str());
+			buf = fmt::sprintf("armor1:%s", InvArmorPointsStr(inv));
 		else if (inv.armortype == 2)
-			buf = fmt::sprintf("armor2:%s", InvArmorPointsStr(inv).c_str());
+			buf = fmt::sprintf("armor2:%s", InvArmorPointsStr(inv));
 
 		params.push_back(buf);
 	}
 
 	if (inv.readyweapon != NUMWEAPONS)
 	{
-		buf = fmt::sprintf("rweapon:%s", InvReadyWeaponStr(inv).c_str());
+		buf = fmt::sprintf("rweapon:%s", InvReadyWeaponStr(inv));
 		params.push_back(buf);
 	}
 
 	if (!InvWeaponsStr(inv).empty())
 	{
-		buf = fmt::sprintf("weapons:%s", InvWeaponsStr(inv).c_str());
+		buf = fmt::sprintf("weapons:%s", InvWeaponsStr(inv));
 		params.push_back(buf);
 	}
 
 	if (inv.ammo[am_clip] > 0)
 	{
-		buf = fmt::sprintf("bullets:%s", InvAmmoStr(inv, am_clip).c_str());
+		buf = fmt::sprintf("bullets:%s", InvAmmoStr(inv, am_clip));
 		params.push_back(buf);
 	}
 
 	if (inv.ammo[am_shell] > 0)
 	{
-		buf = fmt::sprintf("shells:%s", InvAmmoStr(inv, am_shell).c_str());
+		buf = fmt::sprintf("shells:%s", InvAmmoStr(inv, am_shell));
 		params.push_back(buf);
 	}
 
 	if (inv.ammo[am_misl] > 0)
 	{
-		buf = fmt::sprintf("rockets:%s", InvAmmoStr(inv, am_misl).c_str());
+		buf = fmt::sprintf("rockets:%s", InvAmmoStr(inv, am_misl));
 		params.push_back(buf);
 	}
 
 	if (inv.ammo[am_cell] > 0)
 	{
-		buf = fmt::sprintf("cells:%s", InvAmmoStr(inv, am_cell).c_str());
+		buf = fmt::sprintf("cells:%s", InvAmmoStr(inv, am_cell));
 		params.push_back(buf);
 	}
 
@@ -388,7 +388,7 @@ static std::string SpawnInvSerialize(const spawnInventory_t& inv)
 
 	if (inv.invul > 0)
 	{
-		buf = fmt::sprintf("invul:%s", InvInvulStr(inv).c_str());
+		buf = fmt::sprintf("invul:%s", InvInvulStr(inv));
 		params.push_back(buf);
 	}
 
@@ -462,7 +462,7 @@ void G_SetupSpawnInventory()
 				Printf(PRINT_WARNING,
 				       "g_spawninv: Unknown parameter \"%s\", falling back to default "
 				       "inventory.\n",
-				       token.c_str());
+				       token);
 				::gSpawnInv = ::gDefaultInv;
 				return;
 			}
@@ -473,7 +473,7 @@ void G_SetupSpawnInventory()
 				Printf(PRINT_WARNING,
 				       "g_spawninv: Missing key for parameter \"%s\", falling back to "
 				       "default inventory.\n",
-				       token.c_str());
+				       token);
 				::gSpawnInv = ::gDefaultInv;
 				return;
 			}
@@ -484,7 +484,7 @@ void G_SetupSpawnInventory()
 				Printf(PRINT_WARNING,
 				       "g_spawninv: Missing value for parameter \"%s\", falling back to "
 				       "default inventory.\n",
-				       token.c_str());
+				       token);
 				::gSpawnInv = ::gDefaultInv;
 				return;
 			}
@@ -508,7 +508,7 @@ void G_SetupSpawnInventory()
 					Printf(PRINT_WARNING,
 					       "g_spawninv: Unknown value for parameter \"%s\", falling back "
 					       "to default inventory.\n",
-					       token.c_str());
+					       token);
 					::gSpawnInv = ::gDefaultInv;
 					return;
 				}
@@ -520,7 +520,7 @@ void G_SetupSpawnInventory()
 					Printf(PRINT_WARNING,
 					       "g_spawninv: Unknown value for parameter \"%s\", falling back "
 					       "to default inventory.\n",
-					       token.c_str());
+					       token);
 					::gSpawnInv = ::gDefaultInv;
 					return;
 				}
@@ -550,7 +550,7 @@ void G_SetupSpawnInventory()
 				Printf(PRINT_WARNING,
 				       "g_spawninv: Unknown parameter \"%s\", falling back to default "
 				       "inventory.\n",
-				       token.c_str());
+				       token);
 				::gSpawnInv = ::gDefaultInv;
 				return;
 			}
@@ -718,7 +718,7 @@ static void SpawninvCommand(const std::string& cmd, const std::string& param)
 	}
 	else
 	{
-		Printf(PRINT_WARNING, "spawninv: Unknown subcommand \"%s\".", param.c_str());
+		Printf(PRINT_WARNING, "spawninv: Unknown subcommand \"%s\".", param);
 		return;
 	}
 
@@ -739,7 +739,7 @@ BEGIN_COMMAND(spawninv)
 	{
 		// Information about our currently-set spawn inventory.
 		Printf("g_spawninv: %s\n", ::g_spawninv.cstring());
-		Printf("serialized: %s\n", SpawnInvSerialize(::gSpawnInv).c_str());
+		Printf("serialized: %s\n", SpawnInvSerialize(::gSpawnInv));
 
 		Printf("Health: %d\n", ::gSpawnInv.health);
 		if (::gSpawnInv.armortype == 1)
@@ -759,7 +759,7 @@ BEGIN_COMMAND(spawninv)
 				weapons.push_back(::weaponnames[i]);
 		}
 		if (!weapons.empty())
-			Printf("Weapons: %s\n", JoinStrings(weapons, ", ").c_str());
+			Printf("Weapons: %s\n", JoinStrings(weapons, ", "));
 		else
 			Printf("Weapons: None\n");
 
@@ -784,7 +784,7 @@ BEGIN_COMMAND(spawninv)
 		}
 		if (!other.empty())
 		{
-			Printf("Other: %s\n", JoinStrings(other, ", ").c_str());
+			Printf("Other: %s\n", JoinStrings(other, ", "));
 		}
 
 		return;

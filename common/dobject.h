@@ -88,7 +88,7 @@ struct TypeInfo
 	void RegisterType ();
 
 	// Returns true if this type is an ansector of (or same as) the passed type.
-	bool IsAncestorOf (const TypeInfo *ti) const
+	[[nodiscard]] bool IsAncestorOf (const TypeInfo *ti) const
 	{
 		while (ti)
 		{
@@ -98,7 +98,7 @@ struct TypeInfo
 		}
 		return false;
 	}
-	inline bool IsDescendantOf (const TypeInfo *ti) const
+	[[nodiscard]] inline bool IsDescendantOf (const TypeInfo *ti) const
 	{
 		return ti->IsAncestorOf (this);
 	}
@@ -118,7 +118,7 @@ struct ClassInit
 #define RUNTIME_CLASS(cls)		(&cls::_StaticType)
 
 #define _DECLARE_CLASS(cls,parent) \
-	virtual TypeInfo *StaticType() const { return RUNTIME_CLASS(cls); } \
+	[[nodiscard]] TypeInfo *StaticType() const override { return RUNTIME_CLASS(cls); } \
 private: \
 	typedef parent Super; \
 	typedef cls ThisClass; \
@@ -133,7 +133,7 @@ public: \
 	static DObject *CreateObject (); \
 public: \
 	bool CanSerialize() { return true; } \
-	void Serialize (FArchive &); \
+	void Serialize(FArchive &) override; \
 	inline friend FArchive &operator>> (FArchive &arc, cls* &object) \
 	{ \
 		return arc.ReadObject ((DObject* &)object, RUNTIME_CLASS(cls)); \
@@ -167,7 +167,7 @@ class DObject
 {
 public: \
 	static TypeInfo _StaticType; \
-	virtual TypeInfo *StaticType() const { return &_StaticType; } \
+	[[nodiscard]] virtual TypeInfo *StaticType() const { return &_StaticType; } \
 private: \
 	typedef DObject ThisClass;
 
@@ -175,12 +175,12 @@ public:
 	DObject ();
 	virtual ~DObject ();
 
-	inline bool IsKindOf (const TypeInfo *base) const
+	[[nodiscard]] inline bool IsKindOf (const TypeInfo *base) const
 	{
 		return base->IsAncestorOf (StaticType ());
 	}
 
-	inline bool IsA (const TypeInfo *type) const
+	[[nodiscard]] inline bool IsA (const TypeInfo *type) const
 	{
 		return (type == StaticType());
 	}

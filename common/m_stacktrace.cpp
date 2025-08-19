@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: 
+// $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2006-2025 by The Odamex Team.
@@ -17,20 +17,28 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Skill data for defining new skills.
-// 
+//	Stacktrace for more useful error messages
+//
 //-----------------------------------------------------------------------------
-
 
 #include "odamex.h"
 
-#include "g_skill.h"
+#include "m_stacktrace.h"
 
-SkillInfo SkillInfos[MAX_SKILLS];
-byte skillnum = 0;
-byte defaultskillmenu = 2;
+#include "cpptrace/cpptrace.hpp"
+#include "cpptrace/formatting.hpp"
 
-const SkillInfo& G_GetCurrentSkill()
+std::string M_GetStacktrace(std::string header)
 {
-	return SkillInfos[sv_skill.asInt() - 1];
+	auto formatter = cpptrace::formatter{}
+		.header(header)
+		.colors(cpptrace::formatter::color_mode::none)
+		.addresses(cpptrace::formatter::address_mode::none)
+		.paths(cpptrace::formatter::path_mode::basename)
+		.columns(false)
+		.snippets(false)
+		.filter([](const auto& frame)
+			{ return frame.symbol.find("M_GetStacktrace") == std::string::npos; })
+		.filtered_frame_placeholders(false);
+	return formatter.format(cpptrace::generate_trace());
 }

@@ -87,7 +87,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	{
 		// pointer to line function is NULL by default, set non-null if
 		// line special is walkover generalized linedef type
-		BOOL (*linefunc)(line_t * line) = NULL;
+		bool (*linefunc)(line_t * line) = NULL;
 
 		// check each range of generalized linedefs
 		if ((unsigned)line->special >= GenEnd)
@@ -1912,7 +1912,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	// pointer to line function is NULL by default, set non-null if
 	// line special is push or switch generalized linedef type
-	int (*linefunc)(line_t * line) = NULL;
+	bool (*linefunc)(line_t * line) = nullptr;
 
 	// check each range of generalized linedefs
 	if ((unsigned)line->special >= GenEnd)
@@ -3373,7 +3373,7 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 
 	// pointer to line function is NULL by default, set non-null if
 	// line special is gun triggered generalized linedef type
-	int (*linefunc)(line_t * line) = NULL;
+	bool (*linefunc)(line_t * line) = nullptr;
 
 	// check each range of generalized linedefs
 	if ((unsigned)line->special >= GenEnd)

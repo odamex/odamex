@@ -139,8 +139,6 @@ bool SV_IsValidToken(DWORD token)
 // TODO: Clean up and reinvent.
 void SV_SendServerInfo()
 {
-	size_t i;
-
 	SZ_Clear(&ml_message);
 
 	MSG_WriteLong(&ml_message, MSG_CHALLENGE);
@@ -150,12 +148,12 @@ void SV_SendServerInfo()
 	if(MSG_BytesLeft() == 4)
 		MSG_WriteLong(&ml_message, MSG_ReadLong());
 
-	MSG_WriteString(&ml_message, (char *)sv_hostname.cstring());
+	MSG_WriteString(&ml_message, sv_hostname.cstring());
 
 	byte playersingame = 0;
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (const auto& player : players)
 	{
-		if (it->ingame())
+		if (player.ingame())
 			playersingame++;
 	}
 
@@ -169,7 +167,7 @@ void SV_SendServerInfo()
 
 	MSG_WriteByte(&ml_message, numwads - 1);
 
-	for (i = 1; i < numwads; ++i)
+	for (size_t i = 1; i < numwads; ++i)
 		MSG_WriteString(&ml_message, wadfiles[i].getBasename().c_str());
 
 	MSG_WriteBool(&ml_message, (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM));
@@ -177,22 +175,22 @@ void SV_SendServerInfo()
 	MSG_WriteBool(&ml_message, (sv_gametype == GM_TEAMDM));
 	MSG_WriteBool(&ml_message, (sv_gametype == GM_CTF));
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (const auto& player : players)
 	{
-		if (it->ingame())
+		if (player.ingame())
 		{
-			MSG_WriteString(&ml_message, it->userinfo.netname.c_str());
-			MSG_WriteShort(&ml_message, it->fragcount);
-			MSG_WriteLong(&ml_message, it->ping);
+			MSG_WriteString(&ml_message, player.userinfo.netname.c_str());
+			MSG_WriteShort(&ml_message, player.fragcount);
+			MSG_WriteLong(&ml_message, player.ping);
 
 			if (G_IsTeamGame())
-				MSG_WriteByte(&ml_message, it->userinfo.team);
+				MSG_WriteByte(&ml_message, player.userinfo.team);
 			else
 				MSG_WriteByte(&ml_message, TEAM_NONE);
 		}
 	}
 
-	for (i = 1; i < numwads; ++i)
+	for (size_t i = 1; i < numwads; ++i)
 		MSG_WriteString(&ml_message, ::wadfiles[i].getMD5().getHexCStr());
 
 	// [AM] Used to be sv_website - sv_downloadsites can have multiple sites.
@@ -216,7 +214,7 @@ void SV_SendServerInfo()
 	MSG_WriteShort(&ml_message, VERSION);
 
 //bond===========================
-	MSG_WriteString(&ml_message, (char *)sv_email.cstring());
+	MSG_WriteString(&ml_message, sv_email.cstring());
 
 	int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
 	if (timeleft<0) timeleft=0;
@@ -240,14 +238,14 @@ void SV_SendServerInfo()
 	MSG_WriteBool(&ml_message, false);		// used to be sv_cleanmaps
 	MSG_WriteBool(&ml_message, (sv_fragexitswitch ? true : false));
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (const auto& player : players)
 	{
-		if (it->ingame())
+		if (player.ingame())
 		{
-			MSG_WriteShort(&ml_message, it->killcount);
-			MSG_WriteShort(&ml_message, it->deathcount);
+			MSG_WriteShort(&ml_message, player.killcount);
+			MSG_WriteShort(&ml_message, player.deathcount);
 
-			int timeingame = (time(NULL) - it->JoinTime)/60;
+			int timeingame = (time(NULL) - player.JoinTime)/60;
 			if (timeingame<0) timeingame=0;
 				MSG_WriteShort(&ml_message, timeingame);
 		}
@@ -258,11 +256,11 @@ void SV_SendServerInfo()
     MSG_WriteLong(&ml_message, (DWORD)0x01020304);
     MSG_WriteShort(&ml_message, sv_maxplayers.asInt());
 
-    for (Players::iterator it = players.begin();it != players.end();++it)
+    for (const auto& player : players)
     {
-        if (it->ingame())
+        if (player.ingame())
         {
-            MSG_WriteBool(&ml_message, (it->spectator ? true : false));
+            MSG_WriteBool(&ml_message, player.spectator);
         }
     }
 
@@ -274,10 +272,10 @@ void SV_SendServerInfo()
 
     MSG_WriteByte(&ml_message, patchfiles.size());
 
-	for (size_t i = 0; i < patchfiles.size(); ++i)
+	for (const auto& file : patchfiles)
 	{
 		MSG_WriteString(&ml_message,
-		                D_CleanseFileName(patchfiles[i].getBasename()).c_str());
+		                D_CleanseFileName(file.getBasename()).c_str());
 	}
 
 	NET_SendPacket(ml_message, net_from);

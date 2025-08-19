@@ -174,16 +174,14 @@ void cvar_t::ForceSet(const char* valstr)
 
 		// perform rounding to nearest integer for integral types
 		if (integral_type)
-			valf = floor(valf + 0.5f);
+			valf = std::round(valf);
 
 		valf = clamp(valf, m_MinValue, m_MaxValue);
 
 		if (numerical_value || integral_type || floating_type)
 		{
 			// generate m_String based on the clamped valf value
-			char tmp[32];
-			snprintf(tmp, 32, "%g", valf);
-			m_String = tmp;
+			m_String = fmt::format("{:g}", valf);
 		}
 		else
 		{
@@ -488,7 +486,7 @@ void cvar_t::C_BackupCVars (unsigned int bitflag)
 		if (cvar->m_Flags & bitflag)
 		{
 			if (backup == &CVarBackups[MAX_BACKUPCVARS])
-				I_Error ("C_BackupDemoCVars: Too many cvars to save (%d)", MAX_BACKUPCVARS);
+				I_Error("C_BackupDemoCVars: Too many cvars to save ({})", MAX_BACKUPCVARS);
 			backup->name = cvar->m_Name;
 			backup->string = cvar->m_String;
 			backup++;
@@ -730,11 +728,11 @@ BEGIN_COMMAND (get)
 		// [Russell] - Don't make the user feel inadequate, tell
 		// them its either enabled, disabled or its other value
 		Printf(PRINT_HIGH, "\"%s\" is %s%s.\n",
-				var->name(), C_GetValueString(var).c_str(), control.c_str());
+				var->name(), C_GetValueString(var), control);
 
 		if (var->flags() & CVAR_LATCH && var->flags() & CVAR_MODIFIED)
 			Printf(PRINT_HIGH, "\"%s\" will be changed to %s.\n",
-					var->name(), C_GetLatchedValueString(var).c_str());
+					var->name(), C_GetLatchedValueString(var));
 	}
 	else
 	{
@@ -774,11 +772,11 @@ BEGIN_COMMAND (toggle)
 		// [Russell] - Don't make the user feel inadequate, tell
 		// them its either enabled, disabled or its other value
 		Printf(PRINT_HIGH, "\"%s\" is %s.\n",
-				var->name(), C_GetValueString(var).c_str());
+				var->name(), C_GetValueString(var));
 
 		if (var->flags() & CVAR_LATCH && var->flags() & CVAR_MODIFIED)
 			Printf(PRINT_HIGH, "\"%s\" will be changed to %s.\n",
-					var->name(), C_GetLatchedValueString(var).c_str());
+					var->name(), C_GetLatchedValueString(var));
 	}
 }
 END_COMMAND (toggle)

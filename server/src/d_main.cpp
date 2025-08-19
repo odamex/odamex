@@ -85,18 +85,12 @@ void daemon_init();
 
 void D_DoomLoop (void);
 
-extern gameinfo_t SharewareGameInfo;
-extern gameinfo_t RegisteredGameInfo;
-extern gameinfo_t RetailGameInfo;
-extern gameinfo_t CommercialGameInfo;
-extern gameinfo_t RetailBFGGameInfo;
-extern gameinfo_t CommercialBFGGameInfo;
+extern bool gameisdead;
 
-extern BOOL gameisdead;
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 
-BOOL devparm;				// started game with -devparm
+bool devparm;				// started game with -devparm
 OLumpName startmap;
 event_t events[MAXEVENTS];
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
@@ -116,7 +110,7 @@ void D_DoomLoop (void)
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf ("ERROR: %s\n", error.GetMsg().c_str());
+			Printf ("ERROR: %s\n", error.GetMsg());
 			Printf ("sleeping for 10 seconds before map reload...");
 
 			// denis - drop clients
@@ -161,9 +155,6 @@ void D_Init()
 	V_InitPalette("PLAYPAL");
 	R_InitColormaps();
 
-	// [RH] Initialize localizable strings.
-	::GStrings.loadStrings(false);
-
 	// init the renderer
 	if (first_time)
 		Printf(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
@@ -199,7 +190,7 @@ void STACK_ARGS D_Shutdown()
 
 	// stop sound effects and music
 	S_Stop();
-	
+
 	DThinker::DestroyAllThinkers();
 
 	D_UndoDehPatch();
@@ -208,13 +199,14 @@ void STACK_ARGS D_Shutdown()
 	W_Close();
 
 	R_ShutdownColormaps();
+	R_ClearSkyDefs();
 
 	// reset the Zone memory manager
 	Z_Close();
 
 	// [AM] Level is now invalid due to torching zone memory.
 	g_ValidLevel = false;
-	
+
 	// [AM] All of our dyncolormaps are freed, tidy up so we
 	//      don't follow wild pointers.
 	NormalLight.next = NULL;
@@ -251,7 +243,7 @@ void D_DoomMain()
 	// Always log by default
 	if (!LOG.is_open())
 		C_DoCommand("logfile");
-	
+
 	OWantFiles newwadfiles, newpatchfiles;
 
 	const char* iwad_filename_cstr = Args.CheckValue("-iwad");
@@ -297,7 +289,7 @@ void D_DoomMain()
 	devparm = Args.CheckParm("-devparm");
 
 	if (devparm)
-		DPrintf ("%s", GStrings(D_DEVSTR));		// D_DEVSTR
+		DPrintFmt("{}", GStrings(D_DEVSTR));		// D_DEVSTR
 
 	// Nomonsters
 	if (Args.CheckParm("-nomonsters"))
@@ -376,7 +368,7 @@ void D_DoomMain()
 		startmap = Args.GetArg(p + 1);
 		((char*)Args.GetArg(p))[0] = '-';
 	}
-	
+
 	level.mapname = startmap;
 
 	G_ChangeMap();

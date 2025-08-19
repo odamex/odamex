@@ -72,38 +72,13 @@ fixed_t			fovtan;
 float			focratio;
 float			ifocratio;
 
-// increment every time a check is made
-int 			validcount = 1;
-
 // [RH] colormap currently drawing with
 shaderef_t		basecolormap;
 int				fixedlightlev;
 shaderef_t		fixedcolormap;
 
-int 			centerx;
-int				centery;
-
-fixed_t 		centerxfrac;
-fixed_t 		centeryfrac;
-fixed_t			yaspectmul;
-
 // just for profiling purposes
 int 			framecount;
-int 			linecount;
-int 			loopcount;
-
-fixed_t 		viewx;
-fixed_t 		viewy;
-fixed_t 		viewz;
-
-angle_t 		viewangle;
-sector_t*		viewsector;
-LocalView		localview;
-
-fixed_t 		viewcos;
-fixed_t 		viewsin;
-
-AActor			*camera;	// [RH] camera to draw from. doesn't have to be a player
 
 //
 // precalculated math tables
@@ -118,12 +93,6 @@ int				zlight[LIGHTLEVELS][MAXLIGHTZ];
 // [RH] used to keep hires modes dark enough
 int				lightscalexmul;
 int				lightscaleymul;
-
-// bumped light from gun blasts
-int 			extralight;
-
-// [RH] ignore extralight and fullbright
-BOOL			foggy;
 
 static bool		setsizeneeded = true;
 int				setblocks;
@@ -143,8 +112,6 @@ void (*spanslopefunc) (void);
 // [AM] Number of fineangles in a default 90 degree FOV at a 4:3 resolution.
 int FieldOfView = 2048;
 int CorrectFieldOfView = 2048;
-
-fixed_t			render_lerp_amount;
 
 static void R_InitViewWindow();
 
@@ -614,7 +581,7 @@ void R_SetViewSize(int blocks)
 
 CVAR_FUNC_IMPL(screenblocks)
 {
-	R_SetViewSize((int)var);
+	R_SetViewSize(var.asInt());
 }
 
 

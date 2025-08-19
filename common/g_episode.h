@@ -23,11 +23,11 @@
 
 #pragma once
 
-#define MAX_EPISODES 8
+#define MAX_EPISODES 10
 
 struct EpisodeInfo
 {
-	std::string pic_name;
+	OLumpName pic_name;
 	std::string menu_name;
 	char key;
 	bool fulltext;

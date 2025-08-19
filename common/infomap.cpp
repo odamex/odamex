@@ -47,7 +47,7 @@ static MobjMap g_MonsterMap;
 
 static void MapMobj(const mobjtype_t type, const std::string& name, const uint32_t flags)
 {
-	::g_MonsterMap.insert(MobjMap::value_type(name, type));
+	::g_MonsterMap.emplace(name, type);
 }
 
 static void InitMap()
@@ -333,28 +333,28 @@ mobjtype_t P_INameToMobj(const std::string& name)
 		InitMap();
 	}
 
-	for (MobjMap::iterator it = ::g_MonsterMap.begin(); it != ::g_MonsterMap.end(); ++it)
+	for (const auto& [mapname, type] : ::g_MonsterMap)
 	{
-		if (iequals(it->first, name))
+		if (iequals(mapname, name))
 		{
-			return it->second;
+			return type;
 		}
 	}
 	return MT_NULL;
 }
 
-std::string P_MobjToName(const mobjtype_t name)
+std::string P_MobjToName(const mobjtype_t type)
 {
 	if (::g_MonsterMap.empty())
 	{
 		InitMap();
 	}
 
-	for (MobjMap::iterator it = ::g_MonsterMap.begin(); it != ::g_MonsterMap.end(); ++it)
+	for (const auto& [name, maptype] : ::g_MonsterMap)
 	{
-		if (it->second == name)
+		if (type == maptype)
 		{
-			return it->first.c_str();
+			return name;
 		}
 	}
 
@@ -412,9 +412,9 @@ std::vector<MobjPair> OrderedMobjMap()
 {
 	std::vector<MobjPair> orderedVector;
 
-	for (MobjMap::iterator it = ::g_MonsterMap.begin(); it != ::g_MonsterMap.end(); ++it)
+	for (const auto& pair : ::g_MonsterMap)
 	{
-		orderedVector.push_back(MobjPair(it->first, it->second));
+		orderedVector.push_back(pair);
 	}
 
 	std::sort(orderedVector.begin(), orderedVector.end(),
@@ -436,10 +436,9 @@ BEGIN_COMMAND(dumpactors)
 
 	PrintFmt(PRINT_HIGH, "Total amount of actors: {}\n", infomap.size());
 
-	for (std::vector<MobjPair>::iterator it = infomap.begin(); it != infomap.end();
-	     ++it)
+	for (const auto& [name, _] : infomap)
 	{
-		PrintFmt(PRINT_HIGH, "{}\n", it->first);
+		PrintFmt(PRINT_HIGH, "{}\n", name);
 	}
 }
 END_COMMAND(dumpactors)

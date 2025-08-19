@@ -38,26 +38,6 @@
 #include "s_sound.h"
 #include "w_wad.h"
 
-// Miscellaneous info that used to be constant
-struct DehInfo deh = {
-    100, // .StartHealth
-    50,  // .StartBullets
-    100, // .MaxHealth
-    200, // .MaxArmor
-    1,   // .GreenAC
-    2,   // .BlueAC
-    200, // .MaxSoulsphere
-    100, // .SoulsphereHealth
-    200, // .MegasphereHealth
-    100, // .GodHealth
-    200, // .FAArmor
-    2,   // .FAAC
-    200, // .KFAArmor
-    2,   // .KFAAC
-    40,  // .BFGCells (No longer used)
-    0,   // .Infight
-};
-
 // These are the original heights of every Doom 2 thing. They are used if a patch
 // specifies that a thing should be hanging from the ceiling but doesn't specify
 // a height for the thing, since these are the heights it probably wants.
@@ -80,7 +60,7 @@ static byte OrgHeights[] = {
 static char *PatchFile, *PatchPt;
 static char *Line1, *Line2;
 static int dversion, pversion;
-static BOOL including, includenotext;
+static bool including, includenotext;
 
 // English strings for DeHackEd replacement.
 static StringTable ENGStrings;
@@ -443,10 +423,10 @@ static const struct
 };
 
 static int HandleMode(const char* mode, int num);
-static BOOL HandleKey(const struct Key* keys, void* structure, const char* key, int value,
+static bool HandleKey(const struct Key* keys, void* structure, const char* key, int value,
                       const int structsize = 0);
 static void BackupData(void);
-static BOOL ReadChars(char** stuff, int size);
+static bool ReadChars(char** stuff, int size);
 static char* igets(void);
 static int GetLine(void);
 
@@ -456,7 +436,7 @@ static size_t filelen = 0; // Be quiet, gcc
 
 static void PrintUnknown(const char* key, const char* loc, const size_t idx)
 {
-	DPrintf("Unknown key %s encountered in %s (%zu).\n", key, loc, idx);
+	DPrintFmt("Unknown key {} encountered in {} ({}).\n", key, loc, idx);
 }
 
 static int HandleMode(const char* mode, int num)
@@ -474,7 +454,7 @@ static int HandleMode(const char* mode, int num)
 	}
 
 	// Handle unknown or unimplemented data
-	DPrintf("Unknown chunk %s encountered. Skipping.\n", mode);
+	DPrintFmt("Unknown chunk {} encountered. Skipping.\n", mode);
 	do
 	{
 		i = GetLine();
@@ -483,7 +463,7 @@ static int HandleMode(const char* mode, int num)
 	return i;
 }
 
-static BOOL HandleKey(const struct Key* keys, void* structure, const char* key, int value,
+static bool HandleKey(const struct Key* keys, void* structure, const char* key, int value,
                       const int structsize)
 {
 	while (keys->name && stricmp(keys->name, key))
@@ -492,7 +472,7 @@ static BOOL HandleKey(const struct Key* keys, void* structure, const char* key, 
 	if (structsize && keys->offset + (int)sizeof(int) > structsize)
 	{
 		// Handle unknown or unimplemented data
-		DPrintf("DeHackEd: Cannot apply key %s, offset would overrun.\n", keys->name);
+		DPrintFmt("DeHackEd: Cannot apply key {}, offset would overrun.\n", keys->name);
 		return false;
 	}
 
@@ -585,7 +565,7 @@ void D_UndoDehPatch()
 	deh = backupDeh;
 }
 
-static BOOL ReadChars(char** stuff, int size)
+static bool ReadChars(char** stuff, int size)
 {
 	char* str = *stuff;
 
@@ -966,14 +946,14 @@ static int PatchThing(int thingy)
 	thingNum--;
 	if (thingNum < 0 || thingNum >= NUMMOBJTYPES)
 	{
-		DPrintf("Thing %zu out of range.\n", thingNum);
+		DPrintFmt("Thing {} out of range.\n", thingNum);
 	}
 	else
 	{
 		info = &mobjinfo[thingNum];
 		*ednum = *&info->doomednum;
 #if defined _DEBUG
-		DPrintf("Thing %zu found.\n", thingNum);
+		DPrintFmt("Thing {} found.\n", thingNum);
 #endif
 	}
 
@@ -1269,7 +1249,7 @@ static int PatchThing(int thingy)
 
 					if (i == ARRAY_LENGTH(mbf_bitnames))
 					{
-						DPrintf("Unknown bit mnemonic %s\n", strval);
+						DPrintFmt("Unknown bit mnemonic {}\n", strval);
 					}
 				}
 			}
@@ -1326,31 +1306,30 @@ static int PatchThing(int thingy)
 					}
 
 					if (i == ARRAY_LENGTH(bitnames))
-						DPrintf("Unknown bit mnemonic %s\n", strval);
+						DPrintFmt("Unknown bit mnemonic {}\n", strval);
 				}
 			}
 			if (vchanged[0])
 			{
 				if (value[0] & MF_TRANSLUCENT)
 				{
-					info->translucency =
-					    TRANSLUC50; // Correct value should be 0.66 (BOOM)...
+					info->translucency = TRANSLUC66;
 				}
 
 				// Unsupported flags have to be announced for developers...
 				if (value[0] & MF_TOUCHY)
 				{
-					DPrintf("[DEH Bits] Unsupported MBF flag TOUCHY.\n");
+					DPrintFmt("[DEH Bits] Unsupported MBF flag TOUCHY.\n");
 					value[0] &= ~MF_TOUCHY;
 				}
 
 				if (value[0] & MF_BOUNCES)
-					DPrintf("[DEH Bits] MBF flag BOUNCES is partially supported. Use "
-					        "it at your own risk!\n");
+					DPrintFmt("[DEH Bits] MBF flag BOUNCES is partially supported. Use "
+					          "it at your own risk!\n");
 
 				if (value[0] & MF_FRIEND)
 				{
-					DPrintf("[DEH Bits] Unsupported MBF flag FRIEND.\n");
+					DPrintFmt("[DEH Bits] Unsupported MBF flag FRIEND.\n");
 					value[0] &= ~MF_FRIEND;
 				}
 
@@ -1419,7 +1398,7 @@ static int PatchSound(int soundNum)
 {
 	int result;
 
-	DPrintf("Sound %d (no longer supported)\n", soundNum);
+	DPrintFmt("Sound {} (no longer supported)\n", soundNum);
 	/*
 	    sfxinfo_t *info, dummy;
 	    int offset = 0;
@@ -1499,12 +1478,12 @@ static int PatchFrame(int frameNum)
 	if (frameNum >= 0 && frameNum < NUMSTATES)
 	{
 		info = &states[frameNum];
-		DPrintf("Frame %d\n", frameNum);
+		DPrintFmt("Frame {}\n", frameNum);
 	}
 	else
 	{
 		info = &dummy;
-		DPrintf("Frame %d out of range\n", frameNum);
+		DPrintFmt("Frame {} out of range\n", frameNum);
 	}
 
 	while ((result = GetLine()) == 1)
@@ -1553,7 +1532,7 @@ static int PatchFrame(int frameNum)
 
 							if (i == ARRAY_LENGTH(bitnames))
 							{
-								DPrintf("Unknown bit mnemonic %s\n", strval);
+								DPrintFmt("Unknown bit mnemonic {}\n", strval);
 							}
 						}
 					}
@@ -1586,12 +1565,12 @@ static int PatchSprite(int sprNum)
 	if (sprNum >= 0 && sprNum < NUMSPRITES)
 	{
 #if defined _DEBUG
-		DPrintf("Sprite %d\n", sprNum);
+		DPrintFmt("Sprite {}\n", sprNum);
 #endif
 	}
 	else
 	{
-		DPrintf("Sprite %d out of range.\n", sprNum);
+		DPrintFmt("Sprite {} out of range.\n", sprNum);
 		sprNum = -1;
 	}
 	while ((result = GetLine()) == 1)
@@ -1617,7 +1596,7 @@ static int PatchSprite(int sprNum)
 		}
 		else
 		{
-			DPrintf("Sprite name %d out of range.\n", offset);
+			DPrintFmt("Sprite name {} out of range.\n", offset);
 		}
 	}
 
@@ -1636,14 +1615,14 @@ static int PatchAmmo(int ammoNum)
 	if (ammoNum >= 0 && ammoNum < NUMAMMO)
 	{
 #if defined _DEBUG
-		DPrintf("Ammo %d.\n", ammoNum);
+		DPrintFmt("Ammo {}.\n", ammoNum);
 #endif
 		max = &maxammo[ammoNum];
 		per = &clipammo[ammoNum];
 	}
 	else
 	{
-		DPrintf("Ammo %d out of range.\n", ammoNum);
+		DPrintFmt("Ammo {} out of range.\n", ammoNum);
 		max = per = &dummy;
 	}
 
@@ -1665,9 +1644,6 @@ static int PatchWeapon(int weapNum)
 	    {"Bobbing frame", offsetof(weaponinfo_t, readystate)},
 	    {"Shooting frame", offsetof(weaponinfo_t, atkstate)},
 	    {"Firing frame", offsetof(weaponinfo_t, flashstate)},
-	    {"Ammo use", offsetof(weaponinfo_t, ammouse)},      // ZDoom 1.23b33
-	    {"Ammo per shot", offsetof(weaponinfo_t, ammouse)}, // Eternity
-	    {"Min ammo", offsetof(weaponinfo_t, minammo)},      // ZDoom 1.23b33
 	    {NULL, 0}};
 
 	static const struct
@@ -1686,13 +1662,13 @@ static int PatchWeapon(int weapNum)
 	{
 		info = &weaponinfo[weapNum];
 #if defined _DEBUG
-		DPrintf("Weapon %d\n", weapNum);
+		DPrintFmt("Weapon {}\n", weapNum);
 #endif
 	}
 	else
 	{
 		info = &dummy;
-		DPrintf("Weapon %d out of range.\n", weapNum);
+		DPrintFmt("Weapon {} out of range.\n", weapNum);
 	}
 
 	while ((result = GetLine()) == 1)
@@ -1702,54 +1678,67 @@ static int PatchWeapon(int weapNum)
 
 		if (HandleKey(keys, info, Line1, val, sizeof(*info)))
 		{
-			if (linelen == 10)
+			if (linelen == 10 && stricmp(Line1, "MBF21 Bits") == 0)
 			{
-				if (stricmp(Line1, "MBF21 Bits") == 0)
+				int value = 0;
+				bool vchanged = false;
+				char* strval;
+
+				for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
+				     strval = NULL)
 				{
-					int value = 0;
-					bool vchanged = false;
-					char* strval;
-
-					for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
-					     strval = NULL)
+					if (IsNum(strval))
 					{
-						if (IsNum(strval))
-						{
-							// Force the top 4 bits to 0 so that the user is forced
-							// to use the mnemonics to change them.
+						// Force the top 4 bits to 0 so that the user is forced
+						// to use the mnemonics to change them.
 
-							// I have no idea why everyone insists on using strtol here
-							// even though it fails dismally if a value is parsed where
-							// the highest bit it set. Do people really use negative
-							// values here? Let's better be safe and check both.
-							value |= atoi(strval);
-							vchanged = true;
-						}
-						else
-						{
-							size_t i;
-
-							for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
-							{
-								if (!stricmp(strval, bitnames[i].Name))
-								{
-									vchanged = true;
-									value |= 1 << (bitnames[i].Bit);
-									break;
-								}
-							}
-
-							if (i == ARRAY_LENGTH(bitnames))
-							{
-								DPrintf("Unknown bit mnemonic %s\n", strval);
-							}
-						}
+						// I have no idea why everyone insists on using strtol here
+						// even though it fails dismally if a value is parsed where
+						// the highest bit it set. Do people really use negative
+						// values here? Let's better be safe and check both.
+						value |= atoi(strval);
+						vchanged = true;
 					}
-					if (vchanged)
+					else
 					{
-						info->flags = value; // Weapon Flags
+						size_t i;
+
+						for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
+						{
+							if (!stricmp(strval, bitnames[i].Name))
+							{
+								vchanged = true;
+								value |= 1 << (bitnames[i].Bit);
+								break;
+							}
+						}
+
+						if (i == ARRAY_LENGTH(bitnames))
+						{
+							DPrintFmt("Unknown bit mnemonic {}\n", strval);
+						}
 					}
 				}
+				if (vchanged)
+				{
+					info->flags = value; // Weapon Flags
+				}
+			}
+			else if (linelen == 13 && stricmp(Line1, "Ammo per shot") == 0)  // Eternity/MBF21
+			{
+				info->ammopershot = val;
+				info->internalflags |= WIF_ENABLEAPS;
+				deh.ZDAmmo = false;
+			}
+			else if (linelen == 9 && stricmp(Line1, "Ammo use") == 0)  // ZDoom 1.23b33
+			{
+				info->ammouse = val;
+				deh.ZDAmmo = true;
+			}
+			else if (linelen == 9 && stricmp(Line1, "Min ammo") == 0)  // ZDoom 1.23b33
+			{
+				info->minammo = val;
+				deh.ZDAmmo = true;
 			}
 			else
 			{
@@ -1767,12 +1756,12 @@ static int PatchPointer(int ptrNum)
 	if (ptrNum >= 0 && ptrNum < 448)
 	{
 #if defined _DEBUG
-		DPrintf("Pointer %d\n", ptrNum);
+		DPrintFmt("Pointer {}\n", ptrNum);
 #endif
 	}
 	else
 	{
-		DPrintf("Pointer %d out of range.\n", ptrNum);
+		DPrintFmt("Pointer {} out of range.\n", ptrNum);
 		ptrNum = -1;
 	}
 
@@ -1784,7 +1773,7 @@ static int PatchPointer(int ptrNum)
 
 			if (i >= NUMSTATES)
 			{
-				DPrintf("Pointer %d overruns static array (max: %d wanted: %d)."
+				DPrintFmt("Pointer {} overruns static array (max: {} wanted: {})."
 				        "\n",
 				        ptrNum, NUMSTATES, i);
 			}
@@ -1805,7 +1794,7 @@ static int PatchCheats(int dummy)
 {
 	int result;
 
-	DPrintf("[DEHacked] Cheats support is depreciated. Ignoring these lines...\n");
+	DPrintFmt("[DEHacked] Cheats support is deprecated. Ignoring these lines...\n");
 
 	// Fake our work (don't do anything !)
 	while ((result = GetLine()) == 1)
@@ -1838,13 +1827,13 @@ static int PatchMisc(int dummy)
 	int result;
 	gitem_t* item;
 #if defined _DEBUG
-	DPrintf("Misc\n");
+	DPrintFmt("Misc\n");
 #endif
 	while ((result = GetLine()) == 1)
 	{
 		if (HandleKey(keys, &deh, Line1, atoi(Line2)))
 		{
-			DPrintf("Unknown miscellaneous info %s.\n", Line2);
+			DPrintFmt("Unknown miscellaneous info {}.\n", Line2);
 		}
 
 		// [SL] manually check if BFG Cells/Shot is being changed and
@@ -1853,6 +1842,7 @@ static int PatchMisc(int dummy)
 		{
 			weaponinfo[wp_bfg].ammouse = deh.BFGCells;
 			weaponinfo[wp_bfg].minammo = deh.BFGCells;
+			weaponinfo[wp_bfg].ammopershot = deh.BFGCells;
 		}
 	}
 
@@ -1874,17 +1864,18 @@ static int PatchMisc(int dummy)
 
 static int PatchPars(int dummy)
 {
-	char *space, mapname[8], *moredata;
+	char *space, *moredata;
 	int result, par;
+	OLumpName mapname;
 #if defined _DEBUG
-	DPrintf("[Pars]\n");
+	DPrintFmt("[Pars]\n");
 #endif
 	while ((result = GetLine()))
 	{
 		// Argh! .bex doesn't follow the same rules as .deh
 		if (result == 1)
 		{
-			DPrintf("Unknown key in [PARS] section: %s\n", Line1);
+			DPrintFmt("Unknown key in [PARS] section: {}\n", Line1);
 			continue;
 		}
 		if (stricmp("par", Line1))
@@ -1896,7 +1887,7 @@ static int PatchPars(int dummy)
 
 		if (!space)
 		{
-			DPrintf("Need data after par.\n");
+			DPrintFmt("Need data after par.\n");
 			continue;
 		}
 
@@ -1912,13 +1903,13 @@ static int PatchPars(int dummy)
 		if (moredata)
 		{
 			// At least 3 items on this line, must be E?M? format
-			snprintf(mapname, 8, "E%cM%c", *Line2, *space);
+			mapname = fmt::format("E{:c}M{:c}", *Line2, *space);
 			par = atoi(moredata + 1);
 		}
 		else
 		{
 			// Only 2 items, must be MAP?? format
-			snprintf(mapname, 8, "MAP%02d", atoi(Line2) % 100);
+			mapname = fmt::format("MAP{:02d}", atoi(Line2) % 100);
 			par = atoi(space);
 		}
 
@@ -1927,13 +1918,13 @@ static int PatchPars(int dummy)
 
 		if (!info.exists())
 		{
-			DPrintf("No map %s\n", mapname);
+			DPrintFmt("No map {}\n", mapname);
 			continue;
 		}
 
 		info.partime = par;
 #if defined _DEBUG
-		DPrintf("Par for %s changed to %d\n", mapname, par);
+		DPrintFmt("Par for {} changed to {}\n", mapname, par);
 #endif
 	}
 	return result;
@@ -1943,7 +1934,7 @@ static int PatchCodePtrs(int dummy)
 {
 	int result;
 #if defined _DEBUG
-	DPrintf("[CodePtr]\n");
+	DPrintFmt("[CodePtr]\n");
 #endif
 	while ((result = GetLine()) == 1)
 	{
@@ -1953,7 +1944,7 @@ static int PatchCodePtrs(int dummy)
 
 			if (frame < 0 || frame >= NUMSTATES)
 			{
-				DPrintf("Frame %d out of range\n", frame);
+				DPrintFmt("Frame {} out of range\n", frame);
 			}
 			else
 			{
@@ -1979,12 +1970,12 @@ static int PatchCodePtrs(int dummy)
 				if (CodePtrs[i].name)
 				{
 					states[frame].action = CodePtrs[i].func;
-					DPrintf("Frame %d set to %s\n", frame, CodePtrs[i].name);
+					DPrintFmt("Frame {} set to {}\n", frame, CodePtrs[i].name);
 				}
 				else
 				{
 					states[frame].action = NULL;
-					DPrintf("Unknown code pointer: %s\n", com_token);
+					DPrintFmt("Unknown code pointer: {}\n", com_token);
 				}
 			}
 		}
@@ -1995,19 +1986,19 @@ static int PatchCodePtrs(int dummy)
 static int PatchMusic(int dummy)
 {
 	int result;
-	char keystring[128];
+	OString keystring;
 #if defined _DEBUG
-	DPrintf("[Music]\n");
+	DPrintFmt("[Music]\n");
 #endif
 	while ((result = GetLine()) == 1)
 	{
 		const char* newname = skipwhite(Line2);
 
-		snprintf(keystring, ARRAY_LENGTH(keystring), "MUSIC_%s", Line1);
+		keystring = fmt::format("MUSIC_{}", Line1);
 		if (GStrings.hasString(keystring))
 		{
 			GStrings.setString(keystring, newname);
-			DPrintf("Music %s set to:\n%s\n", keystring, newname);
+			DPrintFmt("Music {} set to:\n{}\n", keystring, newname);
 		}
 	}
 
@@ -2020,7 +2011,7 @@ static int PatchText(int oldSize)
 	char* oldStr;
 	char* newStr;
 	char* temp;
-	BOOL good;
+	bool good;
 	int result;
 	const OString* name = NULL;
 
@@ -2052,7 +2043,7 @@ static int PatchText(int oldSize)
 	}
 
 	good = ReadChars(&oldStr, oldSize);
-	good += ReadChars(&newStr, newSize);
+	good = ReadChars(&newStr, newSize) || good;
 
 	if (!good)
 	{
@@ -2068,7 +2059,7 @@ static int PatchText(int oldSize)
 		goto donewithtext;
 	}
 
-	DPrintf("Searching for text:\n%s\n", oldStr);
+	DPrintFmt("Searching for text:\n{}\n", oldStr);
 	good = false;
 
 	// Search through sprite names
@@ -2120,7 +2111,7 @@ static int PatchText(int oldSize)
 
 	if (!good)
 	{
-		DPrintf("   (Unmatched)\n");
+		DPrintFmt("   (Unmatched)\n");
 	}
 
 donewithtext:
@@ -2154,11 +2145,11 @@ static int PatchStrings(int dummy)
 	static char* holdstring;
 	int result;
 #if defined _DEBUG
-	DPrintf("[Strings]\n");
+	DPrintFmt("[Strings]\n");
 #endif
 	if (!holdstring)
 	{
-		holdstring = (char*)Malloc(maxstrlen);
+		holdstring = static_cast<char*>(M_Malloc(maxstrlen));
 	}
 
 	while ((result = GetLine()) == 1)
@@ -2171,9 +2162,9 @@ static int PatchStrings(int dummy)
 			while (maxstrlen < strlen(holdstring) + strlen(Line2) + 8)
 			{
 				maxstrlen += 128;
-				holdstring = (char*)Realloc(holdstring, maxstrlen);
+				holdstring = static_cast<char*>(M_Realloc(holdstring, maxstrlen));
 			}
-			strcat(holdstring, skipwhite(Line2));
+			strncat(holdstring, skipwhite(Line2), maxstrlen - strlen(holdstring) - 1);
 			stripwhite(holdstring);
 			if (holdstring[strlen(holdstring) - 1] == '\\')
 			{
@@ -2215,7 +2206,7 @@ static int PatchStrings(int dummy)
 				}
 			}
 			GStrings.setString(Line1, holdstring);
-			DPrintf("%s set to:\n%s\n", Line1, holdstring);
+			DPrintFmt("{} set to:\n{}\n", Line1, holdstring);
 		}
 	}
 
@@ -2232,7 +2223,7 @@ static int DoInclude(int dummy)
 
 	if (including)
 	{
-		DPrintf("Sorry, can't nest includes\n");
+		DPrintFmt("Sorry, can't nest includes\n");
 		goto endinclude;
 	}
 
@@ -2246,11 +2237,11 @@ static int DoInclude(int dummy)
 	if (!com_token[0])
 	{
 		includenotext = false;
-		DPrintf("Include directive is missing filename\n");
+		DPrintFmt("Include directive is missing filename\n");
 		goto endinclude;
 	}
 #if defined _DEBUG
-	DPrintf("Including %s\n", com_token);
+	DPrintFmt("Including {}\n", com_token);
 #endif
 	savepatchfile = PatchFile;
 	savepatchpt = PatchPt;
@@ -2272,7 +2263,7 @@ static int DoInclude(int dummy)
 
 	D_DoDehPatch(&res, -1);
 
-	DPrintf("Done with include\n");
+	DPrintFmt("Done with include\n");
 	PatchFile = savepatchfile;
 	PatchPt = savepatchpt;
 	dversion = savedversion;
@@ -2309,7 +2300,7 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 		if (fh == NULL)
 		{
 			Printf(PRINT_WARNING, "Could not open DeHackEd patch \"%s\"\n",
-			       patchfile->getBasename().c_str());
+			       patchfile->getBasename());
 			return false;
 		}
 
@@ -2319,7 +2310,7 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 		size_t read = fread(::PatchFile, 1, filelen, fh);
 		if (read < filelen)
 		{
-			DPrintf("Could not read file\n");
+			DPrintFmt("Could not read file\n");
 			return false;
 		}
 	}
@@ -2352,7 +2343,7 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 			if (patchfile)
 			{
 				Printf(PRINT_WARNING, "\"%s\" is not a DeHackEd patch file\n",
-				       patchfile->getBasename().c_str());
+				       patchfile->getBasename());
 			}
 			else
 			{
@@ -2363,7 +2354,7 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 	}
 	else
 	{
-		DPrintf("Patch does not have DeHackEd signature. Assuming .bex\n");
+		DPrintFmt("Patch does not have DeHackEd signature. Assuming .bex\n");
 		::dversion = 19;
 		::pversion = 6;
 		::PatchPt = ::PatchFile;
@@ -2374,8 +2365,8 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 
 	if (::pversion != 6)
 	{
-		DPrintf("DeHackEd patch version is %d.\nUnexpected results may occur.\n",
-		        ::pversion);
+		DPrintFmt("DeHackEd patch version is {}.\nUnexpected results may occur.\n",
+		          ::pversion);
 	}
 
 	if (::dversion == 16)
@@ -2400,7 +2391,7 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 	}
 	else
 	{
-		DPrintf("Patch created with unknown DOOM version.\nAssuming version 1.9.\n");
+		DPrintFmt("Patch created with unknown DOOM version.\nAssuming version 1.9.\n");
 		::dversion = 3;
 	}
 
@@ -2408,7 +2399,7 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 	{
 		if (cont == 1)
 		{
-			DPrintf("Key %s encountered out of context\n", ::Line1);
+			DPrintFmt("Key {} encountered out of context\n", ::Line1);
 			cont = 0;
 		}
 		else if (cont == 2)
@@ -2422,7 +2413,7 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 
 	if (patchfile)
 	{
-		Printf("adding %s\n", patchfile->getFullpath().c_str());
+		Printf("adding %s\n", patchfile->getFullpath());
 	}
 	else
 	{
@@ -2468,7 +2459,7 @@ void D_PostProcessDeh()
 		{
 			if (states[i].args[j] != 0)
 			{
-				I_Error("Action %s on state %d expects no more than %d nonzero args (%d "
+				I_Error("Action {} on state {} expects no more than {} nonzero args ({} "
 				        "found). Check your dehacked.",
 				        bexptr_match->name, i, bexptr_match->argcount, j + 1);
 			}
@@ -2635,7 +2626,7 @@ BEGIN_COMMAND(playstate)
 		PrintState(index);
 
 		// Mark as visited.
-		visited.insert(std::pair<int, bool>(index, true));
+		visited.emplace(index, true);
 
 		// Next state.
 		index = ::states[index].nextstate;

@@ -37,8 +37,10 @@ if(BUILD_CLIENT)
       --config RelWithDebInfo --target install)
   endif()
 
-  set(ZLIB_INCLUDE_DIR
-    "${CMAKE_CURRENT_BINARY_DIR}/local/include" CACHE PATH "" FORCE)
+  if (USE_INTERNAL_ZLIB)
+    set(ZLIB_INCLUDE_DIR
+      "${CMAKE_CURRENT_BINARY_DIR}/local/include" CACHE PATH "" FORCE)
+  endif()
 
   find_package(PNG)
   if(TARGET PNG::PNG)

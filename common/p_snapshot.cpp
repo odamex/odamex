@@ -170,7 +170,7 @@ void ActorSnapshot::toActor(AActor *mo) const
 
 			#ifdef _SNAPSHOT_DEBUG_
 			if (mX != destx || mY != desty || mZ != destz)
-				DPrintf("Snapshot %i: ActorSnapshot::toActor() clipping movement.\n", getTime());
+				DPrintFmt("Snapshot {}: ActorSnapshot::toActor() clipping movement.\n", getTime());
 			#endif // _SNAPSHOT_DEBUG_
 		}
 
@@ -385,7 +385,7 @@ void PlayerSnapshotManager::addSnapshot(const PlayerSnapshot &snap)
 	if (!snap.isValid())
 	{
 		#ifdef _SNAPSHOT_DEBUG_
-		DPrintf(PRINT_WARNING, "Snapshot %i: Not adding invalid player snapshot\n", time);
+		DPrintFmt(PRINT_WARNING, "Snapshot {}: Not adding invalid player snapshot\n", time);
 		#endif // _SNAPSHOT_DEBUG_
 		return;
 	}
@@ -393,7 +393,7 @@ void PlayerSnapshotManager::addSnapshot(const PlayerSnapshot &snap)
 	if (mMostRecent > snap.getTime() + NUM_SNAPSHOTS)
 	{
 		#ifdef _SNAPSHOT_DEBUG_
-		DPrintf("Snapshot %i: Not adding expired player snapshot\n", time);
+		DPrintFmt("Snapshot {}: Not adding expired player snapshot\n", time);
 		#endif // _SNAPSHOT_DEBUG_
 		return;
 	}
@@ -460,7 +460,7 @@ PlayerSnapshot PlayerSnapshotManager::getSnapshot(int time) const
 		if (amount > MAX_EXTRAPOLATION)		// cap extrapolation
 		{
 			#ifdef _SNAPSHOT_DEBUG_
-			DPrintf("Extrap %i: PlayerSnapshotManager::getSnapshot() capping extrapolation past %i\n",
+			DPrintFmt("Extrap {}: PlayerSnapshotManager::getSnapshot() capping extrapolation past {}\n",
 					time, mMostRecent);
 			#endif // _SNAPSHOT_DEBUG_
 
@@ -468,7 +468,7 @@ PlayerSnapshot PlayerSnapshotManager::getSnapshot(int time) const
 		}
 
 		#ifdef _SNAPSHOT_DEBUG_
-		DPrintf("Extrap %i: PlayerSnapshotManager::getSnapshot() extrapolating past %i\n",
+		DPrintFmt("Extrap {}: PlayerSnapshotManager::getSnapshot() extrapolating past {}\n",
 				time, mMostRecent);
 		#endif // _SNAPSHOT_DEBUG_
 
@@ -485,7 +485,7 @@ PlayerSnapshot PlayerSnapshotManager::getSnapshot(int time) const
 	if (pretime > 0 && posttime > 0 && time < posttime && time > pretime)
 	{
 		#ifdef _SNAPSHOT_DEBUG_
-		DPrintf("Lerp %i: PlayerSnapshotManager::getSnapshot() interpolating between %i and %i.\n",
+		DPrintFmt("Lerp {}: PlayerSnapshotManager::getSnapshot() interpolating between {} and {}.\n",
 					time, pretime, posttime);
 		#endif // _SNAPSHOT_DEBUG_
 
@@ -578,7 +578,7 @@ ActorSnapshot P_LerpActorPosition(const ActorSnapshot &from, const ActorSnapshot
 
 	#ifdef _SNAPSHOT_DEBUG_
 	if (pos_delta)
-		DPrintf("Lerp: MF2_ONMOBJ = %s\n", from.getFlags2() & MF2_ONMOBJ ? "yes" : "no");
+		DPrintFmt("Lerp: MF2_ONMOBJ = {}\n", from.getFlags2() & MF2_ONMOBJ ? "yes" : "no");
 	#endif // _SNAPSHOT_DEBUG_
 
 	if (pos_delta <= POS_LERP_THRESHOLD || !to.isContinuous())
@@ -586,7 +586,7 @@ ActorSnapshot P_LerpActorPosition(const ActorSnapshot &from, const ActorSnapshot
 		// snap directly to the new position
 		#ifdef _SNAPSHOT_DEBUG_
 		if (pos_delta)
-			DPrintf("Lerp: %d Snapping to position (delta %d)\n",
+			DPrintFmt("Lerp: {} Snapping to position (delta {})\n",
 								gametic, pos_delta >> FRACBITS);
 		#endif // _SNAPSHOT_DEBUG_
 		return to;
@@ -599,7 +599,7 @@ ActorSnapshot P_LerpActorPosition(const ActorSnapshot &from, const ActorSnapshot
 	M_AddVec3Fixed(&pos_new, &pos_new, &pos_from);
 
 	#ifdef _SNAPSHOT_DEBUG_
-	DPrintf("Lerp: %d, Lerping to position (delta %d)\n",
+	DPrintFmt("Lerp: {}, Lerping to position (delta {})\n",
 						gametic, pos_delta >> FRACBITS);
 	#endif // _SNAPSHOT_DEBUG_
 
@@ -609,7 +609,7 @@ ActorSnapshot P_LerpActorPosition(const ActorSnapshot &from, const ActorSnapshot
 
 	#ifdef _SNAPSHOT_DEBUG_
 	if (anglediff)
-		DPrintf("Lerp: %d, Lerping to angle (delta %d)\n",
+		DPrintFmt("Lerp: {}, Lerping to angle (delta {})\n",
 							gametic, anglediff >> ANGLETOFINESHIFT);
 	#endif // _SNAPSHOT_DEBUG_
 
@@ -1083,7 +1083,7 @@ void SectorSnapshotManager::addSnapshot(const SectorSnapshot &newsnap)
 	if (!newsnap.isValid())
 	{
 		#ifdef _SNAPSHOT_DEBUG_
-		DPrintf("Snapshot %i: Not adding invalid sector snapshot\n", time);
+		DPrintFmt("Snapshot {}: Not adding invalid sector snapshot\n", time);
 		#endif // _SNAPSHOT_DEBUG_
 		return;
 	}
@@ -1091,7 +1091,7 @@ void SectorSnapshotManager::addSnapshot(const SectorSnapshot &newsnap)
 	if (mMostRecent > newsnap.getTime() + NUM_SNAPSHOTS)
 	{
 		#ifdef _SNAPSHOT_DEBUG_
-		DPrintf("Snapshot %i: Not adding expired sector snapshot\n", time);
+		DPrintFmt("Snapshot {}: Not adding expired sector snapshot\n", time);
 		#endif // _SNAPSHOT_DEBUG_
 		return;
 	}

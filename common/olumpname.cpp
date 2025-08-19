@@ -49,11 +49,8 @@ OLumpName::OLumpName()
 
 OLumpName::OLumpName(const OLumpName& other)
 {
-	if (other.m_data)
-	{
-		memcpy(m_data, other.m_data, 8);
-		MakeDataPresentable();
-	}
+	memcpy(m_data, other.m_data, 8);
+	MakeDataPresentable();
 }
 
 OLumpName::OLumpName(const char* other)

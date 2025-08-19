@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -18,7 +18,7 @@
 //
 // DESCRIPTION:
 //   Duh.
-// 
+//
 //-----------------------------------------------------------------------------
 
 
@@ -37,13 +37,13 @@ void G_DeferedPlayDemo(const char* demo, bool bIsSingleDemo = false);
 
 // Can be called by the startup code or M_Responder,
 // calls P_SetupLevel or W_EnterWorld.
-void G_LoadGame(char* name);
+void G_LoadGame(const std::string& name);
 
 void G_DoLoadGame(void);
 
 // Called by M_Responder.
 void G_BuildSaveName(std::string &name, int slot);
-void G_SaveGame(int slot, char* description);
+void G_SaveGame(int slot, std::string_view description);
 
 bool G_RecordDemo(const std::string& mapname, const std::string& basedemoname);
 
@@ -51,13 +51,13 @@ void G_PlayDemo(char* name);
 void G_DoPlayDemo(bool justStreamInput = false);
 void G_TimeDemo(const char* name);
 void G_TestDemo(const char* name);
-BOOL G_CheckDemoStatus(void);
+bool G_CheckDemoStatus(void);
 void G_CleanupDemo();
 
 void G_WorldDone(void);
 
 void G_Ticker(void);
-BOOL G_Responder(event_t*	ev);
+bool G_Responder(event_t*	ev);
 
 void G_ScreenShot(const char* filename);
 
