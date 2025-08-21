@@ -574,6 +574,7 @@ void W_InitMultipleFiles(const OResFiles& files)
 	// [RH] Merge sprite and flat groups.
 	//		(We don't need to bother with patches, since
 	//		Doom doesn't use markers to identify them.)
+	W_MergeLumps ("TX_START", "TX_END", ns_textures);
 	W_MergeLumps ("S_START", "S_END", ns_sprites); // denis - fixme - security
 	W_MergeLumps ("F_START", "F_END", ns_flats);
 	W_MergeLumps ("C_START", "C_END", ns_colormaps);

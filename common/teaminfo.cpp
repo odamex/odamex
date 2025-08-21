@@ -53,6 +53,7 @@ void InitTeamInfo()
 	teamInfo->FlagSocketSprite = SPR_BSOK;
 	teamInfo->FlagSprite = SPR_BFLG;
 	teamInfo->FlagDownSprite = SPR_BDWN;
+	teamInfo->FlagCarrySprite = SPR_BCAR;
 	teamInfo->FlagWaypointSprite = SPR_WPBF;
 	teamInfo->Points = 0;
 	teamInfo->RoundWins = 0;

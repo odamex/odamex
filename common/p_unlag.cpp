@@ -658,3 +658,23 @@ void Unlag::debugReconciliation(byte shooter_id)
 		}
 	}
 }
+
+//
+// Unlag::clearPlayerHistory
+//
+// If the player has died, clear their previous positions
+//
+void Unlag::clearPlayerHistory(byte player_id)
+{
+	if (!Unlag::enabled())
+		return;
+
+	size_t cur = player_id_map[player_id];
+
+	if (cur >= player_history.size())
+		return;
+
+	PlayerHistoryRecord& record = player_history[cur];
+
+	record.history_size = 0;
+}

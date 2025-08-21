@@ -80,6 +80,7 @@ typedef struct lumpinfo_s
 // [RH] Namespaces from BOOM.
 typedef enum {
 	ns_global = 0,
+	ns_textures,
 	ns_sprites,
 	ns_flats,
 	ns_colormaps,

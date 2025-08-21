@@ -291,6 +291,8 @@ oldmenuitem_t EpisodeMenu[MAX_EPISODES] =
 	{1,"","\0", M_Episode,0},
 	{1,"","\0", M_Episode,0},
 	{1,"","\0", M_Episode,0},
+	{1,"","\0", M_Episode,0},
+	{1,"","\0", M_Episode,0},
 	{1,"","\0", M_Episode,0}
 };
 
@@ -1014,7 +1016,7 @@ void M_NewGame(int choice)
 
 		if (episodenum > 4)
 		{
-			EpiDef.y -= LINEHEIGHT;
+			EpiDef.y -= LINEHEIGHT * (episodenum / 4);
 		}
 
 		epi = 0;
@@ -1043,7 +1045,7 @@ void M_DrawEpisode()
 
 	if (episodenum > 4)
 	{
-		y -= (LINEHEIGHT * (episodenum - 4));
+		y -= LINEHEIGHT * (episodenum / 4);
 	}
 
 	screen->DrawPatchClean(W_CachePatch("M_EPISOD"), 54, y);
