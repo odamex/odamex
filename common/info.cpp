@@ -1477,7 +1477,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// damage
 	"vile/active",		// activesound
 	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-     MF2_MCROSS | MF2_PASSMOBJ | MF2_PUSHWALL | MF2_NODMGTHRUST, // flags2
+     MF2_MCROSS | MF2_PASSMOBJ | MF2_PUSHWALL, // flags2
 	S_NULL,		// raisestate
 	0x10000,
 	"MT_VILE",
