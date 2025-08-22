@@ -31,9 +31,7 @@
 class MusicSystem
 {
   public:
-	MusicSystem() : m_isPlaying(false), m_isPaused(false), m_tempo(120.0f), m_volume(1.0f)
-	{
-	}
+	MusicSystem() { }
 	virtual ~MusicSystem() { }
 
 	virtual void startSong(byte* data, size_t length, bool loop);
@@ -60,11 +58,11 @@ class MusicSystem
 	virtual bool isWaveCapable() const { return false; }
 
   private:
-	bool m_isPlaying;
-	bool m_isPaused;
+	bool m_isPlaying = false;
+	bool m_isPaused = false;
 
-	float m_tempo;
-	float m_volume;
+	float m_tempo = 120.0f;
+	float m_volume = 1.0f;
 };
 
 /**

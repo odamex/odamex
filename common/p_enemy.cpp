@@ -277,7 +277,6 @@ bool P_CheckMissileRange (AActor *actor)
 	{
 		if (dist < 196)
 			return false;		// close for fist attack
-		dist >>= 1;
 	}
 
 
@@ -1184,7 +1183,7 @@ void A_CPosRefire (AActor *actor)
 		return;
 
 	if (!actor->target
-		|| (actor->target->player && actor->target->player->spectator) 
+		|| (actor->target->player && actor->target->player->spectator)
 		|| actor->target->health <= 0
 		|| !P_CheckSight(actor, actor->target)
         )
@@ -1203,7 +1202,7 @@ void A_SpidRefire (AActor *actor)
 		return;
 
 	if (!actor->target
-		|| (actor->target->player && actor->target->player->spectator) 
+		|| (actor->target->player && actor->target->player->spectator)
 		|| actor->target->health <= 0
 		|| !P_CheckSight(actor, actor->target)
         )

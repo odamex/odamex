@@ -1053,6 +1053,8 @@ void A_WeaponBulletAttack(AActor* mo)
 	damagebase = psp->state->args[3];
 	damagemod = psp->state->args[4];
 
+	Unlag::getInstance().reconcile(player->id);
+
 	bool refire = player->refire ? true : false;
 
 	angle = 0;
@@ -1071,6 +1073,8 @@ void A_WeaponBulletAttack(AActor* mo)
 
 		P_LineAttack(player->mo, bangle, MISSILERANGE, slope, damage);
 	}
+
+	Unlag::getInstance().restore(player->id);
 }
 
 //
@@ -1113,6 +1117,8 @@ void A_WeaponMeleeAttack(AActor* mo)
 	if (player->powers[pw_strength])
 		damage = (damage * zerkfactor) >> FRACBITS;
 
+	Unlag::getInstance().reconcile(player->id);
+
 	// slight randomization; weird vanillaism here. :P
 	angle = player->mo->angle;
 
@@ -1126,6 +1132,8 @@ void A_WeaponMeleeAttack(AActor* mo)
 
 	// attack, dammit!
 	P_LineAttack(player->mo, angle, range, slope, damage);
+
+	Unlag::getInstance().restore(player->id);
 
 	// missed? ah, welp.
 	if (!linetarget)

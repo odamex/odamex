@@ -66,13 +66,17 @@ function BuildOutCommon {
         -Destination "${CommonDir}"
     Copy-Item -Force -Path "${UnzippedX64}\licenses\COPYING.SDL2_mixer.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.modplug.txt" `
+    Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.xmp.txt" `
         -Destination "${CommonDir}\licenses"
     Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.ogg-vorbis.txt" `
         -Destination "${CommonDir}\licenses"
     Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.opus.txt" `
         -Destination "${CommonDir}\licenses"
     Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.opusfile.txt" `
+        -Destination "${CommonDir}\licenses"
+    Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.wavpack.txt" `
+        -Destination "${CommonDir}\licenses"
+    Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.gme.txt" `
         -Destination "${CommonDir}\licenses"
     Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.SDL2.txt" `
         -Destination "${CommonDir}\licenses"

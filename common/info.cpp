@@ -1477,7 +1477,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	0,		// damage
 	"vile/active",		// activesound
 	MF_SOLID|MF_SHOOTABLE|MF_COUNTKILL,		// flags
-     MF2_MCROSS | MF2_PASSMOBJ | MF2_PUSHWALL | MF2_NODMGTHRUST, // flags2
+     MF2_MCROSS | MF2_PASSMOBJ | MF2_PUSHWALL, // flags2
 	S_NULL,		// raisestate
 	0x10000,
 	"MT_VILE",
@@ -8072,9 +8072,9 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_NULL,		// xdeathstate
 	NULL,		// deathsound
 	0,		// speed
-	20*FRACUNIT,		// radius
-	48*FRACUNIT,		// height
-	48*FRACUNIT,	// cdheight
+	0,		// radius
+	0,				// height
+	0,			// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -8112,9 +8112,9 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_NULL,		// xdeathstate
 	NULL,		// deathsound
 	0,		// speed
-	20*FRACUNIT,		// radius
-	48*FRACUNIT,		// height
-	48*FRACUNIT,	// cdheight
+	0,		// radius
+	0,			// height
+	0,		// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound
@@ -8931,9 +8931,9 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_NULL,		// xdeathstate
 	NULL,		// deathsound
 	0,		// speed
-	20 * FRACUNIT,		// radius
-	48 * FRACUNIT,		// height
-	48 * FRACUNIT,	// cdheight
+	0,		// radius
+	0,				// height
+	0,			// cdheight
 	100,		// mass
 	0,		// damage
 	NULL,		// activesound

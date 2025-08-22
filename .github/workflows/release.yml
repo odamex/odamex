@@ -408,11 +408,20 @@ jobs:
         asset_content_type: application/x-xz
   update-winget:
     name: Update WinGet package
-    needs: package-and-upload
+    needs: package-and-upload-windows
     runs-on: windows-latest
     steps:
+      - name: Check if WinGet release should run
+        id: check
+        run: |
+          if [[ "${{ github.repository_owner }}" != "odamex" || -z "${{ secrets.WINGET_TOKEN }}" ]]; then
+            echo "run=false" >> $GITHUB_OUTPUT
+          else
+            echo "run=true" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
       - uses: vedantmgoyal9/winget-releaser@main
-        if: ${{ github.repository_owner }} == 'odamex'
+        if: steps.check.outputs.run == 'true'
         with:
           identifier: Odamex.Odamex
           token: ${{ secrets.WINGET_TOKEN }}

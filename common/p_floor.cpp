@@ -746,8 +746,6 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 		break;
 
 	case DFloor::floorRaiseAndCrush:
-		m_Crush = crush;
-		[[fallthrough]];
 	case DFloor::floorRaiseToLowestCeiling:
 		m_Direction = 1;
 		m_FloorDestHeight =

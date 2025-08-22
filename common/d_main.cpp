@@ -179,9 +179,35 @@ static const char* steam_install_subdirs[] =
 	"steamapps\\common\\ultimate doom\\base\\plutonia",
 	"steamapps\\common\\ultimate doom\\base\\tnt",
 	"steamapps\\common\\ultimate doom\\rerelease",
-
 };
 
+static registry_value_t gog_doom_plus_doom2 =
+{
+	HKEY_LOCAL_MACHINE,
+	SOFTWARE_KEY "\\GOG.com\\Games\\1413291984",
+	"path",
+};
+
+static registry_value_t gog_doom =
+{
+	HKEY_LOCAL_MACHINE,
+	SOFTWARE_KEY "\\GOG.com\\Games\\1435827232",
+	"path",
+};
+
+static registry_value_t gog_doom2 =
+{
+	HKEY_LOCAL_MACHINE,
+	SOFTWARE_KEY "\\GOG.com\\Games\\1435848814",
+	"path",
+};
+
+static registry_value_t gog_final_doom =
+{
+	HKEY_LOCAL_MACHINE,
+	SOFTWARE_KEY "\\GOG.com\\Games\\1435848742",
+	"path",
+};
 
 static char *GetRegistryString(registry_value_t *reg_val)
 {
@@ -316,11 +342,50 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 				const std::string subpath = fmt::format("{}\\{}", install_path, dir);
 
 				D_AddSearchDir(dirs, subpath.c_str(), separator);
-
-				M_FileExists(subpath);
 			}
 
-			M_FileExists(install_path);
+			M_Free(install_path);
+		}
+	}
+
+	// Doom on GOG
+	{
+		char* doom_plus_doom2_path = GetRegistryString(&gog_doom_plus_doom2);
+
+		if (doom_plus_doom2_path != nullptr)
+		{
+			D_AddSearchDir(dirs, doom_plus_doom2_path, separator);
+			M_Free(doom_plus_doom2_path);
+		}
+
+		char* doom_path = GetRegistryString(&gog_doom);
+
+		if (doom_path != nullptr)
+		{
+			D_AddSearchDir(dirs, doom_path, separator);
+			M_Free(doom_path);
+		}
+
+		char* doom2_path = GetRegistryString(&gog_doom2);
+
+		if (doom2_path != nullptr)
+		{
+			const std::string full_doom2_path = fmt::format("{}\\{}", doom2_path, "doom2");
+			const std::string master_levels_path = fmt::format("{}\\{}", doom2_path, "master\\wads");
+			D_AddSearchDir(dirs, full_doom2_path.c_str(), separator);
+			D_AddSearchDir(dirs, master_levels_path.c_str(), separator);
+			M_Free(doom2_path);
+		}
+
+		char* final_doom_path = GetRegistryString(&gog_final_doom);
+
+		if (final_doom_path != NULL)
+		{
+			const std::string plutonia_path = fmt::format("{}\\{}", final_doom_path, "Plutonia");
+			const std::string tnt_path = fmt::format("{}\\{}", final_doom_path, "TNT");
+			D_AddSearchDir(dirs, plutonia_path.c_str(), separator);
+			D_AddSearchDir(dirs, tnt_path.c_str(), separator);
+			M_Free(final_doom_path);
 		}
 	}
 

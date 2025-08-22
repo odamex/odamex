@@ -534,7 +534,7 @@ std::string M_GetNetDemoFileName(const std::string& file, const std::string& alt
 	else
 	{
 		// Direct our path to our netdemo directory.
-		fs::path path = M_GetNetDemoDir();
+		path = M_GetNetDemoDir();
 	}
 	path /= file;
 #endif

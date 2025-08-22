@@ -43,6 +43,7 @@
 #include "gi.h"
 #include "g_skill.h"
 #include "p_mapformat.h"
+#include "p_unlag.h"
 
 #ifdef SERVER_APP
 #include "sv_main.h"
@@ -1854,6 +1855,13 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			// don't die in auto map, switch view prior to dying
 			AM_Stop();
 		}
+
+		// Clear unlagged history as the player is now dead
+		if (serverside)
+		{
+			Unlag::getInstance().clearPlayerHistory(tplayer->id);
+		}
+
 	}
 
 	if (target->health > 0) // denis - when this function is used standalone

@@ -12,8 +12,13 @@ if(BUILD_CLIENT AND USE_INTERNAL_FLTK)
 
   if(USE_INTERNAL_ZLIB)
     # FLTK defaults to the dynamic library, but we want the static lib.
-    list(APPEND _FLTK_BUILDGEN_PARAMS
-      "-DZLIB_LIBRARY_RELEASE=${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}zlibstatic${libsuffix}")
+    if(WIN32)
+      list(APPEND _FLTK_BUILDGEN_PARAMS
+        "-DZLIB_LIBRARY_RELEASE=${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}libzstatic${libsuffix}")
+    else()
+      list(APPEND _FLTK_BUILDGEN_PARAMS
+        "-DZLIB_LIBRARY_RELEASE=${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}z${libsuffix}")
+    endif()
   endif()
 
   if(USE_INTERNAL_PNG)

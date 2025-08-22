@@ -14,7 +14,7 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-project(Odamex VERSION 11.0.0)
+project(Odamex VERSION 11.1.0)
 
 include(CMakeDependentOption)
 
@@ -54,9 +54,11 @@ option(ODAMEX_INSTALL_BINDIR "Smart default for bin dir location" "/usr/local/bi
 option(ODAMEX_INSTALL_DATADIR "Smart default for data dir location" "/usr/local/share")
 option(USE_EXTERNAL_LIBDWARF "Use external libdwarf for cpptrace" 0)
 cmake_dependent_option( USE_INTERNAL_ZLIB "Use internal zlib" ${USE_INTERNAL_LIBS} BUILD_CLIENT OR BUILD_SERVER 0 )
+cmake_dependent_option( USE_INTERNAL_ZSTD "Use internal zstd" ${USE_INTERNAL_LIBS} BUILD_CLIENT OR BUILD_SERVER 0 )
 cmake_dependent_option( USE_INTERNAL_PNG "Use internal libpng" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_CURL "Use internal libcurl" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_JSONCPP "Use internal JsonCpp" 1 BUILD_CLIENT OR BUILD_SERVER 0 )
+cmake_dependent_option( USE_INTERNAL_CPPTRACE "Use internal cpptrace" 1 BUILD_CLIENT OR BUILD_SERVER 0 )
 cmake_dependent_option( USE_INTERNAL_FLTK "Use internal FLTK" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_WXWIDGETS "Use internal wxWidgets" ${USE_INTERNAL_LIBS} BUILD_LAUNCHER 0 )
 cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
@@ -75,7 +77,7 @@ if(NOT APPLE AND NOT WIN32)
 endif()
 
 set(PROJECT_COPYRIGHT "2006-2025")
-set(PROJECT_RC_VERSION "11,0,0,0")
+set(PROJECT_RC_VERSION "11,1,0,0")
 set(PROJECT_COMPANY "The Odamex Team")
 
 # Include early required commands for specific systems

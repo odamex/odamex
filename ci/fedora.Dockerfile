@@ -6,7 +6,7 @@ COPY . .
 
 # Packages
 RUN set -x && \
-    dnf -y install git gcc-c++ alsa-lib-devel libcurl-devel \
+    dnf -y install git gcc-c++ alsa-lib-devel libcurl-devel libzstd-devel \
                    ninja-build SDL2-devel SDL2_mixer-devel wxGTK3-devel && \
    curl -LO https://github.com/Kitware/CMake/releases/download/v3.30.2/cmake-3.30.2-linux-x86_64.sh && \
    chmod +x ./cmake-3.30.2-linux-x86_64.sh && \
