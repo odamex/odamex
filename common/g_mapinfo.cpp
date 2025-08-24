@@ -1319,7 +1319,10 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "compat_sectorsounds", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
 			{ "compat_nopassover", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_NOPASSOVER },
 			{ "compat_invisibility", &MIType_CompatFlag, &ref.flags},  // todo: not implemented
-			{ "author", &MIType_String, &ref.author }
+			{ "author", &MIType_String, &ref.author },
+			{ "normalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NORMALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
+			{ "noinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NOINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
+			{ "totalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_TOTALINFIGHTING, ~LEVEL2_INFIGHTINGMASK }
 		};
 	}
 };
@@ -1669,7 +1672,8 @@ struct MapInfoDataSetter<SkillInfo>
 			{ "monsterhealth", &MIType_Float, &ref.monster_health },
 			{ "friendlyhealth", &MIType_Float, &ref.friendly_health },
 			{ "nopain", &MIType_Bool, &ref.no_pain, true },
-			{ "infighting", &MIType_Int, &ref.infighting },
+			{ "noinfighting", &MIType_SCFlags, &ref.flags, SKILL_NOINFIGHTING, ~SKILL_TOTALINFIGHTING },
+			{ "totalinfighting", &MIType_SCFlags, &ref.flags, SKILL_TOTALINFIGHTING, ~SKILL_NOINFIGHTING },
 			{ "playerrespawn", &MIType_Bool, &ref.player_respawn, true }
 		};
 	}
@@ -1740,6 +1744,14 @@ void G_MapNameToLevelNum(level_pwad_info_t& info)
 			info.levelnum = mapnum;
 		}
 	}
+}
+
+void G_MapNameToID24LevelNum(level_pwad_info_t& info)
+{
+	int ep, map;
+	ValidateMapName(info.mapname, &ep, &map);
+	info.mapnum = map;
+	info.episodenum = ep;
 }
 
 namespace
@@ -1841,6 +1853,7 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 			{
 				G_MapNameToLevelNum(info);
 			}
+			G_MapNameToID24LevelNum(info);
 		}
 		else if (os.compareTokenNoCase("cluster") ||
 		         os.compareTokenNoCase("clusterdef"))

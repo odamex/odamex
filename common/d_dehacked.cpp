@@ -38,26 +38,6 @@
 #include "s_sound.h"
 #include "w_wad.h"
 
-// Miscellaneous info that used to be constant
-struct DehInfo deh = {
-    100, // .StartHealth
-    50,  // .StartBullets
-    100, // .MaxHealth
-    200, // .MaxArmor
-    1,   // .GreenAC
-    2,   // .BlueAC
-    200, // .MaxSoulsphere
-    100, // .SoulsphereHealth
-    200, // .MegasphereHealth
-    100, // .GodHealth
-    200, // .FAArmor
-    2,   // .FAAC
-    200, // .KFAArmor
-    2,   // .KFAAC
-    40,  // .BFGCells (No longer used)
-    0,   // .Infight
-};
-
 // These are the original heights of every Doom 2 thing. They are used if a patch
 // specifies that a thing should be hanging from the ceiling but doesn't specify
 // a height for the thing, since these are the heights it probably wants.
@@ -1664,9 +1644,6 @@ static int PatchWeapon(int weapNum)
 	    {"Bobbing frame", offsetof(weaponinfo_t, readystate)},
 	    {"Shooting frame", offsetof(weaponinfo_t, atkstate)},
 	    {"Firing frame", offsetof(weaponinfo_t, flashstate)},
-	    {"Ammo use", offsetof(weaponinfo_t, ammouse)},      // ZDoom 1.23b33
-	    {"Ammo per shot", offsetof(weaponinfo_t, ammouse)}, // Eternity
-	    {"Min ammo", offsetof(weaponinfo_t, minammo)},      // ZDoom 1.23b33
 	    {NULL, 0}};
 
 	static const struct
@@ -1701,54 +1678,67 @@ static int PatchWeapon(int weapNum)
 
 		if (HandleKey(keys, info, Line1, val, sizeof(*info)))
 		{
-			if (linelen == 10)
+			if (linelen == 10 && stricmp(Line1, "MBF21 Bits") == 0)
 			{
-				if (stricmp(Line1, "MBF21 Bits") == 0)
+				int value = 0;
+				bool vchanged = false;
+				char* strval;
+
+				for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
+				     strval = NULL)
 				{
-					int value = 0;
-					bool vchanged = false;
-					char* strval;
-
-					for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
-					     strval = NULL)
+					if (IsNum(strval))
 					{
-						if (IsNum(strval))
-						{
-							// Force the top 4 bits to 0 so that the user is forced
-							// to use the mnemonics to change them.
+						// Force the top 4 bits to 0 so that the user is forced
+						// to use the mnemonics to change them.
 
-							// I have no idea why everyone insists on using strtol here
-							// even though it fails dismally if a value is parsed where
-							// the highest bit it set. Do people really use negative
-							// values here? Let's better be safe and check both.
-							value |= atoi(strval);
-							vchanged = true;
-						}
-						else
-						{
-							size_t i;
-
-							for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
-							{
-								if (!stricmp(strval, bitnames[i].Name))
-								{
-									vchanged = true;
-									value |= 1 << (bitnames[i].Bit);
-									break;
-								}
-							}
-
-							if (i == ARRAY_LENGTH(bitnames))
-							{
-								DPrintFmt("Unknown bit mnemonic {}\n", strval);
-							}
-						}
+						// I have no idea why everyone insists on using strtol here
+						// even though it fails dismally if a value is parsed where
+						// the highest bit it set. Do people really use negative
+						// values here? Let's better be safe and check both.
+						value |= atoi(strval);
+						vchanged = true;
 					}
-					if (vchanged)
+					else
 					{
-						info->flags = value; // Weapon Flags
+						size_t i;
+
+						for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
+						{
+							if (!stricmp(strval, bitnames[i].Name))
+							{
+								vchanged = true;
+								value |= 1 << (bitnames[i].Bit);
+								break;
+							}
+						}
+
+						if (i == ARRAY_LENGTH(bitnames))
+						{
+							DPrintFmt("Unknown bit mnemonic {}\n", strval);
+						}
 					}
 				}
+				if (vchanged)
+				{
+					info->flags = value; // Weapon Flags
+				}
+			}
+			else if (linelen == 13 && stricmp(Line1, "Ammo per shot") == 0)  // Eternity/MBF21
+			{
+				info->ammopershot = val;
+				info->internalflags |= WIF_ENABLEAPS;
+				deh.ZDAmmo = false;
+			}
+			else if (linelen == 9 && stricmp(Line1, "Ammo use") == 0)  // ZDoom 1.23b33
+			{
+				info->ammouse = val;
+				deh.ZDAmmo = true;
+			}
+			else if (linelen == 9 && stricmp(Line1, "Min ammo") == 0)  // ZDoom 1.23b33
+			{
+				info->minammo = val;
+				deh.ZDAmmo = true;
 			}
 			else
 			{
@@ -1852,6 +1842,7 @@ static int PatchMisc(int dummy)
 		{
 			weaponinfo[wp_bfg].ammouse = deh.BFGCells;
 			weaponinfo[wp_bfg].minammo = deh.BFGCells;
+			weaponinfo[wp_bfg].ammopershot = deh.BFGCells;
 		}
 	}
 

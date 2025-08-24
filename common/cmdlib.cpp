@@ -368,7 +368,7 @@ StringTokens TokenizeString(const std::string& str, const std::string& delim) {
 	while (delimPos != std::string::npos) {
 		delimPos = str.find(delim, prevDelim);
 		tokens.push_back(str.substr(prevDelim, delimPos - prevDelim));
-		prevDelim = delimPos + 1;
+		prevDelim = delimPos + delim.length();
 	}
 
 	return tokens;

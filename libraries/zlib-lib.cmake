@@ -7,8 +7,13 @@ if(BUILD_CLIENT OR BUILD_SERVER)
     # Set vars so the finder can find them.
     set(ZLIB_INCLUDE_DIR
       "${CMAKE_CURRENT_BINARY_DIR}/local/include")
-    set(ZLIB_LIBRARY
-      "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}zlibstatic${libsuffix}")
+    if(WIN32)
+      set(ZLIB_LIBRARY
+        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}zlibstatic${libsuffix}")
+    else()
+      set(ZLIB_LIBRARY
+        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}z${libsuffix}")
+    endif()
 
     # Generate the build.
     execute_process(COMMAND "${CMAKE_COMMAND}"

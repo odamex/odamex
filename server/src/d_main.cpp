@@ -155,9 +155,6 @@ void D_Init()
 	V_InitPalette("PLAYPAL");
 	R_InitColormaps();
 
-	// [RH] Initialize localizable strings.
-	::GStrings.loadStrings(false);
-
 	// init the renderer
 	if (first_time)
 		Printf(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
@@ -202,6 +199,7 @@ void STACK_ARGS D_Shutdown()
 	W_Close();
 
 	R_ShutdownColormaps();
+	R_ClearSkyDefs();
 
 	// reset the Zone memory manager
 	Z_Close();

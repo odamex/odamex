@@ -36,6 +36,9 @@ CVAR(					am_followplayer, "1", "",
 CVAR(					am_rotate, "0", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR_RANGE(				am_thickness, "1", "Scale the thickness of the automap lines by this value. Set to 0 for auto.",
+						CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 6.0f)
+
 CVAR_RANGE(				am_overlay, "0", "",
 						CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 
@@ -57,7 +60,10 @@ CVAR(					am_classicmapstring, "0", "",
 CVAR(					am_usecustomcolors, "0", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(					am_ovshare, "0", "",
+CVAR(					am_showlocked, "0", "Show locked doors on the automap even when custom colors are disabled.",
+						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(					am_ovshare, "0", "Overlay automap uses the same custom colors as the non-overlayed automap.",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(					am_backcolor, "00 00 3a", "",
@@ -429,12 +435,18 @@ CVAR_FUNC_DECL(		cl_netdemoname, "Odamex_%g_%d_%t_%w_%m",
 					"either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
 					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR(				cl_netdemodir, "", "Directory for Odamex to save netdemos to.",
+					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
 // Screenshot format string
 CVAR_FUNC_DECL(		cl_screenshotname, "Odamex_%g_%d_%t",
 					"Default screenshot name.  Parses the following tokens:\n// " \
 					"%d: date in YYYYMMDD format\n// %t: time in HHMMSS format\n// " \
 					"%n: player name\n// %g: gametype\n// %w: WAD file loaded; " \
 					"either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
+					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(				cl_screenshotdir, "", "Directory for Odamex to save screenshots to.",
 					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(				cl_autorecord, "0", "Automatically record netdemos",
@@ -670,6 +682,10 @@ static char *C_GetDefaultMusicSystem()
 
 	#if defined _WIN32 && !defined _XBOX
 	defaultmusicsystem = MS_PORTMIDI;
+	#endif
+
+	#ifdef __linux__
+	defaultmusicsystem = MS_LIBADLMIDI;
 	#endif
 
 	// don't overflow str

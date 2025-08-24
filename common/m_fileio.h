@@ -31,6 +31,7 @@
 extern std::ofstream LOG;
 extern std::ifstream CON;
 
+std::string M_JoinPath(std::string_view path1, std::string_view path2);
 void M_ExpandHomeDir(std::string& path);
 std::string M_FindUserFileName(const std::string& file, const char* ext);
 void M_FixPathSep(std::string& path);
@@ -121,9 +122,10 @@ std::string M_GetUserFileName(const std::string& file);
  *         consider the existence of the file in question.
  *
  * @param file Filename to resolve.
+ * @param altpath Optional alternate screenshot directory
  * @return An absolute path pointing to the resolved file.
  */
-std::string M_GetScreenshotFileName(const std::string& file);
+std::string M_GetScreenshotFileName(const std::string& file, const std::string& altpath = "");
 
 /**
  * @brief Resolve a file name into a user netdemo directory.
@@ -138,9 +140,10 @@ std::string M_GetScreenshotFileName(const std::string& file);
  *         consider the existence of the file in question.
  *
  * @param file Filename to resolve.
+ * @param altpath Optional alternate netdemo directory
  * @return An absolute path pointing to the resolved file.
  */
-std::string M_GetNetDemoFileName(const std::string& file);
+std::string M_GetNetDemoFileName(const std::string& file, const std::string& altpath = "");
 
 /**
  * @brief Attempt to find a file in a directory - case insensitive.

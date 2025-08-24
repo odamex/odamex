@@ -23,7 +23,7 @@
 
 #pragma once
 
-#define MAX_EPISODES 8
+#define MAX_EPISODES 10
 
 struct EpisodeInfo
 {

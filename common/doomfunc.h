@@ -33,15 +33,29 @@ void SV_BasePrintButPlayer(const int printlevel, const int player_id, const std:
 size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str);
 
 template <typename... ARGS>
+[[deprecated("Please use PrintFmt() instead.")]]
 size_t Printf(const fmt::string_view format, const ARGS&... args)
 {
 	return C_BasePrint(PRINT_HIGH, TEXTCOLOR_NORMAL, fmt::sprintf(format, args...));
 }
 
 template <typename... ARGS>
+[[deprecated("Please use PrintFmt() instead.")]]
 size_t Printf(const int printlevel, const fmt::string_view format, const ARGS&... args)
 {
 	return C_BasePrint(printlevel, TEXTCOLOR_NORMAL, fmt::sprintf(format, args...));
+}
+
+template <typename... ARGS>
+size_t PrintFmt(const fmt::string_view format, const ARGS&... args)
+{
+	return C_BasePrint(PRINT_HIGH, TEXTCOLOR_NORMAL, fmt::format(format, args...));
+}
+
+template <typename... ARGS>
+size_t PrintFmt(const int printlevel, const fmt::string_view format, const ARGS&... args)
+{
+	return C_BasePrint(printlevel, TEXTCOLOR_NORMAL, fmt::format(format, args...));
 }
 
 template <typename... ARGS>
@@ -59,18 +73,6 @@ size_t DPrintFmt(const fmt::string_view format, const ARGS&... args)
 	}
 
 	return 0;
-}
-
-template <typename... ARGS>
-size_t PrintFmt(const fmt::string_view format, const ARGS&... args)
-{
-	return C_BasePrint(PRINT_HIGH, TEXTCOLOR_NORMAL, fmt::format(format, args...));
-}
-
-template <typename... ARGS>
-size_t PrintFmt(const int printlevel, const fmt::string_view format, const ARGS&... args)
-{
-	return C_BasePrint(printlevel, TEXTCOLOR_NORMAL, fmt::format(format, args...));
 }
 
 /**
@@ -128,3 +130,47 @@ void SV_BroadcastPrintFmtButPlayer(int printlevel, int player_id, const fmt::str
 	SV_BasePrintButPlayer(printlevel, player_id, string);
 }
 #endif
+
+namespace OUtil
+{
+
+// Wrapper for easy iteration over containers in reverse with ranged for loops
+template <typename T>
+struct reverse_wrapper
+{
+    T& iterable;
+    inline auto begin() { return std::rbegin(iterable); }
+    inline auto end() { return std::rend(iterable); }
+};
+
+/**
+ * @brief Reverse the iteration in a range-based for loop
+ */
+template <typename T>
+inline reverse_wrapper<T> reverse(T&& iterable) { return { iterable }; }
+
+// Wrapper for skipping the first N elements in a range-based for loop
+template <typename T>
+struct drop_wrapper
+{
+    T& iterable;
+    size_t count;
+
+    auto begin() {
+        auto it = std::begin(iterable);
+        auto end_it = std::end(iterable);
+        for (size_t i = 0; i < count && it != end_it; ++i)
+            ++it;
+        return it;
+    }
+
+    inline auto end() { return std::end(iterable); }
+};
+
+/**
+ * @brief Skip the first `count` elements in a range-based for loop
+ */
+template <typename T>
+inline drop_wrapper<T> drop(T&& iterable, std::size_t count) { return { iterable, count }; }
+
+}

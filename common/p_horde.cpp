@@ -272,6 +272,7 @@ class HordeState
 				// Dead players are reborn with a message.
 				if (player->lives <= 0)
 				{
+					G_ResetLastPlayer();
 					player->playerstate = PST_REBORN;
 					SV_BroadcastPrintFmt("{} gets a new lease on life.\n",
 					                     player->userinfo.netname);

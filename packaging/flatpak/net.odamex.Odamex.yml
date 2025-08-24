@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/flatpak/flatpak-builder/main/data/flatpak-manifest.schema.json
+---
+app-id: net.odamex.Odamex
+runtime: org.freedesktop.Platform
+runtime-version: "24.08"
+sdk: org.freedesktop.Sdk
+command: select-exe
+separate-locales: false
+finish-args:
+  - --share=ipc
+  - --device=all # change this to device=input + device=dri when available more widely
+  - --socket=pulseaudio
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --filesystem=~/.odamex:create
+  - --filesystem=home # needs to be able to create banfile.json and .odalaunch config file, as well as read any odasrv cfgs
+  - --filesystem=host-os:ro # for standard doom data locations in /usr
+  - --filesystem=host-etc:ro # standard location for timidity configs, so users can override the included one
+  - --env=TIMIDITY_CFG=/app/etc/timidity.cfg
+modules:
+  - name: timidity-instruments
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/etc/
+      - cp -r timidity.cfg /app/etc/sdl_timidity.cfg
+      - mkdir -p /app/share/timidity/
+      - cp -r instruments /app/share/timidity/instruments
+    sources:
+      - type: archive
+        url: http://www.libsdl.org/projects/mixer/timidity/timidity.tar.gz
+        sha256: ee7c59bb5d5fae206d53eef0e82b5ed739e7cbf69252a3754024f8f52ebe77aa
+  - name: SDL2-mixer
+    buildsystem: cmake-ninja
+    builddir: true
+    config-opts:
+      - -D SDL2MIXER_VENDORED=ON
+      - -D SDL2MIXER_DEPS_SHARED=OFF
+      - -D SDL2MIXER_SAMPLES=OFF
+      - -D CMAKE_INSTALL_LIBDIR=lib
+    sources:
+      - type: git
+        url: https://github.com/libsdl-org/SDL_mixer.git
+        tag: release-2.8.1
+  # cpptrace dependencies
+  - name: libdwarf
+    buildsystem: cmake-ninja
+    config-opts:
+      - -D BUILD_DWARFDUMP=OFF
+    sources:
+      - type: git
+        url: https://github.com/jeremy-rifkin/libdwarf-lite.git
+        tag: v2.1.0
+  # Odalaunch dependencies
+  - name: WxWidgets
+    buildsystem: autotools
+    config-opts:
+      - --enable-unicode
+      - --with-gtk3
+    cleanup:
+      - '/lib/wx'
+      - '/share/aclocal'
+      - '/share/bakefile'
+    sources:
+      - type: archive
+        url: https://github.com/wxWidgets/wxWidgets/releases/download/v3.0.5/wxWidgets-3.0.5.tar.bz2
+        sha256: 8aacd56b462f42fb6e33b4d8f5d40be5abc3d3b41348ea968aa515cc8285d813
+  # Odamex (combined)
+  - name: Odamex
+    buildsystem: cmake-ninja
+    config-opts:
+      - -D CMAKE_BUILD_TYPE=RelWithDebInfo
+      - -D BUILD_OR_FAIL=1
+      - -D BUILD_CLIENT=1
+      - -D BUILD_SERVER=1
+      - -D BUILD_LAUNCHER=1
+      - -D BUILD_MASTER=0
+      - -D USE_INTERNAL_LIBS=1
+      - -D USE_INTERNAL_DEUTEX=1
+      - -D ODAMEX_INSTALL_BINDIR=/app/bin
+      - -D ODAMEX_INSTALL_DATADIR=/run/host/usr/share
+      - -D USE_EXTERNAL_LIBDWARF=1
+      - -D ODAMEX_NO_GITVER=0
+    post-install:
+      - chmod +x ./flatpak-post-install.sh
+      - "./flatpak-post-install.sh"
+      # delete files that cleanup can't see
+      - rm -rf /app/bin/wx*
+      - rm -rf /app/lib/cmake
+      - rm -rf /app/lib/pkgconfig
+      - rm -rf /app/lib64/cmake
+      - rm -rf /app/lib64/libdwarf.a
+      - rm -rf /app/lib64/pkgconfig
+      - rm -rf /app/include
+    sources:
+      - type: archive
+        url: https://github.com/Doom-Utils/deutex/releases/download/v5.2.3/deutex-5.2.3.tar.zst
+        sha256: 935dcae490fb574e8ad90ef54bdeb599c7055fedca117d79ce837cbc19d070ab
+        dest: wad/deutex
+      - type: dir
+        path: ../..
+      - type: file
+        path: ./flatpak-post-install.sh

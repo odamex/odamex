@@ -134,14 +134,6 @@ if(BUILD_CLIENT OR BUILD_SERVER)
   target_include_directories(minilzo PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/minilzo")
 endif()
 
-include(FetchContent)
-FetchContent_Declare(
-  cpptrace
-  GIT_REPOSITORY https://github.com/jeremy-rifkin/cpptrace.git
-  GIT_TAG        88d75647903b8fe9383601d1cf87a98016e9041b
-)
-FetchContent_MakeAvailable(cpptrace)
-
 include(zlib-lib.cmake)
 
 include(libpng-lib.cmake)
@@ -163,3 +155,5 @@ include(SDL-lib.cmake)
 include(wxWidgets-lib.cmake)
 
 include(libadlmidi-lib.cmake)
+
+include(cpptrace-lib.cmake)

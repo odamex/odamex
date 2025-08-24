@@ -73,7 +73,7 @@ jsonlumpresult_t M_ParseJSONLump(int lumpindex, const char* lumptype, const JSON
 	if(root.size() != 4
 	   || !type.isString()
 	   || !version.isString()
-	   || !metadata.isObject()
+	   || (!metadata.isObject() && !metadata.isNull())
 	   || !data.isObject())
 	{
 		return jsonlumpresult_t::MALFORMEDROOT;

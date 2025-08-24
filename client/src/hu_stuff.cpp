@@ -570,6 +570,9 @@ void HU_Drawer()
 	// [AM] Voting HUD!
 	ST_voteDraw(11 * CleanYfac);
 
+	if (gamestate == GS_LEVEL)
+		HU_DrawCrosshair();
+
 	if (consoleplayer().camera && !(demoplayback))
 	{
 		if ((gamestate != GS_INTERMISSION && Actions[ACTION_SHOWSCORES]) ||
@@ -579,9 +582,6 @@ void HU_Drawer()
 			HU_DrawScores(&displayplayer());
 		}
 	}
-
-	if (gamestate == GS_LEVEL)
-		HU_DrawCrosshair();
 
 	if (HU_ChatMode() != CHAT_INACTIVE)
 		HU_DrawChatPrompt();

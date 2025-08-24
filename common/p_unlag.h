@@ -52,6 +52,7 @@ public:
 									fixed_t &x, fixed_t &y, fixed_t &z);
 	void getCurrentPlayerPosition(	byte player_id,
 									fixed_t &x, fixed_t &y, fixed_t &z);
+	void clearPlayerHistory(byte player_id);
 	static bool enabled();
 private:
 	static constexpr size_t MAX_HISTORY_TICS = TICRATE;

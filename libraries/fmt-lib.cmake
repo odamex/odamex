@@ -7,8 +7,7 @@ if(BUILD_CLIENT OR BUILD_SERVER)
     LIBRARY fmt
     PARAMS "-DFMT_DOC=OFF"
            "-DFMT_INSTALL=ON"
-           "-DFMT_TEST=OFF"
-           "-DFMT_USE_CPP11=OFF")
+           "-DFMT_TEST=OFF")
   lib_build(LIBRARY fmt)
 
   find_package(fmt REQUIRED)

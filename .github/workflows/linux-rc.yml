@@ -1,0 +1,270 @@
+name: Linux-Release-Candidate
+
+on:
+  push:
+    branches:
+    - 'release/[0-9]+.[0-9]+.[0-9]+' # Only run on major.minor.patch releases
+
+jobs:
+  pre_job:
+    name: Build Preparation
+    runs-on: ubuntu-latest
+    outputs:
+      build_number: ${{ steps.revlist.outputs.totalCommits }}
+      new_version: ${{ steps.gitversion.outputs.majorMinorPatch }}
+      major: ${{ steps.gitversion.outputs.major }}
+      minor: ${{ steps.gitversion.outputs.minor }}
+      patch: ${{ steps.gitversion.outputs.patch }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
+          fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v0.9.7
+        with:
+          versionSpec: '5.x'
+      - name: Determine Version
+        id:   gitversion
+        uses: gittools/actions/gitversion/execute@v0.9.7
+      - name: Get Commits From Source
+        id:   revlist
+        shell: bash
+        run: |
+          commits=$(git rev-list HEAD --count)
+          echo "totalCommits=$commits" >> $GITHUB_OUTPUT
+      - name: Display GitVersion outputs
+        run: |
+          echo "Major: ${{ steps.gitversion.outputs.major }}"
+          echo "Minor: ${{ steps.gitversion.outputs.minor }}"
+          echo "Patch: ${{ steps.gitversion.outputs.patch }}"
+          echo "PreReleaseTag: ${{ steps.gitversion.outputs.preReleaseTag }}"
+          echo "PreReleaseTagWithDash: ${{ steps.gitversion.outputs.preReleaseTagWithDash }}"
+          echo "PreReleaseLabel: ${{ steps.gitversion.outputs.preReleaseLabel }}"
+          echo "PreReleaseNumber: ${{ steps.gitversion.outputs.preReleaseNumber }}"
+          echo "WeightedPreReleaseNumber: ${{ steps.gitversion.outputs.weightedPreReleaseNumber }}"
+          echo "BuildMetaData: ${{ steps.gitversion.outputs.buildMetaData }}"
+          echo "BuildMetaDataPadded: ${{ steps.gitversion.outputs.buildMetaDataPadded }}"
+          echo "FullBuildMetaData: ${{ steps.gitversion.outputs.fullBuildMetaData }}"
+          echo "MajorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}"
+          echo "SemVer: ${{ steps.gitversion.outputs.semVer }}"
+          echo "LegacySemVer: ${{ steps.gitversion.outputs.legacySemVer }}"
+          echo "LegacySemVerPadded: ${{ steps.gitversion.outputs.legacySemVerPadded }}"
+          echo "AssemblySemVer: ${{ steps.gitversion.outputs.assemblySemVer }}"
+          echo "AssemblySemFileVer: ${{ steps.gitversion.outputs.assemblySemFileVer }}"
+          echo "FullSemVer: ${{ steps.gitversion.outputs.fullSemVer }}"
+          echo "InformationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}"
+          echo "BranchName: ${{ steps.gitversion.outputs.branchName }}"
+          echo "EscapedBranchName: ${{ steps.gitversion.outputs.escapedBranchName }}"
+          echo "Sha: ${{ steps.gitversion.outputs.sha }}"
+          echo "ShortSha: ${{ steps.gitversion.outputs.shortSha }}"
+          echo "NuGetVersionV2: ${{ steps.gitversion.outputs.nuGetVersionV2 }}"
+          echo "NuGetVersion: ${{ steps.gitversion.outputs.nuGetVersion }}"
+          echo "NuGetPreReleaseTagV2: ${{ steps.gitversion.outputs.nuGetPreReleaseTagV2 }}"
+          echo "NuGetPreReleaseTag: ${{ steps.gitversion.outputs.nuGetPreReleaseTag }}"
+          echo "VersionSourceSha: ${{ steps.gitversion.outputs.versionSourceSha }}"
+          echo "CommitsSinceVersionSource: ${{ steps.gitversion.outputs.commitsSinceVersionSource }}"
+          echo "CommitsSinceVersionSourcePadded: ${{ steps.gitversion.outputs.commitsSinceVersionSourcePadded }}"
+          echo "UncommittedChanges: ${{ steps.gitversion.outputs.uncommittedChanges }}"
+          echo "CommitDate: ${{ steps.gitversion.outputs.commitDate }}"
+          echo "TotalCommits: ${{ steps.revlist.outputs.totalCommits }}"
+  build-sdl20:
+    name: Build (SDL 2.0)
+    needs: pre_job
+    runs-on: ubuntu-latest
+    env:
+      build_number: ${{ needs.pre_job.outputs.build_number }}
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+    - name:  Run Upversion
+      id:    upversion
+      shell: pwsh
+      run:   tools/upversion/upversion.ps1
+      env:
+        MAJORVERSION: ${{ needs.pre_job.outputs.major }}
+        MINORVERSION: ${{ needs.pre_job.outputs.minor }}
+        PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Prepare build
+      run: bash ci/ubuntu-buildgen.sh
+    - name: Turn on problem matcher
+      uses: ammaraskar/gcc-problem-matcher@master
+    - name: Run build
+      run: cmake --build ./build/
+    - name: Prepare artifact
+      run: bash ci/ubuntu-artifact.sh
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-Linux-x86_64
+        path: 'build/artifact/*'
+  build-sdl12:
+    name: Build (SDL 1.2)
+    needs: pre_job
+    runs-on: ubuntu-latest
+    env:
+      USE_SDL12: 1
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Prepare build
+      run: bash ci/ubuntu-buildgen.sh
+    - name: Run build
+      run: cmake --build ./build/
+  build-clang:
+    name: Build (Clang)
+    needs: pre_job
+    runs-on: ubuntu-latest
+    env:
+      CC: /usr/bin/clang
+      CXX: /usr/bin/clang++
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Prepare build
+      run: bash ci/ubuntu-buildgen.sh
+    - name: Run build
+      run: cmake --build ./build/
+  build-arm:
+    name: Build (ARM64)
+    needs: pre_job
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Prepare build
+      run: bash ci/ubuntu-buildgen.sh
+    - name: Turn on problem matcher
+      uses: ammaraskar/gcc-problem-matcher@master
+    - name: Run build
+      run: cmake --build ./build/
+  build-fedora:
+    name: Build (Fedora 32)
+    needs: pre_job
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Run build
+      run: bash ci/fedora-buildgen.sh
+  build-ubuntu-focal:
+    name: Build (Ubuntu 20.04 LTS)
+    needs: pre_job
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Run build
+      run: bash ci/ubuntu-focal-buildgen.sh
+  build-flatpak:
+    name: Build Flatpak (Ubuntu Latest)
+    needs: pre_job
+    runs-on: ubuntu-latest
+    env:
+      build_number: ${{ needs.pre_job.outputs.build_number }}
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+      MAJORVERSION: ${{ needs.pre_job.outputs.major }}
+      MINORVERSION: ${{ needs.pre_job.outputs.minor }}
+      PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+    - name:  Run Upversion
+      id:    upversion
+      shell: pwsh
+      run:   tools/upversion/upversion.ps1
+    - name: Update metainfo
+      shell: bash
+      run: |
+        DATE=$(date +'%Y-%m-%d')
+        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
+        sed -i "s/version=\"$MAJORVERSION\.$MINORVERSION\.$PATCHVERSION\"/version=\"$new_version-prerelease.$build_number\"/g" packaging/linux/net.odamex.Odamex.metainfo.xml
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Install flatpak
+      run: sudo apt update && sudo apt install flatpak flatpak-builder
+    - name: Create escaped branch name
+      env:
+        name: "${{ github.ref_name }}"
+      run: |
+        echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
+    - name: Set flatpak repo
+      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    - name: Run build
+      run: |
+        flatpak-builder --force-clean --user --install-deps-from=flathub \
+        --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
+        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
+    - name: Pack flatpak
+      run: |
+        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
+        --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-Flatpak-x86_64
+        path: odamex.flatpak
+  build-flatpak-arm:
+    name: Build Flatpak (Ubuntu 24.04 ARM)
+    needs: pre_job
+    runs-on: ubuntu-24.04-arm
+    env:
+      build_number: ${{ needs.pre_job.outputs.build_number }}
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+      MAJORVERSION: ${{ needs.pre_job.outputs.major }}
+      MINORVERSION: ${{ needs.pre_job.outputs.minor }}
+      PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+    - name:  Run Upversion
+      id:    upversion
+      shell: pwsh
+      run:   tools/upversion/upversion.ps1
+    - name: Update metainfo
+      shell: bash
+      run: |
+        DATE=$(date +'%Y-%m-%d')
+        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
+        sed -i "s/version=\"$MAJORVERSION\.$MINORVERSION\.$PATCHVERSION\"/version=\"$new_version-prerelease.$build_number\"/g" packaging/linux/net.odamex.Odamex.metainfo.xml
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Install flatpak
+      run: sudo apt update && sudo apt install flatpak flatpak-builder
+    - name: Create escaped branch name
+      env:
+        name: "${{ github.ref_name }}"
+      run: |
+        echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
+    - name: Set flatpak repo
+      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+    - name: Run build
+      run: |
+        flatpak-builder --force-clean --user --install-deps-from=flathub \
+        --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
+        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
+    - name: Pack flatpak
+      run: |
+        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
+        --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-Flatpak-ARM64
+        path: odamex.flatpak

@@ -86,6 +86,9 @@ int*			flattranslation;
 
 int*			texturetranslation;
 
+using texhash_t = std::unordered_map<OLumpName, int32_t>;
+texhash_t texturehash;
+
 //
 // R_CalculateNewPatchSize
 //
@@ -484,33 +487,109 @@ byte* R_GetTextureColumnData(int texnum, int colnum)
 // Initializes the texture list
 //	with the textures from the world map.
 //
-void R_InitTextures (void)
+static inline void RegisterTexture(texture_t* texture, int i, byte scalex = 0, byte scaley = 0)
 {
-	maptexture_t*		mtexture;
-	texture_t*			texture;
-	mappatch_t* 		mpatch;
-	texpatch_t* 		patch;
+	texturecolumnofs[i] = new unsigned int[texture->width];
 
-	int					i;
-	int 				j;
+	int j;
+	for (j = 1; j*2 <= texture->width; j <<= 1)
+		;
+	texturewidthmask[i] = j-1;
 
-	int*				maptex;
-	int*				maptex2;
-	int*				maptex1;
+	textureheight[i] = texture->height << FRACBITS;
 
+	// [RH] Special for beta 29: Values of 0 will use the tx/ty cvars
+	// to determine scaling instead of defaulting to 8. I will likely
+	// remove this once I finish the betas, because by then, users
+	// should be able to actually create scaled textures.
+	texturescalex[i] = scalex ? scalex << (FRACBITS - 3) : FRACUNIT;
+	texturescaley[i] = scaley ? scaley << (FRACBITS - 3) : FRACUNIT;
+}
+
+struct texlump_t
+{
+	int32_t lumpnum = -1;
+	int32_t* data = nullptr;
+	int32_t* directory = nullptr;
+	int numtextures = 0;
+	int maxoff = 0;
+
+	explicit texlump_t(const char* name) : lumpnum(W_CheckNumForName(name))
+	{
+		if (lumpnum != -1)
+		{
+			maxoff = W_LumpLength(lumpnum);
+			data = static_cast<int32_t*>(W_CacheLumpNum(lumpnum, PU_STATIC));
+			numtextures = LELONG(*data);
+			directory = data + 1;
+		}
+	}
+
+	~texlump_t()
+	{
+		if (data)
+			Z_Free(data);
+	}
+};
+
+static int32_t R_LoadTextureLump(const texlump_t& texlump, int* patchlookup, int texnum, texhash_t& texhash, int& errors)
+{
+	int32_t* directory = texlump.directory;
+	int i;
+	for (i = texnum; i < texnum + texlump.numtextures; i++, directory++)
+	{
+		const int32_t offset = LELONG(*directory);
+
+		if (offset > texlump.maxoff)
+			I_FatalError("R_InitTextures: bad texture directory");
+
+		maptexture_t* mtexture = (maptexture_t *) ( (byte *)texlump.data + offset);
+
+		texture_t* texture = textures[i] = (texture_t *)
+			Z_Malloc (sizeof(texture_t)
+					  + sizeof(texpatch_t)*(SAFESHORT(mtexture->patchcount)-1),
+					  PU_STATIC, nullptr);
+
+		texture->width = SAFESHORT(mtexture->width);
+		texture->height = SAFESHORT(mtexture->height);
+		texture->patchcount = SAFESHORT(mtexture->patchcount);
+
+		texture->name = mtexture->name;
+
+		const mappatch_t* mpatch = &mtexture->patches[0];
+		texpatch_t* patch = &texture->patches[0];
+
+		for (int j = 0; j < texture->patchcount ; j++, mpatch++, patch++)
+		{
+			patch->originx = LESHORT(mpatch->originx);
+			patch->originy = LESHORT(mpatch->originy);
+			patch->patch = patchlookup[LESHORT(mpatch->patch)];
+			if (patch->patch == -1)
+			{
+				PrintFmt(PRINT_WARNING, "R_InitTextures: Missing patch in texture {}\n", texture->name);
+				errors++;
+			}
+		}
+
+		RegisterTexture(texture, i, mtexture->scalex, mtexture->scaley);
+
+		if (texhash.find(texture->name) == texhash.end())
+			texhash[texture->name] = i;
+	}
+	return i;
+}
+
+void R_InitTextures()
+{
 	int*				patchlookup;
 
 	int					nummappatches;
-	int 				offset;
-	int 				maxoff;
-	int 				maxoff2;
-	int					numtextures1;
-	int					numtextures2;
-
-	int*				directory;
+	int					tx_numtextures;
 
 	int					errors = 0;
 
+	// for TX_START/TX_END
+	int					first_tx;
 
 	// Load the patch names from pnames.lmp.
 	{
@@ -518,9 +597,17 @@ void R_InitTextures (void)
 		char *name_p = names+4;
 
 		nummappatches = LELONG ( *((int *)names) );
-		patchlookup = new int[nummappatches];
+		int numpatches = nummappatches;
+		first_tx = W_CheckNumForName("TX_START") + 1;
+		const int last_tx  = W_CheckNumForName("TX_END") - 1;
+		tx_numtextures = last_tx - first_tx + 1;
+		if (tx_numtextures > 0)
+		{
+			numpatches += tx_numtextures;
+		}
+		patchlookup = new int[numpatches];
 
-		for (i = 0; i < nummappatches; i++)
+		for (int i = 0; i < nummappatches; i++)
 		{
 			patchlookup[i] = W_CheckNumForName (name_p + i*8);
 			if (patchlookup[i] == -1)
@@ -539,29 +626,12 @@ void R_InitTextures (void)
 		Z_Free (names);
 	}
 
-	// Load the map texture definitions from textures.lmp.
-	// The data is contained in one or two lumps,
-	//	TEXTURE1 for shareware, plus TEXTURE2 for commercial.
-	maptex = maptex1 = (int *)W_CacheLumpName ("TEXTURE1", PU_STATIC);
-	numtextures1 = LELONG(*maptex);
-	maxoff = W_LumpLength (W_GetNumForName ("TEXTURE1"));
-	directory = maptex+1;
-
-	if (W_CheckNumForName ("TEXTURE2") != -1)
-	{
-		maptex2 = (int *)W_CacheLumpName ("TEXTURE2", PU_STATIC);
-		numtextures2 = LELONG(*maptex2);
-		maxoff2 = W_LumpLength (W_GetNumForName ("TEXTURE2"));
-	}
-	else
-	{
-		maptex2 = NULL;
-		numtextures2 = 0;
-		maxoff2 = 0;
-	}
+	texturehash.clear();
+	const texlump_t texture1("TEXTURE1");
+	const texlump_t texture2("TEXTURE2");
 
 	// denis - fix memory leaks
-	for (i = 0; i < numtextures; i++)
+	for (int i = 0; i < numtextures; i++)
 	{
 		delete[] texturecolumnofs[i];
 	}
@@ -576,7 +646,16 @@ void R_InitTextures (void)
 	delete[] texturescalex;
 	delete[] texturescaley;
 
-	numtextures = numtextures1 + numtextures2;
+	numtextures = texture1.numtextures + texture2.numtextures;
+
+	if (tx_numtextures > 0)
+	{
+		for (int p = 0; p < tx_numtextures ; p++)
+		{
+			patchlookup[nummappatches + p] = first_tx + p;
+		}
+		numtextures += tx_numtextures;
+	}
 
 	textures = new texture_t *[numtextures];
 	texturecolumnofs = new unsigned int *[numtextures];
@@ -587,90 +666,47 @@ void R_InitTextures (void)
 	texturescalex = new fixed_t[numtextures];
 	texturescaley = new fixed_t[numtextures];
 
-	for (i = 0; i < numtextures; i++, directory++)
+	texhash_t texturehash2;
+	// [EB] texture1 goes to texturehash2 because .insert only inserts for keys that don't already exist
+	//      and we need texture2 to override texture1
+	int texnum = R_LoadTextureLump(texture1, patchlookup, 0, texturehash2, errors);
+	texnum = R_LoadTextureLump(texture2, patchlookup, texnum, texturehash, errors);
+	texturehash.insert(texturehash2.begin(), texturehash2.end());
+
+	// TX_ marker (texture namespace) parsed here
+	if (tx_numtextures > 0)
 	{
-		if (i == numtextures1)
+		for (int i = texnum, j = 0;
+			i < numtextures;
+			i++, j++)
 		{
-			// Start looking in second texture file.
-			maptex = maptex2;
-			maxoff = maxoff2;
-			directory = maptex+1;
+			const patch_t* tx_patch = W_CachePatch(first_tx + j, PU_CACHE);
+
+			texture_t* texture = textures[i] = static_cast<texture_t*>(Z_Malloc(sizeof(texture_t), PU_STATIC, nullptr));
+
+			texture->name = lumpinfo[first_tx + j].name;
+			texture->width = tx_patch->width();
+			texture->height = tx_patch->height();
+			texture->patchcount = 1;
+
+			texture->patches->patch = patchlookup[nummappatches + j];
+			texture->patches->originx = 0;
+			texture->patches->originy = 0;
+
+			RegisterTexture(texture, i);
+			texturehash[texture->name] = i;
 		}
-
-		offset = LELONG(*directory);
-
-		if (offset > maxoff)
-			I_FatalError ("R_InitTextures: bad texture directory");
-
-		mtexture = (maptexture_t *) ( (byte *)maptex + offset);
-
-		texture = textures[i] = (texture_t *)
-			Z_Malloc (sizeof(texture_t)
-					  + sizeof(texpatch_t)*(SAFESHORT(mtexture->patchcount)-1),
-					  PU_STATIC, 0);
-
-		texture->width = SAFESHORT(mtexture->width);
-		texture->height = SAFESHORT(mtexture->height);
-		texture->patchcount = SAFESHORT(mtexture->patchcount);
-
-		texture->name = mtexture->name;
-
-		mpatch = &mtexture->patches[0];
-		patch = &texture->patches[0];
-
-		for (j=0 ; j<texture->patchcount ; j++, mpatch++, patch++)
-		{
-			patch->originx = LESHORT(mpatch->originx);
-			patch->originy = LESHORT(mpatch->originy);
-			patch->patch = patchlookup[LESHORT(mpatch->patch)];
-			if (patch->patch == -1)
-			{
-				PrintFmt(PRINT_WARNING, "R_InitTextures: Missing patch in texture {}\n", texture->name);
-				errors++;
-			}
-		}
-		texturecolumnofs[i] = new unsigned int[texture->width];
-
-		for (j = 1; j*2 <= texture->width; j <<= 1)
-			;
-		texturewidthmask[i] = j-1;
-
-		textureheight[i] = texture->height << FRACBITS;
-
-		// [RH] Special for beta 29: Values of 0 will use the tx/ty cvars
-		// to determine scaling instead of defaulting to 8. I will likely
-		// remove this once I finish the betas, because by then, users
-		// should be able to actually create scaled textures.
-		texturescalex[i] = mtexture->scalex ? mtexture->scalex << (FRACBITS - 3) : FRACUNIT;
-		texturescaley[i] = mtexture->scaley ? mtexture->scaley << (FRACBITS - 3) : FRACUNIT;
 	}
-	delete[] patchlookup;
 
-	Z_Free (maptex1);
-	if (maptex2)
-		Z_Free (maptex2);
+	delete[] patchlookup;
 
 	if (errors)
 		I_FatalError ("{} errors in R_InitTextures.", errors);
 
-	// [RH] Setup hash chains. Go from back to front so that if
-	//		duplicates are found, the first one gets used instead
-	//		of the last (thus mimicing the original behavior
-	//		of R_CheckTextureNumForName().
-	for (i = 0; i < numtextures; i++)
-		textures[i]->index = -1;
-
-	for (i = numtextures - 1; i >= 0; i--)
-	{
-		j = 0; //W_LumpNameHash (textures[i]->name) % (unsigned) numtextures;
-		textures[i]->next = textures[j]->index;
-		textures[j]->index = i;
-	}
-
 	if (clientside)		// server doesn't need to load patches ever
 	{
 		// Precalculate whatever possible.
-		for (i = 0; i < numtextures; i++)
+		for (int i = 0; i < numtextures; i++)
 			R_GenerateLookup (i, &errors);
 	}
 
@@ -683,7 +719,7 @@ void R_InitTextures (void)
 
 	texturetranslation = new int[numtextures+1];
 
-	for (i = 0; i < numtextures; i++)
+	for (int i = 0; i < numtextures; i++)
 		texturetranslation[i] = i;
 }
 
@@ -957,9 +993,7 @@ void R_InitData()
 	R_InitTextures();
 	R_InitFlats();
 	R_InitSpriteLumps();
-	#ifdef CLIENT_APP
 	R_InitSkyDefs();
-	#endif
 
 	// haleyjd 01/28/10: also initialize tantoangle_acc table
 	Table_InitTanToAngle();
@@ -998,24 +1032,18 @@ int R_FlatNumForName (const char* name)
 // Check whether texture is available.
 // Filter out NoTexture indicator.
 //
-int R_CheckTextureNumForName (const char *name)
+int R_CheckTextureNumForName (const OLumpName& name)
 {
 	// "NoTexture" marker.
 	if (name[0] == '-')
 		return 0;
 
 	// [RH] Use a hash table instead of linear search
-	OLumpName uname = name;
+	auto it = texturehash.find(name);
+	if (it == texturehash.end())
+		return -1;
 
-	int i = textures[/*W_LumpNameHash (uname) % (unsigned) numtextures*/0]->index; // denis - todo - replace with map<>
-
-	while (i != -1) {
-		if (textures[i]->name == uname)
-			break;
-		i = textures[i]->next;
-	}
-
-	return i;
+	return it->second;
 }
 
 
@@ -1025,19 +1053,15 @@ int R_CheckTextureNumForName (const char *name)
 // Calls R_CheckTextureNumForName,
 //	aborts with error message.
 //
-int R_TextureNumForName (const char *name)
+int R_TextureNumForName (const OLumpName& name)
 {
-	int i;
+	const int i = R_CheckTextureNumForName (name);
 
-	i = R_CheckTextureNumForName (name);
-
-	if (i==-1) {
-		char namet[9];
-		strncpy (namet, name, 8);
-		namet[8] = 0;
+	if (i == -1)
+	{
 		//I_Error ("R_TextureNumForName: %s not found", namet);
 		// [RH] Return empty texture if it wasn't found.
-		Printf (PRINT_WARNING, "Texture %s not found\n", namet);
+		PrintFmt(PRINT_WARNING, "Texture {} not found\n", name);
 		return 0;
 	}
 

@@ -29,6 +29,7 @@
 #include <math.h>
 #include <set>
 #include <zlib.h>
+#include <nonstd/scope.hpp>
 
 #include "m_alloc.h"
 #include "m_vectors.h"
@@ -51,6 +52,7 @@
 #include "p_setup.h"
 #include "p_hordespawn.h"
 #include "p_mapformat.h"
+#include "r_sky.h"
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
@@ -416,7 +418,7 @@ void P_LoadSectors (int lump)
 		bool fog = level.outsidefog_color[0] != 0xFF || level.outsidefog_color[1] != 0 ||
 					level.outsidefog_color[2] != 0 || level.outsidefog_color[3] != 0;
 
-		if (fog && ss->ceilingpic == skyflatnum)
+		if (fog && R_IsSkyFlat(ss->ceilingpic))
 			ss->colormap = GetSpecialLights(255, 255, 255,
 									level.outsidefog_color[1], level.outsidefog_color[2], level.outsidefog_color[3]);
 		else
@@ -726,22 +728,20 @@ enum nodetype_t {
 
 nodetype_t P_CheckNodeType(int lump) {
 	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
+	nonstd::make_scope_exit([&]{ Z_ChangeTag(data, PU_CACHE); });
 
 	if (memcmp(data, "xNd4\0\0\0\0", 8) == 0)
 	{
-		Z_Free(data);
 		return NT_DEEP;
 	}
 
 	if (memcmp(data, "XNOD", 4) == 0)
 	{
-		Z_Free(data);
 		return NT_XNOD;
 	}
 
 	if (memcmp(data, "ZNOD", 4) == 0)
 	{
-		Z_Free(data);
 		return NT_ZNOD;
 	}
 

@@ -289,7 +289,7 @@ void OScanner::mustScan(size_t max_length)
 	{
 		if (m_token.length() > max_length)
 		{
-			error("String \"{}\" is too long. Maximum length is %zu characters.", m_token, max_length);
+			error("String \"{}\" is too long. Maximum length is {} characters.", m_token, max_length);
 		}
 	}
 }
@@ -307,8 +307,7 @@ void OScanner::mustScanInt()
 	std::string str = m_token;
 	if (IsNum(str.c_str()) == false && str != "MAXINT")
 	{
-		std::string err = fmt::sprintf("Expected integer, got \"%s\".", m_token);
-		error(err);
+		error("Expected integer, got \"{}\".", m_token);
 	}
 }
 
@@ -325,8 +324,7 @@ void OScanner::mustScanFloat()
 	std::string str = m_token;
 	if (IsRealNum(str.c_str()) == false)
 	{
-		std::string err = fmt::sprintf("Expected float, got \"%s\".", m_token);
-		error(err);
+		error("Expected float, got \"{}\".", m_token);
 	}
 }
 
@@ -342,8 +340,7 @@ void OScanner::mustScanBool()
 
 	if (!iequals(m_token, "true") && !iequals(m_token, "false"))
 	{
-		std::string err = fmt::sprintf("Expected boolean, got \"%s\".", m_token);
-		error(err);
+		error("Expected boolean, got \"{}\".", m_token);
 	}
 }
 
@@ -388,8 +385,7 @@ int OScanner::getTokenInt() const
 
 	if (*stopper != 0)
 	{
-		std::string err = fmt::sprintf("Bad integer constant \"%s\".", m_token);
-		error(err);
+		error("Bad integer constant \"{}\".", m_token);
 	}
 
 	return num;
@@ -407,8 +403,7 @@ float OScanner::getTokenFloat() const
 
 	if (*stopper != 0)
 	{
-		std::string err = fmt::sprintf("Bad float constant \"%s\".", m_token);
-		error(err);
+		error("Bad float constant \"{}\".", m_token);
 	}
 
 	return static_cast<float>(num);

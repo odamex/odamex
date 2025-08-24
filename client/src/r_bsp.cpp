@@ -32,6 +32,7 @@
 #include "r_plane.h"
 #include "r_draw.h"
 #include "r_things.h"
+#include "r_sky.h"
 #include "p_local.h"
 #include "m_vectors.h"
 
@@ -335,7 +336,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		tempsec->ceilingplane		= s->floorplane;
 		P_InvertPlane(&tempsec->ceilingplane);
 		P_ChangeCeilingHeight(tempsec, -1);
-		if (s->ceilingpic == skyflatnum)
+		if (R_IsSkyFlat(s->ceilingpic))
 		{
 			tempsec->floorplane			= tempsec->ceilingplane;
 			P_InvertPlane(&tempsec->floorplane);
@@ -399,7 +400,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		tempsec->base_floor_angle	= tempsec->base_ceiling_angle	= s->base_ceiling_angle;
 		tempsec->base_floor_yoffs	= tempsec->base_ceiling_yoffs	= s->base_ceiling_yoffs;
 
-		if (s->floorpic != skyflatnum)
+		if (!R_IsSkyFlat(s->floorpic))
 		{
 			tempsec->ceilingplane	= sec->ceilingplane;
 			tempsec->floorpic		= s->floorpic;
@@ -673,12 +674,12 @@ void R_Subsector (int num)
 	basecolormap = frontsector->colormap->maps;
 
 	ceilingplane = P_CeilingHeight(viewx, viewy, frontsector) > viewz ||
-		frontsector->ceilingpic == skyflatnum ||
+		R_IsSkyFlat(frontsector->ceilingpic) ||
 		(frontsector->heightsec &&
 		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
-		frontsector->heightsec->floorpic == skyflatnum) ?
+		R_IsSkyFlat(frontsector->heightsec->floorpic)) ?
 		R_FindPlane(frontsector->ceilingplane,		// killough 3/8/98
-					frontsector->ceilingpic == skyflatnum &&  // killough 10/98
+					R_IsSkyFlat(frontsector->ceilingpic) &&  // killough 10/98
 						frontsector->sky & PL_SKYFLAT ? frontsector->sky :
 						frontsector->ceilingpic,
 					ceilinglightlevel,				// killough 4/11/98
@@ -695,9 +696,9 @@ void R_Subsector (int num)
 	floorplane = P_FloorHeight(viewx, viewy, frontsector) < viewz || // killough 3/7/98
 		(frontsector->heightsec &&
 		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
-		frontsector->heightsec->ceilingpic == skyflatnum) ?
+		R_IsSkyFlat(frontsector->heightsec->ceilingpic)) ?
 		R_FindPlane(frontsector->floorplane,
-					frontsector->floorpic == skyflatnum &&  // killough 10/98
+					R_IsSkyFlat(frontsector->floorpic) &&  // killough 10/98
 						frontsector->sky & PL_SKYFLAT ? frontsector->sky :
 						frontsector->floorpic,
 					floorlightlevel,				// killough 3/16/98
