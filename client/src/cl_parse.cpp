@@ -1547,6 +1547,8 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 		p.secretcount = msg->secretcount();
 		p.totalpoints = msg->totalpoints();
 		p.totaldeaths = msg->totaldeaths();
+		p.damagesincelastdeath = msg->damagesincelastdeath();
+		p.killssincelastdeath = msg->killsincelastdeath();
 	}
 
 	if (flags & SVC_PM_CHEATS)

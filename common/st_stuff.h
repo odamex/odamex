@@ -89,6 +89,9 @@ void PushToast(const toast_t& toast);
 // [AM] HUD for showing level state
 void LevelStateHUD();
 
+// HUD showing Multi Kill messages.
+void MultiKillHud();
+
 // [AM] Spectator HUD
 void SpectatorHUD();
 

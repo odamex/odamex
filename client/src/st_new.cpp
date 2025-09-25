@@ -55,6 +55,7 @@
 #include "c_dispatch.h"
 #include "hu_speedometer.h"
 #include "am_map.h"
+#include "g_multikill.h"
 
 static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
 static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};
@@ -1297,24 +1298,32 @@ struct levelStateLines_t
 	std::string subtitle[4];
 	float lucent;
 	levelStateLines_t() : lucent(1.0f) { }
-
-	void lucentFade(int tics, const int start, const int end)
-	{
-		if (tics < start)
-		{
-			lucent = 1.0f;
-		}
-		else if (tics < end)
-		{
-			tics %= TICRATE;
-			lucent = static_cast<float>(TICRATE - tics) / TICRATE;
-		}
-		else
-		{
-			lucent = 0.0f;
-		}
-	}
 };
+
+struct spreeLines_t
+{
+	std::string spreeText;
+	EColorRange color;
+	float lucent;
+	spreeLines_t() : lucent(1.0f), color(CR_GRAY) { }
+};
+
+static float lucentFade(int tics, const int start, const int end)
+{
+	if (tics < start)
+	{
+		return 1.0f;
+	}
+	else if (tics < end)
+	{
+		tics %= TICRATE;
+		return static_cast<float>(TICRATE - tics) / TICRATE;
+	}
+	else
+	{
+		return 0.0f;
+	}
+}
 
 static void LevelStateHorde(levelStateLines_t& lines)
 {
@@ -1377,7 +1386,47 @@ static void LevelStateHorde(levelStateLines_t& lines)
 	}
 
 	// Only render the wave message if it's less than 3 seconds in.
-	lines.lucentFade(tics, TICRATE * 3, TICRATE * 4);
+	lines.lucent = lucentFade(tics, TICRATE * 3, TICRATE * 4);
+}
+
+void MultiKillHud()
+{
+	if (!validplayer(displayplayer()))
+		return;
+
+	const player_t& p = displayplayer();
+
+	// Display the current display player's sprees
+	if (p.multikills > 1 && ::level.time - p.lastkilltime < 4 * TICRATE)
+	{
+		MultiKillLevel_s multi = MultiKillManager::getInstance().getMultiKillLevel(p.multikills);
+		spreeLines_t line;
+
+		line.spreeText = multi.multikilltext;
+		line.color = multi.color;
+
+		V_SetFont("BIGFONT");
+
+		const int surface_width = I_GetSurfaceWidth(),
+			      surface_height = I_GetSurfaceHeight();
+		int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
+		int h = 12 * CleanYfac;
+
+		line.lucent = lucentFade(::level.time - p.lastkilltime,
+			                      TICRATE * 3, TICRATE * 4);
+
+		const float oldtrans = ::hud_transparency;
+		::hud_transparency = line.lucent;
+
+		if (::hud_transparency > 0.0f)
+		{
+		::screen->DrawTextStretchedLuc(
+				line.color, surface_width / 2 - w / 2, surface_height / 4 - h / 2,
+				line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
+		}
+
+		::hud_transparency.ForceSet(oldtrans);
+	}
 }
 
 void LevelStateHUD()
@@ -1462,7 +1511,7 @@ void LevelStateHUD()
 				}
 
 				// Only render the message if it's less than 2 seconds in.
-				lines.lucentFade(::level.time - ::levelstate.getIngameStartTime(),
+				lines.lucent = lucentFade(::level.time - ::levelstate.getIngameStartTime(),
 				                 TICRATE * 2, TICRATE * 3);
 			}
 			else if (G_IsCoopGame())
@@ -1481,7 +1530,7 @@ void LevelStateHUD()
 			}
 
 			// Only render the "FIGHT" message if it's less than 2 seconds in.
-			lines.lucentFade(::level.time - ::levelstate.getIngameStartTime(),
+			lines.lucent = lucentFade(::level.time - ::levelstate.getIngameStartTime(),
 			                 TICRATE * 2, TICRATE * 3);
 		}
 		break;

@@ -768,6 +768,8 @@ odaproto::svc::PlayerMembers SVC_PlayerMembers(const player_t& player, byte flag
 		msg.set_secretcount(player.secretcount);
 		msg.set_totalpoints(player.totalpoints);
 		msg.set_totaldeaths(player.totaldeaths);
+		msg.set_damagesincelastdeath(player.damagesincelastdeath);
+		msg.set_killsincelastdeath(player.killssincelastdeath);
 	}
 
 	if (flags & SVC_PM_CHEATS)
