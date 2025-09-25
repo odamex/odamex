@@ -574,7 +574,7 @@ BGCASTCALL = "BOSSBACK";
 TXT_FRAGLIMIT = "Fraglimit hit.";
 TXT_TIMELIMIT = "Timelimit hit.";
 
-// Spree messages
+// Spree messages (old)
 SPREEKILLSELF = "%o was looking good until %g killed %hself!";
 SPREEOVER = "%o's killing spree was ended by %k";
 SPREE5 = "%k is on a killing spree!";
@@ -583,7 +583,7 @@ SPREE15 = "%k is dominating!";
 SPREE20 = "%k is unstoppable!";
 SPREE25 = "%k is Godlike!";
 
-// Mulitkill messages
+// Mulitkill messages (old)
 MULTI2 = "Double kill!";
 MULTI3 = "Multi kill!";
 MULTI4 = "Ultra kill!";
@@ -1104,6 +1104,10 @@ MUSIC_DM2INT = "dm2int";
 
 TXT_BUDDHAON = "Buddha mode ON";
 TXT_BUDDHAOFF = "Buddha mode OFF";
+
+// Spree defaults (new)
+
+// Multi kill defaults (new)
 
 
 /******************************** French ********************************/

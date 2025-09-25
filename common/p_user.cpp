@@ -44,6 +44,7 @@
 #include "g_gametype.h"
 
 #include "p_mapformat.h"
+#include "g_multikill.h"
 
 //
 // Movement.
@@ -986,6 +987,8 @@ void P_PlayerThink (player_t *player)
 		player->mo->flags &= ~MF_JUSTATTACKED;
 	}
 
+	G_TicMultiKill(player);
+
 	if (player->playerstate == PST_DEAD)
 	{
 		P_DeathThink(player);
@@ -1424,6 +1427,11 @@ player_s::player_s() :
 	QueuePosition(0),
 	hazardcount(0),
 	hazardinterval(0),
+	damagesincelastdeath(0),
+	killssincelastdeath(0),
+	multikills(0),
+	multikilltics(0),
+	lastkilltime(0),
 	LastMessage(LastMessage_s()),
 	to_spawn(std::queue<AActor::AActorPtr>()),
 	client(player_s::client_t())
@@ -1554,6 +1562,14 @@ player_s &player_s::operator =(const player_s &other)
 
 	doreborn = other.doreborn;
 	QueuePosition = other.QueuePosition;
+	
+	hazardcount = other.hazardcount;
+	hazardinterval = other.hazardinterval;
+	damagesincelastdeath = other.damagesincelastdeath;
+	killssincelastdeath = other.killssincelastdeath;
+	multikills = other.multikills;
+	multikilltics = other.multikilltics;
+	lastkilltime = other.lastkilltime;
 
 	return *this;
 }

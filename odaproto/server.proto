@@ -216,6 +216,9 @@ message PlayerMembers
 
 	// Ch0wW: Include Cheats...
 	uint32 cheats = 15;
+
+	int32 killsincelastdeath = 16;
+	int32 damagesincelastdeath = 17;
 }
 
 // svc_teammembers
