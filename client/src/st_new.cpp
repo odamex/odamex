@@ -1396,7 +1396,7 @@ void MultiKillHud()
 
 	const player_t& p = displayplayer();
 
-	// Display the current display player's sprees
+	// Display the current display player's multi kills
 	if (p.multikills > 1 && ::level.time - p.lastkilltime < 4 * TICRATE)
 	{
 		MultiKillLevel_s multi = MultiKillManager::getInstance().getMultiKillLevel(p.multikills);
@@ -1420,12 +1420,14 @@ void MultiKillHud()
 
 		if (::hud_transparency > 0.0f)
 		{
-		::screen->DrawTextStretchedLuc(
-				line.color, surface_width / 2 - w / 2, surface_height / 4 - h / 2,
+			int y = surface_height - (surface_height / 4) - h / 2;
+			::screen->DrawTextStretchedLuc(line.color, surface_width / 2 - w / 2, y,
 				line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
 		}
 
 		::hud_transparency.ForceSet(oldtrans);
+
+		V_SetFont("SMALLFONT");
 	}
 }
 
