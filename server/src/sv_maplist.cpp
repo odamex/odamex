@@ -138,7 +138,7 @@ bool Maplist::insert(const size_t &position, maplist_entry_t &maplist_entry) {
 	// If we haven't actually entered the map rotation yet, don't increase
 	// indexes because this results in the initial map switch going to the end
 	// of the maplist, which probably isn't what we want.
-	if (!this->entered_once) {
+	if (this->entered_once) {
 		// If either of our indexes are after the inserted map, fix them
 		if (this->index >= position) {
 			this->index += 1;
@@ -186,7 +186,7 @@ bool Maplist::remove(const size_t &index) {
 	}
 
 	// Don't mess with indexes if we haven't actually entered the maplist.
-	if (!this->entered_once) {
+	if (this->entered_once) {
 		// If we delete our current map, we do not have a determined
 		// position in the maplist.
 		if (this->index == index) {
@@ -272,7 +272,7 @@ bool Maplist::get_this_index(size_t &index) {
 
 	// We're not in the maplist
 	if (!this->in_maplist) {
-		this->error = "This map is not in the maplist.";
+		this->error = "The maplist is not currently in use.";
 		return false;
 	}
 
@@ -289,14 +289,18 @@ bool Maplist::get_next_index(size_t &index) {
 	}
 
 	if (this->shuffled) {
-		if (this->s_index + 1 >= this->s_maplist.size() || !entered_once) {
+		if (this->s_index + 1 >= this->s_maplist.size()) {
 			index = this->s_maplist[0];
+		} else if (!this->entered_once) {
+			index = this->s_maplist[this->s_index];
 		} else {
 			index = this->s_maplist[this->s_index + 1];
 		}
 	} else {
-		if (this->index + 1 >= this->maplist.size() || !entered_once) {
+		if (this->index + 1 >= this->maplist.size()) {
 			index = 0;
+		} else if (!this->entered_once) {
+			index = this->index;
 		} else {
 			index = this->index + 1;
 		}
@@ -416,8 +420,8 @@ bool Maplist::set_index(const size_t &index) {
 		return false;
 	}
 
-	this->entered_once = true;
-	this->in_maplist = true;
+	this->entered_once = true && gamestate != GS_STARTUP;
+	this->in_maplist = true && gamestate != GS_STARTUP;
 	this->index = index;
 	this->update_shuffle_index();
 	return true;
