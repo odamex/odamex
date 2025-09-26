@@ -578,6 +578,7 @@ ItemEquipVal P_GivePower(player_t *player, int /*powertype_t*/ power)
 }
 
 #include "v_textcolors.h"
+#include "g_multikill.h"
 
 	/*
  * @brief Player grabbed a resurrect player powerup
@@ -1950,7 +1951,10 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			Unlag::getInstance().clearPlayerHistory(tplayer->id);
 		}
 
+		//G_ProcessMultiKills(source, target->player);
 	}
+
+	G_ProcessMultiKills(source, target->player);
 
 	if (target->health > 0) // denis - when this function is used standalone
 	{

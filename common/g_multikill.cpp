@@ -161,12 +161,12 @@ void MultiKillManager::setMultiKillLevels(const std::vector<MultiKillLevel_s> mu
 /// projectile)</param> <param name="target">The victim</param>
 void G_ProcessMultiKills(AActor* source, player_t* target)
 {
-	if (!target)
-		return;
-
-	target->multikilltics = 0;
-	target->multikills = 0;
-	target->lastkilltime = 0;
+	if (target)
+	{
+		target->multikilltics = 0;
+		target->multikills = 0;
+		target->lastkilltime = 0;
+	}
 
 	if (!source->player)
 		return;
