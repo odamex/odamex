@@ -86,6 +86,7 @@
 #include "gui_boot.h"
 #include "g_episode.h"
 #include "g_multikill.h"
+#include "g_spreedef.h"
 
 extern size_t got_heapsize;
 
@@ -636,7 +637,7 @@ void D_Init()
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
-	MultiKillManager::getInstance().loadMultiKillDefaults();
+	G_ParseSpreeDef();
 	G_ParseHordeDefs();
 
 	// init the menu subsystem

@@ -17,9 +17,9 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Handle the loading of multi kill data from SPREEDEF,
+//   Handle the loading of spree data from SPREEDEF,
 //   as well as static functions to handle players'
-//   multikills events.
+//   spree events.
 //
 //-----------------------------------------------------------------------------
 
@@ -33,12 +33,13 @@ struct MultiKillLevel_s
 	EColorRange color;
 };
 
-class MultiKillManager
+class SpreeManager
 {
 	public:
-		MultiKillManager();
-		~MultiKillManager();
-		static MultiKillManager& getInstance(); // returns the instantiated MultiKillManager object
+		SpreeManager();
+		~SpreeManager();
+	  static SpreeManager& getInstance(); // returns the instantiated MultiKillManager
+	                                      // object
 
 		void reset(); // called when loading a new wad
 
