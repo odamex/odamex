@@ -33,44 +33,44 @@
 #include "m_ostring.h"
 
 //
-// MultiKillManager::getInstance
+// SpreeManager::getInstance
 //
 // Singleton pattern
-// Returns a pointer to the only allowable MultiKillManager object
+// Returns a pointer to the only allowable SpreeManager object
 //
-MultiKillManager& MultiKillManager::getInstance()
+SpreeManager& SpreeManager::getInstance()
 {
-	static MultiKillManager instance;
+	static SpreeManager instance;
 	return instance;
 }
 
-MultiKillManager::~MultiKillManager()
+SpreeManager::~SpreeManager()
 {
 	reset();
 }
 
-MultiKillManager::MultiKillManager()
+SpreeManager::SpreeManager()
 {
 	multiTimeInterval = 4 * TICRATE;
 }
 
 //
-// MultiKillManager::reset
+// SpreeManager::reset
 //
 // Erases the current multikills levels and sets their defaults.
 //
-void MultiKillManager::reset()
+void SpreeManager::reset()
 {
 	multiKillLevels.clear();
 	multiTimeInterval = 4 * TICRATE;
 }
 
 //
-// MultiKillManager::loadMultiKillDefaults
+// SpreeManager::loadMultiKillDefaults
 //
 // Sets defaults for loading multi kills.
 //
-void MultiKillManager::loadMultiKillDefaults()
+void SpreeManager::loadMultiKillDefaults()
 {
 	multiKillLevels.clear();
 	MultiKillLevel_s emptylevel = {"", CR_GRAY};
@@ -95,33 +95,33 @@ void MultiKillManager::loadMultiKillDefaults()
 }
 
 //
-// MultiKillManager::getMultiKillInterval
+// SpreeManager::getMultiKillInterval
 //
 // Gets the multi kill interval to trigger multi kills.
 //
-int MultiKillManager::getMultiKillInterval()
+int SpreeManager::getMultiKillInterval()
 {
 	return multiTimeInterval;
 }
 
 //
-// MultiKillManager::getHighestMultiKillLevel
+// SpreeManager::getHighestMultiKillLevel
 //
 // Gets the highest multi kill level.
 //
-int MultiKillManager::getHighestMultiKillLevel()
+int SpreeManager::getHighestMultiKillLevel()
 {
 	return multiKillLevels.size();
 }
 
 //
-// MultiKillManager::getMultiKillLevel
+// SpreeManager::getMultiKillLevel
 //
 // Gets the highest multi kill level.
 // If higher than the max level, get the highest one.
 // If the array isnt populated, return it empty.
 //
-MultiKillLevel_s MultiKillManager::getMultiKillLevel(int level)
+MultiKillLevel_s SpreeManager::getMultiKillLevel(int level)
 {
 	if (getHighestMultiKillLevel() <= 0)
 		return {"", CR_GRAY};
@@ -134,12 +134,12 @@ MultiKillLevel_s MultiKillManager::getMultiKillLevel(int level)
 }
 
 //
-// MultiKillManager::setMultiKillLevels
+// SpreeManager::setMultiKillLevels
 //
 // Creates a new MultiKillLevel list and interval,
 // as if reading a SPREEDEF to create a new multi kill level paradigm.
 //
-void MultiKillManager::setMultiKillLevels(const std::vector<MultiKillLevel_s> multikills,
+void SpreeManager::setMultiKillLevels(const std::vector<MultiKillLevel_s> multikills,
                                           int newinterval)
 {
 	multiKillLevels = multikills;
@@ -176,7 +176,7 @@ void G_ProcessMultiKills(AActor* source, player_t* target)
 	source->player->lastkilltime = ::level.time;
 
 	// Reset this player's multikilltics
-	source->player->multikilltics = MultiKillManager::getInstance().getMultiKillInterval();
+	source->player->multikilltics = SpreeManager::getInstance().getMultiKillInterval();
 
 	if (displayplayer_id == source->player->id &&
 			source->player->multikills > 1)
