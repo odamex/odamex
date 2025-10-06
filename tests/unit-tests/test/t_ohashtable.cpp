@@ -137,3 +137,22 @@ TEST(OHashTable, CopyAssignment) {
 	EXPECT_EQ(table2[2], "two");
 	EXPECT_EQ(table2[3], "three");
 }
+
+TEST(OHashTable, CopyAssignmentSmaller) {
+	OHashTable<int, std::string> table1;
+	OHashTable<int, std::string> table2;
+
+	table1.insert(std::make_pair(1, "one"));
+	table1.insert(std::make_pair(2, "two"));
+	table1.insert(std::make_pair(3, "three"));
+
+	table2.insert(std::make_pair(1, "one"));
+	table2.insert(std::make_pair(2, "two"));
+
+	OHashTable<int, std::string> table1 = table2;
+
+	EXPECT_EQ(table1[1], "one");
+	EXPECT_EQ(table1[2], "two");
+	EXPECT_EQ(table1.find(3), table1.end());
+	EXPECT_EQ(table1[3], "");
+}
