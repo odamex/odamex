@@ -706,6 +706,8 @@ void CTF_CheckFlags (player_t &player)
 	}
 }
 
+void R_InitSkyDefs() {}
+void R_ClearSkyDefs() {}
 bool R_IsSkyFlat(int flatnum)
 {
 	return false;
