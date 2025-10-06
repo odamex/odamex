@@ -1143,7 +1143,9 @@ void ToastTicker()
 	{
 		const int tics = ::gametic - it->tic;
 
-		if (tics >= fadeDoneTics)
+		// The gametic may move backwards in case of netdemo rewinding
+		// If this happens, we need to remove the toast as it hasn't happened yet.
+		if (tics >= fadeDoneTics || it->tic > ::gametic)
 		{
 			it = g_Toasts.erase(it);
 		}

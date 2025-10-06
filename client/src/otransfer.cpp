@@ -448,10 +448,7 @@ bool OTransfer::tick()
 		std::string path, base, ext, fallback;
 		M_ExtractFilePath(m_filename, path);
 		M_ExtractFileBase(m_filename, base);
-		if (M_ExtractFileExtension(m_filename, ext))
-		{
-			ext = std::string(".") + ext;
-		}
+		M_ExtractFileExtension(m_filename, ext);
 		fallback = fmt::sprintf("%s%s%s.%s%s", path, PATHSEP, base,
 		                        actualHash.getHexStr().substr(0, 6), ext);
 

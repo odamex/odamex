@@ -345,6 +345,9 @@ CVAR_RANGE(sv_countdown, "5",
 	CVAR(			co_removesoullimit, "0", "Allows pain elementals to still spawn lost souls if more than 20 are present",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
+	CVAR(			co_mbfphys, "0", "Use MBF's movement code. Fixes mancubus fireball clipping and linedef skips.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
 
 
 	// ZDoom-compatibility changes
@@ -353,6 +356,9 @@ CVAR_RANGE(sv_countdown, "5",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	CVAR(			co_zdoomsound, "0", "Enable sound attenuation curve + attenuation of switch sounds with distance",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	CVAR(			co_zdoomammo, "0", "Enable/disable ZDoom 1.23b33-based ammo checks",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	CVAR(			co_fineautoaim, "0", "Increase precision of vertical auto-aim",

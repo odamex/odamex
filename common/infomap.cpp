@@ -47,7 +47,7 @@ static MobjMap g_MonsterMap;
 
 static void MapMobj(const mobjtype_t type, const std::string& name, const uint32_t flags)
 {
-	::g_MonsterMap.insert(MobjMap::value_type(name, type));
+	::g_MonsterMap.emplace(name, type);
 }
 
 static void InitMap()

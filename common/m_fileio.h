@@ -31,6 +31,7 @@
 extern std::ofstream LOG;
 extern std::ifstream CON;
 
+std::string M_JoinPath(std::string_view path1, std::string_view path2);
 void M_ExpandHomeDir(std::string& path);
 std::string M_FindUserFileName(const std::string& file, const char* ext);
 void M_FixPathSep(std::string& path);
@@ -83,6 +84,13 @@ std::string M_GetUserDir();
 std::string M_GetWriteDir();
 
 /**
+ * @brief Get the directory that downloaded wads and other files
+ *        shall be written into. If the directory does not exist, it will
+ *        be created.
+ */
+std::string M_GetDownloadDir();
+
+/**
  * @brief Resolve a file name into a user directory.
  *
  * @detail This function is OS-specific.
@@ -100,6 +108,42 @@ std::string M_GetWriteDir();
  * @return An absolute path pointing to the resolved file.
  */
 std::string M_GetUserFileName(const std::string& file);
+
+/**
+ * @brief Resolve a file name into a user screenshot directory.
+ *
+ * @detail This function is OS-specific.
+ *
+ *         The file is resolved relative to a platform and
+ *         user specific directory in their home directory.
+ *
+ *         The resolution process will create a user home directory and screenshot subdirectory
+ *         if it doesn't exist, but otherwise this process is blind and does not
+ *         consider the existence of the file in question.
+ *
+ * @param file Filename to resolve.
+ * @param altpath Optional alternate screenshot directory
+ * @return An absolute path pointing to the resolved file.
+ */
+std::string M_GetScreenshotFileName(const std::string& file, const std::string& altpath = "");
+
+/**
+ * @brief Resolve a file name into a user netdemo directory.
+ *
+ * @detail This function is OS-specific.
+ *
+ *         The file is resolved relative to a platform and
+ *         user specific directory in their home directory.
+ *
+ *         The resolution process will create a user home directory and netdemo subdirectory
+ *         if it doesn't exist, but otherwise this process is blind and does not
+ *         consider the existence of the file in question.
+ *
+ * @param file Filename to resolve.
+ * @param altpath Optional alternate netdemo directory
+ * @return An absolute path pointing to the resolved file.
+ */
+std::string M_GetNetDemoFileName(const std::string& file, const std::string& altpath = "");
 
 /**
  * @brief Attempt to find a file in a directory - case insensitive.

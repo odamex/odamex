@@ -1137,12 +1137,12 @@ public:
 
 		if (!crc32Hash.empty())
 		{
-			mCRC32SumLookup.insert(std::make_pair(file->mCRC32Sum, id));
+			mCRC32SumLookup.emplace(file->mCRC32Sum, id);
 		}
 
 		if (!md5Hash.empty())
 		{
-			mMd5SumLookup.insert(std::make_pair(file->mMd5Sum, id));
+			mMd5SumLookup.emplace(file->mMd5Sum, id);
 		}
 
         if (iwad)

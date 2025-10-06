@@ -385,7 +385,7 @@ static void ParseAlias(OScanner& os)
 		os.error(buffer);
 	}
 
-	g_aliasMap.insert(std::make_pair(alias, otype));
+	g_aliasMap.emplace(alias, otype);
 }
 
 static void ParseHordeDef(const int lump, const OLumpName& name)

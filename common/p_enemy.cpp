@@ -277,7 +277,6 @@ bool P_CheckMissileRange (AActor *actor)
 	{
 		if (dist < 196)
 			return false;		// close for fist attack
-		dist >>= 1;
 	}
 
 
@@ -1184,6 +1183,7 @@ void A_CPosRefire (AActor *actor)
 		return;
 
 	if (!actor->target
+		|| (actor->target->player && actor->target->player->spectator)
 		|| actor->target->health <= 0
 		|| !P_CheckSight(actor, actor->target)
         )
@@ -1202,6 +1202,7 @@ void A_SpidRefire (AActor *actor)
 		return;
 
 	if (!actor->target
+		|| (actor->target->player && actor->target->player->spectator)
 		|| actor->target->health <= 0
 		|| !P_CheckSight(actor, actor->target)
         )
@@ -1477,9 +1478,33 @@ bool PIT_VileCheck (AActor *thing)
 
 	corpsehit = thing;
 	corpsehit->momx = corpsehit->momy = 0;
-	corpsehit->height <<= 2;
-	check = P_CheckPosition (corpsehit, corpsehit->x, corpsehit->y);
-	corpsehit->height >>= 2;
+
+	if (P_AllowPassover())
+		corpsehit->flags |= MF_SOLID;
+
+	if (co_novileghosts)
+	{
+		int height, radius;
+
+		corpsehit->flags |= MF_SOLID;
+		height = corpsehit->height; // save temporarily
+		radius = corpsehit->radius; // save temporarily
+		corpsehit->height = P_ThingInfoHeight(corpsehit->info);
+		corpsehit->radius = corpsehit->info->radius;
+		check = P_CheckPosition(corpsehit, corpsehit->x, corpsehit->y);
+		corpsehit->height = height; // restore
+		corpsehit->radius = radius; // restore
+		corpsehit->flags &= ~MF_SOLID;
+	}
+	else
+	{
+		corpsehit->height <<= 2;
+		check = P_CheckPosition(corpsehit, corpsehit->x, corpsehit->y);
+		corpsehit->height >>= 2;
+	}
+
+	if (P_AllowPassover())
+		corpsehit->flags &= ~MF_SOLID;
 
 	return !check;
 }
@@ -1940,6 +1965,8 @@ void A_SpawnObject(AActor* actor)
 		}
 	}
 
+	SV_UpdateMobj(mo);
+
 	// [XA] don't bother with the dont-inherit-friendliness hack
 	// that exists in A_Spawn, 'cause WTF is that about anyway?
 }
@@ -1997,6 +2024,8 @@ void A_MonsterProjectile(AActor* actor)
 	// always set the 'tracer' field, so this pointer
 	// can be used to fire seeker missiles at will.
 	mo->tracer = actor->target;
+
+	SV_UpdateMobj(mo);
 }
 
 //
@@ -2436,13 +2465,14 @@ void A_JumpIfFlagsSet(AActor* actor)
 //
 void A_AddFlags(AActor* actor)
 {
-	int flags, flags2;
-
 	if (!actor)
 		return;
 
-	flags = actor->state->args[0];
-	flags2 = actor->state->args[1];
+	const int flags = actor->state->args[0];
+	const int flags2 = actor->state->args[1];
+
+	if (flags & MF_TRANSLUCENT)
+		actor->translucency = TRANSLUC66;
 
 	actor->flags |= flags;
 	actor->flags2 |= flags2;
@@ -2456,13 +2486,14 @@ void A_AddFlags(AActor* actor)
 //
 void A_RemoveFlags(AActor* actor)
 {
-	int flags, flags2;
-
 	if (!actor)
 		return;
 
-	flags = actor->state->args[0];
-	flags2 = actor->state->args[1];
+	const int flags = actor->state->args[0];
+	const int flags2 = actor->state->args[1];
+
+	if (flags & MF_TRANSLUCENT)
+		actor->translucency = FRACUNIT;
 
 	actor->flags &= ~flags;
 	actor->flags2 &= ~flags2;

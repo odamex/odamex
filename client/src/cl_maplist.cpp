@@ -381,22 +381,22 @@ void CMD_MaplistCallback(const maplist_qrows_t &result) {
 	bool show_this_map = MaplistCache::instance().get_this_index(this_index);
 	MaplistCache::instance().get_next_index(next_index);
 	for (const auto& [index, entry] : result) {
-		const auto& [map, lastmap, wads] = *entry;
+		const auto& [map, lastmap, _, wads] = *entry;
 		char flag = ' ';
 		if (show_this_map && index == this_index) {
 			flag = '*';
 		} else if (index == next_index) {
 			flag = '+';
 		}
-		Printf(PRINT_HIGH, "%c%lu. %s %s%s\n", flag, index + 1,
+		PrintFmt(PRINT_HIGH, "{}{}. {} {}{}\n", flag, index + 1,
 			   JoinStrings(wads, " "), map,
-			   lastmap.empty() ? "" : fmt::sprintf(" lastmap=%s", lastmap));
+			   lastmap.empty() ? "" : fmt::format(" lastmap={}", lastmap));
 	}
 }
 
 // Clientside maplist query errback.
 void CMD_MaplistErrback(const std::string &error) {
-	Printf(PRINT_HIGH, "%s\n", error);
+	PrintFmt(PRINT_HIGH, "{}\n", error);
 }
 
 // Clientside maplist query.

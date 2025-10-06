@@ -274,6 +274,11 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 
 	P_SetPlayerPowerupStatuses(&p, p.powers);
 
+	// Sync mo health with player health
+	// For crosshaircolor, etc.
+	if (p.mo)
+		p.mo->health = p.health;
+
 	if (!p.spectator)
 		p.cheats = msg->player().cheats();
 
@@ -2391,6 +2396,8 @@ static void CL_SectorProperties(const odaproto::svc::SectorProperties* msg)
 			sector->base_ceiling_yoffs = msg->sector().base_ceiling_yoffs();
 			sector->base_floor_angle = msg->sector().base_floor_angle();
 			sector->base_floor_yoffs = msg->sector().base_floor_yoffs();
+		case SPC_Special:
+			sector->special = msg->sector().special();
 		default:
 			break;
 		}

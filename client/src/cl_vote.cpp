@@ -190,6 +190,7 @@ BEGIN_COMMAND(callvote) {
 	case VOTE_FRAGLIMIT:
 	case VOTE_SCORELIMIT:
 	case VOTE_TIMELIMIT:
+	case VOTE_LIVES:
 		// Only one argument is necessary.
 		arguments.resize(1);
 		break;

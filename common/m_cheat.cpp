@@ -81,9 +81,9 @@ bool CHEAT_ChangeLevel(cheatseq_t* cheat)
 	// FIXME: This is probably a horrible hack, it sure looks like one at least
 	// And why is there only a newline for non-chex?
 	if (gamemode == retail_chex)
-		buf = fmt::format("map 1{}", cheat->Args[1]);
+		buf = fmt::format("map 1{:c}", cheat->Args[1]);
 	else
-		buf = fmt::format("map {}{}\n", cheat->Args[0], cheat->Args[1]);
+		buf = fmt::format("map {:c}{:c}\n", cheat->Args[0], cheat->Args[1]);
 
 	AddCommandString(buf);
 	return true;

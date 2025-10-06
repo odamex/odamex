@@ -276,7 +276,7 @@ void StringTable::prepareIndexes()
 		if (it == _stringHash.end())
 		{
 			TableEntry entry = {std::make_pair(false, ""), 0xFF, static_cast<int>(i)};
-			_stringHash.insert(std::make_pair(name, entry));
+			_stringHash.emplace(name, entry);
 		}
 	}
 }
@@ -380,7 +380,7 @@ void StringTable::setString(const OString& name, const OString& string)
 	{
 		// Stringtable entry does nto exist, insert it.
 		TableEntry entry = {std::make_pair(true, string), 0, -1};
-		_stringHash.insert(std::make_pair(name, entry));
+		_stringHash.emplace(name, entry);
 	}
 	else
 	{
@@ -402,7 +402,7 @@ void StringTable::setPassString(int pass, const OString& name, const OString& st
 	{
 		// Stringtable entry does not exist.
 		TableEntry entry = {std::make_pair(true, string), pass, -1};
-		_stringHash.insert(std::make_pair(name, entry));
+		_stringHash.emplace(name, entry);
 	}
 	else
 	{

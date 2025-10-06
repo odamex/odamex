@@ -601,7 +601,7 @@ private:
 			assert(mStrings->size() < OString::MAX_STRINGS);
 			const StringIdType id = mStrings->insert(StringRecord(str, 0, length));
 			rec = &mStrings->get(id);
-			mStringLookup->insert(std::pair<HashedStringType, StringIdType>(hash_value, id));
+			mStringLookup->emplace(hash_value, id);
 		}
 		return rec;
 	}

@@ -27,78 +27,86 @@
 
 enum class animcondition_t
 {
-    None,
-    CurrMapGreater,   // Current map number is greater than the param value
-    CurrMapEqual,     // Current map number is equal to the param value
-    MapVisited,       // The map number corresponding to the param value has been visited
-    CurrMapNotSecret, // The current map is not a secret map
-    AnySecretVisited, // Any secret map has been visited
-    OnFinishedScreen, // The current screen is the "finished" screen
-    OnEnteringScreen, // The current screen is the “entering” screen
+	None,
+	CurrMapGreater,   // Current map number is greater than the param value
+	CurrMapEqual,     // Current map number is equal to the param value
+	MapVisited,       // The map number corresponding to the param value has been visited
+	CurrMapNotSecret, // The current map is not a secret map
+	AnySecretVisited, // Any secret map has been visited
+	OnFinishedScreen, // The current screen is the "finished" screen
+	OnEnteringScreen, // The current screen is the “entering” screen
 
-    ID24Max,
+	ID24Max,
 
-    // vv extra conditions for zdoom intermission scripts
-    CurrMapNotEqual,
-    MapNotVisited,
-    TravelingBetween,
-    NotTravelingBetween,
+	// vv extra conditions for zdoom intermission scripts
+	CurrMapNotEqual,
+	MapNotVisited,
+	TravelingBetween,
+	NotTravelingBetween,
 };
 
 struct interlevelcond_t
 {
-    animcondition_t condition;
-    int param1;
-    int param2;
+	animcondition_t condition;
+	bool isZDoom;
+	int param;
+	OLumpName mapname1;
+	OLumpName mapname2;
 
-    interlevelcond_t(animcondition_t c = animcondition_t::None, int p1 = 0, int p2 = 0) : condition(c), param1(p1), param2(p2) {}
+	interlevelcond_t() = default;
+
+	interlevelcond_t(animcondition_t c, int p) :
+		condition(c), isZDoom(false), param(p), mapname1(), mapname2() {}
+
+	interlevelcond_t(animcondition_t c, OLumpName m1, OLumpName m2 = "") :
+		condition(c), isZDoom(true), param(0), mapname1(m1), mapname2(m2) {}
 };
 
 struct interlevelframe_t
 {
-    enum frametype_t
-    {
-        None          = 0x0000,
-        DurationInf   = 0x0001,
-        DurationFixed = 0x0002,
-        DurationRand  = 0x0004,
-        RandomStart   = 0x1000,
-        Valid         = 0x100F
-    };
+	enum frametype_t
+	{
+		None          = 0x0000,
+		DurationInf   = 0x0001,
+		DurationFixed = 0x0002,
+		DurationRand  = 0x0004,
+		RandomStart   = 0x1000,
+		Valid         = 0x100F
+	};
 
-    OLumpName imagelump;
-    int imagelumpnum;
-    OLumpName altimagelump;
-    int altimagelumpnum;
-    frametype_t type;
-    int duration;
-    int maxduration;
+	OLumpName imagelump;
+	int imagelumpnum;
+	OLumpName altimagelump;
+	int altimagelumpnum;
+	frametype_t type;
+	int duration;
+	int maxduration;
 
-    interlevelframe_t(OLumpName il = "", int iln = 0, OLumpName ail = "", int ailn = 0, frametype_t t = None, int d = 0, int md = 0) :
-        imagelump(il), imagelumpnum(iln), altimagelump(ail), altimagelumpnum(0), type(t), duration(d), maxduration(md) {}
+	interlevelframe_t(OLumpName il = "", int iln = 0, OLumpName ail = "", int ailn = 0, frametype_t t = None, int d = 0, int md = 0) :
+		imagelump(il), imagelumpnum(iln), altimagelump(ail), altimagelumpnum(0), type(t), duration(d), maxduration(md) {}
 };
 
 struct interlevelanim_t
 {
-    std::vector<interlevelframe_t> frames;
-    std::vector<interlevelcond_t> conditions;
-    int xpos;
-    int ypos;
+	std::vector<interlevelframe_t> frames;
+	std::vector<interlevelcond_t> conditions;
+	int xpos;
+	int ypos;
 
-    interlevelanim_t(std::vector<interlevelframe_t> f = {}, std::vector<interlevelcond_t> c = {}, int x = 0, int y = 0) : frames(f), conditions(c), xpos(x), ypos(y) {}
+	interlevelanim_t(std::vector<interlevelframe_t> f = {}, std::vector<interlevelcond_t> c = {}, int x = 0, int y = 0) : frames(f), conditions(c), xpos(x), ypos(y) {}
 };
 
 struct interlevellayer_t
 {
-    std::vector<interlevelanim_t> anims;
-    std::vector<interlevelcond_t> conditions;
+	std::vector<interlevelanim_t> anims;
+	std::vector<interlevelcond_t> conditions;
 };
 
 struct interlevel_t
 {
-    OLumpName musiclump;
-    OLumpName backgroundlump;
-    std::vector<interlevellayer_t> layers;
+	OLumpName musiclump;
+	OLumpName backgroundlump;
+	std::vector<interlevellayer_t> layers;
 };
 
 interlevel_t* WI_GetInterlevel(const OLumpName& lumpname);

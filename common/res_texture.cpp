@@ -985,7 +985,7 @@ Texture* TextureManager::createTexture(texhandle_t texhandle, int width, int hei
 
 	texture->mHandle = texhandle;
 
-	mHandleMap.insert(HandleMapPair(texhandle, texture));
+	mHandleMap.emplace(texhandle, texture);
 
 	return texture;
 }

@@ -125,7 +125,7 @@ void P_PlayerLeavesGame(player_s* player);
 bool P_LineSpecialMovesSector(short special);
 
 void SV_UpdateShareKeys(player_t& player);
-std::string SV_BuildKillsDeathsStatusString(player_t& player);
+std::string SV_BuildKillsDeathsStatusString(const player_t& player);
 std::string V_GetTeamColor(UserInfo userinfo);
 
 CVAR_FUNC_IMPL (sv_maxclients)
@@ -1240,7 +1240,7 @@ void SV_UpdateSector(client_t* cl, int sectornum)
 	sector_t* sector = &sectors[sectornum];
 
 	// Only update moveable sectors to clients
-	if (sector != NULL && sector->moveable)
+	if (sector != nullptr && sector->moveable)
 	{
 		MSG_WriteSVC(&cl->reliablebuf, SVC_UpdateSector(*sector));
 	}
@@ -1250,6 +1250,23 @@ void SV_BroadcastSector(int sectornum)
 {
 	for (auto& player : players)
 		SV_UpdateSector(&(player.client), sectornum);
+}
+
+void SV_UpdateSectorProperties(client_t* cl, int sectornum)
+{
+	sector_t* sector = &sectors[sectornum];
+
+	// Only update sectors with changes
+	if (sector != nullptr && sector->SectorChanges)
+	{
+		MSG_WriteSVC(&cl->reliablebuf, SVC_SectorProperties(*sector));
+	}
+}
+
+void SV_BroadcastSectorProperties(int sectornum)
+{
+	for (auto& player : players)
+		SV_UpdateSectorProperties(&(player.client), sectornum);
 }
 
 //
@@ -1919,7 +1936,7 @@ void SV_ConnectClient2(player_t& player)
 //
 // SV_BuildKillsDeathsStatusString
 //
-std::string SV_BuildKillsDeathsStatusString(player_t& player)
+std::string SV_BuildKillsDeathsStatusString(const player_t& player)
 {
 	std::string status;
 
@@ -1931,13 +1948,13 @@ std::string SV_BuildKillsDeathsStatusString(player_t& player)
 	{
 		if (G_IsTeamGame())
 		{
-			status += fmt::format("{} TEAM", GetTeamInfo(player.userinfo.team)->ColorStringUpper);
+			status += fmt::format("{} TEAM, ", GetTeamInfo(player.userinfo.team)->ColorStringUpper);
 		}
 
 		// Points (CTF).
 		if (sv_gametype == GM_CTF)
 		{
-			status += fmt::format("{} POINTS", player.points);
+			status += fmt::format("{} POINTS, ", player.points);
 		}
 
 		// Frags (DM/TDM/CTF) or Kills (Coop).
@@ -4097,7 +4114,7 @@ void SV_RunTics()
 		if (!Maplist::instance().lobbyempty())
 		{
 			std::string wadstr = C_EscapeWadList(lobby_entry.wads);
-			G_LoadWadString(wadstr, "", lobby_entry.map);
+			G_LoadWadString(wadstr, lobby_entry.map);
 		}
 		else
 		{

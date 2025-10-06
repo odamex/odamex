@@ -153,7 +153,10 @@ inline constexpr fixed64_t FixedMul64( fixed64_t a, fixed64_t b )
 [[nodiscard]]
 inline constexpr fixed_t FixedDiv(fixed_t a, fixed_t b)
 {
-	return (abs(a) >> 14) >= abs(b) ? ((a ^ b) >> 31) ^ MAXINT :
+	constexpr auto absce = [](fixed_t x) -> fixed_t {
+		return (x < 0) ? -x : x;
+	};
+	return (absce(a) >> 14) >= absce(b) ? ((a ^ b) >> 31) ^ MAXINT :
 		(fixed_t)(((int64_t)a << FRACBITS) / b);
 }
 

@@ -423,20 +423,22 @@ static void HU_DrawCrosshair()
 
 		V_ColorMap = translationref_t(crosshair_trans);
 
-		int x = I_GetSurfaceWidth() / 2;
+		patch_t* ch_patch = W_CachePatch(crosshair_lump);
+
+		int x = (I_GetSurfaceWidth() - (ch_patch->width() / 2)) / 2;
 		int y = I_GetSurfaceHeight() / 2;
 
 		if (R_StatusBarVisible())
 			y = ST_StatusBarY(I_GetSurfaceWidth(), I_GetSurfaceHeight()) / 2;
 
 		if (hud_crosshairdim && hud_crosshairscale)
-			screen->DrawTranslatedLucentPatchCleanNoMove(W_CachePatch(crosshair_lump), x, y);
+			screen->DrawTranslatedLucentPatchCleanNoMove(ch_patch, x, y);
         else if (hud_crosshairscale)
-			screen->DrawTranslatedPatchCleanNoMove(W_CachePatch(crosshair_lump), x, y);
+			screen->DrawTranslatedPatchCleanNoMove(ch_patch, x, y);
         else if (hud_crosshairdim)
-			screen->DrawTranslatedLucentPatch(W_CachePatch(crosshair_lump), x, y);
+			screen->DrawTranslatedLucentPatch(ch_patch, x, y);
 		else
-			screen->DrawTranslatedPatch (W_CachePatch (crosshair_lump), x, y);
+			screen->DrawTranslatedPatch(ch_patch, x, y);
 	}
 }
 
@@ -568,6 +570,9 @@ void HU_Drawer()
 	// [AM] Voting HUD!
 	ST_voteDraw(11 * CleanYfac);
 
+	if (gamestate == GS_LEVEL)
+		HU_DrawCrosshair();
+
 	if (consoleplayer().camera && !(demoplayback))
 	{
 		if ((gamestate != GS_INTERMISSION && Actions[ACTION_SHOWSCORES]) ||
@@ -577,9 +582,6 @@ void HU_Drawer()
 			HU_DrawScores(&displayplayer());
 		}
 	}
-
-	if (gamestate == GS_LEVEL)
-		HU_DrawCrosshair();
 
 	if (HU_ChatMode() != CHAT_INACTIVE)
 		HU_DrawChatPrompt();

@@ -41,6 +41,7 @@
 
 EXTERN_CVAR(sv_gametype)
 
+EXTERN_CVAR(g_lives)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_scorelimit)
 EXTERN_CVAR(sv_timelimit)
@@ -54,6 +55,7 @@ EXTERN_CVAR(sv_vote_timelimit)
 EXTERN_CVAR(sv_vote_timeout)
 
 EXTERN_CVAR(sv_callvote_coinflip)
+EXTERN_CVAR(sv_callvote_lives)
 EXTERN_CVAR(sv_callvote_forcespec)
 EXTERN_CVAR(sv_callvote_forcestart)
 EXTERN_CVAR(sv_callvote_kick)
@@ -104,6 +106,56 @@ public:
 		std::string result;
 		CMD_CoinFlip(result);
 		SV_BroadcastPrintFmt("{}\n", result);
+		return true;
+	}
+};
+
+class LivesVote : public Vote
+{
+private:
+	unsigned int lives;
+public:
+	LivesVote() : Vote("lives", &sv_callvote_lives) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player) override
+	{
+		unsigned int lives;
+
+		if (!Vote::setup_check_cvar())
+			return false;
+
+		// Do we have at least one argument?
+		if (args.size() < 1)
+		{
+			this->error = "lives needs a second argument.";
+			return false;
+		}
+
+		// Are the lives a numeric value?
+		std::istringstream buffer(args[0].c_str());
+		buffer >> lives;
+		if (!buffer)
+		{
+			this->error = "lives must be a number.";
+			return false;
+		}
+
+		// Are the lives positive?
+		if (args[0].length() > 0 && args[0][0] == '-')
+		{
+			this->error = "lives must be 0 or a positive number.";
+			return false;
+		}
+
+		std::ostringstream vote_string;
+		vote_string << "lives " << lives;
+
+		this->lives = lives;
+		this->votestring = vote_string.str();
+		return true;
+	}
+	bool exec() override
+	{
+		g_lives.Set(this->lives);
 		return true;
 	}
 };
@@ -1004,7 +1056,7 @@ bool Vote::vote(player_t &player, bool ballot)
 
 		if (timeout < timeout_check)
 		{
-			SV_PlayerPrintFmt(PRINT_HIGH, player.id, "Please wait another %d second%s to change your vote.\n",
+			SV_PlayerPrintFmt(PRINT_HIGH, player.id, "Please wait another {} second{} to change your vote.\n",
 			                  timeout_waitsec, timeout_waitsec != 1 ? "s" : "");
 			return false;
 		}
@@ -1137,6 +1189,9 @@ void SV_Callvote(player_t &player)
 	case VOTE_COINFLIP:
 		vote = new CoinflipVote;
 		break;
+	case VOTE_LIVES:
+		vote = new LivesVote;
+		break;
 	default:
 		return;
 	}
@@ -1148,7 +1203,7 @@ void SV_Callvote(player_t &player)
 	// abort the vote and print a message to the player.
 	if (!valid)
 	{
-		SV_PlayerPrintFmt(PRINT_HIGH, player.id, "%s\n", vote->get_error());
+		SV_PlayerPrintFmt(PRINT_HIGH, player.id, "{}\n", vote->get_error());
 		delete vote;
 		vote = 0;
 		return;

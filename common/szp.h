@@ -38,7 +38,7 @@
 
 #pragma once
 
-
+#include "m_stacktrace.h"
 
 template <typename T>
 class szp
@@ -78,7 +78,7 @@ public:
 	inline T* operator ->()
 	{
 		if(!naive || !*naive)
-			throw CRecoverableError("szp pointer was NULL");
+			throw CRecoverableError(M_GetStacktrace("szp pointer was NULL:"));
 
 		return *naive;
 	}
@@ -86,7 +86,7 @@ public:
 	const inline T* operator ->() const
 	{
 		if(!naive || !*naive)
-			throw CRecoverableError("szp pointer was NULL");
+			throw CRecoverableError(M_GetStacktrace("szp pointer was NULL:"));
 
 		return *naive;
 	}
@@ -113,7 +113,7 @@ public:
 	void update_all(T *target)
 	{
 		if(!naive)
-			throw CRecoverableError("szp pointer was NULL on update_all");
+			throw CRecoverableError(M_GetStacktrace("szp pointer was NULL on update_all:"));
 
 		// all copies already have naive, so their pointers will update too
 		*naive = target;

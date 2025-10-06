@@ -151,7 +151,8 @@ enum SectorPropChanges
 	SPC_Scale = 64,
 	SPC_Rotation = 128,
 	SPC_AlignBase = 256,
-	SPC_Max = 512,
+	SPC_Special = 512,
+	SPC_Max = 1024,
 };
 
 enum SideDefPropChanges

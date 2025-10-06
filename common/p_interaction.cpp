@@ -43,6 +43,7 @@
 #include "gi.h"
 #include "g_skill.h"
 #include "p_mapformat.h"
+#include "p_unlag.h"
 
 #ifdef SERVER_APP
 #include "sv_main.h"
@@ -255,8 +256,6 @@ int P_GetDeathCount(const player_t* player)
 // mbf21: take into account new weapon autoswitch flags
 static ItemEquipVal P_GiveAmmoAutoSwitch(player_t* player, ammotype_t ammo, int oldammo)
 {
-	int i;
-
 	// Keep the original behaviour while playbacking demos only.
 	if (demoplayback)
 	{
@@ -299,13 +298,13 @@ static ItemEquipVal P_GiveAmmoAutoSwitch(player_t* player, ammotype_t ammo, int 
 		if (weaponinfo[player->readyweapon].flags & WPF_AUTOSWITCHFROM &&
 		    player->ammo[weaponinfo[player->readyweapon].ammotype] != ammo)
 		{
-			for (i = NUMWEAPONS - 1; i > player->readyweapon; --i)
+			for (int i = NUMWEAPONS - 1; i > player->readyweapon; --i)
 			{
 				if (player->weaponowned[i] &&
 				    !(weaponinfo[i].flags & WPF_NOAUTOSWITCHTO) &&
 				    weaponinfo[i].ammotype == ammo &&
-				    weaponinfo[i].ammouse > oldammo &&
-				    weaponinfo[i].ammouse <= player->ammo[ammo])
+				    weaponinfo[i].ammopershot > oldammo &&
+				    weaponinfo[i].ammopershot <= player->ammo[ammo])
 				{
 					player->pendingweapon = (weapontype_t)i;
 					break;
@@ -1856,6 +1855,13 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			// don't die in auto map, switch view prior to dying
 			AM_Stop();
 		}
+
+		// Clear unlagged history as the player is now dead
+		if (serverside)
+		{
+			Unlag::getInstance().clearPlayerHistory(tplayer->id);
+		}
+
 	}
 
 	if (target->health > 0) // denis - when this function is used standalone
@@ -2365,7 +2371,10 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		    !(source->flags3 & MF3_DMGIGNORED) &&
 		    !(source->oflags & MFO_INFIGHTINVUL) &&
 		    (!target->threshold || target->flags3 & MF3_NOTHRESHOLD) &&
-		    !P_InfightingImmune(target, source))
+		    !P_InfightingImmune(target, source) &&
+		    !((level.flags2 & LEVEL2_INFIGHTINGMASK) ?
+			    level.flags2 & LEVEL2_NOINFIGHTING :
+			    G_GetCurrentSkill().flags & SKILL_NOINFIGHTING))
 		{
 			// if not intent on another player, chase after this one
 			// [AM] Infight invul monsters will never provoke attacks.

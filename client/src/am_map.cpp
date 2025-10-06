@@ -64,12 +64,14 @@ static int lockglow = 0;
 
 EXTERN_CVAR(am_rotate)
 EXTERN_CVAR(am_overlay)
+EXTERN_CVAR(am_thickness)
 EXTERN_CVAR(am_showsecrets)
 EXTERN_CVAR(am_showmonsters)
 EXTERN_CVAR(am_showitems)
 EXTERN_CVAR(am_showtime)
 EXTERN_CVAR(am_classicmapstring)
 EXTERN_CVAR(am_usecustomcolors)
+EXTERN_CVAR(am_showlocked)
 EXTERN_CVAR(am_ovshare)
 
 EXTERN_CVAR(am_backcolor)
@@ -120,6 +122,12 @@ BEGIN_COMMAND(resetcustomcolors)
 	am_fdwallcolor = "1a 1a 8a";
 	am_cdwallcolor = "00 00 5a";
 	am_thingcolor = "9f d3 ff";
+	am_thingcolor_item = "navy";
+	am_thingcolor_countitem = "sky blue";
+	am_thingcolor_monster = "74 fc 6c";
+	am_thingcolor_nocountmonster = "yellow";
+	am_thingcolor_friend = "dark green";
+	am_thingcolor_projectile = "orange";
 	am_gridcolor = "44 44 88";
 	am_xhaircolor = "80 80 80";
 	am_notseencolor = "00 22 6e";
@@ -133,13 +141,20 @@ BEGIN_COMMAND(resetcustomcolors)
 	am_ovfdwallcolor = "1a 1a 8a";
 	am_ovcdwallcolor = "00 00 5a";
 	am_ovthingcolor = "9f d3 ff";
+	am_ovthingcolor_item = "navy";
+	am_ovthingcolor_countitem = "sky blue";
+	am_ovthingcolor_monster = "74 fc 6c";
+	am_ovthingcolor_nocountmonster = "yellow";
+	am_ovthingcolor_friend = "dark green";
+	am_ovthingcolor_projectile = "orange";
 	am_ovgridcolor = "44 44 88";
 	am_ovxhaircolor = "80 80 80";
 	am_ovnotseencolor = "00 22 6e";
 	am_ovlockedcolor = "bb bb bb";
 	am_ovexitcolor = "ff ff 00";
 	am_ovteleportcolor = "ff a3 00";
-	Printf(PRINT_HIGH, "Custom automap colors reset to default.\n");
+
+	PrintFmt(PRINT_HIGH, "Custom automap colors reset to default.\n");
 }
 END_COMMAND(resetcustomcolors)
 
@@ -163,9 +178,6 @@ EXTERN_CVAR(screenblocks)
 // translates between frame-buffer and map distances
 #define FTOM(x) FixedMul64((INT2FIXED64((x))), scale_ftom)
 #define MTOF(x) FIXED642INT(FixedMul64((x), scale_mtof))
-
-#define PUTDOTP(xx, yy, cc) fb[(yy)*f_p + (xx)] = (cc)
-#define PUTDOTD(xx, yy, cc) *((argb_t*)(fb + (yy)*f_p + ((xx) << 2))) = (cc)
 
 typedef v2int_t fpoint_t;
 
@@ -683,6 +695,12 @@ void AM_initColors(const bool overlayed)
 		gameinfo.currentAutomapColors.NotSeenColor =
 			AM_GetColorFromString(palette_colors, gameinfo.defaultAutomapColors.NotSeenColor);
 	}
+
+	if (am_showlocked)
+	{
+		gameinfo.currentAutomapColors.LockedColor =
+			AM_GetColorFromString(palette_colors, "ff ff ff");
+	}
 }
 
 //
@@ -1080,13 +1098,66 @@ bool AM_clipMline(mline_t* ml, fline_t* fl)
 }
 #undef DOOUTCODE
 
+// [EB] adapted from International Doom am_map.c
+template <typename PIXEL_T>
+static inline void PUTDOT_THICK(
+	int x, int y,
+	PIXEL_T color,
+	void (*PUTDOT)(int, int, PIXEL_T),
+	PIXEL_T* fbuf,
+	int pitch)
+{
+	// Thin point fast path
+	if (am_thickness.asInt() == 1)
+	{
+		PUTDOT(x, y, color);
+		return;
+	}
+
+	// Thickness: 0 == auto (depends on resolution)
+	const int thickness = (am_thickness == 0) ? (CleanXfac >> 2) : am_thickness.asInt() - 1;
+
+	// Clamp bbox once
+	const int fwm1 = f_w - 1, fhm1 = f_h - 1;
+	int minx = x - thickness; if (minx < 0)   minx = 0;
+	int maxx = x + thickness; if (maxx > fwm1) maxx = fwm1;
+	int miny = y - thickness; if (miny < 0)   miny = 0;
+	int maxy = y + thickness; if (maxy > fhm1) maxy = fhm1;
+
+	const int thick_sq = thickness * thickness;
+
+	for (int nx = minx; nx <= maxx; ++nx)
+	{
+		const int dx  = nx - x;
+		const int dx2 = dx * dx;
+
+		PIXEL_T* pix = fbuf + miny * pitch + nx;
+
+		for (int ny = miny; ny <= maxy; ++ny, pix += pitch)
+		{
+			const int dy = ny - y;
+			if (dx2 + dy * dy > thick_sq) continue;
+			*pix = color;
+		}
+	}
+}
+
+static inline void PUTDOT_THICK(int x, int y, argb_t color)
+{
+	PUTDOT_THICK<argb_t>(x, y, color, [](int x, int y, argb_t color){ *((argb_t*)(fb + y * f_p + (x << 2))) = color; }, reinterpret_cast<argb_t*>(fb), f_p >> 2);
+}
+
+static inline void PUTDOT_THICK(int x, int y, byte color)
+{
+	PUTDOT_THICK<byte>(x, y, color, [](int x, int y, byte color){ fb[y * f_p + x] = color; }, fb, f_w);
+}
+
 //
 // Classic Bresenham w/ whatever optimizations needed for speed
 //
 
-// Palettized (8bpp) version:
-
-void AM_drawFlineP(fline_t* fl, byte color)
+template<typename PIXEL_T>
+void AM_drawFline(fline_t* fl, PIXEL_T color)
 {
 	fl->a.x += f.x;
 	fl->a.y += f.y;
@@ -1109,7 +1180,7 @@ void AM_drawFlineP(fline_t* fl, byte color)
 		int d = ay - ax / 2;
 		while (true)
 		{
-			PUTDOTP(x, y, (byte)color);
+			PUTDOT_THICK(x, y, color);
 			if (x == fl->b.x)
 				return;
 			if (d >= 0)
@@ -1126,66 +1197,7 @@ void AM_drawFlineP(fline_t* fl, byte color)
 		int d = ax - ay / 2;
 		while (true)
 		{
-			PUTDOTP(x, y, (byte)color);
-			if (y == fl->b.y)
-				return;
-			if (d >= 0)
-			{
-				x += sx;
-				d -= ay;
-			}
-			y += sy;
-			d += ax;
-		}
-	}
-}
-
-// Direct (32bpp) version:
-
-void AM_drawFlineD(fline_t* fl, argb_t color)
-{
-	fl->a.x += f.x;
-	fl->b.x += f.x;
-	fl->a.y += f.y;
-	fl->b.y += f.y;
-
-	const int dx = fl->b.x - fl->a.x;
-	const int ax = 2 * (dx < 0 ? -dx : dx);
-	const int sx = dx < 0 ? -1 : 1;
-
-	const int dy = fl->b.y - fl->a.y;
-	const int ay = 2 * (dy < 0 ? -dy : dy);
-	const int sy = dy < 0 ? -1 : 1;
-
-	int x = fl->a.x;
-	int y = fl->a.y;
-
-	int d;
-
-	if (ax > ay)
-	{
-		d = ay - ax / 2;
-
-		while (true)
-		{
-			PUTDOTD(x, y, color);
-			if (x == fl->b.x)
-				return;
-			if (d >= 0)
-			{
-				y += sy;
-				d -= ax;
-			}
-			x += sx;
-			d += ay;
-		}
-	}
-	else
-	{
-		d = ax - ay / 2;
-		while (true)
-		{
-			PUTDOTD(x, y, color);
+			PUTDOT_THICK(x, y, color);
 			if (y == fl->b.y)
 				return;
 			if (d >= 0)
@@ -1210,9 +1222,9 @@ void AM_drawMline(mline_t* ml, am_color_t color)
 	{
 		// draws it on frame buffer using fb coords
 		if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
-			AM_drawFlineP(&fl, color.index);
+			AM_drawFline<byte>(&fl, color.index);
 		else
-			AM_drawFlineD(&fl, color.rgb);
+			AM_drawFline<argb_t>(&fl, color.rgb);
 	}
 }
 
@@ -1352,7 +1364,7 @@ void AM_drawWalls()
 						g = gameinfo.currentAutomapColors.LockedColor.rgb.getg();
 						b = gameinfo.currentAutomapColors.LockedColor.rgb.getb();
 
-						if (am_usecustomcolors)
+						if (am_usecustomcolors || am_showlocked)
 						{
 							if (lines[i].args[3] == (zk_blue_card | zk_blue))
 							{
@@ -1400,7 +1412,7 @@ void AM_drawWalls()
 						g = gameinfo.currentAutomapColors.LockedColor.rgb.getg();
 						b = gameinfo.currentAutomapColors.LockedColor.rgb.getb();
 
-						if (am_usecustomcolors)
+						if (am_usecustomcolors || am_showlocked)
 						{
 							if (P_IsCompatibleBlueDoorLine(lines[i].special))
 							{
@@ -1839,9 +1851,9 @@ void AM_drawCrosshair(am_color_t color)
 {
 	// single point for now
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
-		PUTDOTP(f_w / 2, (f_h + 1) / 2, (byte)color.index);
+		PUTDOT_THICK(f_w / 2, (f_h + 1) / 2, (byte)color.index);
 	else
-		PUTDOTD(f_w / 2, (f_h + 1) / 2, color.rgb);
+		PUTDOT_THICK(f_w / 2, (f_h + 1) / 2, color.rgb);
 }
 
 //

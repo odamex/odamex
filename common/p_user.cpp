@@ -801,19 +801,6 @@ void P_DeathThink (player_t *player)
 			player->playerstate = PST_REBORN;
 		}
 	}
-
-	if (clientside)
-	{
-		// [AM] If the player runs out of lives in an LMS gamemode, having
-		//      them spectate another player after a beat is expected.
-		if (::g_lives && player->lives < 1 && &consoleplayer() == &displayplayer() &&
-		    level.time >= player->death_time + (TICRATE * 2))
-		{
-			// CL_SpyCycle is located in cl and templated, so we use this
-			// instead.
-			AddCommandString("spynext");
-		}
-	}
 }
 
 bool P_AreTeammates(const player_t &a, const player_t &b)
@@ -895,6 +882,24 @@ void P_SetPlayerInvulnBleed(player_t* player, int powers[NUMPOWERS])
 			player->mo->flags |= MF_NOBLOOD;
 		else
 			player->mo->flags &= ~MF_NOBLOOD;
+	}
+}
+
+void P_SwitchSpyOnNoLives(player_t* player)
+{
+	if (clientside)
+	{
+		// [AM] If the player runs out of lives in an LMS gamemode, having
+		//      them spectate another player after a beat is expected.
+		if (::g_lives && player->lives < 1 &&
+		    player->id == displayplayer_id &&
+		    level.time >= player->death_time + (TICRATE * 2) &&
+		    ::levelstate.getState() == LevelState::INGAME)
+		{
+			// CL_SpyCycle is located in cl and templated, so we use this
+			// instead.
+			AddCommandString("spynext");
+		}
 	}
 }
 
@@ -984,6 +989,7 @@ void P_PlayerThink (player_t *player)
 	if (player->playerstate == PST_DEAD)
 	{
 		P_DeathThink(player);
+		P_SwitchSpyOnNoLives(player);
 		return;
 	}
 

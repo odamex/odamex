@@ -449,6 +449,8 @@ void D_AdvanceDemo (void)
 //
 void D_DoAdvanceDemo (void)
 {
+	S_StopAmbientSound();
+
 	OLumpName pagename;
 
 	consoleplayer().playerstate = PST_LIVE;	// not reborn

@@ -48,17 +48,6 @@ int 			viewangleoffset;
 // precalculated math tables
 //
 
-// The viewangletox[viewangle + FINEANGLES/4] lookup
-// maps the visible view angles to screen X coordinates,
-// flattening the arc to a flat projection plane.
-// There will be many angles mapped to the same X.
-int 			viewangletox[FINEANGLES/2];
-
-// The xtoviewangleangle[] table maps a screen pixel
-// to the lowest viewangle that maps back to x ranges
-// from clipangle to -clipangle.
-angle_t 		*xtoviewangle;
-
 int				scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 int				scalelightfixed[MAXLIGHTSCALE];
 int				zlight[LIGHTLEVELS][MAXLIGHTZ];

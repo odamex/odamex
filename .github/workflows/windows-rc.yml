@@ -32,7 +32,7 @@ jobs:
         shell: pwsh
         run: |
           $commits = git rev-list HEAD --count
-          Write-Output "totalCommits=$commits >> $GITHUB_OUTPUT"
+          Write-Output "totalCommits=$commits" >> $env:GITHUB_OUTPUT
       - name: Display GitVersion outputs
         run: |
           echo "Major: ${{ steps.gitversion.outputs.major }}"
@@ -194,6 +194,9 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: Odamex-Win-x64
+    - name: Install setup compiler
+      shell: pwsh
+      run: choco install innosetup -y --no-progress
     - name: Stage and run setup compiler
       shell: pwsh
       run: |
@@ -203,19 +206,3 @@ jobs:
       with:
         name: Odamex-Installer
         path: 'Output/*.exe'
-  # build-mingw:
-  #   name: Build (MinGW)
-  #   runs-on: windows-latest
-  #   steps:
-  #   - name: Checkout source
-  #     uses: actions/checkout@v4
-  #   - name: Checkout submodules
-  #     run: git submodule update --init --recursive
-  #   - name: Install packages
-  #     uses: crazy-max/ghaction-chocolatey@v1
-  #     with:
-  #       args: install ninja
-  #   - name: Prepare build
-  #     run: .\ci\win-mingw-buildgen.ps1
-  #   - name: Run build
-  #     run: cmake --build .\build-gcc\

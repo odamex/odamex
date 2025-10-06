@@ -82,6 +82,7 @@ bool M_FindFreeName(std::string &filename, const std::string &extension);
 
 EXTERN_CVAR(gammalevel)
 EXTERN_CVAR(vid_gammatype)
+EXTERN_CVAR(cl_screenshotdir)
 
 CVAR_FUNC_IMPL(cl_screenshotname)
 {
@@ -111,7 +112,7 @@ static void V_SetPNGPalette(png_struct* png_ptr, png_info* info_ptr, const argb_
 {
 	if (png_get_color_type(png_ptr, info_ptr) != 3)
 	{
-		Printf(PRINT_WARNING, "I_SetPNGPalette: Cannot create PNG PLTE chunk in 32-bit mode\n");
+		PrintFmt(PRINT_WARNING, "I_SetPNGPalette: Cannot create PNG PLTE chunk in 32-bit mode\n");
 		return;
 	}
 
@@ -143,7 +144,7 @@ static void SetPNGComments(PNGStrings& out, png_struct* png_ptr, png_info* info_
                            time_t* now)
 {
 #ifndef PNG_TEXT_SUPPORTED
-	Printf(PRINT_HIGH, "SetPNGComments: Skipping PNG tEXt chunk\n");
+	PrintFmt(PRINT_HIGH, "SetPNGComments: Skipping PNG tEXt chunk\n");
 	return;
 #endif
 
@@ -210,7 +211,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 
 	if (fp == NULL)
 	{
-		Printf(PRINT_WARNING, "I_SavePNG: Could not open %s for writing\n", filename);
+		(PrintFmt(PRINT_WARNING, "I_SavePNG: Could not open {} for writing\n", filename));
 		return -1;
 	}
 
@@ -219,7 +220,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	if (png_ptr == NULL)
 	{
 		fclose(fp);
-		Printf(PRINT_WARNING, "I_SavePNG: png_create_write_struct failed\n");
+		PrintFmt(PRINT_WARNING, "I_SavePNG: png_create_write_struct failed\n");
 		return -1;
 	}
 
@@ -229,7 +230,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	{
 		fclose(fp);
 		png_destroy_write_struct(&png_ptr, (png_infop*)NULL);
-		Printf(PRINT_HIGH, "I_SavePNG: png_create_info_struct failed\n");
+		PrintFmt(PRINT_HIGH, "I_SavePNG: png_create_info_struct failed\n");
 		return -1;
 	}
 
@@ -242,7 +243,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	{
 		fclose(fp);
 		png_destroy_write_struct(&png_ptr, &info_ptr);
-		Printf(PRINT_WARNING, "I_SavePNG: setjmp failed with error code %d\n", setjmp_result);
+		PrintFmt(PRINT_WARNING, "I_SavePNG: setjmp failed with error code {}\n", setjmp_result);
 		return -1;
 	}
 	#endif // PNG_SETJMP_SUPPORTED
@@ -286,7 +287,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 			png_destroy_write_struct(&png_ptr, &info_ptr);
 			fclose(fp);
 
-			Printf(PRINT_WARNING, "I_SavePNG: Not enough RAM to create PNG file\n");
+			PrintFmt(PRINT_WARNING, "I_SavePNG: Not enough RAM to create PNG file\n");
 			return -1;
 		}
 	}
@@ -355,7 +356,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	png_convert_from_time_t(&pngtime, now);
 	png_set_tIME(png_ptr, info_ptr, &pngtime);
 	#else
-	Printf(PRINT_HIGH, "I_SavePNG: Skipping PNG tIME chunk\n");
+	PrintFmt(PRINT_HIGH, "I_SavePNG: Skipping PNG tIME chunk\n");
 	#endif // PNG_tIME_SUPPORTED
 
 	png_set_rows(png_ptr, info_ptr, row_ptrs);
@@ -391,12 +392,12 @@ void V_ScreenShot(std::string filename)
 	filename = M_ExpandTokens(filename);
 
 	// Turn filename into complete path.
-	std::string pathname = M_GetUserFileName(filename);
+	std::string pathname = M_GetScreenshotFileName(filename, cl_screenshotdir.str());
 
 	// If the file already exists, append numbers.
 	if (!M_FindFreeName(pathname, extension))
 	{
-		Printf(PRINT_WARNING, "I_ScreenShot: Delete some screenshots\n");
+		PrintFmt(PRINT_WARNING, "V_ScreenShot: Delete some screenshots\n");
 		return;
 	}
 
@@ -406,11 +407,11 @@ void V_ScreenShot(std::string filename)
 	int result = V_SavePNG(pathname, primary_surface);
 	if (result != 0)
 	{
-		Printf(PRINT_WARNING, "I_SavePNG Error: Returned error code %d\n", result);
+		PrintFmt(PRINT_WARNING, "V_SavePNG Error: Returned error code {}\n", result);
 		return;
 	}
 
-	Printf(PRINT_HIGH, "Screenshot taken: %s.%s\n", filename, extension);
+	PrintFmt(PRINT_HIGH, "Screenshot taken: {}.{}\n", filename, extension);
 }
 
 

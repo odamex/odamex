@@ -204,6 +204,8 @@ enum mobjflag_t
 	MF_BOUNCES = BIT(29), // MBF - PARTIAL IMPLEMENTATION
 	MF_FRIEND  = BIT(30), // MBF - UNUSED FOR NOW
 
+	MF_TRANSLUCENT = BIT(31),
+
 	// --- mobj.flags2 ---
 	// Heretic flags
 	MF2_LOGRAV			= BIT(0),   // alternate gravity setting
