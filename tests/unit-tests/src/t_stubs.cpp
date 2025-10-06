@@ -706,4 +706,9 @@ void CTF_CheckFlags (player_t &player)
 	}
 }
 
+bool R_IsSkyFlat(int flatnum)
+{
+	return false;
+}
+
 VERSION_CONTROL (test_stubs_cpp, "$Id$")
