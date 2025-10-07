@@ -975,7 +975,7 @@ void Vote::parse(vote_result_t vote_result)
 		SV_BroadcastPrintFmt("Vote {} failed! (Yes: {}, No: {}, Abs: {})\n", this->votestring, yes, no, abs);
 
 		// Only set the timeout tic if the vote failed.
-		player_t caller = idplayer(this->caller_id);
+		player_t& caller = idplayer(this->caller_id);
 		if (validplayer(caller))
 		{
 			caller.timeout_callvote = level.time;

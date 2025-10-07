@@ -172,12 +172,12 @@ int main(int argc, char *argv[])
 		// denis - if argv[1] starts with "odamex://"
 		if(argc == 2 && argv && argv[1])
 		{
-			const char *protocol = "odamex://";
+			static constexpr std::string_view protocol = "odamex://";
 			const char *uri = argv[1];
 
-			if(strncmp(uri, protocol, strlen(protocol)) == 0)
+			if(protocol == uri)
 			{
-				std::string location = uri + strlen(protocol);
+				std::string location = uri + protocol.length();
 				size_t term = location.find_first_of('/');
 
 				if(term == std::string::npos)

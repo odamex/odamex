@@ -74,7 +74,7 @@ class SilentMusicSystem : public MusicSystem
   public:
 	SilentMusicSystem()
 	{
-		Printf(PRINT_WARNING, "I_InitMusic: Music playback disabled.\n");
+		PrintFmt(PRINT_WARNING, "I_InitMusic: Music playback disabled.\n");
 	}
 
 	void startSong(byte* data, size_t length, bool loop) override { }

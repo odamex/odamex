@@ -98,6 +98,14 @@ OLumpName& OLumpName::operator=(const std::string& other)
 	return *this;
 }
 
+OLumpName& OLumpName::operator=(std::string_view other)
+{
+	strncpy(m_data, other.data(), 8);
+	MakeDataPresentable();
+
+	return *this;
+}
+
 // capacity
 
 size_t OLumpName::size() const
@@ -213,6 +221,11 @@ int OLumpName::compare(const std::string& other) const
 	return !stricmp(m_data, other.data());
 }
 
+int OLumpName::compare(std::string_view other) const
+{
+	return other.length() < 9 && !strnicmp(m_data, other.data(), 8);
+}
+
 bool operator==(const OLumpName& lhs, const OLumpName& rhs)
 {
 	return !stricmp(lhs.m_data, rhs.m_data);
@@ -228,6 +241,11 @@ bool operator==(const OLumpName& lhs, const std::string& rhs)
 	return !stricmp(lhs.m_data, rhs.data());
 }
 
+bool operator==(const OLumpName& lhs, std::string_view rhs)
+{
+	return rhs.length() < 9 && !strnicmp(lhs.m_data, rhs.data(), 8);
+}
+
 bool operator!=(const OLumpName& lhs, const OLumpName& rhs)
 {
 	return stricmp(lhs.m_data, rhs.m_data);
@@ -241,4 +259,9 @@ bool operator!=(const OLumpName& lhs, const char* rhs)
 bool operator!=(const OLumpName& lhs, const std::string& rhs)
 {
 	return stricmp(lhs.m_data, rhs.data());
+}
+
+bool operator!=(const OLumpName& lhs, std::string_view rhs)
+{
+	return rhs.length() < 9 && strnicmp(lhs.m_data, rhs.data(), 8);
 }

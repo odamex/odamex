@@ -43,6 +43,7 @@
 
 #include "m_fileio.h"
 #include "i_system.h"
+#include "m_alloc.h"
 #include "z_zone.h"
 #include "cmdlib.h"
 #include "m_argv.h"
@@ -91,14 +92,14 @@ unsigned int W_LumpNameHash(const char *s)
 {
 	unsigned int hash;
 
-	(void)((hash =         toupper(s[0]), s[1]) &&
+	(void)(( hash =        toupper(s[0]), s[1]) &&
 			(hash = hash*3+toupper(s[1]), s[2]) &&
 			(hash = hash*2+toupper(s[2]), s[3]) &&
 			(hash = hash*2+toupper(s[3]), s[4]) &&
 			(hash = hash*2+toupper(s[4]), s[5]) &&
 			(hash = hash*2+toupper(s[5]), s[6]) &&
 			(hash = hash*2+toupper(s[6]),
-			 hash = hash*2+toupper(s[7]))
+			(hash = hash*2+toupper(s[7])))
          );
 	return hash;
 }
@@ -216,11 +217,11 @@ OMD5Hash W_MD5(const std::string& filename)
  *
  * @param lumpdata byte array pointer to the lump (or lumps) that needs to be fingerprinted.
  * @param size of the byte array pointer in bytes.
- * @return fhfprint_s - struct containing 16-byte array of fingerprint.
+ * @return fhfprint_t - struct containing 16-byte array of fingerprint.
  */
-fhfprint_s W_FarmHash128(const byte* lumpdata, int length)
+fhfprint_t W_FarmHash128(const byte* lumpdata, int length)
 {
-	fhfprint_s fhfngprnt;
+	fhfprint_t fhfngprnt;
 
 	if (!lumpdata)
 		return fhfngprnt;
@@ -301,11 +302,11 @@ void AddFile(const OResFile& file)
 
 	if ( (handle = fopen(filename.c_str(), "rb")) == NULL)
 	{
-		Printf(PRINT_WARNING, "couldn't open %s\n", filename);
+		PrintFmt(PRINT_WARNING, "couldn't open {}\n", filename);
 		return;
 	}
 
-	Printf(PRINT_HIGH, "adding %s", filename);
+	PrintFmt(PRINT_HIGH, "adding {}", filename);
 
 	size_t newlumps;
 
@@ -313,7 +314,7 @@ void AddFile(const OResFile& file)
 	size_t readlen = fread(&header, sizeof(header), 1, handle);
 	if ( readlen < 1 )
 	{
-		Printf(PRINT_HIGH, "failed to read %s.\n", filename);
+		PrintFmt(PRINT_HIGH, "failed to read {}.\n", filename);
 		fclose(handle);
 		return;
 	}
@@ -331,7 +332,7 @@ void AddFile(const OResFile& file)
 		std::transform(lumpname.c_str(), lumpname.c_str() + 8, fileinfo->name, toupper);
 
 		newlumps = 1;
-		Printf(PRINT_HIGH, " (single lump)\n");
+		PrintFmt(PRINT_HIGH, " (single lump)\n");
 	}
 	else
 	{
@@ -342,7 +343,7 @@ void AddFile(const OResFile& file)
 
 		if (length > (unsigned)M_FileLength(handle))
 		{
-			Printf(PRINT_WARNING, "\nbad number of lumps for %s\n", filename);
+			PrintFmt(PRINT_WARNING, "\nbad number of lumps for {}\n", filename);
 			fclose(handle);
 			return;
 		}
@@ -352,7 +353,7 @@ void AddFile(const OResFile& file)
 		readlen = fread(fileinfo, length, 1, handle);
 		if (readlen < 1)
 		{
-			Printf(PRINT_HIGH, "failed to read file info in %s\n", filename);
+			PrintFmt(PRINT_HIGH, "failed to read file info in {}\n", filename);
 			fclose(handle);
 			return;
 		}
@@ -366,7 +367,7 @@ void AddFile(const OResFile& file)
 		}
 
 		newlumps = header.numlumps;
-		Printf(PRINT_HIGH, " (%d lumps)\n", header.numlumps);
+		PrintFmt(PRINT_HIGH, " ({} lumps)\n", header.numlumps);
 	}
 
 	W_AddLumps(handle, fileinfo, newlumps, false);

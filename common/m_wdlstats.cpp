@@ -957,27 +957,6 @@ void M_CommitWDLLog()
 	std::string timestamp = GenerateTimestamp();
 	std::string filename = ::wdlstate.logdir + "wdl_" + timestamp + ".log";
 
-	// [Blair] Serialize the hashes before reading.
-	uint64_t reconsthash1 =
-	    (uint64_t)(::level.level_fingerprint[0]) |
-		(uint64_t)(::level.level_fingerprint[1]) << 8 |
-	    (uint64_t)(::level.level_fingerprint[2]) << 16 |
-	    (uint64_t)(::level.level_fingerprint[3]) << 24 |
-	    (uint64_t)(::level.level_fingerprint[4]) << 32 |
-	    (uint64_t)(::level.level_fingerprint[5]) << 40 |
-	    (uint64_t)(::level.level_fingerprint[6]) << 48 |
-		(uint64_t)(::level.level_fingerprint[7]) << 56;
-
-	uint64_t reconsthash2 =
-		(uint64_t)(::level.level_fingerprint[8]) |
-	    (uint64_t)(::level.level_fingerprint[9]) << 8 |
-	    (uint64_t)(::level.level_fingerprint[10]) << 16 |
-	    (uint64_t)(::level.level_fingerprint[11]) << 24 |
-	    (uint64_t)(::level.level_fingerprint[12]) << 32 |
-	    (uint64_t)(::level.level_fingerprint[13]) << 40 |
-	    (uint64_t)(::level.level_fingerprint[14]) << 48 |
-	    (uint64_t)(::level.level_fingerprint[15]) << 56;
-
 	// [Blair] Make the in-file timestamp ISO 8601 instead of a homegrown one.
 	// However, keeping the homegrown one for filename as ISO 8601 characters
 	// aren't supported in Windows filenames.
@@ -990,7 +969,7 @@ void M_CommitWDLLog()
 	if (fh == NULL)
 	{
 		::wdlstate.recording = false;
-		PrintFmt(PRINT_HIGH, "wdlstats: Could not save\"%s\" for writing.\n",
+		PrintFmt(PRINT_HIGH, "wdlstats: Could not save\"{}\" for writing.\n",
 		         filename);
 		return;
 	}
@@ -1000,7 +979,7 @@ void M_CommitWDLLog()
 	fmt::print(fh, "time={}\n", iso8601buf);
 	fmt::print(fh, "levelnum={}\n", ::level.levelnum);
 	fmt::print(fh, "levelname={}\n", ::level.level_name);
-	fmt::print(fh, "levelhash={:016x}{:016x}\n", reconsthash1, reconsthash2);
+	fmt::print(fh, "levelhash={}\n", ::level.level_fingerprint.toString());
 	fmt::print(fh, "gametype={}\n", ::sv_gametype.str());
 	fmt::print(fh, "lives={}\n", ::g_lives.str());
 	fmt::print(fh, "attackdefend={}\n", ::g_sides.str());

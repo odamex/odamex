@@ -94,6 +94,52 @@ struct acsdefered_s;
 class FBehavior;
 struct bossaction_t;
 
+// struct that contains a FarmHash 128-bit fingerprint.
+struct fhfprint_t
+{
+	std::array<byte, 16> fingerprint{};
+
+	[[nodiscard]]
+	bool operator==(const fhfprint_t& other)
+	{
+		return fingerprint == other.fingerprint;
+	}
+
+	bool operator==(std::string_view other)
+	{
+		return other == this->toString();
+	}
+
+	void clear()
+	{
+		fingerprint.fill(0);
+	}
+
+	std::string toString()
+	{
+		// [Blair] Serialize the hashes before reading.
+		const uint64_t reconsthash1 = (uint64_t)(fingerprint[0]) |
+		                              (uint64_t)(fingerprint[1]) << 8 |
+		                              (uint64_t)(fingerprint[2]) << 16 |
+		                              (uint64_t)(fingerprint[3]) << 24 |
+		                              (uint64_t)(fingerprint[4]) << 32 |
+		                              (uint64_t)(fingerprint[5]) << 40 |
+		                              (uint64_t)(fingerprint[6]) << 48 |
+		                              (uint64_t)(fingerprint[7]) << 56;
+
+		const uint64_t reconsthash2 = (uint64_t)(fingerprint[8]) |
+		                              (uint64_t)(fingerprint[9]) << 8 |
+		                              (uint64_t)(fingerprint[10]) << 16 |
+		                              (uint64_t)(fingerprint[11]) << 24 |
+		                              (uint64_t)(fingerprint[12]) << 32 |
+		                              (uint64_t)(fingerprint[13]) << 40 |
+		                              (uint64_t)(fingerprint[14]) << 48 |
+		                              (uint64_t)(fingerprint[15]) << 56;
+
+		return fmt::format("{:016x}{:016x}", reconsthash1, reconsthash2);
+	}
+};
+
 struct level_info_t
 {
 	OLumpName     mapname    = "";
@@ -101,7 +147,7 @@ struct level_info_t
 	int           mapnum     = 0;
 	int           episodenum = 0;
 	std::string   level_name = "";
-	byte          level_fingerprint[16] = { 0 };
+	fhfprint_t    level_fingerprint{};
 	OLumpName     pname      = "";
 	OLumpName     nextmap    = "";
 	OLumpName     secretmap  = "";
@@ -120,42 +166,26 @@ struct level_info_t
 	}
 };
 
-// struct that contains a FarmHash 128-bit fingerprint.
-struct fhfprint_s
-{
-	byte fingerprint[16];
-
-	fhfprint_s() : fingerprint()
-	{
-		ArrayInit(fingerprint, 0);
-	}
-	[[nodiscard]]
-	bool operator==(const fhfprint_s& other)
-	{
-		return fingerprint == other.fingerprint;
-	}
-};
-
 struct level_pwad_info_t
 {
 	// level_info_t
-	OLumpName		mapname;
-	int				levelnum;
-	int				mapnum;
-	int				episodenum;
-	std::string		level_name;
-	byte			level_fingerprint[16] = { 0 };
-	OLumpName		pname;
-	OLumpName		nextmap;
-	OLumpName		secretmap;
-	int				partime;
-	OLumpName		skypic;
-	OLumpName		music;
-	levelFlags_t	flags;
-	levelFlags_t	flags2;
-	int				cluster;
-	FLZOMemFile*	snapshot;
-	acsdefered_s*	defered;
+	OLumpName		mapname    = "";
+	int				levelnum   = 0;
+	int				mapnum     = 0;
+	int				episodenum = 0;
+	std::string		level_name = "";
+	fhfprint_t		level_fingerprint{};
+	OLumpName		pname      = "";
+	OLumpName		nextmap    = "";
+	OLumpName		secretmap  = "";
+	int				partime    = 0;
+	OLumpName		skypic     = "";
+	OLumpName		music      = "";
+	levelFlags_t	flags      = 0;
+	levelFlags_t	flags2     = 0;
+	int				cluster    = 0;
+	FLZOMemFile*	snapshot   = nullptr;
+	acsdefered_s*	defered    = nullptr;
 
 	// level_pwad_info_t
 
@@ -164,123 +194,53 @@ struct level_pwad_info_t
 	// the channel layout be platform neutral in case the pixel format changes
 	// after the level has been loaded (eg, toggling full-screen on certain OSX version).
 	// The color channels are ordered: A, R, G, B
-	byte			fadeto_color[4];
-	byte			outsidefog_color[4];
+	std::array<byte, 4>	fadeto_color = { 0, 0, 0, 0 };
+	std::array<byte, 4>	outsidefog_color = { 0xFF /* special token signaling to not handle it specially */, 0, 0, 0 };
 
-	OLumpName		fadetable;
-	OLumpName		skypic2;
-	float			gravity;
-	float			aircontrol;
-	int				airsupply;
+	OLumpName		fadetable  = "COLORMAP";
+	OLumpName		skypic2    = "";
+	float			gravity    = 0.0f;
+	float			aircontrol = 0.0f;
+	int				airsupply  = 10;
 
 	// The following are necessary for UMAPINFO compatibility
-	OLumpName		exitpic;
-	OLumpName		enterpic;
-	OLumpName		exitscript;
-	OLumpName		enterscript;
-	OLumpName		exitanim;
-	OLumpName		enteranim;
-	OLumpName		endpic;
+	OLumpName		exitpic     = "";
+	OLumpName		enterpic    = "";
+	OLumpName		exitscript  = "";
+	OLumpName		enterscript = "";
+	OLumpName		exitanim    = "";
+	OLumpName		enteranim   = "";
+	OLumpName		endpic      = "";
 
-	std::string		intertext;
-	std::string		intertextsecret;
-	OLumpName		interbackdrop;
-	OLumpName		intermusic;
-	OLumpName		zintermusic;
+	std::string		intertext       = "";
+	std::string		intertextsecret = "";
+	OLumpName		interbackdrop   = "";
+	OLumpName		intermusic      = "";
+	OLumpName		zintermusic     = "";
 
-	fixed_t			sky1ScrollDelta;
-	fixed_t			sky2ScrollDelta;
+	fixed_t			sky1ScrollDelta = 0;
+	fixed_t			sky2ScrollDelta = 0;
 
-	std::vector<bossaction_t> bossactions;
+	std::vector<bossaction_t> bossactions{};
 
-	std::string		label;
-	bool			clearlabel;
-	std::string		author;
+	std::string		label      = "";
+	bool			clearlabel = false;
+	std::string		author     = "";
 
-	level_pwad_info_t()
-	    : mapname(""), levelnum(0), mapnum(0), episodenum(0), level_name(""), pname(""), nextmap(""), secretmap(""),
-	      partime(0), skypic(""), music(""), flags(0), flags2(0), cluster(0), snapshot(NULL),
-	      defered(NULL), fadetable("COLORMAP"), skypic2(""), gravity(0.0f),
-	      aircontrol(0.0f), airsupply(10),
-	      exitpic(""), enterpic(""), exitscript(""), enterscript(""), exitanim(""), enteranim(""), endpic(""), intertext(""),
-	      intertextsecret(""), interbackdrop(""), intermusic(""), zintermusic(""),
-	      sky1ScrollDelta(0), sky2ScrollDelta(0), bossactions(), label(""),
-	      clearlabel(false), author()
-	{
-		ArrayInit(fadeto_color, 0);
-		ArrayInit(level_fingerprint, 0);
-		ArrayInit(outsidefog_color, 0);
-		outsidefog_color[0] = 0xFF; // special token signaling to not handle it specially
-	}
+	level_pwad_info_t() = default;
 
 	level_pwad_info_t(const level_info_t& other)
 	    : mapname(other.mapname), levelnum(other.levelnum), mapnum(other.mapnum), episodenum(other.episodenum),
-	      level_name(other.level_name), pname(other.pname), nextmap(other.nextmap),
+	      level_name(other.level_name), level_fingerprint(other.level_fingerprint), pname(other.pname), nextmap(other.nextmap),
 	      secretmap(other.secretmap), partime(other.partime), skypic(other.skypic),
 	      music(other.music), flags(other.flags), flags2(other.flags2), cluster(other.cluster),
-	      snapshot(other.snapshot), defered(other.defered), fadetable("COLORMAP"),
-	      skypic2(""), gravity(0.0f), aircontrol(0.0f), airsupply(10),
-	      exitpic(""), enterpic(""), exitscript(""), enterscript(""), exitanim(""), enteranim(""),
-	      endpic(""), intertext(""), intertextsecret(""), interbackdrop(""), intermusic(""), zintermusic(""),
-	      sky1ScrollDelta(0), sky2ScrollDelta(0), bossactions(), label(""),
-	      clearlabel(false), author()
+	      snapshot(other.snapshot), defered(other.defered)
 	{
-		ArrayInit(fadeto_color, 0);
-		ArrayInit(outsidefog_color, 0);
-		ArrayInit(level_fingerprint, 0);
-		outsidefog_color[0] = 0xFF; // special token signaling to not handle it specially
 	}
 
-	level_pwad_info_t& operator=(const level_pwad_info_t& other)
-	{
-		if (this == &other)
-			return *this;
+	level_pwad_info_t& operator=(const level_pwad_info_t& other) = default;
 
-		mapname = other.mapname;
-		levelnum = other.levelnum;
-		level_name = other.level_name;
-		pname = other.pname;
-		nextmap = other.nextmap;
-		secretmap = other.secretmap;
-		partime = other.partime;
-		skypic = other.skypic;
-		music = other.music;
-		flags = other.flags;
-		flags2 = other.flags2;
-		cluster = other.cluster;
-		snapshot = other.snapshot;
-		defered = other.defered;
-		ArrayCopy(fadeto_color, other.fadeto_color);
-		ArrayCopy(outsidefog_color, other.outsidefog_color);
-		ArrayCopy(level_fingerprint, other.level_fingerprint);
-		fadetable = other.fadetable;
-		skypic2 = other.skypic2;
-		gravity = other.gravity;
-		aircontrol = other.aircontrol;
-		airsupply = other.airsupply;
-		exitpic = other.exitpic;
-		exitscript = other.exitscript;
-		exitanim = other.exitanim;
-		enterpic = other.enterpic;
-		enterscript = other.enterscript;
-		enteranim = other.enteranim;
-		endpic = other.endpic;
-		intertext = other.intertext;
-		intertextsecret = other.intertextsecret;
-		interbackdrop = other.interbackdrop;
-		intermusic = other.intermusic;
-		zintermusic = other.zintermusic;
-		sky1ScrollDelta = other.sky1ScrollDelta;
-		sky2ScrollDelta = other.sky2ScrollDelta;
-		bossactions.clear();
-		std::copy(other.bossactions.begin(), other.bossactions.end(),
-		          bossactions.begin());
-		label = other.label;
-		clearlabel = other.clearlabel;
-		author = other.author;
-
-		return *this;
-	}
+	level_pwad_info_t(const level_pwad_info_t& other) = default;
 
 	bool exists() const
 	{
@@ -300,7 +260,7 @@ struct level_locals_t
 	int				cluster;
 	int				levelnum;
 	char			level_name[64];			// the descriptive name (Outer Base, etc)
-	byte			level_fingerprint[16];	// [Blair] 128-bit FarmHash fingerprint generated for the level to describe it uniquely
+	fhfprint_t		level_fingerprint;	    // [Blair] 128-bit FarmHash fingerprint generated for the level to describe it uniquely
 											// so it can besingled out if it's out of its host wad, like in a compilation wad. Contains a 16-byte array.
 	OLumpName		mapname;                // the server name (base1, etc)
 	OLumpName		nextmap;				// go here when sv_fraglimit is hit
@@ -314,8 +274,8 @@ struct level_locals_t
 	// the channel layout be platform neutral in case the pixel format changes
 	// after the level has been loaded (eg, toggling full-screen on certain OSX version).
 	// The color channels are ordered: A, R, G, B
-	byte			fadeto_color[4];		// The color the palette fades to (usually black)
-	byte			outsidefog_color[4];	// The fog for sectors with sky ceilings
+	std::array<byte, 4>	fadeto_color;		// The color the palette fades to (usually black)
+	std::array<byte, 4>	outsidefog_color;	// The fog for sectors with sky ceilings
 
 	OLumpName		music;
 	OLumpName		skypic;

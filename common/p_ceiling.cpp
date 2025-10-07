@@ -213,6 +213,7 @@ void DCeiling::RunThink ()
 			case silentCrushAndRaise:
 			case crushAndRaise:
 				m_Speed = CEILSPEED;
+				[[fallthrough]];
 			case fastCrushAndRaise:
 				m_Speed = m_Speed2;
 				m_Direction = 1;

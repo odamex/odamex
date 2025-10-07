@@ -730,8 +730,6 @@ void R_InitTextures()
 //
 void R_InitFlats (void)
 {
-	int i;
-
 	firstflat = W_GetNumForName ("F_START") + 1;
 	lastflat = W_GetNumForName ("F_END") - 1;
 
@@ -745,7 +743,7 @@ void R_InitFlats (void)
 	// Create translation table for global animation.
 	flattranslation = new int[numflats+1];
 
-	for (i = 0; i < numflats; i++)
+	for (int i = 0; i < numflats; i++)
 		flattranslation[i] = i;
 
 	delete[] flatwarp;

@@ -444,8 +444,8 @@ static void D_PrintIWADIdentity()
 {
 	if (clientside)
 	{
-		Printf(PRINT_HIGH, "\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
-    	                   "\36\36\36\36\36\36\36\36\36\36\36\36\37\n");
+		PrintFmt(PRINT_HIGH, "\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
+    	                     "\36\36\36\36\36\36\36\36\36\36\36\36\37\n");
 
 		if (gamemode == undetermined)
 			PrintFmt_Bold("Game mode indeterminate, no standard wad found.\n\n");
@@ -455,9 +455,9 @@ static void D_PrintIWADIdentity()
 	else
 	{
 		if (gamemode == undetermined)
-			Printf(PRINT_HIGH, "Game mode indeterminate, no standard wad found.\n");
+			PrintFmt(PRINT_HIGH, "Game mode indeterminate, no standard wad found.\n");
 		else
-			Printf(PRINT_HIGH, "%s\n", D_GetTitleString());
+			PrintFmt(PRINT_HIGH, "{}\n", D_GetTitleString());
 	}
 }
 
@@ -487,7 +487,7 @@ void D_LoadResolvedPatches()
 
 	if (::gamemode == retail_chex && !::multiplayer && !chexLoaded)
 	{
-		Printf(
+		PrintFmt(
 		    PRINT_WARNING,
 		    "Warning: chex.deh not loaded, experience may differ from the original!\n");
 	}
@@ -628,7 +628,7 @@ static bool CommercialIWADWarning(const OWantFile& wanted)
 		return false;
 	}
 
-	Printf("Odamex attempted to load\n> %s.\n\n", info->mIdName);
+	PrintFmt("Odamex attempted to load\n> {}.\n\n", info->mIdName);
 
 	// Try to find an IWAD file with a matching name in the user's directories.
 	OWantFile sameNameWant;
@@ -637,9 +637,9 @@ static bool CommercialIWADWarning(const OWantFile& wanted)
 	const bool resolved = M_ResolveWantedFile(sameNameRes, sameNameWant);
 	if (!resolved)
 	{
-		Printf(
+		PrintFmt(
 		    "Odamex could not find the data file for this game in any of the locations "
-		    "it searches for WAD files.  If you know you have %s on your hard drive, you "
+		    "it searches for WAD files.  If you know you have {} on your hard drive, you "
 		    "can add that path to the 'waddirs' cvar so Odamex can find it.\n\n",
 		    wanted.getBasename());
 	}
@@ -649,31 +649,31 @@ static bool CommercialIWADWarning(const OWantFile& wanted)
 		if (curInfo)
 		{
 			// Found a file, but it's the wrong version.
-			Printf("Odamex found a possible data file, but it's the wrong version.\n> "
-			       "%s\n> %s\n\n",
-			       curInfo->mIdName, sameNameRes.getFullpath());
+			PrintFmt("Odamex found a possible data file, but it's the wrong version.\n> "
+			         "{}\n> {}\n\n",
+			         curInfo->mIdName, sameNameRes.getFullpath());
 		}
 		else
 		{
 			// Found a file, but it's not recognized at all.
-			Printf("Odamex found a possible data file, but Odamex does not recognize "
-			       "it.\n> %s\n\n",
-			       sameNameRes.getFullpath());
+			PrintFmt("Odamex found a possible data file, but Odamex does not recognize "
+			         "it.\n> {]\n\n",
+			         sameNameRes.getFullpath());
 		}
 
 #ifdef _WIN32
-		Printf("You can use a tool such as Omniscient "
-		       "<https://drinkybird.net/doom/omniscient> to patch your way to the "
-		       "correct version of the data file.\n");
+		PrintFmt("You can use a tool such as Omniscient "
+		         "<https://drinkybird.net/doom/omniscient> to patch your way to the "
+		         "correct version of the data file.\n");
 #else
-		Printf("You can use a tool such as xdelta3 <http://xdelta.org/> paried with IWAD "
-		       "patches located on Github <https://github.com/Doom-Utils/iwad-patches> "
-		       "to patch your way to the correct version of the data file.\n");
+		PrintFmt("You can use a tool such as xdelta3 <http://xdelta.org/> paried with IWAD "
+		         "patches located on Github <https://github.com/Doom-Utils/iwad-patches> "
+		         "to patch your way to the correct version of the data file.\n");
 #endif
 	}
 
-	Printf("If you do not own this game, consider purchasing it on Steam, GOG, or other "
-	       "digital storefront.\n\n");
+	PrintFmt("If you do not own this game, consider purchasing it on Steam, GOG, or other "
+	         "digital storefront.\n\n");
 	return true;
 }
 
@@ -709,8 +709,8 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 			}
 
 			::missingfiles.push_back(wantfile);
-			Printf(PRINT_WARNING, "Could not resolve resource file \"%s\".",
-			       wantfile.getWantedPath());
+			PrintFmt(PRINT_WARNING, "Could not resolve resource file \"{}\".",
+			         wantfile.getWantedPath());
 			continue;
 		}
 		resolved_wads.push_back(file);
@@ -725,8 +725,8 @@ void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpat
 		if (!M_ResolveWantedFile(file, wantfile))
 		{
 			::missingfiles.push_back(wantfile);
-			Printf(PRINT_WARNING, "Could not resolve patch file \"%s\".",
-			       wantfile.getWantedPath());
+			PrintFmt(PRINT_WARNING, "Could not resolve patch file \"{}\".",
+			         wantfile.getWantedPath());
 			continue;
 		}
 		resolved_patches.push_back(file);
@@ -866,7 +866,7 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 	if (::lastWadRebootSuccess && CheckWantedMatchesLoaded(newwadfiles, newpatchfiles))
 	{
 		// fast track if files have not been changed
-		Printf("Currently loaded resources match server checksums.\n\n");
+		PrintFmt("Currently loaded resources match server checksums.\n\n");
 		return true;
 	}
 
@@ -898,10 +898,10 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 	if (!failmsg.empty())
 	{
 		// Uh oh, loading the new resource set failed for some reason.
-		Printf(PRINT_WARNING,
-		       "Could not load new resource files.\n%s\nReloading previous resource "
-		       "set...\n",
-		       failmsg);
+		PrintFmt(PRINT_WARNING,
+		         "Could not load new resource files.\n{}\nReloading previous resource "
+		         "set...\n",
+		         failmsg);
 
 		D_Shutdown();
 

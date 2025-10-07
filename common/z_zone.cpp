@@ -255,19 +255,19 @@ class OZone
 		for (const auto& [ptr, block] : m_heap)
 		{
 			total += block.size;
-			Printf("0x%p | size:%" "zu" " tag:%s user:0x%p %s:%d\n", (void*)ptr,
-			       block.size, TagStr(block.tag), (void*)block.user,
-			       block.fileLine.shortFile(), block.fileLine.line);
+			PrintFmt("0x{} | size:{} tag:{} user:0x{} {}:{}\n", (void*)ptr,
+			         block.size, TagStr(block.tag), (void*)block.user,
+			         block.fileLine.shortFile(), block.fileLine.line);
 		}
 
 		std::string buf;
-		Printf("  allocation count: %" "zu" "\n", m_heap.size());
+		PrintFmt("  allocation count: {}\n", m_heap.size());
 
 		StrFormatBytes(buf, total);
-		Printf("  allocs size: %s\n", buf);
+		PrintFmt("  allocs size: {}\n", buf);
 
 		StrFormatBytes(buf, m_heap.size() * sizeof(MemoryBlockInfo));
-		Printf("  blocks size: %s\n", buf);
+		PrintFmt("  blocks size: {}\n", buf);
 	}
 } g_zone;
 

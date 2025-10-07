@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	
+//
 //
 //-----------------------------------------------------------------------------
 
@@ -25,7 +25,7 @@
 
 #include "i_input_sdl12.h"
 
-#include "i_sdl.h" 
+#include "i_sdl.h"
 #include "i_input.h"
 
 #include "i_video.h"
@@ -211,7 +211,7 @@ void ISDL12KeyboardInputDevice::resume()
 //
 // ISDL12KeyboardInputDevice::translateKey
 //
-// Performs translation of an SDL_Keysym event to 
+// Performs translation of an SDL_Keysym event to
 // to Odamex's internal key representation.
 //
 int ISDL12KeyboardInputDevice::translateKey(SDL_keysym keysym)
@@ -281,7 +281,7 @@ void ISDL12KeyboardInputDevice::gatherEvents()
 					ev.data2 = ev.data3 = sdl_ev.key.keysym.unicode;
 
 				ev.mod = sdl_ev.key.keysym.mod;
-				
+
 				if (ev.data1)
 					mEvents.push(ev);
 			}
@@ -383,7 +383,7 @@ void ISDL12MouseInputDevice::center()
 			assert(sdl_ev.type == SDL_MOUSEMOTION);
 
 			// drop the events caused by SDL_WarpMouse
-			if (sdl_ev.motion.x == centerx && sdl_ev.motion.y == centery && 
+			if (sdl_ev.motion.x == centerx && sdl_ev.motion.y == centery &&
 				sdl_ev.motion.xrel == centerx - prevx && sdl_ev.motion.yrel == centery - prevy)
 				continue;
 
@@ -563,7 +563,7 @@ ISDL12JoystickInputDevice::ISDL12JoystickInputDevice(int id) :
 	// This turns on automatic event polling for joysticks so that the state
 	// of each button and axis doesn't need to be manually queried each tick. -- Hyper_Eye
 	SDL_JoystickEventState(SDL_ENABLE);
-	
+
 	resume();
 }
 
@@ -707,7 +707,7 @@ void ISDL12JoystickInputDevice::gatherEvents()
 			else if (sdl_ev.type == SDL_JOYHATMOTION && sdl_ev.jhat.which == mJoystickId)
 			{
 				// [SL] A single SDL joystick hat event indicates on/off for each of the
-				// directional triggers for that hat. We need to create a separate 
+				// directional triggers for that hat. We need to create a separate
 				// ev_keydown or ev_keyup event_t instance for each directional trigger
 				// indicated in this SDL joystick event.
 				assert(sdl_ev.jhat.hat < mNumHats);
@@ -834,11 +834,11 @@ void ISDL12InputSubsystem::initKeyboard(int id)
 	std::string device_name;
 	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
 	{
-		if (it->mId == id) 
+		if (it->mId == id)
 			device_name = it->mDeviceName;
 	}
 
-	Printf(PRINT_HIGH, "I_InitInput: intializing %s\n", device_name.c_str());
+	PrintFmt(PRINT_HIGH, "I_InitInput: intializing {}\n", device_name.c_str());
 
 	setKeyboardInputDevice(new ISDL12KeyboardInputDevice(id));
 	registerInputDevice(getKeyboardInputDevice());
@@ -890,11 +890,11 @@ void ISDL12InputSubsystem::initMouse(int id)
 	std::string device_name;
 	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
 	{
-		if (it->mId == id) 
+		if (it->mId == id)
 			device_name = it->mDeviceName;
 	}
 
-	Printf(PRINT_HIGH, "I_InitInput: intializing %s\n", device_name.c_str());
+	PrintFmt(PRINT_HIGH, "I_InitInput: intializing {}\n", device_name.c_str());
 
 	setMouseInputDevice(new ISDL12MouseInputDevice(id));
 	assert(getMouseInputDevice() != NULL);
@@ -950,11 +950,11 @@ void ISDL12InputSubsystem::initJoystick(int id)
 	std::string device_name;
 	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
 	{
-		if (it->mId == id) 
+		if (it->mId == id)
 			device_name = it->mDeviceName;
 	}
 
-	Printf(PRINT_HIGH, "I_InitInput: intializing %s\n", device_name.c_str());
+	PrintFmt(PRINT_HIGH, "I_InitInput: intializing {}\n", device_name.c_str());
 
 	setJoystickInputDevice(new ISDL12JoystickInputDevice(id));
 	registerInputDevice(getJoystickInputDevice());

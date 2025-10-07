@@ -45,7 +45,7 @@ EXTERN_CVAR(snd_musicvolume)
 
 SdlMixerMusicSystem::SdlMixerMusicSystem() : m_isInitialized(false), m_registeredSong()
 {
-	Printf("I_InitMusic: Music playback enabled using SDL_Mixer.\n");
+	PrintFmt("I_InitMusic: Music playback enabled using SDL_Mixer.\n");
 	m_isInitialized = true;
 }
 
@@ -77,7 +77,7 @@ void SdlMixerMusicSystem::startSong(byte* data, size_t length, bool loop)
 
 	if (Mix_PlayMusic(m_registeredSong.Track, loop ? -1 : 1) == -1)
 	{
-		Printf(PRINT_WARNING, "Mix_PlayMusic: %s\n", Mix_GetError());
+		PrintFmt(PRINT_WARNING, "Mix_PlayMusic: {}\n", Mix_GetError());
 		return;
 	}
 
@@ -197,7 +197,7 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 		}
 		else
 		{
-			Printf(PRINT_WARNING, "MUS is not valid\n");
+			PrintFmt(PRINT_WARNING, "MUS is not valid\n");
 		}
 
 		mem_fclose(mus);
@@ -209,7 +209,7 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 
 	if (!m_registeredSong.Data)
 	{
-		Printf(PRINT_WARNING, "SDL_RWFromMem: %s\n", SDL_GetError());
+		PrintFmt(PRINT_WARNING, "SDL_RWFromMem: {}\n", SDL_GetError());
 		return;
 	}
 
@@ -219,8 +219,8 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 	FILE* fp = fopen(TEMP_MIDI, "wb+");
 	if (!fp)
 	{
-		Printf(PRINT_WARNING,
-		       "Could not open temporary music file %s, not playing track\n", TEMP_MIDI);
+		PrintFmt(PRINT_WARNING,
+		         "Could not open temporary music file {}, not playing track\n", TEMP_MIDI);
 		return;
 	}
 
@@ -247,7 +247,7 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 
 	if (!m_registeredSong.Track)
 	{
-		Printf(PRINT_WARNING, "Mix_LoadMUSW: %s\n", Mix_GetError());
+		PrintFmt(PRINT_WARNING, "Mix_LoadMUSW: {}\n", Mix_GetError());
 		return;
 	}
 
@@ -262,7 +262,7 @@ void SdlMixerMusicSystem::_RegisterSong(byte* data, size_t length)
 
 	if (!m_registeredSong.Track)
 	{
-		Printf(PRINT_WARNING, "Mix_LoadMUS_RW: %s\n", Mix_GetError());
+		PrintFmt(PRINT_WARNING, "Mix_LoadMUS_RW: {}\n", Mix_GetError());
 		return;
 	}
 

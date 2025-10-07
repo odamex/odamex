@@ -93,7 +93,7 @@ bool VoteState::get(vote_state_t &vote_state) {
 //////// CALLBACKS & ERRBACKS ////////
 
 void CMD_MapVoteErrback(const std::string &error) {
-	Printf(PRINT_HIGH, "callvote failed: %s\n", error);
+	PrintFmt(PRINT_HIGH, "callvote failed: {}\n", error);
 }
 
 void CMD_MapVoteCallback(const maplist_qrows_t &result) {
@@ -118,7 +118,7 @@ void CMD_MapVoteCallback(const maplist_qrows_t &result) {
 }
 
 void CMD_RandmapVoteErrback(const std::string &error) {
-	Printf(PRINT_HIGH, "callvote failed: %s\n", error);
+	PrintFmt(PRINT_HIGH, "callvote failed: {}\n", error);
 }
 
 void CMD_RandmapVoteCallback(const maplist_qrows_t &result) {
@@ -145,7 +145,7 @@ void CMD_RandmapVoteCallback(const maplist_qrows_t &result) {
 BEGIN_COMMAND(callvote) {
 	// Dumb question, but are we even connected to a server?
 	if (!connected) {
-		Printf(PRINT_HIGH, "callvote failed: You are not connected to a server.\n");
+		PrintFmt(PRINT_HIGH, "callvote failed: You are not connected to a server.\n");
 		return;
 	}
 
@@ -169,7 +169,7 @@ BEGIN_COMMAND(callvote) {
 
 		if (votecmd == VOTE_NONE) {
 			// We passed an argument but it wasn't a valid vote type.
-			Printf(PRINT_HIGH, "callvote failed: Invalid vote \"%s\".\n", votecmd_s);
+			PrintFmt(PRINT_HIGH, "callvote failed: Invalid vote \"{}\".\n", votecmd_s);
 			return;
 		}
 	}
@@ -203,7 +203,7 @@ BEGIN_COMMAND(callvote) {
 	case VOTE_MAP:
 		// If we have no arguments, ask for more.
 		if (arguments.empty()) {
-			Printf(PRINT_HIGH, "callvote failed: \"map\" callvote needs a maplist index or unambiguous map name.\n");
+			PrintFmt(PRINT_HIGH, "callvote failed: \"map\" callvote needs a maplist index or unambiguous map name.\n");
 			return;
 		}
 
@@ -241,7 +241,7 @@ BEGIN_COMMAND(vote_yes)
 {
 	if (!connected)
 	{
-		Printf(PRINT_HIGH, "vote failed: You are not connected to a server.\n");
+		PrintFmt(PRINT_HIGH, "vote failed: You are not connected to a server.\n");
 		return;
 	}
 
@@ -259,7 +259,7 @@ BEGIN_COMMAND(vote_no)
 {
 	if (!connected)
 	{
-		Printf(PRINT_HIGH, "vote failed: You are not connected to a server.\n");
+		PrintFmt(PRINT_HIGH, "vote failed: You are not connected to a server.\n");
 		return;
 	}
 

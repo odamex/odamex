@@ -47,7 +47,6 @@
 
 #include "d_netinf.h"
 #include "i_net.h"
-#include "huffman.h"
 
 #include "p_snapshot.h"
 #include "d_netcmd.h"
@@ -188,9 +187,9 @@ public:
 	weapontype_t	pendingweapon;
 	weapontype_t	readyweapon;
 
-	bool		weaponowned[NUMWEAPONS+1];
-	int			ammo[NUMAMMO];
-	int			maxammo[NUMAMMO];
+	std::array<bool, NUMWEAPONS+1> weaponowned;
+	std::array<int, NUMAMMO> ammo;
+	std::array<int, NUMAMMO> maxammo;
 
     // True if button down last tic.
 	int			attackdown, usedown;
@@ -280,12 +279,6 @@ public:
 			{
 				data.resize(0);
 			}
-
-			oldPacket_t(const oldPacket_t& other)
-			{
-				sequence = other.sequence;
-				data = other.data;
-			}
 		};
 
 		netadr_t    address;
@@ -316,17 +309,11 @@ public:
 		bool        allow_rcon;     // allow remote admin
 		bool		displaydisconnect; // display disconnect message when disconnecting
 
-		huffman_server	compressor;	// denis - adaptive huffman compression
-
-		class download_t
+		struct download_t
 		{
-		public:
-			std::string name;
-			std::string md5;
-			unsigned int next_offset;
-
-			download_t() : name(""), md5(""), next_offset(0) {}
-			download_t(const download_t& other) : name(other.name), md5(other.md5), next_offset(other.next_offset) {}
+			std::string name = "";
+			std::string md5  = "";
+			unsigned int next_offset = 0;
 		} download;
 
 		client_t()
@@ -357,9 +344,8 @@ public:
 			digest = "";
 			allow_rcon = false;
 			displaydisconnect = true;
-		/*
-		huffman_server	compressor;	// denis - adaptive huffman compression*/
 		}
+
 		client_t(const client_t &other)
 			: address(other.address),
 			netbuf(other.netbuf),
@@ -378,13 +364,43 @@ public:
 			digest(other.digest),
 			allow_rcon(false),
 			displaydisconnect(true),
-			compressor(other.compressor),
 			download(other.download)
 		{
 			for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
 			{
 				oldpackets[i] = other.oldpackets[i];
 			}
+		}
+
+		client_t& operator=(const client_t& other)
+		{
+			if (this == &other)
+				return *this;
+
+			address = other.address;
+			netbuf = other.netbuf;
+			reliablebuf = other.reliablebuf;
+			version = other.version;
+			packedversion = other.packedversion;
+			sequence = other.sequence;
+			last_sequence = other.last_sequence;
+			packetnum = other.packetnum;
+			rate = other.rate;
+			reliable_bps = other.reliable_bps;
+			unreliable_bps = other.unreliable_bps;
+			last_received = other.last_received;
+			lastcmdtic = other.lastcmdtic;
+			lastclientcmdtic = other.lastclientcmdtic;
+			digest = other.digest;
+			allow_rcon = false;
+			displaydisconnect = true;
+			download = other.download;
+			for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
+			{
+				oldpackets[i] = other.oldpackets[i];
+			}
+
+			return *this;
 		}
 	} client;
 

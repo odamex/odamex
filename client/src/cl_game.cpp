@@ -305,8 +305,8 @@ BEGIN_COMMAND (turnspeeds)
 {
 	if (argc == 1)
 	{
-		Printf (PRINT_HIGH, "Current turn speeds: %d %d %d\n",
-				angleturn[0], angleturn[1], angleturn[2]);
+		PrintFmt(PRINT_HIGH, "Current turn speeds: {} {} {}\n",
+				 angleturn[0], angleturn[1], angleturn[2]);
 	}
 	else
 	{
@@ -350,8 +350,8 @@ BEGIN_COMMAND (togglerun)
 {
 	cl_run.Set(!cl_run.value());
 
-	Printf(PRINT_HIGH, "Always run %s\n",
-			cl_run.value() ? "on" : "off");
+	PrintFmt(PRINT_HIGH, "Always run {}\n",
+			 cl_run.value() ? "on" : "off");
 }
 END_COMMAND (togglerun)
 
@@ -841,7 +841,7 @@ int outrate;
 
 BEGIN_COMMAND(netstat)
 {
-    Printf (PRINT_HIGH, "in = %d  out = %d \n", netin, netout);
+    PrintFmt(PRINT_HIGH, "in = {}  out = {} \n", netin, netout);
 }
 END_COMMAND(netstat)
 
@@ -1073,8 +1073,8 @@ void G_Ticker (void)
 				MSG_WriteMarker(&net_buffer, clc_disconnect);
 				NET_SendPacket(net_buffer, serveraddr);
 
-				Printf(PRINT_WARNING,
-				       "Got unknown challenge %d while connecting, disconnecting.\n", type);
+				PrintFmt(PRINT_WARNING,
+				         "Got unknown challenge {} while connecting, disconnecting.\n", type);
 			}
 		}
 	}
@@ -1572,7 +1572,7 @@ void G_DoLoadGame (void)
 	FILE *stdfile = fopen (savename.c_str(), "rb");
 	if (stdfile == NULL)
 	{
-		Printf (PRINT_HIGH, "Could not read savegame '%s'\n", savename);
+		PrintFmt(PRINT_HIGH, "Could not read savegame '{}'\n", savename);
 		return;
 	}
 
@@ -1580,13 +1580,13 @@ void G_DoLoadGame (void)
 	size_t readlen = fread (text, 16, 1, stdfile);
 	if (readlen < 1)
 	{
-		Printf (PRINT_HIGH, "Failed to read savegame '%s'\n", savename);
+		PrintFmt(PRINT_HIGH, "Failed to read savegame '{}'\n", savename);
 		fclose(stdfile);
 		return;
 	}
 	if (strncmp (text, SAVESIG, 16))
 	{
-		Printf (PRINT_HIGH, "Savegame '%s' is from a different version\n", savename);
+		PrintFmt(PRINT_HIGH, "Savegame '{}' is from a different version\n", savename);
 
 		fclose(stdfile);
 
@@ -1595,7 +1595,7 @@ void G_DoLoadGame (void)
 	readlen = fread (text, 8, 1, stdfile);
 	if (readlen < 1)
 	{
-		Printf (PRINT_HIGH, "Failed to read savegame '%s'\n", savename);
+		PrintFmt(PRINT_HIGH, "Failed to read savegame '{}'\n", savename);
 		fclose(stdfile);
 		return;
 	}
@@ -1606,9 +1606,9 @@ void G_DoLoadGame (void)
 	FLZOFile savefile (stdfile, FFile::EReading);
 
 	if (!savefile.IsOpen ())
-		I_Error ("Savegame '{}' is corrupt\n", savename);
+		I_Error("Savegame '{}' is corrupt\n", savename);
 
-	Printf (PRINT_HIGH, "Loading savegame '%s'...\n", savename);
+	PrintFmt(PRINT_HIGH, "Loading savegame '{}'...\n", savename);
 
 	CL_QuitNetGame(NQ_SILENT);
 
@@ -1726,7 +1726,7 @@ void G_DoSaveGame()
 	xbox_WriteSaveMeta(name.substr(0, name.rfind(PATHSEPCHAR)), description.c_str());
 #endif
 
-	Printf (PRINT_HIGH, "Saving game to '%s'...\n", name);
+	PrintFmt(PRINT_HIGH, "Saving game to '{}'...\n", name);
 
 	fwrite (description.c_str(), SAVESTRINGSIZE, 1, stdfile);
 	fwrite (SAVESIG, 16, 1, stdfile);
@@ -1756,7 +1756,7 @@ void G_DoSaveGame()
 		arc << ACS_WorldVars[i];
 		ACSWorldGlobalArray worldarr = ACS_WorldArrays[i];
 		arc << worldarr.size();
-		for (const auto [key, val] : worldarr)
+		for (const auto& [key, val] : worldarr)
 		{
 			arc << key;
 			arc << val;
@@ -1768,7 +1768,7 @@ void G_DoSaveGame()
 		arc << ACS_GlobalVars[i];
 		ACSWorldGlobalArray globalarr = ACS_GlobalArrays[i];
 		arc << globalarr.size();
-		for (const auto [key, val] : globalarr)
+		for (const auto& [key, val] : globalarr)
 		{
 			arc << key;
 			arc << val;
@@ -1781,7 +1781,7 @@ void G_DoSaveGame()
 	gameaction = ga_nothing;
 	savedescription[0] = 0;
 
-	Printf (PRINT_HIGH, "%s\n", GStrings(GGSAVED));
+	PrintFmt(PRINT_HIGH, "{}\n", GStrings(GGSAVED));
 	arc.Close ();
 
     if (level.info->snapshot != NULL)
@@ -1865,12 +1865,12 @@ BEGIN_COMMAND(playdemo)
 		}
 		else
 		{
-			Printf(PRINT_WARNING, "Cannot play demo because WAD didn't load\n");
-			Printf(PRINT_WARNING, "Use the 'wad' command\n");
+			PrintFmt(PRINT_WARNING, "Cannot play demo because WAD didn't load\n");
+			PrintFmt(PRINT_WARNING, "Use the 'wad' command\n");
 		}
 	}
 	else
-		Printf(PRINT_HIGH, "Usage: playdemo lumpname or file\n");
+		PrintFmt(PRINT_HIGH, "Usage: playdemo lumpname or file\n");
 }
 END_COMMAND(playdemo)
 
@@ -1883,7 +1883,7 @@ BEGIN_COMMAND(streamdemo)
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "Usage: streamdemo lumpname or file\n");
+		PrintFmt(PRINT_HIGH, "Usage: streamdemo lumpname or file\n");
 	}
 }
 END_COMMAND(streamdemo)
@@ -1919,7 +1919,7 @@ void G_DoPlayDemo(bool justStreamInput)
 		std::string found = M_FindUserFileName(::defdemoname, ".lmp");
 		if (found.empty())
 		{
-			Printf(PRINT_WARNING, "Could not find demo %s\n", ::defdemoname);
+			PrintFmt(PRINT_WARNING, "Could not find demo {}\n", ::defdemoname);
 			gameaction = ga_fullconsole;
 			return;
 		}
@@ -1936,7 +1936,7 @@ void G_DoPlayDemo(bool justStreamInput)
 		if (bytelen)
 			Z_Free(demobuffer);
 
-		Printf(PRINT_WARNING, "DOOM Demo file too short\n");
+		PrintFmt(PRINT_WARNING, "DOOM Demo file too short\n");
 		gameaction = ga_fullconsole;
 		return;
 	}
@@ -1950,7 +1950,7 @@ void G_DoPlayDemo(bool justStreamInput)
 		demo_p[0] == DOOM_1_9p_DEMO ||
 		demo_p[0] == DOOM_1_9_1_DEMO)
 	{
-		Printf(PRINT_HIGH, "Playing DOOM demo %s\n", defdemoname);
+		PrintFmt(PRINT_HIGH, "Playing DOOM demo {}\n", defdemoname);
 
 		demostartgametic = gametic;
 		demoversion = *demo_p++ == DOOM_1_9_1_DEMO ? LMP_DOOM_1_9_1 : LMP_DOOM_1_9;
@@ -1991,7 +1991,7 @@ void G_DoPlayDemo(bool justStreamInput)
 			if (!validplayer(con))
 			{
 				Z_Free(demobuffer);
-				Printf(PRINT_HIGH, "DOOM Demo: invalid console player %d of %lu\n", who + 1, players.size());
+				PrintFmt(PRINT_HIGH, "DOOM Demo: invalid console player {} of {}\n", who + 1, players.size());
 				gameaction = ga_fullconsole;
 				return;
 			}
@@ -2063,7 +2063,7 @@ void G_DoPlayDemo(bool justStreamInput)
 	}
 	else
 	{
-		Printf(PRINT_WARNING, "Unsupported demo format.  If you are trying to play an Odamex " \
+		PrintFmt(PRINT_WARNING, "Unsupported demo format.  If you are trying to play an Odamex " \
 						"netdemo, please use the netplay command\n");
 		gameaction = ga_nothing;
 	}
@@ -2144,9 +2144,13 @@ bool G_CheckDemoStatus (void)
 			AActor *mo = idplayer(1).mo;
 
 			if (mo)
-				Printf(PRINT_HIGH, "demotest:%x %x %x %x\n", mo->angle, mo->x, mo->y, mo->z);
+				PrintFmt(PRINT_HIGH, "demotest:{:x} {:x} {:x} {:x}\n",
+					static_cast<uint32_t>(mo->angle),
+					static_cast<uint32_t>(mo->x),
+					static_cast<uint32_t>(mo->y),
+					static_cast<uint32_t>(mo->z));
 			else
-				Printf(PRINT_WARNING, "demotest:no player\n");
+				PrintFmt(PRINT_WARNING, "demotest:no player\n");
 
 			demotest = false;
 
@@ -2164,15 +2168,15 @@ bool G_CheckDemoStatus (void)
 				int realtics = endtime * TICRATE / 1000;
 				float fps = float(gametic * TICRATE) / realtics;
 
-				Printf(PRINT_HIGH, "timed %i gametics in %i realtics (%.1f fps)\n",
-						gametic, realtics, fps);
+				PrintFmt(PRINT_HIGH, "timed {} gametics in {} realtics ({:.1f} fps)\n",
+				         gametic, realtics, fps);
 
 				// exit the application
 				CL_QuitCommand();
 				return false;
 			}
 			else
-				Printf (PRINT_HIGH, "Demo ended.\n");
+				PrintFmt(PRINT_HIGH, "Demo ended.\n");
 
 			demoplayback = false;
 			gameaction = ga_fullconsole;

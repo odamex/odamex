@@ -99,7 +99,7 @@ void CL_ClearPlayerJustTeleported(player_t* player);
 void CL_ClearSectorSnapshots();
 player_t& CL_FindPlayer(size_t id);
 std::string CL_GenerateNetDemoFileName(
-    const std::string& filename = cl_netdemoname.cstring());
+    const std::string& filename = cl_netdemoname.str());
 bool CL_PlayerJustTeleported(player_t* player);
 void CL_QuitAndTryDownload(const OWantFile& missing_file);
 void CL_ResyncWorldIndex();
@@ -200,7 +200,7 @@ static void CL_Disconnect(const odaproto::svc::Disconnect* msg)
 		buffer = fmt::sprintf("Disconnected from server\n");
 	}
 
-	Printf("%s", msg->message());
+	PrintFmt("{}", msg->message());
 	CL_QuitNetGame(NQ_SILENT);
 }
 
@@ -212,7 +212,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	player_t& p = consoleplayer();
 
 	uint32_t weaponowned = msg->player().weaponowned();
-	UnpackBoolArray(p.weaponowned, NUMWEAPONS, weaponowned);
+	UnpackBoolArray(p.weaponowned.data(), NUMWEAPONS, weaponowned);
 
 	uint32_t cards = msg->player().cards();
 	UnpackBoolArray(p.cards, NUMCARDS, cards);
@@ -787,9 +787,9 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 		OWantFile file;
 		if (!OWantFile::makeWithHash(file, name, OFILE_WAD, hash))
 		{
-			Printf(PRINT_WARNING,
-			       "Could not construct wanted file \"%s\" that server requested.\n",
-			       name);
+			PrintFmt(PRINT_WARNING,
+			         "Could not construct wanted file \"{}\" that server requested.\n",
+			         name);
 			CL_QuitNetGame(NQ_DISCONNECT);
 			return;
 		}
@@ -810,9 +810,9 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 		OWantFile file;
 		if (!OWantFile::makeWithHash(file, name, OFILE_DEH, hash))
 		{
-			Printf(PRINT_WARNING,
-			       "Could not construct wanted patch \"%s\" that server requested.\n",
-			       name);
+			PrintFmt(PRINT_WARNING,
+			         "Could not construct wanted patch \"{}\" that server requested.\n",
+			         name);
 			CL_QuitNetGame(NQ_DISCONNECT);
 			return;
 		}
@@ -830,7 +830,7 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	{
 		if (::missingCommercialIWAD)
 		{
-			Printf(PRINT_WARNING, "Server requires commercial IWAD that was not found.\n");
+			PrintFmt(PRINT_WARNING, "Server requires commercial IWAD that was not found.\n");
 			CL_QuitNetGame(NQ_DISCONNECT);
 			return;
 		}
@@ -1320,7 +1320,7 @@ static void CL_FireWeapon(const odaproto::svc::FireWeapon* msg)
 	weapontype_t firedweap = static_cast<weapontype_t>(msg->readyweapon());
 	if (firedweap < 0 || firedweap > wp_nochange)
 	{
-		Printf("CL_FireWeapon: unknown weapon %d\n", firedweap);
+		PrintFmt("CL_FireWeapon: unknown weapon {}\n", firedweap);
 		return;
 	}
 	int servertic = msg->servertic();
@@ -1387,13 +1387,13 @@ static void CL_Print(const odaproto::svc::Print* msg)
 
 	// TODO : Clientchat moved, remove that but PRINT_SERVERCHAT
 	if (level == PRINT_CHAT)
-		Printf(level, "%c*%s", TEXTCOLOR_ESCAPE, str);
+		PrintFmt(level, "{:c}*{}", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_TEAMCHAT)
-		Printf(level, "%c!%s", TEXTCOLOR_ESCAPE, str);
+		PrintFmt(level, "{:c}!{}", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_SERVERCHAT)
-		Printf(level, "%s%s", TEXTCOLOR_YELLOW, str);
+		PrintFmt(level, "{}", TEXTCOLOR_YELLOW, str);
 	else
-		Printf(level, "%s", str);
+		PrintFmt(level, "{}", str);
 
 	if (show_messages)
 	{
@@ -1814,9 +1814,9 @@ static void CL_Say(const odaproto::svc::Say* msg)
 	if (message_visibility == 0)
 	{
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(publicmsg, "* %s %s\n", name, &message[4]);
+			PrintFmt(publicmsg, "* {} {}\n", name, &message[4]);
 		else
-			Printf(publicmsg, "%s: %s\n", name, message);
+			PrintFmt(publicmsg, "{}: {}\n", name, message);
 
 		if (show_messages && !filtermessage)
 		{
@@ -1827,9 +1827,9 @@ static void CL_Say(const odaproto::svc::Say* msg)
 	else if (message_visibility == 1)
 	{
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(publicteammsg, "* %s %s\n", name, &message[4]);
+			PrintFmt(publicteammsg, "* {} {}\n", name, &message[4]);
 		else
-			Printf(publicteammsg, "%s: %s\n", name, message);
+			PrintFmt(publicteammsg, "{}: {}\n", name, message);
 
 		if (show_messages && cl_chatsounds && !filtermessage)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
@@ -2006,10 +2006,8 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 	if (!::hud_revealsecrets || ::hud_revealsecrets > 2)
 		return;
 
-	std::string buf;
-	buf = fmt::sprintf("%s%s %sfound a secret!\n", TEXTCOLOR_YELLOW,
-	                   player.userinfo.netname, TEXTCOLOR_NORMAL);
-	Printf("%s", buf);
+	PrintFmt("{}", "{}{} {}found a secret!\n", TEXTCOLOR_YELLOW,
+	                player.userinfo.netname, TEXTCOLOR_NORMAL);
 
 	if (::hud_revealsecrets == 1)
 		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
@@ -2090,7 +2088,7 @@ static void CL_ServerGametic(const odaproto::svc::ServerGametic* msg)
 	::last_svgametic = newtic;
 
 #ifdef _WORLD_INDEX_DEBUG_
-	Printf(PRINT_HIGH, "Gametic %i, received world index %i\n", gametic, last_svgametic);
+	PrintFmt(PRINT_HIGH, "Gametic {}, received world index {}\n", gametic, last_svgametic);
 #endif // _WORLD_INDEX_DEBUG_
 }
 
@@ -2296,11 +2294,11 @@ static void CL_PlayerQueuePos(const odaproto::svc::PlayerQueuePos* msg)
 	{
 		if (queuePos > 0 && player.QueuePosition == 0)
 		{
-			Printf(PRINT_HIGH, "Position in line to play: %u\n", queuePos);
+			PrintFmt(PRINT_HIGH, "Position in line to play: {}\n", queuePos);
 		}
 		else if (player.spectator && queuePos == 0 && player.QueuePosition > 0)
 		{
-			Printf(PRINT_HIGH, "You have been removed from the queue.\n");
+			PrintFmt(PRINT_HIGH, "You have been removed from the queue.\n");
 		}
 	}
 
@@ -2396,6 +2394,7 @@ static void CL_SectorProperties(const odaproto::svc::SectorProperties* msg)
 			sector->base_ceiling_yoffs = msg->sector().base_ceiling_yoffs();
 			sector->base_floor_angle = msg->sector().base_floor_angle();
 			sector->base_floor_yoffs = msg->sector().base_floor_yoffs();
+			break;
 		case SPC_Special:
 			sector->special = msg->sector().special();
 		default:
@@ -2574,7 +2573,7 @@ static void CL_ExecuteACSSpecial(const odaproto::svc::ExecuteACSSpecial* msg)
 		break;
 
 	default:
-		Printf(PRINT_HIGH, "Invalid ACS special: %d", special);
+		PrintFmt(PRINT_HIGH, "Invalid ACS special: {}", special);
 		break;
 	}
 }

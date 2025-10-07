@@ -88,7 +88,7 @@ extern int				NumParticles;
 extern int				ActiveParticles;
 extern int				InactiveParticles;
 extern particle_t		*Particles;
-TArray<WORD>			ParticlesInSubsec;
+std::vector<WORD>		ParticlesInSubsec;
 
 
 
@@ -324,8 +324,8 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 #if 0
 	if ((colfrac - vis->xiscale) >> FRACBITS != end)
 	{
-		Printf(PRINT_WARNING, "Bad vissprite bounds check! (pw:%d  ex:%d  act:%d)\n",
-		       patchWidth, end, colfrac >> FRACBITS);
+		PrintFmt(PRINT_WARNING, "Bad vissprite bounds check! (pw:{}  ex:{}  act:{})\n",
+		         patchWidth, end, colfrac >> FRACBITS);
 	}
 #endif
 
@@ -1136,12 +1136,8 @@ void R_ClearParticles (void)
 
 void R_FindParticleSubsectors ()
 {
-	if (ParticlesInSubsec.Size() < (size_t)numsubsectors)
-		ParticlesInSubsec.Reserve(numsubsectors - ParticlesInSubsec.Size());
-
 	// fill the buffer with NO_PARTICLE
-	for (int i = 0; i < numsubsectors; i++)
-		ParticlesInSubsec[i] = NO_PARTICLE;
+	ParticlesInSubsec.assign(numsubsectors, NO_PARTICLE);
 
 	if (!r_particles)
 		return;

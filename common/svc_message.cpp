@@ -76,7 +76,7 @@ odaproto::svc::PlayerInfo SVC_PlayerInfo(player_t& player)
 {
 	odaproto::svc::PlayerInfo msg;
 
-	uint32_t packedweapons = PackBoolArray(player.weaponowned, NUMWEAPONS);
+	uint32_t packedweapons = PackBoolArray(player.weaponowned.data(), NUMWEAPONS);
 	msg.mutable_player()->set_weaponowned(packedweapons);
 
 	uint32_t packedcards = PackBoolArray(player.cards, NUMCARDS);

@@ -24,7 +24,6 @@
 #pragma once
 
 #include <stdlib.h>
-#include "tarray.h"
 
 class FArchive;
 
@@ -196,13 +195,13 @@ public:
 	static void STACK_ARGS StaticShutdown ();
 
 private:
-	static TArray<DObject *> Objects;
-	static TArray<size_t> FreeIndices;
-	static TArray<DObject *> ToDestroy;
+	static inline std::vector<DObject *> Objects{};
+	static inline std::vector<size_t> FreeIndices{};
+	static inline std::vector<DObject *> ToDestroy{};
 
 	void RemoveFromArray ();
 
-	static bool Inactive;
+	static inline bool Inactive;
 	size_t Index;
 };
 

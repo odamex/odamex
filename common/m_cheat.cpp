@@ -46,7 +46,7 @@ EXTERN_CVAR(sv_allowcheats)
 extern bool automapactive;
 #endif
 
-void C_DoCommand(const char* cmd, uint32_t key = 0);
+void C_DoCommand(std::string_view cmd, uint32_t key = 0);
 
 //
 // CHEAT SEQUENCE PACKAGE
@@ -97,7 +97,7 @@ bool CHEAT_IdMyPos(cheatseq_t* cheat)
 
 bool CHEAT_BeholdMenu(cheatseq_t* cheat)
 {
-	Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_BEHOLD));
+	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STSTR_BEHOLD));
 	return false;
 }
 
@@ -196,7 +196,7 @@ BEGIN_COMMAND(summon)
 
 	if (!CHEAT_ValidSummonActor(mobname))
 	{
-		Printf(PRINT_HIGH, "Invalid summon argument: %s. Please use `dumpactors` for a valid list of actor names.\n", mobname);
+		PrintFmt(PRINT_HIGH, "Invalid summon argument: {}. Please use `dumpactors` for a valid list of actor names.\n", mobname);
 		return;
 	}
 
@@ -238,17 +238,17 @@ bool CHEAT_AreCheatsEnabled()
 	{
 		if (!sv_allowcheats)
 		{
-			Printf(PRINT_WARNING,
-			       "You must 'set sv_allowcheats 1' in the console to enable "
-			       "this command on this difficulty.\n");
+			PrintFmt(PRINT_WARNING,
+			         "You must 'set sv_allowcheats 1' in the console to enable "
+			         "this command on this difficulty.\n");
 			return false;
 		}
 	}
 
 	if ((multiplayer || !G_IsCoopGame()) && !sv_allowcheats)
 	{
-		Printf(PRINT_WARNING, "You must run the server with '+set sv_allowcheats 1' to "
-		                      "enable this command.\n");
+		PrintFmt(PRINT_WARNING, "You must run the server with '+set sv_allowcheats 1' to "
+		                        "enable this command.\n");
 		return false;
 	}
 
@@ -523,7 +523,7 @@ void CHEAT_GiveTo(player_t* player, const char* name)
 	gitem_t* it;
 
 	if (player != &consoleplayer())
-		Printf(PRINT_HIGH, "%s is a cheater: give %s\n", player->userinfo.netname,
+		PrintFmt(PRINT_HIGH, "{} is a cheater: give {}\n", player->userinfo.netname,
 		       name);
 
 	if (stricmp(name, "all") == 0)
@@ -622,7 +622,7 @@ void CHEAT_GiveTo(player_t* player, const char* name)
 		if (!it)
 		{
 			if (player == &consoleplayer())
-				Printf(PRINT_HIGH, "Unknown item\n");
+				PrintFmt(PRINT_HIGH, "Unknown item\n");
 			return;
 		}
 	}

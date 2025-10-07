@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -25,18 +25,6 @@
 #include <stdlib.h>
 #include <list>
 #include "m_memio.h"
-
-static byte gm_system_on[] = {
-	0xF0, 0x7E, 0x7F, 0x09, 0x01, 0xF7
-};
-
-static byte gs_reset[] = {
-	0xF0, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7F, 0x00, 0x41, 0xF7
-};
-
-static byte xg_system_on[] = {
-	0xF0, 0x43, 0x10, 0x4C, 0x00, 0x00, 0x7E, 0x00, 0xF7
-};
 
 typedef enum
 {
@@ -130,16 +118,16 @@ public:
 	MidiEvent(unsigned int time, midi_event_type_t type) :
 		mTime(time), mType(type)
 	{ }
-	
+
 	MidiEvent(const MidiEvent &other) :
 		mTime(other.mTime), mType(other.mType)
 	{ }
-	
+
 	virtual ~MidiEvent() { }
 
 	unsigned int getMidiClockTime() const { return mTime; }
 	virtual midi_event_type_t getEventType() const { return mType; }
-	
+
 private:
 	unsigned int		mTime;
 	midi_event_type_t	mType;
@@ -158,13 +146,13 @@ public:
 			memcpy(mData, data, mLength);
 		}
 	}
-	
+
 	virtual ~MidiMetaEvent()
 	{
 		if (mData)
 			delete mData;
 	}
-	
+
 	virtual size_t getDataLength() const { return mLength; }
 	virtual const byte* getData() const	{ return mData; }
 	virtual midi_meta_event_type_t getMetaType() const { return mMetaType; }
@@ -188,13 +176,13 @@ public:
 			memcpy(mData, data, mLength);
 		}
 	}
-	
+
 	virtual ~MidiSysexEvent()
 	{
 		if (mData)
 			delete mData;
 	}
-	
+
 	virtual size_t getDataLength() const { return mLength; }
 	virtual const byte* getData() const	{ return mData; }
 
@@ -211,13 +199,13 @@ public:
 					 byte param1, byte param2 = 0) :
 		MidiEvent(time, type), mChannel(channel), mParam1(param1), mParam2(param2)
 	{ }
-	
+
 	virtual ~MidiChannelEvent() {}
-	
+
 	byte getChannel() const { return mChannel; }
 	byte getParam1() const { return mParam1; }
 	byte getParam2() const { return mParam2; }
-	
+
 private:
 	byte				mChannel;
 	byte				mParam1;
@@ -233,11 +221,11 @@ public:
 		MidiChannelEvent(time, MIDI_EVENT_CONTROLLER, channel, param1, 0),
 		mControllerType(controllertype)
 	{ }
-	
+
 	virtual ~MidiControllerEvent() {}
-	
+
 	midi_controller_t getControllerType() const { return mControllerType; }
-	
+
 private:
 	midi_controller_t	mControllerType;
 };
@@ -248,12 +236,12 @@ class MidiSong
 public:
 	MidiSong(byte* data, size_t length);
 	~MidiSong();
-	
+
 	unsigned short getTimeDivision() { return mTimeDivision; }
-	
+
 	typedef std::list<MidiEvent*>::iterator iterator;
 	typedef std::list<MidiEvent*>::const_iterator const_iterator;
-	
+
 	// Allow iteration through a song's events
 	iterator begin() { return mEvents.begin(); }
 	const_iterator begin() const { return mEvents.begin(); }
@@ -263,7 +251,7 @@ public:
 private:
 	std::list<MidiEvent*>	mEvents;
 	unsigned short			mTimeDivision;
-	
+
 	void _ParseSong(MEMFILE *mf);
 };
 

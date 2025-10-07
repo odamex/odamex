@@ -2139,7 +2139,7 @@ struct FThinkerCollection
 	DThinker *Obj;
 };
 
-static TArray<FThinkerCollection> Collection;
+static std::vector<FThinkerCollection> Collection;
 
 void AdjustPusher (int tag, int magnitude, int angle, DPusher::EPusher type)
 {
@@ -2153,29 +2153,24 @@ void AdjustPusher (int tag, int magnitude, int angle, DPusher::EPusher type)
 			if ((collect.RefNum = ((DPusher *)collect.Obj)->CheckForSectorMatch (type, tag)) >= 0)
 			{
 				((DPusher *)collect.Obj)->ChangeValues (magnitude, angle);
-				Collection.Push (collect);
+				Collection.push_back(collect);
 			}
 		}
 	}
 
-	size_t numcollected = Collection.Size ();
 	int secnum = -1;
 
 	// Now create pushers for any sectors that don't already have them.
 	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
 	{
-		size_t i;
-		for (i = 0; i < numcollected; i++)
-		{
-			if (Collection[i].RefNum == sectors[secnum].tag)
-				break;
-		}
-		if (i == numcollected)
+		if (Collection.end() ==
+		    std::find_if(Collection.begin(), Collection.end(),
+		                 [&](const auto& c){ return c.RefNum == sectors[secnum].tag; }))
 		{
 			new DPusher (type, NULL, magnitude, angle, NULL, secnum);
 		}
 	}
-	Collection.Clear ();
+	Collection.clear();
 }
 
 FUNC(LS_Sector_SetWind)
@@ -2259,29 +2254,24 @@ FUNC(LS_Scroll_Texture_Both)
 					lines[sides[collect.RefNum].linenum].sidenum[sidechoice] == collect.RefNum)
 				{
 					((DScroller *)collect.Obj)->SetRate (dx, dy);
-					Collection.Push (collect);
+					Collection.push_back(collect);
 				}
 			}
 		}
 
-		size_t numcollected = Collection.Size ();
 		int linenum = -1;
 
 		// Now create scrollers for any walls that don't already have them.
 		while ((linenum = P_FindLineFromID (arg0, linenum)) >= 0)
 		{
-			size_t i;
-			for (i = 0; i < numcollected; i++)
-			{
-				if (Collection[i].RefNum == lines[linenum].sidenum[sidechoice])
-					break;
-			}
-			if (i == numcollected)
+			if (Collection.end() ==
+			    std::find_if(Collection.begin(), Collection.end(),
+							 [&](const auto& c){ return c.RefNum == lines[linenum].sidenum[sidechoice]; }))
 			{
 				new DScroller (DScroller::sc_side, dx, dy, -1, lines[linenum].sidenum[sidechoice], 0);
 			}
 		}
-		Collection.Clear ();
+		Collection.clear();
 	}
 
 	return true;

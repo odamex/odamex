@@ -579,8 +579,8 @@ END_COMMAND(bind)
 BEGIN_COMMAND(unbind)
 {
 	if (argc < 2) {
-		Printf(PRINT_WARNING, "Unbinds a key. \"all\" unbinds every key.\n");
-		Printf(PRINT_WARNING, "Usage: unbind <key>\n");
+		PrintFmt(PRINT_WARNING, "Unbinds a key. \"all\" unbinds every key.\n");
+		PrintFmt(PRINT_WARNING, "Usage: unbind <key>\n");
 		return;
 	}
 
@@ -603,8 +603,8 @@ BEGIN_COMMAND(undoublebind)
 {
 	if (argc < 2)
 	{
-		Printf(PRINT_WARNING, "Unbinds a doublekey. \"all\" unbinds every doublebind key.\n");
-		Printf(PRINT_WARNING, "Usage: undoublebind <key>\n");
+		PrintFmt(PRINT_WARNING, "Unbinds a doublekey. \"all\" unbinds every doublebind key.\n");
+		PrintFmt(PRINT_WARNING, "Usage: undoublebind <key>\n");
 		return;
 	}
 
@@ -626,8 +626,8 @@ BEGIN_COMMAND(unambind)
 {
 	if (argc < 2)
 	{
-		Printf(PRINT_WARNING, "Unbinds an automap key. \"all\" unbinds every automap key.\n");
-		Printf(PRINT_WARNING, "Usage: unambind <key>\n");
+		PrintFmt(PRINT_WARNING, "Unbinds an automap key. \"all\" unbinds every automap key.\n");
+		PrintFmt(PRINT_WARNING, "Usage: unambind <key>\n");
 		return;
 	}
 
@@ -652,9 +652,9 @@ BEGIN_COMMAND(unnetdemobind)
 {
 	if (argc < 2)
 	{
-		Printf(PRINT_WARNING,
-		       "Unbinds a netdemo key. \"all\" unbinds every existing netdemo key.\n");
-		Printf(PRINT_WARNING, "Usage: unnetdemobind <key>\n");
+		PrintFmt(PRINT_WARNING,
+		         "Unbinds a netdemo key. \"all\" unbinds every existing netdemo key.\n");
+		PrintFmt(PRINT_WARNING, "Usage: unnetdemobind <key>\n");
 		return;
 	}
 

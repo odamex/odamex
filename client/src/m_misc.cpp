@@ -117,7 +117,7 @@ void STACK_ARGS M_SaveDefaults(std::string filename)
 
 		fclose(f);
 
-		Printf(PRINT_HIGH, "Configuration saved to %s.\n", configfile);
+		PrintFmt(PRINT_HIGH, "Configuration saved to {}.\n", configfile);
 	}
 }
 
@@ -214,7 +214,7 @@ void M_LoadDefaults(void)
 	}
 
 	if (updated)
-		Printf("%s: Updating old defaults.\n", __FUNCTION__);
+		PrintFmt("{}: Updating old defaults.\n", __FUNCTION__);
 
 	AddCommandString("alias ? help");
 

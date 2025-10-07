@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -22,9 +22,6 @@
 //-----------------------------------------------------------------------------
 
 #pragma once
-
-#include "huffman.h"
-
 
 // Default buffer size for a UDP packet.
 // This constant seems to be used as a default buffer size and should
@@ -146,7 +143,7 @@ enum clientBuf_e
 
 /**
  * @brief svc_playermembers: Ready status.
- */ 
+ */
 #define SVC_PM_READY BIT(1)
 
 /**
@@ -299,6 +296,11 @@ enum clc_t
 	clc_privmsg, // [AM] Targeted chat to a specific player.
 };
 
+inline auto format_as(clc_t clc)
+{
+	return fmt::underlying(clc);
+}
+
 static constexpr size_t clc_max = 255;
 
 extern msg_info_t clc_info[clc_max + 1];
@@ -342,7 +344,7 @@ public:
 	void WriteByte(byte b)
 	{
 		byte *buf = SZ_GetSpace(sizeof(b));
-		
+
 		if(!overflowed)
 		{
 			*buf = b;
@@ -352,7 +354,7 @@ public:
 	void WriteShort(short s)
 	{
 		byte *buf = SZ_GetSpace(sizeof(s));
-		
+
 		if(!overflowed)
 		{
 			buf[0] = s&0xff;
@@ -363,7 +365,7 @@ public:
 	void WriteLong(int l)
 	{
 		byte *buf = SZ_GetSpace(sizeof(l));
-		
+
 		if(!overflowed)
 		{
 			buf[0] = l&0xff;
@@ -588,10 +590,11 @@ public:
 
                 readpos += offset;
             }
+			break;
 
             case BT_SEND:
             {
-                if ((int)(readpos-offset) < 0)
+                if (offset > readpos)
                 {
                     // lies, an underflow occured
                     overflowed = true;
@@ -600,6 +603,7 @@ public:
 
                 readpos -= offset;
             }
+			break;
         }
 
         return readpos;
@@ -624,7 +628,7 @@ public:
 	{
 		return cursize;
 	}
-	
+
 	size_t maxsize() const
 	{
 		return allocsize;
@@ -647,7 +651,7 @@ public:
 		byte *olddata = data;
 		data = new byte[len];
 		allocsize = len;
-		
+
 		if (!clearbuf)
 		{
 			if (cursize < allocsize)
@@ -658,7 +662,7 @@ public:
 			{
 				clear();
 				overflowed = true;
-				Printf (PRINT_HIGH, "buf_t::resize(): overflow\n");
+				PrintFmt(PRINT_HIGH, "buf_t::resize(): overflow\n");
 			}
 		}
 		else
@@ -676,7 +680,7 @@ public:
 			clear();
 			overflowed = true;
 #if defined(ODAMEX_DEBUG)
-			Printf (PRINT_HIGH, "SZ_GetSpace: overflow\n");
+			PrintFmt(PRINT_HIGH, "SZ_GetSpace: overflow\n");
 #endif
 		}
 
@@ -693,7 +697,7 @@ public:
             return *this;
 
 		delete[] data;
-		
+
 		data = new byte[other.allocsize];
 		allocsize = other.allocsize;
 		cursize = other.cursize;
@@ -706,7 +710,7 @@ public:
 
 		return *this;
 	}
-	
+
 	buf_t()
 		: data(0), allocsize(0), cursize(0), readpos(0), overflowed(false)
 	{
@@ -717,7 +721,7 @@ public:
 	}
 	buf_t(const buf_t &other)
 		: data(new byte[other.allocsize]), allocsize(other.allocsize), cursize(other.cursize), readpos(other.readpos), overflowed(other.overflowed)
-		
+
 	{
 		if(!overflowed)
 			for(size_t i = 0; i < cursize; i++)
@@ -793,6 +797,3 @@ size_t MSG_SetOffset (const size_t &offset, const buf_t::seek_loc_t &loc);
 
 bool MSG_DecompressMinilzo ();
 bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap);
-
-bool MSG_DecompressAdaptive (huffman &huff);
-bool MSG_CompressAdaptive (huffman &huff, buf_t &buf, size_t start_offset, size_t write_gap);

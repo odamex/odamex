@@ -31,9 +31,6 @@
 #include "z_zone.h"
 #include "st_stuff.h"
 
-// Declared in doomtype.h as part of argb_t
-uint8_t argb_t::a_num, argb_t::r_num, argb_t::g_num, argb_t::b_num;
-
 dyncolormap_t NormalLight;
 
 /****************************/
@@ -70,8 +67,8 @@ void V_InitPalette(const char* lumpname)
 	if (!initialized)
 	{
 		// construct a valid palette_t so we don't get crashes
-		memset(default_palette.basecolors, 0, 256 * sizeof(*default_palette.basecolors));
-		memset(default_palette.colors, 0, 256 * sizeof(*default_palette.colors));
+		std::fill(std::begin(default_palette.basecolors), std::end(default_palette.basecolors), argb_t{0});
+		std::fill(std::begin(default_palette.colors), std::end(default_palette.colors), argb_t{0});
 
 		default_palette.maps.colormap = NULL;
 		default_palette.maps.shademap = NULL;
@@ -86,10 +83,6 @@ translationref_t::translationref_t() : m_table(NULL), m_player_id(-1)
 {
 }
 
-translationref_t::translationref_t(const translationref_t &other) : m_table(other.m_table), m_player_id(other.m_player_id)
-{
-}
-
 translationref_t::translationref_t(const byte *table) : m_table(table), m_player_id(-1)
 {
 }
@@ -99,12 +92,6 @@ translationref_t::translationref_t(const byte *table, const int player_id) : m_t
 }
 
 shaderef_t::shaderef_t() : m_colors(NULL), m_mapnum(-1), m_colormap(NULL), m_shademap(NULL)
-{
-}
-
-shaderef_t::shaderef_t(const shaderef_t &other)
-	: m_colors(other.m_colors), m_mapnum(other.m_mapnum),
-	  m_colormap(other.m_colormap), m_shademap(other.m_shademap), m_dyncolormap(other.m_dyncolormap)
 {
 }
 
