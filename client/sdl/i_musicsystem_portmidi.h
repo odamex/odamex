@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,27 +35,27 @@ class PortMidiMusicSystem : public MidiMusicSystem
 {
   public:
 	PortMidiMusicSystem();
-	virtual ~PortMidiMusicSystem();
+	~PortMidiMusicSystem() override;
 
-	virtual void startSong(byte *data, size_t length, bool loop);
-	virtual void stopSong();
-	virtual void pauseSong();
-	virtual void restartSong();
+	void startSong(byte *data, size_t length, bool loop) override;
+	void stopSong() override;
+	void pauseSong() override;
+	void restartSong() override;
 
-	virtual void setVolume(float volume);
+	void setVolume(float volume) override;
 
-	virtual void writeVolume(int time, byte channel, byte volume);
-	virtual void writeControl(int time, byte channel, byte control, byte value);
-	virtual void writeChannel(int time, byte channel, byte status, byte param1, byte param2 = 0);
-	virtual void writeSysEx(int time, const byte *data, size_t length = 0);
-	virtual void allNotesOff();
-	virtual void allSoundOff();
+	void writeVolume(int time, byte channel, byte volume) override;
+	void writeControl(int time, byte channel, byte control, byte value) override;
+	void writeChannel(int time, byte channel, byte status, byte param1, byte param2 = 0) override;
+	void writeSysEx(int time, const byte *data, size_t length = 0) override;
+	void allNotesOff() override;
+	void allSoundOff() override;
 
-	virtual bool isInitialized() const { return m_isInitialized; }
+	bool isInitialized() const override { return m_isInitialized; }
 
   private:
-	static const int cLatency = 80;
-	static const byte DEFAULT_VOLUME = 100;
+	static constexpr int cLatency = 80;
+	static constexpr byte DEFAULT_VOLUME = 100;
 	byte sysex_buffer[PM_DEFAULT_SYSEX_BUFFER_SIZE];
 	byte m_channelVolume[NUM_CHANNELS];
 	float m_volumeScale;

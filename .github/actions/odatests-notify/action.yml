@@ -1,0 +1,139 @@
+name: OdaTests Notifier
+
+inputs:
+  demos-run:
+    description: "Number of demo tests that were run"
+    required: true
+  demos-passed:
+    description: "The number of demo tests that passed"
+    required: true
+  discord-url:
+    description: "Webhook url for discord"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Checkout odatests-results branch
+      uses: actions/checkout@v4
+      with:
+        ref: odatests-results
+        path: ./odatests-results
+        submodules: false
+        fetch-depth: 0
+    - name: Load previous run values
+      id: previous
+      shell: pwsh
+      run: |
+        Set-PSDebug -Trace 1
+        $branchName = "${{ github.ref_name }}" -replace '/', '_'
+        $jsonPath = "odatests-results\$branchName.json"
+        if (-not (Test-Path $jsonPath)) {
+          $jsonPath = "odatests-results\stable.json"
+        }
+        if (Test-Path $jsonPath) {
+          $jsonContent = Get-Content $jsonPath -Raw | ConvertFrom-Json
+          echo "previous-total=$($jsonContent.demos_run)" >> $env:GITHUB_OUTPUT
+          echo "previous-passes=$($jsonContent.demos_passed)" >> $env:GITHUB_OUTPUT
+          if (-not $jsonContent.commit) {
+            echo "previous-commit-ancestor=missing" >> $env:GITHUB_OUTPUT
+            echo "previous-commit-descendant=missing" >> $env:GITHUB_OUTPUT
+          } else {
+            Set-Location odatests-results
+            git merge-base --is-ancestor $jsonContent.commit ${{ github.sha }}
+            if ($LASTEXITCODE -eq 0) {
+              echo "previous-commit-ancestor=true" >> $env:GITHUB_OUTPUT
+            } elseif ($LASTEXITCODE -eq 1) {
+              echo "previous-commit-ancestor=false" >> $env:GITHUB_OUTPUT
+            } else {
+              echo "previous-commit-ancestor=error" >> $env:GITHUB_OUTPUT
+            }
+            git merge-base --is-ancestor ${{ github.sha }} $jsonContent.commit
+            if ($LASTEXITCODE -eq 0) {
+              echo "previous-commit-descendant=true" >> $env:GITHUB_OUTPUT
+            } elseif ($LASTEXITCODE -eq 1) {
+              echo "previous-commit-descendant=false" >> $env:GITHUB_OUTPUT
+            } else {
+              echo "previous-commit-descendant=error" >> $env:GITHUB_OUTPUT
+            }
+            $global:LASTEXITCODE = 0
+            Set-Location ..
+          }
+        } else {
+          echo "previous-total=0" >> $env:GITHUB_OUTPUT
+          echo "previous-passes=0" >> $env:GITHUB_OUTPUT
+          echo "previous-commit-ancestor=missing" >> $env:GITHUB_OUTPUT
+          echo "previous-commit-descendant=missing" >> $env:GITHUB_OUTPUT
+        }
+
+    - name: Determine embed color
+      id: color
+      shell: bash
+      run: |
+        prev_total=${{ steps.previous.outputs.previous-total }}
+        prev_passed=${{ steps.previous.outputs.previous-passes }}
+        current_total=${{ inputs.demos-run }}
+        current_passed=${{ inputs.demos-passed }}
+
+        # Set red (16711680) if failures increased or total changed
+        if [ "$current_passed" -lt "$prev_passed" ]; then
+          color=16711680 # red
+        elif [ "$current_total" -ne "$prev_total" ]; then
+          color=16776960 # yellow
+        else
+          color=65280 # green
+        fi
+
+        echo "color=$color" >> $GITHUB_OUTPUT
+
+    - name: Set short git commit SHA
+      id: short-sha
+      shell: bash
+      run: |
+        calculatedSha=$(git rev-parse --short ${{ github.sha }})
+        echo "short-sha=$calculatedSha" >> $GITHUB_OUTPUT
+
+    - name: Notify discord if values changed
+      if: >
+        (steps.previous.outputs.previous-total != inputs.demos-run || steps.previous.outputs.previous-passes != inputs.demos-passed) &&
+        (steps.previous.outputs.previous-total != 0 || steps.previous.outputs.previous-passes != 0) &&
+        steps.previous.outputs.previous-commit-ancestor == 'true'
+      uses: tsickert/discord-webhook@v7.0.0
+      with:
+        webhook-url: ${{ inputs.discord-url }}
+        embed-title: OdaTests Results Have Changed
+        embed-url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        embed-color: ${{ steps.color.outputs.color }}
+        embed-description: |
+          **Branch:** `${{ github.ref_name }}`
+          **Commit Hash:** `${{ steps.short-sha.outputs.short-sha }}`
+          **Previous:** `${{ steps.previous.outputs.previous-passes }}/${{ steps.previous.outputs.previous-total }}`
+          **Current:** `${{ inputs.demos-passed }}/${{ inputs.demos-run }}`
+
+          🔗 [Commit](<${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}>)
+          🔁 [Workflow Run](<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}>)
+
+    - name: Write current run values
+      if: steps.previous.outputs.previous-commit-descendant != 'true'
+      shell: pwsh
+      run: |
+        $branchName = "${{ github.ref_name }}" -replace '/', '_'
+        Set-Location odatests-results
+        $jsonPath = "$branchName.json"
+        $obj = @{
+          demos_run = ${{ inputs.demos-run }}
+          demos_passed = ${{ inputs.demos-passed }}
+          updated_at = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+          commit = "${{ github.sha }}"
+        }
+
+        $jsonContent = $obj | ConvertTo-Json -Depth 3
+        Set-Content -Path $jsonPath -Value $jsonContent -Encoding UTF8
+
+        git config --global user.name "github-actions"
+        git config --global user.email "actions@github.com"
+
+        git add $jsonPath
+        $commitMsg = "Update OdaTests results for $branchName [ci skip]"
+        git commit -m $commitMsg -a || Write-Host "No changes to commit"
+        git push origin odatests-results

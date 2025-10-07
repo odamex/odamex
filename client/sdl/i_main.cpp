@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,7 +30,7 @@
 #ifdef _WIN32
     #ifndef _XBOX
         #undef GetMessage
-        typedef BOOL (WINAPI *SetAffinityFunc)(HANDLE hProcess, DWORD mask);
+        typedef bool (WINAPI *SetAffinityFunc)(HANDLE hProcess, DWORD mask);
     #endif // !_XBOX
 #else
     #include <sched.h>
@@ -49,7 +49,7 @@
 #include <stack>
 #include <iostream>
 
-#include "i_sdl.h" 
+#include "i_sdl.h"
 #include "i_crash.h"
 // [Russell] - Don't need SDLmain library
 #ifdef _WIN32
@@ -107,7 +107,7 @@ void STACK_ARGS nx_early_deinit (void)
 #endif
 
 
-#if defined GCONSOLE && !defined __SWITCH__ 
+#if defined GCONSOLE && !defined __SWITCH__
 int I_Main(int argc, char *argv[])
 #else
 int main(int argc, char *argv[])
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
 
 			fclose(fh);
 #else
-			printf("Odamex %s\n", NiceVersion());
+			fmt::print("Odamex {}\n", NiceVersion());
 #endif
 			exit(EXIT_SUCCESS);
 		}
@@ -172,12 +172,12 @@ int main(int argc, char *argv[])
 		// denis - if argv[1] starts with "odamex://"
 		if(argc == 2 && argv && argv[1])
 		{
-			const char *protocol = "odamex://";
+			static constexpr std::string_view protocol = "odamex://";
 			const char *uri = argv[1];
 
-			if(strncmp(uri, protocol, strlen(protocol)) == 0)
+			if(protocol == uri)
 			{
-				std::string location = uri + strlen(protocol);
+				std::string location = uri + protocol.length();
 				size_t term = location.find_first_of('/');
 
 				if(term == std::string::npos)
@@ -219,16 +219,6 @@ int main(int argc, char *argv[])
         	putenv((char*)"SDL_VIDEODRIVER=directx");
 	#endif	// SDL12
 
-	
-	#if defined(SDL20)
-        // FIXME: Remove this when SDL gets it shit together, see 
-        // https://bugzilla.libsdl.org/show_bug.cgi?id=2089
-        // ...
-        // Disable thread naming on windows, with SDL 2.0.5 and GDB > 7.8.1
-        // RaiseException will be thrown and will crash under the debugger with symbols
-        // loaded or not
-        SDL_SetHint(SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING, "1");
-	#endif // SDL20
 
         // Set the process affinity mask to 1 on Windows, so that all threads
         // run on the same processor.  This is a workaround for a bug in
@@ -267,7 +257,7 @@ int main(int argc, char *argv[])
 #endif
 
 		if (SDL_Init(sdl_flags) == -1)
-			I_FatalError("Could not initialize SDL:\n%s\n", SDL_GetError());
+			I_FatalError("Could not initialize SDL:\n{}\n", SDL_GetError());
 
 		atterm (SDL_Quit);
 

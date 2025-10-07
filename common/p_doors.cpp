@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -96,9 +96,9 @@ void DDoor::RunThink ()
 {
 	fixed_t ceilingheight = P_CeilingHeight(m_Sector);
 	fixed_t floorheight = P_FloorHeight(m_Sector);
-	
+
 	EResult res;
-		
+
 	switch (m_Status)
 	{
 	case finished:
@@ -109,7 +109,7 @@ void DDoor::RunThink ()
 	case destroy:
 		P_SetDoorDestroy(this);
 		return;
-		
+
 	case waiting:
 		// WAITING
 		if (!--m_TopCountdown)
@@ -124,7 +124,7 @@ void DDoor::RunThink ()
 				m_Status = closing;
 				PlayDoorSound();
 				break;
-				
+
 			case doorCloseWaitOpen:
 			case close30ThenOpen:
 			case genCdO:
@@ -132,13 +132,13 @@ void DDoor::RunThink ()
 				m_Status = opening;
 				PlayDoorSound();
 				break;
-				
+
 			default:
 				break;
 			}
 		}
 		break;
-		
+
 	case init:
 		//	INITIAL WAIT
 		if (!--m_TopCountdown)
@@ -163,10 +163,10 @@ void DDoor::RunThink ()
 			}
 		}
 		break;
-		
+
 	case closing:
 		res = MoveCeiling(m_Speed, floorheight, -1);
-		
+
         if (m_LightTag)
         {
 			EV_LightTurnOnPartway(m_LightTag,
@@ -189,14 +189,14 @@ void DDoor::RunThink ()
 				m_Status = finished;
 				P_SetDoorDestroy(this);	// Destroy the door immediately, not 1 tick after!
 				return;
-				
+
 			case doorCloseWaitOpen:
 			case genCdO:
 			case genBlazeCdO:
 				m_TopCountdown = m_TopWait;
 				m_Status = waiting;
 				break;
-				
+
 			default:
 				break;
 			}
@@ -214,7 +214,7 @@ void DDoor::RunThink ()
 			case blazeClose:
 			case genBlazeClose:
 				break;
-				
+
 			default:
 				m_Status = reopening;
 				PlayDoorSound();
@@ -222,11 +222,11 @@ void DDoor::RunThink ()
 			}
 		}
 		break;
-		
+
 	case reopening:
 	case opening:
 		res = MoveCeiling(m_Speed, m_TopHeight, 1);
-		
+
         if (m_LightTag && m_TopHeight - floorheight)
         {
 			EV_LightTurnOnPartway(m_LightTag,
@@ -246,7 +246,7 @@ void DDoor::RunThink ()
 				m_TopCountdown = m_TopWait;
 				m_Status = waiting;
 				break;
-				
+
 			case doorCloseWaitOpen:
 			case doorOpen:
 			case blazeOpen:
@@ -256,7 +256,7 @@ void DDoor::RunThink ()
 			case genBlazeCdO:
 				m_Status = finished;
 				return;
-				
+
 			default:
 				break;
 			}
@@ -281,7 +281,7 @@ static bool IsBlazingDoor(DDoor *door)
 {
 	if (!door)
 		return false;
-	
+
 	return (door->m_Speed >= (8 << FRACBITS));
 }
 
@@ -290,14 +290,14 @@ void DDoor::PlayDoorSound ()
 {
 	if (predicting)
 		return;
-		
+
 	if (m_Sector->seqType >= 0)
 	{
 		SN_StartSequence (m_Sector, m_Sector->seqType, SEQ_DOOR);
 		return;
 	}
 
-	const char *snd = NULL;	
+	const char *snd = NULL;
 	switch(m_Status)
 	{
 	case opening:
@@ -363,7 +363,7 @@ DDoor::DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay)
 	}
 
 	fixed_t ceilingheight = P_CeilingHeight(sec);
-	
+
 	switch (type)
 	{
 	case doorClose:
@@ -575,10 +575,10 @@ DDoor* DDoor::Clone(sector_t* sec) const
 	return door;
 }
 
-BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
+bool EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
                 int tag, int speed, int delay, card_t lock)
 {
-	BOOL		rtn = false;
+	bool		rtn = false;
 	int 		secnum;
 	sector_t*	sec;
     DDoor *door;
@@ -607,7 +607,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 			sec->ceilingdata->Destroy();
 			sec->ceilingdata = NULL;
 		}
-		
+
 		// if door already has a thinker, use it
 		door = static_cast<DDoor *>(sec->ceilingdata);
 		// cph 2001/04/05 -
@@ -639,7 +639,7 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 						// run into them (otherwise opening them would be
 						// a real pain).
 						door->m_Line = line;
-						return true;	
+						return true;
 					}
 					else if (thing && thing->player)
 					{
@@ -674,12 +674,12 @@ BOOL EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
 
 			door = new DDoor(sec, line, type, speed, delay);
 			P_AddMovingCeiling(sec);
-			
+
 			if (door)
 				rtn = true;
 		}
 	}
-	
+
 	return rtn;
 }
 
@@ -722,7 +722,7 @@ void P_SpawnDoorRaiseIn5Mins (sector_t *sec)
 	door->m_Status = DDoor::init;
 }
 
-BOOL EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
+bool EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
                    byte speed_byte, int topwait, zdoom_lock_t lock, byte lightTag,
                    bool boomgen, int topcountdown)
 {
@@ -806,7 +806,7 @@ BOOL EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
 	else
 	{
 		int secnum = -1;
-		BOOL retcode = false;
+		bool retcode = false;
 
 		while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
 		{
@@ -832,7 +832,7 @@ BOOL EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
 // Passed the linedef activating the generalized door
 // Returns true if a thinker created
 //
-BOOL EV_DoGenDoor(line_t* line)
+bool EV_DoGenDoor(line_t* line)
 {
 	int secnum;
 	bool rtn;
@@ -904,7 +904,7 @@ manual_gendoor:
 // Passed the linedef activating the generalized locked door
 // Returns true if a thinker created
 //
-BOOL EV_DoGenLockedDoor(line_t* line)
+bool EV_DoGenLockedDoor(line_t* line)
 {
 	int secnum;
 	bool rtn;

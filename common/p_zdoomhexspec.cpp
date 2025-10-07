@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -182,6 +182,7 @@ bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
 				case Door_Raise:
 					if (line->args[1] >= 64)
 						break;
+					[[fallthrough]];
 				case Teleport:
 				case Teleport_NoFog:
 				case Teleport_Line:
@@ -227,13 +228,17 @@ void P_PlayerInZDoomSector(player_t* player)
 
 	sector_t* sector = player->mo->subsector->sector;
 
-	static const int heretic_carry[5] = {2048 * 5, 2048 * 10, 2048 * 25, 2048 * 30,
-	                                     2048 * 35};
+	static constexpr int heretic_carry[5] = {2048 * 5, 2048 * 10, 2048 * 25, 2048 * 30,
+	                                         2048 * 35};
 
-	static const int hexen_carry[3] = {2048 * 5, 2048 * 10, 2048 * 25};
+	static constexpr int hexen_carry[3] = {2048 * 5, 2048 * 10, 2048 * 25};
 
 	if (sector->damageamount > 0)
 	{
+		// Some maps, like rjspace9f, abuse the fact that "end sector damage" will actually
+		// not damage the player beyond 1hp, but won't trigger the exit because they're not damaged.
+		short oldhealth = player->health;
+
 		if (sector->flags & SECF_ENDGODMODE)
 		{
 			player->cheats &= ~CF_GODMODE;
@@ -270,7 +275,7 @@ void P_PlayerInZDoomSector(player_t* player)
 				P_DamageMobj(player->mo, NULL, NULL, sector->damageamount);
 			}
 
-			if (sector->flags & SECF_ENDLEVEL && player->health <= 10)
+			if (sector->flags & SECF_ENDLEVEL && player->health <= 10 && oldhealth != player->health)
 			{
 				if (serverside && sv_allowexit)
 				{
@@ -553,7 +558,7 @@ void P_SpawnZDoomSectorSpecial(sector_t* sector)
 			break;
 		P_SetupSectorDamage(sector, 20, 32, 0,
 		                    SECF_ENDGODMODE | SECF_ENDLEVEL | SECF_DMGUNBLOCKABLE);
-		sector->special = 0;
+		//sector->special = 0;
 		break;
 	case Damage_InstantDeath:
 		if (IgnoreSpecial)
@@ -670,7 +675,7 @@ void P_SpawnZDoomExtra(int i)
 	// support for drawn heights coming from different sector
 	case Transfer_Heights:
 		sec = sides[*lines[i].sidenum].sector;
-		DPrintf("Sector tagged %d: TransferHeights \n", sec->tag);
+		DPrintFmt("Sector tagged {}: TransferHeights \n", sec->tag);
 		if (sv_forcewater)
 		{
 			sec->waterzone = 2;
@@ -682,29 +687,29 @@ void P_SpawnZDoomExtra(int i)
 		if (lines[i].args[1] & 4)
 		{
 			sec->MoreFlags |= SECF_CLIPFAKEPLANES;
-			DPrintf("Sector tagged %d: CLIPFAKEPLANES \n", sec->tag);
+			DPrintFmt("Sector tagged {}: CLIPFAKEPLANES \n", sec->tag);
 		}
 		if (lines[i].args[1] & 8)
 		{
 			sec->waterzone = 1;
-			DPrintf("Sector tagged %d: Sets waterzone=1 \n", sec->tag);
+			DPrintFmt("Sector tagged {}: Sets waterzone=1 \n", sec->tag);
 		}
 		if (lines[i].args[1] & 16)
 		{
 			sec->MoreFlags |= SECF_IGNOREHEIGHTSEC;
-			DPrintf("Sector tagged %d: IGNOREHEIGHTSEC \n", sec->tag);
+			DPrintFmt("Sector tagged {}: IGNOREHEIGHTSEC \n", sec->tag);
 		}
 		if (lines[i].args[1] & 32)
 		{
 			sec->MoreFlags |= SECF_NOFAKELIGHT;
-			DPrintf("Sector tagged %d: NOFAKELIGHTS \n", sec->tag);
+			DPrintFmt("Sector tagged {}: NOFAKELIGHTS \n", sec->tag);
 		}
 		for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0], s)) >= 0;)
 		{
 			sectors[s].heightsec = sec;
 		}
 
-		DPrintf("Sector tagged %d: MoreFlags: %u \n", sec->tag, sec->MoreFlags);
+		DPrintFmt("Sector tagged {}: MoreFlags: {} \n", sec->tag, sec->MoreFlags);
 		break;
 
 	// killough 3/16/98: Add support for setting
@@ -817,7 +822,7 @@ void P_SpawnZDoomScroller(line_t* l, int i)
 
 	switch (special)
 	{
-		register int s;
+		int s;
 
 	case Scroll_Ceiling:
 		if (IgnoreSpecial)
@@ -871,7 +876,7 @@ void P_SpawnZDoomScroller(line_t* l, int i)
 		else
 		{
 			if (l->id == 0)
-				Printf(PRINT_HIGH, "Line %d is missing a tag!", i);
+				PrintFmt(PRINT_HIGH, "Line {} is missing a tag!", i);
 
 			if (l->args[0] > 1024)
 				control = sides[*l->sidenum].sector - sectors;
@@ -957,7 +962,7 @@ void P_SpawnZDoomFriction(line_t* l)
 
 void P_SpawnZDoomPusher(line_t* l)
 {
-	register int s;
+	int s;
 
 	switch (l->special)
 	{
@@ -1032,10 +1037,10 @@ void P_PostProcessZDoomSidedefSpecial(side_t* sd, mapsidedef_t* msd, sector_t* s
 				                     ((argb_t)color).getb(), ((argb_t)fog).getr(),
 				                     ((argb_t)fog).getg(), ((argb_t)fog).getb());
 
-				for (int s = 0; s < numsectors; s++)
+				for (sector_t& sector : R_GetSectors())
 				{
-					if (sectors[s].tag == sd->tag)
-						sectors[s].colormap = colormap;
+					if (sector.tag == sd->tag)
+						sector.colormap = colormap;
 				}
 			}
 		}
@@ -1071,14 +1076,14 @@ unsigned int P_TranslateZDoomLineFlags(const unsigned int flags)
 {
 	unsigned int result = flags & 0x1ff;
 
-	const unsigned int spac_to_flags[8] = {ML_SPAC_CROSS,
-	                                        ML_SPAC_USE,
-	                                        ML_SPAC_MCROSS,
-	                                        ML_SPAC_IMPACT,
-	                                        ML_SPAC_PUSH,
-	                                        ML_SPAC_PCROSS,
-	                                        ML_SPAC_USE | ML_PASSUSE,
-	                                        ML_SPAC_IMPACT | ML_SPAC_PCROSS};
+	static constexpr unsigned int spac_to_flags[8] = {ML_SPAC_CROSS,
+	                                                  ML_SPAC_USE,
+	                                                  ML_SPAC_MCROSS,
+	                                                  ML_SPAC_IMPACT,
+	                                                  ML_SPAC_PUSH,
+	                                                  ML_SPAC_PCROSS,
+	                                                  ML_SPAC_USE | ML_PASSUSE,
+	                                                  ML_SPAC_IMPACT | ML_SPAC_PCROSS};
 
 	// from zdoom-in-hexen to Odamex
 

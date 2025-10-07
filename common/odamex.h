@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,20 +23,7 @@
 
 #pragma once
 
-#if defined(_MSC_VER)
-	#if _MSC_VER >= 1600
-		#define USE_STDINT_H
-	#endif
-#else
-	#define USE_STDINT_H
-#endif
-
-#if defined(USE_STDINT_H)
-	#include <stdint.h>
-	#undef USE_STDINT_H
-#else
-	#include "pstdint.h"
-#endif
+#include <stdint.h>
 
 #include <stddef.h>
 #include <stdio.h>
@@ -45,6 +32,11 @@
 #include <string>
 #include <vector>
 
+#include <nonstd/span.hpp>
+#include "fmt/format.h"
+#include "fmt/printf.h"
+
 #include "doomtype.h"
 #include "doomdef.h"
 #include "doomstat.h"
+#include "doomfunc.h"

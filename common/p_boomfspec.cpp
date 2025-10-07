@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -87,7 +87,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	{
 		// pointer to line function is NULL by default, set non-null if
 		// line special is walkover generalized linedef type
-		BOOL (*linefunc)(line_t * line) = NULL;
+		bool (*linefunc)(line_t * line) = NULL;
 
 		// check each range of generalized linedefs
 		if ((unsigned)line->special >= GenEnd)
@@ -200,7 +200,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		case 269:
 			if (bossaction)
 				return false;
-
+			[[fallthrough]];
 		case 4:  // raise door
 		case 10: // plat down-wait-up-stay trigger
 		case 88: // plat down-wait-up-stay retrigger
@@ -436,7 +436,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 2069:
 		resetinv = true;
-		// TODO: add [[fallthrough]] when C++17 comes
+		[[fallthrough]];
 	case 52:
 		// EXIT!
 		// killough 10/98: prevent zombies from exiting levels
@@ -571,7 +571,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 
 	case 2072:
 		resetinv = true;
-		// TODO: add [[fallthrough]] when C++17 comes
+		[[fallthrough]];
 	case 124:
 		// Secret EXIT
 		// killough 10/98: prevent zombies from exiting levels
@@ -1422,10 +1422,10 @@ void P_PostProcessCompatibleSidedefSpecial(side_t* sd, mapsidedef_t* msd,
 				                     ((argb_t)color).getb(), ((argb_t)fog).getr(),
 				                     ((argb_t)fog).getg(), ((argb_t)fog).getb());
 
-				for (int s = 0; s < numsectors; s++)
+				for (sector_t& sector : R_GetSectors())
 				{
-					if (sectors[s].tag == sd->tag)
-						sectors[s].colormap = colormap;
+					if (sector.tag == sd->tag)
+						sector.colormap = colormap;
 				}
 			}
 		}
@@ -1767,7 +1767,7 @@ void P_SpawnCompatibleScroller(line_t* l, int i)
 			new DScroller(DScroller::sc_floor, -dx, dy, control, s, accel);
 		if (special != 253)
 			break;
-		// fallthrough
+		[[fallthrough]];
 
 	case 252: // carry objects on floor
 		dx = FixedMul(dx, CARRYFACTOR);
@@ -1803,11 +1803,11 @@ void P_SpawnCompatibleScroller(line_t* l, int i)
 	case 2085:
 	case 2086:
 		control = sides[*l->sidenum].sector - sectors;
-
+		[[fallthrough]];
 	case 1024: // special 255 with tag control
 	case 2084:
 		if (l->id == 0)
-			Printf(PRINT_HIGH, "Line %d is missing a tag!", i);
+			PrintFmt(PRINT_HIGH, "Line {} is missing a tag!", i);
 
 		if (special == 1026 || special == 2086)
 			accel = 1;
@@ -1829,7 +1829,7 @@ void P_SpawnCompatibleScroller(line_t* l, int i)
 	case 2082: // scroll both sides left
 		if (lines[i].sidenum[1] != R_NOSIDE)
 			new DScroller(DScroller::sc_side, -FRACUNIT, 0, -1, lines[i].sidenum[1], accel);
-		// [[fallthrough]]
+		[[fallthrough]];
 	case 48: // scroll first side
 		new DScroller(DScroller::sc_side, FRACUNIT, 0, -1, lines[i].sidenum[0], accel);
 		break;
@@ -1837,7 +1837,7 @@ void P_SpawnCompatibleScroller(line_t* l, int i)
 	case 2083: // scroll both sides right
 		if (lines[i].sidenum[1] != R_NOSIDE)
 			new DScroller(DScroller::sc_side, FRACUNIT, 0, -1, lines[i].sidenum[1], accel);
-		// [[fallthrough]]
+		[[fallthrough]];
 	case 85: // jff 1/30/98 2-way scroll
 		new DScroller(DScroller::sc_side, -FRACUNIT, 0, -1, lines[i].sidenum[0], accel);
 		break;
@@ -1912,7 +1912,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	// pointer to line function is NULL by default, set non-null if
 	// line special is push or switch generalized linedef type
-	int (*linefunc)(line_t * line) = NULL;
+	bool (*linefunc)(line_t * line) = nullptr;
 
 	// check each range of generalized linedefs
 	if ((unsigned)line->special >= GenEnd)
@@ -2201,7 +2201,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	case 2070:
 		resetinv = true;
-		// TODO: add [[fallthrough]] when C++17 comes
+		[[fallthrough]];
 	case 11:
 		/* Exit level
 		 * killough 10/98: prevent zombies from exiting levels
@@ -2328,7 +2328,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	case 2073:
 		resetinv = true;
-		// TODO: add [[fallthrough]] when C++17 comes
+		[[fallthrough]];
 	case 51:
 		/* Secret EXIT
 		 * killough 10/98: prevent zombies from exiting levels
@@ -3373,7 +3373,7 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 
 	// pointer to line function is NULL by default, set non-null if
 	// line special is gun triggered generalized linedef type
-	int (*linefunc)(line_t * line) = NULL;
+	bool (*linefunc)(line_t * line) = nullptr;
 
 	// check each range of generalized linedefs
 	if ((unsigned)line->special >= GenEnd)
@@ -3513,7 +3513,7 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		{
 		case 2071:
 			resetinv = true;
-			// TODO: add [[fallthrough]] when C++17 comes
+			[[fallthrough]];
 		case 197:
 			// Exit to next level
 			// killough 10/98: prevent zombies from exiting levels
@@ -3528,7 +3528,7 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 
 		case 2074:
 			resetinv = true;
-			// TODO: add [[fallthrough]] when C++17 comes
+			[[fallthrough]];
 		case 198:
 			// Exit to secret level
 			// killough 10/98: prevent zombies from exiting levels
@@ -3570,24 +3570,23 @@ void P_PostProcessCompatibleLinedefSpecial(line_t* line)
 {
 	switch (line->special)
 	{ // killough 4/11/98: handle special types
-		int j;
 	case 260: // killough 4/11/98: translucent 2s textures
 #if 0
 				lump = sides[*ld->sidenum].special;		// translucency from sidedef
 				if (!ld->tag)							// if tag==0,
 					ld->tranlump = lump;				// affect this linedef only
 				else
-					for (j=0;j<numlines;j++)			// if tag!=0,
-						if (lines[j].tag == ld->tag)	// affect all matching linedefs
-							lines[j].tranlump = lump;
+					for (line_t& lineit : R_GetLines())	// if tag!=0,
+						if (lineit.tag == ld->tag)	// affect all matching linedefs
+							lineit.tranlump = lump;
 #else
 	          // [RH] Second arg controls how opaque it is.
 		if (line->id == 0)
 			line->lucency = (byte)128;
 		else
-			for (j = 0; j < numlines; j++)
-				if (lines[j].id == line->id)
-					lines[j].lucency = (byte)128;
+			for (line_t& lineit : R_GetLines())
+				if (lineit.id == line->id)
+					lineit.lucency = (byte)128;
 #endif
 		line->special = 0;
 		break;

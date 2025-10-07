@@ -1,11 +1,11 @@
 name: Windows
 
-on: 
+on:
   push:
     branches-ignore:
     - 'release/[0-9]+.[0-9]+.[0-9]+'
   pull_request:
-    
+
 
 jobs:
   pre_job:
@@ -46,29 +46,51 @@ jobs:
     - name: Stage artifacts for testing
       run: .\ci\win-prepare-demotest.ps1
     - name: Download OdaTests and Testing Resources
+      id: get-odatests
       run: .\ci\win-get-demotester.ps1
       env:
         DEMOTESTER_URL: ${{ vars.DEMOTESTER_DOWNLOAD_URL }}
         DEMORESOURCES_URL: ${{ vars.DEMORESOURCES_DOWNLOAD_URL }}
       continue-on-error: true
     - name: Decrypt IWADs
+      if: steps.get-odatests.outcome == 'success'
       run: |
         python .\secret.py decrypt plutonia
         python .\secret.py decrypt tnt
         python .\secret.py decrypt doom
         python .\secret.py decrypt doom1
         python .\secret.py decrypt doom2
-        python .\secret.py decrypt hacx
       env:
         SECRET_KEY: ${{ secrets.DEMOTESTER_IWAD_KEY }}
       working-directory: .\build\demotester
-      continue-on-error: true
     - name: Run OdaTests
-      run: python .\odatestcases.py
+      id: odatests
+      if: steps.get-odatests.outcome == 'success'
+      shell: pwsh
+      run: |
+        python .\odatestcases.py
       env:
         ODAMEX_BIN: ..\demotest\odamex.exe
       working-directory: .\build\demotester
       continue-on-error: true
+    - name: Read OdaTests results
+      if: steps.odatests.conclusion == 'success'
+      id: odatests-results
+      shell: pwsh
+      run: |
+        $csvData = Import-Csv -Path .\odatests_results_summary.csv
+        echo "tests_total=$($csvData[0].total)" >> $env:GITHUB_OUTPUT
+        echo "tests_passed=$($csvData[0].passed)" >> $env:GITHUB_OUTPUT
+      working-directory: .\build\demotester
+    - name: Notify Discord
+      if: env.DISCORD_URL != '' && steps.odatests.conclusion == 'success'
+      uses: ./.github/actions/odatests-notify
+      with:
+        demos-run: ${{ steps.odatests-results.outputs.tests_total }}
+        demos-passed: ${{ steps.odatests-results.outputs.tests_passed }}
+        discord-url: ${{ env.DISCORD_URL }}
+      env:
+        DISCORD_URL: ${{ secrets.ODATESTS_WEBHOOK_URL }}
     - name: Upload artifact to B2
       run: python .\ci\upload-b2.py .\build\archive Win-x64
       env:
@@ -82,6 +104,8 @@ jobs:
         path: 'build/artifact/*'
   build-x32:
     name: Build (Visual Studio, 32-bit)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: windows-latest
     steps:
     - name: Checkout source
@@ -109,7 +133,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: Odamex-Win-x32
-        path: 'build/artifact/*'
+        path: 'build-x32/artifact/*'
   # build-mingw:
   #   name: Build (MinGW)
   #   runs-on: windows-latest

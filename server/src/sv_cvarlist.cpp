@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -46,9 +46,6 @@ CVAR(			sv_motd, "Welcome to Odamex", "Message Of The Day to display to clients 
 
 CVAR(			sv_email, "email@domain.com", "Administrator email address",
 				CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
-
-CVAR(			sv_waddownload,	"0", "Allow downloading of WAD files from this server",
-				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR(			sv_emptyreset, "0", "Reloads the current map when all players leave",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
@@ -98,13 +95,7 @@ CVAR(			sv_curmap, "", "Set to the last played map",
 CVAR(			sv_nextmap, "", "Set to the next map to be played",
 				CVARTYPE_STRING, CVAR_NOSET | CVAR_NOENABLEDISABLE)
 
-CVAR(			sv_loopepisode, "0", "Determines whether Doom 1 episodes carry over",
-				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-
 CVAR_FUNC_DECL(	sv_shufflemaplist, "0", "Randomly shuffle the maplist",
-				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-
-CVAR(			sv_mapliststayonwad, "0", "Stay on the current wad when changing maps, proceed to next maplist entry when the wad is finished",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 // Network settings
@@ -190,6 +181,9 @@ CVAR_RANGE(		sv_vote_timeout, "60", "Timeout between votes in seconds.",
 CVAR(			sv_callvote_coinflip, "0", "Clients can flip a coin.",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
+CVAR(			sv_callvote_lives, "0", "Clients can vote to change the number of lives.",
+				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+
 CVAR(			sv_callvote_kick, "0", "Clients can votekick other players.",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
@@ -234,9 +228,6 @@ CVAR(			sv_callvote_timelimit, "0", "Clients can vote a new timelimit.",
 CVAR(			sv_dmfarspawn, "0", "EXPERIMENTAL: When enabled in DM, players will spawn at the farthest point " \
                 "from each other.",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
-
-CVAR(sv_download_test, "0", "Experimental download optimization testing",
-	CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
 // Hacky abominations that should be purged with fire and brimstone
 // =================================================================

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2021 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -102,7 +102,6 @@ struct hordeDefine_t
 	typedef std::vector<powerup_t> powerups_t;
 	typedef std::vector<monster_t> monsters_t;
 
-	uint32_t legacyID;	 // ID of wave assuming no deduplication.  Remove me.
 	std::string name;    // Name of the wave.
 	weapons_t weapons;   // Weapons we can spawn this wave.
 	ammos_t ammos;       // Ammos we can replenish this wave.
@@ -114,7 +113,7 @@ struct hordeDefine_t
 	int maxBossHealth;  // Maximum health of a group of bosses to spawn.
 
 	hordeDefine_t()
-	    : legacyID(0), minGroupHealth(-1), maxGroupHealth(-1), minBossHealth(-1),
+	    : minGroupHealth(-1), maxGroupHealth(-1), minBossHealth(-1),
 	      maxBossHealth(-1)
 	{
 	}
@@ -136,4 +135,4 @@ const hordeDefine_t& G_HordeDefine(size_t id);
 size_t P_HordePickDefine(const int current, const int total);
 bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
                         const bool wantBoss);
-bool P_HordeDefineNamed(int& out, const std::string& name);
+bool P_HordeDefineNamed(size_t& out, const std::string& name);

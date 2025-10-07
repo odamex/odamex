@@ -18,7 +18,7 @@ else
 
 if ($env:build_number.length -gt 0)
 {
-    Set-Variable -Name "OdamexTestSuffix" -Value "-build_${env:build_number}" # "-build_112"
+    Set-Variable -Name "OdamexTestSuffix" -Value "-prerelease.${env:build_number}" # "-prerelease_112"
 }
 else
 {
@@ -66,11 +66,7 @@ function BuildOutCommon {
         -Destination "${CommonDir}"
     Copy-Item -Force -Path "${UnzippedX64}\licenses\COPYING.SDL2_mixer.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.FLAC.txt" `
-        -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.modplug.txt" `
-        -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.mpg123.txt" `
+    Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.xmp.txt" `
         -Destination "${CommonDir}\licenses"
     Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.ogg-vorbis.txt" `
         -Destination "${CommonDir}\licenses"
@@ -78,7 +74,11 @@ function BuildOutCommon {
         -Destination "${CommonDir}\licenses"
     Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.opusfile.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${UnzippedX64}\licenses\COPYING.SDL2.txt" `
+    Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.wavpack.txt" `
+        -Destination "${CommonDir}\licenses"
+    Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.gme.txt" `
+        -Destination "${CommonDir}\licenses"
+    Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.SDL2.txt" `
         -Destination "${CommonDir}\licenses"
 }
 
@@ -92,13 +92,12 @@ function BuildOutX86 {
     New-Item -Force -ItemType "directory" -Path "${OutX86}\redist"
 
     Copy-Item -Force -Path `
-        "${UnzippedX86}\libFLAC-8.dll", `
-        "${UnzippedX86}\libmodplug-1.dll", `
-        "${UnzippedX86}\libmpg123-0.dll", `
+        "${UnzippedX86}\libwavpack-1.dll", `
+        "${UnzippedX86}\libgme.dll", `
+        "${UnzippedX86}\libxmp.dll", `
         "${UnzippedX86}\libogg-0.dll", `
         "${UnzippedX86}\libopus-0.dll", `
-        "${UnzippedX86}\libvorbis-0.dll", `
-        "${UnzippedX86}\libvorbisfile-3.dll", `
+        "${UnzippedX86}\libopusfile-0.dll", `
         "${UnzippedX86}\odamex.exe", `
         "${UnzippedX86}\SDL2_mixer.dll", `
         "${UnzippedX86}\SDL2.dll", `
@@ -127,13 +126,12 @@ function BuildOutX64 {
     New-Item -Force -ItemType "directory" -Path "${OutX64}\redist"
 
     Copy-Item -Force -Path `
-        "${UnzippedX64}\libFLAC-8.dll", `
-        "${UnzippedX64}\libmodplug-1.dll", `
-        "${UnzippedX64}\libmpg123-0.dll", `
+        "${UnzippedX64}\libwavpack-1.dll", `
+        "${UnzippedX64}\libgme.dll", `
+        "${UnzippedX64}\libxmp.dll", `
         "${UnzippedX64}\libogg-0.dll", `
         "${UnzippedX64}\libopus-0.dll", `
-        "${UnzippedX64}\libvorbis-0.dll", `
-        "${UnzippedX64}\libvorbisfile-3.dll", `
+        "${UnzippedX64}\libopusfile-0.dll", `
         "${UnzippedX64}\odamex.exe", `
         "${UnzippedX64}\SDL2_mixer.dll", `
         "${UnzippedX64}\SDL2.dll", `

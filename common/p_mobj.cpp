@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -46,6 +46,7 @@
 #include "g_skill.h"
 #include "m_wdlstats.h"
 #include "p_mapformat.h"
+#include "r_sky.h"
 
 #ifdef CLIENT_APP
 #include "hu_speedometer.h"
@@ -76,6 +77,7 @@ EXTERN_CVAR(sv_itemsrespawn)
 EXTERN_CVAR(sv_respawnsuper)
 EXTERN_CVAR(sv_itemrespawntime)
 EXTERN_CVAR(co_zdoomphys)
+EXTERN_CVAR(co_mbfphys)
 EXTERN_CVAR(co_realactorheight)
 EXTERN_CVAR(sv_teamspawns)
 EXTERN_CVAR(sv_nomonsters)
@@ -129,14 +131,13 @@ AActor::AActor()
       subsector(NULL), floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0),
       height(0), momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING),
       info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0),
-      flags3(0), oflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
+      flags3(0), oflags(0), statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
-      rndindex(0), netid(0), tid(0), baseline_set(false), bmapnode(this)
+      rndindex(0), netid(0), tid(0), baseline(), baseline_set(false), bmapnode(this)
 {
 	memset(args, 0, sizeof(args));
-	memset(&baseline, 0, sizeof(baseline));
 	self.init(this);
 }
 
@@ -203,6 +204,7 @@ AActor &AActor::operator= (const AActor &other)
     flags2 = other.flags2;
 	flags3 = other.flags3;
 	oflags = other.oflags;
+	statusflags = other.statusflags;
     special1 = other.special1;
     special2 = other.special2;
     health = other.health;
@@ -247,16 +249,16 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
       subsector(NULL), floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0),
       height(0), momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING),
       info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0), flags3(0), oflags(0),
-      special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
+      statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
-      rndindex(0), netid(0), tid(0), baseline_set(false), bmapnode(this)
+      rndindex(0), netid(0), tid(0), baseline(), baseline_set(false), bmapnode(this)
 {
 	// Fly!!! fix it in P_RespawnSpecial
 	if ((unsigned int)itype >= NUMMOBJTYPES)
 	{
-		I_Error ("Tried to spawn actor type %d\n", itype);
+		I_Error("Tried to spawn actor type {}\n", itype);
 	}
 
 	self.init(this);
@@ -324,7 +326,6 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
 
 	spawnpoint.type = 0;
 	memset(args, 0, sizeof(args));
-	memset(&baseline, 0, sizeof(baseline));
 }
 
 
@@ -792,8 +793,8 @@ void AActor::RunThink ()
 
 void AActor::Serialize (FArchive &arc)
 {
-	const DWORD TLATE_NONE = 0xFFFFFFFF;
-	const DWORD TLATE_BOSS = 0xFFFFFFFE;
+	static constexpr DWORD TLATE_NONE = 0xFFFFFFFF;
+	static constexpr DWORD TLATE_BOSS = 0xFFFFFFFE;
 
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
@@ -828,6 +829,7 @@ void AActor::Serialize (FArchive &arc)
 			<< flags2
 			<< flags3
 			<< oflags
+		  << statusflags
 			<< special1
 			<< special2
 			<< health
@@ -910,6 +912,7 @@ void AActor::Serialize (FArchive &arc)
 			>> flags2
 			>> flags3
 			>> oflags
+			>> statusflags
 			>> special1
 			>> special2
 			>> health
@@ -1017,7 +1020,7 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 	{
 		if (state >= ARRAY_LENGTH(states) || state < 0)
 		{
-			I_Error("P_SetMobjState: State %d does not exist in state table.", state);
+			I_Error("P_SetMobjState: State {} does not exist in state table.", state);
 		}
 
 		if (state == S_NULL)
@@ -1052,7 +1055,7 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 		// [AM] A slightly different heruistic that doesn't involve global state.
 		if (cycle_counter++ > MOBJ_CYCLE_LIMIT)
 		{
-			I_Error("P_SetMobjState: Infinite state cycle detected for %s at state %d.",
+			I_Error("P_SetMobjState: Infinite state cycle detected for {} at state {}.",
 			        mobj->info->name, state);
 		}
 	} while (!mobj->tics);
@@ -1075,8 +1078,8 @@ static void P_WindThrustActor(AActor* mo)
 {
 	if (mo->flags2 & MF2_WINDTHRUST)
 	{
-		static const int windTab[3] = {2048*5, 2048*10, 2048*25};
-		int special = mo->subsector->sector->special;
+		static constexpr int windTab[3] = {2048*5, 2048*10, 2048*25};
+		const int special = mo->subsector->sector->special;
 		switch (special)
 		{
 			case 40: case 41: case 42: // Wind_East
@@ -1151,8 +1154,8 @@ static bool P_ExplodeMissileAgainstWall(AActor* mo)
 				sec2 = ceilingline->frontsector;
 			}
 
-			bool skyceiling1 = sec1->ceilingpic == skyflatnum;
-			bool skyceiling2 = sec2 && sec2->ceilingpic == skyflatnum;
+			bool skyceiling1 = R_IsSkyFlat(sec1->ceilingpic);
+			bool skyceiling2 = sec2 && R_IsSkyFlat(sec2->ceilingpic);
 
 			if (skyceiling2)
 			{
@@ -1334,7 +1337,7 @@ void P_XYMovement(AActor *mo)
 			ptryx = mo->x + xmove;
 			ptryy = mo->y + ymove;
 		}
-		else if (!co_zdoomphys && (xmove > maxmove || ymove > maxmove))
+		else if (!co_zdoomphys && ((xmove > maxmove || ymove > maxmove) || (co_mbfphys && (xmove < -maxmove || ymove < -maxmove))))
 		{
 			ptryx = mo->x + xmove / 2;
 			ptryy = mo->y + ymove / 2;
@@ -1600,7 +1603,7 @@ static bool P_ClipMovementToFloor(AActor* mo)
 		// Explode missiles
 		if ((mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP))
 		{
-			if (co_fixweaponimpacts && mo->subsector->sector->floorpic == skyflatnum)
+			if (co_fixweaponimpacts && R_IsSkyFlat(mo->subsector->sector->floorpic))
 				mo->Destroy();
 			else if (serverside)
 				P_ExplodeMissile(mo);
@@ -1638,7 +1641,7 @@ static bool P_ClipMovementToCeiling(AActor* mo)
 		// Explode missiles
 		if ((mo->flags & MF_MISSILE) && !(mo->flags & MF_NOCLIP))
 		{
-			if (co_fixweaponimpacts && mo->subsector->sector->ceilingpic == skyflatnum)
+			if (co_fixweaponimpacts && R_IsSkyFlat(mo->subsector->sector->ceilingpic))
 				mo->Destroy();
 			else if (serverside)
 				P_ExplodeMissile(mo);
@@ -1720,7 +1723,7 @@ void P_ApplyBouncyPhysics(AActor *mo)
 			mo->z = mo->ceilingz - mo->height;
 			if (mo->momz > 0)
 			{
-				if (mo->subsector->sector->ceilingpic != skyflatnum)
+				if (!R_IsSkyFlat(mo->subsector->sector->ceilingpic))
 					mo->momz = -mo->momz; // always bounce off non-sky ceiling
 				else if (mo->flags & MF_MISSILE)
 					mo->Destroy(); // missiles don't bounce off skies
@@ -1743,7 +1746,7 @@ void P_ApplyBouncyPhysics(AActor *mo)
 		if (mo->flags & MF_MISSILE)
 		{
 			if (ceilingline && ceilingline->backsector &&
-			    ceilingline->backsector->ceilingpic == skyflatnum &&
+			    R_IsSkyFlat(ceilingline->backsector->ceilingpic) &&
 			    mo->z > ceilingline->backsector->ceilingheight)
 				mo->Destroy();
 			else
@@ -1866,7 +1869,7 @@ void P_NightmareRespawn (AActor *mobj)
 	mo = new AActor(
         mobj->x,
         mobj->y,
-        P_FloorHeight(mobj),
+        P_FloorHeight(mobj) + INT2FIXED(gameinfo.telefogHeight),
         MT_TFOG
     );
 	// initiate teleport sound
@@ -1877,7 +1880,7 @@ void P_NightmareRespawn (AActor *mobj)
     ss = P_PointInSubsector (x,y);
 
 	// spawn a teleport fog at the new spot
-    mo = new AActor (x, y,  P_FloorHeight(x, y, ss->sector), MT_TFOG);
+    mo = new AActor (x, y,  P_FloorHeight(x, y, ss->sector) + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
     if (clientside)
         S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 
@@ -2183,9 +2186,9 @@ bool P_CheckMissileSpawn (AActor* th)
 	// [SL] 2011-06-02 - If a missile explodes immediatley upon firing,
 	// make sure we spawn the missile first, send it to all clients immediately
 	// instead of queueing it, then explode it.
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		SV_AwarenessUpdate(*it, th);
+		SV_AwarenessUpdate(player, th);
 	}
 
 	if (!P_TryMove (th, th->x, th->y, false))
@@ -2369,10 +2372,11 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 // P_SpawnPlayerMissile
 // Tries to aim at a nearby monster
 //
-void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
+AActor* P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 {
+	AActor* th = AActor::AActorPtr();
 	if(!serverside)
-		return;
+		return th;
 
 	fixed_t slope;
 	fixed_t pitchslope = finetangent[FINEANGLES/4 - (source->pitch>>ANGLETOFINESHIFT)];
@@ -2400,7 +2404,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 		slope = pitchslope;
 	}
 
-	AActor *th = new AActor (source->x, source->y, source->z + 4*8*FRACUNIT, type);
+	th = new AActor (source->x, source->y, source->z + 4*8*FRACUNIT, type);
 
 	if (th->info->seesound)
 		S_Sound (th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
@@ -2431,6 +2435,8 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 	}
 
 	P_CheckMissileSpawn (th);
+
+	return th;
 }
 
 
@@ -2731,8 +2737,20 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	// only servers control spawning of items
     // EXCEPT the client must spawn Type 14 (teleport exit).
 	// otherwise teleporters won't work well.
-	if (!serverside && (mthing->type != 14))
+	//
+	// Clients also handle spawning of ambient sounds.
+	//
+	if (mthing->type >= 14001 && mthing->type <= 14065)
+	{
+		if (!clientside)
+		{
+			return;
+		}
+	}
+	else if (!serverside && (mthing->type != 14))
+	{
 		return;
+	}
 
 	// count deathmatch start positions
 	if (mthing->type == 11 || (!sv_teamspawns && mthing->type >= 5080 && mthing->type <= 5082))
@@ -2877,7 +2895,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 		if (type > 63)
 		{
-			Printf (PRINT_WARNING, "Sound sequence %d out of range\n", type);
+			PrintFmt(PRINT_WARNING, "Sound sequence {} out of range\n", type);
 		}
 		else
 		{
@@ -2929,7 +2947,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (i >= NUMMOBJTYPES || i < 0)
 	{
 		// [RH] Don't die if the map tries to spawn an unknown thing
-		Printf (PRINT_WARNING, "Unknown type %i at (%i, %i)\n",
+		PrintFmt(PRINT_WARNING, "Unknown type {} at ({}, {})\n",
 			mthing->type,
 			mthing->x, mthing->y);
 		i = MT_UNKNOWNTHING;
@@ -2938,7 +2956,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	//		it to the unknown thing.
 	else if (sprites[states[mobjinfo[i].spawnstate].sprite].numframes == 0)
 	{
-		Printf (PRINT_WARNING, "Type %i at (%i, %i) has no frames\n",
+		PrintFmt(PRINT_WARNING, "Type {} at ({}, {}) has no frames\n",
 				mthing->type, mthing->x, mthing->y);
 		i = MT_UNKNOWNTHING;
 	}
@@ -3117,10 +3135,9 @@ void P_SpawnAvatars()
 		return;
 	}
 
-	for (std::vector<mapthing2_t>::iterator it = ::voodoostarts.begin();
-	     it != ::voodoostarts.end(); ++it)
+	for (const auto& thing : ::voodoostarts)
 	{
-		new AActor(it->x << FRACBITS, it->y << FRACBITS, it->z << FRACBITS, MT_AVATAR);
+		new AActor(thing.x << FRACBITS, thing.y << FRACBITS, thing.z << FRACBITS, MT_AVATAR);
 	}
 }
 
@@ -3146,16 +3163,16 @@ bool P_VisibleToPlayers(AActor *mo)
 	if (!mo)
 		return false;
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
 		// players aren't considered visible to themselves
-		if (mo->player && mo->player->id == it->id)
+		if (mo->player && mo->player->id == player.id)
 			continue;
 
-		if (!(it->mo) || it->spectator)
+		if (!(player.mo) || player.spectator)
 			continue;
 
-		if (P_CheckSightEdges(it->mo, mo, 5.0))
+		if (P_CheckSightEdges(player.mo, mo, 5.0))
 			return true;
 	}
 
@@ -3251,7 +3268,7 @@ BEGIN_COMMAND(cheat_mobjs)
 {
 	if (argc < 2)
 	{
-		Printf("Missing MT_* mobj type\n");
+		PrintFmt("Missing MT_* mobj type\n");
 		return;
 	}
 
@@ -3269,11 +3286,11 @@ BEGIN_COMMAND(cheat_mobjs)
 
 	if (mobj_index < 0)
 	{
-		Printf("Unknown MT_* mobj type\n");
+		PrintFmt("Unknown MT_* mobj type\n");
 		return;
 	}
 
-	Printf("== %s ==", mobj_type);
+	PrintFmt("== {} ==", mobj_type);
 
 	AActor* mo;
 	TThinkerIterator<AActor> iterator;
@@ -3281,9 +3298,9 @@ BEGIN_COMMAND(cheat_mobjs)
 	{
 		if (mo->type == mobj_index)
 		{
-			Printf("ID: %d\n", mo->netid);
-			Printf("  %.1f, %.1f, %.1f\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
-			       FIXED2FLOAT(mo->z));
+			PrintFmt("ID: {}\n", mo->netid);
+			PrintFmt("  {:.1f}, {:.1f}, {:.1f}\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
+			         FIXED2FLOAT(mo->z));
 		}
 	}
 }

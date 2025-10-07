@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// Copyright (C) 2006-2021 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -55,14 +55,20 @@ OLumpName::OLumpName(const OLumpName& other)
 
 OLumpName::OLumpName(const char* other)
 {
-	strncpy(m_data, other, 8);
-	MakeDataPresentable();
+	if (other)
+	{
+		strncpy(m_data, other, 8);
+		MakeDataPresentable();
+	}
 }
 
 OLumpName::OLumpName(const std::string& other)
 {
-	strncpy(m_data, other.data(), 8);
-	MakeDataPresentable();
+	if (!other.empty())
+	{
+		strncpy(m_data, other.data(), 8);
+		MakeDataPresentable();
+	}
 }
 
 OLumpName& OLumpName::operator=(const OLumpName& other)
@@ -92,6 +98,14 @@ OLumpName& OLumpName::operator=(const std::string& other)
 	return *this;
 }
 
+OLumpName& OLumpName::operator=(std::string_view other)
+{
+	strncpy(m_data, other.data(), 8);
+	MakeDataPresentable();
+
+	return *this;
+}
+
 // capacity
 
 size_t OLumpName::size() const
@@ -104,7 +118,7 @@ size_t OLumpName::size() const
 			break;
 		}
 	}
-	
+
 	return i;
 }
 
@@ -132,15 +146,10 @@ bool OLumpName::empty() const
 char& OLumpName::at(const size_t pos)
 {
 	const size_t s = size();
-	
+
 	if (pos > 7 || pos > s)
 	{
-		char buffer[80];
-		snprintf(buffer, 80,
-				"Attempted to access OLumpName at position %lu when the size was %lu",
-				pos, s);
-		
-		throw std::out_of_range(buffer);
+		throw std::out_of_range(fmt::format("Attempted to access OLumpName at position {} when the size was {}", pos, s));
 	}
 
 	return m_data[pos];
@@ -152,12 +161,7 @@ const char& OLumpName::at(const size_t pos) const
 
 	if (pos > 7 || pos > s)
 	{
-		char buffer[80];
-		snprintf(buffer, 80,
-		        "Attempted to access OLumpName at position %lu when the size was %lu",
-		        pos, s);
-
-		throw std::out_of_range(buffer);
+		throw std::out_of_range(fmt::format("Attempted to access OLumpName at position {} when the size was {}", pos, s));
 	}
 
 	return m_data[pos];
@@ -171,6 +175,23 @@ char& OLumpName::operator[](const size_t pos)
 const char& OLumpName::operator[](const size_t pos) const
 {
 	return m_data[pos];
+}
+
+OLumpName OLumpName::substr(const size_t pos, size_t npos) const
+{
+	const size_t s = size();
+
+	if (pos > 7 || pos > s)
+	{
+		throw std::out_of_range(fmt::format("Attempted to access OLumpName at position {} when the size was {}", pos, s));
+	}
+	if (npos > s)
+	{
+		npos = s;
+	}
+	OLumpName out;
+	strncpy(out.m_data, m_data + pos, npos);
+	return out;
 }
 
 // string operations
@@ -200,6 +221,11 @@ int OLumpName::compare(const std::string& other) const
 	return !stricmp(m_data, other.data());
 }
 
+int OLumpName::compare(std::string_view other) const
+{
+	return other.length() < 9 && !strnicmp(m_data, other.data(), 8);
+}
+
 bool operator==(const OLumpName& lhs, const OLumpName& rhs)
 {
 	return !stricmp(lhs.m_data, rhs.m_data);
@@ -215,6 +241,11 @@ bool operator==(const OLumpName& lhs, const std::string& rhs)
 	return !stricmp(lhs.m_data, rhs.data());
 }
 
+bool operator==(const OLumpName& lhs, std::string_view rhs)
+{
+	return rhs.length() < 9 && !strnicmp(lhs.m_data, rhs.data(), 8);
+}
+
 bool operator!=(const OLumpName& lhs, const OLumpName& rhs)
 {
 	return stricmp(lhs.m_data, rhs.m_data);
@@ -228,4 +259,9 @@ bool operator!=(const OLumpName& lhs, const char* rhs)
 bool operator!=(const OLumpName& lhs, const std::string& rhs)
 {
 	return stricmp(lhs.m_data, rhs.data());
+}
+
+bool operator!=(const OLumpName& lhs, std::string_view rhs)
+{
+	return rhs.length() < 9 && strnicmp(lhs.m_data, rhs.data(), 8);
 }

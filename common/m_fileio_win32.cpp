@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,15 +32,11 @@
 
 #include "m_fileio.h"
 
-
 #include "win32inc.h"
 #include <shlobj.h>
 #include <shlwapi.h>
 
-#include "cmdlib.h"
 #include "i_system.h"
-#include "m_ostring.h"
-#include "w_wad.h"
 
 std::string M_GetBinaryDir()
 {
@@ -72,8 +68,7 @@ std::string M_GetHomeDir(const std::string& user)
 	}
 
 	// Now that we have the Documents folder, just go up one.
-	std::string path;
-	StrFormat(path, "%s\\..", folderPath);
+	std::string path = fmt::sprintf("%s\\..", folderPath);
 	return M_CleanPath(path);
 }
 
@@ -90,9 +85,7 @@ std::string M_GetUserDir()
 		I_FatalError("Could not get user's personal folder.\n");
 	}
 
-	std::string path;
-	StrFormat(path, "%s\\My Games\\Odamex", folderPath);
-	return path;
+	return fmt::sprintf("%s\\My Games\\Odamex", folderPath);
 #endif
 }
 
@@ -114,7 +107,7 @@ std::string M_GetWriteDir()
 		}
 		else
 		{
-			I_FatalError("Failed to create %s directory.\n", userPath.c_str());
+			I_FatalError("Failed to create {} directory.\n", userPath);
 		}
 	}
 
@@ -123,210 +116,6 @@ std::string M_GetWriteDir()
 	//      depends on where you launch it from, which is not great.
 	return M_CleanPath(M_GetBinaryDir());
 #endif
-}
-
-std::string M_GetUserFileName(const std::string& file)
-{
-#if defined(_XBOX)
-	std::string path = "T:";
-
-	path += PATHSEP;
-	path += file;
-
-	return M_CleanPath(path);
-#else
-	// Is absolute path?  If so, stop here.
-	if (!PathIsRelative(file.c_str()))
-	{
-		return file;
-	}
-
-	// Is this an explicitly relative path?  If so, stop here.
-	size_t fileLen = file.length();
-	if (fileLen >= 2 && file[0] == '.' && M_IsPathSep(file[1]))
-	{
-		return file;
-	}
-	else if (fileLen >= 3 && file[0] == '.' && file[1] == '.' && M_IsPathSep(file[2]))
-	{
-		return file;
-	}
-
-	// Direct our path to our write directory.
-	std::string path = M_GetWriteDir();
-	if (!M_IsPathSep(*(path.end() - 1)))
-	{
-		path += PATHSEP;
-	}
-	path += file;
-
-	return path;
-#endif
-}
-
-std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
-                                const std::vector<std::string>& exts,
-                                const OMD5Hash& hash)
-{
-	dir = M_CleanPath(dir);
-	std::vector<OString> cmp_files;
-	for (std::vector<std::string>::const_iterator it = exts.begin(); it != exts.end();
-	     ++it)
-	{
-		if (!hash.empty())
-		{
-			// Filenames with supplied hashes always match first.
-			cmp_files.push_back(
-			    StdStringToUpper(name + "." + hash.getHexStr().substr(0, 6) + *it));
-		}
-		cmp_files.push_back(StdStringToUpper(name + *it));
-	}
-
-	// denis - list files in the directory of interest, case-desensitize
-	// then see if wanted wad is listed
-	std::string all_ext = dir + PATHSEP "*";
-	// all_ext += ext;
-
-	WIN32_FIND_DATA FindFileData;
-	HANDLE hFind = FindFirstFile(all_ext.c_str(), &FindFileData);
-
-	if (hFind == INVALID_HANDLE_VALUE)
-		return "";
-
-	std::string found;
-	std::vector<OString>::iterator found_it = cmp_files.end();
-	do
-	{
-		if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-			continue;
-
-		// Not only find a match, but check if it is a better match than we
-		// found previously.
-		OString check = StdStringToUpper(FindFileData.cFileName);
-		std::vector<OString>::iterator this_it =
-		    std::find(cmp_files.begin(), cmp_files.end(), check);
-		if (this_it < found_it)
-		{
-			const std::string local_file(dir + PATHSEP + FindFileData.cFileName);
-			const OMD5Hash local_hash = W_MD5(local_file);
-
-			if (hash.empty() || hash == local_hash)
-			{
-				// Found a match.
-				found = FindFileData.cFileName;
-				found_it = this_it;
-				if (found_it == cmp_files.begin())
-				{
-					// Found the best possible match, we're done.
-					break;
-				}
-			}
-			else if (!hash.empty())
-			{
-				Printf(PRINT_WARNING, "WAD at %s does not match required copy\n",
-				       local_file.c_str());
-				Printf(PRINT_WARNING, "Local MD5: %s\n", local_hash.getHexCStr());
-				Printf(PRINT_WARNING, "Required MD5: %s\n\n", hash.getHexCStr());
-			}
-		}
-	} while (FindNextFile(hFind, &FindFileData));
-
-	FindClose(hFind);
-	return found;
-}
-
-std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString> files)
-{
-	std::vector<std::string> rvo;
-
-	// Fix up parameters.
-	dir = M_CleanPath(dir);
-	for (size_t i = 0; i < files.size(); i++)
-	{
-		files[i] = StdStringToUpper(files[i]);
-	}
-
-	const std::string all_ext = dir + PATHSEP "*";
-
-	WIN32_FIND_DATA FindFileData;
-	HANDLE hFind = FindFirstFile(all_ext.c_str(), &FindFileData);
-	if (hFind == INVALID_HANDLE_VALUE)
-	{
-		return rvo;
-	}
-
-	do
-	{
-		// Skip directories.
-		if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-			continue;
-
-		// Find the file.
-		std::string check = StdStringToUpper(FindFileData.cFileName);
-		std::vector<OString>::iterator it =
-		    std::find(files.begin(), files.end(), check);
-
-		if (it == files.end())
-			continue;
-
-		rvo.push_back(check);
-	} while (FindNextFile(hFind, &FindFileData));
-
-	return rvo;
-}
-
-// Scan for PWADs and DEH and BEX files
-std::vector<std::string> M_PWADFilesScanDir(std::string dir)
-{
-	std::vector<std::string> rvo;
-
-	// Fix up parameters.
-	dir = M_CleanPath(dir);
-
-	const std::string all_ext = dir + PATHSEP "*";
-
-	WIN32_FIND_DATA FindFileData;
-	HANDLE hFind = FindFirstFile(all_ext.c_str(), &FindFileData);
-	if (hFind == INVALID_HANDLE_VALUE)
-	{
-		return rvo;
-	}
-
-	do
-	{
-		// Skip directories.
-		if (FindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-			continue;
-
-		std::string filename = std::string(FindFileData.cFileName);
-
-		// Don't care about files with names shorter than the extension
-		if (filename.length() < 4)
-			continue;
-
-		// Only return files with correct extensions
-		std::string check = StdStringToUpper(filename).substr(filename.length() - 4);
-		if (check.compare(".WAD") && check.compare(".DEH") && check.compare(".BEX"))
-			continue;
-
-		rvo.push_back(filename);
-	} while (FindNextFile(hFind, &FindFileData));
-
-	return rvo;
-}
-
-bool M_GetAbsPath(const std::string& path, std::string& out)
-{
-	TCHAR buffer[MAX_PATH];
-	LPSTR* file_part = NULL;
-	DWORD wrote = GetFullPathNameA(path.c_str(), ARRAY_LENGTH(buffer), buffer, file_part);
-	if (wrote == 0)
-	{
-		return false;
-	}
-
-	out = buffer;
-	return true;
 }
 
 #endif

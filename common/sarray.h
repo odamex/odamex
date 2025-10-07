@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,7 +17,7 @@
 //
 // DESCRIPTION:
 //
-// A static array implementation utilizing unique IDs for access. 
+// A static array implementation utilizing unique IDs for access.
 //
 //-----------------------------------------------------------------------------
 
@@ -32,7 +32,7 @@
 
 // ============================================================================
 //
-// SArray 
+// SArray
 //
 // Lightweight fixed-size array implementation with iterator.
 // The class provides many desirable characteristics:
@@ -43,7 +43,7 @@
 //		Iterators that are STL conformant for use with <algorithm>
 //
 // ------------------------------------------------------------------------
-// 
+//
 // Notes:
 //
 // There are a fixed number of slots for the array, between 1 and MAX_SIZE.
@@ -67,7 +67,7 @@
 //
 // ============================================================================
 
-typedef unsigned int SArrayId;
+using SArrayId = unsigned int;
 
 // ----------------------------------------------------------------------------
 // SArray interface & inline implementation
@@ -96,7 +96,7 @@ public:
 	typedef generic_iterator<const VT, const SArrayType> const_iterator;
 
 	template <typename IVT, typename ISAT>
-	class generic_iterator : public std::iterator<std::forward_iterator_tag, SArray>
+	class generic_iterator
 	{
 	private:
 		// typedef for easier-to-read code
@@ -104,6 +104,12 @@ public:
 		typedef generic_iterator<const IVT, const ISAT> ConstThisClass;
 
 	public:
+		using iterator_category = std::forward_iterator_tag;
+		using value_type = SArray;
+		using difference_type = std::ptrdiff_t;
+		using pointer = value_type*;
+		using reference = value_type&;
+
 		generic_iterator(ISAT& sarray) :
 			mSArray(sarray), mSlot(NOT_FOUND)
 		{ }
@@ -127,6 +133,7 @@ public:
 			return ConstThisClass(mSArray, mSlot);
 		}
 
+		[[nodiscard]]
 		inline bool operator== (const ThisClass& other) const
 		{
 			return &mSArray == &other.mSArray && mSlot == other.mSlot;
@@ -312,7 +319,7 @@ public:
 	// Returns the maximum size that the container can grow to. This number
 	// is directly based on the template parameter N.
 	//
-	inline size_t max_size() const
+	static constexpr size_t max_size()
 	{
 		return MAX_SIZE;
 	}
@@ -365,7 +372,7 @@ public:
 	inline const_iterator end() const
 	{
 		return const_iterator(*this, NOT_FOUND);
-	}	
+	}
 
 	//
 	// SArray::validate
@@ -418,7 +425,7 @@ public:
 		assert(slot != NOT_FOUND);
 		return mItemRecords[slot].mItem;
 	}
-		
+
 	//
 	// SArray::operator[]
 	//
@@ -481,7 +488,7 @@ public:
 	//
 	inline void erase(const SArrayId id)
 	{
-		SlotNumber slot = getSlot(id);
+		const SlotNumber slot = getSlot(id);
 		assert(slot != NOT_FOUND);
 		eraseSlot(slot);
 	}
@@ -496,7 +503,7 @@ public:
 	//
 	inline void erase(const VT& item)
 	{
-		SlotNumber slot = getSlot(item);
+		const SlotNumber slot = getSlot(item);
 		assert(slot != NOT_FOUND);
 		eraseSlot(slot);
 	}
@@ -549,7 +556,7 @@ private:
 		}
 		for (SlotNumber i = mNextUnused; i < newsize; i++)
 			newitemrecords[i].mId = NOT_FOUND;
-		
+
 		delete [] mItemRecords;
 		mSize = newsize;
 		mItemRecords = newitemrecords;
@@ -594,7 +601,7 @@ private:
 	inline SArrayId generateId(SlotNumber slot)
 	{
 		assert(slot < mSize);
-		SArrayId id = (mIdKey << SLOT_BITS) | slot;
+		const SArrayId id = (mIdKey << SLOT_BITS) | slot;
 		mIdKey++;
 		if (mIdKey > MAX_KEY)
 			mIdKey = MIN_KEY;
@@ -651,7 +658,7 @@ private:
 		// need to resize?
 		if (mUsed == mSize)
 		{
-			unsigned int newsize = 2 * mSize > MAX_SIZE ? MAX_SIZE : 2 * mSize;
+			const unsigned int newsize = 2 * mSize > MAX_SIZE ? MAX_SIZE : 2 * mSize;
 			// is it full and not able to be resized?
 			assert(mSize != newsize);
 			if (mSize == newsize)
@@ -665,7 +672,7 @@ private:
 			mFreeHead = mItemRecords[slot].mId;
 		else
 			slot = mNextUnused++;
-		
+
 		assert(slot < mSize);
 		mItemRecords[slot].mId = generateId(slot);
 		mUsed++;
@@ -710,18 +717,18 @@ private:
 		mIdKey = other.mIdKey;
 	}
 
-	static const unsigned int SLOT_BITS = N; 
-	static const unsigned int KEY_BITS = 32 - SLOT_BITS;
-	static const unsigned int MAX_SIZE = 1 << SLOT_BITS;
+	static constexpr unsigned int SLOT_BITS = N;
+	static constexpr unsigned int KEY_BITS = 32 - SLOT_BITS;
+	static constexpr unsigned int MAX_SIZE = 1 << SLOT_BITS;
 
-	static const unsigned int MIN_KEY = 2;
-	static const unsigned int MAX_KEY = (1 << KEY_BITS) - 1;
+	static constexpr unsigned int MIN_KEY = 2;
+	static constexpr unsigned int MAX_KEY = (1 << KEY_BITS) - 1;
 
-	static const unsigned int MIN_SLOT = 0;
-	static const unsigned int MAX_SLOT = (1 << SLOT_BITS) - 1; 
-	static const unsigned int SLOT_MASK = (1 << SLOT_BITS) - 1;
+	static constexpr unsigned int MIN_SLOT = 0;
+	static constexpr unsigned int MAX_SLOT = (1 << SLOT_BITS) - 1;
+	static constexpr unsigned int SLOT_MASK = (1 << SLOT_BITS) - 1;
 
-	static const unsigned int NOT_FOUND = (1 << SLOT_BITS) | MAX_SLOT;
+	static constexpr unsigned int NOT_FOUND = (1 << SLOT_BITS) | MAX_SLOT;
 
 	ItemRecord*		mItemRecords;
 	unsigned int	mSize;

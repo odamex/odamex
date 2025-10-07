@@ -33,6 +33,7 @@
 #include "cmdlib.h"
 #include "i_system.h"
 #include "m_fileio.h"
+#include "m_random.h"
 #include "sv_main.h"
 #include "svc_message.h"
 #include "w_wad.h"
@@ -51,7 +52,7 @@ void Maplist::shuffle() {
 	for (size_t i = 0;i < maplist.size();++i) {
 		this->s_maplist.push_back(i);
 	}
-	std::random_shuffle(this->s_maplist.begin(), this->s_maplist.end());
+	std::shuffle(this->s_maplist.begin(), this->s_maplist.end(), rng);
 
 	// Update s_index based on our newly-shuffled maplist.
 	this->update_shuffle_index();
@@ -112,10 +113,9 @@ bool Maplist::insert(const size_t &position, maplist_entry_t &maplist_entry) {
 			// loaded WAD files.  Add one to the beginning of wadfiles, since
 			// position 0 stores odamex.wad.
 			maplist_entry.wads.clear();
-			for (OResFiles::const_iterator it = ::wadfiles.begin() + 1;
-			     it != ::wadfiles.end(); ++it)
+			for (const auto& file : OUtil::drop(::wadfiles, 1))
 			{
-				maplist_entry.wads.push_back(it->getBasename());
+				maplist_entry.wads.push_back(file.getBasename());
 			}
 		}
 		else
@@ -130,6 +130,7 @@ bool Maplist::insert(const size_t &position, maplist_entry_t &maplist_entry) {
 
 	// capitalize the map names
 	maplist_entry.map = StdStringToUpper(maplist_entry.map);
+	maplist_entry.lastmap = StdStringToUpper(maplist_entry.lastmap);
 
 	// Puts the map into its proper place
 	this->maplist.insert(this->maplist.begin() + position, maplist_entry);
@@ -137,7 +138,7 @@ bool Maplist::insert(const size_t &position, maplist_entry_t &maplist_entry) {
 	// If we haven't actually entered the map rotation yet, don't increase
 	// indexes because this results in the initial map switch going to the end
 	// of the maplist, which probably isn't what we want.
-	if (!this->entered_once) {
+	if (this->entered_once) {
 		// If either of our indexes are after the inserted map, fix them
 		if (this->index >= position) {
 			this->index += 1;
@@ -185,7 +186,7 @@ bool Maplist::remove(const size_t &index) {
 	}
 
 	// Don't mess with indexes if we haven't actually entered the maplist.
-	if (!this->entered_once) {
+	if (this->entered_once) {
 		// If we delete our current map, we do not have a determined
 		// position in the maplist.
 		if (this->index == index) {
@@ -271,7 +272,7 @@ bool Maplist::get_this_index(size_t &index) {
 
 	// We're not in the maplist
 	if (!this->in_maplist) {
-		this->error = "This map is not in the maplist.";
+		this->error = "The maplist is not currently in use.";
 		return false;
 	}
 
@@ -288,14 +289,18 @@ bool Maplist::get_next_index(size_t &index) {
 	}
 
 	if (this->shuffled) {
-		if (this->s_index + 1 >= this->s_maplist.size() || !entered_once) {
+		if (this->s_index + 1 >= this->s_maplist.size()) {
 			index = this->s_maplist[0];
+		} else if (!this->entered_once) {
+			index = this->s_maplist[this->s_index];
 		} else {
 			index = this->s_maplist[this->s_index + 1];
 		}
 	} else {
-		if (this->index + 1 >= this->maplist.size() || !entered_once) {
+		if (this->index + 1 >= this->maplist.size()) {
 			index = 0;
+		} else if (!this->entered_once) {
+			index = this->index;
 		} else {
 			index = this->index + 1;
 		}
@@ -321,7 +326,7 @@ bool Maplist::query(std::vector<std::pair<size_t, maplist_entry_t*> > &result) {
 	// Return everything
 	result.reserve(this->maplist.size());
 	for (size_t i = 0;i < maplist.size();i++) {
-		result.push_back(std::pair<size_t, maplist_entry_t*>(i, &(this->maplist[i])));
+		result.emplace_back(i, &(this->maplist[i]));
 	}
 	return true;
 }
@@ -359,7 +364,7 @@ bool Maplist::query(const std::vector<std::string> &query,
 				return false;
 			}
 			index -= 1;
-			result.push_back(std::pair<size_t, maplist_entry_t*>(index, &(this->maplist[index])));
+			result.emplace_back(index, &(this->maplist[index]));
 			return true;
 		}
 	}
@@ -372,7 +377,7 @@ bool Maplist::query(const std::vector<std::string> &query,
 				bool f_map = CheckWildcards(pattern.c_str(), this->maplist[i].map.c_str());
 				bool f_wad = CheckWildcards(pattern.c_str(), JoinStrings(this->maplist[i].wads).c_str());
 				if (f_map || f_wad) {
-					result.push_back(std::pair<size_t, maplist_entry_t*>(i, &(this->maplist[i])));
+					result.emplace_back(i, &(this->maplist[i]));
 				}
 			}
 		} else {
@@ -415,8 +420,8 @@ bool Maplist::set_index(const size_t &index) {
 		return false;
 	}
 
-	this->entered_once = true;
-	this->in_maplist = true;
+	this->entered_once = true && gamestate != GS_STARTUP;
+	this->in_maplist = true && gamestate != GS_STARTUP;
 	this->index = index;
 	this->update_shuffle_index();
 	return true;
@@ -496,7 +501,7 @@ void SV_Maplist(player_t &player, maplist_status_t status) {
 	case MAPLIST_OUTDATED:
 	case MAPLIST_OK:
 		// Valid statuses
-		DPrintf("SV_Maplist: Sending status %d to pid %d\n", status, player.id);
+		DPrintFmt("SV_Maplist: Sending status {} to pid {}\n", status, player.id);
 		MSG_WriteSVC(&cl->reliablebuf, SVC_Maplist(status));
 	default:
 		// Invalid statuses
@@ -533,12 +538,12 @@ void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
 	case MAPLIST_EMPTY:
 	case MAPLIST_TIMEOUT:
 		// Valid statuses that don't require the packet logic
-		DPrintf("SV_MaplistUpdate: Sending status %d to pid %d\n", status, player.id);
+		DPrintFmt("SV_MaplistUpdate: Sending status {} to pid {}\n", status, player.id);
 		MSG_WriteSVC(&cl->reliablebuf, SVC_MaplistUpdate(status, NULL));
 		return;
 	case MAPLIST_OUTDATED:
 		// Valid statuses that need the packet logic
-		DPrintf("SV_MaplistUpdate: Sending status %d to pid %d\n", status, player.id);
+		DPrintFmt("SV_MaplistUpdate: Sending status {} to pid {}\n", status, player.id);
 		break;
 	default:
 		// Invalid statuses
@@ -595,7 +600,7 @@ void SV_Maplist(player_t &player) {
 		break;
 	default:
 		// We don't know what status they sent us.  Ignore it.
-		DPrintf("SV_Maplist: Unexpected status %d from player %d\n",
+		DPrintFmt("SV_Maplist: Unexpected status {} from player {}\n",
 				status, player.id);
 		return;
 	}
@@ -639,13 +644,32 @@ void Maplist_Disconnect(player_t &player) {
 
 //////// CONSOLE COMMANDS ////////
 
+nonstd::expected<maplist_lastmaps_t, std::string> maplist_lastmaps_t::parse(const std::string& lastmaps) {
+	StringTokens entries = TokenizeString(lastmaps, ",");
+	maplist_lastmaps_t result;
+	for (const auto& entry : entries) {
+		if (entry.empty()) {
+			return nonstd::make_unexpected(fmt::format("Empty lastmap entry found in {}", lastmaps));
+		}
+		StringTokens maps = TokenizeString(StdStringToUpper(entry), "->");
+		if (maps.size() == 1 && maps[0].find("->") == std::string::npos)
+			result.entries.push_back({ maps[0], "" });
+		else if (maps.size() == 2)
+			result.entries.push_back({ maps[0], maps[1] });
+		else {
+			return nonstd::make_unexpected(fmt::format("Invalid lastmap entry: {} in {}", entry, lastmaps));
+		}
+	}
+	return result;
+}
+
 BEGIN_COMMAND (maplist) {
 	std::vector<std::string> arguments = VectorArgs(argc, argv);
 
 	// Query the maplist
 	std::vector<std::pair<size_t, maplist_entry_t*> > result;
 	if (!Maplist::instance().query(arguments, result)) {
-		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
+		PrintFmt(PRINT_HIGH, "{}\n", Maplist::instance().get_error());
 		return;
 	}
 
@@ -653,42 +677,45 @@ BEGIN_COMMAND (maplist) {
 	size_t this_index, next_index;
 	bool show_this_map = Maplist::instance().get_this_index(this_index);
 	Maplist::instance().get_next_index(next_index);
-	for (std::vector<std::pair<size_t, maplist_entry_t*> >::iterator it = result.begin();
-		 it != result.end();++it) {
+	for (const auto& [index, entry] : result) {
+		const auto& [map, _, lastmaps, wads] = *entry;
 		char flag = ' ';
-		if (show_this_map && it->first == this_index) {
+		if (show_this_map && index == this_index) {
 			flag = '*';
-		} else if (it->first == next_index) {
+		} else if (index == next_index) {
 			flag = '+';
 		}
-		Printf(PRINT_HIGH, "%c%lu. %s %s\n", flag, it->first + 1,
-			   JoinStrings(it->second->wads, " ").c_str(),
-			   it->second->map.c_str());
+		PrintFmt(PRINT_HIGH, "{}{}. {} {}{}\n", flag, index + 1,
+			   JoinStrings(wads, " "), map,
+			   lastmaps.empty() ? "" : fmt::format(" lastmap={}", lastmaps));
 	}
 } END_COMMAND (maplist)
 
 BEGIN_COMMAND (addmap) {
+	if (argc < 2) {
+		PrintFmt(PRINT_HIGH, "Usage: addmap <map lump> [wad name] [...]\n");
+		PrintFmt(PRINT_HIGH, "If you don't specify a wad name, it'll load the IWAD by default.\n");
+		return;
+	}
+
+	maplist_entry_t maplist_entry;
+
 	std::string lastmap = argv[argc-1];
 	if (lastmap.rfind("lastmap=", 0) == 0)
 	{
-		lastmap = lastmap.substr(8);
+		auto lastmap_result = maplist_lastmaps_t::parse(lastmap.substr(8));
+		if (!lastmap_result) {
+			PrintFmt(PRINT_HIGH, "Failed to parse lastmap: {}\n", lastmap_result.error());
+			return;
+		}
+		maplist_entry.lastmaps = lastmap_result.value();
 		argc--;
-	}
-	else
-		lastmap = "";
-
-	if (argc < 2) {
-		Printf(PRINT_HIGH, "Usage: addmap <map lump> [wad name] [...]\n");
-		Printf(PRINT_HIGH, "If you don't specify a wad name, it'll load the IWAD by default.\n");
-		return;
 	}
 
 	std::vector<std::string> arguments = VectorArgs(argc, argv);
 
 	// Grab the map lump.
-	maplist_entry_t maplist_entry;
 	maplist_entry.map = arguments[0];
-	maplist_entry.lastmap = lastmap;
 
 	// If we specified any WAD files, grab them too.
 	if (arguments.size() > 1) {
@@ -697,26 +724,32 @@ BEGIN_COMMAND (addmap) {
 	}
 
 	if (!Maplist::instance().add(maplist_entry)) {
-		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
+		PrintFmt(PRINT_HIGH, "{}\n", Maplist::instance().get_error());
 		return;
 	}
 
 	// Successfully warn the server a map has been added.
-	Printf(PRINT_HIGH, "Adding %s to maplist (WAD%s : %s)", arguments[0].c_str(), (arguments.size() > 2)?"s":"", JoinStrings(maplist_entry.wads, " ").c_str());
+	PrintFmt(PRINT_HIGH, "Adding {} to maplist (WAD{} : {})", arguments[0], (arguments.size() > 2)?"s":"", JoinStrings(maplist_entry.wads, " "));
 } END_COMMAND(addmap)
 
 BEGIN_COMMAND(insertmap) {
+	if (argc < 3) {
+		PrintFmt(PRINT_HIGH, "Usage: insertmap <maplist position> <map lump> [wad name] [...]\n");
+	}
+
+	maplist_entry_t maplist_entry;
+
 	std::string lastmap = argv[argc-1];
 	if (lastmap.rfind("lastmap=", 0) == 0)
 	{
+		auto lastmap_result = maplist_lastmaps_t::parse(lastmap.substr(8));
+		if (!lastmap_result) {
+			PrintFmt(PRINT_HIGH, "Failed to parse lastmap: {}\n", lastmap_result.error());
+			return;
+		}
 		lastmap = lastmap.substr(8);
+		maplist_entry.lastmaps = lastmap_result.value();
 		argc--;
-	}
-	else
-		lastmap = "";
-
-	if (argc < 3) {
-		Printf(PRINT_HIGH, "Usage: insertmap <maplist position> <map lump> [wad name] [...]\n");
 	}
 
 	std::vector<std::string> arguments = VectorArgs(argc, argv);
@@ -726,14 +759,12 @@ BEGIN_COMMAND(insertmap) {
 	std::istringstream buffer(arguments[0]);
 	buffer >> maplist_position;
 	if (maplist_position == 0 || arguments[0][0] == '-') {
-		Printf(PRINT_HIGH, "Position must be a positive number.\n");
+		PrintFmt(PRINT_HIGH, "Position must be a positive number.\n");
 		return;
 	}
 
 	// Grab the map lump.
-	maplist_entry_t maplist_entry;
 	maplist_entry.map = arguments[1];
-	maplist_entry.lastmap = lastmap;
 
 	// If we specified any WAD files, grab them too.
 	if (arguments.size() > 2) {
@@ -742,17 +773,17 @@ BEGIN_COMMAND(insertmap) {
 	}
 
 	if (!Maplist::instance().insert(maplist_position - 1, maplist_entry)) {
-		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
+		PrintFmt(PRINT_HIGH, "{}\n", Maplist::instance().get_error());
 		return;
 	}
 
 	// Successfully warn the server a map has been added.
-	Printf(PRINT_HIGH, "Successfully inserting %s to position #%s (WAD%s : %s)", arguments[1].c_str(), arguments[0].c_str(), (arguments.size() > 3) ? "s" : "", JoinStrings(maplist_entry.wads, " ").c_str());
+	PrintFmt(PRINT_HIGH, "Successfully inserting {} to position #{} (WAD{} : {})", arguments[1], arguments[0], (arguments.size() > 3) ? "s" : "", JoinStrings(maplist_entry.wads, " "));
 } END_COMMAND(insertmap)
 
 BEGIN_COMMAND(delmap) {
 	if (argc < 2) {
-		Printf(PRINT_HIGH, "Usage: delmap <maplist index>\n");
+		PrintFmt(PRINT_HIGH, "Usage: delmap <maplist index>\n");
 		return;
 	}
 
@@ -763,21 +794,21 @@ BEGIN_COMMAND(delmap) {
 	std::istringstream buffer(arguments[0]);
 	buffer >> maplist_index;
 	if (maplist_index == 0 || arguments[0][0] == '-') {
-		Printf(PRINT_HIGH, "Index must be a positive number.\n");
+		PrintFmt(PRINT_HIGH, "Index must be a positive number.\n");
 		return;
 	}
 
 	if (!Maplist::instance().remove(maplist_index - 1)) {
-		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
+		PrintFmt(PRINT_HIGH, "{}\n", Maplist::instance().get_error());
 	}
 } END_COMMAND(delmap)
 
 BEGIN_COMMAND(clearmaplist) {
 	if (!Maplist::instance().clear()) {
-		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
+		PrintFmt(PRINT_HIGH, "{}\n", Maplist::instance().get_error());
 	}
 	else {
-		Printf(PRINT_HIGH, "Maplist cleared.\n");
+		PrintFmt(PRINT_HIGH, "Maplist cleared.\n");
 	}
 } END_COMMAND(clearmaplist)
 
@@ -790,26 +821,26 @@ BEGIN_COMMAND (gotomap) {
 	std::vector<std::string> arguments = VectorArgs(argc, argv);
 
 	if (arguments.empty()) {
-		Printf(PRINT_HIGH, "Usage: gotomap <map index or unambiguous map name>\n");
+		PrintFmt(PRINT_HIGH, "Usage: gotomap <map index or unambiguous map name>\n");
 		return;
 	}
 
 	// Query the maplist
 	maplist_qrows_t result;
 	if (!Maplist::instance().query(arguments, result)) {
-		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error().c_str());
+		PrintFmt(PRINT_HIGH, "{}\n", Maplist::instance().get_error());
 		return;
 	}
 
 	// If we got back an empty response, complain.
 	if (result.empty()) {
-		Printf(PRINT_HIGH, "Map not found.\n");
+		PrintFmt(PRINT_HIGH, "Map not found.\n");
 		return;
 	}
 
 	// If we got back more than one response, complain.
 	if (result.size() > 1) {
-		Printf(PRINT_HIGH, "Map is ambiguous.\n");
+		PrintFmt(PRINT_HIGH, "Map is ambiguous.\n");
 		return;
 	}
 
@@ -833,7 +864,7 @@ bool CMD_Randmap(std::string &error) {
 BEGIN_COMMAND (randmap) {
 	std::string error;
 	if (!CMD_Randmap(error)) {
-		Printf(PRINT_HIGH, "%s\n", error.c_str());
+		PrintFmt(PRINT_HIGH, "{}\n", error);
 	}
 } END_COMMAND (randmap)
 
@@ -844,9 +875,8 @@ BEGIN_COMMAND(setlobbymap)
 {
 	if (argc < 2)
 	{
-		Printf(PRINT_HIGH, "Usage: setlobby <map lump> [wad name] [...]\n");
-		Printf(PRINT_HIGH,
-		       "There can only be one map with the lobby.\n");
+		PrintFmt(PRINT_HIGH, "Usage: setlobby <map lump> [wad name] [...]\n");
+		PrintFmt(PRINT_HIGH, "There can only be one lobby map.\n");
 		return;
 	}
 
@@ -866,15 +896,15 @@ BEGIN_COMMAND(setlobbymap)
 	Maplist::instance().set_lobbymap(maplist_entry);
 
 	// Successfully warn the server a map has been added.
-	Printf(PRINT_HIGH, "Setting %s as the Lobby map (WAD%s : %s)\n", arguments[0].c_str(),
-	       (arguments.size() > 2) ? "s" : "",
-	       JoinStrings(maplist_entry.wads, " ").c_str());
+	PrintFmt(PRINT_HIGH, "Setting {} as the lobby map (WAD{} : {})\n", arguments[0],
+	         (arguments.size() > 2) ? "s" : "",
+	         JoinStrings(maplist_entry.wads, " "));
 }
 END_COMMAND(setlobbymap)
 
 BEGIN_COMMAND(clearlobbymap)
 {
 	Maplist::instance().clear_lobbymap();
-	Printf("Lobby map cleared.\n");
+	PrintFmt("Lobby map cleared.\n");
 }
 END_COMMAND(clearlobbymap)

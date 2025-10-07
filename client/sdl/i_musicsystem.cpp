@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -139,15 +139,15 @@ static MidiSong* I_RegisterMidiSong(byte* data, size_t length)
 		}
 		else
 		{
-			Printf(PRINT_WARNING, "I_RegisterMidiSong: MUS is not valid\n");
+			PrintFmt(PRINT_WARNING, "I_RegisterMidiSong: MUS is not valid\n");
 			regdata = NULL;
 			reglength = 0;
 		}
 	}
 	else if (!S_MusicIsMidi(data, length))
 	{
-		Printf(PRINT_WARNING, "I_RegisterMidiSong: Only midi music formats are supported "
-		                      "with the selected music system.\n");
+		PrintFmt(PRINT_WARNING, "I_RegisterMidiSong: Only midi music formats are supported "
+		                        "with the selected music system.\n");
 		return NULL;
 	}
 

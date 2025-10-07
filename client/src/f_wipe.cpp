@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -76,7 +76,7 @@ static int worms[320];
 
 static void Wipe_StartMelt()
 {
-	worms[0] = - (M_Random() & 15); 
+	worms[0] = - (M_Random() & 15);
 
 	for (int x = 1; x < 320; x++)
 	{
@@ -116,7 +116,7 @@ static bool Wipe_TickMelt()
 			int dy = (worms[x] < 16) ? worms[x] + 1 : 8;
 			if (worms[x] + dy >= 200)
 				dy = 200 - worms[x];
-		
+
 			worms[x] += dy;
 			done = false;
 		}
@@ -140,7 +140,7 @@ static inline void Wipe_DrawMeltLoop(int x, int starty)
 	{
 		*to = *from;
 		to += surface_pitch_pixels;
-		from++; 
+		from++;
 	}
 }
 
@@ -172,14 +172,14 @@ static void Wipe_DrawMelt()
 // on the Westside...
 
 // [RH] Fire Wipe
-static const int FIREWIDTH = 64, FIREHEIGHT = 64;
+static constexpr int FIREWIDTH = 64, FIREHEIGHT = 64;
 
 static byte *burnarray = NULL;
 static byte *oldburnarray = NULL;
 static int density;
 static int burntime;
 static int voop;
-const size_t array_size = FIREWIDTH * (FIREHEIGHT + 5);
+constexpr size_t array_size = FIREWIDTH * (FIREHEIGHT + 5);
 
 static void Wipe_StartBurn()
 {
@@ -353,7 +353,7 @@ static inline void Wipe_DrawBurnGeneric()
 		from += surface_width;
 		to += surface_pitch_pixels;
 	}
-} 
+}
 
 static void Wipe_DrawBurn()
 {
@@ -490,12 +490,12 @@ void Wipe_Start()
 		wipe_stop_func = Wipe_StopFade;
 		wipe_tick_func = Wipe_TickFade;
 		wipe_draw_func = Wipe_DrawFade;
-	}	
+	}
 
 	//  allocate data for the temporary screens
 	int pixel_size = I_GetPrimarySurface()->getBytesPerPixel();
 	wipe_screen = new byte[I_GetSurfaceWidth() * I_GetSurfaceHeight() * pixel_size];
-	
+
 	in_progress = true;
 	if (wipe_start_func)
 		wipe_start_func();
@@ -530,7 +530,7 @@ bool Wipe_Ticker()
 // Renders the wipe animation independent of the ticker. This allows the video
 // framerate to be uncapped while the animation speed moves at the consistent
 // 35Hz ticrate.
-// 
+//
 // It also allows us to interpolate the wipe with the framerate. Which we're doing.
 // Because we can.
 //
@@ -539,7 +539,7 @@ void Wipe_Drawer()
 	if (in_progress)
 	{
 		if (wipe_draw_func)
-			wipe_draw_func();	
+			wipe_draw_func();
 		V_MarkRect(0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
 
 		ST_ForceRefresh();		// wipe draws over the status bar so it needs to be redrawn

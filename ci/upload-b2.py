@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #
-# Copyright (C) 2006-2020 by The Odamex Team.
+# Copyright (C) 2006-2025 by The Odamex Team.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -42,7 +42,7 @@ if GITHUB_REPOSITORY_OWNER != "odamex":
     sys.exit(0)
 
 # Load up JSON so we can grab a message
-with open(os.getenv("GITHUB_EVENT_PATH")) as fh:
+with open(os.getenv("GITHUB_EVENT_PATH"), encoding="utf-8") as fh:
     event_data = json.load(fh)
 
 if GITHUB_EVENT_NAME == "push":

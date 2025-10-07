@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -43,7 +43,7 @@ void TypeInfo::RegisterType ()
 	if (m_NumTypes == m_MaxTypes)
 	{
 		m_MaxTypes = m_MaxTypes ? m_MaxTypes*2 : 32;
-		m_Types = (TypeInfo **)Realloc (m_Types, m_MaxTypes * sizeof(*m_Types));
+		m_Types = (TypeInfo **)M_Realloc (m_Types, m_MaxTypes * sizeof(*m_Types));
 	}
 	m_Types[m_NumTypes] = this;
 	TypeIndex = m_NumTypes;
@@ -63,18 +63,21 @@ const TypeInfo *TypeInfo::FindType (const char *name)
 
 TypeInfo DObject::_StaticType("DObject", NULL, sizeof(DObject));
 
-TArray<DObject *> DObject::Objects;
-TArray<size_t> DObject::FreeIndices;
-TArray<DObject *> DObject::ToDestroy;
-bool DObject::Inactive;
-
 DObject::DObject ()
 {
 	ObjectFlags = 0;
-	if (FreeIndices.Pop (Index))
+
+	if (!FreeIndices.empty())
+	{
+		Index = FreeIndices.back();
 		Objects[Index] = this;
+		FreeIndices.pop_back();
+	}
 	else
-		Index = Objects.Push (this);
+	{
+		Index = Objects.size();
+		Objects.push_back(this);
+	}
 }
 
 DObject::~DObject ()
@@ -90,13 +93,11 @@ DObject::~DObject ()
 			// object is queued for deletion, but is not being deleted
 			// by the destruction process, so remove it from the
 			// ToDestroy array and do other necessary stuff.
-			int i;
-
-			for (i = ToDestroy.Size() - 1; i >= 0; i--)
+			for (auto& obj : OUtil::reverse(ToDestroy))
 			{
-				if (ToDestroy[i] == this)
+				if (obj == this)
 				{
-					ToDestroy[i] = NULL;
+					obj = nullptr;
 					break;
 				}
 			}
@@ -112,7 +113,7 @@ void DObject::Destroy ()
 		{
 			RemoveFromArray ();
 			ObjectFlags |= OF_MassDestruction;
-			ToDestroy.Push (this);
+			ToDestroy.push_back(this);
 		}
 	}
 	else
@@ -125,21 +126,17 @@ void DObject::BeginFrame ()
 
 void DObject::EndFrame ()
 {
-	DObject *obj;
-
-	if (ToDestroy.Size ())
-	{
-		//Printf (PRINT_HIGH, "Destroyed %d objects\n", ToDestroy.Size());
-
-		while (ToDestroy.Pop (obj))
-		{
-			if (obj)
-			{
-				obj->ObjectFlags |= OF_Cleanup;
-				delete obj;
-			}
+	for (DObject* obj : ToDestroy)
+  {
+		if (obj)
+    {
+			obj->ObjectFlags |= OF_Cleanup;
+			delete obj;
 		}
+
+		ToDestroy.clear();
 	}
+	ToDestroy.clear();
 }
 
 void DObject::RemoveFromArray ()
@@ -148,16 +145,15 @@ void DObject::RemoveFromArray ()
 	// so there's really no telling which is destroyed first, better to bail
 	if(Inactive)
 		return;
-	
-	if (Objects.Size () == Index + 1)
+
+	if (Objects.size () == Index + 1)
 	{
-		DObject *dummy;
-		Objects.Pop (dummy);
+		Objects.pop_back();
 	}
-	else if (Objects.Size() > Index + 1)
+	else if (Objects.size() > Index + 1)
 	{
 		Objects[Index] = NULL;
-		FreeIndices.Push (Index);
+		FreeIndices.push_back(Index);
 	}
 }
 

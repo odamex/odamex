@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -81,6 +81,7 @@ typedef int SOCKET;
 #include "i_net.h"
 #include "svc_map.h"
 #include "d_player.h"
+#include "m_alloc.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -145,7 +146,7 @@ void init_upnp (void)
 	memset(&urls, 0, sizeof(struct UPNPUrls));
 	memset(&data, 0, sizeof(struct IGDdatas));
 
-	Printf(PRINT_HIGH, "UPnP: Discovering router (max 1 unit supported)\n");
+	PrintFmt(PRINT_HIGH, "UPnP: Discovering router (max 1 unit supported)\n");
 
 #if MINIUPNPC_API_VERSION < 14
 	devlist = upnpDiscover(sv_upnp_discovertimeout.asInt(), NULL, NULL, 0, 0, &res);
@@ -156,7 +157,7 @@ void init_upnp (void)
 
 	if (!devlist || res != UPNPDISCOVER_SUCCESS)
     {
-		Printf(PRINT_WARNING, "UPnP: Router not found or timed out, error %d\n",
+		PrintFmt(PRINT_WARNING, "UPnP: Router not found or timed out, error {}\n",
             res);
 
 		is_upnp_ok = false;
@@ -189,8 +190,7 @@ void init_upnp (void)
 	if (descXML)
 	{
 		parserootdesc (descXML, descXMLsize, &data);
-		free (descXML);
-		descXML = NULL;
+		M_Free(descXML);
 		GetUPNPUrls (&urls, &data, dev->descURL, 0);
 	}
 
@@ -201,14 +201,14 @@ void init_upnp (void)
 
 	if (r != 0)
 	{
-		Printf(PRINT_HIGH,
+		PrintFmt(PRINT_HIGH,
 			"UPnP: Router found but unable to get external IP address\n");
 
 		is_upnp_ok = false;
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "UPnP: Router found, external IP address is: %s\n",
+		PrintFmt(PRINT_HIGH, "UPnP: Router found, external IP address is: {}\n",
 			IPAddress);
 
 		// Store ip address just in case admin wants it
@@ -220,16 +220,13 @@ void init_upnp (void)
 
 void upnp_add_redir (const char * addr, int port)
 {
-	char port_str[16];
-	int r;
-
 	if (!sv_upnp || !is_upnp_ok)
 		return;
 
 	if (urls.controlURL == NULL)
 		return;
 
-	snprintf(port_str, 16, "%d", port);
+	const std::string port_str = fmt::format("{}", port);
 
 	// Set a description if none exists
 	if (!sv_upnp_description.cstring()[0])
@@ -241,19 +238,19 @@ void upnp_add_redir (const char * addr, int port)
 		sv_upnp_description.Set(desc.str().c_str());
 	}
 
-	r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
-			port_str, port_str, addr, sv_upnp_description.cstring(), "UDP", NULL, 0);
+	const int r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
+		port_str.c_str(), port_str.c_str(), addr, sv_upnp_description.cstring(), "UDP", NULL, 0);
 
 	if (r != 0)
 	{
-		Printf(PRINT_HIGH, "UPnP: AddPortMapping failed: %d\n", r);
+		PrintFmt(PRINT_HIGH, "UPnP: AddPortMapping failed: {}\n", r);
 
 		is_upnp_ok = false;
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "UPnP: Port mapping added to router: %s",
-			sv_upnp_description.cstring());
+		PrintFmt(PRINT_HIGH, "UPnP: Port mapping added to router: {}",
+			sv_upnp_description.str());
 
 		is_upnp_ok = true;
 	}
@@ -261,22 +258,19 @@ void upnp_add_redir (const char * addr, int port)
 
 void upnp_rem_redir (int port)
 {
-	char port_str[16];
-	int r;
-
 	if (!is_upnp_ok)
 		return;
 
 	if(urls.controlURL == NULL)
 		return;
 
-	snprintf(port_str, 16, "%d", port);
-	r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype,
-		port_str, "UDP", 0);
+	const std::string port_str = fmt::format("{}", port);
+	const int r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype,
+		port_str.c_str(), "UDP", 0);
 
 	if (r != 0)
 	{
-		Printf(PRINT_HIGH, "UPnP: DeletePortMapping failed: %d\n", r);
+		PrintFmt(PRINT_HIGH, "UPnP: DeletePortMapping failed: {}\n", r);
 		is_upnp_ok = false;
 	}
 	else
@@ -337,20 +331,20 @@ void BindToLocalPort (SOCKET s, u_short wanted)
     {
         sv_upnp_internalip.Set(ip.c_str());
 
-        Printf(PRINT_HIGH, "UPnP: Internal IP address is: %s\n", ip.c_str());
+        PrintFmt(PRINT_HIGH, "UPnP: Internal IP address is: {}\n", ip);
 
         upnp_add_redir(ip.c_str(), next - 1);
     }
     else
     {
-        Printf(PRINT_HIGH, "UPnP: Could not get first internal IP address, "
+        PrintFmt(PRINT_HIGH, "UPnP: Could not get first internal IP address, "
             "UPnP will not function\n");
 
         is_upnp_ok = false;
     }
 #endif
 
-	Printf(PRINT_HIGH, "Bound to local port %d\n", next - 1);
+	PrintFmt(PRINT_HIGH, "Bound to local port {}\n", next - 1);
 }
 
 
@@ -462,12 +456,12 @@ int NET_GetPacket (void)
 
 		if (errno == WSAEMSGSIZE)
 		{
-			 Printf (PRINT_HIGH, "Warning:  Oversize packet from %s\n",
+			 PrintFmt(PRINT_HIGH, "Warning:  Oversize packet from {}\n",
 							 NET_AdrToString (net_from));
 			 return false;
 		}
 
-		Printf (PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
+		PrintFmt(PRINT_HIGH, "NET_GetPacket: {}\n", strerror(errno));
 		return false;
 #else
 		if (errno == EWOULDBLOCK)
@@ -475,7 +469,7 @@ int NET_GetPacket (void)
 		if (errno == ECONNREFUSED)
 			return false;
 
-		Printf (PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
+		PrintFmt(PRINT_HIGH, "NET_GetPacket: {}\n", strerror(errno));
 		return false;
 #endif
 	}
@@ -521,7 +515,7 @@ int NET_SendPacket (buf_t &buf, netadr_t &to)
 			  return 0;
 		  if (errno == ECONNREFUSED)
 			  return 0;
-		  Printf (PRINT_HIGH, "NET_SendPacket: %s\n", strerror(errno));
+		  PrintFmt(PRINT_HIGH, "NET_SendPacket: {}\n", strerror(errno));
 #endif
 	}
 
@@ -550,12 +544,12 @@ std::string NET_GetLocalAddress (void)
         addr.s_addr = *(u_long *)ent->h_addr_list[0];
 
 		std::string ipstr = inet_ntoa(addr);
-		Printf(PRINT_HIGH, "Bound to IP: %s\n", ipstr.c_str());
+		PrintFmt(PRINT_HIGH, "Bound to IP: {}\n", ipstr);
 		return ipstr;
     }
 	else
 	{
-		Printf(PRINT_HIGH, "Could not look up host IP address from hostname\n");
+		PrintFmt(PRINT_HIGH, "Could not look up host IP address from hostname\n");
 		return "";
 	}
 }
@@ -627,32 +621,32 @@ void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
 	static std::string buffer;
 	if (!msg.SerializeToString(&buffer))
 	{
-		Printf(
+		PrintFmt(
 		    PRINT_WARNING,
-		    "WARNING: Could not serialize message \"%s\".  This is most likely a bug.\n",
-		    msg.GetDescriptor()->full_name().c_str());
+		    "WARNING: Could not serialize message \"{}\".  This is most likely a bug.\n",
+		    msg.GetDescriptor()->full_name());
 		return;
 	}
 
 	// Do we actaully have room for this upcoming message?
-	const size_t MAX_HEADER_SIZE = 4; // header + 3 bytes for varint size.
-	if (b->cursize + MAX_HEADER_SIZE + msg.ByteSize() >= MAX_UDP_SIZE)
+	static constexpr size_t MAX_HEADER_SIZE = 4; // header + 3 bytes for varint size.
+	if (b->cursize + MAX_HEADER_SIZE + msg.ByteSizeLong() >= MAX_UDP_SIZE)
 		SV_SendPackets();
 
 	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
 	if (header == svc_noop)
 	{
-		Printf(PRINT_WARNING,
-		       "WARNING: Could not find svc header for message \"%s\".  This is most "
-		       "likely a bug.\n",
-		       msg.GetDescriptor()->full_name().c_str());
+		PrintFmt(PRINT_WARNING,
+		         "WARNING: Could not find svc header for message \"{}\".  This is most "
+		         "likely a bug.\n",
+		         msg.GetDescriptor()->full_name());
 		return;
 	}
 
 #if 0
-	Printf("%s (%d)\n, %s\n",
+	PrintFmt("{} ({})\n, {}\n",
 		::svc_info[header].getName(), msg.ByteSize(),
-		msg.ShortDebugString().c_str());
+		msg.ShortDebugString());
 #endif
 
 	b->WriteByte(header);
@@ -662,7 +656,7 @@ void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
 
 /**
  * @brief Broadcast message to all players.
- * 
+ *
  * @param buf Type of buffer to broadcast in, per player.
  * @param msg Message to broadcast to all players.
  * @param skip If passed, skip this player id.
@@ -676,37 +670,37 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
 	static std::string buffer;
 	if (!msg.SerializeToString(&buffer))
 	{
-		Printf(
+		PrintFmt(
 		    PRINT_WARNING,
-		    "WARNING: Could not serialize message \"%s\".  This is most likely a bug.\n",
-		    msg.GetDescriptor()->full_name().c_str());
+		    "WARNING: Could not serialize message \"{}\".  This is most likely a bug.\n",
+		    msg.GetDescriptor()->full_name());
 		return;
 	}
 
 	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
 	if (header == svc_noop)
 	{
-		Printf(PRINT_WARNING,
-		       "WARNING: Could not find svc header for message \"%s\".  This is most "
-		       "likely a bug.\n",
-		       msg.GetDescriptor()->full_name().c_str());
+		PrintFmt(PRINT_WARNING,
+		         "WARNING: Could not find svc header for message \"{}\".  This is most "
+		         "likely a bug.\n",
+		         msg.GetDescriptor()->full_name());
 		return;
 	}
 
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	for (auto& player : players)
 	{
-		if (!it->ingame())
+		if (!player.ingame())
 			continue;
 
-		if (static_cast<int>(it->id) == skipPlayer)
+		if (static_cast<int>(player.id) == skipPlayer)
 			continue;
 
 		// Select the correct buffer.
-		buf_t* b = buf == CLBUF_RELIABLE ? &it->client.reliablebuf : &it->client.netbuf;
+		buf_t* b = buf == CLBUF_RELIABLE ? &player.client.reliablebuf : &player.client.netbuf;
 
 		// Do we actaully have room for this upcoming message?
-		const size_t MAX_HEADER_SIZE = 4; // header + 3 bytes for varint size.
-		if (b->cursize + MAX_HEADER_SIZE + msg.ByteSize() >= MAX_UDP_SIZE)
+		static constexpr size_t MAX_HEADER_SIZE = 4; // header + 3 bytes for varint size.
+		if (b->cursize + MAX_HEADER_SIZE + msg.ByteSizeLong() >= MAX_UDP_SIZE)
 			SV_SendPackets();
 
 		b->WriteByte(header);
@@ -768,7 +762,7 @@ void MSG_WriteFloat(buf_t *b, float Float)
 
     StringStream << Float;
 
-	MSG_WriteString(b, (char *)StringStream.str().c_str());
+	MSG_WriteString(b, StringStream.str().c_str());
 }
 
 //
@@ -809,7 +803,7 @@ void MSG_WriteHexString(buf_t *b, const char *s)
 
     if (numdigits > ARRAY_LENGTH(output))
     {
-        Printf (PRINT_HIGH, "MSG_WriteHexString: too many digits\n");
+        PrintFmt(PRINT_HIGH, "MSG_WriteHexString: too many digits\n");
         return;
     }
 
@@ -871,7 +865,7 @@ bool MSG_DecompressMinilzo ()
 
 	if(r != LZO_E_OK)
 	{
-		Printf(PRINT_HIGH, "Error: minilzo packet decompression failed with error %X\n", r);
+		PrintFmt(PRINT_HIGH, "Error: minilzo packet decompression failed with error {:X}\n", r);
 		return false;
 	}
 
@@ -915,60 +909,6 @@ bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap)
 	return true;
 }
 
-//
-// MSG_DecompressAdaptive
-//
-bool MSG_DecompressAdaptive (huffman &huff)
-{
-	// decompress back onto the receive buffer
-	size_t left = MSG_BytesLeft();
-
-	if(decompressed.maxsize() < net_message.maxsize())
-		decompressed.resize(net_message.maxsize());
-
-	size_t newlen = net_message.maxsize();
-
-	bool r = huff.decompress (net_message.ptr() + net_message.BytesRead(), left, decompressed.ptr(), newlen);
-
-	if(!r)
-		return false;
-
-	net_message.clear();
-	memcpy(net_message.ptr(), decompressed.ptr(), newlen);
-
-	net_message.cursize = newlen;
-
-	return true;
-}
-
-//
-// MSG_CompressAdaptive
-//
-bool MSG_CompressAdaptive (huffman &huff, buf_t &buf, size_t start_offset, size_t write_gap)
-{
-	size_t outlen = OUT_LEN(buf.maxsize() - start_offset - write_gap);
-	size_t total_len = outlen + start_offset + write_gap;
-
-	if(compressed.maxsize() < total_len)
-		compressed.resize(total_len);
-
-	bool r = huff.compress (buf.ptr() + start_offset,
-							  buf.size() - start_offset,
-							  compressed.ptr() + start_offset + write_gap,
-							  outlen);
-
-	// worth the effort?
-	if(!r || outlen >= (buf.size() - start_offset - write_gap))
-		return false;
-
-	memcpy(compressed.ptr(), buf.ptr(), start_offset);
-
-	SZ_Clear(&buf);
-	MSG_WriteChunk(&buf, compressed.ptr(), outlen + start_offset + write_gap);
-
-	return true;
-}
-
 int MSG_ReadShort (void)
 {
     return net_message.ReadShort();
@@ -999,7 +939,7 @@ bool MSG_ReadBool(void)
 
     if (Value < 0 || Value > 1)
     {
-        DPrintf("MSG_ReadBool: Value is not 0 or 1, possibly corrupted packet");
+        DPrintFmt("MSG_ReadBool: Value is not 0 or 1, possibly corrupted packet");
 
         return (Value ? true : false);
     }
@@ -1034,7 +974,7 @@ float MSG_ReadFloat(void)
 
 /**
  * @brief Initialize a svc_info member.
- * 
+ *
  * @detail do-while is used to force a semicolon afterwards.
  */
 #define SVC_INFO(n)                    \
@@ -1167,9 +1107,9 @@ CVAR_FUNC_IMPL(net_rcvbuf)
 {
 	int n = var.asInt();
 	if (setsockopt(inet_socket, SOL_SOCKET, SO_RCVBUF, SETSOCKOPTCAST(&n), (int) sizeof(n)) == -1) {
-		Printf(PRINT_HIGH, "setsockopt SO_RCVBUF: %s", strerror(errno));
+		PrintFmt(PRINT_HIGH, "setsockopt SO_RCVBUF: {}", strerror(errno));
 	} else {
-		Printf(PRINT_HIGH, "net_rcvbuf set to %d\n", n);
+		PrintFmt(PRINT_HIGH, "net_rcvbuf set to {}\n", n);
 	}
 }
 
@@ -1177,9 +1117,9 @@ CVAR_FUNC_IMPL(net_sndbuf)
 {
 	int n = var.asInt();
 	if (setsockopt(inet_socket, SOL_SOCKET, SO_SNDBUF, SETSOCKOPTCAST(&n), (int) sizeof(n)) == -1) {
-		Printf (PRINT_HIGH, "setsockopt SO_SNDBUF: %s", strerror(errno));
+		PrintFmt(PRINT_HIGH, "setsockopt SO_SNDBUF: {}", strerror(errno));
 	} else {
-		Printf(PRINT_HIGH, "net_sndbuf set to %d\n", n);
+		PrintFmt(PRINT_HIGH, "net_sndbuf set to {}\n", n);
 	}
 }
 
@@ -1204,7 +1144,7 @@ void InitNetCommon(void)
 
    BindToLocalPort (inet_socket, localport);
    if (ioctlsocket(inet_socket, FIONBIO, &_true) == -1)
-       I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
+       I_FatalError ("UDPsocket: ioctl FIONBIO: {}", strerror(errno));
 
 	// enter message information into message info structs
 	InitNetMessageFormats();
@@ -1233,11 +1173,11 @@ bool NetWaitOrTimeout(size_t ms)
 	#ifdef _WIN32
 		// handle SOCKET_ERROR
 		if(ret == SOCKET_ERROR)
-			Printf(PRINT_HIGH, "select returned SOCKET_ERROR: %d\n", WSAGetLastError());
+			PrintFmt(PRINT_HIGH, "select returned SOCKET_ERROR: {}\n", WSAGetLastError());
 	#else
 		// handle -1
 		if(ret == -1 && ret != EINTR)
-			Printf(PRINT_HIGH, "select returned -1: %s\n", strerror(errno));
+			PrintFmt(PRINT_HIGH, "select returned -1: {}\n", strerror(errno));
 	#endif
 
 	return false;

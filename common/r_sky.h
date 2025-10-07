@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,25 +25,23 @@
 
 
 // SKY, store the number for name.
-extern OLumpName SKYFLATNAME;
+inline OLumpName SKYFLATNAME = "F_SKY1";
 
-extern int		sky1shift;				//		[ML] 5/11/06 - remove sky2 remenants
-
-extern int 		sky1texture;				//		""
-extern int 		sky2texture;				//		""
-extern fixed_t	sky1scrolldelta;
-extern fixed_t	sky2scrolldelta;
-extern fixed_t	sky1columnoffset;
-extern fixed_t	sky2columnoffset;
-extern fixed_t	skytexturemid;
-extern int		skystretch;
-extern fixed_t	skyiscale;
-extern fixed_t	skyscale;
-extern fixed_t	skyheight;
+inline int      sky1texture;
+inline int      sky2texture;
+inline fixed_t	sky2scrollxdelta;
+inline fixed_t	sky2columnoffset;
 
 EXTERN_CVAR (r_stretchsky)
 
 // Called whenever the sky changes.
-void R_InitSkyMap		();
+void R_InitSkyMap();
+void R_InitSkyDefs();
+void R_InitSkiesForLevel();
+void R_ClearSkyDefs();
+void R_SetDefaultSky(const OLumpName& sky);
+void R_UpdateSkies();
+bool R_IsSkyFlat(int flatnum);
+void R_ActivateSkies(const byte* hitlist, std::vector<int>& skytextures);
 
 void R_RenderSkyRange(visplane_t* pl);

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,6 +25,7 @@
 
 #include "dobject.h"
 
+#include <optional>
 
 void C_ExecCmdLineParams (bool onlyset, bool onlylogfile);
 
@@ -33,7 +34,7 @@ void C_ExecCmdLineParams (bool onlyset, bool onlylogfile);
 void AddCommandString(const std::string &cmd, uint32_t key = 0);
 
 // parse a command string
-const char *ParseString (const char *data);
+std::optional<std::string> ParseString (std::string_view& data);
 
 // combine many arguments into one valid argument.
 std::string C_ArgCombine(size_t argc, const char **argv);
@@ -50,10 +51,10 @@ class DConsoleCommand : public DObject
 	DECLARE_CLASS (DConsoleCommand, DObject)
 public:
 	DConsoleCommand (const char *name);
-	virtual ~DConsoleCommand ();
+	~DConsoleCommand () override;
 	virtual void Run (uint32_t key = 0) = 0;
 	virtual bool IsAlias () { return false; }
-	void PrintCommand () { Printf (PRINT_HIGH, "%s\n", m_Name.c_str()); }
+	void PrintCommand () { PrintFmt(PRINT_HIGH, "{}\n", m_Name); }
 
 	std::string m_Name;
 
@@ -63,9 +64,9 @@ protected:
 	AActor *m_Instigator;
 	size_t argc;
 	char **argv;
-	char *args;
+	const char *args;
 
-	friend void C_DoCommand(const char *cmd, uint32_t key);
+	friend void C_DoCommand(std::string_view cmd, uint32_t key);
 };
 
 #define BEGIN_COMMAND(n) \
@@ -84,10 +85,10 @@ class DConsoleAlias : public DConsoleCommand
 	bool state_lock;
 public:
 	DConsoleAlias (const char *name, const char *command);
-	virtual ~DConsoleAlias ();
-	virtual void Run (uint32_t key = 0);
-	virtual bool IsAlias () { return true; }
-	void PrintAlias () { Printf (PRINT_HIGH, "%s : %s\n", m_Name.c_str(), m_Command.c_str()); }
+	~DConsoleAlias () override;
+	void Run (uint32_t key = 0) override;
+	bool IsAlias () override { return true; }
+	void PrintAlias () { PrintFmt(PRINT_HIGH, "{} : {}\n", m_Name, m_Command); }
 	void Archive (FILE *f);
 
 	// Write out alias commands to a file for all current aliases.

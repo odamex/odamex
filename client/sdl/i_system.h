@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -90,9 +90,27 @@ ticcmd_t *I_BaseTiccmd (void);
 // Clean exit, displays sell blurb.
 void STACK_ARGS I_Quit (void);
 
-void STACK_ARGS I_Warning(const char *warning, ...);
-void STACK_ARGS I_Error (const char *error, ...);
-NORETURN void STACK_ARGS I_FatalError(const char *error, ...);
+void I_BaseWarning(const std::string& errortext);
+void I_BaseError(const std::string& errortext);
+[[noreturn]] void I_BaseFatalError(const std::string& errortext);
+
+template <typename... ARGS>
+void I_Warning(const fmt::string_view format, const ARGS&... args)
+{
+	I_BaseWarning(fmt::format(format, args...));
+}
+
+template <typename... ARGS>
+void I_Error(const fmt::string_view format, const ARGS&... args)
+{
+	I_BaseError(fmt::format(format, args...));
+}
+
+template <typename... ARGS>
+[[noreturn]] void I_FatalError(const fmt::string_view format, const ARGS&... args)
+{
+	I_BaseFatalError(fmt::format(format, args...));
+}
 
 void addterm (void (STACK_ARGS *func)(void), const char *name);
 #define atterm(t) addterm (t, #t)
@@ -101,7 +119,7 @@ void addterm (void (STACK_ARGS *func)(void), const char *name);
 void I_PaintConsole (void);
 
 // Print a console string
-void I_PrintStr (int x, const char *str, int count, BOOL scroll);
+void I_PrintStr (int x, const char *str, int count, bool scroll);
 
 // Set the title string of the startup window
 void I_SetTitleString (const char *title);

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -52,9 +52,71 @@ void SV_DrawScores();
 void SV_ServerSettingChange();
 bool SV_IsPlayerAllowedToSee(player_t &pl, AActor *mobj);
 
-void STACK_ARGS SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...);
-void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...);
-void STACK_ARGS SV_PlayerPrintf (int level, int who, const char *fmt, ...);
+void SV_BasePrint(client_t* cl, const int printlevel, const std::string& str);
+
+// Print directly to a specific client.
+template <typename... ARGS>
+void SV_ClientPrintFmt(client_t *cl, int level, const fmt::string_view format, const ARGS&... args)
+{
+	SV_BasePrint(cl, level, fmt::format(format, args...));
+}
+
+// Print directly to a specific player.
+template <typename... ARGS>
+void SV_PlayerPrintFmt(int level, int player_id, const fmt::string_view format, const ARGS&... args)
+{
+	client_t* cl = &idplayer(player_id).client;
+	SV_ClientPrintFmt(cl, level, format, args...);
+}
+
+// Print to all spectators
+template <typename... ARGS>
+void SV_SpectatorPrintFmt(int level, const fmt::string_view format, const ARGS&... args)
+{
+	std::string string = fmt::format(format, args...);
+	PrintFmt(level, "{}", string);  // print to the console
+
+	for (auto& player : players)
+	{
+		client_t* cl = &(player.client);
+
+		bool spectator = player.spectator || !player.ingame();
+		if (spectator)
+		{
+			SV_BasePrint(cl, level, string);
+		}
+	}
+}
+
+template <typename... ARGS>
+void SV_TeamPrintFmt(int level, int who, const fmt::string_view format, const ARGS&... args)
+{
+	if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
+		return;
+
+	std::string string = fmt::format(format, args...);
+	PrintFmt(level, "{}", string);  // print to the console
+
+	const team_t& team = idplayer(who).userinfo.team;
+
+	for (auto& player : players)
+	{
+		if (player.userinfo.team != team)
+			continue;
+
+		bool spectator = player.spectator || !player.ingame();
+		if (spectator)
+			continue;
+
+		client_t* cl = &(player.client);
+
+		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
+			continue;
+
+		SV_BasePrint(cl, level, string);
+	}
+}
+
 void SV_CheckTimeouts (void);
 void SV_ConnectClient(void);
 void SV_ConnectClient2(player_t& player);
@@ -95,7 +157,7 @@ void SV_SendDamageMobj(AActor *target, int pain);
 // Tells clients to remove an actor from the world as it doesn't exist anymore
 void SV_SendDestroyActor(AActor *mo);
 
-bool M_ReadJSON(Json::Value &json, const char *filename);
+bool M_ReadJSON(Json::Value &json, const std::string& filename);
 bool M_WriteJSON(const char *filename, Json::Value &value, bool styled);
 
 // [AM] Coinflip

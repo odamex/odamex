@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -298,7 +298,7 @@ void CTF_DrawHud (void)
 FArchive &operator<< (FArchive &arc, flagdata &flag)
 {
 	int netid = flag.actor ? flag.actor->netid : 0;
-	
+
 	arc << flag.flaglocated
 		<< netid
 		<< flag.flagger
@@ -307,7 +307,7 @@ FArchive &operator<< (FArchive &arc, flagdata &flag)
 		<< flag.timeout
 		<< static_cast<byte>(flag.state)
 		<< flag.sb_tick;
-		
+
 	arc << 0;
 
 	return arc;
@@ -318,7 +318,7 @@ FArchive &operator>> (FArchive &arc, flagdata &flag)
 	int netid;
 	byte state;
 	int dummy;
-	
+
 	arc >> flag.flaglocated
 		>> netid
 		>> flag.flagger
@@ -327,9 +327,9 @@ FArchive &operator>> (FArchive &arc, flagdata &flag)
 		>> flag.timeout
 		>> state
 		>> flag.sb_tick;
-		
+
 	arc >> dummy;
-	
+
 	flag.state = static_cast<flag_state_t>(state);
 	flag.actor = AActor::AActorPtr();
 
@@ -424,18 +424,18 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 				break;
 			}
 		}
-		// fallthrough
+		[[fallthrough]];
 	case 1:
 	{
 		int sound = flag;
 		if (ev == SCORE_CAPTURE)
 			sound = team;
 
-		if (S_FindSound(flag_sound[ev][4 + sound]) != -1) 
+		if (S_FindSound(flag_sound[ev][4 + sound]) != -1)
 			S_Sound(CHAN_ANNOUNCER, flag_sound[ev][4 + sound], 1, ATTN_NONE);
 		break;
 	}
-		// fallthrough
+		[[fallthrough]];
 	default:
 		break;
 	}
@@ -535,7 +535,7 @@ void CTF_Message(team_t flag, team_t team, flag_score_t ev)
 				break;
 			}
 		}
-		// fallthrough
+		[[fallthrough]];
 	case 1:
 		if (ev == SCORE_CAPTURE)
 			C_GMidPrint(flag_message[ev][2 + team], V_GetTextColor(GetTeamInfo(team)->TextColor.c_str()), 0);

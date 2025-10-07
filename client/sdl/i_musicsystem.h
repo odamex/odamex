@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,9 +31,7 @@
 class MusicSystem
 {
   public:
-	MusicSystem() : m_isPlaying(false), m_isPaused(false), m_tempo(120.0f), m_volume(1.0f)
-	{
-	}
+	MusicSystem() { }
 	virtual ~MusicSystem() { }
 
 	virtual void startSong(byte* data, size_t length, bool loop);
@@ -60,11 +58,11 @@ class MusicSystem
 	virtual bool isWaveCapable() const { return false; }
 
   private:
-	bool m_isPlaying;
-	bool m_isPaused;
+	bool m_isPlaying = false;
+	bool m_isPaused = false;
 
-	float m_tempo;
-	float m_volume;
+	float m_tempo = 120.0f;
+	float m_volume = 1.0f;
 };
 
 /**
@@ -76,25 +74,25 @@ class SilentMusicSystem : public MusicSystem
   public:
 	SilentMusicSystem()
 	{
-		Printf(PRINT_WARNING, "I_InitMusic: Music playback disabled.\n");
+		PrintFmt(PRINT_WARNING, "I_InitMusic: Music playback disabled.\n");
 	}
 
-	virtual void startSong(byte* data, size_t length, bool loop) { }
-	virtual void stopSong() { }
-	virtual void pauseSong() { }
-	virtual void resumeSong() { }
-	virtual void playChunk() { }
-	virtual void setVolume(float volume) { }
+	void startSong(byte* data, size_t length, bool loop) override { }
+	void stopSong() override { }
+	void pauseSong() override { }
+	void resumeSong() override { }
+	void playChunk() override { }
+	void setVolume(float volume) override { }
 
-	virtual bool isInitialized() const { return true; }
+	bool isInitialized() const override { return true; }
 
 	// SilentMusicSystem can handle any type of music by doing nothing
-	virtual bool isMusCapable() const { return true; }
-	virtual bool isMidiCapable() const { return true; }
-	virtual bool isOggCapable() const { return true; }
-	virtual bool isMp3Capable() const { return true; }
-	virtual bool isModCapable() const { return true; }
-	virtual bool isWaveCapable() const { return true; }
+	bool isMusCapable() const override { return true; }
+	bool isMidiCapable() const override { return true; }
+	bool isOggCapable() const override { return true; }
+	bool isMp3Capable() const override { return true; }
+	bool isModCapable() const override { return true; }
+	bool isWaveCapable() const override { return true; }
 };
 
 /**
@@ -109,21 +107,21 @@ class MidiMusicSystem : public MusicSystem
 {
   public:
 	MidiMusicSystem();
-	virtual ~MidiMusicSystem();
+	~MidiMusicSystem() override;
 
-	virtual void startSong(byte* data, size_t length, bool loop);
-	virtual void stopSong();
-	virtual void pauseSong();
-	virtual void resumeSong();
+	void startSong(byte* data, size_t length, bool loop) override;
+	void stopSong() override;
+	void pauseSong() override;
+	void resumeSong() override;
 	virtual void restartSong();
 
-	virtual void playChunk();
+	void playChunk() override;
 	virtual void playEvent(int time, MidiEvent *event);
-	virtual void setVolume(float volume);
+	void setVolume(float volume) override;
 
 	// Only plays midi-type music
-	virtual bool isMusCapable() const { return true; }
-	virtual bool isMidiCapable() const { return true; }
+	bool isMusCapable() const override { return true; }
+	bool isMidiCapable() const override { return true; }
 
 	virtual void writeVolume(int time, byte channel, byte volume) = 0;
 	virtual void writeControl(int time, byte channel, byte control, byte value) = 0;
@@ -133,7 +131,7 @@ class MidiMusicSystem : public MusicSystem
 	virtual void allSoundOff() = 0;
 
   protected:
-	static const int NUM_CHANNELS = 16;
+	static constexpr int NUM_CHANNELS = 16;
 	bool m_useResetDelay;
 
 	void _InitFallback();

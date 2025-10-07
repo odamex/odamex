@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//    
+//
 // A limited replacement for std::string featuring string interning.
 // When an OString is compared for equality with another OString, an integer
 // hash of the string is used for extremely quick comparison rather than
@@ -37,11 +37,11 @@
 class OString;
 
 // Forward declarations for non-member functions
-bool operator== (const OString& lhs, const OString& rhs);
-bool operator== (const OString& lhs, const std::string& rhs);
-bool operator== (const std::string& lhs, const OString& rhs);
-bool operator== (const OString& lhs, const char* rhs);
-bool operator== (const char* lhs, const OString& rhs);
+[[nodiscard]] bool operator== (const OString& lhs, const OString& rhs);
+[[nodiscard]] bool operator== (const OString& lhs, const std::string& rhs);
+[[nodiscard]] bool operator== (const std::string& lhs, const OString& rhs);
+[[nodiscard]] bool operator== (const OString& lhs, const char* rhs);
+[[nodiscard]] bool operator== (const char* lhs, const OString& rhs);
 bool operator!= (const OString& lhs, const OString& rhs);
 bool operator!= (const OString& lhs, const std::string& rhs);
 bool operator!= (const std::string& lhs, const OString& rhs);
@@ -119,9 +119,9 @@ public:
 	template <class InputIterator>
 	OString(InputIterator first, InputIterator last);
 
-	
+
 	// ------------------------------------------------------------------------
-	// destructor 
+	// destructor
 	// ------------------------------------------------------------------------
 
 	~OString();
@@ -224,11 +224,11 @@ public:
 
 
 	// ------------------------------------------------------------------------
-	// at 
+	// at
 	// ------------------------------------------------------------------------
 
 	const char& at(size_t pos) const;
-	
+
 
 	// ------------------------------------------------------------------------
 	// assign
@@ -469,8 +469,8 @@ public:
 	// member constants
 	// ------------------------------------------------------------------------
 
-	static const size_t npos = -1;
-	static const size_t MAX_STRINGS = 65536;
+	static constexpr size_t npos = -1;
+	static constexpr size_t MAX_STRINGS = 65536;
 
 
 private:
@@ -505,8 +505,8 @@ private:
 	static StringTable*			mStrings;
 	static StringLookupTable*	mStringLookup;
 	static std::string*			mEmptyString;
-	static const StringIdType	mEmptyStringId = 0;
-	
+	static constexpr StringIdType	mEmptyStringId = 0;
+
 
 	// ------------------------------------------------------------------------
 	// startup / shutdown
@@ -522,7 +522,7 @@ private:
 	// Generates a 32-bit hash value from a string.
 	// ------------------------------------------------------------------------
 
-	inline static HashedStringType hash(const char* s, size_t n = npos) 
+	inline static HashedStringType hash(const char* s, size_t n = npos)
 	{
 		HashedStringType val = 0;
 		for (; *s != 0 && n != 0; s++, n--)
@@ -537,7 +537,7 @@ private:
 	// Checks if a string is already in the string table.
 	// ------------------------------------------------------------------------
 
-	inline StringRecord* lookupByHash(const HashedStringType hash_value) 
+	inline StringRecord* lookupByHash(const HashedStringType hash_value)
 	{
 		StringLookupTable::const_iterator lookupit = mStringLookup->find(hash_value);
 		if (lookupit != mStringLookup->end())
@@ -549,7 +549,7 @@ private:
 		}
 		return NULL;	// not_found
 	}
-	
+
 
 	// ------------------------------------------------------------------------
 	// increaseRefCount
@@ -601,12 +601,12 @@ private:
 			assert(mStrings->size() < OString::MAX_STRINGS);
 			const StringIdType id = mStrings->insert(StringRecord(str, 0, length));
 			rec = &mStrings->get(id);
-			mStringLookup->insert(std::pair<HashedStringType, StringIdType>(hash_value, id));
-		}	
+			mStringLookup->emplace(hash_value, id);
+		}
 		return rec;
 	}
 
-	
+
 	// ------------------------------------------------------------------------
 	// removeString
 	//
@@ -639,7 +639,7 @@ private:
 			return *mEmptyString;
 
 		assert(mStrings->find(mId) != mStrings->end());
-		return mStrings->get(mId).mString; 
+		return mStrings->get(mId).mString;
 	}
 
 
@@ -661,10 +661,11 @@ template <> struct hashfunc<OString>
 
 
 // ----------------------------------------------------------------------------
-// utility functions 
+// utility functions
 // ----------------------------------------------------------------------------
 
 OString OStringToUpper(const char* s, size_t n = OString::npos);
 OString OStringToUpper(const OString& str);
 OString OStringToLower(const char* s, size_t n = OString::npos);
 OString OStringToLower(const OString& str);
+auto inline format_as(const OString& str) { return str.data(); }

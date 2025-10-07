@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,6 +29,7 @@
 #include <math.h>
 #include <set>
 #include <zlib.h>
+#include <nonstd/scope.hpp>
 
 #include "m_alloc.h"
 #include "m_vectors.h"
@@ -51,6 +52,7 @@
 #include "p_setup.h"
 #include "p_hordespawn.h"
 #include "p_mapformat.h"
+#include "r_sky.h"
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
@@ -134,7 +136,7 @@ AActor**		blocklinks;		// for thing chains
 //	used as a PVS lookup as well.
 //
 byte*			rejectmatrix;
-BOOL			rejectempty;
+bool			rejectempty;
 
 
 // Maintain single and multi player starting spots.
@@ -184,7 +186,7 @@ void P_LoadSegsHelper(int side, short angle, int linedef, seg_t *li)
 	li->angle = (angle)<<16;
 
 	if(linedef < 0 || linedef >= numlines)
-		I_Error("P_LoadSegsHelper: invalid linedef %d", linedef);
+		I_Error("P_LoadSegsHelper: invalid linedef {}", linedef);
 
 	ldef = &lines[linedef];
 	li->linedef = ldef;
@@ -252,14 +254,14 @@ void P_LoadSegs (int lump, bool isdeepbsp = false)
 			v = LELONG(ml->v1);
 
 			if(v >= numvertexes)
-				I_Error("P_LoadSegs: invalid vertex %d", v);
+				I_Error("P_LoadSegs: invalid vertex {}", v);
 			else
 				li->v1 = &vertexes[v];
 
 			v = LELONG(ml->v2);
 
 			if(v >= numvertexes)
-				I_Error("P_LoadSegs: invalid vertex %d", v);
+				I_Error("P_LoadSegs: invalid vertex {}", v);
 			else
 				li->v2 = &vertexes[v];
 
@@ -273,14 +275,14 @@ void P_LoadSegs (int lump, bool isdeepbsp = false)
 			v = LESHORT(ml->v1);
 
 			if(v >= numvertexes)
-				I_Error("P_LoadSegs: invalid vertex %d", v);
+				I_Error("P_LoadSegs: invalid vertex {}", v);
 			else
 				li->v1 = &vertexes[v];
 
 			v = LESHORT(ml->v2);
 
 			if(v >= numvertexes)
-				I_Error("P_LoadSegs: invalid vertex %d", v);
+				I_Error("P_LoadSegs: invalid vertex {}", v);
 			else
 				li->v2 = &vertexes[v];
 
@@ -348,7 +350,6 @@ void P_LoadSectors (int lump)
 
 	// denis - properly construct sectors so that smart pointers they contain don't get screwed
 	sectors = new sector_t[numsectors];
-	memset(sectors, 0, sizeof(sector_t)*numsectors);
 
 	byte* data = (byte*)W_CacheLumpNum(lump, PU_STATIC);
 
@@ -416,7 +417,7 @@ void P_LoadSectors (int lump)
 		bool fog = level.outsidefog_color[0] != 0xFF || level.outsidefog_color[1] != 0 ||
 					level.outsidefog_color[2] != 0 || level.outsidefog_color[3] != 0;
 
-		if (fog && ss->ceilingpic == skyflatnum)
+		if (fog && R_IsSkyFlat(ss->ceilingpic))
 			ss->colormap = GetSpecialLights(255, 255, 255,
 									level.outsidefog_color[1], level.outsidefog_color[2], level.outsidefog_color[3]);
 		else
@@ -581,8 +582,8 @@ bool P_LoadXNOD(int lump)
 		if (err != Z_STREAM_END)
 			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression!");
 
-		fprintf(stderr, "P_LoadXNOD: ZDBSP nodes compression ratio %.3f\n",
-				(float)zstream->total_out/zstream->total_in);
+		fmt::print(stderr, "P_LoadXNOD: ZDBSP nodes compression ratio {:.3f}\n",
+		           (float)zstream->total_out/zstream->total_in);
 
 		len = zstream->total_out;
 
@@ -726,22 +727,20 @@ enum nodetype_t {
 
 nodetype_t P_CheckNodeType(int lump) {
 	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
+	nonstd::make_scope_exit([&]{ Z_ChangeTag(data, PU_CACHE); });
 
 	if (memcmp(data, "xNd4\0\0\0\0", 8) == 0)
 	{
-		Z_Free(data);
 		return NT_DEEP;
 	}
 
 	if (memcmp(data, "XNOD", 4) == 0)
 	{
-		Z_Free(data);
 		return NT_XNOD;
 	}
 
 	if (memcmp(data, "ZNOD", 4) == 0)
 	{
-		Z_Free(data);
 		return NT_ZNOD;
 	}
 
@@ -1013,7 +1012,7 @@ void P_AdjustLine (line_t *ld)
 void P_FinishLoadingLineDefs (void)
 {
 	int i, linenum;
-	register line_t *ld = lines;
+	line_t *ld = lines;
 
 	for (i = numlines, linenum = 0; i--; ld++, linenum++)
 	{
@@ -1043,32 +1042,9 @@ void P_LoadLineDefs (const int lump)
 	// E2M7 has flags masked in that interfere with MBF21 flags.
 	// Boom fixes this with the comp flag comp_reservedlineflag
 	// We'll fix this for now by just checking for the E2M7 FarmHash
-	const std::string e2m7hash = "43ffa244f5ae923b7df59dbf511c0468";
+	static constexpr std::string_view e2m7hash = "43ffa244f5ae923b7df59dbf511c0468";
 
-	std::string levelHash;
-
-	// [Blair] Serialize the hashes before reading.
-	uint64_t reconsthash1 = (uint64_t)(::level.level_fingerprint[0]) |
-	                        (uint64_t)(::level.level_fingerprint[1]) << 8 |
-	                        (uint64_t)(::level.level_fingerprint[2]) << 16 |
-	                        (uint64_t)(::level.level_fingerprint[3]) << 24 |
-	                        (uint64_t)(::level.level_fingerprint[4]) << 32 |
-	                        (uint64_t)(::level.level_fingerprint[5]) << 40 |
-	                        (uint64_t)(::level.level_fingerprint[6]) << 48 |
-	                        (uint64_t)(::level.level_fingerprint[7]) << 56;
-
-	uint64_t reconsthash2 = (uint64_t)(::level.level_fingerprint[8]) |
-	                        (uint64_t)(::level.level_fingerprint[9]) << 8 |
-	                        (uint64_t)(::level.level_fingerprint[10]) << 16 |
-	                        (uint64_t)(::level.level_fingerprint[11]) << 24 |
-	                        (uint64_t)(::level.level_fingerprint[12]) << 32 |
-	                        (uint64_t)(::level.level_fingerprint[13]) << 40 |
-	                        (uint64_t)(::level.level_fingerprint[14]) << 48 |
-	                        (uint64_t)(::level.level_fingerprint[15]) << 56;
-
-	StrFormat(levelHash, "%16llx%16llx", reconsthash1, reconsthash2);
-
-	bool isE2M7 = (levelHash == e2m7hash);
+	bool isE2M7 = (::level.level_fingerprint == e2m7hash);
 
 	ld = lines;
 	for (i=0 ; i<numlines ; i++, ld++)
@@ -1089,14 +1065,14 @@ void P_LoadLineDefs (const int lump)
 		unsigned short v = LESHORT(mld->v1);
 
 		if(v >= numvertexes)
-			I_Error("P_LoadLineDefs: invalid vertex %d", v);
+			I_Error("P_LoadLineDefs: invalid vertex {}", v);
 		else
 			ld->v1 = &vertexes[v];
 
 		v = LESHORT(mld->v2);
 
 		if(v >= numvertexes)
-			I_Error("P_LoadLineDefs: invalid vertex %d", v);
+			I_Error("P_LoadLineDefs: invalid vertex {}", v);
 		else
 			ld->v2 = &vertexes[v];
 
@@ -1144,14 +1120,14 @@ void P_LoadLineDefs2 (int lump)
 		unsigned short v = LESHORT(mld->v1);
 
 		if(v >= numvertexes)
-			I_Error("P_LoadLineDefs2: invalid vertex %d", v);
+			I_Error("P_LoadLineDefs2: invalid vertex {}", v);
 		else
 			ld->v1 = &vertexes[v];
 
 		v = LESHORT(mld->v2);
 
 		if(v >= numvertexes)
-			I_Error("P_LoadLineDefs2: invalid vertex %d", v);
+			I_Error("P_LoadLineDefs2: invalid vertex {}", v);
 		else
 			ld->v2 = &vertexes[v];
 
@@ -1292,9 +1268,9 @@ void P_LoadSideDefs2 (int lump)
 
 	for (int i = 0; i < numsides; i++)
 	{
-		register mapsidedef_t* msd = (mapsidedef_t*)data + i;
-		register side_t* sd = sides + i;
-		register sector_t* sec;
+		mapsidedef_t* msd = (mapsidedef_t*)data + i;
+		side_t* sd = sides + i;
+		sector_t* sec;
 
 		sd->textureoffset = LESHORT(msd->textureoffset)<<FRACBITS;
 		sd->rowoffset = LESHORT(msd->rowoffset)<<FRACBITS;
@@ -1697,13 +1673,13 @@ void P_GenerateUniqueMapFingerPrint(int maplumpnum)
 	typedef std::vector<byte> LevelLumps;
 	LevelLumps levellumps;
 
-	const byte* thingbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_THINGS, PU_STATIC));
-	const byte* lindefbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_LINEDEFS, PU_STATIC));
-	const byte* sidedefbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SIDEDEFS, PU_STATIC));
-	const byte* vertexbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_VERTEXES, PU_STATIC));
-	const byte* segsbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SEGS, PU_STATIC));
-	const byte* ssectorsbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SSECTORS, PU_STATIC));
-	const byte* sectorsbytes = const_cast<const byte*>((const byte*)W_CacheLumpNum(maplumpnum+ML_SECTORS, PU_STATIC));
+	const byte* thingbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_THINGS, PU_STATIC));
+	const byte* lindefbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_LINEDEFS, PU_STATIC));
+	const byte* sidedefbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SIDEDEFS, PU_STATIC));
+	const byte* vertexbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_VERTEXES, PU_STATIC));
+	const byte* segsbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SEGS, PU_STATIC));
+	const byte* ssectorsbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SSECTORS, PU_STATIC));
+	const byte* sectorsbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SECTORS, PU_STATIC));
 
 	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_THINGS), *thingbytes);
 	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_LINEDEFS), *lindefbytes);
@@ -1718,9 +1694,9 @@ void P_GenerateUniqueMapFingerPrint(int maplumpnum)
 			 W_LumpLength(maplumpnum + ML_SEGS) + W_LumpLength(maplumpnum + ML_SSECTORS) +
 			 W_LumpLength(maplumpnum + ML_SECTORS);
 
-	fhfprint_s fingerprint = W_FarmHash128(levellumps.data(), length);
+	fhfprint_t fingerprint = W_FarmHash128(levellumps.data(), length);
 
-	ArrayCopy(::level.level_fingerprint, fingerprint.fingerprint);
+	::level.level_fingerprint = fingerprint;
 }
 //
 // P_GroupLines
@@ -1742,7 +1718,7 @@ void P_GroupLines (void)
 	for (i = 0; i < numsubsectors; i++)
 	{
 		if (subsectors[i].firstline >= (unsigned int)numsegs)
-			I_Error("subsector[%d].firstline exceeds numsegs (%u)", i, numsegs);
+			I_Error("subsector[{}].firstline exceeds numsegs (%u)", i, numsegs);
 		subsectors[i].sector = segs[subsectors[i].firstline].sidedef->sector;
 	}
 
@@ -1788,7 +1764,7 @@ void P_GroupLines (void)
 			}
 		}
 		if (linebuffer - sector->lines != sector->linecount)
-			I_Error ("P_GroupLines: miscounted");
+			I_Error("P_GroupLines: miscounted");
 
 		// set the soundorg to the middle of the bounding box
 		sector->soundorg[0] = (bbox.Right()+bbox.Left())/2;
@@ -1921,7 +1897,7 @@ extern polyblock_t **PolyBlockMap;
 // Hash the sector tags across the sectors and linedefs.
 static void P_InitTagLists(void)
 {
-	register int i;
+	int i;
 
 	for (i = numsectors; --i >= 0; )		// Initially make all slots empty.
 		sectors[i].firsttag = -1;
@@ -1952,14 +1928,14 @@ void P_SetupLevel (const char *lumpname, int position)
 	level.total_monsters = level.respawned_monsters = level.total_items = level.total_secrets =
 		level.killed_monsters = level.found_items = level.found_secrets =
 		wminfo.maxfrags = 0;
-	ArrayInit(level.level_fingerprint, 0);
+	level.level_fingerprint.clear();
 	wminfo.partime = 180;
 
 	if (!savegamerestore)
 	{
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (auto& player : players)
 		{
-			it->killcount = it->secretcount = it->itemcount = 0;
+			player.killcount = player.secretcount = player.itemcount = 0;
 		}
 	}
 
@@ -2061,7 +2037,7 @@ void P_SetupLevel (const char *lumpname, int position)
 		// calling P_CheckSight
 		if (W_LumpLength(lumpnum + ML_REJECT) < ((unsigned int)ceil((float)(numsectors * numsectors / 8))))
 		{
-			DPrintf("Reject matrix is not valid and will be ignored.\n");
+			DPrintFmt("Reject matrix is not valid and will be ignored.\n");
 			rejectempty = true;
 		}
 	}
@@ -2089,15 +2065,15 @@ void P_SetupLevel (const char *lumpname, int position)
 
     if (serverside)
     {
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (auto& player : players)
 		{
-			SV_PreservePlayer(*it);
+			SV_PreservePlayer(player);
 
-			if (it->ingame())
+			if (player.ingame())
 			{
 				// if deathmatch, randomly spawn the active players
 				// denis - this function checks for deathmatch internally
-				G_DeathMatchSpawnPlayer(*it);
+				G_DeathMatchSpawnPlayer(player);
 			}
 		}
     }

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -60,15 +60,9 @@ typedef struct
 typedef struct
 {
 	// Keep name for switch changing, etc.
-	char		name[9];
+	OLumpName	name;
 	short		width;
 	short		height;
-
-	// [RH] Use a hash table similar to the one now used
-	//		in w_wad.c, thus speeding up level loads.
-	//		(possibly quite considerably for larger levels)
-	int			index;
-	int			next;
 
 	// All the patches[patchcount]
 	//	are drawn back to front into the cached texture.
@@ -105,9 +99,8 @@ inline int R_FlatNumForName(const byte *name) { return R_FlatNumForName ((const 
 
 // Called by P_Ticker for switches and animations,
 // returns the texture number for the texture name.
-int R_TextureNumForName(const char *name);
-inline int R_TextureNumForName(const OLumpName& name) { return R_TextureNumForName(name.c_str()); }
-int R_CheckTextureNumForName(const char *name);
+int R_TextureNumForName(const OLumpName& name);
+int R_CheckTextureNumForName(const OLumpName& name);
 
 inline int R_TextureNumForName (const byte *name) { return R_TextureNumForName ((const char *)name); }
 inline int R_CheckTextureNumForName (const byte *name) { return R_CheckTextureNumForName ((const char *)name); }

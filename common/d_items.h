@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -43,6 +43,9 @@ struct weaponinfo_s
 
 	// MBF21 Specifications
 	int flags;
+	int ammopershot; // works slightly different from zdoom ammouse, and needs different defaults
+
+	int internalflags;
 };
 typedef struct weaponinfo_s weaponinfo_t;
 
@@ -52,11 +55,14 @@ extern	weaponinfo_t	weaponinfo[NUMWEAPONS+1];
 #define WPF_NOFLAG			0
 #define WPF_NOTHRUST		BIT(0)
 #define WPF_SILENT			BIT(1)
-#define WPF_NOAUTOFIRE		BIT(2)	
+#define WPF_NOAUTOFIRE		BIT(2)
 #define WPF_FLEEMELEE		BIT(3)	// Not Implemented yet (Missing MBF code?)...
 #define WPF_AUTOSWITCHFROM	BIT(4)
 #define WPF_NOAUTOSWITCHTO	BIT(5)
 
+// Weapon internal flags
+#define WIF_NOFLAG			0
+#define WIF_ENABLEAPS		BIT(0)
 
 
 // Item stuff: (this is d_items.h, right?)
@@ -73,7 +79,7 @@ extern	weaponinfo_t	weaponinfo[NUMWEAPONS+1];
 struct gitem_s
 {
 		const char		*classname;
-		BOOL	 		(*pickup)(player_s *ent, class AActor *other);
+		bool	 		(*pickup)(player_s *ent, class AActor *other);
 		void			(*use)(player_s *ent, struct gitem_s *item);
 		byte			flags;
 		byte			offset; 				// For Weapon, Ammo, Armor, Key: Offset in appropriate table

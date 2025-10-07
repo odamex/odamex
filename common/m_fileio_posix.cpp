@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,6 +33,7 @@
 #include "m_fileio.h"
 
 #include <sstream>
+#include <filesystem>
 
 #include <errno.h>
 #include <pwd.h>
@@ -50,6 +51,8 @@
 #include "m_argv.h"
 #include "m_ostring.h"
 #include "w_wad.h"
+
+namespace fs = std::filesystem;
 
 std::string M_GetBinaryDir()
 {
@@ -137,24 +140,15 @@ std::string M_GetHomeDir(const std::string& user)
 
 std::string M_GetUserDir()
 {
-	std::string path = M_GetHomeDir();
-
-	if (path[path.length() - 1] != PATHSEPCHAR)
-		path += PATHSEP;
-
-	path += ".odamex";
-	return path;
+	fs::path path = M_GetHomeDir();
+	path /= ".odamex";
+	return path.string();
 }
 
 std::string M_GetWriteDir()
 {
-	// Our path is relative to the home directory.
-	std::string path = M_GetHomeDir();
-	if (!M_IsPathSep(*(path.end() - 1)))
-	{
-		path += PATHSEP;
-	}
-	path += ".odamex";
+	// Our path is relative to the home directory
+	std::string path = M_GetUserDir();
 
 	// Create the directory.
 	struct stat info;
@@ -162,7 +156,7 @@ std::string M_GetWriteDir()
 	{
 		if (mkdir(path.c_str(), S_IRUSR | S_IWUSR | S_IXUSR) == -1)
 		{
-			I_FatalError("Failed to create %s directory:\n%s", path.c_str(),
+			I_FatalError("Failed to create {} directory:\n{}", path,
 			             strerror(errno));
 		}
 	}
@@ -170,190 +164,11 @@ std::string M_GetWriteDir()
 	{
 		if (!S_ISDIR(info.st_mode))
 		{
-			I_FatalError("%s must be a directory", path.c_str());
+			I_FatalError("{} must be a directory", path);
 		}
 	}
 
 	return path;
-}
-
-std::string M_GetUserFileName(const std::string& file)
-{
-
-#ifdef __SWITCH__
-		std::string path = file;
-#else
-	// Is absolute path?  If so, stop here.
-	size_t fileLen = file.length();
-	if (fileLen >= 1 && M_IsPathSep(file[0]))
-	{
-		return file;
-	}
-
-	// Is this an explicitly relative path?  If so, stop here.
-	if (fileLen >= 2 && file[0] == '.' && M_IsPathSep(file[1]))
-	{
-		return file;
-	}
-	else if (fileLen >= 3 && file[0] == '.' && file[1] == '.' && M_IsPathSep(file[2]))
-	{
-		return file;
-	}
-
-	// Our path is relative to the write directory.
-	std::string path = M_GetWriteDir();
-	path += PATHSEP;
-	path += file;
-#endif
-	return M_CleanPath(path);
-}
-
-std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
-                                const std::vector<std::string>& exts,
-                                const OMD5Hash& hash)
-{
-	dir = M_CleanPath(dir);
-	std::vector<OString> cmp_files;
-	for (std::vector<std::string>::const_iterator it = exts.begin(); it != exts.end();
-	     ++it)
-	{
-		if (!hash.empty())
-		{
-			// Filenames with supplied hashes always match first.
-			cmp_files.push_back(
-			    StdStringToUpper(name + "." + hash.getHexStr().substr(0, 6) + *it));
-		}
-		cmp_files.push_back(StdStringToUpper(name + *it));
-	}
-
-	// denis - list files in the directory of interest, case-desensitize
-	// then see if wanted wad is listed
-	struct dirent** namelist = 0;
-	int n = scandir(dir.c_str(), &namelist, 0, alphasort);
-
-	std::string found;
-	std::vector<OString>::iterator found_it = cmp_files.end();
-	for (int i = 0; i < n && namelist[i]; i++)
-	{
-		const std::string d_name = namelist[i]->d_name;
-		M_Free(namelist[i]);
-
-		if (found_it == cmp_files.begin())
-			continue;
-
-		if (d_name == "." || d_name == "..")
-			continue;
-
-		const std::string check = StdStringToUpper(d_name);
-		std::vector<OString>::iterator this_it =
-		    std::find(cmp_files.begin(), cmp_files.end(), check);
-		if (this_it < found_it)
-		{
-			const std::string local_file(dir + PATHSEP + d_name);
-			const OMD5Hash local_hash(W_MD5(local_file));
-
-			if (hash.empty() || hash == local_hash)
-			{
-				// Found a match.
-				found = d_name;
-				found_it = this_it;
-				continue;
-			}
-			else if (!hash.empty())
-			{
-				Printf(PRINT_WARNING, "WAD at %s does not match required copy\n",
-				       local_file.c_str());
-				Printf(PRINT_WARNING, "Local MD5: %s\n", local_hash.getHexCStr());
-				Printf(PRINT_WARNING, "Required MD5: %s\n\n", hash.getHexCStr());
-			}
-		}
-	}
-
-	M_Free(namelist);
-	return found;
-}
-
-std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString> files)
-{
-	std::vector<std::string> rvo;
-
-	// Fix up parameters.
-	dir = M_CleanPath(dir);
-	for (size_t i = 0; i < files.size(); i++)
-	{
-		files[i] = StdStringToUpper(files[i]);
-	}
-
-	struct dirent** namelist = 0;
-	int n = scandir(dir.c_str(), &namelist, 0, alphasort);
-
-	for (int i = 0; i < n && namelist[i]; i++)
-	{
-		const std::string d_name = namelist[i]->d_name;
-		M_Free(namelist[i]);
-
-		// Find the file.
-		std::string check = StdStringToUpper(d_name);
-		std::vector<OString>::iterator it = std::find(files.begin(), files.end(), check);
-
-		if (it == files.end())
-			continue;
-
-		rvo.push_back(d_name);
-	}
-
-	return rvo;
-}
-
-// Scan for PWADs and DEH and BEX files
-std::vector<std::string> M_PWADFilesScanDir(std::string dir)
-{
-	std::vector<std::string> rvo;
-
-	// Fix up parameters.
-	dir = M_CleanPath(dir);
-
-	struct dirent** namelist = 0;
-	int n = scandir(dir.c_str(), &namelist, 0, alphasort);
-
-	for (int i = 0; i < n && namelist[i]; i++)
-	{
-		const std::string d_name = namelist[i]->d_name;
-		M_Free(namelist[i]);
-
-		// Don't care about files with names shorter than the extensions
-		if (d_name.length() < 4)
-			continue;
-
-		// Only return files with correct extensions
-		std::string check = StdStringToUpper(d_name).substr(d_name.length() - 4);
-		if (check.compare(".WAD") && check.compare(".DEH") && check.compare(".BEX"))
-			continue;
-
-		rvo.push_back(d_name);
-	}
-
-	return rvo;
-}
-
-bool M_GetAbsPath(const std::string& path, std::string& out)
-{
-
-#ifdef __SWITCH__
-	std::string res;
-	StrFormat(res, "%s", path.c_str());
-	out = res;
-	return true;
-#else
-	char buffer[PATH_MAX];
-	char* res = realpath(path.c_str(), buffer);
-	if (res == NULL)
-	{
-		return false;
-	}
-	out = res;
-	return true;
-#endif
 }
 
 #endif

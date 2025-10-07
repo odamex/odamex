@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -66,7 +66,7 @@ static void WriteBacktrace(int sig, siginfo_t* si)
 	               ::gCrashDir, GAMEEXE, GitShortHash(), getpid(), timebuf);
 	if (len < 0)
 	{
-		fprintf(stderr, "%s: File path too long.\n", __FUNCTION__);
+		fmt::print(stderr, "{}: File path too long.\n", __FUNCTION__);
 		return;
 	}
 
@@ -74,7 +74,7 @@ static void WriteBacktrace(int sig, siginfo_t* si)
 	int fd = creat(filename, 0644);
 	if (fd == -1)
 	{
-		fprintf(stderr, "%s: File could not be created.\n", __FUNCTION__);
+		fmt::print(stderr, "{}: File could not be created.\n", __FUNCTION__);
 		return;
 	}
 
@@ -85,7 +85,7 @@ static void WriteBacktrace(int sig, siginfo_t* si)
 	               si->si_signo, si->si_errno, si->si_code, si->si_addr);
 	if (len < 0)
 	{
-		fprintf(stderr, "%s: Header too long for buffer.\n", __FUNCTION__);
+		fmt::print(stderr, "{}: Header too long for buffer.\n", __FUNCTION__);
 		return;
 	}
 
@@ -93,7 +93,7 @@ static void WriteBacktrace(int sig, siginfo_t* si)
 	ssize_t writelen = write(fd, buf, len);
 	if (writelen < 1)
 	{
-		fprintf(stderr, "%s: Failed to write to fd.\n", __FUNCTION__);
+		fmt::print(stderr, "{}: Failed to write to fd.\n", __FUNCTION__);
 		return;
 	}
 
@@ -106,13 +106,13 @@ static void WriteBacktrace(int sig, siginfo_t* si)
 	close(fd);
 
 	// Tell the user about it.
-	fprintf(stderr, "Wrote \"%s\".\n", filename);
+	fmt::print(stderr, "Wrote \"{}\".\n", filename);
 }
 
 static void SigActionCallback(int sig, siginfo_t* si, void* ctx)
 {
-	fprintf(stderr, "Caught Signal %d (%s), dumping crash info...\n", si->si_signo,
-	        strsignal(si->si_signo));
+	fmt::print(stderr, "Caught Signal {} ({}), dumping crash info...\n", si->si_signo,
+	           strsignal(si->si_signo));
 
 	// Change our signal handler back to default.
 	struct sigaction act;
@@ -159,7 +159,7 @@ void I_SetCrashDir(const char* crashdir)
 	if (len > CRASH_DIR_LEN)
 	{
 		I_FatalError(
-		    "Crash directory \"%s\" is too long.  Please pass a correct -crashout param.",
+		    "Crash directory \"{}\" is too long.  Please pass a correct -crashdir param.",
 		    crashdir);
 		abort();
 	}
@@ -169,7 +169,7 @@ void I_SetCrashDir(const char* crashdir)
 	int res = mkstemp(testfile);
 	if (res == -1)
 	{
-		I_FatalError("Crash directory \"%s\" is not writable.  Please point -crashout to "
+		I_FatalError("Crash directory \"{}\" is not writable.  Please point -crashdir to "
 		             "a directory with write permissions.",
 		             crashdir);
 		abort();
@@ -197,26 +197,26 @@ u64 __nx_exception_stack_size = sizeof(__nx_exception_stack);
 
 void __libnx_exception_handler(ThreadExceptionDump *ctx)
 {
-	fprintf(stderr, "FATAL CRASH! See odamex_crash.log for details\n");
+	fmt::print(stderr, "FATAL CRASH! See odamex_crash.log for details\n");
 
 	FILE *f = fopen("./odamex_crash.log", "w");
 	if (f == NULL) return;
 
-	fprintf(f, "error_desc: 0x%x\n", ctx->error_desc);
+	fmt::fprintf(f, "error_desc: 0x%x\n", ctx->error_desc);
 	for(int i = 0; i < 29; i++)
-		fprintf(f, "[X%d]: 0x%lx\n", i, ctx->cpu_gprs[i].x);
+		fmt::fprintf(f, "[X%d]: 0x%lx\n", i, ctx->cpu_gprs[i].x);
 
-	fprintf(f, "fp: 0x%lx\n", ctx->fp.x);
-	fprintf(f, "lr: 0x%lx\n", ctx->lr.x);
-	fprintf(f, "sp: 0x%lx\n", ctx->sp.x);
-	fprintf(f, "pc: 0x%lx\n", ctx->pc.x);
+	fmt::fprintf(f, "fp: 0x%lx\n", ctx->fp.x);
+	fmt::fprintf(f, "lr: 0x%lx\n", ctx->lr.x);
+	fmt::fprintf(f, "sp: 0x%lx\n", ctx->sp.x);
+	fmt::fprintf(f, "pc: 0x%lx\n", ctx->pc.x);
 
-	fprintf(f, "pstate: 0x%x\n", ctx->pstate);
-	fprintf(f, "afsr0: 0x%x\n", ctx->afsr0);
-	fprintf(f, "afsr1: 0x%x\n", ctx->afsr1);
-	fprintf(f, "esr: 0x%x\n", ctx->esr);
+	fmt::fprintf(f, "pstate: 0x%x\n", ctx->pstate);
+	fmt::fprintf(f, "afsr0: 0x%x\n", ctx->afsr0);
+	fmt::fprintf(f, "afsr1: 0x%x\n", ctx->afsr1);
+	fmt::fprintf(f, "esr: 0x%x\n", ctx->esr);
 
-	fprintf(f, "far: 0x%lx\n", ctx->far.x);
+	fmt::fprintf(f, "far: 0x%lx\n", ctx->far.x);
 
 	fclose(f);
 }

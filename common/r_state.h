@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -51,8 +51,8 @@ extern bool*			flatwarp;
 extern byte**			warpedflats;
 extern int*				flatwarpedwhen;
 extern int*				flattranslation;
-		
-extern int* 			texturetranslation; 	
+
+extern int* 			texturetranslation;
 
 // Sprite....
 extern int				firstspritelump;
@@ -87,6 +87,22 @@ extern line_t*			lines;
 
 extern int				numsides;
 extern side_t*			sides;
+
+inline nonstd::span<spritedef_t> R_GetSprites() { return nonstd::span(sprites, numsprites); }
+
+inline nonstd::span<vertex_t>    R_GetVertices() { return nonstd::span(vertexes, numvertexes); }
+
+inline nonstd::span<seg_t>       R_GetSegs() { return nonstd::span(segs, numsegs); }
+
+inline nonstd::span<sector_t>    R_GetSectors() { return nonstd::span(sectors, numsectors); }
+
+inline nonstd::span<subsector_t> R_GetSubsectors() { return nonstd::span(subsectors, numsubsectors); }
+
+inline nonstd::span<node_t>      R_GetNodes() { return nonstd::span(nodes, numnodes); }
+
+inline nonstd::span<line_t>      R_GetLines() { return nonstd::span(lines, numlines); }
+
+inline nonstd::span<side_t>      R_GetSides() { return nonstd::span(sides, numsides); }
 
 extern std::vector<int> originalLightLevels;
 
@@ -139,15 +155,15 @@ struct LocalView
 //
 // POV data.
 //
-extern fixed_t			viewx;
-extern fixed_t			viewy;
-extern fixed_t			viewz;
+inline fixed_t			viewx;
+inline fixed_t			viewy;
+inline fixed_t			viewz;
 
-extern angle_t			viewangle;
-extern sector_t*		viewsector;
+inline angle_t			viewangle;
+inline sector_t*		viewsector;
 
-extern LocalView localview;
-extern AActor*			camera;		// [RH] camera instead of viewplayer
+inline LocalView		localview;
+inline AActor*			camera;		// [RH] camera to draw from. doesn't have to be a player
 
 extern angle_t			clipangle;
 

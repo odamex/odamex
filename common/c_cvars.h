@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,7 +26,6 @@
 //Uncomment to allow for latency simulation - see sv_latency in sv_cvarlist.cpp
 //Note: When compiling for linux you will have link against pthread manually
 //#define SIMULATE_LATENCY
-#include "tarray.h"
 
 #include <cfloat>
 
@@ -65,7 +64,7 @@ CVARS (console variables)
 #define CVAR_LATCH BIT(4)
 
 /**
- * Can unset this var from console. 
+ * Can unset this var from console.
  */
 #define CVAR_UNSETTABLE BIT(5)
 
@@ -128,23 +127,24 @@ public:
 			DWORD flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
 	virtual ~cvar_t ();
 
-	const char *cstring() const {return m_String.c_str(); }
-	const std::string& str() const { return m_String; }
-	const char *name() const { return m_Name.c_str(); }
-	const char *helptext() const {return m_HelpText.c_str(); }
-	const char *latched() const { return m_LatchedString.c_str(); }
-	float value() const { return m_Value; }
-	operator float () const { return m_Value; }
-	operator const std::string& () const { return m_String; }
-	unsigned int flags() const { return m_Flags; }
-    cvartype_t type() const { return m_Type; }
-	const std::string& getDefault() const { return m_Default; }
-	float getMinValue() const { return m_MinValue; }
-	float getMaxValue() const { return m_MaxValue; }
+	[[nodiscard]] const char *cstring() const {return m_String.c_str(); }
+	[[nodiscard]] const std::string& str() const { return m_String; }
+	[[nodiscard]] const std::string& name() const { return m_Name; }
+	[[nodiscard]] const char *helptext() const {return m_HelpText.c_str(); }
+	[[nodiscard]] const char *latched() const { return m_LatchedString.c_str(); }
+	[[nodiscard]] float value() const { return m_Value; }
+	[[nodiscard]] operator float () const { return m_Value; }
+	[[nodiscard]] operator const std::string& () const { return m_String; }
+	[[nodiscard]] unsigned int flags() const { return m_Flags; }
+    [[nodiscard]] cvartype_t type() const { return m_Type; }
+	[[nodiscard]] const std::string& getDefault() const { return m_Default; }
+	[[nodiscard]] float getMinValue() const { return m_MinValue; }
+	[[nodiscard]] float getMaxValue() const { return m_MaxValue; }
 
 	// return m_Value as an int, rounded to the nearest integer because
 	// casting truncates instead of rounding
-	int asInt() const { return static_cast<int>(m_Value >= 0.0f ? m_Value + 0.5f : m_Value - 0.5f); }
+	[[nodiscard]] int asInt() const { return static_cast<int>(std::round(m_Value)); }
+	[[nodiscard]] bool asBool() const { return m_Value != 0; }
 
 	inline void Callback (){ if (m_Callback) m_Callback (*this); }
 
@@ -182,7 +182,7 @@ public:
 	static void C_RestoreCVars (void);
 
 	// Finds a named cvar
-	static cvar_t *FindCVar (const char *var_name, cvar_t **prev);
+	static cvar_t *FindCVar (std::string_view var_name, cvar_t **prev);
 
 	// Called from G_InitNew()
 	static void UnlatchCVars (void);
@@ -196,9 +196,9 @@ public:
 	// the filtering.
 	static void C_SetCVarsToDefaults (unsigned int bitflag = 0xFFFFFFFF);
 
-	static bool SetServerVar (const char *name, const char *value);
+	static bool SetServerVar (std::string_view name, const char *value);
 
-	static void FilterCompactCVars (TArray<cvar_t *> &cvars, DWORD filter);
+	static void FilterCompactCVars (std::vector<cvar_t *> &cvars, DWORD filter);
 
 	// console variable interaction
 	static cvar_t *cvar_set (const char *var_name, const char *value);

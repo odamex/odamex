@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2022 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -39,9 +39,9 @@
 void COM_PushToast(const toast_t& toast)
 {
 #if defined(SERVER_APP)
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	for (auto& player : ::players)
 	{
-		MSG_WriteSVC(&it->client.reliablebuf, SVC_Toast(toast));
+		MSG_WriteSVC(&player.client.reliablebuf, SVC_Toast(toast));
 	}
 #else
 	hud::PushToast(toast);

@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -140,6 +140,18 @@ void S_StopAllChannels()
 {
 }
 
+void S_StopAmbientSound()
+{
+}
+
+void S_PauseSound()
+{
+}
+
+void S_ResumeSound()
+{
+}
+
 // Moves all the sounds from one thing to another. If the destination is
 // NULL, then the sound becomes a positioned sound.
 void S_RelinkSound(AActor *from, AActor *to)
@@ -159,11 +171,11 @@ bool S_GetSoundPlayingInfo(AActor *ent, int sound_id)
 //
 // Stop and resume music, during game PAUSE.
 //
-void S_PauseSound()
+void S_PauseMusic()
 {
 }
 
-void S_ResumeSound()
+void S_ResumeMusic()
 {
 }
 
@@ -195,7 +207,7 @@ void S_StartMusic(const char *m_id)
 
 // [RH] S_ChangeMusic() now accepts the name of the music lump.
 // It's up to the caller to figure out what that name is.
-void S_ChangeMusic(std::string musicname, int looping)
+void S_ChangeMusic(std::string musicname, bool looping)
 {
 }
 
@@ -210,29 +222,36 @@ void S_StopMusic()
 //
 // =============================== [RH]
 
-std::vector<sfxinfo_t> S_sfx; // [RH] This is no longer defined in sounds.c
-std::map<int, std::vector<int> > S_rnd;
+typedef enum
+{
+	AMB_TYPE_NONE,
+    AMB_TYPE_POINT,
+    AMB_TYPE_WORLD,
+} amb_type_t;
+
+typedef enum
+{
+	AMB_MODE_NONE,
+    AMB_MODE_CONTINUOUS,
+    AMB_MODE_RANDOM,
+    AMB_MODE_PERIODIC,
+} amb_mode_t;
 
 static struct AmbientSound {
-	unsigned	type;		// type of ambient sound
+	amb_type_t	type;		// Ambient sound type
+	amb_mode_t	mode;		// Ambient sound mode
 	int			periodmin;	// # of tics between repeats
 	int			periodmax;	// max # of tics for random ambients
 	float		volume;		// relative volume of sound
-	float		attenuation;
+	float		attenuation; // Used for distance scaling
 	char		sound[MAX_SNDNAME+1]; // Logical name of sound to play
 } Ambients[256];
-
-#define RANDOM		1
-#define PERIODIC	2
-#define CONTINUOUS	3
-#define POSITIONAL	4
-#define SURROUND	16
 
 void S_HashSounds()
 {
 	// Mark all buckets as empty
-	for (unsigned i = 0; i < S_sfx.size(); i++)
-		S_sfx[i].index = ~0;
+	for (auto& sfx : S_sfx)
+		sfx.index = ~0;
 
 	// Now set up the chains
 	for (unsigned i = 0; i < S_sfx.size(); i++)
@@ -258,7 +277,7 @@ int S_FindSound(const char *logicalname)
 
 int S_FindSoundByLump(int lump)
 {
-	if (lump != -1) 
+	if (lump != -1)
 	{
 		for (unsigned i = 0; i < S_sfx.size(); i++)
 			if (S_sfx[i].lumpnum == lump)
@@ -269,11 +288,11 @@ int S_FindSoundByLump(int lump)
 
 int S_AddSoundLump(const char *logicalname, int lump)
 {
-	S_sfx.push_back(sfxinfo_t());
-	sfxinfo_t& new_sfx = S_sfx[S_sfx.size() - 1];
+	S_sfx.emplace_back();
+	sfxinfo_t& new_sfx = S_sfx.back();
 
-	// logicalname MUST be < MAX_SNDNAME chars long
-	strcpy(new_sfx.name, logicalname);
+	// logicalname MUST be <= MAX_SNDNAME chars long
+	M_StringCopy(new_sfx.name, logicalname, MAX_SNDNAME + 1);
 	new_sfx.data = NULL;
 	new_sfx.link = sfxinfo_t::NO_LINK;
 	new_sfx.lumpnum = lump;
@@ -373,7 +392,7 @@ void S_ParseSndInfo()
 					const int index = os.getTokenInt();
 					if (index < 0 || index > 255)
 					{
-						os.warning("Bad ambient index (%d)\n", index);
+						os.warning("Bad ambient index ({})\n", index);
 						ambient = &dummy;
 					}
 					else
@@ -381,7 +400,8 @@ void S_ParseSndInfo()
 						ambient = Ambients + index;
 					}
 
-					ambient->type = 0;
+					ambient->type = AMB_TYPE_NONE;
+					ambient->mode = AMB_MODE_NONE;
 					ambient->periodmin = 0;
 					ambient->periodmax = 0;
 					ambient->volume = 0.0f;
@@ -389,43 +409,42 @@ void S_ParseSndInfo()
 					os.mustScan();
 					strncpy(ambient->sound, os.getToken().c_str(), MAX_SNDNAME);
 					ambient->sound[MAX_SNDNAME] = 0;
-					ambient->attenuation = 0.0f;
+					ambient->attenuation = 0.0f; // No change by default
 
 					os.mustScan();
 					if (os.compareTokenNoCase("point"))
 					{
-						ambient->type = POSITIONAL;
+						ambient->type = AMB_TYPE_POINT;
 						os.mustScan();
 
 						if (IsRealNum(os.getToken().c_str()))
 						{
-							ambient->attenuation =
-							    (os.getTokenFloat() > 0) ? os.getTokenFloat() : 1;
+							if (os.getTokenFloat() > 0.0f)
+							{
+								ambient->attenuation = os.getTokenFloat();
+							}
+
 							os.mustScan();
 						}
-						else
+					}
+					else
+					{
+						ambient->type = AMB_TYPE_WORLD;
+
+						if (os.compareTokenNoCase("surround") ||
+						    os.compareTokenNoCase("world"))
 						{
-							ambient->attenuation = 1;
+							os.mustScan();
 						}
 					}
-					else if (os.compareTokenNoCase("surround"))
-					{
-						ambient->type = SURROUND;
-						os.mustScan();
-						ambient->attenuation = -1;
-					}
-					// else if (os.compareTokenNoCase("world"))
-					//{
-					// todo
-					//}
 
 					if (os.compareTokenNoCase("continuous"))
 					{
-						ambient->type |= CONTINUOUS;
+						ambient->mode = AMB_MODE_CONTINUOUS;
 					}
 					else if (os.compareTokenNoCase("random"))
 					{
-						ambient->type |= RANDOM;
+						ambient->mode = AMB_MODE_RANDOM;
 						os.mustScanFloat();
 						ambient->periodmin =
 						    static_cast<int>(os.getTokenFloat() * TICRATE);
@@ -435,26 +454,35 @@ void S_ParseSndInfo()
 					}
 					else if (os.compareTokenNoCase("periodic"))
 					{
-						ambient->type |= PERIODIC;
+						ambient->mode = AMB_MODE_PERIODIC;
 						os.mustScanFloat();
 						ambient->periodmin =
 						    static_cast<int>(os.getTokenFloat() * TICRATE);
 					}
 					else
 					{
-						os.warning("Unknown ambient type (%s)\n", os.getToken().c_str());
+						os.warning("Unknown ambient type ({})\n", os.getToken());
 					}
+
+					ambient->periodmin = MAX(0, ambient->periodmin);
+					ambient->periodmax = MAX(ambient->periodmin, ambient->periodmax);
 
 					os.mustScanFloat();
 					ambient->volume = clamp(os.getTokenFloat(), 0.0f, 1.0f);
+
+					if (ambient->mode == AMB_MODE_NONE || ambient->volume == 0.0f ||
+					    (ambient->mode != AMB_MODE_CONTINUOUS &&
+					     ambient->periodmin == 0 && ambient->periodmax == 0))
+					{
+						// Ignore bad ambient sounds
+						ambient->type = AMB_TYPE_NONE;
+					}
 				}
 				else if (os.compareTokenNoCase("map"))
 				{
 					// Hexen-style $MAP command
-					char mapname[8];
-
 					os.mustScanInt();
-					snprintf(mapname, 8, "MAP%02d", os.getTokenInt());
+					OLumpName mapname = fmt::format("MAP{:02d}", os.getTokenInt());
 					level_pwad_info_t& info = getLevelInfos().findByName(mapname);
 					os.mustScan();
 					if (info.mapname[0])
@@ -484,9 +512,9 @@ void S_ParseSndInfo()
 
 						if (owner == sfxto)
 						{
-							os.warning("Definition of random sound '%s' refers to itself "
+							os.warning("Definition of random sound '{}' refers to itself "
 							           "recursively.\n",
-							           os.getToken().c_str());
+							           os.getToken());
 							continue;
 						}
 
@@ -504,7 +532,7 @@ void S_ParseSndInfo()
 				}
 				else
 				{
-					os.warning("Unknown SNDINFO command %s\n", os.getToken().c_str());
+					os.warning("Unknown SNDINFO command {}\n", os.getToken());
 					while (os.scan())
 						if (os.crossed())
 						{

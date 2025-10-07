@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -66,10 +66,10 @@ bool PTR_SightTraverse (intercept_t *in)
 	fixed_t slope;
 
 	if (!in->isaline)
-		I_Error ("PTR_SightTraverse: non-line intercept\n");
+		I_Error("PTR_SightTraverse: non-line intercept\n");
 
 	li = in->d.line;
-	
+
 	if (!li->backsector)
         return false;
 
@@ -77,7 +77,7 @@ bool PTR_SightTraverse (intercept_t *in)
 // crosses a two sided line
 //
 	fixed_t crossx = trace.x + FixedMul(trace.dx, in->frac);
-	fixed_t crossy = trace.y + FixedMul(trace.dy, in->frac);	
+	fixed_t crossy = trace.y + FixedMul(trace.dy, in->frac);
 	P_LineOpening(li, crossx, crossy);
 
 	if (openbottom >= opentop)		// quick test for totally closed doors
@@ -120,7 +120,7 @@ bool P_SightBlockLinesIterator (int x, int y)
 	line_t *ld;
 	int s1, s2;
 	divline_t dl;
-	
+
 	polyblock_t *polyLink;
 	seg_t **segList;
 	int i;
@@ -129,7 +129,7 @@ bool P_SightBlockLinesIterator (int x, int y)
 	offset = y*bmapwidth+x;
 
 	polyLink = PolyBlockMap[offset];
-	
+
 	while(polyLink)
 	{
 		if(polyLink->polyobj)
@@ -163,7 +163,7 @@ bool P_SightBlockLinesIterator (int x, int y)
 					intercept_t intercept;
 					intercept.d.line = ld;
 					intercept.isaline = true;
-					intercepts.Push(intercept);
+					intercepts.push_back(intercept);
 				}
 				polyLink->polyobj->validcount = validcount;
 			}
@@ -198,7 +198,7 @@ bool P_SightBlockLinesIterator (int x, int y)
        	intercept_t intercept;
        	intercept.d.line = ld;
 		intercept.isaline = true;
-       	intercepts.Push(intercept);
+       	intercepts.push_back(intercept);
 	}
 
 	return true;			// everything was checked
@@ -214,21 +214,20 @@ bool P_SightBlockLinesIterator (int x, int y)
 
 bool P_SightTraverseIntercepts ( void )
 {
-	size_t  count = intercepts.Size();
+	size_t  count = intercepts.size();
 	fixed_t dist;
-	size_t	scan;
 	intercept_t *in = 0;
 	divline_t dl;
 //
 // calculate intercept distance
 //
-	for (scan = 0 ; scan < intercepts.Size(); scan++)
+	for (intercept_t& intercept : intercepts)
 	{
-		if (!intercepts[scan].isaline)
-			I_Error ("P_SightTraverseIntercepts: non-line intercept\n");
+		if (!intercept.isaline)
+			I_Error("P_SightTraverseIntercepts: non-line intercept\n");
 
-		P_MakeDivline (intercepts[scan].d.line, &dl);
-		intercepts[scan].frac = P_InterceptVector (&trace, &dl);
+		P_MakeDivline (intercept.d.line, &dl);
+		intercept.frac = P_InterceptVector (&trace, &dl);
 	}
 
 //
@@ -237,16 +236,16 @@ bool P_SightTraverseIntercepts ( void )
 	while (count--)
 	{
 		dist = MAXINT;
-		for (scan = 0 ; scan < intercepts.Size(); scan++)
-			if (intercepts[scan].frac < dist)
+		for (intercept_t& intercept : intercepts)
+			if (intercept.frac < dist)
 			{
-				dist = intercepts[scan].frac;
-				in = &intercepts[scan];
+				dist = intercept.frac;
+				in = &intercept;
 			}
 
 		if ( !PTR_SightTraverse (in) )
 			return false;					// don't bother going farther
-			
+
 		in->frac = MAXINT;
 	}
 
@@ -273,7 +272,7 @@ bool P_SightPathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 	int count;
 
 	validcount++;
-	intercepts.Clear();
+	intercepts.clear();
 
 	if ( ((x1-bmaporgx)&(MAPBLOCKSIZE-1)) == 0)
 		x1 += FRACUNIT;							// don't side exactly on a line
@@ -360,7 +359,26 @@ bool P_SightPathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 		if (mapxstep == 0 && mapystep == 0)
 			break;
 
-		if ( (yintercept >> FRACBITS) == mapy)
+		// if vanilla Heretic/Hexen demo playback is ever introduced, this branch needs to be disabled
+		if ((xintercept >> FRACBITS) == mapx && (yintercept >> FRACBITS) == mapy)
+		{
+			// The trace goes directly through the corner of a blockmap block. Need to check other blocks adjacent to the corner
+			if (!P_SightBlockLinesIterator (mapx + mapxstep, mapy) ||
+				!P_SightBlockLinesIterator (mapx, mapy + mapystep))
+			{
+				sightcounts2[1]++;
+				return false;
+			}
+			xintercept += xstep;
+			yintercept += ystep;
+			mapx += mapxstep;
+			mapy += mapystep;
+			if (mapx == xt2)
+				mapxstep = 0;
+			if (mapy == yt2)
+				mapystep = 0;
+		}
+		else if ( (yintercept >> FRACBITS) == mapy)
 		{
 			yintercept += ystep;
 			mapx += mapxstep;
@@ -539,38 +557,38 @@ P_DivlineSide
     fixed_t	dy;
     fixed_t	left;
     fixed_t	right;
-	
+
     if (!node->dx)
     {
 		if (x==node->x)
 			return 2;
-		
+
 		if (x <= node->x)
 			return node->dy > 0;
-		
+
 		return node->dy < 0;
     }
-    
+
     if (!node->dy)
     {
 		if (x==node->y)
 			return 2;
-		
+
 		if (y <= node->y)
 			return node->dx < 0;
-		
+
 		return node->dx > 0;
     }
-	
+
     dx = (x - node->x);
     dy = (y - node->y);
-	
+
     left =  (node->dy>>FRACBITS) * (dx>>FRACBITS);
     right = (dy>>FRACBITS) * (node->dx>>FRACBITS);
-	
+
     if (right < left)
 		return 0;	// front side
-    
+
     if (left == right)
 		return 2;
     return 1;		// back side
@@ -591,17 +609,17 @@ P_InterceptVector2
     fixed_t	frac;
     fixed_t	num;
     fixed_t	den;
-	
+
     den = FixedMul (v1->dy>>8,v2->dx) - FixedMul(v1->dx>>8,v2->dy);
-	
+
     if (den == 0)
 		return 0;
     //	I_Error ("P_InterceptVector: parallel");
-    
-    num = FixedMul ( (v1->x - v2->x)>>8 ,v1->dy) + 
+
+    num = FixedMul ( (v1->x - v2->x)>>8 ,v1->dy) +
 		FixedMul ( (v2->y - v1->y)>>8 , v1->dx);
     frac = FixedDiv (num , den);
-	
+
     return frac;
 }
 
@@ -627,61 +645,61 @@ bool P_CrossSubsector (int num)
     vertex_t*		v2;
     fixed_t		frac;
     fixed_t		slope;
-	
+
 #ifdef RANGECHECK
     if (num>=numsubsectors)
-		I_Error ("P_CrossSubsector: ss %i with numss = %i",
-				 num,
-				 numsubsectors);
+		I_Error("P_CrossSubsector: ss {} with numss = {}",
+				num,
+				numsubsectors);
 #endif
-	
+
     sub = &subsectors[num];
-    
+
     // check lines
     count = sub->numlines;
     seg = &segs[sub->firstline];
-	
+
     for ( ; count ; seg++, count--)
     {
 		line = seg->linedef;
-		
+
 		// allready checked other side?
 		if (line->validcount == validcount)
 			continue;
-		
+
 		line->validcount = validcount;
-		
+
 		v1 = line->v1;
 		v2 = line->v2;
 		s1 = P_DivlineSide (v1->x,v1->y, &strace);
 		s2 = P_DivlineSide (v2->x, v2->y, &strace);
-		
+
 		// line isn't crossed?
 		if (s1 == s2)
 			continue;
-		
+
 		divl.x = v1->x;
 		divl.y = v1->y;
 		divl.dx = v2->x - v1->x;
 		divl.dy = v2->y - v1->y;
 		s1 = P_DivlineSide (strace.x, strace.y, &divl);
 		s2 = P_DivlineSide (t2x, t2y, &divl);
-		
+
 		// line isn't crossed?
 		if (s1 == s2)
-			continue;	
-		
+			continue;
+
 		// stop because it is not two sided anyway
 		// might do this after updating validcount?
 		if ( !(line->flags & ML_TWOSIDED) )
 			return false;
-		
+
 		// crosses a two sided line
 		front = seg->frontsector;
 		back = seg->backsector;
 
 		frac = P_InterceptVector2 (&strace, &divl);
-		
+
 		// no wall to block sight with?
 		fixed_t crossx = divl.x + FixedMul(frac, divl.dx);
 		fixed_t crossy = divl.y + FixedMul(frac, divl.dy);
@@ -692,44 +710,44 @@ bool P_CrossSubsector (int num)
 		fixed_t bc = P_CeilingHeight(crossx, crossy, back);
 
 		if (ff == bf && fc == bc)
-			continue;	
-		
+			continue;
+
 		// possible occluder
 		// because of ceiling height differences
 		if (fc < bc)
 			opentop = fc;
 		else
 			opentop = bc;
-		
+
 		// because of ceiling height differences
 		if (ff > bf)
 			openbottom = ff;
 		else
 			openbottom = bf;
-		
+
 		// quick test for totally closed doors
-		if (openbottom >= opentop)	
+		if (openbottom >= opentop)
 			return false;		// stop
-		
+
 		if (ff != bf)
 		{
 			slope = FixedDiv (openbottom - sightzstart , frac);
 			if (slope > bottomslope)
 				bottomslope = slope;
 		}
-		
+
 		if (fc != bc)
 		{
 			slope = FixedDiv (opentop - sightzstart , frac);
 			if (slope < topslope)
 				topslope = slope;
 		}
-		
+
 		if (topslope <= bottomslope)
-			return false;		// stop				
+			return false;		// stop
     }
     // passed the subsector ok
-    return true;		
+    return true;
 }
 
 
@@ -743,7 +761,7 @@ bool P_CrossBSPNode (int bspnum)
 {
     node_t*	bsp;
     int		side;
-	
+
     if (bspnum & NF_SUBSECTOR)
     {
 		if (bspnum == -1)
@@ -751,26 +769,26 @@ bool P_CrossBSPNode (int bspnum)
 		else
 			return P_CrossSubsector (bspnum&(~NF_SUBSECTOR));
     }
-	
+
     bsp = &nodes[bspnum];
-    
+
     // decide which side the start point is on
     side = P_DivlineSide (strace.x, strace.y, (divline_t *)bsp);
     if (side == 2)
 		side = 0;	// an "on" should cross both sides
-	
+
     // cross the starting side
     if (!P_CrossBSPNode (bsp->children[side]) )
 		return false;
-	
+
     // the partition plane is crossed here
     if (side == P_DivlineSide (t2x, t2y,(divline_t *)bsp))
     {
 		// the line doesn't touch the other side
 		return true;
     }
-    
-    // cross the ending side		
+
+    // cross the ending side
     return P_CrossBSPNode (bsp->children[side^1]);
 }
 
@@ -791,44 +809,44 @@ bool P_CheckSightDoom(const AActor* t1, const AActor* t2)
 
 	if(!t1 || !t2 || !t1->subsector || !t2->subsector)
 		return false;
-    
+
     // First check for trivial rejection.
-	
+
     // Determine subsector entries in REJECT table.
     s1 = (t1->subsector->sector - sectors);
     s2 = (t2->subsector->sector - sectors);
     pnum = s1*numsectors + s2;
     bytenum = pnum>>3;
     bitnum = 1 << (pnum&7);
-	
+
     // Check in REJECT table.
     if (!rejectempty && rejectmatrix[bytenum]&bitnum)
     {
 		sightcounts[0]++;
-		
+
 		// can't possibly be connected
-		return false;	
+		return false;
     }
-	
+
     // An unobstructed LOS is possible.
     // Now look from eyes of t1 to any part of t2.
     sightcounts[1]++;
-	
+
     validcount++;
-	
+
     sightzstart = t1->z + t1->height - (t1->height>>2);
     topslope = (t2->z+t2->height) - sightzstart;
     bottomslope = (t2->z) - sightzstart;
-	
+
     strace.x = t1->x;
     strace.y = t1->y;
     t2x = t2->x;
     t2y = t2->y;
     strace.dx = t2->x - t1->x;
     strace.dy = t2->y - t1->y;
-	
+
     // the head node is the last node output
-    return P_CrossBSPNode (numnodes-1);	
+    return P_CrossBSPNode (numnodes-1);
 }
 
 //
@@ -846,44 +864,44 @@ static bool P_CheckSightDoom
     int		pnum;
     int		bytenum;
     int		bitnum;
-    
+
     // First check for trivial rejection.
-	
+
     // Determine subsector entries in REJECT table.
     s1 = (P_PointInSubsector(x1, y1)->sector - sectors);
     s2 = (P_PointInSubsector(x2, y2)->sector - sectors);
     pnum = s1*numsectors + s2;
     bytenum = pnum>>3;
     bitnum = 1 << (pnum&7);
-	
+
     // Check in REJECT table.
     if (!rejectempty && rejectmatrix[bytenum]&bitnum)
     {
 		sightcounts[0]++;
-		
+
 		// can't possibly be connected
-		return false;	
+		return false;
     }
-	
+
     // An unobstructed LOS is possible.
     // Now look from eyes of t1 to any part of t2.
     sightcounts[1]++;
-	
+
     validcount++;
-	
+
     sightzstart = z1 + h1 - (h1>>2);
     topslope = (z2+h2) - sightzstart;
     bottomslope = (z2) - sightzstart;
-	
+
     strace.x = x1;
     strace.y = y1;
     t2x = x2;
     t2y = y2;
     strace.dx = x2 - x1;
     strace.dy = y2 - y1;
-	
+
     // the head node is the last node output
-    return P_CrossBSPNode (numnodes-1);	
+    return P_CrossBSPNode (numnodes-1);
 }
 
 bool P_CheckSight(const AActor* t1, const AActor* t2)
@@ -930,7 +948,7 @@ bool P_CheckSightEdgesDoom
 							t2->x + FLOAT2FIXED(w.x), t2->y + FLOAT2FIXED(w.y), t2->z, t2->height);
 
 	return contact;
-}	
+}
 
 bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost)
 {

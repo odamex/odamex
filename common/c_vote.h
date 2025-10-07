@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -56,8 +56,14 @@ enum vote_type_t
 	VOTE_SCORELIMIT,
 	VOTE_TIMELIMIT,
 	VOTE_COINFLIP,
+	VOTE_LIVES,
 	VOTE_MAX // Reserved
 };
+
+inline auto format_as(vote_type_t eVoteType)
+{
+	return fmt::underlying(eVoteType);
+}
 
 // A struct to pass around voting state
 struct vote_state_t
@@ -72,4 +78,25 @@ struct vote_state_t
 	byte abs;
 };
 
-extern const char* vote_type_cmd[];
+/**
+ * A string array used to associate vote types with command names.
+ */
+inline const char* vote_type_cmd[] = {
+	"???",
+	"kick",
+	"forcespec",
+	"forcestart",
+	"randcaps",
+	"randpickup",
+	"map",
+	"nextmap",
+	"randmap",
+	"restart",
+	"fraglimit",
+	"scorelimit",
+	"timelimit",
+	"coinflip",
+	"lives",
+	"???"
+};
+

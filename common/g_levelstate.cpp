@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -287,7 +287,7 @@ void LevelState::readyToggle()
 		if (m_state == LevelState::WARMUP_COUNTDOWN)
 		{
 			setState(LevelState::WARMUP);
-			SV_BroadcastPrintf("Countdown aborted: Player unreadied.\n");
+			SV_BroadcastPrintFmt("Countdown aborted: Player unreadied.\n");
 		}
 	}
 }
@@ -371,7 +371,7 @@ void LevelState::tic()
 				G_DeferedReset();
 
 			setState(LevelState::INGAME);
-			SV_BroadcastPrintf("FIGHT!\n");
+			SV_BroadcastPrintFmt("FIGHT!\n");
 			return;
 		}
 		break;
@@ -465,8 +465,8 @@ void LevelState::tic()
 				printRoundStart();
 			else
 			{
-				SV_BroadcastPrintf("The %s has started.\n",
-				                   G_IsCoopGame() ? "game" : "match");
+				SV_BroadcastPrintFmt("The {} has started.\n",
+				                     G_IsCoopGame() ? "game" : "match");
 			}
 			return;
 		}
@@ -599,32 +599,32 @@ void LevelState::printRoundStart() const
 	std::string left, right;
 	if (g_roundlimit > 0)
 	{
-		StrFormat(left, "Round %d of %d has started", m_roundNumber,
-		          g_roundlimit.asInt());
+		left = fmt::sprintf("Round %d of %d has started", m_roundNumber,
+		                    g_roundlimit.asInt());
 	}
 	else
 	{
-		StrFormat(left, "Round %d has started", m_roundNumber);
+		left = fmt::sprintf("Round %d has started", m_roundNumber);
 	}
 
 	team_t def = getDefendingTeam();
 	if (G_IsCoopGame() && g_roundlimit)
 	{
-		StrFormat(right, "%d attempts left", g_roundlimit.asInt() - m_roundNumber + 1);
+		right = fmt::sprintf("%d attempts left", g_roundlimit.asInt() - m_roundNumber + 1);
 	}
 	else if (def != TEAM_NONE)
 	{
 		TeamInfo& teaminfo = *GetTeamInfo(def);
-		StrFormat(right, "%s is on defense", teaminfo.ColorizedTeamName().c_str());
+		right = fmt::sprintf("%s is on defense", teaminfo.ColorizedTeamName());
 	}
 
 	if (!right.empty())
 	{
-		SV_BroadcastPrintf("%s - %s.\n", left.c_str(), right.c_str());
+		SV_BroadcastPrintFmt("{} - {}.\n", left, right);
 	}
 	else
 	{
-		SV_BroadcastPrintf("%s.\n", left.c_str());
+		SV_BroadcastPrintFmt("{}.\n", left);
 	}
 }
 
@@ -679,13 +679,13 @@ static const char* WinTypeToString(WinInfo::WinType type)
 BEGIN_COMMAND(levelstateinfo)
 {
 	SerializedLevelState sls = ::levelstate.serialize();
-	Printf("Current level time: %d\n", ::level.time);
-	Printf("State: %s\n", StateToString(sls.state));
-	Printf("Countdown done time: %d\n", sls.countdown_done_time);
-	Printf("Ingame start time: %d\n", sls.ingame_start_time);
-	Printf("Round number: %d\n", sls.round_number);
-	Printf("Last WinInfo type: %s\n", WinTypeToString(sls.last_wininfo_type));
-	Printf("Last WinInfo ID: %d\n", sls.last_wininfo_id);
+	PrintFmt("Current level time: {}\n", ::level.time);
+	PrintFmt("State: {}\n", StateToString(sls.state));
+	PrintFmt("Countdown done time: {}\n", sls.countdown_done_time);
+	PrintFmt("Ingame start time: {}\n", sls.ingame_start_time);
+	PrintFmt("Round number: {}\n", sls.round_number);
+	PrintFmt("Last WinInfo type: {}\n", WinTypeToString(sls.last_wininfo_type));
+	PrintFmt("Last WinInfo ID: {}\n", sls.last_wininfo_id);
 }
 END_COMMAND(levelstateinfo)
 

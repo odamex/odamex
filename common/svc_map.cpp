@@ -38,8 +38,8 @@ SVCDescMap g_SVCDescMap;
 
 static void MapProto(const svc_t header, const google::protobuf::Descriptor* desc)
 {
-	::g_SVCHeaderMap.insert(SVCHeaderMap::value_type(header, desc));
-	::g_SVCDescMap.insert(SVCDescMap::value_type(desc, header));
+	::g_SVCHeaderMap.emplace(header, desc);
+	::g_SVCDescMap.emplace(desc, header);
 }
 
 /**
