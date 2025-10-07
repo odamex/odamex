@@ -385,7 +385,7 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 	return true;
 }
 
-const char *ParseString2(const char *data);
+std::optional<std::string> ParseString2(std::string_view& data);
 
 //
 // G_LoadWadString
@@ -401,14 +401,15 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname, const m
 	OWantFiles newwadfiles;
 	OWantFiles newpatchfiles;
 
-	const char* data = str.c_str();
-	for (size_t i = 0; (data = ParseString2(data)); i++)
+	std::string_view data = str;
+	std::optional<std::string> token;
+	while(token = ParseString2(data))
 	{
 		OWantFile file;
-		if (!OWantFile::make(file, ::com_token, OFILE_UNKNOWN))
+		if (!OWantFile::make(file, *token, OFILE_UNKNOWN))
 		{
-			Printf(PRINT_WARNING, "Could not parse \"%s\" into file, skipping...\n",
-			       ::com_token);
+			PrintFmt(PRINT_WARNING, "Could not parse \"{}\" into file, skipping...\n",
+			         *token);
 			continue;
 		}
 
@@ -417,11 +418,11 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname, const m
 		    std::find(deh_exts.begin(), deh_exts.end(), StdStringToUpper(file.getExt())) != deh_exts.end();
 		if (is_deh)
 		{
-			if (!OWantFile::make(file, ::com_token, OFILE_DEH))
+			if (!OWantFile::make(file, *token, OFILE_DEH))
 			{
-				Printf(PRINT_WARNING,
-				       "Could not parse \"%s\" into patch file, skipping...\n",
-				       ::com_token);
+				PrintFmt(PRINT_WARNING,
+				         "Could not parse \"{}\" into patch file, skipping...\n",
+				         *token);
 				continue;
 			}
 
@@ -434,11 +435,11 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname, const m
 		    std::find(wad_exts.begin(), wad_exts.end(), StdStringToUpper(file.getExt())) != wad_exts.end();
 		if (is_wad)
 		{
-			if (!OWantFile::make(file, ::com_token, OFILE_WAD))
+			if (!OWantFile::make(file, *token, OFILE_WAD))
 			{
-				Printf(PRINT_WARNING,
-				       "Could not parse \"%s\" into WAD file, skipping...\n",
-				       ::com_token);
+				PrintFmt(PRINT_WARNING,
+				         "Could not parse \"{}\" into WAD file, skipping...\n",
+				         *token);
 				continue;
 			}
 

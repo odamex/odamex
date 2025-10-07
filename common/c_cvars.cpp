@@ -311,7 +311,8 @@ void cvar_t::EnableCallbacks ()
 
 static int STACK_ARGS sortcvars (const void *a, const void *b)
 {
-	return strcmp (((*(cvar_t **)a))->name(), ((*(cvar_t **)b))->name());
+	// yes this is horribly ugly - its also easier to search for in the future and fix it rather than the c-style casts it was using before
+	return (*static_cast<cvar_t *const *>(a))->name().compare((*static_cast<cvar_t *const *>(b))->name());
 }
 
 void cvar_t::FilterCompactCVars (TArray<cvar_t *> &cvars, DWORD filter)
@@ -381,7 +382,7 @@ void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, size_t array_size, bool 
 				}
 
 				chars = snprintf((char*)ptr, array_size, "\\%s\\%s",
-								cvar->name(), cvar->cstring());
+								cvar->name().c_str(), cvar->cstring());
 
 				ptr += chars;
 				array_size -= chars;
@@ -585,7 +586,7 @@ void cvar_t::C_ArchiveCVars (void *f)
 			|| (baseapp == server && (cvar->m_Flags & CVAR_SERVERARCHIVE)))
 		{
 			fprintf ((FILE *)f, "// %s\n", cvar->helptext());
-			fprintf ((FILE *)f, "set %s %s\n\n", C_QuoteString(cvar->name()).c_str(), C_QuoteString(cvar->cstring()).c_str());
+			fprintf ((FILE *)f, "set %s %s\n\n", C_QuoteString(cvar->name()).c_str(), C_QuoteString(cvar->str()).c_str());
 		}
 		cvar = cvar->m_Next;
 	}
@@ -601,20 +602,20 @@ void cvar_t::cvarlist()
 		unsigned flags = var->m_Flags;
 
 		count++;
-		Printf (PRINT_HIGH, "%c%c%c%c %s \"%s\"\n",
-				flags & CVAR_ARCHIVE ? 'A' :
-					flags & CVAR_CLIENTARCHIVE ? 'C' :
-					flags & CVAR_SERVERARCHIVE ? 'S' : ' ',
-				flags & CVAR_USERINFO ? 'U' : ' ',
-				flags & CVAR_SERVERINFO ? 'S' : ' ',
-				flags & CVAR_NOSET ? '-' :
-					flags & CVAR_LATCH ? 'L' :
-					flags & CVAR_UNSETTABLE ? '*' : ' ',
-				var->name(),
-				var->cstring());
+		PrintFmt(PRINT_HIGH, "{}{}{}{} {} \"{}\"\n",
+		         flags & CVAR_ARCHIVE ? 'A' :
+		         	flags & CVAR_CLIENTARCHIVE ? 'C' :
+		         	flags & CVAR_SERVERARCHIVE ? 'S' : ' ',
+		         flags & CVAR_USERINFO ? 'U' : ' ',
+		         flags & CVAR_SERVERINFO ? 'S' : ' ',
+		         flags & CVAR_NOSET ? '-' :
+		         	flags & CVAR_LATCH ? 'L' :
+		         	flags & CVAR_UNSETTABLE ? '*' : ' ',
+		         var->name(),
+		         var->str());
 		var = var->m_Next;
 	}
-	Printf (PRINT_HIGH, "%d cvars\n", count);
+	PrintFmt(PRINT_HIGH, "{} cvars\n", count);
 }
 
 
@@ -727,16 +728,16 @@ BEGIN_COMMAND (get)
 
 		// [Russell] - Don't make the user feel inadequate, tell
 		// them its either enabled, disabled or its other value
-		Printf(PRINT_HIGH, "\"%s\" is %s%s.\n",
-				var->name(), C_GetValueString(var), control);
+		PrintFmt(PRINT_HIGH, "\"{}\" is {}{}.\n",
+		         var->name(), C_GetValueString(var), control);
 
 		if (var->flags() & CVAR_LATCH && var->flags() & CVAR_MODIFIED)
-			Printf(PRINT_HIGH, "\"%s\" will be changed to %s.\n",
-					var->name(), C_GetLatchedValueString(var));
+			PrintFmt(PRINT_HIGH, "\"{}\" will be changed to {}.\n",
+			         var->name(), C_GetLatchedValueString(var));
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
+		PrintFmt(PRINT_HIGH, "\"{}\" is unset.\n", argv[1]);
 	}
 }
 END_COMMAND (get)
@@ -771,12 +772,12 @@ BEGIN_COMMAND (toggle)
 
 		// [Russell] - Don't make the user feel inadequate, tell
 		// them its either enabled, disabled or its other value
-		Printf(PRINT_HIGH, "\"%s\" is %s.\n",
-				var->name(), C_GetValueString(var));
+		PrintFmt(PRINT_HIGH, "\"{}\" is {}.\n",
+		         var->name(), C_GetValueString(var));
 
 		if (var->flags() & CVAR_LATCH && var->flags() & CVAR_MODIFIED)
-			Printf(PRINT_HIGH, "\"%s\" will be changed to %s.\n",
-					var->name(), C_GetLatchedValueString(var));
+			PrintFmt(PRINT_HIGH, "\"{}\" will be changed to {}.\n",
+			         var->name(), C_GetLatchedValueString(var));
 	}
 }
 END_COMMAND (toggle)
@@ -794,7 +795,7 @@ BEGIN_COMMAND (help)
 
     if (argc < 2)
     {
-		Printf (PRINT_HIGH, "usage: help <variable>\n");
+		PrintFmt(PRINT_HIGH, "usage: help <variable>\n");
         return;
     }
 
@@ -802,11 +803,11 @@ BEGIN_COMMAND (help)
 
     if (!var)
     {
-        Printf (PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
+        PrintFmt(PRINT_HIGH, "\"{}\" is unset.\n", argv[1]);
         return;
     }
 
-    Printf(PRINT_HIGH, "Help: %s - %s\n", var->name(), var->helptext());
+    PrintFmt(PRINT_HIGH, "Help: {} - {}\n", var->name(), var->helptext());
 }
 END_COMMAND (help)
 

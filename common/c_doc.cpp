@@ -212,7 +212,7 @@ static void HTMLFooter(std::string& out)
 
 static bool CvarCmp(const cvar_t* a, const cvar_t* b)
 {
-	return strcmp(a->name(), b->name()) < 0;
+	return a->name().compare(b->name()) < 0;
 }
 
 /**

@@ -1873,7 +1873,7 @@ void M_OptDrawer (void)
 					joyname = "No device detected";
 				else
 				{
-					joyname = item->a.cvar->cstring();
+					joyname = item->a.cvar->str();
 					joyname += ": " + I_GetJoystickNameFromIndex((int)item->a.cvar->value());
 				}
 
@@ -1965,16 +1965,16 @@ void M_OptResponder (event_t *ev)
 				if( (ev->data3 > (SHRT_MAX / 2)) || (ev->data3 < (SHRT_MIN / 2)) )
 				{
 					if( (ev->data2 == (int)joy_forwardaxis) &&
-							strcmp(joy_forwardaxis.name(), item->a.cvar->name()) )
+							joy_forwardaxis.name() != item->a.cvar->name() )
 						joy_forwardaxis.Set(item->a.cvar->value());
 					else if( (ev->data2 == (int)joy_strafeaxis) &&
-							strcmp(joy_strafeaxis.name(), item->a.cvar->name()) )
+							joy_strafeaxis.name() != item->a.cvar->name() )
 						joy_strafeaxis.Set(item->a.cvar->value());
 					else if( (ev->data2 == (int)joy_turnaxis) &&
-							strcmp(joy_turnaxis.name(), item->a.cvar->name()) )
+							joy_turnaxis.name() != item->a.cvar->name() )
 						joy_turnaxis.Set(item->a.cvar->value());
 					else if( (ev->data2 == (int)joy_lookaxis) &&
-							strcmp(joy_lookaxis.name(), item->a.cvar->name()) )
+							joy_lookaxis.name() != item->a.cvar->name() )
 						joy_lookaxis.Set(item->a.cvar->value());
 
 					item->a.cvar->Set(ev->data2);

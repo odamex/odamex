@@ -378,42 +378,42 @@ BEGIN_COMMAND(hordedefine)
 						const size_t start = static_cast<size_t>(section_offset);
 						const size_t end =
 						    MIN<size_t>(section_offset + section_choice, section_limit);
-						Printf("[Wave %d/%d - Start:%" "zu" " End:%" "zu" "]\n",
-						       current, total, start, end);
+						PrintFmt("[Wave {}/{} - Start:{} End:{}]\n",
+						         current, total, start, end);
 						PrintDefines(::WAVE_DEFINES.begin() + start,
 						             ::WAVE_DEFINES.begin() + end + 1);
 						return;
 					}
 					else
 					{
-						Printf("error: Total waves must be > 0.");
+						PrintFmt("error: Total waves must be > 0.");
 						return;
 					}
 				}
 				else
 				{
-					Printf("error: Must pass a valid wave number.");
+					PrintFmt("error: Must pass a valid wave number.");
 					return;
 				}
 			}
 			else
 			{
-				Printf("error: Must pass a wave number.");
+				PrintFmt("error: Must pass a wave number.");
 				return;
 			}
 		}
 		else
 		{
-			Printf("error: Unknown command.");
+			PrintFmt("error: Unknown command.");
 			return;
 		}
 	}
 
-	Printf("Commands:\n");
-	Printf("  all\n");
-	Printf("    Show all defines.\n");
-	Printf("  wave <NUMBER> [TOTAL]\n");
-	Printf("    Show potential waves for wave NUMBER of [TOTAL].  If omitted, [TOTAL] "
-	       "defaults to the cvar `g_horde_waves`.\n");
+	PrintFmt("Commands:\n");
+	PrintFmt("  all\n");
+	PrintFmt("    Show all defines.\n");
+	PrintFmt("  wave <NUMBER> [TOTAL]\n");
+	PrintFmt("    Show potential waves for wave NUMBER of [TOTAL].  If omitted, [TOTAL] "
+	         "defaults to the cvar `g_horde_waves`.\n");
 }
 END_COMMAND(hordedefine)

@@ -46,7 +46,7 @@ EXTERN_CVAR(sv_allowcheats)
 extern bool automapactive;
 #endif
 
-void C_DoCommand(const char* cmd, uint32_t key = 0);
+void C_DoCommand(std::string_view cmd, uint32_t key = 0);
 
 //
 // CHEAT SEQUENCE PACKAGE

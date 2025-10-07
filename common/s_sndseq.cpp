@@ -699,9 +699,7 @@ void SN_StartSequence (polyobj_t *poly, int sequence, seqtype_t type)
 
 void SN_StartSequence (AActor *actor, const char *name)
 {
-	int i;
-
-	for (i = 0; i < NumSequences; i++)
+	for (int i = 0; i < NumSequences; i++)
 	{
 		if (!stricmp (name, Sequences[i]->name))
 		{
@@ -713,9 +711,7 @@ void SN_StartSequence (AActor *actor, const char *name)
 
 void SN_StartSequence (sector_t *sec, const char *name)
 {
-	int i;
-
-	for (i = 0; i < NumSequences; i++)
+	for (int i = 0; i < NumSequences; i++)
 	{
 		if (!stricmp (name, Sequences[i]->name))
 		{
@@ -727,9 +723,7 @@ void SN_StartSequence (sector_t *sec, const char *name)
 
 void SN_StartSequence (polyobj_t *poly, const char *name)
 {
-	int i;
-
-	for (i = 0; i < NumSequences; i++)
+	for (int i = 0; i < NumSequences; i++)
 	{
 		if (!stricmp (name, Sequences[i]->name))
 		{
@@ -944,11 +938,8 @@ ptrdiff_t SN_GetSequenceOffset (int sequence, unsigned int *sequencePtr)
 void SN_ChangeNodeData (int nodeNum, int seqOffset, int delayTics, float volume,
 	int currentSoundID)
 {
-	int i;
-	DSeqNode *node;
-
-	i = 0;
-	node = DSeqNode::FirstSequence();
+	int i = 0;
+	DSeqNode* node = DSeqNode::FirstSequence();
 	while (node && i < nodeNum)
 	{
 		node = node->NextSequence();

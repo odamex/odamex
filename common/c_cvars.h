@@ -130,7 +130,7 @@ public:
 
 	[[nodiscard]] const char *cstring() const {return m_String.c_str(); }
 	[[nodiscard]] const std::string& str() const { return m_String; }
-	[[nodiscard]] const char *name() const { return m_Name.c_str(); }
+	[[nodiscard]] const std::string& name() const { return m_Name; }
 	[[nodiscard]] const char *helptext() const {return m_HelpText.c_str(); }
 	[[nodiscard]] const char *latched() const { return m_LatchedString.c_str(); }
 	[[nodiscard]] float value() const { return m_Value; }

@@ -67,7 +67,7 @@ PortMidiMusicSystem::PortMidiMusicSystem()
 	}
 
 	m_outputDevice = Pm_GetDefaultOutputDeviceID();
-	std::string prefdevicename(snd_musicdevice.cstring());
+	std::string prefdevicename(snd_musicdevice.str());
 
 	// List PortMidi devices
 	for (int i = 0; i < Pm_CountDevices(); i++)

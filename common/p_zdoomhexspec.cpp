@@ -1037,10 +1037,10 @@ void P_PostProcessZDoomSidedefSpecial(side_t* sd, mapsidedef_t* msd, sector_t* s
 				                     ((argb_t)color).getb(), ((argb_t)fog).getr(),
 				                     ((argb_t)fog).getg(), ((argb_t)fog).getb());
 
-				for (int s = 0; s < numsectors; s++)
+				for (sector_t& sector : R_GetSectors())
 				{
-					if (sectors[s].tag == sd->tag)
-						sectors[s].colormap = colormap;
+					if (sector.tag == sd->tag)
+						sector.colormap = colormap;
 				}
 			}
 		}

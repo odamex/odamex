@@ -738,8 +738,8 @@ BEGIN_COMMAND(spawninv)
 	if (!stricmp(argv[1], "info"))
 	{
 		// Information about our currently-set spawn inventory.
-		Printf("g_spawninv: %s\n", ::g_spawninv.cstring());
-		Printf("serialized: %s\n", SpawnInvSerialize(::gSpawnInv));
+		Printf("g_spawninv: {}\n", ::g_spawninv.str());
+		Printf("serialized: {}\n", SpawnInvSerialize(::gSpawnInv));
 
 		Printf("Health: %d\n", ::gSpawnInv.health);
 		if (::gSpawnInv.armortype == 1)

@@ -138,16 +138,6 @@ void G_DeferedReset()
 	gameaction = ga_resetlevel;
 }
 
-const char* GetBase(const char* in)
-{
-	const char* out = &in[strlen(in) - 1];
-
-	while (out > in && *(out-1) != PATHSEPCHAR)
-		out--;
-
-	return out;
-}
-
 BEGIN_COMMAND (wad) // denis - changes wads
 {
 	// [Russell] print out some useful info
@@ -277,7 +267,7 @@ void G_ChangeMap()
 		// when onlcvars (addcommandstring's second param) is true.  Is there a
 		// reason why the mapscripts ahve to be safe mode?
 		if (strlen(sv_endmapscript.cstring()))
-			AddCommandString(sv_endmapscript.cstring());
+			AddCommandString(sv_endmapscript.str());
 	}
 }
 
@@ -301,7 +291,7 @@ void G_ChangeMap(size_t index) {
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
 	if(strlen(sv_endmapscript.cstring()))
-		AddCommandString(sv_endmapscript.cstring());
+		AddCommandString(sv_endmapscript.str());
 }
 
 // Restart the current map.
@@ -368,7 +358,7 @@ void G_DoNewGame()
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
 	if (strlen(sv_startmapscript.cstring()))
-		AddCommandString(sv_startmapscript.cstring());
+		AddCommandString(sv_startmapscript.str());
 
 	G_InitNew (d_mapname);
 	gameaction = ga_nothing;

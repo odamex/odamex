@@ -75,7 +75,7 @@ EXTERN_CVAR (sv_nomonsters)
 EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_fastmonsters)
 
-void C_DoCommand(const char *cmd, uint32_t key = 0);
+void C_DoCommand(std::string_view cmd, uint32_t key = 0);
 
 #ifdef UNIX
 void daemon_init();

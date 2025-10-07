@@ -25,6 +25,7 @@
 
 #include "dobject.h"
 
+#include <optional>
 
 void C_ExecCmdLineParams (bool onlyset, bool onlylogfile);
 
@@ -33,7 +34,7 @@ void C_ExecCmdLineParams (bool onlyset, bool onlylogfile);
 void AddCommandString(const std::string &cmd, uint32_t key = 0);
 
 // parse a command string
-const char *ParseString (const char *data);
+std::optional<std::string> ParseString (std::string_view& data);
 
 // combine many arguments into one valid argument.
 std::string C_ArgCombine(size_t argc, const char **argv);
@@ -63,9 +64,9 @@ protected:
 	AActor *m_Instigator;
 	size_t argc;
 	char **argv;
-	char *args;
+	const char *args;
 
-	friend void C_DoCommand(const char *cmd, uint32_t key);
+	friend void C_DoCommand(std::string_view cmd, uint32_t key);
 };
 
 #define BEGIN_COMMAND(n) \

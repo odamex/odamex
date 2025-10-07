@@ -871,7 +871,7 @@ BEGIN_COMMAND (serverinfo)
 	{
         if (Cvar->flags() & CVAR_SERVERINFO)
         {
-            size_t FieldLength = strlen(Cvar->name());
+            size_t FieldLength = Cvar->name().length();
 
             if (FieldLength > MaxFieldLength)
                 MaxFieldLength = FieldLength;
@@ -1130,7 +1130,7 @@ END_COMMAND (exit)
 CVAR_FUNC_IMPL (cl_netdemoname)
 {
 	// No empty format strings allowed.
-	if (strlen(var.cstring()) == 0)
+	if (var.str().empty())
 		var.RestoreDefault();
 }
 
@@ -1140,7 +1140,7 @@ EXTERN_CVAR(cl_netdemodir)
 // CL_GenerateNetDemoFileName
 //
 //
-std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemoname.cstring())
+std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemoname.str())
 {
 	const std::string expanded_filename(M_ExpandTokens(filename));
 	std::string newfilename(expanded_filename);

@@ -99,7 +99,7 @@ void CL_ClearPlayerJustTeleported(player_t* player);
 void CL_ClearSectorSnapshots();
 player_t& CL_FindPlayer(size_t id);
 std::string CL_GenerateNetDemoFileName(
-    const std::string& filename = cl_netdemoname.cstring());
+    const std::string& filename = cl_netdemoname.str());
 bool CL_PlayerJustTeleported(player_t* player);
 void CL_QuitAndTryDownload(const OWantFile& missing_file);
 void CL_ResyncWorldIndex();
