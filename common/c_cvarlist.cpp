@@ -145,6 +145,9 @@ CVAR(				sv_keepkeys, "0", "Keep keys on death",
 CVAR_FUNC_DECL(		sv_sharekeys, "0", "Share keys found to every player.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+CVAR(				sv_keepweapons, "0", "Keep weapons and ammo on death",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 CVAR_RANGE(			sv_maxunlagtime, "1.0", "Cap the maxiumum time allowed for player reconciliation (in seconds)",
 					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
