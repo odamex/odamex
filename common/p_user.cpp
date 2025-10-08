@@ -934,7 +934,7 @@ void P_SetPlayerPowerupStatuses(player_t* player, int powers[NUMPOWERS])
 	else
 		player->mo->statusflags &= ~SF_IRONFEET;
 
-		if (powers[pw_allmap])
+	if (powers[pw_allmap])
 		player->mo->statusflags |= SF_ALLMAP;
 	else
 		player->mo->statusflags &= ~SF_ALLMAP;
@@ -1210,7 +1210,7 @@ const char* PlayerState(size_t state)
 
 BEGIN_COMMAND(cheat_players)
 {
-	Printf("== PLAYERS ==");
+	PrintFmt("== PLAYERS ==");
 
 	int dead = 0;
 
@@ -1229,20 +1229,20 @@ BEGIN_COMMAND(cheat_players)
 
 			if (mo->player)
 			{
-				Printf("%.3u: %s\n", mo->player->id,
-				       mo->player->userinfo.netname);
+				PrintFmt("{:03d}: {}\n", mo->player->id,
+				         mo->player->userinfo.netname);
 			}
 			else
 			{
-				Printf("???: ???\n");
+				PrintFmt("???: ???\n");
 			}
-			Printf("State: %s\n", PlayerState(mo->state - states));
-			Printf("%f, %f, %f\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
-			       FIXED2FLOAT(mo->z));
+			PrintFmt("State: {}\n", PlayerState(mo->state - states));
+			PrintFmt("{}, {}, {}\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
+			         FIXED2FLOAT(mo->z));
 		}
 	}
 
-	Printf("== Skipped %d dead players ==\n", dead);
+	PrintFmt("== Skipped {} dead players ==\n", dead);
 }
 END_COMMAND(cheat_players)
 
@@ -1432,9 +1432,9 @@ player_s::player_s() :
 	ArrayInit(powers, 0);
 	ArrayInit(cards, false);
 	ArrayInit(flags, false);
-	ArrayInit(weaponowned, false);
-	ArrayInit(ammo, false);
-	ArrayInit(maxammo, false);
+	weaponowned.fill(false);
+	ammo.fill(false);
+	maxammo.fill(false);
 
 	// Can't put this in initializer list?
 	attacker = AActor::AActorPtr();
@@ -1452,6 +1452,9 @@ player_s::player_s() :
 
 player_s &player_s::operator =(const player_s &other)
 {
+	if (this == &other)
+		return *this;
+
 	id = other.id;
 	playerstate = other.playerstate;
 	mo = other.mo;
@@ -1489,9 +1492,9 @@ player_s &player_s::operator =(const player_s &other)
 	pendingweapon = other.pendingweapon;
 	readyweapon = other.readyweapon;
 
-	ArrayCopy(weaponowned, other.weaponowned);
-	ArrayCopy(ammo, other.ammo);
-	ArrayCopy(maxammo, other.maxammo);
+	weaponowned = other.weaponowned;
+	ammo = other.ammo;
+	maxammo = other.maxammo;
 
 	attackdown = other.attackdown;
 	usedown = other.usedown;

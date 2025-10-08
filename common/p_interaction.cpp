@@ -767,7 +767,7 @@ static void P_GiveCarePack(player_t* player)
 	}
 	else
 	{
-		Printf(PRINT_PICKUP, "%s\n", message.c_str());
+		PrintFmt(PRINT_PICKUP, "{}\n", message.c_str());
 		if (!midmessage.empty())
 		{
 			std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
@@ -1222,7 +1222,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
 
 			if (!teamItemSuccess)
 			{
-				Printf(PRINT_HIGH, "P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite, special->info->name);
+				PrintFmt(PRINT_HIGH, "P_SpecialThing: Unknown gettable thing {}: {}\n", special->sprite, special->info->name);
 				return;
 			}
 		}

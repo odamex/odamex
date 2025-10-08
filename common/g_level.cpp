@@ -387,7 +387,7 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 	return true;
 }
 
-const char *ParseString2(const char *data);
+std::optional<std::string> ParseString2(std::string_view& data);
 
 //
 // G_LoadWadString
@@ -403,14 +403,15 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname, const m
 	OWantFiles newwadfiles;
 	OWantFiles newpatchfiles;
 
-	const char* data = str.c_str();
-	for (size_t i = 0; (data = ParseString2(data)); i++)
+	std::string_view data = str;
+	std::optional<std::string> token;
+	while(token = ParseString2(data))
 	{
 		OWantFile file;
-		if (!OWantFile::make(file, ::com_token, OFILE_UNKNOWN))
+		if (!OWantFile::make(file, *token, OFILE_UNKNOWN))
 		{
-			Printf(PRINT_WARNING, "Could not parse \"%s\" into file, skipping...\n",
-			       ::com_token);
+			PrintFmt(PRINT_WARNING, "Could not parse \"{}\" into file, skipping...\n",
+			         *token);
 			continue;
 		}
 
@@ -419,11 +420,11 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname, const m
 		    std::find(deh_exts.begin(), deh_exts.end(), StdStringToUpper(file.getExt())) != deh_exts.end();
 		if (is_deh)
 		{
-			if (!OWantFile::make(file, ::com_token, OFILE_DEH))
+			if (!OWantFile::make(file, *token, OFILE_DEH))
 			{
-				Printf(PRINT_WARNING,
-				       "Could not parse \"%s\" into patch file, skipping...\n",
-				       ::com_token);
+				PrintFmt(PRINT_WARNING,
+				         "Could not parse \"{}\" into patch file, skipping...\n",
+				         *token);
 				continue;
 			}
 
@@ -436,11 +437,11 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname, const m
 		    std::find(wad_exts.begin(), wad_exts.end(), StdStringToUpper(file.getExt())) != wad_exts.end();
 		if (is_wad)
 		{
-			if (!OWantFile::make(file, ::com_token, OFILE_WAD))
+			if (!OWantFile::make(file, *token, OFILE_WAD))
 			{
-				Printf(PRINT_WARNING,
-				       "Could not parse \"%s\" into WAD file, skipping...\n",
-				       ::com_token);
+				PrintFmt(PRINT_WARNING,
+				         "Could not parse \"{}\" into WAD file, skipping...\n",
+				         *token);
 				continue;
 			}
 
@@ -483,7 +484,7 @@ BEGIN_COMMAND (map)
 
 			if (W_CheckNumForName (mapname) == -1)
 			{ // Still no luck, oh well.
-				Printf (PRINT_WARNING, "Map %s not found.\n", argv[1]);
+				PrintFmt(PRINT_WARNING, "Map {} not found.\n", argv[1]);
 			}
 			else
 			{ // Success
@@ -497,7 +498,7 @@ BEGIN_COMMAND (map)
 			// Ch0wW - Map was still not found, so don't bother trying loading the map.
 			if (W_CheckNumForName (argv[1]) == -1)
 			{
-				Printf (PRINT_WARNING, "Map %s not found.\n", argv[1]);
+				PrintFmt(PRINT_WARNING, "Map {} not found.\n", argv[1]);
 			}
 			else
 			{
@@ -739,7 +740,7 @@ void G_DoWorldDone()
 	{
 		// Don't die if no next map is given,
 		// just repeat the current one.
-		Printf (PRINT_WARNING, "No next map specified.\n");
+		PrintFmt(PRINT_WARNING, "No next map specified.\n");
 	}
 	else
 	{
@@ -761,8 +762,7 @@ EXTERN_CVAR (sv_freelook)
 
 void G_InitLevelLocals()
 {
-	byte old_fadeto_color[4];
-	memcpy(old_fadeto_color, level.fadeto_color, 4);
+	const std::array<byte, 4> old_fadeto_color = level.fadeto_color;
 
 	R_ExitLevel();
 
@@ -783,7 +783,7 @@ void G_InitLevelLocals()
 	// [SL] 2012-03-19 - Add sky2 back
 	::level.info = (level_info_t*)&info;
 	::level.skypic2 = info.skypic2;
-	memcpy(::level.fadeto_color, info.fadeto_color, 4);
+	::level.fadeto_color = info.fadeto_color;
 
 	if (::level.fadeto_color[0] || ::level.fadeto_color[1] || ::level.fadeto_color[2] || ::level.fadeto_color[3])
 	{
@@ -794,7 +794,7 @@ void G_InitLevelLocals()
 		R_ForceDefaultColormap(info.fadetable.c_str());
 	}
 
-	memcpy(::level.outsidefog_color, info.outsidefog_color, 4);
+	::level.outsidefog_color = info.outsidefog_color;
 
 	::level.flags |= LEVEL_DEFINEDINMAPINFO;
 	if (info.gravity != 0.f)
@@ -812,7 +812,7 @@ void G_InitLevelLocals()
 	::level.flags = info.flags;
 	::level.flags2 = info.flags2;
 	::level.levelnum = info.levelnum;
-	ArrayCopy(::level.level_fingerprint, info.level_fingerprint);
+	::level.level_fingerprint = info.level_fingerprint;
 
 	// Only copy the level name if there's a valid level name to be copied.
 
@@ -899,7 +899,7 @@ void G_InitLevelLocals()
 
 //	memset (level.vars, 0, sizeof(level.vars));
 
-	if (memcmp(::level.fadeto_color, old_fadeto_color, 4) != 0)
+	if (::level.fadeto_color != old_fadeto_color)
 	{
 		V_RefreshColormaps();
 	}
@@ -930,7 +930,7 @@ void G_InitLevelLocals()
 
 static void MapinfoHelp()
 {
-	Printf(PRINT_HIGH,
+	PrintFmt(PRINT_HIGH,
 		"mapinfo - Looks up internal information about levels\n\n"
 		"Usage:\n"
 		"  ] mapinfo mapname <LUMPNAME>\n"
@@ -955,7 +955,7 @@ BEGIN_COMMAND(mapinfo)
 	LevelInfos& levels = getLevelInfos();
 	if (stricmp(argv[1], "size") == 0)
 	{
-		Printf(PRINT_HIGH, "%zu maps found\n", levels.size());
+		PrintFmt(PRINT_HIGH, "{} maps found\n", levels.size());
 		return;
 	}
 
@@ -971,7 +971,7 @@ BEGIN_COMMAND(mapinfo)
 		infoptr = &levels.findByName(argv[2]);
 		if (!infoptr->exists())
 		{
-			Printf(PRINT_HIGH, "Map \"%s\" not found\n", argv[2]);
+			PrintFmt(PRINT_HIGH, "Map \"{}\" not found\n", argv[2]);
 			return;
 		}
 	}
@@ -981,7 +981,7 @@ BEGIN_COMMAND(mapinfo)
 		infoptr = &levels.findByNum(levelnum);
 		if (!infoptr->exists())
 		{
-			Printf(PRINT_HIGH, "Map number %d not found\n", levelnum);
+			PrintFmt(PRINT_HIGH, "Map number {} not found\n", levelnum);
 			return;
 		}
 	}
@@ -991,7 +991,7 @@ BEGIN_COMMAND(mapinfo)
 		int id = atoi(argv[2]);
 		if (id < 0 || id >= static_cast<int>(levels.size()))
 		{
-			Printf(PRINT_HIGH, "Map index %d does not exist\n", id);
+			PrintFmt(PRINT_HIGH, "Map index {} does not exist\n", id);
 			return;
 		}
 		infoptr = &levels.at(id);
@@ -1042,6 +1042,7 @@ BEGIN_COMMAND(mapinfo)
 	flags += (info.flags & LEVEL_CHANGEMAPCHEAT ? " CHANGEMAPCHEAT" : "");
 	flags += (info.flags & LEVEL_VISITED ? " VISITED" : "");
 	flags += (info.flags & LEVEL_COMPAT_DROPOFF ? " COMPAT_DROPOFF" : "");
+	flags += (info.flags2 & LEVEL2_COMPAT_CROSSDROPOFF ? " COMPAT_CROSSDROPOFF" : "");
 	flags += (info.flags & LEVEL_COMPAT_NOPASSOVER ? " COMPAT_NOPASSOVER" : "");
 	flags += (info.flags & LEVEL_COMPAT_LIMITPAIN ? " COMPAT_LIMITPAIN" : "");
 	flags += (info.flags & LEVEL_COMPAT_SHORTTEX ? " COMPAT_SHORTTEX" : "");
@@ -1051,16 +1052,16 @@ BEGIN_COMMAND(mapinfo)
 
 	if (flags.length() > 0)
 	{
-		Printf(PRINT_HIGH, "Flags:%s\n", flags);
+		PrintFmt(PRINT_HIGH, "Flags:{}\n", flags);
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "Flags: None\n");
+		PrintFmt(PRINT_HIGH, "Flags: None\n");
 	}
 
-	Printf(PRINT_HIGH, "Cluster: %d\n", info.cluster);
-	Printf(PRINT_HIGH, "Snapshot? %s\n", info.snapshot ? "Yes" : "No");
-	Printf(PRINT_HIGH, "ACS defereds? %s\n", info.defered ? "Yes" : "No");
+	PrintFmt(PRINT_HIGH, "Cluster: {}\n", info.cluster);
+	PrintFmt(PRINT_HIGH, "Snapshot? {}\n", info.snapshot ? "Yes" : "No");
+	PrintFmt(PRINT_HIGH, "ACS defereds? {}\n", info.defered ? "Yes" : "No");
 }
 END_COMMAND(mapinfo)
 
@@ -1069,14 +1070,14 @@ BEGIN_COMMAND(clusterinfo)
 {
 	if (argc < 2)
 	{
-		Printf(PRINT_HIGH, "Usage: clusterinfo <cluster id>\n");
+		PrintFmt(PRINT_HIGH, "Usage: clusterinfo <cluster id>\n");
 		return;
 	}
 
 	cluster_info_t& info = getClusterInfos().findByCluster(std::atoi(argv[1]));
 	if (info.cluster == 0)
 	{
-		Printf(PRINT_HIGH, "Cluster %s not found\n", argv[1]);
+		PrintFmt(PRINT_HIGH, "Cluster {} not found\n", argv[1]);
 		return;
 	}
 
@@ -1085,19 +1086,19 @@ BEGIN_COMMAND(clusterinfo)
 	PrintFmt(PRINT_HIGH, "Message Flat: {}\n", info.finaleflat);
 	if (!info.exittext.empty())
 	{
-		Printf(PRINT_HIGH, "- = Exit Text = -\n%s\n- = = = -\n", info.exittext);
+		PrintFmt(PRINT_HIGH, "- = Exit Text = -\n{}\n- = = = -\n", info.exittext);
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "Exit Text: None\n");
+		PrintFmt(PRINT_HIGH, "Exit Text: None\n");
 	}
 	if (!info.entertext.empty())
 	{
-		Printf(PRINT_HIGH, "- = Enter Text = -\n%s\n- = = = -\n", info.entertext);
+		PrintFmt(PRINT_HIGH, "- = Enter Text = -\n{}\n- = = = -\n", info.entertext);
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "Enter Text: None\n");
+		PrintFmt(PRINT_HIGH, "Enter Text: None\n");
 	}
 
 	// Stringify the set cluster flags.
@@ -1107,11 +1108,11 @@ BEGIN_COMMAND(clusterinfo)
 
 	if (flags.length() > 0)
 	{
-		Printf(PRINT_HIGH, "Flags:%s\n", flags);
+		PrintFmt(PRINT_HIGH, "Flags:{}\n", flags);
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "Flags: None\n");
+		PrintFmt(PRINT_HIGH, "Flags: None\n");
 	}
 }
 END_COMMAND(clusterinfo)
@@ -1133,7 +1134,7 @@ ClusterInfos& getClusterInfos()
 // P_AllowDropOff()
 bool P_AllowDropOff()
 {
-	return level.flags & LEVEL_COMPAT_DROPOFF || co_allowdropoff;
+	return co_allowdropoff && !(level.flags & LEVEL2_COMPAT_CROSSDROPOFF);
 }
 
 bool P_AllowPassover()

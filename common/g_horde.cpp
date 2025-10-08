@@ -497,9 +497,9 @@ const hordeDefine_t& G_HordeDefine(size_t id)
 {
 	if (id >= ::WAVE_DEFINES.size())
 	{
-		Printf(PRINT_WARNING,
-		       "Tried to access horde wave %lu but only have %lu horde defines!\n", id,
-		       ::WAVE_DEFINES.size());
+		PrintFmt(PRINT_WARNING,
+		         "Tried to access horde wave {} but only have {} horde defines!\n", id,
+		         ::WAVE_DEFINES.size());
 		return EMPTY_WAVE_DEFINE;
 	}
 

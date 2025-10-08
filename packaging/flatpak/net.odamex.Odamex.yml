@@ -2,7 +2,7 @@
 ---
 app-id: net.odamex.Odamex
 runtime: org.freedesktop.Platform
-runtime-version: "24.08"
+runtime-version: "25.08"
 sdk: org.freedesktop.Sdk
 command: select-exe
 separate-locales: false
@@ -75,7 +75,8 @@ modules:
       - -D BUILD_SERVER=1
       - -D BUILD_LAUNCHER=1
       - -D BUILD_MASTER=0
-      - -D USE_INTERNAL_LIBS=1
+      - -D USE_INTERNAL_LIBS=0
+      - -D USE_INTERNAL_WXWIDGETS=1
       - -D USE_INTERNAL_DEUTEX=1
       - -D ODAMEX_INSTALL_BINDIR=/app/bin
       - -D ODAMEX_INSTALL_DATADIR=/run/host/usr/share

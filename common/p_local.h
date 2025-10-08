@@ -176,7 +176,7 @@ typedef struct
 
 #define MAXINTERCEPTS	128
 
-extern TArray<intercept_t> intercepts;
+extern std::vector<intercept_t> intercepts;
 
 typedef bool (*traverser_t) (intercept_t *in);
 

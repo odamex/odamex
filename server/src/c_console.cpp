@@ -99,7 +99,7 @@ char *TimeStamp()
 	return stamp;
 }
 
-static int PrintString(int printlevel, const std::string& str)
+static size_t PrintString(int printlevel, const std::string& str)
 {
 	std::string sanitized_str(str);
 	StripColorCodes(sanitized_str);
@@ -157,7 +157,7 @@ BEGIN_COMMAND (history)
 
 	while (hist)
 	{
-		Printf (PRINT_HIGH, "   %s\n", hist->String);
+		PrintFmt(PRINT_HIGH, "   {}\n", hist->String);
 		hist = hist->Newer;
 	}
 }
@@ -168,7 +168,7 @@ BEGIN_COMMAND (echo)
 	if (argc > 1)
 	{
 		std::string text = C_ArgCombine(argc - 1, (const char **)(argv + 1));
-		Printf(PRINT_HIGH, "%s\n", text);
+		PrintFmt(PRINT_HIGH, "{}\n", text);
 	}
 }
 END_COMMAND (echo)

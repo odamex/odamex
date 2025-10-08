@@ -114,11 +114,11 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	// [Russell] print out some useful info
 	if (argc == 1)
 	{
-	    Printf(PRINT_HIGH, "Usage: wad pwad [...] [deh/bex [...]]\n");
-	    Printf(PRINT_HIGH, "       wad iwad [pwad [...]] [deh/bex [...]]\n");
-	    Printf(PRINT_HIGH, "\n");
-	    Printf(PRINT_HIGH, "Load a wad file on the fly, pwads/dehs/bexs require extension\n");
-	    Printf(PRINT_HIGH, "eg: wad doom\n");
+	    PrintFmt(PRINT_HIGH, "Usage: wad pwad [...] [deh/bex [...]]\n");
+	    PrintFmt(PRINT_HIGH, "       wad iwad [pwad [...]] [deh/bex [...]]\n");
+	    PrintFmt(PRINT_HIGH, "\n");
+	    PrintFmt(PRINT_HIGH, "Load a wad file on the fly, pwads/dehs/bexs require extension\n");
+	    PrintFmt(PRINT_HIGH, "eg: wad doom\n");
 
 	    return;
 	}

@@ -211,7 +211,7 @@ bool M_WriteFile(std::string filename, void *source, QWORD length)
 
     if (handle == NULL)
 	{
-		Printf(PRINT_HIGH, "Could not open file %s for writing\n", filename);
+		PrintFmt(PRINT_HIGH, "Could not open file {} for writing\n", filename);
 		return false;
 	}
 
@@ -220,7 +220,7 @@ bool M_WriteFile(std::string filename, void *source, QWORD length)
 
 	if (count != length)
 	{
-		Printf(PRINT_HIGH, "Failed while writing to file %s\n", filename);
+		PrintFmt(PRINT_HIGH, "Failed while writing to file {}\n", filename);
 		return false;
 	}
 
@@ -243,7 +243,7 @@ QWORD M_ReadFile(std::string filename, BYTE **buffer)
 
 	if (handle == NULL)
 	{
-		Printf(PRINT_HIGH, "Could not open file %s for reading\n", filename);
+		PrintFmt(PRINT_HIGH, "Could not open file {} for reading\n", filename);
 		return false;
 	}
 
@@ -255,7 +255,7 @@ QWORD M_ReadFile(std::string filename, BYTE **buffer)
 
     if (count != length)
 	{
-		Printf(PRINT_HIGH, "Failed while reading from file %s\n", filename);
+		PrintFmt(PRINT_HIGH, "Failed while reading from file {}\n", filename);
 		return false;
 	}
 

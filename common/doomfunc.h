@@ -33,43 +33,29 @@ void SV_BasePrintButPlayer(const int printlevel, const int player_id, const std:
 size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str);
 
 template <typename... ARGS>
-[[deprecated("Please use PrintFmt() instead.")]]
-size_t Printf(const fmt::string_view format, const ARGS&... args)
+size_t PrintFmt(fmt::format_string<ARGS...> format, ARGS&&... args)
 {
-	return C_BasePrint(PRINT_HIGH, TEXTCOLOR_NORMAL, fmt::sprintf(format, args...));
+	return C_BasePrint(PRINT_HIGH, TEXTCOLOR_NORMAL, fmt::format(format, std::forward<ARGS>(args)...));
 }
 
 template <typename... ARGS>
-[[deprecated("Please use PrintFmt() instead.")]]
-size_t Printf(const int printlevel, const fmt::string_view format, const ARGS&... args)
+size_t PrintFmt(const int printlevel, fmt::format_string<ARGS...> format, ARGS&&... args)
 {
-	return C_BasePrint(printlevel, TEXTCOLOR_NORMAL, fmt::sprintf(format, args...));
+	return C_BasePrint(printlevel, TEXTCOLOR_NORMAL, fmt::format(format, std::forward<ARGS>(args)...));
 }
 
 template <typename... ARGS>
-size_t PrintFmt(const fmt::string_view format, const ARGS&... args)
+size_t PrintFmt_Bold(fmt::format_string<ARGS...> format, ARGS&&... args)
 {
-	return C_BasePrint(PRINT_HIGH, TEXTCOLOR_NORMAL, fmt::format(format, args...));
+	return C_BasePrint(PRINT_HIGH, TEXTCOLOR_BOLD, fmt::format(format, std::forward<ARGS>(args)...));
 }
 
 template <typename... ARGS>
-size_t PrintFmt(const int printlevel, const fmt::string_view format, const ARGS&... args)
-{
-	return C_BasePrint(printlevel, TEXTCOLOR_NORMAL, fmt::format(format, args...));
-}
-
-template <typename... ARGS>
-size_t PrintFmt_Bold(const fmt::string_view format, const ARGS&... args)
-{
-	return C_BasePrint(PRINT_HIGH, TEXTCOLOR_BOLD, fmt::format(format, args...));
-}
-
-template <typename... ARGS>
-size_t DPrintFmt(const fmt::string_view format, const ARGS&... args)
+size_t DPrintFmt(fmt::format_string<ARGS...> format, ARGS&&... args)
 {
 	if (::developer || ::devparm)
 	{
-		return C_BasePrint(PRINT_WARNING, TEXTCOLOR_NORMAL, fmt::format(format, args...));
+		return C_BasePrint(PRINT_WARNING, TEXTCOLOR_NORMAL, fmt::format(format, std::forward<ARGS>(args)...));
 	}
 
 	return 0;
@@ -85,12 +71,12 @@ size_t DPrintFmt(const fmt::string_view format, const ARGS&... args)
  * @param args printf-style arguments.
  */
 template <typename... ARGS>
-void SV_BroadcastPrintFmt(int printlevel, const fmt::string_view format, const ARGS&... args)
+void SV_BroadcastPrintFmt(int printlevel, fmt::format_string<ARGS...> format, ARGS&&... args)
 {
 	if (!serverside)
 		return;
 
-	std::string string = fmt::format(format, args...);
+	std::string string = fmt::format(format, std::forward<ARGS>(args)...);
 	C_BasePrint(printlevel, TEXTCOLOR_NORMAL, string);
 
 	#ifdef SERVER_APP
@@ -111,16 +97,16 @@ void SV_BroadcastPrintFmt(int printlevel, const fmt::string_view format, const A
  * @param args printf-style arguments.
  */
 template <typename... ARGS>
-void SV_BroadcastPrintFmt(const fmt::string_view format, const ARGS&... args)
+void SV_BroadcastPrintFmt(fmt::format_string<ARGS...> format, ARGS&&... args)
 {
-	SV_BroadcastPrintFmt(PRINT_NORCON, format, args...);
+	SV_BroadcastPrintFmt(PRINT_NORCON, format, std::forward<ARGS>(args)...);
 }
 
 #ifdef SERVER_APP
 template <typename... ARGS>
-void SV_BroadcastPrintFmtButPlayer(int printlevel, int player_id, const fmt::string_view format, const ARGS&... args)
+void SV_BroadcastPrintFmtButPlayer(int printlevel, int player_id, fmt::format_string<ARGS...> format, ARGS&&... args)
 {
-	std::string string = fmt::format(format, args...);
+	std::string string = fmt::format(format, std::forward<ARGS>(args)...);
 	C_BasePrint(printlevel, TEXTCOLOR_NORMAL, string); // print to the console
 
 	// Hacky code to display messages as normal ones to clients

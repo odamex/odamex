@@ -395,7 +395,7 @@ ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, EWindow
 {
 	setRendererDriver();
 	const char* driver_name = getRendererDriver();
-	Printf(PRINT_HIGH, "V_Init: rendering mode \"%s\"\n", driver_name);
+	PrintFmt(PRINT_HIGH, "V_Init: rendering mode \"{}\"\n", driver_name);
 
 	SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0");
 

@@ -572,7 +572,7 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 			}
 			else
 			{
-				Printf(PRINT_HIGH, "Unknown special %u\n", (unsigned)special);
+				PrintFmt(PRINT_HIGH, "Unknown special {}\n", (unsigned)special);
 			}
 
 			switch (special & 0x0018)

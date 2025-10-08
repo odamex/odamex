@@ -135,10 +135,9 @@ AActor::AActor()
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
-      rndindex(0), netid(0), tid(0), baseline_set(false), bmapnode(this)
+      rndindex(0), netid(0), tid(0), baseline(), baseline_set(false), bmapnode(this)
 {
 	memset(args, 0, sizeof(args));
-	memset(&baseline, 0, sizeof(baseline));
 	self.init(this);
 }
 
@@ -254,7 +253,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
-      rndindex(0), netid(0), tid(0), baseline_set(false), bmapnode(this)
+      rndindex(0), netid(0), tid(0), baseline(), baseline_set(false), bmapnode(this)
 {
 	// Fly!!! fix it in P_RespawnSpecial
 	if ((unsigned int)itype >= NUMMOBJTYPES)
@@ -327,7 +326,6 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
 
 	spawnpoint.type = 0;
 	memset(args, 0, sizeof(args));
-	memset(&baseline, 0, sizeof(baseline));
 }
 
 
@@ -2897,7 +2895,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 		if (type > 63)
 		{
-			Printf (PRINT_WARNING, "Sound sequence %d out of range\n", type);
+			PrintFmt(PRINT_WARNING, "Sound sequence {} out of range\n", type);
 		}
 		else
 		{
@@ -2949,7 +2947,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (i >= NUMMOBJTYPES || i < 0)
 	{
 		// [RH] Don't die if the map tries to spawn an unknown thing
-		Printf (PRINT_WARNING, "Unknown type %i at (%i, %i)\n",
+		PrintFmt(PRINT_WARNING, "Unknown type {} at ({}, {})\n",
 			mthing->type,
 			mthing->x, mthing->y);
 		i = MT_UNKNOWNTHING;
@@ -2958,7 +2956,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	//		it to the unknown thing.
 	else if (sprites[states[mobjinfo[i].spawnstate].sprite].numframes == 0)
 	{
-		Printf (PRINT_WARNING, "Type %i at (%i, %i) has no frames\n",
+		PrintFmt(PRINT_WARNING, "Type {} at ({}, {}) has no frames\n",
 				mthing->type, mthing->x, mthing->y);
 		i = MT_UNKNOWNTHING;
 	}
@@ -3270,7 +3268,7 @@ BEGIN_COMMAND(cheat_mobjs)
 {
 	if (argc < 2)
 	{
-		Printf("Missing MT_* mobj type\n");
+		PrintFmt("Missing MT_* mobj type\n");
 		return;
 	}
 
@@ -3288,11 +3286,11 @@ BEGIN_COMMAND(cheat_mobjs)
 
 	if (mobj_index < 0)
 	{
-		Printf("Unknown MT_* mobj type\n");
+		PrintFmt("Unknown MT_* mobj type\n");
 		return;
 	}
 
-	Printf("== %s ==", mobj_type);
+	PrintFmt("== {} ==", mobj_type);
 
 	AActor* mo;
 	TThinkerIterator<AActor> iterator;
@@ -3300,9 +3298,9 @@ BEGIN_COMMAND(cheat_mobjs)
 	{
 		if (mo->type == mobj_index)
 		{
-			Printf("ID: %d\n", mo->netid);
-			Printf("  %.1f, %.1f, %.1f\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
-			       FIXED2FLOAT(mo->z));
+			PrintFmt("ID: {}\n", mo->netid);
+			PrintFmt("  {:.1f}, {:.1f}, {:.1f}\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
+			         FIXED2FLOAT(mo->z));
 		}
 	}
 }

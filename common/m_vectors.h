@@ -42,8 +42,6 @@ struct v2int_t
 
 	v2int_t(const int x_, const int y_) : x(x_), y(y_) { }
 
-	v2int_t(const v2int_t& other) : x(other.x), y(other.y) { }
-
 	int x, y;
 };
 
@@ -52,8 +50,6 @@ struct v2fixed_t
 	v2fixed_t() {}
 
 	v2fixed_t(fixed_t _x, fixed_t _y) : x(_x), y(_y) { }
-
-	v2fixed_t(const v2fixed_t& other) : x(other.x), y(other.y) { }
 
 	fixed_t x, y;
 };
@@ -64,8 +60,6 @@ struct v2fixed64_t
 
 	v2fixed64_t(fixed64_t _x, fixed64_t _y) : x(_x), y(_y) { }
 
-	v2fixed64_t(const v2fixed64_t& other) : x(other.x), y(other.y) { }
-
 	fixed64_t x, y;
 };
 
@@ -74,8 +68,6 @@ struct v3fixed_t
 	v3fixed_t() {}
 
 	v3fixed_t(fixed_t _x, fixed_t _y, fixed_t _z) : x(_x), y(_y), z(_z) { }
-
-	v3fixed_t(const v3fixed_t& other) : x(other.x), y(other.y), z(other.z) { }
 
 	fixed_t x, y, z;
 };
@@ -86,8 +78,6 @@ struct v3float_t
 
 	v3float_t(float _x, float _y, float _z) : x(_x), y(_y), z(_z) { }
 
-	v3float_t(const v3float_t& other) : x(other.x), y(other.y), z(other.z) { }
-
 	float x, y, z;
 };
 
@@ -96,8 +86,6 @@ struct v3double_t
 	v3double_t() {}
 
 	v3double_t(double _x, double _y, double _z) : x(_x), y(_y), z(_z) { }
-
-	v3double_t(const v3float_t& other) : x(other.x), y(other.y), z(other.z) { }
 
 	double x, y, z;
 };
@@ -112,8 +100,6 @@ struct rectInt_t
 	    : min(x1, y1), max(x2, y2)
 	{
 	}
-
-	rectInt_t(const rectInt_t& other) : min(other.min), max(other.max) { }
 
 	v2int_t min, max;
 };

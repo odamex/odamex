@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -65,7 +65,7 @@ bool wii_pathisrelative(const char *path)
 }
 
 // scandir() and alphasort() originally obtained from the viewmol project. They have been slightly modified.
-// The original source is located here: 
+// The original source is located here:
 //		http://viewmol.cvs.sourceforge.net/viewvc/viewmol/source/scandir.c?revision=1.3&view=markup
 // The license (GPL) is located here: http://viewmol.sourceforge.net/documentation/node2.html
 
@@ -104,7 +104,7 @@ int wii_scandir(const char *dir, struct  dirent ***namelist,
 	if (i == 0) return(-1);
 	if (compar != NULL)
 		qsort((void *)(*namelist), (size_t)i, sizeof(struct dirent *), (int (*)(const void*,const void*))compar);
-               
+
 	return(i);
 }
 
@@ -119,10 +119,10 @@ int wii_alphasort(const struct dirent **a, const struct dirent **b)
 bool wii_InitNet()
 {
 	char localip[16] = {0};
-	
+
 	if(if_config(localip, NULL, NULL, true, 20) >= 0)
 	{
-		Printf(PRINT_HIGH, "Local IP received: %s\n", localip);
+		PrintFmt(PRINT_HIGH, "Local IP received: {}\n", localip);
 #if DEBUG
 		// Connect to the remote debug console
 		if(net_print_init(NULL,0) >= 0)
@@ -130,12 +130,12 @@ bool wii_InitNet()
 
 		// Initialize the debug listener
 		DEBUG_Init(100, 5656);
-		
+
 #if 0 // Enable this section to debug remotely over a network connection.
 		// Wait for the debugger
 		_break();
 #endif
-		
+
 #endif
 		return true;
 	}
@@ -146,8 +146,8 @@ bool wii_InitNet()
 int main(int argc, char *argv[])
 {
 	__exception_setreload(8);
-		
-	if(!fatInitDefault()) 
+
+	if(!fatInitDefault())
 	{
 #if DEBUG
 		net_print_string( __FILE__, __LINE__, "Unable to initialise FAT subsystem, exiting.\n");
@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
 #endif
 
 	I_Main(argc, argv); // Does not return
-	
+
 	return 0;
 }
 

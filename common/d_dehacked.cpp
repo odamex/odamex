@@ -1549,9 +1549,9 @@ static int PatchFrame(int frameNum)
 		}
 	}
 #if defined _DEBUG
-	Printf("FRAME %d: Duration: %d, Next: %d, SprNum: %d(%s), SprSub: %d\n", frameNum,
-	       info->tics, info->nextstate, info->sprite, sprnames[info->sprite],
-	       info->frame);
+	PrintFmt("FRAME {}: Duration: {}, Next: {}, SprNum: {}({}), SprSub: {}\n", frameNum,
+	         info->tics, info->nextstate, info->sprite, sprnames[info->sprite],
+	         info->frame);
 #endif
 
 	return result;
@@ -2028,7 +2028,7 @@ static int PatchText(int oldSize)
 
 	if (*temp == 0)
 	{
-		Printf(PRINT_HIGH, "Text chunk is missing size of new string.\n");
+		PrintFmt(PRINT_HIGH, "Text chunk is missing size of new string.\n");
 		return 2;
 	}
 	newSize = atoi(temp);
@@ -2038,7 +2038,7 @@ static int PatchText(int oldSize)
 
 	if (!oldStr || !newStr)
 	{
-		Printf(PRINT_HIGH, "Out of memory.\n");
+		PrintFmt(PRINT_HIGH, "Out of memory.\n");
 		goto donewithtext;
 	}
 
@@ -2049,13 +2049,13 @@ static int PatchText(int oldSize)
 	{
 		delete[] newStr;
 		delete[] oldStr;
-		Printf(PRINT_HIGH, "Unexpected end-of-file.\n");
+		PrintFmt(PRINT_HIGH, "Unexpected end-of-file.\n");
 		return 0;
 	}
 
 	if (includenotext)
 	{
-		Printf(PRINT_HIGH, "Skipping text chunk in included patch.\n");
+		PrintFmt(PRINT_HIGH, "Skipping text chunk in included patch.\n");
 		goto donewithtext;
 	}
 
@@ -2178,7 +2178,7 @@ static int PatchStrings(int dummy)
 		i = GStrings.toIndex(Line1);
 		if (i == -1)
 		{
-			Printf(PRINT_HIGH, "Unknown string: %s\n", Line1);
+			PrintFmt(PRINT_HIGH, "Unknown string: {}\n", Line1);
 		}
 		else
 		{
@@ -2251,13 +2251,13 @@ static int DoInclude(int dummy)
 
 	if (!OWantFile::make(want, com_token, OFILE_DEH))
 	{
-		Printf(PRINT_WARNING, "Could not find BEX include \"%s\"\n", com_token);
+		PrintFmt(PRINT_WARNING, "Could not find BEX include \"{}\"\n", com_token);
 		goto endinclude;
 	}
 
 	if (!M_ResolveWantedFile(res, want))
 	{
-		Printf(PRINT_WARNING, "Could not resolve BEX include \"%s\"\n", com_token);
+		PrintFmt(PRINT_WARNING, "Could not resolve BEX include \"{}\"\n", com_token);
 		goto endinclude;
 	}
 
@@ -2299,8 +2299,8 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 		FILE* fh = fopen(patchfile->getFullpath().c_str(), "rb+");
 		if (fh == NULL)
 		{
-			Printf(PRINT_WARNING, "Could not open DeHackEd patch \"%s\"\n",
-			       patchfile->getBasename());
+			PrintFmt(PRINT_WARNING, "Could not open DeHackEd patch \"{}\"\n",
+			         patchfile->getBasename());
 			return false;
 		}
 
@@ -2342,12 +2342,12 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 			delete[] ::PatchFile;
 			if (patchfile)
 			{
-				Printf(PRINT_WARNING, "\"%s\" is not a DeHackEd patch file\n",
-				       patchfile->getBasename());
+				PrintFmt(PRINT_WARNING, "\"{}\" is not a DeHackEd patch file\n",
+				         patchfile->getBasename());
 			}
 			else
 			{
-				Printf(PRINT_WARNING, "\"DEHACKED\" is not a DeHackEd patch lump\n");
+				PrintFmt(PRINT_WARNING, "\"DEHACKED\" is not a DeHackEd patch lump\n");
 			}
 			return false;
 		}
@@ -2413,13 +2413,13 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 
 	if (patchfile)
 	{
-		Printf("adding %s\n", patchfile->getFullpath());
+		PrintFmt("adding {}\n", patchfile->getFullpath());
 	}
 	else
 	{
-		Printf("adding DEHACKED lump\n");
+		PrintFmt("adding DEHACKED lump\n");
 	}
-	Printf(" (DeHackEd patch)\n");
+	PrintFmt(" (DeHackEd patch)\n");
 
 	D_PostProcessDeh();
 
@@ -2551,23 +2551,23 @@ static void PrintState(int index)
 
 	// Print this state.
 	state_t& state = ::states[index];
-	Printf("%4d | s:%s f:%d t:%d a:%s m1:%d m2:%d\n", index, ::sprnames[state.sprite],
-	       state.frame, state.tics, ActionPtrString(state.action), state.misc1,
-	       state.misc2);
+	PrintFmt("{:>4d} | s:{} f:{} t:{} a:{} m1:{} m2:{}\n", index, ::sprnames[state.sprite],
+	         state.frame, state.tics, ActionPtrString(state.action), state.misc1,
+	         state.misc2);
 }
 
 BEGIN_COMMAND(stateinfo)
 {
 	if (argc < 2)
 	{
-		Printf("Must pass one or two state indexes. (0 to %d)\n", NUMSTATES - 1);
+		PrintFmt("Must pass one or two state indexes. (0 to {})\n", NUMSTATES - 1);
 		return;
 	}
 
 	int index1 = atoi(argv[1]);
 	if (index1 < 0 || index1 >= NUMSTATES)
 	{
-		Printf("Not a valid index.\n");
+		PrintFmt("Not a valid index.\n");
 		return;
 	}
 	int index2 = index1;
@@ -2577,7 +2577,7 @@ BEGIN_COMMAND(stateinfo)
 		index2 = atoi(argv[2]);
 		if (index2 < 0 || index2 >= NUMSTATES)
 		{
-			Printf("Not a valid index.\n");
+			PrintFmt("Not a valid index.\n");
 			return;
 		}
 	}
@@ -2601,14 +2601,14 @@ BEGIN_COMMAND(playstate)
 {
 	if (argc < 2)
 	{
-		Printf("Must pass state index. (0 to %d)\n", NUMSTATES - 1);
+		PrintFmt("Must pass state index. (0 to {})\n", NUMSTATES - 1);
 		return;
 	}
 
 	int index = atoi(argv[1]);
 	if (index < 0 || index >= NUMSTATES)
 	{
-		Printf("Not a valid index.\n");
+		PrintFmt("Not a valid index.\n");
 		return;
 	}
 
@@ -2619,7 +2619,7 @@ BEGIN_COMMAND(playstate)
 		OHashTable<int, bool>::iterator it = visited.find(index);
 		if (it != visited.end())
 		{
-			Printf("Looped back to %d\n", index);
+			PrintFmt("Looped back to {}\n", index);
 			return;
 		}
 

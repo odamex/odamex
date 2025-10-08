@@ -40,7 +40,7 @@ int D_GenderToInt (const char *gender)
 		return GENDER_MALE;
 }
 
-bool SetServerVar (const char *name, const char *value)
+bool SetServerVar (std::string_view name, const char *value)
 {
 	cvar_t *dummy;
 	cvar_t *var = cvar_t::FindCVar (name, &dummy);
@@ -59,7 +59,7 @@ bool SetServerVar (const char *name, const char *value)
 
 void D_SendServerInfoChange (const cvar_t *cvar, const char *value)
 {
-	SetServerVar(cvar->name(), value);
+	SetServerVar(cvar->name().c_str(), value);
 	SV_BroadcastPrintFmt("{}{} has been modified to {}!\n", TEXTCOLOR_YELLOW, cvar->name(), value);
 	SV_ServerSettingChange ();
 }

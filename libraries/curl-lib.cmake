@@ -32,9 +32,14 @@ if(BUILD_CLIENT)
       "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
       "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
       "-DBUILD_CURL_EXE=OFF"
+      "-DBUILD_EXAMPLES=OFF"
+      "-DBUILD_LIBCURL_DOCS=OFF"
+      "-DBUILD_MISC_DOCS=OFF"
       "-DBUILD_SHARED_LIBS=OFF"
-      "-DCMAKE_USE_LIBSSH2=OFF"
-      "-DCMAKE_USE_WINSSL=${_COMPILE_CURL_WINSSL}"
+      "-DBUILD_TESTING=OFF"
+      "-DCURL_USE_LIBSSH2=OFF"
+      "-DCURL_USE_SCHANNEL=${_COMPILE_CURL_WINSSL}"
+      "-DCURL_USE_LIBPSL=OFF"
       "-DCURL_ZLIB=OFF"
       "-DHTTP_ONLY=ON")
     unset(_COMPILE_CURL_WINSSL)
@@ -47,9 +52,11 @@ if(BUILD_CLIENT)
 
   find_package(CURL)
   if(TARGET CURL::libcurl)
-    set_target_properties(CURL::libcurl PROPERTIES IMPORTED_GLOBAL True)
+    add_library(curl_interface INTERFACE)
+    target_link_libraries(curl_interface INTERFACE CURL::libcurl)
+    set_target_properties(curl_interface PROPERTIES GLOBAL True)
     if(WIN32)
-      target_link_libraries(CURL::libcurl INTERFACE ws2_32 crypt32)
+      target_link_libraries(curl_interface INTERFACE ws2_32 crypt32)
     endif()
   endif()
 endif()

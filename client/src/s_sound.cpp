@@ -1139,7 +1139,7 @@ void S_UpdateMusic()
 void S_SetMusicVolume(float volume)
 {
 	if (volume < 0.0 || volume > 1.0)
-		Printf (PRINT_HIGH, "Attempt to set music volume at %f\n", volume);
+		PrintFmt(PRINT_HIGH, "Attempt to set music volume at {}\n", volume);
 	else
 		I_SetMusicVolume (volume);
 }
@@ -1147,7 +1147,7 @@ void S_SetMusicVolume(float volume)
 void S_SetSfxVolume(float volume)
 {
 	if (volume < 0.0 || volume > 1.0)
-		Printf (PRINT_HIGH, "Attempt to set sfx volume at %f\n", volume);
+		PrintFmt(PRINT_HIGH, "Attempt to set sfx volume at {}\n", volume);
 	else
 		I_SetSfxVolume (volume);
 }
@@ -1187,7 +1187,7 @@ void S_ChangeMusic(std::string musicname, bool looping)
 		int lumpnum;
 		if ((lumpnum = W_CheckNumForName (musicname.c_str())) == -1)
 		{
-			Printf (PRINT_HIGH, "Music lump \"%s\" not found\n", musicname);
+			PrintFmt(PRINT_HIGH, "Music lump \"{}\" not found\n", musicname);
 			return;
 		}
 
@@ -1671,11 +1671,11 @@ BEGIN_COMMAND (snd_soundlist)
 		if (S_sfx[i].lumpnum != -1)
 		{
 			const OLumpName lumpname = lumpinfo[S_sfx[i].lumpnum].name;
-			Printf(PRINT_HIGH, "%3d. %s (%s)\n", i+1, S_sfx[i].name, lumpname.c_str());
+			PrintFmt(PRINT_HIGH, "{:>3d}. {} ({})\n", i+1, S_sfx[i].name, lumpname.c_str());
 		}
 		// todo: check if sounds are multiple lumps rather than just one (i.e. random sounds)
 		else
-			Printf (PRINT_HIGH, "%3d. %s **not present**\n", i+1, S_sfx[i].name);
+			PrintFmt(PRINT_HIGH, "{:>3d}. {} **not present**\n", i+1, S_sfx[i].name);
 }
 END_COMMAND (snd_soundlist)
 
@@ -1683,7 +1683,7 @@ BEGIN_COMMAND (snd_soundlinks)
 {
 	for (const auto& sfx : S_sfx)
 		if (sfx.link != static_cast<int>(sfxinfo_t::NO_LINK))
-			Printf(PRINT_HIGH, "%s -> %s\n", sfx.name, S_sfx[sfx.link].name);
+			PrintFmt(PRINT_HIGH, "{} -> {}\n", sfx.name, S_sfx[sfx.link].name);
 }
 END_COMMAND (snd_soundlinks)
 
@@ -1698,11 +1698,11 @@ BEGIN_COMMAND (changemus)
 {
 	if (argc == 1)
 	{
-	    Printf(PRINT_HIGH, "Usage: changemus lumpname [loop]");
-	    Printf(PRINT_HIGH, "\n");
-	    Printf(PRINT_HIGH, "Plays music from an internal lump, loop\n");
-	    Printf(PRINT_HIGH, "parameter determines if the music should play\n");
-	    Printf(PRINT_HIGH, "continuously or not, (1 or 0, default: 1)\n");
+	    PrintFmt(PRINT_HIGH, "Usage: changemus lumpname [loop]");
+	    PrintFmt(PRINT_HIGH, "\n");
+	    PrintFmt(PRINT_HIGH, "Plays music from an internal lump, loop\n");
+	    PrintFmt(PRINT_HIGH, "parameter determines if the music should play\n");
+	    PrintFmt(PRINT_HIGH, "continuously or not, (1 or 0, default: 1)\n");
 
 	    return;
 	}

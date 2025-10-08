@@ -31,15 +31,15 @@
 #define FRACBITS				16
 #define FRACUNIT				(1<<FRACBITS)
 
-using fixed_t = int;			// fixed 16.16
-using fixed64_t = int64_t;      // fixed 44.20
-using dsfixed_t = unsigned int;	// fixedpt used by span drawer
+using fixed_t   = int32_t;  // fixed 16.16
+using fixed64_t = int64_t;  // fixed 44.20
+using dsfixed_t = uint32_t;	// fixedpt used by span drawer
 
 #define FRACBITS64				20ll
 #define FRACUNIT64				(1ll<<FRACBITS64)
 #define FRAC64MASK				(FRACUNIT64 - 1ll)
 #define FRAC64FILL( x, o )		( ( x ) | ( ( o ) < 0 ? ( FRAC64MASK << ( 64 - FRACBITS64 ) ) : 0 ) )
-#define FRAC64FILLFIXED( x, o )	( ( x ) | ( ( o ) < 0 ? ( FRAC64MASK << ( 64 - ( FRACBITS64 - FRACBITS ) ) ) : 0 ) )
+#define FRAC64FILLFIXED( x, o )	( ( x ) | ( ( o ) < 0 ? ~( (( 1ll << ( 64 - ( FRACBITS64 - FRACBITS ) )) - 1 ) ) : 0 ) )
 
 //
 // Fixed Point / Floating Point Conversion

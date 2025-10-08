@@ -208,11 +208,6 @@ static void HTMLFooter(std::string& out)
 	      "</html>";
 }
 
-static bool CvarCmp(const cvar_t* a, const cvar_t* b)
-{
-	return strcmp(a->name(), b->name()) < 0;
-}
-
 /**
  * @brief Return a "view" of Cvars sorted by name.
  */
@@ -227,7 +222,7 @@ static CvarView GetSortedCvarView()
 		var = var->GetNext();
 	}
 
-	std::sort(view.begin(), view.end(), CvarCmp);
+	std::sort(view.begin(), view.end(), [](const cvar_t* a, const cvar_t* b){ return a->name().compare(b->name()) < 0; });
 	return view;
 }
 
@@ -250,7 +245,7 @@ BEGIN_COMMAND(cvardoc)
 	FILE* fh = fopen(path.c_str(), "wt+");
 	if (fh == NULL)
 	{
-		Printf("error: Could not open \"%s\" for writing.\n", path);
+		PrintFmt("error: Could not open \"{}\" for writing.\n", path);
 		return;
 	}
 
@@ -297,6 +292,6 @@ BEGIN_COMMAND(cvardoc)
 	fclose(fh);
 
 	// Success!
-	Printf("Wrote %ld bytes to \"%s\"\n", bytes, path);
+	PrintFmt("Wrote {} bytes to \"{}\"\n", bytes, path);
 }
 END_COMMAND(cvardoc)

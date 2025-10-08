@@ -41,6 +41,7 @@
 
 #include "hashtable.h"
 #include "m_ostring.h"
+#include "oscanner.h"
 
 IMPLEMENT_CLASS (DConsoleCommand, DObject)
 IMPLEMENT_CLASS (DConsoleAlias, DConsoleCommand)
@@ -148,8 +149,8 @@ static int ListActionCommands (void)
 
 	for (i = 0; i < NUM_ACTIONS; i++)
 	{
-		Printf (PRINT_HIGH, "+%s\n", actionbits[i].name);
-		Printf (PRINT_HIGH, "-%s\n", actionbits[i].name);
+		PrintFmt(PRINT_HIGH, "+{}\n", actionbits[i].name);
+		PrintFmt(PRINT_HIGH, "-{}\n", actionbits[i].name);
 	}
 	return NUM_ACTIONS * 2;
 }
@@ -197,26 +198,21 @@ int GetActionBit (unsigned int key)
 bool safemode = false;
 
 
-void C_DoCommand(const char *cmd, uint32_t key)
+void C_DoCommand(std::string_view cmd, uint32_t key)
 {
-	size_t argc, argsize;
-	char **argv;
-	char *args, *arg, *realargs;
-	const char *data;
-	DConsoleCommand *com;
-	int check = -1;
+	std::string_view data = cmd;
 
-	data = ParseString (cmd);
-	if (!data)
+	std::optional<std::string> token = ParseString(data);
+	if (!token)
 		return;
 
 	// Check if this is an action
-	if (*com_token == '+' || *com_token == '-')
+	if (token->at(0) == '+' || token->at(0) == '-')
 	{
-		OString action(com_token + 1);
-		check = GetActionBit(MakeKey(action.c_str()));
+		OString action(token->substr(1));
+		int check = GetActionBit(MakeKey(action.c_str()));
 
-		if (*com_token == '+')
+		if (token->at(0) == '+')
 		{
 			if (action_key_tracker.pressKey(key, action))
 			{
@@ -224,7 +220,7 @@ void C_DoCommand(const char *cmd, uint32_t key)
 					Actions[check] = 1;
 			}
 		}
-		else if (*com_token == '-')
+		else if (token->at(0) == '-')
 		{
 			if (action_key_tracker.releaseKey(key, action))
 			{
@@ -235,106 +231,89 @@ void C_DoCommand(const char *cmd, uint32_t key)
 					AddCommandString("centerview");
 			}
 		}
+		if (check != -1)
+			return;
 	}
 
-	// Check if this is a normal command
-	if (check == -1)
+	size_t argc = 0;
+	std::vector<char*> argv;
+	StringTokens args;
+	const char *realargs = data.data();
+	data = cmd;
+
+	while ((token = ParseString(data)))
 	{
-		argc = 1;
-		argsize = strlen(com_token) + 1;
+		args.push_back(*token);
+		argc++;
+	}
 
-		size_t datalen = strlen(data) + 1;
-		realargs = new char[datalen];
-		M_StringCopy(realargs, data, datalen);
+	for (std::string& arg : args)
+		argv.push_back(arg.data());
 
-		while (data = ParseString(data))
+	// Checking for matching commands follows this search order:
+	//	1. Check the Commands map
+	//	2. Check the CVars list
+	command_map_t::iterator c = Commands().find(StdStringToLower(argv[0]));
+	DConsoleCommand* com;
+
+	if (c != Commands().end())
+	{
+		com = c->second;
+
+		if (!safemode || stricmp(argv[0], "if") == 0 || stricmp(argv[0], "exec") == 0)
 		{
-			argc++;
-			argsize += strlen(com_token) + 1;
+			com->argc = argc;
+			com->argv = argv.data();
+			com->args = realargs;
+			com->m_Instigator = consoleplayer().mo;
+			com->Run(key);
 		}
-
-		args = new char[argsize];
-		argv = new char *[argc];
-
-		arg = args;
-		data = cmd;
-		argsize = 0;
-		while (data = ParseString(data))
+		else
 		{
-			size_t tokenlen = strlen(com_token) + 1;
-			M_StringCopy(arg, com_token, tokenlen);
-			argv[argsize] = arg;
-			arg += tokenlen;
-			argsize++;
+			PrintFmt(PRINT_HIGH, "Not a cvar command \"{}\"\n", argv[0]);
 		}
+	}
+	else
+	{
+		// Check for any CVars that match the command
+		cvar_t *var, *dummy;
 
-		// Checking for matching commands follows this search order:
-		//	1. Check the Commands map
-		//	2. Check the CVars list
-		command_map_t::iterator c = Commands().find(StdStringToLower(argv[0]));
-
-		if (c != Commands().end())
+		if ((var = cvar_t::FindCVar(argv[0], &dummy)))
 		{
-			com = c->second;
-
-			if (!safemode || stricmp(argv[0], "if") == 0 || stricmp(argv[0], "exec") == 0)
+			if (argc >= 2)
 			{
-				com->argc = argc;
-				com->argv = argv;
-				com->args = realargs;
-				com->m_Instigator = consoleplayer().mo;
-				com->Run(key);
+				c = Commands().find("set");
+				if (c != Commands().end())
+				{
+					com = c->second;
+					com->argc = argc + 1;
+					com->argv = argv.data() - 1; // Hack
+					com->m_Instigator = consoleplayer().mo;
+					com->Run(key);
+				}
+				else
+					PrintFmt(PRINT_HIGH, "set command not found\n");
 			}
 			else
 			{
-				Printf (PRINT_HIGH, "Not a cvar command \"%s\"\n", argv[0]);
+				c = Commands().find("get");
+				if (c != Commands().end())
+				{
+					com = c->second;
+					com->argc = argc + 1;
+					com->argv = argv.data() - 1; // Hack
+					com->m_Instigator = consoleplayer().mo;
+					com->Run();
+				}
+				else
+					PrintFmt(PRINT_WARNING, "get command not found\n");
 			}
 		}
 		else
 		{
-			// Check for any CVars that match the command
-			cvar_t *var, *dummy;
-
-			if ( (var = cvar_t::FindCVar (argv[0], &dummy)) )
-			{
-				if (argc >= 2)
-				{
-					c = Commands().find("set");
-					if (c != Commands().end())
-					{
-						com = c->second;
-						com->argc = argc + 1;
-						com->argv = argv - 1;	// Hack
-						com->m_Instigator = consoleplayer().mo;
-						com->Run(key);
-					}
-					else
-						Printf(PRINT_HIGH, "set command not found\n");
-				}
-				else
-				{
-					c = Commands().find("get");
-					if (c != Commands().end())
-					{
-						com = c->second;
-						com->argc = argc + 1;
-						com->argv = argv - 1;	// Hack
-						com->m_Instigator = consoleplayer().mo;
-						com->Run();
-					}
-					else
-						Printf(PRINT_WARNING, "get command not found\n");
-				}
-			}
-			else
-			{
-				// We don't know how to handle this command
-				Printf (PRINT_WARNING, "Unknown command \"%s\"\n", argv[0]);
-			}
+			// We don't know how to handle this command
+			PrintFmt(PRINT_WARNING, "Unknown command \"{}\"\n", argv[0]);
 		}
-		delete[] argv;
-		delete[] args;
-		delete[] realargs;
 	}
 }
 
@@ -441,7 +420,7 @@ BEGIN_COMMAND (exec)
 		const char* cfgdir = Args.CheckValue("-cfgdir");
 		if (!cfgdir)
 		{
-			Printf(PRINT_WARNING, "Could not find \"%s\"\n", argv[1]);
+			PrintFmt(PRINT_WARNING, "Could not find \"{}\"\n", argv[1]);
 			return;
 		}
 
@@ -451,7 +430,7 @@ BEGIN_COMMAND (exec)
 			found += ".cfg";
 			if (!M_FileExists(found))
 			{
-				Printf(PRINT_WARNING, "Could not find \"%s\"\n", argv[1]);
+				PrintFmt(PRINT_WARNING, "Could not find \"{}\"\n", argv[1]);
 				return;
 			}
 		}
@@ -459,20 +438,20 @@ BEGIN_COMMAND (exec)
 
 	if(std::find(exec_stack.begin(), exec_stack.end(), found) != exec_stack.end())
 	{
-		Printf (PRINT_HIGH, "Ignoring recursive exec \"%s\"\n", found);
+		PrintFmt(PRINT_HIGH, "Ignoring recursive exec \"{}\"\n", found);
 		return;
 	}
 
 	if(exec_stack.size() >= MAX_EXEC_DEPTH)
 	{
-		Printf (PRINT_HIGH, "Ignoring recursive exec \"%s\"\n", found);
+		PrintFmt(PRINT_HIGH, "Ignoring recursive exec \"{}\"\n", found);
 		return;
 	}
 
 	std::ifstream ifs(found);
 	if(ifs.fail())
 	{
-		Printf(PRINT_WARNING, "Could not open \"%s\"\n", found);
+		PrintFmt(PRINT_WARNING, "Could not open \"{}\"\n", found);
 		return;
 	}
 
@@ -500,7 +479,7 @@ BEGIN_COMMAND (exec)
 		if(line.substr(0, 5) == "#else")
 		{
 			if(tag_stack.empty())
-				Printf(PRINT_HIGH, "Ignoring stray #else\n");
+				PrintFmt(PRINT_HIGH, "Ignoring stray #else\n");
 			else
 				tag_stack.back() = !tag_stack.back();
 
@@ -511,7 +490,7 @@ BEGIN_COMMAND (exec)
 		if(line.substr(0, 6) == "#endif")
 		{
 			if(tag_stack.empty())
-				Printf(PRINT_HIGH, "Ignoring stray #endif\n");
+				PrintFmt(PRINT_HIGH, "Ignoring stray #endif\n");
 			else
 				tag_stack.pop_back();
 
@@ -543,7 +522,7 @@ BEGIN_COMMAND (if)
 
 	if (!var)
 	{
-		Printf(PRINT_HIGH, "if: no cvar named %s\n", argv[1]);
+		PrintFmt(PRINT_HIGH, "if: no cvar named {}\n", argv[1]);
 		return;
 	}
 
@@ -559,8 +538,8 @@ BEGIN_COMMAND (if)
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "if: no operator %s\n", argv[2]);
-		Printf(PRINT_HIGH, "if: operators are eq, ne\n");
+		PrintFmt(PRINT_HIGH, "if: no operator {}\n", argv[2]);
+		PrintFmt(PRINT_HIGH, "if: operators are eq, ne\n");
 		return;
 	}
 
@@ -580,117 +559,101 @@ bool ValidEscape(char data)
 
 // ParseString2 is adapted from COM_Parse
 // found in the Quake2 source distribution
-const char *ParseString2(const char *data)
+std::optional<std::string> ParseString2(std::string_view& data)
 {
-	int len;
+	std::string token;
 
-	len = 0;
-	com_token[0] = 0;
-
-	// Skip whitespace.
-	while (*data <= ' ')
-	{
-		if (*data == 0)
-		{
-			// End of string encountered.
-			return NULL;
-		}
-		data++;
-	}
+	const auto white = data.find_first_not_of(' ');
+	if (white != std::string_view::npos)
+		data.remove_prefix(white);
+	else
+		return std::nullopt;
 
 	// Ch0wW : If having a comment, break immediately the line!
-	if (data[0] == '/' && data[1] == '/') {
-		return NULL;
+	if (data.length() >= 2 && data[0] == '/' && data[1] == '/') {
+		return std::nullopt;
 	}
 
-	if (data[0] == '\\' && ValidEscape(data[1]))
+	if (data.length() >= 2 && data[0] == '\\' && ValidEscape(data[1]))
 	{
 		// [AM] Handle escaped chars.
-		com_token[len] = data[1];
-		data += 2;
-		len++;
+		token += data[1];
+		data.remove_prefix(2);
 	}
-	else if (*data == '"')
+	else if (data[0] == '"')
 	{
 		// Quoted strings count as one large token.
-		while (1) {
-			data++;
-			if (*data == 0)
+		while (true) {
+			data.remove_prefix(1);
+			if (data.empty())
 			{
 				// [AM] Unclosed quote, show no mercy.
-				return NULL;
+				return std::nullopt;
 			}
-			if (data[0] == '\\' && ValidEscape(data[1]))
+			if (data.length() >= 2 && data[0] == '\\' && ValidEscape(data[1]))
 			{
 				// [AM] Handle escaped chars.
-				com_token[len] = data[1];
-				data++; // Skip one _additional_ char.
-				len++;
+				token += data[1];
+				data.remove_prefix(1); // Skip one _additional_ char.
 				continue;
 			}
-			else if (*data == '"')
+			else if (data[0] == '"')
 			{
 				// Closing quote, that's the entire token.
-				com_token[len] = 0;
-				data++; // Skip the closing quote.
-				return data;
+				data.remove_prefix(1); // Skip the closing quote.
+				return std::optional(token);
 			}
 			// None of the above, copy the char and continue.
-			com_token[len] = *data;
-			len++;
+			token += data[0];
 		}
 	}
 
-	while (1) {
+	while (true) {
 		// Parse a regular word.
-		if (*data <= 32)
+		if (data.empty() || data[0] <= ' ')
 		{
 			// End of word.
 			break;
 		}
-		if (data[0] == '\\' && ValidEscape(data[1]))
+		if (data.length() >= 2 && data[0] == '\\' && ValidEscape(data[1]))
 		{
 			// [AM] Handle escaped chars.
-			com_token[len] = data[1];
-			data += 2; // Skip two chars.
-			len++;
+			token += data[1];
+			data.remove_prefix(2); // Skip two chars.
 			continue;
 		}
-		else if (*data == '"')
+		else if (data[0] == '"')
 		{
 			// End of word.
 			break;
 		}
 		// None of the above, copy the char and continue.
-		com_token[len] = *data;
-		data++;
-		len++;
+		token += data[0];
+		data.remove_prefix(1);
 	}
-	// We're done, cap the token with a null and
+	// We're done
 	// return the remaining data to parse.
-	com_token[len] = 0;
-	return data;
+	return std::optional(token);
 }
 
 // ParseString calls ParseString2 to remove the first
 // token from an input string. If this token is of
 // the form $<cvar>, it will be replaced by the
 // contents of <cvar>.
-const char *ParseString (const char *data)
+std::optional<std::string> ParseString (std::string_view& data)
 {
 	cvar_t *var, *dummy;
+	std::optional<std::string> token = ParseString2(data);
 
-	if ( (data = ParseString2 (data)) )
+	if (token && !token->empty() && token->at(0) == '$')
 	{
-		if (com_token[0] == '$')
+		if ( (var = cvar_t::FindCVar (std::string_view(*token).substr(1).data(), &dummy)) )
 		{
-			if ( (var = cvar_t::FindCVar (&com_token[1], &dummy)) )
-			{
-				M_StringCopy(com_token, var->cstring(), 8192);
-			}
+			return std::optional(var->str());
 		}
 	}
-	return data;
+
+	return token;
 }
 
 DConsoleCommand::DConsoleCommand (const char *name)
@@ -699,19 +662,15 @@ DConsoleCommand::DConsoleCommand (const char *name)
 
 	if (firstTime)
 	{
-		char tname[16];
-		int i;
-
 		firstTime = false;
 
 		// Add all the action commands for tab completion
-		for (i = 0; i < NUM_ACTIONS; i++)
+		for (const auto& bit : actionbits)
 		{
-			M_StringCopy(&tname[1], actionbits[i].name, 15);
-			tname[0] = '+';
-			C_AddTabCommand (tname);
+			std::string tname = fmt::format("+{}", bit.name);
+			C_AddTabCommand(tname.c_str());
 			tname[0] = '-';
-			C_AddTabCommand (tname);
+			C_AddTabCommand(tname.c_str());
 		}
 	}
 
@@ -760,7 +719,7 @@ void DConsoleAlias::Run(uint32_t key)
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "warning: ignored recursive alias");
+		PrintFmt(PRINT_HIGH, "warning: ignored recursive alias");
 	}
 }
 
@@ -889,8 +848,8 @@ BEGIN_COMMAND (alias)
 {
 	if (argc == 1)
 	{
-		Printf (PRINT_HIGH, "Current alias commands:\n");
-		DumpHash (true);
+		PrintFmt(PRINT_HIGH, "Current alias commands:\n");
+		DumpHash(true);
 	}
 	else
 	{
@@ -906,13 +865,13 @@ BEGIN_COMMAND (alias)
 			}
 			else
 			{
-				Printf(PRINT_HIGH, "%s: is a command, can not become an alias\n", argv[1]);
+				PrintFmt(PRINT_HIGH, "{}: is a command, can not become an alias\n", argv[1]);
 				return;
 			}
 		}
 		else if(argc == 2)
 		{
-			Printf(PRINT_HIGH, "%s: not an alias\n", argv[1]);
+			PrintFmt(PRINT_HIGH, "{}: not an alias\n", argv[1]);
 			return;
 		}
 
@@ -930,9 +889,9 @@ BEGIN_COMMAND (cmdlist)
 {
 	int count;
 
-	count = ListActionCommands ();
-	count += DumpHash (false);
-	Printf (PRINT_HIGH, "%d commands\n", count);
+	count = ListActionCommands();
+	count += DumpHash(false);
+	PrintFmt(PRINT_HIGH, "{} commands\n", count);
 }
 END_COMMAND (cmdlist)
 
@@ -972,7 +931,7 @@ void C_ExecCmdLineParams (bool onlyset, bool onlylogfile)
 
 			std::string cmdString = BuildString (cmdlen, Args.GetArgList(argstart));
 			if (cmdString.length()) {
-				C_DoCommand(cmdString.c_str() + 1, 0);
+				C_DoCommand(std::string_view(cmdString).substr(1), 0);
 				if (onlylogfile) didlogfile = 1;
 			}
 		}
@@ -986,10 +945,12 @@ BEGIN_COMMAND (actorlist)
 {
 	AActor *mo;
 	TThinkerIterator<AActor> iterator;
-	Printf (PRINT_HIGH, "Actors at level.time == %d:\n", level.time);
+	PrintFmt(PRINT_HIGH, "Actors at level.time == {}:\n", level.time);
 	while ( (mo = iterator.Next ()) )
 	{
-		Printf (PRINT_HIGH, "%s (%x, %x, %x | %x) state: %zd tics: %d\n", mobjinfo[mo->type].name, mo->x, mo->y, mo->z, mo->angle, mo->state - states, mo->tics);
+		PrintFmt(PRINT_HIGH, "{} ({:x}, {:x}, {:x} | {:x}) state: {} tics: {}\n", mobjinfo[mo->type].name,
+			static_cast<uint32_t>(mo->x), static_cast<uint32_t>(mo->y), static_cast<uint32_t>(mo->z),
+			static_cast<uint32_t>(mo->angle), mo->state - states, mo->tics);
 	}
 }
 END_COMMAND(actorlist)
@@ -1006,13 +967,13 @@ BEGIN_COMMAND(logfile)
 		if ((argc == 1 && ::LOG_FILE == default_logname) ||
 		    (argc > 1 && ::LOG_FILE == argv[1]))
 		{
-			Printf("Log file %s already in use\n", ::LOG_FILE.c_str());
+			PrintFmt("Log file {} already in use\n", ::LOG_FILE.c_str());
 			return;
 		}
 
 		time(&rawtime);
 		timeinfo = localtime(&rawtime);
-		Printf("Log file %s closed on %s\n", ::LOG_FILE, asctime(timeinfo));
+		PrintFmt("Log file {} closed on {}\n", ::LOG_FILE, asctime(timeinfo));
 		::LOG.close();
 	}
 
@@ -1021,7 +982,7 @@ BEGIN_COMMAND(logfile)
 
 	if (!::LOG.is_open())
 	{
-		Printf(PRINT_HIGH, "Unable to create logfile: %s\n", ::LOG_FILE);
+		PrintFmt(PRINT_HIGH, "Unable to create logfile: {}\n", ::LOG_FILE);
 	}
 	else
 	{
@@ -1029,8 +990,8 @@ BEGIN_COMMAND(logfile)
 		timeinfo = localtime(&rawtime);
 		::LOG.flush();
 		::LOG << std::endl;
-		Printf(PRINT_HIGH, "Logging in file %s started %s\n", ::LOG_FILE,
-		       asctime(timeinfo));
+		PrintFmt(PRINT_HIGH, "Logging in file {} started {}\n", ::LOG_FILE,
+		         asctime(timeinfo));
 	}
 }
 END_COMMAND(logfile)
@@ -1043,7 +1004,7 @@ BEGIN_COMMAND (stoplog)
 	if (LOG.is_open()) {
 		time (&rawtime);
     	timeinfo = localtime (&rawtime);
-		Printf (PRINT_HIGH, "Logging to file %s stopped %s\n", LOG_FILE, asctime (timeinfo));
+		PrintFmt(PRINT_HIGH, "Logging to file {} stopped {}\n", LOG_FILE, asctime (timeinfo));
 		LOG.close();
 	}
 }
@@ -1055,7 +1016,7 @@ bool P_StartScript (AActor *who, line_t *where, int script, const char *map, int
 BEGIN_COMMAND (puke)
 {
 	if (argc < 2 || argc > 5) {
-		Printf (PRINT_HIGH, " puke <script> [arg1] [arg2] [arg3]\n");
+		PrintFmt(PRINT_HIGH, " puke <script> [arg1] [arg2] [arg3]\n");
 	} else {
 		int script = atoi (argv[1]);
 		int arg0=0, arg1=0, arg2=0;

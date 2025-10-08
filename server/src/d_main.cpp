@@ -77,7 +77,7 @@ EXTERN_CVAR (sv_fastmonsters)
 
 extern size_t got_heapsize;
 
-void C_DoCommand(const char *cmd, uint32_t key = 0);
+void C_DoCommand(std::string_view cmd, uint32_t key = 0);
 
 #ifdef UNIX
 void daemon_init();
@@ -110,8 +110,8 @@ void D_DoomLoop (void)
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf ("ERROR: %s\n", error.GetMsg());
-			Printf ("sleeping for 10 seconds before map reload...");
+			PrintFmt("ERROR: {}\n", error.GetMsg());
+			PrintFmt("sleeping for 10 seconds before map reload...");
 
 			// denis - drop clients
 			SV_SendDisconnectSignal();
@@ -126,6 +126,56 @@ void D_DoomLoop (void)
 		}
 	}
 }
+
+EXTERN_CVAR(co_boomphys)
+EXTERN_CVAR(co_zdoomphys)
+EXTERN_CVAR(co_mbfphys)
+EXTERN_CVAR(co_zdoomammo)
+EXTERN_CVAR(co_allowdropoff)
+
+void G_ReadCOMPLVL()
+{
+	int lumpnum = W_CheckNumForName("COMPLVL");
+	if (lumpnum != -1)
+	{
+		char* complvl = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
+
+		co_zdoomphys.Set(0.0f);
+		co_zdoomammo.Set(0.0f);
+
+		if (iequals("vanilla", complvl))
+		{
+			co_boomphys.Set(0.0f);
+			co_mbfphys.Set(0.0f);
+			co_allowdropoff.Set(0.0f);
+		}
+		else if (iequals("boom", complvl))
+		{
+			co_boomphys.Set(1.0f);
+			co_mbfphys.Set(0.0f);
+			co_allowdropoff.Set(1.0f);
+		}
+		else if (iequals("mbf", complvl))
+		{
+			co_boomphys.Set(1.0f);
+			co_mbfphys.Set(1.0f);
+			co_allowdropoff.Set(1.0f);
+		}
+		else if (iequals("mbf21", complvl))
+		{
+			co_boomphys.Set(1.0f);
+			co_mbfphys.Set(1.0f);
+			co_allowdropoff.Set(1.0f);
+		}
+		else
+		{
+			DPrintFmt("Unrecognized COMPLVL value: {}", complvl);
+		}
+
+		Z_Free(complvl);
+	}
+}
+
 
 //
 // D_Init
@@ -149,7 +199,7 @@ void D_Init()
 	// start the Zone memory manager
 	Z_Init();
 	if (first_time)
-		Printf("Z_Init: Using native allocator with OZone bookkeeping.\n");
+		PrintFmt("Z_Init: Using native allocator with OZone bookkeeping.\n");
 
 	// Load palette and set up colormaps
 	V_InitPalette("PLAYPAL");
@@ -157,16 +207,17 @@ void D_Init()
 
 	// init the renderer
 	if (first_time)
-		Printf(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
+		PrintFmt(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
 	R_Init();
 
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
 	G_ParseHordeDefs();
+	G_ReadCOMPLVL();
 
 	if (first_time)
-		Printf(PRINT_HIGH, "P_Init: Init Playloop state.\n");
+		PrintFmt(PRINT_HIGH, "P_Init: Init Playloop state.\n");
 	P_Init();
 
 	first_time = false;
@@ -222,7 +273,7 @@ void D_Init_DEHEXTRA_Frames(void);
 //
 void D_DoomMain()
 {
-	unsigned int p;
+	size_t p;
 
 	gamestate = GS_STARTUP;
 
@@ -265,25 +316,25 @@ void D_DoomMain()
 	M_LoadDefaults();					// load before initing other systems
 	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
-	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
+	PrintFmt(PRINT_HIGH, "I_Init: Init hardware.\n");
 	I_Init();
 
 	// [SL] Call init routines that need to be reinitialized every time WAD changes
 	D_Init();
 	atterm(D_Shutdown);
 
-	Printf(PRINT_HIGH, "SV_InitNetwork: Checking network game status.\n");
+	PrintFmt(PRINT_HIGH, "SV_InitNetwork: Checking network game status.\n");
 	SV_InitNetwork();
 
 	// Base systems have been inited; enable cvar callbacks
 	cvar_t::EnableCallbacks();
 
 	// [RH] User-configurable startup strings. Because BOOM does.
-	if (GStrings(STARTUP1)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP1));
-	if (GStrings(STARTUP2)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP2));
-	if (GStrings(STARTUP3)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP3));
-	if (GStrings(STARTUP4)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP4));
-	if (GStrings(STARTUP5)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP5));
+	if (GStrings(STARTUP1)[0])	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STARTUP1));
+	if (GStrings(STARTUP2)[0])	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STARTUP2));
+	if (GStrings(STARTUP3)[0])	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STARTUP3));
+	if (GStrings(STARTUP4)[0])	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STARTUP4));
+	if (GStrings(STARTUP5)[0])	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STARTUP5));
 
 	// developer mode
 	devparm = Args.CheckParm("-devparm");
@@ -314,13 +365,13 @@ void D_DoomMain()
 	if (p && p < Args.NumArgs() - 1)
 	{
 		float time = atof(Args.GetArg(p + 1));
-		Printf(PRINT_HIGH, "Levels will end after %g minute%s.\n", time, time > 1 ? "s" : "");
+		PrintFmt(PRINT_HIGH, "Levels will end after {:g} minute{}.\n", time, time > 1 ? "s" : "");
 		sv_timelimit.Set(time);
 	}
 
 	if (Args.CheckValue("-avg"))
 	{
-		Printf(PRINT_HIGH, "Austin Virtual Gaming: Levels will end after 20 minutes\n");
+		PrintFmt(PRINT_HIGH, "Austin Virtual Gaming: Levels will end after 20 minutes\n");
 		sv_timelimit.Set(20);
 	}
 
@@ -335,7 +386,7 @@ void D_DoomMain()
 	// [AM] Initialize banlist
 	SV_InitBanlist();
 
-	Printf(PRINT_HIGH, "========== Odamex Server Initialized ==========\n");
+	PrintFmt(PRINT_HIGH, "========== Odamex Server Initialized ==========\n");
 
 	#ifdef UNIX
 	if (Args.CheckParm("-fork"))
