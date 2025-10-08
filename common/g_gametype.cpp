@@ -44,6 +44,7 @@ EXTERN_CVAR(g_sides)
 EXTERN_CVAR(g_roundlimit)
 EXTERN_CVAR(g_rounds)
 EXTERN_CVAR(g_winlimit)
+EXTERN_CVAR(g_horde_waves)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_maxplayers)
@@ -90,6 +91,45 @@ const std::string& G_GametypeName()
 		name = "LMS Capture The Flag";
 	else if (sv_gametype == GM_CTF)
 		name = "Capture The Flag";
+	return name;
+}
+
+/**
+ * @brief Returns a string containing the name of the gametype, but makes it brief.
+ *
+ * @return String with the gametype name.
+ */
+const std::string& G_ShortGametypeName()
+{
+	static std::string name;
+	if (!g_gametypename.str().empty())
+		name = g_gametypename.str();
+	else if (G_IsHordeMode() && g_lives)
+		name = "Survival Horde";
+	else if (G_IsHordeMode())
+		name = "Horde";
+	else if (sv_gametype == GM_COOP && g_lives)
+		name = "Survival";
+	else if (sv_gametype == GM_COOP && ::multiplayer)
+		name = "Coop";
+	else if (sv_gametype == GM_COOP)
+		name = "Single-player";
+	else if (sv_gametype == GM_DM && g_lives)
+		name = "LMS";
+	else if (sv_gametype == GM_DM && sv_maxplayers <= 2)
+		name = "Duel";
+	else if (sv_gametype == GM_DM)
+		name = "DM";
+	else if (sv_gametype == GM_TEAMDM && g_lives)
+		name = "Team LMS";
+	else if (sv_gametype == GM_TEAMDM)
+		name = "Team DM";
+	else if (sv_gametype == GM_CTF && g_sides)
+		name = "A & D CTF";
+	else if (sv_gametype == GM_CTF && g_lives)
+		name = "LMS CTF";
+	else if (sv_gametype == GM_CTF)
+		name = "CTF";
 	return name;
 }
 
@@ -697,6 +737,212 @@ void G_TimeCheckEndGame()
 
 	M_CommitWDLLog();
 	::levelstate.endRound();
+}
+
+std::string G_GetScoreForModes()
+{
+	std::string score = "";
+
+	if (G_IsHordeMode())
+	{
+		const hordeInfo_t& info = P_HordeInfo();
+
+		if (::g_horde_waves.asInt() != 0)
+		{
+			score = fmt::format(" | Wave: {} / {}", info.wave, ::g_horde_waves.asInt());
+		}
+		else
+		{
+			score = fmt::format(" | Wave: {}", info.wave);
+		}
+	}
+	else if (G_IsDuelGame() || G_IsFFAGame())
+	{
+		if (sv_fraglimit.asInt() > 0)
+		{
+			score = fmt::format(" | {} - {}", consoleplayer().fragcount, sv_fraglimit.asInt());
+		}
+		else
+		{
+			score = fmt::format(" | {}", consoleplayer().fragcount);
+		}
+	}
+	else if (G_IsTeamGame())
+	{
+		const TeamInfo& red_team = *GetTeamInfo(TEAM_RED);
+		const TeamInfo& blu_team = *GetTeamInfo(TEAM_BLUE);
+		const TeamInfo& grn_team = *GetTeamInfo(TEAM_GREEN);
+
+		if (sv_teamsinplay.asInt() == 3)
+		{
+			score = fmt::format(" | {} - {} - {}", red_team.Points, blu_team.Points, grn_team.Points);
+		}
+		else
+		{
+			score = fmt::format(" | {} - {}", red_team.Points, blu_team.Points);
+		}
+	}
+
+	if (G_IsRoundsGame() && g_roundlimit.asInt() > 1 && !G_IsCoopGame())
+	{
+		const std::string rounds = fmt::format(" | Round: {} / {}", ::levelstate.getRound(), g_roundlimit.asInt());
+		score += rounds;
+	}
+
+	return score;
+}
+
+std::string G_GetPlayerStatLineForMode()
+{
+	std::string statline = "";
+
+	if (G_IsCoopGame())
+	{
+		const int kills = consoleplayer().killcount;
+		const int deaths = consoleplayer().deathcount;
+		const int monsterdmg = consoleplayer().monsterdmgcount;
+		const int secrets = ::level.found_secrets;
+		statline = fmt::format("{} {} / {} {} / {} Damage / {} {} Found",
+			kills, kills == 1 ? "Kill" : "Kills",
+			deaths, deaths == 1 ? "Death" : "Deaths",
+			monsterdmg,
+			secrets, secrets == 1 ? "Secret" : "Secrets");
+	}
+	else if (G_IsDuelGame())
+	{
+		const int deaths = consoleplayer().deathcount;
+		statline = fmt::format("{} {}", deaths, deaths == 1 ? "Death" : "Deaths");
+	}
+	else if (G_IsTeamGame())
+	{
+		if (sv_gametype == GM_TEAMDM)
+		{
+			const int frags = consoleplayer().fragcount;
+			const int deaths = consoleplayer().deathcount;
+			const int damage = consoleplayer().damagecount;
+			statline = fmt::format("{} {} / {} {} / {} Damage",
+				frags, frags == 1 ? "Frag" : "Frags",
+				deaths, deaths == 1 ? "Death" : "Deaths",
+				damage);
+		}
+		else // CTF
+		{
+			const int points = consoleplayer().points;
+			const int frags = consoleplayer().fragcount;
+			const int deaths = consoleplayer().deathcount;
+			statline = fmt::format("{} {} / {} {} / {} {}",
+				points, points == 1 ? "Flag" : "Flags",
+				frags, frags == 1 ? "Frag" : "Frags",
+				deaths, deaths == 1 ? "Death" : "Deaths");
+		}
+	}
+	else if (G_IsFFAGame())
+	{
+		const int deaths = consoleplayer().deathcount;
+		statline = fmt::format("{} {}", deaths, deaths == 1 ? "Death" : "Deaths");
+	}
+
+	if (G_IsLivesGame())
+	{
+		if (consoleplayer().lives > 0)
+		{
+			const int lives = consoleplayer().lives;
+			const std::string livesleft = fmt::format(" / {} {} Left", lives, lives == 1 ? "Life" : "Lives");
+			statline += livesleft;
+		}
+	}
+
+	return statline;
+}
+
+std::string G_GetMainIconForMode()
+{
+	if (demoplayback)
+	{
+		return "odamex_icon_demo";
+	}
+	return "odamex_icon_main";
+}
+
+std::string G_GetSmallIconForMode()
+{
+	if (G_IsCoopGame())
+	{
+		if (G_IsLivesGame())
+		{
+		    if (G_IsHordeMode())
+		    {
+			    return "odamex_survival_horde";
+		    }
+		    else
+		    {
+			    return "odamex_survival";
+		    }
+		}
+		else
+		{
+			if (G_IsHordeMode())
+			{
+				return "odamex_horde";
+			}
+			else
+			{
+				return "odamex_singleplayer";
+			}
+		}
+	}
+	else if (G_IsDuelGame())
+	{
+		if (G_IsMatchDuelGame())
+		{
+			return "odamex_matchduel";
+		}
+		else
+		{
+			return "odamex_duel";
+		}
+	}
+	else if (G_IsTeamGame())
+	{
+		if (sv_gametype == GM_TEAMDM)
+		{
+			if (sv_teamsinplay == 3)
+			{
+				return "odamex_3teamdm";
+			}
+			else
+			{
+				return "odamex_teamdm";
+			}
+		}
+		else // CTF
+		{
+			if (sv_teamsinplay == 3)
+			{
+				return "odamex_3wayctf";
+			}
+			else
+			{
+				return "odamex_ctf";
+			}
+		}
+	}
+	else if (G_IsFFAGame())
+	{
+		return "odamex_ffa";
+	}
+
+	return "odamex_singleplayer"; // Fallback
+}
+
+std::string G_GetGameMode()
+{
+	if (demoplayback)
+	{
+		return "Watching Demos";
+	}
+
+	return G_ShortGametypeName();
 }
 
 /**

@@ -34,7 +34,8 @@ function BuildX64 {
     cmake.exe -G "Visual Studio 17 2022" -A "x64" "${CurrentDir}" `
         -DBUILD_OR_FAIL=1 `
         -DBUILD_CLIENT=1 -DBUILD_SERVER=1 `
-        -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
+        -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1 `
+        -DBUILD_SHIM=1
     cmake.exe --build . --config RelWithDebInfo
 
     Set-Location -Path "${CurrentDir}"
@@ -51,7 +52,8 @@ function BuildX86 {
     cmake.exe -G "Visual Studio 17 2022" -A "Win32" "${CurrentDir}" `
         -DBUILD_OR_FAIL=1 `
         -DBUILD_CLIENT=1 -DBUILD_SERVER=1 `
-        -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
+        -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1 `
+        -DBUILD_SHIM=1
     cmake.exe --build . --config RelWithDebInfo
 
     Set-Location -Path "${CurrentDir}"
@@ -135,6 +137,8 @@ function CopyFiles {
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\odamex.exe", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\SDL2_mixer.dll", `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\SDL2.dll", `
+        "${PSScriptRoot}\BuildX64\shim\RelWithDebInfo\odashim.exe", `
+        "${PSScriptRoot}\BuildX64\shim\discord_game_sdk.dll", `
         "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\odalaunch.exe", `
         "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxbase315u_net_vc14x_x64.dll", `
         "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\wxbase315u_vc14x_x64.dll", `
@@ -165,6 +169,8 @@ function CopyFiles {
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\odamex.exe", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\SDL2_mixer.dll", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\SDL2.dll", `
+        "${PSScriptRoot}\BuildX86\shim\RelWithDebInfo\odashim.exe", `
+        "${PSScriptRoot}\BuildX86\shim\discord_game_sdk.dll", `
         "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\odalaunch.exe", `
         "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxbase315u_net_vc14x.dll", `
         "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxbase315u_vc14x.dll", `

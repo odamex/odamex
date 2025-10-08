@@ -43,9 +43,12 @@
 #include "v_text.h"
 #include "gi.h"
 #include "v_textcolors.h"
+#include "i_shims.h"
 #include "wi_interlevel.h"
 
 extern byte* Ranges;
+
+extern time_t instanceLaunchTime;
 
 void WI_unloadData(void);
 size_t P_NumPlayersInGame();
@@ -1613,6 +1616,29 @@ void WI_Drawer()
 }
 
 
+const StatusUpdate WI_IntermissionStatusUpdate(void)
+{
+	StatusUpdate update = {};
+	std::string wadlevelstr = G_GetWadMapSummary();
+
+	update.current_size = G_GetCurrentPlayerCount();
+	update.max_size = G_GetMaxServerPlayerCount();
+	update.join_secret = "";
+	update.party_id = "";
+	update.start = instanceLaunchTime;
+	update.end = 0;
+	update.privacy = Private;
+	update.small_image = "";
+	update.small_image_text = "";
+	update.large_image = "odamex_icon_main";
+	update.large_image_text = wadlevelstr;
+	update.details = "Intermission";
+	update.state = "Idle";
+
+	return update;
+}
+
+
 void WI_initVariables (wbstartstruct_t *wbstartstruct)
 {
 	wbs = wbstartstruct;
@@ -1631,7 +1657,9 @@ void WI_Start (wbstartstruct_t *wbstartstruct)
 	WI_initNetgameStats();
 
 	S_StopAllChannels ();
-	SN_StopAllSequences ();
+ 	SN_StopAllSequences ();
+
+	OShim::getInstance().Shim_sendStatusUpdate(WI_IntermissionStatusUpdate());
 }
 
 void WI_Shutdown()
