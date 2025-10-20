@@ -1603,7 +1603,7 @@ bool CL_PrepareConnect()
 			return false;
 		}
 
-		PrintFmt("> {]\n   {]\n", file.getBasename(),
+		PrintFmt("> {}\n   {}\n", file.getBasename(),
 		         file.getWantedMD5().getHexStr());
 	}
 

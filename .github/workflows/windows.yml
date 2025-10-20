@@ -4,6 +4,16 @@ on:
   push:
     branches-ignore:
     - 'release/[0-9]+.[0-9]+.[0-9]+'
+    paths-ignore:
+    - "**/*.md"
+    - README
+    - LICENSE
+    - MAINTAINERS
+    - CHANGELOG
+    - 3RD-PARTY-LICENSES
+    - config-samples/*
+    - documentation/**
+    - tools/**
   pull_request:
 
 

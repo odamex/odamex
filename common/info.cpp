@@ -6961,7 +6961,7 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
     // [crispy] support MUSINFO lump (dynamic music changing)
     {
     // MT_MUSICCHANGE
-    14164,         // doomednum
+    14165,         // doomednum
     S_TNT1,        // spawnstate
     1000,          // spawnhealth
 	0, // gibhealth

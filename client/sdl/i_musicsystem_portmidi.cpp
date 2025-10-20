@@ -92,7 +92,7 @@ PortMidiMusicSystem::PortMidiMusicSystem()
 		if (!prefdevicename.empty() && iequals(prefdevicename, curdevicename))
 			m_outputDevice = i;
 
-		PrintFmt(PRINT_HIGH, "{}: {}, {}\n", i, info->interf, info->name);
+		PrintFmt(PRINT_FILTERHIGH, "{}: {}, {}\n", i, info->interf, info->name);
 	}
 
 	if (m_outputDevice == pmNoDevice)
@@ -124,7 +124,7 @@ PortMidiMusicSystem::PortMidiMusicSystem()
 	// Initialize instrument fallback support
 	_InitFallback();
 
-	PrintFmt(PRINT_HIGH, "I_InitMusic: Music playback enabled using PortMidi.\n");
+	PrintFmt(PRINT_FILTERHIGH, "I_InitMusic: Music playback enabled using PortMidi.\n");
 	m_isInitialized = true;
 }
 
@@ -315,11 +315,11 @@ void PortMidiMusicSystem::_ResetDevice(bool playing)
 	m_useResetDelay = (snd_mididelay > 0);
 }
 
-void PortMidiMusicSystem::startSong(byte *data, size_t length, bool loop)
+void PortMidiMusicSystem::startSong(byte *data, size_t length, bool loop, int order)
 {
 	m_isPlaying = false;
 	_ResetDevice(true);
-	MidiMusicSystem::startSong(data, length, loop);
+	MidiMusicSystem::startSong(data, length, loop, order);
 	m_isPlaying = true;
 }
 

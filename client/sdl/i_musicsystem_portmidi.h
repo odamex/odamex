@@ -37,7 +37,7 @@ class PortMidiMusicSystem : public MidiMusicSystem
 	PortMidiMusicSystem();
 	~PortMidiMusicSystem() override;
 
-	void startSong(byte *data, size_t length, bool loop) override;
+	void startSong(byte *data, size_t length, bool loop, int order) override;
 	void stopSong() override;
 	void pauseSong() override;
 	void restartSong() override;

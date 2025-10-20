@@ -193,6 +193,7 @@ typedef enum {
 	PRINT_NORCON,		// Do NOT send the message to any rcon client.
 
 	PRINT_FILTERCHAT,	// Filter the message to not be displayed ingame, but only in the console (ugly hack)
+	PRINT_FILTERHIGH,	// Filter the message to not be displayed ingame, but only in the console (ugly hack)
 
 	PRINT_MAXPRINT
 } printlevel_t;

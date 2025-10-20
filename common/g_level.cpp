@@ -268,13 +268,6 @@ void P_RemoveDefereds()
 	::getLevelInfos().zapDeferreds();
 }
 
-// [ML] Not sure where to put this for now...
-// 	G_ParseMusInfo
-void G_ParseMusInfo()
-{
-	// Nothing yet...
-}
-
 //
 // G_LoadWad
 //
@@ -923,6 +916,8 @@ void G_InitLevelLocals()
 	::level.clearlabel = info.clearlabel;
 	::level.author = info.author;
 
+	::level.musinfo_map = info.musinfo_map;
+
 	::level.detected_gametype = GM_COOP;
 
 	movingsectors.clear();
@@ -1042,6 +1037,7 @@ BEGIN_COMMAND(mapinfo)
 	flags += (info.flags & LEVEL_CHANGEMAPCHEAT ? " CHANGEMAPCHEAT" : "");
 	flags += (info.flags & LEVEL_VISITED ? " VISITED" : "");
 	flags += (info.flags & LEVEL_COMPAT_DROPOFF ? " COMPAT_DROPOFF" : "");
+	flags += (info.flags2 & LEVEL2_COMPAT_CROSSDROPOFF ? " COMPAT_CROSSDROPOFF" : "");
 	flags += (info.flags & LEVEL_COMPAT_NOPASSOVER ? " COMPAT_NOPASSOVER" : "");
 	flags += (info.flags & LEVEL_COMPAT_LIMITPAIN ? " COMPAT_LIMITPAIN" : "");
 	flags += (info.flags & LEVEL_COMPAT_SHORTTEX ? " COMPAT_SHORTTEX" : "");
@@ -1133,7 +1129,7 @@ ClusterInfos& getClusterInfos()
 // P_AllowDropOff()
 bool P_AllowDropOff()
 {
-	return level.flags & LEVEL_COMPAT_DROPOFF || co_allowdropoff;
+	return co_allowdropoff && !(level.flags & LEVEL2_COMPAT_CROSSDROPOFF);
 }
 
 bool P_AllowPassover()

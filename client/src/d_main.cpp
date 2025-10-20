@@ -84,6 +84,7 @@
 #include "g_horde.h"
 #include "w_ident.h"
 #include "gui_boot.h"
+#include "g_musinfo.h"
 #include "g_episode.h"
 
 #ifdef GEKKO
@@ -601,6 +602,72 @@ bool HashOk(std::string &required, std::string &available)
 
 void CL_NetDemoPlay(const std::string &filename);
 
+EXTERN_CVAR(co_boomphys)
+EXTERN_CVAR(co_zdoomphys)
+EXTERN_CVAR(co_mbfphys)
+EXTERN_CVAR(co_zdoomammo)
+EXTERN_CVAR(co_novileghosts)
+EXTERN_CVAR(co_removesoullimit)
+EXTERN_CVAR(co_allowdropoff)
+EXTERN_CVAR(r_clipmaskedspecial)
+
+void G_ReadCOMPLVL()
+{
+	if (!serverside)
+		return;
+
+	int lumpnum = W_CheckNumForName("COMPLVL");
+	if (lumpnum != -1)
+	{
+		char* complvl = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
+
+		co_zdoomphys.Set(0.0f);
+		co_zdoomammo.Set(0.0f);
+
+		if (iequals("vanilla", complvl))
+		{
+			co_boomphys.Set(0.0f);
+			co_mbfphys.Set(0.0f);
+			co_novileghosts.Set(0.0f);
+			co_allowdropoff.Set(0.0f);
+			co_removesoullimit.Set(0.0f);
+			r_clipmaskedspecial.Set(0.0f);
+		}
+		else if (iequals("boom", complvl))
+		{
+			co_boomphys.Set(1.0f);
+			co_mbfphys.Set(0.0f);
+			co_novileghosts.Set(1.0f);
+			co_allowdropoff.Set(1.0f);
+			co_removesoullimit.Set(1.0f);
+			r_clipmaskedspecial.Set(0.0f);
+		}
+		else if (iequals("mbf", complvl))
+		{
+			co_boomphys.Set(1.0f);
+			co_mbfphys.Set(1.0f);
+			co_novileghosts.Set(1.0f);
+			co_allowdropoff.Set(1.0f);
+			co_removesoullimit.Set(1.0f);
+			r_clipmaskedspecial.Set(0.0f);
+		}
+		else if (iequals("mbf21", complvl))
+		{
+			co_boomphys.Set(1.0f);
+			co_mbfphys.Set(1.0f);
+			co_novileghosts.Set(1.0f);
+			co_allowdropoff.Set(1.0f);
+			co_removesoullimit.Set(1.0f);
+			r_clipmaskedspecial.Set(1.0f);
+		}
+		else
+		{
+			DPrintFmt("Unrecognized COMPLVL value: {}", complvl);
+		}
+
+		Z_Free(complvl);
+	}
+}
 
 //
 // D_Init
@@ -648,6 +715,7 @@ void D_Init()
 	G_ParseMusInfo();
 	S_ParseSndInfo();
 	G_ParseHordeDefs();
+	G_ReadCOMPLVL();
 
 	// init the menu subsystem
 	if (first_time)

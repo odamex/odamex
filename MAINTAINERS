@@ -1,17 +1,19 @@
-This code is maintained on https://github.com/odamex/odamex
-Post bugs to https://github.com/odamex/odamex/issues
-IRC: irc.oftc.net #odamex
-DISCORD: https://discord.gg/bvvMJMS
+Find the Odamex code at: https://github.com/odamex/odamex
+Post bugs to: https://github.com/odamex/odamex/issues
+Read our documentation at: https://github.com/odamex/odamex/wiki
+Visit our Discord server: https://discord.gg/bvvMJMS
 
-Sean: sean@odamex.net (lead coder) <- patches
-Manc: mike@odamex.net (services and odamex.net website admin, project manager) <- patches
-Ralphis: ralphis@odamex.net (project manager)
-Russell: russell@odamex.net (launcher coder, coder) <- patches
-Hyper_Eye: mwoodj@huntsvegas.org (coder, osx and xbox package manager)
-deathz0r: deathz0r@odamex.net (documentation, testing and code cleanups)
-Ch0wW: ch0ww@baseq.fr (documentation, testing and code cleanups)
+electricbrass: electricbrass@proton.me (Programmer)
+Hekksy: (Project Manager)
+Hyper_Eye: mwoodj@huntsvegas.org (Programmer, macOS Package Manager)
+KBlair: (Programmer)
+LexiMax: (Programmer)
+Manc: mike@odamex.net (odamex.net Services & Website Administrator, Project Manager)
+Ralphis: ralphis@gmail.com (Project Manager)
+Sean: sean@odamex.net (Programmer)
 
-Portions of the save/load game system code not already present provided by Marisa from 
-zdoom 1.22 relicensed under the GNU/GPL v2.
+Portions of the save/load game system code not
+already present provided by Marisa from zdoom 1.22
+relicensed under the GNU/GPL v2.
 
-An archive of our old bug tracker system is available at http://odamex.net/bugs
+Updated October 14, 2025

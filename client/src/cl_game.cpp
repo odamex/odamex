@@ -65,6 +65,7 @@
 #include "g_spawninv.h"
 #include "g_gametype.h"
 #include "p_horde.h"
+#include "g_musinfo.h"
 
 #ifdef _XBOX
 #include "i_xbox.h"
@@ -1629,6 +1630,8 @@ void G_DoLoadGame (void)
 	P_SerializeACSDefereds (arc);
 	P_SerializeHorde(arc);
 
+	arc >> musinfo.savedmusic;
+
 	multiplayer = false;
 
 	// load a base level
@@ -1749,6 +1752,7 @@ void G_DoSaveGame()
 	P_SerializeACSDefereds (arc);
 	P_SerializeHorde(arc);
 
+	arc << musinfo.savedmusic.c_str();
 	arc << level.time;
 
 	for (int i = 0; i < NUM_WORLDVARS; i++)
@@ -1774,7 +1778,6 @@ void G_DoSaveGame()
 			arc << val;
 		}
 	}
-
 
 	arc << (BYTE)0x1d;			// consistancy marker
 

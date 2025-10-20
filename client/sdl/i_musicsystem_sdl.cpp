@@ -45,7 +45,7 @@ EXTERN_CVAR(snd_musicvolume)
 
 SdlMixerMusicSystem::SdlMixerMusicSystem() : m_isInitialized(false), m_registeredSong()
 {
-	PrintFmt("I_InitMusic: Music playback enabled using SDL_Mixer.\n");
+	PrintFmt(PRINT_FILTERHIGH, "I_InitMusic: Music playback enabled using SDL_Mixer.\n");
 	m_isInitialized = true;
 }
 
@@ -60,7 +60,7 @@ SdlMixerMusicSystem::~SdlMixerMusicSystem()
 	m_isInitialized = false;
 }
 
-void SdlMixerMusicSystem::startSong(byte* data, size_t length, bool loop)
+void SdlMixerMusicSystem::startSong(byte* data, size_t length, bool loop, int order)
 {
 	if (!isInitialized())
 		return;
@@ -81,9 +81,13 @@ void SdlMixerMusicSystem::startSong(byte* data, size_t length, bool loop)
 		return;
 	}
 
+	#if (SDL_MIXER_MAJOR_VERSION == 2 && SDL_MIXER_MINOR_VERSION >= 6)
+	Mix_ModMusicJumpToOrder(order); // for musinfo
+	#endif
+
 	Mix_HookMusicFinished(I_ResetMidiVolume);
 
-	MusicSystem::startSong(data, length, loop);
+	MusicSystem::startSong(data, length, loop, order);
 
 	// [Russell] - Hack for setting the volume on windows vista, since it gets
 	// reset on every music change

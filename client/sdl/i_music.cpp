@@ -46,7 +46,7 @@ MusicSystem* musicsystem = NULL;
 MusicSystemType current_musicsystem_type = MS_NONE;
 
 void S_StopMusic();
-void S_ChangeMusic (std::string musicname, bool looping);
+void S_ChangeMusic (std::string musicname, bool looping, int order = 0);
 
 EXTERN_CVAR (snd_musicvolume)
 EXTERN_CVAR (snd_musicsystem)
@@ -288,7 +288,7 @@ static MusicSystemType I_SelectMusicSystem(byte *data, size_t length)
 	return MS_SDLMIXER;
 }
 
-void I_PlaySong(const OByteSpan data, const bool loop)
+void I_PlaySong(const OByteSpan data, const bool loop, const int order)
 {
 	if (!musicsystem)
 		return;
@@ -304,7 +304,7 @@ void I_PlaySong(const OByteSpan data, const bool loop)
 		I_InitMusic(newtype);
 	}
 
-	musicsystem->startSong(data.data(), data.size(), loop);
+	musicsystem->startSong(data.data(), data.size(), loop, order);
 
 	// Hack for problems with Windows Vista/7 & SDL_Mixer
 	// See comment for I_ResetMidiVolume().

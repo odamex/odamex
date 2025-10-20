@@ -21,7 +21,6 @@
 [submodule "libraries/jsoncpp"]
 	path = libraries/jsoncpp
 	url = https://github.com/open-source-parsers/jsoncpp.git
-	branch = 0.y.z
 	ignore = dirty
 [submodule "libraries/portmidi"]
 	path = libraries/portmidi

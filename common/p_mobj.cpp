@@ -46,6 +46,7 @@
 #include "g_skill.h"
 #include "m_wdlstats.h"
 #include "p_mapformat.h"
+#include "g_musinfo.h"
 #include "r_sky.h"
 
 #ifdef CLIENT_APP
@@ -674,6 +675,19 @@ void AActor::RunThink ()
 {
 	if(!subsector)
 		return;
+
+	// MUSINFO
+	if (type == MT_MUSICSOURCE && clientside)
+	{
+		if (musinfo.mapthing != this &&
+		    subsector->sector == displayplayer().mo->subsector->sector)
+		{
+			musinfo.lastmapthing = musinfo.mapthing;
+			musinfo.mapthing = this->ptr();
+			musinfo.tics = 30;
+		}
+		return;
+	}
 
 	prevx = x;
 	prevy = y;
@@ -2734,9 +2748,13 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (sv_allowshowspawns)
 		P_ShowSpawns(mthing);
 
-  // only servers control spawning of items
-	// EXCEPT only the client needs ambient sound players
-	if (mthing->type >= 14001 && mthing->type <= 14065)
+	// only servers control spawning of items
+  // EXCEPT the client must spawn Type 14 (teleport exit).
+	// otherwise teleporters won't work well.
+	//
+	// Clients also handle spawning of ambient sounds and music changers
+	//
+	if ((mthing->type >= 14001 && mthing->type <= 14065) || (mthing->type >= 14100 && mthing->type <= 14165))
 	{
 		if (!clientside)
 		{
@@ -2917,16 +2935,16 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (mthing->type >= 14001 && mthing->type <= 14064)
 	{
 		mthing->args[0] = mthing->type - 14000;
-		mthing->type = 14065;
+		mthing->type = mobjinfo[MT_AMBIENT].doomednum;
 		i = MT_AMBIENT;
 	}
 
 	// [ML] Determine if it is a musicchanger thing, and if so,
 	//		map it to MT_MUSICSOURCE with the proper parameter.
-	if (mthing->type >= 14101 && mthing->type <= 14164)
+	if (mthing->type >= 14100 && mthing->type <= 14164)
 	{
 		mthing->args[0] = mthing->type - 14100;
-		mthing->type = 14165;
+		mthing->type = mobjinfo[MT_MUSICSOURCE].doomednum;
 		i = MT_MUSICSOURCE;
 	}
 

@@ -173,18 +173,18 @@ int main(int argc, char *argv[])
 		if(argc == 2 && argv && argv[1])
 		{
 			static constexpr std::string_view protocol = "odamex://";
-			const char *uri = argv[1];
+			std::string_view uri = argv[1];
 
-			if(protocol == uri)
+			if(uri.substr(0, protocol.length()) == protocol)
 			{
-				std::string location = uri + protocol.length();
+				std::string_view location = uri.substr(protocol.length());
 				size_t term = location.find_first_of('/');
 
 				if(term == std::string::npos)
 					term = location.length();
 
 				Args.AppendArg("-connect");
-				Args.AppendArg(location.substr(0, term).c_str());
+				Args.AppendArg(location.substr(0, term).data());
 			}
 		}
 

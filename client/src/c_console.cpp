@@ -1163,6 +1163,10 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 	if (printlevel == PRINT_FILTERCHAT)
 		return;
 
+	// Do not display filtered normal messages
+	if (printlevel == PRINT_FILTERHIGH)
+		return;
+
 	const int width = I_GetSurfaceWidth() / V_TextScaleXAmount();
 
 	if (addtype == APPENDLINE && NotifyStrings[NUMNOTIFIES-1].printlevel == printlevel)
@@ -1243,6 +1247,9 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 	// Revert filtered chat to a normal chat to display to the console
 	if (printlevel == PRINT_FILTERCHAT)
 		printlevel = PRINT_CHAT;
+
+	if (printlevel == PRINT_FILTERHIGH)
+		printlevel = PRINT_HIGH;
 
 	const char* line_start = outline;
 	const char* line_end = line_start;

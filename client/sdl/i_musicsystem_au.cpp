@@ -125,11 +125,11 @@ AuMusicSystem::AuMusicSystem() : m_isInitialized(false)
 	if (NewMusicPlayer(&m_player) != noErr)
 	{
 		PrintFmt(PRINT_HIGH,
-		         "I_InitMusic: Music player creation failed using AudioToolbox\n");
+		       "I_InitMusic: Music player creation failed using AudioToolbox\n");
 		return;
 	}
 
-	PrintFmt(PRINT_HIGH, "I_InitMusic: Music playback enabled using AudioToolbox\n");
+	PrintFmt(PRINT_FILTERHIGH, "I_InitMusic: Music playback enabled using AudioToolbox\n");
 	m_isInitialized = true;
 	return;
 }
@@ -143,7 +143,7 @@ AuMusicSystem::~AuMusicSystem()
 	AUGraphClose(m_graph);
 }
 
-void AuMusicSystem::startSong(byte* data, size_t length, bool loop)
+void AuMusicSystem::startSong(byte* data, size_t length, bool loop, int order)
 {
 	if (!isInitialized())
 		return;
@@ -241,7 +241,7 @@ void AuMusicSystem::startSong(byte* data, size_t length, bool loop)
 		return;
 	}
 
-	MusicSystem::startSong(data, length, loop);
+	MusicSystem::startSong(data, length, loop, order);
 }
 
 //

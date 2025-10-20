@@ -142,8 +142,8 @@ void S_RelinkSound(AActor* from, AActor* to);
 // Start music using <music_name>
 void S_StartMusic(const char* music_name);
 
-// Start music using <music_name>, and set whether looping
-void S_ChangeMusic(std::string music_name, bool looping);
+// Start music using <music_name>, and set whether looping, and what MOD order to start from
+void S_ChangeMusic(std::string music_name, bool looping, int order = 0);
 
 // Stops the music fer sure.
 void S_StopMusic();

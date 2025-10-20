@@ -657,7 +657,7 @@ static bool CommercialIWADWarning(const OWantFile& wanted)
 		{
 			// Found a file, but it's not recognized at all.
 			PrintFmt("Odamex found a possible data file, but Odamex does not recognize "
-			         "it.\n> {]\n\n",
+			         "it.\n> {}\n\n",
 			         sameNameRes.getFullpath());
 		}
 
