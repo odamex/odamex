@@ -26,7 +26,6 @@
 
 #include "p_local.h"
 #include "sv_main.h"
-#include "huffman.h"
 #include "i_net.h"
 
 #ifdef SIMULATE_LATENCY
@@ -209,7 +208,7 @@ bool SV_SendPacket(player_t &pl)
 
 	if (log_packetdebug)
 	{
-		Printf(PRINT_HIGH, "ply %03u, pkt %06u, size %04lu, tic %07u, time %011llu\n",
+		PrintFmt(PRINT_HIGH, "ply {:03}, pkt {:06}, size {:04}, tic {:07}, time {:011}\n",
 			   pl.id, cl->sequence - 1, sendd.cursize, gametic, I_MSTime());
 	}
 
@@ -267,8 +266,6 @@ void SV_AcknowledgePacket(player_t &player)
 	client_t *cl = &player.client;
 
 	int sequence = MSG_ReadLong();
-
-	cl->compressor.packet_acked(sequence);
 
 	// packet is missed
 	if (sequence - cl->last_sequence > 1)

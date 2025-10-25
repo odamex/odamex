@@ -66,92 +66,88 @@ void P_SerializePlayers (FArchive &arc)
 //
 void P_SerializeWorld (FArchive &arc)
 {
-	int i, j;
-	sector_t *sec;
-	line_t *li;
-
 	if (arc.IsStoring ())
 	{ // saving to archive
 
 		// do sectors
-		for (i = 0, sec = sectors; i < numsectors; i++, sec++)
+		for (sector_t& sec : R_GetSectors())
 		{
-			arc << sec->floorheight
-				<< sec->ceilingheight
-				<< sec->floorplane.a
-				<< sec->floorplane.b
-				<< sec->floorplane.c
-				<< sec->floorplane.d
-				<< sec->ceilingplane.a
-				<< sec->ceilingplane.b
-				<< sec->ceilingplane.c
-				<< sec->ceilingplane.d
-				<< sec->floorpic
-				<< sec->ceilingpic
-				<< sec->lightlevel
-				<< sec->special
-				<< sec->flags
-				<< sec->tag
-				<< sec->secretsector
-				<< sec->soundtraversed
+			arc << sec.floorheight
+				<< sec.ceilingheight
+				<< sec.floorplane.a
+				<< sec.floorplane.b
+				<< sec.floorplane.c
+				<< sec.floorplane.d
+				<< sec.ceilingplane.a
+				<< sec.ceilingplane.b
+				<< sec.ceilingplane.c
+				<< sec.ceilingplane.d
+				<< sec.floorpic
+				<< sec.ceilingpic
+				<< sec.lightlevel
+				<< sec.special
+				<< sec.flags
+				<< sec.tag
+				<< sec.secretsector
+				<< sec.soundtraversed
 				/*<< sec->soundtarget*/
-				<< sec->friction
-				<< sec->movefactor
-				<< sec->floordata
-				<< sec->ceilingdata
-				<< sec->lightingdata
-				<< sec->stairlock
-				<< sec->prevsec
-				<< sec->nextsec
-				<< sec->floor_xoffs << sec->floor_yoffs
-				<< sec->ceiling_xoffs << sec->ceiling_xoffs
-				<< sec->floor_xscale << sec->floor_yscale
-				<< sec->ceiling_xscale << sec->ceiling_yscale
-				<< sec->floor_angle << sec->ceiling_angle
-				<< sec->base_ceiling_angle << sec->base_ceiling_yoffs
-				<< sec->base_floor_angle << sec->base_floor_yoffs
-				<< sec->heightsec
-				<< sec->floorlightsec << sec->ceilinglightsec
-				<< sec->bottommap << sec->midmap << sec->topmap
-				<< sec->gravity
-				<< sec->damageamount << sec->damageinterval << sec->leakrate
-				<< sec->mod
+				<< sec.friction
+				<< sec.movefactor
+				<< sec.floordata
+				<< sec.ceilingdata
+				<< sec.lightingdata
+				<< sec.stairlock
+				<< sec.prevsec
+				<< sec.nextsec
+				<< sec.floor_xoffs << sec.floor_yoffs
+				<< sec.ceiling_xoffs << sec.ceiling_xoffs
+				<< sec.floor_xscale << sec.floor_yscale
+				<< sec.ceiling_xscale << sec.ceiling_yscale
+				<< sec.floor_angle << sec.ceiling_angle
+				<< sec.base_ceiling_angle << sec.base_ceiling_yoffs
+				<< sec.base_floor_angle << sec.base_floor_yoffs
+				<< sec.heightsec
+				<< sec.floorlightsec << sec.ceilinglightsec
+				<< sec.bottommap << sec.midmap << sec.topmap
+				<< sec.gravity
+				<< sec.damageamount << sec.damageinterval << sec.leakrate
+				<< sec.mod
 
-				<< sec->colormap->color.geta() << sec->colormap->color.getr()
-				<< sec->colormap->color.getg() << sec->colormap->color.getb()
-				<< sec->colormap->fade.geta() << sec->colormap->fade.getr()
-				<< sec->colormap->fade.getg() << sec->colormap->fade.getb()
+				<< sec.colormap->color.geta() << sec.colormap->color.getr()
+				<< sec.colormap->color.getg() << sec.colormap->color.getb()
+				<< sec.colormap->fade.geta() << sec.colormap->fade.getr()
+				<< sec.colormap->fade.getg() << sec.colormap->fade.getb()
 
 				// [SL] TODO: Remove the extra set of light and fade color serialization.
 				// These are left over from when Odamex had separate colormaps for a sector's
 				// floor and ceiling. Now a sector only has one colormap but we keep these
 				// here for now for netdemo compatibility.
-				<< sec->colormap->color.geta() << sec->colormap->color.getr()
-				<< sec->colormap->color.getg() << sec->colormap->color.getb()
-				<< sec->colormap->fade.geta() << sec->colormap->fade.getr()
-				<< sec->colormap->fade.getg() << sec->colormap->fade.getb()
+				<< sec.colormap->color.geta() << sec.colormap->color.getr()
+				<< sec.colormap->color.getg() << sec.colormap->color.getb()
+				<< sec.colormap->fade.geta() << sec.colormap->fade.getr()
+				<< sec.colormap->fade.getg() << sec.colormap->fade.getb()
 
-				<< sec->alwaysfake
-				<< sec->waterzone
-				<< sec->SecActTarget
-				<< sec->MoreFlags;
+				<< sec.alwaysfake
+				<< sec.waterzone
+				<< sec.SecActTarget
+				<< sec.MoreFlags;
 		}
 
 		// do lines
-		for (i = 0, li = lines; i < numlines; i++, li++)
+		for (line_t& line : R_GetLines())
 		{
-			arc << li->flags
-				<< li->special
-				<< li->lucency
-				<< li->id
-				<< li->args[0] << li->args[1] << li->args[2] << li->args[3] << li->args[4] << (WORD)0;
+			arc << line.flags
+				<< line.special
+				<< line.lucency
+				<< line.id
+				<< line.args[0] << line.args[1] << line.args[2] << line.args[3] << line.args[4] << (WORD)0;
 
-			for (j = 0; j < 2; j++)
+			for (int i = 0; i < 2; i++)
 			{
-				if (li->sidenum[j] == R_NOSIDE)
+				if (line.sidenum[i] == R_NOSIDE)
 					continue;
 
-				side_t *si = &sides[li->sidenum[j]];
+				side_t* si = &sides[line.sidenum[i]];
 				arc << si->textureoffset
 					<< si->rowoffset
 					<< si->toptexture
@@ -164,50 +160,50 @@ void P_SerializeWorld (FArchive &arc)
 	{ // loading from archive
 
 		// do sectors
-		for (i = 0, sec = sectors; i < numsectors; i++, sec++)
+		for (sector_t& sec : R_GetSectors())
 		{
 			AActor* SecActTarget;
 
-			arc >> sec->floorheight
-				>> sec->ceilingheight
-				>> sec->floorplane.a
-				>> sec->floorplane.b
-				>> sec->floorplane.c
-				>> sec->floorplane.d
-				>> sec->ceilingplane.a
-				>> sec->ceilingplane.b
-				>> sec->ceilingplane.c
-				>> sec->ceilingplane.d
-				>> sec->floorpic
-				>> sec->ceilingpic
-				>> sec->lightlevel
-				>> sec->special
-				>> sec->flags
-				>> sec->tag
-				>> sec->secretsector
-				>> sec->soundtraversed
+			arc >> sec.floorheight
+				>> sec.ceilingheight
+				>> sec.floorplane.a
+				>> sec.floorplane.b
+				>> sec.floorplane.c
+				>> sec.floorplane.d
+				>> sec.ceilingplane.a
+				>> sec.ceilingplane.b
+				>> sec.ceilingplane.c
+				>> sec.ceilingplane.d
+				>> sec.floorpic
+				>> sec.ceilingpic
+				>> sec.lightlevel
+				>> sec.special
+				>> sec.flags
+				>> sec.tag
+				>> sec.secretsector
+				>> sec.soundtraversed
 				/*>> sec->soundtarget->netid*/
-				>> sec->friction
-				>> sec->movefactor
-				>> sec->floordata
-				>> sec->ceilingdata
-				>> sec->lightingdata
-				>> sec->stairlock
-				>> sec->prevsec
-				>> sec->nextsec
-				>> sec->floor_xoffs >> sec->floor_yoffs
-				>> sec->ceiling_xoffs >> sec->ceiling_xoffs
-				>> sec->floor_xscale >> sec->floor_yscale
-				>> sec->ceiling_xscale >> sec->ceiling_yscale
-				>> sec->floor_angle >> sec->ceiling_angle
-				>> sec->base_ceiling_angle >> sec->base_ceiling_yoffs
-				>> sec->base_floor_angle >> sec->base_floor_yoffs
-				>> sec->heightsec
-				>> sec->floorlightsec >> sec->ceilinglightsec
-				>> sec->bottommap >> sec->midmap >> sec->topmap
-				>> sec->gravity
-				>> sec->damageamount >> sec->damageinterval >> sec->leakrate
-				>> sec->mod;
+				>> sec.friction
+				>> sec.movefactor
+				>> sec.floordata
+				>> sec.ceilingdata
+				>> sec.lightingdata
+				>> sec.stairlock
+				>> sec.prevsec
+				>> sec.nextsec
+				>> sec.floor_xoffs >> sec.floor_yoffs
+				>> sec.ceiling_xoffs >> sec.ceiling_xoffs
+				>> sec.floor_xscale >> sec.floor_yscale
+				>> sec.ceiling_xscale >> sec.ceiling_yscale
+				>> sec.floor_angle >> sec.ceiling_angle
+				>> sec.base_ceiling_angle >> sec.base_ceiling_yoffs
+				>> sec.base_floor_angle >> sec.base_floor_yoffs
+				>> sec.heightsec
+				>> sec.floorlightsec >> sec.ceilinglightsec
+				>> sec.bottommap >> sec.midmap >> sec.topmap
+				>> sec.gravity
+				>> sec.damageamount >> sec.damageinterval >> sec.leakrate
+				>> sec.mod;
 
 			byte color_values[4];
 			argb_t lightcolor, fadecolor;
@@ -218,7 +214,7 @@ void P_SerializeWorld (FArchive &arc)
 			arc >> color_values[0] >> color_values[1] >> color_values[2] >> color_values[3];
 			fadecolor = argb_t(color_values[0], color_values[1], color_values[2], color_values[3]);
 
-			sec->colormap = GetSpecialLights(lightcolor.getr(), lightcolor.getg(), lightcolor.getb(),
+			sec.colormap = GetSpecialLights(lightcolor.getr(), lightcolor.getg(), lightcolor.getb(),
 											fadecolor.getr(), fadecolor.getg(), fadecolor.getb());
 
 			// [SL] TODO: Remove the extra set of light and fade color deserialization.
@@ -228,34 +224,34 @@ void P_SerializeWorld (FArchive &arc)
 			arc >> color_values[0] >> color_values[1] >> color_values[2] >> color_values[3];
 			arc >> color_values[0] >> color_values[1] >> color_values[2] >> color_values[3];
 
-			arc >> sec->alwaysfake
-				>> sec->waterzone
+			arc >> sec.alwaysfake
+				>> sec.waterzone
 				>> SecActTarget
-				>> sec->MoreFlags;
+				>> sec.MoreFlags;
 
-			sec->floorplane.invc = FixedDiv(FRACUNIT, sec->floorplane.c);
-			sec->floorplane.sector = sec;
-			sec->ceilingplane.invc = FixedDiv(FRACUNIT, sec->ceilingplane.c);
-			sec->ceilingplane.sector = sec;
-			sec->SecActTarget.init(SecActTarget);
+			sec.floorplane.invc = FixedDiv(FRACUNIT, sec.floorplane.c);
+			sec.floorplane.sector = &sec;
+			sec.ceilingplane.invc = FixedDiv(FRACUNIT, sec.ceilingplane.c);
+			sec.ceilingplane.sector = &sec;
+			sec.SecActTarget.init(SecActTarget);
 		}
 
 		// do lines
-		for (i = 0, li = lines; i < numlines; i++, li++)
+		for (line_t& line : R_GetLines())
 		{
 		    WORD dummy;
-			arc >> li->flags
-				>> li->special
-				>> li->lucency
-				>> li->id
-				>> li->args[0] >> li->args[1] >> li->args[2] >> li->args[3] >> li->args[4] >> dummy;
+			arc >> line.flags
+				>> line.special
+				>> line.lucency
+				>> line.id
+				>> line.args[0] >> line.args[1] >> line.args[2] >> line.args[3] >> line.args[4] >> dummy;
 
-			for (j = 0; j < 2; j++)
+			for (int i = 0; i < 2; i++)
 			{
-				if (li->sidenum[j] == R_NOSIDE)
+				if (line.sidenum[i] == R_NOSIDE)
 					continue;
 
-				side_t *si = &sides[li->sidenum[j]];
+				side_t* si = &sides[line.sidenum[i]];
 				arc >> si->textureoffset
 					>> si->rowoffset
 					>> si->toptexture

@@ -105,7 +105,7 @@ static void IntQryBuildInformation(const DWORD& EqProtocolVersion,
 		{
 			CvarField.Name = var->name();
 			CvarField.Type = var->type();
-			CvarField.Value = var->cstring();
+			CvarField.Value = var->str();
 
 			// Skip empty strings
 			if(CvarField.Type == CVARTYPE_STRING && var->cstring()[0] != '\0')

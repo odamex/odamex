@@ -94,7 +94,7 @@ typedef vertex_s vertex_t;
 
 // Forward of LineDefs, for Sectors.
 struct line_s;
-struct sector_s;
+struct sector_t;
 
 class player_s;
 
@@ -173,7 +173,7 @@ struct plane_s
 	fixed_t		a, b, c, d;
 	fixed_t		invc;		// pre-calculated 1/c, used to solve for z value
 	fixed_t		texx, texy;
-	sector_s	*sector;
+	sector_t	*sector;
 };
 typedef plane_s plane_t;
 
@@ -181,113 +181,112 @@ struct dyncolormap_s;
 
 class DSectorEffect;
 
-struct sector_s
+struct sector_t
 {
-	fixed_t 	floorheight;
-	fixed_t 	ceilingheight;
-	short		floorpic;
-	short		ceilingpic;
-	short		lightlevel;
-	short		special;
-	short		tag;
-	int			nexttag,firsttag;	// killough 1/30/98: improves searches for tags.
-	bool		secretsector;		// Ch0wW : This is a secret sector !
-	unsigned int flags;				// [Blair] Let's use actual sector flags instead of shoehorning them in special
+	// FIXME: set the real default values instead of 0 for everything. this was just to replace memsetting the struct for now
+	fixed_t 	floorheight = 0;
+	fixed_t 	ceilingheight = 0;
+	short		floorpic = 0;
+	short		ceilingpic = 0;
+	short		lightlevel = 0;
+	short		special = 0;
+	short		tag = 0;
+	int			nexttag = 0, firsttag = 0;	// killough 1/30/98: improves searches for tags.
+	bool		secretsector = false;		// Ch0wW : This is a secret sector !
+	unsigned int flags = 0;				// [Blair] Let's use actual sector flags instead of shoehorning them in special
 
     // 0 = untraversed, 1,2 = sndlines -1
-	int 				soundtraversed;
+	int 				soundtraversed = 0;
 
     // thing that made a sound (or null)
-	AActor::AActorPtr 	soundtarget;
+	AActor::AActorPtr 	soundtarget{};
 
 	// mapblock bounding box for height changes
-	int 		blockbox[4];
+	int 		blockbox[4] = { 0 };
 
 	// origin for any sounds played by the sector
-	fixed_t		soundorg[3];
+	fixed_t		soundorg[3] = { 0 };
 
     // if == validcount, already checked
-	int 		validcount;
+	int 		validcount = 0;
 
     // list of mobjs in sector
-	AActor* 	thinglist;
-	int			seqType;		// this sector's sound sequence
-	int sky;
+	AActor* 	thinglist = nullptr;
+	int			seqType = 0;		// this sector's sound sequence
+	int sky = 0;
 
 	// killough 8/28/98: friction is a sector property, not an mobj property.
 	// these fields used to be in AActor, but presented performance problems
 	// when processed as mobj properties. Fix is to make them sector properties.
-	int friction, movefactor;
+	int friction = 0, movefactor = 0;
 
 	// thinker_t for reversable actions
-	DSectorEffect *floordata;			// jff 2/22/98 make thinkers on
-	DSectorEffect *ceilingdata;			// floors, ceilings, lighting,
-	DSectorEffect *lightingdata;		// independent of one another
+	DSectorEffect *floordata = nullptr;			// jff 2/22/98 make thinkers on
+	DSectorEffect *ceilingdata = nullptr;			// floors, ceilings, lighting,
+	DSectorEffect *lightingdata = nullptr;		// independent of one another
 
-	bool moveable;  // [csDoom] mark a sector as moveable if it is moving.
+	bool moveable = false;  // [csDoom] mark a sector as moveable if it is moving.
                     // If (sector->moveable) the server sends information
                     // about this sector when a client connects.
 
 	// jff 2/26/98 lockout machinery for stairbuilding
-	int stairlock;		// -2 on first locked -1 after thinker done 0 normally
-	int prevsec;		// -1 or number of sector for previous step
-	int nextsec;		// -1 or number of next step sector
+	int stairlock = false;		// -2 on first locked -1 after thinker done 0 normally
+	int prevsec = false;		// -1 or number of sector for previous step
+	int nextsec = false;		// -1 or number of next step sector
 
 	// killough 3/7/98: floor and ceiling texture offsets
-	fixed_t   floor_xoffs,   floor_yoffs;
-	fixed_t ceiling_xoffs, ceiling_yoffs;
+	fixed_t   floor_xoffs = 0,   floor_yoffs = 0;
+	fixed_t ceiling_xoffs = 0, ceiling_yoffs = 0;
 
 	// [RH] floor and ceiling texture scales
-	fixed_t   floor_xscale,   floor_yscale;
-	fixed_t ceiling_xscale, ceiling_yscale;
+	fixed_t   floor_xscale = 0,   floor_yscale = 0;
+	fixed_t ceiling_xscale = 0, ceiling_yscale = 0;
 
 	// [RH] floor and ceiling texture rotation
-	angle_t	floor_angle, ceiling_angle;
+	angle_t	floor_angle = 0, ceiling_angle = 0;
 
-	fixed_t base_ceiling_angle, base_ceiling_yoffs;
-	fixed_t base_floor_angle, base_floor_yoffs;
+	fixed_t base_ceiling_angle = 0, base_ceiling_yoffs = 0;
+	fixed_t base_floor_angle = 0, base_floor_yoffs = 0;
 
 	// killough 3/7/98: support flat heights drawn at another sector's heights
-	sector_s *heightsec;		// other sector, or NULL if no other sector
+	sector_t *heightsec = nullptr;		// other sector, or NULL if no other sector
 
 	// killough 4/11/98: support for lightlevels coming from another sector
-	sector_s *floorlightsec, *ceilinglightsec;
+	sector_t *floorlightsec = nullptr, *ceilinglightsec = nullptr;
 
-	argb_t bottommap, midmap, topmap; // killough 4/4/98: dynamic colormaps
+	argb_t bottommap = 0, midmap = 0, topmap = 0; // killough 4/4/98: dynamic colormaps
 											// [RH] these can also be blend values if
 											//		the alpha mask is non-zero
 
 	// list of mobjs that are at least partially in the sector
 	// thinglist is a subset of touching_thinglist
-	msecnode_s *touching_thinglist;				// phares 3/14/98
+	msecnode_s *touching_thinglist = nullptr;				// phares 3/14/98
 
-	int linecount;
-	line_s **lines;		// [linecount] size
+	int linecount = 0;
+	line_s **lines = nullptr;		// [linecount] size
 
-	float gravity;		// [RH] Sector gravity (1.0 is normal)
-	int damageamount;
-	int damageinterval;
-	int leakrate;
-	short mod;			// [RH] Means-of-death for applied damage
-	dyncolormap_s *colormap;	// [RH] Per-sector colormap
+	float gravity = 0.0f;		// [RH] Sector gravity (1.0 is normal)
+	int damageamount = 0;
+	int damageinterval = 0;
+	int leakrate = 0;
+	short mod = 0;			// [RH] Means-of-death for applied damage
+	dyncolormap_s *colormap = nullptr;	// [RH] Per-sector colormap
 
-	bool alwaysfake;	// [RH] Always apply heightsec modifications?
-	byte waterzone;		// [RH] Sector is underwater?
-	WORD MoreFlags;		// [RH] Misc sector flags
+	bool alwaysfake = false;	// [RH] Always apply heightsec modifications?
+	byte waterzone = 0;		// [RH] Sector is underwater?
+	WORD MoreFlags = 0;		// [RH] Misc sector flags
 
 	// [RH] Action specials for sectors. Like Skull Tag, but more
 	// flexible in a Bloody way. SecActTarget forms a list of actors
 	// joined by their tracer fields. When a potential sector action
 	// occurs, SecActTarget's TriggerAction method is called.
 	// [AM] Use the ZDoom 1.22 AActor system instead.
-	AActor::AActorPtr SecActTarget;
+	AActor::AActorPtr SecActTarget{};
 
 	// [SL] 2012-01-16 - planes for sloping ceilings/floors
-	plane_t floorplane, ceilingplane;
-	int SectorChanges;
+	plane_t floorplane{}, ceilingplane{};
+	int SectorChanges = 0;
 };
-typedef sector_s sector_t;
-
 
 
 

@@ -193,7 +193,7 @@ size_t P_HordePickDefine(const int current, const int total)
 		const float section_size = static_cast<float>(::WAVE_DEFINES.size()) / total;
 		const float section_offset = (current - 1) * section_size;
 		const float section_choice = M_RandomFloat() * section_size;
-		const float section_limit = NextAfter(section_offset + section_size, 0.0f);
+		const float section_limit = nextafter(section_offset + section_size, 0.0f);
 		return MIN<size_t>(section_offset + section_choice, section_limit);
 	}
 	else if (current <= 1)
@@ -337,7 +337,7 @@ static void PrintDefines(const std::vector<hordeDefine_t>::const_iterator& begin
 	for (; it != end; ++it)
 	{
 		const ptrdiff_t idx = it - ::WAVE_DEFINES.begin();
-		Printf("%zd: %s (Group HP: %d)\n", idx, it->name, it->maxGroupHealth);
+		PrintFmt("{}: {} (Group HP: {})\n", idx, it->name, it->maxGroupHealth);
 	}
 }
 
@@ -372,48 +372,48 @@ BEGIN_COMMAND(hordedefine)
 						const float section_size =
 						    static_cast<float>(::WAVE_DEFINES.size()) / total;
 						const float section_offset = (current - 1) * section_size;
-						const float section_choice = NextAfter(1.0f, 0.0f) * section_size;
+						const float section_choice = nextafter(1.0f, 0.0f) * section_size;
 						const float section_limit =
-						    NextAfter(section_offset + section_size, 0.0f);
+						    nextafter(section_offset + section_size, 0.0f);
 						const size_t start = static_cast<size_t>(section_offset);
 						const size_t end =
 						    MIN<size_t>(section_offset + section_choice, section_limit);
-						Printf("[Wave %d/%d - Start:%" "zu" " End:%" "zu" "]\n",
-						       current, total, start, end);
+						PrintFmt("[Wave {}/{} - Start:{} End:{}]\n",
+						         current, total, start, end);
 						PrintDefines(::WAVE_DEFINES.begin() + start,
 						             ::WAVE_DEFINES.begin() + end + 1);
 						return;
 					}
 					else
 					{
-						Printf("error: Total waves must be > 0.");
+						PrintFmt("error: Total waves must be > 0.");
 						return;
 					}
 				}
 				else
 				{
-					Printf("error: Must pass a valid wave number.");
+					PrintFmt("error: Must pass a valid wave number.");
 					return;
 				}
 			}
 			else
 			{
-				Printf("error: Must pass a wave number.");
+				PrintFmt("error: Must pass a wave number.");
 				return;
 			}
 		}
 		else
 		{
-			Printf("error: Unknown command.");
+			PrintFmt("error: Unknown command.");
 			return;
 		}
 	}
 
-	Printf("Commands:\n");
-	Printf("  all\n");
-	Printf("    Show all defines.\n");
-	Printf("  wave <NUMBER> [TOTAL]\n");
-	Printf("    Show potential waves for wave NUMBER of [TOTAL].  If omitted, [TOTAL] "
-	       "defaults to the cvar `g_horde_waves`.\n");
+	PrintFmt("Commands:\n");
+	PrintFmt("  all\n");
+	PrintFmt("    Show all defines.\n");
+	PrintFmt("  wave <NUMBER> [TOTAL]\n");
+	PrintFmt("    Show potential waves for wave NUMBER of [TOTAL].  If omitted, [TOTAL] "
+	         "defaults to the cvar `g_horde_waves`.\n");
 }
 END_COMMAND(hordedefine)

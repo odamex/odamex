@@ -272,7 +272,7 @@ static bool CheckWideModeAdjustment()
 	if (vid_widescreen.asInt() > 0 && allow_widescreen != using_widescreen)
 		return true;
 
-	if (vid_widescreen.asInt() > 0 != using_widescreen)
+	if ((vid_widescreen.asInt() > 0) != using_widescreen)
 		return true;
 
 	return false;
@@ -357,7 +357,7 @@ BEGIN_COMMAND(vid_currentmode)
 	}
 
 	const IVideoMode& mode = I_GetWindow()->getVideoMode();
-	Printf(PRINT_HIGH, "%s %s surface\n",
+	PrintFmt(PRINT_HIGH, "{} {} surface\n",
 			I_GetVideoModeString(mode), pixel_string);
 }
 END_COMMAND(vid_currentmode)
@@ -365,7 +365,7 @@ END_COMMAND(vid_currentmode)
 
 BEGIN_COMMAND(checkres)
 {
-	Printf(PRINT_HIGH, "%dx%d\n", I_GetVideoWidth(), I_GetVideoHeight());
+	PrintFmt(PRINT_HIGH, "{}x{}\n", I_GetVideoWidth(), I_GetVideoHeight());
 }
 END_COMMAND(checkres)
 
@@ -383,7 +383,7 @@ BEGIN_COMMAND(vid_setmode)
 	// No arguments
 	if (argc == 1)
 	{
-		Printf(PRINT_HIGH, "Usage: vid_setmode <width> <height>\n");
+		PrintFmt(PRINT_HIGH, "Usage: vid_setmode <width> <height>\n");
 		return;
 	}
 
@@ -399,13 +399,13 @@ BEGIN_COMMAND(vid_setmode)
 
 	if (width < 320 || height < 200)
 	{
-		Printf(PRINT_WARNING, "%dx%d is too small.  Minimum resolution is 320x200.\n", width, height);
+		PrintFmt(PRINT_WARNING, "{}x{} is too small.  Minimum resolution is 320x200.\n", width, height);
 		return;
 	}
 
 	if (width > MAXWIDTH || height > MAXHEIGHT)
 	{
-		Printf(PRINT_WARNING, "%dx%d is too large.  Maximum resolution is %dx%d.\n", width, height, MAXWIDTH, MAXHEIGHT);
+		PrintFmt(PRINT_WARNING, "{}x{} is too large.  Maximum resolution is {}x{}.\n", width, height, MAXWIDTH, MAXHEIGHT);
 		return;
 	}
 
@@ -506,7 +506,7 @@ void V_Init()
 
 		V_DoSetResolution();
 
-		Printf(PRINT_HIGH, "V_Init: using %s video driver.\n", I_GetVideoDriverName());
+		PrintFmt(PRINT_HIGH, "V_Init: using {} video driver.\n", I_GetVideoDriverName());
 	}
 
 	if (!I_VideoInitialized())

@@ -74,7 +74,7 @@ static double I_CalculateMsPerMidiClock(int timeDivision, double tempo = 120.0)
 //
 // ============================================================================
 
-void MusicSystem::startSong(byte* data, size_t length, bool loop)
+void MusicSystem::startSong(byte* data, size_t length, bool loop, int order)
 {
 	m_isPlaying = true;
 	m_isPaused = false;
@@ -139,15 +139,15 @@ static MidiSong* I_RegisterMidiSong(byte* data, size_t length)
 		}
 		else
 		{
-			Printf(PRINT_WARNING, "I_RegisterMidiSong: MUS is not valid\n");
+			PrintFmt(PRINT_WARNING, "I_RegisterMidiSong: MUS is not valid\n");
 			regdata = NULL;
 			reglength = 0;
 		}
 	}
 	else if (!S_MusicIsMidi(data, length))
 	{
-		Printf(PRINT_WARNING, "I_RegisterMidiSong: Only midi music formats are supported "
-		                      "with the selected music system.\n");
+		PrintFmt(PRINT_WARNING, "I_RegisterMidiSong: Only midi music formats are supported "
+		                        "with the selected music system.\n");
 		return NULL;
 	}
 
@@ -214,7 +214,7 @@ void MidiMusicSystem::_DisableFallback()
 	m_useFallback = false;
 }
 
-void MidiMusicSystem::startSong(byte* data, size_t length, bool loop)
+void MidiMusicSystem::startSong(byte* data, size_t length, bool loop, int order)
 {
 	if (!isInitialized())
 		return;
@@ -239,7 +239,7 @@ void MidiMusicSystem::startSong(byte* data, size_t length, bool loop)
 	m_prevClockTime = 0;
 	m_lastEventTime = I_MSTime();
 
-	MusicSystem::startSong(data, length, loop);
+	MusicSystem::startSong(data, length, loop, order);
 }
 
 void MidiMusicSystem::stopSong()

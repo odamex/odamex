@@ -75,10 +75,10 @@ struct FBehavior::ArrayInfo
 
 static void DoClearInv(player_t* player)
 {
-	memset(player->weaponowned, 0, sizeof(player->weaponowned));
+	player->weaponowned.fill(0);
 	memset(player->powers, 0, sizeof(player->powers));
 	memset(player->cards, 0, sizeof(player->cards));
-	memset(player->ammo, 0, sizeof(player->ammo));
+	player->ammo.fill(0);
 
 	if (player->backpack)
 	{
@@ -359,7 +359,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 	}
 
 	// Unknown item.
-	Printf(PRINT_HIGH, "I don't know what %s is\n", type);
+	PrintFmt(PRINT_HIGH, "I don't know what {} is\n", type);
 }
 
 static void GiveInventory(AActor* activator, const char* type, int amount)
@@ -2389,14 +2389,14 @@ void DLevelScript::RunScript ()
 			func = level.behavior->GetFunction(funcnum);
 			if (func == NULL)
 			{
-				Printf(PRINT_HIGH, "Function %d in script %d out of range\n", funcnum,
+				PrintFmt(PRINT_HIGH, "Function {} in script {} out of range\n", funcnum,
 				       script);
 				state = SCRIPT_PleaseRemove;
 				break;
 			}
 			if (sp + func->LocalCount + 32 > STACK_SIZE)
 			{ // 32 is the margin for the function's working space
-				Printf(PRINT_HIGH, "Out of stack space in script %d\n", script);
+				PrintFmt(PRINT_HIGH, "Out of stack space in script {}\n", script);
 				state = SCRIPT_PleaseRemove;
 				break;
 			}
@@ -3969,7 +3969,7 @@ void P_DoDeferedScripts (void)
 				P_GetScriptGoing (gomo, NULL, def->script, scriptdata, 0, def->arg0, def->arg1, def->arg2, def->type == acsdefered_t::defexealways, true);
 
 			} else
-				Printf (PRINT_HIGH,"P_DoDeferredScripts: Unknown script %d\n", def->script);
+				PrintFmt(PRINT_HIGH,"P_DoDeferredScripts: Unknown script {}\n", def->script);
 			break;
 
 		case acsdefered_t::defsuspend:
@@ -4029,7 +4029,7 @@ bool P_StartScript (AActor *who, line_t *where, int script, const char *map, int
 		}
 		else
 		{
-			Printf (PRINT_HIGH,"P_StartScript: Unknown script %d\n", script);
+			PrintFmt(PRINT_HIGH,"P_StartScript: Unknown script {}\n", script);
 		}
 	}
 	else
@@ -4179,7 +4179,7 @@ BEGIN_COMMAND (scriptstat)
 {
 	if (DACSThinker::ActiveThinker == NULL)
 	{
-		Printf (PRINT_HIGH,"No scripts are running.\n");
+		PrintFmt(PRINT_HIGH,"No scripts are running.\n");
 	}
 	else
 	{
@@ -4205,7 +4205,7 @@ void DACSThinker::DumpScriptStatus ()
 
 	while (script != NULL)
 	{
-		Printf (PRINT_HIGH,"%d: %s\n", script->script, stateNames[script->state]);
+		PrintFmt(PRINT_HIGH,"{}: {}\n", script->script, stateNames[script->state]);
 		script = script->next;
 	}
 }

@@ -422,7 +422,9 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 		{
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
-			int mapnum = levels.findByName(mapname).levelnum;
+			if (!levels.findByName(mapname).exists())
+				os.error("Map {} does not exist");
+
 			os.mustScan();
 			if (os.compareTokenNoCase("animation"))
 				WI_ParseZDoomAnim(os, anims, {animcondition_t::OnFinishedScreen, 0, 0}, {animcondition_t::CurrMapEqual, mapname});

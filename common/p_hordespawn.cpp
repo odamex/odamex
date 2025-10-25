@@ -157,7 +157,7 @@ static AActors SpawnMonsterGroup(hordeSpawn_t& spawn, const hordeRecipe_t& recip
 	}
 	else
 	{
-		Printf(PRINT_WARNING, "Invalid spawn count %d of %s.\n", count, name);
+		PrintFmt(PRINT_WARNING, "Invalid spawn count {} of {}.\n", count, name);
 	}
 
 	// Remove unspawned actors - probably spawnblocked.

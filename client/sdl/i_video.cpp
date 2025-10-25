@@ -55,9 +55,6 @@
     #include "resource.h"
 #endif	// _WIN32
 
-// Declared in doomtype.h as part of argb_t
-uint8_t argb_t::a_num, argb_t::r_num, argb_t::g_num, argb_t::b_num;
-
 // Global IVideoSubsystem instance for video startup and shutdown
 static IVideoSubsystem* video_subsystem = NULL;
 

@@ -232,7 +232,7 @@ void OInterpolation::ticGameInterpolation()
 // Functions that assist with the interpolation of certain game objects
 void OInterpolation::interpolateCeilings(fixed_t amount)
 {
-	for (const auto [old_value, secnum] : prev_ceilingheight)
+	for (const auto& [old_value, secnum] : prev_ceilingheight)
 	{
 		sector_t* sector = &sectors[secnum];
 
@@ -265,7 +265,7 @@ void OInterpolation::interpolateCeilings(fixed_t amount)
 
 void OInterpolation::interpolateFloors(fixed_t amount)
 {
-	for (const auto [old_value, secnum] : prev_floorheight)
+	for (const auto& [old_value, secnum] : prev_floorheight)
 	{
 		sector_t* sector = &sectors[secnum];
 
@@ -382,7 +382,7 @@ void OInterpolation::beginGameInterpolation(fixed_t amount)
 void OInterpolation::restoreCeilings(void)
 {
 	// Ceiling heights
-	for (const auto [height, secnum] : saved_ceilingheight)
+	for (const auto& [height, secnum] : saved_ceilingheight)
 	{
 		sector_t* sector = &sectors[secnum];
 		P_SetCeilingHeight(sector, height);

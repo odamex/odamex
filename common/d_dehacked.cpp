@@ -1101,13 +1101,19 @@ static int PatchThing(int thingy)
 		}
 		else if (stricmp(Line1, "Dropped item") == 0)
 		{
-			//if (val - 1 < 0 || val - 1 >= ::num_mobjinfo_types())
-			int validx = val;
-			if (mobjinfo.find(validx) == mobjinfo.end())
+			if (val == 0)
 			{
-				I_Error("Dropped item out of range. Check your DEHACKED.\n");
+				info->droppeditem = MT_NULL;
 			}
-			info->droppeditem = (mobjtype_t)(int)(val - 1); // deh is mobj + 1
+			else
+			{
+				int validx = val;
+				if (mobjinfo.find(validx) == mobjinfo.end())
+				{
+					I_Error("Dropped item out of range. Check your DEHACKED.\n");
+				}
+				info->droppeditem = static_cast<mobjtype_t>(val - 1); // deh is mobj + 1
+			}
 		}
 		else if (stricmp(Line1, "Splash group") == 0)
 		{
@@ -2469,7 +2475,7 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 		if (fh == NULL)
 		{
 			PrintFmt(PRINT_WARNING, "Could not open DeHackEd patch \"{}\"\n",
-			       patchfile->getBasename());
+			         patchfile->getBasename());
 			return false;
 		}
 
@@ -2512,7 +2518,7 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 			if (patchfile)
 			{
 				PrintFmt(PRINT_WARNING, "\"{}\" is not a DeHackEd patch file\n",
-				       patchfile->getBasename());
+				         patchfile->getBasename());
 			}
 			else
 			{
@@ -2731,7 +2737,7 @@ static void PrintState(int index)
 
 	// Print this state.
 	state_t& state = it->second;
-	PrintFmt("{:04d} | sprite:{} frame:{} tics:{} action:{} m1:{} m2:{}\n", index, ::sprnames[state.sprite],
+	PrintFmt("{:>4d} | sprite:{} frame:{} tics:{} action:{} m1:{} m2:{}\n", index, ::sprnames[state.sprite],
 	       state.frame, state.tics, ActionPtrString(state.action), state.misc1,
 	       state.misc2);
 }

@@ -42,6 +42,18 @@ EXTERN_CVAR(snd_midisysex)
 // Partially based on an implementation from prboom-plus by Nicholai Main (Natt).
 // ============================================================================
 
+static byte gm_system_on[] = {
+	0xF0, 0x7E, 0x7F, 0x09, 0x01, 0xF7
+};
+
+static byte gs_reset[] = {
+	0xF0, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7F, 0x00, 0x41, 0xF7
+};
+
+static byte xg_system_on[] = {
+	0xF0, 0x43, 0x10, 0x4C, 0x00, 0x00, 0x7E, 0x00, 0xF7
+};
+
 //
 // I_PortMidiTime()
 //
@@ -62,12 +74,12 @@ PortMidiMusicSystem::PortMidiMusicSystem()
 
 	if (Pm_Initialize() != pmNoError)
 	{
-		Printf(PRINT_WARNING, "I_InitMusic: PortMidi initialization failed.\n");
+		PrintFmt(PRINT_WARNING, "I_InitMusic: PortMidi initialization failed.\n");
 		return;
 	}
 
 	m_outputDevice = Pm_GetDefaultOutputDeviceID();
-	std::string prefdevicename(snd_musicdevice.cstring());
+	std::string prefdevicename(snd_musicdevice.str());
 
 	// List PortMidi devices
 	for (int i = 0; i < Pm_CountDevices(); i++)
@@ -80,12 +92,12 @@ PortMidiMusicSystem::PortMidiMusicSystem()
 		if (!prefdevicename.empty() && iequals(prefdevicename, curdevicename))
 			m_outputDevice = i;
 
-		Printf(PRINT_HIGH, "%d: %s, %s\n", i, info->interf, info->name);
+		PrintFmt(PRINT_FILTERHIGH, "{}: {}, {}\n", i, info->interf, info->name);
 	}
 
 	if (m_outputDevice == pmNoDevice)
 	{
-		Printf(PRINT_WARNING, "I_InitMusic: No PortMidi output devices available.\n");
+		PrintFmt(PRINT_WARNING, "I_InitMusic: No PortMidi output devices available.\n");
 		Pm_Terminate();
 		return;
 	}
@@ -93,8 +105,8 @@ PortMidiMusicSystem::PortMidiMusicSystem()
 	if (Pm_OpenOutput(&m_stream, m_outputDevice, NULL, output_buffer_size, I_PortMidiTime,
 	                  NULL, cLatency) != pmNoError)
 	{
-		Printf(PRINT_WARNING, "I_InitMusic: Failure opening PortMidi output device %d.\n",
-		       m_outputDevice);
+		PrintFmt(PRINT_WARNING, "I_InitMusic: Failure opening PortMidi output device {}.\n",
+		         m_outputDevice);
 		return;
 	}
 
@@ -112,7 +124,7 @@ PortMidiMusicSystem::PortMidiMusicSystem()
 	// Initialize instrument fallback support
 	_InitFallback();
 
-	Printf(PRINT_HIGH, "I_InitMusic: Music playback enabled using PortMidi.\n");
+	PrintFmt(PRINT_FILTERHIGH, "I_InitMusic: Music playback enabled using PortMidi.\n");
 	m_isInitialized = true;
 }
 
@@ -303,11 +315,11 @@ void PortMidiMusicSystem::_ResetDevice(bool playing)
 	m_useResetDelay = (snd_mididelay > 0);
 }
 
-void PortMidiMusicSystem::startSong(byte *data, size_t length, bool loop)
+void PortMidiMusicSystem::startSong(byte *data, size_t length, bool loop, int order)
 {
 	m_isPlaying = false;
 	_ResetDevice(true);
-	MidiMusicSystem::startSong(data, length, loop);
+	MidiMusicSystem::startSong(data, length, loop, order);
 	m_isPlaying = true;
 }
 

@@ -52,6 +52,7 @@
 #include "p_setup.h"
 #include "p_hordespawn.h"
 #include "p_mapformat.h"
+#include "g_musinfo.h"
 #include "r_sky.h"
 
 void SV_PreservePlayer(player_t &player);
@@ -59,13 +60,16 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position);
 void P_SpawnAvatars();
 void P_TranslateTeleportThings();
 
-unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved);
-unsigned int P_TranslateZDoomLineFlags(const unsigned int flags);
+uint32_t P_TranslateCompatibleLineFlags(const uint32_t flags, const bool reserved);
+uint32_t P_TranslateZDoomLineFlags(const uint32_t flags);
 void P_SpawnCompatibleSectorSpecial(sector_t* sector);
 
-static void P_SetupLevelFloorPlane(sector_t *sector);
-static void P_SetupLevelCeilingPlane(sector_t *sector);
-static void P_SetupSlopes();
+namespace {
+void P_SetupLevelFloorPlane(sector_t *sector);
+void P_SetupLevelCeilingPlane(sector_t *sector);
+void P_SetupSlopes();
+}
+
 void P_InvertPlane(plane_t *plane);
 void P_SetupWorldState();
 int P_TranslateSectorSpecial(int special);
@@ -146,8 +150,10 @@ std::vector<mapthing2_t> voodoostarts;
 // Maintain list of helpers to spawn in a given map
 std::vector<HelperSpawns> helperspawns;
 
+namespace {
+
 // For sorting player starts
-static bool cmpPlayerNum(mapthing2_t i, mapthing2_t j)
+bool cmpPlayerNum(mapthing2_t i, mapthing2_t j)
 {
 	return P_GetMapThingPlayerNumber(&i) < P_GetMapThingPlayerNumber(&j);
 }
@@ -321,16 +327,16 @@ void P_LoadSubsectors(int lump, bool isdeepbsp = false)
 	if (isdeepbsp) {
 		for (i = 0; i < numsubsectors; i++)
 		{
-			subsectors[i].numlines = LESHORT(((mapsubsector_deepbsp_t *)data)[i].numsegs);
-			subsectors[i].firstline = (unsigned int)LELONG(((mapsubsector_deepbsp_t *)data)[i].firstseg);
+			subsectors[i].numlines = (uint32_t)LESHORT(((mapsubsector_deepbsp_t *)data)[i].numsegs);
+			subsectors[i].firstline = (uint32_t)LELONG(((mapsubsector_deepbsp_t *)data)[i].firstseg);
 		}
 	}
 	else
 	{
 		for (i = 0; i < numsubsectors; i++)
 		{
-			subsectors[i].numlines = (unsigned short)LESHORT(((mapsubsector_t *)data)[i].numsegs);
-			subsectors[i].firstline = (unsigned short)LESHORT(((mapsubsector_t *)data)[i].firstseg);
+			subsectors[i].numlines = (uint16_t)LESHORT(((mapsubsector_t *)data)[i].numsegs);
+			subsectors[i].firstline = (uint16_t)LESHORT(((mapsubsector_t *)data)[i].firstseg);
 		}
 	}
 
@@ -352,7 +358,6 @@ void P_LoadSectors (int lump)
 
 	// denis - properly construct sectors so that smart pointers they contain don't get screwed
 	sectors = new sector_t[numsectors];
-	memset(sectors, 0, sizeof(sector_t)*numsectors);
 
 	byte* data = (byte*)W_CacheLumpNum(lump, PU_STATIC);
 
@@ -436,6 +441,50 @@ void P_LoadSectors (int lump)
 	Z_Free (data);
 }
 
+enum class nodetype_t {
+	XNOD,
+	ZNOD,
+	DEEP,
+	XGLN,
+	XGL2,
+	XGL3,
+	ZGLN,
+	ZGL2,
+	ZGL3,
+	STANDARD
+};
+
+nodetype_t P_CheckNodeType(int lump) {
+	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
+	auto guard = nonstd::make_scope_exit([&]{ Z_ChangeTag(data, PU_CACHE); });
+
+	static constexpr struct {
+        std::string_view bytes;
+        nodetype_t type;
+    } node_types[] = {
+        {"xNd4\0\0\0\0", nodetype_t::DEEP},
+        {"XNOD", nodetype_t::XNOD},
+        {"ZNOD", nodetype_t::ZNOD},
+        {"XGLN", nodetype_t::XGLN},
+        {"XGL2", nodetype_t::XGL2},
+        {"XGL3", nodetype_t::XGL3},
+        {"ZGLN", nodetype_t::ZGLN},
+        {"ZGL2", nodetype_t::ZGL2},
+        {"ZGL3", nodetype_t::ZGL3},
+    };
+
+	const auto it = std::find_if(
+		std::begin(node_types), std::end(node_types),
+		[&](const auto& nodetype) {
+			return memcmp(data, nodetype.bytes.data(), nodetype.bytes.size()) == 0;
+	});
+
+	if (it != std::end(node_types)) {
+		return it->type;
+	}
+
+	return nodetype_t::STANDARD;
+}
 
 //
 // P_LoadNodes
@@ -448,27 +497,20 @@ void P_LoadNodes (int lump)
 		    "P_LoadNodes: NODES lump is empty - levels without nodes are not supported.");
 	}
 
-	byte*		data;
-	int 		i;
-	int 		j;
-	int 		k;
-	mapnode_t*	mn;
-	node_t* 	no;
-
 	numnodes = W_LumpLength (lump) / sizeof(mapnode_t);
 	nodes = (node_t *)Z_Malloc (numnodes*sizeof(node_t), PU_LEVEL, 0);
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	byte* data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
 
-	mn = (mapnode_t *)data;
-	no = nodes;
+	mapnode_t* mn = (mapnode_t *)data;
+	node_t* no = nodes;
 
-	for (i = 0; i < numnodes; i++, no++, mn++)
+	for (int i = 0; i < numnodes; i++, no++, mn++)
 	{
 		no->x = LESHORT(mn->x)<<FRACBITS;
 		no->y = LESHORT(mn->y)<<FRACBITS;
 		no->dx = LESHORT(mn->dx)<<FRACBITS;
 		no->dy = LESHORT(mn->dy)<<FRACBITS;
-		for (j = 0; j < 2; j++)
+		for (int j = 0; j < 2; j++)
 		{
 			// account for children's promotion to 32 bits
 			unsigned int child = (unsigned short)LESHORT(mn->children[j]);
@@ -480,7 +522,7 @@ void P_LoadNodes (int lump)
 
 			no->children[j] = child;
 
-			for (k = 0; k < 4; k++)
+			for (int k = 0; k < 4; k++)
 				no->bbox[j][k] = LESHORT(mn->bbox[j][k]) << FRACBITS;
 		}
 	}
@@ -530,134 +572,61 @@ void P_LoadNodes_DeePBSP(int lump)
 	Z_Free (data - 8);
 }
 
-//
-// P_LoadXNOD - load ZDBSP extended nodes
-// returns false if nodes are not extended to fall back to original nodes
-//
-bool P_LoadXNOD(int lump)
-{
-	size_t len = W_LumpLength(lump);
-	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
-	byte* output = NULL;
+byte* P_DecompressNodes(byte* data, size_t len) {
+	byte* output = nullptr;
+	int outlen, err;
+	z_stream *zstream;
 
-	if (len < 4)
+	// first estimate for compression rate:
+	// output buffer size == 2.5 * input size
+	outlen = 2.5 * len;
+	output = (byte*)Z_Malloc(outlen, PU_STATIC, 0);
+
+	// initialize stream state for decompression
+	zstream = (z_stream*)M_Malloc(sizeof(*zstream));
+	memset(zstream, 0, sizeof(*zstream));
+	zstream->next_in = data + 4;
+	zstream->avail_in = static_cast<uInt>(len - 4);
+	zstream->next_out = output;
+	zstream->avail_out = outlen;
+
+	if (inflateInit(zstream) != Z_OK)
+		I_Error("P_DecompressNodes: Error during ZDBSP nodes decompression initialization!");
+
+	// resize if output buffer runs full
+	while ((err = inflate(zstream, Z_SYNC_FLUSH)) == Z_OK)
 	{
-		Z_Free(data);
-		return false;
+		int outlen_old = outlen;
+		outlen = 2 * outlen_old;
+		output = (byte*)Z_Realloc(output, outlen, PU_STATIC, 0);
+		zstream->next_out = output + outlen_old;
+		zstream->avail_out = outlen - outlen_old;
 	}
 
-	bool compressed = memcmp(data, "ZNOD", 4) == 0;
+	if (err != Z_STREAM_END)
+		I_Error("P_DecompressNodes: Error during ZDBSP nodes decompression!");
 
-	byte *p;
-	// [EB] decompress compressed nodes
-	// adapted from Crispy Doom
-	if (compressed)
-	{
-		int outlen, err;
-		z_stream *zstream;
+	fmt::print(stderr, "P_DecompressNodes: ZDBSP nodes compression ratio {:.3f}\n",
+	           (float)zstream->total_out/zstream->total_in);
 
-		// first estimate for compression rate:
-		// output buffer size == 2.5 * input size
-		outlen = 2.5 * len;
-		output = (byte*)Z_Malloc(outlen, PU_STATIC, 0);
+	if (inflateEnd(zstream) != Z_OK)
+		I_Error("P_DecompressNodes: Error during ZDBSP nodes decompression shut-down!");
 
-		// initialize stream state for decompression
-		zstream = (z_stream*)M_Malloc(sizeof(*zstream));
-		memset(zstream, 0, sizeof(*zstream));
-		zstream->next_in = data + 4;
-		zstream->avail_in = len - 4;
-		zstream->next_out = output;
-		zstream->avail_out = outlen;
+	M_Free(zstream);
+	return output;
+}
 
-		if (inflateInit(zstream) != Z_OK)
-			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression initialization!");
-
-		// resize if output buffer runs full
-		while ((err = inflate(zstream, Z_SYNC_FLUSH)) == Z_OK)
-		{
-			int outlen_old = outlen;
-			outlen = 2 * outlen_old;
-			output = (byte*)M_Realloc(output, outlen);
-			zstream->next_out = output + outlen_old;
-			zstream->avail_out = outlen - outlen_old;
-		}
-
-		if (err != Z_STREAM_END)
-			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression!");
-
-		fmt::print(stderr, "P_LoadXNOD: ZDBSP nodes compression ratio {:.3f}\n",
-		           (float)zstream->total_out/zstream->total_in);
-
-		len = zstream->total_out;
-
-		if (inflateEnd(zstream) != Z_OK)
-			I_Error("P_LoadXNOD: Error during ZDBSP nodes decompression shut-down!");
-
-		M_Free(zstream);
-		p = output;
-	}
-	else
-	{
-		p = data + 4; // skip the magic number
-	}
-
-	// Load vertices
-	unsigned int numorgvert = LELONG(*(unsigned int *)p); p += 4;
-	unsigned int numnewvert = LELONG(*(unsigned int *)p); p += 4;
-
-	vertex_t *newvert = (vertex_t *) Z_Malloc((numorgvert + numnewvert)*sizeof(*newvert), PU_LEVEL, 0);
-
-	memcpy(newvert, vertexes, numorgvert*sizeof(*newvert));
-	memset(&newvert[numorgvert], 0, numnewvert * sizeof(*newvert));
-
-	for (unsigned int i = 0; i < numnewvert; i++)
-	{
-		vertex_t *v = &newvert[numorgvert+i];
-		v->x = LELONG(*(int *)p); p += 4;
-		v->y = LELONG(*(int *)p); p += 4;
-	}
-
-	// Adjust linedefs - since we reallocated the vertex array,
-	// all vertex pointers in linedefs must be updated
-
-	for (int i = 0; i < numlines; i++)
-	{
-		lines[i].v1 = newvert + (lines[i].v1 - vertexes);
-		lines[i].v2 = newvert + (lines[i].v2 - vertexes);
-	}
-
-	// nuke the old list, update globals to point to the new list
-	Z_Free(vertexes);
-	vertexes = newvert;
-	numvertexes = numorgvert + numnewvert;
-
-	// Load subsectors
-
-	numsubsectors = LELONG(*(unsigned int *)p); p += 4;
-	subsectors = (subsector_t *) Z_Malloc(numsubsectors * sizeof(*subsectors), PU_LEVEL, 0);
-	memset(subsectors, 0, numsubsectors * sizeof(*subsectors));
-
-	unsigned int first_seg = 0;
-
-	for (int i = 0; i < numsubsectors; i++)
-	{
-		subsectors[i].firstline = first_seg;
-		subsectors[i].numlines = LELONG(*(unsigned int *)p); p += 4;
-		first_seg += subsectors[i].numlines;
-	}
-
-	// Load segs
-
-	numsegs = LELONG(*(unsigned int *)p); p += 4;
+byte* P_LoadSegs_XNOD(byte* p) {
+	numsegs = LELONG(*(uint32_t *)p); p += 4;
 	segs = (seg_t *) Z_Malloc(numsegs * sizeof(*segs), PU_LEVEL, 0);
 	memset(segs, 0, numsegs * sizeof(*segs));
 
 	for (int i = 0; i < numsegs; i++)
 	{
-		unsigned int v1 = LELONG(*(unsigned int *)p); p += 4;
-		unsigned int v2 = LELONG(*(unsigned int *)p); p += 4;
-		unsigned short ld = LESHORT(*(unsigned short *)p); p += 2;
-		unsigned char side = *(unsigned char *)p; p += 1;
+		uint32_t v1 = LELONG(*(uint32_t *)p); p += 4;
+		uint32_t v2 = LELONG(*(uint32_t *)p); p += 4;
+		uint16_t ld = LESHORT(*(uint16_t *)p); p += 2;
+		uint8_t side = *(uint8_t *)p; p += 1;
 
 		if (side != 0 && side != 1)
 			side = 1;
@@ -686,9 +655,202 @@ bool P_LoadXNOD(int lump)
 		seg->offset = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
 	}
 
+	return p;
+}
+
+template<typename LineType>
+byte* P_LoadSegs_XGL(byte* p)
+{
+	static_assert(
+        std::is_same_v<LineType, uint16_t> || std::is_same_v<LineType, uint32_t>,
+        "P_LoadSegs_XGL can only be instantiated with uint16_t or uint32_t"
+    );
+
+	numsegs = LELONG(*(uint32_t *)p); p += 4;
+	segs = (seg_t *) Z_Malloc(numsegs * sizeof(*segs), PU_LEVEL, 0);
+	memset(segs, 0, numsegs * sizeof(*segs));
+
+	for (int i = 0; i < numsubsectors; i++)
+	{
+		for (int j = 0; j < subsectors[i].numlines; j++)
+		{
+			uint32_t v1 = LELONG(*(uint32_t *)p); p += 4;
+			uint32_t partner = LELONG(*(uint32_t *)p); p += 4;
+			LineType ld;
+			if constexpr (std::is_same_v<LineType, uint32_t>)
+			{
+				ld = LELONG(*(uint32_t *)p); p += 4;
+			}
+			else
+			{
+				ld = LESHORT(*(uint16_t *)p); p += 2;
+			}
+			uint8_t side = *(uint8_t *)p; p += 1;
+
+			seg_t* seg = &segs[subsectors[i].firstline + j];
+
+			seg->v1 = &vertexes[v1];
+			if (j == 0)
+				seg[subsectors[i].numlines - 1].v2 = seg->v1;
+			else
+				seg[-1].v2 = seg->v1;
+
+			if (ld != std::numeric_limits<LineType>::max())
+			{
+				if (ld >= numlines)
+				{
+					I_Error("P_LoadSegs_XGL: seg {}, {} references a non-existent linedef {}", i, j, ld);
+				}
+
+				line_t* line = &lines[ld];
+				seg->linedef = line;
+
+				if (side != 0 && side != 1)
+				{
+					I_Error("P_LoadSegs_XGL: seg {}, {} references a non-existent sidedef {}", i, j, side);
+				}
+
+				seg->sidedef = &sides[line->sidenum[side]];
+
+				if (line->sidenum[side] != NO_INDEX)
+				{
+					seg->frontsector = sides[line->sidenum[side]].sector;
+				}
+				else
+				{
+					seg->frontsector = nullptr;
+					fmt::print(stderr, "P_LoadSegs_XGL: front of seg {}, {} has no sidedef\n", i, j);
+				}
+
+				if ((line->flags & ML_TWOSIDED) &&
+				    (line->sidenum[side ^ 1] != NO_INDEX))
+					seg->backsector = sides[line->sidenum[side ^ 1]].sector;
+				else
+					seg->backsector = nullptr;
+
+				// a short version of the offset calculation in P_LoadSegs
+				vertex_t *origin = (side == 0) ? line->v1 : line->v2;
+				float dx = FIXED2FLOAT(seg->v1->x - origin->x);
+				float dy = FIXED2FLOAT(seg->v1->y - origin->y);
+				seg->offset = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
+			}
+			else
+			{
+				seg->angle = 0;
+				seg->offset = 0;
+				seg->sidedef = nullptr;
+				seg->linedef = nullptr;
+				seg->frontsector = segs[subsectors[i].firstline].frontsector;
+				seg->backsector = seg->frontsector;
+			}
+		}
+
+		for (int j = 0; j < subsectors[i].numlines; j++)
+		{
+			seg_t* seg = &segs[subsectors[i].firstline + j];
+
+			if (seg->linedef)
+				seg->angle = R_PointToAngle2(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y);
+		}
+	}
+	return p;
+}
+
+//
+// P_LoadXNOD - load ZDBSP extended nodes
+// returns false if nodes are not extended to fall back to original nodes
+//
+void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
+{
+	const bool compressed = [&](){
+		switch (nodetype)
+		{
+			case nodetype_t::ZNOD:
+			case nodetype_t::ZGLN:
+			case nodetype_t::ZGL2:
+			case nodetype_t::ZGL3:
+				return true;
+			default:
+				return false;
+		}
+	}();
+	byte *data = static_cast<byte *>(W_CacheLumpNum(lump, PU_STATIC));
+	byte* data_decompressed = nullptr;
+
+	auto guard = nonstd::make_scope_exit([&]{
+		Z_Free(data);
+		Z_Free(data_decompressed);
+	});
+
+	byte *p;
+	// [EB] decompress compressed nodes
+	// adapted from Crispy Doom
+	if (compressed)
+	{
+		p = data_decompressed = P_DecompressNodes(data, W_LumpLength(lump));
+	}
+	else
+	{
+		p = data + 4; // skip the magic number
+	}
+
+	// Load vertices
+	uint32_t numorgvert = LELONG(*(uint32_t *)p); p += 4;
+	uint32_t numnewvert = LELONG(*(uint32_t *)p); p += 4;
+
+	vertex_t *newvert = (vertex_t *) Z_Malloc((numorgvert + numnewvert)*sizeof(*newvert), PU_LEVEL, 0);
+
+	memcpy(newvert, vertexes, numorgvert*sizeof(*newvert));
+	memset(&newvert[numorgvert], 0, numnewvert * sizeof(*newvert));
+
+	for (uint32_t i = 0; i < numnewvert; i++)
+	{
+		vertex_t *v = &newvert[numorgvert+i];
+		v->x = LELONG(*(int32_t *)p); p += 4;
+		v->y = LELONG(*(int32_t *)p); p += 4;
+	}
+
+	// Adjust linedefs - since we reallocated the vertex array,
+	// all vertex pointers in linedefs must be updated
+
+	for (int i = 0; i < numlines; i++)
+	{
+		lines[i].v1 = newvert + (lines[i].v1 - vertexes);
+		lines[i].v2 = newvert + (lines[i].v2 - vertexes);
+	}
+
+	// nuke the old list, update globals to point to the new list
+	Z_Free(vertexes);
+	vertexes = newvert;
+	numvertexes = numorgvert + numnewvert;
+
+	// Load subsectors
+
+	numsubsectors = LELONG(*(uint32_t *)p); p += 4;
+	subsectors = (subsector_t *) Z_Malloc(numsubsectors * sizeof(*subsectors), PU_LEVEL, 0);
+	memset(subsectors, 0, numsubsectors * sizeof(*subsectors));
+
+	uint32_t first_seg = 0;
+
+	for (int i = 0; i < numsubsectors; i++)
+	{
+		subsectors[i].firstline = first_seg;
+		subsectors[i].numlines = LELONG(*(uint32_t *)p); p += 4;
+		first_seg += subsectors[i].numlines;
+	}
+
+	// Load segs
+
+	if (nodetype == nodetype_t::XNOD || nodetype == nodetype_t::ZNOD)
+		p = P_LoadSegs_XNOD(p);
+	else if (nodetype == nodetype_t::XGLN || nodetype == nodetype_t::ZGLN)
+		p = P_LoadSegs_XGL<uint16_t>(p);
+	else
+		p = P_LoadSegs_XGL<uint32_t>(p);
+
 	// Load nodes
 
-	numnodes = LELONG(*(unsigned int *)p); p += 4;
+	numnodes = LELONG(*(uint32_t *)p); p += 4;
 	nodes = (node_t *) Z_Malloc(numnodes * sizeof(*nodes), PU_LEVEL, 0);
 	memset(nodes, 0, numnodes * sizeof(*nodes));
 
@@ -696,58 +858,34 @@ bool P_LoadXNOD(int lump)
 	{
 		node_t *node = &nodes[i];
 
-		node->x = LESHORT(*(short *)p)<<FRACBITS; p += 2;
-		node->y = LESHORT(*(short *)p)<<FRACBITS; p += 2;
-		node->dx = LESHORT(*(short *)p)<<FRACBITS; p += 2;
-		node->dy = LESHORT(*(short *)p)<<FRACBITS; p += 2;
+		if (nodetype == nodetype_t::XGL3 || nodetype == nodetype_t::ZGL3)
+		{
+			node->x = LELONG(*(int32_t *)p); p += 4;
+			node->y = LELONG(*(int32_t *)p); p += 4;
+			node->dx = LELONG(*(int32_t *)p); p += 4;
+			node->dy = LELONG(*(int32_t *)p); p += 4;
+		}
+		else
+		{
+			node->x = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
+			node->y = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
+			node->dx = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
+			node->dy = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
+		}
 
 		for (int j = 0; j < 2; j++)
 		{
 			for (int k = 0; k < 4; k++)
 			{
-				node->bbox[j][k] = LESHORT(*(short *)p)<<FRACBITS; p += 2;
+				node->bbox[j][k] = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
 			}
 		}
 
 		for (int j = 0; j < 2; j++)
 		{
-			node->children[j] = LELONG(*(unsigned int *)p); p += 4;
+			node->children[j] = LELONG(*(uint32_t *)p); p += 4;
 		}
 	}
-
-	Z_Free(data);
-	Z_Free(output);
-
-	return true;
-}
-
-enum nodetype_t {
-	NT_XNOD,
-	NT_ZNOD,
-	NT_DEEP,
-	NT_STANDARD
-};
-
-nodetype_t P_CheckNodeType(int lump) {
-	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
-	nonstd::make_scope_exit([&]{ Z_ChangeTag(data, PU_CACHE); });
-
-	if (memcmp(data, "xNd4\0\0\0\0", 8) == 0)
-	{
-		return NT_DEEP;
-	}
-
-	if (memcmp(data, "XNOD", 4) == 0)
-	{
-		return NT_XNOD;
-	}
-
-	if (memcmp(data, "ZNOD", 4) == 0)
-	{
-		return NT_ZNOD;
-	}
-
-	return NT_STANDARD;
 }
 
 //
@@ -1028,30 +1166,9 @@ void P_LoadLineDefs (const int lump)
 	// E2M7 has flags masked in that interfere with MBF21 flags.
 	// Boom fixes this with the comp flag comp_reservedlineflag
 	// We'll fix this for now by just checking for the E2M7 FarmHash
-	const std::string e2m7hash = "43ffa244f5ae923b7df59dbf511c0468";
+	static constexpr std::string_view e2m7hash = "43ffa244f5ae923b7df59dbf511c0468";
 
-	// [Blair] Serialize the hashes before reading.
-	uint64_t reconsthash1 = (uint64_t)(::level.level_fingerprint[0]) |
-	                        (uint64_t)(::level.level_fingerprint[1]) << 8 |
-	                        (uint64_t)(::level.level_fingerprint[2]) << 16 |
-	                        (uint64_t)(::level.level_fingerprint[3]) << 24 |
-	                        (uint64_t)(::level.level_fingerprint[4]) << 32 |
-	                        (uint64_t)(::level.level_fingerprint[5]) << 40 |
-	                        (uint64_t)(::level.level_fingerprint[6]) << 48 |
-	                        (uint64_t)(::level.level_fingerprint[7]) << 56;
-
-	uint64_t reconsthash2 = (uint64_t)(::level.level_fingerprint[8]) |
-	                        (uint64_t)(::level.level_fingerprint[9]) << 8 |
-	                        (uint64_t)(::level.level_fingerprint[10]) << 16 |
-	                        (uint64_t)(::level.level_fingerprint[11]) << 24 |
-	                        (uint64_t)(::level.level_fingerprint[12]) << 32 |
-	                        (uint64_t)(::level.level_fingerprint[13]) << 40 |
-	                        (uint64_t)(::level.level_fingerprint[14]) << 48 |
-	                        (uint64_t)(::level.level_fingerprint[15]) << 56;
-
-	std:: string levelHash = fmt::sprintf("%16llx%16llx", reconsthash1, reconsthash2);
-
-	bool isE2M7 = (levelHash == e2m7hash);
+	bool isE2M7 = (::level.level_fingerprint == e2m7hash);
 
 	ld = lines;
 	for (i=0 ; i<numlines ; i++, ld++)
@@ -1171,7 +1288,7 @@ void P_LoadSideDefs (int lump)
 // The texture name should contain 4 hexadecimal byte values
 // in the following order: alpha, red, green, blue.
 //
-static argb_t P_GetColorFromTextureName(const char* name)
+argb_t P_GetColorFromTextureName(const char* name)
 {
 	// work around name not being a properly terminated string
 	const OLumpName name2 = name;
@@ -1184,85 +1301,6 @@ static argb_t P_GetColorFromTextureName(const char* name)
 	const int b = value & 0xFF;
 
 	return argb_t(a, r, g, b);
-}
-
-
-//
-// P_SetTransferHeightBlends
-//
-// Reads the texture name from the mapsidedef for the given side. If the
-// texture name matches the name of a valid Boom colormap lump, the
-// sidedef's texture value is cleared and the colormap's blend color
-// value is used for the appropriate sector blend. If the texture name
-// is an ARGB value in hexadecimal, that value is used for the appropriate
-// sector blend.
-//
-void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
-{
-	sector_t* sec = &sectors[LESHORT(msd->sector)];
-
-	// for each of the texture tiers (bottom, middle, and top)
-	for (int i = 0; i < 3; i++)
-	{
-		short* texture_num;
-		argb_t* blend_color;
-		const char* texture_name;
-
-		if (i == 0)				// bottom textures
-		{
-			texture_num = &sd->bottomtexture;
-			blend_color = &sec->bottommap;
-			texture_name = msd->bottomtexture;
-		}
-		else if (i == 1)		// mid textures
-		{
-			texture_num = &sd->midtexture;
-			blend_color = &sec->midmap;
-			texture_name = msd->midtexture;
-		}
-		else					// top textures
-		{
-			texture_num = &sd->toptexture;
-			blend_color = &sec->topmap;
-			texture_name = msd->toptexture;
-		}
-
-		*blend_color = argb_t(0, 255, 255, 255);
-		*texture_num = 0;
-
-		int colormap_index = R_ColormapNumForName(texture_name);
-		if (colormap_index != 0)
-		{
-			*blend_color = R_BlendForColormap(colormap_index);
-		}
-		else
-		{
-			*texture_num = R_CheckTextureNumForName(texture_name);
-			if (*texture_num == -1)
-			{
-				*texture_num = 0;
-				if (strnicmp(texture_name, "WATERMAP", 8) == 0)
-					*blend_color = argb_t(0x80, 0, 0x4F, 0xA5);
-				else
-					*blend_color = P_GetColorFromTextureName(texture_name);
-			}
-		}
-	}
-}
-
-//
-
-
-void SetTextureNoErr (short *texture, unsigned int *color, char *name)
-{
-	if ((*texture = R_CheckTextureNumForName (name)) == -1) {
-		char name2[9];
-		char *stop;
-		strncpy (name2, name, 8);
-		name2[8] = 0;
-		*color = strtoul (name2, &stop, 16);
-		*texture = 0;
-	}
 }
 
 // killough 4/4/98: delay using texture names until
@@ -1317,7 +1355,7 @@ typedef struct linelist_t        // type used to list lines in each block
 // It simply returns if the line is already in the block
 //
 
-static void AddBlockLine
+void AddBlockLine
 (
 	linelist_t **lists,
 	int *count,
@@ -1701,9 +1739,9 @@ void P_GenerateUniqueMapFingerPrint(int maplumpnum)
 			 W_LumpLength(maplumpnum + ML_SEGS) + W_LumpLength(maplumpnum + ML_SSECTORS) +
 			 W_LumpLength(maplumpnum + ML_SECTORS);
 
-	fhfprint_s fingerprint = W_FarmHash128(levellumps.data(), length);
+	fhfprint_t fingerprint = W_FarmHash128(levellumps.data(), length);
 
-	ArrayCopy(::level.level_fingerprint, fingerprint.fingerprint);
+	::level.level_fingerprint = fingerprint;
 }
 //
 // P_GroupLines
@@ -1843,7 +1881,7 @@ void P_GroupLines (void)
 // Firelines (TM) is a Rezistered Trademark of MBF Productions
 //
 
-static void P_RemoveSlimeTrails()
+void P_RemoveSlimeTrails()
 {
 	byte* hit = (byte *)Z_Malloc(numvertexes, PU_LEVEL, 0);
 	memset(hit, 0, numvertexes * sizeof(byte));
@@ -1896,13 +1934,8 @@ void P_LoadBehavior (int lumpnum)
 	}
 }
 
-//
-// P_SetupLevel
-//
-extern polyblock_t **PolyBlockMap;
-
 // Hash the sector tags across the sectors and linedefs.
-static void P_InitTagLists(void)
+void P_InitTagLists(void)
 {
 	int i;
 
@@ -1927,6 +1960,143 @@ static void P_InitTagLists(void)
 	}
 }
 
+
+void P_SetupLevelFloorPlane(sector_t *sector)
+{
+	if (!sector)
+		return;
+
+	sector->floorplane.a = sector->floorplane.b = 0;
+	sector->floorplane.c = sector->floorplane.invc = FRACUNIT;
+	sector->floorplane.d = -sector->floorheight;
+	sector->floorplane.texx = sector->floorplane.texy = 0;
+	sector->floorplane.sector = sector;
+}
+
+void P_SetupLevelCeilingPlane(sector_t *sector)
+{
+	if (!sector)
+		return;
+
+	sector->ceilingplane.a = sector->ceilingplane.b = 0;
+	sector->ceilingplane.c = sector->ceilingplane.invc = -FRACUNIT;
+	sector->ceilingplane.d = sector->ceilingheight;
+	sector->ceilingplane.texx = sector->ceilingplane.texy = 0;
+	sector->ceilingplane.sector = sector;
+}
+
+//
+// P_SetupPlane()
+//
+// Takes a line with the special property Plane_Align and its facing sector
+// and calculates the planar equation for the slope formed by the floor or
+// ceiling of this sector.  The equation coefficients are stored in a plane_t
+// structure and saved either to the sector's ceilingplan or floorplane.
+//
+void P_SetupPlane(sector_t* sec, line_t* line, bool floor)
+{
+	if (!sec || !line || !line->backsector)
+		return;
+
+	// Find the vertex comprising the sector that is farthest from the
+	// slope's reference line
+
+	int bestdist = 0;
+	line_t** probe = sec->lines;
+	vertex_t *refvert = (*sec->lines)->v1;
+
+	for (int i = sec->linecount*2; i > 0; i--)
+	{
+		int dist;
+		vertex_t *vert;
+
+		// Do calculations with only the upper bits, because the lower ones
+		// are all zero, and we would overflow for a lot of distances if we
+		// kept them around.
+
+		if (i & 1)
+			vert = (*probe++)->v2;
+		else
+			vert = (*probe)->v1;
+		dist = abs (((line->v1->y - vert->y) >> FRACBITS) * (line->dx >> FRACBITS) -
+					((line->v1->x - vert->x) >> FRACBITS) * (line->dy >> FRACBITS));
+
+		if (dist > bestdist)
+		{
+			bestdist = dist;
+			refvert = vert;
+		}
+	}
+
+	const sector_t* refsec = line->frontsector == sec ? line->backsector : line->frontsector;
+	plane_t* srcplane = floor ? &sec->floorplane : &sec->ceilingplane;
+	fixed_t srcheight = floor ? sec->floorheight : sec->ceilingheight;
+	fixed_t destheight = floor ? refsec->floorheight : refsec->ceilingheight;
+
+	v3float_t p, v1, v2, cross;
+	M_SetVec3f(&p, line->v1->x, line->v1->y, destheight);
+	M_SetVec3f(&v1, line->dx, line->dy, 0);
+	M_SetVec3f(&v2, refvert->x - line->v1->x, refvert->y - line->v1->y, srcheight - destheight);
+
+	M_CrossProductVec3f(&cross, &v1, &v2);
+	M_NormalizeVec3f(&cross, &cross);
+
+	// Fix backward normals
+	if ((cross.z < 0 && floor == true) || (cross.z > 0 && floor == false))
+	{
+		cross.x = -cross.x;
+		cross.y = -cross.y;
+		cross.z = -cross.z;
+	}
+
+	srcplane->a = FLOAT2FIXED(cross.x);
+	srcplane->b = FLOAT2FIXED(cross.y);
+	srcplane->c = FLOAT2FIXED(cross.z);
+	srcplane->invc = FLOAT2FIXED(1.f/cross.z);
+	srcplane->d = -FixedMul(srcplane->a, line->v1->x) - FixedMul(srcplane->b, line->v1->y) - FixedMul(srcplane->c, destheight);
+	srcplane->texx = refvert->x;
+	srcplane->texy = refvert->y;
+}
+
+void P_SetupSlopes()
+{
+	for (int i = 0; i < numlines; i++)
+	{
+		line_t *line = &lines[i];
+
+		if ((map_format.getZDoom() && line->special == Plane_Align) ||
+		    (line->special >= 340 && line->special <= 347))
+		{
+			line->special = 0;
+			line->id = line->args[2];
+
+			// Floor plane?
+			int align_side = line->args[0] & 3;
+			if (align_side == 1)
+				P_SetupPlane(line->frontsector, line, true);
+			else if (align_side == 2)
+				P_SetupPlane(line->backsector, line, true);
+
+			// Ceiling plane?
+			align_side = line->args[1] & 3;
+			if (align_side == 0)
+				align_side = (line->args[0] >> 2) & 3;
+
+			if (align_side == 1)
+				P_SetupPlane(line->frontsector, line, false);
+			else if (align_side == 2)
+				P_SetupPlane(line->backsector, line, false);
+		}
+	}
+}
+
+} // namespace
+
+//
+// P_SetupLevel
+//
+extern polyblock_t **PolyBlockMap;
+
 // [RH] position indicates the start spot to spawn at
 void P_SetupLevel (const char *lumpname, int position)
 {
@@ -1935,7 +2105,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	level.total_monsters = level.respawned_monsters = level.total_items = level.total_secrets =
 		level.killed_monsters = level.found_items = level.found_secrets =
 		wminfo.maxfrags = 0;
-	ArrayInit(level.level_fingerprint, 0);
+	level.level_fingerprint.clear();
 	wminfo.partime = 180;
 
 	if (!savegamerestore)
@@ -1953,6 +2123,8 @@ void P_SetupLevel (const char *lumpname, int position)
 
 	// Make sure all sounds are stopped before Z_FreeTags.
 	S_Start ();
+
+	S_ClearMusInfo();
 
 	// [RH] Clear all ThingID hash chains.
 	AActor::ClearTIDHashes ();
@@ -2021,13 +2193,26 @@ void P_SetupLevel (const char *lumpname, int position)
 	P_FinishLoadingLineDefs ();
 	P_LoadBlockMap (lumpnum+ML_BLOCKMAP);
 
-	switch (P_CheckNodeType(lumpnum+ML_NODES)) {
-		case NT_XNOD:
-		case NT_ZNOD:
-			P_LoadXNOD(lumpnum+ML_NODES);
+	const nodetype_t nodetype = W_LumpLength(lumpnum+ML_NODES) > 0 ?
+	                            P_CheckNodeType(lumpnum+ML_NODES) :
+	                            P_CheckNodeType(lumpnum+ML_SSECTORS);
+
+	switch (nodetype) {
+		case nodetype_t::XNOD:
+		case nodetype_t::ZNOD:
+			P_LoadExtendedNodes(lumpnum+ML_NODES, nodetype);
 			break;
 
-		case NT_DEEP:
+		case nodetype_t::XGLN:
+		case nodetype_t::ZGLN:
+		case nodetype_t::XGL2:
+		case nodetype_t::ZGL2:
+		case nodetype_t::XGL3:
+		case nodetype_t::ZGL3:
+			P_LoadExtendedNodes(lumpnum+ML_SSECTORS, nodetype);
+			break;
+
+		case nodetype_t::DEEP:
 			P_LoadSubsectors(lumpnum+ML_SSECTORS, true);
 			P_LoadNodes_DeePBSP(lumpnum+ML_NODES);
 			P_LoadSegs(lumpnum+ML_SEGS, true);
@@ -2142,6 +2327,83 @@ void P_Init (void)
 	P_InitHorde();
 }
 
+//
+// P_SetTransferHeightBlends
+//
+// Reads the texture name from the mapsidedef for the given side. If the
+// texture name matches the name of a valid Boom colormap lump, the
+// sidedef's texture value is cleared and the colormap's blend color
+// value is used for the appropriate sector blend. If the texture name
+// is an ARGB value in hexadecimal, that value is used for the appropriate
+// sector blend.
+//
+void P_SetTransferHeightBlends(side_t* sd, const mapsidedef_t* msd)
+{
+	sector_t* sec = &sectors[LESHORT(msd->sector)];
+
+	// for each of the texture tiers (bottom, middle, and top)
+	for (int i = 0; i < 3; i++)
+	{
+		short* texture_num;
+		argb_t* blend_color;
+		const char* texture_name;
+
+		if (i == 0)				// bottom textures
+		{
+			texture_num = &sd->bottomtexture;
+			blend_color = &sec->bottommap;
+			texture_name = msd->bottomtexture;
+		}
+		else if (i == 1)		// mid textures
+		{
+			texture_num = &sd->midtexture;
+			blend_color = &sec->midmap;
+			texture_name = msd->midtexture;
+		}
+		else					// top textures
+		{
+			texture_num = &sd->toptexture;
+			blend_color = &sec->topmap;
+			texture_name = msd->toptexture;
+		}
+
+		*blend_color = argb_t(0, 255, 255, 255);
+		*texture_num = 0;
+
+		int colormap_index = R_ColormapNumForName(texture_name);
+		if (colormap_index != 0)
+		{
+			*blend_color = R_BlendForColormap(colormap_index);
+		}
+		else
+		{
+			*texture_num = R_CheckTextureNumForName(texture_name);
+			if (*texture_num == -1)
+			{
+				*texture_num = 0;
+				if (strnicmp(texture_name, "WATERMAP", 8) == 0)
+					*blend_color = argb_t(0x80, 0, 0x4F, 0xA5);
+				else
+					*blend_color = P_GetColorFromTextureName(texture_name);
+			}
+		}
+	}
+}
+
+//
+
+void SetTextureNoErr (short *texture, unsigned int *color, char *name)
+{
+	if ((*texture = R_CheckTextureNumForName (name)) == -1) {
+		char name2[9];
+		char *stop;
+		strncpy (name2, name, 8);
+		name2[8] = 0;
+		*color = strtoul (name2, &stop, 16);
+		*texture = 0;
+	}
+}
+
 CVAR_FUNC_IMPL(sv_intermissionlimit)
 {
 	if (G_IsCoopGame() && var < 10) {
@@ -2152,136 +2414,5 @@ CVAR_FUNC_IMPL(sv_intermissionlimit)
 
 	level.inttimeleft = var;
 }
-
-
-static void P_SetupLevelFloorPlane(sector_t *sector)
-{
-	if (!sector)
-		return;
-
-	sector->floorplane.a = sector->floorplane.b = 0;
-	sector->floorplane.c = sector->floorplane.invc = FRACUNIT;
-	sector->floorplane.d = -sector->floorheight;
-	sector->floorplane.texx = sector->floorplane.texy = 0;
-	sector->floorplane.sector = sector;
-}
-
-static void P_SetupLevelCeilingPlane(sector_t *sector)
-{
-	if (!sector)
-		return;
-
-	sector->ceilingplane.a = sector->ceilingplane.b = 0;
-	sector->ceilingplane.c = sector->ceilingplane.invc = -FRACUNIT;
-	sector->ceilingplane.d = sector->ceilingheight;
-	sector->ceilingplane.texx = sector->ceilingplane.texy = 0;
-	sector->ceilingplane.sector = sector;
-}
-
-//
-// P_SetupPlane()
-//
-// Takes a line with the special property Plane_Align and its facing sector
-// and calculates the planar equation for the slope formed by the floor or
-// ceiling of this sector.  The equation coefficients are stored in a plane_t
-// structure and saved either to the sector's ceilingplan or floorplane.
-//
-void P_SetupPlane(sector_t* sec, line_t* line, bool floor)
-{
-	if (!sec || !line || !line->backsector)
-		return;
-
-	// Find the vertex comprising the sector that is farthest from the
-	// slope's reference line
-
-	int bestdist = 0;
-	line_t** probe = sec->lines;
-	vertex_t *refvert = (*sec->lines)->v1;
-
-	for (int i = sec->linecount*2; i > 0; i--)
-	{
-		int dist;
-		vertex_t *vert;
-
-		// Do calculations with only the upper bits, because the lower ones
-		// are all zero, and we would overflow for a lot of distances if we
-		// kept them around.
-
-		if (i & 1)
-			vert = (*probe++)->v2;
-		else
-			vert = (*probe)->v1;
-		dist = abs (((line->v1->y - vert->y) >> FRACBITS) * (line->dx >> FRACBITS) -
-					((line->v1->x - vert->x) >> FRACBITS) * (line->dy >> FRACBITS));
-
-		if (dist > bestdist)
-		{
-			bestdist = dist;
-			refvert = vert;
-		}
-	}
-
-	const sector_t* refsec = line->frontsector == sec ? line->backsector : line->frontsector;
-	plane_t* srcplane = floor ? &sec->floorplane : &sec->ceilingplane;
-	fixed_t srcheight = floor ? sec->floorheight : sec->ceilingheight;
-	fixed_t destheight = floor ? refsec->floorheight : refsec->ceilingheight;
-
-	v3float_t p, v1, v2, cross;
-	M_SetVec3f(&p, line->v1->x, line->v1->y, destheight);
-	M_SetVec3f(&v1, line->dx, line->dy, 0);
-	M_SetVec3f(&v2, refvert->x - line->v1->x, refvert->y - line->v1->y, srcheight - destheight);
-
-	M_CrossProductVec3f(&cross, &v1, &v2);
-	M_NormalizeVec3f(&cross, &cross);
-
-	// Fix backward normals
-	if ((cross.z < 0 && floor == true) || (cross.z > 0 && floor == false))
-	{
-		cross.x = -cross.x;
-		cross.y = -cross.y;
-		cross.z = -cross.z;
-	}
-
-	srcplane->a = FLOAT2FIXED(cross.x);
-	srcplane->b = FLOAT2FIXED(cross.y);
-	srcplane->c = FLOAT2FIXED(cross.z);
-	srcplane->invc = FLOAT2FIXED(1.f/cross.z);
-	srcplane->d = -FixedMul(srcplane->a, line->v1->x) - FixedMul(srcplane->b, line->v1->y) - FixedMul(srcplane->c, destheight);
-	srcplane->texx = refvert->x;
-	srcplane->texy = refvert->y;
-}
-
-static void P_SetupSlopes()
-{
-	for (int i = 0; i < numlines; i++)
-	{
-		line_t *line = &lines[i];
-
-		if ((map_format.getZDoom() && line->special == Plane_Align) ||
-		    (line->special >= 340 && line->special <= 347))
-		{
-			line->special = 0;
-			line->id = line->args[2];
-
-			// Floor plane?
-			int align_side = line->args[0] & 3;
-			if (align_side == 1)
-				P_SetupPlane(line->frontsector, line, true);
-			else if (align_side == 2)
-				P_SetupPlane(line->backsector, line, true);
-
-			// Ceiling plane?
-			align_side = line->args[1] & 3;
-			if (align_side == 0)
-				align_side = (line->args[0] >> 2) & 3;
-
-			if (align_side == 1)
-				P_SetupPlane(line->frontsector, line, false);
-			else if (align_side == 2)
-				P_SetupPlane(line->backsector, line, false);
-		}
-	}
-}
-
 
 VERSION_CONTROL (p_setup_cpp, "$Id$")

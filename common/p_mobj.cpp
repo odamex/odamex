@@ -46,6 +46,7 @@
 #include "g_skill.h"
 #include "m_wdlstats.h"
 #include "p_mapformat.h"
+#include "g_musinfo.h"
 #include "r_sky.h"
 
 #ifdef CLIENT_APP
@@ -136,11 +137,10 @@ AActor::AActor()
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
-      rndindex(0), netid(0), tid(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
-      baseline_set(false), bmapnode(this)
+      rndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
+      netid(0), tid(0), baseline(), baseline_set(false), bmapnode(this)
 {
 	memset(args, 0, sizeof(args));
-	memset(&baseline, 0, sizeof(baseline));
 	self.init(this);
 }
 
@@ -265,8 +265,8 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
-      rndindex(0), netid(0), tid(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
-      baseline_set(false), bmapnode(this)
+      rndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
+      netid(0), tid(0), baseline(), baseline_set(false), bmapnode(this)
 {
 	// Fly!!! fix it in P_RespawnSpecial
 	const auto it = ::mobjinfo.find(itype);
@@ -337,7 +337,6 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 
 	spawnpoint.type = 0;
 	memset(args, 0, sizeof(args));
-	memset(&baseline, 0, sizeof(baseline));
 }
 
 
@@ -696,6 +695,19 @@ void AActor::RunThink ()
 {
 	if(!subsector)
 		return;
+
+	// MUSINFO
+	if (type == MT_MUSICSOURCE && clientside)
+	{
+		if (musinfo.mapthing != this &&
+		    subsector->sector == displayplayer().mo->subsector->sector)
+		{
+			musinfo.lastmapthing = musinfo.mapthing;
+			musinfo.mapthing = this->ptr();
+			musinfo.tics = 30;
+		}
+		return;
+	}
 
 	prevx = x;
 	prevy = y;
@@ -2802,12 +2814,12 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		P_ShowSpawns(mthing);
 
 	// only servers control spawning of items
-    // EXCEPT the client must spawn Type 14 (teleport exit).
+  // EXCEPT the client must spawn Type 14 (teleport exit).
 	// otherwise teleporters won't work well.
 	//
-	// Clients also handle spawning of ambient sounds.
+	// Clients also handle spawning of ambient sounds and music changers
 	//
-	if (mthing->type >= 14001 && mthing->type <= 14065)
+	if ((mthing->type >= 14001 && mthing->type <= 14065) || (mthing->type >= 14100 && mthing->type <= 14165))
 	{
 		if (!clientside)
 		{
@@ -2994,7 +3006,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 
 		if (type > 63)
 		{
-			Printf (PRINT_WARNING, "Sound sequence %d out of range\n", type);
+			PrintFmt(PRINT_WARNING, "Sound sequence {} out of range\n", type);
 		}
 		else
 		{
@@ -3015,16 +3027,16 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (mthing->type >= 14001 && mthing->type <= 14064)
 	{
 		mthing->args[0] = mthing->type - 14000;
-		mthing->type = 14065;
+		mthing->type = mobjinfo[MT_AMBIENT].doomednum;
 		type = MT_AMBIENT;
 	}
 
 	// [ML] Determine if it is a musicchanger thing, and if so,
 	//		map it to MT_MUSICSOURCE with the proper parameter.
-	if (mthing->type >= 14101 && mthing->type <= 14164)
+	if (mthing->type >= 14100 && mthing->type <= 14164)
 	{
 		mthing->args[0] = mthing->type - 14100;
-		mthing->type = 14165;
+		mthing->type = mobjinfo[MT_MUSICSOURCE].doomednum;
 		type = MT_MUSICSOURCE;
 	}
 
@@ -3063,16 +3075,16 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		// [RH] Don't die if the map tries to spawn an unknown thing
 		PrintFmt(PRINT_WARNING, "P_SpawnMapThing: Unknown type {} at {}, {})\n",
-			mthing->type,
-			mthing->x, mthing->y);
+		         mthing->type,
+		         mthing->x, mthing->y);
 		info = &mobjinfo[MT_UNKNOWNTHING]; // [CMB] odamex specific MT_UNKNOWNTHING
 	}
 	// [RH] If the thing's corresponding sprite has no frames, also map
 	//		it to the unknown thing.
 	else if (sprites[states[info->spawnstate].sprite].numframes == 0)
 	{
-		Printf (PRINT_WARNING, "Type %i at (%i, %i) has no frames\n",
-				mthing->type, mthing->x, mthing->y);
+		PrintFmt(PRINT_WARNING, "P_SpawnMapThing: Type {} at {}, {} has no frames\n",
+		         mthing->type, mthing->x, mthing->y);
 		type = MT_UNKNOWNTHING;
 	}
 
@@ -3395,7 +3407,7 @@ BEGIN_COMMAND(cheat_mobjs)
 {
 	if (argc < 2)
 	{
-		Printf("Missing MT_* mobj type\n");
+		PrintFmt("Missing MT_* mobj type\n");
 		return;
 	}
 
@@ -3406,7 +3418,7 @@ BEGIN_COMMAND(cheat_mobjs)
 
 	if (it == mobjinfo.end())
 	{
-		Printf("Unknown MT_* mobj type\n");
+		PrintFmt("Unknown MT_* mobj type\n");
 		return;
 	}
 
@@ -3422,7 +3434,7 @@ BEGIN_COMMAND(cheat_mobjs)
 		{
 			PrintFmt("ID: {}\n", mo->netid);
 			PrintFmt("  {:.1f}, {:.1f}, {:.1f}\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
-			       FIXED2FLOAT(mo->z));
+			         FIXED2FLOAT(mo->z));
 		}
 	}
 }

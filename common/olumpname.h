@@ -38,6 +38,7 @@ class OLumpName
 	OLumpName& operator=(const OLumpName& other);
 	OLumpName& operator=(const char* other);
 	OLumpName& operator=(const std::string& other);
+	OLumpName& operator=(std::string_view other);
 
 	// capacity
 	[[nodiscard]] size_t size() const;
@@ -59,16 +60,20 @@ class OLumpName
 	// string operations
 	[[nodiscard]] const char* c_str() const;
 	[[nodiscard]] const char* data() const;
+	inline operator std::string_view() const { return { m_data, size() }; };
 	// Note: comparison operations are done without regard to case sensitivity.
 	[[nodiscard]] int compare(const OLumpName& other) const;
 	[[nodiscard]] int compare(const char* other) const;
 	[[nodiscard]] int compare(const std::string& other) const;
+	[[nodiscard]] int compare(std::string_view other) const;
 	friend bool operator==(const OLumpName& lhs, const OLumpName& rhs);
 	friend bool operator==(const OLumpName& lhs, const char* rhs);
+	friend bool operator==(const OLumpName& lhs, std::string_view rhs);
 	friend bool operator==(const OLumpName& lhs, const std::string& rhs);
 	friend bool operator!=(const OLumpName& lhs, const OLumpName& rhs);
 	friend bool operator!=(const OLumpName& lhs, const char* rhs);
 	friend bool operator!=(const OLumpName& lhs, const std::string& rhs);
+	friend bool operator!=(const OLumpName& lhs, std::string_view rhs);
 
 	// for allowing use as keys in OHashTable and std::unordered_map
 	friend struct hashfunc<OLumpName>;
@@ -78,6 +83,7 @@ class OLumpName
 [[nodiscard]] bool operator==(const OLumpName& lhs, const OLumpName& rhs);
 [[nodiscard]] bool operator==(const OLumpName& lhs, const char* rhs);
 [[nodiscard]] bool operator==(const OLumpName& lhs, const std::string& rhs);
+[[nodiscard]] bool operator==(const OLumpName& lhs, std::string_view rhs);
 
 template <>
 struct hashfunc<OLumpName>

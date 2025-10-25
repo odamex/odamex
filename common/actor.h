@@ -341,14 +341,9 @@ struct baseline_t
 	static constexpr uint32_t MOMZ = BIT(11);
 
 	baseline_t()
-	    : angle(0), targetid(0), tracerid(0), movecount(0), movedir(0), rndindex(0)
+	    : pos(0, 0, 0), mom(0, 0, 0),
+	      angle(0), targetid(0), tracerid(0), movecount(0), movedir(0), rndindex(0)
 	{
-		pos.x = 0;
-		pos.y = 0;
-		pos.z = 0;
-		mom.x = 0;
-		mom.y = 0;
-		mom.z = 0;
 	}
 
 	void Serialize(FArchive& arc)
@@ -381,22 +376,22 @@ class AActor : public DThinker
 
 		AActorPtrCounted() {}
 
-		AActorPtr &operator= (AActorPtr other)
+		AActorPtr &operator= (const AActorPtr& other)
 		{
 			if(ptr)
 				ptr->refCount--;
 			if(other)
-				other->refCount++;
+				const_cast<AActorPtr&>(other)->refCount++; // TODO: should refCount maybe be declared as mutable?
 			ptr = other;
 			return ptr;
 		}
 
-		AActorPtr &operator= (AActorPtrCounted other)
+		AActorPtr &operator= (const AActorPtrCounted& other)
 		{
 			if(ptr)
 				ptr->refCount--;
 			if(other)
-				other->refCount++;
+				const_cast<AActorPtrCounted&>(other)->refCount++; // TODO: should refCount maybe be declared as mutable?
 			ptr = other.ptr;
 			return ptr;
 		}
@@ -482,7 +477,7 @@ public:
     fixed_t		floorz;
     fixed_t		ceilingz;
 	fixed_t		dropoffz;
-	struct sector_s		*floorsector;
+	struct sector_t	*floorsector;
 
     // For movement checking.
     fixed_t		radius;

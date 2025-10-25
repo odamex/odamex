@@ -47,7 +47,7 @@ extern int	NumParticles;
 extern int	ActiveParticles;
 extern int	InactiveParticles;
 extern particle_t *Particles;
-extern TArray<WORD>     ParticlesInSubsec;
+extern std::vector<WORD> ParticlesInSubsec;
 
 constexpr WORD NO_PARTICLE = 0xffff;
 

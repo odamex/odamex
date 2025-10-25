@@ -679,13 +679,13 @@ static const char* WinTypeToString(WinInfo::WinType type)
 BEGIN_COMMAND(levelstateinfo)
 {
 	SerializedLevelState sls = ::levelstate.serialize();
-	Printf("Current level time: %d\n", ::level.time);
-	Printf("State: %s\n", StateToString(sls.state));
-	Printf("Countdown done time: %d\n", sls.countdown_done_time);
-	Printf("Ingame start time: %d\n", sls.ingame_start_time);
-	Printf("Round number: %d\n", sls.round_number);
-	Printf("Last WinInfo type: %s\n", WinTypeToString(sls.last_wininfo_type));
-	Printf("Last WinInfo ID: %d\n", sls.last_wininfo_id);
+	PrintFmt("Current level time: {}\n", ::level.time);
+	PrintFmt("State: {}\n", StateToString(sls.state));
+	PrintFmt("Countdown done time: {}\n", sls.countdown_done_time);
+	PrintFmt("Ingame start time: {}\n", sls.ingame_start_time);
+	PrintFmt("Round number: {}\n", sls.round_number);
+	PrintFmt("Last WinInfo type: {}\n", WinTypeToString(sls.last_wininfo_type));
+	PrintFmt("Last WinInfo ID: {}\n", sls.last_wininfo_id);
 }
 END_COMMAND(levelstateinfo)
 

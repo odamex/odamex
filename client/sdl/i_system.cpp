@@ -509,7 +509,7 @@ void STACK_ARGS call_terms (void);
 
 void I_BaseWarning(const std::string& warningtext)
 {
-	Printf(PRINT_WARNING, "\n%s\n", warningtext);
+	PrintFmt(PRINT_WARNING, "\n{}\n", warningtext);
 }
 
 void I_BaseError(const std::string& errortext)
@@ -622,7 +622,7 @@ std::string I_GetClipboardText()
 
 	if (!dis)
 	{
-		Printf(PRINT_HIGH, "I_GetClipboardText: XOpenDisplay failed");
+		PrintFmt(PRINT_HIGH, "I_GetClipboardText: XOpenDisplay failed");
 		return "";
 	}
 
@@ -638,7 +638,7 @@ std::string I_GetClipboardText()
 			XDestroyWindow(dis, WindowEvents);
 			XUnlockDisplay(dis);
 			XCloseDisplay(dis);
-			Printf(PRINT_HIGH, "I_GetClipboardText: XConvertSelection failed");
+			PrintFmt(PRINT_HIGH, "I_GetClipboardText: XConvertSelection failed");
 			return "";
 		}
 
@@ -666,7 +666,7 @@ std::string I_GetClipboardText()
 			XDestroyWindow(dis, WindowEvents);
 			XUnlockDisplay(dis);
 			XCloseDisplay(dis);
-			Printf(PRINT_HIGH, "I_GetClipboardText: XGetWindowProperty failed(1)");
+			PrintFmt(PRINT_HIGH, "I_GetClipboardText: XGetWindowProperty failed(1)");
 			return "";
 		}
 
@@ -686,7 +686,7 @@ std::string I_GetClipboardText()
 			XDestroyWindow(dis, WindowEvents);
 			XUnlockDisplay(dis);
 			XCloseDisplay(dis);
-			Printf(PRINT_HIGH, "I_GetClipboardText: XGetWindowProperty failed(2)");
+			PrintFmt(PRINT_HIGH, "I_GetClipboardText: XGetWindowProperty failed(2)");
 			return "";
 		}
 
@@ -750,7 +750,7 @@ std::string I_GetClipboardText()
 
 	if (err)
 	{
-		Printf(PRINT_HIGH, "GetCurrentScrap error: %d", err);
+		PrintFmt(PRINT_HIGH, "GetCurrentScrap error: {}", err);
 		return "";
 	}
 
@@ -758,7 +758,7 @@ std::string I_GetClipboardText()
 
 	if (err)
 	{
-		Printf(PRINT_HIGH, "GetScrapFlavorSize error: %d", err);
+		PrintFmt(PRINT_HIGH, "GetScrapFlavorSize error: {}", err);
 		return "";
 	}
 
@@ -769,7 +769,7 @@ std::string I_GetClipboardText()
 
 	if(err)
 	{
-		Printf(PRINT_HIGH, "GetScrapFlavorData error: %d", err);
+		PrintFmt(PRINT_HIGH, "GetScrapFlavorData error: {}", err);
 		delete[] data;
 
 		return "";
@@ -788,7 +788,7 @@ std::string I_GetClipboardText()
 
 	if (NULL == textp)
 	{
-		Printf(PRINT_HIGH, "SDL_GetClipboardText error: %s", SDL_GetError());
+		PrintFmt(PRINT_HIGH, "SDL_GetClipboardText error: {}", SDL_GetError());
 		return "";
 	}
 

@@ -36,6 +36,7 @@
 #include "i_video.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"
+#include "oscanner.h"
 
 #include "v_palette.h"
 
@@ -95,11 +96,6 @@ translationref_t::translationref_t() :
 {
 }
 
-translationref_t::translationref_t(const translationref_t &other) :
-	m_table(other.m_table), m_player_id(other.m_player_id)
-{
-}
-
 translationref_t::translationref_t(const byte *table) :
 	m_table(table), m_player_id(-1)
 {
@@ -112,12 +108,6 @@ translationref_t::translationref_t(const byte *table, const int player_id) :
 
 shaderef_t::shaderef_t() :
 	m_colors(NULL), m_mapnum(-1), m_colormap(NULL), m_shademap(NULL)
-{
-}
-
-shaderef_t::shaderef_t(const shaderef_t &other) :
-	m_colors(other.m_colors), m_mapnum(other.m_mapnum),
-	m_colormap(other.m_colormap), m_shademap(other.m_shademap), m_dyncolormap(other.m_dyncolormap)
 {
 }
 
@@ -389,9 +379,9 @@ BEGIN_COMMAND(bumpgamma)
 	V_IncrementGammaLevel();
 
 	if (gammalevel.value() == 0.0f)
-	    Printf (PRINT_HIGH, "Gamma correction off\n");
+	    PrintFmt(PRINT_HIGH, "Gamma correction off\n");
 	else
-	    Printf (PRINT_HIGH, "Gamma correction level %g\n", gammalevel.value());
+	    PrintFmt(PRINT_HIGH, "Gamma correction level {:g}\n", gammalevel.value());
 }
 END_COMMAND(bumpgamma)
 
@@ -478,7 +468,6 @@ void V_ClosestColors(const argb_t* palette_colors, palindex_t& color1, palindex_
 	}
 }
 
-
 //
 // V_GetColorStringByName
 //
@@ -488,48 +477,49 @@ void V_ClosestColors(const argb_t* palette_colors, palindex_t& color1, palindex_
 //
 static std::string V_GetColorStringByName(const std::string& name)
 {
-	/* Note: The X11R6RGB lump used by this function *MUST* end
-	 * with a NULL byte. This is so that COM_Parse is able to
-	 * detect the end of the lump.
-	 */
-	char *rgbNames, *data;
-	int c[3], step;
+	int lumpnum = W_CheckNumForName("X11R6RGB");
 
-	if (!(rgbNames = (char*)W_CacheLumpName("X11R6RGB", PU_CACHE)))
+	if (lumpnum == -1)
 	{
-		Printf(PRINT_HIGH, "X11R6RGB lump not found\n");
+		PrintFmt(PRINT_HIGH, "X11R6RGB lump not found\n");
 		return "";
 	}
 
-	// skip past the header line
-	data = strchr(rgbNames, '\n');
-	step = 0;
+	const char* buffer = static_cast<char*>(W_CacheLumpName("X11R6RGB", PU_CACHE));
 
-	while ( (data = COM_Parse (data)) )
+	OScannerConfig config = {
+		"X11R6RGB", // lumpName
+		false,      // semiComments
+		false,      // cComments
+	};
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lumpnum));
+
+
+	while (os.scan() && !os.crossed());
+	os.unScan();
+
+	int c[3];
+	bool notEOF = os.scan();
+	while (notEOF)
 	{
-		if (step < 3)
+		for (int& i : c)
 		{
-			c[step++] = atoi (com_token);
+			i = os.getTokenInt();
+			os.scan();
 		}
-		else
+
+		std::string colorname = os.getToken();
+		while((notEOF = os.scan()) && !os.crossed())
 		{
-			step = 0;
-			if (*data >= ' ')		// In case this name contains a space...
-			{
-				char *newchar = com_token + strlen(com_token);
-
-				while (*data >= ' ')
-					*newchar++ = *data++;
-				*newchar = 0;
-			}
-
-			if (!stricmp(com_token, name.c_str()))
-			{
-				return fmt::format("{:04x} {:04x} {:04x}",
-				                   (c[0] << 8) | c[0],
-				                   (c[1] << 8) | c[1],
-				                   (c[2] << 8) | c[2]);
-			}
+			colorname += " ";
+			colorname += os.getToken();
+		}
+		if (iequals(name, colorname))
+		{
+			return fmt::format("{:04x} {:04x} {:04x}",
+			                   (c[0] << 8) | c[0],
+			                   (c[1] << 8) | c[1],
+			                   (c[2] << 8) | c[2]);
 		}
 	}
 	return "";
@@ -881,7 +871,7 @@ BEGIN_COMMAND (testblend)
 {
 	if (argc < 3)
 	{
-		Printf (PRINT_HIGH, "testblend <color> <amount>\n");
+		PrintFmt(PRINT_HIGH, "testblend <color> <amount>\n");
 	}
 	else
 	{
@@ -897,7 +887,7 @@ BEGIN_COMMAND (testfade)
 {
 	if (argc < 2)
 	{
-		Printf (PRINT_HIGH, "testfade <color>\n");
+		PrintFmt(PRINT_HIGH, "testfade <color>\n");
 	}
 	else
 	{
@@ -1075,7 +1065,7 @@ BEGIN_COMMAND (testcolor)
 {
 	if (argc < 2)
 	{
-		Printf (PRINT_HIGH, "testcolor <color>\n");
+		PrintFmt(PRINT_HIGH, "testcolor <color>\n");
 	}
 	else
 	{

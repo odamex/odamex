@@ -638,7 +638,7 @@ void ConsoleHistory::movePositionDown()
 void ConsoleHistory::dump()
 {
 	for (const auto& it : history)
-		Printf(PRINT_HIGH, "   %s\n", it);
+		PrintFmt(PRINT_HIGH, "   {}\n", it);
 }
 
 class ConsoleCompletions
@@ -1163,6 +1163,10 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 	if (printlevel == PRINT_FILTERCHAT)
 		return;
 
+	// Do not display filtered normal messages
+	if (printlevel == PRINT_FILTERHIGH)
+		return;
+
 	const int width = I_GetSurfaceWidth() / V_TextScaleXAmount();
 
 	if (addtype == APPENDLINE && NotifyStrings[NUMNOTIFIES-1].printlevel == printlevel)
@@ -1243,6 +1247,9 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 	// Revert filtered chat to a normal chat to display to the console
 	if (printlevel == PRINT_FILTERCHAT)
 		printlevel = PRINT_CHAT;
+
+	if (printlevel == PRINT_FILTERHIGH)
+		printlevel = PRINT_HIGH;
 
 	const char* line_start = outline;
 	const char* line_end = line_start;
@@ -2008,7 +2015,7 @@ static bool C_HandleKey(const event_t* ev)
 		History.addString(text);
 		History.resetPosition();
 
-		Printf(127, "]%s\n", text);
+		PrintFmt(127, "]{}\n", text);
 		AddCommandString(text);
 		CmdLine.clear();
 	}
@@ -2139,7 +2146,7 @@ static bool C_HandleKey(const event_t* ev)
 			History.addString(CmdLine.text);
 			History.resetPosition();
 
-			Printf(127, "]%s\n", CmdLine.text.c_str());
+			PrintFmt(127, "]{}\n", CmdLine.text.c_str());
 			AddCommandString(CmdLine.text.c_str());
 			CmdLine.clear();
 			CmdCompletions.clear();
@@ -2242,7 +2249,7 @@ BEGIN_COMMAND(echo)
 	if (argc > 1)
 	{
 		const std::string str = C_ArgCombine(argc - 1, (const char **)(argv + 1));
-		Printf(PRINT_HIGH, "%s\n", str.c_str());
+		PrintFmt(PRINT_HIGH, "{}\n", str);
 	}
 }
 END_COMMAND(echo)
@@ -2285,7 +2292,7 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 
 		char *newmsg = strdup(str.c_str());
 
-		Printf(PRINT_HIGH, "%s\n", newmsg);
+		PrintFmt(PRINT_HIGH, "{}\n", newmsg);
 		midprinting = false;
 
 		if ( (MidMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), (byte *)newmsg)) )

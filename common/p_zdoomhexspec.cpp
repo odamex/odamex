@@ -876,7 +876,7 @@ void P_SpawnZDoomScroller(line_t* l, int i)
 		else
 		{
 			if (l->id == 0)
-				Printf(PRINT_HIGH, "Line %d is missing a tag!", i);
+				PrintFmt(PRINT_HIGH, "Line {} is missing a tag!", i);
 
 			if (l->args[0] > 1024)
 				control = sides[*l->sidenum].sector - sectors;
@@ -1037,10 +1037,10 @@ void P_PostProcessZDoomSidedefSpecial(side_t* sd, mapsidedef_t* msd, sector_t* s
 				                     ((argb_t)color).getb(), ((argb_t)fog).getr(),
 				                     ((argb_t)fog).getg(), ((argb_t)fog).getb());
 
-				for (int s = 0; s < numsectors; s++)
+				for (sector_t& sector : R_GetSectors())
 				{
-					if (sectors[s].tag == sd->tag)
-						sectors[s].colormap = colormap;
+					if (sector.tag == sd->tag)
+						sector.colormap = colormap;
 				}
 			}
 		}

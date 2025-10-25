@@ -201,7 +201,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     endif()
     target_link_libraries(odamex SDL2::mixer)
   endif()
-  target_link_libraries(odamex ${PNG_LIBRARY} ${ZLIB_LIBRARY} CURL::libcurl)
+
   if(NOT GCONSOLE)
     target_include_directories(odamex PRIVATE gui)
     if(USE_INTERNAL_FLTK)
@@ -220,13 +220,11 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     target_link_libraries(odamex PkgConfig::JSONCPP)
   endif()
 
-  target_link_libraries(odamex libADLMIDI::ADLMIDI_static)
-
   if(ENABLE_PORTMIDI)
     target_link_libraries(odamex ${PORTMIDI_LIBRARY})
   endif()
 
-  target_link_libraries(odamex ZLIB::ZLIB PNG::PNG fmt::fmt minilzo cpptrace::cpptrace)
+  target_link_libraries(odamex ZLIB::ZLIB PNG::PNG fmt::fmt minilzo cpptrace::cpptrace libADLMIDI::ADLMIDI_static curl_interface)
 
   if(WIN32)
     target_link_libraries(odamex winmm wsock32 shlwapi)

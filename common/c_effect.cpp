@@ -303,11 +303,8 @@ void P_ThinkParticles (void)
 	if (!clientside)
 		return;
 
-	int i;
-	particle_t *particle, *prev;
-
-	i = ActiveParticles;
-	prev = NULL;
+	int i = ActiveParticles;
+	particle_t *particle = nullptr, *prev = nullptr;
 	while (i != NO_PARTICLE) {
 		byte oldtrans;
 
@@ -476,9 +473,7 @@ void P_DisconnectEffect (AActor *actor)
 	if (!actor || !clientside)
 		return;
 
-	int i;
-
-	for (i = 64; i; i--) {
+	for (int i = 64; i; i--) {
 		particle_t *p = JitterParticle (TICRATE*2);
 
 		if (!p)

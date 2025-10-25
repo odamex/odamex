@@ -40,34 +40,16 @@ extern const char* weaponnames[];
  */
 struct spawnInventory_t
 {
-	bool isdefault;
-	int health;
-	int armorpoints;
-	int armortype;
-	weapontype_t readyweapon;
-	bool weaponowned[NUMWEAPONS];
-	int ammo[NUMAMMO];
-	bool berserk;
-	bool backpack;
-	int invul;
-
-	spawnInventory_t()
-	    : isdefault(false), health(100), armorpoints(0), armortype(0),
-	      readyweapon(NUMWEAPONS), berserk(false), backpack(false), invul(0)
-	{
-		ArrayInit(weaponowned, false);
-		ArrayInit(ammo, 0);
-	}
-
-	spawnInventory_t(const spawnInventory_t& other)
-	    : isdefault(other.isdefault), health(other.health),
-	      armorpoints(other.armorpoints), armortype(other.armortype),
-	      readyweapon(other.readyweapon), berserk(other.berserk),
-	      backpack(other.backpack), invul(other.invul)
-	{
-		ArrayCopy(weaponowned, other.weaponowned);
-		ArrayCopy(ammo, other.ammo);
-	}
+	bool isdefault = false;
+	int health = 100;
+	int armorpoints = 0;
+	int armortype = 0;
+	weapontype_t readyweapon = NUMWEAPONS;
+	std::array<bool, NUMWEAPONS> weaponowned{};
+	std::array<int, NUMAMMO> ammo{};
+	bool berserk = false;
+	bool backpack = false;
+	int invul = 0;
 };
 
 // Berserk time that prevents showing any red.  If you want to show a teensy
@@ -170,8 +152,8 @@ static std::string InvReadyWeaponStr(const spawnInventory_t& inv)
 static std::string InvWeaponsStr(const spawnInventory_t& inv)
 {
 	std::string rvo;
-	rvo.reserve(ARRAY_LENGTH(inv.weaponowned));
-	for (size_t i = 0; i < ARRAY_LENGTH(inv.weaponowned); i++)
+	rvo.reserve(inv.weaponowned.size());
+	for (size_t i = 0; i < inv.weaponowned.size(); i++)
 	{
 		if (!inv.weaponowned[i])
 			continue;
@@ -405,10 +387,10 @@ static void SetupDefaultInv()
 	::gDefaultInv.armorpoints = 0;
 	::gDefaultInv.armortype = 0;
 	::gDefaultInv.readyweapon = wp_pistol;
-	ArrayInit(::gDefaultInv.weaponowned, false);
+	::gDefaultInv.weaponowned.fill(false);
 	::gDefaultInv.weaponowned[wp_fist] = true;
 	::gDefaultInv.weaponowned[wp_pistol] = true;
-	ArrayInit(::gDefaultInv.ammo, 0);
+	::gDefaultInv.ammo.fill(0);
 	::gDefaultInv.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
 	::gDefaultInv.berserk = false;
 	::gDefaultInv.backpack = false;
@@ -459,10 +441,10 @@ void G_SetupSpawnInventory()
 			StringTokens param = TokenizeString(token, ":");
 			if (param.size() != 2)
 			{
-				Printf(PRINT_WARNING,
-				       "g_spawninv: Unknown parameter \"%s\", falling back to default "
-				       "inventory.\n",
-				       token);
+				PrintFmt(PRINT_WARNING,
+				         "g_spawninv: Unknown parameter \"{}\", falling back to default "
+				         "inventory.\n",
+				         token);
 				::gSpawnInv = ::gDefaultInv;
 				return;
 			}
@@ -470,10 +452,10 @@ void G_SetupSpawnInventory()
 			std::string key = StdStringToLower(param.at(0));
 			if (key.empty())
 			{
-				Printf(PRINT_WARNING,
-				       "g_spawninv: Missing key for parameter \"%s\", falling back to "
-				       "default inventory.\n",
-				       token);
+				PrintFmt(PRINT_WARNING,
+				         "g_spawninv: Missing key for parameter \"{}\", falling back to "
+				         "default inventory.\n",
+				         token);
 				::gSpawnInv = ::gDefaultInv;
 				return;
 			}
@@ -481,10 +463,10 @@ void G_SetupSpawnInventory()
 			std::string value = StdStringToLower(param.at(1));
 			if (value.empty())
 			{
-				Printf(PRINT_WARNING,
-				       "g_spawninv: Missing value for parameter \"%s\", falling back to "
-				       "default inventory.\n",
-				       token);
+				PrintFmt(PRINT_WARNING,
+				         "g_spawninv: Missing value for parameter \"{}\", falling back to "
+				         "default inventory.\n",
+				         token);
 				::gSpawnInv = ::gDefaultInv;
 				return;
 			}
@@ -505,10 +487,10 @@ void G_SetupSpawnInventory()
 			{
 				if (!InvSetReadyWeapon(inv, value))
 				{
-					Printf(PRINT_WARNING,
-					       "g_spawninv: Unknown value for parameter \"%s\", falling back "
-					       "to default inventory.\n",
-					       token);
+					PrintFmt(PRINT_WARNING,
+					         "g_spawninv: Unknown value for parameter \"{}\", falling back "
+					         "to default inventory.\n",
+					         token);
 					::gSpawnInv = ::gDefaultInv;
 					return;
 				}
@@ -517,10 +499,10 @@ void G_SetupSpawnInventory()
 			{
 				if (!InvSetWeapons(inv, value))
 				{
-					Printf(PRINT_WARNING,
-					       "g_spawninv: Unknown value for parameter \"%s\", falling back "
-					       "to default inventory.\n",
-					       token);
+					PrintFmt(PRINT_WARNING,
+					         "g_spawninv: Unknown value for parameter \"{}\", falling back "
+					         "to default inventory.\n",
+					         token);
 					::gSpawnInv = ::gDefaultInv;
 					return;
 				}
@@ -547,10 +529,10 @@ void G_SetupSpawnInventory()
 			}
 			else
 			{
-				Printf(PRINT_WARNING,
-				       "g_spawninv: Unknown parameter \"%s\", falling back to default "
-				       "inventory.\n",
-				       token);
+				PrintFmt(PRINT_WARNING,
+				         "g_spawninv: Unknown parameter \"{}\", falling back to default "
+				         "inventory.\n",
+				         token);
 				::gSpawnInv = ::gDefaultInv;
 				return;
 			}
@@ -568,101 +550,100 @@ CVAR_FUNC_IMPL(g_spawninv)
 
 static void SpawninvHelp()
 {
-	Printf("Commands:\n");
-	Printf("  info\n");
-	Printf("    Show the current spawn inventory settings.\n");
-	Printf("  default\n");
-	Printf("    Reset to default settings.\n");
-	Printf("Inventory Commands:");
-	Printf("  health <HEALTH>\n");
-	Printf("  armor1 <POINTS>\n");
-	Printf("  armor2 <POINTS>\n");
-	Printf("  rweapon <WEAPON>\n");
-	Printf("  weapons <WEAPS>\n");
-	Printf("  bullets <BULLETS>\n");
-	Printf("  shells <SHELLS>\n");
-	Printf("  rockets <ROCKETS>\n");
-	Printf("  cells <CELLS>\n");
-	Printf("  berserk <Y/N>\n");
-	Printf("  backpack <Y/N>\n");
-	Printf("  invul <DURATION>\n");
-	Printf("    Inventory commands show an explanation of their parameter if you omit "
-	       "it.\n");
+	PrintFmt("Commands:\n");
+	PrintFmt("  info\n");
+	PrintFmt("    Show the current spawn inventory settings.\n");
+	PrintFmt("  default\n");
+	PrintFmt("    Reset to default settings.\n");
+	PrintFmt("Inventory Commands:");
+	PrintFmt("  health <HEALTH>\n");
+	PrintFmt("  armor1 <POINTS>\n");
+	PrintFmt("  armor2 <POINTS>\n");
+	PrintFmt("  rweapon <WEAPON>\n");
+	PrintFmt("  weapons <WEAPS>\n");
+	PrintFmt("  bullets <BULLETS>\n");
+	PrintFmt("  shells <SHELLS>\n");
+	PrintFmt("  rockets <ROCKETS>\n");
+	PrintFmt("  cells <CELLS>\n");
+	PrintFmt("  berserk <Y/N>\n");
+	PrintFmt("  backpack <Y/N>\n");
+	PrintFmt("  invul <DURATION>\n");
+	PrintFmt("    Inventory commands show an explanation of their parameter if you omit "
+	         "it.\n");
 }
 
 static void SpawninvCommandHelp(const char* cmd)
 {
 	if (!stricmp(cmd, "health"))
 	{
-		Printf("health <HEALTH>\n");
-		Printf("  Set initial health to HEALTH.\n");
+		PrintFmt("health <HEALTH>\n");
+		PrintFmt("  Set initial health to HEALTH.\n");
 	}
 	else if (!stricmp(cmd, "armor1"))
 	{
-		Printf("armor1 <POINTS>\n");
-		Printf("  Set initial armor to POINTS points of green armor.\n");
+		PrintFmt("armor1 <POINTS>\n");
+		PrintFmt("  Set initial armor to POINTS points of green armor.\n");
 	}
 	else if (!stricmp(cmd, "armor2"))
 	{
-		Printf("armor2 <POINTS>\n");
-		Printf("  Set initial armor to POINTS points of blue armor.\n");
+		PrintFmt("armor2 <POINTS>\n");
+		PrintFmt("  Set initial armor to POINTS points of blue armor.\n");
 	}
 	else if (!stricmp(cmd, "rweapon"))
 	{
-		Printf("rweapon <WEAPON>\n");
-		Printf("  Set starting weapon to WEAPON.\n");
-		Printf("  Valid values are 1-7, A(Saw), and C(SSG).\n");
+		PrintFmt("rweapon <WEAPON>\n");
+		PrintFmt("  Set starting weapon to WEAPON.\n");
+		PrintFmt("  Valid values are 1-7, A(Saw), and C(SSG).\n");
 	}
 	else if (!stricmp(cmd, "weapons"))
 	{
-		Printf("weapons <WEAPS>\n");
-		Printf("  Set starting inventory of weapons to contain WEAPS.\n");
-		Printf("  Valid values are 1-7, A(Saw), and C(SSG).\n");
-		Printf(
-		    "  Multiple weapons are passed as a single block of letters and numbers.\n");
-		Printf("  (example: \"1A23\" gives you fist, saw, pistol, shotgun)\n");
+		PrintFmt("weapons <WEAPS>\n");
+		PrintFmt("  Set starting inventory of weapons to contain WEAPS.\n");
+		PrintFmt("  Valid values are 1-7, A(Saw), and C(SSG).\n");
+		PrintFmt("  Multiple weapons are passed as a single block of letters and numbers.\n");
+		PrintFmt("  (example: \"1A23\" gives you fist, saw, pistol, shotgun)\n");
 	}
 	else if (!stricmp(cmd, "bullets"))
 	{
-		Printf("bullets <BULLETS>\n");
-		Printf("  Set initial bullet count to BULLETS.\n");
+		PrintFmt("bullets <BULLETS>\n");
+		PrintFmt("  Set initial bullet count to BULLETS.\n");
 	}
 	else if (!stricmp(cmd, "shells"))
 	{
-		Printf("shells <SHELLS>\n");
-		Printf("  Set initial shell count to SHELLS.\n");
+		PrintFmt("shells <SHELLS>\n");
+		PrintFmt("  Set initial shell count to SHELLS.\n");
 	}
 	else if (!stricmp(cmd, "rockets"))
 	{
-		Printf("rockets <ROCKETS>\n");
-		Printf("  Set initial rocket count to ROCKETS.\n");
+		PrintFmt("rockets <ROCKETS>\n");
+		PrintFmt("  Set initial rocket count to ROCKETS.\n");
 	}
 	else if (!stricmp(cmd, "cells"))
 	{
-		Printf("cells <CELLS>\n");
-		Printf("  Set initial cell count to CELLS.\n");
+		PrintFmt("cells <CELLS>\n");
+		PrintFmt("  Set initial cell count to CELLS.\n");
 	}
 	else if (!stricmp(cmd, "berserk"))
 	{
-		Printf("berserk <Y/N>\n");
-		Printf("  Give or take away berserk.\n");
+		PrintFmt("berserk <Y/N>\n");
+		PrintFmt("  Give or take away berserk.\n");
 	}
 	else if (!stricmp(cmd, "backpack"))
 	{
-		Printf("backpack <Y/N>\n");
-		Printf("  Give or take away backpack.\n");
-		Printf("  Having a backpack doubles your max ammo and gives you a backpack "
-		       "inventory item.\n");
-		Printf("  It does not double \"spawninv\" ammo counts.\n");
+		PrintFmt("backpack <Y/N>\n");
+		PrintFmt("  Give or take away backpack.\n");
+		PrintFmt("  Having a backpack doubles your max ammo and gives you a backpack "
+		         "inventory item.\n");
+		PrintFmt("  It does not double \"spawninv\" ammo counts.\n");
 	}
 	else if (!stricmp(cmd, "invul"))
 	{
-		Printf("invul <DURATION>\n");
-		Printf("  Give DURATION seconds worth of invulnerability.\n");
+		PrintFmt("invul <DURATION>\n");
+		PrintFmt("  Give DURATION seconds worth of invulnerability.\n");
 	}
 	else
 	{
-		Printf(PRINT_WARNING, "spawninv: Unknown subcommand \"%s\".", cmd);
+		PrintFmt(PRINT_WARNING, "spawninv: Unknown subcommand \"{}\".", cmd);
 	}
 }
 
@@ -718,7 +699,7 @@ static void SpawninvCommand(const std::string& cmd, const std::string& param)
 	}
 	else
 	{
-		Printf(PRINT_WARNING, "spawninv: Unknown subcommand \"%s\".", param);
+		PrintFmt(PRINT_WARNING, "spawninv: Unknown subcommand \"{}\".", param);
 		return;
 	}
 
@@ -738,34 +719,34 @@ BEGIN_COMMAND(spawninv)
 	if (!stricmp(argv[1], "info"))
 	{
 		// Information about our currently-set spawn inventory.
-		Printf("g_spawninv: %s\n", ::g_spawninv.cstring());
-		Printf("serialized: %s\n", SpawnInvSerialize(::gSpawnInv));
+		PrintFmt("g_spawninv: {}\n", ::g_spawninv.str());
+		PrintFmt("serialized: {}\n", SpawnInvSerialize(::gSpawnInv));
 
-		Printf("Health: %d\n", ::gSpawnInv.health);
+		PrintFmt("Health: {}\n", ::gSpawnInv.health);
 		if (::gSpawnInv.armortype == 1)
-			Printf("Green Armor: %d\n", ::gSpawnInv.armorpoints);
+			PrintFmt("Green Armor: {}\n", ::gSpawnInv.armorpoints);
 		else if (::gSpawnInv.armortype == 2)
-			Printf("Blue Armor: %d\n", ::gSpawnInv.armorpoints);
+			PrintFmt("Blue Armor: {}\n", ::gSpawnInv.armorpoints);
 
 		if (::gSpawnInv.readyweapon < 0 || ::gSpawnInv.readyweapon >= NUMWEAPONS)
-			Printf("Ready Weapon: None\n");
+			PrintFmt("Ready Weapon: None\n");
 		else
-			Printf("Ready Weapon: %s\n", ::weaponnames[::gSpawnInv.readyweapon]);
+			PrintFmt("Ready Weapon: {}\n", ::weaponnames[::gSpawnInv.readyweapon]);
 
 		StringTokens weapons;
-		for (size_t i = 0; i < ARRAY_LENGTH(::gSpawnInv.weaponowned); i++)
+		for (size_t i = 0; i < ::gSpawnInv.weaponowned.size(); i++)
 		{
 			if (::gSpawnInv.weaponowned[i])
 				weapons.push_back(::weaponnames[i]);
 		}
 		if (!weapons.empty())
-			Printf("Weapons: %s\n", JoinStrings(weapons, ", "));
+			PrintFmt("Weapons: {}\n", JoinStrings(weapons, ", "));
 		else
-			Printf("Weapons: None\n");
+			PrintFmt("Weapons: None\n");
 
 		for (size_t i = 0; i < NUMAMMO; i++)
 		{
-			Printf("%s: %d\n", ammonames[i], ::gSpawnInv.ammo[i]);
+			PrintFmt("{}: {}\n", ammonames[i], ::gSpawnInv.ammo[i]);
 		}
 
 		StringTokens other;
@@ -784,7 +765,7 @@ BEGIN_COMMAND(spawninv)
 		}
 		if (!other.empty())
 		{
-			Printf("Other: %s\n", JoinStrings(other, ", "));
+			PrintFmt("Other: {}\n", JoinStrings(other, ", "));
 		}
 
 		return;
@@ -824,8 +805,9 @@ void G_GiveSpawnInventory(player_t& player)
 	player.armorpoints = inv.armorpoints;
 	player.armortype = inv.armortype;
 	player.readyweapon = player.pendingweapon = inv.readyweapon;
-	ArrayCopy(player.weaponowned, inv.weaponowned);
-	ArrayCopy(player.ammo, inv.ammo);
+	for (size_t i = 0; i < inv.weaponowned.size(); i++)
+		player.weaponowned[i] = inv.weaponowned[i];
+	player.ammo = inv.ammo;
 
 	if (inv.berserk)
 	{
@@ -835,7 +817,7 @@ void G_GiveSpawnInventory(player_t& player)
 	if (inv.backpack)
 	{
 		player.backpack = true;
-		for (size_t i = 0; i < ARRAY_LENGTH(player.maxammo); i++)
+		for (size_t i = 0; i < player.maxammo.size(); i++)
 		{
 			player.maxammo[i] *= 2;
 		}

@@ -120,9 +120,6 @@ static int packetseq[256];
 // denis - unique session key provided by the server
 std::string digest;
 
-// denis - clientside compressor, used for decompression
-huffman_client compressor;
-
 std::string server_host = "";	// hostname of server
 
 // [SL] 2011-06-27 - Class to record and playback network recordings
@@ -359,7 +356,7 @@ void CL_ResyncWorldIndex()
 
 void Host_EndGame(const char *msg)
 {
-    Printf("%s", msg);
+    PrintFmt("{}", msg);
 	CL_QuitNetGame(NQ_SILENT);
 }
 
@@ -432,18 +429,18 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 	default: // Also NQ_SILENT
 		break;
 	case NQ_DISCONNECT:
-		Printf("Disconnected from server\n");
+		PrintFmt("Disconnected from server\n");
 		break;
 	case NQ_ABORT:
-		Printf("Connection attempt aborted\n");
+		PrintFmt("Connection attempt aborted\n");
 		break;
 	case NQ_PROTO:
-		Printf("Disconnected from server: Unrecoverable protocol error\n");
+		PrintFmt("Disconnected from server: Unrecoverable protocol error\n");
 		break;
 	}
 
 	if (::debug_disconnect)
-		Printf("  (%s:%d)\n", file, line);
+		PrintFmt("  ({}:{})\n", file, line);
 }
 
 
@@ -682,10 +679,10 @@ void CL_RunTics()
 			// debugging output
 			extern unsigned char prndindex;
 			if (!(players.empty()) && players.begin()->mo)
-				Printf("level.time %d, prndindex %d, %d %d %d\n",
-				       level.time, prndindex, players.begin()->mo->x, players.begin()->mo->y, players.begin()->mo->z);
+				PrintFmt("level.time {}, prndindex {}, {} {} {}\n",
+				         level.time, prndindex, players.begin()->mo->x, players.begin()->mo->y, players.begin()->mo->z);
 			else
- 				Printf("level.time %d, prndindex %d\n", level.time, prndindex);
+ 				PrintFmt("level.time %d, prndindex %d\n", level.time, prndindex);
 		}
 	}
 	else
@@ -721,12 +718,12 @@ BEGIN_COMMAND (connect)
 {
 	if (argc == 1)
 	{
-	    Printf("Usage: connect ip[:port] [password]\n");
-	    Printf("\n");
-	    Printf("Connect to a server, with optional port number");
-	    Printf(" and/or password\n");
-	    Printf("eg: connect 127.0.0.1\n");
-	    Printf("eg: connect 192.168.0.1:12345 secretpass\n");
+	    PrintFmt("Usage: connect ip[:port] [password]\n");
+	    PrintFmt("\n");
+	    PrintFmt("Connect to a server, with optional port number");
+	    PrintFmt(" and/or password\n");
+	    PrintFmt("eg: connect 127.0.0.1\n");
+	    PrintFmt("eg: connect 192.168.0.1:12345 secretpass\n");
 
 	    return;
 	}
@@ -761,7 +758,7 @@ BEGIN_COMMAND (connect)
 		}
 		else
 		{
-			Printf("Could not resolve host %s\n", target);
+			PrintFmt("Could not resolve host {}\n", target);
 			memset(&serveraddr, 0, sizeof(serveraddr));
 		}
 	}
@@ -795,11 +792,11 @@ BEGIN_COMMAND (players)
 	}
 
 	// Print them, ordered by player id.
-	Printf("PLAYERS IN GAME:\n");
+	PrintFmt("PLAYERS IN GAME:\n");
 	for (const auto& [id, name] : mplayers) {
-		Printf("%3d. %s\n", id, name);
+		PrintFmt("{:>3d}. {}\n", id, name);
 	}
-	Printf("%lu %s\n", mplayers.size(), mplayers.size() == 1 ? "PLAYER" : "PLAYERS");
+	PrintFmt("{} {}\n", mplayers.size(), mplayers.size() == 1 ? "PLAYER" : "PLAYERS");
 }
 END_COMMAND (players)
 
@@ -853,7 +850,7 @@ BEGIN_COMMAND (kill)
     if (sv_allowcheats || G_IsCoopGame())
         MSG_WriteMarker(&net_buffer, clc_kill);
     else
-        Printf ("You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
+        PrintFmt("You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
 }
 END_COMMAND (kill)
 
@@ -870,7 +867,7 @@ BEGIN_COMMAND (serverinfo)
 	{
         if (Cvar->flags() & CVAR_SERVERINFO)
         {
-            size_t FieldLength = strlen(Cvar->name());
+            size_t FieldLength = Cvar->name().length();
 
             if (FieldLength > MaxFieldLength)
                 MaxFieldLength = FieldLength;
@@ -886,7 +883,7 @@ BEGIN_COMMAND (serverinfo)
 	std::sort(server_cvars.begin(), server_cvars.end());
 
     // Heading
-    Printf ("\n%*s - Value\n", static_cast<int>(MaxFieldLength), "Name");
+    PrintFmt("\n{:>{}} - Value\n", MaxFieldLength, "Name");
 
     // Data
 	for (const auto& varname : server_cvars)
@@ -894,13 +891,13 @@ BEGIN_COMMAND (serverinfo)
 		cvar_t *dummy;
 		Cvar = cvar_t::FindCVar(varname.c_str(), &dummy);
 
-		Printf( "%*s - %s\n",
-				static_cast<int>(MaxFieldLength),
-				Cvar->name(),
-				Cvar->str());
+		PrintFmt("{:>{}} - {}\n",
+			     MaxFieldLength,
+			     Cvar->name(),
+			     Cvar->str());
 	}
 
-    Printf ("\n");
+    PrintFmt("\n");
 }
 END_COMMAND (serverinfo)
 
@@ -953,16 +950,16 @@ END_COMMAND (rcon_logout)
 BEGIN_COMMAND (playerteam)
 {
 	if (G_IsTeamGame())
-		Printf("Your are in the %s team.\n", V_GetTeamColor(consoleplayer().userinfo.team));
+		PrintFmt("Your are in the {} team.\n", V_GetTeamColor(consoleplayer().userinfo.team));
 	else
-		Printf("You need to play a team-based gamemode in order to use this command.\n");
+		PrintFmt("You need to play a team-based gamemode in order to use this command.\n");
 }
 END_COMMAND (playerteam)
 
 BEGIN_COMMAND (changeteams)
 {
 	int iTeam = (int)consoleplayer().userinfo.team;
-	iTeam = ++iTeam % sv_teamsinplay.asInt();
+	iTeam = (iTeam + 1) % sv_teamsinplay.asInt();
 	cl_team.Set(GetTeamInfo((team_t)iTeam)->ColorStringUpper.c_str());
 }
 END_COMMAND (changeteams)
@@ -997,17 +994,17 @@ END_COMMAND(ready)
 
 static void NetCmdHelp()
 {
-	Printf(PRINT_HIGH,
-	       "netcmd - Send an arbitrary string command to a server\n\n"
-	       "Common commands:\n"
-	       "  ] netcmd help\n"
-	       "  Check to see if the server has any server-specific netcmd's.\n\n"
-	       "  ] netcmd motd\n"
-	       "  Ask the server for the MOTD.\n\n"
-	       "  ] netcmd ready\n"
-	       "  Set yourself as ready or unready.\n\n"
-	       "  ] netcmd vote <\"yes\"|\"no\">\n"
-	       "  Vote \"yes\" or \"no\" in an ongoing vote.\n");
+	PrintFmt(PRINT_HIGH,
+	         "netcmd - Send an arbitrary string command to a server\n\n"
+	         "Common commands:\n"
+	         "  ] netcmd help\n"
+	         "  Check to see if the server has any server-specific netcmd's.\n\n"
+	         "  ] netcmd motd\n"
+	         "  Ask the server for the MOTD.\n\n"
+	         "  ] netcmd ready\n"
+	         "  Set yourself as ready or unready.\n\n"
+	         "  ] netcmd vote <\"yes\"|\"no\">\n"
+	         "  Vote \"yes\" or \"no\" in an ongoing vote.\n");
 }
 
 BEGIN_COMMAND(netcmd)
@@ -1079,12 +1076,12 @@ BEGIN_COMMAND (spy)
 {
 	if (argc <= 1) {
 		if (spyplayername.length() > 0) {
-			Printf(PRINT_HIGH, "Unfollowing player '%s'.\n", spyplayername);
+			PrintFmt(PRINT_HIGH, "Unfollowing player '{}'.\n", spyplayername);
 
 			// revert to not spying:
 			displayplayer_id = consoleplayer_id;
 		} else {
-			Printf(PRINT_HIGH, "Expecting player name.  Try 'players' to list all player names.\n");
+			PrintFmt(PRINT_HIGH, "Expecting player name.  Try 'players' to list all player names.\n");
 		}
 
 		// clear last player name:
@@ -1093,8 +1090,8 @@ BEGIN_COMMAND (spy)
 		// remember player name in case of disconnect/reconnect e.g. level change:
 		spyplayername = argv[1];
 
-		Printf(PRINT_HIGH, "Following player '%s'. Use 'spy' with no player name to unfollow.\n",
-			   spyplayername);
+		PrintFmt(PRINT_HIGH, "Following player '{}'. Use 'spy' with no player name to unfollow.\n",
+			     spyplayername);
 	}
 
 	CL_CheckDisplayPlayer();
@@ -1129,7 +1126,7 @@ END_COMMAND (exit)
 CVAR_FUNC_IMPL (cl_netdemoname)
 {
 	// No empty format strings allowed.
-	if (strlen(var.cstring()) == 0)
+	if (var.str().empty())
 		var.RestoreDefault();
 }
 
@@ -1139,7 +1136,7 @@ EXTERN_CVAR(cl_netdemodir)
 // CL_GenerateNetDemoFileName
 //
 //
-std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemoname.cstring())
+std::string CL_GenerateNetDemoFileName(const std::string &filename = cl_netdemoname.str())
 {
 	const std::string expanded_filename(M_ExpandTokens(filename));
 	std::string newfilename(expanded_filename);
@@ -1160,8 +1157,12 @@ void CL_NetDemoPlay(const std::string& filename)
 	std::string found = M_FindUserFileName(filename, ".odd");
 	if (found.empty())
 	{
-		Printf(PRINT_WARNING, "Could not find demo %s.\n", filename);
-		return;
+		found = M_GetNetDemoFileName(filename, cl_netdemodir);
+		if (found.empty())
+		{
+			PrintFmt(PRINT_WARNING, "Could not find demo {}.\n", filename);
+			return;
+		}
 	}
 
 	netdemo.startPlaying(found);
@@ -1184,14 +1185,14 @@ BEGIN_COMMAND(netrecord)
 {
 	if (netdemo.isRecording())
 	{
-		Printf(PRINT_HIGH, "Already recording a netdemo.  Please stop recording before "\
-				"beginning a new netdemo recording.\n");
+		PrintFmt(PRINT_HIGH, "Already recording a netdemo.  Please stop recording before "\
+		         "beginning a new netdemo recording.\n");
 		return;
 	}
 
 	if (!connected || simulated_connection)
 	{
-		Printf(PRINT_HIGH, "You must be connected to a server to record a netdemo.\n");
+		PrintFmt(PRINT_HIGH, "You must be connected to a server to record a netdemo.\n");
 		return;
 	}
 
@@ -1212,13 +1213,13 @@ BEGIN_COMMAND(netpause)
 	{
 		netdemo.resume();
 		paused = false;
-		Printf(PRINT_HIGH, "Demo resumed.\n");
+		PrintFmt(PRINT_HIGH, "Demo resumed.\n");
 	}
 	else if (netdemo.isPlaying())
 	{
 		netdemo.pause();
 		paused = true;
-		Printf(PRINT_HIGH, "Demo paused.\n");
+		PrintFmt(PRINT_HIGH, "Demo paused.\n");
 	}
 }
 END_COMMAND(netpause)
@@ -1227,7 +1228,7 @@ BEGIN_COMMAND(netplay)
 {
 	if(argc <= 1)
 	{
-		Printf(PRINT_HIGH, "Usage: netplay <demoname>\n");
+		PrintFmt(PRINT_HIGH, "Usage: netplay <demoname>\n");
 		return;
 	}
 
@@ -1253,15 +1254,15 @@ BEGIN_COMMAND(netdemostats)
 	int curtime = netdemo.calculateTimeElapsed();
 	int totaltime = netdemo.calculateTotalTime();
 
-	Printf(PRINT_HIGH, "\n%s\n", netdemo.getFileName());
-	Printf(PRINT_HIGH, "============================================\n");
-	Printf(PRINT_HIGH, "Total time: %i seconds\n", totaltime);
-	Printf(PRINT_HIGH, "Current position: %i seconds (%i%%)\n",
+	PrintFmt(PRINT_HIGH, "\n{}\n", netdemo.getFileName());
+	PrintFmt(PRINT_HIGH, "============================================\n");
+	PrintFmt(PRINT_HIGH, "Total time: {} seconds\n", totaltime);
+	PrintFmt(PRINT_HIGH, "Current position: {} seconds ({}%)\n",
 		curtime, curtime * 100 / totaltime);
-	Printf(PRINT_HIGH, "Number of maps: %lu\n", maptimes.size());
+	PrintFmt(PRINT_HIGH, "Number of maps: {}\n", maptimes.size());
 	for (size_t i = 0; i < maptimes.size(); i++)
 	{
-		Printf(PRINT_HIGH, "> %02lu Starting time: %i seconds\n",
+		PrintFmt(PRINT_HIGH, "> {:02d} Starting time: {} seconds\n",
 			i + 1, maptimes[i]);
 	}
 }
@@ -1458,7 +1459,7 @@ void CL_RequestConnectInfo(void)
 	{
 		connecttimeout = 140;
 
-		Printf(PRINT_HIGH, "Connecting to %s...\n", NET_AdrToString(serveraddr));
+		PrintFmt(PRINT_HIGH, "Connecting to {}...\n", NET_AdrToString(serveraddr));
 
 		SZ_Clear(&net_buffer);
 		MSG_WriteLong(&net_buffer, LAUNCHER_CHALLENGE);
@@ -1481,9 +1482,9 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 
 	if (missing_file.getBasename().empty())
 	{
-		Printf(PRINT_WARNING,
-		       "Tried to download an empty file.  This is probably a bug "
-		       "in the client where an empty file is considered missing.\n");
+		PrintFmt(PRINT_WARNING,
+		         "Tried to download an empty file.  This is probably a bug "
+		         "in the client where an empty file is considered missing.\n");
 		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
@@ -1491,10 +1492,10 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 	if (!cl_serverdownload)
 	{
 		// Downloading is disabled client-side
-		Printf(PRINT_WARNING,
-		       "Unable to find \"%s\". Downloading is disabled on your client.  Go to "
-		       "Options > Network Options to enable downloading.\n",
-		       missing_file.getBasename());
+		PrintFmt(PRINT_WARNING,
+		         "Unable to find \"{}\". Downloading is disabled on your client.  Go to "
+		         "Options > Network Options to enable downloading.\n",
+		         missing_file.getBasename());
 		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
@@ -1502,9 +1503,9 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 	if (netdemo.isPlaying())
 	{
 		// Playing a netdemo and unable to download from the server
-		Printf(PRINT_WARNING,
-		       "Unable to find \"%s\".  Cannot download while playing a netdemo.\n",
-		       missing_file.getBasename());
+		PrintFmt(PRINT_WARNING,
+		         "Unable to find \"{}\".  Cannot download while playing a netdemo.\n",
+		         missing_file.getBasename());
 		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
@@ -1512,9 +1513,9 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 	if (sv_downloadsites.str().empty() && cl_downloadsites.str().empty())
 	{
 		// Nobody has any download sites configured.
-		Printf("Unable to find \"%s\".  Both your client and the server have no "
-		       "download sites configured.\n",
-		       missing_file.getBasename());
+		PrintFmt("Unable to find \"{}\".  Both your client and the server have no "
+		         "download sites configured.\n",
+		         missing_file.getBasename());
 		CL_QuitNetGame(NQ_DISCONNECT);
 		return;
 	}
@@ -1534,8 +1535,8 @@ void CL_QuitAndTryDownload(const OWantFile& missing_file)
 	downloadsites.insert(downloadsites.end(), clientsites.begin(), clientsites.end());
 
 	// Disconnect from the server before we start the download.
-	Printf(PRINT_HIGH, "Need to download \"%s\", disconnecting from server...\n",
-	       missing_file.getBasename());
+	PrintFmt(PRINT_HIGH, "Need to download \"{}\", disconnecting from server...\n",
+	         missing_file.getBasename());
 	CL_QuitNetGame(NQ_SILENT);
 
 	// Start the download.
@@ -1564,8 +1565,8 @@ bool CL_PrepareConnect()
 	std::string server_map = MSG_ReadString();
 	byte server_wads = MSG_ReadByte();
 
-	Printf("Found server at %s.\n\n", NET_AdrToString(::serveraddr));
-	Printf("> Hostname: %s\n", server_host);
+	PrintFmt("Found server at {}.\n\n", NET_AdrToString(::serveraddr));
+	PrintFmt("> Hostname: {}\n", server_host);
 
 	std::vector<std::string> newwadnames;
 	newwadnames.reserve(server_wads);
@@ -1597,15 +1598,15 @@ bool CL_PrepareConnect()
 		OMD5Hash::makeFromHexStr(hash, hashStr);
 		if (!OWantFile::makeWithHash(file, newwadnames.at(i), OFILE_WAD, hash))
 		{
-			Printf(PRINT_WARNING,
-			       "Could not construct wanted file \"%s\" that server requested.\n",
-			       newwadnames.at(i));
+			PrintFmt(PRINT_WARNING,
+			         "Could not construct wanted file \"{}\" that server requested.\n",
+			         newwadnames.at(i));
 			CL_QuitNetGame(NQ_ABORT);
 			return false;
 		}
 
-		Printf("> %s\n   %s\n", file.getBasename(),
-		       file.getWantedMD5().getHexStr());
+		PrintFmt("> {}\n   {}\n", file.getBasename(),
+		         file.getWantedMD5().getHexStr());
 	}
 
 	// Download website - needed for HTTP downloading to work.
@@ -1625,7 +1626,7 @@ bool CL_PrepareConnect()
 		}
 	}
 
-	Printf("> Map: %s\n", server_map);
+	PrintFmt("> Map: {}\n", server_map);
 
 	version = MSG_ReadShort();
 	if(version > VERSION)
@@ -1670,12 +1671,12 @@ bool CL_PrepareConnect()
 
 		int major, minor, patch;
 		BREAKVER(gameversion, major, minor, patch);
-		Printf(PRINT_HIGH, "> Server Version %i.%i.%i\n", major, minor, patch);
+		PrintFmt(PRINT_HIGH, "> Server Version {}.{}.{}\n", major, minor, patch);
 
 		std::string msg = VersionMessage(::gameversion, GAMEVER, NULL);
 		if (!msg.empty())
 		{
-			Printf(PRINT_WARNING, "%s", msg);
+			PrintFmt(PRINT_WARNING, "{}", msg);
 			CL_QuitNetGame(NQ_ABORT);
 			return false;
 		}
@@ -1684,7 +1685,7 @@ bool CL_PrepareConnect()
 	{
 		// [AM] Not worth sorting out what version it actually is.
 		std::string msg = VersionMessage(MAKEVER(0, 3, 0), GAMEVER, NULL);
-		Printf(PRINT_WARNING, "%s", msg);
+		PrintFmt(PRINT_WARNING, "{}", msg);
 		CL_QuitNetGame(NQ_ABORT);
 		return false;
 	}
@@ -1700,22 +1701,22 @@ bool CL_PrepareConnect()
 		std::string filename = MSG_ReadString();
 		if (!OWantFile::make(file, filename, OFILE_DEH))
 		{
-			Printf(PRINT_WARNING,
-			       "Could not construct wanted file \"%s\" that server requested.\n",
-			       filename);
+			PrintFmt(PRINT_WARNING,
+			         "Could not construct wanted file \"{}\" that server requested.\n",
+			         filename);
 			CL_QuitNetGame(NQ_ABORT);
 			return false;
 		}
 
-		Printf("> %s\n", file.getBasename());
+		PrintFmt("> {}\n", file.getBasename());
 	}
 
 	// TODO: Allow deh/bex file downloads
-	Printf("\n");
+	PrintFmt("\n");
 	bool ok = D_DoomWadReboot(newwadfiles, newpatchfiles);
 	if (!ok && missingfiles.empty())
 	{
-		Printf(PRINT_WARNING, "Could not load required set of WAD files.\n");
+		PrintFmt(PRINT_WARNING, "Could not load required set of WAD files.\n");
 		CL_QuitNetGame(NQ_ABORT);
 		return false;
 	}
@@ -1723,8 +1724,8 @@ bool CL_PrepareConnect()
 	{
 		if (::missingCommercialIWAD)
 		{
-			Printf(PRINT_WARNING,
-			       "Server requires commercial IWAD that was not found.\n");
+			PrintFmt(PRINT_WARNING,
+			         "Server requires commercial IWAD that was not found.\n");
 			CL_QuitNetGame(NQ_ABORT);
 			return false;
 		}
@@ -1765,9 +1766,7 @@ bool CL_Connect()
 	MSG_WriteMarker(&net_buffer, clc_ack);
 	MSG_WriteLong(&net_buffer, 0);
 	NET_SendPacket(::net_buffer, ::serveraddr);
-	Printf("Requesting server state...\n");
-
-	compressor.reset();
+	PrintFmt("Requesting server state...\n");
 
 	connected = true;
     multiplayer = true;
@@ -1778,7 +1777,7 @@ bool CL_Connect()
 	byte flags = MSG_ReadByte();
 	if (flags & SVF_UNUSED_MASK)
 	{
-		Printf(PRINT_WARNING, "Protocol flag bits (%u) were not understood.", flags);
+		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood.", flags);
 		CL_QuitNetGame(NQ_PROTO);
 	}
 	else if (flags & SVF_COMPRESSED)
@@ -1814,7 +1813,7 @@ void CL_InitNetwork (void)
     if (v)
     {
 		localport = atoi (v);
-		Printf (PRINT_HIGH, "using alternate port %i\n", localport);
+		PrintFmt(PRINT_HIGH, "using alternate port {}\n", localport);
     }
     else
 		localport = CLIENTPORT;
@@ -1861,7 +1860,7 @@ void CL_TryToConnect(DWORD server_token)
 	{
 		connecttimeout = 140; // 140 tics = 4 seconds
 
-		Printf("Joining server...\n");
+		PrintFmt("Joining server...\n");
 
 		SZ_Clear(&net_buffer);
 		MSG_WriteLong(&net_buffer, PROTO_CHALLENGE); // send challenge
@@ -1967,7 +1966,7 @@ bool CL_ReadPacketHeader()
 	byte flags = MSG_ReadByte();
 	if (flags & SVF_UNUSED_MASK)
 	{
-		Printf(PRINT_WARNING, "Protocol flag bits (%u) were not understood.", flags);
+		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood.", flags);
 		CL_QuitNetGame(NQ_PROTO);
 	}
 	else if (flags & SVF_COMPRESSED)
@@ -2037,7 +2036,7 @@ void CL_ParseCommands()
 
 			if (!protos.empty())
 			{
-				Printf(PRINT_WARNING, "CL_ParseCommands: %s\n", err);
+				PrintFmt(PRINT_WARNING, "CL_ParseCommands: {}\n", err);
 
 				for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
 				{
@@ -2045,13 +2044,13 @@ void CL_ParseCommands()
 					ptrdiff_t idx = it - protos.begin() + 1;
 					std::string svc = SVCName(it->header);
 					size_t siz = it->size;
-					Printf(PRINT_WARNING, "%c %2zd [%s] %zub\n", latest, idx, svc,
-					       siz);
+					PrintFmt(PRINT_WARNING, "{:c} {:>2d} [{}] {}b\n", latest, idx, svc,
+					         siz);
 				}
 			}
 			else
 			{
-				Printf(PRINT_WARNING, "CL_ParseCommands: %s\n", err);
+				PrintFmt(PRINT_WARNING, "CL_ParseCommands: {}\n", err);
 			}
 
 			CL_QuitNetGame(NQ_PROTO);
@@ -2060,8 +2059,8 @@ void CL_ParseCommands()
 		// Measure length of each message, so we can keep track of bandwidth.
 		if (::net_message.BytesRead() < byteStart)
 		{
-			Printf("CL_ParseCommands: end byte (%lu) < start byte (%lu)\n",
-			       ::net_message.BytesRead(), byteStart);
+			PrintFmt("CL_ParseCommands: end byte ({}) < start byte ({})\n",
+			         ::net_message.BytesRead(), byteStart);
 		}
 
 		::netgraph.addTrafficIn(::net_message.BytesRead() - byteStart);
@@ -2194,7 +2193,7 @@ void PickupMessage (AActor *toucher, const char *message)
 	{
 		lastmessagetic = gametic;
 		lastmessage = message;
-		Printf (PRINT_PICKUP, "%s\n", message);
+		PrintFmt(PRINT_PICKUP, "{}\n", message);
 	}
 }
 
@@ -2367,8 +2366,8 @@ void CL_SimulatePlayers()
 				if (dist > 2 * FRACUNIT)
 				{
 					#ifdef _SNAPSHOT_DEBUG_
-					Printf(PRINT_HIGH, "Snapshot %i, Correcting extrapolation error of %i\n",
-							world_index, dist >> FRACBITS);
+					PrintFmt(PRINT_HIGH, "Snapshot {}, Correcting extrapolation error of {}\n",
+							 world_index, dist >> FRACBITS);
 					#endif	// _SNAPSHOT_DEBUG_
 
 					static constexpr fixed_t correction_amount = FRACUNIT * 0.80f;
@@ -2439,7 +2438,7 @@ void CL_SimulateWorld()
 		else
 			reason = "invalid world_index";
 
-		Printf(PRINT_HIGH, "Gametic %i, world_index %i, Resynching world index (%s).\n",
+		PrintFmt(PRINT_HIGH, "Gametic {}, world_index {}, Resynching world index ({}).\n",
 			gametic, world_index, reason);
 		#endif // _WORLD_INDEX_DEBUG_
 
@@ -2451,7 +2450,7 @@ void CL_SimulateWorld()
 		world_index = last_svgametic;
 
 	#ifdef _WORLD_INDEX_DEBUG_
-	Printf(PRINT_HIGH, "Gametic %i, simulating world_index %i\n",
+	PrintFmt(PRINT_HIGH, "Gametic {}, simulating world_index {}\n",
 		gametic, world_index);
 	#endif // _WORLD_INDEX_DEBUG_
 
@@ -2467,8 +2466,8 @@ void CL_SimulateWorld()
 
 	#ifdef _WORLD_INDEX_DEBUG_
 	if (drift_correction != 0)
-		Printf(PRINT_HIGH, "Gametic %i, increasing world index by %i.\n",
-				gametic, drift_correction);
+		PrintFmt(PRINT_HIGH, "Gametic {}, increasing world index by {}.\n",
+				 gametic, drift_correction);
 	#endif // _WORLD_INDEX_DEBUG_
 
 	world_index = world_index + 1 + drift_correction;

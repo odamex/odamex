@@ -465,11 +465,11 @@ bool OTransfer::tick()
 			return false;
 		}
 
-		Printf("Saved to fallback location \"%s\".\n", fallback);
+		PrintFmt("Saved to fallback location \"{}\".\n", fallback);
 	}
 	else
 	{
-		Printf("Saved to location \"%s\".\n", m_filename);
+		PrintFmt("Saved to location \"{}\".\n", m_filename);
 	}
 
 	m_shouldCheckAgain = false;

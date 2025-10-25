@@ -734,7 +734,7 @@ BEGIN_COMMAND (addmap) {
 
 BEGIN_COMMAND(insertmap) {
 	if (argc < 3) {
-		Printf(PRINT_HIGH, "Usage: insertmap <maplist position> <map lump> [wad name] [...]\n");
+		PrintFmt(PRINT_HIGH, "Usage: insertmap <maplist position> <map lump> [wad name] [...]\n");
 	}
 
 	maplist_entry_t maplist_entry;
@@ -783,7 +783,7 @@ BEGIN_COMMAND(insertmap) {
 
 BEGIN_COMMAND(delmap) {
 	if (argc < 2) {
-		Printf(PRINT_HIGH, "Usage: delmap <maplist index>\n");
+		PrintFmt(PRINT_HIGH, "Usage: delmap <maplist index>\n");
 		return;
 	}
 
@@ -794,21 +794,21 @@ BEGIN_COMMAND(delmap) {
 	std::istringstream buffer(arguments[0]);
 	buffer >> maplist_index;
 	if (maplist_index == 0 || arguments[0][0] == '-') {
-		Printf(PRINT_HIGH, "Index must be a positive number.\n");
+		PrintFmt(PRINT_HIGH, "Index must be a positive number.\n");
 		return;
 	}
 
 	if (!Maplist::instance().remove(maplist_index - 1)) {
-		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error());
+		PrintFmt(PRINT_HIGH, "{}\n", Maplist::instance().get_error());
 	}
 } END_COMMAND(delmap)
 
 BEGIN_COMMAND(clearmaplist) {
 	if (!Maplist::instance().clear()) {
-		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error());
+		PrintFmt(PRINT_HIGH, "{}\n", Maplist::instance().get_error());
 	}
 	else {
-		Printf(PRINT_HIGH, "Maplist cleared.\n");
+		PrintFmt(PRINT_HIGH, "Maplist cleared.\n");
 	}
 } END_COMMAND(clearmaplist)
 
@@ -821,26 +821,26 @@ BEGIN_COMMAND (gotomap) {
 	std::vector<std::string> arguments = VectorArgs(argc, argv);
 
 	if (arguments.empty()) {
-		Printf(PRINT_HIGH, "Usage: gotomap <map index or unambiguous map name>\n");
+		PrintFmt(PRINT_HIGH, "Usage: gotomap <map index or unambiguous map name>\n");
 		return;
 	}
 
 	// Query the maplist
 	maplist_qrows_t result;
 	if (!Maplist::instance().query(arguments, result)) {
-		Printf(PRINT_HIGH, "%s\n", Maplist::instance().get_error());
+		PrintFmt(PRINT_HIGH, "{}\n", Maplist::instance().get_error());
 		return;
 	}
 
 	// If we got back an empty response, complain.
 	if (result.empty()) {
-		Printf(PRINT_HIGH, "Map not found.\n");
+		PrintFmt(PRINT_HIGH, "Map not found.\n");
 		return;
 	}
 
 	// If we got back more than one response, complain.
 	if (result.size() > 1) {
-		Printf(PRINT_HIGH, "Map is ambiguous.\n");
+		PrintFmt(PRINT_HIGH, "Map is ambiguous.\n");
 		return;
 	}
 
@@ -864,7 +864,7 @@ bool CMD_Randmap(std::string &error) {
 BEGIN_COMMAND (randmap) {
 	std::string error;
 	if (!CMD_Randmap(error)) {
-		Printf(PRINT_HIGH, "%s\n", error);
+		PrintFmt(PRINT_HIGH, "{}\n", error);
 	}
 } END_COMMAND (randmap)
 
@@ -875,9 +875,8 @@ BEGIN_COMMAND(setlobbymap)
 {
 	if (argc < 2)
 	{
-		Printf(PRINT_HIGH, "Usage: setlobby <map lump> [wad name] [...]\n");
-		Printf(PRINT_HIGH,
-		       "There can only be one map with the lobby.\n");
+		PrintFmt(PRINT_HIGH, "Usage: setlobby <map lump> [wad name] [...]\n");
+		PrintFmt(PRINT_HIGH, "There can only be one lobby map.\n");
 		return;
 	}
 
@@ -897,15 +896,15 @@ BEGIN_COMMAND(setlobbymap)
 	Maplist::instance().set_lobbymap(maplist_entry);
 
 	// Successfully warn the server a map has been added.
-	Printf(PRINT_HIGH, "Setting %s as the Lobby map (WAD%s : %s)\n", arguments[0],
-	       (arguments.size() > 2) ? "s" : "",
-	       JoinStrings(maplist_entry.wads, " "));
+	PrintFmt(PRINT_HIGH, "Setting {} as the lobby map (WAD{} : {})\n", arguments[0],
+	         (arguments.size() > 2) ? "s" : "",
+	         JoinStrings(maplist_entry.wads, " "));
 }
 END_COMMAND(setlobbymap)
 
 BEGIN_COMMAND(clearlobbymap)
 {
 	Maplist::instance().clear_lobbymap();
-	Printf("Lobby map cleared.\n");
+	PrintFmt("Lobby map cleared.\n");
 }
 END_COMMAND(clearlobbymap)

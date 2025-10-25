@@ -46,7 +46,6 @@ void R_InitSkyDefs()
 		for (const Json::Value& flatentry : flatmappings)
 		{
 			const Json::Value& flatelem = flatentry["flat"];
-			const Json::Value& skyelem = flatentry["sky"];
 
 			OLumpName flatname = flatelem.asString();
 			int32_t flatnum = R_FlatNumForName(flatname);

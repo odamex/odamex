@@ -1626,7 +1626,7 @@ void M_ChangeTeam (int choice) // [Toke - Teams]
 	int iTeam = (int)team;
 	if (choice)
 	{
-		iTeam = ++iTeam % NUMTEAMS;
+		iTeam = (iTeam + 1) % NUMTEAMS;
 	}
 	else
 	{

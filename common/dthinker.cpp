@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -31,6 +31,7 @@
 #include "z_zone.h"
 #include "stats.h"
 #include "p_local.h"
+#include "g_musinfo.h"
 
 IMPLEMENT_SERIAL (DThinker, DObject)
 
@@ -127,9 +128,9 @@ void DThinker::Destroy ()
 		m_Next->m_Prev = m_Prev;
 	if (m_Prev)
 		m_Prev->m_Next = m_Next;
-	
+
 	destroyed = true;
-		
+
 	if(refCount)
 	{
 		LingerDestroy.push_back(this); // something is still finding this pointer useful
@@ -137,7 +138,7 @@ void DThinker::Destroy ()
 	else
 		Super::Destroy ();
 
-	size_t l = LingerDestroy.size();	
+	size_t l = LingerDestroy.size();
 	for(size_t i = 0; i < l; i++)
 	{
 		DThinker *obj = LingerDestroy[i];
@@ -167,8 +168,8 @@ void DThinker::DestroyAllThinkers ()
 		currentthinker = next;
 	}
 	DObject::EndFrame ();
-	
-	size_t l = LingerDestroy.size();	
+
+	size_t l = LingerDestroy.size();
 	for(size_t i = 0; i < l; i++)
 	{
 		DThinker *obj = LingerDestroy[i];
@@ -226,7 +227,7 @@ bool IndependentThinker(DThinker *thinker)
 		if (serverside)
 			return true;
 	}
-	
+
 	if (thinker->IsA(RUNTIME_CLASS (DPillar)) ||
 		thinker->IsA(RUNTIME_CLASS (DElevator)) ||
 		thinker->IsA(RUNTIME_CLASS (DFloor)) ||
@@ -256,6 +257,7 @@ void DThinker::RunThinkers ()
 		currentthinker = currentthinker->m_Next;
 	}
 	END_STAT (ThinkCycles);
+	P_CheckMusicChange();
 }
 
 void *DThinker::operator new (size_t size)

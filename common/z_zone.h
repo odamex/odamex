@@ -53,6 +53,8 @@ void Z_DumpHeap(const zoneTag_e lowtag, const zoneTag_e hightag);
 // Don't use these, use the macros instead!
 void* Z_Malloc2(size_t size, const zoneTag_e tag, void* user, const char* file,
                 const int line);
+void* Z_Realloc2(void* ptr, size_t size, const zoneTag_e tag, void* user, const char* file,
+                 const int line);
 void Z_Free2(void* ptr, const char* file, int line);
 void Z_Discard2(void** ptr, const char* file, int line);
 void Z_ChangeTag2(void* ptr, const zoneTag_e tag, const char* file, int line);
@@ -106,6 +108,7 @@ inline void Z_Discard2(P ptr, const char* file, int line)
 }
 
 #define Z_Malloc(s,t,p) Z_Malloc2(s,t,p,__FILE__,__LINE__)
+#define Z_Realloc(p,s,t,u) Z_Realloc2(p,s,t,u,__FILE__,__LINE__)
 #define Z_Free(p) Z_Free2(p,__FILE__,__LINE__)
 #define Z_Discard(p) Z_Discard2(p,__FILE__,__LINE__)
 #define Z_ChangeTag(p,t) Z_ChangeTag2(p,t,__FILE__,__LINE__)

@@ -647,7 +647,7 @@ BEGIN_COMMAND (idmus)
 				map = CalcMapName(0, l);
 			else
 			{
-				Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
+				PrintFmt(PRINT_HIGH, "{}\n", GStrings(STSTR_NOMUS));
 				return;
 			}
 		}
@@ -662,12 +662,12 @@ BEGIN_COMMAND (idmus)
 			if (info.music[0])
 			{
 				S_ChangeMusic(std::string(info.music.c_str(), 8), 1);
-				Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_MUS));
+				PrintFmt(PRINT_HIGH, "{}\n", GStrings(STSTR_MUS));
 			}
 		}
 		else
 		{
-			Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
+			PrintFmt(PRINT_HIGH, "{}\n", GStrings(STSTR_NOMUS));
 		}
 	}
 }
@@ -696,7 +696,7 @@ BEGIN_COMMAND (fov)
 		return;
 
 	if (argc != 2)
-		Printf(PRINT_HIGH, "FOV is %g\n", m_Instigator->player->fov);
+		PrintFmt(PRINT_HIGH, "FOV is {:g}\n", m_Instigator->player->fov);
 	else
 	{
 		m_Instigator->player->fov = clamp((float)atof(argv[1]), 45.0f, 135.0f);

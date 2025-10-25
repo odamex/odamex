@@ -737,7 +737,7 @@ bool P_BlockThingsIterator (int x, int y, bool(*func)(AActor*), AActor *actor)
 // INTERCEPT ROUTINES
 //
 // denis - make intercepts array resizeable
-TArray<intercept_t> intercepts;
+std::vector<intercept_t> intercepts;
 
 divline_t		trace;
 bool 			earlyout;
@@ -798,7 +798,7 @@ bool PIT_AddLineIntercepts (line_t *ld)
 	intercept.frac = frac;
 	intercept.isaline = true;
 	intercept.d.line = ld;
-	intercepts.Push(intercept);
+	intercepts.push_back(intercept);
 
 	return true;		// continue
 }
@@ -864,7 +864,7 @@ bool PIT_AddThingIntercepts (AActor* thing)
 	intercept.frac = frac;
 	intercept.isaline = false;
 	intercept.d.thing = thing;
-	intercepts.Push(intercept);
+	intercepts.push_back(intercept);
 
 	return true;				// keep going
 }
@@ -877,20 +877,19 @@ bool PIT_AddThingIntercepts (AActor* thing)
 //
 bool P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
 {
-	size_t 				count = intercepts.Size();
+	size_t 				count = intercepts.size();
 	fixed_t 			dist;
-	size_t		scan;
 	intercept_t*		in = 0;
 
 	while (count--)
 	{
 		dist = MAXINT;
-		for (scan = 0 ; scan < intercepts.Size(); scan++)
+		for (intercept_t& intercept : intercepts)
 		{
-			if (intercepts[scan].frac < dist)
+			if (intercept.frac < dist)
 			{
-				dist = intercepts[scan].frac;
-				in = &intercepts[scan];
+				dist = intercept.frac;
+				in = &intercept;
 			}
 		}
 
@@ -944,7 +943,7 @@ bool P_PathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2, int flags, 
 
 	validcount++;
 
-	intercepts.Clear();
+	intercepts.clear();
 
 	if ( ((x1-bmaporgx)&(MAPBLOCKSIZE-1)) == 0)
 		x1 += FRACUNIT; // don't side exactly on a line
@@ -1316,7 +1315,7 @@ AActor* RoughTracerCheck(AActor* mo, int index, angle_t fov)
 
 		// [Blair] Don't target teammates
 		if (mo->target->player && link->player &&
-		    P_AreTeammates((player_t&)mo->target->player, (player_t&)link->player))
+			P_AreTeammates(*mo->target->player, *link->player))
 		{
 			link = link->snext;
 			continue;
