@@ -27,25 +27,31 @@
 #include "g_multikill.h"
 #include "oscanner.h"
 
-/// <summary>
-/// Parses all SPREEDEF lumps for consumption by
-/// the spree and multi kill managers.
-/// </summary>
-void G_ParseSpreeDef()
+static void ParseKillInterval(OScanner& os, int& killinterval)
 {
-	int lump = -1;
+	os.assertTokenIs("killinterval");
+	os.mustScan();
+	os.assertTokenIs("=");
+	os.mustScanInt();
+	killinterval = os.getTokenInt();
+}
 
-	// No SPREEDEF? Load defaults and continue.
-	if (W_FindLump("SPREEDEF", lump) == -1)
-	{
-		MultiKillManager::getInstance().loadMultiKillDefaults();
-		return;
-	}
+static void ParseDamageInterval(OScanner& os, int& damageinterval)
+{
+	os.assertTokenIs("damageinterval");
+	os.mustScan();
+	os.assertTokenIs("=");
+	os.mustScanInt();
+	damageinterval = os.getTokenInt();
+}
 
-	while ((lump = W_FindLump("SPREEDEF", lump)) != -1)
-	{
-		ParseSpreeDef(lump, "SPREEDEF");
-	}
+static void ParseMultiInterval(OScanner& os, int& multikillinterval)
+{
+	os.assertTokenIs("multitimeinterval");
+	os.mustScan();
+	os.assertTokenIs("=");
+	os.mustScanInt();
+	multikillinterval = os.getTokenInt();
 }
 
 static void ParseSpreeDef(const int lump, const OLumpName name)
@@ -82,17 +88,16 @@ static void ParseSpreeDef(const int lump, const OLumpName name)
 		}
 		else if (os.compareTokenNoCase("spree"))
 		{
-			//ParseSpree(os);
+			// ParseSpree(os);
 		}
 		else if (os.compareTokenNoCase("multi"))
 		{
-			//ParseMulti(os);
+			// ParseMulti(os);
 		}
 		else
 		{
 			// We don't know what this token is.
-			std::string buffer =
-			    fmt::sprintf("Unknown Token \"%s\".", os.getToken());
+			std::string buffer = fmt::sprintf("Unknown Token \"%s\".", os.getToken());
 			os.error(buffer);
 		}
 	}
@@ -101,30 +106,23 @@ static void ParseSpreeDef(const int lump, const OLumpName name)
 	// If there's nothing here just load defaults
 }
 
-static void ParseKillInterval(OScanner& os, int& killinterval)
+/// <summary>
+/// Parses all SPREEDEF lumps for consumption by
+/// the spree and multi kill managers.
+/// </summary>
+void G_ParseSpreeDef()
 {
-	os.assertTokenIs("killinterval");
-	os.mustScan();
-	os.assertTokenIs("=");
-	os.mustScanInt();
-	killinterval = os.getTokenInt();
-}
+	int lump = -1;
 
-static void ParseDamageInterval(OScanner& os, int& damageinterval)
-{
-	os.assertTokenIs("damageinterval");
-	os.mustScan();
-	os.assertTokenIs("=");
-	os.mustScanInt();
-	damageinterval = os.getTokenInt();
-}
+	// No SPREEDEF? Load defaults and continue.
+	if (W_FindLump("SPREEDEF", lump) == -1)
+	{
+		MultiKillManager::getInstance().loadMultiKillDefaults();
+		return;
+	}
 
-static void ParseMultiInterval(OScanner& os, int& multikillinterval)
-{
-	os.assertTokenIs("multitimeinterval");
-	os.mustScan();
-	os.assertTokenIs("=");
-	os.mustScanInt();
-	multikillinterval = os.getTokenInt();
+	while ((lump = W_FindLump("SPREEDEF", lump)) != -1)
+	{
+		ParseSpreeDef(lump, "SPREEDEF");
+	}
 }
-
