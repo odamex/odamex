@@ -27,6 +27,8 @@
 #include <string>
 #include <vector>
 
+#include "d_player.h"
+
 struct MultiKillLevel_s
 {
 	std::string multikilltext;

@@ -27,9 +27,9 @@
 #include <string>
 #include <vector>
 
-struct MultiKillLevel_s
+struct spree_s
 {
-	std::string multikilltext;
+	std::string spreeText;
 	EColorRange color;
 };
 
@@ -38,23 +38,26 @@ class SpreeManager
 	public:
 		SpreeManager();
 		~SpreeManager();
-	  static SpreeManager& getInstance(); // returns the instantiated MultiKillManager
+	  static SpreeManager& getInstance(); // returns the instantiated SpreeManager
 	                                      // object
 
 		void reset(); // called when loading a new wad
 
-		void setMultiKillLevels(const std::vector<MultiKillLevel_s> multikills, int newinterval); // called when reading SPREEDEF to input new multi kill definitions
-		MultiKillLevel_s getMultiKillLevel(int level); // Gets the local multi kill level (with text and color)
+		void setSpreeLevels(const std::vector<spree_s> sprees,
+	                               int newinterval); // called when reading SPREEDEF to
+	                                                 // input new spree definitions
+	  spree_s getSpreeLevel(
+	        int level); // Gets the local spree level (with text and color)
 
-		int getMultiKillInterval(); // gets the multi kill interval for players
+		int getSpreeInterval(); // gets the multi kill interval for players
 
-		int getHighestMultiKillLevel(); // gets the highest multi kill level loaded
+		int getHighestSpreeLevel(); // gets the highest multi kill level loaded
 
-		void loadMultiKillDefaults(); // called if no SPREEDEF is found
+		void loadSpreeDefaults(); // called if no SPREEDEF is found
 	private:
-		int multiTimeInterval;
-		std::vector<MultiKillLevel_s> multiKillLevels;
+		int spreeKillInterval;
+		std::vector<spree_s> spreeLevels;
 };
 
-void G_ProcessMultiKills(AActor* source, player_t* target);
-void G_TicMultiKill(player_t* player);
+void G_ProcessSprees(AActor* source, player_t* target);
+void G_TicSprees(player_t* player);

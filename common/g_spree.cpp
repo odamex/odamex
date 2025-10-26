@@ -29,7 +29,7 @@
 #include "p_local.h"
 #include "s_sound.h"
 
-#include "g_multikill.h"
+#include "g_spree.h"
 #include "m_ostring.h"
 
 //
@@ -51,99 +51,99 @@ SpreeManager::~SpreeManager()
 
 SpreeManager::SpreeManager()
 {
-	multiTimeInterval = 4 * TICRATE;
+	spreeKillInterval = 5;
 }
 
 //
 // SpreeManager::reset
 //
-// Erases the current multikills levels and sets their defaults.
+// Erases the current spree levels and sets their defaults.
 //
 void SpreeManager::reset()
 {
-	multiKillLevels.clear();
-	multiTimeInterval = 4 * TICRATE;
+	spreeLevels.clear();
+	spreeKillInterval = 5;
 }
 
 //
-// SpreeManager::loadMultiKillDefaults
+// SpreeManager::loadSpreeDefaults
 //
-// Sets defaults for loading multi kills.
+// Sets defaults for loading sprees.
 //
-void SpreeManager::loadMultiKillDefaults()
+void SpreeManager::loadSpreeDefaults()
 {
-	multiKillLevels.clear();
-	MultiKillLevel_s emptylevel = {"", CR_GRAY};
+	spreeLevels.clear();
+	spree_s emptylevel = {"", CR_GRAY};
 	// First 2 levels (0 and 1), we insert empty levels as they're not multi kills.
-	multiKillLevels.push_back(emptylevel); // 0
-	multiKillLevels.push_back(emptylevel); // 1
+	spreeLevels.push_back(emptylevel);     // 0
+	spreeLevels.push_back(emptylevel); // 1
 
 	// Next, we input the next 9 levels with the default text. We don't use LANGUAGE tokens
 	// since some people won't have an updated WAD.
-	multiKillLevels.push_back({"Double Kill!",  CR_WHITE});    // 2
-	multiKillLevels.push_back({"Triple Kill!",  CR_TAN});      // 3
-	multiKillLevels.push_back({"Multi Kill!",   CR_BLUE});     // 4
-	multiKillLevels.push_back({"Ultra Kill!",   CR_BRICK});    // 5
-	multiKillLevels.push_back({"Overkill!",     CR_CYAN});     // 6
-	multiKillLevels.push_back({"Mega Kill!",    CR_CREAM});    // 7
-	multiKillLevels.push_back({"Monster Kill!", CR_ORANGE});   // 8
-	multiKillLevels.push_back({"Mythic Kill!",  CR_PURPLE});   // 9
-	multiKillLevels.push_back({"Killionaire!",  CR_DARKGREEN});// 10
-	multiKillLevels.push_back({"Terminator!",   CR_RED});      // 11
+	spreeLevels.push_back({"Double Kill!", CR_WHITE});         // 2
+	spreeLevels.push_back({"Triple Kill!", CR_TAN});           // 3
+	spreeLevels.push_back({"Multi Kill!", CR_BLUE});           // 4
+	spreeLevels.push_back({"Ultra Kill!", CR_BRICK});          // 5
+	spreeLevels.push_back({"Overkill!", CR_CYAN});             // 6
+	spreeLevels.push_back({"Mega Kill!", CR_CREAM});           // 7
+	spreeLevels.push_back({"Monster Kill!", CR_ORANGE});       // 8
+	spreeLevels.push_back({"Mythic Kill!", CR_PURPLE});        // 9
+	spreeLevels.push_back({"Killionaire!", CR_DARKGREEN});     // 10
+	spreeLevels.push_back({"Terminator!", CR_RED});            // 11
 
-	multiTimeInterval = 4 * TICRATE;
+	spreeKillInterval = 5;
 }
 
 //
-// SpreeManager::getMultiKillInterval
+// SpreeManager::getSpreeInterval
 //
-// Gets the multi kill interval to trigger multi kills.
+// Gets the spree interval to trigger sprees.
 //
-int SpreeManager::getMultiKillInterval()
+int SpreeManager::getSpreeInterval()
 {
-	return multiTimeInterval;
+	return spreeKillInterval;
 }
 
 //
-// SpreeManager::getHighestMultiKillLevel
+// SpreeManager::getHighestSpreeLevel
 //
-// Gets the highest multi kill level.
+// Gets the highest spree.
 //
-int SpreeManager::getHighestMultiKillLevel()
+int SpreeManager::getHighestSpreeLevel()
 {
-	return multiKillLevels.size();
+	return spreeLevels.size();
 }
 
 //
-// SpreeManager::getMultiKillLevel
+// SpreeManager::getSpreeLevel
 //
 // Gets the highest multi kill level.
 // If higher than the max level, get the highest one.
 // If the array isnt populated, return it empty.
 //
-MultiKillLevel_s SpreeManager::getMultiKillLevel(int level)
+spree_s SpreeManager::getSpreeLevel(int level)
 {
-	if (getHighestMultiKillLevel() <= 0)
+	if (getHighestSpreeLevel() <= 0)
 		return {"", CR_GRAY};
 
 
-	if (level > multiKillLevels.size())
-		level = multiKillLevels.size();
+	if (level > spreeLevels.size())
+		level = spreeLevels.size();
 
-	return multiKillLevels.at(level);
+	return spreeLevels.at(level);
 }
 
 //
-// SpreeManager::setMultiKillLevels
+// SpreeManager::setSpreeLevels
 //
-// Creates a new MultiKillLevel list and interval,
+// Creates a new spree list and interval,
 // as if reading a SPREEDEF to create a new multi kill level paradigm.
 //
-void SpreeManager::setMultiKillLevels(const std::vector<MultiKillLevel_s> multikills,
+void SpreeManager::setSpreeLevels(const std::vector<spree_s> sprees,
                                           int newinterval)
 {
-	multiKillLevels = multikills;
-	multiTimeInterval = newinterval;
+	spreeLevels = sprees;
+	spreeKillInterval = newinterval;
 }
 
 // ==========================================================
@@ -151,7 +151,7 @@ void SpreeManager::setMultiKillLevels(const std::vector<MultiKillLevel_s> multik
 // ==========================================================
 
 /// <summary>
-/// G_ProcessMultiKills occurs after a kill to determine
+/// G_ProcessSprees occurs after a kill to determine
 /// if this kill is an interval for a kill streak.
 ///
 /// If so, show the kill streak text to the source player if he's the camera player.
@@ -160,7 +160,7 @@ void SpreeManager::setMultiKillLevels(const std::vector<MultiKillLevel_s> multik
 /// </summary>
 /// <param name="source">The killer (if a monster/player, null if environment/zombie
 /// projectile)</param> <param name="target">The victim</param>
-void G_ProcessMultiKills(AActor* source, player_t* target)
+void G_ProcessSprees(AActor* source, player_t* target)
 {
 	if (target)
 	{
@@ -176,7 +176,7 @@ void G_ProcessMultiKills(AActor* source, player_t* target)
 	source->player->lastkilltime = ::level.time;
 
 	// Reset this player's multikilltics
-	source->player->multikilltics = SpreeManager::getInstance().getMultiKillInterval();
+	source->player->multikilltics = SpreeManager::getInstance().getSpreeInterval();
 
 	if (displayplayer_id == source->player->id &&
 			source->player->multikills > 1)
@@ -190,7 +190,7 @@ void G_ProcessMultiKills(AActor* source, player_t* target)
 /// Handles ticking players for multi kills.
 /// </summary>
 /// <param name="player">Player to tick.</param>
-void G_TicMultiKill(player_t* player)
+void G_TicSprees(player_t* player)
 {
 	if (!player)
 		return;
