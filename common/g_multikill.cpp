@@ -111,7 +111,7 @@ int MultiKillManager::getMultiKillInterval()
 //
 int MultiKillManager::getHighestMultiKillLevel()
 {
-	return multiKillLevels.size();
+	return multiKillLevels.size() - 1;
 }
 
 //
@@ -127,8 +127,8 @@ MultiKillLevel_s MultiKillManager::getMultiKillLevel(int level)
 		return {"", CR_GRAY};
 
 
-	if (level > multiKillLevels.size())
-		level = multiKillLevels.size();
+	if (level >= multiKillLevels.size())
+		level = multiKillLevels.size() - 1;
 
 	return multiKillLevels.at(level);
 }
