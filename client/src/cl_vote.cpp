@@ -35,6 +35,10 @@
 #include "i_net.h"
 #include "i_system.h"
 
+#include "s_sound.h"
+#include "c_cvars.h"
+EXTERN_CVAR(snd_votesfx)
+
 //////// VOTING STATE ////////
 
 // Return a singleton reference for the class.
@@ -43,7 +47,14 @@ VoteState& VoteState::instance() {
 	return singleton;
 }
 
-void VoteState::set(const vote_state_t &vote_state) {
+void VoteState::set(const vote_state_t& vote_state)
+{
+	// capture previous state BEFORE overwriting
+	const bool was_visible = this->visible;
+	const auto prev_result = this->result;
+	const auto prev_votestring = this->votestring;
+
+	// overwrite with new state
 	this->visible = true;
 	this->result = vote_state.result;
 	this->votestring = vote_state.votestring;
@@ -54,6 +65,34 @@ void VoteState::set(const vote_state_t &vote_state) {
 	this->no = vote_state.no;
 	this->no_needed = vote_state.no_needed;
 	this->abs = vote_state.abs;
+
+	// [RV] Play "start" when the vote first appears or the prompt changed
+	const bool votestring_changed = (prev_votestring != vote_state.votestring);
+	if (!was_visible || votestring_changed)
+	{
+		if (snd_votesfx)
+			S_Sound(CHAN_INTERFACE, "ui/vote/start", 1.0f, ATTN_NONE);
+	}
+
+	// [RV] Play "pass/fail" exactly once when result becomes decided
+	if (prev_result == VOTE_UNDEC && vote_state.result != VOTE_UNDEC)
+	{
+		switch (vote_state.result)
+		{
+		case VOTE_YES:
+			if (snd_votesfx)
+				S_Sound(CHAN_INTERFACE, "ui/vote/pass", 1.0f, ATTN_NONE);
+			break;
+		case VOTE_NO:
+		case VOTE_INTERRUPT:
+		case VOTE_ABANDON:
+			if (snd_votesfx)
+				S_Sound(CHAN_INTERFACE, "ui/vote/fail", 1.0f, ATTN_NONE);
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 bool VoteState::get(vote_state_t &vote_state) {
@@ -249,6 +288,9 @@ BEGIN_COMMAND(vote_yes)
 	MSG_WriteString(&net_buffer, "vote");
 	MSG_WriteByte(&net_buffer, 1);
 	MSG_WriteString(&net_buffer, "yes");
+
+	if (snd_votesfx)
+		S_Sound(CHAN_INTERFACE, "ui/vote/yes", 1.0f, ATTN_NONE);
 }
 END_COMMAND(vote_yes)
 
@@ -267,5 +309,8 @@ BEGIN_COMMAND(vote_no)
 	MSG_WriteString(&net_buffer, "vote");
 	MSG_WriteByte(&net_buffer, 1);
 	MSG_WriteString(&net_buffer, "no");
+
+	if (snd_votesfx)
+		S_Sound(CHAN_INTERFACE, "ui/vote/no", 1.0f, ATTN_NONE);
 }
 END_COMMAND(vote_no)

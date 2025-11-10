@@ -921,8 +921,26 @@ void P_LoadThings (int lump)
 		//		handle these and more cases better, so we just pass it
 		//		everything and let it decide what to do with them.
 
+		// [RH] Need to translate the spawn flags to Hexen format.
 		short flags = LESHORT(mt->options);
-		mt2.flags = flags;
+		mt2.flags = (short)((flags & 0xf) | 0x7e0);
+		if (flags & BTF_NOTSINGLE)
+		{
+			#ifdef SERVER_APP
+			if (G_IsCoopGame())
+			{
+				if (g_thingfilter == 1)
+					mt2.flags |= MTF_FILTER_COOPWPN;
+				else if (g_thingfilter == 2)
+					mt2.flags &= ~MTF_COOPERATIVE;
+			}
+			else
+			#endif
+				mt2.flags &= ~MTF_SINGLE;
+		}
+		if (flags & BTF_NOTDEATHMATCH)		mt2.flags &= ~MTF_DEATHMATCH;
+		if (flags & BTF_NOTCOOPERATIVE)		mt2.flags &= ~MTF_COOPERATIVE;
+		if (flags & BTF_FRIEND)				mt2.flags |= MTF_FRIENDLY;
 
 		mt2.x = LESHORT(mt->x);
 		mt2.y = LESHORT(mt->y);

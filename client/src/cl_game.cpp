@@ -194,6 +194,13 @@ CVAR_FUNC_IMPL(cl_mouselook)
 	R_InitSkyMap ();
 }
 
+CVAR_FUNC_IMPL(joy_freelook)
+{
+	// [RV] - Center view, Update Skies
+	AddCommandString("centerview");
+	R_InitSkyMap();
+}
+
 char			demoname[256];
 bool 			demoplayback;
 

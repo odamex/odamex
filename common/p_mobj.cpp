@@ -2932,53 +2932,21 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		return;
 	}
 
-	if (map_format.getZDoom())
+	// Filter mapthings based on the gamemode
+	if (!multiplayer && g_thingfilter != -1 && !G_GetCurrentSkill().spawn_multi)
 	{
-		// Filter mapthings based on the gamemode
-		if (!multiplayer && g_thingfilter != -1 && !G_GetCurrentSkill().spawn_multi)
-		{
-			if (!(mthing->flags & MTF_SINGLE))
-				return;
-		}
-		else if (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM)
-		{
-			if (!(mthing->flags & MTF_DEATHMATCH))
-				return;
-		}
-		else if (G_IsCoopGame())
-		{
-			if (g_thingfilter == 1)
-				mthing->flags |= MTF_FILTER_COOPWPN;
-			else if (!(mthing->flags & MTF_COOPERATIVE) || g_thingfilter == 2)
-				return;
-		}
+		if (!(mthing->flags & MTF_SINGLE))
+			return;
 	}
-	else
+	else if (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM)
 	{
-		if (mthing->flags & BTF_NOTSINGLE)
-		{
-			if (G_IsCoopGame() && multiplayer)
-			{
-				if (g_thingfilter == 1)
-					mthing->flags |= MTF_FILTER_COOPWPN;
-				else if (g_thingfilter == 2)
-					return;
-			}
-			else if (!multiplayer && g_thingfilter != -1)
-				return;
-		}
-		else if (mthing->flags & BTF_NOTDEATHMATCH)
-		{
-			if (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM)
-				return;
-		}
-		else if (mthing->flags & BTF_NOTCOOPERATIVE)
-		{
-			if (G_IsCoopGame() && multiplayer)
-			{
-				return;
-			}
-		}
+		if (!(mthing->flags & MTF_DEATHMATCH))
+			return;
+	}
+	else if (G_IsCoopGame())
+	{
+		if (!(mthing->flags & MTF_COOPERATIVE))
+			return;
 	}
 
 	if (g_thingfilter == 3 && P_IsPickupableThing(mthing->type))
@@ -3204,16 +3172,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (mthing->flags & MTF_AMBUSH)
 		mobj->flags |= MF_AMBUSH;
 
-	if (map_format.getZDoom())
-	{
-		if (mthing->flags & MTF_FRIENDLY)
-			mobj->flags |= MF_FRIEND;
-	}
-	else
-	{
-		if (mthing->flags & MTF_FRIEND)
-			mobj->flags |= MF_FRIEND;
-	}
+	if (mthing->flags & MTF_FRIENDLY)
+		mobj->flags |= MF_FRIEND;
 
 	// [RH] Add ThingID to mobj and link it in with the others
 	mobj->tid = mthing->thingid;

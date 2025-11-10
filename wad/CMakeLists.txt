@@ -270,6 +270,11 @@ set(ODAWAD_SOURCES
   lumps/dvyfr.lmp
   lumps/dvyft.lmp
   lumps/dvys.lmp
+  lumps/dsvtstrt.lmp
+  lumps/dsvtno.lmp
+  lumps/dsvtyes.lmp
+  lumps/dsvtpass.lmp
+  lumps/dsvtfail.lmp
   lumps/language.lmp
   lumps/railgf1.lmp
   lumps/s_skin.lmp

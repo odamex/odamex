@@ -84,6 +84,7 @@ static const char* def_masterlist[] =
 {
 	"master1.odamex.net:15000"
 	,"voxelsoft.com:15000"
+	,"odamex.electricbrass.net:15000"
 	,NULL
 };
 

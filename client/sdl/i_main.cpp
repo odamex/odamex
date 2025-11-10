@@ -25,15 +25,6 @@
 
 #include "odamex.h"
 
-// denis - todo - remove
-#include "win32inc.h"
-#ifdef _WIN32
-    #undef GetMessage
-    typedef bool (WINAPI *SetAffinityFunc)(HANDLE hProcess, DWORD mask);
-#else
-    #include <sched.h>
-#endif // WIN32
-
 #ifdef UNIX
 // for getuid and geteuid
 #include <unistd.h>
@@ -181,28 +172,6 @@ int main(int argc, char *argv[])
 				Args.AppendArg(location.substr(0, term).data());
 			}
 		}
-
-#if defined _WIN32
-
-        // Set the process affinity mask to 1 on Windows, so that all threads
-        // run on the same processor.  This is a workaround for a bug in
-        // SDL_mixer that causes occasional crashes.  Thanks to entryway and fraggle for this.
-        //
-        // [ML] 8/6/10: Updated to match prboom+'s I_SetAffinityMask.  We don't do everything
-        // you might find in there but we do enough for now.
-        HMODULE kernel32_dll = LoadLibrary("kernel32.dll");
-
-        if (kernel32_dll)
-        {
-            SetAffinityFunc SetAffinity = (SetAffinityFunc)GetProcAddress(kernel32_dll, "SetProcessAffinityMask");
-
-            if (SetAffinity)
-            {
-                if (!SetAffinity(GetCurrentProcess(), 1))
-                    LOG << "Failed to set process affinity mask: " << GetLastError() << std::endl;
-            }
-        }
-#endif	// _WIN32
 
 		unsigned int sdl_flags = SDL_INIT_TIMER;
 
