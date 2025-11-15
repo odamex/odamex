@@ -26,38 +26,83 @@
 #pragma once
 #include <string>
 #include <vector>
+#include <map>
 
 struct spree_s
 {
-	std::string spreeText;
-	EColorRange color;
+  std::string spreeText;
+  std::string spreeBroadcastText;
+  EColorRange color;
+};
+
+struct spree_record
+{
+  std::string playerName;
+  int playerId;
+  int spreeLevel;
+  int spreeStartTic;
+};
+
+struct spree_breaker
+{
+  std::string spreeEndedName;
+  int spreeEndedPlayerId;
+  team_t spreeEndedTeam;
+
+  std::string spreeEnderName;
+  int spreeEnderPlayerId;
+  team_t spreeEnderTeam;
+  bool spreeEnderMonster;
+
+  int spreeEndedTic;
 };
 
 class SpreeManager
 {
-	public:
-		SpreeManager();
-		~SpreeManager();
-	  static SpreeManager& getInstance(); // returns the instantiated SpreeManager
-	                                      // object
+  public:
+    SpreeManager();
+    ~SpreeManager();
+    static SpreeManager& getInstance(); // returns the instantiated SpreeManager
+                                        // object
 
-		void reset(); // called when loading a new wad
+    void reset(); // called when loading a new wad
 
-		void setSpreeLevels(const std::vector<spree_s> sprees,
-	                               int newinterval); // called when reading SPREEDEF to
-	                                                 // input new spree definitions
-	  spree_s getSpreeLevel(
-	        int level); // Gets the local spree level (with text and color)
+    void setSpreeLevels(const std::vector<spree_s> sprees,
+                        int newKillinterval,    // called when reading SPREEDEF to
+                        int newDamageInterval); // input new spree definitions
 
-		int getSpreeInterval(); // gets the multi kill interval for players
+    spree_s getSpreeLevel(
+          int level); // Gets the local spree level (with text and color)
 
-		int getHighestSpreeLevel(); // gets the highest multi kill level loaded
+    int getSpreeInterval(); // gets the multi kill interval for players
 
-		void loadSpreeDefaults(); // called if no SPREEDEF is found
-	private:
-		int spreeKillInterval;
-		std::vector<spree_s> spreeLevels;
+    int getHighestSpreeLevel(); // gets the highest multi kill level loaded
+
+    void loadSpreeDefaults(); // called if no SPREEDEF is found
+
+    spree_record getSpreeRecord(int playerId); // gets a current spree for a player
+
+    spree_record getLatestSpreeRecord(int notPlayerId); // gets the latest spree excluding the current player
+
+    void recordPlayerKill(player_t* player); // Records a single kill for a player
+
+    spree_breaker getSpreeBreaker(); // gets the current spree breaker
+
+    void setSpreeBreaker(AActor* source,
+                         player_t* target); // sets the current spree breaker
+
+    bool hasSpree(const player_t* player);
+    void removeSpree(int playerid);
+
+  private:
+    int spreeKillInterval; // PVP
+    int spreeDamageInterval; // PVE
+
+    std::vector<spree_s> spreeLevels; // Levels of sprees configured during wad load
+
+    std::unordered_map<int, spree_record> spreeRecord; // Actually controls the spree display for the player.
+    spree_breaker spreeBreaker; // Updated with the last spree to be broken.
 };
 
-void G_ProcessSprees(AActor* source, player_t* target);
-void G_TicSprees(player_t* player);
+void G_ProcessSpreeKill(AActor* source, player_t* target);
+void G_TicSprees();
