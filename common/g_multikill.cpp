@@ -89,7 +89,7 @@ void MultiKillManager::loadMultiKillDefaults()
 	multiKillLevels.push_back({"Monster Kill!", CR_ORANGE});   // 8
 	multiKillLevels.push_back({"Mythic Kill!",  CR_PURPLE});   // 9
 	multiKillLevels.push_back({"Killionaire!",  CR_DARKGREEN});// 10
-	multiKillLevels.push_back({"Terminator!",   CR_RED});      // 11
+	multiKillLevels.push_back({"Terminator!",   CR_GOLD});     // 11
 
 	multiTimeInterval = 4 * TICRATE;
 }
