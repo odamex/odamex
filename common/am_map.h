@@ -118,3 +118,10 @@ inline bool AM_OverlayAutomapVisible() { return automapactive && viewactive; };
 void AM_SetBaseColorDoom();
 void AM_SetBaseColorRaven();
 void AM_SetBaseColorStrife();
+
+enum class am_lump_parse_error_t
+{
+	LUMP_NOT_FOUND,
+};
+
+nonstd::expected<std::vector<mline_t>, am_lump_parse_error_t> AM_ParseVectorLump(const OLumpName& name);

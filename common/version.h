@@ -89,7 +89,7 @@
 // SAVESIG is the save game signature. It should be the minimum version
 // whose savegames this version is compatible with, which could be
 // earlier than this version.  Needs to be exactly 16 chars long.
-// 
+//
 // upversion.py will update thie field deterministically and unambiguously.
 #define SAVESIG "ODAMEXSAVE012000"
 

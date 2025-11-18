@@ -883,7 +883,7 @@ BEGIN_COMMAND (serverinfo)
 	std::sort(server_cvars.begin(), server_cvars.end());
 
     // Heading
-    PrintFmt("\n{:>{}} - Value\n", MaxFieldLength, "Name");
+    PrintFmt("\n{1:>{0}} - Value\n", MaxFieldLength, "Name");
 
     // Data
 	for (const auto& varname : server_cvars)
@@ -891,7 +891,7 @@ BEGIN_COMMAND (serverinfo)
 		cvar_t *dummy;
 		Cvar = cvar_t::FindCVar(varname.c_str(), &dummy);
 
-		PrintFmt("{:>{}} - {}\n",
+		PrintFmt("{1:>{0}} - {2}\n",
 			     MaxFieldLength,
 			     Cvar->name(),
 			     Cvar->str());

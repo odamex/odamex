@@ -548,7 +548,7 @@ void P_MoveActor(AActor *mo)
 
 	P_XYMovement(mo);
 
-	if (mo->ObjectFlags & OF_MassDestruction)
+	if (mo->ObjectFlags & OF_Destroyed)
 		return;		// actor was destroyed
 
 	if (mo->flags2 & MF2_FLOATBOB)
@@ -598,7 +598,7 @@ void P_MoveActor(AActor *mo)
 			P_ZMovement(mo);
 		}
 
-		if (mo->ObjectFlags & OF_MassDestruction)
+		if (mo->ObjectFlags & OF_Destroyed)
 			return; // actor was destroyed
 	}
 	else if (!(mo->momx | mo->momy) && !sentient(mo))

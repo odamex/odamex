@@ -2060,7 +2060,7 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 	if (!::hud_revealsecrets || ::hud_revealsecrets > 2)
 		return;
 
-	PrintFmt("{}", "{}{} {}found a secret!\n", TEXTCOLOR_YELLOW,
+	PrintFmt("{}{} {}found a secret!\n", TEXTCOLOR_YELLOW,
 	                player.userinfo.netname, TEXTCOLOR_NORMAL);
 
 	if (::hud_revealsecrets == 1)

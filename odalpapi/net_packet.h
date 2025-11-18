@@ -307,7 +307,7 @@ private:
 
 		Out.port = atoi(In.substr(colon + 1).c_str());
 		Out.ip = In.substr(0, colon);
-		
+
 		return true;
 	}
 public:
@@ -351,12 +351,12 @@ public:
 	bool AddMaster(std::string Address)
 	{
         addr_t Master;
-		
+
 		if (!StrAddrToAddrT(Address, Master))
             return false;
-		
+
 		Master.custom = true;
-		
+
 		AddMaster(Master);
 
 		return true;
@@ -392,10 +392,10 @@ public:
 		{
 		    return addresses[Index].custom;
 		}
-		
+
 		return false;
 	}
-	
+
 	bool IsCustomServer(const std::string &Address)
 	{
 	    std::vector<addr_t>::const_iterator i;
@@ -406,17 +406,17 @@ public:
 
         for (i = addresses.begin(); i != addresses.end(); ++i)
         {
-            if (i->ip == ServerAddr.ip && 
+            if (i->ip == ServerAddr.ip &&
                 i->port == ServerAddr.port)
             {
                 if (i->custom)
                     return true;
             }
         }
-        
+
         return false;
 	}
-	
+
 	void AddServer(const std::string& Address, const uint16_t& Port,
 	               const bool& Custom = false)
 	{

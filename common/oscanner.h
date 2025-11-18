@@ -85,16 +85,16 @@ class OScanner
 	[[nodiscard]] bool compareTokenNoCase(const char* string) const;
 
 	template <typename... ARGS>
-	void warning(const fmt::string_view format, const ARGS&... args) const
+	void warning(fmt::format_string<ARGS...> format, ARGS&&... args) const
 	{
 		PrintFmt(PRINT_WARNING, "Parse Warning: {}:{}: {}\n", m_config.lumpName,
-		       m_lineNumber, fmt::format(format, args...));
+		       m_lineNumber, fmt::format(format, std::forward<ARGS>(args)...));
 	}
 
 	template <typename... ARGS>
-	void error(const fmt::string_view format, const ARGS&... args) const
+	void error(fmt::format_string<ARGS...> format, ARGS&&... args) const
 	{
 		I_Error("Parse Error: {}:{}: {}", m_config.lumpName, m_lineNumber,
-		        fmt::format(format, args...));
+		        fmt::format(format, std::forward<ARGS>(args)...));
 	}
 };

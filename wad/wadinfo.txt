@@ -28,6 +28,7 @@ DDTARROW
 DAGGER
 CHEATKEY
 EASYKEY
+OBOSSMAP
 
 # List of Sounds (prevent conversion)
 DSEMPTY

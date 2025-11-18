@@ -61,6 +61,7 @@ argb_t CL_GetPlayerColor(player_t*);
 EXTERN_CVAR(am_followplayer)
 
 static int lockglow = 0;
+static int bossglow = 0;
 
 EXTERN_CVAR(am_rotate)
 EXTERN_CVAR(am_overlay)
@@ -194,6 +195,7 @@ typedef struct
 // vector graphics for the automap for things.
 std::vector<mline_t> thintriangle_guy;
 std::vector<mline_t> thinrectangle_guy;
+std::vector<mline_t> hordeboss_guy;
 
 am_default_colors_t AutomapDefaultColors;
 am_colors_t AutomapDefaultCurrentColors;
@@ -446,6 +448,7 @@ void AM_initVariables()
 
 	thintriangle_guy.clear();
 	thinrectangle_guy.clear();
+	hordeboss_guy.clear();
 
 	mline_t ml;
 
@@ -465,6 +468,24 @@ void AM_initVariables()
 	ADD_TO_VEC(thinrectangle_guy,  1, -1, -1, -1)
 	ADD_TO_VEC(thinrectangle_guy, -1, -1, -1,  1)
 	ADD_TO_VEC(thinrectangle_guy, -1,  1,  1,  1)
+
+	static const OLumpName bossicon = "OBOSSMAP";
+	const auto hordeboss_lines = AM_ParseVectorLump(bossicon);
+	if (!hordeboss_lines)
+	{
+		switch (hordeboss_lines.error())
+		{
+			case am_lump_parse_error_t::LUMP_NOT_FOUND:
+				DPrintFmt("Horde boss automap icon lump \"{}\" could not be found", bossicon);
+				break;
+			default:
+				DPrintFmt("Error while parsing horde boss automap icon lump \"{}\"", bossicon);
+		}
+	}
+	else
+	{
+		hordeboss_guy = hordeboss_lines.value();
+	}
 
 #undef ADD_TO_VEC
 #undef L
@@ -934,6 +955,12 @@ void AM_Ticker()
 		lockglow++;
 	else
 		lockglow = 0;
+
+	if (bossglow < 60)
+		bossglow++;
+	else
+		bossglow = 0;
+
 }
 
 //
@@ -1512,7 +1539,7 @@ void AM_rotatePoint(mpoint_t& pt)
 	pt.y += y;
 }
 
-void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed64_t scale,
+void AM_drawLineCharacter(nonstd::span<const mline_t> lineguy, fixed64_t scale,
                           angle_t angle, am_color_t color, fixed64_t x, fixed64_t y)
 {
 	for (const auto& mline : lineguy)
@@ -1670,7 +1697,7 @@ void AM_drawPlayers()
 	}
 }
 
-bool AM_actorIsKey(AActor* t)
+bool AM_actorIsKey(const AActor* t)
 {
 	if (t->sprite == SPR_BKEY || t->sprite == SPR_YKEY || t->sprite == SPR_RKEY ||
 	    t->sprite == SPR_BSKU || t->sprite == SPR_YSKU || t->sprite == SPR_RSKU)
@@ -1681,7 +1708,7 @@ bool AM_actorIsKey(AActor* t)
 	return false;
 }
 
-am_color_t AM_getKeyColor(AActor *t)
+am_color_t AM_getKeyColor(const AActor *t)
 {
 	am_color_t color = gameinfo.currentAutomapColors.ThingColor;
 	const argb_t* palette = V_GetDefaultPalette()->colors;
@@ -1696,123 +1723,177 @@ am_color_t AM_getKeyColor(AActor *t)
 	return color;
 }
 
-void AM_drawEasyKeys()
+void AM_drawEasyKey(const AActor* t)
 {
-	for (const sector_t& sector : R_GetSectors())
+	if (AM_actorIsKey(t))
 	{
-		AActor* t = sector.thinglist;
-		while (t)
+		mpoint_t p;
+		M_SetVec2Fixed64(&p, FIXED2FIXED64(t->x), FIXED2FIXED64(t->y));
+
+		const am_color_t key_color = AM_getKeyColor(t);
+
+		AM_drawLineCharacter(gameinfo.easyKey, FIXED2FIXED64(t->radius), 0, key_color, p.x, p.y);
+	}
+}
+
+void AM_drawHordeBoss(const AActor* t)
+{
+	OInterpolation& oi = OInterpolation::getInstance();
+
+	if (t->oflags & MFO_BOSSPOOL)
+	{
+		fixed_t thingx;
+		fixed_t thingy;
+
+		if (oi.enabled())
 		{
-			if (AM_actorIsKey(t))
-			{
-				mpoint_t p;
-				M_SetVec2Fixed64(&p, FIXED2FIXED64(t->x), FIXED2FIXED64(t->y));
-
-				const am_color_t key_color = AM_getKeyColor(t);
-
-				AM_drawLineCharacter(gameinfo.easyKey, FIXED2FIXED64(t->radius), 0, key_color, p.x, p.y);
-			}
-			t = t->snext;
+			thingx = t->prevx + FixedMul(t->x - t->prevx, render_lerp_amount);
+			thingy = t->prevy + FixedMul(t->y - t->prevy, render_lerp_amount);
 		}
+		else
+		{
+			thingx = t->x;
+			thingy = t->y;
+		}
+
+		mpoint_t p;
+		M_SetVec2Fixed64(&p, FIXED2FIXED64(thingx), FIXED2FIXED64(thingy));
+		if (am_rotate)
+			AM_rotatePoint(p);
+
+		const palette_t* palette = V_GetDefaultPalette();
+		am_color_t gold = AM_GetColorFromString(palette->colors, "light goldenrod yellow");
+		auto r = gold.rgb.getr();
+		auto g = gold.rgb.getg();
+		auto b = gold.rgb.getb();
+		float rdif = (255 - r) / 30;
+		float gdif = (0 - g) / 30;
+		float bdif = (0 - b) / 30;
+
+		if (bossglow < 20)
+		{
+			r += static_cast<int>(rdif) * bossglow;
+			g += static_cast<int>(gdif) * bossglow;
+			b += static_cast<int>(bdif) * bossglow;
+		}
+		else if (bossglow < 40)
+		{
+			r += static_cast<int>(rdif) * (40 - bossglow);
+			g += static_cast<int>(gdif) * (40 - bossglow);
+			b += static_cast<int>(bdif) * (40 - bossglow);
+		}
+
+		AM_drawLineCharacter(hordeboss_guy, FIXED2FIXED64(t->radius), 0, AM_BestColor(palette->basecolors, r, g, b),
+		                     p.x, p.y);
+	}
+}
+
+void AM_drawCheatThing(const AActor* t)
+{
+	OInterpolation& oi = OInterpolation::getInstance();
+
+	mpoint_t p;
+
+	fixed_t thingx;
+	fixed_t thingy;
+
+	fixed_t tangle;
+
+	if (oi.enabled())
+	{
+		thingx = t->prevx + FixedMul(t->x - t->prevx, render_lerp_amount);
+		thingy = t->prevy + FixedMul(t->y - t->prevy, render_lerp_amount);
+		tangle = t->prevangle + FixedMul(t->angle - t->prevangle, render_lerp_amount);
+	}
+	else
+	{
+		thingx = t->x;
+		thingy = t->y;
+		tangle = t->angle;
+	}
+
+	M_SetVec2Fixed64(&p, FIXED2FIXED64(thingx), FIXED2FIXED64(thingy));
+	angle_t rotate_angle = 0;
+	angle_t triangle_angle = tangle;
+
+	if (am_rotate)
+	{
+		AM_rotatePoint(p);
+
+		fixed_t conangle;
+
+		if (oi.enabled())
+		{
+			conangle = displayplayer().camera->prevangle +
+				FixedMul(displayplayer().camera->angle -
+				displayplayer().camera->prevangle,
+				render_lerp_amount);
+		}
+		else
+		{
+			conangle = displayplayer().camera->angle;
+		}
+
+		rotate_angle = ANG90 - conangle;
+		triangle_angle += rotate_angle;
+	}
+
+	if (AM_actorIsKey(t))
+	{
+		if (!G_GetCurrentSkill().easy_key)
+		{
+			const am_color_t key_color = AM_getKeyColor(t);
+
+			AM_drawLineCharacter(gameinfo.cheatKey, FIXED2FIXED64(t->radius), 0, key_color, p.x,
+			                     p.y);
+		}
+	}
+	else
+	{
+		am_color_t color = gameinfo.currentAutomapColors.ThingColor;
+
+		AM_drawLineCharacter(thintriangle_guy, FIXED2FIXED64(t->radius), triangle_angle, color,
+		                     p.x, p.y);
+
+		if (t->flags & MF_MISSILE)
+		{
+			color = gameinfo.currentAutomapColors.ThingColor_Projectile;
+		}
+		else if (t->flags & MF_SPECIAL)
+		{
+			if (t->flags & MF_COUNTITEM)
+				color = gameinfo.currentAutomapColors.ThingColor_CountItem;
+			else
+				color = gameinfo.currentAutomapColors.ThingColor_Item;
+		}
+		else if (t->flags & MF_SOLID && t->flags & MF_SHOOTABLE)
+		{
+			if (t->flags & MF_FRIEND)
+				color = gameinfo.currentAutomapColors.ThingColor_Friend;
+			else if (t->flags & MF_COUNTKILL)
+				color = gameinfo.currentAutomapColors.ThingColor_Monster;
+			else
+				color = gameinfo.currentAutomapColors.ThingColor_NoCountMonster;
+		}
+
+		AM_drawLineCharacter(thinrectangle_guy, FIXED2FIXED64(t->radius), rotate_angle, color,
+		                     p.x, p.y);
 	}
 }
 
 void AM_drawThings()
 {
-	OInterpolation& oi = OInterpolation::getInstance();
-
 	for (const sector_t& sector : R_GetSectors())
 	{
-		AActor* t = sector.thinglist;
+		const AActor* t = sector.thinglist;
 		while (t)
 		{
-			mpoint_t p;
-
-			fixed_t thingx;
-			fixed_t thingy;
-
-			fixed_t tangle;
-
-			if (oi.enabled())
-			{
-				thingx = t->prevx + FixedMul(t->x - t->prevx, render_lerp_amount);
-				thingy = t->prevy + FixedMul(t->y - t->prevy, render_lerp_amount);
-				tangle = t->prevangle + FixedMul(t->angle - t->prevangle, render_lerp_amount);
-			}
-			else
-			{
-				thingx = t->x;
-				thingy = t->y;
-				tangle = t->angle;
-			}
-
-			M_SetVec2Fixed64(&p, FIXED2FIXED64(thingx), FIXED2FIXED64(thingy));
-			angle_t rotate_angle = 0;
-			angle_t triangle_angle = tangle;
-
-			if (am_rotate)
-			{
-				AM_rotatePoint(p);
-
-				fixed_t conangle;
-
-				if (oi.enabled())
-				{
-					conangle = displayplayer().camera->prevangle +
-						FixedMul(displayplayer().camera->angle -
-						displayplayer().camera->prevangle,
-						render_lerp_amount);
-				}
-				else
-				{
-					conangle = displayplayer().camera->angle;
-				}
-
-				rotate_angle = ANG90 - conangle;
-				triangle_angle += rotate_angle;
-			}
-
-			if (AM_actorIsKey(t))
-			{
-				if (!G_GetCurrentSkill().easy_key)
-				{
-					const am_color_t key_color = AM_getKeyColor(t);
-
-					AM_drawLineCharacter(gameinfo.cheatKey, FIXED2FIXED64(t->radius), 0, key_color, p.x,
-					                     p.y);
-				}
-			}
-			else
-			{
-				am_color_t color = gameinfo.currentAutomapColors.ThingColor;
-
-				AM_drawLineCharacter(thintriangle_guy, FIXED2FIXED64(t->radius), triangle_angle, color,
-				                     p.x, p.y);
-
-				if (t->flags & MF_MISSILE)
-				{
-					color = gameinfo.currentAutomapColors.ThingColor_Projectile;
-				}
-				else if (t->flags & MF_SPECIAL)
-				{
-					if (t->flags & MF_COUNTITEM)
-						color = gameinfo.currentAutomapColors.ThingColor_CountItem;
-					else
-						color = gameinfo.currentAutomapColors.ThingColor_Item;
-				}
-				else if (t->flags & MF_SOLID && t->flags & MF_SHOOTABLE)
-				{
-					if (t->flags & MF_FRIEND)
-						color = gameinfo.currentAutomapColors.ThingColor_Friend;
-					else if (t->flags & MF_COUNTKILL)
-						color = gameinfo.currentAutomapColors.ThingColor_Monster;
-					else
-						color = gameinfo.currentAutomapColors.ThingColor_NoCountMonster;
-				}
-
-				AM_drawLineCharacter(thinrectangle_guy, FIXED2FIXED64(t->radius), rotate_angle, color,
-				                     p.x, p.y);
-			}
+			if (G_IsHordeMode())
+				AM_drawHordeBoss(t);
+			if (G_GetCurrentSkill().easy_key)
+				AM_drawEasyKey(t);
+			if (am_cheating == 2)
+				AM_drawCheatThing(t);
 			t = t->snext;
 		}
 	}
@@ -1922,9 +2003,7 @@ void AM_Drawer()
 
 	AM_drawWalls();
 	AM_drawPlayers();
-	if (G_GetCurrentSkill().easy_key)
-		AM_drawEasyKeys();
-	if (am_cheating == 2)
+	if (G_IsHordeMode() || G_GetCurrentSkill().easy_key || (am_cheating == 2))
 		AM_drawThings();
 
 	if (!(viewactive && am_overlay < 2))

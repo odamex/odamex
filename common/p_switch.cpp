@@ -111,6 +111,9 @@ void P_InitSwitchList(void)
 				if (R_CheckTextureNumForName (list_p /* .name1 */) < 0)
 					continue;
 
+				if (R_CheckTextureNumForName (list_p + 9 /* .name2 */) < 0)
+					continue;
+
 				switchlist[i++] = R_TextureNumForName(list_p /* .name1 */);
 				switchlist[i++] = R_TextureNumForName(list_p + 9 /* .name2 */);
 			}

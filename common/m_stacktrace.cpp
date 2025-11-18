@@ -40,5 +40,8 @@ std::string M_GetStacktrace(std::string header)
 		.filter([](const auto& frame)
 			{ return frame.symbol.find("M_GetStacktrace") == std::string::npos; })
 		.filtered_frame_placeholders(false);
-	return formatter.format(cpptrace::generate_trace());
+	return fmt::format(
+		"{}\n\nPlease report this error to the Odamex Team at https://github.com/odamex/odamex/issues",
+		formatter.format(cpptrace::generate_trace())
+	);
 }

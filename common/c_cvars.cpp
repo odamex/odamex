@@ -752,6 +752,16 @@ BEGIN_COMMAND (toggle)
 	{
 		PrintFmt(PRINT_HIGH, "\"{}\" cannot be toggled.\n", argv[1]);
 	}
+	else if (var->flags() & CVAR_NOSET)
+	{
+		PrintFmt(PRINT_HIGH, "{} is write protected.\n", argv[1]);
+		return;
+	}
+	else if (multiplayer && baseapp == client && (var->flags() & CVAR_SERVERINFO))
+	{
+		PrintFmt(PRINT_HIGH, "{} is under server control.\n", argv[1]);
+		return;
+	}
 	else
 	{
 		if (var->flags() & CVAR_LATCH && var->flags() & CVAR_MODIFIED)

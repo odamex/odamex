@@ -608,6 +608,11 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		flip = sprframe->flip[0];
 	}
 
+	if (lump == -1) {
+		char frame = (thing->frame & FF_FRAMEMASK) + 'A';
+		I_Error("Frame {} for sprite {} could not be found.", frame, sprnames[thing->sprite]);
+	}
+
 	if (sprframe->width[rot] == SPRITE_NEEDS_INFO)
 	{
 		R_CacheSprite (sprdef);	// [RH] speeds up game startup time

@@ -1,12 +1,12 @@
 #==========================================
 #
 #	ODAMEX FOR NINTENDO SWITCH CMAKE FILE
-#	
-#	Do not forget to run this before even 
+#
+#	Do not forget to run this before even
 #	trying to do ANYTHING (CMake/Compile)!
 #
-#   Please read "client/switch/readme.md" for 
-#   more informations on how to compile for 
+#   Please read "client/switch/readme.md" for
+#   more informations on how to compile for
 #   the Nintendo Switch.
 #
 #==========================================

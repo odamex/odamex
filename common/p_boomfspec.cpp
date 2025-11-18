@@ -1384,7 +1384,7 @@ bool P_ActorInCompatibleSector(AActor* actor)
 	sector_t* sector = actor->subsector->sector;
 
 	if (sector && sector->special & KILL_MONSTERS_MASK && actor->z == actor->floorz &&
-	    !actor->player && actor->flags & MF_SHOOTABLE && !(actor->flags & MF_FLOAT))
+	    !actor->player && actor->type != MT_AVATAR && actor->flags & MF_SHOOTABLE && !(actor->flags & MF_FLOAT))
 	{
 		P_DamageMobj(actor, NULL, NULL, 10000);
 
