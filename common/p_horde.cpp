@@ -470,7 +470,7 @@ class HordeState
 	 * @param monsterCounts map to update the counts off (m_bossCounts or m_monsterCounts)
 	 * @param type Type of monster to increment count of
 	 */
-	void recountMonstersHelper(mobjCounts_t& monsterCounts, mobjtype_t type)
+	void recountMonstersHelper(mobjCounts_t& monsterCounts, int32_t type)
 	{
 		if (monsterCounts.count(type))
 		{

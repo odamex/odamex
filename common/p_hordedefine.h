@@ -146,7 +146,7 @@ struct hashfunc<mobjtype_t>
 	}
 };
 
-typedef OHashTable<mobjtype_t, int> mobjCounts_t;
+typedef OHashTable<int32_t, int> mobjCounts_t;
 
 void G_ParseHordeDefs();
 const hordeDefine_t& G_HordeDefine(size_t id);
