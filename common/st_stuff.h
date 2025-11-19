@@ -92,6 +92,9 @@ void LevelStateHUD();
 // HUD showing Multi Kill messages.
 void MultiKillHud();
 
+// HUD showing Spree messages.
+void SpreeHud();
+
 // [AM] Spectator HUD
 void SpectatorHUD();
 

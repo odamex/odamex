@@ -56,6 +56,7 @@
 #include "hu_speedometer.h"
 #include "am_map.h"
 #include "g_multikill.h"
+#include "g_spree.h"
 
 static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
 static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};
@@ -1300,6 +1301,14 @@ struct levelStateLines_t
 	levelStateLines_t() : lucent(1.0f) { }
 };
 
+struct multiKillLines_t
+{
+	std::string spreeText;
+	EColorRange color;
+	float lucent;
+	multiKillLines_t() : lucent(1.0f), color(CR_GRAY) { }
+};
+
 struct spreeLines_t
 {
 	std::string spreeText;
@@ -1389,6 +1398,54 @@ static void LevelStateHorde(levelStateLines_t& lines)
 	lines.lucent = lucentFade(tics, TICRATE * 3, TICRATE * 4);
 }
 
+void SpreeHud()
+{
+	if (!validplayer(displayplayer()))
+		return;
+
+	const player_t& p = displayplayer();
+
+	static SpreeManager& manager = SpreeManager::getInstance();
+
+	// Display the current display player's spree if within time
+	// As big text
+	spree_record spree_r = manager.getSpreeRecord(p.id);
+
+	if (spree_r.playerId != -1 && ::level.time - spree_r.spreeStartTic < 4 * TICRATE)
+	{
+		spree_s spree = manager.getSpreeLevel(spree_r.spreeLevel);
+		spreeLines_t line;
+
+		line.spreeText = spree.spreeText;
+		line.color = spree.color;
+
+		V_SetFont("BIGFONT");
+
+		const int surface_width = I_GetSurfaceWidth(),
+		          surface_height = I_GetSurfaceHeight();
+		int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
+		int h = 12 * CleanYfac;
+
+		line.lucent =
+		    lucentFade(::level.time - spree_r.spreeStartTic, TICRATE * 3, TICRATE * 4);
+
+		const float oldtrans = ::hud_transparency;
+		::hud_transparency = line.lucent;
+
+		if (::hud_transparency > 0.0f)
+		{
+			int y = (surface_height / 4) - h / 2;
+			::screen->DrawTextStretchedLuc(line.color, surface_width / 2 - w / 2, y,
+			                               line.spreeText.c_str(), ::CleanYfac,
+			                               ::CleanYfac);
+		}
+
+		::hud_transparency.ForceSet(oldtrans);
+
+		V_SetFont("SMALLFONT");
+	}
+}
+
 void MultiKillHud()
 {
 	if (!validplayer(displayplayer()))
@@ -1400,7 +1457,7 @@ void MultiKillHud()
 	if (p.multikills > 1 && ::level.time - p.lastkilltime < 4 * TICRATE)
 	{
 		MultiKillLevel_s multi = MultiKillManager::getInstance().getMultiKillLevel(p.multikills);
-		spreeLines_t line;
+		multiKillLines_t line;
 
 		line.spreeText = multi.multikilltext;
 		line.color = multi.color;
