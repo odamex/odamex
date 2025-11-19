@@ -25,6 +25,7 @@
 
 #include "w_wad.h"
 #include "g_multikill.h"
+#include "g_spree.h"
 #include "oscanner.h"
 
 static void ParseKillInterval(OScanner& os, int& killinterval)
@@ -118,6 +119,7 @@ void G_ParseSpreeDef()
 	if (W_FindLump("SPREEDEF", lump) == -1)
 	{
 		MultiKillManager::getInstance().loadMultiKillDefaults();
+		SpreeManager::getInstance().loadSpreeDefaults();
 		return;
 	}
 

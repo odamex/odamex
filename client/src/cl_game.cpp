@@ -1225,6 +1225,11 @@ void G_PlayerFinishLevel (player_t &player)
 	p->fixedcolormap = 0;				// cancel ir goggles
 	p->damagecount = 0; 				// no palette changes
 	p->bonuscount = 0;
+	p->killssincelastdeath = 0;
+	p->damagesincelastdeath = 0;
+	p->multikills = 0;
+	p->multikilltics = 0;
+	p->lastkilltime = 0;
 }
 
 

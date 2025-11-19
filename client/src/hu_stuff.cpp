@@ -546,6 +546,8 @@ void HU_Drawer()
 		hud::LevelStateHUD();
 
 		hud::MultiKillHud();
+
+		hud::SpreeHud();
 	}
 
 	// [csDoom] draw disconnected wire [Toke] Made this 1337er

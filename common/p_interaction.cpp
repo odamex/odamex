@@ -579,6 +579,7 @@ ItemEquipVal P_GivePower(player_t *player, int /*powertype_t*/ power)
 
 #include "v_textcolors.h"
 #include "g_multikill.h"
+#include "g_spree.h"
 
 	/*
  * @brief Player grabbed a resurrect player powerup
@@ -1955,6 +1956,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	}
 
 	G_ProcessMultiKills(source, target->player);
+	G_ProcessSpreeKill(source, target->player);
+
 
 	if (target->health > 0) // denis - when this function is used standalone
 	{

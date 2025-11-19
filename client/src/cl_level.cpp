@@ -57,6 +57,7 @@
 #include "wi_stuff.h"
 #include "z_zone.h"
 #include "m_wdlstats.h"
+#include "g_spree.h"
 
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
@@ -205,6 +206,8 @@ void G_InitNew (const char *mapname)
 	}
 
 	cvar_t::UnlatchCVars ();
+
+	SpreeManager::getInstance().clearSprees();
 
 	if (paused)
 	{
@@ -392,6 +395,8 @@ void G_DoCompleted (void)
 				player.didsecret = true;
 		}
 	}
+
+	SpreeManager::getInstance().clearSprees();
 
 	const WinInfo& win = levelstate.getWinInfo();
 	switch (win.type)

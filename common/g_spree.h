@@ -41,6 +41,7 @@ struct spree_record
   int playerId;
   int spreeLevel;
   int spreeStartTic;
+  bool stillDominating;
 };
 
 struct spree_breaker
@@ -67,12 +68,18 @@ class SpreeManager
 
     void reset(); // called when loading a new wad
 
+		void clearSprees(); // called when entering a new map or game
+
     void setSpreeLevels(const std::vector<spree_s> sprees,
                         int newKillinterval,    // called when reading SPREEDEF to
                         int newDamageInterval); // input new spree definitions
 
     spree_s getSpreeLevel(
           int level); // Gets the local spree level (with text and color)
+
+		int getSpreeLevelByKills(int kills); // Gets the spree level by the amount of kills the player has.
+
+		int getSpreeLevelByDamage(int damage); // Gets the spree level by the amount of damage the player has.
 
     int getSpreeInterval(); // gets the multi kill interval for players
 
@@ -84,15 +91,15 @@ class SpreeManager
 
     spree_record getLatestSpreeRecord(int notPlayerId); // gets the latest spree excluding the current player
 
-    void recordPlayerKill(player_t* player); // Records a single kill for a player
+    bool recordPlayerKill(const player_t* player); // Records a single kill for a player
 
     spree_breaker getSpreeBreaker(); // gets the current spree breaker
 
     void setSpreeBreaker(AActor* source,
                          player_t* target); // sets the current spree breaker
 
-    bool hasSpree(const player_t* player);
-    void removeSpree(int playerid);
+    bool hasSpree(const int playerid);
+    void removeSpree(const int playerid);
 
   private:
     int spreeKillInterval; // PVP
