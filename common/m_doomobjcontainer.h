@@ -41,6 +41,7 @@
 #include <vector>
 #include <typeinfo>
 #include <optional>
+#include <iterator>
 
 // Forward declarations:
 struct state_t;
