@@ -9,8 +9,8 @@
 #ifndef NONSTD_BIT_LITE_HPP
 #define NONSTD_BIT_LITE_HPP
 
-#define bit_lite_MAJOR  1
-#define bit_lite_MINOR  2
+#define bit_lite_MAJOR  2
+#define bit_lite_MINOR  0
 #define bit_lite_PATCH  0
 
 #define bit_lite_VERSION  bit_STRINGIFY(bit_lite_MAJOR) "." bit_STRINGIFY(bit_lite_MINOR) "." bit_STRINGIFY(bit_lite_PATCH)
@@ -79,6 +79,8 @@
 # define bit_HAVE_BYTESWAP  0
 #endif
 
+// Provide bit functions in namespace nonstd :
+
 namespace nonstd
 {
     using std::bit_cast;
@@ -103,6 +105,85 @@ namespace nonstd
 
     using std::endian;
 }
+
+//
+// Provide bit extensions (at bottom), unless omitted:
+//
+
+#if ! bit_CONFIG_STRICT
+
+// Additional includes needed for extensions:
+
+#include <climits>      // CHAR_BIT
+
+// Macros needed for extensions:
+
+#define bit_noexcept  noexcept
+
+#ifdef  _MSC_VER
+# include <cstdlib>
+# define bit_byteswap16  _byteswap_ushort
+# define bit_byteswap32  _byteswap_ulong
+# define bit_byteswap64  _byteswap_uint64
+#else
+# define bit_byteswap16  __builtin_bswap16
+# define bit_byteswap32  __builtin_bswap32
+# define bit_byteswap64  __builtin_bswap64
+#endif
+
+// Detail needed for extensions:
+
+namespace nonstd {
+namespace bit {
+
+// C++11 emulation:
+
+namespace std11 {
+
+    using std::uint8_t;
+    using std::uint16_t;
+    using std::uint32_t;
+    using std::uint64_t;
+
+    using std::integral_constant;
+    using std::true_type;
+    using std::false_type;
+
+    using std::is_trivial;
+    using std::is_trivially_copyable;
+    using std::is_copy_constructible;
+    using std::is_move_constructible;
+    using std::is_unsigned;
+    using std::is_same;
+
+} // namespace std11
+
+// Detail appearing for extensions both with std::bit and nonstd::bit:
+
+// make sure all unsigned types are covered, see
+// http://ithare.com/c-on-using-int_t-as-overload-and-template-parameters/
+
+template< size_t N > struct uint_by_size;
+template<> struct uint_by_size< 8> { typedef std11::uint8_t  type; };
+template<> struct uint_by_size<16> { typedef std11::uint16_t type; };
+template<> struct uint_by_size<32> { typedef std11::uint32_t type; };
+#if bit_CPP11_OR_GREATER
+template<> struct uint_by_size<64> { typedef std11::uint64_t type; };
+#endif
+
+template< typename T >
+struct normalized_uint_type
+{
+    typedef typename uint_by_size< CHAR_BIT * sizeof( T ) >::type type;
+
+    static_assert( std::is_integral<T>::value, "integral type required.");
+    static_assert( std11::is_unsigned<type>::value, "unsigned type result expected.");
+    static_assert( sizeof( type ) == sizeof( T ), "size of determined type differs from type derived from.");
+};
+
+}} // namespace nonstd::bit
+
+#endif // bit_CONFIG_STRICT
 
 #else // bit_USES_STD_BIT
 
@@ -788,7 +869,36 @@ private:
 } // namespace nonstd
 
 //
-// Extensions: endian conversions
+// Make type available in namespace nonstd:
+//
+
+namespace nonstd
+{
+    using bit::bit_cast;
+
+    using bit::has_single_bit;
+    using bit::bit_ceil;
+    using bit::bit_floor;
+    using bit::bit_width;
+
+    using bit::rotl;
+    using bit::rotr;
+
+    using bit::countl_zero;
+    using bit::countl_one;
+    using bit::countr_zero;
+    using bit::countr_one;
+    using bit::popcount;
+
+    using bit::byteswap;
+
+    using bit::endian;
+}
+
+#endif // bit_USES_STD_BIT
+
+//
+// Extensions (unless omitted): endian conversions
 //
 
 #if !bit_CONFIG_STRICT
@@ -946,36 +1056,9 @@ inline T as_native_endian( T v ) bit_noexcept
 
 }} // namespace nonstd::bit
 
-#endif // !bit_CONFIG_STRICT
-
 //
-// Make type available in namespace nonstd:
+// Make extensions available in namespace nonstd:
 //
-
-namespace nonstd
-{
-    using bit::bit_cast;
-
-    using bit::has_single_bit;
-    using bit::bit_ceil;
-    using bit::bit_floor;
-    using bit::bit_width;
-
-    using bit::rotl;
-    using bit::rotr;
-
-    using bit::countl_zero;
-    using bit::countl_one;
-    using bit::countr_zero;
-    using bit::countr_one;
-    using bit::popcount;
-
-    using bit::byteswap;
-
-    using bit::endian;
-}
-
-#if !bit_CONFIG_STRICT
 
 namespace nonstd
 {
@@ -993,7 +1076,5 @@ namespace nonstd
 }
 
 #endif // !bit_CONFIG_STRICT
-
-#endif // bit_USES_STD_BIT
 
 #endif // NONSTD_BIT_LITE_HPP
