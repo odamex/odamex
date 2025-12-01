@@ -1301,19 +1301,10 @@ AActor* RoughTracerCheck(AActor* mo, int index, angle_t fov)
 
 AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*searchFunc)(AActor*, int, angle_t))
 {
-	int blockX;
-	int blockY;
-	int startX, startY;
-	int blockIndex;
-	int firstStop;
-	int secondStop;
-	int thirdStop;
-	int finalStop;
-	int count;
 	AActor* target;
 
-	startX = (mo->x - bmaporgx) >> MAPBLOCKSHIFT;
-	startY = (mo->y - bmaporgy) >> MAPBLOCKSHIFT;
+	const int startX = (mo->x - bmaporgx) >> MAPBLOCKSHIFT;
+	const int startY = (mo->y - bmaporgy) >> MAPBLOCKSHIFT;
 
 	if (startX >= 0 && startX < bmapwidth && startY >= 0 && startY < bmapheight)
 	{
@@ -1322,10 +1313,10 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 			return target;
 		}
 	}
-	for (count = 1; count <= distance; count++)
+	for (int count = 1; count <= distance; count++)
 	{
-		blockX = startX - count;
-		blockY = startY - count;
+		int blockX = startX - count;
+		int blockY = startY - count;
 
 		if (blockY < 0)
 		{
@@ -1343,8 +1334,8 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 		{
 			blockX = bmapwidth - 1;
 		}
-		blockIndex = blockY * bmapwidth + blockX;
-		firstStop = startX + count;
+		int blockIndex = blockY * bmapwidth + blockX;
+		int firstStop = startX + count;
 		if (firstStop < 0)
 		{
 			continue;
@@ -1353,7 +1344,7 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 		{
 			firstStop = bmapwidth - 1;
 		}
-		secondStop = startY + count;
+		int secondStop = startY + count;
 		if (secondStop < 0)
 		{
 			continue;
@@ -1362,10 +1353,10 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 		{
 			secondStop = bmapheight - 1;
 		}
-		thirdStop = secondStop * bmapwidth + blockX;
+		int thirdStop = secondStop * bmapwidth + blockX;
 		secondStop = secondStop * bmapwidth + firstStop;
 		firstStop += blockY * bmapwidth;
-		finalStop = blockIndex;
+		int finalStop = blockIndex;
 
 		// Trace the first block section (along the top)
 		for (; blockIndex <= firstStop; blockIndex++)
@@ -1400,7 +1391,8 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 			}
 		}
 	}
-	return NULL;
+
+	return nullptr;
 }
 
 VERSION_CONTROL (p_maputl_cpp, "$Id$")
