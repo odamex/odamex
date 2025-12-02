@@ -195,7 +195,7 @@ fixed_t P_AproxDistance2 (const AActor *a, const AActor *b);
 bool P_ActorInFOV(const AActor* origin, const AActor* mo , float f, fixed_t dist);
 AActor* RoughTracerCheck(AActor* mo, int bx, int by, angle_t fov);
 AActor* RoughMonsterCheck(AActor* mo, int bx, int by, angle_t fov);
-template <auto searchFun>
+template <AActor* (*searchFunc)(AActor*, int, int, angle_t)>
 AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance);
 
 int 	P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line);
@@ -501,12 +501,12 @@ bool PO_RotatePolyobj (int num, angle_t angle);
 void PO_Init (void);
 bool PO_Busy (int polyobj);
 
-bool P_CheckFov(AActor* t1, AActor* t2, angle_t fov);
-bool P_IsFriendlyThing(AActor* actor, AActor* friendshiptest);
+bool P_CheckFov(const AActor* t1, const AActor* t2, angle_t fov);
+bool P_IsFriendlyThing(const AActor* actor, const AActor* friendshiptest);
 bool P_IsVoodooDoll(const AActor* mo);
 void P_FriendlyEffects();
 void P_GiveFriendlyOwnerInfo(AActor* friendly, const AActor* origin);
-bool P_ProjectileImmune(AActor* target, AActor* source);
+bool P_ProjectileImmune(const AActor* target, const AActor* source);
 void P_SetupHelpers();
 void P_ClearHelpers();
 void P_RunHelperTics();

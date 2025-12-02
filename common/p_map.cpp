@@ -603,7 +603,7 @@ bool P_ShouldClipPlayer(AActor* projectile, AActor* player)
 // PIT_CheckThing
 //
 
-bool P_ProjectileImmune(AActor* target, AActor* source)
+bool P_ProjectileImmune(const AActor* target, const AActor* source)
 {
 	return ( // PG_GROUPLESS means no immunity, even to own species
 	           mobjinfo[target->type].projectile_group != PG_GROUPLESS ||
@@ -728,7 +728,7 @@ static bool PIT_CheckThing (AActor *thing)
 					return true;
 
 				// [RH] DeHackEd infighting is here.
-				if (!deh.Infight && 
+				if (!deh.Infight &&
 						(!((thing->flags ^ tmthing->target->flags) & MF_FRIEND) ||
 						(thing->flags & tmthing->target->flags & MF_FRIEND && P_IsFriendlyThing(thing, tmthing->target))))
 					return false; // Hit same species as originator, explode, no damage

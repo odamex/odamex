@@ -223,7 +223,7 @@ int P_IsUnderDamage(AActor* actor)
 * @param actor - Source actor
 * @param friendshiptest - Thing to test friendliness
 */
-bool P_IsFriendlyThing(AActor* actor, AActor* friendshiptest)
+bool P_IsFriendlyThing(const AActor* actor, const AActor* friendshiptest)
 {
 	if (!actor || !friendshiptest)
 	{

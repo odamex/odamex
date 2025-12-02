@@ -1226,7 +1226,7 @@ AActor* RoughMonsterCheck(AActor* mo, int bx, int by, angle_t fov)
 			continue;
 
 		// Don't target players or spectators (done elsewhere)
-		if (link->player || (link->player && link->player->spectator))
+		if (link->player)
 			continue;
 
 		// skip actors outside of specified FOV
@@ -1242,7 +1242,7 @@ AActor* RoughMonsterCheck(AActor* mo, int bx, int by, angle_t fov)
 	}
 
 	// couldn't find a valid target
-	return NULL;
+	return nullptr;
 }
 
 //
@@ -1292,10 +1292,10 @@ AActor* RoughTracerCheck(AActor* mo, int bx, int by, angle_t fov)
 	}
 
 	// couldn't find a valid target
-	return NULL;
+	return nullptr;
 }
 
-template <auto searchFunc>
+template <AActor* (*searchFunc)(AActor*, int, int, angle_t)>
 AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance)
 {
 	AActor* target;
@@ -1312,44 +1312,31 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance)
 	}
 	for (int count = 1; count <= distance; count++)
 	{
-		int minX = startX - count;
-		int minY = startY - count;
-		int maxX = startX + count;
-		int maxY = startY + count;
+		const int minX = MAX(startX - count, 0);
+		const int minY = MAX(startY - count, 0);
+		const int maxX = MIN(startX + count, bmapwidth - 1);
+		const int maxY = MIN(startY + count, bmapheight - 1);
 
-		if (minX < 0) minX = 0;
-		if (minY < 0) minY = 0;
-		if (maxX >= bmapwidth)  maxX = bmapwidth - 1;
-		if (maxY >= bmapheight) maxY = bmapheight - 1;
-
-		// Trace the first block section (along the top)
+		// Trace block sections along the top and bottom
 		for (int x = minX; x <= maxX; x++)
 		{
 			if ((target = searchFunc(mo, x, minY, fov)))
 			{
 				return target;
 			}
-		}
-		// Trace the second block section (right edge)
-		for (int y = minY + 1; y <= maxY; y++)
-		{
-			if ((target = searchFunc(mo, maxX, y, fov)))
-			{
-				return target;
-			}
-		}
-		// Trace the third block section (bottom edge)
-		for (int x = maxX - 1; x >= minX; x--)
-		{
 			if ((target = searchFunc(mo, x, maxY, fov)))
 			{
 				return target;
 			}
 		}
-		// Trace the final block section (left edge)
-		for (int y = maxY - 1; y > minY; y--)
+		// Trace block sections along the left and right
+		for (int y = minY + 1; y < maxY; y++)
 		{
 			if ((target = searchFunc(mo, minX, y, fov)))
+			{
+				return target;
+			}
+			if ((target = searchFunc(mo, maxX, y, fov)))
 			{
 				return target;
 			}
