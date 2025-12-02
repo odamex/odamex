@@ -1205,11 +1205,9 @@ bool P_ActorInFOV(const AActor* origin, const AActor* mo , float f, fixed_t dist
 //
 // distance is in MAPBLOCKUNITS
 
-AActor* RoughMonsterCheck(AActor* mo, int index, angle_t fov)
+AActor* RoughMonsterCheck(AActor* mo, int bx, int by, angle_t fov)
 {
-	const int bx = index % bmapwidth;
-	const int by = index / bmapwidth;
-	for (AActor* link = blocklinks[index]; link != nullptr; link = link->bmapnode.Next(bx, by))
+	for (AActor* link = blocklinks[by * bmapwidth + bx]; link != nullptr; link = link->bmapnode.Next(bx, by))
 	{
 		// skip non-shootable actors
 		if (!(link->flags & MF_SHOOTABLE))
@@ -1256,11 +1254,9 @@ AActor* RoughMonsterCheck(AActor* mo, int index, angle_t fov)
 //
 // distance is in MAPBLOCKUNITS
 
-AActor* RoughTracerCheck(AActor* mo, int index, angle_t fov)
+AActor* RoughTracerCheck(AActor* mo, int bx, int by, angle_t fov)
 {
-	const int bx = index % bmapwidth;
-	const int by = index / bmapwidth;
-	for (AActor* link = blocklinks[index]; link != nullptr; link = link->bmapnode.Next(bx, by))
+	for (AActor* link = blocklinks[by * bmapwidth + bx]; link != nullptr; link = link->bmapnode.Next(bx, by))
 	{
 		// skip non-shootable actors
 		if (!(link->flags & MF_SHOOTABLE))
@@ -1299,7 +1295,7 @@ AActor* RoughTracerCheck(AActor* mo, int index, angle_t fov)
 	return NULL;
 }
 
-AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*searchFunc)(AActor*, int, angle_t))
+AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*searchFunc)(AActor*, int, int, angle_t))
 {
 	AActor* target;
 
@@ -1308,7 +1304,7 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 
 	if (startX >= 0 && startX < bmapwidth && startY >= 0 && startY < bmapheight)
 	{
-		if ((target = searchFunc(mo, startY * bmapwidth + startX, fov)))
+		if ((target = searchFunc(mo, startX, startY, fov)))
 		{ // found a target right away
 			return target;
 		}
@@ -1359,33 +1355,36 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 		int finalStop = blockIndex;
 
 		// Trace the first block section (along the top)
-		for (; blockIndex <= firstStop; blockIndex++)
+		for (; blockIndex <= firstStop; blockIndex++, blockX++)
 		{
-			if ((target = searchFunc(mo, blockIndex, fov)))
+			if ((target = searchFunc(mo, blockX, blockY, fov)))
 			{
 				return target;
 			}
 		}
 		// Trace the second block section (right edge)
-		for (blockIndex--; blockIndex <= secondStop; blockIndex += bmapwidth)
+		blockX--;
+		for (blockIndex--; blockIndex <= secondStop; blockIndex += bmapwidth, blockY++)
 		{
-			if ((target = searchFunc(mo, blockIndex, fov)))
+			if ((target = searchFunc(mo, blockX, blockY, fov)))
 			{
 				return target;
 			}
 		}
 		// Trace the third block section (bottom edge)
-		for (blockIndex -= bmapwidth; blockIndex >= thirdStop; blockIndex--)
+		blockY--;
+		for (blockIndex -= bmapwidth; blockIndex >= thirdStop; blockIndex--, blockX--)
 		{
-			if ((target = searchFunc(mo, blockIndex, fov)))
+			if ((target = searchFunc(mo, blockX, blockY, fov)))
 			{
 				return target;
 			}
 		}
 		// Trace the final block section (left edge)
-		for (blockIndex++; blockIndex > finalStop; blockIndex -= bmapwidth)
+		blockX++;
+		for (blockIndex++; blockIndex > finalStop; blockIndex -= bmapwidth, blockY--)
 		{
-			if ((target = searchFunc(mo, blockIndex, fov)))
+			if ((target = searchFunc(mo, blockX, blockY, fov)))
 			{
 				return target;
 			}
