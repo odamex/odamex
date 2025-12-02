@@ -1295,7 +1295,8 @@ AActor* RoughTracerCheck(AActor* mo, int bx, int by, angle_t fov)
 	return NULL;
 }
 
-AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*searchFunc)(AActor*, int, int, angle_t))
+template <auto searchFunc>
+AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance)
 {
 	AActor* target;
 
@@ -1311,80 +1312,44 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 	}
 	for (int count = 1; count <= distance; count++)
 	{
-		int blockX = startX - count;
-		int blockY = startY - count;
+		int minX = startX - count;
+		int minY = startY - count;
+		int maxX = startX + count;
+		int maxY = startY + count;
 
-		if (blockY < 0)
-		{
-			blockY = 0;
-		}
-		else if (blockY >= bmapheight)
-		{
-			blockY = bmapheight - 1;
-		}
-		if (blockX < 0)
-		{
-			blockX = 0;
-		}
-		else if (blockX >= bmapwidth)
-		{
-			blockX = bmapwidth - 1;
-		}
-		int blockIndex = blockY * bmapwidth + blockX;
-		int firstStop = startX + count;
-		if (firstStop < 0)
-		{
-			continue;
-		}
-		if (firstStop >= bmapwidth)
-		{
-			firstStop = bmapwidth - 1;
-		}
-		int secondStop = startY + count;
-		if (secondStop < 0)
-		{
-			continue;
-		}
-		if (secondStop >= bmapheight)
-		{
-			secondStop = bmapheight - 1;
-		}
-		int thirdStop = secondStop * bmapwidth + blockX;
-		secondStop = secondStop * bmapwidth + firstStop;
-		firstStop += blockY * bmapwidth;
-		int finalStop = blockIndex;
+		if (minX < 0) minX = 0;
+		if (minY < 0) minY = 0;
+		if (maxX >= bmapwidth)  maxX = bmapwidth - 1;
+		if (maxY >= bmapheight) maxY = bmapheight - 1;
 
 		// Trace the first block section (along the top)
-		for (; blockIndex <= firstStop; blockIndex++, blockX++)
+		for (int x = minX; x <= maxX; x++)
 		{
-			if ((target = searchFunc(mo, blockX, blockY, fov)))
+			if ((target = searchFunc(mo, x, minY, fov)))
 			{
 				return target;
 			}
 		}
 		// Trace the second block section (right edge)
-		blockX--;
-		for (blockIndex--; blockIndex <= secondStop; blockIndex += bmapwidth, blockY++)
+		for (int y = minY + 1; y <= maxY; y++)
 		{
-			if ((target = searchFunc(mo, blockX, blockY, fov)))
+			if ((target = searchFunc(mo, maxX, y, fov)))
 			{
 				return target;
 			}
 		}
 		// Trace the third block section (bottom edge)
-		blockY--;
-		for (blockIndex -= bmapwidth; blockIndex >= thirdStop; blockIndex--, blockX--)
+		for (int x = maxX - 1; x >= minX; x--)
 		{
-			if ((target = searchFunc(mo, blockX, blockY, fov)))
+			if ((target = searchFunc(mo, x, maxY, fov)))
 			{
 				return target;
 			}
 		}
 		// Trace the final block section (left edge)
-		blockX++;
-		for (blockIndex++; blockIndex > finalStop; blockIndex -= bmapwidth, blockY--)
+		for (int y = maxY - 1; y > minY; y--)
 		{
-			if ((target = searchFunc(mo, blockX, blockY, fov)))
+			if ((target = searchFunc(mo, minX, y, fov)))
 			{
 				return target;
 			}
@@ -1393,5 +1358,8 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*sea
 
 	return nullptr;
 }
+
+template AActor* P_RoughTargetSearch<&RoughTracerCheck>(AActor* mo, angle_t fov, int distance);
+template AActor* P_RoughTargetSearch<&RoughMonsterCheck>(AActor* mo, angle_t fov, int distance);
 
 VERSION_CONTROL (p_maputl_cpp, "$Id$")

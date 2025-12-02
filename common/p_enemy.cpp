@@ -927,8 +927,8 @@ static bool P_HelpFriend(AActor* actor)
 			else if (it->flags & MF_JUSTHIT && it->target &&
 			         it->target != actor->target)
 			{
-				AActor* enemy = P_RoughTargetSearch(actor, FixedToAngle(INT2FIXED(90)),
-				                                    896, RoughMonsterCheck);
+				AActor* enemy = P_RoughTargetSearch<&RoughMonsterCheck>(actor, FixedToAngle(INT2FIXED(90)),
+				                                    896);
 
 				if (!enemy)
 				{
@@ -975,7 +975,7 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 
 	// This is NOT MBF behavior
 	// But we want a smarter monster check for friendlies and hostiles attacking friendlies.
-	AActor* enemy = P_RoughTargetSearch(actor, FixedToAngle(INT2FIXED(180)), 7, RoughMonsterCheck);
+	AActor* enemy = P_RoughTargetSearch<&RoughMonsterCheck>(actor, FixedToAngle(INT2FIXED(180)), 7);
 
 	if (enemy)
 	{
@@ -2975,7 +2975,7 @@ void A_FindTracer(AActor* actor)
 	fov = FixedToAngle(actor->state->args[0]);
 	dist = (actor->state->args[1]);
 
-	AActor* tracer = P_RoughTargetSearch(actor, fov, dist, RoughTracerCheck);
+	AActor* tracer = P_RoughTargetSearch<&RoughTracerCheck>(actor, fov, dist);
 
 	if (!tracer || tracer->health <= 0)
 		return;
@@ -3166,7 +3166,7 @@ void A_AddFlags(AActor* actor)
 	const int flags2 = actor->state->args[1];
 	const int flags3 = actor->state->args[2];
 
-	const bool update_blockmap = 
+	const bool update_blockmap =
 		((flags & MF_NOBLOCKMAP) && !(actor->flags & MF_NOBLOCKMAP)) ||
 		((flags & MF_NOSECTOR)   && !(actor->flags & MF_NOSECTOR));
 
@@ -3201,7 +3201,7 @@ void A_RemoveFlags(AActor* actor)
 	const int flags2 = actor->state->args[1];
 	const int flags3 = actor->state->args[2];
 
-	const bool update_blockmap = 
+	const bool update_blockmap =
 		((flags & MF_NOBLOCKMAP) && (actor->flags & MF_NOBLOCKMAP)) ||
 		((flags & MF_NOSECTOR)   && (actor->flags & MF_NOSECTOR));
 
