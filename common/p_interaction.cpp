@@ -1962,7 +1962,7 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 	}
 
 	G_ProcessMultiKills(source, target->player);
-	G_ProcessSpreeKill(source, target->player);
+	P_ProcessSpreeKill(source, target->player);
 
 
 	if (target->health > 0) // denis - when this function is used standalone

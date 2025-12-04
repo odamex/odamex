@@ -87,3 +87,35 @@ enum EColorRange
 
 #define TEXTCOLOR_NORMAL		"\034-"
 #define TEXTCOLOR_BOLD			"\034+"
+
+inline std::string TextColorFromRange(EColorRange colorRange)
+{
+	switch (colorRange)
+	{
+	case CR_BRICK:			return TEXTCOLOR_BRICK;
+	case CR_TAN:			return TEXTCOLOR_TAN;
+	case CR_GRAY:			return TEXTCOLOR_GRAY;
+	//case CR_GREY:			return TEXTCOLOR_GREY;
+	case CR_GREEN:			return TEXTCOLOR_GREEN;
+	case CR_BROWN:			return TEXTCOLOR_BROWN;
+	case CR_GOLD:			return TEXTCOLOR_GOLD;
+	case CR_RED:			return TEXTCOLOR_RED;
+	case CR_BLUE:			return TEXTCOLOR_BLUE;
+	case CR_ORANGE:			return TEXTCOLOR_ORANGE;
+	case CR_WHITE:			return TEXTCOLOR_WHITE;
+	case CR_YELLOW:			return TEXTCOLOR_YELLOW;
+	case CR_UNTRANSLATED:	return TEXTCOLOR_UNTRANSLATED;
+	case CR_BLACK:			return TEXTCOLOR_BLACK;
+	case CR_LIGHTBLUE:		return TEXTCOLOR_LIGHTBLUE;
+	case CR_CREAM:			return TEXTCOLOR_CREAM;
+	case CR_OLIVE:			return TEXTCOLOR_OLIVE;
+	case CR_DARKGREEN:		return TEXTCOLOR_DARKGREEN;
+	case CR_DARKRED:		return TEXTCOLOR_DARKRED;
+	case CR_DARKBROWN:		return TEXTCOLOR_DARKBROWN;
+	case CR_PURPLE:			return TEXTCOLOR_PURPLE;
+	case CR_DARKGRAY:		return TEXTCOLOR_DARKGRAY;
+	//case CR_DARKGREY:		return TEXTCOLOR_DARKGREY;
+	case CR_CYAN:			return TEXTCOLOR_CYAN;
+	default:				return TEXTCOLOR_NORMAL;
+	}
+}

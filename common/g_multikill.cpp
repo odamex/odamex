@@ -173,7 +173,7 @@ void G_ProcessMultiKills(AActor* source, player_t* target)
 		return;
 
 	source->player->multikills++;
-	source->player->lastkilltime = ::level.time;
+	source->player->lastkilltime = ::gametic;
 
 	// Reset this player's multikilltics
 	source->player->multikilltics = MultiKillManager::getInstance().getMultiKillInterval();

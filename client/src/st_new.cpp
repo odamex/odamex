@@ -1303,18 +1303,25 @@ struct levelStateLines_t
 
 struct multiKillLines_t
 {
-	std::string spreeText;
+	std::string multiKillText;
 	EColorRange color;
 	float lucent;
 	multiKillLines_t() : lucent(1.0f), color(CR_GRAY) { }
 };
 
-struct spreeLines_t
+struct bigSpreeLine_t
 {
 	std::string spreeText;
 	EColorRange color;
 	float lucent;
-	spreeLines_t() : lucent(1.0f), color(CR_GRAY) { }
+	bigSpreeLine_t() : lucent(1.0f), color(CR_GRAY) { }
+};
+
+struct smallSpreeLine_t
+{
+	std::string spreeText;
+	float lucent;
+	smallSpreeLine_t() : lucent(1.0f) { }
 };
 
 static float lucentFade(int tics, const int start, const int end)
@@ -1398,51 +1405,261 @@ static void LevelStateHorde(levelStateLines_t& lines)
 	lines.lucent = lucentFade(tics, TICRATE * 3, TICRATE * 4);
 }
 
+void DisplaySmallSpreeBreaker(spree_breaker breaker)
+{
+	smallSpreeLine_t line;
+
+	bool selfkill = false;
+	bool monsterkill = false;
+
+	player_t& endedPlayer = idplayer(breaker.spreeEndedPlayerId);
+
+	if (!validplayer(endedPlayer))
+		return;
+
+	std::string endedPlayerColor = TEXTCOLOR_GOLD;
+	std::string enderPlayerColor = TEXTCOLOR_GOLD;
+
+	int enderPlayerId = breaker.spreeEnderPlayerId;
+
+	// Suicide or monster kill
+	if (enderPlayerId != -1)
+	{
+		if (!breaker.spreeEnderMonster || breaker.spreeEndedPlayerId == breaker.spreeEnderPlayerId)
+		{
+			selfkill = true;
+		}
+		else
+		{
+			monsterkill = true;
+		}
+	}
+
+	if (G_IsTeamGame())
+	{
+		TeamInfo* endedinfo = GetTeamInfo(breaker.spreeEndedTeam);
+		endedPlayerColor = endedinfo->ToastColor;
+
+		TeamInfo* enderinfo = GetTeamInfo(breaker.spreeEnderTeam);
+		enderPlayerColor = endedinfo->ToastColor;
+	}
+
+	// format strings for self or monster kill
+	if (!selfkill)
+	{
+		line.spreeText =
+		    fmt::sprintf(breaker.spreeEndedBroadcastText,
+		                 endedPlayerColor + breaker.spreeEndedName + TEXTCOLOR_NORMAL,
+		                 TextColorFromRange(breaker.spreeEndedColor) + breaker.spreeEnded + TEXTCOLOR_NORMAL,
+		                 enderPlayerColor + breaker.spreeEnderName + TEXTCOLOR_NORMAL);
+	}
+	else
+	{
+		// Replace with gendered text
+		line.spreeText =
+		    fmt::sprintf(breaker.spreeEndedBroadcastText,
+		                 endedPlayerColor + breaker.spreeEndedName + TEXTCOLOR_NORMAL);
+	}
+
+	V_SetFont("SMALLFONT");
+
+	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
+	int h = 8 * CleanYfac;
+
+	line.lucent = lucentFade(::gametic - breaker.spreeEndedTic, TICRATE * 3, TICRATE * 4);
+
+	const float oldtrans = ::hud_transparency;
+	::hud_transparency = line.lucent;
+
+	if (::hud_transparency > 0.0f)
+	{
+		int y = (surface_height / 4) - h / 2;
+		::screen->DrawTextStretchedLuc(CR_GRAY,
+		                               surface_width / 2 - w / 2 + (12 * ::CleanYfac), y,
+		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
+	}
+
+	::hud_transparency.ForceSet(oldtrans);
+}
+
+void DisplayPlayerNormalSpree(spree_record record, spree_s spree)
+{
+	// We handle "still dominating" sprees elsewhere.
+	if (record.stillDominating)
+		return;
+
+	bigSpreeLine_t line;
+
+	line.spreeText = spree.spreeText;
+	line.color = spree.color;
+
+	V_SetFont("BIGFONT");
+
+	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
+	int h = 12 * CleanYfac;
+
+	line.lucent = lucentFade(::gametic - record.spreeStartTic, TICRATE * 3, TICRATE * 4);
+
+	const float oldtrans = ::hud_transparency;
+	::hud_transparency = line.lucent;
+
+	if (::hud_transparency > 0.0f)
+	{
+		int y = (surface_height / 4) - h / 2;
+		::screen->DrawTextStretchedLuc(line.color, surface_width / 2 - w / 2, y,
+		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
+	}
+
+	::hud_transparency.ForceSet(oldtrans);
+
+	V_SetFont("SMALLFONT");
+}
+
+void DisplaySmallSpree(spree_record record, spree_s spree)
+{
+	smallSpreeLine_t line;
+
+	player_t& player = idplayer(record.playerId);
+
+	if (!validplayer(player))
+		return;
+
+	std::string playerColor = TEXTCOLOR_GOLD;
+
+	if (G_IsTeamGame())
+	{
+		TeamInfo* info = GetTeamInfo(player.userinfo.team);
+		playerColor = info->ToastColor;
+	}
+
+	line.spreeText = fmt::sprintf(spree.spreeBroadcastText,
+	                              playerColor + record.playerName + TEXTCOLOR_NORMAL,
+	                              TextColorFromRange(spree.color) + spree.spreeText);
+
+	V_SetFont("SMALLFONT");
+
+	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
+	int h = 8 * CleanYfac;
+
+	line.lucent = lucentFade(::gametic - record.spreeStartTic, TICRATE * 3, TICRATE * 4);
+
+	const float oldtrans = ::hud_transparency;
+	::hud_transparency = line.lucent;
+
+	if (::hud_transparency > 0.0f)
+	{
+		int y = (surface_height / 4) - h / 2;
+		::screen->DrawTextStretchedLuc(CR_GRAY,
+		                               surface_width / 2 - w / 2 + (12 * ::CleanYfac), y,
+		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
+	}
+
+	::hud_transparency.ForceSet(oldtrans);
+}
+
 void SpreeHud()
 {
 	if (!validplayer(displayplayer()))
 		return;
 
-	const player_t& p = displayplayer();
-
 	static SpreeManager& manager = SpreeManager::getInstance();
 
 	// Display the current display player's spree if within time
 	// As big text
+	const player_t& p = displayplayer();
+
 	spree_record spree_r = manager.getSpreeRecord(p.id);
+	spree_s spree = manager.getSpreeLevel(spree_r.spreeLevel);
 
-	if (spree_r.playerId != -1 && ::level.time - spree_r.spreeStartTic < 4 * TICRATE)
+	// Main spree text
+	if (spree_r.playerId != -1 && !spree_r.stillDominating)
 	{
-		spree_s spree = manager.getSpreeLevel(spree_r.spreeLevel);
-		spreeLines_t line;
+		DisplayPlayerNormalSpree(spree_r, spree);
+	}
 
-		line.spreeText = spree.spreeText;
-		line.color = spree.color;
+	// If we're not still dominating, check if someone else has a spree.
+	// We'll get the spree breaker as well, to compare and see which one to display.
+	spree_record other_spree_r = manager.getLatestSpreeRecord(p.id);
+	spree_breaker global_spree_breaker = manager.getSpreeBreaker();
+	spree_s otherplayerSpree = manager.getSpreeLevel(other_spree_r.spreeLevel);
 
-		V_SetFont("BIGFONT");
+	bool otherPlayerValid = false;
+	bool spreeBreakerValid = false;
+	bool playerStillDominatingValid = false;
 
-		const int surface_width = I_GetSurfaceWidth(),
-		          surface_height = I_GetSurfaceHeight();
-		int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
-		int h = 12 * CleanYfac;
+	if (spree_r.playerId == -1 && other_spree_r.playerId == -1 && global_spree_breaker.spreeEndedPlayerId == -1)
+	{
+		// All are invalid, bomb out here.
+		return;
+	}
 
-		line.lucent =
-		    lucentFade(::level.time - spree_r.spreeStartTic, TICRATE * 3, TICRATE * 4);
+	// Still dominating text only shows up as small text.
+	if (spree_r.playerId != -1 && spree_r.stillDominating)
+	{
+		playerStillDominatingValid = true;
+	}
 
-		const float oldtrans = ::hud_transparency;
-		::hud_transparency = line.lucent;
+	if (other_spree_r.playerId != -1)
+	{
+		otherPlayerValid = true;
+	}
 
-		if (::hud_transparency > 0.0f)
+	if (global_spree_breaker.spreeEndedPlayerId != -1)
+	{
+		spreeBreakerValid = true;
+	}
+
+	if (!otherPlayerValid && !spreeBreakerValid && !playerStillDominatingValid)
+	{
+		return;
+	}
+	else if (otherPlayerValid && !spreeBreakerValid && !playerStillDominatingValid)
+	{
+		// Just display the other player's spree
+		DisplaySmallSpree(other_spree_r, otherplayerSpree);
+	}
+	else if (!otherPlayerValid && spreeBreakerValid && !playerStillDominatingValid)
+	{
+		// Just display the spree breaker
+		DisplaySmallSpreeBreaker(global_spree_breaker);
+	}
+	else if (!otherPlayerValid && !spreeBreakerValid && playerStillDominatingValid)
+	{
+		// Just display the still dominating text.
+		DisplaySmallSpree(other_spree_r, otherplayerSpree);
+	}
+	else
+	{
+		// All 3 are valid, compare times
+		if (other_spree_r.spreeStartTic > global_spree_breaker.spreeEndedTic)
 		{
-			int y = (surface_height / 4) - h / 2;
-			::screen->DrawTextStretchedLuc(line.color, surface_width / 2 - w / 2, y,
-			                               line.spreeText.c_str(), ::CleanYfac,
-			                               ::CleanYfac);
+				if (other_spree_r.spreeStartTic > spree_r.spreeStartTic)
+				{
+					// Display other player's spree
+					DisplaySmallSpree(other_spree_r, otherplayerSpree);
+				}
+				else
+				{
+					// Display other player's spree
+					DisplaySmallSpree(other_spree_r, otherplayerSpree);
+				}
 		}
-
-		::hud_transparency.ForceSet(oldtrans);
-
-		V_SetFont("SMALLFONT");
+		else
+		{
+			if (global_spree_breaker.spreeEndedTic > spree_r.spreeStartTic)
+			{
+				// Display spree breaker
+				DisplaySmallSpreeBreaker(global_spree_breaker);
+			}
+			else
+			{
+				// Display other player's spree
+				DisplaySmallSpree(other_spree_r, otherplayerSpree);
+			}
+		}
 	}
 }
 
@@ -1454,19 +1671,19 @@ void MultiKillHud()
 	const player_t& p = displayplayer();
 
 	// Display the current display player's multi kills
-	if (p.multikills > 1 && ::level.time - p.lastkilltime < 4 * TICRATE)
+	if (p.multikills > 1 && ::gametic - p.lastkilltime < 4 * TICRATE)
 	{
 		MultiKillLevel_s multi = MultiKillManager::getInstance().getMultiKillLevel(p.multikills);
 		multiKillLines_t line;
 
-		line.spreeText = multi.multikilltext;
+		line.multiKillText = multi.multikilltext;
 		line.color = multi.color;
 
 		V_SetFont("BIGFONT");
 
 		const int surface_width = I_GetSurfaceWidth(),
 			      surface_height = I_GetSurfaceHeight();
-		int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
+		int w = V_StringWidth(line.multiKillText.c_str()) * CleanYfac;
 		int h = 12 * CleanYfac;
 
 		line.lucent = lucentFade(::level.time - p.lastkilltime,
@@ -1479,7 +1696,7 @@ void MultiKillHud()
 		{
 			int y = surface_height - (surface_height / 4) - h / 2;
 			::screen->DrawTextStretchedLuc(line.color, surface_width / 2 - w / 2, y,
-				line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
+				line.multiKillText.c_str(), ::CleanYfac, ::CleanYfac);
 		}
 
 		::hud_transparency.ForceSet(oldtrans);
