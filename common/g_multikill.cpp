@@ -151,7 +151,7 @@ void MultiKillManager::setMultiKillLevels(const std::vector<MultiKillLevel_s> mu
 // ==========================================================
 
 /// <summary>
-/// G_ProcessMultiKills occurs after a kill to determine
+/// P_ProcessMultiKills occurs after a kill to determine
 /// if this kill is an interval for a kill streak.
 ///
 /// If so, show the kill streak text to the source player if he's the camera player.
@@ -160,7 +160,7 @@ void MultiKillManager::setMultiKillLevels(const std::vector<MultiKillLevel_s> mu
 /// </summary>
 /// <param name="source">The killer (if a monster/player, null if environment/zombie
 /// projectile)</param> <param name="target">The victim</param>
-void G_ProcessMultiKills(AActor* source, player_t* target)
+void P_ProcessMultiKills(AActor* source, player_t* target)
 {
 	if (target)
 	{
@@ -169,7 +169,7 @@ void G_ProcessMultiKills(AActor* source, player_t* target)
 		target->lastkilltime = 0;
 	}
 
-	if (!source->player)
+	if (!source || !source->player)
 		return;
 
 	source->player->multikills++;
@@ -190,7 +190,7 @@ void G_ProcessMultiKills(AActor* source, player_t* target)
 /// Handles ticking players for multi kills.
 /// </summary>
 /// <param name="player">Player to tick.</param>
-void G_TicMultiKill(player_t* player)
+void P_TicMultiKill(player_t* player)
 {
 	if (!player)
 		return;

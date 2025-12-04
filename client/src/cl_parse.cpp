@@ -1133,6 +1133,10 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	p->bonuscount = 0;
 	p->extralight = 0;
 	p->fixedcolormap = 0;
+	p->multikills = 0;
+	p->multikilltics = 0;
+	p->killssincelastdeath = 0;
+	p->damagesincelastdeath = 0;
 
 	p->xviewshift = 0;
 	p->viewheight = VIEWHEIGHT;

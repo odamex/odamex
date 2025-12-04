@@ -1455,8 +1455,16 @@ void DisplaySmallSpreeBreaker(spree_breaker breaker)
 	else
 	{
 		// Replace with gendered text
+		char gendermessage[1024];
+		gender_t gender = endedPlayer.userinfo.gender;
+
+		SexMessage(breaker.spreeEndedBroadcastText.c_str(), gendermessage, gender,
+		           "",
+		           "");
+
+		std::string msg = gendermessage;
 		line.spreeText =
-		    fmt::sprintf(breaker.spreeEndedBroadcastText,
+		    fmt::sprintf(msg,
 		                 endedPlayerColor + breaker.spreeEndedName + TEXTCOLOR_NORMAL);
 	}
 
@@ -1628,23 +1636,15 @@ void SpreeHud()
 	else if (!otherPlayerValid && !spreeBreakerValid && playerStillDominatingValid)
 	{
 		// Just display the still dominating text.
-		DisplaySmallSpree(other_spree_r, otherplayerSpree);
+		DisplaySmallSpree(spree_r, spree);
 	}
 	else
 	{
 		// All 3 are valid, compare times
 		if (other_spree_r.spreeStartTic > global_spree_breaker.spreeEndedTic)
 		{
-				if (other_spree_r.spreeStartTic > spree_r.spreeStartTic)
-				{
-					// Display other player's spree
-					DisplaySmallSpree(other_spree_r, otherplayerSpree);
-				}
-				else
-				{
-					// Display other player's spree
-					DisplaySmallSpree(other_spree_r, otherplayerSpree);
-				}
+				// Display other player's spree
+				DisplaySmallSpree(other_spree_r, otherplayerSpree);
 		}
 		else
 		{
@@ -1652,11 +1652,6 @@ void SpreeHud()
 			{
 				// Display spree breaker
 				DisplaySmallSpreeBreaker(global_spree_breaker);
-			}
-			else
-			{
-				// Display other player's spree
-				DisplaySmallSpree(other_spree_r, otherplayerSpree);
 			}
 		}
 	}
@@ -1685,7 +1680,7 @@ void MultiKillHud()
 		int w = V_StringWidth(line.multiKillText.c_str()) * CleanYfac;
 		int h = 12 * CleanYfac;
 
-		line.lucent = lucentFade(::level.time - p.lastkilltime,
+		line.lucent = lucentFade(::gametic - p.lastkilltime,
 			                      TICRATE * 3, TICRATE * 4);
 
 		const float oldtrans = ::hud_transparency;

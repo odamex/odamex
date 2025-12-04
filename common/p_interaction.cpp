@@ -1953,10 +1953,10 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			Unlag::getInstance().clearPlayerHistory(tplayer->id);
 		}
 
-		//G_ProcessMultiKills(source, target->player);
+		//P_ProcessMultiKills(source, target->player);
 	}
 
-	G_ProcessMultiKills(source, target->player);
+	P_ProcessMultiKills(source, target->player);
 	P_ProcessSpreeKill(source, target->player);
 
 

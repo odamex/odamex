@@ -103,7 +103,7 @@ void SpreeManager::loadSpreeDefaults()
 
 	spreeEndPlayer = "%s's %s was ended by %s";
 	spreeEndSelf = "%s was looking good until %g killed %hself!";
-	spreeEndMonster = "%s's %s was was ended by a %s!";
+	spreeEndMonster = "%s's %s was ended by a %s!";
 
 	spreeKillInterval = 5;
 	spreeDamageInterval = 10000;
@@ -269,11 +269,14 @@ bool SpreeManager::hasSpree(const int playerid)
 //
 void SpreeManager::removeSpree(int playerid)
 {
-	if (spreeRecord.find(playerid) == spreeRecord.end())
-		return;
-	
-	spreeRecord.erase(playerid);
-	return;
+	for (auto& it: spreeRecord)
+	{
+		if (it.first == playerid)
+		{
+			spreeRecord.erase(it.first);
+			return;
+		}
+	}
 }
 
 //
@@ -448,7 +451,7 @@ void P_ProcessSpreeKill(AActor* source, player_t* target)
 		target->damagesincelastdeath = 0;
 	}
 
-	if (!source->player)
+	if (!source || !source->player)
 		return;
 
 	source->player->killssincelastdeath += 1;

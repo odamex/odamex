@@ -987,7 +987,7 @@ void P_PlayerThink (player_t *player)
 		player->mo->flags &= ~MF_JUSTATTACKED;
 	}
 
-	G_TicMultiKill(player);
+	P_TicMultiKill(player);
 
 	if (player->playerstate == PST_DEAD)
 	{
