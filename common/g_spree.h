@@ -53,7 +53,14 @@ struct spree_breaker
   std::string spreeEnderName;
   int spreeEnderPlayerId;
   team_t spreeEnderTeam;
-  bool spreeEnderMonster;
+
+	std::string spreeEndedBroadcastText;
+  std::string spreeEnded;
+	EColorRange spreeEndedColor;
+
+	bool spreeEnderMonster;
+
+	int endedKills;
 
   int spreeEndedTic;
 };
@@ -87,6 +94,8 @@ class SpreeManager
 
     void loadSpreeDefaults(); // called if no SPREEDEF is found
 
+    void expireOldSprees(); // Runs every tic to clean up old sprees.
+
     spree_record getSpreeRecord(int playerId); // gets a current spree for a player
 
     spree_record getLatestSpreeRecord(int notPlayerId); // gets the latest spree excluding the current player
@@ -107,9 +116,18 @@ class SpreeManager
 
     std::vector<spree_s> spreeLevels; // Levels of sprees configured during wad load
 
+		std::string repeatingSpreeText; // Text to display when a player is repeating their
+	                                  // highest spree level.
+
+		std::string spreeEndPlayer; // Text for when a spree has ended by the hands of another player.
+
+		std::string spreeEndSelf; // Text for when a spree has ended by suicide. Whoopsie!
+
+		std::string spreeEndMonster; // Text for when a spree has ended by a monster.
+
     std::unordered_map<int, spree_record> spreeRecord; // Actually controls the spree display for the player.
     spree_breaker spreeBreaker; // Updated with the last spree to be broken.
 };
 
-void G_ProcessSpreeKill(AActor* source, player_t* target);
-void G_TicSprees();
+void P_ProcessSpreeKill(AActor* source, player_t* target);
+void P_TicSprees();

@@ -55,6 +55,7 @@ SpreeManager::SpreeManager()
 {
 	spreeKillInterval = 5;
 	spreeDamageInterval = 10000;
+	repeatingSpreeText = "";
 }
 
 //
@@ -66,9 +67,10 @@ void SpreeManager::reset()
 {
 	spreeLevels.clear();
 	spreeRecord.clear();
-	spreeBreaker = {"", -1, TEAM_NONE, "", -1, TEAM_NONE, false, 0};
+	spreeBreaker = {"", -1, TEAM_NONE, "", -1, TEAM_NONE, "", "", CR_GOLD, false, 0, 0};
 	spreeKillInterval = 5;
 	spreeDamageInterval = 10000;
+	repeatingSpreeText = "";
 }
 
 //
@@ -79,7 +81,7 @@ void SpreeManager::reset()
 void SpreeManager::clearSprees()
 {
 	spreeRecord.clear();
-	spreeBreaker = {"", -1, TEAM_NONE, "", -1, TEAM_NONE, false, 0};
+	spreeBreaker = {"", -1, TEAM_NONE, "", -1, TEAM_NONE, "", "", CR_GOLD, false, 0, 0};
 }
 
 //
@@ -90,12 +92,18 @@ void SpreeManager::clearSprees()
 void SpreeManager::loadSpreeDefaults()
 {
 	spreeLevels.clear();
-	spreeLevels.push_back({"Killing spree!", "%s is on a killing spree!", CR_WHITE});    // 5  kills / 10000 dmg
-	spreeLevels.push_back({"Rampage!", "%s is on a rampage!", CR_BLUE});              // 10 kills / 20000 dmg
-	spreeLevels.push_back({"Dominating!", "%s is dominating!", CR_GREEN});          // 15 kills / 30000 dmg
-	spreeLevels.push_back({"Unstoppable!", "%s is unstoppable!", CR_YELLOW});         // 20 kills / 40000 dmg
-	spreeLevels.push_back({"Untouchable!", "%s is untouchable!", CR_CYAN});          // 25 kills / 50000 dmg
-	spreeLevels.push_back({"Legendary!", "%s is legendary!", CR_GOLD});           // 30 kills / 60000 dmg
+	spreeLevels.push_back({"Killing spree!", "%s is on a %s", CR_WHITE});// 5  kills / 10000 dmg
+	spreeLevels.push_back({"Rampage!", "%s is on a %s", CR_BLUE});       // 10 kills / 20000 dmg
+	spreeLevels.push_back({"Dominating!", "%s is %s", CR_GREEN});        // 15 kills / 30000 dmg
+	spreeLevels.push_back({"Unstoppable!", "%s is %s", CR_YELLOW});      // 20 kills / 40000 dmg
+	spreeLevels.push_back({"Untouchable!", "%s is %s", CR_CYAN});        // 25 kills / 50000 dmg
+	spreeLevels.push_back({"Legendary!", "%s is %s", CR_GOLD});          // 30 kills / 60000 dmg
+
+	repeatingSpreeText = "%s is STILL %s!";
+
+	spreeEndPlayer = "%s's %s was ended by %s";
+	spreeEndSelf = "%s was looking good until %g killed %hself!";
+	spreeEndMonster = "%s's %s was was ended by a %s!";
 
 	spreeKillInterval = 5;
 	spreeDamageInterval = 10000;
@@ -179,28 +187,42 @@ void SpreeManager::setSpreeBreaker(AActor* source, player_t* target)
 	int endedPlayerId = target->id;
 	team_t endedTeam = target->userinfo.team;
 
+	spree_s spreeLevel = getSpreeLevel(getSpreeLevelByKills(target->killssincelastdeath));
+
 	std::string enderName = "";
 	int enderPlayerId = 0;
 	team_t enderTeam = TEAM_NONE;
 	bool enderIsMonster = false;
+
+	std::string broadcastText = "";
+	std::string spreeEnded = "";
+	EColorRange spreeEndedColor = CR_GOLD;
+
+	int kills = 0;
 
 	// no source? treat it as a self kill
 	if (!source)
 	{
 		enderName = endedPlayerName;
 		enderPlayerId = endedPlayerId;
+		broadcastText = spreeEndSelf;
 	}
 	else if (source->player)
 	{
 		enderName = source->player->userinfo.netname;
 		enderPlayerId = source->player->id;
 		team_t enderTeam = source->player->userinfo.team;
+		broadcastText = spreeEndPlayer;
 	}
 	else // potential monster
 	{
 		enderName = P_MobjToName(static_cast<mobjtype_t>(source->type));
 		enderIsMonster = true;
+		broadcastText = spreeEndMonster;
 	}
+
+	spreeEnded = spreeLevel.spreeText;
+	spreeEndedColor = spreeLevel.color;
 
 	spreeBreaker = {
 			endedPlayerName,
@@ -211,7 +233,13 @@ void SpreeManager::setSpreeBreaker(AActor* source, player_t* target)
 			enderPlayerId,
 			enderTeam,
 
-			enderIsMonster,  
+			broadcastText,
+			spreeEnded,
+			spreeEndedColor,
+
+			enderIsMonster,
+
+			kills,
 			
 			::gametic
 	};
@@ -301,7 +329,7 @@ bool SpreeManager::recordPlayerKill(const player_t* player)
 		newRecord.playerId = player->id;
 		newRecord.playerName = player->userinfo.netname;
 		newRecord.spreeLevel = newSpreeLevel > maxSpreeLevel ? maxSpreeLevel : newSpreeLevel;
-		newRecord.spreeStartTic = ::level.time;
+		newRecord.spreeStartTic = ::gametic;
 		newRecord.stillDominating = false;
 		spreeRecord[player->id] = newRecord;
 		return true;
@@ -315,7 +343,7 @@ bool SpreeManager::recordPlayerKill(const player_t* player)
 		{
 			// Upgrade spree level
 			record.spreeLevel = newSpreeLevel;
-			record.spreeStartTic = ::level.time;
+			record.spreeStartTic = ::gametic;
 			record.stillDominating = newSpreeLevel > maxSpreeLevel ? true : false;
 			return true;
 		}
@@ -339,6 +367,32 @@ spree_record SpreeManager::getSpreeRecord(int playerId)
 	spree_record record = {"null", -1, 0, 0, false};
 
 	return record;
+}
+
+//
+// SpreeManager::expireOldSprees
+//
+// Cleans up any old sprees or spree breakers.
+//
+void SpreeManager::expireOldSprees()
+{
+	if (::gametic - spreeBreaker.spreeEndedTic > 4 * TICRATE ||
+	    spreeBreaker.spreeEndedTic > ::gametic)
+	{
+		spreeBreaker = {"", -1, TEAM_NONE, "",    -1, TEAM_NONE,
+		                "", "", CR_GOLD,   false, 0,  0};
+	}
+
+	for (auto& it : spreeRecord)
+	{
+		spree_record& record = it.second;
+
+		if (::gametic - record.spreeStartTic > 4 * TICRATE ||
+		    record.spreeStartTic > ::gametic)
+		{
+			spreeRecord.erase(it.first);
+		}
+	}
 }
 
 //
@@ -373,25 +427,25 @@ spree_record SpreeManager::getLatestSpreeRecord(int notPlayerId)
 /// if this kill is an interval for a killing spree.
 ///
 /// If so, show the spree text to the source player if he's the camera player.
-/// Also, remove any spree from a player who was killed, and
+/// Also, remove any spree from a player who was killed, and process any spree breakers.
 /// </summary>
 /// <param name="source">The killer (if a monster/player, null if environment/zombie projectile)</param>
 /// <param name="target">The victim</param>
-void G_ProcessSpreeKill(AActor* source, player_t* target)
+void P_ProcessSpreeKill(AActor* source, player_t* target)
 {
 	static SpreeManager& manager = SpreeManager::getInstance();
 
 	if (target)
 	{
-		target->killssincelastdeath = 0;
-		target->damagesincelastdeath = 0;
-
 		// If this player was on a spree, update it as the latest spree breaker.
 		if (manager.hasSpree(target->id))
 		{
-			manager.removeSpree(target->id);
 			manager.setSpreeBreaker(source, target);
+			manager.removeSpree(target->id);
 		}
+
+		target->killssincelastdeath = 0;
+		target->damagesincelastdeath = 0;
 	}
 
 	if (!source->player)
@@ -416,7 +470,7 @@ void G_ProcessSpreeKill(AActor* source, player_t* target)
 /// <summary>
 /// Handles internal ticking for spree bookkeeping.
 /// </summary>
-void G_TicSprees()
+void P_TicSprees()
 {
-
+	//SpreeManager::getInstance().expireOldSprees();
 }
