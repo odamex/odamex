@@ -121,7 +121,7 @@ void W_HashLumps(void)
 
 	for (unsigned int i = 0; i < numlumps; i++)
 	{
-		unsigned int j = W_LumpNameHash(lumpinfo[i].name) % (unsigned int)numlumps;
+		unsigned int j = W_LumpNameHash(lumpinfo[i].name.c_str()) % (unsigned int)numlumps;
 		lumpinfo[i].next = lumpinfo[j].index;     // Prepend to list
 		lumpinfo[j].index = i;
 	}
@@ -274,7 +274,7 @@ void W_AddLumps(FILE* handle, filelump_t* fileinfo, size_t newlumps, bool client
 		lump->handle = handle;
 		lump->position = info->filepos;
 		lump->size = info->size;
-		strncpy(lump->name, info->name, 8);
+		lump->name = info->name;
 
 		lump++;
 		numlumps++;
@@ -388,8 +388,8 @@ void AddFile(const OResFile& file)
 
 static bool IsMarker (const lumpinfo_t *lump, const char *marker)
 {
-	return (lump->namespc == ns_global) && (!strncmp (lump->name, marker, 8) ||
-			(*(lump->name) == *marker && !strncmp (lump->name + 1, marker, 7)));
+	return (lump->namespc == ns_global) && (!strncmp (lump->name.c_str(), marker, 8) ||
+			(*(lump->name.c_str()) == *marker && !strncmp (lump->name.c_str() + 1, marker, 7)));
 }
 
 //
@@ -452,7 +452,7 @@ void W_MergeLumps (const char *start, const char *end, int space)
 				if (!newlumps)
 				{
 					newlumps++;
-					strncpy (newlumpinfos[0].name, ustart, 8);
+					newlumpinfos[0].name = ustart;
 					newlumpinfos[0].handle = NULL;
 					newlumpinfos[0].position =
 						newlumpinfos[0].size = 0;
@@ -520,7 +520,7 @@ void W_MergeLumps (const char *start, const char *end, int space)
 
 		numlumps = oldlumps + newlumps;
 
-		strncpy (lumpinfo[numlumps].name, uend, 8);
+		lumpinfo[numlumps].name = uend;
 		lumpinfo[numlumps].handle = NULL;
 		lumpinfo[numlumps].position =
 			lumpinfo[numlumps].size = 0;
@@ -657,7 +657,7 @@ int W_CheckNumForName(const char *name, int namespc)
 	// worth the overhead, considering namespace collisions are rare in
 	// Doom wads.
 
-	while (i >= 0 && (strnicmp(lumpinfo[i].name, name, 8) ||
+	while (i >= 0 && (strnicmp(lumpinfo[i].name.c_str(), name, 8) ||
 				lumpinfo[i].namespc != namespc))
 		i = lumpinfo[i].next;
 
@@ -688,12 +688,12 @@ int W_GetNumForName(const char* name, int namespc)
  * @detail You likely only need this for debugging, since a name can be
  *         ambiguous.
  */
-std::string W_LumpName(unsigned lump)
+OLumpName W_LumpName(unsigned lump)
 {
 	if (lump >= ::numlumps)
 		I_Error("{}: {} >= numlumps", __FUNCTION__, lump);
 
-	return std::string(::lumpinfo[lump].name, ARRAY_LENGTH(::lumpinfo[lump].name));
+	return ::lumpinfo[lump].name;
 }
 
 //
@@ -770,7 +770,7 @@ bool W_CheckLumpName (unsigned lump, const char *name)
 	if (lump >= numlumps)
 		return false;
 
-	return !strnicmp (lumpinfo[lump].name, name, 8);
+	return !strnicmp (lumpinfo[lump].name.c_str(), name, 8);
 }
 
 //
@@ -782,7 +782,7 @@ void W_GetLumpName(char *to, unsigned lump)
 		*to = 0;
 	else
 	{
-		memcpy (to, lumpinfo[lump].name, 8); // denis - todo -string limit?
+		memcpy (to, lumpinfo[lump].name.c_str(), 8); // denis - todo -string limit?
 		to[8] = '\0';
 		std::transform(to, to + strlen(to), to, toupper);
 	}
@@ -979,7 +979,7 @@ int W_FindLump (const char *name, int lastlump)
 
 	for (int i = lastlump + 1; i < (int)numlumps; i++)
 	{
-		if (strnicmp(lumpinfo[i].name, name, 8) == 0)
+		if (strnicmp(lumpinfo[i].name.c_str(), name, 8) == 0)
 			return i;
 	}
 

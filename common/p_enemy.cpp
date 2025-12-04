@@ -1072,7 +1072,10 @@ void P_SetupHelpers()
 		for (int i = 0; i < co_friend_playerhelpers.asInt(); i++)
 		{
 
-			mobjtype_t monstertype = P_INameToMobj(co_friend_helpertype.str());
+			mobjtype_t monstertype = static_cast<mobjtype_t>(deh.helper);
+
+			if (!co_friend_helpertype.str().empty())
+				monstertype = P_INameToMobj(co_friend_helpertype.str());
 
 			if (monstertype == MT_NULL)
 				monstertype = MT_DOGS;
@@ -2036,6 +2039,11 @@ void P_GiveFriendlyOwnerInfo(AActor* friendly, const AActor* origin)
 		friendly->friend_playerid = origin->player->id;
 		friendly->friend_teamid = origin->player->userinfo.team;
 	}
+	else if (origin->flags & MF_FRIEND)
+	{
+		friendly->friend_playerid = origin->friend_playerid;
+		friendly->friend_teamid = origin->friend_teamid;
+	}
 }
 
 void A_BruisAttack (AActor *actor)
@@ -2632,6 +2640,15 @@ void A_SpawnObject(AActor* actor)
 
 	P_GiveFriendlyOwnerInfo(mo, actor);
 
+	CLIENT_ONLY(
+		if (cl_showfriends && validplayer(displayplayer()) && displayplayer().mo &&
+		    P_IsFriendlyThing(displayplayer().mo, mo))
+		{
+			mo->effects = FX_FRIENDHEARTS;
+			mo->translation = translationref_t(&friendtable[0]);
+		}
+	)
+
 	SV_UpdateMobj(mo);
 }
 
@@ -3111,21 +3128,23 @@ void A_JumpIfTracerCloser(AActor* actor)
 // Jumps to a state if caller has the specified thing flags set.
 //   args[0]: State to jump to
 //   args[1]: Standard Flag(s) to check
-//   args[2]: MBF21 Flag(s) to check
+//   args[2] and args[3]: MBF21 Flag(s) to check
+//   DeHackEd args3 is split into args[2] and args[3]
+//   because the MBF21 flags are split across AActor::flags2 and AActor::flags3
 //
 void A_JumpIfFlagsSet(AActor* actor)
 {
-	int state;
-	int flags, flags2;
-
 	if (!actor)
 		return;
 
-	state = actor->state->args[0];
-	flags = actor->state->args[1];
-	flags2 = actor->state->args[2];
+	const int state = actor->state->args[0];
+	const int flags = actor->state->args[1];
+	const int flags2 = actor->state->args[2];
+	const int flags3 = actor->state->args[3];
 
-	if ((actor->flags & flags) == flags && (actor->flags2 & flags2) == flags2)
+	if ((actor->flags & flags) == flags &&
+	    (actor->flags2 & flags2) == flags2 &&
+	    (actor->flags3 & flags3) == flags3)
 		P_SetMobjState(actor, (statenum_t)state, true);
 }
 
@@ -3134,7 +3153,9 @@ void A_JumpIfFlagsSet(AActor* actor)
 // A_AddFlags
 // Adds the specified thing flags to the caller.
 //   args[0]: Standard Flag(s) to add
-//   args[1]: MBF21 Flag(s) to add
+//   args[1] and args[2]: MBF21 Flag(s) to add
+//   DeHackEd args2 is split into args[1] and args[2]
+//   because the MBF21 flags are split across AActor::flags2 and AActor::flags3
 //
 void A_AddFlags(AActor* actor)
 {
@@ -3143,19 +3164,33 @@ void A_AddFlags(AActor* actor)
 
 	const int flags = actor->state->args[0];
 	const int flags2 = actor->state->args[1];
+	const int flags3 = actor->state->args[2];
+
+	const bool update_blockmap = 
+		((flags & MF_NOBLOCKMAP) && !(actor->flags & MF_NOBLOCKMAP)) ||
+		((flags & MF_NOSECTOR)   && !(actor->flags & MF_NOSECTOR));
 
 	if (flags & MF_TRANSLUCENT)
 		actor->translucency = TRANSLUC66;
 
+	if (update_blockmap)
+		actor->UnlinkFromWorld();
+
 	actor->flags |= flags;
 	actor->flags2 |= flags2;
+	actor->flags3 |= flags3;
+
+	if (update_blockmap)
+		actor->LinkToWorld();
 }
 
 //
 // A_RemoveFlags
 // Removes the specified thing flags from the caller.
 //   args[0]: Flag(s) to remove
-//   args[1]: MBF21 Flag(s) to remove
+//   args[1] and args[2]: MBF21 Flag(s) to remove
+//   DeHackEd args2 is split into args[1] and args[2]
+//   because the MBF21 flags are split across AActor::flags2 and AActor::flags3
 //
 void A_RemoveFlags(AActor* actor)
 {
@@ -3164,12 +3199,24 @@ void A_RemoveFlags(AActor* actor)
 
 	const int flags = actor->state->args[0];
 	const int flags2 = actor->state->args[1];
+	const int flags3 = actor->state->args[2];
+
+	const bool update_blockmap = 
+		((flags & MF_NOBLOCKMAP) && (actor->flags & MF_NOBLOCKMAP)) ||
+		((flags & MF_NOSECTOR)   && (actor->flags & MF_NOSECTOR));
 
 	if (flags & MF_TRANSLUCENT)
 		actor->translucency = FRACUNIT;
 
+	if (update_blockmap)
+		actor->UnlinkFromWorld();
+
 	actor->flags &= ~flags;
 	actor->flags2 &= ~flags2;
+	actor->flags3 &= ~flags3;
+
+	if (update_blockmap)
+		actor->LinkToWorld();
 }
 
 void A_Stop(AActor* actor)
@@ -3828,6 +3875,15 @@ void A_Spawn(AActor* mo)
 		newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
 
 		P_GiveFriendlyOwnerInfo(newmobj, mo);
+
+		CLIENT_ONLY (
+			if (cl_showfriends && validplayer(displayplayer()) && displayplayer().mo &&
+			    P_IsFriendlyThing(displayplayer().mo, newmobj))
+			{
+				newmobj->effects = FX_FRIENDHEARTS;
+				newmobj->translation = translationref_t(&friendtable[0]);
+			}
+		)
 	}
 }
 
@@ -3892,7 +3948,7 @@ void A_RandomJump(AActor* mo)
 void A_LineEffect(AActor* mo)
 {
 	/* [AM] Not implemented...yet. */
-	if (!(mo->flags & MF_LINEDONE))                // Unless already used up
+	if (!(mo->oflags & MFO_LINEDONE))                // Unless already used up
 	{
 		line_t junk = *lines;                          // Fake linedef set to 1st
 		if ((junk.special = (short)mo->state->misc1))  // Linedef type
@@ -3906,7 +3962,7 @@ void A_LineEffect(AActor* mo)
 			if (!P_UseSpecialLine(mo, &junk, 0, mo->flags & MF2_BOSS))       // Try using it
 				P_CrossSpecialLine(&junk, 0, mo, mo->flags & MF2_BOSS); // Try crossing it
 			if (!junk.special)                         // If type cleared,
-			    mo->flags |= MF_LINEDONE;            // no more for this thing
+			    mo->oflags |= MFO_LINEDONE;            // no more for this thing
 			mo->player = oldplayer;                    // Restore player status
 		}
 	}

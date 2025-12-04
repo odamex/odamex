@@ -27,7 +27,7 @@
 #include "infomap.h"
 #include "g_mapinfo.h" // G_MapNameToLevelNum
 
-int ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NULL)
+bool ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NULL)
 {
 	// Check if the given map name can be expressed as a gameepisode/gamemap pair and be
 	// reconstructed from it.
@@ -37,16 +37,17 @@ int ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NULL
 	if (gamemode != commercial)
 	{
 		if (sscanf(mapname.c_str(), "E%dM%d", &epi, &map) != 2)
-			return 0;
+			return false;
 		lumpname = fmt::format("E{}M{}", epi, map);
 	}
 	else
 	{
 		if (sscanf(mapname.c_str(), "MAP%d", &map) != 1)
-			return 0;
+			return false;
 		lumpname = fmt::format("MAP{:02d}", map);
 		epi = 1;
 	}
+
 	if (pEpi)
 		*pEpi = epi;
 	if (pMap)

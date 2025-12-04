@@ -380,8 +380,6 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 	return true;
 }
 
-std::optional<std::string> ParseString2(std::string_view& data);
-
 //
 // G_LoadWadString
 //
@@ -396,9 +394,8 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname, const m
 	OWantFiles newwadfiles;
 	OWantFiles newpatchfiles;
 
-	std::string_view data = str;
-	std::optional<std::string> token;
-	while(token = ParseString2(data))
+	auto parser = ParseString(str, false);
+	while(std::optional<std::string> token = parser().token)
 	{
 		OWantFile file;
 		if (!OWantFile::make(file, *token, OFILE_UNKNOWN))
@@ -1005,7 +1002,7 @@ BEGIN_COMMAND(mapinfo)
 	PrintFmt(PRINT_HIGH, "Intermission Graphic: {}\n", info.pname);
 	PrintFmt(PRINT_HIGH, "Next Map: {}\n", info.nextmap);
 	PrintFmt(PRINT_HIGH, "Secret Map: {}\n", info.secretmap);
-	PrintFmt(PRINT_HIGH, "Par Time: %d\n", info.partime);
+	PrintFmt(PRINT_HIGH, "Par Time: {}\n", info.partime);
 	PrintFmt(PRINT_HIGH, "Sky: {}\n", info.skypic);
 	PrintFmt(PRINT_HIGH, "Music: {}\n", info.music);
 

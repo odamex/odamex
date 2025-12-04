@@ -92,10 +92,10 @@ extern baseapp_t baseapp;
 #define SERVER_ONLY(expr)
 #endif
 
-// 
+//
 // Environment Platform
-// 
-enum gameplatform_t 
+//
+enum gameplatform_t
 {
 	PF_PC,
 	PF_XBOX,
@@ -489,6 +489,7 @@ inline FArchive &operator>> (FArchive &arc, ammotype_t &i)
 // Power up artifacts.
 enum powertype_t
 {
+	pw_none = -1,
 	pw_invulnerability,
 	pw_strength,
 	pw_invisibility,

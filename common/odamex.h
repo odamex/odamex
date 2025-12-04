@@ -30,6 +30,7 @@
 #include <string.h>
 
 #include <string>
+#include <string_view>
 #include <vector>
 #include <map>
 
@@ -41,3 +42,5 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "doomfunc.h"
+
+using namespace std::string_view_literals;

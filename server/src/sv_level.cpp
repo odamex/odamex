@@ -297,6 +297,50 @@ void G_ChangeMap(size_t index) {
 		AddCommandString(sv_endmapscript.str());
 }
 
+// Determine first map to load on startup
+void G_ChangeMapStartup()
+{
+	unnatural_level_progression = false;
+
+	maplist_entry_t lobby_entry = Maplist::instance().get_lobbymap();
+
+	if (!Maplist::instance().lobbyempty())
+	{
+		std::string wadstr = C_EscapeWadList(lobby_entry.wads);
+		G_LoadWadString(wadstr, lobby_entry.map);
+	}
+	else
+	{
+		if (Maplist::instance().empty())
+		{
+			// We don't have a maplist, so grab the next 'natural' map lump.
+			G_DeferedInitNew(G_NextMap());
+		}
+		else
+		{
+			size_t this_index = 0;
+			// if gotomap was run before this, stay on map set by that
+			// otherwise this_index is unmodified, and go to first maplist entry
+			Maplist::instance().get_this_index(this_index);
+			maplist_entry_t maplist_entry;
+			Maplist::instance().get_map_by_index(this_index, maplist_entry);
+
+			std::string wadstr = C_EscapeWadList(maplist_entry.wads);
+			G_LoadWadString(wadstr, maplist_entry.map, maplist_entry.lastmaps);
+
+			// Set the new map as the current map
+			Maplist::instance().set_index(this_index);
+		}
+	}
+
+	// run script at the end of each map
+	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
+	// when onlcvars (addcommandstring's second param) is true.  Is there a
+	// reason why the mapscripts ahve to be safe mode?
+	if (!sv_endmapscript.str().empty())
+		AddCommandString(sv_endmapscript.str());
+}
+
 // Restart the current map.
 void G_RestartMap() {
 	// Restart the current map.

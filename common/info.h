@@ -1777,7 +1777,20 @@ struct mobjinfo_t
 	int splash_group        = SG_DEFAULT;
 	int flags3              = 0;
 	const char* ripsound    = nullptr;
-	mobjtype_t droppeditem  = MT_NULL;
+	int32_t droppeditem     = MT_NULL;
+
+	// ID24 stuff
+	// int minrespawntics      = 420;
+	// int respawndice         = 4;
+	// int pickupammotype      = -1;
+	// int pickupammocategory  = -1;
+	// int pickupweapontype    = -1;
+	// powertype_t pickupitemtype = pw_none;
+	// int pickupbonuscount    = 6;
+	// const char* pickupsound = nullptr;
+	// std::string pickupmessage = "";
+	// OLumpName translation   = nullptr;
+	// fixed_t selfdamage      = FRACUNIT;
 };
 
 inline auto format_as(const mobjinfo_t& info)

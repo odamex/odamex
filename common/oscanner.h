@@ -27,8 +27,9 @@
 struct OScannerConfig
 {
 	OLumpName lumpName;
-	bool semiComments;
-	bool cComments;
+	bool semiComments = false;
+	bool cComments    = false;
+	bool hashComments = false;
 };
 
 class OScanner
@@ -76,13 +77,13 @@ class OScanner
 	[[nodiscard]] float getTokenFloat() const;
 	[[nodiscard]] bool getTokenBool() const;
 
-	[[nodiscard]] bool &crossed();
+	bool &crossed();
 	[[nodiscard]] bool isQuotedString() const;
 	[[nodiscard]] bool isIdentifier() const;
-	void assertTokenIs(const char* string) const;
-	void assertTokenNoCaseIs(const char* string) const;
-	[[nodiscard]] bool compareToken(const char* string) const;
-	[[nodiscard]] bool compareTokenNoCase(const char* string) const;
+	void assertTokenIs(std::string_view string) const;
+	void assertTokenNoCaseIs(std::string_view string) const;
+	[[nodiscard]] bool compareToken(std::string_view string) const;
+	[[nodiscard]] bool compareTokenNoCase(std::string_view string) const;
 
 	template <typename... ARGS>
 	void warning(fmt::format_string<ARGS...> format, ARGS&&... args) const

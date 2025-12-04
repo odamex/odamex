@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
 					term = location.length();
 
 				Args.AppendArg("-connect");
-				Args.AppendArg(location.substr(0, term).data());
+				Args.AppendArg(std::string(location.substr(0, term)).c_str());
 			}
 		}
 

@@ -65,7 +65,7 @@ typedef struct
 //
 typedef struct lumpinfo_s
 {
-	char		name[8]; // denis - todo - string
+	OLumpName	name;
 	FILE		*handle;
 	int			position;
 	int			size;
@@ -123,7 +123,7 @@ inline int W_CheckNumForName(const OLumpName& name, int ns = ns_global) { return
 int W_GetNumForName(const char *name, int ns = ns_global);
 inline int W_GetNumForName(const OLumpName& name, int ns = ns_global) { return W_GetNumForName(name.c_str(), ns); };
 
-std::string W_LumpName(unsigned lump);
+OLumpName W_LumpName(unsigned lump);
 unsigned	W_LumpLength (unsigned lump);
 void		W_ReadLump (unsigned lump, void *dest);
 unsigned	W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest, unsigned &filelen);

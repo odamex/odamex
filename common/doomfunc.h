@@ -159,4 +159,11 @@ struct drop_wrapper
 template <typename T>
 inline drop_wrapper<T> drop(T&& iterable, std::size_t count) { return { iterable, count }; }
 
+// Helper for use of std::visit with lambdas
+template<class... Ts>
+struct visitor : Ts... { using Ts::operator()...; };
+// TODO: remove deduction guide in C++20
+template<class... Ts>
+visitor(Ts...) -> visitor<Ts...>;
+
 }

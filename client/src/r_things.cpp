@@ -1195,6 +1195,7 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	{
 		vis->patch = particle->sprite;
 		vis->translucency = (particle->trans + 1) << 8;
+		vis->mobjflags = 0;
 	}
 
 	// get light level

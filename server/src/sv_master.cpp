@@ -115,7 +115,7 @@ void SV_InitMasters(void)
 			if (masters.empty())
 			{
 				for (std::string_view master : def_masterlist)
-					SV_AddMaster(master.data());
+					SV_AddMaster(master);
 			}
 		}
 		else
@@ -131,9 +131,9 @@ void SV_InitMasters(void)
 //
 // SV_AddMaster
 //
-bool SV_AddMaster(const char *masterip)
+bool SV_AddMaster(std::string_view masterip)
 {
-	if(strlen(masterip) >= MAX_UDP_PACKET)
+	if(masterip.size() >= MAX_UDP_PACKET)
 		return false;
 
 	masterserver m;

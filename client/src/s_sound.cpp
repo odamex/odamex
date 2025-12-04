@@ -187,7 +187,7 @@ void S_NoiseDebug()
 				oy = Channel[i].y;
 			}
 			const int color = Channel[i].loop ? CR_BROWN : CR_GREY;
-			M_StringCopy(temp, lumpinfo[Channel[i].sfxinfo->lumpnum].name, 9);
+			M_StringCopy(temp, lumpinfo[Channel[i].sfxinfo->lumpnum].name.c_str(), 9);
 			screen->DrawText (color, 0, y, temp);
 			snprintf (temp, 16, "%d", ox / FRACUNIT);
 			screen->DrawText (color, 70, y, temp);
@@ -1673,7 +1673,7 @@ BEGIN_COMMAND (snd_soundlist)
 		if (S_sfx[i].lumpnum != -1)
 		{
 			const OLumpName lumpname = lumpinfo[S_sfx[i].lumpnum].name;
-			PrintFmt(PRINT_HIGH, "{:>3d}. {} ({})\n", i+1, S_sfx[i].name, lumpname.c_str());
+			PrintFmt(PRINT_HIGH, "{:>3d}. {} ({})\n", i+1, S_sfx[i].name, lumpname);
 		}
 		// todo: check if sounds are multiple lumps rather than just one (i.e. random sounds)
 		else

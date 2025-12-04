@@ -265,6 +265,8 @@ void STACK_ARGS D_Shutdown()
 	NormalLight.next = NULL;
 }
 
+void G_ChangeMapStartup();
+
 //
 // D_DoomMain
 //
@@ -418,7 +420,7 @@ void D_DoomMain()
 
 	level.mapname = startmap;
 
-	G_ChangeMap();
+	G_ChangeMapStartup();
 
 	D_DoomLoop();	// never returns
 }

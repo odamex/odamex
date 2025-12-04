@@ -195,12 +195,14 @@ enum mobjflag_t
 
 	MF_SKULLFLY  = BIT(24),		// skull in flight
 	MF_NOTDMATCH = BIT(25),		// don't spawn in death match (key cards)
-	MF_LINEDONE = BIT(26),      // MF - A_LineEffect - activate as if player
+
+	MF_TRANSLATION1 = BIT(26),
+	MF_TRANSLATION2 = BIT(27),
 
 	// Player sprites in multiplayer modes are modified
 	//  using an internal color lookup table for re-indexing.
 	// If 0x4 0x8 or 0xc, use a translation table for player colormaps
-	MF_TRANSLATION = 0xc000000,
+	MF_TRANSLATION = MF_TRANSLATION1 | MF_TRANSLATION2,
 
 	MF_TOUCHY  = BIT(28), // MBF
 	MF_BOUNCES = BIT(29), // MBF
@@ -269,7 +271,7 @@ enum mobjflag_t
 	MF3_E3M8BOSS		= BIT(14),	// is an E3M8 boss
 	MF3_E4M6BOSS		= BIT(15),	// is an E4M6 boss
 	MF3_E4M8BOSS		= BIT(16),	// is an E4M8 boss
-									// BIT 15 is MF2_RIP -- RESERVED
+									// BIT 17 is MF2_RIP -- RESERVED
 	MF3_FULLVOLSOUNDS	= BIT(18),	// full volume see / death sound
 
 	// --- mobj.oflags ---
@@ -285,7 +287,9 @@ enum mobjflag_t
 	MFO_FULLBRIGHT		= BIT(8),	// monster is fullbright
 	MFO_SPECTATOR		= BIT(9),	// GhostlyDeath -- thing is/was a spectator and can't be seen!
 	MFO_FALLING			= BIT(10),	// [INTERNAL] for falling
-	MFO_ARMED				= BIT(11),	// [INTERNAL] for TOUCHY (object is armed)
+	MFO_ARMED			= BIT(11),	// [INTERNAL] for TOUCHY (object is armed)
+	MFO_LINEDONE 		= BIT(12),  // [INTERNAL] for A_LineEffect, line special already done
+	// MFO_STEALTH			= BIT(13),	// Andy Baker's stealth monsters
 };
 
 //
@@ -469,8 +473,6 @@ public:
 
 	DWORD			effects;			// [RH] see p_effect.h
 
-    // Interaction info, by BLOCKMAP.
-    // Links in blocks (if needed).
 	struct subsector_s		*subsector;
 
     // The closest interval over all contacted Sectors.
@@ -638,6 +640,8 @@ public:
 		AActor		**prev[BLOCKSX * BLOCKSY];
 	};
 
+	// Interaction info, by BLOCKMAP.
+    // Links in blocks (if needed).
 	ActorBlockMapListNode bmapnode;
 };
 

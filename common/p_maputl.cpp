@@ -1207,59 +1207,37 @@ bool P_ActorInFOV(const AActor* origin, const AActor* mo , float f, fixed_t dist
 
 AActor* RoughMonsterCheck(AActor* mo, int index, angle_t fov)
 {
-	AActor* link;
-
-	link = blocklinks[index];
-	while (link)
+	const int bx = index % bmapwidth;
+	const int by = index / bmapwidth;
+	for (AActor* link = blocklinks[index]; link != nullptr; link = link->bmapnode.Next(bx, by))
 	{
 		// skip non-shootable actors
 		if (!(link->flags & MF_SHOOTABLE))
-		{
-			link = link->snext;
 			continue;
-		}
 
 		// skip yourself
 		if (link == mo)
-		{
-			link = link->snext;
 			continue;
-		}
 
 		// skip barrels and other shootable but not alive things
 		if (!sentient(link))
-		{
-			link = link->snext;
 			continue;
-		}
 
 		// Don't target things friendly to you.
 		if (P_IsFriendlyThing(mo, link))
-		{
-			link = link->snext;
 			continue;
-		}
 
 		// Don't target players or spectators (done elsewhere)
 		if (link->player || (link->player && link->player->spectator))
-		{
-			link = link->snext;
 			continue;
-		}
 
 		// skip actors outside of specified FOV
 		if (fov > 0 && !P_CheckFov(mo, link, fov))
-		{
-			link = link->snext;
 			continue;
-		}
 
 		// skip actors not in line of sight
 		if (!P_CheckSight(mo, link))
-		{
-			link = link->snext;
 			continue;
-		}
 
 		// all good! return it.
 		return link;
@@ -1273,67 +1251,45 @@ AActor* RoughMonsterCheck(AActor* mo, int index, angle_t fov)
 // RoughTracerCheck
 // Searches though the surrounding mapblocks for monsters/players
 // based on Hexen's P_RoughMonsterSearch
-// 
+//
 // Special logic to handle tracers (actor->target is owner of tracer)
 //
 // distance is in MAPBLOCKUNITS
 
 AActor* RoughTracerCheck(AActor* mo, int index, angle_t fov)
 {
-	AActor* link;
-
-	link = blocklinks[index];
-	while (link)
+	const int bx = index % bmapwidth;
+	const int by = index / bmapwidth;
+	for (AActor* link = blocklinks[index]; link != nullptr; link = link->bmapnode.Next(bx, by))
 	{
 		// skip non-shootable actors
 		if (!(link->flags & MF_SHOOTABLE))
-		{
-			link = link->snext;
 			continue;
-		}
 
 		// skip the projectile's owner
 		if (link == mo->target)
-		{
-			link = link->snext;
 			continue;
-		}
 
 		// [Blair] Don't target friendlies
 		if (P_IsFriendlyThing(mo->target, link))
-		{
-			link = link->snext;
 			continue;
-		}
 
 		// [Blair] Don't target spectators
 		if (link->player && link->player->spectator)
-		{
-			link = link->snext;
 			continue;
-		}
 
 		// [Blair] Don't target teammates
 		if (mo->target->player && link->player &&
 			P_AreTeammates(*mo->target->player, *link->player))
-		{
-			link = link->snext;
 			continue;
-		}
 
 		// skip actors outside of specified FOV
 		if (fov > 0 && !P_CheckFov(mo, link, fov))
-		{
-			link = link->snext;
 			continue;
-		}
 
 		// skip actors not in line of sight
 		if (!P_CheckSight(mo, link))
-		{
-			link = link->snext;
 			continue;
-		}
 
 		// all good! return it.
 		return link;

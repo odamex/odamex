@@ -298,7 +298,8 @@ static ItemEquipVal P_GiveAmmoAutoSwitch(player_t* player, ammotype_t ammo, int 
 	else if (player->userinfo.switchweapon != WPSW_NEVER)
 	{
 		if (weaponinfo[player->readyweapon].flags & WPF_AUTOSWITCHFROM &&
-		    player->ammo[weaponinfo[player->readyweapon].ammotype] != ammo)
+			(weaponinfo[player->readyweapon].ammotype == am_noammo ||
+		     player->ammo[weaponinfo[player->readyweapon].ammotype] != ammo))
 		{
 			for (int i = NUMWEAPONS - 1; i > player->readyweapon; --i)
 			{
@@ -2021,7 +2022,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	// Drop stuff.
 	// This determines the kind of object spawned
 	// during the death frame of a thing.
-	mobjtype_t item = (mobjtype_t)0;
+	int32_t item = 0;
 
 	//
 	// sapientlion - if player killed themselves or were killed by the other

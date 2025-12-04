@@ -363,13 +363,14 @@ weapontype_t P_GetNextWeapon(player_t *player, bool forward)
 			continue;
 		if (!player->weaponowned[itemlist[index].offset])
 			continue;
-		if (!player->ammo[weaponinfo[itemlist[index].offset].ammotype])
+		if (weaponinfo[itemlist[index].offset].ammotype != am_noammo &&
+		    !player->ammo[weaponinfo[itemlist[index].offset].ammotype])
 			continue;
 		if (itemlist[index].offset == wp_plasma && gamemode == shareware)
 			continue;
 		if (itemlist[index].offset == wp_bfg && gamemode == shareware)
 			continue;
-		if (itemlist[index].offset == wp_supershotgun && gamemode != commercial && gamemode != commercial_bfg )
+		if (itemlist[index].offset == wp_supershotgun && gamemode != commercial && gamemode != commercial_bfg)
 			continue;
 		return (weapontype_t)itemlist[index].offset;
 	}

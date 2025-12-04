@@ -26,6 +26,7 @@
 #include "dobject.h"
 
 #include <optional>
+#include <functional>
 
 void C_ExecCmdLineParams (bool onlyset, bool onlylogfile);
 
@@ -33,8 +34,19 @@ void C_ExecCmdLineParams (bool onlyset, bool onlylogfile);
 // for map changing, etc
 void AddCommandString(const std::string &cmd, uint32_t key = 0);
 
+struct parse_string_result_t
+{
+	std::optional<std::string> token;
+	std::string_view rest;
+
+	operator bool() const
+	{
+		return token.has_value();
+	}
+};
+
 // parse a command string
-std::optional<std::string> ParseString (std::string_view& data);
+std::function<parse_string_result_t()> ParseString(std::string_view data, bool expandVars);
 
 // combine many arguments into one valid argument.
 std::string C_ArgCombine(size_t argc, const char **argv);

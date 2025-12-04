@@ -52,7 +52,7 @@ void R_CacheSprite(const spritedef_t *sprite)
 {
 	auto it = sprnames.find(sprite->spritenum);
 	DPrintFmt("cache sprite {}\n",
-		it != sprnames.end() ? it->second.data() : "");
+		it != sprnames.end() ? it->second : "");
 	for (int i = 0; i < sprite->numframes; i++)
 	{
 		for (int r = 0; r < 16; r++)
@@ -191,6 +191,7 @@ static void R_InstallSprite(const char *name, int32_t num)
 	sprites[num].spriteframes = (spriteframe_t *)
 		Z_Malloc (maxframe * sizeof(spriteframe_t), PU_STATIC, NULL);
 	memcpy (sprites[num].spriteframes, sprtemp, maxframe * sizeof(spriteframe_t));
+	sprites[num].spritenum = num;
 }
 
 
@@ -231,7 +232,7 @@ static void R_InitSpriteDefs(std::vector<spriteinfo_t*>& namelist)
 		//	filling in the frames for whatever is found
 		for (int l = lastspritelump; l >= firstspritelump; l--)
 		{
-			if (*(int*)lumpinfo[l].name == intname && lumpinfo[l].size > 0)
+			if (*(int*)lumpinfo[l].name.c_str() == intname && lumpinfo[l].size > 0)
 			{
 				R_InstallSpriteLump (l,
 									 lumpinfo[l].name[4] - 'A', // denis - fixme - security

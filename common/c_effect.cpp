@@ -135,24 +135,6 @@ void P_DrawSplash2 (int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, i
 //
 // [RH] Particle functions
 //
-#ifndef _MSC_VER
-// inlined with VC++
-particle_t *NewParticle (void)
-{
-	if (!clientside)
-		return NULL;
-
-	particle_t *result = NULL;
-	if (InactiveParticles != NO_PARTICLE)
-	{
-		result = Particles + InactiveParticles;
-		InactiveParticles = result->next;
-		result->next = ActiveParticles;
-		ActiveParticles = result - Particles;
-	}
-	return result;
-}
-#endif
 
 static void MakeFountain (AActor *actor, int color1, int color2)
 {
@@ -404,6 +386,7 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 	float deg = 270.0f;
 	for (int i = steps; i; i--) {
 		particle_t *p = NewParticle ();
+		p->sprite = NO_PARTICLE;
 
 		if (!p)
 			return;

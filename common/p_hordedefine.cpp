@@ -132,10 +132,15 @@ StringTokens hordeDefine_t::weaponStrings(player_t* player) const
 	StringTokens rvo;
 	for (const auto& weapon : weapons)
 	{
-		if (!(player == NULL || !player->weaponowned[weapon]))
-		{
+		if (player == nullptr)
 			continue;
-		}
+
+		if (weapon == wp_none && player->powers[pw_strength])
+			continue;
+
+		// don't do an out of bounds access on weaponowned
+		if (weapon != wp_none && player->weaponowned[weapon])
+			continue;
 
 		switch (weapon)
 		{
