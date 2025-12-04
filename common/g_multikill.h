@@ -57,5 +57,5 @@ class MultiKillManager
 		std::vector<MultiKillLevel_s> multiKillLevels;
 };
 
-void G_ProcessMultiKills(AActor* source, player_t* target);
-void G_TicMultiKill(player_t* player);
+void P_ProcessMultiKills(AActor* source, player_t* target);
+void P_TicMultiKill(player_t* player);
