@@ -1644,8 +1644,18 @@ void SpreeHud()
 		// All 3 are valid, compare times
 		if (other_spree_r.spreeStartTic > global_spree_breaker.spreeEndedTic)
 		{
+
+			if (other_spree_r.spreeStartTic > spree_r.spreeStartTic)
+
+			{
 				// Display other player's spree
 				DisplaySmallSpree(other_spree_r, otherplayerSpree);
+			}
+			else
+			{
+				// Display still dominating
+				DisplaySmallSpree(spree_r, spree);
+			}
 		}
 		else
 		{
@@ -1653,6 +1663,11 @@ void SpreeHud()
 			{
 				// Display spree breaker
 				DisplaySmallSpreeBreaker(global_spree_breaker);
+			}
+			else
+			{
+				// Display still dominating
+				DisplaySmallSpree(spree_r, spree);
 			}
 		}
 	}
