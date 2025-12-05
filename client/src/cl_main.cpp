@@ -152,7 +152,6 @@ EXTERN_CVAR (mute_enemies)
 EXTERN_CVAR (cl_autoaim)
 
 EXTERN_CVAR (cl_interp)
-EXTERN_CVAR (cl_showfriends)
 EXTERN_CVAR (cl_serverdownload)
 EXTERN_CVAR (cl_forcedownload)
 
@@ -586,8 +585,7 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 				ST_ForceRefresh();
 			}
 
-			if (cl_showfriends)
-				P_FriendlyEffects(); // Mark any new friendly monsters with an effect
+			P_FriendlyEffects(); // Mark any new friendly monsters with an effect
 
 			return;
 		}
@@ -1410,8 +1408,7 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 	{
 		R_ForceViewWindowResize();		// toggline spectator mode affects status bar visibility
 
-		if (cl_showfriends)
-			P_FriendlyEffects(); // Mark any new friendly monsters with an effect
+		P_FriendlyEffects(); // Mark any new friendly monsters with an effect
 
 		if (player.spectator)
 		{

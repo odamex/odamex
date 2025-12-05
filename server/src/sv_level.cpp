@@ -215,6 +215,7 @@ OLumpName G_NextMap()
 			(((gamemode == registered && level.cluster == 3) ||
 			((gameinfo.flags & GI_MENUHACK_RETAIL) && level.cluster == 4))))
 		{
+			// FIXME: this doesn't play nicely with umapinfo defined episodes
 			next = CalcMapName(1, 1);
 		}
 		else

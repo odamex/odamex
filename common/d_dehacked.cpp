@@ -1294,9 +1294,7 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 		{
 			info->doomednum = (SDWORD)val;
 			// update spawn map
-			auto spawn_map_it = spawn_map.find(info->doomednum);
-			if (spawn_map_it == spawn_map.end())
-				spawn_map.insert(info, info->doomednum);
+			spawn_map.insert(info, info->doomednum);
 		}
 		else if (iequals(key, "Mass"))
 		{

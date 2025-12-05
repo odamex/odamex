@@ -1638,8 +1638,6 @@ void G_DoLoadGame (void)
 	P_SerializeACSDefereds (arc);
 	P_SerializeHorde(arc);
 
-	arc >> musinfo.savedmusic;
-
 	multiplayer = false;
 
 	// load a base level
@@ -1651,6 +1649,7 @@ void G_DoLoadGame (void)
 
 	arc >> level.time;
 
+	P_SerializeMusInfo(arc);
 
 	for (i = 0; i < NUM_WORLDVARS; i++)
 	{
@@ -1752,8 +1751,8 @@ void G_DoSaveGame()
 	P_SerializeACSDefereds (arc);
 	P_SerializeHorde(arc);
 
-	arc << musinfo.savedmusic.c_str();
 	arc << level.time;
+	P_SerializeMusInfo(arc);
 
 	for (int i = 0; i < NUM_WORLDVARS; i++)
 	{

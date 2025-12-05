@@ -1923,6 +1923,7 @@ void G_ParseMapInfo()
 	switch (gamemission)
 	{
 	case doom:
+	case chex3v:
 	case retail_freedoom:
 		baseinfoname = "_D1NFO";
 		if (gamemode == shareware)
@@ -1933,6 +1934,7 @@ void G_ParseMapInfo()
 		}
 		break;
 	case doom2:
+	case chex3d2:
 	case commercial_freedoom:
 	case commercial_hacx:
 		baseinfoname = "_D2NFO";
@@ -1950,6 +1952,7 @@ void G_ParseMapInfo()
 		baseinfoname = "_PLUTNFO";
 		break;
 	case chex:
+	case chex3:
 		baseinfoname = "_CHEXNFO";
 		break;
 	case none:

@@ -45,7 +45,6 @@ EXTERN_CVAR(sv_allowcheats)
 #include "cl_main.h"
 #include "c_dispatch.h"
 extern bool automapactive;
-EXTERN_CVAR(cl_showfriends)
 #endif
 
 void C_DoCommand(std::string_view cmd, uint32_t key = 0);
@@ -541,14 +540,7 @@ AActor* CHEAT_Summon(player_s* player, const std::string& sum, bool friendly)
 		entity->flags |= MF_FRIEND;
 		cheatname = "summonfriend";
 		P_GiveFriendlyOwnerInfo(entity, player->mo);
-#ifdef CLIENT_APP
-		if (cl_showfriends && validplayer(displayplayer()) && displayplayer().mo &&
-			  P_IsFriendlyThing(displayplayer().mo, entity))
-		{
-		entity->effects = FX_FRIENDHEARTS;
-		entity->translation = translationref_t(&friendtable[0]);
-		}
-#endif
+		P_FriendlyEffects(entity);
 	}
 
 	if (multiplayer)

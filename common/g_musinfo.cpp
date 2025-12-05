@@ -122,3 +122,17 @@ void S_ClearMusInfo()
 	musinfo.lastmapthing.init(nullptr);
 	musinfo.savedmusic.clear();
 }
+
+void P_SerializeMusInfo(FArchive& arc)
+{
+	if (arc.IsStoring())
+	{
+		arc << musinfo.savedmusic.c_str();
+	}
+	else
+	{
+		arc >> musinfo.savedmusic;
+		if (!musinfo.savedmusic.empty())
+			S_ChangeMusic(musinfo.savedmusic, true);
+	}
+}

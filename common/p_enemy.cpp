@@ -1020,14 +1020,7 @@ AActor::AActorPtr SpawnHelper(const MapThing SpawnPoint, mobjtype_t SpawnType, c
 
 			P_GiveFriendlyOwnerInfo(mo, origin);
 
-#ifdef CLIENT_APP
-			if (cl_showfriends && validplayer(displayplayer()) && displayplayer().mo &&
-			    P_IsFriendlyThing(displayplayer().mo, mo))
-			{
-				mo->effects = FX_FRIENDHEARTS;
-				mo->translation = translationref_t(&friendtable[0]);
-			}
-#endif
+			P_FriendlyEffects(mo);
 
 			SV_SpawnMobj(mo);
 
@@ -2640,14 +2633,7 @@ void A_SpawnObject(AActor* actor)
 
 	P_GiveFriendlyOwnerInfo(mo, actor);
 
-	CLIENT_ONLY(
-		if (cl_showfriends && validplayer(displayplayer()) && displayplayer().mo &&
-		    P_IsFriendlyThing(displayplayer().mo, mo))
-		{
-			mo->effects = FX_FRIENDHEARTS;
-			mo->translation = translationref_t(&friendtable[0]);
-		}
-	)
+	P_FriendlyEffects(mo);
 
 	SV_UpdateMobj(mo);
 }
@@ -3166,7 +3152,7 @@ void A_AddFlags(AActor* actor)
 	const int flags2 = actor->state->args[1];
 	const int flags3 = actor->state->args[2];
 
-	const bool update_blockmap = 
+	const bool update_blockmap =
 		((flags & MF_NOBLOCKMAP) && !(actor->flags & MF_NOBLOCKMAP)) ||
 		((flags & MF_NOSECTOR)   && !(actor->flags & MF_NOSECTOR));
 
@@ -3201,7 +3187,7 @@ void A_RemoveFlags(AActor* actor)
 	const int flags2 = actor->state->args[1];
 	const int flags3 = actor->state->args[2];
 
-	const bool update_blockmap = 
+	const bool update_blockmap =
 		((flags & MF_NOBLOCKMAP) && (actor->flags & MF_NOBLOCKMAP)) ||
 		((flags & MF_NOSECTOR)   && (actor->flags & MF_NOSECTOR));
 
@@ -3227,6 +3213,10 @@ void A_Stop(AActor* actor)
 // P_FriendlyEffects
 void P_FriendlyEffects()
 {
+CLIENT_ONLY(
+	if (!cl_showfriends)
+		return;
+
 	TThinkerIterator<AActor> iterator;
 	AActor* other;
 
@@ -3234,27 +3224,83 @@ void P_FriendlyEffects()
 	{
 		if (other->health <= 0)
 		{
-			other->effects = 0;
+			other->effects &= ~FX_FRIENDHEARTS;
 			continue;
 		}
 
-		if (other->player || !(other->flags & MF_FRIEND) || other->health <= 0 ||
+		if (other->player || !(other->flags & MF_FRIEND) ||
 		    (other->oflags & MFO_BOSSPOOL))
 			continue;
 
 		if (validplayer(displayplayer()) && displayplayer().mo &&
-		    P_IsFriendlyThing(displayplayer().mo, other))
+		    P_IsFriendlyThing(displayplayer().mo, other) && sentient(other))
 		{
-			other->effects = FX_FRIENDHEARTS;
+			other->effects |= FX_FRIENDHEARTS;
 			other->translation = translationref_t(&friendtable[0]);
 		}
 		else
 		{
-			other->effects = 0;
-			other->translation = 0;
+			other->effects &= ~FX_FRIENDHEARTS;
+			other->translation = nullptr;
+		}
+	}
+)
+}
+
+void P_FriendlyEffects(AActor* mo)
+{
+CLIENT_ONLY(
+	if (!cl_showfriends)
+		return;
+
+	if (mo->health <= 0)
+	{
+		mo->effects &= ~FX_FRIENDHEARTS;
+		return;
+	}
+
+	if (mo->player || !(mo->flags & MF_FRIEND) ||
+	    (mo->oflags & MFO_BOSSPOOL))
+		return;
+
+	if (validplayer(displayplayer()) && displayplayer().mo &&
+	    P_IsFriendlyThing(displayplayer().mo, mo) && sentient(mo))
+	{
+		mo->effects |= FX_FRIENDHEARTS;
+		mo->translation = translationref_t(&friendtable[0]);
+	}
+	else
+	{
+		mo->effects &= ~FX_FRIENDHEARTS;
+		mo->translation = nullptr;
+	}
+)
+}
+
+#ifdef CLIENT_APP
+CVAR_FUNC_IMPL(cl_showfriends)
+{
+	if (var)
+	{
+		P_FriendlyEffects();
+	}
+	else
+	{
+		// Clear all friendly effects
+		TThinkerIterator<AActor> iterator;
+		AActor* other;
+
+		while ((other = iterator.Next()))
+		{
+			if (other->flags & MF_FRIEND)
+			{
+				other->effects &= ~FX_FRIENDHEARTS;
+				other->translation = nullptr;
+			}
 		}
 	}
 }
+#endif
 
 // P_RemoveSoulLimit
 bool P_RemoveSoulLimit()
@@ -3875,15 +3921,7 @@ void A_Spawn(AActor* mo)
 		newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
 
 		P_GiveFriendlyOwnerInfo(newmobj, mo);
-
-		CLIENT_ONLY (
-			if (cl_showfriends && validplayer(displayplayer()) && displayplayer().mo &&
-			    P_IsFriendlyThing(displayplayer().mo, newmobj))
-			{
-				newmobj->effects = FX_FRIENDHEARTS;
-				newmobj->translation = translationref_t(&friendtable[0]);
-			}
-		)
+		P_FriendlyEffects(newmobj);
 	}
 }
 

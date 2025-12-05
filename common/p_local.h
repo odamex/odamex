@@ -505,6 +505,7 @@ bool P_CheckFov(AActor* t1, AActor* t2, angle_t fov);
 bool P_IsFriendlyThing(AActor* actor, AActor* friendshiptest);
 bool P_IsVoodooDoll(const AActor* mo);
 void P_FriendlyEffects();
+void P_FriendlyEffects(AActor* mo);
 void P_GiveFriendlyOwnerInfo(AActor* friendly, const AActor* origin);
 bool P_ProjectileImmune(AActor* target, AActor* source);
 void P_SetupHelpers();

@@ -39,7 +39,6 @@
 
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(cl_showspawns)
-EXTERN_CVAR(cl_showfriends)
 EXTERN_CVAR(chasedemo)
 
 void G_PlayerReborn(player_t &player);
@@ -165,8 +164,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 			level.behavior->StartTypedScripts(SCRIPT_Respawn, player.mo);
 	}
 
-	if (cl_showfriends)
-		P_FriendlyEffects(); // Mark any new friendly monsters with an effect
+	P_FriendlyEffects(); // Mark any new friendly monsters with an effect
 }
 
 std::vector<AActor*> spawnfountains;

@@ -374,10 +374,29 @@ void SetLanguageIDs()
 		SubsetLanguageIDs(LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
 		SubsetLanguageIDs(LOCALE_SYSTEM_DEFAULT, LOCALE_ILANGUAGE, 2);
 		SubsetLanguageIDs(LOCALE_SYSTEM_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 3);
+#elif SDL_VERSION_ATLEAST(2, 0, 14)
+		SDL_Locale* locales = SDL_GetPreferredLocales();
+		size_t i;
+		for (i = 0; i < ARRAY_LENGTH(LanguageIDs) && locales && locales->language; i++)
+		{
+			char slang[4] = {'\0', '\0', '\0', '\0'};
+			strncpy(slang, locales->language, ARRAY_LENGTH(slang) - 1);
+			const uint32_t lang = MAKE_ID(slang[0], slang[1], slang[2], slang[3]);
+			LanguageIDs[i] = lang;
+		}
+		if (i < ARRAY_LENGTH(LanguageIDs))
+		{
+			// Fill the rest with the last valid entry
+			for (; i < ARRAY_LENGTH(LanguageIDs); i++)
+				LanguageIDs[i] = LanguageIDs[i - 1];
+		}
 #else
 		// Default to US English on non-windows systems
-		// FIXME: Use SDL Locale support if available.
-		langid = "enu";
+		static constexpr uint32_t lang = MAKE_ID('e', 'n', 'u', '\0');
+		LanguageIDs[0] = lang;
+		LanguageIDs[1] = lang;
+		LanguageIDs[2] = lang;
+		LanguageIDs[3] = lang;
 #endif
 	}
 	else

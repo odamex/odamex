@@ -92,7 +92,7 @@ void SdlMixerMusicSystem::startSong(byte* data, size_t length, bool loop, int or
 //
 void SdlMixerMusicSystem::_StopSong()
 {
-	if (!isInitialized() || !isPlaying())
+	if (!isInitialized())
 		return;
 
 	if (isPaused())

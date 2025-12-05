@@ -201,7 +201,7 @@ class OZone
 		if (it == m_heap.end())
 		{
 			I_Error("{}: Address 0x{:p} is not tracked by zone at {}:{}.\n{}", __FUNCTION__,
-			        it->first, info.shortFile(), info.line, M_GetStacktrace());
+			        ptr, info.shortFile(), info.line, M_GetStacktrace());
 		}
 
 		const size_t copySize = std::min(size, static_cast<size_t>(it->second.size));
@@ -225,7 +225,7 @@ class OZone
 		if (it == m_heap.end())
 		{
 			I_Error("{}: Address 0x{:p} is not tracked by zone at {}:{}.\n{}", __FUNCTION__,
-			        it->first, info.shortFile(), info.line, M_GetStacktrace());
+			        ptr, info.shortFile(), info.line, M_GetStacktrace());
 		}
 
 		if (tag >= PU_PURGELEVEL && it->second.user == NULL)
@@ -254,7 +254,7 @@ class OZone
 		if (it == m_heap.end())
 		{
 			I_Error("{}: Address 0x{:p} is not tracked by zone at {}:{}.\n{}", __FUNCTION__,
-			        it->first, info.shortFile(), info.line, M_GetStacktrace());
+			        ptr, info.shortFile(), info.line, M_GetStacktrace());
 		}
 
 		dealloc(it);

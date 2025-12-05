@@ -424,8 +424,8 @@ CVAR(in_autosr50, "1", "+strafe activates automatic SR50", CVARTYPE_BOOL,
 CVAR(				cl_showspawns, "0", "Show spawn points as particle fountains",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_LATCH)
 
-CVAR(				cl_showfriends, "0", "Show an indicator on friendly monsters.",
-					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_LATCH)
+CVAR_FUNC_DECL(		cl_showfriends, "0", "Show an indicator on friendly monsters.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 // Netdemo Preferences
 // --------------------

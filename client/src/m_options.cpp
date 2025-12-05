@@ -869,6 +869,7 @@ EXTERN_CVAR (r_painintensity)
 EXTERN_CVAR (cl_movebob)
 EXTERN_CVAR (cl_centerbobonfire)
 EXTERN_CVAR (cl_showspawns)
+EXTERN_CVAR (cl_showfriends)
 EXTERN_CVAR (hud_show_scoreboard_ondeath)
 EXTERN_CVAR (hud_demobar)
 EXTERN_CVAR(hud_targetnames)
@@ -944,6 +945,7 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Linear Skies",			    {&r_linearsky},	   		{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Use softer invuln effect", {&r_softinvulneffect},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Heart effect on friendlies", {&cl_showfriends},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
 	{ discrete, "Multiplayer Intermissions",{&wi_oldintermission},	{2.0}, {0.0},	{0.0},  {DoomOrOdamex} },
 	{ discrete, "Show loading disk icon",	{&r_loadicon},			{2.0}, {0.0},	{0.0},	{OnOff} },

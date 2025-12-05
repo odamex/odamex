@@ -81,7 +81,6 @@ EXTERN_CVAR(cl_disconnectalert)
 EXTERN_CVAR(cl_netdemoname)
 EXTERN_CVAR(cl_splitnetdemos)
 EXTERN_CVAR(cl_team)
-EXTERN_CVAR(cl_showfriends)
 EXTERN_CVAR(hud_revealsecrets)
 EXTERN_CVAR(mute_enemies)
 EXTERN_CVAR(mute_spectators)
@@ -587,16 +586,11 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	    (mo->target->oflags & hordeBossModMask))
 	{
 		mo->oflags |= MFO_FULLBRIGHT;
-		mo->effects = FX_YELLOWFOUNTAIN;
+		mo->effects |= FX_YELLOWFOUNTAIN;
 		mo->translation = translationref_t(&::bosstable[0]);
 	}
 
-	if (cl_showfriends && validplayer(displayplayer()) && displayplayer().mo &&
-	    P_IsFriendlyThing(displayplayer().mo, mo))
-	{
-		mo->effects = FX_FRIENDHEARTS;
-		mo->translation = translationref_t(&friendtable[0]);
-	}
+	P_FriendlyEffects(mo);
 
 	AActor* tracer = NULL;
 	if (bflags & baseline_t::TRACER)
@@ -1447,7 +1441,7 @@ static void CL_Print(const odaproto::svc::Print* msg)
 	else if (level == PRINT_TEAMCHAT)
 		PrintFmt(level, "{:c}!{}", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_SERVERCHAT)
-		PrintFmt(level, "{}", TEXTCOLOR_YELLOW, str);
+		PrintFmt(level, "{:c}{}", TEXTCOLOR_YELLOW, str);
 	else
 		PrintFmt(level, "{}", str);
 

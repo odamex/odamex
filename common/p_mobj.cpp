@@ -1170,7 +1170,13 @@ static void P_WallBouncy(AActor* mo)
 			}
 		}
 		else
+		{
 			mo->momx = mo->momy = 0;
+		}
+	}
+	else
+	{
+		mo->momx = mo->momy = 0;
 	}
 }
 
@@ -2427,7 +2433,7 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 	if (source->oflags & MFO_BOSSPOOL)
 	{
 		th->oflags |= MFO_FULLBRIGHT;
-		th->effects = FX_YELLOWFOUNTAIN;
+		th->effects |= FX_YELLOWFOUNTAIN;
 		th->translation = translationref_t(&bosstable[0]);
 	}
 	else if (source->flags & MF_FRIEND)
@@ -2814,19 +2820,22 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		P_ShowSpawns(mthing);
 
 	// only servers control spawning of items
-  // EXCEPT the client must spawn Type 14 (teleport exit).
+	// EXCEPT the client must spawn Type 14 (teleport exit).
 	// otherwise teleporters won't work well.
-	//
-	// Clients also handle spawning of ambient sounds and music changers
-	//
-	if ((mthing->type >= 14001 && mthing->type <= 14065) || (mthing->type >= 14100 && mthing->type <= 14165))
+	// Also spawn sector special things, fixes some other teleport issues.
+	if (!serverside && (mthing->type != 14)
+	                && !(mthing->type >= 9992 && mthing->type <= 9999)
+	                && !(mthing->type >= 9982 && mthing->type <= 9983))
 	{
-		if (!clientside)
-		{
-			return;
-		}
+		return;
 	}
-	else if (!serverside && (mthing->type != 14))
+
+	//
+	// Clients also exclusively handle spawning of ambient sounds and music changers
+	//
+	if (!clientside &&
+	    ((mthing->type >= 14001 && mthing->type <= 14065) ||
+	     (mthing->type >= 14100 && mthing->type <= 14165)))
 	{
 		return;
 	}
@@ -3008,24 +3017,23 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		type = MT_MUSICSOURCE;
 	}
 
-	// [RH] Check if it's a particle fountain
-	if (mthing->type >= 9027 && mthing->type <= 9033)
-	{
-		mthing->args[0] = mthing->type - 9026;
-		type = MT_FOUNTAIN;
-	}
-
 	// [CMB] find the value in the mobjinfo table if we asked for a specific type; otherwise check the spawn table
 	mobjinfo_t* info = nullptr;
 	if (type == -1)
 	{
-		int32_t spawn_idx = type == -1 ? mthing->type : type;
-		auto spawn_it = spawn_map.find(spawn_idx);
+		auto spawn_it = spawn_map.find(mthing->type);
 		if (spawn_it != spawn_map.end())
 		{
 			info = spawn_it->second;
 			// set this for further down
 			type = info->type;
+		}
+		// [RH] Check if it's a particle fountain
+		if (type == -1 && mthing->type >= 9027 && mthing->type <= 9033)
+		{
+			mthing->args[0] = mthing->type - 9026;
+			type = MT_FOUNTAIN;
+			info = &mobjinfo[type]; // mt_fountain guaranteed to exist
 		}
 	}
 	else

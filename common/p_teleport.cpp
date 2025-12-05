@@ -144,6 +144,13 @@ static AActor* SelectTeleDest(int tid, int tag)
 	return NULL;
 }
 
+static bool UseFinalDoomTeleportZBug()
+{
+	EXTERN_CVAR(co_boomphys);
+	return ((demoplayback || !co_boomphys) &&
+	        (gamemission == pack_tnt || gamemission == pack_plut));
+}
+
 //
 // TELEPORTATION
 //
@@ -183,7 +190,7 @@ bool EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop
 	// it does not have this quirk.
 	// [AM] For z-teleports, the destination sets the height, don't
 	//      override it here.
-	if (m->type == MT_TELEPORTMAN && (gamemission < pack_tnt || gamemission == chex))
+	if (m->type == MT_TELEPORTMAN && !UseFinalDoomTeleportZBug())
 		thing->z = thing->floorz;
 
 	if (player)
@@ -281,7 +288,7 @@ bool EV_LineTeleport (line_t *line, int side, AActor *thing)
 
 				fixed_t destz;
 
-				if (demoplayback && (gamemission == pack_tnt || gamemission == pack_plut || gamemission == chex))
+				if (UseFinalDoomTeleportZBug())
 					destz = m->z;	// Make sure we have the original Z-Height bug on Final Doom.
 				else
 					destz = (m->type == MT_TELEPORTMAN) ? P_FloorHeight(m) : m->z;
@@ -293,7 +300,7 @@ bool EV_LineTeleport (line_t *line, int side, AActor *thing)
 				// problem between normal doom2 1.9 and final doom
 				// Note that although chex.exe is based on Final Doom,
 				// it does not have this quirk.
-				if (gamemission < pack_tnt || gamemission == chex)
+				if (!UseFinalDoomTeleportZBug())
 						thing->z = thing->floorz;
 
 				if (player)

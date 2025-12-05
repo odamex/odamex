@@ -42,13 +42,20 @@
  */
 static bool IfGameZDoom(const std::string& str)
 {
-	if (!stricmp(str.c_str(), "doom") && ::gamemode != retail_chex &&
-	    ::gamemode != undetermined)
+	// TODO: should this account for rekkr too? uzdoom seems to just have
+	// doom, strife, heretic, hexen, and chex here
+	if (!stricmp(str.c_str(), "doom") && !IsChexMission(::gamemission) &&
+	    ::gamemode != undetermined && ::gamemission != commercial_hacx)
 	{
 		return true;
 	}
 
-	if (!stricmp(str.c_str(), "chex") && ::gamemode == retail_chex)
+	if (!stricmp(str.c_str(), "chex") && IsChexMission(::gamemission))
+	{
+		return true;
+	}
+
+	if (!stricmp(str.c_str(), "hacx") && ::gamemission == commercial_hacx)
 	{
 		return true;
 	}

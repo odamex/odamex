@@ -311,10 +311,7 @@ void S_Start()
 	mus_paused = false;
 
 	// [RH] This is a lot simpler now.
-	if (!musinfo.savedmusic.empty())
-		S_ChangeMusic (musinfo.savedmusic, true);
-	else
-		S_ChangeMusic (std::string(level.music.c_str(), 8), true);
+	S_ChangeMusic (std::string(level.music.c_str(), 8), true);
 }
 
 
@@ -1220,7 +1217,7 @@ void S_StopMusic()
 {
 	I_StopSong();
 
-	mus_playing.name = "";
+	mus_playing.name.clear();
 }
 
 

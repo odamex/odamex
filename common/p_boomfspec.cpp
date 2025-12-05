@@ -36,6 +36,7 @@ EXTERN_CVAR(co_helpfriends)
 EXTERN_CVAR(co_monsterbacking)
 EXTERN_CVAR(co_avoidhazards)
 EXTERN_CVAR(co_monstersclimbsteep)
+EXTERN_CVAR(co_mbfphys)
 
 //
 // P_CrossCompatibleSpecialLine - Walkover Trigger Dispatcher
@@ -3601,5 +3602,5 @@ void P_PostProcessCompatibleLinedefSpecial(line_t* line)
 bool P_IsMBFCompatMode()
 {
 	return P_AllowDropOff() || co_pursuit || co_helpfriends || co_monsterbacking ||
-	       co_avoidhazards || co_monstersclimbsteep;
+	       co_avoidhazards || co_monstersclimbsteep || co_mbfphys;
 }

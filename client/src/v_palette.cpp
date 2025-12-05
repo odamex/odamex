@@ -1106,7 +1106,7 @@ void V_DoPaletteEffects()
 		{
 			palette_num = ((int)red_count + 7) >> 3;
 
-			if (gamemode == retail_chex)
+			if (IsChexMission(gamemission))
 				palette_num = RADIATIONPAL;
 			else
 			{
@@ -1170,8 +1170,8 @@ void V_DoPaletteEffects()
 				red_amount = MIN(red_amount, 56.0f);
 				float alpha = (red_amount + 8.0f) / 72.0f;
 
-				const float red = gamemode == retail_chex ? 0.0f : 1.0f;
-				const float green = gamemode == retail_chex ? 1.0f : 0.0f;
+				const float red = IsChexMission(gamemission) ? 0.0f : 1.0f;
+				const float green = IsChexMission(gamemission) ? 1.0f : 0.0f;
 				static constexpr float blue = 0.0f;
 				V_AddBlend(blend, fargb_t(alpha, red, green, blue));
 			}

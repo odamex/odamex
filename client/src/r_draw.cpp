@@ -234,7 +234,7 @@ static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end
 
 	palindex_t* dest = (palindex_t*)Ranges + color_num * 256;
 
-	if (gamemode == retail_chex)
+	if (IsChexMission(gamemission))
 	{
 		for (int index = 0; index < chexstart_index; index++)
 			dest[index] = index;
@@ -263,7 +263,7 @@ static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end
 	int b_diff = end_color.getb() - start_color.getb();
 	int hacxtrack;
 
-	if (gamemode == retail_chex)
+	if (IsChexMission(gamemission))
 	{
 		for (palindex_t index = chexstart_index; index <= chexend_index; index++)
 		{
