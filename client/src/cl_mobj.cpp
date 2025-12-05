@@ -118,7 +118,6 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	player.multikilltics = 0;
 	player.killssincelastdeath = 0;
 	player.damagesincelastdeath = 0;
-	player.fixedcolormap = 0;
 	player.viewheight = VIEWHEIGHT;
 	player.xviewshift = 0;
 	player.attacker = AActor::AActorPtr();

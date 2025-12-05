@@ -138,13 +138,28 @@ int SpreeManager::getHighestSpreeLevel()
 //
 spree_s SpreeManager::getSpreeLevel(int level)
 {
+	spree_s spree = {"", "", CR_GRAY};
+	bool stillDominating = false;
+
 	if (getHighestSpreeLevel() <= -1)
-		return {"", "", CR_GRAY};
+	{
+		return spree;
+	}
 
 	if (level >= spreeLevels.size())
+	{
 		level = spreeLevels.size() - 1;
+		stillDominating = true;
+	}
 
-	return spreeLevels.at(level);
+	spree = spreeLevels.at(level);
+
+	if (stillDominating)
+	{
+		spree.spreeBroadcastText = repeatingSpreeText;
+	}
+
+	return spree;
 }
 
 //
@@ -269,14 +284,11 @@ bool SpreeManager::hasSpree(const int playerid)
 //
 void SpreeManager::removeSpree(int playerid)
 {
-	for (auto& it: spreeRecord)
-	{
-		if (it.first == playerid)
-		{
-			spreeRecord.erase(it.first);
-			return;
-		}
-	}
+	if (spreeRecord.find(playerid) == spreeRecord.end())
+		return;
+
+	spreeRecord.erase(playerid);
+	return;
 }
 
 //
