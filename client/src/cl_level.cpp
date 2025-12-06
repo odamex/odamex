@@ -581,6 +581,8 @@ void G_DoLoadLevel (int position)
 	// [SL] clear the saved sector data from the last level
 	OInterpolation::getInstance().resetGameInterpolation();
 
+	SpreeManager::getInstance().clearSprees();
+
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,
 	//	a flat. The data is in the WAD only because

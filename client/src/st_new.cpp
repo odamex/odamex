@@ -1491,7 +1491,7 @@ void DisplaySmallSpreeBreaker(spree_breaker breaker)
 	::hud_transparency.ForceSet(oldtrans);
 }
 
-void DisplayPlayerNormalSpree(spree_record record, spree_s spree)
+void DisplayPlayerNormalSpree(spree_record record)
 {
 	// We handle "still dominating" sprees elsewhere.
 	if (record.stillDominating)
@@ -1499,8 +1499,8 @@ void DisplayPlayerNormalSpree(spree_record record, spree_s spree)
 
 	bigSpreeLine_t line;
 
-	line.spreeText = spree.spreeText;
-	line.color = spree.color;
+	line.spreeText = record.spree.spreeText;
+	line.color = record.spree.color;
 
 	V_SetFont("BIGFONT");
 
@@ -1525,7 +1525,7 @@ void DisplayPlayerNormalSpree(spree_record record, spree_s spree)
 	V_SetFont("SMALLFONT");
 }
 
-void DisplaySmallSpree(spree_record record, spree_s spree)
+void DisplaySmallSpree(spree_record record)
 {
 	smallSpreeLine_t line;
 
@@ -1542,9 +1542,9 @@ void DisplaySmallSpree(spree_record record, spree_s spree)
 		playerColor = info->ToastColor;
 	}
 
-	line.spreeText = fmt::sprintf(spree.spreeBroadcastText,
+	line.spreeText = fmt::sprintf(record.spree.spreeBroadcastText,
 	                              playerColor + record.playerName + TEXTCOLOR_NORMAL,
-	                              TextColorFromRange(spree.color) + spree.spreeText);
+	                              TextColorFromRange(record.spree.color) + record.spree.spreeText);
 
 	V_SetFont("SMALLFONT");
 
@@ -1580,19 +1580,17 @@ void SpreeHud()
 	const player_t& p = displayplayer();
 
 	spree_record spree_r = manager.getSpreeRecord(p.id);
-	spree_s spree = manager.getSpreeLevel(spree_r.spreeLevel);
 
 	// Main spree text
 	if (spree_r.playerId != -1 && !spree_r.stillDominating)
 	{
-		DisplayPlayerNormalSpree(spree_r, spree);
+		DisplayPlayerNormalSpree(spree_r);
 	}
 
 	// If we're not still dominating, check if someone else has a spree.
 	// We'll get the spree breaker as well, to compare and see which one to display.
 	spree_record other_spree_r = manager.getLatestSpreeRecord(p.id);
 	spree_breaker global_spree_breaker = manager.getSpreeBreaker();
-	spree_s otherplayerSpree = manager.getSpreeLevel(other_spree_r.spreeLevel);
 
 	bool otherPlayerValid = false;
 	bool spreeBreakerValid = false;
@@ -1627,7 +1625,7 @@ void SpreeHud()
 	else if (otherPlayerValid && !spreeBreakerValid && !playerStillDominatingValid)
 	{
 		// Just display the other player's spree
-		DisplaySmallSpree(other_spree_r, otherplayerSpree);
+		DisplaySmallSpree(other_spree_r);
 	}
 	else if (!otherPlayerValid && spreeBreakerValid && !playerStillDominatingValid)
 	{
@@ -1637,7 +1635,7 @@ void SpreeHud()
 	else if (!otherPlayerValid && !spreeBreakerValid && playerStillDominatingValid)
 	{
 		// Just display the still dominating text.
-		DisplaySmallSpree(spree_r, spree);
+		DisplaySmallSpree(spree_r);
 	}
 	else
 	{
@@ -1646,15 +1644,14 @@ void SpreeHud()
 		{
 
 			if (other_spree_r.spreeStartTic > spree_r.spreeStartTic)
-
 			{
 				// Display other player's spree
-				DisplaySmallSpree(other_spree_r, otherplayerSpree);
+				DisplaySmallSpree(other_spree_r);
 			}
 			else
 			{
 				// Display still dominating
-				DisplaySmallSpree(spree_r, spree);
+				DisplaySmallSpree(spree_r);
 			}
 		}
 		else
@@ -1667,7 +1664,7 @@ void SpreeHud()
 			else
 			{
 				// Display still dominating
-				DisplaySmallSpree(spree_r, spree);
+				DisplaySmallSpree(spree_r);
 			}
 		}
 	}
