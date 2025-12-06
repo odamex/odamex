@@ -1953,11 +1953,9 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			Unlag::getInstance().clearPlayerHistory(tplayer->id);
 		}
 
-		//P_ProcessMultiKills(source, target->player);
+		P_ProcessMultiKills(source, target->player);
+		P_ProcessSpreeKill(source, target->player);
 	}
-
-	P_ProcessMultiKills(source, target->player);
-	P_ProcessSpreeKill(source, target->player);
 
 
 	if (target->health > 0) // denis - when this function is used standalone
@@ -2405,12 +2403,18 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 				if (target->health < 0)
 				{
 					if (P_GiveMonsterDamage(splayer, damage + target->health))
+					{
 						PersistPlayerDamage(*splayer);
+						P_ProcessSpreeDamage(splayer, damage + target->health);
+					}
 				}
 				else
 				{
 					if (P_GiveMonsterDamage(splayer, damage))
+					{
 						PersistPlayerDamage(*splayer);
+						P_ProcessSpreeDamage(splayer, damage);
+					}
 				}
 			}
 		}

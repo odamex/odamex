@@ -30,104 +30,118 @@
 
 struct spree_s
 {
-  std::string spreeText;
-  std::string spreeBroadcastText;
-  EColorRange color;
+	std::string spreeText;
+	std::string spreeBroadcastText;
+	EColorRange color;
 };
 
 struct spree_record
 {
-  std::string playerName;
-  int playerId;
-  int spreeLevel;
-  int spreeStartTic;
-  bool stillDominating;
+	std::string playerName;
+	int playerId;
+	int spreeLevel;
+	spree_s spree;
+	int spreeStartTic;
+	bool stillDominating;
 };
 
 struct spree_breaker
 {
-  std::string spreeEndedName;
-  int spreeEndedPlayerId;
-  team_t spreeEndedTeam;
+	std::string spreeEndedName;
+	int spreeEndedPlayerId;
+	team_t spreeEndedTeam;
 
-  std::string spreeEnderName;
-  int spreeEnderPlayerId;
-  team_t spreeEnderTeam;
+	std::string spreeEnderName;
+	int spreeEnderPlayerId;
+	team_t spreeEnderTeam;
 
 	std::string spreeEndedBroadcastText;
-  std::string spreeEnded;
+	std::string spreeEnded;
 	EColorRange spreeEndedColor;
 
 	bool spreeEnderMonster;
 
-	int endedKills;
+	int endedPoints;
 
-  int spreeEndedTic;
+	int spreeEndedTic;
 };
 
 class SpreeManager
 {
-  public:
-    SpreeManager();
-    ~SpreeManager();
-    static SpreeManager& getInstance(); // returns the instantiated SpreeManager
-                                        // object
+public:
+	SpreeManager();
+	~SpreeManager();
+	static SpreeManager& getInstance(); // returns the instantiated SpreeManager
+	                                    // object
 
-    void reset(); // called when loading a new wad
+	void reset(); // called when loading a new wad
 
-		void clearSprees(); // called when entering a new map or game
+	void clearSprees(); // called when entering a new map or game
 
-    void setSpreeLevels(const std::vector<spree_s> sprees,
-                        int newKillinterval,    // called when reading SPREEDEF to
-                        int newDamageInterval); // input new spree definitions
+	void setSpreeLevels(const std::vector<spree_s> sprees,
+	                    int newKillinterval,    // called when reading SPREEDEF to
+	                    int newDamageInterval); // input new spree definitions
 
-    spree_s getSpreeLevel(
-          int level); // Gets the local spree level (with text and color)
+	void loadSpreeDefaults(); // called if no SPREEDEF is found
 
-		int getSpreeLevelByKills(int kills); // Gets the spree level by the amount of kills the player has.
+	void expireOldSprees(); // Runs every tic to clean up old sprees.
 
-		int getSpreeLevelByDamage(int damage); // Gets the spree level by the amount of damage the player has.
+	spree_record getSpreeRecord(int playerId); // gets a current spree for a player
 
-    int getSpreeInterval(); // gets the multi kill interval for players
+	spree_record getLatestSpreeRecord(
+	    int notPlayerId); // gets the latest spree excluding the current player
 
-    int getHighestSpreeLevel(); // gets the highest multi kill level loaded
+	bool recordPlayerKill(const player_t* player); // Records a single kill for a player
 
-    void loadSpreeDefaults(); // called if no SPREEDEF is found
+	bool recordPlayerDamage(const player_t* player); // Records damage for a player.
 
-    void expireOldSprees(); // Runs every tic to clean up old sprees.
+	spree_breaker getSpreeBreaker(); // gets the current spree breaker
 
-    spree_record getSpreeRecord(int playerId); // gets a current spree for a player
+	void setSpreeBreaker(AActor* source,
+	                     player_t* target); // sets the current spree breaker
 
-    spree_record getLatestSpreeRecord(int notPlayerId); // gets the latest spree excluding the current player
+	bool hasSpree(const int playerid);
+	void removeSpree(const int playerid);
 
-    bool recordPlayerKill(const player_t* player); // Records a single kill for a player
+private:
+	int getSpreeLevelByKills(
+	    int kills); // Gets the spree level by the amount of kills the player has.
 
-    spree_breaker getSpreeBreaker(); // gets the current spree breaker
+	int getSpreeLevelByDamage(
+	    int damage); // Gets the spree level by the amount of damage the player has.
 
-    void setSpreeBreaker(AActor* source,
-                         player_t* target); // sets the current spree breaker
+	bool checkForSpreeUpdates(const int playerId, const std::string playerName,
+	                          const int newSpreeLevel); // Gets the spree level by the
+	                                                   // amount of kills the player has.
 
-    bool hasSpree(const int playerid);
-    void removeSpree(const int playerid);
+	spree_s getSpreeLevel(int level); // Gets the local spree level (with text and color)
 
-  private:
-    int spreeKillInterval; // PVP
-    int spreeDamageInterval; // PVE
+	int getSpreeKillInterval(); // gets the spree kill interval for players
 
-    std::vector<spree_s> spreeLevels; // Levels of sprees configured during wad load
+	int getSpreeDamageInterval(); // gets the spree kill interval for players
 
-		std::string repeatingSpreeText; // Text to display when a player is repeating their
-	                                  // highest spree level.
+	int getHighestSpreeLevel(); // gets the highest spree level loaded
 
-		std::string spreeEndPlayer; // Text for when a spree has ended by the hands of another player.
+	int spreeKillInterval;   // PVP
+	int spreeDamageInterval; // PVE
 
-		std::string spreeEndSelf; // Text for when a spree has ended by suicide. Whoopsie!
+	std::vector<spree_s> spreeLevels; // Levels of sprees configured during wad load
 
-		std::string spreeEndMonster; // Text for when a spree has ended by a monster.
+	std::string repeatingSpreeText; // Text to display when a player is repeating their
+	                                // highest spree level.
 
-    std::unordered_map<int, spree_record> spreeRecord; // Actually controls the spree display for the player.
-    spree_breaker spreeBreaker; // Updated with the last spree to be broken.
+	std::string
+	    spreeEndPlayer; // Text for when a spree has ended by the hands of another player.
+
+	std::string spreeEndSelf; // Text for when a spree has ended by suicide. Whoopsie!
+
+	std::string spreeEndMonster; // Text for when a spree has ended by a monster.
+
+	std::unordered_map<int, spree_record>
+	    spreeRecord;            // Actually controls the spree display for the player.
+	spree_breaker spreeBreaker; // Updated with the last spree to be broken.
 };
 
 void P_ProcessSpreeKill(AActor* source, player_t* target);
+void P_ProcessSpreeDamage(player_t* source, int totalDamage);
 void P_TicSprees();

@@ -55,7 +55,11 @@ SpreeManager::SpreeManager()
 {
 	spreeKillInterval = 5;
 	spreeDamageInterval = 10000;
+	spreeBreaker = {"", -1, TEAM_NONE, "", -1, TEAM_NONE, "", "", CR_GOLD, false, 0, 0};
 	repeatingSpreeText = "";
+	spreeEndPlayer = "";
+	spreeEndSelf = "";
+	spreeEndMonster = "";
 }
 
 //
@@ -71,6 +75,9 @@ void SpreeManager::reset()
 	spreeKillInterval = 5;
 	spreeDamageInterval = 10000;
 	repeatingSpreeText = "";
+	spreeEndPlayer = "";
+	spreeEndSelf = "";
+	spreeEndMonster = "";
 }
 
 //
@@ -99,24 +106,34 @@ void SpreeManager::loadSpreeDefaults()
 	spreeLevels.push_back({"Untouchable!", "%s is %s", CR_CYAN});        // 25 kills / 50000 dmg
 	spreeLevels.push_back({"Legendary!", "%s is %s", CR_GOLD});          // 30 kills / 60000 dmg
 
-	repeatingSpreeText = "%s is STILL %s!";
+	repeatingSpreeText = "%s is STILL %s";
 
 	spreeEndPlayer = "%s's %s was ended by %s";
 	spreeEndSelf = "%s was looking good until %g killed %hself!";
 	spreeEndMonster = "%s's %s was ended by a %s!";
 
 	spreeKillInterval = 5;
-	spreeDamageInterval = 10000;
+	spreeDamageInterval = 5000;
 }
 
 //
-// SpreeManager::getSpreeInterval
+// SpreeManager::getSpreeKillInterval
 //
-// Gets the spree interval to trigger sprees.
+// Gets the spree kill interval to trigger sprees.
 //
-int SpreeManager::getSpreeInterval()
+int SpreeManager::getSpreeKillInterval()
 {
 	return spreeKillInterval;
+}
+
+//
+// SpreeManager::getSpreeDamageInterval
+//
+// Gets the spree damage interval to trigger sprees.
+//
+int SpreeManager::getSpreeDamageInterval()
+{
+	return spreeDamageInterval;
 }
 
 //
@@ -139,27 +156,14 @@ int SpreeManager::getHighestSpreeLevel()
 spree_s SpreeManager::getSpreeLevel(int level)
 {
 	spree_s spree = {"", "", CR_GRAY};
-	bool stillDominating = false;
 
 	if (getHighestSpreeLevel() <= -1)
-	{
 		return spree;
-	}
 
 	if (level >= spreeLevels.size())
-	{
 		level = spreeLevels.size() - 1;
-		stillDominating = true;
-	}
 
-	spree = spreeLevels.at(level);
-
-	if (stillDominating)
-	{
-		spree.spreeBroadcastText = repeatingSpreeText;
-	}
-
-	return spree;
+	return spreeLevels.at(level);
 }
 
 //
@@ -168,8 +172,7 @@ spree_s SpreeManager::getSpreeLevel(int level)
 // Creates a new spree list and interval,
 // as if reading a SPREEDEF to create a new multi kill level paradigm.
 //
-void SpreeManager::setSpreeLevels(const std::vector<spree_s> sprees,
-                                  int newKillInterval, 
+void SpreeManager::setSpreeLevels(const std::vector<spree_s> sprees, int newKillInterval,
                                   int newDamageInterval)
 {
 	spreeLevels = sprees;
@@ -213,10 +216,20 @@ void SpreeManager::setSpreeBreaker(AActor* source, player_t* target)
 	std::string spreeEnded = "";
 	EColorRange spreeEndedColor = CR_GOLD;
 
-	int kills = 0;
+	int points = 0;
+	
+	if (G_IsCoopGame())
+	{
+		points = target->damagesincelastdeath;
+	}
+	else
+	{
+		points = target->killssincelastdeath;
+	}
 
 	// no source? treat it as a self kill
-	if (!source)
+	// and if its a self kill, treat it as such
+	if (!source || (source->player && source->player->id == target->id))
 	{
 		enderName = endedPlayerName;
 		enderPlayerId = endedPlayerId;
@@ -239,25 +252,17 @@ void SpreeManager::setSpreeBreaker(AActor* source, player_t* target)
 	spreeEnded = spreeLevel.spreeText;
 	spreeEndedColor = spreeLevel.color;
 
-	spreeBreaker = {
-			endedPlayerName,
-			endedPlayerId,
-			endedTeam,
+	spreeBreaker = {endedPlayerName, endedPlayerId, endedTeam,
 
-			enderName,
-			enderPlayerId,
-			enderTeam,
+	                enderName,       enderPlayerId, enderTeam,
 
-			broadcastText,
-			spreeEnded,
-			spreeEndedColor,
+	                broadcastText,   spreeEnded,    spreeEndedColor,
 
-			enderIsMonster,
+	                enderIsMonster,
 
-			kills,
-			
-			::gametic
-	};
+	                points,
+
+	                ::gametic};
 
 	return;
 }
@@ -314,15 +319,37 @@ int SpreeManager::getSpreeLevelByKills(int kills)
 }
 
 //
+// SpreeManager::getSpreeLevelByDamage
+//
+// Gets a specific spree level by the amount of damage the player has.
+//
+int SpreeManager::getSpreeLevelByDamage(int damage)
+{
+	if (spreeLevels.size() == 0 || spreeDamageInterval <= 0)
+		return -1;
+
+	// Still on the first 10000 damage?
+	if (damage < spreeDamageInterval)
+		return -1;
+
+	int level = damage / spreeDamageInterval;
+
+	if (level <= 0)
+		return -1;
+
+	return level - 1;
+}
+
+//
 // SpreeManager::recordPlayerKill
 //
 // Records the players kills since last death,
 // and updates the spree record accordingly.
-// 
+//
 // If the player doesn't have a spree record yet, create one.
-// 
+//
 // If the player has reached a higher spree level, update it.
-// 
+//
 // Returns true if the spree level was updated, false otherwise.
 //
 bool SpreeManager::recordPlayerKill(const player_t* player)
@@ -332,34 +359,75 @@ bool SpreeManager::recordPlayerKill(const player_t* player)
 		return false;
 
 	int newSpreeLevel = getSpreeLevelByKills(player->killssincelastdeath);
+
+	return checkForSpreeUpdates(player->id, player->userinfo.netname, newSpreeLevel);
+}
+
+//
+// SpreeManager::recordPlayerDamage
+//
+// Records the players damage since last death,
+// and updates the spree record accordingly.
+//
+// If the player doesn't have a spree record yet, create one.
+//
+// If the player has reached a higher spree level, update it.
+//
+// Returns true if the spree level was updated, false otherwise.
+//
+bool SpreeManager::recordPlayerDamage(const player_t* player)
+{
+	if (!player)
+		return false;
+
+	int newSpreeLevel = getSpreeLevelByDamage(player->damagesincelastdeath);
+
+	return checkForSpreeUpdates(player->id, player->userinfo.netname, newSpreeLevel);
+}
+
+//
+// SpreeManager::checkForSpreeUpdates
+//
+// A reusable function to check if a player's spree level has changed.
+//
+
+bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string playerName, const int newSpreeLevel) {
 	int maxSpreeLevel = getHighestSpreeLevel();
 
 	if (newSpreeLevel <= -1)
 		return false;
 
-	if (spreeRecord.find(player->id) == spreeRecord.end())
+	if (spreeRecord.find(playerId) == spreeRecord.end())
 	{
 		// Spree record not found, create it (if necessary)
 		spree_record newRecord;
-		newRecord.playerId = player->id;
-		newRecord.playerName = player->userinfo.netname;
-		newRecord.spreeLevel = newSpreeLevel > maxSpreeLevel ? maxSpreeLevel : newSpreeLevel;
+		newRecord.playerId = playerId;
+		newRecord.playerName = playerName;
+		newRecord.spreeLevel =
+		    newSpreeLevel > maxSpreeLevel ? maxSpreeLevel : newSpreeLevel;
+		newRecord.spree = getSpreeLevel(newRecord.spreeLevel);
 		newRecord.spreeStartTic = ::gametic;
 		newRecord.stillDominating = false;
-		spreeRecord[player->id] = newRecord;
+		spreeRecord[playerId] = newRecord;
 		return true;
 	}
 	else
 	{
 		// Spree record found, check if we can upgrade
-		spree_record& record = spreeRecord[player->id];
+		spree_record& record = spreeRecord[playerId];
 
 		if (newSpreeLevel > record.spreeLevel)
 		{
 			// Upgrade spree level
 			record.spreeLevel = newSpreeLevel;
 			record.spreeStartTic = ::gametic;
+			record.spree = getSpreeLevel(record.spreeLevel);
 			record.stillDominating = newSpreeLevel > maxSpreeLevel ? true : false;
+
+			if (record.stillDominating)
+			{
+				record.spree.spreeBroadcastText = repeatingSpreeText;
+			}
 			return true;
 		}
 	}
@@ -379,7 +447,7 @@ spree_record SpreeManager::getSpreeRecord(int playerId)
 		return spreeRecord[playerId];
 	}
 
-	spree_record record = {"null", -1, 0, 0, false};
+	spree_record record = {"null", -1, 0, {"", "", CR_GRAY}, 0, false};
 
 	return record;
 }
@@ -417,7 +485,7 @@ void SpreeManager::expireOldSprees()
 //
 spree_record SpreeManager::getLatestSpreeRecord(int notPlayerId)
 {
-	spree_record record = {"null", -1, 0, 0, false};
+	spree_record record = {"null", -1, 0, {"", "", CR_GRAY}, 0, false};
 
 	for (auto& it : spreeRecord)
 	{
@@ -438,14 +506,14 @@ spree_record SpreeManager::getLatestSpreeRecord(int notPlayerId)
 // ==========================================================
 
 /// <summary>
-/// G_ProcessSprees occurs after a kill to determine
+/// G_ProcessSpreeKill occurs after a kill to determine
 /// if this kill is an interval for a killing spree.
 ///
 /// If so, show the spree text to the source player if he's the camera player.
 /// Also, remove any spree from a player who was killed, and process any spree breakers.
 /// </summary>
-/// <param name="source">The killer (if a monster/player, null if environment/zombie projectile)</param>
-/// <param name="target">The victim</param>
+/// <param name="source">The killer (if a monster/player, null if environment/zombie
+/// projectile)</param> <param name="target">The victim</param>
 void P_ProcessSpreeKill(AActor* source, player_t* target)
 {
 	static SpreeManager& manager = SpreeManager::getInstance();
@@ -470,7 +538,7 @@ void P_ProcessSpreeKill(AActor* source, player_t* target)
 
 	// Check for spree interval, update the spree map with updates
 	// If the gamemode isn't coop
-	//if (G_IsCoopGame())
+	// if (G_IsCoopGame())
 	//	return;
 
 	bool update = manager.recordPlayerKill(source->player);
@@ -478,7 +546,39 @@ void P_ProcessSpreeKill(AActor* source, player_t* target)
 	if (displayplayer_id == source->player->id && update)
 	{
 		// Play the sound for the new multi kill
-		//S_Sound(CHAN_ANNOUNCER, '', 1, ATTN_NONE);
+		// S_Sound(CHAN_ANNOUNCER, '', 1, ATTN_NONE);
+	}
+}
+
+/// <summary>
+/// G_ProcessSpreeDamage occurs after a player deals some damage to determine
+/// if this damage is an interval for a killing spree.
+///
+/// If so, show the spree text to the source player if he's the camera player.
+/// Also, remove any spree from a player who was killed, and process any spree breakers.
+/// </summary>
+/// <param name="source">The damager (must be a player)</param>
+/// <param name="totalDamage">The total damage dealt during this event.</param>
+void P_ProcessSpreeDamage(player_t* source, int totalDamage)
+{
+	static SpreeManager& manager = SpreeManager::getInstance();
+
+	if (!source)
+		return;
+
+	source->damagesincelastdeath += totalDamage;
+
+	// Check for spree interval, update the spree map with updates
+	// If the gamemode isn't coop
+	// if (G_IsCoopGame())
+	//	return;
+
+	bool update = manager.recordPlayerDamage(source);
+
+	if (displayplayer_id == source->id && update)
+	{
+		// Play the sound for the new multi kill
+		// S_Sound(CHAN_ANNOUNCER, '', 1, ATTN_NONE);
 	}
 }
 
@@ -487,5 +587,5 @@ void P_ProcessSpreeKill(AActor* source, player_t* target)
 /// </summary>
 void P_TicSprees()
 {
-	//SpreeManager::getInstance().expireOldSprees();
+	// SpreeManager::getInstance().expireOldSprees();
 }
