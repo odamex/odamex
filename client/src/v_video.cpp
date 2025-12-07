@@ -973,27 +973,32 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch, bool clear) const
 	const int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 
 	int destw, desth;
+	const int width = patch->width();
 
 	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
 	{
-		destw = surface_width;
+		if (width <= 320)
+			destw = surface_width;
+		else
+			destw = width * (surface_height / 200);
 		desth = surface_height;
 	}
 	else if (surface_width * 3 >= surface_height * 4)
 	{
-		destw = surface_height * 4 / 3;
+		if (width <= 320)
+			destw = surface_height * 4 / 3;
+		else
+			destw = width * (surface_height / 200.0f) * 3 / 4;
 		desth = surface_height;
 	}
 	else
 	{
-		destw = surface_width;
+		if (width <= 320)
+			destw = surface_width;
+		else
+			destw = width * (surface_width / 320) * 3 / 4;
 		desth = surface_width * 3 / 4;
 	}
-
-	const int width = patch->width();
-
-	if (width > 320)
-		destw = surface_width;
 
 	const int x = (surface_width - destw) / 2;
 	const int y = (surface_height - desth) / 2;
