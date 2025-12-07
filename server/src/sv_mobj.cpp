@@ -42,7 +42,7 @@ void P_SetSpectatorFlags(player_t &player)
 {
 	player.spectator = true;
 
-	if (player.mo)
+	if (player.mo && player.health > 0) // if a dead player spectates, let the corpse collection logic pick it up
 	{
 		player.mo->oflags |= MFO_SPECTATOR;
 		player.mo->flags &= ~MF_SOLID;
