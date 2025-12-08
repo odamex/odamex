@@ -768,8 +768,6 @@ odaproto::svc::PlayerMembers SVC_PlayerMembers(const player_t& player, byte flag
 		msg.set_secretcount(player.secretcount);
 		msg.set_totalpoints(player.totalpoints);
 		msg.set_totaldeaths(player.totaldeaths);
-		msg.set_damagesincelastdeath(player.damagesincelastdeath);
-		msg.set_killsincelastdeath(player.killssincelastdeath);
 	}
 
 	if (flags & SVC_PM_CHEATS)
@@ -1637,6 +1635,33 @@ odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde)
 	msg.set_boss_health(horde.bossHealth);
 	msg.set_boss_damage(horde.bossDamage);
 	msg.set_wave_start_health(horde.waveStartHealth);
+
+	return msg;
+}
+
+odaproto::svc::Spree SVC_Spree(const spreeRecord_t& spree)
+{
+	odaproto::svc::Spree msg;
+
+	msg.set_pid(spree.playerId);
+	msg.set_spree_level(spree.spreeLevel);
+	msg.set_tic(spree.spreeStartTic);
+
+	return msg;
+}
+
+odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const spreeBreaker_t& breaker, const int level, SpreeBreakerType breakerType)
+{
+	odaproto::svc::SpreeBreaker msg;
+
+	msg.set_victim_pid(breaker.spreeEndedPlayerId);
+	msg.set_victim_name(breaker.spreeEndedName);
+	msg.set_source_pid(breaker.spreeEnderPlayerId);
+	msg.set_source_name(breaker.spreeEnderName);
+	msg.set_spree_level(level);
+	msg.set_spree_points(breaker.endedPoints);
+	msg.set_spree_breaker_type(breakerType);
+	msg.set_tic(breaker.spreeEndedTic);
 
 	return msg;
 }

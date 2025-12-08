@@ -40,6 +40,7 @@
 #include "p_ctf.h"
 #include "p_horde.h"
 #include "p_spec.h"
+#include "g_spree.h"
 
 /**
  * @brief Call the constructor according to the PlaySound invocation you
@@ -150,4 +151,6 @@ odaproto::svc::MaplistIndex SVC_MaplistIndex(const byte count, const size_t this
                                              const size_t next_index);
 odaproto::svc::Toast SVC_Toast(const toast_t& toast);
 odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde);
+odaproto::svc::Spree SVC_Spree(const spreeRecord_t& spree);
+odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const spreeBreaker_t& breaker, const int level, SpreeBreakerType breakerType);
 odaproto::svc::NetdemoCap SVC_NetdemoCap(const player_t* player);
