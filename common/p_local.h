@@ -319,7 +319,7 @@ void	P_DelSeclist(msecnode_t *);							// phares 3/16/98
 void	P_CreateSecNodeList(AActor*,fixed_t,fixed_t);		// phares 3/14/98
 int		P_GetMoveFactor(const AActor *mo, int *frictionp);	// phares  3/6/98
 int		P_GetFriction(const AActor *mo, int *frictionfactor);
-bool	Check_Sides(AActor *, int, int);					// phares
+bool	Check_Sides(const AActor *, int, int);					// phares
 
 
 //
