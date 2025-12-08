@@ -182,7 +182,7 @@ void S_ResumeMusic()
 //
 // Updates music & sounds
 //
-void S_UpdateSounds(void *listener_p)
+void S_UpdateSounds(const AActor* listener)
 {
 }
 

@@ -476,7 +476,7 @@ void P_CheckTouchy(AActor* mo)
 // [SL] Factored out of P_MoveActor for reuse and changed to fixed-point math
 // for consistency purposes.
 //
-fixed_t P_CalculateMinMom(AActor *mo)
+fixed_t P_CalculateMinMom(const AActor *mo)
 {
 	fixed_t levelgravity, sectorgravity;
 

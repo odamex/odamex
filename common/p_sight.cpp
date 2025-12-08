@@ -967,7 +967,7 @@ bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost)
 //
 // Adapted from Eternity, so big thanks to Quasar
 //
-bool P_CheckFov(AActor* t1, AActor* t2, angle_t fov)
+bool P_CheckFov(const AActor* t1, const AActor* t2, angle_t fov)
 {
 	angle_t angle, minang, maxang;
 

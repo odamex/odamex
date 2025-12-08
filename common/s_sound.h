@@ -153,7 +153,7 @@ void S_ResumeMusic();
 //
 // Updates music & sounds
 //
-void S_UpdateSounds(void* listener);
+void S_UpdateSounds(const AActor* listener);
 void S_UpdateMusic();
 
 void S_SetMusicVolume(float volume);
@@ -186,7 +186,7 @@ void S_NoiseDebug();
 #include "sv_main.h"
 #endif
 
-inline static void S_NetSound(AActor* mo, byte channel, const char* name, const byte attenuation)
+inline static void S_NetSound(const AActor* mo, byte channel, const char* name, const byte attenuation)
 {
 #if SERVER_APP
 	SV_Sound(mo, channel, name, attenuation);
@@ -195,7 +195,7 @@ inline static void S_NetSound(AActor* mo, byte channel, const char* name, const 
 #endif
 }
 
-inline static void S_PlayerSound(player_t* pl, AActor* mo, const byte channel, const char* name,
+inline static void S_PlayerSound(player_t* pl, const AActor* mo, const byte channel, const char* name,
                           const byte attenuation)
 {
 #if SERVER_APP

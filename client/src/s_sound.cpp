@@ -1053,12 +1053,11 @@ void S_ResumeMusic()
 // Updates music & sounds
 //
 // joek - from choco again
-void S_UpdateSounds(void* listener_p)
+void S_UpdateSounds(const AActor* listener)
 {
 	if (::Channel == nullptr)
 		return;
 
-	AActor* listener = (AActor*)listener_p;
 	for (int cnum = 0; cnum < (int)numChannels; cnum++)
 	{
 		channel_t* c = &Channel[cnum];

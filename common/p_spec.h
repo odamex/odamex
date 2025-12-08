@@ -868,7 +868,7 @@ public:
 	int			m_LightTag; // ZDoom compat
 
 protected:
-	friend bool	EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
+	friend bool	EV_DoDoor (DDoor::EVlDoor type, line_t *line, const AActor *thing,
                                    int tag, int speed, int delay, card_t lock);
     friend bool EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
 	                         byte speed_byte, int topwait, zdoom_lock_t lock,

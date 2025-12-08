@@ -2133,18 +2133,14 @@ static void PatchStrings(int dummy, DehScanner& scanner)
 		int i = GStrings.toIndex(key);
 		if (iequals("DEHTHING_", key.substr(0, 9)))
 		{
-			try {
-				int32_t type = ParseNum<int32_t>(string).value_or(0);
-				type--;
-				P_MapDehThing(static_cast<mobjtype_t>(type), std::string(key)); // TODO: rework so no casting needed
+			if (auto type = ParseNum<int32_t>(string))
+			{
+				(*type)--;
+				P_MapDehThing(static_cast<mobjtype_t>(*type), std::string(key)); // TODO: rework so no casting needed
 				GStrings.setString(key, string);
 				DPrintFmt("{} set to:\n{}\n", key, string);
 			}
-			catch (const std::invalid_argument&)
-			{
-				PrintFmt(PRINT_HIGH, "Invalid thing type {} for {}\n", string, key);
-			}
-			catch (const std::out_of_range&)
+			else
 			{
 				PrintFmt(PRINT_HIGH, "Invalid thing type {} for {}\n", string, key);
 			}

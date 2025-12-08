@@ -297,7 +297,7 @@ v3fixed_t P_LinePlaneIntersection(const plane_t *plane, const v3fixed_t &lineorg
 
 
 bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost);
-bool P_SpecialIsWeapon(AActor* special);
+bool P_SpecialIsWeapon(const AActor* special);
 
 bool	P_ChangeSector (sector_t* sector, int crunch);
 
@@ -347,7 +347,7 @@ extern int				clipammo[NUMAMMO];
 void P_GiveSpecial(player_t *player, AActor *special);
 void P_TouchSpecialThing (AActor *special, AActor *toucher);
 
-void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage, int mod=0, int flags=0);
+void P_DamageMobj (AActor *target, const AActor *inflictor, AActor *source, int damage, int mod=0, int flags=0);
 
 #define DMG_NO_ARMOR		1
 
@@ -501,8 +501,8 @@ bool PO_RotatePolyobj (int num, angle_t angle);
 void PO_Init (void);
 bool PO_Busy (int polyobj);
 
-bool P_CheckFov(AActor* t1, AActor* t2, angle_t fov);
-bool P_IsFriendlyThing(AActor* actor, AActor* friendshiptest);
+bool P_CheckFov(const AActor* t1, const AActor* t2, angle_t fov);
+bool P_IsFriendlyThing(const AActor* actor, const AActor* friendshiptest);
 bool P_IsVoodooDoll(const AActor* mo);
 void P_FriendlyEffects();
 void P_FriendlyEffects(AActor* mo);

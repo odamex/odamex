@@ -91,14 +91,14 @@ void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDa
 void SV_SendDamageMobj(const AActor *target, int pain);
 void SV_UpdateMobj(const AActor* mo);
 void SV_ActorTarget(const AActor *actor);
-void PickupMessage(AActor *toucher, const char *message);
-void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon);
+void PickupMessage(const AActor *toucher, const char *message);
+void WeaponPickupMessage(const AActor *toucher, const weapontype_t &Weapon);
 
 #ifdef SERVER_APP
 void SV_ShareKeys(card_t card, const player_t& player);
 #endif
 
-static void PersistPlayerDamage(player_t& p)
+static void PersistPlayerDamage(const player_t& p)
 {
 	// Send this information to everybody.
 	for (auto& player : ::players)
@@ -853,7 +853,7 @@ static void P_GiveCarePack(player_t* player)
 	}
 }
 
-bool P_SpecialIsWeapon(AActor *special)
+bool P_SpecialIsWeapon(const AActor *special)
 {
 	if (!special)
 		return false;
@@ -1477,7 +1477,7 @@ void SexMessage (const char *from, char *to, gender_t gender, std::string_view v
 // [RH]
 // ClientObituary: Show a message when a player dies
 //
-static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
+static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attacker)
 {
 	char gendermessage[1024];
 
@@ -1768,7 +1768,7 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 //
 // P_KillMobj
 //
-void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill)
+void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool joinkill)
 {
 	SV_SendKillMobj(source, target, inflictor, joinkill);
 	AActor *mo;
@@ -2105,7 +2105,7 @@ bool P_InfightingImmune(AActor* target, AActor* source)
 // and other environmental stuff.
 //
 // [Toke] This is no longer needed client-side
-void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage, int mod, int flags)
+void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int damage, int mod, int flags)
 {
 	if (!serverside)
     {
