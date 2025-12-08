@@ -128,8 +128,8 @@ inline static fixed_t DegToSlope(fixed_t a)
 extern NetIDHandler ServerNetID;
 
 // All oflag mods that are sent to horde bosses.
-const uint32_t hordeBossModMask = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR |
-                                  MFO_QUICK | MFO_NORAISE | MFO_FULLBRIGHT;
+inline constexpr uint32_t hordeBossModMask = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR |
+                                             MFO_QUICK | MFO_NORAISE | MFO_FULLBRIGHT;
 
 void P_ClearAllNetIds();
 AActor* P_FindThingById(uint32_t id);

@@ -89,6 +89,7 @@ void SV_SocketTouch(player_t &player, team_t f);
 void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
 void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
+void SV_UpdateMobj(AActor* mo);
 void SV_ActorTarget(AActor *actor);
 void PickupMessage(AActor *toucher, const char *message);
 void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon);
@@ -2012,11 +2013,6 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	if (target->player && level.time)
 		G_LivesCheckEndGame();
 
-	if (gamemode == retail_chex)	// [ML] Chex Quest mode - monsters don't drop items
-    {
-		return;
-    }
-
 	// Drop stuff.
 	// This determines the kind of object spawned
 	// during the death frame of a thing.
@@ -2452,7 +2448,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 	if (source && player && co_helpfriends)
 		target->target = source->ptr();
 
-  if (!(target->flags2 & MF2_DORMANT))
+	if (!(target->flags2 & MF2_DORMANT))
 	{
 		int pain = P_Random(target);
 
@@ -2516,6 +2512,10 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
             }
             SV_ActorTarget(target);
 		}
+	}
+	else
+	{
+		SV_UpdateMobj(target);
 	}
 }
 

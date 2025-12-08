@@ -728,7 +728,7 @@ static bool PIT_CheckThing (AActor *thing)
 					return true;
 
 				// [RH] DeHackEd infighting is here.
-				if (!deh.Infight && 
+				if (!deh.Infight &&
 						(!((thing->flags ^ tmthing->target->flags) & MF_FRIEND) ||
 						(thing->flags & tmthing->target->flags & MF_FRIEND && P_IsFriendlyThing(thing, tmthing->target))))
 					return false; // Hit same species as originator, explode, no damage
@@ -2210,9 +2210,9 @@ bool P_ShootLine(intercept_t* in)
 	}
 
 	fixed_t ceilingheight1 = P_CeilingHeight(crossx, crossy, sec1);
-	fixed_t ceilingheight2 = sec2 ? P_CeilingHeight(crossx, crossy, sec2) : MAXINT;
+	fixed_t ceilingheight2 = sec2 ? P_CeilingHeight(crossx, crossy, sec2) : limits::MAXINT;
 	fixed_t floorheight1 = P_FloorHeight(crossx, crossy, sec1);
-	fixed_t floorheight2 = sec2 ? P_FloorHeight(crossx, crossy, sec2) : MAXINT;
+	fixed_t floorheight2 = sec2 ? P_FloorHeight(crossx, crossy, sec2) : limits::MAXINT;
 
 	// position the destination for the bullet puff a bit closer
 	fixed_t frac = in->frac - FixedDiv(4 * FRACUNIT, attackrange);
@@ -3736,7 +3736,7 @@ bool P_IsPlaneLevel(const plane_t *plane)
 fixed_t P_PlaneZ(fixed_t x, fixed_t y, const plane_t *plane)
 {
 	if (!plane)
-		return MAXINT;
+		return limits::MAXFIXED;
 
 	// Is the plane level?  (Z value is constant for entire plane)
 	if (P_IsPlaneLevel(plane))
@@ -3748,7 +3748,7 @@ fixed_t P_PlaneZ(fixed_t x, fixed_t y, const plane_t *plane)
 double P_PlaneZ(double x, double y, const plane_t *plane)
 {
 	if (!plane)
-		return MAXINT / 65536.0;
+		return limits::MAXINT / 65536.0;
 
 	static constexpr double m = 1.0 / (65536.0 * 65536.0);
 
@@ -3775,7 +3775,7 @@ double P_PlaneZ(double x, double y, const plane_t *plane)
 fixed_t P_FloorHeight(fixed_t x, fixed_t y, const sector_t *sector)
 {
 	if (!sector && !(sector = P_PointInSubsector(x, y)->sector))
-		return MAXINT;
+		return limits::MAXFIXED;
 
 	return P_PlaneZ(x, y, &sector->floorplane);
 }
@@ -3785,13 +3785,13 @@ fixed_t P_FloorHeight(const AActor *mo)
 	if (mo && mo->subsector && mo->subsector->sector)
 		return P_PlaneZ(mo->x, mo->y, &mo->subsector->sector->floorplane);
 	else
-		return MAXINT;
+		return limits::MAXFIXED;
 }
 
 fixed_t P_FloorHeight(const sector_t *sector)
 {
 	if (!sector)
-		return MAXINT;
+		return limits::MAXFIXED;
 
 	const plane_t *plane = &sector->floorplane;
 	return P_PlaneZ(plane->texx, plane->texy, plane);
@@ -3812,7 +3812,7 @@ fixed_t P_FloorHeight(const sector_t *sector)
 fixed_t P_CeilingHeight(fixed_t x, fixed_t y, const sector_t *sector)
 {
 	if (!sector && !(sector = P_PointInSubsector(x, y)->sector))
-		return MAXINT;
+		return limits::MAXFIXED;
 
 	return P_PlaneZ(x, y, &sector->ceilingplane);
 }
@@ -3822,13 +3822,13 @@ fixed_t P_CeilingHeight(const AActor *mo)
 	if (mo && mo->subsector && mo->subsector->sector)
 		return P_PlaneZ(mo->x, mo->y, &mo->subsector->sector->ceilingplane);
 	else
-		return MAXINT;
+		return limits::MAXFIXED;
 }
 
 fixed_t P_CeilingHeight(const sector_t *sector)
 {
 	if (!sector)
-		return MAXINT;
+		return limits::MAXFIXED;
 
 	const plane_t *plane = &sector->ceilingplane;
 	return P_PlaneZ(plane->texx, plane->texy, plane);
@@ -3849,7 +3849,7 @@ v3fixed_t P_LinePlaneIntersection(const plane_t *plane,
 									const v3fixed_t &linedir)
 {
 	v3fixed_t pt;
-	M_SetVec3Fixed(&pt, MAXINT, MAXINT, MAXINT);	// marks as invalid
+	M_SetVec3Fixed(&pt, limits::MAXFIXED, limits::MAXFIXED, limits::MAXFIXED);	// marks as invalid
 
 	if (!plane)		// sanity check
 		return pt;
@@ -3967,7 +3967,7 @@ void P_SetFloorHeight(sector_t *sector, fixed_t value)
 //
 fixed_t P_LowestHeightOfCeiling(sector_t *sector)
 {
-	fixed_t height = MAXINT;
+	fixed_t height = limits::MAXFIXED;
 	if (!sector)
 		return height;
 
@@ -3993,7 +3993,7 @@ fixed_t P_LowestHeightOfCeiling(sector_t *sector)
 //
 fixed_t P_LowestHeightOfFloor(sector_t *sector)
 {
-	fixed_t height = MAXINT;
+	fixed_t height = limits::MAXFIXED;
 	if (!sector)
 		return height;
 
@@ -4019,7 +4019,7 @@ fixed_t P_LowestHeightOfFloor(sector_t *sector)
 //
 fixed_t P_HighestHeightOfCeiling(sector_t *sector)
 {
-	fixed_t height = MININT;
+	fixed_t height = limits::MINFIXED;
 	if (!sector)
 		return height;
 
@@ -4045,7 +4045,7 @@ fixed_t P_HighestHeightOfCeiling(sector_t *sector)
 //
 fixed_t P_HighestHeightOfFloor(sector_t *sector)
 {
-	fixed_t height = MININT;
+	fixed_t height = limits::MINFIXED;
 	if (!sector)
 		return height;
 

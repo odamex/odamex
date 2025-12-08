@@ -112,6 +112,11 @@ enum clientBuf_e
 #define SVC_SM_OFLAGS BIT(2)
 
 /**
+ * @brief svc_spawnmobj: ZDoom/Heretic flags.
+ */
+#define SVC_SM_FLAGS2 BIT(3)
+
+/**
  * @brief svc_updatemobj: Supply mobj position and random index.
  */
 #define SVC_UM_POS_RND BIT(0)
@@ -255,7 +260,7 @@ enum svc_t
 	svc_netdemoloadsnap = 102, // netdemos - NullPoint
 };
 
-static constexpr size_t svc_max = 255;
+inline constexpr size_t svc_max = 255;
 
 enum ThinkerType
 {
@@ -304,7 +309,7 @@ inline auto format_as(clc_t clc)
 	return fmt::underlying(clc);
 }
 
-static constexpr size_t clc_max = 255;
+inline constexpr size_t clc_max = 255;
 
 extern msg_info_t clc_info[clc_max + 1];
 extern msg_info_t svc_info[svc_max + 1];

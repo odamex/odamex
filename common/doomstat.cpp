@@ -48,7 +48,7 @@ CVAR_FUNC_IMPL (language)
 	::GStrings.loadStrings(false);
 
 	// Reapply DeHackEd patches on top of these strings.
-	D_LoadResolvedPatches();
+	D_LoadResolvedPatches(true);
 }
 
 // Set if homebrew PWAD stuff has been added.

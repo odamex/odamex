@@ -368,7 +368,7 @@ CVAR_RANGE(sv_countdown, "5",
 	//------------------------------
 
 	CVAR(			co_pursuit, "0",
-					"Use MBF comp_pursuit behavior -- monsters will change targets " 
+					"Use MBF comp_pursuit behavior -- monsters will change targets "
 					"if their current target is out of sight and a new valid target is in sight.",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
@@ -407,15 +407,15 @@ CVAR_RANGE(sv_countdown, "5",
 
 	CVAR_RANGE(co_friend_playerhelpers, "0",
 					"Use MBF player_helpers behavior -- amount of friendly things to spawn at map start.\n" \
-					"If in an online game, dogs spawn only once on map start per helper per player.\n" \
-					"The helper type is defined in BEX or through the cvar co_friend_helpertype.",
+					"// If in an online game, dogs spawn only once on map start per helper per player.\n" \
+					"// The helper type is defined in BEX or through the cvar co_friend_helpertype.",
 					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 64.0f)
 
-	CVAR(			co_friend_helpertype, "", 
+	CVAR(			co_friend_helpertype, "",
 					"Name of the actor type to spawn as a helper.\n" \
-					"Spawnable actors can be found using the ccmd `dumpactors`\n" \
-					"If empty, it uses the defined default friend in Dehacked (BEX).\n" \
-					"If the actor name can't be found, an MBF helper dog will be spawned\n",
+					"// Spawnable actors can be found using the ccmd `dumpactors`\n" \
+					"// If empty, it uses the defined default friend in Dehacked (BEX).\n" \
+					"// If the actor name can't be found, an MBF helper dog will be spawned\n",
 					CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 	CVAR(			co_mbfphys, "0", "Use MBF's movement code. Fixes mancubus fireball clipping and linedef skips.",

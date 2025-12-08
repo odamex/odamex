@@ -25,8 +25,8 @@
 
 #define MAX_SKILLS 7
 
-static constexpr uint32_t SKILL_NOINFIGHTING = BIT(0);
-static constexpr uint32_t SKILL_TOTALINFIGHTING = BIT(1);
+inline constexpr uint32_t SKILL_NOINFIGHTING = BIT(0);
+inline constexpr uint32_t SKILL_TOTALINFIGHTING = BIT(1);
 
 struct SkillInfo
 {

@@ -85,7 +85,7 @@ public:
 		dist = 0;
 		initial_volume = 0.0f;
 		volume = 0.0f;
-		priority = MININT;
+		priority = limits::MININT;
 		loop = false;
 		start_time = 0;
 	}

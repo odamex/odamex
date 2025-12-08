@@ -169,7 +169,7 @@ class OZone
 		MemoryBlockInfo block;
 		block.tag = tag;
 		block.user = static_cast<void**>(user);
-		block.size = size > MAXUINT ? MAXUINT : static_cast<uint32_t>(size);
+		block.size = size > limits::MAXUINT ? limits::MAXUINT : static_cast<uint32_t>(size);
 
 		// Store the allocating function.  12 byte overhead per allocation,
 		// but the information we get while debugging is priceless.
@@ -392,7 +392,7 @@ void Z_DumpHeap(const zoneTag_e lowtag, const zoneTag_e hightag)
 
 BEGIN_COMMAND(dumpheap)
 {
-	int lo = MININT, hi = MAXINT;
+	int lo = limits::MININT, hi = limits::MAXINT;
 
 	if (argc >= 2)
 	{

@@ -230,5 +230,5 @@ static const char* odamex_SoundMap[] =
 inline DoomObjectContainer<std::string> SoundMap(ARRAY_LENGTH(doom_SoundMap) + ARRAY_LENGTH(odamex_SoundMap));
 
 void D_UndoDehPatch();
-bool D_DoDehPatch(const OResFile* patchfile, const int lump, bool notext = false);
+bool D_DoDehPatch(const OResFile* patchfile, const int lump, bool textonly, bool notext = false);
 bool CheckIfDehActorDefined(const mobjtype_t mobjtype);

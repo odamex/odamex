@@ -396,7 +396,7 @@ DDoor::DDoor(sector_t* sec, line_t* ln, int kind, int trigger, int speed)
     : DMovingCeiling(sec), m_Status(init)
 {
 	m_Line = ln;
-	m_TopWait = VDOORWAIT;
+	m_TopWait = doors::WAIT;
 	m_TopHeight = P_FindLowestCeilingSurrounding(sec) - 4 * FRACUNIT;
 	m_Status = opening;
 	m_TopCountdown = -1;
@@ -408,19 +408,19 @@ DDoor::DDoor(sector_t* sec, line_t* ln, int kind, int trigger, int speed)
 	default:
 	case SpeedSlow:
 		m_Type = kind ? genOpen : genRaise;
-		m_Speed = VDOORSPEED;
+		m_Speed = doors::SPEED;
 		break;
 	case SpeedNormal:
 		m_Type = kind ? genOpen : genRaise;
-		m_Speed = VDOORSPEED * 2;
+		m_Speed = doors::SPEED * 2;
 		break;
 	case SpeedFast:
 		m_Type = kind ? genBlazeOpen : genBlazeRaise;
-		m_Speed = VDOORSPEED * 4;
+		m_Speed = doors::SPEED * 4;
 		break;
 	case SpeedTurbo:
 		m_Type = kind ? genBlazeOpen : genBlazeRaise;
-		m_Speed = VDOORSPEED * 8;
+		m_Speed = doors::SPEED * 8;
 		break;
 	}
 	/* killough 10/98: implement gradual lighting */
@@ -445,13 +445,13 @@ DDoor::DDoor(sector_t* sec, line_t* ln, int delay, int kind, int trigger, int sp
 		m_TopWait = 35;
 		break;
 	case 1:
-		m_TopWait = VDOORWAIT;
+		m_TopWait = doors::WAIT;
 		break;
 	case 2:
-		m_TopWait = 2 * VDOORWAIT;
+		m_TopWait = 2 * doors::WAIT;
 		break;
 	case 3:
-		m_TopWait = 7 * VDOORWAIT;
+		m_TopWait = 7 * doors::WAIT;
 		break;
 	}
 
@@ -460,16 +460,16 @@ DDoor::DDoor(sector_t* sec, line_t* ln, int delay, int kind, int trigger, int sp
 	{
 	default:
 	case SpeedSlow:
-		m_Speed = VDOORSPEED;
+		m_Speed = doors::SPEED;
 		break;
 	case SpeedNormal:
-		m_Speed = VDOORSPEED * 2;
+		m_Speed = doors::SPEED * 2;
 		break;
 	case SpeedFast:
-		m_Speed = VDOORSPEED * 4;
+		m_Speed = doors::SPEED * 4;
 		break;
 	case SpeedTurbo:
-		m_Speed = VDOORSPEED * 8;
+		m_Speed = doors::SPEED * 8;
 		break;
 	}
 	/* killough 10/98: implement gradual lighting */

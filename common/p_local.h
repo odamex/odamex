@@ -110,8 +110,8 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo = false);
 //
 // P_MOBJ
 //
-#define ONFLOORZ		MININT
-#define ONCEILINGZ		MAXINT
+#define ONFLOORZ		limits::MININT
+#define ONCEILINGZ		limits::MAXINT
 
 // Time interval for item respawning.
 #define ITEMQUESIZE 	128
@@ -209,7 +209,7 @@ extern fixed_t			openbottom;
 extern fixed_t			openrange;
 extern fixed_t			lowfloor;
 
-void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx=MINFIXED, fixed_t refy=0);
+void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx=limits::MINFIXED, fixed_t refy=0);
 
 bool P_BlockLinesIterator (int x, int y, bool(*func)(line_t*) );
 bool P_BlockThingsIterator (int x, int y, bool(*func)(AActor*), AActor *start=NULL);

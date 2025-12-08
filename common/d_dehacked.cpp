@@ -603,7 +603,7 @@ public:
     {
         if (auto line = getNextLine())
         {
-            if (auto kv = std::get_if<KVLine>(&*line))
+            if (auto kv = std::get_if<KVLine>(&line.value()))
                 return *kv;
 
             m_buffer = *line; // put back
@@ -2236,7 +2236,7 @@ static int DoInclude(std::string_view include, size_t)
 		return 0;
 	}
 
-	D_DoDehPatch(&res, -1, notext);
+	D_DoDehPatch(&res, -1, false, notext);
 
 	DPrintFmt("Done with include\n");
 
@@ -2251,7 +2251,7 @@ static void D_PostProcessDeh(const DehScanner::ParsedState& dp);
  * @param patchfile File to attempt to load, NULL if not a file.
  * @param lump Lump index to load, -1 if not a lump.
  */
-bool D_DoDehPatch(const OResFile* patchfile, const int lump, bool notext)
+bool D_DoDehPatch(const OResFile* patchfile, const int lump, bool textonly, bool notext)
 {
 	BackupData();
 
@@ -2365,6 +2365,27 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump, bool notext)
 	default:
 		DPrintFmt("Patch created with unknown DOOM version.\nAssuming version 1.9.\n");
 		dp.textOffsetIdx = 1;
+	}
+
+	if (textonly)
+	{
+		while (std::optional<DehScanner::Line> line = scanner.getNextLine())
+		{
+			static constexpr std::string_view STRINGS_HEADER = "[STRINGS]";
+			static constexpr std::string_view TEXT_HEADER = "Text";
+			auto header = std::get_if<DehScanner::HeaderLine>(&line.value());
+			if (header &&
+			    (!strnicmp(header->data(), STRINGS_HEADER.data(), STRINGS_HEADER.size()) ||
+			     !strnicmp(header->data(), TEXT_HEADER.data(), TEXT_HEADER.size())))
+			{
+				HandleMode(*header, scanner);
+			}
+			else
+			{
+				scanner.skipLine();
+			}
+		}
+		return true;
 	}
 
 	while (std::optional<DehScanner::Line> line = scanner.getNextLine())

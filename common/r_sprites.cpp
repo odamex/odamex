@@ -36,7 +36,7 @@
 
 #include "s_sound.h"
 
-#define SPRITE_NEEDS_INFO	MAXINT
+#define SPRITE_NEEDS_INFO	limits::MAXINT
 
 //
 // INITIALIZATION FUNCTIONS

@@ -368,6 +368,12 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 		cur->set_flags(mo->flags);
 	}
 
+	if (mo->flags2 & MF2_DORMANT)
+	{
+		spawnFlags |= SVC_SM_FLAGS2;
+		cur->set_flags2(mo->flags2);
+	}
+
 	// odamex flags - only monster flags for now
 	if (mo->oflags & hordeBossModMask)
 	{
@@ -568,7 +574,7 @@ odaproto::svc::SpawnPlayer SVC_SpawnPlayer(player_t& player)
 		// The client hasn't yet received his own position from the server
 		// This happens with cl_autorecord
 		// Just fake a position for now
-		act->set_netid(MAXSHORT);
+		act->set_netid(limits::MAXSHORT);
 	}
 
 	return msg;

@@ -1015,7 +1015,7 @@ fixed_t P_FindHighestFloorSurrounding (sector_t *sec)
 	int i;
 	line_t *check;
 	sector_t *other;
-	fixed_t height = MININT;
+	fixed_t height = limits::MINFIXED;
 
 	for (i = 0; i < sec->linecount; i++)
 	{
@@ -1053,7 +1053,7 @@ fixed_t P_FindNextHighestFloor (sector_t *sec)
 {
 	sector_t *other;
 	fixed_t ogheight = P_FloorHeight(sec);
-	fixed_t height = MAXINT;
+	fixed_t height = limits::MAXFIXED;
 
     for (int i = 0; i < sec->linecount; i++)
     {
@@ -1073,7 +1073,7 @@ fixed_t P_FindNextHighestFloor (sector_t *sec)
         }
     }
 
-    if (height == MAXINT)
+    if (height == limits::MAXFIXED)
     	height = ogheight;
 
     return height;
@@ -1096,7 +1096,7 @@ fixed_t P_FindNextLowestFloor(sector_t *sec)
 {
 	sector_t *other;
 	fixed_t ogheight = P_FloorHeight(sec);
-	fixed_t height = MININT;
+	fixed_t height = limits::MINFIXED;
 
     for (int i = 0; i < sec->linecount; i++)
     {
@@ -1116,7 +1116,7 @@ fixed_t P_FindNextLowestFloor(sector_t *sec)
         }
     }
 
-    if (height == MININT)
+    if (height == limits::MINFIXED)
     	height = ogheight;
 
     return height;
@@ -1138,7 +1138,7 @@ fixed_t P_FindNextLowestCeiling (sector_t *sec)
 {
 	sector_t *other;
 	fixed_t ogheight = P_CeilingHeight(sec);
-	fixed_t height = MININT;
+	fixed_t height = limits::MINFIXED;
 
     for (int i = 0; i < sec->linecount; i++)
     {
@@ -1158,7 +1158,7 @@ fixed_t P_FindNextLowestCeiling (sector_t *sec)
         }
     }
 
-    if (height == MININT)
+    if (height == limits::MINFIXED)
     	height = ogheight;
 
     return height;
@@ -1181,7 +1181,7 @@ fixed_t P_FindNextHighestCeiling (sector_t *sec)
 {
 	sector_t *other;
 	fixed_t ogheight = P_CeilingHeight(sec);
-	fixed_t height = MAXINT;
+	fixed_t height = limits::MAXFIXED;
 
     for (int i = 0; i < sec->linecount; i++)
     {
@@ -1201,7 +1201,7 @@ fixed_t P_FindNextHighestCeiling (sector_t *sec)
         }
     }
 
-    if (height == MAXINT)
+    if (height == limits::MAXFIXED)
     	height = ogheight;
 
     return height;
@@ -1215,7 +1215,7 @@ fixed_t P_FindLowestCeilingSurrounding (sector_t *sec)
 	int i;
 	line_t *check;
 	sector_t *other;
-	fixed_t height = MAXINT;
+	fixed_t height = limits::MAXFIXED;
 
 	for (i = 0; i < sec->linecount; i++)
 	{
@@ -1247,7 +1247,7 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 	int i;
 	line_t *check;
 	sector_t *other;
-	fixed_t height = MININT;
+	fixed_t height = limits::MINFIXED;
 
 	for (i = 0; i < sec->linecount; i++)
 	{
@@ -1281,7 +1281,7 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 //
 fixed_t P_FindShortestTextureAround (sector_t *sec)
 {
-	int minsize = MAXINT;
+	int minsize = limits::MAXINT;
 	side_t *side;
 	int i;
 	int mintex = (co_boomphys && !(level.flags & LEVEL_COMPAT_SHORTTEX)) ? 1 : 0;
@@ -1316,7 +1316,7 @@ fixed_t P_FindShortestTextureAround (sector_t *sec)
 //
 fixed_t P_FindShortestUpperAround (sector_t *sec)
 {
-	int minsize = MAXINT;
+	int minsize = limits::MAXINT;
 	side_t *side;
 	int i;
 	int mintex = (co_boomphys && !(level.flags & LEVEL_COMPAT_SHORTTEX)) ? 1 : 0;
@@ -2598,7 +2598,7 @@ void DScroller::RunThink ()
 			height = P_HighestHeightOfFloor(sec);
 			waterheight = sec->heightsec &&
 				P_HighestHeightOfFloor(sec->heightsec) > height ?
-				P_HighestHeightOfFloor(sec->heightsec) : MININT;
+				P_HighestHeightOfFloor(sec->heightsec) : limits::MINFIXED;
 
 			for (node = sec->touching_thinglist; node; node = node->m_snext)
 				if (!((thing = node->m_thing)->flags & MF_NOCLIP) &&

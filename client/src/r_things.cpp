@@ -68,7 +68,7 @@ fixed_t bobx;
 fixed_t boby;
 
 #define MAX_SPRITE_FRAMES 29		// [RH] Macro-ized as in BOOM.
-#define SPRITE_NEEDS_INFO	MAXINT
+#define SPRITE_NEEDS_INFO	limits::MAXINT
 
 EXTERN_CVAR (r_drawplayersprites)
 EXTERN_CVAR (r_softinvulneffect)

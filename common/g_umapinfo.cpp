@@ -100,6 +100,28 @@ void MustGetIdentifier(OScanner& os)
 	}
 }
 
+enum struct player_action_t
+{
+	DISALLOW,
+	ALLOW,
+	REQUIRE,
+};
+
+player_action_t ParsePlayerAction(OScanner& os)
+{
+	MustGetIdentifier(os);
+	if (os.compareTokenNoCase("disallow"))
+		return player_action_t::DISALLOW;
+
+	if (os.compareTokenNoCase("allow"))
+		return player_action_t::ALLOW;
+
+	if (os.compareTokenNoCase("require"))
+		return player_action_t::REQUIRE;
+
+	os.error("Expected 'disable', 'allow' or 'require', got '{}'.", os.getToken());
+}
+
 bool pnamemodified;
 
 bool ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
@@ -388,6 +410,45 @@ bool ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 				mape->bossactions.push_back(new_bossaction);
 			}
 		}
+	}
+	else if (!stricmp(pname.c_str(), "jumping"))
+	{
+		switch (ParsePlayerAction(os))
+		{
+		case player_action_t::DISALLOW:
+			mape->flags |= LEVEL_JUMP_NO;
+			mape->flags &= ~LEVEL_JUMP_YES;
+			break;
+		case player_action_t::ALLOW:
+			mape->flags &= ~(LEVEL_JUMP_NO | LEVEL_JUMP_YES);
+			break;
+		case player_action_t::REQUIRE:
+			mape->flags &= ~LEVEL_JUMP_NO;
+			mape->flags |= LEVEL_JUMP_YES;
+			break;
+		}
+	}
+	else if (!stricmp(pname.c_str(), "freeaim"))
+	{
+		switch (ParsePlayerAction(os))
+		{
+		case player_action_t::DISALLOW:
+			mape->flags |= LEVEL_FREELOOK_NO;
+			mape->flags &= ~LEVEL_FREELOOK_YES;
+			break;
+		case player_action_t::ALLOW:
+			mape->flags &= ~(LEVEL_FREELOOK_NO | LEVEL_FREELOOK_YES);
+			break;
+		case player_action_t::REQUIRE:
+			mape->flags &= ~LEVEL_FREELOOK_NO;
+			mape->flags |= LEVEL_FREELOOK_YES;
+			break;
+		}
+	}
+	else if (!stricmp(pname.c_str(), "crouching"))
+	{
+		if (ParsePlayerAction(os) == player_action_t::REQUIRE)
+			os.warning("Crouching is not supported in Odamex. Map {} may not work as intended.", mape->mapname);
 	}
 	else
 	{

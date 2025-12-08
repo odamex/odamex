@@ -1413,10 +1413,10 @@ void P_CreateBlockMap()
 	int NBlocks;					// number of cells = nrows*ncols
 	DWORD linetotal=0;				// total length of all blocklists
 	int i,j;
-	int map_minx=MAXINT;			// init for map limits search
-	int map_miny=MAXINT;
-	int map_maxx=MININT;
-	int map_maxy=MININT;
+	int map_minx=limits::MAXINT;			// init for map limits search
+	int map_miny=limits::MAXINT;
+	int map_maxx=limits::MININT;
+	int map_maxy=limits::MININT;
 
 	// scan for map limits, which the blockmap must enclose
 

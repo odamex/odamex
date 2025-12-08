@@ -2369,7 +2369,7 @@ size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length)
     	}
 	}
 
-    return MAXINT;    // indicate not found
+    return limits::MAXINT;    // indicate not found
 }
 
 

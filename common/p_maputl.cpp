@@ -490,7 +490,7 @@ void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx, f
 			usefront = true;
 		else if (bflevel)
 			usefront = false;
-		else if (refx != MINFIXED)
+		else if (refx != limits::MINFIXED)
 			usefront = !P_PointOnLineSide(refx, refy, linedef);
 	}
 
@@ -883,7 +883,7 @@ bool P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
 
 	while (count--)
 	{
-		dist = MAXINT;
+		dist = limits::MAXFIXED;
 		for (intercept_t& intercept : intercepts)
 		{
 			if (intercept.frac < dist)
@@ -900,7 +900,7 @@ bool P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
 		if ( !func (in) )
 			return false;		// don't bother going farther
 
-		in->frac = MAXINT;
+		in->frac = limits::MAXFIXED;
 	}
 
 	return true;				// everything was traversed

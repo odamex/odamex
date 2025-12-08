@@ -78,50 +78,27 @@ using OByteSpan = nonstd::span<byte>;
 	#define strnicmp strncasecmp
 #endif
 
-#ifndef MAXCHAR
-	#define MAXCHAR 		((char)0x7f)
-#endif
-#ifndef MAXSHORT
-	#define MAXSHORT		((short)0x7fff)
-#endif
+namespace limits
+{
+	inline constexpr char         MAXCHAR  = std::numeric_limits<char>::max();
+	inline constexpr short        MAXSHORT = std::numeric_limits<short>::max();
+	inline constexpr int          MAXINT   = std::numeric_limits<int>::max();
+	inline constexpr unsigned int MAXUINT  = std::numeric_limits<unsigned int>::max();
+	// todo: do we even want to be using long here instead of int32_t/int64_t
+	// this feels like a remnant from before 64 bit
+	inline constexpr long         MAXLONG  = std::numeric_limits<long>::max();
 
-// Max pos 32-bit int.
-#ifndef MAXINT
-	#define MAXINT			(0x7fffffff)
-#endif
-#ifndef MAXUINT
-	#define MAXUINT			(0xffffffff)
-#endif
+	inline constexpr char         MINCHAR  = std::numeric_limits<char>::min();
+	inline constexpr short        MINSHORT = std::numeric_limits<short>::min();
+	inline constexpr int          MININT   = std::numeric_limits<int>::min();
+	inline constexpr unsigned int MINUINT  = std::numeric_limits<unsigned int>::min();
+	inline constexpr long         MINLONG  = std::numeric_limits<long>::min();
 
-#ifndef MAXLONG
-	#ifndef ALPHA
-		#define MAXLONG 		((long)0x7fffffff)
-	#else
-		#define MAXLONG			((long)0x7fffffffffffffff)
-	#endif
-#endif
-
-#ifndef MINCHAR
-	#define MINCHAR 		((char)0x80)
-#endif
-#ifndef MINSHORT
-	#define MINSHORT		((short)0x8000)
-#endif
-
-// Max negative 32-bit integer.
-#ifndef MININT
-	#define MININT			((int)0x80000000)
-#endif
-#ifndef MINLONG
-	#ifndef ALPHA
-		#define MINLONG 		((long)0x80000000)
-	#else
-		#define MINLONG			((long)0x8000000000000000)
-	#endif
-#endif
-
-#define MINFIXED		(signed)(0x80000000)
-#define MAXFIXED		(signed)(0x7fffffff)
+	inline constexpr int32_t      MAXFIXED = std::numeric_limits<int32_t>::max();
+	inline constexpr int32_t      MINFIXED = std::numeric_limits<int32_t>::min();
+	inline constexpr int64_t      MAXFIXED64 = std::numeric_limits<int64_t>::max();
+	inline constexpr int64_t      MINFIXED64 = std::numeric_limits<int64_t>::min();
+}
 
 typedef unsigned char		BYTE;
 typedef signed char			SBYTE;

@@ -402,7 +402,7 @@ void V_RestoreScreenPalette()
 //
 palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b)
 {
-	int bestdistortion = MAXINT;
+	int bestdistortion = limits::MAXINT;
 	int bestcolor = 0;		/// let any color go to 0 as a last resort
 
 	for (int i = 0; i < 256; i++)
@@ -441,7 +441,7 @@ palindex_t V_BestColor(const argb_t* palette_colors, argb_t color)
 //
 void V_ClosestColors(const argb_t* palette_colors, palindex_t& color1, palindex_t& color2)
 {
-	int bestdistortion = MAXINT;
+	int bestdistortion = limits::MAXINT;
 
 	color1 = color2 = 0;	// go to color 0 as a last resort
 

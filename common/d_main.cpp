@@ -496,31 +496,25 @@ static void D_PrintIWADIdentity()
 /**
  * @brief Load all found DEH patches, as well as all found DEHACKED lumps.
  */
-void D_LoadResolvedPatches()
+void D_LoadResolvedPatches(bool reloadStrings)
 {
+	// Load internal chex.deh if necessary
+	if (::gamemode == retail_chex)
+	{
+		D_DoDehPatch(nullptr, W_GetNumForName("_CHXHACK"), reloadStrings);
+	}
+
 	// Load external patch files first.
-	bool chexLoaded = false;
 	for (const auto& file : ::patchfiles)
 	{
-		if (StdStringToUpper(file.getBasename()) == "CHEX.DEH")
-		{
-			chexLoaded = true;
-		}
-		D_DoDehPatch(&file, -1);
+		D_DoDehPatch(&file, -1, reloadStrings);
 	}
 
 	// Check WAD files for lumps.
 	int lump = -1;
 	while ((lump = W_FindLump("DEHACKED", lump)) != -1)
 	{
-		D_DoDehPatch(NULL, lump);
-	}
-
-	if (::gamemode == retail_chex && !::multiplayer && !chexLoaded)
-	{
-		PrintFmt(
-		    PRINT_WARNING,
-		    "Warning: chex.deh not loaded, experience may differ from the original!\n");
+		D_DoDehPatch(NULL, lump, reloadStrings);
 	}
 
 	// Re-apply spawninv settings with our new DEH settings.

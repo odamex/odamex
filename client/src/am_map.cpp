@@ -306,7 +306,7 @@ END_COMMAND(am_big)
 BEGIN_COMMAND(am_togglefollow)
 {
 	am_followplayer = !am_followplayer;
-	f_oldloc.x = MAXINT;
+	f_oldloc.x = limits::MAXINT;
 	PrintFmt(PRINT_HIGH, "{}\n",
 	         am_followplayer ? GStrings(AMSTR_FOLLOWON) : GStrings(AMSTR_FOLLOWOFF));
 }
@@ -385,8 +385,8 @@ void AM_addMark()
 //
 void AM_findMinMaxBoundaries()
 {
-	M_SetVec2Fixed64(&min, MAXLONG, MAXLONG);
-	M_SetVec2Fixed64(&max, -MAXLONG, -MAXLONG);
+	M_SetVec2Fixed64(&min, limits::MAXFIXED64, limits::MAXFIXED64);
+	M_SetVec2Fixed64(&max, limits::MINFIXED64, limits::MINFIXED64);
 
 	for (const auto [x, y]: R_GetVertices())
 	{
@@ -421,7 +421,7 @@ void AM_changeWindowLoc()
 	if (m_paninc.x || m_paninc.y)
 	{
 		am_followplayer.Set(0.0f);
-		f_oldloc.x = MAXINT;
+		f_oldloc.x = limits::MAXINT;
 	}
 
 	M_AddVec2Fixed64(&m_ll, &m_paninc, &m_ll);
@@ -492,7 +492,7 @@ void AM_initVariables()
 
 	automapactive = true;
 
-	f_oldloc.x = MAXINT;
+	f_oldloc.x = limits::MAXINT;
 	amclock = 0;
 
 	M_SetVec2Fixed64(&m_wh, FTOM(I_GetSurfaceWidth()), FTOM(I_GetSurfaceHeight()));

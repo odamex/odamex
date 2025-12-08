@@ -79,7 +79,7 @@ enum class jsonlumpresult_t
 	PARSEERROR
 };
 
-static constexpr const char* JSON_LUMP_RESULT_ERROR_STRINGS[] =
+inline constexpr std::string_view JSON_LUMP_RESULT_ERROR_STRINGS[] =
 {
 	"JSON Lump Parsing Successful",
 	"JSON Lump Not Found",
@@ -90,7 +90,7 @@ static constexpr const char* JSON_LUMP_RESULT_ERROR_STRINGS[] =
 	"JSON Lump Parse Error"
 };
 
-constexpr const char* M_JSONLumpResultToString(jsonlumpresult_t jlr)
+constexpr std::string_view M_JSONLumpResultToString(jsonlumpresult_t jlr)
 {
 	return JSON_LUMP_RESULT_ERROR_STRINGS[static_cast<int>(jlr)];
 }

@@ -104,8 +104,8 @@ typedef enum
 
 #define MAX_PLAYER_SEE_MOBJ	0x7F
 
-static constexpr int ReJoinDelay = TICRATE * 5;
-static constexpr int SuicideDelay = TICRATE * 10;
+inline constexpr int ReJoinDelay = TICRATE * 5;
+inline constexpr int SuicideDelay = TICRATE * 10;
 
 //
 // Extended player object info: player_t

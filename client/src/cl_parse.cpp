@@ -679,12 +679,17 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->flags = msg->current().flags();
 	}
 
+	if (msg->spawn_flags() & SVC_SM_FLAGS2)
+	{
+		mo->flags2 = msg->current().flags2();
+	}
+
 	if (msg->spawn_flags() & SVC_SM_OFLAGS)
 	{
 		mo->oflags = msg->current().oflags();
 
 		// [AM] HACK! Assume that any monster with a flag is a boss.
-		if (mo->oflags)
+		if (mo->oflags & hordeBossModMask)
 		{
 			mo->effects = FX_YELLOWFOUNTAIN;
 			mo->translation = translationref_t(&::bosstable[0]);
