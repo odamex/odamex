@@ -65,6 +65,7 @@
 #include "cl_replay.h"
 #include "r_interp.h"
 #include "m_doomobjcontainer.h"
+#include "g_spree.h"
 
 // Extern data from other files.
 
@@ -1492,8 +1493,6 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 		p.secretcount = msg->secretcount();
 		p.totalpoints = msg->totalpoints();
 		p.totaldeaths = msg->totaldeaths();
-		p.damagesincelastdeath = msg->damagesincelastdeath();
-		p.killssincelastdeath = msg->killsincelastdeath();
 	}
 
 	if (flags & SVC_PM_CHEATS)
@@ -2865,6 +2864,31 @@ static void CL_HordeInfo(const odaproto::svc::HordeInfo* msg)
 	P_SetHordeInfo(info);
 }
 
+static void CL_Spree(const odaproto::svc::Spree* msg)
+{
+	int playerId = msg->pid();
+	int spreeLevel = msg->spree_level();
+	int spreeStartTic = msg->tic();
+
+	SpreeManager::getInstance().setRawSpree(playerId, spreeLevel, spreeStartTic);
+}
+
+static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
+{
+	spreeBreaker_t breaker;
+
+	breaker.spreeEndedPlayerId = msg->victim_pid();
+	breaker.spreeEndedName = msg->victim_name();
+	breaker.spreeEnderPlayerId = msg->source_pid();
+	breaker.spreeEndedName = msg->source_name();
+	breaker.endedPoints = msg->spree_points();
+	breaker.spreeEndedTic = msg->tic();
+	SpreeBreakerType type = static_cast<SpreeBreakerType>(msg->spree_breaker_type());
+	int level = msg->spree_level();
+
+	SpreeManager::getInstance().setRawSpreeBreaker(breaker, level, type);
+}
+
 static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 {
 	player_t* clientPlayer = &consoleplayer();
@@ -3103,6 +3127,8 @@ parseError_e CL_ParseCommand()
 		SV_MSG(svc_maplist_index, CL_MaplistIndex, odaproto::svc::MaplistIndex);
 		SV_MSG(svc_toast, CL_Toast, odaproto::svc::Toast);
 		SV_MSG(svc_hordeinfo, CL_HordeInfo, odaproto::svc::HordeInfo);
+		SV_MSG(svc_spree, CL_Spree, odaproto::svc::Spree);
+		SV_MSG(svc_spreebreaker, CL_SpreeBreaker, odaproto::svc::SpreeBreaker);
 		SV_MSG(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
 		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);

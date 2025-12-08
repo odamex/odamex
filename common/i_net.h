@@ -248,6 +248,8 @@ enum svc_t
 	svc_toast,
 	svc_hordeinfo,
 	svc_raisemobj,
+	svc_spree,
+	svc_spreebreaker,
 	svc_netdemocap = 100,  // netdemos - NullPoint
 	svc_netdemostop = 101, // netdemos - NullPoint
 	svc_netdemoloadsnap = 102, // netdemos - NullPoint
