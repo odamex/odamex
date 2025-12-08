@@ -112,9 +112,9 @@ void A_Fall (AActor *actor);
 
 
 void SV_UpdateMonsterRespawnCount();
-void SV_SendRaiseMobj(AActor* source, AActor* corpse);
-void SV_UpdateMobj(AActor* mo);
-void SV_Sound(AActor* mo, byte channel, const char* name, byte attenuation);
+void SV_SendRaiseMobj(const AActor* source, const AActor* corpse);
+void SV_UpdateMobj(const AActor* mo);
+void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation);
 void SV_SpawnMobj(AActor* mobj);
 
 extern bool isFast;

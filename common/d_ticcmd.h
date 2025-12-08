@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -73,7 +73,7 @@ struct ticcmd_t
 		impulse = 0;
 	}
 
-	void serialize(std::string& out)
+	void serialize(std::string& out) const
 	{
 		out.resize(SERIALIZED_SIZE);
 		writeByte(out.begin(), buttons);

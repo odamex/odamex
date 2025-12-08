@@ -43,7 +43,7 @@
 #ifdef _UNLAG_DEBUG_
 #include <list>
 void SV_SpawnMobj(AActor *mo);
-void SV_SendDestroyActor(AActor *mo);
+void SV_SendDestroyActor(const AActor *mo);
 #endif	// _UNLAG_DEBUG_
 
 EXTERN_CVAR(sv_maxunlagtime)

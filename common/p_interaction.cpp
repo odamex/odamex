@@ -83,19 +83,19 @@ void AM_Stop(void);
 void SV_SpawnMobj(AActor *mobj);
 void SV_UpdateFrags(player_t &player);
 void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
-void SV_TouchSpecial(AActor *special, player_t *player);
+void SV_TouchSpecial(const AActor *special, player_t *player);
 ItemEquipVal SV_FlagTouch(player_t &player, team_t f, bool firstgrab);
 void SV_SocketTouch(player_t &player, team_t f);
-void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
-void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, int armorDamage);
-void SV_SendDamageMobj(AActor *target, int pain);
-void SV_UpdateMobj(AActor* mo);
-void SV_ActorTarget(AActor *actor);
+void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill);
+void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage);
+void SV_SendDamageMobj(const AActor *target, int pain);
+void SV_UpdateMobj(const AActor* mo);
+void SV_ActorTarget(const AActor *actor);
 void PickupMessage(AActor *toucher, const char *message);
 void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon);
 
 #ifdef SERVER_APP
-void SV_ShareKeys(card_t card, player_t& player);
+void SV_ShareKeys(card_t card, const player_t& player);
 #endif
 
 static void PersistPlayerDamage(player_t& p)

@@ -54,8 +54,8 @@
 #endif
 #include <p_boomfspec.h>
 
-void SV_UpdateMobj(AActor* mo);
-void SV_UpdateMobjState(AActor* mo);
+void SV_UpdateMobj(const AActor* mo);
+void SV_UpdateMobjState(const AActor* mo);
 
 #define WATER_SINK_FACTOR		3
 #define WATER_SINK_SMALL_FACTOR	4
@@ -70,8 +70,8 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
 void P_ShowSpawns(mapthing2_t* mthing);
 void P_ExplodeMissile(AActor* mo);
 void SV_SpawnMobj(AActor *mobj);
-void SV_SendDestroyActor(AActor *);
-void SV_ExplodeMissile(AActor *);
+void SV_SendDestroyActor(const AActor *);
+void SV_ExplodeMissile(const AActor *);
 void SV_UpdateMonsterRespawnCount();
 
 EXTERN_CVAR(sv_freelook)
@@ -3265,12 +3265,12 @@ void SpawnFlag(mapthing2_t* mthing, team_t flag)
 // Returns true if mo is currently in any player's field of view
 //
 
-bool P_VisibleToPlayers(AActor *mo)
+bool P_VisibleToPlayers(const AActor *mo)
 {
 	if (!mo)
 		return false;
 
-	for (auto& player : players)
+	for (const auto& player : players)
 	{
 		// players aren't considered visible to themselves
 		if (mo->player && mo->player->id == player.id)
@@ -3313,7 +3313,7 @@ void P_SetMobjBaseline(AActor& mo)
 /**
  * @brief Generate flags that lists which fields are different
  */
-uint32_t P_GetMobjBaselineFlags(AActor& mo)
+uint32_t P_GetMobjBaselineFlags(const AActor& mo)
 {
 	uint32_t flags = 0;
 
