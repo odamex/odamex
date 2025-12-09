@@ -554,6 +554,8 @@ odaproto::svc::UpdateMobj SVC_UpdateMobj(AActor& mobj)
 	return msg;
 }
 
+EXTERN_CVAR(sv_sharekeys);
+
 odaproto::svc::SpawnPlayer SVC_SpawnPlayer(player_t& player)
 {
 	odaproto::svc::SpawnPlayer msg;
@@ -575,6 +577,13 @@ odaproto::svc::SpawnPlayer SVC_SpawnPlayer(player_t& player)
 		// This happens with cl_autorecord
 		// Just fake a position for now
 		act->set_netid(limits::MAXSHORT);
+	}
+
+
+	if (sv_sharekeys)
+	{
+		const uint32_t packedcards = PackBoolArray(player.cards, NUMCARDS);
+		msg.set_cards(packedcards);
 	}
 
 	return msg;

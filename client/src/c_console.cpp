@@ -1215,15 +1215,14 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 // Prints the given string to stdout, stripping away any color markup
 // escape codes.
 //
-static size_t C_PrintStringStdOut(const char* str)
+static size_t C_PrintStringStdOut(std::string str)
 {
-	std::string sanitized_str(str);
-	StripColorCodes(sanitized_str);
+	StripColorCodes(str);
 
-	fmt::print("{}", sanitized_str);
+	fmt::print("{}", str);
 	fflush(stdout);
 
-	return sanitized_str.length();
+	return str.length();
 }
 
 
@@ -1351,7 +1350,7 @@ size_t C_BasePrint(const int printlevel, const char* color_code, const std::stri
 	}
 
 	if (print_stdout && gamestate != GS_FORCEWIPE)
-		C_PrintStringStdOut(newStr.c_str());
+		C_PrintStringStdOut(newStr);
 
 	if (!con_coloredmessages)
 		StripColorCodes(newStr);

@@ -99,20 +99,20 @@ char *TimeStamp()
 	return stamp;
 }
 
-static size_t PrintString(int printlevel, const std::string& str)
+static size_t PrintString(int printlevel, std::string str)
 {
-	std::string sanitized_str(str);
-	StripColorCodes(sanitized_str);
+	StripColorCodes(str);
 
-	fwrite(sanitized_str.data(), 1, sanitized_str.length(), stdout);
+	fwrite(str.data(), 1, str.length(), stdout);
+	fflush(stdout);
 
 	if (LOG.is_open())
 	{
-		LOG << sanitized_str;
+		LOG << str;
 		LOG.flush();
 	}
 
-	return sanitized_str.length();
+	return str.length();
 }
 
 extern bool gameisdead;

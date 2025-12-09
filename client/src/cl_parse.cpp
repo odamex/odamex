@@ -87,6 +87,7 @@ EXTERN_CVAR(mute_enemies)
 EXTERN_CVAR(mute_spectators)
 EXTERN_CVAR(show_messages)
 EXTERN_CVAR(co_novileghosts)
+EXTERN_CVAR(sv_sharekeys)
 
 extern std::string digest;
 extern bool forcenetdemosplit;
@@ -1152,8 +1153,15 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 
 	// give all cards in death match mode
 	if (!G_IsCoopGame())
+	{
 		for (size_t i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
+	}
+	else if (sv_sharekeys)
+	{
+		const uint32_t cards = msg->cards();
+		UnpackBoolArray(p->cards, NUMCARDS, cards);
+	}
 
 	if (p->id == consoleplayer_id)
 	{
