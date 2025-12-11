@@ -1638,7 +1638,7 @@ odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde)
 	return msg;
 }
 
-odaproto::svc::Spree SVC_Spree(const spreeRecord_t& spree)
+odaproto::svc::Spree SVC_Spree(const SpreeRecord_t& spree)
 {
 	odaproto::svc::Spree msg;
 
@@ -1649,7 +1649,7 @@ odaproto::svc::Spree SVC_Spree(const spreeRecord_t& spree)
 	return msg;
 }
 
-odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const spreeBreaker_t& breaker, const int level, SpreeBreakerType breakerType)
+odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, const int level, SpreeBreakerType breakerType)
 {
 	odaproto::svc::SpreeBreaker msg;
 

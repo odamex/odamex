@@ -2888,7 +2888,7 @@ static void CL_Spree(const odaproto::svc::Spree* msg)
 
 static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
 {
-	spreeBreaker_t breaker;
+	SpreeBreaker_t breaker;
 
 	breaker.spreeEndedPlayerId = msg->victim_pid();
 	breaker.spreeEndedName = msg->victim_name();

@@ -27,19 +27,20 @@
 #include "g_multikill.h"
 #include "g_spree.h"
 #include "oscanner.h"
+#include "gstrings.h"
 
-static void ParseKillInterval(OScanner& os, int& killinterval)
+static void ParseSpreeKillInterval(OScanner& os, int& killinterval)
 {
-	os.assertTokenIs("killinterval");
+	os.assertTokenIs("spreekillinterval");
 	os.mustScan();
 	os.assertTokenIs("=");
 	os.mustScanInt();
 	killinterval = os.getTokenInt();
 }
 
-static void ParseDamageInterval(OScanner& os, int& damageinterval)
+static void ParseSpreeDamageInterval(OScanner& os, int& damageinterval)
 {
-	os.assertTokenIs("damageinterval");
+	os.assertTokenIs("spreedamageinterval");
 	os.mustScan();
 	os.assertTokenIs("=");
 	os.mustScanInt();
@@ -48,11 +49,115 @@ static void ParseDamageInterval(OScanner& os, int& damageinterval)
 
 static void ParseMultiInterval(OScanner& os, int& multikillinterval)
 {
-	os.assertTokenIs("multitimeinterval");
+	os.assertTokenIs("multikillinterval");
 	os.mustScan();
 	os.assertTokenIs("=");
 	os.mustScanInt();
 	multikillinterval = os.getTokenInt();
+}
+
+static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
+{
+	os.assertTokenIs("spree");
+	os.mustScan();
+	os.mustScanInt();
+	int newLevel = os.getTokenInt();
+
+	if (newLevel <= spreeLevels.size() || newLevel > spreeLevels.size() + 1 ||
+	    newLevel <= 0)
+		os.error("Spree levels must be defined in ascending order.");
+
+	os.mustScan();
+	os.assertTokenIs("{");
+	os.mustScan();
+	Spree_s spree = Spree_s();
+	while (!os.compareToken("}"))
+	{
+		if (os.compareTokenNoCase("color"))
+		{
+			os.mustScan();
+			os.assertTokenIs("=");
+			os.mustScanInt();
+			spree.color = static_cast<EColorRange>(os.getTokenInt());
+		}
+		else if (os.compareTokenNoCase("text"))
+		{
+			os.mustScan();
+			os.assertTokenIs("=");
+			os.mustScan();
+			spree.spreeText = os.getToken();
+		}
+		else if (os.compareTokenNoCase("broadcasttext"))
+		{
+			os.mustScan();
+			os.assertTokenIs("=");
+			os.mustScan();
+			std::string broadcastText = os.getToken();
+			// Use LANGUAGE lump for this string.
+			if (broadcastText.find_first_of("$") == 0)
+					{
+				// This is a reference to a string.
+				spree.spreeBroadcastText = GStrings(broadcastText.substr(1));
+			}
+			else
+			{
+				spree.spreeBroadcastText = broadcastText;
+			}
+		}
+		else
+		{
+			// We don't know what this token is.
+			std::string buffer = fmt::sprintf("Unknown Spree Token \"%s\".", os.getToken());
+			os.warning(buffer);
+		}
+		os.mustScan();
+	}
+
+	spreeLevels.push_back(spree);
+}
+
+static void ParseMulti(OScanner& os, std::vector<MultiKillLevel_s>& multiKillLevels)
+{
+	os.assertTokenIs("multi");
+	os.mustScan();
+	os.mustScanInt();
+	int newLevel = os.getTokenInt();
+
+	if (newLevel <= multiKillLevels.size() || newLevel > multiKillLevels.size() + 1 ||
+	    newLevel <= 1)
+		os.error("Multi kill levels must be defined in ascending order.");
+
+	os.mustScan();
+	os.assertTokenIs("{");
+	os.mustScan();
+	MultiKillLevel_s level = MultiKillLevel_s();
+	while (!os.compareToken("}"))
+	{
+		if (os.compareTokenNoCase("color"))
+		{
+			os.mustScan();
+			os.assertTokenIs("=");
+			os.mustScanInt();
+			level.color = static_cast<EColorRange>(os.getTokenInt());
+		}
+		else if (os.compareTokenNoCase("text"))
+		{
+			os.mustScan();
+			os.assertTokenIs("=");
+			os.mustScan();
+			level.multikilltext = os.getToken();
+		}
+		else
+		{
+			// We don't know what this token is.
+			std::string buffer =
+			    fmt::sprintf("Unknown Multi Kill Token \"%s\".", os.getToken());
+			os.warning(buffer);
+		}
+		os.mustScan();
+	}
+
+	multiKillLevels.push_back(level);
 }
 
 static void ParseSpreeDef(const int lump, const OLumpName name)
@@ -68,32 +173,45 @@ static void ParseSpreeDef(const int lump, const OLumpName name)
 
 	// Reset everything before parsing
 	MultiKillManager::getInstance().reset();
+	SpreeManager::getInstance().reset();
 
-	int damageinterval = 0;
-	int killinterval = 0;
+	// Spree variables
+	int spreedamageinterval = 0;
+	int spreekillinterval = 0;
 	int multikillinterval = 0;
+
+	std::vector<Spree_s> spreeLevels;
+	std::vector<MultiKillLevel_s> multiKillLevels;
+
+	multiKillLevels.push_back(MultiKillLevel_s()); // Level 0 placeholder
+	multiKillLevels.push_back(MultiKillLevel_s()); // Level 1 placeholder
+
+	std::string repeatingSpreeText = "";
+	std::string spreeEndPlayer = "";
+	std::string spreeEndSelf = "";
+	std::string spreeEndMonster = "";
 
 	while (os.scan())
 	{
-		if (os.compareTokenNoCase("killinterval"))
+		if (os.compareTokenNoCase("spreekillinterval"))
 		{
-			ParseKillInterval(os, killinterval);
+			ParseSpreeKillInterval(os, spreekillinterval);
 		}
-		else if (os.compareTokenNoCase("damageinterval"))
+		else if (os.compareTokenNoCase("spreedamageinterval"))
 		{
-			ParseDamageInterval(os, damageinterval);
+			ParseSpreeDamageInterval(os, spreedamageinterval);
 		}
-		else if (os.compareTokenNoCase("multitimeinterval"))
+		else if (os.compareTokenNoCase("multikillinterval"))
 		{
 			ParseMultiInterval(os, multikillinterval);
 		}
 		else if (os.compareTokenNoCase("spree"))
 		{
-			// ParseSpree(os);
+			ParseSpree(os, spreeLevels);
 		}
 		else if (os.compareTokenNoCase("multi"))
 		{
-			// ParseMulti(os);
+			ParseMulti(os, multiKillLevels);
 		}
 		else
 		{
