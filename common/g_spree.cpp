@@ -56,7 +56,7 @@ SpreeManager::SpreeManager()
 {
 	spreeKillInterval = 5;
 	spreeDamageInterval = 10000;
-	spreeBreaker = {"", -1, TEAM_NONE, "", -1, TEAM_NONE, "", "", CR_GOLD, false, 0, 0};
+	spreeBreaker = SpreeBreaker_t();
 	repeatingSpreeText = "";
 	spreeEndPlayer = "";
 	spreeEndSelf = "";
@@ -72,7 +72,7 @@ void SpreeManager::reset()
 {
 	spreeLevels.clear();
 	spreeRecord.clear();
-	spreeBreaker = {"", -1, TEAM_NONE, "", -1, TEAM_NONE, "", "", CR_GOLD, false, 0, 0};
+	spreeBreaker = SpreeBreaker_t();
 	spreeKillInterval = 5;
 	spreeDamageInterval = 10000;
 	repeatingSpreeText = "";
@@ -89,7 +89,7 @@ void SpreeManager::reset()
 void SpreeManager::clearSprees()
 {
 	spreeRecord.clear();
-	spreeBreaker = {"", -1, TEAM_NONE, "", -1, TEAM_NONE, "", "", CR_GOLD, false, 0, 0};
+	spreeBreaker = SpreeBreaker_t();
 }
 
 //
@@ -154,9 +154,9 @@ int SpreeManager::getHighestSpreeLevel()
 // If higher than the max level, get the highest one.
 // If the array isnt populated, return it empty.
 //
-spree_s SpreeManager::getSpreeLevel(int level)
+Spree_s SpreeManager::getSpreeLevel(int level)
 {
-	spree_s spree = {"", "", CR_GRAY};
+	Spree_s spree = Spree_s();
 
 	if (getHighestSpreeLevel() <= -1)
 		return spree;
@@ -173,7 +173,7 @@ spree_s SpreeManager::getSpreeLevel(int level)
 // Creates a new spree list and interval,
 // as if reading a SPREEDEF to create a new multi kill level paradigm.
 //
-void SpreeManager::setSpreeLevels(const std::vector<spree_s> sprees, int newKillInterval,
+void SpreeManager::setSpreeLevels(const std::vector<Spree_s> sprees, int newKillInterval,
                                   int newDamageInterval)
 {
 	spreeLevels = sprees;
@@ -184,9 +184,9 @@ void SpreeManager::setSpreeLevels(const std::vector<spree_s> sprees, int newKill
 //
 // SpreeManager::getSpreeBreaker
 //
-// Gets the current spreeBreaker_t object.
+// Gets the current SpreeBreaker_t object.
 //
-spreeBreaker_t SpreeManager::getSpreeBreaker()
+SpreeBreaker_t SpreeManager::getSpreeBreaker()
 {
 	return spreeBreaker;
 }
@@ -194,12 +194,12 @@ spreeBreaker_t SpreeManager::getSpreeBreaker()
 //
 // SpreeManager::setRawSpreeBreaker
 //
-// Sets the current spreeBreaker_t object from a raw state,
+// Sets the current SpreeBreaker_t object from a raw state,
 // where we don't know the conditions, we just know the breaker information.
 // 
 // Use this to set a client's spree breaker info when receiving it from the server.
 //
-void SpreeManager::setRawSpreeBreaker(spreeBreaker_t& breaker, const int level, SpreeBreakerType breakerType)
+void SpreeManager::setRawSpreeBreaker(SpreeBreaker_t& breaker, const int level, SpreeBreakerType breakerType)
 {
 	player_t& victim = idplayer(breaker.spreeEndedPlayerId);
 
@@ -209,7 +209,7 @@ void SpreeManager::setRawSpreeBreaker(spreeBreaker_t& breaker, const int level, 
 	breaker.spreeEndedTeam = victim.userinfo.team;
 	breaker.spreeEnderTeam = TEAM_NONE;
 
-	spree_s spreeLevel = getSpreeLevel(level);
+	Spree_s spreeLevel = getSpreeLevel(level);
 
 	breaker.spreeEnded = spreeLevel.spreeText;
 	breaker.spreeEndedColor = spreeLevel.color;
@@ -246,7 +246,7 @@ void SpreeManager::setRawSpreeBreaker(spreeBreaker_t& breaker, const int level, 
 // SpreeManager::setSpreeBreaker
 //
 // Handles logic of what kind of breaker it is,
-// then sets the current spreeBreaker_t object.
+// then sets the current SpreeBreaker_t object.
 //
 void SpreeManager::setSpreeBreaker(AActor* source, player_t* target)
 {
@@ -277,7 +277,7 @@ void SpreeManager::setSpreeBreaker(AActor* source, player_t* target)
 		level = getSpreeLevelByKills(points);
 	}
 
-	spree_s spreeLevel = getSpreeLevel(level);
+	Spree_s spreeLevel = getSpreeLevel(level);
 
 	std::string enderName = "";
 	int enderPlayerId = 0;
@@ -316,7 +316,7 @@ void SpreeManager::setSpreeBreaker(AActor* source, player_t* target)
 	spreeEnded = spreeLevel.spreeText;
 	spreeEndedColor = spreeLevel.color;
 
-	spreeBreaker_t breaker = {endedPlayerName, endedPlayerId, endedTeam,
+	SpreeBreaker_t breaker = {endedPlayerName, endedPlayerId, endedTeam,
 
 	                         enderName,       enderPlayerId, enderTeam,
 
@@ -470,7 +470,7 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 	if (spreeRecord.find(playerId) == spreeRecord.end())
 	{
 		// Spree record not found, create it (if necessary)
-		spreeRecord_t newRecord;
+		SpreeRecord_t newRecord;
 		newRecord.playerId = playerId;
 		newRecord.playerName = playerName;
 		newRecord.spreeLevel =
@@ -488,7 +488,7 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 	else
 	{
 		// Spree record found, check if we can upgrade
-		spreeRecord_t& record = spreeRecord[playerId];
+		SpreeRecord_t& record = spreeRecord[playerId];
 
 		if (newSpreeLevel > record.spreeLevel)
 		{
@@ -538,14 +538,14 @@ bool SpreeManager::setRawSpree(const int playerId, const int newSpreeLevel, cons
 //
 // Gets a spree record for a player.
 //
-spreeRecord_t SpreeManager::getSpreeRecord(int playerId)
+SpreeRecord_t SpreeManager::getSpreeRecord(int playerId)
 {
 	if (spreeRecord.find(playerId) != spreeRecord.end())
 	{
 		return spreeRecord[playerId];
 	}
 
-	spreeRecord_t record = {"null", -1, 0, {"", "", CR_GRAY}, 0, false};
+	SpreeRecord_t record = {"null", -1, 0, {"", "", CR_GRAY}, 0, false};
 
 	return record;
 }
@@ -566,7 +566,7 @@ void SpreeManager::expireOldSprees()
 
 	for (auto& it : spreeRecord)
 	{
-		spreeRecord_t& record = it.second;
+		SpreeRecord_t& record = it.second;
 
 		if (::gametic - record.spreeStartTic > 4 * TICRATE ||
 		    record.spreeStartTic > ::gametic)
@@ -581,9 +581,9 @@ void SpreeManager::expireOldSprees()
 //
 // Gets the latest spree record excluding the current player.
 //
-spreeRecord_t SpreeManager::getLatestSpreeRecord(int notPlayerId)
+SpreeRecord_t SpreeManager::getLatestSpreeRecord(int notPlayerId)
 {
-	spreeRecord_t record = {"null", -1, 0, {"", "", CR_GRAY}, 0, false};
+	SpreeRecord_t record = {"null", -1, 0, {"", "", CR_GRAY}, 0, false};
 
 	for (auto& it : spreeRecord)
 	{

@@ -1405,7 +1405,7 @@ static void LevelStateHorde(levelStateLines_t& lines)
 	lines.lucent = lucentFade(tics, TICRATE * 3, TICRATE * 4);
 }
 
-void DisplaySmallSpreeBreaker(spreeBreaker_t breaker)
+void DisplaySmallSpreeBreaker(SpreeBreaker_t breaker)
 {
 	smallSpreeLine_t line;
 
@@ -1491,7 +1491,7 @@ void DisplaySmallSpreeBreaker(spreeBreaker_t breaker)
 	::hud_transparency.ForceSet(oldtrans);
 }
 
-void DisplayPlayerNormalSpree(spreeRecord_t record)
+void DisplayPlayerNormalSpree(SpreeRecord_t record)
 {
 	// We handle "still dominating" sprees elsewhere.
 	if (record.stillDominating)
@@ -1525,7 +1525,7 @@ void DisplayPlayerNormalSpree(spreeRecord_t record)
 	V_SetFont("SMALLFONT");
 }
 
-void DisplaySmallSpree(spreeRecord_t record)
+void DisplaySmallSpree(SpreeRecord_t record)
 {
 	smallSpreeLine_t line;
 
@@ -1579,7 +1579,7 @@ void SpreeHud()
 	// As big text
 	const player_t& p = displayplayer();
 
-	spreeRecord_t spree_r = manager.getSpreeRecord(p.id);
+	SpreeRecord_t spree_r = manager.getSpreeRecord(p.id);
 
 	// Main spree text
 	if (spree_r.playerId != -1 && !spree_r.stillDominating)
@@ -1589,8 +1589,8 @@ void SpreeHud()
 
 	// If we're not still dominating, check if someone else has a spree.
 	// We'll get the spree breaker as well, to compare and see which one to display.
-	spreeRecord_t other_spree_r = manager.getLatestSpreeRecord(p.id);
-	spreeBreaker_t global_spree_breaker = manager.getSpreeBreaker();
+	SpreeRecord_t other_spree_r = manager.getLatestSpreeRecord(p.id);
+	SpreeBreaker_t global_spree_breaker = manager.getSpreeBreaker();
 
 	bool otherPlayerValid = false;
 	bool spreeBreakerValid = false;

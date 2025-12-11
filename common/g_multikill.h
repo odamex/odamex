@@ -33,6 +33,11 @@ struct MultiKillLevel_s
 {
 	std::string multikilltext;
 	EColorRange color;
+	MultiKillLevel_s() : multikilltext(""), color(CR_GRAY) { }
+	MultiKillLevel_s(std::string MultiKillText, EColorRange Color)
+	    : multikilltext(MultiKillText), color(Color)
+	{
+	}
 };
 
 class MultiKillManager
