@@ -424,9 +424,22 @@ bool P_IsCompatibleLockedDoorLine(const short special)
 	if (map_format.getZDoom())
 		return false;
 
+	if (special >= GenLockedBase && special < GenDoorBase)
+		return true;
+
 	return special == 26 || special == 27 || special == 28 || special == 32 ||
 	       special == 33 || special == 34 || special == 99 || special == 133 ||
-		   special == 134 || special == 135 || special == 136 || special == 137;
+	       special == 134 || special == 135 || special == 136 || special == 137;
+}
+
+bool P_IsCompatibleMultiKeyDoorLine(const short special)
+{
+	if (map_format.getZDoom())
+		return false;
+
+	const int lock = (special & LockedKey) >> LockedKeyShift;
+
+	return lock == 0 || lock == 7;
 }
 
 bool P_IsCompatibleBlueDoorLine(const short special)

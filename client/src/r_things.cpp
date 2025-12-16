@@ -106,7 +106,7 @@ int 			newvissprite;
 //
 void R_ClearSprites()
 {
-	vissprite_p = vissprites;
+	vissprite_p = firstvissprite;
 }
 
 
@@ -116,11 +116,13 @@ void R_ClearSprites()
 vissprite_t *R_NewVisSprite()
 {
 	if (vissprite_p == lastvissprite) {
+		int firstvisspritenum = firstvissprite - vissprites;
 		int prevvisspritenum = vissprite_p - vissprites;
 
 		MaxVisSprites *= 2;
 		vissprites = (vissprite_t *)M_Realloc (vissprites, MaxVisSprites * sizeof(vissprite_t));
 		lastvissprite = &vissprites[MaxVisSprites];
+		firstvissprite = &vissprites[firstvisspritenum];
 		vissprite_p = &vissprites[prevvisspritenum];
 		DPrintFmt("MaxVisSprites increased to {}\n", MaxVisSprites);
 	}
@@ -924,20 +926,22 @@ static int STACK_ARGS sv_compare(const void *arg1, const void *arg2)
 
 void R_SortVisSprites()
 {
-	vsprcount = vissprite_p - vissprites;
+	vsprcount = vissprite_p - firstvissprite;
 
 	if (!vsprcount)
 		return;
 
 	if (spritesorter_size < MaxVisSprites)
 	{
-		delete [] spritesorter;
+		if (spritesorter != NULL)
+			delete [] spritesorter;
 		spritesorter = new vissprite_t*[MaxVisSprites];
 		spritesorter_size = MaxVisSprites;
 	}
 
-	for (int i = 0; i < vsprcount; i++)
-		spritesorter[i] = vissprites + i;
+	vissprite_t* spr = firstvissprite;
+	for (int i = 0; i < vsprcount; i++, spr++)
+		spritesorter[i] = spr;
 
 	qsort(spritesorter, vsprcount, sizeof(vissprite_t *), sv_compare);
 }
@@ -1021,7 +1025,7 @@ void R_DrawSprite (vissprite_t *spr)
 	// (pointer check was originally nonportable
 	// and buggy, by going past LEFT end of array):
 
-	for (ds = ds_p ; ds-- > drawsegs ; )  // new -- killough
+	for (ds = ds_p ; ds-- > firstdrawseg ; )  // new -- killough
 	{
 		// determine if the drawseg obscures the sprite
 		if (ds->x1 > spr->x2 || ds->x2 < spr->x1 ||
@@ -1038,8 +1042,8 @@ void R_DrawSprite (vissprite_t *spr)
 		segscale2 = MIN<int>(ds->scale1, ds->scale2);
 
 		// check if the seg is in front of the sprite
-		if (segscale1 < spr->yscale ||
-			(segscale2 < spr->yscale && !R_PointOnSegSide(spr->gx, spr->gy, ds->curline)))
+		if (!(!ds->curline) && (segscale1 < spr->yscale ||
+			(segscale2 < spr->yscale && !R_PointOnSegSide(spr->gx, spr->gy, ds->curline))))
 		{
 			// masked mid texture?
 			if (ds->midposts)
@@ -1084,8 +1088,10 @@ void R_DrawMasked (void)
 
 	R_SortVisSprites ();
 
-	while (vsprcount > 0)
-		R_DrawSprite(spritesorter[--vsprcount]);
+	for (int i = vsprcount; i > 0; i--)
+	{
+		R_DrawSprite(spritesorter[i-1]);
+	}
 
 	// render any remaining masked mid textures
 
@@ -1095,7 +1101,7 @@ void R_DrawMasked (void)
 
 	//		for (ds=ds_p-1 ; ds >= drawsegs ; ds--)    old buggy code
 
-	for (ds=ds_p ; ds-- > drawsegs ; )	// new -- killough
+	for (ds=ds_p ; ds-- > firstdrawseg ; )	// new -- killough
 		if (ds->midposts)
 			R_RenderMaskedSegRange(ds, ds->x1, ds->x2);
 

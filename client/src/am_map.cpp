@@ -940,6 +940,15 @@ void AM_doFollowPlayer()
 		m_ll.y + m_wh.y);
 }
 
+struct
+{
+	std::array<uint8_t, 3> reddoor;
+	std::array<uint8_t, 3> bluedoor;
+	std::array<uint8_t, 3> yellowdoor;
+	std::array<uint8_t, 3> multidoor;
+} doorColors;
+
+
 //
 // Updates on Game Tick
 //
@@ -961,6 +970,71 @@ void AM_Ticker()
 	else
 		bossglow = 0;
 
+	const std::array<uint8_t,3> baseDoorColor = {
+		gameinfo.currentAutomapColors.LockedColor.rgb.getr(),
+		gameinfo.currentAutomapColors.LockedColor.rgb.getg(),
+		gameinfo.currentAutomapColors.LockedColor.rgb.getb()
+	};
+
+	if (am_usecustomcolors || am_showlocked)
+	{
+		const auto lerp = [](uint8_t a, uint8_t b, int t, int max) -> uint8_t
+		{
+			return static_cast<uint8_t>(a + (b - a) * t / max);
+		};
+
+		const auto lerp3 = [&lerp](const std::array<uint8_t,3>& a,
+		                           const std::array<uint8_t,3>& b,
+		                           int t, int max)
+		{
+			return std::array<uint8_t, 3>{
+				lerp(a[0], b[0], t, max),
+				lerp(a[1], b[1], t, max),
+				lerp(a[2], b[2], t, max)
+			};
+		};
+
+		const auto pulse = [&baseDoorColor, &lerp3](const std::array<uint8_t, 3>& color) -> std::array<uint8_t, 3>
+		{
+			if (lockglow < 30)
+			{
+				return lerp3(baseDoorColor, color, lockglow, 30);
+			}
+			else if (lockglow < 60)
+			{
+				return lerp3(baseDoorColor, color, 60 - lockglow, 30);
+			}
+			else
+			{
+				return baseDoorColor;
+			}
+		};
+
+		static constexpr std::array<uint8_t, 3> red = {255, 0, 0};
+		static constexpr std::array<uint8_t, 3> blue = {0, 0, 255};
+		static constexpr std::array<uint8_t, 3> yellow = {255, 255, 0};
+
+		doorColors.reddoor    = pulse(red);
+		doorColors.bluedoor   = pulse(blue);
+		doorColors.yellowdoor = pulse(yellow);
+
+		static constexpr std::array<std::array<uint8_t,3>, 3> seq = {
+			red, blue, yellow
+		};
+
+		const int segment = (lockglow / 30) % 3;
+		const int next    = (segment + 1) % 3;
+		const int t       = lockglow % 30;
+
+		doorColors.multidoor = lerp3(seq[segment], seq[next], t, 30);
+	}
+	else
+	{
+		doorColors.reddoor    = baseDoorColor;
+		doorColors.bluedoor   = baseDoorColor;
+		doorColors.yellowdoor = baseDoorColor;
+		doorColors.multidoor  = baseDoorColor;
+	}
 }
 
 //
@@ -1381,49 +1455,56 @@ void AM_drawWalls()
 					AM_drawMline(&l, gameinfo.currentAutomapColors.TSWallColor);
 				}
 
+				// NES - Locked doors glow from a predefined color to either blue,
+				// yellow, or red.
 				if (map_format.getZDoom())
 				{
-					if (line.special == Door_LockedRaise)
+					if (line.special == Door_LockedRaise || line.special == Generic_Door)
 					{
-						// NES - Locked doors glow from a predefined color to either blue,
-						// yellow, or red.
-						r = gameinfo.currentAutomapColors.LockedColor.rgb.getr();
-						g = gameinfo.currentAutomapColors.LockedColor.rgb.getg();
-						b = gameinfo.currentAutomapColors.LockedColor.rgb.getb();
-
-						if (am_usecustomcolors || am_showlocked)
+						const short lock = line.special == Door_LockedRaise ? line.args[3] : line.args[4];
+						switch (lock)
 						{
-							if (line.args[3] == (zk_blue_card | zk_blue))
-							{
-								rdif = (0 - r) / 30;
-								gdif = (0 - g) / 30;
-								bdif = (255 - b) / 30;
-							}
-							else if (line.args[3] == (zk_yellow_card | zk_yellow))
-							{
-								rdif = (255 - r) / 30;
-								gdif = (255 - g) / 30;
-								bdif = (0 - b) / 30;
-							}
-							else
-							{
-								rdif = (255 - r) / 30;
-								gdif = (0 - g) / 30;
-								bdif = (0 - b) / 30;
-							}
-
-							if (lockglow < 30)
-							{
-								r += static_cast<int>(rdif) * lockglow;
-								g += static_cast<int>(gdif) * lockglow;
-								b += static_cast<int>(bdif) * lockglow;
-							}
-							else if (lockglow < 60)
-							{
-								r += static_cast<int>(rdif) * (60 - lockglow);
-								g += static_cast<int>(gdif) * (60 - lockglow);
-								b += static_cast<int>(bdif) * (60 - lockglow);
-							}
+							case zk_blue_card:
+							case zk_blue:
+							case zk_blue_skull:
+							case zk_bluex:
+								r = doorColors.bluedoor[0];
+								g = doorColors.bluedoor[1];
+								b = doorColors.bluedoor[2];
+								break;
+							case zk_yellow_card:
+							case zk_yellow:
+							case zk_yellow_skull:
+							case zk_yellowx:
+								r = doorColors.yellowdoor[0];
+								g = doorColors.yellowdoor[1];
+								b = doorColors.yellowdoor[2];
+								break;
+							case zk_red_card:
+							case zk_red:
+							case zk_red_skull:
+							case zk_redx:
+								r = doorColors.reddoor[0];
+								g = doorColors.reddoor[1];
+								b = doorColors.reddoor[2];
+								break;
+							case zk_all:
+							case zk_any:
+							case zk_each_color:
+								r = doorColors.multidoor[0];
+								g = doorColors.multidoor[1];
+								b = doorColors.multidoor[2];
+								break;
+							case zk_none:
+								r = gameinfo.currentAutomapColors.CDWallColor.rgb.getr();
+								g = gameinfo.currentAutomapColors.CDWallColor.rgb.getg();
+								b = gameinfo.currentAutomapColors.CDWallColor.rgb.getb();
+								break;
+							default:
+								r = gameinfo.currentAutomapColors.LockedColor.rgb.getr();
+								g = gameinfo.currentAutomapColors.LockedColor.rgb.getg();
+								b = gameinfo.currentAutomapColors.LockedColor.rgb.getb();
+								break;
 						}
 
 						AM_drawMline(&l, AM_BestColor(pal->basecolors, r, g, b));
@@ -1435,42 +1516,31 @@ void AM_drawWalls()
 					{
 						// NES - Locked doors glow from a predefined color to either blue,
 						// yellow, or red.
-						r = gameinfo.currentAutomapColors.LockedColor.rgb.getr();
-						g = gameinfo.currentAutomapColors.LockedColor.rgb.getg();
-						b = gameinfo.currentAutomapColors.LockedColor.rgb.getb();
-
-						if (am_usecustomcolors || am_showlocked)
+						if (P_IsCompatibleMultiKeyDoorLine(line.special))
+						{
+							r = doorColors.multidoor[0];
+							g = doorColors.multidoor[1];
+							b = doorColors.multidoor[2];
+						}
+						else
 						{
 							if (P_IsCompatibleBlueDoorLine(line.special))
 							{
-								rdif = (0 - r) / 30;
-								gdif = (0 - g) / 30;
-								bdif = (255 - b) / 30;
+								r = doorColors.bluedoor[0];
+								g = doorColors.bluedoor[1];
+								b = doorColors.bluedoor[2];
 							}
 							else if (P_IsCompatibleYellowDoorLine(line.special))
 							{
-								rdif = (255 - r) / 30;
-								gdif = (255 - g) / 30;
-								bdif = (0 - b) / 30;
+								r = doorColors.yellowdoor[0];
+								g = doorColors.yellowdoor[1];
+								b = doorColors.yellowdoor[2];
 							}
 							else
 							{
-								rdif = (255 - r) / 30;
-								gdif = (0 - g) / 30;
-								bdif = (0 - b) / 30;
-							}
-
-							if (lockglow < 30)
-							{
-								r += static_cast<int>(rdif) * lockglow;
-								g += static_cast<int>(gdif) * lockglow;
-								b += static_cast<int>(bdif) * lockglow;
-							}
-							else if (lockglow < 60)
-							{
-								r += static_cast<int>(rdif) * (60 - lockglow);
-								g += static_cast<int>(gdif) * (60 - lockglow);
-								b += static_cast<int>(bdif) * (60 - lockglow);
+								r = doorColors.reddoor[0];
+								g = doorColors.reddoor[1];
+								b = doorColors.reddoor[2];
 							}
 						}
 

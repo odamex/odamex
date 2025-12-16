@@ -72,7 +72,7 @@ enum spritenum_t: int32_t
     SPR_WPGF,
 
     SPR_CARE,
-	SPR_LIVE,
+	SPR_O1UP,
 	SPR_RSTM,
     // ------------------------------------------------------ //
 	SPR_TROO = 0,
@@ -338,8 +338,16 @@ enum statenum_t: int32_t
 	S_WPGF2,
 
 	S_CARE, // Horde - Care Package
-	S_LIVES,// Horde - Extra Life Power Up
+	S_O1UP, // Horde - Extra Life Power Up
+	S_O1UP2,
+	S_O1UP3,
+	S_O1UP4,
+	S_O1UP5,
+	S_O1UP6,
 	S_RES,  // Horde - Resurrect Power Up
+	S_RES2,
+	S_RES3,
+	S_RES4,
 
 	S_NOWEAPONUP,
 	S_NOWEAPONDOWN,
@@ -1482,6 +1490,10 @@ enum mobjtype_t: int32_t {
     MT_NODE,        //Added by MC:
     MT_WATERZONE,
     MT_SECRETTRIGGER,
+    MT_SKYVIEWPOINT,
+    MT_SKYPICKER,
+    MT_SECTORSILENCER,
+
 
     // -----------------------------------
     //    [Toke - CTF]

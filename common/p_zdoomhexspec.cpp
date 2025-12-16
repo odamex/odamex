@@ -148,7 +148,7 @@ bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
 		}
 	}
 
-	if (mo && !mo->player && mo->type != MT_AVATAR && !(mo->flags & MF_MISSILE) &&
+	if (mo && !P_IsPlayerOrAvatar(*mo) && !(mo->flags & MF_MISSILE) &&
 	    !(line->flags & ML_MONSTERSCANACTIVATE) &&
 	    (!(activationType & ML_SPAC_MCROSS) || !(lineActivation & ML_SPAC_MCROSS)))
 	{

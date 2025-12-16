@@ -2024,7 +2024,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 		if (thing->flags & MF_MISSILE)
 			return;
 
-		if (map_format.getZDoom() && !thing->player && thing->type != MT_AVATAR &&
+		if (map_format.getZDoom() && !P_IsPlayerOrAvatar(*thing) &&
 		    !(line->flags & ML_MONSTERSCANACTIVATE))
 			return;
 	}
@@ -2077,7 +2077,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 	if(!bossaction && thing)
 	{
 		// Switches that other things can activate.
-		if (!thing->player && thing->type != MT_AVATAR)
+		if (!P_IsPlayerOrAvatar(*thing))
 		{
 			// not for monsters?
 			if (map_format.getZDoom() && !(line->flags & ML_MONSTERSCANACTIVATE))
@@ -2150,7 +2150,7 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 			return false;
 
 		// Switches that other things can activate.
-		if (!thing->player && thing->type != MT_AVATAR)
+		if (!P_IsPlayerOrAvatar(*thing))
 		{
 			// not for monsters?
 			if (!(line->flags & ML_MONSTERSCANACTIVATE))

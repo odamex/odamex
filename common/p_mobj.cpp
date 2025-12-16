@@ -2999,6 +2999,19 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		::level.detected_gametype = GM_HORDE;
 	}
 
+	if (mthing->type == 9081)
+	{
+		type = MT_SKYPICKER;
+	}
+	else if (mthing->type == 9080)
+	{
+		type = MT_SKYVIEWPOINT;
+	}
+	else if (mthing->type == 9082)
+	{
+		type = MT_SECTORSILENCER;
+	}
+
 	// [RH] Determine if it is an old ambient thing, and if so,
 	//		map it to MT_AMBIENT with the proper parameter.
 	if (mthing->type >= 14001 && mthing->type <= 14064)
@@ -3188,6 +3201,49 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	mobj->AddToHash ();
 
 	SV_SpawnMobj(mobj);
+
+	if (mobj->type == MT_SKYVIEWPOINT)
+	{
+		mobj->angle = mthing->angle;
+		// If this actor has no TID, make it the default sky box
+		if (mobj->tid == 0)
+		{
+			int j;
+
+			for (j = 0; j < numsectors; j++)
+			{
+				if (sectors[j].Skybox == NULL)
+				{
+					sectors[j].Skybox = mobj->ptr();
+				}
+			}
+		}
+	}
+
+	if (mobj->type == MT_SKYPICKER)
+	{
+		sector_t* sector = mobj->subsector->sector;
+		if (mthing->args[0] == 0)
+		{
+			sector->Skybox = AActor::AActorPtr();
+		}
+		else
+			{
+				TActorIterator<AActor> iterator (mthing->args[0]);
+			    AActor* box = iterator.Next();
+
+				if (box->type == MT_SKYVIEWPOINT && box != NULL)
+				{
+				    sector->Skybox = box->ptr();
+				}
+				else
+				{
+					PrintFmt ("Can't find SkyViewpoint {} for sector {}\n", mthing->args[0],
+				           sector - sectors);
+				}
+			}
+			mobj->Destroy ();
+	}
 
 	if ((mthing->type >= 9992 && mthing->type <= 9999) ||
 		(mthing->type >= 9982 && mthing->type <= 9983)) {

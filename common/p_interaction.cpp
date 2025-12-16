@@ -1199,7 +1199,7 @@ void P_GiveSpecial(player_t *player, AActor *special)
 		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_CAREPACKAGE, false);
 			break;
 
-		case SPR_LIVE:
+		case SPR_O1UP:
 		    // Award an extra life to the player who collects this
 		    P_AwardExtraLifePowerUp(player);
 		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_EXTRALIFE, false);
@@ -1369,7 +1369,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 		return;
 
 	// Touchers that aren't players or avatars need not apply.
-	if (!toucher->player && toucher->type != MT_AVATAR)
+	if (!P_IsPlayerOrAvatar(*toucher))
 		return;
 
 	if (predicting)

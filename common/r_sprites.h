@@ -25,7 +25,7 @@
 
 extern int MaxVisSprites;
 
-extern vissprite_t *vissprites;
+extern vissprite_t *vissprites, *firstvissprite;
 
 extern OHashTable<int32_t, spritedef_t> sprites;
 extern int numsprites;
