@@ -744,11 +744,16 @@ void HordeState::tick()
 				recipe = m_bossRecipe;
 				recipe.count = m_bossRecipe.totalCount - int(m_bosses.size());
 				int alive = int(countLivingBosses());
-				if (recipe.count <= recipe.limit - alive)
+				if (recipe.limit)
 				{
-					m_bossRecipe.limit = 0;
+					if (recipe.count <= 0)
+					{
+						m_bossRecipe.limit = 0;
+						recipe.count = 0;
+					}
+					else
+						recipe.count = clamp(recipe.limit - alive, 0, recipe.count);
 				}
-				recipe.count = MIN(recipe.limit - alive, recipe.count);
 			}
 
 			// Spawn a boss if we don't have one.

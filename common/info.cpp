@@ -7049,7 +7049,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
     100,           // mass
     0,             // damage
     NULL,          // activesound
-    0, // flags (MF_NOBLOCKMAP)
+    MF_NOBLOCKMAP, // flags
 	0,
     S_NULL,         // raisestate
     0x10000,   // translucency
