@@ -21,13 +21,17 @@
 //
 //-----------------------------------------------------------------------------
 
+// We need to call SetProcessInformation to disable power throttling,
+// but the API itself doesn't exist until Windows 8.  Here we set the minimum
+// Windows version to 8.  (Windows Server 2012, BTW)
+#define _WIN32_WINNT 0x0602 // _WIN32_WINNT_WIN8
+#include "win32inc.h"
 
 #include "odamex.h"
 
 #include <stack>
 #include <iostream>
 
-#include "win32inc.h"
 #ifdef _WIN32
     #include "resource.h"
 	#include "mmsystem.h"
@@ -88,12 +92,57 @@ BOOL WINAPI ConsoleHandlerRoutine(DWORD dwCtrlType)
     return true;
 }
 
+class PowerThrottleController
+{
+    public:
+        void Disable(ULONG flag)
+        {
+            PROCESS_POWER_THROTTLING_STATE throttleCommand{};
+            throttleCommand.Version     = PROCESS_POWER_THROTTLING_CURRENT_VERSION;
+            throttleCommand.ControlMask = m_toggledFlags | flag;
+            throttleCommand.StateMask   = 0;
+
+            if (SetProcessInformation(GetCurrentProcess(),
+                                      ProcessPowerThrottling,
+                                      & throttleCommand,
+                                      sizeof(throttleCommand)))
+            {
+                m_toggledFlags |= flag;
+            }
+        }
+
+    protected:
+        // Record the successfully-toggled flags so that we can support successive calls
+        // to SetProcessInformation with a potential mixture of successes and failures,
+        // which is to be expected on Windows versions prior to 11.
+        ULONG m_toggledFlags = 0;
+};
+
+static void DisablePowerThrottling()
+{
+    // Sometime during 2022, Windows 11 was updated to throttle processes' access to
+    // the high-resolution timer, even if processes explicitly requested it.  Throttling
+    // occurs when the process is no longer in the foreground, including when being
+    // obscured by other windows.  When this happens, the server spends excessive time
+    // sleeping in various system API calls, such as kbhit() in the console code and/or
+    // sendto() in the network code.
+    //
+    // Fortunately we can disable this behavior via the SetProcessInformation API.
+
+    PowerThrottleController throttler;
+
+    throttler.Disable(PROCESS_POWER_THROTTLING_EXECUTION_SPEED);
+    throttler.Disable(PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION);
+}
+
 int __cdecl main(int argc, char *argv[])
 {
 	// [AM] Set crash callbacks, so we get something useful from crashes.
 #ifdef NDEBUG
 	I_SetCrashCallbacks();
 #endif
+
+    DisablePowerThrottling();
 
     try
     {
