@@ -1450,7 +1450,7 @@ static void CL_Print(const odaproto::svc::Print* msg)
 	else if (level == PRINT_TEAMCHAT)
 		PrintFmt(level, "{:c}!{}", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_SERVERCHAT)
-		PrintFmt(level, "{:c}{}", TEXTCOLOR_YELLOW, str);
+		PrintFmt(level, "{:s}{}", TEXTCOLOR_YELLOW, str);
 	else
 		PrintFmt(level, "{}", str);
 
