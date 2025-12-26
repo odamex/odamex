@@ -243,7 +243,7 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 	validcount++;
 	spechit.clear();
 
-	StompAlwaysFrags = tmthing->player || tmthing->type == MT_AVATAR ||
+	StompAlwaysFrags = P_IsPlayerOrAvatar(*tmthing) ||
 	                   (level.flags & LEVEL_MONSTERSTELEFRAG) || telefrag;
 
 	// stomp on any things contacted
@@ -437,10 +437,10 @@ bool PIT_CheckLine (line_t *ld)
     {
 		if ((ld->flags &
 		     (ML_BLOCKING | ML_BLOCKEVERYTHING)) || // explicitly blocking everything
-		    (!tmthing->player && tmthing->type != MT_AVATAR && !(tmthing->flags & MF_FRIEND) && (ld->flags & ML_BLOCKMONSTERS)) || // block monsters only
-		    (!tmthing->player && tmthing->type != MT_AVATAR && !(tmthing->flags & MF_FRIEND) && (ld->flags & ML_BLOCKLANDMONSTERS) &&
+		    (!P_IsPlayerOrAvatar(*tmthing) && !(tmthing->flags & MF_FRIEND) && (ld->flags & ML_BLOCKMONSTERS)) || // block monsters only
+		    (!P_IsPlayerOrAvatar(*tmthing) && !(tmthing->flags & MF_FRIEND) && (ld->flags & ML_BLOCKLANDMONSTERS) &&
 		     !(tmthing->flags & MF_FLOAT)) || // [Blair] Block land monsters.
-		    (tmthing->player &&
+		    (P_IsPlayerOrAvatar(*tmthing) &&
 		     (ld->flags & ML_BLOCKPLAYERS))) // [Blair] Block players only
 		{
 			CheckForPushSpecial(ld, 0, tmthing);

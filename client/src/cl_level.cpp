@@ -773,7 +773,7 @@ void G_WorldDone()
 			clusters.findByCluster(levels.findByName(::level.secretmap).cluster) :
 			clusters.findByCluster(levels.findByName(::level.nextmap).cluster);
 
-		if (nextcluster.cluster != level.cluster && sv_gametype == GM_COOP) {
+		if (nextcluster.cluster != level.cluster && sv_gametype == GM_COOP && options.text != "-") {
 			// Only start the finale if the next level's cluster is different
 			// than the current one and we're not in deathmatch.
 			if (!nextcluster.entertext.empty())

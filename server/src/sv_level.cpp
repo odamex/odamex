@@ -178,8 +178,7 @@ EXTERN_CVAR(sv_shufflemaplist)
 
 bool isLastMap()
 {
-	return level.nextmap.empty() ||
-		std::any_of(
+	return std::any_of(
 			forcedlastmaps.entries.begin(), forcedlastmaps.entries.end(),
 			[&](const auto& entry) {
 				return entry.first == level.mapname && (entry.second.empty() || entry.second == level.nextmap);

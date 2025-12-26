@@ -584,13 +584,13 @@ ItemEquipVal P_GivePower(player_t *player, int /*powertype_t*/ power)
 	/*
  * @brief Player grabbed a resurrect player powerup
  */
-static void P_ResurrectPlayerPowerUp(player_t* player)
+static void P_ResurrectPlayerPowerUp(player_t& player)
 {
-	// Not lives game? Nothing to do.
-	if (!G_IsLivesGame())
+	if (!::serverside)
 		return;
 
-	if (!player)
+	// Not lives game? Nothing to do.
+	if (!G_IsLivesGame())
 		return;
 
 	// Grab all the players in game, make a list of their ids, then pick one at random
@@ -598,14 +598,14 @@ static void P_ResurrectPlayerPowerUp(player_t* player)
 	std::vector<int> ingameplayers;
 	for (const auto& p : ingame)
 	{
-		if (p->id != player->id)
+		if (p->id != player.id)
 			ingameplayers.push_back(p->id);
 	}
 
 	if (ingameplayers.empty())
 	{
 		SV_BroadcastPrintFmt("{} tried to resurrect someone, but everyone is alive!\n",
-		                   player->userinfo.netname);
+		                   player.userinfo.netname);
 		return;
 	}
 
@@ -621,8 +621,10 @@ static void P_ResurrectPlayerPowerUp(player_t* player)
 	pl->lives += 1;
 	pl->playerstate = PST_REBORN;
 
+	G_ResetLastPlayer();
+
 	SV_BroadcastPrintFmt("{} has brought {} back into the fight!\n",
-	                   player->userinfo.netname, pl->userinfo.netname);
+	                   player.userinfo.netname, pl->userinfo.netname);
 
 	// Send a res sound directly to this player.
 	MSG_WriteSVC(&pl->client.reliablebuf, SVC_PlayerInfo(*pl));
@@ -635,22 +637,22 @@ static void P_ResurrectPlayerPowerUp(player_t* player)
 /*
  * @brief Player grabbed an extra life powerup
  */
-static void P_AwardExtraLifePowerUp(player_t* player)
+static void P_AwardExtraLifePowerUp(player_t& player)
 {
+	if (!::serverside)
+		return;
+
 	// Not lives game? Nothing to do.
 	if (!G_IsLivesGame())
 		return;
 
-	if (!player)
-		return;
-
 	SV_BroadcastPrintFmt("{} was awarded an extra life!\n",
-	                   player->userinfo.netname);
+	                   player.userinfo.netname);
 
-	player->lives += 1;
-	MSG_WriteSVC(&player->client.reliablebuf, SVC_PlayerInfo(*player));
-	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(*player, SVC_PM_LIVES),
-	                 player->id);
+	player.lives += 1;
+	MSG_WriteSVC(&player.client.reliablebuf, SVC_PlayerInfo(player));
+	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(player, SVC_PM_LIVES),
+	                 player.id);
 }
 
 /**
@@ -1197,15 +1199,17 @@ void P_GiveSpecial(player_t *player, AActor *special)
 		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_CAREPACKAGE, false);
 			break;
 
-		case SPR_LIVE:
+		case SPR_O1UP:
 		    // Award an extra life to the player who collects this
-		    P_AwardExtraLifePowerUp(player);
+		    P_AwardExtraLifePowerUp(*player);
+		    sound = 1;
 		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_EXTRALIFE, false);
 		    break;
 
 		case SPR_RSTM:
 		    // Resurrect a player with this power up
-		    P_ResurrectPlayerPowerUp(player);
+		    P_ResurrectPlayerPowerUp(*player);
+		    sound = 1;
 		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_RESTEAMMATE, false);
 		    break;
 
@@ -1367,7 +1371,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 		return;
 
 	// Touchers that aren't players or avatars need not apply.
-	if (!toucher->player && toucher->type != MT_AVATAR)
+	if (!P_IsPlayerOrAvatar(*toucher))
 		return;
 
 	if (predicting)

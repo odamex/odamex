@@ -54,6 +54,31 @@ struct sfxinfo_struct
 	bool israndom;            // [DE] Whether or not this is an alias for a set of random sounds
 };
 
+enum class amb_type_t
+{
+	NONE,
+    POINT,
+    WORLD,
+};
+
+enum class amb_mode_t
+{
+	NONE,
+    CONTINUOUS,
+    RANDOM,
+    PERIODIC,
+};
+
+inline struct AmbientSound {
+	amb_type_t	type;		// Ambient sound type
+	amb_mode_t	mode;		// Ambient sound mode
+	int			periodmin;	// # of tics between repeats
+	int			periodmax;	// max # of tics for random ambients
+	float		volume;		// relative volume of sound
+	float		attenuation; // Used for distance scaling
+	char		sound[MAX_SNDNAME+1]; // Logical name of sound to play
+} Ambients[256];
+
 // the complete set of sound effects
 inline std::vector<sfxinfo_t> S_sfx;
 

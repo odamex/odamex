@@ -1092,89 +1092,101 @@ void WI_initStats()
     cnt_pause = TICRATE;
 }
 
+static int StatPercent(int statValue, int statValueMax)
+{
+	if (statValueMax > 0)
+	{
+		return (statValue * 100) / statValueMax;
+	}
+	return std::max(1, statValue) * 100;    // Report the case where value == max == 0 as a full success.
+}
+
 void WI_updateStats()
 {
-    if (acceleratestage && sp_state != 10)
-    {
+	const int finalKillPercent   = StatPercent(level.killed_monsters, wminfo.maxkills);
+	const int finalItemPercent   = StatPercent(level.found_items,     wminfo.maxitems);
+	const int finalSecretPercent = StatPercent(level.found_secrets,   wminfo.maxsecret);
+
+	if (acceleratestage && sp_state != 10)
+	{
 		acceleratestage = 0;
-		cnt_kills = (wminfo.maxkills) ? (level.killed_monsters * 100) / wminfo.maxkills : 0;
-		cnt_items = (wminfo.maxitems) ? (level.found_items * 100) / wminfo.maxitems : 0;
-		cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
-		cnt_time = (plrs[me].stime) ? plrs[me].stime / TICRATE : level.time / TICRATE;
-		cnt_par = wminfo.partime / TICRATE;
+
+		cnt_kills  = finalKillPercent;
+		cnt_items  = finalItemPercent;
+		cnt_secret = finalSecretPercent;
+		cnt_time   = (plrs[me].stime) ? plrs[me].stime / TICRATE : level.time / TICRATE;
+		cnt_par    = wminfo.partime / TICRATE;
+
 		S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
 		sp_state = 10;
-    }
-    if (sp_state == 2)
-    {
+	}
+	if (sp_state == 2)
+	{
 		cnt_kills += 2;
 
 		if (!(bcnt&3))
-		    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
-		if (!gameinfo.intermissionCounter || !wminfo.maxkills ||
-		    cnt_kills >= (level.killed_monsters * 100) / wminfo.maxkills)
+		if (!gameinfo.intermissionCounter || cnt_kills >= finalKillPercent)
 		{
-		    cnt_kills = (wminfo.maxkills) ? (level.killed_monsters * 100) / wminfo.maxkills : 0;
-		    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
-		    sp_state++;
+			cnt_kills = finalKillPercent;
+			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			sp_state++;
 		}
-    }
-    else if (sp_state == 4)
-    {
+	}
+	else if (sp_state == 4)
+	{
 		cnt_items += 2;
 
 		if (!(bcnt&3))
-		    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
-		if (!gameinfo.intermissionCounter || !wminfo.maxitems ||
-		    cnt_items >= (level.found_items * 100) / wminfo.maxitems)
+		if (!gameinfo.intermissionCounter || cnt_items >= finalItemPercent)
 		{
-		    cnt_items = (wminfo.maxitems) ? (level.found_items * 100) / wminfo.maxitems : 0;
-		    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
-		    sp_state++;
+			cnt_items = finalItemPercent;
+			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			sp_state++;
 		}
-    }
-    else if (sp_state == 6)
-    {
+	}
+	else if (sp_state == 6)
+	{
 		cnt_secret += 2;
 
 		if (!(bcnt&3))
-		    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
-		if (!gameinfo.intermissionCounter || !wminfo.maxsecret ||
-		    cnt_secret >= (level.found_secrets * 100) / wminfo.maxsecret)
+		if (!gameinfo.intermissionCounter || cnt_secret >= finalSecretPercent)
 		{
-		    cnt_secret = (wminfo.maxsecret) ? (level.found_secrets * 100) / wminfo.maxsecret : 0;
-		    S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
-		    sp_state++;
+			cnt_secret = finalSecretPercent;
+			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
+			sp_state++;
 		}
-    }
-    else if (sp_state == 8)
-    {
+	}
+	else if (sp_state == 8)
+	{
 		if (!(bcnt&3))
-		    S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
 
 		cnt_time += 3;
 
 		if (cnt_time >= plrs[me].stime / TICRATE)
-		    cnt_time = plrs[me].stime / TICRATE;
+			cnt_time = plrs[me].stime / TICRATE;
 
 		cnt_par += 3;
 
 		if (!gameinfo.intermissionCounter || cnt_par >= wminfo.partime / TICRATE)
 		{
-		    cnt_par = wminfo.partime / TICRATE;
+			cnt_par = wminfo.partime / TICRATE;
 
-		    if (cnt_time >= plrs[me].stime / TICRATE)
-		    {
+			if (cnt_time >= plrs[me].stime / TICRATE)
+			{
 			S_Sound (CHAN_INTERFACE, "world/barrelx", 1, ATTN_NONE);
 			sp_state++;
-		    }
+			}
 		}
-    }
-    else if (sp_state == 10)
-    {
+	}
+	else if (sp_state == 10)
+	{
 		if (acceleratestage)
 		{
 			level_pwad_info_t& nextlevel = getLevelInfos().findByName(wbs->next);
@@ -1206,22 +1218,22 @@ void WI_updateStats()
 				background_surface->unlock();
 			}
 
-		    S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
+			S_Sound (CHAN_INTERFACE, "weapons/shotgr", 1, ATTN_NONE);
 
-		    if (gameinfo.flags & GI_MAPxx && (enteranim == nullptr || demoplayback))
+			if (gameinfo.flags & GI_MAPxx && (enteranim == nullptr || demoplayback))
 				WI_initNoState();
-		    else
+			else
 				WI_initShowNextLoc();
 		}
-    }
-    else if (sp_state & 1)
-    {
+	}
+	else if (sp_state & 1)
+	{
 		if (!--cnt_pause)
 		{
-		    sp_state++;
-		    cnt_pause = TICRATE;
+			sp_state++;
+			cnt_pause = TICRATE;
 		}
-    }
+	}
 
 	WI_updateAnimation(state != StatCount);
 }

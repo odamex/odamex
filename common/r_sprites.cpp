@@ -256,6 +256,7 @@ static void R_InitSpriteDefs(std::vector<spriteinfo_t*>& namelist)
 //
 int				MaxVisSprites;
 vissprite_t 	*vissprites;
+vissprite_t		*firstvissprite;
 vissprite_t		*lastvissprite;
 
 
@@ -270,7 +271,7 @@ void R_InitSprites(std::vector<spriteinfo_t*>& sprites)
 
 	M_Free(vissprites);
 
-	vissprites = (vissprite_t *) M_Malloc(MaxVisSprites * sizeof(vissprite_t));
+	firstvissprite = vissprites = (vissprite_t *) M_Malloc(MaxVisSprites * sizeof(vissprite_t));
 	lastvissprite = &vissprites[MaxVisSprites];
 
 	R_InitSpriteDefs (sprites);

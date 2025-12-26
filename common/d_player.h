@@ -718,3 +718,13 @@ typedef struct wbstartstruct_s
 
 	std::vector<wbplayerstruct_s> plyr;
 } wbstartstruct_t;
+
+//
+// P_IsPlayerOrAvatar
+//
+// Returns true if thing is a player or an avatar
+//
+inline bool P_IsPlayerOrAvatar(const AActor& mo)
+{
+	return mo.player != nullptr || mo.type == MT_AVATAR;
+}
