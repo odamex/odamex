@@ -21,7 +21,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include "odamex.h"
 
 #include <stack>
@@ -79,13 +78,56 @@ static HANDLE hEvent;
 
 int ShutdownNow()
 {
-    return (WaitForSingleObject(hEvent, 1) == WAIT_OBJECT_0);
+	return (WaitForSingleObject(hEvent, 1) == WAIT_OBJECT_0);
 }
 
 BOOL WINAPI ConsoleHandlerRoutine(DWORD dwCtrlType)
 {
-    SetEvent(hEvent);
-    return true;
+	SetEvent(hEvent);
+	return true;
+}
+
+class PowerThrottleController
+{
+	public:
+		void Disable(ULONG flag)
+		{
+			PROCESS_POWER_THROTTLING_STATE throttleCommand{};
+			throttleCommand.Version     = PROCESS_POWER_THROTTLING_CURRENT_VERSION;
+			throttleCommand.ControlMask = m_toggledFlags | flag;
+			throttleCommand.StateMask   = 0;
+
+			if (SetProcessInformation(GetCurrentProcess(),
+			                          ProcessPowerThrottling,
+			                          & throttleCommand,
+			                          sizeof(throttleCommand)))
+			{
+				m_toggledFlags |= flag;
+			}
+		}
+
+	protected:
+		// Record the successfully-toggled flags so that we can support successive calls
+		// to SetProcessInformation with a potential mixture of successes and failures,
+		// which is to be expected on Windows versions prior to 11.
+		ULONG m_toggledFlags = 0;
+};
+
+static void DisablePowerThrottling()
+{
+	// Sometime during 2022, Windows 11 was updated to throttle processes' access to
+	// the high-resolution timer, even if processes explicitly requested it.  Throttling
+	// occurs when the process is no longer in the foreground, including when being
+	// obscured by other windows.  When this happens, the server spends excessive time
+	// sleeping in various system API calls, such as kbhit() in the console code and/or
+	// sendto() in the network code.
+	//
+	// Fortunately we can disable this behavior via the SetProcessInformation API.
+
+	PowerThrottleController throttler;
+
+	throttler.Disable(PROCESS_POWER_THROTTLING_EXECUTION_SPEED);
+	throttler.Disable(PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION);
 }
 
 int __cdecl main(int argc, char *argv[])
@@ -95,32 +137,34 @@ int __cdecl main(int argc, char *argv[])
 	I_SetCrashCallbacks();
 #endif
 
-    try
-    {
-        // Handle close box, shutdown and logoff events
-        if (!(hEvent = CreateEvent(NULL, false, false, NULL)))
-            throw CDoomError("Could not create console control event!\n");
+	DisablePowerThrottling();
 
-        if (!SetConsoleCtrlHandler(ConsoleHandlerRoutine, true))
-            throw CDoomError("Could not set console control handler!\n");
+	try
+	{
+		// Handle close box, shutdown and logoff events
+		if (!(hEvent = CreateEvent(NULL, false, false, NULL)))
+			throw CDoomError("Could not create console control event!\n");
 
-        // Disable QuickEdit mode as any text selection will cause all functions
-        // that use stdout (printf etc) to block
-        DWORD lpMode = ENABLE_EXTENDED_FLAGS;
+		if (!SetConsoleCtrlHandler(ConsoleHandlerRoutine, true))
+			throw CDoomError("Could not set console control handler!\n");
 
-        if (!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), lpMode))
-            throw CDoomError("SetConsoleMode failed!\n");
+		// Disable QuickEdit mode as any text selection will cause all functions
+		// that use stdout (printf etc) to block
+		DWORD lpMode = ENABLE_EXTENDED_FLAGS;
 
-        // Fixes icon not showing in titlebar and alt-tab menu under windows 7
-        HANDLE hIcon;
+		if (!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), lpMode))
+			throw CDoomError("SetConsoleMode failed!\n");
 
-        hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
+		// Fixes icon not showing in titlebar and alt-tab menu under windows 7
+		HANDLE hIcon;
 
-        if(hIcon)
-        {
-            SendMessage(GetConsoleWindow(), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
-            SendMessage(GetConsoleWindow(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
-        }
+		hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
+
+		if(hIcon)
+		{
+			SendMessage(GetConsoleWindow(), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+			SendMessage(GetConsoleWindow(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+		}
 
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
 		::Args.SetArgs(argc, argv);
@@ -148,13 +192,13 @@ int __cdecl main(int argc, char *argv[])
 		// Set the timer to be as accurate as possible
 		TIMECAPS tc;
 		if (timeGetDevCaps (&tc, sizeof(tc) != TIMERR_NOERROR))
-			TimerPeriod = 1;	// Assume minimum resolution of 1 ms
+			TimerPeriod = 1;    // Assume minimum resolution of 1 ms
 		else
 			TimerPeriod = tc.wPeriodMin;
 
 		timeBeginPeriod (TimerPeriod);
 
-        // Don't call this on windows!
+		// Don't call this on windows!
 		//atexit (call_terms);
 
 		Z_Init();
