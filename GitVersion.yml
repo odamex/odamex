@@ -1,0 +1,5 @@
+branches:
+  release:
+    regex: ^release[/-]
+    prevent-increment:
+      when-current-commit-tagged: true
