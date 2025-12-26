@@ -434,16 +434,16 @@ void ISDL20MouseInputDevice::resume()
 	mActive = true;
 	reset();
 
-	// [RV] Always use relative mouse mode and 
+	// [RV] Always use relative mouse mode and
 	// force unscaled relative motion across supported SDL versions
 	SDL_SetRelativeMouseMode(SDL_TRUE);
 
 	#if SDL_VERSION_ATLEAST(2, 0, 14)
-			SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_SCALING, "0", SDL_HINT_OVERRIDE);
+		SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_SCALING, "0", SDL_HINT_OVERRIDE);
 	#endif
 
 	#if SDL_VERSION_ATLEAST(2, 26, 0)
-			SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_SYSTEM_SCALE, "0", SDL_HINT_OVERRIDE);
+		SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_SYSTEM_SCALE, "0", SDL_HINT_OVERRIDE);
 	#endif
 
 	SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);

@@ -30,7 +30,9 @@
 #include "m_bbox.h"
 
 #include "p_local.h"
+#include "p_mobj.h"
 #include "r_data.h"
+#include "m_random.h"
 
 // State.
 #include "r_state.h"
@@ -488,7 +490,7 @@ void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx, f
 			usefront = true;
 		else if (bflevel)
 			usefront = false;
-		else if (refx != MINFIXED)
+		else if (refx != limits::MINFIXED)
 			usefront = !P_PointOnLineSide(refx, refy, linedef);
 	}
 
@@ -881,7 +883,7 @@ bool P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
 
 	while (count--)
 	{
-		dist = MAXINT;
+		dist = limits::MAXFIXED;
 		for (intercept_t& intercept : intercepts)
 		{
 			if (intercept.frac < dist)
@@ -898,7 +900,7 @@ bool P_TraverseIntercepts (traverser_t func, fixed_t maxfrac)
 		if ( !func (in) )
 			return false;		// don't bother going farther
 
-		in->frac = MAXINT;
+		in->frac = limits::MAXFIXED;
 	}
 
 	return true;				// everything was traversed
@@ -1194,70 +1196,48 @@ bool P_ActorInFOV(const AActor* origin, const AActor* mo , float f, fixed_t dist
 	return true;
 }
 
-
 //
-// P_RoughTargetSearch
+// RoughMonsterCheck
 // Searches though the surrounding mapblocks for monsters/players
 // based on Hexen's P_RoughMonsterSearch
 //
+// This allows friendlies (and hostiles) to target each other
+//
 // distance is in MAPBLOCKUNITS
 
-static AActor* RoughBlockCheck(AActor* mo, int index, angle_t fov)
+AActor* RoughMonsterCheck(AActor* mo, int index, angle_t fov)
 {
-	AActor* link;
-
-	link = blocklinks[index];
-	while (link)
+	const int bx = index % bmapwidth;
+	const int by = index / bmapwidth;
+	for (AActor* link = blocklinks[index]; link != nullptr; link = link->bmapnode.Next(bx, by))
 	{
 		// skip non-shootable actors
 		if (!(link->flags & MF_SHOOTABLE))
-		{
-			link = link->snext;
 			continue;
-		}
 
-		// skip the projectile's owner
-		if (link == mo->target)
-		{
-			link = link->snext;
+		// skip yourself
+		if (link == mo)
 			continue;
-		}
 
-		// [Blair] Don't target friendlies
-		if (P_IsFriendlyThing(mo->target, link))
-		{
-			link = link->snext;
+		// skip barrels and other shootable but not alive things
+		if (!sentient(link))
 			continue;
-		}
 
-		// [Blair] Don't target spectators
-		if (link->player && link->player->spectator)
-		{
-			link = link->snext;
+		// Don't target things friendly to you.
+		if (P_IsFriendlyThing(mo, link))
 			continue;
-		}
 
-		// [Blair] Don't target teammates
-		if (mo->target->player && link->player &&
-			P_AreTeammates(*mo->target->player, *link->player))
-		{
-			link = link->snext;
+		// Don't target players or spectators (done elsewhere)
+		if (link->player || (link->player && link->player->spectator))
 			continue;
-		}
 
 		// skip actors outside of specified FOV
-		 if (fov > 0 && !P_CheckFov(mo, link, fov))
-		{
-			link = link->snext;
+		if (fov > 0 && !P_CheckFov(mo, link, fov))
 			continue;
-		}
 
 		// skip actors not in line of sight
 		if (!P_CheckSight(mo, link))
-		{
-			link = link->snext;
 			continue;
-		}
 
 		// all good! return it.
 		return link;
@@ -1267,7 +1247,59 @@ static AActor* RoughBlockCheck(AActor* mo, int index, angle_t fov)
 	return NULL;
 }
 
-AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance)
+//
+// RoughTracerCheck
+// Searches though the surrounding mapblocks for monsters/players
+// based on Hexen's P_RoughMonsterSearch
+//
+// Special logic to handle tracers (actor->target is owner of tracer)
+//
+// distance is in MAPBLOCKUNITS
+
+AActor* RoughTracerCheck(AActor* mo, int index, angle_t fov)
+{
+	const int bx = index % bmapwidth;
+	const int by = index / bmapwidth;
+	for (AActor* link = blocklinks[index]; link != nullptr; link = link->bmapnode.Next(bx, by))
+	{
+		// skip non-shootable actors
+		if (!(link->flags & MF_SHOOTABLE))
+			continue;
+
+		// skip the projectile's owner
+		if (link == mo->target)
+			continue;
+
+		// [Blair] Don't target friendlies
+		if (P_IsFriendlyThing(mo->target, link))
+			continue;
+
+		// [Blair] Don't target spectators
+		if (link->player && link->player->spectator)
+			continue;
+
+		// [Blair] Don't target teammates
+		if (mo->target->player && link->player &&
+			P_AreTeammates(*mo->target->player, *link->player))
+			continue;
+
+		// skip actors outside of specified FOV
+		if (fov > 0 && !P_CheckFov(mo, link, fov))
+			continue;
+
+		// skip actors not in line of sight
+		if (!P_CheckSight(mo, link))
+			continue;
+
+		// all good! return it.
+		return link;
+	}
+
+	// couldn't find a valid target
+	return NULL;
+}
+
+AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance, AActor* (*searchFunc)(AActor*, int, angle_t))
 {
 	int blockX;
 	int blockY;
@@ -1285,7 +1317,7 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance)
 
 	if (startX >= 0 && startX < bmapwidth && startY >= 0 && startY < bmapheight)
 	{
-		if ((target = RoughBlockCheck(mo, startY * bmapwidth + startX, fov)))
+		if ((target = searchFunc(mo, startY * bmapwidth + startX, fov)))
 		{ // found a target right away
 			return target;
 		}
@@ -1338,7 +1370,7 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance)
 		// Trace the first block section (along the top)
 		for (; blockIndex <= firstStop; blockIndex++)
 		{
-			if ((target = RoughBlockCheck(mo, blockIndex, fov)))
+			if ((target = searchFunc(mo, blockIndex, fov)))
 			{
 				return target;
 			}
@@ -1346,7 +1378,7 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance)
 		// Trace the second block section (right edge)
 		for (blockIndex--; blockIndex <= secondStop; blockIndex += bmapwidth)
 		{
-			if ((target = RoughBlockCheck(mo, blockIndex, fov)))
+			if ((target = searchFunc(mo, blockIndex, fov)))
 			{
 				return target;
 			}
@@ -1354,7 +1386,7 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance)
 		// Trace the third block section (bottom edge)
 		for (blockIndex -= bmapwidth; blockIndex >= thirdStop; blockIndex--)
 		{
-			if ((target = RoughBlockCheck(mo, blockIndex, fov)))
+			if ((target = searchFunc(mo, blockIndex, fov)))
 			{
 				return target;
 			}
@@ -1362,7 +1394,7 @@ AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance)
 		// Trace the final block section (left edge)
 		for (blockIndex++; blockIndex > finalStop; blockIndex -= bmapwidth)
 		{
-			if ((target = RoughBlockCheck(mo, blockIndex, fov)))
+			if ((target = searchFunc(mo, blockIndex, fov)))
 			{
 				return target;
 			}

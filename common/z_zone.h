@@ -59,6 +59,7 @@ void Z_Free2(void* ptr, const char* file, int line);
 void Z_Discard2(void** ptr, const char* file, int line);
 void Z_ChangeTag2(void* ptr, const zoneTag_e tag, const char* file, int line);
 void Z_ChangeOwner2(void* ptr, void* user, const char* file, int line);
+char* Z_StrDup2(const char* s, const zoneTag_e tag, const char* file, int line);
 
 typedef struct memblock_s
 {
@@ -112,3 +113,4 @@ inline void Z_Discard2(P ptr, const char* file, int line)
 #define Z_Discard(p) Z_Discard2(p,__FILE__,__LINE__)
 #define Z_ChangeTag(p,t) Z_ChangeTag2(p,t,__FILE__,__LINE__)
 #define Z_ChangeOwner(p,u) Z_ChangeOwner2(p,u,__FILE__,__LINE__)
+#define Z_StrDup(s, t) Z_StrDup2(s,t, __FILE__,__LINE__)

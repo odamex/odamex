@@ -31,6 +31,7 @@
 #include "m_random.h"
 #include "r_things.h"
 #include "s_sound.h"
+#include "w_wad.h"
 
 // [RH] particle globals
 int				NumParticles;
@@ -43,7 +44,7 @@ particle_t		*Particles;
 static int	grey1, grey2, grey3, grey4, red, green, blue, yellow, black,
 		   red1, green1, blue1, yellow1, purple, purple1, white,
 		   rblue1, rblue2, rblue3, rblue4, orange, yorange, dred, grey5,
-		   maroon1, maroon2;
+		   maroon1, maroon2, pink;
 
 static const struct ColorList {
 	int *color, r, g, b;
@@ -74,6 +75,7 @@ static const struct ColorList {
 	{&dred,		80,  0,   0  },
 	{&maroon1,	154, 49,  49 },
 	{&maroon2,	125, 24,  24 },
+	{&pink,		255, 112,  185 },
 	{NULL, 0, 0, 0}
 };
 
@@ -133,24 +135,6 @@ void P_DrawSplash2 (int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, i
 //
 // [RH] Particle functions
 //
-#ifndef _MSC_VER
-// inlined with VC++
-particle_t *NewParticle (void)
-{
-	if (!clientside)
-		return NULL;
-
-	particle_t *result = NULL;
-	if (InactiveParticles != NO_PARTICLE)
-	{
-		result = Particles + InactiveParticles;
-		InactiveParticles = result->next;
-		result->next = ActiveParticles;
-		ActiveParticles = result - Particles;
-	}
-	return result;
-}
-#endif
 
 static void MakeFountain (AActor *actor, int color1, int color2)
 {
@@ -186,6 +170,36 @@ static void MakeFountain (AActor *actor, int color1, int color2)
 	}
 }
 
+static void MakeHearts(AActor* actor)
+{
+	if (!clientside)
+		return;
+
+	particle_t* particle;
+
+	if (!(level.time % 5 == 0))
+		return;
+
+	particle = JitterParticle(51);
+
+	if (particle)
+	{
+		angle_t an = M_Random() << (24 - ANGLETOFINESHIFT);
+		fixed_t out = FixedMul(actor->radius, M_Random() << 8);
+
+		particle->x = actor->x + FixedMul(out, finecosine[an]);
+		particle->y = actor->y + FixedMul(out, finesine[an]);
+		particle->z = actor->z + actor->height + FRACUNIT;
+		if (out < actor->radius / 8)
+			particle->velz += FRACUNIT * 10 / 3;
+		else
+			particle->velz += FRACUNIT * 3;
+		particle->accz -= FRACUNIT / 15;
+
+		particle->sprite = W_GetNumForName("FRNDHRT");
+	}
+}
+
 //
 // AddParticle
 //
@@ -212,6 +226,7 @@ particle_t *JitterParticle (int ttl)
 		particle->trans = 255;	// fully opaque
 		particle->ttl = ttl;
 		particle->fade = FADEFROMTTL(ttl);
+		particle->sprite = NO_PARTICLE;
 	}
 	return particle;
 }
@@ -257,6 +272,12 @@ void P_RunEffect (AActor *actor, int effects)
 		int color = (effects & FX_FOUNTAINMASK) >> 15;
 		MakeFountain (actor, *fountainColors[color], *fountainColors[color+1]);
 	}
+
+	if (effects & FX_FRIENDHEARTS)
+	{
+		// Friend hearts
+		MakeHearts(actor);
+	}
 }
 
 void P_ThinkParticles (void)
@@ -286,6 +307,22 @@ void P_ThinkParticles (void)
 		particle->x += particle->velx;
 		particle->y += particle->vely;
 		particle->z += particle->velz;
+
+		if (particle->sprite)
+		{
+			int timefrac = ::level.time % 35;
+			if (timefrac > 16)
+			{
+				particle->accx += FixedMul(-timefrac, FRACUNIT * M_RandomInt(9));
+				particle->accy += FixedMul(-timefrac, FRACUNIT * M_RandomInt(9));
+			}
+			else
+			{
+				particle->accx -= FixedMul(timefrac, FRACUNIT * M_RandomInt(9));
+				particle->accy -= FixedMul(timefrac, FRACUNIT * M_RandomInt(9));
+			}
+		}
+
 		particle->velx += particle->accx;
 		particle->vely += particle->accy;
 		particle->velz += particle->accz;
@@ -349,6 +386,7 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 	float deg = 270.0f;
 	for (int i = steps; i; i--) {
 		particle_t *p = NewParticle ();
+		p->sprite = NO_PARTICLE;
 
 		if (!p)
 			return;

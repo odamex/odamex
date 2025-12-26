@@ -569,12 +569,6 @@ class BootWindow : public Fl_Window
 		scannedIWAD_t iwad = m_IWADs[value - 1];
 		g_SelectedWADs.iwad = iwad.path;
 
-		if (iwad.id != NULL && iwad.id->mIdName == "CHEX QUEST")
-		{
-			g_SelectedWADs.options.push_back("-deh");
-			g_SelectedWADs.options.push_back("chex.deh");
-		}
-
 		// PWADs
 		for (const auto& pwad : m_selectedPWADs)
 		{

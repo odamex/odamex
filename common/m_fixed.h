@@ -71,7 +71,7 @@ inline constexpr fixed_t DOUBLE2FIXED(double x)
 [[nodiscard]]
 inline constexpr int32_t FIXED2INT(fixed_t x)
 {
-	return (x + FRACUNIT / 2) / FRACUNIT;
+	return (x + FRACUNIT / 2) >> FRACBITS;
 }
 
 [[nodiscard]]
@@ -156,7 +156,7 @@ inline constexpr fixed_t FixedDiv(fixed_t a, fixed_t b)
 	constexpr auto absce = [](fixed_t x) -> fixed_t {
 		return (x < 0) ? -x : x;
 	};
-	return (absce(a) >> 14) >= absce(b) ? ((a ^ b) >> 31) ^ MAXINT :
+	return (absce(a) >> 14) >= absce(b) ? ((a ^ b) >> 31) ^ limits::MAXINT :
 		(fixed_t)(((int64_t)a << FRACBITS) / b);
 }
 
@@ -175,7 +175,9 @@ inline constexpr fixed64_t FixedDiv64( fixed64_t a, fixed64_t b )
 {
 	if ((FixedAbs64(a) >> (FRACBITS64 - 2)) >= FixedAbs64(b))
 	{
-		return (a ^ b) < 0 ? MINLONG : MAXLONG;
+		// fixme: should this really use minlong and maxlong?
+		// thats what R&R uses but seems wrong for 64 bit systems
+		return (a ^ b) < 0 ? limits::MINLONG : limits::MAXLONG;
 	}
 	return (a << FRACBITS64) / b;
 }

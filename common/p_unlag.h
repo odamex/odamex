@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -27,7 +27,6 @@
 
 #pragma once
 
-#include <map>
 #include "m_fixed.h"
 #include "actor.h"
 #include "d_player.h"
@@ -56,19 +55,19 @@ public:
 	static bool enabled();
 private:
 	static constexpr size_t MAX_HISTORY_TICS = TICRATE;
-		
+
 	typedef struct {
 		byte		player_id;
 
 		// cached pointer to players[n].  Note: this needs to be updated
 		// EVERYTIME a player connects or disconnects.
 		player_t*	player;
-	
+
 		fixed_t		history_x[Unlag::MAX_HISTORY_TICS];
 		fixed_t		history_y[Unlag::MAX_HISTORY_TICS];
 		fixed_t		history_z[Unlag::MAX_HISTORY_TICS];
 		size_t		history_size;
-		
+
 		// current position. restore this position after reconciliation.
 		fixed_t		backup_x;
 		fixed_t		backup_y;
@@ -77,14 +76,14 @@ private:
 		fixed_t		offset_x;
 		fixed_t		offset_y;
 		fixed_t		offset_z;
-		
+
 		// did we change player's MF_SHOOTABLE flag during reconciliation?
 		bool		changed_flags;
-		int			backup_flags; 
+		int			backup_flags;
 
 		size_t		current_lag;
 	} PlayerHistoryRecord;
-   
+
 	class SectorHistoryRecord
 	{
 	public:
@@ -103,8 +102,8 @@ private:
 
 	std::vector<PlayerHistoryRecord> player_history;
 	std::vector<SectorHistoryRecord> sector_history;
-	bool reconciled;	
-    
+	bool reconciled;
+
     // stores an index into the player_history vector, keyed by player_id
 	std::map<byte, size_t> player_id_map;
 
@@ -113,7 +112,7 @@ private:
 	Unlag& operator=(const Unlag &rhs);	//private assignment operator
 
 	void movePlayer(player_t *player, fixed_t x, fixed_t y, fixed_t z);
-	void moveSector(sector_t *sector, 
+	void moveSector(sector_t *sector,
 					fixed_t ceilingheight, fixed_t floorheight);
 	void reconcilePlayerPositions(byte shooter_id, size_t ticsago);
 	void reconcileSectorPositions(size_t ticsago);

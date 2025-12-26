@@ -67,10 +67,6 @@
 #include "p_horde.h"
 #include "g_musinfo.h"
 
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
-
 #include <math.h> // for pow()
 
 #define SAVESTRINGSIZE	24
@@ -1637,8 +1633,6 @@ void G_DoLoadGame (void)
 	P_SerializeACSDefereds (arc);
 	P_SerializeHorde(arc);
 
-	arc >> musinfo.savedmusic;
-
 	multiplayer = false;
 
 	// load a base level
@@ -1650,6 +1644,7 @@ void G_DoLoadGame (void)
 
 	arc >> level.time;
 
+	P_SerializeMusInfo(arc);
 
 	for (i = 0; i < NUM_WORLDVARS; i++)
 	{
@@ -1708,11 +1703,7 @@ void G_SaveGame (int slot, std::string_view description)
  */
 void G_BuildSaveName(std::string &name, int slot)
 {
-#ifdef _XBOX
-	std::string path = xbox_GetSavePath(name, slot);
-#else
 	std::string path = M_GetUserFileName(name);
-#endif
 	name = fmt::sprintf("%s" PATHSEP "odasv%d.ods", path, slot);
 }
 
@@ -1731,10 +1722,6 @@ void G_DoSaveGame()
 	{
         return;
 	}
-
-#ifdef _XBOX
-	xbox_WriteSaveMeta(name.substr(0, name.rfind(PATHSEPCHAR)), description.c_str());
-#endif
 
 	PrintFmt(PRINT_HIGH, "Saving game to '{}'...\n", name);
 
@@ -1759,8 +1746,8 @@ void G_DoSaveGame()
 	P_SerializeACSDefereds (arc);
 	P_SerializeHorde(arc);
 
-	arc << musinfo.savedmusic.c_str();
 	arc << level.time;
+	P_SerializeMusInfo(arc);
 
 	for (int i = 0; i < NUM_WORLDVARS; i++)
 	{

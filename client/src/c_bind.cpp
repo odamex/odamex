@@ -72,7 +72,7 @@ OBinding DefaultBindings[] =
 	{"s", "+back"},
 	{"a", "+moveleft"},
 	{"d", "+moveright"},
-#ifdef _XBOX
+#ifdef GCONSOLE
 	{"hat1right", "messagemode2"},
 	{"hat1left", "spynext"},
 	{"hat1up", "messagemode"},

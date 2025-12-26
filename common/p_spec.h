@@ -1007,7 +1007,7 @@ private:
 		int tag, fixed_t speed, fixed_t speed2, fixed_t height,
 		bool crush, int silent, int change);
 	friend bool EV_CeilingCrushStop (int tag);
-	friend void P_ActivateInStasisCeiling (int tag);
+	friend bool P_ActivateInStasisCeiling (int tag);
 	friend bool EV_ZDoomCeilingCrushStop(int tag, bool remove);
 };
 

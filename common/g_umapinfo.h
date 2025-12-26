@@ -21,4 +21,4 @@
 #pragma once
 
 void ParseUMapInfoLump(int lump, const OLumpName& lumpname);
-int ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NULL);
+bool ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NULL);

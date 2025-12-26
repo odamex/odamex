@@ -22,7 +22,6 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #include "odamex.h"
 
 #include <stdlib.h>
@@ -175,7 +174,7 @@ fixed_t P_CalculateWeaponBobY(player_t* player, float scale_amount)
 //
 // P_SetPsprite
 //
-void P_SetPspritePtr(player_t* player, pspdef_t* psp, statenum_t stnum)
+void P_SetPspritePtr(player_t* player, pspdef_t* psp, int32_t stnum)
 {
 	do
 	{
@@ -186,10 +185,11 @@ void P_SetPspritePtr(player_t* player, pspdef_t* psp, statenum_t stnum)
 			break;
 		}
 
-		if (stnum >= NUMSTATES)
+		auto it = states.find(stnum);
+		if (it == states.end())
 			return;
 
-		psp->state = &states[stnum];
+		psp->state = &it->second;
 		psp->tics = psp->state->tics;		// could be 0
 
 		if (psp->state->misc1)
@@ -204,7 +204,11 @@ void P_SetPspritePtr(player_t* player, pspdef_t* psp, statenum_t stnum)
 		if (psp->state->action)
 		{
 			if (!player->spectator && player->mo != NULL)
+			{
+				// [CMB] calculate psprnum here using the present psp and length of psprites
+				player->psprnum = psp - player->psprites;
 				psp->state->action(player->mo);
+			}
 
 			if (!psp->state)
 				break;
@@ -216,8 +220,9 @@ void P_SetPspritePtr(player_t* player, pspdef_t* psp, statenum_t stnum)
 	// an initial state of 0 could cycle through
 }
 
-void P_SetPsprite(player_t* player, int position, statenum_t stnum)
+void P_SetPsprite(player_t* player, int position, int32_t stnum)
 {
+	// TODO [CMB] set psprnum here to the correct position in the sprites
 	P_SetPspritePtr(player, &player->psprites[position], stnum);
 }
 
@@ -358,13 +363,14 @@ weapontype_t P_GetNextWeapon(player_t *player, bool forward)
 			continue;
 		if (!player->weaponowned[itemlist[index].offset])
 			continue;
-		if (!player->ammo[weaponinfo[itemlist[index].offset].ammotype])
+		if (weaponinfo[itemlist[index].offset].ammotype != am_noammo &&
+		    !player->ammo[weaponinfo[itemlist[index].offset].ammotype])
 			continue;
 		if (itemlist[index].offset == wp_plasma && gamemode == shareware)
 			continue;
 		if (itemlist[index].offset == wp_bfg && gamemode == shareware)
 			continue;
-		if (itemlist[index].offset == wp_supershotgun && gamemode != commercial && gamemode != commercial_bfg )
+		if (itemlist[index].offset == wp_supershotgun && gamemode != commercial && gamemode != commercial_bfg)
 			continue;
 		return (weapontype_t)itemlist[index].offset;
 	}
@@ -472,10 +478,12 @@ void P_FireWeapon(player_t* player)
 
 	// [tm512] Send the client the weapon they just fired so
 	// that they can fix any weapon desyncs that they get - apr 14 2012
+#if defined(SERVER_APP)
 	if (serverside && !clientside)
 	{
 		MSG_WriteSVC(&player->client.reliablebuf, SVC_FireWeapon(*player));
 	}
+#endif
 
 	P_SetMobjState(player->mo, S_PLAY_ATK1);
 	statenum_t newstatenum = weaponinfo[player->readyweapon].atkstate;
@@ -877,7 +885,7 @@ void A_WeaponJump(AActor* mo)
 	if (!psp->state)
 		return;
 
-	if (P_Random() < psp->state->args[1])
+	if (P_Random(mo) < psp->state->args[1])
 		P_SetPspritePtr(player, psp, (statenum_t)psp->state->args[0]);
 }
 
@@ -1067,7 +1075,7 @@ void A_WeaponBulletAttack(AActor* mo)
 	for (i = 0; i < numbullets; i++)
 	{
 		int bangle = angle;
-		damage = (P_Random() % damagemod + 1) * damagebase;
+		damage = (P_Random(mo) % damagemod + 1) * damagebase;
 		bangle = angle + (int)player->mo->angle + P_RandomHitscanAngle(hspread);
 		slope = bulletslope + P_RandomHitscanSlope(vspread);
 
@@ -1104,16 +1112,23 @@ void A_WeaponMeleeAttack(AActor* mo)
 	hitsound = psp->state->args[3];
 	range = psp->state->args[4];
 
-	if (hitsound >= static_cast<int>(ARRAY_LENGTH(SoundMap)))
+	const char* snd;
+
+	auto soundIt = SoundMap.find(hitsound);
+	if (soundIt == SoundMap.end())
 	{
 		DPrintFmt("Warning: Weapon Melee Hitsound ID is beyond the array of the Sound Map!\n");
-		hitsound = 0;
+		snd = nullptr;
+	}
+	else
+	{
+		snd = soundIt->second.c_str();
 	}
 
 	if (range <= 0)
 		range = player->mo->info->meleerange;
 
-	damage = (P_Random() % damagemod + 1) * damagebase;
+	damage = (P_Random(mo) % damagemod + 1) * damagebase;
 	if (player->powers[pw_strength])
 		damage = (damage * zerkfactor) >> FRACBITS;
 
@@ -1122,8 +1137,8 @@ void A_WeaponMeleeAttack(AActor* mo)
 	// slight randomization; weird vanillaism here. :P
 	angle = player->mo->angle;
 
-	t = P_Random();
-	angle += (t - P_Random()) << 18;
+	t = P_Random(mo);
+	angle += (t - P_Random(mo)) << 18;
 
 	// make autoaim prefer enemies
 	slope = P_AimLineAttack(player->mo, angle, range);
@@ -1140,7 +1155,7 @@ void A_WeaponMeleeAttack(AActor* mo)
 		return;
 
 	// un-missed!
-	UV_SoundAvoidPlayer(player->mo, CHAN_WEAPON, SoundMap[hitsound],
+	UV_SoundAvoidPlayer(player->mo, CHAN_WEAPON, snd,
 	                    ATTN_NORM);
 
 	// turn to face target
@@ -1163,14 +1178,20 @@ void A_WeaponSound(AActor *mo)
 		return;
 
 	int sndmap = psp->state->args[0];
+	const char* snd;
 
-	if (sndmap >= static_cast<int>(ARRAY_LENGTH(SoundMap)))
+	auto soundIt = SoundMap.find(sndmap);
+	if (soundIt == SoundMap.end())
 	{
-		DPrintFmt("Warning: Weapon Sound ID is beyond the array of the Sound Map!\n");
-		sndmap = 0;
+		DPrintFmt("Warning: Weapon sound ID is beyond the array of the Sound Map!\n");
+		snd = nullptr;
+	}
+	else
+	{
+		snd = soundIt->second.c_str();
 	}
 
-	UV_SoundAvoidPlayer(player->mo, CHAN_WEAPON, SoundMap[sndmap],
+	UV_SoundAvoidPlayer(player->mo, CHAN_WEAPON, snd,
 	                    (psp->state->args[1] ? ATTN_NONE : ATTN_NORM));
 }
 
@@ -1443,7 +1464,7 @@ void A_FireShotgun2(AActor* mo)
 void A_FireCGun(AActor* mo)
 {
     player_t *player = mo->player;
-    struct pspdef_s *psp = &player->psprites[player->psprnum];
+	pspdef_s *psp = &player->psprites[player->psprnum];
 
 	A_FireSound (player, "weapons/chngun");
 
@@ -1455,11 +1476,8 @@ void A_FireCGun(AActor* mo)
 
 	DecreaseAmmo(player);
 
-	P_SetPsprite (player,
-				  ps_flash,
-				  (statenum_t)(weaponinfo[player->readyweapon].flashstate
-				  + psp->state
-				  - &states[S_CHAIN1]) );
+	// [CMB] this is expecting to calculate a very specific state based on the pointer arithmetic
+	P_SetPsprite(player, ps_flash, weaponinfo[player->readyweapon].flashstate + psp->state->statenum - states[S_CHAIN1].statenum);
 
 	spreadtype_t accuracy = player->refire ? SPREAD_NORMAL : SPREAD_NONE;
 	P_FireHitscan(player, 1, accuracy);

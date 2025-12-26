@@ -43,30 +43,30 @@
 #include <stdlib.h>
 #include <time.h>
 
-
-#include "m_random.h"
-#include "minilzo.h"
+#include "c_dispatch.h"
+#include "d_dehacked.h"
+#include "d_main.h"
+#include "g_game.h"
+#include "g_horde.h"
+#include "g_mapinfo.h"
+#include "gi.h"
 #include "gstrings.h"
-#include "z_zone.h"
-#include "w_wad.h"
-#include "v_video.h"
+#include "i_system.h"
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "m_misc.h"
-#include "c_dispatch.h"
-#include "i_system.h"
-#include "g_game.h"
+#include "m_random.h"
+#include "minilzo.h"
+#include "odainfo.h"
 #include "p_setup.h"
 #include "r_local.h"
 #include "r_sky.h"
-#include "d_main.h"
-#include "d_dehacked.h"
 #include "s_sound.h"
-#include "gi.h"
-#include "g_mapinfo.h"
-#include "sv_main.h"
 #include "sv_banlist.h"
-#include "g_horde.h"
+#include "sv_main.h"
+#include "v_video.h"
+#include "w_wad.h"
+#include "z_zone.h"
 #include "g_musinfo.h"
 
 #include "w_ident.h"
@@ -242,6 +242,7 @@ void STACK_ARGS D_Shutdown()
 
 	// stop sound effects and music
 	S_Stop();
+	S_ClearSoundLumps();
 
 	DThinker::DestroyAllThinkers();
 
@@ -264,7 +265,7 @@ void STACK_ARGS D_Shutdown()
 	NormalLight.next = NULL;
 }
 
-void D_Init_DEHEXTRA_Frames(void);
+void G_ChangeMapStartup();
 
 //
 // D_DoomMain
@@ -280,10 +281,7 @@ void D_DoomMain()
 
 	W_SetupFileIdentifiers();
 
-	// [RH] Initialize items. Still only used for the give command. :-(
-	InitItems();
-	// Initialize all extra frames
-	D_Init_DEHEXTRA_Frames();
+	D_InitializeDoomObjectTables();
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
@@ -296,6 +294,7 @@ void D_DoomMain()
 	if (!LOG.is_open())
 		C_DoCommand("logfile");
 
+
 	OWantFiles newwadfiles, newpatchfiles;
 
 	const char* iwad_filename_cstr = Args.CheckValue("-iwad");
@@ -305,8 +304,6 @@ void D_DoomMain()
 		OWantFile::make(file, iwad_filename_cstr, OFILE_WAD);
 		newwadfiles.push_back(file);
 	}
-
-
 
 	D_AddWadCommandLineFiles(newwadfiles);
 	D_AddDehCommandLineFiles(newpatchfiles);
@@ -423,7 +420,7 @@ void D_DoomMain()
 
 	level.mapname = startmap;
 
-	G_ChangeMap();
+	G_ChangeMapStartup();
 
 	D_DoomLoop();	// never returns
 }

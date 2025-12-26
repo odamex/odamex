@@ -27,7 +27,6 @@
 #include <sstream>
 #include <algorithm>
 #include <ctime>
-#include <map>
 
 #include "cmdlib.h"
 #include "c_console.h"
@@ -200,9 +199,9 @@ bool safemode = false;
 
 void C_DoCommand(std::string_view cmd, uint32_t key)
 {
-	std::string_view data = cmd;
+	auto parser = ParseString(cmd, true);
 
-	std::optional<std::string> token = ParseString(data);
+	auto [token, rest] = parser();
 	if (!token)
 		return;
 
@@ -238,10 +237,11 @@ void C_DoCommand(std::string_view cmd, uint32_t key)
 	size_t argc = 0;
 	std::vector<char*> argv;
 	StringTokens args;
-	const char *realargs = data.data();
-	data = cmd;
+	// for rcon
+	const char *realargs = rest.data();
+	parser = ParseString(cmd, true);
 
-	while ((token = ParseString(data)))
+	while ((token = parser().token))
 	{
 		args.push_back(*token);
 		argc++;
@@ -557,103 +557,103 @@ bool ValidEscape(char data)
 	return (data == '"' || data == ';' || data == '\\');
 }
 
-// ParseString2 is adapted from COM_Parse
+// ParseString is adapted from COM_Parse
 // found in the Quake2 source distribution
-std::optional<std::string> ParseString2(std::string_view& data)
+// If expandVars == true, any token of
+// the form $<cvar>, will be replaced by the
+// contents of <cvar>.
+std::function<parse_string_result_t()> ParseString(std::string_view data, bool expandVars)
 {
-	std::string token;
+	auto base = [data]() mutable -> parse_string_result_t {
+		std::string token;
 
-	const auto white = data.find_first_not_of(' ');
-	if (white != std::string_view::npos)
-		data.remove_prefix(white);
-	else
-		return std::nullopt;
-
-	// Ch0wW : If having a comment, break immediately the line!
-	if (data.length() >= 2 && data[0] == '/' && data[1] == '/') {
-		return std::nullopt;
-	}
-
-	if (data.length() >= 2 && data[0] == '\\' && ValidEscape(data[1]))
-	{
-		// [AM] Handle escaped chars.
-		token += data[1];
-		data.remove_prefix(2);
-	}
-	else if (data[0] == '"')
-	{
-		// Quoted strings count as one large token.
-		while (true) {
+		while (!data.empty() && data[0] <= ' ')
 			data.remove_prefix(1);
-			if (data.empty())
+
+		if (data.empty())
+			return {std::nullopt, data};
+
+		// Ch0wW : If having a comment, break immediately the line!
+		if (data.length() >= 2 && data[0] == '/' && data[1] == '/') {
+			return {std::nullopt, data};
+		}
+
+		if (data.length() >= 2 && data[0] == '\\' && ValidEscape(data[1]))
+		{
+			// [AM] Handle escaped chars.
+			token += data[1];
+			data.remove_prefix(2);
+		}
+		else if (data[0] == '"')
+		{
+			// Quoted strings count as one large token.
+			while (true) {
+				data.remove_prefix(1);
+				if (data.empty())
+				{
+					// [AM] Unclosed quote, show no mercy.
+					return {std::nullopt, data};
+				}
+				if (data.length() >= 2 && data[0] == '\\' && ValidEscape(data[1]))
+				{
+					// [AM] Handle escaped chars.
+					token += data[1];
+					data.remove_prefix(1); // Skip one _additional_ char.
+					continue;
+				}
+				else if (data[0] == '"')
+				{
+					// Closing quote, that's the entire token.
+					data.remove_prefix(1); // Skip the closing quote.
+					return {std::optional(token), data};
+				}
+				// None of the above, copy the char and continue.
+				token += data[0];
+			}
+		}
+
+		while (true) {
+			// Parse a regular word.
+			if (data.empty() || data[0] <= ' ')
 			{
-				// [AM] Unclosed quote, show no mercy.
-				return std::nullopt;
+				// End of word.
+				break;
 			}
 			if (data.length() >= 2 && data[0] == '\\' && ValidEscape(data[1]))
 			{
 				// [AM] Handle escaped chars.
 				token += data[1];
-				data.remove_prefix(1); // Skip one _additional_ char.
+				data.remove_prefix(2); // Skip two chars.
 				continue;
 			}
 			else if (data[0] == '"')
 			{
-				// Closing quote, that's the entire token.
-				data.remove_prefix(1); // Skip the closing quote.
-				return std::optional(token);
+				// End of word.
+				break;
 			}
 			// None of the above, copy the char and continue.
 			token += data[0];
+			data.remove_prefix(1);
 		}
-	}
+		// We're done
+		// return the remaining data to parse.
+		return {std::optional(token), data};
+	};
 
-	while (true) {
-		// Parse a regular word.
-		if (data.empty() || data[0] <= ' ')
-		{
-			// End of word.
-			break;
-		}
-		if (data.length() >= 2 && data[0] == '\\' && ValidEscape(data[1]))
-		{
-			// [AM] Handle escaped chars.
-			token += data[1];
-			data.remove_prefix(2); // Skip two chars.
-			continue;
-		}
-		else if (data[0] == '"')
-		{
-			// End of word.
-			break;
-		}
-		// None of the above, copy the char and continue.
-		token += data[0];
-		data.remove_prefix(1);
-	}
-	// We're done
-	// return the remaining data to parse.
-	return std::optional(token);
-}
+	if (!expandVars)
+		return base;
 
-// ParseString calls ParseString2 to remove the first
-// token from an input string. If this token is of
-// the form $<cvar>, it will be replaced by the
-// contents of <cvar>.
-std::optional<std::string> ParseString (std::string_view& data)
-{
-	cvar_t *var, *dummy;
-	std::optional<std::string> token = ParseString2(data);
+	return [base = std::move(base)]() mutable -> parse_string_result_t {
+		auto result = base();
+		if (!result || result.token->empty() || result.token->at(0) != '$')
+			return result;
 
-	if (token && !token->empty() && token->at(0) == '$')
-	{
-		if ( (var = cvar_t::FindCVar (std::string_view(*token).substr(1).data(), &dummy)) )
-		{
-			return std::optional(var->str());
-		}
-	}
+		cvar_t *dummy;
+		if (const cvar_t* var = cvar_t::FindCVar(std::string_view(*result.token).substr(1), &dummy))
+			return {std::optional(var->str()), result.rest};
 
-	return token;
+		return result;
+	};
 }
 
 DConsoleCommand::DConsoleCommand (const char *name)
@@ -950,7 +950,7 @@ BEGIN_COMMAND (actorlist)
 	{
 		PrintFmt(PRINT_HIGH, "{} ({:x}, {:x}, {:x} | {:x}) state: {} tics: {}\n", mobjinfo[mo->type].name,
 			static_cast<uint32_t>(mo->x), static_cast<uint32_t>(mo->y), static_cast<uint32_t>(mo->z),
-			static_cast<uint32_t>(mo->angle), mo->state - states, mo->tics);
+			static_cast<uint32_t>(mo->angle), mo->state->statenum, mo->tics);
 	}
 }
 END_COMMAND(actorlist)
@@ -1038,7 +1038,7 @@ END_COMMAND (puke)
 BEGIN_COMMAND (error)
 {
 	std::string text = C_ArgCombine(argc - 1, (const char **)(argv + 1));
-	I_Error (text);
+	I_Error ("{}", text);
 }
 END_COMMAND (error)
 

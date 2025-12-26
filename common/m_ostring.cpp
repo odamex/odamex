@@ -104,6 +104,13 @@ OString::OString(const std::string& str) :
 	assign(str);
 }
 
+OString::OString(std::string_view str) :
+	mId(mEmptyStringId)
+{
+	startup();
+	assign(str.data(), str.length());
+}
+
 OString::OString(const OString& other, size_t pos, size_t len) :
 	mId(mEmptyStringId)
 {
@@ -116,6 +123,14 @@ OString::OString(const std::string& str, size_t pos, size_t len) :
 {
 	startup();
 	assign(std::string(str, pos, len));
+}
+
+OString::OString(std::string_view str, size_t pos, size_t len) :
+	mId(mEmptyStringId)
+{
+	startup();
+	str = str.substr(pos, len);
+	assign(str.data(), str.length());
 }
 
 OString::OString(const char* s, size_t n) :

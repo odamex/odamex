@@ -386,8 +386,8 @@ CVAR(				cl_forcedownload, "0", "Forces the client to download the last WAD file
 // Client Preferences
 // ------------------
 
-#ifdef _XBOX // Because Xbox players may be unable to communicate for now -- Hyper_Eye
-CVAR_FUNC_DECL(		cl_name, "Xbox Player", "",
+#ifdef GCONSOLE // Because Xbox players may be unable to communicate for now -- Hyper_Eye
+CVAR_FUNC_DECL(		cl_name, "Console Player", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 #else
 CVAR_FUNC_DECL(		cl_name, "Player", "",
@@ -423,6 +423,9 @@ CVAR(in_autosr50, "1", "+strafe activates automatic SR50", CVARTYPE_BOOL,
 
 CVAR(				cl_showspawns, "0", "Show spawn points as particle fountains",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_LATCH)
+
+CVAR_FUNC_DECL(		cl_showfriends, "0", "Show an indicator on friendly monsters.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 // Netdemo Preferences
 // --------------------
@@ -598,7 +601,7 @@ CVAR_RANGE(hud_extendedinfo, "0",
 		   "Show kills, items, and secrets:\n// 0: Off\n// 1: DIGFONT\n// 2: SMALLFONT\n// 3: DIGFONT, vertical arrangement\n// 4: SMALLFONT, vertical arrangement",
 		   CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0, 4.0)
 
-#ifdef _XBOX
+#ifdef GCONSOLE
 CVAR (chatmacro0, "Hi.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                       // A
 CVAR (chatmacro1, "I'm ready to kick butt!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)   // B
 CVAR (chatmacro2, "Help!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                     // X
@@ -608,7 +611,7 @@ CVAR (chatmacro5, "Yes", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLE
 CVAR (chatmacro6, "I'll take care of it.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)     // Left Trigger
 CVAR (chatmacro7, "Come here!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                // Right Trigger
 CVAR (chatmacro8, "Thanks for the game. Bye.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE) // Start
-CVAR (chatmacro9, "I am on Xbox and can only use chat macros.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE) // Back
+CVAR (chatmacro9, "I am on a game console and can only use chat macros.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE) // Back
 #else
 // GhostlyDeath <November 2, 2008> -- someone had the order wrong (0-9!)
 CVAR (chatmacro1, "I'm ready to kick butt!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
@@ -680,7 +683,7 @@ static char *C_GetDefaultMusicSystem()
 	defaultmusicsystem = MS_AUDIOUNIT;
 	#endif
 
-	#if defined _WIN32 && !defined _XBOX
+	#if defined _WIN32
 	defaultmusicsystem = MS_PORTMIDI;
 	#endif
 
@@ -776,13 +779,8 @@ CVAR_FUNC_DECL(	r_forceteamcolor, "0", "Changes the color of all teammates to th
 CVAR_FUNC_DECL(	r_teamcolor, "40 cf 00", "",
 				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-#ifdef _XBOX // The burn wipe works better in 720p
-CVAR_RANGE(		r_wipetype, "2", "",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
-#else
 CVAR_RANGE(		r_wipetype, "1", "",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
-#endif
 
 CVAR_RANGE(		r_showendoom, "0", "Display the ENDDOOM text after quitting",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)   // [ML] 1/5/10: Add endoom support

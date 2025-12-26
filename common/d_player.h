@@ -104,8 +104,8 @@ typedef enum
 
 #define MAX_PLAYER_SEE_MOBJ	0x7F
 
-static constexpr int ReJoinDelay = TICRATE * 5;
-static constexpr int SuicideDelay = TICRATE * 10;
+inline constexpr int ReJoinDelay = TICRATE * 5;
+inline constexpr int SuicideDelay = TICRATE * 10;
 
 //
 // Extended player object info: player_t
@@ -434,6 +434,16 @@ player_t		&idplayer(byte id);
 player_t		&nameplayer(const std::string &netname);
 bool			validplayer(const player_t &ref);
 
+// A helper spawn object.
+// One object = 1 spawn
+struct HelperSpawns
+{
+	mobjtype_t helpertype;
+	int playerid;
+};
+
+extern std::vector<HelperSpawns> helperspawns;
+
 /**
  * @brief A collection of pointers to players, commonly called a "view".
  */
@@ -708,3 +718,13 @@ typedef struct wbstartstruct_s
 
 	std::vector<wbplayerstruct_s> plyr;
 } wbstartstruct_t;
+
+//
+// P_IsPlayerOrAvatar
+//
+// Returns true if thing is a player or an avatar
+//
+inline bool P_IsPlayerOrAvatar(const AActor& mo)
+{
+	return mo.player != nullptr || mo.type == MT_AVATAR;
+}

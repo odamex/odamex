@@ -60,7 +60,10 @@ void P_Ticker (void)
 #endif
 
 	if (serverside)
+	{
 		P_RunHordeTics();
+		P_RunHelperTics();
+	}
 
 	if (clientside)
 		P_ThinkParticles ();	// [RH] make the particles think
@@ -87,7 +90,7 @@ void P_Ticker (void)
 	P_RespawnSpecials ();
 
 	if (clientside)
-		P_RunEffects ();	// [RH] Run particle effects
+		P_RunEffects(); // [RH] Run particle effects
 
 	// for par times
 	level.time++;

@@ -29,9 +29,7 @@
 
 #include <string>
 
-#ifdef _XBOX
-#include <xtl.h>
-#elif _WIN32
+#ifdef _WIN32
 #include <winsock2.h>
 #include <windows.h>
 #include <ws2tcpip.h>

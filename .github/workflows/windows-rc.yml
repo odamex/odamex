@@ -5,6 +5,9 @@ on:
     branches:
     - 'release/[0-9]+.[0-9]+.[0-9]+' # Only run on major.minor.patch releases
 
+permissions:
+  contents: write
+
 jobs:
   pre_job:
     name: Build Preparation
@@ -167,6 +170,8 @@ jobs:
       new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-tags: true
     - name: Run Upversion
       id:   upversion
       shell: pwsh
@@ -201,3 +206,23 @@ jobs:
       with:
         name: Odamex-Installer
         path: 'Output/*.exe'
+    - name: Download x86 pdb
+      uses: actions/download-artifact@v4
+      with:
+        name: Odamex-Win-x86-pdb
+    - name: Download x64 pdb
+      uses: actions/download-artifact@v4
+      with:
+        name: Odamex-Win-x64-pdb
+    - name: Create or update prerelease
+      uses: ./.github/actions/update-prerelease
+      env:
+        build_number: ${{ needs.pre_job.outputs.build_number }}
+        new_version: ${{ needs.pre_job.outputs.new_version }}
+      with:
+        build_number: ${{ env.build_number }}
+        new_version: ${{ env.new_version }}
+        files: |
+          ./odamex-win*.zip
+          ./odamex-debug-*.zip
+          ./Output/*.exe

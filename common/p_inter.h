@@ -45,3 +45,4 @@ ItemEquipVal P_GiveCard(player_t* player, card_t card);
 ItemEquipVal P_GivePower(player_t* player, int /*powertype_t*/ power);
 void P_KillMobj(AActor* source, AActor* target, AActor* inflictor, bool joinkill);
 void P_HealMobj(AActor* mo, int num);
+bool P_InfightingImmune(AActor* target, AActor* source);

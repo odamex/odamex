@@ -127,6 +127,9 @@ void OScanner::munchString()
 		if (m_config.semiComments && m_position[0] == ';')
 			return;
 
+		if (m_config.hashComments && m_position[0] == '#')
+			return;
+
 		if (m_config.cComments && checkPair('/', '/'))
 			return;
 
@@ -222,6 +225,11 @@ bool OScanner::scan()
 			continue;
 		}
 		if (m_config.semiComments && m_position[0] == ';')
+		{
+			skipToNextLine();
+			continue;
+		}
+		else if (m_config.hashComments && m_position[0] == '#')
 		{
 			skipToNextLine();
 			continue;
@@ -378,7 +386,7 @@ int OScanner::getTokenInt() const
 
 	if (str == "MAXINT")
 	{
-		return MAXINT; // INT32_MAX;
+		return limits::MAXINT; // INT32_MAX;
 	}
 
 	const int num = strtol(str.c_str(), &stopper, 0);
@@ -467,7 +475,7 @@ bool OScanner::isIdentifier() const
 //
 // Assert token is equal to the passed string, or error.
 //
-void OScanner::assertTokenIs(const char* string) const
+void OScanner::assertTokenIs(std::string_view string) const
 {
 	if (m_token.compare(string) != 0)
 	{
@@ -479,7 +487,7 @@ void OScanner::assertTokenIs(const char* string) const
 //
 // Assert token is equal to the passed string without regard to case, or error.
 //
-void OScanner::assertTokenNoCaseIs(const char* string) const
+void OScanner::assertTokenNoCaseIs(std::string_view string) const
 {
 	if (!iequals(m_token, string))
 	{
@@ -491,7 +499,7 @@ void OScanner::assertTokenNoCaseIs(const char* string) const
 //
 // Compare the most recent token with the passed string.
 //
-bool OScanner::compareToken(const char* string) const
+bool OScanner::compareToken(std::string_view string) const
 {
 	return m_token.compare(string) == 0;
 }
@@ -499,9 +507,9 @@ bool OScanner::compareToken(const char* string) const
 //
 // Compare the most recent token with the passed string, case-insensitive.
 //
-bool OScanner::compareTokenNoCase(const char* string) const
+bool OScanner::compareTokenNoCase(std::string_view string) const
 {
 	return iequals(m_token, string);
 }
 
-VERSION_CONTROL(sc_oman_cpp, "$Id$")
+VERSION_CONTROL(oscanner_cpp, "$Id$")

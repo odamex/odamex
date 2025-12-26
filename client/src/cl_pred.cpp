@@ -32,8 +32,6 @@
 
 #include "p_snapshot.h"
 
-#include <map>
-
 EXTERN_CVAR (cl_prednudge)
 EXTERN_CVAR (cl_predictsectors)
 

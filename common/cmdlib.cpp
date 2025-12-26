@@ -31,7 +31,6 @@
 
 #include <ctime>
 #include <functional>
-#include <map>
 #include <sstream>
 
 #include "win32inc.h"
@@ -41,17 +40,9 @@
 
 #include "fmt/ranges.h"
 
-#ifdef GEKKO
-#include "i_wii.h"
-#endif
-
 #ifdef __SWITCH__
 #include "nx_system.h"
 #endif
-
-
-char		com_token[8192];
-bool		com_eof;
 
 // Safe string copy function that works like OpenBSD's strlcpy().
 // Returns true if the string was not truncated.
@@ -90,85 +81,6 @@ char *copystring (const char *s)
 		b[0] = '\0';
 	}
 	return b;
-}
-
-
-//
-// COM_Parse
-//
-// Parse a token out of a string
-//
-char *COM_Parse (char *data) // denis - todo - security com_token overrun needs expert check, i have just put simple bounds on len
-{
-	int			c;
-	size_t		len;
-
-	len = 0;
-	com_token[0] = 0;
-
-	if (!data)
-		return NULL;
-
-// skip whitespace
-skipwhite:
-	while ( (c = *data) <= ' ')
-	{
-		if (c == 0)
-		{
-			com_eof = true;
-			return NULL;			// end of file;
-		}
-		data++;
-	}
-
-// skip // comments
-	if (c=='/' && data[1] == '/')
-	{
-		while (*data && *data != '\n')
-			data++;
-		goto skipwhite;
-	}
-
-
-// handle quoted strings specially
-	if (c == '\"')
-	{
-		data++;
-		do
-		{
-			c = *data++;
-			if (c=='\"')
-			{
-				com_token[len] = 0;
-				return data;
-			}
-			com_token[len] = c;
-			len++;
-		} while (len < sizeof(com_token) + 2);
-	}
-
-// parse single characters
-	if (c=='{' || c=='}'|| c==')'|| c=='(' || c=='\'' || c==':' || /*[RH]*/c=='=')
-	{
-		com_token[len] = c;
-		len++;
-		com_token[len] = 0;
-		return data+1;
-	}
-
-// parse a regular word
-	do
-	{
-		com_token[len] = c;
-		data++;
-		len++;
-		c = *data;
-	if (c=='{' || c=='}'|| c==')'|| c=='(' || c=='\'' || c==':' || c=='=')
-			break;
-	} while (c>32 && len < sizeof(com_token) + 2);
-
-	com_token[len] = 0;
-	return data;
 }
 
 //
@@ -210,7 +122,6 @@ int ParseNum(const char* str)
 	return atol(str);
 }
 
-
 // [RH] Returns true if the specified string is a valid decimal number
 
 bool IsNum(const char* str)
@@ -229,6 +140,17 @@ bool IsNum(const char* str)
 	return result;
 }
 
+bool IsNum(std::string_view str)
+{
+	return std::all_of(str.begin(), str.end(), [](char c)
+	{
+		if (((c < '0') || (c > '9')) && (c != '-'))
+		{
+			return false;
+		}
+		return true;
+	});
+}
 
 //
 // IsRealNum
@@ -267,7 +189,9 @@ bool IsRealNum(const char* str)
 // sensitivity
 bool iequals(std::string_view s1, std::string_view s2)
 {
-	return stricmp(s1.data(), s2.data()) == 0;
+	if (s1.size() != s2.size())
+		return false;
+	return strnicmp(s1.data(), s2.data(), s1.size()) == 0;
 }
 
 size_t StdStringFind(const std::string& haystack, const std::string& needle,

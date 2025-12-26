@@ -32,7 +32,6 @@
 
 #include "m_fixed.h"
 #include "r_defs.h"
-#include <map>
 
 typedef std::pair<fixed_t, unsigned int> fixed_uint_pair;
 typedef std::pair<std::pair<fixed_t, fixed_t>, unsigned int> fixed_fixed_uint_pair;

@@ -61,6 +61,7 @@ argb_t CL_GetPlayerColor(player_t*);
 EXTERN_CVAR(am_followplayer)
 
 static int lockglow = 0;
+static int bossglow = 0;
 
 EXTERN_CVAR(am_rotate)
 EXTERN_CVAR(am_overlay)
@@ -194,6 +195,7 @@ typedef struct
 // vector graphics for the automap for things.
 std::vector<mline_t> thintriangle_guy;
 std::vector<mline_t> thinrectangle_guy;
+std::vector<mline_t> hordeboss_guy;
 
 am_default_colors_t AutomapDefaultColors;
 am_colors_t AutomapDefaultCurrentColors;
@@ -304,7 +306,7 @@ END_COMMAND(am_big)
 BEGIN_COMMAND(am_togglefollow)
 {
 	am_followplayer = !am_followplayer;
-	f_oldloc.x = MAXINT;
+	f_oldloc.x = limits::MAXINT;
 	PrintFmt(PRINT_HIGH, "{}\n",
 	         am_followplayer ? GStrings(AMSTR_FOLLOWON) : GStrings(AMSTR_FOLLOWOFF));
 }
@@ -383,8 +385,8 @@ void AM_addMark()
 //
 void AM_findMinMaxBoundaries()
 {
-	M_SetVec2Fixed64(&min, MAXLONG, MAXLONG);
-	M_SetVec2Fixed64(&max, -MAXLONG, -MAXLONG);
+	M_SetVec2Fixed64(&min, limits::MAXFIXED64, limits::MAXFIXED64);
+	M_SetVec2Fixed64(&max, limits::MINFIXED64, limits::MINFIXED64);
 
 	for (const auto [x, y]: R_GetVertices())
 	{
@@ -419,7 +421,7 @@ void AM_changeWindowLoc()
 	if (m_paninc.x || m_paninc.y)
 	{
 		am_followplayer.Set(0.0f);
-		f_oldloc.x = MAXINT;
+		f_oldloc.x = limits::MAXINT;
 	}
 
 	M_AddVec2Fixed64(&m_ll, &m_paninc, &m_ll);
@@ -446,6 +448,7 @@ void AM_initVariables()
 
 	thintriangle_guy.clear();
 	thinrectangle_guy.clear();
+	hordeboss_guy.clear();
 
 	mline_t ml;
 
@@ -466,12 +469,30 @@ void AM_initVariables()
 	ADD_TO_VEC(thinrectangle_guy, -1, -1, -1,  1)
 	ADD_TO_VEC(thinrectangle_guy, -1,  1,  1,  1)
 
+	static const OLumpName bossicon = "OBOSSMAP";
+	const auto hordeboss_lines = AM_ParseVectorLump(bossicon);
+	if (!hordeboss_lines)
+	{
+		switch (hordeboss_lines.error())
+		{
+			case am_lump_parse_error_t::LUMP_NOT_FOUND:
+				DPrintFmt("Horde boss automap icon lump \"{}\" could not be found", bossicon);
+				break;
+			default:
+				DPrintFmt("Error while parsing horde boss automap icon lump \"{}\"", bossicon);
+		}
+	}
+	else
+	{
+		hordeboss_guy = hordeboss_lines.value();
+	}
+
 #undef ADD_TO_VEC
 #undef L
 
 	automapactive = true;
 
-	f_oldloc.x = MAXINT;
+	f_oldloc.x = limits::MAXINT;
 	amclock = 0;
 
 	M_SetVec2Fixed64(&m_wh, FTOM(I_GetSurfaceWidth()), FTOM(I_GetSurfaceHeight()));
@@ -919,6 +940,15 @@ void AM_doFollowPlayer()
 		m_ll.y + m_wh.y);
 }
 
+struct
+{
+	std::array<uint8_t, 3> reddoor;
+	std::array<uint8_t, 3> bluedoor;
+	std::array<uint8_t, 3> yellowdoor;
+	std::array<uint8_t, 3> multidoor;
+} doorColors;
+
+
 //
 // Updates on Game Tick
 //
@@ -934,6 +964,77 @@ void AM_Ticker()
 		lockglow++;
 	else
 		lockglow = 0;
+
+	if (bossglow < 60)
+		bossglow++;
+	else
+		bossglow = 0;
+
+	const std::array<uint8_t,3> baseDoorColor = {
+		gameinfo.currentAutomapColors.LockedColor.rgb.getr(),
+		gameinfo.currentAutomapColors.LockedColor.rgb.getg(),
+		gameinfo.currentAutomapColors.LockedColor.rgb.getb()
+	};
+
+	if (am_usecustomcolors || am_showlocked)
+	{
+		const auto lerp = [](uint8_t a, uint8_t b, int t, int max) -> uint8_t
+		{
+			return static_cast<uint8_t>(a + (b - a) * t / max);
+		};
+
+		const auto lerp3 = [&lerp](const std::array<uint8_t,3>& a,
+		                           const std::array<uint8_t,3>& b,
+		                           int t, int max)
+		{
+			return std::array<uint8_t, 3>{
+				lerp(a[0], b[0], t, max),
+				lerp(a[1], b[1], t, max),
+				lerp(a[2], b[2], t, max)
+			};
+		};
+
+		const auto pulse = [&baseDoorColor, &lerp3](const std::array<uint8_t, 3>& color) -> std::array<uint8_t, 3>
+		{
+			if (lockglow < 30)
+			{
+				return lerp3(baseDoorColor, color, lockglow, 30);
+			}
+			else if (lockglow < 60)
+			{
+				return lerp3(baseDoorColor, color, 60 - lockglow, 30);
+			}
+			else
+			{
+				return baseDoorColor;
+			}
+		};
+
+		static constexpr std::array<uint8_t, 3> red = {255, 0, 0};
+		static constexpr std::array<uint8_t, 3> blue = {0, 0, 255};
+		static constexpr std::array<uint8_t, 3> yellow = {255, 255, 0};
+
+		doorColors.reddoor    = pulse(red);
+		doorColors.bluedoor   = pulse(blue);
+		doorColors.yellowdoor = pulse(yellow);
+
+		static constexpr std::array<std::array<uint8_t,3>, 3> seq = {
+			red, blue, yellow
+		};
+
+		const int segment = (lockglow / 30) % 3;
+		const int next    = (segment + 1) % 3;
+		const int t       = lockglow % 30;
+
+		doorColors.multidoor = lerp3(seq[segment], seq[next], t, 30);
+	}
+	else
+	{
+		doorColors.reddoor    = baseDoorColor;
+		doorColors.bluedoor   = baseDoorColor;
+		doorColors.yellowdoor = baseDoorColor;
+		doorColors.multidoor  = baseDoorColor;
+	}
 }
 
 //
@@ -1354,49 +1455,56 @@ void AM_drawWalls()
 					AM_drawMline(&l, gameinfo.currentAutomapColors.TSWallColor);
 				}
 
+				// NES - Locked doors glow from a predefined color to either blue,
+				// yellow, or red.
 				if (map_format.getZDoom())
 				{
-					if (line.special == Door_LockedRaise)
+					if (line.special == Door_LockedRaise || line.special == Generic_Door)
 					{
-						// NES - Locked doors glow from a predefined color to either blue,
-						// yellow, or red.
-						r = gameinfo.currentAutomapColors.LockedColor.rgb.getr();
-						g = gameinfo.currentAutomapColors.LockedColor.rgb.getg();
-						b = gameinfo.currentAutomapColors.LockedColor.rgb.getb();
-
-						if (am_usecustomcolors || am_showlocked)
+						const short lock = line.special == Door_LockedRaise ? line.args[3] : line.args[4];
+						switch (lock)
 						{
-							if (line.args[3] == (zk_blue_card | zk_blue))
-							{
-								rdif = (0 - r) / 30;
-								gdif = (0 - g) / 30;
-								bdif = (255 - b) / 30;
-							}
-							else if (line.args[3] == (zk_yellow_card | zk_yellow))
-							{
-								rdif = (255 - r) / 30;
-								gdif = (255 - g) / 30;
-								bdif = (0 - b) / 30;
-							}
-							else
-							{
-								rdif = (255 - r) / 30;
-								gdif = (0 - g) / 30;
-								bdif = (0 - b) / 30;
-							}
-
-							if (lockglow < 30)
-							{
-								r += static_cast<int>(rdif) * lockglow;
-								g += static_cast<int>(gdif) * lockglow;
-								b += static_cast<int>(bdif) * lockglow;
-							}
-							else if (lockglow < 60)
-							{
-								r += static_cast<int>(rdif) * (60 - lockglow);
-								g += static_cast<int>(gdif) * (60 - lockglow);
-								b += static_cast<int>(bdif) * (60 - lockglow);
-							}
+							case zk_blue_card:
+							case zk_blue:
+							case zk_blue_skull:
+							case zk_bluex:
+								r = doorColors.bluedoor[0];
+								g = doorColors.bluedoor[1];
+								b = doorColors.bluedoor[2];
+								break;
+							case zk_yellow_card:
+							case zk_yellow:
+							case zk_yellow_skull:
+							case zk_yellowx:
+								r = doorColors.yellowdoor[0];
+								g = doorColors.yellowdoor[1];
+								b = doorColors.yellowdoor[2];
+								break;
+							case zk_red_card:
+							case zk_red:
+							case zk_red_skull:
+							case zk_redx:
+								r = doorColors.reddoor[0];
+								g = doorColors.reddoor[1];
+								b = doorColors.reddoor[2];
+								break;
+							case zk_all:
+							case zk_any:
+							case zk_each_color:
+								r = doorColors.multidoor[0];
+								g = doorColors.multidoor[1];
+								b = doorColors.multidoor[2];
+								break;
+							case zk_none:
+								r = gameinfo.currentAutomapColors.CDWallColor.rgb.getr();
+								g = gameinfo.currentAutomapColors.CDWallColor.rgb.getg();
+								b = gameinfo.currentAutomapColors.CDWallColor.rgb.getb();
+								break;
+							default:
+								r = gameinfo.currentAutomapColors.LockedColor.rgb.getr();
+								g = gameinfo.currentAutomapColors.LockedColor.rgb.getg();
+								b = gameinfo.currentAutomapColors.LockedColor.rgb.getb();
+								break;
 						}
 
 						AM_drawMline(&l, AM_BestColor(pal->basecolors, r, g, b));
@@ -1408,42 +1516,31 @@ void AM_drawWalls()
 					{
 						// NES - Locked doors glow from a predefined color to either blue,
 						// yellow, or red.
-						r = gameinfo.currentAutomapColors.LockedColor.rgb.getr();
-						g = gameinfo.currentAutomapColors.LockedColor.rgb.getg();
-						b = gameinfo.currentAutomapColors.LockedColor.rgb.getb();
-
-						if (am_usecustomcolors || am_showlocked)
+						if (P_IsCompatibleMultiKeyDoorLine(line.special))
+						{
+							r = doorColors.multidoor[0];
+							g = doorColors.multidoor[1];
+							b = doorColors.multidoor[2];
+						}
+						else
 						{
 							if (P_IsCompatibleBlueDoorLine(line.special))
 							{
-								rdif = (0 - r) / 30;
-								gdif = (0 - g) / 30;
-								bdif = (255 - b) / 30;
+								r = doorColors.bluedoor[0];
+								g = doorColors.bluedoor[1];
+								b = doorColors.bluedoor[2];
 							}
 							else if (P_IsCompatibleYellowDoorLine(line.special))
 							{
-								rdif = (255 - r) / 30;
-								gdif = (255 - g) / 30;
-								bdif = (0 - b) / 30;
+								r = doorColors.yellowdoor[0];
+								g = doorColors.yellowdoor[1];
+								b = doorColors.yellowdoor[2];
 							}
 							else
 							{
-								rdif = (255 - r) / 30;
-								gdif = (0 - g) / 30;
-								bdif = (0 - b) / 30;
-							}
-
-							if (lockglow < 30)
-							{
-								r += static_cast<int>(rdif) * lockglow;
-								g += static_cast<int>(gdif) * lockglow;
-								b += static_cast<int>(bdif) * lockglow;
-							}
-							else if (lockglow < 60)
-							{
-								r += static_cast<int>(rdif) * (60 - lockglow);
-								g += static_cast<int>(gdif) * (60 - lockglow);
-								b += static_cast<int>(bdif) * (60 - lockglow);
+								r = doorColors.reddoor[0];
+								g = doorColors.reddoor[1];
+								b = doorColors.reddoor[2];
 							}
 						}
 
@@ -1512,7 +1609,7 @@ void AM_rotatePoint(mpoint_t& pt)
 	pt.y += y;
 }
 
-void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed64_t scale,
+void AM_drawLineCharacter(nonstd::span<const mline_t> lineguy, fixed64_t scale,
                           angle_t angle, am_color_t color, fixed64_t x, fixed64_t y)
 {
 	for (const auto& mline : lineguy)
@@ -1670,7 +1767,7 @@ void AM_drawPlayers()
 	}
 }
 
-bool AM_actorIsKey(AActor* t)
+bool AM_actorIsKey(const AActor* t)
 {
 	if (t->sprite == SPR_BKEY || t->sprite == SPR_YKEY || t->sprite == SPR_RKEY ||
 	    t->sprite == SPR_BSKU || t->sprite == SPR_YSKU || t->sprite == SPR_RSKU)
@@ -1681,7 +1778,7 @@ bool AM_actorIsKey(AActor* t)
 	return false;
 }
 
-am_color_t AM_getKeyColor(AActor *t)
+am_color_t AM_getKeyColor(const AActor *t)
 {
 	am_color_t color = gameinfo.currentAutomapColors.ThingColor;
 	const argb_t* palette = V_GetDefaultPalette()->colors;
@@ -1696,123 +1793,177 @@ am_color_t AM_getKeyColor(AActor *t)
 	return color;
 }
 
-void AM_drawEasyKeys()
+void AM_drawEasyKey(const AActor* t)
 {
-	for (const sector_t& sector : R_GetSectors())
+	if (AM_actorIsKey(t))
 	{
-		AActor* t = sector.thinglist;
-		while (t)
+		mpoint_t p;
+		M_SetVec2Fixed64(&p, FIXED2FIXED64(t->x), FIXED2FIXED64(t->y));
+
+		const am_color_t key_color = AM_getKeyColor(t);
+
+		AM_drawLineCharacter(gameinfo.easyKey, FIXED2FIXED64(t->radius), 0, key_color, p.x, p.y);
+	}
+}
+
+void AM_drawHordeBoss(const AActor* t)
+{
+	OInterpolation& oi = OInterpolation::getInstance();
+
+	if (t->oflags & MFO_BOSSPOOL)
+	{
+		fixed_t thingx;
+		fixed_t thingy;
+
+		if (oi.enabled())
 		{
-			if (AM_actorIsKey(t))
-			{
-				mpoint_t p;
-				M_SetVec2Fixed64(&p, FIXED2FIXED64(t->x), FIXED2FIXED64(t->y));
-
-				const am_color_t key_color = AM_getKeyColor(t);
-
-				AM_drawLineCharacter(gameinfo.easyKey, FIXED2FIXED64(t->radius), 0, key_color, p.x, p.y);
-			}
-			t = t->snext;
+			thingx = t->prevx + FixedMul(t->x - t->prevx, render_lerp_amount);
+			thingy = t->prevy + FixedMul(t->y - t->prevy, render_lerp_amount);
 		}
+		else
+		{
+			thingx = t->x;
+			thingy = t->y;
+		}
+
+		mpoint_t p;
+		M_SetVec2Fixed64(&p, FIXED2FIXED64(thingx), FIXED2FIXED64(thingy));
+		if (am_rotate)
+			AM_rotatePoint(p);
+
+		const palette_t* palette = V_GetDefaultPalette();
+		am_color_t gold = AM_GetColorFromString(palette->colors, "light goldenrod yellow");
+		auto r = gold.rgb.getr();
+		auto g = gold.rgb.getg();
+		auto b = gold.rgb.getb();
+		float rdif = (255 - r) / 30;
+		float gdif = (0 - g) / 30;
+		float bdif = (0 - b) / 30;
+
+		if (bossglow < 20)
+		{
+			r += static_cast<int>(rdif) * bossglow;
+			g += static_cast<int>(gdif) * bossglow;
+			b += static_cast<int>(bdif) * bossglow;
+		}
+		else if (bossglow < 40)
+		{
+			r += static_cast<int>(rdif) * (40 - bossglow);
+			g += static_cast<int>(gdif) * (40 - bossglow);
+			b += static_cast<int>(bdif) * (40 - bossglow);
+		}
+
+		AM_drawLineCharacter(hordeboss_guy, FIXED2FIXED64(t->radius), 0, AM_BestColor(palette->basecolors, r, g, b),
+		                     p.x, p.y);
+	}
+}
+
+void AM_drawCheatThing(const AActor* t)
+{
+	OInterpolation& oi = OInterpolation::getInstance();
+
+	mpoint_t p;
+
+	fixed_t thingx;
+	fixed_t thingy;
+
+	fixed_t tangle;
+
+	if (oi.enabled())
+	{
+		thingx = t->prevx + FixedMul(t->x - t->prevx, render_lerp_amount);
+		thingy = t->prevy + FixedMul(t->y - t->prevy, render_lerp_amount);
+		tangle = t->prevangle + FixedMul(t->angle - t->prevangle, render_lerp_amount);
+	}
+	else
+	{
+		thingx = t->x;
+		thingy = t->y;
+		tangle = t->angle;
+	}
+
+	M_SetVec2Fixed64(&p, FIXED2FIXED64(thingx), FIXED2FIXED64(thingy));
+	angle_t rotate_angle = 0;
+	angle_t triangle_angle = tangle;
+
+	if (am_rotate)
+	{
+		AM_rotatePoint(p);
+
+		fixed_t conangle;
+
+		if (oi.enabled())
+		{
+			conangle = displayplayer().camera->prevangle +
+				FixedMul(displayplayer().camera->angle -
+				displayplayer().camera->prevangle,
+				render_lerp_amount);
+		}
+		else
+		{
+			conangle = displayplayer().camera->angle;
+		}
+
+		rotate_angle = ANG90 - conangle;
+		triangle_angle += rotate_angle;
+	}
+
+	if (AM_actorIsKey(t))
+	{
+		if (!G_GetCurrentSkill().easy_key)
+		{
+			const am_color_t key_color = AM_getKeyColor(t);
+
+			AM_drawLineCharacter(gameinfo.cheatKey, FIXED2FIXED64(t->radius), 0, key_color, p.x,
+			                     p.y);
+		}
+	}
+	else
+	{
+		am_color_t color = gameinfo.currentAutomapColors.ThingColor;
+
+		AM_drawLineCharacter(thintriangle_guy, FIXED2FIXED64(t->radius), triangle_angle, color,
+		                     p.x, p.y);
+
+		if (t->flags & MF_MISSILE)
+		{
+			color = gameinfo.currentAutomapColors.ThingColor_Projectile;
+		}
+		else if (t->flags & MF_SPECIAL)
+		{
+			if (t->flags & MF_COUNTITEM)
+				color = gameinfo.currentAutomapColors.ThingColor_CountItem;
+			else
+				color = gameinfo.currentAutomapColors.ThingColor_Item;
+		}
+		else if (t->flags & MF_SOLID && t->flags & MF_SHOOTABLE)
+		{
+			if (t->flags & MF_FRIEND)
+				color = gameinfo.currentAutomapColors.ThingColor_Friend;
+			else if (t->flags & MF_COUNTKILL)
+				color = gameinfo.currentAutomapColors.ThingColor_Monster;
+			else
+				color = gameinfo.currentAutomapColors.ThingColor_NoCountMonster;
+		}
+
+		AM_drawLineCharacter(thinrectangle_guy, FIXED2FIXED64(t->radius), rotate_angle, color,
+		                     p.x, p.y);
 	}
 }
 
 void AM_drawThings()
 {
-	OInterpolation& oi = OInterpolation::getInstance();
-
 	for (const sector_t& sector : R_GetSectors())
 	{
-		AActor* t = sector.thinglist;
+		const AActor* t = sector.thinglist;
 		while (t)
 		{
-			mpoint_t p;
-
-			fixed_t thingx;
-			fixed_t thingy;
-
-			fixed_t tangle;
-
-			if (oi.enabled())
-			{
-				thingx = t->prevx + FixedMul(t->x - t->prevx, render_lerp_amount);
-				thingy = t->prevy + FixedMul(t->y - t->prevy, render_lerp_amount);
-				tangle = t->prevangle + FixedMul(t->angle - t->prevangle, render_lerp_amount);
-			}
-			else
-			{
-				thingx = t->x;
-				thingy = t->y;
-				tangle = t->angle;
-			}
-
-			M_SetVec2Fixed64(&p, FIXED2FIXED64(thingx), FIXED2FIXED64(thingy));
-			angle_t rotate_angle = 0;
-			angle_t triangle_angle = tangle;
-
-			if (am_rotate)
-			{
-				AM_rotatePoint(p);
-
-				fixed_t conangle;
-
-				if (oi.enabled())
-				{
-					conangle = displayplayer().camera->prevangle +
-						FixedMul(displayplayer().camera->angle -
-						displayplayer().camera->prevangle,
-						render_lerp_amount);
-				}
-				else
-				{
-					conangle = displayplayer().camera->angle;
-				}
-
-				rotate_angle = ANG90 - conangle;
-				triangle_angle += rotate_angle;
-			}
-
-			if (AM_actorIsKey(t))
-			{
-				if (!G_GetCurrentSkill().easy_key)
-				{
-					const am_color_t key_color = AM_getKeyColor(t);
-
-					AM_drawLineCharacter(gameinfo.cheatKey, FIXED2FIXED64(t->radius), 0, key_color, p.x,
-					                     p.y);
-				}
-			}
-			else
-			{
-				am_color_t color = gameinfo.currentAutomapColors.ThingColor;
-
-				AM_drawLineCharacter(thintriangle_guy, FIXED2FIXED64(t->radius), triangle_angle, color,
-				                     p.x, p.y);
-
-				if (t->flags & MF_MISSILE)
-				{
-					color = gameinfo.currentAutomapColors.ThingColor_Projectile;
-				}
-				else if (t->flags & MF_SPECIAL)
-				{
-					if (t->flags & MF_COUNTITEM)
-						color = gameinfo.currentAutomapColors.ThingColor_CountItem;
-					else
-						color = gameinfo.currentAutomapColors.ThingColor_Item;
-				}
-				else if (t->flags & MF_SOLID && t->flags & MF_SHOOTABLE)
-				{
-					if (t->flags & MF_FRIEND)
-						color = gameinfo.currentAutomapColors.ThingColor_Friend;
-					else if (t->flags & MF_COUNTKILL)
-						color = gameinfo.currentAutomapColors.ThingColor_Monster;
-					else
-						color = gameinfo.currentAutomapColors.ThingColor_NoCountMonster;
-				}
-
-				AM_drawLineCharacter(thinrectangle_guy, FIXED2FIXED64(t->radius), rotate_angle, color,
-				                     p.x, p.y);
-			}
+			if (G_IsHordeMode())
+				AM_drawHordeBoss(t);
+			if (G_GetCurrentSkill().easy_key)
+				AM_drawEasyKey(t);
+			if (am_cheating == 2)
+				AM_drawCheatThing(t);
 			t = t->snext;
 		}
 	}
@@ -1922,9 +2073,7 @@ void AM_Drawer()
 
 	AM_drawWalls();
 	AM_drawPlayers();
-	if (G_GetCurrentSkill().easy_key)
-		AM_drawEasyKeys();
-	if (am_cheating == 2)
+	if (G_IsHordeMode() || G_GetCurrentSkill().easy_key || (am_cheating == 2))
 		AM_drawThings();
 
 	if (!(viewactive && am_overlay < 2))

@@ -35,6 +35,10 @@
 #include "win32inc.h"
 #include <shlobj.h>
 #include <shlwapi.h>
+#include <nonstd/scope.hpp>
+
+#include <filesystem>
+namespace fs = std::filesystem;
 
 #include "i_system.h"
 
@@ -59,41 +63,36 @@ std::string M_GetBinaryDir()
 
 std::string M_GetHomeDir(const std::string& user)
 {
-	// [AM] Use SHGetKnownFolderPath when we don't feel like supporting
-	//      Windows XP anymore.
-	TCHAR folderPath[MAX_PATH];
-	if (!SUCCEEDED(SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, folderPath)))
+	PWSTR folderPath;
+	if (!SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Profile, 0, NULL, &folderPath)))
 	{
 		I_FatalError("Could not get user's personal folder.\n");
 	}
 
-	// Now that we have the Documents folder, just go up one.
-	std::string path = fmt::sprintf("%s\\..", folderPath);
-	return M_CleanPath(path);
+	fs::path path(folderPath);
+
+	CoTaskMemFree(folderPath);
+
+	return path.string();
 }
 
 std::string M_GetUserDir()
 {
-#if defined(_XBOX)
-	return "T:" PATHSEP;
-#else
-	// [AM] Use SHGetKnownFolderPath when we don't feel like supporting
-	//      Windows XP anymore.
-	TCHAR folderPath[MAX_PATH];
-	if (!SUCCEEDED(SHGetFolderPath(NULL, CSIDL_PERSONAL, NULL, 0, folderPath)))
+	PWSTR folderPath;
+	if (!SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &folderPath)))
 	{
 		I_FatalError("Could not get user's personal folder.\n");
 	}
 
-	return fmt::sprintf("%s\\My Games\\Odamex", folderPath);
-#endif
+	fs::path path(folderPath);
+
+	CoTaskMemFree(folderPath);
+
+	return (path / "My Games" / "Odamex").string();
 }
 
 std::string M_GetWriteDir()
 {
-#if defined(_XBOX)
-	return "T:" PATHSEP;
-#else
 	// Has Odamex been installed?
 	std::string installed = M_GetBinaryDir() + PATHSEP "odamex-installed.txt";
 	if (M_FileExists(installed))
@@ -115,7 +114,6 @@ std::string M_GetWriteDir()
 	// [AM] Don't change this back to CWD because this means your write dir
 	//      depends on where you launch it from, which is not great.
 	return M_CleanPath(M_GetBinaryDir());
-#endif
 }
 
 #endif

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -30,7 +30,9 @@
 #include <string.h>
 
 #include <string>
+#include <string_view>
 #include <vector>
+#include <map>
 
 #include <nonstd/span.hpp>
 #include "fmt/format.h"
@@ -40,3 +42,5 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "doomfunc.h"
+
+using namespace std::string_view_literals;

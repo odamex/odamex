@@ -27,10 +27,12 @@
 #include "r_sprites.h"
 
 // [RH] Particle details
+// Expanded to be able to use patches/textures for particle effects
 struct particle_s {
 	fixed_t	x,y,z;
 	fixed_t velx,vely,velz;
 	fixed_t accx,accy,accz;
+	int		sprite; // new
 	byte	ttl;
 	byte	trans;
 	byte	size;
@@ -49,11 +51,10 @@ extern std::vector<WORD> ParticlesInSubsec;
 
 constexpr WORD NO_PARTICLE = 0xffff;
 
-#ifdef _MSC_VER
-__inline particle_t *NewParticle()
+inline particle_t *NewParticle()
 {
-	particle_t *result = NULL;
-	if (InactiveParticles != NO_PARTICLE) {
+	particle_t *result = nullptr;
+	if (clientside && InactiveParticles != NO_PARTICLE) {
 		result = Particles + InactiveParticles;
 		InactiveParticles = result->next;
 		result->next = ActiveParticles;
@@ -61,9 +62,6 @@ __inline particle_t *NewParticle()
 	}
 	return result;
 }
-#else
-particle_t *NewParticle ();
-#endif
 void R_InitParticles ();
 void R_ClearParticles ();
 void R_DrawParticle(vissprite_t*);

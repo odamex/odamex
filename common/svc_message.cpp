@@ -344,7 +344,7 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 	cur->set_netid(mo->netid);
 
 	// denis - sending state fixes monster ghosts appearing under doors
-	cur->set_statenum(mo->state - states);
+	cur->set_statenum(mo->state->statenum);
 
 	if (mo->type == MT_FOUNTAIN)
 	{
@@ -368,6 +368,12 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 		cur->set_flags(mo->flags);
 	}
 
+	if (mo->flags2 & MF2_DORMANT)
+	{
+		spawnFlags |= SVC_SM_FLAGS2;
+		cur->set_flags2(mo->flags2);
+	}
+
 	// odamex flags - only monster flags for now
 	if (mo->oflags & hordeBossModMask)
 	{
@@ -376,7 +382,7 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 	}
 
 	// animating corpses
-	if ((mo->flags & MF_CORPSE) && mo->state - states != S_GIBS)
+	if ((mo->flags & MF_CORPSE) && mo->state->statenum != S_GIBS)
 	{
 		// This sets off some additional logic on the client.
 		spawnFlags |= SVC_SM_CORPSE;
@@ -548,6 +554,8 @@ odaproto::svc::UpdateMobj SVC_UpdateMobj(AActor& mobj)
 	return msg;
 }
 
+EXTERN_CVAR(sv_sharekeys);
+
 odaproto::svc::SpawnPlayer SVC_SpawnPlayer(player_t& player)
 {
 	odaproto::svc::SpawnPlayer msg;
@@ -568,7 +576,14 @@ odaproto::svc::SpawnPlayer SVC_SpawnPlayer(player_t& player)
 		// The client hasn't yet received his own position from the server
 		// This happens with cl_autorecord
 		// Just fake a position for now
-		act->set_netid(MAXSHORT);
+		act->set_netid(limits::MAXSHORT);
+	}
+
+
+	if (sv_sharekeys)
+	{
+		const uint32_t packedcards = PackBoolArray(player.cards, NUMCARDS);
+		msg.set_cards(packedcards);
 	}
 
 	return msg;
@@ -632,6 +647,37 @@ odaproto::svc::KillMobj SVC_KillMobj(AActor* source, AActor* target, AActor* inf
 	tgtmom->set_x(target->momx);
 	tgtmom->set_y(target->momy);
 	tgtmom->set_z(target->momz);
+
+	return msg;
+}
+
+/**
+ * @brief Resurrect a mobj.
+ */
+odaproto::svc::RaiseMobj SVC_RaiseMobj(AActor* source, AActor* corpse)
+{
+	odaproto::svc::RaiseMobj msg;
+
+	odaproto::Actor* cps = msg.mutable_corpse();
+
+	// corpse netid
+	cps->set_netid(corpse->netid);
+
+	cps->set_rndindex(corpse->rndindex);
+
+	odaproto::Vec3* cpspos = cps->mutable_pos();
+	cpspos->set_x(corpse->x);
+	cpspos->set_y(corpse->y);
+	cpspos->set_z(corpse->z);
+
+	cps->set_angle(corpse->angle);
+
+	odaproto::Vec3* cpsmom = cps->mutable_mom();
+	cpsmom->set_x(corpse->momx);
+	cpsmom->set_y(corpse->momy);
+	cpsmom->set_z(corpse->momz);
+
+	msg.set_source_netid(source ? source->netid : 0);
 
 	return msg;
 }
@@ -986,7 +1032,7 @@ odaproto::svc::PlayerState SVC_PlayerState(player_t& player)
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
 		pspdef_t* psp = &player.psprites[i];
-		unsigned int state = psp->state - states;
+		const int32_t state = psp->state ? psp->state->statenum : 0;
 		odaproto::Player_Psp* plpsp = pl->add_psprites();
 		plpsp->set_statenum(state);
 	}
@@ -1320,7 +1366,7 @@ odaproto::svc::MobjState SVC_MobjState(AActor* mo)
 {
 	odaproto::svc::MobjState msg;
 
-	statenum_t mostate = static_cast<statenum_t>(mo->state - states);
+	const int32_t mostate = mo->state ? mo->state->statenum : 0;
 
 	msg.set_netid(mo->netid);
 	msg.set_mostate(mostate);

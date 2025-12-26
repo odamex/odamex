@@ -52,25 +52,24 @@ enum triggertype
 // Migrate some non-hexen data to hexen format, and other misc flags.
 void P_MigrateActorInfo(void)
 {
-	int i;
 	static bool migrated = false;
 
 	// Set MF2_PASSMOBJ on dehacked monsters
 	// because we don't expose ZDoom's Bits2 BEX extension (yet...)
 	// which is the normal way MF2_PASSMOBJ gets set.
-	for (i = 0; i < NUMMOBJTYPES; ++i)
+	for (auto& [_, m] : mobjinfo)
 	{
-		if (mobjinfo[i].flags & MF_COUNTKILL)
+		if (m.flags & MF_COUNTKILL)
 		{
 			if (P_AllowPassover())
 			{
-				if (mobjinfo[i].flags & MF_COUNTKILL)
-					mobjinfo[i].flags2 |= MF2_PASSMOBJ;
+				if (m.flags & MF_COUNTKILL)
+					m.flags2 |= MF2_PASSMOBJ;
 			}
 			else
 			{
-				if (mobjinfo[i].flags & MF_COUNTKILL)
-					mobjinfo[i].flags2 &= ~MF2_PASSMOBJ;
+				if (m.flags & MF_COUNTKILL)
+					m.flags2 &= ~MF2_PASSMOBJ;
 			}
 		}
 	}
@@ -89,13 +88,13 @@ void P_MigrateActorInfo(void)
 	{
 		migrated = true;
 
-		for (i = 0; i < NUMMOBJTYPES; ++i)
+		for (auto& [_, m] : mobjinfo)
 		{
-			if (mobjinfo[i].flags & MF_COUNTKILL)
-				mobjinfo[i].flags2 |= MF2_MCROSS | MF2_PUSHWALL;
+			if (m.flags & MF_COUNTKILL)
+				m.flags2 |= MF2_MCROSS | MF2_PUSHWALL;
 
-			if (mobjinfo[i].flags & MF_MISSILE)
-				mobjinfo[i].flags2 |= MF2_PCROSS | MF2_IMPACT;
+			if (m.flags & MF_MISSILE)
+				m.flags2 |= MF2_PCROSS | MF2_IMPACT;
 		}
 
 		mobjinfo[MT_SKULL].flags2 |= MF2_MCROSS | MF2_PUSHWALL;
@@ -105,13 +104,13 @@ void P_MigrateActorInfo(void)
 	{
 		migrated = false;
 
-		for (i = 0; i < NUMMOBJTYPES; ++i)
+		for (auto& [idx, m] : mobjinfo)
 		{
-			if (mobjinfo[i].flags & MF_COUNTKILL)
-				mobjinfo[i].flags2 &= ~(MF2_MCROSS | MF2_PUSHWALL);
+			if (m.flags & MF_COUNTKILL)
+				m.flags2 &= ~(MF2_MCROSS | MF2_PUSHWALL);
 
-			if (mobjinfo[i].flags & MF_MISSILE)
-				mobjinfo[i].flags2 &= ~(MF2_PCROSS | MF2_IMPACT);
+			if (m.flags & MF_MISSILE)
+				m.flags2 &= ~(MF2_PCROSS | MF2_IMPACT);
 		}
 
 		mobjinfo[MT_SKULL].flags2 &= ~(MF2_MCROSS | MF2_PUSHWALL);
@@ -397,8 +396,8 @@ bool P_IsTeleportLine(const short special)
 
 	return special == 39 || special == 97 || special == 125 || special == 126 ||
 	       special == 174 || special == 195 || special == 207 || special == 208 ||
-	       special == 209 || special == 210 || special == 244 || special == 268 ||
-	       special == 269;
+	       special == 209 || special == 210 || special == 243 || special == 244 ||
+	       (262 <= special && special <= 269);
 }
 
 bool P_IsThingTeleportLine(const short special)
@@ -407,7 +406,8 @@ bool P_IsThingTeleportLine(const short special)
 		return false;
 
 	return special == 39 || special == 97 || special == 125 || special == 126 ||
-	       special == 174 || special == 195 || special == 208 || special == 243;
+	       special == 174 || special == 195 || special == 207 || special == 208 ||
+	       special == 209 || special == 210 || special == 268 || special == 269;
 }
 
 bool P_IsThingNoFogTeleportLine(const short special)
@@ -424,8 +424,22 @@ bool P_IsCompatibleLockedDoorLine(const short special)
 	if (map_format.getZDoom())
 		return false;
 
+	if (special >= GenLockedBase && special < GenDoorBase)
+		return true;
+
 	return special == 26 || special == 27 || special == 28 || special == 32 ||
-	       special == 33 || special == 34;
+	       special == 33 || special == 34 || special == 99 || special == 133 ||
+	       special == 134 || special == 135 || special == 136 || special == 137;
+}
+
+bool P_IsCompatibleMultiKeyDoorLine(const short special)
+{
+	if (map_format.getZDoom())
+		return false;
+
+	const int lock = (special & LockedKey) >> LockedKeyShift;
+
+	return lock == 0 || lock == 7;
 }
 
 bool P_IsCompatibleBlueDoorLine(const short special)
@@ -433,13 +447,10 @@ bool P_IsCompatibleBlueDoorLine(const short special)
 	if (map_format.getZDoom())
 		return false;
 
-	int lock = (special & LockedKey) >> LockedKeyShift;
-	bool genericlock = false;
+	const int lock = (special & LockedKey) >> LockedKeyShift;
+	const bool genericlock = lock == BCard || lock == BSkull;
 
-	if (lock == BCard || lock == BSkull)
-		genericlock = true;
-
-	return special == 26 || special == 32 || genericlock;
+	return special == 26 || special == 32 || special == 99 || special == 133 || genericlock;
 }
 
 bool P_IsCompatibleRedDoorLine(const short special)
@@ -447,13 +458,10 @@ bool P_IsCompatibleRedDoorLine(const short special)
 	if (map_format.getZDoom())
 		return false;
 
-	int lock = (special & LockedKey) >> LockedKeyShift;
-	bool genericlock = false;
+	const int lock = (special & LockedKey) >> LockedKeyShift;
+	const bool genericlock = lock == RCard || lock == RSkull;
 
-	if (lock == RCard || lock == RSkull)
-		genericlock = true;
-
-	return special == 28 || special == 33 || genericlock;
+	return special == 28 || special == 33 || special == 134 || special == 135 || genericlock;
 }
 
 bool P_IsCompatibleYellowDoorLine(const short special)
@@ -461,13 +469,10 @@ bool P_IsCompatibleYellowDoorLine(const short special)
 	if (map_format.getZDoom())
 		return false;
 
-	int lock = (special & LockedKey) >> LockedKeyShift;
-	bool genericlock = false;
+	const int lock = (special & LockedKey) >> LockedKeyShift;
+	const bool genericlock = lock == YCard || lock == YSkull;
 
-	if (lock == YCard || lock == YSkull)
-		genericlock = true;
-
-	return special == 27 || special == 34 || genericlock;
+	return special == 27 || special == 34 || special == 136 || special == 137 || genericlock;
 }
 
 bool P_IsLightTagDoorType(const short special)

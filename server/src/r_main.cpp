@@ -44,6 +44,7 @@ extern dyncolormap_t NormalLight;
 // [Russell] - Doesn't get used serverside
 byte *translationtables;
 byte bosstable[256];
+byte friendtable[256];
 byte greentable[MAXPLAYERS + 1][256];
 byte redtable[MAXPLAYERS + 1][256];
 

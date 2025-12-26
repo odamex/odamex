@@ -55,10 +55,6 @@
 #include "g_skill.h"
 #include "m_fileio.h"
 
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
-
 EXTERN_CVAR(g_resetinvonexit)
 
 // temp for screenblocks (0-9)
@@ -1278,7 +1274,7 @@ void M_QuitDOOM(int choice)
 
 void M_DrawSlider(int x, int y, float leftval, float rightval, float cur, float step);
 
-static const char *genders[3] = { "male", "female", "cyborg" };
+static const char *genders[4] = { "male", "female", "cyborg", "other" };
 // Acts 19 quiz the order must match d_netinf.h
 static const char *colorpresets[11] = { "custom", "blue", "indigo", "green", "brown", "red", "gold", "jungle green", "purple", "white", "black" };
 static state_t *PlayerState;
@@ -1542,7 +1538,7 @@ static void M_PlayerSetupDrawer()
 		}
 	}
 	{
-		const int spritenum = states[mobjinfo[MT_PLAYER].spawnstate].sprite;
+		const int32_t spritenum = states[mobjinfo[MT_PLAYER].spawnstate].sprite;
 		const spriteframe_t* sprframe = &sprites[spritenum].spriteframes[PlayerState->frame & FF_FRAMEMASK];
 
 		// [Nes] Color of player preview uses the unused translation table (player 0), instead
@@ -1645,12 +1641,13 @@ void M_ChangeTeam (int choice) // [Toke - Teams]
 
 static void M_ChangeGender (int choice)
 {
+	static constexpr int MAX_GENDER = ARRAY_LENGTH(genders) - 1;
 	int gender = D_GenderByName(cl_gender.cstring());
 
 	if (!choice)
-		gender = (gender == 0) ? 2 : gender - 1;
+		gender = (gender == 0) ? MAX_GENDER : gender - 1;
 	else
-		gender = (gender == 2) ? 0 : gender + 1;
+		gender = (gender == MAX_GENDER) ? 0 : gender + 1;
 
 	cl_gender = genders[gender];
 }
@@ -1685,13 +1682,14 @@ static void M_ChangeAutoAim (int choice)
 
 static void M_ChangeColorPreset (int choice)
 {
+	static constexpr int MAX_PRESET = ARRAY_LENGTH(colorpresets) - 1;
 	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
 	argb_t customcolor = V_GetColorFromString(cl_customcolor);
 
 	if (!choice)
-		colorpreset = (colorpreset == 0) ? 10 : colorpreset - 1;
+		colorpreset = (colorpreset == 0) ? MAX_PRESET : colorpreset - 1;
 	else
-		colorpreset = (colorpreset == 10) ? 0 : colorpreset + 1;
+		colorpreset = (colorpreset == MAX_PRESET) ? 0 : colorpreset + 1;
 
 	cl_colorpreset = colorpresets[colorpreset];
 
@@ -2371,7 +2369,7 @@ size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length)
     	}
 	}
 
-    return MAXINT;    // indicate not found
+    return limits::MAXINT;    // indicate not found
 }
 
 

@@ -1206,7 +1206,7 @@ const char* PlayerState(size_t state)
 	}
 }
 
-#define STATE_NUM(mo) (mo -> state - states)
+#define STATE_NUM(mo) (mo->state->statenum)
 
 BEGIN_COMMAND(cheat_players)
 {
@@ -1236,7 +1236,7 @@ BEGIN_COMMAND(cheat_players)
 			{
 				PrintFmt("???: ???\n");
 			}
-			PrintFmt("State: {}\n", PlayerState(mo->state - states));
+			PrintFmt("State: {}\n", PlayerState(mo->state->statenum));
 			PrintFmt("{}, {}, {}\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
 			         FIXED2FLOAT(mo->z));
 		}

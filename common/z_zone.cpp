@@ -26,6 +26,7 @@
 
 #include <unordered_map>
 #include <stdlib.h>
+#include <string.h>
 
 #include "z_zone.h"
 #include "i_system.h"
@@ -168,7 +169,7 @@ class OZone
 		MemoryBlockInfo block;
 		block.tag = tag;
 		block.user = static_cast<void**>(user);
-		block.size = size > MAXUINT ? MAXUINT : static_cast<uint32_t>(size);
+		block.size = size > limits::MAXUINT ? limits::MAXUINT : static_cast<uint32_t>(size);
 
 		// Store the allocating function.  12 byte overhead per allocation,
 		// but the information we get while debugging is priceless.
@@ -200,7 +201,7 @@ class OZone
 		if (it == m_heap.end())
 		{
 			I_Error("{}: Address 0x{:p} is not tracked by zone at {}:{}.\n{}", __FUNCTION__,
-			        it->first, info.shortFile(), info.line, M_GetStacktrace());
+			        ptr, info.shortFile(), info.line, M_GetStacktrace());
 		}
 
 		const size_t copySize = std::min(size, static_cast<size_t>(it->second.size));
@@ -224,7 +225,7 @@ class OZone
 		if (it == m_heap.end())
 		{
 			I_Error("{}: Address 0x{:p} is not tracked by zone at {}:{}.\n{}", __FUNCTION__,
-			        it->first, info.shortFile(), info.line, M_GetStacktrace());
+			        ptr, info.shortFile(), info.line, M_GetStacktrace());
 		}
 
 		if (tag >= PU_PURGELEVEL && it->second.user == NULL)
@@ -253,7 +254,7 @@ class OZone
 		if (it == m_heap.end())
 		{
 			I_Error("{}: Address 0x{:p} is not tracked by zone at {}:{}.\n{}", __FUNCTION__,
-			        it->first, info.shortFile(), info.line, M_GetStacktrace());
+			        ptr, info.shortFile(), info.line, M_GetStacktrace());
 		}
 
 		dealloc(it);
@@ -360,10 +361,24 @@ void Z_ChangeTag2(void* ptr, const zoneTag_e tag, const char* file, int line)
 	return ::g_zone.changeTag(ptr, tag, OFileLine::create(file, line));
 }
 
-
+//
+// Z_ChangeOwner
+//
 void Z_ChangeOwner2(void* ptr, void* user, const char* file, int line)
 {
 	return ::g_zone.changeOwner(ptr, user, OFileLine::create(file, line));
+}
+
+//
+// Z_StrDup
+//
+char* Z_StrDup2(const char* s, const zoneTag_e tag, const char* file, int line)
+{
+	size_t len = strlen(s);
+	char* output = (char*)Z_Malloc2(len + 1, tag, NULL, file, line);
+	strncpy(output, s, len);
+	output[len] = '\0';
+	return output;
 }
 
 //
@@ -377,7 +392,7 @@ void Z_DumpHeap(const zoneTag_e lowtag, const zoneTag_e hightag)
 
 BEGIN_COMMAND(dumpheap)
 {
-	int lo = MININT, hi = MAXINT;
+	int lo = limits::MININT, hi = limits::MAXINT;
 
 	if (argc >= 2)
 	{

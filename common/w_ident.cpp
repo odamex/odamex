@@ -64,6 +64,7 @@ struct identData_t
 #define FREEDM_PREFIX "FreeDM"
 #define NERVE_PREFIX "No Rest for the Living"
 #define MASTERLV_PREFIX "Master Levels"
+#define CHEX3_PREFIX "Chex Quest 3"
 
 #define PWAD_NO_WEIGHT 0
 
@@ -1006,6 +1007,45 @@ static constexpr identData_t identdata[] = {
     },
 
     // ------------------------------------------------------------------------
+    // CHEX3ODX-RCD4.WAD
+    // ------------------------------------------------------------------------
+    {
+        CHEX3_PREFIX " v2.0 RC4",           // mIdName
+        "CHEX3ODX-RC4.WAD",                 // mFilename
+        "D85A48E2",                         // mCRC32Sum
+        "D7FF45AD937D8F26D0723D70349E38CC", // mMd5Sum
+        "chex3v2",                          // mGroupName
+        IDENT_IWAD,                         // flags
+        600,                                // weight
+    },
+
+    // ------------------------------------------------------------------------
+    // CHEX3V.WAD
+    // ------------------------------------------------------------------------
+    {
+        CHEX3_PREFIX " Vanilla Edition",    // mIdName
+        "CHEX3V.WAD",                       // mFilename
+        "C57A9F82",                         // mCRC32Sum
+        "99325880D3D91EE1F8B47BFD9665A887", // mMd5Sum
+        "chex3vanilla",                     // mGroupName
+        IDENT_IWAD,                         // flags
+        600,                                // weight
+    },
+
+    // ------------------------------------------------------------------------
+    // CHEX3D2.WAD
+    // ------------------------------------------------------------------------
+    {
+        CHEX3_PREFIX "V Modding Version",   // mIdName
+        "CHEX3D2.WAD",                      // mFilename
+        "67EA7CD5",                         // mCRC32Sum
+        "B43DB49801C6C9577B89810A8650CF1D", // mMd5Sum
+        "chex3vanillad2",                   // mGroupName
+        IDENT_IWAD,                         // flags
+        600,                                // weight
+    },
+
+    // ------------------------------------------------------------------------
     // HACX.WAD
     // ------------------------------------------------------------------------
     {
@@ -1429,7 +1469,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
     {
 		gamemode = retail;
 		gamemission = doom;
-		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
+		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "REKKR";
 	}
@@ -1457,11 +1497,27 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "DOOM 2: TNT - Evilution";
 	}
+    else if (idname.find("CHEX QUEST 3V MODDING") == 0)
+	{
+		gamemission = chex3d2;
+		gamemode = commercial;
+		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
+		gameinfo.maxSwitch = 3;
+		gameinfo.titleString = "Chex Quest 3 Modding Version";
+	}
+    else if (idname.find(OStringToUpper(OString(CHEX3_PREFIX))) == 0)
+	{
+		gamemission = idname.find("VANILLA") != std::string::npos ? chex3v : chex3;
+		gamemode = registered;
+		gameinfo.flags = GI_MENUHACK_RETAIL;
+		gameinfo.maxSwitch = 2;
+		gameinfo.titleString = "Chex Quest 3";
+	}
 	else if (idname.find("CHEX QUEST") == 0)
 	{
 		gamemission = chex;
 		gamemode = retail_chex;
-		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
+		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "Chex Quest";
 	}
@@ -1469,7 +1525,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	{
 		gamemode = retail;
 		gamemission = retail_freedoom;
-		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
+		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "FreeDoom: Phase 1";
 	}
@@ -1510,7 +1566,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	{
 		gamemode = retail_bfg;
 		gamemission = doom;
-		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
+		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "The Ultimate DOOM (BFG Edition)";
 	}
@@ -1518,7 +1574,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	{
 		gamemode = retail;
 		gamemission = doom;
-		gameinfo.flags = GI_MENUHACK_RETAIL | GI_NOCRAZYDEATH;
+		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "The Ultimate DOOM";
 	}
@@ -1542,7 +1598,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	{
 		gamemode = registered;
 		gamemission = doom;
-		gameinfo.flags = GI_NOCRAZYDEATH;
+		gameinfo.flags = 0;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "DOOM Registered";
 	}

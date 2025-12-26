@@ -248,8 +248,8 @@ AMSTR_MARKEDSPOT = "Marked Spot";
 AMSTR_MARKSCLEARED = "All Marks Cleared";
 STSTR_MUS = "Music Change";
 STSTR_NOMUS = "IMPOSSIBLE SELECTION";
-STSTR_DQDON = "Degreelessness Mode ON";
-STSTR_DQDOFF = "Degreelessness Mode OFF";
+STSTR_DQDON = "Degreelessness Mode On";
+STSTR_DQDOFF = "Degreelessness Mode Off";
 STSTR_KFAADDED = "Very Happy Ammo Added";
 STSTR_FAADDED = "Ammo (no keys) Added";
 STSTR_NCON = "No Clipping Mode ON";
@@ -1248,7 +1248,7 @@ HUSTR_8 = "NIVEAU 8: RUSES ET PIEGES ";
 HUSTR_9 = "NIVEAU 9: LE PUITS ";
 HUSTR_10 = "NIVEAU 10: BASE DE RAVITAILLEMENT ";
 HUSTR_11 = "NIVEAU 11: LE CERCLE DE LA MORT!";
-  
+
 HUSTR_12 = "NIVEAU 12: L'USINE ";
 HUSTR_13 = "NIVEAU 13: LE CENTRE VILLE";
 HUSTR_14 = "NIVEAU 14: LES ANTRES PROFONDES ";
@@ -1258,7 +1258,7 @@ HUSTR_17 = "NIVEAU 17: LES IMMEUBLES";
 HUSTR_18 = "NIVEAU 18: LA COUR ";
 HUSTR_19 = "NIVEAU 19: LA CITADELLE ";
 HUSTR_20 = "NIVEAU 20: JE T'AI EU!";
-  
+
 HUSTR_21 = "NIVEAU 21: LE NIRVANA";
 HUSTR_22 = "NIVEAU 22: LES CATACOMBES ";
 HUSTR_23 = "NIVEAU 23: LA GRANDE FETE ";
@@ -1269,7 +1269,7 @@ HUSTR_27 = "NIVEAU 27: CHEZ LES MONSTRES ";
 HUSTR_28 = "NIVEAU 28: LE MONDE DE L'ESPRIT ";
 HUSTR_29 = "NIVEAU 29: LA LIMITE ";
 HUSTR_30 = "NIVEAU 30: L'ICONE DU PECHE ";
-  
+
 HUSTR_31 = "NIVEAU 31: WOLFENSTEIN";
 HUSTR_32 = "NIVEAU 32: LE MASSACRE";
 
@@ -1333,7 +1333,7 @@ E1TEXT =
   "POUR VIVRE LA SUITE DE DOOM, JOUEZ\n"
   "A 'AUX PORTES DE L'ENFER' ET A\n"
   "L'EPISODE SUIVANT, 'L'ENFER'!\n";
-        
+
 E2TEXT =
   "VOUS AVEZ REUSSI. L'INFAME DEMON\n"
   "QUI CONTROLAIT LA BASE LUNAIRE DE\n"
@@ -1352,7 +1352,7 @@ E2TEXT =
   "\n"
   "VOICI MAINTENANT LE CHAPITRE FINAL DE\n"
   "DOOM! -- L'ENFER.";
-  
+
 E3TEXT =
   "LE DEMON ARACHNEEN ET REPUGNANT\n"
   "QUI A DIRIGE L'INVASION DES BASES\n"
@@ -1371,11 +1371,11 @@ E3TEXT =
   "COMBATTU LE DEMON. HEUREUSEMENT,\n"
   "AUCUN GERME DU MAL N'A FRANCHI\n"
   "CETTE PORTE AVEC VOUS...";
-  
-  
-  
+
+
+
 // after level 6, put this:
-  
+
 C1TEXT =
   "VOUS ETES AU PLUS PROFOND DE L'ASTROPORT\n"
   "INFESTE DE MONSTRES, MAIS QUELQUE CHOSE\n"
@@ -1389,9 +1389,9 @@ C1TEXT =
   "COEUR DE LA BASE HANTEE ET TROUVER \n"
   "L'INTERRUPTEUR DE CONTROLE QUI GARDE LA \n"
   "POPULATION DE LA TERRE EN OTAGE.";
-  
+
 // After level 11, put this:
-  
+
 C2TEXT =
   "VOUS AVEZ GAGNE! VOTRE VICTOIRE A PERMIS\n"
   "A L'HUMANITE D'EVACUER LA TERRE ET \n"
@@ -1410,9 +1410,9 @@ C2TEXT =
   "DE VOTRE VILLE NATALE, PRES DE L'ASTROPORT.\n"
   "VOUS VOUS RELEVEZ LENTEMENT ET PENIBLEMENT\n"
   "ET VOUS REPARTEZ POUR LE FRONT.";
-  
+
 // After level 20, put this:
-  
+
 C3TEXT =
   "VOUS ETES AU COEUR DE LA CITE CORROMPUE,\n"
   "ENTOURE PAR LES CADAVRES DE VOS ENNEMIS.\n"
@@ -1423,9 +1423,9 @@ C3TEXT =
   "IL DOIT Y AVOIR UN MOYEN DE LA FERMER\n"
   "DE L'AUTRE COTE. VOUS ACCEPTEZ DE\n"
   "TRAVERSER L'ENFER POUR LE FAIRE?";
-  
+
 // After level 29, put this:
-  
+
 C4TEXT =
   "LE VISAGE HORRIBLE D'UN DEMON D'UNE\n"
   "TAILLE INCROYABLE S'EFFONDRE DEVANT\n"
@@ -1442,18 +1442,18 @@ C4TEXT =
   "VOTRE FRONT COUVERT DE SUEUR ET REPARTEZ\n"
   "VERS LA TERRE. SA RECONSTRUCTION SERA\n"
   "BEAUCOUP PLUS DROLE QUE SA DESTRUCTION.\n";
-  
+
 // Before level 31, put this:
-  
+
 C5TEXT =
   "FELICITATIONS! VOUS AVEZ TROUVE LE\n"
   "NIVEAU SECRET! IL SEMBLE AVOIR ETE\n"
   "CONSTRUIT PAR LES HUMAINS. VOUS VOUS\n"
   "DEMANDEZ QUELS PEUVENT ETRE LES\n"
   "HABITANTS DE CE COIN PERDU DE L'ENFER.";
-  
+
 // Before level 32, put this:
-  
+
 C6TEXT =
   "FELICITATIONS! VOUS AVEZ DECOUVERT\n"
   "LE NIVEAU SUPER SECRET! VOUS FERIEZ\n"
@@ -1762,7 +1762,7 @@ E2TEXT =
 	"Deimos fluttua sopra l'Inferno stesso!\n"
 	"Non hai mai sentito di nessuno fuggito\n"
 	"dall'Inferno, ma farai spiacere ai\n"
-	"bastardi di aver anche solo\n" 
+	"bastardi di aver anche solo\n"
         "sentito parlare di te!\n"
 	"Velocemente scendi sulla superficie\n"
 	"dell'Inferno.\n"
@@ -1794,7 +1794,7 @@ E4TEXT =
 	"terribile bestia. Ma ti sei fatto avanti\n"
 	"ed hai portato dannazione eterna e\n"
 	"sofferenza all'orda come un vero eroe\n"
-	"farebbe a fronte di qualcosa di cosi'\n" 
+	"farebbe a fronte di qualcosa di cosi'\n"
         "crudele.\n"
 	"\n"
 	"inoltre, qualcuno doveva pagare per\n"
@@ -1953,7 +1953,7 @@ T2TEXT =
         "farne fuori un intero branco se fosse\n"
         "necessario.\n"
 	"Forse stanno progettando un orgia sanguinaria,\n"
-	"ma ti senti forte come duecento pazzi\n" 
+	"ma ti senti forte come duecento pazzi\n"
         "assiepati in un unico maniaco omicida.\n"
 	"\n"
 	"Non intendi farti battere facilmente.";
@@ -2293,7 +2293,7 @@ HHUSTR_E4M7 = "TORRIONI DELLA PERDIZIONE";
 HHUSTR_E4M8 = "IL PONTE DISTRUTTO";
 HHUSTR_E4M9 = "MAUSOLEO";
 
-// EPISODE 5: I POSSEDIMENTI STAGNANTI 
+// EPISODE 5: I POSSEDIMENTI STAGNANTI
 HHUSTR_E5M1 = "COLLINE OCRA";
 HHUSTR_E5M2 = "RAPIDE";
 HHUSTR_E5M3 = "BANCHINA";

@@ -212,5 +212,6 @@ struct DehInfo
 	int BFGCells         = 40;
 	int Infight          = 0;
 	bool ZDAmmo          = false;
+	int32_t helper       = MT_NULL;
 };
 inline DehInfo deh{};

@@ -64,6 +64,7 @@
 #include "infomap.h"
 #include "cl_replay.h"
 #include "r_interp.h"
+#include "m_doomobjcontainer.h"
 
 // Extern data from other files.
 
@@ -84,6 +85,8 @@ EXTERN_CVAR(hud_revealsecrets)
 EXTERN_CVAR(mute_enemies)
 EXTERN_CVAR(mute_spectators)
 EXTERN_CVAR(show_messages)
+EXTERN_CVAR(co_novileghosts)
+EXTERN_CVAR(sv_sharekeys)
 
 extern std::string digest;
 extern bool forcenetdemosplit;
@@ -108,7 +111,7 @@ void G_PlayerReborn(player_t& p); // [Toke - todo] clean this function
 void P_DestroyButtonThinkers();
 void P_ExplodeMissile(AActor* mo);
 void P_PlayerLeavesGame(player_s* player);
-void P_SetPsprite(player_t* player, int position, statenum_t stnum);
+void P_SetPsprite(player_t* player, int position, int32_t stnum);
 void P_SetButtonTexture(line_t* line, short texture);
 
 /**
@@ -504,7 +507,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	mobjtype_t type = static_cast<mobjtype_t>(msg->current().type());
 	statenum_t state = static_cast<statenum_t>(msg->current().statenum());
 
-	if (type < MT_PLAYER || type >= NUMMOBJTYPES)
+	if (!mobjinfo.contains(type))
 		return;
 
 	P_ClearId(netid);
@@ -584,9 +587,11 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	    (mo->target->oflags & hordeBossModMask))
 	{
 		mo->oflags |= MFO_FULLBRIGHT;
-		mo->effects = FX_YELLOWFOUNTAIN;
+		mo->effects |= FX_YELLOWFOUNTAIN;
 		mo->translation = translationref_t(&::bosstable[0]);
 	}
+
+	P_FriendlyEffects(mo);
 
 	AActor* tracer = NULL;
 	if (bflags & baseline_t::TRACER)
@@ -627,7 +632,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			mo->tics = 1;
 	}
 
-	if (state >= S_NULL && state < NUMSTATES)
+    if(state >= S_NULL && states.contains(state))
 	{
 		P_SetMobjState(mo, state);
 	}
@@ -674,12 +679,17 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->flags = msg->current().flags();
 	}
 
+	if (msg->spawn_flags() & SVC_SM_FLAGS2)
+	{
+		mo->flags2 = msg->current().flags2();
+	}
+
 	if (msg->spawn_flags() & SVC_SM_OFLAGS)
 	{
 		mo->oflags = msg->current().oflags();
 
 		// [AM] HACK! Assume that any monster with a flag is a boss.
-		if (mo->oflags)
+		if (mo->oflags & hordeBossModMask)
 		{
 			mo->effects = FX_YELLOWFOUNTAIN;
 			mo->translation = translationref_t(&::bosstable[0]);
@@ -695,7 +705,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			tics = -1;
 
 		// already spawned as gibs?
-		if (!mo || mo->state - states == S_GIBS)
+		if (!mo || mo->state == &states[S_GIBS])
 			return;
 
 		if ((frame & FF_FRAMEMASK) >= sprites[mo->sprite].numframes)
@@ -958,7 +968,7 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 
 	p->userinfo.gender = static_cast<gender_t>(msg->gender());
 	if (p->userinfo.gender < 0 || p->userinfo.gender >= NUMGENDER)
-		p->userinfo.gender = GENDER_NEUTER;
+		p->userinfo.gender = GENDER_OTHER;
 
 	p->userinfo.color[0] = 255;
 	p->userinfo.color[1] = msg->color().r();
@@ -1138,8 +1148,15 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 
 	// give all cards in death match mode
 	if (!G_IsCoopGame())
+	{
 		for (size_t i = 0; i < NUMCARDS; i++)
 			p->cards[i] = true;
+	}
+	else if (sv_sharekeys)
+	{
+		const uint32_t cards = msg->cards();
+		UnpackBoolArray(p->cards, NUMCARDS, cards);
+	}
 
 	if (p->id == consoleplayer_id)
 	{
@@ -1305,6 +1322,48 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 	P_KillMobj(source, target, inflictor, joinkill);
 }
 
+//
+// CL_RaiseMobj
+//
+static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
+{
+	uint32_t srcid = msg->source_netid();
+	uint32_t cpsid = msg->corpse().netid();
+
+	AActor* source = P_FindThingById(srcid);
+	AActor* corpsehit = P_FindThingById(cpsid);
+
+	if (!corpsehit)
+		return;
+
+	corpsehit->x = msg->corpse().pos().x();
+	corpsehit->y = msg->corpse().pos().y();
+	corpsehit->z = msg->corpse().pos().z();
+	corpsehit->angle = msg->corpse().angle();
+	corpsehit->momx = msg->corpse().mom().x();
+	corpsehit->momy = msg->corpse().mom().y();
+	corpsehit->momz = msg->corpse().mom().z();
+
+	mobjinfo_t* info = corpsehit->info;
+
+	P_SetMobjState(corpsehit, info->raisestate);
+
+	// [Nes] - Classic demo compatability: Ghost monster bug.
+	if (co_novileghosts)
+	{
+		corpsehit->height = P_ThingInfoHeight(info); // [RH] Use real mobj height
+		corpsehit->radius = info->radius;            // [RH] Use real radius
+	}
+	else
+	{
+		corpsehit->height <<= 2;
+	}
+
+	corpsehit->flags = info->flags;
+	corpsehit->health = info->spawnhealth;
+	corpsehit->target = AActor::AActorPtr();
+}
+
 ///////////////////////////////////////////////////////////
 ///// CL_Fire* called when someone uses a weapon  /////////
 ///////////////////////////////////////////////////////////
@@ -1391,7 +1450,7 @@ static void CL_Print(const odaproto::svc::Print* msg)
 	else if (level == PRINT_TEAMCHAT)
 		PrintFmt(level, "{:c}!{}", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_SERVERCHAT)
-		PrintFmt(level, "{}", TEXTCOLOR_YELLOW, str);
+		PrintFmt(level, "{:c}{}", TEXTCOLOR_YELLOW, str);
 	else
 		PrintFmt(level, "{}", str);
 
@@ -2006,7 +2065,7 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 	if (!::hud_revealsecrets || ::hud_revealsecrets > 2)
 		return;
 
-	PrintFmt("{}", "{}{} {}found a secret!\n", TEXTCOLOR_YELLOW,
+	PrintFmt("{}{} {}found a secret!\n", TEXTCOLOR_YELLOW,
 	                player.userinfo.netname, TEXTCOLOR_NORMAL);
 
 	if (::hud_revealsecrets == 1)
@@ -2160,8 +2219,8 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	{
 		if (i < msg->player().psprites_size())
 		{
-			unsigned int state = msg->player().psprites().Get(i).statenum();
-			if (state >= NUMSTATES)
+			const int32_t state = msg->player().psprites().Get(i).statenum();
+            if (!states.contains(state))
 			{
 				continue;
 			}
@@ -2448,7 +2507,7 @@ static void CL_SetMobjState(const odaproto::svc::MobjState* msg)
 	AActor* mo = P_FindThingById(msg->netid());
 	int s = msg->mostate();
 
-	if (mo == NULL || s < 0 || s >= NUMSTATES)
+    if (mo == NULL || !states.contains(s))
 		return;
 
 	P_SetMobjState(mo, static_cast<statenum_t>(s));
@@ -3007,6 +3066,7 @@ parseError_e CL_ParseCommand()
 		SV_MSG(svc_spawnplayer, CL_SpawnPlayer, odaproto::svc::SpawnPlayer);
 		SV_MSG(svc_damageplayer, CL_DamagePlayer, odaproto::svc::DamagePlayer);
 		SV_MSG(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
+		SV_MSG(svc_raisemobj, CL_RaiseMobj, odaproto::svc::RaiseMobj);
 		SV_MSG(svc_fireweapon, CL_FireWeapon, odaproto::svc::FireWeapon);
 		SV_MSG(svc_updatesector, CL_UpdateSector, odaproto::svc::UpdateSector);
 		SV_MSG(svc_print, CL_Print, odaproto::svc::Print);
@@ -3061,3 +3121,5 @@ parseError_e CL_ParseCommand()
 	RecordProto(static_cast<svc_t>(cmd), msg);
 	return PERR_OK;
 }
+
+VERSION_CONTROL (cl_parse_cpp, "$Id$")

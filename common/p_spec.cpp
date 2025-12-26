@@ -68,6 +68,7 @@
 
 #include "p_boomfspec.h"
 #include "p_zdoomhexspec.h"
+#include "p_mobj.h"
 
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
@@ -215,31 +216,61 @@ int P_IsUnderDamage(AActor* actor)
 * P_IsFriendlyThing
 * @brief Helper function to determine if a particular thing is of friendly origin.
 *
-* @param actor Source actor
-* @param friendshiptest Thing to test friendliness
+* @param actor - Source actor
+* @param friendshiptest - Thing to test friendliness
 */
 bool P_IsFriendlyThing(AActor* actor, AActor* friendshiptest)
 {
+	if (!actor || !friendshiptest)
+	{
+		return true;
+	}
+
 	if (friendshiptest->flags & MF_FRIEND)
 	{
 		if (G_IsCoopGame())
 		{
+			if (actor->flags & MF_FRIEND)
+				return true;
+		}
+		else if (actor->player)
+		{
+			if (actor->player->id == friendshiptest->friend_playerid)
+			{
+				// Don't attack me, I love you!
+				return true;
+			}
+			else if (G_IsTeamGame())
+			{
+				if (actor->player->userinfo.team == friendshiptest->friend_teamid)
+				{
+				   return true;
+				}
+			}
+		}
+		else if (actor->friend_playerid == 0 || friendshiptest->friend_playerid == 0 ||
+		         actor->friend_playerid == friendshiptest->friend_playerid)
+		{
+			// Fellow friend (or general friend)
+			// Do not attack.
 			return true;
 		}
-		else if (actor->player && friendshiptest->target && friendshiptest->target->player &&
-		    actor->player->userinfo.team == friendshiptest->target->player->userinfo.team)
+		else if (G_IsTeamGame())
 		{
-			return true;
-		}
-		else
-		{
-			return false;
+			if (actor->friend_teamid == friendshiptest->friend_teamid)
+			{
+				// Friendly is of the same team as this friendly.
+				// Don't attack
+				return true;
+			}
 		}
 	}
 	else
 	{
-		return false;
+		if (!(actor->flags & MF_FRIEND))
+			return true;
 	}
+	return false;
 }
 
 //
@@ -461,6 +492,7 @@ void DPusher::Serialize (FArchive &arc)
 	else
 	{
 		arc >> m_Type;
+		// [CMB] copy ctr and assignment operator to m_Source was previously causing an unlinking issue resulting in a nullptr
 		DObject* temp = nullptr;
 		arc.ReadObject(temp, DPusher::StaticType());
 		m_Source = temp ? static_cast<AActor*>(temp)->ptr() : AActor::AActorPtr();
@@ -983,7 +1015,7 @@ fixed_t P_FindHighestFloorSurrounding (sector_t *sec)
 	int i;
 	line_t *check;
 	sector_t *other;
-	fixed_t height = MININT;
+	fixed_t height = limits::MINFIXED;
 
 	for (i = 0; i < sec->linecount; i++)
 	{
@@ -1021,7 +1053,7 @@ fixed_t P_FindNextHighestFloor (sector_t *sec)
 {
 	sector_t *other;
 	fixed_t ogheight = P_FloorHeight(sec);
-	fixed_t height = MAXINT;
+	fixed_t height = limits::MAXFIXED;
 
     for (int i = 0; i < sec->linecount; i++)
     {
@@ -1041,7 +1073,7 @@ fixed_t P_FindNextHighestFloor (sector_t *sec)
         }
     }
 
-    if (height == MAXINT)
+    if (height == limits::MAXFIXED)
     	height = ogheight;
 
     return height;
@@ -1064,7 +1096,7 @@ fixed_t P_FindNextLowestFloor(sector_t *sec)
 {
 	sector_t *other;
 	fixed_t ogheight = P_FloorHeight(sec);
-	fixed_t height = MININT;
+	fixed_t height = limits::MINFIXED;
 
     for (int i = 0; i < sec->linecount; i++)
     {
@@ -1084,7 +1116,7 @@ fixed_t P_FindNextLowestFloor(sector_t *sec)
         }
     }
 
-    if (height == MININT)
+    if (height == limits::MINFIXED)
     	height = ogheight;
 
     return height;
@@ -1106,7 +1138,7 @@ fixed_t P_FindNextLowestCeiling (sector_t *sec)
 {
 	sector_t *other;
 	fixed_t ogheight = P_CeilingHeight(sec);
-	fixed_t height = MININT;
+	fixed_t height = limits::MINFIXED;
 
     for (int i = 0; i < sec->linecount; i++)
     {
@@ -1126,7 +1158,7 @@ fixed_t P_FindNextLowestCeiling (sector_t *sec)
         }
     }
 
-    if (height == MININT)
+    if (height == limits::MINFIXED)
     	height = ogheight;
 
     return height;
@@ -1149,7 +1181,7 @@ fixed_t P_FindNextHighestCeiling (sector_t *sec)
 {
 	sector_t *other;
 	fixed_t ogheight = P_CeilingHeight(sec);
-	fixed_t height = MAXINT;
+	fixed_t height = limits::MAXFIXED;
 
     for (int i = 0; i < sec->linecount; i++)
     {
@@ -1169,7 +1201,7 @@ fixed_t P_FindNextHighestCeiling (sector_t *sec)
         }
     }
 
-    if (height == MAXINT)
+    if (height == limits::MAXFIXED)
     	height = ogheight;
 
     return height;
@@ -1183,7 +1215,7 @@ fixed_t P_FindLowestCeilingSurrounding (sector_t *sec)
 	int i;
 	line_t *check;
 	sector_t *other;
-	fixed_t height = MAXINT;
+	fixed_t height = limits::MAXFIXED;
 
 	for (i = 0; i < sec->linecount; i++)
 	{
@@ -1215,7 +1247,7 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 	int i;
 	line_t *check;
 	sector_t *other;
-	fixed_t height = MININT;
+	fixed_t height = limits::MINFIXED;
 
 	for (i = 0; i < sec->linecount; i++)
 	{
@@ -1249,7 +1281,7 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 //
 fixed_t P_FindShortestTextureAround (sector_t *sec)
 {
-	int minsize = MAXINT;
+	int minsize = limits::MAXINT;
 	side_t *side;
 	int i;
 	int mintex = (co_boomphys && !(level.flags & LEVEL_COMPAT_SHORTTEX)) ? 1 : 0;
@@ -1284,7 +1316,7 @@ fixed_t P_FindShortestTextureAround (sector_t *sec)
 //
 fixed_t P_FindShortestUpperAround (sector_t *sec)
 {
-	int minsize = MAXINT;
+	int minsize = limits::MAXINT;
 	side_t *side;
 	int i;
 	int mintex = (co_boomphys && !(level.flags & LEVEL_COMPAT_SHORTTEX)) ? 1 : 0;
@@ -1992,7 +2024,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 		if (thing->flags & MF_MISSILE)
 			return;
 
-		if (map_format.getZDoom() && !thing->player && thing->type != MT_AVATAR &&
+		if (map_format.getZDoom() && !P_IsPlayerOrAvatar(*thing) &&
 		    !(line->flags & ML_MONSTERSCANACTIVATE))
 			return;
 	}
@@ -2045,7 +2077,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 	if(!bossaction && thing)
 	{
 		// Switches that other things can activate.
-		if (!thing->player && thing->type != MT_AVATAR)
+		if (!P_IsPlayerOrAvatar(*thing))
 		{
 			// not for monsters?
 			if (map_format.getZDoom() && !(line->flags & ML_MONSTERSCANACTIVATE))
@@ -2118,7 +2150,7 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 			return false;
 
 		// Switches that other things can activate.
-		if (!thing->player && thing->type != MT_AVATAR)
+		if (!P_IsPlayerOrAvatar(*thing))
 		{
 			// not for monsters?
 			if (!(line->flags & ML_MONSTERSCANACTIVATE))
@@ -2335,6 +2367,8 @@ void P_SetupWorldState(void)
 	{
 		level.behavior->StartTypedScripts(SCRIPT_Open, NULL, 0, 0, 0, false);
 	}
+
+	P_FriendlyEffects(); // Mark any new friendly monsters with an effect
 }
 
 void P_AddSectorSecret(sector_t* sector)
@@ -2564,7 +2598,7 @@ void DScroller::RunThink ()
 			height = P_HighestHeightOfFloor(sec);
 			waterheight = sec->heightsec &&
 				P_HighestHeightOfFloor(sec->heightsec) > height ?
-				P_HighestHeightOfFloor(sec->heightsec) : MININT;
+				P_HighestHeightOfFloor(sec->heightsec) : limits::MINFIXED;
 
 			for (node = sec->touching_thinglist; node; node = node->m_snext)
 				if (!((thing = node->m_thing)->flags & MF_NOCLIP) &&
@@ -2875,14 +2909,31 @@ DPusher *tmpusher; // pusher structure for blockmap searches
 
 bool PIT_PushThing (AActor *thing)
 {
-	if (thing->player &&
-		!(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
+	if (!P_IsMBFCompatMode() ?
+			thing->player && !(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)) :
+			(sentient(thing) || thing->flags & MF_SHOOTABLE) &&
+			!(thing->flags & MF_NOCLIP))
 	{
 		int sx = tmpusher->m_X;
 		int sy = tmpusher->m_Y;
 		int dist = P_AproxDistance (thing->x - sx,thing->y - sy);
 		int speed = (tmpusher->m_Magnitude -
 					((dist>>FRACBITS)>>1))<<(FRACBITS-PUSH_FACTOR-1);
+
+		// killough 10/98: make magnitude decrease with square
+		// of distance, making it more in line with real nature,
+		// so long as it's still in range with original formula.
+		//
+		// Removes angular distortion, and makes effort required
+		// to stay close to source, grow increasingly hard as you
+		// get closer, as expected. Still, it doesn't consider z :(
+
+		if (speed > 0 && P_IsMBFCompatMode())
+		{
+			int x = (thing->x - sx) >> FRACBITS;
+			int y = (thing->y - sy) >> FRACBITS;
+			speed = (int)(((uint64_t)tmpusher->m_Magnitude << 23) / (x * x + y * y + 1));
+		}
 
 		// If speed <= 0, you're outside the effective radius. You also have
 		// to be able to see the push/pull source point.

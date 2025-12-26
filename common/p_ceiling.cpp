@@ -529,9 +529,10 @@ DCeiling* DCeiling::Clone(sector_t* sec) const
 // Restart a ceiling that's in-stasis
 // [RH] Passed a tag instead of a line and rewritten to use list
 //
-void P_ActivateInStasisCeiling (int tag)
+bool P_ActivateInStasisCeiling (int tag)
 {
 	DCeiling *scan;
+	bool rtn = false;
 	TThinkerIterator<DCeiling> iterator;
 
 	while ( (scan = iterator.Next ()) )
@@ -540,8 +541,11 @@ void P_ActivateInStasisCeiling (int tag)
 		{
 			scan->m_Direction = scan->m_OldDirection;
 			scan->PlayCeilingSound ();
+			rtn = true;
 		}
 	}
+
+	return rtn;
 }
 
 bool EV_ZDoomCeilingCrushStop(int tag, bool remove)
@@ -611,7 +615,7 @@ bool P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t
 		manual = true;
 		// [RH] Hack to let manual crushers be retriggerable, too
 		tag ^= secnum | 0x1000000;
-		P_ActivateInStasisCeiling(tag);
+		rtn |= P_ActivateInStasisCeiling(tag);
 		goto manual_ceiling;
 	}
 
@@ -619,7 +623,7 @@ bool P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t
 	// This restarts a crusher after it has been stopped
 	if (type == DCeiling::ceilCrushAndRaise)
 	{
-		P_ActivateInStasisCeiling(tag);
+		rtn |= P_ActivateInStasisCeiling(tag);
 	}
 
 	secnum = -1;
@@ -872,7 +876,7 @@ bool EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 		manual = true;
 		// [RH] Hack to let manual crushers be retriggerable, too
 		tag ^= secnum | 0x1000000;
-		P_ActivateInStasisCeiling (tag);
+		rtn |= P_ActivateInStasisCeiling (tag);
 		goto manual_ceiling;
 	}
 
@@ -880,7 +884,7 @@ bool EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 	// This restarts a crusher after it has been stopped
 	if (type == DCeiling::crushAndRaise)
 	{
-		P_ActivateInStasisCeiling (tag);
+		rtn |= P_ActivateInStasisCeiling (tag);
 	}
 
 	secnum = -1;

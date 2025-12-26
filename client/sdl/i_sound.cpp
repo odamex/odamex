@@ -40,10 +40,6 @@
 #include "m_misc.h"
 #include "w_wad.h"
 
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
-
 #define NUM_CHANNELS 32
 
 static int mixer_freq;
@@ -483,14 +479,7 @@ void I_InitSound()
 	if (I_IsHeadless() || Args.CheckParm("-nosound"))
 		return;
 
-    #if defined(SDL12)
-    const char *driver = getenv("SDL_AUDIODRIVER");
-
-	if(!driver)
-		driver = "default";
-
-    PrintFmt(PRINT_HIGH, "I_InitSound: Initializing SDL's sound subsystem ({})\n", driver);
-    #elif defined(SDL20)
+    #if defined(SDL20)
     PrintFmt("I_InitSound: Initializing SDL's sound subsystem\n");
     #endif
 

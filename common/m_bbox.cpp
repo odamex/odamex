@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -21,7 +21,7 @@
 //		Random number LUT.
 //		Default Config File.
 //		PCX Screenshots.
-//    
+//
 //-----------------------------------------------------------------------------
 
 
@@ -38,8 +38,8 @@ DBoundingBox::DBoundingBox ()
 
 void DBoundingBox::ClearBox ()
 {
-	m_Box[BOXTOP] = m_Box[BOXRIGHT] = MININT;
-	m_Box[BOXBOTTOM] = m_Box[BOXLEFT] = MAXINT;
+	m_Box[BOXTOP] = m_Box[BOXRIGHT] = limits::MININT;
+	m_Box[BOXBOTTOM] = m_Box[BOXLEFT] = limits::MAXINT;
 }
 
 void DBoundingBox::AddToBox (fixed_t x, fixed_t y)

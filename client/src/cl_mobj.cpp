@@ -158,6 +158,8 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 		else if (playerstate == PST_REBORN)
 			level.behavior->StartTypedScripts(SCRIPT_Respawn, player.mo);
 	}
+
+	P_FriendlyEffects(); // Mark any new friendly monsters with an effect
 }
 
 std::vector<AActor*> spawnfountains;

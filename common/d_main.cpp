@@ -58,14 +58,8 @@
 #include "gi.h"
 #include "w_ident.h"
 #include "m_resfile.h"
-
-#ifdef GEKKO
-#include "i_wii.h"
-#endif
-
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
+#include "odainfo.h"
+#include "infomap.h"
 
 OResFiles wadfiles;
 OResFiles patchfiles;
@@ -78,8 +72,7 @@ extern bool step_mode;
 bool capfps = true;
 float maxfps = 35.0f;
 
-
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
 
 typedef struct
 {
@@ -250,6 +243,44 @@ static char *GetRegistryString(registry_value_t *reg_val)
 
 #endif
 
+//
+// D_InitializeDoomObjectTables()
+// [CMB] Initialize all the doom objects: MobjInfo, SprNames, SoundMap, etc.
+//
+void D_InitializeDoomObjectTables()
+{
+	// [RH] Initialize items. Still only used for the give command. :-(
+	InitItems();
+	// Initialize states
+	states.clear();
+	states.insert({boomstates, ::NUMSTATES}, S_NULL);
+	states.insert(getOdaStates(), S_GIB0);
+	// Initialize mobjinfo
+	mobjinfo.clear();
+	mobjinfo.insert({doom_mobjinfo, ::NUMMOBJTYPES}, MT_PLAYER);
+	mobjinfo.insert(getOdaMobjinfo(), MT_GIB0);
+	// Initialize sprnames
+	sprnames.clear();
+	sprnames.insert({doom_sprnames, ::NUMSPRITES}, SPR_TROO);
+	sprnames.insert(getOdaSprNames(), SPR_GIB0);
+	// Initialize soundmap
+	SoundMap.clear();
+	SoundMap.insert({doom_SoundMap, ARRAY_LENGTH(doom_SoundMap)}, 0);
+	SoundMap.insert({odamex_SoundMap, ARRAY_LENGTH(odamex_SoundMap)}, 0x80000000);
+	// Initialize spawn map
+	D_BuildSpawnMap();
+
+	states.rebuildMap(
+		[](const state_t& lhs, const state_t& rhs){ return lhs.statenum < rhs.statenum; },
+		[](const state_t& s){ return s.statenum; }
+	);
+	mobjinfo.rebuildMap(
+		[](const mobjinfo_t& lhs, const mobjinfo_t& rhs){
+			return lhs.type < rhs.type || (lhs.type == rhs.type && lhs.doomednum < rhs.doomednum);
+		},
+		[](const mobjinfo_t& m){ return m.type; }
+	);
+}
 
 //
 // D_AddSearchDir
@@ -281,7 +312,7 @@ void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char 
 // [AM] Add platform-sepcific search directories
 void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 {
-	#if defined(_WIN32) && !defined(_XBOX)
+	#if defined(_WIN32)
 
 	const char separator = ';';
 
@@ -465,31 +496,25 @@ static void D_PrintIWADIdentity()
 /**
  * @brief Load all found DEH patches, as well as all found DEHACKED lumps.
  */
-void D_LoadResolvedPatches()
+void D_LoadResolvedPatches(bool reloadStrings)
 {
+	// Load internal chex.deh if necessary
+	if (::gamemode == retail_chex)
+	{
+		D_DoDehPatch(nullptr, W_GetNumForName("_CHXHACK"), reloadStrings);
+	}
+
 	// Load external patch files first.
-	bool chexLoaded = false;
 	for (const auto& file : ::patchfiles)
 	{
-		if (StdStringToUpper(file.getBasename()) == "CHEX.DEH")
-		{
-			chexLoaded = true;
-		}
-		D_DoDehPatch(&file, -1);
+		D_DoDehPatch(&file, -1, reloadStrings);
 	}
 
 	// Check WAD files for lumps.
 	int lump = -1;
 	while ((lump = W_FindLump("DEHACKED", lump)) != -1)
 	{
-		D_DoDehPatch(NULL, lump);
-	}
-
-	if (::gamemode == retail_chex && !::multiplayer && !chexLoaded)
-	{
-		PrintFmt(
-		    PRINT_WARNING,
-		    "Warning: chex.deh not loaded, experience may differ from the original!\n");
+		D_DoDehPatch(NULL, lump, reloadStrings);
 	}
 
 	// Re-apply spawninv settings with our new DEH settings.
@@ -593,6 +618,8 @@ static void LoadResolvedFiles(const OResFiles& newwadfiles,
 	// [SL] It is necessary to load the strings here since a dehacked patch
 	// might change the strings
 	::GStrings.loadStrings(false);
+
+	P_InitMobjNameMap();
 
 	// Apply DEH patches.
 	D_LoadResolvedPatches();
@@ -951,8 +978,8 @@ static void AddCommandLineOptionFiles(OWantFiles& out, const std::string& option
 	for (size_t i = 0; i < files.NumArgs(); i++)
 	{
 		OWantFile file;
-		OWantFile::make(file, files.GetArg(i), type);
-		out.push_back(file);
+		if (OWantFile::make(file, files.GetArg(i), type))
+			out.push_back(file);
 	}
 
 	files.FlushArgs();

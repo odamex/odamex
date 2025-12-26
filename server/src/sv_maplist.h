@@ -22,10 +22,8 @@
 
 #pragma once
 
-#include <c_maplist.h>
-#include <d_player.h>
-
-#include <map>
+#include "c_maplist.h"
+#include "d_player.h"
 
 // Serverside maplist structure
 class Maplist {

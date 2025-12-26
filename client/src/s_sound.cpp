@@ -85,7 +85,7 @@ public:
 		dist = 0;
 		initial_volume = 0.0f;
 		volume = 0.0f;
-		priority = MININT;
+		priority = limits::MININT;
 		loop = false;
 		start_time = 0;
 	}
@@ -187,7 +187,7 @@ void S_NoiseDebug()
 				oy = Channel[i].y;
 			}
 			const int color = Channel[i].loop ? CR_BROWN : CR_GREY;
-			M_StringCopy(temp, lumpinfo[Channel[i].sfxinfo->lumpnum].name, 9);
+			M_StringCopy(temp, lumpinfo[Channel[i].sfxinfo->lumpnum].name.c_str(), 9);
 			screen->DrawText (color, 0, y, temp);
 			snprintf (temp, 16, "%d", ox / FRACUNIT);
 			screen->DrawText (color, 70, y, temp);
@@ -311,10 +311,7 @@ void S_Start()
 	mus_paused = false;
 
 	// [RH] This is a lot simpler now.
-	if (!musinfo.savedmusic.empty())
-		S_ChangeMusic (musinfo.savedmusic, true);
-	else
-		S_ChangeMusic (std::string(level.music.c_str(), 8), true);
+	S_ChangeMusic (std::string(level.music.c_str(), 8), true);
 }
 
 
@@ -789,6 +786,29 @@ void S_LoopedSoundID(fixed_t *pt, int channel, int sound_id, float volume, int a
 	S_StartSound(pt, 0, 0, channel, sound_id, volume, attenuation, true);
 }
 
+int S_FindGenderedSound(std::string_view name, AActor* ent)
+{
+	static constexpr std::string_view templat = "player/{}/{}";
+	// static constexpr std::string_view genders[] = { "male", "female", "cyborg", "other" };
+	static constexpr std::string_view genders[] = { "male", "male", "male", "male" };
+	player_t *player;
+
+	int sfx_id = -1;
+	if (ent && ent != (AActor *)(~0) && (player = ent->player))
+	{
+		sfx_id = S_FindSound(fmt::format(templat, "base", name).c_str());
+		if (sfx_id == -1)
+		{
+			sfx_id = S_FindSound(fmt::format(templat, genders[player->userinfo.gender], name).c_str());
+		}
+	}
+	if (sfx_id == -1)
+	{
+		sfx_id = S_FindSound(fmt::format(templat, "male", name).c_str());
+	}
+	return sfx_id;
+}
+
 static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, int channel,
                               const char *name, float volume, int attenuation, bool looping,
                               float dist_scale = 0.0f)
@@ -809,30 +829,7 @@ static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, in
 
 	if (soundname[0] == '*')
 	{
-		// Sexed sound
-		char nametemp[128];
-		const char templat[] = "player/%s/%s";
-                // Hacks away! -joek
-		//const char *genders[] = { "male", "female", "cyborg" };
-                const char *genders[] = { "male", "male", "male" };
-		player_t *player;
-
-		sfx_id = -1;
-		if (ent && ent != (AActor *)(~0) && (player = ent->player))
-		{
-			snprintf(nametemp, 128, templat, "base", soundname.substr(1).c_str());
-			sfx_id = S_FindSound(nametemp);
-			if (sfx_id == -1)
-			{
-				snprintf(nametemp, 128, templat, genders[player->userinfo.gender], soundname.substr(1).c_str());
-				sfx_id = S_FindSound(nametemp);
-			}
-		}
-		if (sfx_id == -1)
-		{
-			snprintf(nametemp, 128, templat, "male", soundname.substr(1).c_str());
-			sfx_id = S_FindSound(nametemp);
-		}
+		sfx_id = S_FindGenderedSound(soundname.substr(1), ent);
 	}
 	else
 		sfx_id = S_FindSound(soundname.c_str());
@@ -1220,7 +1217,7 @@ void S_StopMusic()
 {
 	I_StopSong();
 
-	mus_playing.name = "";
+	mus_playing.name.clear();
 }
 
 
@@ -1231,355 +1228,13 @@ void S_StopMusic()
 //
 // =============================== [RH]
 
-typedef enum
-{
-	AMB_TYPE_NONE,
-    AMB_TYPE_POINT,
-    AMB_TYPE_WORLD,
-} amb_type_t;
-
-typedef enum
-{
-	AMB_MODE_NONE,
-    AMB_MODE_CONTINUOUS,
-    AMB_MODE_RANDOM,
-    AMB_MODE_PERIODIC,
-} amb_mode_t;
-
-static struct AmbientSound {
-	amb_type_t	type;		// Ambient sound type
-	amb_mode_t	mode;		// Ambient sound mode
-	int			periodmin;	// # of tics between repeats
-	int			periodmax;	// max # of tics for random ambients
-	float		volume;		// relative volume of sound
-	float		attenuation; // Used for distance scaling
-	char		sound[MAX_SNDNAME+1]; // Logical name of sound to play
-} Ambients[256];
-
-void S_HashSounds()
-{
-	// Mark all buckets as empty
-	for (auto& sfx : S_sfx)
-		sfx.index = ~0;
-
-	// Now set up the chains
-	for (unsigned i = 0; i < S_sfx.size(); i++)
-	{
-		const unsigned j = MakeKey(S_sfx[i].name) % static_cast<unsigned>(S_sfx.size() - 1);
-		S_sfx[i].next = S_sfx[j].index;
-		S_sfx[j].index = i;
-	}
-}
-
-int S_FindSound(const char *logicalname)
-{
-	if (S_sfx.empty())
-		return -1;
-
-	int i = S_sfx[MakeKey(logicalname) % static_cast<unsigned>(S_sfx.size() - 1)].index;
-
-	while ((i != -1) && strnicmp(S_sfx[i].name, logicalname, MAX_SNDNAME))
-		i = S_sfx[i].next;
-
-	return i;
-}
-
-int S_FindSoundByLump(int lump)
-{
-	if (lump != -1)
-	{
-		for (unsigned i = 0; i < S_sfx.size(); i++)
-			if (S_sfx[i].lumpnum == lump)
-				return i;
-	}
-	return -1;
-}
-
-int S_AddSoundLump(const char *logicalname, int lump)
-{
-	sfxinfo_t& new_sfx = S_sfx.emplace_back();
-
-	// logicalname MUST be <= MAX_SNDNAME chars long
-	M_StringCopy(new_sfx.name, logicalname, MAX_SNDNAME + 1);
-	new_sfx.data = NULL;
-	new_sfx.link = sfxinfo_t::NO_LINK;
-	new_sfx.lumpnum = lump;
-	return S_sfx.size() - 1;
-}
-
-void S_ClearSoundLumps()
-{
-	S_sfx.clear();
-	S_rnd.clear();
-}
-
-int FindSoundNoHash(const char* logicalname)
-{
-	for (size_t i = 0; i < S_sfx.size(); i++)
-		if (iequals(logicalname, S_sfx[i].name))
-			return i;
-
-	return S_sfx.size();
-}
-
-int FindSoundTentative(const char* name)
-{
-	int id = FindSoundNoHash(name);
-	if (id == static_cast<int>(S_sfx.size()))
-	{
-		id = S_AddSoundLump(name, -1);
-	}
-	return id;
-}
-
-int S_AddSound(const char *logicalname, const char *lumpname)
-{
-	int sfxid = FindSoundNoHash(logicalname);
-
-	const int lump = lumpname ? W_CheckNumForName(lumpname) : -1;
-
-	// Otherwise, prepare a new one.
-	if (sfxid != static_cast<int>(S_sfx.size()))
-	{
-		sfxinfo_t& sfx = S_sfx[sfxid];
-
-		sfx.lumpnum = lump;
-		sfx.link = sfxinfo_t::NO_LINK;
-		if (sfx.israndom)
-		{
-			S_rnd.erase(sfxid);
-			sfx.israndom = false;
-		}
-	}
-	else
-		sfxid = S_AddSoundLump(logicalname, lump);
-
-	return sfxid;
-}
-
-void S_AddRandomSound(int owner, std::vector<int>& list)
-{
-	S_rnd[owner] = list;
-	S_sfx[owner].link = owner;
-	S_sfx[owner].israndom = true;
-}
-
-// S_ParseSndInfo
-// Parses all loaded SNDINFO lumps.
-void S_ParseSndInfo()
-{
-	S_ClearSoundLumps();
-
-	int lump = -1;
-	while ((lump = W_FindLump("SNDINFO", lump)) != -1)
-	{
-		char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_CACHE));
-
-		const OScannerConfig config = {
-		    "SNDINFO", // lumpName
-		    true,      // semiComments
-		    true,      // cComments
-		};
-		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
-
-		while (os.scan())
-		{
-			std::string tok = os.getToken();
-
-			// check if token is a command
-			if (tok[0] == '$')
-			{
-				os.mustScan();
-				if (os.compareTokenNoCase("ambient"))
-				{
-					// $ambient <num> <logical name> [point [atten]|surround] <type>
-					// [secs] <relative volume>
-					AmbientSound *ambient, dummy;
-
-					os.mustScanInt();
-					const int index = os.getTokenInt();
-					if (index < 0 || index > 255)
-					{
-						os.warning("Bad ambient index ({})\n", index);
-						ambient = &dummy;
-					}
-					else
-					{
-						ambient = Ambients + index;
-					}
-
-					ambient->type = AMB_TYPE_NONE;
-					ambient->mode = AMB_MODE_NONE;
-					ambient->periodmin = 0;
-					ambient->periodmax = 0;
-					ambient->volume = 0.0f;
-
-					os.mustScan();
-					strncpy(ambient->sound, os.getToken().c_str(), MAX_SNDNAME);
-					ambient->sound[MAX_SNDNAME] = 0;
-					ambient->attenuation = 0.0f; // No change by default
-
-					os.mustScan();
-					if (os.compareTokenNoCase("point"))
-					{
-						ambient->type = AMB_TYPE_POINT;
-						os.mustScan();
-
-						if (IsRealNum(os.getToken().c_str()))
-						{
-							if (os.getTokenFloat() > 0.0f)
-							{
-								ambient->attenuation = os.getTokenFloat();
-							}
-
-							os.mustScan();
-						}
-					}
-					else
-					{
-						ambient->type = AMB_TYPE_WORLD;
-
-						if (os.compareTokenNoCase("surround") ||
-						    os.compareTokenNoCase("world"))
-						{
-							os.mustScan();
-						}
-					}
-
-					if (os.compareTokenNoCase("continuous"))
-					{
-						ambient->mode = AMB_MODE_CONTINUOUS;
-					}
-					else if (os.compareTokenNoCase("random"))
-					{
-						ambient->mode = AMB_MODE_RANDOM;
-						os.mustScanFloat();
-						ambient->periodmin = static_cast<int>(os.getTokenFloat() * TICRATE);
-						os.mustScanFloat();
-						ambient->periodmax = static_cast<int>(os.getTokenFloat() * TICRATE);
-					}
-					else if (os.compareTokenNoCase("periodic"))
-					{
-						ambient->mode = AMB_MODE_PERIODIC;
-						os.mustScanFloat();
-						ambient->periodmin = static_cast<int>(os.getTokenFloat() * TICRATE);
-					}
-					else
-					{
-						os.warning("Unknown ambient type ({})\n", os.getToken());
-					}
-
-					ambient->periodmin = MAX(0, ambient->periodmin);
-					ambient->periodmax = MAX(ambient->periodmin, ambient->periodmax);
-
-					os.mustScanFloat();
-					ambient->volume = clamp(os.getTokenFloat(), 0.0f, 1.0f);
-
-					if (ambient->mode == AMB_MODE_NONE || ambient->volume == 0.0f ||
-					    (ambient->mode != AMB_MODE_CONTINUOUS &&
-					     ambient->periodmin == 0 && ambient->periodmax == 0))
-					{
-						// Ignore bad ambient sounds
-						ambient->type = AMB_TYPE_NONE;
-					}
-				}
-				else if (os.compareTokenNoCase("map"))
-				{
-					// Hexen-style $MAP command
-					char mapname[8];
-
-					os.mustScanInt();
-					snprintf(mapname, 8, "MAP%02d", os.getTokenInt());
-					level_pwad_info_t& info = getLevelInfos().findByName(mapname);
-					os.mustScan();
-					if (info.mapname[0])
-					{
-						info.music = os.getToken();
-					}
-				}
-				else if (os.compareTokenNoCase("alias"))
-				{
-					os.mustScan();
-					const int sfxfrom = S_AddSound(os.getToken().c_str(), NULL);
-					os.mustScan();
-					S_sfx[sfxfrom].link = FindSoundTentative(os.getToken().c_str());
-				}
-				else if (os.compareTokenNoCase("random"))
-				{
-					std::vector<int> list;
-
-					os.mustScan();
-					const int owner = S_AddSound(os.getToken().c_str(), NULL);
-
-					os.mustScan();
-					os.assertTokenIs("{");
-					while (os.scan() && !os.compareToken("}"))
-					{
-						const int sfxto = FindSoundTentative(os.getToken().c_str());
-
-						if (owner == sfxto)
-						{
-							os.warning("Definition of random sound '{}' refers to itself "
-							       "recursively.\n", os.getToken());
-							continue;
-						}
-
-						list.push_back(sfxto);
-					}
-					if (list.size() == 1)
-					{
-						// only one sound; treat as alias
-						S_sfx[owner].link = list[0];
-					}
-					else if (list.size() > 1)
-					{
-						S_AddRandomSound(owner, list);
-					}
-				}
-				else
-				{
-					os.warning("Unknown SNDINFO command {}\n", os.getToken());
-					while (os.scan())
-						if (os.crossed())
-						{
-							os.unScan();
-							break;
-						}
-				}
-			}
-			else
-			{
-				// token is a logical sound mapping
-				char name[MAX_SNDNAME + 1];
-
-				strncpy(name, tok.c_str(), MAX_SNDNAME);
-				name[MAX_SNDNAME] = 0;
-				os.mustScan();
-
-				if (os.compareToken("="))
-				{
-					os.mustScan();
-				}
-
-				S_AddSound(name, os.getToken().c_str());
-			}
-		}
-	}
-	S_HashSounds();
-
-	sfx_empty = W_CheckNumForName("dsempty");
-	sfx_noway = S_FindSoundByLump(W_CheckNumForName("dsnoway"));
-	sfx_oof = S_FindSoundByLump(W_CheckNumForName("dsoof"));
-}
-
-
 static void SetTicker(int *tics, AmbientSound *ambient)
 {
-	if (ambient->mode == AMB_MODE_CONTINUOUS)
+	if (ambient->mode == amb_mode_t::CONTINUOUS)
 	{
 		*tics = 1;
 	}
-	else if (ambient->mode == AMB_MODE_RANDOM)
+	else if (ambient->mode == amb_mode_t::RANDOM)
 	{
 		*tics = (int)(((float)rand() / (float)RAND_MAX) *
 				(float)(ambient->periodmax - ambient->periodmin)) +
@@ -1603,7 +1258,7 @@ void A_Ambient(AActor *actor)
 
 	AmbientSound *ambient = &Ambients[actor->args[0]];
 
-	if (ambient->mode == AMB_MODE_CONTINUOUS)
+	if (ambient->mode == amb_mode_t::CONTINUOUS)
 	{
 		if (S_GetSoundPlayingInfo (actor, S_FindSound (ambient->sound)))
 			return;
@@ -1611,7 +1266,7 @@ void A_Ambient(AActor *actor)
 		if (ambient->sound[0])
 		{
 			const int attn_type =
-			    (ambient->type == AMB_TYPE_POINT ? ATTN_IDLE : ATTN_NONE);
+			    (ambient->type == amb_type_t::POINT ? ATTN_IDLE : ATTN_NONE);
 			S_StartNamedSound(actor, NULL, 0, 0, CHAN_AMBIENT, ambient->sound,
 			                  ambient->volume, attn_type, true, ambient->attenuation);
 
@@ -1627,7 +1282,7 @@ void A_Ambient(AActor *actor)
 		if (ambient->sound[0])
 		{
 			const int attn_type =
-			    (ambient->type == AMB_TYPE_POINT ? ATTN_IDLE : ATTN_NONE);
+			    (ambient->type == amb_type_t::POINT ? ATTN_IDLE : ATTN_NONE);
 			S_StartNamedSound(actor, NULL, 0, 0, CHAN_AMBIENT, ambient->sound,
 			                  ambient->volume, attn_type, false, ambient->attenuation);
 
@@ -1647,12 +1302,12 @@ void S_ActivateAmbient(AActor *origin, int ambient)
 
 	AmbientSound *amb = &Ambients[ambient];
 
-	if (amb->type == AMB_TYPE_NONE)
+	if (amb->type == amb_type_t::NONE)
 	{
 		return;
 	}
 
-	if (amb->mode != AMB_MODE_CONTINUOUS && amb->periodmin == 0)
+	if (amb->mode != amb_mode_t::CONTINUOUS && amb->periodmin == 0)
 	{
 		const int sndnum = S_FindSound(amb->sound);
 		if (sndnum == 0 || sndnum == -1)
@@ -1675,7 +1330,7 @@ BEGIN_COMMAND (snd_soundlist)
 		if (S_sfx[i].lumpnum != -1)
 		{
 			const OLumpName lumpname = lumpinfo[S_sfx[i].lumpnum].name;
-			PrintFmt(PRINT_HIGH, "{:>3d}. {} ({})\n", i+1, S_sfx[i].name, lumpname.c_str());
+			PrintFmt(PRINT_HIGH, "{:>3d}. {} ({})\n", i+1, S_sfx[i].name, lumpname);
 		}
 		// todo: check if sounds are multiple lumps rather than just one (i.e. random sounds)
 		else

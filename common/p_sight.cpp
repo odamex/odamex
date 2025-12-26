@@ -235,7 +235,7 @@ bool P_SightTraverseIntercepts ( void )
 //
 	while (count--)
 	{
-		dist = MAXINT;
+		dist = limits::MAXFIXED;
 		for (intercept_t& intercept : intercepts)
 			if (intercept.frac < dist)
 			{
@@ -246,7 +246,7 @@ bool P_SightTraverseIntercepts ( void )
 		if ( !PTR_SightTraverse (in) )
 			return false;					// don't bother going farther
 
-		in->frac = MAXINT;
+		in->frac = limits::MAXFIXED;
 	}
 
 	return true;			// everything was traversed

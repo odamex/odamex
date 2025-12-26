@@ -121,18 +121,22 @@ inline static fixed_t DegToSlope(fixed_t a)
 		return AngleToSlope(-(int)FixedToAngle(-a));
 }
 
+// killough 11/98:
+// Whether an object is "sentient" or not. Used for environmental influences.
+#define sentient(actor) ((actor)->health > 0 && (actor)->info->seestate)
+
 extern NetIDHandler ServerNetID;
 
 // All oflag mods that are sent to horde bosses.
-const uint32_t hordeBossModMask = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR |
-                                  MFO_QUICK | MFO_NORAISE | MFO_FULLBRIGHT;
+inline constexpr uint32_t hordeBossModMask = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR |
+                                             MFO_QUICK | MFO_NORAISE | MFO_FULLBRIGHT;
 
 void P_ClearAllNetIds();
 AActor* P_FindThingById(uint32_t id);
 void P_SetThingId(AActor* mo, uint32_t newnetid);
 void P_ClearId(uint32_t id);
 
-bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update);
+bool P_SetMobjState(AActor *mobj, int32_t state, bool cl_update);
 void P_XYMovement(AActor *mo);
 void P_ZMovement(AActor *mo);
 void PlayerLandedOnThing(AActor *mo, AActor *onmobj); // [CG] Used to be 'static'

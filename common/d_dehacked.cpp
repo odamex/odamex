@@ -24,9 +24,16 @@
 #include "odamex.h"
 
 #include <stdlib.h>
+#include <sstream>
+#include <variant>
+#include <string.h>
+#include <nonstd/scope.hpp>
+#include <nonstd/span.hpp>
 
 #include "cmdlib.h"
+#include "c_dispatch.h"
 #include "d_dehacked.h"
+#include "m_doomobjcontainer.h"
 #include "d_items.h"
 #include "gstrings.h"
 #include "i_system.h"
@@ -37,30 +44,21 @@
 #include "p_local.h"
 #include "s_sound.h"
 #include "w_wad.h"
+#include "infomap.h"
 
 // These are the original heights of every Doom 2 thing. They are used if a patch
 // specifies that a thing should be hanging from the ceiling but doesn't specify
 // a height for the thing, since these are the heights it probably wants.
 
-static byte OrgHeights[] = {
+static constexpr byte OrgHeights[] = {
     56, 56,  56, 56, 16, 56, 8,  16, 64, 8,  56, 56, 56, 56, 56, 64, 8,  64, 56, 100,
     64, 110, 56, 56, 72, 16, 32, 32, 32, 16, 42, 8,  8,  8,  8,  8,  8,  16, 16, 16,
     16, 16,  16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
     16, 16,  16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
     16, 16,  16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
     16, 68,  84, 84, 68, 52, 84, 68, 52, 52, 68, 16, 16, 16, 16, 16, 16, 16, 16, 16,
-    16, 16,  16, 16, 16, 16, 16, 16, 88, 88, 64, 64, 64, 64, 16, 16, 16};
-
-#define LINESIZE 2048
-
-#define CHECKKEY(a, b)        \
-	if (!stricmp(Line1, (a))) \
-		(b) = atoi(Line2);
-
-static char *PatchFile, *PatchPt;
-static char *Line1, *Line2;
-static int dversion, pversion;
-static bool including, includenotext;
+    16, 16,  16, 16, 16, 16, 16, 16, 88, 88, 64, 64, 64, 64, 16, 16, 16
+};
 
 // English strings for DeHackEd replacement.
 static StringTable ENGStrings;
@@ -68,12 +66,12 @@ static StringTable ENGStrings;
 // This is an offset to be used for computing the text stuff.
 // Straight from the DeHackEd source which was
 // Written by Greg Lewis, gregl@umich.edu.
-static int toff[] = {129044, 129044, 129044, 129284, 129380};
+static constexpr int toff[] = {129044, 129284, 129380};
 
 // A conversion array to convert from the 448 code pointers to the 966
 // Frames that exist.
 // Again taken from the DeHackEd source.
-static short codepconv[522] = {
+static constexpr short codepconv[522] = {
     1, 2, 3, 4, 6, 9, 10, 11, 12, 14, 16, 17, 18, 19, 20, 22, 29, 30, 31, 32, 33, 34, 36,
     38, 39, 41, 43, 44, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62,
     63, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84,
@@ -112,8 +110,8 @@ static short codepconv[522] = {
 
 static bool BackedUpData = false;
 // This is the original data before it gets replaced by a patch.
-static const char* OrgSprNames[NUMSPRITES];
-static actionf_p1 OrgActionPtrs[NUMSTATES];
+static std::string OrgSprNames[::NUMSPRITES];
+static actionf_p1 OrgActionPtrs[::NUMSTATES];
 
 // Functions used in a .bex [CODEPTR] chunk
 void A_FireRailgun(AActor*);
@@ -246,7 +244,7 @@ struct CodePtr
 	long default_args[MAXSTATEARGS];
 };
 
-static const CodePtr CodePtrs[] = {
+static constexpr CodePtr CodePtrs[] = {
     {"NULL", NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
     {"MonsterRail", A_MonsterRail, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
     {"FireRailgun", A_FireRailgun, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
@@ -369,284 +367,480 @@ static const CodePtr CodePtrs[] = {
     {"CheckAmmo", A_CheckAmmo, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
     {"RefireTo", A_RefireTo, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
     {"GunFlashTo", A_GunFlashTo, 2, {0, 0, 0, 0, 0, 0, 0, 0}},
+};
 
-    {NULL, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}}};
+static constexpr struct
+{
+	std::string_view name;
+	int32_t mobjinfo_t::* flags;
+	int32_t dehBit;
+	int32_t internalBit;
+} mbf21flagtranslation[] = {
+	// flags2
+	{ "LOGRAV",         &mobjinfo_t::flags2, BIT(0),  MF2_LOGRAV },
+	{ "BOSS",           &mobjinfo_t::flags2, BIT(9),  MF2_BOSS },
+	{ "RIP",            &mobjinfo_t::flags2, BIT(17), MF2_RIP },
+	// flags3
+	{ "SHORTMRANGE",    &mobjinfo_t::flags3, BIT(1),  MF3_SHORTMRANGE },
+	{ "DMGIGNORED",     &mobjinfo_t::flags3, BIT(2),  MF3_DMGIGNORED },
+	{ "NORADIUSDMG",    &mobjinfo_t::flags3, BIT(3),  MF3_NORADIUSDMG },
+	{ "FORCERADIUSDMG", &mobjinfo_t::flags3, BIT(4),  MF3_FORCERADIUSDMG },
+	{ "HIGHERMPROB",    &mobjinfo_t::flags3, BIT(5),  MF3_HIGHERMPROB },
+	{ "RANGEHALF",      &mobjinfo_t::flags3, BIT(6),  MF3_RANGEHALF },
+	{ "NOTHRESHOLD",    &mobjinfo_t::flags3, BIT(7),  MF3_NOTHRESHOLD },
+	{ "LONGMELEE",      &mobjinfo_t::flags3, BIT(8),  MF3_LONGMELEE },
+	{ "MAP07BOSS1",     &mobjinfo_t::flags3, BIT(10), MF3_MAP07BOSS1 },
+	{ "MAP07BOSS2",     &mobjinfo_t::flags3, BIT(11), MF3_MAP07BOSS2 },
+	{ "E1M8BOSS",       &mobjinfo_t::flags3, BIT(12), MF3_E1M8BOSS },
+	{ "E2M8BOSS",       &mobjinfo_t::flags3, BIT(13), MF3_E2M8BOSS },
+	{ "E3M8BOSS",       &mobjinfo_t::flags3, BIT(14), MF3_E3M8BOSS },
+	{ "E4M6BOSS",       &mobjinfo_t::flags3, BIT(15), MF3_E4M6BOSS },
+	{ "E4M8BOSS",       &mobjinfo_t::flags3, BIT(16), MF3_E4M8BOSS },
+	{ "FULLVOLSOUNDS",  &mobjinfo_t::flags3, BIT(18), MF3_FULLVOLSOUNDS },
+};
 
 struct Key
 {
-	const char* name;
+	std::string_view name;
 	ptrdiff_t offset;
 };
 
-static int PatchThing(int);
-static int PatchSound(int);
-static int PatchFrame(int);
-static int PatchSprite(int);
-static int PatchAmmo(int);
-static int PatchWeapon(int);
-static int PatchPointer(int);
-static int PatchCheats(int);
-static int PatchMisc(int);
-static int PatchText(int);
-static int PatchStrings(int);
-static int PatchPars(int);
-static int PatchCodePtrs(int);
-static int PatchMusic(int);
-static int DoInclude(int);
+class DehScanner;
 
-static const struct
+static void PatchThing(int, DehScanner&);
+static void PatchSound(int, DehScanner&);
+static void PatchSounds(int, DehScanner&);
+static void PatchFrame(int, DehScanner&);
+static void PatchSprite(int, DehScanner&);
+static void PatchSprites(int, DehScanner&);
+static void PatchAmmo(int, DehScanner&);
+static void PatchWeapon(int, DehScanner&);
+static void PatchPointer(int, DehScanner&);
+static void PatchCheats(int, DehScanner&);
+static void PatchMisc(int, DehScanner&);
+static void PatchText(int, DehScanner&);
+static void PatchStrings(int, DehScanner&);
+static void PatchPars(int, DehScanner&);
+static void PatchCodePtrs(int, DehScanner&);
+static void PatchMusic(int, DehScanner&);
+static void PatchHelper(int, DehScanner&);
+static int DoInclude(std::string_view, size_t);
+
+static int ParsePointerHeader(std::string_view, size_t);
+static int ParseTextHeader(std::string_view, size_t);
+static int ParseClassicHeader(std::string_view header, size_t length)
 {
-	const char* name;
-	int (*func)(int);
+	std::string_view textNum = header.substr(length);
+	if (auto num = ParseNum<int32_t>(textNum))
+	{
+		return *num;
+	}
+	else
+	{
+		DPrintFmt("Invalid section header: '{}'\n", header);
+		return -1;
+	}
+};
+
+static constexpr struct
+{
+	std::string_view name;
+	void (*parsebody)(int, DehScanner&);
+	int (*parseheader)(std::string_view, size_t) = [](std::string_view, size_t){ return 0; };
 } Modes[] = {
     // https://eternity.youfailit.net/wiki/DeHackEd_/_BEX_Reference
 
     // These appear in .deh and .bex files
-    {"Thing", PatchThing},
-    {"Sound", PatchSound},
-    {"Frame", PatchFrame},
-    {"Sprite", PatchSprite},
-    {"Ammo", PatchAmmo},
-    {"Weapon", PatchWeapon},
-    {"Pointer", PatchPointer},
+    {"Thing", PatchThing, ParseClassicHeader},
+    {"Sound", PatchSound, ParseClassicHeader},
+    {"Frame", PatchFrame, ParseClassicHeader},
+    {"Sprite", PatchSprite, ParseClassicHeader},
+    {"Ammo", PatchAmmo, ParseClassicHeader},
+    {"Weapon", PatchWeapon, ParseClassicHeader},
+    {"Pointer", PatchPointer, ParsePointerHeader},
     {"Cheat", PatchCheats},
     {"Misc", PatchMisc},
-    {"Text", PatchText},
+    {"Text", PatchText, ParseTextHeader},
     // These appear in .bex files
-    {"include", DoInclude},
+    {"include", [](int, DehScanner&){}, DoInclude},
     {"[STRINGS]", PatchStrings},
     {"[PARS]", PatchPars},
     {"[CODEPTR]", PatchCodePtrs},
     // Eternity engine added a few more features to BEX
     {"[MUSIC]", PatchMusic},
-    {NULL, NULL},
+	// DSDHacked BEX additions
+	{"[SPRITES]", PatchSprites},
+	{"[SOUNDS]", PatchSounds},
+	{"[HELPER]", PatchHelper},
 };
 
-static int HandleMode(const char* mode, int num);
-static bool HandleKey(const struct Key* keys, void* structure, const char* key, int value,
-                      const int structsize = 0);
+static bool HandleKey(nonstd::span<const Key> keys, void* structure, std::string_view key, int value,
+                      const int structsize);
 static void BackupData(void);
-static bool ReadChars(char** stuff, int size);
-static char* igets(void);
-static int GetLine(void);
 
-static size_t filelen = 0; // Be quiet, gcc
+class DehScanner
+{
+public:
+	using HeaderLine = std::string_view;
+	using KVLine = std::pair<std::string_view, std::string_view>;
+	using Line = std::variant<KVLine, HeaderLine>;
 
-#define IS_AT_PATCH_SIZE (((PatchPt - 1) - PatchFile) == (int)filelen)
+private:
+	std::string_view m_remainingData;
+	std::string_view m_currentLine;
+	std::optional<Line> m_buffer;
 
-static void PrintUnknown(const char* key, const char* loc, const size_t idx)
+	bool readLine()
+    {
+        if (m_remainingData.empty())
+        {
+            m_currentLine = std::string_view{};
+            return false;
+        }
+
+        size_t pos = m_remainingData.find('\n');
+        if (pos == std::string_view::npos)
+		{
+			m_currentLine = m_remainingData;
+			m_remainingData = std::string_view{};
+		}
+        else
+		{
+			m_currentLine = m_remainingData.substr(0, pos);
+			m_remainingData.remove_prefix(pos + 1);
+		}
+        return true;
+    }
+
+	bool isEmptyLine() const
+	{
+		return m_currentLine.empty() ||
+			std::all_of(
+				m_currentLine.begin(),
+				m_currentLine.end(),
+				[](char c){ return std::isspace(static_cast<unsigned char>(c)); }
+			);
+	}
+
+	bool isCommentLine() const
+	{
+		return !m_currentLine.empty() && m_currentLine[0] == '#';
+	}
+
+	bool isKVLine() const
+	{
+		return !m_currentLine.empty() && m_currentLine.find('=') != std::string_view::npos;
+	}
+
+	static std::string_view trimSpace(std::string_view str)
+	{
+		while (!str.empty() && std::isspace(static_cast<unsigned char>(str.front())))
+			str.remove_prefix(1);
+		while (!str.empty() && std::isspace(static_cast<unsigned char>(str.back())))
+			str.remove_suffix(1);
+		return str;
+	}
+
+	KVLine parseKV() const
+    {
+        size_t equalPos = m_currentLine.find('=');
+        auto key = trimSpace(m_currentLine.substr(0, equalPos));
+        auto value = trimSpace(m_currentLine.substr(equalPos + 1));
+        return { key, value };
+    }
+
+    HeaderLine parseHeader() const
+    {
+        return trimSpace(m_currentLine);
+    }
+
+	std::optional<Line> parseCurrentLine() const
+    {
+        if (isKVLine())
+            return Line{ parseKV() };
+        if (!isEmptyLine() && !isCommentLine())
+            return Line{ parseHeader() };
+
+        return std::nullopt;
+    }
+
+public:
+	explicit DehScanner(std::string_view data) : m_remainingData(data) {}
+
+	[[nodiscard]] bool hasMoreLines() const {
+		return !m_remainingData.empty() || m_buffer.has_value();
+	}
+
+	void unscan()
+	{
+		if (!m_buffer)
+            m_buffer = parseCurrentLine();
+	}
+
+	void skipLine() { std::ignore = getNextLine(); }
+
+	[[nodiscard]] std::optional<Line> getNextLine()
+	{
+		if (m_buffer)
+        {
+            auto out = m_buffer;
+            m_buffer.reset();
+            return out;
+        }
+
+		while (readLine())
+		{
+			if (isCommentLine() || isEmptyLine())
+				continue;
+
+			return parseCurrentLine();
+		}
+
+		return std::nullopt;
+	}
+
+	[[nodiscard]] std::optional<KVLine> getNextKeyValue()
+    {
+        if (auto line = getNextLine())
+        {
+            if (auto kv = std::get_if<KVLine>(&line.value()))
+                return *kv;
+
+            m_buffer = *line; // put back
+        }
+        return std::nullopt;
+    }
+
+	[[nodiscard]] std::optional<HeaderLine> getNextHeader()
+    {
+        if (auto line = getNextLine())
+        {
+            if (auto header = std::get_if<HeaderLine>(&*line))
+                return *header;
+
+            m_buffer = *line; // put back
+        }
+        return std::nullopt;
+    }
+
+	[[nodiscard]] std::optional<std::string> readTextString(int size)
+	{
+		std::string str;
+		str.reserve(size);
+
+		while (size--)
+		{
+			if (m_remainingData.empty())
+			{
+				DPrintFmt("Unexpected end of Text data.\n");
+				break;
+			}
+
+			if (m_remainingData[0] != '\r')
+				str += m_remainingData[0];
+			else
+				size++;
+
+			m_remainingData.remove_prefix(1);
+		}
+
+		return str;
+	}
+
+	struct ParsedState
+	{
+		size_t textOffsetIdx;
+		bool includenotext;
+		std::vector<int32_t> droppedItems;
+		std::vector<std::pair<const char**, int>> soundMapIndices;
+		std::vector<std::pair<int32_t, const CodePtr*>> codePtrs;
+	} m_state;
+};
+
+static void PrintUnknown(std::string_view key, const char* loc, const size_t idx)
 {
 	DPrintFmt("Unknown key {} encountered in {} ({}).\n", key, loc, idx);
 }
 
-static int HandleMode(const char* mode, int num)
+static void HandleMode(std::string_view header, DehScanner& scanner)
 {
-	int i = 0;
-
-	while (Modes[i].name && stricmp(Modes[i].name, mode))
+	for (const auto& [name, parsebody, parseheader] : Modes)
 	{
-		i++;
-	}
-
-	if (Modes[i].name)
-	{
-		return Modes[i].func(num);
+		if (!strnicmp(name.data(), header.data(), name.size()))
+		{
+			parsebody(parseheader(header, name.length()), scanner);
+			return;
+		}
 	}
 
 	// Handle unknown or unimplemented data
-	DPrintFmt("Unknown chunk {} encountered. Skipping.\n", mode);
-	do
-	{
-		i = GetLine();
-	} while (i == 1);
-
-	return i;
+	DPrintFmt("Unknown chunk {} encountered. Skipping.\n", header);
+	scanner.skipLine();
+	while (scanner.getNextKeyValue());
 }
 
-static bool HandleKey(const struct Key* keys, void* structure, const char* key, int value,
+static bool HandleKey(nonstd::span<const Key> keys, void* structure, std::string_view key, int value,
                       const int structsize)
 {
-	while (keys->name && stricmp(keys->name, key))
-		keys++;
-
-	if (structsize && keys->offset + (int)sizeof(int) > structsize)
+	for (const auto& keyit : keys)
 	{
-		// Handle unknown or unimplemented data
-		DPrintFmt("DeHackEd: Cannot apply key {}, offset would overrun.\n", keys->name);
-		return false;
-	}
+		if (iequals(keyit.name, key))
+		{
+			if (structsize && keyit.offset + (int)sizeof(int) > structsize)
+			{
+				// Handle unknown or unimplemented data
+				DPrintFmt("DeHackEd: Cannot apply key {}, offset would overrun.\n", keyit.name);
+				return true;
+			}
 
-	if (keys->name)
-	{
-		*((int*)(((byte*)structure) + keys->offset)) = value;
-		return false;
+			*((int*)(((byte*)structure) + keyit.offset)) = value;
+			return false;
+		}
 	}
 
 	return true;
 }
 
-static state_t backupStates[NUMSTATES];
-static mobjinfo_t backupMobjInfo[NUMMOBJTYPES];
-static mobjinfo_t backupWeaponInfo[NUMWEAPONS];
-static char* backupSprnames[NUMSPRITES + 1];
-static int backupMaxAmmo[NUMAMMO];
-static int backupClipAmmo[NUMAMMO];
-static DehInfo backupDeh;
+struct DoomBackup_t
+{
+	DoomObjectContainer<state_t, int32_t> backupStates; // boomstates
+	DoomObjectContainer<mobjinfo_t, int32_t> backupMobjInfo; // doom_mobjinfo
+	DoomObjectContainer<std::string, int32_t> backupSprnames; // doom_sprnames
+	DoomObjectContainer<std::string, int32_t> backupSoundMap; // doom_SoundMap
+	weaponinfo_t backupWeaponInfo[NUMWEAPONS + 1];
+	int backupMaxAmmo[NUMAMMO];
+	int backupClipAmmo[NUMAMMO];
+	DehInfo backupDeh;
+
+	DoomBackup_t()
+	    : backupStates(),
+	      backupMobjInfo(),
+	      backupSprnames(),
+	      backupSoundMap(),
+		  backupWeaponInfo(),
+	      backupMaxAmmo(),
+	      backupDeh()
+	{}
+} doomBackup;
+
+// [CMB] useful typedefs for iteration over global doom object containers
+typedef DoomObjectContainer<state_t, int32_t>::iterator StatesIterator;
+typedef DoomObjectContainer<mobjinfo_t, int32_t>::iterator MobjIterator;
+typedef DoomObjectContainer<std::string, int32_t>::iterator SpriteNamesIterator;
+typedef DoomObjectContainer<std::string, int32_t>::iterator SoundMapIterator;
 
 static void BackupData(void)
 {
-	int i;
-
 	if (BackedUpData)
 	{
 		return;
 	}
 
-	//	for (i = 0; i < numsfx; i++)
-	// {
-	//		OrgSfxNames[i] = S_sfx[i].name;
-	// }
-
-	for (i = 0; i < NUMSPRITES; i++)
+	// backup sprites
+	for (int i = 0; i < ::NUMSPRITES; i++)
 	{
 		OrgSprNames[i] = sprnames[i];
 	}
 
-	for (i = 0; i < NUMSTATES; i++)
+	// backup action pointers
+	for (int i = 0; i < ::NUMSTATES; i++)
 	{
 		OrgActionPtrs[i] = states[i].action;
 	}
 
-	memcpy(backupStates, states, sizeof(states));
-	memcpy(backupMobjInfo, mobjinfo, sizeof(mobjinfo));
-	memcpy(backupWeaponInfo, weaponinfo, sizeof(weaponinfo));
-	memcpy(backupSprnames, sprnames, sizeof(sprnames));
-	memcpy(backupClipAmmo, clipammo, sizeof(clipammo));
-	memcpy(backupMaxAmmo, maxammo, sizeof(maxammo));
-	backupDeh = deh;
+	doomBackup.backupStates = states;
+	doomBackup.backupMobjInfo = mobjinfo;
+	doomBackup.backupSprnames = sprnames;
+	doomBackup.backupSoundMap = SoundMap;
+
+	std::copy(weaponinfo, weaponinfo + ::NUMWEAPONS + 1, doomBackup.backupWeaponInfo);
+	std::copy(clipammo, clipammo + ::NUMAMMO, doomBackup.backupClipAmmo);
+	std::copy(maxammo, maxammo + ::NUMAMMO, doomBackup.backupMaxAmmo);
+	doomBackup.backupDeh = deh;
 
 	BackedUpData = true;
 }
 
 void D_UndoDehPatch()
 {
-	int i;
-
 	if (!BackedUpData)
 	{
 		return;
 	}
 
-	//	for (i = 0; i < NUMSFX; i++)
-	// {
-	//		OrgSfxNames[i] = S_sfx[i].name;
-	// }
+	sprnames = std::move(doomBackup.backupSprnames);
+	mobjinfo = std::move(doomBackup.backupMobjInfo);
+	states = std::move(doomBackup.backupStates);
+	SoundMap = std::move(doomBackup.backupSoundMap);
 
-	for (i = 0; i < NUMSPRITES; i++)
-	{
-		::sprnames[i] = ::OrgSprNames[i];
-	}
+	D_BuildSpawnMap();
 
-	for (i = 0; i < NUMSTATES; i++)
-	{
-		::states[i].action = ::OrgActionPtrs[i];
-	}
-
-	memcpy(states, backupStates, sizeof(states));
-
-	memcpy(mobjinfo, backupMobjInfo, sizeof(mobjinfo));
 	extern bool isFast;
 	isFast = false;
 
-	memcpy(weaponinfo, backupWeaponInfo, sizeof(weaponinfo));
-	memcpy(sprnames, backupSprnames, sizeof(sprnames));
-	memcpy(clipammo, backupClipAmmo, sizeof(clipammo));
-	memcpy(maxammo, backupMaxAmmo, sizeof(maxammo));
-	deh = backupDeh;
+	std::copy(doomBackup.backupWeaponInfo, doomBackup.backupWeaponInfo + ::NUMWEAPONS,
+	          weaponinfo);
+	std::copy(doomBackup.backupClipAmmo, doomBackup.backupClipAmmo + ::NUMAMMO, clipammo);
+	std::copy(doomBackup.backupMaxAmmo, doomBackup.backupMaxAmmo + ::NUMAMMO, maxammo);
+
+	deh = doomBackup.backupDeh;
+
+	BackedUpData = false;
 }
 
-static bool ReadChars(char** stuff, int size)
+static void ReplaceSpecialChars(std::string& str)
 {
-	char* str = *stuff;
+	char *read = str.data();
+	char *write = str.data();
 
-	if (!size)
-	{
-		*str = 0;
-		return true;
-	}
-
-	do
-	{
-		// Ignore carriage returns
-		if (*PatchPt != '\r')
-		{
-			*str++ = *PatchPt;
-		}
-		else
-		{
-			size++;
-		}
-
-		PatchPt++;
-	} while (--size);
-
-	*str = 0;
-	return true;
-}
-
-static void ReplaceSpecialChars(char* str)
-{
-	char *p = str, c;
-	int i;
-
-	while ((c = *p++))
+	while (char c = *read++)
 	{
 		if (c != '\\')
 		{
-			*str++ = c;
+			*write++ = c;
 		}
 		else
 		{
-			switch (*p)
+			switch (*read)
 			{
 			case 'n':
 			case 'N':
-				*str++ = '\n';
+				*write++ = '\n';
 				break;
 			case 't':
 			case 'T':
-				*str++ = '\t';
+				*write++ = '\t';
 				break;
 			case 'r':
 			case 'R':
-				*str++ = '\r';
+				*write++ = '\r';
 				break;
 			case 'x':
 			case 'X':
 				c = 0;
-				p++;
-				for (i = 0; i < 2; i++)
+				read++;
+				for (int i = 0; i < 2; i++)
 				{
 					c <<= 4;
-					if (*p >= '0' && *p <= '9')
+					if (*read >= '0' && *read <= '9')
 					{
-						c += *p - '0';
+						c += *read - '0';
 					}
-					else if (*p >= 'a' && *p <= 'f')
+					else if (*read >= 'a' && *read <= 'f')
 					{
-						c += 10 + *p - 'a';
+						c += 10 + *read - 'a';
 					}
-					else if (*p >= 'A' && *p <= 'F')
+					else if (*read >= 'A' && *read <= 'F')
 					{
-						c += 10 + *p - 'A';
+						c += 10 + *read - 'A';
 					}
 					else
 					{
 						break;
 					}
-					p++;
+					read++;
 				}
-				*str++ = c;
+				*write++ = c;
 				break;
 			case '0':
 			case '1':
@@ -657,193 +851,54 @@ static void ReplaceSpecialChars(char* str)
 			case '6':
 			case '7':
 				c = 0;
-				for (i = 0; i < 3; i++)
+				for (int i = 0; i < 3; i++)
 				{
 					c <<= 3;
-					if (*p >= '0' && *p <= '7')
+					if (*read >= '0' && *read <= '7')
 					{
-						c += *p - '0';
+						c += *read - '0';
 					}
 					else
 					{
 						break;
 					}
-					p++;
+					read++;
 				}
-				*str++ = c;
+				*write++ = c;
 				break;
 			default:
-				*str++ = *p;
+				*write++ = *read;
 				break;
 			}
-			p++;
+			read++;
 		}
 	}
-	*str = 0;
+	*write = 0;
+	str.resize(write - str.data());
 }
 
-static char* skipwhite(char* str)
+static auto SplitBexBits(std::string_view str, std::string_view delims)
 {
-	if (str)
-	{
-		while (*str && isspace(*str))
-		{
-			str++;
-		}
-	}
-	return str;
+    std::vector<std::string_view> out;
+    size_t start = str.find_first_not_of(delims);
+    while (start != std::string_view::npos) {
+        size_t end = str.find_first_of(delims, start);
+        out.push_back(str.substr(start, end - start));
+        if (end == std::string_view::npos) break;
+        start = str.find_first_not_of(delims, end);
+    }
+    return out;
 }
 
-static void stripwhite(char* str)
+static void PatchThing(int thingNum, DehScanner& scanner)
 {
-	char* end = str + strlen(str) - 1;
-
-	while (end >= str && isspace(*end))
-	{
-		end--;
-	}
-
-	end[1] = '\0';
-}
-
-static char* igets(void)
-{
-	char* line;
-
-	if (!PatchPt || IS_AT_PATCH_SIZE)
-	{
-		return NULL;
-	}
-
-	if (*PatchPt == '\0')
-	{
-		return NULL;
-	}
-
-	line = PatchPt;
-
-	while (*PatchPt != '\n' && *PatchPt != '\0')
-	{
-		PatchPt++;
-	}
-
-	if (*PatchPt == '\n')
-	{
-		*PatchPt++ = 0;
-	}
-
-	return line;
-}
-
-static int GetLine(void)
-{
-	char *line, *line2;
-
-	do
-	{
-		while ((line = igets()))
-		{
-			if (line[0] != '#') // Skip comment lines
-			{
-				break;
-			}
-		}
-
-		Line1 = skipwhite(line);
-	} while (Line1 && *Line1 == 0); // Loop until we get a line with
-	                                // more than just whitespace.
-
-	if (!Line1)
-	{
-		return 0;
-	}
-
-	line = strchr(Line1, '=');
-
-	if (line)
-	{ // We have an '=' in the input line
-		line2 = line;
-		while (--line2 >= Line1)
-		{
-			if (*line2 > ' ')
-			{
-				break;
-			}
-		}
-
-		if (line2 < Line1)
-		{
-			return 0; // Nothing before '='
-		}
-
-		*(line2 + 1) = 0;
-
-		line++;
-		while (*line && *line <= ' ')
-		{
-			line++;
-		}
-
-		if (*line == 0)
-		{
-			return 0; // Nothing after '='
-		}
-
-		Line2 = line;
-
-		return 1;
-	}
-	else
-	{ // No '=' in input line
-		line = Line1 + 1;
-		while (*line > ' ')
-		{
-			line++; // Get beyond first word
-		}
-
-		*line++ = 0;
-		while (*line && *line <= ' ')
-		{
-			line++; // Skip white space
-		}
-
-		//.bex files don't have this restriction
-		// if (*line == 0)
-		//	return 0;			// No second word
-
-		Line2 = line;
-
-		return 2;
-	}
-}
-
-static int PatchThing(int thingy)
-{
-
-	enum
-	{
-		// Boom flags
-		MF_TRANSLATION = 0x0c000000, // if 0x4 0x8 or 0xc, use a translation
-		// MF_TRANSSHIFT = 26,       // table for player colormaps
-		// A couple of Boom flags that don't exist in ZDoom
-		MF_SLIDE = 0x00002000,       // Player: keep info about sliding along walls.
-		MF_TRANSLUCENT = 0x80000000, // Translucent sprite?
-		                             // MBF flags: TOUCHY is remapped to flags6, FRIEND is
-		                             // turned into FRIENDLY, and finally BOUNCES is
-		                             // replaced by bouncetypes with the BOUNCES_MBF bit.
-	};
-
-	size_t thingNum = thingy;
-
 	// flags can be specified by name (a .bex extension):
-	struct flagsystem_t
+	struct
 	{
 		short Bit;
 		short WhichFlags;
 		const char* Name;
-	};
-
-	flagsystem_t bitnames[73] = {
+	} bitnames[73] = {
 	    {0, 0, "SPECIAL"},
 	    {1, 0, "SOLID"},
 	    {2, 0, "SHOOTABLE"},
@@ -877,16 +932,17 @@ static int PatchThing(int thingy)
 	    {28, 0, "UNUSED2"}, // BOOM compatibility
 	    {29, 0, "UNUSED3"}, // BOOM compatibility
 	    {30, 0, "UNUSED4"}, // BOOM compatibility
-	    {28, 0, "TOUCHY"},  // UNUSED FOR NOW
-	    {29, 0, "BOUNCES"}, // UNUSED FOR NOW
+	    {28, 0, "TOUCHY"},
+	    {29, 0, "BOUNCES"},
 	    {30, 0, "FRIEND"},
 	    {31, 0, "TRANSLUCENT"}, // BOOM compatibility
-	    {30, 0, "STEALTH"},
 
 	    // TRANSLUCENT... HACKY BUT HEH.
 	    {0, 2, "TRANSLUC25"},
 	    {1, 2, "TRANSLUC50"},
 	    {2, 2, "TRANSLUC75"},
+		// old zdoom only allowed setting this by mnemonic anyway
+		{3, 2, "STEALTH"}, // UNUSED FOR NOW
 
 	    // Names for flags2
 	    {0, 1, "LOGRAV"},
@@ -923,126 +979,108 @@ static int PatchThing(int thingy)
 	    {31, 1, "REFLECTIVE"},
 	};
 
-	// MBF21 Bitname system
-	flagsystem_t mbf_bitnames[19] = {
-	    {0, 1, "LOGRAV"},         {1, 3, "SHORTMRANGE"},    {2, 3, "DMGIGNORED"},
-	    {3, 3, "NORADIUSDMG"},    {4, 3, "FORCERADIUSDMG"}, {5, 3, "HIGHERMPROB"},
-	    {6, 3, "RANGEHALF"},      {17, 1, "NOTHRESHOLD"},   {8, 3, "LONGMELEE"},
-	    {15, 1, "BOSS"},          {10, 3, "MAP07BOSS1"},    {11, 3, "MAP07BOSS2"},
-	    {12, 3, "E1M8BOSS"},      {13, 3, "E2M8BOSS"},      {14, 3, "E3M8BOSS"},
-	    {15, 3, "E4M6BOSS"},      {16, 3, "E4M8BOSS"},      {8, 1, "RIP"},
-	    {18, 3, "FULLVOLSOUNDS"},
-	};
-
-	int result;
-	mobjinfo_t *info, dummy;
-	int *ednum, dummyed;
+	mobjinfo_t *info;
 	bool hadHeight = false;
 	bool gibhealth = false;
 
-	info = &dummy;
-	ednum = &dummyed;
-
 	thingNum--;
-	if (thingNum < 0 || thingNum >= NUMMOBJTYPES)
+	MobjIterator mobjinfo_it = mobjinfo.find(thingNum);
+	if (mobjinfo_it == mobjinfo.end())
 	{
-		DPrintFmt("Thing {} out of range.\n", thingNum);
+		info = &mobjinfo.insert(mobjinfo_t{}, (mobjtype_t) thingNum);
+		// set the type
+		info->type = thingNum;
+	} else
+	{
+		info = &mobjinfo_it->second;
 	}
-	else
-	{
-		info = &mobjinfo[thingNum];
-		*ednum = *&info->doomednum;
+
 #if defined _DEBUG
-		DPrintFmt("Thing {} found.\n", thingNum);
+	DPrintFmt("Thing {} found.\n", thingNum);
 #endif
-	}
 
-	while ((result = GetLine()) == 1)
+	while (const auto line = scanner.getNextKeyValue())
 	{
-		size_t sndmap = atoi(Line2);
+		const auto& [key, value] = *line;
+		const auto val = ParseNum<int32_t>(value).value_or(0);
 
-		if (sndmap >= ARRAY_LENGTH(SoundMap))
+		const auto ends_with = [](std::string_view str, std::string_view ending)
 		{
-			sndmap = 0;
-		}
+			return str.size() >= ending.size() &&
+			       iequals(str.substr(str.size() - ending.size()), ending);
+		};
 
-		size_t val = atoi(Line2);
-		size_t linelen = strlen(Line1);
-
-		if (stricmp(Line1 + linelen - 6, " frame") == 0)
+		const auto starts_with = [](std::string_view str, std::string_view beginning)
 		{
-			statenum_t state = (statenum_t)val;
+			return str.size() >= beginning.size() &&
+			       iequals(str.substr(0, beginning.size()), beginning);
+		};
 
-			if (!strnicmp(Line1, "Initial", 7))
+		if (ends_with(key, " frame"))
+		{
+			statenum_t state = static_cast<statenum_t>(val);
+
+			if (starts_with(key, "Initial frame"))
 			{
 				info->spawnstate = state;
 			}
-			else if (!strnicmp(Line1, "First moving", 12))
+			else if (starts_with(key, "First moving"))
 			{
 				info->seestate = state;
 			}
-			else if (!strnicmp(Line1, "Injury", 6))
+			else if (starts_with(key, "Injury"))
 			{
 				info->painstate = state;
 			}
-			else if (!strnicmp(Line1, "Close attack", 12))
+			else if (starts_with(key, "Close attack"))
 			{
 				info->meleestate = state;
 			}
-			else if (!strnicmp(Line1, "Far attack", 10))
+			else if (starts_with(key, "Far attack"))
 			{
 				info->missilestate = state;
 			}
-			else if (!strnicmp(Line1, "Death", 5))
+			else if (starts_with(key, "Death"))
 			{
 				info->deathstate = state;
 			}
-			else if (!strnicmp(Line1, "Exploding", 9))
+			else if (starts_with(key, "Exploding"))
 			{
 				info->xdeathstate = state;
 			}
-			else if (!strnicmp(Line1, "Respawn", 7))
+			else if (starts_with(key, "Respawn"))
 			{
 				info->raisestate = state;
 			}
 		}
-		else if (stricmp(Line1 + linelen - 6, " sound") == 0)
+		else if (ends_with(key, " sound"))
 		{
-			char* snd;
-
-			if (val == 0 || val >= ARRAY_LENGTH(SoundMap))
+			if (starts_with(key, "Alert"))
 			{
-				val = 0;
+				scanner.m_state.soundMapIndices.emplace_back(&info->seesound, val);
 			}
-
-			snd = (char*)SoundMap[val];
-
-			if (!strnicmp(Line1, "Alert", 5))
+			else if (starts_with(key, "Attack"))
 			{
-				info->seesound = snd;
+				scanner.m_state.soundMapIndices.emplace_back(&info->attacksound, val);
 			}
-			else if (!strnicmp(Line1, "Attack", 6))
+			else if (starts_with(key, "Pain"))
 			{
-				info->attacksound = snd;
+				scanner.m_state.soundMapIndices.emplace_back(&info->painsound, val);
 			}
-			else if (!strnicmp(Line1, "Pain", 4))
+			else if (starts_with(key, "Death"))
 			{
-				info->painsound = snd;
+				scanner.m_state.soundMapIndices.emplace_back(&info->deathsound, val);
 			}
-			else if (!strnicmp(Line1, "Death", 5))
+			else if (starts_with(key, "Action"))
 			{
-				info->deathsound = snd;
+				scanner.m_state.soundMapIndices.emplace_back(&info->activesound, val);
 			}
-			else if (!strnicmp(Line1, "Action", 6))
+			else if (starts_with(key, "Rip"))
 			{
-				info->activesound = snd;
-			}
-			else if (!strnicmp(Line1, "Rip", 3))
-			{
-				info->ripsound = snd;
+				scanner.m_state.soundMapIndices.emplace_back(&info->ripsound, val);
 			}
 		}
-		else if (stricmp(Line1, "Projectile group") == 0)
+		else if (iequals(key, "Projectile group"))
 		{
 			info->projectile_group = val;
 
@@ -1055,64 +1093,69 @@ static int PatchThing(int thingy)
 				info->projectile_group = val + PG_END;
 			}
 		}
-		else if (stricmp(Line1, "Infighting group") == 0)
+		else if (iequals(key, "Infighting group"))
 		{
 			info->infighting_group = val;
 
 			if (info->infighting_group < 0)
 			{
-				I_Error("Infighting groups must be >= 0 (check your DEHacked "
+				I_Error("Infighting groups must be >= 0 (check your DEHACKED "
 				        "entry, and correct it!)\n");
 			}
 			info->infighting_group = val + IG_END;
 		}
-		else if (stricmp(Line1, "Missile damage") == 0)
+		else if (iequals(key, "Missile damage"))
 		{
 			info->damage = val;
 		}
-		else if (stricmp(Line1, "Reaction time") == 0)
+		else if (iequals(key, "Reaction time"))
 		{
 			info->reactiontime = val;
 		}
-		else if (stricmp(Line1, "Translucency") == 0)
+		else if (iequals(key, "Translucency"))
 		{
 			info->translucency = val;
 		}
-		else if (stricmp(Line1, "Dropped item") == 0)
+		else if (iequals(key, "Dropped item"))
 		{
-			if (val - 1 < 0 || val - 1 >= NUMMOBJTYPES)
+			if (val == 0)
 			{
-				I_Error("Dropped item out of range. Check your dehacked.\n");
+				info->droppeditem = MT_NULL;
 			}
-			info->droppeditem = (mobjtype_t)(int)(val - 1); // deh is mobj + 1
+			else
+			{
+				int validx = val - 1;
+				scanner.m_state.droppedItems.push_back(validx);
+				info->droppeditem = static_cast<mobjtype_t>(validx); // deh is mobj + 1
+			}
 		}
-		else if (stricmp(Line1, "Splash group") == 0)
+		else if (iequals(key, "Splash group"))
 		{
 			info->splash_group = val;
 			if (info->splash_group < 0)
 			{
-				I_Error("Splash groups must be >= 0 (check your DEHacked entry, "
+				I_Error("Splash groups must be >= 0 (check your DEHACKED entry, "
 				        "and correct it!)\n");
 			}
 			info->splash_group = val + SG_END;
 		}
-		else if (stricmp(Line1, "Pain chance") == 0)
+		else if (iequals(key, "Pain chance"))
 		{
 			info->painchance = (SWORD)val;
 		}
-		else if (stricmp(Line1, "Melee range") == 0)
+		else if (iequals(key, "Melee range"))
 		{
 			info->meleerange = val;
 		}
-		else if (stricmp(Line1, "Hit points") == 0)
+		else if (iequals(key, "Hit points"))
 		{
 			info->spawnhealth = val;
 		}
-		else if (stricmp(Line1, "Fast speed") == 0)
+		else if (iequals(key, "Fast speed"))
 		{
 			info->altspeed = val;
 		}
-		else if (stricmp(Line1, "Gib health") == 0)
+		else if (iequals(key, "Gib health"))
 		{
 			gibhealth = true;
 			info->gibhealth = val;
@@ -1122,173 +1165,82 @@ static int PatchThing(int thingy)
 			if (info->gibhealth > 0)
 				info->gibhealth = -info->gibhealth;
 		}
-		else if (stricmp(Line1, "MBF21 Bits") == 0)
+		else if (iequals(key, "MBF21 Bits"))
 		{
-			int value[4] = {0, 0, 0};
-			bool vchanged[4] = {false, false, false};
-			char* strval;
+			static constexpr auto make_mask = [](const auto flagsPtr) -> int32_t
+			{
+			    int32_t mask = 0;
+			    for (const auto& f : mbf21flagtranslation)
+				{
+			        if (f.flags == flagsPtr)
+			            mask |= f.internalBit;
+				}
+			    return mask;
+			};
 
-			for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r")); strval = NULL)
+			static constexpr int32_t flags2mask = make_mask(&mobjinfo_t::flags2);
+			static constexpr int32_t flags3mask = make_mask(&mobjinfo_t::flags3);
+
+			info->flags2 &= ~flags2mask;
+			info->flags3 &= ~flags3mask;
+
+			for (const auto strval : SplitBexBits(value, ",+| \t\f\r"))
 			{
 				if (IsNum(strval))
 				{
-					int tempval = atoi(strval);
+					// TODO: maybe give a warning for out of range bits
+					const int32_t tempval = ParseNum<int32_t>(strval).value_or(0);
 
-					if (tempval & MF2_LOGRAV)
+					for (const auto& [_, flags, dehflag, internalflag] : mbf21flagtranslation)
 					{
-						info->flags2 |= MF2_LOGRAV;
+						if (tempval & dehflag)
+							info->*flags |= internalflag;
 					}
-
-					if (tempval & MF3_SHORTMRANGE)
-					{
-						info->flags3 |= MF3_SHORTMRANGE;
-					}
-
-					if (tempval & MF3_DMGIGNORED)
-					{
-						info->flags3 |= MF3_DMGIGNORED;
-					}
-
-					if (tempval & MF3_NORADIUSDMG)
-					{
-						info->flags3 |= MF3_NORADIUSDMG;
-					}
-
-					if (tempval & MF3_FORCERADIUSDMG)
-					{
-						info->flags3 |= MF3_FORCERADIUSDMG;
-					}
-
-					if (tempval & MF3_HIGHERMPROB)
-					{
-						info->flags3 |= MF3_HIGHERMPROB;
-					}
-
-					if (tempval & MF3_RANGEHALF)
-					{
-						info->flags3 |= MF3_RANGEHALF;
-					}
-
-					if (tempval & MF3_NOTHRESHOLD)
-					{
-						info->flags3 |= MF3_NOTHRESHOLD;
-					}
-
-					if (tempval & MF3_LONGMELEE)
-					{
-						info->flags3 |= MF3_LONGMELEE;
-					}
-
-					if (tempval & MF2_BOSS)
-					{
-						info->flags2 |= MF2_BOSS;
-					}
-
-					if (tempval & MF3_MAP07BOSS1)
-					{
-						info->flags3 |= MF3_MAP07BOSS1;
-					}
-
-					if (tempval & MF3_MAP07BOSS2)
-					{
-						info->flags3 |= MF3_MAP07BOSS2;
-					}
-
-					if (tempval & MF3_E1M8BOSS)
-					{
-						info->flags3 |= MF3_E1M8BOSS;
-					}
-
-					if (tempval & MF3_E2M8BOSS)
-					{
-						info->flags3 |= MF3_E2M8BOSS;
-					}
-
-					if (tempval & MF3_E3M8BOSS)
-					{
-						info->flags3 |= MF3_E3M8BOSS;
-					}
-
-					if (tempval & MF3_E4M6BOSS)
-					{
-						info->flags3 |= MF3_E4M6BOSS;
-					}
-
-					if (tempval & MF3_E4M8BOSS)
-					{
-						info->flags3 |= MF3_E4M8BOSS;
-					}
-
-					if (tempval & BIT(17)) // MBF21 RIP is 1 << 17
-					{
-						info->flags2 |= MF2_RIP;
-					}
-
-					if (tempval & MF3_FULLVOLSOUNDS)
-					{
-						info->flags3 |= MF3_FULLVOLSOUNDS;
-					}
-
-					value[3] |= atoi(strval);
-					vchanged[3] = true;
 				}
 				else
 				{
-					size_t i;
-
-					for (i = 0; i < ARRAY_LENGTH(mbf_bitnames); i++)
+					bool found = false;
+					for (const auto& [name, flags, _, internalflag] : mbf21flagtranslation)
 					{
-						if (!stricmp(strval, mbf_bitnames[i].Name))
+						if (iequals(strval, name))
 						{
-							vchanged[mbf_bitnames[i].WhichFlags] = true;
-							value[mbf_bitnames[i].WhichFlags] |= 1
-							                                     << (mbf_bitnames[i].Bit);
-							break;
+							info->*flags |= internalflag;
+							found = true;
 						}
 					}
 
-					if (i == ARRAY_LENGTH(mbf_bitnames))
+					if (!found)
 					{
 						DPrintFmt("Unknown bit mnemonic {}\n", strval);
 					}
 				}
 			}
-			if (vchanged[3])
-			{
-				info->flags3 = value[3];
-			}
 		}
-		else if (stricmp(Line1, "Height") == 0)
+		else if (iequals(key, "Height"))
 		{
 			info->height = val;
 			hadHeight = true;
 		}
-		else if (!stricmp(Line1, "Speed"))
+		else if (iequals(key, "Speed"))
 		{
 			info->speed = val;
 		}
-		else if (stricmp(Line1, "Width") == 0)
+		else if (iequals(key, "Width"))
 		{
 			info->radius = val;
 		}
-		else if (!stricmp(Line1, "Bits"))
+		else if (iequals(key, "Bits"))
 		{
-			int value[4] = {0, 0, 0};
-			bool vchanged[4] = {false, false, false};
-			char* strval;
+			auto lineval = value;
+			int value[3] = {0, 0, 0};
+			bool vchanged[3] = {false, false, false};
 
-			for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r")); strval = NULL)
+			for (const auto strval : SplitBexBits(lineval, ",+| \t\f\r"))
 			{
 				if (IsNum(strval))
 				{
-					// Force the top 4 bits to 0 so that the user is forced
-					// to use the mnemonics to change them.
-
-					// I have no idea why everyone insists on using strtol here
-					// even though it fails dismally if a value is parsed where
-					// the highest bit it set. Do people really use negative
-					// values here? Let's better be safe and check both.
-					value[0] |= atoi(strval);
+					// TODO: maybe give a warning for out of range bits
+					value[0] |= ParseNum<int32_t>(strval).value_or(0);
 					vchanged[0] = true;
 				}
 				else
@@ -1297,7 +1249,7 @@ static int PatchThing(int thingy)
 
 					for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
 					{
-						if (!stricmp(strval, bitnames[i].Name))
+						if (iequals(strval, bitnames[i].Name))
 						{
 							vchanged[bitnames[i].WhichFlags] = true;
 							value[bitnames[i].WhichFlags] |= 1 << (bitnames[i].Bit);
@@ -1315,24 +1267,6 @@ static int PatchThing(int thingy)
 				{
 					info->translucency = TRANSLUC66;
 				}
-
-				// Unsupported flags have to be announced for developers...
-				if (value[0] & MF_TOUCHY)
-				{
-					DPrintFmt("[DEH Bits] Unsupported MBF flag TOUCHY.\n");
-					value[0] &= ~MF_TOUCHY;
-				}
-
-				if (value[0] & MF_BOUNCES)
-					DPrintFmt("[DEH Bits] MBF flag BOUNCES is partially supported. Use "
-					          "it at your own risk!\n");
-
-				if (value[0] & MF_FRIEND)
-				{
-					DPrintFmt("[DEH Bits] Unsupported MBF flag FRIEND.\n");
-					value[0] &= ~MF_FRIEND;
-				}
-
 				info->flags = value[0];
 			}
 			if (vchanged[1])
@@ -1350,219 +1284,160 @@ static int PatchThing(int thingy)
 					else if (value[2] & 4)
 						info->translucency = TRANSLUC75;
 				}
-			}
-			if (vchanged[3])
-			{
-				info->flags3 = value[3];
+				if (value[2] & 8)
+				{
+					// info->oflags |= MFO_STEALTH; // not yet implemented
+				}
 			}
 		}
-		else if (stricmp(Line1, "ID #") == 0)
+		else if (iequals(key, "ID #"))
 		{
-			*&info->doomednum = (SDWORD)val;
+			info->doomednum = (SDWORD)val;
+			// update spawn map
+			spawn_map.insert(info, info->doomednum);
 		}
-		else if (stricmp(Line1, "Mass") == 0)
+		else if (iequals(key, "Mass"))
 		{
 			info->mass = val;
 		}
 		else
 		{
-			PrintUnknown(Line1, "Thing", thingNum);
+			PrintUnknown(key, "Thing", thingNum);
 		}
 	}
 
 	// [ML] Set a thing's "real world height" to what's being offered here,
 	// so it's consistent from the patch
-	if (info != &dummy)
+	if (hadHeight && thingNum < ARRAY_LENGTH(OrgHeights) && thingNum >= 0)
 	{
-		if (hadHeight && thingNum < sizeof(OrgHeights))
-		{
-			info->cdheight = info->height;
-		}
-
-		if (info->flags & MF_SPAWNCEILING && !hadHeight && thingNum < sizeof(OrgHeights))
-		{
-			info->height = OrgHeights[thingNum] * FRACUNIT;
-		}
-
-		// Set a default gibhealth if none was assigned.
-		if (!gibhealth && info->spawnhealth && !info->gibhealth)
-		{
-			info->gibhealth = -info->spawnhealth;
-		}
+		info->cdheight = info->height;
 	}
 
-	return result;
+	if (info->flags & MF_SPAWNCEILING && !hadHeight && thingNum < ARRAY_LENGTH(OrgHeights) && thingNum >= 0)
+	{
+		info->height = OrgHeights[thingNum] * FRACUNIT;
+	}
+
+	// Set a default gibhealth if none was assigned.
+	if (!gibhealth && info->spawnhealth && !info->gibhealth)
+	{
+		info->gibhealth = -info->spawnhealth;
+	}
 }
 
-static int PatchSound(int soundNum)
+static void PatchSound(int soundNum, DehScanner& scanner)
 {
-	int result;
-
 	DPrintFmt("Sound {} (no longer supported)\n", soundNum);
-	/*
-	    sfxinfo_t *info, dummy;
-	    int offset = 0;
-	    if (soundNum >= 1 && soundNum <= NUMSFX) {
-	        info = &S_sfx[soundNum];
-	    } else {
-	        info = &dummy;
-	        DPrintf ("Sound %d out of range.\n");
-	    }
-	*/
-	while ((result = GetLine()) == 1)
-	{
-		/*
-		if (!stricmp  ("Offset", Line1))
-		    offset = atoi (Line2);
-		else CHECKKEY ("Zero/One",			info->singularity)
-		else CHECKKEY ("Value",				info->priority)
-		else CHECKKEY ("Zero 1",			info->link)
-		else CHECKKEY ("Neg. One 1",		info->pitch)
-		else CHECKKEY ("Neg. One 2",		info->volume)
-		else CHECKKEY ("Zero 2",			info->data)
-		else CHECKKEY ("Zero 3",			info->usefulness)
-		else CHECKKEY ("Zero 4",			info->lumpnum)
-		else PrintUnknown(Line1, "Sound", soundNum);
-		*/
-	}
-	/*
-	    if (offset) {
-	        // Calculate offset from start of sound names
-	        offset -= toff[dversion] + 21076;
 
-	        if (offset <= 64)			// pistol .. bfg
-	            offset >>= 3;
-	        else if (offset <= 260)		// sawup .. oof
-	            offset = (offset + 4) >> 3;
-	        else						// telept .. skeatk
-	            offset = (offset + 8) >> 3;
-
-	        if (offset >= 0 && offset < NUMSFX) {
-	            S_sfx[soundNum].name = OrgSfxNames[offset + 1];
-	        } else {
-	            DPrintf ("Sound name %d out of range.\n", offset + 1);
-	        }
-	    }
-	*/
-	return result;
+	while (auto result = scanner.getNextKeyValue());
 }
 
-static int PatchFrame(int frameNum)
+static void PatchFrame(int frameNum, DehScanner& scanner)
 {
-	static const Key keys[] = {{"Sprite number", offsetof(state_t, sprite)},
-	                             {"Sprite subnumber", offsetof(state_t, frame)},
-	                             {"Duration", offsetof(state_t, tics)},
-	                             {"Next frame", offsetof(state_t, nextstate)},
-	                             {"Unknown 1", offsetof(state_t, misc1)},
-	                             {"Unknown 2", offsetof(state_t, misc2)},
-	                             {"Args1", offsetof(state_t, args[0])},
-	                             {"Args2", offsetof(state_t, args[1])},
-	                             {"Args3", offsetof(state_t, args[2])},
-	                             {"Args4", offsetof(state_t, args[3])},
-	                             {"Args5", offsetof(state_t, args[4])},
-	                             {"Args6", offsetof(state_t, args[5])},
-	                             {"Args7", offsetof(state_t, args[6])},
-	                             {"Args8", offsetof(state_t, args[7])},
-	                             {NULL, 0}};
-	int result;
-	state_t *info, dummy;
+	static constexpr Key keys[] = {{"Sprite number", offsetof(state_t, sprite)},
+	                               {"Sprite subnumber", offsetof(state_t, frame)},
+	                               {"Duration", offsetof(state_t, tics)},
+	                               {"Next frame", offsetof(state_t, nextstate)},
+	                               {"Unknown 1", offsetof(state_t, misc1)},
+	                               {"Unknown 2", offsetof(state_t, misc2)},
+	                               {"Args1", offsetof(state_t, args[0])},
+	                               {"Args2", offsetof(state_t, args[1])},
+	                               {"Args3", offsetof(state_t, args[2])},
+	                               {"Args4", offsetof(state_t, args[3])},
+	                               {"Args5", offsetof(state_t, args[4])},
+	                               {"Args6", offsetof(state_t, args[5])},
+	                               {"Args7", offsetof(state_t, args[6])},
+	                               {"Args8", offsetof(state_t, args[7])}};
+	state_t *info;
 
-	static const struct
-	{
-		short Bit;
-		const char* Name;
-	} bitnames[] = {
-	    {1, "SKILL5FAST"},
-	};
+    static const struct
+    {
+        short Bit;
+        const char* Name;
+    } bitnames[] = {
+        {0x01, "SKILL5FAST"},
+    };
 
-	if (frameNum >= 0 && frameNum < NUMSTATES)
-	{
-		info = &states[frameNum];
-		DPrintFmt("Frame {}\n", frameNum);
+	StatesIterator states_it = states.find(frameNum);
+	if(states_it == states.end())
+    {
+		info = &states.insert(state_t{}, frameNum);
+		info->statenum = frameNum;
+		info->nextstate = frameNum;
 	}
 	else
 	{
-		info = &dummy;
-		DPrintFmt("Frame {} out of range\n", frameNum);
+		info = &states_it->second;
 	}
 
-	while ((result = GetLine()) == 1)
+
+	while (const auto line = scanner.getNextKeyValue())
 	{
-		size_t val = atoi(Line2);
-		size_t linelen = strlen(Line1);
+		const auto& [key, value] = *line;
+		const auto val = ParseNum<int32_t>(value).value_or(0);
 
-		if (HandleKey(keys, info, Line1, val, sizeof(*info)))
+		if (HandleKey(keys, info, key, val, sizeof(*info)))
 		{
-			if (linelen == 10)
+			if (iequals(key, "MBF21 Bits"))
 			{
-				if (stricmp(Line1, "MBF21 Bits") == 0)
+				auto lineval = value;
+				int value = 0;
+				bool vchanged = false;
+
+				for (const auto strval : SplitBexBits(lineval, ",+| \t\f\r"))
 				{
-					int value = 0;
-					bool vchanged = false;
-					char* strval;
-
-					for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
-					     strval = NULL)
+					if (IsNum(strval))
 					{
-						if (IsNum(strval))
+						// TODO: maybe give a warning for out of range bits
+						value |= ParseNum<int32_t>(strval).value_or(0);
+						vchanged = true;
+					}
+					else
+					{
+						size_t i;
+
+						for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
 						{
-							// Force the top 4 bits to 0 so that the user is forced
-							// to use the mnemonics to change them.
-
-							// I have no idea why everyone insists on using strtol here
-							// even though it fails dismally if a value is parsed where
-							// the highest bit it set. Do people really use negative
-							// values here? Let's better be safe and check both.
-							value |= atoi(strval);
-							vchanged = true;
-						}
-						else
-						{
-							size_t i;
-
-							for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
+							if (iequals(strval, bitnames[i].Name))
 							{
-								if (!stricmp(strval, bitnames[i].Name))
-								{
-									vchanged = true;
-									value |= 1 << (bitnames[i].Bit);
-									break;
-								}
-							}
-
-							if (i == ARRAY_LENGTH(bitnames))
-							{
-								DPrintFmt("Unknown bit mnemonic {}\n", strval);
+								vchanged = true;
+								value |= bitnames[i].Bit;
+								break;
 							}
 						}
+
+						if (i == ARRAY_LENGTH(bitnames))
+						{
+							DPrintFmt("Unknown bit mnemonic {}\n", strval);
+						}
 					}
-					if (vchanged)
-					{
-						info->flags = value; // Weapon Flags
-					}
+				}
+				if (vchanged)
+				{
+					info->flags = value; // Weapon Flags
 				}
 			}
 			else
 			{
-				PrintUnknown(Line1, "Frame", frameNum);
+				PrintUnknown(key, "Frame", frameNum);
 			}
 		}
 	}
 #if defined _DEBUG
-	PrintFmt("FRAME {}: Duration: {}, Next: {}, SprNum: {}({}), SprSub: {}\n", frameNum,
-	         info->tics, info->nextstate, info->sprite, sprnames[info->sprite],
-	         info->frame);
+	SpriteNamesIterator sprnames_it = sprnames.find(info->sprite);
+	// TODO: sprname might appear as <No Sprite> when it's just not be defined yet
+	std::string_view sprname = (sprnames_it == sprnames.end()) ? "<No Sprite>"sv : sprnames_it->second;
+	DPrintFmt("FRAME {}: Duration: {}, Next: {}, SprNum: {}({}), SprSub: {}\n", frameNum,
+	          info->tics, info->nextstate, info->sprite, sprname,
+	          info->frame);
 #endif
-
-	return result;
 }
 
-static int PatchSprite(int sprNum)
+static void PatchSprite(int sprNum, DehScanner& scanner)
 {
-	int result;
 	int offset = 0;
 
-	if (sprNum >= 0 && sprNum < NUMSPRITES)
+	if (sprNum >= 0 && sprNum < ::NUMSPRITES)
 	{
 #if defined _DEBUG
 		DPrintFmt("Sprite {}\n", sprNum);
@@ -1573,24 +1448,27 @@ static int PatchSprite(int sprNum)
 		DPrintFmt("Sprite {} out of range.\n", sprNum);
 		sprNum = -1;
 	}
-	while ((result = GetLine()) == 1)
+	while (const auto line = scanner.getNextKeyValue())
 	{
-		if (!stricmp("Offset", Line1))
+		const auto& [key, value] = *line;
+		const auto val = ParseNum<int32_t>(value).value_or(0);
+
+		if (iequals(key, "Offset"))
 		{
-			offset = atoi(Line2);
+			offset = val;
 		}
 		else
 		{
-			PrintUnknown(Line1, "Sprite", sprNum);
+			PrintUnknown(key, "Sprite", sprNum);
 		}
 	}
 
 	if (offset > 0 && sprNum != -1)
 	{
 		// Calculate offset from beginning of sprite names.
-		offset = (offset - toff[dversion] - 22044) / 8;
+		offset = (offset - toff[scanner.m_state.textOffsetIdx] - 22044) / 8;
 
-		if (offset >= 0 && offset < NUMSPRITES)
+		if (offset >= 0 && offset < sprnames.size())
 		{
 			sprnames[sprNum] = OrgSprNames[offset];
 		}
@@ -1599,15 +1477,103 @@ static int PatchSprite(int sprNum)
 			DPrintFmt("Sprite name {} out of range.\n", offset);
 		}
 	}
-
-	return result;
 }
 
-static int PatchAmmo(int ammoNum)
+/**
+ * @brief patch sprites underneath SPRITES header
+ *
+ * @param dummy - int value for function pointer
+ */
+static void PatchSprites(int dummy, DehScanner& scanner)
+{
+	static constexpr size_t maxsprlen = 4;
+#if defined _DEBUG
+	DPrintFmt("[SPRITES]\n");
+#endif
+
+	while (const auto line = scanner.getNextKeyValue())
+	{
+		const auto& [key, value] = *line;
+
+        if(value.length() > maxsprlen)
+        {
+            DPrintFmt("Invalid sprite {}\n", value);
+            continue; // TODO: should this be an error instead?
+        }
+
+		const std::string newSprName(value);
+
+		int32_t sprIdx = -1;
+		if (IsNum(key))
+		{
+			sprIdx = ParseNum<int32_t>(key).value_or(-1);
+		}
+		else
+		{
+			// find the value that matches
+			for (int i = 0; i < ARRAY_LENGTH(OrgSprNames); i++)
+			{
+				if (strnicmp(key.data(), OrgSprNames[i].c_str(), maxsprlen) == 0)
+				{
+					sprIdx = i;
+				}
+			}
+		}
+		if (sprIdx == -1)
+		{
+			DPrintFmt("Invalid sprite index {}.\n", key);
+			continue; // TODO: should this be an error instead?
+		}
+#if defined _DEBUG
+		SpriteNamesIterator sprnames_it = sprnames.find(sprIdx);
+		const char* prevSprName =
+		    sprnames_it != sprnames.end() ? sprnames_it->second.c_str() : "No Sprite";
+		DPrintFmt("Patching sprite at {} with name {} with new name {}\n",
+		          sprIdx, prevSprName, newSprName);
+#endif
+		sprnames.insert(newSprName, sprIdx);
+	}
+}
+
+static void PatchSounds(int dummy, DehScanner& scanner)
+{
+#if defined _DEBUG
+	DPrintFmt("[Sounds]\n");
+#endif
+	while (const auto line = scanner.getNextKeyValue())
+	{
+		const auto& [key, value] = *line;
+		const std::string newname(value);
+		const OLumpName newnameds = fmt::format("DS{}", value);
+
+		if (IsNum(key))
+		{
+			const std::string sndname = fmt::format("dsdhacked/{}", StdStringToLower(newname));
+			if (const auto soundIdx = ParseNum<int32_t>(key)) {
+				SoundMap.insert(sndname, soundIdx.value());
+				S_AddSound(sndname.c_str(), newnameds.c_str());
+			}
+			else
+			{
+				DPrintFmt("Invalid sound index {}.\n", key);
+			}
+		}
+		else
+		{
+			const int lumpnum = W_CheckNumForName(fmt::format("DS{}", key).c_str());
+			const int sndIdx = S_FindSoundByLump(lumpnum);
+			if (sndIdx == -1)
+				I_Error("Sound {} not found.", key);
+			S_AddSound(S_sfx[sndIdx].name, newnameds.c_str());
+		}
+	}
+	S_HashSounds();
+}
+
+static void PatchAmmo(int ammoNum, DehScanner& scanner)
 {
 	extern int clipammo[NUMAMMO];
 
-	int result;
 	int* max;
 	int* per;
 	int dummy;
@@ -1626,36 +1592,39 @@ static int PatchAmmo(int ammoNum)
 		max = per = &dummy;
 	}
 
-	while ((result = GetLine()) == 1)
+	while (const auto line = scanner.getNextKeyValue())
 	{
-		CHECKKEY("Max ammo", *max)
-		else CHECKKEY("Per ammo", *per) else PrintUnknown(Line1, "Ammo", ammoNum);
-	}
+		const auto& [key, value] = *line;
+		const auto val = ParseNum<int32_t>(value).value_or(0);
 
-	return result;
+		if (iequals(key, "Max ammo"))
+			*max = val;
+		else if (iequals(key, "Per ammo"))
+			*per = val;
+		else
+			PrintUnknown(key, "Ammo", ammoNum);
+	}
 }
 
-static int PatchWeapon(int weapNum)
+static void PatchWeapon(int weapNum, DehScanner& scanner)
 {
-	static const Key keys[] = {
+	static constexpr Key keys[] = {
 	    {"Ammo type", offsetof(weaponinfo_t, ammotype)},
 	    {"Deselect frame", offsetof(weaponinfo_t, upstate)},
 	    {"Select frame", offsetof(weaponinfo_t, downstate)},
 	    {"Bobbing frame", offsetof(weaponinfo_t, readystate)},
 	    {"Shooting frame", offsetof(weaponinfo_t, atkstate)},
-	    {"Firing frame", offsetof(weaponinfo_t, flashstate)},
-	    {NULL, 0}};
+	    {"Firing frame", offsetof(weaponinfo_t, flashstate)}};
 
-	static const struct
+	static constexpr struct
 	{
 		short Bit;
 		const char* Name;
 	} bitnames[] = {
-	    {1, "NOTHRUST"},  {2, "SILENT"},          {4, "NOAUTOFIRE"},
-	    {8, "FLEEMELEE"}, {16, "AUTOSWITCHFROM"}, {32, "NOAUTOSWITCHTO"},
+	    {0x01, "NOTHRUST"},  {0x02, "SILENT"},         {0x04, "NOAUTOFIRE"},
+	    {0x08, "FLEEMELEE"}, {0x10, "AUTOSWITCHFROM"}, {0x20, "NOAUTOSWITCHTO"},
 	};
 
-	int result;
 	weaponinfo_t *info, dummy;
 
 	if (weapNum >= 0 && weapNum < NUMWEAPONS)
@@ -1671,32 +1640,25 @@ static int PatchWeapon(int weapNum)
 		DPrintFmt("Weapon {} out of range.\n", weapNum);
 	}
 
-	while ((result = GetLine()) == 1)
+	while (const auto line = scanner.getNextKeyValue())
 	{
-		size_t val = atoi(Line2);
-		size_t linelen = strlen(Line1);
+		const auto& [key, value] = *line;
+		const auto val = ParseNum<int32_t>(value).value_or(-1);
 
-		if (HandleKey(keys, info, Line1, val, sizeof(*info)))
+		if (HandleKey(keys, info, key, val, sizeof(*info)))
 		{
-			if (linelen == 10 && stricmp(Line1, "MBF21 Bits") == 0)
+			if (iequals(key, "MBF21 Bits"))
 			{
+				auto lineval = value;
 				int value = 0;
 				bool vchanged = false;
-				char* strval;
 
-				for (strval = Line2; (strval = strtok(strval, ",+| \t\f\r"));
-				     strval = NULL)
+				for (const auto strval : SplitBexBits(lineval, ",+| \t\f\r"))
 				{
 					if (IsNum(strval))
 					{
-						// Force the top 4 bits to 0 so that the user is forced
-						// to use the mnemonics to change them.
-
-						// I have no idea why everyone insists on using strtol here
-						// even though it fails dismally if a value is parsed where
-						// the highest bit it set. Do people really use negative
-						// values here? Let's better be safe and check both.
-						value |= atoi(strval);
+						// TODO: maybe give a warning for out of range bits
+						value |= ParseNum<int32_t>(strval).value_or(0);
 						vchanged = true;
 					}
 					else
@@ -1705,10 +1667,10 @@ static int PatchWeapon(int weapNum)
 
 						for (i = 0; i < ARRAY_LENGTH(bitnames); i++)
 						{
-							if (!stricmp(strval, bitnames[i].Name))
+							if (iequals(strval, bitnames[i].Name))
 							{
 								vchanged = true;
-								value |= 1 << (bitnames[i].Bit);
+								value |= bitnames[i].Bit;
 								break;
 							}
 						}
@@ -1724,121 +1686,156 @@ static int PatchWeapon(int weapNum)
 					info->flags = value; // Weapon Flags
 				}
 			}
-			else if (linelen == 13 && stricmp(Line1, "Ammo per shot") == 0)  // Eternity/MBF21
+			else if (iequals(key, "Ammo per shot"))  // Eternity/MBF21
 			{
 				info->ammopershot = val;
 				info->internalflags |= WIF_ENABLEAPS;
 				deh.ZDAmmo = false;
 			}
-			else if (linelen == 9 && stricmp(Line1, "Ammo use") == 0)  // ZDoom 1.23b33
+			else if (iequals(key, "Ammo use"))  // ZDoom 1.23b33
 			{
 				info->ammouse = val;
 				deh.ZDAmmo = true;
 			}
-			else if (linelen == 9 && stricmp(Line1, "Min ammo") == 0)  // ZDoom 1.23b33
+			else if (iequals(key, "Min ammo"))  // ZDoom 1.23b33
 			{
 				info->minammo = val;
 				deh.ZDAmmo = true;
 			}
 			else
 			{
-				PrintUnknown(Line1, "Weapon", weapNum);
+				PrintUnknown(key, "Weapon", weapNum);
 			}
 		}
 	}
-	return result;
 }
 
-static int PatchPointer(int ptrNum)
-{
-	int result;
+static int ParsePointerHeader(std::string_view header, size_t) {
+	auto headerParser = ParseString(header, false);
+	int ptr, frame;
 
-	if (ptrNum >= 0 && ptrNum < 448)
-	{
+	// skip first token, we already know it's "Pointer"
+	headerParser();
+
+	auto expect_token = [&](std::string_view match = "") -> std::optional<std::string> {
+		auto t = headerParser().token;
+        if (t && (match.empty() || iequals(*t, match))) return *t;
+        DPrintFmt("Pointer block header is invalid: \"{}\"\n", header);
+        return std::nullopt;
+    };
+
+    auto expect_number = [&]() -> std::optional<int> {
+        auto tok = expect_token();
+        if (!tok) return std::nullopt;
+
+        if (auto num = ParseNum<int32_t>(*tok)) return *num;
+
+        DPrintFmt("Pointer block header is invalid: \"{}\"\n", header);
+        return std::nullopt;
+    };
+
+	const auto ptrNum = expect_number();
+	if (!ptrNum)
+		return -1;
+
+	if (!expect_token("(Frame"))
+		return -1;
+
+	const auto frameNum = expect_number();
+	if (!frameNum)
+		return -1;
+
+	ptr = *ptrNum;
+	frame = *frameNum;
+
 #if defined _DEBUG
-		DPrintFmt("Pointer {}\n", ptrNum);
+	DPrintFmt("Pointer {}\n", ptr);
 #endif
-	}
-	else
-	{
-		DPrintFmt("Pointer {} out of range.\n", ptrNum);
-		ptrNum = -1;
+
+	if (ptr < 0 || ptr >= ARRAY_LENGTH(codepconv)) {
+		DPrintFmt("Pointer {} out of range.\n", ptr);
+		return -1;
 	}
 
-	while ((result = GetLine()) == 1)
+	if (ptr && frame && codepconv[ptr] != frame) {
+		DPrintFmt("Pointer {} expects frame {}, but frame was {}\n", ptr, codepconv[ptr], frame);
+		return -1;
+	} else if (frame) {
+		return frame;
+	} else {
+		return codepconv[ptr];
+	}
+}
+
+static void PatchPointer(int ptrNum, DehScanner& scanner)
+{
+	while (const auto line = scanner.getNextKeyValue())
 	{
-		if ((ptrNum != -1) && (!stricmp(Line1, "Codep Frame")))
+		const auto& [key, value] = *line;
+		const auto val = ParseNum<int32_t>(value).value_or(0);
+		if ((ptrNum != -1) && (iequals(key, "Codep Frame")))
 		{
-			int i = atoi(Line2);
-
-			if (i >= NUMSTATES)
+			// This check is okay because [CODEPTR] must be used for states added by DSDHacked
+            if (states.find(val) == states.end())
 			{
-				DPrintFmt("Pointer {} overruns static array (max: {} wanted: {})."
-				        "\n",
-				        ptrNum, NUMSTATES, i);
+				DPrintFmt("Source frame {} not found while patching pointer for destination frame {}.\n",
+				          val, ptrNum);
 			}
 			else
 			{
-				states[codepconv[ptrNum]].action = OrgActionPtrs[i];
+				states[ptrNum].action = OrgActionPtrs[val];
 			}
 		}
 		else
 		{
-			PrintUnknown(Line1, "Pointer", ptrNum);
+			PrintUnknown(key, "Pointer", ptrNum);
 		}
 	}
-	return result;
 }
 
-static int PatchCheats(int dummy)
+static void PatchCheats(int dummy, DehScanner& scanner)
 {
-	int result;
-
-	DPrintFmt("[DEHacked] Cheats support is deprecated. Ignoring these lines...\n");
+	DPrintFmt("[DeHackEd] Cheats support is deprecated. Ignoring these lines...\n");
 
 	// Fake our work (don't do anything !)
-	while ((result = GetLine()) == 1)
-	{
-	}
-
-	return result;
+	while (const auto line = scanner.getNextKeyValue());
 }
 
-static int PatchMisc(int dummy)
+static void PatchMisc(int dummy, DehScanner& scanner)
 {
-	static const Key keys[] = {
-	    {"Initial Health", offsetof(struct DehInfo, StartHealth)},
-	    {"Initial Bullets", offsetof(struct DehInfo, StartBullets)},
-	    {"Max Health", offsetof(struct DehInfo, MaxHealth)},
-	    {"Max Armor", offsetof(struct DehInfo, MaxArmor)},
-	    {"Green Armor Class", offsetof(struct DehInfo, GreenAC)},
-	    {"Blue Armor Class", offsetof(struct DehInfo, BlueAC)},
-	    {"Max Soulsphere", offsetof(struct DehInfo, MaxSoulsphere)},
-	    {"Soulsphere Health", offsetof(struct DehInfo, SoulsphereHealth)},
-	    {"Megasphere Health", offsetof(struct DehInfo, MegasphereHealth)},
-	    {"God Mode Health", offsetof(struct DehInfo, GodHealth)},
-	    {"IDFA Armor", offsetof(struct DehInfo, FAArmor)},
-	    {"IDFA Armor Class", offsetof(struct DehInfo, FAAC)},
-	    {"IDKFA Armor", offsetof(struct DehInfo, KFAArmor)},
-	    {"IDKFA Armor Class", offsetof(struct DehInfo, KFAAC)},
-	    {"BFG Cells/Shot", offsetof(struct DehInfo, BFGCells)},
-	    {"Monsters Infight", offsetof(struct DehInfo, Infight)},
-	    {NULL, 0}};
-	int result;
+	static constexpr Key keys[] = {
+	    {"Initial Health", offsetof(DehInfo, StartHealth)},
+	    {"Initial Bullets", offsetof(DehInfo, StartBullets)},
+	    {"Max Health", offsetof(DehInfo, MaxHealth)},
+	    {"Max Armor", offsetof(DehInfo, MaxArmor)},
+	    {"Green Armor Class", offsetof(DehInfo, GreenAC)},
+	    {"Blue Armor Class", offsetof(DehInfo, BlueAC)},
+	    {"Max Soulsphere", offsetof(DehInfo, MaxSoulsphere)},
+	    {"Soulsphere Health", offsetof(DehInfo, SoulsphereHealth)},
+	    {"Megasphere Health", offsetof(DehInfo, MegasphereHealth)},
+	    {"God Mode Health", offsetof(DehInfo, GodHealth)},
+	    {"IDFA Armor", offsetof(DehInfo, FAArmor)},
+	    {"IDFA Armor Class", offsetof(DehInfo, FAAC)},
+	    {"IDKFA Armor", offsetof(DehInfo, KFAArmor)},
+	    {"IDKFA Armor Class", offsetof(DehInfo, KFAAC)},
+	    {"BFG Cells/Shot", offsetof(DehInfo, BFGCells)},
+	    {"Monsters Infight", offsetof(DehInfo, Infight)}};
 	gitem_t* item;
 #if defined _DEBUG
 	DPrintFmt("Misc\n");
 #endif
-	while ((result = GetLine()) == 1)
+	while (const auto line = scanner.getNextKeyValue())
 	{
-		if (HandleKey(keys, &deh, Line1, atoi(Line2)))
+		const auto& [key, value] = *line;
+		const auto val = ParseNum<int32_t>(value).value_or(0);
+		if (HandleKey(keys, &deh, key, val, sizeof(deh)))
 		{
-			DPrintFmt("Unknown miscellaneous info {}.\n", Line2);
+			DPrintFmt("Unknown miscellaneous info {}.\n", key);
 		}
 
 		// [SL] manually check if BFG Cells/Shot is being changed and
 		// update weaponinfo accordingly. BFGCells should be considered depricated.
-		if (Line1 != NULL && stricmp(Line1, "BFG Cells/Shot") == 0)
+		if (iequals(key, "BFG Cells/Shot") == 0)
 		{
 			weaponinfo[wp_bfg].ammouse = deh.BFGCells;
 			weaponinfo[wp_bfg].minammo = deh.BFGCells;
@@ -1858,422 +1855,395 @@ static int PatchMisc(int dummy)
 
 	// 0xDD == enable infighting
 	deh.Infight = deh.Infight == 0xDD ? 1 : 0;
-
-	return result;
 }
 
-static int PatchPars(int dummy)
+static void PatchPars(int dummy, DehScanner& scanner)
 {
-	char *space, *moredata;
-	int result, par;
-	OLumpName mapname;
 #if defined _DEBUG
 	DPrintFmt("[Pars]\n");
 #endif
-	while ((result = GetLine()))
+	while (const auto line = scanner.getNextLine())
 	{
 		// Argh! .bex doesn't follow the same rules as .deh
-		if (result == 1)
+		if (auto kv = std::get_if<DehScanner::KVLine>(&line.value()))
 		{
-			DPrintFmt("Unknown key in [PARS] section: {}\n", Line1);
+			DPrintFmt("Unknown key in [PARS] section: {}\n", kv->first);
 			continue;
 		}
-		if (stricmp("par", Line1))
+
+		// safe because if we reached this point, we know its not the other variant
+		std::string_view parline = std::get<DehScanner::HeaderLine>(line.value());
+
+		// didnt start with par
+		if (!iequals(parline.substr(0, 4), "par "))
 		{
-			return result;
+			// we've consumed a header by accident, need to go back one line
+			scanner.unscan();
+			return;
 		}
 
-		space = strchr(Line2, ' ');
+		parline.remove_prefix(4);
 
-		if (!space)
+		if (parline.empty())
 		{
 			DPrintFmt("Need data after par.\n");
 			continue;
 		}
 
-		*space++ = '\0';
+		int time;
+		OLumpName mapname;
 
-		while (*space && isspace(*space))
+		auto parser = ParseString(parline, false);
+
+		int nums[] = { -1, -1, -1 };
+
+		for (int& num : nums)
 		{
-			space++;
+			if (auto token = parser().token)
+				num = ParseNum<int32_t>(*token).value_or(-1);
 		}
 
-		moredata = strchr(space, ' ');
-
-		if (moredata)
+		if (std::all_of(std::begin(nums), std::end(nums), [](int n){ return n > -1; }))
 		{
-			// At least 3 items on this line, must be E?M? format
-			mapname = fmt::format("E{:c}M{:c}", *Line2, *space);
-			par = atoi(moredata + 1);
+			time = nums[2];
+			mapname = fmt::format("E{}M{}", nums[0], nums[1]);
+		}
+		else if (nums[0] > -1 && nums[1] > -1)
+		{
+			time = nums[1];
+			mapname = fmt::format("MAP{:02d}", nums[0]);
 		}
 		else
 		{
-			// Only 2 items, must be MAP?? format
-			mapname = fmt::format("MAP{:02d}", atoi(Line2) % 100);
-			par = atoi(space);
+			DPrintFmt("Invalid [PARS] format: {}", parline);
+			continue;
 		}
 
 		LevelInfos& levels = getLevelInfos();
 		level_pwad_info_t& info = levels.findByName(mapname);
 
+		// TODO: THIS CHECK FAILS EXCEPT WHEN DOUBLE DEHACKED HAPPENS
+		// SO PAR TIMES ARE SET INCORRECTLY ON SERVERS
 		if (!info.exists())
 		{
 			DPrintFmt("No map {}\n", mapname);
 			continue;
 		}
 
-		info.partime = par;
+		info.partime = time;
 #if defined _DEBUG
-		DPrintFmt("Par for {} changed to {}\n", mapname, par);
+		DPrintFmt("Par for {} changed to {}\n", mapname, time);
 #endif
 	}
-	return result;
 }
 
-static int PatchCodePtrs(int dummy)
+static void PatchCodePtrs(int dummy, DehScanner& scanner)
 {
-	int result;
 #if defined _DEBUG
 	DPrintFmt("[CodePtr]\n");
 #endif
-	while ((result = GetLine()) == 1)
+	while (const auto line = scanner.getNextKeyValue())
 	{
-		if (!strnicmp("Frame", Line1, 5) && isspace(Line1[5]))
+		const auto [key, value] = *line;
+		if (iequals(key.substr(0, 6), "Frame "))
 		{
-			int frame = atoi(Line1 + 5);
-
-			if (frame < 0 || frame >= NUMSTATES)
+			const auto frameOpt = ParseNum<int32_t>(key.substr(6));
+			if (!frameOpt)
 			{
-				DPrintFmt("Frame {} out of range\n", frame);
+				DPrintFmt("Unknown key in [CODEPTR] section: {}\n", key);
+				continue;
+			}
+
+			const int32_t frame = frameOpt.value();
+			std::string_view data = value;
+
+			if ((value[0] == 'A' || value[0] == 'a') && value[1] == '_')
+				data.remove_prefix(2);
+
+
+			const auto it = std::find_if(std::begin(CodePtrs), std::end(CodePtrs), [data](const CodePtr& ptr){
+				return iequals(ptr.name, data);
+			});
+
+			if (it != std::end(CodePtrs))
+			{
+				scanner.m_state.codePtrs.emplace_back(frame, &*it);
 			}
 			else
 			{
-				int i = 0;
-				char* data;
-
-				COM_Parse(Line2);
-
-				if ((com_token[0] == 'A' || com_token[0] == 'a') && com_token[1] == '_')
-				{
-					data = com_token + 2;
-				}
-				else
-				{
-					data = com_token;
-				}
-
-				while (CodePtrs[i].name && stricmp(CodePtrs[i].name, data))
-				{
-					i++;
-				}
-
-				if (CodePtrs[i].name)
-				{
-					states[frame].action = CodePtrs[i].func;
-					DPrintFmt("Frame {} set to {}\n", frame, CodePtrs[i].name);
-				}
-				else
-				{
-					states[frame].action = NULL;
-					DPrintFmt("Unknown code pointer: {}\n", com_token);
-				}
+				scanner.m_state.codePtrs.emplace_back(frame, nullptr);
+				DPrintFmt("Unknown code pointer: {}\n", value);
 			}
 		}
+		else
+		{
+			DPrintFmt("Unknown key in [CODEPTR] section: {}\n", key);
+		}
 	}
-	return result;
 }
 
-static int PatchMusic(int dummy)
+static void PatchMusic(int dummy, DehScanner& scanner)
 {
-	int result;
-	OString keystring;
 #if defined _DEBUG
 	DPrintFmt("[Music]\n");
 #endif
-	while ((result = GetLine()) == 1)
+	while (const auto line = scanner.getNextKeyValue())
 	{
-		const char* newname = skipwhite(Line2);
+		const auto& [key, value] = *line;
+		const std::string_view newname = value;
 
-		keystring = fmt::format("MUSIC_{}", Line1);
+		OString keystring = fmt::format("MUSIC_{}", key);
 		if (GStrings.hasString(keystring))
 		{
 			GStrings.setString(keystring, newname);
 			DPrintFmt("Music {} set to:\n{}\n", keystring, newname);
 		}
 	}
-
-	return result;
 }
 
-static int PatchText(int oldSize)
+static void PatchHelper(int dummy, DehScanner& scanner)
 {
-	int newSize;
-	char* oldStr;
-	char* newStr;
-	char* temp;
-	bool good;
-	int result;
-	const OString* name = NULL;
-
-	// Skip old size, since we already know it
-	temp = Line2;
-	while (*temp > ' ')
+#if defined _DEBUG
+	DPrintFmt("[Helper]\n");
+#endif
+	while (const auto line = scanner.getNextKeyValue())
 	{
-		temp++;
-	}
-	while (*temp && *temp <= ' ')
-	{
-		temp++;
-	}
-
-	if (*temp == 0)
-	{
-		PrintFmt(PRINT_HIGH, "Text chunk is missing size of new string.\n");
-		return 2;
-	}
-	newSize = atoi(temp);
-
-	oldStr = new char[oldSize + 1];
-	newStr = new char[newSize + 1];
-
-	if (!oldStr || !newStr)
-	{
-		PrintFmt(PRINT_HIGH, "Out of memory.\n");
-		goto donewithtext;
-	}
-
-	good = ReadChars(&oldStr, oldSize);
-	good = ReadChars(&newStr, newSize) || good;
-
-	if (!good)
-	{
-		delete[] newStr;
-		delete[] oldStr;
-		PrintFmt(PRINT_HIGH, "Unexpected end-of-file.\n");
-		return 0;
-	}
-
-	if (includenotext)
-	{
-		PrintFmt(PRINT_HIGH, "Skipping text chunk in included patch.\n");
-		goto donewithtext;
-	}
-
-	DPrintFmt("Searching for text:\n{}\n", oldStr);
-	good = false;
-
-	// Search through sprite names
-	for (int i = 0; i < NUMSPRITES; i++)
-	{
-		if (!strcmp(sprnames[i], oldStr))
+		const auto& [key, value] = *line;
+		if (iequals(key, "type"))
 		{
-			sprnames[i] = copystring(newStr);
-			good = true;
-			// See above.
+			deh.helper = ParseNum<int32_t>(value).value_or(-1);
+		}
+		else
+		{
+			DPrintFmt("Unknown key {} in [HELPER] section", key);
+		}
+	}
+}
+
+static int ParseTextHeader(std::string_view header, size_t)
+{
+	std::string_view idk = header.substr(4);
+	auto parser = ParseString(idk, false);
+	int oldsize = -1, newsize = -1;
+	if (auto token = parser().token)
+	{
+		if (auto num = ParseNum<int32_t>(*token))
+		{
+			oldsize = *num;
 		}
 	}
 
-	if (good)
+	if (auto token = parser().token)
 	{
-		goto donewithtext;
+		if (auto num = ParseNum<int32_t>(*token))
+		{
+			newsize = *num;
+		}
 	}
 
-	// Search through music names.
-	// [AM] Disabled because it relies on an extern wadlevelinfos
-	/*if (oldSize < 7)
-	{		// Music names are never >6 chars
-	    char musname[9];
-	    snprintf(musname, ARRAY_LENGTH(musname), "D_%s", oldStr);
-
-	    for (size_t i = 0; i < levels.size(); i++)
-	    {
-	        level_pwad_info_t& level = levels.at(0);
-	        if (stricmp(level.music, musname) == 0)
-	        {
-	            good = true;
-	            uppercopy(level.music, musname);
-	        }
-	    }
-	}*/
-
-	if (good)
+	if (oldsize == -1 || newsize == -1)
 	{
-		goto donewithtext;
+		DPrintFmt("Invalid Text header: '{}'\n", header);
+		return -1;
+	}
+
+	// awful hack, but we know that the max size here is only a few hundred
+	return (oldsize << 16) + newsize;
+}
+
+static void PatchText(int sizes, DehScanner& scanner)
+{
+	if (sizes == -1)
+		return;
+
+	int newSize = (sizes & 0xFFFF);
+	int oldSize = sizes >> 16;
+
+	const auto oldStr = scanner.readTextString(oldSize);
+	const auto newStr = scanner.readTextString(newSize);
+
+	if (!oldStr || !newStr)
+	{
+		DPrintFmt("Unexpected-end-of-file");
+		return;
+	}
+
+	if (scanner.m_state.includenotext)
+	{
+		PrintFmt(PRINT_HIGH, "Skipping text chunk in included patch.\n");
+		return;
+	}
+
+	DPrintFmt("Searching for text:\n{}\n", *oldStr);
+
+	// Search through sprite names
+	for (auto& [_, sprname] : sprnames)
+	{
+		if (sprname == *oldStr)
+		{
+			sprname = *newStr;
+			return;
+		}
+	}
+
+	const OLumpName newnameds = fmt::format("DS{}", *newStr);
+	const OLumpName oldnameds = fmt::format("DS{}", *oldStr);
+
+	const int oldlumpnum = W_CheckNumForName(oldnameds);
+	const int sndIdx = S_FindSoundByLump(oldlumpnum);
+	if (sndIdx != -1 && W_CheckNumForName(newnameds) != -1)
+	{
+		S_AddSound(S_sfx[sndIdx].name, newnameds.c_str());
+		S_HashSounds();
+		return;
 	}
 
 	// Search through most other texts
-	name = &ENGStrings.matchString(oldStr);
-	if (name != NULL && !name->empty())
+	const OString& name = ENGStrings.matchString(*oldStr);
+	if (!name.empty())
 	{
-		GStrings.setString(*name, newStr);
-		good = true;
+		GStrings.setString(name, *newStr);
+		return;
 	}
 
-	if (!good)
-	{
-		DPrintFmt("   (Unmatched)\n");
-	}
-
-donewithtext:
-	if (newStr)
-	{
-		delete[] newStr;
-	}
-	if (oldStr)
-	{
-		delete[] oldStr;
-	}
-
-	// Ensure that we've munched the entire line in the case of an incomplete
-	// substitution.
-	if (!(*PatchPt == '\0' || *PatchPt == '\n'))
-	{
-		igets();
-	}
-
-	// Fetch next identifier for main loop
-	while ((result = GetLine()) == 1)
-	{
-	}
-
-	return result;
+	DPrintFmt("   (Unmatched)\n");
 }
 
-static int PatchStrings(int dummy)
+static void PatchStrings(int dummy, DehScanner& scanner)
 {
-	static size_t maxstrlen = 128;
-	static char* holdstring;
-	int result;
 #if defined _DEBUG
 	DPrintFmt("[Strings]\n");
 #endif
-	if (!holdstring)
+	while (const auto line = scanner.getNextKeyValue())
 	{
-		holdstring = static_cast<char*>(M_Malloc(maxstrlen));
-	}
-
-	while ((result = GetLine()) == 1)
-	{
-		int i;
-
-		*holdstring = '\0';
-		do
+		std::string string;
+		const auto [key, value] = *line;
+		std::string_view nextpart = value;
+		while (nextpart.back() == '\\')
 		{
-			while (maxstrlen < strlen(holdstring) + strlen(Line2) + 8)
-			{
-				maxstrlen += 128;
-				holdstring = static_cast<char*>(M_Realloc(holdstring, maxstrlen));
+			nextpart.remove_suffix(1);
+			string += nextpart;
+			if (const auto nextOpt = scanner.getNextHeader())
+				nextpart = *nextOpt;
+			else
+				DPrintFmt("[STRINGS] invalid line continuation: {}\\", nextpart);
+		}
+		string += nextpart;
+
+		int i = GStrings.toIndex(key);
+		if (iequals("DEHTHING_", key.substr(0, 9)))
+		{
+			try {
+				int32_t type = ParseNum<int32_t>(string).value_or(0);
+				type--;
+				P_MapDehThing(static_cast<mobjtype_t>(type), std::string(key)); // TODO: rework so no casting needed
+				GStrings.setString(key, string);
+				DPrintFmt("{} set to:\n{}\n", key, string);
 			}
-			strncat(holdstring, skipwhite(Line2), maxstrlen - strlen(holdstring) - 1);
-			stripwhite(holdstring);
-			if (holdstring[strlen(holdstring) - 1] == '\\')
+			catch (const std::invalid_argument&)
 			{
-				holdstring[strlen(holdstring) - 1] = '\0';
-				Line2 = igets();
+				PrintFmt(PRINT_HIGH, "Invalid thing type {} for {}\n", string, key);
+			}
+			catch (const std::out_of_range&)
+			{
+				PrintFmt(PRINT_HIGH, "Invalid thing type {} for {}\n", string, key);
+			}
+		}
+		else if (i == -1)
+		{
+			if (iequals("USER_", key.substr(0, 5)))
+			{
+				ReplaceSpecialChars(string);
+				GStrings.setString(key, string);
+				DPrintFmt("{} set to:\n{}\n", key, string);
 			}
 			else
-				Line2 = NULL;
-		} while (Line2 && *Line2);
-
-		i = GStrings.toIndex(Line1);
-		if (i == -1)
-		{
-			PrintFmt(PRINT_HIGH, "Unknown string: {}\n", Line1);
+			{
+				PrintFmt(PRINT_HIGH, "Unknown string: {}\n", key);
+			}
 		}
 		else
 		{
 
-			ReplaceSpecialChars(holdstring);
+			ReplaceSpecialChars(string);
 			if ((i >= GStrings.toIndex(OB_SUICIDE) && i <= GStrings.toIndex(OB_DEFAULT) &&
-			     strstr(holdstring, "%o") == NULL) ||
+			     string.find("%o") == std::string::npos) ||
 			    (i >= GStrings.toIndex(OB_FRIENDLY1) &&
-			     i <= GStrings.toIndex(OB_FRIENDLY4) && strstr(holdstring, "%k") == NULL))
+			     i <= GStrings.toIndex(OB_FRIENDLY4) && string.find("%k") == std::string::npos))
 			{
-				size_t len = strlen(holdstring);
-				memmove(holdstring + 3, holdstring, len);
-				holdstring[0] = '%';
-				holdstring[1] = i <= GStrings.toIndex(OB_DEFAULT) ? 'o' : 'k';
-				holdstring[2] = ' ';
-				holdstring[3 + len] = '.';
-				holdstring[4 + len] = 0;
+				string = fmt::format("%{} {}.", i <= GStrings.toIndex(OB_DEFAULT) ? 'o' : 'k', string);
 				if (i >= GStrings.toIndex(OB_MPFIST) && i <= GStrings.toIndex(OB_RAILGUN))
 				{
-					char* spot = strstr(holdstring, "%s");
-					if (spot != NULL)
+					size_t spot = string.find("%s");
+					if (spot != std::string::npos)
 					{
-						spot[1] = 'k';
+						string[spot + 1] = 'k';
 					}
 				}
 			}
-			GStrings.setString(Line1, holdstring);
-			DPrintFmt("{} set to:\n{}\n", Line1, holdstring);
+			// [CMB] TODO: Language string table change // [EB] what is this comment about??
+			GStrings.setString(key, string);
+			DPrintFmt("{} set to:\n{}\n", key, string);
 		}
 	}
-
-	return result;
 }
 
-static int DoInclude(int dummy)
+static int DoInclude(std::string_view include, size_t)
 {
-	char* data;
-	int savedversion, savepversion;
-	char *savepatchfile, *savepatchpt;
+	bool notext = false;
 	OWantFile want;
 	OResFile res;
 
-	if (including)
-	{
-		DPrintFmt("Sorry, can't nest includes\n");
-		goto endinclude;
-	}
+	auto lineParser = ParseString(include, false);
 
-	data = COM_Parse(Line2);
-	if (!stricmp(com_token, "notext"))
-	{
-		includenotext = true;
-		data = COM_Parse(data);
-	}
+	// skip first token, we already know it has to be "include"
+	lineParser();
 
-	if (!com_token[0])
+	auto token = lineParser().token;
+	if (!token)
 	{
-		includenotext = false;
 		DPrintFmt("Include directive is missing filename\n");
-		goto endinclude;
+		return 0;
 	}
-#if defined _DEBUG
-	DPrintFmt("Including {}\n", com_token);
-#endif
-	savepatchfile = PatchFile;
-	savepatchpt = PatchPt;
-	savedversion = dversion;
-	savepversion = pversion;
-	including = true;
 
-	if (!OWantFile::make(want, com_token, OFILE_DEH))
+	if (iequals(*token, "notext"))
 	{
-		PrintFmt(PRINT_WARNING, "Could not find BEX include \"{}\"\n", com_token);
-		goto endinclude;
+		notext = true;
+		token = lineParser().token;
+	}
+
+	if (!token)
+	{
+		DPrintFmt("Include directive is missing filename\n");
+		return 0;
+	}
+
+	std::string filename = *token;
+
+#if defined _DEBUG
+	DPrintFmt("Including {}\n", filename);
+#endif
+
+	if (!OWantFile::make(want, filename, OFILE_DEH))
+	{
+		PrintFmt(PRINT_WARNING, "Could not find BEX include \"{}\"\n", filename);
+		return 0;
 	}
 
 	if (!M_ResolveWantedFile(res, want))
 	{
-		PrintFmt(PRINT_WARNING, "Could not resolve BEX include \"{}\"\n", com_token);
-		goto endinclude;
+		PrintFmt(PRINT_WARNING, "Could not resolve BEX include \"{}\"\n", filename);
+		return 0;
 	}
 
-	D_DoDehPatch(&res, -1);
+	D_DoDehPatch(&res, -1, false, notext);
 
 	DPrintFmt("Done with include\n");
-	PatchFile = savepatchfile;
-	PatchPt = savepatchpt;
-	dversion = savedversion;
-	pversion = savepversion;
 
-endinclude:
-	including = false;
-	includenotext = false;
-	return GetLine();
+	return 0;
 }
+
+static void D_PostProcessDeh(const DehScanner::ParsedState& dp);
 
 /**
  * @brief Attempt to load a DeHackEd file.
@@ -2281,17 +2251,18 @@ endinclude:
  * @param patchfile File to attempt to load, NULL if not a file.
  * @param lump Lump index to load, -1 if not a lump.
  */
-bool D_DoDehPatch(const OResFile* patchfile, const int lump)
+bool D_DoDehPatch(const OResFile* patchfile, const int lump, bool textonly, bool notext)
 {
 	BackupData();
-	::PatchFile = NULL;
+
+	std::string buffer;
 
 	if (lump >= 0)
 	{
 		// Execute the DEHACKED lump as a patch.
-		::filelen = W_LumpLength(lump);
-		::PatchFile = new char[::filelen + 1];
-		W_ReadLump(lump, ::PatchFile);
+		const auto lumplen = W_LumpLength(lump);
+		buffer.resize(lumplen);
+		W_ReadLump(lump, buffer.data());
 	}
 	else if (patchfile)
 	{
@@ -2304,10 +2275,10 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 			return false;
 		}
 
-		::filelen = M_FileLength(fh);
-		::PatchFile = new char[::filelen + 1];
+		const auto filelen = M_FileLength(fh);
+		buffer.resize(filelen);
 
-		size_t read = fread(::PatchFile, 1, filelen, fh);
+		size_t read = fread(buffer.data(), 1, filelen, fh);
 		if (read < filelen)
 		{
 			DPrintFmt("Could not read file\n");
@@ -2320,26 +2291,37 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 		return false;
 	}
 
+	DehScanner scanner(buffer);
+	DehScanner::ParsedState& dp = scanner.m_state;
+
+	dp.includenotext = notext;
+
 	// Load english strings to match against.
 	::ENGStrings.loadStrings(true);
 
-	// End file with a NULL for our parser
-	::PatchFile[::filelen] = 0;
+	int pversion = -1, dversion = -1;
 
-	::dversion = pversion = -1;
-
-	int cont = 0;
-	if (!strncmp(::PatchFile, "Patch File for DeHackEd v", 25))
+	if (!strncmp(buffer.c_str(), "Patch File for DeHackEd v", 25))
 	{
-		::PatchPt = strchr(::PatchFile, '\n');
-		while ((cont = GetLine()) == 1)
+		scanner.skipLine();
+		while (std::optional<DehScanner::KVLine> kvLine = scanner.getNextKeyValue())
 		{
-			CHECKKEY("Doom version", ::dversion)
-			else CHECKKEY("Patch format", ::pversion)
+			const auto& [key, value] = *kvLine;
+			if (iequals(key, "Doom version"))
+			{
+				dversion = ParseNum<int32_t>(value).value_or(-1);
+			}
+			else if (iequals(key, "Patch format"))
+			{
+				pversion = ParseNum<int32_t>(value).value_or(-1);
+			}
+			else
+			{
+				DPrintFmt("Unknown header key: {}\n", key);
+			}
 		}
-		if (!cont || ::dversion == -1 || ::pversion == -1)
+		if (!scanner.hasMoreLines() || dversion == -1 || pversion == -1)
 		{
-			delete[] ::PatchFile;
 			if (patchfile)
 			{
 				PrintFmt(PRINT_WARNING, "\"{}\" is not a DeHackEd patch file\n",
@@ -2355,61 +2337,68 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 	else
 	{
 		DPrintFmt("Patch does not have DeHackEd signature. Assuming .bex\n");
-		::dversion = 19;
-		::pversion = 6;
-		::PatchPt = ::PatchFile;
-		while ((cont = GetLine()) == 1)
-		{
-		}
+		dversion = 19;
+		pversion = 6;
 	}
 
-	if (::pversion != 6)
+	if (pversion != 6)
 	{
 		DPrintFmt("DeHackEd patch version is {}.\nUnexpected results may occur.\n",
-		          ::pversion);
+		          pversion);
 	}
 
-	if (::dversion == 16)
+	switch (dversion)
 	{
-		::dversion = 0;
-	}
-	else if (::dversion == 17)
-	{
-		::dversion = 2;
-	}
-	else if (::dversion == 19)
-	{
-		::dversion = 3;
-	}
-	else if (::dversion == 20)
-	{
-		::dversion = 1;
-	}
-	else if (::dversion == 21)
-	{
-		::dversion = 4;
-	}
-	else
-	{
+	case 16:
+	case 17:
+	case 20:
+		dp.textOffsetIdx = 0;
+		break;
+	case 19:
+		dp.textOffsetIdx = 1;
+		break;
+	case 21:
+	case 2021:
+	case 2024:
+		dp.textOffsetIdx = 2;
+		break;
+	default:
 		DPrintFmt("Patch created with unknown DOOM version.\nAssuming version 1.9.\n");
-		::dversion = 3;
+		dp.textOffsetIdx = 1;
 	}
 
-	do
+	if (textonly)
 	{
-		if (cont == 1)
+		while (std::optional<DehScanner::Line> line = scanner.getNextLine())
 		{
-			DPrintFmt("Key {} encountered out of context\n", ::Line1);
-			cont = 0;
+			static constexpr std::string_view STRINGS_HEADER = "[STRINGS]";
+			static constexpr std::string_view TEXT_HEADER = "Text";
+			auto header = std::get_if<DehScanner::HeaderLine>(&line.value());
+			if (header &&
+			    (!strnicmp(header->data(), STRINGS_HEADER.data(), STRINGS_HEADER.size()) ||
+			     !strnicmp(header->data(), TEXT_HEADER.data(), TEXT_HEADER.size())))
+			{
+				HandleMode(*header, scanner);
+			}
+			else
+			{
+				scanner.skipLine();
+			}
 		}
-		else if (cont == 2)
-		{
-			cont = HandleMode(::Line1, atoi(::Line2));
-		}
-	} while (cont);
+		return true;
+	}
 
-	delete[] ::PatchFile;
-	::PatchFile = NULL;
+	while (std::optional<DehScanner::Line> line = scanner.getNextLine())
+	{
+		std::visit(OUtil::visitor {
+			[](const DehScanner::KVLine& kvLine) {
+				DPrintFmt("Key {} encountered out of context\n", kvLine.first);
+			},
+			[&scanner](const DehScanner::HeaderLine& headerLine) {
+				HandleMode(headerLine, scanner);
+			}
+		}, *line);
+	}
 
 	if (patchfile)
 	{
@@ -2421,12 +2410,12 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump)
 	}
 	PrintFmt(" (DeHackEd patch)\n");
 
-	D_PostProcessDeh();
+	D_PostProcessDeh(dp);
 
 	return true;
 }
 
-static CodePtr null_bexptr = {"(NULL)", NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
+static constexpr CodePtr null_bexptr = {"(NULL)", NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 
 /*
  * @brief Check loaded deh files for any problems prior
@@ -2435,44 +2424,121 @@ static CodePtr null_bexptr = {"(NULL)", NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
  * (Credit to DSDADoom for the inspiration for this)
  */
 
-void D_PostProcessDeh()
+static void D_PostProcessDeh(const DehScanner::ParsedState& dp)
 {
-	int i, j;
-	const CodePtr* bexptr_match;
-
-	for (i = 0; i < NUMSTATES; i++)
+	// resolve states with assigned codeptrs
+	for (auto& [frame, codeptr] : dp.codePtrs)
 	{
-		bexptr_match = &null_bexptr;
-
-		for (j = 1; CodePtrs[j].func != NULL; ++j)
+		auto states_it = states.find(frame);
+		if (states_it == states.end())
 		{
-			if (states[i].action == CodePtrs[j].func)
+			DPrintFmt("Frame {} out of range\n", frame);
+		}
+		else
+		{
+			state_t& state = states_it->second;
+			if (codeptr == nullptr)
 			{
-				bexptr_match = &CodePtrs[j];
+				state.action = nullptr;
+			}
+			else
+			{
+				state.action = codeptr->func;
+				DPrintFmt("Frame {} set to {}\n", frame, codeptr->name);
+			}
+		}
+	}
+
+	for (auto& [_, state] : states)
+	{
+		const CodePtr* bexptr_match = &null_bexptr;
+
+		for (const auto& codeptr : CodePtrs)
+		{
+			if (state.action == codeptr.func)
+			{
+				bexptr_match = &codeptr;
 				break;
 			}
 		}
 
 		// ensure states don't use more mbf21 args than their
 		// action pointer expects, for future-proofing's sake
-		for (j = MAXSTATEARGS - 1; j >= bexptr_match->argcount; j--)
+		int i;
+		for (i = MAXSTATEARGS - 1; i >= bexptr_match->argcount; i--)
 		{
-			if (states[i].args[j] != 0)
+			if (state.args[i] != 0)
 			{
 				I_Error("Action {} on state {} expects no more than {} nonzero args ({} "
-				        "found). Check your dehacked.",
-				        bexptr_match->name, i, bexptr_match->argcount, j + 1);
+				        "found). Check your DEHACKED.",
+				        bexptr_match->name, state.statenum, bexptr_match->argcount, i + 1);
 			}
 		}
 
 		// replace unset fields with default values
-		for (; j >= 0; j--)
+		for (; i >= 0; i--)
 		{
-			if (states[i].args[j] == 0 && bexptr_match->default_args[j])
+			if (state.args[i] == 0 && bexptr_match->default_args[i])
 			{
-				states[i].args[j] = bexptr_match->default_args[j];
+				state.args[i] = bexptr_match->default_args[i];
 			}
 		}
+
+		// remap mbf21 flags to flags2/flags3
+		if (bexptr_match->func == A_AddFlags ||
+		    bexptr_match->func == A_RemoveFlags ||
+		    bexptr_match->func == A_JumpIfFlagsSet)
+		{
+			const int mbf21flags = bexptr_match->func == A_JumpIfFlagsSet ? state.args[2] : state.args[1];
+			int flags2 = 0, flags3 = 0;
+			for (const auto& [_, flags, dehflag, internalflag]  : mbf21flagtranslation)
+			{
+				if (mbf21flags & dehflag)
+				{
+					if (flags == &mobjinfo_t::flags2)
+						flags2 |= internalflag;
+					else if (flags == &mobjinfo_t::flags3)
+						flags3 |= internalflag;
+				}
+			}
+
+			if (bexptr_match->func == A_JumpIfFlagsSet)
+			{
+				state.args[2] = flags2;
+				state.args[3] = flags3;
+			}
+			else
+			{
+				state.args[1] = flags2;
+				state.args[2] = flags3;
+			}
+		}
+	}
+
+	// Resolve sounds
+	for (const auto& [soundPtr, index] : dp.soundMapIndices)
+	{
+		auto soundIt = SoundMap.find(index);
+		if (soundIt == SoundMap.end())
+		{
+			I_Error("Sound {} is not defined. Check your DEHACKED.\n", index);
+		}
+		*soundPtr = soundIt->second.c_str();
+	}
+
+	// Check dropped items for validity
+	for (auto droppedItem : dp.droppedItems)
+	{
+		if (mobjinfo.find(droppedItem) == mobjinfo.end())
+		{
+			I_Error("Dropped item type {} is not defined. Check your DEHACKED.\n", droppedItem);
+		}
+	}
+
+	if (deh.helper != -1 && mobjinfo.find(deh.helper) == mobjinfo.end())
+	{
+		DPrintFmt("Helper type {} is not defined.", deh.helper);
+		deh.helper = -1;
 	}
 }
 
@@ -2480,10 +2546,14 @@ void D_PostProcessDeh()
 * @brief Checks to see if TNT-range actor is defined, but useful for DEHEXTRA monsters.
 * Because in HORDEDEF, sometimes a WAD author may accidentally use a DEHEXTRA monster
 * that is undefined.
+* Assumes the value exists - no range checking
 */
 bool CheckIfDehActorDefined(const mobjtype_t mobjtype)
 {
-	const mobjinfo_t mobj = ::mobjinfo[mobjtype];
+	auto it = ::mobjinfo.find(mobjtype);
+	if (it == ::mobjinfo.end())
+		return false;
+	const auto& mobj = it->second;
 	if (mobj.doomednum == -1 &&
 		mobj.spawnstate == S_TNT1 &&
 		mobj.spawnhealth == 0 &&
@@ -2544,30 +2614,80 @@ static const char* ActionPtrString(actionf_p1 func)
 
 static void PrintState(int index)
 {
-	if (index < 0 || index >= NUMSTATES)
+	StatesIterator it = states.find(index);
+    if (it == states.end())
 	{
 		return;
 	}
 
 	// Print this state.
-	state_t& state = ::states[index];
-	PrintFmt("{:>4d} | s:{} f:{} t:{} a:{} m1:{} m2:{}\n", index, ::sprnames[state.sprite],
-	         state.frame, state.tics, ActionPtrString(state.action), state.misc1,
-	         state.misc2);
+	state_t& state = it->second;
+	PrintFmt("{:>4d} | sprite:{} frame:{} tics:{} action:{} m1:{} m2:{}\n", index, ::sprnames[state.sprite],
+	       state.frame, state.tics, ActionPtrString(state.action), state.misc1,
+	       state.misc2);
 }
+
+static void PrintMobjinfo(int index)
+{
+	MobjIterator it = mobjinfo.find(index);
+    if (it == mobjinfo.end())
+    {
+        return;
+    }
+
+	PrintFmt("{}", it->second);
+}
+
+BEGIN_COMMAND(mobinfo)
+{
+    if (argc < 2)
+    {
+        PrintFmt("Must pass one or two mobjinfo indexes.\n");
+        return;
+    }
+
+    int index1 = atoi(argv[1]);
+    if (mobjinfo.find(index1) == mobjinfo.end())
+    {
+        PrintFmt("Index 1: Not a valid index.\n");
+        return;
+    }
+    int index2 = index1;
+
+    if (argc == 3)
+    {
+        index2 = atoi(argv[2]);
+        if (mobjinfo.find(index2) == mobjinfo.end())
+        {
+            PrintFmt("Index 2: Not a valid index.\n");
+            return;
+        }
+    }
+
+    if (index2 < index1)
+    {
+        std::swap(index1, index2);
+    }
+
+    for(int i = index1; i <= index2; i++)
+    {
+        PrintMobjinfo(i);
+    }
+}
+END_COMMAND(mobinfo)
 
 BEGIN_COMMAND(stateinfo)
 {
 	if (argc < 2)
 	{
-		PrintFmt("Must pass one or two state indexes. (0 to {})\n", NUMSTATES - 1);
+		PrintFmt("Must pass one or two state indexes.\n");
 		return;
 	}
 
 	int index1 = atoi(argv[1]);
-	if (index1 < 0 || index1 >= NUMSTATES)
+    if (states.find(index1) == states.end())
 	{
-		PrintFmt("Not a valid index.\n");
+		PrintFmt("Index 1: Not a valid index.\n");
 		return;
 	}
 	int index2 = index1;
@@ -2575,9 +2695,9 @@ BEGIN_COMMAND(stateinfo)
 	if (argc == 3)
 	{
 		index2 = atoi(argv[2]);
-		if (index2 < 0 || index2 >= NUMSTATES)
+        if (states.find(index2) == states.end())
 		{
-			PrintFmt("Not a valid index.\n");
+			PrintFmt("Index 2: Not a valid index.\n");
 			return;
 		}
 	}
@@ -2590,6 +2710,7 @@ BEGIN_COMMAND(stateinfo)
 		index2 = tmp;
 	}
 
+    // [CMB] TODO: index range here may not correspond correctly -- iterator needed
 	for (int i = index1; i <= index2; i++)
 	{
 		PrintState(i);
@@ -2601,12 +2722,12 @@ BEGIN_COMMAND(playstate)
 {
 	if (argc < 2)
 	{
-		PrintFmt("Must pass state index. (0 to {})\n", NUMSTATES - 1);
+		PrintFmt("Must pass state index.\n");
 		return;
 	}
 
 	int index = atoi(argv[1]);
-	if (index < 0 || index >= NUMSTATES)
+	if (!states.contains(index))
 	{
 		PrintFmt("Not a valid index.\n");
 		return;

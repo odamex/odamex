@@ -68,6 +68,7 @@ const fixed_t NEARCLIP = 2*FRACUNIT;
 
 drawseg_t*		ds_p;
 drawseg_t*		drawsegs;
+drawseg_t*		firstdrawseg;
 unsigned		maxdrawsegs;
 
 // CPhipps -
@@ -93,8 +94,10 @@ void R_ReallocDrawSegs(void)
 	if (ds_p == drawsegs+maxdrawsegs)		// killough 1/98 -- fix 2s line HOM
 	{
 		unsigned pos = ds_p - drawsegs;	// jff 8/9/98 fix from ZDOOM1.14a
+		unsigned firstofs = firstdrawseg - drawsegs;
 		unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128; // killough
 		drawsegs = (drawseg_t*)M_Realloc(drawsegs, newmax*sizeof(*drawsegs));
+		firstdrawseg = drawsegs + firstofs;
 		ds_p = drawsegs + pos;				// jff 8/9/98 fix from ZDOOM1.14a
 		maxdrawsegs = newmax;
 		DPrintFmt("MaxDrawSegs increased to {}\n", maxdrawsegs);
@@ -106,6 +109,11 @@ void R_ReallocDrawSegs(void)
 //
 void R_ClearDrawSegs(void)
 {
+	if (drawsegs == NULL)
+	{
+		maxdrawsegs = 256;
+		firstdrawseg = drawsegs = (drawseg_t*)Malloc(maxdrawsegs * sizeof(drawseg_t));
+	}
 	ds_p = drawsegs;
 }
 
@@ -687,7 +695,8 @@ void R_Subsector (int num)
 					frontsector->ceiling_yoffs + frontsector->base_ceiling_yoffs,
 					frontsector->ceiling_xscale,
 					frontsector->ceiling_yscale,
-					frontsector->ceiling_angle + frontsector->base_ceiling_angle
+					frontsector->ceiling_angle + frontsector->base_ceiling_angle,
+					frontsector->Skybox
 					) : NULL;
 
 	// killough 3/7/98: Add (x,y) offsets to flats, add deep water check
@@ -706,7 +715,8 @@ void R_Subsector (int num)
 					frontsector->floor_yoffs + frontsector->base_floor_yoffs,
 					frontsector->floor_xscale,
 					frontsector->floor_yscale,
-					frontsector->floor_angle + frontsector->base_floor_angle
+					frontsector->floor_angle + frontsector->base_floor_angle,
+					frontsector->Skybox
 					) : NULL;
 
 	// [RH] set foggy flag

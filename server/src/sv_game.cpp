@@ -393,7 +393,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 // zdoom 2.x still has it!
 static fixed_t PlayersRangeFromSpot (mapthing2_t *spot)
 {
-	fixed_t closest = MAXINT;
+	fixed_t closest = limits::MAXFIXED;
 	fixed_t distance;
 
 	for (const auto& player : players)

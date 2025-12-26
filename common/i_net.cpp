@@ -37,32 +37,24 @@
 /* [Petteri] Use Winsock for Win32: */
 #include "win32inc.h"
 #ifdef _WIN32
-    #ifndef _XBOX
-    	#include <winsock2.h>
-        #include <ws2tcpip.h>
-    #endif // !_XBOX
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
 #else
-#ifdef GEKKO // Wii/GC
-#	include <network.h>
-#else
-#	include <sys/socket.h>
-#	include <netinet/in.h>
-#	include <arpa/inet.h>
-#	include <netdb.h>
-#	include <sys/ioctl.h>
-#endif // GEKKO
-#	include <sys/types.h>
-#	include <errno.h>
-#	include <unistd.h>
-#	include <sys/time.h>
+	#include <sys/socket.h>
+	#include <netinet/in.h>
+	#include <arpa/inet.h>
+	#include <netdb.h>
+	#include <sys/ioctl.h>
+	#include <sys/types.h>
+	#include <errno.h>
+	#include <unistd.h>
+	#include <sys/time.h>
 #endif // WIN32
 
 #ifndef _WIN32
 typedef int SOCKET;
-#ifndef GEKKO
 #define SOCKET_ERROR -1
 #define INVALID_SOCKET -1
-#endif
 #define closesocket close
 #define ioctlsocket ioctl
 #define Sleep(x)	usleep (x * 1000)
@@ -82,14 +74,6 @@ typedef int SOCKET;
 #include "svc_map.h"
 #include "d_player.h"
 #include "m_alloc.h"
-
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
-
-#ifdef GEKKO
-#include "i_wii.h"
-#endif
 
 #include "minilzo.h"
 
@@ -494,11 +478,7 @@ int NET_SendPacket (buf_t &buf, netadr_t &to)
 
 	NetadrToSockadr (&to, &addr);
 
-#ifdef GEKKO
-	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, 8);	// 8 is important for online
-#else
 	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
-#endif
 
 	buf.clear();
 
@@ -1023,6 +1003,7 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_spawnplayer);
 	SVC_INFO(svc_damageplayer);
 	SVC_INFO(svc_killmobj);
+	SVC_INFO(svc_raisemobj);
 	SVC_INFO(svc_fireweapon);
 	SVC_INFO(svc_updatesector);
 	SVC_INFO(svc_print);

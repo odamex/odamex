@@ -436,16 +436,16 @@ DPlat::DPlat(sector_t* sec, int target, int delay, int speed, int trigger)
 	switch (speed)
 	{
 	case SpeedSlow:
-		m_Speed = PLATSPEED * 2;
+		m_Speed = plats::SPEED * 2;
 		break;
 	case SpeedNormal:
-		m_Speed = PLATSPEED * 4;
+		m_Speed = plats::SPEED * 4;
 		break;
 	case SpeedFast:
-		m_Speed = PLATSPEED * 8;
+		m_Speed = plats::SPEED * 8;
 		break;
 	case SpeedTurbo:
-		m_Speed = PLATSPEED * 16;
+		m_Speed = plats::SPEED * 16;
 		break;
 	default:
 		break;

@@ -35,6 +35,7 @@
 #include "g_skill.h"
 #include "p_local.h"
 #include "infomap.h"
+#include "c_effect.h"
 
 extern bool simulated_connection;
 EXTERN_CVAR(sv_allowcheats)
@@ -204,6 +205,30 @@ BEGIN_COMMAND(summon)
 	CL_SendSummonCheat(mobname.c_str());
  }
 END_COMMAND(summon)
+
+BEGIN_COMMAND(summonfriend)
+{
+	if (!CHEAT_AreCheatsEnabled())
+		return;
+
+	if (argc < 2)
+		return;
+
+	const std::string mobname = C_ArgCombine(argc - 1, (const char**)(argv + 1));
+
+	if (!CHEAT_ValidSummonActor(mobname.c_str()))
+	{
+		PrintFmt(PRINT_HIGH,
+		         "Invalid summon argument: {}. Please use `dumpactors` for a valid list of "
+		         "actor names.\n",
+		         mobname);
+		return;
+	}
+
+	CHEAT_Summon(&consoleplayer(), mobname.c_str(), true);
+	CL_SendSummonFriendCheat(mobname.c_str());
+}
+END_COMMAND(summonfriend)
 
 BEGIN_COMMAND(mdk)
 {
@@ -508,10 +533,21 @@ AActor* CHEAT_Summon(player_s* player, const std::string& sum, bool friendly)
 		}
 	}
 
+	std::string cheatname = "summon";
+
+	if (friendly)
+	{
+		entity->flags |= MF_FRIEND;
+		cheatname = "summonfriend";
+		P_GiveFriendlyOwnerInfo(entity, player->mo);
+		P_FriendlyEffects(entity);
+	}
+
 	if (multiplayer)
-		PrintFmt(PRINT_HIGH, "{} is a cheater: summon {}\n",
+		PrintFmt(PRINT_HIGH, "{} is a cheater: {} {}\n",
 		         player->userinfo.netname,
-		 sum);
+		         cheatname,
+		         sum);
 
 	return entity;
 }

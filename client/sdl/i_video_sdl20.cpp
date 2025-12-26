@@ -44,14 +44,10 @@
 
 // [Russell] - Just for windows, display the icon in the system menu and alt-tab display
 #include "win32inc.h"
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
     #include <SDL_syswm.h>
     #include "resource.h"
 #endif // WIN32
-
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
 
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_widescreen)
@@ -664,7 +660,7 @@ void ISDL20Window::setWindowTitle(const std::string& str)
 //
 void ISDL20Window::setWindowIcon()
 {
-	#if defined(_WIN32) && !defined(_XBOX)
+	#if defined(_WIN32)
 	// [SL] Use Win32-specific code to make use of multiple-icon sizes
 	// stored in the executable resources.
 	//
@@ -686,9 +682,9 @@ void ISDL20Window::setWindowIcon()
 			SendMessage(WindowHandle, WM_SETICON, ICON_BIG, (LPARAM)hIcon);
 		}
 	}
-	#endif	// _WIN32 && !_XBOX
+	#endif	// _WIN32
 
-	#if !defined(_WIN32) && !defined(_XBOX)
+	#if !defined(_WIN32)
 	SDL_Surface* icon_surface = SDL_CreateRGBSurfaceFrom(
 											(void*)app_icon.pixel_data, app_icon.width, app_icon.height,
 											app_icon.bytes_per_pixel * 8, app_icon.width * app_icon.bytes_per_pixel,
@@ -696,7 +692,7 @@ void ISDL20Window::setWindowIcon()
 
 	SDL_SetWindowIcon(mSDLWindow, icon_surface);
 	SDL_FreeSurface(icon_surface);
-	#endif	// !_WIN32 && !_XBOX
+	#endif	// !_WIN32
 }
 
 

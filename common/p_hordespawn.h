@@ -26,6 +26,7 @@
 #include "actor.h"
 #include "p_hordedefine.h"
 
+// [CMB] id24spec implementation specific range(s) needed in the future
 #define TTYPE_HORDE_SMALLMONSTER (5300)
 #define TTYPE_HORDE_ITEM (5301)
 #define TTYPE_HORDE_MONSTER (5302)

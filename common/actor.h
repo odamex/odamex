@@ -42,6 +42,7 @@
 
 #include "szp.h"
 
+#include "teamdef.h"
 //
 // NOTES: AActor
 //
@@ -195,14 +196,17 @@ enum mobjflag_t
 	MF_SKULLFLY  = BIT(24),		// skull in flight
 	MF_NOTDMATCH = BIT(25),		// don't spawn in death match (key cards)
 
+	MF_TRANSLATION1 = BIT(26),
+	MF_TRANSLATION2 = BIT(27),
+
 	// Player sprites in multiplayer modes are modified
 	//  using an internal color lookup table for re-indexing.
 	// If 0x4 0x8 or 0xc, use a translation table for player colormaps
-	MF_TRANSLATION = 0xc000000,
+	MF_TRANSLATION = MF_TRANSLATION1 | MF_TRANSLATION2,
 
-	MF_TOUCHY  = BIT(28), // MBF - UNUSED FOR NOW
-	MF_BOUNCES = BIT(29), // MBF - PARTIAL IMPLEMENTATION
-	MF_FRIEND  = BIT(30), // MBF - UNUSED FOR NOW
+	MF_TOUCHY  = BIT(28), // MBF
+	MF_BOUNCES = BIT(29), // MBF
+	MF_FRIEND  = BIT(30), // MBF
 
 	MF_TRANSLUCENT = BIT(31),
 
@@ -267,7 +271,7 @@ enum mobjflag_t
 	MF3_E3M8BOSS		= BIT(14),	// is an E3M8 boss
 	MF3_E4M6BOSS		= BIT(15),	// is an E4M6 boss
 	MF3_E4M8BOSS		= BIT(16),	// is an E4M8 boss
-									// BIT 15 is MF2_RIP -- RESERVED
+									// BIT 17 is MF2_RIP -- RESERVED
 	MF3_FULLVOLSOUNDS	= BIT(18),	// full volume see / death sound
 
 	// --- mobj.oflags ---
@@ -283,6 +287,9 @@ enum mobjflag_t
 	MFO_FULLBRIGHT		= BIT(8),	// monster is fullbright
 	MFO_SPECTATOR		= BIT(9),	// GhostlyDeath -- thing is/was a spectator and can't be seen!
 	MFO_FALLING			= BIT(10),	// [INTERNAL] for falling
+	MFO_ARMED			= BIT(11),	// [INTERNAL] for TOUCHY (object is armed)
+	MFO_LINEDONE 		= BIT(12),  // [INTERNAL] for A_LineEffect, line special already done
+	// MFO_STEALTH			= BIT(13),	// Andy Baker's stealth monsters
 };
 
 //
@@ -439,9 +446,9 @@ public:
 	AActor ();
 	AActor (const AActor &other);
 	AActor &operator= (const AActor &other);
-	AActor (fixed_t x, fixed_t y, fixed_t z, mobjtype_t type);
-	void Destroy() override;
-	~AActor ();
+	AActor (fixed_t x, fixed_t y, fixed_t z, int32_t type);
+	void Destroy () override;
+	~AActor () override;
 
 	void RunThink () override;
 
@@ -459,15 +466,13 @@ public:
     //More drawing info: to determine current sprite.
     angle_t		angle;	// orientation
 	angle_t		prevangle;
-    spritenum_t		sprite;	// used to find patch_t and flip value
+    int32_t		sprite;	// used to find patch_t and flip value
     int			frame;	// might be ORed with FF_FULLBRIGHT
 	fixed_t		pitch;
 	angle_t		prevpitch;
 
 	DWORD			effects;			// [RH] see p_effect.h
 
-    // Interaction info, by BLOCKMAP.
-    // Links in blocks (if needed).
 	struct subsector_s		*subsector;
 
     // The closest interval over all contacted Sectors.
@@ -488,7 +493,7 @@ public:
     // If == validcount, already checked.
     int			validcount;
 
-	mobjtype_t		type;
+	int32_t			type;
     mobjinfo_t*		info;	// &mobjinfo[mobj->type]
     int				tics;	// state tic counter
 	state_t			*state;
@@ -556,6 +561,16 @@ public:
 	int             oldframe;
 
 	unsigned char	rndindex;		// denis - because everything should have a random number generator, for prediction
+
+	byte friend_playerid; // playerid of the player who spawned this actor
+
+	team_t friend_teamid; // team of the player who spawned this actor
+
+	// killough 9/9/98: How long a monster pursues a target.
+	short pursuecount;
+
+	// killough 9/8/98: monster strafing
+	short strafecount;
 
 	// ThingIDs
 	static void ClearTIDHashes ();
@@ -625,6 +640,8 @@ public:
 		AActor		**prev[BLOCKSX * BLOCKSY];
 	};
 
+	// Interaction info, by BLOCKMAP.
+    // Links in blocks (if needed).
 	ActorBlockMapListNode bmapnode;
 };
 

@@ -36,6 +36,12 @@ extern std::string LOG_FILE;
 //
 void D_DoomMain(void);
 
+//
+// D_InitializeDoomObjectTables()
+// Initialize all the doom objects: MobjInfo, SprNames, SoundMap, etc.
+//
+void D_InitializeDoomObjectTables();
+
 void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles);
 bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles);
 
@@ -56,7 +62,7 @@ extern const char *D_DrawIcon;
 
 void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator);
 void D_AddPlatformSearchDirs(std::vector<std::string>& dirs);
-void D_LoadResolvedPatches();
+void D_LoadResolvedPatches(bool reloadStrings = false);
 std::string D_CleanseFileName(const std::string &filename, const std::string &ext = "");
 
 extern OResFiles wadfiles;

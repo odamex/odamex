@@ -24,8 +24,6 @@
 
 #include "odamex.h"
 
-#include <map>
-
 #include "p_local.h"
 #include "p_lnspec.h"
 #include "s_sound.h"
@@ -111,6 +109,9 @@ void P_InitSwitchList(void)
 			{
 				// [RH] Skip this switch if it can't be found.
 				if (R_CheckTextureNumForName (list_p /* .name1 */) < 0)
+					continue;
+
+				if (R_CheckTextureNumForName (list_p + 9 /* .name2 */) < 0)
 					continue;
 
 				switchlist[i++] = R_TextureNumForName(list_p /* .name1 */);

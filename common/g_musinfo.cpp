@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -121,4 +121,18 @@ void S_ClearMusInfo()
 	musinfo.mapthing.init(nullptr);
 	musinfo.lastmapthing.init(nullptr);
 	musinfo.savedmusic.clear();
+}
+
+void P_SerializeMusInfo(FArchive& arc)
+{
+	if (arc.IsStoring())
+	{
+		arc << musinfo.savedmusic.c_str();
+	}
+	else
+	{
+		arc >> musinfo.savedmusic;
+		if (!musinfo.savedmusic.empty())
+			S_ChangeMusic(musinfo.savedmusic, true);
+	}
 }

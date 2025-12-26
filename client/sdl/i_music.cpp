@@ -24,7 +24,7 @@
 #include "odamex.h"
 
 #include "win32inc.h"
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
 #include <mmsystem.h>
 #endif
 
@@ -142,7 +142,7 @@ bool S_MusicIsWave(byte* data, size_t length)
 //
 void I_ResetMidiVolume()
 {
-	#if defined(_WIN32) && !defined(_XBOX)
+	#if defined(_WIN32)
 	SDL_LockAudio();
 
 	for (UINT device = MIDI_MAPPER; device != midiOutGetNumDevs(); device++)

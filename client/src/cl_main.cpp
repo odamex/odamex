@@ -70,15 +70,10 @@
 #include "cl_replay.h"
 
 #include <bitset>
-#include <map>
 #include <set>
 #include <sstream>
 
 #include "server.pb.h"
-
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
 
 #if _MSC_VER == 1310
 #pragma optimize("",off)
@@ -299,7 +294,7 @@ void M_Ticker(void);
 size_t P_NumPlayersInGame();
 void G_PlayerReborn (player_t &player);
 void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
-void P_SetPsprite (player_t *player, int position, statenum_t stnum);
+void P_SetPsprite (player_t *player, int position, int32_t stnum);
 void P_ExplodeMissile (AActor* mo);
 void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
@@ -589,6 +584,8 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 				consoleplayer_id = player.id;
 				ST_ForceRefresh();
 			}
+
+			P_FriendlyEffects(); // Mark any new friendly monsters with an effect
 
 			return;
 		}
@@ -884,7 +881,7 @@ BEGIN_COMMAND (serverinfo)
 	std::sort(server_cvars.begin(), server_cvars.end());
 
     // Heading
-    PrintFmt("\n{:>{}} - Value\n", MaxFieldLength, "Name");
+    PrintFmt("\n{1:>{0}} - Value\n", MaxFieldLength, "Name");
 
     // Data
 	for (const auto& varname : server_cvars)
@@ -892,7 +889,7 @@ BEGIN_COMMAND (serverinfo)
 		cvar_t *dummy;
 		Cvar = cvar_t::FindCVar(varname.c_str(), &dummy);
 
-		PrintFmt("{:>{}} - {}\n",
+		PrintFmt("{1:>{0}} - {2}\n",
 			     MaxFieldLength,
 			     Cvar->name(),
 			     Cvar->str());
@@ -1410,6 +1407,8 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 	if (&player == &consoleplayer())
 	{
 		R_ForceViewWindowResize();		// toggline spectator mode affects status bar visibility
+
+		P_FriendlyEffects(); // Mark any new friendly monsters with an effect
 
 		if (player.spectator)
 		{
@@ -2165,6 +2164,16 @@ void CL_SendSummonCheat(const char* summon)
 {
 	MSG_WriteMarker(&net_buffer, clc_cheat);
 	MSG_WriteByte(&net_buffer, 2);
+	MSG_WriteString(&net_buffer, summon);
+}
+
+//
+// CL_SendSummonFriendCheat
+//
+void CL_SendSummonFriendCheat(const char* summon)
+{
+	MSG_WriteMarker(&net_buffer, clc_cheat);
+	MSG_WriteByte(&net_buffer, 3);
 	MSG_WriteString(&net_buffer, summon);
 }
 

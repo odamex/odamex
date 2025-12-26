@@ -883,7 +883,7 @@ bool SV_SetupUserInfo(player_t &player)
 
 	// ensure sane values for userinfo
 	if (gender < 0 || gender >= NUMGENDER)
-		gender = GENDER_NEUTER;
+		gender = GENDER_OTHER;
 
 	aimdist = clamp(aimdist, 0, 5000 * 16384);
 
@@ -971,7 +971,8 @@ bool SV_SetupUserInfo(player_t &player)
 		switch (gender) {
 			case GENDER_MALE:	gendermessage = "his";  break;
 			case GENDER_FEMALE:	gendermessage = "her";  break;
-			default:			gendermessage = "its";  break;
+			case GENDER_CYBORG:	gendermessage = "its";  break;
+			default:			gendermessage = "their";  break;
 		}
 
 		SV_BroadcastPrintFmt("{} changed {} name to {}.\n",
@@ -3759,6 +3760,24 @@ void SV_Cheat(player_t &player)
 			SV_SendMobjToClient(actor, cl);
 		}
 	}
+	else if (cheatType == 3)
+	{
+		const char* wantsummon = MSG_ReadString();
+
+		if (!CHEAT_AreCheatsEnabled())
+			return;
+
+		AActor* actor = CHEAT_Summon(&player, wantsummon, true);
+
+		if (actor == NULL)
+			return;
+
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		{
+			client_t* cl = &it->client;
+			SV_SendMobjToClient(actor, cl);
+		}
+	}
 }
 
 void SV_WantWad(player_t &player)
@@ -4384,6 +4403,22 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 
 		MSG_WriteSVC(&cl->reliablebuf,
 		             SVC_KillMobj(source, target, inflictor, ::MeansOfDeath, joinkill));
+	}
+}
+
+void SV_SendRaiseMobj(AActor* source, AActor* corpse)
+{
+	if (!corpse)
+		return;
+
+	for (auto& player : players)
+	{
+		client_t* cl = &(player.client);
+
+		if (!SV_IsPlayerAllowedToSee(player, corpse))
+			continue;
+
+		MSG_WriteSVC(&cl->reliablebuf, SVC_RaiseMobj(source, corpse));
 	}
 }
 

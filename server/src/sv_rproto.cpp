@@ -33,7 +33,7 @@
 #include <chrono>
 #endif
 
-QWORD I_MSTime (void);
+dtime_t I_MSTime (void);
 
 EXTERN_CVAR (log_packetdebug)
 #ifdef SIMULATE_LATENCY
