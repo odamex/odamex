@@ -310,6 +310,7 @@ typedef struct MapThing
 #define BTF_NOTCOOPERATIVE	0x0040	// (TF_SINGLE|TF_DEATHMATCH)
 #define BTF_FRIEND			0x0080	// mbf
 #define BTF_RESERVED		0x0100	// mbf reserved bit
+#define BTF_RESERVED_MASK   (MTF_EASY|MTF_MEDIUM|MTF_HARD|MTF_AMBUSH|BTF_NOTSINGLE)
 
 #define NO_CRUSH	-1
 #define DOOM_CRUSH	10

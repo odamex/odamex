@@ -623,6 +623,8 @@ static void P_ResurrectPlayerPowerUp(player_t& player)
 	pl->lives += 1;
 	pl->playerstate = PST_REBORN;
 
+	G_ResetLastPlayer();
+
 	SV_BroadcastPrintFmt("{} has brought {} back into the fight!\n",
 	                   player.userinfo.netname, pl->userinfo.netname);
 

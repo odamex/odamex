@@ -793,7 +793,9 @@ void HordeState::tick()
 				def.addPowerup(MT_EXTRALIFE, config);
 			}
 
-			if (g_horde_resurrect.value() > 0.0f)
+
+
+			if (g_horde_resurrect.value() > 0.0f && PlayerQuery().notHasLives().execute().count > 0)
 			{
 				hordeDefine_t::powConfig_t config;
 				config.chance = g_horde_resurrect.value();
