@@ -267,6 +267,8 @@ void STACK_ARGS D_Shutdown()
 
 void G_ChangeMapStartup();
 
+EXTERN_CVAR(sv_startwadscript)
+
 //
 // D_DoomMain
 //
@@ -419,6 +421,9 @@ void D_DoomMain()
 	}
 
 	level.mapname = startmap;
+
+	if (!sv_startwadscript.str().empty())
+		AddCommandString(sv_startwadscript.str());
 
 	G_ChangeMapStartup();
 

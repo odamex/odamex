@@ -705,6 +705,15 @@ void D_Init()
 	G_ParseHordeDefs();
 	G_ReadCOMPLVL();
 
+	SERVER_ONLY(
+		// [EB] have to do this elsewhere on startup to be sure that cvar callbacks are enabled
+		if (!first_time)
+		{
+			if (!sv_startwadscript.str().empty())
+				AddCommandString(sv_startwadscript.str());
+		}
+	)
+
 	// init the menu subsystem
 	if (first_time)
 		PrintFmt(PRINT_HIGH, "M_Init: Init miscellaneous info.\n");
