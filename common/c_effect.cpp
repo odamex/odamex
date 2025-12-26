@@ -386,11 +386,11 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 	float deg = 270.0f;
 	for (int i = steps; i; i--) {
 		particle_t *p = NewParticle ();
-		p->sprite = NO_PARTICLE;
 
 		if (!p)
 			return;
 
+		p->sprite = NO_PARTICLE;
 		p->trans = 255;
 		p->ttl = 35;
 		p->fade = FADEFROMTTL(35);
