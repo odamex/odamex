@@ -86,22 +86,23 @@ void D_WriteUserInfoStrings(int i, byte **stream, bool compact) {}
 void D_ReadUserInfoStrings(int i, byte **stream, bool update) {}
 
 void SV_SpawnMobj(AActor *mobj) {}
-void SV_TouchSpecial(AActor *special, player_t *player) {}
+void SV_TouchSpecial(const AActor *special, player_t *player) {}
 ItemEquipVal SV_FlagTouch (player_t &player, team_t f, bool firstgrab) { return IEV_NotEquipped; }
 void SV_SocketTouch (player_t &player, team_t f) {}
-void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill) {}
-void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, int armorDamage) {}
-void SV_SendDamageMobj(AActor *target, int pain) {}
+void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill) {}
+void SV_SendRaiseMobj(const AActor* source, const AActor* corpse) {}
+void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage) {}
+void SV_SendDamageMobj(const AActor *target, int pain) {}
 void SV_CTFEvent(team_t f, flag_score_t event, player_t &who) {}
 void SV_UpdateFrags(player_t &player) {}
-void SV_ActorTarget(AActor *actor) {}
-void SV_SendDestroyActor(AActor *mo) {}
-void SV_ExplodeMissile(AActor *mo) {}
+void SV_ActorTarget(const AActor *actor) {}
+void SV_SendDestroyActor(const AActor *mo) {}
+void SV_ExplodeMissile(const AActor *mo) {}
 void SV_SendPlayerInfo(player_t &player) {}
 void SV_PreservePlayer(player_t &player) {}
 void SV_BroadcastSector(int sectornum) {}
-void SV_UpdateMobj(AActor* mo) {}
-void SV_UpdateMobjState(AActor* mo) {}
+void SV_UpdateMobj(const AActor* mo) {}
+void SV_UpdateMobjState(const AActor* mo) {}
 
 void CTF_RememberFlagPos(mapthing2_t *mthing) {}
 void CTF_SpawnFlag(team_t f) {}
@@ -111,14 +112,14 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, in
                                int arg1, int arg2, int arg3, int arg4) {}
 
 void SV_UpdateMonsterRespawnCount() {}
-void SV_Sound(AActor* mo, byte channel, const char* name, byte attenuation) {}
+void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation) {}
 
 void R_ExitLevel() {}
 void D_SetupUserInfo (void) {}
 void D_UserInfoChanged (cvar_t *cvar) {}
 
-void PickupMessage(AActor *toucher, const char *message) {}
-void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon) {}
+void PickupMessage(const AActor *toucher, const char *message) {}
+void WeaponPickupMessage(const AActor *toucher, const weapontype_t &Weapon) {}
 
 void AM_Stop(void) {}
 
@@ -134,24 +135,24 @@ void S_Init(float sfxVolume, float musicVolume) {}
 void S_Start() {}
 void S_Stop() {}
 void S_SoundID(int channel, int sound_id, float volume, int attenuation) {}
-void S_SoundID(AActor *ent, int channel, int sound_id, float volume, int attenuation) {}
-void S_SoundID(fixed_t *pt, int channel, int sound_id, float volume, int attenuation) {}
-void S_LoopedSoundID(AActor *ent, int channel, int sound_id, float volume, int attenuation) {}
-void S_LoopedSoundID(fixed_t *pt, int channel, int sound_id, float volume, int attenuation) {}
-void S_PlatSound(fixed_t *pt, int channel, const char *name, float volume, int attenuation) {}
+void S_SoundID(const AActor *ent, int channel, int sound_id, float volume, int attenuation) {}
+void S_SoundID(const fixed_t *pt, int channel, int sound_id, float volume, int attenuation) {}
+void S_LoopedSoundID(const AActor *ent, int channel, int sound_id, float volume, int attenuation) {}
+void S_LoopedSoundID(const fixed_t *pt, int channel, int sound_id, float volume, int attenuation) {}
+void S_PlatSound(const fixed_t *pt, int channel, const char *name, float volume, int attenuation) {}
 void S_Sound(int channel, const char *name, float volume, int attenuation) {}
-void S_Sound(AActor *ent, int channel, const char *name, float volume, int attenuation) {}
-void S_Sound(fixed_t *pt, int channel, const char *name, float volume, int attenuation) {}
-void S_LoopedSound(AActor *ent, int channel, const char *name, float volume, int attenuation) {}
-void S_LoopedSound(fixed_t *pt, int channel, const char *name, float volume, int attenuation) {}
+void S_Sound(const AActor *ent, int channel, const char *name, float volume, int attenuation) {}
+void S_Sound(const fixed_t *pt, int channel, const char *name, float volume, int attenuation) {}
+void S_LoopedSound(const AActor *ent, int channel, const char *name, float volume, int attenuation) {}
+void S_LoopedSound(const fixed_t *pt, int channel, const char *name, float volume, int attenuation) {}
 void S_Sound(fixed_t x, fixed_t y, int channel, const char *name, float volume, int attenuation) {}
-void S_StopSound(fixed_t *pt) {}
-void S_StopSound(fixed_t *pt, int channel) {}
-void S_StopSound(AActor *ent, int channel) {}
+void S_StopSound(const fixed_t *pt) {}
+void S_StopSound(const fixed_t *pt, int channel) {}
+void S_StopSound(const AActor *ent, int channel) {}
 void S_StopAllChannels() {}
-void S_RelinkSound(AActor *from, AActor *to) {}
-bool S_GetSoundPlayingInfo(fixed_t *pt, int sound_id) { return false; }
-bool S_GetSoundPlayingInfo(AActor *ent, int sound_id) {	return S_GetSoundPlayingInfo (ent ? &ent->x : NULL, sound_id); }
+void S_RelinkSound(const AActor *from, const AActor *to) {}
+bool S_GetSoundPlayingInfo(const fixed_t *pt, int sound_id) { return false; }
+bool S_GetSoundPlayingInfo(const AActor *ent, int sound_id) {	return S_GetSoundPlayingInfo (ent ? &ent->x : NULL, sound_id); }
 void S_PauseSound() {}
 void S_ResumeSound() {}
 void S_UpdateSounds(void *listener_p) {}
@@ -159,329 +160,10 @@ void S_UpdateMusic() {}
 void S_SetMusicVolume(float volume) {}
 void S_SetSfxVolume(float volume) {}
 void S_StartMusic(const char *m_id) {}
-void S_ChangeMusic(std::string musicname, bool looping)  {}
+void S_ChangeMusic(std::string musicname, bool looping, int order)  {}
 void S_StopMusic() {}
 void A_Ambient(AActor *actor) {}
 void S_ActivateAmbient(AActor *origin, int ambient) {}
-
-
-// [RH] ===============================
-//
-//	Ambient sound and SNDINFO routines
-//
-// =============================== [RH]
-
-static struct AmbientSound {
-	unsigned	type;		// type of ambient sound
-	int			periodmin;	// # of tics between repeats
-	int			periodmax;	// max # of tics for random ambients
-	float		volume;		// relative volume of sound
-	float		attenuation;
-	char		sound[MAX_SNDNAME+1]; // Logical name of sound to play
-} Ambients[256];
-
-#define RANDOM		1
-#define PERIODIC	2
-#define CONTINUOUS	3
-#define POSITIONAL	4
-#define SURROUND	16
-
-void S_HashSounds()
-{
-	// Mark all buckets as empty
-	for (unsigned i = 0; i < S_sfx.size(); i++)
-		S_sfx[i].index = ~0;
-
-	// Now set up the chains
-	for (unsigned i = 0; i < S_sfx.size(); i++)
-	{
-		const unsigned j = MakeKey(S_sfx[i].name) % static_cast<unsigned>(S_sfx.size() - 1);
-		S_sfx[i].next = S_sfx[j].index;
-		S_sfx[j].index = i;
-	}
-}
-
-int S_FindSound(const char *logicalname)
-{
-	if (S_sfx.empty())
-		return -1;
-
-	int i = S_sfx[MakeKey(logicalname) % static_cast<unsigned>(S_sfx.size() - 1)].index;
-
-	while ((i != -1) && strnicmp(S_sfx[i].name, logicalname, MAX_SNDNAME))
-		i = S_sfx[i].next;
-
-	return i;
-}
-
-int S_FindSoundByLump(int lump)
-{
-	if (lump != -1)
-	{
-		for (unsigned i = 0; i < S_sfx.size(); i++)
-			if (S_sfx[i].lumpnum == lump)
-				return i;
-	}
-	return -1;
-}
-
-size_t S_AddSoundLump(const char *logicalname, int lump)
-{
-	sfxinfo_t& new_sfx = S_sfx.emplace_back();
-
-	// logicalname MUST be < MAX_SNDNAME chars long
-	strcpy(new_sfx.name, logicalname);
-	new_sfx.data = nullptr;
-	new_sfx.link = sfxinfo_t::NO_LINK;
-	new_sfx.lumpnum = lump;
-	return S_sfx.size() - 1;
-}
-
-void S_ClearSoundLumps()
-{
-	S_sfx.clear();
-	S_rnd.clear();
-}
-
-size_t FindSoundNoHash(const char* logicalname)
-{
-	for (size_t i = 0; i < S_sfx.size(); i++)
-		if (iequals(logicalname, S_sfx[i].name))
-			return i;
-
-	return S_sfx.size();
-}
-
-size_t FindSoundTentative(const char* name)
-{
-	size_t id = FindSoundNoHash(name);
-	if (id == S_sfx.size())
-	{
-		id = S_AddSoundLump(name, -1);
-	}
-	return id;
-}
-
-size_t S_AddSound(const char *logicalname, const char *lumpname)
-{
-	size_t sfxid = FindSoundNoHash(logicalname);
-
-	const int lump = lumpname ? W_CheckNumForName(lumpname) : -1;
-
-	// Otherwise, prepare a new one.
-	if (sfxid != S_sfx.size())
-	{
-		sfxinfo_t& sfx = S_sfx[sfxid];
-
-		sfx.lumpnum = lump;
-		sfx.link = sfxinfo_t::NO_LINK;
-		if (sfx.israndom)
-		{
-			S_rnd.erase(sfxid);
-			sfx.israndom = false;
-		}
-	}
-	else
-		sfxid = S_AddSoundLump(logicalname, lump);
-
-	return sfxid;
-}
-
-void S_AddRandomSound(size_t owner, std::vector<size_t>& list)
-{
-	S_rnd[owner] = list;
-	S_sfx[owner].link = owner;
-	S_sfx[owner].israndom = true;
-}
-
-// S_ParseSndInfo
-// Parses all loaded SNDINFO lumps.
-void S_ParseSndInfo()
-{
-	S_ClearSoundLumps();
-
-	int lump = -1;
-	while ((lump = W_FindLump("SNDINFO", lump)) != -1)
-	{
-		char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_CACHE));
-
-		const OScannerConfig config = {
-		    "SNDINFO", // lumpName
-		    true,      // semiComments
-		    true,      // cComments
-		};
-		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
-
-		while (os.scan())
-		{
-			std::string tok = os.getToken();
-
-			// check if token is a command
-			if (tok[0] == '$')
-			{
-				os.mustScan();
-				if (os.compareTokenNoCase("ambient"))
-				{
-					// $ambient <num> <logical name> [point [atten]|surround] <type>
-					// [secs] <relative volume>
-					AmbientSound *ambient, dummy;
-
-					os.mustScanInt();
-					const int index = os.getTokenInt();
-					if (index < 0 || index > 255)
-					{
-						os.warning("Bad ambient index (%d)\n", index);
-						ambient = &dummy;
-					}
-					else
-					{
-						ambient = Ambients + index;
-					}
-
-					ambient->type = 0;
-					ambient->periodmin = 0;
-					ambient->periodmax = 0;
-					ambient->volume = 0.0f;
-
-					os.mustScan();
-					strncpy(ambient->sound, os.getToken().c_str(), MAX_SNDNAME);
-					ambient->sound[MAX_SNDNAME] = 0;
-					ambient->attenuation = 0.0f;
-
-					os.mustScan();
-					if (os.compareTokenNoCase("point"))
-					{
-						ambient->type = POSITIONAL;
-						os.mustScan();
-
-						if (IsRealNum(os.getToken().c_str()))
-						{
-							ambient->attenuation =
-							    (os.getTokenFloat() > 0) ? os.getTokenFloat() : 1;
-							os.mustScan();
-						}
-						else
-						{
-							ambient->attenuation = 1;
-						}
-					}
-					else if (os.compareTokenNoCase("surround"))
-					{
-						ambient->type = SURROUND;
-						os.mustScan();
-						ambient->attenuation = -1;
-					}
-					// else if (os.compareTokenNoCase("world"))
-					//{
-					// todo
-					//}
-
-					if (os.compareTokenNoCase("continuous"))
-					{
-						ambient->type |= CONTINUOUS;
-					}
-					else if (os.compareTokenNoCase("random"))
-					{
-						ambient->type |= RANDOM;
-						os.mustScanFloat();
-						ambient->periodmin =
-						    static_cast<int>(os.getTokenFloat() * TICRATE);
-						os.mustScanFloat();
-						ambient->periodmax =
-						    static_cast<int>(os.getTokenFloat() * TICRATE);
-					}
-					else if (os.compareTokenNoCase("periodic"))
-					{
-						ambient->type |= PERIODIC;
-						os.mustScanFloat();
-						ambient->periodmin =
-						    static_cast<int>(os.getTokenFloat() * TICRATE);
-					}
-					else
-					{
-						os.warning("Unknown ambient type (%s)\n", os.getToken().c_str());
-					}
-
-					os.mustScanFloat();
-					ambient->volume = clamp(os.getTokenFloat(), 0.0f, 1.0f);
-				}
-				else if (os.compareTokenNoCase("map"))
-				{
-					// Hexen-style $MAP command
-					os.mustScanInt();
-					OLumpName mapname = fmt::format("MAP{:02d}", os.getTokenInt());
-					level_pwad_info_t& info = getLevelInfos().findByName(mapname);
-					os.mustScan();
-					if (info.mapname[0])
-					{
-						info.music = os.getToken();
-					}
-				}
-				else if (os.compareTokenNoCase("alias"))
-				{
-					os.mustScan();
-					const size_t sfxfrom = S_AddSound(os.getToken().c_str(), NULL);
-					os.mustScan();
-					S_sfx[sfxfrom].link = FindSoundTentative(os.getToken().c_str());
-				}
-				else if (os.compareTokenNoCase("random"))
-				{
-					std::vector<size_t> list;
-
-					os.mustScan();
-					const size_t owner = S_AddSound(os.getToken().c_str(), NULL);
-
-					os.mustScan();
-					os.assertTokenIs("{");
-					while (os.scan() && !os.compareToken("}"))
-					{
-						const size_t sfxto = FindSoundTentative(os.getToken().c_str());
-
-						if (owner == sfxto)
-						{
-							os.warning("Definition of random sound '%s' refers to itself "
-							           "recursively.\n",
-							           os.getToken().c_str());
-							continue;
-						}
-
-						list.push_back(sfxto);
-					}
-					if (list.size() == 1)
-					{
-						// only one sound; treat as alias
-						S_sfx[owner].link = list[0];
-					}
-					else if (list.size() > 1)
-					{
-						S_AddRandomSound(owner, list);
-					}
-				}
-				else
-				{
-					os.warning("Unknown SNDINFO command %s\n", os.getToken().c_str());
-					while (os.scan())
-						if (os.crossed())
-						{
-							os.unScan();
-							break;
-						}
-				}
-			}
-			else
-			{
-				// token is a logical sound mapping
-				char name[MAX_SNDNAME + 1];
-
-				strncpy(name, tok.c_str(), MAX_SNDNAME);
-				name[MAX_SNDNAME] = 0;
-				os.mustScan();
-				S_AddSound(name, os.getToken().c_str());
-			}
-		}
-	}
-	S_HashSounds();
-}
 
 void AM_SetBaseColorDoom() {}
 void AM_SetBaseColorRaven() {}
@@ -500,7 +182,7 @@ FArchive &operator<< (FArchive &arc, UserInfo &info) { return arc; }
 FArchive &operator>> (FArchive &arc, UserInfo &info) { return arc; }
 void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
     const LineActivationType activationType, const bool bossaction) {}
-void UV_SoundAvoidPlayer(AActor *mo, byte channel, const char *name, byte attenuation) {}
+void UV_SoundAvoidPlayer(const AActor *mo, byte channel, const char *name, byte attenuation) {}
 void OnChangedSwitchTexture (line_t *line, int useAgain) {}
 
 void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
@@ -603,7 +285,6 @@ angle_t R_PointToAngle2(fixed_t viewx, fixed_t viewy, fixed_t x, fixed_t y)
 }
 
 translationref_t::translationref_t() : m_table(NULL), m_player_id(-1) {}
-translationref_t::translationref_t(const translationref_t &other) : m_table(other.m_table), m_player_id(other.m_player_id) {}
 translationref_t::translationref_t(const byte *table) : m_table(table), m_player_id(-1) {}
 translationref_t::translationref_t(const byte *table, const int player_id) : m_table(table), m_player_id(player_id) {}
 

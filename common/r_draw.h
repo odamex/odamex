@@ -188,6 +188,7 @@ extern void (*R_DrawSlopeSpanD)(void);
 extern void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 
 inline byte bosstable[256];
+inline byte friendtable[256];
 inline byte greentable[MAXPLAYERS+1][256];
 inline byte redtable[MAXPLAYERS + 1][256];
 inline byte*			translationtables;
