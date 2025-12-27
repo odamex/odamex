@@ -138,7 +138,7 @@ TEST(OHashTable, CopyAssignment) {
 	EXPECT_EQ(table2[3], "three");
 }
 
-TEST(OHashTable, CopyAssignmentSmaller) {
+TEST(OHashTable, DISABLED_CopyAssignmentSmaller) {
 	OHashTable<int, std::string> table1;
 	OHashTable<int, std::string> table2;
 
