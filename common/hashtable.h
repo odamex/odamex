@@ -330,10 +330,20 @@ public:
 		copyFromOther(other);
 	}
 
+	OHashTable(std::initializer_list<HashPairType> list)
+	{
+		resize(list.size());
+		for (const HashPairType& pair : list)
+			insert(pair);
+	}
+
 	~OHashTable() = default;
 
 	OHashTable& operator= (const HashTableType& other)
 	{
+		if (this == &other)
+			return *this;
+
 		copyFromOther(other);
 		return *this;
 	}
@@ -527,6 +537,7 @@ private:
 	void copyFromOther(const HashTableType& other)
 	{
 		clear();
+		// FIXME: this fails if other.mSize <= mSize
 		resize(other.mSize);
 		for (size_t i = 0; i < mSize; i++)
 		{

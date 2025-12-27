@@ -28,7 +28,7 @@
 
 #include "gui_resource.h"
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
 
 #include "FL/x.H"
 #include "win32inc.h"

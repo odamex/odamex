@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -41,10 +41,6 @@
 #include "agar_mutex_factory.h"
 #include "threads/mutex_factory.h"
 
-#ifdef _XBOX
-#include "xbox_main.h"
-#endif
-
 using namespace std;
 using namespace odalpapi;
 
@@ -80,19 +76,11 @@ int AGOL_InitVideo(const string& drivers, const int width, const int height, con
 
 	spec << "(width=" << width << ":height=" << height << ":depth=" << depth << ")";
 
-	if (AG_InitGraphics(spec.str().c_str()) == -1) 
+	if (AG_InitGraphics(spec.str().c_str()) == -1)
 	{
 		cerr << AG_GetError() << endl;
 		return -1;
 	}
-
-#ifdef _XBOX
-	// Software cursor only updates at the refresh rate so make it respectable
-	if(agDriverSw)
-	{
-		AG_SetRefreshRate(60);
-	}
-#endif
 
 	// Pick up GUI subsystem options
 	GuiConfig::Load();
@@ -117,7 +105,7 @@ int main(int argc, char *argv[])
 	int              width, height;
 
 	/* Initialize Agar-Core. */
-	if (AG_InitCore("ag-odalaunch", AG_VERBOSE | AG_CREATE_DATADIR) == -1) 
+	if (AG_InitCore("ag-odalaunch", AG_VERBOSE | AG_CREATE_DATADIR) == -1)
 	{
 		cerr << AG_GetError() << endl;
 		return (-1);
@@ -126,9 +114,9 @@ int main(int argc, char *argv[])
 	// Initial config load
 	GuiConfig::Load();
 
-	while ((c = AG_Getopt(argc, argv, "?d:f", &optArg, NULL)) != -1) 
+	while ((c = AG_Getopt(argc, argv, "?d:f", &optArg, NULL)) != -1)
 	{
-		switch (c) 
+		switch (c)
 		{
 			case 'd':
 				drivers = optArg;
@@ -170,13 +158,6 @@ int main(int argc, char *argv[])
 	if(!drivers.size())
 	{
 		GuiConfig::Read("VideoDriver", drivers);
-
-#ifdef _XBOX
-		if(!drivers.size())
-		{
-			drivers = "sdlfb";
-		}
-#endif
 	}
 
 	if(AGOL_InitVideo(drivers, width, height, 32))
@@ -196,11 +177,6 @@ int main(int argc, char *argv[])
 	AG_BindGlobalKey(AG_KEY_F8, AG_KEYMOD_ANY, AG_ViewCapture);
 #ifdef AG_DEBUG
 	AG_BindGlobalKey(AG_KEY_F12,    AG_KEYMOD_ANY,  AGOL_StartDebugger);
-#endif
-
-#ifdef _XBOX
-	// Initialize the Xbox controller
-	Xbox::InitializeJoystick();
 #endif
 
 	// Event (main) Loop

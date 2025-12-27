@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -42,10 +42,6 @@
 #include "typedefs.h"
 #include "icons.h"
 
-#ifdef _XBOX
-#include "xbox_main.h"
-#endif
-
 using namespace std;
 
 namespace agOdalaunch {
@@ -64,7 +60,7 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height) :
 	ManualDialog(NULL), CloseManualHandler(NULL),
 	QServer(NULL), WindowExited(false)
 {
-	// Create the Agar window. If we are using a single-window display driver (sdlfb, sdlgl) 
+	// Create the Agar window. If we are using a single-window display driver (sdlfb, sdlgl)
 	// make the window plain (no window decorations). No flags for multi-window drivers (glx, wgl)
 	MainWindow = AG_WindowNewNamedS(agDriverSw ? AG_WINDOW_PLAIN : 0, "MainWindow");
 	AG_WindowSetGeometryAligned(MainWindow, AG_WINDOW_MC, width, height);
@@ -89,12 +85,12 @@ AGOL_MainWindow::AGOL_MainWindow(int width, int height) :
 		AG_WindowMaximize(MainWindow);
 
 	// Add the show event
-	AG_AddEvent(MainWindow, "window-shown", EventReceiver, "%p", 
+	AG_AddEvent(MainWindow, "window-shown", EventReceiver, "%p",
 		RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnShow));
 
 	// Set the window close action
 	AG_WindowSetCloseAction(MainWindow, AG_WINDOW_DETACH);
-	AG_AddEvent(MainWindow, "window-close", EventReceiver, "%p", 
+	AG_AddEvent(MainWindow, "window-close", EventReceiver, "%p",
 		RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::ExitWindow));
 
 	// Add the save widget states event
@@ -121,7 +117,7 @@ AGOL_MainWindow::~AGOL_MainWindow()
 {
 	// If the window exit action has not been performed by this time
 	// then the driver being used is a single-window driver that does
-	// not trigger the exit action when the window is closed (due to 
+	// not trigger the exit action when the window is closed (due to
 	// the fact that the close button is actually for the driver window
 	// itself.) In that case it should be safe to save the widget states
 	// because the window is actually still valid. In all other cases
@@ -195,51 +191,51 @@ AG_Menu *AGOL_MainWindow::CreateMainMenu(void *parent)
 
 	// File menu
 	m = AG_MenuNode(menu->root, "File", NULL);
-	AG_MenuAction(m, "Settings", agIconGear.s, EventReceiver, "%p", 
+	AG_MenuAction(m, "Settings", agIconGear.s, EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnOpenSettingsDialog));
 	AG_MenuSeparator(m);
-	AG_MenuActionKb(m, "Exit", agIconClose.s, AG_KEY_Q, AG_KEYMOD_CTRL, 
+	AG_MenuActionKb(m, "Exit", agIconClose.s, AG_KEY_Q, AG_KEYMOD_CTRL,
 			EventReceiver, "%p", RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnExit));
 
 	// Action menu
 	m = AG_MenuNode(menu->root, "Action", NULL);
-	AG_MenuAction(m, "Launch", NULL, EventReceiver, "%p", 
+	AG_MenuAction(m, "Launch", NULL, EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnLaunch));
-	AG_MenuAction(m, "Run Offline", NULL, EventReceiver, "%p", 
+	AG_MenuAction(m, "Run Offline", NULL, EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnOfflineLaunch));
 	AG_MenuSeparator(m);
-	AG_MenuAction(m, "Refresh Selected", NULL, EventReceiver, "%p", 
+	AG_MenuAction(m, "Refresh Selected", NULL, EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnRefreshSelected));
-	AG_MenuAction(m, "Refresh All", NULL, EventReceiver, "%p", 
+	AG_MenuAction(m, "Refresh All", NULL, EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnRefreshAll));
-	AG_MenuAction(m, "Get Master List", NULL, EventReceiver, "%p", 
+	AG_MenuAction(m, "Get Master List", NULL, EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnGetMasterList));
 
 	// Tools Menu
 	m = AG_MenuNode(menu->root, "Tools", NULL);
 	m = AG_MenuNode(m, "OdaGet", NULL);
 	AG_MenuDisable(m);
-	AG_MenuAction(m, "Get WAD", NULL, EventReceiver, "%p", 
+	AG_MenuAction(m, "Get WAD", NULL, EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnGetWAD));
-	AG_MenuAction(m, "Configure", NULL, EventReceiver, "%p", 
+	AG_MenuAction(m, "Configure", NULL, EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnOdaGetConfig));
 	AG_MenuEnable(m);
 
 	// Advanced menu
 	m = AG_MenuNode(menu->root, "Advanced", NULL);
-	AG_MenuAction(m, "Manual Connect", NULL, EventReceiver, "%p", 
+	AG_MenuAction(m, "Manual Connect", NULL, EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnManualConnect));
 	AG_MenuDisable(m);
-	AG_MenuAction(m, "Custom Servers", NULL, EventReceiver, "%p", 
+	AG_MenuAction(m, "Custom Servers", NULL, EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnCustomServer));
 	AG_MenuEnable(m);
-	
+
 	// Help menu
 	m = AG_MenuNode(menu->root, "Help", NULL);
-	AG_MenuAction(m, "Report Bug", NULL, EventReceiver, "%p", 
+	AG_MenuAction(m, "Report Bug", NULL, EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnReportBug));
 	AG_MenuSeparator(m);
-	AG_MenuAction(m, "About", NULL, EventReceiver, "%p", 
+	AG_MenuAction(m, "About", NULL, EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnAbout));
 
 	return menu;
@@ -253,30 +249,30 @@ ODA_ButtonBox *AGOL_MainWindow::CreateMainButtonBox(void *parent)
 
 	bbox->buttonbox = AG_BoxNewHoriz(parent, AG_BOX_HFILL);
 
-	bbox->launch = CreateButton(bbox->buttonbox, "Launch", odalaunchico, 
+	bbox->launch = CreateButton(bbox->buttonbox, "Launch", odalaunchico,
 			sizeof(odalaunchico), (EVENT_FUNC_PTR)&AGOL_MainWindow::OnLaunch);
-	bbox->qlaunch = CreateButton(bbox->buttonbox, "Quick Launch", odaqlaunchico, 
+	bbox->qlaunch = CreateButton(bbox->buttonbox, "Quick Launch", odaqlaunchico,
 			sizeof(odaqlaunchico), (EVENT_FUNC_PTR)&AGOL_MainWindow::OnOfflineLaunch);
 
 	AG_SeparatorNewVert(bbox->buttonbox);
 
-	bbox->refresh = CreateButton(bbox->buttonbox, "Refresh Selected", btnrefreshico, 
+	bbox->refresh = CreateButton(bbox->buttonbox, "Refresh Selected", btnrefreshico,
 			sizeof(btnrefreshico), (EVENT_FUNC_PTR)&AGOL_MainWindow::OnRefreshSelected);
-	bbox->refreshall = CreateButton(bbox->buttonbox, "Refresh All", btnrefreshallico, 
+	bbox->refreshall = CreateButton(bbox->buttonbox, "Refresh All", btnrefreshallico,
 			sizeof(btnrefreshico), (EVENT_FUNC_PTR)&AGOL_MainWindow::OnRefreshAll);
-	bbox->mlist = CreateButton(bbox->buttonbox, "Query Master", btnlistico, 
+	bbox->mlist = CreateButton(bbox->buttonbox, "Query Master", btnlistico,
 			sizeof(btnlistico), (EVENT_FUNC_PTR)&AGOL_MainWindow::OnGetMasterList);
 
 	AG_SeparatorNewVert(bbox->buttonbox);
 
-	bbox->settings = CreateButton(bbox->buttonbox, "Settings", btnsettingsico, 
+	bbox->settings = CreateButton(bbox->buttonbox, "Settings", btnsettingsico,
 			sizeof(btnsettingsico), (EVENT_FUNC_PTR)&AGOL_MainWindow::OnOpenSettingsDialog);
-	bbox->about = CreateButton(bbox->buttonbox, "About", btnhelpico, 
+	bbox->about = CreateButton(bbox->buttonbox, "About", btnhelpico,
 			sizeof(btnhelpico), (EVENT_FUNC_PTR)&AGOL_MainWindow::OnAbout);
 
 	AG_SeparatorNewVert(bbox->buttonbox);
 
-	bbox->exit = CreateButton(bbox->buttonbox, "Exit", btnexitico, 
+	bbox->exit = CreateButton(bbox->buttonbox, "Exit", btnexitico,
 			sizeof(btnexitico), (EVENT_FUNC_PTR)&AGOL_MainWindow::OnExit);
 
 	return bbox;
@@ -315,13 +311,13 @@ AG_Table *AGOL_MainWindow::CreateServerList(void *parent)
 	ostringstream  colSzSpec[8];
 	int            colW[8] = { 200, 33, 48, 100, 47, 105, 72, 125 };
 
-	list = AG_TableNewPolled(parent, AG_TABLE_EXPAND, EventReceiver, "%p", 
+	list = AG_TableNewPolled(parent, AG_TABLE_EXPAND, EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::UpdateServerList));
 
-  	AG_TableSetRowDblClickFn(list, EventReceiver, "%p", 
+  	AG_TableSetRowDblClickFn(list, EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnLaunch));
 
-	AG_SetEvent(list, "row-selected", EventReceiver, "%p", 
+	AG_SetEvent(list, "row-selected", EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnServerListRowSelected));
 
 	// Configure each columns size spec
@@ -350,7 +346,7 @@ AG_Table *AGOL_MainWindow::CreateServerList(void *parent)
 	AG_TableAddCol(list, "Address : Port", colSzSpec[7].str().c_str(), NULL);
 
 	// Add an update event that we can schedule without enabling polling
-	AG_SetEvent(list, "update-items", EventReceiver, "%p", 
+	AG_SetEvent(list, "update-items", EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::UpdateServerList));
 
 	return list;
@@ -437,8 +433,8 @@ void AGOL_MainWindow::UpdateStatusbarMasterPing(uint64_t ping)
 	AG_LabelText(MainStatusbar->mping, "Master Ping: %lu", ping);
 }
 
-AG_Button *AGOL_MainWindow::CreateButton(void *parent, const char *label, 
-                                         const unsigned char *icon, int iconsize, 
+AG_Button *AGOL_MainWindow::CreateButton(void *parent, const char *label,
+                                         const unsigned char *icon, int iconsize,
                                          EVENT_FUNC_PTR handler)
 {
 	AG_Button     *button;
@@ -446,7 +442,7 @@ AG_Button *AGOL_MainWindow::CreateButton(void *parent, const char *label,
 
 	button = AG_ButtonNewFn(parent, 0, label, EventReceiver, "%p", RegisterEventHandler(handler));
 
-	AG_SetEvent(button, "button-mouseoverlap", EventReceiver, "%p", 
+	AG_SetEvent(button, "button-mouseoverlap", EventReceiver, "%p",
 			RegisterEventHandler((EVENT_FUNC_PTR)&AGOL_MainWindow::OnMouseOverWidget));
 
 
@@ -539,7 +535,7 @@ int AGOL_MainWindow::GetServerListRowFromAddr(const string &address)
 		string cellAddr;
 
 		cellAddr = GetAddrFromServerListRow(row);
-		
+
 		if(!cellAddr.size())
 			continue;
 
@@ -616,12 +612,12 @@ void AGOL_MainWindow::UpdatePlayerList(int serverNdx)
 			AG_Surface *(*teamFn)(void*,int,int) = NullSurfFn;
 			AG_Surface *(*specFn)(void*,int,int) = NullSurfFn;
 			string      name = " ";
-	
+
 			if(QServer[serverNdx].Info.Players[i].Name.size())
 				name = QServer[serverNdx].Info.Players[i].Name;
 
 			// Team pixmap
-			if(QServer[serverNdx].Info.GameType == GT_TeamDeathmatch || 
+			if(QServer[serverNdx].Info.GameType == GT_TeamDeathmatch ||
 			   QServer[serverNdx].Info.GameType == GT_CaptureTheFlag)
 			{
 				switch(QServer[serverNdx].Info.Players[i].Team)
@@ -644,7 +640,7 @@ void AGOL_MainWindow::UpdatePlayerList(int serverNdx)
 			}
 
 			AG_TableAddRow(PlayerList, "%[FS]:%s:%u:%u:%i:%u:%u:%[FS]",
-			                     specFn, name.c_str(), 
+			                     specFn, name.c_str(),
 			                     QServer[serverNdx].Info.Players[i].Ping,
 			                     QServer[serverNdx].Info.Players[i].Time,
 			                     QServer[serverNdx].Info.Players[i].Frags,
@@ -895,7 +891,7 @@ void AGOL_MainWindow::AutoSizeTableColumn(AG_Table *table, int col)
 				if(cell && cell->data.s)
 				{
 					int txtsize;
-			
+
 					AG_TextSize(cell->data.s, &txtsize, NULL);
 
 					if(txtsize > maxpx)
@@ -1181,7 +1177,7 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 	}
 
 	GuiConfig::Read("ShowBlockedServers", showBlocked);
-	
+
 	for(size_t i = 0; i < serverCount; ++i)
 	{
 		AG_Surface    *(*padlockFn)(void*,int,int) = NullSurfFn;
@@ -1194,7 +1190,7 @@ void AGOL_MainWindow::UpdateServerList(AG_Event *event)
 		string         gametype;
 		size_t         wadCnt = 0;
 		int            row;
-		
+
 		// If we can't immediately get a lock on this server
 		// move on to the next one.
 		if(QServer[i].TryLock())
@@ -1341,13 +1337,6 @@ void *AGOL_MainWindow::GetMasterList(void *arg)
 	uint16_t     port = 0;
 	unsigned int masterTimeout;
 
-#ifdef _XBOX
-	// A slight delay is required to complete initialization on Xbox
-	// if this is the "Master On Start" query - 3/4 sec
-	if(StartupQuery)
-		AG_Delay(750);
-#endif
-
 	if(GuiConfig::Read("MasterTimeout", masterTimeout) || masterTimeout == 0)
 		masterTimeout = 500;
 
@@ -1357,15 +1346,11 @@ void *AGOL_MainWindow::GetMasterList(void *arg)
 	MServer.SetSocket(&socket);
 
 	// Get a list of servers
-#ifdef _XBOX
-	MServer.QueryMasters(masterTimeout, 0, 2); // TODO: Make broadcast and retry configurable
-#else
 	MServer.QueryMasters(masterTimeout, 1, 2); // TODO: Make broadcast and retry configurable
-#endif
 
 	serverCount = MServer.GetServerCount();
 
-	// If there are no servers something went wrong 
+	// If there are no servers something went wrong
 	// (either with the query or with the Odamex project ;P)
 	if(serverCount == 0)
 	{
@@ -1438,10 +1423,6 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 	if(serverCount == 0)
 		return NULL;
 
-#ifdef _XBOX
-	Xbox::EnableJoystickUpdates(false);
-#endif
-
 	StartServerListPoll();
 
 	ClearList(PlayerList);
@@ -1478,12 +1459,6 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 				serversQueried++;
 			}
 		}
-#ifdef _XBOX
-		// This yield is required on Xbox. Without it the Xbox sometimes fails to give the other
-		// threads CPU time and that results in an unacceptably long query and an interface pause
-		// while this thread continuously queries the other threads for completion. -- Hyper_Eye
-		AG_Delay(1); // 1ms yield
-#endif
 		UpdateQueriedLabelCompleted(static_cast<int>(count));
 	}
 
@@ -1497,10 +1472,6 @@ void *AGOL_MainWindow::QueryAllServers(void *arg)
 
 	UpdatePlayerList(selectedNdx);
 	UpdateServInfoList(selectedNdx);
-
-#ifdef _XBOX
-	Xbox::EnableJoystickUpdates(true);
-#endif
 
 	return NULL;
 }
@@ -1524,10 +1495,10 @@ int AGOL_MainWindow::CellCompare(const void *p1, const void *p2)
 	AG_TableCell *c2 = (AG_TableCell*)p2;
 
 	// Make sure the cells are the same type
-	if (c1->type != c2->type || strcmp(c1->fmt, c2->fmt) != 0) 
+	if (c1->type != c2->type || strcmp(c1->fmt, c2->fmt) != 0)
 	{
 		// See if one of the cells is null
-		if (c1->type == AG_CELL_NULL || c2->type == AG_CELL_NULL) 
+		if (c1->type == AG_CELL_NULL || c2->type == AG_CELL_NULL)
 		{
 			// Sort out the null (unset) cells
 			return (c1->type == AG_CELL_NULL ? 1 : -1);
@@ -1576,7 +1547,7 @@ int AGOL_MainWindow::CellCompare(const void *p1, const void *p2)
 			{
 				compval[0] = 1;
 			}
-				
+
 			if(c2->fnSu == BulletBlueSurfFn ||
 			   c2->fnSu == SpectatorIconSurfFn ||
 			   c2->fnSu == PadlockIconSurfFn)

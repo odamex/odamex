@@ -211,7 +211,7 @@ bool M_WriteFile(std::string filename, void *source, QWORD length)
 
     if (handle == NULL)
 	{
-		Printf(PRINT_HIGH, "Could not open file %s for writing\n", filename);
+		PrintFmt(PRINT_HIGH, "Could not open file {} for writing\n", filename);
 		return false;
 	}
 
@@ -220,7 +220,7 @@ bool M_WriteFile(std::string filename, void *source, QWORD length)
 
 	if (count != length)
 	{
-		Printf(PRINT_HIGH, "Failed while writing to file %s\n", filename);
+		PrintFmt(PRINT_HIGH, "Failed while writing to file {}\n", filename);
 		return false;
 	}
 
@@ -243,7 +243,7 @@ QWORD M_ReadFile(std::string filename, BYTE **buffer)
 
 	if (handle == NULL)
 	{
-		Printf(PRINT_HIGH, "Could not open file %s for reading\n", filename);
+		PrintFmt(PRINT_HIGH, "Could not open file {} for reading\n", filename);
 		return false;
 	}
 
@@ -255,7 +255,7 @@ QWORD M_ReadFile(std::string filename, BYTE **buffer)
 
     if (count != length)
 	{
-		Printf(PRINT_HIGH, "Failed while reading from file %s\n", filename);
+		PrintFmt(PRINT_HIGH, "Failed while reading from file {}\n", filename);
 		return false;
 	}
 
@@ -377,7 +377,7 @@ bool M_IsPathSep(const char ch)
 		return true;
 	}
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
 	// This is not the canonical path separator, but it is valid.
 	if (ch == '/')
 	{
@@ -404,13 +404,6 @@ std::string M_GetUserFileName(const std::string& file)
 {
 #ifdef __SWITCH__
 	std::string path = file;
-	return M_CleanPath(path);
-#elif defined(_XBOX)
-	std::string path = "T:";
-
-	path += PATHSEP;
-	path += file;
-
 	return M_CleanPath(path);
 #else
 	fs::path path(file);
@@ -440,9 +433,6 @@ std::string M_GetUserFileName(const std::string& file)
 
 std::string M_GetWriteSubDir(std::string_view folder)
 {
-#if defined(_XBOX)
-	return "T:" PATHSEP;
-#else
 	// Does the folder exist?
 	fs::path path = M_GetWriteDir();
 	path /= folder;
@@ -455,7 +445,6 @@ std::string M_GetWriteSubDir(std::string_view folder)
 	{
 		I_FatalError("Failed to create directory {}: {}\n", path.string(), e.what());
 	}
-#endif
 }
 
 std::string M_GetDownloadDir()
@@ -475,10 +464,7 @@ std::string M_GetNetDemoDir()
 
 std::string M_GetScreenshotFileName(const std::string& file, const std::string& altpath)
 {
-#if defined(_XBOX)
-	fs::path path = "T:";
-	path /= file;
-#elif defined __SWITCH__
+#ifdef __SWITCH__
 	fs::path path = file;
 #else
 	fs::path path;
@@ -509,10 +495,7 @@ std::string M_GetScreenshotFileName(const std::string& file, const std::string& 
 
 std::string M_GetNetDemoFileName(const std::string& file, const std::string& altpath)
 {
-#if defined(_XBOX)
-	fs::path path = "T:";
-	path /= file;
-#elif defined __SWITCH__
+#ifdef __SWITCH__
 	fs::path path = file;
 #else
 	fs::path path;

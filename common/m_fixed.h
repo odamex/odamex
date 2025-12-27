@@ -31,15 +31,15 @@
 #define FRACBITS				16
 #define FRACUNIT				(1<<FRACBITS)
 
-using fixed_t = int;			// fixed 16.16
-using fixed64_t = int64_t;      // fixed 44.20
-using dsfixed_t = unsigned int;	// fixedpt used by span drawer
+using fixed_t   = int32_t;  // fixed 16.16
+using fixed64_t = int64_t;  // fixed 44.20
+using dsfixed_t = uint32_t;	// fixedpt used by span drawer
 
 #define FRACBITS64				20ll
 #define FRACUNIT64				(1ll<<FRACBITS64)
 #define FRAC64MASK				(FRACUNIT64 - 1ll)
 #define FRAC64FILL( x, o )		( ( x ) | ( ( o ) < 0 ? ( FRAC64MASK << ( 64 - FRACBITS64 ) ) : 0 ) )
-#define FRAC64FILLFIXED( x, o )	( ( x ) | ( ( o ) < 0 ? ( FRAC64MASK << ( 64 - ( FRACBITS64 - FRACBITS ) ) ) : 0 ) )
+#define FRAC64FILLFIXED( x, o )	( ( x ) | ( ( o ) < 0 ? ~( (( 1ll << ( 64 - ( FRACBITS64 - FRACBITS ) )) - 1 ) ) : 0 ) )
 
 //
 // Fixed Point / Floating Point Conversion
@@ -156,7 +156,7 @@ inline constexpr fixed_t FixedDiv(fixed_t a, fixed_t b)
 	constexpr auto absce = [](fixed_t x) -> fixed_t {
 		return (x < 0) ? -x : x;
 	};
-	return (absce(a) >> 14) >= absce(b) ? ((a ^ b) >> 31) ^ MAXINT :
+	return (absce(a) >> 14) >= absce(b) ? ((a ^ b) >> 31) ^ limits::MAXINT :
 		(fixed_t)(((int64_t)a << FRACBITS) / b);
 }
 
@@ -175,7 +175,9 @@ inline constexpr fixed64_t FixedDiv64( fixed64_t a, fixed64_t b )
 {
 	if ((FixedAbs64(a) >> (FRACBITS64 - 2)) >= FixedAbs64(b))
 	{
-		return (a ^ b) < 0 ? MINLONG : MAXLONG;
+		// fixme: should this really use minlong and maxlong?
+		// thats what R&R uses but seems wrong for 64 bit systems
+		return (a ^ b) < 0 ? limits::MINLONG : limits::MAXLONG;
 	}
 	return (a << FRACBITS64) / b;
 }

@@ -47,6 +47,7 @@ message Actor
 	uint32 tracerid = 16;
 	int32 waterlevel = 17;
 	uint32 rndindex = 18;
+	fixed32 flags2 = 19;
 }
 
 message Player

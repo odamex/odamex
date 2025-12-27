@@ -61,7 +61,7 @@ void R_DrawSpanD_SSE2 (void)
 	if (dspan.x2 < dspan.x1 || dspan.x1 < 0 || dspan.x2 >= viewwidth ||
 		dspan.y >= viewheight || dspan.y < 0)
 	{
-		Printf(PRINT_HIGH, "R_DrawLevelSpan: %i to %i at %i", dspan.x1, dspan.x2, dspan.y);
+		PrintFmt(PRINT_HIGH, "R_DrawLevelSpan: {} to {} at {}", dspan.x1, dspan.x2, dspan.y);
 		return;
 	}
 #endif

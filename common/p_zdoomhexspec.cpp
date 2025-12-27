@@ -148,7 +148,7 @@ bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
 		}
 	}
 
-	if (mo && !mo->player && mo->type != MT_AVATAR && !(mo->flags & MF_MISSILE) &&
+	if (mo && !P_IsPlayerOrAvatar(*mo) && !(mo->flags & MF_MISSILE) &&
 	    !(line->flags & ML_MONSTERSCANACTIVATE) &&
 	    (!(activationType & ML_SPAC_MCROSS) || !(lineActivation & ML_SPAC_MCROSS)))
 	{
@@ -876,7 +876,7 @@ void P_SpawnZDoomScroller(line_t* l, int i)
 		else
 		{
 			if (l->id == 0)
-				Printf(PRINT_HIGH, "Line %d is missing a tag!", i);
+				PrintFmt(PRINT_HIGH, "Line {} is missing a tag!", i);
 
 			if (l->args[0] > 1024)
 				control = sides[*l->sidenum].sector - sectors;

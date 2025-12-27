@@ -65,7 +65,7 @@ typedef struct
 //
 typedef struct lumpinfo_s
 {
-	char		name[8]; // denis - todo - string
+	OLumpName	name;
 	FILE		*handle;
 	int			position;
 	int			size;
@@ -113,7 +113,7 @@ extern	size_t	numlumps;
 
 OCRC32Sum W_CRC32(const std::string& filename);
 OMD5Hash W_MD5(const std::string& filename);
-fhfprint_s W_FarmHash128(const byte* lumpdata, int length);
+fhfprint_t W_FarmHash128(const byte* lumpdata, int length);
 void W_InitMultipleFiles(const OResFiles& filenames);
 lumpHandle_t W_LumpToHandle(const unsigned lump);
 int W_HandleToLump(const lumpHandle_t handle);
@@ -123,7 +123,7 @@ inline int W_CheckNumForName(const OLumpName& name, int ns = ns_global) { return
 int W_GetNumForName(const char *name, int ns = ns_global);
 inline int W_GetNumForName(const OLumpName& name, int ns = ns_global) { return W_GetNumForName(name.c_str(), ns); };
 
-std::string W_LumpName(unsigned lump);
+OLumpName W_LumpName(unsigned lump);
 unsigned	W_LumpLength (unsigned lump);
 void		W_ReadLump (unsigned lump, void *dest);
 unsigned	W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest, unsigned &filelen);
@@ -161,6 +161,7 @@ void W_GetLumpName(char* to, unsigned lump);
 
 // Copies the lump name to to
 void W_GetOLumpName(OLumpName& to, unsigned lump);
+OLumpName W_GetOLumpName(unsigned lump);
 
 // [RH] Returns file handle for specified lump
 int W_GetLumpFile (unsigned lump);

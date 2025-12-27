@@ -41,27 +41,22 @@
 
 #include "win32inc.h"
 #ifdef _WIN32
-#include <direct.h>
-#include <io.h>
-#include <process.h>
-
-#ifdef _XBOX
-#include <xtl.h>
-#else
-#include <shlwapi.h>
-#include <winsock2.h>
-#include <mmsystem.h>
-#include <shlobj.h>
-#endif // !_XBOX
+	#include <direct.h>
+	#include <io.h>
+	#include <process.h>
+	#include <shlwapi.h>
+	#include <winsock2.h>
+	#include <mmsystem.h>
+	#include <shlobj.h>
 #endif // WIN32
 
 #ifdef UNIX
 // for getuid and geteuid
-#include <unistd.h>
-#include <sys/types.h>
-#include <limits.h>
-#include <time.h>
-#include <pwd.h>
+	#include <unistd.h>
+	#include <sys/types.h>
+	#include <limits.h>
+	#include <time.h>
+	#include <pwd.h>
 #endif
 
 #include <sstream>
@@ -93,14 +88,6 @@
 #include "m_fileio.h"
 #include "txt_main.h"
 
-#ifdef _XBOX
-	#include "i_xbox.h"
-#endif
-
-#ifdef GEKKO
-	#include "i_wii.h"
-#endif
-
 #ifndef GCONSOLE // I will add this back later -- Hyper_Eye
 	// For libtextscreen to link properly
 	extern "C"
@@ -109,7 +96,7 @@
 	}
 	#define ENDOOM_W 80
 	#define ENDOOM_H 25
-#endif // _XBOX
+#endif // GCONSOLE
 
 EXTERN_CVAR (r_loadicon)
 EXTERN_CVAR (r_showendoom)
@@ -173,12 +160,12 @@ dtime_t I_GetTime()
 	mach_port_deallocate(mach_task_self(), cclock);
 	return mts.tv_sec * 1000LL * 1000LL * 1000LL + mts.tv_nsec;
 
-#elif defined UNIX && !defined GEKKO
+#elif defined UNIX
 	timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	return ts.tv_sec * 1000LL * 1000LL * 1000LL + ts.tv_nsec;
 
-#elif defined WIN32 && !defined _XBOX
+#elif defined WIN32
 	static bool initialized = false;
 	static LARGE_INTEGER initial_count;
 	static double nanoseconds_per_count;
@@ -262,7 +249,7 @@ void I_Sleep(dtime_t sleep_time)
 #if defined UNIX
 	usleep(sleep_time / 1000LL);
 
-#elif defined(WIN32) && !defined(_XBOX)
+#elif defined(WIN32)
 	Sleep(sleep_time / 1000000LL);
 
 #else
@@ -295,7 +282,7 @@ void I_WaitVBL(int count)
 //
 // SubsetLanguageIDs
 //
-#if defined _WIN32 && !defined _XBOX
+#if defined _WIN32
 static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
 {
 	char buf[8];
@@ -324,16 +311,35 @@ void SetLanguageIDs()
 
 	if (strcmp(langid, "auto") == 0)
 	{
-#if defined _WIN32 && !defined _XBOX
+#if defined _WIN32
 		memset(LanguageIDs, 0, sizeof(LanguageIDs));
 		SubsetLanguageIDs(LOCALE_USER_DEFAULT, LOCALE_ILANGUAGE, 0);
 		SubsetLanguageIDs(LOCALE_USER_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 1);
 		SubsetLanguageIDs(LOCALE_SYSTEM_DEFAULT, LOCALE_ILANGUAGE, 2);
 		SubsetLanguageIDs(LOCALE_SYSTEM_DEFAULT, LOCALE_IDEFAULTLANGUAGE, 3);
+#elif SDL_VERSION_ATLEAST(2, 0, 14)
+		SDL_Locale* locales = SDL_GetPreferredLocales();
+		size_t i;
+		for (i = 0; i < ARRAY_LENGTH(LanguageIDs) && locales && locales->language; i++)
+		{
+			char slang[4] = {'\0', '\0', '\0', '\0'};
+			strncpy(slang, locales->language, ARRAY_LENGTH(slang) - 1);
+			const uint32_t lang = MAKE_ID(slang[0], slang[1], slang[2], slang[3]);
+			LanguageIDs[i] = lang;
+		}
+		if (i < ARRAY_LENGTH(LanguageIDs))
+		{
+			// Fill the rest with the last valid entry
+			for (; i < ARRAY_LENGTH(LanguageIDs); i++)
+				LanguageIDs[i] = LanguageIDs[i - 1];
+		}
 #else
 		// Default to US English on non-windows systems
-		// FIXME: Use SDL Locale support if available.
-		langid = "enu";
+		static constexpr uint32_t lang = MAKE_ID('e', 'n', 'u', '\0');
+		LanguageIDs[0] = lang;
+		LanguageIDs[1] = lang;
+		LanguageIDs[2] = lang;
+		LanguageIDs[3] = lang;
 #endif
 	}
 	else
@@ -465,7 +471,7 @@ void STACK_ARGS call_terms (void);
 
 void I_BaseWarning(const std::string& warningtext)
 {
-	Printf(PRINT_WARNING, "\n%s\n", warningtext);
+	PrintFmt(PRINT_WARNING, "\n{}\n", warningtext);
 }
 
 void I_BaseError(const std::string& errortext)
@@ -578,7 +584,7 @@ std::string I_GetClipboardText()
 
 	if (!dis)
 	{
-		Printf(PRINT_HIGH, "I_GetClipboardText: XOpenDisplay failed");
+		PrintFmt(PRINT_HIGH, "I_GetClipboardText: XOpenDisplay failed");
 		return "";
 	}
 
@@ -594,7 +600,7 @@ std::string I_GetClipboardText()
 			XDestroyWindow(dis, WindowEvents);
 			XUnlockDisplay(dis);
 			XCloseDisplay(dis);
-			Printf(PRINT_HIGH, "I_GetClipboardText: XConvertSelection failed");
+			PrintFmt(PRINT_HIGH, "I_GetClipboardText: XConvertSelection failed");
 			return "";
 		}
 
@@ -622,7 +628,7 @@ std::string I_GetClipboardText()
 			XDestroyWindow(dis, WindowEvents);
 			XUnlockDisplay(dis);
 			XCloseDisplay(dis);
-			Printf(PRINT_HIGH, "I_GetClipboardText: XGetWindowProperty failed(1)");
+			PrintFmt(PRINT_HIGH, "I_GetClipboardText: XGetWindowProperty failed(1)");
 			return "";
 		}
 
@@ -642,7 +648,7 @@ std::string I_GetClipboardText()
 			XDestroyWindow(dis, WindowEvents);
 			XUnlockDisplay(dis);
 			XCloseDisplay(dis);
-			Printf(PRINT_HIGH, "I_GetClipboardText: XGetWindowProperty failed(2)");
+			PrintFmt(PRINT_HIGH, "I_GetClipboardText: XGetWindowProperty failed(2)");
 			return "";
 		}
 
@@ -657,7 +663,7 @@ std::string I_GetClipboardText()
 	return ret;
 #endif
 
-#if defined _WIN32 && !defined _XBOX
+#if defined _WIN32
 	std::string ret;
 
 	if(!IsClipboardFormatAvailable(CF_TEXT))
@@ -706,7 +712,7 @@ std::string I_GetClipboardText()
 
 	if (err)
 	{
-		Printf(PRINT_HIGH, "GetCurrentScrap error: %d", err);
+		PrintFmt(PRINT_HIGH, "GetCurrentScrap error: {}", err);
 		return "";
 	}
 
@@ -714,7 +720,7 @@ std::string I_GetClipboardText()
 
 	if (err)
 	{
-		Printf(PRINT_HIGH, "GetScrapFlavorSize error: %d", err);
+		PrintFmt(PRINT_HIGH, "GetScrapFlavorSize error: {}", err);
 		return "";
 	}
 
@@ -725,7 +731,7 @@ std::string I_GetClipboardText()
 
 	if(err)
 	{
-		Printf(PRINT_HIGH, "GetScrapFlavorData error: %d", err);
+		PrintFmt(PRINT_HIGH, "GetScrapFlavorData error: {}", err);
 		delete[] data;
 
 		return "";
@@ -744,7 +750,7 @@ std::string I_GetClipboardText()
 
 	if (NULL == textp)
 	{
-		Printf(PRINT_HIGH, "SDL_GetClipboardText error: %s", SDL_GetError());
+		PrintFmt(PRINT_HIGH, "SDL_GetClipboardText error: {}", SDL_GetError());
 		return "";
 	}
 
@@ -921,7 +927,7 @@ void I_ErrorMessageBox(const char* message)
 	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, ODAMEX_ERROR_TITLE, message, NULL);
 }
 
-#elif defined(WIN32) && !defined(_XBOX)
+#elif defined(WIN32)
 
 void I_ErrorMessageBox(const char* message)
 {

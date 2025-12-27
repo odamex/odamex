@@ -47,7 +47,6 @@
 
 #include "d_netinf.h"
 #include "i_net.h"
-#include "huffman.h"
 
 #include "p_snapshot.h"
 #include "d_netcmd.h"
@@ -105,8 +104,8 @@ typedef enum
 
 #define MAX_PLAYER_SEE_MOBJ	0x7F
 
-static constexpr int ReJoinDelay = TICRATE * 5;
-static constexpr int SuicideDelay = TICRATE * 10;
+inline constexpr int ReJoinDelay = TICRATE * 5;
+inline constexpr int SuicideDelay = TICRATE * 10;
 
 //
 // Extended player object info: player_t
@@ -188,9 +187,9 @@ public:
 	weapontype_t	pendingweapon;
 	weapontype_t	readyweapon;
 
-	bool		weaponowned[NUMWEAPONS+1];
-	int			ammo[NUMAMMO];
-	int			maxammo[NUMAMMO];
+	std::array<bool, NUMWEAPONS+1> weaponowned;
+	std::array<int, NUMAMMO> ammo;
+	std::array<int, NUMAMMO> maxammo;
 
     // True if button down last tic.
 	int			attackdown, usedown;
@@ -280,12 +279,6 @@ public:
 			{
 				data.resize(0);
 			}
-
-			oldPacket_t(const oldPacket_t& other)
-			{
-				sequence = other.sequence;
-				data = other.data;
-			}
 		};
 
 		netadr_t    address;
@@ -316,17 +309,11 @@ public:
 		bool        allow_rcon;     // allow remote admin
 		bool		displaydisconnect; // display disconnect message when disconnecting
 
-		huffman_server	compressor;	// denis - adaptive huffman compression
-
-		class download_t
+		struct download_t
 		{
-		public:
-			std::string name;
-			std::string md5;
-			unsigned int next_offset;
-
-			download_t() : name(""), md5(""), next_offset(0) {}
-			download_t(const download_t& other) : name(other.name), md5(other.md5), next_offset(other.next_offset) {}
+			std::string name = "";
+			std::string md5  = "";
+			unsigned int next_offset = 0;
 		} download;
 
 		client_t()
@@ -357,9 +344,8 @@ public:
 			digest = "";
 			allow_rcon = false;
 			displaydisconnect = true;
-		/*
-		huffman_server	compressor;	// denis - adaptive huffman compression*/
 		}
+
 		client_t(const client_t &other)
 			: address(other.address),
 			netbuf(other.netbuf),
@@ -378,13 +364,43 @@ public:
 			digest(other.digest),
 			allow_rcon(false),
 			displaydisconnect(true),
-			compressor(other.compressor),
 			download(other.download)
 		{
 			for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
 			{
 				oldpackets[i] = other.oldpackets[i];
 			}
+		}
+
+		client_t& operator=(const client_t& other)
+		{
+			if (this == &other)
+				return *this;
+
+			address = other.address;
+			netbuf = other.netbuf;
+			reliablebuf = other.reliablebuf;
+			version = other.version;
+			packedversion = other.packedversion;
+			sequence = other.sequence;
+			last_sequence = other.last_sequence;
+			packetnum = other.packetnum;
+			rate = other.rate;
+			reliable_bps = other.reliable_bps;
+			unreliable_bps = other.unreliable_bps;
+			last_received = other.last_received;
+			lastcmdtic = other.lastcmdtic;
+			lastclientcmdtic = other.lastclientcmdtic;
+			digest = other.digest;
+			allow_rcon = false;
+			displaydisconnect = true;
+			download = other.download;
+			for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
+			{
+				oldpackets[i] = other.oldpackets[i];
+			}
+
+			return *this;
 		}
 	} client;
 
@@ -417,6 +433,16 @@ player_t		&listenplayer();
 player_t		&idplayer(byte id);
 player_t		&nameplayer(const std::string &netname);
 bool			validplayer(const player_t &ref);
+
+// A helper spawn object.
+// One object = 1 spawn
+struct HelperSpawns
+{
+	mobjtype_t helpertype;
+	int playerid;
+};
+
+extern std::vector<HelperSpawns> helperspawns;
 
 /**
  * @brief A collection of pointers to players, commonly called a "view".
@@ -692,3 +718,13 @@ typedef struct wbstartstruct_s
 
 	std::vector<wbplayerstruct_s> plyr;
 } wbstartstruct_t;
+
+//
+// P_IsPlayerOrAvatar
+//
+// Returns true if thing is a player or an avatar
+//
+inline bool P_IsPlayerOrAvatar(const AActor& mo)
+{
+	return mo.player != nullptr || mo.type == MT_AVATAR;
+}

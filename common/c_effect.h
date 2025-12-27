@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -30,6 +30,7 @@
 #define FX_ROCKET			0x00000001
 #define FX_GRENADE			0x00000002
 #define FX_VISIBILITYPULSE	0x00000040
+#define FX_FRIENDHEARTS 0x00000080
 
 #define FX_FOUNTAINMASK		0x00070000
 #define FX_FOUNTAINSHIFT	16
@@ -50,9 +51,9 @@ void P_ThinkParticles (void);
 void P_InitEffects (void);
 void P_RunEffects (void);
 
-void P_RunEffect (AActor *actor, int effects);
+void P_RunEffect (const AActor *actor, int effects);
 
-void P_DrawRailTrail(v3double_t &start, v3double_t &end);
+void P_DrawRailTrail(const v3double_t &start, const v3double_t &end);
 void P_DrawSplash (int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, int kind);
 void P_DrawSplash2 (int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, int updown, int kind);
-void P_DisconnectEffect (AActor *actor);
+void P_DisconnectEffect (const AActor *actor);

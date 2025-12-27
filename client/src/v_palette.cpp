@@ -96,11 +96,6 @@ translationref_t::translationref_t() :
 {
 }
 
-translationref_t::translationref_t(const translationref_t &other) :
-	m_table(other.m_table), m_player_id(other.m_player_id)
-{
-}
-
 translationref_t::translationref_t(const byte *table) :
 	m_table(table), m_player_id(-1)
 {
@@ -113,12 +108,6 @@ translationref_t::translationref_t(const byte *table, const int player_id) :
 
 shaderef_t::shaderef_t() :
 	m_colors(NULL), m_mapnum(-1), m_colormap(NULL), m_shademap(NULL)
-{
-}
-
-shaderef_t::shaderef_t(const shaderef_t &other) :
-	m_colors(other.m_colors), m_mapnum(other.m_mapnum),
-	m_colormap(other.m_colormap), m_shademap(other.m_shademap), m_dyncolormap(other.m_dyncolormap)
 {
 }
 
@@ -390,9 +379,9 @@ BEGIN_COMMAND(bumpgamma)
 	V_IncrementGammaLevel();
 
 	if (gammalevel.value() == 0.0f)
-	    Printf (PRINT_HIGH, "Gamma correction off\n");
+	    PrintFmt(PRINT_HIGH, "Gamma correction off\n");
 	else
-	    Printf (PRINT_HIGH, "Gamma correction level %g\n", gammalevel.value());
+	    PrintFmt(PRINT_HIGH, "Gamma correction level {:g}\n", gammalevel.value());
 }
 END_COMMAND(bumpgamma)
 
@@ -413,7 +402,7 @@ void V_RestoreScreenPalette()
 //
 palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b)
 {
-	int bestdistortion = MAXINT;
+	int bestdistortion = limits::MAXINT;
 	int bestcolor = 0;		/// let any color go to 0 as a last resort
 
 	for (int i = 0; i < 256; i++)
@@ -452,7 +441,7 @@ palindex_t V_BestColor(const argb_t* palette_colors, argb_t color)
 //
 void V_ClosestColors(const argb_t* palette_colors, palindex_t& color1, palindex_t& color2)
 {
-	int bestdistortion = MAXINT;
+	int bestdistortion = limits::MAXINT;
 
 	color1 = color2 = 0;	// go to color 0 as a last resort
 
@@ -882,7 +871,7 @@ BEGIN_COMMAND (testblend)
 {
 	if (argc < 3)
 	{
-		Printf (PRINT_HIGH, "testblend <color> <amount>\n");
+		PrintFmt(PRINT_HIGH, "testblend <color> <amount>\n");
 	}
 	else
 	{
@@ -898,7 +887,7 @@ BEGIN_COMMAND (testfade)
 {
 	if (argc < 2)
 	{
-		Printf (PRINT_HIGH, "testfade <color>\n");
+		PrintFmt(PRINT_HIGH, "testfade <color>\n");
 	}
 	else
 	{
@@ -1076,7 +1065,7 @@ BEGIN_COMMAND (testcolor)
 {
 	if (argc < 2)
 	{
-		Printf (PRINT_HIGH, "testcolor <color>\n");
+		PrintFmt(PRINT_HIGH, "testcolor <color>\n");
 	}
 	else
 	{
@@ -1117,7 +1106,7 @@ void V_DoPaletteEffects()
 		{
 			palette_num = ((int)red_count + 7) >> 3;
 
-			if (gamemode == retail_chex)
+			if (IsChexMission(gamemission))
 				palette_num = RADIATIONPAL;
 			else
 			{
@@ -1181,8 +1170,8 @@ void V_DoPaletteEffects()
 				red_amount = MIN(red_amount, 56.0f);
 				float alpha = (red_amount + 8.0f) / 72.0f;
 
-				const float red = gamemode == retail_chex ? 0.0f : 1.0f;
-				const float green = gamemode == retail_chex ? 1.0f : 0.0f;
+				const float red = IsChexMission(gamemission) ? 0.0f : 1.0f;
+				const float green = IsChexMission(gamemission) ? 1.0f : 0.0f;
 				static constexpr float blue = 0.0f;
 				V_AddBlend(blend, fargb_t(alpha, red, green, blue));
 			}

@@ -163,7 +163,7 @@ bool P_SightBlockLinesIterator (int x, int y)
 					intercept_t intercept;
 					intercept.d.line = ld;
 					intercept.isaline = true;
-					intercepts.Push(intercept);
+					intercepts.push_back(intercept);
 				}
 				polyLink->polyobj->validcount = validcount;
 			}
@@ -198,7 +198,7 @@ bool P_SightBlockLinesIterator (int x, int y)
        	intercept_t intercept;
        	intercept.d.line = ld;
 		intercept.isaline = true;
-       	intercepts.Push(intercept);
+       	intercepts.push_back(intercept);
 	}
 
 	return true;			// everything was checked
@@ -214,21 +214,20 @@ bool P_SightBlockLinesIterator (int x, int y)
 
 bool P_SightTraverseIntercepts ( void )
 {
-	size_t  count = intercepts.Size();
+	size_t  count = intercepts.size();
 	fixed_t dist;
-	size_t	scan;
 	intercept_t *in = 0;
 	divline_t dl;
 //
 // calculate intercept distance
 //
-	for (scan = 0 ; scan < intercepts.Size(); scan++)
+	for (intercept_t& intercept : intercepts)
 	{
-		if (!intercepts[scan].isaline)
+		if (!intercept.isaline)
 			I_Error("P_SightTraverseIntercepts: non-line intercept\n");
 
-		P_MakeDivline (intercepts[scan].d.line, &dl);
-		intercepts[scan].frac = P_InterceptVector (&trace, &dl);
+		P_MakeDivline (intercept.d.line, &dl);
+		intercept.frac = P_InterceptVector (&trace, &dl);
 	}
 
 //
@@ -236,18 +235,18 @@ bool P_SightTraverseIntercepts ( void )
 //
 	while (count--)
 	{
-		dist = MAXINT;
-		for (scan = 0 ; scan < intercepts.Size(); scan++)
-			if (intercepts[scan].frac < dist)
+		dist = limits::MAXFIXED;
+		for (intercept_t& intercept : intercepts)
+			if (intercept.frac < dist)
 			{
-				dist = intercepts[scan].frac;
-				in = &intercepts[scan];
+				dist = intercept.frac;
+				in = &intercept;
 			}
 
 		if ( !PTR_SightTraverse (in) )
 			return false;					// don't bother going farther
 
-		in->frac = MAXINT;
+		in->frac = limits::MAXFIXED;
 	}
 
 	return true;			// everything was traversed
@@ -273,7 +272,7 @@ bool P_SightPathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
 	int count;
 
 	validcount++;
-	intercepts.Clear();
+	intercepts.clear();
 
 	if ( ((x1-bmaporgx)&(MAPBLOCKSIZE-1)) == 0)
 		x1 += FRACUNIT;							// don't side exactly on a line
@@ -968,7 +967,7 @@ bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost)
 //
 // Adapted from Eternity, so big thanks to Quasar
 //
-bool P_CheckFov(AActor* t1, AActor* t2, angle_t fov)
+bool P_CheckFov(const AActor* t1, const AActor* t2, angle_t fov)
 {
 	angle_t angle, minang, maxang;
 

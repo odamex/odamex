@@ -29,3 +29,5 @@ mobjtype_t P_NameToMobj(const std::string& name);
 mobjtype_t P_INameToMobj(const std::string& name);
 weapontype_t P_NameToWeapon(const std::string& name);
 std::string P_MobjToName(const mobjtype_t type);
+void P_MapDehThing(const mobjtype_t type, const std::string& name);
+void P_InitMobjNameMap();

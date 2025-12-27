@@ -33,9 +33,7 @@
 #include "i_video.h"
 #include "v_video.h"
 
-#if defined(SDL12)
-#include "i_video_sdl12.h"
-#elif defined(SDL20)
+#if defined(SDL20)
 #include "i_video_sdl20.h"
 #else
 #error "no video subsystem selected"
@@ -51,7 +49,7 @@
 
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
 	#include "win32inc.h"
     #include "SDL_syswm.h"
     #include "resource.h"
@@ -931,9 +929,7 @@ void I_InitHardware()
 	}
 	else
 	{
-		#if defined(SDL12)
-		video_subsystem = new ISDL12VideoSubsystem();
-		#elif defined(SDL20)
+		#if defined(SDL20)
 		video_subsystem = new ISDL20VideoSubsystem();
 		#endif
 		assert(video_subsystem != NULL);

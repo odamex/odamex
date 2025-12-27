@@ -65,7 +65,7 @@ extern int				numspritelumps;
 extern bool				g_ValidLevel;
 
 extern int				numsprites;
-extern spritedef_t* 	sprites;
+extern OHashTable<int32_t, spritedef_t> sprites;
 
 extern int				numvertexes;
 extern vertex_t*		vertexes;
@@ -87,8 +87,6 @@ extern line_t*			lines;
 
 extern int				numsides;
 extern side_t*			sides;
-
-inline nonstd::span<spritedef_t> R_GetSprites() { return nonstd::span(sprites, numsprites); }
 
 inline nonstd::span<vertex_t>    R_GetVertices() { return nonstd::span(vertexes, numvertexes); }
 

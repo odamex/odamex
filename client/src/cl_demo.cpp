@@ -158,7 +158,7 @@ void NetDemo::cleanUp()
 void NetDemo::error(const std::string &message)
 {
 	cleanUp();
-	Printf(PRINT_HIGH, "%s\n", message);
+	PrintFmt(PRINT_HIGH, "{}\n", message);
 }
 
 /**
@@ -175,7 +175,7 @@ void NetDemo::fatalError(const std::string &message)
 	gameaction = ga_nothing;
 	gamestate = GS_FULLCONSOLE;
 
-	Printf(PRINT_HIGH, "%s\n", message);
+	PrintFmt(PRINT_HIGH, "{}\n", message);
 }
 
 //
@@ -455,7 +455,7 @@ bool NetDemo::startRecording(const std::string &filename)
 
 	state = NetDemo::st_recording;
 	header.starting_gametic = gametic;
-	Printf(PRINT_HIGH, "Recording netdemo %s.\n", filename);
+	PrintFmt(PRINT_HIGH, "Recording netdemo {}.\n", filename);
 
 	if (connected)
 	{
@@ -584,7 +584,7 @@ bool NetDemo::startPlaying(const std::string &filename)
 	fseek(demofp, NetDemo::HEADER_SIZE, SEEK_SET);
 	state = NetDemo::st_playing;
 
-	Printf(PRINT_HIGH, "Playing netdemo %s.\n", filename);
+	PrintFmt(PRINT_HIGH, "Playing netdemo {}.\n", filename);
 
 	return true;
 }
@@ -683,7 +683,7 @@ bool NetDemo::stopRecording()
 	fclose(demofp);
 	demofp = NULL;
 
-	Printf(PRINT_HIGH, "Demo recording has stopped.\n");
+	PrintFmt(PRINT_HIGH, "Demo recording has stopped.\n");
 	reset();
 	return true;
 }
@@ -707,7 +707,7 @@ bool NetDemo::stopPlaying()
 		demofp = NULL;
 	}
 
-	Printf(PRINT_HIGH, "Demo has ended.\n");
+	PrintFmt(PRINT_HIGH, "Demo has ended.\n");
 	reset();
     gameaction = ga_fullconsole;
     gamestate = GS_FULLCONSOLE;
@@ -1480,7 +1480,7 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 		arc << ACS_WorldVars[i];
 		ACSWorldGlobalArray worldarr = ACS_WorldArrays[i];
 		arc << worldarr.size();
-		for (const auto [key, val] : worldarr)
+		for (const auto& [key, val] : worldarr)
 		{
 			arc << key;
 			arc << val;
@@ -1493,7 +1493,7 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 		arc << ACS_GlobalVars[i];
 		ACSWorldGlobalArray globalarr = ACS_GlobalArrays[i];
 		arc << globalarr.size();
-		for (const auto [key, val] : globalarr)
+		for (const auto& [key, val] : globalarr)
 		{
 			arc << key;
 			arc << val;

@@ -98,6 +98,8 @@ bool P_IsTeleportLine(const short special);
 bool P_IsThingTeleportLine(const short special);
 bool P_IsThingNoFogTeleportLine(const short special);
 bool P_IsCompatibleLockedDoorLine(const short special);
+// true if generalized door can be opened with either all or any key
+bool P_IsCompatibleMultiKeyDoorLine(const short special);
 bool P_IsCompatibleBlueDoorLine(const short special);
 bool P_IsCompatibleRedDoorLine(const short special);
 bool P_IsCompatibleYellowDoorLine(const short special);

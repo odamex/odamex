@@ -40,10 +40,6 @@
 #include "net_utils.h"
 #include "net_error.h"
 
-#ifdef _XBOX
-#include "xbox_main.h"
-#endif
-
 #ifdef _WIN32
 #define AI_ALL 0x00000100
 #else
@@ -165,20 +161,6 @@ void BufferedSocket::DestroySocket()
 
 void BufferedSocket::SetRemoteAddress(const string& Address, const uint16_t& Port)
 {
-#ifdef _XBOX
-	struct hostent *he;
-
-    if((he = gethostbyname((const char *)Address.c_str())) == NULL)
-    {
-		NET_ReportError(REPERR_NO_ARGS);
-        return;
-    }
-
-    m_RemoteAddress.sin_family = PF_INET;
-    m_RemoteAddress.sin_port = htons(Port);
-    m_RemoteAddress.sin_addr = *((struct in_addr *)he->h_addr);
-    memset(m_RemoteAddress.sin_zero, '\0', sizeof m_RemoteAddress.sin_zero);
-#else
 	addrinfo  hints;
 	addrinfo* result = NULL;
 
@@ -198,7 +180,6 @@ void BufferedSocket::SetRemoteAddress(const string& Address, const uint16_t& Por
 	memset(m_RemoteAddress.sin_zero, '\0', sizeof m_RemoteAddress.sin_zero);
 
 	freeaddrinfo(result);
-#endif
 }
 
 bool BufferedSocket::SetRemoteAddress(const string& Address)

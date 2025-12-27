@@ -29,9 +29,7 @@
 #include <cstdio>
 #include <cstdarg>
 
-#if defined(_XBOX)
-#include "xbox_main.h"
-#elif defined (_WIN32)
+#ifdef _WIN32
 #include <windows.h>
 #else
 #include <string.h>
@@ -43,13 +41,10 @@
 #include <agar/core.h>
 #endif
 
-#ifdef _XBOX
-#endif
-
 namespace odalpapi
 {
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
 // Russell - bits from msdn:
 static LPSTR _GetFormattedMessage(DWORD errnum)
 {
@@ -70,7 +65,7 @@ static LPSTR _GetFormattedMessage(DWORD errnum)
 
 static char* _GetStrError(int errnum)
 {
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
 	return _GetFormattedMessage(errnum);
 #else
 	return strerror(errnum);
@@ -120,7 +115,7 @@ void _ReportError(const char* file, int line, const char* func,
 	if(!func || !fmt)
 		return;
 
-#if _WIN32 || _XBOX
+#if _WIN32
 	InitLockStderr();
 
 	LockStderr();
@@ -138,17 +133,6 @@ void _ReportError(const char* file, int line, const char* func,
 
 	va_start(ap, fmt);
 
-#ifdef _XBOX
-	char errorstr[1024];
-
-	agOdalaunch::Xbox::OutputDebugString("[%s:%d] BufferedSocket::%s(): ", file, line, func);
-	vsprintf(errorstr, fmt, ap);
-	agOdalaunch::Xbox::OutputDebugString("%s\n", errorstr);
-	if(NULL != syserrmsg)
-	{
-		agOdalaunch::Xbox::OutputDebugString("syserrmsg - %s\n", errorstr, syserrmsg);
-	}
-#else
 	fprintf(stderr, "[%s:%d] BufferedSocket::%s(): ", file, line, func);
 	vfprintf(stderr, fmt, ap);
 	if(NULL != syserrmsg)
@@ -156,11 +140,10 @@ void _ReportError(const char* file, int line, const char* func,
 		fprintf(stderr, "\n syserrmsg - %s\n", syserrmsg);
 	}
 	fputs("\n", stderr);
-#endif // _XBOX
 
 	va_end(ap);
 
-#if _WIN32 || _XBOX
+#ifdef _WIN32
 	if(NULL != syserrmsg)
 	{
 		LocalFree(syserrmsg);

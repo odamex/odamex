@@ -26,7 +26,6 @@
 //Uncomment to allow for latency simulation - see sv_latency in sv_cvarlist.cpp
 //Note: When compiling for linux you will have link against pthread manually
 //#define SIMULATE_LATENCY
-#include "tarray.h"
 
 #include <cfloat>
 
@@ -183,7 +182,7 @@ public:
 	static void C_RestoreCVars (void);
 
 	// Finds a named cvar
-	static cvar_t *FindCVar (const char *var_name, cvar_t **prev);
+	static cvar_t *FindCVar (std::string_view var_name, cvar_t **prev);
 
 	// Called from G_InitNew()
 	static void UnlatchCVars (void);
@@ -197,9 +196,9 @@ public:
 	// the filtering.
 	static void C_SetCVarsToDefaults (unsigned int bitflag = 0xFFFFFFFF);
 
-	static bool SetServerVar (const char *name, const char *value);
+	static bool SetServerVar (std::string_view name, const char *value);
 
-	static void FilterCompactCVars (TArray<cvar_t *> &cvars, DWORD filter);
+	static void FilterCompactCVars (std::vector<cvar_t *> &cvars, DWORD filter);
 
 	// console variable interaction
 	static cvar_t *cvar_set (const char *var_name, const char *value);

@@ -40,8 +40,8 @@ argb_t V_GetColorFromString(const std::string& str)
     return 0;
 }
 
-void PickupMessage(AActor *toucher, const char *message) {}
-void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon) {}
+void PickupMessage(const AActor *toucher, const char *message) {}
+void WeaponPickupMessage(const AActor *toucher, const weapontype_t &Weapon) {}
 
 void AM_Stop(void) {}
 

@@ -125,6 +125,7 @@ EXTERN_CVAR(hud_extendedinfo)
 
 // [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (co_allowdropoff)
+EXTERN_CVAR (co_pursuit)
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_zdoomsound)
@@ -135,6 +136,14 @@ EXTERN_CVAR (co_fineautoaim)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (co_boomphys)			// [ML] Roll-up of various compat options
 EXTERN_CVAR (co_mbfphys)
+EXTERN_CVAR (co_helpfriends)
+EXTERN_CVAR (co_monsterbacking)
+EXTERN_CVAR (co_monsterfriction)
+EXTERN_CVAR (co_avoidhazards)
+EXTERN_CVAR (co_monstersclimbsteep)
+EXTERN_CVAR (co_staylift)
+EXTERN_CVAR (co_friend_ledgejumping)
+EXTERN_CVAR (co_friend_distance)
 EXTERN_CVAR (co_removesoullimit)
 EXTERN_CVAR (co_blockmapfix)
 EXTERN_CVAR (co_globalsound)
@@ -167,6 +176,7 @@ EXTERN_CVAR (snd_gamesfx)
 EXTERN_CVAR (snd_voxtype)
 EXTERN_CVAR (cl_connectalert)
 EXTERN_CVAR (cl_disconnectalert)
+EXTERN_CVAR (snd_votesfx)
 
 // Joystick menu -- Hyper_Eye
 void JoystickSetup (void);
@@ -183,11 +193,6 @@ EXTERN_CVAR (joy_freelook)
 EXTERN_CVAR (joy_deadzone)
 
 // Network Options
-EXTERN_CVAR (cl_interp)
-EXTERN_CVAR (cl_prednudge)
-EXTERN_CVAR (cl_predictpickup)
-EXTERN_CVAR (cl_predictsectors)
-EXTERN_CVAR (cl_predictweapons)
 EXTERN_CVAR (cl_serverdownload)
 
 // Demo Options
@@ -335,7 +340,7 @@ menu_t OptionMenu = {
  *=======================================*/
 
 static menuitem_t ControlsItems[] = {
-#ifdef _XBOX
+#ifdef GCONSOLE
 	{ whitetext,"A to change, START to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
 #else
 	{ whitetext,"ENTER to change, BACKSPACE to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
@@ -516,14 +521,6 @@ static menuitem_t JoystickItems[] =
 	{ slider	,	"Turn Sensitivity"						, {&joy_sensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
 	{ slider	,	"Alt. Turn Sensitivity"					, {&joy_fastsensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
 	{ slider	,	"Joystick Deadzone"						, {&joy_deadzone},		{0.0},		{0.75},		{0.05},		{NULL}						},
-#ifdef SDL12
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ whitetext	,	"Press ENTER to change"					, {NULL}, 				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} 						},
-	{ joyaxis	,	"Walk Analog Axis"						, {&joy_forwardaxis},	{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ joyaxis	,	"Strafe Analog Axis"					, {&joy_strafeaxis},	{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ joyaxis	,	"Turn Analog Axis"						, {&joy_turnaxis},		{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ joyaxis	,	"Look Analog Axis"						, {&joy_lookaxis},		{0.0},		{0.0},		{0.0},		{NULL}						},
-#endif
 };
 
 menu_t JoystickMenu = {
@@ -646,7 +643,8 @@ static menuitem_t SoundItems[] = {
 	{ discrete  ,   "Player Connect Alert"     , {&cl_connectalert},    {2.0},        {0.0}, {0.0},      {OnOff} },
 	{ discrete  ,   "Player Disconnect Alert"  , {&cl_disconnectalert}, {2.0},        {0.0}, {0.0},      {OnOff} },
 	{ discrete  ,   "Chat sounds"              , {&cl_chatsounds},      {3.0},        {0.0}, {0.0},      {ChatSndType}},
-};
+     {discrete	,   "Voting Sounds"            , {&snd_votesfx},		{2.0},        {0.0}, {0.0},	     {OnOff}},
+ };
 
 menu_t AdvMidiMenu = {
 	"M_SOUND",
@@ -703,7 +701,16 @@ static menuitem_t CompatItems[] ={
 	{svdiscrete, "BOOM actor/sector/line checks",  {&co_boomphys},			 {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "MBF movement and collision",  {&co_mbfphys},			 {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "ZDOOM 1.23 physics",             {&co_zdoomphys},         {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "ZDOOM 1.23 ammo checks",         {&co_zdoomammo},         {2.0}, {0.0}, {0.0}, {OnOff}},
+  {svdiscrete, "ZDOOM 1.23 ammo checks",         {&co_zdoomammo},         {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "MBF Monster target selection",{&co_pursuit},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Monsters help friends (MBF)",{&co_helpfriends},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Monsters strafe (MBF)",{&co_monsterbacking},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Monster wind/friction (MBF)",{&co_monsterfriction},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Monsters avoid crushers (MBF)",{&co_avoidhazards},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Monsters climb (MBF)",{&co_monstersclimbsteep},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Monsters stay on lifts (MBF)",{&co_staylift},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Friends can drop off (MBF)",{&co_friend_ledgejumping},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{slider,		 "Friend distance (MBF)", {&co_friend_distance}, {0.0}, {2048.0}, {64.0}, {NULL}},
 	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{yellowtext, "Sound",							{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{svdiscrete, "Fix silent west spawns",         {&co_nosilentspawns},    {2.0}, {0.0}, {0.0}, {OnOff}},
@@ -729,21 +736,9 @@ menu_t CompatMenu = {
  *
  *=======================================*/
 
-static value_t PredictSectors[] = {
-	{ 0.0, "None" },
-	{ 1.0, "All" },
-	{ 2.0, "Only Mine" }
-};
-
 static menuitem_t NetworkItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,	"Adjust Network Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
-	{ slider,		"Interpolation time",			{&cl_interp},		{0.0},		{4.0},		{1.0},		{NULL} },
-	{ slider,		"Smooth collisions",			{&cl_prednudge},	{1.0},		{0.1},		{-0.1},		{NULL} },
-	{ discrete,		"Predict weapon pickups",		{&cl_predictpickup},{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ discrete,		"Predict sector actions",		{&cl_predictsectors},{3.0},		{0.0},		{0.0},		{PredictSectors} },
-	{ discrete,		"Predict weapon effects",		{&cl_predictweapons},{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ redtext,		" ",							{NULL},				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} },
+	{ yellowtext,	"Wad Download Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ discrete, 	"Download From Internet", 		{&cl_serverdownload}, {2.0}, 		{0.0}, 		{0.0}, 		{OnOff} },
 
 	{ redtext,		" ",							{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
@@ -857,6 +852,7 @@ EXTERN_CVAR (r_painintensity)
 EXTERN_CVAR (cl_movebob)
 EXTERN_CVAR (cl_centerbobonfire)
 EXTERN_CVAR (cl_showspawns)
+EXTERN_CVAR (cl_showfriends)
 EXTERN_CVAR (hud_show_scoreboard_ondeath)
 EXTERN_CVAR (hud_demobar)
 EXTERN_CVAR(hud_targetnames)
@@ -932,6 +928,7 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Linear Skies",			    {&r_linearsky},	   		{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Use softer invuln effect", {&r_softinvulneffect},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Heart effect on friendlies", {&cl_showfriends},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
 	{ discrete, "Multiplayer Intermissions",{&wi_oldintermission},	{2.0}, {0.0},	{0.0},  {DoomOrOdamex} },
 	{ discrete, "Show loading disk icon",	{&r_loadicon},			{2.0}, {0.0},	{0.0},	{OnOff} },
@@ -1226,7 +1223,7 @@ void M_RestoreVideoMode()
 
 static value_t Depths[22];
 
-#ifdef _XBOX
+#ifdef GCONSOLE
 static const char VMEnterText[] = "Press A to set mode";
 static const char VMTestText[] = "Press X to test mode for 5 seconds";
 #else
@@ -1507,12 +1504,12 @@ void M_ChangeMessages (void)
 {
 	if (show_messages)
 	{
-		Printf (128, "%s\n", GStrings(MSGOFF));
+		PrintFmt(128, "{}\n", GStrings(MSGOFF));
 		show_messages.Set (0.0f);
 	}
 	else
 	{
-		Printf (128, "%s\n", GStrings(MSGON));
+		PrintFmt(128, "{}\n", GStrings(MSGON));
 		show_messages.Set (1.0f);
 	}
 }
@@ -1964,17 +1961,17 @@ void M_OptResponder (event_t *ev)
 				// to make sure we get the one that is intended -- Hyper_Eye
 				if( (ev->data3 > (SHRT_MAX / 2)) || (ev->data3 < (SHRT_MIN / 2)) )
 				{
-					if( (ev->data2 == (int)joy_forwardaxis) &&
-							joy_forwardaxis.name() != item->a.cvar->name() )
+					if ((ev->data2 == joy_forwardaxis.asInt()) &&
+					    joy_forwardaxis.name() != item->a.cvar->name())
 						joy_forwardaxis.Set(item->a.cvar->value());
-					else if( (ev->data2 == (int)joy_strafeaxis) &&
-							joy_strafeaxis.name() != item->a.cvar->name() )
+					else if ((ev->data2 == joy_strafeaxis.asInt()) &&
+					         joy_strafeaxis.name() != item->a.cvar->name())
 						joy_strafeaxis.Set(item->a.cvar->value());
-					else if( (ev->data2 == (int)joy_turnaxis) &&
-							joy_turnaxis.name() != item->a.cvar->name() )
+					else if ((ev->data2 == joy_turnaxis.asInt()) &&
+					         joy_turnaxis.name() != item->a.cvar->name())
 						joy_turnaxis.Set(item->a.cvar->value());
-					else if( (ev->data2 == (int)joy_lookaxis) &&
-							joy_lookaxis.name() != item->a.cvar->name() )
+					else if ((ev->data2 == joy_lookaxis.asInt()) &&
+					         joy_lookaxis.name() != item->a.cvar->name())
 						joy_lookaxis.Set(item->a.cvar->value());
 
 					item->a.cvar->Set(ev->data2);
@@ -2490,7 +2487,7 @@ void M_OptResponder (event_t *ev)
 		}
 		else
 		{
-#ifdef _XBOX
+#ifdef GCONSOLE
 		if (ev->data3 == 't' || ev->data1 == OKEY_JOY3)
 #else
 		if (ev->data3 == 't')

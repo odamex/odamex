@@ -142,6 +142,7 @@ message SpawnPlayer
 {
 	int32 pid = 1;
 	Actor actor = 2;
+	uint32 cards = 3;
 }
 
 // svc_damageplayer
@@ -164,6 +165,13 @@ message KillMobj
 	int32 mod = 5;
 	bool joinkill = 6;
 	sint32 lives = 7; // Default is -1.
+}
+
+// svc_raisemobj
+message RaiseMobj
+{
+	uint32 source_netid = 1;
+	Actor corpse = 2;
 }
 
 // svc_fireweapon

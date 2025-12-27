@@ -26,9 +26,7 @@
 
 #include <iostream>
 
-#ifdef _XBOX
-#include "xbox_main.h"
-#elif defined(_WIN32)
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <WinSock2.h>
@@ -104,14 +102,14 @@ uint64_t GetMillisNow()
 	return _UnwrapTime(_Millis());
 }
 
-int32_t OdaAddrToComponents(const std::string& HostPort, std::string &AddrOut, 
+int32_t OdaAddrToComponents(const std::string& HostPort, std::string &AddrOut,
                             uint16_t &PortOut)
 {
 	size_t colon;
 
 	if (HostPort.empty())
         return 1;
-	
+
 	colon = HostPort.find(':');
 
 	if(colon != std::string::npos)
@@ -120,7 +118,7 @@ int32_t OdaAddrToComponents(const std::string& HostPort, std::string &AddrOut,
 
         if(colon + 1 >= HostPort.length())
             return 2;
-        
+
         try
         {
             std::istringstream(HostPort.substr(colon + 1)) >> tmp_port;
@@ -134,10 +132,10 @@ int32_t OdaAddrToComponents(const std::string& HostPort, std::string &AddrOut,
     else
     {
         AddrOut = HostPort;
-        
+
         return 0;
     }
-    
+
 	AddrOut = HostPort.substr(0, colon);
 
 	return 0;

@@ -113,11 +113,11 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	// [Russell] print out some useful info
 	if (argc == 1)
 	{
-	    Printf(PRINT_HIGH, "Usage: wad pwad [...] [deh/bex [...]]\n");
-	    Printf(PRINT_HIGH, "       wad iwad [pwad [...]] [deh/bex [...]]\n");
-	    Printf(PRINT_HIGH, "\n");
-	    Printf(PRINT_HIGH, "Load a wad file on the fly, pwads/dehs/bexs require extension\n");
-	    Printf(PRINT_HIGH, "eg: wad doom\n");
+	    PrintFmt(PRINT_HIGH, "Usage: wad pwad [...] [deh/bex [...]]\n");
+	    PrintFmt(PRINT_HIGH, "       wad iwad [pwad [...]] [deh/bex [...]]\n");
+	    PrintFmt(PRINT_HIGH, "\n");
+	    PrintFmt(PRINT_HIGH, "Load a wad file on the fly, pwads/dehs/bexs require extension\n");
+	    PrintFmt(PRINT_HIGH, "eg: wad doom\n");
 
 	    return;
 	}
@@ -179,8 +179,6 @@ void G_DoNewGame (void)
 
 void G_InitNew (const char *mapname)
 {
-	size_t i;
-
 	// [RH] Remove all particles
 	R_ClearParticles ();
 
@@ -230,38 +228,38 @@ void G_InitNew (const char *mapname)
 	{
 		if (wantFast)
 		{
-			for (i = 0; i < NUMSTATES; i++)
+			for (auto& [_, state] : states)
 			{
-				if (states[i].flags & STATEF_SKILL5FAST &&
-				    (states[i].tics != 1 || demoplayback))
-					states[i].tics >>= 1; // don't change 1->0 since it causes cycles
+				if (state.flags & STATEF_SKILL5FAST &&
+				    (state.tics != 1 || demoplayback))
+					state.tics >>= 1; // don't change 1->0 since it causes cycles
 			}
 
-			for (i = 0; i < NUMMOBJTYPES; ++i)
+			for (auto& [_, minfo] : mobjinfo)
 			{
-				if (mobjinfo[i].altspeed != NO_ALTSPEED)
+				if (minfo.altspeed != NO_ALTSPEED)
 				{
-					int swap = mobjinfo[i].speed;
-					mobjinfo[i].speed = mobjinfo[i].altspeed;
-					mobjinfo[i].altspeed = swap;
+					int swap = minfo.speed;
+					minfo.speed = minfo.altspeed;
+					minfo.altspeed = swap;
 				}
 			}
 		}
 		else
 		{
-			for (i = 0; i < NUMSTATES; i++)
+			for (auto& [_, state] : states)
 			{
-				if (states[i].flags & STATEF_SKILL5FAST)
-					states[i].tics <<= 1; // don't change 1->0 since it causes cycles
+				if (state.flags & STATEF_SKILL5FAST)
+					state.tics <<= 1; // don't change 1->0 since it causes cycles
 			}
 
-			for (i = 0; i < NUMMOBJTYPES; ++i)
+			for (auto& [_, minfo] : mobjinfo)
 			{
-				if (mobjinfo[i].altspeed != NO_ALTSPEED)
+				if (minfo.altspeed != NO_ALTSPEED)
 				{
-					int swap = mobjinfo[i].altspeed;
-					mobjinfo[i].altspeed = mobjinfo[i].speed;
-					mobjinfo[i].speed = swap;
+					int swap = minfo.altspeed;
+					minfo.altspeed = minfo.speed;
+					minfo.speed = swap;
 				}
 			}
 		}
@@ -774,7 +772,7 @@ void G_WorldDone()
 			clusters.findByCluster(levels.findByName(::level.secretmap).cluster) :
 			clusters.findByCluster(levels.findByName(::level.nextmap).cluster);
 
-		if (nextcluster.cluster != level.cluster && sv_gametype == GM_COOP) {
+		if (nextcluster.cluster != level.cluster && sv_gametype == GM_COOP && options.text != "-") {
 			// Only start the finale if the next level's cluster is different
 			// than the current one and we're not in deathmatch.
 			if (!nextcluster.entertext.empty())

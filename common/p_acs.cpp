@@ -75,10 +75,10 @@ struct FBehavior::ArrayInfo
 
 static void DoClearInv(player_t* player)
 {
-	memset(player->weaponowned, 0, sizeof(player->weaponowned));
+	player->weaponowned.fill(0);
 	memset(player->powers, 0, sizeof(player->powers));
 	memset(player->cards, 0, sizeof(player->cards));
-	memset(player->ammo, 0, sizeof(player->ammo));
+	player->ammo.fill(0);
 
 	if (player->backpack)
 	{
@@ -359,7 +359,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 	}
 
 	// Unknown item.
-	Printf(PRINT_HIGH, "I don't know what %s is\n", type);
+	PrintFmt(PRINT_HIGH, "I don't know what {} is\n", type);
 }
 
 static void GiveInventory(AActor* activator, const char* type, int amount)
@@ -1562,7 +1562,7 @@ int DLevelScript::CountPlayers()
 	return static_cast<int>(P_NumPlayersInGame());
 }
 
-void DLevelScript::ACS_SetLineTexture(int* args, byte argCount)
+void DLevelScript::ACS_SetLineTexture(const int* args, byte argCount)
 {
 	if (argCount < 4)
 		return;
@@ -1591,7 +1591,7 @@ void DLevelScript::ACS_Print(byte pcd, AActor* activator, const char* print)
 	}
 }
 
-void DLevelScript::ACS_ChangeMusic(byte pcd, AActor* activator, int* args, byte argCount)
+void DLevelScript::ACS_ChangeMusic(byte pcd, const AActor* activator, const int* args, byte argCount)
 {
 	if (argCount < 2)
 		return;
@@ -1599,7 +1599,7 @@ void DLevelScript::ACS_ChangeMusic(byte pcd, AActor* activator, int* args, byte 
 	ChangeMusic(pcd, activator, args[0], args[1]);
 }
 
-void DLevelScript::ACS_StartSound(byte pcd, AActor* activator, int* args, byte argCount)
+void DLevelScript::ACS_StartSound(byte pcd, const AActor* activator, const int* args, byte argCount)
 {
 	if (pcd == PCD_SECTORSOUND)
 	{
@@ -1626,7 +1626,7 @@ void DLevelScript::ACS_StartSound(byte pcd, AActor* activator, int* args, byte a
 	}
 }
 
-void DLevelScript::ACS_SetLineBlocking(int* args, byte argCount)
+void DLevelScript::ACS_SetLineBlocking(const int* args, byte argCount)
 {
 	if (argCount < 2)
 		return;
@@ -1634,7 +1634,7 @@ void DLevelScript::ACS_SetLineBlocking(int* args, byte argCount)
 	SetLineBlocking(args[0], args[1]);
 }
 
-void DLevelScript::ACS_SetLineMonsterBlocking(int* args, byte argCount)
+void DLevelScript::ACS_SetLineMonsterBlocking(const int* args, byte argCount)
 {
 	if (argCount < 2)
 		return;
@@ -1642,7 +1642,7 @@ void DLevelScript::ACS_SetLineMonsterBlocking(int* args, byte argCount)
 	SetLineMonsterBlocking(args[0], args[1]);
 }
 
-void DLevelScript::ACS_SetLineSpecial(int* args, byte argCount)
+void DLevelScript::ACS_SetLineSpecial(const int* args, byte argCount)
 {
 	if (argCount < 7)
 		return;
@@ -1650,7 +1650,7 @@ void DLevelScript::ACS_SetLineSpecial(int* args, byte argCount)
 	SetLineSpecial(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
 }
 
-void DLevelScript::ACS_SetThingSpecial(int* args, byte argCount)
+void DLevelScript::ACS_SetThingSpecial(const int* args, byte argCount)
 {
 	if (argCount < 7)
 		return;
@@ -1660,7 +1660,7 @@ void DLevelScript::ACS_SetThingSpecial(int* args, byte argCount)
 		SetThingSpecial(actor, args[1], args[2], args[3], args[4], args[5], args[6]);
 }
 
-void DLevelScript::ACS_FadeRange(AActor* activator, int* args, byte argCount)
+void DLevelScript::ACS_FadeRange(AActor* activator, const int* args, byte argCount)
 {
 	if (argCount < 9)
 		return;
@@ -1673,7 +1673,7 @@ void DLevelScript::ACS_CancelFade(AActor* actor)
 	CancelFade(actor);
 }
 
-void DLevelScript::ACS_ChangeFlat(byte pcd, int* args, byte argCount)
+void DLevelScript::ACS_ChangeFlat(byte pcd, const int* args, byte argCount)
 {
 	if (argCount < 2)
 		return;
@@ -1681,7 +1681,7 @@ void DLevelScript::ACS_ChangeFlat(byte pcd, int* args, byte argCount)
 	ChangeFlat(args[0], args[1], pcd == PCD_CHANGECEILING);
 }
 
-void DLevelScript::ACS_SoundSequence(int* args, byte argCount)
+void DLevelScript::ACS_SoundSequence(const int* args, byte argCount)
 {
 	if (argCount < 2)
 		return;
@@ -1831,7 +1831,7 @@ void DLevelScript::ActivateLineSpecial(byte special, line_t* line, AActor* activ
 	}
 }
 
-void DLevelScript::ChangeMusic(byte pcd, AActor* activator, int index, int loop)
+void DLevelScript::ChangeMusic(byte pcd, const AActor* activator, int index, int loop)
 {
 	bool local = (pcd == PCD_LOCALSETMUSIC || pcd == PCD_LOCALSETMUSICDIRECT);
 
@@ -1854,7 +1854,7 @@ void DLevelScript::ChangeMusic(byte pcd, AActor* activator, int index, int loop)
 }
 
 
-void DLevelScript::StartSound(byte pcd, AActor* activator, int channel, int index, int volume, int attenuation)
+void DLevelScript::StartSound(byte pcd, const AActor* activator, int channel, int index, int volume, int attenuation)
 {
 	bool local = pcd == PCD_LOCALAMBIENTSOUND;
 
@@ -1876,7 +1876,7 @@ void DLevelScript::StartSound(byte pcd, AActor* activator, int channel, int inde
 	}
 }
 
-void DLevelScript::StartSectorSound(byte pcd, sector_t* sector, int channel, int index, int volume, int attenuation)
+void DLevelScript::StartSectorSound(byte pcd, const sector_t* sector, int channel, int index, int volume, int attenuation)
 {
 	if (clientside)
 	{
@@ -1894,7 +1894,7 @@ void DLevelScript::StartSectorSound(byte pcd, sector_t* sector, int channel, int
 	}
 }
 
-void DLevelScript::StartThingSound(byte pcd, AActor* actor, int channel, int index, int volume, int attenuation)
+void DLevelScript::StartThingSound(byte pcd, const AActor* actor, int channel, int index, int volume, int attenuation)
 {
 	if (clientside)
 	{
@@ -2389,14 +2389,14 @@ void DLevelScript::RunScript ()
 			func = level.behavior->GetFunction(funcnum);
 			if (func == NULL)
 			{
-				Printf(PRINT_HIGH, "Function %d in script %d out of range\n", funcnum,
+				PrintFmt(PRINT_HIGH, "Function {} in script {} out of range\n", funcnum,
 				       script);
 				state = SCRIPT_PleaseRemove;
 				break;
 			}
 			if (sp + func->LocalCount + 32 > STACK_SIZE)
 			{ // 32 is the margin for the function's working space
-				Printf(PRINT_HIGH, "Out of stack space in script %d\n", script);
+				PrintFmt(PRINT_HIGH, "Out of stack space in script {}\n", script);
 				state = SCRIPT_PleaseRemove;
 				break;
 			}
@@ -3969,7 +3969,7 @@ void P_DoDeferedScripts (void)
 				P_GetScriptGoing (gomo, NULL, def->script, scriptdata, 0, def->arg0, def->arg1, def->arg2, def->type == acsdefered_t::defexealways, true);
 
 			} else
-				Printf (PRINT_HIGH,"P_DoDeferredScripts: Unknown script %d\n", def->script);
+				PrintFmt(PRINT_HIGH,"P_DoDeferredScripts: Unknown script {}\n", def->script);
 			break;
 
 		case acsdefered_t::defsuspend:
@@ -4029,7 +4029,7 @@ bool P_StartScript (AActor *who, line_t *where, int script, const char *map, int
 		}
 		else
 		{
-			Printf (PRINT_HIGH,"P_StartScript: Unknown script %d\n", script);
+			PrintFmt(PRINT_HIGH,"P_StartScript: Unknown script {}\n", script);
 		}
 	}
 	else
@@ -4179,7 +4179,7 @@ BEGIN_COMMAND (scriptstat)
 {
 	if (DACSThinker::ActiveThinker == NULL)
 	{
-		Printf (PRINT_HIGH,"No scripts are running.\n");
+		PrintFmt(PRINT_HIGH,"No scripts are running.\n");
 	}
 	else
 	{
@@ -4205,7 +4205,7 @@ void DACSThinker::DumpScriptStatus ()
 
 	while (script != NULL)
 	{
-		Printf (PRINT_HIGH,"%d: %s\n", script->script, stateNames[script->state]);
+		PrintFmt(PRINT_HIGH,"{}: {}\n", script->script, stateNames[script->state]);
 		script = script->next;
 	}
 }

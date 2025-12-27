@@ -30,7 +30,7 @@
 class player_s;
 typedef player_s player_t;
 
-static constexpr short CENTERVIEW = -32768;
+inline constexpr short CENTERVIEW = -32768;
 //
 // NetCommand
 //

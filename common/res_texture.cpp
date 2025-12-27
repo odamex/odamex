@@ -929,7 +929,7 @@ void TextureManager::addTextureDirectory(const char* lumpname)
 				patch->originy = LESHORT(mpatch->originy);
 				patch->patch = mPNameLookup[LESHORT(mpatch->patch)];
 				if (patch->patch == -1)
-					Printf(PRINT_WARNING, "Res_InitTextures: Missing patch in texture %s\n", uname.c_str());
+					PrintFmt(PRINT_WARNING, "Res_InitTextures: Missing patch in texture {}\n", uname);
 			}
 
 			mTextureDefinitions.push_back(texdef);
@@ -1407,7 +1407,7 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 
 	if (!png_check_sig(lumpdata, 8))
 	{
-		Printf(PRINT_WARNING, "Bad PNG header in %s.\n", lumpname);
+		PrintFmt(PRINT_WARNING, "Bad PNG header in {}.\n", lumpname);
 		Res_PNGCleanup(&png_ptr, &info_ptr, &lumpdata, &row_data, &mfp);
 		return;
 	}
@@ -1415,7 +1415,7 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 	png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if (!png_ptr)
 	{
-		Printf(PRINT_WARNING, "PNG out of memory reading %s.\n", lumpname);
+		PrintFmt(PRINT_WARNING, "PNG out of memory reading {}.\n", lumpname);
 		Res_PNGCleanup(&png_ptr, &info_ptr, &lumpdata, &row_data, &mfp);
 		return;
 	}
@@ -1423,7 +1423,7 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 	info_ptr = png_create_info_struct(png_ptr);
 	if (!info_ptr)
 	{
-		Printf(PRINT_WARNING, "PNG out of memory reading %s.\n", lumpname);
+		PrintFmt(PRINT_WARNING, "PNG out of memory reading {}.\n", lumpname);
 		Res_PNGCleanup(&png_ptr, &info_ptr, &lumpdata, &row_data, &mfp);
 		return;
     }
@@ -1441,7 +1441,7 @@ void TextureManager::cachePNGTexture(texhandle_t handle)
 
 	if (ret != 1)
 	{
-		Printf(PRINT_WARNING, "Bad PNG header in %s.\n", lumpname);
+		PrintFmt(PRINT_WARNING, "Bad PNG header in {}.\n", lumpname);
 		Res_PNGCleanup(&png_ptr, &info_ptr, &lumpdata, &row_data, &mfp);
 		return;
 	}

@@ -56,9 +56,7 @@ namespace fs = std::filesystem;
 
 std::string M_GetBinaryDir()
 {
-#if defined(GEKKO)
-	ret = "sd:/";
-#elif defined(__SWITCH__)
+#if defined(__SWITCH__)
 	return "./";
 #else
 	std::string ret;

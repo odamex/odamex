@@ -27,7 +27,7 @@
 
 void OnChangedSwitchTexture(line_t* line, int useAgain);
 void G_SecretExitLevel(int position, int drawscores, bool resetinv);
-void P_DamageMobj(AActor* target, AActor* inflictor, AActor* source, int damage, int mod,
+void P_DamageMobj(AActor* target, const AActor* inflictor, AActor* source, int damage, int mod,
                   int flags);
 bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
                                           bool bossaction);
@@ -60,3 +60,4 @@ void P_SpawnFireFlicker(sector_t* sector);
 AActor* P_GetPushThing(int);
 void P_PostProcessCompatibleLinedefSpecial(line_t* line);
 bool P_IsTeleportLine(const short special);
+bool P_IsMBFCompatMode();

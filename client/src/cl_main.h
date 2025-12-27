@@ -71,6 +71,7 @@ bool CL_Connect();
 void CL_SendCheat(int cheats);
 void CL_SendGiveCheat(const char* item);
 void CL_SendSummonCheat(const char* summon);
+void CL_SendSummonFriendCheat(const char* summon);
 
 void CL_DisplayTics();
 void CL_RunTics();

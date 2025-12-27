@@ -229,7 +229,7 @@ static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end
 
 	palindex_t* dest = (palindex_t*)Ranges + color_num * 256;
 
-	if (gamemode == retail_chex)
+	if (IsChexMission(gamemission))
 	{
 		for (int index = 0; index < chexstart_index; index++)
 			dest[index] = index;
@@ -258,7 +258,7 @@ static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end
 	int b_diff = end_color.getb() - start_color.getb();
 	int hacxtrack;
 
-	if (gamemode == retail_chex)
+	if (IsChexMission(gamemission))
 	{
 		for (palindex_t index = chexstart_index; index <= chexend_index; index++)
 		{
@@ -397,6 +397,18 @@ void R_InitTranslationTables()
 		                 SoftLight(bot.getb(), ytop.getb()));
 
 		::bosstable[i] = V_BestColor(V_GetDefaultPalette()->basecolors, mul);
+	}
+
+	// Friend translation is a pink tint.
+	const argb_t ptop(0xff, 0x70, 0xB9);
+	for (size_t i = 0; i < ARRAY_LENGTH(::friendtable); i++)
+	{
+		const argb_t bot = V_GetDefaultPalette()->basecolors[i];
+		const argb_t mul(SoftLight(bot.getr(), ptop.getr()),
+		                 SoftLight(bot.getg(), ptop.getg()),
+		                 SoftLight(bot.getb(), ptop.getb()));
+
+		::friendtable[i] = V_BestColor(V_GetDefaultPalette()->basecolors, mul);
 	}
 
 	translationtablesmem = new byte[256*(MAXPLAYERS+3+22)+255]; // denis - fixme - magic numbers?
@@ -618,7 +630,7 @@ static forceinline void R_FillColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 #ifdef RANGECHECK
 	if (drawcolumn.x < 0 || drawcolumn.x >= viewwidth || drawcolumn.yl < 0 || drawcolumn.yh >= viewheight)
 	{
-		Printf (PRINT_HIGH, "R_FillColumn: %i to %i at %i\n", drawcolumn.yl, drawcolumn.yh, drawcolumn.x);
+		PrintFmt(PRINT_HIGH, "R_FillColumn: {} to {} at {}\n", drawcolumn.yl, drawcolumn.yh, drawcolumn.x);
 		return;
 	}
 #endif
@@ -657,7 +669,7 @@ static forceinline void R_DrawColumnGeneric(PIXEL_T* dest, const drawcolumn_t& d
 #ifdef RANGECHECK
 	if (drawcolumn.x < 0 || drawcolumn.x >= viewwidth || drawcolumn.yl < 0 || drawcolumn.yh >= viewheight)
 	{
-		Printf (PRINT_HIGH, "R_DrawColumn: %i to %i at %i\n", drawcolumn.yl, drawcolumn.yh, drawcolumn.x);
+		PrintFmt(PRINT_HIGH, "R_DrawColumn: {} to {} at {}\n", drawcolumn.yl, drawcolumn.yh, drawcolumn.x);
 		return;
 	}
 #endif
@@ -765,7 +777,7 @@ static forceinline void R_FillSpanGeneric(PIXEL_T* dest, const drawspan_t& draws
 	if (drawspan.x2 < drawspan.x1 || drawspan.x1 < 0 || drawspan.x2 >= viewwidth ||
 		drawspan.y >= viewheight || drawspan.y < 0)
 	{
-		Printf(PRINT_HIGH, "R_FillSpan: %i to %i at %i", drawspan.x1, drawspan.x2, drawspan.y);
+		PrintFmt(PRINT_HIGH, "R_FillSpan: {} to {} at {}", drawspan.x1, drawspan.x2, drawspan.y);
 		return;
 	}
 #endif
@@ -798,7 +810,7 @@ static forceinline void R_DrawLevelSpanGeneric(PIXEL_T* dest, const drawspan_t& 
 	if (drawspan.x2 < drawspan.x1 || drawspan.x1 < 0 || drawspan.x2 >= viewwidth ||
 		drawspan.y >= viewheight || drawspan.y < 0)
 	{
-		Printf(PRINT_HIGH, "R_DrawLevelSpan: %i to %i at %i", drawspan.x1, drawspan.x2, drawspan.y);
+		PrintFmt(PRINT_HIGH, "R_DrawLevelSpan: {} to {} at {}", drawspan.x1, drawspan.x2, drawspan.y);
 		return;
 	}
 #endif
@@ -851,7 +863,7 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 	if (drawspan.x2 < drawspan.x1 || drawspan.x1 < 0 || drawspan.x2 >= viewwidth ||
 		drawspan.y >= viewheight || drawspan.y < 0)
 	{
-		Printf(PRINT_HIGH, "R_DrawSlopedSpan: %i to %i at %i", drawspan.x1, drawspan.x2, drawspan.y);
+		PrintFmt(PRINT_HIGH, "R_DrawSlopedSpan: {} to {} at {}", drawspan.x1, drawspan.x2, drawspan.y);
 		return;
 	}
 #endif
@@ -1761,7 +1773,7 @@ static std::string get_optimization_name_list(const bool includeNone)
 
 static void print_optimizations()
 {
-	Printf(PRINT_HIGH, "r_optimize detected \"%s\"\n", get_optimization_name_list(false));
+	PrintFmt(PRINT_HIGH, "r_optimize detected \"{}\"\n", get_optimization_name_list(false));
 }
 
 static bool detect_optimizations()
@@ -1826,8 +1838,8 @@ CVAR_FUNC_IMPL(r_optimize)
 		optimize_kind = optimizations_available.back();
 	else
 	{
-		Printf(PRINT_HIGH, "Invalid value for r_optimize. Availible options are \"%s, detect\"\n",
-				get_optimization_name_list(true));
+		PrintFmt(PRINT_HIGH, "Invalid value for r_optimize. Availible options are \"{}, detect\"\n",
+		         get_optimization_name_list(true));
 
 		// Restore the original setting:
 		var.Set(get_optimization_name(optimize_kind));
@@ -1839,7 +1851,7 @@ CVAR_FUNC_IMPL(r_optimize)
 	{
 		// update the cvar string
 		// this will trigger the callback to run a second time
-		Printf(PRINT_HIGH, "r_optimize set to \"%s\" based on availability\n", optimize_name);
+		PrintFmt(PRINT_HIGH, "r_optimize set to \"{}\" based on availability\n", optimize_name);
 		var.Set(optimize_name);
 	}
 	else

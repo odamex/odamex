@@ -33,7 +33,7 @@ StringTable	GStrings;
 
 static void StringinfoHelp()
 {
-	Printf(PRINT_HIGH,
+	PrintFmt(PRINT_HIGH,
 		"stringinfo - Looks up internal information about strings\n\n"
 		"Usage:\n"
 		"  ] stringinfo name <STRINGNAME>\n"
@@ -56,7 +56,7 @@ BEGIN_COMMAND(stringinfo)
 
 	if (stricmp(argv[1], "size") == 0)
 	{
-		Printf("%zu strings found\n", GStrings.size());
+		PrintFmt("{} strings found\n", GStrings.size());
 		return;
 	}
 	else if (stricmp(argv[1], "dump") == 0)
@@ -73,13 +73,13 @@ BEGIN_COMMAND(stringinfo)
 
 	if (stricmp(argv[1], "name") == 0)
 	{
-		Printf(PRINT_HIGH, "%s = \"%s\"\n", argv[2], GStrings(argv[2]));
+		PrintFmt(PRINT_HIGH, "{} = \"{}\"\n", argv[2], GStrings(argv[2]));
 		return;
 	}
 	else if (stricmp(argv[1], "index") == 0)
 	{
 		int index = atoi(argv[2]);
-		Printf(PRINT_HIGH, "%s = \"%s\"\n", argv[2], GStrings.getIndex(index));
+		PrintFmt(PRINT_HIGH, "{} = \"{}\"\n", argv[2], GStrings.getIndex(index));
 		return;
 	}
 

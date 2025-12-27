@@ -111,8 +111,10 @@ public:
 	OString();
 	OString(const OString& other);
 	OString(const std::string& str);
+	OString(std::string_view str);
 	OString(const OString& other, size_t pos, size_t len = npos);
 	OString(const std::string& str, size_t pos, size_t len = npos);
+	OString(std::string_view str, size_t pos, size_t len = npos);
 	OString(const char* s, size_t n = npos);
 	OString(size_t n, char c);
 

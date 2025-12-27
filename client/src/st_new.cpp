@@ -438,6 +438,33 @@ void ST_voteDraw (int y) {
 			   true, false, true);
 	ST_DrawBar(CR_GREEN, vote_state.yes, vote_state.yes_needed,
 			   (I_GetSurfaceWidth() >> 1), y, xscale * 40, false, true);
+
+	// [RV] Show bound keys for YES/NO while vote is undecided
+	if (vote_state.result == VOTE_UNDEC)
+	{
+		// Use the same binding helper as the warmup code
+		const std::string yesKey = ::Bindings.GetKeynameFromCommand("vote_yes");
+		const std::string noKey = ::Bindings.GetKeynameFromCommand("vote_no");
+
+		// Fallbacks if nothing bound
+		const char* yesStr = yesKey.empty() ? "Y" : yesKey.c_str();
+		const char* noStr = noKey.empty() ? "N" : noKey.c_str();
+
+		// Match the warmup style (fmt::sprintf + TEXTCOLOR_* tags)
+		const std::string hint = fmt::sprintf(
+		    "Press %s%s%s for %sYES%s, %s%s%s for %sNO%s", TEXTCOLOR_GOLD, yesStr,
+		    TEXTCOLOR_NORMAL, TEXTCOLOR_GREEN, TEXTCOLOR_NORMAL, TEXTCOLOR_GOLD, noStr,
+		    TEXTCOLOR_NORMAL, TEXTCOLOR_RED, TEXTCOLOR_NORMAL);
+
+		int hint_w = V_StringWidth(hint.c_str()) * xscale;
+		int hx = (I_GetSurfaceWidth() - hint_w) >> 1;
+
+		y += yscale * 8; // place one line below the votestring lines
+		if (hud_scale)
+			screen->DrawTextClean(CR_GRAY, hx, y, hint.c_str());
+		else
+			screen->DrawText(CR_GRAY, hx, y, hint.c_str());
+	}
 }
 
 namespace hud {

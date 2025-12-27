@@ -41,34 +41,35 @@ void D_WriteUserInfoStrings(int i, byte **stream, bool compact) {}
 void D_ReadUserInfoStrings(int i, byte **stream, bool update) {}
 
 void SV_SpawnMobj(AActor *mobj) {}
-void SV_TouchSpecial(AActor *special, player_t *player) {}
+void SV_TouchSpecial(const AActor *special, player_t *player) {}
 ItemEquipVal SV_FlagTouch (player_t &player, team_t f, bool firstgrab) { return IEV_NotEquipped; }
 void SV_SocketTouch (player_t &player, team_t f) {}
-void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill) {}
-void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, int armorDamage) {}
-void SV_SendDamageMobj(AActor *target, int pain) {}
+void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill) {}
+void SV_SendRaiseMobj(const AActor* source, const AActor* corpse) { }
+void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage) {}
+void SV_SendDamageMobj(const AActor *target, int pain) {}
 void SV_CTFEvent(team_t f, flag_score_t event, player_t &who) {}
 void SV_UpdateFrags(player_t &player) {}
-void SV_ActorTarget(AActor *actor) {}
-void SV_SendDestroyActor(AActor *mo) {}
-void SV_ExplodeMissile(AActor *mo) {}
+void SV_ActorTarget(const AActor *actor) {}
+void SV_SendDestroyActor(const AActor *mo) {}
+void SV_ExplodeMissile(const AActor *mo) {}
 void SV_SendPlayerInfo(player_t &player) {}
 void SV_PreservePlayer(player_t &player) {}
 void SV_BroadcastSector(int sectornum) {}
-void SV_UpdateMobj(AActor* mo) {}
-void SV_UpdateMobjState(AActor* mo) {}
+void SV_UpdateMobj(const AActor* mo) {}
+void SV_UpdateMobjState(const AActor* mo) {}
 
 void CTF_RememberFlagPos(mapthing2_t *mthing) {}
 void CTF_SpawnFlag(team_t f) {}
 bool SV_AwarenessUpdate(player_t &pl, AActor* mo) { return true; }
 void SV_SendPackets(void) {}
-void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, int arg0,
+void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* activator, int arg0,
                                int arg1, int arg2, int arg3, int arg4)
 {
 }
 
 void SV_UpdateMonsterRespawnCount() {}
-void SV_Sound(AActor* mo, byte channel, const char* name, byte attenuation) {}
+void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation) {}
 
 
 CVAR_FUNC_IMPL(sv_sharekeys) {}

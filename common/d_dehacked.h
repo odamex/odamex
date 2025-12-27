@@ -28,7 +28,7 @@
 
 // Sound equivalences. When a patch tries to change a sound,
 // use these sound names.
-static const char* SoundMap[] = { NULL,
+static const char* doom_SoundMap[] = {nullptr,
                             "weapons/pistol",
                             "weapons/shotgf",
                             "weapons/shotgr",
@@ -219,11 +219,16 @@ static const char* SoundMap[] = { NULL,
                             "dehextra/sound188", "dehextra/sound189", "dehextra/sound190", "dehextra/sound191",
                             "dehextra/sound192", "dehextra/sound193", "dehextra/sound194", "dehextra/sound195",
                             "dehextra/sound196", "dehextra/sound197", "dehextra/sound198", "dehextra/sound199",
+                            };
 
-                            // ZDOOM-Specific sounds
-                            "misc/teamchat"};
+static const char* odamex_SoundMap[] =
+{
+    // Odamex/ZDoom sounds
+    "misc/teamchat"
+};
+
+inline DoomObjectContainer<std::string> SoundMap(ARRAY_LENGTH(doom_SoundMap) + ARRAY_LENGTH(odamex_SoundMap));
 
 void D_UndoDehPatch();
-void D_PostProcessDeh();
-bool D_DoDehPatch(const OResFile* patchfile, const int lump);
+bool D_DoDehPatch(const OResFile* patchfile, const int lump, bool textonly, bool notext = false);
 bool CheckIfDehActorDefined(const mobjtype_t mobjtype);

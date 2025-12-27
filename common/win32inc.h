@@ -34,18 +34,14 @@
     #endif  // NOMINMAX;
 
     #define WIN32_LEAN_AND_MEAN
-    #ifndef _XBOX
-        // need to make winxp compat for raw mouse input
-        #if (_WIN32_WINNT < 0x0501)
-            #undef _WIN32_WINNT
-            #define _WIN32_WINNT 0x0501
-        #endif
+    // need to make winxp compat for raw mouse input
+    // need at least vista for SHGetKnownFolderPath
+    #if (_WIN32_WINNT < _WIN32_WINNT_VISTA)
+        #undef _WIN32_WINNT
+        #define _WIN32_WINNT _WIN32_WINNT_VISTA
+    #endif
 
-        #include <windows.h>
-    #else
-        #define _WIN32_WINNT 0x0400 // win2000 compat
-        #include <xtl.h>
-    #endif // !_XBOX
+    #include <windows.h>
 
 	// avoid a conflict with the winuser.h macro DrawText
 	#ifdef DrawText

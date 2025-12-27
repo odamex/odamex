@@ -370,7 +370,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			{
 				OLumpName mapname = os.getToken();
 				if (!levels.findByName(mapname).exists())
-					os.error("Map {} does not exist");
+					os.error("Map {} does not exist", mapname);
 
 				os.mustScanInt();
 				int x = os.getTokenInt();
@@ -393,7 +393,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
 			if (!levels.findByName(mapname).exists())
-				os.error("Map {} does not exist");
+				os.error("Map {} does not exist", mapname);
 
 			os.mustScan();
 			if (os.compareTokenNoCase("animation"))
@@ -408,7 +408,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
 			if (!levels.findByName(mapname).exists())
-				os.error("Map {} does not exist");
+				os.error("Map {} does not exist", mapname);
 
 			os.mustScan();
 			if (os.compareTokenNoCase("animation"))
@@ -422,7 +422,9 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 		{
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
-			int mapnum = levels.findByName(mapname).levelnum;
+			if (!levels.findByName(mapname).exists())
+				os.error("Map {} does not exist", mapname);
+
 			os.mustScan();
 			if (os.compareTokenNoCase("animation"))
 				WI_ParseZDoomAnim(os, anims, {animcondition_t::OnFinishedScreen, 0, 0}, {animcondition_t::CurrMapEqual, mapname});
@@ -436,7 +438,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
 			if (!levels.findByName(mapname).exists())
-				os.error("Map {} does not exist");
+				os.error("Map {} does not exist", mapname);
 
 			os.mustScan();
 			if (os.compareTokenNoCase("animation"))
@@ -451,7 +453,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
 			if (!levels.findByName(mapname).exists())
-				os.error("Map {} does not exist");
+				os.error("Map {} does not exist", mapname);
 
 			os.mustScan();
 			if (os.compareTokenNoCase("animation"))
@@ -466,7 +468,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
 			if (!levels.findByName(mapname).exists())
-				os.error("Map {} does not exist");
+				os.error("Map {} does not exist", mapname);
 
 			os.mustScan();
 			if (os.compareTokenNoCase("animation"))
@@ -481,12 +483,12 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
 			if (!levels.findByName(mapname).exists())
-				os.error("Map {} does not exist");
+				os.error("Map {} does not exist", mapname);
 
 			os.mustScan(8);
 			OLumpName mapname2 = os.getToken();
 			if (!levels.findByName(mapname2).exists())
-				os.error("Map {} does not exist");
+				os.error("Map {} does not exist", mapname2);
 
 			os.mustScan();
 			if (os.compareTokenNoCase("animation"))
@@ -501,12 +503,12 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 			os.mustScan(8);
 			OLumpName mapname = os.getToken();
 			if (!levels.findByName(mapname).exists())
-				os.error("Map {} does not exist");
+				os.error("Map {} does not exist", mapname);
 
 			os.mustScan(8);
 			OLumpName mapname2 = os.getToken();
 			if (!levels.findByName(mapname2).exists())
-				os.error("Map {} does not exist");
+				os.error("Map {} does not exist", mapname2);
 
 			os.mustScan();
 			if (os.compareTokenNoCase("animation"))

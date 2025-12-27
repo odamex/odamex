@@ -558,11 +558,11 @@ void HU_Drawer()
 		mousegraph.draw(hud_mousegraph);
 
 	if (idmypos && gamestate == GS_LEVEL)
-		Printf (PRINT_HIGH, "ang=%d;x,y,z=(%d,%d,%d)\n",
-				displayplayer().camera->angle/FRACUNIT,
-				displayplayer().camera->x/FRACUNIT,
-				displayplayer().camera->y/FRACUNIT,
-				displayplayer().camera->z/FRACUNIT);
+		PrintFmt(PRINT_HIGH, "ang={};x,y,z=({},{},{})\n",
+			     displayplayer().camera->angle/FRACUNIT,
+			     displayplayer().camera->x/FRACUNIT,
+			     displayplayer().camera->y/FRACUNIT,
+			     displayplayer().camera->z/FRACUNIT);
 
 	// Draw Netdemo info
 	hud::drawNetdemo();
@@ -666,7 +666,7 @@ BEGIN_COMMAND (say_to)
 		player_t &player = nameplayer(argv[1]);
 		if (!validplayer(player))
 		{
-			Printf(PRINT_HIGH, "%s isn't the name of anybody on the server.\n", argv[1]);
+			PrintFmt(PRINT_HIGH, "{} isn't the name of anybody on the server.\n", argv[1]);
 			return;
 		}
 
@@ -2159,7 +2159,7 @@ void HU_ConsoleScores(player_t *player)
 		}
 	}
 
-	Printf(PRINT_HIGH, "\n");
+	PrintFmt(PRINT_HIGH, "\n");
 
 	C_ToggleConsole();
 }
@@ -2169,7 +2169,7 @@ BEGIN_COMMAND (displayscores)
 	if (multiplayer)
 	    HU_ConsoleScores(&consoleplayer());
 	else
-		Printf(PRINT_HIGH, "This command is only used for multiplayer games.");
+		PrintFmt(PRINT_HIGH, "This command is only used for multiplayer games.");
 }
 END_COMMAND (displayscores)
 

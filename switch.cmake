@@ -1,12 +1,12 @@
 #==========================================
 #
 #	ODAMEX FOR NINTENDO SWITCH CMAKE FILE
-#	
-#	Do not forget to run this before even 
+#
+#	Do not forget to run this before even
 #	trying to do ANYTHING (CMake/Compile)!
 #
-#   Please read "client/switch/readme.md" for 
-#   more informations on how to compile for 
+#   Please read "client/switch/readme.md" for
+#   more informations on how to compile for
 #   the Nintendo Switch.
 #
 #==========================================
@@ -37,7 +37,7 @@ set (GCONSOLE 1)
 # NACP info
 set (APP_TITLE "Odamex for Nintendo Switch")
 set (APP_AUTHOR "The Odamex Team")
-set (APP_VERSION "11.1.1")
+set (APP_VERSION "12.0.0")
 
 # Compiler stuff
 set(NACP_TOOL "${DEVKITPRO}/tools/bin/nacptool"  CACHE PATH "nacp-tool")

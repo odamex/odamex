@@ -48,6 +48,7 @@
 #include <cmath>
 
 #include <algorithm>
+#include <unordered_set>
 
 //
 // Graphics.
@@ -610,6 +611,11 @@ void R_InitTextures()
 		for (int i = 0; i < nummappatches; i++)
 		{
 			patchlookup[i] = W_CheckNumForName (name_p + i*8);
+
+			// [EB] some wads use the texture namespace but then still use those in pnames
+			if (patchlookup[i] == -1)
+				patchlookup[i] = W_CheckNumForName (name_p + i*8, ns_textures);
+
 			if (patchlookup[i] == -1)
 			{
 				// killough 4/17/98:
@@ -1143,24 +1149,28 @@ void R_PrecacheLevel (void)
 		}
 	}
 
-	// Precache sprites.
-	memset (hitlist, 0, numsprites);
+	delete[] hitlist;
 
+	// Precache sprites.
 	{
 		AActor *actor;
 		TThinkerIterator<AActor> iterator;
+		std::unordered_set<int32_t> spriteHitlist;
 
+		// generate a unique list of all the sprites we hit in this level
 		while ( (actor = iterator.Next ()) )
-			hitlist[actor->sprite] = 1;
-	}
+		{
+			// [CMB] spritenum_t can now be negative so a new structure is needed
+			// [CMB] sprites is a pointer in order by index
+			spriteHitlist.insert(actor->sprite);
+		}
 
-	for (i = numsprites - 1; i >= 0; i--)
-	{
-		if (hitlist[i])
-			R_CacheSprite (sprites + i);
+		// cache each of the sprites
+		for (auto sprite : spriteHitlist)
+		{
+			R_CacheSprite (&sprites[sprite]);
+		}
 	}
-
-	delete[] hitlist;
 }
 
 // Utility function,

@@ -309,25 +309,16 @@ void cvar_t::EnableCallbacks ()
 	}
 }
 
-static int STACK_ARGS sortcvars (const void *a, const void *b)
-{
-	// yes this is horribly ugly - its also easier to search for in the future and fix it rather than the c-style casts it was using before
-	return (*static_cast<cvar_t *const *>(a))->name().compare((*static_cast<cvar_t *const *>(b))->name());
-}
-
-void cvar_t::FilterCompactCVars (TArray<cvar_t *> &cvars, DWORD filter)
+void cvar_t::FilterCompactCVars (std::vector<cvar_t *> &cvars, DWORD filter)
 {
 	cvar_t *cvar = ad.GetCVars();
 	while (cvar)
 	{
 		if (cvar->m_Flags & filter)
-			cvars.Push (cvar);
+			cvars.push_back(cvar);
 		cvar = cvar->m_Next;
 	}
-	if (cvars.Size () > 0)
-	{
-		qsort (&cvars[0], cvars.Size (), sizeof(cvar_t *), sortcvars);
-	}
+	std::sort(cvars.begin(), cvars.end(), [](const cvar_t* a, const cvar_t* b){ return a->name().compare(b->name()); });
 }
 
 // Uses snprintf's return value (number of chars written) to advance
@@ -339,24 +330,23 @@ void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, size_t array_size, bool 
 	if (array_size <= 0)
 		return;
 
-	cvar_t *cvar = ad.GetCVars();
 	byte *ptr = *demo_p;
 	int chars;
 
 	if (compact)
 	{
-		TArray<cvar_t *> cvars;
+		std::vector<cvar_t *> cvars;
 		chars = snprintf((char*)ptr, array_size, "\\\\%ux", (unsigned int)filter);
 
 		ptr += chars;
 		array_size -= chars;
 
-		FilterCompactCVars (cvars, filter);
-		while (cvars.Pop (cvar))
+		FilterCompactCVars(cvars, filter);
+		for (const cvar_t* cvar : cvars)
 		{
 			if (array_size <= 0)
 			{
-				Printf(PRINT_WARNING, "Warning: Saved Cvars exceed %lu bytes, no more cvars will be written.\n", array_size);
+				PrintFmt(PRINT_WARNING, "Warning: Saved Cvars exceed {} bytes, no more cvars will be written.\n", array_size);
 				return;
 			}
 
@@ -368,16 +358,16 @@ void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, size_t array_size, bool 
 	}
 	else
 	{
-		cvar = ad.GetCVars();
+		cvar_t *cvar = ad.GetCVars();
 		while (cvar)
 		{
 			if (cvar->m_Flags & filter)
 			{
 				if (array_size <= 0)
 				{
-					Printf(PRINT_WARNING, "Saved Cvars exceed %lu bytes, no more "
-					       "cvars will be written.\n",
-					       array_size);
+					PrintFmt(PRINT_WARNING, "Saved Cvars exceed {} bytes, no more "
+					         "cvars will be written.\n",
+					         array_size);
 					return;
 				}
 
@@ -404,8 +394,7 @@ void cvar_t::C_ReadCVars (byte **demo_p)
 
 	if (*ptr == '\\')
 	{	// compact mode
-		TArray<cvar_t *> cvars;
-		cvar_t *cvar;
+		std::vector<cvar_t *> cvars;
 		DWORD filter;
 
 		ptr++;
@@ -417,7 +406,7 @@ void cvar_t::C_ReadCVars (byte **demo_p)
 
 		FilterCompactCVars (cvars, filter);
 
-		while (cvars.Pop (cvar))
+		for (cvar_t* cvar : cvars)
 		{
 			breakpt = strchr (ptr, '\\');
 			if (breakpt)
@@ -511,15 +500,15 @@ void cvar_t::C_RestoreCVars (void)
 	UnlatchCVars();
 }
 
-cvar_t *cvar_t::FindCVar (const char *var_name, cvar_t **prev)
+cvar_t *cvar_t::FindCVar (std::string_view var_name, cvar_t **prev)
 {
 	cvar_t *var;
 
-	if (var_name == NULL)
-		return NULL;
+	if (var_name.empty())
+		return nullptr;
 
 	var = ad.GetCVars();
-	*prev = NULL;
+	*prev = nullptr;
 	while (var)
 	{
 		if (iequals(var->m_Name, var_name))
@@ -585,8 +574,8 @@ void cvar_t::C_ArchiveCVars (void *f)
 		if ((baseapp == client && (cvar->m_Flags & CVAR_CLIENTARCHIVE))
 			|| (baseapp == server && (cvar->m_Flags & CVAR_SERVERARCHIVE)))
 		{
-			fprintf ((FILE *)f, "// %s\n", cvar->helptext());
-			fprintf ((FILE *)f, "set %s %s\n\n", C_QuoteString(cvar->name()).c_str(), C_QuoteString(cvar->str()).c_str());
+			fmt::print((FILE *)f, "// {}\n", cvar->helptext());
+			fmt::print((FILE *)f, "set {} {}\n\n", C_QuoteString(cvar->name()), C_QuoteString(cvar->str()));
 		}
 		cvar = cvar->m_Next;
 	}
@@ -602,17 +591,17 @@ void cvar_t::cvarlist()
 		unsigned flags = var->m_Flags;
 
 		count++;
-		PrintFmt(PRINT_HIGH, "{}{}{}{} {} \"{}\"\n",
-		         flags & CVAR_ARCHIVE ? 'A' :
-		         	flags & CVAR_CLIENTARCHIVE ? 'C' :
-		         	flags & CVAR_SERVERARCHIVE ? 'S' : ' ',
-		         flags & CVAR_USERINFO ? 'U' : ' ',
-		         flags & CVAR_SERVERINFO ? 'S' : ' ',
-		         flags & CVAR_NOSET ? '-' :
-		         	flags & CVAR_LATCH ? 'L' :
-		         	flags & CVAR_UNSETTABLE ? '*' : ' ',
-		         var->name(),
-		         var->str());
+		PrintFmt(PRINT_HIGH, "{:c}{:c}{:c}{:c} {} \"{}\"\n",
+				flags & CVAR_ARCHIVE ? 'A' :
+					flags & CVAR_CLIENTARCHIVE ? 'C' :
+					flags & CVAR_SERVERARCHIVE ? 'S' : ' ',
+				flags & CVAR_USERINFO ? 'U' : ' ',
+				flags & CVAR_SERVERINFO ? 'S' : ' ',
+				flags & CVAR_NOSET ? '-' :
+					flags & CVAR_LATCH ? 'L' :
+					flags & CVAR_UNSETTABLE ? '*' : ' ',
+				var->name(),
+				var->str());
 		var = var->m_Next;
 	}
 	PrintFmt(PRINT_HIGH, "{} cvars\n", count);
@@ -656,7 +645,7 @@ BEGIN_COMMAND (set)
 {
 	if (argc != 3)
 	{
-		Printf (PRINT_HIGH, "usage: set <variable> <value>\n");
+		PrintFmt(PRINT_HIGH, "usage: set <variable> <value>\n");
 	}
 	else
 	{
@@ -668,12 +657,12 @@ BEGIN_COMMAND (set)
 
 		if (var->flags() & CVAR_NOSET)
 		{
-			Printf(PRINT_HIGH, "%s is write protected.\n", argv[1]);
+			PrintFmt(PRINT_HIGH, "{} is write protected.\n", argv[1]);
 			return;
 		}
 		else if (multiplayer && baseapp == client && (var->flags() & CVAR_SERVERINFO))
 		{
-			Printf (PRINT_HIGH, "%s is under server control.\n", argv[1]);
+			PrintFmt(PRINT_HIGH, "{} is under server control.\n", argv[1]);
 			return;
 		}
 
@@ -698,7 +687,7 @@ BEGIN_COMMAND (set)
 		{
 			// if new value is different from current value and latched value
 			if (strcmp(var->cstring(), argv[2]) && strcmp(var->latched(), argv[2]) && gamestate == GS_LEVEL)
-				Printf(PRINT_HIGH, "%s will be changed for next game.\n", argv[1]);
+				PrintFmt(PRINT_HIGH, "{} will be changed for next game.\n", argv[1]);
 		}
 
 		var->Set(argv[2]);
@@ -713,7 +702,7 @@ BEGIN_COMMAND (get)
 
     if (argc < 2)
 	{
-		Printf (PRINT_HIGH, "usage: get <variable>\n");
+		PrintFmt(PRINT_HIGH, "usage: get <variable>\n");
         return;
 	}
 
@@ -749,7 +738,7 @@ BEGIN_COMMAND (toggle)
 
     if (argc < 2)
 	{
-		Printf (PRINT_HIGH, "usage: toggle <variable>\n");
+		PrintFmt(PRINT_HIGH, "usage: toggle <variable>\n");
         return;
 	}
 
@@ -757,11 +746,21 @@ BEGIN_COMMAND (toggle)
 
 	if (!var)
 	{
-		Printf(PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
+		PrintFmt(PRINT_HIGH, "\"{}\" is unset.\n", argv[1]);
 	}
 	else if (var->flags() & CVAR_NOENABLEDISABLE)
 	{
-		Printf(PRINT_HIGH, "\"%s\" cannot be toggled.\n", argv[1]);
+		PrintFmt(PRINT_HIGH, "\"{}\" cannot be toggled.\n", argv[1]);
+	}
+	else if (var->flags() & CVAR_NOSET)
+	{
+		PrintFmt(PRINT_HIGH, "{} is write protected.\n", argv[1]);
+		return;
+	}
+	else if (multiplayer && baseapp == client && (var->flags() & CVAR_SERVERINFO))
+	{
+		PrintFmt(PRINT_HIGH, "{} is under server control.\n", argv[1]);
+		return;
 	}
 	else
 	{
@@ -826,7 +825,7 @@ END_COMMAND(fatalout)
 BEGIN_COMMAND(exceptout)
 {
 	std::string crashma = "What's crashma?";
-	Printf("%crashma game, lmao.\n", crashma.at(std::string::npos));
+	fmt::sprintf("%crashma game, lmao.\n", crashma.at(std::string::npos));
 }
 END_COMMAND(exceptout)
 

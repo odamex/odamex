@@ -41,7 +41,7 @@ extern int				*ceilingclipinitial;
 extern fixed_t			*yslope;
 
 void R_InitPlanes (void);
-void R_ClearPlanes (void);
+void R_ClearPlanes (bool fullclear);
 
 void
 R_MapPlane
@@ -58,16 +58,18 @@ R_MakeSpans
   int		b2 );
   
 void R_DrawPlanes (void);
+void R_DrawSkyBoxes (void);
 
 visplane_t *R_FindPlane
-( plane_t		secplane,
+( const plane_t	&secplane,
   int			picnum,
   int			lightlevel,
   fixed_t		xoffs,		// killough 2/28/98: add x-y offsets
   fixed_t		yoffs,
   fixed_t		xscale,
   fixed_t		yscale,
-  angle_t		angle);
+  angle_t		angle,
+  AActor::AActorPtr skybox);
 
 visplane_t *R_CheckPlane (visplane_t *pl, int start, int stop);
 

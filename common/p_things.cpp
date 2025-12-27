@@ -201,10 +201,13 @@ bool P_Thing_Spawn (int tid, int type, angle_t angle, bool fog)
 	int kind;
 	AActor *spot = NULL;
 
+	// type is doomednum
+	// kind is the mobjtype
+
 	if (type >= NumSpawnableThings)
 		return false;
 
-	if ( (kind = SpawnableThings[type]) == 0)
+	if ((kind = SpawnableThings[type]) == 0)
 		return false;
 
 	if ((mobjinfo[kind].flags & MF_COUNTKILL) && sv_nomonsters == 1)

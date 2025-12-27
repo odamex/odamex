@@ -639,6 +639,20 @@ subsector_t *R_PointInSubsector (fixed_t x, fixed_t y)
 }
 
 //
+//
+// R_SetViewAngle
+//
+//
+
+void R_SetViewAngle(angle_t ang)
+{
+	viewangle = ang;
+
+	viewsin = finesine[ang >> ANGLETOFINESHIFT];
+	viewcos = finecosine[ang >> ANGLETOFINESHIFT];
+}
+
+//
 // R_ViewShear
 //
 // Sets centeryfrac, centery, and fills the yslope array based on the given
@@ -984,7 +998,7 @@ void R_RenderPlayerView(player_t* player)
 	R_ClearClipSegs();
 	R_ClearDrawSegs();
 	R_ClearOpenings();
-	R_ClearPlanes();
+	R_ClearPlanes(true);
 	R_ClearSprites();
 
 	R_ResetDrawFuncs();
@@ -1019,7 +1033,7 @@ void R_RenderPlayerView(player_t* player)
 		R_RenderBSPNode(numnodes - 1);	// The head node is the last node output.
 
 	R_DrawPlanes();
-
+	R_DrawSkyBoxes();
 	R_DrawMasked();
 
 	// NOTE(jsd): Full-screen status color blending:

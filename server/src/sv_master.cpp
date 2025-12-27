@@ -35,7 +35,7 @@
 
 // [Russell] - default master list
 // This is here for complete master redundancy, including domain name failure
-static const char* def_masterlist[] = { "master1.odamex.net", "voxelsoft.com", NULL };
+static constexpr std::string_view def_masterlist[] = { "master1.odamex.net", "voxelsoft.com", "odamex.electricbrass.net" };
 
 class masterserver
 {
@@ -114,13 +114,13 @@ void SV_InitMasters(void)
 			// so we can dump them to the server cfg file if one does not exist
 			if (masters.empty())
 			{
-				for (int i = 0; def_masterlist[i] != NULL; i++)
-					SV_AddMaster(def_masterlist[i]);
+				for (std::string_view master : def_masterlist)
+					SV_AddMaster(master);
 			}
 		}
 		else
 		{
-			Printf(PRINT_HIGH, "Masters will not be contacted because sv_usemasters is 0\n");
+			PrintFmt(PRINT_HIGH, "Masters will not be contacted because sv_usemasters is 0\n");
 		}
 	}
 
@@ -131,9 +131,9 @@ void SV_InitMasters(void)
 //
 // SV_AddMaster
 //
-bool SV_AddMaster(const char *masterip)
+bool SV_AddMaster(std::string_view masterip)
 {
-	if(strlen(masterip) >= MAX_UDP_PACKET)
+	if(masterip.size() >= MAX_UDP_PACKET)
 		return false;
 
 	masterserver m;
@@ -148,19 +148,19 @@ bool SV_AddMaster(const char *masterip)
 	{
 		if(masters[i].masterip == m.masterip)
 		{
-			Printf("Master %s [%s] is already on the list", m.masterip, NET_AdrToString(m.masteraddr));
+			PrintFmt("Master {} [{}] is already on the list", m.masterip, NET_AdrToString(m.masteraddr));
 			return false;
 		}
 	}
 
 	if(m.masteraddr.ip[0] == 0 && m.masteraddr.ip[1] == 0 && m.masteraddr.ip[2] == 0 && m.masteraddr.ip[3] == 0)
 	{
-		Printf("Failed to resolve master server: %s, not added", m.masterip);
+		PrintFmt("Failed to resolve master server: {}, not added", m.masterip);
 		return false;
 	}
 	else
 	{
-		Printf("Added master: %s [%s]", m.masterip, NET_AdrToString(m.masteraddr));
+		PrintFmt("Added master: {} [{}]", m.masterip, NET_AdrToString(m.masteraddr));
 		masters.push_back(m);
 	}
 
@@ -181,10 +181,10 @@ void SV_ArchiveMasters(FILE *fp)
 //
 void SV_ListMasters(void)
 {
-	Printf("Use addmaster/delmaster commands to modify this list");
+	PrintFmt("Use addmaster/delmaster commands to modify this list");
 
 	for(size_t index = 0; index < masters.size(); index++)
-		Printf("%s [%s]", masters[index].masterip, NET_AdrToString(masters[index].masteraddr));
+		PrintFmt("{} [{}]", masters[index].masterip, NET_AdrToString(masters[index].masteraddr));
 }
 
 //
@@ -196,13 +196,13 @@ bool SV_RemoveMaster(const char *masterip)
 	{
 		if(strnicmp(masters[index].masterip.c_str(), masterip, strlen(masterip)) == 0)
 		{
-			Printf("Removed master server: %s", masters[index].masterip);
+			PrintFmt("Removed master server: {}", masters[index].masterip);
 			masters.erase(masters.begin() + index);
 			return true;
 		}
 	}
 
-	Printf("Failed to remove master: %s, not in list", masterip);
+	PrintFmt("Failed to remove master: {}, not in list", masterip);
 	return false;
 }
 

@@ -30,17 +30,7 @@
 #include "sv_main.h"
 #include "v_textcolors.h"
 
-int D_GenderToInt (const char *gender)
-{
-	if (!stricmp (gender, "female"))
-		return GENDER_FEMALE;
-	else if (!stricmp (gender, "cyborg"))
-		return GENDER_NEUTER;
-	else
-		return GENDER_MALE;
-}
-
-bool SetServerVar (const char *name, const char *value)
+bool SetServerVar (std::string_view name, const char *value)
 {
 	cvar_t *dummy;
 	cvar_t *var = cvar_t::FindCVar (name, &dummy);

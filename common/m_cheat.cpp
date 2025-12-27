@@ -35,6 +35,7 @@
 #include "g_skill.h"
 #include "p_local.h"
 #include "infomap.h"
+#include "c_effect.h"
 
 extern bool simulated_connection;
 EXTERN_CVAR(sv_allowcheats)
@@ -97,7 +98,7 @@ bool CHEAT_IdMyPos(cheatseq_t* cheat)
 
 bool CHEAT_BeholdMenu(cheatseq_t* cheat)
 {
-	Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_BEHOLD));
+	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STSTR_BEHOLD));
 	return false;
 }
 
@@ -196,7 +197,7 @@ BEGIN_COMMAND(summon)
 
 	if (!CHEAT_ValidSummonActor(mobname))
 	{
-		Printf(PRINT_HIGH, "Invalid summon argument: %s. Please use `dumpactors` for a valid list of actor names.\n", mobname);
+		PrintFmt(PRINT_HIGH, "Invalid summon argument: {}. Please use `dumpactors` for a valid list of actor names.\n", mobname);
 		return;
 	}
 
@@ -204,6 +205,30 @@ BEGIN_COMMAND(summon)
 	CL_SendSummonCheat(mobname.c_str());
  }
 END_COMMAND(summon)
+
+BEGIN_COMMAND(summonfriend)
+{
+	if (!CHEAT_AreCheatsEnabled())
+		return;
+
+	if (argc < 2)
+		return;
+
+	const std::string mobname = C_ArgCombine(argc - 1, (const char**)(argv + 1));
+
+	if (!CHEAT_ValidSummonActor(mobname.c_str()))
+	{
+		PrintFmt(PRINT_HIGH,
+		         "Invalid summon argument: {}. Please use `dumpactors` for a valid list of "
+		         "actor names.\n",
+		         mobname);
+		return;
+	}
+
+	CHEAT_Summon(&consoleplayer(), mobname.c_str(), true);
+	CL_SendSummonFriendCheat(mobname.c_str());
+}
+END_COMMAND(summonfriend)
 
 BEGIN_COMMAND(mdk)
 {
@@ -238,17 +263,17 @@ bool CHEAT_AreCheatsEnabled()
 	{
 		if (!sv_allowcheats)
 		{
-			Printf(PRINT_WARNING,
-			       "You must 'set sv_allowcheats 1' in the console to enable "
-			       "this command on this difficulty.\n");
+			PrintFmt(PRINT_WARNING,
+			         "You must 'set sv_allowcheats 1' in the console to enable "
+			         "this command on this difficulty.\n");
 			return false;
 		}
 	}
 
 	if ((multiplayer || !G_IsCoopGame()) && !sv_allowcheats)
 	{
-		Printf(PRINT_WARNING, "You must run the server with '+set sv_allowcheats 1' to "
-		                      "enable this command.\n");
+		PrintFmt(PRINT_WARNING, "You must run the server with '+set sv_allowcheats 1' to "
+		                        "enable this command.\n");
 		return false;
 	}
 
@@ -508,10 +533,21 @@ AActor* CHEAT_Summon(player_s* player, const std::string& sum, bool friendly)
 		}
 	}
 
+	std::string cheatname = "summon";
+
+	if (friendly)
+	{
+		entity->flags |= MF_FRIEND;
+		cheatname = "summonfriend";
+		P_GiveFriendlyOwnerInfo(entity, player->mo);
+		P_FriendlyEffects(entity);
+	}
+
 	if (multiplayer)
-		PrintFmt(PRINT_HIGH, "{} is a cheater: summon {}\n",
+		PrintFmt(PRINT_HIGH, "{} is a cheater: {} {}\n",
 		         player->userinfo.netname,
-		 sum);
+		         cheatname,
+		         sum);
 
 	return entity;
 }
@@ -523,7 +559,7 @@ void CHEAT_GiveTo(player_t* player, const char* name)
 	gitem_t* it;
 
 	if (player != &consoleplayer())
-		Printf(PRINT_HIGH, "%s is a cheater: give %s\n", player->userinfo.netname,
+		PrintFmt(PRINT_HIGH, "{} is a cheater: give {}\n", player->userinfo.netname,
 		       name);
 
 	if (stricmp(name, "all") == 0)
@@ -622,7 +658,7 @@ void CHEAT_GiveTo(player_t* player, const char* name)
 		if (!it)
 		{
 			if (player == &consoleplayer())
-				Printf(PRINT_HIGH, "Unknown item\n");
+				PrintFmt(PRINT_HIGH, "Unknown item\n");
 			return;
 		}
 	}

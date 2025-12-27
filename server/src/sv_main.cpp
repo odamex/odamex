@@ -249,9 +249,9 @@ EXTERN_CVAR (g_lives)
 CVAR_FUNC_IMPL (join_password)
 {
 	if (strlen(var.cstring()))
-		Printf("Join password set.");
+		PrintFmt("Join password set.");
 	else
-		Printf("Join password cleared.");
+		PrintFmt("Join password cleared.");
 }
 
 CVAR_FUNC_IMPL (rcon_password) // Remote console password.
@@ -259,15 +259,15 @@ CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 	if(strlen(var.cstring()) < 5)
 	{
 		if(!strlen(var.cstring()))
-			Printf("RCON password cleared.");
+			PrintFmt("RCON password cleared.");
 		else
 		{
-			Printf("RCON password must be at least 5 characters.");
+			PrintFmt("RCON password must be at least 5 characters.");
 			var.Set("");
 		}
 	}
 	else
-		Printf(PRINT_HIGH, "RCON password set.");
+		PrintFmt(PRINT_HIGH, "RCON password set.");
 }
 
 CVAR_FUNC_IMPL(sv_maxrate)
@@ -325,7 +325,7 @@ BEGIN_COMMAND (kick) {
 	std::string reason;
 
 	if (!CMD_KickCheck(arguments, error, pid, reason)) {
-		Printf("Kick: %s.\n", error);
+		PrintFmt("Kick: {}.\n", error);
 		return;
 	}
 
@@ -393,11 +393,11 @@ void SV_InvalidateClient(player_t &player, const std::string& reason)
 {
 	if (&(player.client) == NULL)
 	{
-		Printf("Player with NULL client fails security check (%s), client cannot be safely dropped.\n", reason);
+		PrintFmt("Player with NULL client fails security check ({}), client cannot be safely dropped.\n", reason);
 		return;
 	}
 
-	Printf("%s fails security check (%s), dropping client.\n", NET_AdrToString(player.client.address), reason);
+	PrintFmt("{} fails security check ({}), dropping client.\n", NET_AdrToString(player.client.address), reason);
 	SV_PlayerPrintFmt(PRINT_ERROR, player.id,
 	                  "The server closed your connection for the following reason: {}.\n",
 	                  reason);
@@ -474,7 +474,7 @@ void SV_InitNetwork (void)
     if (v)
     {
        localport = atoi (v);
-       Printf (PRINT_HIGH, "using alternate port %i\n", localport);
+       PrintFmt(PRINT_HIGH, "using alternate port {}\n", localport);
     }
 	else
 	   localport = SERVERPORT;
@@ -485,7 +485,7 @@ void SV_InitNetwork (void)
 	// determine my name & address
 	// NET_GetLocalAddress ();
 
-	Printf("UDP Initialized.\n");
+	PrintFmt("UDP Initialized.\n");
 
 	const char *w = Args.CheckValue ("-maxclients");
 	if (w)
@@ -675,13 +675,13 @@ void SV_BasePrintButPlayer(const int printlevel, const int player_id, const std:
 //
 // SV_Sound
 //
-void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
+void SV_Sound (const AActor *mo, byte channel, const char *name, byte attenuation)
 {
 	const int sfx_id = S_FindSound (name);
 
 	if (sfx_id >= static_cast<int>(S_sfx.size()) || sfx_id < 0)
 	{
-		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
+		PrintFmt(PRINT_HIGH, "SV_StartSound: range error. Sfx_id = {}\n", sfx_id);
 		return;
 	}
 
@@ -694,14 +694,14 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 	}
 }
 
-void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
+void SV_Sound(player_t& pl, const AActor* mo, const byte channel, const char* name,
               const byte attenuation)
 {
 	const int sfx_id = S_FindSound (name);
 
 	if (sfx_id >= static_cast<int>(S_sfx.size()) || sfx_id < 0)
 	{
-		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
+		PrintFmt(PRINT_HIGH, "SV_StartSound: range error. Sfx_id = {}\n", sfx_id);
 		return;
 	}
 
@@ -715,7 +715,7 @@ void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
 // UV_SoundAvoidPlayer
 // Sends a sound to clients, but doesn't send it to client 'player'.
 //
-void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte attenuation)
+void UV_SoundAvoidPlayer (const AActor *mo, byte channel, const char *name, byte attenuation)
 {
 	if (!mo || !mo->player)
 		return;
@@ -726,7 +726,7 @@ void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte atten
 
 	if (sfx_id >= static_cast<int>(S_sfx.size()) || sfx_id < 0)
 	{
-		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
+		PrintFmt(PRINT_HIGH, "SV_StartSound: range error. Sfx_id = {}\n", sfx_id);
 		return;
 	}
 
@@ -752,7 +752,7 @@ void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 
 	if (sfx_id >= static_cast<int>(S_sfx.size()) || sfx_id < 0)
 	{
-		Printf("SV_StartSound: range error. Sfx_id = %d\n", sfx_id );
+		PrintFmt("SV_StartSound: range error. Sfx_id = {}\n", sfx_id );
 		return;
 	}
 
@@ -774,7 +774,7 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 
 	if (sfx_id >= static_cast<int>(S_sfx.size()) || sfx_id < 0)
 	{
-		Printf (PRINT_HIGH, "SV_StartSound: range error. Sfx_id = %d\n", sfx_id);
+		PrintFmt(PRINT_HIGH, "SV_StartSound: range error. Sfx_id = {}\n", sfx_id);
 		return;
 	}
 
@@ -793,7 +793,7 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 //
 // SV_UpdateFrags
 //
-void SV_UpdateFrags(player_t &player)
+void SV_UpdateFrags(const player_t &player)
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -805,17 +805,16 @@ void SV_UpdateFrags(player_t &player)
 //
 // SV_SendUserInfo
 //
-void SV_SendUserInfo (player_t &player, client_t* cl)
+void SV_SendUserInfo (const player_t &player, client_t* cl)
 {
-	player_t *p = &player;
-	MSG_WriteSVC(&cl->reliablebuf, SVC_UserInfo(*p, time(NULL) - p->JoinTime));
+	MSG_WriteSVC(&cl->reliablebuf, SVC_UserInfo(player, time(NULL) - player.JoinTime));
 }
 
 /**
 Spreads a player's userinfo to every client.
 @param player Player to parse info for.
  */
-void SV_BroadcastUserInfo(player_t &player)
+void SV_BroadcastUserInfo(const player_t &player)
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 		SV_SendUserInfo(player, &(it->client));
@@ -882,7 +881,7 @@ bool SV_SetupUserInfo(player_t &player)
 
 	// ensure sane values for userinfo
 	if (gender < 0 || gender >= NUMGENDER)
-		gender = GENDER_NEUTER;
+		gender = GENDER_OTHER;
 
 	aimdist = clamp(aimdist, 0, 5000 * 16384);
 
@@ -970,7 +969,8 @@ bool SV_SetupUserInfo(player_t &player)
 		switch (gender) {
 			case GENDER_MALE:	gendermessage = "his";  break;
 			case GENDER_FEMALE:	gendermessage = "her";  break;
-			default:			gendermessage = "its";  break;
+			case GENDER_CYBORG:	gendermessage = "its";  break;
+			default:			gendermessage = "their";  break;
 		}
 
 		SV_BroadcastPrintFmt("{} changed {} name to {}.\n",
@@ -1018,7 +1018,7 @@ void SV_ForceSetTeam (player_t &who, team_t team)
 	client_t *cl = &who.client;
 
 	who.userinfo.team = team;
-	Printf (PRINT_HIGH, "Forcing %s to %s team\n", who.userinfo.netname.c_str(), team == TEAM_NONE ? "NONE" : V_GetTeamColor(team).c_str());
+	PrintFmt(PRINT_HIGH, "Forcing {} to {} team\n", who.userinfo.netname.c_str(), team == TEAM_NONE ? "NONE" : V_GetTeamColor(team).c_str());
 
 	MSG_WriteSVC(&cl->reliablebuf, SVC_ForceTeam(team));
 }
@@ -1183,7 +1183,7 @@ void SV_SpawnMobj(AActor *mo)
 // [denis] SV_IsPlayerAllowedToSee
 // determine if a client should be able to see an actor
 //
-bool SV_IsPlayerAllowedToSee(player_t &p, AActor *mo)
+bool SV_IsPlayerAllowedToSee(const player_t &p, const AActor *mo)
 {
 	if (!mo)
 		return false;
@@ -1664,8 +1664,8 @@ bool SV_CheckClientVersion(client_t *cl, Players::iterator it)
 		SV_SendPacket(*it);
 
 		// GhostlyDeath -- And we tell the server
-		Printf("%s disconnected (version mismatch %s).\n", NET_AdrToString(::net_from),
-		       VersionStr);
+		PrintFmt("{} disconnected (version mismatch {}).\n", NET_AdrToString(::net_from),
+		         VersionStr);
 	}
 
 	return AllowConnect;
@@ -1721,8 +1721,8 @@ static void SV_DisconnectOldClient()
 
 	NET_SendPacket(smallbuf, ::net_from);
 
-	Printf("%s disconnected (version mismatch %d.%d.%d).\n", NET_AdrToString(::net_from),
-	       cl_maj, cl_min, cl_pat);
+	PrintFmt("{} disconnected (version mismatch {}.{}.{}).\n", NET_AdrToString(::net_from),
+	         cl_maj, cl_min, cl_pat);
 }
 
 void G_DoReborn(player_t& playernum);
@@ -1752,7 +1752,7 @@ void SV_ConnectClient()
 	if (!SV_IsValidToken(MSG_ReadLong()))
 		return;
 
-	Printf("%s is trying to connect...\n", NET_AdrToString (net_from));
+	PrintFmt("{} is trying to connect...\n", NET_AdrToString (net_from));
 
 	// Show old challenges the door only after we've validated their token.
 	if (challenge == MSG_CHALLENGE)
@@ -1766,7 +1766,7 @@ void SV_ConnectClient()
 
 	if (it == players.end()) // a server is full
 	{
-		Printf("%s disconnected (server full).\n", NET_AdrToString (net_from));
+		PrintFmt("{} disconnected (server full).\n", NET_AdrToString (net_from));
 
 		static buf_t smallbuf(1024);
 		if (smallbuf.size() == 0)
@@ -1855,7 +1855,7 @@ void SV_ConnectClient()
 	std::string passhash = MSG_ReadString();
 	if (strlen(join_password.cstring()) && MD5SUM(join_password.cstring()) != passhash)
 	{
-		Printf("%s disconnected (password failed).\n", NET_AdrToString(net_from));
+		PrintFmt("{} disconnected (password failed).\n", NET_AdrToString(net_from));
 
 		MSG_WriteSVC(
 		    &cl->reliablebuf,
@@ -2023,7 +2023,7 @@ void SV_DropClient2(player_t &who, const char* file, const int line)
 	SV_DisconnectClient(who);
 
 	if (::debug_disconnect)
-		Printf("  (%s:%d)\n", file, line);
+		PrintFmt("  ({}:{})\n", file, line);
 }
 
 //
@@ -2405,9 +2405,9 @@ void SVC_TeamSay(player_t &player, const char* message)
 void SVC_SpecSay(player_t &player, const char* message)
 {
 	if (strnicmp(message, "/me ", 4) == 0)
-		Printf(PRINT_TEAMCHAT, "<SPEC> * %s %s\n", player.userinfo.netname, &message[4]);
+		PrintFmt(PRINT_TEAMCHAT, "<SPEC> * {} {}\n", player.userinfo.netname, &message[4]);
 	else
-		Printf(PRINT_TEAMCHAT, "<SPEC> %s: %s\n", player.userinfo.netname, message);
+		PrintFmt(PRINT_TEAMCHAT, "<SPEC> {}: {}\n", player.userinfo.netname, message);
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
@@ -2433,9 +2433,9 @@ void SVC_SpecSay(player_t &player, const char* message)
 void SVC_Say(player_t &player, const char* message)
 {
 	if (strnicmp(message, "/me ", 4) == 0)
-		Printf(PRINT_CHAT, "<CHAT> * %s %s\n", player.userinfo.netname, &message[4]);
+		PrintFmt(PRINT_CHAT, "<CHAT> * {} {}\n", player.userinfo.netname, &message[4]);
 	else
-		Printf(PRINT_CHAT, "<CHAT> %s: %s\n", player.userinfo.netname, message);
+		PrintFmt(PRINT_CHAT, "<CHAT> {}: {}\n", player.userinfo.netname, message);
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
@@ -2457,10 +2457,10 @@ void SVC_Say(player_t &player, const char* message)
 void SVC_PrivMsg(player_t &player, player_t &dplayer, const char* message)
 {
 	if (strnicmp(message, "/me ", 4) == 0)
-		Printf(PRINT_CHAT, "<PRIVMSG> * %s (to %s) %s\n",
+		PrintFmt(PRINT_CHAT, "<PRIVMSG> * {} (to {}) {}\n",
 				player.userinfo.netname, dplayer.userinfo.netname, &message[4]);
 	else
-		Printf(PRINT_CHAT, "<PRIVMSG> %s (to %s): %s\n",
+		PrintFmt(PRINT_CHAT, "<PRIVMSG> {} (to {}): {}\n",
 				player.userinfo.netname, dplayer.userinfo.netname, message);
 
 	MSG_WriteSVC(&dplayer.client.reliablebuf, SVC_Say(true, player.id, message));
@@ -2621,7 +2621,7 @@ void SV_UpdateMissiles(player_t &pl)
 }
 
 // Update the given actors data immediately.
-void SV_UpdateMobj(AActor* mo)
+void SV_UpdateMobj(const AActor* mo)
 {
 	// Don't use this function to update players.
 	if (mo->player)
@@ -2641,7 +2641,7 @@ void SV_UpdateMobj(AActor* mo)
 }
 
 // Update the given actors state immediately.
-void SV_UpdateMobjState(AActor* mo)
+void SV_UpdateMobjState(const AActor* mo)
 {
 	for (auto& player : players)
 	{
@@ -2720,7 +2720,7 @@ void SV_UpdateGametype(player_t& pl)
 //
 // SV_ActorTarget
 //
-void SV_ActorTarget(AActor *actor)
+void SV_ActorTarget(const AActor *actor)
 {
 	if (actor->player)
 		return;
@@ -2742,7 +2742,7 @@ void SV_ActorTarget(AActor *actor)
 //
 // SV_ActorTracer
 //
-void SV_ActorTracer(AActor *actor)
+void SV_ActorTracer(const AActor *actor)
 {
 	for (auto& player : players)
 	{
@@ -3473,7 +3473,7 @@ BEGIN_COMMAND (forcespec) {
 	size_t pid;
 
 	if (!CMD_ForcespecCheck(arguments, error, pid)) {
-		Printf("forcespec: %s\n", error);
+		PrintFmt("forcespec: {}\n", error);
 		return;
 	}
 
@@ -3646,7 +3646,7 @@ void SV_RConLogout (player_t &player)
 
 	if (cl->allow_rcon)
 	{
-		Printf("RCON logout from %s - %s", player.userinfo.netname, NET_AdrToString(cl->address));
+		PrintFmt("RCON logout from {} - {}", player.userinfo.netname, NET_AdrToString(cl->address));
 		cl->allow_rcon = false;
 	}
 }
@@ -3670,11 +3670,11 @@ void SV_RConPassword (player_t &player)
 	if (!password.empty() && MD5SUM(password + cl->digest) == challenge)
 	{
 		cl->allow_rcon = true;
-		Printf(PRINT_HIGH, "RCON login from %s - %s", player.userinfo.netname, NET_AdrToString(cl->address));
+		PrintFmt(PRINT_HIGH, "RCON login from {} - {}", player.userinfo.netname, NET_AdrToString(cl->address));
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "RCON login failure from %s - %s", player.userinfo.netname, NET_AdrToString(cl->address));
+		PrintFmt(PRINT_HIGH, "RCON login failure from {} - {}", player.userinfo.netname, NET_AdrToString(cl->address));
 		MSG_WriteSVC(&cl->reliablebuf, SVC_Print(PRINT_HIGH, "Bad password\n"));
 	}
 }
@@ -3758,6 +3758,24 @@ void SV_Cheat(player_t &player)
 			SV_SendMobjToClient(actor, cl);
 		}
 	}
+	else if (cheatType == 3)
+	{
+		const char* wantsummon = MSG_ReadString();
+
+		if (!CHEAT_AreCheatsEnabled())
+			return;
+
+		AActor* actor = CHEAT_Summon(&player, wantsummon, true);
+
+		if (actor == NULL)
+			return;
+
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		{
+			client_t* cl = &it->client;
+			SV_SendMobjToClient(actor, cl);
+		}
+	}
 }
 
 void SV_WantWad(player_t &player)
@@ -3784,7 +3802,7 @@ void SV_ParseCommands(player_t &player)
 {
 	 while(validplayer(player))
 	 {
-		clc_t cmd = (clc_t)MSG_ReadByte();
+		clc_t cmd = static_cast<clc_t>(MSG_ReadByte());
 
 		if(cmd == (clc_t)-1)
 			break;
@@ -3838,7 +3856,7 @@ void SV_ParseCommands(player_t &player)
 
 				if (player.client.allow_rcon)
 				{
-					Printf(PRINT_HIGH, "RCON command from %s - %s -> %s",
+					PrintFmt(PRINT_HIGH, "RCON command from {} - {} -> {}",
 							player.userinfo.netname, NET_AdrToString(net_from), str);
 					AddCommandString(str);
 				}
@@ -3888,7 +3906,7 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		case clc_abort:
-			Printf("Client abort.\n");
+			PrintFmt("Client abort.\n");
 			SV_DropClient(player);
 			return;
 
@@ -3910,15 +3928,15 @@ void SV_ParseCommands(player_t &player)
 			break;
 
 		default:
-			Printf("SV_ParseCommands: Unknown client message %d.\n", (int)cmd);
+			PrintFmt("SV_ParseCommands: Unknown client message {}.\n", cmd);
 			SV_DropClient(player);
 			return;
 		}
 
 		if (net_message.overflowed)
 		{
-			Printf ("SV_ReadClientMessage: badread %d(%s)\n",
-					    (int)cmd,
+			PrintFmt("SV_ReadClientMessage: badread {}({})\n",
+					    cmd,
 					    clc_info[cmd].getName());
 			SV_DropClient(player);
 			return;
@@ -3984,7 +4002,7 @@ void SV_GameTics (void)
 		SV_ProcessPlayerCmd(player);
 }
 
-void SV_TouchSpecial(AActor *special, player_t *player)
+void SV_TouchSpecial(const AActor *special, player_t *player)
 {
 	client_t *cl = &player->client;
 
@@ -4137,9 +4155,9 @@ BEGIN_COMMAND(step)
 
 	// debugging output
 	if (players.size() && players.begin() != players.end())
-		Printf("level.time %d, prndindex %d, %d %d %d\n", level.time, prndindex, players.begin()->mo->x, players.begin()->mo->y, players.begin()->mo->z);
+		PrintFmt("level.time {}, prndindex {}, {} {} {}\n", level.time, prndindex, players.begin()->mo->x, players.begin()->mo->y, players.begin()->mo->z);
 	else
-		Printf("level.time %d, prndindex %d\n", level.time, prndindex);
+		PrintFmt("level.time {}, prndindex {}\n", level.time, prndindex);
 }
 END_COMMAND(step)
 
@@ -4155,7 +4173,7 @@ BEGIN_COMMAND (playerinfo)
 
 		if (!validplayer(p))
 		{
-			Printf (PRINT_HIGH, "Bad player number.\n");
+			PrintFmt(PRINT_HIGH, "Bad player number.\n");
 			return;
 		}
 		else
@@ -4163,14 +4181,14 @@ BEGIN_COMMAND (playerinfo)
 	}
 	else
 	{
-		Printf("Usage : playerinfo <#playerid>\n");
-		Printf("Gives additional infos about the selected player (use \"playerlist\" to display player IDs).\n");
+		PrintFmt("Usage : playerinfo <#playerid>\n");
+		PrintFmt("Gives additional infos about the selected player (use \"playerlist\" to display player IDs).\n");
 		return;
 	}
 
 	if (!validplayer(*player))
 	{
-		Printf("Not a valid player\n");
+		PrintFmt("Not a valid player\n");
 		return;
 	}
 
@@ -4294,13 +4312,13 @@ BEGIN_COMMAND(playerlist)
 			}
 		}
 
-		Printf("%s%s\n", strMain, strScore);
+		PrintFmt("{}{}\n", strMain, strScore);
 		anybody = true;
 	}
 
 	if (!anybody)
 	{
-		Printf("There are no players on the server.\n");
+		PrintFmt("There are no players on the server.\n");
 		return;
 	}
 }
@@ -4342,7 +4360,7 @@ void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
 	}
 }
 
-void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, int armorDamage)
+void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage)
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -4353,7 +4371,7 @@ void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, 
 	}
 }
 
-void SV_SendDamageMobj(AActor *target, int pain)
+void SV_SendDamageMobj(const AActor *target, int pain)
 {
 	if (!target)
 		return;
@@ -4368,7 +4386,7 @@ void SV_SendDamageMobj(AActor *target, int pain)
 	}
 }
 
-void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
+void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor,
 				     bool joinkill)
 {
 	if (!target)
@@ -4386,8 +4404,24 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 	}
 }
 
+void SV_SendRaiseMobj(const AActor* source, const AActor* corpse)
+{
+	if (!corpse)
+		return;
+
+	for (auto& player : players)
+	{
+		client_t* cl = &(player.client);
+
+		if (!SV_IsPlayerAllowedToSee(player, corpse))
+			continue;
+
+		MSG_WriteSVC(&cl->reliablebuf, SVC_RaiseMobj(source, corpse));
+	}
+}
+
 // Tells clients to remove an actor from the world as it doesn't exist anymore
-void SV_SendDestroyActor(AActor *mo)
+void SV_SendDestroyActor(const AActor *mo)
 {
 	if (mo->netid && mo->type != MT_PUFF)
 	{
@@ -4407,7 +4441,7 @@ void SV_SendDestroyActor(AActor *mo)
 }
 
 // Missile exploded so tell clients about it
-void SV_ExplodeMissile(AActor *mo)
+void SV_ExplodeMissile(const AActor *mo)
 {
 	for (auto& player : players)
 	{
@@ -4570,19 +4604,18 @@ void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer
 		queueUpdates.push_back(disconnectPlayer);
 	}
 
-	for (Players::iterator dest = ::players.begin(); dest != ::players.end(); ++dest)
+	for (auto& dest : ::players)
 	{
-		for (PlayersView::iterator it = queueUpdates.begin(); it != queueUpdates.end();
-		     ++it)
+		for (const auto& source : queueUpdates)
 		{
-			SV_SendPlayerQueuePosition(*it, &(*dest));
+			SV_SendPlayerQueuePosition(source, &dest);
 		}
 	}
 }
 
 void SV_SendPlayerQueuePositions(player_t* dest, bool initConnect)
 {
-	for (auto& player : players)
+	for (const auto& player : players)
 	{
 		if (initConnect && player.QueuePosition == 0)
 			continue;
@@ -4590,7 +4623,7 @@ void SV_SendPlayerQueuePositions(player_t* dest, bool initConnect)
 	}
 }
 
-void SV_SendPlayerQueuePosition(player_t* source, player_t* dest)
+void SV_SendPlayerQueuePosition(const player_t* source, player_t* dest)
 {
 	MSG_WriteSVC(&(dest->client.reliablebuf), SVC_PlayerQueuePos(*source));
 }
@@ -4609,7 +4642,7 @@ void SV_ClearPlayerQueue()
 		SV_SendPlayerQueuePositions(&player, false);
 }
 
-void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, int arg0,
+void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* activator, int arg0,
                                int arg1, int arg2, int arg3, int arg4)
 {
 	if (P_LineSpecialMovesSector(special))
@@ -4632,7 +4665,7 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, in
 // If playerOnly is true and the activator is a player, then it will only be
 // sent to the activating player.
 //
-void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print,
+void SV_ACSExecuteSpecial(byte special, const AActor* activator, const char* print,
                           bool playerOnly, const std::vector<int>& args)
 {
 	player_s* sendPlayer = nullptr;
@@ -4674,7 +4707,7 @@ void SV_UpdateShareKeys(player_t& player)
 	SV_SendPlayerInfo(player);
 }
 
-void SV_ShareKeys(card_t card, player_t &player)
+void SV_ShareKeys(card_t card, const player_t &player)
 {
 	// Add it to the KeysCheck array
 	keysfound[card] = true;

@@ -5,6 +5,9 @@ on:
     branches:
     - 'release/[0-9]+.[0-9]+.[0-9]+' # Only run on major.minor.patch releases
 
+permissions:
+  contents: write
+
 jobs:
   pre_job:
     name: Build Preparation
@@ -21,12 +24,12 @@ jobs:
           persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
           fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
       - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v0.9.7
+        uses: gittools/actions/gitversion/setup@v4.1.0
         with:
-          versionSpec: '5.x'
+          versionSpec: '6.x'
       - name: Determine Version
         id:   gitversion
-        uses: gittools/actions/gitversion/execute@v0.9.7
+        uses: gittools/actions/gitversion/execute@v4.1.0
       - name: Get Commits From Source
         id:   revlist
         shell: bash
@@ -44,12 +47,9 @@ jobs:
           echo "PreReleaseNumber: ${{ steps.gitversion.outputs.preReleaseNumber }}"
           echo "WeightedPreReleaseNumber: ${{ steps.gitversion.outputs.weightedPreReleaseNumber }}"
           echo "BuildMetaData: ${{ steps.gitversion.outputs.buildMetaData }}"
-          echo "BuildMetaDataPadded: ${{ steps.gitversion.outputs.buildMetaDataPadded }}"
           echo "FullBuildMetaData: ${{ steps.gitversion.outputs.fullBuildMetaData }}"
           echo "MajorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}"
           echo "SemVer: ${{ steps.gitversion.outputs.semVer }}"
-          echo "LegacySemVer: ${{ steps.gitversion.outputs.legacySemVer }}"
-          echo "LegacySemVerPadded: ${{ steps.gitversion.outputs.legacySemVerPadded }}"
           echo "AssemblySemVer: ${{ steps.gitversion.outputs.assemblySemVer }}"
           echo "AssemblySemFileVer: ${{ steps.gitversion.outputs.assemblySemFileVer }}"
           echo "FullSemVer: ${{ steps.gitversion.outputs.fullSemVer }}"
@@ -58,13 +58,8 @@ jobs:
           echo "EscapedBranchName: ${{ steps.gitversion.outputs.escapedBranchName }}"
           echo "Sha: ${{ steps.gitversion.outputs.sha }}"
           echo "ShortSha: ${{ steps.gitversion.outputs.shortSha }}"
-          echo "NuGetVersionV2: ${{ steps.gitversion.outputs.nuGetVersionV2 }}"
-          echo "NuGetVersion: ${{ steps.gitversion.outputs.nuGetVersion }}"
-          echo "NuGetPreReleaseTagV2: ${{ steps.gitversion.outputs.nuGetPreReleaseTagV2 }}"
-          echo "NuGetPreReleaseTag: ${{ steps.gitversion.outputs.nuGetPreReleaseTag }}"
           echo "VersionSourceSha: ${{ steps.gitversion.outputs.versionSourceSha }}"
           echo "CommitsSinceVersionSource: ${{ steps.gitversion.outputs.commitsSinceVersionSource }}"
-          echo "CommitsSinceVersionSourcePadded: ${{ steps.gitversion.outputs.commitsSinceVersionSourcePadded }}"
           echo "UncommittedChanges: ${{ steps.gitversion.outputs.uncommittedChanges }}"
           echo "CommitDate: ${{ steps.gitversion.outputs.commitDate }}"
           echo "TotalCommits: ${{ steps.revlist.outputs.totalCommits }}"
@@ -212,13 +207,13 @@ jobs:
         --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
     - name: Pack flatpak
       run: |
-        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
-        --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+        flatpak build-bundle repo odamex-linux-x86_64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak \
+        net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: Odamex-Flatpak-x86_64
-        path: odamex.flatpak
+        path: odamex-linux-x86_64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak
   build-flatpak-arm:
     name: Build Flatpak (Ubuntu 24.04 ARM)
     needs: pre_job
@@ -261,10 +256,39 @@ jobs:
         --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
     - name: Pack flatpak
       run: |
-        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
-        --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+        flatpak build-bundle repo odamex-linux-arm64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak \
+        net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: Odamex-Flatpak-ARM64
-        path: odamex.flatpak
+        path: odamex-linux-arm64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak
+  package-and-upload:
+    name: Package and Upload Artifacts
+    runs-on: windows-latest
+    needs: [pre_job, build-flatpak, build-flatpak-arm]
+    env:
+      build_number: ${{ needs.pre_job.outputs.build_number }}
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-tags: true
+    - name: Download x86_64 Flatpak
+      uses: actions/download-artifact@v4
+      with:
+        name: Odamex-Flatpak-x86_64
+    - name: Download Arm Flatpak
+      uses: actions/download-artifact@v4
+      with:
+        name: Odamex-Flatpak-ARM64
+    - name: Create or update prerelease
+      uses: ./.github/actions/update-prerelease
+      env:
+        build_number: ${{ needs.pre_job.outputs.build_number }}
+        new_version: ${{ needs.pre_job.outputs.new_version }}
+      with:
+        build_number: ${{ env.build_number }}
+        new_version: ${{ env.new_version }}
+        files: |
+          ./*.flatpak

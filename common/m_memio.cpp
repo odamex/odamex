@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -24,7 +24,7 @@
 //
 // DESCRIPTION:
 //
-//	Emulates the IO functions in C stdio.h reading and writing to 
+//	Emulates the IO functions in C stdio.h reading and writing to
 //	memory.
 //
 //	[Russell] - Added some functions and cleaned up a few areas
@@ -76,27 +76,27 @@ size_t mem_fread(void *buf, size_t size, size_t nmemb, MEMFILE *stream)
 
 	if (stream->mode != MODE_READ)
 	{
-		Printf(PRINT_HIGH, "mem_fread: not a read stream\n");
+		PrintFmt(PRINT_HIGH, "mem_fread: not a read stream\n");
 		return 0;
 	}
 
 	// Trying to read more bytes than we have left?
-	
+
 	items = nmemb;
 
-	if (items * size > stream->buflen - stream->position) 
+	if (items * size > stream->buflen - stream->position)
 	{
 		items = (stream->buflen - stream->position) / size;
 	}
-	
+
 	// Copy bytes to buffer
-	
+
 	memcpy(buf, stream->buf + stream->position, items * size);
 
 	// Update position
 
 	stream->position += items * size;
-	
+
 	return items;
 }
 
@@ -127,12 +127,12 @@ size_t mem_fwrite(const void *ptr, size_t size, size_t nmemb, MEMFILE *stream)
 	{
 		return 0;
 	}
-	
+
 	// More bytes than can fit in the buffer?
 	// If so, reallocate bigger.
 
 	bytes = size * nmemb;
-	
+
 	while (bytes > stream->alloced - stream->position)
 	{
 		unsigned char *newbuf;
@@ -145,7 +145,7 @@ size_t mem_fwrite(const void *ptr, size_t size, size_t nmemb, MEMFILE *stream)
 	}
 
 	// Copy into buffer
-	
+
 	memcpy(stream->buf + stream->position, ptr, bytes);
 	stream->position += bytes;
 
@@ -189,7 +189,7 @@ int mem_fseek(MEMFILE *stream, signed long position, mem_rel_t whence)
 		case MEM_SEEK_CUR:
 			newpos = (int) (stream->position + position);
 			break;
-			
+
 		case MEM_SEEK_END:
 			newpos = (int) (stream->buflen + position);
 			break;
@@ -204,7 +204,7 @@ int mem_fseek(MEMFILE *stream, signed long position, mem_rel_t whence)
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "mem_fseek: Error seeking to %i\n", newpos);
+		PrintFmt(PRINT_HIGH, "mem_fseek: Error seeking to {}\n", newpos);
 		return -1;
 	}
 }

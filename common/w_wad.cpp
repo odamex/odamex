@@ -43,6 +43,7 @@
 
 #include "m_fileio.h"
 #include "i_system.h"
+#include "m_alloc.h"
 #include "z_zone.h"
 #include "cmdlib.h"
 #include "m_argv.h"
@@ -91,14 +92,14 @@ unsigned int W_LumpNameHash(const char *s)
 {
 	unsigned int hash;
 
-	(void)((hash =         toupper(s[0]), s[1]) &&
+	(void)(( hash =        toupper(s[0]), s[1]) &&
 			(hash = hash*3+toupper(s[1]), s[2]) &&
 			(hash = hash*2+toupper(s[2]), s[3]) &&
 			(hash = hash*2+toupper(s[3]), s[4]) &&
 			(hash = hash*2+toupper(s[4]), s[5]) &&
 			(hash = hash*2+toupper(s[5]), s[6]) &&
 			(hash = hash*2+toupper(s[6]),
-			 hash = hash*2+toupper(s[7]))
+			(hash = hash*2+toupper(s[7])))
          );
 	return hash;
 }
@@ -120,7 +121,7 @@ void W_HashLumps(void)
 
 	for (unsigned int i = 0; i < numlumps; i++)
 	{
-		unsigned int j = W_LumpNameHash(lumpinfo[i].name) % (unsigned int)numlumps;
+		unsigned int j = W_LumpNameHash(lumpinfo[i].name.c_str()) % (unsigned int)numlumps;
 		lumpinfo[i].next = lumpinfo[j].index;     // Prepend to list
 		lumpinfo[j].index = i;
 	}
@@ -216,11 +217,11 @@ OMD5Hash W_MD5(const std::string& filename)
  *
  * @param lumpdata byte array pointer to the lump (or lumps) that needs to be fingerprinted.
  * @param size of the byte array pointer in bytes.
- * @return fhfprint_s - struct containing 16-byte array of fingerprint.
+ * @return fhfprint_t - struct containing 16-byte array of fingerprint.
  */
-fhfprint_s W_FarmHash128(const byte* lumpdata, int length)
+fhfprint_t W_FarmHash128(const byte* lumpdata, int length)
 {
-	fhfprint_s fhfngprnt;
+	fhfprint_t fhfngprnt;
 
 	if (!lumpdata)
 		return fhfngprnt;
@@ -273,7 +274,7 @@ void W_AddLumps(FILE* handle, filelump_t* fileinfo, size_t newlumps, bool client
 		lump->handle = handle;
 		lump->position = info->filepos;
 		lump->size = info->size;
-		strncpy(lump->name, info->name, 8);
+		lump->name = info->name;
 
 		lump++;
 		numlumps++;
@@ -301,11 +302,11 @@ void AddFile(const OResFile& file)
 
 	if ( (handle = fopen(filename.c_str(), "rb")) == NULL)
 	{
-		Printf(PRINT_WARNING, "couldn't open %s\n", filename);
+		PrintFmt(PRINT_WARNING, "couldn't open {}\n", filename);
 		return;
 	}
 
-	Printf(PRINT_HIGH, "adding %s", filename);
+	PrintFmt(PRINT_HIGH, "adding {}", filename);
 
 	size_t newlumps;
 
@@ -313,7 +314,7 @@ void AddFile(const OResFile& file)
 	size_t readlen = fread(&header, sizeof(header), 1, handle);
 	if ( readlen < 1 )
 	{
-		Printf(PRINT_HIGH, "failed to read %s.\n", filename);
+		PrintFmt(PRINT_HIGH, "failed to read {}.\n", filename);
 		fclose(handle);
 		return;
 	}
@@ -331,7 +332,7 @@ void AddFile(const OResFile& file)
 		std::transform(lumpname.c_str(), lumpname.c_str() + 8, fileinfo->name, toupper);
 
 		newlumps = 1;
-		Printf(PRINT_HIGH, " (single lump)\n");
+		PrintFmt(PRINT_HIGH, " (single lump)\n");
 	}
 	else
 	{
@@ -342,7 +343,7 @@ void AddFile(const OResFile& file)
 
 		if (length > (unsigned)M_FileLength(handle))
 		{
-			Printf(PRINT_WARNING, "\nbad number of lumps for %s\n", filename);
+			PrintFmt(PRINT_WARNING, "\nbad number of lumps for {}\n", filename);
 			fclose(handle);
 			return;
 		}
@@ -352,7 +353,7 @@ void AddFile(const OResFile& file)
 		readlen = fread(fileinfo, length, 1, handle);
 		if (readlen < 1)
 		{
-			Printf(PRINT_HIGH, "failed to read file info in %s\n", filename);
+			PrintFmt(PRINT_HIGH, "failed to read file info in {}\n", filename);
 			fclose(handle);
 			return;
 		}
@@ -366,7 +367,7 @@ void AddFile(const OResFile& file)
 		}
 
 		newlumps = header.numlumps;
-		Printf(PRINT_HIGH, " (%d lumps)\n", header.numlumps);
+		PrintFmt(PRINT_HIGH, " ({} lumps)\n", header.numlumps);
 	}
 
 	W_AddLumps(handle, fileinfo, newlumps, false);
@@ -387,8 +388,8 @@ void AddFile(const OResFile& file)
 
 static bool IsMarker (const lumpinfo_t *lump, const char *marker)
 {
-	return (lump->namespc == ns_global) && (!strncmp (lump->name, marker, 8) ||
-			(*(lump->name) == *marker && !strncmp (lump->name + 1, marker, 7)));
+	return (lump->namespc == ns_global) && (!strncmp (lump->name.c_str(), marker, 8) ||
+			(*(lump->name.c_str()) == *marker && !strncmp (lump->name.c_str() + 1, marker, 7)));
 }
 
 //
@@ -451,7 +452,7 @@ void W_MergeLumps (const char *start, const char *end, int space)
 				if (!newlumps)
 				{
 					newlumps++;
-					strncpy (newlumpinfos[0].name, ustart, 8);
+					newlumpinfos[0].name = ustart;
 					newlumpinfos[0].handle = NULL;
 					newlumpinfos[0].position =
 						newlumpinfos[0].size = 0;
@@ -519,7 +520,7 @@ void W_MergeLumps (const char *start, const char *end, int space)
 
 		numlumps = oldlumps + newlumps;
 
-		strncpy (lumpinfo[numlumps].name, uend, 8);
+		lumpinfo[numlumps].name = uend;
 		lumpinfo[numlumps].handle = NULL;
 		lumpinfo[numlumps].position =
 			lumpinfo[numlumps].size = 0;
@@ -648,7 +649,7 @@ int W_CheckNumForName(const char *name, int namespc)
 	// It has been tuned so that the average chain length never exceeds 2.
 
 	// proff 2001/09/07 - check numlumps==0, this happens when called before WAD loaded
-	int i = (numlumps==0)?(-1):(lumpinfo[W_LumpNameHash(name) % numlumps].index);
+	int i = (numlumps == 0 || name == nullptr)?(-1):(lumpinfo[W_LumpNameHash(name) % numlumps].index);
 
 	// We search along the chain until end, looking for case-insensitive
 	// matches which also match a namespace tag. Separate hash tables are
@@ -656,7 +657,7 @@ int W_CheckNumForName(const char *name, int namespc)
 	// worth the overhead, considering namespace collisions are rare in
 	// Doom wads.
 
-	while (i >= 0 && (strnicmp(lumpinfo[i].name, name, 8) ||
+	while (i >= 0 && (strnicmp(lumpinfo[i].name.c_str(), name, 8) ||
 				lumpinfo[i].namespc != namespc))
 		i = lumpinfo[i].next;
 
@@ -687,12 +688,12 @@ int W_GetNumForName(const char* name, int namespc)
  * @detail You likely only need this for debugging, since a name can be
  *         ambiguous.
  */
-std::string W_LumpName(unsigned lump)
+OLumpName W_LumpName(unsigned lump)
 {
 	if (lump >= ::numlumps)
 		I_Error("{}: {} >= numlumps", __FUNCTION__, lump);
 
-	return std::string(::lumpinfo[lump].name, ARRAY_LENGTH(::lumpinfo[lump].name));
+	return ::lumpinfo[lump].name;
 }
 
 //
@@ -769,7 +770,7 @@ bool W_CheckLumpName (unsigned lump, const char *name)
 	if (lump >= numlumps)
 		return false;
 
-	return !strnicmp (lumpinfo[lump].name, name, 8);
+	return !strnicmp (lumpinfo[lump].name.c_str(), name, 8);
 }
 
 //
@@ -781,7 +782,7 @@ void W_GetLumpName(char *to, unsigned lump)
 		*to = 0;
 	else
 	{
-		memcpy (to, lumpinfo[lump].name, 8); // denis - todo -string limit?
+		memcpy (to, lumpinfo[lump].name.c_str(), 8); // denis - todo -string limit?
 		to[8] = '\0';
 		std::transform(to, to + strlen(to), to, toupper);
 	}
@@ -796,6 +797,14 @@ void W_GetOLumpName(OLumpName& to, unsigned lump)
 		to.clear();
 	else
 		to = lumpinfo[lump].name;
+}
+
+//
+// W_GetOLumpName
+//
+OLumpName W_GetOLumpName(unsigned lump)
+{
+	return lumpinfo[lump].name;
 }
 
 //
@@ -970,7 +979,7 @@ int W_FindLump (const char *name, int lastlump)
 
 	for (int i = lastlump + 1; i < (int)numlumps; i++)
 	{
-		if (strnicmp(lumpinfo[i].name, name, 8) == 0)
+		if (strnicmp(lumpinfo[i].name.c_str(), name, 8) == 0)
 			return i;
 	}
 

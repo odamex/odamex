@@ -27,7 +27,7 @@
 #include "infomap.h"
 #include "g_mapinfo.h" // G_MapNameToLevelNum
 
-int ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NULL)
+bool ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NULL)
 {
 	// Check if the given map name can be expressed as a gameepisode/gamemap pair and be
 	// reconstructed from it.
@@ -37,16 +37,17 @@ int ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NULL
 	if (gamemode != commercial)
 	{
 		if (sscanf(mapname.c_str(), "E%dM%d", &epi, &map) != 2)
-			return 0;
+			return false;
 		lumpname = fmt::format("E{}M{}", epi, map);
 	}
 	else
 	{
 		if (sscanf(mapname.c_str(), "MAP%d", &map) != 1)
-			return 0;
+			return false;
 		lumpname = fmt::format("MAP{:02d}", map);
 		epi = 1;
 	}
+
 	if (pEpi)
 		*pEpi = epi;
 	if (pMap)
@@ -97,6 +98,28 @@ void MustGetIdentifier(OScanner& os)
 	{
 		os.error("Expected identifier (unexpected end of file).");
 	}
+}
+
+enum struct player_action_t
+{
+	DISALLOW,
+	ALLOW,
+	REQUIRE,
+};
+
+player_action_t ParsePlayerAction(OScanner& os)
+{
+	MustGetIdentifier(os);
+	if (os.compareTokenNoCase("disallow"))
+		return player_action_t::DISALLOW;
+
+	if (os.compareTokenNoCase("allow"))
+		return player_action_t::ALLOW;
+
+	if (os.compareTokenNoCase("require"))
+		return player_action_t::REQUIRE;
+
+	os.error("Expected 'disable', 'allow' or 'require', got '{}'.", os.getToken());
 }
 
 bool pnamemodified;
@@ -339,6 +362,93 @@ bool ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 				mape->bossactions.push_back(new_bossaction);
 			}
 		}
+	}
+	else if (!stricmp(pname.c_str(), "bossactionednum"))
+	{
+		os.mustScan();
+
+		if (os.compareTokenNoCase("clear"))
+		{
+			// mark level free of boss actions
+			mape->bossactions.clear();
+		}
+		else
+		{
+			const int actor_ednum = os.getTokenInt();
+			const auto it = spawn_map.find(actor_ednum);
+			int32_t type;
+			if (it == spawn_map.end())
+			{
+				os.error("Unknown thing ednum {}", os.getToken());
+				return 0;
+			}
+			else
+			{
+				type = it->second->type;
+			}
+
+			// skip comma token
+			os.mustScan();
+			os.assertTokenNoCaseIs(",");
+			os.mustScanInt();
+			const int special = os.getTokenInt();
+			os.mustScan();
+			os.assertTokenNoCaseIs(",");
+			os.mustScanInt();
+			const int tag = os.getTokenInt();
+			// allow no 0-tag specials here, unless a level exit.
+			if (tag != 0 || special == 11 || special == 51 || special == 52 ||
+			    special == 124)
+			{
+				bossaction_t new_bossaction;
+
+				new_bossaction.special = static_cast<short>(special);
+				new_bossaction.tag = static_cast<short>(tag);
+
+				new_bossaction.type = type;
+
+				mape->bossactions.push_back(new_bossaction);
+			}
+		}
+	}
+	else if (!stricmp(pname.c_str(), "jumping"))
+	{
+		switch (ParsePlayerAction(os))
+		{
+		case player_action_t::DISALLOW:
+			mape->flags |= LEVEL_JUMP_NO;
+			mape->flags &= ~LEVEL_JUMP_YES;
+			break;
+		case player_action_t::ALLOW:
+			mape->flags &= ~(LEVEL_JUMP_NO | LEVEL_JUMP_YES);
+			break;
+		case player_action_t::REQUIRE:
+			mape->flags &= ~LEVEL_JUMP_NO;
+			mape->flags |= LEVEL_JUMP_YES;
+			break;
+		}
+	}
+	else if (!stricmp(pname.c_str(), "freeaim"))
+	{
+		switch (ParsePlayerAction(os))
+		{
+		case player_action_t::DISALLOW:
+			mape->flags |= LEVEL_FREELOOK_NO;
+			mape->flags &= ~LEVEL_FREELOOK_YES;
+			break;
+		case player_action_t::ALLOW:
+			mape->flags &= ~(LEVEL_FREELOOK_NO | LEVEL_FREELOOK_YES);
+			break;
+		case player_action_t::REQUIRE:
+			mape->flags &= ~LEVEL_FREELOOK_NO;
+			mape->flags |= LEVEL_FREELOOK_YES;
+			break;
+		}
+	}
+	else if (!stricmp(pname.c_str(), "crouching"))
+	{
+		if (ParsePlayerAction(os) == player_action_t::REQUIRE)
+			os.warning("Crouching is not supported in Odamex. Map {} may not work as intended.", mape->mapname);
 	}
 	else
 	{

@@ -22,8 +22,6 @@
 
 #pragma once
 
-#include <map>
-
 #include "c_maplist.h"
 
 // Callbacks for deffered queries

@@ -609,8 +609,8 @@ void	P_InitSwitchList ();
 
 void	P_ProcessSwitchDef ();
 
-short P_GetButtonTexture(line_t* line);
-bool	P_GetButtonInfo (line_t *line, unsigned &state, unsigned &time);
+short P_GetButtonTexture(const line_t* line);
+bool	P_GetButtonInfo (const line_t *line, unsigned &state, unsigned &time);
 bool	P_SetButtonInfo (line_t *line, unsigned state, unsigned time);
 
 void	P_UpdateButtons (client_t *cl);
@@ -868,7 +868,7 @@ public:
 	int			m_LightTag; // ZDoom compat
 
 protected:
-	friend bool	EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
+	friend bool	EV_DoDoor (DDoor::EVlDoor type, line_t *line, const AActor *thing,
                                    int tag, int speed, int delay, card_t lock);
     friend bool EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
 	                         byte speed_byte, int topwait, zdoom_lock_t lock,
@@ -1007,7 +1007,7 @@ private:
 		int tag, fixed_t speed, fixed_t speed2, fixed_t height,
 		bool crush, int silent, int change);
 	friend bool EV_CeilingCrushStop (int tag);
-	friend void P_ActivateInStasisCeiling (int tag);
+	friend bool P_ActivateInStasisCeiling (int tag);
 	friend bool EV_ZDoomCeilingCrushStop(int tag, bool remove);
 };
 

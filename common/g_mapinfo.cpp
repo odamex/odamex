@@ -1094,85 +1094,33 @@ void MIType_AutomapBase(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 }
 
 //
-bool ScanAndCompareString(OScanner& os, std::string cmp)
-{
-	os.scan();
-	if (!os.compareToken(cmp.c_str()))
-	{
-		os.warning("Expected \"{}\", got \"{}\". Aborting parsing", cmp, os.getToken());
-		return false;
-	}
-
-	return true;
-}
-
-//
-bool ScanAndSetRealNum(OScanner& os, fixed64_t& num)
-{
-	os.scan();
-	if (!IsRealNum(os.getToken().c_str()))
-	{
-		os.warning("Expected number, got \"{}\". Aborting parsing", os.getToken());
-		return false;
-	}
-	num = FLOAT2FIXED64(os.getTokenFloat());
-
-	return true;
-}
-
-// Scans through and interprets a file of lines
-bool InterpretLines(const std::string& name, std::vector<mline_t>& lines)
-{
-	lines.clear();
-
-	const int lump = W_FindLump(name.c_str(), 0);
-	if (lump != -1)
-	{
-		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
-
-		const OScannerConfig config = {
-		    name,  // lumpName
-		    false, // semiComments
-		    true,  // cComments
-		};
-		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
-
-		while (os.scan())
-		{
-			os.unScan();
-			mline_t ml;
-
-			if (!ScanAndCompareString(os, "(")) break;
-			if (!ScanAndSetRealNum(os, ml.a.x)) break;
-			if (!ScanAndCompareString(os, ",")) break;
-			if (!ScanAndSetRealNum(os, ml.a.y)) break;
-			if (!ScanAndCompareString(os, ")")) break;
-			if (!ScanAndCompareString(os, ",")) break;
-			if (!ScanAndCompareString(os, "(")) break;
-			if (!ScanAndSetRealNum(os, ml.b.x)) break;
-			if (!ScanAndCompareString(os, ",")) break;
-			if (!ScanAndSetRealNum(os, ml.b.y)) break;
-			if (!ScanAndCompareString(os, ")")) break;
-
-			lines.push_back(ml);
-		}
-	}
-	else
-		return false;
-
-	return true;
-}
-
-//
 void MIType_MapArrows(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                       unsigned int flags2)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
+	auto helper = [&os](std::vector<mline_t>& arrow, const std::string& arrowlump){
+		const auto lines = AM_ParseVectorLump(arrowlump);
+		if (!lines)
+		{
+			switch (lines.error())
+			{
+				case am_lump_parse_error_t::LUMP_NOT_FOUND:
+					os.warning("Map arrow lump \"{}\" could not be found", arrowlump);
+					break;
+				default:
+					os.warning("Error while parsing map arrow lump \"{}\"", arrowlump);
+			}
+		}
+		else
+		{
+			arrow = lines.value();
+		}
+	};
+
 	std::string maparrow = os.getToken();
 
-	if (!InterpretLines(maparrow, gameinfo.mapArrow))
-		os.warning("Map arrow lump \"{}\" could not be found", maparrow);
+	helper(gameinfo.mapArrow, maparrow);
 
 	os.scan();
 	if (os.compareToken(","))
@@ -1180,8 +1128,7 @@ void MIType_MapArrows(OScanner& os, bool newStyleMapInfo, void* data, unsigned i
 		os.mustScan();
 		maparrow = os.getToken();
 
-		if (!InterpretLines(maparrow, gameinfo.mapArrowCheat))
-			os.warning("Map arrow lump \"{}\" could not be found", maparrow);
+		helper(gameinfo.mapArrowCheat, maparrow);
 	}
 	else
 	{
@@ -1196,7 +1143,22 @@ void MIType_MapKey(OScanner& os, bool newStyleMapInfo, void* data, unsigned int 
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	const std::string name = os.getToken();
-	InterpretLines(name, *static_cast<std::vector<mline_t>*>(data));
+	const auto lines = AM_ParseVectorLump(name);
+	if (lines)
+	{
+		*static_cast<std::vector<mline_t>*>(data) = lines.value();
+	}
+	else
+	{
+		switch (lines.error())
+		{
+			case am_lump_parse_error_t::LUMP_NOT_FOUND:
+				os.warning("Map key lump \"{}\" could not be found", name);
+				break;
+			default:
+				os.warning("Error while parsing map key lump \"{}\"", name);
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1308,7 +1270,8 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "compat_limitpain", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_LIMITPAIN },
 			{ "compat_useblocking", &MIType_CompatFlag, &ref.flags }, // special lines block use (not implemented, default odamex behavior)
 		    { "compat_missileclip", &MIType_CompatFlag, &ref.flags }, // original height monsters when it comes to missiles (not implemented)
-			{ "compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF },
+			{ "compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF }, // todo: not implemented
+			{ "compat_crossdropoff", &MIType_CompatFlag, &ref.flags2, LEVEL2_COMPAT_CROSSDROPOFF },
 			{ "compat_trace", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
 			{ "compat_boomscroll", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
 			{ "compat_sectorsounds", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
@@ -1955,6 +1918,7 @@ void G_ParseMapInfo()
 	switch (gamemission)
 	{
 	case doom:
+	case chex3v:
 	case retail_freedoom:
 		baseinfoname = "_D1NFO";
 		if (gamemode == shareware)
@@ -1965,6 +1929,7 @@ void G_ParseMapInfo()
 		}
 		break;
 	case doom2:
+	case chex3d2:
 	case commercial_freedoom:
 	case commercial_hacx:
 		baseinfoname = "_D2NFO";
@@ -1982,6 +1947,7 @@ void G_ParseMapInfo()
 		baseinfoname = "_PLUTNFO";
 		break;
 	case chex:
+	case chex3:
 		baseinfoname = "_CHEXNFO";
 		break;
 	case none:
