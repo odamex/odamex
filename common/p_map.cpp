@@ -852,10 +852,8 @@ static bool PIT_CheckThing (AActor *thing)
 // sides of the blocking line. If so, return true, otherwise
 // false.
 
-bool Check_Sides(AActor* actor, int x, int y)
+bool Check_Sides(const AActor* actor, int x, int y)
 {
-	int bx,by,xl,xh,yl,yh;
-
 	pe_x = actor->x;
 	pe_y = actor->y;
 	ls_x = x;
@@ -870,19 +868,19 @@ bool Check_Sides(AActor* actor, int x, int y)
 
 	// Determine which blocks to look in for blocking lines
 
-	xl = (tmbbox[BOXLEFT]   - bmaporgx)>>MAPBLOCKSHIFT;
-	xh = (tmbbox[BOXRIGHT]  - bmaporgx)>>MAPBLOCKSHIFT;
-	yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
-	yh = (tmbbox[BOXTOP]    - bmaporgy)>>MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT]   - bmaporgx)>>MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT]  - bmaporgx)>>MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - bmaporgy)>>MAPBLOCKSHIFT;
+	const int yh = (tmbbox[BOXTOP]    - bmaporgy)>>MAPBLOCKSHIFT;
 
 	// xl->xh, yl->yh determine the mapblock set to search
 
 	validcount++; // prevents checking same line twice
-	for (bx = xl ; bx <= xh ; bx++)
-		for (by = yl ; by <= yh ; by++)
-		if (!P_BlockLinesIterator(bx,by,PIT_CrossLine))
-			return true;										//   ^
-	return(false);												//   |
+	for (int bx = xl ; bx <= xh ; bx++)
+		for (int by = yl ; by <= yh ; by++)
+			if (!P_BlockLinesIterator(bx,by,PIT_CrossLine))
+				return true;										//   ^
+	return false;												//   |
 }																// phares
 
 

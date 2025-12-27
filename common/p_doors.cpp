@@ -575,7 +575,7 @@ DDoor* DDoor::Clone(sector_t* sec) const
 	return door;
 }
 
-bool EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
+bool EV_DoDoor (DDoor::EVlDoor type, line_t *line, const AActor *thing,
                 int tag, int speed, int delay, card_t lock)
 {
 	bool		rtn = false;

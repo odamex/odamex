@@ -57,8 +57,8 @@ static constexpr fixed_t S_STEREO_SWING = 96 * FRACUNIT;
 struct channel_t
 {
 public:
-	fixed_t*	pt;				// origin of sound
-	fixed_t		x, y;			// origin if pt is NULL
+	const fixed_t*	pt;				// origin of sound
+	fixed_t		x, y;			// origin if pt is nullptr
 	sfxinfo_t*	sfxinfo;		// sound information (if null, channel avail.)
 	int 		handle;			// handle of the sound being played
 	int			sound_id;
@@ -74,9 +74,9 @@ public:
 
 	void clear()
 	{
-		pt = NULL;
+		pt = nullptr;
 		x = y = 0;
-		sfxinfo = NULL;
+		sfxinfo = nullptr;
 		handle = -1;
 		sound_id = -1;
 		entchannel = CHAN_VOICE;
@@ -169,7 +169,7 @@ void S_NoiseDebug()
 		if (Channel[i].sfxinfo)
 		{
 			char temp[16];
-			fixed_t *origin = Channel[i].pt;
+			const fixed_t *origin = Channel[i].pt;
 
 			if (Channel[i].attenuation == ATTN_NONE && listenplayer().camera)
 			{
@@ -278,8 +278,8 @@ void S_Init(float sfxVolume, float musicVolume)
  */
 void S_Deinit()
 {
-	::SoundCurve = NULL;
-	::Channel = NULL;
+	::SoundCurve = nullptr;
+	::Channel = nullptr;
 }
 
 //
@@ -358,7 +358,7 @@ int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_in
                  fixed_t dist, int channel)
 {
 	// not a valid sound
-	if (::Channel == NULL || sfxinfo == NULL)
+	if (::Channel == nullptr || sfxinfo == nullptr)
 		return -1;
 
 	// Sort the sound channels by descending priority levels
@@ -388,7 +388,7 @@ int S_GetChannel(sfxinfo_t* sfxinfo, float volume, int priority, unsigned max_in
 
 	// try to find the first empty channel
 	for (size_t i = 0; i < numChannels; i++)
-		if (Channel[i].sfxinfo == NULL)
+		if (Channel[i].sfxinfo == nullptr)
 			return i;
 
 	// No empty channels and this is an ambient sound?
@@ -609,7 +609,7 @@ static int ResolveSound(int soundid)
 // joek - choco's S_StartSoundAtVolume with some zdoom code
 // a bit of a whore of a funtion but she works ok
 //
-static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
+static void S_StartSound(const fixed_t* pt, fixed_t x, fixed_t y, int channel,
 	                     int sfx_id, float volume, int attenuation, bool looping,
 	                     float dist_scale = 0.0f)
 {
@@ -653,9 +653,9 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 
 	if (pt == (fixed_t *)(~0))
 	{
-		pt = NULL;
+		pt = nullptr;
 	}
-	else if (pt != NULL)
+	else if (pt != nullptr)
 	{
 		x = pt[0];
 		y = pt[1];
@@ -746,15 +746,15 @@ static void S_StartSound(fixed_t* pt, fixed_t x, fixed_t y, int channel,
 
 void S_SoundID(int channel, int sound_id, float volume, int attenuation)
 {
-	S_StartSound((fixed_t *)NULL, 0, 0, channel, sound_id, volume, attenuation, false);
+	S_StartSound(nullptr, 0, 0, channel, sound_id, volume, attenuation, false);
 }
 
 void S_SoundID(fixed_t x, fixed_t y, int channel, int sound_id, float volume, int attenuation)
 {
-	S_StartSound((fixed_t *)NULL, x, y, channel, sound_id, volume, attenuation, false);
+	S_StartSound(nullptr, x, y, channel, sound_id, volume, attenuation, false);
 }
 
-void S_SoundID(AActor *ent, int channel, int sound_id, float volume, int attenuation)
+void S_SoundID(const AActor *ent, int channel, int sound_id, float volume, int attenuation)
 {
 	if (!ent)
 		return;
@@ -765,12 +765,12 @@ void S_SoundID(AActor *ent, int channel, int sound_id, float volume, int attenua
 	S_StartSound (&ent->x, 0, 0, channel, sound_id, volume, attenuation, false);
 }
 
-void S_SoundID(fixed_t *pt, int channel, int sound_id, float volume, int attenuation)
+void S_SoundID(const fixed_t *pt, int channel, int sound_id, float volume, int attenuation)
 {
 	S_StartSound(pt, 0, 0, channel, sound_id, volume, attenuation, false);
 }
 
-void S_LoopedSoundID(AActor *ent, int channel, int sound_id, float volume, int attenuation)
+void S_LoopedSoundID(const AActor *ent, int channel, int sound_id, float volume, int attenuation)
 {
 	if (!ent)
 		return;
@@ -781,12 +781,12 @@ void S_LoopedSoundID(AActor *ent, int channel, int sound_id, float volume, int a
 	S_StartSound(&ent->x, 0, 0, channel, sound_id, volume, attenuation, true);
 }
 
-void S_LoopedSoundID(fixed_t *pt, int channel, int sound_id, float volume, int attenuation)
+void S_LoopedSoundID(const fixed_t *pt, int channel, int sound_id, float volume, int attenuation)
 {
 	S_StartSound(pt, 0, 0, channel, sound_id, volume, attenuation, true);
 }
 
-int S_FindGenderedSound(std::string_view name, AActor* ent)
+int S_FindGenderedSound(std::string_view name, const AActor* ent)
 {
 	static constexpr std::string_view templat = "player/{}/{}";
 	// static constexpr std::string_view genders[] = { "male", "female", "cyborg", "other" };
@@ -809,7 +809,7 @@ int S_FindGenderedSound(std::string_view name, AActor* ent)
 	return sfx_id;
 }
 
-static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, int channel,
+static void S_StartNamedSound(const AActor *ent, const fixed_t *pt, fixed_t x, fixed_t y, int channel,
                               const char *name, float volume, int attenuation, bool looping,
                               float dist_scale = 0.0f)
 {
@@ -852,7 +852,7 @@ static void S_StartNamedSound(AActor *ent, fixed_t *pt, fixed_t x, fixed_t y, in
 void S_PlatSound(fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
     if (!predicting)
-        S_StartNamedSound(NULL, pt, 0, 0, channel, name, volume, attenuation, false);
+        S_StartNamedSound(nullptr, pt, 0, 0, channel, name, volume, attenuation, false);
 }
 
 void S_Sound(int channel, const char *name, float volume, int attenuation)
@@ -860,35 +860,35 @@ void S_Sound(int channel, const char *name, float volume, int attenuation)
 	// [SL] 2011-05-27 - This particular S_Sound() function is only used for sounds
 	// that should be full volume regardless of location.  Ignore the specified
 	// attenuation and use ATTN_NONE instead.
-	S_StartNamedSound((AActor *)NULL, NULL, 0, 0, channel, name, volume, ATTN_NONE, false);
+	S_StartNamedSound(nullptr, nullptr, 0, 0, channel, name, volume, ATTN_NONE, false);
 }
 
-void S_Sound(AActor *ent, int channel, const char *name, float volume, int attenuation)
+void S_Sound(const AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
 	if(!co_globalsound && channel == CHAN_ITEM && ent != listenplayer().camera)
 		return;
 
-	S_StartNamedSound(ent, NULL, 0, 0, channel, name, volume, attenuation, false);
+	S_StartNamedSound(ent, nullptr, 0, 0, channel, name, volume, attenuation, false);
 }
 
-void S_Sound(fixed_t *pt, int channel, const char *name, float volume, int attenuation)
+void S_Sound(const fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound(NULL, pt, 0, 0, channel, name, volume, attenuation, false);
+	S_StartNamedSound(nullptr, pt, 0, 0, channel, name, volume, attenuation, false);
 }
 
-void S_LoopedSound(AActor *ent, int channel, const char *name, float volume, int attenuation)
+void S_LoopedSound(const AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound(ent, NULL, 0, 0, channel, name, volume, attenuation, true);
+	S_StartNamedSound(ent, nullptr, 0, 0, channel, name, volume, attenuation, true);
 }
 
-void S_LoopedSound(fixed_t *pt, int channel, const char *name, float volume, int attenuation)
+void S_LoopedSound(const fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound(NULL, pt, 0, 0, channel, name, volume, attenuation, true);
+	S_StartNamedSound(nullptr, pt, 0, 0, channel, name, volume, attenuation, true);
 }
 
 void S_Sound(fixed_t x, fixed_t y, int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound((AActor *)(~0), NULL, x, y, channel, name, volume, attenuation, false);
+	S_StartNamedSound(nullptr, nullptr, x, y, channel, name, volume, attenuation, false);
 }
 
 
@@ -897,7 +897,7 @@ void S_Sound(fixed_t x, fixed_t y, int channel, const char *name, float volume, 
 //
 static void S_StopChannel(unsigned int cnum)
 {
-	if (::Channel == NULL)
+	if (::Channel == nullptr)
 		return;
 
 	if (cnum >= numChannels)
@@ -915,7 +915,7 @@ static void S_StopChannel(unsigned int cnum)
 }
 
 
-void S_StopSound(fixed_t *pt)
+void S_StopSound(const fixed_t *pt)
 {
 	for (unsigned int i = 0; i < numChannels; i++)
 		if (Channel[i].sfxinfo && (Channel[i].pt == pt))
@@ -924,9 +924,9 @@ void S_StopSound(fixed_t *pt)
 		}
 }
 
-void S_StopSound(fixed_t *pt, int channel)
+void S_StopSound(const fixed_t *pt, int channel)
 {
-	if (::Channel == NULL)
+	if (::Channel == nullptr)
 		return;
 
 	for (unsigned int i = 0; i < numChannels; i++)
@@ -936,7 +936,7 @@ void S_StopSound(fixed_t *pt, int channel)
 			S_StopChannel(i);
 }
 
-void S_StopSound(AActor *ent, int channel)
+void S_StopSound(const AActor *ent, int channel)
 {
 	S_StopSound(&ent->x, channel);
 }
@@ -990,17 +990,17 @@ void S_ResumeSound()
 
 
 // Moves all the sounds from one thing to another. If the destination is
-// NULL, then the sound becomes a positioned sound.
-void S_RelinkSound(AActor *from, AActor *to)
+// nullptr, then the sound becomes a positioned sound.
+void S_RelinkSound(const AActor *from, const AActor *to)
 {
-	if (::Channel == NULL)
+	if (::Channel == nullptr)
 		return;
 
 	if (!from)
 		return;
 
 	const fixed_t *frompt = &from->x;
-	fixed_t *topt = to ? &to->x : NULL;
+	const fixed_t *topt = to ? &to->x : nullptr;
 
 	for (unsigned int i = 0; i < numChannels; i++)
 	{
@@ -1013,7 +1013,7 @@ void S_RelinkSound(AActor *from, AActor *to)
 	}
 }
 
-bool S_GetSoundPlayingInfo(fixed_t *pt, int sound_id)
+bool S_GetSoundPlayingInfo(const fixed_t *pt, int sound_id)
 {
 	for (unsigned int i = 0; i < numChannels; i++)
 	{
@@ -1023,9 +1023,9 @@ bool S_GetSoundPlayingInfo(fixed_t *pt, int sound_id)
 	return false;
 }
 
-bool S_GetSoundPlayingInfo(AActor *ent, int sound_id)
+bool S_GetSoundPlayingInfo(const AActor *ent, int sound_id)
 {
-	return S_GetSoundPlayingInfo (ent ? &ent->x : NULL, sound_id);
+	return S_GetSoundPlayingInfo (ent ? &ent->x : nullptr, sound_id);
 }
 
 //
@@ -1053,12 +1053,11 @@ void S_ResumeMusic()
 // Updates music & sounds
 //
 // joek - from choco again
-void S_UpdateSounds(void* listener_p)
+void S_UpdateSounds(const AActor* listener)
 {
-	if (::Channel == NULL)
+	if (::Channel == nullptr)
 		return;
 
-	AActor* listener = (AActor*)listener_p;
 	for (int cnum = 0; cnum < (int)numChannels; cnum++)
 	{
 		channel_t* c = &Channel[cnum];
@@ -1179,7 +1178,7 @@ void S_ChangeMusic(std::string musicname, bool looping, int order)
 		return;
 	}
 
-	byte* data = NULL;
+	byte* data = nullptr;
 	size_t length = 0;
 	FILE *f;
 
@@ -1267,7 +1266,7 @@ void A_Ambient(AActor *actor)
 		{
 			const int attn_type =
 			    (ambient->type == amb_type_t::POINT ? ATTN_IDLE : ATTN_NONE);
-			S_StartNamedSound(actor, NULL, 0, 0, CHAN_AMBIENT, ambient->sound,
+			S_StartNamedSound(actor, nullptr, 0, 0, CHAN_AMBIENT, ambient->sound,
 			                  ambient->volume, attn_type, true, ambient->attenuation);
 
 			SetTicker (&actor->tics, ambient);
@@ -1283,7 +1282,7 @@ void A_Ambient(AActor *actor)
 		{
 			const int attn_type =
 			    (ambient->type == amb_type_t::POINT ? ATTN_IDLE : ATTN_NONE);
-			S_StartNamedSound(actor, NULL, 0, 0, CHAN_AMBIENT, ambient->sound,
+			S_StartNamedSound(actor, nullptr, 0, 0, CHAN_AMBIENT, ambient->sound,
 			                  ambient->volume, attn_type, false, ambient->attenuation);
 
 			SetTicker (&actor->tics, ambient);
@@ -1384,7 +1383,7 @@ END_COMMAND (changemus)
 // UV_SoundAvoidCl
 // Sends a sound to clients, but doesn't send it to client 'player'.
 //
-void UV_SoundAvoidPlayer(AActor *mo, byte channel, const char *name, byte attenuation)
+void UV_SoundAvoidPlayer(const AActor *mo, byte channel, const char *name, byte attenuation)
 {
 	S_Sound(mo, channel, name, 1, attenuation);
 }

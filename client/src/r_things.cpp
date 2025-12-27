@@ -453,7 +453,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	return vis;
 }
 
-void R_DrawHitBox(AActor* thing)
+void R_DrawHitBox(const AActor* thing)
 {
 	v3fixed_t vertices[8];
 	static constexpr byte color = 0x80;
@@ -523,7 +523,7 @@ void R_DrawHitBox(AActor* thing)
 // R_ProjectSprite
 // Generates a vissprite for a thing if it might be visible.
 //
-void R_ProjectSprite(AActor *thing, int fakeside)
+void R_ProjectSprite(const AActor *thing, int fakeside)
 {
 	int 				lump;
 	unsigned int		rot;
@@ -699,7 +699,7 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 		spritelights = scalelight[lightnum];
 
 	// Handle all things in sector.
-	for (AActor* thing = sec->thinglist; thing; thing = thing->snext)
+	for (const AActor* thing = sec->thinglist; thing; thing = thing->snext)
 	{
 		R_ProjectSprite (thing, fakeside);
 	}
