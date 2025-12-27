@@ -73,6 +73,7 @@ fixed_t boby;
 EXTERN_CVAR (r_drawplayersprites)
 EXTERN_CVAR (r_softinvulneffect)
 EXTERN_CVAR (r_particles)
+EXTERN_CVAR (r_thingsectorlight);
 
 //
 // INITIALIZATION FUNCTIONS
@@ -689,7 +690,8 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 	// Well, now it will be done.
 	sec->validcount = validcount;
 
-	int lightnum = (lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
+	int lightnum = r_thingsectorlight ? lightlevel : sec->lightlevel;
+	lightnum = (lightnum >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
 
 	if (lightnum < 0)
 		spritelights = scalelight[0];
