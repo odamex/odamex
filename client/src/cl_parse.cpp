@@ -707,7 +707,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			TActorIterator<AActor> iterator(mo->args[0]);
 			AActor* box = iterator.Next();
 
-			if (box->type == MT_SKYVIEWPOINT && box != NULL)
+			if (box != NULL && box->type == MT_SKYVIEWPOINT)
 			{
 				sector->Skybox = box->ptr();
 			}
