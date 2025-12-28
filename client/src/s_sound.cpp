@@ -607,7 +607,6 @@ class sound_origin_t
 {
 	enum
 	{
-		Global,
 		StaticPoint,
 		MoveablePoint,
 		Entity
@@ -622,7 +621,7 @@ class sound_origin_t
 	};
 
 public:
-	sound_origin_t() noexcept: type(Global) {}
+	sound_origin_t() noexcept: type(StaticPoint), x(0), y(0) {}
 	explicit sound_origin_t(fixed_t _x, fixed_t _y) noexcept: type(StaticPoint), x(_x), y(_y) {}
 	explicit sound_origin_t(const fixed_t* _pt) noexcept: type(MoveablePoint), pt(_pt) {}
 	explicit sound_origin_t(const AActor* _ent) noexcept: type(Entity), ent(_ent) {}
@@ -631,8 +630,6 @@ public:
 	{
 		switch (type)
 		{
-			case sound_origin_t::Global:
-				return { nullptr, 0, 0 };
 			case sound_origin_t::MoveablePoint:
 				if (pt == nullptr)
 					return { nullptr, 0, 0 };
