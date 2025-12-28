@@ -799,7 +799,8 @@ static void ReplaceSpecialChars(std::string& str)
 		{
 			*write++ = c;
 		}
-		else
+		// don't read past a trailing backslash
+		else if (*read)
 		{
 			switch (*read)
 			{
