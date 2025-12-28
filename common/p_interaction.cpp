@@ -1429,8 +1429,9 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 //		%p -> his/her/its/their
 //		%o -> other (victim)
 //		%k -> killer
+//		%s -> spree
 //
-void SexMessage (const char *from, char *to, gender_t gender, std::string_view victim, std::string_view killer)
+void SexMessage (const char *from, char *to, gender_t gender, std::string_view victim, std::string_view killer, std::string_view spree)
 {
 	static constexpr std::string_view genderstuff[4][3] =
 	{
@@ -1458,6 +1459,7 @@ void SexMessage (const char *from, char *to, gender_t gender, std::string_view v
 			case 'p':	gendermsg = 2;	break;
 			case 'o':	subst = victim;	break;
 			case 'k':	subst = killer;	break;
+			case 's':	subst = spree;	break;
 			}
 			if (!subst.empty())
 			{
@@ -1671,7 +1673,7 @@ static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attack
 	if (message)
 	{
 		SexMessage(message, gendermessage, gender, self->player->userinfo.netname,
-		           self->player->userinfo.netname);
+		           self->player->userinfo.netname, "");
 		SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
 
 		toast_t toast;
@@ -1747,7 +1749,7 @@ static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attack
 	if (message && attacker && attacker->player)
 	{
 		SexMessage(message, gendermessage, gender, self->player->userinfo.netname,
-		           attacker->player->userinfo.netname);
+		           attacker->player->userinfo.netname, "");
 		SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
 
 		toast_t toast;
@@ -1760,8 +1762,7 @@ static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attack
 	}
 
 	SexMessage(GStrings(OB_DEFAULT), gendermessage, gender,
-	           self->player->userinfo.netname,
-	           self->player->userinfo.netname);
+	           self->player->userinfo.netname, self->player->userinfo.netname, "");
 	SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
 
 	toast_t toast;

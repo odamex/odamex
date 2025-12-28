@@ -85,7 +85,17 @@ static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 			os.mustScan();
 			os.assertTokenIs("=");
 			os.mustScan();
-			spree.spreeText = os.getToken();
+			std::string text = os.getToken();
+			// Use LANGUAGE lump for this string.
+			if (text.find_first_of("$") == 0)
+			{
+				// This is a reference to a string.
+				spree.spreeText = GStrings(text.substr(1));
+			}
+			else
+			{
+				spree.spreeText = text;
+			}
 		}
 		else if (os.compareTokenNoCase("broadcasttext"))
 		{
@@ -95,7 +105,7 @@ static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 			std::string broadcastText = os.getToken();
 			// Use LANGUAGE lump for this string.
 			if (broadcastText.find_first_of("$") == 0)
-					{
+			{
 				// This is a reference to a string.
 				spree.spreeBroadcastText = GStrings(broadcastText.substr(1));
 			}
@@ -145,7 +155,17 @@ static void ParseMulti(OScanner& os, std::vector<MultiKillLevel_s>& multiKillLev
 			os.mustScan();
 			os.assertTokenIs("=");
 			os.mustScan();
-			level.multikilltext = os.getToken();
+			std::string text = os.getToken();
+			// Use LANGUAGE lump for this string.
+			if (text.find_first_of("$") == 0)
+			{
+				// This is a reference to a string.
+				level.multikilltext = GStrings(text.substr(1));
+			}
+			else
+			{
+				level.multikilltext = text;
+			}
 		}
 		else
 		{
@@ -158,6 +178,25 @@ static void ParseMulti(OScanner& os, std::vector<MultiKillLevel_s>& multiKillLev
 	}
 
 	multiKillLevels.push_back(level);
+}
+
+static void ParseSpreeText(OScanner& os, std::string& text, std::string token)
+{
+	os.assertTokenIs(token);
+	os.mustScan();
+	os.assertTokenIs("=");
+	os.mustScan();
+	std::string newText = os.getToken();
+	// Use LANGUAGE lump for this string.
+	if (newText.find_first_of("$") == 0)
+	{
+		// This is a reference to a string.
+		text = GStrings(newText.substr(1));
+	}
+	else
+	{
+		text = newText;
+	}
 }
 
 static void ParseSpreeDef(const int lump, const OLumpName name)
@@ -204,6 +243,22 @@ static void ParseSpreeDef(const int lump, const OLumpName name)
 		else if (os.compareTokenNoCase("multikillinterval"))
 		{
 			ParseMultiInterval(os, multikillinterval);
+		}
+		else if (os.compareTokenNoCase("spreeendedplayertext"))
+		{
+			ParseSpreeText(os, spreeEndPlayer, "spreeendedplayertext");
+		}
+		else if (os.compareTokenNoCase("spreeendedselftext"))
+		{
+			ParseSpreeText(os, spreeEndSelf, "spreeendedselftext");
+		}
+		else if (os.compareTokenNoCase("spreeendedmonstertext"))
+		{
+			ParseSpreeText(os, spreeEndMonster, "spreeendedmonstertext");
+		}
+		else if (os.compareTokenNoCase("repeatingspreestext"))
+		{
+			ParseSpreeText(os, repeatingSpreeText, "repeatingspreestext");
 		}
 		else if (os.compareTokenNoCase("spree"))
 		{

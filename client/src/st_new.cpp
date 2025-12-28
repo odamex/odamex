@@ -1409,9 +1409,6 @@ void DisplaySmallSpreeBreaker(SpreeBreaker_t breaker)
 {
 	smallSpreeLine_t line;
 
-	bool selfkill = false;
-	bool monsterkill = false;
-
 	player_t& endedPlayer = idplayer(breaker.spreeEndedPlayerId);
 
 	if (!validplayer(endedPlayer))
@@ -1422,19 +1419,6 @@ void DisplaySmallSpreeBreaker(SpreeBreaker_t breaker)
 
 	int enderPlayerId = breaker.spreeEnderPlayerId;
 
-	// Suicide or monster kill
-	if (enderPlayerId != -1)
-	{
-		if (!breaker.spreeEnderMonster || breaker.spreeEndedPlayerId == breaker.spreeEnderPlayerId)
-		{
-			selfkill = true;
-		}
-		else
-		{
-			monsterkill = true;
-		}
-	}
-
 	if (G_IsTeamGame())
 	{
 		TeamInfo* endedinfo = GetTeamInfo(breaker.spreeEndedTeam);
@@ -1444,30 +1428,18 @@ void DisplaySmallSpreeBreaker(SpreeBreaker_t breaker)
 		enderPlayerColor = endedinfo->ToastColor;
 	}
 
-	// format strings for self or monster kill
-	if (!selfkill)
-	{
-		line.spreeText =
-		    fmt::sprintf(breaker.spreeEndedBroadcastText,
-		                 endedPlayerColor + breaker.spreeEndedName + TEXTCOLOR_NORMAL,
-		                 TextColorFromRange(breaker.spreeEndedColor) + breaker.spreeEnded + TEXTCOLOR_NORMAL,
-		                 enderPlayerColor + breaker.spreeEnderName + TEXTCOLOR_NORMAL);
-	}
-	else
-	{
-		// Replace with gendered text
-		char gendermessage[1024];
-		gender_t gender = endedPlayer.userinfo.gender;
+	char gendermessage[1024];
+	gender_t gender = endedPlayer.userinfo.gender;
 
-		SexMessage(breaker.spreeEndedBroadcastText.c_str(), gendermessage, gender,
-		           "",
-		           "");
+	// Replace any possible gender or victim/killer/spree text with gendered text
+	SexMessage(breaker.spreeEndedBroadcastText.c_str(), gendermessage, gender,
+	           endedPlayerColor + breaker.spreeEndedName + TEXTCOLOR_NORMAL,
+	           enderPlayerColor + breaker.spreeEnderName + TEXTCOLOR_NORMAL,
+	           TextColorFromRange(breaker.spreeEndedColor) + breaker.spreeEnded + TEXTCOLOR_NORMAL);
 
-		std::string msg = gendermessage;
-		line.spreeText =
-		    fmt::sprintf(msg,
-		                 endedPlayerColor + breaker.spreeEndedName + TEXTCOLOR_NORMAL);
-	}
+	std::string msg = gendermessage;
+
+	line.spreeText = msg;
 
 	V_SetFont("SMALLFONT");
 
@@ -1542,9 +1514,18 @@ void DisplaySmallSpree(SpreeRecord_t record)
 		playerColor = info->ToastColor;
 	}
 
-	line.spreeText = fmt::sprintf(record.spree.spreeBroadcastText,
-	                              playerColor + record.playerName + TEXTCOLOR_NORMAL,
-	                              TextColorFromRange(record.spree.color) + record.spree.spreeText);
+	char gendermessage[1024];
+	gender_t gender = GENDER_OTHER;
+
+	// Replace any possible gender or victim/spree text with gendered text
+	SexMessage(record.spree.spreeBroadcastText.c_str(), gendermessage, gender,
+	           playerColor + record.playerName + TEXTCOLOR_NORMAL,
+	           "",
+	           TextColorFromRange(record.spree.color) + record.spree.spreeText);
+
+	std::string msg = gendermessage;
+
+	line.spreeText = msg;
 
 	V_SetFont("SMALLFONT");
 

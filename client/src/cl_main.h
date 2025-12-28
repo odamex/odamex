@@ -82,4 +82,4 @@ argb_t CL_GetPlayerColor(player_t* player);
 std::string M_ExpandTokens(const std::string &str);
 
 void SexMessage(const char* from, char* to, gender_t gender, std::string_view victim,
-                std::string_view killer);
+                std::string_view killer, std::string_view spree);
