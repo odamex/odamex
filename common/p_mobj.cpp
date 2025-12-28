@@ -3232,7 +3232,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 				TActorIterator<AActor> iterator (mthing->args[0]);
 			    AActor* box = iterator.Next();
 
-				if (box->type == MT_SKYVIEWPOINT && box != NULL)
+				if (box != NULL && box->type == MT_SKYVIEWPOINT)
 				{
 				    sector->Skybox = box->ptr();
 				}
