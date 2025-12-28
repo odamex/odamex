@@ -634,11 +634,17 @@ public:
 			case sound_origin_t::Global:
 				return { nullptr, 0, 0 };
 			case sound_origin_t::MoveablePoint:
-				return { pt, pt[0], pt[1] };
+				if (pt == nullptr)
+					return { nullptr, 0, 0 };
+				else
+					return { pt, pt[0], pt[1] };
 			case sound_origin_t::StaticPoint:
 				return { nullptr, x, y };
 			case sound_origin_t::Entity:
-				return { &ent->x, ent->x, ent->y };
+				if (ent == nullptr)
+					return { nullptr, 0, 0 };
+				else
+					return { &ent->x, ent->x, ent->y };
 		}
 	}
 
