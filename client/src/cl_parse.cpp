@@ -694,6 +694,9 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	if (type == MT_SKYPICKER)
 	{
+		if (!mo || !mo->subsector)
+			return;
+
 		sector_t* sector = mo->subsector->sector;
 		if (mo->args[0] == 0)
 		{
