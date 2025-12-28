@@ -629,7 +629,7 @@ struct sound_origin_t
 // joek - choco's S_StartSoundAtVolume with some zdoom code
 // a bit of a whore of a funtion but she works ok
 //
-static void S_StartSound(const sound_origin_t& origin, int channel,
+static void S_StartSound(sound_origin_t origin, int channel,
 	                     int sfx_id, float volume, int attenuation, bool looping,
 	                     float dist_scale = 0.0f)
 {
@@ -847,7 +847,7 @@ int S_FindGenderedSound(std::string_view name, const AActor* ent)
 	return sfx_id;
 }
 
-static void S_StartNamedSound(const sound_origin_t& origin, int channel,
+static void S_StartNamedSound(sound_origin_t origin, int channel,
                               const char *name, float volume, int attenuation, bool looping,
                               float dist_scale = 0.0f)
 {
