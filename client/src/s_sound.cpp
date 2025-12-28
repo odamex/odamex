@@ -603,13 +603,33 @@ static int ResolveSound(int soundid)
 	return sfx.link;
 }
 
+struct sound_origin_t
+{
+	enum
+	{
+		Global,
+		StaticPoint,
+		MoveablePoint,
+		Entity
+	} type = Global;
+	const fixed_t* pt = nullptr;
+	const AActor* ent = nullptr;
+	fixed_t x = 0;
+	fixed_t y = 0;
+
+	explicit sound_origin_t() noexcept: type(Global) {}
+	explicit sound_origin_t(fixed_t _x, fixed_t _y) noexcept: type(StaticPoint), x(_x), y(_y) {}
+	explicit sound_origin_t(const fixed_t* _pt) noexcept: type(MoveablePoint), pt(_pt) {}
+	explicit sound_origin_t(const AActor* _ent) noexcept: type(Entity), ent(_ent) {}
+};
+
 //
 // S_StartSound
 //
 // joek - choco's S_StartSoundAtVolume with some zdoom code
 // a bit of a whore of a funtion but she works ok
 //
-static void S_StartSound(const fixed_t* pt, fixed_t x, fixed_t y, int channel,
+static void S_StartSound(const sound_origin_t& origin, int channel,
 	                     int sfx_id, float volume, int attenuation, bool looping,
 	                     float dist_scale = 0.0f)
 {
@@ -651,14 +671,31 @@ static void S_StartSound(const fixed_t* pt, fixed_t x, fixed_t y, int channel,
 		return;
 	}
 
-	if (pt == (fixed_t *)(~0))
+	const fixed_t* pt = nullptr;
+	fixed_t x, y;
+
+	switch (origin.type)
 	{
-		pt = nullptr;
-	}
-	else if (pt != nullptr)
-	{
-		x = pt[0];
-		y = pt[1];
+		case sound_origin_t::Global:
+			pt = nullptr;
+			x = 0;
+			y = 0;
+			break;
+		case sound_origin_t::MoveablePoint:
+			pt = origin.pt;
+			x = pt[0];
+			y = pt[1];
+			break;
+		case sound_origin_t::StaticPoint:
+			pt = nullptr;
+			x = origin.x;
+			y = origin.y;
+			break;
+		case sound_origin_t::Entity:
+			pt = &origin.ent->x;
+			x = pt[0];
+			y = pt[1];
+			break;
 	}
 
 	if (sfxinfo->lumpnum == sfx_empty)
@@ -746,12 +783,12 @@ static void S_StartSound(const fixed_t* pt, fixed_t x, fixed_t y, int channel,
 
 void S_SoundID(int channel, int sound_id, float volume, int attenuation)
 {
-	S_StartSound(nullptr, 0, 0, channel, sound_id, volume, attenuation, false);
+	S_StartSound(sound_origin_t(), channel, sound_id, volume, attenuation, false);
 }
 
 void S_SoundID(fixed_t x, fixed_t y, int channel, int sound_id, float volume, int attenuation)
 {
-	S_StartSound(nullptr, x, y, channel, sound_id, volume, attenuation, false);
+	S_StartSound(sound_origin_t(x, y), channel, sound_id, volume, attenuation, false);
 }
 
 void S_SoundID(const AActor *ent, int channel, int sound_id, float volume, int attenuation)
@@ -762,12 +799,12 @@ void S_SoundID(const AActor *ent, int channel, int sound_id, float volume, int a
 	if (ent->subsector && ent->subsector->sector &&
 		ent->subsector->sector->MoreFlags & SECF_SILENT)
 		return;
-	S_StartSound (&ent->x, 0, 0, channel, sound_id, volume, attenuation, false);
+	S_StartSound(sound_origin_t(&ent->x), channel, sound_id, volume, attenuation, false);
 }
 
 void S_SoundID(const fixed_t *pt, int channel, int sound_id, float volume, int attenuation)
 {
-	S_StartSound(pt, 0, 0, channel, sound_id, volume, attenuation, false);
+	S_StartSound(sound_origin_t(pt), channel, sound_id, volume, attenuation, false);
 }
 
 void S_LoopedSoundID(const AActor *ent, int channel, int sound_id, float volume, int attenuation)
@@ -778,12 +815,13 @@ void S_LoopedSoundID(const AActor *ent, int channel, int sound_id, float volume,
 	if (ent->subsector && ent->subsector->sector &&
 		ent->subsector->sector->MoreFlags & SECF_SILENT)
 		return;
-	S_StartSound(&ent->x, 0, 0, channel, sound_id, volume, attenuation, true);
+
+	S_StartSound(sound_origin_t(&ent->x), channel, sound_id, volume, attenuation, true);
 }
 
 void S_LoopedSoundID(const fixed_t *pt, int channel, int sound_id, float volume, int attenuation)
 {
-	S_StartSound(pt, 0, 0, channel, sound_id, volume, attenuation, true);
+	S_StartSound(sound_origin_t(pt), channel, sound_id, volume, attenuation, true);
 }
 
 int S_FindGenderedSound(std::string_view name, const AActor* ent)
@@ -794,7 +832,7 @@ int S_FindGenderedSound(std::string_view name, const AActor* ent)
 	player_t *player;
 
 	int sfx_id = -1;
-	if (ent && ent != (AActor *)(~0) && (player = ent->player))
+	if (ent && (player = ent->player))
 	{
 		sfx_id = S_FindSound(fmt::format(templat, "base", name).c_str());
 		if (sfx_id == -1)
@@ -809,7 +847,7 @@ int S_FindGenderedSound(std::string_view name, const AActor* ent)
 	return sfx_id;
 }
 
-static void S_StartNamedSound(const AActor *ent, const fixed_t *pt, fixed_t x, fixed_t y, int channel,
+static void S_StartNamedSound(const sound_origin_t& origin, int channel,
                               const char *name, float volume, int attenuation, bool looping,
                               float dist_scale = 0.0f)
 {
@@ -818,19 +856,18 @@ static void S_StartNamedSound(const AActor *ent, const fixed_t *pt, fixed_t x, f
 
 	const std::string soundname = name ? name : "";
 
-	if (soundname.empty() ||
-			(ent && ent != (AActor *)(~0) && ent->subsector && ent->subsector->sector &&
-			ent->subsector->sector->MoreFlags & SECF_SILENT))
-	{
+	if (soundname.empty())
 		return;
-	}
+
+	if (origin.type == sound_origin_t::Entity &&
+	    origin.ent->subsector && origin.ent->subsector->sector &&
+	    origin.ent->subsector->sector->MoreFlags & SECF_SILENT)
+		return;
 
 	int sfx_id = -1;
 
 	if (soundname[0] == '*')
-	{
-		sfx_id = S_FindGenderedSound(soundname.substr(1), ent);
-	}
+		sfx_id = S_FindGenderedSound(soundname.substr(1), origin.ent);
 	else
 		sfx_id = S_FindSound(soundname.c_str());
 
@@ -840,19 +877,14 @@ static void S_StartNamedSound(const AActor *ent, const fixed_t *pt, fixed_t x, f
 		return;
 	}
 
-	if (ent && ent != (AActor *)(~0))
-		S_StartSound(&ent->x, x, y, channel, sfx_id, volume, attenuation, looping, dist_scale);
-	else if (pt)
-		S_StartSound(pt, x, y, channel, sfx_id, volume, attenuation, looping, dist_scale);
-	else
-		S_StartSound((fixed_t *)ent, x, y, channel, sfx_id, volume, attenuation, looping, dist_scale);
+	S_StartSound(origin, channel, sfx_id, volume, attenuation, looping, dist_scale);
 }
 
 // [Russell] - Hack to stop multiple plat stop sounds
 void S_PlatSound(fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
     if (!predicting)
-        S_StartNamedSound(nullptr, pt, 0, 0, channel, name, volume, attenuation, false);
+        S_StartNamedSound(sound_origin_t(pt), channel, name, volume, attenuation, false);
 }
 
 void S_Sound(int channel, const char *name, float volume, int attenuation)
@@ -860,7 +892,7 @@ void S_Sound(int channel, const char *name, float volume, int attenuation)
 	// [SL] 2011-05-27 - This particular S_Sound() function is only used for sounds
 	// that should be full volume regardless of location.  Ignore the specified
 	// attenuation and use ATTN_NONE instead.
-	S_StartNamedSound(nullptr, nullptr, 0, 0, channel, name, volume, ATTN_NONE, false);
+	S_StartNamedSound(sound_origin_t(), channel, name, volume, ATTN_NONE, false);
 }
 
 void S_Sound(const AActor *ent, int channel, const char *name, float volume, int attenuation)
@@ -868,27 +900,27 @@ void S_Sound(const AActor *ent, int channel, const char *name, float volume, int
 	if(!co_globalsound && channel == CHAN_ITEM && ent != listenplayer().camera)
 		return;
 
-	S_StartNamedSound(ent, nullptr, 0, 0, channel, name, volume, attenuation, false);
+	S_StartNamedSound(sound_origin_t(ent), channel, name, volume, attenuation, false);
 }
 
 void S_Sound(const fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound(nullptr, pt, 0, 0, channel, name, volume, attenuation, false);
+	S_StartNamedSound(sound_origin_t(pt), channel, name, volume, attenuation, false);
 }
 
 void S_LoopedSound(const AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound(ent, nullptr, 0, 0, channel, name, volume, attenuation, true);
+	S_StartNamedSound(sound_origin_t(ent), channel, name, volume, attenuation, true);
 }
 
 void S_LoopedSound(const fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound(nullptr, pt, 0, 0, channel, name, volume, attenuation, true);
+	S_StartNamedSound(sound_origin_t(pt), channel, name, volume, attenuation, true);
 }
 
 void S_Sound(fixed_t x, fixed_t y, int channel, const char *name, float volume, int attenuation)
 {
-	S_StartNamedSound(nullptr, nullptr, x, y, channel, name, volume, attenuation, false);
+	S_StartNamedSound(sound_origin_t(x, y), channel, name, volume, attenuation, false);
 }
 
 
@@ -1266,7 +1298,7 @@ void A_Ambient(AActor *actor)
 		{
 			const int attn_type =
 			    (ambient->type == amb_type_t::POINT ? ATTN_IDLE : ATTN_NONE);
-			S_StartNamedSound(actor, nullptr, 0, 0, CHAN_AMBIENT, ambient->sound,
+			S_StartNamedSound(sound_origin_t(actor), CHAN_AMBIENT, ambient->sound,
 			                  ambient->volume, attn_type, true, ambient->attenuation);
 
 			SetTicker (&actor->tics, ambient);
@@ -1282,7 +1314,7 @@ void A_Ambient(AActor *actor)
 		{
 			const int attn_type =
 			    (ambient->type == amb_type_t::POINT ? ATTN_IDLE : ATTN_NONE);
-			S_StartNamedSound(actor, nullptr, 0, 0, CHAN_AMBIENT, ambient->sound,
+			S_StartNamedSound(sound_origin_t(actor), CHAN_AMBIENT, ambient->sound,
 			                  ambient->volume, attn_type, false, ambient->attenuation);
 
 			SetTicker (&actor->tics, ambient);
