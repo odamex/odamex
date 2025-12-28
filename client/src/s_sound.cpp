@@ -616,8 +616,9 @@ class sound_origin_t
 	union {
 		const fixed_t* pt;
 		const AActor* ent;
-		struct {fixed_t x;
-		fixed_t y;};
+		struct {
+			fixed_t x, y;
+		};
 	};
 
 public:
@@ -862,7 +863,7 @@ static void S_StartNamedSound(sound_origin_t origin, int channel,
 		return;
 
 	const AActor* ent = origin.get_entity();
-	if (ent->subsector && ent->subsector->sector &&
+	if (ent && ent->subsector && ent->subsector->sector &&
 	    ent->subsector->sector->MoreFlags & SECF_SILENT)
 		return;
 
