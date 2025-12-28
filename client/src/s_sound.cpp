@@ -603,7 +603,7 @@ static int ResolveSound(int soundid)
 	return sfx.link;
 }
 
-struct sound_origin_t
+class sound_origin_t
 {
 	enum
 	{
@@ -611,16 +611,43 @@ struct sound_origin_t
 		StaticPoint,
 		MoveablePoint,
 		Entity
-	} type = Global;
-	const fixed_t* pt = nullptr;
-	const AActor* ent = nullptr;
-	fixed_t x = 0;
-	fixed_t y = 0;
+	} type;
 
-	explicit sound_origin_t() noexcept: type(Global) {}
+	union {
+		const fixed_t* pt;
+		const AActor* ent;
+		struct {fixed_t x;
+		fixed_t y;};
+	};
+
+public:
+	sound_origin_t() noexcept: type(Global) {}
 	explicit sound_origin_t(fixed_t _x, fixed_t _y) noexcept: type(StaticPoint), x(_x), y(_y) {}
 	explicit sound_origin_t(const fixed_t* _pt) noexcept: type(MoveablePoint), pt(_pt) {}
 	explicit sound_origin_t(const AActor* _ent) noexcept: type(Entity), ent(_ent) {}
+
+	[[nodiscard]] std::tuple<const fixed_t*, fixed_t, fixed_t> get_point() noexcept
+	{
+		switch (type)
+		{
+			case sound_origin_t::Global:
+				return { nullptr, 0, 0 };
+			case sound_origin_t::MoveablePoint:
+				return { pt, pt[0], pt[1] };
+			case sound_origin_t::StaticPoint:
+				return { nullptr, x, y };
+			case sound_origin_t::Entity:
+				return { &ent->x, ent->x, ent->y };
+		}
+	}
+
+	[[nodiscard]] const AActor* get_entity() noexcept
+	{
+		if (type == Entity)
+			return ent;
+		else
+			return nullptr;
+	}
 };
 
 //
@@ -671,32 +698,7 @@ static void S_StartSound(sound_origin_t origin, int channel,
 		return;
 	}
 
-	const fixed_t* pt = nullptr;
-	fixed_t x, y;
-
-	switch (origin.type)
-	{
-		case sound_origin_t::Global:
-			pt = nullptr;
-			x = 0;
-			y = 0;
-			break;
-		case sound_origin_t::MoveablePoint:
-			pt = origin.pt;
-			x = pt[0];
-			y = pt[1];
-			break;
-		case sound_origin_t::StaticPoint:
-			pt = nullptr;
-			x = origin.x;
-			y = origin.y;
-			break;
-		case sound_origin_t::Entity:
-			pt = &origin.ent->x;
-			x = pt[0];
-			y = pt[1];
-			break;
-	}
+	const auto& [pt, x, y] = origin.get_point();
 
 	if (sfxinfo->lumpnum == sfx_empty)
 		return;
@@ -859,15 +861,15 @@ static void S_StartNamedSound(sound_origin_t origin, int channel,
 	if (soundname.empty())
 		return;
 
-	if (origin.type == sound_origin_t::Entity &&
-	    origin.ent->subsector && origin.ent->subsector->sector &&
-	    origin.ent->subsector->sector->MoreFlags & SECF_SILENT)
+	const AActor* ent = origin.get_entity();
+	if (ent->subsector && ent->subsector->sector &&
+	    ent->subsector->sector->MoreFlags & SECF_SILENT)
 		return;
 
 	int sfx_id = -1;
 
 	if (soundname[0] == '*')
-		sfx_id = S_FindGenderedSound(soundname.substr(1), origin.ent);
+		sfx_id = S_FindGenderedSound(soundname.substr(1), ent);
 	else
 		sfx_id = S_FindSound(soundname.c_str());
 
