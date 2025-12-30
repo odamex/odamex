@@ -1355,91 +1355,64 @@ bool EV_DoGenStairs(line_t* line)
 //		by its special. If usespecials is 2, each sector stays in "sync" with
 //		the others.
 //
-bool EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
-					 fixed_t stairsize, fixed_t speed, int delay, int reset, int igntxt,
-					 int usespecials)
+bool EV_BuildStairs(const int tag, const DFloor::EStair type, const line_t *line,
+                    const fixed_t stairsize, const fixed_t speed, const int delay,
+                    const int reset, int igntxt, const int usespecials)
 {
-	int 				secnum;
-	int					osecnum;	//jff 3/4/98 save old loop index
-	int 				height;
-	int 				i;
-	int 				newsecnum = 0;
-	int 				texture;
-	int 				ok;
-	int					persteptime;
-	bool 				rtn = false;
-
-	sector_t*			sec = NULL;
-	sector_t*			tsec = NULL;
-	sector_t*			prev = NULL;
-
-	DFloor*				floor = NULL;
-	bool				manual = false;
+	sector_t* prev = nullptr;
 
 	if (speed == 0)
 		return false;
 
-	persteptime = FixedDiv (stairsize, speed) >> FRACBITS;
+	const int persteptime = FixedDiv (stairsize, speed) >> FRACBITS;
 
-	// check if a manual trigger, if so do just the sector on the backside
-	if (tag == 0)
+	const auto helper = [&](sector_t* sec, int secnum) -> bool
 	{
-		if (!line || !(sec = line->backsector))
-			return rtn;
-		secnum = sec-sectors;
-		manual = true;
-		goto manual_stair;
-	}
-
-	secnum = -1;
-	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
-	{
-		sec = &sectors[secnum];
-
-manual_stair:
-		// ALREADY MOVING?	IF SO, KEEP GOING...
-		//jff 2/26/98 add special lockout condition to wait for entire
-		//staircase to build before retriggering
 		if (sec->floordata || sec->stairlock)
-		{
-			if (!manual)
-				continue;
-			else
-				return rtn;
-		}
+			return false;
 
-		fixed_t floorheight = P_FloorHeight(sec);
+		const fixed_t floorheight = P_FloorHeight(sec);
+
+		const auto spawnStairFloor = [&]() -> DFloor*
+		{
+			// new floor thinker
+			DFloor* floor = new DFloor(sec);
+			P_AddMovingFloor(sec);
+
+			floor->m_Direction = (type == DFloor::buildUp) ? 1 : -1;
+			floor->m_Type = DFloor::buildStair;	//jff 3/31/98 do not leave uninited
+			// [RH] Set up delay values
+			floor->m_Delay = delay;
+			floor->m_PauseTime = 0;
+			floor->m_StepTime = floor->m_PerStepTime = persteptime;
+			//jff 2/27/98 fix uninitialized crush field
+			floor->m_Crush =
+				(!usespecials && speed == 4 * FRACUNIT) ? DOOM_CRUSH : NO_CRUSH;
+			floor->m_ResetCount = reset;	// [RH] Tics until reset (0 if never)
+			floor->m_OrgHeight = floorheight;	// [RH] Height to reset to
+
+			return floor;
+		};
 
 		// new floor thinker
-		rtn = true;
-		floor = new DFloor (sec);
-		P_AddMovingFloor(sec);
-
-		floor->m_Direction = (type == DFloor::buildUp) ? 1 : -1;
-		floor->m_Type = DFloor::buildStair;	//jff 3/31/98 do not leave uninited
-		floor->m_ResetCount = reset;	// [RH] Tics until reset (0 if never)
-		floor->m_OrgHeight = floorheight;	// [RH] Height to reset to
-		// [RH] Set up delay values
-		floor->m_Delay = delay;
-		floor->m_PauseTime = 0;
-		floor->m_StepTime = floor->m_PerStepTime = persteptime;
-
-		floor->m_Crush = (!usespecials && speed == 4*FRACUNIT) ? DOOM_CRUSH : NO_CRUSH; //jff 2/27/98 fix uninitialized crush field
+		DFloor* floor = spawnStairFloor();
 
 		floor->m_Speed = speed;
-		height = floorheight + stairsize * floor->m_Direction;
+		int height = floorheight + stairsize * floor->m_Direction;
 		floor->m_FloorDestHeight = height;
 
-		texture = sec->floorpic;
-		osecnum = secnum;				//jff 3/4/98 preserve loop index
+		const int texture = sec->floorpic;
 
 		// Find next sector to raise
 		// 1.	Find 2-sided line with same sector side[0] (lowest numbered)
 		// 2.	Other side is the next sector to raise
 		// 3.	Unless already moving, or different texture, then stop building
+		bool ok = false;
+		int newsecnum = 0;
+		sector_t* tsec = nullptr;
 		do
 		{
-			ok = 0;
+			ok = false;
 
 			if (usespecials)
 			{
@@ -1448,7 +1421,7 @@ manual_stair:
 						(sec->special & 0xff) == Stairs_Special1 ?
 							Stairs_Special2 : Stairs_Special1, prev);
 
-				if ( (ok = (tsec != NULL)) )
+				if ( (ok = (tsec != nullptr)) )
 				{
 					height += floor->m_Direction * stairsize;
 
@@ -1465,9 +1438,9 @@ manual_stair:
 			}
 			else
 			{
-				for (i = 0; i < sec->linecount; i++)
+				for (int i = 0; i < sec->linecount; i++)
 				{
-					if ( !((sec->lines[i])->flags & ML_TWOSIDED) )
+					if (!((sec->lines[i])->flags & ML_TWOSIDED))
 						continue;
 
 					tsec = (sec->lines[i])->frontsector;
@@ -1510,16 +1483,10 @@ manual_stair:
 				secnum = newsecnum;
 
 				// create and initialize a thinker for the next step
-				floor = new DFloor (sec);
-				P_AddMovingFloor(sec);
+				floor = spawnStairFloor();
 
 				floor->PlayFloorSound();
-				floor->m_Direction = (type == DFloor::buildUp) ? 1 : -1;
 				floor->m_FloorDestHeight = height;
-				// [RH] Set up delay values
-				floor->m_Delay = delay;
-				floor->m_PauseTime = 0;
-				floor->m_StepTime = floor->m_PerStepTime = persteptime;
 
 				if (usespecials == 2)
 				{
@@ -1532,17 +1499,26 @@ manual_stair:
 				{
 					floor->m_Speed = speed;
 				}
-				floor->m_Type = DFloor::buildStair;	//jff 3/31/98 do not leave uninited
-				//jff 2/27/98 fix uninitialized crush field
-				floor->m_Crush =
-				    (!usespecials && speed == 4 * FRACUNIT) ? DOOM_CRUSH : NO_CRUSH;
-				floor->m_ResetCount = reset;	// [RH] Tics until reset (0 if never)
-				floor->m_OrgHeight = floorheight;	// [RH] Height to reset to
 			}
 		} while(ok);
-		if (manual)
-			return rtn;
-		secnum = osecnum;	//jff 3/4/98 restore loop index
+
+		return true;
+	};
+
+	// check if a manual trigger, if so do just the sector on the backside
+	if (tag == 0)
+	{
+		if (!line || !line->backsector)
+			return false;
+
+		return helper(line->backsector, line->backsector - sectors);
+	}
+
+	bool rtn = false;
+	int secnum = -1;
+	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
+	{
+		rtn |= helper(&sectors[secnum], secnum);
 	}
 	return rtn;
 }

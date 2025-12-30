@@ -1147,7 +1147,7 @@ public:
 	int			m_Change;
 
 protected:
-	friend bool EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
+	friend bool EV_BuildStairs (int tag, DFloor::EStair type, const line_t *line,
 		fixed_t stairsize, fixed_t speed, int delay, int reset, int igntxt,
 		int usespecials);
 	friend bool EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
