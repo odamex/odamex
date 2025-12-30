@@ -4078,7 +4078,7 @@ void strbin (char *str)
 	while ( (c = *p++) ) {
 		if (c != '\\') {
 			*str++ = c;
-		} else {
+		} else if (*p) {
 			switch (*p) {
 				case 'c':
 					*str++ = '\034';	// TEXTCOLOR_ESCAPE
@@ -4136,6 +4136,10 @@ void strbin (char *str)
 					break;
 			}
 			p++;
+		}
+		else
+		{
+			// Trainling backlash
 		}
 	}
 	*str = 0;
