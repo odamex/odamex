@@ -1427,8 +1427,6 @@ player_s::player_s() :
 	QueuePosition(0),
 	hazardcount(0),
 	hazardinterval(0),
-	damagesincelastdeath(0),
-	killssincelastdeath(0),
 	multikills(0),
 	multikilltics(0),
 	lastkilltime(0),
@@ -1568,8 +1566,6 @@ player_s &player_s::operator =(const player_s &other)
 	
 	hazardcount = other.hazardcount;
 	hazardinterval = other.hazardinterval;
-	damagesincelastdeath = other.damagesincelastdeath;
-	killssincelastdeath = other.killssincelastdeath;
 	multikills = other.multikills;
 	multikilltics = other.multikilltics;
 	lastkilltime = other.lastkilltime;

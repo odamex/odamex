@@ -1172,6 +1172,8 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	mobj->health = p->health;
 	P_SetThingId(mobj, netid);
 
+	SpreeManager::getInstance().erasePoints(p->id);
+
 	p->mo = p->camera = mobj->ptr();
 	p->fov = 90.0f;
 	p->playerstate = PST_LIVE;
@@ -1182,8 +1184,6 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	p->fixedcolormap = 0;
 	p->multikills = 0;
 	p->multikilltics = 0;
-	p->killssincelastdeath = 0;
-	p->damagesincelastdeath = 0;
 
 	p->xviewshift = 0;
 	p->viewheight = VIEWHEIGHT;
