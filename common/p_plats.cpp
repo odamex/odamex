@@ -559,14 +559,14 @@ manual_plat:
 	return rtn;
 }
 
-bool EV_DoGenLift(line_t* line)
+bool EV_DoGenLift(line_t& line)
 {
 	DPlat* plat;
 	int secnum;
 	sector_t* sec;
 	bool rtn = false;
 	bool manual = false;
-	unsigned value = (unsigned)line->special - GenLiftBase;
+	unsigned value = (unsigned)line.special - GenLiftBase;
 
     int Targ = (value & LiftTarget) >> LiftTargetShift;
 	int Dely = (value & LiftDelay) >> LiftDelayShift;
@@ -576,11 +576,11 @@ bool EV_DoGenLift(line_t* line)
 	 // Activate all <type> plats that are in_stasis
 
 	if (Targ == LnF2HnF)
-		P_ActivateInStasis(line->id);
+		P_ActivateInStasis(line.id);
 
 	if (Trig == PushOnce || Trig == PushMany)
 	{
-		if (!line || !(sec = line->backsector))
+		if (!(sec = line.backsector))
 			return false;
 		secnum = sec - sectors;
 		manual = true;
@@ -588,7 +588,7 @@ bool EV_DoGenLift(line_t* line)
 	}
 
 	secnum = -1;
-	while ((secnum = P_FindSectorFromTagOrLine(line->id, line, secnum)) >= 0)
+	while ((secnum = P_FindSectorFromTagOrLine(line.id, &line, secnum)) >= 0)
 	{
 	manual_genplat:
 		sec = &sectors[secnum];
@@ -604,7 +604,7 @@ bool EV_DoGenLift(line_t* line)
 		rtn = true;
 		plat = new DPlat(sec, Targ, Dely, Sped, Trig);
 
-		plat->m_Tag = line->id;
+		plat->m_Tag = line.id;
 
 		P_AddMovingFloor(sec);
 

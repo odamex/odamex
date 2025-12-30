@@ -832,13 +832,13 @@ bool EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
 // Passed the linedef activating the generalized door
 // Returns true if a thinker created
 //
-bool EV_DoGenDoor(line_t* line)
+bool EV_DoGenDoor(line_t& line)
 {
 	int secnum;
 	bool rtn;
 	sector_t* sec;
 	bool manual;
-	unsigned value = (unsigned)line->special - GenDoorBase;
+	unsigned value = (unsigned)line.special - GenDoorBase;
 
 	// parse the bit fields in the line's special type
 
@@ -849,9 +849,9 @@ bool EV_DoGenDoor(line_t* line)
 
 	rtn = 0;
 
-	if (line->id == 0)
+	if (line.id == 0)
 	{
-		if (!(sec = line->backsector))
+		if (!(sec = line.backsector))
 			return true;
 		secnum = sec - sectors;
 		manual = true;
@@ -861,7 +861,7 @@ bool EV_DoGenDoor(line_t* line)
 	manual = false;
 	if (Trig == PushOnce || Trig == PushMany)
 	{
-		if (!(sec = line->backsector))
+		if (!(sec = line.backsector))
 			return rtn;
 		secnum = sec - sectors;
 		manual = true;
@@ -872,7 +872,7 @@ bool EV_DoGenDoor(line_t* line)
 	rtn = false;
 
 	// if not manual do all sectors tagged the same as the line
-	while ((secnum = P_FindSectorFromTagOrLine(line->id, line, secnum)) >= 0)
+	while ((secnum = P_FindSectorFromTagOrLine(line.id, &line, secnum)) >= 0)
 	{
 		sec = &sectors[secnum];
 manual_gendoor:
@@ -886,7 +886,7 @@ manual_gendoor:
 		}
 
 		// new door thinker
-		new DDoor(sec, line, Dely, Kind, Trig, Sped);
+		new DDoor(sec, &line, Dely, Kind, Trig, Sped);
 		rtn = true;
 		P_AddMovingCeiling(sec);
 
@@ -904,13 +904,13 @@ manual_gendoor:
 // Passed the linedef activating the generalized locked door
 // Returns true if a thinker created
 //
-bool EV_DoGenLockedDoor(line_t* line)
+bool EV_DoGenLockedDoor(line_t& line)
 {
 	int secnum;
 	bool rtn;
 	sector_t* sec;
 	bool manual;
-	unsigned value = (unsigned)line->special - GenLockedBase;
+	unsigned value = (unsigned)line.special - GenLockedBase;
 
 	// parse the bit fields in the line's special type
 
@@ -920,9 +920,9 @@ bool EV_DoGenLockedDoor(line_t* line)
 
 	rtn = 0;
 
-	if (line->id == 0)
+	if (line.id == 0)
 	{
-		if (!(sec = line->backsector))
+		if (!(sec = line.backsector))
 			return true;
 		secnum = sec - sectors;
 		manual = true;
@@ -932,7 +932,7 @@ bool EV_DoGenLockedDoor(line_t* line)
 	manual = false;
 	if (Trig == PushOnce || Trig == PushMany)
 	{
-		if (!(sec = line->backsector))
+		if (!(sec = line.backsector))
 			return rtn;
 		secnum = sec - sectors;
 		manual = true;
@@ -943,7 +943,7 @@ bool EV_DoGenLockedDoor(line_t* line)
 	rtn = false;
 
 	// if not manual do all sectors tagged the same as the line
-	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
+	while ((secnum = P_FindSectorFromLineTag(&line, secnum)) >= 0)
 	{
 		sec = &sectors[secnum];
 manual_genlocked:
@@ -957,7 +957,7 @@ manual_genlocked:
 		}
 
 		// new door thinker
-		new DDoor(sec, line, Kind, Trig, Sped);
+		new DDoor(sec, &line, Kind, Trig, Sped);
 		rtn = true;
 		P_AddMovingCeiling(sec);
 

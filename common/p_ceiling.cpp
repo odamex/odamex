@@ -1112,13 +1112,13 @@ manual_ceiling:
 // jff 02/04/98 Added this routine (and file) to handle generalized
 // floor movers using bit fields in the line special type.
 //
-bool EV_DoGenCeiling(line_t* line)
+bool EV_DoGenCeiling(line_t& line)
 {
 	int secnum;
 	bool rtn;
 	bool manual;
 	sector_t* sec;
-	unsigned value = (unsigned)line->special - GenCeilingBase;
+	unsigned value = (unsigned)line.special - GenCeilingBase;
 
 	// parse the bit fields in the line's special type
 
@@ -1136,7 +1136,7 @@ bool EV_DoGenCeiling(line_t* line)
 	manual = false;
 	if (Trig == PushOnce || Trig == PushMany)
 	{
-		if (!(sec = line->backsector))
+		if (!(sec = line.backsector))
 			return rtn;
 		secnum = sec - sectors;
 		manual = true;
@@ -1145,7 +1145,7 @@ bool EV_DoGenCeiling(line_t* line)
 
 	secnum = -1;
 	// if not manual do all sectors tagged the same as the line
-	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
+	while ((secnum = P_FindSectorFromLineTag(&line, secnum)) >= 0)
 	{
 	manual_genceiling:
 		sec = &sectors[secnum];
@@ -1161,7 +1161,7 @@ bool EV_DoGenCeiling(line_t* line)
 		// new ceiling thinker
 		rtn = true;
 
-		new DCeiling(sec, line, Sped, Targ, Crsh, ChgT, Dirn, ChgM);
+		new DCeiling(sec, &line, Sped, Targ, Crsh, ChgT, Dirn, ChgM);
 		P_AddMovingCeiling(sec); // add this ceiling to the active list
 		if (manual)
 			return rtn;
@@ -1180,13 +1180,13 @@ bool EV_DoGenCeiling(line_t* line)
 // jff 02/04/98 Added this routine (and file) to handle generalized
 // floor movers using bit fields in the line special type.
 //
-bool EV_DoGenCrusher(line_t* line)
+bool EV_DoGenCrusher(line_t& line)
 {
 	int secnum;
 	bool rtn;
 	bool manual;
 	sector_t* sec;
-	unsigned value = (unsigned)line->special - GenCrusherBase;
+	unsigned value = (unsigned)line.special - GenCrusherBase;
 
 	// parse the bit fields in the line's special type
 
@@ -1196,13 +1196,13 @@ bool EV_DoGenCrusher(line_t* line)
 
 	rtn = false;
 
-	P_ActivateInStasisCeiling(line->id);
+	P_ActivateInStasisCeiling(line.id);
 
 	// check if a manual trigger, if so do just the sector on the backside
 	manual = false;
 	if (Trig == PushOnce || Trig == PushMany)
 	{
-		if (!(sec = line->backsector))
+		if (!(sec = line.backsector))
 			return rtn;
 		secnum = sec - sectors;
 		manual = true;
@@ -1211,7 +1211,7 @@ bool EV_DoGenCrusher(line_t* line)
 
 	secnum = -1;
 	// if not manual do all sectors tagged the same as the line
-	while ((secnum = P_FindSectorFromLineTag(line, secnum)) >= 0)
+	while ((secnum = P_FindSectorFromLineTag(&line, secnum)) >= 0)
 	{
 	manual_gencrusher:
 		sec = &sectors[secnum];
@@ -1227,7 +1227,7 @@ bool EV_DoGenCrusher(line_t* line)
 		// new ceiling thinker
 		rtn = true;
 
-		new DCeiling(sec, line, Slnt, Sped);
+		new DCeiling(sec, &line, Slnt, Sped);
 		P_AddMovingCeiling(sec); // add this ceiling to the active list
 		if (manual)
 			return rtn;
