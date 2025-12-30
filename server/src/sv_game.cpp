@@ -40,6 +40,7 @@
 #include "g_game.h"
 #include "sv_main.h"
 #include "g_spawninv.h"
+#include "g_spree.h"
 
 void	G_PlayerReborn (player_t &player);
 
@@ -200,6 +201,8 @@ void G_PlayerFinishLevel (player_t &player)
 	memset (p->powers, 0, sizeof (p->powers));
 	memset (p->cards, 0, sizeof (p->cards));
 
+	SpreeManager::getInstance().erasePoints(player.id);
+
 	if(p->mo)
 		p->mo->flags &= ~MF_SHADOW; 	// cancel invisibility
 
@@ -207,8 +210,6 @@ void G_PlayerFinishLevel (player_t &player)
 	p->fixedcolormap = 0;				// cancel ir goggles
 	p->damagecount = 0; 				// no palette changes
 	p->bonuscount = 0;
-	p->killssincelastdeath = 0;
-	p->damagesincelastdeath = 0;
 	p->multikills = 0;
 	p->multikilltics = 0;
 	p->lastkilltime = 0;

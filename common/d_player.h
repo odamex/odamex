@@ -258,8 +258,6 @@ public:
 	byte hazardinterval;
 
 	// multi kills and sprees
-	int killssincelastdeath;
-	int damagesincelastdeath;
 	int multikills;
 	int multikilltics;
 	int lastkilltime;

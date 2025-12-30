@@ -36,6 +36,7 @@
 #include "p_ctf.h"
 #include "g_gametype.h"
 #include "g_spawninv.h"
+#include "g_spree.h"
 
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(cl_showspawns)
@@ -106,6 +107,8 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	mobj->player = &player;
 	mobj->health = player.health;
 
+	SpreeManager::getInstance().erasePoints(player.id);
+
 	player.fov = 90.0f;
 	player.mo = player.camera = mobj->ptr();
 	player.playerstate = PST_LIVE;
@@ -116,8 +119,6 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	player.fixedcolormap = 0;
 	player.multikills = 0;
 	player.multikilltics = 0;
-	player.killssincelastdeath = 0;
-	player.damagesincelastdeath = 0;
 	player.viewheight = VIEWHEIGHT;
 	player.xviewshift = 0;
 	player.attacker = AActor::AActorPtr();

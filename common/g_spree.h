@@ -145,6 +145,11 @@ public:
 	    SpreeBreakerType type); // sets the spree breaker using raw data
 	                            // (used when receiving from server)
 
+	int getPoints(const int playerid); // gets player points safely
+	void addPoints(const int playerid, const int points); // adds points to a player's current spree
+	void erasePoints(const int playerid); // resets player points after death
+	void clearPoints();                   // resets everyones points after map change/restart/new round
+
 	bool setRawSpree(
 	    const int playerId, const int newSpreeLevel,
 	    const int tic); // sets a players spree using raw data
@@ -189,6 +194,8 @@ private:
 
 	std::unordered_map<int, SpreeRecord_t>
 	    spreeRecord;            // Actually controls the spree display for the player.
+	std::unordered_map<int, int>
+	    pointsSinceLastDeath;   // Lookup for current kills/damage since last death
 	SpreeBreaker_t spreeBreaker; // Updated with the last spree to be broken.
 };
 
