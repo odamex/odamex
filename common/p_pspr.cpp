@@ -1171,13 +1171,13 @@ void A_WeaponMeleeAttack(AActor* mo)
 //
 void A_WeaponSound(AActor *mo)
 {
-	player_t* player = mo->player;
-	struct pspdef_s* psp = &player->psprites[player->psprnum];
+	const player_t* player = mo->player;
+	const pspdef_s* psp = &player->psprites[player->psprnum];
 
 	if (!psp->state)
 		return;
 
-	int sndmap = psp->state->args[0];
+	const int sndmap = psp->state->args[0];
 	const char* snd;
 
 	auto soundIt = SoundMap.find(sndmap);

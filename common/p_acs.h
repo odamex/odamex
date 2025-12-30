@@ -371,19 +371,19 @@ public:
 	};
 
 
-	static void ACS_SetLineTexture(int* args, byte argCount);
+	static void ACS_SetLineTexture(const int* args, byte argCount);
 	static void ACS_ClearInventory(AActor* actor);
 	static void ACS_Print(byte pcd, AActor* actor, const char* print);
-	static void ACS_ChangeMusic(byte pcd, AActor* activator, int* args, byte argCount);
-	static void ACS_StartSound(byte pcd, AActor* activator, int* args, byte argCount);
-	static void ACS_SetLineBlocking(int* args, byte argCount);
-	static void ACS_SetLineMonsterBlocking(int* args, byte argCount);
-	static void ACS_SetLineSpecial(int* args, byte argCount);
-	static void ACS_SetThingSpecial(int* args, byte argCount);
-	static void ACS_FadeRange(AActor* activator, int* args, byte argCount);
+	static void ACS_ChangeMusic(byte pcd, const AActor* activator, const int* args, byte argCount);
+	static void ACS_StartSound(byte pcd, const AActor* activator, const int* args, byte argCount);
+	static void ACS_SetLineBlocking(const int* args, byte argCount);
+	static void ACS_SetLineMonsterBlocking(const int* args, byte argCount);
+	static void ACS_SetLineSpecial(const int* args, byte argCount);
+	static void ACS_SetThingSpecial(const int* args, byte argCount);
+	static void ACS_FadeRange(AActor* activator, const int* args, byte argCount);
 	static void ACS_CancelFade(AActor* activator);
-	static void ACS_ChangeFlat(byte pcd, int* args, byte argCount);
-	static void ACS_SoundSequence(int* args, byte argCount);
+	static void ACS_ChangeFlat(byte pcd, const int* args, byte argCount);
+	static void ACS_SoundSequence(const int* args, byte argCount);
 
 	// Some constants used by ACS scripts
 	enum {
@@ -496,10 +496,10 @@ protected:
 	static void SetLineSpecial(int lineid, int special, int arg1, int arg2, int arg3, int arg4, int arg5);
 	static void ActivateLineSpecial(byte special, line_t* line, AActor* activator,
 	                                int arg0, int arg1, int arg2, int arg3, int arg4);
-	static void ChangeMusic(byte pcd, AActor* activator, int index, int loop);
-	static void StartSound(byte pcd, AActor* activator, int channel, int index, int volume, int attenuation);
-	static void StartSectorSound(byte pcd, sector_t* sector, int channel, int index, int volume, int attenuation);
-	static void StartThingSound(byte pcd, AActor* actor, int channel, int index, int volume, int attenuation);
+	static void ChangeMusic(byte pcd, const AActor* activator, int index, int loop);
+	static void StartSound(byte pcd, const AActor* activator, int channel, int index, int volume, int attenuation);
+	static void StartSectorSound(byte pcd, const sector_t* sector, int channel, int index, int volume, int attenuation);
+	static void StartThingSound(byte pcd, const AActor* actor, int channel, int index, int volume, int attenuation);
 	static void SetThingSpecial(AActor* actor, int special, int arg1, int arg2, int arg3, int arg4, int arg5);
 	static void CancelFade(AActor* actor);
 	static void StartSoundSequence(sector_t* sec, int index);

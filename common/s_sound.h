@@ -101,23 +101,23 @@ void S_Start();
 
 // Start sound for thing at <ent>
 void S_Sound(int channel, const char* name, float volume, int attenuation);
-void S_Sound(AActor* ent, int channel, const char* name, float volume, int attenuation);
-void S_Sound(fixed_t* pt, int channel, const char* name, float volume, int attenuation);
+void S_Sound(const AActor* ent, int channel, const char* name, float volume, int attenuation);
+void S_Sound(const fixed_t* pt, int channel, const char* name, float volume, int attenuation);
 void S_Sound(fixed_t x, fixed_t y, int channel, const char* name, float volume,
              int attenuation);
-void S_PlatSound(fixed_t* pt, int channel, const char* name, float volume,
+void S_PlatSound(const fixed_t* pt, int channel, const char* name, float volume,
                  int attenuation); // [Russell] - Hack to stop multiple plat stop sounds
-void S_LoopedSound(AActor* ent, int channel, const char* name, float volume,
+void S_LoopedSound(const AActor* ent, int channel, const char* name, float volume,
                    int attenuation);
-void S_LoopedSound(fixed_t* pt, int channel, const char* name, float volume,
+void S_LoopedSound(const fixed_t* pt, int channel, const char* name, float volume,
                    int attenuation);
 void S_SoundID(int channel, int sfxid, float volume, int attenuation);
 void S_SoundID(fixed_t x, fixed_t y, int channel, int sound_id, float volume,
                int attenuation);
-void S_SoundID(AActor* ent, int channel, int sfxid, float volume, int attenuation);
-void S_SoundID(fixed_t* pt, int channel, int sfxid, float volume, int attenuation);
-void S_LoopedSoundID(AActor* ent, int channel, int sfxid, float volume, int attenuation);
-void S_LoopedSoundID(fixed_t* pt, int channel, int sfxid, float volume, int attenuation);
+void S_SoundID(const AActor* ent, int channel, int sfxid, float volume, int attenuation);
+void S_SoundID(const fixed_t* pt, int channel, int sfxid, float volume, int attenuation);
+void S_LoopedSoundID(const AActor* ent, int channel, int sfxid, float volume, int attenuation);
+void S_LoopedSoundID(const fixed_t* pt, int channel, int sfxid, float volume, int attenuation);
 
 // sound channels
 // channel 0 never willingly overrides
@@ -144,9 +144,9 @@ void S_LoopedSoundID(fixed_t* pt, int channel, int sfxid, float volume, int atte
 #define ATTN_STATIC 3 // diminish very rapidly with distance
 
 // Stops a sound emanating from one of an entity's channels
-void S_StopSound(AActor* ent, int channel);
-void S_StopSound(fixed_t* pt, int channel);
-void S_StopSound(fixed_t* pt);
+void S_StopSound(const AActor* ent, int channel);
+void S_StopSound(const fixed_t* pt, int channel);
+void S_StopSound(const fixed_t* pt);
 
 // Stop sound for all channels
 void S_StopAllChannels();
@@ -156,11 +156,11 @@ void S_PauseSound();
 void S_ResumeSound();
 
 // Is the sound playing on one of the entity's channels?
-bool S_GetSoundPlayingInfo(AActor* ent, int sound_id);
-bool S_GetSoundPlayingInfo(fixed_t* pt, int sound_id);
+bool S_GetSoundPlayingInfo(const AActor* ent, int sound_id);
+bool S_GetSoundPlayingInfo(const fixed_t* pt, int sound_id);
 
 // Moves all sounds from one mobj to another
-void S_RelinkSound(AActor* from, AActor* to);
+void S_RelinkSound(const AActor* from, const AActor* to);
 
 // Start music using <music_name>
 void S_StartMusic(const char* music_name);
@@ -178,7 +178,7 @@ void S_ResumeMusic();
 //
 // Updates music & sounds
 //
-void S_UpdateSounds(void* listener);
+void S_UpdateSounds(const AActor* listener);
 void S_UpdateMusic();
 
 void S_SetMusicVolume(float volume);
@@ -199,7 +199,7 @@ int S_AddSoundLump(char* logicalname, int lump);         // Add sound by lump in
 void S_AddRandomSound(int owner, std::vector<int>& list);
 void S_ClearSoundLumps();
 
-void UV_SoundAvoidPlayer(AActor* mo, byte channel, const char* name, byte attenuation);
+void UV_SoundAvoidPlayer(const AActor* mo, byte channel, const char* name, byte attenuation);
 
 // [RH] Prints sound debug info to the screen.
 //		Modelled after Hexen's noise cheat.
@@ -211,7 +211,7 @@ void S_NoiseDebug();
 #include "sv_main.h"
 #endif
 
-inline static void S_NetSound(AActor* mo, byte channel, const char* name, const byte attenuation)
+inline static void S_NetSound(const AActor* mo, byte channel, const char* name, const byte attenuation)
 {
 #if SERVER_APP
 	SV_Sound(mo, channel, name, attenuation);
@@ -220,7 +220,7 @@ inline static void S_NetSound(AActor* mo, byte channel, const char* name, const 
 #endif
 }
 
-inline static void S_PlayerSound(player_t* pl, AActor* mo, const byte channel, const char* name,
+inline static void S_PlayerSound(player_t* pl, const AActor* mo, const byte channel, const char* name,
                           const byte attenuation)
 {
 #if SERVER_APP

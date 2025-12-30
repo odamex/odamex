@@ -330,13 +330,13 @@ visplane_t *R_FindPlane (const plane_t &secplane, int picnum, int lightlevel,
 				return check;
 			}
 		}
-		else if (P_IdenticalPlanes(&secplane, &check->secplane) && 
+		else if (P_IdenticalPlanes(&secplane, &check->secplane) &&
 				picnum == check->picnum &&
 				lightlevel == check->lightlevel &&
 				xoffs == check->xoffs && // killough 2/28/98: Add offset checks
 				yoffs == check->yoffs &&
 				basecolormap == check->colormap && // [RH] Add colormap check
-				xscale == check->xscale && 
+				xscale == check->xscale &&
 				yscale == check->yscale &&
 				angle == check->angle)
 		{
@@ -769,7 +769,7 @@ void R_DrawSkyBoxes()
 		if (pl->maxx < pl->minx)
 			continue;
 
-		AActor::AActorPtr sky = pl->skybox;
+		AActor* sky = pl->skybox;
 
 		viewx = sky->x;
 		viewy = sky->y;
@@ -795,7 +795,7 @@ void R_DrawSkyBoxes()
 				floorclip[i] = pl->bottom[i];
 			}
 		}
-		
+
 		// Create a drawseg to clip sprites to the sky plane.
 		R_ReallocDrawSegs();
 		ds_p->x1 = 0;
@@ -811,7 +811,7 @@ void R_DrawSkyBoxes()
 		// [RK] Copy visplane clip values into the arrays.
 		memcpy(ds_p->sprbottomclip, floorclip, viewwidth * sizeof(*ds_p->sprbottomclip));
 		memcpy(ds_p->sprtopclip, ceilingclip, viewwidth * sizeof(*ds_p->sprtopclip));
-		
+
 		firstvissprite = vissprite_p;
 		firstdrawseg = ds_p++;
 

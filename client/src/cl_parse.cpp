@@ -674,6 +674,52 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			mo->height = msg->args().Get(1) << FRACBITS;
 	}
 
+	if (type == MT_SKYVIEWPOINT)
+	{
+		// mo->angle = msg->current().angle(); // done above
+		// If this actor has no TID, make it the default sky box
+		if (mo->tid == 0)
+		{
+			int j;
+
+			for (j = 0; j < numsectors; j++)
+			{
+				if (sectors[j].Skybox == NULL)
+				{
+					sectors[j].Skybox = mo->ptr();
+				}
+			}
+		}
+	}
+
+	if (type == MT_SKYPICKER)
+	{
+		if (!mo || !mo->subsector)
+			return;
+
+		sector_t* sector = mo->subsector->sector;
+		if (mo->args[0] == 0)
+		{
+			sector->Skybox = AActor::AActorPtr();
+		}
+		else
+		{
+			TActorIterator<AActor> iterator(mo->args[0]);
+			AActor* box = iterator.Next();
+
+			if (box != NULL && box->type == MT_SKYVIEWPOINT)
+			{
+				sector->Skybox = box->ptr();
+			}
+			else
+			{
+				PrintFmt("Can't find SkyViewpoint {} for sector {}\n", mo->args[0],
+				         sector - sectors);
+			}
+		}
+		mo->Destroy();
+	}
+
 	if (msg->spawn_flags() & SVC_SM_FLAGS)
 	{
 		mo->flags = msg->current().flags();
@@ -1450,7 +1496,7 @@ static void CL_Print(const odaproto::svc::Print* msg)
 	else if (level == PRINT_TEAMCHAT)
 		PrintFmt(level, "{:c}!{}", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_SERVERCHAT)
-		PrintFmt(level, "{:c}{}", TEXTCOLOR_YELLOW, str);
+		PrintFmt(level, "{:s}{}", TEXTCOLOR_YELLOW, str);
 	else
 		PrintFmt(level, "{}", str);
 
