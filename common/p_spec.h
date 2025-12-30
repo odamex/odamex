@@ -1105,17 +1105,17 @@ public:
 	};
 
 	DFloor(sector_t *sec);
-	DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line, fixed_t speed,
+	DFloor(sector_t *sec, DFloor::EFloor floortype, const line_t *line, fixed_t speed,
 		   fixed_t height, bool crush, int change);
-	DFloor(sector_t* sec, line_t* line, int speed,
+	DFloor(sector_t* sec, const line_t* line, int speed,
 	       int target, int crush, int change, int direction, int model);
-	DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t speed,
+	DFloor(sector_t* sec, DFloor::EFloor floortype, const line_t* line, fixed_t speed,
 	               fixed_t height, int crush, int change, bool hexencrush,
 	               bool hereticlower);
 	[[nodiscard]] DFloor* Clone(sector_t* sec) const override;
 	friend void P_SetFloorDestroy(DFloor *floor);
-	friend bool EV_DoGenFloor(line_t* line);
-	friend bool EV_DoGenStairs(line_t* line);
+	friend bool EV_DoGenFloor(const line_t* line);
+	friend bool EV_DoGenStairs(const line_t* line);
 
 	void RunThink () override;
 	void PlayFloorSound();
@@ -1143,7 +1143,7 @@ public:
 	int			m_PerStepTime;
 
 	fixed_t		m_Height;
-	line_t		*m_Line;
+	const line_t *m_Line;
 	int			m_Change;
 
 protected:

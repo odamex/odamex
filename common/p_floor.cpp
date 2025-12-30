@@ -259,7 +259,7 @@ DFloor::DFloor (sector_t *sec)
 {
 }
 
-DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t speed,
+DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, const line_t* line, fixed_t speed,
                fixed_t height, int crush, int change, bool hexencrush, bool hereticlower)
     : DMovingFloor(sec), m_Status(init)
 {
@@ -511,7 +511,7 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, line_t* line, fixed_t sp
 }
 
 // Generalized floor init
-DFloor::DFloor(sector_t* sec, line_t* line, int speed,
+DFloor::DFloor(sector_t* sec, const line_t* line, int speed,
                int target, int crush, int change, int direction, int model)
     : DMovingFloor(sec), m_Status(init)
 {
@@ -680,7 +680,7 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 	}
 }
 
-DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
+DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, const line_t *line,
 			   fixed_t speed, fixed_t height, bool crush, int change)
 	: DMovingFloor (sec), m_Status(init)
 {
@@ -961,43 +961,32 @@ DFloor* DFloor::Clone(sector_t* sec) const
 bool EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
 				 fixed_t speed, fixed_t height, bool crush, int change)
 {
-	int 				secnum;
-	bool 				rtn = false;
-	sector_t*			sec;
-	bool				manual = false;
+	const auto helper = [&](sector_t* sec) -> bool
+	{
+		// ALREADY MOVING?	IF SO, KEEP GOING...
+		if (sec->floordata || (demoplayback && sec->ceilingdata))
+			return false;
+
+		// new floor thinker
+		new DFloor(sec, floortype, line, speed, height, crush, change);
+		P_AddMovingFloor(sec);
+		return true;
+	};
 
 	// check if a manual trigger; if so do just the sector on the backside
 	if (co_boomphys && tag == 0)
 	{
-		if (!line || !(sec = line->backsector))
-			return rtn;
-		secnum = sec-sectors;
-		manual = true;
-		goto manual_floor;
+		if (!line || !line->backsector)
+			return false;
+
+		return helper(line->backsector);
 	}
 
-	secnum = -1;
+	bool rtn = false;
+	int secnum = -1;
 	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
 	{
-		sec = &sectors[secnum];
-
-manual_floor:
-		// ALREADY MOVING?	IF SO, KEEP GOING...
-		if (sec->floordata || (demoplayback && sec->ceilingdata))
-		{
-			if (co_boomphys && manual)
-				return false;
-			else
-				continue;
-		}
-
-		// new floor thinker
-		rtn = true;
-		new DFloor(sec, floortype, line, speed, height, crush, change);
-		P_AddMovingFloor(sec);
-
-		if (manual)
-			return rtn;
+		rtn |= helper(&sectors[secnum]);
 	}
 	return rtn;
 }
@@ -1015,56 +1004,44 @@ manual_floor:
 //
 bool EV_DoGenFloor(line_t* line)
 {
-	int secnum;
-	bool rtn;
-	bool manual;
-	sector_t* sec;
-	unsigned value = (unsigned)line->special - GenFloorBase;
+	const uint32_t value = static_cast<uint32_t>(line->special) - GenFloorBase;
 
 	// parse the bit fields in the line's special type
 
-	int Crsh = (value & FloorCrush) >> FloorCrushShift;
-	int ChgT = (value & FloorChange) >> FloorChangeShift;
-	int Targ = (value & FloorTarget) >> FloorTargetShift;
-	int Dirn = (value & FloorDirection) >> FloorDirectionShift;
-	int ChgM = (value & FloorModel) >> FloorModelShift;
-	int Sped = (value & FloorSpeed) >> FloorSpeedShift;
-	int Trig = (value & TriggerType) >> TriggerTypeShift;
+	const int Crsh = (value & FloorCrush) >> FloorCrushShift;
+	const int ChgT = (value & FloorChange) >> FloorChangeShift;
+	const int Targ = (value & FloorTarget) >> FloorTargetShift;
+	const int Dirn = (value & FloorDirection) >> FloorDirectionShift;
+	const int ChgM = (value & FloorModel) >> FloorModelShift;
+	const int Sped = (value & FloorSpeed) >> FloorSpeedShift;
+	const int Trig = (value & TriggerType) >> TriggerTypeShift;
 
-	rtn = false;
-	manual = false;
+	const auto helper = [&](sector_t* sec) -> bool
+	{
+		// ALREADY MOVING?	IF SO, KEEP GOING...
+		if (sec->floordata)
+			return false;
+
+		// new floor thinker
+		new DFloor(sec, line, Sped, Targ, Crsh, ChgT, Dirn, ChgM);
+		P_AddMovingFloor(sec);
+		return true;
+	};
 
 	// check if a manual trigger; if so do just the sector on the backside
 	if (Trig == PushOnce || Trig == PushMany)
 	{
-		if (!line || !(sec = line->backsector))
-			return rtn;
-		secnum = sec - sectors;
-		manual = true;
-		goto manual_genfloor;
+		if (!line || !line->backsector)
+			return false;
+
+		return helper(line->backsector);
 	}
 
-	secnum = -1;
+	bool rtn = false;
+	int secnum = -1;
 	while ((secnum = P_FindSectorFromTag(line->id, secnum)) >= 0)
 	{
-	manual_genfloor:
-		sec = &sectors[secnum];
-		// ALREADY MOVING?	IF SO, KEEP GOING...
-		if (sec->floordata)
-		{
-			if (co_boomphys && manual)
-				return false;
-			else
-				continue;
-		}
-
-		// new floor thinker
-		rtn = true;
-		new DFloor(sec, line, Sped, Targ, Crsh, ChgT, Dirn, ChgM);
-		P_AddMovingFloor(sec);
-
-		if (manual)
-			return rtn;
+		rtn |= helper(&sectors[secnum]);
 	}
 	return rtn;
 }
@@ -1072,45 +1049,34 @@ bool EV_DoGenFloor(line_t* line)
 bool EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t speed,
                 fixed_t height, int crush, int change, bool hexencrush, bool hereticlower)
 {
-	int secnum;
-	bool rtn = false;
-	sector_t* sec;
-	bool manual = false;
-
 	height *= FRACUNIT;
+
+	const auto helper = [&](sector_t* sec) -> bool
+	{
+		// ALREADY MOVING?	IF SO, KEEP GOING...
+		if (sec->floordata)
+			return false;
+
+		// new floor thinker
+		new DFloor(sec, floortype, line, speed, height, crush, change, hexencrush, hereticlower);
+		P_AddMovingFloor(sec);
+		return true;
+	};
 
 	// check if a manual trigger; if so do just the sector on the backside
 	if (co_boomphys && tag == 0)
 	{
-		if (!line || !(sec = line->backsector))
-			return rtn;
-		secnum = sec - sectors;
-		manual = true;
-		goto manual_floor;
+		if (!line || !line->backsector)
+			return false;
+
+		return helper(line->backsector);
 	}
 
-	secnum = -1;
+	bool rtn = false;
+	int secnum = -1;
 	while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
 	{
-		sec = &sectors[secnum];
-
-	manual_floor:
-		// ALREADY MOVING?	IF SO, KEEP GOING...
-		if (sec->floordata)
-		{
-			if (co_boomphys && manual)
-				return false;
-			else
-				continue;
-		}
-
-		// new floor thinker
-		rtn = true;
-		new DFloor(sec, floortype, line, speed, height, crush, change, hexencrush, hereticlower);
-		P_AddMovingFloor(sec);
-
-		if (manual)
-			return rtn;
+		rtn |= helper(&sectors[secnum]);
 	}
 	return rtn;
 }
