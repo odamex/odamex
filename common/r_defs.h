@@ -283,7 +283,7 @@ struct sector_t
 	// [AM] Use the ZDoom 1.22 AActor system instead.
 	AActor::AActorPtr SecActTarget{};
 
-	AActor::AActorPtr Skybox;
+	AActor::AActorPtr Skybox{};
 
 	// [SL] 2012-01-16 - planes for sloping ceilings/floors
 	plane_t floorplane{}, ceilingplane{};

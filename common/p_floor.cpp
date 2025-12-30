@@ -193,7 +193,7 @@ void DFloor::RunThink ()
 					m_Sector->damageamount = m_NewDamageRate;
 					m_Sector->damageinterval = m_NewDmgInterval;
 					m_Sector->leakrate = m_NewLeakRate;
-					//fall thru
+					[[fallthrough]];
 				case genFloorChg:
 					m_Sector->floorpic = m_Texture;
 					break;
@@ -842,7 +842,28 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 		}
 		break;
 
-	  default:
+	case DFloor::genFloorChg0:
+		if (line)
+		{
+			newspecial_s ns;
+			P_ResetTransferSpecial(&ns);
+			m_NewSpecial = ns.special;
+			m_NewDamageRate = ns.damageamount;
+			m_NewDmgInterval = ns.damageinterval;
+			m_NewLeakRate = ns.damageleakrate;
+			m_NewFlags = P_ResetSectorTransferFlags(line->frontsector->flags);
+		}
+		break;
+
+	case DFloor::genFloorChgT:
+		if (line)
+		{
+			m_NewSpecial = line->frontsector->special;
+			m_NewDamageRate = line->frontsector->damageamount;
+			m_NewDmgInterval = line->frontsector->damageinterval;
+			m_NewLeakRate = line->frontsector->leakrate;
+			m_NewFlags = line->frontsector->flags;
+		}
 		break;
 	}
 

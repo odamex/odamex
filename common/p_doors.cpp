@@ -105,7 +105,7 @@ void DDoor::RunThink ()
 
 		if (m_Type != doorOpen)
 			PlayDoorSound();
-		// fall through
+		[[fallthrough]];
 	case destroy:
 		P_SetDoorDestroy(this);
 		return;
