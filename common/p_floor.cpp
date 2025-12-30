@@ -1228,18 +1228,18 @@ bool EV_DoGenStairs(line_t& line)
 		do
 		{
 			ok = false;
-			for (int i = 0; i < sec->linecount; i++)
+			for (const line_t* secline : sec->getLines())
 			{
-				if (!((sec->lines[i])->backsector))
+				if (!(secline->backsector))
 					continue;
 
-				tsec = (sec->lines[i])->frontsector;
+				tsec = secline->frontsector;
 				newsecnum = tsec - sectors;
 
 				if (secnum != newsecnum)
 					continue;
 
-				tsec = (sec->lines[i])->backsector;
+				tsec = secline->backsector;
 				newsecnum = tsec - sectors;
 
 				if (!Igno && tsec->floorpic != texture)
@@ -1407,19 +1407,19 @@ bool EV_BuildStairs(const int tag, const DFloor::EStair type, const line_t *line
 			}
 			else
 			{
-				for (int i = 0; i < sec->linecount; i++)
+				for (const line_t* secline : sec->getLines())
 				{
-					if (!((sec->lines[i])->flags & ML_TWOSIDED))
+					if (!(secline->flags & ML_TWOSIDED))
 						continue;
 
-					tsec = (sec->lines[i])->frontsector;
+					tsec = secline->frontsector;
 					if (!tsec) continue;	//jff 5/7/98 if no backside, continue
 					newsecnum = tsec-sectors;
 
 					if (secnum != newsecnum)
 						continue;
 
-					tsec = (sec->lines[i])->backsector;
+					tsec = secline->backsector;
 					newsecnum = tsec - sectors;
 
 					if (!igntxt && tsec->floorpic != texture)
