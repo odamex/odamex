@@ -213,7 +213,7 @@ void DFloor::RunThink ()
 					m_Sector->damageamount = m_NewDamageRate;
 					m_Sector->damageinterval = m_NewDmgInterval;
 					m_Sector->leakrate = m_NewLeakRate;
-					//fall thru
+					[[fallthrough]];
 				case genFloorChg:
 					m_Sector->floorpic = m_Texture;
 					break;
@@ -593,8 +593,6 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 	case Fby32:
 		m_FloorDestHeight = sec->floorheight + m_Direction * 32 * FRACUNIT;
 		break;
-	default:
-		break;
 	}
 
 	// set texture/type change properties
@@ -640,7 +638,7 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 				case FChgTxt: // leave type be
 					m_Type = genFloorChg;
 					break;
-				default:
+				case FNoChg:
 					break;
 				}
 			}
@@ -675,7 +673,7 @@ DFloor::DFloor(sector_t* sec, line_t* line, int speed,
 				break;
 			case FChgTxt: // leave type be
 				m_Type = genFloorChg;
-			default:
+			case FNoChg:
 				break;
 			}
 		}
@@ -843,16 +841,14 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, line_t *line,
 		break;
 
 	case DFloor::genFloorChg0:
-		if (line)
-		{
-			newspecial_s ns;
-			P_ResetTransferSpecial(&ns);
-			m_NewSpecial = ns.special;
-			m_NewDamageRate = ns.damageamount;
-			m_NewDmgInterval = ns.damageinterval;
-			m_NewLeakRate = ns.damageleakrate;
-			m_NewFlags = P_ResetSectorTransferFlags(line->frontsector->flags);
-		}
+		newspecial_s ns;
+		P_ResetTransferSpecial(&ns);
+		m_NewSpecial = ns.special;
+		m_NewDamageRate = ns.damageamount;
+		m_NewDmgInterval = ns.damageinterval;
+		m_NewLeakRate = ns.damageleakrate;
+		m_NewFlags = line ?
+			P_ResetSectorTransferFlags(line->frontsector->flags) : 0;
 		break;
 
 	case DFloor::genFloorChgT:
@@ -1172,8 +1168,6 @@ bool EV_DoChange (line_t *line, EChange changetype, int tag)
 				)
 			}
 			break;
-		default:
-			break;
 		}
 	}
 	return rtn;
@@ -1278,17 +1272,16 @@ bool EV_DoGenStairs(line_t* line)
 		// setup stepsize for stairs
 		switch (Step)
 		{
-		default:
-		case 0:
+		case StepSize4:
 			stairsize = 4 * FRACUNIT;
 			break;
-		case 1:
+		case StepSize8:
 			stairsize = 8 * FRACUNIT;
 			break;
-		case 2:
+		case StepSize16:
 			stairsize = 16 * FRACUNIT;
 			break;
-		case 3:
+		case StepSize24:
 			stairsize = 24 * FRACUNIT;
 			break;
 		}

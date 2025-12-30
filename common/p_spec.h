@@ -40,6 +40,14 @@ typedef struct movingsector_s
 	bool		moving_floor;
 } movingsector_t;
 
+enum stepsize_e
+{
+	StepSize4,
+	StepSize8,
+	StepSize16,
+	StepSize24,
+};
+
 enum motionspeed_e
 {
 	SpeedSlow,
