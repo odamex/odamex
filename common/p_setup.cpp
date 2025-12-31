@@ -1409,7 +1409,6 @@ void P_CreateBlockMap()
 	int *blockdone=NULL;			// array keeping track of blocks/line
 	int NBlocks;					// number of cells = nrows*ncols
 	DWORD linetotal=0;				// total length of all blocklists
-	int i,j;
 	int map_minx=limits::MAXINT;			// init for map limits search
 	int map_miny=limits::MAXINT;
 	int map_maxx=limits::MININT;
@@ -1417,7 +1416,7 @@ void P_CreateBlockMap()
 
 	// scan for map limits, which the blockmap must enclose
 
-	for (i = 0; i < numvertexes; i++)
+	for (int i = 0; i < numvertexes; i++)
 	{
 		fixed_t t;
 
@@ -1456,7 +1455,7 @@ void P_CreateBlockMap()
 	// initialize each blocklist, and enter the trailing -1 in all blocklists
 	// note the linked list of lines grows backwards
 
-	for (i = 0; i < NBlocks; i++)
+	for (int i = 0; i < NBlocks; i++)
 	{
 		blocklists[i] = new linelist_t;
 		blocklists[i]->num = -1;
@@ -1467,7 +1466,7 @@ void P_CreateBlockMap()
 	// For each linedef in the wad, determine all blockmap blocks it touches,
 	// and add the linedef number to the blocklists for those blocks
 
-	for (i = 0; i < numlines; i++)
+	for (int i = 0; i < numlines; i++)
 	{
 		int x1 = lines[i].v1->x>>FRACBITS;		// lines[i] map coords
 		int y1 = lines[i].v1->y>>FRACBITS;
@@ -1504,7 +1503,7 @@ void P_CreateBlockMap()
 
 		if (!vert)    // don't interesect vertical lines with columns
 		{
-			for (j=0;j<ncols;j++)
+			for (int j = 0; j < ncols; j++)
 			{
 				// intersection of Linedef with x=xorg+(j<<blkshift)
 				// (y-y1)*dx = dy*(x-x1)
@@ -1560,7 +1559,7 @@ void P_CreateBlockMap()
 
 		if (!horiz)
 		{
-			for (j=0;j<nrows;j++)
+			for (int j = 0; j < nrows; j++)
 			{
 				// intersection of Linedef with y=yorg+(j<<blkshift)
 				// (x,y) on Linedef i satisfies: (y-y1)*dx = dy*(x-x1)
@@ -1614,7 +1613,7 @@ void P_CreateBlockMap()
 	// Add initial 0 to all blocklists
 	// count the total number of lines (and 0's and -1's)
 	memset (blockdone, 0, NBlocks*sizeof(int));
-	for (i = 0, linetotal = 0; i < NBlocks; i++)
+	for (int i = 0, linetotal = 0; i < NBlocks; i++)
 	{
 		AddBlockLine (blocklists, blockcount, blockdone, i, 0);
 		linetotal += blockcount[i];
@@ -1642,7 +1641,7 @@ void P_CreateBlockMap()
 	blockmaplump[3] = nrows;
 
 	// offsets to lists and block lists
-	for (i = 0; i < NBlocks; i++)
+	for (int i = 0; i < NBlocks; i++)
 	{
 		linelist_t *bl = blocklists[i];
 		DWORD offs = blockmaplump[4+i] =   // set offset to block's list

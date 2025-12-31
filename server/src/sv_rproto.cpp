@@ -162,7 +162,7 @@ bool SV_SendPacket(player_t &pl)
 	{
 		// copy the reliable data into the buffer.
 		old.sequence = cl->sequence;
-		SZ_Write(&old.data, cl->reliablebuf.data, cl->reliablebuf.cursize);
+		SZ_Write(&old.data, cl->reliablebuf.data.get(), cl->reliablebuf.cursize);
 	}
 	else
 	{
@@ -180,7 +180,7 @@ bool SV_SendPacket(player_t &pl)
 	// copy the reliable message to the packet first
     if (cl->reliablebuf.cursize)
     {
-		SZ_Write (&sendd, cl->reliablebuf.data, cl->reliablebuf.cursize);
+		SZ_Write (&sendd, cl->reliablebuf.data.get(), cl->reliablebuf.cursize);
 		cl->reliable_bps += cl->reliablebuf.cursize;
     }
 
@@ -193,7 +193,7 @@ bool SV_SendPacket(player_t &pl)
 
 	  if (cl->netbuf.cursize && (sendd.maxsize() - sendd.cursize > cl->netbuf.cursize) )
 	  {
-         SZ_Write (&sendd, cl->netbuf.data, cl->netbuf.cursize);
+         SZ_Write (&sendd, cl->netbuf.data.get(), cl->netbuf.cursize);
 	     cl->unreliable_bps += cl->netbuf.cursize;
 	  }
 
@@ -245,7 +245,7 @@ static void SendOldPacket(player_t& pl, const int sequence)
 	// copy the reliable message to the packet
 	if (old.data.cursize)
 	{
-		SZ_Write(&send, old.data.data, old.data.cursize);
+		SZ_Write(&send, old.data.data.get(), old.data.cursize);
 		cl.reliable_bps += old.data.cursize;
 	}
 

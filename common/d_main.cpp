@@ -1109,8 +1109,8 @@ private:
 	dtime_t				mPreviousFrameStartTime;
 };
 
-static TaskScheduler* simulation_scheduler;
-static TaskScheduler* display_scheduler;
+static std::unique_ptr<TaskScheduler> simulation_scheduler;
+static std::unique_ptr<TaskScheduler> display_scheduler;
 
 //
 // D_InitTaskSchedulers
@@ -1131,12 +1131,10 @@ static void D_InitTaskSchedulers(void (*sim_func)(), void(*display_func)())
 	{
 		previous_capped_simulation = capped_simulation;
 
-		delete simulation_scheduler;
-
 		if (capped_simulation)
-			simulation_scheduler = new CappedTaskScheduler(sim_func, TICRATE, 4);
+			simulation_scheduler = std::make_unique<CappedTaskScheduler>(sim_func, TICRATE, 4);
 		else
-			simulation_scheduler = new UncappedTaskScheduler(sim_func);
+			simulation_scheduler = std::make_unique<UncappedTaskScheduler>(sim_func);
 	}
 
 	if (capped_display != previous_capped_display || maxfps != previous_maxfps)
@@ -1144,21 +1142,17 @@ static void D_InitTaskSchedulers(void (*sim_func)(), void(*display_func)())
 		previous_capped_display = capped_display;
 		previous_maxfps = maxfps;
 
-		delete display_scheduler;
-
 		if (capped_display)
-			display_scheduler = new CappedTaskScheduler(display_func, maxfps, 1);
+			display_scheduler = std::make_unique<CappedTaskScheduler>(display_func, maxfps, 1);
 		else
-			display_scheduler = new UncappedTaskScheduler(display_func);
+			display_scheduler = std::make_unique<UncappedTaskScheduler>(display_func);
 	}
 }
 
 void STACK_ARGS D_ClearTaskSchedulers()
 {
-	delete simulation_scheduler;
-	delete display_scheduler;
-	simulation_scheduler = NULL;
-	display_scheduler = NULL;
+	simulation_scheduler.reset();
+	display_scheduler.reset();
 }
 
 //
