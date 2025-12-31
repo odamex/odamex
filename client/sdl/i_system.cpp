@@ -25,7 +25,12 @@
 
 #include "odamex.h"
 
+#include <condition_variable>
+#include <iostream>
 #include <limits>
+#include <mutex>
+#include <string>
+#include <thread>
 
 #include "nonstd/scope.hpp"
 
@@ -852,12 +857,97 @@ int I_FindClose (long handle) {return 0;}
 
 #endif
 
+class StdinCommandStream
+{
+    public:
+
+        // Please note that we force the use of a Singleton because that's the best
+        // way to ensure that the underlying OS thread is created only if it's actually
+        // needed and it is cleaned up during runtime teardown.  This is important
+        // because:
+        //
+        //  1.  The purpose of the thread is to block on an istream without interrupting
+        //      the main program.
+        //  2.  The C++ standard does NOT guarantee any way to safely, portably interrupt
+        //      the blocking read, therefore we essentially cannot interrupt the thread;
+        //      We must let the runtime clean this all up during teardown.
+        //  3.  If we allow this object to be destructed directly, and we have no way of
+        //      gracefully ending and joining the thread, then we can easily wind up with
+        //      a thread that attempts to access freed resources (i.e. member variables).
+        //
+        // The best way to address this is to just make a Meyers Singleton and be done
+        // with it.
+        static StdinCommandStream& Get()
+        {
+            static StdinCommandStream instance(std::cin);
+            return instance;
+        }
+
+        // Just a heads up.  We don't give copiers or movers here because this is fundamentally
+        // neither movable nor copyable on account of the member mutex.
+
+        bool GetCommand(std::string& o_command)
+        {
+            if (std::unique_lock lock{m_mutex, std::try_to_lock})
+            {
+                if (not m_command.empty())
+                {
+                    o_command.swap(m_command);
+                    m_command.clear();
+
+                    // Unlock early so that we can be sure that the thread doesn't awake via
+                    // the condition variable then turn around and immediately have to wait
+                    // on the mutex.
+                    lock.unlock();
+                    m_commandIsReleasedCondition.notify_one();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+    protected:
+        explicit StdinCommandStream(std::istream& i_streamRef):
+            m_streamRef(i_streamRef),
+            m_thread(&StdinCommandStream::ThreadMain, this)
+        {
+        }
+
+        ~StdinCommandStream()
+        {
+            // Detach because we don't have a nice way of terminating our thread yet.
+            m_thread.detach();
+        }
+
+        void ThreadMain()
+        {
+            while(m_streamRef.good())
+            {
+                std::unique_lock lock(m_mutex);
+                std::getline(m_streamRef, m_command);
+                if (m_streamRef and not m_command.empty())
+                {
+                    m_commandIsReleasedCondition.wait(lock, [this]() { return m_command.empty(); });
+                }
+            }
+        }
+
+        std::istream&           m_streamRef;
+        std::string             m_command;
+        std::mutex              m_mutex;
+        std::condition_variable m_commandIsReleasedCondition;
+        std::thread             m_thread;
+};
+
 //
 // I_ConsoleInput
 //
 #ifdef _WIN32
 std::string I_ConsoleInput (void)
 {
+    std::string command;
+    StdinCommandStream::Get().GetCommand(command);
+    return command;
 	// denis - todo - implement this properly!!!
 	/* denis - this probably won't work for a gui sdl app. if it does work, please uncomment!
     static char     text[1024] = {0};
@@ -905,7 +995,6 @@ std::string I_ConsoleInput (void)
 		return text;
 	}
 */
-	return "";
 }
 
 #else
