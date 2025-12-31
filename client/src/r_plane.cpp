@@ -266,8 +266,8 @@ void R_ClearPlanes(bool fullclear)
 	if (fullclear)
 	{
 		// opening / clipping determination
-		memcpy(floorclip.get(), floorclipinitial.get(), viewwidth * sizeof(&floorclip[0]));
-		memcpy(ceilingclip.get(), ceilingclipinitial.get(), viewwidth * sizeof(&ceilingclip[0]));
+		memcpy(floorclip.get(), floorclipinitial.get(), viewwidth * sizeof(floorclip[0]));
+		memcpy(ceilingclip.get(), ceilingclipinitial.get(), viewwidth * sizeof(ceilingclip[0]));
 	}
 }
 
