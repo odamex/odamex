@@ -51,14 +51,15 @@ typedef struct
 
 } wadinfo_t;
 
-
-typedef struct
+#pragma pack(push, 1)
+struct filelump_t
 {
 	int			filepos;
 	int			size;
 	char		name[8]; // denis - todo - string
 
-} filelump_t;
+};
+#pragma pack(pop)
 
 //
 // WADFILE I/O related stuff.

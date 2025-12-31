@@ -1084,8 +1084,7 @@ static constexpr identData_t identdata[] = {
 class WadFileLumpFinder
 {
 public:
-	WadFileLumpFinder(const std::string& filename) :
-		mNumLumps(0), mLumps(NULL)
+	WadFileLumpFinder(const std::string& filename)
 	{
 		FILE* fp = fopen(filename.c_str(), "rb");
 		if (fp)
@@ -1101,9 +1100,9 @@ public:
 					if (fseek(fp, header.infotableofs, SEEK_SET) == 0)
 					{
 						mNumLumps = LELONG(header.numlumps);
-						mLumps = new filelump_t[mNumLumps];
+						mLumps = std::make_unique<filelump_t[]>(mNumLumps);
 
-						if (fread(mLumps, mNumLumps * sizeof(*mLumps), 1, fp) != 1)
+						if (fread(mLumps.get(), sizeof(mLumps[0]), mNumLumps, fp) != mNumLumps)
 							mNumLumps = 0;
 					}
 				}
@@ -1113,23 +1112,17 @@ public:
 		}
 	}
 
-	~WadFileLumpFinder()
-	{
-		if (mLumps)
-			delete [] mLumps;
-	}
-
 	bool exists(const std::string& lumpname)
 	{
 		for (size_t i = 0; i < mNumLumps; i++)
-			if (iequals(lumpname, std::string(mLumps[i].name, 8)))
+			if (iequals(lumpname, std::string_view(mLumps[i].name, 8)))
 				return true;
 		return false;
 	}
 
 private:
-	size_t		mNumLumps;
-	filelump_t*	mLumps;
+	size_t mNumLumps = 0;
+	std::unique_ptr<filelump_t[]> mLumps{};
 };
 
 
