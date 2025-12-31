@@ -520,8 +520,8 @@ void R_RenderSolidSegRange(int start, int stop)
 					SolidColumnBlaster, true, columnmethod);
 
 		// indicate that no further drawing can be done in this column
-		memcpy(ceilingclip + start, floorclipinitial + start, count * sizeof(*ceilingclip));
-		memcpy(floorclip + start, ceilingclipinitial + start, count * sizeof(*floorclip));
+		memcpy(&ceilingclip[start], &floorclipinitial[start], count * sizeof(&ceilingclip[0]));
+		memcpy(&floorclip[start], &ceilingclipinitial[start], count * sizeof(&floorclip[0]));
 	}
 	else			// 2-sided line
 	{
@@ -543,12 +543,12 @@ void R_RenderSolidSegRange(int start, int stop)
 			R_RenderColumnRange(start, stop, walltopf, lower, topposts,
 						SolidColumnBlaster, true, columnmethod);
 
-			memcpy(ceilingclip + start, walltopb + start, count * sizeof(*ceilingclip));
+			memcpy(&ceilingclip[start], walltopb + start, count * sizeof(&ceilingclip[0]));
 		}
 		else if (markceiling)
 		{
 			// no upper wall
-			memcpy(ceilingclip + start, walltopf + start, count * sizeof(*ceilingclip));
+			memcpy(&ceilingclip[start], walltopf + start, count * sizeof(&ceilingclip[0]));
 		}
 
 		if (bottomtexture)
@@ -569,12 +569,12 @@ void R_RenderSolidSegRange(int start, int stop)
 			R_RenderColumnRange(start, stop, wallbottomb, lower, bottomposts,
 						SolidColumnBlaster, true, columnmethod);
 
-			memcpy(floorclip + start, wallbottomb + start, count * sizeof(*floorclip));
+			memcpy(&floorclip[start], wallbottomb + start, count * sizeof(&floorclip[0]));
 		}
 		else if (markfloor)
 		{
 			// no lower wall
-			memcpy(floorclip + start, wallbottomf + start, count * sizeof(*floorclip));
+			memcpy(&floorclip[start], wallbottomf + start, count * sizeof(&floorclip[0]));
 		}
 
 		if (maskedtexture)
@@ -1120,13 +1120,13 @@ void R_StoreWallRange(int start, int stop)
 	if ((ds_p->silhouette & SIL_TOP) && ds_p->sprtopclip == NULL)
 	{
 		ds_p->sprtopclip = sprclip_pool.alloc(count) - start;
-		memcpy(ds_p->sprtopclip + start, ceilingclip + start, count * sizeof(*ds_p->sprtopclip));
+		memcpy(ds_p->sprtopclip + start, &ceilingclip[start], count * sizeof(*ds_p->sprtopclip));
 	}
 
 	if ((ds_p->silhouette & SIL_BOTTOM) && ds_p->sprbottomclip == NULL)
 	{
 		ds_p->sprbottomclip = sprclip_pool.alloc(count) - start;
-		memcpy(ds_p->sprbottomclip + start, floorclip + start, count * sizeof(*ds_p->sprbottomclip));
+		memcpy(ds_p->sprbottomclip + start, &floorclip[start], count * sizeof(*ds_p->sprbottomclip));
 	}
 
 	ds_p++;
