@@ -26,8 +26,10 @@
 #include "odamex.h"
 
 #include <condition_variable>
+#include <fstream>
 #include <iostream>
 #include <limits>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -857,35 +859,40 @@ int I_FindClose (long handle) {return 0;}
 
 #endif
 
-class StdinCommandStream
+class CommandStreamReader
 {
     public:
 
         // Please note that we force the use of a Singleton because that's the best
-        // way to ensure that the underlying OS thread is created only if it's actually
-        // needed and it is cleaned up during runtime teardown.  This is important
-        // because:
+        // way to ensure that the thread, file handles, and other resources are created
+        // in the correct order and cleaned up during runtime teardown.
         //
         //  1.  The purpose of the thread is to block on an istream without interrupting
         //      the main program.
+        //
         //  2.  The C++ standard does NOT guarantee any way to safely, portably interrupt
-        //      the blocking read, therefore we essentially cannot interrupt the thread;
-        //      We must let the runtime clean this all up during teardown.
+        //      the blocking read when using stdin, therefore we essentially cannot
+        //      interrupt the thread; We must let the runtime clean this all up during
+        //      teardown.
+        //
         //  3.  If we allow this object to be destructed directly, and we have no way of
         //      gracefully ending and joining the thread, then we can easily wind up with
         //      a thread that attempts to access freed resources (i.e. member variables).
         //
         // The best way to address this is to just make a Meyers Singleton and be done
         // with it.
-        static StdinCommandStream& Get()
+        static CommandStreamReader& Get()
         {
-            static StdinCommandStream instance(std::cin);
+            static CommandStreamReader instance(s_filePtr ? *s_filePtr : std::cin);
             return instance;
         }
 
-        // Just a heads up.  We don't give copiers or movers here because this is fundamentally
-        // neither movable nor copyable on account of the member mutex.
-
+        // Set the contents of the given string, an output parameter, to the next command
+        // received from the command stream.  If a command is available, the given string
+        // is updated and true is returned.  Otherwise, the string is unmodified and false
+        // is returned.
+        //
+        // Meant to be called from the main thread.
         bool GetCommand(std::string& o_command)
         {
             if (std::unique_lock lock{m_mutex, std::try_to_lock})
@@ -906,14 +913,32 @@ class StdinCommandStream
             return false;
         }
 
+        // Commit to using the given Input File for the CommandStream instead of stdin.  This
+        // must be done before the first attempt to access the CommandStream, and can only be
+        // completed successfully once.  If the file is successfully opened, then true is
+        // returned, and all subsequent calls to this function do nothing and return false.
+        static bool OpenInputFile(const char* filepath)
+        {
+            if (filepath and not s_filePtr)
+            {
+                s_filePtr = std::make_unique<std::ifstream>(filepath);
+                if (s_filePtr->good())
+                {
+                    return true;
+                }
+                s_filePtr.reset();
+            }
+            return false;
+        }
+
     protected:
-        explicit StdinCommandStream(std::istream& i_streamRef):
+        explicit CommandStreamReader(std::istream& i_streamRef):
             m_streamRef(i_streamRef),
-            m_thread(&StdinCommandStream::ThreadMain, this)
+            m_thread(&CommandStreamReader::ThreadMain, this)
         {
         }
 
-        ~StdinCommandStream()
+        ~CommandStreamReader()
         {
             // Detach because we don't have a nice way of terminating our thread yet.
             m_thread.detach();
@@ -932,12 +957,27 @@ class StdinCommandStream
             }
         }
 
-        std::istream&           m_streamRef;
-        std::string             m_command;
+        static std::unique_ptr<std::ifstream>   s_filePtr;
+
+        std::istream &  m_streamRef;
+        std::string     m_command;
+
+        // Threading objects.  Please note that the order is intentional for safe construction
+        // and destruction.
         std::mutex              m_mutex;
         std::condition_variable m_commandIsReleasedCondition;
         std::thread             m_thread;
 };
+
+std::unique_ptr<std::ifstream> CommandStreamReader::s_filePtr;
+
+// Use the given named file to read console commands instead of stdin.
+// MUST be called before the first call to I_ConsoleInput().
+void I_SetConsoleInputFile (const char* filepath)
+{
+    CommandStreamReader::OpenInputFile(filepath);
+}
+
 
 //
 // I_ConsoleInput
@@ -946,55 +986,8 @@ class StdinCommandStream
 std::string I_ConsoleInput (void)
 {
     std::string command;
-    StdinCommandStream::Get().GetCommand(command);
+    CommandStreamReader::Get().GetCommand(command);
     return command;
-	// denis - todo - implement this properly!!!
-	/* denis - this probably won't work for a gui sdl app. if it does work, please uncomment!
-    static char     text[1024] = {0};
-    static char     buffer[1024] = {0};
-    unsigned int    len = strlen(buffer);
-
-	while(kbhit() && len < sizeof(text))
-	{
-		char ch = (char)getch();
-
-		// input the character
-		if(ch == '\b' && len)
-		{
-			buffer[--len] = 0;
-			// john - backspace hack
-			fwrite(&ch, 1, 1, stdout);
-			ch = ' ';
-			fwrite(&ch, 1, 1, stdout);
-			ch = '\b';
-		}
-		else
-			buffer[len++] = ch;
-		buffer[len] = 0;
-
-		// recalculate length
-		len = strlen(buffer);
-
-		// echo character back to user
-		fwrite(&ch, 1, 1, stdout);
-		fflush(stdout);
-	}
-
-	if(len && buffer[len - 1] == '\n' || buffer[len - 1] == '\r')
-	{
-		// echo newline back to user
-		char ch = '\n';
-		fwrite(&ch, 1, 1, stdout);
-		fflush(stdout);
-
-		strcpy(text, buffer);
-		text[len-1] = 0; // rip off the /n and terminate
-		buffer[0] = 0;
-		len = 0;
-
-		return text;
-	}
-*/
 }
 
 #else

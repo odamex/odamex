@@ -148,11 +148,7 @@ int main(int argc, char *argv[])
 			I_SetCrashDir(writedir.c_str());
 		}
 
-		const char* CON_FILE = ::Args.CheckValue("-confile");
-		if (CON_FILE)
-		{
-			CON.open(CON_FILE, std::ios::in);
-		}
+		I_SetConsoleInputFile(::Args.CheckValue("-confile"));
 
 		// denis - if argv[1] starts with "odamex://"
 		if(argc == 2 && argv && argv[1])
