@@ -695,6 +695,7 @@ struct vissprite_s
 	int 			mobjflags;
 	int				statusflags;	// Status of player to show (powers, etc)
 	bool			spectator;		// [Blair] Mark if this visprite belongs to a spectator.
+	bool			noclip;			// [LM] If true, do no sprite clipping.
 
 	translationref_t translation;	// [RH] for translation;
 	sector_t*		heightsec;		// killough 3/27/98: height sector for underwater/fake ceiling
