@@ -1086,29 +1086,26 @@ class WadFileLumpFinder
 public:
 	WadFileLumpFinder(const std::string& filename)
 	{
-		FILE* fp = fopen(filename.c_str(), "rb");
-		if (fp)
+		if (auto fp = uqFile(fopen(filename.c_str(), "rb")))
 		{
 			wadinfo_t header;
-			if (fread(&header, sizeof(header), 1, fp) == 1)
+			if (fread(&header, sizeof(header), 1, fp.get()) == 1)
 			{
 				header.identification = LELONG(header.identification);
 				header.infotableofs = LELONG(header.infotableofs);
 
 				if (header.identification == IWAD_ID || header.identification == PWAD_ID)
 				{
-					if (fseek(fp, header.infotableofs, SEEK_SET) == 0)
+					if (fseek(fp.get(), header.infotableofs, SEEK_SET) == 0)
 					{
 						mNumLumps = LELONG(header.numlumps);
 						mLumps = std::make_unique<filelump_t[]>(mNumLumps);
 
-						if (fread(mLumps.get(), sizeof(mLumps[0]), mNumLumps, fp) != mNumLumps)
+						if (fread(mLumps.get(), sizeof(mLumps[0]), mNumLumps, fp.get()) != mNumLumps)
 							mNumLumps = 0;
 					}
 				}
 			}
-
-			fclose(fp);
 		}
 	}
 

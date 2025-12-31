@@ -638,22 +638,20 @@ void M_ReadSaveStrings()
 
 		G_BuildSaveName (name, i);
 
-		FILE* handle = fopen(name.c_str(), "rb");
-		if (handle == NULL)
+		auto handle = uqFile(fopen(name.c_str(), "rb"));
+		if (handle == nullptr)
 		{
 			M_StringCopy(&savegamestrings[i][0], GStrings(EMPTYSTRING), SAVESTRINGSIZE);
 			LoadSavegameMenu[i].status = 0;
 		}
 		else
 		{
-			const size_t readlen = fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle);
+			const size_t readlen = fread (&savegamestrings[i], SAVESTRINGSIZE, 1, handle.get());
 			if (readlen < 1)
 			{
 				fmt::print("M_Read_SaveStrings(): Failed to read handle.\n");
-				fclose(handle);
 				return;
 			}
-			fclose (handle);
 			LoadSavegameMenu[i].status = 1;
 		}
 	}

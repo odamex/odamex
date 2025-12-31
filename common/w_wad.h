@@ -67,7 +67,7 @@ struct filelump_t
 typedef struct lumpinfo_s
 {
 	OLumpName	name;
-	FILE		*handle;
+	FILE		*handle; // TODO: uqFile
 	int			position;
 	int			size;
 

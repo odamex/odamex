@@ -356,7 +356,7 @@ void M_FindResponseFile (void)
 			size_t 	index;
 
 			// READ THE RESPONSE FILE INTO MEMORY
-			FILE* handle = fopen (Args.GetArg(i) + 1,"rb");
+			auto handle = uqFile(fopen(Args.GetArg(i) + 1,"rb"));
 			if (!handle)
 			{ // [RH] Make this a warning, not an error.
 				PrintFmt(PRINT_WARNING,"No such response file ({})!", Args.GetArg(i) + 1);
@@ -364,17 +364,16 @@ void M_FindResponseFile (void)
 			}
 
 			PrintFmt(PRINT_HIGH,"Found response file {}!\n", Args.GetArg(i) + 1);
-			fseek (handle, 0, SEEK_END);
-			auto size = ftell (handle);
-			fseek (handle, 0, SEEK_SET);
+			fseek (handle.get(), 0, SEEK_END);
+			auto size = ftell (handle.get());
+			fseek (handle.get(), 0, SEEK_SET);
 			file = std::make_unique<char[]>(size+1);
-			size_t readlen = fread (file.get(), size, 1, handle);
+			size_t readlen = fread (file.get(), size, 1, handle.get());
 			if (readlen < 1)
 			{
 				PrintFmt(PRINT_HIGH,"Failed to read response file {}.\n", Args.GetArg(i) + 1);
 			}
 			file[size] = 0;
-			fclose (handle);
 
 			int	argcinresp;
 			const auto argsize = ParseCommandLine(file.get(), &argcinresp, nullptr);
