@@ -982,61 +982,12 @@ void I_SetConsoleInputFile (const char* filepath)
 //
 // I_ConsoleInput
 //
-#ifdef _WIN32
 std::string I_ConsoleInput (void)
 {
     std::string command;
     CommandStreamReader::Get().GetCommand(command);
     return command;
 }
-
-#else
-
-std::string I_ConsoleInput (void)
-{
-	std::string ret;
-	static char	 text[1024] = {0};
-	int			 len;
-
-	fd_set fdr;
-	FD_ZERO(&fdr);
-	FD_SET(0, &fdr);
-	struct timeval tv;
-	tv.tv_sec = 0;
-	tv.tv_usec = 0;
-
-	if (select(1, &fdr, NULL, NULL, &tv) <= 0)
-		return "";
-
-	len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead
-
-	if (len < 1)
-		return "";
-
-	len = strlen(text);
-
-	if (strlen(text) >= sizeof(text))
-	{
-		if(text[len-1] == '\n' || text[len-1] == '\r')
-			text[len-1] = 0; // rip off the /n and terminate
-
-		ret = text;
-		memset(text, 0, sizeof(text));
-		return ret;
-	}
-
-	if(text[len-1] == '\n' || text[len-1] == '\r')
-	{
-		text[len-1] = 0;
-
-		ret = text;
-		memset(text, 0, sizeof(text));
-		return ret;
-	}
-
-	return "";
-}
-#endif
 
 
 //
