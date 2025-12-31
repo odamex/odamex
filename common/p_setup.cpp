@@ -1366,33 +1366,6 @@ typedef struct linelist_t        // type used to list lines in each block
 } linelist_t;
 
 //
-// Subroutine to add a line number to a block list
-// It simply returns if the line is already in the block
-//
-
-void AddBlockLine
-(
-	linelist_t **lists,
-	int *count,
-	int *done,
-	int blockno,
-	DWORD lineno
-)
-{
-	linelist_t *l;
-
-	if (done[blockno])
-		return;
-
-	l = new linelist_t;
-	l->num = lineno;
-	l->next = lists[blockno];
-	lists[blockno] = l;
-	count[blockno]++;
-	done[blockno] = 1;
-}
-
-//
 // Actually construct the blockmap lump from the level data
 //
 // This finds the intersection of each linedef with the column and
@@ -1402,29 +1375,49 @@ void AddBlockLine
 
 void P_CreateBlockMap()
 {
-	int xorg,yorg;					// blockmap origin (lower left)
-	int nrows,ncols;				// blockmap dimensions
-	linelist_t **blocklists=NULL;	// array of pointers to lists of lines
-	int *blockcount=NULL;			// array of counters of line lists
-	int *blockdone=NULL;			// array keeping track of blocks/line
-	int NBlocks;					// number of cells = nrows*ncols
-	DWORD linetotal=0;				// total length of all blocklists
-	int map_minx=limits::MAXINT;			// init for map limits search
-	int map_miny=limits::MAXINT;
-	int map_maxx=limits::MININT;
-	int map_maxy=limits::MININT;
+	std::unique_ptr<linelist_t*[]> blocklists; // array of pointers to lists of lines
+	std::unique_ptr<int[]> blockcount; // array of counters of line lists
+	std::unique_ptr<bool[]> blockdone; // array keeping track of blocks/line
+
+	//
+	// Subroutine to add a line number to a block list
+	// It simply returns if the line is already in the block
+	//
+
+	const auto AddBlockLine = [&blocklists, &blockdone, &blockcount]
+	(
+		int blockno,
+		DWORD lineno
+	)
+	{
+		linelist_t *l;
+
+		if (blockdone[blockno])
+			return;
+
+		l = new linelist_t;
+		l->num = lineno;
+		l->next = blocklists[blockno];
+		blocklists[blockno] = l;
+		blockcount[blockno]++;
+		blockdone[blockno] = true;
+	};
 
 	// scan for map limits, which the blockmap must enclose
-
+	int map_minx = limits::MAXINT;
+	int map_miny = limits::MAXINT;
+	int map_maxx = limits::MININT;
+	int map_maxy = limits::MININT;
 	for (int i = 0; i < numvertexes; i++)
 	{
 		fixed_t t;
 
-		if ((t=vertexes[i].x) < map_minx)
+		if ((t = vertexes[i].x) < map_minx)
 			map_minx = t;
 		else if (t > map_maxx)
 			map_maxx = t;
-		if ((t=vertexes[i].y) < map_miny)
+
+		if ((t = vertexes[i].y) < map_miny)
 			map_miny = t;
 		else if (t > map_maxy)
 			map_maxy = t;
@@ -1436,21 +1429,24 @@ void P_CreateBlockMap()
 
 	// set up blockmap area to enclose level plus margin
 
-	xorg = map_minx-blkmargin;
-	yorg = map_miny-blkmargin;
-	ncols = (map_maxx+blkmargin-xorg+1+blkmask)>>blkshift;	//jff 10/12/98
-	nrows = (map_maxy+blkmargin-yorg+1+blkmask)>>blkshift;	//+1 needed for
-	NBlocks = ncols*nrows;									//map exactly 1 cell
+	const int xorg = map_minx-blkmargin; // blockmap origin (lower left)
+	const int yorg = map_miny-blkmargin;
+	const int ncols = (map_maxx+blkmargin-xorg+1+blkmask)>>blkshift; //jff 10/12/98
+	const int nrows = (map_maxy+blkmargin-yorg+1+blkmask)>>blkshift; //+1 needed for map exactly 1 cell
+
+	const auto BlockIndex = [ncols](int x, int y){ return (y * ncols) + x; };
+
+	const int NBlocks = ncols*nrows; // number of cells
 
 	// create the array of pointers on NBlocks to blocklists
 	// also create an array of linelist counts on NBlocks
 	// finally make an array in which we can mark blocks done per line
 
-	blocklists = new linelist_t *[NBlocks];
-	memset (blocklists, 0, NBlocks*sizeof(linelist_t *));
-	blockcount = new int[NBlocks];
-	memset (blockcount, 0, NBlocks*sizeof(int));
-	blockdone = new int[NBlocks];
+	blocklists = std::make_unique<linelist_t*[]>(NBlocks);
+	std::fill_n(blocklists.get(), NBlocks, nullptr);
+	blockcount = std::make_unique<int[]>(NBlocks);
+	std::fill_n(blockcount.get(), NBlocks, 0);
+	blockdone = std::make_unique<bool[]>(NBlocks);
 
 	// initialize each blocklist, and enter the trailing -1 in all blocklists
 	// note the linked list of lines grows backwards
@@ -1468,34 +1464,34 @@ void P_CreateBlockMap()
 
 	for (int i = 0; i < numlines; i++)
 	{
-		int x1 = lines[i].v1->x>>FRACBITS;		// lines[i] map coords
-		int y1 = lines[i].v1->y>>FRACBITS;
-		int x2 = lines[i].v2->x>>FRACBITS;
-		int y2 = lines[i].v2->y>>FRACBITS;
-		int dx = x2-x1;
-		int dy = y2-y1;
-		int vert = !dx;							// lines[i] slopetype
-		int horiz = !dy;
-		int spos = (dx^dy) > 0;
-		int sneg = (dx^dy) < 0;
-		int bx,by;								// block cell coords
-		int minx = x1>x2? x2 : x1;				// extremal lines[i] coords
-		int maxx = x1>x2? x1 : x2;
-		int miny = y1>y2? y2 : y1;
-		int maxy = y1>y2? y1 : y2;
+		const int x1 = lines[i].v1->x>>FRACBITS; // lines[i] map coords
+		const int y1 = lines[i].v1->y>>FRACBITS;
+		const int x2 = lines[i].v2->x>>FRACBITS;
+		const int y2 = lines[i].v2->y>>FRACBITS;
+		const int dx = x2 - x1;
+		const int dy = y2 - y1;
+		const bool vert = (dx == 0);             // lines[i] slopetype
+		const bool horiz = (dy == 0);
+		const bool spos = (dx ^ dy) > 0;
+		const bool sneg = (dx ^ dy) < 0;
+		int bx,by;                              // block cell coords
+		const int minx = x1 > x2 ? x2 : x1;        // extremal lines[i] coords
+		const int maxx = x1 > x2 ? x1 : x2;
+		const int miny = y1 > y2 ? y2 : y1;
+		const int maxy = y1 > y2 ? y1 : y2;
 
 		// no blocks done for this linedef yet
 
-		memset (blockdone, 0, NBlocks*sizeof(int));
+		std::fill_n(blockdone.get(), NBlocks, false);
 
 		// The line always belongs to the blocks containing its endpoints
 
 		bx = (x1-xorg) >> blkshift;
 		by = (y1-yorg) >> blkshift;
-		AddBlockLine (blocklists, blockcount, blockdone, by*ncols+bx, i);
+		AddBlockLine (BlockIndex(bx, by), i);
 		bx = (x2-xorg) >> blkshift;
 		by = (y2-yorg) >> blkshift;
-		AddBlockLine (blocklists, blockcount, blockdone, by*ncols+bx, i);
+		AddBlockLine (BlockIndex(bx, by), i);
 
 		// For each column, see where the line along its left edge, which
 		// it contains, intersects the Linedef i. Add i to each corresponding
@@ -1522,7 +1518,7 @@ void P_CreateBlockMap()
 
 				// The cell that contains the intersection point is always added
 
-				AddBlockLine(blocklists,blockcount,blockdone,ncols*yb+j,i);
+				AddBlockLine(BlockIndex(j, yb), i);
 
 				// if the intersection is at a corner it depends on the slope
 				// (and whether the line extends past the intersection) which
@@ -1533,23 +1529,23 @@ void P_CreateBlockMap()
 					if (sneg)		//   \ - blocks x,y-, x-,y
 					{
 						if (yb>0 && miny<y)
-							AddBlockLine(blocklists, blockcount, blockdone, ncols*(yb-1)+j, i);
+							AddBlockLine(BlockIndex(j, yb - 1), i);
 						if (j>0 && minx<x)
-							AddBlockLine(blocklists, blockcount, blockdone, ncols*yb+j-1, i);
+							AddBlockLine(BlockIndex(j - 1, yb), i);
 					}
 					else if (spos)	//   / - block x-,y-
 					{
 						if (yb>0 && j>0 && minx<x)
-							AddBlockLine(blocklists,blockcount,blockdone,ncols*(yb-1)+j-1,i);
+							AddBlockLine(BlockIndex(j - 1, yb - 1), i);
 					}
 					else if (horiz)	//   - - block x-,y
 					{
 						if (j>0 && minx<x)
-							AddBlockLine(blocklists,blockcount,blockdone,ncols*yb+j-1,i);
+							AddBlockLine(BlockIndex(j - 1, yb), i);
 					}
 				}
 				else if (j>0 && minx<x)	// else not at corner: x-,y
-					AddBlockLine(blocklists,blockcount,blockdone,ncols*yb+j-1,i);
+					AddBlockLine(BlockIndex(j - 1, yb), i);
 			}
 		}
 
@@ -1565,10 +1561,10 @@ void P_CreateBlockMap()
 				// (x,y) on Linedef i satisfies: (y-y1)*dx = dy*(x-x1)
 				// x = dx*(y-y1)/dy+x1;
 
-				int y = yorg+(j<<blkshift);		// (x,y) is intersection
-				int x = (dx*(y-y1))/dy+x1;
-				int xb = (x-xorg)>>blkshift;	// block column number
-				int xp = (x-xorg)&blkmask;		// x position within block
+				const int y = yorg+(j<<blkshift);		// (x,y) is intersection
+				const int x = (dx*(y-y1))/dy+x1;
+				const int xb = (x-xorg)>>blkshift;	// block column number
+				const int xp = (x-xorg)&blkmask;		// x position within block
 
 				if (xb<0 || xb>ncols-1)			// outside blockmap, continue
 					continue;
@@ -1578,7 +1574,7 @@ void P_CreateBlockMap()
 
 				// The cell that contains the intersection point is always added
 
-				AddBlockLine (blocklists, blockcount, blockdone, ncols*j+xb, i);
+				AddBlockLine (BlockIndex(xb, j), i);
 
 				// if the intersection is at a corner it depends on the slope
 				// (and whether the line extends past the intersection) which
@@ -1589,33 +1585,34 @@ void P_CreateBlockMap()
 					if (sneg)       //   \ - blocks x,y-, x-,y
 					{
 						if (j>0 && miny<y)
-							AddBlockLine (blocklists, blockcount, blockdone, ncols*(j-1)+xb, i);
+							AddBlockLine (BlockIndex(xb, j - 1), i);
 						if (xb>0 && minx<x)
-							AddBlockLine (blocklists, blockcount, blockdone, ncols*j+xb-1, i);
+							AddBlockLine (BlockIndex(xb - 1, j), i);
 					}
 					else if (vert)  //   | - block x,y-
 					{
 						if (j>0 && miny<y)
-							AddBlockLine (blocklists, blockcount, blockdone, ncols*(j-1)+xb, i);
+							AddBlockLine (BlockIndex(xb, j - 1), i);
 					}
 					else if (spos)  //   / - block x-,y-
 					{
 						if (xb>0 && j>0 && miny<y)
-							AddBlockLine (blocklists, blockcount, blockdone, ncols*(j-1)+xb-1, i);
+							AddBlockLine (BlockIndex(xb - 1, j - 1), i);
 					}
 				}
 				else if (j>0 && miny<y) // else not on a corner: x,y-
-					AddBlockLine (blocklists, blockcount, blockdone, ncols*(j-1)+xb, i);
+					AddBlockLine (BlockIndex(xb, j - 1), i);
 			}
 		}
 	}
 
 	// Add initial 0 to all blocklists
 	// count the total number of lines (and 0's and -1's)
-	memset (blockdone, 0, NBlocks*sizeof(int));
-	for (int i = 0, linetotal = 0; i < NBlocks; i++)
+	std::fill_n(blockdone.get(), NBlocks, false);
+	DWORD linetotal = 0;
+	for (int i = 0; i < NBlocks; i++)
 	{
-		AddBlockLine (blocklists, blockcount, blockdone, i, 0);
+		AddBlockLine (i, 0);
 		linetotal += blockcount[i];
 	}
 
@@ -1658,11 +1655,6 @@ void P_CreateBlockMap()
 			bl = tmp;
 		}
 	}
-
-	// free all temporary storage
-	delete[] blocklists;
-	delete[] blockcount;
-	delete[] blockdone;
 }
 
 // jff 10/6/98
