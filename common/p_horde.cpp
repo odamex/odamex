@@ -185,23 +185,23 @@ static void ActivateMonsters(AActors& mobjs)
 
 class HordeState
 {
-	hordeState_e m_state;
-	int m_wave;
-	int m_waveTime;
-	int m_bossTime; // If == waveTime, boss not spawned.
-	size_t m_defineID;
-	int m_spawnedHealth;
-	int m_killedHealth;
-	int m_bossHealth;
-	int m_bossDamage;
-	int m_waveStartHealth;
-	AActors m_bosses;
-	hordeRecipe_t m_bossRecipe;
-	int m_nextSpawn;
-	int m_nextPowerup;
-	corpseCollector_t m_corpses;
-	mobjCounts_t m_monsterCounts;
-	mobjCounts_t m_bossCounts;
+	hordeState_e m_state = HS_STARTING;
+	int m_wave = 0;
+	int m_waveTime = 0;
+	int m_bossTime = 0; // If == waveTime, boss not spawned.
+	size_t m_defineID = 0;
+	int m_spawnedHealth = 0;
+	int m_killedHealth = 0;
+	int m_bossHealth = 0;
+	int m_bossDamage = 0;
+	int m_waveStartHealth = 0;
+	AActors m_bosses{};
+	hordeRecipe_t m_bossRecipe{};
+	int m_nextSpawn = 0;
+	int m_nextPowerup = 0;
+	corpseCollector_t m_corpses{};
+	mobjCounts_t m_monsterCounts{};
+	mobjCounts_t m_bossCounts{};
 
 	/**
 	 * @brief Returns number of bosses currently alive.
@@ -227,13 +227,7 @@ class HordeState
 	}
 
   public:
-	HordeState()
-	    : m_state(HS_STARTING), m_wave(0), m_waveTime(0), m_bossTime(0), m_defineID(0),
-	      m_spawnedHealth(0), m_killedHealth(0), m_bossHealth(0), m_bossDamage(0),
-	      m_waveStartHealth(0), m_bossRecipe(hordeRecipe_t()), m_nextSpawn(0),
-	      m_nextPowerup(0), m_monsterCounts(), m_bossCounts()
-	{
-	}
+	HordeState() = default;
 
 	/**
 	 * @brief Reset director state.
