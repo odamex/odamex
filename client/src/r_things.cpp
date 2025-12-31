@@ -391,7 +391,8 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	// killough 3/27/98: exclude things totally separated
 	// from the viewer, by either water or fake ceilings
 	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
-	sector_t* heightsec = sector->heightsec;
+	// [LM] Allow for passing NULL sectors for global sprites.
+	sector_t* heightsec = sector ? sector->heightsec : nullptr;
 
 	if (heightsec && heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC)
 		heightsec = NULL;
@@ -438,6 +439,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	vis->FakeFlat = fakeside;
 	vis->colormap = basecolormap;
 	vis->spectator = false;
+	vis->noclip = false;
 
 	fixed_t iscale = FixedDiv(ty, FocalLengthX);
 	if (flip)
@@ -637,6 +639,7 @@ void R_ProjectSprite(const AActor *thing, int fakeside)
 	vis->mobjflags = thing->flags;
 	vis->statusflags = thing->statusflags;
 	vis->spectator = thing->oflags & MFO_SPECTATOR;
+	vis->noclip = false;
 	vis->translation = thing->translation;		// [RH] thing translation table
 	vis->translucency = thing->translucency;
 	vis->patch = lump;
@@ -776,6 +779,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	vis->translucency = r_drawplayersprites * FRACUNIT;
 	vis->mo = NULL;
 	vis->spectator = false;
+	vis->noclip = false;
 
 	if (flip)
 	{
@@ -836,7 +840,37 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	R_DrawVisSprite (vis, vis->x1, vis->x2);
 }
 
+void R_AddGlobalSprites()
+{
+	int lump = W_GetNumForName("NET");
+	if (lump == -1)
+		return;
 
+	patch_t* patch = W_CachePatch(lump);
+	if (patch == nullptr)
+		return;
+
+	fixed_t height = patch->height() << FRACBITS;
+	fixed_t width = patch->width() << FRACBITS;
+	short topoffs = patch->topoffset();
+	short sideoffs = patch->leftoffset();
+
+	vissprite_t* vis =
+	    R_GenerateVisSprite(NULL, FAKED_Center, -64 << FRACBITS, 1312 << FRACBITS,
+	                        64 << FRACBITS, height, width, topoffs, sideoffs, false);
+	if (vis == NULL)
+		return;
+
+	vis->mobjflags = 0;
+	vis->statusflags = 0;
+	vis->spectator = false;
+	vis->noclip = true;
+	vis->translation = translationref_t{};
+	vis->translucency = FRACUNIT;
+	vis->patch = lump;
+	vis->mo = nullptr;
+	vis->colormap = ::basecolormap;
+}
 
 //
 // R_DrawPlayerSprites
@@ -1022,42 +1056,46 @@ void R_DrawSprite (vissprite_t *spr)
 	// (pointer check was originally nonportable
 	// and buggy, by going past LEFT end of array):
 
-	for (ds = ds_p ; ds-- > firstdrawseg ; )  // new -- killough
+	if (!spr->noclip) // [LM] Don't clip "global" sprites.
 	{
-		// determine if the drawseg obscures the sprite
-		if (ds->x1 > spr->x2 || ds->x2 < spr->x1 ||
-			(!(ds->silhouette & SIL_BOTH) && !ds->midposts) )
+		for (ds = ds_p; ds-- > firstdrawseg;) // new -- killough
 		{
-			// does not cover sprite
-			continue;
-		}
+			// determine if the drawseg obscures the sprite
+			if (ds->x1 > spr->x2 || ds->x2 < spr->x1 ||
+			    (!(ds->silhouette & SIL_BOTH) && !ds->midposts))
+			{
+				// does not cover sprite
+				continue;
+			}
 
-		r1 = MAX<int>(ds->x1, spr->x1);
-		r2 = MIN<int>(ds->x2, spr->x2);
+			r1 = MAX<int>(ds->x1, spr->x1);
+			r2 = MIN<int>(ds->x2, spr->x2);
 
-		segscale1 = MAX<int>(ds->scale1, ds->scale2);
-		segscale2 = MIN<int>(ds->scale1, ds->scale2);
+			segscale1 = MAX<int>(ds->scale1, ds->scale2);
+			segscale2 = MIN<int>(ds->scale1, ds->scale2);
 
-		// check if the seg is in front of the sprite
-		if (!(!ds->curline) && (segscale1 < spr->yscale ||
-			(segscale2 < spr->yscale && !R_PointOnSegSide(spr->gx, spr->gy, ds->curline))))
-		{
-			// masked mid texture?
-			if (ds->midposts)
-				R_RenderMaskedSegRange(ds, r1, r2);
-			// seg is behind sprite
-			continue;
-		}
+			// check if the seg is in front of the sprite
+			if (!(!ds->curline) && (segscale1 < spr->yscale ||
+			                        (segscale2 < spr->yscale &&
+			                         !R_PointOnSegSide(spr->gx, spr->gy, ds->curline))))
+			{
+				// masked mid texture?
+				if (ds->midposts)
+					R_RenderMaskedSegRange(ds, r1, r2);
+				// seg is behind sprite
+				continue;
+			}
 
-		// clip this piece of the sprite
-		// killough 3/27/98: optimized and made much shorter
+			// clip this piece of the sprite
+			// killough 3/27/98: optimized and made much shorter
 
-		for (x = r1; x <= r2; x++)
-		{
-			if (ds->silhouette & SIL_BOTTOM && clipbot[x] > ds->sprbottomclip[x])
-				clipbot[x] = ds->sprbottomclip[x];
-			if (ds->silhouette & SIL_TOP && cliptop[x] < ds->sprtopclip[x])
-				cliptop[x] = ds->sprtopclip[x];
+			for (x = r1; x <= r2; x++)
+			{
+				if (ds->silhouette & SIL_BOTTOM && clipbot[x] > ds->sprbottomclip[x])
+					clipbot[x] = ds->sprbottomclip[x];
+				if (ds->silhouette & SIL_TOP && cliptop[x] < ds->sprtopclip[x])
+					cliptop[x] = ds->sprtopclip[x];
+			}
 		}
 	}
 
@@ -1082,6 +1120,9 @@ void R_DrawSprite (vissprite_t *spr)
 void R_DrawMasked (void)
 {
 	drawseg_t		 *ds;
+
+	// [LM] Add global sprites at the last possible minute.
+	R_AddGlobalSprites();
 
 	R_SortVisSprites ();
 
@@ -1187,6 +1228,7 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	vis->statusflags = 0;
 	vis->mo = NULL;
 	vis->spectator = false;
+	vis->noclip = false;
 
 	if (particle->sprite == NO_PARTICLE)
 	{
