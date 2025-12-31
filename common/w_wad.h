@@ -152,7 +152,7 @@ bool	W_CheckLumpName (unsigned lump, const char *name);	// [RH] True if lump's n
 //unsigned W_LumpNameHash (const char *name);				// [RH] Create hash key from an 8-char name
 
 // [RH] Combine multiple marked ranges of lumps into one.
-void	W_MergeLumps (const char *start, const char *end, int);
+void W_MergeLumps (const OLumpName& start, const OLumpName& end, int);
 
 // [RH] Copy an 8-char string and uppercase it.
 void uppercopy (char *to, const char *from);

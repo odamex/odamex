@@ -394,7 +394,7 @@ static bool IsMarker (const lumpinfo_t *lump, const char *marker)
 // Basically from BOOM, too, although I tried to write it independently.
 //
 
-void W_MergeLumps (OLumpName start, OLumpName end, int space)
+void W_MergeLumps (const OLumpName& start, const OLumpName& end, int space)
 {
 	// Some pwads use an icky hack to get flats with regular Doom.
 	// This tries to detect them.

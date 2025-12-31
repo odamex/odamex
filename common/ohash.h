@@ -24,14 +24,11 @@
 
 class OHash
 {
-  private:
-	virtual void concrete() = 0; // [AM] Hack to make this class abstract.
-
   protected:
 	std::string m_hash;
 
   public:
-	virtual ~OHash() { }
+	virtual ~OHash() = 0;
 	[[nodiscard]] bool operator==(const OHash& other) const { return m_hash == other.m_hash; }
 	bool operator!=(const OHash& other) const { return !(operator==(other)); }
 	const std::string& getHexStr() const { return m_hash; }
@@ -39,20 +36,16 @@ class OHash
 	bool empty() const { return m_hash.empty(); }
 };
 
+inline OHash::~OHash() = default;
+
 class OMD5Hash : public OHash
 {
-  protected:
-	void concrete() override { }
-
   public:
 	static bool makeFromHexStr(OMD5Hash& out, const std::string& hash);
 };
 
 class OCRC32Sum : public OHash
 {
-  protected:
-	void concrete() override { }
-
   public:
 	static bool makeFromHexStr(OCRC32Sum& out, const std::string& hash);
 };

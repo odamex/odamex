@@ -52,27 +52,23 @@ enum States
 
 static struct DownloadState
 {
-  private:
-	DownloadState(const DownloadState&);
-
   public:
-	States state;
-	OTransferCheck* check;
-	OTransfer* transfer;
+	States state = STATE_SHUTDOWN;
+	OTransferCheck* check = nullptr;
+	OTransfer* transfer = nullptr;
 	std::string url;
 	std::string filename;
-	OMD5Hash hash;
-	unsigned flags;
-	Websites checkurls;
-	size_t checkurlidx;
-	std::string checkfilename;
-	int checkfails;
-	DownloadState()
-	    : state(STATE_SHUTDOWN), check(NULL), transfer(NULL), url(""), filename(""),
-	      hash(), flags(0), checkurls(), checkurlidx(0), checkfilename(""),
-	      checkfails(0)
-	{
-	}
+	OMD5Hash hash{};
+	uint32_t flags = 0;
+	Websites checkurls{};
+	size_t checkurlidx = 0;
+	std::string checkfilename{};
+	int checkfails = 0;
+	DownloadState(const DownloadState&) = delete;
+	DownloadState& operator=(const DownloadState&) = delete;
+	DownloadState(DownloadState&&) = delete;
+	DownloadState& operator=(DownloadState&&) = delete;
+	DownloadState() = default;
 	void Ready()
 	{
 		this->state = STATE_READY;
