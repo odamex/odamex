@@ -126,12 +126,15 @@ Spree_s SpreeManager::getSpreeLevel(int level)
 	return spreeLevels.at(level);
 }
 
-void SpreeManager::setSpreeLevels(const std::vector<Spree_s> sprees, int newKillInterval,
-                                  int newDamageInterval)
+void SpreeManager::setSpreeLevels(const NewSprees_s newSprees)
 {
-	spreeLevels = sprees;
-	spreeKillInterval = newKillInterval;
-	spreeDamageInterval = newDamageInterval;
+	spreeLevels = newSprees.newSprees;
+	spreeKillInterval = newSprees.newKillInterval;
+	spreeDamageInterval = newSprees.newDamageInterval;
+	spreeEndPlayer = newSprees.newSpreeEndPlayer;
+	spreeEndSelf = newSprees.newSpreeEndSelf;
+	spreeEndMonster = newSprees.newSpreeEndMonster;
+	repeatingSpreeText = newSprees.newRepeatingSpreeText;
 }
 
 SpreeBreaker_t SpreeManager::getSpreeBreaker()

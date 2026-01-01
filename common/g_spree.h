@@ -117,6 +117,37 @@ struct SpreeBreaker_t
 };
 
 /// <summary>
+/// Structure to represent a new spree paradigm.
+/// </summary>
+struct NewSprees_s
+{
+	std::vector<Spree_s> newSprees;
+	int newKillInterval;
+	int newDamageInterval;
+	std::string newRepeatingSpreeText = "";
+	std::string newSpreeEndPlayer = "";
+	std::string newSpreeEndSelf = "";
+	std::string newSpreeEndMonster = "";
+
+	NewSprees_s()
+	    : newSprees(), newKillInterval(0), newDamageInterval(0),
+	      newRepeatingSpreeText(""),
+	      newSpreeEndPlayer(""), newSpreeEndSelf(""), newSpreeEndMonster("")
+	{
+	}
+	NewSprees_s(std::vector<Spree_s> Sprees, int NewKillInterval, int NewDamageInterval,
+	            std::string NewRepeatingSpreeText, std::string NewSpreeEndPlayer,
+	            std::string NewSpreeEndSelf, std::string NewSpreeEndMonster)
+	    : newSprees(Sprees), newKillInterval(NewKillInterval),
+	      newDamageInterval(NewDamageInterval),
+	      newRepeatingSpreeText(NewRepeatingSpreeText),
+	      newSpreeEndPlayer(NewSpreeEndPlayer), newSpreeEndSelf(NewSpreeEndSelf),
+	      newSpreeEndMonster(NewSpreeEndMonster)
+	{
+	}
+};
+
+/// <summary>
 /// A singleton class to manage sprees and associated spree bookkeeping.
 /// </summary>
 class SpreeManager
@@ -145,12 +176,8 @@ public:
 	/// <summary>
 	/// Creates a new spree list reading from a SPREEDEF lump.
 	/// </summary>
-	/// <param name="sprees">New finished spree list, in order, as read from a SPREEDEF lump.</param>
-	/// <param name="newKillinterval">Kill interval (as in, how many kills to reach a new spree level.)</param>
-	/// <param name="newDamageInterval">Damage interval (as in, how much damage to reach a new spree level.)</param>
-	void setSpreeLevels(const std::vector<Spree_s> sprees,
-	                    int newKillinterval,
-	                    int newDamageInterval);
+	/// <param name="newSprees">New finished spree paradigm, in order, as read from a SPREEDEF lump.</param>
+	void setSpreeLevels(const NewSprees_s newSprees);
 
 	/// <summary>
 	/// Loads default spree information if no SPREEDEF is found.

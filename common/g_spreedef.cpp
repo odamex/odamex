@@ -214,35 +214,35 @@ static void ParseSpreeDef(const int lump, const OLumpName name)
 	MultiKillManager::getInstance().reset();
 	SpreeManager::getInstance().reset();
 
-	// Spree variables
-	int spreedamageinterval = 0;
-	int spreekillinterval = 0;
-	int multikillinterval = 0;
+	// Spree variables (required)
+	int spreeDamageInterval = 0;
+	int spreeKillInterval = 0;
+	int multiKillInterval = 0;
+	std::string repeatingSpreeText = "";
+	std::string spreeEndPlayer = "";
+	std::string spreeEndSelf = "";
+	std::string spreeEndMonster = "";
 
+	// Spree and multi kill levels
 	std::vector<Spree_s> spreeLevels;
 	std::vector<MultiKillLevel_s> multiKillLevels;
 
 	multiKillLevels.push_back(MultiKillLevel_s()); // Level 0 placeholder
 	multiKillLevels.push_back(MultiKillLevel_s()); // Level 1 placeholder
 
-	std::string repeatingSpreeText = "";
-	std::string spreeEndPlayer = "";
-	std::string spreeEndSelf = "";
-	std::string spreeEndMonster = "";
-
 	while (os.scan())
 	{
 		if (os.compareTokenNoCase("spreekillinterval"))
 		{
-			ParseSpreeKillInterval(os, spreekillinterval);
+			ParseSpreeKillInterval(os, spreeKillInterval);
 		}
 		else if (os.compareTokenNoCase("spreedamageinterval"))
 		{
-			ParseSpreeDamageInterval(os, spreedamageinterval);
+			ParseSpreeDamageInterval(os, spreeDamageInterval);
 		}
 		else if (os.compareTokenNoCase("multikillinterval"))
 		{
-			ParseMultiInterval(os, multikillinterval);
+			ParseMultiInterval(os, multiKillInterval);
 		}
 		else if (os.compareTokenNoCase("spreeendedplayertext"))
 		{
@@ -278,6 +278,47 @@ static void ParseSpreeDef(const int lump, const OLumpName name)
 
 	// Update the spree and multi kill managers
 	// If there's nothing here just load defaults
+	if (spreeLevels.size() > 0)
+	{
+		// Check required variables, error if missing
+		if (spreeKillInterval == 0)
+			os.error("Missing required keyword 'spreekillinterval' in SPREEDEF.");
+		if (spreeDamageInterval == 0)
+			os.error("Missing required keyword 'spreedamageinterval' in SPREEDEF.");
+		if (repeatingSpreeText.empty())
+			os.error("Missing required keyword 'repeatingspreetext' in SPREEDEF.");
+		if (spreeEndPlayer.empty())
+			os.error("Missing required keyword 'spreeendedplayertext' in SPREEDEF.");
+		if (spreeEndSelf.empty())
+			os.error("Missing required keyword 'spreeendedselftext' in SPREEDEF.");
+		if (spreeEndMonster.empty())
+			os.error("Missing required keyword 'spreeendedmonstertext' in SPREEDEF.");
+
+		NewSprees_s newSprees = {
+		    spreeLevels,    spreeKillInterval, spreeDamageInterval, repeatingSpreeText,
+		    spreeEndPlayer, spreeEndSelf,      spreeEndMonster
+		};
+
+		SpreeManager::getInstance().setSpreeLevels(newSprees);
+	}
+	else
+	{
+		SpreeManager::getInstance().loadSpreeDefaults();
+	}
+
+	if (multiKillLevels.size() > 2)
+	{
+		// Check required variables, error if missing
+		if (multiKillInterval == 0)
+			os.error("Missing required keyword 'multikillinterval' in SPREEDEF.");
+
+		MultiKillManager::getInstance().setMultiKillLevels(multiKillLevels,
+		                                                   multiKillInterval);
+	}
+	else
+	{
+		MultiKillManager::getInstance().loadMultiKillDefaults();
+	}
 }
 
 void G_ParseSpreeDef()
