@@ -280,10 +280,6 @@ static void ParseSpreeDef(const int lump, const OLumpName name)
 	// If there's nothing here just load defaults
 }
 
-/// <summary>
-/// Parses all SPREEDEF lumps for consumption by
-/// the spree and multi kill managers.
-/// </summary>
 void G_ParseSpreeDef()
 {
 	int lump = -1;

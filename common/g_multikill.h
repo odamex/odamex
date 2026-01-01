@@ -76,7 +76,8 @@ public:
 	static MultiKillManager& getInstance();
 
 	/// <summary>
-	/// Resets the status of the manager.
+	/// Resets the status of the manager, called when loading a new wad with a SPREEDEF
+	/// lump.
 	/// </summary>
 	void reset();
 
@@ -86,8 +87,7 @@ public:
 	/// </summary>
 	/// <param name="multikills">The completed MultiKillLevels in order in a vector.</param>
 	/// <param name="newinterval">Multi kill interval in tics.</param>
-	void setMultiKillLevels(const std::vector<MultiKillLevel_s> multikills,
-	                        int newinterval);
+	void setMultiKillLevels(const std::vector<MultiKillLevel_s> multikills, int newinterval);
 
 	/// <summary>
 	/// Gets the highest multi kill level.
@@ -98,18 +98,6 @@ public:
 	/// for.</param> <returns>The multi kill level specified, or empty if
 	/// invalid.</returns>
 	MultiKillLevel_s getMultiKillLevel(int level);
-
-	/// <summary>
-	/// Gets the multi kill interval to trigger multi kills.
-	/// </summary>
-	/// <returns>The multi kill interval.</returns>
-	int getMultiKillInterval();
-
-	/// <summary>
-	/// Gets the highest multi kill level.
-	/// </summary>
-	/// <returns>The highest multi kill level available.</returns>
-	int getHighestMultiKillLevel();
 
 	/// <summary>
 	/// Sets defaults for loading multi kills. Typically runs if a SPREEDEF is not found.
@@ -148,6 +136,18 @@ public:
 	void clearMultiTics();
 private:
 	/// <summary>
+	/// Gets the multi kill interval to trigger multi kills.
+	/// </summary>
+	/// <returns>The multi kill interval.</returns>
+	int getMultiKillInterval();
+
+	/// <summary>
+	/// Gets the highest multi kill level.
+	/// </summary>
+	/// <returns>The highest multi kill level available.</returns>
+	int getHighestMultiKillLevel();
+
+	/// <summary>
 	/// Integer that represents, in tics, the max time interval allowed
 	/// between kills to keep up a multi kill streak.
 	/// </summary>
@@ -162,8 +162,7 @@ private:
 	/// <summary>
 	/// Bookkeeping dictionary for multi kills and multi kill tics per player.
 	/// </summary>
-	std::unordered_map<int, MultiKillTics_s>
-	    mutliKillPlayerDict; // Lookup for current player multi kill status
+	std::unordered_map<int, MultiKillTics_s> mutliKillPlayerDict;
 };
 
 /// <summary>

@@ -23,5 +23,8 @@
 
 #pragma once
 
-// Parse SPREEDEF lumps for spree and multi kill information
+/// <summary>
+/// Parses all SPREEDEF lumps for consumption by
+/// the spree and multi kill managers.
+/// </summary>
 void G_ParseSpreeDef();
