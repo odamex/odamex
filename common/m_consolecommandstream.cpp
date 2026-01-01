@@ -29,116 +29,120 @@
 #include <mutex>
 #include <thread>
 
-class CommandStreamReader
-{
-    public:
+namespace {
 
-        // Please note that we force the use of a Singleton because that's the best
-        // way to ensure that the thread, the file handles, and the other resources
-        // are created in the correct order and cleaned up during runtime teardown.
-        //
-        //  1.  The purpose of the thread is to block on an istream without interrupting
-        //      the main program.
-        //
-        //  2.  The C++ standard does NOT guarantee any way to safely, portably interrupt
-        //      the blocking read when using stdin, therefore we essentially cannot
-        //      interrupt the thread; We must let the runtime clean this all up during
-        //      teardown.
-        //
-        //  3.  If we allow this object to be destructed directly, and we have no way of
-        //      gracefully ending and joining the thread, then we can easily wind up with
-        //      a thread that attempts to access freed resources (i.e. member variables).
-        //
-        // The best way to address this is to just make a Meyers Singleton and be done
-        // with it.
-        static CommandStreamReader& Get()
-        {
-            static CommandStreamReader instance(s_filePtr ? *s_filePtr : std::cin);
-            return instance;
-        }
+    class CommandStreamReader
+    {
+        public:
 
-        // Set the contents of the given string, an output parameter, to the next command
-        // received from the command stream.  If a command is available, the given string
-        // is updated and true is returned.  Otherwise, the string is unmodified and false
-        // is returned.
-        //
-        // Meant to be called from the main thread.
-        bool GetCommand(std::string& o_command)
-        {
-            if (std::unique_lock lock{m_mutex, std::try_to_lock})
+            // Please note that we force the use of a Singleton because that's the best
+            // way to ensure that the thread, the file handles, and the other resources
+            // are created in the correct order and cleaned up during runtime teardown.
+            //
+            //  1.  The purpose of the thread is to block on an istream without interrupting
+            //      the main program.
+            //
+            //  2.  The C++ standard does NOT guarantee any way to safely, portably interrupt
+            //      the blocking read when using stdin, therefore we essentially cannot
+            //      interrupt the thread; We must let the runtime clean this all up during
+            //      teardown.
+            //
+            //  3.  If we allow this object to be destructed directly, and we have no way of
+            //      gracefully ending and joining the thread, then we can easily wind up with
+            //      a thread that attempts to access freed resources (i.e. member variables).
+            //
+            // The best way to address this is to just make a Meyers Singleton and be done
+            // with it.
+            static CommandStreamReader& Get()
             {
-                if (not m_command.empty())
-                {
-                    o_command.swap(m_command);
-                    m_command.clear();
+                static CommandStreamReader instance(s_filePtr ? *s_filePtr : std::cin);
+                return instance;
+            }
 
-                    // Unlock early so that we can be sure that the thread doesn't awake via
-                    // the condition variable then turn around and immediately have to wait
-                    // on the mutex.
-                    lock.unlock();
-                    m_commandIsReleasedCondition.notify_one();
-                    return true;
+            // Set the contents of the given string, an output parameter, to the next command
+            // received from the command stream.  If a command is available, the given string
+            // is updated and true is returned.  Otherwise, the string is unmodified and false
+            // is returned.
+            //
+            // Meant to be called from the main thread.
+            bool GetCommand(std::string& o_command)
+            {
+                if (std::unique_lock lock{m_mutex, std::try_to_lock})
+                {
+                    if (not m_command.empty())
+                    {
+                        o_command.swap(m_command);
+                        m_command.clear();
+
+                        // Unlock early so that we can be sure that the thread doesn't awake via
+                        // the condition variable then turn around and immediately have to wait
+                        // on the mutex.
+                        lock.unlock();
+                        m_commandIsReleasedCondition.notify_one();
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // Commit to using the given Input File for the CommandStream instead of stdin.  This
+            // must be done before the first attempt to access the CommandStream, and can only be
+            // completed successfully once.  If the file is successfully opened, then true is
+            // returned, and all subsequent calls to this function do nothing and return false.
+            static bool OpenInputFile(const char* filepath)
+            {
+                if (filepath and not s_filePtr)
+                {
+                    s_filePtr = std::make_unique<std::ifstream>(filepath);
+                    if (s_filePtr->good())
+                    {
+                        return true;
+                    }
+                    s_filePtr.reset();
+                }
+                return false;
+            }
+
+        protected:
+            explicit CommandStreamReader(std::istream& i_streamRef):
+                m_streamRef(i_streamRef),
+                m_thread(&CommandStreamReader::ThreadMain, this)
+            {
+            }
+
+            ~CommandStreamReader()
+            {
+                // Detach because we don't have a nice way of terminating our thread yet.
+                m_thread.detach();
+            }
+
+            void ThreadMain()
+            {
+                while(m_streamRef.good())
+                {
+                    std::unique_lock lock(m_mutex);
+                    std::getline(m_streamRef, m_command);
+                    if (m_streamRef and not m_command.empty())
+                    {
+                        m_commandIsReleasedCondition.wait(lock, [this]() { return m_command.empty(); });
+                    }
                 }
             }
-            return false;
-        }
 
-        // Commit to using the given Input File for the CommandStream instead of stdin.  This
-        // must be done before the first attempt to access the CommandStream, and can only be
-        // completed successfully once.  If the file is successfully opened, then true is
-        // returned, and all subsequent calls to this function do nothing and return false.
-        static bool OpenInputFile(const char* filepath)
-        {
-            if (filepath and not s_filePtr)
-            {
-                s_filePtr = std::make_unique<std::ifstream>(filepath);
-                if (s_filePtr->good())
-                {
-                    return true;
-                }
-                s_filePtr.reset();
-            }
-            return false;
-        }
+            static std::unique_ptr<std::ifstream>   s_filePtr;
 
-    protected:
-        explicit CommandStreamReader(std::istream& i_streamRef):
-            m_streamRef(i_streamRef),
-            m_thread(&CommandStreamReader::ThreadMain, this)
-        {
-        }
+            // Please note that the member order is intentional for safe construction.
+            std::istream &  m_streamRef;
+            std::string     m_command;
 
-        ~CommandStreamReader()
-        {
-            // Detach because we don't have a nice way of terminating our thread yet.
-            m_thread.detach();
-        }
+            std::mutex              m_mutex;
+            std::condition_variable m_commandIsReleasedCondition;
+            std::thread             m_thread;
+    };
 
-        void ThreadMain()
-        {
-            while(m_streamRef.good())
-            {
-                std::unique_lock lock(m_mutex);
-                std::getline(m_streamRef, m_command);
-                if (m_streamRef and not m_command.empty())
-                {
-                    m_commandIsReleasedCondition.wait(lock, [this]() { return m_command.empty(); });
-                }
-            }
-        }
+    std::unique_ptr<std::ifstream> CommandStreamReader::s_filePtr;
 
-        static std::unique_ptr<std::ifstream>   s_filePtr;
-
-        // Please note that the member order is intentional for safe construction.
-        std::istream &  m_streamRef;
-        std::string     m_command;
-
-        std::mutex              m_mutex;
-        std::condition_variable m_commandIsReleasedCondition;
-        std::thread             m_thread;
-};
-
-std::unique_ptr<std::ifstream> CommandStreamReader::s_filePtr;
+}
 
 void M_InitConsoleInputFile (const char* filepath)
 {
