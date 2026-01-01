@@ -69,6 +69,8 @@
 #include "cl_parse.h"
 #include "cl_replay.h"
 
+#include "m_consolecommandstream.h"
+
 #include <bitset>
 #include <set>
 #include <sstream>
@@ -650,7 +652,7 @@ void CL_DisplayTics()
 //
 void CL_RunTics()
 {
-	std::string cmd = I_ConsoleInput();
+	const std::string cmd = M_ConsoleInput();
 	if (cmd.length())
 		AddCommandString(cmd);
 
