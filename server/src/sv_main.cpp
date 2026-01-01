@@ -63,7 +63,6 @@
 #include "g_gametype.h"
 #include "sv_banlist.h"
 #include "d_main.h"
-#include "m_fileio.h"
 #include "v_textcolors.h"
 #include "p_lnspec.h"
 #include "m_wdlstats.h"
