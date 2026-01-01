@@ -59,7 +59,6 @@ static void ParseMultiInterval(OScanner& os, int& multikillinterval)
 static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 {
 	os.assertTokenIs("spree");
-	os.mustScan();
 	os.mustScanInt();
 	int newLevel = os.getTokenInt();
 
@@ -67,6 +66,8 @@ static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 	    newLevel <= 0)
 		os.error("Spree levels must be defined in ascending order.");
 
+	os.mustScan();
+	os.assertTokenIs("=");
 	os.mustScan();
 	os.assertTokenIs("{");
 	os.mustScan();
@@ -129,14 +130,15 @@ static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 static void ParseMulti(OScanner& os, std::vector<MultiKillLevel_s>& multiKillLevels)
 {
 	os.assertTokenIs("multi");
-	os.mustScan();
 	os.mustScanInt();
 	int newLevel = os.getTokenInt();
 
-	if (newLevel <= multiKillLevels.size() || newLevel > multiKillLevels.size() + 1 ||
+	if (newLevel <= multiKillLevels.size() - 1 || newLevel > multiKillLevels.size() + 1 ||
 	    newLevel <= 1)
 		os.error("Multi kill levels must be defined in ascending order.");
 
+	os.mustScan();
+	os.assertTokenIs("=");
 	os.mustScan();
 	os.assertTokenIs("{");
 	os.mustScan();
@@ -256,9 +258,9 @@ static void ParseSpreeDef(const int lump, const OLumpName name)
 		{
 			ParseSpreeText(os, spreeEndMonster, "spreeendedmonstertext");
 		}
-		else if (os.compareTokenNoCase("repeatingspreestext"))
+		else if (os.compareTokenNoCase("repeatingspreetext"))
 		{
-			ParseSpreeText(os, repeatingSpreeText, "repeatingspreestext");
+			ParseSpreeText(os, repeatingSpreeText, "repeatingspreetext");
 		}
 		else if (os.compareTokenNoCase("spree"))
 		{
@@ -282,17 +284,17 @@ static void ParseSpreeDef(const int lump, const OLumpName name)
 	{
 		// Check required variables, error if missing
 		if (spreeKillInterval == 0)
-			os.error("Missing required keyword 'spreekillinterval' in SPREEDEF.");
+			os.error("Missing required keyword 'spreekillinterval'.");
 		if (spreeDamageInterval == 0)
-			os.error("Missing required keyword 'spreedamageinterval' in SPREEDEF.");
+			os.error("Missing required keyword 'spreedamageinterval'.");
 		if (repeatingSpreeText.empty())
-			os.error("Missing required keyword 'repeatingspreetext' in SPREEDEF.");
+			os.error("Missing required keyword 'repeatingspreetext'.");
 		if (spreeEndPlayer.empty())
-			os.error("Missing required keyword 'spreeendedplayertext' in SPREEDEF.");
+			os.error("Missing required keyword 'spreeendedplayertext'.");
 		if (spreeEndSelf.empty())
-			os.error("Missing required keyword 'spreeendedselftext' in SPREEDEF.");
+			os.error("Missing required keyword 'spreeendedselftext'.");
 		if (spreeEndMonster.empty())
-			os.error("Missing required keyword 'spreeendedmonstertext' in SPREEDEF.");
+			os.error("Missing required keyword 'spreeendedmonstertext'.");
 
 		NewSprees_s newSprees = {
 		    spreeLevels,    spreeKillInterval, spreeDamageInterval, repeatingSpreeText,
@@ -310,7 +312,7 @@ static void ParseSpreeDef(const int lump, const OLumpName name)
 	{
 		// Check required variables, error if missing
 		if (multiKillInterval == 0)
-			os.error("Missing required keyword 'multikillinterval' in SPREEDEF.");
+			os.error("Missing required keyword 'multikillinterval'.");
 
 		MultiKillManager::getInstance().setMultiKillLevels(multiKillLevels,
 		                                                   multiKillInterval);
