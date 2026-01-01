@@ -79,7 +79,7 @@ static HANDLE hEvent;
 
 int ShutdownNow()
 {
-	return (WaitForSingleObject(hEvent, 1) == WAIT_OBJECT_0);
+	return (WaitForSingleObject(hEvent, 0) == WAIT_OBJECT_0);
 }
 
 BOOL WINAPI ConsoleHandlerRoutine(DWORD dwCtrlType)
