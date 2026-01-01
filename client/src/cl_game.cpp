@@ -67,6 +67,7 @@
 #include "p_horde.h"
 #include "g_musinfo.h"
 #include "g_spree.h"
+#include "g_multikill.h"
 
 #include <math.h> // for pow()
 
@@ -1223,14 +1224,12 @@ void G_PlayerFinishLevel (player_t &player)
 		p->mo->flags &= ~MF_SHADOW; 	// cancel invisibility
 
 	SpreeManager::getInstance().erasePoints(player.id);
+	MultiKillManager::getInstance().eraseMultiKills(player.id);
 
 	p->extralight = 0;					// cancel gun flashes
 	p->fixedcolormap = 0;				// cancel ir goggles
 	p->damagecount = 0; 				// no palette changes
 	p->bonuscount = 0;
-	p->multikills = 0;
-	p->multikilltics = 0;
-	p->lastkilltime = 0;
 }
 
 

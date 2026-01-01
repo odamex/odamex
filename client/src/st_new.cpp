@@ -1656,11 +1656,13 @@ void MultiKillHud()
 		return;
 
 	const player_t& p = displayplayer();
+	const MultiKillTics_s tics = MultiKillManager::getInstance().getMultiKills(p.id);
 
 	// Display the current display player's multi kills
-	if (p.multikills > 1 && ::gametic - p.lastkilltime < 4 * TICRATE)
+	if (tics.multiKills > 1 && ::gametic - tics.lastKillTime < 4 * TICRATE)
 	{
-		MultiKillLevel_s multi = MultiKillManager::getInstance().getMultiKillLevel(p.multikills);
+		MultiKillLevel_s multi =
+		    MultiKillManager::getInstance().getMultiKillLevel(tics.multiKills);
 		multiKillLines_t line;
 
 		line.multiKillText = multi.multikilltext;
@@ -1673,7 +1675,7 @@ void MultiKillHud()
 		int w = V_StringWidth(line.multiKillText.c_str()) * CleanYfac;
 		int h = 12 * CleanYfac;
 
-		line.lucent = lucentFade(::gametic - p.lastkilltime,
+		line.lucent = lucentFade(::gametic - tics.lastKillTime,
 			                      TICRATE * 3, TICRATE * 4);
 
 		const float oldtrans = ::hud_transparency;

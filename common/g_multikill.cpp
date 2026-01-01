@@ -32,12 +32,6 @@
 #include "g_multikill.h"
 #include "m_ostring.h"
 
-//
-// MultiKillManager::getInstance
-//
-// Singleton pattern
-// Returns a pointer to the only allowable MultiKillManager object
-//
 MultiKillManager& MultiKillManager::getInstance()
 {
 	static MultiKillManager instance;
@@ -54,22 +48,13 @@ MultiKillManager::MultiKillManager()
 	multiTimeInterval = 4 * TICRATE;
 }
 
-//
-// MultiKillManager::reset
-//
-// Erases the current multikills levels and sets their defaults.
-//
 void MultiKillManager::reset()
 {
 	multiKillLevels.clear();
+	mutliKillPlayerDict.clear();
 	multiTimeInterval = 4 * TICRATE;
 }
 
-//
-// MultiKillManager::loadMultiKillDefaults
-//
-// Sets defaults for loading multi kills.
-//
 void MultiKillManager::loadMultiKillDefaults()
 {
 	multiKillLevels.clear();
@@ -94,33 +79,16 @@ void MultiKillManager::loadMultiKillDefaults()
 	multiTimeInterval = 4 * TICRATE;
 }
 
-//
-// MultiKillManager::getMultiKillInterval
-//
-// Gets the multi kill interval to trigger multi kills.
-//
 int MultiKillManager::getMultiKillInterval()
 {
 	return multiTimeInterval;
 }
 
-//
-// MultiKillManager::getHighestMultiKillLevel
-//
-// Gets the highest multi kill level.
-//
 int MultiKillManager::getHighestMultiKillLevel()
 {
 	return multiKillLevels.size() - 1;
 }
 
-//
-// MultiKillManager::getMultiKillLevel
-//
-// Gets the highest multi kill level.
-// If higher than the max level, get the highest one.
-// If the array isnt populated, return it empty.
-//
 MultiKillLevel_s MultiKillManager::getMultiKillLevel(int level)
 {
 	if (getHighestMultiKillLevel() <= 0)
@@ -133,12 +101,6 @@ MultiKillLevel_s MultiKillManager::getMultiKillLevel(int level)
 	return multiKillLevels.at(level);
 }
 
-//
-// MultiKillManager::setMultiKillLevels
-//
-// Creates a new MultiKillLevel list and interval,
-// as if reading a SPREEDEF to create a new multi kill level paradigm.
-//
 void MultiKillManager::setMultiKillLevels(const std::vector<MultiKillLevel_s> multikills,
                                           int newinterval)
 {
@@ -147,63 +109,113 @@ void MultiKillManager::setMultiKillLevels(const std::vector<MultiKillLevel_s> mu
 }
 
 // ==========================================================
+// Multi kill bookkeeping functions start here.
+// ==========================================================
+
+MultiKillTics_s MultiKillManager::getMultiKills(const int playerid)
+{
+	if (mutliKillPlayerDict.find(playerid) == mutliKillPlayerDict.end())
+	{
+		return MultiKillTics_s();
+	}
+	else
+	{
+		return mutliKillPlayerDict[playerid];
+	}
+}
+
+void MultiKillManager::addKill(const int playerid)
+{
+	MultiKillTics_s status = MultiKillTics_s();
+	status.lastKillTime = ::gametic;
+	status.ticsRemaining = multiTimeInterval;
+
+	if (mutliKillPlayerDict.find(playerid) == mutliKillPlayerDict.end())
+	{
+		status.multiKills = 1;
+		mutliKillPlayerDict[playerid] = status;
+	}
+	else
+	{
+		status.multiKills = mutliKillPlayerDict[playerid].multiKills + 1;
+		mutliKillPlayerDict[playerid] = status;
+	}
+
+	return;
+}
+
+void MultiKillManager::ticPlayerMultiKill(const int playerid)
+{
+	if (mutliKillPlayerDict.find(playerid) == mutliKillPlayerDict.end())
+	{
+		return;
+	}
+
+	MultiKillTics_s& status = mutliKillPlayerDict[playerid];
+
+	if (status.ticsRemaining)
+	{
+		status.ticsRemaining--;
+
+		// We out of tics?
+		if (status.ticsRemaining == 0)
+		{
+			// Remove the current multi kill as well.
+			status.multiKills = 0;
+		}
+	}
+}
+
+void MultiKillManager::eraseMultiKills(const int playerid)
+{
+	if (mutliKillPlayerDict.find(playerid) == mutliKillPlayerDict.end())
+	{
+		return;
+	}
+
+	mutliKillPlayerDict.erase(playerid);
+	return;
+}
+
+void MultiKillManager::clearMultiTics()
+{
+	mutliKillPlayerDict.clear();
+	return;
+}
+
+// ==========================================================
 // Static functions start here.
 // ==========================================================
 
-/// <summary>
-/// P_ProcessMultiKills occurs after a kill to determine
-/// if this kill is an interval for a kill streak.
-///
-/// If so, show the kill streak text to the source player if he's the camera player.
-/// Also, remove any kill streak from the killed player, and reset the timer for the
-/// source player (if any)
-/// </summary>
-/// <param name="source">The killer (if a monster/player, null if environment/zombie
-/// projectile)</param> <param name="target">The victim</param>
 void P_ProcessMultiKills(AActor* source, player_t* target)
 {
+	MultiKillManager& manager = MultiKillManager::getInstance();
+
 	if (target)
 	{
-		target->multikilltics = 0;
-		target->multikills = 0;
-		target->lastkilltime = 0;
+		manager.eraseMultiKills(target->id);
 	}
 
 	if (!source || !source->player)
 		return;
 
-	source->player->multikills++;
-	source->player->lastkilltime = ::gametic;
+	manager.addKill(source->player->id);
 
-	// Reset this player's multikilltics
-	source->player->multikilltics = MultiKillManager::getInstance().getMultiKillInterval();
+	// Now get the player's new multi kill total
+	// To see what sound we should play, if any.
+	MultiKillTics_s status = manager.getMultiKills(source->player->id);
 
-	if (displayplayer_id == source->player->id &&
-			source->player->multikills > 1)
+	if (displayplayer_id == source->player->id && status.multiKills > 1)
 	{
 		// Play the sound for the new multi kill
 		//S_Sound(CHAN_ANNOUNCER, '', 1, ATTN_NONE);
 	}
 }
 
-/// <summary>
-/// Handles ticking players for multi kills.
-/// </summary>
-/// <param name="player">Player to tick.</param>
 void P_TicMultiKill(player_t* player)
 {
 	if (!player)
 		return;
 
-	if (player->multikilltics)
-	{
-		player->multikilltics--;
-
-		// We out of tics?
-		if (player->multikilltics == 0)
-		{
-			// Remove the current multi kill as well.
-			player->multikills = 0;
-		}
-	}
+	MultiKillManager::getInstance().ticPlayerMultiKill(player->id);
 }
