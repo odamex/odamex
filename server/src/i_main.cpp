@@ -47,6 +47,7 @@
 #include "z_zone.h"
 #include "i_net.h"
 #include "m_fileio.h"
+#include "m_consolecommandstream.h"
 
 using namespace std;
 
@@ -186,8 +187,7 @@ int __cdecl main(int argc, char *argv[])
 			I_SetCrashDir(writedir.c_str());
 		}
 
-		const char *CON_FILE = Args.CheckValue("-confile");
-		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
+		M_InitConsoleInputFile(Args.CheckValue("-confile"));
 
 		// Set the timer to be as accurate as possible
 		TIMECAPS tc;

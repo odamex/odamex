@@ -4092,16 +4092,6 @@ void SV_RunTics()
 	if (cmd.length())
 		AddCommandString(cmd);
 
-	if (CON.is_open())
-	{
-		CON.clear();
-		if (!CON.eof())
-		{
-			std::getline(CON, cmd);
-			AddCommandString(cmd);
-		}
-	}
-
 	SV_BanlistTics();
 	SV_UpdateMaster();
 
