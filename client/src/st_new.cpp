@@ -1518,9 +1518,8 @@ void DisplaySmallSpree(SpreeRecord_t record)
 	gender_t gender = GENDER_OTHER;
 
 	// Replace any possible gender or victim/spree text with gendered text
-	SexMessage(record.spree.spreeBroadcastText.c_str(), gendermessage, gender,
+	SexMessage(record.spree.spreeBroadcastText.c_str(), gendermessage, gender, "",
 	           playerColor + record.playerName + TEXTCOLOR_NORMAL,
-	           "",
 	           TextColorFromRange(record.spree.color) + record.spree.spreeText);
 
 	std::string msg = gendermessage;

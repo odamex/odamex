@@ -86,7 +86,7 @@ public:
 	/// as if reading a SPREEDEF to create a new multi kill level paradigm.
 	/// </summary>
 	/// <param name="multikills">The completed MultiKillLevels in order in a vector.</param>
-	/// <param name="newinterval">Multi kill interval in tics.</param>
+	/// <param name="newinterval">Multi kill interval in seconds.</param>
 	void setMultiKillLevels(const std::vector<MultiKillLevel_s> multikills, int newinterval);
 
 	/// <summary>

@@ -81,17 +81,17 @@ void SpreeManager::clearSprees()
 void SpreeManager::loadSpreeDefaults()
 {
 	spreeLevels.clear();
-	spreeLevels.push_back({"Killing spree", "%o is on a %s!", CR_WHITE});// 5  kills / 5000 dmg
-	spreeLevels.push_back({"Rampage", "%o is on a %s!", CR_BLUE});       // 10 kills / 10000 dmg
-	spreeLevels.push_back({"Dominating", "%o is %s!", CR_GREEN});        // 15 kills / 15000 dmg
-	spreeLevels.push_back({"Unstoppable", "%o is %s!", CR_YELLOW});      // 20 kills / 20000 dmg
-	spreeLevels.push_back({"Untouchable", "%o is %s!", CR_CYAN});        // 25 kills / 25000 dmg
-	spreeLevels.push_back({"Legendary", "%o is %s!", CR_GOLD});          // 30 kills / 30000 dmg
+	spreeLevels.push_back({"Killing spree", "%k is on a %s!", CR_WHITE});// 5  kills / 5000 dmg
+	spreeLevels.push_back({"Rampage", "%k is on a %s!", CR_BLUE});       // 10 kills / 10000 dmg
+	spreeLevels.push_back({"Dominating", "%k is %s!", CR_GREEN});        // 15 kills / 15000 dmg
+	spreeLevels.push_back({"Unstoppable", "%k is %s!", CR_YELLOW});      // 20 kills / 20000 dmg
+	spreeLevels.push_back({"Untouchable", "%k is %s!", CR_CYAN});        // 25 kills / 25000 dmg
+	spreeLevels.push_back({"Legendary", "%k is %s!", CR_GOLD});          // 30 kills / 30000 dmg
 
-	repeatingSpreeText = "%o is STILL %s!";
+	repeatingSpreeText = "%k is STILL %s!";
 
 	spreeEndPlayer = "%o's %s was ended by %k";
-	spreeEndSelf = "%o was looking good until %g killed %hself!";
+	spreeEndSelf = "%k was looking good until %g killed %hself!";
 	spreeEndMonster = "%o's %s was ended by a %k!";
 
 	spreeKillInterval = 5;

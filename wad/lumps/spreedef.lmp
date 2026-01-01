@@ -1,0 +1,117 @@
+// Text color defined here refers to the EColorRange enum in Odamex
+// For reference, the enum is as follows:
+// enum EColorRange
+// {
+// CR_BRICK, // 0
+// CR_TAN,   // 1
+// CR_GRAY,  // 2
+// CR_GREY = CR_GRAY, // 2
+// CR_GREEN, // 3
+// CR_BROWN, // 4
+// CR_GOLD,  // 5
+// CR_RED,   // 6
+// CR_BLUE,  // 7
+// CR_ORANGE,// 8
+// CR_WHITE, // 9
+// CR_YELLOW,// 10
+//
+// CR_UNTRANSLATED, // 11
+// CR_BLACK,     // 12
+// CR_LIGHTBLUE, // 13
+// CR_CREAM,     // 14
+// CR_OLIVE,     // 15
+// CR_DARKGREEN, // 16
+// CR_DARKRED,   // 17
+// CR_DARKBROWN, // 18
+// CR_PURPLE,    // 19
+// CR_DARKGRAY,  // 20
+// CR_DARKGREY = CR_DARKGRAY, // 20
+// CR_CYAN,      // 21
+// };
+
+// Spree intervals (in kills and damage)
+spreekillinterval = 5
+spreedamageinterval = 5000
+
+// Multi kill interval (in seconds)
+multikillinterval = 4
+
+// Spree texts
+spreeendedplayertext = "$OSPREEENDP"
+spreeendedselftext = "$OSPREEENDS"
+spreeendedmonstertext = "$OSPREEENDM"
+repeatingspreetext = "$OSPREEREP"
+
+// A spree section is defined here. It must start at 1 and count up in order.
+spree 1 = { 
+	color = 9
+	text = "$OSPREE1"
+	broadcasttext = "$OBSPREE1"
+}
+spree 2 = { 
+	color = 7
+	text = "$OSPREE2"
+	broadcasttext = "$OBSPREE2"
+}
+spree 3 = { 
+	color = 3
+	text = "$OSPREE3"
+	broadcasttext = "$OBSPREE3"
+}
+spree 4 = { 
+	color = 10
+	text = "$OSPREE4"
+	broadcasttext = "$OBSPREE4"
+}
+spree 5 = { 
+	color = 21
+	text = "$OSPREE5"
+	broadcasttext = "$OBSPREE5"
+}
+spree 6 = {
+	color = 5
+	text = "$OSPREE6"
+	broadcasttext = "$OBSPREE6"
+}
+
+// A multi kill section is defined here. It must start at 2 and count up in order.
+multi 2 = { 
+	color = 9
+	text = "$OMULTI2"
+}
+multi 3 = {
+	color = 1
+	text = "$OMULTI3"
+}
+multi 4 = {
+	color = 7
+	text = "$OMULTI4"
+}
+multi 5 = { 
+	color = 0
+	text = "$OMULTI5"
+}
+multi 6 = {
+	color = 21
+	text = "$OMULTI6"
+}
+multi 7 = {
+	color = 14
+	text = "$OMULTI7"
+}
+multi 8 = { 
+	color = 8
+	text = "$OMULTI8"
+}
+multi 9 = {
+	color = 19
+	text = "$OMULTI9"
+}
+multi 10 = {
+	color = 16
+	text = "$OMULTI10"
+}
+multi 11 = { 
+	color = 5
+	text = "$OMULTI11"
+}
