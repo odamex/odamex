@@ -151,9 +151,16 @@ int __cdecl main(int argc, char *argv[])
 
 		// Disable QuickEdit mode as any text selection will cause all functions
 		// that use stdout (printf etc) to block
-		DWORD lpMode = ENABLE_EXTENDED_FLAGS;
 
-		if (!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), lpMode))
+		DWORD consoleMode = 0;
+
+		if (!GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &consoleMode))
+			throw CDoomError("GetConsoleMode failed!\n");
+
+		consoleMode &= ~ENABLE_QUICK_EDIT_MODE;
+		consoleMode |= ENABLE_EXTENDED_FLAGS;
+
+		if (!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), consoleMode))
 			throw CDoomError("SetConsoleMode failed!\n");
 
 		// Fixes icon not showing in titlebar and alt-tab menu under windows 7
