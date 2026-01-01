@@ -257,11 +257,6 @@ public:
 	int hazardcount;
 	byte hazardinterval;
 
-	// multi kills and sprees
-	int multikills;
-	int multikilltics;
-	int lastkilltime;
-
 	// For flood protection
 	struct LastMessage_s
 	{

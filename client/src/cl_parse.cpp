@@ -66,6 +66,7 @@
 #include "r_interp.h"
 #include "m_doomobjcontainer.h"
 #include "g_spree.h"
+#include "g_multikill.h"
 
 // Extern data from other files.
 
@@ -1173,6 +1174,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	P_SetThingId(mobj, netid);
 
 	SpreeManager::getInstance().erasePoints(p->id);
+	MultiKillManager::getInstance().eraseMultiKills(p->id);
 
 	p->mo = p->camera = mobj->ptr();
 	p->fov = 90.0f;
@@ -1182,8 +1184,6 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	p->bonuscount = 0;
 	p->extralight = 0;
 	p->fixedcolormap = 0;
-	p->multikills = 0;
-	p->multikilltics = 0;
 
 	p->xviewshift = 0;
 	p->viewheight = VIEWHEIGHT;

@@ -1427,9 +1427,6 @@ player_s::player_s() :
 	QueuePosition(0),
 	hazardcount(0),
 	hazardinterval(0),
-	multikills(0),
-	multikilltics(0),
-	lastkilltime(0),
 	LastMessage(LastMessage_s()),
 	to_spawn(std::queue<AActor::AActorPtr>()),
 	client(player_s::client_t())
@@ -1566,9 +1563,6 @@ player_s &player_s::operator =(const player_s &other)
 	
 	hazardcount = other.hazardcount;
 	hazardinterval = other.hazardinterval;
-	multikills = other.multikills;
-	multikilltics = other.multikilltics;
-	lastkilltime = other.lastkilltime;
 
 	return *this;
 }
