@@ -29,7 +29,6 @@
 #include "m_ostring.h"
 
 extern std::ofstream LOG;
-extern std::ifstream CON;
 
 std::string M_JoinPath(std::string_view path1, std::string_view path2);
 void M_ExpandHomeDir(std::string& path);
