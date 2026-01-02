@@ -1505,7 +1505,7 @@ void DisplaySmallSpreeBreaker(SpreeBreaker_t breaker)
 		endedPlayerColor = endedinfo->ToastColor;
 
 		TeamInfo* enderinfo = GetTeamInfo(breaker.spreeEnderTeam);
-		enderPlayerColor = endedinfo->ToastColor;
+		enderPlayerColor = enderinfo->ToastColor;
 	}
 
 	char gendermessage[1024];
@@ -1518,6 +1518,32 @@ void DisplaySmallSpreeBreaker(SpreeBreaker_t breaker)
 	           TextColorFromRange(breaker.spreeEndedColor) + breaker.spreeEnded + TEXTCOLOR_NORMAL);
 
 	std::string msg = gendermessage;
+
+	// Get final points and add to the message
+	int pts = breaker.endedPoints;
+
+	// Insert commas for every 3 digits
+	std::string formattedPts = std::to_string(pts);
+
+	for (int i = formattedPts.size() - 3; i > 0; i -= 3)
+	{
+		formattedPts.insert(i, ",");
+	}
+
+	std::string pointsType = "";
+
+	if (G_IsCoopGame())
+	{
+		pointsType = "dmg";
+	}
+	else
+	{
+		pointsType = "frags";
+	}
+
+	std::string ptsStr = fmt::sprintf(" (%s %s)", formattedPts, pointsType.c_str());
+
+	msg += ptsStr;
 
 	line.spreeText = msg;
 
@@ -1600,7 +1626,7 @@ void DisplaySmallSpree(SpreeRecord_t record)
 	// Replace any possible gender or victim/spree text with gendered text
 	SexMessage(record.spree.spreeBroadcastText.c_str(), gendermessage, gender, "",
 	           playerColor + record.playerName + TEXTCOLOR_NORMAL,
-	           TextColorFromRange(record.spree.color) + record.spree.spreeText);
+	           TextColorFromRange(record.spree.color) + record.spree.spreeText + TEXTCOLOR_NORMAL);
 
 	std::string msg = gendermessage;
 
