@@ -404,7 +404,7 @@ void G_DoNewGame()
 	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
-	if (strlen(sv_startmapscript.cstring()))
+	if (!sv_startmapscript.str().empty())
 		AddCommandString(sv_startmapscript.str());
 
 	G_InitNew (d_mapname);

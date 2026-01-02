@@ -154,7 +154,7 @@ static void P_StartButton (line_t *line, DActiveButton::EWhere w, int texture,
 	new DActiveButton (line, w, texture, time, x, y);
 }
 
-short* P_GetButtonTexturePtr(line_t* line, short*& altTexture, DActiveButton::EWhere& where)
+short* P_GetButtonTexturePtr(const line_t* line, short*& altTexture, DActiveButton::EWhere& where)
 {
 	if (!line->sidenum[0])
 		return NULL;
@@ -190,7 +190,7 @@ short* P_GetButtonTexturePtr(line_t* line, short*& altTexture, DActiveButton::EW
 	return NULL;
 }
 
-short P_GetButtonTexture(line_t* line)
+short P_GetButtonTexture(const line_t* line)
 {
 	DActiveButton::EWhere twhere;
 	short* alt;
@@ -216,7 +216,7 @@ void P_SetButtonTexture(line_t* line, short texture)
 }
 
 // denis - query button
-bool P_GetButtonInfo (line_t *line, unsigned &state, unsigned &time)
+bool P_GetButtonInfo (const line_t *line, unsigned &state, unsigned &time)
 {
 	DActiveButton *button;
 	TThinkerIterator<DActiveButton> iterator;

@@ -136,7 +136,7 @@ void P_DrawSplash2 (int count, fixed_t x, fixed_t y, fixed_t z, angle_t angle, i
 // [RH] Particle functions
 //
 
-static void MakeFountain (AActor *actor, int color1, int color2)
+static void MakeFountain (const AActor *actor, int color1, int color2)
 {
 	if (!clientside)
 		return;
@@ -170,7 +170,7 @@ static void MakeFountain (AActor *actor, int color1, int color2)
 	}
 }
 
-static void MakeHearts(AActor* actor)
+static void MakeHearts(const AActor* actor)
 {
 	if (!clientside)
 		return;
@@ -251,7 +251,7 @@ void P_RunEffects (void)
 	}
 }
 
-void P_RunEffect (AActor *actor, int effects)
+void P_RunEffect (const AActor *actor, int effects)
 {
 	if (!actor || !clientside)
 		return;
@@ -331,7 +331,7 @@ void P_ThinkParticles (void)
 }
 
 
-void P_DrawRailTrail(v3double_t &start, v3double_t &end)
+void P_DrawRailTrail(const v3double_t &start, const v3double_t &end)
 {
 	if (!clientside)
 		return;
@@ -386,11 +386,11 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 	float deg = 270.0f;
 	for (int i = steps; i; i--) {
 		particle_t *p = NewParticle ();
-		p->sprite = NO_PARTICLE;
 
 		if (!p)
 			return;
 
+		p->sprite = NO_PARTICLE;
 		p->trans = 255;
 		p->ttl = 35;
 		p->fade = FADEFROMTTL(35);
@@ -451,7 +451,7 @@ void P_DrawRailTrail(v3double_t &start, v3double_t &end)
 	}
 }
 
-void P_DisconnectEffect (AActor *actor)
+void P_DisconnectEffect (const AActor *actor)
 {
 	if (!actor || !clientside)
 		return;

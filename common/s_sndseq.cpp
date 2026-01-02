@@ -739,22 +739,22 @@ void SN_StartSequence (polyobj_t *poly, const char *name)
 //
 //==========================================================================
 
-void SN_StopSequence (AActor *actor)
+void SN_StopSequence (const AActor *actor)
 {
 	SN_DoStop (actor);
 }
 
-void SN_StopSequence (sector_t *sector)
+void SN_StopSequence (const sector_t *sector)
 {
 	SN_DoStop (sector);
 }
 
-void SN_StopSequence (polyobj_t *poly)
+void SN_StopSequence (const polyobj_t *poly)
 {
 	SN_DoStop (poly);
 }
 
-void SN_DoStop (void *source)
+void SN_DoStop (const void *source)
 {
 	DSeqNode *node;
 

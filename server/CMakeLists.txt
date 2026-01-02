@@ -44,6 +44,11 @@ odamex_target_settings(odasrv)
 target_include_directories(odasrv PRIVATE src)
 if(WIN32)
   target_include_directories(odasrv PRIVATE win32)
+
+  # We need to call SetProcessInformation to disable power throttling,
+  # but the API itself doesn't exist until Windows 8.  Here we set the minimum
+  # Windows version to 8.  (Windows Server 2012, BTW)
+  target_compile_definitions(odasrv PRIVATE _WIN32_WINNT=0x0602)
 endif()
 
 target_link_libraries(odasrv fmt::fmt tinylibs ZLIB::ZLIB odamex-common odaproto minilzo cpptrace::cpptrace)
