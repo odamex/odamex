@@ -89,6 +89,9 @@ static lumpHandle_t FlagIconTaken[NUMTEAMS];
 static lumpHandle_t FlagIconDropped[NUMTEAMS];
 static lumpHandle_t LivesIcon[NUMTEAMS];
 static lumpHandle_t ToastIcon[NUMMODS];
+static lumpHandle_t ToastSpreeR;
+static lumpHandle_t ToastSpreeM;
+static lumpHandle_t ToastSpreeL;
 
 extern lumpHandle_t negminus;
 extern lumpHandle_t tallnum[10];
@@ -192,6 +195,10 @@ void ST_initNew()
 	{
 		::ToastIcon[i] = W_CachePatchHandle(fmt::sprintf("ODAMOD%lu", i), PU_STATIC);
 	}
+
+	::ToastSpreeR = W_CachePatchHandle("DIGSPRER", PU_STATIC);
+	::ToastSpreeM = W_CachePatchHandle("DIGSPREM", PU_STATIC);
+	::ToastSpreeL = W_CachePatchHandle("DIGSPREL", PU_STATIC);
 }
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
@@ -1093,6 +1100,9 @@ struct drawToast_t
 	int tic;
 	int pid_highlight;
 	std::string left;
+	bool active_spree;
+	int points;
+	EColorRange spree_color;
 	lumpHandle_t icon;
 	std::string right;
 };
@@ -1154,6 +1164,50 @@ void DrawToasts()
 		// Left-hand side.
 		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
 		              hud::Y_TOP, toast.left.c_str(), CR_GREY);
+
+		// Draw spree point badge if any
+		if (toast.active_spree)
+		{
+			x += V_StringWidth(toast.left.c_str()) + 1;
+
+			// Right
+			const patch_t* rpatch = W_ResolvePatchHandle(ToastSpreeR);
+			const double syoff = (static_cast<double>(TOAST_HEIGHT) -
+			                      static_cast<double>(rpatch->height())) /
+			                     2.0;
+			hud::DrawTranslatedPatch(x, y + ceil(syoff), hud_scale, hud::X_RIGHT,
+			                         hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP, rpatch,
+			                         Ranges + toast.spree_color * 256, false, true);
+
+			x += rpatch->width();
+			int pointStartX = x - 1;
+
+			// Draw as many middle segments as needed (based on the string width)
+			// We subtract 2 pixels because we want the text to bleed into the left and right gfx
+			int points_width =
+			    V_StringWidth(fmt::sprintf("%d", toast.points).c_str()) - 1;
+			const patch_t* mpatch = W_ResolvePatchHandle(ToastSpreeM);
+			for (int i = 0; i < points_width; i++)
+			{
+				hud::DrawTranslatedPatch(x, y + ceil(syoff), hud_scale, hud::X_RIGHT,
+				                         hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP, mpatch,
+				                         Ranges + toast.spree_color * 256, false, true);
+				x += mpatch->width();
+			}
+
+			// Left
+			const patch_t* lpatch = W_ResolvePatchHandle(ToastSpreeL);
+			hud::DrawTranslatedPatch(x, y + ceil(syoff), hud_scale, hud::X_RIGHT,
+			                         hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP, lpatch,
+			                         Ranges + toast.spree_color * 256, false, true);
+
+			x += lpatch->width() + 1;
+
+			// Now draw the number of points
+			hud::DrawText(pointStartX, y + ceil(syoff), hud_scale, hud::X_RIGHT,
+			              hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP,
+			              fmt::sprintf("%d", toast.points).c_str(), CR_GRAY);
+		}
 
 		y += TOAST_HEIGHT;
 	}
@@ -1246,6 +1300,19 @@ void PushToast(const toast_t& toast)
 	else if (toast.flags & toast_t::RIGHT)
 	{
 		buffer += toast.right;
+	}
+
+	if (toast.flags & toast_t::SPREE)
+	{
+		drawToast.active_spree = true;
+		drawToast.points = toast.points;
+		drawToast.spree_color = static_cast<EColorRange>(toast.spree_color);
+	}
+	else
+	{
+		drawToast.active_spree = false;
+		drawToast.points = 0;
+		drawToast.spree_color = CR_GRAY;
 	}
 
 	if (!buffer.empty())
