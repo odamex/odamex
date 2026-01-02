@@ -105,7 +105,7 @@ void MultiKillManager::setMultiKillLevels(const std::vector<MultiKillLevel_s> mu
                                           int newinterval)
 {
 	multiKillLevels = multikills;
-	multiTimeInterval = newinterval;
+	multiTimeInterval = newinterval * TICRATE;
 }
 
 // ==========================================================
