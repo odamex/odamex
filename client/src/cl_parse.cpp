@@ -2929,9 +2929,8 @@ static void CL_Spree(const odaproto::svc::Spree* msg)
 {
 	int playerId = msg->pid();
 	int spreeLevel = msg->spree_level();
-	int spreeStartTic = msg->tic();
 
-	SpreeManager::getInstance().setRawSpree(playerId, spreeLevel, spreeStartTic);
+	SpreeManager::getInstance().setRawSpree(playerId, spreeLevel);
 }
 
 static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
@@ -2941,9 +2940,8 @@ static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
 	breaker.spreeEndedPlayerId = msg->victim_pid();
 	breaker.spreeEndedName = msg->victim_name();
 	breaker.spreeEnderPlayerId = msg->source_pid();
-	breaker.spreeEndedName = msg->source_name();
+	breaker.spreeEnderName = msg->source_name();
 	breaker.endedPoints = msg->spree_points();
-	breaker.spreeEndedTic = msg->tic();
 	SpreeBreakerType type = static_cast<SpreeBreakerType>(msg->spree_breaker_type());
 	int level = msg->spree_level();
 

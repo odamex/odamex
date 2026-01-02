@@ -151,6 +151,7 @@ void SpreeManager::setRawSpreeBreaker(SpreeBreaker_t& breaker, const int level, 
 
 	breaker.spreeEndedTeam = victim.userinfo.team;
 	breaker.spreeEnderTeam = TEAM_NONE;
+	breaker.spreeEndedTic = ::gametic;
 
 	Spree_s spreeLevel = getSpreeLevel(level);
 
@@ -402,7 +403,7 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 	return false;
 }
 
-bool SpreeManager::setRawSpree(const int playerId, const int newSpreeLevel, const int tic)
+bool SpreeManager::setRawSpree(const int playerId, const int newSpreeLevel)
 {
 	if (newSpreeLevel <= -1)
 		return false;
@@ -412,7 +413,7 @@ bool SpreeManager::setRawSpree(const int playerId, const int newSpreeLevel, cons
 	if (!validplayer(player))
 		return false;
 
-	return checkForSpreeUpdates(playerId, player.userinfo.netname, newSpreeLevel, tic);
+	return checkForSpreeUpdates(playerId, player.userinfo.netname, newSpreeLevel, ::gametic);
 }
 
 SpreeRecord_t SpreeManager::getSpreeRecord(int playerId)

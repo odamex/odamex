@@ -688,7 +688,6 @@ message Spree
 {
 	int32 pid = 1;
 	int32 spree_level = 2;
-	int32 tic = 3;
 }
 
 // svc_spreebreaker
@@ -701,7 +700,6 @@ message SpreeBreaker
 	int32 spree_points = 5;
 	int32 spree_level = 6;
 	int32 spree_breaker_type = 7;
-	int32 tic = 8;
 }
 
 // svc_netdemocap

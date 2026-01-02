@@ -1647,7 +1647,6 @@ odaproto::svc::Spree SVC_Spree(const SpreeRecord_t& spree)
 
 	msg.set_pid(spree.playerId);
 	msg.set_spree_level(spree.spreeLevel);
-	msg.set_tic(spree.spreeStartTic);
 
 	return msg;
 }
@@ -1663,7 +1662,6 @@ odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, cons
 	msg.set_spree_level(level);
 	msg.set_spree_points(breaker.endedPoints);
 	msg.set_spree_breaker_type(breakerType);
-	msg.set_tic(breaker.spreeEndedTic);
 
 	return msg;
 }

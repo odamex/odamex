@@ -48,8 +48,8 @@ struct MultiKillLevel_s
 /// </summary>
 struct MultiKillTics_s
 {
-	int multiKills;
 	int ticsRemaining;
+	int multiKills;
 	int lastKillTime;
 
 	MultiKillTics_s() : ticsRemaining(0), multiKills(0), lastKillTime(0) { }
