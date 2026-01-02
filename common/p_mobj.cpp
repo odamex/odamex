@@ -3067,6 +3067,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		         mthing->type,
 		         mthing->x, mthing->y);
 		info = &mobjinfo[MT_UNKNOWNTHING]; // [CMB] odamex specific MT_UNKNOWNTHING
+		type = MT_UNKNOWNTHING;
 	}
 	// [RH] If the thing's corresponding sprite has no frames, also map
 	//		it to the unknown thing.
@@ -3074,6 +3075,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		PrintFmt(PRINT_WARNING, "P_SpawnMapThing: Type {} at {}, {} has no frames\n",
 		         mthing->type, mthing->x, mthing->y);
+		info = &mobjinfo[MT_UNKNOWNTHING];
 		type = MT_UNKNOWNTHING;
 	}
 

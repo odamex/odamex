@@ -487,7 +487,7 @@ mobjinfo_t odamobjinfo[] = {
         MF_NOGRAVITY,   // flags
         0,              // flags2
         S_NULL,         // raisestate
-        0,
+        0x10000,
         "MT_UNKNOWNTHING",
         NO_ALTSPEED,   // altspeed
         64 * FRACUNIT, // meleerange
@@ -528,7 +528,7 @@ mobjinfo_t odamobjinfo[] = {
         MF_NOBLOCKMAP, // flags
         MF2_DONTDRAW,  // flags2
         S_NULL,        // raisestate
-        0,
+        0x10000,
         "MT_PATHNODE -- used for monster patrols",
         NO_ALTSPEED,   // altspeed
         64 * FRACUNIT, // meleerange
