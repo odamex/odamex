@@ -72,6 +72,8 @@
 
 #include "w_ident.h"
 
+#include "g_spreedef.h"
+
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_nomonsters)
 EXTERN_CVAR (sv_monstersrespawn)
@@ -216,6 +218,7 @@ void D_Init()
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
+	G_ParseSpreeDef();
 	G_ParseHordeDefs();
 	G_ReadCOMPLVL();
 
