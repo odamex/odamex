@@ -1107,7 +1107,7 @@ TXT_BUDDHAOFF = "Buddha mode OFF";
 
 // Spree defaults (new)
 // Spree texts
-OSPREEENDP = "%o's killing spree was ended by %k";
+OSPREEENDP = "%o's %s was ended by %k!";
 OSPREEENDS = "%k was looking good until %g killed %hself!";
 OSPREEENDM = "%o's %s was ended by a %k!";
 OSPREEREP = "%k is STILL %s!";
