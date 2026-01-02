@@ -500,11 +500,11 @@ class HordeState
 			{
 				if (mo->oflags & MFO_BOSSPOOL)
 				{
-					recountMonstersHelper(m_bossCounts, static_cast<mobjtype_t>(mo->type));
+					recountMonstersHelper(m_bossCounts, mo->type);
 				}
 				else
 				{
-					recountMonstersHelper(m_monsterCounts, static_cast<mobjtype_t>(mo->type));
+					recountMonstersHelper(m_monsterCounts, mo->type);
 				}
 			}
 		}
@@ -524,16 +524,16 @@ class HordeState
 	{
 		if (mo->oflags & MFO_BOSSPOOL)
 		{
-			if (m_bossCounts.count(static_cast<mobjtype_t>(mo->type)))
+			if (m_bossCounts.count(mo->type))
 			{
-				m_bossCounts[static_cast<mobjtype_t>(mo->type)] -= 1;
+				m_bossCounts[mo->type] -= 1;
 			}
 		}
 		else
 		{
-			if (m_monsterCounts.count(static_cast<mobjtype_t>(mo->type)))
+			if (m_monsterCounts.count(mo->type))
 			{
-				m_monsterCounts[static_cast<mobjtype_t>(mo->type)] -= 1;
+				m_monsterCounts[mo->type] -= 1;
 			}
 		}
 	}
