@@ -69,6 +69,7 @@
 #include "m_wdlstats.h"
 #include "svc_message.h"
 #include "m_cheat.h"
+#include "p_playerping.h"
 
 #include <algorithm>
 #include <sstream>
@@ -3614,22 +3615,26 @@ void SV_NetCmd(player_t& player)
 	{
 		netargs.push_back(MSG_ReadString());
 	}
-
-	if (netargs.at(0) == "help")
+	
+	uint32_t arg0 = CONST_HASH(netargs.at(0));
+	switch (arg0)
 	{
+	case CONST_HASH("help"):
 		HelpCmd(player);
-	}
-	else if (netargs.at(0) == "motd")
-	{
+		break;
+	case CONST_HASH("motd"):
 		MOTDCmd(player);
-	}
-	else if (netargs.at(0) == "ready")
-	{
+		break;
+	case CONST_HASH("ready"):
 		ReadyCmd(player);
-	}
-	else if (netargs.at(0) == "vote")
-	{
+		break;
+	case CONST_HASH("vote"):
 		SV_VoteCmd(player, netargs);
+		break;
+	case CONST_HASH("player_ping"):
+		P_PlayerPing(player);
+		break;
+	default: break;
 	}
 }
 

@@ -281,3 +281,8 @@ void M_TranslateVec3f(v3float_t *vec, const v3float_t *origin, angle_t ang);
 void M_TranslateVec3(v3double_t *vec, const v3double_t *origin, angle_t ang);
 
 rectInt_t M_RectFromDimensions(const v2int_t& origin, const v2int_t& dims);
+
+inline std::string format_as(v3fixed_t v)
+{
+	return fmt::format("({}, {}, {})", FIXED2FLOAT(v.x), FIXED2FLOAT(v.y), FIXED2FLOAT(v.z));
+}

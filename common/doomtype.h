@@ -147,8 +147,32 @@ typedef uint64_t			dtime_t;
  */
 static constexpr uint32_t BIT_MASK(uint32_t a, uint32_t b)
 {
-    return (static_cast<uint32_t>(-1) >> (31 - b)) & ~(BIT(a) - 1);
+	return (static_cast<uint32_t>(-1) >> (31 - b)) & ~(BIT(a) - 1);
 }
+
+/**
+ * @brief Set a specific flag.
+ * 
+ * @param v Bitfield to examine.
+ * @param f Flag to set.
+ */
+#define BITFLAG_SET(v, n) ((v) |= (n))
+
+/**
+ * @brief Clear a specific flag.
+ * 
+ * @param v Bitfield to examine.
+ * @param f Flag to clear.
+ */
+#define BITFLAG_CLEAR(v, n) ((v) &= ~(n))
+
+/**
+ * @brief Check to see if a specific flag or flag mask is set.
+ *
+ * @param v Bitfield to examine.
+ * @param f Flag to check.
+ */
+#define BITFLAG_TEST(v, n) (((v) & (n)) != 0)
 
 // game print flags
 typedef enum {
@@ -227,6 +251,56 @@ constexpr size_t ARRAY_LENGTH(T (&arr)[N])
 	return std::extent_v<T[N]>;
 }
 
+/**
+ * @brief Constexpr-friendly hash.
+ *
+ * @warning This hash could change in the future, so don't serialize it or
+ *          rely on it being consistent between Odamex versions.
+ *
+ * @link https://gist.github.com/ruby0x1/81308642d0325fd386237cfa3b44785c
+ *
+ * @param ptr Pointer to data to hash.
+ * @param len Length of data to hash.
+ * @return Hash of passed data.
+ */
+constexpr uint32_t CONST_HASH(const void* ptr, size_t len)
+{
+	const byte* data = static_cast<const byte*>(ptr);
+	uint32_t hash = 0x811c9dc5;
+	constexpr uint32_t prime = 0x1000193;
+
+	for(size_t i = 0; i < len; ++i)
+	{
+		uint8_t value = data[i];
+		hash = hash ^ value;
+		hash *= prime;
+	}
+
+	return hash;
+}
+
+constexpr uint32_t CONST_HASH(const char* str)
+{
+	uint32_t hash = 0x811c9dc5;
+	constexpr uint32_t prime = 0x1000193;
+
+	for(size_t i = 0;; ++i)
+	{
+		uint8_t value = static_cast<uint8_t>(str[i]);
+		if (value == '\0')
+			break;
+
+		hash = hash ^ value;
+		hash *= prime;
+	}
+
+	return hash;
+}
+
+constexpr uint32_t CONST_HASH(const std::string& str)
+{
+	return CONST_HASH(str.c_str(), str.length());
+}
 
 // ----------------------------------------------------------------------------
 //

@@ -107,6 +107,17 @@ typedef enum
 inline constexpr int ReJoinDelay = TICRATE * 5;
 inline constexpr int SuicideDelay = TICRATE * 10;
 
+/**
+ * @brief Player ping struct - describes what a player last pinged.
+ */
+struct playerPing_s
+{
+	translationref_t translation{};
+	v3fixed_t pos{};
+	int lump = -1;
+	int pingtic = -1;
+};
+
 //
 // Extended player object info: player_t
 //
@@ -252,6 +263,7 @@ public:
 	bool		doreborn;
 
 	byte        QueuePosition;            //Queue position to join game. 0 means not in queue
+	std::unique_ptr<playerPing_s> player_ping; // [LM] Player ping.
 
 	// zdoom
 	int hazardcount;
