@@ -653,8 +653,12 @@ public:
 };
 typedef patch_s patch_t;
 
-
-
+enum vsflags_e : uint
+{
+	VSF_NONE = 0,
+	VSF_SPECTATOR = BIT(0),		// [Blair] Mark if this visprite belongs to a spectator.
+	VSF_NOCLIP = BIT(1),		// [LM] Do no sprite clipping (see through walls)
+};
 
 // A vissprite_t is a thing
 //	that will be drawn during a refresh.
@@ -692,8 +696,7 @@ struct vissprite_s
 
 	int 			mobjflags;
 	int				statusflags;	// Status of player to show (powers, etc)
-	bool			spectator;		// [Blair] Mark if this visprite belongs to a spectator.
-	bool			noclip;			// [LM] If true, do no sprite clipping.
+	uint			visflags;		// [LM] Odamex-specific vissprite flags. 
 
 	translationref_t translation;	// [RH] for translation;
 	sector_t*		heightsec;		// killough 3/27/98: height sector for underwater/fake ceiling

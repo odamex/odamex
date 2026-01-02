@@ -42,6 +42,7 @@
 #include "m_vectors.h"
 #include "am_map.h"
 #include "cl_demo.h"
+#include "p_playerping.h" // [LM]
 
 extern NetDemo netdemo;
 
@@ -974,6 +975,14 @@ void R_SetSkyForegroundDrawFuncs()
 	}
 }
 
+/**
+ * @brief Add world sprites that don't exist as a mobj.
+ */
+static void R_AddGlobalSprites()
+{
+	R_AddPingSprites();
+}
+
 //
 // R_RenderPlayerView
 //
@@ -1032,6 +1041,7 @@ void R_RenderPlayerView(player_t* player)
 	else
 		R_RenderBSPNode(numnodes - 1);	// The head node is the last node output.
 
+	R_AddGlobalSprites(); // [LM]
 	R_DrawPlanes();
 	R_DrawSkyBoxes();
 	R_DrawMasked();

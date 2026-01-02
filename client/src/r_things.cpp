@@ -210,7 +210,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 
 	dcol.textureheight = 256 << FRACBITS;
 
-	if (vis->spectator)
+	if (BITFLAG_TEST(vis->visflags, VSF_SPECTATOR))
 		return;
 
 	if (vis->patch == NO_PARTICLE)
@@ -438,8 +438,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	vis->depth = ty;
 	vis->FakeFlat = fakeside;
 	vis->colormap = basecolormap;
-	vis->spectator = false;
-	vis->noclip = false;
+	vis->visflags = VSF_NONE;
 
 	fixed_t iscale = FixedDiv(ty, FocalLengthX);
 	if (flip)
@@ -638,8 +637,7 @@ void R_ProjectSprite(const AActor *thing, int fakeside)
 
 	vis->mobjflags = thing->flags;
 	vis->statusflags = thing->statusflags;
-	vis->spectator = thing->oflags & MFO_SPECTATOR;
-	vis->noclip = false;
+	vis->visflags = thing->oflags & MFO_SPECTATOR ? VSF_SPECTATOR : VSF_NONE;
 	vis->translation = thing->translation;		// [RH] thing translation table
 	vis->translucency = thing->translucency;
 	vis->patch = lump;
@@ -710,6 +708,37 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 	}
 }
 
+void R_Add3DHUDSprite(int lump, v3fixed_t pos, translationref_t translation, float translucency)
+{
+	if (lump == -1)
+		return;
+
+	patch_t* patch = W_CachePatch(lump);
+	if (patch == nullptr)
+		return;
+
+	fixed_t height = patch->height() << FRACBITS;
+	fixed_t width = patch->width() << FRACBITS;
+	short topoffs = patch->topoffset();
+	short sideoffs = patch->leftoffset();
+
+	vissprite_t* vis =
+		R_GenerateVisSprite(NULL, FAKED_Center, pos.x, pos.y, pos.z,
+							height, width, topoffs, sideoffs, false);
+	if (vis == NULL)
+		return;
+
+	vis->mobjflags = 0;
+	vis->statusflags = 0;
+	//vis->xscale = FRACUNIT; // Don't scale this sprite.
+	//vis->yscale = FRACUNIT;
+	vis->visflags = VSF_NOCLIP;
+	vis->translation = translation;
+	vis->translucency = FLOAT2FIXED(translucency) - 1;
+	vis->patch = lump;
+	vis->mo = nullptr;
+	vis->colormap = ::basecolormap;
+}
 
 //
 // R_DrawPSprite
@@ -778,8 +807,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	vis->translation = translationref_t();		// [RH] Use default colors
 	vis->translucency = r_drawplayersprites * FRACUNIT;
 	vis->mo = NULL;
-	vis->spectator = false;
-	vis->noclip = false;
+	vis->visflags = VSF_NONE;
 
 	if (flip)
 	{
@@ -838,38 +866,6 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 		return;
 
 	R_DrawVisSprite (vis, vis->x1, vis->x2);
-}
-
-void R_AddGlobalSprites()
-{
-	int lump = W_GetNumForName("NET");
-	if (lump == -1)
-		return;
-
-	patch_t* patch = W_CachePatch(lump);
-	if (patch == nullptr)
-		return;
-
-	fixed_t height = patch->height() << FRACBITS;
-	fixed_t width = patch->width() << FRACBITS;
-	short topoffs = patch->topoffset();
-	short sideoffs = patch->leftoffset();
-
-	vissprite_t* vis =
-	    R_GenerateVisSprite(NULL, FAKED_Center, -64 << FRACBITS, 1312 << FRACBITS,
-	                        64 << FRACBITS, height, width, topoffs, sideoffs, false);
-	if (vis == NULL)
-		return;
-
-	vis->mobjflags = 0;
-	vis->statusflags = 0;
-	vis->spectator = false;
-	vis->noclip = true;
-	vis->translation = translationref_t{};
-	vis->translucency = FRACUNIT;
-	vis->patch = lump;
-	vis->mo = nullptr;
-	vis->colormap = ::basecolormap;
 }
 
 //
@@ -1055,8 +1051,7 @@ void R_DrawSprite (vissprite_t *spr)
 	// Modified by Lee Killough:
 	// (pointer check was originally nonportable
 	// and buggy, by going past LEFT end of array):
-
-	if (!spr->noclip) // [LM] Don't clip "global" sprites.
+	if (!BITFLAG_TEST(spr->visflags, VSF_NOCLIP)) // [LM] Skip clipping if noclip.
 	{
 		for (ds = ds_p; ds-- > firstdrawseg;) // new -- killough
 		{
@@ -1120,10 +1115,7 @@ void R_DrawSprite (vissprite_t *spr)
 void R_DrawMasked (void)
 {
 	drawseg_t		 *ds;
-
-	// [LM] Add global sprites at the last possible minute.
-	R_AddGlobalSprites();
-
+	
 	R_SortVisSprites ();
 
 	for (auto vis : OUtil::reverse(spritesorter))
@@ -1227,8 +1219,7 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 	vis->translucency = 65535;
 	vis->statusflags = 0;
 	vis->mo = NULL;
-	vis->spectator = false;
-	vis->noclip = false;
+	vis->visflags = VSF_NONE;
 
 	if (particle->sprite == NO_PARTICLE)
 	{
