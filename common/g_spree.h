@@ -268,8 +268,7 @@ public:
 	/// <param name="newSpreeLevel">New level of spree to </param>
 	/// <param name="tic">Tic the spree level was achieved on.</param>
 	/// <returns>True if the update resulted in an upgraded spree level.</returns>
-	bool setRawSpree(const int playerId, const int newSpreeLevel,
-	                 const int tic);
+	bool setRawSpree(const int playerId, const int newSpreeLevel);
 
 	/// <summary>
 	/// Checks if the user has a current spree active.

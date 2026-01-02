@@ -92,6 +92,7 @@ static lumpHandle_t ToastIcon[NUMMODS];
 static lumpHandle_t ToastSpreeR;
 static lumpHandle_t ToastSpreeM;
 static lumpHandle_t ToastSpreeL;
+static lumpHandle_t ToastSpreeArrow;
 
 extern lumpHandle_t negminus;
 extern lumpHandle_t tallnum[10];
@@ -199,6 +200,8 @@ void ST_initNew()
 	::ToastSpreeR = W_CachePatchHandle("DIGSPRER", PU_STATIC);
 	::ToastSpreeM = W_CachePatchHandle("DIGSPREM", PU_STATIC);
 	::ToastSpreeL = W_CachePatchHandle("DIGSPREL", PU_STATIC);
+
+	::ToastSpreeArrow = W_CachePatchHandle("DIG62", PU_STATIC);
 }
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
@@ -1161,14 +1164,19 @@ void DrawToasts()
 		               hud::X_RIGHT, hud::Y_TOP, icon, false, true);
 		x += icon->width() + 1;
 
-		// Left-hand side.
-		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
-		              hud::Y_TOP, toast.left.c_str(), CR_GREY);
-
-		// Draw spree point badge if any
+			// Draw spree point badge if any
 		if (toast.active_spree)
 		{
-			x += V_StringWidth(toast.left.c_str()) + 1;
+			// Draw the arrow
+			const patch_t* arrow = W_ResolvePatchHandle(ToastSpreeArrow);
+			const double ayoff = (static_cast<double>(TOAST_HEIGHT) -
+			                      static_cast<double>(arrow->height())) /
+			                     2.0;
+			hud::DrawTranslatedPatch(x, y + ceil(ayoff), hud_scale, hud::X_RIGHT,
+			                         hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP, arrow,
+			                         Ranges + toast.spree_color * 256, false, true);
+
+			x += arrow->width();
 
 			// Right
 			const patch_t* rpatch = W_ResolvePatchHandle(ToastSpreeR);
@@ -1183,7 +1191,8 @@ void DrawToasts()
 			int pointStartX = x - 1;
 
 			// Draw as many middle segments as needed (based on the string width)
-			// We subtract 2 pixels because we want the text to bleed into the left and right gfx
+			// We subtract 2 pixels because we want the text to bleed into the left and
+			// right gfx
 			int points_width =
 			    V_StringWidth(fmt::sprintf("%d", toast.points).c_str()) - 1;
 			const patch_t* mpatch = W_ResolvePatchHandle(ToastSpreeM);
@@ -1208,6 +1217,10 @@ void DrawToasts()
 			              hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP,
 			              fmt::sprintf("%d", toast.points).c_str(), CR_GRAY);
 		}
+
+		// Left-hand side.
+		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
+		              hud::Y_TOP, toast.left.c_str(), CR_GREY);
 
 		y += TOAST_HEIGHT;
 	}
@@ -1522,7 +1535,7 @@ void DisplaySmallSpreeBreaker(SpreeBreaker_t breaker)
 	{
 		int y = (surface_height / 4) - h / 2;
 		::screen->DrawTextStretchedLuc(CR_GRAY,
-		                               surface_width / 2 - w / 2 + (12 * ::CleanYfac), y,
+		                               surface_width / 2 - w / 2, y - (12 * ::CleanYfac),
 		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
 	}
 
@@ -1607,7 +1620,7 @@ void DisplaySmallSpree(SpreeRecord_t record)
 	{
 		int y = (surface_height / 4) - h / 2;
 		::screen->DrawTextStretchedLuc(CR_GRAY,
-		                               surface_width / 2 - w / 2 + (12 * ::CleanYfac), y,
+		                               surface_width / 2 - w / 2, y - (12 * ::CleanYfac),
 		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
 	}
 
