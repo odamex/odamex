@@ -152,5 +152,5 @@ odaproto::svc::MaplistIndex SVC_MaplistIndex(const byte count, const size_t this
 odaproto::svc::Toast SVC_Toast(const toast_t& toast);
 odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde);
 odaproto::svc::Spree SVC_Spree(const SpreeRecord_t& spree);
-odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, const int level, SpreeBreakerType breakerType);
+odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, const int level, const SpreeBreakerType breakerType);
 odaproto::svc::NetdemoCap SVC_NetdemoCap(const player_t* player);
