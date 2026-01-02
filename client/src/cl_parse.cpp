@@ -2901,6 +2901,8 @@ static void CL_Toast(const odaproto::svc::Toast* msg)
 	toast.right = msg->right();
 	toast.right_pid = msg->right_pid();
 	toast.icon = msg->icon();
+	toast.points = msg->points();
+	toast.spree_color = msg->spree_color();
 
 	COM_PushToast(toast);
 }

@@ -1757,6 +1757,12 @@ static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attack
 		toast.left_pid = attacker->player->id;
 		toast.icon = mod;
 		toast.right_pid = self->player->id;
+		if (SpreeManager::getInstance().hasSpree(toast.left_pid))
+		{
+			toast.flags |= toast_t::SPREE;
+			toast.points = SpreeManager::getInstance().getPoints(toast.left_pid);
+			toast.spree_color = SpreeManager::getInstance().getSpreeRecord(toast.left_pid).spree.color;
+		}
 		COM_PushToast(toast);
 		return;
 	}

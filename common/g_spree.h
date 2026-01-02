@@ -295,7 +295,6 @@ public:
 	/// </summary>
 	void clearPoints();
 
-private:
 	/// <summary>
 	/// Gets current amount of points for a specific player.
 	/// </summary>
@@ -303,6 +302,7 @@ private:
 	/// <returns>Amount of points for the specified player.</returns>
 	int getPoints(const int playerid);
 
+private:
 	/// <summary>
 	/// Adds points (kills or damage depending on gamemode) to a player
 	/// </summary>

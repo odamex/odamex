@@ -1617,6 +1617,8 @@ odaproto::svc::Toast SVC_Toast(const toast_t& toast)
 	msg.set_right(toast.right);
 	msg.set_right_pid(toast.right_pid);
 	msg.set_icon(toast.icon);
+	msg.set_points(toast.points);
+	msg.set_spree_color(toast.spree_color);
 
 	return msg;
 }

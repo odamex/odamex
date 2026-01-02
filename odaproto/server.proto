@@ -664,6 +664,8 @@ message Toast
 	string right = 4;
 	sint32 right_pid = 5;
 	sint32 icon = 6;
+	sint32 points = 7;
+	sint32 spree_color = 8;
 }
 
 // svc_hordeinfo
