@@ -396,7 +396,7 @@ inline sector_t *getSector (int currentSector, int line, int side)
 // Return sector_t * of sector next to current.
 // NULL if not two-sided line
 //
-inline sector_t *getNextSector (line_t *line, sector_t *sec)
+inline sector_t *getNextSector (const line_t *line, const sector_t *sec)
 {
 	if (!(line->flags & ML_TWOSIDED))
 		return NULL;
@@ -1152,10 +1152,10 @@ protected:
 		int usespecials);
 	friend bool EV_DoFloor (DFloor::EFloor floortype, line_t *line, int tag,
 		fixed_t speed, fixed_t height, bool crush, int change);
-	friend int EV_DoDonut (line_t* line);
+	friend bool EV_DoDonut (line_t* line);
 	friend bool EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed,
 	                            fixed_t slimespeed);
-	friend int P_SpawnDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
+	friend bool P_SpawnDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed);
 	friend bool EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag,
 	                            fixed_t speed, fixed_t height, int crush, int change,
 	                            bool hexencrush, bool hereticlower);
@@ -1219,9 +1219,9 @@ public:
 	EElevatorState m_Status;
 
 protected:
-	friend bool EV_DoElevator (line_t *line, DElevator::EElevator type, fixed_t speed,
+	friend bool EV_DoElevator (const line_t *line, DElevator::EElevator type, fixed_t speed,
 		fixed_t height, int tag);
-    friend bool EV_DoZDoomElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
+    friend bool EV_DoZDoomElevator(const line_t* line, DElevator::EElevator type, fixed_t speed,
 	                        fixed_t height, int tag);
 
 private:

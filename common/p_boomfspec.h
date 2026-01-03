@@ -47,7 +47,7 @@ bool EV_DoGenStairs(line_t& line);
 bool P_CanUnlockGenDoor(line_t* line, player_t* player);
 bool EV_DoGenLockedDoor(line_t& line);
 bool EV_DoGenCrusher(line_t& line);
-int EV_DoDonut(line_t* line);
+bool EV_DoDonut(line_t* line);
 void P_CollectSecretVanilla(sector_t& sector, player_t& player);
 void EV_StartLightStrobing(int tag, int upper, int lower, int utics, int ltics);
 void EV_StartLightStrobing(int tag, int utics, int ltics);

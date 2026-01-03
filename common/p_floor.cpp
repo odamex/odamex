@@ -1095,17 +1095,14 @@ bool EV_DoZDoomFloor(DFloor::EFloor floortype, line_t* line, int tag, fixed_t sp
 //
 bool EV_DoChange (line_t *line, EChange changetype, int tag)
 {
-	int			secnum;
-	bool		rtn;
-	sector_t	*sec;
 	sector_t	*secm;
 
-	secnum = -1;
-	rtn = false;
+	int secnum = -1;
+	bool rtn = false;
 	// change all sectors with the same tag as the linedef
 	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
 	{
-		sec = &sectors[secnum];
+		sector_t* sec = &sectors[secnum];
 
 		rtn = true;
 
@@ -1492,61 +1489,43 @@ bool EV_BuildStairs(const int tag, const DFloor::EStair type, const line_t *line
 	return rtn;
 }
 
-int P_SpawnDonut(int, line_t*, fixed_t, fixed_t);
-
 bool EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed)
 {
-	int rtn = 0;
-
-	rtn = P_SpawnDonut(line->id, line, pillarspeed, slimespeed);
-
-	return rtn;
+	return P_SpawnDonut(line->id, line, pillarspeed, slimespeed);
 }
 
-int EV_DoDonut(line_t* line)
+bool EV_DoDonut(line_t* line)
 {
-	int rtn = 0;
-
-	rtn = P_SpawnDonut(line->id, line, FLOORSPEED / 2, FLOORSPEED / 2);
-
-	return rtn;
+	return P_SpawnDonut(line->id, line, FLOORSPEED / 2, FLOORSPEED / 2);
 }
 
 // [RH] Added pillarspeed and slimespeed parameters
-int P_SpawnDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed)
+bool P_SpawnDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed)
 {
-	sector_t*			s1;
-	sector_t*			s2;
-	sector_t*			s3;
-	int 				secnum;
-	int 				rtn;
-	int 				i;
-	DFloor*				floor;
-
-	secnum = -1;
-	rtn = 0;
+	int secnum = -1;
+	bool rtn = false;
 	while ((secnum = P_FindSectorFromTag(tag,secnum)) >= 0)
 	{
-		s1 = &sectors[secnum];					// s1 is pillar's sector
+		sector_t* s1 = &sectors[secnum];					// s1 is pillar's sector
 
 		// ALREADY MOVING?	IF SO, KEEP GOING...
 		if (s1->floordata)
 			continue;
 
-		rtn = 1;
-		s2 = getNextSector (s1->lines[0], s1);	// s2 is pool's sector
+		rtn = true;
+		sector_t* s2 = getNextSector (s1->lines[0], s1);	// s2 is pool's sector
 		if (!s2)								// note lowest numbered line around
 			continue;							// pillar must be two-sided
 
-		for (i = 0; i < s2->linecount; i++)
+		for (int i = 0; i < s2->linecount; i++)
 		{
 			if (!(s2->lines[i]->flags & ML_TWOSIDED) ||
 				(s2->lines[i]->backsector == s1))
 				continue;
-			s3 = s2->lines[i]->backsector;
+			sector_t* s3 = s2->lines[i]->backsector;
 
 			//	Spawn rising slime
-			floor = new DFloor (s2);
+			DFloor* floor = new DFloor (s2);
 			P_AddMovingFloor(s2);
 
 			newspecial_s newspec;
@@ -1713,43 +1692,18 @@ DElevator* DElevator::Clone(sector_t* sec) const
 	return ele;
 }
 
-bool SpawnCommonElevator(line_t*, DElevator::EElevator, fixed_t,
-                         fixed_t, int);
-
-//
-// EV_DoElevator
-//
-// Handle elevator linedef types
-//
-// Passed the linedef that triggered the elevator and the elevator action
-//
-// jff 2/22/98 new type to move floor and ceiling in parallel
-// [RH] Added speed, tag, and height parameters and new types.
-//
-bool EV_DoElevator (line_t *line, DElevator::EElevator elevtype,
-					fixed_t speed, fixed_t height, int tag)
-{
-	bool rtn = SpawnCommonElevator(line, elevtype, speed, height, tag);
-	return rtn;
-}
-
-bool SpawnCommonElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
+static bool SpawnCommonElevator(const line_t* line, DElevator::EElevator type, fixed_t speed,
                        fixed_t height, int tag)
 {
-	int secnum;
-	bool rtn;
-	sector_t* sec;
-	DElevator* elevator;
-
 	if (!line && (type == DElevator::elevateCurrent))
 		return false;
 
-	secnum = -1;
-	rtn = false;
+	int secnum = -1;
+	bool rtn = false;
 	// act on all sectors with the same tag as the triggering linedef
 	while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
 	{
-		sec = &sectors[secnum];
+		sector_t* sec = &sectors[secnum];
 
 		// If either floor or ceiling is already activated, skip it
 		if (sec->ceilingdata && P_MovingCeilingCompleted(sec))
@@ -1766,12 +1720,12 @@ bool SpawnCommonElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
 		if (sec->floordata || sec->ceilingdata) // jff 2/22/98
 			continue;
 
-		fixed_t floorheight = P_FloorHeight(sec);
-		fixed_t ceilingheight = P_CeilingHeight(sec);
+		const fixed_t floorheight = P_FloorHeight(sec);
+		const fixed_t ceilingheight = P_CeilingHeight(sec);
 
 		// create and initialize new elevator thinker
 		rtn = true;
-		elevator = new DElevator(sec);
+		DElevator* elevator = new DElevator(sec);
 
 		// [SL] 2012-04-19 - Elevators have both moving ceilings and floors.
 		// Consider them as moving ceilings for consistency sake.
@@ -1830,15 +1784,28 @@ bool SpawnCommonElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
 	return rtn;
 }
 
+//
+// EV_DoElevator
+//
+// Handle elevator linedef types
+//
+// Passed the linedef that triggered the elevator and the elevator action
+//
+// jff 2/22/98 new type to move floor and ceiling in parallel
+// [RH] Added speed, tag, and height parameters and new types.
+//
+bool EV_DoElevator (const line_t *line, DElevator::EElevator elevtype,
+					fixed_t speed, fixed_t height, int tag)
+{
+	return SpawnCommonElevator(line, elevtype, speed, height, tag);
+}
+
 // Almost identical to the above, but height is multiplied by FRACUNIT
-bool EV_DoZDoomElevator(line_t* line, DElevator::EElevator type, fixed_t speed,
+bool EV_DoZDoomElevator(const line_t* line, DElevator::EElevator type, fixed_t speed,
                        fixed_t height, int tag)
 {
 	height *= FRACUNIT;
-
-	bool rtn = SpawnCommonElevator(line, type, speed, height, tag);
-
-	return rtn;
+	return SpawnCommonElevator(line, type, speed, height, tag);
 }
 
 ///////////////////////////////////////
