@@ -1,0 +1,26 @@
+<releases>
+  <release version="12.0.0" date="2025-12-25">
+    <url type="details">https://github.com/odamex/odamex/releases/tag/12.0.0</url>
+    <description>
+      <p>This is a major update featuring support for DSDHacked, friendly monsters, many MBF21 bugfixes, and more!</p>
+    </description>
+  </release>
+  <release version="11.2.0" date="2025-11-14">
+    <url type="details">https://github.com/odamex/odamex/releases/tag/11.2.0</url>
+    <description>
+      <p>An exploit where the toggle command could be used to bypass server control of cvars has been fixed.</p>
+    </description>
+  </release>
+  <release version="11.1.1" date="2025-09-24">
+    <url type="details">https://github.com/odamex/odamex/releases/tag/11.1.1</url>
+    <description>
+      <p>This is just a small patch to fix a few issues encountered with 11.1.0, plus a few QoL features. See the release notes for more details!</p>
+    </description>
+  </release>
+  <release version="11.1.0" date="2025-08-10">
+    <url type="details">https://github.com/odamex/odamex/releases/tag/11.1.0</url>
+    <description>
+      <p>First official Flathub release! Flatpak versions are now in line with the releases on other platforms.</p>
+    </description>
+  </release>
+</releases>

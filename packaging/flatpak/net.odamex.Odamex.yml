@@ -83,8 +83,7 @@ modules:
       - -D USE_EXTERNAL_LIBDWARF=1
       - -D ODAMEX_NO_GITVER=0
     post-install:
-      - chmod +x ./flatpak-post-install.sh
-      - "./flatpak-post-install.sh"
+      - ./flatpak-post-install.sh
       # delete files that cleanup can't see
       - rm -rf /app/bin/wx*
       - rm -rf /app/lib/cmake

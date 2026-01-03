@@ -70,7 +70,7 @@
     <p>A copy of DOOM, DOOM II, Final DOOM, Freedoom, Hacx, REKKR, or Chex Quest is required. If you do not own DOOM, it can be purchased on GOG or Steam.</p>
   </description>
   <screenshots>
-      <screenshot  type="default">
+      <screenshot type="default">
           <image>https://raw.githubusercontent.com/odamex/odamex/refs/tags/12.2.0/packaging/flatpak/screenshots/doom-e1m1.png</image>
           <caption>Experience classic DOOM multiplayer with your friends!</caption>
       </screenshot>
@@ -102,7 +102,5 @@
     <color type="primary" scheme_preference="light">#a0a0a7</color>
     <color type="primary" scheme_preference="dark">#404042</color>
   </branding>
-  <releases>
-    <release version="12.2.0" date="YYYY-MM-DD" />
-  </releases>
+  <releases type="eternal"/>
 </component>
