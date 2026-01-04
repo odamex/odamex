@@ -1,3 +1,10 @@
+#
+# dotex: "I don't care, just do the tex or whatever..."
+#
+# Written in 2025 by Lexi Mayfield
+# Released into the Public Domain, see UNLICENSE.txt
+#
+
 import io
 import struct
 from dataclasses import dataclass
@@ -31,8 +38,8 @@ class DoomWADWriter:
 
     def finalize(self, iwad: bool = False):
         """
-        Finalize the WAD file - write out the directory and fix up the
-        header to match.
+        Finalize the WAD file - write out the directory, fix up the header
+        to match, then close the file.
         """
         # Pad to 4 bytes.
         while self.handle.tell() % 4 != 0:

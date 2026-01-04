@@ -1,4 +1,6 @@
 #
+# dotex: "I don't care, just do the tex or whatever..."
+#
 # Written in 2025 by Lexi Mayfield
 # Released into the Public Domain, see UNLICENSE.txt
 #

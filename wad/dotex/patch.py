@@ -1,4 +1,6 @@
 #
+# dotex: "I don't care, just do the tex or whatever..."
+#
 # Written in 2025 by Lexi Mayfield
 # Released into the Public Domain, see UNLICENSE.txt
 #
@@ -42,7 +44,7 @@ class DoomPatch:
 
     def read_image(self, file: Path) -> None:
         """
-        Given a path, try and use Imagemagick to read the graphic data.
+        Given a path, read in the image data.
         """
 
         reader = png.Reader(filename=file)
