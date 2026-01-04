@@ -127,7 +127,7 @@ Spree_s& SpreeManager::getSpreeLevel(int level)
 	return spreeLevels.at(level);
 }
 
-void SpreeManager::setSpreeLevels(const NewSprees_s newSprees)
+void SpreeManager::setSpreeLevels(const NewSprees_s& newSprees)
 {
 	spreeLevels = newSprees.newSprees;
 	spreeKillInterval = newSprees.newKillInterval;
