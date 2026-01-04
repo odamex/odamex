@@ -177,7 +177,7 @@ public:
 	/// Creates a new spree list reading from a SPREEDEF lump.
 	/// </summary>
 	/// <param name="newSprees">New finished spree paradigm, in order, as read from a SPREEDEF lump.</param>
-	void setSpreeLevels(const NewSprees_s newSprees);
+	void setSpreeLevels(const NewSprees_s& newSprees);
 
 	/// <summary>
 	/// Loads default spree information if no SPREEDEF is found.
