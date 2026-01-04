@@ -55,6 +55,7 @@ SpreeManager::SpreeManager()
 	spreeEndPlayer = "";
 	spreeEndSelf = "";
 	spreeEndMonster = "";
+	emptyRecord = {"null", -1, 0, {"", "", CR_GRAY}, 0, false};
 }
 
 void SpreeManager::reset()
@@ -113,7 +114,7 @@ int SpreeManager::getHighestSpreeLevel()
 	return spreeLevels.size() - 1;
 }
 
-Spree_s SpreeManager::getSpreeLevel(int level)
+Spree_s& SpreeManager::getSpreeLevel(int level)
 {
 	Spree_s spree = Spree_s();
 
@@ -137,56 +138,57 @@ void SpreeManager::setSpreeLevels(const NewSprees_s newSprees)
 	repeatingSpreeText = newSprees.newRepeatingSpreeText;
 }
 
-SpreeBreaker_t SpreeManager::getSpreeBreaker()
+SpreeBreaker_t& SpreeManager::getSpreeBreaker()
 {
 	return spreeBreaker;
 }
 
-void SpreeManager::setRawSpreeBreaker(SpreeBreaker_t& breaker, const int level, SpreeBreakerType breakerType)
+void SpreeManager::setRawSpreeBreaker(const SpreeBreaker_t& breaker, const int level, const SpreeBreakerType breakerType)
 {
 	player_t& victim = idplayer(breaker.spreeEndedPlayerId);
+	SpreeBreaker_t newbreaker = breaker;
 
 	if (!validplayer(victim))
 		return;
 
-	breaker.spreeEndedTeam = victim.userinfo.team;
-	breaker.spreeEnderTeam = TEAM_NONE;
-	breaker.spreeEndedTic = ::gametic;
+	newbreaker.spreeEndedTeam = victim.userinfo.team;
+	newbreaker.spreeEnderTeam = TEAM_NONE;
+	newbreaker.spreeEndedTic = ::gametic;
 
 	Spree_s spreeLevel = getSpreeLevel(level);
 
-	breaker.spreeEnded = spreeLevel.spreeText;
-	breaker.spreeEndedColor = spreeLevel.color;
+	newbreaker.spreeEnded = spreeLevel.spreeText;
+	newbreaker.spreeEndedColor = spreeLevel.color;
 
 	// Determine the type to figure out which localized broadcast string to serve
 	switch (breakerType)
 	{
 		case BR_SELF:
-		  breaker.spreeEndedBroadcastText = spreeEndSelf;
-		  breaker.spreeEnderMonster = false;
+				newbreaker.spreeEndedBroadcastText = spreeEndSelf;
+				newbreaker.spreeEnderMonster = false;
 		break;
-	    case BR_PLAYER: {
-		    breaker.spreeEndedBroadcastText = spreeEndPlayer;
-		    breaker.spreeEnderMonster = false;
+	  case BR_PLAYER: {
+				newbreaker.spreeEndedBroadcastText = spreeEndPlayer;
+				newbreaker.spreeEnderMonster = false;
 
-		    player_t& source = idplayer(breaker.spreeEnderPlayerId);
+				player_t& source = idplayer(newbreaker.spreeEnderPlayerId);
 
-		    if (!validplayer(source))
-			    break;
+				if (!validplayer(source))
+						break;
 
-		    breaker.spreeEndedTeam = source.userinfo.team;
-	    }
+				newbreaker.spreeEndedTeam = source.userinfo.team;
+				}
 		break;
 		case BR_MONSTER:
-		  breaker.spreeEndedBroadcastText = spreeEndMonster;
-		  breaker.spreeEnderMonster = true;
+		    newbreaker.spreeEndedBroadcastText = spreeEndMonster;
+		    newbreaker.spreeEnderMonster = true;
 		break;
 	}
 
-	spreeBreaker = breaker;
+	spreeBreaker = newbreaker;
 }
 
-void SpreeManager::setSpreeBreaker(AActor* source, player_t* target)
+void SpreeManager::setSpreeBreaker(const AActor* source, const player_t* target)
 {
 	if (clientside && network_game)
 		return;
@@ -416,16 +418,14 @@ bool SpreeManager::setRawSpree(const int playerId, const int newSpreeLevel)
 	return checkForSpreeUpdates(playerId, player.userinfo.netname, newSpreeLevel, ::gametic);
 }
 
-SpreeRecord_t SpreeManager::getSpreeRecord(int playerId)
+SpreeRecord_t& SpreeManager::getSpreeRecord(int playerId)
 {
 	if (spreeRecord.find(playerId) != spreeRecord.end())
 	{
 		return spreeRecord[playerId];
 	}
 
-	SpreeRecord_t record = {"null", -1, 0, {"", "", CR_GRAY}, 0, false};
-
-	return record;
+	return emptyRecord;
 }
 
 void SpreeManager::expireOldSprees()
@@ -449,9 +449,9 @@ void SpreeManager::expireOldSprees()
 	}
 }
 
-SpreeRecord_t SpreeManager::getLatestSpreeRecord(int notPlayerId)
+SpreeRecord_t& SpreeManager::getLatestSpreeRecord(int notPlayerId)
 {
-	SpreeRecord_t record = {"null", -1, 0, {"", "", CR_GRAY}, 0, false};
+	SpreeRecord_t record = emptyRecord;
 
 	for (auto& it : spreeRecord)
 	{
@@ -514,7 +514,7 @@ void SpreeManager::clearPoints()
 // Static functions start here.
 // ==========================================================
 
-void P_ProcessSpreeKill(AActor* source, player_t* target)
+void P_ProcessSpreeKill(const AActor* source, const player_t* target)
 {
 	static SpreeManager& manager = SpreeManager::getInstance();
 
@@ -550,7 +550,7 @@ void P_ProcessSpreeKill(AActor* source, player_t* target)
 	}
 }
 
-void P_ProcessSpreeDamage(player_t* source, int totalDamage)
+void P_ProcessSpreeDamage(const player_t* source, const int totalDamage)
 {
 	if (clientside && network_game)
 		return;

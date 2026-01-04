@@ -46,6 +46,8 @@ MultiKillManager::~MultiKillManager()
 MultiKillManager::MultiKillManager()
 {
 	multiTimeInterval = 4 * TICRATE;
+	emptyLevel = MultiKillLevel_s();
+	emptyTics = MultiKillTics_s();
 }
 
 void MultiKillManager::reset()
@@ -89,20 +91,21 @@ int MultiKillManager::getHighestMultiKillLevel()
 	return multiKillLevels.size() - 1;
 }
 
-MultiKillLevel_s MultiKillManager::getMultiKillLevel(int level)
+MultiKillLevel_s& MultiKillManager::getMultiKillLevel(const int level)
 {
+	int newlevel = level;
 	if (getHighestMultiKillLevel() <= 0)
-		return {"", CR_GRAY};
+		return emptyLevel;
 
 
 	if (level >= multiKillLevels.size())
-		level = multiKillLevels.size() - 1;
+		newlevel = multiKillLevels.size() - 1;
 
-	return multiKillLevels.at(level);
+	return multiKillLevels.at(newlevel);
 }
 
 void MultiKillManager::setMultiKillLevels(const std::vector<MultiKillLevel_s> multikills,
-                                          int newinterval)
+                                          const int newinterval)
 {
 	multiKillLevels = multikills;
 	multiTimeInterval = newinterval * TICRATE;
@@ -112,11 +115,11 @@ void MultiKillManager::setMultiKillLevels(const std::vector<MultiKillLevel_s> mu
 // Multi kill bookkeeping functions start here.
 // ==========================================================
 
-MultiKillTics_s MultiKillManager::getMultiKills(const int playerid)
+MultiKillTics_s& MultiKillManager::getMultiKills(const int playerid)
 {
 	if (mutliKillPlayerDict.find(playerid) == mutliKillPlayerDict.end())
 	{
-		return MultiKillTics_s();
+		return emptyTics;
 	}
 	else
 	{
@@ -187,7 +190,7 @@ void MultiKillManager::clearMultiTics()
 // Static functions start here.
 // ==========================================================
 
-void P_ProcessMultiKills(AActor* source, player_t* target)
+void P_ProcessMultiKills(const AActor* source, const player_t* target)
 {
 	MultiKillManager& manager = MultiKillManager::getInstance();
 
@@ -212,7 +215,7 @@ void P_ProcessMultiKills(AActor* source, player_t* target)
 	}
 }
 
-void P_TicMultiKill(player_t* player)
+void P_TicMultiKill(const player_t* player)
 {
 	if (!player)
 		return;

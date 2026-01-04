@@ -87,7 +87,7 @@ public:
 	/// </summary>
 	/// <param name="multikills">The completed MultiKillLevels in order in a vector.</param>
 	/// <param name="newinterval">Multi kill interval in seconds.</param>
-	void setMultiKillLevels(const std::vector<MultiKillLevel_s> multikills, int newinterval);
+	void setMultiKillLevels(const std::vector<MultiKillLevel_s> multikills, const int newinterval);
 
 	/// <summary>
 	/// Gets the highest multi kill level.
@@ -97,7 +97,7 @@ public:
 	/// <param name="level">Multi kill level to return detailed information
 	/// for.</param> <returns>The multi kill level specified, or empty if
 	/// invalid.</returns>
-	MultiKillLevel_s getMultiKillLevel(int level);
+	MultiKillLevel_s& getMultiKillLevel(const int level);
 
 	/// <summary>
 	/// Sets defaults for loading multi kills. Typically runs if a SPREEDEF is not found.
@@ -109,7 +109,7 @@ public:
 	/// </summary>
 	/// <param name="playerid">ID of the player to get current multi kill status.</param>
 	/// <returns>Multi kill status for the specified player id, or empty if invalid.</returns>
-	MultiKillTics_s getMultiKills(const int playerid);
+	MultiKillTics_s& getMultiKills(const int playerid);
 
 	/// <summary>
 	/// Adds a single kill to a player's current multi kill
@@ -163,6 +163,16 @@ private:
 	/// Bookkeeping dictionary for multi kills and multi kill tics per player.
 	/// </summary>
 	std::unordered_map<int, MultiKillTics_s> mutliKillPlayerDict;
+
+	/// <summary>
+	/// Empty multi kill level struct for returning when invalid.
+	/// </summary>
+	MultiKillLevel_s emptyLevel;
+
+	/// <summary>
+	/// Empty multi kill tics struct for returning when invalid.
+	/// </summary>
+	MultiKillTics_s emptyTics;
 };
 
 /// <summary>
@@ -175,10 +185,10 @@ private:
 /// </summary>
 /// <param name="source">The killer (if a monster/player, null if environment/zombie
 /// projectile)</param> <param name="target">The victim</param>
-void P_ProcessMultiKills(AActor* source, player_t* target);
+void P_ProcessMultiKills(const AActor* source, const player_t* target);
 
 /// <summary>
 /// Handles ticking players for multi kills.
 /// </summary>
 /// <param name="player">Player to tick.</param>
-void P_TicMultiKill(player_t* player);
+void P_TicMultiKill(const player_t* player);
