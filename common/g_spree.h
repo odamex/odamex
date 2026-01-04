@@ -418,6 +418,11 @@ private:
 	/// An invalid spree record.
 	/// </summary>
 	SpreeRecord_t emptyRecord;
+
+	/// <summary>
+	/// An empty spree level.
+	/// </summary>
+	Spree_s emptySpree;
 };
 
 /// <summary>
