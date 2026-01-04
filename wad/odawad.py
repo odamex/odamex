@@ -6,9 +6,7 @@ import configparser
 import logging
 from configparser import ConfigParser
 from dataclasses import dataclass
-from multiprocessing import Lock
 from pathlib import Path
-from pydoc import describe
 
 from dotex import DoomFlat, DoomPalette, DoomPatch, DoomWADWriter
 
