@@ -56,6 +56,7 @@ SpreeManager::SpreeManager()
 	spreeEndSelf = "";
 	spreeEndMonster = "";
 	emptyRecord = {"null", -1, 0, {"", "", CR_GRAY}, 0, false};
+	emptySpree = Spree_s();
 }
 
 void SpreeManager::reset()
@@ -114,17 +115,17 @@ int SpreeManager::getHighestSpreeLevel()
 	return spreeLevels.size() - 1;
 }
 
-Spree_s& SpreeManager::getSpreeLevel(int level)
+Spree_s& SpreeManager::getSpreeLevel(const int level)
 {
-	Spree_s spree = Spree_s();
+	int newlevel = level;
 
 	if (getHighestSpreeLevel() <= -1)
-		return spree;
+		return emptySpree;
 
 	if (level >= spreeLevels.size())
-		level = spreeLevels.size() - 1;
+		newlevel = spreeLevels.size() - 1;
 
-	return spreeLevels.at(level);
+	return spreeLevels.at(newlevel);
 }
 
 void SpreeManager::setSpreeLevels(const NewSprees_s& newSprees)
@@ -286,7 +287,7 @@ bool SpreeManager::hasSpree(const int playerid)
 	return false;
 }
 
-void SpreeManager::removeSpree(int playerid)
+void SpreeManager::removeSpree(const int playerid)
 {
 	if (spreeRecord.find(playerid) == spreeRecord.end())
 		return;
@@ -295,7 +296,7 @@ void SpreeManager::removeSpree(int playerid)
 	return;
 }
 
-int SpreeManager::getSpreeLevelByKills(int kills)
+int SpreeManager::getSpreeLevelByKills(const int kills)
 {
 	if (spreeLevels.size() == 0 || spreeKillInterval <= 0)
 		return -1;
@@ -312,7 +313,7 @@ int SpreeManager::getSpreeLevelByKills(int kills)
 	return level - 1;
 }
 
-int SpreeManager::getSpreeLevelByDamage(int damage)
+int SpreeManager::getSpreeLevelByDamage(const int damage)
 {
 	if (spreeLevels.size() == 0 || spreeDamageInterval <= 0)
 		return -1;
@@ -341,7 +342,7 @@ bool SpreeManager::recordPlayerKill(const player_t* player)
 	return checkForSpreeUpdates(player->id, player->userinfo.netname, newSpreeLevel, ::gametic);
 }
 
-bool SpreeManager::recordPlayerDamage(const player_t* player, int totalDamage)
+bool SpreeManager::recordPlayerDamage(const player_t* player, const int totalDamage)
 {
 	if (!player)
 		return false;
@@ -418,7 +419,7 @@ bool SpreeManager::setRawSpree(const int playerId, const int newSpreeLevel)
 	return checkForSpreeUpdates(playerId, player.userinfo.netname, newSpreeLevel, ::gametic);
 }
 
-SpreeRecord_t& SpreeManager::getSpreeRecord(int playerId)
+SpreeRecord_t& SpreeManager::getSpreeRecord(const int playerId)
 {
 	if (spreeRecord.find(playerId) != spreeRecord.end())
 	{
@@ -449,7 +450,7 @@ void SpreeManager::expireOldSprees()
 	}
 }
 
-SpreeRecord_t& SpreeManager::getLatestSpreeRecord(int notPlayerId)
+SpreeRecord_t& SpreeManager::getLatestSpreeRecord(const int notPlayerId)
 {
 	SpreeRecord_t record = emptyRecord;
 
