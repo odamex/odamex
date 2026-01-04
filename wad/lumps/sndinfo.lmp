@@ -576,29 +576,29 @@ misc/lastplayer     dslastpl
 // - "Your flag has been taken" => vox/your/flag/take
 // - "Your team has the enemy flag" => vox/your/take/flag
 
-vox/your/score			dvys
-vox/your/flag/take		dvyft
-vox/your/flag/drop		dvyfd
-vox/your/flag/manualreturn	dvyfm
-vox/your/flag/return		dvyfr
+officialvox/your/score			dvys
+officialvox/your/flag/take		dvyft
+officialvox/your/flag/drop		dvyfd
+officialvox/your/flag/manualreturn	dvyfm
+officialvox/your/flag/return		dvyfr
 
-vox/enemy/score			dves
-vox/enemy/flag/take		dveft
-vox/enemy/flag/drop		dvefd
-vox/enemy/flag/manualreturn	dvefm
-vox/enemy/flag/return		dvefr
+officialvox/enemy/score			dves
+officialvox/enemy/flag/take		dveft
+officialvox/enemy/flag/drop		dvefd
+officialvox/enemy/flag/manualreturn	dvefm
+officialvox/enemy/flag/return		dvefr
 
-vox/blue/score			dvbs
-vox/blue/flag/take		dvbft
-vox/blue/flag/drop		dvbfd
-vox/blue/flag/manualreturn	dvbfm
-vox/blue/flag/return		dvbfr
+officialvox/blue/score			dvbs
+officialvox/blue/flag/take		dvbft
+officialvox/blue/flag/drop		dvbfd
+officialvox/blue/flag/manualreturn	dvbfm
+officialvox/blue/flag/return		dvbfr
 
-vox/red/score			dvrs
-vox/red/flag/take		dvrft
-vox/red/flag/drop		dvrfd
-vox/red/flag/manualreturn	dvrfm
-vox/red/flag/return		dvrfr
+officialvox/red/score			dvrs
+officialvox/red/flag/take		dvrft
+officialvox/red/flag/drop		dvrfd
+officialvox/red/flag/manualreturn	dvrfm
+officialvox/red/flag/return		dvrfr
 
 $random menu/quit1 { player/male/death1 demon/pain grunt/pain misc/gibbed misc/teleport grunt/sight1 grunt/sight3 demon/melee }
 $random menu/quit2 { vile/active misc/p_pkup brain/cube misc/gibbed skeleton/swing knight/death baby/active demon/melee  }
