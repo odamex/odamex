@@ -3,7 +3,8 @@
 # Released into the Public Domain, see UNLICENSE.txt
 #
 
-from dotex.graphic import DoomGraphic
 from dotex.palette import DoomPalette
+from dotex.patch import DoomPatch
+from dotex.wad import DoomWADWriter
 
-__all__ = ["DoomGraphic", "DoomPalette"]
+__all__ = ["DoomPalette", "DoomPatch", "DoomWADWriter"]

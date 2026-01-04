@@ -6,6 +6,8 @@
 import io
 from pathlib import Path
 
+from dotex.util import rgb_pack, rgb_unpack
+
 
 class DoomPalette:
     playpal: dict[int, int]
@@ -31,7 +33,7 @@ class DoomPalette:
             if len(color) < 3:
                 raise Exception(f"Line '{line}' does not contain a color")
 
-            rgb = int(color[0]) | (int(color[1]) << 8) | (int(color[2]) << 16)
+            rgb = rgb_pack(int(color[0]), int(color[1]), int(color[2]))
             self.playpal[rgb] = index
             index += 1
 
@@ -59,3 +61,23 @@ class DoomPalette:
                 return self._read_gimp_colors(fh)
 
             return self._read_gimp_colors(fh)
+
+    def add_close_color(self, rgb: int) -> None:
+        r, g, b = rgb_unpack(rgb)
+
+        closest_index: int | None = None
+        closest_distsq: float = float("inf")
+        for color in self.playpal.keys():
+            cr, cg, cb = rgb_unpack(color)
+
+            dr = r - cr
+            dg = g - cg
+            db = b - cb
+
+            distsq = dr * dr + dg * dg + db * db
+            if distsq < closest_distsq:
+                closest_index = self.playpal[color]
+                closest_distsq = distsq
+
+        assert closest_index is not None
+        self.playpal[rgb] = closest_index

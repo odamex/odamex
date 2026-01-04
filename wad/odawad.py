@@ -5,15 +5,15 @@
 import configparser
 from pathlib import Path
 
-from dotex import DoomGraphic, DoomPalette
+from dotex import DoomPalette, DoomPatch, DoomWADWriter
 
 
-def read_graphic(dir: str, lump: str) -> DoomGraphic:
+def read_patch(dir: str, lump: str) -> DoomPatch:
     files = Path(dir).glob(lump + ".*")
 
     # This is a loop, but we always want the first matched file.
     for file in files:
-        graphic = DoomGraphic()
+        graphic = DoomPatch()
         graphic.read_image(file)
         return graphic
 
@@ -26,12 +26,33 @@ config.read("wadinfo.txt")
 palette = DoomPalette()
 palette.read_gimp_palette(Path(__file__).parent / "doom.gpl")
 
-for graphics in config["graphics"]:
-    filename, leftstr, topstr = graphics.split()
+odamex_wad = DoomWADWriter(Path("odamex.wad"))
 
-    graphic = read_graphic("graphics", filename)
-    graphic.set_left_top(int(leftstr), int(topstr))
-    data = graphic.to_bytes(palette)
 
-    with open(graphic.name + ".lmp", "wb") as wh:
-        wh.write(data)
+def pack_graphics():
+    for graphics in config["graphics"]:
+        filename, leftstr, topstr = graphics.split()
+
+        graphic = read_patch("graphics", filename)
+        graphic.set_left_top(int(leftstr), int(topstr))
+        data = graphic.to_bytes(palette)
+        odamex_wad.write_lump(filename.upper(), data)
+
+
+def pack_sprites():
+    odamex_wad.write_lump("SS_START")
+
+    for sprites in config["sprites"]:
+        filename, leftstr, topstr = sprites.split()
+
+        sprite = read_patch("sprites", filename)
+        sprite.set_left_top(int(leftstr), int(topstr))
+        data = sprite.to_bytes(palette)
+        odamex_wad.write_lump(filename.upper(), data)
+
+    odamex_wad.write_lump("SS_END")
+
+
+pack_graphics()
+pack_sprites()
+odamex_wad.finalize()

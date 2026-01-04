@@ -12,7 +12,7 @@ import dotex.png as png
 from dotex.palette import DoomPalette
 
 
-class DoomGraphic:
+class DoomPatch:
     name: str
     width: int
     height: int
@@ -56,7 +56,10 @@ class DoomGraphic:
                     co = color[0]
                     co |= color[1] << 8
                     co |= color[2] << 16
-                    co |= color[3] << 24
+                    if len(color) == 4:
+                        co |= color[3] << 24
+                    else:
+                        co |= 0xFF << 24
                     self.data.append(co)
         elif metadata["greyscale"] is True:
             # Greyscale image
@@ -122,7 +125,8 @@ class DoomGraphic:
                 if a > 0:
                     icolor = pal.playpal.get(rgb)
                     if icolor is None:
-                        raise Exception(f"Could not find color {hex(rgb)} in palette")
+                        pal.add_close_color(rgb)
+                        icolor = pal.playpal[rgb]
                 else:
                     icolor = None
 
@@ -140,6 +144,7 @@ class DoomGraphic:
                 elif icolor is None and post_len > 0:
                     # Write the end of a post.
                     end_post()
+                    post_len = 0
 
                 # Advance to the next pixel
                 y += 1
