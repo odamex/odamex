@@ -1518,31 +1518,31 @@ void DisplaySmallSpreeBreaker(SpreeBreaker_t breaker)
 
 	std::string msg = gendermessage;
 
-	// Get final points and add to the message
-	int pts = breaker.endedPoints;
+	//// Get final points and add to the message
+	//int pts = breaker.endedPoints;
 
-	// Insert commas for every 3 digits
-	std::string formattedPts = std::to_string(pts);
+	//// Insert commas for every 3 digits
+	//std::string formattedPts = std::to_string(pts);
 
-	for (int i = formattedPts.size() - 3; i > 0; i -= 3)
-	{
-		formattedPts.insert(i, ",");
-	}
+	//for (int i = formattedPts.size() - 3; i > 0; i -= 3)
+	//{
+	//	formattedPts.insert(i, ",");
+	//}
 
-	std::string pointsType = "";
+	//std::string pointsType = "";
 
-	if (G_IsCoopGame())
-	{
-		pointsType = "dmg";
-	}
-	else
-	{
-		pointsType = "frags";
-	}
+	//if (G_IsCoopGame())
+	//{
+	//	pointsType = "dmg";
+	//}
+	//else
+	//{
+	//	pointsType = "frags";
+	//}
 
-	std::string ptsStr = fmt::sprintf(" (%s %s)", formattedPts, pointsType.c_str());
+	//std::string ptsStr = fmt::sprintf(" (%s %s)", formattedPts, pointsType.c_str());
 
-	msg += ptsStr;
+	//msg += ptsStr;
 
 	line.spreeText = msg;
 
