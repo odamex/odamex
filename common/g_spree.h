@@ -194,7 +194,7 @@ public:
 	/// </summary>
 	/// <param name="playerId">Player ID of the player to look up the spree record for.</param>
 	/// <returns>The player's spree record, or a zeroed out struct.</returns>
-	SpreeRecord_t getSpreeRecord(int playerId);
+	SpreeRecord_t& getSpreeRecord(const int playerId);
 
 	/// <summary>
 	/// Gets the latest spree record excluding the current player.
@@ -202,7 +202,7 @@ public:
 	/// <param name="notPlayerId">Get any spree except for this player id</param>
 	/// <returns>The latest spree record that isn't the specified player id's,
 	/// or an empty one if not found.</returns>
-	SpreeRecord_t getLatestSpreeRecord(int notPlayerId);
+	SpreeRecord_t& getLatestSpreeRecord(const int notPlayerId);
 
 	/// <summary>
 	/// Records a single kill for a player, adds it to the kills since last death dictionary,
@@ -227,13 +227,13 @@ public:
 	/// <param name="player">A pointer to the player object to record this damage.</param>
 	/// <param name="totalDamage">Amount of damage to record.</param>
 	/// <returns>True if this damage event resulted in an upgraded spree level.</returns>
-	bool recordPlayerDamage(const player_t* player, int totalDamage);
+	bool recordPlayerDamage(const player_t* player, const int totalDamage);
 
 	/// <summary>
 	/// Gets the current SpreeBreaker_t object.
 	/// </summary>
 	/// <returns>The current SpreeBreaker_t object.</returns>
-	SpreeBreaker_t getSpreeBreaker();
+	SpreeBreaker_t& getSpreeBreaker();
 
 	/// <summary>
 	/// Using the spree ender and the player whomst spree has ended, this function handles logic
@@ -242,7 +242,7 @@ public:
 	/// </summary>
 	/// <param name="source">The spree ender.</param>
 	/// <param name="target">The player whomst spree has ended. (RIP)</param>
-	void setSpreeBreaker(AActor* source, player_t* target);
+	void setSpreeBreaker(const AActor* source, const player_t* target);
 
 	/// <summary>
 	/// Sets the current SpreeBreaker_t object from a raw state,
@@ -255,9 +255,9 @@ public:
 	/// <param name="level">The spree level the player was on when their spree ended.</param>
 	/// <param name="type">Type of spree breaker.</param>
 	void setRawSpreeBreaker(
-	    SpreeBreaker_t& breaker,
+	    const SpreeBreaker_t& breaker,
 			const int level,
-	    SpreeBreakerType type);
+	    const SpreeBreakerType type);
 
 	/// <summary>
 	/// Sets a raw state of a player's spree.
@@ -314,14 +314,14 @@ private:
 	/// </summary>
 	/// <param name="kills">Amount of kills to check the spree level.</param>
 	/// <returns>The spree level that corresponds to the amount of kills.</returns>
-	int getSpreeLevelByKills(int kills);
+	int getSpreeLevelByKills(const int kills);
 
 	/// <summary>
 	/// Gets a specific spree level by the amount of damage the player has.
 	/// </summary>
 	/// <param name="damage">Amount of damage to check the spree level.</param>
 	/// <returns>The spree level that corresponds to the amount of damage.</returns>
-	int getSpreeLevelByDamage(int damage);
+	int getSpreeLevelByDamage(const int damage);
 
 	/// <summary>
 	/// A reusable function to check if a player's spree level has changed.
@@ -341,7 +341,7 @@ private:
 	/// </summary>
 	/// <param name="level">Spree level to get data for.</param>
 	/// <returns>The spree level specified, or a zeroed out struct if invalid.</returns>
-	Spree_s getSpreeLevel(int level); // Gets the local spree level (with text and color)
+	Spree_s& getSpreeLevel(const int level); // Gets the local spree level (with text and color)
 
 	/// <summary>
 	/// Gets the kill spree interval for players -- as in, the amount of kills needed to upgrade to a new spree level.
@@ -413,6 +413,11 @@ private:
 	/// Updated with the latest spree to be broken.
 	/// </summary>
 	SpreeBreaker_t spreeBreaker;
+
+	/// <summary>
+	/// An invalid spree record.
+	/// </summary>
+	SpreeRecord_t emptyRecord;
 };
 
 /// <summary>
@@ -425,7 +430,7 @@ private:
 /// <param name="source">The killer (if a monster/player, null if environment/zombie
 /// projectile)</param>
 /// <param name="target">The victim</param>
-void P_ProcessSpreeKill(AActor* source, player_t* target);
+void P_ProcessSpreeKill(const AActor* source, const player_t* target);
 
 /// <summary>
 /// G_ProcessSpreeDamage occurs after a player deals some damage to determine
@@ -436,7 +441,7 @@ void P_ProcessSpreeKill(AActor* source, player_t* target);
 /// </summary>
 /// <param name="source">The damager (must be a player)</param>
 /// <param name="totalDamage">The total damage dealt during this event.</param>
-void P_ProcessSpreeDamage(player_t* source, int totalDamage);
+void P_ProcessSpreeDamage(const player_t* source, const int totalDamage);
 
 /// <summary>
 /// Handles internal ticking for spree bookkeeping.
