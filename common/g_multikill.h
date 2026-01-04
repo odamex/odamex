@@ -97,7 +97,7 @@ public:
 	/// <param name="level">Multi kill level to return detailed information
 	/// for.</param> <returns>The multi kill level specified, or empty if
 	/// invalid.</returns>
-	MultiKillLevel_s& getMultiKillLevel(const int level);
+	const MultiKillLevel_s& getMultiKillLevel(const int level);
 
 	/// <summary>
 	/// Sets defaults for loading multi kills. Typically runs if a SPREEDEF is not found.
@@ -109,7 +109,7 @@ public:
 	/// </summary>
 	/// <param name="playerid">ID of the player to get current multi kill status.</param>
 	/// <returns>Multi kill status for the specified player id, or empty if invalid.</returns>
-	MultiKillTics_s& getMultiKills(const int playerid);
+	const MultiKillTics_s& getMultiKills(const int playerid);
 
 	/// <summary>
 	/// Adds a single kill to a player's current multi kill

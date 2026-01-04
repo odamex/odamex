@@ -194,7 +194,7 @@ public:
 	/// </summary>
 	/// <param name="playerId">Player ID of the player to look up the spree record for.</param>
 	/// <returns>The player's spree record, or a zeroed out struct.</returns>
-	SpreeRecord_t& getSpreeRecord(const int playerId);
+	const SpreeRecord_t& getSpreeRecord(const int playerId);
 
 	/// <summary>
 	/// Gets the latest spree record excluding the current player.
@@ -202,7 +202,7 @@ public:
 	/// <param name="notPlayerId">Get any spree except for this player id</param>
 	/// <returns>The latest spree record that isn't the specified player id's,
 	/// or an empty one if not found.</returns>
-	SpreeRecord_t& getLatestSpreeRecord(const int notPlayerId);
+	const SpreeRecord_t& getLatestSpreeRecord(const int notPlayerId);
 
 	/// <summary>
 	/// Records a single kill for a player, adds it to the kills since last death dictionary,
@@ -233,7 +233,7 @@ public:
 	/// Gets the current SpreeBreaker_t object.
 	/// </summary>
 	/// <returns>The current SpreeBreaker_t object.</returns>
-	SpreeBreaker_t& getSpreeBreaker();
+	const SpreeBreaker_t& getSpreeBreaker();
 
 	/// <summary>
 	/// Using the spree ender and the player whomst spree has ended, this function handles logic
@@ -341,7 +341,7 @@ private:
 	/// </summary>
 	/// <param name="level">Spree level to get data for.</param>
 	/// <returns>The spree level specified, or a zeroed out struct if invalid.</returns>
-	Spree_s& getSpreeLevel(const int level); // Gets the local spree level (with text and color)
+	const Spree_s& getSpreeLevel(const int level); // Gets the local spree level (with text and color)
 
 	/// <summary>
 	/// Gets the kill spree interval for players -- as in, the amount of kills needed to upgrade to a new spree level.

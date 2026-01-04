@@ -91,7 +91,7 @@ int MultiKillManager::getHighestMultiKillLevel()
 	return multiKillLevels.size() - 1;
 }
 
-MultiKillLevel_s& MultiKillManager::getMultiKillLevel(const int level)
+const MultiKillLevel_s& MultiKillManager::getMultiKillLevel(const int level)
 {
 	int newlevel = level;
 	if (getHighestMultiKillLevel() <= 0)
@@ -115,7 +115,7 @@ void MultiKillManager::setMultiKillLevels(const std::vector<MultiKillLevel_s> mu
 // Multi kill bookkeeping functions start here.
 // ==========================================================
 
-MultiKillTics_s& MultiKillManager::getMultiKills(const int playerid)
+const MultiKillTics_s& MultiKillManager::getMultiKills(const int playerid)
 {
 	if (mutliKillPlayerDict.find(playerid) == mutliKillPlayerDict.end())
 	{

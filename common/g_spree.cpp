@@ -115,7 +115,7 @@ int SpreeManager::getHighestSpreeLevel()
 	return spreeLevels.size() - 1;
 }
 
-Spree_s& SpreeManager::getSpreeLevel(const int level)
+const Spree_s& SpreeManager::getSpreeLevel(const int level)
 {
 	int newlevel = level;
 
@@ -139,7 +139,7 @@ void SpreeManager::setSpreeLevels(const NewSprees_s& newSprees)
 	repeatingSpreeText = newSprees.newRepeatingSpreeText;
 }
 
-SpreeBreaker_t& SpreeManager::getSpreeBreaker()
+const SpreeBreaker_t& SpreeManager::getSpreeBreaker()
 {
 	return spreeBreaker;
 }
@@ -419,7 +419,7 @@ bool SpreeManager::setRawSpree(const int playerId, const int newSpreeLevel)
 	return checkForSpreeUpdates(playerId, player.userinfo.netname, newSpreeLevel, ::gametic);
 }
 
-SpreeRecord_t& SpreeManager::getSpreeRecord(const int playerId)
+const SpreeRecord_t& SpreeManager::getSpreeRecord(const int playerId)
 {
 	if (spreeRecord.find(playerId) != spreeRecord.end())
 	{
@@ -450,7 +450,7 @@ void SpreeManager::expireOldSprees()
 	}
 }
 
-SpreeRecord_t& SpreeManager::getLatestSpreeRecord(const int notPlayerId)
+const SpreeRecord_t& SpreeManager::getLatestSpreeRecord(const int notPlayerId)
 {
 	SpreeRecord_t record = emptyRecord;
 
