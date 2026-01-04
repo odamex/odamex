@@ -29,6 +29,26 @@
 #include "oscanner.h"
 #include "gstrings.h"
 
+static std::string UseStringTableOrToken(std::string token)
+{
+	if (token.find_first_of("$") == 0)
+	{
+		std::string text = GStrings(token.substr(1));
+		if (text.empty())
+		{
+			return token;
+		}
+		else
+		{
+			return text;
+		}
+	}
+	else
+	{
+		return token;
+	}
+}
+
 static void ParseSpreeKillInterval(OScanner& os, int& killinterval)
 {
 	os.assertTokenIs("spreekillinterval");
@@ -87,16 +107,7 @@ static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 			os.assertTokenIs("=");
 			os.mustScan();
 			std::string text = os.getToken();
-			// Use LANGUAGE lump for this string.
-			if (text.find_first_of("$") == 0)
-			{
-				// This is a reference to a string.
-				spree.spreeText = GStrings(text.substr(1));
-			}
-			else
-			{
-				spree.spreeText = text;
-			}
+			spree.spreeText = UseStringTableOrToken(text);
 		}
 		else if (os.compareTokenNoCase("broadcasttext"))
 		{
@@ -104,16 +115,7 @@ static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 			os.assertTokenIs("=");
 			os.mustScan();
 			std::string broadcastText = os.getToken();
-			// Use LANGUAGE lump for this string.
-			if (broadcastText.find_first_of("$") == 0)
-			{
-				// This is a reference to a string.
-				spree.spreeBroadcastText = GStrings(broadcastText.substr(1));
-			}
-			else
-			{
-				spree.spreeBroadcastText = broadcastText;
-			}
+			spree.spreeBroadcastText = UseStringTableOrToken(broadcastText);
 		}
 		else
 		{
@@ -158,16 +160,7 @@ static void ParseMulti(OScanner& os, std::vector<MultiKillLevel_s>& multiKillLev
 			os.assertTokenIs("=");
 			os.mustScan();
 			std::string text = os.getToken();
-			// Use LANGUAGE lump for this string.
-			if (text.find_first_of("$") == 0)
-			{
-				// This is a reference to a string.
-				level.multikilltext = GStrings(text.substr(1));
-			}
-			else
-			{
-				level.multikilltext = text;
-			}
+			level.multikilltext = UseStringTableOrToken(text);
 		}
 		else
 		{
@@ -189,16 +182,7 @@ static void ParseSpreeText(OScanner& os, std::string& text, std::string token)
 	os.assertTokenIs("=");
 	os.mustScan();
 	std::string newText = os.getToken();
-	// Use LANGUAGE lump for this string.
-	if (newText.find_first_of("$") == 0)
-	{
-		// This is a reference to a string.
-		text = GStrings(newText.substr(1));
-	}
-	else
-	{
-		text = newText;
-	}
+	text = UseStringTableOrToken(newText);
 }
 
 static void ParseSpreeDef(const int lump, const OLumpName name)
