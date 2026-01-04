@@ -5,6 +5,7 @@
 # Released into the Public Domain, see UNLICENSE.txt
 #
 
+import logging
 import io
 import struct
 from array import array
@@ -30,6 +31,8 @@ class DoomFlat:
         """
         Given a path, read in the image data.
         """
+        logging.debug(f"Reading '{file}' for flat.")
+
         reader = png.Reader(filename=file)
         self.name = file.stem
         self.width, self.height, pixels, metadata = reader.read()
@@ -70,6 +73,8 @@ class DoomFlat:
 
         Based on the pseudo-code from https://doomwiki.org/wiki/Picture_format
         """
+        logging.debug(f"Writing flat '{self.name}'.")
+
         data = io.BytesIO()
 
         for y in range(self.height):
@@ -79,8 +84,7 @@ class DoomFlat:
 
                 icolor = pal.playpal.get(rgb)
                 if icolor is None:
-                    pal.add_close_color(rgb)
-                    icolor = pal.playpal[rgb]
+                    icolor = pal.add_close_color(rgb)
 
                 data.write(struct.pack("<B", icolor))
 

@@ -6,6 +6,7 @@
 #
 
 import io
+import logging
 from pathlib import Path
 
 from dotex.util import rgb_pack, rgb_unpack
@@ -45,6 +46,8 @@ class DoomPalette:
 
         See: https://developer.gimp.org/core/standards/gpl/
         """
+        logging.debug(f"Reading '{file}' for palette.")
+
         with open(file, "rt") as fh:
             line = fh.readline().rstrip()
             if line != "GIMP Palette":
@@ -64,13 +67,21 @@ class DoomPalette:
 
             return self._read_gimp_colors(fh)
 
-    def add_close_color(self, rgb: int) -> None:
+    def add_close_color(self, rgb: int) -> int:
+        """
+        Seek out the closest color to a given palette index.
+        """
+        logging.debug(f"Finding color close to {rgb:06x}")
+
         r, g, b = rgb_unpack(rgb)
 
         closest_index: int | None = None
         closest_distsq: float = float("inf")
         for color in self.playpal.keys():
-            cr, cg, cb = rgb_unpack(color)
+            # [LM] Calling rgb_unpack slows this down
+            cr = rgb & 0xFF
+            cg = (rgb >> 8) & 0xFF
+            cb = (rgb >> 16) & 0xFF
 
             dr = r - cr
             dg = g - cg
@@ -83,3 +94,4 @@ class DoomPalette:
 
         assert closest_index is not None
         self.playpal[rgb] = closest_index
+        return closest_index

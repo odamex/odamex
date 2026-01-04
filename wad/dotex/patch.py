@@ -6,6 +6,7 @@
 #
 
 import io
+import logging
 import struct
 from array import array
 from pathlib import Path
@@ -46,6 +47,7 @@ class DoomPatch:
         """
         Given a path, read in the image data.
         """
+        logging.debug(f"Reading '{file}' for patch.")
 
         reader = png.Reader(filename=file)
         self.name = file.stem
@@ -81,6 +83,8 @@ class DoomPatch:
 
         Based on the pseudo-code from https://doomwiki.org/wiki/Picture_format
         """
+        logging.debug(f"Writing patch '{self.name}'.")
+
         data = io.BytesIO()
 
         # Patch header
@@ -127,8 +131,7 @@ class DoomPatch:
                 if a > 0:
                     icolor = pal.playpal.get(rgb)
                     if icolor is None:
-                        pal.add_close_color(rgb)
-                        icolor = pal.playpal[rgb]
+                        icolor = pal.add_close_color(rgb)
                 else:
                     icolor = None
 

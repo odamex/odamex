@@ -112,22 +112,22 @@ def main(output_file: str, manifest: str):
 
     ctx = BuildContext(config=config, pal=palette, wad=odamex_wad)
 
-    logging.info("Packing lumps...")
+    logging.info("Packing lumps.")
     pack_lumps(ctx)
 
-    logging.info("Packing graphics...")
+    logging.info("Packing graphics.")
     pack_graphics(ctx)
 
-    logging.info("Packing sprites...")
+    logging.info("Packing sprites.")
     pack_sprites(ctx)
 
-    logging.info("Packing flats...")
+    logging.info("Packing flats.")
     pack_flats(ctx)
 
-    logging.info(f"Finalizing '{output_path.name}'...")
+    logging.info(f"Finalizing '{output_path.name}'.")
     odamex_wad.finalize()
 
-    logging.info("...Done!")
+    logging.info("Done!")
 
 
 if __name__ == "__main__":
@@ -135,6 +135,13 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        default=False,
+        action='store_true',
+        help="verbose logging output"
+    )
     parser.add_argument(
         "-o",
         "--output",
@@ -146,8 +153,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(
-        level=logging.INFO, format="%(relativeCreated)8.3fms %(levelname)s: %(message)s"
+        level=level, format="%(relativeCreated)8.3fms %(levelname)s: %(message)s"
     )
 
     main(args.output, args.manifest)

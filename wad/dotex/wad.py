@@ -6,6 +6,7 @@
 #
 
 import io
+import logging
 import struct
 from dataclasses import dataclass
 from pathlib import Path
@@ -19,16 +20,20 @@ class Lump:
 
 
 class DoomWADWriter:
+    name: str
     handle: io.BufferedRandom
     lumps: list[Lump]
 
     def __init__(self, file: Path):
+        self.name = str(file.name)
         self.lumps = []
         self.handle = open(file, "wb+")
         self.handle.write(b"\x00" * 12)  # Blank WAD header
 
     def write_lump(self, name: str, data: bytes | None = None) -> None:
         """Write out lump data, while also noting its name and location."""
+        logging.debug(f"Writing lump '{name}' to '{self.name}'.")
+
         if data is None:
             self.lumps.append(Lump(filepos=0, size=0, name=name))
             return
@@ -41,6 +46,8 @@ class DoomWADWriter:
         Finalize the WAD file - write out the directory, fix up the header
         to match, then close the file.
         """
+        logging.debug(f"Finalizing WAD '{self.name}'.")
+
         # Pad to 4 bytes.
         while self.handle.tell() % 4 != 0:
             self.handle.write(b"\x00")
