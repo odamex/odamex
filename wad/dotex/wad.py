@@ -10,6 +10,7 @@ import logging
 import struct
 from dataclasses import dataclass
 from pathlib import Path
+from typing import List, Optional
 
 
 @dataclass
@@ -22,7 +23,7 @@ class Lump:
 class DoomWADWriter:
     name: str
     handle: io.BufferedRandom
-    lumps: list[Lump]
+    lumps: List[Lump]
 
     def __init__(self, file: Path):
         self.name = str(file.name)
@@ -30,7 +31,7 @@ class DoomWADWriter:
         self.handle = open(file, "wb+")
         self.handle.write(b"\x00" * 12)  # Blank WAD header
 
-    def write_lump(self, name: str, data: bytes | None = None) -> None:
+    def write_lump(self, name: str, data: Optional[bytes] = None) -> None:
         """Write out lump data, while also noting its name and location."""
         logging.debug(f"Writing lump '{name}' to '{self.name}'.")
 

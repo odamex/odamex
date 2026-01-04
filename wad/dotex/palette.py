@@ -8,12 +8,13 @@
 import io
 import logging
 from pathlib import Path
+from typing import Dict
 
 from dotex.util import rgb_pack, rgb_unpack
 
 
 class DoomPalette:
-    playpal: dict[int, int]
+    playpal: Dict[int, int]
 
     def __init__(self):
         self.playpal = {}

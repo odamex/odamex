@@ -5,8 +5,8 @@
 # Released into the Public Domain, see UNLICENSE.txt
 #
 
-import logging
 import io
+import logging
 import struct
 from array import array
 from pathlib import Path

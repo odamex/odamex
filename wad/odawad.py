@@ -139,8 +139,8 @@ if __name__ == "__main__":
         "-v",
         "--verbose",
         default=False,
-        action='store_true',
-        help="verbose logging output"
+        action="store_true",
+        help="verbose logging output",
     )
     parser.add_argument(
         "-o",
