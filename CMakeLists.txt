@@ -14,7 +14,7 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-project(Odamex VERSION 12.0.0)
+project(Odamex VERSION 12.1.0)
 
 include(CMakeDependentOption)
 
@@ -76,8 +76,8 @@ if(NOT APPLE AND NOT WIN32)
   add_definitions(-DODAMEX_INSTALL_DATADIR="${ODAMEX_INSTALL_DATADIR}")
 endif()
 
-set(PROJECT_COPYRIGHT "2006-2025")
-set(PROJECT_RC_VERSION "12,0,0,0")
+set(PROJECT_COPYRIGHT "2006-2026")
+set(PROJECT_RC_VERSION "12,1,0,0")
 set(PROJECT_COMPANY "The Odamex Team")
 
 # Include early required commands for specific systems
