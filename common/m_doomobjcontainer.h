@@ -35,7 +35,7 @@
 
 #include "i_system.h"
 #include "m_stacktrace.h"
-#include <nonstd/span.hpp>
+#include <span>
 #include <functional>
 #include <unordered_map>
 #include <vector>
@@ -166,7 +166,7 @@ public:
 		return *(this->m_lookuptable[idx] = m_inordertable.back().get());
 	}
 
-	void insert(nonstd::span<ObjType> objs, IdxType start_idx)
+	void insert(std::span<ObjType> objs, IdxType start_idx)
 	{
 		IdxType idx = start_idx;
 		reserve(m_lookuptable.size() + objs.size()); // reserve is not additive
@@ -175,7 +175,7 @@ public:
 	}
 
 	template <typename T = ObjType, typename = std::enable_if_t<std::is_same_v<T, std::string>>>
-	void insert(nonstd::span<const char*> objs, IdxType start_idx)
+	void insert(std::span<const char*> objs, IdxType start_idx)
 	{
 		IdxType idx = start_idx;
 		reserve(m_lookuptable.size() + objs.size()); // reserve is not additive

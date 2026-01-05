@@ -28,7 +28,7 @@
 #include <variant>
 #include <string.h>
 #include <nonstd/scope.hpp>
-#include <nonstd/span.hpp>
+#include <span>
 
 #include "cmdlib.h"
 #include "c_dispatch.h"
@@ -474,7 +474,7 @@ static constexpr struct
 	{"[HELPER]", PatchHelper},
 };
 
-static bool HandleKey(nonstd::span<const Key> keys, void* structure, std::string_view key, int value,
+static bool HandleKey(std::span<const Key> keys, void* structure, std::string_view key, int value,
                       const int structsize);
 static void BackupData(void);
 
@@ -679,7 +679,7 @@ static void HandleMode(std::string_view header, DehScanner& scanner)
 	while (scanner.getNextKeyValue());
 }
 
-static bool HandleKey(nonstd::span<const Key> keys, void* structure, std::string_view key, int value,
+static bool HandleKey(std::span<const Key> keys, void* structure, std::string_view key, int value,
                       const int structsize)
 {
 	for (const auto& keyit : keys)
