@@ -273,8 +273,6 @@ void SpreeManager::setSpreeBreaker(const AActor* source, const player_t* target)
 	#endif
 
 	spreeBreaker = breaker;
-
-	return;
 }
 
 bool SpreeManager::hasSpree(const int playerid)
@@ -293,7 +291,6 @@ void SpreeManager::removeSpree(const int playerid)
 		return;
 
 	spreeRecord.erase(playerid);
-	return;
 }
 
 int SpreeManager::getSpreeLevelByKills(const int kills)
@@ -452,20 +449,22 @@ void SpreeManager::expireOldSprees()
 
 const SpreeRecord_t& SpreeManager::getLatestSpreeRecord(const int notPlayerId)
 {
-	SpreeRecord_t record = emptyRecord;
+	if (spreeRecord.empty())
+		return emptyRecord;
 
-	for (auto& it : spreeRecord)
-	{
-		if (it.first == notPlayerId)
-			continue;
+	auto it = std::max_element(spreeRecord.begin(), spreeRecord.end(),
+	                           [notPlayerId](const auto& a, const auto& b) {
+		                           if (a.first == notPlayerId)
+			                           return true;
+		                           if (b.first == notPlayerId)
+			                           return false;
+		                           return a.second.spreeStartTic < b.second.spreeStartTic;
+	                           });
 
-		if (it.second.spreeStartTic > record.spreeStartTic)
-		{
-			record = it.second;
-		}
-	}
+	if (it == spreeRecord.end() || it->first == notPlayerId)
+		return emptyRecord;
 
-	return record;
+	return it->second;
 }
 
 // ==========================================================
@@ -490,7 +489,6 @@ void SpreeManager::erasePoints(const int playerid)
 		return;
 
 	pointsSinceLastDeath.erase(playerid);
-	return;
 }
 
 int SpreeManager::getPoints(const int playerid)
@@ -508,7 +506,6 @@ int SpreeManager::getPoints(const int playerid)
 void SpreeManager::clearPoints()
 {
 	pointsSinceLastDeath.clear();
-	return;
 }
 
 // ==========================================================
