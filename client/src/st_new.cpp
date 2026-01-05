@@ -1664,7 +1664,7 @@ void SpreeHud()
 	// As big text
 	const player_t& p = displayplayer();
 
-	const SpreeRecord_t spree_r = manager.getSpreeRecord(p.id);
+	const SpreeRecord_t& spree_r = manager.getSpreeRecord(p.id);
 
 	// Main spree text
 	if (spree_r.playerId != -1 && !spree_r.stillDominating)
@@ -1674,8 +1674,8 @@ void SpreeHud()
 
 	// If we're not still dominating, check if someone else has a spree.
 	// We'll get the spree breaker as well, to compare and see which one to display.
-	const SpreeRecord_t other_spree_r = manager.getLatestSpreeRecord(p.id);
-	const SpreeBreaker_t global_spree_breaker = manager.getSpreeBreaker();
+	const SpreeRecord_t& other_spree_r = manager.getLatestSpreeRecord(p.id);
+	const SpreeBreaker_t& global_spree_breaker = manager.getSpreeBreaker();
 
 	bool otherPlayerValid = false;
 	bool spreeBreakerValid = false;
@@ -1761,12 +1761,12 @@ void MultiKillHud()
 		return;
 
 	const player_t& p = displayplayer();
-	const MultiKillTics_s tics = MultiKillManager::getInstance().getMultiKills(p.id);
+	const MultiKillTics_s& tics = MultiKillManager::getInstance().getMultiKills(p.id);
 
 	// Display the current display player's multi kills
 	if (tics.multiKills > 1 && ::gametic - tics.lastKillTime < 4 * TICRATE)
 	{
-		const MultiKillLevel_s multi =
+		const MultiKillLevel_s& multi =
 		    MultiKillManager::getInstance().getMultiKillLevel(tics.multiKills);
 		multiKillLines_t line;
 

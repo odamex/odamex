@@ -27,6 +27,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <algorithm>
 
 /// <summary>
 /// Type of spree breaker to determine the spree obituary used.
