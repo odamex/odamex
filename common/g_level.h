@@ -97,9 +97,9 @@ class FBehavior;
 
 struct bossaction_t
 {
-	int type      = -1;
-	short special = 0;
-	short tag     = 0;
+	int32_t type    = MT_NULL;
+	int16_t special = 0;
+	int16_t tag     = 0;
 };
 
 // struct that contains a FarmHash 128-bit fingerprint.
