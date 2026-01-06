@@ -3546,26 +3546,17 @@ void A_Explode (AActor *thing)
 void A_BossDeath(AActor *actor)
 {
 	// make sure there is a player alive for victory
-	Players::const_iterator it = players.begin();
-	for (; it != players.end(); ++it)
-	{
-		if (it->ingame() && it->health > 0)
-			break;
-	}
-
-	if (it == players.end())
+	if (std::none_of(players.begin(), players.end(), [](const player_t& p){ return p.ingame() && p.health > 0; }))
 		return; // no one left alive, so do not end game
 
 	if (!level.bossactions.empty())
 	{
-		std::vector<bossaction_t>::iterator ba = level.bossactions.begin();
-
-		// see if the BossAction applies to this type
-		for (; ba != level.bossactions.end(); ++ba)
-		{
-			if (ba->type == actor->type)
-				break;
-		}
+		// see if a BossAction applies to this type
+		const auto ba = std::find_if(level.bossactions.begin(), level.bossactions.end(),
+			[&actor](bossaction_t ba){
+				return (ba.type == actor->type) || (ba.flags & actor->flags3);
+			}
+		);
 		if (ba == level.bossactions.end())
 			return;
 
@@ -3582,26 +3573,24 @@ void A_BossDeath(AActor *actor)
 			}
 		}
 
-		ba = level.bossactions.begin();
-
-		for (; ba != level.bossactions.end(); ++ba)
+		for (const bossaction_t& ba : level.bossactions)
 		{
-			if (ba->type == actor->type)
+			if ((ba.type == actor->type) || (ba.flags & actor->flags3))
 			{
 				line_t ld;
 
 				if (map_format.getZDoom())
 				{
 					maplinedef_t mld;
-					mld.special = (ba->special);
-					mld.tag = (ba->tag);
+					mld.special = (ba.special);
+					mld.tag = (ba.tag);
 
 					P_TranslateLineDef(&ld, &mld);
 				}
 				else
 				{
-					ld.special = ba->special;
-					ld.id = ba->tag;
+					ld.special = ba.special;
+					ld.id = ba.tag;
 				}
 
 				if (!P_UseSpecialLine(actor, &ld, 0, true))
