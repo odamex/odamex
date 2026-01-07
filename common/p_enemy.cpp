@@ -3540,6 +3540,39 @@ void A_Explode (AActor *thing)
 }
 
 //
+// P_Massacre
+// Kill all monsters in the current level
+// Currently only used by A_BossDeath for specialaction_killmonsters
+//
+int P_Massacre()
+{
+	int killcount = 0;
+	AActor* actor;
+	TThinkerIterator<AActor> it;
+	while ( (actor = it.Next()) )
+	{
+		if ((actor->flags & MF_SHOOTABLE) && (actor->flags & MF_COUNTKILL ||
+		    (actor->type == MT_SKULL)))
+		{
+			if (actor->health > 0)
+			{
+				killcount++;
+				actor->flags2 &= ~(MF2_DORMANT | MF2_INVULNERABLE);
+				P_DamageMobj(actor, nullptr, nullptr, 10000);
+			}
+			if (actor->type == MT_PAIN)
+			{
+				// todo: this is based on woof and zdoom behavior, but doesn't
+				// really account for dehacked adding other spawn-on-death monsters
+				A_Fall(actor);
+				P_SetMobjState(actor, S_PAIN_DIE6);
+			}
+		}
+	}
+	return killcount;
+}
+
+//
 // A_BossDeath
 // Possibly trigger special effects if on a boss level
 //
@@ -3577,6 +3610,13 @@ void A_BossDeath(AActor *actor)
 		{
 			if ((ba.type == actor->type) || (ba.flags & actor->flags3))
 			{
+				// TODO: if a standardized line special for massacre is introduced, use that instead
+				if (ba.special == 280)
+				{
+					P_Massacre();
+					continue;
+				}
+
 				line_t ld;
 
 				if (map_format.getZDoom())

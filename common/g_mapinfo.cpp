@@ -927,8 +927,7 @@ void MIType_SpecialAction_ExitLevel(OScanner& os, bool newStyleMapInfo, void* da
 		}
 	}
 
-	bossactionvector.emplace_back();
-	bossaction_t& action = bossactionvector.back();
+	bossaction_t& action = bossactionvector.emplace_back();
 	action.special = 11;
 	action.tag = 0;
 }
@@ -949,8 +948,7 @@ void MIType_SpecialAction_OpenDoor(OScanner& os, bool newStyleMapInfo, void* dat
 		}
 	}
 
-	bossactionvector.emplace_back();
-	bossaction_t& action = bossactionvector.back();
+	bossaction_t& action = bossactionvector.emplace_back();
 	action.special = 29;
 	action.tag = 666;
 }
@@ -961,6 +959,8 @@ void MIType_SpecialAction_LowerFloor(OScanner& os, bool newStyleMapInfo, void* d
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
 
+	// TODO: need to make this just add a special, not modify the others
+	// and it needs to check for another bossactions and use the type of them, for various orderings
 	for (auto& bossaction : bossactionvector)
 	{
 		if (bossaction.type != MT_NULL)
@@ -971,8 +971,7 @@ void MIType_SpecialAction_LowerFloor(OScanner& os, bool newStyleMapInfo, void* d
 		}
 	}
 
-	bossactionvector.emplace_back();
-	bossaction_t& action = bossactionvector.back();
+	bossaction_t& action = bossactionvector.emplace_back();
 	action.special = 23;
 	action.tag = 666;
 }
@@ -981,7 +980,19 @@ void MIType_SpecialAction_LowerFloor(OScanner& os, bool newStyleMapInfo, void* d
 void MIType_SpecialAction_KillMonsters(OScanner& os, bool newStyleMapInfo, void* data,
                                     unsigned int flags, unsigned int flags2)
 {
-	// todo
+	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
+
+	for (auto& bossaction : bossactionvector)
+	{
+		if (bossaction.type != MT_NULL)
+		{
+			bossaction.special = 280;
+			return;
+		}
+	}
+
+	bossaction_t& action = bossactionvector.emplace_back();
+	action.special = 280;
 }
 
 // border around smaller screen sizes
