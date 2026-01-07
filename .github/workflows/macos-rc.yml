@@ -120,6 +120,7 @@ jobs:
         curl -L -o SDL2_mixer.tar.gz \
           "https://github.com/libsdl-org/SDL_mixer/releases/download/release-${{ env.sdl2_mixer_version }}/SDL2_mixer-${{ env.sdl2_mixer_version }}.tar.gz"
         tar -xf SDL2_mixer.tar.gz
+        bash "SDL2_mixer-${{ env.sdl2_mixer_version }}/external/download.sh"
         cmake -S "SDL2_mixer-${{ env.sdl2_mixer_version }}" -B build-sdl2-mixer -GNinja \
           -DCMAKE_INSTALL_PREFIX="${DEPS_PREFIX}" \
           -DCMAKE_PREFIX_PATH="${DEPS_PREFIX}" \
