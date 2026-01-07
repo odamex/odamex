@@ -921,13 +921,6 @@ void MIType_SpecialAction(OScanner& os, bool newStyleMapInfo, void* data,
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
 
-	if (bossactionvector.empty())
-	{
-		bossaction_t& action = bossactionvector.emplace_back();
-		action.special = SPECIAL;
-		action.tag = TAG;
-	}
-
 	for (auto& bossaction : bossactionvector)
 	{
 		if (bossaction.special == 0)
@@ -937,6 +930,10 @@ void MIType_SpecialAction(OScanner& os, bool newStyleMapInfo, void* data,
 			return;
 		}
 	}
+
+	bossaction_t& action = bossactionvector.emplace_back();
+	action.special = SPECIAL;
+	action.tag = TAG;
 }
 
 // border around smaller screen sizes
