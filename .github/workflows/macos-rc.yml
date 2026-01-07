@@ -164,8 +164,21 @@ jobs:
       shell: bash
       run: |
         set -euo pipefail
-        perl -0pi -e 's/set\\(PLATFORM_C_FLAGS \\$\\{PLATFORM_C_FLAGS\\} -arch \\$\\{CMAKE_OSX_ARCHITECTURES\\}\\)/foreach(arch \\$\\{CMAKE_OSX_ARCHITECTURES\\})\\n      set(PLATFORM_C_FLAGS \\$\\{PLATFORM_C_FLAGS\\} -arch \\$\\{arch\\})\\n    endforeach()/s' \
-          libraries/libpng/scripts/genout.cmake.in
+        python - <<'PY'
+        from pathlib import Path
+
+        path = Path("libraries/libpng/scripts/genout.cmake.in")
+        text = path.read_text()
+        needle = "set(PLATFORM_C_FLAGS ${PLATFORM_C_FLAGS} -arch ${CMAKE_OSX_ARCHITECTURES})"
+        repl = "\n".join([
+            "foreach(arch ${CMAKE_OSX_ARCHITECTURES})",
+            "      set(PLATFORM_C_FLAGS ${PLATFORM_C_FLAGS} -arch ${arch})",
+            "    endforeach()",
+        ])
+        if needle in text:
+            text = text.replace(needle, repl)
+        path.write_text(text)
+        PY
     - name: Configure build
       run: |
         cmake -S . -B build -GNinja \
