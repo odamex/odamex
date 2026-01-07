@@ -186,6 +186,8 @@ void SpreeManager::setRawSpreeBreaker(const SpreeBreaker_t& breaker, const int l
 		break;
 	}
 
+	setBreakerLanguage(newbreaker, breakerType);
+
 	spreeBreaker = newbreaker;
 }
 
@@ -271,6 +273,8 @@ void SpreeManager::setSpreeBreaker(const AActor* source, const player_t* target)
 	// Broadcast to all clients
 	MSG_BroadcastSVC(CLBUF_NET, SVC_SpreeBreaker(breaker, level, type), -1);
 	#endif
+
+	setBreakerLanguage(breaker, type);
 
 	spreeBreaker = breaker;
 }
@@ -368,6 +372,10 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 		newRecord.spree = getSpreeLevel(newRecord.spreeLevel);
 		newRecord.spreeStartTic = tic;
 		newRecord.stillDominating = false;
+
+		// Apply sexmessage to the broadcast text
+		setSpreeRecordLanguage(newRecord, playerId);
+
 		spreeRecord[playerId] = newRecord;
 #ifdef SERVER_APP
 		// Broadcast to all clients
@@ -392,6 +400,9 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 			{
 				record.spree.spreeBroadcastText = repeatingSpreeText;
 			}
+
+			// Apply sexmessage to the broadcast text
+			setSpreeRecordLanguage(record, playerId);
 #ifdef SERVER_APP
 			// Broadcast to all clients
 			MSG_BroadcastSVC(CLBUF_NET, SVC_Spree(record), -1);
@@ -465,6 +476,96 @@ const SpreeRecord_t& SpreeManager::getLatestSpreeRecord(const int notPlayerId)
 		return emptyRecord;
 
 	return it->second;
+}
+
+void SpreeManager::setSpreeRecordLanguage(SpreeRecord_t& record, const int playerId)
+{
+	// Apply sexmessage to the broadcast text
+	std::string playerColor = TEXTCOLOR_GOLD;
+	char gendermessage[1024];
+	gender_t gender = GENDER_OTHER;
+
+	if (validplayer(idplayer(playerId)))
+	{
+		player_t& player = idplayer(playerId);
+		gender = player.userinfo.gender;
+
+		if (G_IsTeamGame())
+		{
+			TeamInfo* info = GetTeamInfo(player.userinfo.team);
+			playerColor = info->ToastColor;
+		}
+	}
+
+	SexMessage(record.spree.spreeBroadcastText.c_str(), gendermessage, gender, "",
+	           playerColor + record.playerName + TEXTCOLOR_NORMAL,
+	           TextColorFromRange(record.spree.color) + record.spree.spreeText +
+	               TEXTCOLOR_NORMAL);
+
+	record.spree.spreeBroadcastText = gendermessage;
+}
+
+void SpreeManager::setBreakerLanguage(SpreeBreaker_t& breaker,
+                                      const SpreeBreakerType type)
+{
+	std::string endedPlayerColor = TEXTCOLOR_GOLD;
+	std::string enderPlayerColor = TEXTCOLOR_GOLD;
+
+	int enderPlayerId = breaker.spreeEnderPlayerId;
+
+	if (G_IsTeamGame())
+	{
+		TeamInfo* endedinfo = GetTeamInfo(breaker.spreeEndedTeam);
+		endedPlayerColor = endedinfo->ToastColor;
+
+		TeamInfo* enderinfo = GetTeamInfo(breaker.spreeEnderTeam);
+		enderPlayerColor = enderinfo->ToastColor;
+	}
+
+	char gendermessage[1024];
+	gender_t gender = GENDER_OTHER;
+
+	const player_t& endedPlayer = idplayer(breaker.spreeEndedPlayerId);
+
+	if (validplayer(endedPlayer))
+	{
+		gender = endedPlayer.userinfo.gender;
+	}
+
+	// Replace any possible gender or victim/killer/spree text with gendered text
+	SexMessage(breaker.spreeEndedBroadcastText.c_str(), gendermessage, gender,
+	           endedPlayerColor + breaker.spreeEndedName + TEXTCOLOR_NORMAL,
+	           enderPlayerColor + breaker.spreeEnderName + TEXTCOLOR_NORMAL,
+	           TextColorFromRange(breaker.spreeEndedColor) + breaker.spreeEnded +
+	               TEXTCOLOR_NORMAL);
+
+	breaker.spreeEndedBroadcastText = gendermessage;
+
+	//// Get final points and add to the message
+	// int pts = breaker.endedPoints;
+
+	//// Insert commas for every 3 digits
+	// std::string formattedPts = std::to_string(pts);
+
+	// for (int i = formattedPts.size() - 3; i > 0; i -= 3)
+	//{
+	//	formattedPts.insert(i, ",");
+	// }
+
+	// std::string pointsType = "";
+
+	// if (G_IsCoopGame())
+	//{
+	//	pointsType = "dmg";
+	// }
+	// else
+	//{
+	//	pointsType = "frags";
+	// }
+
+	// std::string ptsStr = fmt::sprintf(" (%s %s)", formattedPts, pointsType.c_str());
+
+	// msg += ptsStr;
 }
 
 // ==========================================================
