@@ -906,93 +906,37 @@ void MIType_Special(OScanner& os, bool newStyleMapInfo, void* data, unsigned int
 
 	for (auto& bossaction : bossactionvector)
 	{
-		bossaction.type = TYPE;
-		bossaction.flags = FLAG;
+		// don't overwrite map07special
+		if (bossaction.type != MT_BABY && bossaction.type != MT_FATSO)
+		{
+			bossaction.type = TYPE;
+			bossaction.flags = FLAG;
+		}
 	}
 }
 
-//
-void MIType_SpecialAction_ExitLevel(OScanner& os, bool newStyleMapInfo, void* data,
-                                    unsigned int flags, unsigned int flags2)
+template <int16_t SPECIAL, int16_t TAG = 0>
+void MIType_SpecialAction(OScanner& os, bool newStyleMapInfo, void* data,
+                          unsigned int flags, unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
 
-	for (auto& bossaction : bossactionvector)
+	if (bossactionvector.empty())
 	{
-		if (bossaction.type != MT_NULL)
-		{
-			bossaction.special = 11;
-			bossaction.tag = 0;
-			return;
-		}
+		bossaction_t& action = bossactionvector.emplace_back();
+		action.special = SPECIAL;
+		action.tag = TAG;
 	}
-
-	bossaction_t& action = bossactionvector.emplace_back();
-	action.special = 11;
-	action.tag = 0;
-}
-
-//
-void MIType_SpecialAction_OpenDoor(OScanner& os, bool newStyleMapInfo, void* data,
-                                   unsigned int flags, unsigned int flags2)
-{
-	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
 
 	for (auto& bossaction : bossactionvector)
 	{
-		if (bossaction.type != MT_NULL)
+		if (bossaction.special == 0)
 		{
-			bossaction.special = 29;
-			bossaction.tag = 666;
+			bossaction.special = SPECIAL;
+			bossaction.tag = TAG;
 			return;
 		}
 	}
-
-	bossaction_t& action = bossactionvector.emplace_back();
-	action.special = 29;
-	action.tag = 666;
-}
-
-//
-void MIType_SpecialAction_LowerFloor(OScanner& os, bool newStyleMapInfo, void* data,
-                                    unsigned int flags, unsigned int flags2)
-{
-	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
-
-	// TODO: need to make this just add a special, not modify the others
-	// and it needs to check for another bossactions and use the type of them, for various orderings
-	for (auto& bossaction : bossactionvector)
-	{
-		if (bossaction.type != MT_NULL)
-		{
-			bossaction.special = 23;
-			bossaction.tag = 666;
-			return;
-		}
-	}
-
-	bossaction_t& action = bossactionvector.emplace_back();
-	action.special = 23;
-	action.tag = 666;
-}
-
-//
-void MIType_SpecialAction_KillMonsters(OScanner& os, bool newStyleMapInfo, void* data,
-                                    unsigned int flags, unsigned int flags2)
-{
-	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
-
-	for (auto& bossaction : bossactionvector)
-	{
-		if (bossaction.type != MT_NULL)
-		{
-			bossaction.special = 280;
-			return;
-		}
-	}
-
-	bossaction_t& action = bossactionvector.emplace_back();
-	action.special = 280;
 }
 
 // border around smaller screen sizes
@@ -1221,9 +1165,10 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "e3m8special", &MIType_Special<MT_NULL, MF3_E3M8BOSS>, &ref.bossactions },
 			{ "e4m6special", &MIType_Special<MT_NULL, MF3_E4M6BOSS>, &ref.bossactions },
 			{ "e4m8special", &MIType_Special<MT_NULL, MF3_E4M8BOSS>, &ref.bossactions },
-			{ "specialaction_exitlevel", &MIType_SpecialAction_ExitLevel, &ref.bossactions },
-			{ "specialaction_opendoor", &MIType_SpecialAction_OpenDoor, &ref.bossactions },
-			{ "specialaction_lowerfloor", &MIType_SpecialAction_LowerFloor, &ref.bossactions },
+			{ "specialaction_exitlevel", &MIType_SpecialAction<11>, &ref.bossactions },
+			{ "specialaction_opendoor", &MIType_SpecialAction<29, 666>, &ref.bossactions },
+			{ "specialaction_lowerfloor", &MIType_SpecialAction<23, 666>, &ref.bossactions },
+			{ "specialaction_killmonsters", &MIType_SpecialAction<280>, &ref.bossactions },
 			{ "lightning" },
 			{ "fadetable", &MIType_LumpName, &ref.fadetable },
 			{ "evenlighting", &MIType_SetFlag, &ref.flags, LEVEL_EVENLIGHTING },
