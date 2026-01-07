@@ -112,8 +112,22 @@ namespace {
 
             ~CommandStreamReader()
             {
+#ifdef _WIN32
                 // Detach because we don't have a nice way of terminating our thread yet.
                 m_thread.detach();
+#else
+                // The thread is going to be asleep in read() via std::getline() for the VAST
+                // majority of its lifetime, or in pthread_cond_wait() via the condition_variable.
+                // Pthreads specifies both as cancelation points, so we're good to cancel and join.
+                if (pthread_cancel(m_thread.native_handle()) == 0)
+                {
+                    m_thread.join();
+                }
+                else
+                {
+                    m_thread.detach();
+                }
+#endif
             }
 
             void ThreadMain()
