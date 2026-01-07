@@ -36,6 +36,7 @@ function(lib_buildgen)
     -S "${_SRCDIR}"
     -B "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
     -G "${CMAKE_GENERATOR}"
+    "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
     "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
     "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
     "-DCMAKE_INSTALL_LIBDIR=lib") # Without this, CentOS installs into lib64
