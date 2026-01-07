@@ -1484,67 +1484,11 @@ static void LevelStateHorde(levelStateLines_t& lines)
 	lines.lucent = lucentFade(tics, TICRATE * 3, TICRATE * 4);
 }
 
-void DisplaySmallSpreeBreaker(SpreeBreaker_t breaker)
+void DisplaySmallSpreeBreaker(const SpreeBreaker_t& breaker)
 {
 	smallSpreeLine_t line;
 
-	player_t& endedPlayer = idplayer(breaker.spreeEndedPlayerId);
-
-	if (!validplayer(endedPlayer))
-		return;
-
-	std::string endedPlayerColor = TEXTCOLOR_GOLD;
-	std::string enderPlayerColor = TEXTCOLOR_GOLD;
-
-	int enderPlayerId = breaker.spreeEnderPlayerId;
-
-	if (G_IsTeamGame())
-	{
-		TeamInfo* endedinfo = GetTeamInfo(breaker.spreeEndedTeam);
-		endedPlayerColor = endedinfo->ToastColor;
-
-		TeamInfo* enderinfo = GetTeamInfo(breaker.spreeEnderTeam);
-		enderPlayerColor = enderinfo->ToastColor;
-	}
-
-	char gendermessage[1024];
-	gender_t gender = endedPlayer.userinfo.gender;
-
-	// Replace any possible gender or victim/killer/spree text with gendered text
-	SexMessage(breaker.spreeEndedBroadcastText.c_str(), gendermessage, gender,
-	           endedPlayerColor + breaker.spreeEndedName + TEXTCOLOR_NORMAL,
-	           enderPlayerColor + breaker.spreeEnderName + TEXTCOLOR_NORMAL,
-	           TextColorFromRange(breaker.spreeEndedColor) + breaker.spreeEnded + TEXTCOLOR_NORMAL);
-
-	std::string msg = gendermessage;
-
-	//// Get final points and add to the message
-	//int pts = breaker.endedPoints;
-
-	//// Insert commas for every 3 digits
-	//std::string formattedPts = std::to_string(pts);
-
-	//for (int i = formattedPts.size() - 3; i > 0; i -= 3)
-	//{
-	//	formattedPts.insert(i, ",");
-	//}
-
-	//std::string pointsType = "";
-
-	//if (G_IsCoopGame())
-	//{
-	//	pointsType = "dmg";
-	//}
-	//else
-	//{
-	//	pointsType = "frags";
-	//}
-
-	//std::string ptsStr = fmt::sprintf(" (%s %s)", formattedPts, pointsType.c_str());
-
-	//msg += ptsStr;
-
-	line.spreeText = msg;
+	line.spreeText = breaker.spreeEndedBroadcastText;
 
 	V_SetFont("SMALLFONT");
 
@@ -1568,7 +1512,7 @@ void DisplaySmallSpreeBreaker(SpreeBreaker_t breaker)
 	::hud_transparency.ForceSet(oldtrans);
 }
 
-void DisplayPlayerNormalSpree(SpreeRecord_t record)
+void DisplayPlayerNormalSpree(const SpreeRecord_t& record)
 {
 	// We handle "still dominating" sprees elsewhere.
 	if (record.stillDominating)
@@ -1602,34 +1546,11 @@ void DisplayPlayerNormalSpree(SpreeRecord_t record)
 	V_SetFont("SMALLFONT");
 }
 
-void DisplaySmallSpree(SpreeRecord_t record)
+void DisplaySmallSpree(const SpreeRecord_t& record)
 {
 	smallSpreeLine_t line;
 
-	player_t& player = idplayer(record.playerId);
-
-	if (!validplayer(player))
-		return;
-
-	std::string playerColor = TEXTCOLOR_GOLD;
-
-	if (G_IsTeamGame())
-	{
-		TeamInfo* info = GetTeamInfo(player.userinfo.team);
-		playerColor = info->ToastColor;
-	}
-
-	char gendermessage[1024];
-	gender_t gender = GENDER_OTHER;
-
-	// Replace any possible gender or victim/spree text with gendered text
-	SexMessage(record.spree.spreeBroadcastText.c_str(), gendermessage, gender, "",
-	           playerColor + record.playerName + TEXTCOLOR_NORMAL,
-	           TextColorFromRange(record.spree.color) + record.spree.spreeText + TEXTCOLOR_NORMAL);
-
-	std::string msg = gendermessage;
-
-	line.spreeText = msg;
+	line.spreeText = record.spree.spreeBroadcastText;
 
 	V_SetFont("SMALLFONT");
 
@@ -1664,7 +1585,7 @@ void SpreeHud()
 	// As big text
 	const player_t& p = displayplayer();
 
-	SpreeRecord_t spree_r = manager.getSpreeRecord(p.id);
+	const SpreeRecord_t& spree_r = manager.getSpreeRecord(p.id);
 
 	// Main spree text
 	if (spree_r.playerId != -1 && !spree_r.stillDominating)
@@ -1674,8 +1595,8 @@ void SpreeHud()
 
 	// If we're not still dominating, check if someone else has a spree.
 	// We'll get the spree breaker as well, to compare and see which one to display.
-	SpreeRecord_t other_spree_r = manager.getLatestSpreeRecord(p.id);
-	SpreeBreaker_t global_spree_breaker = manager.getSpreeBreaker();
+	const SpreeRecord_t& other_spree_r = manager.getLatestSpreeRecord(p.id);
+	const SpreeBreaker_t& global_spree_breaker = manager.getSpreeBreaker();
 
 	bool otherPlayerValid = false;
 	bool spreeBreakerValid = false;
@@ -1761,12 +1682,12 @@ void MultiKillHud()
 		return;
 
 	const player_t& p = displayplayer();
-	const MultiKillTics_s tics = MultiKillManager::getInstance().getMultiKills(p.id);
+	const MultiKillTics_s& tics = MultiKillManager::getInstance().getMultiKills(p.id);
 
 	// Display the current display player's multi kills
 	if (tics.multiKills > 1 && ::gametic - tics.lastKillTime < 4 * TICRATE)
 	{
-		MultiKillLevel_s multi =
+		const MultiKillLevel_s& multi =
 		    MultiKillManager::getInstance().getMultiKillLevel(tics.multiKills);
 		multiKillLines_t line;
 

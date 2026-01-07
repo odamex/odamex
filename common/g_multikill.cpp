@@ -91,7 +91,7 @@ int MultiKillManager::getHighestMultiKillLevel()
 	return multiKillLevels.size() - 1;
 }
 
-MultiKillLevel_s& MultiKillManager::getMultiKillLevel(const int level)
+const MultiKillLevel_s& MultiKillManager::getMultiKillLevel(const int level)
 {
 	int newlevel = level;
 	if (getHighestMultiKillLevel() <= 0)
@@ -115,7 +115,7 @@ void MultiKillManager::setMultiKillLevels(const std::vector<MultiKillLevel_s> mu
 // Multi kill bookkeeping functions start here.
 // ==========================================================
 
-MultiKillTics_s& MultiKillManager::getMultiKills(const int playerid)
+const MultiKillTics_s& MultiKillManager::getMultiKills(const int playerid)
 {
 	if (mutliKillPlayerDict.find(playerid) == mutliKillPlayerDict.end())
 	{
@@ -143,8 +143,6 @@ void MultiKillManager::addKill(const int playerid)
 		status.multiKills = mutliKillPlayerDict[playerid].multiKills + 1;
 		mutliKillPlayerDict[playerid] = status;
 	}
-
-	return;
 }
 
 void MultiKillManager::ticPlayerMultiKill(const int playerid)
@@ -177,13 +175,11 @@ void MultiKillManager::eraseMultiKills(const int playerid)
 	}
 
 	mutliKillPlayerDict.erase(playerid);
-	return;
 }
 
 void MultiKillManager::clearMultiTics()
 {
 	mutliKillPlayerDict.clear();
-	return;
 }
 
 // ==========================================================
@@ -206,7 +202,7 @@ void P_ProcessMultiKills(const AActor* source, const player_t* target)
 
 	// Now get the player's new multi kill total
 	// To see what sound we should play, if any.
-	MultiKillTics_s status = manager.getMultiKills(source->player->id);
+	const MultiKillTics_s& status = manager.getMultiKills(source->player->id);
 
 	if (displayplayer_id == source->player->id && status.multiKills > 1)
 	{

@@ -27,6 +27,10 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <algorithm>
+
+void SexMessage(const char* from, char* to, gender_t gender, std::string_view victim,
+                std::string_view killer, std::string_view spree);
 
 /// <summary>
 /// Type of spree breaker to determine the spree obituary used.
@@ -194,7 +198,7 @@ public:
 	/// </summary>
 	/// <param name="playerId">Player ID of the player to look up the spree record for.</param>
 	/// <returns>The player's spree record, or a zeroed out struct.</returns>
-	SpreeRecord_t& getSpreeRecord(const int playerId);
+	const SpreeRecord_t& getSpreeRecord(const int playerId);
 
 	/// <summary>
 	/// Gets the latest spree record excluding the current player.
@@ -202,7 +206,7 @@ public:
 	/// <param name="notPlayerId">Get any spree except for this player id</param>
 	/// <returns>The latest spree record that isn't the specified player id's,
 	/// or an empty one if not found.</returns>
-	SpreeRecord_t& getLatestSpreeRecord(const int notPlayerId);
+	const SpreeRecord_t& getLatestSpreeRecord(const int notPlayerId);
 
 	/// <summary>
 	/// Records a single kill for a player, adds it to the kills since last death dictionary,
@@ -233,7 +237,7 @@ public:
 	/// Gets the current SpreeBreaker_t object.
 	/// </summary>
 	/// <returns>The current SpreeBreaker_t object.</returns>
-	SpreeBreaker_t& getSpreeBreaker();
+	const SpreeBreaker_t& getSpreeBreaker();
 
 	/// <summary>
 	/// Using the spree ender and the player whomst spree has ended, this function handles logic
@@ -341,7 +345,7 @@ private:
 	/// </summary>
 	/// <param name="level">Spree level to get data for.</param>
 	/// <returns>The spree level specified, or a zeroed out struct if invalid.</returns>
-	Spree_s& getSpreeLevel(const int level); // Gets the local spree level (with text and color)
+	const Spree_s& getSpreeLevel(const int level); // Gets the local spree level (with text and color)
 
 	/// <summary>
 	/// Gets the kill spree interval for players -- as in, the amount of kills needed to upgrade to a new spree level.
@@ -361,6 +365,22 @@ private:
 	/// </summary>
 	/// <returns>The highest spree level possible in the current configuration.</returns>
 	int getHighestSpreeLevel();
+
+	/// <summary>
+	/// Runs sexmessage on a spreebreaker record to get the final broadcast text.
+	/// </summary>
+	/// <param name="breaker">Spree breaker to modify</param>
+	/// <param name="type">Type of the spree breaker.</param>
+	void setBreakerLanguage(
+			SpreeBreaker_t& breaker,
+			const SpreeBreakerType type);
+
+	/// <summary>
+	/// Runs sexmessage on a spree record to get the final broadcast text.
+	/// </summary>
+	/// <param name="record">The spree record for the player.</param>
+	/// <param name="playerId">ID of the player who has the spree.</param>
+	void setSpreeRecordLanguage(SpreeRecord_t& record, const int playerId);
 
 	/// <summary>
 	/// Kill spree interval -- how many kills to reach a new spree level. PVP
@@ -418,6 +438,11 @@ private:
 	/// An invalid spree record.
 	/// </summary>
 	SpreeRecord_t emptyRecord;
+
+	/// <summary>
+	/// An empty spree level.
+	/// </summary>
+	Spree_s emptySpree;
 };
 
 /// <summary>
