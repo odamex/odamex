@@ -351,9 +351,8 @@ jobs:
         text = path.read_text()
         needle = "set(PLATFORM_C_FLAGS ${PLATFORM_C_FLAGS} -arch ${CMAKE_OSX_ARCHITECTURES})"
         repl = "\n".join([
-            "foreach(arch ${CMAKE_OSX_ARCHITECTURES})",
-            "      set(PLATFORM_C_FLAGS ${PLATFORM_C_FLAGS} -arch ${arch})",
-            "    endforeach()",
+            "list(GET CMAKE_OSX_ARCHITECTURES 0 _first_arch)",
+            "    set(PLATFORM_C_FLAGS ${PLATFORM_C_FLAGS} -arch ${_first_arch})",
         ])
         if needle in text:
             text = text.replace(needle, repl)
