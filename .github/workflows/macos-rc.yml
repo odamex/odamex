@@ -1,0 +1,192 @@
+name: macOS-Release-Candidate
+
+on:
+  push:
+    branches:
+    - 'release/[0-9]+.[0-9]+.[0-9]+' # Only run on major.minor.patch releases
+
+permissions:
+  contents: write
+
+jobs:
+  pre_job:
+    name: Build Preparation
+    runs-on: ubuntu-latest
+    outputs:
+      build_number: ${{ steps.revlist.outputs.totalCommits }}
+      new_version: ${{ steps.gitversion.outputs.majorMinorPatch }}
+      major: ${{ steps.gitversion.outputs.major }}
+      minor: ${{ steps.gitversion.outputs.minor }}
+      patch: ${{ steps.gitversion.outputs.patch }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
+          fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4.1.0
+        with:
+          versionSpec: '6.x'
+      - name: Determine Version
+        id:   gitversion
+        uses: gittools/actions/gitversion/execute@v4.1.0
+      - name: Get Commits From Source
+        id:   revlist
+        shell: bash
+        run: |
+          commits=$(git rev-list HEAD --count)
+          echo "totalCommits=$commits" >> $GITHUB_OUTPUT
+      - name: Display GitVersion outputs
+        run: |
+          echo "Major: ${{ steps.gitversion.outputs.major }}"
+          echo "Minor: ${{ steps.gitversion.outputs.minor }}"
+          echo "Patch: ${{ steps.gitversion.outputs.patch }}"
+          echo "PreReleaseTag: ${{ steps.gitversion.outputs.preReleaseTag }}"
+          echo "PreReleaseTagWithDash: ${{ steps.gitversion.outputs.preReleaseTagWithDash }}"
+          echo "PreReleaseLabel: ${{ steps.gitversion.outputs.preReleaseLabel }}"
+          echo "PreReleaseNumber: ${{ steps.gitversion.outputs.preReleaseNumber }}"
+          echo "WeightedPreReleaseNumber: ${{ steps.gitversion.outputs.weightedPreReleaseNumber }}"
+          echo "BuildMetaData: ${{ steps.gitversion.outputs.buildMetaData }}"
+          echo "FullBuildMetaData: ${{ steps.gitversion.outputs.fullBuildMetaData }}"
+          echo "MajorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}"
+          echo "SemVer: ${{ steps.gitversion.outputs.semVer }}"
+          echo "AssemblySemVer: ${{ steps.gitversion.outputs.assemblySemVer }}"
+          echo "AssemblySemFileVer: ${{ steps.gitversion.outputs.assemblySemFileVer }}"
+          echo "FullSemVer: ${{ steps.gitversion.outputs.fullSemVer }}"
+          echo "InformationalVersion: ${{ steps.gitversion.outputs.informationalVersion }}"
+          echo "BranchName: ${{ steps.gitversion.outputs.branchName }}"
+          echo "EscapedBranchName: ${{ steps.gitversion.outputs.escapedBranchName }}"
+          echo "Sha: ${{ steps.gitversion.outputs.sha }}"
+          echo "ShortSha: ${{ steps.gitversion.outputs.shortSha }}"
+          echo "VersionSourceSha: ${{ steps.gitversion.outputs.versionSourceSha }}"
+          echo "CommitsSinceVersionSource: ${{ steps.gitversion.outputs.commitsSinceVersionSource }}"
+          echo "UncommittedChanges: ${{ steps.gitversion.outputs.uncommittedChanges }}"
+          echo "CommitDate: ${{ steps.gitversion.outputs.commitDate }}"
+          echo "TotalCommits: ${{ steps.revlist.outputs.totalCommits }}"
+  build-macos-x64:
+    name: Build (x86_64)
+    needs: pre_job
+    runs-on: macos-13
+    env:
+      build_number: ${{ needs.pre_job.outputs.build_number }}
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+    - name: Run Upversion
+      id:   upversion
+      shell: pwsh
+      run:   tools/upversion/upversion.ps1
+      env:
+        MAJORVERSION: ${{ needs.pre_job.outputs.major }}
+        MINORVERSION: ${{ needs.pre_job.outputs.minor }}
+        PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Install dependencies
+      run: brew install ninja sdl2 sdl2_mixer wxwidgets
+    - name: Configure build
+      run: |
+        cmake -S . -B build -GNinja \
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+          -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
+          -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1 \
+          -DCMAKE_OSX_ARCHITECTURES="x86_64" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="10.13"
+    - name: Run build
+      run: cmake --build build
+    - name: Install bundle
+      run: cmake --install build
+    - name: Package DMG
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p dmg-root
+        cp -R build/client/odamex.app dmg-root/Odamex.app
+        ln -s /Applications dmg-root/Applications
+        hdiutil create -volname "Odamex" -srcfolder dmg-root -ov -format UDZO \
+          odamex-macos-x86_64-${{ env.new_version }}-prerelease.${{ env.build_number }}.dmg
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-macOS-x86_64
+        path: odamex-macos-x86_64-${{ env.new_version }}-prerelease.${{ env.build_number }}.dmg
+  build-macos-arm64:
+    name: Build (ARM64)
+    needs: pre_job
+    runs-on: macos-14
+    env:
+      build_number: ${{ needs.pre_job.outputs.build_number }}
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
+    - name: Run Upversion
+      id:   upversion
+      shell: pwsh
+      run:   tools/upversion/upversion.ps1
+      env:
+        MAJORVERSION: ${{ needs.pre_job.outputs.major }}
+        MINORVERSION: ${{ needs.pre_job.outputs.minor }}
+        PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Install dependencies
+      run: brew install ninja sdl2 sdl2_mixer wxwidgets
+    - name: Configure build
+      run: |
+        cmake -S . -B build -GNinja \
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+          -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
+          -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1 \
+          -DCMAKE_OSX_ARCHITECTURES="arm64" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
+    - name: Run build
+      run: cmake --build build
+    - name: Install bundle
+      run: cmake --install build
+    - name: Package DMG
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p dmg-root
+        cp -R build/client/odamex.app dmg-root/Odamex.app
+        ln -s /Applications dmg-root/Applications
+        hdiutil create -volname "Odamex" -srcfolder dmg-root -ov -format UDZO \
+          odamex-macos-arm64-${{ env.new_version }}-prerelease.${{ env.build_number }}.dmg
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-macOS-ARM64
+        path: odamex-macos-arm64-${{ env.new_version }}-prerelease.${{ env.build_number }}.dmg
+  package-and-upload:
+    name: Package and Upload Artifacts
+    runs-on: ubuntu-latest
+    needs: [pre_job, build-macos-x64, build-macos-arm64]
+    env:
+      build_number: ${{ needs.pre_job.outputs.build_number }}
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-tags: true
+    - name: Download x86_64 artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: Odamex-macOS-x86_64
+    - name: Download ARM64 artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: Odamex-macOS-ARM64
+    - name: Create or update prerelease
+      uses: ./.github/actions/update-prerelease
+      env:
+        build_number: ${{ needs.pre_job.outputs.build_number }}
+        new_version: ${{ needs.pre_job.outputs.new_version }}
+      with:
+        build_number: ${{ env.build_number }}
+        new_version: ${{ env.new_version }}
+        files: |
+          ./*.dmg

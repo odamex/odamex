@@ -1,6 +1,5 @@
 # Runs when a release is published
-# Contains every package required for a release except:
-# - MacOS package
+# Contains every package required for a release
 name: Release
 
 on:
@@ -254,6 +253,92 @@ jobs:
         GITHUB_TOKEN: ${{ github.token }}
       with:
         files: odamex-linux-arm64-${{ env.new_version }}.flatpak
+  build-macos-x64:
+    name: macOS Build (x86_64 DMG)
+    needs: pre_job
+    runs-on: macos-13
+    env:
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Install dependencies
+      run: brew install ninja sdl2 sdl2_mixer wxwidgets
+    - name: Configure build
+      run: |
+        cmake -S . -B build -GNinja \
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+          -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
+          -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1 \
+          -DCMAKE_OSX_ARCHITECTURES="x86_64" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="10.13"
+    - name: Run build
+      run: cmake --build build
+    - name: Install bundle
+      run: cmake --install build
+    - name: Package DMG
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p dmg-root
+        cp -R build/client/odamex.app dmg-root/Odamex.app
+        ln -s /Applications dmg-root/Applications
+        hdiutil create -volname "Odamex" -srcfolder dmg-root -ov -format UDZO \
+          odamex-macos-x86_64-${{ env.new_version }}.dmg
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-macOS-x86_64
+        path: odamex-macos-x86_64-${{ env.new_version }}.dmg
+    - name: Upload release binary (x86_64)
+      uses: softprops/action-gh-release@v2.3.4
+      with:
+        files: odamex-macos-x86_64-${{ env.new_version }}.dmg
+  build-macos-arm64:
+    name: macOS Build (ARM64 DMG)
+    needs: pre_job
+    runs-on: macos-14
+    env:
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Install dependencies
+      run: brew install ninja sdl2 sdl2_mixer wxwidgets
+    - name: Configure build
+      run: |
+        cmake -S . -B build -GNinja \
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+          -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
+          -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1 \
+          -DCMAKE_OSX_ARCHITECTURES="arm64" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
+    - name: Run build
+      run: cmake --build build
+    - name: Install bundle
+      run: cmake --install build
+    - name: Package DMG
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p dmg-root
+        cp -R build/client/odamex.app dmg-root/Odamex.app
+        ln -s /Applications dmg-root/Applications
+        hdiutil create -volname "Odamex" -srcfolder dmg-root -ov -format UDZO \
+          odamex-macos-arm64-${{ env.new_version }}.dmg
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-macOS-ARM64
+        path: odamex-macos-arm64-${{ env.new_version }}.dmg
+    - name: Upload release binary (ARM64)
+      uses: softprops/action-gh-release@v2.3.4
+      with:
+        files: odamex-macos-arm64-${{ env.new_version }}.dmg
   package-and-upload-windows:
     name: Package and Upload Artifacts
     runs-on: windows-latest
