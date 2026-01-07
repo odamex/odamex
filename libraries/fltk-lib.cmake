@@ -41,10 +41,32 @@ if(BUILD_CLIENT AND USE_INTERNAL_FLTK)
 
   find_package(FLTK CONFIG)
   if(NOT TARGET fltk::fltk)
-    message(FATAL_ERROR "FLTK target not found.")
+    find_package(FLTK REQUIRED)
+  endif()
+  if(NOT TARGET fltk::fltk)
+    if(FLTK_LIBRARIES)
+      add_library(fltk::fltk INTERFACE IMPORTED GLOBAL)
+      set_target_properties(fltk::fltk PROPERTIES
+        INTERFACE_LINK_LIBRARIES "${FLTK_LIBRARIES}"
+        INTERFACE_INCLUDE_DIRECTORIES "${FLTK_INCLUDE_DIRS}")
+    else()
+      message(FATAL_ERROR "FLTK target not found.")
+    endif()
   endif()
 
   set_target_properties(fltk::fltk PROPERTIES IMPORTED_GLOBAL True)
+  if(NOT TARGET fltk::images)
+    add_library(fltk::images INTERFACE IMPORTED GLOBAL)
+    if(FLTK_IMAGES_LIBRARIES)
+      set_target_properties(fltk::images PROPERTIES
+        INTERFACE_LINK_LIBRARIES "${FLTK_IMAGES_LIBRARIES}"
+        INTERFACE_INCLUDE_DIRECTORIES "${FLTK_INCLUDE_DIRS}")
+    else()
+      set_target_properties(fltk::images PROPERTIES
+        INTERFACE_LINK_LIBRARIES "${FLTK_LIBRARIES}"
+        INTERFACE_INCLUDE_DIRECTORIES "${FLTK_INCLUDE_DIRS}")
+    endif()
+  endif()
   set_target_properties(fltk::images PROPERTIES IMPORTED_GLOBAL True)
   if(WIN32)
     target_link_libraries(fltk::fltk INTERFACE gdiplus)
