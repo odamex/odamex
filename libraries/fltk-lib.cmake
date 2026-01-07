@@ -10,6 +10,11 @@ if(BUILD_CLIENT AND USE_INTERNAL_FLTK)
     "-DFLTK_BUILD_GL=OFF"
 
     "-DFLTK_BUILD_TEST=OFF")
+  if(APPLE)
+    list(APPEND _FLTK_BUILDGEN_PARAMS
+      "-DFLTK_USE_SYSTEM_LIBPNG=ON"
+      "-DFLTK_USE_SYSTEM_ZLIB=ON")
+  endif()
 
   if(USE_INTERNAL_ZLIB)
     # FLTK defaults to the dynamic library, but we want the static lib.
@@ -18,7 +23,8 @@ if(BUILD_CLIENT AND USE_INTERNAL_FLTK)
         "-DZLIB_LIBRARY_RELEASE=${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}libzstatic${libsuffix}")
     else()
       list(APPEND _FLTK_BUILDGEN_PARAMS
-        "-DZLIB_LIBRARY_RELEASE=${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}z${libsuffix}")
+        "-DZLIB_LIBRARY_RELEASE=${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}z${libsuffix}"
+        "-DZLIB_INCLUDE_DIR=${CMAKE_CURRENT_BINARY_DIR}/local/include")
     endif()
   endif()
 
