@@ -302,9 +302,7 @@ int main (int argc, char **argv)
 			I_SetCrashDir(writedir.c_str());
 		}
 
-		const char* CON_FILE = Args.CheckValue("-confile");
-		if (CON_FILE)
-			CON.open(CON_FILE, std::ios::in);
+		M_InitConsoleInputFile(Args.CheckValue("-confile"));
 
 		/*
 		  killough 1/98:
