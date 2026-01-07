@@ -138,6 +138,7 @@ jobs:
           --prefix="${DEPS_PREFIX}" \
           --enable-unicode \
           --with-cocoa \
+          --without-libtiff \
           --enable-universal_binary=arm64,x86_64 \
           --with-macosx-version-min="${{ env.macos_deployment_target }}"
         make -j"$(sysctl -n hw.ncpu)"
