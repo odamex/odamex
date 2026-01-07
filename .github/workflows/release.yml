@@ -253,74 +253,106 @@ jobs:
         GITHUB_TOKEN: ${{ github.token }}
       with:
         files: odamex-linux-arm64-${{ env.new_version }}.flatpak
-  build-macos-x64:
-    name: macOS Build (x86_64 DMG)
-    needs: pre_job
-    runs-on: macos-13
-    env:
-      new_version: ${{ needs.pre_job.outputs.new_version }}
-    steps:
-    - name: Checkout source
-      uses: actions/checkout@v4
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
-    - name: Install dependencies
-      run: brew install ninja sdl2 sdl2_mixer wxwidgets
-    - name: Configure build
-      run: |
-        cmake -S . -B build -GNinja \
-          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-          -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
-          -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1 \
-          -DCMAKE_OSX_ARCHITECTURES="x86_64" \
-          -DCMAKE_OSX_DEPLOYMENT_TARGET="10.13"
-    - name: Run build
-      run: cmake --build build
-    - name: Install bundle
-      run: cmake --install build
-    - name: Package DMG
-      shell: bash
-      run: |
-        set -euo pipefail
-        mkdir -p dmg-root
-        cp -R build/client/odamex.app dmg-root/Odamex.app
-        ln -s /Applications dmg-root/Applications
-        hdiutil create -volname "Odamex" -srcfolder dmg-root -ov -format UDZO \
-          odamex-macos-x86_64-${{ env.new_version }}.dmg
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: Odamex-macOS-x86_64
-        path: odamex-macos-x86_64-${{ env.new_version }}.dmg
-    - name: Upload release binary (x86_64)
-      uses: softprops/action-gh-release@v2.3.4
-      with:
-        files: odamex-macos-x86_64-${{ env.new_version }}.dmg
-  build-macos-arm64:
-    name: macOS Build (ARM64 DMG)
+  build-macos-universal:
+    name: macOS Build (Universal DMG)
     needs: pre_job
     runs-on: macos-14
     env:
       new_version: ${{ needs.pre_job.outputs.new_version }}
+      macos_deployment_target: "11.0"
+      sdl2_version: "2.32.8"
+      sdl2_mixer_version: "2.8.1"
+      wxwidgets_version: "3.2.5"
     steps:
     - name: Checkout source
       uses: actions/checkout@v4
     - name: Checkout submodules
       run: git submodule update --init --recursive
-    - name: Install dependencies
-      run: brew install ninja sdl2 sdl2_mixer wxwidgets
+    - name: Cache macOS universal deps
+      uses: actions/cache@v4
+      with:
+        path: deps/universal
+        key: macos-universal-deps-${{ env.sdl2_version }}-${{ env.sdl2_mixer_version }}-${{ env.wxwidgets_version }}-${{ env.macos_deployment_target }}
+    - name: Build universal deps
+      shell: bash
+      run: |
+        set -euo pipefail
+        export DEPS_PREFIX="${PWD}/deps/universal"
+        if [ -d "${DEPS_PREFIX}/lib" ]; then
+          echo "Using cached dependencies at ${DEPS_PREFIX}"
+          exit 0
+        fi
+        mkdir -p "${DEPS_PREFIX}"
+
+        brew install ninja cmake pkg-config
+
+        curl -L -o SDL2.tar.gz \
+          "https://github.com/libsdl-org/SDL/releases/download/release-${{ env.sdl2_version }}/SDL2-${{ env.sdl2_version }}.tar.gz"
+        tar -xf SDL2.tar.gz
+        cmake -S "SDL2-${{ env.sdl2_version }}" -B build-sdl2 -GNinja \
+          -DCMAKE_INSTALL_PREFIX="${DEPS_PREFIX}" \
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${{ env.macos_deployment_target }}" \
+          -DSDL_SHARED=ON -DSDL_STATIC=OFF
+        cmake --build build-sdl2
+        cmake --install build-sdl2
+
+        curl -L -o SDL2_mixer.tar.gz \
+          "https://github.com/libsdl-org/SDL_mixer/releases/download/release-${{ env.sdl2_mixer_version }}/SDL2_mixer-${{ env.sdl2_mixer_version }}.tar.gz"
+        tar -xf SDL2_mixer.tar.gz
+        cmake -S "SDL2_mixer-${{ env.sdl2_mixer_version }}" -B build-sdl2-mixer -GNinja \
+          -DCMAKE_INSTALL_PREFIX="${DEPS_PREFIX}" \
+          -DCMAKE_PREFIX_PATH="${DEPS_PREFIX}" \
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${{ env.macos_deployment_target }}" \
+          -DSDL2MIXER_VENDORED=ON -DSDL2MIXER_SAMPLES=OFF
+        cmake --build build-sdl2-mixer
+        cmake --install build-sdl2-mixer
+
+        curl -L -o wxwidgets.tar.bz2 \
+          "https://github.com/wxWidgets/wxWidgets/releases/download/v${{ env.wxwidgets_version }}/wxWidgets-${{ env.wxwidgets_version }}.tar.bz2"
+        tar -xf wxwidgets.tar.bz2
+        pushd "wxWidgets-${{ env.wxwidgets_version }}"
+        ./configure \
+          --prefix="${DEPS_PREFIX}" \
+          --enable-unicode \
+          --with-cocoa \
+          --enable-universal_binary=arm64,x86_64 \
+          --with-macosx-version-min="${{ env.macos_deployment_target }}"
+        make -j"$(sysctl -n hw.ncpu)"
+        make install
+        popd
     - name: Configure build
       run: |
         cmake -S . -B build -GNinja \
           -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
           -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1 \
-          -DCMAKE_OSX_ARCHITECTURES="arm64" \
-          -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
+          -DCMAKE_PREFIX_PATH="${PWD}/deps/universal" \
+          -DwxWidgets_CONFIG_EXECUTABLE="${PWD}/deps/universal/bin/wx-config" \
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${{ env.macos_deployment_target }}"
     - name: Run build
       run: cmake --build build
     - name: Install bundle
       run: cmake --install build
+    - name: Bundle shared libraries
+      shell: bash
+      run: |
+        set -euo pipefail
+        app_bin="build/client/odamex.app/Contents/MacOS/odamex"
+        bundle_dir="build/client/odamex.app/Contents/Frameworks"
+        deps_prefix="${PWD}/deps/universal"
+        mkdir -p "${bundle_dir}"
+        deps=$(otool -L "${app_bin}" | awk 'NR>1 {print $1}' | grep "${deps_prefix}" || true)
+        for dep in ${deps}; do
+          base=$(basename "${dep}")
+          if [ ! -f "${bundle_dir}/${base}" ]; then
+            cp "${dep}" "${bundle_dir}/"
+            chmod 644 "${bundle_dir}/${base}"
+          fi
+          install_name_tool -change "${dep}" "@executable_path/../Frameworks/${base}" "${app_bin}"
+        done
     - name: Package DMG
       shell: bash
       run: |
@@ -329,16 +361,16 @@ jobs:
         cp -R build/client/odamex.app dmg-root/Odamex.app
         ln -s /Applications dmg-root/Applications
         hdiutil create -volname "Odamex" -srcfolder dmg-root -ov -format UDZO \
-          odamex-macos-arm64-${{ env.new_version }}.dmg
+          odamex-macos-${{ env.new_version }}.dmg
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Odamex-macOS-ARM64
-        path: odamex-macos-arm64-${{ env.new_version }}.dmg
-    - name: Upload release binary (ARM64)
+        name: Odamex-macOS-universal
+        path: odamex-macos-${{ env.new_version }}.dmg
+    - name: Upload release binary (Universal)
       uses: softprops/action-gh-release@v2.3.4
       with:
-        files: odamex-macos-arm64-${{ env.new_version }}.dmg
+        files: odamex-macos-${{ env.new_version }}.dmg
   package-and-upload-windows:
     name: Package and Upload Artifacts
     runs-on: windows-latest
