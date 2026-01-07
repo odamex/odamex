@@ -340,6 +340,12 @@ jobs:
         make -j"$(sysctl -n hw.ncpu)"
         make install
         popd
+    - name: Patch libpng genout for universal arch flags
+      shell: bash
+      run: |
+        set -euo pipefail
+        perl -0pi -e 's/set\\(PLATFORM_C_FLAGS \\$\\{PLATFORM_C_FLAGS\\} -arch \\$\\{CMAKE_OSX_ARCHITECTURES\\}\\)/foreach(arch \\$\\{CMAKE_OSX_ARCHITECTURES\\})\\n      set(PLATFORM_C_FLAGS \\$\\{PLATFORM_C_FLAGS\\} -arch \\$\\{arch\\})\\n    endforeach()/s' \
+          libraries/libpng/scripts/genout.cmake.in
     - name: Configure build
       run: |
         cmake -S . -B build -GNinja \
