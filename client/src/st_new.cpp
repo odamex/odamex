@@ -1489,63 +1489,7 @@ void DisplaySmallSpreeBreaker(const SpreeBreaker_t& breaker)
 {
 	smallSpreeLine_t line;
 
-	player_t& endedPlayer = idplayer(breaker.spreeEndedPlayerId);
-
-	if (!validplayer(endedPlayer))
-		return;
-
-	std::string endedPlayerColor = TEXTCOLOR_GOLD;
-	std::string enderPlayerColor = TEXTCOLOR_GOLD;
-
-	int enderPlayerId = breaker.spreeEnderPlayerId;
-
-	if (G_IsTeamGame())
-	{
-		TeamInfo* endedinfo = GetTeamInfo(breaker.spreeEndedTeam);
-		endedPlayerColor = endedinfo->ToastColor;
-
-		TeamInfo* enderinfo = GetTeamInfo(breaker.spreeEnderTeam);
-		enderPlayerColor = enderinfo->ToastColor;
-	}
-
-	char gendermessage[1024];
-	gender_t gender = endedPlayer.userinfo.gender;
-
-	// Replace any possible gender or victim/killer/spree text with gendered text
-	SexMessage(breaker.spreeEndedBroadcastText.c_str(), gendermessage, gender,
-	           endedPlayerColor + breaker.spreeEndedName + TEXTCOLOR_NORMAL,
-	           enderPlayerColor + breaker.spreeEnderName + TEXTCOLOR_NORMAL,
-	           TextColorFromRange(breaker.spreeEndedColor) + breaker.spreeEnded + TEXTCOLOR_NORMAL);
-
-	std::string msg = gendermessage;
-
-	//// Get final points and add to the message
-	//int pts = breaker.endedPoints;
-
-	//// Insert commas for every 3 digits
-	//std::string formattedPts = std::to_string(pts);
-
-	//for (int i = formattedPts.size() - 3; i > 0; i -= 3)
-	//{
-	//	formattedPts.insert(i, ",");
-	//}
-
-	//std::string pointsType = "";
-
-	//if (G_IsCoopGame())
-	//{
-	//	pointsType = "dmg";
-	//}
-	//else
-	//{
-	//	pointsType = "frags";
-	//}
-
-	//std::string ptsStr = fmt::sprintf(" (%s %s)", formattedPts, pointsType.c_str());
-
-	//msg += ptsStr;
-
-	line.spreeText = msg;
+	line.spreeText = breaker.spreeEndedBroadcastText;
 
 	V_SetFont("SMALLFONT");
 
@@ -1607,30 +1551,7 @@ void DisplaySmallSpree(const SpreeRecord_t& record)
 {
 	smallSpreeLine_t line;
 
-	player_t& player = idplayer(record.playerId);
-
-	if (!validplayer(player))
-		return;
-
-	std::string playerColor = TEXTCOLOR_GOLD;
-
-	if (G_IsTeamGame())
-	{
-		TeamInfo* info = GetTeamInfo(player.userinfo.team);
-		playerColor = info->ToastColor;
-	}
-
-	char gendermessage[1024];
-	gender_t gender = GENDER_OTHER;
-
-	// Replace any possible gender or victim/spree text with gendered text
-	SexMessage(record.spree.spreeBroadcastText.c_str(), gendermessage, gender, "",
-	           playerColor + record.playerName + TEXTCOLOR_NORMAL,
-	           TextColorFromRange(record.spree.color) + record.spree.spreeText + TEXTCOLOR_NORMAL);
-
-	std::string msg = gendermessage;
-
-	line.spreeText = msg;
+	line.spreeText = record.spree.spreeBroadcastText;
 
 	V_SetFont("SMALLFONT");
 

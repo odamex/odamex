@@ -29,6 +29,9 @@
 #include <map>
 #include <algorithm>
 
+void SexMessage(const char* from, char* to, gender_t gender, std::string_view victim,
+                std::string_view killer, std::string_view spree);
+
 /// <summary>
 /// Type of spree breaker to determine the spree obituary used.
 /// </summary>
@@ -362,6 +365,22 @@ private:
 	/// </summary>
 	/// <returns>The highest spree level possible in the current configuration.</returns>
 	int getHighestSpreeLevel();
+
+	/// <summary>
+	/// Runs sexmessage on a spreebreaker record to get the final broadcast text.
+	/// </summary>
+	/// <param name="breaker">Spree breaker to modify</param>
+	/// <param name="type">Type of the spree breaker.</param>
+	void setBreakerLanguage(
+			SpreeBreaker_t& breaker,
+			const SpreeBreakerType type);
+
+	/// <summary>
+	/// Runs sexmessage on a spree record to get the final broadcast text.
+	/// </summary>
+	/// <param name="record">The spree record for the player.</param>
+	/// <param name="playerId">ID of the player who has the spree.</param>
+	void setSpreeRecordLanguage(SpreeRecord_t& record, const int playerId);
 
 	/// <summary>
 	/// Kill spree interval -- how many kills to reach a new spree level. PVP
