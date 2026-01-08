@@ -5,7 +5,18 @@ on run argv
 	set dmgName to item 1 of argv
 
 	tell application "Finder"
-		tell disk dmgName
+		set targetDisk to missing value
+		repeat with i from 1 to 10
+			try
+				set targetDisk to disk dmgName
+				exit repeat
+			end try
+			delay 1
+		end repeat
+		if targetDisk is missing value then
+			error "Could not find disk " & dmgName
+		end if
+		tell targetDisk
 			open
 			set options to icon view options of container window
 			tell options
