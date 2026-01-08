@@ -25,7 +25,7 @@ on run argv
 				set icon of folder "Odamex" to icon of file ".background:odamex.icns"
 			end try
 
-			make new alias file to POSIX file "/Applications" at disk dmgName with properties {name:"Applications"}
+			make new alias file to POSIX file "/Applications" at targetDisk with properties {name:"Applications"}
 
 			set position of item "Odamex" to {111, 179}
 			set position of item "Applications" to {384, 179}
