@@ -145,9 +145,9 @@ namespace {
 
             void ThreadMain()
             {
+                std::unique_lock lock(m_mutex);
                 while(m_streamRef.good())
                 {
-                    std::unique_lock lock(m_mutex);
                     std::getline(m_streamRef, m_command);
                     if (m_streamRef and not m_command.empty())
                     {
