@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -295,7 +295,7 @@ void M_Ticker(void);
 
 size_t P_NumPlayersInGame();
 void G_PlayerReborn (player_t &player);
-void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
+void P_KillMobj (AActor *source, AActor *target, const AActor *inflictor, bool joinkill);
 void P_SetPsprite (player_t *player, int position, int32_t stnum);
 void P_ExplodeMissile (AActor* mo);
 void P_CalcHeight (player_t *player);
@@ -2170,7 +2170,7 @@ void CL_SendSummonFriendCheat(const char* summon)
 }
 
 
-void PickupMessage (AActor *toucher, const char *message)
+void PickupMessage (const AActor *toucher, const char *message)
 {
 	// Some maps have multiple items stacked on top of each other.
 	// It looks odd to display pickup messages for all of them.
@@ -2191,7 +2191,7 @@ void PickupMessage (AActor *toucher, const char *message)
 //
 // This is used for displaying weaponstay messages, it is inevitably a hack
 // because weaponstay is a hack
-void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
+void WeaponPickupMessage (const AActor *toucher, const weapontype_t &Weapon)
 {
     switch (Weapon)
     {

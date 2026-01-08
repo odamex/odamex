@@ -72,7 +72,7 @@ odaproto::svc::Disconnect SVC_Disconnect(const char* message)
 /**
  * @brief Send information about a player.
  */
-odaproto::svc::PlayerInfo SVC_PlayerInfo(player_t& player)
+odaproto::svc::PlayerInfo SVC_PlayerInfo(const player_t& player)
 {
 	odaproto::svc::PlayerInfo msg;
 
@@ -111,7 +111,7 @@ odaproto::svc::PlayerInfo SVC_PlayerInfo(player_t& player)
 /**
  * @brief Change the location of a player.
  */
-odaproto::svc::MovePlayer SVC_MovePlayer(player_t& player, const int tic)
+odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player, const int tic)
 {
 	odaproto::svc::MovePlayer msg;
 
@@ -162,7 +162,7 @@ odaproto::svc::MovePlayer SVC_MovePlayer(player_t& player, const int tic)
 /**
  * @brief Send the local player position for a client.
  */
-odaproto::svc::UpdateLocalPlayer SVC_UpdateLocalPlayer(AActor& mo, const int tic)
+odaproto::svc::UpdateLocalPlayer SVC_UpdateLocalPlayer(const AActor& mo, const int tic)
 {
 	odaproto::svc::UpdateLocalPlayer msg;
 
@@ -247,7 +247,7 @@ odaproto::svc::PingRequest SVC_PingRequest()
 	return msg;
 }
 
-odaproto::svc::UpdatePing SVC_UpdatePing(player_t& player)
+odaproto::svc::UpdatePing SVC_UpdatePing(const player_t& player)
 {
 	odaproto::svc::UpdatePing msg;
 
@@ -257,7 +257,7 @@ odaproto::svc::UpdatePing SVC_UpdatePing(player_t& player)
 	return msg;
 }
 
-odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
+odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 {
 	odaproto::svc::SpawnMobj msg;
 
@@ -395,7 +395,7 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(AActor* mo)
 	return msg;
 }
 
-odaproto::svc::DisconnectClient SVC_DisconnectClient(player_t& player)
+odaproto::svc::DisconnectClient SVC_DisconnectClient(const player_t& player)
 {
 	odaproto::svc::DisconnectClient msg;
 
@@ -437,7 +437,7 @@ odaproto::svc::LoadMap SVC_LoadMap(const OResFiles& wadnames, const OResFiles& p
 	return msg;
 }
 
-odaproto::svc::ConsolePlayer SVC_ConsolePlayer(player_t& player,
+odaproto::svc::ConsolePlayer SVC_ConsolePlayer(const player_t& player,
                                                const std::string& digest)
 {
 	odaproto::svc::ConsolePlayer msg;
@@ -448,7 +448,7 @@ odaproto::svc::ConsolePlayer SVC_ConsolePlayer(player_t& player,
 	return msg;
 }
 
-odaproto::svc::ExplodeMissile SVC_ExplodeMissile(AActor& mobj)
+odaproto::svc::ExplodeMissile SVC_ExplodeMissile(const AActor& mobj)
 {
 	odaproto::svc::ExplodeMissile msg;
 
@@ -457,7 +457,7 @@ odaproto::svc::ExplodeMissile SVC_ExplodeMissile(AActor& mobj)
 	return msg;
 }
 
-odaproto::svc::RemoveMobj SVC_RemoveMobj(AActor& mobj)
+odaproto::svc::RemoveMobj SVC_RemoveMobj(const AActor& mobj)
 {
 	odaproto::svc::RemoveMobj msg;
 
@@ -466,7 +466,7 @@ odaproto::svc::RemoveMobj SVC_RemoveMobj(AActor& mobj)
 	return msg;
 }
 
-odaproto::svc::UserInfo SVC_UserInfo(player_t& player, int64_t time)
+odaproto::svc::UserInfo SVC_UserInfo(const player_t& player, int64_t time)
 {
 	odaproto::svc::UserInfo msg;
 
@@ -489,7 +489,7 @@ odaproto::svc::UserInfo SVC_UserInfo(player_t& player, int64_t time)
 /**
  * @brief Update mobj data on the client compared to the baseline.
  */
-odaproto::svc::UpdateMobj SVC_UpdateMobj(AActor& mobj)
+odaproto::svc::UpdateMobj SVC_UpdateMobj(const AActor& mobj)
 {
 	odaproto::svc::UpdateMobj msg;
 
@@ -556,7 +556,7 @@ odaproto::svc::UpdateMobj SVC_UpdateMobj(AActor& mobj)
 
 EXTERN_CVAR(sv_sharekeys);
 
-odaproto::svc::SpawnPlayer SVC_SpawnPlayer(player_t& player)
+odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player)
 {
 	odaproto::svc::SpawnPlayer msg;
 
@@ -589,7 +589,7 @@ odaproto::svc::SpawnPlayer SVC_SpawnPlayer(player_t& player)
 	return msg;
 }
 
-odaproto::svc::DamagePlayer SVC_DamagePlayer(player_t& player, AActor* inflictor, int health, int armor)
+odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActor* inflictor, int health, int armor)
 {
 	odaproto::svc::DamagePlayer msg;
 
@@ -606,7 +606,7 @@ odaproto::svc::DamagePlayer SVC_DamagePlayer(player_t& player, AActor* inflictor
 /**
  * @brief Kill a mobj.
  */
-odaproto::svc::KillMobj SVC_KillMobj(AActor* source, AActor* target, AActor* inflictor,
+odaproto::svc::KillMobj SVC_KillMobj(const AActor* source, const AActor* target, const AActor* inflictor,
                                      int mod, bool joinkill)
 {
 	odaproto::svc::KillMobj msg;
@@ -654,7 +654,7 @@ odaproto::svc::KillMobj SVC_KillMobj(AActor* source, AActor* target, AActor* inf
 /**
  * @brief Resurrect a mobj.
  */
-odaproto::svc::RaiseMobj SVC_RaiseMobj(AActor* source, AActor* corpse)
+odaproto::svc::RaiseMobj SVC_RaiseMobj(const AActor* source, const AActor* corpse)
 {
 	odaproto::svc::RaiseMobj msg;
 
@@ -682,7 +682,7 @@ odaproto::svc::RaiseMobj SVC_RaiseMobj(AActor* source, AActor* corpse)
 	return msg;
 }
 
-odaproto::svc::FireWeapon SVC_FireWeapon(player_t& player)
+odaproto::svc::FireWeapon SVC_FireWeapon(const player_t& player)
 {
 	odaproto::svc::FireWeapon msg;
 
@@ -692,7 +692,7 @@ odaproto::svc::FireWeapon SVC_FireWeapon(player_t& player)
 	return msg;
 }
 
-odaproto::svc::UpdateSector SVC_UpdateSector(sector_t& sector)
+odaproto::svc::UpdateSector SVC_UpdateSector(const sector_t& sector)
 {
 	odaproto::svc::UpdateSector msg;
 
@@ -725,7 +725,7 @@ odaproto::svc::Print SVC_Print(printlevel_t level, const std::string& str)
  * @param player Player to send information about.
  * @param flags SVC_PM_* flags to designate what gets sent.
  */
-odaproto::svc::PlayerMembers SVC_PlayerMembers(player_t& player, byte flags)
+odaproto::svc::PlayerMembers SVC_PlayerMembers(const player_t& player, byte flags)
 {
 	odaproto::svc::PlayerMembers msg;
 
@@ -794,7 +794,7 @@ odaproto::svc::TeamMembers SVC_TeamMembers(team_t team)
 	return msg;
 }
 
-odaproto::svc::ActivateLine SVC_ActivateLine(line_t* line, AActor* mo, int side,
+odaproto::svc::ActivateLine SVC_ActivateLine(const line_t* line, const AActor* mo, int side,
                                              LineActivationType type)
 {
 	odaproto::svc::ActivateLine msg;
@@ -992,7 +992,7 @@ odaproto::svc::PlaySound SVC_PlaySound(const PlaySoundType& type, int channel, i
 	return msg;
 }
 
-odaproto::svc::TouchSpecial SVC_TouchSpecial(AActor* mo)
+odaproto::svc::TouchSpecial SVC_TouchSpecial(const AActor* mo)
 {
 	odaproto::svc::TouchSpecial msg;
 
@@ -1004,7 +1004,7 @@ odaproto::svc::TouchSpecial SVC_TouchSpecial(AActor* mo)
 /**
  * @brief Send information about a player
  */
-odaproto::svc::PlayerState SVC_PlayerState(player_t& player)
+odaproto::svc::PlayerState SVC_PlayerState(const player_t& player)
 {
 	odaproto::svc::PlayerState msg;
 
@@ -1031,7 +1031,7 @@ odaproto::svc::PlayerState SVC_PlayerState(player_t& player)
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
-		pspdef_t* psp = &player.psprites[i];
+		const pspdef_t* psp = &player.psprites[i];
 		const int32_t state = psp->state ? psp->state->statenum : 0;
 		odaproto::Player_Psp* plpsp = pl->add_psprites();
 		plpsp->set_statenum(state);
@@ -1084,7 +1084,7 @@ odaproto::svc::ForceTeam SVC_ForceTeam(team_t team)
 	return msg;
 }
 
-odaproto::svc::Switch SVC_Switch(line_t& line, uint32_t state, uint32_t timer)
+odaproto::svc::Switch SVC_Switch(const line_t& line, uint32_t state, uint32_t timer)
 {
 	odaproto::svc::Switch msg;
 
@@ -1160,7 +1160,7 @@ odaproto::svc::CTFEvent SVC_CTFEvent(const flag_score_t event, const team_t targ
 /**
  * @brief Send information about a player who discovered a secret.
  */
-odaproto::svc::SecretEvent SVC_SecretEvent(player_t& player, sector_t& sector)
+odaproto::svc::SecretEvent SVC_SecretEvent(const player_t& player, const sector_t& sector)
 {
 	odaproto::svc::SecretEvent msg;
 
@@ -1246,7 +1246,7 @@ odaproto::svc::LineUpdate SVC_LineUpdate(const line_t& line)
 	return msg;
 }
 
-odaproto::svc::SectorProperties SVC_SectorProperties(sector_t& sector)
+odaproto::svc::SectorProperties SVC_SectorProperties(const sector_t& sector)
 {
 	odaproto::svc::SectorProperties msg;
 
@@ -1362,7 +1362,7 @@ odaproto::svc::LineSideUpdate SVC_LineSideUpdate(const line_t& line, const int s
 	return msg;
 }
 
-odaproto::svc::MobjState SVC_MobjState(AActor* mo)
+odaproto::svc::MobjState SVC_MobjState(const AActor* mo)
 {
 	odaproto::svc::MobjState msg;
 
@@ -1374,7 +1374,7 @@ odaproto::svc::MobjState SVC_MobjState(AActor* mo)
 	return msg;
 }
 
-odaproto::svc::DamageMobj SVC_DamageMobj(AActor* target, const int pain)
+odaproto::svc::DamageMobj SVC_DamageMobj(const AActor* target, const int pain)
 {
 	odaproto::svc::DamageMobj msg;
 
@@ -1385,8 +1385,8 @@ odaproto::svc::DamageMobj SVC_DamageMobj(AActor* target, const int pain)
 	return msg;
 }
 
-odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, line_t* line,
-                                                         AActor* mo, const int (&args)[5])
+odaproto::svc::ExecuteLineSpecial SVC_ExecuteLineSpecial(byte special, const line_t* line,
+                                                         const AActor* mo, const int (&args)[5])
 {
 	odaproto::svc::ExecuteLineSpecial msg;
 
@@ -1435,13 +1435,13 @@ odaproto::svc::ExecuteACSSpecial SVC_ExecuteACSSpecial(const byte special,
 	return msg;
 }
 
-odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(DThinker* thinker)
+odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(const DThinker* thinker)
 {
 	odaproto::svc::ThinkerUpdate msg;
 
 	if (thinker->IsA(RUNTIME_CLASS(DScroller)))
 	{
-		DScroller* scroller = static_cast<DScroller*>(thinker);
+		const DScroller* scroller = static_cast<const DScroller*>(thinker);
 		odaproto::svc::ThinkerUpdate_Scroller* smsg = msg.mutable_scroller();
 		smsg->set_type(scroller->GetType());
 		smsg->set_scroll_x(scroller->GetScrollX());
@@ -1452,7 +1452,7 @@ odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(DThinker* thinker)
 	}
 	else if (thinker->IsA(RUNTIME_CLASS(DFireFlicker)))
 	{
-		DFireFlicker* fireFlicker = static_cast<DFireFlicker*>(thinker);
+		const DFireFlicker* fireFlicker = static_cast<const DFireFlicker*>(thinker);
 		odaproto::svc::ThinkerUpdate_FireFlicker* ffmsg = msg.mutable_fire_flicker();
 		ffmsg->set_sector(fireFlicker->GetSector() - sectors);
 		ffmsg->set_min_light(fireFlicker->GetMinLight());
@@ -1460,7 +1460,7 @@ odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(DThinker* thinker)
 	}
 	else if (thinker->IsA(RUNTIME_CLASS(DFlicker)))
 	{
-		DFlicker* flicker = static_cast<DFlicker*>(thinker);
+		const DFlicker* flicker = static_cast<const DFlicker*>(thinker);
 		odaproto::svc::ThinkerUpdate_Flicker* fmsg = msg.mutable_flicker();
 		fmsg->set_sector(flicker->GetSector() - sectors);
 		fmsg->set_min_light(flicker->GetMinLight());
@@ -1468,7 +1468,7 @@ odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(DThinker* thinker)
 	}
 	else if (thinker->IsA(RUNTIME_CLASS(DLightFlash)))
 	{
-		DLightFlash* lightFlash = static_cast<DLightFlash*>(thinker);
+		const DLightFlash* lightFlash = static_cast<const DLightFlash*>(thinker);
 		odaproto::svc::ThinkerUpdate_LightFlash* lfmsg = msg.mutable_light_flash();
 		lfmsg->set_sector(lightFlash->GetSector() - sectors);
 		lfmsg->set_min_light(lightFlash->GetMinLight());
@@ -1476,7 +1476,7 @@ odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(DThinker* thinker)
 	}
 	else if (thinker->IsA(RUNTIME_CLASS(DStrobe)))
 	{
-		DStrobe* strobe = static_cast<DStrobe*>(thinker);
+		const DStrobe* strobe = static_cast<const DStrobe*>(thinker);
 		odaproto::svc::ThinkerUpdate_Strobe* smsg = msg.mutable_strobe();
 		smsg->set_sector(strobe->GetSector() - sectors);
 		smsg->set_min_light(strobe->GetMinLight());
@@ -1487,13 +1487,13 @@ odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(DThinker* thinker)
 	}
 	else if (thinker->IsA(RUNTIME_CLASS(DGlow)))
 	{
-		DGlow* glow = static_cast<DGlow*>(thinker);
+		const DGlow* glow = static_cast<const DGlow*>(thinker);
 		odaproto::svc::ThinkerUpdate_Glow* gmsg = msg.mutable_glow();
 		gmsg->set_sector(glow->GetSector() - sectors);
 	}
 	else if (thinker->IsA(RUNTIME_CLASS(DGlow2)))
 	{
-		DGlow2* glow2 = static_cast<DGlow2*>(thinker);
+		const DGlow2* glow2 = static_cast<const DGlow2*>(thinker);
 		odaproto::svc::ThinkerUpdate_Glow2* g2msg = msg.mutable_glow2();
 		g2msg->set_sector(glow2->GetSector() - sectors);
 		g2msg->set_start(glow2->GetStart());
@@ -1503,7 +1503,7 @@ odaproto::svc::ThinkerUpdate SVC_ThinkerUpdate(DThinker* thinker)
 	}
 	else if (thinker->IsA(RUNTIME_CLASS(DPhased)))
 	{
-		DPhased* phased = static_cast<DPhased*>(thinker);
+		const DPhased* phased = static_cast<const DPhased*>(thinker);
 		odaproto::svc::ThinkerUpdate_Phased* pmsg = msg.mutable_phased();
 		pmsg->set_sector(phased->GetSector() - sectors);
 		pmsg->set_base_level(phased->GetBaseLevel());
@@ -1638,14 +1638,14 @@ odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde)
 	return msg;
 }
 
-odaproto::svc::NetdemoCap SVC_NetdemoCap(player_t* player)
+odaproto::svc::NetdemoCap SVC_NetdemoCap(const player_t* player)
 {
 	odaproto::svc::NetdemoCap msg;
 
 	odaproto::Actor* act = msg.mutable_actor();
 	odaproto::Player* play = msg.mutable_player();
 
-	AActor* mo = player->mo;
+	const AActor* mo = player->mo;
 
 	player->cmd.serialize(*msg.mutable_player_cmd());
 

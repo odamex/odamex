@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -73,6 +73,7 @@ fixed_t boby;
 EXTERN_CVAR (r_drawplayersprites)
 EXTERN_CVAR (r_softinvulneffect)
 EXTERN_CVAR (r_particles)
+EXTERN_CVAR (r_thingsectorlight);
 
 //
 // INITIALIZATION FUNCTIONS
@@ -453,7 +454,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	return vis;
 }
 
-void R_DrawHitBox(AActor* thing)
+void R_DrawHitBox(const AActor* thing)
 {
 	v3fixed_t vertices[8];
 	static constexpr byte color = 0x80;
@@ -523,7 +524,7 @@ void R_DrawHitBox(AActor* thing)
 // R_ProjectSprite
 // Generates a vissprite for a thing if it might be visible.
 //
-void R_ProjectSprite(AActor *thing, int fakeside)
+void R_ProjectSprite(const AActor *thing, int fakeside)
 {
 	int 				lump;
 	unsigned int		rot;
@@ -689,7 +690,8 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 	// Well, now it will be done.
 	sec->validcount = validcount;
 
-	int lightnum = (lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
+	int lightnum = r_thingsectorlight ? lightlevel : sec->lightlevel;
+	lightnum = (lightnum >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
 
 	if (lightnum < 0)
 		spritelights = scalelight[0];
@@ -699,7 +701,7 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 		spritelights = scalelight[lightnum];
 
 	// Handle all things in sector.
-	for (AActor* thing = sec->thinglist; thing; thing = thing->snext)
+	for (const AActor* thing = sec->thinglist; thing; thing = thing->snext)
 	{
 		R_ProjectSprite (thing, fakeside);
 	}

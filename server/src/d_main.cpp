@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -75,6 +75,7 @@ EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_nomonsters)
 EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_fastmonsters)
+EXTERN_CVAR (sv_startwadscript)
 
 extern size_t got_heapsize;
 
@@ -216,6 +217,13 @@ void D_Init()
 	S_ParseSndInfo();
 	G_ParseHordeDefs();
 	G_ReadCOMPLVL();
+
+	// [EB] have to do this elsewhere on startup to be sure that cvar callbacks are enabled
+	if (!first_time)
+	{
+		if (!sv_startwadscript.str().empty())
+			AddCommandString(sv_startwadscript.str());
+	}
 
 	if (first_time)
 		PrintFmt(PRINT_HIGH, "P_Init: Init Playloop state.\n");
@@ -419,6 +427,9 @@ void D_DoomMain()
 	}
 
 	level.mapname = startmap;
+
+	if (!sv_startwadscript.str().empty())
+		AddCommandString(sv_startwadscript.str());
 
 	G_ChangeMapStartup();
 

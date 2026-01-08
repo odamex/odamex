@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -54,8 +54,8 @@
 #endif
 #include <p_boomfspec.h>
 
-void SV_UpdateMobj(AActor* mo);
-void SV_UpdateMobjState(AActor* mo);
+void SV_UpdateMobj(const AActor* mo);
+void SV_UpdateMobjState(const AActor* mo);
 
 #define WATER_SINK_FACTOR		3
 #define WATER_SINK_SMALL_FACTOR	4
@@ -70,8 +70,8 @@ void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
 void P_ShowSpawns(mapthing2_t* mthing);
 void P_ExplodeMissile(AActor* mo);
 void SV_SpawnMobj(AActor *mobj);
-void SV_SendDestroyActor(AActor *);
-void SV_ExplodeMissile(AActor *);
+void SV_SendDestroyActor(const AActor *);
+void SV_ExplodeMissile(const AActor *);
 void SV_UpdateMonsterRespawnCount();
 
 EXTERN_CVAR(sv_freelook)
@@ -476,7 +476,7 @@ void P_CheckTouchy(AActor* mo)
 // [SL] Factored out of P_MoveActor for reuse and changed to fixed-point math
 // for consistency purposes.
 //
-fixed_t P_CalculateMinMom(AActor *mo)
+fixed_t P_CalculateMinMom(const AActor *mo)
 {
 	fixed_t levelgravity, sectorgravity;
 
@@ -3067,6 +3067,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		         mthing->type,
 		         mthing->x, mthing->y);
 		info = &mobjinfo[MT_UNKNOWNTHING]; // [CMB] odamex specific MT_UNKNOWNTHING
+		type = MT_UNKNOWNTHING;
 	}
 	// [RH] If the thing's corresponding sprite has no frames, also map
 	//		it to the unknown thing.
@@ -3074,6 +3075,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		PrintFmt(PRINT_WARNING, "P_SpawnMapThing: Type {} at {}, {} has no frames\n",
 		         mthing->type, mthing->x, mthing->y);
+		info = &mobjinfo[MT_UNKNOWNTHING];
 		type = MT_UNKNOWNTHING;
 	}
 
@@ -3232,7 +3234,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 				TActorIterator<AActor> iterator (mthing->args[0]);
 			    AActor* box = iterator.Next();
 
-				if (box->type == MT_SKYVIEWPOINT && box != NULL)
+				if (box != NULL && box->type == MT_SKYVIEWPOINT)
 				{
 				    sector->Skybox = box->ptr();
 				}
@@ -3321,12 +3323,12 @@ void SpawnFlag(mapthing2_t* mthing, team_t flag)
 // Returns true if mo is currently in any player's field of view
 //
 
-bool P_VisibleToPlayers(AActor *mo)
+bool P_VisibleToPlayers(const AActor *mo)
 {
 	if (!mo)
 		return false;
 
-	for (auto& player : players)
+	for (const auto& player : players)
 	{
 		// players aren't considered visible to themselves
 		if (mo->player && mo->player->id == player.id)
@@ -3369,7 +3371,7 @@ void P_SetMobjBaseline(AActor& mo)
 /**
  * @brief Generate flags that lists which fields are different
  */
-uint32_t P_GetMobjBaselineFlags(AActor& mo)
+uint32_t P_GetMobjBaselineFlags(const AActor& mo)
 {
 	uint32_t flags = 0;
 

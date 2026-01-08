@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -967,7 +967,7 @@ bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost)
 //
 // Adapted from Eternity, so big thanks to Quasar
 //
-bool P_CheckFov(AActor* t1, AActor* t2, angle_t fov)
+bool P_CheckFov(const AActor* t1, const AActor* t2, angle_t fov)
 {
 	angle_t angle, minang, maxang;
 
