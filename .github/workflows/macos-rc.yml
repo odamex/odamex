@@ -77,6 +77,7 @@ jobs:
       wxwidgets_version: "3.2.5"
       zlib_version: "1.2.11"
       libpng_version: "1.6.40"
+      zstd_version: "1.5.7"
     steps:
     - uses: actions/checkout@v4
       with:
@@ -95,7 +96,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: deps/universal
-        key: macos-universal-deps-${{ env.sdl2_version }}-${{ env.sdl2_mixer_version }}-${{ env.pcre2_version }}-${{ env.wxwidgets_version }}-${{ env.zlib_version }}-${{ env.libpng_version }}-${{ env.macos_deployment_target }}
+        key: macos-universal-deps-${{ env.sdl2_version }}-${{ env.sdl2_mixer_version }}-${{ env.pcre2_version }}-${{ env.wxwidgets_version }}-${{ env.zlib_version }}-${{ env.libpng_version }}-${{ env.zstd_version }}-${{ env.macos_deployment_target }}
     - name: Build universal deps
       shell: bash
       run: |
@@ -106,7 +107,8 @@ jobs:
           "${DEPS_PREFIX}/lib/cmake/SDL2/SDL2Config.cmake" \
           "${DEPS_PREFIX}/lib/cmake/SDL2_mixer/SDL2_mixerConfig.cmake" \
           "${DEPS_PREFIX}/bin/wx-config" \
-          "${DEPS_PREFIX}/lib/libpcre2-32.a"
+          "${DEPS_PREFIX}/lib/libpcre2-32.a" \
+          "${DEPS_PREFIX}/lib/libzstd.a"
         do
           if [ ! -f "$f" ]; then
             missing=1
@@ -156,6 +158,17 @@ jobs:
         make install
         popd
 
+        curl -L -o zstd.tar.gz \
+          "https://github.com/facebook/zstd/releases/download/v${{ env.zstd_version }}/zstd-${{ env.zstd_version }}.tar.gz"
+        tar -xf zstd.tar.gz
+        cmake -S "zstd-${{ env.zstd_version }}/build/cmake" -B build-zstd -GNinja \
+          -DCMAKE_INSTALL_PREFIX="${DEPS_PREFIX}" \
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${{ env.macos_deployment_target }}" \
+          -DZSTD_BUILD_PROGRAMS=OFF -DZSTD_BUILD_SHARED=OFF -DZSTD_BUILD_STATIC=ON
+        cmake --build build-zstd
+        cmake --install build-zstd
+
         curl -L -o wxwidgets.tar.bz2 \
           "https://github.com/wxWidgets/wxWidgets/releases/download/v${{ env.wxwidgets_version }}/wxWidgets-${{ env.wxwidgets_version }}.tar.bz2"
         tar -xf wxwidgets.tar.bz2
@@ -200,6 +213,8 @@ jobs:
           -DCMAKE_PREFIX_PATH="${PWD}/deps/universal" \
           -DSDL2_DIR="${PWD}/deps/universal/lib/cmake/SDL2" \
           -DSDL2_MIXER_DIR="${PWD}/deps/universal/lib/cmake/SDL2_mixer" \
+          -DZSTD_LIBRARY="${PWD}/deps/universal/lib/libzstd.a" \
+          -DZSTD_INCLUDE_DIR="${PWD}/deps/universal/include" \
           -DwxWidgets_CONFIG_EXECUTABLE="${PWD}/deps/universal/bin/wx-config" \
           -DUSE_INTERNAL_ZLIB=1 -DUSE_INTERNAL_PNG=1 \
           -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
