@@ -38,38 +38,53 @@ if(BUILD_CLIENT AND USE_INTERNAL_FLTK)
   lib_buildgen(LIBRARY fltk PARAMS ${_FLTK_BUILDGEN_PARAMS})
   lib_build(LIBRARY fltk)
 
-  set(FLTK_SKIP_OPENGL TRUE)
-  find_package(FLTK CONFIG)
-  if(NOT TARGET fltk::fltk)
-    find_package(FLTK REQUIRED)
-  endif()
-  if(NOT TARGET fltk::fltk)
-    if(FLTK_LIBRARIES)
-      list(REMOVE_ITEM FLTK_LIBRARIES "FLTK_GL_LIBRARY-NOTFOUND" "-lFLTK_GL_LIBRARY-NOTFOUND")
-      add_library(fltk::fltk INTERFACE IMPORTED GLOBAL)
-      set_target_properties(fltk::fltk PROPERTIES
-        INTERFACE_LINK_LIBRARIES "${FLTK_LIBRARIES}"
-        INTERFACE_INCLUDE_DIRECTORIES "${FLTK_INCLUDE_DIRS}")
-    else()
-      message(FATAL_ERROR "FLTK target not found.")
-    endif()
-  endif()
-
-  set_target_properties(fltk::fltk PROPERTIES IMPORTED_GLOBAL True)
-  if(NOT TARGET fltk::images)
+  if(APPLE)
+    set(_FLTK_LOCAL_LIBDIR "${CMAKE_CURRENT_BINARY_DIR}/local/lib")
+    set(_FLTK_LOCAL_INCDIR "${CMAKE_CURRENT_BINARY_DIR}/local/include")
+    add_library(fltk::fltk INTERFACE IMPORTED GLOBAL)
+    set_target_properties(fltk::fltk PROPERTIES
+      INTERFACE_LINK_LIBRARIES
+        "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk${libsuffix};${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_forms${libsuffix};-framework Cocoa;-framework ApplicationServices"
+      INTERFACE_INCLUDE_DIRECTORIES "${_FLTK_LOCAL_INCDIR}")
     add_library(fltk::images INTERFACE IMPORTED GLOBAL)
-    if(FLTK_IMAGES_LIBRARIES)
-      list(REMOVE_ITEM FLTK_IMAGES_LIBRARIES "FLTK_GL_LIBRARY-NOTFOUND" "-lFLTK_GL_LIBRARY-NOTFOUND")
-      set_target_properties(fltk::images PROPERTIES
-        INTERFACE_LINK_LIBRARIES "${FLTK_IMAGES_LIBRARIES}"
-        INTERFACE_INCLUDE_DIRECTORIES "${FLTK_INCLUDE_DIRS}")
-    else()
-      set_target_properties(fltk::images PROPERTIES
-        INTERFACE_LINK_LIBRARIES "${FLTK_LIBRARIES}"
-        INTERFACE_INCLUDE_DIRECTORIES "${FLTK_INCLUDE_DIRS}")
+    set_target_properties(fltk::images PROPERTIES
+      INTERFACE_LINK_LIBRARIES
+        "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_images${libsuffix};${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_png${libsuffix};${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_z${libsuffix}"
+      INTERFACE_INCLUDE_DIRECTORIES "${_FLTK_LOCAL_INCDIR}")
+  else()
+    set(FLTK_SKIP_OPENGL TRUE)
+    find_package(FLTK CONFIG)
+    if(NOT TARGET fltk::fltk)
+      find_package(FLTK REQUIRED)
     endif()
+    if(NOT TARGET fltk::fltk)
+      if(FLTK_LIBRARIES)
+        list(REMOVE_ITEM FLTK_LIBRARIES "FLTK_GL_LIBRARY-NOTFOUND" "-lFLTK_GL_LIBRARY-NOTFOUND")
+        add_library(fltk::fltk INTERFACE IMPORTED GLOBAL)
+        set_target_properties(fltk::fltk PROPERTIES
+          INTERFACE_LINK_LIBRARIES "${FLTK_LIBRARIES}"
+          INTERFACE_INCLUDE_DIRECTORIES "${FLTK_INCLUDE_DIRS}")
+      else()
+        message(FATAL_ERROR "FLTK target not found.")
+      endif()
+    endif()
+
+    set_target_properties(fltk::fltk PROPERTIES IMPORTED_GLOBAL True)
+    if(NOT TARGET fltk::images)
+      add_library(fltk::images INTERFACE IMPORTED GLOBAL)
+      if(FLTK_IMAGES_LIBRARIES)
+        list(REMOVE_ITEM FLTK_IMAGES_LIBRARIES "FLTK_GL_LIBRARY-NOTFOUND" "-lFLTK_GL_LIBRARY-NOTFOUND")
+        set_target_properties(fltk::images PROPERTIES
+          INTERFACE_LINK_LIBRARIES "${FLTK_IMAGES_LIBRARIES}"
+          INTERFACE_INCLUDE_DIRECTORIES "${FLTK_INCLUDE_DIRS}")
+      else()
+        set_target_properties(fltk::images PROPERTIES
+          INTERFACE_LINK_LIBRARIES "${FLTK_LIBRARIES}"
+          INTERFACE_INCLUDE_DIRECTORIES "${FLTK_INCLUDE_DIRS}")
+      endif()
+    endif()
+    set_target_properties(fltk::images PROPERTIES IMPORTED_GLOBAL True)
   endif()
-  set_target_properties(fltk::images PROPERTIES IMPORTED_GLOBAL True)
   if(UNIX AND NOT APPLE)
     find_library(_FLTK_XFT_LIB Xft)
     find_library(_FLTK_FONTCONFIG_LIB fontconfig)
