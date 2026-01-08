@@ -83,7 +83,7 @@ hdiutil create -size "${size_mb}m" -srcfolder "${staging_dir}" -fs HFS+ -volname
 hdiutil attach -readwrite -noverify -noautoopen "${image_path}" -mountpoint "${mount_dir}"
 attached=1
 
-osascript "${root_dir}/ci/macos-dmg.applescript" "${volume_name}"
+osascript "${root_dir}/ci/macos-dmg.applescript" "${mount_dir}"
 
 hdiutil detach "${mount_dir}"
 attached=0

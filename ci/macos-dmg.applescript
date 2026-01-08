@@ -1,21 +1,11 @@
 on run argv
 	if (count of argv) < 1 then
-		error "Missing volume name"
+		error "Missing mount path"
 	end if
-	set dmgName to item 1 of argv
+	set mountPath to item 1 of argv
 
 	tell application "Finder"
-		set targetDisk to missing value
-		repeat with i from 1 to 10
-			try
-				set targetDisk to disk dmgName
-				exit repeat
-			end try
-			delay 1
-		end repeat
-		if targetDisk is missing value then
-			error "Could not find disk " & dmgName
-		end if
+		set targetDisk to disk of (POSIX file mountPath as alias)
 		tell targetDisk
 			open
 			set options to icon view options of container window
@@ -37,8 +27,8 @@ on run argv
 
 			make new alias file to POSIX file "/Applications" at disk dmgName with properties {name:"Applications"}
 
-			set position of item "Odamex" to {75, 150}
-			set position of item "Applications" to {425, 150}
+			set position of item "Odamex" to {111, 179}
+			set position of item "Applications" to {384, 179}
 			close
 		end tell
 	end tell
