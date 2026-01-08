@@ -99,6 +99,10 @@ if(BUILD_CLIENT AND USE_INTERNAL_FLTK)
       set_property(TARGET fltk::images APPEND PROPERTY
         INTERFACE_LINK_LIBRARIES "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}fltk_png${libsuffix}")
     endif()
+    if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}fltk_z${libsuffix}")
+      set_property(TARGET fltk::images APPEND PROPERTY
+        INTERFACE_LINK_LIBRARIES "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}fltk_z${libsuffix}")
+    endif()
   endif()
   if(WIN32)
     target_link_libraries(fltk::fltk INTERFACE gdiplus)
