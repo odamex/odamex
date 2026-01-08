@@ -14,7 +14,11 @@ include(ProcessorCount)
 ProcessorCount(PARALLEL_PROC_COUNT)
 
 # Set our prefix path, so inter-dependencies are picked up on.
-set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/local")
+if(CMAKE_PREFIX_PATH)
+  list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/local")
+else()
+  set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/local")
+endif()
 
 # Shorthand, to reduce line-noise
 set(libprefix "${CMAKE_STATIC_LIBRARY_PREFIX}")
