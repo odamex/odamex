@@ -7,10 +7,16 @@ IFS=$'\n\t'
 
 set -x
 
-# Install packages
-sudo apt update
-sudo apt install ninja-build libsdl2-dev libsdl2-mixer-dev \
+# Install packages (retry to handle transient mirror churn)
+sudo apt-get update -y -o Acquire::Retries=3
+if ! sudo apt-get install -y --no-install-recommends \
+    ninja-build libsdl2-dev libsdl2-mixer-dev \
+    libcurl4-openssl-dev libpng-dev libwxgtk3.2-dev deutex; then
+  sudo apt-get update -y -o Acquire::Retries=3
+  sudo apt-get install -y --no-install-recommends \
+    ninja-build libsdl2-dev libsdl2-mixer-dev \
     libcurl4-openssl-dev libpng-dev libwxgtk3.2-dev deutex
+fi
 
 # Generate build
 mkdir -p build && cd build
