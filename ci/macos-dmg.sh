@@ -32,6 +32,9 @@ fi
 if [ -d "build/odalaunch/odalaunch.app" ]; then
   cp -R "build/odalaunch/odalaunch.app" "${staging_dir}/Odamex/odalaunch.app"
 fi
+if [ -f "${staging_dir}/Odamex/Odamex.app/Contents/MacOS/odamex.wad" ]; then
+  ln -s "Odamex.app/Contents/MacOS/odamex.wad" "${staging_dir}/Odamex/odamex.wad"
+fi
 
 for doc in 3RD-PARTY-LICENSES CHANGELOG LICENSE MAINTAINERS odamex-installed.txt README README.md; do
   if [ -e "${doc}" ]; then
