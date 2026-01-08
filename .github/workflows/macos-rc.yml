@@ -241,18 +241,25 @@ jobs:
       shell: bash
       run: |
         set -euo pipefail
-        app_bin="build/client/odamex.app/Contents/MacOS/odamex"
-        bundle_dir="build/client/odamex.app/Contents/Frameworks"
         deps_prefix="${PWD}/deps/universal"
-        mkdir -p "${bundle_dir}"
-        deps=$(otool -L "${app_bin}" | awk 'NR>1 {print $1}' | grep "${deps_prefix}" || true)
-        for dep in ${deps}; do
-          base=$(basename "${dep}")
-          if [ ! -f "${bundle_dir}/${base}" ]; then
-            cp "${dep}" "${bundle_dir}/"
-            chmod 644 "${bundle_dir}/${base}"
+        for app_bin in \
+          "build/client/odamex.app/Contents/MacOS/odamex" \
+          "build/odalaunch/odalaunch.app/Contents/MacOS/odalaunch"
+        do
+          if [ ! -f "${app_bin}" ]; then
+            continue
           fi
-          install_name_tool -change "${dep}" "@executable_path/../Frameworks/${base}" "${app_bin}"
+          bundle_dir="$(dirname "${app_bin}")/../Frameworks"
+          mkdir -p "${bundle_dir}"
+          deps=$(otool -L "${app_bin}" | awk 'NR>1 {print $1}' | grep "${deps_prefix}" || true)
+          for dep in ${deps}; do
+            base=$(basename "${dep}")
+            if [ ! -f "${bundle_dir}/${base}" ]; then
+              cp "${dep}" "${bundle_dir}/"
+              chmod 644 "${bundle_dir}/${base}"
+            fi
+            install_name_tool -change "${dep}" "@executable_path/../Frameworks/${base}" "${app_bin}"
+          done
         done
     - name: Package DMG
       shell: bash
