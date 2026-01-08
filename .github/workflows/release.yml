@@ -281,7 +281,18 @@ jobs:
       run: |
         set -euo pipefail
         export DEPS_PREFIX="${PWD}/deps/universal"
-        if [ -d "${DEPS_PREFIX}/lib" ]; then
+        missing=0
+        for f in \
+          "${DEPS_PREFIX}/lib/cmake/SDL2/SDL2Config.cmake" \
+          "${DEPS_PREFIX}/lib/cmake/SDL2_mixer/SDL2_mixerConfig.cmake" \
+          "${DEPS_PREFIX}/bin/wx-config" \
+          "${DEPS_PREFIX}/lib/libpcre2-32.a"
+        do
+          if [ ! -f "$f" ]; then
+            missing=1
+          fi
+        done
+        if [ "$missing" -eq 0 ]; then
           echo "Using cached dependencies at ${DEPS_PREFIX}"
           exit 0
         fi
