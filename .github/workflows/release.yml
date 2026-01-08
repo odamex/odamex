@@ -366,6 +366,8 @@ jobs:
         make -j"$(sysctl -n hw.ncpu)"
         make install
         popd
+    - name: Install DeuTex
+      run: brew install deutex
     - name: Patch libpng genout for universal arch flags
       shell: bash
       run: |
