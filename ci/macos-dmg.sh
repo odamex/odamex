@@ -63,6 +63,13 @@ copy_license "libraries/minilzo/COPYING" "COPYING.minilzo.txt"
 copy_license "libraries/jsoncpp/LICENSE" "LICENSE.jsoncpp.txt"
 copy_license "libraries/fmt/LICENSE" "LICENSE.fmt.txt"
 copy_license "libraries/protobuf/LICENSE" "LICENSE.protobuf.txt"
+if [ -d "deps/universal/licenses" ]; then
+  for dep_license in deps/universal/licenses/*; do
+    if [ -f "${dep_license}" ]; then
+      cp "${dep_license}" "${licenses_dir}/"
+    fi
+  done
+fi
 
 mkdir -p "${staging_dir}/.background"
 cp "media/macinstaller_background.png" "${staging_dir}/.background/background.png"

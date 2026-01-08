@@ -288,7 +288,9 @@ jobs:
           "${DEPS_PREFIX}/lib/cmake/SDL2_mixer/SDL2_mixerConfig.cmake" \
           "${DEPS_PREFIX}/bin/wx-config" \
           "${DEPS_PREFIX}/lib/libpcre2-32.a" \
-          "${DEPS_PREFIX}/lib/libzstd.a"
+          "${DEPS_PREFIX}/lib/libzstd.a" \
+          "${DEPS_PREFIX}/licenses/LICENSE.SDL2.txt" \
+          "${DEPS_PREFIX}/licenses/COPYING.SDL2_mixer.txt"
         do
           if [ ! -f "$f" ]; then
             missing=1
@@ -312,11 +314,37 @@ jobs:
           -DSDL_SHARED=ON -DSDL_STATIC=OFF
         cmake --build build-sdl2
         cmake --install build-sdl2
+        mkdir -p "${DEPS_PREFIX}/licenses"
+        if [ -f "SDL2-${{ env.sdl2_version }}/LICENSE.txt" ]; then
+          cp "SDL2-${{ env.sdl2_version }}/LICENSE.txt" "${DEPS_PREFIX}/licenses/LICENSE.SDL2.txt"
+        fi
 
         curl -L -o SDL2_mixer.tar.gz \
           "https://github.com/libsdl-org/SDL_mixer/releases/download/release-${{ env.sdl2_mixer_version }}/SDL2_mixer-${{ env.sdl2_mixer_version }}.tar.gz"
         tar -xf SDL2_mixer.tar.gz
         bash "SDL2_mixer-${{ env.sdl2_mixer_version }}/external/download.sh"
+        if [ -f "SDL2_mixer-${{ env.sdl2_mixer_version }}/LICENSE.txt" ]; then
+          cp "SDL2_mixer-${{ env.sdl2_mixer_version }}/LICENSE.txt" "${DEPS_PREFIX}/licenses/COPYING.SDL2_mixer.txt"
+        fi
+        copy_license_glob() {
+          local base="$1"
+          local dest="$2"
+          if [ -e "${DEPS_PREFIX}/licenses/${dest}" ]; then
+            return 0
+          fi
+          local found
+          found=$(find "${base}" -maxdepth 3 -type f \( -iname "LICENSE*" -o -iname "COPYING*" \) | head -n 1 || true)
+          if [ -n "${found}" ]; then
+            cp "${found}" "${DEPS_PREFIX}/licenses/${dest}"
+          fi
+        }
+        copy_license_glob "SDL2_mixer-${{ env.sdl2_mixer_version }}/external" "LICENSE.gme.txt"
+        copy_license_glob "SDL2_mixer-${{ env.sdl2_mixer_version }}/external/ogg" "LICENSE.ogg-vorbis.txt"
+        copy_license_glob "SDL2_mixer-${{ env.sdl2_mixer_version }}/external/vorbis" "LICENSE.ogg-vorbis.txt"
+        copy_license_glob "SDL2_mixer-${{ env.sdl2_mixer_version }}/external/opus" "LICENSE.opus.txt"
+        copy_license_glob "SDL2_mixer-${{ env.sdl2_mixer_version }}/external/opusfile" "LICENSE.opusfile.txt"
+        copy_license_glob "SDL2_mixer-${{ env.sdl2_mixer_version }}/external/wavpack" "LICENSE.wavpack.txt"
+        copy_license_glob "SDL2_mixer-${{ env.sdl2_mixer_version }}/external/xmp" "LICENSE.xmp.txt"
         cmake -S "SDL2_mixer-${{ env.sdl2_mixer_version }}" -B build-sdl2-mixer -GNinja \
           -DCMAKE_INSTALL_PREFIX="${DEPS_PREFIX}" \
           -DCMAKE_PREFIX_PATH="${DEPS_PREFIX}" \
