@@ -9,7 +9,7 @@ on run argv
 			open
 			set options to icon view options of container window
 			tell options
-				set icon size to 96
+				set icon size to 104
 				set arrangement to not arranged
 			end tell
 			set background picture of options to file ".background:background.png"
