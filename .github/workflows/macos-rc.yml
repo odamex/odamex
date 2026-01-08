@@ -75,6 +75,8 @@ jobs:
       sdl2_mixer_version: "2.8.1"
       pcre2_version: "10.47"
       wxwidgets_version: "3.2.5"
+      zlib_version: "1.2.11"
+      libpng_version: "1.6.40"
     steps:
     - uses: actions/checkout@v4
       with:
@@ -93,7 +95,7 @@ jobs:
       uses: actions/cache@v4
       with:
         path: deps/universal
-        key: macos-universal-deps-${{ env.sdl2_version }}-${{ env.sdl2_mixer_version }}-${{ env.pcre2_version }}-${{ env.wxwidgets_version }}-${{ env.macos_deployment_target }}
+        key: macos-universal-deps-${{ env.sdl2_version }}-${{ env.sdl2_mixer_version }}-${{ env.pcre2_version }}-${{ env.wxwidgets_version }}-${{ env.zlib_version }}-${{ env.libpng_version }}-${{ env.macos_deployment_target }}
     - name: Build universal deps
       shell: bash
       run: |
@@ -185,6 +187,8 @@ jobs:
           -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
           -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1 \
           -DCMAKE_PREFIX_PATH="${PWD}/deps/universal" \
+          -DSDL2_DIR="${PWD}/deps/universal/lib/cmake/SDL2" \
+          -DSDL2_MIXER_DIR="${PWD}/deps/universal/lib/cmake/SDL2_mixer" \
           -DwxWidgets_CONFIG_EXECUTABLE="${PWD}/deps/universal/bin/wx-config" \
           -DUSE_INTERNAL_ZLIB=1 -DUSE_INTERNAL_PNG=1 \
           -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
