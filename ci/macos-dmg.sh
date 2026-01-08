@@ -76,14 +76,9 @@ cp "media/macinstaller_background.png" "${staging_dir}/.background/background.pn
 cp "media/odamex.icns" "${staging_dir}/.background/odamex.icns"
 
 size_mb=$(du -sm "${staging_dir}" | awk '{print $1 + 20}')
-hdiutil create -size "${size_mb}m" -fs HFS+ -volname "${volume_name}" -format UDRW "${image_path}"
+hdiutil create -size "${size_mb}m" -srcfolder "${staging_dir}" -fs HFS+ -volname "${volume_name}" -format UDRW "${image_path}"
 hdiutil attach -readwrite -noverify -noautoopen "${image_path}" -mountpoint "${mount_dir}"
 attached=1
-
-cp -R "${staging_dir}/Odamex" "${mount_dir}/"
-mkdir -p "${mount_dir}/.background"
-cp "${staging_dir}/.background/background.png" "${mount_dir}/.background/background.png"
-cp "${staging_dir}/.background/odamex.icns" "${mount_dir}/.background/odamex.icns"
 
 osascript "${root_dir}/ci/macos-dmg.applescript" "${volume_name}"
 
