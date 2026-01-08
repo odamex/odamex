@@ -265,11 +265,9 @@ jobs:
       shell: bash
       run: |
         set -euo pipefail
-        mkdir -p dmg-root
-        cp -R build/client/odamex.app dmg-root/Odamex.app
-        ln -s /Applications dmg-root/Applications
-        hdiutil create -volname "Odamex" -srcfolder dmg-root -ov -format UDZO \
-          odamex-macos-${{ env.new_version }}-prerelease.${{ env.build_number }}.dmg
+        bash ci/macos-dmg.sh \
+          "odamex-macos-${{ env.new_version }}-prerelease.${{ env.build_number }}.dmg" \
+          "Odamex"
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
