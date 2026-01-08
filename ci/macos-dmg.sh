@@ -38,6 +38,12 @@ for doc in 3RD-PARTY-LICENSES CHANGELOG LICENSE MAINTAINERS odamex-installed.txt
     cp -R "${doc}" "${staging_dir}/Odamex/"
   fi
 done
+if [ -d "config-samples" ]; then
+  cp -R "config-samples" "${staging_dir}/Odamex/"
+fi
+if [ -e "version.txt" ]; then
+  cp -R "version.txt" "${staging_dir}/Odamex/"
+fi
 
 mkdir -p "${staging_dir}/.background"
 cp "media/macinstaller_background.png" "${staging_dir}/.background/background.png"
