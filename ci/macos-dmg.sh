@@ -45,6 +45,25 @@ if [ -e "version.txt" ]; then
   cp -R "version.txt" "${staging_dir}/Odamex/"
 fi
 
+licenses_dir="${staging_dir}/Odamex/licenses"
+mkdir -p "${licenses_dir}"
+copy_license() {
+  local src="$1"
+  local dest_name="$2"
+  if [ -e "${src}" ]; then
+    cp -R "${src}" "${licenses_dir}/${dest_name}"
+  fi
+}
+copy_license "libraries/curl/COPYING" "COPYING.curl.txt"
+copy_license "libraries/libpng/LICENSE" "LICENSE.libpng.txt"
+copy_license "libraries/miniupnp/LICENSE" "LICENSE.miniupnp.txt"
+copy_license "libraries/portmidi/license.txt" "license.portmidi.txt"
+copy_license "libraries/fltk/COPYING" "COPYING.fltk.txt"
+copy_license "libraries/minilzo/COPYING" "COPYING.minilzo.txt"
+copy_license "libraries/jsoncpp/LICENSE" "LICENSE.jsoncpp.txt"
+copy_license "libraries/fmt/LICENSE" "LICENSE.fmt.txt"
+copy_license "libraries/protobuf/LICENSE" "LICENSE.protobuf.txt"
+
 mkdir -p "${staging_dir}/.background"
 cp "media/macinstaller_background.png" "${staging_dir}/.background/background.png"
 cp "media/odamex.icns" "${staging_dir}/.background/odamex.icns"
