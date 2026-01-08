@@ -366,8 +366,19 @@ jobs:
         make -j"$(sysctl -n hw.ncpu)"
         make install
         popd
-    - name: Install DeuTex
-      run: brew install deutex
+    - name: Fetch DeuTex source
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ ! -d "wad/deutex" ]; then
+          if ! command -v unzstd >/dev/null 2>&1; then
+            brew install zstd
+          fi
+          curl -L -o deutex.tar.zst \
+            "https://github.com/Doom-Utils/deutex/releases/download/v5.2.3/deutex-5.2.3.tar.zst"
+          mkdir -p wad/deutex
+          tar --use-compress-program=unzstd -xf deutex.tar.zst -C wad/deutex --strip-components=1
+        fi
     - name: Patch libpng genout for universal arch flags
       shell: bash
       run: |
@@ -399,6 +410,7 @@ jobs:
           -DZSTD_INCLUDE_DIR="${PWD}/deps/universal/include" \
           -DwxWidgets_CONFIG_EXECUTABLE="${PWD}/deps/universal/bin/wx-config" \
           -DUSE_INTERNAL_ZLIB=1 -DUSE_INTERNAL_PNG=1 \
+          -DUSE_INTERNAL_DEUTEX=1 \
           -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${{ env.macos_deployment_target }}"
     - name: Run build
