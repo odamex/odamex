@@ -29,6 +29,11 @@
 #include <mutex>
 #include <thread>
 
+#ifdef _WIN32
+#   define WIN32_LEAN_AND_MEAN
+#   include <windows.h>
+#endif
+
 namespace {
 
     class CommandStreamReader
@@ -44,8 +49,9 @@ namespace {
             //
             //  2.  The C++ standard does NOT guarantee any way to safely, portably interrupt
             //      the blocking read when using stdin, therefore we essentially cannot
-            //      interrupt the thread; We must let the runtime clean this all up during
-            //      teardown.
+            //      intelligently interrupt the thread; We can cancel/terminate it, leave the
+            //      sync objects in an undefined state, and let the runtime clean this all up
+            //      during teardown.
             //
             //  3.  If we allow this object to be destructed directly, and we have no way of
             //      gracefully ending and joining the thread, then we can easily wind up with
@@ -112,14 +118,22 @@ namespace {
 
             ~CommandStreamReader()
             {
+                // We don't have a real, portable way of interrupting the std::getline and
+                // gracefully exiting the thread.  We have to fall back to lower-level
+                // mechansims which we know are going to leave the thread sync objects in
+                // an unknown state.  Again, this drives us towards a program-lifetime
+                // Singleton for this whole thing.
 #ifdef _WIN32
-                // Detach because we don't have a nice way of terminating our thread yet.
-                m_thread.detach();
+                // Windows makes us ruthlessly kill the thread.
+                if (TerminateThread(m_thread.native_handle(), 0))
 #else
-                // The thread is going to be asleep in read() via std::getline() for the VAST
-                // majority of its lifetime, or in pthread_cond_wait() via the condition_variable.
-                // Pthreads specifies both as cancelation points, so we're good to cancel and join.
+                // Pthreads lets us do a Cancel operation, which defaults to ending the
+                // thread when control is in a "cancelation point" function.  Fortunately
+                // the thread is going to be blocked in read() or pthread_cond_wait() via
+                // std::getline and std::condition_variable for the vast majority of its
+                // lifetime, so it cancels basically right away.
                 if (pthread_cancel(m_thread.native_handle()) == 0)
+#endif
                 {
                     m_thread.join();
                 }
@@ -127,7 +141,6 @@ namespace {
                 {
                     m_thread.detach();
                 }
-#endif
             }
 
             void ThreadMain()
