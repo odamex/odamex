@@ -32,6 +32,9 @@ fi
 if [ -d "build/odalaunch/odalaunch.app" ]; then
   cp -R "build/odalaunch/odalaunch.app" "${staging_dir}/Odamex/odalaunch.app"
 fi
+if [ -f "build/server/odasrv" ]; then
+  cp "build/server/odasrv" "${staging_dir}/Odamex/odasrv"
+fi
 if [ -f "${staging_dir}/Odamex/Odamex.app/Contents/MacOS/odamex.wad" ]; then
   ln -s "Odamex.app/Contents/MacOS/odamex.wad" "${staging_dir}/Odamex/odamex.wad"
 fi
@@ -77,11 +80,16 @@ fi
 mkdir -p "${staging_dir}/.background"
 cp "media/macinstaller_background.png" "${staging_dir}/.background/background.png"
 cp "media/odamex.icns" "${staging_dir}/.background/odamex.icns"
+cp "media/odasrv.icns" "${staging_dir}/.background/odasrv.icns"
 
 size_mb=$(du -sm "${staging_dir}" | awk '{print $1 + 20}')
 hdiutil create -size "${size_mb}m" -srcfolder "${staging_dir}" -fs HFS+ -volname "${volume_name}" -format UDRW "${image_path}"
 hdiutil attach -readwrite -noverify -noautoopen "${image_path}" -mountpoint "${mount_dir}"
 attached=1
+
+if command -v SetFile >/dev/null 2>&1; then
+  SetFile -a C "${mount_dir}/Odamex" || true
+fi
 
 osascript "${root_dir}/ci/macos-dmg.applescript" "${mount_dir}"
 
