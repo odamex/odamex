@@ -49,8 +49,16 @@ if(BUILD_CLIENT AND USE_INTERNAL_FLTK)
     add_library(fltk::images INTERFACE IMPORTED GLOBAL)
     set_target_properties(fltk::images PROPERTIES
       INTERFACE_LINK_LIBRARIES
-        "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_images${libsuffix};${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_png${libsuffix};${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_z${libsuffix}"
+        "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_images${libsuffix}"
       INTERFACE_INCLUDE_DIRECTORIES "${_FLTK_LOCAL_INCDIR}")
+    if(EXISTS "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_png${libsuffix}")
+      set_property(TARGET fltk::images APPEND PROPERTY
+        INTERFACE_LINK_LIBRARIES "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_png${libsuffix}")
+    endif()
+    if(EXISTS "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_z${libsuffix}")
+      set_property(TARGET fltk::images APPEND PROPERTY
+        INTERFACE_LINK_LIBRARIES "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_z${libsuffix}")
+    endif()
   else()
     set(FLTK_SKIP_OPENGL TRUE)
     find_package(FLTK CONFIG)
