@@ -559,7 +559,7 @@ jobs:
           done
         done
     - name: Install create-dmg
-      run: brew install create-dmg
+      run: brew install create-dmg fileicon
     - name: Package DMG
       shell: bash
       run: |

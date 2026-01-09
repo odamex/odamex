@@ -83,20 +83,8 @@ set_custom_icon() {
   if [ ! -e "${target}" ] || [ ! -f "${icon}" ]; then
     return 0
   fi
-  local derez_cmd="DeRez"
-  local rez_cmd="Rez"
-  if ! command -v DeRez >/dev/null 2>&1 && command -v xcrun >/dev/null 2>&1; then
-    derez_cmd="xcrun DeRez"
-  fi
-  if ! command -v Rez >/dev/null 2>&1 && command -v xcrun >/dev/null 2>&1; then
-    rez_cmd="xcrun Rez"
-  fi
-  if command -v ${derez_cmd%% *} >/dev/null 2>&1 && command -v ${rez_cmd%% *} >/dev/null 2>&1; then
-    local tmp_rsrc
-    tmp_rsrc="$(mktemp)"
-    if ${derez_cmd} -only icns "${icon}" > "${tmp_rsrc}.rsrc"; then
-      ${rez_cmd} -append "${tmp_rsrc}.rsrc" -o "${target}" || true
-    fi
+  if command -v fileicon >/dev/null 2>&1; then
+    fileicon set "${target}" "${icon}" || true
   fi
   if [ -n "${setfile_cmd}" ]; then
     ${setfile_cmd} -a C "${target}" || true
