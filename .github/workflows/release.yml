@@ -522,7 +522,7 @@ jobs:
             for dylib in "${deps_lib_dir}"/*.dylib; do
               if [ -f "${dylib}" ]; then
                 base=$(basename "${dylib}")
-                if [[ "${base}" == libwx* ]]; then
+                if [[ "${base}" == libwx* ]] || [[ "${base}" == libpcre2* ]]; then
                   continue
                 fi
                 if [ ! -f "${bundle_dir}/${base}" ]; then
