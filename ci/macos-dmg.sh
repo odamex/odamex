@@ -117,7 +117,11 @@ set_custom_icon() {
   fi
 }
 
-set_custom_icon "${mount_dir}/Odamex" "media/odamex.icns"
+folder_icon="media/odamex.icns"
+if [ -f "build/client/odamex.app/Contents/Resources/odamex.icns" ]; then
+  folder_icon="build/client/odamex.app/Contents/Resources/odamex.icns"
+fi
+set_custom_icon "${mount_dir}/Odamex" "${folder_icon}"
 set_custom_icon "${mount_dir}/Odamex/odasrv" "media/odasrv.icns"
 
 osascript "${root_dir}/ci/macos-dmg.applescript" "${mount_dir}"
