@@ -332,8 +332,26 @@ jobs:
           if [ ! -f "${app_bin}" ]; then
             continue
           fi
+          is_odamex=0
+          if [[ "${app_bin}" == *"/client/odamex.app/"* ]]; then
+            is_odamex=1
+          fi
           bundle_dir="$(dirname "${app_bin}")/../Frameworks"
           mkdir -p "${bundle_dir}"
+          if [ "${is_odamex}" -eq 1 ] && [ -d "${deps_lib_dir}" ]; then
+            for dylib in "${deps_lib_dir}"/*.dylib; do
+              if [ -f "${dylib}" ]; then
+                base=$(basename "${dylib}")
+                if [[ "${base}" == libwx* ]]; then
+                  continue
+                fi
+                if [ ! -f "${bundle_dir}/${base}" ]; then
+                  cp "${dylib}" "${bundle_dir}/"
+                  chmod 644 "${bundle_dir}/${base}"
+                fi
+              fi
+            done
+          fi
           if ! otool -l "${app_bin}" | grep -q "@executable_path/../Frameworks"; then
             install_name_tool -add_rpath "@executable_path/../Frameworks" "${app_bin}"
           fi
