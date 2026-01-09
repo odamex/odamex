@@ -99,12 +99,12 @@ set_custom_icon() {
   if [ ! -e "${target}" ] || [ ! -f "${icon}" ]; then
     return 0
   fi
-  if command -v sips >/dev/null 2>&1 && command -v DeRez >/dev/null 2>&1 && command -v Rez >/dev/null 2>&1; then
+  if command -v DeRez >/dev/null 2>&1 && command -v Rez >/dev/null 2>&1; then
     local tmp_rsrc
     tmp_rsrc="$(mktemp)"
-    sips -s format icns "${icon}" --out "${tmp_rsrc}" >/dev/null 2>&1 || return 0
-    DeRez -only icns "${tmp_rsrc}" > "${tmp_rsrc}.rsrc" || return 0
-    Rez -append "${tmp_rsrc}.rsrc" -o "${target}" || return 0
+    if DeRez -only icns "${icon}" > "${tmp_rsrc}.rsrc"; then
+      Rez -append "${tmp_rsrc}.rsrc" -o "${target}" || true
+    fi
   fi
   if [ -n "${setfile_cmd}" ]; then
     ${setfile_cmd} -a C "${target}" || true
