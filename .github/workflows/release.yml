@@ -389,6 +389,7 @@ jobs:
           --enable-unicode \
           --with-cocoa \
           --without-libtiff \
+          --enable-monolithic \
           --enable-universal_binary=arm64,x86_64 \
           --with-macosx-version-min="${{ env.macos_deployment_target }}"
         make -j"$(sysctl -n hw.ncpu)"
