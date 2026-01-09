@@ -85,10 +85,6 @@ hdiutil create -size "${size_mb}m" -srcfolder "${staging_dir}" -fs HFS+ -volname
 hdiutil attach -readwrite -noverify -noautoopen "${image_path}" -mountpoint "${mount_dir}"
 attached=1
 
-if [ -f "${root_dir}/ci/dmg.DS_Store" ]; then
-  cp "${root_dir}/ci/dmg.DS_Store" "${mount_dir}/.DS_Store"
-fi
-
 setfile_cmd=""
 if command -v SetFile >/dev/null 2>&1; then
   setfile_cmd="SetFile"
