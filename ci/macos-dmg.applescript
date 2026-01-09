@@ -16,7 +16,7 @@ on run argv
 			end tell
 			set background picture of options to file ".background:background.png"
 			tell container window
-				set the bounds to {0, 0, 520, 380}
+				set the bounds to {0, 0, 500, 380}
 				set current view to icon view
 				set toolbar visible to false
 				set statusbar visible to false
