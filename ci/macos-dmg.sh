@@ -87,6 +87,11 @@ hdiutil create -size "${size_mb}m" -srcfolder "${staging_dir}" -fs HFS+ -volname
 hdiutil attach -readwrite -noverify -noautoopen "${image_path}" -mountpoint "${mount_dir}"
 attached=1
 
+icon_file="${mount_dir}/Odamex/Icon"$'\r'
+if [ -d "${mount_dir}/Odamex" ]; then
+  cp "media/odamex.icns" "${icon_file}" || true
+fi
+
 setfile_cmd=""
 if command -v SetFile >/dev/null 2>&1; then
   setfile_cmd="SetFile"
