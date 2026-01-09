@@ -79,8 +79,6 @@ fi
 
 mkdir -p "${staging_dir}/.background"
 cp "media/macinstaller_background.png" "${staging_dir}/.background/background.png"
-cp "media/odamex.icns" "${staging_dir}/.background/odamex.icns"
-cp "media/odasrv.icns" "${staging_dir}/.background/odasrv.icns"
 
 size_mb=$(du -sm "${staging_dir}" | awk '{print $1 + 20}')
 hdiutil create -size "${size_mb}m" -srcfolder "${staging_dir}" -fs HFS+ -volname "${volume_name}" -format UDRW "${image_path}"
@@ -99,11 +97,19 @@ set_custom_icon() {
   if [ ! -e "${target}" ] || [ ! -f "${icon}" ]; then
     return 0
   fi
-  if command -v DeRez >/dev/null 2>&1 && command -v Rez >/dev/null 2>&1; then
+  local derez_cmd="DeRez"
+  local rez_cmd="Rez"
+  if ! command -v DeRez >/dev/null 2>&1 && command -v xcrun >/dev/null 2>&1; then
+    derez_cmd="xcrun DeRez"
+  fi
+  if ! command -v Rez >/dev/null 2>&1 && command -v xcrun >/dev/null 2>&1; then
+    rez_cmd="xcrun Rez"
+  fi
+  if command -v ${derez_cmd%% *} >/dev/null 2>&1 && command -v ${rez_cmd%% *} >/dev/null 2>&1; then
     local tmp_rsrc
     tmp_rsrc="$(mktemp)"
-    if DeRez -only icns "${icon}" > "${tmp_rsrc}.rsrc"; then
-      Rez -append "${tmp_rsrc}.rsrc" -o "${target}" || true
+    if ${derez_cmd} -only icns "${icon}" > "${tmp_rsrc}.rsrc"; then
+      ${rez_cmd} -append "${tmp_rsrc}.rsrc" -o "${target}" || true
     fi
   fi
   if [ -n "${setfile_cmd}" ]; then
