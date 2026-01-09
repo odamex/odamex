@@ -469,6 +469,15 @@ jobs:
                   added=1
                 fi
                 ;;
+              @rpath/*|@loader_path/*|@executable_path/*)
+                local base
+                base=$(basename "${dep}")
+                if [ -f "${deps_lib_dir}/${base}" ] && [ ! -f "${bundle_dir}/${base}" ]; then
+                  cp "${deps_lib_dir}/${base}" "${bundle_dir}/"
+                  chmod 644 "${bundle_dir}/${base}"
+                  added=1
+                fi
+                ;;
             esac
           done
           if [ "${added}" -eq 1 ]; then
@@ -478,12 +487,20 @@ jobs:
         }
         fix_deps() {
           local target="$1"
+          local bundle_dir="$2"
           local deps
           deps=$(otool -L "${target}" | awk 'NR>1 {print $1}')
           for dep in ${deps}; do
             case "${dep}" in
               "${deps_prefix}"/*)
                 install_name_tool -change "${dep}" "@executable_path/../Frameworks/$(basename "${dep}")" "${target}" || true
+                ;;
+              @rpath/*|@loader_path/*|@executable_path/*)
+                local base
+                base=$(basename "${dep}")
+                if [ -f "${bundle_dir}/${base}" ]; then
+                  install_name_tool -change "${dep}" "@executable_path/../Frameworks/${base}" "${target}" || true
+                fi
                 ;;
             esac
           done
@@ -514,12 +531,12 @@ jobs:
               fi
             done
           done
-          fix_deps "${app_bin}"
+          fix_deps "${app_bin}" "${bundle_dir}"
           for dylib in "${bundle_dir}"/*.dylib; do
             if [ -f "${dylib}" ]; then
               base=$(basename "${dylib}")
               install_name_tool -id "@executable_path/../Frameworks/${base}" "${dylib}"
-              fix_deps "${dylib}"
+              fix_deps "${dylib}" "${bundle_dir}"
             fi
           done
         done
