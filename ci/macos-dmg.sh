@@ -87,23 +87,32 @@ hdiutil create -size "${size_mb}m" -srcfolder "${staging_dir}" -fs HFS+ -volname
 hdiutil attach -readwrite -noverify -noautoopen "${image_path}" -mountpoint "${mount_dir}"
 attached=1
 
-icon_file="${mount_dir}/Odamex/Icon"$'\r'
-if [ -d "${mount_dir}/Odamex" ]; then
-  cp "media/odamex.icns" "${icon_file}" || true
-fi
-
 setfile_cmd=""
 if command -v SetFile >/dev/null 2>&1; then
   setfile_cmd="SetFile"
 elif command -v xcrun >/dev/null 2>&1; then
   setfile_cmd="xcrun SetFile"
 fi
-if [ -n "${setfile_cmd}" ]; then
-  ${setfile_cmd} -a C "${mount_dir}/Odamex" || true
-  if [ -f "${mount_dir}/Odamex/odasrv" ]; then
-    ${setfile_cmd} -a C "${mount_dir}/Odamex/odasrv" || true
+set_custom_icon() {
+  local target="$1"
+  local icon="$2"
+  if [ ! -e "${target}" ] || [ ! -f "${icon}" ]; then
+    return 0
   fi
-fi
+  if command -v sips >/dev/null 2>&1 && command -v DeRez >/dev/null 2>&1 && command -v Rez >/dev/null 2>&1; then
+    local tmp_rsrc
+    tmp_rsrc="$(mktemp)"
+    sips -s format icns "${icon}" --out "${tmp_rsrc}" >/dev/null 2>&1 || return 0
+    DeRez -only icns "${tmp_rsrc}" > "${tmp_rsrc}.rsrc" || return 0
+    Rez -append "${tmp_rsrc}.rsrc" -o "${target}" || return 0
+  fi
+  if [ -n "${setfile_cmd}" ]; then
+    ${setfile_cmd} -a C "${target}" || true
+  fi
+}
+
+set_custom_icon "${mount_dir}/Odamex" "media/odamex.icns"
+set_custom_icon "${mount_dir}/Odamex/odasrv" "media/odasrv.icns"
 
 osascript "${root_dir}/ci/macos-dmg.applescript" "${mount_dir}"
 
