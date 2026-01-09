@@ -87,10 +87,16 @@ hdiutil create -size "${size_mb}m" -srcfolder "${staging_dir}" -fs HFS+ -volname
 hdiutil attach -readwrite -noverify -noautoopen "${image_path}" -mountpoint "${mount_dir}"
 attached=1
 
+setfile_cmd=""
 if command -v SetFile >/dev/null 2>&1; then
-  SetFile -a C "${mount_dir}/Odamex" || true
+  setfile_cmd="SetFile"
+elif command -v xcrun >/dev/null 2>&1; then
+  setfile_cmd="xcrun SetFile"
+fi
+if [ -n "${setfile_cmd}" ]; then
+  ${setfile_cmd} -a C "${mount_dir}/Odamex" || true
   if [ -f "${mount_dir}/Odamex/odasrv" ]; then
-    SetFile -a C "${mount_dir}/Odamex/odasrv" || true
+    ${setfile_cmd} -a C "${mount_dir}/Odamex/odasrv" || true
   fi
 fi
 

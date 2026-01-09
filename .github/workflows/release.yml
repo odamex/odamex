@@ -479,17 +479,21 @@ jobs:
           if ! otool -l "${app_bin}" | grep -q "@executable_path/../Frameworks"; then
             install_name_tool -add_rpath "@executable_path/../Frameworks" "${app_bin}"
           fi
-          deps=$(otool -L "${app_bin}" | awk 'NR>1 {print $1}' | grep "${deps_prefix}" || true)
+          deps=$(otool -L "${app_bin}" | awk 'NR>1 {print $1}')
           for dep in ${deps}; do
             base=$(basename "${dep}")
             if [ "${is_odamex}" -eq 1 ] && [[ "${base}" == libwx* ]]; then
               continue
             fi
-            if [ ! -f "${bundle_dir}/${base}" ]; then
-              cp "${dep}" "${bundle_dir}/"
-              chmod 644 "${bundle_dir}/${base}"
+            if [ -f "${bundle_dir}/${base}" ]; then
+              install_name_tool -change "${dep}" "@executable_path/../Frameworks/${base}" "${app_bin}"
             fi
-            install_name_tool -change "${dep}" "@executable_path/../Frameworks/${base}" "${app_bin}"
+          done
+          for dylib in "${bundle_dir}"/*.dylib; do
+            if [ -f "${dylib}" ]; then
+              base=$(basename "${dylib}")
+              install_name_tool -id "@executable_path/../Frameworks/${base}" "${dylib}"
+            fi
           done
         done
     - name: Package DMG

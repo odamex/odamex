@@ -23,11 +23,12 @@ on run argv
 			end tell
 
 			try
-				set icon of folder "Odamex" to icon of file ".background:odamex.icns" of targetDisk
+				set icon of item "Odamex" of targetDisk to icon of file ".background:odamex.icns" of targetDisk
 			end try
 			try
-				set icon of file "odasrv" to icon of file ".background:odasrv.icns" of targetDisk
+				set icon of item "odasrv" of targetDisk to icon of file ".background:odasrv.icns" of targetDisk
 			end try
+			delay 1
 
 			make new alias file to POSIX file "/Applications" at targetDisk with properties {name:"Applications"}
 
