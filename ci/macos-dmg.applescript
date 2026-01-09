@@ -8,6 +8,7 @@ on run argv
 		set targetDisk to disk of (POSIX file mountPath as alias)
 		tell targetDisk
 			open
+			delay 1
 			set options to icon view options of container window
 			tell options
 				set icon size to 104
@@ -15,17 +16,17 @@ on run argv
 			end tell
 			set background picture of options to file ".background:background.png"
 			tell container window
-				set the bounds to {0, 0, 500, 350}
+				set the bounds to {0, 0, 520, 380}
 				set current view to icon view
 				set toolbar visible to false
 				set statusbar visible to false
 			end tell
 
 			try
-				set icon of folder "Odamex" to icon of file ".background:odamex.icns"
+				set icon of folder "Odamex" to icon of file ".background:odamex.icns" of targetDisk
 			end try
 			try
-				set icon of file "odasrv" to icon of file ".background:odasrv.icns"
+				set icon of file "odasrv" to icon of file ".background:odasrv.icns" of targetDisk
 			end try
 
 			make new alias file to POSIX file "/Applications" at targetDisk with properties {name:"Applications"}

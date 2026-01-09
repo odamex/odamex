@@ -89,6 +89,9 @@ attached=1
 
 if command -v SetFile >/dev/null 2>&1; then
   SetFile -a C "${mount_dir}/Odamex" || true
+  if [ -f "${mount_dir}/Odamex/odasrv" ]; then
+    SetFile -a C "${mount_dir}/Odamex/odasrv" || true
+  fi
 fi
 
 osascript "${root_dir}/ci/macos-dmg.applescript" "${mount_dir}"

@@ -458,13 +458,21 @@ jobs:
           if [ ! -f "${app_bin}" ]; then
             continue
           fi
+          is_odamex=0
+          if [[ "${app_bin}" == *"/client/odamex.app/"* ]]; then
+            is_odamex=1
+          fi
           bundle_dir="$(dirname "${app_bin}")/../Frameworks"
           mkdir -p "${bundle_dir}"
           if [ -d "${deps_lib_dir}" ]; then
             for dylib in "${deps_lib_dir}"/*.dylib; do
               if [ -f "${dylib}" ]; then
+                base=$(basename "${dylib}")
+                if [ "${is_odamex}" -eq 1 ] && [[ "${base}" == libwx* ]]; then
+                  continue
+                fi
                 cp "${dylib}" "${bundle_dir}/"
-                chmod 644 "${bundle_dir}/$(basename "${dylib}")"
+                chmod 644 "${bundle_dir}/${base}"
               fi
             done
           fi
@@ -474,6 +482,9 @@ jobs:
           deps=$(otool -L "${app_bin}" | awk 'NR>1 {print $1}' | grep "${deps_prefix}" || true)
           for dep in ${deps}; do
             base=$(basename "${dep}")
+            if [ "${is_odamex}" -eq 1 ] && [[ "${base}" == libwx* ]]; then
+              continue
+            fi
             if [ ! -f "${bundle_dir}/${base}" ]; then
               cp "${dep}" "${bundle_dir}/"
               chmod 644 "${bundle_dir}/${base}"
