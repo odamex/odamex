@@ -12,14 +12,8 @@ volume_name="$2"
 root_dir="$(pwd)"
 work_dir="$(mktemp -d)"
 staging_dir="${work_dir}/staging"
-mount_dir="${work_dir}/mount"
-image_path="${work_dir}/temp.dmg"
-attached=0
 
 cleanup() {
-  if [ "${attached}" -eq 1 ]; then
-    hdiutil detach "${mount_dir}" >/dev/null 2>&1 || true
-  fi
   rm -rf "${work_dir}"
 }
 trap cleanup EXIT
@@ -77,14 +71,6 @@ if [ -d "deps/universal/licenses" ]; then
   done
 fi
 
-mkdir -p "${staging_dir}/.background"
-cp "media/macinstaller_background.png" "${staging_dir}/.background/background.png"
-
-size_mb=$(du -sm "${staging_dir}" | awk '{print $1 + 20}')
-hdiutil create -size "${size_mb}m" -srcfolder "${staging_dir}" -fs HFS+ -volname "${volume_name}" -format UDRW "${image_path}"
-hdiutil attach -readwrite -noverify -noautoopen "${image_path}" -mountpoint "${mount_dir}"
-attached=1
-
 setfile_cmd=""
 if command -v SetFile >/dev/null 2>&1; then
   setfile_cmd="SetFile"
@@ -121,11 +107,20 @@ folder_icon="media/odamex.icns"
 if [ -f "build/client/odamex.app/Contents/Resources/odamex.icns" ]; then
   folder_icon="build/client/odamex.app/Contents/Resources/odamex.icns"
 fi
-set_custom_icon "${mount_dir}/Odamex" "${folder_icon}"
-set_custom_icon "${mount_dir}/Odamex/odasrv" "media/odasrv.icns"
+set_custom_icon "${staging_dir}/Odamex" "${folder_icon}"
+set_custom_icon "${staging_dir}/Odamex/odasrv" "media/odasrv.icns"
 
-osascript "${root_dir}/ci/macos-dmg.applescript" "${mount_dir}"
+if ! command -v create-dmg >/dev/null 2>&1; then
+  echo "create-dmg is required but not installed." >&2
+  exit 1
+fi
 
-hdiutil detach "${mount_dir}"
-attached=0
-hdiutil convert "${image_path}" -format UDZO -o "${output_dmg}"
+create-dmg \
+  --volname "${volume_name}" \
+  --window-size 500 378 \
+  --icon-size 104 \
+  --background "${root_dir}/media/macinstaller_background.png" \
+  --icon "Odamex" 111 179 \
+  --app-drop-link 384 179 \
+  "${output_dmg}" \
+  "${staging_dir}"
