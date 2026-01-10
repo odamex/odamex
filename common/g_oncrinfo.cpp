@@ -34,10 +34,10 @@ void G_ParseOncrInfo()
 
 	AnnouncerManager::getInstance().reset();
 
-	// No SPREEDEF? Load defaults and continue.
+	// No ONCRINFO? Load defaults and continue.
 	if (W_FindLump("ONCRINFO", lump) == -1)
 	{
-		//AnnouncerManager::getInstance().loadAnnouncerDefaults();
+		AnnouncerManager::getInstance().loadAnnouncerDefaults();
 		return;
 	}
 

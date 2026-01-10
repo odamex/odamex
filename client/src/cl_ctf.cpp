@@ -37,6 +37,7 @@
 #include "s_sound.h"
 #include "v_text.h"
 #include "g_gametype.h"
+#include "g_announcer.h"
 
 static int tintglow = 0;
 
@@ -348,13 +349,13 @@ static const char *flag_sound[NUM_CTF_SCORE][7] = {
 	{"", "", "", "", "", ""}, // REFRESH
 	{"", "", "", "", "", ""}, // KILL
 	{"", "", "", "", "", ""}, // BETRAYAL
-	{"ctf/your/flag/take", "ctf/enemy/flag/take", "vox/your/flag/take", "vox/enemy/flag/take", "vox/blue/flag/take", "vox/red/flag/take", "vox/green/flag/take"}, // GRAB
-	{"ctf/your/flag/take", "ctf/enemy/flag/take", "vox/your/flag/take", "vox/enemy/flag/take", "vox/blue/flag/take", "vox/red/flag/take", "vox/green/flag/take"}, // FIRSTGRAB
+	{"ctf/your/flag/take", "ctf/enemy/flag/take", ANN_YOURFLAGTAKEN.c_str(), ANN_ENEMYFLAGTAKEN.c_str(), ANN_BLUEFLAGTAKEN.c_str(), ANN_REDFLAGTAKEN.c_str(), ANN_GREENFLAGTAKEN.c_str()}, // GRAB
+	{"ctf/your/flag/take", "ctf/enemy/flag/take", ANN_YOURFLAGTAKEN.c_str(), ANN_ENEMYFLAGTAKEN.c_str(), ANN_BLUEFLAGTAKEN.c_str(), ANN_REDFLAGTAKEN.c_str(), ANN_GREENFLAGTAKEN.c_str()}, // FIRSTGRAB
 	{"", "", "", "", "", ""}, // CARRIERKILL
-	{"ctf/your/flag/return", "ctf/enemy/flag/return", "vox/your/flag/return", "vox/enemy/flag/return", "vox/blue/flag/return", "vox/red/flag/return", "vox/green/flag/return"}, // RETURN
-	{"ctf/your/score", "ctf/enemy/score", "vox/your/score", "vox/enemy/score", "vox/blue/score", "vox/red/score", "vox/green/score"}, // CAPTURE
-	{"ctf/your/flag/drop", "ctf/enemy/flag/drop", "vox/your/flag/drop", "vox/enemy/flag/drop", "vox/blue/flag/drop", "vox/red/flag/drop", "vox/green/flag/drop"}, // DROP
-	{"ctf/your/flag/manualreturn", "ctf/enemy/flag/manualreturn", "vox/your/flag/manualreturn", "vox/enemy/flag/manualreturn", "vox/blue/flag/manualreturn", "vox/red/flag/manualreturn", "vox/green/flag/manualreturn"}, // MANUALRETURN
+	{"ctf/your/flag/return", "ctf/enemy/flag/return", ANN_YOURFLAGRETURNED.c_str(), ANN_ENEMYFLAGRETURNED.c_str(), ANN_BLUEFLAGRETURNED.c_str(), ANN_REDFLAGRETURNED.c_str(), ANN_GREENFLAGRETURNED.c_str()}, // RETURN
+	{"ctf/your/score", "ctf/enemy/score", ANN_YOURTEAMSCORES.c_str(), ANN_ENEMYTEAMSCORES.c_str(), ANN_BLUETEAMSCORES.c_str(), ANN_REDTEAMSCORES.c_str(), ANN_GREENTEAMSCORES.c_str()}, // CAPTURE
+	{"ctf/your/flag/drop", "ctf/enemy/flag/drop", ANN_YOURFLAGDROPPED.c_str(), ANN_ENEMYFLAGDROPPED.c_str(), ANN_BLUEFLAGDROPPED.c_str(), ANN_REDFLAGDROPPED.c_str(), ANN_GREENFLAGDROPPED.c_str()}, // DROP
+	{"ctf/your/flag/manualreturn", "ctf/enemy/flag/manualreturn", ANN_YOURFLAGISBEINGRETURNED.c_str(), ANN_ENEMYFLAGISBEINGRETURNED.c_str(), ANN_BLUEFLAGISBEINGRETURNED.c_str(), ANN_REDFLAGISBEINGRETURNED.c_str(), ANN_GREENFLAGISBEINGRETURNED.c_str()}, // MANUALRETURN
 };
 
 EXTERN_CVAR(snd_voxtype)
@@ -418,9 +419,11 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 			else if ((ev == SCORE_RETURN || ev == SCORE_MANUALRETURN || ev == SCORE_DROP || ev == SCORE_GRAB || ev == SCORE_FIRSTGRAB) && playerTeam == flag)
 				sound = Yours;
 
-			if (IsPossesiveEvent(playerTeam, flag, team, ev) && S_FindSound(flag_sound[ev][2 + sound]))
+			const std::string possessiveSound = AnnouncerManager::getInstance().getTokenForEvent(flag_sound[ev][2 + sound]);
+
+			if (IsPossesiveEvent(playerTeam, flag, team, ev) && S_FindSound(possessiveSound.c_str()))
 			{
-				S_Sound(CHAN_ANNOUNCER, flag_sound[ev][2 + sound], 1, ATTN_NONE);
+				S_Sound(CHAN_ANNOUNCER, possessiveSound.c_str(), 1, ATTN_NONE);
 				break;
 			}
 		}
@@ -431,8 +434,10 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 		if (ev == SCORE_CAPTURE)
 			sound = team;
 
-		if (S_FindSound(flag_sound[ev][4 + sound]) != -1)
-			S_Sound(CHAN_ANNOUNCER, flag_sound[ev][4 + sound], 1, ATTN_NONE);
+		const std::string teamSound = AnnouncerManager::getInstance().getTokenForEvent(flag_sound[ev][4 + sound]);
+
+		if (S_FindSound(teamSound.c_str()) != -1)
+			S_Sound(CHAN_ANNOUNCER, teamSound.c_str(), 1, ATTN_NONE);
 		break;
 	}
 		[[fallthrough]];

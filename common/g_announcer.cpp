@@ -119,4 +119,59 @@ void AnnouncerManager::loadAnnouncerDefaults()
 	defaultAnnouncer.soundDict[ANN_YOUWIN] = "officialvox/youwin";
 	defaultAnnouncer.soundDict[ANN_YOULOSE] = "officialvox/youlose";
 	defaultAnnouncer.soundDict[ANN_YOUTIED] = "officialvox/youtied";
+
+	// Multi Kill Announcements
+	defaultAnnouncer.soundDict["multi 2"] = "officialvox/multi/doublekill";
+	defaultAnnouncer.soundDict["multi 3"] = "officialvox/multi/triplekill";
+	defaultAnnouncer.soundDict["multi 4"] = "officialvox/multi/multikill";
+	defaultAnnouncer.soundDict["multi 5"] = "officialvox/multi/ultrakill";
+	defaultAnnouncer.soundDict["multi 6"] = "officialvox/multi/overkill";
+	defaultAnnouncer.soundDict["multi 7"] = "officialvox/multi/megakill";
+	defaultAnnouncer.soundDict["multi 8"] = "officialvox/multi/monsterkill";
+	defaultAnnouncer.soundDict["multi 9"] = "officialvox/multi/mythickill";
+	defaultAnnouncer.soundDict["multi 10"] = "officialvox/multi/killionaire";
+	defaultAnnouncer.soundDict["multi 11"] = "officialvox/multi/terminator";
+
+	// Spree Announcements
+	defaultAnnouncer.soundDict["multi 1"] = "officialvox/spree/killingspree";
+	defaultAnnouncer.soundDict["multi 2"] = "officialvox/spree/rampage";
+	defaultAnnouncer.soundDict["multi 3"] = "officialvox/spree/dominating";
+	defaultAnnouncer.soundDict["multi 4"] = "officialvox/spree/unstoppable";
+	defaultAnnouncer.soundDict["multi 5"] = "officialvox/spree/untouchable";
+	defaultAnnouncer.soundDict["multi 6"] = "officialvox/spree/legendary";
+
+	announcerDict[defaultAnnouncer.name] = defaultAnnouncer;
+
+	loadedAnnouncer = announcerDict[defaultAnnouncer.name];
+}
+
+const std::string AnnouncerManager::getTokenForEvent(const std::string& event)
+{
+	auto it = loadedAnnouncer.soundDict.find(event);
+	if (it != loadedAnnouncer.soundDict.end())
+	{
+		return it->second;
+	}
+	return "";
+}
+
+void AnnouncerManager::loadAnnouncerByName(const std::string& announcer)
+{
+	auto it = announcerDict.find(announcer);
+	if (it != announcerDict.end())
+	{
+		loadedAnnouncer = it->second;
+	}
+	else
+	{
+		// Load default announcer if nothing is found.
+		if (announcerDict.empty())
+		{
+			loadAnnouncerDefaults();
+		}
+		else
+		{
+			loadedAnnouncer = announcerDict.begin()->second;
+		}
+	}
 }

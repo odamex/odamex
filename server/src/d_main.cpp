@@ -72,6 +72,7 @@
 #include "w_ident.h"
 
 #include "g_spreedef.h"
+#include "g_oncrinfo.h"
 
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_nomonsters)
@@ -218,6 +219,7 @@ void D_Init()
 	G_ParseMusInfo();
 	S_ParseSndInfo();
 	G_ParseSpreeDef();
+	G_ParseOncrInfo();
 	G_ParseHordeDefs();
 	G_ReadCOMPLVL();
 

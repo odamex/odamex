@@ -668,6 +668,11 @@ CVAR_RANGE_FUNC_DECL(	snd_oplchips, "6", "Number of emulated OPL chips",
 CVAR_RANGE_FUNC_DECL(	snd_oplbank, "1", "OPL instrument set",
 				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
+// Announcer
+CVAR(	cl_announcer, "Odamex Official Announcer",
+				"The announcer profile to use for game play. Must be an exact match to a currently loaded announcer's name.",
+				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
 //
 // C_GetDefaultMuiscSystem()
 //

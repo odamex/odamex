@@ -311,6 +311,21 @@ public:
 	/// </summary>
 	void loadAnnouncerDefaults();
 
+	/// <summary>
+	/// Gets the sndinfo token for the current announcer for the
+	/// following event.
+	/// </summary>
+	/// <param name="token">Token for the event to play. One
+	/// of the announcements above.</param>
+	/// <returns>The specified sndinfo token for the current announcer, empty if invalid or unknown.</returns>
+	const std::string getTokenForEvent(const std::string& event);
+
+	/// <summary>
+	/// Loads the specified announcer, or if not found, loads the default announcer.
+	/// </summary>
+	/// <param name="announcer">Name of the announcer to load.</param>
+	void loadAnnouncerByName(const std::string& announcer);
+
 private:
 	/// <summary>
 	/// Dictionary of all loaded announcers, mapped by their name.
