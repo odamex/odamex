@@ -8,11 +8,6 @@ Odamex is a modification of DOOM to allow players to compete with each other ove
 
 Odamex is based on the CSDoom 0.62 source code originally created by Sergey Makovkin, which is based on the ZDoom 1.22 source code created by Marisa Heit.
 
-MacOS DMG packaging
--------------------
-
-macOS DMGs are built as universal binaries and include `Odamex.app`, `odalaunch.app`, `odasrv`, `odamex.wad`, config samples, and third-party licenses. The DMG layout and icons are generated in CI to match the release installer.
-
 Features
 --------
 
@@ -70,6 +65,11 @@ On Windows, all libraries are automatically downloaded if not found.  On \*nix/M
 Please check [this page][1] for further instructions on how to compile Odamex for your platform.
 
 [1]: https://github.com/odamex/odamex/wiki/Compiling-Odamex
+
+MacOS DMG packaging
+-------------------
+
+macOS DMGs are built as universal binaries and include `Odamex.app`, `odalaunch.app`, `odasrv`, `odamex.wad`, config samples, and third-party licenses. The DMG layout and icons are generated in CI to match the release installer.
 
 Contributing to the project
 ---------------------------

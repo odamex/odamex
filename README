@@ -13,13 +13,6 @@ and operating systems such as Windows and Macintosh.
 Odamex is based on the CSDoom 0.62 source code originally created by Sergey
 Makovkin, which is based on the ZDoom 1.22 source code created by Marisa Heit.
 
-macOS DMG packaging
--------------------
-
-macOS DMGs are built as universal binaries and include Odamex.app, odalaunch.app,
-odasrv, odamex.wad, config samples, and third-party licenses. The DMG layout and
-icons are generated in CI to match the release installer.
-
 Features
 --------
 
@@ -87,6 +80,14 @@ Please check this page for further instructions on how to compile Odamex
 for your platform.
 
 <https://github.com/odamex/odamex/wiki/Compiling-Odamex>
+
+
+macOS DMG packaging
+-------------------
+
+macOS DMGs are built as universal binaries and include Odamex.app, odalaunch.app,
+odasrv, odamex.wad, config samples, and third-party licenses. The DMG layout and
+icons are generated in CI to match the release installer.
 
 Contributing to the project
 ---------------------------
