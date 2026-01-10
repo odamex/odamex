@@ -1398,7 +1398,6 @@ void AM_drawWalls()
 {
 	int r, g, b;
 	static mline_t l;
-	float rdif, gdif, bdif;
 	const palette_t* pal = V_GetDefaultPalette();
 
 	for (const line_t& line : R_GetLines())
@@ -1810,7 +1809,7 @@ void AM_drawHordeBoss(const AActor* t)
 {
 	OInterpolation& oi = OInterpolation::getInstance();
 
-	if (t->oflags & MFO_BOSSPOOL)
+	if (t->oflags & MFO_BOSSPOOL && t->health > 0)
 	{
 		fixed_t thingx;
 		fixed_t thingy;
