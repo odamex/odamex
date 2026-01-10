@@ -66,70 +66,100 @@ if(BUILD_CLIENT AND USE_INTERNAL_FLTK)
     endif()
   else()
     set(FLTK_SKIP_OPENGL TRUE)
-    function(odamex_sanitize_fltk_libs input_list output_var)
-      set(result "")
-      set(mode "general")
-      foreach(item IN LISTS input_list)
-        if(item STREQUAL "optimized")
-          set(mode "optimized")
-        elseif(item STREQUAL "debug")
-          set(mode "debug")
-        elseif(item STREQUAL "general")
-          set(mode "general")
-        elseif(item STREQUAL "FLTK_LIBRARIES" OR item STREQUAL "FLTK_IMAGES_LIBRARIES"
-            OR item STREQUAL "-lFLTK_LIBRARIES" OR item STREQUAL "-lFLTK_IMAGES_LIBRARIES")
-          set(mode "general")
-        else()
-          if(WIN32)
-            if(mode STREQUAL "debug")
-              list(APPEND result "$<$<CONFIG:Debug>:${item}>")
-            elseif(mode STREQUAL "optimized")
-              list(APPEND result "$<$<NOT:$<CONFIG:Debug>>:${item}>")
+    set(_FLTK_LOCAL_LIBDIR "${CMAKE_CURRENT_BINARY_DIR}/local/lib")
+    set(_FLTK_LOCAL_INCDIR "${CMAKE_CURRENT_BINARY_DIR}/local/include")
+    if(EXISTS "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk${libsuffix}")
+      add_library(fltk::fltk INTERFACE IMPORTED GLOBAL)
+      set_target_properties(fltk::fltk PROPERTIES
+        INTERFACE_LINK_LIBRARIES
+          "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk${libsuffix};${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_forms${libsuffix}"
+        INTERFACE_INCLUDE_DIRECTORIES "${_FLTK_LOCAL_INCDIR}"
+        IMPORTED_GLOBAL True)
+      add_library(fltk::images INTERFACE IMPORTED GLOBAL)
+      set_target_properties(fltk::images PROPERTIES
+        INTERFACE_LINK_LIBRARIES
+          "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_images${libsuffix}"
+        INTERFACE_INCLUDE_DIRECTORIES "${_FLTK_LOCAL_INCDIR}"
+        IMPORTED_GLOBAL True)
+      if(EXISTS "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_png${libsuffix}")
+        set_property(TARGET fltk::images APPEND PROPERTY
+          INTERFACE_LINK_LIBRARIES "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_png${libsuffix}")
+      endif()
+      if(EXISTS "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_z${libsuffix}")
+        set_property(TARGET fltk::images APPEND PROPERTY
+          INTERFACE_LINK_LIBRARIES "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_z${libsuffix}")
+      endif()
+    else()
+      function(odamex_sanitize_fltk_libs input_list output_var)
+        set(result "")
+        set(mode "general")
+        foreach(item IN LISTS input_list)
+          if(item STREQUAL "optimized")
+            set(mode "optimized")
+          elseif(item STREQUAL "debug")
+            set(mode "debug")
+          elseif(item STREQUAL "general")
+            set(mode "general")
+          elseif(item STREQUAL "FLTK_LIBRARIES" OR item STREQUAL "FLTK_IMAGES_LIBRARIES"
+              OR item STREQUAL "-lFLTK_LIBRARIES" OR item STREQUAL "-lFLTK_IMAGES_LIBRARIES")
+            set(mode "general")
+          else()
+            if(WIN32)
+              if(mode STREQUAL "debug")
+                list(APPEND result "$<$<CONFIG:Debug>:${item}>")
+              elseif(mode STREQUAL "optimized")
+                list(APPEND result "$<$<NOT:$<CONFIG:Debug>>:${item}>")
+              else()
+                list(APPEND result "${item}")
+              endif()
             else()
               list(APPEND result "${item}")
             endif()
-          else()
-            list(APPEND result "${item}")
+            set(mode "general")
           endif()
-          set(mode "general")
+        endforeach()
+        set(${output_var} "${result}" PARENT_SCOPE)
+      endfunction()
+
+      find_package(FLTK CONFIG)
+      if(NOT TARGET fltk::fltk)
+        find_package(FLTK REQUIRED)
+      endif()
+      if(NOT TARGET fltk::fltk)
+        if(FLTK_LIBRARIES)
+          list(REMOVE_ITEM FLTK_LIBRARIES "FLTK_GL_LIBRARY-NOTFOUND" "-lFLTK_GL_LIBRARY-NOTFOUND")
+          odamex_sanitize_fltk_libs(FLTK_LIBRARIES FLTK_LIBRARIES_SANITIZED)
+          add_library(fltk::fltk INTERFACE IMPORTED GLOBAL)
+          set_target_properties(fltk::fltk PROPERTIES
+            INTERFACE_LINK_LIBRARIES "${FLTK_LIBRARIES_SANITIZED}"
+            INTERFACE_INCLUDE_DIRECTORIES "${FLTK_INCLUDE_DIRS}"
+            IMPORTED_GLOBAL True)
+        else()
+          message(FATAL_ERROR "FLTK target not found.")
         endif()
-      endforeach()
-      set(${output_var} "${result}" PARENT_SCOPE)
-    endfunction()
-
-    find_package(FLTK CONFIG)
-    if(NOT TARGET fltk::fltk)
-      find_package(FLTK REQUIRED)
-    endif()
-    if(NOT TARGET fltk::fltk)
-      if(FLTK_LIBRARIES)
-        list(REMOVE_ITEM FLTK_LIBRARIES "FLTK_GL_LIBRARY-NOTFOUND" "-lFLTK_GL_LIBRARY-NOTFOUND")
-        odamex_sanitize_fltk_libs(FLTK_LIBRARIES FLTK_LIBRARIES_SANITIZED)
-        add_library(fltk::fltk INTERFACE IMPORTED GLOBAL)
-        set_target_properties(fltk::fltk PROPERTIES
-          INTERFACE_LINK_LIBRARIES "${FLTK_LIBRARIES_SANITIZED}"
-          INTERFACE_INCLUDE_DIRECTORIES "${FLTK_INCLUDE_DIRS}")
       else()
-        message(FATAL_ERROR "FLTK target not found.")
+        set_target_properties(fltk::fltk PROPERTIES IMPORTED_GLOBAL True)
+      endif()
+
+      if(NOT TARGET fltk::images)
+        add_library(fltk::images INTERFACE IMPORTED GLOBAL)
+        if(FLTK_IMAGES_LIBRARIES)
+          list(REMOVE_ITEM FLTK_IMAGES_LIBRARIES "FLTK_GL_LIBRARY-NOTFOUND" "-lFLTK_GL_LIBRARY-NOTFOUND")
+          odamex_sanitize_fltk_libs(FLTK_IMAGES_LIBRARIES FLTK_IMAGES_LIBRARIES_SANITIZED)
+          set_target_properties(fltk::images PROPERTIES
+            INTERFACE_LINK_LIBRARIES "${FLTK_IMAGES_LIBRARIES_SANITIZED}"
+            INTERFACE_INCLUDE_DIRECTORIES "${FLTK_INCLUDE_DIRS}"
+            IMPORTED_GLOBAL True)
+        else()
+          set_target_properties(fltk::images PROPERTIES
+            INTERFACE_LINK_LIBRARIES "${FLTK_LIBRARIES_SANITIZED}"
+            INTERFACE_INCLUDE_DIRECTORIES "${FLTK_INCLUDE_DIRS}"
+            IMPORTED_GLOBAL True)
+        endif()
+      else()
+        set_target_properties(fltk::images PROPERTIES IMPORTED_GLOBAL True)
       endif()
     endif()
-
-    set_target_properties(fltk::fltk PROPERTIES IMPORTED_GLOBAL True)
-    if(NOT TARGET fltk::images)
-      add_library(fltk::images INTERFACE IMPORTED GLOBAL)
-      if(FLTK_IMAGES_LIBRARIES)
-        list(REMOVE_ITEM FLTK_IMAGES_LIBRARIES "FLTK_GL_LIBRARY-NOTFOUND" "-lFLTK_GL_LIBRARY-NOTFOUND")
-        odamex_sanitize_fltk_libs(FLTK_IMAGES_LIBRARIES FLTK_IMAGES_LIBRARIES_SANITIZED)
-        set_target_properties(fltk::images PROPERTIES
-          INTERFACE_LINK_LIBRARIES "${FLTK_IMAGES_LIBRARIES_SANITIZED}"
-          INTERFACE_INCLUDE_DIRECTORIES "${FLTK_INCLUDE_DIRS}")
-      else()
-        set_target_properties(fltk::images PROPERTIES
-          INTERFACE_LINK_LIBRARIES "${FLTK_LIBRARIES_SANITIZED}"
-          INTERFACE_INCLUDE_DIRECTORIES "${FLTK_INCLUDE_DIRS}")
-      endif()
-    endif()
-    set_target_properties(fltk::images PROPERTIES IMPORTED_GLOBAL True)
   endif()
   if(UNIX AND NOT APPLE)
     find_library(_FLTK_XFT_LIB Xft)
