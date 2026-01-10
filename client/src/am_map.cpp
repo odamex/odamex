@@ -1224,7 +1224,7 @@ static inline void PUTDOT_THICK(
 	const int thickness = (am_thickness == 0) ? (CleanXfac >> 2) : am_thickness.asInt() - 1;
 
 	// Clamp bbox once
-	const int fwm1 = f_w - 1, fhm1 = f_h - 1;
+	const int fwm1 = f.x + f_w - 1, fhm1 = f.y + f_h - 1;
 	int minx = x - thickness; if (minx < 0)   minx = 0;
 	int maxx = x + thickness; if (maxx > fwm1) maxx = fwm1;
 	int miny = y - thickness; if (miny < 0)   miny = 0;
@@ -1255,7 +1255,7 @@ static inline void PUTDOT_THICK(int x, int y, argb_t color)
 
 static inline void PUTDOT_THICK(int x, int y, byte color)
 {
-	PUTDOT_THICK<byte>(x, y, color, [](int x, int y, byte color){ fb[y * f_p + x] = color; }, fb, f_w);
+	PUTDOT_THICK<byte>(x, y, color, [](int x, int y, byte color){ fb[y * f_p + x] = color; }, fb, f_p);
 }
 
 //
