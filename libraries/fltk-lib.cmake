@@ -39,55 +39,51 @@ if(BUILD_CLIENT AND USE_INTERNAL_FLTK)
       "-DHAVE_PNG_H=ON")
   endif()
 
+  function(odamex_define_fltk_targets libdir incdir extra_libs)
+    add_library(fltk::fltk INTERFACE IMPORTED GLOBAL)
+    set(_fltk_core_libs
+      "${libdir}/${libprefix}fltk${libsuffix};${libdir}/${libprefix}fltk_forms${libsuffix}")
+    if(extra_libs)
+      set(_fltk_core_libs "${_fltk_core_libs};${extra_libs}")
+    endif()
+    set_target_properties(fltk::fltk PROPERTIES
+      INTERFACE_LINK_LIBRARIES "${_fltk_core_libs}"
+      INTERFACE_INCLUDE_DIRECTORIES "${incdir}"
+      IMPORTED_GLOBAL True)
+
+    add_library(fltk::images INTERFACE IMPORTED GLOBAL)
+    set_target_properties(fltk::images PROPERTIES
+      INTERFACE_LINK_LIBRARIES "${libdir}/${libprefix}fltk_images${libsuffix}"
+      INTERFACE_INCLUDE_DIRECTORIES "${incdir}"
+      IMPORTED_GLOBAL True)
+    if(EXISTS "${libdir}/${libprefix}fltk_png${libsuffix}")
+      set_property(TARGET fltk::images APPEND PROPERTY
+        INTERFACE_LINK_LIBRARIES "${libdir}/${libprefix}fltk_png${libsuffix}")
+    endif()
+    if(EXISTS "${libdir}/${libprefix}fltk_z${libsuffix}")
+      set_property(TARGET fltk::images APPEND PROPERTY
+        INTERFACE_LINK_LIBRARIES "${libdir}/${libprefix}fltk_z${libsuffix}")
+    endif()
+  endfunction()
+
   lib_buildgen(LIBRARY fltk PARAMS ${_FLTK_BUILDGEN_PARAMS})
   lib_build(LIBRARY fltk)
 
+  set(_FLTK_LOCAL_LIBDIR "${CMAKE_CURRENT_BINARY_DIR}/local/lib")
+  set(_FLTK_LOCAL_INCDIR "${CMAKE_CURRENT_BINARY_DIR}/local/include")
+
   if(APPLE)
-    set(_FLTK_LOCAL_LIBDIR "${CMAKE_CURRENT_BINARY_DIR}/local/lib")
-    set(_FLTK_LOCAL_INCDIR "${CMAKE_CURRENT_BINARY_DIR}/local/include")
-    add_library(fltk::fltk INTERFACE IMPORTED GLOBAL)
-    set_target_properties(fltk::fltk PROPERTIES
-      INTERFACE_LINK_LIBRARIES
-        "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk${libsuffix};${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_forms${libsuffix};-framework Cocoa;-framework ApplicationServices"
-      INTERFACE_INCLUDE_DIRECTORIES "${_FLTK_LOCAL_INCDIR}")
-    add_library(fltk::images INTERFACE IMPORTED GLOBAL)
-    set_target_properties(fltk::images PROPERTIES
-      INTERFACE_LINK_LIBRARIES
-        "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_images${libsuffix}"
-      INTERFACE_INCLUDE_DIRECTORIES "${_FLTK_LOCAL_INCDIR}")
-    if(EXISTS "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_png${libsuffix}")
-      set_property(TARGET fltk::images APPEND PROPERTY
-        INTERFACE_LINK_LIBRARIES "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_png${libsuffix}")
-    endif()
-    if(EXISTS "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_z${libsuffix}")
-      set_property(TARGET fltk::images APPEND PROPERTY
-        INTERFACE_LINK_LIBRARIES "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_z${libsuffix}")
-    endif()
+    odamex_define_fltk_targets(
+      "${_FLTK_LOCAL_LIBDIR}"
+      "${_FLTK_LOCAL_INCDIR}"
+      "-framework Cocoa;-framework ApplicationServices")
   else()
     set(FLTK_SKIP_OPENGL TRUE)
-    set(_FLTK_LOCAL_LIBDIR "${CMAKE_CURRENT_BINARY_DIR}/local/lib")
-    set(_FLTK_LOCAL_INCDIR "${CMAKE_CURRENT_BINARY_DIR}/local/include")
     if(EXISTS "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk${libsuffix}")
-      add_library(fltk::fltk INTERFACE IMPORTED GLOBAL)
-      set_target_properties(fltk::fltk PROPERTIES
-        INTERFACE_LINK_LIBRARIES
-          "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk${libsuffix};${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_forms${libsuffix}"
-        INTERFACE_INCLUDE_DIRECTORIES "${_FLTK_LOCAL_INCDIR}"
-        IMPORTED_GLOBAL True)
-      add_library(fltk::images INTERFACE IMPORTED GLOBAL)
-      set_target_properties(fltk::images PROPERTIES
-        INTERFACE_LINK_LIBRARIES
-          "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_images${libsuffix}"
-        INTERFACE_INCLUDE_DIRECTORIES "${_FLTK_LOCAL_INCDIR}"
-        IMPORTED_GLOBAL True)
-      if(EXISTS "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_png${libsuffix}")
-        set_property(TARGET fltk::images APPEND PROPERTY
-          INTERFACE_LINK_LIBRARIES "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_png${libsuffix}")
-      endif()
-      if(EXISTS "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_z${libsuffix}")
-        set_property(TARGET fltk::images APPEND PROPERTY
-          INTERFACE_LINK_LIBRARIES "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk_z${libsuffix}")
-      endif()
+      odamex_define_fltk_targets(
+        "${_FLTK_LOCAL_LIBDIR}"
+        "${_FLTK_LOCAL_INCDIR}"
+        "")
     else()
       function(odamex_sanitize_fltk_libs input_list output_var)
         set(result "")
