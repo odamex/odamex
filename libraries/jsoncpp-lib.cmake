@@ -14,6 +14,9 @@ if((BUILD_CLIENT OR BUILD_SERVER) AND USE_INTERNAL_JSONCPP)
 
   find_package(jsoncpp REQUIRED)
   set(_JSONCPP_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/local/include/jsoncpp")
+  if(NOT EXISTS "${_JSONCPP_INCLUDE_DIR}")
+    set(_JSONCPP_INCLUDE_DIR "${CMAKE_CURRENT_BINARY_DIR}/local/include")
+  endif()
   if(TARGET jsoncpp_static)
     set_target_properties(jsoncpp_static PROPERTIES IMPORTED_GLOBAL TRUE)
     set_property(TARGET jsoncpp_static APPEND PROPERTY
