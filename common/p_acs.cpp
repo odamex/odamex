@@ -3340,7 +3340,7 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_GAMESKILL:
-			PushToStack (sv_skill);
+			PushToStack (sv_skill - 1);
 			break;
 
 // [BC] Start ST PCD's
