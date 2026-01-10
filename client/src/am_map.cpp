@@ -2026,6 +2026,8 @@ void AM_Drawer()
 
 	if (AM_ClassicAutomapVisible())
 	{
+		minimapactive = false;
+
 		f.x = f.y = 0;
 		f_w = surface_width;
 		f_h = ST_StatusBarY(surface_width, surface_height);
@@ -2035,8 +2037,6 @@ void AM_Drawer()
 	}
 	else
 	{
-		minimapactive = am_ovscalewidth < 0.5f || am_ovscaleheight < 0.5f;
-
 		const int v_width = R_ViewWidth(surface_width, surface_height);
 		const int v_height = R_ViewHeight(surface_width, surface_height);
 		const int loc = am_ovlocation;
@@ -2070,6 +2070,11 @@ void AM_Drawer()
 
 		if (const DCanvas* canvas = surface->getDefaultCanvas())
 			canvas->Dim(f.x, f.y, f_w, f_h, am_ovbackcolor.cstring(), am_ovbackalpha);
+
+		const int x_center = surface_width >> 1;
+		const int y_center = surface_height >> 1;
+
+		minimapactive = x_center < f.x || y_center < f.y ||  x_center > f.x + f_w || y_center > f.y + f_h;
 	}
 
 	if (am_followplayer)
