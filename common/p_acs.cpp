@@ -39,6 +39,7 @@
 #include "m_vectors.h"
 #include "p_inter.h"
 #include "gi.h"
+#include "g_skill.h"
 
 #if defined(SERVER_APP)
 #include "sv_main.h"
@@ -3340,7 +3341,7 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_GAMESKILL:
-			PushToStack (sv_skill - 1);
+			PushToStack (G_GetCurrentSkill().ACS_return);
 			break;
 
 // [BC] Start ST PCD's
