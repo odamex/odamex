@@ -235,14 +235,14 @@ jobs:
         python - <<'PY'
         from pathlib import Path
 
-          candidates = [
-              Path("libraries/libpng/scripts/cmake/genout.cmake.in"),
-              Path("libraries/libpng/scripts/genout.cmake.in"),
-          ]
-          path = next((p for p in candidates if p.exists()), None)
-          if path is None:
-              raise FileNotFoundError("genout.cmake.in not found in libpng scripts")
-          text = path.read_text()
+        candidates = [
+            Path("libraries/libpng/scripts/cmake/genout.cmake.in"),
+            Path("libraries/libpng/scripts/genout.cmake.in"),
+        ]
+        path = next((p for p in candidates if p.exists()), None)
+        if path is None:
+            raise FileNotFoundError("genout.cmake.in not found in libpng scripts")
+        text = path.read_text()
         needle = "set(PLATFORM_C_FLAGS ${PLATFORM_C_FLAGS} -arch ${CMAKE_OSX_ARCHITECTURES})"
         repl = "\n".join([
             "list(GET CMAKE_OSX_ARCHITECTURES 0 _first_arch)",
