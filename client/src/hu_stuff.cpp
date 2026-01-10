@@ -383,7 +383,7 @@ static void HU_DrawCrosshair()
 		return;
 
     // Don't draw the crosshair when automap is visible.
-	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible())
+	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible(true))
         return;
 
 	// Don't draw the crosshair in spectator mode

@@ -97,6 +97,7 @@ typedef struct
 
 inline int am_cheating;
 inline bool automapactive = false;
+inline bool minimapactive = false;
 
 // Called by main loop.
 bool AM_Responder(event_t* ev);
@@ -113,7 +114,10 @@ void AM_Drawer();
 void AM_Stop();
 
 inline bool AM_ClassicAutomapVisible() { return automapactive && !viewactive; };
-inline bool AM_OverlayAutomapVisible() { return automapactive && viewactive; };
+inline bool AM_OverlayAutomapVisible(bool not_minimap = false)
+{
+	return (not_minimap ? !minimapactive : true) && automapactive && viewactive;
+};
 
 void AM_SetBaseColorDoom();
 void AM_SetBaseColorRaven();

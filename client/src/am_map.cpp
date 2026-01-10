@@ -2035,6 +2035,8 @@ void AM_Drawer()
 	}
 	else
 	{
+		minimapactive = am_ovscalewidth < 0.5f || am_ovscaleheight < 0.5f;
+
 		const int v_width = R_ViewWidth(surface_width, surface_height);
 		const int v_height = R_ViewHeight(surface_width, surface_height);
 		const int loc = am_ovlocation;
