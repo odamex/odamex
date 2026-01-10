@@ -113,6 +113,11 @@ EXTERN_CVAR(am_ovnotseencolor)
 EXTERN_CVAR(am_ovlockedcolor)
 EXTERN_CVAR(am_ovexitcolor)
 EXTERN_CVAR(am_ovteleportcolor)
+EXTERN_CVAR(am_ovbackcolor)
+EXTERN_CVAR(am_ovbackalpha)
+EXTERN_CVAR(am_ovscalewidth)
+EXTERN_CVAR(am_ovscaleheight)
+EXTERN_CVAR(am_ovlocation)
 
 BEGIN_COMMAND(resetcustomcolors)
 {
@@ -2030,11 +2035,39 @@ void AM_Drawer()
 	}
 	else
 	{
-		f.x = R_ViewWindowX(surface_width, surface_height);
-		f.y = R_ViewWindowY(surface_width, surface_height);
-		f_w = R_ViewWidth(surface_width, surface_height);
-		f_h = R_ViewHeight(surface_width, surface_height);
+		const int v_width = R_ViewWidth(surface_width, surface_height);
+		const int v_height = R_ViewHeight(surface_width, surface_height);
+		const int loc = am_ovlocation;
+
+		int x_offset = 0;
+		int y_offset = 0;
+
+		f_w = v_width * am_ovscalewidth;
+		f_h = v_height * am_ovscaleheight;
+
+		switch (loc)
+		{
+		case 1:
+		case 4:
+			y_offset = (v_height - f_h) / 2;
+			break;
+		case 2:
+		case 5:
+			y_offset = v_height - f_h;
+			break;
+		default:
+			break;
+		}
+
+		if (loc >= 3)
+			x_offset = v_width - f_w;
+
+		f.x = R_ViewWindowX(surface_width, surface_height) + x_offset;
+		f.y = R_ViewWindowY(surface_width, surface_height) + y_offset;
 		f_p = surface->getPitch();
+
+		if (const DCanvas* canvas = surface->getDefaultCanvas())
+			canvas->Dim(f.x, f.y, f_w, f_h, am_ovbackcolor.cstring(), am_ovbackalpha);
 	}
 
 	if (am_followplayer)

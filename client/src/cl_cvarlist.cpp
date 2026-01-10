@@ -177,6 +177,20 @@ CVAR(					am_ovexitcolor, "ff ff 00", "",
 CVAR(					am_ovteleportcolor, "ff a3 00", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR(					am_ovbackcolor, "00 00 00", "Overlay background color",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_RANGE(				am_ovbackalpha, "0.25", "Transparency of overlay background",
+						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(				am_ovscalewidth, "0.25", "Scale width of overlay automap",
+						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(				am_ovscaleheight, "0.5", "Scale height of overlay automap",
+						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(				am_ovlocation, "1", "Overlay location (0:LeftTop, 1:LeftMid, 2:LeftBot, 3:RightTop, 4:RightMid, 5:RightBot)",
+						CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 5.0f)
 
 // Console
 // -------
