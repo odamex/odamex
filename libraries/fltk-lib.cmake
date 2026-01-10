@@ -76,9 +76,8 @@ if(BUILD_CLIENT AND USE_INTERNAL_FLTK)
     odamex_define_fltk_targets(
       "${_FLTK_LOCAL_LIBDIR}"
       "${_FLTK_LOCAL_INCDIR}"
-      "-framework Cocoa;-framework ApplicationServices")
+      "-framework Cocoa;-framework ApplicationServices;-framework UniformTypeIdentifiers")
   else()
-    set(FLTK_SKIP_OPENGL TRUE)
     if(EXISTS "${_FLTK_LOCAL_LIBDIR}/${libprefix}fltk${libsuffix}")
       odamex_define_fltk_targets(
         "${_FLTK_LOCAL_LIBDIR}"
