@@ -23,9 +23,10 @@ if [ -f "version.txt" ]; then
   version_suffix="$(head -n 1 version.txt | tr -d '\r')"
 fi
 if [ -z "${version_suffix}" ]; then
-  version_suffix="unknown"
+  odamex_dir="Odamex"
+else
+  odamex_dir="Odamex ${version_suffix}"
 fi
-odamex_dir="Odamex ${version_suffix}"
 mkdir -p "${staging_dir}/${odamex_dir}"
 
 if [ -d "build/client/odamex.app" ]; then
