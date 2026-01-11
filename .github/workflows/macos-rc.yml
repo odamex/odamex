@@ -78,7 +78,7 @@ jobs:
       zlib_version: "1.2.11"
       libpng_version: "1.6.40"
       zstd_version: "1.5.7"
-      odamex_install_bindir: "/Applications/Odamex ${{ needs.pre_job.outputs.new_version }}"
+      odamex_install_bindir: "/Applications/Odamex"
     steps:
     - uses: actions/checkout@v4
       with:
@@ -394,8 +394,7 @@ jobs:
         set -euo pipefail
         bash ci/macos-dmg.sh \
           "odamex-macos-${{ env.new_version }}-prerelease.${{ env.build_number }}.dmg" \
-          "Odamex" \
-          "${{ env.new_version }}"
+          "Odamex ${{ env.new_version }}"
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:

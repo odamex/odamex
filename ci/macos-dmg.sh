@@ -2,13 +2,12 @@
 set -euo pipefail
 
 if [ "$#" -lt 2 ]; then
-  echo "Usage: $0 <output-dmg> <volume-name> [version]" >&2
+  echo "Usage: $0 <output-dmg> <volume-name>" >&2
   exit 1
 fi
 
 output_dmg="$1"
 volume_name="$2"
-odamex_version="${3:-}"
 
 root_dir="$(pwd)"
 work_dir="$(mktemp -d)"
@@ -19,11 +18,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-if [ -n "${odamex_version}" ]; then
-  odamex_dir="${volume_name} ${odamex_version}"
-else
-  odamex_dir="${volume_name}"
-fi
+odamex_dir="Odamex"
 mkdir -p "${staging_dir}/${odamex_dir}"
 
 if [ -d "build/client/odamex.app" ]; then
