@@ -878,39 +878,24 @@ void MIType_Map07Special(OScanner& os, bool newStyleMapInfo, void* data, unsigne
 	    *static_cast<std::vector<bossaction_t>*>(data);
 
 	// mancubus
-	bossactionvector.emplace_back();
-	bossaction_t& mancaction = bossactionvector.back();
+	bossaction_t& mancaction = bossactionvector.emplace_back();;
 
 	mancaction.type = MT_FATSO;
+	mancaction.flags = MF3_MAP07BOSS1;
 	mancaction.special = 23;
 	mancaction.tag = 666;
 
 	// arachnotron
-	bossactionvector.emplace_back();
-	bossaction_t& arachnoaction = bossactionvector.back();
+	bossaction_t& arachnoaction = bossactionvector.emplace_back();;
 
 	arachnoaction.type = MT_BABY;
+	arachnoaction.flags = MF3_MAP07BOSS2;
 	arachnoaction.special = 30;
 	arachnoaction.tag = 667;
 }
 
-// Sets the map to use the baron bossaction
-void MIType_BaronSpecial(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                    unsigned int flags2)
-{
-	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
-
-	if (bossactionvector.size() == 0)
-		bossactionvector.emplace_back();
-
-	for (auto& bossaction : bossactionvector)
-	{
-		bossaction.type = MT_BRUISER;
-	}
-}
-
-// Sets the map to use the cyberdemon bossaction
-void MIType_CyberdemonSpecial(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
+template <int32_t TYPE, int32_t FLAG = 0>
+void MIType_Special(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                          unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector =
@@ -921,97 +906,34 @@ void MIType_CyberdemonSpecial(OScanner& os, bool newStyleMapInfo, void* data, un
 
 	for (auto& bossaction : bossactionvector)
 	{
-		bossaction.type = MT_CYBORG;
+		// don't overwrite map07special
+		if (bossaction.type != MT_BABY && bossaction.type != MT_FATSO)
+		{
+			bossaction.type = TYPE;
+			bossaction.flags = FLAG;
+		}
 	}
 }
 
-// Sets the map to use the cyberdemon bossaction
-void MIType_SpiderMastermindSpecial(OScanner& os, bool newStyleMapInfo, void* data,
-                                    unsigned int flags, unsigned int flags2)
-{
-	std::vector<bossaction_t>& bossactionvector =
-	    *static_cast<std::vector<bossaction_t>*>(data);
-
-	if (bossactionvector.size() == 0)
-		bossactionvector.emplace_back();
-
-	for (auto& bossaction : bossactionvector)
-	{
-		bossaction.type = MT_SPIDER;
-	}
-}
-
-//
-void MIType_SpecialAction_ExitLevel(OScanner& os, bool newStyleMapInfo, void* data,
-                                    unsigned int flags, unsigned int flags2)
+template <int16_t SPECIAL, int16_t TAG = 0>
+void MIType_SpecialAction(OScanner& os, bool newStyleMapInfo, void* data,
+                          unsigned int flags, unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
 
 	for (auto& bossaction : bossactionvector)
 	{
-		if (bossaction.type != MT_NULL)
+		if (bossaction.special == 0)
 		{
-			bossaction.special = 11;
-			bossaction.tag = 0;
+			bossaction.special = SPECIAL;
+			bossaction.tag = TAG;
 			return;
 		}
 	}
 
-	bossactionvector.emplace_back();
-	bossaction_t& action = bossactionvector.back();
-	action.special = 11;
-	action.tag = 0;
-}
-
-//
-void MIType_SpecialAction_OpenDoor(OScanner& os, bool newStyleMapInfo, void* data,
-                                   unsigned int flags, unsigned int flags2)
-{
-	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
-
-	for (auto& bossaction : bossactionvector)
-	{
-		if (bossaction.type != MT_NULL)
-		{
-			bossaction.special = 29;
-			bossaction.tag = 666;
-			return;
-		}
-	}
-
-	bossactionvector.emplace_back();
-	bossaction_t& action = bossactionvector.back();
-	action.special = 29;
-	action.tag = 666;
-}
-
-//
-void MIType_SpecialAction_LowerFloor(OScanner& os, bool newStyleMapInfo, void* data,
-                                    unsigned int flags, unsigned int flags2)
-{
-	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
-
-	for (auto& bossaction : bossactionvector)
-	{
-		if (bossaction.type != MT_NULL)
-		{
-			bossaction.special = 23;
-			bossaction.tag = 666;
-			return;
-		}
-	}
-
-	bossactionvector.emplace_back();
-	bossaction_t& action = bossactionvector.back();
-	action.special = 23;
-	action.tag = 666;
-}
-
-//
-void MIType_SpecialAction_KillMonsters(OScanner& os, bool newStyleMapInfo, void* data,
-                                    unsigned int flags, unsigned int flags2)
-{
-	// todo
+	bossaction_t& action = bossactionvector.emplace_back();
+	action.special = SPECIAL;
+	action.tag = TAG;
 }
 
 // border around smaller screen sizes
@@ -1232,12 +1154,18 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "allowmonstertelefrags", &MIType_SetFlag, &ref.flags,
 		       LEVEL_MONSTERSTELEFRAG },
 			{ "map07special", &MIType_Map07Special, &ref.bossactions },
-			{ "baronspecial", &MIType_BaronSpecial, &ref.bossactions },
-			{ "cyberdemonspecial", &MIType_CyberdemonSpecial, &ref.bossactions },
-			{ "spidermastermindspecial", &MIType_SpiderMastermindSpecial, &ref.bossactions },
-			{ "specialaction_exitlevel", &MIType_SpecialAction_ExitLevel, &ref.bossactions },
-			{ "specialaction_opendoor", &MIType_SpecialAction_OpenDoor, &ref.bossactions },
-			{ "specialaction_lowerfloor", &MIType_SpecialAction_LowerFloor, &ref.bossactions },
+			{ "baronspecial", &MIType_Special<MT_BRUISER>, &ref.bossactions },
+			{ "cyberdemonspecial", &MIType_Special<MT_CYBORG>, &ref.bossactions },
+			{ "spidermastermindspecial", &MIType_Special<MT_SPIDER>, &ref.bossactions },
+			{ "e1m8special", &MIType_Special<MT_NULL, MF3_E1M8BOSS>, &ref.bossactions },
+			{ "e2m8special", &MIType_Special<MT_NULL, MF3_E2M8BOSS>, &ref.bossactions },
+			{ "e3m8special", &MIType_Special<MT_NULL, MF3_E3M8BOSS>, &ref.bossactions },
+			{ "e4m6special", &MIType_Special<MT_NULL, MF3_E4M6BOSS>, &ref.bossactions },
+			{ "e4m8special", &MIType_Special<MT_NULL, MF3_E4M8BOSS>, &ref.bossactions },
+			{ "specialaction_exitlevel", &MIType_SpecialAction<11>, &ref.bossactions },
+			{ "specialaction_opendoor", &MIType_SpecialAction<29, 666>, &ref.bossactions },
+			{ "specialaction_lowerfloor", &MIType_SpecialAction<23, 666>, &ref.bossactions },
+			{ "specialaction_killmonsters", &MIType_SpecialAction<280>, &ref.bossactions },
 			{ "lightning" },
 			{ "fadetable", &MIType_LumpName, &ref.fadetable },
 			{ "evenlighting", &MIType_SetFlag, &ref.flags, LEVEL_EVENLIGHTING },

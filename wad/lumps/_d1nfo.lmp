@@ -164,7 +164,7 @@ map E1M8 lookup "HUSTR_E1M8"
 	par = 30
 	nointermission
 	nosoundclipping
-	baronspecial
+	e1m8special
 	specialaction_lowerfloor
 	music = "$MUSIC_E1M8"
 	enteranim = "_DEP1INT"
@@ -296,7 +296,7 @@ map E2M8 lookup "HUSTR_E2M8"
 	par = 30
 	nointermission
 	nosoundclipping
-	cyberdemonspecial
+	e2m8special
 	specialaction_exitlevel
 	music = "$MUSIC_E2M8"
 	enteranim = "_DEP2INT"
@@ -428,7 +428,7 @@ map E3M8 lookup "HUSTR_E3M8"
 	par = 30
 	nointermission
 	nosoundclipping
-	spidermastermindspecial
+	e3m8special
 	specialaction_exitlevel
 	music = "$MUSIC_E3M8"
 	enteranim = "_DEP3INT"
@@ -514,7 +514,7 @@ map E4M6 lookup "HUSTR_E4M6"
 	secretnext = "E4M9"
 	sky1 = "SKY4"
 	cluster = 4
-	cyberdemonspecial
+	e4m6special
 	specialaction_opendoor
 	music = "$MUSIC_E2M4"
 }
@@ -540,7 +540,7 @@ map E4M8 lookup "HUSTR_E4M8"
 	cluster = 4
 	nointermission
 	nosoundclipping
-	spidermastermindspecial
+	e4m8special
 	specialaction_lowerfloor
 	music = "$MUSIC_E2M5"
 }
