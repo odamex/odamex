@@ -164,77 +164,74 @@ if(BUILD_CLIENT AND USE_INTERNAL_FLTK)
     endif()
   endif()
   if(UNIX AND NOT APPLE)
-    find_library(_FLTK_XFT_LIB Xft)
-    find_library(_FLTK_FONTCONFIG_LIB fontconfig)
-    find_library(_FLTK_XRENDER_LIB Xrender)
-    find_library(_FLTK_XFIXES_LIB Xfixes)
-    find_library(_FLTK_XCURSOR_LIB Xcursor)
-    find_library(_FLTK_XINERAMA_LIB Xinerama)
-    find_library(_FLTK_WAYLAND_CLIENT_LIB wayland-client)
-    find_library(_FLTK_WAYLAND_CURSOR_LIB wayland-cursor)
-    find_library(_FLTK_XKBCOMMON_LIB xkbcommon)
-    find_library(_FLTK_CAIRO_LIB cairo)
-    find_library(_FLTK_GOBJECT_LIB gobject-2.0)
-    find_library(_FLTK_GLIB_LIB glib-2.0)
-    find_library(_FLTK_DBUS_LIB dbus-1)
-    find_library(_FLTK_PANGO_LIB pango-1.0)
-    find_library(_FLTK_PANGOCAIRO_LIB pangocairo-1.0)
-    find_library(_FLTK_PANGOXFT_LIB pangoxft-1.0)
-    if(_FLTK_XFT_LIB)
-      set_property(TARGET fltk::fltk APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${_FLTK_XFT_LIB}")
+    set(_FLTK_LINUX_FIND_LIBS
+      _FLTK_XFT_LIB:Xft
+      _FLTK_FONTCONFIG_LIB:fontconfig
+      _FLTK_XRENDER_LIB:Xrender
+      _FLTK_XFIXES_LIB:Xfixes
+      _FLTK_XCURSOR_LIB:Xcursor
+      _FLTK_XINERAMA_LIB:Xinerama
+      _FLTK_WAYLAND_CLIENT_LIB:wayland-client
+      _FLTK_WAYLAND_CURSOR_LIB:wayland-cursor
+      _FLTK_XKBCOMMON_LIB:xkbcommon
+      _FLTK_CAIRO_LIB:cairo
+      _FLTK_GOBJECT_LIB:gobject-2.0
+      _FLTK_GLIB_LIB:glib-2.0
+      _FLTK_DBUS_LIB:dbus-1
+      _FLTK_PANGO_LIB:pango-1.0
+      _FLTK_PANGOCAIRO_LIB:pangocairo-1.0
+      _FLTK_PANGOXFT_LIB:pangoxft-1.0)
+    foreach(_FLTK_PAIR IN LISTS _FLTK_LINUX_FIND_LIBS)
+      string(REPLACE ":" ";" _FLTK_PARTS "${_FLTK_PAIR}")
+      list(GET _FLTK_PARTS 0 _FLTK_VAR)
+      list(GET _FLTK_PARTS 1 _FLTK_NAME)
+      find_library(${_FLTK_VAR} ${_FLTK_NAME})
+    endforeach()
+
+    function(odamex_append_found_libs out_var)
+      foreach(_lib_var IN LISTS ARGN)
+        if(${_lib_var})
+          list(APPEND ${out_var} "${${_lib_var}}")
+        endif()
+      endforeach()
+      set(${out_var} "${${out_var}}" PARENT_SCOPE)
+    endfunction()
+
+    set(_FLTK_LINUX_LIBS "")
+    odamex_append_found_libs(_FLTK_LINUX_LIBS
+      _FLTK_XFT_LIB
+      _FLTK_FONTCONFIG_LIB
+      _FLTK_XRENDER_LIB
+      _FLTK_XFIXES_LIB
+      _FLTK_XCURSOR_LIB
+      _FLTK_XINERAMA_LIB
+      _FLTK_WAYLAND_CLIENT_LIB
+      _FLTK_WAYLAND_CURSOR_LIB
+      _FLTK_XKBCOMMON_LIB
+      _FLTK_CAIRO_LIB
+      _FLTK_GOBJECT_LIB
+      _FLTK_GLIB_LIB
+      _FLTK_DBUS_LIB
+      _FLTK_PANGO_LIB
+      _FLTK_PANGOCAIRO_LIB
+      _FLTK_PANGOXFT_LIB)
+    if(_FLTK_LINUX_LIBS)
+      set_property(TARGET fltk::fltk APPEND PROPERTY
+        INTERFACE_LINK_LIBRARIES ${_FLTK_LINUX_LIBS})
     endif()
-    if(_FLTK_FONTCONFIG_LIB)
-      set_property(TARGET fltk::fltk APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${_FLTK_FONTCONFIG_LIB}")
-    endif()
-    if(_FLTK_XRENDER_LIB)
-      set_property(TARGET fltk::fltk APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${_FLTK_XRENDER_LIB}")
-    endif()
-    if(_FLTK_XFIXES_LIB)
-      set_property(TARGET fltk::fltk APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${_FLTK_XFIXES_LIB}")
-    endif()
-    if(_FLTK_XCURSOR_LIB)
-      set_property(TARGET fltk::fltk APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${_FLTK_XCURSOR_LIB}")
-    endif()
-    if(_FLTK_XINERAMA_LIB)
-      set_property(TARGET fltk::fltk APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${_FLTK_XINERAMA_LIB}")
-    endif()
-    if(_FLTK_WAYLAND_CLIENT_LIB)
-      set_property(TARGET fltk::fltk APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${_FLTK_WAYLAND_CLIENT_LIB}")
-    endif()
-    if(_FLTK_WAYLAND_CURSOR_LIB)
-      set_property(TARGET fltk::fltk APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${_FLTK_WAYLAND_CURSOR_LIB}")
-    endif()
-    if(_FLTK_XKBCOMMON_LIB)
-      set_property(TARGET fltk::fltk APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${_FLTK_XKBCOMMON_LIB}")
-    endif()
-    if(_FLTK_CAIRO_LIB)
-      set_property(TARGET fltk::fltk APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${_FLTK_CAIRO_LIB}")
-    endif()
-    if(_FLTK_GOBJECT_LIB)
-      set_property(TARGET fltk::fltk APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${_FLTK_GOBJECT_LIB}")
-    endif()
-    if(_FLTK_GLIB_LIB)
-      set_property(TARGET fltk::fltk APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${_FLTK_GLIB_LIB}")
-    endif()
-    if(_FLTK_DBUS_LIB)
-      set_property(TARGET fltk::fltk APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${_FLTK_DBUS_LIB}")
-    endif()
-    if(_FLTK_PANGO_LIB)
-      set_property(TARGET fltk::fltk APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${_FLTK_PANGO_LIB}")
-    endif()
-    if(_FLTK_PANGOCAIRO_LIB)
-      set_property(TARGET fltk::fltk APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${_FLTK_PANGOCAIRO_LIB}")
-    endif()
-    if(_FLTK_PANGOXFT_LIB)
-      set_property(TARGET fltk::fltk APPEND PROPERTY INTERFACE_LINK_LIBRARIES "${_FLTK_PANGOXFT_LIB}")
-    endif()
+
+    set(_FLTK_LINUX_IMAGE_LIBS "")
     if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}fltk_png${libsuffix}")
-      set_property(TARGET fltk::images APPEND PROPERTY
-        INTERFACE_LINK_LIBRARIES "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}fltk_png${libsuffix}")
+      list(APPEND _FLTK_LINUX_IMAGE_LIBS
+        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}fltk_png${libsuffix}")
     endif()
     if(EXISTS "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}fltk_z${libsuffix}")
+      list(APPEND _FLTK_LINUX_IMAGE_LIBS
+        "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}fltk_z${libsuffix}")
+    endif()
+    if(_FLTK_LINUX_IMAGE_LIBS)
       set_property(TARGET fltk::images APPEND PROPERTY
-        INTERFACE_LINK_LIBRARIES "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}fltk_z${libsuffix}")
+        INTERFACE_LINK_LIBRARIES ${_FLTK_LINUX_IMAGE_LIBS})
     endif()
   endif()
   if(WIN32)
