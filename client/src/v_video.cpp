@@ -29,6 +29,7 @@
 #include <cmath>
 
 #include "i_system.h"
+#include "i_time.h"
 #include "i_video.h"
 #include "r_local.h"
 #include "r_draw.h"

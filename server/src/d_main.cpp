@@ -52,6 +52,7 @@
 #include "gi.h"
 #include "gstrings.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "m_misc.h"

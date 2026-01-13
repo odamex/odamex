@@ -40,6 +40,7 @@
 #include "g_skill.h"
 #include "i_system.h"
 #include "i_music.h"
+#include "i_time.h"
 #include "minilzo.h"
 #include "m_random.h"
 #include "p_acs.h"

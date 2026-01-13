@@ -29,6 +29,7 @@
 #include "sv_master.h"
 #include "c_dispatch.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "md5.h"
 
 #define MASTERPORT			15000
