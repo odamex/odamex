@@ -123,14 +123,29 @@ dtime_t I_ConvertTimeFromMs(dtime_t value)
 // I_Sleep
 //
 // Sleeps for the specified number of nanoseconds, yielding control to the
-// operating system. In actuality, the highest resolution availible with
-// the select() function is 1 microsecond, but the nanosecond parameter
-// is used for consistency with I_GetTime().
+// operating system. Nanoseconds are used for consistency with I_GetTime().
 //
 void I_Sleep(dtime_t sleep_time)
 {
 #if defined UNIX
-	usleep(sleep_time / 1000LL);
+	timespec sleepRequest;
+	clock_gettime(CLOCK_MONOTONIC, &sleepRequest);
+	sleepRequest.tv_nsec += sleep_time;
+	if (sleepRequest.tv_nsec >= 1000000000LL)
+	{
+		const lldiv_t divisionResult = lldiv(sleepRequest.tv_nsec, 1000000000LL);
+		sleepRequest.tv_sec += divisionResult.quot;
+		sleepRequest.tv_nsec = divisionResult.rem;
+	}
+
+	while (clock_nanosleep(CLOCK_MONOTONIC,
+	                       TIMER_ABSTIME,       // Use ABSTIME because unlike relative time, it won't drift
+	                       & sleepRequest,      // over successive interruptions.
+	                       nullptr) == EINTR)
+	{
+		// If we're here, it's because some signal interrupted our slumber.
+		// Go back to sleep.
+	}
 
 #elif defined WIN32
 	Sleep(static_cast<DWORD>(sleep_time / 1000000LL));
