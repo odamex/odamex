@@ -28,6 +28,7 @@
 
 #elif defined UNIX
 	#include <time.h>
+	#include <unistd.h>
 
 #elif defined WIN32
 	#include "win32inc.h"
