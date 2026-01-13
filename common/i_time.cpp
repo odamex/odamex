@@ -133,6 +133,8 @@ void I_Sleep(dtime_t sleep_time)
 	sleepRequest.tv_nsec += sleep_time;
 	if (sleepRequest.tv_nsec >= 1000000000LL)
 	{
+		// Use lldiv because it's the formal way to get both integer quotient and
+		// remainder from a single operation on platforms that can do so.
 		const lldiv_t divisionResult = lldiv(sleepRequest.tv_nsec, 1000000000LL);
 		sleepRequest.tv_sec += divisionResult.quot;
 		sleepRequest.tv_nsec = divisionResult.rem;
