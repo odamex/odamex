@@ -76,7 +76,7 @@ dtime_t I_GetTime()
 
 	LARGE_INTEGER current_count;
 	QueryPerformanceCounter(&current_count);
-	return nanoseconds_per_count * (current_count.QuadPart - initial_count.QuadPart);
+	return static_cast<dtime_t>(nanoseconds_per_count * (current_count.QuadPart - initial_count.QuadPart));
 
 #else
 	// [SL] use SDL_GetTicks, but account for the fact that after
@@ -124,7 +124,7 @@ void I_Sleep(dtime_t sleep_time)
 	usleep(sleep_time / 1000LL);
 
 #elif defined(WIN32)
-	Sleep(sleep_time / 1000000LL);
+	Sleep(static_cast<DWORD>(sleep_time / 1000000LL));
 
 #else
 	SDL_Delay(sleep_time / 1000000LL);
