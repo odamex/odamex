@@ -226,7 +226,6 @@ dtime_t I_GetTime()
 	static bool initialized = false;
 	static LARGE_INTEGER initial_count;
 	static double nanoseconds_per_count;
-	static LARGE_INTEGER last_count;
 
 	if (!initialized)
 	{
@@ -234,31 +233,13 @@ dtime_t I_GetTime()
 		QueryPerformanceFrequency(&freq);
 		nanoseconds_per_count = 1000.0 * 1000.0 * 1000.0 / double(freq.QuadPart);
 
-        QueryPerformanceCounter(&initial_count);
-        last_count = initial_count;
+		QueryPerformanceCounter(&initial_count);
 
 		initialized = true;
 	}
 
 	LARGE_INTEGER current_count;
 	QueryPerformanceCounter(&current_count);
-
-	// [SL] ensure current_count is a sane value
-	// AMD dual-core CPUs and buggy BIOSes sometimes cause QPC
-	// to return different values from different CPU cores,
-	// which ruins our timing. We check that the new value is
-	// at least equal to the last value and that the new value
-	// isn't too far past the last value (1 frame at 10fps).
-
-	const int64_t min_count = last_count.QuadPart;
-	const int64_t max_count = last_count.QuadPart +
-			nanoseconds_per_count * I_ConvertTimeFromMs(100);
-
-	if (current_count.QuadPart < min_count || current_count.QuadPart > max_count)
-		current_count = last_count;
-
-	last_count = current_count;
-
 	return nanoseconds_per_count * (current_count.QuadPart - initial_count.QuadPart);
 
 #else
