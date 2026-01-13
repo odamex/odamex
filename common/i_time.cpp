@@ -22,9 +22,10 @@
 
 #include "i_time.h"
 
-#if defined OSX
+#ifdef OSX
 	#include <mach/clock.h>
 	#include <mach/mach.h>
+	#include <unistd.h>
 
 #elif defined UNIX
 	#include <time.h>
