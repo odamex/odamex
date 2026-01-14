@@ -127,14 +127,40 @@ dtime_t I_ConvertTimeFromMs(dtime_t value)
 //
 void I_Sleep(dtime_t sleep_time)
 {
-#if defined UNIX
+	// Use lldiv because it's the formal way to get both integer quotient and
+	// remainder from a single operation on platforms that can do so.
+#if defined OSX
+	timespec relativeSleepRequest;
+
+	relativeSleepRequest.tv_sec  = 0;
+	relativeSleepRequest.tv_nsec = sleep_time;
+	if (relativeSleepRequest.tv_nsec >= 1000000000LL)
+	{
+		const lldiv_t divisionResult = lldiv(relativeSleepRequest.tv_nsec, 1000000000LL);
+		relativeSleepRequest.tv_sec += divisionResult.quot;
+		relativeSleepRequest.tv_nsec = divisionResult.rem;
+	}
+
+	// Unfortunately OSX doesn't really support clock_nanosleep, so we're forced into
+	// using nanosleep, which only does relative sleep requests.  It's better than
+	// usleep because we can easily continue sleeping after a spurious wakeup, but there's
+	// a slight time leak due to drift between the moment that the relative `remaining`
+	// is written and the moment we enter nanosleep.  IOW, the goalposts move slightly.
+	timespec remaining;
+
+	while (nanosleep(& relativeSleepRequest, & remaining) && errno == EINTR)
+	{
+		// If we're here, it's because some signal interrupted our slumber.
+		// Go back to sleep.
+		relativeSleepRequest = remaining;
+	}
+
+#elif defined UNIX
 	timespec sleepRequest;
 	clock_gettime(CLOCK_MONOTONIC, &sleepRequest);
 	sleepRequest.tv_nsec += sleep_time;
 	if (sleepRequest.tv_nsec >= 1000000000LL)
 	{
-		// Use lldiv because it's the formal way to get both integer quotient and
-		// remainder from a single operation on platforms that can do so.
 		const lldiv_t divisionResult = lldiv(sleepRequest.tv_nsec, 1000000000LL);
 		sleepRequest.tv_sec += divisionResult.quot;
 		sleepRequest.tv_nsec = divisionResult.rem;
