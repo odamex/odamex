@@ -123,7 +123,7 @@ jobs:
         fi
         mkdir -p "${DEPS_PREFIX}"
 
-        brew install ninja cmake pkg-config
+        brew install ninja cmake pkg-config python
 
         curl -L -o SDL2.tar.gz \
           "https://github.com/libsdl-org/SDL/releases/download/release-${{ env.sdl2_version }}/SDL2-${{ env.sdl2_version }}.tar.gz"
@@ -216,19 +216,6 @@ jobs:
         make -j"$(sysctl -n hw.ncpu)"
         make install
         popd
-    - name: Fetch DeuTex source
-      shell: bash
-      run: |
-        set -euo pipefail
-        if [ ! -d "wad/deutex" ]; then
-          if ! command -v unzstd >/dev/null 2>&1; then
-            brew install zstd
-          fi
-          curl -L -o deutex.tar.zst \
-            "https://github.com/Doom-Utils/deutex/releases/download/v5.2.3/deutex-5.2.3.tar.zst"
-          mkdir -p wad/deutex
-          tar --use-compress-program=unzstd -xf deutex.tar.zst -C wad/deutex --strip-components=1
-        fi
     - name: Patch libpng genout for universal arch flags
       shell: bash
       run: |
@@ -267,7 +254,6 @@ jobs:
           -DwxWidgets_CONFIG_EXECUTABLE="${PWD}/deps/universal/bin/wx-config" \
           -DODAMEX_INSTALL_BINDIR="${{ env.odamex_install_bindir }}" \
           -DUSE_INTERNAL_ZLIB=1 -DUSE_INTERNAL_PNG=1 \
-          -DUSE_INTERNAL_DEUTEX=1 \
           -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
           -DCMAKE_OSX_DEPLOYMENT_TARGET="${{ env.macos_deployment_target }}"
     - name: Run build
