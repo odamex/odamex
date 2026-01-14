@@ -1,10 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2026 by The Odamex Team.
+// Copyright (C) 2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,33 +16,29 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	Error Handling
+//      This module contains the basic time functions.
 //
 //-----------------------------------------------------------------------------
 
-
 #pragma once
 
-#include <string>
+#include "doomtype.h"
 
-class CDoomError
-{
-public:
-	CDoomError (std::string message) : m_Message(message) {}
-	std::string GetMsg (void) const { return m_Message;	}
+// Returns current time in nanoseconds.
+dtime_t I_GetTime();
 
-private:
-	std::string m_Message;
-};
+// [RH] Returns current time in milliseconds.
+dtime_t I_MSTime (void);
 
-class CRecoverableError : public CDoomError
-{
-public:
-	CRecoverableError(std::string message) : CDoomError(message) {}
-};
+dtime_t I_ConvertTimeToMs(dtime_t value);
+dtime_t I_ConvertTimeFromMs(dtime_t value);
 
-class CFatalError : public CDoomError
-{
-public:
-	CFatalError(std::string message) : CDoomError(message) {}
-};
+// Yields to the OS for the specified time (in nanoseconds).
+void I_Sleep(dtime_t);
+// Yields to the OS for 1 millisecond.
+void I_Yield();
+
+// I_WaitVBL is never used to actually synchronize to the
+// vertical blank. Instead, it's used for delay purposes.
+// Sleeps for `count` * 70Hz intervals.
+void I_WaitVBL(int count);

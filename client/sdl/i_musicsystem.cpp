@@ -30,6 +30,7 @@
 #include "i_musicsystem.h"
 #include "i_sdl.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "mus2midi.h"
 
 extern MusicSystem* musicsystem;

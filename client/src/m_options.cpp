@@ -39,6 +39,7 @@
 #include "cmdlib.h"
 
 #include "i_system.h"
+#include "i_time.h"
 #include "i_video.h"
 #include "i_input.h"
 #include "z_zone.h"
