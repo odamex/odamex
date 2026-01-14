@@ -22,7 +22,7 @@
 
 #include "i_time.h"
 
-#ifdef OSX
+#if defined OSX
 	#include <mach/clock.h>
 	#include <mach/mach.h>
 	#include <unistd.h>
@@ -34,8 +34,12 @@
 #elif defined WIN32
 	#include "win32inc.h"
 
-#else
+#elif defined CLIENT_APP
 	#include "i_sdl.h"
+
+#else
+	#error This is an unknown target platform - don't know how to provide a high-res timer!
+
 #endif
 
 //
@@ -80,7 +84,7 @@ dtime_t I_GetTime()
 	QueryPerformanceCounter(&current_count);
 	return static_cast<dtime_t>(nanoseconds_per_count * (current_count.QuadPart - initial_count.QuadPart));
 
-#else
+#elif defined CLIENT_APP
 	// [SL] use SDL_GetTicks, but account for the fact that after
 	// 49 days, it wraps around since it returns a 32-bit int
 	static constexpr uint64_t mask = 0xFFFFFFFFLL;
@@ -93,6 +97,9 @@ dtime_t I_GetTime()
 		last_time = current_time;
 
 	return last_time * 1000000LL;
+
+#else
+	#error This is an unknown target platform - unsure how to read time!
 
 #endif
 }
@@ -125,11 +132,14 @@ void I_Sleep(dtime_t sleep_time)
 #if defined UNIX
 	usleep(sleep_time / 1000LL);
 
-#elif defined(WIN32)
+#elif defined WIN32
 	Sleep(static_cast<DWORD>(sleep_time / 1000000LL));
 
-#else
+#elif defined CLIENT_APP
 	SDL_Delay(sleep_time / 1000000LL);
+
+#else
+	#error This is an unknown target platform - don't know how to sleep!
 
 #endif
 }
@@ -141,7 +151,7 @@ void I_Sleep(dtime_t sleep_time)
 //
 void I_Yield()
 {
-	I_Sleep(1000LL * 1000LL);		// sleep for 1ms
+	I_Sleep(1000LL * 1000LL);       // sleep for 1ms
 }
 
 //
