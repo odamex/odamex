@@ -11,7 +11,6 @@ RUN true \
         gcc g++ \
         cmake \
         make \
-        deutex \
         zlib1g-dev \
         libzstd1 libzstd-dev \
         patch \

@@ -67,7 +67,7 @@ Odamex requires the following tools and libraries:
 * cURL: <https://curl.se/>
 * libPNG: <http://www.libpng.org/pub/png/libpng.html>
 * zlib: <https://zlib.net/>
-* DeuTex (for building the WAD): <https://github.com/Doom-Utils/deutex/releases/>
+* Python (for building the WAD): <https://www.python.org/>
 * wxWidgets (for the launcher): <https://www.wxwidgets.org/downloads/>
 
 `cURL`, `libPNG` and `zlib` are automatically included in-tree as submodules.

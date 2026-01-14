@@ -10,7 +10,7 @@ set -x
 # Install packages
 sudo apt update
 sudo apt install ninja-build libsdl2-dev libsdl2-mixer-dev \
-    libcurl4-openssl-dev libpng-dev libwxgtk3.2-dev deutex
+    libcurl4-openssl-dev libpng-dev libwxgtk3.2-dev
 
 # Generate build
 mkdir -p build && cd build

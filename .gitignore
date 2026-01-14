@@ -3,6 +3,7 @@
 /.cache
 *.vscode
 *.zed
+*.pyc
 
 # Used by Visual Studio when loading this project as a folder, which uses CMake.
 /.vs
