@@ -38,7 +38,7 @@
 	#include "i_sdl.h"
 
 #else
-	#error This is an unknown target platform - don't know how to provide a high-res timer!
+	#error This is an unknown target platform - dont know how to provide a high-res timer!
 
 #endif
 
@@ -139,7 +139,7 @@ void I_Sleep(dtime_t sleep_time)
 	SDL_Delay(sleep_time / 1000000LL);
 
 #else
-	#error This is an unknown target platform - don't know how to sleep!
+	#error This is an unknown target platform - dont know how to sleep!
 
 #endif
 }
