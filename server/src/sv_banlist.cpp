@@ -30,6 +30,7 @@
 #include "win32inc.h"
 
 #include "i_system.h"
+#include "i_time.h"
 
 #include "json/json.h"
 

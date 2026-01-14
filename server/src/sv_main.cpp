@@ -47,6 +47,7 @@
 #include "sv_sqpold.h"
 #include "sv_master.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "m_argv.h"

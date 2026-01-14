@@ -32,6 +32,7 @@
 #include "c_dispatch.h"
 #include "d_main.h"
 #include "i_music.h"
+#include "i_time.h"
 #include "i_video.h"
 #include "z_zone.h"
 #include "v_video.h"

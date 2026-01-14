@@ -58,9 +58,9 @@ modules:
       - --enable-unicode
       - --with-gtk3
     cleanup:
-      - '/lib/wx'
-      - '/share/aclocal'
-      - '/share/bakefile'
+      - "/lib/wx"
+      - "/share/aclocal"
+      - "/share/bakefile"
     sources:
       - type: archive
         url: https://github.com/wxWidgets/wxWidgets/releases/download/v3.0.5/wxWidgets-3.0.5.tar.bz2
@@ -77,7 +77,6 @@ modules:
       - -D BUILD_MASTER=0
       - -D USE_INTERNAL_LIBS=0
       - -D USE_INTERNAL_WXWIDGETS=1
-      - -D USE_INTERNAL_DEUTEX=1
       - -D ODAMEX_INSTALL_BINDIR=/app/bin
       - -D ODAMEX_INSTALL_DATADIR=/run/host/usr/share
       - -D USE_EXTERNAL_LIBDWARF=1
@@ -94,10 +93,6 @@ modules:
       - rm -rf /app/lib64/pkgconfig
       - rm -rf /app/include
     sources:
-      - type: archive
-        url: https://github.com/Doom-Utils/deutex/releases/download/v5.2.3/deutex-5.2.3.tar.zst
-        sha256: 935dcae490fb574e8ad90ef54bdeb599c7055fedca117d79ce837cbc19d070ab
-        dest: wad/deutex
       - type: dir
         path: ../..
       - type: file

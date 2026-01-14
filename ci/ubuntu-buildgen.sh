@@ -11,11 +11,11 @@ set -x
 sudo apt-get update -y -o Acquire::Retries=3
 if ! sudo apt-get install -y --no-install-recommends \
     ninja-build libsdl2-dev libsdl2-mixer-dev \
-    libcurl4-openssl-dev libpng-dev libwxgtk3.2-dev deutex; then
+    libcurl4-openssl-dev libpng-dev libwxgtk3.2-dev; then
   sudo apt-get update -y -o Acquire::Retries=3
   sudo apt-get install -y --no-install-recommends \
     ninja-build libsdl2-dev libsdl2-mixer-dev \
-    libcurl4-openssl-dev libpng-dev libwxgtk3.2-dev deutex
+    libcurl4-openssl-dev libpng-dev libwxgtk3.2-dev
 fi
 
 # Generate build
