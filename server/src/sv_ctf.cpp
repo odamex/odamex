@@ -30,6 +30,7 @@
 
 #include "g_gametype.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "m_random.h"
 #include "m_wdlstats.h"
 #include "p_inter.h"

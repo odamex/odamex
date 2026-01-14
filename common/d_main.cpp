@@ -49,6 +49,7 @@
 #include "m_fileio.h"
 #include "c_console.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "g_game.h"
 #include "g_spawninv.h"
 #include "r_main.h"

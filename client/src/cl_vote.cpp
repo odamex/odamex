@@ -34,6 +34,7 @@
 #include "cmdlib.h"
 #include "i_net.h"
 #include "i_system.h"
+#include "i_time.h"
 
 #include "s_sound.h"
 #include "c_cvars.h"
