@@ -78,5 +78,7 @@ void G_FragsCheckEndGame();
 void G_TeamFragsCheckEndGame();
 void G_TeamScoreCheckEndGame();
 void G_ResetLastPlayer();
+void G_ResetFragWarnings();
+void G_CheckFragWarnings();
 void G_LivesCheckEndGame();
 bool G_RoundsShouldEndGame();

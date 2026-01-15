@@ -2010,6 +2010,9 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 	// Check sv_fraglimit.
 	if (source && source->player && target->player && level.time)
 	{
+		// Check for frag warning announcements (client-side)
+		G_CheckFragWarnings();
+
 		// [Toke] Better sv_fraglimit
 		if (sv_gametype == GM_DM)
 			G_FragsCheckEndGame();
