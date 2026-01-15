@@ -425,7 +425,7 @@ jobs:
         cmake -S . -B build -GNinja \
           -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
-          -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1 \
+          -DBUILD_MASTER=0 -DBUILD_LAUNCHER=1 \
           -DCMAKE_PREFIX_PATH="${PWD}/deps/universal" \
           -DSDL2_DIR="${PWD}/deps/universal/lib/cmake/SDL2" \
           -DSDL2_MIXER_DIR="${PWD}/deps/universal/lib/cmake/SDL2_mixer" \
