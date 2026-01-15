@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <string>
 
 #if defined(CLIENT_APP)
 #define GAMEEXE "odamex"
