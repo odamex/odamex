@@ -44,6 +44,7 @@
 #include "g_skill.h"
 #include "p_mapformat.h"
 #include "p_unlag.h"
+#include "g_announcer.h"
 
 #ifdef SERVER_APP
 #include "sv_main.h"
@@ -2011,7 +2012,7 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 	if (source && source->player && target->player && level.time)
 	{
 		// Check for frag warning announcements (client-side)
-		G_CheckFragWarnings();
+		P_CheckFragWarnings();
 
 		// [Toke] Better sv_fraglimit
 		if (sv_gametype == GM_DM)

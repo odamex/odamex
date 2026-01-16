@@ -28,6 +28,10 @@
 #include "oscanner.h"
 #include "gstrings.h"
 #include "g_announcer.h"
+#include "g_gametype.h"
+#include "s_sound.h"
+
+EXTERN_CVAR(sv_fraglimit)
 
 AnnouncerManager& AnnouncerManager::getInstance()
 {
@@ -37,13 +41,12 @@ AnnouncerManager& AnnouncerManager::getInstance()
 
 AnnouncerManager::AnnouncerManager()
 {
-	announcerDict.clear();
-	loadedAnnouncer = Announcer_s();
+
 }
 
 AnnouncerManager::~AnnouncerManager()
 {
-	reset();
+
 }
 
 void AnnouncerManager::reset()
@@ -173,5 +176,86 @@ void AnnouncerManager::loadAnnouncerByName(const std::string& announcer)
 		{
 			loadedAnnouncer = announcerDict.begin()->second;
 		}
+	}
+}
+
+void AnnouncerManager::resetFragWarnings()
+{
+	fragWarning3Announced = false;
+	fragWarning2Announced = false;
+	fragWarning1Announced = false;
+}
+
+void AnnouncerManager::announceFragWarning3()
+{
+	fragWarning3Announced = true;
+	std::string sound = getTokenForEvent(ANN_THREEFRAGSLEFT);
+	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
+		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+}
+
+void AnnouncerManager::announceFragWarning2()
+{
+	fragWarning2Announced = true;
+	fragWarning3Announced = true;
+	std::string sound = getTokenForEvent(ANN_TWOFRAGSLEFT);
+	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
+		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+}
+
+void AnnouncerManager::announceFragWarning1()
+{
+	fragWarning1Announced = true;
+	fragWarning2Announced = true;
+	fragWarning3Announced = true;
+	std::string sound = getTokenForEvent(ANN_ONEFRAGLEFT);
+	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
+		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+}
+void P_CheckFragWarnings()
+{
+	// Only play sounds on the client
+	if (!::clientside)
+		return;
+
+	if (!G_UsesFraglimit() || sv_fraglimit <= 0)
+		return;
+
+	// Find the leading score (player or team)
+	int leadingScore = 0;
+
+	AnnouncerManager& instance = AnnouncerManager::getInstance();
+
+	if (G_IsTeamGame())
+	{
+		TeamsView tv = TeamQuery().sortScore().filterSortMax().execute();
+		if (!tv.empty())
+			leadingScore = tv.front()->Points;
+	}
+	else
+	{
+		PlayerResults pr = PlayerQuery().sortFrags().filterSortMax().execute();
+		if (pr.count > 0)
+			leadingScore = pr.players.front()->fragcount;
+	}
+
+	int fragsRemaining = sv_fraglimit.asInt() - leadingScore;
+
+	if (fragsRemaining > 3)
+	{
+		// Reset warnings when more than 3 frags away
+		instance.resetFragWarnings();
+	}
+	else if (fragsRemaining == 3 && !instance.hasFragWarning3BeenAnnounced())
+	{
+		instance.announceFragWarning3();
+	}
+	else if (fragsRemaining == 2 && !instance.hasFragWarning2BeenAnnounced())
+	{
+		instance.announceFragWarning2();
+	}
+	else if (fragsRemaining == 1 && !instance.hasFragWarning1BeenAnnounced())
+	{
+		instance.announceFragWarning1();
 	}
 }

@@ -312,6 +312,41 @@ public:
 	void loadAnnouncerDefaults();
 
 	/// <summary>
+	/// Function to return whether the 3-frag warning has been announced already.
+	/// </summary>
+	bool hasFragWarning3BeenAnnounced() const { return fragWarning3Announced; }
+
+	/// <summary>
+	/// Function to return whether the 2-frag warning has been announced already.
+	/// </summary>
+	bool hasFragWarning2BeenAnnounced() const { return fragWarning2Announced; }
+
+	/// <summary>
+	/// Function to return whether the 1-frag warning has been announced already.
+	/// </summary>
+	bool hasFragWarning1BeenAnnounced() const { return fragWarning1Announced; }
+
+	/// <summary>
+	/// Function to announce the 3-frag warning.
+	/// </summary>
+	void announceFragWarning3();
+
+	/// <summary>
+	/// Function to announce the 2-frag warning.
+	/// </summary>
+	void announceFragWarning2();
+
+	/// <summary>
+	/// Function to announce the 1-frag warning.
+	/// </summary>
+	void announceFragWarning1();
+
+	/// <summary>
+	/// Resets all the frag warning variables to enable an upcoming announcement.
+	/// </summary>
+	void resetFragWarnings();
+
+	/// <summary>
 	/// Gets the sndinfo token for the current announcer for the
 	/// following event.
 	/// </summary>
@@ -328,6 +363,19 @@ public:
 
 private:
 	/// <summary>
+	/// Has the 3-frag warning been announced already?
+	/// </summary>
+	bool fragWarning3Announced = false;
+	/// <summary>
+	/// Has the 2-frag warning been announced already?
+	/// </summary>
+	bool fragWarning2Announced = false;
+	/// <summary>
+	/// Has the 1-frag warning been announced already?
+	/// </summary>
+	bool fragWarning1Announced = false;
+
+	/// <summary>
 	/// Dictionary of all loaded announcers, mapped by their name.
 	/// </summary>
 	std::unordered_map<std::string, Announcer_s> announcerDict;
@@ -335,5 +383,12 @@ private:
 	/// <summary>
 	/// The currently loaded and used announcer.
 	/// </summary>
-	Announcer_s loadedAnnouncer;
+	Announcer_s loadedAnnouncer = Announcer_s();
 };
+
+// In-game announcer logic functions.
+
+/// <summary>
+/// Run logic to determine to play a frag warning for this frag.
+/// </summary>
+void P_CheckFragWarnings();

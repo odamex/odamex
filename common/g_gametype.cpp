@@ -792,11 +792,6 @@ bool lastblueplayerhype = false;
 bool lastredplayerhype = false;
 bool lastgreenplayerhype = false;
 
-// Track whether frag warning announcements have been played.
-static bool fragWarning3Announced = false;
-static bool fragWarning2Announced = false;
-static bool fragWarning1Announced = false;
-
 void G_ResetLastPlayer()
 {
 	lastplayerhype = false;
@@ -807,75 +802,6 @@ void G_ResetTeamLastPlayer()
 	lastblueplayerhype = false;
 	lastredplayerhype = false;
 	lastgreenplayerhype = false;
-}
-
-void G_ResetFragWarnings()
-{
-	fragWarning3Announced = false;
-	fragWarning2Announced = false;
-	fragWarning1Announced = false;
-}
-
-/**
- * @brief Check and play frag warning announcements when approaching fraglimit.
- *        Plays sounds client side only.
- */
-void G_CheckFragWarnings()
-{
-	// Only play sounds on the client
-	if (!::clientside)
-		return;
-
-	if (!G_UsesFraglimit() || sv_fraglimit <= 0)
-		return;
-
-	// Find the leading score (player or team)
-	int leadingScore = 0;
-
-	if (G_IsTeamGame())
-	{
-		TeamsView tv = TeamQuery().sortScore().filterSortMax().execute();
-		if (!tv.empty())
-			leadingScore = tv.front()->Points;
-	}
-	else
-	{
-		PlayerResults pr = PlayerQuery().sortFrags().filterSortMax().execute();
-		if (pr.count > 0)
-			leadingScore = pr.players.front()->fragcount;
-	}
-
-	int fragsRemaining = sv_fraglimit.asInt() - leadingScore;
-
-	if (fragsRemaining > 3)
-	{
-		// Reset warnings when more than 3 frags away
-		G_ResetFragWarnings();
-	}
-	else if (fragsRemaining == 3 && !fragWarning3Announced)
-	{
-		fragWarning3Announced = true;
-		std::string sound = AnnouncerManager::getInstance().getTokenForEvent(ANN_THREEFRAGSLEFT);
-		if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
-			S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
-	}
-	else if (fragsRemaining == 2 && !fragWarning2Announced)
-	{
-		fragWarning2Announced = true;
-		fragWarning3Announced = true;
-		std::string sound = AnnouncerManager::getInstance().getTokenForEvent(ANN_TWOFRAGSLEFT);
-		if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
-			S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
-	}
-	else if (fragsRemaining == 1 && !fragWarning1Announced)
-	{
-		fragWarning1Announced = true;
-		fragWarning2Announced = true;
-		fragWarning3Announced = true;
-		std::string sound = AnnouncerManager::getInstance().getTokenForEvent(ANN_ONEFRAGLEFT);
-		if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
-			S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
-	}
 }
 
 /**
