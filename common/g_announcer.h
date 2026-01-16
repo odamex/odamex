@@ -27,6 +27,8 @@
 #include <map>
 #include <string>
 
+#include "d_player.h"
+
 // Tokens for the announcer sound dictionary.
 
 // Possessive CTF Announcements
@@ -392,3 +394,9 @@ private:
 /// Run logic to determine to play a frag warning for this frag.
 /// </summary>
 void P_CheckFragWarnings();
+
+/// <summary>
+/// Run logic to determine to play a 'player eliminated' announcement.
+/// Only if the player who was eliminated is the display player.
+/// </summary>
+void P_CheckPlayerEliminatedAnnouncement(const player_t* player);

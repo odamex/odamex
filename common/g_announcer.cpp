@@ -31,8 +31,6 @@
 #include "g_gametype.h"
 #include "s_sound.h"
 
-EXTERN_CVAR(sv_fraglimit)
-
 AnnouncerManager& AnnouncerManager::getInstance()
 {
 	static AnnouncerManager instance;
@@ -212,6 +210,9 @@ void AnnouncerManager::announceFragWarning1()
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
+
+EXTERN_CVAR(sv_fraglimit)
+
 void P_CheckFragWarnings()
 {
 	// Only play sounds on the client
@@ -258,4 +259,28 @@ void P_CheckFragWarnings()
 	{
 		instance.announceFragWarning1();
 	}
+}
+
+EXTERN_CVAR(g_lives)
+
+void P_CheckPlayerEliminatedAnnouncement(const player_t* player)
+{
+	// Only play sounds on the client
+	if (!::clientside)
+		return;
+
+	if (!player)
+		return;
+
+	// Only announce if lives are enabled and the player is out of lives
+	if (!(g_lives && player->lives <= 0))
+		return;
+
+	// Only announce for the display player
+	if (player->id != displayplayer_id)
+		return;
+
+	std::string sound = AnnouncerManager::getInstance().getTokenForEvent(ANN_PLAYERELIMINATED);
+	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
+		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
