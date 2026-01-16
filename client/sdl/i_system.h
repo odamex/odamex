@@ -112,8 +112,6 @@ void I_PrintStr (int x, const char *str, int count, bool scroll);
 // Set the title string of the startup window
 void I_SetTitleString (const char *title);
 
-std::string I_ConsoleInput (void);
-
 // Returns true if there will be no application window
 bool I_IsHeadless();
 
