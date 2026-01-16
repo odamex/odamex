@@ -31,6 +31,7 @@
 #include "p_unlag.h"
 #include "p_horde.h"
 #include "g_spree.h"
+#include "g_announcer.h"
 
 //
 // P_AtInterval
@@ -91,6 +92,8 @@ void P_Ticker (void)
 	P_RespawnSpecials ();
 
 	P_TicSprees();
+	P_CheckFightAnnouncement();
+	P_CheckCountdownAnnouncements();
 
 	if (clientside)
 		P_RunEffects(); // [RH] Run particle effects

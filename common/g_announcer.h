@@ -349,6 +349,64 @@ public:
 	void resetFragWarnings();
 
 	/// <summary>
+	/// Function to return whether the fight announcement has been played already.
+	/// </summary>
+	bool hasFightBeenAnnounced() const { return fightAnnounced; }
+
+	/// <summary>
+	/// Resets the fight announcement flag to enable an upcoming announcement.
+	/// </summary>
+	void resetFightAnnouncement() { fightAnnounced = false; }
+
+	/// <summary>
+	/// Marks the fight announcement as having been played.
+	/// </summary>
+	void setFightAnnounced() { fightAnnounced = true; }
+
+	/// <summary>
+	/// Resets all countdown announcement flags.
+	/// </summary>
+	void resetCountdownAnnouncements()
+	{
+		countdown5Announced = false;
+		countdown4Announced = false;
+		countdown3Announced = false;
+		countdown2Announced = false;
+		countdown1Announced = false;
+	}
+
+	/// <summary>
+	/// Checks if a specific countdown has been announced.
+	/// </summary>
+	bool hasCountdownBeenAnnounced(int countdown) const
+	{
+		switch (countdown)
+		{
+		case 5: return countdown5Announced;
+		case 4: return countdown4Announced;
+		case 3: return countdown3Announced;
+		case 2: return countdown2Announced;
+		case 1: return countdown1Announced;
+		default: return true;
+		}
+	}
+
+	/// <summary>
+	/// Marks a specific countdown as announced.
+	/// </summary>
+	void setCountdownAnnounced(int countdown)
+	{
+		switch (countdown)
+		{
+		case 5: countdown5Announced = true; break;
+		case 4: countdown4Announced = true; break;
+		case 3: countdown3Announced = true; break;
+		case 2: countdown2Announced = true; break;
+		case 1: countdown1Announced = true; break;
+		}
+	}
+
+	/// <summary>
 	/// Gets the sndinfo token for the current announcer for the
 	/// following event.
 	/// </summary>
@@ -376,6 +434,18 @@ private:
 	/// Has the 1-frag warning been announced already?
 	/// </summary>
 	bool fragWarning1Announced = false;
+	/// <summary>
+	/// Has the fight announcement been played already?
+	/// </summary>
+	bool fightAnnounced = false;
+	/// <summary>
+	/// Countdown announcement flags (5, 4, 3, 2, 1).
+	/// </summary>
+	bool countdown5Announced = false;
+	bool countdown4Announced = false;
+	bool countdown3Announced = false;
+	bool countdown2Announced = false;
+	bool countdown1Announced = false;
 
 	/// <summary>
 	/// Dictionary of all loaded announcers, mapped by their name.
@@ -400,3 +470,15 @@ void P_CheckFragWarnings();
 /// Only if the player who was eliminated is the display player.
 /// </summary>
 void P_CheckPlayerEliminatedAnnouncement(const player_t* player);
+
+/// <summary>
+/// Checks if it's time to announce 'fight' when the game starts.
+/// Uses getIngameStartTime() to work clientside and in demos.
+/// </summary>
+void P_CheckFightAnnouncement();
+
+/// <summary>
+/// Checks if it's time to announce countdown numbers (5, 4, 3, 2, 1).
+/// Uses getCountdown() to work clientside and in demos.
+/// </summary>
+void P_CheckCountdownAnnouncements();

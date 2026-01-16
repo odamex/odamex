@@ -29,6 +29,7 @@
 #include "gstrings.h"
 #include "g_announcer.h"
 #include "g_gametype.h"
+#include "g_levelstate.h"
 #include "s_sound.h"
 
 AnnouncerManager& AnnouncerManager::getInstance()
@@ -105,9 +106,9 @@ void AnnouncerManager::loadAnnouncerDefaults()
 	defaultAnnouncer.soundDict[ANN_ONEFRAGLEFT] = "officialvox/onefragleft";
 	defaultAnnouncer.soundDict[ANN_FIVE] = "officialvox/five";
 	defaultAnnouncer.soundDict[ANN_FOUR] = "officialvox/four";
-	defaultAnnouncer.soundDict[ANN_FIVE] = "officialvox/three";
-	defaultAnnouncer.soundDict[ANN_FIVE] = "officialvox/two";
-	defaultAnnouncer.soundDict[ANN_FIVE] = "officialvox/one";
+	defaultAnnouncer.soundDict[ANN_THREE] = "officialvox/three";
+	defaultAnnouncer.soundDict[ANN_TWO] = "officialvox/two";
+	defaultAnnouncer.soundDict[ANN_ONE] = "officialvox/one";
 	defaultAnnouncer.soundDict[ANN_PLAYERELIMINATED] = "officialvox/playereliminated";
 	defaultAnnouncer.soundDict[ANN_FIRSTBLOOD] = "officialvox/firstblood";
 
@@ -262,6 +263,75 @@ void P_CheckFragWarnings()
 }
 
 EXTERN_CVAR(g_lives)
+
+void P_CheckFightAnnouncement()
+{
+	// Only play sounds on the client
+	if (!::clientside)
+		return;
+
+	AnnouncerManager& instance = AnnouncerManager::getInstance();
+
+	// Check if it's time to announce (when level.time reaches ingame start time)
+	int ingameStartTime = ::levelstate.getIngameStartTime();
+	if (ingameStartTime == 0)
+	{
+		// Reset the flag when not in-game so it can trigger again next game
+		instance.resetFightAnnouncement();
+		return;
+	}
+
+	// Check if we've already announced
+	if (instance.hasFightBeenAnnounced())
+		return;
+
+	if (::level.time != ingameStartTime)
+		return;
+
+	instance.setFightAnnounced();
+	std::string sound = instance.getTokenForEvent(ANN_FIGHT);
+	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
+		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+}
+
+void P_CheckCountdownAnnouncements()
+{
+	// Only play sounds on the client
+	if (!::clientside)
+		return;
+
+	AnnouncerManager& instance = AnnouncerManager::getInstance();
+
+	int countdown = ::levelstate.getCountdown();
+
+	// Reset flags when countdown is over or above 5
+	if (countdown == 0 || countdown > 5)
+	{
+		instance.resetCountdownAnnouncements();
+		return;
+	}
+
+	// Check if this countdown has already been announced
+	if (instance.hasCountdownBeenAnnounced(countdown))
+		return;
+
+	// Get the appropriate sound token
+	std::string token;
+	switch (countdown)
+	{
+	case 5: token = ANN_FIVE; break;
+	case 4: token = ANN_FOUR; break;
+	case 3: token = ANN_THREE; break;
+	case 2: token = ANN_TWO; break;
+	case 1: token = ANN_ONE; break;
+	default: return;
+	}
+
+	instance.setCountdownAnnounced(countdown);
+	std::string sound = instance.getTokenForEvent(token);
+	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
+		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+}
 
 void P_CheckPlayerEliminatedAnnouncement(const player_t* player)
 {
