@@ -38,7 +38,7 @@
 	#include "i_sdl.h"
 
 #else
-	#error This is an unknown target platform - don't know how to provide a high-res timer!
+	#error This is an unknown target platform - dont know how to provide a high-res timer!
 
 #endif
 
@@ -123,14 +123,57 @@ dtime_t I_ConvertTimeFromMs(dtime_t value)
 // I_Sleep
 //
 // Sleeps for the specified number of nanoseconds, yielding control to the
-// operating system. In actuality, the highest resolution availible with
-// the select() function is 1 microsecond, but the nanosecond parameter
-// is used for consistency with I_GetTime().
+// operating system. Nanoseconds are used for consistency with I_GetTime().
 //
 void I_Sleep(dtime_t sleep_time)
 {
-#if defined UNIX
-	usleep(sleep_time / 1000LL);
+	// Use lldiv because it's the formal way to get both integer quotient and
+	// remainder from a single operation on platforms that can do so.
+#if defined OSX
+	timespec relativeSleepRequest;
+
+	relativeSleepRequest.tv_sec  = 0;
+	relativeSleepRequest.tv_nsec = sleep_time;
+	if (relativeSleepRequest.tv_nsec >= 1000000000LL)
+	{
+		const lldiv_t divisionResult = lldiv(relativeSleepRequest.tv_nsec, 1000000000LL);
+		relativeSleepRequest.tv_sec += divisionResult.quot;
+		relativeSleepRequest.tv_nsec = divisionResult.rem;
+	}
+
+	// Unfortunately OSX doesn't really support clock_nanosleep, so we're forced into
+	// using nanosleep, which only does relative sleep requests.  It's better than
+	// usleep because we can easily continue sleeping after a spurious wakeup, but there's
+	// a slight time leak due to drift between the moment that the relative `remaining`
+	// is written and the moment we enter nanosleep.  IOW, the goalposts move slightly.
+	timespec remaining;
+
+	while (nanosleep(& relativeSleepRequest, & remaining) && errno == EINTR)
+	{
+		// If we're here, it's because some signal interrupted our slumber.
+		// Go back to sleep.
+		relativeSleepRequest = remaining;
+	}
+
+#elif defined UNIX
+	timespec sleepRequest;
+	clock_gettime(CLOCK_MONOTONIC, &sleepRequest);
+	sleepRequest.tv_nsec += sleep_time;
+	if (sleepRequest.tv_nsec >= 1000000000LL)
+	{
+		const lldiv_t divisionResult = lldiv(sleepRequest.tv_nsec, 1000000000LL);
+		sleepRequest.tv_sec += divisionResult.quot;
+		sleepRequest.tv_nsec = divisionResult.rem;
+	}
+
+	while (clock_nanosleep(CLOCK_MONOTONIC,
+	                       TIMER_ABSTIME,       // Use ABSTIME because unlike relative time, it won't drift
+	                       & sleepRequest,      // over successive interruptions.
+	                       nullptr) == EINTR)
+	{
+		// If we're here, it's because some signal interrupted our slumber.
+		// Go back to sleep.
+	}
 
 #elif defined WIN32
 	Sleep(static_cast<DWORD>(sleep_time / 1000000LL));
@@ -139,7 +182,7 @@ void I_Sleep(dtime_t sleep_time)
 	SDL_Delay(sleep_time / 1000000LL);
 
 #else
-	#error This is an unknown target platform - don't know how to sleep!
+	#error This is an unknown target platform - dont know how to sleep!
 
 #endif
 }
