@@ -1142,9 +1142,7 @@ public:
 	int			m_StepTime;
 	int			m_PerStepTime;
 
-	fixed_t		m_Height;
 	const line_t *m_Line;
-	int			m_Change;
 
 protected:
 	friend bool EV_BuildStairs (int tag, DFloor::EStair type, const line_t *line,

@@ -273,8 +273,6 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, const line_t* line, fixe
 	m_ResetCount = 0; // [RH]
 	m_Direction = 1;
 	m_OrgHeight = floorheight;
-	m_Height = height;
-	m_Change = change;
 	m_Line = line;
 
 	PlayFloorSound();
@@ -523,7 +521,6 @@ DFloor::DFloor(sector_t* sec, const line_t* line, int speed,
 	m_ResetCount = 0; // [RH]
 	m_Sector = sec;
 	m_OrgHeight = floorheight;
-	m_Height = floorheight;
 	m_Line = line;
 	m_Direction = direction ? 1 : -1;
 	m_NewSpecial = sec->special;
@@ -694,8 +691,6 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, const line_t *line,
 	m_ResetCount = 0;				// [RH]
 	m_Direction = 1;
 	m_OrgHeight = floorheight;
-	m_Height = height;
-	m_Change = change;
 	m_Line = line;
 
 	PlayFloorSound();
@@ -1546,8 +1541,6 @@ bool P_SpawnDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed
 			floor->m_NewDmgInterval = newspec.damageinterval;
 			floor->m_NewLeakRate = newspec.damageleakrate;
 			floor->m_FloorDestHeight = P_FloorHeight(s3);
-			floor->m_Change = 0;
-			floor->m_Height = 0;
 			floor->m_Line = NULL;
 			floor->PlayFloorSound();
 
@@ -1562,8 +1555,6 @@ bool P_SpawnDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed
 			floor->m_Sector = s1;
 			floor->m_Speed = pillarspeed;
 			floor->m_FloorDestHeight = P_FloorHeight(s3);
-			floor->m_Change = 0;
-			floor->m_Height = 0;
 			floor->m_Line = NULL;
 			floor->PlayFloorSound();
 			break;
