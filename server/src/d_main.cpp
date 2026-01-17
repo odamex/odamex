@@ -78,8 +78,6 @@ EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_startwadscript)
 
-extern size_t got_heapsize;
-
 void C_DoCommand(std::string_view cmd, uint32_t key = 0);
 
 #ifdef UNIX
@@ -93,12 +91,8 @@ extern bool gameisdead;
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 
-bool devparm;				// started game with -devparm
-OLumpName startmap;
 event_t events[MAXEVENTS];
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
-
-std::string LOG_FILE;
 
 //
 // D_DoomLoop

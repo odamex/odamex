@@ -424,7 +424,7 @@ typedef player_t::client_t client_t;
 
 // Bookkeeping on players - state.
 typedef std::list<player_t> Players;
-extern Players players;
+inline Players players;
 
 // Player taking events, and displaying.
 player_t		&consoleplayer();
@@ -670,8 +670,8 @@ size_t P_NumPlayersInGame();
 size_t P_NumReadyPlayersInGame();
 size_t P_NumPlayersOnTeam(team_t team);
 
-extern byte consoleplayer_id;
-extern byte displayplayer_id;
+inline byte consoleplayer_id; // player taking events and displaying
+inline byte displayplayer_id; // view being displayed
 
 //
 

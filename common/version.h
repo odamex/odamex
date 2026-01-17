@@ -29,6 +29,8 @@
 #define GAMEEXE "odamex"
 #elif defined(SERVER_APP)
 #define GAMEEXE "odasrv"
+#elif defined(TEST_APP)
+#define GAMEEXE "odagtest"
 #else
 #error "Odamex is not client or server"
 #endif

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2026 by The Odamex Team.
+// Copyright (C) 2006-2020 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -42,7 +42,9 @@
     #include <process.h>
     #include <mmsystem.h>
     #include <direct.h> // SoM: I don't know HOW this has been overlooked until now...
-	#include <winsock2.h>
+	#ifndef _XBOX
+		#include <winsock2.h>
+	#endif  // !_XBOX
 #endif
 
 #ifdef UNIX
@@ -61,8 +63,6 @@
 #include "i_system.h"
 #include "i_net.h"
 #include "c_dispatch.h"
-#include "sv_main.h"
-#include "m_consolecommandstream.h"
 
 #ifdef _WIN32
 UINT TimerPeriod;
@@ -97,39 +97,8 @@ size_t I_BytesToMegabytes (size_t Bytes)
     return (Bytes/1024/1024);
 }
 
-void I_BeginRead(void)
-{
-}
-
-void I_EndRead(void)
-{
-}
-
-//
-// SubsetLanguageIDs
-//
-#ifdef _WIN32
-static void SubsetLanguageIDs (LCID id, LCTYPE type, int idx)
-{
-	char buf[8];
-	LCID langid;
-	char *idp;
-
-	if (!GetLocaleInfo (id, type, buf, 8))
-		return;
-	langid = MAKELCID (strtoul(buf, NULL, 16), SORT_DEFAULT);
-	if (!GetLocaleInfo (langid, LOCALE_SABBREVLANGNAME, buf, 8))
-		return;
-	idp = (char *)(&LanguageIDs[idx]);
-	memset (idp, 0, 4);
-	idp[0] = tolower(buf[0]);
-	idp[1] = tolower(buf[1]);
-	idp[2] = tolower(buf[2]);
-	idp[3] = 0;
-}
-#endif
-
-EXTERN_CVAR(language)
+void I_BeginRead(void) {}
+void I_EndRead(void) {}
 
 // Force the language to English (default)
 void SetLanguageIDs()
@@ -144,9 +113,7 @@ void SetLanguageIDs()
 //
 // I_Init
 //
-void I_Init (void)
-{
-}
+void I_Init (void) {}
 
 void I_FinishClockCalibration ()
 {
@@ -158,21 +125,7 @@ void I_FinishClockCalibration ()
 //
 static int has_exited;
 
-void STACK_ARGS I_Quit (void)
-{
-    has_exited = 1;             /* Prevent infinitely recursive exits -- killough */
-
-    #ifdef _WIN32
-    timeEndPeriod (TimerPeriod);
-    #endif
-
-    G_ClearSnapshots ();
-    SV_SendDisconnectSignal();
-
-    CloseNetwork ();
-
-	DConsoleAlias::DestroyAll();
-}
+void STACK_ARGS I_Quit (void) {}
 
 
 //
@@ -181,8 +134,6 @@ void STACK_ARGS I_Quit (void)
 bool gameisdead;
 
 #define MAX_ERRORTEXT	1024
-
-void STACK_ARGS call_terms (void);
 
 void I_BaseError(const std::string& errortext)
 {
@@ -208,21 +159,11 @@ void I_BaseError(const std::string& errortext)
 	{
 		has_exited = 1; // Prevent infinitely recursive exits -- killough
 
-		call_terms();
-
 		exit(EXIT_FAILURE);
 	}
 }
 
-char DoomStartupTitle[256] = { 0 };
-
-void I_SetTitleString (const char *title)
-{
-    int i;
-
-    for (i = 0; title[i]; i++)
-                DoomStartupTitle[i] = title[i] | 0x80;
-}
+void I_SetTitleString (const char *title) { return; }
 
 void I_PrintStr (int xp, const char *cp, int count, bool scroll)
 {
@@ -237,41 +178,11 @@ void I_PrintStr (int xp, const char *cp, int count, bool scroll)
         fflush (stdout);
 }
 
-//static const char *pattern; // [DL] todo - remove
-//static findstate_t *findstates[8]; // [DL] todo - remove
+long I_FindFirst (char *filespec, findstate_t *fileinfo) { return 0; }
+int I_FindNext (long handle, findstate_t *fileinfo) { return 0; }
+int I_FindClose (long handle) { return 0; }
+int I_FindAttr (findstate_t *fileinfo) { return 0; }
 
-long I_FindFirst (char *filespec, findstate_t *fileinfo)
-{
-    return 0;
-}
-
-int I_FindNext (long handle, findstate_t *fileinfo)
-{
-    return 0;
-}
-
-int I_FindClose (long handle)
-{
-    return 0;
-}
-
-int I_FindAttr (findstate_t *fileinfo)
-{
-    return 0;
-}
-
-#ifdef _WIN32
-int ShutdownNow();
-#endif
-
-std::string I_ConsoleInput (void)
-{
-#ifdef _WIN32
-    if (ShutdownNow())
-        return "quit";
-#endif
-
-    return M_ConsoleInput();
-}
+std::string I_ConsoleInput (void) { return ""; }
 
 VERSION_CONTROL (i_system_cpp, "$Id$")

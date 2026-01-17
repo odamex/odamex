@@ -106,31 +106,17 @@ EXTERN_CVAR (in_autosr50)
 
 EXTERN_CVAR (chasedemo)
 
-gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
 
-bool 			paused;
 bool 			sendpause;				// send a pause event next tic
 bool			sendsave;				// send a save event next tic
 bool 			usergame;				// ok to save / end game
 bool			sendcenterview;			// send a center view event next tic
 
-bool			timingdemo; 			// if true, exit with report on completion
 bool			longtics;				// don't quantize yaw for classic vanilla demos
 bool 			nodrawers;				// for comparative timing purposes
 bool 			noblit; 				// for comparative timing purposes
 
-bool	 		viewactive;
-
-// Describes if a network game is being played
-bool			network_game;
-// Describes if this is a multiplayer game or not
-bool			multiplayer;
-// The player vector, contains all player information
-Players			players;
-
-byte			consoleplayer_id;			// player taking events and displaying
-byte			displayplayer_id;			// view being displayed
 int 			gametic;
 
 extern fixed_t bobx;
@@ -203,7 +189,6 @@ CVAR_FUNC_IMPL(joy_freelook)
 }
 
 char			demoname[256];
-bool 			demoplayback;
 
 extern bool		simulated_connection;
 

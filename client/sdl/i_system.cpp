@@ -108,18 +108,6 @@ ticcmd_t *I_BaseTiccmd(void)
 	return &emptycmd;
 }
 
-/* [Russell] - Modified to accomodate a minimal allowable heap size */
-// These values are in megabytes
-#if defined(GCONSOLE) && !defined(__SWITCH__)
-size_t def_heapsize = 16;
-#else
-size_t def_heapsize = 128;
-#endif
-constexpr size_t min_heapsize = 8;
-
-// The size we got back from I_ZoneBase in megabytes
-size_t got_heapsize = 0;
-
 DWORD LanguageIDs[4];
 
 // Endoom screen is showing
@@ -144,51 +132,6 @@ size_t I_BytesToMegabytes (size_t Bytes)
         return 0;
 
     return (Bytes/1024/1024);
-}
-
-//
-// I_ZoneBase
-//
-// Allocates a portion of system memory for the Zone Memory Allocator, returns
-// the 'size' of what it could allocate in its parameter
-void *I_ZoneBase (size_t *size)
-{
-	void *zone = NULL;
-
-	// User wanted a different default size
-	const char *p = Args.CheckValue ("-heapsize");
-
-	if (p)
-		def_heapsize = atoi(p);
-
-	if (def_heapsize < min_heapsize)
-		def_heapsize = min_heapsize;
-
-	// Set the size
-	*size = I_MegabytesToBytes(def_heapsize);
-
-	// Allocate the def_heapsize, otherwise try to allocate a smaller amount
-	while ((zone == NULL) && (*size >= I_MegabytesToBytes(min_heapsize)))
-	{
-		zone = malloc (*size);
-
-		if (zone != NULL)
-			break;
-
-		*size -= I_MegabytesToBytes(1);
-	}
-
-	// Our heap size we received
-	got_heapsize = I_BytesToMegabytes(*size);
-
-	// Die if the system has insufficient memory
-	if (got_heapsize < min_heapsize)
-		I_FatalError("I_ZoneBase: Insufficient memory available! Minimum size "
-					 "is {} MB but got {} MB instead",
-					 min_heapsize,
-					 got_heapsize);
-
-	return zone;
 }
 
 void I_BeginRead()

@@ -80,7 +80,6 @@ dtime_t starttime;
 FLZOMemFile	*reset_snapshot = NULL;
 
 extern bool r_underwater;
-bool savegamerestore;
 
 extern int mousex, mousey, joyforward, joystrafe, joyturn, joylook, Impulse;
 extern bool sendpause, sendsave, sendcenterview;
