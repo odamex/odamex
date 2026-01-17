@@ -35,6 +35,7 @@
 #include "m_random.h"
 #include "i_system.h"
 #include "i_input.h"
+#include "i_time.h"
 #include "i_video.h"
 #include "v_screenshot.h"
 #include "p_saveg.h"

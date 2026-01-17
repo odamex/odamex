@@ -62,6 +62,7 @@
 #include "i_net.h"
 #include "c_dispatch.h"
 #include "sv_main.h"
+#include "m_consolecommandstream.h"
 
 #ifdef _WIN32
 UINT TimerPeriod;
@@ -155,128 +156,6 @@ void I_BeginRead(void)
 
 void I_EndRead(void)
 {
-}
-
-//
-// I_GetTime
-//
-// [SL] Retrieve an arbitrarily-based time from a high-resolution timer with
-// nanosecond accuracy.
-//
-dtime_t I_GetTime()
-{
-#if defined OSX
-	clock_serv_t cclock;
-	mach_timespec_t mts;
-
-	host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &cclock);
-	clock_get_time(cclock, &mts);
-	mach_port_deallocate(mach_task_self(), cclock);
-	return mts.tv_sec * 1000LL * 1000LL * 1000LL + mts.tv_nsec;
-
-#elif defined UNIX
-	timespec ts;
-	clock_gettime(CLOCK_MONOTONIC, &ts);
-	return ts.tv_sec * 1000LL * 1000LL * 1000LL + ts.tv_nsec;
-
-#elif defined WIN32
-	static bool initialized = false;
-	static LARGE_INTEGER initial_count;
-	static double nanoseconds_per_count;
-	static LARGE_INTEGER last_count;
-
-	if (!initialized)
-	{
-		LARGE_INTEGER freq;
-		QueryPerformanceFrequency(&freq);
-		nanoseconds_per_count = 1000.0 * 1000.0 * 1000.0 / double(freq.QuadPart);
-
-        QueryPerformanceCounter(&initial_count);
-        last_count = initial_count;
-
-		initialized = true;
-	}
-
-	LARGE_INTEGER current_count;
-	QueryPerformanceCounter(&current_count);
-
-	// [SL] ensure current_count is a sane value
-	// AMD dual-core CPUs and buggy BIOSes sometimes cause QPC
-	// to return different values from different CPU cores,
-	// which ruins our timing. We check that the new value is
-	// at least equal to the last value and that the new value
-	// isn't too far past the last value (1 frame at 10fps).
-
-	const int64_t min_count = last_count.QuadPart;
-	const int64_t max_count = last_count.QuadPart +
-			nanoseconds_per_count * I_ConvertTimeFromMs(100);
-
-	if (current_count.QuadPart < min_count || current_count.QuadPart > max_count)
-		current_count = last_count;
-
-	last_count = current_count;
-
-	return nanoseconds_per_count * (current_count.QuadPart - initial_count.QuadPart);
-#endif
-}
-
-dtime_t I_MSTime()
-{
-	return I_ConvertTimeToMs(I_GetTime());
-}
-
-dtime_t I_ConvertTimeToMs(dtime_t value)
-{
-	return value / 1000000LL;
-}
-
-dtime_t I_ConvertTimeFromMs(dtime_t value)
-{
-	return value * 1000000LL;
-}
-
-//
-// I_Sleep
-//
-// Sleeps for the specified number of nanoseconds, yielding control to the
-// operating system. In actuality, the highest resolution availible with
-// the select() function is 1 microsecond, but the nanosecond parameter
-// is used for consistency with I_GetTime().
-//
-void I_Sleep(dtime_t sleep_time)
-{
-#if defined UNIX
-	usleep(sleep_time / 1000LL);
-
-#elif defined(WIN32)
-	Sleep(sleep_time / 1000000LL);
-
-#else
-	SDL_Delay(sleep_time / 1000000LL);
-
-#endif
-}
-
-
-//
-// I_Yield
-//
-// Sleeps for 1 millisecond
-//
-void I_Yield()
-{
-	I_Sleep(1000LL * 1000LL);		// sleep for 1ms
-}
-
-//
-// I_WaitVBL
-//
-// I_WaitVBL is never used to actually synchronize to the
-// vertical blank. Instead, it's used for delay purposes.
-//
-void I_WaitVBL(int count)
-{
-	I_Sleep(1000000LL * 1000LL * count / 70);
 }
 
 //
@@ -434,137 +313,18 @@ int I_FindAttr (findstate_t *fileinfo)
     return 0;
 }
 
-//
-// I_ConsoleInput
-//
 #ifdef _WIN32
 int ShutdownNow();
+#endif
 
 std::string I_ConsoleInput (void)
 {
-	// denis - todo - implement this properly!!!
-    static char     text[1024] = {0};
-    static char     buffer[1024] = {0};
-    unsigned int    len = strlen(buffer);
-
+#ifdef _WIN32
     if (ShutdownNow())
         return "quit";
-
-	while(kbhit() && len < sizeof(text))
-	{
-		int ch = getch();
-
-		// Handle special keys
-		switch (ch)
-		{
-            // Function keys (arrows etc)
-            case 0:
-            case 0xE0:
-            {
-                // getch sends a second char
-                // for these keys, skip it
-                ch = getch();
-                continue;
-            }
-            // Ctrl-C (MSDN has incorrect documentation regarding this)
-            case 3:
-            {
-                return "quit";
-            }
-		}
-
-		if(ch == '\b' && len)
-		{
-			buffer[--len] = 0;
-			// john - backspace hack
-			fwrite(&ch, 1, 1, stdout);
-			ch = ' ';
-			fwrite(&ch, 1, 1, stdout);
-			ch = '\b';
-		}
-		else
-		{
-            // Accept return but not unusual characters as input (eg Ctrl-B)
-            if ((ch != '\n' && ch != '\r') && (ch < 32 || ch > 126))
-                continue;
-
-			buffer[len++] = ch;
-		}
-
-		buffer[len] = 0;
-
-		// recalculate length
-		len = strlen(buffer);
-
-		// echo character back to user
-		fwrite(&ch, 1, 1, stdout);
-		fflush(stdout);
-	}
-
-	if(len && (buffer[len - 1] == '\n' || buffer[len - 1] == '\r'))
-	{
-		// echo newline back to user
-		char ch = '\n';
-		fwrite(&ch, 1, 1, stdout);
-		fflush(stdout);
-
-		M_StringCopy(text, buffer, 1024);
-		text[len-1] = 0; // rip off the /n and terminate
-		buffer[0] = 0;
-		len = 0;
-
-		return text;
-	}
-
-	return "";
-}
-
-#else
-
-std::string I_ConsoleInput (void)
-{
-	std::string ret;
-	static char	 text[1024] = {0};
-	int			 len;
-
-	fd_set fdr;
-	FD_ZERO(&fdr);
-	FD_SET(0, &fdr);
-	struct timeval tv;
-	tv.tv_sec = 0;
-	tv.tv_usec = 0;
-
-	if (select(1, &fdr, NULL, NULL, &tv) <= 0)
-		return "";
-
-	len = read (0, text + strlen(text), sizeof(text) - strlen(text)); // denis - fixme - make it read until the next linebreak instead
-
-	if (len < 1)
-		return "";
-
-	len = strlen(text);
-
-	if (strlen(text) >= sizeof(text))
-	{
-		if(text[len-1] == '\n' || text[len-1] == '\r')
-			text[len-1] = 0; // rip off the /n and terminate
-
-		ret = text;
-		memset(text, 0, sizeof(text));
-		return ret;
-	}
-
-	if(text[len-1] == '\n' || text[len-1] == '\r')
-	{
-		text[len-1] = 0;
-
-		ret = text;
-		memset(text, 0, sizeof(text));
-		return ret;
-	}
-
-	return "";
-}
 #endif
+
+    return M_ConsoleInput();
+}
 
 VERSION_CONTROL (i_system_cpp, "$Id$")

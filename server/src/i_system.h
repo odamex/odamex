@@ -57,12 +57,6 @@ void I_Init (void);
 // for the zone management.
 void *I_ZoneBase (size_t *size);
 
-
-dtime_t I_GetTime();
-dtime_t I_ConvertTimeToMs(dtime_t value);
-dtime_t I_ConvertTimeFromMs(dtime_t value);
-void I_Sleep(dtime_t sleep_time);
-
 // Asynchronous interrupt functions should maintain private queues
 // that are read by the synchronous functions
 // to be converted into events.
@@ -103,11 +97,6 @@ void I_PrintStr (int x, const char *str, int count, bool scroll);
 void I_SetTitleString (const char *title);
 
 std::string I_ConsoleInput (void);
-
-// [RH] Returns millisecond-accurate time
-dtime_t I_MSTime (void);
-
-void I_Yield(void);
 
 // [RH] Title string to display at bottom of console during startup
 extern char DoomStartupTitle[256];
