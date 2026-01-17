@@ -33,8 +33,10 @@
 
 #ifdef CLIENT_APP
 #define CS_STRING "Odamex Client"
-#else
+#elif defined(SERVER_APP)
 #define CS_STRING "Odamex Server"
+#elif defined(TEST_APP)
+#define CS_STRING "Odamex Unit Tests"
 #endif
 
 // A view to a list of Cvars.
@@ -235,8 +237,10 @@ BEGIN_COMMAND(cvardoc)
 
 #ifdef CLIENT_APP
 	path += "odamex_cvardoc.html";
-#else
+#elif defined(SERVER_APP)
 	path += "odasrv_cvardoc.html";
+#elif defined(TEST_APP)
+	path += "odagtest_cvardoc.html";
 #endif
 
 	// Try and open a file in our write directory.

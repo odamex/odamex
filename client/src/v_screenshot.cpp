@@ -204,7 +204,7 @@ static void SetPNGComments(PNGStrings& out, png_struct* png_ptr, png_info* info_
 //
 static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 {
-	FILE* fp = fopen(filename.c_str(), "wb");
+	auto fp = uqFile(fopen(filename.c_str(), "wb"));
 	png_struct *png_ptr;
 	png_info *info_ptr;
 	time_t now = time(NULL); // used for PNG text comments
@@ -219,7 +219,6 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if (png_ptr == NULL)
 	{
-		fclose(fp);
 		PrintFmt(PRINT_WARNING, "I_SavePNG: png_create_write_struct failed\n");
 		return -1;
 	}
@@ -228,7 +227,6 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	info_ptr = png_create_info_struct(png_ptr);
 	if (info_ptr == NULL)
 	{
-		fclose(fp);
 		png_destroy_write_struct(&png_ptr, (png_infop*)NULL);
 		PrintFmt(PRINT_HIGH, "I_SavePNG: png_create_info_struct failed\n");
 		return -1;
@@ -241,7 +239,6 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	int setjmp_result = setjmp(png_jmpbuf(png_ptr));
 	if (setjmp_result != 0)
 	{
-		fclose(fp);
 		png_destroy_write_struct(&png_ptr, &info_ptr);
 		PrintFmt(PRINT_WARNING, "I_SavePNG: setjmp failed with error code {}\n", setjmp_result);
 		return -1;
@@ -285,7 +282,6 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 
 			png_free(png_ptr, row_ptrs);
 			png_destroy_write_struct(&png_ptr, &info_ptr);
-			fclose(fp);
 
 			PrintFmt(PRINT_WARNING, "I_SavePNG: Not enough RAM to create PNG file\n");
 			return -1;
@@ -344,7 +340,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 
 	// commit PNG image data to file
 	surface->unlock();
-	png_init_io(png_ptr, fp);
+	png_init_io(png_ptr, fp.get());
 
 	// Holds the text strings until the file is written.
 	PNGStrings png_strings;
@@ -369,7 +365,6 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	png_free(png_ptr, row_ptrs);
 	png_destroy_write_struct(&png_ptr, &info_ptr);
 
-	fclose(fp);
 	return 0;
 }
 

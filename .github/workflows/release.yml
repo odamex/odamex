@@ -1,6 +1,5 @@
 # Runs when a release is published
-# Contains every package required for a release except:
-# - MacOS package
+# Contains every package required for a release
 name: Release
 
 on:
@@ -254,6 +253,323 @@ jobs:
         GITHUB_TOKEN: ${{ github.token }}
       with:
         files: odamex-linux-arm64-${{ env.new_version }}.flatpak
+  build-macos-universal:
+    name: macOS Build (Universal DMG)
+    needs: pre_job
+    runs-on: macos-14
+    env:
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+      macos_deployment_target: "11.0"
+      sdl2_version: "2.32.8"
+      sdl2_mixer_version: "2.8.1"
+      pcre2_version: "10.47"
+      wxwidgets_version: "3.2.5"
+      zlib_version: "1.2.11"
+      libpng_version: "1.6.40"
+      zstd_version: "1.5.7"
+      odamex_install_bindir: "/Applications/Odamex"
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Cache macOS universal deps
+      uses: actions/cache@v4
+      with:
+        path: deps/universal
+        key: macos-universal-deps-${{ env.sdl2_version }}-${{ env.sdl2_mixer_version }}-${{ env.pcre2_version }}-${{ env.wxwidgets_version }}-${{ env.zlib_version }}-${{ env.libpng_version }}-${{ env.zstd_version }}-${{ env.macos_deployment_target }}
+    - name: Build universal deps
+      shell: bash
+      run: |
+        set -euo pipefail
+        export DEPS_PREFIX="${PWD}/deps/universal"
+        missing=0
+        for f in \
+          "${DEPS_PREFIX}/lib/cmake/SDL2/SDL2Config.cmake" \
+          "${DEPS_PREFIX}/lib/cmake/SDL2_mixer/SDL2_mixerConfig.cmake" \
+          "${DEPS_PREFIX}/bin/wx-config" \
+          "${DEPS_PREFIX}/lib/libpcre2-32.a" \
+          "${DEPS_PREFIX}/lib/libzstd.a" \
+          "${DEPS_PREFIX}/licenses/LICENSE.SDL2.txt" \
+          "${DEPS_PREFIX}/licenses/COPYING.SDL2_mixer.txt"
+        do
+          if [ ! -f "$f" ]; then
+            missing=1
+          fi
+        done
+        if [ "$missing" -eq 0 ]; then
+          echo "Using cached dependencies at ${DEPS_PREFIX}"
+          exit 0
+        fi
+        mkdir -p "${DEPS_PREFIX}"
+
+        brew install ninja cmake pkg-config python
+
+        curl -L -o SDL2.tar.gz \
+          "https://github.com/libsdl-org/SDL/releases/download/release-${{ env.sdl2_version }}/SDL2-${{ env.sdl2_version }}.tar.gz"
+        tar -xf SDL2.tar.gz
+        cmake -S "SDL2-${{ env.sdl2_version }}" -B build-sdl2 -GNinja \
+          -DCMAKE_INSTALL_PREFIX="${DEPS_PREFIX}" \
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${{ env.macos_deployment_target }}" \
+          -DSDL_SHARED=ON -DSDL_STATIC=OFF
+        cmake --build build-sdl2
+        cmake --install build-sdl2
+        mkdir -p "${DEPS_PREFIX}/licenses"
+        if [ -f "SDL2-${{ env.sdl2_version }}/LICENSE.txt" ]; then
+          cp "SDL2-${{ env.sdl2_version }}/LICENSE.txt" "${DEPS_PREFIX}/licenses/LICENSE.SDL2.txt"
+        fi
+
+        curl -L -o SDL2_mixer.tar.gz \
+          "https://github.com/libsdl-org/SDL_mixer/releases/download/release-${{ env.sdl2_mixer_version }}/SDL2_mixer-${{ env.sdl2_mixer_version }}.tar.gz"
+        tar -xf SDL2_mixer.tar.gz
+        bash "SDL2_mixer-${{ env.sdl2_mixer_version }}/external/download.sh"
+        if [ -f "SDL2_mixer-${{ env.sdl2_mixer_version }}/LICENSE.txt" ]; then
+          cp "SDL2_mixer-${{ env.sdl2_mixer_version }}/LICENSE.txt" "${DEPS_PREFIX}/licenses/COPYING.SDL2_mixer.txt"
+        fi
+        copy_license_glob() {
+          local base="$1"
+          local dest="$2"
+          if [ -e "${DEPS_PREFIX}/licenses/${dest}" ]; then
+            return 0
+          fi
+          local found
+          found=$(find "${base}" -maxdepth 3 -type f \( -iname "LICENSE*" -o -iname "COPYING*" \) | head -n 1 || true)
+          if [ -n "${found}" ]; then
+            cp "${found}" "${DEPS_PREFIX}/licenses/${dest}"
+          fi
+        }
+        copy_license_glob "SDL2_mixer-${{ env.sdl2_mixer_version }}/external" "LICENSE.gme.txt"
+        copy_license_glob "SDL2_mixer-${{ env.sdl2_mixer_version }}/external/ogg" "LICENSE.ogg-vorbis.txt"
+        copy_license_glob "SDL2_mixer-${{ env.sdl2_mixer_version }}/external/vorbis" "LICENSE.ogg-vorbis.txt"
+        copy_license_glob "SDL2_mixer-${{ env.sdl2_mixer_version }}/external/opus" "LICENSE.opus.txt"
+        copy_license_glob "SDL2_mixer-${{ env.sdl2_mixer_version }}/external/opusfile" "LICENSE.opusfile.txt"
+        copy_license_glob "SDL2_mixer-${{ env.sdl2_mixer_version }}/external/wavpack" "LICENSE.wavpack.txt"
+        copy_license_glob "SDL2_mixer-${{ env.sdl2_mixer_version }}/external/xmp" "LICENSE.xmp.txt"
+        cmake -S "SDL2_mixer-${{ env.sdl2_mixer_version }}" -B build-sdl2-mixer -GNinja \
+          -DCMAKE_INSTALL_PREFIX="${DEPS_PREFIX}" \
+          -DCMAKE_PREFIX_PATH="${DEPS_PREFIX}" \
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${{ env.macos_deployment_target }}" \
+          -DSDL2MIXER_VENDORED=ON -DSDL2MIXER_SAMPLES=OFF
+        cmake --build build-sdl2-mixer
+        cmake --install build-sdl2-mixer
+
+        curl -L -o pcre2.tar.bz2 \
+          "https://github.com/PCRE2Project/pcre2/releases/download/pcre2-${{ env.pcre2_version }}/pcre2-${{ env.pcre2_version }}.tar.bz2"
+        tar -xf pcre2.tar.bz2
+        pushd "pcre2-${{ env.pcre2_version }}"
+        CFLAGS="-arch arm64 -arch x86_64 -mmacosx-version-min=${{ env.macos_deployment_target }}" \
+        CXXFLAGS="-arch arm64 -arch x86_64 -mmacosx-version-min=${{ env.macos_deployment_target }}" \
+        LDFLAGS="-arch arm64 -arch x86_64 -mmacosx-version-min=${{ env.macos_deployment_target }}" \
+        ./configure --prefix="${DEPS_PREFIX}" --enable-pcre2-32
+        make -j"$(sysctl -n hw.ncpu)"
+        make install
+        popd
+
+        curl -L -o zstd.tar.gz \
+          "https://github.com/facebook/zstd/releases/download/v${{ env.zstd_version }}/zstd-${{ env.zstd_version }}.tar.gz"
+        tar -xf zstd.tar.gz
+        cmake -S "zstd-${{ env.zstd_version }}/build/cmake" -B build-zstd -GNinja \
+          -DCMAKE_INSTALL_PREFIX="${DEPS_PREFIX}" \
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${{ env.macos_deployment_target }}" \
+          -DZSTD_BUILD_PROGRAMS=OFF -DZSTD_BUILD_SHARED=OFF -DZSTD_BUILD_STATIC=ON
+        cmake --build build-zstd
+        cmake --install build-zstd
+
+        curl -L -o wxwidgets.tar.bz2 \
+          "https://github.com/wxWidgets/wxWidgets/releases/download/v${{ env.wxwidgets_version }}/wxWidgets-${{ env.wxwidgets_version }}.tar.bz2"
+        tar -xf wxwidgets.tar.bz2
+        pushd "wxWidgets-${{ env.wxwidgets_version }}"
+        export PKG_CONFIG_PATH="${DEPS_PREFIX}/lib/pkgconfig"
+        export CPPFLAGS="-I${DEPS_PREFIX}/include"
+        export LDFLAGS="-L${DEPS_PREFIX}/lib"
+        ./configure \
+          --prefix="${DEPS_PREFIX}" \
+          --enable-unicode \
+          --with-cocoa \
+          --without-libtiff \
+          --enable-monolithic \
+          --enable-universal_binary=arm64,x86_64 \
+          --with-macosx-version-min="${{ env.macos_deployment_target }}"
+        make -j"$(sysctl -n hw.ncpu)"
+        make install
+        popd
+    - name: Patch libpng genout for universal arch flags
+      shell: bash
+      run: |
+        set -euo pipefail
+        python - <<'PY'
+        from pathlib import Path
+
+        candidates = [
+            Path("libraries/libpng/scripts/cmake/genout.cmake.in"),
+            Path("libraries/libpng/scripts/genout.cmake.in"),
+        ]
+        path = next((p for p in candidates if p.exists()), None)
+        if path is None:
+            raise FileNotFoundError("genout.cmake.in not found in libpng scripts")
+        text = path.read_text()
+        needle = "set(PLATFORM_C_FLAGS ${PLATFORM_C_FLAGS} -arch ${CMAKE_OSX_ARCHITECTURES})"
+        repl = "\n".join([
+            "list(GET CMAKE_OSX_ARCHITECTURES 0 _first_arch)",
+            "    set(PLATFORM_C_FLAGS ${PLATFORM_C_FLAGS} -arch ${_first_arch})",
+        ])
+        if needle in text:
+            text = text.replace(needle, repl)
+        path.write_text(text)
+        PY
+    - name: Configure build
+      run: |
+        cmake -S . -B build -GNinja \
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+          -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
+          -DBUILD_MASTER=0 -DBUILD_LAUNCHER=1 \
+          -DCMAKE_PREFIX_PATH="${PWD}/deps/universal" \
+          -DSDL2_DIR="${PWD}/deps/universal/lib/cmake/SDL2" \
+          -DSDL2_MIXER_DIR="${PWD}/deps/universal/lib/cmake/SDL2_mixer" \
+          -DZSTD_LIBRARY="${PWD}/deps/universal/lib/libzstd.a" \
+          -DZSTD_INCLUDE_DIR="${PWD}/deps/universal/include" \
+          -DwxWidgets_CONFIG_EXECUTABLE="${PWD}/deps/universal/bin/wx-config" \
+          -DODAMEX_INSTALL_BINDIR="${{ env.odamex_install_bindir }}" \
+          -DUSE_INTERNAL_ZLIB=1 -DUSE_INTERNAL_PNG=1 \
+          -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET="${{ env.macos_deployment_target }}"
+    - name: Run build
+      run: cmake --build build
+    - name: Install bundle
+      run: cmake --install build
+    - name: Bundle shared libraries
+      shell: bash
+      run: |
+        set -euo pipefail
+        deps_prefix="${PWD}/deps/universal"
+        deps_lib_dir="${deps_prefix}/lib"
+        copy_deps() {
+          local target="$1"
+          local bundle_dir="$2"
+          local added=0
+          local deps
+          deps=$(otool -L "${target}" | awk 'NR>1 {print $1}')
+          for dep in ${deps}; do
+            case "${dep}" in
+              "${deps_prefix}"/*)
+                local base
+                base=$(basename "${dep}")
+                if [ ! -f "${bundle_dir}/${base}" ]; then
+                  cp "${dep}" "${bundle_dir}/"
+                  chmod 644 "${bundle_dir}/${base}"
+                  added=1
+                fi
+                ;;
+              @rpath/*|@loader_path/*|@executable_path/*)
+                local base
+                base=$(basename "${dep}")
+                if [ -f "${deps_lib_dir}/${base}" ] && [ ! -f "${bundle_dir}/${base}" ]; then
+                  cp "${deps_lib_dir}/${base}" "${bundle_dir}/"
+                  chmod 644 "${bundle_dir}/${base}"
+                  added=1
+                fi
+                ;;
+            esac
+          done
+          if [ "${added}" -eq 1 ]; then
+            return 0
+          fi
+          return 1
+        }
+        fix_deps() {
+          local target="$1"
+          local bundle_dir="$2"
+          local deps
+          deps=$(otool -L "${target}" | awk 'NR>1 {print $1}')
+          for dep in ${deps}; do
+            case "${dep}" in
+              "${deps_prefix}"/*)
+                install_name_tool -change "${dep}" "@executable_path/../Frameworks/$(basename "${dep}")" "${target}" || true
+                ;;
+              @rpath/*|@loader_path/*|@executable_path/*)
+                local base
+                base=$(basename "${dep}")
+                if [ -f "${bundle_dir}/${base}" ]; then
+                  install_name_tool -change "${dep}" "@executable_path/../Frameworks/${base}" "${target}" || true
+                fi
+                ;;
+            esac
+          done
+        }
+        for app_bin in \
+          "build/client/odamex.app/Contents/MacOS/odamex" \
+          "build/odalaunch/odalaunch.app/Contents/MacOS/odalaunch"
+        do
+          if [ ! -f "${app_bin}" ]; then
+            continue
+          fi
+          is_odamex=0
+          if [[ "${app_bin}" == *"/client/odamex.app/"* ]]; then
+            is_odamex=1
+          fi
+          bundle_dir="$(dirname "${app_bin}")/../Frameworks"
+          mkdir -p "${bundle_dir}"
+          if [ "${is_odamex}" -eq 1 ] && [ -d "${deps_lib_dir}" ]; then
+            for dylib in "${deps_lib_dir}"/*.dylib; do
+              if [ -f "${dylib}" ]; then
+                base=$(basename "${dylib}")
+                if [[ "${base}" == libwx* ]] || [[ "${base}" == libpcre2* ]]; then
+                  continue
+                fi
+                if [ ! -f "${bundle_dir}/${base}" ]; then
+                  cp "${dylib}" "${bundle_dir}/"
+                  chmod 644 "${bundle_dir}/${base}"
+                fi
+              fi
+            done
+          fi
+          if ! otool -l "${app_bin}" | grep -q "@executable_path/../Frameworks"; then
+            install_name_tool -add_rpath "@executable_path/../Frameworks" "${app_bin}"
+          fi
+          if [ -d "${deps_lib_dir}" ]; then
+            copy_deps "${app_bin}" "${bundle_dir}" || true
+          fi
+          changed=1
+          while [ "${changed}" -eq 1 ]; do
+            changed=0
+            for dylib in "${bundle_dir}"/*.dylib; do
+              if [ -f "${dylib}" ]; then
+                if copy_deps "${dylib}" "${bundle_dir}"; then
+                  changed=1
+                fi
+              fi
+            done
+          done
+          fix_deps "${app_bin}" "${bundle_dir}"
+          for dylib in "${bundle_dir}"/*.dylib; do
+            if [ -f "${dylib}" ]; then
+              base=$(basename "${dylib}")
+              install_name_tool -id "@executable_path/../Frameworks/${base}" "${dylib}"
+              fix_deps "${dylib}" "${bundle_dir}"
+            fi
+          done
+        done
+    - name: Install create-dmg
+      run: brew install create-dmg fileicon
+    - name: Package DMG
+      shell: bash
+      run: |
+        set -euo pipefail
+        bash ci/macos-dmg.sh \
+          "odamex-macos-${{ env.new_version }}.dmg" \
+          "Odamex ${{ env.new_version }}"
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Odamex-macOS-universal
+        path: odamex-macos-${{ env.new_version }}.dmg
+    - name: Upload release binary (Universal)
+      uses: softprops/action-gh-release@v2.3.4
+      with:
+        files: odamex-macos-${{ env.new_version }}.dmg
   package-and-upload-windows:
     name: Package and Upload Artifacts
     runs-on: windows-latest

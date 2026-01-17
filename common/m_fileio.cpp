@@ -44,9 +44,6 @@ namespace fs = std::filesystem;
 // Simple logging
 std::ofstream LOG;
 
-// Simple file based console input
-std::ifstream CON;
-
 /**
  * @brief Joins two paths together
 */

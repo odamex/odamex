@@ -1088,6 +1088,11 @@ void MIType_MapKey(OScanner& os, bool newStyleMapInfo, void* data, unsigned int 
 	}
 }
 
+void MIType_SetInt(OScanner& os, bool newStyleMapInfo, void* data, uint32_t flags, uint32_t flags2)
+{
+	*static_cast<int32_t*>(data) = flags;
+}
+
 //////////////////////////////////////////////////////////////////////
 /// MapInfoData
 
@@ -1565,7 +1570,8 @@ struct MapInfoDataSetter<SkillInfo>
 			{ "nopain", &MIType_Bool, &ref.no_pain, true },
 			{ "noinfighting", &MIType_SCFlags, &ref.flags, SKILL_NOINFIGHTING, ~SKILL_TOTALINFIGHTING },
 			{ "totalinfighting", &MIType_SCFlags, &ref.flags, SKILL_TOTALINFIGHTING, ~SKILL_NOINFIGHTING },
-			{ "playerrespawn", &MIType_Bool, &ref.player_respawn, true }
+			{ "playerrespawn", &MIType_Bool, &ref.player_respawn, true },
+			{ "defaultskill", &MIType_SetInt, &defaultskillmenu, skillnum }
 		};
 	}
 };
@@ -1785,6 +1791,10 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 
 				MapInfoDataSetter<SkillInfo> setter(info);
 				ParseMapInfoLower<SkillInfo>(os, setter);
+				if (info.ACS_return == limits::MAXINT)
+				{
+					info.ACS_return = skillnum;
+				}
 
 				++skillnum;
 			}

@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include <nonstd/span.hpp>
+
 // Standard libc/STL includes we use in countless places
 
 #include "version.h"

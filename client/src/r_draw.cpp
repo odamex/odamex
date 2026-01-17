@@ -211,14 +211,9 @@ algorithm that uses RGB tables.
 //
 // ============================================================================
 
-byte* translationtables;
 argb_t translationRGB[MAXPLAYERS+1][16];
 byte *Ranges;
 static byte *translationtablesmem = NULL;
-byte bosstable[256];
-byte friendtable[256];
-byte greentable[MAXPLAYERS + 1][256];
-byte redtable[MAXPLAYERS + 1][256];
 
 static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end_color)
 {

@@ -117,8 +117,7 @@ void LevelInfos::clearSnapshots()
 // Add a new levelinfo and return it by reference
 level_pwad_info_t& LevelInfos::create()
 {
-	m_infos.emplace_back();
-	return m_infos.back();
+	return m_infos.emplace_back();
 }
 
 // Find a levelinfo by mapname
@@ -240,8 +239,7 @@ void ClusterInfos::clear()
 // Add a new levelinfo and return it by reference
 cluster_info_t& ClusterInfos::create()
 {
-	m_infos.emplace_back();
-	return m_infos.back();
+	return m_infos.emplace_back();
 }
 
 // Find a clusterinfo by mapname

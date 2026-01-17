@@ -34,6 +34,7 @@
 #include "gi.h"
 
 #include "i_system.h"
+#include "i_time.h"
 #include "minilzo.h"
 #include "m_random.h"
 #include "p_acs.h"
@@ -81,8 +82,6 @@ extern maplist_lastmaps_t forcedlastmaps;
 FLZOMemFile	*reset_snapshot = NULL;
 
 bool firstmapinit = true; // Nes - Avoid drawing same init text during every rebirth in single-player servers.
-
-bool savegamerestore;
 
 extern bool sendpause;
 

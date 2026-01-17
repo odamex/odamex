@@ -32,6 +32,7 @@
 
 #include "i_midi.h"
 #include "i_system.h"
+#include "i_time.h"
 
 EXTERN_CVAR(snd_musicdevice)
 EXTERN_CVAR(snd_midireset)

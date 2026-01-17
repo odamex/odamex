@@ -29,6 +29,7 @@
 #include "c_dispatch.h"
 #include "stats.h"
 #include "i_system.h"
+#include "i_time.h"
 
 std::vector<FStat*> FStat::stats;
 

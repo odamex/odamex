@@ -586,7 +586,7 @@ int S_CalculateSoundPriority(const fixed_t* pt, int channel, int attenuation)
 	return priority;
 }
 
-static int ResolveSound(int soundid)
+static size_t ResolveSound(size_t soundid)
 {
 	const sfxinfo_t& sfx = S_sfx[soundid];
 
@@ -594,8 +594,8 @@ static int ResolveSound(int soundid)
 	{
 		while (S_sfx[soundid].israndom)
 		{
-			std::vector<int>& list = S_rnd[soundid];
-			soundid = list[P_Random() % static_cast<int>(list.size())];
+			std::vector<size_t>& list = S_rnd[soundid];
+			soundid = list[P_Random() % list.size()];
 		}
 		return soundid;
 	}
@@ -679,7 +679,7 @@ static void S_StartSound(sound_origin_t origin, int channel,
 
 	sfxinfo_t* sfxinfo = &S_sfx[sfx_id];
 
-	while (sfxinfo->link != static_cast<int>(sfxinfo_t::NO_LINK))
+	while (sfxinfo->link != static_cast<size_t>(sfxinfo_t::NO_LINK))
 	{
 		sfx_id = ResolveSound(sfxinfo->link);
 		sfxinfo = &S_sfx[sfx_id];
@@ -688,7 +688,7 @@ static void S_StartSound(sound_origin_t origin, int channel,
 	if (!sfxinfo->data)
 	{
 		I_LoadSound(sfxinfo);
-		while (sfxinfo->link != static_cast<int>(sfxinfo_t::NO_LINK))
+		while (sfxinfo->link != static_cast<size_t>(sfxinfo_t::NO_LINK))
 		{
 			sfx_id = ResolveSound(sfxinfo->link);
 			sfxinfo = &S_sfx[sfx_id];

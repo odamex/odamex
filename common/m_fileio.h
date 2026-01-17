@@ -29,7 +29,6 @@
 #include "m_ostring.h"
 
 extern std::ofstream LOG;
-extern std::ifstream CON;
 
 std::string M_JoinPath(std::string_view path1, std::string_view path2);
 void M_ExpandHomeDir(std::string& path);
@@ -191,3 +190,13 @@ std::vector<std::string> M_PWADFilesScanDir(std::string dir);
  * @return True if the path was made absolute successfully.
  */
 bool M_GetAbsPath(const std::string& path, std::string& out);
+
+struct FileDeleter
+{
+    void operator()(FILE* f) const
+    {
+        fclose(f);
+    }
+};
+
+using uqFile = std::unique_ptr<FILE, FileDeleter>;

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -33,12 +33,12 @@ typedef void (*planefunction_t) (int top, int bottom);
 extern planefunction_t	floorfunc;
 extern planefunction_t	ceilingfunc_t;
 
-extern int  			*floorclip;
-extern int  			*ceilingclip;
-extern int				*floorclipinitial;
-extern int				*ceilingclipinitial;
+extern std::unique_ptr<int[]> floorclip;
+extern std::unique_ptr<int[]> ceilingclip;
+extern std::unique_ptr<int[]> floorclipinitial;
+extern std::unique_ptr<int[]> ceilingclipinitial;
 
-extern fixed_t			*yslope;
+extern std::unique_ptr<fixed_t[]> yslope;
 
 void R_InitPlanes (void);
 void R_ClearPlanes (bool fullclear);
@@ -56,7 +56,7 @@ R_MakeSpans
   int		b1,
   int		t2,
   int		b2 );
-  
+
 void R_DrawPlanes (void);
 void R_DrawSkyBoxes (void);
 

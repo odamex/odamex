@@ -40,6 +40,7 @@
 #include "c_bind.h"
 #include "c_console.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "hu_stuff.h"
 
 #ifdef __SWITCH__
