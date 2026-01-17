@@ -192,17 +192,11 @@ static void CL_PredictSpying()
 	// Save and restore the prevangle and prevpitch so that the client viewangle interpolation
 	// actually works when spying.
 	//
-	// Details:
-	// As part of normal operations, P_PlayerThink overwrites prevangle and prevpitch with
-	// current angle and pitch, assuming that a newer angle and pitch are coming in P_MovePlayer
-	// under control of player->cmd.yaw and player->cmd.pitch.  The end result would be fresh
-	// previous and current values, which can be interpolated for nice smooth animation.
-	//
-	// Spying adds a wrinkle in that angle and pitch are *already* as up-to-date as can be,
-	// thanks to CL_SimulatePlayers, so P_PlayerThink's assumption that newer angle values are
-	// incoming doesn't hold.  However, prevangle and prevpitch genuinely have the previous
-	// snapshot's values, so hold onto them and write them back.  The end result will be the
-	// current and the previous snapshots' values reflected in their respective attributes.
+	// This is needed because the spy target's prevangle and prevpitch are already accurate
+	// thanks to CL_SimulatePlayers, but P_PlayerThink overwrites them, assuming that it's
+	// ultimately responsible for moving players.  That just isn't the case for spied remote
+	// players.  We can simply restore the overwritten states to allow interpolation to work.
+
 	const auto prevangle = player->mo->prevangle;
 	const auto prevpitch = player->mo->prevpitch;
 
