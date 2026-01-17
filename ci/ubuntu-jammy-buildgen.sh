@@ -7,5 +7,5 @@ IFS=$'\n\t'
 
 set -x
 
-docker build -t odamex -f ci/ubuntu-focal.Dockerfile .
+docker build -t odamex -f ci/ubuntu-jammy.Dockerfile .
 docker run --rm odamex

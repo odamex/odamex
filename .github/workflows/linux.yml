@@ -97,7 +97,7 @@ jobs:
       run: git submodule update --init --recursive
     - name: Run build
       run: bash ci/fedora-buildgen.sh
-  build-ubuntu-focal:
+  build-ubuntu-jammy:
     name: Build (Ubuntu 20.04 LTS)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
@@ -108,7 +108,7 @@ jobs:
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Run build
-      run: bash ci/ubuntu-focal-buildgen.sh
+      run: bash ci/ubuntu-jammy-buildgen.sh
   build-flatpak:
     name: Build Flatpak (Ubuntu Latest)
     needs: pre_job
