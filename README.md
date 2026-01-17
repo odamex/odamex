@@ -66,6 +66,11 @@ Please check [this page][1] for further instructions on how to compile Odamex fo
 
 [1]: https://github.com/odamex/odamex/wiki/Compiling-Odamex
 
+MacOS DMG packaging
+-------------------
+
+macOS DMGs are built as universal binaries and include `Odamex.app`, `odalaunch.app`, `odasrv`, `odamex.wad`, config samples, and third-party licenses. The DMG layout and icons are generated in CI to match the release installer.
+
 Contributing to the project
 ---------------------------
 

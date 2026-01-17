@@ -30,7 +30,7 @@ jobs:
     name: Build
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
     - name: Checkout source
       uses: actions/checkout@v4
