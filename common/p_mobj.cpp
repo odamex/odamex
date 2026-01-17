@@ -163,10 +163,10 @@ AActor::AActor(const AActor& other)
       translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
       onground(other.onground), touching_sectorlist(other.touching_sectorlist),
       deadtic(other.deadtic), oldframe(other.oldframe), rndindex(other.rndindex),
-      netid(other.netid), tid(other.tid),
       friend_playerid(other.friend_playerid),
       friend_teamid(other.friend_teamid), pursuecount(other.pursuecount),
       strafecount(other.strafecount),
+      netid(other.netid), tid(other.tid),
       baseline_set(false), bmapnode(other.bmapnode)
 {
 	memcpy(args, other.args, sizeof(args));
