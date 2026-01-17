@@ -2016,6 +2016,9 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 		// Check for frag warning announcements (client-side)
 		P_CheckFragWarnings();
 
+		// Check for lead change announcements (client-side)
+		P_CheckLeadChangeAnnouncement();
+
 		// [Toke] Better sv_fraglimit
 		if (sv_gametype == GM_DM)
 			G_FragsCheckEndGame();

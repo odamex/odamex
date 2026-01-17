@@ -40,6 +40,7 @@
 #include "cmdlib.h"
 #include "d_main.h"
 #include "d_player.h"
+#include "g_announcer.h"
 #include "g_gametype.h"
 #include "g_levelstate.h"
 #include "gi.h"
@@ -1986,6 +1987,9 @@ static void CL_CTFRefresh(const odaproto::svc::CTFRefresh* msg)
 			}
 		}
 	}
+
+	// Check for lead change announcements
+	P_CheckLeadChangeAnnouncement();
 }
 
 static void CL_CTFEvent(const odaproto::svc::CTFEvent* msg)

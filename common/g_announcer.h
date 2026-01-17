@@ -407,6 +407,68 @@ public:
 	}
 
 	/// <summary>
+	/// Resets lead tracking state for a new game.
+	/// </summary>
+	void resetLeadTracking()
+	{
+		currentLeaderPlayerId = 0;
+		currentLeaderTeam = TEAM_NONE;
+		displayPlayerHasLead = false;
+		leadIsTied = false;
+		leadTrackingInitialized = false;
+	}
+
+	/// <summary>
+	/// Gets whether lead tracking has been initialized.
+	/// </summary>
+	bool isLeadTrackingInitialized() const { return leadTrackingInitialized; }
+
+	/// <summary>
+	/// Sets lead tracking as initialized.
+	/// </summary>
+	void setLeadTrackingInitialized() { leadTrackingInitialized = true; }
+
+	/// <summary>
+	/// Gets the current leader player ID (for FFA games).
+	/// </summary>
+	int getCurrentLeaderPlayerId() const { return currentLeaderPlayerId; }
+
+	/// <summary>
+	/// Sets the current leader player ID (for FFA games).
+	/// </summary>
+	void setCurrentLeaderPlayerId(int id) { currentLeaderPlayerId = id; }
+
+	/// <summary>
+	/// Gets the current leader team (for team games).
+	/// </summary>
+	team_t getCurrentLeaderTeam() const { return currentLeaderTeam; }
+
+	/// <summary>
+	/// Sets the current leader team (for team games).
+	/// </summary>
+	void setCurrentLeaderTeam(team_t team) { currentLeaderTeam = team; }
+
+	/// <summary>
+	/// Gets whether the display player currently has the lead.
+	/// </summary>
+	bool doesDisplayPlayerHaveLead() const { return displayPlayerHasLead; }
+
+	/// <summary>
+	/// Sets whether the display player has the lead.
+	/// </summary>
+	void setDisplayPlayerHasLead(bool hasLead) { displayPlayerHasLead = hasLead; }
+
+	/// <summary>
+	/// Gets whether the lead is currently tied.
+	/// </summary>
+	bool isLeadTied() const { return leadIsTied; }
+
+	/// <summary>
+	/// Sets whether the lead is tied.
+	/// </summary>
+	void setLeadTied(bool tied) { leadIsTied = tied; }
+
+	/// <summary>
 	/// Gets the sndinfo token for the current announcer for the
 	/// following event.
 	/// </summary>
@@ -448,6 +510,32 @@ private:
 	bool countdown1Announced = false;
 
 	/// <summary>
+	/// Lead tracking state for FFA games - stores the player ID of the current leader.
+	/// A value of 0 means no leader has been established yet.
+	/// </summary>
+	int currentLeaderPlayerId = 0;
+
+	/// <summary>
+	/// Lead tracking state for team games - stores the team currently in the lead.
+	/// </summary>
+	team_t currentLeaderTeam = TEAM_NONE;
+
+	/// <summary>
+	/// Tracks whether the display player currently has the lead.
+	/// </summary>
+	bool displayPlayerHasLead = false;
+
+	/// <summary>
+	/// Tracks whether there is currently a tie for the lead.
+	/// </summary>
+	bool leadIsTied = false;
+
+	/// <summary>
+	/// Tracks whether lead tracking has been initialized for this game.
+	/// </summary>
+	bool leadTrackingInitialized = false;
+
+	/// <summary>
 	/// Dictionary of all loaded announcers, mapped by their name.
 	/// </summary>
 	std::unordered_map<std::string, Announcer_s> announcerDict;
@@ -482,3 +570,10 @@ void P_CheckFightAnnouncement();
 /// Uses getCountdown() to work clientside and in demos.
 /// </summary>
 void P_CheckCountdownAnnouncements();
+
+/// <summary>
+/// Checks for lead changes and announces them to the display player.
+/// Announces "You have the lead", "You lost the lead", or "You tied for the lead".
+/// Does not run in coop game modes.
+/// </summary>
+void P_CheckLeadChangeAnnouncement();
