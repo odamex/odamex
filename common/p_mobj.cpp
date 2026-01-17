@@ -1044,7 +1044,7 @@ int P_ThingInfoHeight(mobjinfo_t *mi)
 // [AM] Taken from Crispy Doom, with a smaller limit - 10,000 iterations
 //      still seems like a lot to me.
 
-#define MOBJ_CYCLE_LIMIT 128
+#define MOBJ_CYCLE_LIMIT 512
 
 // P_SetMobjState
 //
