@@ -1559,41 +1559,36 @@ void G_DoLoadGame (void)
 
 	gameaction = ga_nothing;
 
-	FILE *stdfile = fopen (savename.c_str(), "rb");
-	if (stdfile == NULL)
+	auto stdfile = uqFile(fopen(savename.c_str(), "rb"));
+	if (stdfile == nullptr)
 	{
 		PrintFmt(PRINT_HIGH, "Could not read savegame '{}'\n", savename);
 		return;
 	}
 
-	fseek (stdfile, SAVESTRINGSIZE, SEEK_SET);	// skip the description field
-	size_t readlen = fread (text, 16, 1, stdfile);
+	fseek (stdfile.get(), SAVESTRINGSIZE, SEEK_SET);	// skip the description field
+	size_t readlen = fread (text, 16, 1, stdfile.get());
 	if (readlen < 1)
 	{
 		PrintFmt(PRINT_HIGH, "Failed to read savegame '{}'\n", savename);
-		fclose(stdfile);
 		return;
 	}
 	if (strncmp (text, SAVESIG, 16))
 	{
 		PrintFmt(PRINT_HIGH, "Savegame '{}' is from a different version\n", savename);
-
-		fclose(stdfile);
-
 		return;
 	}
-	readlen = fread (text, 8, 1, stdfile);
+	readlen = fread (text, 8, 1, stdfile.get());
 	if (readlen < 1)
 	{
 		PrintFmt(PRINT_HIGH, "Failed to read savegame '{}'\n", savename);
-		fclose(stdfile);
 		return;
 	}
 	text[8] = 0;
 
 	/*bglobal.RemoveAllBots (true);*/
 
-	FLZOFile savefile (stdfile, FFile::EReading);
+	FLZOFile savefile (stdfile.release(), FFile::EReading);
 
 	if (!savefile.IsOpen ())
 		I_Error("Savegame '{}' is corrupt\n", savename);
