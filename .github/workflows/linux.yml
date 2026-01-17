@@ -86,7 +86,7 @@ jobs:
     - name: Run build
       run: cmake --build ./build/
   build-fedora:
-    name: Build (Fedora 32)
+    name: Build (Fedora 34)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
@@ -98,7 +98,7 @@ jobs:
     - name: Run build
       run: bash ci/fedora-buildgen.sh
   build-ubuntu-jammy:
-    name: Build (Ubuntu 20.04 LTS)
+    name: Build (Ubuntu 22.04 LTS)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
