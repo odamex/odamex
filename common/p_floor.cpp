@@ -1489,6 +1489,8 @@ bool EV_BuildStairs(const int tag, const DFloor::EStair type, const line_t *line
 	return rtn;
 }
 
+bool P_SpawnDonut(int, line_t*, fixed_t, fixed_t);
+
 bool EV_DoZDoomDonut(int tag, line_t* line, fixed_t pillarspeed, fixed_t slimespeed)
 {
 	return P_SpawnDonut(line->id, line, pillarspeed, slimespeed);
