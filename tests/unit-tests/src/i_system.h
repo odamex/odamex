@@ -49,11 +49,6 @@ void I_EndRead (void);
 // Called by DoomMain.
 void I_Init (void);
 
-dtime_t I_GetTime();
-dtime_t I_ConvertTimeToMs(dtime_t value);
-dtime_t I_ConvertTimeFromMs(dtime_t value);
-void I_Sleep(dtime_t sleep_time);
-
 // Asynchronous interrupt functions should maintain private queues
 // that are read by the synchronous functions
 // to be converted into events.
