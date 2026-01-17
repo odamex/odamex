@@ -1,4 +1,4 @@
-# deutex build file for odamex.wad
+# WAD manifest for odamex.wad
 
 # List of data Lumps
 [lumps]
