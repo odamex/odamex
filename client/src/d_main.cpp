@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,7 +41,7 @@
 #endif
 
 #include <cmath>
-
+#include <nonstd/scope.hpp>
 
 #include "m_alloc.h"
 #include "m_random.h"
@@ -62,6 +62,7 @@
 #include "c_dispatch.h"
 #include "i_system.h"
 #include "i_music.h"
+#include "i_time.h"
 #include "i_video.h"
 #include "i_input.h"
 #include "g_game.h"
@@ -602,63 +603,70 @@ EXTERN_CVAR(r_thingsectorlight)
 
 void G_ReadCOMPLVL()
 {
-	if (!serverside)
+	const int lumpnum = W_CheckNumForName("COMPLVL");
+	if (lumpnum == -1)
 		return;
 
-	int lumpnum = W_CheckNumForName("COMPLVL");
-	if (lumpnum != -1)
+	char* complvl = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
+	auto guard = nonstd::make_scope_exit([&]{ Z_Free(complvl); });
+
+	if (!serverside)
 	{
-		char* complvl = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
-
-		co_zdoomphys.Set(0.0f);
-		co_zdoomammo.Set(0.0f);
-
-		if (iequals("vanilla", complvl))
-		{
-			co_boomphys.Set(0.0f);
-			co_mbfphys.Set(0.0f);
-			co_novileghosts.Set(0.0f);
-			co_allowdropoff.Set(0.0f);
-			co_removesoullimit.Set(0.0f);
-			r_clipmaskedspecial.Set(0.0f);
-			r_thingsectorlight.Set(0.0f);
-		}
-		else if (iequals("boom", complvl))
-		{
-			co_boomphys.Set(1.0f);
-			co_mbfphys.Set(0.0f);
-			co_novileghosts.Set(1.0f);
-			co_allowdropoff.Set(1.0f);
-			co_removesoullimit.Set(1.0f);
-			r_clipmaskedspecial.Set(0.0f);
-			r_thingsectorlight.Set(0.0f);
-		}
-		else if (iequals("mbf", complvl))
-		{
-			co_boomphys.Set(1.0f);
-			co_mbfphys.Set(1.0f);
-			co_novileghosts.Set(1.0f);
-			co_allowdropoff.Set(1.0f);
-			co_removesoullimit.Set(1.0f);
-			r_clipmaskedspecial.Set(0.0f);
+		if (iequals("mbf", complvl))
 			r_thingsectorlight.Set(1.0f);
-		}
-		else if (iequals("mbf21", complvl))
-		{
-			co_boomphys.Set(1.0f);
-			co_mbfphys.Set(1.0f);
-			co_novileghosts.Set(1.0f);
-			co_allowdropoff.Set(1.0f);
-			co_removesoullimit.Set(1.0f);
-			r_clipmaskedspecial.Set(1.0f);
-			r_thingsectorlight.Set(0.0f);
-		}
 		else
-		{
-			DPrintFmt("Unrecognized COMPLVL value: {}", complvl);
-		}
+			r_thingsectorlight.Set(0.0f);
 
-		Z_Free(complvl);
+		if (iequals("mbf21", complvl))
+			r_clipmaskedspecial.Set(1.0f);
+		else
+			r_clipmaskedspecial.Set(0.0f);
+
+		return;
+	}
+
+	co_zdoomphys.Set(0.0f);
+	co_zdoomammo.Set(0.0f);
+
+	if (iequals("vanilla", complvl))
+	{
+		co_boomphys.Set(0.0f);
+		co_mbfphys.Set(0.0f);
+		co_novileghosts.Set(0.0f);
+		co_allowdropoff.Set(0.0f);
+		co_removesoullimit.Set(0.0f);
+		r_clipmaskedspecial.Set(0.0f);
+	}
+	else if (iequals("boom", complvl))
+	{
+		co_boomphys.Set(1.0f);
+		co_mbfphys.Set(0.0f);
+		co_novileghosts.Set(1.0f);
+		co_allowdropoff.Set(1.0f);
+		co_removesoullimit.Set(1.0f);
+		r_clipmaskedspecial.Set(0.0f);
+	}
+	else if (iequals("mbf", complvl))
+	{
+		co_boomphys.Set(1.0f);
+		co_mbfphys.Set(1.0f);
+		co_novileghosts.Set(1.0f);
+		co_allowdropoff.Set(1.0f);
+		co_removesoullimit.Set(1.0f);
+		r_clipmaskedspecial.Set(0.0f);
+	}
+	else if (iequals("mbf21", complvl))
+	{
+		co_boomphys.Set(1.0f);
+		co_mbfphys.Set(1.0f);
+		co_novileghosts.Set(1.0f);
+		co_allowdropoff.Set(1.0f);
+		co_removesoullimit.Set(1.0f);
+		r_clipmaskedspecial.Set(1.0f);
+	}
+	else
+	{
+		DPrintFmt("Unrecognized COMPLVL value: {}", complvl);
 	}
 }
 

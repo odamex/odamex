@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -39,6 +39,7 @@
 #include "m_vectors.h"
 #include "p_inter.h"
 #include "gi.h"
+#include "g_skill.h"
 
 #if defined(SERVER_APP)
 #include "sv_main.h"
@@ -3340,7 +3341,7 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_GAMESKILL:
-			PushToStack (sv_skill);
+			PushToStack (G_GetCurrentSkill().ACS_return);
 			break;
 
 // [BC] Start ST PCD's
@@ -4078,7 +4079,7 @@ void strbin (char *str)
 	while ( (c = *p++) ) {
 		if (c != '\\') {
 			*str++ = c;
-		} else {
+		} else if (*p) {
 			switch (*p) {
 				case 'c':
 					*str++ = '\034';	// TEXTCOLOR_ESCAPE

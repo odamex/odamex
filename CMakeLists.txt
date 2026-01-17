@@ -14,7 +14,7 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-project(Odamex VERSION 12.0.0)
+project(Odamex VERSION 12.1.0)
 
 include(CMakeDependentOption)
 
@@ -49,7 +49,6 @@ option(BUILD_LAUNCHER "Build launcher target" 1)
 option(BUILD_TESTS "Build unit test target" 1)
 option(BUILD_MASTER "Build master server target" 0)
 option(BUILD_OR_FAIL "Must build the BUILD_* targets or else generation will fail" 0)
-option(USE_INTERNAL_DEUTEX "Use internal DeuTex" ${USE_INTERNAL_LIBS})
 option(USE_LTO "Build Release builds with Link Time Optimization" 1)
 option(ODAMEX_INSTALL_BINDIR "Smart default for bin dir location" "/usr/local/bin")
 option(ODAMEX_INSTALL_DATADIR "Smart default for data dir location" "/usr/local/share")
@@ -77,8 +76,8 @@ if(NOT APPLE AND NOT WIN32)
   add_definitions(-DODAMEX_INSTALL_DATADIR="${ODAMEX_INSTALL_DATADIR}")
 endif()
 
-set(PROJECT_COPYRIGHT "2006-2025")
-set(PROJECT_RC_VERSION "12,0,0,0")
+set(PROJECT_COPYRIGHT "2006-2026")
+set(PROJECT_RC_VERSION "12,1,0,0")
 set(PROJECT_COMPANY "The Odamex Team")
 
 # Include early required commands for specific systems

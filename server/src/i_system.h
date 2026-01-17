@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -52,10 +52,10 @@ void I_EndRead (void);
 // Called by DoomMain.
 void I_Init (void);
 
-dtime_t I_GetTime();
-dtime_t I_ConvertTimeToMs(dtime_t value);
-dtime_t I_ConvertTimeFromMs(dtime_t value);
-void I_Sleep(dtime_t sleep_time);
+// Called by startup code
+// to get the ammount of memory to malloc
+// for the zone management.
+void *I_ZoneBase (size_t *size);
 
 // Asynchronous interrupt functions should maintain private queues
 // that are read by the synchronous functions
@@ -97,11 +97,6 @@ void I_PrintStr (int x, const char *str, int count, bool scroll);
 void I_SetTitleString (const char *title);
 
 std::string I_ConsoleInput (void);
-
-// [RH] Returns millisecond-accurate time
-dtime_t I_MSTime (void);
-
-void I_Yield(void);
 
 // [RH] Title string to display at bottom of console during startup
 extern char DoomStartupTitle[256];

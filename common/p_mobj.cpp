@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -163,10 +163,10 @@ AActor::AActor(const AActor& other)
       translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
       onground(other.onground), touching_sectorlist(other.touching_sectorlist),
       deadtic(other.deadtic), oldframe(other.oldframe), rndindex(other.rndindex),
-      netid(other.netid), tid(other.tid),
       friend_playerid(other.friend_playerid),
       friend_teamid(other.friend_teamid), pursuecount(other.pursuecount),
       strafecount(other.strafecount),
+      netid(other.netid), tid(other.tid),
       baseline_set(false), bmapnode(other.bmapnode)
 {
 	memcpy(args, other.args, sizeof(args));
@@ -1044,7 +1044,7 @@ int P_ThingInfoHeight(mobjinfo_t *mi)
 // [AM] Taken from Crispy Doom, with a smaller limit - 10,000 iterations
 //      still seems like a lot to me.
 
-#define MOBJ_CYCLE_LIMIT 128
+#define MOBJ_CYCLE_LIMIT 512
 
 // P_SetMobjState
 //
@@ -3067,6 +3067,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		         mthing->type,
 		         mthing->x, mthing->y);
 		info = &mobjinfo[MT_UNKNOWNTHING]; // [CMB] odamex specific MT_UNKNOWNTHING
+		type = MT_UNKNOWNTHING;
 	}
 	// [RH] If the thing's corresponding sprite has no frames, also map
 	//		it to the unknown thing.
@@ -3074,6 +3075,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		PrintFmt(PRINT_WARNING, "P_SpawnMapThing: Type {} at {}, {} has no frames\n",
 		         mthing->type, mthing->x, mthing->y);
+		info = &mobjinfo[MT_UNKNOWNTHING];
 		type = MT_UNKNOWNTHING;
 	}
 
@@ -3232,7 +3234,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 				TActorIterator<AActor> iterator (mthing->args[0]);
 			    AActor* box = iterator.Next();
 
-				if (box->type == MT_SKYVIEWPOINT && box != NULL)
+				if (box != NULL && box->type == MT_SKYVIEWPOINT)
 				{
 				    sector->Skybox = box->ptr();
 				}

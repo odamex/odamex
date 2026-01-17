@@ -55,7 +55,7 @@ Odamex requires the following tools and libraries:
 * [cURL](https://curl.se/)
 * [libPNG](http://www.libpng.org/pub/png/libpng.html)
 * [zlib](https://zlib.net/)
-* [DeuTex](https://github.com/Doom-Utils/deutex/releases/) (for building the WAD)
+* [Python](https://www.python.org/) (for building the WAD)
 * [wxWidgets](https://www.wxwidgets.org/downloads/) (for the launcher)
 
 `cURL`, `libPNG` and `zlib` are automatically included in-tree as submodules.
@@ -65,6 +65,11 @@ On Windows, all libraries are automatically downloaded if not found.  On \*nix/M
 Please check [this page][1] for further instructions on how to compile Odamex for your platform.
 
 [1]: https://github.com/odamex/odamex/wiki/Compiling-Odamex
+
+MacOS DMG packaging
+-------------------
+
+macOS DMGs are built as universal binaries and include `Odamex.app`, `odalaunch.app`, `odasrv`, `odamex.wad`, config samples, and third-party licenses. The DMG layout and icons are generated in CI to match the release installer.
 
 Contributing to the project
 ---------------------------

@@ -11,7 +11,6 @@ RUN true \
         gcc g++ \
         cmake \
         make \
-        deutex \
         zlib1g-dev \
         libzstd1 libzstd-dev \
         patch \
@@ -45,11 +44,6 @@ RUN true \
 # Setup Build
 RUN true \
     && mkdir build
-
-# Build the Wad
-# WORKDIR /build/odamex/wad
-# RUN true \
-#     && /usr/games/deutex -rgb 0 255 255 -doom2 bootstrap -build wadinfo.txt ../odamex.wad
 
 # Build Odamex
 WORKDIR /build/odamex/build

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -345,11 +345,10 @@ const static clusterFlags_t CLUSTER_EXITTEXTISLUMP = BIT(1);
 
 struct bossaction_t
 {
-	int type;
-	short special;
-	short tag;
-
-	bossaction_t() : type(MT_NULL), special(), tag() {}
+	int32_t type    = MT_NULL;
+	int32_t flags   = 0;
+	int16_t special = 0;
+	int16_t tag     = 0;
 };
 
 struct cluster_info_t

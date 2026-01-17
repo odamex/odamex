@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -47,6 +47,7 @@
 #include "sv_sqpold.h"
 #include "sv_master.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "m_argv.h"
@@ -63,7 +64,6 @@
 #include "g_gametype.h"
 #include "sv_banlist.h"
 #include "d_main.h"
-#include "m_fileio.h"
 #include "v_textcolors.h"
 #include "p_lnspec.h"
 #include "m_wdlstats.h"
@@ -4089,16 +4089,6 @@ void SV_RunTics()
 	std::string cmd = I_ConsoleInput();
 	if (cmd.length())
 		AddCommandString(cmd);
-
-	if (CON.is_open())
-	{
-		CON.clear();
-		if (!CON.eof())
-		{
-			std::getline(CON, cmd);
-			AddCommandString(cmd);
-		}
-	}
 
 	SV_BanlistTics();
 	SV_UpdateMaster();
