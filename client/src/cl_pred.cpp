@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -189,10 +189,24 @@ static void CL_PredictSpying()
 	if (consoleplayer_id == displayplayer_id)
 		return;
 
+	// Save and restore the prevangle and prevpitch so that the client viewangle interpolation
+	// actually works when spying.
+	//
+	// This is needed because the spy target's prevangle and prevpitch are already accurate
+	// thanks to CL_SimulatePlayers, but P_PlayerThink overwrites them, assuming that it's
+	// ultimately responsible for moving players.  That just isn't the case for spied remote
+	// players.  We can simply restore the overwritten states to allow interpolation to work.
+
+	const auto prevangle = player->mo->prevangle;
+	const auto prevpitch = player->mo->prevpitch;
+
 	predicting = false;
 
 	P_PlayerThink(player);
 	P_CalcHeight(player);
+
+	player->mo->prevangle = prevangle;
+	player->mo->prevpitch = prevpitch;
 }
 
 //

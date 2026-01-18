@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -62,6 +62,7 @@
 #include "c_dispatch.h"
 #include "i_system.h"
 #include "i_music.h"
+#include "i_time.h"
 #include "i_video.h"
 #include "i_input.h"
 #include "g_game.h"
@@ -104,11 +105,9 @@ extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 
-bool devparm;				// started game with -devparm
 const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 static bool wiping_screen = false;
 
-OLumpName startmap;
 bool autostart;
 bool advancedemo;
 event_t events[MAXEVENTS];
@@ -145,8 +144,6 @@ EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_vsync)
 EXTERN_CVAR (g_resetinvonexit)
 EXTERN_CVAR (i_skipbootwin)
-
-std::string LOG_FILE;
 
 void M_RestoreVideoMode();
 void M_ModeFlashTestText();

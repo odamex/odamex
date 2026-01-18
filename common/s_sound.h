@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -43,7 +43,7 @@ struct sfxinfo_struct
 	unsigned looping;           // Looping sample handle
 	void* data;
 
-	int link;
+	size_t link;
 	enum { NO_LINK = 0xffffffff };
 
 	int lumpnum;              // lump number of sfx
@@ -83,7 +83,7 @@ inline struct AmbientSound {
 inline std::vector<sfxinfo_t> S_sfx;
 
 // map of every sound id for sounds that have randomized variants
-inline std::map<int, std::vector<int>> S_rnd;
+inline std::map<size_t, std::vector<size_t>> S_rnd;
 
 // Initializes sound stuff, including volume
 // Sets channels, SFX and music volume,
@@ -194,9 +194,9 @@ void S_ParseSndInfo();
 void S_HashSounds();
 int S_FindSound(const char* logicalname);
 int S_FindSoundByLump(int lump);
-int S_AddSound(const char* logicalname, const char* lumpname); // Add sound by lumpname
-int S_AddSoundLump(char* logicalname, int lump);         // Add sound by lump index
-void S_AddRandomSound(int owner, std::vector<int>& list);
+size_t S_AddSound(const char* logicalname, const char* lumpname); // Add sound by lumpname
+size_t S_AddSoundLump(char* logicalname, int lump);         // Add sound by lump index
+void S_AddRandomSound(size_t owner, std::vector<size_t>& list);
 void S_ClearSoundLumps();
 
 void UV_SoundAvoidPlayer(const AActor* mo, byte channel, const char* name, byte attenuation);
@@ -215,7 +215,7 @@ inline static void S_NetSound(const AActor* mo, byte channel, const char* name, 
 {
 #if SERVER_APP
 	SV_Sound(mo, channel, name, attenuation);
-#else
+#elif defined(CLIENT_APP)
 	S_Sound(mo, channel, name, 1, attenuation);
 #endif
 }
@@ -225,7 +225,7 @@ inline static void S_PlayerSound(player_t* pl, const AActor* mo, const byte chan
 {
 #if SERVER_APP
 	SV_Sound(*pl, mo, channel, name, attenuation);
-#else
+#elif defined(CLIENT_APP)
 	S_Sound(mo, channel, name, 1, attenuation);
 #endif
 }

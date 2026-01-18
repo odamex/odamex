@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -270,17 +270,16 @@ void FLZOFile::Implode()
 {
 	unsigned int input_len = m_BufferSize;
 	lzo_uint compressed_len = 0;
-	byte* compressed = NULL;
+	std::unique_ptr<byte[]> compressed;
 
 	byte* oldbuf = m_Buffer;
 
 	if (!m_NoCompress)
 	{
-		compressed = new lzo_byte[MaxLZOCompressedLength(input_len)];
+		compressed = std::make_unique<lzo_byte[]>(MaxLZOCompressedLength(input_len));
 
-		lzo_byte* wrkmem = new lzo_byte[LZO1X_1_MEM_COMPRESS];
-		int res = lzo1x_1_compress(m_Buffer, input_len, compressed, &compressed_len, wrkmem);
-		delete [] wrkmem;
+		auto wrkmem = std::make_unique<lzo_byte[]>(LZO1X_1_MEM_COMPRESS);
+		int res = lzo1x_1_compress(m_Buffer, input_len, compressed.get(), &compressed_len, wrkmem.get());
 
 		// If the data could not be compressed, store it as-is.
 		if (res != LZO_E_OK || compressed_len > input_len)
@@ -309,10 +308,7 @@ void FLZOFile::Implode()
 	if (compressed_len == 0 || !compressed)
 		memcpy(m_Buffer + 8, oldbuf, input_len);
 	else
-		memcpy(m_Buffer + 8, compressed, compressed_len);
-
-	delete [] compressed;
-    compressed = NULL;
+		memcpy(m_Buffer + 8, compressed.get(), compressed_len);
 
 	M_Free(oldbuf);
 }

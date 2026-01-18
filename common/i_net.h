@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -335,7 +335,7 @@ extern  netadr_t  net_from;  // address of who sent the packet
 class buf_t
 {
 public:
-	byte	*data;
+	std::unique_ptr<byte[]> data;
 	size_t	allocsize, cursize, readpos;
 	bool	overflowed;  // set to true if the buffer size failed
 
@@ -477,7 +477,7 @@ public:
 		}
 		size_t oldpos = readpos;
 		readpos += size;
-		return data+oldpos;
+		return &data[oldpos];
 	}
 
 	int ReadShort()
@@ -560,7 +560,7 @@ public:
 
 	const char *ReadString()
 	{
-		byte *begin = data + readpos;
+		byte *begin = &data[readpos];
 
 		while(ReadByte() > 0);
 
@@ -629,7 +629,7 @@ public:
 
 	byte *ptr()
 	{
-		return data;
+		return data.get();
 	}
 
 	size_t size() const
@@ -656,15 +656,14 @@ public:
 
 	void resize(size_t len, bool clearbuf = true)
 	{
-		byte *olddata = data;
-		data = new byte[len];
+		auto newdata = std::make_unique<byte[]>(len);
 		allocsize = len;
 
 		if (!clearbuf)
 		{
-			if (cursize < allocsize)
+			if (cursize < len)
 			{
-				memcpy(data, olddata, cursize);
+				memcpy(newdata.get(), data.get(), cursize);
 			}
 			else
 			{
@@ -678,7 +677,8 @@ public:
 			clear();
 		}
 
-		delete[] olddata;
+		data = std::move(newdata);
+		allocsize = len;
 	}
 
 	byte *SZ_GetSpace(size_t length)
@@ -692,7 +692,7 @@ public:
 #endif
 		}
 
-		byte *ret = data + cursize;
+		byte *ret = &data[cursize];
 		cursize += length;
 
 		return ret;
@@ -704,9 +704,7 @@ public:
 		if (this == &other)
             return *this;
 
-		delete[] data;
-
-		data = new byte[other.allocsize];
+		data = std::make_unique<byte[]>(other.allocsize);
 		allocsize = other.allocsize;
 		cursize = other.cursize;
 		overflowed = other.overflowed;
@@ -720,7 +718,7 @@ public:
 	}
 
 	buf_t()
-		: data(0), allocsize(0), cursize(0), readpos(0), overflowed(false)
+		: data(nullptr), allocsize(0), cursize(0), readpos(0), overflowed(false)
 	{
 	}
 	buf_t(size_t len)
@@ -737,8 +735,6 @@ public:
 	}
 	~buf_t()
 	{
-		delete[] data;
-		data = NULL;
 	}
 };
 

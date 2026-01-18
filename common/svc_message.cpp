@@ -35,6 +35,7 @@
 #include "d_main.h"
 #include "g_gametype.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "m_strindex.h"
 #include "p_lnspec.h"
 #include "p_local.h"

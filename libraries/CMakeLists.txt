@@ -14,7 +14,11 @@ include(ProcessorCount)
 ProcessorCount(PARALLEL_PROC_COUNT)
 
 # Set our prefix path, so inter-dependencies are picked up on.
-set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/local")
+if(CMAKE_PREFIX_PATH)
+  list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/local")
+else()
+  set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/local")
+endif()
 
 # Shorthand, to reduce line-noise
 set(libprefix "${CMAKE_STATIC_LIBRARY_PREFIX}")
@@ -36,6 +40,7 @@ function(lib_buildgen)
     -S "${_SRCDIR}"
     -B "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
     -G "${CMAKE_GENERATOR}"
+    "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
     "-DCMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
     "-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/local"
     "-DCMAKE_INSTALL_LIBDIR=lib") # Without this, CentOS installs into lib64
@@ -64,6 +69,13 @@ function(lib_buildgen)
 
   if(CMAKE_RC_COMPILER)
     list(APPEND _COMMAND "-DCMAKE_RC_COMPILER=${CMAKE_RC_COMPILER}")
+  endif()
+  if(CMAKE_OSX_ARCHITECTURES)
+    string(REPLACE ";" "\\;" _OSX_ARCHS "${CMAKE_OSX_ARCHITECTURES}")
+    list(APPEND _COMMAND "-DCMAKE_OSX_ARCHITECTURES=${_OSX_ARCHS}")
+  endif()
+  if(CMAKE_OSX_DEPLOYMENT_TARGET)
+    list(APPEND _COMMAND "-DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}")
   endif()
 
   get_property(_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)

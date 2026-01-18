@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,7 +32,7 @@
 
 #if defined(SERVER_APP)
 #include "svc_message.h"
-#else
+#elif defined(CLIENT_APP)
 #include "st_stuff.h"
 #endif
 
@@ -43,7 +43,7 @@ void COM_PushToast(const toast_t& toast)
 	{
 		MSG_WriteSVC(&player.client.reliablebuf, SVC_Toast(toast));
 	}
-#else
+#elif defined(CLIENT_APP)
 	hud::PushToast(toast);
 #endif
 }

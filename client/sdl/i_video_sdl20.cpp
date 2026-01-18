@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,6 +37,7 @@
 
 #include "v_palette.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "i_input.h"
 #include "i_icon.h"
 

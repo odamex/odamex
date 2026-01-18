@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -68,6 +68,8 @@
 #include "g_gametype.h"
 #include "cl_parse.h"
 #include "cl_replay.h"
+
+#include "m_consolecommandstream.h"
 
 #include <bitset>
 #include <set>
@@ -650,19 +652,9 @@ void CL_DisplayTics()
 //
 void CL_RunTics()
 {
-	std::string cmd = I_ConsoleInput();
+	const std::string cmd = M_ConsoleInput();
 	if (cmd.length())
 		AddCommandString(cmd);
-
-	if (CON.is_open())
-	{
-		CON.clear();
-		if (!CON.eof())
-		{
-			std::getline(CON, cmd);
-			AddCommandString(cmd);
-		}
-	}
 
 	if (step_mode)
 	{

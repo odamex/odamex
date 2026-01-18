@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -69,4 +69,4 @@ bool G_ShouldIgnoreMouseInput();
 
 extern int mapchange;
 
-extern bool timingdemo;
+inline bool timingdemo; // if true, exit with report on completion

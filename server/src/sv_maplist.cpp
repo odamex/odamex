@@ -32,6 +32,7 @@
 #include "c_dispatch.h"
 #include "cmdlib.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "m_fileio.h"
 #include "m_random.h"
 #include "sv_main.h"
