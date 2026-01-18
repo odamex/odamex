@@ -830,26 +830,7 @@ DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, const line_t *line,
 		}
 		break;
 
-	case DFloor::genFloorChg0:
-		newspecial_s ns;
-		P_ResetTransferSpecial(&ns);
-		m_NewSpecial = ns.special;
-		m_NewDamageRate = ns.damageamount;
-		m_NewDmgInterval = ns.damageinterval;
-		m_NewLeakRate = ns.damageleakrate;
-		m_NewFlags = line ?
-			P_ResetSectorTransferFlags(line->frontsector->flags) : 0;
-		break;
-
-	case DFloor::genFloorChgT:
-		if (line)
-		{
-			m_NewSpecial = line->frontsector->special;
-			m_NewDamageRate = line->frontsector->damageamount;
-			m_NewDmgInterval = line->frontsector->damageinterval;
-			m_NewLeakRate = line->frontsector->leakrate;
-			m_NewFlags = line->frontsector->flags;
-		}
+	default:
 		break;
 	}
 
