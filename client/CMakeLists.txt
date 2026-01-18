@@ -7,6 +7,11 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0005 NEW)
 endif(COMMAND cmake_policy)
 
+if(APPLE)
+  set(CMAKE_FIND_FRAMEWORK LAST)
+  set(CMAKE_FIND_APPBUNDLE LAST)
+endif()
+
 # Enable default SIMD settings for standard builds.
 option(USE_DEFAULT_SIMD "Use default SIMD optimization settings" ON)
 

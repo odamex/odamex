@@ -53,8 +53,6 @@ using namespace std;
 
 void AddCommandString(std::string cmd);
 
-DArgs Args;
-
 #ifdef _WIN32
 extern UINT TimerPeriod;
 #endif

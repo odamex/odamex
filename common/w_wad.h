@@ -51,14 +51,15 @@ typedef struct
 
 } wadinfo_t;
 
-
-typedef struct
+#pragma pack(push, 1)
+struct filelump_t
 {
 	int			filepos;
 	int			size;
 	char		name[8]; // denis - todo - string
 
-} filelump_t;
+};
+#pragma pack(pop)
 
 //
 // WADFILE I/O related stuff.
@@ -66,7 +67,7 @@ typedef struct
 typedef struct lumpinfo_s
 {
 	OLumpName	name;
-	FILE		*handle;
+	FILE		*handle; // TODO: uqFile
 	int			position;
 	int			size;
 
@@ -151,7 +152,7 @@ bool	W_CheckLumpName (unsigned lump, const char *name);	// [RH] True if lump's n
 //unsigned W_LumpNameHash (const char *name);				// [RH] Create hash key from an 8-char name
 
 // [RH] Combine multiple marked ranges of lumps into one.
-void	W_MergeLumps (const char *start, const char *end, int);
+void W_MergeLumps (const OLumpName& start, const OLumpName& end, int);
 
 // [RH] Copy an 8-char string and uppercase it.
 void uppercopy (char *to, const char *from);

@@ -104,11 +104,9 @@ extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 
-bool devparm;				// started game with -devparm
 const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 static bool wiping_screen = false;
 
-OLumpName startmap;
 bool autostart;
 bool advancedemo;
 event_t events[MAXEVENTS];
@@ -145,8 +143,6 @@ EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_vsync)
 EXTERN_CVAR (g_resetinvonexit)
 EXTERN_CVAR (i_skipbootwin)
-
-std::string LOG_FILE;
 
 void M_RestoreVideoMode();
 void M_ModeFlashTestText();

@@ -108,31 +108,17 @@ EXTERN_CVAR (in_autosr50)
 
 EXTERN_CVAR (chasedemo)
 
-gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
 
-bool 			paused;
 bool 			sendpause;				// send a pause event next tic
 bool			sendsave;				// send a save event next tic
 bool 			usergame;				// ok to save / end game
 bool			sendcenterview;			// send a center view event next tic
 
-bool			timingdemo; 			// if true, exit with report on completion
 bool			longtics;				// don't quantize yaw for classic vanilla demos
 bool 			nodrawers;				// for comparative timing purposes
 bool 			noblit; 				// for comparative timing purposes
 
-bool	 		viewactive;
-
-// Describes if a network game is being played
-bool			network_game;
-// Describes if this is a multiplayer game or not
-bool			multiplayer;
-// The player vector, contains all player information
-Players			players;
-
-byte			consoleplayer_id;			// player taking events and displaying
-byte			displayplayer_id;			// view being displayed
 int 			gametic;
 
 extern fixed_t bobx;
@@ -205,7 +191,6 @@ CVAR_FUNC_IMPL(joy_freelook)
 }
 
 char			demoname[256];
-bool 			demoplayback;
 
 extern bool		simulated_connection;
 
@@ -1579,41 +1564,36 @@ void G_DoLoadGame (void)
 
 	gameaction = ga_nothing;
 
-	FILE *stdfile = fopen (savename.c_str(), "rb");
-	if (stdfile == NULL)
+	auto stdfile = uqFile(fopen(savename.c_str(), "rb"));
+	if (stdfile == nullptr)
 	{
 		PrintFmt(PRINT_HIGH, "Could not read savegame '{}'\n", savename);
 		return;
 	}
 
-	fseek (stdfile, SAVESTRINGSIZE, SEEK_SET);	// skip the description field
-	size_t readlen = fread (text, 16, 1, stdfile);
+	fseek (stdfile.get(), SAVESTRINGSIZE, SEEK_SET);	// skip the description field
+	size_t readlen = fread (text, 16, 1, stdfile.get());
 	if (readlen < 1)
 	{
 		PrintFmt(PRINT_HIGH, "Failed to read savegame '{}'\n", savename);
-		fclose(stdfile);
 		return;
 	}
 	if (strncmp (text, SAVESIG, 16))
 	{
 		PrintFmt(PRINT_HIGH, "Savegame '{}' is from a different version\n", savename);
-
-		fclose(stdfile);
-
 		return;
 	}
-	readlen = fread (text, 8, 1, stdfile);
+	readlen = fread (text, 8, 1, stdfile.get());
 	if (readlen < 1)
 	{
 		PrintFmt(PRINT_HIGH, "Failed to read savegame '{}'\n", savename);
-		fclose(stdfile);
 		return;
 	}
 	text[8] = 0;
 
 	/*bglobal.RemoveAllBots (true);*/
 
-	FLZOFile savefile (stdfile, FFile::EReading);
+	FLZOFile savefile (stdfile.release(), FFile::EReading);
 
 	if (!savefile.IsOpen ())
 		I_Error("Savegame '{}' is corrupt\n", savename);

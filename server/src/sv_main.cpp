@@ -515,8 +515,7 @@ Players::iterator SV_GetFreeClient(void)
 			free_player_ids.insert(i);
 	}
 
-	players.emplace_back();
-	players.back().playerstate = PST_CONTACT;
+	players.emplace_back().playerstate = PST_CONTACT;
 
 	// generate player id
 	std::set<byte>::iterator id = free_player_ids.begin();
