@@ -109,6 +109,7 @@ EXTERN_CVAR (wi_oldintermission)
 
 // [electricbrass - Menu] HUD Menu
 EXTERN_CVAR (hud_targetnames)
+EXTERN_CVAR (hud_hidespyname)
 EXTERN_CVAR (hud_gamemsgtype)
 EXTERN_CVAR (hud_scale)
 EXTERN_CVAR (hud_scalescoreboard)
@@ -857,6 +858,7 @@ EXTERN_CVAR (cl_showfriends)
 EXTERN_CVAR (hud_show_scoreboard_ondeath)
 EXTERN_CVAR (hud_demobar)
 EXTERN_CVAR(hud_targetnames)
+EXTERN_CVAR(hud_hidespyname)
 
 static value_t Wipes[] = {
 	{ 0.0, "None" },
