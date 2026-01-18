@@ -58,11 +58,6 @@ void P_SetFloorDestroy(DFloor *floor)
 
 IMPLEMENT_SERIAL (DFloor, DMovingFloor)
 
-DFloor::DFloor () :
-	m_Status(init)
-{
-}
-
 void DFloor::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
@@ -255,13 +250,13 @@ void DFloor::RunThink ()
 }
 
 DFloor::DFloor (sector_t *sec)
-	: DMovingFloor (sec), m_Status(init)
+	: DMovingFloor (sec)
 {
 }
 
 DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, const line_t* line, fixed_t speed,
                fixed_t height, int crush, int change, bool hexencrush, bool hereticlower)
-    : DMovingFloor(sec), m_Status(init)
+    : DMovingFloor(sec)
 {
 	fixed_t floorheight = P_FloorHeight(sec);
 	fixed_t ceilingheight = P_CeilingHeight(sec);
@@ -511,7 +506,7 @@ DFloor::DFloor(sector_t* sec, DFloor::EFloor floortype, const line_t* line, fixe
 // Generalized floor init
 DFloor::DFloor(sector_t* sec, const line_t* line, int speed,
                int target, int crush, int change, int direction, int model)
-    : DMovingFloor(sec), m_Status(init)
+    : DMovingFloor(sec)
 {
 	fixed_t floorheight = P_FloorHeight(sec);
 
@@ -679,7 +674,7 @@ DFloor::DFloor(sector_t* sec, const line_t* line, int speed,
 
 DFloor::DFloor(sector_t *sec, DFloor::EFloor floortype, const line_t *line,
 			   fixed_t speed, fixed_t height, bool crush, int change)
-	: DMovingFloor (sec), m_Status(init)
+	: DMovingFloor (sec)
 {
 	fixed_t floorheight = P_FloorHeight(sec);
 	fixed_t ceilingheight = P_CeilingHeight(sec);
