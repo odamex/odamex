@@ -562,3 +562,29 @@ void P_CheckLeadChangeAnnouncement()
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
+
+void P_CheckFirstBloodAnnouncement()
+{
+	// Only play sounds on the client
+	if (!::clientside)
+		return;
+
+	AnnouncerManager& instance = AnnouncerManager::getInstance();
+
+	// No first blood unless in active gameplay
+	if (::levelstate.getState() != LevelState::INGAME)
+		return;
+
+	// Check if already announced this game
+	if (instance.hasFirstBloodBeenAnnounced())
+		return;
+
+	// Only play in non-duel deathmatch games
+	if ((sv_gametype != GM_DM && sv_gametype != GM_TEAMDM) || G_IsDuelGame())
+		return;
+
+	instance.setFirstBloodAnnounced();
+	std::string sound = instance.getTokenForEvent(ANN_FIRSTBLOOD);
+	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
+		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+}

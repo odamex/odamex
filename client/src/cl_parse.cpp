@@ -1560,6 +1560,13 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 		if (!p.spectator)
 			p.cheats = msg->cheats();
 	}
+
+	if (p.fragcount > 0 &&
+	    AnnouncerManager::getInstance().hasFirstBloodBeenAnnounced() == false)
+	{
+		// First frag has already been made, so prevent announcing first blood on the next frag.
+		AnnouncerManager::getInstance().setFirstBloodAnnounced();
+	}
 }
 
 //

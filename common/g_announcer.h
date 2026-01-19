@@ -419,6 +419,21 @@ public:
 	}
 
 	/// <summary>
+	/// Resets the first blood announcement flag for a new game.
+	/// </summary>
+	void resetFirstBloodAnnouncement() { firstBloodAnnounced = false; }
+
+	/// <summary>
+	/// Gets whether first blood has already been announced.
+	/// </summary>
+	bool hasFirstBloodBeenAnnounced() const { return firstBloodAnnounced; }
+
+	/// <summary>
+	/// Marks first blood as having been announced.
+	/// </summary>
+	void setFirstBloodAnnounced() { firstBloodAnnounced = true; }
+
+	/// <summary>
 	/// Gets whether lead tracking has been initialized.
 	/// </summary>
 	bool isLeadTrackingInitialized() const { return leadTrackingInitialized; }
@@ -536,6 +551,11 @@ private:
 	bool leadTrackingInitialized = false;
 
 	/// <summary>
+	/// Tracks whether the first blood announcement has been played this game.
+	/// </summary>
+	bool firstBloodAnnounced = false;
+
+	/// <summary>
 	/// Dictionary of all loaded announcers, mapped by their name.
 	/// </summary>
 	std::unordered_map<std::string, Announcer_s> announcerDict;
@@ -577,3 +597,9 @@ void P_CheckCountdownAnnouncements();
 /// Does not run in coop game modes.
 /// </summary>
 void P_CheckLeadChangeAnnouncement();
+
+/// <summary>
+/// Checks if this is the first frag of the round and announces "first blood".
+/// Only plays in non-duel deathmatch games, client-side only.
+/// </summary>
+void P_CheckFirstBloodAnnouncement();

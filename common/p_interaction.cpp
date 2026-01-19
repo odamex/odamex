@@ -2019,6 +2019,9 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 		// Check for lead change announcements (client-side)
 		P_CheckLeadChangeAnnouncement();
 
+		// Check for first blood announcement (client-side, non-duel DM only)
+		P_CheckFirstBloodAnnouncement();
+
 		// [Toke] Better sv_fraglimit
 		if (sv_gametype == GM_DM)
 			G_FragsCheckEndGame();
