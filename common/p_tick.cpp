@@ -92,8 +92,11 @@ void P_Ticker (void)
 	P_RespawnSpecials ();
 
 	P_TicSprees();
+
+	// Announcements
 	P_CheckFightAnnouncement();
 	P_CheckCountdownAnnouncements();
+
 
 	if (clientside)
 		P_RunEffects(); // [RH] Run particle effects

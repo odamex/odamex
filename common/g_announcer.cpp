@@ -31,6 +31,7 @@
 #include "g_gametype.h"
 #include "g_levelstate.h"
 #include "s_sound.h"
+#include "p_horde.h"
 
 AnnouncerManager& AnnouncerManager::getInstance()
 {
@@ -585,6 +586,27 @@ void P_CheckFirstBloodAnnouncement()
 
 	instance.setFirstBloodAnnounced();
 	std::string sound = instance.getTokenForEvent(ANN_FIRSTBLOOD);
+	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
+		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+}
+
+void P_CheckBossSpawnAnnouncement()
+{
+	// Only play sounds on the client
+	if (!::clientside)
+		return;
+
+	if (!G_IsHordeMode())
+		return;
+
+	const hordeInfo_t& info = P_HordeInfo();
+
+	if (info.hasBoss() && info.bossTic() != 0)
+		return;
+
+	AnnouncerManager& instance = AnnouncerManager::getInstance();
+
+	std::string sound = instance.getTokenForEvent(ANN_HORDEBOSSSPAWN);
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }

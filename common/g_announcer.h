@@ -603,3 +603,8 @@ void P_CheckLeadChangeAnnouncement();
 /// Only plays in non-duel deathmatch games, client-side only.
 /// </summary>
 void P_CheckFirstBloodAnnouncement();
+
+/// <summary>
+/// Checks if this tic had the boss spawn in horde mode. If so, play the sound.
+/// </summary>
+void P_CheckBossSpawnAnnouncement();
