@@ -190,10 +190,10 @@ jobs:
       run: |
         flatpak-builder --force-clean --user --install-deps-from=flathub \
         --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
-        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
+        --default-branch="${{ env.MODIFIED_BRANCH_NAME }}" -v
     - name: Pack flatpak
       run: |
-        flatpak build-bundle repo odamex-linux-x86_64-${{ env.new_version }}.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
+        flatpak build-bundle repo odamex-linux-x86_64-${{ env.new_version }}.flatpak net.odamex.Odamex "${{ env.MODIFIED_BRANCH_NAME }}" \
         --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -237,10 +237,10 @@ jobs:
       run: |
         flatpak-builder --force-clean --user --install-deps-from=flathub \
         --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
-        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
+        --default-branch="${{ env.MODIFIED_BRANCH_NAME }}" -v
     - name: Pack flatpak
       run: |
-        flatpak build-bundle repo odamex-linux-arm64-${{ env.new_version }}.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
+        flatpak build-bundle repo odamex-linux-arm64-${{ env.new_version }}.flatpak net.odamex.Odamex "${{ env.MODIFIED_BRANCH_NAME }}" \
         --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
     - name: Upload artifact
       uses: actions/upload-artifact@v4
