@@ -53,6 +53,69 @@ static char  **gArgv;
 static bool   gFinderLaunch;
 static bool   gCalledAppMainline = false;
 
+static bool AppendArg(const char *arg)
+{
+    size_t arglen;
+    char *copy;
+    char **newargv;
+
+    if (arg == NULL)
+        return false;
+
+    arglen = SDL_strlen(arg) + 1;
+    copy = (char *) SDL_malloc(arglen);
+    if (copy == NULL)
+        return false;
+
+    newargv = (char **) realloc(gArgv, sizeof (char *) * (gArgc + 2));
+    if (newargv == NULL)
+    {
+        SDL_free(copy);
+        return false;
+    }
+    gArgv = newargv;
+
+    SDL_strlcpy(copy, arg, arglen);
+    gArgv[gArgc++] = copy;
+    gArgv[gArgc] = NULL;
+    return true;
+}
+
+static bool AppendConnectFromURL(NSURL *url)
+{
+    NSString *scheme;
+    NSString *host;
+    NSNumber *port;
+    NSString *hostport;
+    const char *hostport_cstr;
+
+    if (url == nil)
+        return false;
+
+    scheme = [url scheme];
+    if (scheme == nil || [scheme caseInsensitiveCompare:@"odamex"] != NSOrderedSame)
+        return false;
+
+    host = [url host];
+    if (host == nil || [host length] == 0)
+        return false;
+
+    port = [url port];
+    if (port != nil)
+        hostport = [NSString stringWithFormat:@"%@:%@", host, port];
+    else
+        hostport = host;
+
+    hostport_cstr = [hostport UTF8String];
+    if (hostport_cstr == NULL)
+        return false;
+
+    if (!AppendArg("-connect"))
+        return false;
+
+    return AppendArg(hostport_cstr);
+}
+
 static NSString *getApplicationName(void)
 {
     NSDictionary *dict;
@@ -265,9 +328,6 @@ static void CustomApplicationMain (int argc, char **argv)
 - (bool)application:(NSApplication *)theApplication openFile:(NSString *)filename
 {
     const char *temparg;
-    size_t arglen;
-    char *arg;
-    char **newargv;
 
     if (!gFinderLaunch)  /* MacOS is passing command line args. */
         return false;
@@ -276,23 +336,26 @@ static void CustomApplicationMain (int argc, char **argv)
         return false;
 
     temparg = [filename UTF8String];
-    arglen = SDL_strlen(temparg) + 1;
-    arg = (char *) SDL_malloc(arglen);
-    if (arg == NULL)
+    return AppendArg(temparg);
+}
+
+/* Called by LaunchServices for odamex:// URLs. */
+- (void)application:(NSApplication *)theApplication openURLs:(NSArray<NSURL *> *)urls
+{
+    if (!gFinderLaunch || gCalledAppMainline)
+        return;
+
+    for (NSURL *url in urls)
+        AppendConnectFromURL(url);
+}
+
+/* Backward-compatible URL handler for older macOS versions. */
+- (bool)application:(NSApplication *)theApplication openURL:(NSURL *)url
+{
+    if (!gFinderLaunch || gCalledAppMainline)
         return false;
 
-    newargv = (char **) realloc(gArgv, sizeof (char *) * (gArgc + 2));
-    if (newargv == NULL)
-    {
-        SDL_free(arg);
-        return false;
-    }
-    gArgv = newargv;
-
-    SDL_strlcpy(arg, temparg, arglen);
-    gArgv[gArgc++] = arg;
-    gArgv[gArgc] = NULL;
-    return true;
+    return AppendConnectFromURL(url);
 }
 
 
@@ -393,4 +456,3 @@ int main (int argc, char **argv)
 #endif
     return 0;
 }
-
