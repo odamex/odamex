@@ -102,8 +102,14 @@ void writeMinidump(EXCEPTION_POINTERS* exceptionPtrs)
 	mei.ClientPointers = false;
 
 	// Do the actual dump.
-	pMiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile,
-	                   MINIDUMP_TYPE(MiniDumpWithIndirectlyReferencedMemory), &mei, 0, 0);
+	pMiniDumpWriteDump(GetCurrentProcess(),
+	                   GetCurrentProcessId(),
+	                   hFile,
+	                   static_cast<MINIDUMP_TYPE>(MiniDumpWithFullMemory |
+	                                              MiniDumpIgnoreInaccessibleMemory),
+	                   & mei,
+	                   0,
+	                   0);
 	CloseHandle(hFile);
 
 	return;
