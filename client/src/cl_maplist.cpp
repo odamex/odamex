@@ -32,6 +32,7 @@
 #include "c_dispatch.h"
 #include "i_net.h"
 #include "i_system.h"
+#include "i_time.h"
 
 //////// MAPLIST CACHE METHODS (Private) ////////
 

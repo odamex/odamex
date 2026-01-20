@@ -345,11 +345,10 @@ const static clusterFlags_t CLUSTER_EXITTEXTISLUMP = BIT(1);
 
 struct bossaction_t
 {
-	int type;
-	short special;
-	short tag;
-
-	bossaction_t() : type(MT_NULL), special(), tag() {}
+	int32_t type    = MT_NULL;
+	int32_t flags   = 0;
+	int16_t special = 0;
+	int16_t tag     = 0;
 };
 
 struct cluster_info_t
@@ -423,7 +422,7 @@ inline std::array<ACSWorldGlobalArray, NUM_WORLDVARS> ACS_WorldArrays;
 inline std::array<int, NUM_GLOBALVARS> ACS_GlobalVars;
 inline std::array<ACSWorldGlobalArray, NUM_GLOBALVARS> ACS_GlobalArrays;
 
-extern bool savegamerestore;
+inline bool savegamerestore;
 
 void G_InitNew(const char *mapname);
 inline void G_InitNew(const OLumpName& mapname) { G_InitNew(mapname.c_str()); }

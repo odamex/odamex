@@ -57,7 +57,6 @@ typedef int SOCKET;
 #define INVALID_SOCKET -1
 #define closesocket close
 #define ioctlsocket ioctl
-#define Sleep(x)	usleep (x * 1000)
 #endif
 
 #ifdef _WIN32

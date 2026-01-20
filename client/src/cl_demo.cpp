@@ -816,7 +816,7 @@ void NetDemo::writeMessages()
 		captured.push_back(netbuf_localcmd);
 	}
 
-	byte *output_buf = new byte[captured.size() * MAX_UDP_PACKET];
+	auto output_buf = std::make_unique<byte[]>(captured.size() * MAX_UDP_PACKET);
 
 	uint32_t output_len = 0;
 	while (!captured.empty())
@@ -825,15 +825,13 @@ void NetDemo::writeMessages()
 		uint32_t len = netbuf.BytesLeftToRead();
 
 		byte *chunk = netbuf.ReadChunk(len);
-		memcpy(output_buf + output_len, chunk, len);
+		memcpy(&output_buf[output_len], chunk, len);
 		output_len += len;
 
 		captured.pop_front();
 	}
 
-	writeChunk(output_buf, output_len, NetDemo::msg_packet);
-
-	delete [] output_buf;
+	writeChunk(output_buf.get(), output_len, NetDemo::msg_packet);
 }
 
 
@@ -881,12 +879,11 @@ bool NetDemo::readMessageHeader(netdemo_message_t &type, uint32_t &len, uint32_t
 
 void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 {
-	char *msgdata = new char[len];
+	auto msgdata = std::make_unique<char[]>(len);
 
-	size_t cnt = fread(msgdata, 1, len, demofp);
+	size_t cnt = fread(msgdata.get(), 1, len, demofp);
 	if (cnt < len)
 	{
-		delete[] msgdata;
 		fatalError("Can not read netdemo message.");
 		return;
 	}
@@ -897,8 +894,7 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 		netbuffer->resize(len + netbuffer->size() + 1, false);
 	}
 
-	netbuffer->WriteChunk(msgdata, len);
-	delete [] msgdata;
+	netbuffer->WriteChunk(msgdata.get(), len);
 
 	if (!connected)
 	{

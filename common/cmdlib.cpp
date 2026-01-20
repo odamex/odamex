@@ -507,14 +507,14 @@ static int _isspace(int c)
 // Trim whitespace from the start of a string
 std::string &TrimStringStart(std::string &s)
 {
-	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not_fn([](int c){ return _isspace(c); })));
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not_fn( _isspace )));
 	return s;
 }
 
 // Trim whitespace from the end of a string
 std::string &TrimStringEnd(std::string &s)
 {
-	s.erase(std::find_if(s.rbegin(), s.rend(), std::not_fn([](int c){ return _isspace(c); })).base(), s.end());
+	s.erase(std::find_if(s.rbegin(), s.rend(), std::not_fn( _isspace )).base(), s.end());
 	return s;
 }
 

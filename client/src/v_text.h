@@ -66,11 +66,11 @@ void V_SetFont(const char* fontname);
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
 
-struct brokenlines_s {
+struct brokenlines_t
+{
 	int width;
 	char *string;
 };
-typedef struct brokenlines_s brokenlines_t;
 
 int V_StringWidth(const byte* str);
 inline int V_StringWidth(const char* str) { return V_StringWidth((const byte*)str); }

@@ -61,7 +61,8 @@ extern bool clientside, serverside;
 enum baseapp_t
 {
 	client,		// Odamex.exe
-	server		// Odasrv.exe
+	server,		// Odasrv.exe
+	test,		// Odagtest.exe
 };
 
 extern baseapp_t baseapp;

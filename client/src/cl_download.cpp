@@ -52,34 +52,28 @@ enum States
 
 static struct DownloadState
 {
-  private:
-	DownloadState(const DownloadState&);
-
   public:
-	States state;
-	OTransferCheck* check;
-	OTransfer* transfer;
+	States state = STATE_SHUTDOWN;
+	std::unique_ptr<OTransferCheck> check;
+	std::unique_ptr<OTransfer> transfer;
 	std::string url;
 	std::string filename;
-	OMD5Hash hash;
-	unsigned flags;
-	Websites checkurls;
-	size_t checkurlidx;
-	std::string checkfilename;
-	int checkfails;
-	DownloadState()
-	    : state(STATE_SHUTDOWN), check(NULL), transfer(NULL), url(""), filename(""),
-	      hash(), flags(0), checkurls(), checkurlidx(0), checkfilename(""),
-	      checkfails(0)
-	{
-	}
+	OMD5Hash hash{};
+	uint32_t flags = 0;
+	Websites checkurls{};
+	size_t checkurlidx = 0;
+	std::string checkfilename{};
+	int checkfails = 0;
+	DownloadState(const DownloadState&) = delete;
+	DownloadState& operator=(const DownloadState&) = delete;
+	DownloadState(DownloadState&&) = delete;
+	DownloadState& operator=(DownloadState&&) = delete;
+	DownloadState() = default;
 	void Ready()
 	{
 		this->state = STATE_READY;
-		delete this->check;
-		this->check = NULL;
-		delete this->transfer;
-		this->transfer = NULL;
+		this->check.reset();
+		this->transfer.reset();
 		this->url = "";
 		this->filename = "";
 		this->hash = OMD5Hash();
@@ -112,10 +106,8 @@ void CL_DownloadShutdown()
 	if (::dlstate.state == STATE_SHUTDOWN)
 		return;
 
-	delete ::dlstate.check;
-	::dlstate.check = NULL;
-	delete ::dlstate.transfer;
-	::dlstate.transfer = NULL;
+	::dlstate.check.reset();
+	::dlstate.transfer.reset();
 
 	curl_global_cleanup();
 	::dlstate.state = STATE_SHUTDOWN;
@@ -242,8 +234,7 @@ static void CheckError(const char* msg)
 	// That's a strike.
 	::dlstate.checkfails += 1;
 
-	delete ::dlstate.check;
-	::dlstate.check = NULL;
+	::dlstate.check.reset();
 
 	// Three strikes and you're out.
 	if (::dlstate.checkfails >= 3)
@@ -286,7 +277,7 @@ static void TickCheck()
 		}
 
 		// Create the check transfer.
-		::dlstate.check = new OTransferCheck(CheckDone, CheckError);
+		::dlstate.check = std::make_unique<OTransferCheck>(CheckDone, CheckError);
 
 		std::string safeFileName =
 		    ::dlstate.check->escapeFileName(::dlstate.checkfilename);
@@ -366,7 +357,7 @@ static void TickDownload()
 	if (::dlstate.transfer == NULL)
 	{
 		// Create the transfer.
-		::dlstate.transfer = new OTransfer(TransferDone, TransferError);
+		::dlstate.transfer = std::make_unique<OTransfer>(TransferDone, TransferError);
 		::dlstate.transfer->setURL(::dlstate.url);
 
 		// Figure out where our destination should be.
@@ -451,20 +442,16 @@ void CL_DownloadTick()
 	switch (::dlstate.state)
 	{
 	case STATE_CHECKING:
-		delete ::dlstate.transfer;
-		::dlstate.transfer = NULL;
+		::dlstate.transfer.reset();
 		TickCheck();
 		break;
 	case STATE_DOWNLOADING:
-		delete ::dlstate.check;
-		::dlstate.check = NULL;
+		::dlstate.check.reset();
 		TickDownload();
 		break;
 	default:
-		delete ::dlstate.check;
-		::dlstate.check = NULL;
-		delete ::dlstate.transfer;
-		::dlstate.check = NULL;
+		::dlstate.check.reset();
+		::dlstate.transfer.reset();
 		return;
 	}
 }
