@@ -321,6 +321,10 @@ static void getsfx(sfxinfo_struct *sfx)
     chunk->volume = MIX_MAX_VOLUME;
 
     ExpandSoundData((byte*)data + 8, samplerate, 8, length, chunk);
+    Uint32 points = chunk->alen / ((mixer_format & 0xFF) / 8);
+    Uint32 frames = points / mixer_channels;
+
+    sfx->ms = ((frames * 1000) / mixer_freq);
     sfx->data = chunk;
 }
 
