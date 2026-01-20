@@ -290,7 +290,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
       "\t<key>CFBundleVersion</key>\n"
       "\t<string>${MACOSX_BUNDLE_BUNDLE_VERSION}</string>\n"
       "\t<key>NSHumanReadableCopyright</key>\n"
-      "\t<string>Copyright Ac ${PROJECT_COPYRIGHT} The Odamex Team</string>\n"
+      "\t<string>Copyright © ${PROJECT_COPYRIGHT} The Odamex Team</string>\n"
       "\t<key>CFBundleURLTypes</key>\n"
       "\t<array>\n"
       "\t\t<dict>\n"
