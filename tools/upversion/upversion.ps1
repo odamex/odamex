@@ -44,7 +44,6 @@ $year = "2006-$curYear"
 $majminpatchFiles = @(
 '.\README',
 '.\CMakeLists.txt',
-'.\client\CMakeLists.txt',
 '.\ag-odalaunch\res\Info.plist',
 '.\common\version.h',
 '.\odalaunch\res\Info.plist',
