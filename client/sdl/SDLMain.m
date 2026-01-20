@@ -15,9 +15,6 @@ Feel free to customize this file to suit your needs
 */
 
 #import <Cocoa/Cocoa.h>
-#import <stdlib.h>
-
-#import "i_url.h"
 
 @interface SDLMain : NSObject
 @end
@@ -85,11 +82,10 @@ static bool AppendArg(const char *arg)
     return true;
 }
 
-/* Convert an odamex:// URL into "-connect host[:port]" arguments. */
-static bool AppendConnectFromURL(NSURL *url)
+/* Forward an odamex:// URL to argv for platform-agnostic parsing. */
+static bool AppendUrlArg(NSURL *url)
 {
     const char *url_cstr;
-    char *hostport;
 
     if (url == nil)
         return false;
@@ -98,21 +94,7 @@ static bool AppendConnectFromURL(NSURL *url)
     if (url_cstr == NULL)
         return false;
 
-    hostport = I_ParseOdamexUrlC(url_cstr);
-    if (hostport == NULL)
-        return false;
-
-    if (!AppendArg("-connect"))
-    {
-        free(hostport);
-        return false;
-    }
-
-    {
-        const bool ok = AppendArg(hostport);
-        free(hostport);
-        return ok;
-    }
+    return AppendArg(url_cstr);
 }
 
 static NSString *getApplicationName(void)
@@ -345,7 +327,7 @@ static void CustomApplicationMain (int argc, char **argv)
         return;
 
     for (NSURL *url in urls)
-        AppendConnectFromURL(url);
+        AppendUrlArg(url);
 }
 
 /* Backward-compatible URL handler for older macOS versions. */
@@ -354,7 +336,7 @@ static void CustomApplicationMain (int argc, char **argv)
     if (!gFinderLaunch || gCalledAppMainline)
         return false;
 
-    return AppendConnectFromURL(url);
+    return AppendUrlArg(url);
 }
 
 

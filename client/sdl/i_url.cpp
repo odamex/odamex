@@ -7,8 +7,6 @@
 
 #include "i_url.h"
 
-#include <cstring>
-#include <cstdlib>
 #include <string_view>
 
 OdamexUrlParts I_ParseOdamexUrlParts(std::string_view url)
@@ -71,45 +69,4 @@ std::string I_ParseOdamexUrl(std::string_view url)
 {
 	// Only return the host:port for now.
 	return I_ParseOdamexUrlParts(url).hostport;
-}
-
-static char* ToCString(std::string_view input)
-{
-	// Allocate a NUL-terminated C string with malloc.
-	if (input.empty())
-		return nullptr;
-
-	char *out = static_cast<char*>(std::malloc(input.size() + 1));
-	if (!out)
-		return nullptr;
-
-	std::memcpy(out, input.data(), input.size());
-	out[input.size()] = '\0';
-	return out;
-}
-
-char* I_ParseOdamexUrlC(const char *url)
-{
-	if (!url)
-		return nullptr;
-
-	return ToCString(I_ParseOdamexUrl(url));
-}
-
-char* I_ParseOdamexUrlUsernameC(const char *url)
-{
-	if (!url)
-		return nullptr;
-
-	OdamexUrlParts parts = I_ParseOdamexUrlParts(url);
-	return ToCString(parts.username);
-}
-
-char* I_ParseOdamexUrlPasswordC(const char *url)
-{
-	if (!url)
-		return nullptr;
-
-	OdamexUrlParts parts = I_ParseOdamexUrlParts(url);
-	return ToCString(parts.password);
 }

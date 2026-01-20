@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
 		M_InitConsoleInputFile(::Args.CheckValue("-confile"));
 
 		// denis - if argv[1] starts with "odamex://"
-		if(argc == 2 && argv && argv[1])
+		if (argc >= 2 && argv && argv[1])
 		{
 			std::string hostport = I_ParseOdamexUrl(argv[1]);
 			if (!hostport.empty())
