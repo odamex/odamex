@@ -15,6 +15,9 @@ Feel free to customize this file to suit your needs
 */
 
 #import <Cocoa/Cocoa.h>
+#import <stdlib.h>
+
+#import "i_url.h"
 
 @interface SDLMain : NSObject
 @end
@@ -83,37 +86,31 @@ static bool AppendArg(const char *arg)
 
 static bool AppendConnectFromURL(NSURL *url)
 {
-    NSString *scheme;
-    NSString *host;
-    NSNumber *port;
-    NSString *hostport;
-    const char *hostport_cstr;
+    const char *url_cstr;
+    char *hostport;
 
     if (url == nil)
         return false;
 
-    scheme = [url scheme];
-    if (scheme == nil || [scheme caseInsensitiveCompare:@"odamex"] != NSOrderedSame)
+    url_cstr = [[url absoluteString] UTF8String];
+    if (url_cstr == NULL)
         return false;
 
-    host = [url host];
-    if (host == nil || [host length] == 0)
-        return false;
-
-    port = [url port];
-    if (port != nil)
-        hostport = [NSString stringWithFormat:@"%@:%@", host, port];
-    else
-        hostport = host;
-
-    hostport_cstr = [hostport UTF8String];
-    if (hostport_cstr == NULL)
+    hostport = I_ParseOdamexUrlC(url_cstr);
+    if (hostport == NULL)
         return false;
 
     if (!AppendArg("-connect"))
+    {
+        free(hostport);
         return false;
+    }
 
-    return AppendArg(hostport_cstr);
+    {
+        const bool ok = AppendArg(hostport);
+        free(hostport);
+        return ok;
+    }
 }
 
 static NSString *getApplicationName(void)

@@ -40,6 +40,7 @@
 
 #include "i_sdl.h"
 #include "i_crash.h"
+#include "i_url.h"
 // [Russell] - Don't need SDLmain library
 #ifdef _WIN32
 #undef main
@@ -53,6 +54,7 @@
 #include "i_system.h"
 #include "c_console.h"
 #include "z_zone.h"
+#include <string>
 
 // Use main() on windows for msvc
 #if defined(_MSC_VER) && !defined(GCONSOLE)
@@ -152,19 +154,11 @@ int main(int argc, char *argv[])
 		// denis - if argv[1] starts with "odamex://"
 		if(argc == 2 && argv && argv[1])
 		{
-			static constexpr std::string_view protocol = "odamex://";
-			std::string_view uri = argv[1];
-
-			if(uri.substr(0, protocol.length()) == protocol)
+			std::string hostport = I_ParseOdamexUrl(argv[1]);
+			if (!hostport.empty())
 			{
-				std::string_view location = uri.substr(protocol.length());
-				size_t term = location.find_first_of('/');
-
-				if(term == std::string::npos)
-					term = location.length();
-
 				Args.AppendArg("-connect");
-				Args.AppendArg(std::string(location.substr(0, term)).c_str());
+				Args.AppendArg(hostport.c_str());
 			}
 		}
 
