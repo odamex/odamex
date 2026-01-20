@@ -11,27 +11,81 @@
 #include <cstdlib>
 #include <string_view>
 
-std::string I_ParseOdamexUrl(std::string_view url)
+OdamexUrlParts I_ParseOdamexUrlParts(std::string_view url)
 {
 	static constexpr std::string_view protocol = "odamex://";
 	std::string_view uri;
 	size_t term;
+	OdamexUrlParts parts;
 
 	if (url.empty())
-		return {};
+		return parts;
 
 	uri = url;
 	if (uri.size() < protocol.size() || uri.compare(0, protocol.size(), protocol) != 0)
-		return {};
+		return parts;
 
 	uri.remove_prefix(protocol.size());
 	term = uri.find('/');
 	if (term == std::string_view::npos)
 		term = uri.size();
 	if (term == 0)
+		return parts;
+
+	uri = uri.substr(0, term);
+
+	const size_t at = uri.find('@');
+	if (at != std::string_view::npos)
+	{
+		if (at == 0 || at + 1 >= uri.size())
+			return parts;
+
+		parts.hostport = std::string(uri.substr(at + 1));
+
+		const std::string_view userinfo = uri.substr(0, at);
+		const size_t colon = userinfo.find(':');
+		if (colon != std::string::npos)
+		{
+			// username:password form
+			parts.username = std::string(userinfo.substr(0, colon));
+			parts.password = std::string(userinfo.substr(colon + 1));
+		}
+		else
+		{
+			// password-only form
+			parts.password = std::string(userinfo);
+		}
+	}
+	else
+	{
+		parts.hostport = std::string(uri);
+	}
+
+	if (parts.hostport.empty())
 		return {};
 
-	return std::string(uri.substr(0, term));
+	return parts;
+}
+
+std::string I_ParseOdamexUrl(std::string_view url)
+{
+	// Only return the host:port for now.
+	return I_ParseOdamexUrlParts(url).hostport;
+}
+
+static char* ToCString(std::string_view input)
+{
+	// Allocate a NUL-terminated C string with malloc.
+	if (input.empty())
+		return nullptr;
+
+	char *out = static_cast<char*>(std::malloc(input.size() + 1));
+	if (!out)
+		return nullptr;
+
+	std::memcpy(out, input.data(), input.size());
+	out[input.size()] = '\0';
+	return out;
 }
 
 char* I_ParseOdamexUrlC(const char *url)
@@ -39,14 +93,23 @@ char* I_ParseOdamexUrlC(const char *url)
 	if (!url)
 		return nullptr;
 
-	std::string hostport = I_ParseOdamexUrl(url);
-	if (hostport.empty())
+	return ToCString(I_ParseOdamexUrl(url));
+}
+
+char* I_ParseOdamexUrlUsernameC(const char *url)
+{
+	if (!url)
 		return nullptr;
 
-	char *out = static_cast<char*>(std::malloc(hostport.size() + 1));
-	if (!out)
+	OdamexUrlParts parts = I_ParseOdamexUrlParts(url);
+	return ToCString(parts.username);
+}
+
+char* I_ParseOdamexUrlPasswordC(const char *url)
+{
+	if (!url)
 		return nullptr;
 
-	std::memcpy(out, hostport.c_str(), hostport.size() + 1);
-	return out;
+	OdamexUrlParts parts = I_ParseOdamexUrlParts(url);
+	return ToCString(parts.password);
 }

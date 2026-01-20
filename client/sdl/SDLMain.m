@@ -56,6 +56,7 @@ static char  **gArgv;
 static bool   gFinderLaunch;
 static bool   gCalledAppMainline = false;
 
+/* Append an argument to the SDL-style argv list. */
 static bool AppendArg(const char *arg)
 {
     size_t arglen;
@@ -84,6 +85,7 @@ static bool AppendArg(const char *arg)
     return true;
 }
 
+/* Convert an odamex:// URL into "-connect host[:port]" arguments. */
 static bool AppendConnectFromURL(NSURL *url)
 {
     const char *url_cstr;
