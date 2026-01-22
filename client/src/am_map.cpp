@@ -113,6 +113,7 @@ EXTERN_CVAR(am_ovnotseencolor)
 EXTERN_CVAR(am_ovlockedcolor)
 EXTERN_CVAR(am_ovexitcolor)
 EXTERN_CVAR(am_ovteleportcolor)
+EXTERN_CVAR(am_ovminimap)
 EXTERN_CVAR(am_ovbackcolor)
 EXTERN_CVAR(am_ovbackalpha)
 EXTERN_CVAR(am_ovscalewidth)
@@ -2024,16 +2025,24 @@ void AM_Drawer()
 
 	fb = surface->getBuffer();
 
+	minimapactive = false;
+
 	if (AM_ClassicAutomapVisible())
 	{
-		minimapactive = false;
-
 		f.x = f.y = 0;
 		f_w = surface_width;
 		f_h = ST_StatusBarY(surface_width, surface_height);
 		f_p = surface->getPitch();
 
 		AM_clearFB(gameinfo.currentAutomapColors.Background);
+	}
+	else if (!am_ovminimap)
+	{
+		f.x = R_ViewWindowX(surface_width, surface_height);
+		f.y = R_ViewWindowY(surface_width, surface_height);
+		f_w = R_ViewWidth(surface_width, surface_height);
+		f_h = R_ViewHeight(surface_width, surface_height);
+		f_p = surface->getPitch();
 	}
 	else
 	{
@@ -2068,16 +2077,16 @@ void AM_Drawer()
 		f.y = R_ViewWindowY(surface_width, surface_height) + y_offset;
 		f_p = surface->getPitch();
 
+		const int x_center = surface_width / 2;
+		const int y_center = surface_height / 2;
+
+		minimapactive = x_center < f.x || y_center < f.y || x_center > f.x + f_w || y_center > f.y + f_h;
+
 		if (const DCanvas* canvas = surface->getDefaultCanvas())
 			canvas->Dim(f.x, f.y, f_w, f_h, am_ovbackcolor.cstring(), am_ovbackalpha);
-
-		const int x_center = surface_width >> 1;
-		const int y_center = surface_height >> 1;
-
-		minimapactive = x_center < f.x || y_center < f.y ||  x_center > f.x + f_w || y_center > f.y + f_h;
 	}
 
-	if (am_followplayer)
+	if (am_followplayer || minimapactive)
 	{
 		AM_doFollowPlayer();
 	}
