@@ -2046,6 +2046,8 @@ void AM_Drawer()
 	}
 	else
 	{
+		minimapactive = true;
+
 		const int v_width = R_ViewWidth(surface_width, surface_height);
 		const int v_height = R_ViewHeight(surface_width, surface_height);
 		const int loc = am_ovlocation;
@@ -2076,11 +2078,6 @@ void AM_Drawer()
 		f.x = R_ViewWindowX(surface_width, surface_height) + x_offset;
 		f.y = R_ViewWindowY(surface_width, surface_height) + y_offset;
 		f_p = surface->getPitch();
-
-		const int x_center = surface_width / 2;
-		const int y_center = surface_height / 2;
-
-		minimapactive = x_center < f.x || y_center < f.y || x_center > f.x + f_w || y_center > f.y + f_h;
 
 		if (const DCanvas* canvas = surface->getDefaultCanvas())
 			canvas->Dim(f.x, f.y, f_w, f_h, am_ovbackcolor.cstring(), am_ovbackalpha);
