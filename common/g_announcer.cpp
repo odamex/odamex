@@ -136,12 +136,12 @@ void AnnouncerManager::loadAnnouncerDefaults()
 	defaultAnnouncer.soundDict["multi 11"] = "officialvox/multi/terminator";
 
 	// Spree Announcements
-	defaultAnnouncer.soundDict["multi 1"] = "officialvox/spree/killingspree";
-	defaultAnnouncer.soundDict["multi 2"] = "officialvox/spree/rampage";
-	defaultAnnouncer.soundDict["multi 3"] = "officialvox/spree/dominating";
-	defaultAnnouncer.soundDict["multi 4"] = "officialvox/spree/unstoppable";
-	defaultAnnouncer.soundDict["multi 5"] = "officialvox/spree/untouchable";
-	defaultAnnouncer.soundDict["multi 6"] = "officialvox/spree/legendary";
+	defaultAnnouncer.soundDict["spree 1"] = "officialvox/spree/killingspree";
+	defaultAnnouncer.soundDict["spree 2"] = "officialvox/spree/rampage";
+	defaultAnnouncer.soundDict["spree 3"] = "officialvox/spree/dominating";
+	defaultAnnouncer.soundDict["spree 4"] = "officialvox/spree/unstoppable";
+	defaultAnnouncer.soundDict["spree 5"] = "officialvox/spree/untouchable";
+	defaultAnnouncer.soundDict["spree 6"] = "officialvox/spree/legendary";
 
 	announcerDict[defaultAnnouncer.name] = defaultAnnouncer;
 
