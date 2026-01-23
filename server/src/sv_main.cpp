@@ -1221,16 +1221,16 @@ void SV_UpdateHiddenMobj(void)
 			if (mo && !mo->WasDestroyed())
 				updated += SV_AwarenessUpdate(pl, mo);
 
-			if (updated > 16)
-				break;
+//			if (updated > 16)
+//				break;
 		}
 
 		while ((mo = iterator.Next()))
 		{
 			updated += SV_AwarenessUpdate(pl, mo);
 
-			if (updated > 16)
-				break;
+//			if (updated > 16)
+//				break;
 		}
 	}
 }
