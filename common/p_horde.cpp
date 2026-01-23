@@ -32,6 +32,7 @@
 #include "doomstat.h"
 #include "g_gametype.h"
 #include "g_horde.h"
+#include "g_announcer.h"
 #include "i_net.h"
 #include "m_random.h"
 #include "p_hordespawn.h"
@@ -284,6 +285,9 @@ class HordeState
 					// Send a res sound directly to this player.
 					S_PlayerSound(player, NULL, CHAN_INTERFACE, "misc/plraise",
 					              ATTN_NONE);
+
+					// Also send an announcement
+					MSG_WriteSVC(&player->client.netbuf, SVC_AnnouncerEvent(ANN_REVIVEDPLAYER));
 				}
 				// Give everyone an extra life.
 				if (player->lives < g_lives)

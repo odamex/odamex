@@ -632,6 +632,8 @@ static void P_ResurrectPlayerPowerUp(player_t& player)
 	// Send a res sound directly to this player.
 	MSG_WriteSVC(&pl->client.reliablebuf, SVC_PlayerInfo(*pl));
 	S_PlayerSound(pl, NULL, CHAN_INTERFACE, "misc/plraise", ATTN_NONE);
+	// Also send an announcement
+	MSG_WriteSVC(&pl->client.netbuf, SVC_AnnouncerEvent(ANN_REVIVEDPLAYER));
 
 	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(*pl, SVC_PM_LIVES),
 	                 playerid);
