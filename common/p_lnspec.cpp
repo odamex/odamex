@@ -2314,12 +2314,13 @@ static void SetScroller(int tag, DScroller::EScrollType type, fixed_t dx, fixed_
 }
 
 FUNC(LS_Scroll_Floor)
+// Scroll_Floor (tag, x-move, y-move, type)
 {
 	if (IgnoreSpecial)
 		return false;
 
-	fixed_t dx = arg1 * FRACUNIT / 32;
-	fixed_t dy = arg2 * FRACUNIT / 32;
+	const fixed_t dx = arg1 * FRACUNIT / 32;
+	const fixed_t dy = arg2 * FRACUNIT / 32;
 
 	if (arg3 == 0 || arg3 == 2)
 	{
@@ -2341,8 +2342,15 @@ FUNC(LS_Scroll_Floor)
 }
 
 FUNC(LS_Scroll_Ceiling)
+// Scroll_Ceiling (tag, x-move, y-move, unused)
 {
-	return false;
+	if (IgnoreSpecial)
+		return false;
+
+	const fixed_t dx = arg1 * FRACUNIT / 32;
+	const fixed_t dy = arg2 * FRACUNIT / 32;
+	SetScroller(arg0, DScroller::sc_ceiling, -dx, dy);
+	return true;
 }
 
 FUNC(LS_PointPush_SetForce)
