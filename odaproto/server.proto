@@ -702,6 +702,12 @@ message SpreeBreaker
 	int32 spree_breaker_type = 7;
 }
 
+// svc_announcerevent
+message AnnouncerEvent
+{
+	string key = 1;
+}
+
 // svc_netdemocap
 message NetdemoCap
 {

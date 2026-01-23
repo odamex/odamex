@@ -1666,6 +1666,15 @@ odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, cons
 	return msg;
 }
 
+odaproto::svc::AnnouncerEvent SVC_AnnouncerEvent(const std::string& key)
+{
+	odaproto::svc::AnnouncerEvent msg;
+
+	msg.set_key(key);
+
+	return msg;
+}
+
 odaproto::svc::NetdemoCap SVC_NetdemoCap(const player_t* player)
 {
 	odaproto::svc::NetdemoCap msg;

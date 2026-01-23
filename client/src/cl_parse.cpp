@@ -2959,6 +2959,15 @@ static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
 	SpreeManager::getInstance().setRawSpreeBreaker(breaker, level, type);
 }
 
+static void CL_AnnouncerEvent(const odaproto::svc::AnnouncerEvent* msg)
+{
+	const std::string key = msg->key();
+	const std::string sound = AnnouncerManager::getInstance().getTokenForEvent(key);
+
+	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
+		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+}
+
 static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 {
 	player_t* clientPlayer = &consoleplayer();
@@ -3199,6 +3208,7 @@ parseError_e CL_ParseCommand()
 		SV_MSG(svc_hordeinfo, CL_HordeInfo, odaproto::svc::HordeInfo);
 		SV_MSG(svc_spree, CL_Spree, odaproto::svc::Spree);
 		SV_MSG(svc_spreebreaker, CL_SpreeBreaker, odaproto::svc::SpreeBreaker);
+		SV_MSG(svc_announcerevent, CL_AnnouncerEvent, odaproto::svc::AnnouncerEvent);
 		SV_MSG(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
 		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);
