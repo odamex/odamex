@@ -610,3 +610,59 @@ void P_CheckBossSpawnAnnouncement()
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
+
+void P_CheckLastPlayerAliveAnnouncement()
+{
+	// Only play sounds on the client
+	if (!::clientside)
+		return;
+
+	// Only in games with lives
+	if (!g_lives)
+		return;
+
+	// Must be in active gameplay
+	if (::levelstate.getState() != LevelState::INGAME)
+		return;
+
+	if (G_IsCoopGame())
+	{
+		// Check how many players have lives
+		PlayerResults pr = PlayerQuery().hasLives().execute();
+
+		// In coop, reset if more than 1 player has lives
+		if (pr.count > 1)
+			return;
+		// Need exactly 1 player with lives
+		if (pr.count != 1 || P_NumPlayersInGame() <= 1)
+			return;
+		// Check if the last player alive is the display player
+		if (pr.players.front()->id != consoleplayer_id)
+			return;
+	}
+	else if (G_IsTeamGame())
+	{
+		const player_t player = consoleplayer();
+
+		if (!validplayer(player) || !player.ingame())
+			return;
+
+		PlayerResults livingplayers = PlayerQuery().onTeam(player.userinfo.team).hasLives().execute();
+
+		if (livingplayers.count > 0 ||
+		    livingplayers.players.front()->id != consoleplayer_id)
+		{
+			// Either teammates are still alive, or the last player alive is not the console player
+			return;
+		}
+	}
+	else
+	{
+		// Only announce player alive messages for coop and team games
+		return;
+	}
+
+	std::string sound = AnnouncerManager::getInstance().getTokenForEvent(ANN_LASTPLAYERALIVE);
+	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
+		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+}

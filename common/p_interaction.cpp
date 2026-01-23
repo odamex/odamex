@@ -2035,6 +2035,10 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 	if (target->player && level.time)
 		G_LivesCheckEndGame();
 
+	// Check for last player alive announcement (client-side)
+	if (target->player && level.time)
+		P_CheckLastPlayerAliveAnnouncement();
+
 	// Drop stuff.
 	// This determines the kind of object spawned
 	// during the death frame of a thing.
