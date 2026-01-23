@@ -403,15 +403,23 @@ void G_DoCompleted (void)
 	{
 		case WinInfo::WIN_EVERYBODY:
 			wminfo.winner = true;
+			wminfo.tie = false;
 			break;
 		case WinInfo::WIN_TEAM:
 			wminfo.winner = consoleplayer().userinfo.team == win.id;
+			wminfo.tie = false;
 			break;
 		case WinInfo::WIN_PLAYER:
 			wminfo.winner = consoleplayer_id == win.id;
+			wminfo.tie = false;
+			break;
+	  case WinInfo::WIN_DRAW:
+			wminfo.winner = false;
+			wminfo.tie = true;
 			break;
 		default:
 			wminfo.winner = false;
+			wminfo.tie = false;
 	}
 
 	AM_Stop();

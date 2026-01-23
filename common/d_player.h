@@ -715,6 +715,7 @@ typedef struct wbstartstruct_s
 
 	bool		didsecret = false;
 	bool		winner;
+	bool		tie;
 
 	std::vector<wbplayerstruct_s> plyr;
 } wbstartstruct_t;

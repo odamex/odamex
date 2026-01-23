@@ -31,6 +31,7 @@
 #include "i_video.h"
 #include "w_wad.h"
 #include "g_game.h"
+#include "g_announcer.h"
 #include "r_local.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
@@ -1361,9 +1362,41 @@ void WI_Ticker()
 
 	// [ML] If cl_autoscreenshot is on, take a screenshot 3 seconds
 	//		after the level end. (Multiplayer only)
-	if (cl_autoscreenshot && multiplayer && bcnt == (3 * TICRATE))
+	// Also announce winner status at this time.
+	if (multiplayer && bcnt == (3 * TICRATE))
 	{
-		AddCommandString("screenshot");
+		if (cl_autoscreenshot)
+		{
+			AddCommandString("screenshot");
+		}
+
+		if (consoleplayer().ingame() && !consoleplayer().spectator)
+		{
+			if (wbs->winner)
+			{
+				std::string sound =
+				    AnnouncerManager::getInstance().getTokenForEvent(ANN_YOUWIN);
+				if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
+					S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+			}
+			else
+			{
+				if (wbs->tie)
+				{
+					std::string sound =
+							AnnouncerManager::getInstance().getTokenForEvent(ANN_YOUTIED);
+					if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
+						S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+				}
+				else
+				{
+						std::string sound =
+							AnnouncerManager::getInstance().getTokenForEvent(ANN_YOULOSE);
+					if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
+						    S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+				}
+			}
+		}
 	}
 }
 
