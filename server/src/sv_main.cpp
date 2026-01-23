@@ -579,7 +579,7 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 	AActor* mo;
 	TThinkerIterator<AActor> iterator;
 	while ((mo = iterator.Next()))
-		mo->players_aware.unset(it->id);
+		mo->players_aware[it->id] = false;
 
 	// remove this player's actor object
 	if (it->mo)
@@ -1127,13 +1127,13 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 	else if(player.mo && mo->player && true)
 		ok = true;
 
-	bool previously_ok = mo->players_aware.get(player.id);
+	bool previously_ok = mo->players_aware[player.id];
 
 	client_t *cl = &player.client;
 
 	if(!ok && previously_ok)
 	{
-		mo->players_aware.unset(player.id);
+		mo->players_aware[player.id] = false;
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_RemoveMobj(*mo));
 
@@ -1141,7 +1141,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 	}
 	else if(!previously_ok && ok)
 	{
-		mo->players_aware.set(player.id);
+		mo->players_aware[player.id] = true;
 
 		if(!mo->player || mo->player->playerstate != PST_LIVE)
 		{
@@ -1191,7 +1191,7 @@ bool SV_IsPlayerAllowedToSee(const player_t &p, const AActor *mo)
 	if (mo->oflags & MFO_SPECTATOR)
 		return false; // GhostlyDeath -- always false, as usual!
 	else
-		return mo->players_aware.get(p.id);
+		return mo->players_aware[p.id];
 }
 
 #define HARDWARE_CAPABILITY 1000
@@ -1796,14 +1796,8 @@ void SV_ConnectClient()
 	SZ_Clear(&cl->netbuf);
 	SZ_Clear(&cl->reliablebuf);
 
-	for (size_t i = 0; i < ARRAY_LENGTH(cl->oldpackets); i++)
-	{
-		cl->oldpackets[i].sequence = -1;
-		SZ_Clear(&cl->oldpackets[i].data);
-	}
-
+	cl->reliableSendSequencer = SequenceSender();
 	cl->sequence = 0;
-	cl->last_sequence = -1;
 	cl->packetnum = 0;
 
 	// generate a random string
@@ -3798,8 +3792,9 @@ void SV_WantWad(player_t &player)
 // SV_ParseCommands
 //
 
-void SV_ParseCommands(player_t &player)
+bool SV_ParseCommands(player_t &player)
 {
+	bool retransmitIsAllowed = false;
 	 while(validplayer(player))
 	 {
 		clc_t cmd = static_cast<clc_t>(MSG_ReadByte());
@@ -3811,11 +3806,11 @@ void SV_ParseCommands(player_t &player)
 		{
 		case clc_disconnect:
 			SV_DisconnectClient(player);
-			return;
+			return false;
 
 		case clc_userinfo:
 			if (!SV_SetupUserInfo(player))
-				return;
+				return retransmitIsAllowed;
 			SV_BroadcastUserInfo(player);
 			break;
 
@@ -3825,12 +3820,12 @@ void SV_ParseCommands(player_t &player)
 
 		case clc_say:
 			if (!SV_Say(player))
-				return;
+				return retransmitIsAllowed;
 			break;
 
 		case clc_privmsg:
 			if (!SV_PrivMsg(player))
-				return;
+				return retransmitIsAllowed;
 			break;
 
 		case clc_move:
@@ -3847,6 +3842,7 @@ void SV_ParseCommands(player_t &player)
 
 		case clc_ack:
 			SV_AcknowledgePacket(player);
+			retransmitIsAllowed = true;
 			break;
 
 		case clc_rcon:
@@ -3908,7 +3904,7 @@ void SV_ParseCommands(player_t &player)
 		case clc_abort:
 			PrintFmt("Client abort.\n");
 			SV_DropClient(player);
-			return;
+			return false;
 
 		case clc_spy:
 			SV_SpyPlayer(player);
@@ -3930,7 +3926,7 @@ void SV_ParseCommands(player_t &player)
 		default:
 			PrintFmt("SV_ParseCommands: Unknown client message {}.\n", cmd);
 			SV_DropClient(player);
-			return;
+			return false;
 		}
 
 		if (net_message.overflowed)
@@ -3939,9 +3935,10 @@ void SV_ParseCommands(player_t &player)
 					    cmd,
 					    clc_info[cmd].getName());
 			SV_DropClient(player);
-			return;
+			return false;
 		}
 	 }
+     return retransmitIsAllowed;
 }
 
 
@@ -4085,6 +4082,7 @@ void SV_DisplayTics()
 void SV_RunTics()
 {
 	SV_GetPackets();
+    SV_HandleReliableRetransmissions();
 
 	std::string cmd = I_ConsoleInput();
 	if (cmd.length())
@@ -4417,7 +4415,7 @@ void SV_SendDestroyActor(const AActor *mo)
 	{
 		for (auto& player : players)
 		{
-			if (mo->players_aware.get(player.id))
+			if (mo->players_aware[player.id])
 			{
 				client_t *cl = &(player.client);
 

@@ -61,12 +61,17 @@ class SequenceSender
 
     public:
         explicit SequenceSender(size_t i_initialSize) :
-            m_sendQueue         (i_initialSize),
-            m_recvQueue         (i_initialSize),
-            m_sendIndex         (0),
-            m_receiveIndex  (0),
-            m_unackedCount(0),
+            m_sendQueue      (i_initialSize),
+            m_recvQueue      (i_initialSize),
+            m_sendIndex      (0),
+            m_receiveIndex   (0),
+            m_unackedCount   (0),
             m_smallestUnacked(0)
+        {
+        }
+
+        SequenceSender() :
+            SequenceSender(DEFAULT_RELIABILITY_QUEUE_SIZE)
         {
         }
 

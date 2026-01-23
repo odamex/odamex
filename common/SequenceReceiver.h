@@ -15,7 +15,12 @@ class SequenceReceiver
         {
         }
 
-        void RegisterReceivedPacket(int sequence, buf_t& io_bufferRef)
+        SequenceReceiver() :
+            SequenceReceiver(DEFAULT_RELIABILITY_QUEUE_SIZE)
+        {
+        }
+
+        bool RegisterReceivedPacket(int sequence, buf_t& io_bufferRef)
         {
             const int desiredIndex = sequence % m_recvQueue.size();
 
@@ -32,8 +37,10 @@ class SequenceReceiver
                 {
                     entryRef.sequence = sequence;
                     entryRef.buf.swap(io_bufferRef);
+                    return true;
                 }
             }
+            return false;
         }
 
         QueueEntryType* NextPacket()

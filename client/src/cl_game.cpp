@@ -998,26 +998,25 @@ void G_Ticker (void)
 		while ((packet_size = NET_GetPacket()) )
 		{
 			// denis - don't accept candy from strangers
-			if(!NET_CompareAdr(serveraddr, net_from))
+			if (not NET_CompareAdr(serveraddr, net_from))
 				break;
 
 			realrate += packet_size;
 			last_received = gametic;
 			noservermsgs = false;
 
-			if (!CL_ReadPacketHeader())
+			if (not CL_ReadPacketHeader())
 				continue;
 
-			if (netdemo.isRecording())
-				netdemo.capture(&net_message);
-
-			CL_ParseCommands();
-
-			if (gameaction == ga_fullconsole) // Host_EndGame was called
-				return;
+            if (not CL_AcceptNetMessage())
+                return;
 		}
 
-		if (!(gametic%TICRATE))
+        // With all the latest packets received, process the reliable message in proper sequence.
+        if (not CL_ProcessCurrentReliableMessages())
+            return;
+
+		if ((gametic % TICRATE) == 0)
 		{
 			netin = realrate;
 			realrate = 0;

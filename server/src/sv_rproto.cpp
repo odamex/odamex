@@ -75,7 +75,7 @@ static void CompressPacket(buf_t& send, const size_t reserved, client_t* cl)
 	}
 
 	send.ptr()[PACKET_FLAG_INDEX] |= method;
-	DPrintFmt("CompressPacket {} {}\n", method, send.size());
+	//DPrintFmt("CompressPacket {} {}\n", method, send.size());
 }
 
 #ifdef SIMULATE_LATENCY
@@ -153,36 +153,38 @@ bool SV_SendPacket(player_t &pl)
 
 	sendd.clear();
 
-	// save the reliable message
-	// it will be retransmited, if it's missed
-	client_t::oldPacket_t& old = cl->oldpackets[cl->sequence & PACKET_OLD_MASK];
-
-	old.data.clear();
 	if (cl->reliablebuf.cursize)
 	{
+		// save the reliable message
+		// it will be retransmited, if it's missed
+		buf_t& saveMessage = cl->reliableSendSequencer.ObtainSendPacket(cl->sequence);
+
+		saveMessage.clear();
+
 		// copy the reliable data into the buffer.
-		old.sequence = cl->sequence;
-		SZ_Write(&old.data, cl->reliablebuf.data.get(), cl->reliablebuf.cursize);
+		SZ_Write(&saveMessage, cl->reliablebuf.data.get(), cl->reliablebuf.cursize);
+
+        // Insert and increment Reliable sequence number
+		MSG_WriteLong(&sendd, cl->sequence++);
 	}
 	else
 	{
-		old.sequence = -1;
+		// Messages without reliability are non-sequenced.
+		MSG_WriteLong(&sendd, -1);
 	}
+	MSG_WriteByte(&sendd, 0); // Flags, filled out later.
 
 	cl->packetnum++; // packetnum will never be more than 255
 	                 // because sizeof(packetnum) == 1. Don't need
 	                 // to use &0xff. Cool, eh? ;-)
 
-	// copy sequence
-	MSG_WriteLong(&sendd, cl->sequence++);
-	MSG_WriteByte(&sendd, 0); // Flags, filled out later.
 
 	// copy the reliable message to the packet first
-    if (cl->reliablebuf.cursize)
-    {
+	if (cl->reliablebuf.cursize)
+	{
 		SZ_Write (&sendd, cl->reliablebuf.data.get(), cl->reliablebuf.cursize);
 		cl->reliable_bps += cl->reliablebuf.cursize;
-    }
+	}
 
 	// add the unreliable part if space is available and rate value
 	// allows it
@@ -224,29 +226,26 @@ bool SV_SendPacket(player_t &pl)
 /**
  * @brief Send an old reliable packet with old data on the wire.
  *
- * @param pl Player to send to.
+ * @param cl Player Client to send to.
  * @param sequence Sequence number to send.  This assumss
 */
-static void SendOldPacket(player_t& pl, const int sequence)
+static void SendOldPacket(client_t& cl, const QueueEntryType& queueEntry)
 {
 	// Send buffer.
 	static buf_t send(MAX_UDP_PACKET);
 	send.clear();
 
-	client_t& cl = pl.client;
-	client_t::oldPacket_t& old = cl.oldpackets[sequence & PACKET_OLD_MASK];
-
 	// This is a lot simpler than a fresh send.  Just send the data we have
 	// have saved out.
 
-	MSG_WriteLong(&send, old.sequence);
+	MSG_WriteLong(&send, queueEntry.sequence);
 	MSG_WriteByte(&send, 0); // Flags, filled out later.
 
 	// copy the reliable message to the packet
-	if (old.data.cursize)
+	if (queueEntry.buf.cursize)
 	{
-		SZ_Write(&send, old.data.data.get(), old.data.cursize);
-		cl.reliable_bps += old.data.cursize;
+		SZ_Write(&send, queueEntry.buf.data.get(), queueEntry.buf.cursize);
+		cl.reliable_bps += queueEntry.buf.cursize;
 	}
 
 	// compress the packet, but not the sequence id
@@ -258,6 +257,19 @@ static void SendOldPacket(player_t& pl, const int sequence)
 	NET_SendPacket(send, cl.address);
 }
 
+void SV_HandleReliableRetransmissions()
+{
+    for (auto& player : players)
+    {
+        auto            iter = player.client.reliableSendSequencer.IterateUnackedPackets();
+        QueueEntryType* sendQueueEntry;
+        while ((sendQueueEntry = ++iter) != nullptr)
+        {
+            SendOldPacket(player.client, *sendQueueEntry);
+        }
+    }
+}
+
 //
 // SV_AcknowledgePacket
 //
@@ -267,27 +279,9 @@ void SV_AcknowledgePacket(player_t &player)
 
 	int sequence = MSG_ReadLong();
 
-	// packet is missed
-	if (sequence - cl->last_sequence > 1)
-	{
-		// resend
-		for (int seq = cl->last_sequence+1; seq < sequence; seq++)
-		{
-			if (cl->oldpackets[seq & PACKET_OLD_MASK].sequence != seq)
-			{
-				// do full update
-				DPrintFmt("need full update\n");
-				cl->last_sequence = sequence;
-				return;
-			}
+	cl->reliableSendSequencer.Acknowledge(sequence);
 
-			SendOldPacket(player, seq);
-		}
-	}
-
-	cl->last_sequence = sequence;
-
-	if (cl->last_sequence == 0)
+	if (sequence == 0)
 	{
 		// [AM] Finish our connection sequence.
 		SV_ConnectClient2(player);

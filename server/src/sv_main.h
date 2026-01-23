@@ -126,7 +126,8 @@ bool SV_SendPacket(player_t &pl);
 void SV_AcknowledgePacket(player_t &player);
 void SV_DisplayTics();
 void SV_RunTics();
-void SV_ParseCommands(player_t &player);
+bool SV_ParseCommands(player_t &player);
+void SV_HandleReliableRetransmissions();
 void SV_UpdateFrags (const player_t &player);
 void SV_RemoveCorpses (void);
 #define SV_DropClient(who) SV_DropClient2(who, __FILE__, __LINE__)
