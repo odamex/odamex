@@ -96,6 +96,7 @@ void P_Ticker (void)
 	// Announcements
 	P_CheckFightAnnouncement();
 	P_CheckCountdownAnnouncements();
+	P_CheckTimeWarnings();
 
 
 	if (clientside)

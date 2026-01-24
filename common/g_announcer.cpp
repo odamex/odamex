@@ -213,6 +213,20 @@ void AnnouncerManager::announceFragWarning1()
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
 
+void AnnouncerManager::announceFiveMinuteWarning()
+{
+	std::string sound = getTokenForEvent(ANN_FIVEMINUTEWARNING);
+	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
+		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+}
+
+void AnnouncerManager::announceOneMinuteWarning()
+{
+	std::string sound = getTokenForEvent(ANN_ONEMINUTEWARNING);
+	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
+		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+}
+
 EXTERN_CVAR(sv_fraglimit)
 
 void P_CheckFragWarnings()
@@ -260,6 +274,41 @@ void P_CheckFragWarnings()
 	else if (fragsRemaining == 1 && !instance.hasFragWarning1BeenAnnounced())
 	{
 		instance.announceFragWarning1();
+	}
+}
+
+EXTERN_CVAR(sv_timelimit)
+
+void P_CheckTimeWarnings()
+{
+	// Only play sounds on the client
+	if (!::clientside)
+		return;
+
+	// Only during active gameplay
+	if (::levelstate.getState() != LevelState::INGAME)
+		return;
+
+	if (sv_timelimit <= 0.0f)
+		return;
+
+	AnnouncerManager& instance = AnnouncerManager::getInstance();
+
+	// Calculate remaining time in seconds
+	int endingTic = G_GetEndingTic();
+	int remainingTics = endingTic - ::level.time;
+	int remainingSeconds = remainingTics / TICRATE;
+
+	// Check for 5 minute warning (300 seconds)
+	// Announce when we cross the threshold (between 300 and 299 seconds remaining)
+	if (remainingSeconds == 5 * 60)
+	{
+		instance.announceFiveMinuteWarning();
+	}
+	// Check for 1 minute warning (60 seconds)
+	else if (remainingSeconds == 60)
+	{
+		instance.announceOneMinuteWarning();
 	}
 }
 
@@ -642,7 +691,7 @@ void P_CheckLastPlayerAliveAnnouncement()
 	}
 	else if (G_IsTeamGame())
 	{
-		const player_t player = consoleplayer();
+		const player_t& player = consoleplayer();
 
 		if (!validplayer(player) || !player.ingame())
 			return;

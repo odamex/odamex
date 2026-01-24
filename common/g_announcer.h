@@ -349,6 +349,16 @@ public:
 	void resetFragWarnings();
 
 	/// <summary>
+	/// Function to announce the 5-minute time warning.
+	/// </summary>
+	void announceFiveMinuteWarning();
+
+	/// <summary>
+	/// Function to announce the 1-minute time warning.
+	/// </summary>
+	void announceOneMinuteWarning();
+
+	/// <summary>
 	/// Function to return whether the fight announcement has been played already.
 	/// </summary>
 	bool hasFightBeenAnnounced() const { return fightAnnounced; }
@@ -572,6 +582,11 @@ private:
 /// Run logic to determine to play a frag warning for this frag.
 /// </summary>
 void P_CheckFragWarnings();
+
+/// <summary>
+/// Run logic to determine to play a time warning (5 minutes or 1 minute remaining).
+/// </summary>
+void P_CheckTimeWarnings();
 
 /// <summary>
 /// Run logic to determine to play a 'player eliminated' announcement.
