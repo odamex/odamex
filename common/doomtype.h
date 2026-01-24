@@ -249,15 +249,49 @@ class argb_t
 {
 public:
 	argb_t() { }
-	argb_t(uint32_t _value) : value(_value) { }
+#if 0
+	argb_t(uint32_t _value)
+    { // Serious endian issue here.
+        seta(_value & 0x000000FF);
+        setr((_value & 0x0000FF00) >>  8);
+        setg((_value & 0x00FF0000) >> 16);
+        setb((_value & 0xFF000000) >> 24);
+    }
 
+	inline operator uint32_t () const
+    {
+        // ENDIAN FIXME!!!
+        return (getb() << 24) |
+               (getg() << 16) |
+               (getr() <<  8) |
+                geta();
+    }
+protected:
+//	union
+//	{
+//		uint32_t value;
+		uint8_t channels[4];
+//	};
+
+#else
+	argb_t(uint32_t _value) : value(_value) {}
+
+	inline operator uint32_t () const { return value; }
+
+protected:
+	union
+	{
+		uint32_t value;
+		uint8_t channels[4];
+	};
+
+#endif
+public:
 	argb_t(uint8_t _r, uint8_t _g, uint8_t _b)
 	{	seta(255); setr(_r); setg(_g); setb(_b);	}
 
 	argb_t(uint8_t _a, uint8_t _r, uint8_t _g, uint8_t _b)
 	{	seta(_a); setr(_r); setg(_g); setb(_b);	}
-
-	inline operator uint32_t () const { return value; }
 
 	inline uint8_t geta() const
 	{	return channels[a_num];	}
@@ -289,11 +323,6 @@ public:
 private:
 	static inline uint8_t a_num, r_num, g_num, b_num;
 
-	union
-	{
-		uint32_t value;
-		uint8_t channels[4];
-	};
 };
 
 

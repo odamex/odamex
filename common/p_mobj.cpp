@@ -140,6 +140,7 @@ AActor::AActor()
       rndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
       netid(0), tid(0), baseline(), baseline_set(false), bmapnode(this)
 {
+	players_aware.fill(false);
 	memset(args, 0, sizeof(args));
 	self.init(this);
 }
@@ -159,7 +160,7 @@ AActor::AActor(const AActor& other)
       health(other.health), movedir(other.movedir), movecount(other.movecount),
       visdir(other.visdir), reactiontime(other.reactiontime), threshold(other.threshold),
       player(other.player), lastlook(other.lastlook), special(other.special),
-      inext(other.inext), iprev(other.iprev), translation(other.translation),
+      inext(other.inext), iprev(other.iprev), players_aware(other.players_aware), translation(other.translation),
       translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
       onground(other.onground), touching_sectorlist(other.touching_sectorlist),
       deadtic(other.deadtic), oldframe(other.oldframe), rndindex(other.rndindex),
@@ -224,6 +225,7 @@ AActor &AActor::operator= (const AActor &other)
     lastlook = other.lastlook;
     inext = other.inext;
     iprev = other.iprev;
+    players_aware = other.players_aware;
     translation = other.translation;
     translucency = other.translucency;
     waterlevel = other.waterlevel;
@@ -274,6 +276,8 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 	{
 		I_Error("Tried to spawn actor type {}\n", itype);
 	}
+
+	players_aware.fill(false);
 
 	self.init(this);
 	info = &it->second;
@@ -2173,7 +2177,7 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z)
 		// [SL] 2012-10-02 - Allow a client to predict their own bullet puffs
 		// so don't send the puffs to the client already predicting
 		if (shootthing && shootthing->player && shootthing->player->userinfo.predict_weapons)
-			puff->players_aware.set(shootthing->player->id);
+			puff->players_aware[shootthing->player->id] = true;
 
 		SV_SpawnMobj(puff);
 	}
