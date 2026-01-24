@@ -263,7 +263,7 @@ void SV_HandleReliableRetransmissions()
     {
         auto            iter = player.client.reliableSendSequencer.IterateUnackedPackets();
         QueueEntryType* sendQueueEntry;
-        while ((sendQueueEntry = ++iter) != nullptr)
+        while ((sendQueueEntry = iter.Next()) != nullptr)
         {
             SendOldPacket(player.client, *sendQueueEntry);
         }

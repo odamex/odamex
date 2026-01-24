@@ -20,7 +20,7 @@ class SequenceSender
                 m_index    (-1)
             {}
 
-            QueueEntryType* operator++()
+            QueueEntryType* Next()
             {
                 if (m_count >= m_sequencer->m_unackedCount)
                 {
