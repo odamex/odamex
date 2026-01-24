@@ -105,34 +105,39 @@ class SequenceSender
         // Returns false otherwise.
         bool Acknowledge(int sequence)
         {
-            const int desiredIndex = sequence % m_sendQueue.size();
-            bool      isFreshAck   = false;
+            bool isFreshAck = false;
 
-            QueueEntryType& entryRef = m_sendQueue[desiredIndex];
+            // Older clients send acks for unreliable messages as well.
+            // Just ignore those.
+            if (sequence >= 0)
+            {
+                const int desiredIndex = sequence % m_sendQueue.size();
+                QueueEntryType& entryRef = m_sendQueue[desiredIndex];
 
-            if (sequence < entryRef.sequence)
-            {
-                DPrintFmt("Wow, that's an old acknowledgement!  seq: {} cur: {}\n", sequence, entryRef.sequence);
-            }
-            else if (sequence > entryRef.sequence)
-            {
-                DPrintFmt("Can't get fooled again!  (future?!?!) seq: {} cur: {}\n", sequence, entryRef.sequence);
-            }
-            else
-            {
-                if (not entryRef.isAwaiting)
+                if (sequence < entryRef.sequence)
                 {
-                    //DPrintFmt("Stale ack: {}\n", sequence);
+                    DPrintFmt("Wow, that's an old acknowledgement!  seq: {} cur: {}\n", sequence, entryRef.sequence);
+                }
+                else if (sequence > entryRef.sequence)
+                {
+                    DPrintFmt("Can't get fooled again!  (future?!?!) seq: {} cur: {}\n", sequence, entryRef.sequence);
                 }
                 else
                 {
-                    isFreshAck = true;
-                    entryRef.isAwaiting = false;
-                    --m_unackedCount;
+                    if (not entryRef.isAwaiting)
+                    {
+                        //DPrintFmt("Stale ack: {}\n", sequence);
+                    }
+                    else
+                    {
+                        isFreshAck = true;
+                        entryRef.isAwaiting = false;
+                        --m_unackedCount;
+                    }
                 }
-            }
 
-            AdvanceSmallestUnacked();
+                AdvanceSmallestUnacked();
+            }
             return isFreshAck;
         }
 
