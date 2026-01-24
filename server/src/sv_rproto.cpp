@@ -279,9 +279,9 @@ void SV_AcknowledgePacket(player_t &player)
 
 	int sequence = MSG_ReadLong();
 
-	cl->reliableSendSequencer.Acknowledge(sequence);
+	const bool isFresh = cl->reliableSendSequencer.Acknowledge(sequence);
 
-	if (sequence == 0)
+	if (isFresh and sequence == 0)
 	{
 		// [AM] Finish our connection sequence.
 		SV_ConnectClient2(player);

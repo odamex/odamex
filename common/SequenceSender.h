@@ -31,23 +31,19 @@ class SequenceSender
                 {
                     m_index = m_sequencer->m_smallestUnacked % m_sequencer->m_sendQueue.size();
                 }
-                else
-                {
-                    ++m_index;
-                }
 
                 for (size_t i = 0; i < m_sequencer->m_sendQueue.size(); ++i)
                 {
-                    if (m_sequencer->m_sendQueue[m_index].isAwaiting)
-                    {
-                        ++m_count;
-                        return &m_sequencer->m_sendQueue[m_index];
-                    }
-
-                    ++m_index;
                     if (m_index == static_cast<int>(m_sequencer->m_sendQueue.size()))
                     {
                         m_index = 0;
+                    }
+
+                    QueueEntryType* candidate = &m_sequencer->m_sendQueue[m_index++];
+                    if (candidate->isAwaiting)
+                    {
+                        ++m_count;
+                        return candidate;
                     }
                 }
                 return nullptr;
@@ -62,9 +58,6 @@ class SequenceSender
     public:
         explicit SequenceSender(size_t i_initialSize) :
             m_sendQueue      (i_initialSize),
-            m_recvQueue      (i_initialSize),
-            m_sendIndex      (0),
-            m_receiveIndex   (0),
             m_unackedCount   (0),
             m_smallestUnacked(0)
         {
@@ -108,9 +101,12 @@ class SequenceSender
             return entryRef.buf;
         }
 
-        void Acknowledge(int sequence)
+        // Returns true if the acknowledgement a previously unacknowledged message has become acknowledged.
+        // Returns false otherwise.
+        bool Acknowledge(int sequence)
         {
             const int desiredIndex = sequence % m_sendQueue.size();
+            bool      isFreshAck   = false;
 
             QueueEntryType& entryRef = m_sendQueue[desiredIndex];
 
@@ -130,12 +126,14 @@ class SequenceSender
                 }
                 else
                 {
+                    isFreshAck = true;
                     entryRef.isAwaiting = false;
                     --m_unackedCount;
                 }
             }
 
             AdvanceSmallestUnacked();
+            return isFreshAck;
         }
 
         UnackedIterator IterateUnackedPackets()
@@ -145,38 +143,31 @@ class SequenceSender
 
         // Receiver functions
 
+        int GetPendingAckCount() const
+        {
+            return m_unackedCount;
+        }
     protected:
 
         void AdvanceSmallestUnacked()
         {
             if (m_unackedCount)
             {
-                int checkForUnackedPosition = m_smallestUnacked % m_sendQueue.size();
-
                 for (size_t i = 0; i < m_sendQueue.size(); ++i)
                 {
-                    const auto& checkRef = m_sendQueue[checkForUnackedPosition];
-                    if (checkRef.isAwaiting)
+                    const auto& checkRef = m_sendQueue[m_smallestUnacked % m_sendQueue.size()];
+
+                    if (checkRef.isAwaiting and m_smallestUnacked == checkRef.sequence)
                     {
-                        m_smallestUnacked = checkRef.sequence;
                         break;
                     }
-
-                    ++checkForUnackedPosition;
-                    if (checkForUnackedPosition == m_sendQueue.size())
-                    {
-                        checkForUnackedPosition = 0;
-                    }
+                    ++m_smallestUnacked;
                 }
             }
-
         }
 
         std::vector<QueueEntryType> m_sendQueue;
-        std::vector<QueueEntryType> m_recvQueue;
 
-        int m_sendIndex;        // Index of the place to store the next sent packet.
-        int m_receiveIndex;     // Index of the place to store the next received packet.
         int m_unackedCount;     // The number of sent packets that have not yet been acked.
         int m_smallestUnacked;  // The smallest sequence number that has yet to be acked.
 };
