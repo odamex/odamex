@@ -122,7 +122,7 @@ class SequenceSender
             {
                 if (not entryRef.isAwaiting)
                 {
-                    DPrintFmt("Stale ack: {}\n", sequence);
+                    //DPrintFmt("Stale ack: {}\n", sequence);
                 }
                 else
                 {
