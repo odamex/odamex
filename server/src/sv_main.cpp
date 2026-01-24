@@ -2817,8 +2817,8 @@ void SV_CalcPing(player_t &player)
 {
 	unsigned int ping = I_MSTime() - MSG_ReadLong();
 
-	if(ping > 999)
-		ping = 999;
+	if(ping > MAX_PING)
+		ping = MAX_PING;
 
 	player.ping = ping;
 }
