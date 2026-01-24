@@ -1949,6 +1949,8 @@ bool CL_ReadPacketHeader()
 		CL_Decompress();
 	}
 
+	netgraph.addPacketIn();
+
     if (sequence >= 0)
     {
 		::reliableSequenceReceiver.RegisterReceivedPacket(sequence, ::net_message);
@@ -1959,7 +1961,6 @@ bool CL_ReadPacketHeader()
         return false;
     }
 
-	netgraph.addPacketIn();
 	return true;
 }
 
