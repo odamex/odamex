@@ -69,7 +69,7 @@ class SequenceSender
         }
 
         // Sender functions
-        buf_t& ObtainSendPacket(int sequence)
+        buf_t& ObtainSendPacket(int sequence, int currentTic=-1)
         {
             const int desiredIndex = sequence % m_sendQueue.size();
 
@@ -94,8 +94,9 @@ class SequenceSender
                 ++m_unackedCount;
             }
 
-            entryRef.isAwaiting  = true;
+            entryRef.isAwaiting     = true;
             entryRef.sequence       = sequence;
+            entryRef.originatingTic = currentTic;
             entryRef.buf.clear();
 
             return entryRef.buf;

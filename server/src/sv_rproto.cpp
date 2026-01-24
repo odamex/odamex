@@ -157,7 +157,7 @@ bool SV_SendPacket(player_t &pl)
 	{
 		// save the reliable message
 		// it will be retransmited, if it's missed
-		buf_t& saveMessage = cl->reliableSendSequencer.ObtainSendPacket(cl->sequence);
+		buf_t& saveMessage = cl->reliableSendSequencer.ObtainSendPacket(cl->sequence, gametic);
 
 		saveMessage.clear();
 

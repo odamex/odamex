@@ -8,11 +8,13 @@ struct QueueEntryType
 {
     buf_t buf;
     int   sequence;
+    int   originatingTic;
     bool  isAwaiting;
 
     QueueEntryType() :
-        buf         (MAX_UDP_PACKET),
-        sequence    (-1),
-        isAwaiting  (false)
+        buf           (MAX_UDP_PACKET),
+        sequence      (-1),
+        originatingTic(-1),
+        isAwaiting    (false)
     {}
 };
