@@ -263,9 +263,20 @@ void SV_HandleReliableRetransmissions()
     {
         auto            iter = player.client.reliableSendSequencer.IterateUnackedPackets();
         QueueEntryType* sendQueueEntry;
+
+        // The following results in fractional tics rounding up.
+        const int pingInTics = (player.ping * TICRATE + 999) / 1000;
+
+        // Adjust upwards because in the real world, tic boundaries don't align and can drift.
+        const int retransmitDelayInTics = pingInTics + 2;
+
+        // TODO:  throttle this.  Could do it dynamically as part of a sliding window.
         while ((sendQueueEntry = iter.Next()) != nullptr)
         {
-            SendOldPacket(player.client, *sendQueueEntry);
+            if (gametic >= retransmitDelayInTics + sendQueueEntry->originatingTic)
+            {
+                SendOldPacket(player.client, *sendQueueEntry);
+            }
         }
     }
 }
