@@ -32,6 +32,7 @@
 #include "g_levelstate.h"
 #include "s_sound.h"
 #include "p_horde.h"
+#include "p_tick.h"
 
 AnnouncerManager& AnnouncerManager::getInstance()
 {
@@ -290,6 +291,10 @@ void P_CheckTimeWarnings()
 		return;
 
 	if (sv_timelimit <= 0.0f)
+		return;
+
+	// Only run once per second
+	if (!P_AtInterval(TICRATE))
 		return;
 
 	AnnouncerManager& instance = AnnouncerManager::getInstance();
