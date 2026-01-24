@@ -263,19 +263,32 @@ void SV_HandleReliableRetransmissions()
     {
         auto            iter = player.client.reliableSendSequencer.IterateUnackedPackets();
         QueueEntryType* sendQueueEntry;
+        int             retransmissionsSent = 0;
 
         // The following results in fractional tics rounding up.
         const int pingInTics = (player.ping * TICRATE + 999) / 1000;
 
         // Adjust upwards because in the real world, tic boundaries don't align and can drift.
-        const int retransmitDelayInTics = pingInTics + 2;
+        const int retransmitDelayInTics = pingInTics + 1;
 
+        //DPrintFmt("--------------------------\n");
         // TODO:  throttle this.  Could do it dynamically as part of a sliding window.
         while ((sendQueueEntry = iter.Next()) != nullptr)
         {
-            if (gametic >= retransmitDelayInTics + sendQueueEntry->originatingTic)
+            // Total hack:  We check for the player being in the first second of their connection because there's something
+            // in the connection protocol that requires us to do immediate retransmits of the first few reliable messages.
+            if (player.GameTime == 0 or gametic >= (retransmitDelayInTics + sendQueueEntry->originatingTic))
             {
+                //DPrintFmt("player {} ingame {} gametic {} orig {} seq {} SEND\n", int(player.id), player.GameTime, gametic, sendQueueEntry->originatingTic, sendQueueEntry->sequence);
                 SendOldPacket(player.client, *sendQueueEntry);
+                if (++retransmissionsSent > 10)
+                {
+                    break;
+                }
+            }
+            else
+            {
+                //DPrintFmt("player {} ingame {} gametic {} orig {} seq {}\n", int(player.id), player.GameTime, gametic, sendQueueEntry->originatingTic, sendQueueEntry->sequence);
             }
         }
     }
@@ -291,6 +304,8 @@ void SV_AcknowledgePacket(player_t &player)
 	int sequence = MSG_ReadLong();
 
 	const bool isFresh = cl->reliableSendSequencer.Acknowledge(sequence);
+
+    //DPrintFmt("player {} tic {} ACKed seq {}\n", int(player.id), gametic, sequence);
 
 	if (isFresh and sequence == 0)
 	{
