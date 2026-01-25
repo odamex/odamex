@@ -89,6 +89,7 @@ EXTERN_CVAR(mute_spectators)
 EXTERN_CVAR(show_messages)
 EXTERN_CVAR(co_novileghosts)
 EXTERN_CVAR(sv_sharekeys)
+EXTERN_CVAR(cl_showsprees)
 
 extern std::string digest;
 extern bool forcenetdemosplit;
@@ -2930,7 +2931,13 @@ static void CL_Spree(const odaproto::svc::Spree* msg)
 	int playerId = msg->pid();
 	int spreeLevel = msg->spree_level();
 
-	SpreeManager::getInstance().setRawSpree(playerId, spreeLevel);
+	bool update = SpreeManager::getInstance().setRawSpree(playerId, spreeLevel);
+
+	if (cl_showsprees && displayplayer_id == playerId && update)
+	{
+		// Play the sound for the new multi kill
+		// S_Sound(CHAN_ANNOUNCER, '', 1, ATTN_NONE);
+	}
 }
 
 static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)

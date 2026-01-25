@@ -613,6 +613,10 @@ void SpreeManager::clearPoints()
 // Static functions start here.
 // ==========================================================
 
+#ifdef CLIENT_APP
+EXTERN_CVAR(cl_showsprees)
+#endif
+
 void P_ProcessSpreeKill(const AActor* source, const player_t* target)
 {
 	static SpreeManager& manager = SpreeManager::getInstance();
@@ -641,6 +645,12 @@ void P_ProcessSpreeKill(const AActor* source, const player_t* target)
 		return;
 
 	bool update = manager.recordPlayerKill(source->player);
+
+#ifdef CLIENT_APP
+	// Don't announce sprees if the client has showing them disabled
+	if (!cl_showsprees)
+		return;
+#endif
 
 	if (displayplayer_id == source->player->id && update)
 	{
