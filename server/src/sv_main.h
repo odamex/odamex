@@ -131,7 +131,7 @@ bool SV_SendPacket(player_t &pl);
 void SV_AcknowledgePacket(player_t &player);
 void SV_DisplayTics();
 void SV_RunTics();
-bool SV_ParseCommands(player_t &player);
+void SV_ParseCommands(player_t &player);
 void SV_HandleReliableRetransmissions();
 void SV_UpdateFrags (const player_t &player);
 void SV_RemoveCorpses (void);

@@ -3843,9 +3843,8 @@ void SV_WantWad(player_t &player)
 // SV_ParseCommands
 //
 
-bool SV_ParseCommands(player_t &player)
+void SV_ParseCommands(player_t &player)
 {
-	bool retransmitIsAllowed = false;
 	 while(validplayer(player))
 	 {
 		clc_t cmd = static_cast<clc_t>(MSG_ReadByte());
@@ -3857,11 +3856,11 @@ bool SV_ParseCommands(player_t &player)
 		{
 		case clc_disconnect:
 			SV_DisconnectClient(player);
-			return false;
+			return;
 
 		case clc_userinfo:
 			if (!SV_SetupUserInfo(player))
-				return retransmitIsAllowed;
+				return;
 			SV_BroadcastUserInfo(player);
 			break;
 
@@ -3871,12 +3870,12 @@ bool SV_ParseCommands(player_t &player)
 
 		case clc_say:
 			if (!SV_Say(player))
-				return retransmitIsAllowed;
+				return;
 			break;
 
 		case clc_privmsg:
 			if (!SV_PrivMsg(player))
-				return retransmitIsAllowed;
+				return;
 			break;
 
 		case clc_move:
@@ -3893,7 +3892,6 @@ bool SV_ParseCommands(player_t &player)
 
 		case clc_ack:
 			SV_AcknowledgePacket(player);
-			retransmitIsAllowed = true;
 			break;
 
 		case clc_rcon:
@@ -3955,7 +3953,7 @@ bool SV_ParseCommands(player_t &player)
 		case clc_abort:
 			PrintFmt("Client abort.\n");
 			SV_DropClient(player);
-			return false;
+			return;
 
 		case clc_spy:
 			SV_SpyPlayer(player);
@@ -3977,7 +3975,7 @@ bool SV_ParseCommands(player_t &player)
 		default:
 			PrintFmt("SV_ParseCommands: Unknown client message {}.\n", cmd);
 			SV_DropClient(player);
-			return false;
+			return;
 		}
 
 		if (net_message.overflowed)
@@ -3986,10 +3984,9 @@ bool SV_ParseCommands(player_t &player)
 					    cmd,
 					    clc_info[cmd].getName());
 			SV_DropClient(player);
-			return false;
+			return;
 		}
 	 }
-     return retransmitIsAllowed;
 }
 
 
