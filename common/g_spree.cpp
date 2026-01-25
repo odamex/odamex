@@ -681,6 +681,12 @@ void P_ProcessSpreeDamage(const player_t* source, const int totalDamage)
 
 	bool update = manager.recordPlayerDamage(source, totalDamage);
 
+#ifdef CLIENT_APP
+	// Don't announce sprees if the client has showing them disabled
+	if (!cl_showsprees)
+		return;
+#endif
+
 	if (displayplayer_id == source->id && update)
 	{
 		// Play the sound for the new spree
