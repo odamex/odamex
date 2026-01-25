@@ -1207,6 +1207,11 @@ namespace
             mo(i_mo),
             distance(P_AproxDistance2(i_mo, i_pl.mo))
         {}
+
+        friend bool operator<(const DistanceSortableActorType& mobj1, const DistanceSortableActorType& mobj2)
+        {
+            return mobj1.distance < mobj2.distance;
+        }
     };
 }
 
@@ -1216,12 +1221,14 @@ namespace
 void SV_UpdateHiddenMobj(void)
 {
     // Throttle and prioritization.
-    constexpr size_t MAX_UPDATES = 16;
+    constexpr int MAX_UPDATES = 16;
 
     // We are going to let this grow naturally.
     // The first few passes will be slower than normal due to reallocations,
     // but it will top out at some point.
     static std::vector<DistanceSortableActorType> s_sortedMobjs;
+    const int                                     previousSortedMobjCount = static_cast<int>(s_sortedMobjs.size());
+    int                                           deltaMobjs;
 
 	// denis - todo - throttle this
 	AActor *mo;
@@ -1247,31 +1254,33 @@ void SV_UpdateHiddenMobj(void)
 				break;
 		}
 
-        if (updated > MAX_UPDATES)
-        {
-            continue;
-        }
-
         static_assert(std::is_trivially_destructible_v<DistanceSortableActorType>);
-        s_sortedMobjs.clear();  // Expect constant-time because the contained type is trivial.
+        s_sortedMobjs.clear();  // Expect constant-time because the contained type is trivially destructible.
 
         while ((mo = iterator.Next()))
         {
             s_sortedMobjs.emplace_back(mo, pl);
         }
 
+        // We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
+        const int temporaryGrowthBonus = std::min(std::max(0,
+                                                           static_cast<int>(s_sortedMobjs.size()) - previousSortedMobjCount),
+                                                  MAX_UPDATES);
+        const int maxForThisTic = MAX_UPDATES + temporaryGrowthBonus;
+
+        if (updated > maxForThisTic)
+        {
+            continue;
+        }
+
         std::sort(s_sortedMobjs.begin(),
-                  s_sortedMobjs.end(),
-                  [](const auto& mobj1, const auto& mobj2)
-                  {
-                      return mobj1.distance < mobj2.distance;
-                  });
+                  s_sortedMobjs.end());
 
         for (auto& sortedMobj : s_sortedMobjs)
         {
 			updated += SV_AwarenessUpdate(pl, sortedMobj.mo);
 
-			if (updated > MAX_UPDATES)
+			if (updated > maxForThisTic)
 				break;
 		}
 	}
