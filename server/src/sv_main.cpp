@@ -1196,11 +1196,33 @@ bool SV_IsPlayerAllowedToSee(const player_t &p, const AActor *mo)
 
 #define HARDWARE_CAPABILITY 1000
 
+namespace
+{
+    struct DistanceSortableActorType
+    {
+        AActor* mo;
+        fixed_t distance;
+
+        DistanceSortableActorType(AActor* i_mo, const player_t& i_pl):
+            mo(i_mo),
+            distance(P_AproxDistance2(i_mo, i_pl.mo))
+        {}
+    };
+}
+
 //
 // SV_UpdateHiddenMobj
 //
 void SV_UpdateHiddenMobj(void)
 {
+    // Throttle and prioritization.
+    constexpr size_t MAX_UPDATES = 16;
+
+    // We are going to let this grow naturally.
+    // The first few passes will be slower than normal due to reallocations,
+    // but it will top out at some point.
+    static std::vector<DistanceSortableActorType> s_sortedMobjs;
+
 	// denis - todo - throttle this
 	AActor *mo;
 	TThinkerIterator<AActor> iterator;
@@ -1221,15 +1243,35 @@ void SV_UpdateHiddenMobj(void)
 			if (mo && !mo->WasDestroyed())
 				updated += SV_AwarenessUpdate(pl, mo);
 
-			if (updated > 16)
+			if (updated > MAX_UPDATES)
 				break;
 		}
 
-		while ((mo = iterator.Next()))
-		{
-			updated += SV_AwarenessUpdate(pl, mo);
+        if (updated > MAX_UPDATES)
+        {
+            continue;
+        }
 
-			if (updated > 16)
+        static_assert(std::is_trivially_destructible_v<DistanceSortableActorType>);
+        s_sortedMobjs.clear();  // Expect constant-time because the contained type is trivial.
+
+        while ((mo = iterator.Next()))
+        {
+            s_sortedMobjs.emplace_back(mo, pl);
+        }
+
+        std::sort(s_sortedMobjs.begin(),
+                  s_sortedMobjs.end(),
+                  [](const auto& mobj1, const auto& mobj2)
+                  {
+                      return mobj1.distance < mobj2.distance;
+                  });
+
+        for (auto& sortedMobj : s_sortedMobjs)
+        {
+			updated += SV_AwarenessUpdate(pl, sortedMobj.mo);
+
+			if (updated > MAX_UPDATES)
 				break;
 		}
 	}
