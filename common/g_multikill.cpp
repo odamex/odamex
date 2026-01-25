@@ -155,6 +155,15 @@ void MultiKillManager::ticPlayerMultiKill(const int playerid)
 
 	MultiKillTics_s& status = mutliKillPlayerDict[playerid];
 
+	if (status.lastKillTime > ::gametic)
+	{
+		// We've rewinded in a demo and this multi kill
+		// doesn't exist yet. Remove it.
+		eraseMultiKills(playerid);
+		return;
+	
+	}
+
 	if (status.ticsRemaining)
 	{
 		status.ticsRemaining--;
