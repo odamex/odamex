@@ -40,13 +40,19 @@ EXTERN_CVAR (log_packetdebug)
 EXTERN_CVAR (sv_latency)
 #endif
 
-buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
-buf_t sendd(MAX_UDP_PACKET);
+namespace
+{
+    const size_t PACKET_FLAG_INDEX = sizeof(uint32_t);
+    const size_t PACKET_MESSAGE_INDEX = PACKET_FLAG_INDEX + 1;
+    const size_t PACKET_HEADER_SIZE = PACKET_MESSAGE_INDEX;
+    const size_t PACKET_OLD_MASK = 0xFF;
 
-const static size_t PACKET_FLAG_INDEX = sizeof(uint32_t);
-const static size_t PACKET_MESSAGE_INDEX = PACKET_FLAG_INDEX + 1;
-const static size_t PACKET_HEADER_SIZE = PACKET_MESSAGE_INDEX;
-const static size_t PACKET_OLD_MASK = 0xFF;
+    const int DEFAULT_RETRANSMISSIONS_PER_TIC = 5;
+
+    buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
+    buf_t sendd(MAX_UDP_PACKET);
+}
+
 
 //
 // CompressPacket
@@ -281,7 +287,8 @@ void SV_HandleReliableRetransmissions()
             {
                 //DPrintFmt("player {} ingame {} gametic {} orig {} seq {} SEND\n", int(player.id), player.GameTime, gametic, sendQueueEntry->originatingTic, sendQueueEntry->sequence);
                 SendOldPacket(player.client, *sendQueueEntry);
-                if (++retransmissionsSent > 10)
+
+                if (++retransmissionsSent > DEFAULT_RETRANSMISSIONS_PER_TIC)
                 {
                     break;
                 }
