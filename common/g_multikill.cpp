@@ -187,6 +187,10 @@ void MultiKillManager::clearMultiTics()
 // Static functions start here.
 // ==========================================================
 
+#ifdef CLIENT_APP
+EXTERN_CVAR(cl_showmultikills)
+#endif
+
 void P_ProcessMultiKills(const AActor* source, const player_t* target)
 {
 	MultiKillManager& manager = MultiKillManager::getInstance();
@@ -204,6 +208,12 @@ void P_ProcessMultiKills(const AActor* source, const player_t* target)
 	// Now get the player's new multi kill total
 	// To see what sound we should play, if any.
 	const MultiKillTics_s& status = manager.getMultiKills(source->player->id);
+
+	#ifdef CLIENT_APP
+	// Don't announce multi kills if the client has showing them disabled
+	if (!cl_showmultikills)
+		return;
+	#endif
 
 	if (displayplayer_id == source->player->id && status.multiKills > 1)
 	{
