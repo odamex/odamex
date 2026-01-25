@@ -195,37 +195,40 @@ bool SV_SendPacket(player_t &pl)
 	// add the unreliable part if space is available and rate value
 	// allows it
 	if (gametic % 35)
-	    bps = (int)((double)( (cl->unreliable_bps + cl->reliable_bps) * TICRATE)/(double)(gametic%35));
+	{
+		bps = (int)((double)( (cl->unreliable_bps + cl->reliable_bps) * TICRATE)/(double)(gametic%35));
+	}
 
     if (bps < cl->rate*1000)
-
-	  if (cl->netbuf.cursize && (sendd.maxsize() - sendd.cursize > cl->netbuf.cursize) )
-	  {
-         SZ_Write (&sendd, cl->netbuf.data.get(), cl->netbuf.cursize);
-	     cl->unreliable_bps += cl->netbuf.cursize;
-	  }
+    {
+		if (cl->netbuf.cursize && (sendd.maxsize() - sendd.cursize > cl->netbuf.cursize) )
+		{
+			SZ_Write (&sendd, cl->netbuf.data.get(), cl->netbuf.cursize);
+			cl->unreliable_bps += cl->netbuf.cursize;
+		}
+	}
 
 	SZ_Clear(&cl->netbuf);
 	SZ_Clear(&cl->reliablebuf);
 
-	// compress the packet, but not the sequence id
 	if (sendd.size() > PACKET_HEADER_SIZE)
 	{
+		// compress the packet, but not the sequence id
 		CompressPacket(sendd, PACKET_HEADER_SIZE, cl);
-	}
 
-	if (log_packetdebug)
-	{
-		PrintFmt(PRINT_HIGH, "ply {:03}, pkt {:06}, size {:04}, tic {:07}, time {:011}\n",
-			   pl.id, cl->sequence - 1, sendd.cursize, gametic, I_MSTime());
-	}
+		if (log_packetdebug)
+		{
+			PrintFmt(PRINT_HIGH, "ply {:03}, pkt {:06}, size {:04}, tic {:07}, time {:011}\n",
+			         pl.id, cl->sequence - 1, sendd.cursize, gametic, I_MSTime());
+		}
 
 #ifdef SIMULATE_LATENCY
-	SV_SendPacketDelayed(sendd, pl);
+		SV_SendPacketDelayed(sendd, pl);
 #else
 
-	NET_SendPacket(sendd, cl->address);
+		NET_SendPacket(sendd, cl->address);
 #endif
+	}
 	return true;
 }
 
