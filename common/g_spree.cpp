@@ -439,19 +439,20 @@ const SpreeRecord_t& SpreeManager::getSpreeRecord(const int playerId)
 
 void SpreeManager::expireOldSprees()
 {
-	if (::gametic - spreeBreaker.spreeEndedTic > 4 * TICRATE ||
-	    spreeBreaker.spreeEndedTic > ::gametic)
-	{
-		spreeBreaker = {"", -1, TEAM_NONE, "",    -1, TEAM_NONE,
-		                "", "", CR_GOLD,   false, 0,  0};
-	}
+	//if (::gametic - spreeBreaker.spreeEndedTic > 4 * TICRATE ||
+	//    spreeBreaker.spreeEndedTic > ::gametic)
+	//{
+	//	spreeBreaker = {"", -1, TEAM_NONE, "",    -1, TEAM_NONE,
+	//	                "", "", CR_GOLD,   false, 0,  0};
+	//}
 
 	for (auto& it : spreeRecord)
 	{
 		SpreeRecord_t& record = it.second;
 
-		if (::gametic - record.spreeStartTic > 4 * TICRATE ||
-		    record.spreeStartTic > ::gametic)
+		// Spree happened in the future, indicating we're in a rewinded demo
+		// Remove it
+		if (record.spreeStartTic > ::gametic)
 		{
 			spreeRecord.erase(it.first);
 		}
@@ -691,5 +692,5 @@ void P_ProcessSpreeDamage(const player_t* source, const int totalDamage)
 
 void P_TicSprees()
 {
-	// SpreeManager::getInstance().expireOldSprees();
+	SpreeManager::getInstance().expireOldSprees();
 }
