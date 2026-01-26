@@ -23,8 +23,6 @@
 
 #pragma once
 
-#include <array>
-
 // Basics.
 #include "tables.h"
 #include "m_fixed.h"
@@ -108,6 +106,53 @@
 //
 // Any questions?
 //
+
+//
+// [SL] 2012-04-30 - A bit field to store a bool value for every player.
+//
+class PlayerBitField
+{
+public:
+	PlayerBitField() { clear(); }
+
+	void clear()
+	{
+		memset(bitfield, 0, sizeof(bitfield));
+	}
+
+	void set(byte id)
+	{
+		int bytenum = id >> 3;
+		int bitnum = id & bytemask;
+
+		bitfield[bytenum] |= (1 << bitnum);
+	}
+
+	void unset(byte id)
+	{
+		int bytenum = id >> 3;
+		int bitnum = id & bytemask;
+
+		bitfield[bytenum] &= ~(1 << bitnum);
+	}
+
+	[[nodiscard]] bool get(byte id) const
+	{
+		int bytenum = id >> 3;
+		int bitnum = id & bytemask;
+
+		return ((bitfield[bytenum] & (1 << bitnum)) != 0);
+	}
+
+private:
+	static constexpr int bytesize = 8 * sizeof(byte);
+	static constexpr int bytemask = bytesize - 1;
+
+	// Hacky way of getting ceil() at compile-time
+	static constexpr size_t fieldsize = (MAXPLAYERS + bytemask) / bytesize;
+
+	byte	bitfield[fieldsize];
+};
 
 //
 // Misc. mobj flags
@@ -498,7 +543,8 @@ public:
 	AActor			*inext, *iprev;	// Links to other mobjs in same bucket
 
 	// denis - playerids of players to whom this object has been sent
-	std::array<bool, MAXPLAYERS> players_aware;
+	// [SL] changed to use a bitfield instead of a vector for O(1) lookups
+	PlayerBitField	players_aware;
 
 	AActorPtr		goal;			// Monster's goal if not chasing anything
 	translationref_t translation;	// Translation table (or NULL)
