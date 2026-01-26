@@ -238,8 +238,6 @@ bool IndependentThinker(DThinker *thinker)
 
 void DThinker::RunThinkers ()
 {
-	DThinker *currentthinker;
-
 	BEGIN_STAT (ThinkCycles);
 	for (auto currentthinker : s_thinkers)
 	{
