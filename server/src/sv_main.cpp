@@ -2997,9 +2997,9 @@ void SV_WriteCommands(void)
 		// In testing a 22000 mobj firefight (No Time To Freeze map32) on a Ryzen 9800x3d,
 		// Windows 11, MSVC 2019:
 		//
-		//      - std::sort:                    800-900 usec.
-		//      - Boost spreadsort:             600 usec.
-		//      - 3-partition std::nth_element: 300 usec.
+		//      - std::sort:                    600-700 usec.
+		//      - Boost spreadsort:             300 usec.
+		//      - 3-partition std::nth_element:  70-100 usec.
 		//
 		// We go with dividing up the mobjs into 3 partitions with two calls to std::nth_element
 		// because for the purposes of prioritizing mobj messages to clients, we don't need fine
@@ -3011,6 +3011,9 @@ void SV_WriteCommands(void)
 		//      2. The next closest 25%     - no problem if these somewhat-distant guys stutter.
 		//      3. Everything else          - we don't care if we don't see them.
 		//
+		// With the 3-partition approach, the long pole in the tent is the time spent copying
+		// data into the static vector, which takes about 2x the time of the 2 calls to nth_element.
+        //
 		// The end result works well for the heavy-load test case, and only rarely do we see
 		// nearby enemies behave like there's any packet loss.
 
