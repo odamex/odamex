@@ -582,7 +582,7 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 	AActor* mo;
 	TThinkerIterator<AActor> iterator;
 	while ((mo = iterator.Next()))
-		mo->players_aware[it->id] = false;
+		mo->players_aware.unset(it->id);
 
 	// remove this player's actor object
 	if (it->mo)
@@ -1130,13 +1130,13 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 	else if(player.mo && mo->player && true)
 		ok = true;
 
-	bool previously_ok = mo->players_aware[player.id];
+	bool previously_ok = mo->players_aware.get(player.id);
 
 	client_t *cl = &player.client;
 
 	if(!ok && previously_ok)
 	{
-		mo->players_aware[player.id] = false;
+		mo->players_aware.unset(player.id);
 
 		MSG_WriteSVC(&cl->reliablebuf, SVC_RemoveMobj(*mo));
 
@@ -1144,7 +1144,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 	}
 	else if(!previously_ok && ok)
 	{
-		mo->players_aware[player.id] = true;
+		mo->players_aware.set(player.id);
 
 		if(!mo->player || mo->player->playerstate != PST_LIVE)
 		{
@@ -1194,7 +1194,7 @@ bool SV_IsPlayerAllowedToSee(const player_t &p, const AActor *mo)
 	if (mo->oflags & MFO_SPECTATOR)
 		return false; // GhostlyDeath -- always false, as usual!
 	else
-		return mo->players_aware[p.id];
+		return mo->players_aware.get(p.id);
 }
 
 //
@@ -2938,20 +2938,110 @@ void SV_SpyPlayer(player_t &viewer)
 
 namespace
 {
-	struct DistanceSortableActorType
+	class MobjSorter
 	{
-		AActor* mo;
-		fixed_t distance;
+		public:
 
-		DistanceSortableActorType(AActor* i_mo, const player_t& i_pl):
-			mo(i_mo),
-			distance(P_AproxDistance2(i_mo, i_pl.mo))
-		{}
+			MobjSorter() :
+				m_previousSortedMobjCount(static_cast<int>(s_sortedMobjs.size()))
+			{
+				[[maybe_unused]] const int freshTime = I_GetTime();
 
-		friend bool operator<(const DistanceSortableActorType& mobj1, const DistanceSortableActorType& mobj2)
-		{
-			return mobj1.distance < mobj2.distance;
-		}
+				static_assert(std::is_trivially_destructible_v<decltype(s_unsortedMobjs)::value_type>);
+				s_unsortedMobjs.clear();  // Expect constant-time because the contained type is trivially destructible.
+
+				// The fact that the underlying thinker container is a vector keeps the following
+				// fairly well performant.
+				TThinkerIterator<AActor> iterator;
+				AActor* mo;
+
+				while((mo = iterator.Next()))
+				{
+					s_unsortedMobjs.emplace_back(mo);
+				}
+				[[maybe_unused]] const int copyTime = I_GetTime();
+			}
+
+			int MobjCount() const
+			{
+				return static_cast<int>(s_sortedMobjs.size());
+			}
+			int PreviousMobjCount() const
+			{
+				return m_previousSortedMobjCount;
+			}
+
+			void Sort(player_t& pl)
+			{
+				[[maybe_unused]] const dtime_t startTime = I_GetTime();
+				s_sortedMobjs = s_unsortedMobjs;
+
+				[[maybe_unused]] const dtime_t buildTime = I_GetTime();
+				// In testing a 22000 mobj firefight (No Time To Freeze map32) on a Ryzen 9800x3d,
+				// Windows 11, MSVC 2019, looking at JUST the core sort operation itself:
+				//
+				//      - std::sort:                    600-700 usec.
+				//      - Boost spreadsort:             ~300 usec.
+				//      - 3-partition std::nth_element:  40-70 usec.
+				//
+				// We go with dividing up the mobjs into 3 partitions with two calls to std::nth_element
+				// because for the purposes of prioritizing mobj messages to clients, we don't need fine
+				// precision between mobjs by distance.  Three coarse buckets based on approximate distance
+				// is enough.  When looking at a massive fray, even with sv_maxrate at 200, this gives us
+				// three categories of entities based on range:
+				//
+				//      1. The closest 25% of mobjs - we really want to see frequent updates to these.
+				//      2. The next closest 25%     - no problem if these somewhat-distant guys stutter.
+				//      3. Everything else          - we don't care if we don't see them.
+				//
+				//
+				// The end result works well for the heavy-load test case, and only rarely do we see
+				// nearby enemies behave like there's any packet loss.
+
+				// The following block is used for sorting on approximate, relative distance.
+				for (auto& moPtr : s_sortedMobjs)
+				{
+					// We go with the below block because it's just a bit faster in MSVC (~170 usec) than
+					// P_AproxDistance2 (~200 usec) when looking at 22k mobjs, and we don't need "real"
+					// distance - just comparable values that correlate with distance.
+
+					if (pl.mo)
+					{
+						const int dx = (pl.mo->x >> 16) - (moPtr->x >> 16);
+						const int dy = (pl.mo->y >> 16) - (moPtr->y >> 16);
+						moPtr->transientInt = dx*dx + dy*dy;
+					}
+					else
+					{
+						moPtr->transientInt = 0;
+					}
+				}
+				auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1->transientInt < mo2->transientInt; };
+
+				std::nth_element(s_sortedMobjs.begin(),
+				                 s_sortedMobjs.begin() + s_sortedMobjs.size()/2,
+				                 s_sortedMobjs.end(),
+				                 distanceCompare);
+				std::nth_element(s_sortedMobjs.begin(),
+				                 s_sortedMobjs.begin() + s_sortedMobjs.size()/4,
+				                 s_sortedMobjs.begin() + s_sortedMobjs.size()/2,
+				                 distanceCompare);
+				[[maybe_unused]] const dtime_t endTime = I_GetTime();
+
+				//DPrintFmt("{} initial: {}, Player {} sorting all ({}): build {} sort {} total {} nsec\n",sizeof(AActor), copyTime - freshTime, int(it->id), s_sortedMobjs.size(), buildTime - startTime, endTime - buildTime, endTime - startTime);
+			}
+
+			auto begin() { return s_sortedMobjs.begin(); }
+			auto end()   { return s_sortedMobjs.end();   }
+
+		protected:
+			// We are going to let this grow naturally.
+			// The first few passes will be slower than normal due to reallocations,
+			// but it will top out at some point.
+			inline static std::vector<AActor*> s_unsortedMobjs{};
+			inline static std::vector<AActor*> s_sortedMobjs{};
+
+			const int m_previousSortedMobjCount;
 	};
 }
 
@@ -2965,108 +3055,11 @@ void SV_WriteCommands(void)
 	Unlag::getInstance().recordPlayerPositions();
 	Unlag::getInstance().recordSectorPositions();
 
-	TThinkerIterator<AActor> iterator;
-
-	// We are going to let this grow naturally.
-	// The first few passes will be slower than normal due to reallocations,
-	// but it will top out at some point.
-	static std::vector<AActor*> s_unsortedMobjs;
-	static std::vector<AActor*> s_sortedMobjs;
-	const int                                     previousSortedMobjCount = static_cast<int>(s_sortedMobjs.size());
-
-    const int freshTime = I_GetTime();
-		static_assert(std::is_trivially_destructible_v<decltype(s_unsortedMobjs)::value_type>);
-		s_unsortedMobjs.clear();  // Expect constant-time because the contained type is trivially destructible.
-
-    // Just going from linked list to vector takes over 300 usec on average!
-		AActor* mo;
-		while ((mo = iterator.Next()))
-		{
-			s_unsortedMobjs.emplace_back(mo);
-		}
-    const int copyTime = I_GetTime();
-
-    //DPrintFmt("initial: {} ", copyTime - freshTime);    // Intentionally no newline.
+	MobjSorter sortedMobjs;
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		client_t *cl = &(it->client);
-
-		const dtime_t startTime = I_GetTime();
-
-        s_sortedMobjs = s_unsortedMobjs;
-		const dtime_t buildTime = I_GetTime();
-
-		// We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
-		const int temporaryGrowthBonus = std::min(std::max(0,
-		                                                   static_cast<int>(s_sortedMobjs.size()) - previousSortedMobjCount),
-		                                          MAX_HIDDEN_MOBJ_UPDATES);
-		const int maxForThisTic = MAX_HIDDEN_MOBJ_UPDATES + temporaryGrowthBonus;
-
-		// In testing a 22000 mobj firefight (No Time To Freeze map32) on a Ryzen 9800x3d,
-		// Windows 11, MSVC 2019:
-		//
-		//      - std::sort:                    600-700 usec.
-		//      - Boost spreadsort:             300 usec.
-		//      - 3-partition std::nth_element:  70-100 usec.
-		//
-		// We go with dividing up the mobjs into 3 partitions with two calls to std::nth_element
-		// because for the purposes of prioritizing mobj messages to clients, we don't need fine
-		// precision between mobjs by distance.  Three coarse buckets based on approximate distance
-		// is enough.  When looking at a massive fray, even with sv_maxrate at 200, this gives us
-		// three categories of entities based on range:
-		//
-		//      1. The closest 25% of mobjs - we really want to see frequent updates to these.
-		//      2. The next closest 25%     - no problem if these somewhat-distant guys stutter.
-		//      3. Everything else          - we don't care if we don't see them.
-		//
-		// With the 3-partition approach, the long pole in the tent is the time spent copying
-		// data into the static vector, which takes about 2x the time of the 2 calls to nth_element.
-		//
-		// The end result works well for the heavy-load test case, and only rarely do we see
-		// nearby enemies behave like there's any packet loss.
-
-        for (auto& moPtr : s_sortedMobjs)
-        {
-            //moPtr->transientFixed = P_AproxDistance2(it->mo, moPtr);  ~200 usec
-            //
-            //moPtr->transientFixed = 0;                                ~40 usec
-            //
-            // ---------------------------------------------------      ~300 usec
-            //if (it->mo)
-            //{
-            //    const int64_t dx = int64_t(it->mo->x) - int64_t(moPtr->x);
-            //    const int64_t dy = int64_t(it->mo->y) - int64_t(moPtr->y);
-            //    moPtr->transientFixed = static_cast<fixed_t>(dx*dx + dy*dy);
-            //}
-            //else
-            //{
-            //    moPtr->transientFixed = 0;
-            //}
-            // ---------------------------------------------------      ~200 usec
-            if (it->mo)
-            {
-                const int dx = static_cast<int>(it->mo->x >> 16) - static_cast<int>(moPtr->x >> 16);
-                const int dy = static_cast<int>(it->mo->y >> 16) - static_cast<int>(moPtr->y >> 16);
-                moPtr->transientFixed = dx*dx + dy*dy;
-            }
-            else
-            {
-                moPtr->transientFixed = 0;
-            }
-        }
-        auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1->transientFixed < mo2->transientFixed; };
-
-		std::nth_element(s_sortedMobjs.begin(),
-		                 s_sortedMobjs.begin() + s_sortedMobjs.size()/2,
-		                 s_sortedMobjs.end(),
-                         distanceCompare);
-		std::nth_element(s_sortedMobjs.begin(),
-		                 s_sortedMobjs.begin() + s_sortedMobjs.size()/4,
-		                 s_sortedMobjs.begin() + s_sortedMobjs.size()/2,
-                         distanceCompare);
-		const dtime_t endTime = I_GetTime();
-		//DPrintFmt("Player {} sorting all ({}): build {} sort {} total {} nsec\n", int(it->id), s_sortedMobjs.size(), buildTime - startTime, endTime - buildTime, endTime - startTime);
 
 		// [SL] 2011-05-11 - Send the client the server's gametic
 		// this gametic is returned to the server with the client's
@@ -3100,17 +3093,22 @@ void SV_WriteCommands(void)
 
 		SV_UpdateConsolePlayer(*it);
 
+		sortedMobjs.Sort(*it);
+
+		// We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
+		const int temporaryGrowthBonus = std::min(std::max(0,
+		                                                   sortedMobjs.MobjCount() - sortedMobjs.PreviousMobjCount()),
+		                                          MAX_HIDDEN_MOBJ_UPDATES);
+		const int maxForThisTic = MAX_HIDDEN_MOBJ_UPDATES + temporaryGrowthBonus;
+
 		int hiddenUpdateCount = 0;
 
-		for (auto& sortedMobj : s_sortedMobjs)
+		for (auto& sortedMobj : sortedMobjs)
 		{
-			//const dtime_t startTime = I_GetTime();
 			SV_UpdateMissiles(*it, sortedMobj);
 
-			//const dtime_t missileTime = I_GetTime();
 			SV_UpdateMonsters(*it, sortedMobj);
 
-			//const dtime_t monsterTime = I_GetTime();
 			if (hiddenUpdateCount <= maxForThisTic)
 			{
 				hiddenUpdateCount = SV_UpdateHiddenMobj(*it, sortedMobj, hiddenUpdateCount);
@@ -3124,7 +3122,6 @@ void SV_WriteCommands(void)
 		SV_UpdatePing(cl);          // send the ping value of all cients to this client
 
 	}
-
 
 	SV_UpdateDeadPlayers(); // Update dying players.
 }
@@ -4532,7 +4529,7 @@ void SV_SendDestroyActor(const AActor *mo)
 	{
 		for (auto& player : players)
 		{
-			if (mo->players_aware[player.id])
+			if (mo->players_aware.get(player.id))
 			{
 				client_t *cl = &(player.client);
 
