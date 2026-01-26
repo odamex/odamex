@@ -59,6 +59,8 @@
 #include "m_misc.h"
 #include "cl_demo.h"
 
+#include "g_announcer.h"
+
 // Data.
 #include "m_menu.h"
 
@@ -209,6 +211,18 @@ EXTERN_CVAR(cl_autorecord_horde)
 // Spree options
 EXTERN_CVAR(cl_showsprees)
 EXTERN_CVAR(cl_showmultikills)
+
+// Announcer options
+EXTERN_CVAR(cl_announcer)
+EXTERN_CVAR(snd_announcectf)
+EXTERN_CVAR(snd_announcehorde)
+EXTERN_CVAR(snd_announcesurvival)
+EXTERN_CVAR(snd_announcecountdown)
+EXTERN_CVAR(snd_announcetimewarnings)
+EXTERN_CVAR(snd_announcefirstblood)
+EXTERN_CVAR(snd_announcefragtracking)
+EXTERN_CVAR(snd_announceleadtracking)
+EXTERN_CVAR(snd_announceresulttracking)
 
 // Weapon Preferences
 EXTERN_CVAR (cl_switchweapon)
@@ -591,6 +605,7 @@ static value_t ChatSndType[] = {
 
 static void AdvMidiOptions (void);
 static void LibAdlMidiOptions (void);
+static void AnnouncerOptions(void);
 
 static constexpr float num_mussys = static_cast<float>(ARRAY_LENGTH(MusSys));
 
@@ -642,14 +657,36 @@ static menuitem_t SoundItems[] = {
 	{ more      ,   "OPL FM Synth Options"     , {NULL},                {0.0},        {0.0}, {0.0},      {(value_t *)LibAdlMidiOptions}},
 	{ more      ,   "Advanced MIDI Options"    , {NULL},                {0.0},        {0.0}, {0.0},      {(value_t *)AdvMidiOptions}},
 	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
+	{ more      ,   "Announcer Options"        , {NULL},                {0.0},        {0.0}, {0.0},      {(value_t *)AnnouncerOptions} },
+	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
 	{ yellowtext,   "Sound Options"            , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
 	{ discrete  ,   "Game SFX"                 , {&snd_gamesfx},        {2.0},        {0.0}, {0.0},      {OnOff} },
 	{ discrete  ,   "Announcer Type"           , {&snd_voxtype},        {3.0},        {0.0}, {0.0},      {VoxType} },
 	{ discrete  ,   "Player Connect Alert"     , {&cl_connectalert},    {2.0},        {0.0}, {0.0},      {OnOff} },
 	{ discrete  ,   "Player Disconnect Alert"  , {&cl_disconnectalert}, {2.0},        {0.0}, {0.0},      {OnOff} },
 	{ discrete  ,   "Chat sounds"              , {&cl_chatsounds},      {3.0},        {0.0}, {0.0},      {ChatSndType}},
-     {discrete	,   "Voting Sounds"            , {&snd_votesfx},		{2.0},        {0.0}, {0.0},	     {OnOff}},
+	{ discrete	,   "Voting Sounds"            , {&snd_votesfx},        {2.0},        {0.0}, {0.0},	     {OnOff}},
+	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
  };
+
+static menuitem_t AnnouncerItems[] = {
+	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
+	{ yellowtext,   "Choose Announcer"         , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
+	{ announcer ,   " "                        , {&cl_announcer},       {0.0},        {0.0}, {0.0},      {NULL} },
+	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
+	{ orangetext,   "Announcers not currently loaded", {NULL},          {0.0},        {0.0}, {0.0},      {NULL}},
+	{ orangetext,   "will default to the Odamex announcer.", {NULL},    {0.0},        {0.0}, {0.0},      {NULL}},
+	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
+	{ discrete  ,   "Announce CTF Events"      , {&snd_announcectf},    {2.0},        {0.0}, {0.0},      {OnOff} },
+	{ discrete  ,   "Announce Horde Events"    , {&snd_announcehorde},  {2.0},        {0.0}, {0.0},      {OnOff} },
+	{ discrete  ,   "Announce Survival Events" , {&snd_announcesurvival},  {2.0},     {0.0}, {0.0},      {OnOff} },
+	{ discrete  ,   "Announce Pre-Round Countdown" , {&snd_announcecountdown},  {2.0},{0.0}, {0.0},      {OnOff} },
+	{ discrete  ,   "Announce Time Left Warnings"   , {&snd_announcetimewarnings},  {2.0},        {0.0}, {0.0},      {OnOff} },
+	{ discrete  ,   "Announce First Blood"     , {&snd_announcefirstblood},  {2.0},   {0.0}, {0.0},      {OnOff} },
+	{ discrete  ,   "Announce Frag Tracking"   , {&snd_announcefragtracking},  {2.0}, {0.0}, {0.0},      {OnOff} },
+	{ discrete  ,   "Announce Lead Tracking"   , {&snd_announceleadtracking},  {2.0}, {0.0}, {0.0},      {OnOff} },
+	{ discrete  ,   "Announce Match Result Tracking"   , {&snd_announceresulttracking},  {2.0},        {0.0}, {0.0},      {OnOff} },
+};
 
 menu_t AdvMidiMenu = {
 	"M_SOUND",
@@ -679,6 +716,17 @@ menu_t SoundMenu = {
 	ARRAY_LENGTH(SoundItems),
 	177,
 	SoundItems,
+	0,
+	0,
+	NULL
+};
+
+menu_t AnnouncerMenu = {
+	"M_SOUND",
+	2,
+	ARRAY_LENGTH(AnnouncerItems),
+	0,
+	AnnouncerItems,
 	0,
 	0,
 	NULL
@@ -1663,6 +1711,16 @@ int M_FindCurVal (float cur, value_t *values, int numvals)
 	return v;
 }
 
+static std::string truncate(std::string str, size_t width, bool show_ellipsis = true)
+{
+	if (str.length() > width)
+		if (show_ellipsis)
+			return str.substr(0, width) + "...";
+		else
+			return str.substr(0, width);
+	return str;
+}
+
 void M_OptDrawer (void)
 {
 	int color;
@@ -1882,6 +1940,24 @@ void M_OptDrawer (void)
 				}
 
 				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, joyname.c_str());
+			}
+			break;
+
+			case announcer: {
+				std::string announcername = cl_announcer.str();
+				bool announcerisavailable = AnnouncerManager::getInstance().isAnnouncerLoaded(announcername);
+
+				int announcerwidth = V_StringWidth(announcername.c_str());
+
+				std::string truncated = truncate(announcername, 30);
+
+				screen->DrawTextCleanMove(CR_GREY, CurrentMenu->indent - announcerwidth,
+				                          y, truncated.c_str());
+
+				if (!announcerisavailable)
+				{
+					screen->DrawTextCleanMove(CR_RED, CurrentMenu->indent + 14, y, "Not Loaded");
+				}
 			}
 			break;
 
@@ -2262,6 +2338,14 @@ void M_OptResponder (event_t *ev)
 		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 		break;
 
+		case announcer: {
+			std::string newannouncername = AnnouncerManager::getInstance().getLeftAnnouncer(item->a.cvar->str());
+
+			item->a.cvar->Set(newannouncername.c_str());
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+
 		default:
 			break;
 		}
@@ -2388,6 +2472,14 @@ void M_OptResponder (event_t *ev)
 			else if ((size_t)item->a.cvar->value() < (numjoy - 1))
 				item->a.cvar->Set(item->a.cvar->value() + 1);
 
+		}
+		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		break;
+
+		case announcer: {
+			std::string newannouncername = AnnouncerManager::getInstance().getRightAnnouncer(item->a.cvar->str());
+
+			item->a.cvar->Set(newannouncername.c_str());
 		}
 		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 		break;
@@ -2620,6 +2712,11 @@ void LibAdlMidiOptions (void)
 void SoundOptions (void) // [Ralphis] for sound menu
 {
 	M_SwitchMenu (&SoundMenu);
+}
+
+void AnnouncerOptions(void)
+{
+	M_SwitchMenu(&AnnouncerMenu);
 }
 
 void CompatOptions (void) // [Ralphis] for compatibility menu

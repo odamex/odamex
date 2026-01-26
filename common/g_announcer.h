@@ -314,6 +314,28 @@ public:
 	void loadAnnouncerDefaults();
 
 	/// <summary>
+	/// Gets if there is a currently loaded announcer name available.
+	/// </summary>
+	/// <param name="announcer">Name of the announcer pack to check.</param>
+	/// <returns>True if the name matches a currently available announcer.</returns>
+	bool isAnnouncerLoaded(const std::string& announcer) const;
+
+	/// <summary>
+	/// Gets the name of the announcer to the left of the current one.
+	/// If the current cl_announcer is null or invalid, return the first announcer in the list.
+	/// </summary>
+	/// <returns>The name of the announcer to the left of this one.</returns>
+	std::string getLeftAnnouncer(const std::string& currentAnnouncer) const;
+
+	/// <summary>
+	/// Gets the name of the announcer to the right of the current one.
+	/// If the current cl_announcer is null or invalid, return the first announcer in the
+	/// list.
+	/// </summary>
+	/// <returns>The name of the announcer to the right of this one.</returns>
+	std::string getRightAnnouncer(const std::string& currentAnnouncer) const;
+
+	/// <summary>
 	/// Function to return whether the 3-frag warning has been announced already.
 	/// </summary>
 	bool hasFragWarning3BeenAnnounced() const { return fragWarning3Announced; }

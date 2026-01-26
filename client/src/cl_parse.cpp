@@ -2946,8 +2946,12 @@ static void CL_Spree(const odaproto::svc::Spree* msg)
 
 	if (cl_showsprees && displayplayer_id == playerId && update)
 	{
-		// Play the sound for the new multi kill
-		// S_Sound(CHAN_ANNOUNCER, '', 1, ATTN_NONE);
+		// Play the sound for the new spree
+		const SpreeRecord_t& record = SpreeManager::getInstance().getSpreeRecord(playerId);
+		const std::string sound = AnnouncerManager::getInstance().getTokenForEvent(
+		    "spree " + std::to_string(record.spreeLevel));
+		if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
+			S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 	}
 }
 

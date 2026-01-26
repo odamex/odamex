@@ -56,6 +56,72 @@ void AnnouncerManager::reset()
 	loadedAnnouncer = Announcer_s();
 }
 
+bool AnnouncerManager::isAnnouncerLoaded(const std::string& announcer) const
+{
+	return announcerDict.find(announcer) != announcerDict.end();
+}
+
+std::string AnnouncerManager::getLeftAnnouncer(const std::string& currentAnnouncer) const
+{
+	if (announcerDict.empty())
+	{
+		return "";
+	}
+	if (announcerDict.size() == 1)
+	{
+		return announcerDict.begin()->first;
+	}
+
+	auto it = announcerDict.find(currentAnnouncer);
+
+	if (it == announcerDict.end())
+	{
+		return announcerDict.begin()->first;
+	}
+	else if (it == announcerDict.begin())
+	{
+		// Wrap around to the end
+		it = announcerDict.end();
+		--it;
+		return it->first;
+	}
+	else
+	{
+		--it;
+		return it->first;
+	}
+}
+
+std::string AnnouncerManager::getRightAnnouncer(const std::string& currentAnnouncer) const
+{
+	if (announcerDict.empty())
+	{
+		return "";
+	}
+	if (announcerDict.size() == 1)
+	{
+		return announcerDict.begin()->first;
+	}
+	auto it = announcerDict.find(currentAnnouncer);
+	if (it == announcerDict.end())
+	{
+		return announcerDict.begin()->first;
+	}
+	else
+	{
+		++it;
+		if (it == announcerDict.end())
+		{
+			// Wrap around to the beginning
+			return announcerDict.begin()->first;
+		}
+		else
+		{
+			return it->first;
+		}
+	}
+}
+
 void AnnouncerManager::loadAnnouncerDefaults()
 {
 	Announcer_s defaultAnnouncer;
