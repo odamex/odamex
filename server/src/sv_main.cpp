@@ -2965,27 +2965,36 @@ void SV_WriteCommands(void)
 	Unlag::getInstance().recordPlayerPositions();
 	Unlag::getInstance().recordSectorPositions();
 
+	TThinkerIterator<AActor> iterator;
+
 	// We are going to let this grow naturally.
 	// The first few passes will be slower than normal due to reallocations,
 	// but it will top out at some point.
-	static std::vector<DistanceSortableActorType> s_sortedMobjs;
+	static std::vector<AActor*> s_unsortedMobjs;
+	static std::vector<AActor*> s_sortedMobjs;
 	const int                                     previousSortedMobjCount = static_cast<int>(s_sortedMobjs.size());
 
-	TThinkerIterator<AActor> iterator;
+    const int freshTime = I_GetTime();
+		static_assert(std::is_trivially_destructible_v<decltype(s_unsortedMobjs)::value_type>);
+		s_unsortedMobjs.clear();  // Expect constant-time because the contained type is trivially destructible.
+
+    // Just going from linked list to vector takes over 300 usec on average!
+		AActor* mo;
+		while ((mo = iterator.Next()))
+		{
+			s_unsortedMobjs.emplace_back(mo);
+		}
+    const int copyTime = I_GetTime();
+
+    //DPrintFmt("initial: {} ", copyTime - freshTime);    // Intentionally no newline.
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		client_t *cl = &(it->client);
 
 		const dtime_t startTime = I_GetTime();
-		static_assert(std::is_trivially_destructible_v<DistanceSortableActorType>);
-		s_sortedMobjs.clear();  // Expect constant-time because the contained type is trivially destructible.
 
-		AActor* mo;
-		while ((mo = iterator.Next()))
-		{
-			s_sortedMobjs.emplace_back(mo, *it);
-		}
+        s_sortedMobjs = s_unsortedMobjs;
 		const dtime_t buildTime = I_GetTime();
 
 		// We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
@@ -3013,16 +3022,49 @@ void SV_WriteCommands(void)
 		//
 		// With the 3-partition approach, the long pole in the tent is the time spent copying
 		// data into the static vector, which takes about 2x the time of the 2 calls to nth_element.
-        //
+		//
 		// The end result works well for the heavy-load test case, and only rarely do we see
 		// nearby enemies behave like there's any packet loss.
 
+        for (auto& moPtr : s_sortedMobjs)
+        {
+            //moPtr->transientFixed = P_AproxDistance2(it->mo, moPtr);  ~200 usec
+            //
+            //moPtr->transientFixed = 0;                                ~40 usec
+            //
+            // ---------------------------------------------------      ~300 usec
+            //if (it->mo)
+            //{
+            //    const int64_t dx = int64_t(it->mo->x) - int64_t(moPtr->x);
+            //    const int64_t dy = int64_t(it->mo->y) - int64_t(moPtr->y);
+            //    moPtr->transientFixed = static_cast<fixed_t>(dx*dx + dy*dy);
+            //}
+            //else
+            //{
+            //    moPtr->transientFixed = 0;
+            //}
+            // ---------------------------------------------------      ~200 usec
+            if (it->mo)
+            {
+                const int dx = static_cast<int>(it->mo->x >> 16) - static_cast<int>(moPtr->x >> 16);
+                const int dy = static_cast<int>(it->mo->y >> 16) - static_cast<int>(moPtr->y >> 16);
+                moPtr->transientFixed = dx*dx + dy*dy;
+            }
+            else
+            {
+                moPtr->transientFixed = 0;
+            }
+        }
+        auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1->transientFixed < mo2->transientFixed; };
+
 		std::nth_element(s_sortedMobjs.begin(),
 		                 s_sortedMobjs.begin() + s_sortedMobjs.size()/2,
-		                 s_sortedMobjs.end());
+		                 s_sortedMobjs.end(),
+                         distanceCompare);
 		std::nth_element(s_sortedMobjs.begin(),
 		                 s_sortedMobjs.begin() + s_sortedMobjs.size()/4,
-		                 s_sortedMobjs.begin() + s_sortedMobjs.size()/2);
+		                 s_sortedMobjs.begin() + s_sortedMobjs.size()/2,
+                         distanceCompare);
 		const dtime_t endTime = I_GetTime();
 		//DPrintFmt("Player {} sorting all ({}): build {} sort {} total {} nsec\n", int(it->id), s_sortedMobjs.size(), buildTime - startTime, endTime - buildTime, endTime - startTime);
 
@@ -3063,15 +3105,15 @@ void SV_WriteCommands(void)
 		for (auto& sortedMobj : s_sortedMobjs)
 		{
 			//const dtime_t startTime = I_GetTime();
-			SV_UpdateMissiles(*it, sortedMobj.mo);
+			SV_UpdateMissiles(*it, sortedMobj);
 
 			//const dtime_t missileTime = I_GetTime();
-			SV_UpdateMonsters(*it, sortedMobj.mo);
+			SV_UpdateMonsters(*it, sortedMobj);
 
 			//const dtime_t monsterTime = I_GetTime();
 			if (hiddenUpdateCount <= maxForThisTic)
 			{
-				hiddenUpdateCount = SV_UpdateHiddenMobj(*it, sortedMobj.mo, hiddenUpdateCount);
+				hiddenUpdateCount = SV_UpdateHiddenMobj(*it, sortedMobj, hiddenUpdateCount);
 			}
 		}
 

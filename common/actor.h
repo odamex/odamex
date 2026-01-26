@@ -512,7 +512,10 @@ public:
 	struct msecnode_s	*touching_sectorlist;				// phares 3/14/98
 
 	short           deadtic;        // tics after player's death
-	int             oldframe;
+	fixed_t         transientFixed; // transient variable for use by algorithms that should
+                                    // not expect it to contain any particular value or that
+                                    // any value it leaves in it will last for any length of
+                                    // time.  Perfect for things like doing immediate sorts.
 
 	unsigned char	rndindex;		// denis - because everything should have a random number generator, for prediction
 

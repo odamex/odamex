@@ -1169,6 +1169,7 @@ void STACK_ARGS D_ClearTaskSchedulers()
 //
 void D_RunTics(void (*sim_func)(), void(*display_func)())
 {
+    const dtime_t startTime = I_GetTime();
 	D_InitTaskSchedulers(sim_func, display_func);
 
 	simulation_scheduler->run();
@@ -1187,6 +1188,11 @@ void D_RunTics(void (*sim_func)(), void(*display_func)())
 
 	display_scheduler->run();
 
+    const dtime_t endTime = I_GetTime();
+
+#ifndef CLIENT_APP
+    DPrintFmt("frame time {} nsec\n", endTime - startTime);
+#endif
 	if (timingdemo)
 		return;
 

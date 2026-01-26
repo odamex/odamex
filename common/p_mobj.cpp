@@ -136,7 +136,7 @@ AActor::AActor()
       flags3(0), oflags(0), statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
-      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
+      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), transientFixed(0),
       rndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
       netid(0), tid(0), baseline(), baseline_set(false), bmapnode(this)
 {
@@ -163,7 +163,7 @@ AActor::AActor(const AActor& other)
       inext(other.inext), iprev(other.iprev), players_aware(other.players_aware), translation(other.translation),
       translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
       onground(other.onground), touching_sectorlist(other.touching_sectorlist),
-      deadtic(other.deadtic), oldframe(other.oldframe), rndindex(other.rndindex),
+      deadtic(other.deadtic), transientFixed(other.transientFixed), rndindex(other.rndindex),
       friend_playerid(other.friend_playerid),
       friend_teamid(other.friend_teamid), pursuecount(other.pursuecount),
       strafecount(other.strafecount),
@@ -233,7 +233,7 @@ AActor &AActor::operator= (const AActor &other)
     onground = other.onground;
     touching_sectorlist = other.touching_sectorlist;
     deadtic = other.deadtic;
-    oldframe = other.oldframe;
+    transientFixed = other.transientFixed;
     rndindex = other.rndindex;
     friend_playerid = other.friend_playerid;
     friend_teamid = other.friend_teamid;
@@ -266,7 +266,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
       statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
-      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
+      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), transientFixed(0),
       rndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
       netid(0), tid(0), baseline(), baseline_set(false), bmapnode(this)
 {
