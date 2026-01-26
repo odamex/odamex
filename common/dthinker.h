@@ -51,7 +51,6 @@ typedef actionf_t  think_t;
 
 class FThinkerIterator;
 
-// Doubly linked list of thinkers
 class DThinker : public DObject
 {
 	DECLARE_SERIAL (DThinker, DObject)
@@ -60,16 +59,12 @@ public:
 	DThinker ();
 	void Orphan();
 	void Destroy () override;
-    std::vector<DThinker*>::iterator DestroyFromContainer();
 	~DThinker () override;
 	virtual void RunThink () {}
 
 	void *operator new (size_t size);
 	void operator delete (void *block);
 
-	// Both the head and tail of the thinker list.
-	//static DThinker *FirstThinker;
-	//static DThinker *LastThinker;
 	static void RunThinkers ();
 	static void DestroyAllThinkers ();
 	static void DestroyMostThinkers ();
@@ -79,9 +74,13 @@ public:
 
 	size_t refCount;
 
-    static std::vector<DThinker*> s_thinkers;
 private:
-	//DThinker *m_Next, *m_Prev;
+	// Live thinkers are contained in a static vector.
+	// We do this for a performance bump in certain iteration cases, courtesy of improved cache friendliness.
+	static std::vector<DThinker*> s_thinkers;
+
+	std::vector<DThinker*>::iterator DestroyFromContainer();
+
 	bool destroyed;
 
 	friend class FThinkerIterator;
@@ -91,14 +90,15 @@ class FThinkerIterator
 {
 private:
 	TypeInfo *m_ParentType;
-    std::vector<DThinker*>::iterator m_currentThinker;
+	std::vector<DThinker*>::iterator m_currentThinker;
 
 public:
 	FThinkerIterator (TypeInfo *type) :
-        m_ParentType    (type),
-        m_currentThinker(DThinker::s_thinkers.begin())
+		m_ParentType    (type),
+		m_currentThinker(DThinker::s_thinkers.begin())
 	{
 	}
+
 	DThinker *Next ()
 	{
 		while (m_currentThinker != DThinker::s_thinkers.end())
@@ -107,7 +107,7 @@ public:
 			{
 				return *(m_currentThinker++);
 			}
-            ++m_currentThinker;
+			++m_currentThinker;
 		}
 		m_currentThinker = DThinker::s_thinkers.begin();
 		return NULL;

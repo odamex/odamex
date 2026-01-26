@@ -35,9 +35,6 @@
 
 IMPLEMENT_SERIAL (DThinker, DObject)
 
-//DThinker *DThinker::FirstThinker = NULL;
-//DThinker *DThinker::LastThinker = NULL;
-
 std::vector<DThinker*> DThinker::s_thinkers;
 
 std::vector<DThinker *> LingerDestroy;
@@ -54,7 +51,7 @@ void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 {
 	if (arc.IsStoring ())
 	{
-        for (auto& thinker : s_thinkers)
+		for (auto& thinker : s_thinkers)
 		{
 			if (!(arc.IsReset() && P_ThinkerIsPlayerType(thinker)))
 			{
@@ -87,7 +84,6 @@ void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 
 DThinker::DThinker ()
 {
-	// Add a new thinker at the end of the list.
 	s_thinkers.push_back(this);
 	refCount = 0;
 	destroyed = false;
@@ -107,7 +103,7 @@ void DThinker::Orphan()
 
 void DThinker::Destroy()
 {
-    DestroyFromContainer();
+	DestroyFromContainer();
 }
 
 std::vector<DThinker*>::iterator DThinker::DestroyFromContainer ()
@@ -116,11 +112,14 @@ std::vector<DThinker*>::iterator DThinker::DestroyFromContainer ()
 	if(destroyed)
 		return s_thinkers.end();
 
-    auto iterToThis = std::find(s_thinkers.begin(),
-                                s_thinkers.end(),
-                                this);
+	// In isolation, find-erase is almost always slower than unlinking a node from a linked list.
+	// However, across the entire frame, the vector's iteration performance advantages ultimately
+	// lead to slightly better performance overall.
+	auto iterToThis = std::find(s_thinkers.begin(),
+	                            s_thinkers.end(),
+	                            this);
 
-    auto nextIter = iterToThis != s_thinkers.end() ? s_thinkers.erase(iterToThis) : s_thinkers.end();
+	auto nextIter = iterToThis != s_thinkers.end() ? s_thinkers.erase(iterToThis) : s_thinkers.end();
 
 	destroyed = true;
 
@@ -143,7 +142,7 @@ std::vector<DThinker*>::iterator DThinker::DestroyFromContainer ()
 			delete obj;
 		}
 	}
-    return nextIter;
+	return nextIter;
 }
 
 bool DThinker::WasDestroyed ()
@@ -154,12 +153,12 @@ bool DThinker::WasDestroyed ()
 // Destroy every thinker
 void DThinker::DestroyAllThinkers ()
 {
-    auto currentthinker = s_thinkers.begin();
-    while (currentthinker != s_thinkers.end())
-    {
-        // Suboptimal, but eh, this function probably doesn't need to be fast.
-        currentthinker = (*currentthinker)->DestroyFromContainer();
-    }
+	auto currentthinker = s_thinkers.begin();
+	while (currentthinker != s_thinkers.end())
+	{
+		// Suboptimal, but eh, this function probably doesn't need to be fast.
+		currentthinker = (*currentthinker)->DestroyFromContainer();
+	}
 	DObject::EndFrame ();
 
 	for (DThinker *obj : LingerDestroy)
@@ -186,10 +185,10 @@ void DThinker::DestroyMostThinkers ()
 		{
 			thinker = (*thinker)->DestroyFromContainer();
 		}
-        else
-        {
+		else
+		{
 		    ++thinker;
-        }
+		}
 	}
 	DObject::EndFrame ();
 }
