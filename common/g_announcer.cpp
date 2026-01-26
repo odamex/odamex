@@ -122,13 +122,25 @@ std::string AnnouncerManager::getRightAnnouncer(const std::string& currentAnnoun
 	}
 }
 
+const AnnouncerMetaData_s& AnnouncerManager::getAnnouncerMetadata(const std::string& announcer)
+{
+	auto it = announcerDict.find(announcer);
+	if (it != announcerDict.end())
+	{
+		return it->second.metadata;
+	}
+	return emptyMetadata;
+}
+
 void AnnouncerManager::loadAnnouncerDefaults()
 {
 	Announcer_s defaultAnnouncer;
 
-	defaultAnnouncer.name = "Odamex Official Announcer";
-	defaultAnnouncer.description = "The official Odamex announcer pack.";
-	defaultAnnouncer.author = "Manc";
+	AnnouncerMetaData_s metadata = AnnouncerMetaData_s();
+
+	metadata.name = "Odamex Official Announcer";
+	metadata.description = "The official Odamex announcer pack.";
+	metadata.author = "Manc";
 
 	// Fill in default sounds
 	// Possessive CTF Announcements
@@ -210,9 +222,11 @@ void AnnouncerManager::loadAnnouncerDefaults()
 	defaultAnnouncer.soundDict["spree 5"] = "officialvox/spree/untouchable";
 	defaultAnnouncer.soundDict["spree 6"] = "officialvox/spree/legendary";
 
-	announcerDict[defaultAnnouncer.name] = defaultAnnouncer;
+	defaultAnnouncer.metadata = metadata;
 
-	loadedAnnouncer = announcerDict[defaultAnnouncer.name];
+	announcerDict[metadata.name] = defaultAnnouncer;
+
+	loadedAnnouncer = announcerDict[metadata.name];
 }
 
 const std::string AnnouncerManager::getTokenForEvent(const std::string& event)

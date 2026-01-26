@@ -253,9 +253,9 @@ static const std::string ANN_YOULOSE = "youlose";
 static const std::string ANN_YOUTIED = "youtied";
 
 /// <summary>
-/// This structure represents a single announcer pack, and its specified data.
+/// Holds all the metadata for the specified announcer pack.
 /// </summary>
-struct Announcer_s
+struct AnnouncerMetaData_s
 {
 	/// <summary>
 	/// Name of the announcer pack.
@@ -272,18 +272,31 @@ struct Announcer_s
 	/// Displayed in the announcer selection menu.
 	/// </summary>
 	std::string author;
+	AnnouncerMetaData_s() : name(""), description(""), author("") { }
+	AnnouncerMetaData_s(const AnnouncerMetaData_s& other)
+	{
+		name = other.name;
+		description = other.description;
+		author = other.author;
+	}
+};
+
+/// <summary>
+/// This structure represents a single announcer pack, and its specified data.
+/// </summary>
+struct Announcer_s
+{
+	AnnouncerMetaData_s metadata;
 	/// <summary>
 	/// Dictionary of the sounds in this announcer pack.
 	/// Each named sound refers to a sndinfo token, which is given to the
 	/// sound function to play the appropriate sound.
 	/// </summary>
 	std::unordered_map<std::string, std::string> soundDict;
-	Announcer_s() : name(""), description(""), author(""), soundDict() { }
+	Announcer_s() : metadata(), soundDict() { }
 	Announcer_s(const Announcer_s& other)
 	{
-		name = other.name;
-		description = other.description;
-		author = other.author;
+		metadata = other.metadata;
 		soundDict = other.soundDict;
 	}
 };
@@ -334,6 +347,13 @@ public:
 	/// </summary>
 	/// <returns>The name of the announcer to the right of this one.</returns>
 	std::string getRightAnnouncer(const std::string& currentAnnouncer) const;
+
+	/// <summary>
+	/// Gets the metadata of the specified announcer pack.
+	/// </summary>
+	/// <param name="currentAnnouncer">Announcer for which to return the metadata.</param>
+	/// <returns>The metadata of the specified announcer pack.</returns>
+	const AnnouncerMetaData_s& getAnnouncerMetadata(const std::string& currentAnnouncer);
 
 	/// <summary>
 	/// Function to return whether the 3-frag warning has been announced already.
@@ -596,6 +616,11 @@ private:
 	/// The currently loaded and used announcer.
 	/// </summary>
 	Announcer_s loadedAnnouncer = Announcer_s();
+
+	/// <summary>
+	/// An empty metadata structure.
+	/// </summary>
+	AnnouncerMetaData_s emptyMetadata = AnnouncerMetaData_s();
 };
 
 // In-game announcer logic functions.

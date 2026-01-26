@@ -673,8 +673,8 @@ CVAR_RANGE_FUNC_DECL(	snd_oplbank, "1", "OPL instrument set",
 				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
 // Announcer
-CVAR(	cl_announcer, "Odamex Official Announcer",
-				"The announcer profile to use for game play. Must be an exact match to a currently loaded announcer's name.",
+CVAR_FUNC_DECL( cl_announcer, "Odamex Official Announcer",
+				"The announcer profile to use in-game. Must be an exact match to a currently loaded announcer's name.",
 				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(	snd_announcectf, "1", "Announce CTF events.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)

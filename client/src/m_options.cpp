@@ -673,6 +673,8 @@ static menuitem_t AnnouncerItems[] = {
 	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
 	{ yellowtext,   "Choose Announcer"         , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
 	{ announcer ,   " "                        , {&cl_announcer},       {0.0},        {0.0}, {0.0},      {NULL} },
+	{ whitetext ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
+	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
 	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
 	{ orangetext,   "Announcers not currently loaded", {NULL},          {0.0},        {0.0}, {0.0},      {NULL}},
 	{ orangetext,   "will default to the Odamex announcer.", {NULL},    {0.0},        {0.0}, {0.0},      {NULL}},
@@ -1345,6 +1347,9 @@ static menuitem_t ModesItems[] = {
 #define VM_ENTERLINE	15
 #define VM_TESTLINE		17
 
+#define ANN_AUTHORLINE 3
+#define ANN_DESCLINE 4
+
 menu_t ModesMenu = {
 	"M_VIDMOD",
 	0,
@@ -1946,6 +1951,19 @@ void M_OptDrawer (void)
 			case announcer: {
 				std::string announcername = cl_announcer.str();
 				bool announcerisavailable = AnnouncerManager::getInstance().isAnnouncerLoaded(announcername);
+
+				if (announcerisavailable)
+				{
+					const AnnouncerMetaData_s& metadata = AnnouncerManager::getInstance().getAnnouncerMetadata(announcername);
+					static std::string authorLine = fmt::sprintf("By: %s%s", TEXTCOLOR_TAN ,metadata.author.c_str());
+					AnnouncerItems[ANN_AUTHORLINE].label = authorLine.c_str();
+					AnnouncerItems[ANN_DESCLINE].label = metadata.description.c_str();
+				}
+				else
+				{
+					AnnouncerItems[ANN_AUTHORLINE].label = "";
+					AnnouncerItems[ANN_DESCLINE].label = "";
+				}
 
 				int announcerwidth = V_StringWidth(announcername.c_str());
 

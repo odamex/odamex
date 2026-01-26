@@ -69,6 +69,7 @@
 #include "g_musinfo.h"
 #include "g_spree.h"
 #include "g_multikill.h"
+#include "g_announcer.h"
 
 #include <math.h> // for pow()
 
@@ -147,19 +148,34 @@ EXTERN_CVAR(sv_showplayerpowerups)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(co_fixweaponimpacts)
 EXTERN_CVAR(co_blockmapfix)
-EXTERN_CVAR (cl_run)
-EXTERN_CVAR (hud_mousegraph)
-EXTERN_CVAR (cl_predictpickup)
+EXTERN_CVAR(cl_run)
+EXTERN_CVAR(hud_mousegraph)
+EXTERN_CVAR(cl_predictpickup)
 
-EXTERN_CVAR (mouse_sensitivity)
-EXTERN_CVAR (m_pitch)
-EXTERN_CVAR (m_filter)
-EXTERN_CVAR (invertmouse)
-EXTERN_CVAR (lookstrafe)
-EXTERN_CVAR (m_yaw)
-EXTERN_CVAR (m_forward)
-EXTERN_CVAR (m_side)
+EXTERN_CVAR(mouse_sensitivity)
+EXTERN_CVAR(m_pitch)
+EXTERN_CVAR(m_filter)
+EXTERN_CVAR(invertmouse)
+EXTERN_CVAR(lookstrafe)
+EXTERN_CVAR(m_yaw)
+EXTERN_CVAR(m_forward)
+EXTERN_CVAR(m_side)
 
+CVAR_FUNC_IMPL(cl_announcer)
+{
+	// Load this announcer, or if not found,
+	// load the default and issue a warning.
+
+	AnnouncerManager& instance = AnnouncerManager::getInstance();
+
+	if (!instance.isAnnouncerLoaded(var.str()))
+	{
+		PrintFmt(PRINT_WARNING,
+		         "AnnouncerManager: Cannot find announcer named '{}'. \n", var.str());
+	}
+
+	instance.loadAnnouncerByName(var.str()); // This function will load the default anyway if not found.
+}
 
 CVAR_FUNC_IMPL(mouse_type)
 {
