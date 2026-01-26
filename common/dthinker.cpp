@@ -35,8 +35,10 @@
 
 IMPLEMENT_SERIAL (DThinker, DObject)
 
-DThinker *DThinker::FirstThinker = NULL;
-DThinker *DThinker::LastThinker = NULL;
+//DThinker *DThinker::FirstThinker = NULL;
+//DThinker *DThinker::LastThinker = NULL;
+
+std::vector<DThinker*> DThinker::s_thinkers;
 
 std::vector<DThinker *> LingerDestroy;
 
@@ -50,18 +52,15 @@ void DThinker::Serialize (FArchive &arc)
 
 void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 {
-	DThinker *thinker;
 	if (arc.IsStoring ())
 	{
-		thinker = FirstThinker;
-		while (thinker)
+        for (auto& thinker : s_thinkers)
 		{
 			if (!(arc.IsReset() && P_ThinkerIsPlayerType(thinker)))
 			{
 				arc << (BYTE)1;
 				arc << thinker;
 			}
-			thinker = thinker->m_Next;
 		}
 		arc << (BYTE)0;
 	}
@@ -89,13 +88,7 @@ void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 DThinker::DThinker ()
 {
 	// Add a new thinker at the end of the list.
-	m_Prev = LastThinker;
-	m_Next = NULL;
-	if (LastThinker)
-		LastThinker->m_Next = this;
-	if (!FirstThinker)
-		FirstThinker = this;
-	LastThinker = this;
+	s_thinkers.push_back(this);
 	refCount = 0;
 	destroyed = false;
 }
@@ -109,25 +102,25 @@ DThinker::~DThinker ()
 // all over the thinker list.
 void DThinker::Orphan()
 {
-	m_Next = NULL;
-	m_Prev = NULL;
 	refCount = 0;
 }
 
-void DThinker::Destroy ()
+void DThinker::Destroy()
+{
+    DestroyFromContainer();
+}
+
+std::vector<DThinker*>::iterator DThinker::DestroyFromContainer ()
 {
 	// denis - allow this function to be safely called multiple times
 	if(destroyed)
-		return;
+		return s_thinkers.end();
 
-	if (FirstThinker == this)
-		FirstThinker = m_Next;
-	if (LastThinker == this)
-		LastThinker = m_Prev;
-	if (m_Next)
-		m_Next->m_Prev = m_Prev;
-	if (m_Prev)
-		m_Prev->m_Next = m_Next;
+    auto iterToThis = std::find(s_thinkers.begin(),
+                                s_thinkers.end(),
+                                this);
+
+    auto nextIter = iterToThis != s_thinkers.end() ? s_thinkers.erase(iterToThis) : s_thinkers.end();
 
 	destroyed = true;
 
@@ -150,6 +143,7 @@ void DThinker::Destroy ()
 			delete obj;
 		}
 	}
+    return nextIter;
 }
 
 bool DThinker::WasDestroyed ()
@@ -160,13 +154,12 @@ bool DThinker::WasDestroyed ()
 // Destroy every thinker
 void DThinker::DestroyAllThinkers ()
 {
-	DThinker *currentthinker = FirstThinker;
-	while (currentthinker)
-	{
-		DThinker *next = currentthinker->m_Next;
-		currentthinker->Destroy ();
-		currentthinker = next;
-	}
+    auto currentthinker = s_thinkers.begin();
+    while (currentthinker != s_thinkers.end())
+    {
+        // Suboptimal, but eh, this function probably doesn't need to be fast.
+        currentthinker = (*currentthinker)->DestroyFromContainer();
+    }
 	DObject::EndFrame ();
 
 	for (DThinker *obj : LingerDestroy)
@@ -183,18 +176,20 @@ void DThinker::DestroyAllThinkers ()
 // Destroy all thinkers except for player-controlled actors
 void DThinker::DestroyMostThinkers ()
 {
-	DThinker *thinker = FirstThinker;
-	while (thinker)
+    auto thinker = s_thinkers.begin();
+	while (thinker != s_thinkers.end())
 	{
-		DThinker *next = thinker->m_Next;
-		if (!thinker->IsKindOf (RUNTIME_CLASS (AActor)) ||
-			static_cast<AActor *>(thinker)->player == NULL ||
-			static_cast<AActor *>(thinker)->player->mo
-			 != static_cast<AActor *>(thinker))
+		if (!(*thinker)->IsKindOf (RUNTIME_CLASS (AActor)) ||
+			static_cast<AActor *>(*thinker)->player == NULL ||
+			static_cast<AActor *>(*thinker)->player->mo
+			 != static_cast<AActor *>(*thinker))
 		{
-			thinker->Destroy ();
+			thinker = (*thinker)->DestroyFromContainer();
 		}
-		thinker = next;
+        else
+        {
+		    ++thinker;
+        }
 	}
 	DObject::EndFrame ();
 }
@@ -247,12 +242,10 @@ void DThinker::RunThinkers ()
 	DThinker *currentthinker;
 
 	BEGIN_STAT (ThinkCycles);
-	currentthinker = FirstThinker;
-	while (currentthinker)
+	for (auto currentthinker : s_thinkers)
 	{
 		if (!IndependentThinker(currentthinker))
 			currentthinker->RunThink();
-		currentthinker = currentthinker->m_Next;
 	}
 	END_STAT (ThinkCycles);
 	P_CheckMusicChange();

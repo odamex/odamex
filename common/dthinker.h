@@ -60,6 +60,7 @@ public:
 	DThinker ();
 	void Orphan();
 	void Destroy () override;
+    std::vector<DThinker*>::iterator DestroyFromContainer();
 	~DThinker () override;
 	virtual void RunThink () {}
 
@@ -67,8 +68,8 @@ public:
 	void operator delete (void *block);
 
 	// Both the head and tail of the thinker list.
-	static DThinker *FirstThinker;
-	static DThinker *LastThinker;
+	//static DThinker *FirstThinker;
+	//static DThinker *LastThinker;
 	static void RunThinkers ();
 	static void DestroyAllThinkers ();
 	static void DestroyMostThinkers ();
@@ -78,8 +79,9 @@ public:
 
 	size_t refCount;
 
+    static std::vector<DThinker*> s_thinkers;
 private:
-	DThinker *m_Next, *m_Prev;
+	//DThinker *m_Next, *m_Prev;
 	bool destroyed;
 
 	friend class FThinkerIterator;
@@ -89,27 +91,25 @@ class FThinkerIterator
 {
 private:
 	TypeInfo *m_ParentType;
-	DThinker *m_CurrThinker;
+    std::vector<DThinker*>::iterator m_currentThinker;
 
 public:
-	FThinkerIterator (TypeInfo *type)
+	FThinkerIterator (TypeInfo *type) :
+        m_ParentType    (type),
+        m_currentThinker(DThinker::s_thinkers.begin())
 	{
-		m_ParentType = type;
-		m_CurrThinker = DThinker::FirstThinker;
 	}
 	DThinker *Next ()
 	{
-		while (m_CurrThinker)
+		while (m_currentThinker != DThinker::s_thinkers.end())
 		{
-			if (m_CurrThinker->IsKindOf (m_ParentType))
+			if ((*m_currentThinker)->IsKindOf (m_ParentType))
 			{
-				DThinker *res = m_CurrThinker;
-				m_CurrThinker = m_CurrThinker->m_Next;
-				return res;
+				return *(m_currentThinker++);
 			}
-			m_CurrThinker = m_CurrThinker->m_Next;
+            ++m_currentThinker;
 		}
-		m_CurrThinker = DThinker::FirstThinker;
+		m_currentThinker = DThinker::s_thinkers.begin();
 		return NULL;
 	}
 };
