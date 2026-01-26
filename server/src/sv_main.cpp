@@ -78,6 +78,9 @@
 extern void G_DeferedInitNew (const OLumpName& mapname);
 extern level_locals_t level;
 
+constexpr int MAX_HIDDEN_MOBJ_UPDATES = 16;
+
+
 // Unnatural Level Progression.  True if we've used 'map' or another command
 // to switch to a specific map out of order, otherwise false.
 bool unnatural_level_progression;
@@ -1196,94 +1199,31 @@ bool SV_IsPlayerAllowedToSee(const player_t &p, const AActor *mo)
 
 #define HARDWARE_CAPABILITY 1000
 
-namespace
-{
-    struct DistanceSortableActorType
-    {
-        AActor* mo;
-        fixed_t distance;
-
-        DistanceSortableActorType(AActor* i_mo, const player_t& i_pl):
-            mo(i_mo),
-            distance(P_AproxDistance2(i_mo, i_pl.mo))
-        {}
-
-        friend bool operator<(const DistanceSortableActorType& mobj1, const DistanceSortableActorType& mobj2)
-        {
-            return mobj1.distance < mobj2.distance;
-        }
-    };
-}
-
 //
 // SV_UpdateHiddenMobj
 //
-void SV_UpdateHiddenMobj(void)
+int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated)
 {
-    // Throttle and prioritization.
-    constexpr int MAX_UPDATES = 16;
-
-    // We are going to let this grow naturally.
-    // The first few passes will be slower than normal due to reallocations,
-    // but it will top out at some point.
-    static std::vector<DistanceSortableActorType> s_sortedMobjs;
-    const int                                     previousSortedMobjCount = static_cast<int>(s_sortedMobjs.size());
-    int                                           deltaMobjs;
-
-	// denis - todo - throttle this
-	AActor *mo;
-	TThinkerIterator<AActor> iterator;
-
-	for (auto& pl : players)
-	{
-		if (!pl.mo)
-			continue;
-
-		int updated = 0;
-
-		while (!pl.to_spawn.empty())
-		{
-			mo = pl.to_spawn.front();
-
-			pl.to_spawn.pop();
-
-			if (mo && !mo->WasDestroyed())
-				updated += SV_AwarenessUpdate(pl, mo);
-
-			if (updated > MAX_UPDATES)
-				break;
-		}
-
-        static_assert(std::is_trivially_destructible_v<DistanceSortableActorType>);
-        s_sortedMobjs.clear();  // Expect constant-time because the contained type is trivially destructible.
-
-        while ((mo = iterator.Next()))
+	if (pl.mo)
+    {
+        if (updated == 0)
         {
-            s_sortedMobjs.emplace_back(mo, pl);
+    		while (!pl.to_spawn.empty())
+    		{
+    			mo = pl.to_spawn.front();
+
+    			pl.to_spawn.pop();
+
+    			if (mo && !mo->WasDestroyed())
+    				updated += SV_AwarenessUpdate(pl, mo);
+
+    			if (updated > MAX_HIDDEN_MOBJ_UPDATES)
+    				break;
+    		}
         }
-
-        // We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
-        const int temporaryGrowthBonus = std::min(std::max(0,
-                                                           static_cast<int>(s_sortedMobjs.size()) - previousSortedMobjCount),
-                                                  MAX_UPDATES);
-        const int maxForThisTic = MAX_UPDATES + temporaryGrowthBonus;
-
-        if (updated > maxForThisTic)
-        {
-            continue;
-        }
-
-        std::sort(s_sortedMobjs.begin(),
-                  s_sortedMobjs.end());
-
-        for (auto& sortedMobj : s_sortedMobjs)
-        {
-			updated += SV_AwarenessUpdate(pl, sortedMobj.mo);
-
-			if (updated > maxForThisTic)
-				break;
-		}
+		updated += SV_AwarenessUpdate(pl, mo);
 	}
+    return updated;
 }
 
 void SV_UpdateSector(client_t* cl, int sectornum)
@@ -1548,7 +1488,18 @@ void SV_ClientFullUpdate(player_t &pl)
 			MSG_WriteSVC(&cl->reliablebuf, SVC_TeamMembers(static_cast<team_t>(i)));
 	}
 
-	SV_UpdateHiddenMobj();
+    int hiddenUpdates = 0;
+    TThinkerIterator<AActor> iterator;
+    AActor* mo;
+
+    while ((mo = iterator.Next()))
+    {
+        hiddenUpdates = SV_UpdateHiddenMobj(pl, mo, hiddenUpdates);
+        if (hiddenUpdates >= MAX_HIDDEN_MOBJ_UPDATES)
+        {
+            break;
+        }
+    }
 
 	// update flags
 	if (sv_gametype == GM_CTF)
@@ -2632,25 +2583,21 @@ bool SV_PrivMsg(player_t &player)
 // SV_UpdateMissiles
 // Updates missiles position sometimes.
 //
-void SV_UpdateMissiles(player_t &pl)
+void SV_UpdateMissiles(player_t &pl, AActor *mo)
 {
-    AActor *mo;
-
-    TThinkerIterator<AActor> iterator;
-    while ( (mo = iterator.Next() ) )
     {
 		if (!(mo->flags & MF_MISSILE) || mo->flags & MF_SKULLFLY)
-			continue;
+			return;
 
 		if (mo->type == MT_PLASMA)
-			continue;
+			return;
 
 		// update missile position every 30 tics
 		if (((gametic+mo->netid) % 30) && (mo->type != MT_TRACER) && (mo->type != MT_FATSHOT) && !(mo->flags2 & MF2_SEEKERMISSILE))
-			continue;
+			return;
 		// Revenant tracers and Mancubus fireballs need to be updated more often (and custom tracers)
 		else if (((gametic+mo->netid) % 5) && (mo->type == MT_TRACER || mo->type == MT_FATSHOT || mo->flags2 & MF2_SEEKERMISSILE))
-			continue;
+			return;
 
 		if(SV_IsPlayerAllowedToSee(pl, mo))
 		{
@@ -2702,24 +2649,21 @@ void SV_UpdateMobjState(const AActor* mo)
 }
 
 // Keep tabs on monster positions and angles.
-void SV_UpdateMonsters(player_t &pl)
+void SV_UpdateMonsters(player_t &pl, AActor *mo)
 {
-	AActor *mo;
 
-	TThinkerIterator<AActor> iterator;
-	while ((mo = iterator.Next()))
 	{
 		// Ignore corpses.
 		if (mo->flags & MF_CORPSE)
-			continue;
+			return;
 
 		// We don't handle updating non-monsters here.
 		if (!(mo->flags & MF_COUNTKILL || mo->type == MT_SKULL))
-			continue;
+			return;
 
 		// update monster position every 7 tics
 		if ((gametic+mo->netid) % 7)
-			continue;
+			return;
 
 		if (SV_IsPlayerAllowedToSee(pl, mo) && mo->target)
 		{
@@ -2998,6 +2942,35 @@ void SV_SpyPlayer(player_t &viewer)
 	SV_SendPlayerStateUpdate(&viewer.client, &other);
 }
 
+namespace
+{
+    struct DistanceSortableActorType
+    {
+        AActor* mo;
+        fixed_t distance;
+
+        DistanceSortableActorType():
+            mo(nullptr),
+            distance(0)
+        {}
+
+        DistanceSortableActorType(AActor* i_mo, const player_t& i_pl):
+            mo(i_mo),
+            distance(P_AproxDistance2(i_mo, i_pl.mo))
+        {}
+
+        friend bool operator<(const DistanceSortableActorType& mobj1, const DistanceSortableActorType& mobj2)
+        {
+            return mobj1.distance < mobj2.distance;
+        }
+        
+        fixed_t operator>>(size_t n) const
+        {
+            return distance >> n;
+        }
+    };
+}
+
 //
 // SV_WriteCommands
 //
@@ -3008,9 +2981,65 @@ void SV_WriteCommands(void)
 	Unlag::getInstance().recordPlayerPositions();
 	Unlag::getInstance().recordSectorPositions();
 
+    // We are going to let this grow naturally.
+    // The first few passes will be slower than normal due to reallocations,
+    // but it will top out at some point.
+    static std::vector<DistanceSortableActorType> s_sortedMobjs;
+    const int                                     previousSortedMobjCount = static_cast<int>(s_sortedMobjs.size());
+
+    TThinkerIterator<AActor> iterator;
+
+    //const dtime_t endTime = I_GetTime();
+
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		client_t *cl = &(it->client);
+
+        const dtime_t startTime = I_GetTime();
+        static_assert(std::is_trivially_destructible_v<DistanceSortableActorType>);
+        s_sortedMobjs.clear();  // Expect constant-time because the contained type is trivially destructible.
+
+        AActor* mo;
+        while ((mo = iterator.Next()))
+        {
+            s_sortedMobjs.emplace_back(mo, *it);
+        }
+        const dtime_t buildTime = I_GetTime();
+
+        // We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
+        const int temporaryGrowthBonus = std::min(std::max(0,
+                                                           static_cast<int>(s_sortedMobjs.size()) - previousSortedMobjCount),
+                                                  MAX_HIDDEN_MOBJ_UPDATES);
+        const int maxForThisTic = MAX_HIDDEN_MOBJ_UPDATES + temporaryGrowthBonus;
+
+        // In testing a 22000 mobj firefight (No Time To Freeze map32) on a Ryzen 9800x3d,
+        // Windows 11, MSVC 2019:
+        //
+        //      - std::sort:                    800-900 usec.
+        //      - Boost spreadsort:             600 usec.
+        //      - 3-partition std::nth_element: 300 usec.
+        //
+        // We go with dividing up the mobjs into 3 partitions with two calls to std::nth_element
+        // because for the purposes of prioritizing mobj messages to clients, we don't need fine
+        // precision between mobjs by distance.  Three coarse buckets based on approximate distance
+        // is enough.  When looking at a massive fray, even with sv_maxrate at 200, this gives us
+        // three categories of entities based on range:
+        //
+        //      1. The closest 25% of mobjs - we really want to see frequent updates to these.
+        //      2. The next closest 25%     - no problem if these somewhat-distant guys stutter.
+        //      3. Everything else          - we don't care if we don't see them.
+        //
+        // The end result works well for the heavy-load test case, and only rarely do we see
+        // nearby enemies behave like there's any packet loss.
+
+        std::nth_element(s_sortedMobjs.begin(),
+                         s_sortedMobjs.begin() + s_sortedMobjs.size()/2,
+                         s_sortedMobjs.end());
+        std::nth_element(s_sortedMobjs.begin(),
+                         s_sortedMobjs.begin() + s_sortedMobjs.size()/4,
+                         s_sortedMobjs.begin() + s_sortedMobjs.size()/2);
+        const dtime_t endTime = I_GetTime();
+        //DPrintFmt("Player {} sorting all ({}): build {} sort {} total {} nsec\n", int(it->id), s_sortedMobjs.size(), buildTime - startTime, endTime - buildTime, endTime - startTime);
 
 		// [SL] 2011-05-11 - Send the client the server's gametic
 		// this gametic is returned to the server with the client's
@@ -3044,18 +3073,32 @@ void SV_WriteCommands(void)
 
 		SV_UpdateConsolePlayer(*it);
 
-		SV_UpdateMissiles(*it);
+        int hiddenUpdateCount = 0;
 
-		SV_UpdateMonsters(*it);
+        for (auto& sortedMobj : s_sortedMobjs)
+        {
+            //const dtime_t startTime = I_GetTime();
+		    SV_UpdateMissiles(*it, sortedMobj.mo);
 
+            //const dtime_t missileTime = I_GetTime();
+		    SV_UpdateMonsters(*it, sortedMobj.mo);
+
+            //const dtime_t monsterTime = I_GetTime();
+            if (hiddenUpdateCount <= maxForThisTic)
+            {
+		        hiddenUpdateCount = SV_UpdateHiddenMobj(*it, sortedMobj.mo, hiddenUpdateCount);
+            }
+        }
+
+        //DPrintFmt("player {} missiletime {} usec; monstertime {} usec\n", int(it->id), (missileTime - startTime) / 1000, (monsterTime - missileTime) / 1000);
 		SV_UpdateGametype(*it);     // update gametype stuff
 
 		SV_SendPingRequest(cl);     // request ping reply
 
 		SV_UpdatePing(cl);          // send the ping value of all cients to this client
+
 	}
 
-	SV_UpdateHiddenMobj();
 
 	SV_UpdateDeadPlayers(); // Update dying players.
 }
