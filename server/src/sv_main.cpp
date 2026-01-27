@@ -2945,7 +2945,7 @@ namespace
 			MobjSorter() :
 				m_previousSortedMobjCount(static_cast<int>(s_sortedMobjs.size()))
 			{
-				[[maybe_unused]] const int freshTime = I_GetTime();
+				m_freshTime = I_GetTime();
 
 				static_assert(std::is_trivially_destructible_v<decltype(s_unsortedMobjs)::value_type>);
 				s_unsortedMobjs.clear();  // Expect constant-time because the contained type is trivially destructible.
@@ -2959,7 +2959,7 @@ namespace
 				{
 					s_unsortedMobjs.emplace_back(mo);
 				}
-				[[maybe_unused]] const int copyTime = I_GetTime();
+				m_copyTime = I_GetTime();
 			}
 
 			int MobjCount() const
@@ -2973,61 +2973,61 @@ namespace
 
 			void Sort(player_t& pl)
 			{
-				[[maybe_unused]] const dtime_t startTime = I_GetTime();
-				s_sortedMobjs = s_unsortedMobjs;
-
-				[[maybe_unused]] const dtime_t buildTime = I_GetTime();
-				// In testing a 22000 mobj firefight (No Time To Freeze map32) on a Ryzen 9800x3d,
-				// Windows 11, MSVC 2019, looking at JUST the core sort operation itself:
-				//
-				//      - std::sort:                    600-700 usec.
-				//      - Boost spreadsort:             ~300 usec.
-				//      - 3-partition std::nth_element:  40-70 usec.
-				//
-				// We go with dividing up the mobjs into 3 partitions with two calls to std::nth_element
-				// because for the purposes of prioritizing mobj messages to clients, we don't need fine
-				// precision between mobjs by distance.  Three coarse buckets based on approximate distance
-				// is enough.  This gives us three categories of entities based on range:
-				//
-				//      1. The closest 25% of mobjs - we really want to see frequent updates to these.
-				//      2. The next closest 25%     - no problem if these somewhat-distant guys stutter.
-				//      3. Everything else          - we don't care if we don't see them.
-				//
-				//
-				// The end result works well for the heavy-load test case, and only rarely do we see
-				// nearby enemies behave like there's any packet loss.
-
-				// The following block is used for sorting on approximate, relative distance.
-				for (auto& moPtr : s_sortedMobjs)
+				// This only makes sense if the player has a position.
+				if (pl.mo)
 				{
-					// We go with the below block because it's just a bit faster in MSVC (~170 usec) than
-					// P_AproxDistance2 (~200 usec) when looking at 22k mobjs, and we don't need "real"
-					// distance - just comparable values that correlate with distance.
+					[[maybe_unused]] const dtime_t startTime = I_GetTime();
+					s_sortedMobjs = s_unsortedMobjs;
 
-					if (pl.mo)
+					[[maybe_unused]] const dtime_t buildTime = I_GetTime();
+					// In testing a 22000 mobj firefight (No Time To Freeze map32) on a Ryzen 9800x3d,
+					// Windows 11, MSVC 2019, looking at JUST the core sort operation itself:
+					//
+					//      - std::sort:                    600-700 usec.
+					//      - Boost spreadsort:             ~300 usec.
+					//      - 3-partition std::nth_element:  40-70 usec.
+					//
+					// We go with dividing up the mobjs into 3 partitions with two calls to std::nth_element
+					// because for the purposes of prioritizing mobj messages to clients, we don't need fine
+					// precision between mobjs by distance.  Three coarse buckets based on approximate distance
+					// is enough.  This gives us three categories of entities based on range:
+					//
+					//      1. The closest 25% of mobjs - we really want to see frequent updates to these.
+					//      2. The next closest 25%     - no problem if these somewhat-distant guys stutter.
+					//      3. Everything else          - we don't care if we don't see them.
+					//
+					//
+					// The end result works well for the heavy-load test case, and only rarely do we see
+					// nearby enemies behave like there's any packet loss.
+
+					// The following block is used for sorting on approximate, relative distance.
+					const int playerMostSignificantX = (pl.mo->x >> 16);
+					const int playerMostSignificantY = (pl.mo->y >> 16);
+
+					for (auto& moPtr : s_sortedMobjs)
 					{
-						const int dx = (pl.mo->x >> 16) - (moPtr->x >> 16);
-						const int dy = (pl.mo->y >> 16) - (moPtr->y >> 16);
+						// We go with the below block because it's just a bit faster in MSVC (~170 usec) than
+						// P_AproxDistance2 (~200 usec) when looking at 22k mobjs, and we don't need "real"
+						// distance - just comparable values that correlate with distance.
+
+						const int dx = playerMostSignificantX - (moPtr->x >> 16);
+						const int dy = playerMostSignificantY - (moPtr->y >> 16);
 						moPtr->transientInt = dx*dx + dy*dy;
 					}
-					else
-					{
-						moPtr->transientInt = 0;
-					}
+					auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1->transientInt < mo2->transientInt; };
+
+					std::nth_element(s_sortedMobjs.begin(),
+					                 s_sortedMobjs.begin() + s_sortedMobjs.size()/2,
+					                 s_sortedMobjs.end(),
+					                 distanceCompare);
+					std::nth_element(s_sortedMobjs.begin(),
+					                 s_sortedMobjs.begin() + s_sortedMobjs.size()/4,
+					                 s_sortedMobjs.begin() + s_sortedMobjs.size()/2,
+					                 distanceCompare);
+					[[maybe_unused]] const dtime_t endTime = I_GetTime();
+
+					//DPrintFmt("{} initial: {}, Player {} sorting all ({}): build {} sort {} total {} nsec\n",sizeof(AActor), m_copyTime - m_freshTime, int(pl.id), s_sortedMobjs.size(), buildTime - startTime, endTime - buildTime, endTime - startTime);
 				}
-				auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1->transientInt < mo2->transientInt; };
-
-				std::nth_element(s_sortedMobjs.begin(),
-				                 s_sortedMobjs.begin() + s_sortedMobjs.size()/2,
-				                 s_sortedMobjs.end(),
-				                 distanceCompare);
-				std::nth_element(s_sortedMobjs.begin(),
-				                 s_sortedMobjs.begin() + s_sortedMobjs.size()/4,
-				                 s_sortedMobjs.begin() + s_sortedMobjs.size()/2,
-				                 distanceCompare);
-				[[maybe_unused]] const dtime_t endTime = I_GetTime();
-
-				//DPrintFmt("{} initial: {}, Player {} sorting all ({}): build {} sort {} total {} nsec\n",sizeof(AActor), copyTime - freshTime, int(it->id), s_sortedMobjs.size(), buildTime - startTime, endTime - buildTime, endTime - startTime);
 			}
 
 			auto begin() { return s_sortedMobjs.begin(); }
@@ -3041,6 +3041,9 @@ namespace
 			inline static std::vector<AActor*> s_sortedMobjs{};
 
 			const int m_previousSortedMobjCount;
+
+			dtime_t m_freshTime;
+			dtime_t m_copyTime;
 	};
 }
 
