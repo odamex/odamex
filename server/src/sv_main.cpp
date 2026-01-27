@@ -3028,6 +3028,10 @@ namespace
 
 					//DPrintFmt("{} initial: {}, Player {} sorting all ({}): build {} sort {} total {} nsec\n",sizeof(AActor), m_copyTime - m_freshTime, int(pl.id), s_sortedMobjs.size(), buildTime - startTime, endTime - buildTime, endTime - startTime);
 				}
+				else
+				{
+					s_sortedMobjs = s_unsortedMobjs;
+				}
 			}
 
 			auto begin() { return s_sortedMobjs.begin(); }
