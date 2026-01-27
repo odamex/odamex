@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -72,7 +72,7 @@ OBinding DefaultBindings[] =
 	{"s", "+back"},
 	{"a", "+moveleft"},
 	{"d", "+moveright"},
-#ifdef _XBOX
+#ifdef GCONSOLE
 	{"hat1right", "messagemode2"},
 	{"hat1left", "spynext"},
 	{"hat1up", "messagemode"},

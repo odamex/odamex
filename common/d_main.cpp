@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -49,6 +49,7 @@
 #include "m_fileio.h"
 #include "c_console.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "g_game.h"
 #include "g_spawninv.h"
 #include "r_main.h"
@@ -58,14 +59,8 @@
 #include "gi.h"
 #include "w_ident.h"
 #include "m_resfile.h"
-
-#ifdef GEKKO
-#include "i_wii.h"
-#endif
-
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
+#include "odainfo.h"
+#include "infomap.h"
 
 OResFiles wadfiles;
 OResFiles patchfiles;
@@ -78,8 +73,7 @@ extern bool step_mode;
 bool capfps = true;
 float maxfps = 35.0f;
 
-
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
 
 typedef struct
 {
@@ -250,6 +244,44 @@ static char *GetRegistryString(registry_value_t *reg_val)
 
 #endif
 
+//
+// D_InitializeDoomObjectTables()
+// [CMB] Initialize all the doom objects: MobjInfo, SprNames, SoundMap, etc.
+//
+void D_InitializeDoomObjectTables()
+{
+	// [RH] Initialize items. Still only used for the give command. :-(
+	InitItems();
+	// Initialize states
+	states.clear();
+	states.insert({boomstates, ::NUMSTATES}, S_NULL);
+	states.insert(getOdaStates(), S_GIB0);
+	// Initialize mobjinfo
+	mobjinfo.clear();
+	mobjinfo.insert({doom_mobjinfo, ::NUMMOBJTYPES}, MT_PLAYER);
+	mobjinfo.insert(getOdaMobjinfo(), MT_GIB0);
+	// Initialize sprnames
+	sprnames.clear();
+	sprnames.insert({doom_sprnames, ::NUMSPRITES}, SPR_TROO);
+	sprnames.insert(getOdaSprNames(), SPR_GIB0);
+	// Initialize soundmap
+	SoundMap.clear();
+	SoundMap.insert({doom_SoundMap, ARRAY_LENGTH(doom_SoundMap)}, 0);
+	SoundMap.insert({odamex_SoundMap, ARRAY_LENGTH(odamex_SoundMap)}, 0x80000000);
+	// Initialize spawn map
+	D_BuildSpawnMap();
+
+	states.rebuildMap(
+		[](const state_t& lhs, const state_t& rhs){ return lhs.statenum < rhs.statenum; },
+		[](const state_t& s){ return s.statenum; }
+	);
+	mobjinfo.rebuildMap(
+		[](const mobjinfo_t& lhs, const mobjinfo_t& rhs){
+			return lhs.type < rhs.type || (lhs.type == rhs.type && lhs.doomednum < rhs.doomednum);
+		},
+		[](const mobjinfo_t& m){ return m.type; }
+	);
+}
 
 //
 // D_AddSearchDir
@@ -281,7 +313,7 @@ void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char 
 // [AM] Add platform-sepcific search directories
 void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 {
-	#if defined(_WIN32) && !defined(_XBOX)
+	#if defined(_WIN32)
 
 	const char separator = ';';
 
@@ -465,31 +497,25 @@ static void D_PrintIWADIdentity()
 /**
  * @brief Load all found DEH patches, as well as all found DEHACKED lumps.
  */
-void D_LoadResolvedPatches()
+void D_LoadResolvedPatches(bool reloadStrings)
 {
+	// Load internal chex.deh if necessary
+	if (::gamemode == retail_chex)
+	{
+		D_DoDehPatch(nullptr, W_GetNumForName("_CHXHACK"), reloadStrings);
+	}
+
 	// Load external patch files first.
-	bool chexLoaded = false;
 	for (const auto& file : ::patchfiles)
 	{
-		if (StdStringToUpper(file.getBasename()) == "CHEX.DEH")
-		{
-			chexLoaded = true;
-		}
-		D_DoDehPatch(&file, -1);
+		D_DoDehPatch(&file, -1, reloadStrings);
 	}
 
 	// Check WAD files for lumps.
 	int lump = -1;
 	while ((lump = W_FindLump("DEHACKED", lump)) != -1)
 	{
-		D_DoDehPatch(NULL, lump);
-	}
-
-	if (::gamemode == retail_chex && !::multiplayer && !chexLoaded)
-	{
-		PrintFmt(
-		    PRINT_WARNING,
-		    "Warning: chex.deh not loaded, experience may differ from the original!\n");
+		D_DoDehPatch(NULL, lump, reloadStrings);
 	}
 
 	// Re-apply spawninv settings with our new DEH settings.
@@ -594,6 +620,8 @@ static void LoadResolvedFiles(const OResFiles& newwadfiles,
 	// might change the strings
 	::GStrings.loadStrings(false);
 
+	P_InitMobjNameMap();
+
 	// Apply DEH patches.
 	D_LoadResolvedPatches();
 }
@@ -657,7 +685,7 @@ static bool CommercialIWADWarning(const OWantFile& wanted)
 		{
 			// Found a file, but it's not recognized at all.
 			PrintFmt("Odamex found a possible data file, but Odamex does not recognize "
-			         "it.\n> {]\n\n",
+			         "it.\n> {}\n\n",
 			         sameNameRes.getFullpath());
 		}
 
@@ -951,8 +979,8 @@ static void AddCommandLineOptionFiles(OWantFiles& out, const std::string& option
 	for (size_t i = 0; i < files.NumArgs(); i++)
 	{
 		OWantFile file;
-		OWantFile::make(file, files.GetArg(i), type);
-		out.push_back(file);
+		if (OWantFile::make(file, files.GetArg(i), type))
+			out.push_back(file);
 	}
 
 	files.FlushArgs();
@@ -1081,8 +1109,8 @@ private:
 	dtime_t				mPreviousFrameStartTime;
 };
 
-static TaskScheduler* simulation_scheduler;
-static TaskScheduler* display_scheduler;
+static std::unique_ptr<TaskScheduler> simulation_scheduler;
+static std::unique_ptr<TaskScheduler> display_scheduler;
 
 //
 // D_InitTaskSchedulers
@@ -1103,12 +1131,10 @@ static void D_InitTaskSchedulers(void (*sim_func)(), void(*display_func)())
 	{
 		previous_capped_simulation = capped_simulation;
 
-		delete simulation_scheduler;
-
 		if (capped_simulation)
-			simulation_scheduler = new CappedTaskScheduler(sim_func, TICRATE, 4);
+			simulation_scheduler = std::make_unique<CappedTaskScheduler>(sim_func, TICRATE, 4);
 		else
-			simulation_scheduler = new UncappedTaskScheduler(sim_func);
+			simulation_scheduler = std::make_unique<UncappedTaskScheduler>(sim_func);
 	}
 
 	if (capped_display != previous_capped_display || maxfps != previous_maxfps)
@@ -1116,21 +1142,17 @@ static void D_InitTaskSchedulers(void (*sim_func)(), void(*display_func)())
 		previous_capped_display = capped_display;
 		previous_maxfps = maxfps;
 
-		delete display_scheduler;
-
 		if (capped_display)
-			display_scheduler = new CappedTaskScheduler(display_func, maxfps, 1);
+			display_scheduler = std::make_unique<CappedTaskScheduler>(display_func, maxfps, 1);
 		else
-			display_scheduler = new UncappedTaskScheduler(display_func);
+			display_scheduler = std::make_unique<UncappedTaskScheduler>(display_func);
 	}
 }
 
 void STACK_ARGS D_ClearTaskSchedulers()
 {
-	delete simulation_scheduler;
-	delete display_scheduler;
-	simulation_scheduler = NULL;
-	display_scheduler = NULL;
+	simulation_scheduler.reset();
+	display_scheduler.reset();
 }
 
 //

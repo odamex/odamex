@@ -23,7 +23,6 @@
 
 #include "odamex.h"
 
-#include <map>
 #include <sstream>
 
 #include "c_maplist.h"
@@ -33,6 +32,7 @@
 #include "c_dispatch.h"
 #include "i_net.h"
 #include "i_system.h"
+#include "i_time.h"
 
 //////// MAPLIST CACHE METHODS (Private) ////////
 
@@ -384,11 +384,11 @@ void CMD_MaplistCallback(const maplist_qrows_t &result) {
 		const auto& [map, lastmap, _, wads] = *entry;
 		char flag = ' ';
 		if (show_this_map && index == this_index) {
-			flag = '*';
+			flag = '>';
 		} else if (index == next_index) {
 			flag = '+';
 		}
-		PrintFmt(PRINT_HIGH, "{}{}. {} {}{}\n", flag, index + 1,
+		PrintFmt(PRINT_HIGH, " {}{}. {} {}{}\n", flag, index + 1,
 			   JoinStrings(wads, " "), map,
 			   lastmap.empty() ? "" : fmt::format(" lastmap={}", lastmap));
 	}

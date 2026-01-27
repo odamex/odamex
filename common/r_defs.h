@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -282,6 +282,8 @@ struct sector_t
 	// occurs, SecActTarget's TriggerAction method is called.
 	// [AM] Use the ZDoom 1.22 AActor system instead.
 	AActor::AActorPtr SecActTarget{};
+
+	AActor::AActorPtr Skybox;
 
 	// [SL] 2012-01-16 - planes for sloping ceilings/floors
 	plane_t floorplane{}, ceilingplane{};
@@ -699,7 +701,7 @@ struct vissprite_s
 	fixed_t			translucency;
 	byte			FakeFlat;		// [RH] which side of fake/floor ceiling sprite is on
 
-	AActor*			mo;
+	const AActor*			mo;
 };
 typedef vissprite_s vissprite_t;
 
@@ -746,6 +748,7 @@ struct spritedef_t
 {
 	int 			numframes;
 	spriteframe_t	*spriteframes;
+	int32_t spritenum;
 };
 
 //
@@ -766,6 +769,7 @@ struct visplane_s
 	shaderef_t	colormap;			// [RH] Support multiple colormaps
 	fixed_t		xscale, yscale;		// [RH] Support flat scaling
 	angle_t		angle;				// [RH] Support flat rotation
+	AActor*		skybox;
 
 	unsigned int *bottom;			// [RH] bottom and top arrays are dynamically
 	unsigned int pad;				//		allocated immediately after the

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -211,13 +211,9 @@ algorithm that uses RGB tables.
 //
 // ============================================================================
 
-byte* translationtables;
 argb_t translationRGB[MAXPLAYERS+1][16];
 byte *Ranges;
 static byte *translationtablesmem = NULL;
-byte bosstable[256];
-byte greentable[MAXPLAYERS + 1][256];
-byte redtable[MAXPLAYERS + 1][256];
 
 static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end_color)
 {
@@ -233,7 +229,7 @@ static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end
 
 	palindex_t* dest = (palindex_t*)Ranges + color_num * 256;
 
-	if (gamemode == retail_chex)
+	if (IsChexMission(gamemission))
 	{
 		for (int index = 0; index < chexstart_index; index++)
 			dest[index] = index;
@@ -262,7 +258,7 @@ static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end
 	int b_diff = end_color.getb() - start_color.getb();
 	int hacxtrack;
 
-	if (gamemode == retail_chex)
+	if (IsChexMission(gamemission))
 	{
 		for (palindex_t index = chexstart_index; index <= chexend_index; index++)
 		{
@@ -401,6 +397,18 @@ void R_InitTranslationTables()
 		                 SoftLight(bot.getb(), ytop.getb()));
 
 		::bosstable[i] = V_BestColor(V_GetDefaultPalette()->basecolors, mul);
+	}
+
+	// Friend translation is a pink tint.
+	const argb_t ptop(0xff, 0x70, 0xB9);
+	for (size_t i = 0; i < ARRAY_LENGTH(::friendtable); i++)
+	{
+		const argb_t bot = V_GetDefaultPalette()->basecolors[i];
+		const argb_t mul(SoftLight(bot.getr(), ptop.getr()),
+		                 SoftLight(bot.getg(), ptop.getg()),
+		                 SoftLight(bot.getb(), ptop.getb()));
+
+		::friendtable[i] = V_BestColor(V_GetDefaultPalette()->basecolors, mul);
 	}
 
 	translationtablesmem = new byte[256*(MAXPLAYERS+3+22)+255]; // denis - fixme - magic numbers?

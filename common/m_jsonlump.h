@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -79,7 +79,7 @@ enum class jsonlumpresult_t
 	PARSEERROR
 };
 
-static constexpr const char* JSON_LUMP_RESULT_ERROR_STRINGS[] =
+inline constexpr std::string_view JSON_LUMP_RESULT_ERROR_STRINGS[] =
 {
 	"JSON Lump Parsing Successful",
 	"JSON Lump Not Found",
@@ -90,7 +90,7 @@ static constexpr const char* JSON_LUMP_RESULT_ERROR_STRINGS[] =
 	"JSON Lump Parse Error"
 };
 
-constexpr const char* M_JSONLumpResultToString(jsonlumpresult_t jlr)
+constexpr std::string_view M_JSONLumpResultToString(jsonlumpresult_t jlr)
 {
 	return JSON_LUMP_RESULT_ERROR_STRINGS[static_cast<int>(jlr)];
 }

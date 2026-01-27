@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1206,7 +1206,7 @@ const char* PlayerState(size_t state)
 	}
 }
 
-#define STATE_NUM(mo) (mo -> state - states)
+#define STATE_NUM(mo) (mo->state->statenum)
 
 BEGIN_COMMAND(cheat_players)
 {
@@ -1236,7 +1236,7 @@ BEGIN_COMMAND(cheat_players)
 			{
 				PrintFmt("???: ???\n");
 			}
-			PrintFmt("State: {}\n", PlayerState(mo->state - states));
+			PrintFmt("State: {}\n", PlayerState(mo->state->statenum));
 			PrintFmt("{}, {}, {}\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
 			         FIXED2FLOAT(mo->z));
 		}

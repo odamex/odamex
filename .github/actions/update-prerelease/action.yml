@@ -1,0 +1,79 @@
+name: Update Prerelease
+
+inputs:
+  files:
+    description: "Files to upload to release artifacts"
+    required: true
+  build_number:
+    description: "Prerelease build number"
+    required: true
+  new_version:
+    description: "Version number of the upcoming release"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Check if prerelease is outdated
+      id: check
+      shell: bash
+      run: |
+        if git fetch --quiet origin refs/tags/prerelease:refs/tags/prerelease; then
+          TAG_COMMIT=$(git rev-list -n 1 refs/tags/prerelease)
+
+          if [ "$TAG_COMMIT" != "${{ github.sha }}" ]; then
+            echo "should_delete=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_delete=false" >> "$GITHUB_OUTPUT"
+          fi
+        else
+          echo "should_delete=false" >> "$GITHUB_OUTPUT"
+        fi
+    - name: Delete old prerelease
+      if: steps.check.outputs.should_delete == 'true'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        gh release delete prerelease --yes || true
+        git push origin :prerelease || true
+    - name: Find last release tag
+      id: get_tag
+      shell: bash
+      run: |
+        latest_tag=$(git tag -l --sort=version:refname "[0-9]*.[0-9]*.[0-9]*" | tail -n 1)
+        echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
+    - name: Create prerelease
+      uses: softprops/action-gh-release@v2.3.4
+      id: create_prerelease
+      with:
+        tag_name: prerelease
+        target_commitish: ${{ github.sha }}
+        name: "Odamex ${{ inputs.new_version }} Prerelease ${{ inputs.build_number }}"
+        prerelease: true
+        make_latest: false
+        draft: false
+        overwrite_files: true
+        generate_release_notes: false
+        body: ""
+        files: ${{ inputs.files }}
+    - name: Generate release notes
+      id: build_changelog
+      uses: actions/github-script@v8
+      env:
+        latest_tag: ${{ steps.get_tag.outputs.latest_tag }}
+        release_id: ${{ steps.create_prerelease.outputs.id }}
+      with:
+        script: |
+          const notes = await github.rest.repos.generateReleaseNotes({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            tag_name: "prerelease",
+            previous_tag_name: process.env.latest_tag,
+          });
+          await github.rest.repos.updateRelease({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            release_id: process.env.release_id,
+            body: notes.data.body,
+          });

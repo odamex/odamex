@@ -32,6 +32,7 @@
 #include "c_dispatch.h"
 #include "cmdlib.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "m_fileio.h"
 #include "m_random.h"
 #include "sv_main.h"
@@ -420,8 +421,8 @@ bool Maplist::set_index(const size_t &index) {
 		return false;
 	}
 
-	this->entered_once = true && gamestate != GS_STARTUP;
-	this->in_maplist = true && gamestate != GS_STARTUP;
+	this->entered_once = true;
+	this->in_maplist = true;
 	this->index = index;
 	this->update_shuffle_index();
 	return true;
@@ -527,7 +528,7 @@ void SV_MaplistIndex(player_t &player) {
 		}
 	}
 
-	MSG_WriteSVC(&cl->reliablebuf, SVC_MaplistIndex(count, next_index, this_index));
+	MSG_WriteSVC(&cl->reliablebuf, SVC_MaplistIndex(count, this_index, next_index));
 }
 
 // Send a full maplist update to a specific player
@@ -681,7 +682,7 @@ BEGIN_COMMAND (maplist) {
 		const auto& [map, _, lastmaps, wads] = *entry;
 		char flag = ' ';
 		if (show_this_map && index == this_index) {
-			flag = '*';
+			flag = '>';
 		} else if (index == next_index) {
 			flag = '+';
 		}

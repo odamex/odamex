@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -751,6 +751,16 @@ BEGIN_COMMAND (toggle)
 	else if (var->flags() & CVAR_NOENABLEDISABLE)
 	{
 		PrintFmt(PRINT_HIGH, "\"{}\" cannot be toggled.\n", argv[1]);
+	}
+	else if (var->flags() & CVAR_NOSET)
+	{
+		PrintFmt(PRINT_HIGH, "{} is write protected.\n", argv[1]);
+		return;
+	}
+	else if (multiplayer && baseapp == client && (var->flags() & CVAR_SERVERINFO))
+	{
+		PrintFmt(PRINT_HIGH, "{} is under server control.\n", argv[1]);
+		return;
 	}
 	else
 	{

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,8 +32,6 @@
 #include "p_local.h"
 
 #define WDLSTATS_VERSION 6
-
-extern Players players;
 
 EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_hostname)
@@ -388,6 +386,12 @@ WDLPowerups M_GetWDLItemByMobjType(const mobjtype_t type)
 	case MT_CAREPACK:
 		itemid = WDL_PICKUP_CAREPACKAGE;
 		break;
+	case MT_EXTRALIFE:
+		itemid = WDL_PICKUP_EXTRALIFE;
+		break;
+	case MT_RESTEAMMATE:
+		itemid = WDL_PICKUP_RESTEAMMATE;
+		break;
 	default:
 		itemid = WDL_PICKUP_UNKNOWN;
 		break;
@@ -701,7 +705,7 @@ void M_LogWDLItemRespawnEvent(AActor* activator)
 	int az = 0;
 	if (activator != NULL)
 	{
-		itemtype = M_GetWDLItemByMobjType(activator->type);
+		itemtype = M_GetWDLItemByMobjType(static_cast<mobjtype_t>(activator->type));
 
 		// Add the activator's body information.
 		ax = activator->x;

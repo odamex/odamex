@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -58,6 +58,7 @@ EXTERN_CVAR(sv_monsterdamage)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_fragexitswitch) // [ML] 04/4/06: Added compromise for older exit method
 EXTERN_CVAR(sv_friendlyfire)
+EXTERN_CVAR(sv_friendlymonsterfire)
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_forcerespawn)
 EXTERN_CVAR(sv_forcerespawntime)
@@ -65,6 +66,7 @@ EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(cl_predictpickup)
 EXTERN_CVAR(co_zdoomsound)
 EXTERN_CVAR(co_globalsound)
+EXTERN_CVAR(co_helpfriends)
 EXTERN_CVAR(g_lives)
 
 // sapientlion - experimental
@@ -81,21 +83,22 @@ void AM_Stop(void);
 void SV_SpawnMobj(AActor *mobj);
 void SV_UpdateFrags(player_t &player);
 void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
-void SV_TouchSpecial(AActor *special, player_t *player);
+void SV_TouchSpecial(const AActor *special, player_t *player);
 ItemEquipVal SV_FlagTouch(player_t &player, team_t f, bool firstgrab);
 void SV_SocketTouch(player_t &player, team_t f);
-void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
-void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, int armorDamage);
-void SV_SendDamageMobj(AActor *target, int pain);
-void SV_ActorTarget(AActor *actor);
-void PickupMessage(AActor *toucher, const char *message);
-void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon);
+void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill);
+void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage);
+void SV_SendDamageMobj(const AActor *target, int pain);
+void SV_UpdateMobj(const AActor* mo);
+void SV_ActorTarget(const AActor *actor);
+void PickupMessage(const AActor *toucher, const char *message);
+void WeaponPickupMessage(const AActor *toucher, const weapontype_t &Weapon);
 
 #ifdef SERVER_APP
-void SV_ShareKeys(card_t card, player_t& player);
+void SV_ShareKeys(card_t card, const player_t& player);
 #endif
 
-static void PersistPlayerDamage(player_t& p)
+static void PersistPlayerDamage(const player_t& p)
 {
 	// Send this information to everybody.
 	for (auto& player : ::players)
@@ -296,7 +299,8 @@ static ItemEquipVal P_GiveAmmoAutoSwitch(player_t* player, ammotype_t ammo, int 
 	else if (player->userinfo.switchweapon != WPSW_NEVER)
 	{
 		if (weaponinfo[player->readyweapon].flags & WPF_AUTOSWITCHFROM &&
-		    player->ammo[weaponinfo[player->readyweapon].ammotype] != ammo)
+			(weaponinfo[player->readyweapon].ammotype == am_noammo ||
+		     player->ammo[weaponinfo[player->readyweapon].ammotype] != ammo))
 		{
 			for (int i = NUMWEAPONS - 1; i > player->readyweapon; --i)
 			{
@@ -386,8 +390,9 @@ ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, bool dropped)
 	bool gaveweapon;
 
 	// [RH] Don't get the weapon if no graphics for it
-	state_t *state = states + weaponinfo[weapon].readystate;
-	if ((state->frame & FF_FRAMEMASK) >= sprites[state->sprite].numframes)
+	// state_t* state = states + weaponinfo[weapon].readystate;
+	const state_t& state = states[weaponinfo[weapon].readystate];
+	if ((state.frame & FF_FRAMEMASK) >= sprites[state.sprite].numframes)
 	{
 		return IEV_NotEquipped;
 	}
@@ -575,6 +580,80 @@ ItemEquipVal P_GivePower(player_t *player, int /*powertype_t*/ power)
 }
 
 #include "v_textcolors.h"
+
+	/*
+ * @brief Player grabbed a resurrect player powerup
+ */
+static void P_ResurrectPlayerPowerUp(player_t& player)
+{
+	if (!::serverside)
+		return;
+
+	// Not lives game? Nothing to do.
+	if (!G_IsLivesGame())
+		return;
+
+	// Grab all the players in game, make a list of their ids, then pick one at random
+	PlayersView ingame = PlayerQuery().notHasLives().execute().players;
+	std::vector<int> ingameplayers;
+	for (const auto& p : ingame)
+	{
+		if (p->id != player.id)
+			ingameplayers.push_back(p->id);
+	}
+
+	if (ingameplayers.empty())
+	{
+		SV_BroadcastPrintFmt("{} tried to resurrect someone, but everyone is alive!\n",
+		                   player.userinfo.netname);
+		return;
+	}
+
+	int arrayindex = M_RandomInt(ingameplayers.size());
+
+	int playerid = ingameplayers.at(arrayindex);
+
+	player_t* pl = &idplayer(playerid);
+
+	if (!validplayer(*pl))
+		return;
+
+	pl->lives += 1;
+	pl->playerstate = PST_REBORN;
+
+	G_ResetLastPlayer();
+
+	SV_BroadcastPrintFmt("{} has brought {} back into the fight!\n",
+	                   player.userinfo.netname, pl->userinfo.netname);
+
+	// Send a res sound directly to this player.
+	MSG_WriteSVC(&pl->client.reliablebuf, SVC_PlayerInfo(*pl));
+	S_PlayerSound(pl, NULL, CHAN_INTERFACE, "misc/plraise", ATTN_NONE);
+
+	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(*pl, SVC_PM_LIVES),
+	                 playerid);
+}
+
+/*
+ * @brief Player grabbed an extra life powerup
+ */
+static void P_AwardExtraLifePowerUp(player_t& player)
+{
+	if (!::serverside)
+		return;
+
+	// Not lives game? Nothing to do.
+	if (!G_IsLivesGame())
+		return;
+
+	SV_BroadcastPrintFmt("{} was awarded an extra life!\n",
+	                   player.userinfo.netname);
+
+	player.lives += 1;
+	MSG_WriteSVC(&player.client.reliablebuf, SVC_PlayerInfo(player));
+	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(player, SVC_PM_LIVES),
+	                 player.id);
+}
 
 /**
  * @brief Give the player a care package.
@@ -776,7 +855,7 @@ static void P_GiveCarePack(player_t* player)
 	}
 }
 
-bool P_SpecialIsWeapon(AActor *special)
+bool P_SpecialIsWeapon(const AActor *special)
 {
 	if (!special)
 		return false;
@@ -1120,6 +1199,20 @@ void P_GiveSpecial(player_t *player, AActor *special)
 		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_CAREPACKAGE, false);
 			break;
 
+		case SPR_O1UP:
+		    // Award an extra life to the player who collects this
+		    P_AwardExtraLifePowerUp(*player);
+		    sound = 1;
+		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_EXTRALIFE, false);
+		    break;
+
+		case SPR_RSTM:
+		    // Resurrect a player with this power up
+		    P_ResurrectPlayerPowerUp(*player);
+		    sound = 1;
+		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_RESTEAMMATE, false);
+		    break;
+
 		// weapons
 	    case SPR_BFUG:
             val = P_GiveWeapon(player, wp_bfg, special->flags & MF_DROPPED);
@@ -1278,7 +1371,7 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 		return;
 
 	// Touchers that aren't players or avatars need not apply.
-	if (!toucher->player && toucher->type != MT_AVATAR)
+	if (!P_IsPlayerOrAvatar(*toucher))
 		return;
 
 	if (predicting)
@@ -1329,19 +1422,20 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 // SexMessage: Replace parts of strings with gender-specific pronouns
 //
 // The following expansions are performed:
-//		%g -> he/she/it
-//		%h -> him/her/it
-//		%p -> his/her/its
+//		%g -> he/she/it/they
+//		%h -> him/her/it/them
+//		%p -> his/her/its/their
 //		%o -> other (victim)
 //		%k -> killer
 //
 void SexMessage (const char *from, char *to, gender_t gender, std::string_view victim, std::string_view killer)
 {
-	static constexpr std::string_view genderstuff[3][3] =
+	static constexpr std::string_view genderstuff[4][3] =
 	{
 		{ "he",  "him", "his" },
 		{ "she", "her", "her" },
-		{ "it",  "it",  "its" }
+		{ "it",  "it",  "its" },
+		{ "they",  "them",  "their" },
 	};
 
 	do
@@ -1387,7 +1481,7 @@ void SexMessage (const char *from, char *to, gender_t gender, std::string_view v
 // [RH]
 // ClientObituary: Show a message when a player dies
 //
-static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
+static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attacker)
 {
 	char gendermessage[1024];
 
@@ -1678,7 +1772,7 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 //
 // P_KillMobj
 //
-void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill)
+void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool joinkill)
 {
 	SV_SendKillMobj(source, target, inflictor, joinkill);
 	AActor *mo;
@@ -1918,15 +2012,10 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	if (target->player && level.time)
 		G_LivesCheckEndGame();
 
-	if (gamemode == retail_chex)	// [ML] Chex Quest mode - monsters don't drop items
-    {
-		return;
-    }
-
 	// Drop stuff.
 	// This determines the kind of object spawned
 	// during the death frame of a thing.
-	mobjtype_t item = (mobjtype_t)0;
+	int32_t item = 0;
 
 	//
 	// sapientlion - if player killed themselves or were killed by the other
@@ -2000,7 +2089,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	}
 }
 
-static bool P_InfightingImmune(AActor* target, AActor* source)
+bool P_InfightingImmune(AActor* target, AActor* source)
 {
 	return // not default behaviour, and same group
 		mobjinfo[target->type].infighting_group != IG_DEFAULT &&
@@ -2020,7 +2109,7 @@ static bool P_InfightingImmune(AActor* target, AActor* source)
 // and other environmental stuff.
 //
 // [Toke] This is no longer needed client-side
-void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage, int mod, int flags)
+void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int damage, int mod, int flags)
 {
 	if (!serverside)
     {
@@ -2051,9 +2140,19 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
     }
 
 	// [AM] Target is invulnerable to infighting from any non-player source.
-	if (source && source->player == NULL && target->oflags & MFO_INFIGHTINVUL)
+	// Unless it is friendly (and thus hostile to bosses)
+	if (source && target->oflags & MFO_INFIGHTINVUL && (source->player == NULL && P_IsFriendlyThing(source, target)))
 	{
 		return;
+	}
+
+	// No damage with sv_friendlymonsterfire
+	if (!sv_friendlymonsterfire && source && target != source && mod != MOD_TELEFRAG)
+	{
+		if (source->flags & MF_FRIEND && P_IsFriendlyThing(source, target))
+		{
+			return;
+		}
 	}
 
 	MeansOfDeath = mod;
@@ -2112,8 +2211,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		// make fall forwards sometimes
 		if (damage < 40
 			&& damage > target->health
-			&& target->z - inflictor->z > 64 * FRACUNIT
-			&& (P_Random() & 1))
+			&& target->z - inflictor->z > 64 * FRACUNIT && (P_Random(target) & 1))
 		{
 			ang += ANG180;
 			thrust *= 4;
@@ -2122,6 +2220,10 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		ang >>= ANGLETOFINESHIFT;
 		target->momx += FixedMul(thrust, finecosine[ang]);
 		target->momy += FixedMul(thrust, finesine[ang]);
+
+		/* killough 11/98: thrust objects hanging off ledges */
+		if (target->oflags & MFO_FALLING && target->gear >= MAXGEAR)
+			target->gear = 0;
 	}
 
 	// player specific
@@ -2333,9 +2435,15 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		return;
 	}
 
-    if (!(target->flags2 & MF2_DORMANT))
+	 /* If target is a player, set player's target to source,
+	 * so that a friend can tell who's hurting a player
+	 */
+	if (source && player && co_helpfriends)
+		target->target = source->ptr();
+
+	if (!(target->flags2 & MF2_DORMANT))
 	{
-		int pain = P_Random();
+		int pain = P_Random(target);
 
 		if (target->oflags & MFO_UNFLINCHING)
 		{
@@ -2398,6 +2506,10 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
             SV_ActorTarget(target);
 		}
 	}
+	else
+	{
+		SV_UpdateMobj(target);
+	}
 }
 
 //The player has left the game (in-game to spectator, or in-game disconnect)
@@ -2458,7 +2570,7 @@ void P_HealMobj(AActor* mo, int num)
 	}
 	else
 	{
-		int max = mobjinfo[mo->type].spawnhealth;
+		const int max = mobjinfo[mo->type].spawnhealth;
 
 		mo->health += num;
 		if (mo->health > max)

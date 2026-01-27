@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -148,7 +148,7 @@ bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
 		}
 	}
 
-	if (mo && !mo->player && mo->type != MT_AVATAR && !(mo->flags & MF_MISSILE) &&
+	if (mo && !P_IsPlayerOrAvatar(*mo) && !(mo->flags & MF_MISSILE) &&
 	    !(line->flags & ML_MONSTERSCANACTIVATE) &&
 	    (!(activationType & ML_SPAC_MCROSS) || !(lineActivation & ML_SPAC_MCROSS)))
 	{

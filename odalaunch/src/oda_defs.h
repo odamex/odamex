@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -84,6 +84,7 @@ static const char* def_masterlist[] =
 {
 	"master1.odamex.net:15000"
 	,"voxelsoft.com:15000"
+	,"odamex.electricbrass.net:15000"
 	,NULL
 };
 

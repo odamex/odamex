@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -158,8 +158,8 @@ public: \
 
 enum EObjectFlags
 {
-	OF_MassDestruction	= 0x00000001,	// Object is queued for deletion
-	OF_Cleanup			= 0x00000002	// Object is being deconstructed as a result of a queued deletion
+	OF_Destroyed = 0x00000001, // Object has been destroyed but not yet deleted
+	OF_Cleanup   = 0x00000002  // Object is being deconstructed as a result of a queued deletion
 };
 
 class DObject
@@ -171,8 +171,8 @@ private: \
 	typedef DObject ThisClass;
 
 public:
-	DObject ();
-	virtual ~DObject ();
+	DObject () {};
+	virtual ~DObject () = 0;
 
 	[[nodiscard]] inline bool IsKindOf (const TypeInfo *base) const
 	{
@@ -190,19 +190,14 @@ public:
 	static void BeginFrame ();
 	static void EndFrame ();
 
-	DWORD ObjectFlags;
+	DWORD ObjectFlags = 0;
 
 	static void STACK_ARGS StaticShutdown ();
 
 private:
-	static inline std::vector<DObject *> Objects{};
-	static inline std::vector<size_t> FreeIndices{};
 	static inline std::vector<DObject *> ToDestroy{};
 
-	void RemoveFromArray ();
-
 	static inline bool Inactive;
-	size_t Index;
 };
 
 #include "farchive.h"

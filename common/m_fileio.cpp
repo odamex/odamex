@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -43,9 +43,6 @@ namespace fs = std::filesystem;
 
 // Simple logging
 std::ofstream LOG;
-
-// Simple file based console input
-std::ifstream CON;
 
 /**
  * @brief Joins two paths together
@@ -377,7 +374,7 @@ bool M_IsPathSep(const char ch)
 		return true;
 	}
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
 	// This is not the canonical path separator, but it is valid.
 	if (ch == '/')
 	{
@@ -404,13 +401,6 @@ std::string M_GetUserFileName(const std::string& file)
 {
 #ifdef __SWITCH__
 	std::string path = file;
-	return M_CleanPath(path);
-#elif defined(_XBOX)
-	std::string path = "T:";
-
-	path += PATHSEP;
-	path += file;
-
 	return M_CleanPath(path);
 #else
 	fs::path path(file);
@@ -440,9 +430,6 @@ std::string M_GetUserFileName(const std::string& file)
 
 std::string M_GetWriteSubDir(std::string_view folder)
 {
-#if defined(_XBOX)
-	return "T:" PATHSEP;
-#else
 	// Does the folder exist?
 	fs::path path = M_GetWriteDir();
 	path /= folder;
@@ -455,7 +442,6 @@ std::string M_GetWriteSubDir(std::string_view folder)
 	{
 		I_FatalError("Failed to create directory {}: {}\n", path.string(), e.what());
 	}
-#endif
 }
 
 std::string M_GetDownloadDir()
@@ -475,10 +461,7 @@ std::string M_GetNetDemoDir()
 
 std::string M_GetScreenshotFileName(const std::string& file, const std::string& altpath)
 {
-#if defined(_XBOX)
-	fs::path path = "T:";
-	path /= file;
-#elif defined __SWITCH__
+#ifdef __SWITCH__
 	fs::path path = file;
 #else
 	fs::path path;
@@ -509,10 +492,7 @@ std::string M_GetScreenshotFileName(const std::string& file, const std::string& 
 
 std::string M_GetNetDemoFileName(const std::string& file, const std::string& altpath)
 {
-#if defined(_XBOX)
-	fs::path path = "T:";
-	path /= file;
-#elif defined __SWITCH__
+#ifdef __SWITCH__
 	fs::path path = file;
 #else
 	fs::path path;

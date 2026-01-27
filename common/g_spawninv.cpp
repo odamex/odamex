@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -119,7 +119,7 @@ static int WeaponTypeFromChar(const char ch)
 	else if (ch == 'X' || ch == 'x')
 		return NUMWEAPONS;
 
-	return MININT; // best chance of loud and obvious crash
+	return limits::MININT; // best chance of loud and obvious crash
 }
 
 /**
@@ -227,7 +227,7 @@ static bool InvSetReadyWeapon(spawnInventory_t& inv, const std::string& value)
 		return false;
 
 	int weap = WeaponTypeFromChar(value.at(0));
-	if (weap == MININT)
+	if (weap == limits::MININT)
 		return false;
 
 	inv.readyweapon = static_cast<weapontype_t>(weap);
@@ -248,7 +248,7 @@ static bool InvSetWeapons(spawnInventory_t& inv, const std::string& value)
 	for (const auto c : value)
 	{
 		int owned = WeaponTypeFromChar(c);
-		if (owned == MININT)
+		if (owned == limits::MININT)
 			return false;
 
 		newowned[owned] = true;

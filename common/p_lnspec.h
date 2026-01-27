@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -536,7 +536,6 @@ void P_DestroyLightThinkers();
 int P_FindLineFromLineTag(const line_t* line, int start);
 int P_IsUnderDamage(const AActor* actor);
 bool P_IsOnLift(const AActor* actor);
-int P_IsUnderDamage(AActor* actor);
 void EV_LightSetMinNeighbor(int tag);
 void EV_LightSetMaxNeighbor(int tag);
 

@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,7 +30,9 @@
 #include <string.h>
 
 #include <string>
+#include <string_view>
 #include <vector>
+#include <map>
 
 #include <nonstd/span.hpp>
 #include "fmt/format.h"
@@ -40,3 +42,5 @@
 #include "doomdef.h"
 #include "doomstat.h"
 #include "doomfunc.h"
+
+using namespace std::string_view_literals;

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -69,16 +69,16 @@ CVAR_FUNC_IMPL(cl_name)
 		var.Set(newname.c_str());
 }
 
-
-
 gender_t D_GenderByName (const char *gender)
 {
 	if (!stricmp (gender, "female"))
 		return GENDER_FEMALE;
-	else if (!stricmp (gender, "cyborg"))
-		return GENDER_NEUTER;
-	else
+	else if (!stricmp (gender, "male"))
 		return GENDER_MALE;
+	else if (!stricmp (gender, "cyborg"))
+		return GENDER_CYBORG;
+	else
+		return GENDER_OTHER;
 }
 
 //

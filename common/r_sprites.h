@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -21,14 +21,13 @@
 //
 //-----------------------------------------------------------------------------
 
-
 #pragma once
 
 extern int MaxVisSprites;
 
-extern vissprite_t *vissprites;
+extern vissprite_t *vissprites, *firstvissprite;
 
-extern spritedef_t* sprites;
+extern OHashTable<int32_t, spritedef_t> sprites;
 extern int numsprites;
 
 #define MAX_SPRITE_FRAMES 29 // [RH] Macro-ized as in BOOM.
@@ -40,5 +39,5 @@ extern int maxframe;
 
 extern vissprite_t* lastvissprite;
 
-void R_CacheSprite(spritedef_t *sprite);
-void R_InitSprites(const char** namelist);
+void R_CacheSprite(const spritedef_t *sprite);
+void R_InitSprites(std::vector<spriteinfo_t*>& sprites);

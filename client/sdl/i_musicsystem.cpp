@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,6 +30,7 @@
 #include "i_musicsystem.h"
 #include "i_sdl.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "mus2midi.h"
 
 extern MusicSystem* musicsystem;
@@ -74,7 +75,7 @@ static double I_CalculateMsPerMidiClock(int timeDivision, double tempo = 120.0)
 //
 // ============================================================================
 
-void MusicSystem::startSong(byte* data, size_t length, bool loop)
+void MusicSystem::startSong(byte* data, size_t length, bool loop, int order)
 {
 	m_isPlaying = true;
 	m_isPaused = false;
@@ -214,7 +215,7 @@ void MidiMusicSystem::_DisableFallback()
 	m_useFallback = false;
 }
 
-void MidiMusicSystem::startSong(byte* data, size_t length, bool loop)
+void MidiMusicSystem::startSong(byte* data, size_t length, bool loop, int order)
 {
 	if (!isInitialized())
 		return;
@@ -239,7 +240,7 @@ void MidiMusicSystem::startSong(byte* data, size_t length, bool loop)
 	m_prevClockTime = 0;
 	m_lastEventTime = I_MSTime();
 
-	MusicSystem::startSong(data, length, loop);
+	MusicSystem::startSong(data, length, loop, order);
 }
 
 void MidiMusicSystem::stopSong()

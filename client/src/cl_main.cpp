@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -69,16 +69,13 @@
 #include "cl_parse.h"
 #include "cl_replay.h"
 
+#include "m_consolecommandstream.h"
+
 #include <bitset>
-#include <map>
 #include <set>
 #include <sstream>
 
 #include "server.pb.h"
-
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
 
 #if _MSC_VER == 1310
 #pragma optimize("",off)
@@ -298,8 +295,8 @@ void M_Ticker(void);
 
 size_t P_NumPlayersInGame();
 void G_PlayerReborn (player_t &player);
-void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
-void P_SetPsprite (player_t *player, int position, statenum_t stnum);
+void P_KillMobj (AActor *source, AActor *target, const AActor *inflictor, bool joinkill);
+void P_SetPsprite (player_t *player, int position, int32_t stnum);
 void P_ExplodeMissile (AActor* mo);
 void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
@@ -590,6 +587,8 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 				ST_ForceRefresh();
 			}
 
+			P_FriendlyEffects(); // Mark any new friendly monsters with an effect
+
 			return;
 		}
 	} while (it != sentinal);
@@ -653,19 +652,9 @@ void CL_DisplayTics()
 //
 void CL_RunTics()
 {
-	std::string cmd = I_ConsoleInput();
+	const std::string cmd = M_ConsoleInput();
 	if (cmd.length())
 		AddCommandString(cmd);
-
-	if (CON.is_open())
-	{
-		CON.clear();
-		if (!CON.eof())
-		{
-			std::getline(CON, cmd);
-			AddCommandString(cmd);
-		}
-	}
 
 	if (step_mode)
 	{
@@ -884,7 +873,7 @@ BEGIN_COMMAND (serverinfo)
 	std::sort(server_cvars.begin(), server_cvars.end());
 
     // Heading
-    PrintFmt("\n{:>{}} - Value\n", MaxFieldLength, "Name");
+    PrintFmt("\n{1:>{0}} - Value\n", MaxFieldLength, "Name");
 
     // Data
 	for (const auto& varname : server_cvars)
@@ -892,7 +881,7 @@ BEGIN_COMMAND (serverinfo)
 		cvar_t *dummy;
 		Cvar = cvar_t::FindCVar(varname.c_str(), &dummy);
 
-		PrintFmt("{:>{}} - {}\n",
+		PrintFmt("{1:>{0}} - {2}\n",
 			     MaxFieldLength,
 			     Cvar->name(),
 			     Cvar->str());
@@ -1411,6 +1400,8 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 	{
 		R_ForceViewWindowResize();		// toggline spectator mode affects status bar visibility
 
+		P_FriendlyEffects(); // Mark any new friendly monsters with an effect
+
 		if (player.spectator)
 		{
 			player.playerstate = PST_LIVE;				// Resurrect dead spectators
@@ -1603,7 +1594,7 @@ bool CL_PrepareConnect()
 			return false;
 		}
 
-		PrintFmt("> {]\n   {]\n", file.getBasename(),
+		PrintFmt("> {}\n   {}\n", file.getBasename(),
 		         file.getWantedMD5().getHexStr());
 	}
 
@@ -2168,8 +2159,18 @@ void CL_SendSummonCheat(const char* summon)
 	MSG_WriteString(&net_buffer, summon);
 }
 
+//
+// CL_SendSummonFriendCheat
+//
+void CL_SendSummonFriendCheat(const char* summon)
+{
+	MSG_WriteMarker(&net_buffer, clc_cheat);
+	MSG_WriteByte(&net_buffer, 3);
+	MSG_WriteString(&net_buffer, summon);
+}
 
-void PickupMessage (AActor *toucher, const char *message)
+
+void PickupMessage (const AActor *toucher, const char *message)
 {
 	// Some maps have multiple items stacked on top of each other.
 	// It looks odd to display pickup messages for all of them.
@@ -2190,7 +2191,7 @@ void PickupMessage (AActor *toucher, const char *message)
 //
 // This is used for displaying weaponstay messages, it is inevitably a hack
 // because weaponstay is a hack
-void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
+void WeaponPickupMessage (const AActor *toucher, const weapontype_t &Weapon)
 {
     switch (Weapon)
     {

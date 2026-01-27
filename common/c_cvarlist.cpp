@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,6 +41,11 @@ CVAR_RANGE(sv_gametype, "0",
            4.0f)
 
 CVAR(				sv_friendlyfire, "1", "When set, players can injure others on the same team, " \
+					"it is ignored in deathmatch",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR(				sv_friendlymonsterfire, "1",
+					"When set, players and other friendly monsters can injure friendly monsters on the same team, "
 					"it is ignored in deathmatch",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
@@ -178,6 +183,10 @@ CVAR_RANGE(			sv_spawndelaytime, "0.0", "Force a player to wait a period (in sec
 CVAR(				sv_unblockplayers, "0", "Allows players to walk through other players, and player projectiles to pass through teammates.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
 
+CVAR(				sv_unblockfriendly, "0", "Allows players and friendly monsters to walk through other friendly monsters, and player and friendly"
+						" projectiles to pass thru players and other friendlies.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
+
 CVAR(				sv_hostname, "Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
 					CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
 
@@ -300,6 +309,15 @@ CVAR_RANGE(g_horde_cooldown, "5",
            "Number of waves a specific Horde wave must wait before it can be chosen again",
            CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0,
            10)
+CVAR_RANGE(g_horde_extralife, "0.0", "Chance to spawn an `extra life powerup` in Horde.\n" \
+     "The value is the chance this spawns when a powerup is awarded, capped at 4x as likely.\n" \
+     "If `g_lives` isn't greater than 0, this cvar has no effect.",
+     CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
+
+CVAR_RANGE(g_horde_resurrect, "0.0", "Chance to spawn a `resurrect teammate powerup` in Horde.\n" \
+     "The value is the chance this spawns when a powerup is awarded, capped at 4x as likely.\n" \
+     "If `g_lives` isn't greater than 0, this cvar has no effect.",
+     CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
 
 // Game mode options commonized from the server
 //     At some point, replace "sv_" with "g_"
@@ -344,11 +362,65 @@ CVAR_RANGE(sv_countdown, "5",
 					"sectors and lines",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
-	CVAR(			co_allowdropoff, "0", "Allow monsters can get pushed or thrusted off of ledges",
+	CVAR(			co_allowdropoff, "0", "Allow monsters can get pushed or thrusted off of ledges.",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 	CVAR(			co_removesoullimit, "0", "Allows pain elementals to still spawn lost souls if more than 20 are present",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	// MBF-compatibility changes
+	//------------------------------
+
+	CVAR(			co_pursuit, "0",
+					"Use MBF comp_pursuit behavior -- monsters will change targets "
+					"if their current target is out of sight and a new valid target is in sight.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	CVAR(			co_helpfriends, "0",
+					"Use MBF help_friends behavior -- monsters will help friends under 50% health.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	CVAR(			co_monsterbacking, "0",
+					"Use MBF monster_backing behavior -- monsters can strafe or retreat.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	CVAR(			co_monsterfriction, "0",
+					"Use MBF monster_friction behavior -- monster movement is affected by ice and sludge.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	CVAR_RANGE(co_friend_distance, "128",
+					"Use MBF distfriend behavior -- friendlies will try to maintain this distance in mapblocks.",
+					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 2048.0f)
+
+	CVAR(			co_avoidhazards, "0",
+					"Use MBF monster_avoid_hazards behavior -- monsters will avoid some damaging sectors and crushers.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	CVAR(			co_monstersclimbsteep, "0",
+					"Use MBF monkeys behavior -- monsters will step up or down to 24 units.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	CVAR(			co_staylift, "0",
+					"Use MBF comp_staylift behavior -- monsters will try to stay on the same lift their target is on.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	CVAR(			co_friend_ledgejumping, "0",
+					"Use MBF dog_jumping behavior -- friendly monsters will drop off high ledges "
+					"if the target is immediately on the other side.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	CVAR_RANGE(co_friend_playerhelpers, "0",
+					"Use MBF player_helpers behavior -- amount of friendly things to spawn at map start.\n" \
+					"// If in an online game, dogs spawn only once on map start per helper per player.\n" \
+					"// The helper type is defined in BEX or through the cvar co_friend_helpertype.",
+					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 64.0f)
+
+	CVAR(			co_friend_helpertype, "",
+					"Name of the actor type to spawn as a helper.\n" \
+					"// Spawnable actors can be found using the ccmd `dumpactors`\n" \
+					"// If empty, it uses the defined default friend in Dehacked (BEX).\n" \
+					"// If the actor name can't be found, an MBF helper dog will be spawned\n",
+					CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
 
 	CVAR(			co_mbfphys, "0", "Use MBF's movement code. Fixes mancubus fireball clipping and linedef skips.",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,6 +31,7 @@
 #include "r_defs.h" // line_t
 
 #include <assert.h>
+#include <unordered_map>
 
 #define NUM_MAPVARS				128
 #define NUM_WORLDVARS			256
@@ -89,6 +90,7 @@ constexpr static levelFlags_t LEVEL2_NORMALINFIGHTING = BIT(0);
 constexpr static levelFlags_t LEVEL2_NOINFIGHTING = BIT(1);
 constexpr static levelFlags_t LEVEL2_TOTALINFIGHTING = BIT(2);
 constexpr static levelFlags_t LEVEL2_INFIGHTINGMASK = BIT_MASK(0, 2);
+constexpr static levelFlags_t LEVEL2_COMPAT_CROSSDROPOFF = BIT(18);
 
 struct acsdefered_s;
 class FBehavior;
@@ -203,6 +205,9 @@ struct level_pwad_info_t
 	float			aircontrol = 0.0f;
 	int				airsupply  = 10;
 
+	// MUSINFO
+	std::unordered_map<int, std::string> musinfo_map;
+
 	// The following are necessary for UMAPINFO compatibility
 	OLumpName		exitpic     = "";
 	OLumpName		enterpic    = "";
@@ -299,6 +304,9 @@ struct level_locals_t
 	fixed_t			airfriction;
 	int 			airsupply;
 
+	// MUSINFO
+	std::unordered_map<int, std::string> musinfo_map;
+
 	// The following are all used for ACS scripting
 	FBehavior*		behavior;
 	SDWORD			vars[NUM_MAPVARS];
@@ -337,11 +345,10 @@ const static clusterFlags_t CLUSTER_EXITTEXTISLUMP = BIT(1);
 
 struct bossaction_t
 {
-	int type;
-	short special;
-	short tag;
-
-	bossaction_t() : type(MT_NULL), special(), tag() {}
+	int32_t type    = MT_NULL;
+	int32_t flags   = 0;
+	int16_t special = 0;
+	int16_t tag     = 0;
 };
 
 struct cluster_info_t
@@ -415,7 +422,7 @@ inline std::array<ACSWorldGlobalArray, NUM_WORLDVARS> ACS_WorldArrays;
 inline std::array<int, NUM_GLOBALVARS> ACS_GlobalVars;
 inline std::array<ACSWorldGlobalArray, NUM_GLOBALVARS> ACS_GlobalArrays;
 
-extern bool savegamerestore;
+inline bool savegamerestore;
 
 void G_InitNew(const char *mapname);
 inline void G_InitNew(const OLumpName& mapname) { G_InitNew(mapname.c_str()); }
@@ -443,8 +450,6 @@ void G_InitLevelLocals();
 void G_AirControlChanged();
 
 OLumpName CalcMapName(int episode, int level);
-
-void G_ParseMusInfo();
 
 void G_ClearSnapshots();
 void G_SnapshotLevel();

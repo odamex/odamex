@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,8 +32,11 @@
 #include "infomap.h"
 #include "m_random.h"
 #include "oscanner.h"
-#include "w_wad.h"
 #include "v_textcolors.h"
+#include "w_wad.h"
+
+#include <limits>
+#include <math.h>
 
 EXTERN_CVAR(g_horde_mintotalhp)
 EXTERN_CVAR(g_horde_maxtotalhp)
@@ -129,10 +132,15 @@ StringTokens hordeDefine_t::weaponStrings(player_t* player) const
 	StringTokens rvo;
 	for (const auto& weapon : weapons)
 	{
-		if (!(player == NULL || !player->weaponowned[weapon]))
-		{
+		if (player == nullptr)
 			continue;
-		}
+
+		if (weapon == wp_none && player->powers[pw_strength])
+			continue;
+
+		// don't do an out of bounds access on weaponowned
+		if (weapon != wp_none && player->weaponowned[weapon])
+			continue;
 
 		switch (weapon)
 		{
@@ -169,6 +177,15 @@ StringTokens hordeDefine_t::weaponStrings(player_t* player) const
 	}
 
 	return rvo;
+}
+
+/**
+ * @brief Return the number of monsters of a given type horde has spawned.
+ */
+int P_HordeMobjCount(const mobjCounts_t& counts, const mobjtype_t type)
+{
+	mobjCounts_t::const_iterator it = counts.find(type);
+	return it != counts.end() ? it->second : 0;
 }
 
 /**
@@ -218,7 +235,7 @@ size_t P_HordePickDefine(const int current, const int total)
  * @param wantBoss Caller wants a boss.
  */
 bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
-                        const bool wantBoss)
+                        const bool wantBoss, const mobjCounts_t& monsterCounts)
 {
 	std::vector<const hordeDefine_t::monster_t*> monsters;
 
@@ -241,21 +258,50 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 		return false;
 
 	// Randomly select a monster to spawn.
-	const hordeDefine_t::monster_t* const monster =
-	    P_RandomFloatWeighted(monsters, MonsterChance);
+	const hordeDefine_t::monster_t* monster = nullptr;
+	std::optional<int> limit = std::nullopt;
+	for (size_t i = 0; i < 5; i++)
+	{
+		monster = P_RandomFloatWeighted(monsters, MonsterChance);
+		if (monster->config.limit <= 0)
+		{
+			// No limit, we're good.
+			break;
+		}
+
+		// Scale the limit, but whatever number we come up with must end
+		// up as an integer anyway.
+		limit.emplace(ceilf(monster->config.limit * SkillScaler()));
+		const int numAlive = P_HordeMobjCount(monsterCounts, monster->mobj);
+		if (numAlive < *limit)
+		{
+			// We have limit enough to spawn the monster.
+			break;
+		}
+
+		// Can't fit this monster.
+		monster = nullptr;
+		limit.reset();
+	}
+
+	if (monster == nullptr)
+	{
+		// We can't spawn a monster.
+		out.count = -1;
+		return false;
+	}
 
 	const mobjtype_t outType = monster->mobj;
 	const bool outIsBoss = monster->monster != hordeDefine_t::RM_NORMAL;
-	const hordeDefine_t::monConfig_t* config = &monster->config;
+	const hordeDefine_t::monConfig_t& config = monster->config;
 
-	int outCount = 0;
 	const int health = ::mobjinfo[outType].spawnhealth;
 
 	// Maximum health.
 	int maxHealth = -1;
-	if (config->maxGroupHealth >= 0)
+	if (config.maxGroupHealth >= 0)
 	{
-		maxHealth = config->maxGroupHealth;
+		maxHealth = config.maxGroupHealth;
 	}
 	else if (wantBoss)
 	{
@@ -268,9 +314,9 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 
 	// Minimum health.
 	int minHealth = -1;
-	if (config->minGroupHealth >= 0)
+	if (config.minGroupHealth >= 0)
 	{
-		minHealth = config->minGroupHealth;
+		minHealth = config.minGroupHealth;
 	}
 	else if (wantBoss)
 	{
@@ -281,9 +327,28 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 		minHealth = define.minGroupHealth;
 	}
 
-	const int upper = MAX(maxHealth / health, 1);
+	int upper = MAX(maxHealth / health, 1);
 	const int lower = MAX(minHealth / health, 1);
 
+	int outTotalCount;
+	if (upper <= lower)
+	{
+		// Only one possibility.
+		outTotalCount = upper;
+	}
+	else
+	{
+		// Randomly select a possibility.
+		outTotalCount = P_RandomInt(upper - lower + 1) + lower;
+	}
+
+	// If we have a limit, reduce the maxHealth to that.
+	if (limit)
+		maxHealth = MIN(maxHealth, *limit * health);
+
+	upper = MAX(maxHealth / health, 1);
+
+	int outCount;
 	if (upper <= lower)
 	{
 		// Only one possibility.
@@ -292,11 +357,13 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	else
 	{
 		// Randomly select a possibility.
-		outCount = P_RandomInt(upper - lower) + lower;
+		outCount = P_RandomInt(upper - lower + 1) + lower;
 	}
 
 	out.type = outType;
 	out.count = outCount;
+	out.limit = limit.value_or(0);
+	out.totalCount = MAX(outTotalCount, outCount);
 	out.isBoss = outIsBoss;
 
 	return true;

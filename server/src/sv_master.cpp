@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,13 +29,14 @@
 #include "sv_master.h"
 #include "c_dispatch.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "md5.h"
 
 #define MASTERPORT			15000
 
 // [Russell] - default master list
 // This is here for complete master redundancy, including domain name failure
-static const char* def_masterlist[] = { "master1.odamex.net", "voxelsoft.com", NULL };
+static constexpr std::string_view def_masterlist[] = { "master1.odamex.net", "voxelsoft.com", "odamex.electricbrass.net" };
 
 class masterserver
 {
@@ -114,8 +115,8 @@ void SV_InitMasters(void)
 			// so we can dump them to the server cfg file if one does not exist
 			if (masters.empty())
 			{
-				for (int i = 0; def_masterlist[i] != NULL; i++)
-					SV_AddMaster(def_masterlist[i]);
+				for (std::string_view master : def_masterlist)
+					SV_AddMaster(master);
 			}
 		}
 		else
@@ -131,9 +132,9 @@ void SV_InitMasters(void)
 //
 // SV_AddMaster
 //
-bool SV_AddMaster(const char *masterip)
+bool SV_AddMaster(std::string_view masterip)
 {
-	if(strlen(masterip) >= MAX_UDP_PACKET)
+	if(masterip.size() >= MAX_UDP_PACKET)
 		return false;
 
 	masterserver m;

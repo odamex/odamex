@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -315,7 +315,7 @@ CVAR (joy_turnaxis, "2", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLED
 CVAR (joy_lookaxis, "3", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (joy_sensitivity, "10.0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (joy_fastsensitivity, "15.0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (joy_freelook, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
+CVAR_FUNC_DECL (joy_freelook, "0", "Look up or down with the joystick", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 CVAR (joy_invert, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE (joy_deadzone, "0.20", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE,  0.0f, 0.75f)
@@ -386,8 +386,8 @@ CVAR(				cl_forcedownload, "0", "Forces the client to download the last WAD file
 // Client Preferences
 // ------------------
 
-#ifdef _XBOX // Because Xbox players may be unable to communicate for now -- Hyper_Eye
-CVAR_FUNC_DECL(		cl_name, "Xbox Player", "",
+#ifdef GCONSOLE // Because Xbox players may be unable to communicate for now -- Hyper_Eye
+CVAR_FUNC_DECL(		cl_name, "Console Player", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 #else
 CVAR_FUNC_DECL(		cl_name, "Player", "",
@@ -423,6 +423,9 @@ CVAR(in_autosr50, "1", "+strafe activates automatic SR50", CVARTYPE_BOOL,
 
 CVAR(				cl_showspawns, "0", "Show spawn points as particle fountains",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_LATCH)
+
+CVAR_FUNC_DECL(		cl_showfriends, "0", "Show an indicator on friendly monsters.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 // Netdemo Preferences
 // --------------------
@@ -598,7 +601,7 @@ CVAR_RANGE(hud_extendedinfo, "0",
 		   "Show kills, items, and secrets:\n// 0: Off\n// 1: DIGFONT\n// 2: SMALLFONT\n// 3: DIGFONT, vertical arrangement\n// 4: SMALLFONT, vertical arrangement",
 		   CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0, 4.0)
 
-#ifdef _XBOX
+#ifdef GCONSOLE
 CVAR (chatmacro0, "Hi.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                       // A
 CVAR (chatmacro1, "I'm ready to kick butt!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)   // B
 CVAR (chatmacro2, "Help!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                     // X
@@ -608,7 +611,7 @@ CVAR (chatmacro5, "Yes", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLE
 CVAR (chatmacro6, "I'll take care of it.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)     // Left Trigger
 CVAR (chatmacro7, "Come here!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                // Right Trigger
 CVAR (chatmacro8, "Thanks for the game. Bye.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE) // Start
-CVAR (chatmacro9, "I am on Xbox and can only use chat macros.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE) // Back
+CVAR (chatmacro9, "I am on a game console and can only use chat macros.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE) // Back
 #else
 // GhostlyDeath <November 2, 2008> -- someone had the order wrong (0-9!)
 CVAR (chatmacro1, "I'm ready to kick butt!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
@@ -639,6 +642,8 @@ CVAR_RANGE(		snd_voxtype, "2", "Voice announcer type",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 2.0f)
 
 CVAR(			snd_gamesfx, "1", "Game SFX", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			snd_votesfx, "1", "Enable vote UI sounds", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			snd_crossover, "0", "Stereo switch",	CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
@@ -678,7 +683,7 @@ static char *C_GetDefaultMusicSystem()
 	defaultmusicsystem = MS_AUDIOUNIT;
 	#endif
 
-	#if defined _WIN32 && !defined _XBOX
+	#if defined _WIN32
 	defaultmusicsystem = MS_PORTMIDI;
 	#endif
 
@@ -739,6 +744,12 @@ CVAR(			r_flashhom, "0", "Draws flashing colors where there is HOM",
 CVAR(			r_drawflat, "0", "Disables all texturing of walls, floors and ceilings",
 				CVARTYPE_BOOL, CVAR_NULL)
 
+CVAR(			r_clipmaskedspecial, "1", "Vertically clip masked midtextures when surrounding sectors have differing specials (mimics Hexen and DSDA-Doom behavior)",
+				CVARTYPE_BOOL, CVAR_NULL)
+
+CVAR(			r_thingsectorlight, "0", "Things are lit according to the average of the transfered light levels (mimics MBF behavior)",
+				CVARTYPE_BOOL, CVAR_NULL)
+
 #if 0
 CVAR(			r_drawhitboxes, "0", "Draws a box outlining every actor's hitboxes",
 				CVARTYPE_BOOL, CVAR_NULL)
@@ -771,13 +782,8 @@ CVAR_FUNC_DECL(	r_forceteamcolor, "0", "Changes the color of all teammates to th
 CVAR_FUNC_DECL(	r_teamcolor, "40 cf 00", "",
 				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-#ifdef _XBOX // The burn wipe works better in 720p
-CVAR_RANGE(		r_wipetype, "2", "",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
-#else
 CVAR_RANGE(		r_wipetype, "1", "",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
-#endif
 
 CVAR_RANGE(		r_showendoom, "0", "Display the ENDDOOM text after quitting",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)   // [ML] 1/5/10: Add endoom support

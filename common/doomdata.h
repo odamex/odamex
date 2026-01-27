@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -296,6 +296,8 @@ typedef struct MapThing
 #define MTF_COOPERATIVE		0x0200	// Thing appears in cooperative games
 #define MTF_DEATHMATCH		0x0400	// Thing appears in deathmatch games
 
+#define MTF_FRIENDLY			0x2000 // zdoom
+
 // Custom MapThing Flags
 #define MTF_FILTER_COOPWPN  0x0800  // Weapon thing is filtered with g_thingfilter 1.
 									// (Hate this method but it works...)
@@ -306,6 +308,9 @@ typedef struct MapThing
 #define BTF_NOTSINGLE		0x0010	// (TF_COOPERATIVE|TF_DEATHMATCH)
 #define BTF_NOTDEATHMATCH	0x0020	// (TF_SINGLE|TF_COOPERATIVE)
 #define BTF_NOTCOOPERATIVE	0x0040	// (TF_SINGLE|TF_DEATHMATCH)
+#define BTF_FRIEND			0x0080	// mbf
+#define BTF_RESERVED		0x0100	// mbf reserved bit
+#define BTF_RESERVED_MASK   (MTF_EASY|MTF_MEDIUM|MTF_HARD|MTF_AMBUSH|BTF_NOTSINGLE)
 
 #define NO_CRUSH	-1
 #define DOOM_CRUSH	10

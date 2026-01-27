@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -40,7 +40,7 @@
 // ------------------------
 // Command line parameters.
 //
-extern	bool			devparm;		// DEBUG: launched with -devparm
+inline	bool			devparm;		// DEBUG: launched with -devparm
 
 
 // -----------------------------------------------------
@@ -57,17 +57,15 @@ extern	bool			modifiedgame;
 // Selected skill type, map etc.
 //
 
-extern OLumpName startmap; // [RH] Actual map name now
+inline OLumpName startmap; // [RH] Actual map name now
 
 extern bool autostart;
 
 // Selected by user.
 EXTERN_CVAR (sv_skill)
 
-// Bot game? Like netgame, but doesn't involve network communication.
-extern	bool			multiplayer;
-
-extern bool            network_game;
+inline bool network_game;			// Describes if a network game is being played
+inline bool multiplayer;			// Describes if this is a multiplayer game or not
 
 // Game mode
 EXTERN_CVAR (sv_gametype)
@@ -105,11 +103,11 @@ EXTERN_CVAR (sv_maxplayers)
 //	status bar explicitely.
 extern	bool			statusbaractive;
 
-extern	bool			menuactive; 	// Menu overlayed?
-extern	bool			paused; 		// Game Pause?
+inline	bool			menuactive; 	// Menu overlayed?
+inline	bool			paused; 		// Game Pause?
 
 
-extern	bool			viewactive;
+inline	bool			viewactive;
 
 extern	bool	 		nodrawers;
 extern	bool	 		noblit;
@@ -129,7 +127,7 @@ extern level_locals_t level;
 // Disable save/end game?
 extern	bool			usergame;
 
-extern	bool			demoplayback;
+inline	bool			demoplayback;
 
 // Quit after playing a demo from cmdline.
 extern	bool			singledemo;
@@ -212,5 +210,6 @@ struct DehInfo
 	int BFGCells         = 40;
 	int Infight          = 0;
 	bool ZDAmmo          = false;
+	int32_t helper       = MT_NULL;
 };
 inline DehInfo deh{};

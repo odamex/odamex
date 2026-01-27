@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -130,6 +130,7 @@ void P_SerializeWorld (FArchive &arc)
 				<< sec.alwaysfake
 				<< sec.waterzone
 				<< sec.SecActTarget
+				<< sec.Skybox
 				<< sec.MoreFlags;
 		}
 
@@ -163,6 +164,7 @@ void P_SerializeWorld (FArchive &arc)
 		for (sector_t& sec : R_GetSectors())
 		{
 			AActor* SecActTarget;
+			AActor* Skybox;
 
 			arc >> sec.floorheight
 				>> sec.ceilingheight
@@ -227,6 +229,7 @@ void P_SerializeWorld (FArchive &arc)
 			arc >> sec.alwaysfake
 				>> sec.waterzone
 				>> SecActTarget
+				>> Skybox
 				>> sec.MoreFlags;
 
 			sec.floorplane.invc = FixedDiv(FRACUNIT, sec.floorplane.c);
@@ -234,6 +237,7 @@ void P_SerializeWorld (FArchive &arc)
 			sec.ceilingplane.invc = FixedDiv(FRACUNIT, sec.ceilingplane.c);
 			sec.ceilingplane.sector = &sec;
 			sec.SecActTarget.init(SecActTarget);
+			sec.Skybox.init(Skybox);
 		}
 
 		// do lines

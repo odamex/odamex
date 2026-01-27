@@ -5,6 +5,9 @@ on:
     branches:
     - 'release/[0-9]+.[0-9]+.[0-9]+' # Only run on major.minor.patch releases
 
+permissions:
+  contents: write
+
 jobs:
   pre_job:
     name: Build Preparation
@@ -204,13 +207,13 @@ jobs:
         --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
     - name: Pack flatpak
       run: |
-        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
-        --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+        flatpak build-bundle repo odamex-linux-x86_64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak \
+        net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: Odamex-Flatpak-x86_64
-        path: odamex.flatpak
+        path: odamex-linux-x86_64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak
   build-flatpak-arm:
     name: Build Flatpak (Ubuntu 24.04 ARM)
     needs: pre_job
@@ -253,10 +256,39 @@ jobs:
         --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
     - name: Pack flatpak
       run: |
-        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
-        --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+        flatpak build-bundle repo odamex-linux-arm64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak \
+        net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: Odamex-Flatpak-ARM64
-        path: odamex.flatpak
+        path: odamex-linux-arm64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak
+  package-and-upload:
+    name: Package and Upload Artifacts
+    runs-on: windows-latest
+    needs: [pre_job, build-flatpak, build-flatpak-arm]
+    env:
+      build_number: ${{ needs.pre_job.outputs.build_number }}
+      new_version: ${{ needs.pre_job.outputs.new_version }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-tags: true
+    - name: Download x86_64 Flatpak
+      uses: actions/download-artifact@v4
+      with:
+        name: Odamex-Flatpak-x86_64
+    - name: Download Arm Flatpak
+      uses: actions/download-artifact@v4
+      with:
+        name: Odamex-Flatpak-ARM64
+    - name: Create or update prerelease
+      uses: ./.github/actions/update-prerelease
+      env:
+        build_number: ${{ needs.pre_job.outputs.build_number }}
+        new_version: ${{ needs.pre_job.outputs.new_version }}
+      with:
+        build_number: ${{ env.build_number }}
+        new_version: ${{ env.new_version }}
+        files: |
+          ./*.flatpak

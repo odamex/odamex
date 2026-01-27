@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -56,28 +56,15 @@ EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_teamsinplay)
 
-gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
 
-bool 			paused;
 bool 			sendpause;				// send a pause event next tic
 
-bool			timingdemo; 			// FIXME : delete this variable for odasrv ?
-bool	 		viewactive;
-
-bool			network_game;			// Describes if a network game is being played
-bool			multiplayer;			// Describes if this is a multiplayer game or not
-
-Players			players;				// The player vector, contains all player information
 player_t		nullplayer;				// The null player
 
-byte			consoleplayer_id;		// player taking events and displaying
-byte			displayplayer_id;		// view being displayed
 int 			gametic;
 
-
 FILE			*recorddemo_fp;			// Ch0wW : Keeping this for future serverside demo-recording.
-bool 			demoplayback;			// FIXME : remove this serverside !
 int				demostartgametic;		// FIXME : remove this serverside !
 
 wbstartstruct_t wminfo; 				// parms for world map / intermission
@@ -393,7 +380,7 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 // zdoom 2.x still has it!
 static fixed_t PlayersRangeFromSpot (mapthing2_t *spot)
 {
-	fixed_t closest = MAXINT;
+	fixed_t closest = limits::MAXFIXED;
 	fixed_t distance;
 
 	for (const auto& player : players)

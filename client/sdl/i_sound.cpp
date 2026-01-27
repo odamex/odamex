@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -39,10 +39,6 @@
 #include "m_argv.h"
 #include "m_misc.h"
 #include "w_wad.h"
-
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
 
 #define NUM_CHANNELS 32
 
@@ -483,14 +479,7 @@ void I_InitSound()
 	if (I_IsHeadless() || Args.CheckParm("-nosound"))
 		return;
 
-    #if defined(SDL12)
-    const char *driver = getenv("SDL_AUDIODRIVER");
-
-	if(!driver)
-		driver = "default";
-
-    PrintFmt(PRINT_HIGH, "I_InitSound: Initializing SDL's sound subsystem ({})\n", driver);
-    #elif defined(SDL20)
+    #if defined(SDL20)
     PrintFmt("I_InitSound: Initializing SDL's sound subsystem\n");
     #endif
 

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,6 +25,8 @@
 
 #include <algorithm>
 #include <ctime>
+#include <optional>
+#include <charconv>
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4244)     // MIPS
@@ -54,7 +56,28 @@ struct OTimespan
 int		ParseHex(const char *str);
 int 	ParseNum(const char *str);
 bool	IsNum(const char* str);		// [RH] added
+bool	IsNum(std::string_view str);
 bool	IsRealNum(const char* str);
+
+template<typename T>
+std::optional<T> ParseNum(std::string_view str)
+{
+    T out;
+	int base = 10;
+	while (!str.empty() && std::isspace(static_cast<unsigned char>(str.front())))
+		str.remove_prefix(1);
+	if (str[0] == '$')
+	{
+		str.remove_prefix(1);
+		base = 16;
+	}
+    const std::from_chars_result result = std::from_chars(str.data(), str.data() + str.size(), out, base);
+    if (result.ec != std::errc())
+    {
+        return std::nullopt;
+    }
+    return out;
+}
 
 // [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity
@@ -77,11 +100,6 @@ std::string &TrimStringEnd(std::string &s);
 
 bool ValidString(const std::string&);
 bool IsHexString(const std::string& str, const size_t len);
-
-char	*COM_Parse (char *data);
-
-extern	char	com_token[8192];
-extern	bool	com_eof;
 
 char	*copystring(const char *s);
 bool M_StringCopy(char *dest, const char *src, size_t dest_size);
