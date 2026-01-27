@@ -1486,18 +1486,18 @@ void SV_ClientFullUpdate(player_t &pl)
 			MSG_WriteSVC(&cl->reliablebuf, SVC_TeamMembers(static_cast<team_t>(i)));
 	}
 
-    int hiddenUpdates = 0;
-    TThinkerIterator<AActor> iterator;
-    AActor* mo;
+	int hiddenUpdates = 0;
+	TThinkerIterator<AActor> iterator;
+	AActor* mo;
 
-    while ((mo = iterator.Next()))
-    {
-        hiddenUpdates = SV_UpdateHiddenMobj(pl, mo, hiddenUpdates);
-        if (hiddenUpdates >= MAX_HIDDEN_MOBJ_UPDATES)
-        {
-            break;
-        }
-    }
+	while ((mo = iterator.Next()))
+	{
+		hiddenUpdates = SV_UpdateHiddenMobj(pl, mo, hiddenUpdates);
+		if (hiddenUpdates >= MAX_HIDDEN_MOBJ_UPDATES)
+		{
+			break;
+		}
+	}
 
 	// update flags
 	if (sv_gametype == GM_CTF)
@@ -4196,7 +4196,7 @@ void SV_DisplayTics()
 void SV_RunTics()
 {
 	SV_GetPackets();
-    SV_HandleReliableRetransmissions();
+	SV_HandleReliableRetransmissions();
 
 	std::string cmd = I_ConsoleInput();
 	if (cmd.length())

@@ -558,10 +558,10 @@ public:
 	struct msecnode_s	*touching_sectorlist;				// phares 3/14/98
 
 	short           deadtic;        // tics after player's death
-	int             transientInt;   // transient variable for use by algorithms that should
-                                    // not expect it to contain any particular value or that
-                                    // any value it leaves in it will last for any length of
-                                    // time.  Perfect for things like doing immediate sorts.
+	int             transientInt;   // transient variable for use by algorithms that need a
+	                                // very short-lived, per-actor data value that could be
+	                                // thought of as "throwaway."  For example, a key for a
+	                                // bespoke, immediate sorting operation.
 
 	unsigned char	rndindex;		// denis - because everything should have a random number generator, for prediction
 

@@ -110,15 +110,13 @@ float     world_index_accum = 0.0f;
 int       last_svgametic = 0;
 int       last_player_update = 0;
 
-bool		recv_full_update = false;
+bool      recv_full_update = false;
 
 std::string connectpasshash = "";
 
 bool      connected;
 netadr_t  serveraddr; // address of a server
 netadr_t  lastconaddr;
-
-constexpr static size_t PACKET_SEQ_MASK = 0xFF;
 
 static SequenceReceiver reliableSequenceReceiver;
 
@@ -1951,15 +1949,15 @@ bool CL_ReadPacketHeader()
 
 	netgraph.addPacketIn();
 
-    if (sequence >= 0)
-    {
+	if (sequence >= 0)
+	{
 		::reliableSequenceReceiver.RegisterReceivedPacket(sequence, ::net_message);
 
-		// Send an ACK to the server IF it contained reliable data.
+		// Send an ACK to the server only if it contained reliable data.
 		MSG_WriteMarker(&net_buffer, clc_ack);
 		MSG_WriteLong(&net_buffer, sequence);
-        return false;
-    }
+		return false;
+	}
 
 	return true;
 }
@@ -1967,33 +1965,35 @@ bool CL_ReadPacketHeader()
 // Returns true if all is good, false if we need to bail out of further processing.
 bool CL_AcceptNetMessage()
 {
-    if (netdemo.isRecording())
-        netdemo.capture(&::net_message);
+	if (netdemo.isRecording())
+	{
+		netdemo.capture(&::net_message);
+	}
 
-    CL_ParseCommands();
+	CL_ParseCommands();
 
-    if (gameaction == ga_fullconsole) // Host_EndGame was called
-    {
-        return false;
-    }
-    return true;
+	if (gameaction == ga_fullconsole) // Host_EndGame was called
+	{
+		return false;
+	}
+	return true;
 }
 
 // Handles the next Reliable message in sequence.
 // Returns true if all is good, false if we need to bail out of further processing.
 bool CL_ProcessCurrentReliableMessages()
 {
-    QueueEntryType* queueEntryPtr;
-    while ((queueEntryPtr = ::reliableSequenceReceiver.NextPacket()) != nullptr)
-    {
-        queueEntryPtr->buf.swap(::net_message);
+	QueueEntryType* queueEntryPtr;
+	while ((queueEntryPtr = ::reliableSequenceReceiver.NextPacket()) != nullptr)
+	{
+		queueEntryPtr->buf.swap(::net_message);
 
-        if (not CL_AcceptNetMessage())
-        {
-            return false;
-        }
-    }
-    return true;
+		if (not CL_AcceptNetMessage())
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 

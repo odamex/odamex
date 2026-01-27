@@ -170,7 +170,7 @@ bool SV_SendPacket(player_t &pl)
 		// copy the reliable data into the buffer.
 		SZ_Write(&saveMessage, cl->reliablebuf.data.get(), cl->reliablebuf.cursize);
 
-        // Insert and increment Reliable sequence number
+		// Insert and increment Reliable sequence number
 		MSG_WriteLong(&sendd, cl->sequence++);
 	}
 	else
@@ -199,8 +199,8 @@ bool SV_SendPacket(player_t &pl)
 		bps = (int)((double)( (cl->unreliable_bps + cl->reliable_bps) * TICRATE)/(double)(gametic%35));
 	}
 
-    if (bps < cl->rate*1000)
-    {
+	if (bps < cl->rate*1000)
+	{
 		if (cl->netbuf.cursize && (sendd.maxsize() - sendd.cursize > cl->netbuf.cursize) )
 		{
 			SZ_Write (&sendd, cl->netbuf.data.get(), cl->netbuf.cursize);
@@ -268,40 +268,41 @@ static void SendOldPacket(client_t& cl, const QueueEntryType& queueEntry)
 
 void SV_HandleReliableRetransmissions()
 {
-    for (auto& player : players)
-    {
-        auto            iter = player.client.reliableSendSequencer.IterateUnackedPackets();
-        QueueEntryType* sendQueueEntry;
-        int             retransmissionsSent = 0;
+	for (auto& player : players)
+	{
+		auto            iter = player.client.reliableSendSequencer.IterateUnackedPackets();
+		QueueEntryType* sendQueueEntry;
+		int             retransmissionsSent = 0;
 
-        // The following results in fractional tics rounding up.
-        const int pingInTics = (player.ping * TICRATE + 999) / 1000;
+		// The following results in fractional tics rounding up.
+		const int pingInTics = (player.ping * TICRATE + 999) / 1000;
 
-        // Adjust upwards because in the real world, tic boundaries don't align and can drift.
-        const int retransmitDelayInTics = pingInTics + 1;
+		// Adjust upwards because in the real world, tic boundaries don't align and can drift.
+		const int retransmitDelayInTics = pingInTics + 1;
 
-        //DPrintFmt("--------------------------\n");
-        // TODO:  throttle this.  Could do it dynamically as part of a sliding window.
-        while ((sendQueueEntry = iter.Next()) != nullptr)
-        {
-            // Total hack:  We check for the player being in the first second of their connection because there's something
-            // in the connection protocol that requires us to do immediate retransmits of the first few reliable messages.
-            if (player.GameTime == 0 or gametic >= (retransmitDelayInTics + sendQueueEntry->originatingTic))
-            {
-                //DPrintFmt("player {} ingame {} gametic {} orig {} seq {} SEND\n", int(player.id), player.GameTime, gametic, sendQueueEntry->originatingTic, sendQueueEntry->sequence);
-                SendOldPacket(player.client, *sendQueueEntry);
+		//DPrintFmt("--------------------------\n");
 
-                if (++retransmissionsSent > DEFAULT_RETRANSMISSIONS_PER_TIC)
-                {
-                    break;
-                }
-            }
-            else
-            {
-                //DPrintFmt("player {} ingame {} gametic {} orig {} seq {}\n", int(player.id), player.GameTime, gametic, sendQueueEntry->originatingTic, sendQueueEntry->sequence);
-            }
-        }
-    }
+		while ((sendQueueEntry = iter.Next()) != nullptr)
+		{
+			// Total hack:  We check for the player being in the first second of their connection because there's something
+			// in the connection protocol that requires us to do immediate retransmits of the first few reliable messages.
+			if (player.GameTime == 0 or gametic >= (retransmitDelayInTics + sendQueueEntry->originatingTic))
+			{
+				//DPrintFmt("player {} ingame {} gametic {} orig {} seq {} SEND\n", int(player.id), player.GameTime, gametic, sendQueueEntry->originatingTic, sendQueueEntry->sequence);
+				SendOldPacket(player.client, *sendQueueEntry);
+
+				// TODO:  Consider changing the size of the retransmit window based on client-specific info.
+				if (++retransmissionsSent > DEFAULT_RETRANSMISSIONS_PER_TIC)
+				{
+					break;
+				}
+			}
+			else
+			{
+				//DPrintFmt("player {} ingame {} gametic {} orig {} seq {}\n", int(player.id), player.GameTime, gametic, sendQueueEntry->originatingTic, sendQueueEntry->sequence);
+			}
+		}
+	}
 }
 
 //
@@ -315,7 +316,7 @@ void SV_AcknowledgePacket(player_t &player)
 
 	const bool isFresh = cl->reliableSendSequencer.Acknowledge(sequence);
 
-    //DPrintFmt("player {} tic {} ACKed seq {}\n", int(player.id), gametic, sequence);
+	//DPrintFmt("player {} tic {} ACKed seq {}\n", int(player.id), gametic, sequence);
 
 	if (isFresh and sequence == 0)
 	{

@@ -715,21 +715,21 @@ public:
 		return *this;
 	}
 
-    void swap(buf_t& other)
-    {
-        using std::swap;
+	void swap(buf_t& other)
+	{
+		using std::swap;
 
-        swap(data,       other.data);
-        swap(allocsize,  other.allocsize);
-        swap(cursize,    other.cursize);
-        swap(readpos,    other.readpos);
-        swap(overflowed, other.overflowed);
-    }
+		swap(data,       other.data);
+		swap(allocsize,  other.allocsize);
+		swap(cursize,    other.cursize);
+		swap(readpos,    other.readpos);
+		swap(overflowed, other.overflowed);
+	}
 
-    friend void swap(buf_t& lhs, buf_t& rhs)
-    {
-        lhs.swap(rhs);
-    }
+	friend void swap(buf_t& lhs, buf_t& rhs)
+	{
+		lhs.swap(rhs);
+	}
 
 	buf_t()
 		: data(nullptr), allocsize(0), cursize(0), readpos(0), overflowed(false)
