@@ -270,6 +270,12 @@ void SV_HandleReliableRetransmissions()
 {
 	for (auto& player : players)
 	{
+		// Players that are on their way out don't get any retries.
+		if (player.playerstate == PST_DISCONNECT)
+		{
+			continue;
+		}
+
 		auto                    iter = player.client.reliableSendSequencer.IterateUnackedPackets();
 		SequenceQueueEntryType* sendQueueEntry;
 		int                     retransmissionsSent = 0;

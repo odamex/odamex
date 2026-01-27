@@ -398,6 +398,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 	mute_spectators = 0.f;
 	mute_enemies = 0.f;
 
+	::reliableSequenceReceiver = SequenceReceiver();
 	P_ClearAllNetIds();
 
 	{
@@ -463,6 +464,7 @@ void CL_Reconnect(void)
 		connected = false;
 		gameaction = ga_fullconsole;
 
+		::reliableSequenceReceiver = SequenceReceiver();
 		P_ClearAllNetIds();
 	}
 	else if (lastconaddr.ip[0])
@@ -1749,7 +1751,7 @@ bool CL_Connect()
 {
 	players.clear();
 
-	reliableSequenceReceiver = SequenceReceiver();
+	::reliableSequenceReceiver = SequenceReceiver();
 
 	// [AM] This needs to go out ASAP so the server can start sending us
 	//      messages.
