@@ -103,14 +103,9 @@ void DThinker::Orphan()
 
 void DThinker::Destroy()
 {
-	DestroyFromContainer();
-}
-
-std::vector<DThinker*>::iterator DThinker::DestroyFromContainer ()
-{
 	// denis - allow this function to be safely called multiple times
 	if(destroyed)
-		return s_thinkers.end();
+		return;
 
 	// In isolation, find-erase is almost always slower than unlinking a node from a linked list.
 	// However, across the entire frame, the vector's iteration performance advantages ultimately
@@ -119,30 +114,40 @@ std::vector<DThinker*>::iterator DThinker::DestroyFromContainer ()
 	                            s_thinkers.end(),
 	                            this);
 
-	auto nextIter = iterToThis != s_thinkers.end() ? s_thinkers.erase(iterToThis) : s_thinkers.end();
+	DestroyFromContainer(iterToThis);
+}
 
-	destroyed = true;
-
-	if(refCount)
+std::vector<DThinker*>::iterator DThinker::DestroyFromContainer (std::vector<DThinker*>::iterator iterToThis)
+{
+	if (iterToThis != s_thinkers.end())
 	{
-		LingerDestroy.push_back(this); // something is still finding this pointer useful
-	}
-	else
-		Super::Destroy ();
+		DThinker *obj = *iterToThis;
+		auto nextIter = s_thinkers.erase(iterToThis);
 
-	size_t l = LingerDestroy.size();
-	for(size_t i = 0; i < l; i++)
-	{
-		DThinker *obj = LingerDestroy[i];
-		if(!obj->refCount)
+		obj->destroyed = true;
+
+		if(obj->refCount)
 		{
-			obj->ObjectFlags |= OF_Cleanup;
-			LingerDestroy.erase(LingerDestroy.begin() + i);
-			l--; i--;
-			delete obj;
+			LingerDestroy.push_back(obj); // something is still finding this pointer useful
 		}
+		else
+			obj->Super::Destroy ();
+
+		size_t l = LingerDestroy.size();
+		for(size_t i = 0; i < l; i++)
+		{
+			obj = LingerDestroy[i];
+			if(!obj->refCount)
+			{
+				obj->ObjectFlags |= OF_Cleanup;
+				LingerDestroy.erase(LingerDestroy.begin() + i);
+				l--; i--;
+				delete obj;
+			}
+		}
+		return nextIter;
 	}
-	return nextIter;
+	return s_thinkers.end();
 }
 
 bool DThinker::WasDestroyed ()
@@ -153,11 +158,10 @@ bool DThinker::WasDestroyed ()
 // Destroy every thinker
 void DThinker::DestroyAllThinkers ()
 {
-	auto currentthinker = s_thinkers.begin();
-	while (currentthinker != s_thinkers.end())
-	{
+	while (not s_thinkers.empty())
+    {
 		// Suboptimal, but eh, this function probably doesn't need to be fast.
-		currentthinker = (*currentthinker)->DestroyFromContainer();
+		DestroyFromContainer(s_thinkers.end() - 1);
 	}
 	DObject::EndFrame ();
 
@@ -175,21 +179,34 @@ void DThinker::DestroyAllThinkers ()
 // Destroy all thinkers except for player-controlled actors
 void DThinker::DestroyMostThinkers ()
 {
-    auto thinker = s_thinkers.begin();
-	while (thinker != s_thinkers.end())
-	{
-		if (!(*thinker)->IsKindOf (RUNTIME_CLASS (AActor)) ||
-			static_cast<AActor *>(*thinker)->player == NULL ||
-			static_cast<AActor *>(*thinker)->player->mo
-			 != static_cast<AActor *>(*thinker))
-		{
-			thinker = (*thinker)->DestroyFromContainer();
-		}
-		else
-		{
-		    ++thinker;
-		}
-	}
+    auto isPlayerActor = [](DThinker* thinker) -> bool
+    {
+        return thinker->IsKindOf (RUNTIME_CLASS (AActor)) &&
+            static_cast<AActor *>(thinker)->player     != nullptr &&
+            static_cast<AActor *>(thinker)->player->mo != static_cast<AActor *>(thinker);
+    };
+
+    // stable_partition retains the relative order of elements with both partitions.
+    auto lastToDestroy = std::stable_partition(s_thinkers.begin(),
+                                               s_thinkers.end(),
+                                               isPlayerActor);
+
+    // Calling an erase() range would be nicest, but we have special stuff going on in Destroy
+    // that normally runs between destructions.  A good refactor would be to allow that to work
+    // with the normal destructors.
+    //
+    // So in the meantime, let's take advantage of the fact that erase() doesn't invalidate
+    // preceding iterators.
+    if (lastToDestroy != s_thinkers.end())
+    {
+        auto nextToDestroy = s_thinkers.end() - 1;
+        while (nextToDestroy != lastToDestroy)
+        {
+            DestroyFromContainer(nextToDestroy);
+            nextToDestroy = s_thinkers.end() - 1;       // Can't validly decrement here.
+        }
+        DestroyFromContainer(nextToDestroy);
+    }
 	DObject::EndFrame ();
 }
 
