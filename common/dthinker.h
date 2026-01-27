@@ -102,7 +102,7 @@ public:
 	{
 		while (m_currentThinker != DThinker::s_thinkers.end())
 		{
-			if ((*m_currentThinker)->IsKindOf (m_ParentType))
+			if ((*m_currentThinker)->IsKindOf (m_ParentType) and not (*m_currentThinker)->destroyed)
 			{
 				return *(m_currentThinker++);
 			}

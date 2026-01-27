@@ -91,6 +91,16 @@ DThinker::DThinker ()
 
 DThinker::~DThinker ()
 {
+	// In isolation, find-erase is almost always slower than unlinking a node from a linked list.
+	// However, across the entire frame, the vector's iteration performance advantages ultimately
+	// lead to slightly better performance overall.
+	auto iterToThis = std::find(s_thinkers.begin(),
+	                            s_thinkers.end(),
+	                            this);
+	if (iterToThis != s_thinkers.end())
+	{
+		s_thinkers.erase(iterToThis);
+	}
 }
 
 // This method is necessary if you construct the Thinker in an unconventional way,
@@ -107,42 +117,25 @@ void DThinker::Destroy()
 	if(destroyed)
 		return;
 
-	DestroyFromContainer();
-}
+	destroyed = true;
 
-void DThinker::DestroyFromContainer()
-{
-	// In isolation, find-erase is almost always slower than unlinking a node from a linked list.
-	// However, across the entire frame, the vector's iteration performance advantages ultimately
-	// lead to slightly better performance overall.
-	auto iterToThis = std::find(s_thinkers.begin(),
-	                            s_thinkers.end(),
-	                            this);
-
-	if (iterToThis != s_thinkers.end())
+	if(refCount)
 	{
-		auto nextIter = s_thinkers.erase(iterToThis);
+		LingerDestroy.push_back(this); // something is still finding this pointer useful
+	}
+	else
+		Super::Destroy ();
 
-		this->destroyed = true;
-
-		if(this->refCount)
+	size_t l = LingerDestroy.size();
+	for(size_t i = 0; i < l; i++)
+	{
+		DThinker *obj = LingerDestroy[i];
+		if(!obj->refCount)
 		{
-			LingerDestroy.push_back(this); // something is still finding this pointer useful
-		}
-		else
-			this->Super::Destroy ();
-
-		size_t l = LingerDestroy.size();
-		for(size_t i = 0; i < l; i++)
-		{
-			DThinker *obj = LingerDestroy[i];
-			if(!obj->refCount)
-			{
-				obj->ObjectFlags |= OF_Cleanup;
-				LingerDestroy.erase(LingerDestroy.begin() + i);
-				l--; i--;
-				delete obj;
-			}
+			obj->ObjectFlags |= OF_Cleanup;
+			LingerDestroy.erase(LingerDestroy.begin() + i);
+			l--; i--;
+			obj->Super::Destroy();
 		}
 	}
 }
@@ -155,12 +148,12 @@ bool DThinker::WasDestroyed ()
 // Destroy every thinker
 void DThinker::DestroyAllThinkers ()
 {
-	while (not s_thinkers.empty())
-    {
+	for (auto& thinker : s_thinkers)
+	{
 		// Suboptimal, but eh, this function probably doesn't need to be fast.
 		// Please note, it is CRITICAL that we call Destroy() so that it dispatches
 		// appropriately!
-		s_thinkers.front()->Destroy();
+		thinker->Destroy();
 	}
 	DObject::EndFrame ();
 
@@ -194,19 +187,17 @@ void DThinker::DestroyMostThinkers ()
     // that normally runs between destructions.  A good refactor would be to allow that to work
     // with the normal destructors.
     //
-    // So in the meantime, let's take advantage of the fact that erase() doesn't invalidate
-    // preceding iterators.
+    // Let's delete in reverse order to eliminate memory move operations in the vector...
+    //
 	// Please note, it is CRITICAL that we call Destroy() so that it dispatches
 	// appropriately!
     if (lastToDestroy != s_thinkers.end())
     {
-        auto nextToDestroy = s_thinkers.end() - 1;
-        while (nextToDestroy != lastToDestroy)
+        for (auto iter = s_thinkers.end() - 1; iter != lastToDestroy; --iter)
         {
-            (*nextToDestroy)->Destroy();
-            nextToDestroy = s_thinkers.end() - 1;       // Can't validly decrement here.
+            (*iter)->Destroy();
         }
-        (*nextToDestroy)->Destroy();
+        (*lastToDestroy)->Destroy();
     }
 	DObject::EndFrame ();
 }
