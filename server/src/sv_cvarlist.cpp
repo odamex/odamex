@@ -110,7 +110,7 @@ CVAR_RANGE(		sv_natport,	"0", "NAT firewall workaround, this is a port number",
 CVAR_RANGE(		sv_flooddelay, "1.5", "Chat flood protection time (in seconds)",
 				CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 10.0f)
 
-CVAR_RANGE_FUNC_DECL(sv_maxrate, "200", "Forces clients to be on or below this rate",
+CVAR_RANGE_FUNC_DECL(sv_maxrate, "800", "Forces clients to be on or below this rate",
 				CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 7.0f, 100000.0f)
 
 #ifdef ODA_HAVE_MINIUPNP

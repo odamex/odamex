@@ -2987,8 +2987,7 @@ namespace
 				// We go with dividing up the mobjs into 3 partitions with two calls to std::nth_element
 				// because for the purposes of prioritizing mobj messages to clients, we don't need fine
 				// precision between mobjs by distance.  Three coarse buckets based on approximate distance
-				// is enough.  When looking at a massive fray, even with sv_maxrate at 200, this gives us
-				// three categories of entities based on range:
+				// is enough.  This gives us three categories of entities based on range:
 				//
 				//      1. The closest 25% of mobjs - we really want to see frequent updates to these.
 				//      2. The next closest 25%     - no problem if these somewhat-distant guys stutter.
