@@ -31,6 +31,7 @@ class SequenceSender
 {
 	public:
 
+    // This class iterates over the *unacknowledged* reliable messages.
 	// This iterator can be invalidated if things are acked or new Send Packets are obtained.
 	class UnackedIterator
 	{
@@ -41,6 +42,8 @@ class SequenceSender
 				m_index    (-1)
 			{}
 
+			// Returns the next unacknowledged message.  After the last unacknowledged message
+			// has been returned, subsequent calls return nullptr.
 			SequenceQueueEntryType* Next()
 			{
 				if (m_count >= m_sequencer->m_unackedCount)
@@ -89,7 +92,20 @@ class SequenceSender
 		{
 		}
 
-		// Sender functions
+		// Grab a slot in the reliability sequence and prepare it for transmission.
+		// This class does not manage the sequence numbers or timestamps themselves -
+		// the caller must manage these and specify them when obtaining a reliability
+		// slot.  If a sequence number is requested that corresponds to an existing
+		// message, that existing message is discarded, regardless of whether or not
+		// it is awaiting acknowledgement.
+		//
+		// The overall algorithm assumes that sequence numbers will only ever be
+		// specified in *contiguous* ascending order.  If a sequence number is
+		// specified with a value less than 0 or the sequence of any previously-
+		// obtained slot, the behavior is undefined.
+		//
+		// Returns a reference to the buffer that the caller must fill out with data
+		// and send to the intended recipient.
 		buf_t& ObtainSendPacket(int sequence, int currentTic=-1)
 		{
 			const int desiredIndex = sequence % m_sendQueue.size();
@@ -123,6 +139,9 @@ class SequenceSender
 			return entryRef.buf;
 		}
 
+		// This function declares that the packet associated with the given sequence number has been
+		// acknowledged by its intended recipient.
+		//
 		// Returns true if the acknowledgement a previously unacknowledged message has become acknowledged.
 		// Returns false otherwise.
 		bool Acknowledge(int sequence)
@@ -167,8 +186,6 @@ class SequenceSender
 		{
 			return UnackedIterator(this);
 		}
-
-		// Receiver functions
 
 		int GetPendingAckCount() const
 		{
