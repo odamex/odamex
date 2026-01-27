@@ -204,6 +204,7 @@ void A_PlaySound(AActor*);
 void A_RandomJump(AActor*);
 void A_LineEffect(AActor*);
 void A_BetaSkullAttack(AActor* actor);
+void A_Stop(AActor*);
 
 // MBF21
 void A_SpawnObject(AActor*);
@@ -336,6 +337,7 @@ static constexpr CodePtr CodePtrs[] = {
     {"RandomJump", A_RandomJump, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, // killough 11/98
     {"LineEffect", A_LineEffect, 0, {0, 0, 0, 0, 0, 0, 0, 0}}, // killough 11/98
     {"BetaSkullAttack", A_BetaSkullAttack, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
+	{"Stop", A_Stop, 0, {0, 0, 0, 0, 0, 0, 0, 0}},
 
     // MBF21 Pointers
     {"SpawnObject", A_SpawnObject, 8, {0, 0, 0, 0, 0, 0, 0, 0}},
