@@ -107,6 +107,11 @@ void DThinker::Destroy()
 	if(destroyed)
 		return;
 
+	DestroyFromContainer();
+}
+
+void DThinker::DestroyFromContainer()
+{
 	// In isolation, find-erase is almost always slower than unlinking a node from a linked list.
 	// However, across the entire frame, the vector's iteration performance advantages ultimately
 	// lead to slightly better performance overall.
@@ -114,29 +119,23 @@ void DThinker::Destroy()
 	                            s_thinkers.end(),
 	                            this);
 
-	DestroyFromContainer(iterToThis);
-}
-
-std::vector<DThinker*>::iterator DThinker::DestroyFromContainer (std::vector<DThinker*>::iterator iterToThis)
-{
 	if (iterToThis != s_thinkers.end())
 	{
-		DThinker *obj = *iterToThis;
 		auto nextIter = s_thinkers.erase(iterToThis);
 
-		obj->destroyed = true;
+		this->destroyed = true;
 
-		if(obj->refCount)
+		if(this->refCount)
 		{
-			LingerDestroy.push_back(obj); // something is still finding this pointer useful
+			LingerDestroy.push_back(this); // something is still finding this pointer useful
 		}
 		else
-			obj->Super::Destroy ();
+			this->Super::Destroy ();
 
 		size_t l = LingerDestroy.size();
 		for(size_t i = 0; i < l; i++)
 		{
-			obj = LingerDestroy[i];
+			DThinker *obj = LingerDestroy[i];
 			if(!obj->refCount)
 			{
 				obj->ObjectFlags |= OF_Cleanup;
@@ -145,9 +144,7 @@ std::vector<DThinker*>::iterator DThinker::DestroyFromContainer (std::vector<DTh
 				delete obj;
 			}
 		}
-		return nextIter;
 	}
-	return s_thinkers.end();
 }
 
 bool DThinker::WasDestroyed ()
@@ -161,7 +158,9 @@ void DThinker::DestroyAllThinkers ()
 	while (not s_thinkers.empty())
     {
 		// Suboptimal, but eh, this function probably doesn't need to be fast.
-		DestroyFromContainer(s_thinkers.end() - 1);
+		// Please note, it is CRITICAL that we call Destroy() so that it dispatches
+		// appropriately!
+		s_thinkers.front()->Destroy();
 	}
 	DObject::EndFrame ();
 
@@ -197,15 +196,17 @@ void DThinker::DestroyMostThinkers ()
     //
     // So in the meantime, let's take advantage of the fact that erase() doesn't invalidate
     // preceding iterators.
+	// Please note, it is CRITICAL that we call Destroy() so that it dispatches
+	// appropriately!
     if (lastToDestroy != s_thinkers.end())
     {
         auto nextToDestroy = s_thinkers.end() - 1;
         while (nextToDestroy != lastToDestroy)
         {
-            DestroyFromContainer(nextToDestroy);
+            (*nextToDestroy)->Destroy();
             nextToDestroy = s_thinkers.end() - 1;       // Can't validly decrement here.
         }
-        DestroyFromContainer(nextToDestroy);
+        (*nextToDestroy)->Destroy();
     }
 	DObject::EndFrame ();
 }

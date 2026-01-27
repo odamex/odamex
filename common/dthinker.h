@@ -78,7 +78,7 @@ private:
 	// Live thinkers are contained in a static vector.
 	// We do this for a performance bump in certain iteration cases, courtesy of improved cache friendliness.
 	static std::vector<DThinker*> s_thinkers;
-	static std::vector<DThinker*>::iterator DestroyFromContainer(std::vector<DThinker*>::iterator iter);
+	void DestroyFromContainer();
 
 	bool destroyed;
 
