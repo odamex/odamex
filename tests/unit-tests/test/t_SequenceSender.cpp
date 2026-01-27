@@ -12,7 +12,7 @@ TEST(ReliableSequenceSender, IterEmptyDefault)
 
     auto iter = sender1.IterateUnackedPackets();
 
-    QueueEntryType* entryPtr = iter.Next();
+    SequenceQueueEntryType* entryPtr = iter.Next();
 
     REQUIRE(entryPtr == nullptr);
 }
@@ -188,7 +188,7 @@ TEST(ReliableSequenceSender, FullUp)
     sender1.ObtainSendPacket(4);
 
     auto iter = sender1.IterateUnackedPackets();
-    QueueEntryType* entry;
+    SequenceQueueEntryType* entry;
     REQUIRE((entry = iter.Next()) != nullptr && entry->sequence == 0);
     REQUIRE((entry = iter.Next()) != nullptr && entry->sequence == 1);
     REQUIRE((entry = iter.Next()) != nullptr && entry->sequence == 2);
@@ -207,7 +207,7 @@ TEST(ReliableSequenceSender, NormalWrap)
     sender1.ObtainSendPacket(6);
 
     auto iter = sender1.IterateUnackedPackets();
-    QueueEntryType* entry;
+    SequenceQueueEntryType* entry;
     REQUIRE((entry = iter.Next()) != nullptr && entry->sequence == 3);
     REQUIRE((entry = iter.Next()) != nullptr && entry->sequence == 4);
     REQUIRE((entry = iter.Next()) != nullptr && entry->sequence == 5);

@@ -238,7 +238,7 @@ bool SV_SendPacket(player_t &pl)
  * @param cl Player Client to send to.
  * @param sequence Sequence number to send.  This assumss
 */
-static void SendOldPacket(client_t& cl, const QueueEntryType& queueEntry)
+static void SendOldPacket(client_t& cl, const SequenceQueueEntryType& queueEntry)
 {
 	// Send buffer.
 	static buf_t send(MAX_UDP_PACKET);
@@ -270,9 +270,9 @@ void SV_HandleReliableRetransmissions()
 {
 	for (auto& player : players)
 	{
-		auto            iter = player.client.reliableSendSequencer.IterateUnackedPackets();
-		QueueEntryType* sendQueueEntry;
-		int             retransmissionsSent = 0;
+		auto                    iter = player.client.reliableSendSequencer.IterateUnackedPackets();
+		SequenceQueueEntryType* sendQueueEntry;
+		int                     retransmissionsSent = 0;
 
 		// The following results in fractional tics rounding up.
 		const int pingInTics = (player.ping * TICRATE + 999) / 1000;

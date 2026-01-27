@@ -8,7 +8,7 @@
 
 struct ReliableSequenceReceiverData
 {
-    QueueEntryType packet;
+    SequenceQueueEntryType packet;
 };
 
 struct ReliableSequenceReceiver : ReliableSequenceReceiverData, testing::Test
@@ -48,7 +48,7 @@ TEST_F(ReliableSequenceReceiver, MultiReceive)
     receiver.RegisterReceivedPacket(3, packet.buf);
     receiver.RegisterReceivedPacket(4, packet.buf);
 
-    QueueEntryType* packetPtr;
+    SequenceQueueEntryType* packetPtr;
     REQUIRE((packetPtr = receiver.NextPacket()) and packetPtr->sequence == 0);
     REQUIRE((packetPtr = receiver.NextPacket()) and packetPtr->sequence == 1);
     REQUIRE((packetPtr = receiver.NextPacket()) and packetPtr->sequence == 2);
@@ -69,7 +69,7 @@ TEST_F(ReliableSequenceReceiver, OutOfSequence)
 
     receiver.RegisterReceivedPacket(0, packet.buf);
 
-    QueueEntryType* packetPtr;
+    SequenceQueueEntryType* packetPtr;
     REQUIRE((packetPtr = receiver.NextPacket()) and packetPtr->sequence == 0);
     REQUIRE(receiver.NextPacket() == nullptr);
 

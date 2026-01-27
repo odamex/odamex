@@ -1983,7 +1983,7 @@ bool CL_AcceptNetMessage()
 // Returns true if all is good, false if we need to bail out of further processing.
 bool CL_ProcessCurrentReliableMessages()
 {
-	QueueEntryType* queueEntryPtr;
+	SequenceQueueEntryType* queueEntryPtr;
 	while ((queueEntryPtr = ::reliableSequenceReceiver.NextPacket()) != nullptr)
 	{
 		queueEntryPtr->buf.swap(::net_message);
