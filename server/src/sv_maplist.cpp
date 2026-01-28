@@ -91,16 +91,14 @@ bool Maplist::add(maplist_entry_t &maplist_entry) {
 bool Maplist::insert(const size_t &position, maplist_entry_t &maplist_entry) {
 	// We send the maplist to clients using a short int, so we don't want
 	// more maps in the list than the short int can handle.
-	if (this->maplist.size() > (unsigned short)-1) {
+	if (this->maplist.size() > std::numeric_limits<std::uint16_t>::max()) {
 		this->error = "Maplist is full.";
 		return false;
 	}
 
 	// Desired position is outside of the maplist
 	if (position > this->maplist.size()) {
-		std::ostringstream buffer;
-		buffer << "Index " << position + 1 << " out of range.";
-		this->error = buffer.str();
+		this->error = fmt::format("Index {} out of range.", position + 1);
 		return false;
 	}
 
@@ -110,6 +108,14 @@ bool Maplist::insert(const size_t &position, maplist_entry_t &maplist_entry) {
 	{
 		if (position == 0)
 		{
+			// Loading config at startup, no wads have been loaded,
+			// so we don't know what to put here
+			if (::wadfiles.size() <= 1)
+			{
+				this->error = "Wad could not be inferred from context. Wad must be specified.";
+				return false;
+			}
+
 			// Nothing is 'above us' to yoink from, so just use the currently
 			// loaded WAD files.  Add one to the beginning of wadfiles, since
 			// position 0 stores odamex.wad.
