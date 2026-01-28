@@ -305,6 +305,11 @@ CVAR_RANGE(g_horde_spawnfull_max, "6",
            CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1,
            60)
 
+CVAR_RANGE(g_horde_cooldown, "5",
+           "Number of waves a specific Horde wave must wait before it can be chosen again",
+           CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0,
+           10)
+
 CVAR_RANGE(g_horde_extralife, "0.0", "Chance to spawn an `extra life powerup` in Horde.\n" \
      "The value is the chance this spawns when a powerup is awarded, capped at 4x as likely.\n" \
      "If `g_lives` isn't greater than 0, this cvar has no effect.",
