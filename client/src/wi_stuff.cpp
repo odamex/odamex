@@ -180,6 +180,7 @@ static interlevel_t* exitanim;
 EXTERN_CVAR (sv_maxplayers)
 EXTERN_CVAR (wi_oldintermission)
 EXTERN_CVAR (cl_autoscreenshot)
+EXTERN_CVAR (snd_announceresulttracking)
 
 //
 // ID24 STUFF - largely based on the implementation from Woof, with some bits from Rum and Raisin
@@ -1370,7 +1371,7 @@ void WI_Ticker()
 			AddCommandString("screenshot");
 		}
 
-		if (consoleplayer().ingame() && !consoleplayer().spectator)
+		if (consoleplayer().ingame() && !consoleplayer().spectator && snd_announceresulttracking)
 		{
 			if (wbs->winner)
 			{

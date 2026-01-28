@@ -253,6 +253,70 @@ static const std::string ANN_YOULOSE = "youlose";
 static const std::string ANN_YOUTIED = "youtied";
 
 /// <summary>
+/// Contains tokens that would be disabled if snd_announcectf is false.
+/// </summary>
+static const std::vector<std::string> announcerCTFTokens = {
+    ANN_YOURFLAGTAKEN,           ANN_ENEMYFLAGTAKEN,
+    ANN_YOURFLAGDROPPED,         ANN_ENEMYFLAGDROPPED,
+    ANN_YOURFLAGISBEINGRETURNED, ANN_ENEMYFLAGISBEINGRETURNED,
+    ANN_YOURFLAGRETURNED,        ANN_ENEMYFLAGRETURNED,
+    ANN_YOURTEAMSCORES,          ANN_ENEMYTEAMSCORES,
+
+    ANN_REDFLAGTAKEN,            ANN_BLUEFLAGTAKEN,           ANN_GREENFLAGTAKEN,
+    ANN_REDFLAGDROPPED,          ANN_BLUEFLAGDROPPED,         ANN_GREENFLAGDROPPED,
+    ANN_REDFLAGISBEINGRETURNED,  ANN_BLUEFLAGISBEINGRETURNED, ANN_GREENFLAGISBEINGRETURNED,
+    ANN_REDFLAGRETURNED,         ANN_BLUEFLAGRETURNED,        ANN_GREENFLAGRETURNED,
+    ANN_REDTEAMSCORES,           ANN_BLUETEAMSCORES,          ANN_GREENTEAMSCORES
+};
+
+/// <summary>
+/// Contains tokens that would be disabled if snd_announcehorde is false.
+/// </summary>
+static const std::vector<std::string> announcerHordeTokens = {ANN_HORDEBOSSSPAWN,
+                                                              ANN_REVIVEDPLAYER};
+
+/// <summary>
+/// Contains tokens that would be disabled if snd_announcesurvival is false.
+/// </summary>
+static const std::vector<std::string> announcerSurvivalTokens = {ANN_LASTPLAYERALIVE,
+                                                                 ANN_PLAYERELIMINATED};
+
+/// <summary>
+/// Contains tokens that would be disabled if snd_announcecountdown is false.
+/// </summary>
+static const std::vector<std::string> announcerCountdownTokens = {
+    ANN_FIVE, ANN_FOUR, ANN_THREE, ANN_TWO, ANN_ONE, ANN_FIGHT};
+
+/// <summary>
+/// Contains tokens that would be disabled if snd_announcecountdown is false.
+/// </summary>
+static const std::vector<std::string> announcerTimeWarningsTokens = {
+    ANN_ONEMINUTEWARNING, ANN_FIVEMINUTEWARNING};
+
+/// <summary>
+/// Contains tokens that would be disabled if snd_announcefirstblood is false.
+/// </summary>
+static const std::vector<std::string> announcerFirstBloodTokens = {ANN_FIRSTBLOOD};
+
+/// <summary>
+/// Contains tokens that would be disabled if snd_announcefragtracking is false.
+/// </summary>
+static const std::vector<std::string> announcerFragTrackingTokens = {
+    ANN_THREEFRAGSLEFT, ANN_TWOFRAGSLEFT, ANN_ONEFRAGLEFT};
+
+/// <summary>
+/// Contains tokens that would be disabled if snd_announceleadtracking is false.
+/// </summary>
+static const std::vector<std::string> announcerLeadTrackingTokens = {
+    ANN_YOUHAVETHELEAD, ANN_YOUTIEDFORTHELEAD, ANN_YOULOSTTHELEAD};
+
+/// <summary>
+/// Contains tokens that would be disabled if snd_announceresulttracking is false.
+/// </summary>
+static const std::vector<std::string> announcerResultTrackingTokens = {
+    ANN_YOUWIN, ANN_YOUTIED, ANN_YOULOSE};
+
+/// <summary>
 /// Holds all the metadata for the specified announcer pack.
 /// </summary>
 struct AnnouncerMetaData_s

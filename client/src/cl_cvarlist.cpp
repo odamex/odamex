@@ -698,7 +698,7 @@ CVAR(	snd_announcectf, "1", "Announce CTF events.", CVARTYPE_BOOL, CVAR_CLIENTAR
 
 CVAR(	snd_announcehorde, "1", "Announce Horde events.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR( snd_announcesurvival, "1", "Announce Survival events.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR( snd_announcesurvival, "1", "Announce Survival (g_lives > 1) events.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR( snd_announcecountdown, "1", "Announce pre-round countdown and fight message.", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
@@ -713,6 +713,10 @@ CVAR( snd_announcefragtracking, "1", "Announce frag tracking (3/2/1 frags left) 
 CVAR( snd_announceleadtracking, "1", "Announce lead tracking (all PvP game types).", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(	snd_announceresulttracking, "1", "Announce win/loss/tie status during intermission.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(	snd_announcesprees, "1", "Announce sprees if the displayplayer hits a spree.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(	snd_announcemultikills, "1", "Announce multi kills if the displayplayer hits a multi kill.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 //
 // C_GetDefaultMuiscSystem()

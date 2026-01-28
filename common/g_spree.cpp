@@ -617,6 +617,7 @@ void SpreeManager::clearPoints()
 
 #ifdef CLIENT_APP
 EXTERN_CVAR(cl_showsprees)
+EXTERN_CVAR(snd_announcesprees)
 #endif
 
 void P_ProcessSpreeKill(const AActor* source, const player_t* target)
@@ -650,7 +651,7 @@ void P_ProcessSpreeKill(const AActor* source, const player_t* target)
 
 #ifdef CLIENT_APP
 	// Don't announce sprees if the client has showing them disabled
-	if (!cl_showsprees)
+	if (!cl_showsprees || !snd_announcesprees)
 		return;
 #endif
 
@@ -684,7 +685,7 @@ void P_ProcessSpreeDamage(const player_t* source, const int totalDamage)
 
 #ifdef CLIENT_APP
 	// Don't announce sprees if the client has showing them disabled
-	if (!cl_showsprees)
+	if (!cl_showsprees || snd_announcesprees)
 		return;
 #endif
 

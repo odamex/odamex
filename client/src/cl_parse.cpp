@@ -91,6 +91,18 @@ EXTERN_CVAR(show_messages)
 EXTERN_CVAR(co_novileghosts)
 EXTERN_CVAR(sv_sharekeys)
 EXTERN_CVAR(cl_showsprees)
+EXTERN_CVAR(snd_announcectf)
+EXTERN_CVAR(snd_announcehorde)
+EXTERN_CVAR(snd_announcesurvival)
+EXTERN_CVAR(snd_announcecountdown)
+EXTERN_CVAR(snd_announcetimewarnings)
+EXTERN_CVAR(snd_announcefirstblood)
+EXTERN_CVAR(snd_announcefragtracking)
+EXTERN_CVAR(snd_announceleadtracking)
+EXTERN_CVAR(snd_announceresulttracking)
+EXTERN_CVAR(snd_announcesprees)
+EXTERN_CVAR(snd_announcemultikills)
+
 
 extern std::string digest;
 extern bool forcenetdemosplit;
@@ -2974,6 +2986,48 @@ static void CL_AnnouncerEvent(const odaproto::svc::AnnouncerEvent* msg)
 {
 	const std::string key = msg->key();
 	const std::string sound = AnnouncerManager::getInstance().getTokenForEvent(key);
+
+	if (!snd_announcectf && 
+			std::find(announcerCTFTokens.begin(), announcerCTFTokens.end(), key) != announcerCTFTokens.end())
+		return;
+
+	if (!snd_announcehorde && 
+			std::find(announcerHordeTokens.begin(), announcerHordeTokens.end(), key) != announcerHordeTokens.end())
+		return;
+
+	if (!snd_announcesurvival && 
+			std::find(announcerSurvivalTokens.begin(), announcerSurvivalTokens.end(), key) != announcerSurvivalTokens.end())
+		return;
+
+	if (!snd_announcecountdown &&
+	    std::find(announcerCountdownTokens.begin(), announcerCountdownTokens.end(), key) != announcerCountdownTokens.end())
+		return;
+
+	if (!snd_announcetimewarnings &&
+	    std::find(announcerTimeWarningsTokens.begin(), announcerTimeWarningsTokens.end(), key) != announcerTimeWarningsTokens.end())
+		return;
+
+	if (!snd_announcefirstblood &&
+	    std::find(announcerFirstBloodTokens.begin(), announcerFirstBloodTokens.end(), key) != announcerFirstBloodTokens.end())
+		return;
+
+	if (!snd_announcefragtracking &&
+	    std::find(announcerFragTrackingTokens.begin(), announcerFragTrackingTokens.end(), key) != announcerFragTrackingTokens.end())
+		return;
+
+	if (!snd_announceleadtracking &&
+	    std::find(announcerLeadTrackingTokens.begin(), announcerLeadTrackingTokens.end(), key) != announcerLeadTrackingTokens.end())
+		return;
+
+	if (!snd_announceresulttracking &&
+	    std::find(announcerResultTrackingTokens.begin(), announcerResultTrackingTokens.end(), key) != announcerResultTrackingTokens.end())
+		return;
+
+	if (!snd_announcesprees && key.find("spree") == 0)
+		return;
+
+	if (!snd_announcemultikills && key.find("multi") == 0)
+		return;
 
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);

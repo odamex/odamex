@@ -310,11 +310,20 @@ void AnnouncerManager::announceOneMinuteWarning()
 
 EXTERN_CVAR(sv_fraglimit)
 
+#ifdef CLIENT_APP
+EXTERN_CVAR(snd_announcefragtracking)
+#endif
+
 void P_CheckFragWarnings()
 {
 	// Only play sounds on the client
 	if (!::clientside)
 		return;
+
+#ifdef CLIENT_APP
+	if (!snd_announcefragtracking)
+		return;
+#endif
 
 	if (!G_UsesFraglimit() || sv_fraglimit <= 0)
 		return;
@@ -360,6 +369,10 @@ void P_CheckFragWarnings()
 
 EXTERN_CVAR(sv_timelimit)
 
+#ifdef CLIENT_APP
+EXTERN_CVAR(snd_announcetimewarnings)
+#endif
+
 void P_CheckTimeWarnings()
 {
 	// Only play sounds on the client
@@ -372,6 +385,11 @@ void P_CheckTimeWarnings()
 
 	if (sv_timelimit <= 0.0f)
 		return;
+
+#ifdef CLIENT_APP
+	if (!snd_announcetimewarnings)
+		return;
+#endif
 
 	// Only run once per second
 	if (!P_AtInterval(TICRATE))
@@ -399,11 +417,20 @@ void P_CheckTimeWarnings()
 
 EXTERN_CVAR(g_lives)
 
+#ifdef CLIENT_APP
+EXTERN_CVAR(snd_announcecountdown)
+#endif
+
 void P_CheckFightAnnouncement()
 {
 	// Only play sounds on the client
 	if (!::clientside)
 		return;
+
+#ifdef CLIENT_APP
+	if (!snd_announcecountdown)
+		return;
+#endif
 
 	AnnouncerManager& instance = AnnouncerManager::getInstance();
 
@@ -434,6 +461,11 @@ void P_CheckCountdownAnnouncements()
 	// Only play sounds on the client
 	if (!::clientside)
 		return;
+
+#ifdef CLIENT_APP
+	if (!snd_announcecountdown)
+		return;
+#endif
 
 	AnnouncerManager& instance = AnnouncerManager::getInstance();
 
@@ -468,11 +500,20 @@ void P_CheckCountdownAnnouncements()
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
 
+#ifdef CLIENT_APP
+EXTERN_CVAR(snd_announcesurvival)
+#endif
+
 void P_CheckPlayerEliminatedAnnouncement(const player_t* player)
 {
 	// Only play sounds on the client
 	if (!::clientside)
 		return;
+
+#ifdef CLIENT_APP
+	if (!snd_announcesurvival)
+		return;
+#endif
 
 	if (!player)
 		return;
@@ -490,11 +531,20 @@ void P_CheckPlayerEliminatedAnnouncement(const player_t* player)
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
 
+#ifdef CLIENT_APP
+EXTERN_CVAR(snd_announceleadtracking)
+#endif
+
 void P_CheckLeadChangeAnnouncement()
 {
 	// Only play sounds on the client
 	if (!::clientside)
 		return;
+
+#ifdef CLIENT_APP
+	if (!snd_announceleadtracking)
+		return;
+#endif
 
 	// No lead announcements in coop game modes
 	if (G_IsCoopGame())
@@ -698,11 +748,20 @@ void P_CheckLeadChangeAnnouncement()
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
 
+#ifdef CLIENT_APP
+EXTERN_CVAR(snd_announcefirstblood)
+#endif
+
 void P_CheckFirstBloodAnnouncement()
 {
 	// Only play sounds on the client
 	if (!::clientside)
 		return;
+
+#ifdef CLIENT_APP
+	if (!snd_announcefirstblood)
+		return;
+#endif
 
 	AnnouncerManager& instance = AnnouncerManager::getInstance();
 
@@ -724,6 +783,10 @@ void P_CheckFirstBloodAnnouncement()
 		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
 
+#ifdef CLIENT_APP
+EXTERN_CVAR (snd_announcehorde)
+#endif
+
 void P_CheckBossSpawnAnnouncement()
 {
 	// Only play sounds on the client
@@ -732,6 +795,11 @@ void P_CheckBossSpawnAnnouncement()
 
 	if (!G_IsHordeMode())
 		return;
+
+#ifdef CLIENT_APP
+	if (!snd_announcehorde)
+		return;
+#endif
 
 	const hordeInfo_t& info = P_HordeInfo();
 

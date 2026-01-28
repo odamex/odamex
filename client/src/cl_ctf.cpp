@@ -54,6 +54,7 @@ EXTERN_CVAR (hud_gamemsgtype)
 EXTERN_CVAR (hud_heldflag)
 EXTERN_CVAR (hud_heldflag_flash)
 EXTERN_CVAR (sv_teamsinplay)
+EXTERN_CVAR (snd_announcectf)
 
 //
 // CTF_Connect
@@ -408,6 +409,9 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 	switch (snd_voxtype.asInt())
 	{
 	case 2:
+		if (!snd_announcectf)
+			break;
+
 		// Possessive (yours/theirs)
 		if (!consoleplayer().spectator)
 		{
