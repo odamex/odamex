@@ -69,6 +69,7 @@ extern AActor *shootthing;
 void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
 void P_ShowSpawns(mapthing2_t* mthing);
 void P_ExplodeMissile(AActor* mo);
+void SV_SpawnMapMobj(AActor *mobj);
 void SV_SpawnMobj(AActor *mobj);
 void SV_SendDestroyActor(const AActor *);
 void SV_ExplodeMissile(const AActor *);
@@ -2804,6 +2805,7 @@ int P_IsPickupableThing(short type)
 
 //
 // P_SpawnMapThing
+// This function spawns a thing that originates from the map itself.
 // The fields of the mapthing should
 // already be in host byte order.
 //
@@ -3202,7 +3204,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	mobj->tid = mthing->thingid;
 	mobj->AddToHash ();
 
-	SV_SpawnMobj(mobj);
+	SV_SpawnMapMobj(mobj);
 
 	if (mobj->type == MT_SKYVIEWPOINT)
 	{

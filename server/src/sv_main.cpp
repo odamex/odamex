@@ -1162,11 +1162,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 	return false;
 }
 
-//
-// [denis] SV_SpawnMobj
-// because you can't expect the constructors to send network messages!
-//
-void SV_SpawnMobj(AActor *mo)
+static void SV_SpawnMobjPrepareForClients(AActor* mo, bool i_allowDirectSpawnQueue)
 {
 	if (!mo)
 		return;
@@ -1178,8 +1174,29 @@ void SV_SpawnMobj(AActor *mo)
 		if (mo->player)
 			SV_AwarenessUpdate(player, mo);
 		else
-			player.to_spawn.push(mo->ptr());
+		{
+			if (i_allowDirectSpawnQueue)
+			{
+				player.to_spawn.push(mo->ptr());
+			}
+		}
 	}
+}
+
+//
+// [denis] SV_SpawnMobj
+// because you can't expect the constructors to send network messages!
+//
+void SV_SpawnMobj(AActor *mo)
+{
+    SV_SpawnMobjPrepareForClients(mo, true);
+}
+
+// When spawning map-defined Mobjs, we don't want to clog up the separate at-runtime spawn queue.
+// We just let the normal mobj sorter get to the map mobjs as part and parcel of its job.
+void SV_SpawnMapMobj(AActor *mo)
+{
+    SV_SpawnMobjPrepareForClients(mo, false);
 }
 
 //
