@@ -1164,8 +1164,17 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 
 //
 // SV_SpawnMobj functions
+// ----------------------
 // These exist because we can't expect the constructors to send network messages.
 //
+// This function does the actual prep for sending the given actor to clients.
+// If i_allowDirectSpawnQueue is true, it goes on the higher-priority queue for
+// runtime-spawned actors (i.e. missiles and such).  We do this because on great
+// big slaughter maps, it's really helpful to see shots coming in from a distance
+// even if the monster that fired it isn't visible yet.  We also do this because a
+// map-load sends some non-monster entities that really must be sent in as-created
+// order and we can't just defer and let the player-distance algorithm do it later.
+
 static void SV_SpawnMobjPrepareForClients(AActor* mo, bool i_allowDirectSpawnQueue)
 {
 	if (!mo)
@@ -1176,7 +1185,9 @@ static void SV_SpawnMobjPrepareForClients(AActor* mo, bool i_allowDirectSpawnQue
 	for (auto& player : players)
 	{
 		if (mo->player)
+		{
 			SV_AwarenessUpdate(player, mo);
+		}
 		else
 		{
 			if (i_allowDirectSpawnQueue)
@@ -1187,18 +1198,19 @@ static void SV_SpawnMobjPrepareForClients(AActor* mo, bool i_allowDirectSpawnQue
 	}
 }
 
-// This function sends the Mobj to clients through an immediate at-runtime higher-priority queue.
+// This function sends the Mobj to clients through an immediate runtime-spawned higher-priority queue.
 void SV_SpawnMobj(AActor *mo)
 {
-    SV_SpawnMobjPrepareForClients(mo, true);
+	SV_SpawnMobjPrepareForClients(mo, true);
 }
 
-// When spawning map-defined Mobjs, particularly those spawned at map load time itself, we don't
-// want to clog up the separate at-runtime spawn queue, so we just don't put them into the queue.
-// We simply let the normal mobj sorter get to them as part and parcel of its job.
+// This function does the work of preparing the mobj for transmission to clients, but it defers the
+// Spawn Mobj message for the player-distance sort algorithm.  This allows us to send some mobjs
+// immediately during map load (i.e. things that have an important effect on the client state), but
+// defer lower-priority things like idle monsters.
 void SV_SpawnMapMobj(AActor *mo)
 {
-    SV_SpawnMobjPrepareForClients(mo, false);
+	SV_SpawnMobjPrepareForClients(mo, false);
 }
 
 //
