@@ -3204,7 +3204,19 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	mobj->tid = mthing->thingid;
 	mobj->AddToHash ();
 
-	SV_SpawnMapMobj(mobj);
+	// "Solid" things like monsters and props we want to be handled like anything else
+	// that's visible - let the mobj sorter send it to clients at the appropriate time.
+	// Sometimes things that are not solid can also affect some important parts of the
+	// client state, including the renderer.  We want to send those things to clients
+	// through the higher-priority SV_SpawnMobj queue.
+	if (info->flags & MF_SOLID)
+	{
+		SV_SpawnMapMobj(mobj);
+	}
+	else
+	{
+		SV_SpawnMobj(mobj);
+	}
 
 	if (mobj->type == MT_SKYVIEWPOINT)
 	{
