@@ -27,10 +27,6 @@
 
 #include "SequenceQueueEntryType.h"
 
-#ifdef min
-#   undef min
-#endif
-
 class SequenceSender
 {
 	public:
