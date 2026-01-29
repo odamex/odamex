@@ -26,7 +26,7 @@
 /// Better to be in a place where we have a substantial backlog of reliable packets
 /// than have reliable packets go missing unnecessarily.
 ///
-/// In theory this is sized with a max tolerance assuming a client with about
+/// This is sized with a theoretical max tolerance assuming a client with about
 /// 300 msec of latency with a throughput of 800 KB/s.
 ///
 const size_t DEFAULT_RELIABILITY_QUEUE_SIZE = 256;
