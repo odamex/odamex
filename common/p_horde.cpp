@@ -274,8 +274,8 @@ class HordeState
 // runs at Odamex start and starts a Horde wave, even though it's never played.
 // We don't want this wave to either be checked for cooldown duplication or be
 // logged in that list.
-		PlayerResults pr = PlayerQuery().hasHealth().execute();
-		if (!demoplayback && pr.count > 0 && g_horde_cooldown > 0)
+		// PlayerResults pr = PlayerQuery().hasHealth().execute();
+		if (G_IsHordeMode() && g_horde_cooldown > 0)
 		{
 			const char* wavename = G_HordeDefine(waveidentity).name.c_str();
 
@@ -317,12 +317,8 @@ class HordeState
 
 	void HordeWaveLogger(const char* wavename)
 	{
-// [Acts 19 quiz] We check for both because it's possible to use hordewav
-// /forcewave with all players dead, but they still have lives. We want that
-// logged, just not when it's used with no active players at all.
-		PlayerResults playershealth = PlayerQuery().hasHealth().execute();
 		PlayerResults playerslives = PlayerQuery().hasLives().execute();
-		if (!demoplayback && (playershealth.count > 0 || playerslives.count > 0))
+		if (G_IsHordeMode() && (!G_IsLivesGame() || playerslives.count > 0))
 		{
 			hordecooldown[hordecoolcount] = wavename;
 			hordecoolcount = ++hordecoolcount;
