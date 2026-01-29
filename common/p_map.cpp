@@ -2981,28 +2981,22 @@ bool PTR_NoWayTraverse (intercept_t *in)
 // P_UseLines
 // Looks for special lines in front of the player to activate.
 //
-void P_UseLines (player_t *player)
+void P_UseLines (player_t& player)
 {
-	int 		angle;
-	fixed_t 	x1;
-	fixed_t 	y1;
-	fixed_t 	x2;
-	fixed_t 	y2;
-
 	// GhostlyDeath -- Spectators can't use special lines
-	if (player->spectator)
+	if (player.spectator)
 		return;
 
-	usething = player->mo;
+	usething = player.mo;
 	foundline = false;
 
 	//Added by MC: Check if bot and use special activating (spin round) if it is.
-	angle = player->mo->angle >> ANGLETOFINESHIFT;
+	const int angle = player.mo->angle >> ANGLETOFINESHIFT;
 
-	x1 = player->mo->x;
-	y1 = player->mo->y;
-	x2 = x1 + (USERANGE>>FRACBITS)*finecosine[angle];
-	y2 = y1 + (USERANGE>>FRACBITS)*finesine[angle];
+	const fixed_t x1 = player.mo->x;
+	const fixed_t y1 = player.mo->y;
+	const fixed_t x2 = x1 + (USERANGE >> FRACBITS) * finecosine[angle];
+	const fixed_t y2 = y1 + (USERANGE >> FRACBITS) * finesine[angle];
 
 	if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse)) {
 		// [RH] Give sector a chance to eat the use

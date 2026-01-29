@@ -862,9 +862,6 @@ void P_CheckInterpPause()
 	}
 }
 
-void P_MovePlayer (player_t *player);
-void P_CalcHeight (player_t *player);
-void P_DeathThink (player_t *player);
 void CL_SimulateWorld();
 //
 // G_Ticker

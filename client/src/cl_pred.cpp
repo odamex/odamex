@@ -37,9 +37,8 @@ EXTERN_CVAR (cl_predictsectors)
 
 extern NetGraph netgraph;
 
-void P_DeathThink (player_t *player);
-void P_MovePlayer (player_t *player);
-void P_CalcHeight (player_t *player);
+void P_MovePlayer (player_t& player);
+void P_CalcHeight (player_t& player);
 
 extern NetCommand localcmds[MAXSAVETICS];
 static PlayerSnapshot cl_savedsnaps[MAXSAVETICS];
@@ -185,7 +184,7 @@ static void CL_PredictSectors(int predtic)
 //
 static void CL_PredictSpying()
 {
-	player_t *player = &displayplayer();
+	player_t& player = displayplayer();
 	if (consoleplayer_id == displayplayer_id)
 		return;
 
@@ -197,16 +196,16 @@ static void CL_PredictSpying()
 	// ultimately responsible for moving players.  That just isn't the case for spied remote
 	// players.  We can simply restore the overwritten states to allow interpolation to work.
 
-	const auto prevangle = player->mo->prevangle;
-	const auto prevpitch = player->mo->prevpitch;
+	const auto prevangle = player.mo->prevangle;
+	const auto prevpitch = player.mo->prevpitch;
 
 	predicting = false;
 
 	P_PlayerThink(player);
 	P_CalcHeight(player);
 
-	player->mo->prevangle = prevangle;
-	player->mo->prevpitch = prevpitch;
+	player.mo->prevangle = prevangle;
+	player.mo->prevpitch = prevpitch;
 }
 
 //
@@ -215,8 +214,8 @@ static void CL_PredictSpying()
 //
 static void CL_PredictSpectator()
 {
-	player_t *player = &consoleplayer();
-	if (!player->spectator)
+	player_t& player = consoleplayer();
+	if (!player.spectator)
 		return;
 
 	predicting = true;
@@ -233,9 +232,9 @@ static void CL_PredictSpectator()
 //
 static void CL_PredictLocalPlayer(int predtic)
 {
-	player_t *player = &consoleplayer();
+	player_t& player = consoleplayer();
 
-	if (!player->ingame() || !player->mo || player->tic >= predtic)
+	if (!player.ingame() || !player.mo || player.tic >= predtic)
 		return;
 
 	// Restore the angle, viewheight, etc for the player
@@ -252,7 +251,7 @@ static void CL_PredictLocalPlayer(int predtic)
 	else
 		P_MovePlayer(player);
 
-	player->mo->RunThink();
+	player.mo->RunThink();
 }
 
 //
@@ -265,9 +264,9 @@ void CL_PredictWorld(void)
 	if (gamestate != GS_LEVEL)
 		return;
 
-	player_t *p = &consoleplayer();
+	player_t& p = consoleplayer();
 
-	if (!validplayer(*p) || !p->mo || noservermsgs || netdemo.isPaused())
+	if (!validplayer(p) || !p.mo || noservermsgs || netdemo.isPaused())
 		return;
 
 	// tenatively tell the netgraph that our prediction was successful
@@ -284,7 +283,7 @@ void CL_PredictWorld(void)
 		return;
 	}
 
-	if (p->tic <= 0)	// No verified position from the server
+	if (p.tic <= 0)	// No verified position from the server
 		return;
 
 	// Disable sounds, etc, during prediction
@@ -297,7 +296,7 @@ void CL_PredictWorld(void)
 		predtic = gametic - MAXSAVETICS;
 
 	// Save a snapshot of the player's state before prediction
-	PlayerSnapshot prevsnap(p->tic, p);
+	PlayerSnapshot prevsnap(p.tic, p);
 	cl_savedsnaps[gametic % MAXSAVETICS] = prevsnap;
 
 	// Move sectors to the last position received from the server
@@ -305,8 +304,8 @@ void CL_PredictWorld(void)
 		CL_ResetSectors();
 
 	// Move the client to the last position received from the sever
-	int snaptime = p->snapshots.getMostRecentTime();
-	PlayerSnapshot snap = p->snapshots.getSnapshot(snaptime);
+	int snaptime = p.snapshots.getMostRecentTime();
+	PlayerSnapshot snap = p.snapshots.getSnapshot(snaptime);
 	snap.toPlayer(p);
 
 	while (++predtic < gametic)
@@ -321,7 +320,7 @@ void CL_PredictWorld(void)
 	// view when there's a misprediction.
 	if (snap.isContinuous())
 	{
-		PlayerSnapshot correctedprevsnap(p->tic, p);
+		PlayerSnapshot correctedprevsnap(p.tic, p);
 
 		// Did we predict correctly?
 		bool correct = (correctedprevsnap.getX() == prevsnap.getX()) &&

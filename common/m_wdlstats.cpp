@@ -231,12 +231,12 @@ static void AddWDLFlagLocation(const mapthing2_t& mthing, team_t team)
 			return;
 	}
 
-	::wdlflaglocations.emplace_back(team, mthing.x, mthing.y, mthing.z);
+	::wdlflaglocations.push_back({team, mthing.x, mthing.y, mthing.z});
 }
 
 static void RemoveWDLPlayerSpawn(const mapthing2_t& mthing)
 {
-	const auto it = std::find_if(::wdlplayerspawns.begin(), ::wdlplayerspawns.end(), [](const auto& spawn){
+	const auto it = std::find_if(::wdlplayerspawns.begin(), ::wdlplayerspawns.end(), [&mthing](const auto& spawn){
 		return spawn.x == mthing.x && spawn.y == mthing.y && spawn.z == mthing.z;
 	});
 
@@ -916,7 +916,7 @@ int M_GetPlayerId(const player_t& player, team_t team)
 	AddWDLPlayer(player);
 
 	// Make real good sure its in there.
-	const auto it = std::find_if(::wdlplayers.begin(), ::wdlplayers.end(), [](const auto& wp){
+	const auto it = std::find_if(::wdlplayers.begin(), ::wdlplayers.end(), [&player, team](const auto& wp){
 		return wp.pid == player.id && wp.netname == player.userinfo.netname && wp.team == team;
 	});
 

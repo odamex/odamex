@@ -72,7 +72,7 @@ void P_Ticker (void)
 	{
 		for (auto& player : players)
 			if (player.ingame())
-				P_PlayerThink(&player);
+				P_PlayerThink(player);
 	}
 
 	// [SL] 2011-06-05 - Tick player actor animations here since P_Ticker is

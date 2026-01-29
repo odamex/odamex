@@ -3140,7 +3140,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 		// Apply this ticcmd using the game logic
 		if (gamestate == GS_LEVEL)
 		{
-			P_PlayerThink(&player);
+			P_PlayerThink(player);
 			player.mo->RunThink();
 		}
 

@@ -2195,23 +2195,23 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
     return true;
 }
 
-void P_ApplySectorDamageNoWait(player_t* player, int damage, int mod)
+void P_ApplySectorDamageNoWait(player_t& player, int damage, int mod)
 {
-	P_DamageMobj(player->mo, NULL, NULL, damage, mod);
+	P_DamageMobj(player.mo, NULL, NULL, damage, mod);
 }
 
-void P_ApplySectorDamageNoRandom(player_t* player, int damage, int mod)
+void P_ApplySectorDamageNoRandom(player_t& player, int damage, int mod)
 {
-	if (!player->powers[pw_ironfeet])
+	if (!player.powers[pw_ironfeet])
 		if (!(level.time & 0x1f))
-			P_DamageMobj(player->mo, NULL, NULL, damage, mod);
+			P_DamageMobj(player.mo, NULL, NULL, damage, mod);
 }
 
-void P_ApplySectorDamage(player_t* player, int damage, int leak, int mod)
+void P_ApplySectorDamage(player_t& player, int damage, int leak, int mod)
 {
-	if (!player->powers[pw_ironfeet] || (leak && P_Random(player->mo)<leak))
+	if (!player.powers[pw_ironfeet] || (leak && P_Random(player.mo)<leak))
 		if (!(level.time & 0x1f))
-			P_DamageMobj(player->mo, NULL, NULL, damage, mod);
+			P_DamageMobj(player.mo, NULL, NULL, damage, mod);
 }
 
 void P_ApplySectorDamageEndLevel(player_t* player)
@@ -2231,24 +2231,24 @@ void P_ApplySectorDamageEndLevel(player_t* player)
 void SV_UpdateSecret(sector_t& sector, player_t &player);
 #endif
 
-void P_CollectSecretCommon(sector_t* sector, player_t* player)
+void P_CollectSecretCommon(sector_t& sector, player_t& player)
 {
-	player->secretcount++;
+	player.secretcount++;
 	level.found_secrets++;
-	sector->flags &= ~SECF_SECRET;
+	sector.flags &= ~SECF_SECRET;
 
 #ifdef SERVER_APP
 	SV_UpdateSecret(*sector, *player); // Update the sector to all clients so that they
 	                                   // don't discover an already found secret.
 #elif defined(CLIENT_APP)
-	if (player->mo == consoleplayer().camera)
+	if (player.mo == consoleplayer().camera)
 		C_RevealSecret(); // Display the secret revealed message
 #endif
 }
 
-void P_CollectSecretVanilla(sector_t* sector, player_t* player)
+void P_CollectSecretVanilla(sector_t& sector, player_t& player)
 {
-	sector->special = 0;
+	sector.special = 0;
 	P_CollectSecretCommon(sector, player);
 }
 

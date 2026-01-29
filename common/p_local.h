@@ -91,8 +91,8 @@ enum weaponstate_t
 	unknownstate
 };
 
-void P_SetupPsprites (player_t* curplayer);
-void P_MovePsprites (player_t* curplayer);
+void P_SetupPsprites (player_t& curplayer);
+void P_MovePsprites (player_t& curplayer);
 void P_DropWeapon (player_t* player);
 
 weaponstate_t P_GetWeaponState(player_t* player);
@@ -102,8 +102,8 @@ weaponstate_t P_GetWeaponState(player_t* player);
 // P_USER
 //
 void P_FallingDamage (AActor *ent);
-void P_PlayerThink (player_t *player);
-void P_SetPlayerPowerupStatuses(player_t* player, int powers[NUMPOWERS]);
+void P_PlayerThink (player_t& player);
+void P_SetPlayerPowerupStatuses(player_t& player, int powers[NUMPOWERS]);
 bool P_AreTeammates(const player_t& a, const player_t& b);
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo = false);
 
@@ -264,7 +264,7 @@ bool	P_TryMove (AActor* thing, fixed_t x, fixed_t y, int dropoff, bool onfloor =
 bool	P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, bool telefrag);	// [RH] Added z and telefrag parameters
 void	P_SlideMove (AActor* mo);
 bool	P_CheckSight (const AActor* t1, const AActor* t2);
-void	P_UseLines (player_t* player);
+void	P_UseLines (player_t& player);
 void	P_ApplyTorque(AActor *mo);
 void	P_CopySector(sector_t *dest, sector_t *src);
 

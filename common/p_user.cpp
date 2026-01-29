@@ -368,41 +368,38 @@ size_t P_NumPlayersOnTeam(team_t team)
 // P_Thrust
 // Moves the given origin along a given angle.
 //
-void P_SideThrust (player_t *player, angle_t angle, fixed_t move)
+void P_SideThrust (player_t& player, angle_t angle, fixed_t move)
 {
 	angle = (angle - ANG90) >> ANGLETOFINESHIFT;
 
-	player->mo->momx += FixedMul (move, finecosine[angle]);
-	player->mo->momy += FixedMul (move, finesine[angle]);
+	player.mo->momx += FixedMul (move, finecosine[angle]);
+	player.mo->momy += FixedMul (move, finesine[angle]);
 }
 
-void P_ForwardThrust (player_t *player, angle_t angle, fixed_t move)
+void P_ForwardThrust (player_t& player, angle_t angle, fixed_t move)
 {
 	angle >>= ANGLETOFINESHIFT;
 
-	if ((player->mo->waterlevel || (player->mo->flags2 & MF2_FLY))
-		&& player->mo->pitch != 0)
+	if ((player.mo->waterlevel || (player.mo->flags2 & MF2_FLY))
+		&& player.mo->pitch != 0)
 	{
-		angle_t pitch = (angle_t)player->mo->pitch >> ANGLETOFINESHIFT;
+		angle_t pitch = (angle_t)player.mo->pitch >> ANGLETOFINESHIFT;
 		fixed_t zpush = FixedMul (move, finesine[pitch]);
-		if (player->mo->waterlevel && player->mo->waterlevel < 2 && zpush < 0)
+		if (player.mo->waterlevel && player.mo->waterlevel < 2 && zpush < 0)
 			zpush = 0;
-		player->mo->momz -= zpush;
+		player.mo->momz -= zpush;
 		move = FixedMul (move, finecosine[pitch]);
 	}
-	player->mo->momx += FixedMul (move, finecosine[angle]);
-	player->mo->momy += FixedMul (move, finesine[angle]);
+	player.mo->momx += FixedMul (move, finecosine[angle]);
+	player.mo->momy += FixedMul (move, finesine[angle]);
 }
 
 //
 // P_CalcHeight
 // Calculate the walking / running height adjustment
 //
-void P_CalcHeight (player_t *player)
+void P_CalcHeight (player_t& player)
 {
-	int 		angle;
-	fixed_t 	bob;
-
 	// Regular movement bobbing
 	// (needs to be calculated for gun swing even if not on ground)
 	// OPTIMIZE: tablify angle
@@ -413,61 +410,62 @@ void P_CalcHeight (player_t *player)
 	// it causes bobbing jerkiness when the player moves from ice to non-ice,
 	// and vice-versa.
 
-	if ((player->mo->flags2 & MF2_FLY) && !player->mo->onground)
+	if ((player.mo->flags2 & MF2_FLY) && !player.mo->onground)
 	{
-		player->bob = FRACUNIT / 2;
+		player.bob = FRACUNIT / 2;
 	}
 
-	if ((serverside || !predicting) && !player->spectator)
+	if ((serverside || !predicting) && !player.spectator)
 	{
-		player->bob = FixedMul (player->mo->momx, player->mo->momx)
-					+ FixedMul (player->mo->momy, player->mo->momy);
-		player->bob >>= 2;
+		player.bob = FixedMul (player.mo->momx, player.mo->momx)
+					+ FixedMul (player.mo->momy, player.mo->momy);
+		player.bob >>= 2;
 
-		if (player->bob > MAXBOB)
-			player->bob = MAXBOB;
+		if (player.bob > MAXBOB)
+			player.bob = MAXBOB;
 	}
 
-    if (player->cheats & CF_NOMOMENTUM || (!co_zdoomphys && !player->mo->onground))
+    if (player.cheats & CF_NOMOMENTUM || (!co_zdoomphys && !player.mo->onground))
 	{
-		player->viewz = player->mo->z + VIEWHEIGHT;
+		player.viewz = player.mo->z + VIEWHEIGHT;
 
-		if (player->viewz > player->mo->ceilingz-4*FRACUNIT)
-			player->viewz = player->mo->ceilingz-4*FRACUNIT;
+		if (player.viewz > player.mo->ceilingz-4*FRACUNIT)
+			player.viewz = player.mo->ceilingz-4*FRACUNIT;
 
-		if (player->prevviewz == 1) // don't interp first frame
-			player->prevviewz = player->viewz;
+		if (player.prevviewz == 1) // don't interp first frame
+			player.prevviewz = player.viewz;
 		return;
 	}
 
-	angle = (FINEANGLES/20*level.time) & FINEMASK;
-	if (!player->spectator)
-		bob = FixedMul (player->bob>>(player->mo->waterlevel > 1 ? 2 : 1), finesine[angle]);
+	int angle = (FINEANGLES/20*level.time) & FINEMASK;
+	fixed_t bob;
+	if (!player.spectator)
+		bob = FixedMul (player.bob>>(player.mo->waterlevel > 1 ? 2 : 1), finesine[angle]);
 	else
 		bob = 0;
 
 	// move viewheight
-	if (player->playerstate == PST_LIVE)
+	if (player.playerstate == PST_LIVE)
 	{
-		player->viewheight += player->deltaviewheight;
+		player.viewheight += player.deltaviewheight;
 
-		if (player->viewheight > VIEWHEIGHT)
+		if (player.viewheight > VIEWHEIGHT)
 		{
-			player->viewheight = VIEWHEIGHT;
-			player->deltaviewheight = 0;
+			player.viewheight = VIEWHEIGHT;
+			player.deltaviewheight = 0;
 		}
-		else if (player->viewheight < VIEWHEIGHT/2)
+		else if (player.viewheight < VIEWHEIGHT/2)
 		{
-			player->viewheight = VIEWHEIGHT/2;
-			if (player->deltaviewheight <= 0)
-				player->deltaviewheight = 1;
+			player.viewheight = VIEWHEIGHT/2;
+			if (player.deltaviewheight <= 0)
+				player.deltaviewheight = 1;
 		}
 
-		if (player->deltaviewheight)
+		if (player.deltaviewheight)
 		{
-			player->deltaviewheight += FRACUNIT/4;
-			if (!player->deltaviewheight)
-				player->deltaviewheight = 1;
+			player.deltaviewheight += FRACUNIT/4;
+			if (!player.deltaviewheight)
+				player.deltaviewheight = 1;
 		}
 	}
 
@@ -475,30 +473,30 @@ void P_CalcHeight (player_t *player)
 	if (sv_allowmovebob || (clientside && serverside))
 		bob *= cl_movebob;
 
-	player->viewz = player->mo->z + player->viewheight + bob;
+	player.viewz = player.mo->z + player.viewheight + bob;
 
-	if (player->viewz > player->mo->ceilingz-4*FRACUNIT)
-		player->viewz = player->mo->ceilingz-4*FRACUNIT;
-	if (player->viewz < player->mo->floorz + 4*FRACUNIT)
-		player->viewz = player->mo->floorz + 4*FRACUNIT;
+	if (player.viewz > player.mo->ceilingz-4*FRACUNIT)
+		player.viewz = player.mo->ceilingz-4*FRACUNIT;
+	if (player.viewz < player.mo->floorz + 4*FRACUNIT)
+		player.viewz = player.mo->floorz + 4*FRACUNIT;
 
-	if (player->prevviewz == 1) // don't interp first frame
-		player->prevviewz = player->viewz;
+	if (player.prevviewz == 1) // don't interp first frame
+		player.prevviewz = player.viewz;
 }
 
 //
 // P_PlayerLookUpDown
 //
-void P_PlayerLookUpDown (player_t *p)
+void P_PlayerLookUpDown (player_t& p)
 {
 	// [RH] Look up/down stuff
-	if (!sv_freelook && (!p->spectator))
+	if (!sv_freelook && (!p.spectator))
 	{
-		p->mo->pitch = 0;
+		p.mo->pitch = 0;
 	}
 	else
 	{
-		int look = p->cmd.pitch << 16;
+		const int look = p.cmd.pitch << 16;
 
 		// The player's view pitch is clamped between -32 and +56 degrees,
 		// which translates to about half a screen height up and (more than)
@@ -508,19 +506,19 @@ void P_PlayerLookUpDown (player_t *p)
 		{
 			if (look == INT_MIN)
 			{ // center view
-				p->mo->pitch = 0;
+				p.mo->pitch = 0;
 			}
 			else if (look > 0)
 			{ // look up
-				p->mo->pitch -= look;
-				if (p->mo->pitch < -ANG(32))
-					p->mo->pitch = -ANG(32);
+				p.mo->pitch -= look;
+				if (p.mo->pitch < -ANG(32))
+					p.mo->pitch = -ANG(32);
 			}
 			else
 			{ // look down
-				p->mo->pitch -= look;
-				if (p->mo->pitch > ANG(56))
-					p->mo->pitch = ANG(56);
+				p.mo->pitch -= look;
+				if (p.mo->pitch > ANG(56))
+					p.mo->pitch = ANG(56);
 			}
 		}
 	}
@@ -535,49 +533,49 @@ CVAR_FUNC_IMPL (sv_aircontrol)
 //
 // P_MovePlayer
 //
-void P_MovePlayer (player_t *player)
+void P_MovePlayer (player_t& player)
 {
-	if (!player || !player->mo || player->playerstate == PST_DEAD)
+	if (!player.mo || player.playerstate == PST_DEAD)
 		return;
 
-	AActor *mo = player->mo;
+	AActor *mo = player.mo;
 
 	mo->onground = (mo->z <= mo->floorz) || (mo->flags2 & MF2_ONMOBJ);
 
 	// [RH] Don't let frozen players move
-	if (player->cheats & CF_FROZEN)
+	if (player.cheats & CF_FROZEN)
 		return;
 
 	// Move around.
 	// Reactiontime is used to prevent movement
 	//	for a bit after a teleport.
-	if (player->mo->reactiontime)
+	if (player.mo->reactiontime)
 	{
-		player->mo->reactiontime--;
+		player.mo->reactiontime--;
 		return;
 	}
 
-	if (player->cmd.upmove == -32768)
+	if (player.cmd.upmove == -32768)
 	{
 		// Only land if in the air
-		if ((player->mo->flags2 & MF2_FLY) && player->mo->waterlevel < 2)
+		if ((player.mo->flags2 & MF2_FLY) && player.mo->waterlevel < 2)
 		{
-			player->mo->flags2 &= ~MF2_FLY;
-			player->mo->flags &= ~MF_NOGRAVITY;
+			player.mo->flags2 &= ~MF2_FLY;
+			player.mo->flags &= ~MF_NOGRAVITY;
 		}
 	}
-	else if (player->cmd.upmove != 0)
+	else if (player.cmd.upmove != 0)
 	{
-		if (player->mo->waterlevel >= 2 || player->mo->flags2 & MF2_FLY)
+		if (player.mo->waterlevel >= 2 || player.mo->flags2 & MF2_FLY)
 		{
-			player->mo->momz = player->cmd.upmove << 9;
+			player.mo->momz = player.cmd.upmove << 9;
 
-			if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
+			if (player.mo->waterlevel < 2 && !(player.mo->flags2 & MF2_FLY))
 			{
-				player->mo->flags2 |= MF2_FLY;
-				player->mo->flags |= MF_NOGRAVITY;
-				if (player->mo->momz <= -39*FRACUNIT)
-					S_StopSound(player->mo, CHAN_VOICE);	// Stop falling scream
+				player.mo->flags2 |= MF2_FLY;
+				player.mo->flags |= MF_NOGRAVITY;
+				if (player.mo->momz <= -39*FRACUNIT)
+					S_StopSound(player.mo, CHAN_VOICE);	// Stop falling scream
 			}
 		}
 	}
@@ -585,7 +583,7 @@ void P_MovePlayer (player_t *player)
 	// Look left/right
 	if(clientside || step_mode)
 	{
-		mo->angle += player->cmd.yaw << 16;
+		mo->angle += player.cmd.yaw << 16;
 
 		// Look up/down stuff
 		P_PlayerLookUpDown(player);
@@ -598,14 +596,12 @@ void P_MovePlayer (player_t *player)
 	// ice, because the player still "works just as hard" to move, while the
 	// thrust applied to the movement varies with 'movefactor'.
 
-	if (player->cmd.forwardmove | player->cmd.sidemove)
+	if (player.cmd.forwardmove | player.cmd.sidemove)
 	{
-		fixed_t forwardmove, sidemove;
-		int bobfactor;
-		int friction, movefactor;
+		int friction;
 
-		movefactor = P_GetMoveFactor (mo, &friction);
-		bobfactor = friction < ORIG_FRICTION ? movefactor : ORIG_FRICTION_FACTOR;
+		int movefactor = P_GetMoveFactor (mo, &friction);
+		int bobfactor = friction < ORIG_FRICTION ? movefactor : ORIG_FRICTION_FACTOR;
 		if (!mo->onground && !(mo->flags2 & MF2_FLY) && !mo->waterlevel)
 		{
 			// [RH] allow very limited movement if not on ground.
@@ -620,8 +616,8 @@ void P_MovePlayer (player_t *player)
 				bobfactor >>= 8;
 			}
 		}
-		forwardmove = (player->cmd.forwardmove * movefactor) >> 8;
-		sidemove = (player->cmd.sidemove * movefactor) >> 8;
+		const fixed_t forwardmove = (player.cmd.forwardmove * movefactor) >> 8;
+		const fixed_t sidemove = (player.cmd.sidemove * movefactor) >> 8;
 
 		// [ML] Check for these conditions unless advanced physics is on
 		if(co_zdoomphys ||
@@ -639,41 +635,41 @@ void P_MovePlayer (player_t *player)
 
 		if (mo->state == &states[S_PLAY])
 		{
-			// denis - fixme - this function might destoy player->mo without setting it to 0
-			P_SetMobjState (player->mo, S_PLAY_RUN1);
+			// denis - fixme - this function might destoy player.mo without setting it to 0
+			P_SetMobjState (player.mo, S_PLAY_RUN1);
 		}
 
-		if (player->cheats & CF_REVERTPLEASE)
+		if (player.cheats & CF_REVERTPLEASE)
 		{
-			player->cheats &= ~CF_REVERTPLEASE;
-			player->camera = player->mo;
+			player.cheats &= ~CF_REVERTPLEASE;
+			player.camera = player.mo;
 		}
 	}
 
 	// [RH] check for jump
-	if (player->jumpTics)
-		player->jumpTics--;
+	if (player.jumpTics)
+		player.jumpTics--;
 
-	if ((player->cmd.buttons & BT_JUMP) == BT_JUMP)
+	if ((player.cmd.buttons & BT_JUMP) == BT_JUMP)
 	{
-		if (player->mo->waterlevel >= 2)
+		if (player.mo->waterlevel >= 2)
 		{
-			player->mo->momz = 4*FRACUNIT;
+			player.mo->momz = 4*FRACUNIT;
 		}
-		else if (player->mo->flags2 & MF2_FLY)
+		else if (player.mo->flags2 & MF2_FLY)
 		{
-			player->mo->momz = 3*FRACUNIT;
+			player.mo->momz = 3*FRACUNIT;
 		}
-		else if (sv_allowjump && player->mo->onground && !player->jumpTics)
+		else if (sv_allowjump && player.mo->onground && !player.jumpTics)
 		{
-			player->mo->momz += 8*FRACUNIT;
+			player.mo->momz += 8*FRACUNIT;
 
 //			[SL] No jumping sound...
-//			if(!player->spectator)
-//				UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
+//			if(!player.spectator)
+//				UV_SoundAvoidPlayer(player.mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
 
-            player->mo->flags2 &= ~MF2_ONMOBJ;
-            player->jumpTics = 18;
+            player.mo->flags2 &= ~MF2_ONMOBJ;
+            player.jumpTics = 18;
 		}
 	}
 }
@@ -739,66 +735,66 @@ void P_FallingDamage (AActor *ent)
 //
 #define ANG5	(ANG90/18)
 
-void P_DeathThink (player_t *player)
+void P_DeathThink (player_t& player)
 {
 	bool reduce_redness = true;
 
 	P_MovePsprites (player);
-	player->mo->onground = (player->mo->z <= player->mo->floorz);
+	player.mo->onground = (player.mo->z <= player.mo->floorz);
 
 	// fall to the ground
-	if (player->viewheight > 6*FRACUNIT)
-		player->viewheight -= FRACUNIT;
+	if (player.viewheight > 6*FRACUNIT)
+		player.viewheight -= FRACUNIT;
 
-	if (player->viewheight < 6*FRACUNIT)
-		player->viewheight = 6*FRACUNIT;
+	if (player.viewheight < 6*FRACUNIT)
+		player.viewheight = 6*FRACUNIT;
 
-	player->deltaviewheight = 0;
+	player.deltaviewheight = 0;
 	P_CalcHeight (player);
 
 	// adjust the player's view to follow its attacker
 	if (cl_deathcam && clientside &&
-		player->attacker && player->attacker != player->mo)
+		player.attacker && player.attacker != player.mo)
 	{
-		angle_t angle = P_PointToAngle (player->mo->x,
-								 		player->mo->y,
-								 		player->attacker->x,
-								 		player->attacker->y);
+		angle_t angle = P_PointToAngle (player.mo->x,
+								 		player.mo->y,
+								 		player.attacker->x,
+								 		player.attacker->y);
 
-		angle_t delta = angle - player->mo->angle;
+		angle_t delta = angle - player.mo->angle;
 
 		if (delta < ANG5 || delta > (unsigned)-ANG5)
-			player->mo->angle = angle;
+			player.mo->angle = angle;
 		else
 		{
 			if (delta < ANG180)
-				player->mo->angle += ANG5;
+				player.mo->angle += ANG5;
 			else
-				player->mo->angle -= ANG5;
+				player.mo->angle -= ANG5;
 
 			// not yet looking at killer so keep the red tinting
 			reduce_redness = false;
 		}
 	}
 
-	if (player->damagecount && reduce_redness && !predicting)
-		player->damagecount--;
+	if (player.damagecount && reduce_redness && !predicting)
+		player.damagecount--;
 
 	if(serverside)
 	{
 		bool force_respawn =	(!clientside && sv_forcerespawn &&
-								level.time >= player->death_time + sv_forcerespawntime * TICRATE);
+								level.time >= player.death_time + sv_forcerespawntime * TICRATE);
 
 		// [SL] Can we respawn yet?
-		int respawn_time = player->death_time + sv_spawndelaytime * TICRATE;
+		int respawn_time = player.death_time + sv_spawndelaytime * TICRATE;
 		bool delay_respawn =	(!clientside && level.time < respawn_time);
 
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
-		if (player->ingame() &&
-		    ((player->cmd.buttons & BT_USE && !delay_respawn) || force_respawn) &&
-		    ((g_lives && player->lives > 0) || !g_lives))
+		if (player.ingame() &&
+		    ((player.cmd.buttons & BT_USE && !delay_respawn) || force_respawn) &&
+		    ((g_lives && player.lives > 0) || !g_lives))
 		{
-			player->playerstate = PST_REBORN;
+			player.playerstate = PST_REBORN;
 		}
 	}
 }
@@ -885,15 +881,15 @@ void P_SetPlayerInvulnBleed(player_t& player, int powers[NUMPOWERS])
 	}
 }
 
-void P_SwitchSpyOnNoLives(player_t* player)
+void P_SwitchSpyOnNoLives(const player_t& player)
 {
 	if (clientside)
 	{
 		// [AM] If the player runs out of lives in an LMS gamemode, having
 		//      them spectate another player after a beat is expected.
-		if (::g_lives && player->lives < 1 &&
-		    player->id == displayplayer_id &&
-		    level.time >= player->death_time + (TICRATE * 2) &&
+		if (::g_lives && player.lives < 1 &&
+		    player.id == displayplayer_id &&
+		    level.time >= player.death_time + (TICRATE * 2) &&
 		    ::levelstate.getState() == LevelState::INGAME)
 		{
 			// CL_SpyCycle is located in cl and templated, so we use this
@@ -1143,7 +1139,7 @@ void P_PlayerThink (player_t& player)
 	{
 		if (P_AtInterval(5))
 		{
-			M_LogWDLEvent(WDL_EVENT_PLAYERBEACON, player, NULL, player.mo->angle / 4, 0,
+			M_LogWDLEvent(WDL_EVENT_PLAYERBEACON, &player, NULL, player.mo->angle / 4, 0,
 			              0, 0);
 		}
 	}
