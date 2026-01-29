@@ -93,7 +93,7 @@ enum weaponstate_t
 
 void P_SetupPsprites (player_t& curplayer);
 void P_MovePsprites (player_t& curplayer);
-void P_DropWeapon (player_t* player);
+void P_DropWeapon (player_t& player);
 
 weaponstate_t P_GetWeaponState(const player_t& player);
 

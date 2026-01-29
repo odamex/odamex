@@ -488,20 +488,20 @@ ItemEquipVal P_GiveBody(player_t& player, int num)
 // Returns false if the armor is worse
 // than the current armor.
 //
-ItemEquipVal P_GiveArmor(player_t *player, int armortype)
+ItemEquipVal P_GiveArmor(player_t& player, int armortype)
 {
 	const int hits = armortype * 100;
-	if (player->armorpoints >= hits)
+	if (player.armorpoints >= hits)
 	{
 		return IEV_NotEquipped;	// don't pick up
 	}
 
 	const int hits_real = static_cast<int>(static_cast<float>(hits) * G_GetCurrentSkill().armor_factor);
 
-	player->armortype = armortype;
-	player->armorpoints += hits_real;
-	if (player->armorpoints > hits)
-		player->armorpoints = hits;
+	player.armortype = armortype;
+	player.armorpoints += hits_real;
+	if (player.armorpoints > hits)
+		player.armorpoints = hits;
 
 	return IEV_EquipRemove;
 }
@@ -1820,7 +1820,7 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 	}
 	else
 	{
-		splayer = 0;
+		splayer = nullptr;
 	}
 
 	tplayer = target->player;
@@ -1832,7 +1832,7 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 		tplayer->attacker = source ? source->ptr() : AActor::AActorPtr();
 	}
 
-	if (source && source->player)
+	if (splayer)
 	{
 		// Don't count any frags at level start, because they're just telefrags
 		// resulting from insufficient deathmatch starts, and it wouldn't be
@@ -1843,11 +1843,11 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 			{
 				if (target->player == source->player) // [RH] Cumulative frag count
 				{
-					sendScore |= P_GiveFrags(splayer, -1);
+					sendScore |= P_GiveFrags(*splayer, -1);
 					// [Toke] Minus a team frag for suicide
 					if (sv_gametype == GM_TEAMDM)
 					{
-						sendTeamScore |= P_GiveTeamPoints(splayer, -1);
+						sendTeamScore |= P_GiveTeamPoints(*splayer, -1);
 					}
 				}
 				// [Toke] Minus a team frag for killing teammate
@@ -1855,10 +1855,10 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 				         (splayer->userinfo.team == tplayer->userinfo.team))
 				{
 					// [Toke - Teamplay || deathz0r - updated]
-					sendScore |= P_GiveFrags(splayer, -1);
+					sendScore |= P_GiveFrags(*splayer, -1);
 					if (sv_gametype == GM_TEAMDM)
 					{
-						sendTeamScore |= P_GiveTeamPoints(splayer, -1);
+						sendTeamScore |= P_GiveTeamPoints(*splayer, -1);
 					}
 					else if (sv_gametype == GM_CTF)
 					{
@@ -1867,11 +1867,11 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 				}
 				else
 				{
-					sendScore |= P_GiveFrags(splayer, 1);
+					sendScore |= P_GiveFrags(*splayer, 1);
 					// [Toke] Add a team frag
 					if (sv_gametype == GM_TEAMDM)
 					{
-						sendTeamScore |= P_GiveTeamPoints(splayer, 1);
+						sendTeamScore |= P_GiveTeamPoints(*splayer, 1);
 					}
 					else if (sv_gametype == GM_CTF)
 					{
@@ -1896,7 +1896,7 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 		if (G_IsCoopGame() &&
 		    ((target->flags & MF_COUNTKILL) || (target->type == MT_SKULL)))
 		{
-			if (P_GiveKills(splayer, 1))
+			if (P_GiveKills(*splayer, 1))
 				PersistPlayerScore(*splayer, sendLives, sendScore);
 		}
 	}
@@ -1910,10 +1910,10 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 			CTF_CheckFlags(*target->player);
 
 		if (!joinkill)
-			sendScore |= P_GiveDeaths(tplayer, 1);
+			sendScore |= P_GiveDeaths(*tplayer, 1);
 
 		if (!joinkill && tplayer->lives > 0)
-			sendLives |= P_GiveLives(tplayer, -1);
+			sendLives |= P_GiveLives(*tplayer, -1);
 
 		// Death script execution, care of Skull Tag
 		if (level.behavior != NULL)
@@ -1925,7 +1925,7 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 		if (!source && !joinkill)
 		{
 			// [RH] Cumulative frag count
-			sendScore |= P_GiveFrags(tplayer, -1);
+			sendScore |= P_GiveFrags(*tplayer, -1);
 		}
 
 		// [NightFang] - Added this, thought it would be cooler
@@ -1937,7 +1937,7 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 
 		target->flags &= ~MF_SOLID;
 		target->player->playerstate = PST_DEAD;
-		P_DropWeapon(target->player);
+		P_DropWeapon(*target->player);
 
 		tplayer->suicidedelay = SuicideDelay;
 		tplayer->death_time = level.time;
@@ -2385,8 +2385,8 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 			}
 
 			// Calculate amount of HP to take away from the boss pool
-			int low = std::max(target->health - damage, 0);
-			int actualdamage = target->health - low;
+			const int low = std::max(target->health - damage, 0);
+			const int actualdamage = target->health - low;
 
 			P_AddDamagePool(target, actualdamage);
 
@@ -2395,12 +2395,12 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 			{
 				if (target->health < 0)
 				{
-					if (P_GiveMonsterDamage(splayer, damage + target->health))
+					if (P_GiveMonsterDamage(*splayer, damage + target->health))
 						PersistPlayerDamage(*splayer);
 				}
 				else
 				{
-					if (P_GiveMonsterDamage(splayer, damage))
+					if (P_GiveMonsterDamage(*splayer, damage))
 						PersistPlayerDamage(*splayer);
 				}
 			}

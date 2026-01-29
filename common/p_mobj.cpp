@@ -2847,7 +2847,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		if (DeathMatchStarts.size() >= 10 && demoplayback)
 			return;
 
-		M_LogWDLPlayerSpawn(mthing);
+		M_LogWDLPlayerSpawn(*mthing);
 		DeathMatchStarts.push_back(*mthing);
 		return;
 	}
@@ -2861,7 +2861,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 			if (mthing->type == teamInfo->TeamSpawnThingNum)
 			{
 				teamInfo->Starts.push_back(*mthing);
-				M_LogWDLPlayerSpawn(mthing);
+				M_LogWDLPlayerSpawn(*mthing);
 				return;
 			}
 		}
@@ -2909,7 +2909,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 			return;
 
 		if ((G_IsCoopGame() || G_UsesCoopSpawns()) && !G_IsHordeMode())
-			M_LogWDLPlayerSpawn(mthing);
+			M_LogWDLPlayerSpawn(*mthing);
 
 		size_t playernum = P_GetMapThingPlayerNumber(mthing);
 
@@ -2921,7 +2921,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 			if (otherplayernum == playernum)
 			{
 				// consider playerstarts[i] to be a voodoo doll start
-				M_RemoveWDLPlayerSpawn(&playerstarts[i]);
+				M_RemoveWDLPlayerSpawn(playerstarts[i]);
 				voodoostarts.push_back(playerstarts[i]);
 				playerstarts.erase(playerstarts.begin() + i);
 				break;
@@ -3146,9 +3146,9 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		// [CMB] specific types must be checked; otherwise they won't spawn correctly
 		mobj->special1 = mthing->type;
 		if (mthing->type == 5301) // Supply cache (5301)
-			M_LogWDLItemSpawn(mobj, WDL_PICKUP_CAREPACKAGE);
+			M_LogWDLItemSpawn(*mobj, WDL_PICKUP_CAREPACKAGE);
 		else if (mthing->type == 5307) // Horde Powerup (5307)
-			M_LogWDLItemSpawn(mobj, WDL_PICKUP_POWERUPSPAWNER);
+			M_LogWDLItemSpawn(*mobj, WDL_PICKUP_POWERUPSPAWNER);
 	}
 
 	if (z == ONFLOORZ)
@@ -3264,7 +3264,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 			if (mthing->type == teamInfo->FlagThingNum)
 			{
 				SpawnFlag(mthing, teamInfo->Team);
-				M_LogWDLFlagLocation(mthing, teamInfo->Team);
+				M_LogWDLFlagLocation(*mthing, teamInfo->Team);
 				break;
 			}
 		}
@@ -3279,7 +3279,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	WDLPowerups typetocheck = M_GetWDLItemByMobjType(static_cast<mobjtype_t>(mobj->type));
 	if (typetocheck != WDL_PICKUP_UNKNOWN)
 	{
-		M_LogWDLItemSpawn(mobj, typetocheck);
+		M_LogWDLItemSpawn(*mobj, typetocheck);
 	}
 }
 

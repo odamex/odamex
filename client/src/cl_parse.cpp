@@ -1820,7 +1820,7 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 		return;
 	}
 
-	P_GiveSpecial(&consoleplayer(), mo);
+	P_GiveSpecial(consoleplayer(), *mo);
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -2305,7 +2305,7 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 		player.cards[i] = cardBits[i];
 
 	if (!player.weaponowned[weap])
-		P_GiveWeapon(&player, weap, false);
+		P_GiveWeapon(player, weap, false);
 
 	for (int i = 0; i < NUMAMMO; i++)
 		player.ammo[i] = ammo[i];

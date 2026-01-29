@@ -293,7 +293,7 @@ static void DoGiveInv(player_t& player, const char* type, int amount)
 		if (strcmp(DoomAmmoNames[i].Name, type) == 0)
 		{
 			player.ammo[i] = MIN(player.ammo[i]+amount, player.maxammo[i]);
-			SERVER_ONLY(SV_SendPlayerInfo(*player));
+			SERVER_ONLY(SV_SendPlayerInfo(player));
 			return;
 		}
 	}
@@ -312,7 +312,7 @@ static void DoGiveInv(player_t& player, const char* type, int amount)
 			// Don't bring it up automatically
 			if (player.readyweapon != NUMWEAPONS && player.pendingweapon != NUMWEAPONS)
 				player.pendingweapon = savedpendingweap;
-			SERVER_ONLY(SV_SendPlayerInfo(*player));
+			SERVER_ONLY(SV_SendPlayerInfo(player));
 			return;
 		}
 	}
@@ -327,7 +327,7 @@ static void DoGiveInv(player_t& player, const char* type, int amount)
 				P_GiveCard(player, static_cast<card_t>(i));
 			}
 			while (--amount > 0);
-			SERVER_ONLY(SV_SendPlayerInfo(*player));
+			SERVER_ONLY(SV_SendPlayerInfo(player));
 			return;
 		}
 	}
@@ -342,7 +342,7 @@ static void DoGiveInv(player_t& player, const char* type, int amount)
 				P_GivePower(player, i);
 			}
 			while (--amount > 0);
-			SERVER_ONLY(SV_SendPlayerInfo(*player));
+			SERVER_ONLY(SV_SendPlayerInfo(player));
 			return;
 		}
 	}
