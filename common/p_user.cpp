@@ -45,6 +45,8 @@
 
 #include "p_mapformat.h"
 
+#include <nonstd/span.hpp>
+
 //
 // Movement.
 //
@@ -869,7 +871,7 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 
 void SV_SendPlayerInfo(player_t &);
 
-void P_SetPlayerInvulnBleed(player_t& player, int powers[NUMPOWERS])
+void P_SetPlayerInvulnBleed(player_t& player, nonstd::span<const int, NUMPOWERS> powers)
 {
 	if (sv_showplayerpowerups)
 	{
@@ -899,7 +901,7 @@ void P_SwitchSpyOnNoLives(const player_t& player)
 	}
 }
 
-void P_SetPlayerPowerupStatuses(player_t& player, int powers[NUMPOWERS])
+void P_SetPlayerPowerupStatuses(player_t& player, nonstd::span<const int, NUMPOWERS> powers)
 {
 	if (!player.mo)
 		return;
@@ -1428,9 +1430,9 @@ player_s::player_s() :
 	client(player_s::client_t())
 {
 	cmd.clear();
-	ArrayInit(powers, 0);
-	ArrayInit(cards, false);
-	ArrayInit(flags, false);
+	powers.fill(0);
+	cards.fill(false);
+	flags.fill(false);
 	weaponowned.fill(false);
 	ammo.fill(false);
 	maxammo.fill(false);
@@ -1470,13 +1472,13 @@ player_s &player_s::operator =(const player_s &other)
 	armorpoints = other.armorpoints;
 	armortype = other.armortype;
 
-	ArrayCopy(powers, other.powers);
-	ArrayCopy(cards, other.cards);
+	powers = other.powers;
+	cards = other.cards;
 
 	lives = other.lives;
 	roundwins = other.roundwins;
 
-	ArrayCopy(flags, other.flags);
+	flags = other.flags;
 
 	points = other.points;
 	backpack = other.backpack;

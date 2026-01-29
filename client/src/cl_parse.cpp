@@ -117,7 +117,7 @@ void P_SetButtonTexture(line_t* line, short texture);
 /**
  * @brief Unpack a bitfield into an array of booleans.
  */
-static void UnpackBoolArray(bool* bools, size_t count, uint32_t in)
+static void UnpackBoolArray(nonstd::span<bool> bools, size_t count, uint32_t in)
 {
 	for (size_t i = 0; i < count; i++)
 	{
@@ -215,7 +215,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	player_t& p = consoleplayer();
 
 	uint32_t weaponowned = msg->player().weaponowned();
-	UnpackBoolArray(p.weaponowned.data(), NUMWEAPONS, weaponowned);
+	UnpackBoolArray(p.weaponowned, NUMWEAPONS, weaponowned);
 
 	uint32_t cards = msg->player().cards();
 	UnpackBoolArray(p.cards, NUMCARDS, cards);
