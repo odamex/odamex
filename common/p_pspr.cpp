@@ -83,9 +83,9 @@ fixed_t P_BulletSlope(AActor* mo);
 //
 // Returns which state the player's ready weapon is in.
 //
-weaponstate_t P_GetWeaponState(player_t& player)
+weaponstate_t P_GetWeaponState(const player_t& player)
 {
-	pspdef_t& psp = player.psprites[player.psprnum];
+	const pspdef_t& psp = player.psprites[player.psprnum];
 
 	if (psp.state == NULL)
 		return unknownstate;
@@ -385,11 +385,11 @@ weapontype_t P_GetNextWeapon(player_t *player, bool forward)
 // to the one indicated by weapon, based on the player's preference.
 // Called by P_GiveWeapon when a player touches a weapon mapthing.
 //
-bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon)
+bool P_CheckSwitchWeapon(const player_t& player, weapontype_t weapon)
 {
 	// Always switch - vanilla Doom behavior
 	if ((multiplayer && !sv_allowpwo) ||
-		player->userinfo.switchweapon == WPSW_ALWAYS ||
+		player.userinfo.switchweapon == WPSW_ALWAYS ||
 		demoplayback)
 	{
 		return true;
@@ -397,22 +397,22 @@ bool P_CheckSwitchWeapon(player_t *player, weapontype_t weapon)
 
 	// Never switch - player has to manually change themselves
 	// Having no weapons because of ClearInventory/TakeInventory overrides this
-	if (player->userinfo.switchweapon == WPSW_NEVER && player->readyweapon != NUMWEAPONS && player->pendingweapon != NUMWEAPONS)
+	if (player.userinfo.switchweapon == WPSW_NEVER && player.readyweapon != NUMWEAPONS && player.pendingweapon != NUMWEAPONS)
 		return false;
 
-	weapontype_t currentweapon = (player->pendingweapon == wp_nochange)
-			? player->readyweapon
-			: player->pendingweapon;
+	const weapontype_t currentweapon = (player.pendingweapon == wp_nochange)
+			? player.readyweapon
+			: player.pendingweapon;
 
 	if (currentweapon == NUMWEAPONS)
 		return true;
 
 	// Use player's weapon preferences
-	byte *prefs = player->userinfo.weapon_prefs;
+	const byte *prefs = player.userinfo.weapon_prefs;
 	if (prefs[weapon] > prefs[currentweapon])
 	{
-		if (player->userinfo.switchweapon == WPSW_PWO_ALT &&
-			player->cmd.buttons & BT_ATTACK)
+		if (player.userinfo.switchweapon == WPSW_PWO_ALT &&
+			player.cmd.buttons & BT_ATTACK)
 			return false;
 
 		return true;

@@ -2223,9 +2223,9 @@ void SV_DrawScores()
 					              player->id,
 					              NET_AdrToString(player->client.address),
 					              player->userinfo.netname,
-					              P_GetPointCount(player),
+					              P_GetPointCount(*player),
 					              //itplayer->captures,
-					              P_GetFragCount(player),
+					              P_GetFragCount(*player),
 					              player->GameTime / 60);
 				}
 			}
@@ -2276,8 +2276,8 @@ void SV_DrawScores()
 					              player->id,
 					              NET_AdrToString(player->client.address),
 					              player->userinfo.netname,
-					              P_GetFragCount(player),
-					              P_GetDeathCount(player),
+					              P_GetFragCount(*player),
+					              P_GetDeathCount(*player),
 					              SV_CalculateFragDeathRatio(player),
 					              player->GameTime / 60);
 				}
@@ -2316,8 +2316,8 @@ void SV_DrawScores()
 			              player->id,
 			              NET_AdrToString(player->client.address),
 			              player->userinfo.netname,
-			              P_GetFragCount(player),
-			              P_GetDeathCount(player),
+			              P_GetFragCount(*player),
+			              P_GetDeathCount(*player),
 			              SV_CalculateFragDeathRatio(player),
 			              player->GameTime / 60);
 		}
@@ -3132,7 +3132,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 		}
 		#endif
 
-		netcmd->toPlayer(&player);
+		netcmd->toPlayer(player);
 
 		if (!sv_freelook)
 			player.mo->pitch = 0;
@@ -4002,11 +4002,11 @@ void SV_GameTics (void)
 		SV_ProcessPlayerCmd(player);
 }
 
-void SV_TouchSpecial(const AActor *special, player_t *player)
+void SV_TouchSpecial(const AActor& special, player_t& player)
 {
-	client_t *cl = &player->client;
+	client_t *cl = &player.client;
 
-	if (cl == NULL || special == NULL)
+	if (cl == nullptr)
 		return;
 
 	MSG_WriteSVC(&cl->reliablebuf, SVC_TouchSpecial(special));

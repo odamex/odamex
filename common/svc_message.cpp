@@ -993,11 +993,11 @@ odaproto::svc::PlaySound SVC_PlaySound(const PlaySoundType& type, int channel, i
 	return msg;
 }
 
-odaproto::svc::TouchSpecial SVC_TouchSpecial(const AActor* mo)
+odaproto::svc::TouchSpecial SVC_TouchSpecial(const AActor& mo)
 {
 	odaproto::svc::TouchSpecial msg;
 
-	msg.set_netid(mo->netid);
+	msg.set_netid(mo.netid);
 
 	return msg;
 }

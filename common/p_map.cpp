@@ -815,7 +815,7 @@ static bool PIT_CheckThing (AActor *thing)
 			max_z -= 24 * FRACUNIT;
 
 		if (!P_AllowPassover() || thing->z < max_z)
-			P_TouchSpecialThing (thing, tmthing);	// can remove thing
+			P_TouchSpecialThing (*thing, *tmthing);	// can remove thing
 
 		return !solid;
 	}

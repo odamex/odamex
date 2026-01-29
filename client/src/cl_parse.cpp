@@ -98,12 +98,12 @@ extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 extern std::set<byte> teleported_players;
 
 void CL_CheckDisplayPlayer(void);
-void CL_ClearPlayerJustTeleported(player_t* player);
+void CL_ClearPlayerJustTeleported(const player_t& player);
 void CL_ClearSectorSnapshots();
 player_t& CL_FindPlayer(size_t id);
 std::string CL_GenerateNetDemoFileName(
     const std::string& filename = cl_netdemoname.str());
-bool CL_PlayerJustTeleported(player_t* player);
+bool CL_PlayerJustTeleported(const player_t& player);
 void CL_QuitAndTryDownload(const OWantFile& missing_file);
 void CL_ResyncWorldIndex();
 void CL_SpectatePlayer(player_t& player, bool spectate);
@@ -111,7 +111,7 @@ void G_PlayerReborn(player_t& p); // [Toke - todo] clean this function
 void P_DestroyButtonThinkers();
 void P_ExplodeMissile(AActor* mo);
 void P_PlayerLeavesGame(player_s* player);
-void P_SetPsprite(player_t* player, int position, int32_t stnum);
+void P_SetPsprite(player_t& player, int position, int32_t stnum);
 void P_SetButtonTexture(line_t* line, short texture);
 
 /**
@@ -275,7 +275,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 		}
 	}
 
-	P_SetPlayerPowerupStatuses(&p, p.powers);
+	P_SetPlayerPowerupStatuses(p, p.powers);
 
 	// Sync mo health with player health
 	// For crosshaircolor, etc.
@@ -295,7 +295,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 {
 	byte who = msg->player().playerid();
-	player_t* p = &idplayer(who);
+	player_t& p = idplayer(who);
 
 	fixed_t x = msg->actor().pos().x();
 	fixed_t y = msg->actor().pos().y();
@@ -314,43 +314,43 @@ static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 	{
 		if (i < msg->player().powers_size())
 		{
-			p->powers[i] = msg->player().powers(i);
+			p.powers[i] = msg->player().powers(i);
 		}
 		else
 		{
-			p->powers[i] = 0;
+			p.powers[i] = 0;
 		}
 	}
 
-	if (!validplayer(*p) || !p->mo)
+	if (!validplayer(p) || !p.mo)
 		return;
 
 	// Mark the gametic this update arrived in for prediction code
-	p->tic = gametic;
+	p.tic = gametic;
 
 	// GhostlyDeath -- Servers will never send updates on spectators
-	if (p->spectator && (p != &consoleplayer()))
-		p->spectator = 0;
+	if (p.spectator && (&p != &consoleplayer()))
+		p.spectator = 0;
 
 	// Set powerup statuses (online games)
 	// in here too because PlayerThink doesn't run against other players online
 	// the players don't think, man
-	P_SetPlayerPowerupStatuses(p, p->powers);
+	P_SetPlayerPowerupStatuses(p, p.powers);
 
 	// This is a very bright frame. Looks cool :)
 	if (frame == PLAYER_FULLBRIGHTFRAME)
 		frame = 32773;
 
 	// denis - fixme - security
-	if (!p->mo->sprite ||
-	    (p->mo->frame & FF_FRAMEMASK) >= sprites[p->mo->sprite].numframes)
+	if (!p.mo->sprite ||
+	    (p.mo->frame & FF_FRAMEMASK) >= sprites[p.mo->sprite].numframes)
 		return;
 
-	p->last_received = gametic;
+	p.last_received = gametic;
 	::last_player_update = gametic;
 
 	// [SL] 2012-02-21 - Save the position information to a snapshot
-	int snaptime = ::last_svgametic;
+	const int snaptime = ::last_svgametic;
 	PlayerSnapshot newsnap(snaptime);
 	newsnap.setAuthoritative(true);
 
@@ -369,7 +369,7 @@ static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 	newsnap.setContinuous(!CL_PlayerJustTeleported(p));
 	CL_ClearPlayerJustTeleported(p);
 
-	p->snapshots.addSnapshot(newsnap);
+	p.snapshots.addSnapshot(newsnap);
 }
 
 static void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
@@ -403,8 +403,8 @@ static void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
 
 	// Mark the snapshot as continuous unless the player just teleported
 	// and lerping should be disabled
-	newsnapshot.setContinuous(!CL_PlayerJustTeleported(&p));
-	CL_ClearPlayerJustTeleported(&p);
+	newsnapshot.setContinuous(!CL_PlayerJustTeleported(p));
+	CL_ClearPlayerJustTeleported(p);
 
 	consoleplayer().snapshots.addSnapshot(newsnapshot);
 }
@@ -1139,25 +1139,25 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 //
 static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 {
-	size_t playernum = msg->pid();
-	size_t netid = msg->actor().netid();
-	player_t* p = &CL_FindPlayer(playernum);
+	const size_t playernum = msg->pid();
+	const size_t netid = msg->actor().netid();
+	player_t& p = CL_FindPlayer(playernum);
 
-	angle_t angle = msg->actor().angle();
-	fixed_t x = msg->actor().pos().x();
-	fixed_t y = msg->actor().pos().y();
-	fixed_t z = msg->actor().pos().z();
+	const angle_t angle = msg->actor().angle();
+	const fixed_t x = msg->actor().pos().x();
+	const fixed_t y = msg->actor().pos().y();
+	const fixed_t z = msg->actor().pos().z();
 
 	P_ClearId(netid);
 
 	// first disassociate the corpse
-	if (p->mo)
+	if (p.mo)
 	{
-		p->mo->player = NULL;
-		p->mo->health = 0;
+		p.mo->player = nullptr;
+		p.mo->health = 0;
 	}
 
-	G_PlayerReborn(*p);
+	G_PlayerReborn(p);
 
 	AActor* mobj = new AActor(x, y, z, MT_PLAYER);
 
@@ -1167,24 +1167,24 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	mobj->translation = translationref_t(translationtables + 256 * playernum, playernum);
 	mobj->angle = angle;
 	mobj->pitch = 0;
-	mobj->player = p;
-	mobj->health = p->health;
+	mobj->player = &p;
+	mobj->health = p.health;
 	P_SetThingId(mobj, netid);
 
-	p->mo = p->camera = mobj->ptr();
-	p->fov = 90.0f;
-	p->playerstate = PST_LIVE;
-	p->refire = 0;
-	p->damagecount = 0;
-	p->bonuscount = 0;
-	p->extralight = 0;
-	p->fixedcolormap = 0;
+	p.mo = p.camera = mobj->ptr();
+	p.fov = 90.0f;
+	p.playerstate = PST_LIVE;
+	p.refire = 0;
+	p.damagecount = 0;
+	p.bonuscount = 0;
+	p.extralight = 0;
+	p.fixedcolormap = 0;
 
-	p->xviewshift = 0;
-	p->viewheight = VIEWHEIGHT;
+	p.xviewshift = 0;
+	p.viewheight = VIEWHEIGHT;
 
-	p->attacker = AActor::AActorPtr();
-	p->viewz = z + VIEWHEIGHT;
+	p.attacker = AActor::AActorPtr();
+	p.viewz = z + VIEWHEIGHT;
 
 	// spawn a teleport fog
 	// tfog = new AActor (x, y, z + gameinfo.telefogHeight, MT_TFOG);
@@ -1196,15 +1196,15 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	if (!G_IsCoopGame())
 	{
 		for (size_t i = 0; i < NUMCARDS; i++)
-			p->cards[i] = true;
+			p.cards[i] = true;
 	}
 	else if (sv_sharekeys)
 	{
 		const uint32_t cards = msg->cards();
-		UnpackBoolArray(p->cards, NUMCARDS, cards);
+		UnpackBoolArray(p.cards, NUMCARDS, cards);
 	}
 
-	if (p->id == consoleplayer_id)
+	if (p.id == consoleplayer_id)
 	{
 		// denis - if this concerns the local player, restart the status bar
 		ST_Start();
@@ -1217,7 +1217,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		movingsectors.clear();
 	}
 
-	if (p->id == displayplayer().id)
+	if (p.id == displayplayer().id)
 	{
 		// [SL] 2012-03-08 - Resync with the server's incoming tic since we don't care
 		// about players/sectors jumping to new positions when the displayplayer spawns
@@ -1225,20 +1225,20 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		OInterpolation::getInstance().resetBobInterpolation();
 	}
 
-	if (level.behavior && !p->spectator && p->playerstate == PST_LIVE)
+	if (level.behavior && !p.spectator && p.playerstate == PST_LIVE)
 	{
-		if (p->deathcount)
-			::level.behavior->StartTypedScripts(SCRIPT_Respawn, p->mo);
+		if (p.deathcount)
+			::level.behavior->StartTypedScripts(SCRIPT_Respawn, p.mo);
 		else
-			::level.behavior->StartTypedScripts(SCRIPT_Enter, p->mo);
+			::level.behavior->StartTypedScripts(SCRIPT_Enter, p.mo);
 	}
 
-	int snaptime = last_svgametic;
+	const int snaptime = last_svgametic;
 	PlayerSnapshot newsnap(snaptime, p);
 	newsnap.setAuthoritative(true);
 	newsnap.setContinuous(false);
-	p->snapshots.clearSnapshots();
-	p->snapshots.addSnapshot(newsnap);
+	p.snapshots.clearSnapshots();
+	p.snapshots.addSnapshot(newsnap);
 }
 
 //
@@ -2311,12 +2311,12 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 		player.ammo[i] = ammo[i];
 
 	for (int i = 0; i < NUMPSPRITES; i++)
-		P_SetPsprite(&player, i, stnum[i]);
+		P_SetPsprite(player, i, stnum[i]);
 
 	for (int i = 0; i < NUMPOWERS; i++)
 		player.powers[i] = powerups[i];
 
-	P_SetPlayerPowerupStatuses(&player, powerups);
+	P_SetPlayerPowerupStatuses(player, powerups);
 
 	if (!player.spectator)
 		player.cheats = cheats;

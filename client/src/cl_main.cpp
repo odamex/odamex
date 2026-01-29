@@ -296,7 +296,7 @@ void M_Ticker(void);
 size_t P_NumPlayersInGame();
 void G_PlayerReborn (player_t &player);
 void P_KillMobj (AActor *source, AActor *target, const AActor *inflictor, bool joinkill);
-void P_SetPsprite (player_t *player, int position, int32_t stnum);
+void P_SetPsprite (player_t& player, int position, int32_t stnum);
 void P_ExplodeMissile (AActor* mo);
 bool P_CheckMissileSpawn (AActor* th);
 
@@ -1884,9 +1884,9 @@ void CL_TryToConnect(DWORD server_token)
 // Returns true if we have received a svc_activateline message from the server
 // involving this player and teleportation
 //
-bool CL_PlayerJustTeleported(player_t *player)
+bool CL_PlayerJustTeleported(const player_t& player)
 {
-	if (player && teleported_players.find(player->id) != teleported_players.end())
+	if (teleported_players.find(player.id) != teleported_players.end())
 		return true;
 
 	return false;
@@ -1895,10 +1895,9 @@ bool CL_PlayerJustTeleported(player_t *player)
 //
 // CL_ClearPlayerJustTeleported
 //
-void CL_ClearPlayerJustTeleported(player_t *player)
+void CL_ClearPlayerJustTeleported(const player_t& player)
 {
-	if (player)
-		teleported_players.erase(player->id);
+	teleported_players.erase(player.id);
 }
 
 ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, bool dropped);
@@ -2059,7 +2058,7 @@ void CL_ParseCommands()
 void CL_SaveCmd(void)
 {
 	NetCommand *netcmd = &localcmds[gametic % MAXSAVETICS];
-	netcmd->fromPlayer(&consoleplayer());
+	netcmd->fromPlayer(consoleplayer());
 	netcmd->setTic(gametic);
 	netcmd->setWorldIndex(world_index);
 }
@@ -2369,7 +2368,7 @@ void CL_SimulatePlayers()
 			}
 
 			int oldframe = player.mo->frame;
-			snap.toPlayer(&player);
+			snap.toPlayer(player);
 
 			if (player.playerstate != PST_LIVE)
 				player.mo->frame = oldframe;

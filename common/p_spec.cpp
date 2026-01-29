@@ -2214,15 +2214,15 @@ void P_ApplySectorDamage(player_t& player, int damage, int leak, int mod)
 			P_DamageMobj(player.mo, NULL, NULL, damage, mod);
 }
 
-void P_ApplySectorDamageEndLevel(player_t* player)
+void P_ApplySectorDamageEndLevel(player_t& player)
 {
 	//if (comp[comp_god])
-	player->cheats &= ~CF_GODMODE;
+	player.cheats &= ~CF_GODMODE;
 
 	if (!(level.time & 0x1f))
-		P_DamageMobj(player->mo, NULL, NULL, 20);
+		P_DamageMobj(player.mo, NULL, NULL, 20);
 
-	if (player->health <= 10)
+	if (player.health <= 10)
 		if (sv_allowexit)
 			G_ExitLevel(0, 1);
 }
@@ -2238,8 +2238,8 @@ void P_CollectSecretCommon(sector_t& sector, player_t& player)
 	sector.flags &= ~SECF_SECRET;
 
 #ifdef SERVER_APP
-	SV_UpdateSecret(*sector, *player); // Update the sector to all clients so that they
-	                                   // don't discover an already found secret.
+	SV_UpdateSecret(sector, player); // Update the sector to all clients so that they
+	                                 // don't discover an already found secret.
 #elif defined(CLIENT_APP)
 	if (player.mo == consoleplayer().camera)
 		C_RevealSecret(); // Display the secret revealed message
