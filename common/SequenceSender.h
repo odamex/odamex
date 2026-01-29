@@ -27,11 +27,18 @@
 
 #include "SequenceQueueEntryType.h"
 
+#ifdef min
+#   undef min
+#endif
+
 class SequenceSender
 {
 	public:
 
-    // This class iterates over the *unacknowledged* reliable messages.
+		// Random conservative wild-ass guess.
+		const static int DEFAULT_RETRANSMISSIONS_PER_TIC = 5;
+
+		// This class iterates over the *unacknowledged* reliable messages.
 		// This iterator can be invalidated if things are acked or new Send Packets are obtained.
 		class UnackedIterator
 		{
@@ -92,7 +99,9 @@ class SequenceSender
 			m_nextSequence   (0),
 			m_unackedCount   (0),
 			m_smallestUnacked(0),
-            m_mode           (NORMAL)
+
+			m_maxPacketsPerRetransmission (DEFAULT_RETRANSMISSIONS_PER_TIC),
+			m_mode                        (NORMAL)
 		{
 		}
 
@@ -102,6 +111,8 @@ class SequenceSender
 		}
 
 		SenderModeEnum GetMode() const { return m_mode; }
+
+		int GetMaxPacketsPerRetransmission() const { return m_maxPacketsPerRetransmission; }
 
 		struct QueueEntryResultType
 		{
@@ -173,12 +184,23 @@ class SequenceSender
 
 				if (sequence < entryRef.sequence)
 				{
-					// In this particular case, we're so far behind that we're about to run out of send queue
-					// space.
+					// This happens because we sent out at least one retransmission that was acked, but we had a
+					// prior transmission of the same message be successfully received and acked, but the ack was
+					// was on its way to us when we sent the retransmission.  It's a relatively common occurrence
+					// in reality.
 					//
-					// This should never happen because if we have to drop reliable packets, we drop new ones
-					// not old ones.
-					DPrintFmt("Wow, that's an old acknowledgement!  Should never happen!  seq: {} cur: {}\n", sequence, entryRef.sequence);
+					// However, this particular case is interesting because the combination of 1. the time between
+					// the canonical ack and this one, and 2 .the fact that the send queue is full enough that the
+					// original message's slot has already been reused for another message.
+					//
+					// This implies that we're about halfway through the queue, but more importantly means that
+					// the queue just isn't big enough for the client's latency.  Maybe they're overframing?  Maybe
+					// a ping spike?  We can still have healthy traffic, but it means we could likely benefit from
+					// a one-time increase in queue size.
+					//
+					//TODO: Use this as a metric to determine when it's time to grow the queue and/or downthrottle.
+
+					DPrintFmt("Wow, that's an old acknowledgement!  pct full {} seq: {} cur: {}\n", (m_unackedCount * 100) / m_sendQueue.size(), sequence, entryRef.sequence);
 				}
 				else if (sequence > entryRef.sequence)
 				{
@@ -190,11 +212,10 @@ class SequenceSender
 					if (not entryRef.isAwaiting)
 					{
 						// This happens because we're seeing multiple acks for the same message.  This happens when
-						// the client is far behind enough that it's acked a message, but the sender has already
-						// sent retries.  It could in fact happen multiple times, depending on how far back we're
-						// talking.  Could be due to congestion or just a very long latency.
+						// the client is behind enough that it's acked a message, but the sender has already
+						// sent retries.  This is a less severe version of the above "old acknowledgement" case.
 						//
-						// TODO:  Consider using this as a quality metric.  Are we spamming retries too much?
+						// TODO:  Consider using this as a quality metric.
 						//DPrintFmt("Stale ack: {}\n", sequence);
 					}
 					else
@@ -202,7 +223,18 @@ class SequenceSender
 						isFreshAck = true;
 						entryRef.isAwaiting = false;
 						--m_unackedCount;
-						m_mode = NORMAL;
+
+						// The low-rent exit from recovery:  we received enough current acks to do more
+						// retransmissions.  The idea is that if we hold of on transmitting for just a little
+						// bit, the bandwidth utilization drops enough to start to decongest...  I'm sure
+						// there's a better way.
+						//
+						// TODO: Downthrottling
+
+						if (m_unackedCount < std::min(m_maxPacketsPerRetransmission, static_cast<int>(m_sendQueue.size())))
+						{
+							m_mode = NORMAL;
+						}
 					}
 				}
 
@@ -241,9 +273,10 @@ class SequenceSender
 
 		std::vector<SequenceQueueEntryType> m_sendQueue;
 
-		int m_nextSequence;     // The sequence number to assign to the next requested packet.
-		int m_unackedCount;     // The number of sent packets that have not yet been acked.
-		int m_smallestUnacked;  // The smallest sequence number that has yet to be acked.
+		int m_nextSequence;                 // The sequence number to assign to the next requested packet.
+		int m_unackedCount;                 // The number of sent packets that have not yet been acked.
+		int m_smallestUnacked;              // The smallest sequence number that has yet to be acked.
+		int m_maxPacketsPerRetransmission;  // The max packets to send during a retransmission cycle.
 
 		SenderModeEnum m_mode;
 };

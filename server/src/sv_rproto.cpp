@@ -47,8 +47,6 @@ namespace
     const size_t PACKET_HEADER_SIZE = PACKET_MESSAGE_INDEX;
     const size_t PACKET_OLD_MASK = 0xFF;
 
-    const int DEFAULT_RETRANSMISSIONS_PER_TIC = 5;
-
     buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
     buf_t sendd(MAX_UDP_PACKET);
 }
@@ -135,7 +133,7 @@ void SV_SendPacketDelayed(buf_t& packet, player_t& pl)
 
 bool SV_MustThrottleTransmissionsForClient(client_t& client)
 {
-    return client.reliableSendSequencer.GetMode() == SequenceSender::RECOVERY;
+	return client.reliableSendSequencer.GetMode() == SequenceSender::RECOVERY;
 }
 
 //
@@ -298,7 +296,7 @@ void SV_HandleReliableRetransmissions()
 				SendOldPacket(player.client, *sendQueueEntry);
 
 				// TODO:  Consider changing the size of the retransmit window based on client-specific info.
-				if (++retransmissionsSent > DEFAULT_RETRANSMISSIONS_PER_TIC)
+				if (++retransmissionsSent > player.client.reliableSendSequencer.GetMaxPacketsPerRetransmission())
 				{
 					break;
 				}
