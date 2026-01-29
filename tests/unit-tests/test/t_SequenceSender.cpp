@@ -21,7 +21,7 @@ TEST(ReliableSequenceSender, OneSendOneAckAndNullIter)
 {
     SequenceSender sender1(10);
 
-    sender1.ObtainSendPacket(1);
+    sender1.ObtainSendPacket();
 
     auto iter = sender1.IterateUnackedPackets();
 
@@ -36,24 +36,24 @@ TEST(ReliableSequenceSender, OneSendOneAckAndNullIter)
     REQUIRE(iter.Next() == nullptr);
     REQUIRE(iter.Next() == nullptr);
 
-    sender1.Acknowledge(1);
+    REQUIRE(sender1.Acknowledge(0));
 
     iter = sender1.IterateUnackedPackets();
 
     REQUIRE(iter.Next() == nullptr);
 
-    sender1.Acknowledge(1);
-    sender1.Acknowledge(0);
-    sender1.Acknowledge(6);
+    REQUIRE(not sender1.Acknowledge(1));
+    REQUIRE(not sender1.Acknowledge(0));
+    REQUIRE(not sender1.Acknowledge(6));
 }
 
 TEST(ReliableSequenceSender, MultipleSendsAndAcks)
 {
     SequenceSender sender1(10);
 
-    sender1.ObtainSendPacket(1);
-    sender1.ObtainSendPacket(2);
-    sender1.ObtainSendPacket(3);
+    sender1.ObtainSendPacket();
+    sender1.ObtainSendPacket();
+    sender1.ObtainSendPacket();
 
     auto iter = sender1.IterateUnackedPackets();
 
@@ -62,27 +62,27 @@ TEST(ReliableSequenceSender, MultipleSendsAndAcks)
     REQUIRE(iter.Next() != nullptr);
     REQUIRE(iter.Next() == nullptr);
 
-    sender1.Acknowledge(1);
-    sender1.Acknowledge(2);
-    sender1.Acknowledge(3);
+    REQUIRE(sender1.Acknowledge(0));
+    REQUIRE(sender1.Acknowledge(1));
+    REQUIRE(sender1.Acknowledge(2));
 
     iter = sender1.IterateUnackedPackets();
     REQUIRE(iter.Next() == nullptr);
 
-    sender1.ObtainSendPacket(4);
-    sender1.ObtainSendPacket(5);
-    sender1.ObtainSendPacket(6);
+    sender1.ObtainSendPacket();
+    sender1.ObtainSendPacket();
+    sender1.ObtainSendPacket();
 
     iter = sender1.IterateUnackedPackets();
 
+    REQUIRE((iter.Next())->sequence == 3);
     REQUIRE((iter.Next())->sequence == 4);
     REQUIRE((iter.Next())->sequence == 5);
-    REQUIRE((iter.Next())->sequence == 6);
     REQUIRE(iter.Next() == nullptr);
 
-    sender1.Acknowledge(4);
-    sender1.Acknowledge(5);
-    sender1.Acknowledge(6);
+    REQUIRE(sender1.Acknowledge(3));
+    REQUIRE(sender1.Acknowledge(4));
+    REQUIRE(sender1.Acknowledge(5));
 
     iter = sender1.IterateUnackedPackets();
     REQUIRE(iter.Next() == nullptr);
@@ -92,86 +92,86 @@ TEST(ReliableSequenceSender, MultipleOutOfOrder)
 {
     SequenceSender sender1(100);
 
-    sender1.ObtainSendPacket(10);
-    sender1.ObtainSendPacket(11);
-    sender1.ObtainSendPacket(12);
+    sender1.ObtainSendPacket();
+    sender1.ObtainSendPacket();
+    sender1.ObtainSendPacket();
 
     auto iter = sender1.IterateUnackedPackets();
 
-    REQUIRE((iter.Next())->sequence == 10);
-    REQUIRE((iter.Next())->sequence == 11);
-    REQUIRE((iter.Next())->sequence == 12);
+    REQUIRE((iter.Next())->sequence == 0);
+    REQUIRE((iter.Next())->sequence == 1);
+    REQUIRE((iter.Next())->sequence == 2);
     REQUIRE(iter.Next() == nullptr);
 
-    sender1.Acknowledge(11);
+    REQUIRE(sender1.Acknowledge(1));
 
     iter = sender1.IterateUnackedPackets();
 
-    REQUIRE((iter.Next())->sequence == 10);
-    REQUIRE((iter.Next())->sequence == 12);
+    REQUIRE((iter.Next())->sequence == 0);
+    REQUIRE((iter.Next())->sequence == 2);
     REQUIRE(iter.Next() == nullptr);
 
-    sender1.ObtainSendPacket(13);
+    sender1.ObtainSendPacket();
 
     iter = sender1.IterateUnackedPackets();
 
-    REQUIRE((iter.Next())->sequence == 10);
-    REQUIRE((iter.Next())->sequence == 12);
-    REQUIRE((iter.Next())->sequence == 13);
+    REQUIRE((iter.Next())->sequence == 0);
+    REQUIRE((iter.Next())->sequence == 2);
+    REQUIRE((iter.Next())->sequence == 3);
     REQUIRE(iter.Next() == nullptr);
 
-    sender1.Acknowledge(10);
+    REQUIRE(sender1.Acknowledge(0));
 
     iter = sender1.IterateUnackedPackets();
 
-    REQUIRE((iter.Next())->sequence == 12);
-    REQUIRE((iter.Next())->sequence == 13);
+    REQUIRE((iter.Next())->sequence == 2);
+    REQUIRE((iter.Next())->sequence == 3);
     REQUIRE(iter.Next() == nullptr);
 
-    sender1.ObtainSendPacket(14);
-    sender1.ObtainSendPacket(15);
-    sender1.ObtainSendPacket(16);
+    sender1.ObtainSendPacket();
+    sender1.ObtainSendPacket();
+    sender1.ObtainSendPacket();
 
     iter = sender1.IterateUnackedPackets();
 
-    REQUIRE((iter.Next())->sequence == 12);
-    REQUIRE((iter.Next())->sequence == 13);
-    REQUIRE((iter.Next())->sequence == 14);
-    REQUIRE((iter.Next())->sequence == 15);
-    REQUIRE((iter.Next())->sequence == 16);
+    REQUIRE((iter.Next())->sequence == 2);
+    REQUIRE((iter.Next())->sequence == 3);
+    REQUIRE((iter.Next())->sequence == 4);
+    REQUIRE((iter.Next())->sequence == 5);
+    REQUIRE((iter.Next())->sequence == 6);
     REQUIRE(iter.Next() == nullptr);
 
-    sender1.Acknowledge(16);
+    REQUIRE(sender1.Acknowledge(6));
 
     iter = sender1.IterateUnackedPackets();
-    REQUIRE((iter.Next())->sequence == 12);
-    REQUIRE((iter.Next())->sequence == 13);
-    REQUIRE((iter.Next())->sequence == 14);
-    REQUIRE((iter.Next())->sequence == 15);
+    REQUIRE((iter.Next())->sequence == 2);
+    REQUIRE((iter.Next())->sequence == 3);
+    REQUIRE((iter.Next())->sequence == 4);
+    REQUIRE((iter.Next())->sequence == 5);
     REQUIRE(iter.Next() == nullptr);
 
-    sender1.Acknowledge(13);
+    REQUIRE(sender1.Acknowledge(3));
 
     iter = sender1.IterateUnackedPackets();
-    REQUIRE((iter.Next())->sequence == 12);
-    REQUIRE((iter.Next())->sequence == 14);
-    REQUIRE((iter.Next())->sequence == 15);
+    REQUIRE((iter.Next())->sequence == 2);
+    REQUIRE((iter.Next())->sequence == 4);
+    REQUIRE((iter.Next())->sequence == 5);
     REQUIRE(iter.Next() == nullptr);
 
-    sender1.Acknowledge(12);
+    REQUIRE(sender1.Acknowledge(2));
 
     iter = sender1.IterateUnackedPackets();
-    REQUIRE((iter.Next())->sequence == 14);
-    REQUIRE((iter.Next())->sequence == 15);
+    REQUIRE((iter.Next())->sequence == 4);
+    REQUIRE((iter.Next())->sequence == 5);
     REQUIRE(iter.Next() == nullptr);
 
-    sender1.Acknowledge(15);
+    REQUIRE(sender1.Acknowledge(5));
 
     iter = sender1.IterateUnackedPackets();
-    REQUIRE((iter.Next())->sequence == 14);
+    REQUIRE((iter.Next())->sequence == 4);
     REQUIRE(iter.Next() == nullptr);
 
-    sender1.Acknowledge(14);
+    REQUIRE(sender1.Acknowledge(4));
 
     iter = sender1.IterateUnackedPackets();
     REQUIRE(iter.Next() == nullptr);
@@ -181,11 +181,11 @@ TEST(ReliableSequenceSender, FullUp)
 {
     SequenceSender sender1(5);
 
-    sender1.ObtainSendPacket(0);
-    sender1.ObtainSendPacket(1);
-    sender1.ObtainSendPacket(2);
-    sender1.ObtainSendPacket(3);
-    sender1.ObtainSendPacket(4);
+    sender1.ObtainSendPacket();
+    sender1.ObtainSendPacket();
+    sender1.ObtainSendPacket();
+    sender1.ObtainSendPacket();
+    sender1.ObtainSendPacket();
 
     auto iter = sender1.IterateUnackedPackets();
     SequenceQueueEntryType* entry;
@@ -201,10 +201,18 @@ TEST(ReliableSequenceSender, NormalWrap)
 {
     SequenceSender sender1(5);
 
-    sender1.ObtainSendPacket(3);
-    sender1.ObtainSendPacket(4);
-    sender1.ObtainSendPacket(5);
-    sender1.ObtainSendPacket(6);
+    sender1.ObtainSendPacket();
+    sender1.ObtainSendPacket();
+    sender1.ObtainSendPacket();
+
+    sender1.Acknowledge(0);
+    sender1.Acknowledge(1);
+    sender1.Acknowledge(2);
+
+    sender1.ObtainSendPacket();
+    sender1.ObtainSendPacket();
+    sender1.ObtainSendPacket();
+    sender1.ObtainSendPacket();
 
     auto iter = sender1.IterateUnackedPackets();
     SequenceQueueEntryType* entry;
