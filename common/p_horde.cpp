@@ -270,11 +270,6 @@ class HordeState
 
 	size_t HordeWaveSelector(size_t waveidentity)
 	{
-// [Acts 19 quiz] We check for players with health because P_HordePickDefine
-// runs at Odamex start and starts a Horde wave, even though it's never played.
-// We don't want this wave to either be checked for cooldown duplication or be
-// logged in that list.
-		// PlayerResults pr = PlayerQuery().hasHealth().execute();
 		if (G_IsHordeMode() && g_horde_cooldown > 0)
 		{
 			const char* wavename = G_HordeDefine(waveidentity).name.c_str();
@@ -1105,7 +1100,7 @@ void P_HordePostLoad()
 	::g_HordeDirector.recountMonsters();
 }
 
-const char* serveronlycmd = "Only the server can use this command!\n";
+const char* serveronlycmd = "Only the server can use this command in a netgame!\n";
 
 BEGIN_COMMAND(hordewave)
 {
