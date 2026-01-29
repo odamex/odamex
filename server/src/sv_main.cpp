@@ -1828,7 +1828,6 @@ void SV_ConnectClient()
 	SZ_Clear(&cl->reliablebuf);
 
 	cl->reliableSendSequencer = SequenceSender();
-	cl->packetnum = 0;
 
 	// generate a random string
 	std::stringstream ss;

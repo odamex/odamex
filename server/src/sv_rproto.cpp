@@ -183,17 +183,7 @@ bool SV_SendPacket(player_t &pl)
 		MSG_WriteLong(&sendd, -1);
 	}
 
-    if (SV_MustThrottleTransmissionsForClient(pl.client))
-    {
-        return false;
-    }
-
 	MSG_WriteByte(&sendd, 0); // Flags, filled out later.
-
-	cl->packetnum++; // packetnum will never be more than 255
-	                 // because sizeof(packetnum) == 1. Don't need
-	                 // to use &0xff. Cool, eh? ;-)
-
 
 	// copy the reliable message to the packet first
 	if (cl->reliablebuf.cursize)
@@ -221,7 +211,7 @@ bool SV_SendPacket(player_t &pl)
 	SZ_Clear(&cl->netbuf);
 	SZ_Clear(&cl->reliablebuf);
 
-	if (sendd.size() > PACKET_HEADER_SIZE)
+	if (sendd.size() > PACKET_HEADER_SIZE and not SV_MustThrottleTransmissionsForClient(pl.client))
 	{
 		// compress the packet, but not the sequence id
 		CompressPacket(sendd, PACKET_HEADER_SIZE, cl);
