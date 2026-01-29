@@ -77,8 +77,8 @@
 // greater.
 #define CONFIGVERSIONSTR "012010"
 
-#define DOTVERSIONSTR "12.1.0"
-#define GAMEVER (MAKEVER(12, 1, 0))
+#define DOTVERSIONSTR "12.99.0"
+#define GAMEVER (MAKEVER(12, 99, 0))
 
 #define COPYRIGHTSTR "Copyright (C) 2006-2026 The Odamex Team"
 
