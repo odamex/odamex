@@ -32,58 +32,67 @@ class SequenceSender
 	public:
 
     // This class iterates over the *unacknowledged* reliable messages.
-	// This iterator can be invalidated if things are acked or new Send Packets are obtained.
-	class UnackedIterator
-	{
-		public:
-			explicit UnackedIterator(SequenceSender* i_sequencer):
-				m_sequencer(i_sequencer),
-				m_count    (0),
-				m_index    (-1)
-			{}
+		// This iterator can be invalidated if things are acked or new Send Packets are obtained.
+		class UnackedIterator
+		{
+			public:
+				explicit UnackedIterator(SequenceSender* i_sequencer):
+					m_sequencer(i_sequencer),
+					m_count    (0),
+					m_index    (-1)
+				{}
 
-			// Returns the next unacknowledged message.  After the last unacknowledged message
-			// has been returned, subsequent calls return nullptr.
-			SequenceQueueEntryType* Next()
-			{
-				if (m_count >= m_sequencer->m_unackedCount)
+				// Returns the next unacknowledged message.  After the last unacknowledged message
+				// has been returned, subsequent calls return nullptr.
+				SequenceQueueEntryType* Next()
 				{
+					if (m_count >= m_sequencer->m_unackedCount)
+					{
+						return nullptr;
+					}
+
+					if (m_index < 0)
+					{
+						m_index = m_sequencer->m_smallestUnacked % m_sequencer->m_sendQueue.size();
+					}
+
+					for (size_t i = 0; i < m_sequencer->m_sendQueue.size(); ++i)
+					{
+						if (m_index == static_cast<int>(m_sequencer->m_sendQueue.size()))
+						{
+							m_index = 0;
+						}
+
+						SequenceQueueEntryType* candidate = &m_sequencer->m_sendQueue[m_index++];
+						if (candidate->isAwaiting)
+						{
+							++m_count;
+							return candidate;
+						}
+					}
 					return nullptr;
 				}
 
-				if (m_index < 0)
-				{
-					m_index = m_sequencer->m_smallestUnacked % m_sequencer->m_sendQueue.size();
-				}
-
-				for (size_t i = 0; i < m_sequencer->m_sendQueue.size(); ++i)
-				{
-					if (m_index == static_cast<int>(m_sequencer->m_sendQueue.size()))
-					{
-						m_index = 0;
-					}
-
-					SequenceQueueEntryType* candidate = &m_sequencer->m_sendQueue[m_index++];
-					if (candidate->isAwaiting)
-					{
-						++m_count;
-						return candidate;
-					}
-				}
-				return nullptr;
-			}
-
-		protected:
-			SequenceSender* m_sequencer;   // non-owning pointer.
-			int          m_index;
-			int          m_count;
-	};
+			protected:
+				SequenceSender* m_sequencer;   // non-owning pointer.
+				int          m_index;
+				int          m_count;
+		};
 
 	public:
+
+		enum SenderModeEnum
+		{
+			NORMAL,
+			RECOVERY
+		};
+
 		explicit SequenceSender(size_t i_initialSize) :
 			m_sendQueue      (i_initialSize),
+			m_nextSequence   (0),
 			m_unackedCount   (0),
-			m_smallestUnacked(0)
+			m_smallestUnacked(0),
+            m_mode           (NORMAL)
 		{
 		}
 
@@ -92,51 +101,58 @@ class SequenceSender
 		{
 		}
 
-		// Grab a slot in the reliability sequence and prepare it for transmission.
-		// This class does not manage the sequence numbers or timestamps themselves -
-		// the caller must manage these and specify them when obtaining a reliability
-		// slot.  If a sequence number is requested that corresponds to an existing
-		// message, that existing message is discarded, regardless of whether or not
-		// it is awaiting acknowledgement.
-		//
-		// The overall algorithm assumes that sequence numbers will only ever be
-		// specified in *contiguous* ascending order.  If a sequence number is
-		// specified with a value less than 0 or the sequence of any previously-
-		// obtained slot, the behavior is undefined.
-		//
-		// Returns a reference to the buffer that the caller must fill out with data
-		// and send to the intended recipient.
-		buf_t& ObtainSendPacket(int sequence, int currentTic=-1)
+		SenderModeEnum GetMode() const { return m_mode; }
+
+		struct QueueEntryResultType
 		{
-			const int desiredIndex = sequence % m_sendQueue.size();
+			buf_t* buffer   {nullptr};
+			int    sequence {-1};
+		};
 
-			SequenceQueueEntryType& entryRef = m_sendQueue[desiredIndex];
+		// Grab a slot in the reliability sequence and prepare it for transmission.
+		// This class does not manage the timestamps themselves -
+		// the caller must manage these and specify them when obtaining a reliability
+		// slot.
+		//
+		QueueEntryResultType ObtainSendPacket(int currentTic=-1)
+		{
 
-			if (entryRef.sequence > -1 and entryRef.isAwaiting)
+			// Recovery mode is exceedingly simple for now.  We just don't send anything
+			// until the send buffer comes back down to size.
+			if (m_mode == NORMAL)
 			{
-				DPrintFmt("Done goofed!  Wrapped around, dropping ancient message: {} cur: {}\n", entryRef.sequence, sequence);
+				const int desiredSequence = m_nextSequence;
+				const int desiredIndex    = desiredSequence % m_sendQueue.size();
 
-				// We don't increment the Unacked Count in this case, because we're replacing
-				// an old unacked message with a new unacked message.
+				SequenceQueueEntryType& entryRef = m_sendQueue[desiredIndex];
 
-				entryRef.isAwaiting = false; // Clear so that we probe forward for the next unacked.
-				AdvanceSmallestUnacked();
-			}
-			else
-			{
-				if (m_unackedCount == 0)
+				if (entryRef.sequence > -1 and entryRef.isAwaiting)
 				{
-					m_smallestUnacked = sequence;
+					m_mode = RECOVERY;
+					DPrintFmt("I'm exhausted!  dropping packet {} while awaiting ack for {}\n", desiredSequence, entryRef.sequence);
+
+					// We take no further action here.  We are considering this new packet DROPPED.
+					// We have to start recovering.
 				}
-				++m_unackedCount;
+				else
+				{
+					if (m_unackedCount == 0)
+					{
+						m_smallestUnacked = desiredSequence;
+					}
+					++m_unackedCount;
+
+					m_nextSequence = desiredSequence + 1;
+
+					entryRef.isAwaiting     = true;
+					entryRef.sequence       = desiredSequence;
+					entryRef.originatingTic = currentTic;
+					entryRef.buf.clear();
+
+					return QueueEntryResultType {& entryRef.buf, entryRef.sequence};
+				}
 			}
-
-			entryRef.isAwaiting     = true;
-			entryRef.sequence       = sequence;
-			entryRef.originatingTic = currentTic;
-			entryRef.buf.clear();
-
-			return entryRef.buf;
+            return QueueEntryResultType();
 		}
 
 		// This function declares that the packet associated with the given sequence number has been
@@ -157,16 +173,28 @@ class SequenceSender
 
 				if (sequence < entryRef.sequence)
 				{
-					DPrintFmt("Wow, that's an old acknowledgement!  seq: {} cur: {}\n", sequence, entryRef.sequence);
+					// In this particular case, we're so far behind that we're about to run out of send queue
+					// space.
+					//
+					// This should never happen because if we have to drop reliable packets, we drop new ones
+					// not old ones.
+					DPrintFmt("Wow, that's an old acknowledgement!  Should never happen!  seq: {} cur: {}\n", sequence, entryRef.sequence);
 				}
 				else if (sequence > entryRef.sequence)
 				{
-					DPrintFmt("Can't get fooled again!  (future?!?!) seq: {} cur: {}\n", sequence, entryRef.sequence);
+					// Not sure how this would ever happen, but we need to be sure and log something if it does.
+					DPrintFmt("Received a packet from the future?!?! seq: {} cur: {}\n", sequence, entryRef.sequence);
 				}
 				else
 				{
 					if (not entryRef.isAwaiting)
 					{
+						// This happens because we're seeing multiple acks for the same message.  This happens when
+						// the client is far behind enough that it's acked a message, but the sender has already
+						// sent retries.  It could in fact happen multiple times, depending on how far back we're
+						// talking.  Could be due to congestion or just a very long latency.
+						//
+						// TODO:  Consider using this as a quality metric.  Are we spamming retries too much?
 						//DPrintFmt("Stale ack: {}\n", sequence);
 					}
 					else
@@ -174,6 +202,7 @@ class SequenceSender
 						isFreshAck = true;
 						entryRef.isAwaiting = false;
 						--m_unackedCount;
+						m_mode = NORMAL;
 					}
 				}
 
@@ -212,6 +241,9 @@ class SequenceSender
 
 		std::vector<SequenceQueueEntryType> m_sendQueue;
 
+		int m_nextSequence;     // The sequence number to assign to the next requested packet.
 		int m_unackedCount;     // The number of sent packets that have not yet been acked.
 		int m_smallestUnacked;  // The smallest sequence number that has yet to be acked.
+
+		SenderModeEnum m_mode;
 };

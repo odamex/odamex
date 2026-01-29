@@ -133,20 +133,24 @@ void SV_SendPacketDelayed(buf_t& packet, player_t& pl)
 }
 #endif
 
+bool SV_MustThrottleTransmissionsForClient(client_t& client)
+{
+    return client.reliableSendSequencer.GetMode() == SequenceSender::RECOVERY;
+}
+
 //
 // SV_SendPacket
 //
 bool SV_SendPacket(player_t &pl)
 {
-	int				bps = 0; // bytes per second, not bits per second
-
+	int bps      = 0; // bytes per second, not bits per second
 	client_t *cl = &pl.client;
 
 	if (cl->reliablebuf.overflowed)
 	{
 		SZ_Clear(&cl->netbuf);
 		SZ_Clear(&cl->reliablebuf);
-	    SV_DropClient(pl);
+		SV_DropClient(pl);
 		return false;
 	}
 	else
@@ -161,23 +165,29 @@ bool SV_SendPacket(player_t &pl)
 
 	if (cl->reliablebuf.cursize)
 	{
-		// save the reliable message
-		// it will be retransmited, if it's missed
-		buf_t& saveMessage = cl->reliableSendSequencer.ObtainSendPacket(cl->sequence, gametic);
+		// Save the reliable portion of the message for ack checking and retransmission if necessary.
+		auto saveMessage = cl->reliableSendSequencer.ObtainSendPacket(gametic);
 
-		saveMessage.clear();
+		if (saveMessage.buffer)
+		{
+			// copy the reliable portion into the buffer.
+			SZ_Write(saveMessage.buffer, cl->reliablebuf.data.get(), cl->reliablebuf.cursize);
 
-		// copy the reliable data into the buffer.
-		SZ_Write(&saveMessage, cl->reliablebuf.data.get(), cl->reliablebuf.cursize);
-
-		// Insert and increment Reliable sequence number
-		MSG_WriteLong(&sendd, cl->sequence++);
+			// Insert Reliable sequence number first thing.
+			MSG_WriteLong(&sendd, saveMessage.sequence);
+		}
 	}
 	else
 	{
 		// Messages without reliability are non-sequenced.
 		MSG_WriteLong(&sendd, -1);
 	}
+
+    if (SV_MustThrottleTransmissionsForClient(pl.client))
+    {
+        return false;
+    }
+
 	MSG_WriteByte(&sendd, 0); // Flags, filled out later.
 
 	cl->packetnum++; // packetnum will never be more than 255
@@ -218,8 +228,8 @@ bool SV_SendPacket(player_t &pl)
 
 		if (log_packetdebug)
 		{
-			PrintFmt(PRINT_HIGH, "ply {:03}, pkt {:06}, size {:04}, tic {:07}, time {:011}\n",
-			         pl.id, cl->sequence - 1, sendd.cursize, gametic, I_MSTime());
+			PrintFmt(PRINT_HIGH, "ply {:03}, size {:04}, tic {:07}, time {:011}\n",
+			         pl.id, sendd.cursize, gametic, I_MSTime());
 		}
 
 #ifdef SIMULATE_LATENCY

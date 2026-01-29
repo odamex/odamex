@@ -282,7 +282,6 @@ public:
 		// for reliable protocol
 		SequenceSender reliableSendSequencer;
 
-		int         sequence;
 		byte        packetnum;
 
 		int         rate;
@@ -311,7 +310,6 @@ public:
 			memset(&address, 0, sizeof(netadr_t));
 			version = 0;
 			packedversion = 0;
-			sequence = 0;
 			packetnum = 0;
 			rate = 0;
 			reliable_bps = 0;
@@ -336,7 +334,6 @@ public:
 			version(other.version),
 			packedversion(other.packedversion),
 			reliableSendSequencer(other.reliableSendSequencer),
-			sequence(other.sequence),
 			packetnum(other.packetnum),
 			rate(other.rate),
 			reliable_bps(other.reliable_bps),
@@ -362,7 +359,6 @@ public:
 			version = other.version;
 			packedversion = other.packedversion;
 			reliableSendSequencer = other.reliableSendSequencer;
-			sequence = other.sequence;
 			packetnum = other.packetnum;
 			rate = other.rate;
 			reliable_bps = other.reliable_bps;

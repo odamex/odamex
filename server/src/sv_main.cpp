@@ -1828,7 +1828,6 @@ void SV_ConnectClient()
 	SZ_Clear(&cl->reliablebuf);
 
 	cl->reliableSendSequencer = SequenceSender();
-	cl->sequence = 0;
 	cl->packetnum = 0;
 
 	// generate a random string
@@ -3097,6 +3096,11 @@ void SV_WriteCommands(void)
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
 		client_t *cl = &(it->client);
+
+        if (SV_MustThrottleTransmissionsForClient(*cl))
+        {
+            continue;
+        }
 
 		// [SL] 2011-05-11 - Send the client the server's gametic
 		// this gametic is returned to the server with the client's
