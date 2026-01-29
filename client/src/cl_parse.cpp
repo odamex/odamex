@@ -1023,7 +1023,7 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 
 	p->GameTime = msg->join_time();
 
-	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(p));
+	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(*p));
 	R_RebuildPlayerTintTables(p->id);
 
 	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed

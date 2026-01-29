@@ -189,12 +189,9 @@ argb_t CL_ShadePlayerColor(argb_t base_color, argb_t shade_color)
 // Returns the color for the player after applying game logic (teammate, enemy)
 // and applying CVARs like r_forceteamcolor and r_forceenemycolor.
 //
-argb_t CL_GetPlayerColor(player_t *player)
+argb_t CL_GetPlayerColor(const player_t& player)
 {
-	if (!player)
-		return 0;
-
-	argb_t base_color(255, player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
+	argb_t base_color(255, player.userinfo.color[1], player.userinfo.color[2], player.userinfo.color[3]);
 	argb_t shade_color = base_color;
 
 	bool teammate = false;
@@ -204,10 +201,10 @@ argb_t CL_GetPlayerColor(player_t *player)
 		teammate = false;
 	if (G_IsTeamGame())
 	{
-		teammate = P_AreTeammates(consoleplayer(), *player);
-		base_color = GetTeamInfo(player->userinfo.team)->Color;
+		teammate = P_AreTeammates(consoleplayer(), player);
+		base_color = GetTeamInfo(player.userinfo.team)->Color;
 	}
-	if (player->id != consoleplayer_id && !consoleplayer().spectator)
+	if (player.id != consoleplayer_id && !consoleplayer().spectator)
 	{
 		if (r_forceteamcolor && teammate)
 			base_color = teamcolor;
@@ -227,7 +224,7 @@ static void CL_RebuildAllPlayerTranslations()
 		return;
 
 	for (auto& player : players)
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player));
 }
 
 CVAR_FUNC_IMPL (r_enemycolor)
@@ -1421,7 +1418,7 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 	}
 	else
 	{
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player));
 	}
 
 	P_ClearPlayerPowerups(player);	// Remove all current powerups

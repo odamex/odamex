@@ -41,7 +41,7 @@
 #include "cmdlib.h"
 
 size_t P_NumPlayersInGame(void);
-argb_t CL_GetPlayerColor(player_t*);
+argb_t CL_GetPlayerColor(const player_t&);
 
 extern NetDemo netdemo;
 extern fixed_t FocalLengthX;
@@ -979,7 +979,7 @@ void EAPlayerColors(int x, int y,
 
 		if (ingamePlayer(player))
 		{
-			argb_t playercolor = CL_GetPlayerColor(player);
+			argb_t playercolor = CL_GetPlayerColor(*player);
 			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, playercolor);
 
 			y += h + padding;
@@ -1006,7 +1006,7 @@ void EATeamPlayerColors(int x, int y,
 
 		if (inTeamPlayer(player, team))
 		{
-			argb_t playercolor = CL_GetPlayerColor(player);
+			argb_t playercolor = CL_GetPlayerColor(*player);
 			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, playercolor);
 
 			y += h + padding;

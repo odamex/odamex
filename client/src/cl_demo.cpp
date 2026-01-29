@@ -1659,7 +1659,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	for (auto& player : players)
 	{
 		P_SetupPsprites(player);
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player));
 	}
 
 	R_CopyTranslationRGB (0, consoleplayer_id);
