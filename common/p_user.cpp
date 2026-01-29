@@ -873,15 +873,15 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 
 void SV_SendPlayerInfo(player_t &);
 
-void P_SetPlayerInvulnBleed(player_t* player, int powers[NUMPOWERS])
+void P_SetPlayerInvulnBleed(player_t& player, int powers[NUMPOWERS])
 {
 	if (sv_showplayerpowerups)
 	{
 		// Don't show blood if the player is invuln
 		if (powers[pw_invulnerability])
-			player->mo->flags |= MF_NOBLOOD;
+			player.mo->flags |= MF_NOBLOOD;
 		else
-			player->mo->flags &= ~MF_NOBLOOD;
+			player.mo->flags &= ~MF_NOBLOOD;
 	}
 }
 
@@ -903,41 +903,44 @@ void P_SwitchSpyOnNoLives(player_t* player)
 	}
 }
 
-void P_SetPlayerPowerupStatuses(player_t* player, int powers[NUMPOWERS])
+void P_SetPlayerPowerupStatuses(player_t& player, int powers[NUMPOWERS])
 {
+	if (!player.mo)
+		return;
+
 	if (powers[pw_strength])
-		player->mo->statusflags |= SF_BERSERK;
+		player.mo->statusflags |= SF_BERSERK;
 	else
-		player->mo->statusflags &= ~SF_BERSERK;
+		player.mo->statusflags &= ~SF_BERSERK;
 
 	if (powers[pw_invulnerability] > 4 * 32 ||
 		        powers[pw_invulnerability] & 8)
-		player->mo->statusflags |= SF_INVULN;
+		player.mo->statusflags |= SF_INVULN;
 	else
-		player->mo->statusflags &= ~SF_INVULN;
+		player.mo->statusflags &= ~SF_INVULN;
 
 	if (powers[pw_invisibility] > 4 * 32 ||
 			powers[pw_invisibility] & 8)
-		player->mo->statusflags |= SF_INVIS;
+		player.mo->statusflags |= SF_INVIS;
 	else
-		player->mo->statusflags &= ~SF_INVIS;
+		player.mo->statusflags &= ~SF_INVIS;
 
 	if (powers[pw_infrared] > 4 * 32 ||
 			powers[pw_infrared] & 8)
-		player->mo->statusflags |= SF_INFRARED;
+		player.mo->statusflags |= SF_INFRARED;
 	else
-		player->mo->statusflags &= ~SF_INFRARED;
+		player.mo->statusflags &= ~SF_INFRARED;
 
 	if (powers[pw_ironfeet] > 4 * 32 ||
 			powers[pw_ironfeet] & 8)
-		player->mo->statusflags |= SF_IRONFEET;
+		player.mo->statusflags |= SF_IRONFEET;
 	else
-		player->mo->statusflags &= ~SF_IRONFEET;
+		player.mo->statusflags &= ~SF_IRONFEET;
 
 	if (powers[pw_allmap])
-		player->mo->statusflags |= SF_ALLMAP;
+		player.mo->statusflags |= SF_ALLMAP;
 	else
-		player->mo->statusflags &= ~SF_ALLMAP;
+		player.mo->statusflags &= ~SF_ALLMAP;
 
 	P_SetPlayerInvulnBleed(player, powers);
 }
@@ -945,48 +948,48 @@ void P_SetPlayerPowerupStatuses(player_t* player, int powers[NUMPOWERS])
 //
 // P_PlayerThink
 //
-void P_PlayerThink (player_t *player)
+void P_PlayerThink (player_t& player)
 {
 	weapontype_t newweapon;
 
 	// [SL] 2011-10-31 - Thinker called before the client has received a message
 	// to spawn a mobj from the server.  Just bail from this function and
 	// hope the client receives the spawn message at a later time.
-	if (!player->mo && clientside && multiplayer)
+	if (!player.mo && clientside && multiplayer)
 	{
 		DPrintFmt("Warning: P_PlayerThink called for player {} without a valid Actor.\n",
-				  player->userinfo.netname);
+				  player.userinfo.netname);
 		return;
 	}
-	else if (!player->mo)
-		I_Error("No player {} start\n", player->id);
+	else if (!player.mo)
+		I_Error("No player {} start\n", player.id);
 
-	player->xviewshift = 0;		// [RH] Make sure view is in right place
-	player->prevviewz = player->viewz;
-	player->mo->prevangle = player->mo->angle;
-	player->mo->prevpitch = player->mo->pitch;
+	player.xviewshift = 0;		// [RH] Make sure view is in right place
+	player.prevviewz = player.viewz;
+	player.mo->prevangle = player.mo->angle;
+	player.mo->prevpitch = player.mo->pitch;
 
 	// fixme: do this in the cheat code
-	if (player->cheats & CF_NOCLIP)
-		player->mo->flags |= MF_NOCLIP;
+	if (player.cheats & CF_NOCLIP)
+		player.mo->flags |= MF_NOCLIP;
 	else
-		player->mo->flags &= ~MF_NOCLIP;
+		player.mo->flags &= ~MF_NOCLIP;
 
-	if (player->cheats & CF_FLY)
-		player->mo->flags |= MF_NOGRAVITY, player->mo->flags2 |= MF2_FLY;
+	if (player.cheats & CF_FLY)
+		player.mo->flags |= MF_NOGRAVITY, player.mo->flags2 |= MF2_FLY;
 	else
-		player->mo->flags &= ~MF_NOGRAVITY, player->mo->flags2 &= ~MF2_FLY;
+		player.mo->flags &= ~MF_NOGRAVITY, player.mo->flags2 &= ~MF2_FLY;
 
 	// chain saw run forward
-	if (player->mo->flags & MF_JUSTATTACKED)
+	if (player.mo->flags & MF_JUSTATTACKED)
 	{
-		player->cmd.yaw = 0;
-		player->cmd.forwardmove = 0xc800/2;
-		player->cmd.sidemove = 0;
-		player->mo->flags &= ~MF_JUSTATTACKED;
+		player.cmd.yaw = 0;
+		player.cmd.forwardmove = 0xc800/2;
+		player.cmd.sidemove = 0;
+		player.mo->flags &= ~MF_JUSTATTACKED;
 	}
 
-	if (player->playerstate == PST_DEAD)
+	if (player.playerstate == PST_DEAD)
 	{
 		P_DeathThink(player);
 		P_SwitchSpyOnNoLives(player);
@@ -996,69 +999,69 @@ void P_PlayerThink (player_t *player)
 	P_MovePlayer (player);
 	P_CalcHeight (player);
 
-	if (player->mo->subsector &&
-		(player->mo->subsector->sector->special ||
-		player->mo->subsector->sector->damageamount ||
-		player->mo->subsector->sector->flags & SECF_SECRET))
+	if (player.mo->subsector &&
+		(player.mo->subsector->sector->special ||
+		player.mo->subsector->sector->damageamount ||
+		player.mo->subsector->sector->flags & SECF_SECRET))
 		map_format.player_in_special_sector(player);
 
 	// Check for weapon change.
 
 	// A special event has no other buttons.
-	if (player->cmd.buttons & BT_SPECIAL)
-		player->cmd.buttons = 0;
+	if (player.cmd.buttons & BT_SPECIAL)
+		player.cmd.buttons = 0;
 
-	if ((player->cmd.buttons & BT_CHANGE) || player->cmd.impulse >= 50)
+	if ((player.cmd.buttons & BT_CHANGE) || player.cmd.impulse >= 50)
 	{
 		// [RH] Support direct weapon changes
-		if (player->cmd.impulse) {
-			newweapon = (weapontype_t)(player->cmd.impulse - 50);
+		if (player.cmd.impulse) {
+			newweapon = (weapontype_t)(player.cmd.impulse - 50);
 		} else {
 			// The actual changing of the weapon is done
 			//	when the weapon psprite can do it
 			//	(read: not in the middle of an attack).
-			newweapon = (weapontype_t)((player->cmd.buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT);
+			newweapon = (weapontype_t)((player.cmd.buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT);
 
 			if (newweapon == wp_fist
-				&& player->weaponowned[wp_chainsaw]
-				&& !(player->readyweapon == wp_chainsaw
-					 && player->powers[pw_strength]))
+				&& player.weaponowned[wp_chainsaw]
+				&& !(player.readyweapon == wp_chainsaw
+					 && player.powers[pw_strength]))
 			{
 				newweapon = wp_chainsaw;
 			}
 
 			if (newweapon == wp_shotgun
-				&& player->weaponowned[wp_supershotgun]
-				&& player->readyweapon != wp_supershotgun)
+				&& player.weaponowned[wp_supershotgun]
+				&& player.readyweapon != wp_supershotgun)
 			{
 				newweapon = wp_supershotgun;
 			}
 		}
 
 		if ((newweapon >= 0 && newweapon < NUMWEAPONS)
-			&& player->weaponowned[newweapon]
-			&& newweapon != player->readyweapon)
+			&& player.weaponowned[newweapon]
+			&& newweapon != player.readyweapon)
 		{
 			// NEVER go to plasma or BFG in shareware,
 			if ((newweapon != wp_plasma && newweapon != wp_bfg)
 			|| (gamemode != shareware) )
 			{
-				player->pendingweapon = newweapon;
+				player.pendingweapon = newweapon;
 			}
 		}
 	}
 
 	// check for use
-	if (player->cmd.buttons & BT_USE)
+	if (player.cmd.buttons & BT_USE)
 	{
-		if (!player->usedown)
+		if (!player.usedown)
 		{
 			P_UseLines (player);
-			player->usedown = true;
+			player.usedown = true;
 		}
 	}
 	else
-		player->usedown = false;
+		player.usedown = false;
 
 	// cycle psprites
 	P_MovePsprites (player);
@@ -1066,37 +1069,37 @@ void P_PlayerThink (player_t *player)
 	// Counters, time dependent power ups.
 
 	// Strength counts up to diminish fade.
-	if (player->powers[pw_strength])
-		player->powers[pw_strength]++;
+	if (player.powers[pw_strength])
+		player.powers[pw_strength]++;
 
-	if (player->powers[pw_invulnerability])
-		player->powers[pw_invulnerability]--;
+	if (player.powers[pw_invulnerability])
+		player.powers[pw_invulnerability]--;
 
-	if (player->powers[pw_invisibility])
-		if (! --player->powers[pw_invisibility] )
-			player->mo->flags &= ~MF_SHADOW;
+	if (player.powers[pw_invisibility])
+		if (! --player.powers[pw_invisibility] )
+			player.mo->flags &= ~MF_SHADOW;
 
-	if (player->powers[pw_infrared])
-		player->powers[pw_infrared]--;
+	if (player.powers[pw_infrared])
+		player.powers[pw_infrared]--;
 
-	if (player->powers[pw_ironfeet])
-		player->powers[pw_ironfeet]--;
+	if (player.powers[pw_ironfeet])
+		player.powers[pw_ironfeet]--;
 
 	// For offline/chase cam
-	P_SetPlayerPowerupStatuses(player, player->powers);
+	P_SetPlayerPowerupStatuses(player, player.powers);
 
-	if (player->damagecount)
-		player->damagecount--;
+	if (player.damagecount)
+		player.damagecount--;
 
-	if (player->bonuscount)
-		player->bonuscount--;
+	if (player.bonuscount)
+		player.bonuscount--;
 
-	if (player->hazardcount)
+	if (player.hazardcount)
 	{
-		player->hazardcount--;
-		if (!(::level.time % player->hazardinterval) &&
-		    player->hazardcount > 16 * TICRATE)
-			P_DamageMobj(player->mo, NULL, NULL, 5);
+		player.hazardcount--;
+		if (!(::level.time % player.hazardinterval) &&
+		    player.hazardcount > 16 * TICRATE)
+			P_DamageMobj(player.mo, NULL, NULL, 5);
 	}
 
 	// Handling colormaps.
@@ -1111,36 +1114,36 @@ void P_PlayerThink (player_t *player)
 		else
 			displayplayer().fixedcolormap = 0;
 	}
-	else if (player->powers[pw_infrared])
+	else if (player.powers[pw_infrared])
 	{
-		if (player->powers[pw_infrared] > 4*32
-			|| (player->powers[pw_infrared]&8) )
+		if (player.powers[pw_infrared] > 4*32
+			|| (player.powers[pw_infrared]&8) )
 		{
 			// almost full bright
-			player->fixedcolormap = 1;
+			player.fixedcolormap = 1;
 		}
 		else
-			player->fixedcolormap = 0;
+			player.fixedcolormap = 0;
 	}
 	else
-		player->fixedcolormap = 0;
+		player.fixedcolormap = 0;
 
 	// Handle air supply
-	if (player->mo->waterlevel < 3 || player->powers[pw_ironfeet] || player->cheats & CF_GODMODE)
+	if (player.mo->waterlevel < 3 || player.powers[pw_ironfeet] || player.cheats & CF_GODMODE)
 	{
-		player->air_finished = level.time + level.airsupply * TICRATE;
+		player.air_finished = level.time + level.airsupply * TICRATE;
 	}
-	else if (level.airsupply != 0 && player->air_finished <= level.time && !(level.time & 31))
+	else if (level.airsupply != 0 && player.air_finished <= level.time && !(level.time & 31))
 	{
-		P_DamageMobj (player->mo, NULL, NULL, 2 + 2*((level.time-player->air_finished)/TICRATE), MOD_WATER, DMG_NO_ARMOR);
+		P_DamageMobj (player.mo, NULL, NULL, 2 + 2*((level.time-player.air_finished)/TICRATE), MOD_WATER, DMG_NO_ARMOR);
 	}
 
 	// [BC] Handle WDL Beacon
-	if (serverside && player->ingame() && !player->spectator && player->mo->health > 0)
+	if (serverside && player.ingame() && !player.spectator && player.mo->health > 0)
 	{
 		if (P_AtInterval(5))
 		{
-			M_LogWDLEvent(WDL_EVENT_PLAYERBEACON, player, NULL, player->mo->angle / 4, 0,
+			M_LogWDLEvent(WDL_EVENT_PLAYERBEACON, player, NULL, player.mo->angle / 4, 0,
 			              0, 0);
 		}
 	}
