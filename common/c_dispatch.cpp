@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -328,7 +328,7 @@ void AddCommandString(const std::string &str, uint32_t key)
 	const char* cend;
 
 	// stores a copy of the current substring
-	char* command = new char[totallen + 1];
+	auto command = std::make_unique<char[]>(totallen + 1);
 
 	// scan for a command ending
 	while (*cstart)
@@ -383,10 +383,10 @@ void AddCommandString(const std::string &str, uint32_t key)
 			cend--;
 
 		size_t clength = cend - cstart + 1;
-		memcpy(command, cstart, clength);
+		memcpy(command.get(), cstart, clength);
 		command[clength] = '\0';
 
-		C_DoCommand(command, key);
+		C_DoCommand(command.get(), key);
 
 		// don't parse anymore if there's a comment
 		if (cp[0] == '/' && cp[1] == '/')
@@ -398,8 +398,6 @@ void AddCommandString(const std::string &str, uint32_t key)
 		else
 			cstart = cp;
 	}
-
-	delete[] command;
 }
 
 #define MAX_EXEC_DEPTH 32

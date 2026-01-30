@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -39,6 +39,7 @@
 #include "cmdlib.h"
 
 #include "i_system.h"
+#include "i_time.h"
 #include "i_video.h"
 #include "i_input.h"
 #include "z_zone.h"
@@ -856,6 +857,10 @@ EXTERN_CVAR (cl_showfriends)
 EXTERN_CVAR (hud_show_scoreboard_ondeath)
 EXTERN_CVAR (hud_demobar)
 EXTERN_CVAR(hud_targetnames)
+EXTERN_CVAR(am_ovminimap)
+EXTERN_CVAR(am_ovlocation)
+EXTERN_CVAR(am_ovscalewidth)
+EXTERN_CVAR(am_ovscaleheight)
 
 static value_t Wipes[] = {
 	{ 0.0, "None" },
@@ -1150,6 +1155,15 @@ static value_t AutomapScales[] = {
 	{ 6.0, "6X" },
 };
 
+static value_t MinimapLocations[] = {
+	{ 0.0, "Left Top" },
+	{ 1.0, "Left Middle" },
+	{ 2.0, "Left Bottom" },
+	{ 3.0, "Right Top" },
+	{ 4.0, "Right Middle" },
+	{ 5.0, "Right Bottom" },
+};
+
 static menuitem_t AutomapItems[] = {
 	{ discrete, "Rotate automap",		{&am_rotate},		   	{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Overlay automap",		{&am_overlay},			{4.0}, {0.0},	{0.0},  {Overlays} },
@@ -1167,6 +1181,13 @@ static menuitem_t AutomapItems[] = {
 	{ discrete, "Highlight locked doors",{&am_showlocked},		{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Custom map colors",	{&am_usecustomcolors},	{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ more,     "Reset custom map colors",  {NULL},    {0.0}, {0.0},   {0.0},  {(value_t *)ResetCustomColors} },
+
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
+	{ yellowtext, "Overlay Minimap Options", {NULL},			{0.0}, {0.0},	{0.0},  {NULL} },
+	{ discrete, "Enable Minimap",		{&am_ovminimap},		{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ discrete, "Location",				{&am_ovlocation},		{6.0}, {0.0},	{0.0},  {MinimapLocations} },
+	{ slider,	"Scale Width",			{&am_ovscalewidth},		{0.0}, {1.0},	{0.05}, {NULL} },
+	{ slider,	"Scale Height",			{&am_ovscaleheight},	{0.0}, {1.0},	{0.05}, {NULL} },
 };
 
 menu_t AutomapMenu = {

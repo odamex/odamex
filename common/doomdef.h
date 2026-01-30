@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -61,7 +61,8 @@ extern bool clientside, serverside;
 enum baseapp_t
 {
 	client,		// Odamex.exe
-	server		// Odasrv.exe
+	server,		// Odasrv.exe
+	test,		// Odagtest.exe
 };
 
 extern baseapp_t baseapp;

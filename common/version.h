@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,11 +23,14 @@
 
 #pragma once
 
+#include <string>
 
 #if defined(CLIENT_APP)
 #define GAMEEXE "odamex"
 #elif defined(SERVER_APP)
 #define GAMEEXE "odasrv"
+#elif defined(TEST_APP)
+#define GAMEEXE "odagtest"
 #else
 #error "Odamex is not client or server"
 #endif
@@ -77,7 +80,7 @@
 #define DOTVERSIONSTR "13.0.0"
 #define GAMEVER (MAKEVER(13, 0, 0))
 
-#define COPYRIGHTSTR "Copyright (C) 2006-2025 The Odamex Team"
+#define COPYRIGHTSTR "Copyright (C) 2006-2026 The Odamex Team"
 
 #define SERVERMAJ (VERMAJ(gameversion))
 #define SERVERMIN (VERMIN(gameversion))

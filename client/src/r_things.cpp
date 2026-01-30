@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -912,40 +912,35 @@ void R_DrawPlayerSprites()
 //		stdlib qsort() function instead, and now it is a *lot* faster; the
 //		more vissprites that need to be sorted, the better the performance
 //		gain compared to the old function.
+// [EB] Now uses std::sort, hopefully slightly faster, but definitely easier to read
 //
 
-static int				vsprcount;
-static vissprite_t**	spritesorter;
-static int				spritesorter_size = 0;
-
-static int STACK_ARGS sv_compare(const void *arg1, const void *arg2)
-{
-	int diff = (*(vissprite_t **)arg1)->depth - (*(vissprite_t **)arg2)->depth;
-	if (diff == 0)
-		return (*(vissprite_t **)arg2)->gzt - (*(vissprite_t **)arg1)->gzt;
-	return diff;
-}
+static std::vector<vissprite_t*> spritesorter;
 
 void R_SortVisSprites()
 {
-	vsprcount = vissprite_p - firstvissprite;
+	const int vsprcount = vissprite_p - firstvissprite;
 
 	if (!vsprcount)
-		return;
-
-	if (spritesorter_size < MaxVisSprites)
 	{
-		if (spritesorter != NULL)
-			delete [] spritesorter;
-		spritesorter = new vissprite_t*[MaxVisSprites];
-		spritesorter_size = MaxVisSprites;
+		spritesorter.clear();
+		return;
 	}
+
+	spritesorter.reserve(MaxVisSprites);
+	spritesorter.resize(vsprcount);
 
 	vissprite_t* spr = firstvissprite;
 	for (int i = 0; i < vsprcount; i++, spr++)
 		spritesorter[i] = spr;
 
-	qsort(spritesorter, vsprcount, sizeof(vissprite_t *), sv_compare);
+	const auto comparator = [](const vissprite_t* v1, const vissprite_t* v2) -> bool
+	{
+		const bool samedepth = v1->depth == v2->depth;
+		return samedepth ? v1->gzt > v2->gzt : v1->depth < v2->depth;
+	};
+
+	std::sort(spritesorter.begin(), spritesorter.end(), comparator);
 }
 
 
@@ -1090,9 +1085,9 @@ void R_DrawMasked (void)
 
 	R_SortVisSprites ();
 
-	for (int i = vsprcount; i > 0; i--)
+	for (auto vis : OUtil::reverse(spritesorter))
 	{
-		R_DrawSprite(spritesorter[i-1]);
+		R_DrawSprite(vis);
 	}
 
 	// render any remaining masked mid textures

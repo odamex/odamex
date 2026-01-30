@@ -83,6 +83,12 @@ if(wxWidgets_FOUND)
       VERBATIM
     )
 
+    install(CODE "
+      include(BundleUtilities)
+      fixup_bundle(\"${CMAKE_CURRENT_BINARY_DIR}/odalaunch.app\" \"\" \"${wxWidgets_LIBRARY_DIRS}\")
+      "
+      COMPONENT Runtime)
+
     set_directory_properties(
       PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES
       "${CMAKE_CURRENT_BINARY_DIR}/odalaunch.app/Contents/Resources/${MACOSX_BUNDLE_ICON_FILE}"

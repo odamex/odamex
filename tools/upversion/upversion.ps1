@@ -139,7 +139,7 @@ foreach ($file in $configverFiles) {
    }
 }
 
-# Update years (e.g. 2006-2025)
+# Update years (e.g. 2006-2026)
 foreach ($file in $yearFiles) {
    $filename = $file.FullName
    $content = Get-Content -Raw $filename

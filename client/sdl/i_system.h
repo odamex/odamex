@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -55,18 +55,6 @@ void I_Endoom(void);
 // to get the ammount of memory to malloc
 // for the zone management.
 void *I_ZoneBase (size_t *size);
-
-
-// returns current time in nanoseconds.
-dtime_t I_GetTime();
-
-dtime_t I_ConvertTimeToMs(dtime_t value);
-dtime_t I_ConvertTimeFromMs(dtime_t value);
-
-// yields to the OS for the specified time (in nanoseconds)
-void I_Sleep(dtime_t);
-// yields to the OS for 1 millisecond
-void I_Yield();
 
 //
 // Called by D_DoomLoop,
@@ -124,13 +112,8 @@ void I_PrintStr (int x, const char *str, int count, bool scroll);
 // Set the title string of the startup window
 void I_SetTitleString (const char *title);
 
-std::string I_ConsoleInput (void);
-
 // Returns true if there will be no application window
 bool I_IsHeadless();
-
-// [RH] Returns millisecond-accurate time
-dtime_t I_MSTime (void);
 
 // [RH] Title string to display at bottom of console during startup
 extern char DoomStartupTitle[256];

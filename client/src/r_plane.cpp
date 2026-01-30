@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -81,16 +81,16 @@ visplane_t				*skyplane;
 //	floorclip starts out SCREENHEIGHT-1
 //	ceilingclip starts out 0
 //
-int     				*floorclip;
-int 					*ceilingclip;
-int						*floorclipinitial;
-int						*ceilingclipinitial;
+std::unique_ptr<int[]> floorclip;
+std::unique_ptr<int[]> ceilingclip;
+std::unique_ptr<int[]> floorclipinitial;
+std::unique_ptr<int[]> ceilingclipinitial;
 
 //
 // spanstart holds the start of a plane span
 // initialized to 0 at start
 //
-int 					*spanstart;
+std::unique_ptr<int[]> spanstart;
 
 //
 // texture mapping
@@ -103,7 +103,7 @@ extern Pool<int> sprclip_pool;
 int*					planezlight;
 float					plight, shade;
 
-fixed_t 				*yslope;
+std::unique_ptr<fixed_t[]> yslope;
 static fixed_t			planeheight;
 
 static fixed_t			pl_xscale, pl_yscale;
@@ -266,8 +266,8 @@ void R_ClearPlanes(bool fullclear)
 	if (fullclear)
 	{
 		// opening / clipping determination
-		memcpy(floorclip, floorclipinitial, viewwidth * sizeof(*floorclip));
-		memcpy(ceilingclip, ceilingclipinitial, viewwidth * sizeof(*ceilingclip));
+		memcpy(floorclip.get(), floorclipinitial.get(), viewwidth * sizeof(floorclip[0]));
+		memcpy(ceilingclip.get(), ceilingclipinitial.get(), viewwidth * sizeof(ceilingclip[0]));
 	}
 }
 
@@ -809,8 +809,8 @@ void R_DrawSkyBoxes()
 		ds_p->sprtopclip = sprclip_pool.alloc(viewwidth);
 
 		// [RK] Copy visplane clip values into the arrays.
-		memcpy(ds_p->sprbottomclip, floorclip, viewwidth * sizeof(*ds_p->sprbottomclip));
-		memcpy(ds_p->sprtopclip, ceilingclip, viewwidth * sizeof(*ds_p->sprtopclip));
+		memcpy(ds_p->sprbottomclip, floorclip.get(), viewwidth * sizeof(*ds_p->sprbottomclip));
+		memcpy(ds_p->sprtopclip, ceilingclip.get(), viewwidth * sizeof(*ds_p->sprtopclip));
 
 		firstvissprite = vissprite_p;
 		firstdrawseg = ds_p++;
@@ -846,17 +846,10 @@ bool R_PlaneInitData(IWindowSurface* surface)
 	int surface_width = surface->getWidth();
 	int surface_height = surface->getHeight();
 
-	delete[] floorclip;
-	delete[] ceilingclip;
-	delete[] floorclipinitial;
-	delete[] ceilingclipinitial;
-	delete[] spanstart;
-	delete[] yslope;
-
-	floorclip = new int[surface_width];
-	ceilingclip = new int[surface_width];
-	floorclipinitial = new int[surface_width];
-	ceilingclipinitial = new int[surface_width];
+	floorclip = std::make_unique<int[]>(surface_width);
+	ceilingclip = std::make_unique<int[]>(surface_width);
+	floorclipinitial = std::make_unique<int[]>(surface_width);
+	ceilingclipinitial = std::make_unique<int[]>(surface_width);
 
 	for (int i = 0; i < surface_width; i++)
 	{
@@ -864,8 +857,8 @@ bool R_PlaneInitData(IWindowSurface* surface)
 		floorclipinitial[i] = viewheight;
 	}
 
-	spanstart = new int[surface_height];
-	yslope = new fixed_t[surface_height];
+	spanstart = std::make_unique<int[]>(surface_height);
+	yslope = std::make_unique<fixed_t[]>(surface_height);
 
 	// Free all visplanes and let them be re-allocated as needed.
 	visplane_t* pl = freetail;
@@ -889,47 +882,6 @@ bool R_PlaneInitData(IWindowSurface* surface)
 			M_Free(pl);
 			pl = next;
 		}
-	}
-
-	return true;
-}
-
-//
-// R_AlignFlat
-//
-bool R_AlignFlat (int linenum, int side, int fc)
-{
-	line_t *line = lines + linenum;
-	sector_t *sec = side ? line->backsector : line->frontsector;
-
-	if (!sec)
-		return false;
-
-	fixed_t x = line->v1->x;
-	fixed_t y = line->v1->y;
-
-	angle_t angle = R_PointToAngle2 (x, y, line->v2->x, line->v2->y);
-	angle_t norm = (angle-ANG90) >> ANGLETOFINESHIFT;
-
-	fixed_t dist = -FixedMul (finecosine[norm], x) - FixedMul (finesine[norm], y);
-
-	if (side)
-	{
-		angle = angle + ANG180;
-		dist = -dist;
-	}
-
-	if (fc)
-	{
-		sec->base_ceiling_angle = 0-angle;
-		sec->base_ceiling_yoffs = dist & ((1<<(FRACBITS+8))-1);
-		sec->SectorChanges |= SPC_AlignBase;
-	}
-	else
-	{
-		sec->base_floor_angle = 0-angle;
-		sec->base_floor_yoffs = dist & ((1<<(FRACBITS+8))-1);
-		sec->SectorChanges |= SPC_AlignBase;
 	}
 
 	return true;
