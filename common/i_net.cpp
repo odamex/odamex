@@ -1085,26 +1085,22 @@ static void InitNetMessageFormats()
 #undef SVC_INFO
 #undef CLC_INFO
 
-static bool socketIsValid;
 void SetSocketBufSizeFromCvar(const char* name, int optname, cvar_t& var)
 {
-	if (socketIsValid)
+	int currentBufSize = -1;
+	socklen_t currentBufSizeSize = static_cast<socklen_t>(sizeof(currentBufSize));
+	if (getsockopt(inet_socket, SOL_SOCKET, optname, GETSOCKOPTCAST(&currentBufSize), &currentBufSizeSize) == 0)
 	{
-		int currentBufSize = -1;
-		socklen_t currentBufSizeSize = static_cast<socklen_t>(sizeof(currentBufSize));
-		if (getsockopt(inet_socket, SOL_SOCKET, optname, GETSOCKOPTCAST(&currentBufSize), &currentBufSizeSize) == 0)
+		int n = var.asInt();
+		if (n != currentBufSize)
 		{
-			int n = var.asInt();
-			if (n != currentBufSize)
+			if (setsockopt(inet_socket, SOL_SOCKET, optname, SETSOCKOPTCAST(&n), static_cast<socklen_t>(sizeof(n))) == -1)
 			{
-				if (setsockopt(inet_socket, SOL_SOCKET, optname, SETSOCKOPTCAST(&n), static_cast<socklen_t>(sizeof(n))) == -1)
-				{
-					PrintFmt(PRINT_HIGH, "{} set buffer size error: {}", name, strerror(errno));
-				}
-				else
-				{
-					PrintFmt(PRINT_HIGH, "{} set to {}\n", name, n);
-				}
+				PrintFmt(PRINT_HIGH, "{} set buffer size error: {}", name, strerror(errno));
+			}
+			else
+			{
+				PrintFmt(PRINT_HIGH, "{} set to {}\n", name, n);
 			}
 		}
 	}
@@ -1134,7 +1130,6 @@ void InitNetCommon(void)
 #endif
 
    inet_socket = UDPsocket ();
-   socketIsValid = true;
 
     #ifdef ODA_HAVE_MINIUPNP
     init_upnp();
