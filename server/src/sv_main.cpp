@@ -3089,10 +3089,10 @@ void SV_WriteCommands(void)
 	{
 		client_t *cl = &(it->client);
 
-        if (SV_MustThrottleTransmissionsForClient(*cl))
-        {
-            continue;
-        }
+		if (SV_MustThrottleTransmissionsForClient(*cl))
+		{
+			continue;
+		}
 
 		// [SL] 2011-05-11 - Send the client the server's gametic
 		// this gametic is returned to the server with the client's
@@ -3129,6 +3129,9 @@ void SV_WriteCommands(void)
 		sortedMobjs.Sort(*it);
 
 		// We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
+		// Combined with the high-priority to_spawn queue being directly limited in SV_UpdateHiddenMobj,
+		// we can be sure that both high-priority things like new missiles and deferred map-defined mobjs
+		// get serviced under high-load situations.
 		const int temporaryGrowthBonus = std::min(std::max(0,
 		                                                   sortedMobjs.MobjCount() - sortedMobjs.PreviousMobjCount()),
 		                                          MAX_HIDDEN_MOBJ_UPDATES);

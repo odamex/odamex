@@ -123,9 +123,10 @@ class SequenceSender
 		//
 		QueueEntryResultType ObtainSendPacket(int currentTic=-1)
 		{
-
 			// Recovery mode is exceedingly simple for now.  We just don't send anything
-			// until the send buffer comes back down to size.
+			// until the send buffer comes back down to size.  That's why we only do a
+			// simple check for NORMAL mode here - nothing to do for RECOVERY.
+
 			if (m_mode == NORMAL)
 			{
 				const int desiredSequence = m_nextSequence;
@@ -140,6 +141,12 @@ class SequenceSender
 
 					// We take no further action here.  We are considering this new packet DROPPED.
 					// We have to start recovering.
+					//
+					// If this happens intermittently for a client, it's a pretty good clue that the client
+					// is borderline and its queue just needs to be bigger.
+					//
+					// If this happens consistently, either there's a lot of packet loss or the client just
+					// doesn't have the bandwidth for whatever's happening in-game.
 				}
 				else
 				{
@@ -194,6 +201,8 @@ class SequenceSender
 					// a ping spike?  We can still have healthy traffic, but it means we could likely benefit from
 					// a one-time increase in queue size.
 					//
+					// Intentional packet drops in ObtainSendPacket() are almost always preceded by this case.
+					//
 					//TODO: Use this as a metric to determine when it's time to grow the queue and/or downthrottle.
 
 					DPrintFmt("Wow, that's an old acknowledgement!  pct full {} seq: {} cur: {}\n", (m_unackedCount * 100) / m_sendQueue.size(), sequence, entryRef.sequence);
@@ -209,7 +218,9 @@ class SequenceSender
 					{
 						// This happens because we're seeing multiple acks for the same message.  This happens when
 						// the client is behind enough that it's acked a message, but the sender has already
-						// sent retries.  This is a less severe version of the above "old acknowledgement" case.
+						// sent retries.  This is a less severe and more "normal" version of the above
+						// "old acknowledgement" case - the send queue is not full enough / latency's not high
+						// enough that we're running into duplicate acks overlapping with reused slots.
 						//
 						// TODO:  Consider using this as a quality metric.
 						//DPrintFmt("Stale ack: {}\n", sequence);
@@ -225,7 +236,7 @@ class SequenceSender
 						// bit, the bandwidth utilization drops enough to start to decongest...  I'm sure
 						// there's a better way.
 						//
-						// TODO: Downthrottling
+						// TODO: Real downthrottling
 
 						if (m_unackedCount < std::min(m_maxPacketsPerRetransmission, static_cast<int>(m_sendQueue.size())))
 						{
