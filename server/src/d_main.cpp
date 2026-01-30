@@ -300,6 +300,8 @@ void D_DoomMain()
 	if (!LOG.is_open())
 		C_DoCommand("logfile");
 
+	M_LoadDefaults();					// load before initing other systems
+	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
 	OWantFiles newwadfiles, newpatchfiles;
 
@@ -315,10 +317,6 @@ void D_DoomMain()
 	D_AddDehCommandLineFiles(newpatchfiles);
 
 	D_LoadResourceFiles(newwadfiles, newpatchfiles);
-
-	// Ch0wW: Loading the config here fixes the "addmap" issue.
-	M_LoadDefaults();					// load before initing other systems
-	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
 	PrintFmt(PRINT_HIGH, "I_Init: Init hardware.\n");
 	I_Init();
