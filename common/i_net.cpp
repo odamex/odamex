@@ -1091,13 +1091,13 @@ void SetSocketBufSizeFromCvar(const char* name, int optname, cvar_t& var)
 	if (socketIsValid)
 	{
 		int currentBufSize = -1;
-		int currentBufSizeSize = sizeof(currentBufSize);
-		if (getsockopt(inet_socket, SOL_SOCKET, optname, GETSOCKOPTCAST(&currentBufSize), (int*) &currentBufSizeSize) == 0)
+		socklen_t currentBufSizeSize = static_cast<socklen_t>(sizeof(currentBufSize));
+		if (getsockopt(inet_socket, SOL_SOCKET, optname, GETSOCKOPTCAST(&currentBufSize), &currentBufSizeSize) == 0)
 		{
 			int n = var.asInt();
 			if (n != currentBufSize)
 			{
-				if (setsockopt(inet_socket, SOL_SOCKET, optname, SETSOCKOPTCAST(&n), (int) sizeof(n)) == -1)
+				if (setsockopt(inet_socket, SOL_SOCKET, optname, SETSOCKOPTCAST(&n), static_cast<socklen_t>(sizeof(n))) == -1)
 				{
 					PrintFmt(PRINT_HIGH, "{} set buffer size error: {}", name, strerror(errno));
 				}
