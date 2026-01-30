@@ -2976,8 +2976,8 @@ namespace
 			{
 				m_freshTime = I_GetTime();
 
-				static_assert(std::is_trivially_destructible_v<decltype(s_unsortedMobjs)::value_type>);
-				s_unsortedMobjs.clear();  // Expect constant-time because the contained type is trivially destructible.
+				static_assert(std::is_trivially_destructible_v<decltype(s_sortedMobjs)::value_type>);
+				s_sortedMobjs.clear();  // Expect constant-time because the contained type is trivially destructible.
 
 				// The fact that the underlying thinker container is a vector keeps the following
 				// fairly well performant.
@@ -2986,7 +2986,7 @@ namespace
 
 				while((mo = iterator.Next()))
 				{
-					s_unsortedMobjs.emplace_back(mo);
+					s_sortedMobjs.emplace_back(mo);
 				}
 				m_copyTime = I_GetTime();
 			}
@@ -3006,9 +3006,7 @@ namespace
 				if (pl.mo)
 				{
 					[[maybe_unused]] const dtime_t startTime = I_GetTime();
-					s_sortedMobjs = s_unsortedMobjs;
 
-					[[maybe_unused]] const dtime_t buildTime = I_GetTime();
 					// In testing a 22000 mobj firefight (No Time To Freeze map32) on a Ryzen 9800x3d,
 					// Windows 11, MSVC 2019, looking at JUST the core sort operation itself:
 					//
@@ -3055,11 +3053,7 @@ namespace
 					                 distanceCompare);
 					[[maybe_unused]] const dtime_t endTime = I_GetTime();
 
-					//DPrintFmt("{} initial: {}, Player {} sorting all ({}): build {} sort {} total {} nsec\n",sizeof(AActor), m_copyTime - m_freshTime, int(pl.id), s_sortedMobjs.size(), buildTime - startTime, endTime - buildTime, endTime - startTime);
-				}
-				else
-				{
-					s_sortedMobjs = s_unsortedMobjs;
+					//DPrintFmt("{} initial: {}, Player {} sorting all ({}): total {} nsec\n",sizeof(AActor), m_copyTime - m_freshTime, int(pl.id), s_sortedMobjs.size(), endTime - startTime);
 				}
 			}
 
@@ -3070,13 +3064,12 @@ namespace
 			// We are going to let this grow naturally.
 			// The first few passes will be slower than normal due to reallocations,
 			// but it will top out at some point.
-			inline static std::vector<AActor*> s_unsortedMobjs{};
 			inline static std::vector<AActor*> s_sortedMobjs{};
 
 			const int m_previousSortedMobjCount;
 
-			dtime_t m_freshTime;
-			dtime_t m_copyTime;
+			[[maybe_unused]] dtime_t m_freshTime;
+			[[maybe_unused]] dtime_t m_copyTime;
 	};
 }
 
