@@ -193,17 +193,15 @@ static void CL_Noop(const odaproto::svc::Noop* msg)
  */
 static void CL_Disconnect(const odaproto::svc::Disconnect* msg)
 {
-	std::string buffer;
 	if (!msg->message().empty())
 	{
-		buffer = fmt::sprintf("Disconnected from server: %s", msg->message());
+		PrintFmt("Disconnected from server: {}", msg->message());
 	}
 	else
 	{
-		buffer = fmt::sprintf("Disconnected from server\n");
+		PrintFmt("Disconnected from server\n");
 	}
 
-	PrintFmt("{}", msg->message());
 	CL_QuitNetGame(NQ_SILENT);
 }
 
