@@ -2987,6 +2987,9 @@ static void CL_AnnouncerEvent(const odaproto::svc::AnnouncerEvent* msg)
 	const std::string key = msg->key();
 	const std::string sound = AnnouncerManager::getInstance().getTokenForEvent(key);
 
+	if (sound.empty() || S_FindSound(sound.c_str()) == -1)
+		return;
+
 	if (!snd_announcectf && 
 			std::find(announcerCTFTokens.begin(), announcerCTFTokens.end(), key) != announcerCTFTokens.end())
 		return;
@@ -3029,8 +3032,7 @@ static void CL_AnnouncerEvent(const odaproto::svc::AnnouncerEvent* msg)
 	if (!snd_announcemultikills && key.find("multi") == 0)
 		return;
 
-	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
-		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+	S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
 
 static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
