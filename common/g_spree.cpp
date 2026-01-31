@@ -283,10 +283,8 @@ bool SpreeManager::hasSpree(const int playerid)
 {
 	if (spreeRecord.find(playerid) == spreeRecord.end())
 		return false;
-	else if (spreeRecord.find(playerid) != spreeRecord.end())
-		return true;
 
-	return false;
+	return true;
 }
 
 void SpreeManager::removeSpree(const int playerid)
