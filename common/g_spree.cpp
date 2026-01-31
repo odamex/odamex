@@ -657,8 +657,9 @@ void P_ProcessSpreeKill(const AActor* source, const player_t* target)
 
 	if (displayplayer_id == source->player->id && update)
 	{
-		// Play the gamesfx sound from the spree first.
 		const SpreeRecord_t& record = manager.getSpreeRecord(source->player->id);
+
+		// Play the gamesfx sound from the spree first.
 		if (!record.spree.gameSfxToken.empty() &&
 		    S_FindSound(record.spree.gameSfxToken.c_str()) != -1)
 			S_Sound(CHAN_GAMEINFO, record.spree.gameSfxToken.c_str(), 1, ATTN_NONE);
@@ -696,14 +697,14 @@ void P_ProcessSpreeDamage(const player_t* source, const int totalDamage)
 
 	if (displayplayer_id == source->id && update)
 	{
-		// Play the gamesfx sound from the spree first.
 		const SpreeRecord_t& record = manager.getSpreeRecord(source->id);
+
+		// Play the gamesfx sound from the spree first.
 		if (!record.spree.gameSfxToken.empty() &&
 		    S_FindSound(record.spree.gameSfxToken.c_str()) != -1)
 			S_Sound(CHAN_GAMEINFO, record.spree.gameSfxToken.c_str(), 1, ATTN_NONE);
 
 		// Play the announcer sound for the new spree
-		const SpreeRecord_t& record = manager.getSpreeRecord(source->id);
 		std::string sound = AnnouncerManager::getInstance().getTokenForEvent("spree " + std::to_string(record.spreeLevel));
 		if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 			S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
