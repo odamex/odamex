@@ -56,7 +56,7 @@ SpreeManager::SpreeManager()
 	spreeEndPlayer = "";
 	spreeEndSelf = "";
 	spreeEndMonster = "";
-	emptyRecord = {"null", -1, 0, {"", "", CR_GRAY}, 0, false};
+	emptyRecord = {"null", -1, 0, {"", "", "", CR_GRAY}, 0, false};
 	emptySpree = Spree_s();
 }
 
@@ -84,12 +84,12 @@ void SpreeManager::clearSprees()
 void SpreeManager::loadSpreeDefaults()
 {
 	spreeLevels.clear();
-	spreeLevels.push_back({"Killing spree", "%k is on a %s!", CR_WHITE});// 5  kills / 5000 dmg
-	spreeLevels.push_back({"Rampage", "%k is on a %s!", CR_BLUE});       // 10 kills / 10000 dmg
-	spreeLevels.push_back({"Dominating", "%k is %s!", CR_GREEN});        // 15 kills / 15000 dmg
-	spreeLevels.push_back({"Unstoppable", "%k is %s!", CR_YELLOW});      // 20 kills / 20000 dmg
-	spreeLevels.push_back({"Untouchable", "%k is %s!", CR_CYAN});        // 25 kills / 25000 dmg
-	spreeLevels.push_back({"Legendary", "%k is %s!", CR_GOLD});          // 30 kills / 30000 dmg
+	spreeLevels.push_back({"Killing spree", "%k is on a %s!", "", CR_WHITE});// 5  kills / 5000 dmg
+	spreeLevels.push_back({"Rampage", "%k is on a %s!", "", CR_BLUE});       // 10 kills / 10000 dmg
+	spreeLevels.push_back({"Dominating", "%k is %s!", "", CR_GREEN});        // 15 kills / 15000 dmg
+	spreeLevels.push_back({"Unstoppable", "%k is %s!", "", CR_YELLOW});      // 20 kills / 20000 dmg
+	spreeLevels.push_back({"Untouchable", "%k is %s!", "", CR_CYAN});        // 25 kills / 25000 dmg
+	spreeLevels.push_back({"Legendary", "%k is %s!", "", CR_GOLD});          // 30 kills / 30000 dmg
 
 	repeatingSpreeText = "%k is STILL %s!";
 
@@ -657,8 +657,13 @@ void P_ProcessSpreeKill(const AActor* source, const player_t* target)
 
 	if (displayplayer_id == source->player->id && update)
 	{
-		// Play the sound for the new spree
+		// Play the gamesfx sound from the spree first.
 		const SpreeRecord_t& record = manager.getSpreeRecord(source->player->id);
+		if (!record.spree.gameSfxToken.empty() &&
+		    S_FindSound(record.spree.gameSfxToken.c_str()) != -1)
+			S_Sound(CHAN_GAMEINFO, record.spree.gameSfxToken.c_str(), 1, ATTN_NONE);
+
+		// Play the announcer sound for the new spree
 		const std::string sound = AnnouncerManager::getInstance().getTokenForEvent(
 		    "spree " + std::to_string(record.spreeLevel));
 		if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
@@ -691,7 +696,13 @@ void P_ProcessSpreeDamage(const player_t* source, const int totalDamage)
 
 	if (displayplayer_id == source->id && update)
 	{
-		// Play the sound for the new spree
+		// Play the gamesfx sound from the spree first.
+		const SpreeRecord_t& record = manager.getSpreeRecord(source->id);
+		if (!record.spree.gameSfxToken.empty() &&
+		    S_FindSound(record.spree.gameSfxToken.c_str()) != -1)
+			S_Sound(CHAN_GAMEINFO, record.spree.gameSfxToken.c_str(), 1, ATTN_NONE);
+
+		// Play the announcer sound for the new spree
 		const SpreeRecord_t& record = manager.getSpreeRecord(source->id);
 		std::string sound = AnnouncerManager::getInstance().getTokenForEvent("spree " + std::to_string(record.spreeLevel));
 		if (!sound.empty() && S_FindSound(sound.c_str()) != -1)

@@ -35,10 +35,11 @@
 struct MultiKillLevel_s
 {
 	std::string multikilltext;
+	std::string gameSfxToken;
 	EColorRange color;
-	MultiKillLevel_s() : multikilltext(""), color(CR_GRAY) { }
-	MultiKillLevel_s(std::string MultiKillText, EColorRange Color)
-	    : multikilltext(MultiKillText), color(Color)
+	MultiKillLevel_s() : multikilltext(""), gameSfxToken(""), color(CR_GRAY) { }
+	MultiKillLevel_s(std::string MultiKillText, std::string GameSfxToken, EColorRange Color)
+	    : multikilltext(MultiKillText), gameSfxToken(GameSfxToken), color(Color)
 	{
 	}
 };

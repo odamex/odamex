@@ -49,10 +49,11 @@ struct Spree_s
 {
 	std::string spreeText;
 	std::string spreeBroadcastText;
+	std::string gameSfxToken;
 	EColorRange color;
-	Spree_s() : spreeText(""), spreeBroadcastText(""), color(CR_GRAY) { }
-	Spree_s(std::string SpreeText, std::string BroadcastText, EColorRange Color)
-	    : spreeText(SpreeText), spreeBroadcastText(BroadcastText), color(Color)
+	Spree_s() : spreeText(""), spreeBroadcastText(""), gameSfxToken(""), color(CR_GRAY) { }
+	Spree_s(std::string SpreeText, std::string BroadcastText, std::string GameSfxToken, EColorRange Color)
+	    : spreeText(SpreeText), spreeBroadcastText(BroadcastText), gameSfxToken(GameSfxToken), color(Color)
 	{
 	}
 };

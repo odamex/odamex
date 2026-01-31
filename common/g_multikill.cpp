@@ -61,23 +61,23 @@ void MultiKillManager::reset()
 void MultiKillManager::loadMultiKillDefaults()
 {
 	multiKillLevels.clear();
-	MultiKillLevel_s emptylevel = {"", CR_GRAY};
+	MultiKillLevel_s emptylevel = {"", "", CR_GRAY};
 	// First 2 levels (0 and 1), we insert empty levels as they're not multi kills.
 	multiKillLevels.push_back(emptylevel); // 0
 	multiKillLevels.push_back(emptylevel); // 1
 
 	// Next, we input the next 9 levels with the default text. We don't use LANGUAGE tokens
 	// since some people won't have an updated WAD.
-	multiKillLevels.push_back({"Double Kill!",  CR_WHITE});    // 2
-	multiKillLevels.push_back({"Triple Kill!",  CR_TAN});      // 3
-	multiKillLevels.push_back({"Multi Kill!",   CR_BLUE});     // 4
-	multiKillLevels.push_back({"Ultra Kill!",   CR_BRICK});    // 5
-	multiKillLevels.push_back({"Overkill!",     CR_CYAN});     // 6
-	multiKillLevels.push_back({"Mega Kill!",    CR_CREAM});    // 7
-	multiKillLevels.push_back({"Monster Kill!", CR_ORANGE});   // 8
-	multiKillLevels.push_back({"Mythic Kill!",  CR_PURPLE});   // 9
-	multiKillLevels.push_back({"Killionaire!",  CR_DARKGREEN});// 10
-	multiKillLevels.push_back({"Terminator!",   CR_GOLD});     // 11
+	multiKillLevels.push_back({"Double Kill!", "", CR_WHITE});      // 2
+	multiKillLevels.push_back({"Triple Kill!", "", CR_TAN});        // 3
+	multiKillLevels.push_back({"Multi Kill!",  "", CR_BLUE});       // 4
+	multiKillLevels.push_back({"Ultra Kill!",  "", CR_BRICK});      // 5
+	multiKillLevels.push_back({"Overkill!",    "", CR_CYAN});       // 6
+	multiKillLevels.push_back({"Mega Kill!",   "", CR_CREAM});      // 7
+	multiKillLevels.push_back({"Monster Kill!","", CR_ORANGE});     // 8
+	multiKillLevels.push_back({"Mythic Kill!", "", CR_PURPLE});     // 9
+	multiKillLevels.push_back({"Killionaire!", "", CR_DARKGREEN});  // 10
+	multiKillLevels.push_back({"Terminator!",  "", CR_GOLD});       // 11
 
 	multiTimeInterval = 4 * TICRATE;
 }
@@ -227,7 +227,12 @@ void P_ProcessMultiKills(const AActor* source, const player_t* target)
 
 	if (displayplayer_id == source->player->id && status.multiKills > 1)
 	{
-		// Play the sound for the new multi kill
+		// Play the gamesfx sound from the multi kill first.
+		const MultiKillLevel_s& level = manager.getMultiKillLevel(status.multiKills);
+		if (!level.gameSfxToken.empty() && S_FindSound(level.gameSfxToken.c_str()) != -1)
+			S_Sound(CHAN_GAMEINFO, level.gameSfxToken.c_str(), 1, ATTN_NONE);
+
+		// Play the announcer sound for the new multi kill
 		const std::string sound = AnnouncerManager::getInstance().getTokenForEvent(
 		    "multi " + std::to_string(status.multiKills));
 		if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
