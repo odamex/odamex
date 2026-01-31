@@ -119,3 +119,107 @@ inline std::string TextColorFromRange(EColorRange colorRange)
 	default:				return TEXTCOLOR_NORMAL;
 	}
 }
+
+inline EColorRange TextColorFromString(std::string color)
+{
+	// Convert to lower case
+	std::transform(color.begin(), color.end(), color.begin(),
+	               [](unsigned char c) { return std::tolower(c); });
+
+	// Remove any spaces
+	color.erase(color.begin(), std::find_if(color.begin(), color.end(),
+	                                        [](int c) { return !std::isspace(c); }));
+
+	if (color == "brick")
+	{
+		return CR_BRICK;
+	}
+	else if (color == "tan")
+	{
+		return CR_TAN;
+	}
+	else if (color == "gray" || color == "grey")
+	{
+		return CR_GRAY;
+	}
+	else if (color == "green")
+	{
+		return CR_GREEN;
+	}
+	else if (color == "brown")
+	{
+		return CR_BROWN;
+	}
+	else if (color == "gold")
+	{
+		return CR_GOLD;
+	}
+	else if (color == "red")
+	{
+		return CR_RED;
+	}
+	else if (color == "blue")
+	{
+		return CR_BLUE;
+	}
+	else if (color == "orange")
+	{
+		return CR_ORANGE;
+	}
+	else if (color == "white")
+	{
+		return CR_WHITE;
+	}
+	else if (color == "yellow")
+	{
+		return CR_YELLOW;
+	}
+	else if (color == "untranslated")
+	{
+		return CR_UNTRANSLATED;
+	}
+	else if (color == "black")
+	{
+		return CR_BLACK;
+	}
+	else if (color == "lightblue")
+	{
+		return CR_LIGHTBLUE;
+	}
+	else if (color == "cream")
+	{
+		return CR_CREAM;
+	}
+	else if (color == "olive")
+	{
+		return CR_OLIVE;
+	}
+	else if (color == "darkgreen")
+	{
+		return CR_DARKGREEN;
+	}
+	else if (color == "darkred")
+	{
+		return CR_DARKRED;
+	}
+	else if (color == "darkbrown")
+	{
+		return CR_DARKBROWN;
+	}
+	else if (color == "purple")
+	{
+		return CR_PURPLE;
+	}
+	else if (color == "darkgray" || color == "darkgrey")
+	{
+		return CR_DARKGRAY;
+	}
+	else if (color == "cyan")
+	{
+		return CR_CYAN;
+	}
+	else
+	{
+		return CR_GRAY; // Default to gray
+	}
+}

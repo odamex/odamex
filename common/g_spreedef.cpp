@@ -98,8 +98,8 @@ static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 		{
 			os.mustScan();
 			os.assertTokenIs("=");
-			os.mustScanInt();
-			spree.color = static_cast<EColorRange>(os.getTokenInt());
+			os.mustScan();
+			spree.color = TextColorFromString(os.getToken());
 		}
 		else if (os.compareTokenNoCase("text"))
 		{
@@ -116,6 +116,14 @@ static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 			os.mustScan();
 			std::string broadcastText = os.getToken();
 			spree.spreeBroadcastText = UseStringTableOrToken(broadcastText);
+		}
+		else if (os.compareTokenNoCase("gamesfx"))
+		{
+			os.mustScan();
+			os.assertTokenIs("=");
+			os.mustScan();
+			std::string gamesfx = os.getToken();
+			spree.gameSfxToken = gamesfx;
 		}
 		else
 		{
@@ -151,8 +159,8 @@ static void ParseMulti(OScanner& os, std::vector<MultiKillLevel_s>& multiKillLev
 		{
 			os.mustScan();
 			os.assertTokenIs("=");
-			os.mustScanInt();
-			level.color = static_cast<EColorRange>(os.getTokenInt());
+			os.mustScan();
+			level.color = TextColorFromString(os.getToken());
 		}
 		else if (os.compareTokenNoCase("text"))
 		{
@@ -161,6 +169,14 @@ static void ParseMulti(OScanner& os, std::vector<MultiKillLevel_s>& multiKillLev
 			os.mustScan();
 			std::string text = os.getToken();
 			level.multikilltext = UseStringTableOrToken(text);
+		}
+		else if (os.compareTokenNoCase("gamesfx"))
+		{
+			os.mustScan();
+			os.assertTokenIs("=");
+			os.mustScan();
+			std::string gamesfx = os.getToken();
+			level.gameSfxToken = gamesfx;
 		}
 		else
 		{
