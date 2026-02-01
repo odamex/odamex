@@ -982,8 +982,8 @@ void G_Ticker (void)
 		memcpy(&consoleplayer().cmd, &consoleplayer().netcmds[buf], sizeof(ticcmd_t));
 	}
 
-	static int realrate = 0;
-	int packet_size;
+    static int realrate = 0;
+    int packet_size;
 
 	if (demoplayback)
 		G_ReadDemoTiccmd(); // play all player commands
@@ -998,25 +998,26 @@ void G_Ticker (void)
 		while ((packet_size = NET_GetPacket()) )
 		{
 			// denis - don't accept candy from strangers
-			if (not NET_CompareAdr(serveraddr, net_from))
+			if(!NET_CompareAdr(serveraddr, net_from))
 				break;
 
 			realrate += packet_size;
 			last_received = gametic;
 			noservermsgs = false;
 
-			if (not CL_ReadPacketHeader())
+			if (!CL_ReadPacketHeader())
 				continue;
 
-			if (not CL_AcceptNetMessage())
+			if (netdemo.isRecording())
+				netdemo.capture(&net_message);
+
+			CL_ParseCommands();
+
+			if (gameaction == ga_fullconsole) // Host_EndGame was called
 				return;
 		}
 
-		// With all the latest packets received, process the reliable message in proper sequence.
-		if (not CL_ProcessCurrentReliableMessages())
-			return;
-
-		if ((gametic % TICRATE) == 0)
+		if (!(gametic%TICRATE))
 		{
 			netin = realrate;
 			realrate = 0;
@@ -1073,7 +1074,7 @@ void G_Ticker (void)
 
 	// check for special buttons
 	if(serverside && consoleplayer().ingame())
-	{
+    {
 		// [Blair] Let's get all player's commands in a demo playback.
 		// Otherwise we might miss a pause and desync!
 		if (demoplayback)
