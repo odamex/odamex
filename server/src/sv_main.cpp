@@ -2979,14 +2979,14 @@ namespace
 				static_assert(std::is_trivially_destructible_v<decltype(s_sortedMobjs)::value_type>);
 				s_sortedMobjs.clear();  // Expect constant-time because the contained type is trivially destructible.
 
-				// The fact that the underlying thinker container is a vector keeps the following
-				// fairly well performant.
-				TThinkerIterator<AActor> iterator;
-				AActor* mo;
+				auto& unsortedThinkers = DThinker::GetThinkerVectorRef();
 
-				while((mo = iterator.Next()))
+				for (DThinker* thinker : unsortedThinkers)
 				{
-					s_sortedMobjs.emplace_back(mo);
+					if (thinker->IsKindOf(RUNTIME_CLASS(AActor)))
+					{
+						s_sortedMobjs.emplace_back(static_cast<AActor*>(thinker));
+					}
 				}
 				m_copyTime = I_GetTime();
 			}
@@ -3053,7 +3053,7 @@ namespace
 					                 distanceCompare);
 					[[maybe_unused]] const dtime_t endTime = I_GetTime();
 
-					//DPrintFmt("{} initial: {}, Player {} sorting all ({}): total {} nsec\n",sizeof(AActor), m_copyTime - m_freshTime, int(pl.id), s_sortedMobjs.size(), endTime - startTime);
+					DPrintFmt("{} initial: {}, Player {} sorting all ({}): total {} nsec\n",sizeof(AActor), m_copyTime - m_freshTime, int(pl.id), s_sortedMobjs.size(), endTime - startTime);
 				}
 			}
 
