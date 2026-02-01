@@ -3553,18 +3553,14 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	return false;
 }
 
-unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved)
+uint32_t P_TranslateCompatibleLineFlags(const uint32_t flags, const bool reserved)
 {
-	/*
-	if (mbf21)
-		const unsigned int filter = (flags & ML_RESERVED && comp[comp_reservedlineflag]) ? 0x01ff : 0x3fff;
-	else
-		const unsigned int filter = 0x03ff;
-	*/
+	// no comp_reservedlineflag, it's only needed for playback of
+	// a small set of early mbf21 demos from before its introduction
 
-	unsigned int filter;
+	uint32_t filter;
 
-	if (demoplayback || reserved)
+	if (demoplayback || flags & ML_RESERVED || reserved)
 		filter = 0x01ff;
 	else
 		filter = 0x3fff;

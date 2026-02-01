@@ -1413,9 +1413,8 @@ static FileIdentificationManager identtab;
 //
 void W_SetupFileIdentifiers()
 {
-	for (size_t i = 0; i < ARRAY_LENGTH(::identdata); i++)
+	for (const auto& data : ::identdata)
 	{
-		const identData_t& data = ::identdata[i];
 		::identtab.addFile(data.idName, data.filename, data.crc32Sum, data.md5Sum,
 		                   data.groupName, data.flags & IDENT_COMMERCIAL,
 		                   data.flags & IDENT_IWAD, data.flags & IDENT_DEPRECATED,
