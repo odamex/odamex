@@ -71,8 +71,6 @@
 
 #include "m_consolecommandstream.h"
 
-#include "SequenceReceiver.h"
-
 #include <bitset>
 #include <set>
 #include <sstream>
@@ -110,7 +108,7 @@ float     world_index_accum = 0.0f;
 int       last_svgametic = 0;
 int       last_player_update = 0;
 
-bool      recv_full_update = false;
+bool		recv_full_update = false;
 
 std::string connectpasshash = "";
 
@@ -118,7 +116,8 @@ bool      connected;
 netadr_t  serveraddr; // address of a server
 netadr_t  lastconaddr;
 
-static SequenceReceiver reliableSequenceReceiver;
+constexpr static size_t PACKET_SEQ_MASK = 0xFF;
+static int packetseq[256];
 
 // denis - unique session key provided by the server
 std::string digest;
@@ -398,7 +397,6 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 	mute_spectators = 0.f;
 	mute_enemies = 0.f;
 
-	::reliableSequenceReceiver = SequenceReceiver();
 	P_ClearAllNetIds();
 
 	{
@@ -464,7 +462,6 @@ void CL_Reconnect(void)
 		connected = false;
 		gameaction = ga_fullconsole;
 
-		::reliableSequenceReceiver = SequenceReceiver();
 		P_ClearAllNetIds();
 	}
 	else if (lastconaddr.ip[0])
@@ -1751,7 +1748,7 @@ bool CL_Connect()
 {
 	players.clear();
 
-	::reliableSequenceReceiver = SequenceReceiver();
+	memset(packetseq, -1, sizeof(packetseq));
 
 	// [AM] This needs to go out ASAP so the server can start sending us
 	//      messages.
@@ -1932,13 +1929,30 @@ void CL_Decompress()
 /**
  * @brief Read the header of the packet and prepare the rest of it for reading.
  *
- * @return False if the packet was set aside for reliability sequencing, otherwise true.
+ * @return False if the packet was scuttled, otherwise true.
  */
 bool CL_ReadPacketHeader()
 {
-	const int sequence = MSG_ReadLong();    // Packet sequence number.
-	const byte flags   = MSG_ReadByte();    // Flag bits.
+	// Packet sequence number.
+	int sequence = MSG_ReadLong();
+	int oldsequence = ::packetseq[sequence & PACKET_SEQ_MASK];
 
+	if (sequence == oldsequence)
+	{
+		// Duplicate packet, burn it and return early.
+		SZ_Clear(&::net_message);
+		return false;
+	}
+
+	// Not a dupe, keep it in our array of known received packets.
+	::packetseq[sequence & PACKET_SEQ_MASK] = sequence;
+
+	// Send an ACK to the server.
+	MSG_WriteMarker(&net_buffer, clc_ack);
+	MSG_WriteLong(&net_buffer, sequence);
+
+	// Flag bits.
+	byte flags = MSG_ReadByte();
 	if (flags & SVF_UNUSED_MASK)
 	{
 		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood.", flags);
@@ -1950,54 +1964,8 @@ bool CL_ReadPacketHeader()
 	}
 
 	netgraph.addPacketIn();
-
-	if (sequence >= 0)
-	{
-		::reliableSequenceReceiver.RegisterReceivedPacket(sequence, ::net_message);
-
-		// Send an ACK to the server only if it contained reliable data.
-		MSG_WriteMarker(&net_buffer, clc_ack);
-		MSG_WriteLong(&net_buffer, sequence);
-		return false;
-	}
-
 	return true;
 }
-
-// Returns true if all is good, false if we need to bail out of further processing.
-bool CL_AcceptNetMessage()
-{
-	if (netdemo.isRecording())
-	{
-		netdemo.capture(&::net_message);
-	}
-
-	CL_ParseCommands();
-
-	if (gameaction == ga_fullconsole) // Host_EndGame was called
-	{
-		return false;
-	}
-	return true;
-}
-
-// Handles the next Reliable message in sequence.
-// Returns true if all is good, false if we need to bail out of further processing.
-bool CL_ProcessCurrentReliableMessages()
-{
-	SequenceQueueEntryType* queueEntryPtr;
-	while ((queueEntryPtr = ::reliableSequenceReceiver.NextPacket()) != nullptr)
-	{
-		queueEntryPtr->buf.swap(::net_message);
-
-		if (not CL_AcceptNetMessage())
-		{
-			return false;
-		}
-	}
-	return true;
-}
-
 
 void CL_Clear()
 {

@@ -61,10 +61,8 @@ typedef int SOCKET;
 
 #ifdef _WIN32
 #define SETSOCKOPTCAST(x) ((const char *)(x))
-#define GETSOCKOPTCAST(x) ((char *)(x))
 #else
 #define SETSOCKOPTCAST(x) ((const void *)(x))
-#define GETSOCKOPTCAST(x) ((void *)(x))
 #endif
 
 #include <google/protobuf/message.h>
@@ -1085,35 +1083,24 @@ static void InitNetMessageFormats()
 #undef SVC_INFO
 #undef CLC_INFO
 
-void SetSocketBufSizeFromCvar(const char* name, int optname, cvar_t& var)
-{
-	int currentBufSize = -1;
-	socklen_t currentBufSizeSize = static_cast<socklen_t>(sizeof(currentBufSize));
-	if (getsockopt(inet_socket, SOL_SOCKET, optname, GETSOCKOPTCAST(&currentBufSize), &currentBufSizeSize) == 0)
-	{
-		int n = var.asInt();
-		if (n != currentBufSize)
-		{
-			if (setsockopt(inet_socket, SOL_SOCKET, optname, SETSOCKOPTCAST(&n), static_cast<socklen_t>(sizeof(n))) == -1)
-			{
-				PrintFmt(PRINT_HIGH, "{} set buffer size error: {}", name, strerror(errno));
-			}
-			else
-			{
-				PrintFmt(PRINT_HIGH, "{} set to {}\n", name, n);
-			}
-		}
-	}
-}
-
 CVAR_FUNC_IMPL(net_rcvbuf)
 {
-	SetSocketBufSizeFromCvar("net_rcvbuf", SO_RCVBUF, var);
+	int n = var.asInt();
+	if (setsockopt(inet_socket, SOL_SOCKET, SO_RCVBUF, SETSOCKOPTCAST(&n), (int) sizeof(n)) == -1) {
+		PrintFmt(PRINT_HIGH, "setsockopt SO_RCVBUF: {}", strerror(errno));
+	} else {
+		PrintFmt(PRINT_HIGH, "net_rcvbuf set to {}\n", n);
+	}
 }
 
 CVAR_FUNC_IMPL(net_sndbuf)
 {
-	SetSocketBufSizeFromCvar("net_sndbuf", SO_SNDBUF, var);
+	int n = var.asInt();
+	if (setsockopt(inet_socket, SOL_SOCKET, SO_SNDBUF, SETSOCKOPTCAST(&n), (int) sizeof(n)) == -1) {
+		PrintFmt(PRINT_HIGH, "setsockopt SO_SNDBUF: {}", strerror(errno));
+	} else {
+		PrintFmt(PRINT_HIGH, "net_sndbuf set to {}\n", n);
+	}
 }
 
 
@@ -1138,11 +1125,6 @@ void InitNetCommon(void)
    BindToLocalPort (inet_socket, localport);
    if (ioctlsocket(inet_socket, FIONBIO, &_true) == -1)
        I_FatalError ("UDPsocket: ioctl FIONBIO: {}", strerror(errno));
-
-   // Because it's possible for these to have been set before the socket was valid, we want
-   // to make sure we check and apply the current values at least once after socket creation.
-   net_rcvbuf.Callback();
-   net_sndbuf.Callback();
 
 	// enter message information into message info structs
 	InitNetMessageFormats();

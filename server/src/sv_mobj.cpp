@@ -110,10 +110,6 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	mobj->health = player.health;
 
 	player.fov = 90.0f;
-	if (player.mo)
-	{
-		player.mo->Destroy();
-	}
 	player.mo = player.camera = mobj->ptr();
 	player.playerstate = PST_LIVE;
 	player.refire = 0;
