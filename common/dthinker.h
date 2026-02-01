@@ -51,6 +51,7 @@ typedef actionf_t  think_t;
 
 class FThinkerIterator;
 
+// Doubly linked list of thinkers
 class DThinker : public DObject
 {
 	DECLARE_SERIAL (DThinker, DObject)
@@ -65,6 +66,9 @@ public:
 	void *operator new (size_t size);
 	void operator delete (void *block);
 
+	// Both the head and tail of the thinker list.
+	static DThinker *FirstThinker;
+	static DThinker *LastThinker;
 	static void RunThinkers ();
 	static void DestroyAllThinkers ();
 	static void DestroyMostThinkers ();
@@ -75,11 +79,7 @@ public:
 	size_t refCount;
 
 private:
-	// Live thinkers are contained in a static vector.
-	// We do this for a performance bump in certain iteration cases, courtesy of improved cache friendliness.
-	static std::vector<DThinker*> s_thinkers;
-	void DestroyFromContainer();
-
+	DThinker *m_Next, *m_Prev;
 	bool destroyed;
 
 	friend class FThinkerIterator;
@@ -89,26 +89,27 @@ class FThinkerIterator
 {
 private:
 	TypeInfo *m_ParentType;
-	std::vector<DThinker*>::iterator m_currentThinker;
+	DThinker *m_CurrThinker;
 
 public:
-	FThinkerIterator (TypeInfo *type) :
-		m_ParentType    (type),
-		m_currentThinker(DThinker::s_thinkers.begin())
+	FThinkerIterator (TypeInfo *type)
 	{
+		m_ParentType = type;
+		m_CurrThinker = DThinker::FirstThinker;
 	}
-
 	DThinker *Next ()
 	{
-		while (m_currentThinker != DThinker::s_thinkers.end())
+		while (m_CurrThinker)
 		{
-			if ((*m_currentThinker)->IsKindOf (m_ParentType) and not (*m_currentThinker)->destroyed)
+			if (m_CurrThinker->IsKindOf (m_ParentType))
 			{
-				return *(m_currentThinker++);
+				DThinker *res = m_CurrThinker;
+				m_CurrThinker = m_CurrThinker->m_Next;
+				return res;
 			}
-			++m_currentThinker;
+			m_CurrThinker = m_CurrThinker->m_Next;
 		}
-		m_currentThinker = DThinker::s_thinkers.begin();
+		m_CurrThinker = DThinker::FirstThinker;
 		return NULL;
 	}
 };

@@ -35,7 +35,8 @@
 
 IMPLEMENT_SERIAL (DThinker, DObject)
 
-std::vector<DThinker*> DThinker::s_thinkers;
+DThinker *DThinker::FirstThinker = NULL;
+DThinker *DThinker::LastThinker = NULL;
 
 std::vector<DThinker *> LingerDestroy;
 
@@ -49,15 +50,18 @@ void DThinker::Serialize (FArchive &arc)
 
 void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 {
+	DThinker *thinker;
 	if (arc.IsStoring ())
 	{
-		for (auto& thinker : s_thinkers)
+		thinker = FirstThinker;
+		while (thinker)
 		{
 			if (!(arc.IsReset() && P_ThinkerIsPlayerType(thinker)))
 			{
 				arc << (BYTE)1;
 				arc << thinker;
 			}
+			thinker = thinker->m_Next;
 		}
 		arc << (BYTE)0;
 	}
@@ -84,23 +88,20 @@ void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 
 DThinker::DThinker ()
 {
-	s_thinkers.push_back(this);
+	// Add a new thinker at the end of the list.
+	m_Prev = LastThinker;
+	m_Next = NULL;
+	if (LastThinker)
+		LastThinker->m_Next = this;
+	if (!FirstThinker)
+		FirstThinker = this;
+	LastThinker = this;
 	refCount = 0;
 	destroyed = false;
 }
 
 DThinker::~DThinker ()
 {
-	// In isolation, find-erase is almost always slower than unlinking a node from a linked list.
-	// However, across the entire frame, the vector's iteration performance advantages ultimately
-	// lead to slightly better performance overall.
-	auto iterToThis = std::find(s_thinkers.begin(),
-	                            s_thinkers.end(),
-	                            this);
-	if (iterToThis != s_thinkers.end())
-	{
-		s_thinkers.erase(iterToThis);
-	}
 }
 
 // This method is necessary if you construct the Thinker in an unconventional way,
@@ -108,14 +109,25 @@ DThinker::~DThinker ()
 // all over the thinker list.
 void DThinker::Orphan()
 {
+	m_Next = NULL;
+	m_Prev = NULL;
 	refCount = 0;
 }
 
-void DThinker::Destroy()
+void DThinker::Destroy ()
 {
 	// denis - allow this function to be safely called multiple times
 	if(destroyed)
 		return;
+
+	if (FirstThinker == this)
+		FirstThinker = m_Next;
+	if (LastThinker == this)
+		LastThinker = m_Prev;
+	if (m_Next)
+		m_Next->m_Prev = m_Prev;
+	if (m_Prev)
+		m_Prev->m_Next = m_Next;
 
 	destroyed = true;
 
@@ -135,7 +147,7 @@ void DThinker::Destroy()
 			obj->ObjectFlags |= OF_Cleanup;
 			LingerDestroy.erase(LingerDestroy.begin() + i);
 			l--; i--;
-			obj->Super::Destroy();
+			delete obj;
 		}
 	}
 }
@@ -148,12 +160,12 @@ bool DThinker::WasDestroyed ()
 // Destroy every thinker
 void DThinker::DestroyAllThinkers ()
 {
-	for (auto& thinker : s_thinkers)
+	DThinker *currentthinker = FirstThinker;
+	while (currentthinker)
 	{
-		// Suboptimal, but eh, this function probably doesn't need to be fast.
-		// Please note, it is CRITICAL that we call Destroy() so that it dispatches
-		// appropriately!
-		thinker->Destroy();
+		DThinker *next = currentthinker->m_Next;
+		currentthinker->Destroy ();
+		currentthinker = next;
 	}
 	DObject::EndFrame ();
 
@@ -171,34 +183,19 @@ void DThinker::DestroyAllThinkers ()
 // Destroy all thinkers except for player-controlled actors
 void DThinker::DestroyMostThinkers ()
 {
-    auto isPlayerActor = [](DThinker* thinker) -> bool
-    {
-        return thinker->IsKindOf (RUNTIME_CLASS (AActor)) &&
-            static_cast<AActor *>(thinker)->player     != nullptr &&
-            static_cast<AActor *>(thinker)->player->mo != static_cast<AActor *>(thinker);
-    };
-
-    // stable_partition retains the relative order of elements with both partitions.
-    auto lastToDestroy = std::stable_partition(s_thinkers.begin(),
-                                               s_thinkers.end(),
-                                               isPlayerActor);
-
-    // Calling an erase() range would be nicest, but we have special stuff going on in Destroy
-    // that normally runs between destructions.  A good refactor would be to allow that to work
-    // with the normal destructors.
-    //
-    // Let's delete in reverse order to eliminate memory move operations in the vector...
-    //
-	// Please note, it is CRITICAL that we call Destroy() so that it dispatches
-	// appropriately!
-    if (lastToDestroy != s_thinkers.end())
-    {
-        for (auto iter = s_thinkers.end() - 1; iter != lastToDestroy; --iter)
-        {
-            (*iter)->Destroy();
-        }
-        (*lastToDestroy)->Destroy();
-    }
+	DThinker *thinker = FirstThinker;
+	while (thinker)
+	{
+		DThinker *next = thinker->m_Next;
+		if (!thinker->IsKindOf (RUNTIME_CLASS (AActor)) ||
+			static_cast<AActor *>(thinker)->player == NULL ||
+			static_cast<AActor *>(thinker)->player->mo
+			 != static_cast<AActor *>(thinker))
+		{
+			thinker->Destroy ();
+		}
+		thinker = next;
+	}
 	DObject::EndFrame ();
 }
 
@@ -247,11 +244,15 @@ bool IndependentThinker(DThinker *thinker)
 
 void DThinker::RunThinkers ()
 {
+	DThinker *currentthinker;
+
 	BEGIN_STAT (ThinkCycles);
-	for (auto currentthinker : s_thinkers)
+	currentthinker = FirstThinker;
+	while (currentthinker)
 	{
 		if (!IndependentThinker(currentthinker))
 			currentthinker->RunThink();
+		currentthinker = currentthinker->m_Next;
 	}
 	END_STAT (ThinkCycles);
 	P_CheckMusicChange();
@@ -279,3 +280,4 @@ bool P_ThinkerIsPlayerType(DThinker* thinker)
 }
 
 VERSION_CONTROL (dthinker_cpp, "$Id$")
+
