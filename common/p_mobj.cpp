@@ -69,6 +69,7 @@ extern AActor *shootthing;
 void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
 void P_ShowSpawns(mapthing2_t* mthing);
 void P_ExplodeMissile(AActor* mo);
+void SV_SpawnMapMobj(AActor *mobj);
 void SV_SpawnMobj(AActor *mobj);
 void SV_SendDestroyActor(const AActor *);
 void SV_ExplodeMissile(const AActor *);
@@ -136,7 +137,7 @@ AActor::AActor()
       flags3(0), oflags(0), statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
-      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
+      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), transientInt(0),
       rndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
       netid(0), tid(0), baseline(), baseline_set(false), bmapnode(this)
 {
@@ -162,7 +163,7 @@ AActor::AActor(const AActor& other)
       inext(other.inext), iprev(other.iprev), translation(other.translation),
       translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
       onground(other.onground), touching_sectorlist(other.touching_sectorlist),
-      deadtic(other.deadtic), oldframe(other.oldframe), rndindex(other.rndindex),
+      deadtic(other.deadtic), transientInt(other.transientInt), rndindex(other.rndindex),
       friend_playerid(other.friend_playerid),
       friend_teamid(other.friend_teamid), pursuecount(other.pursuecount),
       strafecount(other.strafecount),
@@ -231,7 +232,7 @@ AActor &AActor::operator= (const AActor &other)
     onground = other.onground;
     touching_sectorlist = other.touching_sectorlist;
     deadtic = other.deadtic;
-    oldframe = other.oldframe;
+    transientInt = other.transientInt;
     rndindex = other.rndindex;
     friend_playerid = other.friend_playerid;
     friend_teamid = other.friend_teamid;
@@ -264,7 +265,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
       statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
-      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
+      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), transientInt(0),
       rndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
       netid(0), tid(0), baseline(), baseline_set(false), bmapnode(this)
 {
@@ -2804,6 +2805,7 @@ int P_IsPickupableThing(short type)
 
 //
 // P_SpawnMapThing
+// This function spawns a thing that originates from the map itself.
 // The fields of the mapthing should
 // already be in host byte order.
 //
@@ -3202,7 +3204,19 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	mobj->tid = mthing->thingid;
 	mobj->AddToHash ();
 
-	SV_SpawnMobj(mobj);
+	// "Solid" things like monsters and props we want to be handled like anything else
+	// that's visible - let the mobj sorter send it to clients at the appropriate time.
+	// Sometimes things that are not solid can also affect some important parts of the
+	// client state, including the renderer.  We want to send those things to clients
+	// through the higher-priority SV_SpawnMobj queue.
+	if (info->flags & MF_SOLID)
+	{
+		SV_SpawnMapMobj(mobj);
+	}
+	else
+	{
+		SV_SpawnMobj(mobj);
+	}
 
 	if (mobj->type == MT_SKYVIEWPOINT)
 	{

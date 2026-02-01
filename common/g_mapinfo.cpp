@@ -1093,6 +1093,11 @@ void MIType_SetInt(OScanner& os, bool newStyleMapInfo, void* data, uint32_t flag
 	*static_cast<int32_t*>(data) = flags;
 }
 
+void MIType_SetByte(OScanner& os, bool newStyleMapInfo, void* data, uint32_t flags, uint32_t flags2)
+{
+	*static_cast<byte*>(data) = static_cast<byte>(flags);
+}
+
 //////////////////////////////////////////////////////////////////////
 /// MapInfoData
 
@@ -1571,7 +1576,7 @@ struct MapInfoDataSetter<SkillInfo>
 			{ "noinfighting", &MIType_SCFlags, &ref.flags, SKILL_NOINFIGHTING, ~SKILL_TOTALINFIGHTING },
 			{ "totalinfighting", &MIType_SCFlags, &ref.flags, SKILL_TOTALINFIGHTING, ~SKILL_NOINFIGHTING },
 			{ "playerrespawn", &MIType_Bool, &ref.player_respawn, true },
-			{ "defaultskill", &MIType_SetInt, &defaultskillmenu, skillnum }
+			{ "defaultskill", &MIType_SetByte, &defaultskillmenu, skillnum }
 		};
 	}
 };
