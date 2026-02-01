@@ -51,6 +51,8 @@
 #include "p_snapshot.h"
 #include "d_netcmd.h"
 
+#include "SequenceSender.h"
+
 //
 // Player states.
 //
@@ -101,8 +103,6 @@ typedef enum
 	CF_REVERTPLEASE =	(1 << 7), // [RH] Stick camera in player's head if he moves
 	CF_BUDDHA =			(1 << 8), // [Ch0wW] Buddha Cheatcode
 } cheat_t;
-
-#define MAX_PLAYER_SEE_MOBJ	0x7F
 
 inline constexpr int ReJoinDelay = TICRATE * 5;
 inline constexpr int SuicideDelay = TICRATE * 10;
@@ -270,17 +270,6 @@ public:
 	// denis - client structure is here now for a 1:1
 	struct client_t
 	{
-		struct oldPacket_t
-		{
-			int		sequence;
-			buf_t	data;
-
-			oldPacket_t() : sequence(-1)
-			{
-				data.resize(0);
-			}
-		};
-
 		netadr_t    address;
 
 		buf_t       netbuf;
@@ -291,10 +280,8 @@ public:
 		int			packedversion;
 
 		// for reliable protocol
-		oldPacket_t oldpackets[256];
+		SequenceSender reliableSendSequencer;
 
-		int         sequence;
-		int         last_sequence;
 		byte        packetnum;
 
 		int         rate;
@@ -316,19 +303,13 @@ public:
 			unsigned int next_offset = 0;
 		} download;
 
-		client_t()
+		client_t() :
+		    reliableSendSequencer()
 		{
 			// GhostlyDeath -- Initialize to Zero
 			memset(&address, 0, sizeof(netadr_t));
 			version = 0;
 			packedversion = 0;
-			for (auto& [sequence, data] : oldpackets)
-			{
-				sequence = -1;
-				data.resize(MAX_UDP_PACKET);
-			}
-			sequence = 0;
-			last_sequence = 0;
 			packetnum = 0;
 			rate = 0;
 			reliable_bps = 0;
@@ -352,8 +333,7 @@ public:
 			reliablebuf(other.reliablebuf),
 			version(other.version),
 			packedversion(other.packedversion),
-			sequence(other.sequence),
-			last_sequence(other.last_sequence),
+			reliableSendSequencer(other.reliableSendSequencer),
 			packetnum(other.packetnum),
 			rate(other.rate),
 			reliable_bps(other.reliable_bps),
@@ -366,10 +346,6 @@ public:
 			displaydisconnect(true),
 			download(other.download)
 		{
-			for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
-			{
-				oldpackets[i] = other.oldpackets[i];
-			}
 		}
 
 		client_t& operator=(const client_t& other)
@@ -382,8 +358,7 @@ public:
 			reliablebuf = other.reliablebuf;
 			version = other.version;
 			packedversion = other.packedversion;
-			sequence = other.sequence;
-			last_sequence = other.last_sequence;
+			reliableSendSequencer = other.reliableSendSequencer;
 			packetnum = other.packetnum;
 			rate = other.rate;
 			reliable_bps = other.reliable_bps;
@@ -395,10 +370,6 @@ public:
 			allow_rcon = false;
 			displaydisconnect = true;
 			download = other.download;
-			for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
-			{
-				oldpackets[i] = other.oldpackets[i];
-			}
 
 			return *this;
 		}
