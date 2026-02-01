@@ -279,14 +279,14 @@ class PlayerSnapshot : public Snapshot
 {
 public:
 	PlayerSnapshot(int time = -1);
-	PlayerSnapshot(int time, player_t *player);
+	PlayerSnapshot(int time, const player_t& player);
 	~PlayerSnapshot() override {};
 
 	[[nodiscard]] bool operator==(const PlayerSnapshot &other) const;
 
 	void merge(const PlayerSnapshot& other);
 
-	void toPlayer(player_t *player) const;
+	void toPlayer(player_t& player) const;
 
 	fixed_t getViewHeight() const		{ return mViewHeight; }
 	fixed_t getDeltaViewHeight() const	{ return mDeltaViewHeight; }
@@ -737,7 +737,7 @@ private:
 //
 // ============================================================================
 
-void P_SetPlayerSnapshotNoPosition(player_t *player, const PlayerSnapshot &snap);
+void P_SetPlayerSnapshotNoPosition(player_t& player, const PlayerSnapshot &snap);
 
 ActorSnapshot P_LerpActorPosition(const ActorSnapshot &from, const ActorSnapshot &to, float amount);
 ActorSnapshot P_ExtrapolateActorPosition(const ActorSnapshot &from, float amount);

@@ -56,7 +56,7 @@
 #include "g_skill.h"
 #include "p_mapformat.h"
 
-argb_t CL_GetPlayerColor(player_t*);
+argb_t CL_GetPlayerColor(const player_t&);
 
 EXTERN_CVAR(am_followplayer)
 
@@ -1735,7 +1735,7 @@ void AM_drawPlayers()
 		}
 		else
 		{
-			color.rgb = CL_GetPlayerColor(&p);
+			color.rgb = CL_GetPlayerColor(p);
 			color.index = V_BestColor(V_GetDefaultPalette()->basecolors, color.rgb);
 		}
 

@@ -39,7 +39,7 @@
 #include "r_state.h"
 
 
-extern void P_CalcHeight (player_t *player);
+void P_CalcHeight (player_t& player);
 
 // [AM] From ZDoom SVN, modified for use with Odamex and without the
 //      buggy 2.0.x teleport behavior compatibility fix.  Thanks to both
@@ -403,7 +403,7 @@ bool EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* l
 		player->deltaviewheight = 0;
 
 		// Set player's view according to the newly set parameters
-		P_CalcHeight(player);
+		P_CalcHeight(*player);
 
 		// Reset the delta to have the same dynamics as before
 		player->deltaviewheight = deltaviewheight;
@@ -526,7 +526,7 @@ bool EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 				player->deltaviewheight = 0;
 
 				// Set player's view according to the newly set parameters
-				P_CalcHeight(player);
+				P_CalcHeight(*player);
 
 				// Reset the delta to have the same dynamics as before
 				player->deltaviewheight = deltaviewheight;

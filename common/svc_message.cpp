@@ -45,10 +45,10 @@
 /**
  * @brief Pack an array of booleans into a bitfield.
  */
-static uint32_t PackBoolArray(const bool* bools, size_t count)
+static uint32_t PackBoolArray(nonstd::span<const bool> bools)
 {
 	uint32_t out = 0;
-	for (size_t i = 0; i < count; i++)
+	for (size_t i = 0; i < bools.size(); i++)
 	{
 		if (bools[i])
 		{
@@ -77,10 +77,10 @@ odaproto::svc::PlayerInfo SVC_PlayerInfo(const player_t& player)
 {
 	odaproto::svc::PlayerInfo msg;
 
-	uint32_t packedweapons = PackBoolArray(player.weaponowned.data(), NUMWEAPONS);
+	uint32_t packedweapons = PackBoolArray(player.weaponowned);
 	msg.mutable_player()->set_weaponowned(packedweapons);
 
-	uint32_t packedcards = PackBoolArray(player.cards, NUMCARDS);
+	uint32_t packedcards = PackBoolArray(player.cards);
 	msg.mutable_player()->set_cards(packedcards);
 
 	msg.mutable_player()->set_backpack(player.backpack);
@@ -583,7 +583,7 @@ odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player)
 
 	if (sv_sharekeys)
 	{
-		const uint32_t packedcards = PackBoolArray(player.cards, NUMCARDS);
+		const uint32_t packedcards = PackBoolArray(player.cards);
 		msg.set_cards(packedcards);
 	}
 
@@ -993,11 +993,11 @@ odaproto::svc::PlaySound SVC_PlaySound(const PlaySoundType& type, int channel, i
 	return msg;
 }
 
-odaproto::svc::TouchSpecial SVC_TouchSpecial(const AActor* mo)
+odaproto::svc::TouchSpecial SVC_TouchSpecial(const AActor& mo)
 {
 	odaproto::svc::TouchSpecial msg;
 
-	msg.set_netid(mo->netid);
+	msg.set_netid(mo.netid);
 
 	return msg;
 }

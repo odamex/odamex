@@ -134,7 +134,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 		player.cheats = CF_CHASECAM;
 
 	// setup gun psprite
-	P_SetupPsprites(&player);
+	P_SetupPsprites(player);
 
 	// give all cards in death match mode
 	if (!G_IsCoopGame())
