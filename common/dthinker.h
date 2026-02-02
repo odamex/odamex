@@ -26,6 +26,7 @@
 
 #pragma once
 
+#include <optional>
 #include <stdlib.h>
 #include "dobject.h"
 
@@ -78,7 +79,12 @@ public:
 
 	size_t refCount;
 
+	static const std::vector<DThinker*>& GetThinkerVectorRef() { return s_thinkers; }
 private:
+
+	static std::vector<DThinker*> s_thinkers;
+
+	std::optional<size_t> m_optionalVectorIndex;
 	DThinker *m_Next, *m_Prev;
 	bool destroyed;
 

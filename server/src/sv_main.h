@@ -33,6 +33,11 @@
 
 extern bool keysfound[NUMCARDS];
 
+// The server tracks ping up until 999 msec.  This is the most that we record into
+// the player structure and the point at which we turn off reliable message
+// retransmissions.
+constexpr int MAX_PING = 999;
+
 class client_c
 {
 public:
@@ -122,11 +127,13 @@ void SV_ConnectClient(void);
 void SV_ConnectClient2(player_t& player);
 void SV_WriteCommands(void);
 void SV_ClearClientsBPS(void);
+bool SV_MustThrottleTransmissionsForClient(client_t& client);
 bool SV_SendPacket(player_t &pl);
 void SV_AcknowledgePacket(player_t &player);
 void SV_DisplayTics();
 void SV_RunTics();
 void SV_ParseCommands(player_t &player);
+void SV_HandleReliableRetransmissions();
 void SV_UpdateFrags (const player_t &player);
 void SV_RemoveCorpses (void);
 #define SV_DropClient(who) SV_DropClient2(who, __FILE__, __LINE__)
