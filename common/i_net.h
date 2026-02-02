@@ -26,7 +26,7 @@
 // Default buffer size for a UDP packet.
 // This constant seems to be used as a default buffer size and should
 // probably not be considered a reasonable MTU.
-#define MAX_UDP_PACKET 8192
+#define MAX_UDP_PACKET 2048
 
 // Maximum safe size for a packet transmitted over UDP.
 // This number comes from Steamworks and seems to be a reasonable default.
