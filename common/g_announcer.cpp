@@ -61,6 +61,30 @@ bool AnnouncerManager::isAnnouncerLoaded(const std::string& announcer) const
 	return announcerDict.find(announcer) != announcerDict.end();
 }
 
+bool AnnouncerManager::namedTokenExists(const std::string& tokenName)
+{
+	// Build a list of all tokens if we haven't already.
+	if (allTokens.size() == 0)
+	{
+		allTokens.insert(allTokens.end(), announcerCTFTokens.begin(), announcerCTFTokens.end());
+		allTokens.insert(allTokens.end(), announcerHordeTokens.begin(), announcerHordeTokens.end());
+		allTokens.insert(allTokens.end(), announcerSurvivalTokens.begin(), announcerSurvivalTokens.end());
+		allTokens.insert(allTokens.end(), announcerCountdownTokens.begin(), announcerCountdownTokens.end());
+		allTokens.insert(allTokens.end(), announcerTimeWarningsTokens.begin(), announcerTimeWarningsTokens.end());
+		allTokens.insert(allTokens.end(), announcerFirstBloodTokens.begin(), announcerFirstBloodTokens.end());
+		allTokens.insert(allTokens.end(), announcerFragTrackingTokens.begin(), announcerFragTrackingTokens.end());
+		allTokens.insert(allTokens.end(), announcerLeadTrackingTokens.begin(), announcerLeadTrackingTokens.end());
+		allTokens.insert(allTokens.end(), announcerResultTrackingTokens.begin(), announcerResultTrackingTokens.end());
+	}
+
+	if (std::find(allTokens.begin(), allTokens.end(), tokenName) != allTokens.end())
+	{
+		return true;
+	}
+
+	return false;
+}
+
 std::string AnnouncerManager::getLeftAnnouncer(const std::string& currentAnnouncer) const
 {
 	if (announcerDict.empty())

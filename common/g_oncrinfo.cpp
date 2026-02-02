@@ -28,6 +28,123 @@
 #include "gstrings.h"
 #include "g_announcer.h"
 
+static void ParseSpreeAndMulti(OScanner& os,
+                               std::unordered_map<std::string, std::string>& soundDict)
+{
+	std::string token = StdStringToLower(os.getToken());
+	os.mustScan();
+	os.assertTokenIs("=");
+	os.mustScanInt();
+	int level = os.getTokenInt();
+
+	std::string tokenName = token + " " + std::to_string(level);
+
+	soundDict[tokenName] = token;
+}
+
+static void ParseAnnouncerToken(OScanner& os,
+																std::unordered_map<std::string, std::string>& soundDict)
+{
+	std::string tokenName = StdStringToLower(os.getToken());
+	os.mustScan();
+	os.assertTokenIs("=");
+	os.mustScan();
+	std::string token = os.getToken();
+	soundDict[tokenName] = token;
+}
+
+static void ParseMetadata(OScanner& os, AnnouncerMetaData_s& metaData,
+                          const std::string& fieldName)
+{
+	os.mustScan();
+	os.assertTokenIs("=");
+	os.mustScan();
+
+	std::string token = os.getToken();
+
+	if (fieldName == "name")
+	{
+		metaData.name = token;
+	}
+	else if (fieldName == "description")
+	{
+		metaData.description = token;
+	}
+	else if (fieldName == "author")
+	{
+		metaData.author = token;
+	}
+	else
+	{
+		os.error(fmt::format("ParseMetadata called with unknown field name \"{}\".",
+		                     fieldName));
+	}
+}
+
+static void ParseOncrInfo(const int lump, const OLumpName name)
+{
+	char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_CACHE));
+
+	const OScannerConfig config = {
+	    "ONCRINFO", // lumpName
+	    false,      // semiComments
+	    true,       // cComments
+	};
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
+
+	while (os.scan())
+	{
+		os.mustScan();
+		os.assertTokenNoCaseIs("{");
+		os.scan();
+
+		std::unordered_map<std::string, std::string> soundDict;
+		AnnouncerMetaData_s metaData = AnnouncerMetaData_s();
+
+		while (!os.compareToken("}"))
+		{
+			// Parse metadata
+			if (os.compareTokenNoCase("name"))
+			{
+				ParseMetadata(os, metaData, "name");
+			}
+			else if (os.compareTokenNoCase("description"))
+			{
+				ParseMetadata(os, metaData, "description");
+			}
+			else if (os.compareTokenNoCase("author"))
+			{
+				ParseMetadata(os, metaData, "author");
+			}
+			// Parse announcer tokens
+			// Compare the token against known token groups to see
+			// if its valid.
+			else if (AnnouncerManager::getInstance().namedTokenExists(StdStringToLower(os.getToken())))
+			{
+				ParseAnnouncerToken(os, soundDict);
+			}
+			else if (os.compareTokenNoCase("multi") || os.compareTokenNoCase("spree"))
+			{
+				ParseSpreeAndMulti(os, soundDict);
+			}
+			else
+			{
+				// We don't know what this token is.
+				std::string buffer =
+						fmt::sprintf("Unknown ONCRINFO Token \"%s\".", os.getToken());
+				os.warning(buffer);
+			}
+		}
+
+		bool didScan = os.scan();
+		if (!didScan)
+		{
+			break;
+		}
+		continue;
+	}
+}
+
 void G_ParseOncrInfo()
 {
 	int lump = -1;
@@ -43,6 +160,6 @@ void G_ParseOncrInfo()
 
 	while ((lump = W_FindLump("ONCRINFO", lump)) != -1)
 	{
-		//ParseOncrInfo(lump, "ONCRINFO");
+		ParseOncrInfo(lump, "ONCRINFO");
 	}
 }

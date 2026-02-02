@@ -278,7 +278,8 @@ static const std::vector<std::string> announcerHordeTokens = {ANN_HORDEBOSSSPAWN
 /// <summary>
 /// Contains tokens that would be disabled if snd_announcesurvival is false.
 /// </summary>
-static const std::vector<std::string> announcerSurvivalTokens = {ANN_LASTPLAYERALIVE,
+static const std::vector<std::string> announcerSurvivalTokens = {
+    ANN_LASTPLAYERALIVE,
                                                                  ANN_PLAYERELIMINATED};
 
 /// <summary>
@@ -396,6 +397,14 @@ public:
 	/// <param name="announcer">Name of the announcer pack to check.</param>
 	/// <returns>True if the name matches a currently available announcer.</returns>
 	bool isAnnouncerLoaded(const std::string& announcer) const;
+
+	/// <summary>
+	/// Returns if a named token exists in our repository of named tokens.
+	/// Will NOT return true for spree or multi tokens, as those are dynamically generated.
+	/// </summary>
+	/// <param name="tokenName">Name of the token to search.</param>
+	/// <returns>True if the token is found.</returns>
+	bool namedTokenExists(const std::string& tokenName);
 
 	/// <summary>
 	/// Gets the name of the announcer to the left of the current one.
@@ -615,6 +624,11 @@ public:
 	void loadAnnouncerByName(const std::string& announcer);
 
 private:
+	/// <summary>
+	/// Contains every named token for announcer packs.
+	/// Must run namedTokenExists() to fill this vector.
+	/// </summary>
+	std::vector<std::string> allTokens;
 	/// <summary>
 	/// Has the 3-frag warning been announced already?
 	/// </summary>
