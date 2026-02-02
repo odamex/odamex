@@ -27,6 +27,9 @@
 
 // Standard libc/STL includes we use in countless places
 
+#include <limits>
+#include <span>
+
 #include "version.h"
 #include "errors.h"
 
