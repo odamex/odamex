@@ -19,7 +19,7 @@ Odamex supports the following features:
 * Playback of vanilla demos
 * A fully-featured client netdemo record system with playback control
 * Removal of most vanilla Doom Static limits
-* Support for most Boom and MBF mapping features
+* Support for most Boom, Marine's Best Friend (MBF), MBF21, DEHEXTRA, and DSDHacked features.
 * The traditional old-school style of Deathmatch and a Cooperative mode, but also other game modes such as Team Deathmatch and Capture the Flag
 * Support for Horde, Survival, Last Man Standing, Last Team Standing, LMS CTF, 3-WAY CTF, and Attack & Defend game modes
 * Competitive-ready features, such as a warmup mode, round system, player queue, or playercolor overriding
