@@ -93,11 +93,11 @@ You can restore this functionality by doing the following:
 3. Replace the encrypted IWADs with your own set of encrypted IWADs.
    1. Delete the **.bin** files.  These are the upstream encrypted IWADS.
    1. Copy your IWADS into the directory.  The following IWADs (latest versions, see md5sums) are needed to run all tests:
-      - `doom     : C4FE9FD920207691A9F493668E0A2083`
-      - `doom1    : F0CEFCA49926D00903CF57551D901ABE` ([shareware IWAD](https://doomwiki.org/wiki/DOOM1.WAD))
-      - `doom2    : 25E1459CA71D321525F84628F45CA8CD`
-      - `tnt      : 4E158D9953C79CCF97BD0663244CC6B6`
-      - `plutonia : 75C8CF89566741FA9D22447604053BD7`
+      - `doom     : C4FE9FD920207691A9F493668E0A2083` (Ultimate Doom v1.9)
+      - `doom1    : F0CEFCA49926D00903CF57551D901ABE` ([Ultimate Doom v1.9 shareware IWAD](https://doomwiki.org/wiki/DOOM1.WAD))
+      - `doom2    : 25E1459CA71D321525F84628F45CA8CD` (Doom 2 v1.9)
+      - `tnt      : 4E158D9953C79CCF97BD0663244CC6B6` (TNT: Evilution v1.9)
+      - `plutonia : 75C8CF89566741FA9D22447604053BD7` (The Plutonia Experiment v1.9)
    1. Generate an encryption key:
       ```
       python .\secret.py genkey
