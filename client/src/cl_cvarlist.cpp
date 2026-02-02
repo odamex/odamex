@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -177,6 +177,23 @@ CVAR(					am_ovexitcolor, "ff ff 00", "",
 CVAR(					am_ovteleportcolor, "ff a3 00", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR(					am_ovminimap, "0", "Overlay minimap enabled",
+						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(					am_ovbackcolor, "00 00 00", "Overlay minimap background color",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_RANGE(				am_ovbackalpha, "0.25", "Transparency of overlay minimap background",
+						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(				am_ovscalewidth, "0.25", "Scale width of overlay minimap",
+						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(				am_ovscaleheight, "0.5", "Scale height of overlay minimap",
+						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(				am_ovlocation, "1", "Overlay minimap location (0:LeftTop, 1:LeftMid, 2:LeftBot, 3:RightTop, 4:RightMid, 5:RightBot)",
+						CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 5.0f)
 
 // Console
 // -------
@@ -745,6 +762,9 @@ CVAR(			r_drawflat, "0", "Disables all texturing of walls, floors and ceilings",
 				CVARTYPE_BOOL, CVAR_NULL)
 
 CVAR(			r_clipmaskedspecial, "1", "Vertically clip masked midtextures when surrounding sectors have differing specials (mimics Hexen and DSDA-Doom behavior)",
+				CVARTYPE_BOOL, CVAR_NULL)
+
+CVAR(			r_thingsectorlight, "0", "Things are lit according to the average of the transfered light levels (mimics MBF behavior)",
 				CVARTYPE_BOOL, CVAR_NULL)
 
 #if 0

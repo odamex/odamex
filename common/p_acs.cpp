@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -39,6 +39,7 @@
 #include "m_vectors.h"
 #include "p_inter.h"
 #include "gi.h"
+#include "g_skill.h"
 
 #if defined(SERVER_APP)
 #include "sv_main.h"
@@ -1562,7 +1563,7 @@ int DLevelScript::CountPlayers()
 	return static_cast<int>(P_NumPlayersInGame());
 }
 
-void DLevelScript::ACS_SetLineTexture(int* args, byte argCount)
+void DLevelScript::ACS_SetLineTexture(const int* args, byte argCount)
 {
 	if (argCount < 4)
 		return;
@@ -1591,7 +1592,7 @@ void DLevelScript::ACS_Print(byte pcd, AActor* activator, const char* print)
 	}
 }
 
-void DLevelScript::ACS_ChangeMusic(byte pcd, AActor* activator, int* args, byte argCount)
+void DLevelScript::ACS_ChangeMusic(byte pcd, const AActor* activator, const int* args, byte argCount)
 {
 	if (argCount < 2)
 		return;
@@ -1599,7 +1600,7 @@ void DLevelScript::ACS_ChangeMusic(byte pcd, AActor* activator, int* args, byte 
 	ChangeMusic(pcd, activator, args[0], args[1]);
 }
 
-void DLevelScript::ACS_StartSound(byte pcd, AActor* activator, int* args, byte argCount)
+void DLevelScript::ACS_StartSound(byte pcd, const AActor* activator, const int* args, byte argCount)
 {
 	if (pcd == PCD_SECTORSOUND)
 	{
@@ -1626,7 +1627,7 @@ void DLevelScript::ACS_StartSound(byte pcd, AActor* activator, int* args, byte a
 	}
 }
 
-void DLevelScript::ACS_SetLineBlocking(int* args, byte argCount)
+void DLevelScript::ACS_SetLineBlocking(const int* args, byte argCount)
 {
 	if (argCount < 2)
 		return;
@@ -1634,7 +1635,7 @@ void DLevelScript::ACS_SetLineBlocking(int* args, byte argCount)
 	SetLineBlocking(args[0], args[1]);
 }
 
-void DLevelScript::ACS_SetLineMonsterBlocking(int* args, byte argCount)
+void DLevelScript::ACS_SetLineMonsterBlocking(const int* args, byte argCount)
 {
 	if (argCount < 2)
 		return;
@@ -1642,7 +1643,7 @@ void DLevelScript::ACS_SetLineMonsterBlocking(int* args, byte argCount)
 	SetLineMonsterBlocking(args[0], args[1]);
 }
 
-void DLevelScript::ACS_SetLineSpecial(int* args, byte argCount)
+void DLevelScript::ACS_SetLineSpecial(const int* args, byte argCount)
 {
 	if (argCount < 7)
 		return;
@@ -1650,7 +1651,7 @@ void DLevelScript::ACS_SetLineSpecial(int* args, byte argCount)
 	SetLineSpecial(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);
 }
 
-void DLevelScript::ACS_SetThingSpecial(int* args, byte argCount)
+void DLevelScript::ACS_SetThingSpecial(const int* args, byte argCount)
 {
 	if (argCount < 7)
 		return;
@@ -1660,7 +1661,7 @@ void DLevelScript::ACS_SetThingSpecial(int* args, byte argCount)
 		SetThingSpecial(actor, args[1], args[2], args[3], args[4], args[5], args[6]);
 }
 
-void DLevelScript::ACS_FadeRange(AActor* activator, int* args, byte argCount)
+void DLevelScript::ACS_FadeRange(AActor* activator, const int* args, byte argCount)
 {
 	if (argCount < 9)
 		return;
@@ -1673,7 +1674,7 @@ void DLevelScript::ACS_CancelFade(AActor* actor)
 	CancelFade(actor);
 }
 
-void DLevelScript::ACS_ChangeFlat(byte pcd, int* args, byte argCount)
+void DLevelScript::ACS_ChangeFlat(byte pcd, const int* args, byte argCount)
 {
 	if (argCount < 2)
 		return;
@@ -1681,7 +1682,7 @@ void DLevelScript::ACS_ChangeFlat(byte pcd, int* args, byte argCount)
 	ChangeFlat(args[0], args[1], pcd == PCD_CHANGECEILING);
 }
 
-void DLevelScript::ACS_SoundSequence(int* args, byte argCount)
+void DLevelScript::ACS_SoundSequence(const int* args, byte argCount)
 {
 	if (argCount < 2)
 		return;
@@ -1831,7 +1832,7 @@ void DLevelScript::ActivateLineSpecial(byte special, line_t* line, AActor* activ
 	}
 }
 
-void DLevelScript::ChangeMusic(byte pcd, AActor* activator, int index, int loop)
+void DLevelScript::ChangeMusic(byte pcd, const AActor* activator, int index, int loop)
 {
 	bool local = (pcd == PCD_LOCALSETMUSIC || pcd == PCD_LOCALSETMUSICDIRECT);
 
@@ -1854,7 +1855,7 @@ void DLevelScript::ChangeMusic(byte pcd, AActor* activator, int index, int loop)
 }
 
 
-void DLevelScript::StartSound(byte pcd, AActor* activator, int channel, int index, int volume, int attenuation)
+void DLevelScript::StartSound(byte pcd, const AActor* activator, int channel, int index, int volume, int attenuation)
 {
 	bool local = pcd == PCD_LOCALAMBIENTSOUND;
 
@@ -1876,7 +1877,7 @@ void DLevelScript::StartSound(byte pcd, AActor* activator, int channel, int inde
 	}
 }
 
-void DLevelScript::StartSectorSound(byte pcd, sector_t* sector, int channel, int index, int volume, int attenuation)
+void DLevelScript::StartSectorSound(byte pcd, const sector_t* sector, int channel, int index, int volume, int attenuation)
 {
 	if (clientside)
 	{
@@ -1894,7 +1895,7 @@ void DLevelScript::StartSectorSound(byte pcd, sector_t* sector, int channel, int
 	}
 }
 
-void DLevelScript::StartThingSound(byte pcd, AActor* actor, int channel, int index, int volume, int attenuation)
+void DLevelScript::StartThingSound(byte pcd, const AActor* actor, int channel, int index, int volume, int attenuation)
 {
 	if (clientside)
 	{
@@ -3340,7 +3341,7 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_GAMESKILL:
-			PushToStack (sv_skill);
+			PushToStack (G_GetCurrentSkill().ACS_return);
 			break;
 
 // [BC] Start ST PCD's
@@ -4078,7 +4079,7 @@ void strbin (char *str)
 	while ( (c = *p++) ) {
 		if (c != '\\') {
 			*str++ = c;
-		} else {
+		} else if (*p) {
 			switch (*p) {
 				case 'c':
 					*str++ = '\034';	// TEXTCOLOR_ESCAPE
@@ -4136,6 +4137,10 @@ void strbin (char *str)
 					break;
 			}
 			p++;
+		}
+		else
+		{
+			// Trainling backlash
 		}
 	}
 	*str = 0;

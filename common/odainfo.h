@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 // Copyright (C) 2024-2025 by Christian Bernard.
 //
 // This program is free software; you can redistribute it and/or

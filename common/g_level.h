@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -98,6 +98,7 @@ class FBehavior;
 struct bossaction_t
 {
 	int32_t type    = MT_NULL;
+	int32_t flags   = 0;
 	int16_t special = 0;
 	int16_t tag     = 0;
 };
@@ -420,7 +421,7 @@ inline std::array<ACSWorldGlobalArray, NUM_WORLDVARS> ACS_WorldArrays;
 inline std::array<int, NUM_GLOBALVARS> ACS_GlobalVars;
 inline std::array<ACSWorldGlobalArray, NUM_GLOBALVARS> ACS_GlobalArrays;
 
-extern bool savegamerestore;
+inline bool savegamerestore;
 
 void G_InitNew(const char *mapname);
 inline void G_InitNew(const OLumpName& mapname) { G_InitNew(mapname.c_str()); }

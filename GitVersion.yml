@@ -1,3 +1,6 @@
+strategies:
+- Fallback
+- VersionInBranchName
 branches:
   release:
     regex: ^release[/-]

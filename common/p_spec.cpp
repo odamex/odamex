@@ -5,7 +5,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -79,7 +79,7 @@ std::list<sector_t*> specialdoors;
 bool s_SpecialFromServer;
 
 int P_FindSectorFromLineTag(int tag, int start);
-bool EV_DoDoor(DDoor::EVlDoor type, line_t* line, AActor* thing, int tag, int speed,
+bool EV_DoDoor(DDoor::EVlDoor type, line_t* line, const AActor* thing, int tag, int speed,
                int delay, card_t lock);
 bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
 bool P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
@@ -196,7 +196,7 @@ int P_ArgToCrush(byte arg)
  * Returns nonzero if the object is under damage based on
  * their current position.
  */
-int P_IsUnderDamage(AActor* actor)
+int P_IsUnderDamage(const AActor* actor)
 {
 	const struct msecnode_s* seclist;
 	const DCeiling* cr; // Crushing ceiling
@@ -219,7 +219,7 @@ int P_IsUnderDamage(AActor* actor)
 * @param actor - Source actor
 * @param friendshiptest - Thing to test friendliness
 */
-bool P_IsFriendlyThing(AActor* actor, AActor* friendshiptest)
+bool P_IsFriendlyThing(const AActor* actor, const AActor* friendshiptest)
 {
 	if (!actor || !friendshiptest)
 	{
@@ -295,8 +295,7 @@ void P_AddMovingCeiling(sector_t *sector)
 	}
 	else
 	{
-		movingsectors.emplace_back();
-		movesec = &(movingsectors.back());
+		movesec = &(movingsectors.emplace_back());
 	}
 
 	movesec->sector = sector;
@@ -330,8 +329,7 @@ void P_AddMovingFloor(sector_t *sector)
 	}
 	else
 	{
-		movingsectors.emplace_back();
-		movesec = &(movingsectors.back());
+		movesec = &(movingsectors.emplace_back());
 	}
 
 	movesec->sector = sector;
@@ -2242,7 +2240,7 @@ void P_CollectSecretCommon(sector_t* sector, player_t* player)
 #ifdef SERVER_APP
 	SV_UpdateSecret(*sector, *player); // Update the sector to all clients so that they
 	                                   // don't discover an already found secret.
-#else
+#elif defined(CLIENT_APP)
 	if (player->mo == consoleplayer().camera)
 		C_RevealSecret(); // Display the secret revealed message
 #endif

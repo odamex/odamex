@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -672,6 +672,52 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			mo->radius = msg->args().Get(0) << FRACBITS;
 		if (msg->args_size() >= 2)
 			mo->height = msg->args().Get(1) << FRACBITS;
+	}
+
+	if (type == MT_SKYVIEWPOINT)
+	{
+		// mo->angle = msg->current().angle(); // done above
+		// If this actor has no TID, make it the default sky box
+		if (mo->tid == 0)
+		{
+			int j;
+
+			for (j = 0; j < numsectors; j++)
+			{
+				if (sectors[j].Skybox == NULL)
+				{
+					sectors[j].Skybox = mo->ptr();
+				}
+			}
+		}
+	}
+
+	if (type == MT_SKYPICKER)
+	{
+		if (!mo || !mo->subsector)
+			return;
+
+		sector_t* sector = mo->subsector->sector;
+		if (mo->args[0] == 0)
+		{
+			sector->Skybox = AActor::AActorPtr();
+		}
+		else
+		{
+			TActorIterator<AActor> iterator(mo->args[0]);
+			AActor* box = iterator.Next();
+
+			if (box != NULL && box->type == MT_SKYVIEWPOINT)
+			{
+				sector->Skybox = box->ptr();
+			}
+			else
+			{
+				PrintFmt("Can't find SkyViewpoint {} for sector {}\n", mo->args[0],
+				         sector - sectors);
+			}
+		}
+		mo->Destroy();
 	}
 
 	if (msg->spawn_flags() & SVC_SM_FLAGS)

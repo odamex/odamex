@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1084,52 +1084,42 @@ static constexpr identData_t identdata[] = {
 class WadFileLumpFinder
 {
 public:
-	WadFileLumpFinder(const std::string& filename) :
-		mNumLumps(0), mLumps(NULL)
+	WadFileLumpFinder(const std::string& filename)
 	{
-		FILE* fp = fopen(filename.c_str(), "rb");
-		if (fp)
+		if (auto fp = uqFile(fopen(filename.c_str(), "rb")))
 		{
 			wadinfo_t header;
-			if (fread(&header, sizeof(header), 1, fp) == 1)
+			if (fread(&header, sizeof(header), 1, fp.get()) == 1)
 			{
 				header.identification = LELONG(header.identification);
 				header.infotableofs = LELONG(header.infotableofs);
 
 				if (header.identification == IWAD_ID || header.identification == PWAD_ID)
 				{
-					if (fseek(fp, header.infotableofs, SEEK_SET) == 0)
+					if (fseek(fp.get(), header.infotableofs, SEEK_SET) == 0)
 					{
 						mNumLumps = LELONG(header.numlumps);
-						mLumps = new filelump_t[mNumLumps];
+						mLumps = std::make_unique<filelump_t[]>(mNumLumps);
 
-						if (fread(mLumps, mNumLumps * sizeof(*mLumps), 1, fp) != 1)
+						if (fread(mLumps.get(), sizeof(mLumps[0]), mNumLumps, fp.get()) != mNumLumps)
 							mNumLumps = 0;
 					}
 				}
 			}
-
-			fclose(fp);
 		}
-	}
-
-	~WadFileLumpFinder()
-	{
-		if (mLumps)
-			delete [] mLumps;
 	}
 
 	bool exists(const std::string& lumpname)
 	{
 		for (size_t i = 0; i < mNumLumps; i++)
-			if (iequals(lumpname, std::string(mLumps[i].name, 8)))
+			if (iequals(lumpname, std::string_view(mLumps[i].name, 8)))
 				return true;
 		return false;
 	}
 
 private:
-	size_t		mNumLumps;
-	filelump_t*	mLumps;
+	size_t mNumLumps = 0;
+	std::unique_ptr<filelump_t[]> mLumps{};
 };
 
 

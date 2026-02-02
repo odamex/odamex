@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,12 +33,12 @@ typedef void (*planefunction_t) (int top, int bottom);
 extern planefunction_t	floorfunc;
 extern planefunction_t	ceilingfunc_t;
 
-extern int  			*floorclip;
-extern int  			*ceilingclip;
-extern int				*floorclipinitial;
-extern int				*ceilingclipinitial;
+extern std::unique_ptr<int[]> floorclip;
+extern std::unique_ptr<int[]> ceilingclip;
+extern std::unique_ptr<int[]> floorclipinitial;
+extern std::unique_ptr<int[]> ceilingclipinitial;
 
-extern fixed_t			*yslope;
+extern std::unique_ptr<fixed_t[]> yslope;
 
 void R_InitPlanes (void);
 void R_ClearPlanes (bool fullclear);
@@ -56,7 +56,7 @@ R_MakeSpans
   int		b1,
   int		t2,
   int		b2 );
-  
+
 void R_DrawPlanes (void);
 void R_DrawSkyBoxes (void);
 

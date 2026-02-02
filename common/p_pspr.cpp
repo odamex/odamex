@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1171,13 +1171,13 @@ void A_WeaponMeleeAttack(AActor* mo)
 //
 void A_WeaponSound(AActor *mo)
 {
-	player_t* player = mo->player;
-	struct pspdef_s* psp = &player->psprites[player->psprnum];
+	const player_t* player = mo->player;
+	const pspdef_s* psp = &player->psprites[player->psprnum];
 
 	if (!psp->state)
 		return;
 
-	int sndmap = psp->state->args[0];
+	const int sndmap = psp->state->args[0];
 	const char* snd;
 
 	auto soundIt = SoundMap.find(sndmap);

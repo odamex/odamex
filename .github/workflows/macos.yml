@@ -30,7 +30,7 @@ jobs:
     name: Build
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
     - name: Checkout source
       uses: actions/checkout@v4
@@ -40,3 +40,5 @@ jobs:
       run: bash ci/macos-buildgen.sh
     - name: Run build
       run: cmake --build ./build/
+    - name: Run unit tests
+      run: ./build/tests/unit-tests/odagtest --gtest_color=yes

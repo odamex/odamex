@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -187,11 +187,11 @@ extern void (*R_DrawSpanD)(void);
 extern void (*R_DrawSlopeSpanD)(void);
 extern void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 
-extern byte bosstable[256];
-extern byte friendtable[256];
-extern byte greentable[MAXPLAYERS+1][256];
-extern byte redtable[MAXPLAYERS + 1][256];
-extern byte*			translationtables;
+inline byte bosstable[256];
+inline byte friendtable[256];
+inline byte greentable[MAXPLAYERS+1][256];
+inline byte redtable[MAXPLAYERS + 1][256];
+inline byte*			translationtables;
 extern argb_t           translationRGB[MAXPLAYERS+1][16];
 
 enum

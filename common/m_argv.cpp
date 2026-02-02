@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -352,17 +352,11 @@ void M_FindResponseFile (void)
 	{
 		if (Args.GetArg(i)[0] == '@')
 		{
-			char	**argv;
-			char	*file;
-			size_t	argc;
-			int		argcinresp;
-			FILE	*handle;
-			int 	size;
-			long	argsize;
+			std::unique_ptr<char[]> file;
 			size_t 	index;
 
 			// READ THE RESPONSE FILE INTO MEMORY
-			handle = fopen (Args.GetArg(i) + 1,"rb");
+			auto handle = uqFile(fopen(Args.GetArg(i) + 1,"rb"));
 			if (!handle)
 			{ // [RH] Make this a warning, not an error.
 				PrintFmt(PRINT_WARNING,"No such response file ({})!", Args.GetArg(i) + 1);
@@ -370,26 +364,26 @@ void M_FindResponseFile (void)
 			}
 
 			PrintFmt(PRINT_HIGH,"Found response file {}!\n", Args.GetArg(i) + 1);
-			fseek (handle, 0, SEEK_END);
-			size = ftell (handle);
-			fseek (handle, 0, SEEK_SET);
-			file = new char[size+1];
-			size_t readlen = fread (file, size, 1, handle);
+			fseek (handle.get(), 0, SEEK_END);
+			auto size = ftell (handle.get());
+			fseek (handle.get(), 0, SEEK_SET);
+			file = std::make_unique<char[]>(size+1);
+			size_t readlen = fread (file.get(), size, 1, handle.get());
 			if (readlen < 1)
 			{
 				PrintFmt(PRINT_HIGH,"Failed to read response file {}.\n", Args.GetArg(i) + 1);
 			}
 			file[size] = 0;
-			fclose (handle);
 
-			argsize = ParseCommandLine (file, &argcinresp, NULL);
-			argc = argcinresp + Args.NumArgs() - 1;
+			int	argcinresp;
+			const auto argsize = ParseCommandLine(file.get(), &argcinresp, nullptr);
+			const size_t argc = argcinresp + Args.NumArgs() - 1;
 
 			if (argc != 0)
 			{
-				argv = (char **) M_Malloc(argc*sizeof(char *) + argsize);
+				char **argv = (char **) M_Malloc(argc*sizeof(char *) + argsize);
 				argv[i] = (char *)argv + argc*sizeof(char *);
-				ParseCommandLine (file, NULL, argv+i);
+				ParseCommandLine (file.get(), NULL, argv+i);
 
 				for (index = 0; index < i; ++index)
 					argv[index] = (char*)Args.GetArg (index);
@@ -402,8 +396,6 @@ void M_FindResponseFile (void)
 
 				M_Free(argv);
 			}
-
-			delete[] file;
 
 			// DISPLAY ARGS
 			PrintFmt("{} command-line args:\n", Args.NumArgs());

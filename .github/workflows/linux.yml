@@ -45,6 +45,8 @@ jobs:
       uses: ammaraskar/gcc-problem-matcher@master
     - name: Run build
       run: cmake --build ./build/
+    - name: Run unit tests
+      run: ./build/tests/unit-tests/odagtest --gtest_color=yes
     - name: Prepare artifact
       run: bash ci/ubuntu-artifact.sh
     - name: Upload artifact
@@ -69,6 +71,8 @@ jobs:
       run: bash ci/ubuntu-buildgen.sh
     - name: Run build
       run: cmake --build ./build/
+    - name: Run unit tests
+      run: ./build/tests/unit-tests/odagtest --gtest_color=yes
   build-arm:
     name: Build (ARM64)
     needs: pre_job
@@ -85,6 +89,8 @@ jobs:
       uses: ammaraskar/gcc-problem-matcher@master
     - name: Run build
       run: cmake --build ./build/
+    - name: Run unit tests
+      run: ./build/tests/unit-tests/odagtest --gtest_color=yes
   build-fedora:
     name: Build (Fedora 34)
     needs: pre_job

@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1997-2000 by id Software Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -507,14 +507,14 @@ static int _isspace(int c)
 // Trim whitespace from the start of a string
 std::string &TrimStringStart(std::string &s)
 {
-	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not_fn([](int c){ return _isspace(c); })));
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not_fn( _isspace )));
 	return s;
 }
 
 // Trim whitespace from the end of a string
 std::string &TrimStringEnd(std::string &s)
 {
-	s.erase(std::find_if(s.rbegin(), s.rend(), std::not_fn([](int c){ return _isspace(c); })).base(), s.end());
+	s.erase(std::find_if(s.rbegin(), s.rend(), std::not_fn( _isspace )).base(), s.end());
 	return s;
 }
 

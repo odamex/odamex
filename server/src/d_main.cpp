@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -52,6 +52,7 @@
 #include "gi.h"
 #include "gstrings.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "m_misc.h"
@@ -75,8 +76,7 @@ EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_nomonsters)
 EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_fastmonsters)
-
-extern size_t got_heapsize;
+EXTERN_CVAR (sv_startwadscript)
 
 void C_DoCommand(std::string_view cmd, uint32_t key = 0);
 
@@ -91,12 +91,8 @@ extern bool gameisdead;
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 
-bool devparm;				// started game with -devparm
-OLumpName startmap;
 event_t events[MAXEVENTS];
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
-
-std::string LOG_FILE;
 
 //
 // D_DoomLoop
@@ -217,6 +213,13 @@ void D_Init()
 	G_ParseHordeDefs();
 	G_ReadCOMPLVL();
 
+	// [EB] have to do this elsewhere on startup to be sure that cvar callbacks are enabled
+	if (!first_time)
+	{
+		if (!sv_startwadscript.str().empty())
+			AddCommandString(sv_startwadscript.str());
+	}
+
 	if (first_time)
 		PrintFmt(PRINT_HIGH, "P_Init: Init Playloop state.\n");
 	P_Init();
@@ -294,6 +297,8 @@ void D_DoomMain()
 	if (!LOG.is_open())
 		C_DoCommand("logfile");
 
+	M_LoadDefaults();					// load before initing other systems
+	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
 	OWantFiles newwadfiles, newpatchfiles;
 
@@ -309,10 +314,6 @@ void D_DoomMain()
 	D_AddDehCommandLineFiles(newpatchfiles);
 
 	D_LoadResourceFiles(newwadfiles, newpatchfiles);
-
-	// Ch0wW: Loading the config here fixes the "addmap" issue.
-	M_LoadDefaults();					// load before initing other systems
-	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
 
 	PrintFmt(PRINT_HIGH, "I_Init: Init hardware.\n");
 	I_Init();
@@ -419,6 +420,9 @@ void D_DoomMain()
 	}
 
 	level.mapname = startmap;
+
+	if (!sv_startwadscript.str().empty())
+		AddCommandString(sv_startwadscript.str());
 
 	G_ChangeMapStartup();
 

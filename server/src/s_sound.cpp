@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -79,24 +79,24 @@ void S_SoundID(int channel, int sound_id, float volume, int attenuation)
 {
 }
 
-void S_SoundID(AActor *ent, int channel, int sound_id, float volume, int attenuation)
+void S_SoundID(const AActor *ent, int channel, int sound_id, float volume, int attenuation)
 {
 }
 
-void S_SoundID(fixed_t *pt, int channel, int sound_id, float volume, int attenuation)
+void S_SoundID(const fixed_t *pt, int channel, int sound_id, float volume, int attenuation)
 {
 }
 
-void S_LoopedSoundID(AActor *ent, int channel, int sound_id, float volume, int attenuation)
+void S_LoopedSoundID(const AActor *ent, int channel, int sound_id, float volume, int attenuation)
 {
 }
 
-void S_LoopedSoundID(fixed_t *pt, int channel, int sound_id, float volume, int attenuation)
+void S_LoopedSoundID(const fixed_t *pt, int channel, int sound_id, float volume, int attenuation)
 {
 }
 
 // [Russell] - Hack to stop multiple plat stop sounds
-void S_PlatSound(fixed_t *pt, int channel, const char *name, float volume, int attenuation)
+void S_PlatSound(const fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
 }
 
@@ -104,19 +104,19 @@ void S_Sound(int channel, const char *name, float volume, int attenuation)
 {
 }
 
-void S_Sound(AActor *ent, int channel, const char *name, float volume, int attenuation)
+void S_Sound(const AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
 }
 
-void S_Sound(fixed_t *pt, int channel, const char *name, float volume, int attenuation)
+void S_Sound(const fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
 }
 
-void S_LoopedSound(AActor *ent, int channel, const char *name, float volume, int attenuation)
+void S_LoopedSound(const AActor *ent, int channel, const char *name, float volume, int attenuation)
 {
 }
 
-void S_LoopedSound(fixed_t *pt, int channel, const char *name, float volume, int attenuation)
+void S_LoopedSound(const fixed_t *pt, int channel, const char *name, float volume, int attenuation)
 {
 }
 
@@ -124,15 +124,15 @@ void S_Sound(fixed_t x, fixed_t y, int channel, const char *name, float volume, 
 {
 }
 
-void S_StopSound(fixed_t *pt)
+void S_StopSound(const fixed_t *pt)
 {
 }
 
-void S_StopSound(fixed_t *pt, int channel)
+void S_StopSound(const fixed_t *pt, int channel)
 {
 }
 
-void S_StopSound(AActor *ent, int channel)
+void S_StopSound(const AActor *ent, int channel)
 {
 }
 
@@ -154,16 +154,16 @@ void S_ResumeSound()
 
 // Moves all the sounds from one thing to another. If the destination is
 // NULL, then the sound becomes a positioned sound.
-void S_RelinkSound(AActor *from, AActor *to)
+void S_RelinkSound(const AActor *from, const AActor *to)
 {
 }
 
-bool S_GetSoundPlayingInfo(fixed_t *pt, int sound_id)
+bool S_GetSoundPlayingInfo(const fixed_t *pt, int sound_id)
 {
 	return false;
 }
 
-bool S_GetSoundPlayingInfo(AActor *ent, int sound_id)
+bool S_GetSoundPlayingInfo(const AActor *ent, int sound_id)
 {
 	return S_GetSoundPlayingInfo (ent ? &ent->x : NULL, sound_id);
 }
@@ -182,7 +182,7 @@ void S_ResumeMusic()
 //
 // Updates music & sounds
 //
-void S_UpdateSounds(void *listener_p)
+void S_UpdateSounds(const AActor* listener)
 {
 }
 

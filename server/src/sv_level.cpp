@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,6 +34,7 @@
 #include "gi.h"
 
 #include "i_system.h"
+#include "i_time.h"
 #include "minilzo.h"
 #include "m_random.h"
 #include "p_acs.h"
@@ -81,8 +82,6 @@ extern maplist_lastmaps_t forcedlastmaps;
 FLZOMemFile	*reset_snapshot = NULL;
 
 bool firstmapinit = true; // Nes - Avoid drawing same init text during every rebirth in single-player servers.
-
-bool savegamerestore;
 
 extern bool sendpause;
 
@@ -403,7 +402,7 @@ void G_DoNewGame()
 	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
-	if (strlen(sv_startmapscript.cstring()))
+	if (!sv_startmapscript.str().empty())
 		AddCommandString(sv_startmapscript.str());
 
 	G_InitNew (d_mapname);

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -211,14 +211,9 @@ algorithm that uses RGB tables.
 //
 // ============================================================================
 
-byte* translationtables;
 argb_t translationRGB[MAXPLAYERS+1][16];
 byte *Ranges;
 static byte *translationtablesmem = NULL;
-byte bosstable[256];
-byte friendtable[256];
-byte greentable[MAXPLAYERS + 1][256];
-byte redtable[MAXPLAYERS + 1][256];
 
 static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end_color)
 {

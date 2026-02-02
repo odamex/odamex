@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -113,6 +113,12 @@ EXTERN_CVAR(am_ovnotseencolor)
 EXTERN_CVAR(am_ovlockedcolor)
 EXTERN_CVAR(am_ovexitcolor)
 EXTERN_CVAR(am_ovteleportcolor)
+EXTERN_CVAR(am_ovminimap)
+EXTERN_CVAR(am_ovbackcolor)
+EXTERN_CVAR(am_ovbackalpha)
+EXTERN_CVAR(am_ovscalewidth)
+EXTERN_CVAR(am_ovscaleheight)
+EXTERN_CVAR(am_ovlocation)
 
 BEGIN_COMMAND(resetcustomcolors)
 {
@@ -1219,7 +1225,7 @@ static inline void PUTDOT_THICK(
 	const int thickness = (am_thickness == 0) ? (CleanXfac >> 2) : am_thickness.asInt() - 1;
 
 	// Clamp bbox once
-	const int fwm1 = f_w - 1, fhm1 = f_h - 1;
+	const int fwm1 = f.x + f_w - 1, fhm1 = f.y + f_h - 1;
 	int minx = x - thickness; if (minx < 0)   minx = 0;
 	int maxx = x + thickness; if (maxx > fwm1) maxx = fwm1;
 	int miny = y - thickness; if (miny < 0)   miny = 0;
@@ -1250,7 +1256,7 @@ static inline void PUTDOT_THICK(int x, int y, argb_t color)
 
 static inline void PUTDOT_THICK(int x, int y, byte color)
 {
-	PUTDOT_THICK<byte>(x, y, color, [](int x, int y, byte color){ fb[y * f_p + x] = color; }, fb, f_w);
+	PUTDOT_THICK<byte>(x, y, color, [](int x, int y, byte color){ fb[y * f_p + x] = color; }, fb, f_p);
 }
 
 //
@@ -1398,7 +1404,6 @@ void AM_drawWalls()
 {
 	int r, g, b;
 	static mline_t l;
-	float rdif, gdif, bdif;
 	const palette_t* pal = V_GetDefaultPalette();
 
 	for (const line_t& line : R_GetLines())
@@ -1810,7 +1815,7 @@ void AM_drawHordeBoss(const AActor* t)
 {
 	OInterpolation& oi = OInterpolation::getInstance();
 
-	if (t->oflags & MFO_BOSSPOOL)
+	if (t->oflags & MFO_BOSSPOOL && t->health > 0)
 	{
 		fixed_t thingx;
 		fixed_t thingy;
@@ -2020,6 +2025,8 @@ void AM_Drawer()
 
 	fb = surface->getBuffer();
 
+	minimapactive = false;
+
 	if (AM_ClassicAutomapVisible())
 	{
 		f.x = f.y = 0;
@@ -2029,7 +2036,7 @@ void AM_Drawer()
 
 		AM_clearFB(gameinfo.currentAutomapColors.Background);
 	}
-	else
+	else if (!am_ovminimap)
 	{
 		f.x = R_ViewWindowX(surface_width, surface_height);
 		f.y = R_ViewWindowY(surface_width, surface_height);
@@ -2037,8 +2044,46 @@ void AM_Drawer()
 		f_h = R_ViewHeight(surface_width, surface_height);
 		f_p = surface->getPitch();
 	}
+	else
+	{
+		minimapactive = true;
 
-	if (am_followplayer)
+		const int v_width = R_ViewWidth(surface_width, surface_height);
+		const int v_height = R_ViewHeight(surface_width, surface_height);
+		const int loc = am_ovlocation;
+
+		int x_offset = 0;
+		int y_offset = 0;
+
+		f_w = v_width * am_ovscalewidth;
+		f_h = v_height * am_ovscaleheight;
+
+		switch (loc)
+		{
+		case 1:
+		case 4:
+			y_offset = (v_height - f_h) / 2;
+			break;
+		case 2:
+		case 5:
+			y_offset = v_height - f_h;
+			break;
+		default:
+			break;
+		}
+
+		if (loc >= 3)
+			x_offset = v_width - f_w;
+
+		f.x = R_ViewWindowX(surface_width, surface_height) + x_offset;
+		f.y = R_ViewWindowY(surface_width, surface_height) + y_offset;
+		f_p = surface->getPitch();
+
+		if (const DCanvas* canvas = surface->getDefaultCanvas())
+			canvas->Dim(f.x, f.y, f_w, f_h, am_ovbackcolor.cstring(), am_ovbackalpha);
+	}
+
+	if (am_followplayer || minimapactive)
 	{
 		AM_doFollowPlayer();
 	}
