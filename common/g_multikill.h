@@ -192,4 +192,4 @@ void P_ProcessMultiKills(const AActor* source, const player_t* target);
 /// Handles ticking players for multi kills.
 /// </summary>
 /// <param name="player">Player to tick.</param>
-void P_TicMultiKill(const player_t* player);
+void P_TicMultiKill(const player_t& player);

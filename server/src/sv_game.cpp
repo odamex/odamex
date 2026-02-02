@@ -182,23 +182,19 @@ void G_Ticker (void)
 //
 void G_PlayerFinishLevel (player_t &player)
 {
-	player_t *p;
-
-	p = &player;
-
-	memset (p->powers, 0, sizeof (p->powers));
-	memset (p->cards, 0, sizeof (p->cards));
+	player.powers.fill(0);
+	player.cards.fill(false);
 
 	SpreeManager::getInstance().erasePoints(player.id);
 	MultiKillManager::getInstance().eraseMultiKills(player.id);
 
-	if(p->mo)
-		p->mo->flags &= ~MF_SHADOW; 	// cancel invisibility
+	if(player.mo)
+		player.mo->flags &= ~MF_SHADOW; 	// cancel invisibility
 
-	p->extralight = 0;					// cancel gun flashes
-	p->fixedcolormap = 0;				// cancel ir goggles
-	p->damagecount = 0; 				// no palette changes
-	p->bonuscount = 0;
+	player.extralight = 0;					// cancel gun flashes
+	player.fixedcolormap = 0;				// cancel ir goggles
+	player.damagecount = 0; 				// no palette changes
+	player.bonuscount = 0;
 }
 
 void SV_SendPlayerInfo(player_t& player);

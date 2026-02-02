@@ -235,10 +235,10 @@ void P_ProcessMultiKills(const AActor* source, const player_t* target)
 	}
 }
 
-void P_TicMultiKill(const player_t* player)
+void P_TicMultiKill(const player_t& player)
 {
-	if (!player)
+	if (!validplayer(player))
 		return;
 
-	MultiKillManager::getInstance().ticPlayerMultiKill(player->id);
+	MultiKillManager::getInstance().ticPlayerMultiKill(player.id);
 }

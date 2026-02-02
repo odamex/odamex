@@ -1771,7 +1771,7 @@ FUNC(LS_Clear_ForceField)
 	return clear;
 }
 
-ItemEquipVal P_GiveBody (player_t *, int);
+ItemEquipVal P_GiveBody (player_t&, int);
 
 FUNC(LS_HealThing)
 // HealThing (amount)
@@ -1780,7 +1780,7 @@ FUNC(LS_HealThing)
 
 	if (it->player)
 	{
-		P_GiveBody (it->player, arg0);
+		P_GiveBody (*it->player, arg0);
 	}
 	else
 	{
