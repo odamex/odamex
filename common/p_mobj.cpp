@@ -3302,7 +3302,7 @@ void P_SpawnAvatars()
 
 	for (const auto& thing : ::voodoostarts)
 	{
-		new AActor(thing.x << FRACBITS, thing.y << FRACBITS, thing.z << FRACBITS, MT_AVATAR);
+		new AActor(thing.x << FRACBITS, thing.y << FRACBITS, ONFLOORZ, MT_AVATAR);
 	}
 }
 
