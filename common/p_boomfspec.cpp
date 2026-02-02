@@ -1211,7 +1211,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	return false;
 }
 
-void P_ApplyGeneralizedSectorDamage(player_t* player, int bits)
+void P_ApplyGeneralizedSectorDamage(player_t& player, int bits)
 {
 	switch (bits & 3)
 	{
@@ -1229,46 +1229,46 @@ void P_ApplyGeneralizedSectorDamage(player_t* player, int bits)
 	}
 }
 
-void P_CollectSecretBoom(sector_t* sector, player_t* player)
+void P_CollectSecretBoom(sector_t& sector, player_t& player)
 {
-	sector->special &= ~SECRET_MASK;
+	sector.special &= ~SECRET_MASK;
 
-	if (sector->special < 32) // if all extended bits clear,
-		sector->special = 0;  // sector is not special anymore
+	if (sector.special < 32) // if all extended bits clear,
+		sector.special = 0;  // sector is not special anymore
 
 	P_CollectSecretCommon(sector, player);
 }
 
-void P_PlayerInCompatibleSector(player_t* player)
+void P_PlayerInCompatibleSector(player_t& player)
 {
 	// Spectators should not be affected by special sectors
-	if (player->spectator)
+	if (player.spectator)
 		return;
 
 	// Falling, not all the way down yet?
-	if (player->mo->z != P_FloorHeight(player->mo) && !player->mo->waterlevel)
+	if (player.mo->z != P_FloorHeight(player.mo) && !player.mo->waterlevel)
 		return;
 
-	sector_t* sector = player->mo->subsector->sector;
-	if (sector->special == 0 && sector->damageamount > 0) // Odamex Static Init Damage
+	sector_t& sector = *player.mo->subsector->sector;
+	if (sector.special == 0 && sector.damageamount > 0) // Odamex Static Init Damage
 	{
-		if (sector->damageamount < 20)
+		if (sector.damageamount < 20)
 		{
-			P_ApplySectorDamageNoRandom(player, sector->damageamount, MOD_UNKNOWN);
+			P_ApplySectorDamageNoRandom(player, sector.damageamount, MOD_UNKNOWN);
 		}
-		else if (sector->damageamount < 50)
+		else if (sector.damageamount < 50)
 		{
-			P_ApplySectorDamage(player, sector->damageamount, 5, MOD_UNKNOWN);
+			P_ApplySectorDamage(player, sector.damageamount, 5, MOD_UNKNOWN);
 		}
 		else
 		{
-			P_ApplySectorDamageNoWait(player, sector->damageamount, MOD_UNKNOWN);
+			P_ApplySectorDamageNoWait(player, sector.damageamount, MOD_UNKNOWN);
 		}
 	}
 	// jff add if to handle old vs generalized types
-	else if (sector->special < 32) // regular sector specials
+	else if (sector.special < 32) // regular sector specials
 	{
-		switch (sector->special)
+		switch (sector.special)
 		{
 		case 5:
 			P_ApplySectorDamage(player, 10, 0, MOD_SLIME);
@@ -1292,20 +1292,20 @@ void P_PlayerInCompatibleSector(player_t* player)
 	}
 	else // jff 3/14/98 handle extended sector damage
 	{
-		if (sector->special & DEATH_MASK)
+		if (sector.special & DEATH_MASK)
 		{
-			switch ((sector->special & DAMAGE_MASK) >> DAMAGE_SHIFT)
+			switch ((sector.special & DAMAGE_MASK) >> DAMAGE_SHIFT)
 			{
 			case 0: // Kill player unless invuln or rad suit or IDDQD
-				if (!player->powers[pw_invulnerability] && !player->powers[pw_ironfeet] && !(player->cheats & CF_GODMODE))
+				if (!player.powers[pw_invulnerability] && !player.powers[pw_ironfeet] && !(player.cheats & CF_GODMODE))
 				{
-					P_DamageMobj(player->mo, NULL, NULL, 999, MOD_UNKNOWN); // 999 so BUDDHA can survive
+					P_DamageMobj(player.mo, NULL, NULL, 999, MOD_UNKNOWN); // 999 so BUDDHA can survive
 				}
 				break;
 			case 1: // Kill player with no scruples unless IDDQD
-				if(!(player->cheats & CF_GODMODE))
+				if(!(player.cheats & CF_GODMODE))
 				{
-					P_DamageMobj(player->mo, NULL, NULL, 10000, MOD_UNKNOWN);
+					P_DamageMobj(player.mo, NULL, NULL, 10000, MOD_UNKNOWN);
 				}
 				break;
 			case 2: // Kill all players and exit. There's no delay here so it may confuse
@@ -1317,17 +1317,17 @@ void P_PlayerInCompatibleSector(player_t* player)
 						for (Players::iterator it = ::players.begin();
 						     it != ::players.end(); ++it)
 						{
-							if (player->ingame() && player->health > 0 && !(player->cheats & CF_GODMODE))
+							if (player.ingame() && player.health > 0 && !(player.cheats & CF_GODMODE))
 							{
 								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
 							}
 						}
 						G_ExitLevel(0, 1);
 					}
-					else if (!(player->cheats & CF_GODMODE)) // Do NOT kill players with IDDQD.
+					else if (!(player.cheats & CF_GODMODE)) // Do NOT kill players with IDDQD.
 					{
 						P_DamageMobj(
-						    player->mo, NULL, NULL, 10000,
+						    player.mo, NULL, NULL, 10000,
 						    MOD_EXIT); // Exiting not allowed, kill only activator here
 						               // even if fragexitswitch = 0
 					}
@@ -1342,17 +1342,17 @@ void P_PlayerInCompatibleSector(player_t* player)
 						for (Players::iterator it = ::players.begin();
 						     it != ::players.end(); ++it)
 						{
-							if (player->ingame() && player->health > 0 && !(player->cheats & CF_GODMODE))
+							if (player.ingame() && player.health > 0 && !(player.cheats & CF_GODMODE))
 							{
 								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
 							}
 						}
 						G_SecretExitLevel(0, 1);
 					}
-					else if (!(player->cheats & CF_GODMODE)) // Do NOT kill players with IDDQD.
+					else if (!(player.cheats & CF_GODMODE)) // Do NOT kill players with IDDQD.
 					{
 						P_DamageMobj(
-						    player->mo, NULL, NULL, 10000,
+						    player.mo, NULL, NULL, 10000,
 						    MOD_EXIT); // Exiting not allowed, kill only activator here
 						               // even if fragexitswitch = 0
 					}
@@ -1360,14 +1360,14 @@ void P_PlayerInCompatibleSector(player_t* player)
 				break;
 			}
 		}
-		else if (!(player->cheats & CF_GODMODE)) // Do NOT damage players with IDDQD.
+		else if (!(player.cheats & CF_GODMODE)) // Do NOT damage players with IDDQD.
 		{
-			P_ApplyGeneralizedSectorDamage(player, (sector->special & DAMAGE_MASK) >>
+			P_ApplyGeneralizedSectorDamage(player, (sector.special & DAMAGE_MASK) >>
 			                                           DAMAGE_SHIFT);
 		}
 	}
 
-	if (sector->flags & SECF_SECRET)
+	if (sector.flags & SECF_SECRET)
 	{
 		P_CollectSecretBoom(sector, player);
 	}
@@ -3553,18 +3553,14 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 	return false;
 }
 
-unsigned int P_TranslateCompatibleLineFlags(const unsigned int flags, const bool reserved)
+uint32_t P_TranslateCompatibleLineFlags(const uint32_t flags, const bool reserved)
 {
-	/*
-	if (mbf21)
-		const unsigned int filter = (flags & ML_RESERVED && comp[comp_reservedlineflag]) ? 0x01ff : 0x3fff;
-	else
-		const unsigned int filter = 0x03ff;
-	*/
+	// no comp_reservedlineflag, it's only needed for playback of
+	// a small set of early mbf21 demos from before its introduction
 
-	unsigned int filter;
+	uint32_t filter;
 
-	if (demoplayback || reserved)
+	if (demoplayback || flags & ML_RESERVED || reserved)
 		filter = 0x01ff;
 	else
 		filter = 0x3fff;

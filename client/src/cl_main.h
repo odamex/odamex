@@ -77,7 +77,7 @@ void CL_DisplayTics();
 void CL_RunTics();
 
 bool CL_SectorIsPredicting(sector_t *sector);
-argb_t CL_GetPlayerColor(player_t* player);
+argb_t CL_GetPlayerColor(const player_t& player);
 
 std::string M_ExpandTokens(const std::string &str);
 

@@ -46,6 +46,8 @@
 #include "p_mapformat.h"
 #include "g_multikill.h"
 
+#include <nonstd/span.hpp>
+
 //
 // Movement.
 //
@@ -369,41 +371,38 @@ size_t P_NumPlayersOnTeam(team_t team)
 // P_Thrust
 // Moves the given origin along a given angle.
 //
-void P_SideThrust (player_t *player, angle_t angle, fixed_t move)
+void P_SideThrust (player_t& player, angle_t angle, fixed_t move)
 {
 	angle = (angle - ANG90) >> ANGLETOFINESHIFT;
 
-	player->mo->momx += FixedMul (move, finecosine[angle]);
-	player->mo->momy += FixedMul (move, finesine[angle]);
+	player.mo->momx += FixedMul (move, finecosine[angle]);
+	player.mo->momy += FixedMul (move, finesine[angle]);
 }
 
-void P_ForwardThrust (player_t *player, angle_t angle, fixed_t move)
+void P_ForwardThrust (player_t& player, angle_t angle, fixed_t move)
 {
 	angle >>= ANGLETOFINESHIFT;
 
-	if ((player->mo->waterlevel || (player->mo->flags2 & MF2_FLY))
-		&& player->mo->pitch != 0)
+	if ((player.mo->waterlevel || (player.mo->flags2 & MF2_FLY))
+		&& player.mo->pitch != 0)
 	{
-		angle_t pitch = (angle_t)player->mo->pitch >> ANGLETOFINESHIFT;
+		angle_t pitch = (angle_t)player.mo->pitch >> ANGLETOFINESHIFT;
 		fixed_t zpush = FixedMul (move, finesine[pitch]);
-		if (player->mo->waterlevel && player->mo->waterlevel < 2 && zpush < 0)
+		if (player.mo->waterlevel && player.mo->waterlevel < 2 && zpush < 0)
 			zpush = 0;
-		player->mo->momz -= zpush;
+		player.mo->momz -= zpush;
 		move = FixedMul (move, finecosine[pitch]);
 	}
-	player->mo->momx += FixedMul (move, finecosine[angle]);
-	player->mo->momy += FixedMul (move, finesine[angle]);
+	player.mo->momx += FixedMul (move, finecosine[angle]);
+	player.mo->momy += FixedMul (move, finesine[angle]);
 }
 
 //
 // P_CalcHeight
 // Calculate the walking / running height adjustment
 //
-void P_CalcHeight (player_t *player)
+void P_CalcHeight (player_t& player)
 {
-	int 		angle;
-	fixed_t 	bob;
-
 	// Regular movement bobbing
 	// (needs to be calculated for gun swing even if not on ground)
 	// OPTIMIZE: tablify angle
@@ -414,61 +413,62 @@ void P_CalcHeight (player_t *player)
 	// it causes bobbing jerkiness when the player moves from ice to non-ice,
 	// and vice-versa.
 
-	if ((player->mo->flags2 & MF2_FLY) && !player->mo->onground)
+	if ((player.mo->flags2 & MF2_FLY) && !player.mo->onground)
 	{
-		player->bob = FRACUNIT / 2;
+		player.bob = FRACUNIT / 2;
 	}
 
-	if ((serverside || !predicting) && !player->spectator)
+	if ((serverside || !predicting) && !player.spectator)
 	{
-		player->bob = FixedMul (player->mo->momx, player->mo->momx)
-					+ FixedMul (player->mo->momy, player->mo->momy);
-		player->bob >>= 2;
+		player.bob = FixedMul (player.mo->momx, player.mo->momx)
+					+ FixedMul (player.mo->momy, player.mo->momy);
+		player.bob >>= 2;
 
-		if (player->bob > MAXBOB)
-			player->bob = MAXBOB;
+		if (player.bob > MAXBOB)
+			player.bob = MAXBOB;
 	}
 
-    if (player->cheats & CF_NOMOMENTUM || (!co_zdoomphys && !player->mo->onground))
+    if (player.cheats & CF_NOMOMENTUM || (!co_zdoomphys && !player.mo->onground))
 	{
-		player->viewz = player->mo->z + VIEWHEIGHT;
+		player.viewz = player.mo->z + VIEWHEIGHT;
 
-		if (player->viewz > player->mo->ceilingz-4*FRACUNIT)
-			player->viewz = player->mo->ceilingz-4*FRACUNIT;
+		if (player.viewz > player.mo->ceilingz-4*FRACUNIT)
+			player.viewz = player.mo->ceilingz-4*FRACUNIT;
 
-		if (player->prevviewz == 1) // don't interp first frame
-			player->prevviewz = player->viewz;
+		if (player.prevviewz == 1) // don't interp first frame
+			player.prevviewz = player.viewz;
 		return;
 	}
 
-	angle = (FINEANGLES/20*level.time) & FINEMASK;
-	if (!player->spectator)
-		bob = FixedMul (player->bob>>(player->mo->waterlevel > 1 ? 2 : 1), finesine[angle]);
+	int angle = (FINEANGLES/20*level.time) & FINEMASK;
+	fixed_t bob;
+	if (!player.spectator)
+		bob = FixedMul (player.bob>>(player.mo->waterlevel > 1 ? 2 : 1), finesine[angle]);
 	else
 		bob = 0;
 
 	// move viewheight
-	if (player->playerstate == PST_LIVE)
+	if (player.playerstate == PST_LIVE)
 	{
-		player->viewheight += player->deltaviewheight;
+		player.viewheight += player.deltaviewheight;
 
-		if (player->viewheight > VIEWHEIGHT)
+		if (player.viewheight > VIEWHEIGHT)
 		{
-			player->viewheight = VIEWHEIGHT;
-			player->deltaviewheight = 0;
+			player.viewheight = VIEWHEIGHT;
+			player.deltaviewheight = 0;
 		}
-		else if (player->viewheight < VIEWHEIGHT/2)
+		else if (player.viewheight < VIEWHEIGHT/2)
 		{
-			player->viewheight = VIEWHEIGHT/2;
-			if (player->deltaviewheight <= 0)
-				player->deltaviewheight = 1;
+			player.viewheight = VIEWHEIGHT/2;
+			if (player.deltaviewheight <= 0)
+				player.deltaviewheight = 1;
 		}
 
-		if (player->deltaviewheight)
+		if (player.deltaviewheight)
 		{
-			player->deltaviewheight += FRACUNIT/4;
-			if (!player->deltaviewheight)
-				player->deltaviewheight = 1;
+			player.deltaviewheight += FRACUNIT/4;
+			if (!player.deltaviewheight)
+				player.deltaviewheight = 1;
 		}
 	}
 
@@ -476,30 +476,30 @@ void P_CalcHeight (player_t *player)
 	if (sv_allowmovebob || (clientside && serverside))
 		bob *= cl_movebob;
 
-	player->viewz = player->mo->z + player->viewheight + bob;
+	player.viewz = player.mo->z + player.viewheight + bob;
 
-	if (player->viewz > player->mo->ceilingz-4*FRACUNIT)
-		player->viewz = player->mo->ceilingz-4*FRACUNIT;
-	if (player->viewz < player->mo->floorz + 4*FRACUNIT)
-		player->viewz = player->mo->floorz + 4*FRACUNIT;
+	if (player.viewz > player.mo->ceilingz-4*FRACUNIT)
+		player.viewz = player.mo->ceilingz-4*FRACUNIT;
+	if (player.viewz < player.mo->floorz + 4*FRACUNIT)
+		player.viewz = player.mo->floorz + 4*FRACUNIT;
 
-	if (player->prevviewz == 1) // don't interp first frame
-		player->prevviewz = player->viewz;
+	if (player.prevviewz == 1) // don't interp first frame
+		player.prevviewz = player.viewz;
 }
 
 //
 // P_PlayerLookUpDown
 //
-void P_PlayerLookUpDown (player_t *p)
+void P_PlayerLookUpDown (player_t& p)
 {
 	// [RH] Look up/down stuff
-	if (!sv_freelook && (!p->spectator))
+	if (!sv_freelook && (!p.spectator))
 	{
-		p->mo->pitch = 0;
+		p.mo->pitch = 0;
 	}
 	else
 	{
-		int look = p->cmd.pitch << 16;
+		const int look = p.cmd.pitch << 16;
 
 		// The player's view pitch is clamped between -32 and +56 degrees,
 		// which translates to about half a screen height up and (more than)
@@ -509,19 +509,19 @@ void P_PlayerLookUpDown (player_t *p)
 		{
 			if (look == INT_MIN)
 			{ // center view
-				p->mo->pitch = 0;
+				p.mo->pitch = 0;
 			}
 			else if (look > 0)
 			{ // look up
-				p->mo->pitch -= look;
-				if (p->mo->pitch < -ANG(32))
-					p->mo->pitch = -ANG(32);
+				p.mo->pitch -= look;
+				if (p.mo->pitch < -ANG(32))
+					p.mo->pitch = -ANG(32);
 			}
 			else
 			{ // look down
-				p->mo->pitch -= look;
-				if (p->mo->pitch > ANG(56))
-					p->mo->pitch = ANG(56);
+				p.mo->pitch -= look;
+				if (p.mo->pitch > ANG(56))
+					p.mo->pitch = ANG(56);
 			}
 		}
 	}
@@ -536,49 +536,49 @@ CVAR_FUNC_IMPL (sv_aircontrol)
 //
 // P_MovePlayer
 //
-void P_MovePlayer (player_t *player)
+void P_MovePlayer (player_t& player)
 {
-	if (!player || !player->mo || player->playerstate == PST_DEAD)
+	if (!player.mo || player.playerstate == PST_DEAD)
 		return;
 
-	AActor *mo = player->mo;
+	AActor *mo = player.mo;
 
 	mo->onground = (mo->z <= mo->floorz) || (mo->flags2 & MF2_ONMOBJ);
 
 	// [RH] Don't let frozen players move
-	if (player->cheats & CF_FROZEN)
+	if (player.cheats & CF_FROZEN)
 		return;
 
 	// Move around.
 	// Reactiontime is used to prevent movement
 	//	for a bit after a teleport.
-	if (player->mo->reactiontime)
+	if (player.mo->reactiontime)
 	{
-		player->mo->reactiontime--;
+		player.mo->reactiontime--;
 		return;
 	}
 
-	if (player->cmd.upmove == -32768)
+	if (player.cmd.upmove == -32768)
 	{
 		// Only land if in the air
-		if ((player->mo->flags2 & MF2_FLY) && player->mo->waterlevel < 2)
+		if ((player.mo->flags2 & MF2_FLY) && player.mo->waterlevel < 2)
 		{
-			player->mo->flags2 &= ~MF2_FLY;
-			player->mo->flags &= ~MF_NOGRAVITY;
+			player.mo->flags2 &= ~MF2_FLY;
+			player.mo->flags &= ~MF_NOGRAVITY;
 		}
 	}
-	else if (player->cmd.upmove != 0)
+	else if (player.cmd.upmove != 0)
 	{
-		if (player->mo->waterlevel >= 2 || player->mo->flags2 & MF2_FLY)
+		if (player.mo->waterlevel >= 2 || player.mo->flags2 & MF2_FLY)
 		{
-			player->mo->momz = player->cmd.upmove << 9;
+			player.mo->momz = player.cmd.upmove << 9;
 
-			if (player->mo->waterlevel < 2 && !(player->mo->flags2 & MF2_FLY))
+			if (player.mo->waterlevel < 2 && !(player.mo->flags2 & MF2_FLY))
 			{
-				player->mo->flags2 |= MF2_FLY;
-				player->mo->flags |= MF_NOGRAVITY;
-				if (player->mo->momz <= -39*FRACUNIT)
-					S_StopSound(player->mo, CHAN_VOICE);	// Stop falling scream
+				player.mo->flags2 |= MF2_FLY;
+				player.mo->flags |= MF_NOGRAVITY;
+				if (player.mo->momz <= -39*FRACUNIT)
+					S_StopSound(player.mo, CHAN_VOICE);	// Stop falling scream
 			}
 		}
 	}
@@ -586,7 +586,7 @@ void P_MovePlayer (player_t *player)
 	// Look left/right
 	if(clientside || step_mode)
 	{
-		mo->angle += player->cmd.yaw << 16;
+		mo->angle += player.cmd.yaw << 16;
 
 		// Look up/down stuff
 		P_PlayerLookUpDown(player);
@@ -599,14 +599,12 @@ void P_MovePlayer (player_t *player)
 	// ice, because the player still "works just as hard" to move, while the
 	// thrust applied to the movement varies with 'movefactor'.
 
-	if (player->cmd.forwardmove | player->cmd.sidemove)
+	if (player.cmd.forwardmove | player.cmd.sidemove)
 	{
-		fixed_t forwardmove, sidemove;
-		int bobfactor;
-		int friction, movefactor;
+		int friction;
 
-		movefactor = P_GetMoveFactor (mo, &friction);
-		bobfactor = friction < ORIG_FRICTION ? movefactor : ORIG_FRICTION_FACTOR;
+		int movefactor = P_GetMoveFactor (mo, &friction);
+		int bobfactor = friction < ORIG_FRICTION ? movefactor : ORIG_FRICTION_FACTOR;
 		if (!mo->onground && !(mo->flags2 & MF2_FLY) && !mo->waterlevel)
 		{
 			// [RH] allow very limited movement if not on ground.
@@ -621,8 +619,8 @@ void P_MovePlayer (player_t *player)
 				bobfactor >>= 8;
 			}
 		}
-		forwardmove = (player->cmd.forwardmove * movefactor) >> 8;
-		sidemove = (player->cmd.sidemove * movefactor) >> 8;
+		const fixed_t forwardmove = (player.cmd.forwardmove * movefactor) >> 8;
+		const fixed_t sidemove = (player.cmd.sidemove * movefactor) >> 8;
 
 		// [ML] Check for these conditions unless advanced physics is on
 		if(co_zdoomphys ||
@@ -640,41 +638,41 @@ void P_MovePlayer (player_t *player)
 
 		if (mo->state == &states[S_PLAY])
 		{
-			// denis - fixme - this function might destoy player->mo without setting it to 0
-			P_SetMobjState (player->mo, S_PLAY_RUN1);
+			// denis - fixme - this function might destoy player.mo without setting it to 0
+			P_SetMobjState (player.mo, S_PLAY_RUN1);
 		}
 
-		if (player->cheats & CF_REVERTPLEASE)
+		if (player.cheats & CF_REVERTPLEASE)
 		{
-			player->cheats &= ~CF_REVERTPLEASE;
-			player->camera = player->mo;
+			player.cheats &= ~CF_REVERTPLEASE;
+			player.camera = player.mo;
 		}
 	}
 
 	// [RH] check for jump
-	if (player->jumpTics)
-		player->jumpTics--;
+	if (player.jumpTics)
+		player.jumpTics--;
 
-	if ((player->cmd.buttons & BT_JUMP) == BT_JUMP)
+	if ((player.cmd.buttons & BT_JUMP) == BT_JUMP)
 	{
-		if (player->mo->waterlevel >= 2)
+		if (player.mo->waterlevel >= 2)
 		{
-			player->mo->momz = 4*FRACUNIT;
+			player.mo->momz = 4*FRACUNIT;
 		}
-		else if (player->mo->flags2 & MF2_FLY)
+		else if (player.mo->flags2 & MF2_FLY)
 		{
-			player->mo->momz = 3*FRACUNIT;
+			player.mo->momz = 3*FRACUNIT;
 		}
-		else if (sv_allowjump && player->mo->onground && !player->jumpTics)
+		else if (sv_allowjump && player.mo->onground && !player.jumpTics)
 		{
-			player->mo->momz += 8*FRACUNIT;
+			player.mo->momz += 8*FRACUNIT;
 
 //			[SL] No jumping sound...
-//			if(!player->spectator)
-//				UV_SoundAvoidPlayer(player->mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
+//			if(!player.spectator)
+//				UV_SoundAvoidPlayer(player.mo, CHAN_VOICE, "player/male/jump1", ATTN_NORM);
 
-            player->mo->flags2 &= ~MF2_ONMOBJ;
-            player->jumpTics = 18;
+            player.mo->flags2 &= ~MF2_ONMOBJ;
+            player.jumpTics = 18;
 		}
 	}
 }
@@ -740,66 +738,66 @@ void P_FallingDamage (AActor *ent)
 //
 #define ANG5	(ANG90/18)
 
-void P_DeathThink (player_t *player)
+void P_DeathThink (player_t& player)
 {
 	bool reduce_redness = true;
 
 	P_MovePsprites (player);
-	player->mo->onground = (player->mo->z <= player->mo->floorz);
+	player.mo->onground = (player.mo->z <= player.mo->floorz);
 
 	// fall to the ground
-	if (player->viewheight > 6*FRACUNIT)
-		player->viewheight -= FRACUNIT;
+	if (player.viewheight > 6*FRACUNIT)
+		player.viewheight -= FRACUNIT;
 
-	if (player->viewheight < 6*FRACUNIT)
-		player->viewheight = 6*FRACUNIT;
+	if (player.viewheight < 6*FRACUNIT)
+		player.viewheight = 6*FRACUNIT;
 
-	player->deltaviewheight = 0;
+	player.deltaviewheight = 0;
 	P_CalcHeight (player);
 
 	// adjust the player's view to follow its attacker
 	if (cl_deathcam && clientside &&
-		player->attacker && player->attacker != player->mo)
+		player.attacker && player.attacker != player.mo)
 	{
-		angle_t angle = P_PointToAngle (player->mo->x,
-								 		player->mo->y,
-								 		player->attacker->x,
-								 		player->attacker->y);
+		angle_t angle = P_PointToAngle (player.mo->x,
+								 		player.mo->y,
+								 		player.attacker->x,
+								 		player.attacker->y);
 
-		angle_t delta = angle - player->mo->angle;
+		angle_t delta = angle - player.mo->angle;
 
 		if (delta < ANG5 || delta > (unsigned)-ANG5)
-			player->mo->angle = angle;
+			player.mo->angle = angle;
 		else
 		{
 			if (delta < ANG180)
-				player->mo->angle += ANG5;
+				player.mo->angle += ANG5;
 			else
-				player->mo->angle -= ANG5;
+				player.mo->angle -= ANG5;
 
 			// not yet looking at killer so keep the red tinting
 			reduce_redness = false;
 		}
 	}
 
-	if (player->damagecount && reduce_redness && !predicting)
-		player->damagecount--;
+	if (player.damagecount && reduce_redness && !predicting)
+		player.damagecount--;
 
 	if(serverside)
 	{
 		bool force_respawn =	(!clientside && sv_forcerespawn &&
-								level.time >= player->death_time + sv_forcerespawntime * TICRATE);
+								level.time >= player.death_time + sv_forcerespawntime * TICRATE);
 
 		// [SL] Can we respawn yet?
-		int respawn_time = player->death_time + sv_spawndelaytime * TICRATE;
+		int respawn_time = player.death_time + sv_spawndelaytime * TICRATE;
 		bool delay_respawn =	(!clientside && level.time < respawn_time);
 
 		// [Toke - dmflags] Old location of DF_FORCE_RESPAWN
-		if (player->ingame() &&
-		    ((player->cmd.buttons & BT_USE && !delay_respawn) || force_respawn) &&
-		    ((g_lives && player->lives > 0) || !g_lives))
+		if (player.ingame() &&
+		    ((player.cmd.buttons & BT_USE && !delay_respawn) || force_respawn) &&
+		    ((g_lives && player.lives > 0) || !g_lives))
 		{
-			player->playerstate = PST_REBORN;
+			player.playerstate = PST_REBORN;
 		}
 	}
 }
@@ -874,27 +872,27 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 
 void SV_SendPlayerInfo(player_t &);
 
-void P_SetPlayerInvulnBleed(player_t* player, int powers[NUMPOWERS])
+void P_SetPlayerInvulnBleed(player_t& player, nonstd::span<const int, NUMPOWERS> powers)
 {
 	if (sv_showplayerpowerups)
 	{
 		// Don't show blood if the player is invuln
 		if (powers[pw_invulnerability])
-			player->mo->flags |= MF_NOBLOOD;
+			player.mo->flags |= MF_NOBLOOD;
 		else
-			player->mo->flags &= ~MF_NOBLOOD;
+			player.mo->flags &= ~MF_NOBLOOD;
 	}
 }
 
-void P_SwitchSpyOnNoLives(player_t* player)
+void P_SwitchSpyOnNoLives(const player_t& player)
 {
 	if (clientside)
 	{
 		// [AM] If the player runs out of lives in an LMS gamemode, having
 		//      them spectate another player after a beat is expected.
-		if (::g_lives && player->lives < 1 &&
-		    player->id == displayplayer_id &&
-		    level.time >= player->death_time + (TICRATE * 2) &&
+		if (::g_lives && player.lives < 1 &&
+		    player.id == displayplayer_id &&
+		    level.time >= player.death_time + (TICRATE * 2) &&
 		    ::levelstate.getState() == LevelState::INGAME)
 		{
 			// CL_SpyCycle is located in cl and templated, so we use this
@@ -904,41 +902,44 @@ void P_SwitchSpyOnNoLives(player_t* player)
 	}
 }
 
-void P_SetPlayerPowerupStatuses(player_t* player, int powers[NUMPOWERS])
+void P_SetPlayerPowerupStatuses(player_t& player, nonstd::span<const int, NUMPOWERS> powers)
 {
+	if (!player.mo)
+		return;
+
 	if (powers[pw_strength])
-		player->mo->statusflags |= SF_BERSERK;
+		player.mo->statusflags |= SF_BERSERK;
 	else
-		player->mo->statusflags &= ~SF_BERSERK;
+		player.mo->statusflags &= ~SF_BERSERK;
 
 	if (powers[pw_invulnerability] > 4 * 32 ||
 		        powers[pw_invulnerability] & 8)
-		player->mo->statusflags |= SF_INVULN;
+		player.mo->statusflags |= SF_INVULN;
 	else
-		player->mo->statusflags &= ~SF_INVULN;
+		player.mo->statusflags &= ~SF_INVULN;
 
 	if (powers[pw_invisibility] > 4 * 32 ||
 			powers[pw_invisibility] & 8)
-		player->mo->statusflags |= SF_INVIS;
+		player.mo->statusflags |= SF_INVIS;
 	else
-		player->mo->statusflags &= ~SF_INVIS;
+		player.mo->statusflags &= ~SF_INVIS;
 
 	if (powers[pw_infrared] > 4 * 32 ||
 			powers[pw_infrared] & 8)
-		player->mo->statusflags |= SF_INFRARED;
+		player.mo->statusflags |= SF_INFRARED;
 	else
-		player->mo->statusflags &= ~SF_INFRARED;
+		player.mo->statusflags &= ~SF_INFRARED;
 
 	if (powers[pw_ironfeet] > 4 * 32 ||
 			powers[pw_ironfeet] & 8)
-		player->mo->statusflags |= SF_IRONFEET;
+		player.mo->statusflags |= SF_IRONFEET;
 	else
-		player->mo->statusflags &= ~SF_IRONFEET;
+		player.mo->statusflags &= ~SF_IRONFEET;
 
 	if (powers[pw_allmap])
-		player->mo->statusflags |= SF_ALLMAP;
+		player.mo->statusflags |= SF_ALLMAP;
 	else
-		player->mo->statusflags &= ~SF_ALLMAP;
+		player.mo->statusflags &= ~SF_ALLMAP;
 
 	P_SetPlayerInvulnBleed(player, powers);
 }
@@ -946,50 +947,50 @@ void P_SetPlayerPowerupStatuses(player_t* player, int powers[NUMPOWERS])
 //
 // P_PlayerThink
 //
-void P_PlayerThink (player_t *player)
+void P_PlayerThink (player_t& player)
 {
 	weapontype_t newweapon;
 
 	// [SL] 2011-10-31 - Thinker called before the client has received a message
 	// to spawn a mobj from the server.  Just bail from this function and
 	// hope the client receives the spawn message at a later time.
-	if (!player->mo && clientside && multiplayer)
+	if (!player.mo && clientside && multiplayer)
 	{
 		DPrintFmt("Warning: P_PlayerThink called for player {} without a valid Actor.\n",
-				  player->userinfo.netname);
+				  player.userinfo.netname);
 		return;
 	}
-	else if (!player->mo)
-		I_Error("No player {} start\n", player->id);
+	else if (!player.mo)
+		I_Error("No player {} start\n", player.id);
 
-	player->xviewshift = 0;		// [RH] Make sure view is in right place
-	player->prevviewz = player->viewz;
-	player->mo->prevangle = player->mo->angle;
-	player->mo->prevpitch = player->mo->pitch;
+	player.xviewshift = 0;		// [RH] Make sure view is in right place
+	player.prevviewz = player.viewz;
+	player.mo->prevangle = player.mo->angle;
+	player.mo->prevpitch = player.mo->pitch;
 
 	// fixme: do this in the cheat code
-	if (player->cheats & CF_NOCLIP)
-		player->mo->flags |= MF_NOCLIP;
+	if (player.cheats & CF_NOCLIP)
+		player.mo->flags |= MF_NOCLIP;
 	else
-		player->mo->flags &= ~MF_NOCLIP;
+		player.mo->flags &= ~MF_NOCLIP;
 
-	if (player->cheats & CF_FLY)
-		player->mo->flags |= MF_NOGRAVITY, player->mo->flags2 |= MF2_FLY;
+	if (player.cheats & CF_FLY)
+		player.mo->flags |= MF_NOGRAVITY, player.mo->flags2 |= MF2_FLY;
 	else
-		player->mo->flags &= ~MF_NOGRAVITY, player->mo->flags2 &= ~MF2_FLY;
+		player.mo->flags &= ~MF_NOGRAVITY, player.mo->flags2 &= ~MF2_FLY;
 
 	// chain saw run forward
-	if (player->mo->flags & MF_JUSTATTACKED)
+	if (player.mo->flags & MF_JUSTATTACKED)
 	{
-		player->cmd.yaw = 0;
-		player->cmd.forwardmove = 0xc800/2;
-		player->cmd.sidemove = 0;
-		player->mo->flags &= ~MF_JUSTATTACKED;
+		player.cmd.yaw = 0;
+		player.cmd.forwardmove = 0xc800/2;
+		player.cmd.sidemove = 0;
+		player.mo->flags &= ~MF_JUSTATTACKED;
 	}
 
 	P_TicMultiKill(player);
 
-	if (player->playerstate == PST_DEAD)
+	if (player.playerstate == PST_DEAD)
 	{
 		P_DeathThink(player);
 		P_SwitchSpyOnNoLives(player);
@@ -999,69 +1000,69 @@ void P_PlayerThink (player_t *player)
 	P_MovePlayer (player);
 	P_CalcHeight (player);
 
-	if (player->mo->subsector &&
-		(player->mo->subsector->sector->special ||
-		player->mo->subsector->sector->damageamount ||
-		player->mo->subsector->sector->flags & SECF_SECRET))
+	if (player.mo->subsector &&
+		(player.mo->subsector->sector->special ||
+		player.mo->subsector->sector->damageamount ||
+		player.mo->subsector->sector->flags & SECF_SECRET))
 		map_format.player_in_special_sector(player);
 
 	// Check for weapon change.
 
 	// A special event has no other buttons.
-	if (player->cmd.buttons & BT_SPECIAL)
-		player->cmd.buttons = 0;
+	if (player.cmd.buttons & BT_SPECIAL)
+		player.cmd.buttons = 0;
 
-	if ((player->cmd.buttons & BT_CHANGE) || player->cmd.impulse >= 50)
+	if ((player.cmd.buttons & BT_CHANGE) || player.cmd.impulse >= 50)
 	{
 		// [RH] Support direct weapon changes
-		if (player->cmd.impulse) {
-			newweapon = (weapontype_t)(player->cmd.impulse - 50);
+		if (player.cmd.impulse) {
+			newweapon = (weapontype_t)(player.cmd.impulse - 50);
 		} else {
 			// The actual changing of the weapon is done
 			//	when the weapon psprite can do it
 			//	(read: not in the middle of an attack).
-			newweapon = (weapontype_t)((player->cmd.buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT);
+			newweapon = (weapontype_t)((player.cmd.buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT);
 
 			if (newweapon == wp_fist
-				&& player->weaponowned[wp_chainsaw]
-				&& !(player->readyweapon == wp_chainsaw
-					 && player->powers[pw_strength]))
+				&& player.weaponowned[wp_chainsaw]
+				&& !(player.readyweapon == wp_chainsaw
+					 && player.powers[pw_strength]))
 			{
 				newweapon = wp_chainsaw;
 			}
 
 			if (newweapon == wp_shotgun
-				&& player->weaponowned[wp_supershotgun]
-				&& player->readyweapon != wp_supershotgun)
+				&& player.weaponowned[wp_supershotgun]
+				&& player.readyweapon != wp_supershotgun)
 			{
 				newweapon = wp_supershotgun;
 			}
 		}
 
 		if ((newweapon >= 0 && newweapon < NUMWEAPONS)
-			&& player->weaponowned[newweapon]
-			&& newweapon != player->readyweapon)
+			&& player.weaponowned[newweapon]
+			&& newweapon != player.readyweapon)
 		{
 			// NEVER go to plasma or BFG in shareware,
 			if ((newweapon != wp_plasma && newweapon != wp_bfg)
 			|| (gamemode != shareware) )
 			{
-				player->pendingweapon = newweapon;
+				player.pendingweapon = newweapon;
 			}
 		}
 	}
 
 	// check for use
-	if (player->cmd.buttons & BT_USE)
+	if (player.cmd.buttons & BT_USE)
 	{
-		if (!player->usedown)
+		if (!player.usedown)
 		{
 			P_UseLines (player);
-			player->usedown = true;
+			player.usedown = true;
 		}
 	}
 	else
-		player->usedown = false;
+		player.usedown = false;
 
 	// cycle psprites
 	P_MovePsprites (player);
@@ -1069,37 +1070,37 @@ void P_PlayerThink (player_t *player)
 	// Counters, time dependent power ups.
 
 	// Strength counts up to diminish fade.
-	if (player->powers[pw_strength])
-		player->powers[pw_strength]++;
+	if (player.powers[pw_strength])
+		player.powers[pw_strength]++;
 
-	if (player->powers[pw_invulnerability])
-		player->powers[pw_invulnerability]--;
+	if (player.powers[pw_invulnerability])
+		player.powers[pw_invulnerability]--;
 
-	if (player->powers[pw_invisibility])
-		if (! --player->powers[pw_invisibility] )
-			player->mo->flags &= ~MF_SHADOW;
+	if (player.powers[pw_invisibility])
+		if (! --player.powers[pw_invisibility] )
+			player.mo->flags &= ~MF_SHADOW;
 
-	if (player->powers[pw_infrared])
-		player->powers[pw_infrared]--;
+	if (player.powers[pw_infrared])
+		player.powers[pw_infrared]--;
 
-	if (player->powers[pw_ironfeet])
-		player->powers[pw_ironfeet]--;
+	if (player.powers[pw_ironfeet])
+		player.powers[pw_ironfeet]--;
 
 	// For offline/chase cam
-	P_SetPlayerPowerupStatuses(player, player->powers);
+	P_SetPlayerPowerupStatuses(player, player.powers);
 
-	if (player->damagecount)
-		player->damagecount--;
+	if (player.damagecount)
+		player.damagecount--;
 
-	if (player->bonuscount)
-		player->bonuscount--;
+	if (player.bonuscount)
+		player.bonuscount--;
 
-	if (player->hazardcount)
+	if (player.hazardcount)
 	{
-		player->hazardcount--;
-		if (!(::level.time % player->hazardinterval) &&
-		    player->hazardcount > 16 * TICRATE)
-			P_DamageMobj(player->mo, NULL, NULL, 5);
+		player.hazardcount--;
+		if (!(::level.time % player.hazardinterval) &&
+		    player.hazardcount > 16 * TICRATE)
+			P_DamageMobj(player.mo, NULL, NULL, 5);
 	}
 
 	// Handling colormaps.
@@ -1114,36 +1115,36 @@ void P_PlayerThink (player_t *player)
 		else
 			displayplayer().fixedcolormap = 0;
 	}
-	else if (player->powers[pw_infrared])
+	else if (player.powers[pw_infrared])
 	{
-		if (player->powers[pw_infrared] > 4*32
-			|| (player->powers[pw_infrared]&8) )
+		if (player.powers[pw_infrared] > 4*32
+			|| (player.powers[pw_infrared]&8) )
 		{
 			// almost full bright
-			player->fixedcolormap = 1;
+			player.fixedcolormap = 1;
 		}
 		else
-			player->fixedcolormap = 0;
+			player.fixedcolormap = 0;
 	}
 	else
-		player->fixedcolormap = 0;
+		player.fixedcolormap = 0;
 
 	// Handle air supply
-	if (player->mo->waterlevel < 3 || player->powers[pw_ironfeet] || player->cheats & CF_GODMODE)
+	if (player.mo->waterlevel < 3 || player.powers[pw_ironfeet] || player.cheats & CF_GODMODE)
 	{
-		player->air_finished = level.time + level.airsupply * TICRATE;
+		player.air_finished = level.time + level.airsupply * TICRATE;
 	}
-	else if (level.airsupply != 0 && player->air_finished <= level.time && !(level.time & 31))
+	else if (level.airsupply != 0 && player.air_finished <= level.time && !(level.time & 31))
 	{
-		P_DamageMobj (player->mo, NULL, NULL, 2 + 2*((level.time-player->air_finished)/TICRATE), MOD_WATER, DMG_NO_ARMOR);
+		P_DamageMobj (player.mo, NULL, NULL, 2 + 2*((level.time-player.air_finished)/TICRATE), MOD_WATER, DMG_NO_ARMOR);
 	}
 
 	// [BC] Handle WDL Beacon
-	if (serverside && player->ingame() && !player->spectator && player->mo->health > 0)
+	if (serverside && player.ingame() && !player.spectator && player.mo->health > 0)
 	{
 		if (P_AtInterval(5))
 		{
-			M_LogWDLEvent(WDL_EVENT_PLAYERBEACON, player, NULL, player->mo->angle / 4, 0,
+			M_LogWDLEvent(WDL_EVENT_PLAYERBEACON, &player, NULL, player.mo->angle / 4, 0,
 			              0, 0);
 		}
 	}
@@ -1159,18 +1160,18 @@ fixed_t P_TickWeaponBobX()
 		((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob
 		: 1.0f;
 
-	return P_CalculateWeaponBobX(&player, bob_amount);
+	return P_CalculateWeaponBobX(player, bob_amount);
 }
 
 fixed_t P_TickWeaponBobY()
 {
 	// Update bob - this happens once per gametic
 	player_t& player = displayplayer();
-		const float bob_amount =
+	const float bob_amount =
 		((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob
 		: 1.0f;
 
-	return P_CalculateWeaponBobY(&player, bob_amount);
+	return P_CalculateWeaponBobY(player, bob_amount);
 }
 
 const char* PlayerState(size_t state)
@@ -1432,9 +1433,9 @@ player_s::player_s() :
 	client(player_s::client_t())
 {
 	cmd.clear();
-	ArrayInit(powers, 0);
-	ArrayInit(cards, false);
-	ArrayInit(flags, false);
+	powers.fill(0);
+	cards.fill(false);
+	flags.fill(false);
 	weaponowned.fill(false);
 	ammo.fill(false);
 	maxammo.fill(false);
@@ -1474,13 +1475,13 @@ player_s &player_s::operator =(const player_s &other)
 	armorpoints = other.armorpoints;
 	armortype = other.armortype;
 
-	ArrayCopy(powers, other.powers);
-	ArrayCopy(cards, other.cards);
+	powers = other.powers;
+	cards = other.cards;
 
 	lives = other.lives;
 	roundwins = other.roundwins;
 
-	ArrayCopy(flags, other.flags);
+	flags = other.flags;
 
 	points = other.points;
 	backpack = other.backpack;

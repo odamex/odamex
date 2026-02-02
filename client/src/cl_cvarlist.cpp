@@ -444,9 +444,9 @@ CVAR(				cl_showspawns, "0", "Show spawn points as particle fountains",
 CVAR_FUNC_DECL(		cl_showfriends, "0", "Show an indicator on friendly monsters.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(cl_showsprees, "1", "", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR(cl_showsprees, "1", "Show killing sprees for the display player.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(cl_showmultikills, "1", "", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+CVAR(cl_showmultikills, "1", "Show multi kills for the display player.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 // Netdemo Preferences
 // --------------------
