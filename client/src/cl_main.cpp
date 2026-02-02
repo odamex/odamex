@@ -1766,6 +1766,7 @@ bool CL_Connect()
 	serverside = false;
 	simulated_connection = netdemo.isPlaying();
 
+    const int reliableSize = MSG_ReadShort();
 	byte flags = MSG_ReadByte();
 	if (flags & SVF_UNUSED_MASK)
 	{
@@ -1936,12 +1937,13 @@ void CL_Decompress()
  */
 bool CL_ReadPacketHeader()
 {
-	const int sequence = MSG_ReadLong();    // Packet sequence number.
-	const byte flags   = MSG_ReadByte();    // Flag bits.
+	const int  sequence     = MSG_ReadLong();    // Packet sequence number.
+	const int  reliableSize = MSG_ReadShort();   // Reliable size / Start of Unreliable data
+	const byte flags        = MSG_ReadByte();    // Flag bits.
 
 	if (flags & SVF_UNUSED_MASK)
 	{
-		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood.", flags);
+		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood", flags);
 		CL_QuitNetGame(NQ_PROTO);
 	}
 	else if (flags & SVF_COMPRESSED)
@@ -1953,6 +1955,24 @@ bool CL_ReadPacketHeader()
 
 	if (sequence >= 0)
 	{
+		// If this packet has both reliable and unreliable data, receive the unreliable
+		// portion immediately, then truncate the packet and defer the rest for ordered
+		// processing.
+		if (reliableSize < ::net_message.BytesLeftToRead())
+		{
+			const size_t startOfReliableData = ::net_message.Tell();
+			::net_message.Seek(reliableSize, buf_t::BT_CURRENT);
+			const size_t startOfNonReliableData = ::net_message.Tell();
+
+			CL_AcceptNetMessage();
+
+			const size_t sizeOfNonReliableData = ::net_message.Tell() - startOfNonReliableData;
+			const size_t sizeOfMessageWithNonReliableTruncated = ::net_message.size() - sizeOfNonReliableData;
+
+			::net_message.Seek(startOfReliableData, buf_t::BT_START);
+			::net_message.setcursize(sizeOfMessageWithNonReliableTruncated);
+		}
+
 		::reliableSequenceReceiver.RegisterReceivedPacket(sequence, ::net_message);
 
 		// Send an ACK to the server only if it contained reliable data.

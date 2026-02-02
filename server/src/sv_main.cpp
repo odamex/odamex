@@ -1803,6 +1803,7 @@ void SV_ConnectClient()
 		if (smallbuf.size() == 0)
 		{
 			MSG_WriteLong(&smallbuf, 0); // First packet.
+			MSG_WriteShort(&smallbuf, 0); // Rel size
 			MSG_WriteByte(&smallbuf, 0); // No flags.
 			MSG_WriteSVC(&smallbuf, SVC_Disconnect("Server is full\n"));
 		}

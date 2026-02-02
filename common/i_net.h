@@ -340,9 +340,9 @@ public:
     // Buffer seeking flags
     typedef enum
     {
-         BT_SSET // From beginning
-        ,BT_SCUR // From current position
-        ,BT_SEND // From end
+         BT_START   // From beginning
+        ,BT_CURRENT // From current position
+        ,BT_END     // From end
     } seek_loc_t;
 
 public:
@@ -570,11 +570,11 @@ public:
 		return (const char *)begin;
 	}
 
-    size_t SetOffset (const size_t &offset, const seek_loc_t &loc)
+    size_t Seek (const size_t &offset, const seek_loc_t &loc)
     {
         switch (loc)
         {
-            case BT_SSET:
+            case BT_START:
             {
                 if (offset > cursize)
                 {
@@ -586,7 +586,7 @@ public:
             }
             break;
 
-            case BT_SCUR:
+            case BT_CURRENT:
             {
                 if (readpos+offset > cursize)
                 {
@@ -598,7 +598,7 @@ public:
             }
 			break;
 
-            case BT_SEND:
+            case BT_END:
             {
                 if (offset > readpos)
                 {
@@ -621,6 +621,11 @@ public:
 	}
 
 	size_t BytesRead() const
+	{
+		return readpos;
+	}
+
+	size_t Tell() const
 	{
 		return readpos;
 	}
@@ -811,7 +816,7 @@ bool MSG_ReadProto(MSG& msg)
 	return true;
 }
 
-size_t MSG_SetOffset (const size_t &offset, const buf_t::seek_loc_t &loc);
+size_t MSG_Seek(const size_t &offset, const buf_t::seek_loc_t &loc);
 
 bool MSG_DecompressMinilzo ();
 bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap);

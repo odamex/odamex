@@ -42,10 +42,11 @@ EXTERN_CVAR (sv_latency)
 
 namespace
 {
-    const size_t PACKET_FLAG_INDEX = sizeof(uint32_t);
-    const size_t PACKET_MESSAGE_INDEX = PACKET_FLAG_INDEX + 1;
-    const size_t PACKET_HEADER_SIZE = PACKET_MESSAGE_INDEX;
-    const size_t PACKET_OLD_MASK = 0xFF;
+    const size_t PACKET_SEQUENCE_INDEX      = 0;
+    const size_t PACKET_RELIABLE_SIZE_INDEX = 4;
+    const size_t PACKET_FLAG_INDEX          = 6;
+    const size_t PACKET_MESSAGE_INDEX       = 7;
+    const size_t PACKET_HEADER_SIZE         = PACKET_MESSAGE_INDEX;
 
     buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
     buf_t sendd(MAX_UDP_PACKET);
@@ -181,7 +182,8 @@ bool SV_SendPacket(player_t &pl)
 		MSG_WriteLong(&sendd, -1);
 	}
 
-	MSG_WriteByte(&sendd, 0); // Flags, filled out later.
+	MSG_WriteShort(&sendd, cl->reliablebuf.cursize);    // Reliable size
+	MSG_WriteByte(&sendd, 0);                           // Flags, filled out later.
 
 	// copy the reliable message to the packet first
 	if (cl->reliablebuf.cursize)
@@ -246,6 +248,7 @@ static void SendOldPacket(client_t& cl, const SequenceQueueEntryType& queueEntry
 	// have saved out.
 
 	MSG_WriteLong(&send, queueEntry.sequence);
+	MSG_WriteShort(&send, queueEntry.buf.cursize);
 	MSG_WriteByte(&send, 0); // Flags, filled out later.
 
 	// copy the reliable message to the packet
