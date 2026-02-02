@@ -162,7 +162,7 @@ void AnnouncerManager::loadAnnouncerDefaults()
 
 	AnnouncerMetaData_s metadata = AnnouncerMetaData_s();
 
-	metadata.name = "Odamex Official Announcer";
+	metadata.name = "Official Odamex Announcer";
 	metadata.description = "The official Odamex announcer pack.";
 	metadata.author = "Manc";
 
@@ -202,7 +202,6 @@ void AnnouncerManager::loadAnnouncerDefaults()
 	defaultAnnouncer.soundDict[ANN_REVIVEDPLAYER] = "officialvox/horde/revivedplayer";
 
 	// General Announcements
-	defaultAnnouncer.soundDict[ANN_FIGHT] = "officialvox/fight";
 	defaultAnnouncer.soundDict[ANN_FIVEMINUTEWARNING] = "officialvox/fiveminutewarning";
 	defaultAnnouncer.soundDict[ANN_ONEMINUTEWARNING] = "officialvox/oneminutewarning";
 	defaultAnnouncer.soundDict[ANN_THREEFRAGSLEFT] = "officialvox/threefragsleft";
@@ -213,6 +212,7 @@ void AnnouncerManager::loadAnnouncerDefaults()
 	defaultAnnouncer.soundDict[ANN_THREE] = "officialvox/three";
 	defaultAnnouncer.soundDict[ANN_TWO] = "officialvox/two";
 	defaultAnnouncer.soundDict[ANN_ONE] = "officialvox/one";
+	defaultAnnouncer.soundDict[ANN_FIGHT] = "officialvox/fight";
 	defaultAnnouncer.soundDict[ANN_PLAYERELIMINATED] = "officialvox/playereliminated";
 	defaultAnnouncer.soundDict[ANN_FIRSTBLOOD] = "officialvox/firstblood";
 
@@ -280,6 +280,29 @@ void AnnouncerManager::loadAnnouncerByName(const std::string& announcer)
 		else
 		{
 			loadedAnnouncer = announcerDict.begin()->second;
+		}
+	}
+}
+
+void AnnouncerManager::loadAnnouncers(const std::unordered_map<std::string, Announcer_s> newAnnouncers)
+{
+	for (auto& it : newAnnouncers)
+	{
+		if (announcerDict.find(it.first) == announcerDict.end())
+		{
+			announcerDict[it.first] = it.second;
+		}
+		else
+		{
+			// Merge existing announcer with new one.
+			Announcer_s& existingAnnouncer = announcerDict[it.first];
+			// Update metadata
+			existingAnnouncer.metadata = it.second.metadata;
+			// Merge sound dictionaries
+			for (auto& soundIt : it.second.soundDict)
+			{
+				existingAnnouncer.soundDict[soundIt.first] = soundIt.second;
+			}
 		}
 	}
 }

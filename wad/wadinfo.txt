@@ -31,6 +31,7 @@ CHEATKEY
 EASYKEY
 OBOSSMAP
 SPREEDEF
+ONCRINFO
 
 # List of Sounds (prevent conversion)
 DSEMPTY

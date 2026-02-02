@@ -31,15 +31,17 @@
 static void ParseSpreeAndMulti(OScanner& os,
                                std::unordered_map<std::string, std::string>& soundDict)
 {
-	std::string token = StdStringToLower(os.getToken());
-	os.mustScan();
-	os.assertTokenIs("=");
+	std::string key = StdStringToLower(os.getToken());
 	os.mustScanInt();
 	int level = os.getTokenInt();
+	os.mustScan();
+	os.assertTokenIs("=");
+	os.mustScan();
+	std::string token = StdStringToLower(os.getToken());
 
-	std::string tokenName = token + " " + std::to_string(level);
+	std::string keyName = key + " " + std::to_string(level);
 
-	soundDict[tokenName] = token;
+	soundDict[keyName] = token;
 }
 
 static void ParseAnnouncerToken(OScanner& os,
@@ -92,11 +94,12 @@ static void ParseOncrInfo(const int lump, const OLumpName name)
 	};
 	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
 
+	std::unordered_map<std::string, Announcer_s> newAnnouncers;
+
 	while (os.scan())
 	{
-		os.mustScan();
 		os.assertTokenNoCaseIs("{");
-		os.scan();
+		os.mustScan();
 
 		std::unordered_map<std::string, std::string> soundDict;
 		AnnouncerMetaData_s metaData = AnnouncerMetaData_s();
@@ -134,6 +137,33 @@ static void ParseOncrInfo(const int lump, const OLumpName name)
 						fmt::sprintf("Unknown ONCRINFO Token \"%s\".", os.getToken());
 				os.warning(buffer);
 			}
+			os.mustScan();
+		}
+
+		if (metaData.name.empty())
+		{
+			os.error("Announcer pack is missing a 'name' field.");
+		}
+
+		Announcer_s newAnnouncer = Announcer_s();
+		newAnnouncer.metadata = metaData;
+		newAnnouncer.soundDict = soundDict;
+
+		if (newAnnouncers.find(metaData.name) == newAnnouncers.end())
+		{
+			newAnnouncers[metaData.name] = newAnnouncer;
+		}
+		else
+		{
+			// Merge existing announcer with new one.
+			Announcer_s& existingAnnouncer = newAnnouncers[metaData.name];
+			// Update metadata
+			existingAnnouncer.metadata = metaData;
+			// Merge sound dictionaries
+			for (auto& soundIt : soundDict)
+			{
+				existingAnnouncer.soundDict[soundIt.first] = soundIt.second;
+			}
 		}
 
 		bool didScan = os.scan();
@@ -141,9 +171,19 @@ static void ParseOncrInfo(const int lump, const OLumpName name)
 		{
 			break;
 		}
+		else
+		{
+			os.unScan();
+		}
 		continue;
 	}
+
+	AnnouncerManager::getInstance().loadAnnouncers(newAnnouncers);
 }
+
+#ifdef CLIENT_APP
+EXTERN_CVAR(cl_announcer)
+#endif
 
 void G_ParseOncrInfo()
 {
@@ -162,4 +202,9 @@ void G_ParseOncrInfo()
 	{
 		ParseOncrInfo(lump, "ONCRINFO");
 	}
+
+#ifdef CLIENT_APP
+	// Reset the preferred announcer once all announcers are loaded.
+	cl_announcer.Callback();
+#endif
 }

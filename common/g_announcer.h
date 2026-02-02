@@ -170,10 +170,6 @@ static const std::string ANN_REVIVEDPLAYER = "revivedplayer";
 // General Announcements
 
 /// <summary>
-/// Plays when fighting is enabled, either start of a new round or weapons unlocked.
-/// </summary>
-static const std::string ANN_FIGHT = "fight";
-/// <summary>
 /// Plays when there's 5 minutes left in a time limit game.
 /// </summary>
 static const std::string ANN_FIVEMINUTEWARNING = "fiveminutewarning";
@@ -213,6 +209,10 @@ static const std::string ANN_TWO = "two";
 /// Plays in warmup when there's 1 second before the match starts.
 /// </summary>
 static const std::string ANN_ONE = "one";
+/// <summary>
+/// Plays when fighting is enabled, either start of a new round or weapons unlocked.
+/// </summary>
+static const std::string ANN_FIGHT = "fight";
 /// <summary>
 /// Plays when the display player runs out of lives.
 /// </summary>
@@ -387,11 +387,6 @@ public:
 	void reset();
 
 	/// <summary>
-	/// Loads default announcer information if no ONCRINFO is found.
-	/// </summary>
-	void loadAnnouncerDefaults();
-
-	/// <summary>
 	/// Gets if there is a currently loaded announcer name available.
 	/// </summary>
 	/// <param name="announcer">Name of the announcer pack to check.</param>
@@ -400,7 +395,8 @@ public:
 
 	/// <summary>
 	/// Returns if a named token exists in our repository of named tokens.
-	/// Will NOT return true for spree or multi tokens, as those are dynamically generated.
+	/// Will NOT return true for spree or multi tokens, as those are dynamically
+	/// generated.
 	/// </summary>
 	/// <param name="tokenName">Name of the token to search.</param>
 	/// <returns>True if the token is found.</returns>
@@ -408,7 +404,8 @@ public:
 
 	/// <summary>
 	/// Gets the name of the announcer to the left of the current one.
-	/// If the current cl_announcer is null or invalid, return the first announcer in the list.
+	/// If the current cl_announcer is null or invalid, return the first announcer in the
+	/// list.
 	/// </summary>
 	/// <returns>The name of the announcer to the left of this one.</returns>
 	std::string getLeftAnnouncer(const std::string& currentAnnouncer) const;
@@ -427,6 +424,33 @@ public:
 	/// <param name="currentAnnouncer">Announcer for which to return the metadata.</param>
 	/// <returns>The metadata of the specified announcer pack.</returns>
 	const AnnouncerMetaData_s& getAnnouncerMetadata(const std::string& currentAnnouncer);
+
+	/// <summary>
+	/// Loads default announcer information if no ONCRINFO is found.
+	/// </summary>
+	void loadAnnouncerDefaults();
+
+	/// <summary>
+	/// Gets the sndinfo token for the current announcer for the
+	/// following event.
+	/// </summary>
+	/// <param name="token">Token for the event to play. One
+	/// of the announcements above.</param>
+	/// <returns>The specified sndinfo token for the current announcer, empty if invalid
+	/// or unknown.</returns>
+	const std::string getTokenForEvent(const std::string& event);
+
+	/// <summary>
+	/// Loads the specified announcer, or if not found, loads the default announcer.
+	/// </summary>
+	/// <param name="announcer">Name of the announcer to load.</param>
+	void loadAnnouncerByName(const std::string& announcer);
+
+	/// <summary>
+	/// Loads the map of new announcers brought in by reading an ONCRINFO lump.
+	/// </summary>
+	/// <param name="newAnnouncers">New announcers to add or merge.</param>
+	void loadAnnouncers(const std::unordered_map<std::string, Announcer_s> newAnnouncers);
 
 	/// <summary>
 	/// Function to return whether the 3-frag warning has been announced already.
@@ -607,21 +631,6 @@ public:
 	/// Sets whether the lead is tied.
 	/// </summary>
 	void setLeadTied(bool tied) { leadIsTied = tied; }
-
-	/// <summary>
-	/// Gets the sndinfo token for the current announcer for the
-	/// following event.
-	/// </summary>
-	/// <param name="token">Token for the event to play. One
-	/// of the announcements above.</param>
-	/// <returns>The specified sndinfo token for the current announcer, empty if invalid or unknown.</returns>
-	const std::string getTokenForEvent(const std::string& event);
-
-	/// <summary>
-	/// Loads the specified announcer, or if not found, loads the default announcer.
-	/// </summary>
-	/// <param name="announcer">Name of the announcer to load.</param>
-	void loadAnnouncerByName(const std::string& announcer);
 
 private:
 	/// <summary>

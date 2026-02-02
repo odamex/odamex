@@ -1,0 +1,93 @@
+// Oncrinfo lump for the Official Odamex Announcer
+{
+    name = "Official Odamex Announcer"
+    description = "Official announcer voice for Odamex"
+    author = "Manc, Odamex Team"
+
+    // Possessive CTF announcer lines
+    yourflagtaken = "officialvox/your/flag/take"
+    enemyflagtaken = "officialvox/enemy/flag/take"
+    yourflagdropped = "officialvox/your/flag/drop"
+    enemyflagdropped = "officialvox/enemy/flag/drop"
+    yourflagisbeingreturned = "officialvox/your/flag/manualreturn"
+    enemyflagisbeingreturned = "officialvox/enemy/flag/manualreturn"
+    yourflagreturned = "officialvox/your/flag/return"
+    enemyflagreturned = "officialvox/enemy/flag/return"
+    yourteamscores = "officialvox/your/score"
+    enemyteamscores = "officialvox/enemy/score"
+
+    // Team CTF announcer lines
+    redflagtaken = "officialvox/red/flag/take"
+    blueflagtaken = "officialvox/blue/flag/take"
+    greenflagtaken = "officialvox/green/flag/take"
+    redflagdropped = "officialvox/red/flag/drop"
+    blueflagdropped = "officialvox/blue/flag/drop"
+    greenflagdropped = "officialvox/green/flag/drop"
+    redflagisbeingreturned = "officialvox/red/flag/manualreturn"
+    blueflagisbeingreturned = "officialvox/blue/flag/manualreturn"
+    greenflagisbeingreturned = "officialvox/green/flag/manualreturn"
+    redflagreturned = "officialvox/red/flag/return"
+    blueflagreturned = "officialvox/blue/flag/return"
+    greenflagreturned = "officialvox/green/flag/return"
+    redteamscores = "officialvox/red/score"
+    blueteamscores = "officialvox/blue/score"
+    greenteamscores = "officialvox/green/score"
+
+    // Horde and Survival announcer lines
+    hordebossspawn = "officialvox/horde/bossspawn"
+    lastplayeralive = "officialvox/lastplayeralive"
+    revivedplayer = "officialvox/horde/revivedplayer"
+
+    // Time warning announcer lines
+    fiveminutewarning = "officialvox/fiveminutewarning"
+    oneminutewarning = "officialvox/oneminutewarning"
+
+    // Fraglimit warning announcer lines
+    threefragsleft = "officialvox/threefragsleft"
+    twofragsleft = "officialvox/twofragsleft"
+    onefragleft = "officialvox/onefragleft"
+
+    // Countdown announcer lines
+    five = "officialvox/five"
+    four = "officialvox/four"
+    three = "officialvox/three"
+    two = "officialvox/two"
+    one = "officialvox/one"
+    fight = "officialvox/fight"
+
+    // Survival/LMS Announcer line
+    playereliminated = "officialvox/playereliminated"
+
+    // DM/TDM Announcer lines
+    firstblood = "officialvox/firstblood"
+
+    // Lead tracking announcer lines
+    youhavethelead = "officialvox/youhavethelead"
+    youlostthelead = "officialvox/youlostthelead"
+    youtiedforthelead = "officialvox/youtiedforthelead"
+
+    // Result tracking announcer lines
+    youwin = "officialvox/youwin"
+    youlose = "officialvox/youlose"
+    youtied = "officialvox/youtied"
+
+    // Multi kill announcer lines
+    multi 2 = "officialvox/multi/doublekill"
+    multi 3 = "officialvox/multi/triplekill"
+    multi 4 = "officialvox/multi/multikill"
+    multi 5 = "officialvox/multi/ultrakill"
+    multi 6 = "officialvox/multi/overkill"
+    multi 7 = "officialvox/multi/megakill"
+    multi 8 = "officialvox/multi/monsterkill"
+    multi 9 = "officialvox/multi/mythickill"
+    multi 10 = "officialvox/multi/killionaire"
+    multi 11 = "officialvox/multi/terminator"
+
+    // Spree announcer lines
+    spree 1 = "officialvox/spree/killingspree"
+    spree 2 = "officialvox/spree/rampage"
+    spree 3 = "officialvox/spree/dominating"
+    spree 4 = "officialvox/spree/unstoppable"
+    spree 5 = "officialvox/spree/untouchable"
+    spree 6 = "officialvox/spree/legendary"
+}
