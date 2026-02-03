@@ -5,6 +5,13 @@
 #include "SequenceReceiver.h"
 #include "SequenceSender.h"
 
+enum class MessageResultEnum
+{
+    ACCEPT,
+    DEFER,
+    ABORT
+};
+
 class SequencedMessenger
 {
     public:

@@ -596,9 +596,9 @@ static void ShoveChatStr (std::string str, byte who)
 	if(str.length() > MAX_CHATSTR_LEN)
 		str.resize(MAX_CHATSTR_LEN);
 
-	MSG_WriteMarker (&net_buffer, clc_say);
-	MSG_WriteByte (&net_buffer, who);
-	MSG_WriteString (&net_buffer, str.c_str());
+	MSG_WriteMarker (&messenger.NetBuf(), clc_say);
+	MSG_WriteByte (&messenger.NetBuf(), who);
+	MSG_WriteString (&messenger.NetBuf(), str.c_str());
 }
 
 static void ShovePrivMsg(byte pid, std::string str)
@@ -610,9 +610,9 @@ static void ShovePrivMsg(byte pid, std::string str)
 	if (str.length() > MAX_CHATSTR_LEN)
 		str.resize(MAX_CHATSTR_LEN);
 
-	MSG_WriteMarker(&net_buffer, clc_privmsg);
-	MSG_WriteByte(&net_buffer, pid);
-	MSG_WriteString(&net_buffer, str.c_str());
+	MSG_WriteMarker(&messenger.NetBuf(), clc_privmsg);
+	MSG_WriteByte(&messenger.NetBuf(), pid);
+	MSG_WriteString(&messenger.NetBuf(), str.c_str());
 }
 
 BEGIN_COMMAND (messagemode)

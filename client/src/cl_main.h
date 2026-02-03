@@ -30,6 +30,8 @@
 #include "r_defs.h"
 #include "cl_demo.h"
 
+#include "SequencedMessenger.h"
+
 extern netadr_t  serveraddr;
 extern bool      connected;
 extern int       connecttimeout;
@@ -37,9 +39,8 @@ extern int       connecttimeout;
 extern bool      noservermsgs;
 extern int       last_received;
 
-extern buf_t     net_buffer;
-
-extern NetDemo	netdemo;
+extern NetDemo            netdemo;
+extern SequencedMessenger messenger;
 
 #define MAXSAVETICS 70
 
@@ -51,13 +52,6 @@ enum netQuitReason_e
 	NQ_DISCONNECT, // Generic message for "typical" forced disconnects initiated by the client.
 	NQ_ABORT,      // Connection attempt was aborted
 	NQ_PROTO,      // Encountered something unexpected in the protocol
-};
-
-enum class MessageResultEnum
-{
-    ACCEPT,
-    DEFER,
-    ABORT
 };
 
 #define CL_QuitNetGame(reason) CL_QuitNetGame2(reason, __FILE__, __LINE__)
