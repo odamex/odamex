@@ -61,6 +61,7 @@
 #include "cl_main.h"
 #include "cl_demo.h"
 #include "cl_replay.h"
+#include "cl_netgraph.h"
 #include "gi.h"
 #include "hu_mousegraph.h"
 #include "g_spawninv.h"
@@ -121,6 +122,7 @@ int 			gametic;
 
 extern fixed_t bobx;
 extern fixed_t boby;
+extern NetGraph netgraph;
 
 enum demoversion_t
 {
@@ -1006,16 +1008,21 @@ void G_Ticker (void)
 			noservermsgs = false;
 
             const MessageResultEnum initialReadResult = CL_ReadPacketHeader();
+
             switch (initialReadResult)
             {
                 case MessageResultEnum::DEFER:
+					netgraph.addPacketIn();
                     continue;
                 case MessageResultEnum::ABORT:
                     return;
-                case MessageResultEnum::ACCEPT:    // fall-thru: 
+                case MessageResultEnum::ACCEPT:    // fall-thru: have a purely non-reliable message.
+					netgraph.addPacketIn();
                 default:
                     break;
             }
+
+            // If we're here it's because we need to accept a message right away.
 
             const MessageResultEnum nonReliableResult = CL_AcceptNetMessage();
 			if (nonReliableResult == MessageResultEnum::ABORT)

@@ -48,7 +48,6 @@ bool predicting;
 int demostartgametic;
 bool isFast;
 int gametic;
-bool simulated_connection;
 gamestate_t gamestate;
 
 CVAR_FUNC_IMPL (sv_allowwidescreen) {}

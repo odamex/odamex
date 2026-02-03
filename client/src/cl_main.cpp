@@ -71,7 +71,7 @@
 
 #include "m_consolecommandstream.h"
 
-#include "SequenceReceiver.h"
+#include "SequencedMessenger.h"
 
 #include <bitset>
 #include <set>
@@ -118,7 +118,10 @@ bool      connected;
 netadr_t  serveraddr; // address of a server
 netadr_t  lastconaddr;
 
-static SequenceReceiver reliableSequenceReceiver;
+extern NetGraph netgraph;
+
+static SequencedMessenger messenger;
+//static SequenceReceiver reliableSequenceReceiver;
 
 // denis - unique session key provided by the server
 std::string digest;
@@ -128,12 +131,9 @@ std::string server_host = "";	// hostname of server
 // [SL] 2011-06-27 - Class to record and playback network recordings
 NetDemo netdemo;
 // [SL] 2011-07-06 - not really connected (playing back a netdemo)
-bool simulated_connection = false;
 bool forcenetdemosplit = false;		// need to split demo due to svc_reconnect
 
 NetCommand localcmds[MAXSAVETICS];
-
-extern NetGraph netgraph;
 
 // [SL] 2012-03-07 - Players that were teleported during the current gametic
 std::set<byte> teleported_players;
@@ -398,7 +398,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 	mute_spectators = 0.f;
 	mute_enemies = 0.f;
 
-	::reliableSequenceReceiver = SequenceReceiver();
+	::messenger = SequencedMessenger();
 	P_ClearAllNetIds();
 
 	{
@@ -464,7 +464,7 @@ void CL_Reconnect(void)
 		connected = false;
 		gameaction = ga_fullconsole;
 
-		::reliableSequenceReceiver = SequenceReceiver();
+		::messenger = SequencedMessenger();
 		P_ClearAllNetIds();
 	}
 	else if (lastconaddr.ip[0])
@@ -1751,7 +1751,7 @@ bool CL_Connect()
 {
 	players.clear();
 
-	::reliableSequenceReceiver = SequenceReceiver();
+	::messenger = SequencedMessenger();
 
 	// [AM] This needs to go out ASAP so the server can start sending us
 	//      messages.
@@ -1927,7 +1927,7 @@ void CL_Decompress()
 	if(!MSG_BytesLeft())
 		return;
 
-	MSG_DecompressMinilzo();
+	MSG_DecompressMinilzo(::net_message);
 }
 
 /**
@@ -1937,88 +1937,38 @@ void CL_Decompress()
  */
 MessageResultEnum CL_ReadPacketHeader()
 {
-	const int  sequence     = MSG_ReadLong();    // Packet sequence number.
-	const int  reliableSize = MSG_ReadShort();   // Reliable size / Start of Unreliable data
-	const byte flags        = MSG_ReadByte();    // Flag bits.
-
-	if (flags & SVF_UNUSED_MASK)
-	{
-		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood", flags);
-		CL_QuitNetGame(NQ_PROTO);
-	}
-	else if (flags & SVF_COMPRESSED)
-	{
-		CL_Decompress();
-	}
-
-	netgraph.addPacketIn();
-
-	if (sequence >= 0)
-	{
-		// If this packet has both reliable and unreliable data, receive the unreliable
-		// portion immediately, then truncate the packet and defer the rest for ordered
-		// processing.
-		if (reliableSize < ::net_message.BytesLeftToRead())
-		{
-			const size_t startOfReliableData    = ::net_message.Tell();
-			const size_t startOfNonReliableData = startOfReliableData + reliableSize;
-
-			::net_message.Seek(reliableSize, buf_t::BT_CURRENT);
-			if (CL_AcceptNetMessage() == MessageResultEnum::ABORT)
-            {
-                return MessageResultEnum::ABORT;
-            }
-
-			const size_t sizeOfNonReliableData                 = ::net_message.Tell() - startOfNonReliableData;
-			const size_t sizeOfMessageWithNonReliableTruncated = ::net_message.size() - sizeOfNonReliableData;
-
-			::net_message.Seek(startOfReliableData, buf_t::BT_START);
-			::net_message.setcursize(sizeOfMessageWithNonReliableTruncated);
-		}
-
-		::reliableSequenceReceiver.RegisterReceivedPacket(sequence, ::net_message);
-
-		// Send an ACK to the server only if it contained reliable data.
-		MSG_WriteMarker(&net_buffer, clc_ack);
-		MSG_WriteLong(&net_buffer, sequence);
-		return MessageResultEnum::DEFER;
-	}
-
-	return MessageResultEnum::ACCEPT;
+	return ::messenger.Receive(::net_message);
 }
 
 // Returns true if all is good, false if we need to bail out of further processing.
 MessageResultEnum CL_AcceptNetMessage()
 {
-	if (netdemo.isRecording())
+	if (::messenger.NextReceivedPacket(::net_message))
 	{
-		netdemo.capture(&::net_message);
-	}
+		if (netdemo.isRecording())
+		{
+			netdemo.capture(&::net_message);
+		}
 
-	CL_ParseCommands();
+		CL_ParseCommands();
 
-	if (gameaction == ga_fullconsole) // Host_EndGame was called
-	{
-		return MessageResultEnum::ABORT;
-	}
-	return MessageResultEnum::ACCEPT;
-}
-
-// Handles the next Reliable message in sequence.
-// Returns true if all is good, false if we need to bail out of further processing.
-MessageResultEnum CL_ProcessCurrentReliableMessages()
-{
-	SequenceQueueEntryType* queueEntryPtr;
-	while ((queueEntryPtr = ::reliableSequenceReceiver.NextPacket()) != nullptr)
-	{
-		queueEntryPtr->buf.swap(::net_message);
-
-		if (CL_AcceptNetMessage() == MessageResultEnum::ABORT)
+		if (gameaction == ga_fullconsole) // Host_EndGame was called
 		{
 			return MessageResultEnum::ABORT;
 		}
+		return MessageResultEnum::ACCEPT;
 	}
-	return MessageResultEnum::ACCEPT;
+	return MessageResultEnum::DEFER;
+}
+
+MessageResultEnum CL_ProcessCurrentReliableMessages()
+{
+	auto result = CL_AcceptNetMessage();
+	while (result == MessageResultEnum::ACCEPT)
+	{
+		result = CL_AcceptNetMessage();
+	}
+	return result;
 }
 
 

@@ -173,6 +173,7 @@ enum clientBuf_e
 
 extern int   localport;
 extern int   msg_badread;
+extern bool  simulated_connection;
 
 // network message info
 struct msg_info_t
@@ -724,6 +725,10 @@ public:
 	{
 		using std::swap;
 
+        if (&other == this)
+        {
+            return;
+        }
 		swap(data,       other.data);
 		swap(allocsize,  other.allocsize);
 		swap(cursize,    other.cursize);
@@ -818,5 +823,5 @@ bool MSG_ReadProto(MSG& msg)
 
 size_t MSG_Seek(const size_t &offset, const buf_t::seek_loc_t &loc);
 
-bool MSG_DecompressMinilzo ();
+bool MSG_DecompressMinilzo (buf_t& io_buf);
 bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap);

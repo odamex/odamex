@@ -90,10 +90,6 @@ bool clientside = false, serverside = true;
 bool predicting = false;
 baseapp_t baseapp = server;
 
-// [SL] 2011-07-06 - not really connected (playing back a netdemo)
-// really only used clientside
-bool        simulated_connection = false;
-
 extern int mapchange;
 
 bool step_mode = false;

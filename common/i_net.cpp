@@ -88,8 +88,9 @@ unsigned int	inet_socket;
 int         	localport;
 netadr_t    	net_from;   // address of who sent the packet
 
+bool simulated_connection;  // .bss initialized to false.
+
 buf_t       net_message(MAX_UDP_PACKET);
-extern bool	simulated_connection;
 
 // buffer for compression/decompression
 // can't be static to a function because some
@@ -832,17 +833,17 @@ size_t MSG_Seek (const size_t &offset, const buf_t::seek_loc_t &loc)
 //
 // MSG_DecompressMinilzo
 //
-bool MSG_DecompressMinilzo ()
+bool MSG_DecompressMinilzo (buf_t& io_buf)
 {
 	// decompress back onto the receive buffer
-	size_t left = MSG_BytesLeft();
+	size_t left = io_buf.BytesLeftToRead();
 
-	if(decompressed.maxsize() < net_message.maxsize())
-		decompressed.resize(net_message.maxsize());
+	if(decompressed.maxsize() < io_buf.maxsize())
+		decompressed.resize(io_buf.maxsize());
 
-	lzo_uint newlen = net_message.maxsize();
+	lzo_uint newlen = io_buf.maxsize();
 
-	unsigned int r = lzo1x_decompress_safe (net_message.ptr() + net_message.BytesRead(), left, decompressed.ptr(), &newlen, NULL);
+	unsigned int r = lzo1x_decompress_safe (io_buf.ptr() + io_buf.BytesRead(), left, decompressed.ptr(), &newlen, NULL);
 
 	if(r != LZO_E_OK)
 	{
@@ -850,10 +851,10 @@ bool MSG_DecompressMinilzo ()
 		return false;
 	}
 
-	net_message.clear();
-	memcpy(net_message.ptr(), decompressed.ptr(), newlen);
+	io_buf.clear();
+	memcpy(io_buf.ptr(), decompressed.ptr(), newlen);
 
-	net_message.cursize = newlen;
+	io_buf.cursize = newlen;
 
 	return true;
 }
