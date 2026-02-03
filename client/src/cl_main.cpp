@@ -1935,7 +1935,7 @@ void CL_Decompress()
  *
  * @return False if the packet was set aside for reliability sequencing, otherwise true.
  */
-bool CL_ReadPacketHeader()
+MessageResultEnum CL_ReadPacketHeader()
 {
 	const int  sequence     = MSG_ReadLong();    // Packet sequence number.
 	const int  reliableSize = MSG_ReadShort();   // Reliable size / Start of Unreliable data
@@ -1960,13 +1960,16 @@ bool CL_ReadPacketHeader()
 		// processing.
 		if (reliableSize < ::net_message.BytesLeftToRead())
 		{
-			const size_t startOfReliableData = ::net_message.Tell();
+			const size_t startOfReliableData    = ::net_message.Tell();
+			const size_t startOfNonReliableData = startOfReliableData + reliableSize;
+
 			::net_message.Seek(reliableSize, buf_t::BT_CURRENT);
-			const size_t startOfNonReliableData = ::net_message.Tell();
+			if (CL_AcceptNetMessage() == MessageResultEnum::ABORT)
+            {
+                return MessageResultEnum::ABORT;
+            }
 
-			CL_AcceptNetMessage();
-
-			const size_t sizeOfNonReliableData = ::net_message.Tell() - startOfNonReliableData;
+			const size_t sizeOfNonReliableData                 = ::net_message.Tell() - startOfNonReliableData;
 			const size_t sizeOfMessageWithNonReliableTruncated = ::net_message.size() - sizeOfNonReliableData;
 
 			::net_message.Seek(startOfReliableData, buf_t::BT_START);
@@ -1978,14 +1981,14 @@ bool CL_ReadPacketHeader()
 		// Send an ACK to the server only if it contained reliable data.
 		MSG_WriteMarker(&net_buffer, clc_ack);
 		MSG_WriteLong(&net_buffer, sequence);
-		return false;
+		return MessageResultEnum::DEFER;
 	}
 
-	return true;
+	return MessageResultEnum::ACCEPT;
 }
 
 // Returns true if all is good, false if we need to bail out of further processing.
-bool CL_AcceptNetMessage()
+MessageResultEnum CL_AcceptNetMessage()
 {
 	if (netdemo.isRecording())
 	{
@@ -1996,26 +1999,26 @@ bool CL_AcceptNetMessage()
 
 	if (gameaction == ga_fullconsole) // Host_EndGame was called
 	{
-		return false;
+		return MessageResultEnum::ABORT;
 	}
-	return true;
+	return MessageResultEnum::ACCEPT;
 }
 
 // Handles the next Reliable message in sequence.
 // Returns true if all is good, false if we need to bail out of further processing.
-bool CL_ProcessCurrentReliableMessages()
+MessageResultEnum CL_ProcessCurrentReliableMessages()
 {
 	SequenceQueueEntryType* queueEntryPtr;
 	while ((queueEntryPtr = ::reliableSequenceReceiver.NextPacket()) != nullptr)
 	{
 		queueEntryPtr->buf.swap(::net_message);
 
-		if (not CL_AcceptNetMessage())
+		if (CL_AcceptNetMessage() == MessageResultEnum::ABORT)
 		{
-			return false;
+			return MessageResultEnum::ABORT;
 		}
 	}
-	return true;
+	return MessageResultEnum::ACCEPT;
 }
 
 

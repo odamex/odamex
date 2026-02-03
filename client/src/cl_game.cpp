@@ -1005,15 +1005,26 @@ void G_Ticker (void)
 			last_received = gametic;
 			noservermsgs = false;
 
-			if (not CL_ReadPacketHeader())
-				continue;
+            const MessageResultEnum initialReadResult = CL_ReadPacketHeader();
+            switch (initialReadResult)
+            {
+                case MessageResultEnum::DEFER:
+                    continue;
+                case MessageResultEnum::ABORT:
+                    return;
+                case MessageResultEnum::ACCEPT:    // fall-thru: 
+                default:
+                    break;
+            }
 
-			if (not CL_AcceptNetMessage())
+            const MessageResultEnum nonReliableResult = CL_AcceptNetMessage();
+			if (nonReliableResult == MessageResultEnum::ABORT)
 				return;
 		}
 
 		// With all the latest packets received, process the reliable message in proper sequence.
-		if (not CL_ProcessCurrentReliableMessages())
+		const MessageResultEnum reliableResult = CL_ProcessCurrentReliableMessages();
+		if (reliableResult == MessageResultEnum::ABORT)
 			return;
 
 		if ((gametic % TICRATE) == 0)
@@ -1022,9 +1033,9 @@ void G_Ticker (void)
 			realrate = 0;
 		}
 
-		CL_SaveCmd();      // save console commands
+		CL_SaveCmd();      // save player commands
 		if (!noservermsgs)
-			CL_SendCmd();  // send console commands to the server
+			CL_SendCmd();  // send player commands to the server
 
 		if (!(gametic%TICRATE))
 		{

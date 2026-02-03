@@ -53,6 +53,13 @@ enum netQuitReason_e
 	NQ_PROTO,      // Encountered something unexpected in the protocol
 };
 
+enum class MessageResultEnum
+{
+    ACCEPT,
+    DEFER,
+    ABORT
+};
+
 #define CL_QuitNetGame(reason) CL_QuitNetGame2(reason, __FILE__, __LINE__)
 void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int line);
 void CL_Reconnect();
@@ -60,9 +67,9 @@ void CL_InitNetwork (void);
 void CL_RequestConnectInfo(void);
 bool CL_PrepareConnect();
 void CL_ParseCommands(void);
-bool CL_ReadPacketHeader();
-bool CL_AcceptNetMessage();
-bool CL_ProcessCurrentReliableMessages();
+MessageResultEnum CL_ReadPacketHeader();
+MessageResultEnum CL_AcceptNetMessage();
+MessageResultEnum CL_ProcessCurrentReliableMessages();
 void CL_SendCmd(void);
 void CL_SaveCmd(void);
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
