@@ -24,13 +24,23 @@ class SequencedMessenger
     const static size_t PACKET_HEADER_SIZE         = PACKET_MESSAGE_INDEX;
 
     public:
-        buf_t& Update(int i_currentTic)
-        {
-//            if
-        }
 
+        //  -------------- Receiving functions --------------
+
+        // Receive and enqueue a packet for processing.  Every packet received with this function must be subsequently fetched via
+        // NextReceivedPacket().
+        //
+        //  io_rawBuf - the buffer from which to move data.  Must be a valid buffer containing a complete packet with nothing yet read
+        //              from it.  After returning from this function, the given buffer will be left in a valid but indeterminant state.
+        //  i_currentTic - The current timestamp / tic representing "now."  Used for sending an unreliable ack message if necessary.
+        //  i_dest       - The intended recipient for an unreliable message containing acks if one must be sent before this function
+        //                 returns.
+        //
+        // Return values:
+        // ABORT  - Malformed message.
         // DEFER  - The receive buffer had only reliable data.  You can defer processing and call Receive() again without losing data.
-        // ACCEPT - unreliable data is awaiting immediately.  Process it before the next call to Receive() or lose it forever.
+        // ACCEPT - Unreliable data is awaiting immediately.  Obtain via NextReceivedPacket() and process it before the next call to
+        //          Receive() or LOSE IT FOREVER.  Seriously, handle it immediately, because you don't want to let Acks hit the floor!
         MessageResultEnum Receive(buf_t& io_rawBuf, int i_currentTic, const netadr_t& i_dest)
         {
             const int  sequence     = io_rawBuf.ReadLong();    // Packet sequence number.
@@ -89,6 +99,12 @@ class SequencedMessenger
 			return MessageResultEnum::ACCEPT;
 		}
 
+        // Fetches the next packet for processing and moves its content into the given raw buffer.  This provides packets
+        // that have been received via the Receive() API, including reliable and unreliable data.  Unreliable data is
+        // available immediately, and reliable data is fetched only in contiguous order.  It is HIGHLY RECOMMENDED to
+        // call this function in a loop to ensure reliable data is handled in a timely manner.
+        //
+        // Returns true if data was available and has been moved into the given raw buffer, false otherwise.
         bool NextReceivedPacket(buf_t& io_rawBuf)
         {
             if (m_receiveBuffer.size() > 0)
@@ -105,8 +121,16 @@ class SequencedMessenger
             return false;
         }
 
-        // Sending functions
+        //  -------------- Sending functions --------------
 
+        // Assembles an outgoing packet and transmits it.  Following the header, any outgoing reliable data appears first.
+        // If there's any outgoing unreliable data, there's space available following the reliable data, and we haven't
+        // hit the maxrate cap, then the unreliable data is appended.
+        //
+        // Return values:
+        //  ABORT  - The reliable buffer had been overflown by time we entered this call.
+        //  DEFER  - No one gave us any data to actually transmit, thus we skipped sending any packet.
+        //  ACCEPT - Normal result: A packet was sent, or we only had unreliable data and it was intentionally capped by maxrate.
         MessageResultEnum Send(int i_currentTic, const netadr_t& i_dest)
         {
             int bps = 0; // bytes per second, not bits per second
@@ -211,6 +235,15 @@ class SequencedMessenger
             return MessageResultEnum::ACCEPT;
         }
 
+        // Retransmit the oldest reliable packets that were previously sent and are older than RetransmitDelay
+        // (see Get/Set methods) but haven't yet been acknowledged.
+        //
+        // Up to MaxPacketsPerRetransmission (see Get/Set methods) packets may be sent.  Please note that
+        // only the reliable portions of old packets are retransmitted - if the original packet had both
+        // reliable and unreliable data, the unreliable data is NOT included in the retransmission.  If there
+        // are no unacknowledged reliable packets older than the RetransmitDelay, nothing is sent.
+        //
+        // Returns the number of bytes sent as part of this retransmission cycle.
         int HandleRetransmissions(int i_currentTic, const netadr_t& i_dest)
         {
             auto                    iter = m_sender.IterateUnackedPackets();
@@ -233,6 +266,9 @@ class SequencedMessenger
             return bytesSent;
         }
 
+        // Mark a previously-sent reliable message as having been acknowledged by the recipient.  If the old
+        // message has been included in retransmissions, then it stops being retransmitted.
+        //
         // Returns true if this is the first acknowledgement of the given sequence.  False otherwise.
         bool Acknowledge(int sequence)
         {
@@ -254,17 +290,6 @@ class SequencedMessenger
 
         static void CompressPacket(buf_t& send, const size_t reserved)
         {
-#if 0
-            static buf_t plain { MAX_UDP_PACKET };
-
-            if (plain.maxsize() < send.maxsize())
-            {
-                plain.resize(send.maxsize());
-            }
-
-            plain.setcursize(send.size());
-            memcpy(plain.ptr(), send.ptr(), send.size());
-#endif
             byte method = 0;
             if (MSG_CompressMinilzo(send, reserved, 0))
             {
@@ -273,7 +298,6 @@ class SequencedMessenger
             }
 
             send.ptr()[PACKET_FLAG_INDEX] |= method;
-            //DPrintFmt("CompressPacket {} {}\n", method, send.size());
         }
 
         int SendOldPacket(const SequenceQueueEntryType& queueEntry, const netadr_t& i_dest)
@@ -302,7 +326,6 @@ class SequencedMessenger
 
             return NET_SendPacket(m_outgoingPacketBuffer, i_dest);
         }
-
 
         SequenceSender   m_sender;
         SequenceReceiver m_receiver;
