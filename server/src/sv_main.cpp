@@ -248,17 +248,17 @@ EXTERN_CVAR (g_lives)
 // Private server settings
 CVAR_FUNC_IMPL (join_password)
 {
-	if (strlen(var.cstring()))
-		PrintFmt("Join password set.");
-	else
+	if (var.str().empty())
 		PrintFmt("Join password cleared.");
+	else
+		PrintFmt("Join password set.");
 }
 
 CVAR_FUNC_IMPL (rcon_password) // Remote console password.
 {
-	if(strlen(var.cstring()) < 5)
+	if(var.str().length() < 5)
 	{
-		if(!strlen(var.cstring()))
+		if(var.str().empty())
 			PrintFmt("RCON password cleared.");
 		else
 		{
@@ -1853,7 +1853,7 @@ void SV_ConnectClient()
 
 	// Check if the user entered a good password (if any)
 	std::string passhash = MSG_ReadString();
-	if (strlen(join_password.cstring()) && MD5SUM(join_password.cstring()) != passhash)
+	if (!join_password.str().empty() && MD5SUM(join_password) != passhash)
 	{
 		PrintFmt("{} disconnected (password failed).\n", NET_AdrToString(net_from));
 

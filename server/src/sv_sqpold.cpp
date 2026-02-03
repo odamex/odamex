@@ -266,7 +266,7 @@ void SV_SendServerInfo()
     }
 
     MSG_WriteLong(&ml_message, (uint32_t)0x01020305);
-    MSG_WriteShort(&ml_message, strlen(join_password.cstring()) ? 1 : 0);
+    MSG_WriteShort(&ml_message, join_password.str().empty() ? 0 : 1);
 
     // GhostlyDeath -- Send Game Version info
     MSG_WriteLong(&ml_message, GAMEVER);

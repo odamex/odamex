@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -415,9 +415,9 @@ std::string MD5SUM(const void *in, size_t size)
 	return hash.str();
 }
 
-std::string MD5SUM(std::string in)
+std::string MD5SUM(std::string_view in)
 {
-	return MD5SUM(in.c_str(), in.length());
+	return MD5SUM(in.data(), in.length());
 }
 
 VERSION_CONTROL (md5_cpp, "$Id$")

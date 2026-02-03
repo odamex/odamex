@@ -269,7 +269,7 @@ void G_ChangeMap()
 		// [ML] 8/22/2010: There are examples in the wiki that outright don't work
 		// when onlcvars (addcommandstring's second param) is true.  Is there a
 		// reason why the mapscripts ahve to be safe mode?
-		if (strlen(sv_endmapscript.cstring()))
+		if (!sv_endmapscript.str().empty())
 			AddCommandString(sv_endmapscript.str());
 	}
 }
@@ -293,7 +293,7 @@ void G_ChangeMap(size_t index) {
 	// [ML] 8/22/2010: There are examples in the wiki that outright don't work
 	// when onlcvars (addcommandstring's second param) is true.  Is there a
 	// reason why the mapscripts ahve to be safe mode?
-	if(strlen(sv_endmapscript.cstring()))
+	if(!sv_endmapscript.str().empty())
 		AddCommandString(sv_endmapscript.str());
 }
 

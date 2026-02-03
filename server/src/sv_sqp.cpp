@@ -168,7 +168,7 @@ next:
 		}
 	}
 
-	MSG_WriteHexString(&ml_message, strlen(join_password.cstring()) ? MD5SUM(join_password.cstring()).c_str() : "");
+	MSG_WriteHexString(&ml_message, !join_password.str().empty() ? MD5SUM(join_password.str()).c_str() : "");
 
 	MSG_WriteString(&ml_message, level.mapname.c_str());
 
