@@ -29,9 +29,9 @@ class SequencedMessenger
 //            if
         }
 
-        // DEFER  - Check
-        // ACCEPT - unreliable data is awaiting right now.  Process it immediately or lose it forever.
-        MessageResultEnum Receive(buf_t& io_rawBuf)
+        // DEFER  - The receive buffer had only reliable data.  You can defer processing and call Receive() again without losing data.
+        // ACCEPT - unreliable data is awaiting immediately.  Process it before the next call to Receive() or lose it forever.
+        MessageResultEnum Receive(buf_t& io_rawBuf, int i_currentTic, const netadr_t& i_dest)
         {
             const int  sequence     = io_rawBuf.ReadLong();    // Packet sequence number.
             const int  reliableSize = io_rawBuf.ReadShort();   // Reliable size / Start of Unreliable data
@@ -75,6 +75,10 @@ class SequencedMessenger
 				{
 					m_nonreliableBuffer.WriteByte(clc_ack);
 					m_nonreliableBuffer.WriteLong(sequence);
+                    if (m_nonreliableBuffer.size() >= 1024)
+                    {
+                        Send(i_currentTic, i_dest);
+                    }
 				}
 				return alsoHasNonReliableData ? MessageResultEnum::ACCEPT : MessageResultEnum::DEFER;
 			}

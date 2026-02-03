@@ -1936,7 +1936,7 @@ void CL_Decompress()
  */
 MessageResultEnum CL_ReadPacketHeader()
 {
-	return ::messenger.Receive(::net_message);
+	return ::messenger.Receive(::net_message, gametic, ::serveraddr);
 }
 
 // Returns true if all is good, false if we need to bail out of further processing.
