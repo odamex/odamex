@@ -108,7 +108,8 @@ class SequenceSender
 
 		SenderModeEnum GetMode() const { return m_mode; }
 
-		int GetMaxPacketsPerRetransmission() const { return m_maxPacketsPerRetransmission; }
+		void SetMaxPacketsPerRetransmission(int i_maxPackets){ m_maxPacketsPerRetransmission = i_maxPackets; }
+		int  GetMaxPacketsPerRetransmission() const { return m_maxPacketsPerRetransmission; }
 
 		struct QueueEntryResultType
 		{

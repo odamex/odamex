@@ -289,7 +289,7 @@ class HordeState
 				if (player->lives < g_lives)
 				{
 					player->lives += 1;
-					MSG_WriteSVC(&player->client.reliablebuf, SVC_PlayerInfo(*player));
+					MSG_WriteSVC(&player->client.messenger.ReliableBuf(), SVC_PlayerInfo(*player));
 					MSG_BroadcastSVC(CLBUF_RELIABLE,
 					                 SVC_PlayerMembers(*player, SVC_PM_LIVES),
 					                 player->id);
@@ -304,7 +304,7 @@ class HordeState
 			for (const auto& player : queued)
 			{
 				player->lives = 1;
-				MSG_WriteSVC(&player->client.reliablebuf, SVC_PlayerInfo(*player));
+				MSG_WriteSVC(&player->client.messenger.ReliableBuf(), SVC_PlayerInfo(*player));
 				MSG_BroadcastSVC(CLBUF_RELIABLE,
 				                 SVC_PlayerMembers(*player, SVC_PM_LIVES), player->id);
 			}

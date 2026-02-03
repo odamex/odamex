@@ -2763,7 +2763,7 @@ void P_RailAttack (AActor *source, int damage, int offset)
 			if (!mo || mo == source)
 				continue;
 
-			buf_t* buf = &(player.client.netbuf);
+			buf_t* buf = &(player.client.messenger.NetBuf());
 
 			MSG_WriteSVC(buf, SVC_RailTrail(start, end));
 		}

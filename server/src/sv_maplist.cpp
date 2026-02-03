@@ -509,7 +509,7 @@ void SV_Maplist(player_t &player, maplist_status_t status) {
 	case MAPLIST_OK:
 		// Valid statuses
 		DPrintFmt("SV_Maplist: Sending status {} to pid {}\n", status, player.id);
-		MSG_WriteSVC(&cl->reliablebuf, SVC_Maplist(status));
+		MSG_WriteSVC(&cl->messenger.ReliableBuf(), SVC_Maplist(status));
 	default:
 		// Invalid statuses
 		return;
@@ -534,7 +534,7 @@ void SV_MaplistIndex(player_t &player) {
 		}
 	}
 
-	MSG_WriteSVC(&cl->reliablebuf, SVC_MaplistIndex(count, this_index, next_index));
+	MSG_WriteSVC(&cl->messenger.ReliableBuf(), SVC_MaplistIndex(count, this_index, next_index));
 }
 
 // Send a full maplist update to a specific player
@@ -546,7 +546,7 @@ void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
 	case MAPLIST_TIMEOUT:
 		// Valid statuses that don't require the packet logic
 		DPrintFmt("SV_MaplistUpdate: Sending status {} to pid {}\n", status, player.id);
-		MSG_WriteSVC(&cl->reliablebuf, SVC_MaplistUpdate(status, NULL));
+		MSG_WriteSVC(&cl->messenger.ReliableBuf(), SVC_MaplistUpdate(status, NULL));
 		return;
 	case MAPLIST_OUTDATED:
 		// Valid statuses that need the packet logic
@@ -563,10 +563,10 @@ void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
 	odaproto::svc::MaplistUpdate update = SVC_MaplistUpdate(MAPLIST_OUTDATED, &maplist);
 
 	// Attempt to make room on the wire if we're running out.
-	if (cl->reliablebuf.size() + update.ByteSizeLong() >= MAX_UDP_SIZE)
+	if (cl->messenger.ReliableBuf().size() + update.ByteSizeLong() >= MAX_UDP_SIZE)
 		SV_SendPacket(player);
 
-	MSG_WriteSVC(&cl->reliablebuf, update);
+	MSG_WriteSVC(&cl->messenger.ReliableBuf(), update);
 
 	// Update the timeout to ensure the player doesn't abuse the server
 	Maplist::instance().set_timeout(player.id);

@@ -355,7 +355,7 @@ void SockadrToNetadr (struct sockaddr_in *s, netadr_t *a)
      a->port = s->sin_port;
 }
 
-void NetadrToSockadr (netadr_t *a, struct sockaddr_in *s)
+void NetadrToSockadr (const netadr_t *a, struct sockaddr_in *s)
 {
      memset (s, 0, sizeof(*s));
      s->sin_family = AF_INET;
@@ -465,7 +465,7 @@ int NET_GetPacket (void)
 	return ret;
 }
 
-int NET_SendPacket (buf_t &buf, netadr_t &to)
+int NET_SendPacket (buf_t& buf, const netadr_t& to)
 {
 	int				   ret;
 	struct sockaddr_in	addr;
@@ -542,12 +542,12 @@ void SZ_Clear (buf_t *buf)
 	buf->clear();
 }
 
-void SZ_Write (buf_t *b, const void *data, int length)
+void SZ_Write (buf_t *b, const void *data, size_t length)
 {
 	b->WriteChunk((const char *)data, length);
 }
 
-void SZ_Write (buf_t *b, const byte *data, int startpos, int length)
+void SZ_Write (buf_t *b, const byte *data, size_t startpos, size_t length)
 {
 	b->WriteChunk((const char *)data, length, startpos);
 }
@@ -588,7 +588,7 @@ void MSG_WriteByte (buf_t *b, byte c)
 }
 
 
-void MSG_WriteChunk (buf_t *b, const void *p, unsigned l)
+void MSG_WriteChunk (buf_t *b, const void *p, size_t l)
 {
 	if (simulated_connection)
 		return;
@@ -678,7 +678,7 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
 			continue;
 
 		// Select the correct buffer.
-		buf_t* b = buf == CLBUF_RELIABLE ? &player.client.reliablebuf : &player.client.netbuf;
+		buf_t* b = buf == CLBUF_RELIABLE ? &player.client.messenger.ReliableBuf() : &player.client.messenger.NetBuf();
 
 		// Do we actaully have room for this upcoming message?
 		static constexpr size_t MAX_HEADER_SIZE = 4; // header + 3 bytes for varint size.

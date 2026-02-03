@@ -437,7 +437,7 @@ public:
 			WriteByte(0);
 	}
 
-	void WriteChunk(const char *c, unsigned l, int startpos = 0)
+	void WriteChunk(const char *c, size_t l, size_t startpos = 0)
 	{
 		byte *buf = SZ_GetSpace(l);
 
@@ -773,12 +773,12 @@ char *NET_AdrToString (netadr_t a);
 bool NET_StringToAdr (const char *s, netadr_t *a);
 bool NET_CompareAdr (netadr_t a, netadr_t b);
 int  NET_GetPacket (void);
-int NET_SendPacket (buf_t &buf, netadr_t &to);
+int NET_SendPacket (buf_t &buf, const netadr_t &to);
 std::string NET_GetLocalAddress (void);
 
 void SZ_Clear (buf_t *buf);
-void SZ_Write (buf_t *b, const void *data, int length);
-void SZ_Write (buf_t *b, const byte *data, int startpos, int length);
+void SZ_Write (buf_t *b, const void *data, size_t length);
+void SZ_Write (buf_t *b, const byte *data, size_t startpos, size_t length);
 
 void MSG_WriteByte (buf_t *b, byte c);
 void MSG_WriteMarker (buf_t *b, svc_t c);
@@ -791,7 +791,7 @@ void MSG_WriteBool(buf_t *b, bool);
 void MSG_WriteFloat(buf_t *b, float);
 void MSG_WriteString (buf_t *b, const char *s);
 void MSG_WriteHexString(buf_t *b, const char *s);
-void MSG_WriteChunk (buf_t *b, const void *p, unsigned l);
+void MSG_WriteChunk (buf_t *b, const void *p, size_t l);
 void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg);
 void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& msg,
                       const int skipPlayer = -1);

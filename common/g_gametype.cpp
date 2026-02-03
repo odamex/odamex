@@ -539,7 +539,7 @@ static void GiveWins(player_t& player, int wins)
 	{
 		if (!it->ingame())
 			continue;
-		MSG_WriteSVC(&it->client.netbuf, SVC_PlayerMembers(player, SVC_PM_SCORE));
+		MSG_WriteSVC(&it->client.messenger.NetBuf(), SVC_PlayerMembers(player, SVC_PM_SCORE));
 	}
 }
 
@@ -559,7 +559,7 @@ static void GiveTeamWins(team_t team, int wins)
 	{
 		if (!player.ingame())
 			continue;
-		MSG_WriteSVC(&player.client.netbuf, SVC_TeamMembers(team));
+		MSG_WriteSVC(&player.client.messenger.NetBuf(), SVC_TeamMembers(team));
 	}
 }
 
