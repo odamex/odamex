@@ -44,7 +44,8 @@ class SequencedMessenger
 				// If this packet has both reliable and unreliable data, receive the unreliable
 				// portion immediately, then truncate the packet and defer the rest for ordered
 				// processing.
-				if (reliableSize < io_rawBuf.BytesLeftToRead())
+                const bool alsoHasNonReliableData = reliableSize < io_rawBuf.BytesLeftToRead();
+				if (alsoHasNonReliableData)
 				{
 					const size_t startOfReliableData    = io_rawBuf.Tell();
 					const size_t startOfNonReliableData = startOfReliableData + reliableSize;
@@ -73,7 +74,7 @@ class SequencedMessenger
 					m_nonreliableBuffer.WriteByte(clc_ack);
 					m_nonreliableBuffer.WriteLong(sequence);
 				}
-				return MessageResultEnum::DEFER;
+				return alsoHasNonReliableData ? MessageResultEnum::ACCEPT : MessageResultEnum::DEFER;
 			}
 			else
 			{
