@@ -630,6 +630,7 @@ void SV_GetPackets()
 		{
 			if(player.playerstate != PST_DISCONNECT)
 			{
+                player.client.messenger.Receive(::net_message);
 				player.client.last_received = gametic;
 				SV_ParseCommands(player);
 			}
@@ -1812,7 +1813,6 @@ void SV_ConnectClient()
 	// clear and reinitialize client network info
 	cl->address = net_from;
 	cl->last_received = gametic;
-	cl->lastcmdtic = 0;
 	cl->lastclientcmdtic = 0;
 	cl->allow_rcon = false;
 	cl->displaydisconnect = false;
@@ -3281,28 +3281,19 @@ void SV_ProcessPlayerCmd(player_t &player)
 
 void SV_GetPlayerCmd(player_t &player)
 {
-	client_t *cl = &player.client;
-
 	// The client-tic at the time this message was sent.  The server stores
 	// this and sends it back the next time it tells the client
-	int tic = MSG_ReadLong();
+	const int tic = MSG_ReadLong();
 
-	// Read the last 10 ticcmds from the client and add any new ones
-	// to the cmdqueue
-	for (int i = 9; i >= 0; i--)
-	{
-		NetCommand netcmd;
-		netcmd.read(&net_message);
-		netcmd.setTic(tic - i);
+	NetCommand netcmd;
+	netcmd.read(&net_message);
+	netcmd.setTic(tic);
 
-		if (netcmd.getTic() > cl->lastclientcmdtic && gamestate == GS_LEVEL)
+		if (gamestate == GS_LEVEL)
 		{
 			if (!player.spectator)
 				player.cmdqueue.push(netcmd);
-			cl->lastclientcmdtic = netcmd.getTic();
-			cl->lastcmdtic = gametic;
 		}
-	}
 }
 
 void SV_UpdateConsolePlayer(player_t &player)
@@ -3925,10 +3916,16 @@ void SV_ParseCommands(player_t &player)
 {
 	 while(validplayer(player))
 	 {
+         if (not player.client.messenger.NextReceivedPacket(::net_message))
+         {
+             break;
+         }
+         while (::net_message.BytesLeftToRead() > 0)
+         {
 		clc_t cmd = static_cast<clc_t>(MSG_ReadByte());
 
 		if(cmd == (clc_t)-1)
-			break;
+			continue;
 
 		switch(cmd)
 		{
@@ -4064,6 +4061,7 @@ void SV_ParseCommands(player_t &player)
 			SV_DropClient(player);
 			return;
 		}
+         }
 	 }
 }
 

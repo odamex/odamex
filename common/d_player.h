@@ -278,11 +278,9 @@ public:
 
 		SequencedMessenger messenger;
 
-		byte        packetnum;
-
 		int			last_received;	// for timeouts
 
-		int			lastcmdtic, lastclientcmdtic;
+		int			lastclientcmdtic;
 
 		std::string	digest;			// randomly generated string that the client must use for any hashes it sends back
 		bool        allow_rcon;     // allow remote admin
@@ -302,9 +300,7 @@ public:
 			memset(&address, 0, sizeof(netadr_t));
 			version = 0;
 			packedversion = 0;
-			packetnum = 0;
 			last_received = 0;
-			lastcmdtic = 0;
 			lastclientcmdtic = 0;
 
 
@@ -318,9 +314,7 @@ public:
 			messenger(other.messenger),
 			version(other.version),
 			packedversion(other.packedversion),
-			packetnum(other.packetnum),
 			last_received(other.last_received),
-			lastcmdtic(other.lastcmdtic),
 			lastclientcmdtic(other.lastclientcmdtic),
 			digest(other.digest),
 			allow_rcon(false),
@@ -338,9 +332,7 @@ public:
 			messenger = other.messenger;
 			version = other.version;
 			packedversion = other.packedversion;
-			packetnum = other.packetnum;
 			last_received = other.last_received;
-			lastcmdtic = other.lastcmdtic;
 			lastclientcmdtic = other.lastclientcmdtic;
 			digest = other.digest;
 			allow_rcon = false;

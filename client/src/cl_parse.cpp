@@ -3072,6 +3072,13 @@ parseError_e CL_ParseCommand()
 	// What type of message we have.
 	byte cmd = MSG_ReadByte();
 
+    if (cmd == svc_ack)
+    {
+        const int sequence = MSG_ReadLong();
+        messenger.Acknowledge(sequence);
+        return PERR_OK;
+    }
+
 	// Size of the message.
 	size_t size = MSG_ReadUnVarint();
 

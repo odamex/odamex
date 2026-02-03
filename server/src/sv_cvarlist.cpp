@@ -35,9 +35,6 @@ CVAR(sv_latency, "80", "Latency simulation", CVARTYPE_INT, CVAR_SERVERARCHIVE | 
 CVAR(			log_fulltimestamps, "0", "Extended timestamp info (dd/mm/yyyy hh:mm:ss)",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
-CVAR(			log_packetdebug, "0", "Print debugging messages for each packet sent",
-				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-
 // Server administrative settings
 // ------------------------------
 

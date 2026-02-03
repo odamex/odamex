@@ -487,6 +487,9 @@ CVAR				(r_softinvulneffect, "1",
 CVAR(				developer, "0", "Debugging mode",
 					CVARTYPE_BOOL, CVAR_NULL)
 
+CVAR(			log_packetdebug, "0", "Print debugging messages for each packet sent",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
 CVAR(debug_disconnect, "0", "Show source file:line where a disconnect happens",
      CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 

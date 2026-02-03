@@ -365,7 +365,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 	{
 		SZ_Clear(&messenger.NetBuf());
 		MSG_WriteMarker(&messenger.NetBuf(), clc_disconnect);
-		NET_SendPacket(messenger.NetBuf(), serveraddr);
+        ::messenger.Send(gametic, serveraddr);
 		SZ_Clear(&messenger.NetBuf());
 		sv_gametype = GM_COOP;
 		ClientReplay::getInstance().reset();
@@ -456,7 +456,7 @@ void CL_Reconnect(void)
 	if (connected)
 	{
 		MSG_WriteMarker(&messenger.NetBuf(), clc_disconnect);
-		NET_SendPacket(messenger.NetBuf(), serveraddr);
+        messenger.Send(gametic, serveraddr);
 		SZ_Clear(&messenger.NetBuf());
 		connected = false;
 		gameaction = ga_fullconsole;
@@ -1749,12 +1749,14 @@ bool CL_Connect()
 	players.clear();
 
 	::messenger = SequencedMessenger();
-
+	::messenger.SetMaxRate(20);         // FIXME: total guess
+	::messenger.SetPacketsPerRetransmit(10);    // To align with the size of the traditional cmd buffer
 	// [AM] This needs to go out ASAP so the server can start sending us
 	//      messages.
 	MSG_WriteMarker(&messenger.NetBuf(), clc_ack);
 	MSG_WriteLong(&messenger.NetBuf(), 0);
-	NET_SendPacket(::messenger.NetBuf(), ::serveraddr);
+    ::messenger.Send(gametic, ::serveraddr);
+
 	PrintFmt("Requesting server state...\n");
 
 	connected = true;
@@ -2092,31 +2094,27 @@ void CL_SendCmd(void)
 		MSG_WriteLong(&messenger.NetBuf(), p->mo->z);
 	}
 
-	MSG_WriteMarker(&messenger.NetBuf(), clc_move);
+	MSG_WriteMarker(&messenger.ReliableBuf(), clc_move);
 
 	// Write current client-tic.  Server later sends this back to client
 	// when sending svc_updatelocalplayer so the client knows which ticcmds
 	// need to be used for client's positional prediction.
-    MSG_WriteLong(&messenger.NetBuf(), gametic);
+    MSG_WriteLong(&messenger.ReliableBuf(), gametic);
 
-	for (int i = 9; i >= 0; i--)
-	{
-		NetCommand blank_netcmd;
-		NetCommand* netcmd;
+		NetCommand& currentNetcmd = localcmds[gametic % MAXSAVETICS];
 
-		if (gametic >= i)
-			netcmd = &localcmds[(gametic - i) % MAXSAVETICS];
-		else
-			netcmd = &blank_netcmd;		// write a blank netcmd since not enough gametics have passed
+		currentNetcmd.write(&messenger.ReliableBuf());
 
-		netcmd->write(&messenger.NetBuf());
-	}
 
-	int bytesWritten = NET_SendPacket(messenger.NetBuf(), serveraddr);
-	netgraph.addTrafficOut(bytesWritten);
+    messenger.Send(gametic, serveraddr);
 
-	outrate += messenger.NetBuf().size();
-    SZ_Clear(&messenger.NetBuf());
+    const int retransmittedByteCount = messenger.HandleRetransmissions(gametic, serveraddr);
+
+    const int currentSendSize    = messenger.GetLastSendSize();
+    const int totalSentByteCount = currentSendSize + retransmittedByteCount;
+
+	netgraph.addTrafficOut(totalSentByteCount);
+	outrate += totalSentByteCount;
 }
 
 //

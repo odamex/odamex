@@ -107,6 +107,8 @@ class SequencedMessenger
         {
             int bps = 0; // bytes per second, not bits per second
 
+            m_lastSendSize = 0;
+
             if (m_reliableBuffer.overflowed)
             {
                 SZ_Clear(&m_nonreliableBuffer);
@@ -120,7 +122,9 @@ class SequencedMessenger
 
             // [SL] 2012-05-04 - Don't send empty packets - they still have overhead
             if (m_reliableBuffer.cursize + m_nonreliableBuffer.cursize == 0)
+            {
                 return MessageResultEnum::DEFER;
+            }
 
             m_outgoingPacketBuffer.clear();
 
@@ -190,7 +194,7 @@ class SequencedMessenger
                 SV_SendPacketDelayed(m_outgoingPacketBuffer, pl);
 #else
 
-                NET_SendPacket(m_outgoingPacketBuffer, i_dest);
+                m_lastSendSize = NET_SendPacket(m_outgoingPacketBuffer, i_dest);
 #endif
             }
 
@@ -203,17 +207,18 @@ class SequencedMessenger
             return MessageResultEnum::ACCEPT;
         }
 
-        void HandleRetransmissions(int i_currentTic, const netadr_t& i_dest)
+        int HandleRetransmissions(int i_currentTic, const netadr_t& i_dest)
         {
             auto                    iter = m_sender.IterateUnackedPackets();
             SequenceQueueEntryType* sendQueueEntry;
             int                     retransmissionsSent = 0;
+            int                     bytesSent = 0;
 
             while ((sendQueueEntry = iter.Next()) != nullptr)
             {
                 if (i_currentTic >= (m_retransmitDelayInTics + sendQueueEntry->originatingTic))
                 {
-                    SendOldPacket(*sendQueueEntry, i_dest);
+                    bytesSent += SendOldPacket(*sendQueueEntry, i_dest);
 
                     if (++retransmissionsSent > m_sender.GetMaxPacketsPerRetransmission())
                     {
@@ -221,6 +226,7 @@ class SequencedMessenger
                     }
                 }
             }
+            return bytesSent;
         }
 
         // Returns true if this is the first acknowledgement of the given sequence.  False otherwise.
@@ -237,6 +243,8 @@ class SequencedMessenger
         void SetRetransmitDelay(int i_delayInTics) { m_retransmitDelayInTics = i_delayInTics; }
         void SetPacketsPerRetransmit(int i_maxPackets) { m_sender.SetMaxPacketsPerRetransmission(i_maxPackets); }
         void SetMaxRate(int i_maxRate) { m_maxRate  = i_maxRate; }
+
+        int GetLastSendSize() const { return m_lastSendSize; }
 
     protected:
 
@@ -264,7 +272,7 @@ class SequencedMessenger
             //DPrintFmt("CompressPacket {} {}\n", method, send.size());
         }
 
-        void SendOldPacket(const SequenceQueueEntryType& queueEntry, const netadr_t& i_dest)
+        int SendOldPacket(const SequenceQueueEntryType& queueEntry, const netadr_t& i_dest)
         {
             m_outgoingPacketBuffer.clear();
 
@@ -288,7 +296,7 @@ class SequencedMessenger
                 CompressPacket(m_outgoingPacketBuffer, PACKET_HEADER_SIZE);
             }
 
-            NET_SendPacket(m_outgoingPacketBuffer, i_dest);
+            return NET_SendPacket(m_outgoingPacketBuffer, i_dest);
         }
 
 
@@ -309,4 +317,5 @@ class SequencedMessenger
         size_t m_unreliableBps { 0 };
         size_t m_reliableBps   { 0 };
         int    m_maxRate       { 0 };
+        int    m_lastSendSize  { 0 };
 };

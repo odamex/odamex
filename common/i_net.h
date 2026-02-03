@@ -196,6 +196,7 @@ enum svc_t
 	svc_levellocals, // [AM] Persist one or more level locals
 	svc_pingrequest, // [SL] 2011-05-11 timestamp
 	svc_updateping,
+    svc_ack,                // Overlays the clc type...  FIXME: unify the message identifiers!
 	svc_spawnmobj,
 	svc_disconnectclient,
 	svc_loadmap,
@@ -284,7 +285,7 @@ enum clc_t
 	clc_userinfo,  // send userinfo
 	clc_pingreply, // [SL] 2011-05-11 - timestamp
 	clc_rate,
-	clc_ack,
+	clc_ack,        // Overlays the svc type...  FIXME: unify the message identifiers!
 	clc_rcon,
 	clc_rcon_password,
 	clc_changeteam, // [NightFang] - Change your team
