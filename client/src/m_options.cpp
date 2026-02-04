@@ -1975,9 +1975,12 @@ void M_OptDrawer (void)
 				if (announcerisavailable)
 				{
 					const AnnouncerMetaData_s& metadata = AnnouncerManager::getInstance().getAnnouncerMetadata(announcername);
-					static std::string authorLine = fmt::sprintf("By: %s%s", TEXTCOLOR_TAN ,metadata.author.c_str());
-					AnnouncerItems[ANN_AUTHORLINE].label = authorLine.c_str();
-					AnnouncerItems[ANN_DESCLINE].label = metadata.description.c_str();
+					static char author_data[40];
+					static char desc_data[40];
+					snprintf(author_data, 40, "By: %s%s", TEXTCOLOR_TAN, metadata.author.c_str());
+					snprintf(desc_data, 40, "%s", metadata.description.c_str());
+					AnnouncerItems[ANN_AUTHORLINE].label = author_data;
+					AnnouncerItems[ANN_DESCLINE].label = desc_data;
 				}
 				else
 				{
