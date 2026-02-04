@@ -1853,7 +1853,7 @@ void SV_ConnectClient()
 
 	// Check if the user entered a good password (if any)
 	std::string passhash = MSG_ReadString();
-	if (!join_password.str().empty() && MD5SUM(join_password) != passhash)
+	if (!join_password.str().empty() && MD5SUM(join_password.str()) != passhash)
 	{
 		PrintFmt("{} disconnected (password failed).\n", NET_AdrToString(net_from));
 
