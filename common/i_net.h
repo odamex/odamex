@@ -178,10 +178,10 @@ extern int   msg_badread;
 struct msg_info_t
 {
 	int id;
-	const char *msgName;
-	const char *msgFormat; // 'b'=byte, 'n'=short, 'N'=long, 's'=string
+	std::string_view msgName;
+	std::string_view msgFormat = "x"; // 'b'=byte, 'n'=short, 'N'=long, 's'=string
 
-	const char *getName() { return msgName ? msgName : ""; }
+	constexpr std::string_view getName() noexcept { return msgName; }
 };
 
 // network messages
@@ -311,8 +311,8 @@ inline auto format_as(clc_t clc)
 
 inline constexpr size_t clc_max = 255;
 
-extern msg_info_t clc_info[clc_max + 1];
-extern msg_info_t svc_info[svc_max + 1];
+extern std::array<msg_info_t, clc_max + 1> clc_info;
+extern std::array<msg_info_t, svc_max + 1> svc_info;
 
 namespace google
 {

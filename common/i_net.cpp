@@ -97,8 +97,125 @@ lzo_byte wrkmem[LZO1X_1_MEM_COMPRESS];
 
 EXTERN_CVAR(port)
 
-msg_info_t clc_info[clc_max + 1];
-msg_info_t svc_info[svc_max + 1];
+/**
+ * @brief Initialize a clc_info member.
+ *
+ * @detail do-while is used to force a semicolon afterwards.
+ */
+#define CLC_INFO(n)                    \
+	do                                 \
+	{                                  \
+		::clc_info[n].id = n;          \
+		::clc_info[n].msgName = #n;    \
+		::clc_info[n].msgFormat = "x"; \
+	} while (false)
+
+const std::array<msg_info_t, clc_max + 1> clc_info
+{{
+#define CLC_INFO(n) { n, #n, "x" }
+	// Client Messages.
+	CLC_INFO(clc_abort),
+	CLC_INFO(clc_reserved1),
+	CLC_INFO(clc_disconnect),
+	CLC_INFO(clc_say),
+	CLC_INFO(clc_move),
+	CLC_INFO(clc_userinfo),
+	CLC_INFO(clc_pingreply),
+	CLC_INFO(clc_rate),
+	CLC_INFO(clc_ack),
+	CLC_INFO(clc_rcon),
+	CLC_INFO(clc_rcon_password),
+	CLC_INFO(clc_changeteam),
+	CLC_INFO(clc_ctfcommand),
+	CLC_INFO(clc_spectate),
+	CLC_INFO(clc_wantwad),
+	CLC_INFO(clc_kill),
+	CLC_INFO(clc_cheat),
+	CLC_INFO(clc_callvote),
+	CLC_INFO(clc_maplist),
+	CLC_INFO(clc_maplist_update),
+	CLC_INFO(clc_getplayerinfo),
+	CLC_INFO(clc_netcmd),
+	CLC_INFO(clc_spy),
+	CLC_INFO(clc_privmsg),
+	CLC_INFO(clc_max),
+#undef CLC_INFO
+}};
+
+const std::array<msg_info_t, svc_max + 1> svc_info
+{{
+#define SVC_INFO(n) { n, #n, "x" }
+	// Server Messages.
+	SVC_INFO(svc_noop),
+	SVC_INFO(svc_disconnect),
+	SVC_INFO(svc_playerinfo),
+	SVC_INFO(svc_moveplayer),
+	SVC_INFO(svc_updatelocalplayer),
+	SVC_INFO(svc_levellocals),
+	SVC_INFO(svc_pingrequest),
+	SVC_INFO(svc_updateping),
+	SVC_INFO(svc_spawnmobj),
+	SVC_INFO(svc_disconnectclient),
+	SVC_INFO(svc_loadmap),
+	SVC_INFO(svc_consoleplayer),
+	SVC_INFO(svc_explodemissile),
+	SVC_INFO(svc_removemobj),
+	SVC_INFO(svc_userinfo),
+	SVC_INFO(svc_updatemobj),
+	SVC_INFO(svc_spawnplayer),
+	SVC_INFO(svc_damageplayer),
+	SVC_INFO(svc_killmobj),
+	SVC_INFO(svc_raisemobj),
+	SVC_INFO(svc_fireweapon),
+	SVC_INFO(svc_updatesector),
+	SVC_INFO(svc_print),
+	SVC_INFO(svc_playermembers),
+	SVC_INFO(svc_teammembers),
+	SVC_INFO(svc_activateline),
+	SVC_INFO(svc_movingsector),
+	SVC_INFO(svc_playsound),
+	SVC_INFO(svc_reconnect),
+	SVC_INFO(svc_exitlevel),
+	SVC_INFO(svc_touchspecial),
+	SVC_INFO(svc_forceteam),
+	SVC_INFO(svc_switch),
+	SVC_INFO(svc_say),
+	SVC_INFO(svc_spawnhiddenplayer),
+	SVC_INFO(svc_updatedeaths),
+	SVC_INFO(svc_ctfrefresh),
+	SVC_INFO(svc_ctfevent),
+	SVC_INFO(svc_serversettings),
+	SVC_INFO(svc_connectclient),
+    SVC_INFO(svc_midprint),
+	SVC_INFO(svc_servergametic),
+	SVC_INFO(svc_inttimeleft),
+	SVC_INFO(svc_fullupdatedone),
+	SVC_INFO(svc_railtrail),
+	SVC_INFO(svc_playerstate),
+	SVC_INFO(svc_levelstate),
+	SVC_INFO(svc_resetmap),
+	SVC_INFO(svc_playerqueuepos),
+	SVC_INFO(svc_fullupdatestart),
+	SVC_INFO(svc_lineupdate),
+	SVC_INFO(svc_sectorproperties),
+	SVC_INFO(svc_linesideupdate),
+	SVC_INFO(svc_mobjstate),
+	SVC_INFO(svc_damagemobj),
+	SVC_INFO(svc_executelinespecial),
+	SVC_INFO(svc_executeacsspecial),
+	SVC_INFO(svc_thinkerupdate),
+	SVC_INFO(svc_netdemocap),
+	SVC_INFO(svc_netdemostop),
+	SVC_INFO(svc_netdemoloadsnap),
+	SVC_INFO(svc_vote_update),
+	SVC_INFO(svc_maplist),
+	SVC_INFO(svc_maplist_update),
+	SVC_INFO(svc_maplist_index),
+	SVC_INFO(svc_toast),
+	SVC_INFO(svc_hordeinfo),
+	SVC_INFO(svc_max),
+#undef SVC_INFO
+}};
 
 #ifdef ODA_HAVE_MINIUPNP
 EXTERN_CVAR(sv_upnp)
@@ -951,138 +1068,6 @@ float MSG_ReadFloat(void)
     return Float;
 }
 
-/**
- * @brief Initialize a svc_info member.
- *
- * @detail do-while is used to force a semicolon afterwards.
- */
-#define SVC_INFO(n)                    \
-	do                                 \
-	{                                  \
-		::svc_info[n].id = n;          \
-		::svc_info[n].msgName = #n;    \
-		::svc_info[n].msgFormat = "x"; \
-	} while (false)
-
-/**
- * @brief Initialize a clc_info member.
- *
- * @detail do-while is used to force a semicolon afterwards.
- */
-#define CLC_INFO(n)                    \
-	do                                 \
-	{                                  \
-		::clc_info[n].id = n;          \
-		::clc_info[n].msgName = #n;    \
-		::clc_info[n].msgFormat = "x"; \
-	} while (false)
-
-//
-// InitNetMessageFormats
-//
-static void InitNetMessageFormats()
-{
-	// Server Messages.
-	SVC_INFO(svc_noop);
-	SVC_INFO(svc_disconnect);
-	SVC_INFO(svc_playerinfo);
-	SVC_INFO(svc_moveplayer);
-	SVC_INFO(svc_updatelocalplayer);
-	SVC_INFO(svc_levellocals);
-	SVC_INFO(svc_pingrequest);
-	SVC_INFO(svc_updateping);
-	SVC_INFO(svc_spawnmobj);
-	SVC_INFO(svc_disconnectclient);
-	SVC_INFO(svc_loadmap);
-	SVC_INFO(svc_consoleplayer);
-	SVC_INFO(svc_explodemissile);
-	SVC_INFO(svc_removemobj);
-	SVC_INFO(svc_userinfo);
-	SVC_INFO(svc_updatemobj);
-	SVC_INFO(svc_spawnplayer);
-	SVC_INFO(svc_damageplayer);
-	SVC_INFO(svc_killmobj);
-	SVC_INFO(svc_raisemobj);
-	SVC_INFO(svc_fireweapon);
-	SVC_INFO(svc_updatesector);
-	SVC_INFO(svc_print);
-	SVC_INFO(svc_playermembers);
-	SVC_INFO(svc_teammembers);
-	SVC_INFO(svc_activateline);
-	SVC_INFO(svc_movingsector);
-	SVC_INFO(svc_playsound);
-	SVC_INFO(svc_reconnect);
-	SVC_INFO(svc_exitlevel);
-	SVC_INFO(svc_touchspecial);
-	SVC_INFO(svc_forceteam);
-	SVC_INFO(svc_switch);
-	SVC_INFO(svc_say);
-	SVC_INFO(svc_spawnhiddenplayer);
-	SVC_INFO(svc_updatedeaths);
-	SVC_INFO(svc_ctfrefresh);
-	SVC_INFO(svc_ctfevent);
-	SVC_INFO(svc_serversettings);
-	SVC_INFO(svc_connectclient);
-    SVC_INFO(svc_midprint);
-	SVC_INFO(svc_servergametic);
-	SVC_INFO(svc_inttimeleft);
-	SVC_INFO(svc_fullupdatedone);
-	SVC_INFO(svc_railtrail);
-	SVC_INFO(svc_playerstate);
-	SVC_INFO(svc_levelstate);
-	SVC_INFO(svc_resetmap);
-	SVC_INFO(svc_playerqueuepos);
-	SVC_INFO(svc_fullupdatestart);
-	SVC_INFO(svc_lineupdate);
-	SVC_INFO(svc_sectorproperties);
-	SVC_INFO(svc_linesideupdate);
-	SVC_INFO(svc_mobjstate);
-	SVC_INFO(svc_damagemobj);
-	SVC_INFO(svc_executelinespecial);
-	SVC_INFO(svc_executeacsspecial);
-	SVC_INFO(svc_thinkerupdate);
-	SVC_INFO(svc_netdemocap);
-	SVC_INFO(svc_netdemostop);
-	SVC_INFO(svc_netdemoloadsnap);
-	SVC_INFO(svc_vote_update);
-	SVC_INFO(svc_maplist);
-	SVC_INFO(svc_maplist_update);
-	SVC_INFO(svc_maplist_index);
-	SVC_INFO(svc_toast);
-	SVC_INFO(svc_hordeinfo);
-	SVC_INFO(svc_max);
-
-	// Client Messages.
-	CLC_INFO(clc_abort);
-	CLC_INFO(clc_reserved1);
-	CLC_INFO(clc_disconnect);
-	CLC_INFO(clc_say);
-	CLC_INFO(clc_move);
-	CLC_INFO(clc_userinfo);
-	CLC_INFO(clc_pingreply);
-	CLC_INFO(clc_rate);
-	CLC_INFO(clc_ack);
-	CLC_INFO(clc_rcon);
-	CLC_INFO(clc_rcon_password);
-	CLC_INFO(clc_changeteam);
-	CLC_INFO(clc_ctfcommand);
-	CLC_INFO(clc_spectate);
-	CLC_INFO(clc_wantwad);
-	CLC_INFO(clc_kill);
-	CLC_INFO(clc_cheat);
-	CLC_INFO(clc_callvote);
-	CLC_INFO(clc_maplist);
-	CLC_INFO(clc_maplist_update);
-	CLC_INFO(clc_getplayerinfo);
-	CLC_INFO(clc_netcmd);
-	CLC_INFO(clc_spy);
-	CLC_INFO(clc_privmsg);
-	CLC_INFO(clc_max);
-}
-
-#undef SVC_INFO
-#undef CLC_INFO
-
 CVAR_FUNC_IMPL(net_rcvbuf)
 {
 	int n = var.asInt();
@@ -1125,9 +1110,6 @@ void InitNetCommon(void)
    BindToLocalPort (inet_socket, localport);
    if (ioctlsocket(inet_socket, FIONBIO, &_true) == -1)
        I_FatalError ("UDPsocket: ioctl FIONBIO: {}", strerror(errno));
-
-	// enter message information into message info structs
-	InitNetMessageFormats();
 
    SZ_Clear(&net_message);
 }
