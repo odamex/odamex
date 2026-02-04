@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include <array>
+
 class NetGraph
 {
 public:
@@ -35,6 +37,8 @@ public:
 	void addTrafficIn(int val);
 	void addTrafficOut(int val);
 	void addPacketIn();
+	void setReliableSendDepth(int val);
+	void setReliableNonContiguousRetransmits(int val);
 	void draw();
 
 private:
@@ -43,6 +47,7 @@ private:
 	void drawTrafficIn(int x, int y);
 	void drawTrafficOut(int x, int y);
 	void drawPackets(int x, int y);
+	void drawReliableSendDepth(int x, int y);
 
 	static constexpr int BAR_HEIGHT_WORLD_INDEX = 4;
 	static constexpr int BAR_WIDTH_WORLD_INDEX = 2;
@@ -58,10 +63,12 @@ private:
 	int		mX;
 	int		mY;
 
-	bool	mMisprediction[NetGraph::MAX_HISTORY_TICS];
-	int		mWorldIndexSync[NetGraph::MAX_HISTORY_TICS];
-	int		mInterpolation;
-	int		mTrafficIn[NetGraph::MAX_HISTORY_TICS];
-	int		mTrafficOut[NetGraph::MAX_HISTORY_TICS];
-	int		mPacketsIn[NetGraph::MAX_HISTORY_TICS];
+	std::array<bool, NetGraph::MAX_HISTORY_TICS> mMisprediction;
+	std::array<int, NetGraph::MAX_HISTORY_TICS> mWorldIndexSync;
+	std::array<int, NetGraph::MAX_HISTORY_TICS> mTrafficIn;
+	std::array<int, NetGraph::MAX_HISTORY_TICS> mTrafficOut;
+	std::array<int, NetGraph::MAX_HISTORY_TICS> mPacketsIn;
+	std::array<int, NetGraph::MAX_HISTORY_TICS> mReliableSendDepth;
+	std::array<int, NetGraph::MAX_HISTORY_TICS> mReliableNonContiguousRetransmits;
+	int     mInterpolation;
 };

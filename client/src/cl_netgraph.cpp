@@ -35,16 +35,23 @@
 #include "cl_netgraph.h"
 #include "r_draw.h"
 
+#include "SequenceQueueEntryType.h"
+
 NetGraph::NetGraph(int x, int y) :
-	mX(x), mY(y)
+	mX(x), mY(y), mInterpolation(0)
 {
-	for (size_t i = 0; i < NetGraph::MAX_HISTORY_TICS; i++)
-	{
-		mMisprediction[i] = false;
-		mWorldIndexSync[i] = 0;
-		mTrafficIn[i] = 0;
-		mTrafficOut[i] = 0;
-	}
+	mMisprediction.fill(false);
+	mWorldIndexSync.fill(0);
+	mTrafficIn.fill(0);
+	mTrafficOut.fill(0);
+	mPacketsIn.fill(0);
+	mReliableSendDepth.fill(0);
+}
+
+template <typename ElementType, size_t N>
+static void SetClamped(std::array<ElementType, N>& io_array, const ElementType& i_value, const ElementType& i_min, const ElementType& i_max)
+{
+    io_array[gametic % N] = std::max(i_min, std::min(i_value, i_max));
 }
 
 void NetGraph::setMisprediction(bool val)
@@ -54,12 +61,17 @@ void NetGraph::setMisprediction(bool val)
 
 void NetGraph::setWorldIndexSync(int val)
 {
-	if (val > NetGraph::MAX_WORLD_INDEX)
-		val = NetGraph::MAX_WORLD_INDEX;
-	else if (val < NetGraph::MIN_WORLD_INDEX)
-		val = NetGraph::MIN_WORLD_INDEX;
+    SetClamped(mWorldIndexSync, val, NetGraph::MIN_WORLD_INDEX, NetGraph::MAX_WORLD_INDEX);
+}
 
-	mWorldIndexSync[gametic % NetGraph::MAX_HISTORY_TICS] = val;
+void NetGraph::setReliableSendDepth(int val)
+{
+    SetClamped(mReliableSendDepth, val, 0, static_cast<int>(DEFAULT_RELIABILITY_QUEUE_SIZE));
+}
+
+void NetGraph::setReliableNonContiguousRetransmits(int val)
+{
+    SetClamped(mReliableNonContiguousRetransmits, val, 0, static_cast<int>(DEFAULT_RELIABILITY_QUEUE_SIZE));
 }
 
 void NetGraph::addTrafficIn(int val)
@@ -151,6 +163,35 @@ void NetGraph::drawWorldIndexSync(int x, int y)
 		for (size_t i = 0; i < NetGraph::MAX_HISTORY_TICS; i++)
 			NetGraphDrawBar(x, liney, graphwidth, 1, 1);
 	}
+}
+
+template <int BAR_WIDTH, int BAR_UNIT_HEIGHT, typename ElementType, size_t N >
+static void DrawSimpleBarGraph(int x, int y, const std::array<ElementType, N>& i_data, int color)
+{
+	static constexpr int graphwidth = BAR_WIDTH * static_cast<int>(N);
+	const int centery = y + BAR_UNIT_HEIGHT;
+
+	// draw the center line
+	for (size_t i = 0; i < N; i++)
+		NetGraphDrawBar(x, centery, graphwidth, 1, 0);
+
+	for (size_t i = 0; i < N; i++)
+	{
+		const int index = (gametic - (N - i)) % N;
+		constexpr int width = BAR_WIDTH;
+		const int height = static_cast<int>(i_data[index]) * BAR_UNIT_HEIGHT;
+		const int startx = x + i * BAR_WIDTH;
+		const int starty = y;
+
+		if (i_data[index])
+			NetGraphDrawBar(startx, starty, width, height, color);
+	}
+}
+
+void NetGraph::drawReliableSendDepth(int x, int y)
+{
+    DrawSimpleBarGraph<2, 4>(x, y, mReliableSendDepth,                0xA0);    // yellow
+    DrawSimpleBarGraph<2, 4>(x, y, mReliableNonContiguousRetransmits, 0xB0);    // red
 }
 
 void NetGraph::drawMispredictions(int x, int y)
@@ -249,6 +290,9 @@ void NetGraph::draw()
 
     screen->DrawText(textcolor, mX, mY + 64, "Mispredictions");
 	drawMispredictions(mX, mY + 64 + fontheight);
+
+    screen->DrawText(textcolor, mX + 128, mY, ("Reliable Send Queue: " + std::to_string(mReliableSendDepth[gametic % MAX_HISTORY_TICS])).c_str());
+    drawReliableSendDepth(mX + 128, mY + fontheight);
 
 	drawTrafficIn(mX, mY + 128 + fontheight);
 	drawTrafficOut(mX, mY + 128 + fontheight * 3);

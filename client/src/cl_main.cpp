@@ -2111,6 +2111,8 @@ void CL_SendCmd(void)
 	const int currentSendSize    = messenger.GetLastSendSize();
 	const int totalSentByteCount = currentSendSize + retransmittedByteCount;
 
+    netgraph.setReliableNonContiguousRetransmits(messenger.GetNonContiguousRetransmitPackets());
+	netgraph.setReliableSendDepth(messenger.GetPendingAckCount());
 	netgraph.addTrafficOut(totalSentByteCount);
 	outrate += totalSentByteCount;
 }

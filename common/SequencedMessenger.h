@@ -249,11 +249,21 @@ class SequencedMessenger
 			SequenceQueueEntryType* sendQueueEntry;
 			int                     retransmissionsSent = 0;
 			int                     bytesSent = 0;
+            int                     previousPacketSeq = -1;
+
+            m_noncontiguousRetransmitCount = 0;
 
 			while ((sendQueueEntry = iter.Next()) != nullptr)
 			{
-				if (i_currentTic >= (m_retransmitDelayInTics + sendQueueEntry->originatingTic))
+				if (i_currentTic >= (m_retransmitDelayInTics + sendQueueEntry->originatingTic) or sendQueueEntry->lastRetransmitTic != -1)
 				{
+                    sendQueueEntry->lastRetransmitTic = i_currentTic;
+
+                    if (previousPacketSeq != -1)
+                    {
+                        m_noncontiguousRetransmitCount += previousPacketSeq != sendQueueEntry->sequence - 1 ? 1 : 0;
+                    }
+                    previousPacketSeq = sendQueueEntry->sequence;
 					bytesSent += SendOldPacket(*sendQueueEntry, i_dest);
 
 					if (++retransmissionsSent > m_sender.GetMaxPacketsPerRetransmission())
@@ -284,6 +294,8 @@ class SequencedMessenger
 		void SetMaxRate(int i_maxRate) { m_maxRate  = i_maxRate; }
 
 		int GetLastSendSize() const { return m_lastSendSize; }
+        int GetPendingAckCount() const { return m_sender.GetPendingAckCount(); }
+        int GetNonContiguousRetransmitPackets() const { return m_noncontiguousRetransmitCount; }
 
 	protected:
 
@@ -340,8 +352,11 @@ class SequencedMessenger
 
 		int m_retransmitDelayInTics  { 0 };
 
-		size_t m_unreliableBps { 0 };
-		size_t m_reliableBps   { 0 };
 		int    m_maxRate       { 0 };
-		int    m_lastSendSize  { 0 };
+
+		// Metrics
+		size_t m_unreliableBps                { 0 };
+		size_t m_reliableBps                  { 0 };
+		int    m_lastSendSize                 { 0 };
+		int    m_noncontiguousRetransmitCount { 0 };
 };
