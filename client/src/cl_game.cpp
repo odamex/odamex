@@ -1007,24 +1007,24 @@ void G_Ticker (void)
 			last_received = gametic;
 			noservermsgs = false;
 
-            const MessageResultEnum initialReadResult = CL_ReadPacketHeader();
+			const MessageResultEnum initialReadResult = CL_ReadPacketHeader();
 
-            switch (initialReadResult)
-            {
-                case MessageResultEnum::DEFER:
+			switch (initialReadResult)
+			{
+				case MessageResultEnum::DEFER:
 					netgraph.addPacketIn();
-                    continue;
-                case MessageResultEnum::ABORT:
-                    return;
-                case MessageResultEnum::ACCEPT:    // fall-thru: have a purely non-reliable message.
+					continue;
+				case MessageResultEnum::ABORT:
+					return;
+				case MessageResultEnum::ACCEPT:    // fall-thru: have a purely non-reliable message.
 					netgraph.addPacketIn();
-                default:
-                    break;
-            }
+				default:
+					break;
+			}
 
-            // If we're here it's because we need to accept a message right away.
+			// If we're here it's because we need to accept a message right away.
 
-            const MessageResultEnum nonReliableResult = CL_AcceptNetMessage();
+			const MessageResultEnum nonReliableResult = CL_AcceptNetMessage();
 			if (nonReliableResult == MessageResultEnum::ABORT)
 				return;
 		}
@@ -1078,9 +1078,7 @@ void G_Ticker (void)
 			{
 				// we are already connected to this server, quit first
 				MSG_WriteMarker(&messenger.NetBuf(), clc_disconnect);
-                messenger.Send(gametic, serveraddr);
-
-				//NET_SendPacket(messenger.NetBuf(), serveraddr);
+				messenger.Send(gametic, serveraddr);
 
 				PrintFmt(PRINT_WARNING,
 				         "Got unknown challenge {} while connecting, disconnecting.\n", type);

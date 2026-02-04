@@ -365,7 +365,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 	{
 		SZ_Clear(&messenger.NetBuf());
 		MSG_WriteMarker(&messenger.NetBuf(), clc_disconnect);
-        ::messenger.Send(gametic, serveraddr);
+		::messenger.Send(gametic, serveraddr);
 		SZ_Clear(&messenger.NetBuf());
 		sv_gametype = GM_COOP;
 		ClientReplay::getInstance().reset();
@@ -456,12 +456,12 @@ void CL_Reconnect(void)
 	if (connected)
 	{
 		MSG_WriteMarker(&messenger.NetBuf(), clc_disconnect);
-        messenger.Send(gametic, serveraddr);
+		messenger.Send(gametic, serveraddr);
 		SZ_Clear(&messenger.NetBuf());
 		connected = false;
 		gameaction = ga_fullconsole;
 
-		::messenger = SequencedMessenger();
+		messenger = SequencedMessenger();
 		P_ClearAllNetIds();
 	}
 	else if (lastconaddr.ip[0])
@@ -1748,14 +1748,14 @@ bool CL_Connect()
 {
 	players.clear();
 
-	::messenger = SequencedMessenger();
-	::messenger.SetMaxRate(20);         // FIXME: total guess
-	::messenger.SetPacketsPerRetransmit(10);    // To align with the size of the traditional cmd buffer
+	messenger = SequencedMessenger();
+	messenger.SetMaxRate(20);         // FIXME: total guess
+	messenger.SetPacketsPerRetransmit(10);    // To align with the size of the traditional cmd buffer
 	// [AM] This needs to go out ASAP so the server can start sending us
 	//      messages.
 	MSG_WriteMarker(&messenger.NetBuf(), clc_ack);
 	MSG_WriteLong(&messenger.NetBuf(), 0);
-    ::messenger.Send(gametic, ::serveraddr);
+	messenger.Send(gametic, ::serveraddr);
 
 	PrintFmt("Requesting server state...\n");
 
@@ -2099,19 +2099,17 @@ void CL_SendCmd(void)
 	// Write current client-tic.  Server later sends this back to client
 	// when sending svc_updatelocalplayer so the client knows which ticcmds
 	// need to be used for client's positional prediction.
-    MSG_WriteLong(&messenger.ReliableBuf(), gametic);
+	MSG_WriteLong(&messenger.ReliableBuf(), gametic);
 
-		NetCommand& currentNetcmd = localcmds[gametic % MAXSAVETICS];
+	NetCommand& currentNetcmd = localcmds[gametic % MAXSAVETICS];
+	currentNetcmd.write(&messenger.ReliableBuf());
 
-		currentNetcmd.write(&messenger.ReliableBuf());
+	messenger.Send(gametic, serveraddr);
 
+	const int retransmittedByteCount = messenger.HandleRetransmissions(gametic, serveraddr);
 
-    messenger.Send(gametic, serveraddr);
-
-    const int retransmittedByteCount = messenger.HandleRetransmissions(gametic, serveraddr);
-
-    const int currentSendSize    = messenger.GetLastSendSize();
-    const int totalSentByteCount = currentSendSize + retransmittedByteCount;
+	const int currentSendSize    = messenger.GetLastSendSize();
+	const int totalSentByteCount = currentSendSize + retransmittedByteCount;
 
 	netgraph.addTrafficOut(totalSentByteCount);
 	outrate += totalSentByteCount;
