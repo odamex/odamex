@@ -77,10 +77,6 @@
 
 #include "server.pb.h"
 
-#if _MSC_VER == 1310
-#pragma optimize("",off)
-#endif
-
 // denis - fancy gfx, but no game manipulation
 bool clientside = true, serverside = false;
 baseapp_t baseapp = client;
