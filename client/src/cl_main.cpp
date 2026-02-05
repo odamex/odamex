@@ -1966,7 +1966,7 @@ void CL_Clear()
 
 static std::string SVCName(byte header)
 {
-	std::string svc = ::svc_info[header].getName();
+	std::string svc = std::string(::svc_info[header].getName());
 	if (svc.empty())
 	{
 		svc = fmt::sprintf("svc_%u", header);
