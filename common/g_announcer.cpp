@@ -85,7 +85,7 @@ bool AnnouncerManager::namedTokenExists(const std::string& tokenName)
 	return false;
 }
 
-std::string AnnouncerManager::getLeftAnnouncer(const std::string& currentAnnouncer) const
+std::string AnnouncerManager::getLeftAnnouncer(const std::string& currentAnnouncer)
 {
 	if (announcerDict.empty())
 	{
@@ -116,7 +116,7 @@ std::string AnnouncerManager::getLeftAnnouncer(const std::string& currentAnnounc
 	}
 }
 
-std::string AnnouncerManager::getRightAnnouncer(const std::string& currentAnnouncer) const
+std::string AnnouncerManager::getRightAnnouncer(const std::string& currentAnnouncer)
 {
 	if (announcerDict.empty())
 	{
