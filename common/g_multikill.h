@@ -101,6 +101,12 @@ public:
 	const MultiKillLevel_s& getMultiKillLevel(const int level);
 
 	/// <summary>
+	/// Gets the highest multi kill level.
+	/// </summary>
+	/// <returns>The highest multi kill level available.</returns>
+	int getHighestMultiKillLevel();
+
+	/// <summary>
 	/// Sets defaults for loading multi kills. Typically runs if a SPREEDEF is not found.
 	/// </summary>
 	void loadMultiKillDefaults();
@@ -141,12 +147,6 @@ private:
 	/// </summary>
 	/// <returns>The multi kill interval.</returns>
 	int getMultiKillInterval();
-
-	/// <summary>
-	/// Gets the highest multi kill level.
-	/// </summary>
-	/// <returns>The highest multi kill level available.</returns>
-	int getHighestMultiKillLevel();
 
 	/// <summary>
 	/// Integer that represents, in tics, the max time interval allowed

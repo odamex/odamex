@@ -689,7 +689,7 @@ void P_ProcessSpreeDamage(const player_t* source, const int totalDamage)
 
 #ifdef CLIENT_APP
 	// Don't announce sprees if the client has showing them disabled
-	if (!cl_showsprees || snd_announcesprees)
+	if (!cl_showsprees || !snd_announcesprees)
 		return;
 #endif
 
@@ -703,7 +703,7 @@ void P_ProcessSpreeDamage(const player_t* source, const int totalDamage)
 			S_Sound(CHAN_GAMEINFO, record.spree.gameSfxToken.c_str(), 1, ATTN_NONE);
 
 		// Play the announcer sound for the new spree
-		std::string sound = AnnouncerManager::getInstance().getTokenForEvent("spree " + std::to_string(record.spreeLevel));
+		std::string sound = AnnouncerManager::getInstance().getTokenForEvent("spree " + std::to_string(record.spreeLevel + 1));
 		if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 			S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 	}

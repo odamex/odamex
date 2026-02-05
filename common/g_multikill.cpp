@@ -198,7 +198,7 @@ void MultiKillManager::clearMultiTics()
 
 #ifdef CLIENT_APP
 EXTERN_CVAR(cl_showmultikills)
-EXTERN_CVAR(snd_announcesprees)
+EXTERN_CVAR(snd_announcemultikills)
 #endif
 
 void P_ProcessMultiKills(const AActor* source, const player_t* target)
@@ -221,7 +221,7 @@ void P_ProcessMultiKills(const AActor* source, const player_t* target)
 
 	#ifdef CLIENT_APP
 	// Don't announce multi kills if the client has showing them disabled
-	if (!cl_showmultikills || !snd_announcesprees)
+	if (!cl_showmultikills || !snd_announcemultikills)
 		return;
 	#endif
 
@@ -233,8 +233,10 @@ void P_ProcessMultiKills(const AActor* source, const player_t* target)
 			S_Sound(CHAN_GAMEINFO, level.gameSfxToken.c_str(), 1, ATTN_NONE);
 
 		// Play the announcer sound for the new multi kill
+		int highest = manager.getHighestMultiKillLevel();
+		int levelnum = status.multiKills > highest ? highest : status.multiKills;
 		const std::string sound = AnnouncerManager::getInstance().getTokenForEvent(
-		    "multi " + std::to_string(status.multiKills));
+		    "multi " + std::to_string(levelnum));
 		if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 			S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 	}
