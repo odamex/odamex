@@ -58,9 +58,7 @@ SequenceSender::SequenceSender(size_t i_initialSize) :
 	m_nextSequence   (0),
 	m_unackedCount   (0),
 	m_smallestUnacked(0),
-
-	m_maxPacketsPerRetransmission (DEFAULT_RETRANSMISSIONS_PER_TIC),
-	m_mode                        (NORMAL)
+	m_mode           (NORMAL)
 {
 }
 
@@ -182,10 +180,10 @@ bool SequenceSender::Acknowledge(int sequence)
 				//
 				// TODO: Real downthrottling
 
-				if (m_unackedCount < std::min(m_maxPacketsPerRetransmission, static_cast<int>(m_sendQueue.size())))
-				{
-					m_mode = NORMAL;
-				}
+				//if (m_unackedCount == 0)
+				//{
+				//	m_mode = NORMAL;
+				//}
 			}
 		}
 

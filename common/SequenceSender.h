@@ -31,9 +31,6 @@ class SequenceSender
 {
 	public:     // Types.
 
-		// Random conservative wild-ass guess.
-		const static int DEFAULT_RETRANSMISSIONS_PER_TIC = 5;
-
 		// This class iterates over the *unacknowledged* reliable messages.
 		// This iterator can be invalidated if things are acked or new Send Packets are obtained.
 		class UnackedIterator
@@ -76,10 +73,8 @@ class SequenceSender
 		{
 		}
 
+        void SetMode(SenderModeEnum i_mode) { m_mode = i_mode; }
 		SenderModeEnum GetMode() const { return m_mode; }
-
-		void SetMaxPacketsPerRetransmission(int i_maxPackets){ m_maxPacketsPerRetransmission = i_maxPackets; }
-		int  GetMaxPacketsPerRetransmission() const { return m_maxPacketsPerRetransmission; }
 
 		// Grab a slot in the reliability sequence and prepare it for transmission.
 		// This class does not manage the timestamps themselves -
@@ -108,7 +103,6 @@ class SequenceSender
 		int m_nextSequence;                 // The sequence number to assign to the next requested packet.
 		int m_unackedCount;                 // The number of sent packets that have not yet been acked.
 		int m_smallestUnacked;              // The smallest sequence number that has yet to be acked.
-		int m_maxPacketsPerRetransmission;  // The max packets to send during a retransmission cycle.
 
 		SenderModeEnum m_mode;
 };

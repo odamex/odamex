@@ -18,6 +18,9 @@ class SequencedMessenger
 	const static size_t PACKET_MESSAGE_INDEX       = 7;
 	const static size_t PACKET_HEADER_SIZE         = PACKET_MESSAGE_INDEX;
 
+	// Random conservative wild-ass guess.
+	const static int DEFAULT_RETRANSMISSIONS_PER_TIC = 10;
+
 	public:
 
 		//  -------------- Receiving functions --------------
@@ -74,10 +77,7 @@ class SequencedMessenger
 		// message has been included in retransmissions, then it stops being retransmitted.
 		//
 		// Returns true if this is the first acknowledgement of the given sequence.  False otherwise.
-		bool Acknowledge(int sequence)
-		{
-			return m_sender.Acknowledge(sequence);
-		}
+		bool Acknowledge(int sequence);
 
 		buf_t& ReliableBuf() { return m_reliableBuffer; }
 		buf_t& NetBuf() { return m_nonreliableBuffer; }
@@ -85,7 +85,8 @@ class SequencedMessenger
 		bool MustThrottleTransmission() const { return m_sender.GetMode() == SequenceSender::RECOVERY; }
 
 		void SetRetransmitDelay(int i_delayInTics) { m_retransmitDelayInTics = i_delayInTics; }
-		void SetPacketsPerRetransmit(int i_maxPackets) { m_sender.SetMaxPacketsPerRetransmission(i_maxPackets); }
+		void SetPacketsPerRetransmit(int i_maxPackets) { m_maxPacketsPerRetransmission = i_maxPackets; }
+		int  GetMaxPacketsPerRetransmission() const { return m_maxPacketsPerRetransmission; }
 		void SetMaxRate(int i_maxRate) { m_maxRate  = i_maxRate; }
 
 		int GetLastSendSize() const { return m_lastSendSize; }
@@ -110,12 +111,15 @@ class SequencedMessenger
 		// Receive buffer
 		buf_t m_receiveBuffer { MAX_UDP_PACKET };
 
-		int m_retransmitDelayInTics { 0 };
-		int m_maxRate               { 0 };
+        int m_maxPacketsPerRetransmission { DEFAULT_RETRANSMISSIONS_PER_TIC };
+		int m_retransmitDelayInTics       { 0 };
+		int m_maxRate                     { 0 };
 
 		// Metrics
 		size_t m_unreliableBps                { 0 };
 		size_t m_reliableBps                  { 0 };
 		int    m_lastSendSize                 { 0 };
 		int    m_noncontiguousRetransmitCount { 0 };
+        int    m_previousUnackedCount         { 0 };
+        int    m_unackedGrowth                { 0 };
 };

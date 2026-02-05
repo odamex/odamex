@@ -121,6 +121,11 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 			// Insert Reliable sequence number first thing.
 			MSG_WriteLong(&m_outgoingPacketBuffer, saveMessage.sequence);
 		}
+        else
+        {
+            // This just can't go out as reliable!
+            MSG_WriteLong(&m_outgoingPacketBuffer, -1);
+        }
 	}
 	else
 	{
@@ -201,9 +206,9 @@ int SequencedMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& 
 
 	for (; sendQueueEntry != nullptr; sendQueueEntry = iter.Next())
 	{
-		if (i_currentTic >= (m_retransmitDelayInTics + sendQueueEntry->originatingTic) or sendQueueEntry->lastRetransmitTic != -1)
+		if (i_currentTic >= (std::min(m_retransmitDelayInTics, 5) + sendQueueEntry->originatingTic) or sendQueueEntry->lastRetransmitTic != -1)
 		{
-			if (++retransmissionsSent > m_sender.GetMaxPacketsPerRetransmission())
+			if (++retransmissionsSent > m_maxPacketsPerRetransmission)
 			{
 				break;
 			}
@@ -216,6 +221,19 @@ int SequencedMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& 
 		}
 	}
 	return bytesSent;
+}
+
+bool SequencedMessenger::Acknowledge(int sequence)
+{
+    const bool isFreshAck = m_sender.Acknowledge(sequence);
+    if (isFreshAck)
+    {
+        if (m_sender.GetMode() == SequenceSender::RECOVERY and m_sender.GetPendingAckCount() < m_maxPacketsPerRetransmission)
+        {
+            m_sender.SetMode(SequenceSender::NORMAL);
+        }
+    }
+	return isFreshAck;
 }
 
 
