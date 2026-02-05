@@ -41,7 +41,7 @@ struct SequenceQueueEntryType
 		buf           (MAX_UDP_PACKET),
 		sequence      (-1),
 		originatingTic(-1),
-        lastRetransmitTic(-1),
+		lastRetransmitTic(-1),
 		isAwaiting    (false)
 	{}
 };

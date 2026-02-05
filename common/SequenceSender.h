@@ -159,9 +159,10 @@ class SequenceSender
 
 					m_nextSequence = desiredSequence + 1;
 
-					entryRef.isAwaiting     = true;
-					entryRef.sequence       = desiredSequence;
-					entryRef.originatingTic = currentTic;
+					entryRef.isAwaiting        = true;
+					entryRef.sequence          = desiredSequence;
+					entryRef.originatingTic    = currentTic;
+					entryRef.lastRetransmitTic = -1;
 					entryRef.buf.clear();
 
 					return QueueEntryResultType {& entryRef.buf, entryRef.sequence};

@@ -245,25 +245,25 @@ class SequencedMessenger
 		// Returns the number of bytes sent as part of this retransmission cycle.
 		int HandleRetransmissions(int i_currentTic, const netadr_t& i_dest)
 		{
+			int retransmissionsSent = 0;
+			int bytesSent = 0;
+
 			auto                    iter = m_sender.IterateUnackedPackets();
-			SequenceQueueEntryType* sendQueueEntry;
-			int                     retransmissionsSent = 0;
-			int                     bytesSent = 0;
-            int                     previousPacketSeq = -1;
+			SequenceQueueEntryType* sendQueueEntry = iter.Next();
 
-            m_noncontiguousRetransmitCount = 0;
+			// If we have retransmissions, setup previousPacketSeq to appear that the first retransmitted
+			// packet counts as the first of a contiguous run of packets.
+			int previousPacketSeq          = sendQueueEntry ? sendQueueEntry->sequence - 1 : -1;
+			m_noncontiguousRetransmitCount = 0;
 
-			while ((sendQueueEntry = iter.Next()) != nullptr)
+			for (; sendQueueEntry != nullptr; sendQueueEntry = iter.Next())
 			{
 				if (i_currentTic >= (m_retransmitDelayInTics + sendQueueEntry->originatingTic) or sendQueueEntry->lastRetransmitTic != -1)
 				{
-                    sendQueueEntry->lastRetransmitTic = i_currentTic;
+					m_noncontiguousRetransmitCount += previousPacketSeq != sendQueueEntry->sequence - 1 ? 1 : 0;
+					previousPacketSeq = sendQueueEntry->sequence;
 
-                    if (previousPacketSeq != -1)
-                    {
-                        m_noncontiguousRetransmitCount += previousPacketSeq != sendQueueEntry->sequence - 1 ? 1 : 0;
-                    }
-                    previousPacketSeq = sendQueueEntry->sequence;
+					sendQueueEntry->lastRetransmitTic = i_currentTic;
 					bytesSent += SendOldPacket(*sendQueueEntry, i_dest);
 
 					if (++retransmissionsSent > m_sender.GetMaxPacketsPerRetransmission())
