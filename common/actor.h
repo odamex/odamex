@@ -24,6 +24,8 @@
 #pragma once
 
 // Basics.
+#include "doomdef.h"
+
 #include "tables.h"
 #include "m_fixed.h"
 #include "m_vectors.h"

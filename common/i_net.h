@@ -42,6 +42,11 @@
 #define LAUNCHER_CHALLENGE 777123 // csdl challenge
 #define VERSION 65                // GhostlyDeath -- this should remain static from now on
 
+#include "fmt/format.h"
+
+#include "doomtype.h"
+#include "doomfunc.h"
+
 /**
  * @brief Types of client buffers.
  */

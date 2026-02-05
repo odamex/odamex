@@ -1,12 +1,7 @@
 #pragma once
 
-#include "i_net.h"
-
 #include "SequenceReceiver.h"
 #include "SequenceSender.h"
-
-dtime_t I_MSTime (void);
-EXTERN_CVAR (log_packetdebug)
 
 enum class MessageResultEnum
 {
@@ -41,63 +36,7 @@ class SequencedMessenger
 		// DEFER  - The receive buffer had only reliable data.  You can defer processing and call Receive() again without losing data.
 		// ACCEPT - Unreliable data is awaiting immediately.  Obtain via NextReceivedPacket() and process it before the next call to
 		//          Receive() or LOSE IT FOREVER.  Seriously, handle it immediately, because you don't want to let Acks hit the floor!
-		MessageResultEnum Receive(buf_t& io_rawBuf, int i_currentTic, const netadr_t& i_dest)
-		{
-			const int  sequence     = io_rawBuf.ReadLong();    // Packet sequence number.
-			const int  reliableSize = io_rawBuf.ReadShort();   // Reliable size / Start of Unreliable data
-			const byte flags        = io_rawBuf.ReadByte();    // Flag bits.
-			if (flags & SVF_UNUSED_MASK)
-			{
-				PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood", flags);
-				return MessageResultEnum::ABORT;
-			}
-			else if (flags & SVF_COMPRESSED)
-			{
-				MSG_DecompressMinilzo(io_rawBuf);
-			}
-
-			m_receiveBuffer.clear();
-			if (sequence >= 0)
-			{
-				// If this packet has both reliable and unreliable data, receive the unreliable
-				// portion immediately, then truncate the packet and defer the rest for ordered
-				// processing.
-				const bool alsoHasNonReliableData = reliableSize < io_rawBuf.BytesLeftToRead();
-				if (alsoHasNonReliableData)
-				{
-					const size_t startOfReliableData    = io_rawBuf.Tell();
-					const size_t startOfNonReliableData = startOfReliableData + reliableSize;
-					const size_t sizeOfNonReliableData  = io_rawBuf.size() - startOfNonReliableData;
-
-					m_receiveBuffer.WriteChunk(reinterpret_cast<char*>(io_rawBuf.ptr()),
-					                           sizeOfNonReliableData,
-					                           startOfNonReliableData);
-
-					const size_t sizeOfMessageWithNonReliableTruncated = startOfNonReliableData;
-
-					io_rawBuf.setcursize(sizeOfMessageWithNonReliableTruncated);
-				}
-
-				m_receiver.RegisterReceivedPacket(sequence, io_rawBuf);
-
-				// Send an ACK to the server only if it contained reliable data.
-				if (not simulated_connection)
-				{
-					m_nonreliableBuffer.WriteByte(clc_ack);
-					m_nonreliableBuffer.WriteLong(sequence);
-					if (m_nonreliableBuffer.size() >= 1024)
-					{
-						Send(i_currentTic, i_dest);
-					}
-				}
-				return alsoHasNonReliableData ? MessageResultEnum::ACCEPT : MessageResultEnum::DEFER;
-			}
-			else
-			{
-				m_receiveBuffer.swap(io_rawBuf);
-			}
-			return MessageResultEnum::ACCEPT;
-		}
+		MessageResultEnum Receive(buf_t& io_rawBuf, int i_currentTic, const netadr_t& i_dest);
 
 		// Fetches the next packet for processing and moves its content into the given raw buffer.  This provides packets
 		// that have been received via the Receive() API, including reliable and unreliable data.  Unreliable data is
@@ -105,21 +44,7 @@ class SequencedMessenger
 		// call this function in a loop to ensure reliable data is handled in a timely manner.
 		//
 		// Returns true if data was available and has been moved into the given raw buffer, false otherwise.
-		bool NextReceivedPacket(buf_t& io_rawBuf)
-		{
-			if (m_receiveBuffer.size() > 0)
-			{
-				io_rawBuf.swap(m_receiveBuffer);
-				m_receiveBuffer.clear();
-				return true;
-			}
-			if (SequenceQueueEntryType* queueEntryPtr = m_receiver.NextPacket())
-			{
-				io_rawBuf.swap(queueEntryPtr->buf);
-				return true;
-			}
-			return false;
-		}
+		bool NextReceivedPacket(buf_t& io_rawBuf);
 
 		//  -------------- Sending functions --------------
 
@@ -131,108 +56,7 @@ class SequencedMessenger
 		//  ABORT  - The reliable buffer had been overflown by time we entered this call.
 		//  DEFER  - No one gave us any data to actually transmit, thus we skipped sending any packet.
 		//  ACCEPT - Normal result: A packet was sent, or we only had unreliable data and it was intentionally capped by maxrate.
-		MessageResultEnum Send(int i_currentTic, const netadr_t& i_dest)
-		{
-			int bps = 0; // bytes per second, not bits per second
-
-			m_lastSendSize = 0;
-
-			if (m_reliableBuffer.overflowed)
-			{
-				SZ_Clear(&m_nonreliableBuffer);
-				SZ_Clear(&m_reliableBuffer);
-				//SV_DropClient(pl);
-				return MessageResultEnum::ABORT;
-			}
-			else
-				if (m_nonreliableBuffer.overflowed)
-					SZ_Clear(&m_nonreliableBuffer);
-
-			// [SL] 2012-05-04 - Don't send empty packets - they still have overhead
-			if (m_reliableBuffer.cursize + m_nonreliableBuffer.cursize == 0)
-			{
-				return MessageResultEnum::DEFER;
-			}
-
-			m_outgoingPacketBuffer.clear();
-
-			if (m_reliableBuffer.cursize)
-			{
-				// Save the reliable portion of the message for ack checking and retransmission if necessary.
-				auto saveMessage = m_sender.ObtainSendPacket(i_currentTic);
-
-				if (saveMessage.buffer)
-				{
-					// copy the reliable portion into the buffer.
-					SZ_Write(saveMessage.buffer, m_reliableBuffer.data.get(), m_reliableBuffer.cursize);
-
-					// Insert Reliable sequence number first thing.
-					MSG_WriteLong(&m_outgoingPacketBuffer, saveMessage.sequence);
-				}
-			}
-			else
-			{
-				// Messages without reliability are non-sequenced.
-				MSG_WriteLong(&m_outgoingPacketBuffer, -1);
-			}
-
-			MSG_WriteShort(&m_outgoingPacketBuffer, static_cast<short>(m_reliableBuffer.cursize));  // Reliable size
-			MSG_WriteByte (&m_outgoingPacketBuffer, 0);                                             // Flags, filled out later.
-
-			// copy the reliable message to the packet first
-			if (m_reliableBuffer.cursize)
-			{
-				SZ_Write (&m_outgoingPacketBuffer, m_reliableBuffer.data.get(), m_reliableBuffer.cursize);
-				m_reliableBps += m_reliableBuffer.cursize;
-			}
-
-			// add the unreliable part if space is available and rate value
-			// allows it
-			const int ticPhase = i_currentTic % TICRATE;
-			if (ticPhase != 0)
-			{
-				bps = (int)((double)( (m_unreliableBps + m_reliableBps) * TICRATE)/(double)(i_currentTic%TICRATE));
-			}
-
-			if (bps < m_maxRate * 1000)
-			{
-				if (m_nonreliableBuffer.cursize && (m_outgoingPacketBuffer.maxsize() - m_outgoingPacketBuffer.cursize > m_nonreliableBuffer.cursize) )
-				{
-					SZ_Write (&m_outgoingPacketBuffer, m_nonreliableBuffer.data.get(), m_nonreliableBuffer.cursize);
-					m_unreliableBps += m_nonreliableBuffer.cursize;
-				}
-			}
-
-			SZ_Clear(&m_nonreliableBuffer);
-			SZ_Clear(&m_reliableBuffer);
-
-			if (m_outgoingPacketBuffer.size() > PACKET_HEADER_SIZE and not MustThrottleTransmission())
-			{
-				// compress the packet, but not the sequence id
-				CompressPacket(m_outgoingPacketBuffer, PACKET_HEADER_SIZE);
-
-				if (log_packetdebug)
-				{
-					// FIXME: Have the player ID handy for debug messages.
-					//PrintFmt(PRINT_HIGH, "ply {:03}, size {:04}, tic {:07}, time {:011}\n",
-					//        pl.id, m_outgoingPacketBuffer.cursize, i_currentTic, I_MSTime());
-				}
-
-#ifdef SIMULATE_LATENCY
-				SV_SendPacketDelayed(m_outgoingPacketBuffer, pl);
-#else
-				m_lastSendSize = NET_SendPacket(m_outgoingPacketBuffer, i_dest);
-#endif
-			}
-
-			if (ticPhase == 0)
-			{
-				m_unreliableBps = 0;
-				m_reliableBps   = 0;
-			}
-
-			return MessageResultEnum::ACCEPT;
-		}
+		MessageResultEnum Send(int i_currentTic, const netadr_t& i_dest);
 
 		// Retransmit the oldest reliable packets that were previously sent and are older than RetransmitDelay
 		// (see Get/Set methods) but haven't yet been acknowledged.
@@ -243,37 +67,8 @@ class SequencedMessenger
 		// are no unacknowledged reliable packets older than the RetransmitDelay, nothing is sent.
 		//
 		// Returns the number of bytes sent as part of this retransmission cycle.
-		int HandleRetransmissions(int i_currentTic, const netadr_t& i_dest)
-		{
-			int retransmissionsSent = 0;
-			int bytesSent = 0;
+		int HandleRetransmissions(int i_currentTic, const netadr_t& i_dest);
 
-			auto                    iter = m_sender.IterateUnackedPackets();
-			SequenceQueueEntryType* sendQueueEntry = iter.Next();
-
-			// If we have retransmissions, setup previousPacketSeq to appear that the first retransmitted
-			// packet counts as the first of a contiguous run of packets.
-			int previousPacketSeq          = sendQueueEntry ? sendQueueEntry->sequence - 1 : -1;
-			m_noncontiguousRetransmitCount = 0;
-
-			for (; sendQueueEntry != nullptr; sendQueueEntry = iter.Next())
-			{
-				if (i_currentTic >= (m_retransmitDelayInTics + sendQueueEntry->originatingTic) or sendQueueEntry->lastRetransmitTic != -1)
-				{
-					if (++retransmissionsSent > m_sender.GetMaxPacketsPerRetransmission())
-					{
-						break;
-					}
-					m_noncontiguousRetransmitCount += previousPacketSeq != sendQueueEntry->sequence - 1 ? 1 : 0;
-					previousPacketSeq = sendQueueEntry->sequence;
-
-					sendQueueEntry->lastRetransmitTic = i_currentTic;
-					bytesSent += SendOldPacket(*sendQueueEntry, i_dest);
-
-				}
-			}
-			return bytesSent;
-		}
 
 		// Mark a previously-sent reliable message as having been acknowledged by the recipient.  If the old
 		// message has been included in retransmissions, then it stops being retransmitted.
@@ -299,44 +94,9 @@ class SequencedMessenger
 
 	protected:
 
-		static void CompressPacket(buf_t& send, const size_t reserved)
-		{
-			byte method = 0;
-			if (MSG_CompressMinilzo(send, reserved, 0))
-			{
-				// Successful compression, set the compression flag bit.
-				method |= SVF_COMPRESSED;
-			}
+		static void CompressPacket(buf_t& send, const size_t reserved);
 
-			send.ptr()[PACKET_FLAG_INDEX] |= method;
-		}
-
-		int SendOldPacket(const SequenceQueueEntryType& queueEntry, const netadr_t& i_dest)
-		{
-			m_outgoingPacketBuffer.clear();
-
-			// This is a lot simpler than a fresh send.  Just send the data we have
-			// have saved out.
-
-			MSG_WriteLong (&m_outgoingPacketBuffer, queueEntry.sequence);
-			MSG_WriteShort(&m_outgoingPacketBuffer, static_cast<short>(queueEntry.buf.cursize));
-			MSG_WriteByte (&m_outgoingPacketBuffer, 0); // Flags, filled out later.
-
-			// copy the reliable message to the packet
-			if (queueEntry.buf.cursize)
-			{
-				SZ_Write(&m_outgoingPacketBuffer, queueEntry.buf.data.get(), queueEntry.buf.cursize);
-				m_reliableBps += queueEntry.buf.cursize;
-			}
-
-			// compress the data portion of the packet
-			if (m_outgoingPacketBuffer.size() > PACKET_HEADER_SIZE)
-			{
-				CompressPacket(m_outgoingPacketBuffer, PACKET_HEADER_SIZE);
-			}
-
-			return NET_SendPacket(m_outgoingPacketBuffer, i_dest);
-		}
+		int SendOldPacket(const SequenceQueueEntryType& queueEntry, const netadr_t& i_dest);
 
 		SequenceSender   m_sender;
 		SequenceReceiver m_receiver;
@@ -350,9 +110,8 @@ class SequencedMessenger
 		// Receive buffer
 		buf_t m_receiveBuffer { MAX_UDP_PACKET };
 
-		int m_retransmitDelayInTics  { 0 };
-
-		int    m_maxRate       { 0 };
+		int m_retransmitDelayInTics { 0 };
+		int m_maxRate               { 0 };
 
 		// Metrics
 		size_t m_unreliableBps                { 0 };

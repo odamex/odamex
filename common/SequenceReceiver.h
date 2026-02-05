@@ -50,28 +50,7 @@ class SequenceReceiver
 		// into the queue, leaving the given io_bufferRef in a valid but indeterminant
 		// state, and true is returned.  Otherwise, false is returned and the given
 		// buffer is left unmodified.
-		bool RegisterReceivedPacket(int sequence, buf_t& io_bufferRef)
-		{
-			const int desiredIndex = sequence % m_recvQueue.size();
-
-			SequenceQueueEntryType& entryRef = m_recvQueue[desiredIndex];
-
-			if (m_currentSequence < 0)
-			{
-				m_currentSequence = sequence;
-			}
-
-			if (sequence >= m_currentSequence)
-			{
-				if (entryRef.sequence != sequence)
-				{
-					entryRef.sequence = sequence;
-					entryRef.buf.swap(io_bufferRef);
-					return true;
-				}
-			}
-			return false;
-		}
+		bool RegisterReceivedPacket(int sequence, buf_t& io_bufferRef);
 
 		// Returns the next packet in the sequence of received reliable messages.
 		// The ordering of messages returned by repeated calls to this function is
@@ -82,22 +61,7 @@ class SequenceReceiver
 		// Messages obtained and processed in accordance with this function will be
 		// in the correct sequence, even if they were provided to RegisterReceivePacket()
 		// out-of-order.
-		SequenceQueueEntryType* NextPacket()
-		{
-			const int desiredIndex = m_currentSequence % m_recvQueue.size();
-
-			SequenceQueueEntryType& entryRef = m_recvQueue[desiredIndex];
-
-			// This is deliberately restrictive.  We do NOT want to process packets
-			// "from the future."  We want to keep a strict sequence to try to be as
-			// deterministic as possible.
-			if (m_currentSequence == entryRef.sequence)
-			{
-				++m_currentSequence;
-				return &entryRef;
-			}
-			return nullptr;
-		}
+		SequenceQueueEntryType* NextPacket();
 
 	protected:
 
