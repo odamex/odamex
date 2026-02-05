@@ -181,7 +181,7 @@ struct msg_info_t
 	std::string_view msgName;
 	std::string_view msgFormat = "x"; // 'b'=byte, 'n'=short, 'N'=long, 's'=string
 
-	constexpr std::string_view getName() noexcept { return msgName; }
+	constexpr std::string_view getName() const noexcept { return msgName; }
 };
 
 // network messages
@@ -311,8 +311,8 @@ inline auto format_as(clc_t clc)
 
 inline constexpr size_t clc_max = 255;
 
-extern std::array<msg_info_t, clc_max + 1> clc_info;
-extern std::array<msg_info_t, svc_max + 1> svc_info;
+extern const std::array<msg_info_t, clc_max + 1> clc_info;
+extern const std::array<msg_info_t, svc_max + 1> svc_info;
 
 namespace google
 {
@@ -322,12 +322,12 @@ class Message;
 }
 } // namespace google
 
-typedef struct
+struct netadr_t
 {
-   byte    ip[4];
-   unsigned short  port;
-   unsigned short  pad;
-} netadr_t;
+   byte     ip[4] = { 0, 0, 0, 0 };
+   uint16_t port  = 0;
+   uint16_t pad   = 0;
+};
 
 extern  netadr_t  net_from;  // address of who sent the packet
 

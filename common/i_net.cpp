@@ -97,19 +97,6 @@ lzo_byte wrkmem[LZO1X_1_MEM_COMPRESS];
 
 EXTERN_CVAR(port)
 
-/**
- * @brief Initialize a clc_info member.
- *
- * @detail do-while is used to force a semicolon afterwards.
- */
-#define CLC_INFO(n)                    \
-	do                                 \
-	{                                  \
-		::clc_info[n].id = n;          \
-		::clc_info[n].msgName = #n;    \
-		::clc_info[n].msgFormat = "x"; \
-	} while (false)
-
 const std::array<msg_info_t, clc_max + 1> clc_info
 {{
 #define CLC_INFO(n) { n, #n, "x" }

@@ -281,7 +281,7 @@ public:
 			}
 		};
 
-		netadr_t    address;
+		netadr_t    address{};
 
 		buf_t       netbuf;
 		buf_t       reliablebuf;
@@ -318,8 +318,6 @@ public:
 
 		client_t()
 		{
-			// GhostlyDeath -- Initialize to Zero
-			memset(&address, 0, sizeof(netadr_t));
 			version = 0;
 			packedversion = 0;
 			for (auto& [sequence, data] : oldpackets)
