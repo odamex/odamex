@@ -408,7 +408,7 @@ public:
 	/// list.
 	/// </summary>
 	/// <returns>The name of the announcer to the left of this one.</returns>
-	std::string getLeftAnnouncer(const std::string& currentAnnouncer);
+	std::string getLeftAnnouncer(const std::string& currentAnnouncer) const;
 
 	/// <summary>
 	/// Gets the name of the announcer to the right of the current one.
@@ -416,7 +416,7 @@ public:
 	/// list.
 	/// </summary>
 	/// <returns>The name of the announcer to the right of this one.</returns>
-	std::string getRightAnnouncer(const std::string& currentAnnouncer);
+	std::string getRightAnnouncer(const std::string& currentAnnouncer) const;
 
 	/// <summary>
 	/// Gets the metadata of the specified announcer pack.

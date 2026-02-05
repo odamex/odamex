@@ -85,7 +85,7 @@ bool AnnouncerManager::namedTokenExists(const std::string& tokenName)
 	return false;
 }
 
-std::string AnnouncerManager::getLeftAnnouncer(const std::string& currentAnnouncer)
+std::string AnnouncerManager::getLeftAnnouncer(const std::string& currentAnnouncer) const
 {
 	if (announcerDict.empty())
 	{
@@ -105,18 +105,18 @@ std::string AnnouncerManager::getLeftAnnouncer(const std::string& currentAnnounc
 	else if (it == announcerDict.begin())
 	{
 		// Wrap around to the end
-		it = announcerDict.end();
-		--it;
+		it = std::prev(announcerDict.end());
+
 		return it->first;
 	}
 	else
 	{
-		--it;
+		it = std::prev(it);
 		return it->first;
 	}
 }
 
-std::string AnnouncerManager::getRightAnnouncer(const std::string& currentAnnouncer)
+std::string AnnouncerManager::getRightAnnouncer(const std::string& currentAnnouncer) const
 {
 	if (announcerDict.empty())
 	{
@@ -133,7 +133,8 @@ std::string AnnouncerManager::getRightAnnouncer(const std::string& currentAnnoun
 	}
 	else
 	{
-		++it;
+		it = std::next(it);
+
 		if (it == announcerDict.end())
 		{
 			// Wrap around to the beginning
