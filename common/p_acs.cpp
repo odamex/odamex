@@ -4136,6 +4136,10 @@ void strbin (char *str)
 			}
 			p++;
 		}
+		else
+		{
+			// Trainling backlash
+		}
 	}
 	*str = 0;
 }

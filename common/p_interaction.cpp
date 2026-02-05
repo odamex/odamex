@@ -580,6 +580,8 @@ ItemEquipVal P_GivePower(player_t& player, int /*powertype_t*/ power)
 }
 
 #include "v_textcolors.h"
+#include "g_multikill.h"
+#include "g_spree.h"
 
 	/*
  * @brief Player grabbed a resurrect player powerup
@@ -1425,8 +1427,9 @@ void P_TouchSpecialThing(AActor& special, AActor& toucher)
 //		%p -> his/her/its/their
 //		%o -> other (victim)
 //		%k -> killer
+//		%s -> spree
 //
-void SexMessage (const char *from, char *to, gender_t gender, std::string_view victim, std::string_view killer)
+void SexMessage (const char *from, char *to, gender_t gender, std::string_view victim, std::string_view killer, std::string_view spree)
 {
 	static constexpr std::string_view genderstuff[4][3] =
 	{
@@ -1454,6 +1457,7 @@ void SexMessage (const char *from, char *to, gender_t gender, std::string_view v
 			case 'p':	gendermsg = 2;	break;
 			case 'o':	subst = victim;	break;
 			case 'k':	subst = killer;	break;
+			case 's':	subst = spree;	break;
 			}
 			if (!subst.empty())
 			{
@@ -1667,7 +1671,7 @@ static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attack
 	if (message)
 	{
 		SexMessage(message, gendermessage, gender, self->player->userinfo.netname,
-		           self->player->userinfo.netname);
+		           self->player->userinfo.netname, "");
 		SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
 
 		toast_t toast;
@@ -1743,7 +1747,7 @@ static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attack
 	if (message && attacker && attacker->player)
 	{
 		SexMessage(message, gendermessage, gender, self->player->userinfo.netname,
-		           attacker->player->userinfo.netname);
+		           attacker->player->userinfo.netname, "");
 		SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
 
 		toast_t toast;
@@ -1751,13 +1755,18 @@ static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attack
 		toast.left_pid = attacker->player->id;
 		toast.icon = mod;
 		toast.right_pid = self->player->id;
+		if (SpreeManager::getInstance().hasSpree(toast.left_pid))
+		{
+			toast.flags |= toast_t::SPREE;
+			toast.points = SpreeManager::getInstance().getPoints(toast.left_pid);
+			toast.spree_color = SpreeManager::getInstance().getSpreeRecord(toast.left_pid).spree.color;
+		}
 		COM_PushToast(toast);
 		return;
 	}
 
 	SexMessage(GStrings(OB_DEFAULT), gendermessage, gender,
-	           self->player->userinfo.netname,
-	           self->player->userinfo.netname);
+	           self->player->userinfo.netname, self->player->userinfo.netname, "");
 	SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
 
 	toast_t toast;
@@ -1954,6 +1963,8 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 			Unlag::getInstance().clearPlayerHistory(tplayer->id);
 		}
 
+		P_ProcessMultiKills(source, target->player);
+		P_ProcessSpreeKill(source, target->player);
 	}
 
 	if (target->health > 0) // denis - when this function is used standalone
@@ -2396,12 +2407,18 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 				if (target->health < 0)
 				{
 					if (P_GiveMonsterDamage(*splayer, damage + target->health))
+					{
 						PersistPlayerDamage(*splayer);
+						P_ProcessSpreeDamage(splayer, damage + target->health);
+					}
 				}
 				else
 				{
 					if (P_GiveMonsterDamage(*splayer, damage))
+					{
 						PersistPlayerDamage(*splayer);
+						P_ProcessSpreeDamage(splayer, damage);
+					}
 				}
 			}
 		}

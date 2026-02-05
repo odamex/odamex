@@ -1617,6 +1617,8 @@ odaproto::svc::Toast SVC_Toast(const toast_t& toast)
 	msg.set_right(toast.right);
 	msg.set_right_pid(toast.right_pid);
 	msg.set_icon(toast.icon);
+	msg.set_points(toast.points);
+	msg.set_spree_color(toast.spree_color);
 
 	return msg;
 }
@@ -1635,6 +1637,31 @@ odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde)
 	msg.set_boss_health(horde.bossHealth);
 	msg.set_boss_damage(horde.bossDamage);
 	msg.set_wave_start_health(horde.waveStartHealth);
+
+	return msg;
+}
+
+odaproto::svc::Spree SVC_Spree(const SpreeRecord_t& spree)
+{
+	odaproto::svc::Spree msg;
+
+	msg.set_pid(spree.playerId);
+	msg.set_spree_level(spree.spreeLevel);
+
+	return msg;
+}
+
+odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, const int level, const SpreeBreakerType breakerType)
+{
+	odaproto::svc::SpreeBreaker msg;
+
+	msg.set_victim_pid(breaker.spreeEndedPlayerId);
+	msg.set_victim_name(breaker.spreeEndedName);
+	msg.set_source_pid(breaker.spreeEnderPlayerId);
+	msg.set_source_name(breaker.spreeEnderName);
+	msg.set_spree_level(level);
+	msg.set_spree_points(breaker.endedPoints);
+	msg.set_spree_breaker_type(breakerType);
 
 	return msg;
 }

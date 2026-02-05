@@ -44,6 +44,7 @@
 #include "g_gametype.h"
 
 #include "p_mapformat.h"
+#include "g_multikill.h"
 
 #include <nonstd/span.hpp>
 
@@ -987,6 +988,8 @@ void P_PlayerThink (player_t& player)
 		player.mo->flags &= ~MF_JUSTATTACKED;
 	}
 
+	P_TicMultiKill(player);
+
 	if (player.playerstate == PST_DEAD)
 	{
 		P_DeathThink(player);
@@ -1558,6 +1561,9 @@ player_s &player_s::operator =(const player_s &other)
 
 	doreborn = other.doreborn;
 	QueuePosition = other.QueuePosition;
+	
+	hazardcount = other.hazardcount;
+	hazardinterval = other.hazardinterval;
 
 	return *this;
 }

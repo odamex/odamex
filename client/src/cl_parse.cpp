@@ -65,6 +65,8 @@
 #include "cl_replay.h"
 #include "r_interp.h"
 #include "m_doomobjcontainer.h"
+#include "g_spree.h"
+#include "g_multikill.h"
 
 // Extern data from other files.
 
@@ -87,6 +89,7 @@ EXTERN_CVAR(mute_spectators)
 EXTERN_CVAR(show_messages)
 EXTERN_CVAR(co_novileghosts)
 EXTERN_CVAR(sv_sharekeys)
+EXTERN_CVAR(cl_showsprees)
 
 extern std::string digest;
 extern bool forcenetdemosplit;
@@ -1169,6 +1172,9 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	mobj->health = p.health;
 	P_SetThingId(mobj, netid);
 
+	SpreeManager::getInstance().erasePoints(p.id);
+	MultiKillManager::getInstance().eraseMultiKills(p.id);
+	
 	p.mo = p.camera = mobj->ptr();
 	p.fov = 90.0f;
 	p.playerstate = PST_LIVE;
@@ -2894,6 +2900,8 @@ static void CL_Toast(const odaproto::svc::Toast* msg)
 	toast.right = msg->right();
 	toast.right_pid = msg->right_pid();
 	toast.icon = msg->icon();
+	toast.points = msg->points();
+	toast.spree_color = msg->spree_color();
 
 	COM_PushToast(toast);
 }
@@ -2914,6 +2922,35 @@ static void CL_HordeInfo(const odaproto::svc::HordeInfo* msg)
 	info.waveStartHealth = msg->wave_start_health();
 
 	P_SetHordeInfo(info);
+}
+
+static void CL_Spree(const odaproto::svc::Spree* msg)
+{
+	int playerId = msg->pid();
+	int spreeLevel = msg->spree_level();
+
+	bool update = SpreeManager::getInstance().setRawSpree(playerId, spreeLevel);
+
+	if (cl_showsprees && displayplayer_id == playerId && update)
+	{
+		// Play the sound for the new multi kill
+		// S_Sound(CHAN_ANNOUNCER, '', 1, ATTN_NONE);
+	}
+}
+
+static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
+{
+	SpreeBreaker_t breaker;
+
+	breaker.spreeEndedPlayerId = msg->victim_pid();
+	breaker.spreeEndedName = msg->victim_name();
+	breaker.spreeEnderPlayerId = msg->source_pid();
+	breaker.spreeEnderName = msg->source_name();
+	breaker.endedPoints = msg->spree_points();
+	SpreeBreakerType type = static_cast<SpreeBreakerType>(msg->spree_breaker_type());
+	int level = msg->spree_level();
+
+	SpreeManager::getInstance().setRawSpreeBreaker(breaker, level, type);
 }
 
 static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
@@ -3154,6 +3191,8 @@ parseError_e CL_ParseCommand()
 		SV_MSG(svc_maplist_index, CL_MaplistIndex, odaproto::svc::MaplistIndex);
 		SV_MSG(svc_toast, CL_Toast, odaproto::svc::Toast);
 		SV_MSG(svc_hordeinfo, CL_HordeInfo, odaproto::svc::HordeInfo);
+		SV_MSG(svc_spree, CL_Spree, odaproto::svc::Spree);
+		SV_MSG(svc_spreebreaker, CL_SpreeBreaker, odaproto::svc::SpreeBreaker);
 		SV_MSG(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
 		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);

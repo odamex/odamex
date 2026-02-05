@@ -40,6 +40,8 @@
 #include "g_game.h"
 #include "sv_main.h"
 #include "g_spawninv.h"
+#include "g_spree.h"
+#include "g_multikill.h"
 
 void	G_PlayerReborn (player_t &player);
 
@@ -182,6 +184,9 @@ void G_PlayerFinishLevel (player_t &player)
 {
 	player.powers.fill(0);
 	player.cards.fill(false);
+
+	SpreeManager::getInstance().erasePoints(player.id);
+	MultiKillManager::getInstance().eraseMultiKills(player.id);
 
 	if(player.mo)
 		player.mo->flags &= ~MF_SHADOW; 	// cancel invisibility
