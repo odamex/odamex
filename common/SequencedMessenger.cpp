@@ -108,6 +108,9 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 
 	m_outgoingPacketBuffer.clear();
 
+	// Messages without reliability are non-sequenced.
+	int sequence = -1;
+
 	if (m_reliableBuffer.cursize)
 	{
 		// Save the reliable portion of the message for ack checking and retransmission if necessary.
@@ -119,22 +122,19 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 			SZ_Write(saveMessage.buffer, m_reliableBuffer.data.get(), m_reliableBuffer.cursize);
 
 			// Insert Reliable sequence number first thing.
-			MSG_WriteLong(&m_outgoingPacketBuffer, saveMessage.sequence);
+            sequence = saveMessage.sequence;
 		}
-        else
-        {
-            // This just can't go out as reliable!
-            MSG_WriteLong(&m_outgoingPacketBuffer, -1);
-        }
-	}
-	else
-	{
-		// Messages without reliability are non-sequenced.
-		MSG_WriteLong(&m_outgoingPacketBuffer, -1);
+        // If we fall into an 'else' case here, it's because we just cannot get a reliable packet
+        // in the sequence.  Something has gone really wrong.  Our best shot is to send the data
+        // as unreliable... :(
 	}
 
+	MSG_WriteLong (&m_outgoingPacketBuffer, sequence);
 	MSG_WriteShort(&m_outgoingPacketBuffer, static_cast<short>(m_reliableBuffer.cursize));  // Reliable size
 	MSG_WriteByte (&m_outgoingPacketBuffer, 0);                                             // Flags, filled out later.
+
+    // NOTE: The receiver COULD look at whether there's a non-zero Reliable Size alongside a
+    //       negative sequence and conclude that the sender is totally exhausted.
 
 	// copy the reliable message to the packet first
 	if (m_reliableBuffer.cursize)
@@ -160,10 +160,12 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 		}
 	}
 
+    const bool isThrottled = (m_sender.GetMode() == SequenceSender::RECOVERY and m_reliableBuffer.cursize == 0);
+
 	SZ_Clear(&m_nonreliableBuffer);
 	SZ_Clear(&m_reliableBuffer);
 
-	if (m_outgoingPacketBuffer.size() > PACKET_HEADER_SIZE and not MustThrottleTransmission())
+	if (m_outgoingPacketBuffer.size() > PACKET_HEADER_SIZE and not isThrottled)
 	{
 		// compress the packet, but not the sequence id
 		CompressPacket(m_outgoingPacketBuffer, PACKET_HEADER_SIZE);
@@ -195,6 +197,25 @@ int SequencedMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& 
 {
 	int retransmissionsSent = 0;
 	int bytesSent = 0;
+
+    // Gather metrics
+    m_unackedGrowth       += m_sender.GetPendingAckCount() > m_previousUnackedCount ? 1 : -1;
+    m_unackedGrowth        = std::max(0, m_unackedGrowth);
+    m_previousUnackedCount = m_sender.GetPendingAckCount();
+
+    if (m_unackedGrowth > 10 && m_sender.GetMode() == SequenceSender::NORMAL)
+    {
+        m_sender.SetMode(SequenceSender::RECOVERY);
+    }
+    else if (m_unackedGrowth == 0)
+    {
+        m_sender.SetMode(SequenceSender::NORMAL);
+    }
+
+    if (m_sender.GetMode() == SequenceSender::RECOVERY)
+    {
+        m_retransmitDelayInTics = 0;
+    }
 
 	auto                    iter = m_sender.IterateUnackedPackets();
 	SequenceQueueEntryType* sendQueueEntry = iter.Next();

@@ -83,6 +83,7 @@ class SequencedMessenger
 		buf_t& NetBuf() { return m_nonreliableBuffer; }
 
 		bool MustThrottleTransmission() const { return m_sender.GetMode() == SequenceSender::RECOVERY; }
+        fixed_t ThrottleFraction() const { return FixedDiv( m_unackedGrowth << FRACBITS, m_unackedGrowthThreshold << FRACBITS); }
 
 		void SetRetransmitDelay(int i_delayInTics) { m_retransmitDelayInTics = i_delayInTics; }
 		void SetPacketsPerRetransmit(int i_maxPackets) { m_maxPacketsPerRetransmission = i_maxPackets; }
@@ -116,10 +117,11 @@ class SequencedMessenger
 		int m_maxRate                     { 0 };
 
 		// Metrics
-		size_t m_unreliableBps                { 0 };
-		size_t m_reliableBps                  { 0 };
-		int    m_lastSendSize                 { 0 };
-		int    m_noncontiguousRetransmitCount { 0 };
-        int    m_previousUnackedCount         { 0 };
-        int    m_unackedGrowth                { 0 };
+		size_t m_unreliableBps                {  0 };
+		size_t m_reliableBps                  {  0 };
+		int    m_lastSendSize                 {  0 };
+		int    m_noncontiguousRetransmitCount {  0 };
+        int    m_previousUnackedCount         {  0 };
+        int    m_unackedGrowth                {  0 };
+        int    m_unackedGrowthThreshold       { 10 };
 };

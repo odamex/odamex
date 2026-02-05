@@ -1107,7 +1107,7 @@ bool SV_IsTeammate(player_t &a, player_t &b)
 //
 // [denis] SV_AwarenessUpdate
 //
-bool SV_AwarenessUpdate(player_t &player, AActor *mo)
+bool SV_AwarenessUpdate(player_t &player, AActor *mo, const std::optional<bool> forcedAwareness)
 {
 	bool ok = false;
 
@@ -1116,6 +1116,8 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 
 	if(player.mo == mo)
 		ok = true;
+    else if(forcedAwareness.has_value())    // else if because players are ALWAYS aware of themselves.
+        ok = forcedAwareness.value();
 	else if(!mo->player)
 		ok = true;
 	else if (mo->oflags & MFO_SPECTATOR)      // GhostlyDeath -- Spectating things
@@ -1154,9 +1156,12 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 
 		return true;
 	}
-
-
 	return false;
+}
+
+bool SV_AwarenessUpdate(player_t &player, AActor *mo)
+{
+    return SV_AwarenessUpdate(player, mo, std::nullopt);
 }
 
 //
@@ -3065,11 +3070,6 @@ void SV_WriteCommands(void)
 	{
 		client_t *cl = &(it->client);
 
-		if (SV_MustThrottleTransmissionsForClient(*cl))
-		{
-			continue;
-		}
-
 		// [SL] 2011-05-11 - Send the client the server's gametic
 		// this gametic is returned to the server with the client's
 		// next cmd
@@ -3114,9 +3114,22 @@ void SV_WriteCommands(void)
 		const int maxForThisTic = MAX_HIDDEN_MOBJ_UPDATES + temporaryGrowthBonus;
 
 		int hiddenUpdateCount = 0;
+        int throttleCount = std::numeric_limits<int>::max();
+
+		if (SV_MustThrottleTransmissionsForClient(*cl))
+		{
+            const auto mobjCountFixed = INT2FIXED64  (sortedMobjs.MobjCount());
+            const auto fractionFixed  = FIXED2FIXED64(cl->messenger.ThrottleFraction());
+            throttleCount = FIXED642INT(FixedMul64(mobjCountFixed, fractionFixed));
+			//continue;
+		}
 
 		for (auto& sortedMobj : sortedMobjs)
 		{
+//            if (throttleCount-- > 0)
+//            {
+//                break;
+//            }
 			SV_UpdateMissiles(*it, sortedMobj);
 
 			SV_UpdateMonsters(*it, sortedMobj);

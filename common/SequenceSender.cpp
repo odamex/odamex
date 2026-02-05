@@ -68,7 +68,7 @@ SequenceSender::QueueEntryResultType SequenceSender::ObtainSendPacket(int curren
 	// until the send buffer comes back down to size.  That's why we only do a
 	// simple check for NORMAL mode here - nothing to do for RECOVERY.
 
-	if (m_mode == NORMAL)
+	//if (m_mode == NORMAL)
 	{
 		const int desiredSequence = m_nextSequence;
 		const int desiredIndex    = desiredSequence % m_sendQueue.size();
