@@ -106,7 +106,8 @@ class SequencedMessenger
 		// Send buffers
 		buf_t m_reliableBuffer    { MAX_UDP_PACKET };
 		buf_t m_nonreliableBuffer { MAX_UDP_PACKET };
-
+        buf_t m_ackBuffer         { MAX_UDP_PACKET };   // Because acks must be outside of the reliable channels
+                                                        // but still be sendable when in recovery.
 		buf_t m_outgoingPacketBuffer { MAX_UDP_PACKET };
 
 		// Receive buffer

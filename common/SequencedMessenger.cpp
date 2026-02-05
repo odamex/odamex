@@ -49,9 +49,9 @@ MessageResultEnum SequencedMessenger::Receive(buf_t& io_rawBuf, int i_currentTic
 		// Send an ACK to the server only if it contained reliable data.
 		if (not simulated_connection)
 		{
-			m_nonreliableBuffer.WriteByte(clc_ack);
-			m_nonreliableBuffer.WriteLong(sequence);
-			if (m_nonreliableBuffer.size() >= 1024)
+			m_ackBuffer.WriteByte(clc_ack);
+			m_ackBuffer.WriteLong(sequence);
+			if (m_reliableBuffer.size() + m_ackBuffer.size() >= 1024)
 			{
 				Send(i_currentTic, i_dest);
 			}
@@ -89,10 +89,11 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 
 	m_lastSendSize = 0;
 
-	if (m_reliableBuffer.overflowed)
+	if (m_reliableBuffer.overflowed or m_ackBuffer.overflowed)
 	{
 		SZ_Clear(&m_nonreliableBuffer);
 		SZ_Clear(&m_reliableBuffer);
+        SZ_Clear(&m_ackBuffer);
 		//SV_DropClient(pl);
 		return MessageResultEnum::ABORT;
 	}
@@ -101,7 +102,9 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 			SZ_Clear(&m_nonreliableBuffer);
 
 	// [SL] 2012-05-04 - Don't send empty packets - they still have overhead
-	if (m_reliableBuffer.cursize + m_nonreliableBuffer.cursize == 0)
+	if (m_reliableBuffer.cursize +
+        m_nonreliableBuffer.cursize +
+        m_ackBuffer.cursize == 0)
 	{
 		return MessageResultEnum::DEFER;
 	}
@@ -143,6 +146,12 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 		m_reliableBps += m_reliableBuffer.cursize;
 	}
 
+    // Then acks.  They count as part of Reliable traffic for throughput calculation purposes.
+    if (m_ackBuffer.cursize)
+    {
+        SZ_Write(&m_outgoingPacketBuffer, m_ackBuffer.data.get(), m_ackBuffer.cursize);
+        m_reliableBps += m_ackBuffer.cursize;
+    }
 	// add the unreliable part if space is available and rate value
 	// allows it
 	const int ticPhase = i_currentTic % TICRATE;
@@ -160,8 +169,9 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 		}
 	}
 
-    const bool isThrottled = (m_sender.GetMode() == SequenceSender::RECOVERY and m_reliableBuffer.cursize == 0);
+    const bool isThrottled = (m_sender.GetMode() == SequenceSender::RECOVERY and m_reliableBuffer.cursize == 0 and m_ackBuffer.cursize == 0);
 
+    SZ_Clear(&m_ackBuffer);
 	SZ_Clear(&m_nonreliableBuffer);
 	SZ_Clear(&m_reliableBuffer);
 
