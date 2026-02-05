@@ -169,3 +169,5 @@ include(wxWidgets-lib.cmake)
 include(libadlmidi-lib.cmake)
 
 include(cpptrace-lib.cmake)
+
+include(libwebsockets-lib.cmake)

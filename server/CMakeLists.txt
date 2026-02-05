@@ -51,7 +51,7 @@ if(WIN32)
   target_compile_definitions(odasrv PRIVATE _WIN32_WINNT=0x0602)
 endif()
 
-target_link_libraries(odasrv fmt::fmt tinylibs ZLIB::ZLIB odamex-common odaproto minilzo cpptrace::cpptrace)
+target_link_libraries(odasrv fmt::fmt tinylibs ZLIB::ZLIB odamex-common odaproto minilzo cpptrace::cpptrace websockets)
 
 if(USE_INTERNAL_JSONCPP)
   target_link_libraries(odasrv jsoncpp_static)

@@ -34,3 +34,6 @@
 [submodule "libraries/cpptrace"]
 	path = libraries/cpptrace
 	url = https://github.com/jeremy-rifkin/cpptrace.git
+[submodule "libraries/libwebsockets"]
+	path = libraries/libwebsockets
+	url = https://github.com/warmcat/libwebsockets.git
