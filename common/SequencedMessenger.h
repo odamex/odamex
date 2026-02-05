@@ -260,16 +260,16 @@ class SequencedMessenger
 			{
 				if (i_currentTic >= (m_retransmitDelayInTics + sendQueueEntry->originatingTic) or sendQueueEntry->lastRetransmitTic != -1)
 				{
+					if (++retransmissionsSent > m_sender.GetMaxPacketsPerRetransmission())
+					{
+						break;
+					}
 					m_noncontiguousRetransmitCount += previousPacketSeq != sendQueueEntry->sequence - 1 ? 1 : 0;
 					previousPacketSeq = sendQueueEntry->sequence;
 
 					sendQueueEntry->lastRetransmitTic = i_currentTic;
 					bytesSent += SendOldPacket(*sendQueueEntry, i_dest);
 
-					if (++retransmissionsSent > m_sender.GetMaxPacketsPerRetransmission())
-					{
-						break;
-					}
 				}
 			}
 			return bytesSent;
