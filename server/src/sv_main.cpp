@@ -1391,7 +1391,8 @@ void SV_UpdateMovingSectors(player_t &player)
 // send only the least significant byte to save bandwidth.
 void SV_SendGametic(client_t* cl)
 {
-	byte tic = static_cast<byte>(gametic & 0xFF);
+	const byte tic = static_cast<byte>(gametic & 0xFF);
+
 	MSG_WriteSVC(&cl->messenger.NetBuf(), SVC_ServerGametic(tic, cl->messenger.GetPendingAckCount()));
 }
 
