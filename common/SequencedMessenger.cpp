@@ -160,7 +160,7 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 		bps = (int)((double)( (m_unreliableBps + m_reliableBps) * TICRATE)/(double)(i_currentTic%TICRATE));
 	}
 
-	if (bps < m_maxRate * 1000)
+	if (bps < m_maxRate * 1000 and m_sender.GetMode() != SequenceSender::RECOVERY)
 	{
 		if (m_nonreliableBuffer.cursize && (m_outgoingPacketBuffer.maxsize() - m_outgoingPacketBuffer.cursize > m_nonreliableBuffer.cursize) )
 		{
@@ -169,13 +169,13 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 		}
 	}
 
-    const bool isThrottled = (m_sender.GetMode() == SequenceSender::RECOVERY and m_reliableBuffer.cursize == 0 and m_ackBuffer.cursize == 0);
+    //const bool isThrottled = (m_sender.GetMode() == SequenceSender::RECOVERY and m_reliableBuffer.cursize == 0 and m_ackBuffer.cursize == 0);
 
     SZ_Clear(&m_ackBuffer);
 	SZ_Clear(&m_nonreliableBuffer);
 	SZ_Clear(&m_reliableBuffer);
 
-	if (m_outgoingPacketBuffer.size() > PACKET_HEADER_SIZE and not isThrottled)
+	if (m_outgoingPacketBuffer.size() > PACKET_HEADER_SIZE)
 	{
 		// compress the packet, but not the sequence id
 		CompressPacket(m_outgoingPacketBuffer, PACKET_HEADER_SIZE);

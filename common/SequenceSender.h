@@ -24,6 +24,7 @@
 #include <iostream>
 #include <iso646.h>
 #include <vector>
+#include <unordered_map>
 
 #include "SequenceQueueEntryType.h"
 
@@ -38,8 +39,7 @@ class SequenceSender
 			public:
 				explicit UnackedIterator(SequenceSender* i_sequencer):
 					m_sequencer(i_sequencer),
-					m_count    (0),
-					m_index    (-1)
+                    m_iter     (i_sequencer->m_unackedSequences.begin())
 				{}
 
 				// Returns the next unacknowledged message.  After the last unacknowledged message
@@ -48,8 +48,7 @@ class SequenceSender
 
 			protected:
 				SequenceSender* m_sequencer;   // non-owning pointer.
-				int          m_index;
-				int          m_count;
+                std::vector<int>::iterator m_iter;
 		};
 
 		enum SenderModeEnum
@@ -92,17 +91,23 @@ class SequenceSender
 
 		UnackedIterator IterateUnackedPackets() { return UnackedIterator(this); }
 
-		int GetPendingAckCount() const { return m_unackedCount; }
+		int GetPendingAckCount() const { return static_cast<int>(m_sendTable.size()); }
 
 	protected:
 
 		void AdvanceSmallestUnacked();
 
-		std::vector<SequenceQueueEntryType> m_sendQueue;
+        struct IntIdentity
+        {
+            size_t operator()(const int key) const { return key; }
+        };
+
+		//std::vector<SequenceQueueEntryType> m_sendQueue;
+        std::vector<int> m_unackedSequences;
+        std::unordered_map<int, SequenceQueueEntryType, IntIdentity> m_sendTable;
+        std::vector<SequenceQueueEntryType> m_freePackets;
 
 		int m_nextSequence;                 // The sequence number to assign to the next requested packet.
-		int m_unackedCount;                 // The number of sent packets that have not yet been acked.
-		int m_smallestUnacked;              // The smallest sequence number that has yet to be acked.
 
 		SenderModeEnum m_mode;
 };

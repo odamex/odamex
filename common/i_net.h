@@ -747,6 +747,12 @@ public:
 		lhs.swap(rhs);
 	}
 
+    buf_t& operator=(buf_t&& other)
+    {
+        swap(other);
+        return *this;
+    }
+
 	buf_t()
 		: data(nullptr), allocsize(0), cursize(0), readpos(0), overflowed(false)
 	{
@@ -757,12 +763,16 @@ public:
 	}
 	buf_t(const buf_t &other)
 		: data(new byte[other.allocsize]), allocsize(other.allocsize), cursize(other.cursize), readpos(other.readpos), overflowed(other.overflowed)
-
 	{
 		if(!overflowed)
 			for(size_t i = 0; i < cursize; i++)
 				data[i] = other.data[i];
 	}
+    buf_t(buf_t&& other) :
+        buf_t()
+    {
+        swap(other);
+    }
 	~buf_t()
 	{
 	}

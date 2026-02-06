@@ -31,9 +31,14 @@ class SequenceReceiver
 	public:
 
 		explicit SequenceReceiver(size_t i_initialSize) :
-			m_recvQueue       (i_initialSize),
+			m_recvQueue       (),
 			m_currentSequence (0)
 		{
+            m_recvQueue.reserve(i_initialSize);
+            for (size_t i = 0; i < i_initialSize; ++i)
+            {
+                m_recvQueue.emplace_back(MAX_UDP_PACKET);
+            }
 		}
 
 		SequenceReceiver() :

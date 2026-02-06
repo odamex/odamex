@@ -38,7 +38,15 @@ struct SequenceQueueEntryType
 	bool  isAwaiting;       ///< True if this packet needs yet to be acked.
 
 	SequenceQueueEntryType() :
-		buf           (MAX_UDP_PACKET),
+		buf           (),
+		sequence      (-1),
+		originatingTic(-1),
+		lastRetransmitTic(-1),
+		isAwaiting    (false)
+	{}
+
+	explicit SequenceQueueEntryType(size_t length) :
+		buf           (length),
 		sequence      (-1),
 		originatingTic(-1),
 		lastRetransmitTic(-1),
