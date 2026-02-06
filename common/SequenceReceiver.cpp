@@ -43,7 +43,7 @@ bool SequenceReceiver::RegisterReceivedPacket(int sequence, buf_t& io_bufferRef)
 	return false;
 }
 
-bool SequenceReceiver::NextPacket(buf_t& io_bufferRef)
+int SequenceReceiver::NextPacket(buf_t& io_bufferRef)
 {
 	// This is deliberately restrictive.  We do NOT want to process packets
 	// "from the future."  We want to keep a strict sequence to try to be as
@@ -53,8 +53,7 @@ bool SequenceReceiver::NextPacket(buf_t& io_bufferRef)
 	{
 		io_bufferRef.swap(iter->second.buf);
 		m_recvQueue.Release(iter);
-		++m_currentSequence;
-		return true;
+		return m_currentSequence++;
 	}
-	return false;
+	return -1;
 }

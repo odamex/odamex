@@ -61,7 +61,7 @@ class SequenceReceiver
 		// Messages obtained and processed in accordance with this function will be
 		// in the correct sequence, even if they were provided to RegisterReceivePacket()
 		// out-of-order.
-		bool NextPacket(buf_t& io_bufferRef);
+		int NextPacket(buf_t& io_bufferRef);
 
 	protected:
 

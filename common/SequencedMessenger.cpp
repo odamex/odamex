@@ -73,7 +73,7 @@ bool SequencedMessenger::NextReceivedPacket(buf_t& io_rawBuf)
 		m_receiveBuffer.clear();
 		return true;
 	}
-	return m_receiver.NextPacket(io_rawBuf);
+	return m_receiver.NextPacket(io_rawBuf) >= 0;
 }
 
 //  -------------- Sending functions --------------
