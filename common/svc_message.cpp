@@ -1201,11 +1201,12 @@ odaproto::svc::MidPrint SVC_MidPrint(const std::string& message, const int time)
 	return msg;
 }
 
-odaproto::svc::ServerGametic SVC_ServerGametic(const byte tic)
+odaproto::svc::ServerGametic SVC_ServerGametic(const byte tic, const byte queueDepth)
 {
 	odaproto::svc::ServerGametic msg;
 
 	msg.set_tic(tic);
+	msg.set_reliable_queue_depth(queueDepth);
 
 	return msg;
 }

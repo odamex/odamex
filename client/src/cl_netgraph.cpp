@@ -46,6 +46,8 @@ NetGraph::NetGraph(int x, int y) :
 	mTrafficOut.fill(0);
 	mPacketsIn.fill(0);
 	mReliableSendDepth.fill(0);
+	mServerQueueDepth.fill(0);
+	mServerQueueDepthLastUpdate.fill(0);
 }
 
 template <typename ElementType, size_t N>
@@ -72,6 +74,12 @@ void NetGraph::setReliableSendDepth(int val)
 void NetGraph::setReliableNonContiguousRetransmits(int val)
 {
     SetClamped(mReliableNonContiguousRetransmits, val, 0, static_cast<int>(DEFAULT_RELIABILITY_QUEUE_SIZE));
+}
+
+void NetGraph::setServerQueueDepth(int val)
+{
+    SetClamped(mServerQueueDepth, val, 0, static_cast<int>(DEFAULT_RELIABILITY_QUEUE_SIZE));
+    mServerQueueDepthLastUpdate[gametic % MAX_HISTORY_TICS] = gametic;
 }
 
 void NetGraph::addTrafficIn(int val)
@@ -179,19 +187,35 @@ static void DrawSimpleBarGraph(int x, int y, const std::array<ElementType, N>& i
 	{
 		const int index = (gametic - (N - i)) % N;
 		constexpr int width = BAR_WIDTH;
-		const int height = static_cast<int>(i_data[index]) * BAR_UNIT_HEIGHT;
+		const int value  = static_cast<int>(i_data[index]);
+		const int height = (value >= 0 ? value : -value) * BAR_UNIT_HEIGHT;
 		const int startx = x + i * BAR_WIDTH;
 		const int starty = y;
 
 		if (i_data[index])
-			NetGraphDrawBar(startx, starty, width, height, color);
+			NetGraphDrawBar(startx, starty, width, height, (value >= 0 ? color : 0xB0));
 	}
+}
+
+void NetGraph::drawQueueDepth(int x, int y, const std::array<int, NetGraph::MAX_HISTORY_TICS>& data, int color)
+{
+    DrawSimpleBarGraph<2, 4>(x, y, data, color);
 }
 
 void NetGraph::drawReliableSendDepth(int x, int y)
 {
-    DrawSimpleBarGraph<2, 4>(x, y, mReliableSendDepth,                0xA0);    // yellow
-    DrawSimpleBarGraph<2, 4>(x, y, mReliableNonContiguousRetransmits, 0xB0);    // red
+    drawQueueDepth(x, y, mReliableSendDepth,                0xA0); // yellow
+    drawQueueDepth(x, y, mReliableNonContiguousRetransmits, 0xB0); // red
+}
+
+void NetGraph::drawServerQueueDepth(int x, int y)
+{
+    const int index = (gametic - 1) % MAX_HISTORY_TICS;
+    if (mServerQueueDepthLastUpdate[index] != gametic - 1)
+    {
+        mServerQueueDepth[index] = -1;
+    }
+    drawQueueDepth(x, y, mServerQueueDepth, 0x10);   // Pinkish
 }
 
 void NetGraph::drawMispredictions(int x, int y)
@@ -291,8 +315,18 @@ void NetGraph::draw()
     screen->DrawText(textcolor, mX, mY + 64, "Mispredictions");
 	drawMispredictions(mX, mY + 64 + fontheight);
 
-    screen->DrawText(textcolor, mX + 128, mY, ("Reliable Send Queue: " + std::to_string(mReliableSendDepth[gametic % MAX_HISTORY_TICS])).c_str());
+    const int nowIndex = (gametic - 1) % MAX_HISTORY_TICS;
+
+    screen->DrawText(textcolor, mX + 128, mY, ("Reliable Send Queue: " + std::to_string(mReliableSendDepth[nowIndex])).c_str());
     drawReliableSendDepth(mX + 128, mY + fontheight);
+
+    std::string serverQueueNumber;
+    if (mServerQueueDepth[nowIndex] >= 0)
+    {
+        serverQueueNumber = std::to_string(mServerQueueDepth[nowIndex]);
+    }
+    screen->DrawText(textcolor, mX + 290, mY, ("Server-side Queue: " + serverQueueNumber).c_str());
+    drawServerQueueDepth(mX + 290, mY + fontheight);
 
 	drawTrafficIn(mX, mY + 128 + fontheight);
 	drawTrafficOut(mX, mY + 128 + fontheight * 3);

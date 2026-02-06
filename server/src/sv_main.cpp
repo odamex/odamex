@@ -1392,7 +1392,7 @@ void SV_UpdateMovingSectors(player_t &player)
 void SV_SendGametic(client_t* cl)
 {
 	byte tic = static_cast<byte>(gametic & 0xFF);
-	MSG_WriteSVC(&cl->messenger.NetBuf(), SVC_ServerGametic(tic));
+	MSG_WriteSVC(&cl->messenger.NetBuf(), SVC_ServerGametic(tic, cl->messenger.GetPendingAckCount()));
 }
 
 void SV_LineStateUpdate(client_t *cl)

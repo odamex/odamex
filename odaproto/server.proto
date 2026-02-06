@@ -417,6 +417,7 @@ message MidPrint
 message ServerGametic
 {
 	int32 tic = 1;
+	int32 reliable_queue_depth = 2;
 }
 
 // svc_inttimeleft

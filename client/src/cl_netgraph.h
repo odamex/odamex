@@ -30,7 +30,7 @@ class NetGraph
 {
 public:
 	NetGraph(int x, int y);
-		
+
 	void setMisprediction(bool val);
 	void setWorldIndexSync(int val);
 	void setInterpolation(int val);
@@ -39,26 +39,29 @@ public:
 	void addPacketIn();
 	void setReliableSendDepth(int val);
 	void setReliableNonContiguousRetransmits(int val);
+	void setServerQueueDepth(int val);
 	void draw();
 
 private:
-	void drawWorldIndexSync(int x, int y);
-	void drawMispredictions(int x, int y);
-	void drawTrafficIn(int x, int y);
-	void drawTrafficOut(int x, int y);
-	void drawPackets(int x, int y);
-	void drawReliableSendDepth(int x, int y);
+	static constexpr size_t MAX_HISTORY_TICS = 64;
 
 	static constexpr int BAR_HEIGHT_WORLD_INDEX = 4;
 	static constexpr int BAR_WIDTH_WORLD_INDEX = 2;
-	
+
 	static constexpr int BAR_HEIGHT_MISPREDICTION = 2;
 	static constexpr int BAR_WIDTH_MISPREDICTION = 2;
 
 	static constexpr int MAX_WORLD_INDEX = 6;
 	static constexpr int MIN_WORLD_INDEX = -6;
-	
-	static constexpr size_t MAX_HISTORY_TICS = 64;
+
+	void drawWorldIndexSync(int x, int y);
+	void drawMispredictions(int x, int y);
+	void drawTrafficIn(int x, int y);
+	void drawTrafficOut(int x, int y);
+	void drawPackets(int x, int y);
+	void drawQueueDepth(int x, int y, const std::array<int, NetGraph::MAX_HISTORY_TICS>& data, int color);
+	void drawReliableSendDepth(int x, int y);
+	void drawServerQueueDepth(int x, int y);
 
 	int		mX;
 	int		mY;
@@ -68,6 +71,8 @@ private:
 	std::array<int, NetGraph::MAX_HISTORY_TICS> mTrafficIn;
 	std::array<int, NetGraph::MAX_HISTORY_TICS> mTrafficOut;
 	std::array<int, NetGraph::MAX_HISTORY_TICS> mPacketsIn;
+	std::array<int, NetGraph::MAX_HISTORY_TICS> mServerQueueDepth;
+	std::array<int, NetGraph::MAX_HISTORY_TICS> mServerQueueDepthLastUpdate;
 	std::array<int, NetGraph::MAX_HISTORY_TICS> mReliableSendDepth;
 	std::array<int, NetGraph::MAX_HISTORY_TICS> mReliableNonContiguousRetransmits;
 	int     mInterpolation;

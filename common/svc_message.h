@@ -126,7 +126,7 @@ odaproto::svc::SecretEvent SVC_SecretEvent(const player_t& player, const sector_
 odaproto::svc::ServerSettings SVC_ServerSettings(const cvar_t& var);
 odaproto::svc::ConnectClient SVC_ConnectClient(const player_t& player);
 odaproto::svc::MidPrint SVC_MidPrint(const std::string& message, const int time);
-odaproto::svc::ServerGametic SVC_ServerGametic(const byte tic);
+odaproto::svc::ServerGametic SVC_ServerGametic(const byte tic, const byte queueDepth);
 odaproto::svc::IntTimeLeft SVC_IntTimeLeft(const unsigned int timeleft);
 odaproto::svc::RailTrail SVC_RailTrail(const v3double_t& start, const v3double_t& end);
 odaproto::svc::LineUpdate SVC_LineUpdate(const line_t& line);

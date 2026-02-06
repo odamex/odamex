@@ -65,6 +65,7 @@
 #include "cl_replay.h"
 #include "r_interp.h"
 #include "m_doomobjcontainer.h"
+#include "cl_netgraph.h"
 
 // Extern data from other files.
 
@@ -96,6 +97,7 @@ extern NetCommand localcmds[MAXSAVETICS];
 extern bool recv_full_update;
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 extern std::set<byte> teleported_players;
+extern NetGraph netgraph;
 
 void CL_CheckDisplayPlayer(void);
 void CL_ClearPlayerJustTeleported(player_t* player);
@@ -2183,14 +2185,16 @@ static void CL_MidPrint(const odaproto::svc::MidPrint* msg)
 // [SL] 2011-05-11
 static void CL_ServerGametic(const odaproto::svc::ServerGametic* msg)
 {
-	byte t = msg->tic();
+	byte tic = msg->tic();
 
-	int newtic = (::last_svgametic & 0xFFFFFF00) + t;
+	int newtic = (::last_svgametic & 0xFFFFFF00) + tic;
 
 	if (::last_svgametic > newtic + 127)
 		newtic += 256;
 
 	::last_svgametic = newtic;
+
+	netgraph.setServerQueueDepth(msg->reliable_queue_depth());
 
 #ifdef _WORLD_INDEX_DEBUG_
 	PrintFmt(PRINT_HIGH, "Gametic {}, received world index {}\n", gametic, last_svgametic);
