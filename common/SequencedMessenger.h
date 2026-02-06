@@ -19,7 +19,7 @@ class SequencedMessenger
 	const static size_t PACKET_HEADER_SIZE         = PACKET_MESSAGE_INDEX;
 
 	// Random conservative wild-ass guess.
-	const static int DEFAULT_RETRANSMISSIONS_PER_TIC = 10;
+	const static int DEFAULT_RETRANSMISSIONS_PER_TIC = 25;
 
 	public:
 
