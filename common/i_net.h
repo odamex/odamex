@@ -735,7 +735,7 @@ public:
         {
             return;
         }
-		swap(data,       other.data);
+		data.swap(other.data);
 		swap(allocsize,  other.allocsize);
 		swap(cursize,    other.cursize);
 		swap(readpos,    other.readpos);
