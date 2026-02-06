@@ -19,23 +19,22 @@ TEST_F(ReliableSequenceReceiver, BasicReceive)
 {
     SequenceReceiver receiver(10);
 
-    REQUIRE(receiver.NextPacket() == nullptr);
+    REQUIRE(receiver.NextPacket(packet.buf) < 0);
 
     receiver.RegisterReceivedPacket(0, packet.buf);
 
-    auto packetPtr = receiver.NextPacket();
-    REQUIRE(packetPtr != nullptr);
-    REQUIRE(packetPtr->sequence == 0);
-    REQUIRE(receiver.NextPacket() == nullptr);
+    auto sequence = receiver.NextPacket(packet.buf);
+    REQUIRE(sequence == 0);
+    REQUIRE(receiver.NextPacket(packet.buf) < 0);
 
     // Duplicate receive.
     receiver.RegisterReceivedPacket(0, packet.buf);
-    REQUIRE(receiver.NextPacket() == nullptr);
+    REQUIRE(receiver.NextPacket(packet.buf) < 0);
 
     receiver.RegisterReceivedPacket(1, packet.buf);
 
-    REQUIRE((packetPtr = receiver.NextPacket()) and packetPtr->sequence == 1);
-    REQUIRE(receiver.NextPacket() == nullptr);
+    REQUIRE(receiver.NextPacket(packet.buf) == 1);
+    REQUIRE(receiver.NextPacket(packet.buf) < 0);
 }
 
 TEST_F(ReliableSequenceReceiver, MultiReceive)
@@ -48,13 +47,12 @@ TEST_F(ReliableSequenceReceiver, MultiReceive)
     receiver.RegisterReceivedPacket(3, packet.buf);
     receiver.RegisterReceivedPacket(4, packet.buf);
 
-    SequenceQueueEntryType* packetPtr;
-    REQUIRE((packetPtr = receiver.NextPacket()) and packetPtr->sequence == 0);
-    REQUIRE((packetPtr = receiver.NextPacket()) and packetPtr->sequence == 1);
-    REQUIRE((packetPtr = receiver.NextPacket()) and packetPtr->sequence == 2);
-    REQUIRE((packetPtr = receiver.NextPacket()) and packetPtr->sequence == 3);
-    REQUIRE((packetPtr = receiver.NextPacket()) and packetPtr->sequence == 4);
-    REQUIRE(receiver.NextPacket() == nullptr);
+    REQUIRE(receiver.NextPacket(packet.buf) == 0);
+    REQUIRE(receiver.NextPacket(packet.buf) == 1);
+    REQUIRE(receiver.NextPacket(packet.buf) == 2);
+    REQUIRE(receiver.NextPacket(packet.buf) == 3);
+    REQUIRE(receiver.NextPacket(packet.buf) == 4);
+    REQUIRE(receiver.NextPacket(packet.buf) < 0);
 }
 
 TEST_F(ReliableSequenceReceiver, OutOfSequence)
@@ -65,32 +63,31 @@ TEST_F(ReliableSequenceReceiver, OutOfSequence)
     receiver.RegisterReceivedPacket(5, packet.buf);
     receiver.RegisterReceivedPacket(3, packet.buf);
 
-    REQUIRE(receiver.NextPacket() == nullptr);
+    REQUIRE(receiver.NextPacket(packet.buf) < 0);
 
     receiver.RegisterReceivedPacket(0, packet.buf);
 
-    SequenceQueueEntryType* packetPtr;
-    REQUIRE((packetPtr = receiver.NextPacket()) and packetPtr->sequence == 0);
-    REQUIRE(receiver.NextPacket() == nullptr);
+    REQUIRE(receiver.NextPacket(packet.buf) == 0);
+    REQUIRE(receiver.NextPacket(packet.buf) < 0);
 
     receiver.RegisterReceivedPacket(1, packet.buf);
 
-    REQUIRE((packetPtr = receiver.NextPacket()) and packetPtr->sequence == 1);
-    REQUIRE((packetPtr = receiver.NextPacket()) and packetPtr->sequence == 2);
-    REQUIRE((packetPtr = receiver.NextPacket()) and packetPtr->sequence == 3);
-    REQUIRE(receiver.NextPacket() == nullptr);
-    REQUIRE(receiver.NextPacket() == nullptr);
+    REQUIRE(receiver.NextPacket(packet.buf) == 1);
+    REQUIRE(receiver.NextPacket(packet.buf) == 2);
+    REQUIRE(receiver.NextPacket(packet.buf) == 3);
+    REQUIRE(receiver.NextPacket(packet.buf) < 0);
+    REQUIRE(receiver.NextPacket(packet.buf) < 0);
 
     receiver.RegisterReceivedPacket(6, packet.buf);
-    REQUIRE(receiver.NextPacket() == nullptr);
+    REQUIRE(receiver.NextPacket(packet.buf) < 0);
 
     receiver.RegisterReceivedPacket(4, packet.buf);
-    REQUIRE((packetPtr = receiver.NextPacket()) and packetPtr->sequence == 4);
+    REQUIRE(receiver.NextPacket(packet.buf) == 4);
 
     receiver.RegisterReceivedPacket(7, packet.buf);
-    REQUIRE((packetPtr = receiver.NextPacket()) and packetPtr->sequence == 5);
-    REQUIRE((packetPtr = receiver.NextPacket()) and packetPtr->sequence == 6);
-    REQUIRE((packetPtr = receiver.NextPacket()) and packetPtr->sequence == 7);
-    REQUIRE(receiver.NextPacket() == nullptr);
+    REQUIRE(receiver.NextPacket(packet.buf) == 5);
+    REQUIRE(receiver.NextPacket(packet.buf) == 6);
+    REQUIRE(receiver.NextPacket(packet.buf) == 7);
+    REQUIRE(receiver.NextPacket(packet.buf) < 0);
 
 }
