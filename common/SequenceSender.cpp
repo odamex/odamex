@@ -22,6 +22,8 @@
 
 #include "SequenceSender.h"
 
+#include <iso646.h>
+
 #include "doomfunc.h"
 
 SequenceQueueEntryType* SequenceSender::UnackedIterator::Next()
@@ -47,35 +49,23 @@ SequenceSender::SequenceSender(size_t i_initialSize) :
 	m_nextSequence   (0),
 	m_mode           (NORMAL)
 {
-    m_sendTable.max_load_factor(3.0f);   // why not...?
 }
 
 SequenceSender::QueueEntryResultType SequenceSender::ObtainSendPacket(int currentTic)
 {
-        decltype(m_sendTable)::iterator iter;
-        if (not m_freePackets.empty())
-        {
-            auto insertResult = m_sendTable.insert( { m_nextSequence, std::move(m_freePackets.back()) } );
-            m_freePackets.pop_back();
+    auto result = m_sendTable.Acquire(m_nextSequence);
+    auto iter   = result.first;
 
-            iter = insertResult.first;
-        }
-        else
-        {
-            auto insertResult = m_sendTable.emplace(m_nextSequence, MAX_UDP_PACKET);
-            iter = insertResult.first;
-        }
+    m_unackedSequences.push_back(m_nextSequence);
+    ++m_nextSequence;
 
-        m_unackedSequences.push_back(m_nextSequence);
-        ++m_nextSequence;
+    iter->second.isAwaiting        = true;
+    iter->second.sequence          = iter->first;
+    iter->second.originatingTic    = currentTic;
+    iter->second.lastRetransmitTic = -1;
+    iter->second.buf.clear();
 
-        iter->second.isAwaiting        = true;
-        iter->second.sequence          = iter->first;
-        iter->second.originatingTic    = currentTic;
-        iter->second.lastRetransmitTic = -1;
-        iter->second.buf.clear();
-
-        return QueueEntryResultType {& iter->second.buf, iter->second.sequence};
+    return QueueEntryResultType {& iter->second.buf, iter->second.sequence};
 }
 
 bool SequenceSender::Acknowledge(int sequence)
@@ -86,7 +76,7 @@ bool SequenceSender::Acknowledge(int sequence)
 	{
         auto iter = m_sendTable.find(sequence);
 
-        if (iter != m_sendTable.end())
+        if (m_sendTable.Release(iter))
         {
             auto unackIter = std::find(m_unackedSequences.begin(),
                                        m_unackedSequences.end(),
@@ -96,8 +86,6 @@ bool SequenceSender::Acknowledge(int sequence)
                 m_unackedSequences.erase(unackIter);
             }
 
-            m_freePackets.push_back(std::move(iter->second));
-            m_sendTable.erase(iter);
             return true;
         }
     }

@@ -24,10 +24,6 @@
 
 bool SequenceReceiver::RegisterReceivedPacket(int sequence, buf_t& io_bufferRef)
 {
-	const int desiredIndex = sequence % m_recvQueue.size();
-
-	SequenceQueueEntryType& entryRef = m_recvQueue[desiredIndex];
-
 	if (m_currentSequence < 0)
 	{
 		m_currentSequence = sequence;
@@ -35,8 +31,10 @@ bool SequenceReceiver::RegisterReceivedPacket(int sequence, buf_t& io_bufferRef)
 
 	if (sequence >= m_currentSequence)
 	{
-		if (entryRef.sequence != sequence)
+		auto result = m_recvQueue.Acquire(sequence);
+		if (result.second)      // Was this NOT a repeated reception?
 		{
+			SequenceQueueEntryType& entryRef = result.first->second;
 			entryRef.sequence = sequence;
 			entryRef.buf.swap(io_bufferRef);
 			return true;
@@ -45,19 +43,18 @@ bool SequenceReceiver::RegisterReceivedPacket(int sequence, buf_t& io_bufferRef)
 	return false;
 }
 
-SequenceQueueEntryType* SequenceReceiver::NextPacket()
+bool SequenceReceiver::NextPacket(buf_t& io_bufferRef)
 {
-	const int desiredIndex = m_currentSequence % m_recvQueue.size();
-
-	SequenceQueueEntryType& entryRef = m_recvQueue[desiredIndex];
-
 	// This is deliberately restrictive.  We do NOT want to process packets
 	// "from the future."  We want to keep a strict sequence to try to be as
 	// deterministic as possible.
-	if (m_currentSequence == entryRef.sequence)
+	auto iter = m_recvQueue.find(m_currentSequence);
+	if (iter != m_recvQueue.end())
 	{
+		io_bufferRef.swap(iter->second.buf);
+		m_recvQueue.Release(iter);
 		++m_currentSequence;
-		return &entryRef;
+		return true;
 	}
-	return nullptr;
+	return false;
 }

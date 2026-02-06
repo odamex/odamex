@@ -73,12 +73,7 @@ bool SequencedMessenger::NextReceivedPacket(buf_t& io_rawBuf)
 		m_receiveBuffer.clear();
 		return true;
 	}
-	if (SequenceQueueEntryType* queueEntryPtr = m_receiver.NextPacket())
-	{
-		io_rawBuf.swap(queueEntryPtr->buf);
-		return true;
-	}
-	return false;
+	return m_receiver.NextPacket(io_rawBuf);
 }
 
 //  -------------- Sending functions --------------

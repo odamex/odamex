@@ -24,21 +24,16 @@
 #include <algorithm>
 #include <vector>
 
-#include "SequenceQueueEntryType.h"
+#include "SequenceQueue.h"
 
 class SequenceReceiver
 {
 	public:
 
 		explicit SequenceReceiver(size_t i_initialSize) :
-			m_recvQueue       (),
+			m_recvQueue       (i_initialSize),
 			m_currentSequence (0)
 		{
-            m_recvQueue.reserve(i_initialSize);
-            for (size_t i = 0; i < i_initialSize; ++i)
-            {
-                m_recvQueue.emplace_back(MAX_UDP_PACKET);
-            }
 		}
 
 		SequenceReceiver() :
@@ -66,11 +61,11 @@ class SequenceReceiver
 		// Messages obtained and processed in accordance with this function will be
 		// in the correct sequence, even if they were provided to RegisterReceivePacket()
 		// out-of-order.
-		SequenceQueueEntryType* NextPacket();
+		bool NextPacket(buf_t& io_bufferRef);
 
 	protected:
 
-		std::vector<SequenceQueueEntryType> m_recvQueue;
+		SequenceQueue m_recvQueue;
 
 		int m_currentSequence;  // Index of the place to store the next received packet.
 };

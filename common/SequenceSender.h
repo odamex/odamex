@@ -21,12 +21,9 @@
 //-----------------------------------------------------------------------------
 #pragma once
 
-#include <iostream>
-#include <iso646.h>
 #include <vector>
-#include <unordered_map>
 
-#include "SequenceQueueEntryType.h"
+#include "SequenceQueue.h"
 
 class SequenceSender
 {
@@ -95,17 +92,13 @@ class SequenceSender
 
 	protected:
 
-		void AdvanceSmallestUnacked();
-
         struct IntIdentity
         {
             size_t operator()(const int key) const { return key; }
         };
 
-		//std::vector<SequenceQueueEntryType> m_sendQueue;
         std::vector<int> m_unackedSequences;
-        std::unordered_map<int, SequenceQueueEntryType, IntIdentity> m_sendTable;
-        std::vector<SequenceQueueEntryType> m_freePackets;
+        SequenceQueue    m_sendTable;
 
 		int m_nextSequence;                 // The sequence number to assign to the next requested packet.
 
