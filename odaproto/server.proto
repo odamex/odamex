@@ -128,6 +128,7 @@ message UserInfo
 	int32 gender = 4;
 	Color color = 5;
 	sint64 join_time = 6;
+	int32 colorpreset = 7;
 }
 
 // svc_updatemobj
