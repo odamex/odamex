@@ -59,6 +59,7 @@
 #include "z_zone.h"
 #include "m_wdlstats.h"
 #include "g_spree.h"
+#include "g_announcer.h"
 
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
@@ -208,6 +209,11 @@ void G_InitNew (const char *mapname)
 	cvar_t::UnlatchCVars ();
 
 	SpreeManager::getInstance().clearSprees();
+	AnnouncerManager::getInstance().resetCountdownAnnouncements();
+	AnnouncerManager::getInstance().resetLeadTracking();
+	AnnouncerManager::getInstance().resetFightAnnouncement();
+	AnnouncerManager::getInstance().resetFirstBloodAnnouncement();
+	AnnouncerManager::getInstance().resetFragWarnings();
 
 	if (paused)
 	{
@@ -397,6 +403,11 @@ void G_DoCompleted (void)
 	}
 
 	SpreeManager::getInstance().clearSprees();
+	AnnouncerManager::getInstance().resetCountdownAnnouncements();
+	AnnouncerManager::getInstance().resetLeadTracking();
+	AnnouncerManager::getInstance().resetFightAnnouncement();
+	AnnouncerManager::getInstance().resetFirstBloodAnnouncement();
+	AnnouncerManager::getInstance().resetFragWarnings();
 
 	const WinInfo& win = levelstate.getWinInfo();
 	switch (win.type)
@@ -589,6 +600,11 @@ void G_DoLoadLevel (int position)
 	OInterpolation::getInstance().resetGameInterpolation();
 
 	SpreeManager::getInstance().clearSprees();
+	AnnouncerManager::getInstance().resetCountdownAnnouncements();
+	AnnouncerManager::getInstance().resetLeadTracking();
+	AnnouncerManager::getInstance().resetFightAnnouncement();
+	AnnouncerManager::getInstance().resetFirstBloodAnnouncement();
+	AnnouncerManager::getInstance().resetFragWarnings();
 
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,

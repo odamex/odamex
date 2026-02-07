@@ -2368,6 +2368,11 @@ static void CL_LevelState(const odaproto::svc::LevelState* msg)
 static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 {
 	ClientReplay::getInstance().reset();
+	AnnouncerManager::getInstance().resetCountdownAnnouncements();
+	AnnouncerManager::getInstance().resetLeadTracking();
+	AnnouncerManager::getInstance().resetFightAnnouncement();
+	AnnouncerManager::getInstance().resetFirstBloodAnnouncement();
+	AnnouncerManager::getInstance().resetFragWarnings();
 
 	// Destroy every actor with a netid that isn't a player.  We're going to
 	// get the contents of the map with a full update later on anyway.

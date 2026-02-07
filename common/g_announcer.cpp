@@ -450,14 +450,13 @@ void P_CheckTimeWarnings()
 	int remainingTics = endingTic - ::level.time;
 	int remainingSeconds = remainingTics / TICRATE;
 
-	// Check for 5 minute warning (300 seconds)
-	// Announce when we cross the threshold (between 300 and 299 seconds remaining)
-	if (remainingSeconds == 5 * 60)
+	// Check for 5 minute warning (299 seconds, so it announces when the clock reads 5:00)
+	if (remainingSeconds == (5 * 60) - 1)
 	{
 		instance.announceFiveMinuteWarning();
 	}
-	// Check for 1 minute warning (60 seconds)
-	else if (remainingSeconds == 60)
+	// Check for 1 minute warning (59 seconds, so it announces when the clock hits 1:00)
+	else if (remainingSeconds == 60 - 1)
 	{
 		instance.announceOneMinuteWarning();
 	}
@@ -472,7 +471,11 @@ EXTERN_CVAR(snd_announcecountdown)
 void P_CheckFightAnnouncement()
 {
 	// Only play sounds on the client
-	if (!::clientside)
+	if (!::clientside || !::multiplayer)
+		return;
+
+	// Don't announce fight if we're a spectator
+	if (consoleplayer().spectator)
 		return;
 
 #ifdef CLIENT_APP
@@ -482,20 +485,25 @@ void P_CheckFightAnnouncement()
 
 	AnnouncerManager& instance = AnnouncerManager::getInstance();
 
-	// Check if it's time to announce (when level.time reaches ingame start time)
-	int ingameStartTime = ::levelstate.getIngameStartTime();
-	if (ingameStartTime == 0)
-	{
-		// Reset the flag when not in-game so it can trigger again next game
-		instance.resetFightAnnouncement();
-		return;
-	}
-
 	// Check if we've already announced
 	if (instance.hasFightBeenAnnounced())
 		return;
 
-	if (::level.time != ingameStartTime)
+	// Check if it's time to announce (when level.time reaches ingame start time)
+	int ingameStartTime = ::levelstate.getIngameStartTime();
+
+	if (::levelstate.getState() != LevelState::INGAME)
+		return;
+
+	// Start of the round happened 3 seconds ago and we didn't announce?
+	// Forget about it
+	if (::level.time > ingameStartTime + (3 * TICRATE))
+	{
+		instance.setFightAnnounced();
+		return;
+	}
+
+	if (::level.time < ingameStartTime)
 		return;
 
 	instance.setFightAnnounced();
@@ -507,7 +515,11 @@ void P_CheckFightAnnouncement()
 void P_CheckCountdownAnnouncements()
 {
 	// Only play sounds on the client
-	if (!::clientside)
+	if (!::clientside || !::multiplayer)
+		return;
+
+	// Don't announce fight if we're a spectator
+	if (consoleplayer().spectator)
 		return;
 
 #ifdef CLIENT_APP
@@ -517,14 +529,14 @@ void P_CheckCountdownAnnouncements()
 
 	AnnouncerManager& instance = AnnouncerManager::getInstance();
 
-	int countdown = ::levelstate.getCountdown();
-
-	// Reset flags when countdown is over or above 5
-	if (countdown == 0 || countdown > 5)
+	// If we got reset to warmup (player chickened out)
+	// Reset the countdown so we hear it again.
+	if (::levelstate.getState() == LevelState::WARMUP)
 	{
 		instance.resetCountdownAnnouncements();
-		return;
 	}
+
+	int countdown = ::levelstate.getCountdown();
 
 	// Check if this countdown has already been announced
 	if (instance.hasCountdownBeenAnnounced(countdown))
@@ -742,7 +754,6 @@ void P_CheckLeadChangeAnnouncement()
 		instance.setLeadTied(newLeadIsTied);
 		instance.setCurrentLeaderPlayerId(newLeaderPlayerId);
 		instance.setCurrentLeaderTeam(newLeaderTeam);
-		return;
 	}
 
 	// Check for lead changes
