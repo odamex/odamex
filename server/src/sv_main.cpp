@@ -50,6 +50,7 @@
 #include "i_time.h"
 #include "c_console.h"
 #include "c_dispatch.h"
+#include "c_rcon.h"
 #include "m_argv.h"
 #include "m_random.h"
 #include "p_ctf.h"
@@ -466,7 +467,7 @@ static void SendLevelState(SerializedLevelState sls)
 //
 // SV_InitNetwork
 //
-void SV_InitNetwork (void)
+void SV_InitNetwork()
 {
     network_game = true;
 
@@ -481,6 +482,8 @@ void SV_InitNetwork (void)
 
 	// set up a socket and net_message buffer
 	InitNetCommon();
+	// FIXME: shouldn't set password until after cvar callbacks are enabled
+	rcon::Server::Init(localport, rcon_password);
 
 	// determine my name & address
 	// NET_GetLocalAddress ();

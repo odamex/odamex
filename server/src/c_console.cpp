@@ -32,6 +32,7 @@
 #include "m_memio.h"
 #include "c_console.h"
 #include "c_dispatch.h"
+#include "c_rcon.h"
 #include "v_palette.h"
 #include "sv_main.h"
 #include "gi.h"
@@ -111,6 +112,9 @@ static size_t PrintString(int printlevel, std::string str)
 		LOG << str;
 		LOG.flush();
 	}
+
+	if (rcon::Server::GetInstance())
+		rcon::Server::GetInstance()->queueResponse(str);
 
 	return str.length();
 }
