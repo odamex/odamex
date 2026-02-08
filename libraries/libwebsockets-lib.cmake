@@ -1,10 +1,6 @@
 ### libwebsockets ###
 
 if(BUILD_SERVER)
-  # Figure out the correct library path to attach to our imported target
-  set(MINIUPNPC_LIBRARY
-    "${CMAKE_CURRENT_BINARY_DIR}/local/lib/${libprefix}miniupnpc${libsuffix}")
-
   lib_buildgen(
     LIBRARY libwebsockets
     PARAMS "-DLWS_ROLE_RAW_FILE=OFF"
