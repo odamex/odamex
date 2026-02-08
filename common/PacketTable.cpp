@@ -1,8 +1,8 @@
-#include "SequenceQueue.h"
+#include "PacketTable.h"
 
 #include "i_net.h"
 
-std::pair<SequenceQueue::iterator, bool> SequenceQueue::Acquire(int sequence)
+std::pair<PacketTable::iterator, bool> PacketTable::Acquire(int sequence)
 {
     std::pair<iterator, bool> result;
     if (not m_freePackets.empty())
@@ -17,7 +17,7 @@ std::pair<SequenceQueue::iterator, bool> SequenceQueue::Acquire(int sequence)
     return result;
 }
 
-bool SequenceQueue::Release(iterator pos)
+bool PacketTable::Release(iterator pos)
 {
     if (pos != m_hashTable.end())
     {

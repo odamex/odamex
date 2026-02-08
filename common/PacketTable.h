@@ -5,7 +5,7 @@
 
 #include "SequenceQueueEntryType.h"
 
-class SequenceQueue
+class PacketTable
 {
     public:
         struct IntIdentity
@@ -16,7 +16,7 @@ class SequenceQueue
         using HashTableType = std::unordered_map<int, SequenceQueueEntryType, IntIdentity>;
         using iterator      = HashTableType::iterator;
 
-        explicit SequenceQueue(size_t i_initialSize) :
+        explicit PacketTable(size_t i_initialSize) :
             m_hashTable(i_initialSize)
         {
             m_hashTable.max_load_factor(3.0f);   // why not...?
