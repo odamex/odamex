@@ -1846,6 +1846,8 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 
 	if (splayer)
 	{
+		P_CaptureLeadState();
+
 		// Don't count any frags at level start, because they're just telefrags
 		// resulting from insufficient deathmatch starts, and it wouldn't be
 		// fair to count them toward a player's score.

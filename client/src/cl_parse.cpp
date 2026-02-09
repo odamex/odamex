@@ -1532,6 +1532,7 @@ static void CL_Print(const odaproto::svc::Print* msg)
 static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 {
 	player_t& p = CL_FindPlayer(msg->pid());
+
 	byte flags = msg->flags();
 
 	if (flags & SVC_PM_SPECTATOR)
@@ -1546,7 +1547,11 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 
 	if (flags & SVC_PM_LIVES)
 	{
+		P_CaptureLeadState();
+
 		p.lives = msg->lives();
+
+		P_CheckLeadChangeAnnouncement();
 	}
 
 	if (flags & SVC_PM_DAMAGE)
@@ -1556,6 +1561,8 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 
 	if (flags & SVC_PM_SCORE)
 	{
+		P_CaptureLeadState();
+
 		p.roundwins = msg->roundwins();
 		p.points = msg->points();
 		p.fragcount = msg->fragcount();
@@ -1564,6 +1571,8 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 		p.secretcount = msg->secretcount();
 		p.totalpoints = msg->totalpoints();
 		p.totaldeaths = msg->totaldeaths();
+
+		P_CheckLeadChangeAnnouncement();
 	}
 
 	if (flags & SVC_PM_CHEATS)
@@ -1594,8 +1603,12 @@ static void CL_TeamMembers(const odaproto::svc::TeamMembers* msg)
 	if (info->Team >= NUMTEAMS)
 		return;
 
+	P_CaptureLeadState();
+
 	info->Points = points;
 	info->RoundWins = roundWins;
+
+	P_CheckLeadChangeAnnouncement();
 }
 
 static void CL_ActivateLine(const odaproto::svc::ActivateLine* msg)
@@ -2034,6 +2047,8 @@ static void CL_CTFEvent(const odaproto::svc::CTFEvent* msg)
 	player_t& player = idplayer(msg->player_id());
 	team_t player_team = static_cast<team_t>(msg->player_team());
 	TeamInfo* target_teaminfo = GetTeamInfo(target_team);
+
+	P_CaptureLeadState();
 
 	// If our player is valid, assign passed points to them.
 	if (validplayer(player))

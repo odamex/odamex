@@ -741,8 +741,15 @@ void P_CheckFightAnnouncement();
 void P_CheckCountdownAnnouncements();
 
 /// <summary>
+/// Captures the current lead state before a score change.
+/// Call this BEFORE adding frags or flag captures.
+/// </summary>
+void P_CaptureLeadState();
+
+/// <summary>
 /// Checks for lead changes and announces them to the display player.
 /// Announces "You have the lead", "You lost the lead", or "You tied for the lead".
+/// Call this AFTER adding frags or flag captures.
 /// Does not run in coop game modes.
 /// </summary>
 void P_CheckLeadChangeAnnouncement();

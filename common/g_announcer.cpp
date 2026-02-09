@@ -595,10 +595,155 @@ void P_CheckPlayerEliminatedAnnouncement(const player_t* player)
 EXTERN_CVAR(snd_announceleadtracking)
 #endif
 
+// Helper function to determine current lead state for the display player
+static bool P_GetDisplayPlayerLeadState(bool& outHasLead, bool& outIsTied)
+{
+	outHasLead = false;
+	outIsTied = false;
+
+	player_t& displayPlayer = idplayer(displayplayer_id);
+
+	// Make sure the display player is valid and in the game
+	if (!validplayer(displayPlayer) || !displayPlayer.ingame())
+		return false;
+
+	if (G_IsTeamGame())
+	{
+		if (G_IsLivesGame() && sv_gametype != GM_CTF)
+		{
+			// Team game with lives - check team lives
+			TeamsView tv = TeamQuery().sortLives().filterSortMax().execute();
+			if (tv.empty())
+				return false;
+			if (tv.size() > 1)
+			{
+				outIsTied = true;
+				for (const auto& team : tv)
+				{
+					if (team->Team == displayPlayer.userinfo.team)
+					{
+						outHasLead = true;
+						break;
+					}
+				}
+			}
+			else
+			{
+				outHasLead = (tv.front()->Team == displayPlayer.userinfo.team);
+			}
+		}
+		else
+		{
+			// Team game - check team scores
+			TeamsView tv = TeamQuery().sortScore().filterSortMax().execute();
+			if (tv.empty())
+				return false;
+			if (tv.size() > 1)
+			{
+				outIsTied = true;
+				for (const auto& team : tv)
+				{
+					if (team->Team == displayPlayer.userinfo.team)
+					{
+						outHasLead = true;
+						break;
+					}
+				}
+			}
+			else
+			{
+				outHasLead = (tv.front()->Team == displayPlayer.userinfo.team);
+			}
+		}
+	}
+	else
+	{
+		if (G_IsLivesGame())
+		{
+			// FFA game with lives - check individual lives
+			PlayerResults pr = PlayerQuery().sortLives().filterSortMax().execute();
+			if (pr.count == 0)
+				return false;
+			if (pr.count > 1)
+			{
+				outIsTied = true;
+				for (const auto& player : pr.players)
+				{
+					if (player->id == displayplayer_id)
+					{
+						outHasLead = true;
+						break;
+					}
+				}
+			}
+			else
+			{
+				outHasLead = (pr.players.front()->id == displayplayer_id);
+			}
+		}
+		else
+		{
+			// FFA game - check individual frags
+			PlayerResults pr = PlayerQuery().sortFrags().filterSortMax().execute();
+			if (pr.count == 0)
+				return false;
+			if (pr.count > 1)
+			{
+				outIsTied = true;
+				for (const auto& player : pr.players)
+				{
+					if (player->id == displayplayer_id)
+					{
+						outHasLead = true;
+						break;
+					}
+				}
+			}
+			else
+			{
+				outHasLead = (pr.players.front()->id == displayplayer_id);
+			}
+		}
+	}
+
+	return true;
+}
+
+// Call this BEFORE a score change to capture current lead state
+void P_CaptureLeadState()
+{
+	// Only on client
+	if (!::clientside || !::multiplayer)
+		return;
+
+	// No lead announcements in coop game modes
+	if (G_IsCoopGame())
+		return;
+
+	// Only check during active gameplay
+	if (::levelstate.getState() != LevelState::INGAME)
+	{
+		AnnouncerManager::getInstance().resetLeadTracking();
+		return;
+	}
+
+	AnnouncerManager& instance = AnnouncerManager::getInstance();
+
+	bool hasLead = false;
+	bool isTied = false;
+
+	if (P_GetDisplayPlayerLeadState(hasLead, isTied))
+	{
+		instance.setDisplayPlayerHasLead(hasLead);
+		instance.setLeadTied(isTied);
+	}
+}
+
+// Call this AFTER a score change to check for lead changes and announce
 void P_CheckLeadChangeAnnouncement()
 {
 	// Only play sounds on the client
-	if (!::clientside)
+	if (!::clientside || !::multiplayer)
 		return;
 
 #ifdef CLIENT_APP
@@ -612,195 +757,48 @@ void P_CheckLeadChangeAnnouncement()
 
 	// Only check during active gameplay
 	if (::levelstate.getState() != LevelState::INGAME)
-	{
-		// Reset lead tracking when not in-game
-		AnnouncerManager::getInstance().resetLeadTracking();
 		return;
-	}
 
 	AnnouncerManager& instance = AnnouncerManager::getInstance();
-	player_t& displayPlayer = idplayer(displayplayer_id);
 
-	// Make sure the display player is valid and in the game
-	if (!validplayer(displayPlayer) || !displayPlayer.ingame())
-		return;
-
-	bool newDisplayPlayerHasLead = false;
-	bool newLeadIsTied = false;
-	int newLeaderPlayerId = 0;
-	team_t newLeaderTeam = TEAM_NONE;
-
-	if (G_IsTeamGame())
-	{
-		if (G_IsLivesGame() && sv_gametype != GM_CTF)
-		{
-			// Team game with lives - check team lives
-			TeamsView tv = TeamQuery().sortLives().filterSortMax().execute();
-			if (tv.empty())
-				return;
-			// Check if there's a tie (multiple teams with max lives)
-			if (tv.size() > 1)
-			{
-				newLeadIsTied = true;
-				// Check if display player's team is among the tied leaders
-				for (const auto& team : tv)
-				{
-					if (team->Team == displayPlayer.userinfo.team)
-					{
-						newDisplayPlayerHasLead = true;
-						break;
-					}
-				}
-			}
-			else
-			{
-				newLeaderTeam = tv.front()->Team;
-				newDisplayPlayerHasLead = (newLeaderTeam == displayPlayer.userinfo.team);
-			}
-		}
-		else
-		{
-			// Team game - check team scores
-			TeamsView tv = TeamQuery().sortScore().filterSortMax().execute();
-
-			if (tv.empty())
-				return;
-
-			// Check if there's a tie (multiple teams with max score)
-			if (tv.size() > 1)
-			{
-				newLeadIsTied = true;
-				// Check if display player's team is among the tied leaders
-				for (const auto& team : tv)
-				{
-					if (team->Team == displayPlayer.userinfo.team)
-					{
-						newDisplayPlayerHasLead = true;
-						break;
-					}
-				}
-			}
-			else
-			{
-				newLeaderTeam = tv.front()->Team;
-				newDisplayPlayerHasLead = (newLeaderTeam == displayPlayer.userinfo.team);
-			}
-		}
-	}
-	else
-	{
-		if (G_IsLivesGame())
-		{
-				// FFA game with lives - check individual lives
-			PlayerResults pr = PlayerQuery().sortLives().filterSortMax().execute();
-			if (pr.count == 0)
-				return;
-			// Check if there's a tie (multiple players with max lives)
-			if (pr.count > 1)
-			{
-				newLeadIsTied = true;
-				// Check if display player is among the tied leaders
-				for (const auto& player : pr.players)
-				{
-					if (player->id == displayplayer_id)
-					{
-						newDisplayPlayerHasLead = true;
-						break;
-					}
-				}
-			}
-			else
-			{
-				newLeaderPlayerId = pr.players.front()->id;
-				newDisplayPlayerHasLead = (newLeaderPlayerId == displayplayer_id);
-			}
-			return;
-		}
-		else
-		{
-			// FFA game - check individual frags
-			PlayerResults pr = PlayerQuery().sortFrags().filterSortMax().execute();
-
-			if (pr.count == 0)
-				return;
-
-			// Check if there's a tie (multiple players with max frags)
-			if (pr.count > 1)
-			{
-				newLeadIsTied = true;
-				// Check if display player is among the tied leaders
-				for (const auto& player : pr.players)
-				{
-					if (player->id == displayplayer_id)
-					{
-						newDisplayPlayerHasLead = true;
-						break;
-					}
-				}
-			}
-			else
-			{
-				newLeaderPlayerId = pr.players.front()->id;
-				newDisplayPlayerHasLead = (newLeaderPlayerId == displayplayer_id);
-			}
-		}
-	}
-
-	// If lead tracking hasn't been initialized, just store the current state
-	if (!instance.isLeadTrackingInitialized())
-	{
-		instance.setLeadTrackingInitialized();
-		instance.setDisplayPlayerHasLead(newDisplayPlayerHasLead);
-		instance.setLeadTied(newLeadIsTied);
-		instance.setCurrentLeaderPlayerId(newLeaderPlayerId);
-		instance.setCurrentLeaderTeam(newLeaderTeam);
-	}
-
-	// Check for lead changes
+	// Get the previous state (captured before score change)
 	bool previouslyHadLead = instance.doesDisplayPlayerHaveLead();
 	bool previouslyTied = instance.isLeadTied();
 
+	// Get current state (after score change)
+	bool newHasLead = false;
+	bool newIsTied = false;
+
+	if (!P_GetDisplayPlayerLeadState(newHasLead, newIsTied))
+		return;
+
 	std::string sound;
 
-	if (newDisplayPlayerHasLead && !previouslyHadLead)
+	if (newHasLead && !previouslyHadLead)
 	{
-		// Gained the lead (either from not having it, or from being tied)
-		if (newLeadIsTied)
-		{
-			// Tied for the lead
+		// Gained the lead
+		if (newIsTied)
 			sound = instance.getTokenForEvent(ANN_YOUTIEDFORTHELEAD);
-		}
 		else
-		{
-			// Took the lead outright
 			sound = instance.getTokenForEvent(ANN_YOUHAVETHELEAD);
-		}
 	}
-	else if (!newDisplayPlayerHasLead && previouslyHadLead)
+	else if (!newHasLead && previouslyHadLead)
 	{
 		// Lost the lead
 		sound = instance.getTokenForEvent(ANN_YOULOSTTHELEAD);
 	}
-	else if (newDisplayPlayerHasLead && previouslyHadLead)
+	else if (newHasLead && previouslyHadLead)
 	{
 		// Still has the lead - check for tie status changes
-		if (newLeadIsTied && !previouslyTied)
-		{
-			// Was leading outright, now tied
+		if (newIsTied && !previouslyTied)
 			sound = instance.getTokenForEvent(ANN_YOUTIEDFORTHELEAD);
-		}
-		else if (!newLeadIsTied && previouslyTied)
-		{
-			// Was tied, now leading outright
+		else if (!newIsTied && previouslyTied)
 			sound = instance.getTokenForEvent(ANN_YOUHAVETHELEAD);
-		}
 	}
 
-	// Update stored state
-	instance.setDisplayPlayerHasLead(newDisplayPlayerHasLead);
-	instance.setLeadTied(newLeadIsTied);
-	instance.setCurrentLeaderPlayerId(newLeaderPlayerId);
-	instance.setCurrentLeaderTeam(newLeaderTeam);
+	// Update stored state for next comparison
+	instance.setDisplayPlayerHasLead(newHasLead);
+	instance.setLeadTied(newIsTied);
 
 	// Play announcement if we have one
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
