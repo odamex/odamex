@@ -45,7 +45,8 @@ namespace rcon
 
 class Server {
 public:
-	explicit Server(uint16_t p, std::string password) noexcept : m_port(p), m_password(password) {}
+	explicit Server(uint16_t port, std::string password) noexcept :
+		m_port(port), m_password(password) {}
 
 	~Server()
 	{
@@ -54,9 +55,16 @@ public:
 
 	void start();
 	void stop();
-	void changePassword(std::string_view new_password);
+
+	void changePassword(std::string new_password)
+	{
+		stop();
+		m_password = new_password;
+		start();
+	};
+
 	void getCommandQueue();
-	void queueResponse(std::string_view response);
+	void queueResponse(std::string_view response) {};
 
 	static void Init(uint16_t port, std::string password)
 	{
@@ -72,9 +80,9 @@ private:
 	lws_context* m_context = nullptr;
 	std::thread m_serverThread;
 	std::atomic<bool> m_running = false;
-	std::atomic<std::string> m_password;
+	std::string m_password;
 
-	static std::unique_ptr<Server> singleton;
+	inline static std::unique_ptr<Server> singleton;
 
 	// Callback for the websocket protocol
 	static int callback_json_server(
