@@ -25,8 +25,11 @@
 #include "odamex.h"
 
 #include <ctime>
+#include <chrono>
 
 #include <stdarg.h>
+
+#include "fmt/chrono.h"
 
 #include "m_fileio.h"
 #include "m_memio.h"
@@ -55,49 +58,21 @@ struct History
 // CmdLine[259]= offset from beginning of cmdline to display
 //static byte CmdLine[260];
 
-static byte printxormask;
-
 static struct History *HistTail = NULL;
 
 #define PRINTLEVELS 5
 
 EXTERN_CVAR (log_fulltimestamps)
 
-char *TimeStamp()
+std::string TimeStamp()
 {
-	static char stamp[38];
+	auto now = std::chrono::system_clock::now();
+	std::time_t t = std::chrono::system_clock::to_time_t(now);
 
-	time_t ti = time(NULL);
-	struct tm *lt = localtime(&ti);
-
-	if(lt)
-	{
-		if (log_fulltimestamps)
-		{
-            snprintf (stamp,
-                     38,
-                     "[%.2d/%.2d/%.2d %.2d:%.2d:%.2d]",
-                     lt->tm_mday,
-                     lt->tm_mon + 1,	// localtime returns 0-based month
-                     lt->tm_year + 1900,
-                     lt->tm_hour,
-                     lt->tm_min,
-                     lt->tm_sec);
-		}
-		else
-		{
-            snprintf (stamp,
-                     38,
-                     "[%.2d:%.2d:%.2d]",
-                     lt->tm_hour,
-                     lt->tm_min,
-                     lt->tm_sec);
-		}
-	}
+	if (log_fulltimestamps)
+		return fmt::format("[{:%d/%m/%Y %H:%M:%S}]", fmt::localtime(t));
 	else
-		*stamp = 0;
-
-	return stamp;
+		return fmt::format("[{:%H:%M:%S}]", fmt::localtime(t));
 }
 
 static size_t PrintString(int printlevel, std::string str)
@@ -134,7 +109,7 @@ size_t C_BasePrint(const int printlevel, const char* color_code, const std::stri
 		if (c == 0x07)
 			c = '.';
 
-	newStr = std::string(TimeStamp()) + " " + newStr;
+	newStr = TimeStamp() + " " + newStr;
 
 	if (newStr[newStr.length() - 1] != '\n')
 		newStr += '\n';
