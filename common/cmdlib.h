@@ -27,6 +27,7 @@
 #include <ctime>
 #include <optional>
 #include <charconv>
+#include <vector>
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4244)     // MIPS

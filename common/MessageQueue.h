@@ -9,6 +9,7 @@ class MessageQueue
 {
     public:
 
+        /*
         size_t SizeInBytes() const { return std::accumulate(m_queue.first(),
                                                             m_queue.last(),
                                                             0,
@@ -16,7 +17,7 @@ class MessageQueue
                                                             {
                                                                 return x + buf.size();
                                                             }); }
-
+        */
         size_t SizeInMessages() const { return m_queue.size(); }
 
         // Pushing messages
@@ -24,7 +25,7 @@ class MessageQueue
         void Emplace(buf_t& io_str);
 
         // Using messages.
-        const buf_t& Front() const { m_queue.front(); }
+        const buf_t& Front() const { return m_queue.front(); }
 
         // Popping messages.
         bool Pop();

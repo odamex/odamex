@@ -1077,7 +1077,8 @@ void G_Ticker (void)
 			else
 			{
 				// we are already connected to this server, quit first
-				MSG_WriteMarker(&messenger.NetBuf(), clc_disconnect);
+                messenger.Clear();
+				MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_disconnect);
 				messenger.Send(gametic, serveraddr);
 
 				PrintFmt(PRINT_WARNING,

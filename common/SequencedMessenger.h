@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MessageQueue.h"
+#include "Packet.h"
 #include "SequenceReceiver.h"
 #include "SequenceSender.h"
 
@@ -83,6 +84,13 @@ class SequencedMessenger
 		MessageQueue& ReliableBuf() { return m_reliableBuffer; }
 		MessageQueue& NetBuf() { return m_nonreliableBuffer; }
 
+        void Clear()
+        {
+            m_reliableBuffer.Clear();
+            m_nonreliableBuffer.Clear();
+            m_ackBuffer.Clear();
+        }
+
 		bool MustThrottleTransmission() const { return m_sender.GetMode() == SequenceSender::RECOVERY; }
         fixed_t ThrottleFraction() const { return FixedDiv( m_unackedGrowth << FRACBITS, m_unackedGrowthThreshold << FRACBITS); }
 
@@ -119,7 +127,7 @@ class SequencedMessenger
 		int m_retransmitDelayInTics       { 0 };
 		int m_maxRate                     { 0 };
 
-        int m_bpsBudget { 0 };
+        int m_bpsBudget { 0 };  // Signed so that it can also represent debt.
 
 		// Metrics
 		size_t m_unreliableBps                {  0 };

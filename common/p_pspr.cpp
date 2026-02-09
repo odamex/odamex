@@ -481,7 +481,7 @@ void P_FireWeapon(player_t* player)
 #if defined(SERVER_APP)
 	if (serverside && !clientside)
 	{
-		MSG_WriteSVC(&player->client.messenger.ReliableBuf(), SVC_FireWeapon(*player));
+		MSG_WriteSVC(player->client.messenger.ReliableBuf(), SVC_FireWeapon(*player));
 	}
 #endif
 

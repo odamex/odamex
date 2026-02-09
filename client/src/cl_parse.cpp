@@ -459,8 +459,9 @@ static void CL_LevelLocals(const odaproto::svc::LevelLocals* msg)
 //
 static void CL_PingRequest(const odaproto::svc::PingRequest* msg)
 {
-	MSG_WriteMarker(&messenger.NetBuf(), clc_pingreply);
-	MSG_WriteLong(&messenger.NetBuf(), msg->ms_time());
+    auto& netBuf = messenger.NetBuf().Obtain();
+	MSG_WriteMarker(&netBuf, clc_pingreply);
+	MSG_WriteLong(&netBuf, msg->ms_time());
 }
 
 //
@@ -1438,7 +1439,7 @@ static void CL_FireWeapon(const odaproto::svc::FireWeapon* msg)
 		A_ForceWeaponFire(p->mo, firedweap, servertic);
 
 		// Request the player's ammo status from the server
-		MSG_WriteMarker(&messenger.NetBuf(), clc_getplayerinfo);
+		MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_getplayerinfo);
 	}
 }
 

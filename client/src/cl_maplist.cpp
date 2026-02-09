@@ -256,8 +256,9 @@ void MaplistCache::defer_query(const std::vector<std::string> &query,
 	if (this->deferred_queries.empty()) {
 		// Only send out a maplist status packet if we don't already have a
 		// deferred query in progress.
-		MSG_WriteMarker(&messenger.NetBuf(), clc_maplist);
-		MSG_WriteByte(&messenger.NetBuf(), this->status);
+        buf_t& netBuf = messenger.NetBuf().Obtain();
+		MSG_WriteMarker(&netBuf, clc_maplist);
+		MSG_WriteByte(&netBuf, this->status);
 		this->status = MAPLIST_WAIT;
 		this->timeout = I_MSTime() + (1000 * 3);
 	}
@@ -275,7 +276,7 @@ void MaplistCache::status_handler(maplist_status_t status) {
 	case MAPLIST_OUTDATED:
 		// If our cache is out-of-date and we are able to request
 		// an updated maplist, request one.
-		MSG_WriteMarker(&messenger.NetBuf(), clc_maplist_update);
+		MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_maplist_update);
 		[[fallthrough]];
 	case MAPLIST_EMPTY:
 	case MAPLIST_THROTTLED:

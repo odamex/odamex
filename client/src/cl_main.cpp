@@ -363,10 +363,16 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 {
 	if(connected)
 	{
-		SZ_Clear(&messenger.NetBuf());
-		MSG_WriteMarker(&messenger.NetBuf(), clc_disconnect);
-		::messenger.Send(gametic, serveraddr);
-		SZ_Clear(&messenger.NetBuf());
+        messenger.ReliableBuf().Clear();
+        messenger.NetBuf().Clear();
+
+        buf_t& netBuf = messenger.NetBuf().Obtain();
+		MSG_WriteMarker(&netBuf, clc_disconnect);
+		messenger.Send(gametic, serveraddr);
+
+        messenger.ReliableBuf().Clear();
+        messenger.NetBuf().Clear();
+
 		sv_gametype = GM_COOP;
 		ClientReplay::getInstance().reset();
 	}
@@ -455,9 +461,15 @@ void CL_Reconnect(void)
 
 	if (connected)
 	{
-		MSG_WriteMarker(&messenger.NetBuf(), clc_disconnect);
+        messenger.ReliableBuf().Clear();
+        messenger.NetBuf().Clear();
+
+		MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_disconnect);
 		messenger.Send(gametic, serveraddr);
-		SZ_Clear(&messenger.NetBuf());
+
+        messenger.ReliableBuf().Clear();
+        messenger.NetBuf().Clear();
+
 		connected = false;
 		gameaction = ga_fullconsole;
 
@@ -511,8 +523,9 @@ void CL_CheckDisplayPlayer(void)
 	{
 		// Request information about this player from the server
 		// (weapons, ammo, health, etc)
-		MSG_WriteMarker(&messenger.NetBuf(), clc_spy);
-		MSG_WriteByte(&messenger.NetBuf(), newid);
+        buf_t& netBuf = messenger.NetBuf().Obtain();
+		MSG_WriteMarker(&netBuf, clc_spy);
+		MSG_WriteByte(&netBuf, newid);
 		displayplayer_id = newid;
 
 		// Changing display player can sometimes affect status bar visibility
@@ -838,7 +851,7 @@ END_COMMAND (playerinfo)
 BEGIN_COMMAND (kill)
 {
     if (sv_allowcheats || G_IsCoopGame())
-        MSG_WriteMarker(&messenger.NetBuf(), clc_kill);
+        MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_kill);
     else
         PrintFmt("You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
 }
@@ -901,8 +914,9 @@ BEGIN_COMMAND (rcon)
 		strncpy(command, args, ARRAY_LENGTH(command) - 1);
 		command[255] = '\0';
 
-		MSG_WriteMarker(&messenger.NetBuf(), clc_rcon);
-		MSG_WriteString(&messenger.NetBuf(), command);
+        buf_t& netBuf = messenger.NetBuf().Obtain();
+		MSG_WriteMarker(&netBuf, clc_rcon);
+		MSG_WriteString(&netBuf, command);
 	}
 }
 END_COMMAND (rcon)
@@ -914,11 +928,12 @@ BEGIN_COMMAND (rcon_password)
 	{
 		bool login = true;
 
-		MSG_WriteMarker(&messenger.NetBuf(), clc_rcon_password);
-		MSG_WriteByte(&messenger.NetBuf(), login);
+        buf_t& netBuf = messenger.NetBuf().Obtain();
+		MSG_WriteMarker(&netBuf, clc_rcon_password);
+		MSG_WriteByte(&netBuf, login);
 
 		std::string password = argv[1];
-		MSG_WriteString(&messenger.NetBuf(), MD5SUM(password + digest).c_str());
+		MSG_WriteString(&netBuf, MD5SUM(password + digest).c_str());
 	}
 }
 END_COMMAND (rcon_password)
@@ -929,9 +944,10 @@ BEGIN_COMMAND (rcon_logout)
 	{
 		bool login = false;
 
-		MSG_WriteMarker(&messenger.NetBuf(), clc_rcon_password);
-		MSG_WriteByte(&messenger.NetBuf(), login);
-		MSG_WriteString(&messenger.NetBuf(), "");
+        buf_t& netBuf = messenger.NetBuf().Obtain();
+		MSG_WriteMarker(&netBuf, clc_rcon_password);
+		MSG_WriteByte(&netBuf, login);
+		MSG_WriteString(&netBuf, "");
 	}
 }
 END_COMMAND (rcon_logout)
@@ -968,17 +984,19 @@ BEGIN_COMMAND (spectate)
 	// Only send message if currently not a spectator, or to remove from play queue
 	if (!spectator || consoleplayer().QueuePosition > 0)
 	{
-		MSG_WriteMarker(&messenger.NetBuf(), clc_spectate);
-		MSG_WriteByte(&messenger.NetBuf(), true);
+        buf_t& netBuf = messenger.NetBuf().Obtain();
+		MSG_WriteMarker(&netBuf, clc_spectate);
+		MSG_WriteByte(&netBuf, true);
 	}
 }
 END_COMMAND (spectate)
 
 BEGIN_COMMAND(ready)
 {
-	MSG_WriteMarker(&messenger.NetBuf(), clc_netcmd);
-	MSG_WriteString(&messenger.NetBuf(), "ready");
-	MSG_WriteByte(&messenger.NetBuf(), 0);
+    buf_t& netBuf = messenger.NetBuf().Obtain();
+	MSG_WriteMarker(&netBuf, clc_netcmd);
+	MSG_WriteString(&netBuf, "ready");
+	MSG_WriteByte(&netBuf, 0);
 }
 END_COMMAND(ready)
 
@@ -1005,16 +1023,17 @@ BEGIN_COMMAND(netcmd)
 		return;
 	}
 
-	MSG_WriteMarker(&messenger.NetBuf(), clc_netcmd);
-	MSG_WriteString(&messenger.NetBuf(), argv[1]);
+    buf_t& netBuf = messenger.NetBuf().Obtain();
+	MSG_WriteMarker(&netBuf, clc_netcmd);
+	MSG_WriteString(&netBuf, argv[1]);
 
 	// Pass additional arguments as separate strings.  Avoids argument
 	// parsing at the opposite end.
 	byte netargc = MIN<size_t>(argc - 2, 0xFF);
-	MSG_WriteByte(&messenger.NetBuf(), netargc);
+	MSG_WriteByte(&netBuf, netargc);
 	for (size_t i = 0; i < netargc; i++)
 	{
-		MSG_WriteString(&messenger.NetBuf(), argv[i + 2]);
+		MSG_WriteString(&netBuf, argv[i + 2]);
 	}
 }
 END_COMMAND(netcmd)
@@ -1027,8 +1046,9 @@ BEGIN_COMMAND (join)
 	//	return;
 	//}
 
-	MSG_WriteMarker(&messenger.NetBuf(), clc_spectate);
-	MSG_WriteByte(&messenger.NetBuf(), false);
+    buf_t& netBuf = messenger.NetBuf().Obtain();
+	MSG_WriteMarker(&netBuf, clc_spectate);
+	MSG_WriteByte(&netBuf, false);
 }
 END_COMMAND (join)
 
@@ -1318,29 +1338,29 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 //
 // CL_SendUserInfo
 //
-void CL_SendUserInfo(void)
+void CL_SendUserInfo(buf_t& netBuf)
 {
 	UserInfo* coninfo = &consoleplayer().userinfo;
 	D_SetupUserInfo();
 
-	MSG_WriteMarker	(&messenger.NetBuf(), clc_userinfo);
-	MSG_WriteString	(&messenger.NetBuf(), coninfo->netname.c_str());
-	MSG_WriteByte	(&messenger.NetBuf(), coninfo->team); // [Toke]
-	MSG_WriteLong	(&messenger.NetBuf(), coninfo->gender);
+	MSG_WriteMarker	(&netBuf, clc_userinfo);
+	MSG_WriteString	(&netBuf, coninfo->netname.c_str());
+	MSG_WriteByte	(&netBuf, coninfo->team); // [Toke]
+	MSG_WriteLong	(&netBuf, coninfo->gender);
 
 	for (int i = 3; i >= 0; i--)
-		MSG_WriteByte(&messenger.NetBuf(), coninfo->color[i]);
+		MSG_WriteByte(&netBuf, coninfo->color[i]);
 
 	// [SL] place holder for deprecated skins
-	MSG_WriteString	(&messenger.NetBuf(), "");
+	MSG_WriteString	(&netBuf, "");
 
-	MSG_WriteLong	(&messenger.NetBuf(), coninfo->aimdist);
-	MSG_WriteBool	(&messenger.NetBuf(), true);	// [SL] deprecated "cl_unlag" CVAR
-	MSG_WriteBool	(&messenger.NetBuf(), coninfo->predict_weapons);
-	MSG_WriteByte	(&messenger.NetBuf(), (char)coninfo->switchweapon);
+	MSG_WriteLong	(&netBuf, coninfo->aimdist);
+	MSG_WriteBool	(&netBuf, true);	// [SL] deprecated "cl_unlag" CVAR
+	MSG_WriteBool	(&netBuf, coninfo->predict_weapons);
+	MSG_WriteByte	(&netBuf, (char)coninfo->switchweapon);
 	for (const auto& pref : coninfo->weapon_prefs)
 	{
-		MSG_WriteByte (&messenger.NetBuf(), pref);
+		MSG_WriteByte (&netBuf, pref);
 	}
 
 	CL_RebuildAllPlayerTranslations();	// Refresh Player Translations AFTER sending the new status to the server.
@@ -1450,9 +1470,10 @@ void CL_RequestConnectInfo(void)
 
 		PrintFmt(PRINT_HIGH, "Connecting to {}...\n", NET_AdrToString(serveraddr));
 
-		SZ_Clear(&messenger.NetBuf());
-		MSG_WriteLong(&messenger.NetBuf(), LAUNCHER_CHALLENGE);
-		NET_SendPacket(messenger.NetBuf(), serveraddr);
+        messenger.ReliableBuf().Clear();
+		messenger.NetBuf().Clear();
+		MSG_WriteLong(&messenger.NetBuf().Obtain(), LAUNCHER_CHALLENGE);
+        messenger.Send(gametic, serveraddr);
 	}
 
 	connecttimeout--;
@@ -1753,8 +1774,9 @@ bool CL_Connect()
 	messenger.SetPacketsPerRetransmit(10);    // To align with the size of the traditional cmd buffer
 	// [AM] This needs to go out ASAP so the server can start sending us
 	//      messages.
-	MSG_WriteMarker(&messenger.NetBuf(), clc_ack);
-	MSG_WriteLong(&messenger.NetBuf(), 0);
+    buf_t& netBuf = messenger.NetBuf().Obtain();
+	MSG_WriteMarker(&netBuf, clc_ack);
+	MSG_WriteLong(&netBuf, 0);
 	messenger.Send(gametic, ::serveraddr);
 
 	PrintFmt("Requesting server state...\n");
@@ -1813,7 +1835,7 @@ void CL_InitNetwork (void)
     // set up a socket and net_message buffer
     InitNetCommon();
 
-    SZ_Clear(&messenger.NetBuf());
+    messenger.Clear();
 
     size_t ParamIndex = Args.CheckParm ("-connect");
 
@@ -1854,29 +1876,31 @@ void CL_TryToConnect(DWORD server_token)
 
 		PrintFmt("Joining server...\n");
 
-		SZ_Clear(&messenger.NetBuf());
-		MSG_WriteLong(&messenger.NetBuf(), PROTO_CHALLENGE); // send challenge
-		MSG_WriteLong(&messenger.NetBuf(), server_token); // confirm server token
-		MSG_WriteShort(&messenger.NetBuf(), version); // send client version
-		MSG_WriteByte(&messenger.NetBuf(), 0); // send type of connection (play/spectate/rcon/download)
+		messenger.Clear();
+
+        buf_t& netBuf = messenger.NetBuf().Obtain();
+		MSG_WriteLong(&netBuf, PROTO_CHALLENGE); // send challenge
+		MSG_WriteLong(&netBuf, server_token); // confirm server token
+		MSG_WriteShort(&netBuf, version); // send client version
+		MSG_WriteByte(&netBuf, 0); // send type of connection (play/spectate/rcon/download)
 
 		// GhostlyDeath -- Send more version info
 		if (gameversiontosend)
-			MSG_WriteLong(&messenger.NetBuf(), gameversiontosend);
+			MSG_WriteLong(&netBuf, gameversiontosend);
 		else
-			MSG_WriteLong(&messenger.NetBuf(), GAMEVER);
+			MSG_WriteLong(&netBuf, GAMEVER);
 
-		CL_SendUserInfo(); // send userinfo
+		CL_SendUserInfo(netBuf); // send userinfo
 
 		// [SL] The "rate" CVAR has been deprecated. Now just send a hard-coded
 		// maximum rate that the server will ignore.
 		constexpr int rate = 0xFFFF;
-		MSG_WriteLong(&messenger.NetBuf(), rate);
+		MSG_WriteLong(&netBuf, rate);
 
-        MSG_WriteString(&messenger.NetBuf(), connectpasshash.c_str());
+        MSG_WriteString(&netBuf, connectpasshash.c_str());
 
-		NET_SendPacket(messenger.NetBuf(), serveraddr);
-		SZ_Clear(&messenger.NetBuf());
+        messenger.Send(gametic, serveraddr);
+        messenger.Clear();
 	}
 
 	connecttimeout--;
@@ -2087,22 +2111,26 @@ void CL_SendCmd(void)
 	// GhostlyDeath -- If we are spectating, tell the server of our new position
 	if (p->spectator)
 	{
-		MSG_WriteMarker(&messenger.NetBuf(), clc_spectate);
-		MSG_WriteByte(&messenger.NetBuf(), 5);
-		MSG_WriteLong(&messenger.NetBuf(), p->mo->x);
-		MSG_WriteLong(&messenger.NetBuf(), p->mo->y);
-		MSG_WriteLong(&messenger.NetBuf(), p->mo->z);
+        buf_t& netBuf = messenger.NetBuf().Obtain();
+
+		MSG_WriteMarker(&netBuf, clc_spectate);
+		MSG_WriteByte(&netBuf, 5);
+		MSG_WriteLong(&netBuf, p->mo->x);
+		MSG_WriteLong(&netBuf, p->mo->y);
+		MSG_WriteLong(&netBuf, p->mo->z);
 	}
 
-	MSG_WriteMarker(&messenger.ReliableBuf(), clc_move);
+    buf_t& reliableBuf = messenger.ReliableBuf().Obtain();
+
+	MSG_WriteMarker(&reliableBuf, clc_move);
 
 	// Write current client-tic.  Server later sends this back to client
 	// when sending svc_updatelocalplayer so the client knows which ticcmds
 	// need to be used for client's positional prediction.
-	MSG_WriteLong(&messenger.ReliableBuf(), gametic);
+	MSG_WriteLong(&reliableBuf, gametic);
 
 	NetCommand& currentNetcmd = localcmds[gametic % MAXSAVETICS];
-	currentNetcmd.write(&messenger.ReliableBuf());
+	currentNetcmd.write(&reliableBuf);
 
 	messenger.Send(gametic, serveraddr);
 
@@ -2134,9 +2162,10 @@ void CL_PlayerTimes()
 //
 void CL_SendCheat(int cheats)
 {
-	MSG_WriteMarker(&messenger.NetBuf(), clc_cheat);
-	MSG_WriteByte(&messenger.NetBuf(), 0);
-	MSG_WriteShort(&messenger.NetBuf(), cheats);
+    buf_t& netBuf = messenger.NetBuf().Obtain();
+	MSG_WriteMarker(&netBuf, clc_cheat);
+	MSG_WriteByte(&netBuf, 0);
+	MSG_WriteShort(&netBuf, cheats);
 }
 
 //
@@ -2144,9 +2173,10 @@ void CL_SendCheat(int cheats)
 //
 void CL_SendGiveCheat(const char* item)
 {
-	MSG_WriteMarker(&messenger.NetBuf(), clc_cheat);
-	MSG_WriteByte(&messenger.NetBuf(), 1);
-	MSG_WriteString(&messenger.NetBuf(), item);
+    buf_t& netBuf = messenger.NetBuf().Obtain();
+	MSG_WriteMarker(&netBuf, clc_cheat);
+	MSG_WriteByte(&netBuf, 1);
+	MSG_WriteString(&netBuf, item);
 }
 
 //
@@ -2154,9 +2184,10 @@ void CL_SendGiveCheat(const char* item)
 //
 void CL_SendSummonCheat(const char* summon)
 {
-	MSG_WriteMarker(&messenger.NetBuf(), clc_cheat);
-	MSG_WriteByte(&messenger.NetBuf(), 2);
-	MSG_WriteString(&messenger.NetBuf(), summon);
+    buf_t& netBuf = messenger.NetBuf().Obtain();
+	MSG_WriteMarker(&netBuf, clc_cheat);
+	MSG_WriteByte(&netBuf, 2);
+	MSG_WriteString(&netBuf, summon);
 }
 
 //
@@ -2164,9 +2195,10 @@ void CL_SendSummonCheat(const char* summon)
 //
 void CL_SendSummonFriendCheat(const char* summon)
 {
-	MSG_WriteMarker(&messenger.NetBuf(), clc_cheat);
-	MSG_WriteByte(&messenger.NetBuf(), 3);
-	MSG_WriteString(&messenger.NetBuf(), summon);
+    buf_t& netBuf = messenger.NetBuf().Obtain();
+	MSG_WriteMarker(&netBuf, clc_cheat);
+	MSG_WriteByte(&netBuf, 3);
+	MSG_WriteString(&netBuf, summon);
 }
 
 

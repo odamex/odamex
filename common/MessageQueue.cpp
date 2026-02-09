@@ -45,22 +45,3 @@ void MessageQueue::Clear()
         PopFromQueueToFreeStack();
     }
 }
-
-size_t MessageQueue::Pack(buf_t& io_rawBuf, size_t i_maxBytes)
-{
-    size_t packedBytes = 0;
-
-    while (not m_queue.empty())
-    {
-        auto& dataBuf = m_queue.front();
-        if (packedBytes + dataBuf.size() > i_maxBytes)
-        {
-            break;
-        }
-        packedBytes += dataBuf.size();
-        io_rawBuf.WriteChunk(dataBuf.data.get(), dataBuf.size());
-        PopFromQueueToFreeStack();
-    }
-
-    return packedBytes;
-}

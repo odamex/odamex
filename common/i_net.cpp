@@ -595,7 +595,7 @@ void MSG_WriteChunk (buf_t *b, const void *p, size_t l)
 	b->WriteChunk((const char *)p, l);
 }
 
-void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
+void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg)
 {
 	if (simulated_connection)
 		return;
@@ -609,11 +609,6 @@ void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
 		    msg.GetDescriptor()->full_name());
 		return;
 	}
-
-	// Do we actaully have room for this upcoming message?
-	static constexpr size_t MAX_HEADER_SIZE = 4; // header + 3 bytes for varint size.
-	if (b->cursize + MAX_HEADER_SIZE + msg.ByteSizeLong() >= MAX_UDP_SIZE)
-		SV_SendPackets();
 
 	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
 	if (header == svc_noop)
@@ -634,6 +629,44 @@ void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
 	b->WriteByte(header);
 	b->WriteUnVarint(buffer.size());
 	b->WriteChunk(buffer.data(), buffer.size());
+}
+
+void MSG_WriteSVC(MessageQueue& io_queue, const google::protobuf::Message& msg)
+{
+	if (simulated_connection)
+		return;
+
+	static std::string buffer;
+	if (!msg.SerializeToString(&buffer))
+	{
+		PrintFmt(
+		    PRINT_WARNING,
+		    "WARNING: Could not serialize message \"{}\".  This is most likely a bug.\n",
+		    msg.GetDescriptor()->full_name());
+		return;
+	}
+
+	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
+	if (header == svc_noop)
+	{
+		PrintFmt(PRINT_WARNING,
+		         "WARNING: Could not find svc header for message \"{}\".  This is most "
+		         "likely a bug.\n",
+		         msg.GetDescriptor()->full_name());
+		return;
+	}
+
+#if 0
+	PrintFmt("{} ({})\n, {}\n",
+		::svc_info[header].getName(), msg.ByteSize(),
+		msg.ShortDebugString());
+#endif
+
+    buf_t& b = io_queue.Obtain();
+
+	b.WriteByte(header);
+	b.WriteUnVarint(buffer.size());
+	b.WriteChunk(buffer.data(), buffer.size());
 }
 
 /**
@@ -678,16 +711,11 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
 			continue;
 
 		// Select the correct buffer.
-		buf_t* b = buf == CLBUF_RELIABLE ? &player.client.messenger.ReliableBuf() : &player.client.messenger.NetBuf();
+		buf_t& b = buf == CLBUF_RELIABLE ? player.client.messenger.ReliableBuf().Obtain() : player.client.messenger.NetBuf().Obtain();
 
-		// Do we actaully have room for this upcoming message?
-		static constexpr size_t MAX_HEADER_SIZE = 4; // header + 3 bytes for varint size.
-		if (b->cursize + MAX_HEADER_SIZE + msg.ByteSizeLong() >= MAX_UDP_SIZE)
-			SV_SendPackets();
-
-		b->WriteByte(header);
-		b->WriteUnVarint(buffer.size());
-		b->WriteChunk(buffer.data(), buffer.size());
+		b.WriteByte(header);
+		b.WriteUnVarint(buffer.size());
+		b.WriteChunk(buffer.data(), buffer.size());
 	}
 }
 

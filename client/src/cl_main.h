@@ -68,7 +68,7 @@ void CL_SendCmd(void);
 void CL_SaveCmd(void);
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
 void CL_PredictWorld(void);
-void CL_SendUserInfo(void);
+void CL_SendUserInfo(buf_t& netBuf);
 bool CL_Connect();
 
 void CL_SendCheat(int cheats);

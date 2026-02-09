@@ -476,7 +476,7 @@ bool NetDemo::startRecording(const std::string &filename)
 		writeMessages();
 
 		SZ_Clear(&tempbuf);
-		MSG_WriteSVC(&tempbuf, odaproto::svc::NetDemoLoadSnap());
+		MSG_WriteSVCBuffer(&tempbuf, odaproto::svc::NetDemoLoadSnap());
 		capture(&tempbuf);
 		writeMessages();
 
@@ -727,7 +727,7 @@ void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 	if (!player->mo)
 		return;
 
-	MSG_WriteSVC(netbuffer, SVC_NetdemoCap(player));
+	MSG_WriteSVCBuffer(netbuffer, SVC_NetdemoCap(player));
 }
 
 
@@ -1124,10 +1124,10 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteByte(netbuffer, 0);
 
 	// Server sends our player id and digest
-	MSG_WriteSVC(netbuffer, SVC_ConsolePlayer(consoleplayer(), digest));
+	MSG_WriteSVCBuffer(netbuffer, SVC_ConsolePlayer(consoleplayer(), digest));
 
 	// our userinfo
-	MSG_WriteSVC(netbuffer, SVC_UserInfo(consoleplayer(), consoleplayer().GameTime));
+	MSG_WriteSVCBuffer(netbuffer, SVC_UserInfo(consoleplayer(), consoleplayer().GameTime));
 
 	// Server sends its settings
 	cvar_t *var = GetFirstCvar();
@@ -1135,19 +1135,19 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	{
 		if (var->flags() & CVAR_SERVERINFO)
 		{
-			MSG_WriteSVC(netbuffer, SVC_ServerSettings(*var));
+			MSG_WriteSVCBuffer(netbuffer, SVC_ServerSettings(*var));
 		}
 		var = var->GetNext();
 	}
 
 	// Server tells everyone if we're a spectator
-	MSG_WriteSVC(netbuffer, SVC_PlayerMembers(consoleplayer(), SVC_PM_SPECTATOR));
+	MSG_WriteSVCBuffer(netbuffer, SVC_PlayerMembers(consoleplayer(), SVC_PM_SPECTATOR));
 
 	// Server sends wads & map name
-	MSG_WriteSVC(netbuffer, SVC_LoadMap(wadfiles, patchfiles, level.mapname.c_str(), level.time));
+	MSG_WriteSVCBuffer(netbuffer, SVC_LoadMap(wadfiles, patchfiles, level.mapname.c_str(), level.time));
 
 	// Server spawns the player
-	MSG_WriteSVC(netbuffer, SVC_SpawnPlayer(consoleplayer()));
+	MSG_WriteSVCBuffer(netbuffer, SVC_SpawnPlayer(consoleplayer()));
 }
 
 

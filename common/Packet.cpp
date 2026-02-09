@@ -30,7 +30,7 @@ size_t Packet::AddReliableMessage(const buf_t& i_dataBuffer)
 
     if (packedMessageSize)
     {
-        m_header.reliableSize += i_dataBuffer.size();
+        m_header.reliableSize += static_cast<uint16_t>(i_dataBuffer.size());
     }
     return packedMessageSize;
 }
@@ -43,16 +43,16 @@ size_t Packet::AddUnreliableMessage(const buf_t& i_dataBuffer)
 void Packet::Compress()
 {
 	byte method = 0;
-	if (MSG_CompressMinilzo(m_outgoingPacketBuffer, PACKET_HEADER_SIZE, 0))
+	if (MSG_CompressMinilzo(m_outgoingPacketBuffer, PacketHeaderType::PACKET_HEADER_SIZE, 0))
 	{
 		// Successful compression, set the compression flag bit.
 		method |= SVF_COMPRESSED;
 	}
 
-	m_outgoingPacketBuffer.ptr()[PACKET_FLAG_INDEX] |= method;
+	m_outgoingPacketBuffer.ptr()[PacketHeaderType::PACKET_FLAG_INDEX] |= method;
 }
 
-size_t Packet::CompressAndSend()
+size_t Packet::CompressAndSend(const netadr_t& i_dest)
 {
     size_t bytesSent = 0;
     if (m_outgoingPacketBuffer.size() > PacketHeaderType::PACKET_HEADER_SIZE)
@@ -71,13 +71,13 @@ size_t Packet::ReSend(int sequence, const buf_t& i_dataBuffer, const netadr_t& i
     m_outgoingPacketBuffer.clear();
 
     m_header.sequence     = sequence;
-    m_header.reliableSize = i_dataBuffer.size();
+    m_header.reliableSize = static_cast<uint16_t>(i_dataBuffer.size());
     m_header.flags        = 0;
 
     m_header.Pack(m_outgoingPacketBuffer);
     AddToOutgoingBuffer(i_dataBuffer);
 
-    return resentBytes = CompressAndSend();
+    return CompressAndSend(i_dest);
 }
 
 size_t Packet::Send(int i_currentTic, SequenceSender& i_sender, const netadr_t& i_dest)
@@ -85,12 +85,12 @@ size_t Packet::Send(int i_currentTic, SequenceSender& i_sender, const netadr_t& 
     if (m_header.reliableSize)
     {
         // Save off the data for incoming ack checking and retransmission.
-        auto saveMessage = m_sender.ObtainSendPacket(i_currentTic);
+        auto saveMessage = i_sender.ObtainSendPacket(i_currentTic);
         if (saveMessage.buffer)
         {
-            saveMessage.buffer.WriteChunk(m_reliableBuffer.data.get(),
-                                          m_header.reliableSize,
-                                          PacketHeaderType::PACKET_MESSAGE_INDEX);
+            saveMessage.buffer->WriteChunk(m_outgoingPacketBuffer.data.get(),
+                                           m_header.reliableSize,
+                                           PacketHeaderType::PACKET_MESSAGE_INDEX);
         }
         m_header.sequence = saveMessage.sequence;
 
@@ -98,5 +98,5 @@ size_t Packet::Send(int i_currentTic, SequenceSender& i_sender, const netadr_t& 
         m_header.Pack(m_outgoingPacketBuffer);
     }
 
-    return CompressAndSend();
+    return CompressAndSend(i_dest);
 }

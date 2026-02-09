@@ -327,6 +327,8 @@ class Message;
 }
 } // namespace google
 
+class MessageQueue;
+
 typedef struct
 {
    byte    ip[4];
@@ -449,7 +451,7 @@ public:
 
 		if(!overflowed)
 		{
-			memcpy(buf, c + startpos, l);
+			memcpy(buf, static_cast<const byte*>(c) + startpos, l);
 		}
 	}
 
@@ -813,7 +815,8 @@ void MSG_WriteFloat(buf_t *b, float);
 void MSG_WriteString (buf_t *b, const char *s);
 void MSG_WriteHexString(buf_t *b, const char *s);
 void MSG_WriteChunk (buf_t *b, const void *p, size_t l);
-void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg);
+void MSG_WriteSVC(MessageQueue& io_queue, const google::protobuf::Message& msg);
+void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg);
 void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& msg,
                       const int skipPlayer = -1);
 

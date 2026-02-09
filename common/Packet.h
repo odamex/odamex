@@ -21,13 +21,13 @@ class Packet
         size_t ReSend(int sequence, const buf_t& i_dataBuffer, const netadr_t& i_dest);
 
         size_t Size() const { return m_outgoingPacketBuffer.size(); }
-        int    RemainingBytes() const { return MAX_UDP_SIZE - m_outgoingPacketBuffer.size(); }
+        int    RemainingBytes() const { return MAX_UDP_SIZE - static_cast<int>(m_outgoingPacketBuffer.size()); }
 
         size_t SizeOfReliablePortion() const { return m_header.reliableSize; }
 
     protected:
 
-        size_t CompressAndSend();
+        size_t CompressAndSend(const netadr_t& i_dest);
         size_t AddToOutgoingBuffer(const buf_t& i_dataBuffer);
 
         void Reset();

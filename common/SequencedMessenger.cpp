@@ -75,11 +75,6 @@ bool SequencedMessenger::NextReceivedPacket(buf_t& io_rawBuf)
 
 //  -------------- Sending functions --------------
 
-void SequencedMessenger::PrepareReliablePacket()
-{
-}
-
-
 MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_dest)
 {
 	const int ticPhase = i_currentTic % TICRATE;
@@ -90,12 +85,12 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
         m_bpsBudget     += (m_maxRate * 1000);
 	}
 
-    const size_t startBudget = m_bpsBudget;
+    const int startBudget = m_bpsBudget;
 	int bps = 0; // bytes per second, not bits per second
 
 	m_lastSendSize = 0;
 
-    auto addUnreliableFunctor = [&m_packet](const buf_t& messageBuf)
+    auto addUnreliableFunctor = [this](const buf_t& messageBuf)
     {
         return m_packet.AddUnreliableMessage(messageBuf);
     };
@@ -104,7 +99,7 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
     size_t bytesSentWithReliability = 0;
     while (m_reliableBuffer.SizeInMessages() > 0)
     {
-        m_reliableBuffer.Pack([&m_packet](const buf_t& messageBuf) { return m_packet.AddReliableMessage(messageBuf); });
+        m_reliableBuffer.Pack([this](const buf_t& messageBuf) { return m_packet.AddReliableMessage(messageBuf); });
 
         m_ackBuffer.Pack(addUnreliableFunctor);
 
@@ -131,7 +126,7 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
     }
 
     m_reliableBps += bytesSentWithReliability;
-    m_bpsBudget -= bytesSentWithReliability;
+    m_bpsBudget   -= static_cast<int>(bytesSentWithReliability);
 
     size_t bytesSentBestEffort = 0;
     // Okay, done with the "really important" stuff.  Now onto best-effort unreliable stuff.
@@ -144,14 +139,14 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
                 if (m_packet.SizeOfReliablePortion() == 0)
                 {
                     const size_t bestEffortBytes = m_packet.Send(i_currentTic, m_sender, i_dest);
-                    bytesSentBestEffort += bestEffortBytes
-                    m_bpsBudget         -= bestEffortBytes;
+                    bytesSentBestEffort += bestEffortBytes;
+                    m_bpsBudget         -= static_cast<int>(bestEffortBytes);
                 }
                 else
                 {
                     const size_t reliableBytes = m_packet.Send(i_currentTic, m_sender, i_dest);
                     bytesSentWithReliability += reliableBytes;
-                    m_bpsBudget              -= reliableBytes;
+                    m_bpsBudget              -= static_cast<int>(reliableBytes);
                 }
             }
         }
@@ -162,7 +157,7 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
     // If it doesn't have anything, nothing happens, we're good.
     const size_t lastReliableBytesSent = m_packet.SizeOfReliablePortion();
     const size_t lastTotalSent         = m_packet.Send(i_currentTic, m_sender, i_dest);
-    m_bpsBudget              -= lastTotalSent;
+    m_bpsBudget              -= static_cast<int>(lastTotalSent);
     bytesSentWithReliability += lastReliableBytesSent;
 
     m_lastSendSize = std::max(0, startBudget - m_bpsBudget);
@@ -332,7 +327,7 @@ int SequencedMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& 
 			previousPacketSeq = sendQueueEntry->sequence;
 
 			sendQueueEntry->lastRetransmitTic = i_currentTic;
-			bytesSent += m_packet.ReSend(sendQueueEntry->sequence, sendQueueEntry->buf, i_dest);
+			bytesSent += static_cast<int>(m_packet.ReSend(sendQueueEntry->sequence, sendQueueEntry->buf, i_dest));
 
 		}
 	}
