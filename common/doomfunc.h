@@ -180,4 +180,14 @@ constexpr uint32_t CONST_HASH(std::string_view str)
 	return hash;
 }
 
+// C++23 std::unreachable
+[[noreturn]] inline void unreachable()
+{
+#if defined(_MSC_VER) && !defined(__clang__)
+	__assume(false);
+#else
+	__builtin_unreachable();
+#endif
+}
+
 }
