@@ -342,7 +342,7 @@ Message<T, Enable>::deserialize(std::string_view json)
 	if (id.isNull())
 		return nonstd::make_unexpected(ParseError("Protocol error: missing id"));
 
-	if (!id.is<size_t>())
+	if (!id.isUInt64())
 		return nonstd::make_unexpected(ParseError("Protocol error: id must be an unsigned integer"));
 
 	if (type.isNull())
@@ -360,7 +360,7 @@ Message<T, Enable>::deserialize(std::string_view json)
 	if (!variant_result)
 		return nonstd::make_unexpected(variant_result.error());
 
-	return Message<T, Enable>{ id.as<size_t>(), std::move(*variant_result) };
+	return Message<T, Enable>{ id.asUInt64(), std::move(*variant_result) };
 }
 
 template struct Message<messages::server::Message>;
