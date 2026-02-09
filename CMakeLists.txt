@@ -44,7 +44,15 @@ endif()
 
 execute_process(
     COMMAND git apply "${CMAKE_SOURCE_DIR}/libraries/libwebsockets.patch"
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    RESULT_VARIABLE result
+    OUTPUT_VARIABLE out
+    ERROR_VARIABLE err
 )
+
+if(NOT result EQUAL 0)
+    message(FATAL_ERROR "Failed to apply patch:\n${err}")
+endif()
 
 # options
 option(BUILD_CLIENT "Build client target" 1)
