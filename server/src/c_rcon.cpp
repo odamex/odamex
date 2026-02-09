@@ -24,6 +24,7 @@
 #include "odamex.h"
 
 #include "c_rcon.h"
+#include "rconprotocol.h"
 
 namespace rcon
 {
@@ -61,31 +62,24 @@ int Server::callback_json_server(
 		{
 			std::string_view payload((char*)in, len);
 
-			Json::Value root;
-			Json::CharReaderBuilder builder;
-			std::string errs;
-
-			auto reader = std::unique_ptr<Json::CharReader>(builder.newCharReader());
-
-			if (!reader->parse(payload.begin(), payload.end(), &root, &errs))
+			const auto parsed_message = ClientMessage::deserialize(payload);
+			if (!parsed_message)
 			{
-				PrintFmt("JSON parse error: {}\n", errs);
+				PrintFmt("JSON parse error: {}\n", parsed_message.error().what());
 				break;
 			}
 
-			PrintFmt("Received JSON: {}\n", root.toStyledString());
-
 			// Echo JSON back
-			Json::Value reply;
-			reply["type"] = "print";
-			reply["id"] = 0;
-			Json::Value content;
-			content["printlevel"] = "high";
-			content["text"] = fmt::format("Received command '{}' from RCON client", root["content"].asString());
-			reply["content"] = content;
+			const ServerMessage reply
+			{
+				0,
+				rcon::messages::server::Print {
+					PRINT_HIGH,
+					fmt::format("Received command '{}' from RCON client", std::get<rcon::messages::client::Command>(parsed_message->content).command)
+				}
+			};
 
-			Json::StreamWriterBuilder writer;
-			std::string reply_str = Json::writeString(writer, reply);
+			const std::string reply_str = reply.serialize();
 
 			// libwebsockets requires a preallocated buffer
 			const size_t buf_size = LWS_PRE + reply_str.size();

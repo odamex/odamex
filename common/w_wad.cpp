@@ -565,7 +565,7 @@ void W_InitMultipleFiles(const OResFiles& files)
 	if (!lumpcache)
 		I_Error("Couldn't allocate lumpcache");
 
-	memset (lumpcache,0, size);
+	memset(lumpcache, 0, size);
 
 	// killough 1/31/98: initialize lump hash table
 	W_HashLumps();

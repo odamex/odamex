@@ -23,12 +23,142 @@
 
 #pragma once
 
+#include "doomtype.h"
+#include "doomfunc.h"
+#include "json/json.h"
+#include <nonstd/expected.hpp>
+#include <variant>
+
 // This is separate from the RCON protocol used by the client
 // It's here in common for unit testing purposes
 #if defined(SERVER_APP) || defined(TEST_APP)
 
 namespace rcon
 {
+
+namespace messages
+{
+
+class ParseError {
+	std::string message;
+public:
+	explicit ParseError(std::string m): message(m) {}
+	std::string_view what() const noexcept { return message; }
+};
+
+struct ProtocolVersion
+{
+	uint8_t major = 0, minor = 0, patch = 0;
+	Json::Value serialize() const;
+	static nonstd::expected<ProtocolVersion, ParseError> deserialize(const Json::Value&);
+};
+
+#define MESSAGE_TYPE_NAME(name) \
+	static constexpr const char* MESSAGE_TYPE = name; \
+	static constexpr uint32_t MESSAGE_TYPE_HASH = OUtil::CONST_HASH(MESSAGE_TYPE);
+
+namespace client
+{
+
+struct LoginRequest
+{
+	MESSAGE_TYPE_NAME("login_request")
+	ProtocolVersion version;
+	Json::Value serialize() const;
+	static nonstd::expected<LoginRequest, ParseError> deserialize(const Json::Value&);
+};
+
+struct LoginPassword
+{
+	MESSAGE_TYPE_NAME("login_password")
+	std::string password;
+	Json::Value serialize() const;
+	static nonstd::expected<LoginPassword, ParseError> deserialize(const Json::Value&);
+};
+
+struct Command
+{
+	MESSAGE_TYPE_NAME("command")
+	std::string command;
+	Json::Value serialize() const;
+	static nonstd::expected<Command, ParseError> deserialize(const Json::Value&);
+};
+
+struct Maplist {
+	MESSAGE_TYPE_NAME("maplist")
+	Json::Value serialize() const;
+	static nonstd::expected<Maplist, ParseError> deserialize(const Json::Value&);
+};
+
+using Message = std::variant<LoginRequest, LoginPassword, Command, Maplist>;
+
+} // namespace client
+
+namespace server
+{
+
+struct LoginResponse
+{
+	MESSAGE_TYPE_NAME("login_response")
+	uint64_t nonce;
+	Json::Value serialize() const;
+	static nonstd::expected<LoginResponse, ParseError> deserialize(const Json::Value&);
+};
+
+struct LoginFailure
+{
+	MESSAGE_TYPE_NAME("login_failure")
+	std::string message;
+	Json::Value serialize() const;
+	static nonstd::expected<LoginFailure, ParseError> deserialize(const Json::Value&);
+};
+
+// TODO: should this include something like sv_hostname? for printing "Successfully connect to <hostname>"
+struct LoginSuccess {
+	MESSAGE_TYPE_NAME("login_success")
+	Json::Value serialize() const;
+	static nonstd::expected<LoginSuccess, ParseError> deserialize(const Json::Value&);
+};
+
+struct Print
+{
+	MESSAGE_TYPE_NAME("print")
+	printlevel_t printlevel;
+	std::string text;
+
+	Json::Value serialize() const;
+	static nonstd::expected<Print, ParseError> deserialize(const Json::Value&);
+};
+
+struct Maplist {
+	MESSAGE_TYPE_NAME("maplist")
+	Json::Value serialize() const;
+	static nonstd::expected<Maplist, ParseError> deserialize(const Json::Value&);
+};
+
+using Message = std::variant<LoginResponse, LoginFailure, LoginSuccess, Print, Maplist>;
+
+} // namespace server
+
+#undef MESSAGE_TYPE_NAME
+
+template <typename T, typename = std::enable_if_t<
+	std::is_same_v<T, server::Message> ||
+	std::is_same_v<T, client::Message>
+>>
+struct Message
+{
+	size_t id;
+	T content;
+
+	std::string serialize() const;
+	static nonstd::expected<Message, ParseError> deserialize(std::string_view);
+};
+
+} // namespace messages
+
+using ServerMessage = messages::Message<messages::server::Message>;
+using ClientMessage = messages::Message<messages::client::Message>;
 
 } // namespace rcon
 

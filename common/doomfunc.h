@@ -166,4 +166,18 @@ struct visitor : Ts... { using Ts::operator()...; };
 template<class... Ts>
 visitor(Ts...) -> visitor<Ts...>;
 
+constexpr uint32_t CONST_HASH(std::string_view str)
+{
+	uint32_t hash = 0x811c9dc5;
+	constexpr uint32_t prime = 0x1000193;
+
+	for (uint8_t value : str)
+	{
+		hash = hash ^ value;
+		hash *= prime;
+	}
+
+	return hash;
+}
+
 }
