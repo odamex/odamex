@@ -1377,32 +1377,28 @@ static std::string WinToColorString(const WinInfo& win)
 struct levelStateLines_t
 {
 	std::string title;
-	std::string subtitle[4];
-	float lucent;
-	levelStateLines_t() : lucent(1.0f) { }
+	std::array<std::string, 4> subtitle;
+	float lucent = 1.0f;
 };
 
 struct multiKillLines_t
 {
 	std::string multiKillText;
-	EColorRange color;
-	float lucent;
-	multiKillLines_t() : lucent(1.0f), color(CR_GRAY) { }
+	EColorRange color = CR_GRAY;
+	float lucent = 1.0f;
 };
 
 struct bigSpreeLine_t
 {
 	std::string spreeText;
-	EColorRange color;
-	float lucent;
-	bigSpreeLine_t() : lucent(1.0f), color(CR_GRAY) { }
+	EColorRange color = CR_GRAY;
+	float lucent = 1.0f;
 };
 
 struct smallSpreeLine_t
 {
 	std::string spreeText;
-	float lucent;
-	smallSpreeLine_t() : lucent(1.0f) { }
+	float lucent = 1.0f;
 };
 
 static float lucentFade(int tics, const int start, const int end)
@@ -1902,7 +1898,7 @@ void LevelStateHUD()
 	V_SetFont("SMALLFONT");
 	const int height = V_StringHeight("M") + 1;
 
-	for (size_t i = 0; i < ARRAY_LENGTH(lines.subtitle); i++)
+	for (size_t i = 0; i < lines.subtitle.size(); i++)
 	{
 		w = V_StringWidth(lines.subtitle[i].c_str()) * ::CleanYfac;
 		h = 8 * ::CleanYfac;
