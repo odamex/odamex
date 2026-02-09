@@ -231,4 +231,41 @@ TEST(RCONProtocol, DeserializeMissingID) {
 	ASSERT_FALSE(actual) << "Deserialize succeeded: " << actual->serialize(true);
 }
 
+TEST(RCONProtocol, DeserializeExtraFieldRoot) {
+	std::string_view json = R"({
+		"type": "command",
+		"id": 27,
+		"content": "hi",
+		"what-is-this": "something"
+	})";
+	auto actual = ClientMessage::deserialize(json);
+	ASSERT_FALSE(actual) << "Deserialize succeeded: " << actual->serialize(true);
+}
+
+TEST(RCONProtocol, DeserializeExtraFieldContent) {
+	std::string_view json = R"({
+		"type": "print",
+		"id": 27,
+		"content": {
+			"printlevel": "chat",
+			"text": "hiiiiiii",
+			"someweirdo": "whats up"
+		}
+	})";
+	auto actual = ServerMessage::deserialize(json);
+	ASSERT_FALSE(actual) << "Deserialize succeeded: " << actual->serialize(true);
+}
+
+TEST(RCONProtocol, DeserializeWrongContentType) {
+	std::string_view json = R"({
+		"type": "command",
+		"id": 27,
+		"content": {
+			"text": "what"
+		}
+	})";
+	auto actual = ClientMessage::deserialize(json);
+	ASSERT_FALSE(actual) << "Deserialize succeeded: " << actual->serialize(true);
+}
+
 // TODO: add tests to make sure bad json fails to deserialize

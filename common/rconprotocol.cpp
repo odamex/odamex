@@ -35,6 +35,16 @@
 namespace rcon
 {
 
+static bool check_extra_fields(const Json::Value& val, nonstd::span<const std::string_view> names)
+{
+	for (auto& name : val.getMemberNames())
+	{
+		if (std::none_of(names.begin(), names.end(), [&](std::string_view good) { return good == name; }))
+			return false;
+	}
+	return true;
+}
+
 namespace messages
 {
 
@@ -218,6 +228,10 @@ nonstd::expected<Print, ParseError> Print::deserialize(const Json::Value& root)
 	if (!root.isObject() || !root.isMember("text") || !root.isMember("printlevel"))
 		return nonstd::make_unexpected(ParseError("Protocol error: content must be an object with printlevel and text fields"));
 
+	static constexpr std::array<std::string_view, 3> field_names = {"text", "printlevel"};
+	if (!check_extra_fields(root, field_names))
+		return nonstd::make_unexpected(ParseError("Protocol error: 'content' must contain only 'printlevel' and 'text'"));
+
 	const auto& text = root["text"];
 	const auto& printlevel = root["printlevel"];
 
@@ -335,6 +349,13 @@ Message<T, Enable>::deserialize(std::string_view json)
 	{
 		return nonstd::make_unexpected(ParseError(fmt::format("JSON parse error: {}\n", errs)));
 	}
+
+	if (!root.isObject())
+		return nonstd::make_unexpected(ParseError("Protocol error: root must be JSON object"));
+
+	static constexpr std::array<std::string_view, 3> field_names = {"id", "type", "content"};
+	if (!check_extra_fields(root, field_names))
+		return nonstd::make_unexpected(ParseError("Protocol error: root must contain only 'id', 'type', and 'content'"));
 
 	const Json::Value& id      = root["id"];
 	const Json::Value& type    = root["type"];
