@@ -42,6 +42,10 @@ else()
   set(USE_INTERNAL_LIBS 0)
 endif()
 
+execute_process(
+    COMMAND git apply "${CMAKE_SOURCE_DIR}/libraries/libwebsockets.patch"
+)
+
 # options
 option(BUILD_CLIENT "Build client target" 1)
 option(BUILD_SERVER "Build server target" 1)
