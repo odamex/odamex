@@ -29,6 +29,7 @@
 
 #include "rconprotocol.h"
 
+#include <regex>
 #include "json/json.h"
 
 namespace rcon
@@ -44,7 +45,38 @@ Json::Value ProtocolVersion::serialize() const
 
 nonstd::expected<ProtocolVersion, ParseError> ProtocolVersion::deserialize(const Json::Value& root)
 {
-	return nonstd::make_unexpected(ParseError("Unimplemented!!"));
+	// [EB] I know std::regex is awful but this is a simple regex that's not
+	// checked all that frequently, so it should be fine
+	static const auto VERSION_REGEX = std::regex("^(\\d+)\\.(\\d+)\\.(\\d+)$");
+
+	if (!root.isString())
+		return nonstd::make_unexpected(ParseError("Protocol error: version must be a string"));
+
+	std::string versionstr = root.asString();
+	std::smatch versionmatch;
+	if(!std::regex_search(versionstr, versionmatch, VERSION_REGEX))
+		return nonstd::make_unexpected(ParseError(
+			fmt::format("Protocol error: invalid protocol version '{}'", versionstr)
+		));
+
+	ProtocolVersion version;
+	// where are you, my beloved c++23 monadic operations ;-;
+	if (auto major = ParseNum<uint8_t>(versionmatch[1].str()))
+		version.major = major.value();
+	else
+		return nonstd::make_unexpected(ParseError(fmt::format("Protocol error: major version out of range {}", versionmatch[1].str())));
+
+	if (auto minor = ParseNum<uint8_t>(versionmatch[2].str()))
+		version.minor = minor.value();
+	else
+		return nonstd::make_unexpected(ParseError(fmt::format("Protocol error: minor version out of range {}", versionmatch[2].str())));
+
+	if (auto patch = ParseNum<uint8_t>(versionmatch[3].str()))
+		version.patch = patch.value();
+	else
+		return nonstd::make_unexpected(ParseError(fmt::format("Protocol error: revision number out of range {}", versionmatch[3].str())));
+
+	return version;
 }
 
 namespace client
@@ -57,7 +89,10 @@ Json::Value LoginRequest::serialize() const
 
 nonstd::expected<LoginRequest, ParseError> LoginRequest::deserialize(const Json::Value& root)
 {
-	return nonstd::make_unexpected(ParseError("Unimplemented!!"));
+	if (auto version = ProtocolVersion::deserialize(root))
+		return LoginRequest { version.value() };
+	else
+		return nonstd::make_unexpected(version.error());
 }
 
 Json::Value LoginPassword::serialize() const
@@ -67,7 +102,10 @@ Json::Value LoginPassword::serialize() const
 
 nonstd::expected<LoginPassword, ParseError> LoginPassword::deserialize(const Json::Value& root)
 {
-	return nonstd::make_unexpected(ParseError("Unimplemented!!"));
+	if (!root.isString())
+		return nonstd::make_unexpected(ParseError("Protocol error: password must be a string"));
+
+	return LoginPassword { root.asString() };
 }
 
 Json::Value Command::serialize() const
@@ -105,7 +143,10 @@ Json::Value LoginResponse::serialize() const
 
 nonstd::expected<LoginResponse, ParseError> LoginResponse::deserialize(const Json::Value& root)
 {
-	return nonstd::make_unexpected(ParseError("Unimplemented!!"));
+	if (!root.isUInt64())
+		return nonstd::make_unexpected(ParseError("Protocol error: nonce must be an unsigned 64-bit integer"));
+
+	return LoginResponse { root.asUInt64() };
 }
 
 Json::Value LoginFailure::serialize() const
@@ -115,7 +156,10 @@ Json::Value LoginFailure::serialize() const
 
 nonstd::expected<LoginFailure, ParseError> LoginFailure::deserialize(const Json::Value& root)
 {
-	return nonstd::make_unexpected(ParseError("Unimplemented!!"));
+	if (!root.isString())
+		return nonstd::make_unexpected(ParseError("Protocol error: message must be a string"));
+
+	return LoginFailure { root.asString() };
 }
 
 Json::Value LoginSuccess::serialize() const
@@ -125,7 +169,10 @@ Json::Value LoginSuccess::serialize() const
 
 nonstd::expected<LoginSuccess, ParseError> LoginSuccess::deserialize(const Json::Value& root)
 {
-	return nonstd::make_unexpected(ParseError("Unimplemented!!"));
+	if (!root.isNull())
+		return nonstd::make_unexpected(ParseError("Protocol error: content must be null"));
+
+	return LoginSuccess {};
 }
 
 Json::Value Print::serialize() const
@@ -168,7 +215,52 @@ Json::Value Print::serialize() const
 
 nonstd::expected<Print, ParseError> Print::deserialize(const Json::Value& root)
 {
-	return nonstd::make_unexpected(ParseError("Unimplemented!!"));
+	if (!root.isObject() || !root.isMember("text") || !root.isMember("printlevel"))
+		return nonstd::make_unexpected(ParseError("Protocol error: content must be an object with printlevel and text fields"));
+
+	const auto& text = root["text"];
+	const auto& printlevel = root["printlevel"];
+
+	if (!text.isString())
+		return nonstd::make_unexpected(ParseError("Protocol error: text must be a string"));
+
+	if (!printlevel.isString())
+		return nonstd::make_unexpected(ParseError("Protocol error: printlevel must be a string"));
+
+	printlevel_t level;
+	switch (OUtil::CONST_HASH(printlevel.asString()))
+	{
+		case OUtil::CONST_HASH("pickup"):
+			level = PRINT_PICKUP;
+			break;
+		case OUtil::CONST_HASH("obituary"):
+			level = PRINT_OBITUARY;
+			break;
+		case OUtil::CONST_HASH("high"):
+			level = PRINT_HIGH;
+			break;
+		case OUtil::CONST_HASH("chat"):
+			level = PRINT_CHAT;
+			break;
+		case OUtil::CONST_HASH("teamchat"):
+			level = PRINT_TEAMCHAT;
+			break;
+		case OUtil::CONST_HASH("serverchat"):
+			level = PRINT_SERVERCHAT;
+			break;
+		case OUtil::CONST_HASH("warning"):
+			level = PRINT_WARNING;
+			break;
+		case OUtil::CONST_HASH("error"):
+			level = PRINT_ERROR;
+			break;
+		default:
+			return nonstd::make_unexpected(ParseError(
+				fmt::format("Protocol error: invalid printlevel '{}'", printlevel.asString())
+			));
+	}
+
+	return Print { level, text.asString() };
 }
 
 Json::Value Maplist::serialize() const
@@ -184,7 +276,7 @@ nonstd::expected<Maplist, ParseError> Maplist::deserialize(const Json::Value& ro
 }
 
 template <typename T, typename Enable>
-std::string Message<T, Enable>::serialize() const
+std::string Message<T, Enable>::serialize(bool pretty) const
 {
 	Json::Value root;
 	root["id"] = id;
@@ -196,6 +288,8 @@ std::string Message<T, Enable>::serialize() const
 	}, content);
 
 	Json::StreamWriterBuilder writer;
+	if (!pretty)
+		writer["indentation"] = "";
 	return Json::writeString(writer, root);
 }
 

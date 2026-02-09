@@ -51,6 +51,11 @@ struct ProtocolVersion
 	uint8_t major = 0, minor = 0, patch = 0;
 	Json::Value serialize() const;
 	static nonstd::expected<ProtocolVersion, ParseError> deserialize(const Json::Value&);
+	// TODO: replace with = default in C++20
+	bool operator==(const ProtocolVersion& other) const
+	{
+		return major == other.major && minor == other.minor && patch == other.patch;
+	};
 };
 
 #define MESSAGE_TYPE_NAME(name) \
@@ -66,6 +71,11 @@ struct LoginRequest
 	ProtocolVersion version;
 	Json::Value serialize() const;
 	static nonstd::expected<LoginRequest, ParseError> deserialize(const Json::Value&);
+	// TODO: replace with = default in C++20
+	bool operator==(const LoginRequest& other) const
+	{
+		return version == other.version;
+	};
 };
 
 struct LoginPassword
@@ -74,6 +84,11 @@ struct LoginPassword
 	std::string password;
 	Json::Value serialize() const;
 	static nonstd::expected<LoginPassword, ParseError> deserialize(const Json::Value&);
+	// TODO: replace with = default in C++20
+	bool operator==(const LoginPassword& other) const
+	{
+		return password == other.password;
+	};
 };
 
 struct Command
@@ -82,12 +97,19 @@ struct Command
 	std::string command;
 	Json::Value serialize() const;
 	static nonstd::expected<Command, ParseError> deserialize(const Json::Value&);
+	// TODO: replace with = default in C++20
+	bool operator==(const Command& other) const
+	{
+		return command == other.command;
+	};
 };
 
 struct Maplist {
 	MESSAGE_TYPE_NAME("maplist")
 	Json::Value serialize() const;
 	static nonstd::expected<Maplist, ParseError> deserialize(const Json::Value&);
+	// TODO: replace with = default in C++20
+	bool operator==(const Maplist&) const { return true; }
 };
 
 using Message = std::variant<LoginRequest, LoginPassword, Command, Maplist>;
@@ -103,6 +125,11 @@ struct LoginResponse
 	uint64_t nonce;
 	Json::Value serialize() const;
 	static nonstd::expected<LoginResponse, ParseError> deserialize(const Json::Value&);
+	// TODO: replace with = default in C++20
+	bool operator==(const LoginResponse& other) const
+	{
+		return nonce == other.nonce;
+	};
 };
 
 struct LoginFailure
@@ -111,6 +138,11 @@ struct LoginFailure
 	std::string message;
 	Json::Value serialize() const;
 	static nonstd::expected<LoginFailure, ParseError> deserialize(const Json::Value&);
+	// TODO: replace with = default in C++20
+	bool operator==(const LoginFailure& other) const
+	{
+		return message == other.message;
+	};
 };
 
 // TODO: should this include something like sv_hostname? for printing "Successfully connect to <hostname>"
@@ -118,6 +150,8 @@ struct LoginSuccess {
 	MESSAGE_TYPE_NAME("login_success")
 	Json::Value serialize() const;
 	static nonstd::expected<LoginSuccess, ParseError> deserialize(const Json::Value&);
+	// TODO: replace with = default in C++20
+	bool operator==(const LoginSuccess&) const { return true; }
 };
 
 struct Print
@@ -128,12 +162,19 @@ struct Print
 
 	Json::Value serialize() const;
 	static nonstd::expected<Print, ParseError> deserialize(const Json::Value&);
+	// TODO: replace with = default in C++20
+	bool operator==(const Print& other) const
+	{
+		return printlevel == other.printlevel && text == other.text;
+	};
 };
 
 struct Maplist {
 	MESSAGE_TYPE_NAME("maplist")
 	Json::Value serialize() const;
 	static nonstd::expected<Maplist, ParseError> deserialize(const Json::Value&);
+	// TODO: replace with = default in C++20
+	bool operator==(const Maplist&) const { return true; };
 };
 
 using Message = std::variant<LoginResponse, LoginFailure, LoginSuccess, Print, Maplist>;
@@ -151,7 +192,13 @@ struct Message
 	size_t id;
 	T content;
 
-	std::string serialize() const;
+	// TODO: replace with = default in C++20
+	bool operator==(const Message& other) const
+	{
+		return id == other.id && content == other.content;
+	}
+
+	std::string serialize(bool pretty = false) const;
 	static nonstd::expected<Message, ParseError> deserialize(std::string_view);
 };
 
