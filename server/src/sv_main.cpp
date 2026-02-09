@@ -26,7 +26,7 @@
 
 #include "win32inc.h"
 #ifdef _WIN32
-    #include <winsock.h>
+    #include <winsock2.h>
     #include <time.h>
 #endif
 
