@@ -84,11 +84,13 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 		m_reliableBps   = 0;
 
         const int maxRateInBytes = m_maxRate * 1000;
-        m_bpsBudget              = std::min(maxRateInBytes, m_bpsBudget + maxRateInBytes);
+        m_perTicBudget           = maxRateInBytes / TICRATE;
+        //m_bpsBudget              = std::min(maxRateInBytes, m_bpsBudget + maxRateInBytes);
 	}
 
-    const int startBudget = m_bpsBudget;
-	int bps = 0; // bytes per second, not bits per second
+    int budgetThisTic = m_perTicBudget;
+
+    const int startBudget = budgetThisTic;
 
 	m_lastSendSize = 0;
 
@@ -99,7 +101,7 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 
     // First phase - send reliables, padded out to MAX_UDP_SIZE-ish with Acks.
     size_t bytesSentWithReliability = 0;
-    while (m_reliableBuffer.SizeInMessages() > 0)
+    while (m_reliableBuffer.SizeInMessages() > 0 and budgetThisTic > 0)
     {
         m_reliableBuffer.Pack([this](const buf_t& messageBuf) { return m_packet.AddReliableMessage(messageBuf); });
 
@@ -108,13 +110,15 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
         // Now cover the case where we have all our acks out and there's still leftover space enough for an unreliable portion.
         m_nonreliableBuffer.Pack(addUnreliableFunctor);
 
-        bytesSentWithReliability += m_packet.Send(i_currentTic, m_sender, i_dest);
+        const size_t sendSize = m_packet.Send(i_currentTic, m_sender, i_dest);
+        bytesSentWithReliability += sendSize;
+        budgetThisTic            -= static_cast<int>(sendSize);
     }
 
     // Now get any remaining Acks out.  This also covers the case where we just didn't have any reliable packets to send.
     // For accounting purposes against target rate, we consider Acks to have the same priority as reliable traffic because
     // it fundamentally is!
-    while(m_ackBuffer.SizeInMessages() > 0)
+    while(m_ackBuffer.SizeInMessages() > 0 and budgetThisTic > 0)
     {
         const size_t preAckSize = m_packet.Size();
         m_ackBuffer.Pack(addUnreliableFunctor);
@@ -123,46 +127,63 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
         // Welp, we filled up the packet with all-acks?  Send it.
         if (m_ackBuffer.SizeInMessages() > 0)
         {
-            bytesSentWithReliability += m_packet.Send(i_currentTic, m_sender, i_dest);
+            const size_t sendSize = m_packet.Send(i_currentTic, m_sender, i_dest);
+            bytesSentWithReliability += sendSize;
+            budgetThisTic            -= static_cast<int>(sendSize);
         }
     }
 
-    m_reliableBps += bytesSentWithReliability;
-    m_bpsBudget   -= static_cast<int>(bytesSentWithReliability);
+    //m_reliableBps += bytesSentWithReliability;
+    //m_bpsBudget   -= static_cast<int>(bytesSentWithReliability);
 
     size_t bytesSentBestEffort = 0;
     // Okay, done with the "really important" stuff.  Now onto best-effort unreliable stuff.
-    while (m_nonreliableBuffer.SizeInMessages() > 0)
+    while (m_nonreliableBuffer.SizeInMessages() > 0 and budgetThisTic > 0)
     {
-        if (static_cast<int>(m_nonreliableBuffer.Front().size() + m_packet.Size()) < m_bpsBudget)
+        if (static_cast<int>(m_packet.Size() + m_nonreliableBuffer.Front().size()) > budgetThisTic)
         {
-            if (m_packet.AddUnreliableMessage(m_nonreliableBuffer.Front()) == 0)
+            break;
+        }
+
+        if (m_packet.AddUnreliableMessage(m_nonreliableBuffer.Front()))
+        {
+            m_nonreliableBuffer.Pop();
+        }
+        else
+        {
+            if (m_packet.SizeOfReliablePortion() == 0)
             {
-                if (m_packet.SizeOfReliablePortion() == 0)
-                {
-                    const size_t bestEffortBytes = m_packet.Send(i_currentTic, m_sender, i_dest);
-                    bytesSentBestEffort += bestEffortBytes;
-                    m_bpsBudget         -= static_cast<int>(bestEffortBytes);
-                }
-                else
-                {
-                    const size_t reliableBytes = m_packet.Send(i_currentTic, m_sender, i_dest);
-                    bytesSentWithReliability += reliableBytes;
-                    m_bpsBudget              -= static_cast<int>(reliableBytes);
-                }
+                const size_t bestEffortBytes = m_packet.Send(i_currentTic, m_sender, i_dest);
+                bytesSentBestEffort         += bestEffortBytes;
+                budgetThisTic               -= static_cast<int>(bestEffortBytes);
+            }
+            else
+            {
+                const size_t reliableBytes = m_packet.Send(i_currentTic, m_sender, i_dest);
+                bytesSentWithReliability  += reliableBytes;
+                budgetThisTic             -= static_cast<int>(reliableBytes);
             }
         }
-        m_nonreliableBuffer.Pop();
     }
+
+    m_nonreliableBuffer.Clear();
 
     // Last packet.  Send it, even if overbudget...  We'll borrow against the future.
     // If it doesn't have anything, nothing happens, we're good.
     const size_t lastReliableBytesSent = m_packet.SizeOfReliablePortion();
     const size_t lastTotalSent         = m_packet.Send(i_currentTic, m_sender, i_dest);
-    m_bpsBudget              -= static_cast<int>(lastTotalSent);
-    bytesSentWithReliability += lastReliableBytesSent;
+    budgetThisTic                     -= static_cast<int>(lastTotalSent);
 
-    m_lastSendSize = std::max(0, startBudget - m_bpsBudget);
+    if (lastReliableBytesSent)
+    {
+        bytesSentWithReliability += lastTotalSent;
+    }
+    else
+    {
+        bytesSentBestEffort += lastTotalSent;
+    }
+
+    m_lastSendSize = std::max(0, startBudget - budgetThisTic);
 
     return MessageResultEnum::ACCEPT;
 

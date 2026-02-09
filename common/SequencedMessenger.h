@@ -89,10 +89,6 @@ class SequencedMessenger
             m_reliableBuffer.Clear();
             m_nonreliableBuffer.Clear();
             m_ackBuffer.Clear();
-
-            m_unreliableBps  = 0;
-            m_reliableBps    = 0;
-            m_bpsBudget      = m_maxRate * 1000;
         }
 
 		bool MustThrottleTransmission() const { return m_sender.GetMode() == SequenceSender::RECOVERY; }
@@ -101,7 +97,11 @@ class SequencedMessenger
 		void SetRetransmitDelay(int i_delayInTics) { m_retransmitDelayInTics = i_delayInTics; }
 		void SetPacketsPerRetransmit(int i_maxPackets) { m_maxPacketsPerRetransmission = i_maxPackets; }
 		int  GetMaxPacketsPerRetransmission() const { return m_maxPacketsPerRetransmission; }
-		void SetMaxRate(int i_maxRate) { m_maxRate  = i_maxRate; }
+		void SetMaxRate(int i_maxRate)
+        {
+            m_maxRate      = i_maxRate;
+            m_perTicBudget = (m_maxRate * 1000) / TICRATE;
+        }
 
 		int GetLastSendSize() const { return m_lastSendSize; }
         int GetPendingAckCount() const { return m_sender.GetPendingAckCount(); }
@@ -132,6 +132,7 @@ class SequencedMessenger
 		int m_maxRate                     { 0 };
 
         int m_bpsBudget { 0 };  // Signed so that it can also represent debt.
+        int m_perTicBudget {0};
 
 		// Metrics
 		size_t m_unreliableBps                {  0 };

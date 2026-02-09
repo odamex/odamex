@@ -1961,6 +1961,7 @@ void CL_Decompress()
  */
 MessageResultEnum CL_ReadPacketHeader()
 {
+	::netgraph.addTrafficIn(::net_message.size());
 	return ::messenger.Receive(::net_message, gametic, ::serveraddr);
 }
 
@@ -2080,8 +2081,6 @@ void CL_ParseCommands()
 			PrintFmt("CL_ParseCommands: end byte ({}) < start byte ({})\n",
 			         ::net_message.BytesRead(), byteStart);
 		}
-
-		::netgraph.addTrafficIn(::net_message.BytesRead() - byteStart);
 	}
 }
 
