@@ -31,7 +31,7 @@ MessageResultEnum SequencedMessenger::Receive(buf_t& io_rawBuf, int i_currentTic
 		const bool alsoHasNonReliableData = reliableSize < io_rawBuf.BytesLeftToRead();
 		if (alsoHasNonReliableData)
 		{
-			const size_t startOfReliableData    = io_rawBuf.Tell();
+			const size_t startOfReliableData    = io_rawBuf.TellRead();
 			const size_t startOfNonReliableData = startOfReliableData + reliableSize;
 			const size_t sizeOfNonReliableData  = io_rawBuf.size() - startOfNonReliableData;
 

@@ -94,7 +94,7 @@ size_t Packet::Send(int i_currentTic, SequenceSender& i_sender, const netadr_t& 
         }
         m_header.sequence = saveMessage.sequence;
 
-        m_outgoingPacketBuffer.Seek(0, buf_t::BT_START);
+        m_outgoingPacketBuffer.SeekWrite(0, buf_t::BT_START);
         m_header.Pack(m_outgoingPacketBuffer);
     }
 

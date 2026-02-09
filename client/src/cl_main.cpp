@@ -363,15 +363,13 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 {
 	if(connected)
 	{
-        messenger.ReliableBuf().Clear();
-        messenger.NetBuf().Clear();
+        messenger.Clear();
 
         buf_t& netBuf = messenger.NetBuf().Obtain();
 		MSG_WriteMarker(&netBuf, clc_disconnect);
 		messenger.Send(gametic, serveraddr);
 
-        messenger.ReliableBuf().Clear();
-        messenger.NetBuf().Clear();
+        messenger.Clear();
 
 		sv_gametype = GM_COOP;
 		ClientReplay::getInstance().reset();
@@ -461,14 +459,12 @@ void CL_Reconnect(void)
 
 	if (connected)
 	{
-        messenger.ReliableBuf().Clear();
-        messenger.NetBuf().Clear();
+        messenger.Clear();
 
 		MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_disconnect);
 		messenger.Send(gametic, serveraddr);
 
-        messenger.ReliableBuf().Clear();
-        messenger.NetBuf().Clear();
+        messenger.Clear();
 
 		connected = false;
 		gameaction = ga_fullconsole;
@@ -1470,10 +1466,11 @@ void CL_RequestConnectInfo(void)
 
 		PrintFmt(PRINT_HIGH, "Connecting to {}...\n", NET_AdrToString(serveraddr));
 
-        messenger.ReliableBuf().Clear();
-		messenger.NetBuf().Clear();
-		MSG_WriteLong(&messenger.NetBuf().Obtain(), LAUNCHER_CHALLENGE);
-        messenger.Send(gametic, serveraddr);
+        //messenger.SetMaxRate(20);
+        //messenger.Clear();
+        buf_t netBuf {MAX_UDP_PACKET};
+		MSG_WriteLong(&netBuf, LAUNCHER_CHALLENGE);
+        NET_SendPacket(netBuf, serveraddr);
 	}
 
 	connecttimeout--;
@@ -1772,6 +1769,7 @@ bool CL_Connect()
 	messenger = SequencedMessenger();
 	messenger.SetMaxRate(20);         // FIXME: total guess
 	messenger.SetPacketsPerRetransmit(10);    // To align with the size of the traditional cmd buffer
+    messenger.Clear();                      // To force a reset on the budget.
 	// [AM] This needs to go out ASAP so the server can start sending us
 	//      messages.
     buf_t& netBuf = messenger.NetBuf().Obtain();
@@ -1878,7 +1876,11 @@ void CL_TryToConnect(DWORD server_token)
 
 		messenger.Clear();
 
-        buf_t& netBuf = messenger.NetBuf().Obtain();
+        // The following is part of the connection sequence that doesn't play
+        // nicely with the rest of the messaging...  This is why we do direct
+        // unmanaged packet sends.
+        //
+        buf_t netBuf {MAX_UDP_PACKET};
 		MSG_WriteLong(&netBuf, PROTO_CHALLENGE); // send challenge
 		MSG_WriteLong(&netBuf, server_token); // confirm server token
 		MSG_WriteShort(&netBuf, version); // send client version
@@ -1899,8 +1901,7 @@ void CL_TryToConnect(DWORD server_token)
 
         MSG_WriteString(&netBuf, connectpasshash.c_str());
 
-        messenger.Send(gametic, serveraddr);
-        messenger.Clear();
+        NET_SendPacket(netBuf, serveraddr);
 	}
 
 	connecttimeout--;

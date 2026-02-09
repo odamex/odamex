@@ -343,7 +343,7 @@ class buf_t
 {
 public:
 	std::unique_ptr<byte[]> data;
-	size_t	allocsize, cursize, readpos;
+	size_t	allocsize, cursize, readpos, writepos;
 	bool	overflowed;  // set to true if the buffer size failed
 
     // Buffer seeking flags
@@ -579,7 +579,17 @@ public:
 		return (const char *)begin;
 	}
 
-    size_t Seek (const size_t &offset, const seek_loc_t &loc)
+    size_t SeekRead (const size_t &offset, const seek_loc_t &loc)
+    {
+        return Seek(offset, loc, readpos);
+    }
+
+    size_t SeekWrite (const size_t &offset, const seek_loc_t &loc)
+    {
+        return Seek(offset, loc, writepos);
+    }
+
+    size_t Seek (const size_t &offset, const seek_loc_t &loc, size_t& position)
     {
         switch (loc)
         {
@@ -591,37 +601,37 @@ public:
                     return 0;
                 }
 
-                readpos = offset;
+                position = offset;
             }
             break;
 
             case BT_CURRENT:
             {
-                if (readpos+offset > cursize)
+                if (position+offset > cursize)
                 {
                     overflowed = true;
                     return 0;
                 }
 
-                readpos += offset;
+                position += offset;
             }
 			break;
 
             case BT_END:
             {
-                if (offset > readpos)
+                if (offset > position)
                 {
                     // lies, an underflow occured
                     overflowed = true;
                     return 0;
                 }
 
-                readpos -= offset;
+                position -= offset;
             }
 			break;
         }
 
-        return readpos;
+        return position;
     }
 
 	size_t BytesLeftToRead() const
@@ -634,9 +644,14 @@ public:
 		return readpos;
 	}
 
-	size_t Tell() const
+	size_t TellRead() const
 	{
 		return readpos;
+	}
+
+	size_t TellWrite() const
+	{
+		return writepos;
 	}
 
 	byte *ptr()
@@ -663,6 +678,7 @@ public:
 	{
 		cursize = 0;
 		readpos = 0;
+		writepos = 0;
 		overflowed = false;
 	}
 
@@ -695,7 +711,7 @@ public:
 
 	byte *SZ_GetSpace(size_t length)
 	{
-		if (readpos + length >= allocsize)
+		if (writepos + length >= allocsize)
 		{
 			clear();
 			overflowed = true;
@@ -704,12 +720,12 @@ public:
 #endif
 		}
 
-		byte *ret = &data[readpos];
-        readpos += length;
+		byte *ret = &data[writepos];
+        writepos += length;
 
-        if (readpos > cursize)
+        if (writepos > cursize)
         {
-            cursize = readpos;
+            cursize = writepos;
         }
 
 		return ret;
@@ -726,6 +742,7 @@ public:
 		cursize = other.cursize;
 		overflowed = other.overflowed;
 		readpos = other.readpos;
+        writepos = other.writepos;
 
 		if(!overflowed)
 			for(size_t i = 0; i < cursize; i++)
@@ -746,6 +763,7 @@ public:
 		swap(allocsize,  other.allocsize);
 		swap(cursize,    other.cursize);
 		swap(readpos,    other.readpos);
+        swap(writepos,   other.writepos);
 		swap(overflowed, other.overflowed);
 	}
 
@@ -761,15 +779,15 @@ public:
     }
 
 	buf_t()
-		: data(nullptr), allocsize(0), cursize(0), readpos(0), overflowed(false)
+		: data(nullptr), allocsize(0), cursize(0), readpos(0), writepos(0), overflowed(false)
 	{
 	}
 	buf_t(size_t len)
-		: data(new byte[len]), allocsize(len), cursize(0), readpos(0), overflowed(false)
+		: data(new byte[len]), allocsize(len), cursize(0), readpos(0), writepos(0), overflowed(false)
 	{
 	}
 	buf_t(const buf_t &other)
-		: data(new byte[other.allocsize]), allocsize(other.allocsize), cursize(other.cursize), readpos(other.readpos), overflowed(other.overflowed)
+		: data(new byte[other.allocsize]), allocsize(other.allocsize), cursize(other.cursize), readpos(other.readpos), writepos(other.writepos), overflowed(other.overflowed)
 	{
 		if(!overflowed)
 			for(size_t i = 0; i < cursize; i++)
@@ -844,8 +862,6 @@ bool MSG_ReadProto(MSG& msg)
 	}
 	return true;
 }
-
-size_t MSG_Seek(const size_t &offset, const buf_t::seek_loc_t &loc);
 
 bool MSG_DecompressMinilzo (buf_t& io_buf);
 bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap);

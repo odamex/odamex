@@ -89,6 +89,10 @@ class SequencedMessenger
             m_reliableBuffer.Clear();
             m_nonreliableBuffer.Clear();
             m_ackBuffer.Clear();
+
+            m_unreliableBps  = 0;
+            m_reliableBps    = 0;
+            m_bpsBudget      = m_maxRate * 1000;
         }
 
 		bool MustThrottleTransmission() const { return m_sender.GetMode() == SequenceSender::RECOVERY; }

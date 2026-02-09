@@ -6,6 +6,7 @@ buf_t& MessageQueue::Obtain()
     {
         m_queue.emplace_back(std::move(m_freeStack.back()));
         m_freeStack.pop_back();
+        m_queue.back().clear();
     }
     else
     {
