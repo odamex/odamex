@@ -50,10 +50,6 @@ execute_process(
     ERROR_VARIABLE err
 )
 
-if(NOT result EQUAL 0)
-    message(FATAL_ERROR "Failed to apply patch:\n${err}")
-endif()
-
 # options
 option(BUILD_CLIENT "Build client target" 1)
 option(BUILD_SERVER "Build server target" 1)
@@ -156,6 +152,11 @@ if(NOT MSVC)
     "Statically link against the C and C++ Standard Library.")
   set(USE_SANITIZE_ADDRESS OFF CACHE BOOL
     "Turn on Address Sanitizer in Debug builds, requires GCC >= 4.8 or Clang >= 3.1")
+  set(USE_SANITIZE_THREAD OFF CACHE BOOL
+    "Turn on Thread Sanitizer in Debug builds, requires GCC >= 4.8 or Clang >= 3.2")
+  if(USE_SANITIZE_ADDRESS AND USE_SANITIZE_THREAD)
+    message(FATAL_ERROR "USE_SANITIZE_ADDRESS and USE_SANITIZE_THREAD are mutually exclusive options.")
+  endif()
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES SunOS )

@@ -61,6 +61,12 @@ function(odamex_target_settings _TARGET)
         -fsanitize=address -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls)
       target_link_options("${_TARGET}" PRIVATE -fsanitize=address)
     endif()
+
+    if(USE_SANITIZE_THREAD)
+      target_compile_options("${_TARGET}" PRIVATE
+        -fsanitize=thread -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls)
+      target_link_options("${_TARGET}" PRIVATE -fsanitize=thread)
+    endif()
   endif()
 
   # Add checked compile options - mostly taken from:
