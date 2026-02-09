@@ -531,9 +531,17 @@ void P_CheckCountdownAnnouncements()
 
 	// If we got reset to warmup (player chickened out)
 	// Reset the countdown so we hear it again.
-	if (::levelstate.getState() == LevelState::WARMUP)
+	LevelState::States levelstate = ::levelstate.getState();
+	if (levelstate == LevelState::WARMUP)
 	{
 		instance.resetCountdownAnnouncements();
+	}
+
+	// Don't announce end game or end round countdowns.
+	if (levelstate == LevelState::ENDGAME_COUNTDOWN ||
+	    levelstate == LevelState::ENDROUND_COUNTDOWN)
+	{
+		return;
 	}
 
 	int countdown = ::levelstate.getCountdown();
