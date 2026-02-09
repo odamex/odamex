@@ -24,7 +24,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "SequenceQueue.h"
+#include "PacketTable.h"
 
 class SequenceReceiver
 {
@@ -65,7 +65,7 @@ class SequenceReceiver
 
 	protected:
 
-		SequenceQueue m_recvQueue;
+		PacketTable m_recvQueue;
 
 		int m_currentSequence;  // Index of the place to store the next received packet.
 };

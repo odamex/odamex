@@ -443,7 +443,7 @@ public:
 			WriteByte(0);
 	}
 
-	void WriteChunk(const char *c, size_t l, size_t startpos = 0)
+	void WriteChunk(const void *c, size_t l, size_t startpos = 0)
 	{
 		byte *buf = SZ_GetSpace(l);
 
@@ -693,7 +693,7 @@ public:
 
 	byte *SZ_GetSpace(size_t length)
 	{
-		if (cursize + length >= allocsize)
+		if (readpos + length >= allocsize)
 		{
 			clear();
 			overflowed = true;
@@ -702,8 +702,13 @@ public:
 #endif
 		}
 
-		byte *ret = &data[cursize];
-		cursize += length;
+		byte *ret = &data[readpos];
+        readpos += length;
+
+        if (readpos > cursize)
+        {
+            cursize = readpos;
+        }
 
 		return ret;
 	}

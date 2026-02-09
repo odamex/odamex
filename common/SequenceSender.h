@@ -23,7 +23,7 @@
 
 #include <vector>
 
-#include "SequenceQueue.h"
+#include "PacketTable.h"
 
 class SequenceSender
 {
@@ -98,7 +98,7 @@ class SequenceSender
         };
 
         std::vector<int> m_unackedSequences;
-        SequenceQueue    m_sendTable;
+        PacketTable      m_sendTable;
 
 		int m_nextSequence;                 // The sequence number to assign to the next requested packet.
 

@@ -49,12 +49,9 @@ MessageResultEnum SequencedMessenger::Receive(buf_t& io_rawBuf, int i_currentTic
 		// Send an ACK to the server only if it contained reliable data.
 		if (not simulated_connection)
 		{
-			m_ackBuffer.WriteByte(clc_ack);
-			m_ackBuffer.WriteLong(sequence);
-			if (m_reliableBuffer.size() + m_ackBuffer.size() >= 1024)
-			{
-				Send(i_currentTic, i_dest);
-			}
+			buf_t& ack = m_ackBuffer.Obtain();
+			ack.WriteByte(clc_ack);
+			ack.WriteLong(sequence);
 		}
 		return alsoHasNonReliableData ? MessageResultEnum::ACCEPT : MessageResultEnum::DEFER;
 	}
@@ -78,50 +75,149 @@ bool SequencedMessenger::NextReceivedPacket(buf_t& io_rawBuf)
 
 //  -------------- Sending functions --------------
 
+void SequencedMessenger::PrepareReliablePacket()
+{
+}
+
+
 MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_dest)
 {
+	const int ticPhase = i_currentTic % TICRATE;
+	if (ticPhase == 0)
+	{
+		m_unreliableBps  = 0;
+		m_reliableBps    = 0;
+        m_bpsBudget     += (m_maxRate * 1000);
+	}
+
+    const size_t startBudget = m_bpsBudget;
 	int bps = 0; // bytes per second, not bits per second
 
 	m_lastSendSize = 0;
 
-	if (m_reliableBuffer.overflowed or m_ackBuffer.overflowed)
-	{
-		SZ_Clear(&m_nonreliableBuffer);
-		SZ_Clear(&m_reliableBuffer);
-        SZ_Clear(&m_ackBuffer);
-		//SV_DropClient(pl);
-		return MessageResultEnum::ABORT;
-	}
-	else
-		if (m_nonreliableBuffer.overflowed)
-			SZ_Clear(&m_nonreliableBuffer);
+    auto addUnreliableFunctor = [&m_packet](const buf_t& messageBuf)
+    {
+        return m_packet.AddUnreliableMessage(messageBuf);
+    };
 
-	// [SL] 2012-05-04 - Don't send empty packets - they still have overhead
-	if (m_reliableBuffer.cursize +
-        m_nonreliableBuffer.cursize +
-        m_ackBuffer.cursize == 0)
+    // First phase - send reliables, padded out to MAX_UDP_SIZE-ish with Acks.
+    size_t bytesSentWithReliability = 0;
+    while (m_reliableBuffer.SizeInMessages() > 0)
+    {
+        m_reliableBuffer.Pack([&m_packet](const buf_t& messageBuf) { return m_packet.AddReliableMessage(messageBuf); });
+
+        m_ackBuffer.Pack(addUnreliableFunctor);
+
+        // Now cover the case where we have all our acks out and there's still leftover space enough for an unreliable portion.
+        m_nonreliableBuffer.Pack(addUnreliableFunctor);
+
+        bytesSentWithReliability += m_packet.Send(i_currentTic, m_sender, i_dest);
+    }
+
+    // Now get any remaining Acks out.  This also covers the case where we just didn't have any reliable packets to send.
+    // For accounting purposes against target rate, we consider Acks to have the same priority as reliable traffic because
+    // it fundamentally is!
+    while(m_ackBuffer.SizeInMessages() > 0)
+    {
+        const size_t preAckSize = m_packet.Size();
+        m_ackBuffer.Pack(addUnreliableFunctor);
+        const size_t packedAckSize = m_packet.Size() - preAckSize;
+
+        // Welp, we filled up the packet with all-acks?  Send it.
+        if (m_ackBuffer.SizeInMessages() > 0)
+        {
+            bytesSentWithReliability += m_packet.Send(i_currentTic, m_sender, i_dest);
+        }
+    }
+
+    m_reliableBps += bytesSentWithReliability;
+    m_bpsBudget -= bytesSentWithReliability;
+
+    size_t bytesSentBestEffort = 0;
+    // Okay, done with the "really important" stuff.  Now onto best-effort unreliable stuff.
+    while (m_nonreliableBuffer.SizeInMessages() > 0)
+    {
+        if (m_nonreliableBuffer.Front().size() + m_packet.Size() < m_bpsBudget)
+        {
+            if (m_packet.AddUnreliableMessage(m_nonreliableBuffer.Front()) == 0)
+            {
+                if (m_packet.SizeOfReliablePortion() == 0)
+                {
+                    const size_t bestEffortBytes = m_packet.Send(i_currentTic, m_sender, i_dest);
+                    bytesSentBestEffort += bestEffortBytes
+                    m_bpsBudget         -= bestEffortBytes;
+                }
+                else
+                {
+                    const size_t reliableBytes = m_packet.Send(i_currentTic, m_sender, i_dest);
+                    bytesSentWithReliability += reliableBytes;
+                    m_bpsBudget              -= reliableBytes;
+                }
+            }
+        }
+        m_nonreliableBuffer.Pop();
+    }
+
+    // Last packet.  Send it, even if overbudget...  We'll borrow against the future.
+    // If it doesn't have anything, nothing happens, we're good.
+    const size_t lastReliableBytesSent = m_packet.SizeOfReliablePortion();
+    const size_t lastTotalSent         = m_packet.Send(i_currentTic, m_sender, i_dest);
+    m_bpsBudget              -= lastTotalSent;
+    bytesSentWithReliability += lastReliableBytesSent;
+
+    m_lastSendSize = std::max(0, startBudget - m_bpsBudget);
+
+    return MessageResultEnum::ACCEPT;
+
+
+
+
+#if 0
+    // Acks are really important to get out ASAP.  Start there.
+
+    size_t totalAckBytes = m_ackBuffer;
+    while (m_ackBuffer.SizeInMessages() > 0)
+    {
+        const size_t acksInBytes = m_ackBuffer.Pack(m_outgoingPacketBuffer, MAX_UDP_SIZE);
+
+        // Okay we must send an ack-ful packet.
+        if (m_ackBuffer.SizeInMessages() > 0)
+        {
+        }
+
+    const size_t ackBytes    = m_ackBuffer.SizeInBytes();
+    const int    nonAckBytes = static_cast<int>(MAX_UDP_SIZE) - static_cast<int>(ackBytes);
+
+    while (m_ackBuffer.SizeInMessages() > 0)
+    {
+	int sequence = -1;
+	// Save the reliable portion of the message for ack checking and retransmission if necessary.
+	auto saveMessage = m_sender.ObtainSendPacket(i_currentTic);
+
+	if (saveMessage.buffer)
 	{
-		return MessageResultEnum::DEFER;
+		// copy the reliable portion into the buffer.
+		SZ_Write(saveMessage.buffer, m_reliableBuffer.data.get(), m_reliableBuffer.cursize);
+
+		// Insert Reliable sequence number first thing.
+        sequence = saveMessage.sequence;
 	}
 
 	m_outgoingPacketBuffer.clear();
+	MSG_WriteLong (&m_outgoingPacketBuffer, sequence);
+	MSG_WriteShort(&m_outgoingPacketBuffer, static_cast<short>(m_reliableBuffer.cursize));  // Reliable size
+	MSG_WriteByte (&m_outgoingPacketBuffer, 0);                                             // Flags, filled out later.
+            // Send the packet.
+        }
+    }
+
+    SizeInMessages
 
 	// Messages without reliability are non-sequenced.
 	int sequence = -1;
 
 	if (m_reliableBuffer.cursize)
 	{
-		// Save the reliable portion of the message for ack checking and retransmission if necessary.
-		auto saveMessage = m_sender.ObtainSendPacket(i_currentTic);
-
-		if (saveMessage.buffer)
-		{
-			// copy the reliable portion into the buffer.
-			SZ_Write(saveMessage.buffer, m_reliableBuffer.data.get(), m_reliableBuffer.cursize);
-
-			// Insert Reliable sequence number first thing.
-            sequence = saveMessage.sequence;
-		}
         // If we fall into an 'else' case here, it's because we just cannot get a reliable packet
         // in the sequence.  Something has gone really wrong.  Our best shot is to send the data
         // as unreliable... :(
@@ -138,7 +234,6 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 	if (m_reliableBuffer.cursize)
 	{
 		SZ_Write (&m_outgoingPacketBuffer, m_reliableBuffer.data.get(), m_reliableBuffer.cursize);
-		m_reliableBps += m_reliableBuffer.cursize;
 	}
 
     // Then acks.  They count as part of Reliable traffic for throughput calculation purposes.
@@ -149,7 +244,6 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
     }
 	// add the unreliable part if space is available and rate value
 	// allows it
-	const int ticPhase = i_currentTic % TICRATE;
 	if (ticPhase != 0)
 	{
 		bps = (int)((double)( (m_unreliableBps + m_reliableBps) * TICRATE)/(double)(i_currentTic%TICRATE));
@@ -189,13 +283,9 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 #endif
 	}
 
-	if (ticPhase == 0)
-	{
-		m_unreliableBps = 0;
-		m_reliableBps   = 0;
-	}
-
 	return MessageResultEnum::ACCEPT;
+#endif
+
 }
 
 int SequencedMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& i_dest)
@@ -242,10 +332,14 @@ int SequencedMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& 
 			previousPacketSeq = sendQueueEntry->sequence;
 
 			sendQueueEntry->lastRetransmitTic = i_currentTic;
-			bytesSent += SendOldPacket(*sendQueueEntry, i_dest);
+			bytesSent += m_packet.ReSend(sendQueueEntry->sequence, sendQueueEntry->buf, i_dest);
 
 		}
 	}
+	m_reliableBps += bytesSent;
+
+    m_bpsBudget -= bytesSent;
+
 	return bytesSent;
 }
 
@@ -260,44 +354,4 @@ bool SequencedMessenger::Acknowledge(int sequence)
         }
     }
 	return isFreshAck;
-}
-
-
-void SequencedMessenger::CompressPacket(buf_t& send, const size_t reserved)
-{
-	byte method = 0;
-	if (MSG_CompressMinilzo(send, reserved, 0))
-	{
-		// Successful compression, set the compression flag bit.
-		method |= SVF_COMPRESSED;
-	}
-
-	send.ptr()[PACKET_FLAG_INDEX] |= method;
-}
-
-int SequencedMessenger::SendOldPacket(const SequenceQueueEntryType& queueEntry, const netadr_t& i_dest)
-{
-	m_outgoingPacketBuffer.clear();
-
-	// This is a lot simpler than a fresh send.  Just send the data we have
-	// have saved out.
-
-	MSG_WriteLong (&m_outgoingPacketBuffer, queueEntry.sequence);
-	MSG_WriteShort(&m_outgoingPacketBuffer, static_cast<short>(queueEntry.buf.cursize));
-	MSG_WriteByte (&m_outgoingPacketBuffer, 0); // Flags, filled out later.
-
-	// copy the reliable message to the packet
-	if (queueEntry.buf.cursize)
-	{
-		SZ_Write(&m_outgoingPacketBuffer, queueEntry.buf.data.get(), queueEntry.buf.cursize);
-		m_reliableBps += queueEntry.buf.cursize;
-	}
-
-	// compress the data portion of the packet
-	if (m_outgoingPacketBuffer.size() > PACKET_HEADER_SIZE)
-	{
-		CompressPacket(m_outgoingPacketBuffer, PACKET_HEADER_SIZE);
-	}
-
-	return NET_SendPacket(m_outgoingPacketBuffer, i_dest);
 }

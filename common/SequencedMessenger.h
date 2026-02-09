@@ -1,5 +1,6 @@
 #pragma once
 
+#include "MessageQueue.h"
 #include "SequenceReceiver.h"
 #include "SequenceSender.h"
 
@@ -79,8 +80,8 @@ class SequencedMessenger
 		// Returns true if this is the first acknowledgement of the given sequence.  False otherwise.
 		bool Acknowledge(int sequence);
 
-		buf_t& ReliableBuf() { return m_reliableBuffer; }
-		buf_t& NetBuf() { return m_nonreliableBuffer; }
+		MessageQueue& ReliableBuf() { return m_reliableBuffer; }
+		MessageQueue& NetBuf() { return m_nonreliableBuffer; }
 
 		bool MustThrottleTransmission() const { return m_sender.GetMode() == SequenceSender::RECOVERY; }
         fixed_t ThrottleFraction() const { return FixedDiv( m_unackedGrowth << FRACBITS, m_unackedGrowthThreshold << FRACBITS); }
@@ -103,12 +104,13 @@ class SequencedMessenger
 		SequenceSender   m_sender;
 		SequenceReceiver m_receiver;
 
+        Packet m_packet;
+
 		// Send buffers
-		buf_t m_reliableBuffer    { MAX_UDP_PACKET };
-		buf_t m_nonreliableBuffer { MAX_UDP_PACKET };
-        buf_t m_ackBuffer         { MAX_UDP_PACKET };   // Because acks must be outside of the reliable channels
-                                                        // but still be sendable when in recovery.
-		buf_t m_outgoingPacketBuffer { MAX_UDP_PACKET };
+		MessageQueue m_reliableBuffer;
+		MessageQueue m_nonreliableBuffer;
+        MessageQueue m_ackBuffer;   // Because acks must be outside of the reliable channels
+                                    // but still be sendable when in recovery.
 
 		// Receive buffer
 		buf_t m_receiveBuffer { MAX_UDP_PACKET };
@@ -116,6 +118,8 @@ class SequencedMessenger
         int m_maxPacketsPerRetransmission { DEFAULT_RETRANSMISSIONS_PER_TIC };
 		int m_retransmitDelayInTics       { 0 };
 		int m_maxRate                     { 0 };
+
+        int m_bpsBudget { 0 };
 
 		// Metrics
 		size_t m_unreliableBps                {  0 };

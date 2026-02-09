@@ -544,7 +544,7 @@ void SZ_Clear (buf_t *buf)
 
 void SZ_Write (buf_t *b, const void *data, size_t length)
 {
-	b->WriteChunk((const char *)data, length);
+	b->WriteChunk(data, length);
 }
 
 void SZ_Write (buf_t *b, const byte *data, size_t startpos, size_t length)

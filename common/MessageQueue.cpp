@@ -1,6 +1,6 @@
 #include "MessageQueue.h"
 
-void MessageQueue::Emplace(std::string& io_str)
+buf_t& MessageQueue::Obtain()
 {
     if (not m_freeStack.empty())
     {
@@ -9,22 +9,23 @@ void MessageQueue::Emplace(std::string& io_str)
     }
     else
     {
-        m_queue.emplace_back();
+        m_queue.emplace_back(MAX_UDP_PACKET);
     }
-    m_size += io_str.size();
-
-    m_queue.back().swap(io_str);
-    io_str.clear();
-
     return m_queue.back();
+}
+
+void MessageQueue::Emplace(buf_t& io_str)
+{
+    buf_t& obtainedBuffer = MessageQueue::Obtain();
+
+    obtainedBuffer.swap(io_str);
+    io_str.clear();
 }
 
 void MessageQueue::PopFromQueueToFreeStack()
 {
     m_freeStack.emplace_back(std::move(m_queue.front()));
     m_queue.pop_front();
-
-    m_size -= m_freeStack.back().size();
 }
 
 bool MessageQueue::Pop()
@@ -43,4 +44,23 @@ void MessageQueue::Clear()
     {
         PopFromQueueToFreeStack();
     }
+}
+
+size_t MessageQueue::Pack(buf_t& io_rawBuf, size_t i_maxBytes)
+{
+    size_t packedBytes = 0;
+
+    while (not m_queue.empty())
+    {
+        auto& dataBuf = m_queue.front();
+        if (packedBytes + dataBuf.size() > i_maxBytes)
+        {
+            break;
+        }
+        packedBytes += dataBuf.size();
+        io_rawBuf.WriteChunk(dataBuf.data.get(), dataBuf.size());
+        PopFromQueueToFreeStack();
+    }
+
+    return packedBytes;
 }
