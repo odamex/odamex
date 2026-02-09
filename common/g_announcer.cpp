@@ -820,7 +820,7 @@ EXTERN_CVAR(snd_announcefirstblood)
 void P_CheckFirstBloodAnnouncement()
 {
 	// Only play sounds on the client
-	if (!::clientside)
+	if (!::clientside || !::multiplayer)
 		return;
 
 #ifdef CLIENT_APP
@@ -841,6 +841,69 @@ void P_CheckFirstBloodAnnouncement()
 	// Only play in non-duel deathmatch games
 	if ((sv_gametype != GM_DM && sv_gametype != GM_TEAMDM) || G_IsDuelGame())
 		return;
+
+	PlayerResults pr = PlayerQuery().sortFrags().filterSortMax().execute();
+	PlayerResults opr = PlayerQuery().sortFrags().filterSortNotMax().execute();
+
+	if (pr.count > 0)
+	{
+		bool playerWithOneFrag = false;
+
+		for (auto& player : pr.players)
+		{
+			// Find if one player has one frag
+			if (player->fragcount > 1)
+			{
+				// We missed first blood
+				instance.setFirstBloodAnnounced();
+				return;
+			}
+			else if (player->fragcount == 1)
+			{
+				// Potential first blood
+				if (playerWithOneFrag)
+				{
+					// Two players with one frag means we missed first blood
+					instance.setFirstBloodAnnounced();
+					return;
+				}
+
+				playerWithOneFrag = true;
+			}
+		}
+
+		if (playerWithOneFrag)
+		{
+			// If everyone else has 0 frags or lower, we can call first blood.
+			if (opr.count > 0)
+			{
+				for (auto& player : opr.players)
+				{
+					if (player->fragcount > 0)
+					{
+						// We missed first blood
+						instance.setFirstBloodAnnounced();
+						return;
+					}
+				}
+			}
+			else
+			{
+				// Where'd everyone go?
+				instance.setFirstBloodAnnounced();
+				return;
+			}
+		}
+		else
+		{
+			// No player with 1 frag? Try again later.
+			return;
+		}
+	}
+	else
+	{
+		return;
+	}
 
 	instance.setFirstBloodAnnounced();
 	std::string sound = instance.getTokenForEvent(ANN_FIRSTBLOOD);

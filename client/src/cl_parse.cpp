@@ -1573,6 +1573,7 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 		p.totaldeaths = msg->totaldeaths();
 
 		P_CheckLeadChangeAnnouncement();
+		P_CheckFirstBloodAnnouncement();
 	}
 
 	if (flags & SVC_PM_CHEATS)

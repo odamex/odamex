@@ -103,7 +103,6 @@ class LevelState
 	static LevelState::States getStartOfRoundState();
 	void setState(LevelState::States new_state);
 	void printRoundStart() const;
-	void resetFirstBlood() const;
 };
 
 struct SerializedLevelState

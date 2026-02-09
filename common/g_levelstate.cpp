@@ -569,7 +569,6 @@ void LevelState::setState(LevelState::States new_state)
 		{
 			m_ingameStartTime = ::level.time + 1;
 		}
-		resetFirstBlood();
 	}
 
 	// If we're in a warmup state, alwasy reset the round count to zero.
@@ -628,14 +627,6 @@ void LevelState::printRoundStart() const
 	{
 		SV_BroadcastPrintFmt("{}.\n", left);
 	}
-}
-
-/**
- * @brief Resets the first blood tracking at the start of every ingame.
- */
-void LevelState::resetFirstBlood() const
-{
-	AnnouncerManager::getInstance().resetFirstBloodAnnouncement();
 }
 
 BEGIN_COMMAND(forcestart)
