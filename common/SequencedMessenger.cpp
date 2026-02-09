@@ -80,9 +80,11 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 	const int ticPhase = i_currentTic % TICRATE;
 	if (ticPhase == 0)
 	{
-		m_unreliableBps  = 0;
-		m_reliableBps    = 0;
-        m_bpsBudget     += (m_maxRate * 1000);
+		m_unreliableBps = 0;
+		m_reliableBps   = 0;
+
+        const int maxRateInBytes = m_maxRate * 1000;
+        m_bpsBudget              = std::min(maxRateInBytes, m_bpsBudget + maxRateInBytes);
 	}
 
     const int startBudget = m_bpsBudget;
@@ -132,7 +134,7 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
     // Okay, done with the "really important" stuff.  Now onto best-effort unreliable stuff.
     while (m_nonreliableBuffer.SizeInMessages() > 0)
     {
-        if (m_nonreliableBuffer.Front().size() + m_packet.Size() < m_bpsBudget)
+        if (static_cast<int>(m_nonreliableBuffer.Front().size() + m_packet.Size()) < m_bpsBudget)
         {
             if (m_packet.AddUnreliableMessage(m_nonreliableBuffer.Front()) == 0)
             {
