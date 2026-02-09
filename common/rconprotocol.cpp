@@ -237,7 +237,7 @@ Message<T, Enable>::deserialize(std::string_view json)
 	std::string errs;
 
 	auto reader = std::unique_ptr<Json::CharReader>(builder.newCharReader());
-	if (!reader->parse(json.begin(), json.end(), &root, &errs))
+	if (!reader->parse(json.data(), json.data() + json.length(), &root, &errs))
 	{
 		return nonstd::make_unexpected(ParseError(fmt::format("JSON parse error: {}\n", errs)));
 	}
