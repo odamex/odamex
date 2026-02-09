@@ -711,9 +711,9 @@ static void P_DoNewChaseDir(AActor* actor, fixed_t deltax, fixed_t deltay)
 	dirtype_t d[3];
 
 	int tdir;
-	dirtype_t olddir = (dirtype_t)actor->movedir;
+	const dirtype_t olddir = (dirtype_t)actor->movedir;
 
-	dirtype_t turnaround = turnaround = opposite[olddir];
+	const dirtype_t turnaround = opposite[olddir];
 
 	if (deltax > 10 * FRACUNIT)
 		d[1] = DI_EAST;

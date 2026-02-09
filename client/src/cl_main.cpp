@@ -371,7 +371,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 		S_ResumeMusic();
 	}
 
-	memset (&serveraddr, 0, sizeof(serveraddr));
+	serveraddr = {};
 	connected = false;
 	gameaction = ga_fullconsole;
 	noservermsgs = false;
@@ -741,7 +741,7 @@ BEGIN_COMMAND (connect)
 		else
 		{
 			PrintFmt("Could not resolve host {}\n", target);
-			memset(&serveraddr, 0, sizeof(serveraddr));
+			serveraddr = {};
 		}
 	}
 
