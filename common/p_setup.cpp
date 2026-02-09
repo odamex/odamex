@@ -2268,7 +2268,7 @@ void P_SetupLevel (const char *lumpname, int position)
 		}
     }
 
-	// clear special respawning que
+	// clear special respawning queue
 	itemrespawnque = {};
 
 	// killough 3/26/98: Spawn icon landings:
