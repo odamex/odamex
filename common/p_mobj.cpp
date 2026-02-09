@@ -91,11 +91,6 @@ EXTERN_CVAR(sv_allowshowspawns)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_thingfilter)
 
-mapthing2_t     itemrespawnque[ITEMQUESIZE];
-int             itemrespawntime[ITEMQUESIZE];
-int             iquehead;
-int             iquetail;
-
 NetIDHandler ServerNetID;
 
 // denis - fast netid lookup
@@ -431,13 +426,11 @@ void AActor::Destroy ()
     // Add special to item respawn queue if it is destined to be respawned
 	if ((flags & MF_SPECIAL) && !(flags & MF_DROPPED) && spawnpoint.type > 0)
 	{
-		itemrespawnque[iquehead] = spawnpoint;
-		itemrespawntime[iquehead] = level.time;
-		iquehead = (iquehead+1)&(ITEMQUESIZE-1);
+		itemrespawnque.emplace(spawnpoint, level.time);
 
 		// lose one off the end?
-		if (iquehead == iquetail)
-			iquetail = (iquetail+1)&(ITEMQUESIZE-1);
+		if (demoplayback && itemrespawnque.size() >= 128)
+			itemrespawnque.pop();
 	}
 
 	// [RH] Unlink from tid chain
@@ -2626,9 +2619,6 @@ void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle, f
 //
 void P_RespawnSpecials (void)
 {
-	fixed_t 			z;
-	AActor* 			mo;
-
 	// clients do no control respawning of items
 	if(!serverside)
 		return;
@@ -2638,69 +2628,57 @@ void P_RespawnSpecials (void)
 		return;
 
 	// nothing left to respawn?
-	if (iquehead == iquetail)
+	if (itemrespawnque.empty())
 		return;
+
+	const auto& [mthing, respawntime] = itemrespawnque.front();
 
 	// wait a certain number of seconds before respawning this special
-	if (level.time - itemrespawntime[iquetail] < sv_itemrespawntime*TICRATE)
+	if (level.time - respawntime < sv_itemrespawntime * TICRATE)
 		return;
 
-	const mapthing2_t* mthing = &itemrespawnque[iquetail];
-
-	const fixed_t x = mthing->x << FRACBITS;
-	const fixed_t y = mthing->y << FRACBITS;
+	const fixed_t x = mthing.x << FRACBITS;
+	const fixed_t y = mthing.y << FRACBITS;
 
 	// find which type to spawn
-	auto it = spawn_map.find(mthing->type);
-	if(it != spawn_map.end())
-	{
+	auto it = spawn_map.find(mthing.type);
+	if (it == spawn_map.end() ||
 		// Allow or not Partial Invisibility & Invulnerability from respawning
-		if (!sv_respawnsuper && (mthing->type == 2022 || mthing->type == 2024))
-		{
-			iquetail = (iquetail + 1)&(ITEMQUESIZE - 1);
-			return;
-		}
-	}
-
-	// [Fly] crashes sometimes without it
-	if (it == spawn_map.end())
+	    (!sv_respawnsuper && (mthing.type == 2022 || mthing.type == 2024)))
 	{
 		// pull it from the queue
-		iquetail = (iquetail+1)&(ITEMQUESIZE-1);
+		itemrespawnque.pop();
 		return;
 	}
 
-	if (it->second->flags & MF_SPAWNCEILING)
-		z = ONCEILINGZ;
-	else
-		z = ONFLOORZ;
+	const fixed_t z = it->second->flags & MF_SPAWNCEILING ? ONCEILINGZ : ONFLOORZ;
 
 	// spawn a teleport fog at the new spot
-	mo = new AActor (x, y, z, MT_IFOG);
+	AActor* mo = new AActor (x, y, z, MT_IFOG);
 	SV_SpawnMobj(mo);
 	if (clientside)
 		S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
 
 	// spawn it
 	mo = new AActor (x, y, z, it->second->type);
-	mo->spawnpoint = *mthing;
-	mo->angle = ANG45 * (mthing->angle/45);
+	mo->spawnpoint = mthing;
+	mo->angle = ANG45 * (mthing.angle / 45);
 
 	if (z == ONFLOORZ)
-		mo->z += mthing->z << FRACBITS;
+		mo->z += mthing.z << FRACBITS;
 	else if (z == ONCEILINGZ)
-		mo->z -= mthing->z << FRACBITS;
+		mo->z -= mthing.z << FRACBITS;
 
 	if (mo->flags2 & MF2_FLOATBOB)
 	{ // Seed random starting index for bobbing motion
 		mo->health = M_Random();
-		mo->special1 = mthing->z << FRACBITS;
+		mo->special1 = mthing.z << FRACBITS;
 	}
 
 	mo->special = 0;
 
 	// pull it from the que
-	iquetail = (iquetail+1)&(ITEMQUESIZE-1);
+	itemrespawnque.pop();
 
 	SV_SpawnMobj(mo);
 
