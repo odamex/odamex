@@ -189,7 +189,7 @@ template <typename T, typename = std::enable_if_t<
 >>
 struct Message
 {
-	size_t id;
+	uint64_t id;
 	T content;
 
 	// TODO: replace with = default in C++20

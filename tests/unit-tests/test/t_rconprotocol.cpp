@@ -174,4 +174,61 @@ TEST(RCONProtocolServer, DISABLED_DeserializeMaplist) {
 	EXPECT_EQ(*actual, expect);
 }
 
+TEST(RCONProtocol, DeserializeNegativeID) {
+	std::string_view json = R"({
+		"type": "command",
+		"id": -23,
+		"content": "Hey server do somethin"
+	})";
+	auto actual = ClientMessage::deserialize(json);
+	ASSERT_FALSE(actual) << "Deserialize succeeded: " << actual->serialize(true);
+}
+
+TEST(RCONProtocol, DeserializeNullID) {
+	std::string_view json = R"({
+		"type": "command",
+		"id": null,
+		"content": "Hey server do somethin"
+	})";
+	auto actual = ClientMessage::deserialize(json);
+	ASSERT_FALSE(actual) << "Deserialize succeeded: " << actual->serialize(true);
+}
+
+TEST(RCONProtocol, DeserializeMissingNull) {
+	std::string_view json = R"({
+		"type": "login_success",
+		"id": 0,
+	})";
+	auto actual = ServerMessage::deserialize(json);
+	ASSERT_FALSE(actual) << "Deserialize succeeded: " << actual->serialize(true);
+}
+
+TEST(RCONProtocol, DeserializeNullType) {
+	std::string_view json = R"({
+		"type": null,
+		"id": 0,
+		"content": null
+	})";
+	auto actual = ServerMessage::deserialize(json);
+	ASSERT_FALSE(actual) << "Deserialize succeeded: " << actual->serialize(true);
+}
+
+TEST(RCONProtocol, DeserializeMissingType) {
+	std::string_view json = R"({
+		"id": 0,
+		"content": "hi"
+	})";
+	auto actual = ClientMessage::deserialize(json);
+	ASSERT_FALSE(actual) << "Deserialize succeeded: " << actual->serialize(true);
+}
+
+TEST(RCONProtocol, DeserializeMissingID) {
+	std::string_view json = R"({
+		"type": "command",
+		"content": "hi"
+	})";
+	auto actual = ClientMessage::deserialize(json);
+	ASSERT_FALSE(actual) << "Deserialize succeeded: " << actual->serialize(true);
+}
+
 // TODO: add tests to make sure bad json fails to deserialize
