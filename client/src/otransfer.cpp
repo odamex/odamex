@@ -108,8 +108,8 @@ bool OTransferInfo::hydrate(CURL* curl)
 	if (curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &resCode) != CURLE_OK)
 		return false;
 
-	double speed;
-	if (curl_easy_getinfo(curl, CURLINFO_SPEED_DOWNLOAD, &speed) != CURLE_OK)
+	curl_off_t speed;
+	if (curl_easy_getinfo(curl, CURLINFO_SPEED_DOWNLOAD_T, &speed) != CURLE_OK)
 		return false;
 
 	const char* url;
