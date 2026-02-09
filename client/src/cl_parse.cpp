@@ -2383,6 +2383,7 @@ static void CL_LevelState(const odaproto::svc::LevelState* msg)
 static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 {
 	ClientReplay::getInstance().reset();
+	MultiKillManager::getInstance().clearMultiTics();
 	AnnouncerManager::getInstance().resetCountdownAnnouncements();
 	AnnouncerManager::getInstance().resetLeadTracking();
 	AnnouncerManager::getInstance().resetFightAnnouncement();
