@@ -643,6 +643,8 @@ public:
 				else
 					return { &ent->x, ent->x, ent->y };
 		}
+
+		OUtil::unreachable();
 	}
 
 	[[nodiscard]] const AActor* get_entity() noexcept
