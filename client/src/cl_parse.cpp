@@ -2979,7 +2979,13 @@ static void CL_Spree(const odaproto::svc::Spree* msg)
 		// Play the sound for the new spree
 		const SpreeRecord_t& record = SpreeManager::getInstance().getSpreeRecord(playerId);
 		const std::string sound = AnnouncerManager::getInstance().getTokenForEvent(
-		    "spree " + std::to_string(record.spreeLevel));
+		    "spree " + std::to_string(record.spreeLevel + 1));
+
+			// Play the gamesfx sound from the spree first.
+		if (!record.spree.gameSfxToken.empty() &&
+		    S_FindSound(record.spree.gameSfxToken.c_str()) != -1)
+			S_Sound(CHAN_GAMEINFO, record.spree.gameSfxToken.c_str(), 1, ATTN_NONE);
+
 		if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 			S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 	}
