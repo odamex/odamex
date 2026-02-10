@@ -78,14 +78,14 @@ class SequencedMessenger
 		// Returns true if this is the first acknowledgement of the given sequence.  False otherwise.
 		bool Acknowledge(int sequence);
 
-		MessageQueue& ReliableBuf() { return m_reliableBuffer; }
-		MessageQueue& NetBuf() { return m_nonreliableBuffer; }
+		MessageQueue& ReliableBuf() { return m_outgoingReliableQueue; }
+		MessageQueue& NetBuf() { return m_outgoingNonReliableQueue; }
 
         void Clear()
         {
-            m_reliableBuffer.Clear();
-            m_nonreliableBuffer.Clear();
-            //m_ackBuffer.Clear();
+            m_outgoingReliableQueue.Clear();
+            m_outgoingNonReliableQueue.Clear();
+            //m_outgoingAckQueue.Clear();
         }
 
 		bool MustThrottleTransmission() const { return m_sender.GetMode() == SequenceSender::RECOVERY; }
@@ -116,9 +116,9 @@ class SequencedMessenger
         Packet m_packet;
 
 		// Send buffers
-		MessageQueue m_reliableBuffer;
-		MessageQueue m_nonreliableBuffer;
-        MessageQueue m_ackBuffer;   // Because acks must be outside of the reliable channels
+		MessageQueue m_outgoingReliableQueue;
+		MessageQueue m_outgoingNonReliableQueue;
+        MessageQueue m_outgoingAckQueue;   // Because acks must be outside of the reliable channels
                                     // but still be sendable when in recovery.
 
 		// Receive buffer

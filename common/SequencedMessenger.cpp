@@ -55,7 +55,7 @@ MessageResultEnum SequencedMessenger::Receive(buf_t& io_rawBuf)
 		// Send an ACK to the server only if it contained reliable data.
 		if (not simulated_connection)
 		{
-			buf_t& ack = m_ackBuffer.Obtain();
+			buf_t& ack = m_outgoingAckQueue.Obtain();
 			ack.WriteByte(clc_ack);
 			ack.WriteLong(header.sequence);
 		}
@@ -107,14 +107,14 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 
     // First phase - send reliables, padded out to MAX_UDP_SIZE-ish with Acks.
     size_t bytesSentWithReliability = 0;
-    while (m_reliableBuffer.SizeInMessages() > 0 and budgetThisTic > 0)
+    while (m_outgoingReliableQueue.SizeInMessages() > 0 and budgetThisTic > 0)
     {
-        m_reliableBuffer.Pack([this](const buf_t& messageBuf) { return m_packet.AddReliableMessage(messageBuf); });
+        m_outgoingReliableQueue.Pack([this](const buf_t& messageBuf) { return m_packet.AddReliableMessage(messageBuf); });
 
-        m_ackBuffer.Pack(addAckFunctor);
+        m_outgoingAckQueue.Pack(addAckFunctor);
 
         // Now cover the case where we have all our acks out and there's still leftover space enough for an unreliable portion.
-        m_nonreliableBuffer.Pack(addUnreliableFunctor);
+        m_outgoingNonReliableQueue.Pack(addUnreliableFunctor);
 
         const size_t sendSize = m_packet.Send(i_currentTic, m_sender, i_dest);
         bytesSentWithReliability += sendSize;
@@ -124,12 +124,12 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
     // Now get any remaining Acks out.  This also covers the case where we just didn't have any reliable packets to send.
     // For accounting purposes against target rate, we consider Acks to have the same priority as reliable traffic because
     // it fundamentally is!
-    while(m_ackBuffer.SizeInMessages() > 0 and budgetThisTic > 0)
+    while(m_outgoingAckQueue.SizeInMessages() > 0 and budgetThisTic > 0)
     {
-        m_ackBuffer.Pack(addAckFunctor);
+        m_outgoingAckQueue.Pack(addAckFunctor);
 
         // Welp, we filled up the packet with all-acks?  Send it.
-        if (m_ackBuffer.SizeInMessages() > 0)
+        if (m_outgoingAckQueue.SizeInMessages() > 0)
         {
             const size_t sendSize = m_packet.Send(i_currentTic, m_sender, i_dest);
             bytesSentWithReliability += sendSize;
@@ -142,16 +142,16 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 
     size_t bytesSentBestEffort = 0;
     // Okay, done with the "really important" stuff.  Now onto best-effort unreliable stuff.
-    while (m_nonreliableBuffer.SizeInMessages() > 0 and budgetThisTic > 0)
+    while (m_outgoingNonReliableQueue.SizeInMessages() > 0 and budgetThisTic > 0)
     {
-        if (static_cast<int>(m_packet.Size() + m_nonreliableBuffer.Front().size()) > budgetThisTic)
+        if (static_cast<int>(m_packet.Size() + m_outgoingNonReliableQueue.Front().size()) > budgetThisTic)
         {
             break;
         }
 
-        if (m_packet.AddUnreliableMessage(m_nonreliableBuffer.Front()))
+        if (m_packet.AddUnreliableMessage(m_outgoingNonReliableQueue.Front()))
         {
-            m_nonreliableBuffer.Pop();
+            m_outgoingNonReliableQueue.Pop();
         }
         else
         {
@@ -170,7 +170,7 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
         }
     }
 
-    m_nonreliableBuffer.Clear();
+    m_outgoingNonReliableQueue.Clear();
 
     // Last packet.  Send it, even if overbudget...  We'll borrow against the future.
     // If it doesn't have anything, nothing happens, we're good.
