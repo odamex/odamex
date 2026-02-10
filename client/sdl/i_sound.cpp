@@ -261,6 +261,9 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
 static void getsfx(sfxinfo_struct *sfx)
 {
 	Uint32 new_size = 0;
+
+	Uint32 points, frames = 0;
+
 	Mix_Chunk *chunk;
 
 	if (sfx->lumpnum == -1)
@@ -291,6 +294,10 @@ static void getsfx(sfxinfo_struct *sfx)
         }
         chunk->volume = MIX_MAX_VOLUME;
 
+        points = chunk->alen / ((mixer_format & 0xFF) / 8);
+        frames = points / mixer_channels;
+
+        sfx->ms = ((frames * 1000) / mixer_freq);
         sfx->data = chunk;
 
         Z_ChangeTag(data, PU_CACHE);
@@ -321,8 +328,8 @@ static void getsfx(sfxinfo_struct *sfx)
     chunk->volume = MIX_MAX_VOLUME;
 
     ExpandSoundData((byte*)data + 8, samplerate, 8, length, chunk);
-    Uint32 points = chunk->alen / ((mixer_format & 0xFF) / 8);
-    Uint32 frames = points / mixer_channels;
+    points = chunk->alen / ((mixer_format & 0xFF) / 8);
+    frames = points / mixer_channels;
 
     sfx->ms = ((frames * 1000) / mixer_freq);
     sfx->data = chunk;
