@@ -227,18 +227,15 @@ void P_ProcessMultiKills(const AActor* source, const player_t* target)
 
 	if (displayplayer_id == source->player->id && status.multiKills > 1)
 	{
-		// Play the gamesfx sound from the multi kill first.
 		const MultiKillLevel_s& level = manager.getMultiKillLevel(status.multiKills);
-		if (!level.gameSfxToken.empty() && S_FindSound(level.gameSfxToken.c_str()) != -1)
-			S_Sound(CHAN_GAMEINFO, level.gameSfxToken.c_str(), 1, ATTN_NONE);
 
-		// Play the announcer sound for the new multi kill
 		int highest = manager.getHighestMultiKillLevel();
 		int levelnum = status.multiKills > highest ? highest : status.multiKills;
 		const std::string sound = AnnouncerManager::getInstance().getTokenForEvent(
 		    "multi " + std::to_string(levelnum));
-		if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
-			S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+
+		AnnouncerManager::getInstance().setPendingMultiKill(
+		    levelnum, sound, level.gameSfxToken);
 	}
 }
 
