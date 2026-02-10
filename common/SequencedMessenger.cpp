@@ -81,17 +81,13 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 	const int ticPhase = i_currentTic % TICRATE;
 	if (ticPhase == 0)
 	{
-		m_unreliableBps = 0;
-		m_reliableBps   = 0;
-
         const int maxRateInBytes = m_maxRate * 1000;
         m_perTicBudget           = maxRateInBytes / TICRATE;
-        //m_bpsBudget              = std::min(maxRateInBytes, m_bpsBudget + maxRateInBytes);
 	}
 
-    int budgetThisTic = m_perTicBudget;
+    m_byteBudget = std::min(m_perTicBudget, m_byteBudget + m_perTicBudget);
 
-    const int startBudget = budgetThisTic;
+    const int startBudget = m_byteBudget;
 
 	m_lastSendSize = 0;
 
@@ -107,7 +103,7 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 
     // First phase - send reliables, padded out to MAX_UDP_SIZE-ish with Acks.
     size_t bytesSentWithReliability = 0;
-    while (m_outgoingReliableQueue.SizeInMessages() > 0 and budgetThisTic > 0)
+    while (m_outgoingReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
     {
         m_outgoingReliableQueue.Pack([this](const buf_t& messageBuf) { return m_packet.AddReliableMessage(messageBuf); });
 
@@ -118,13 +114,13 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
 
         const size_t sendSize = m_packet.Send(i_currentTic, m_sender, i_dest);
         bytesSentWithReliability += sendSize;
-        budgetThisTic            -= static_cast<int>(sendSize);
+        m_byteBudget             -= static_cast<int>(sendSize);
     }
 
     // Now get any remaining Acks out.  This also covers the case where we just didn't have any reliable packets to send.
     // For accounting purposes against target rate, we consider Acks to have the same priority as reliable traffic because
     // it fundamentally is!
-    while(m_outgoingAckQueue.SizeInMessages() > 0 and budgetThisTic > 0)
+    while(m_outgoingAckQueue.SizeInMessages() > 0 and m_byteBudget > 0)
     {
         m_outgoingAckQueue.Pack(addAckFunctor);
 
@@ -133,18 +129,15 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
         {
             const size_t sendSize = m_packet.Send(i_currentTic, m_sender, i_dest);
             bytesSentWithReliability += sendSize;
-            budgetThisTic            -= static_cast<int>(sendSize);
+            m_byteBudget             -= static_cast<int>(sendSize);
         }
     }
 
-    //m_reliableBps += bytesSentWithReliability;
-    //m_bpsBudget   -= static_cast<int>(bytesSentWithReliability);
-
     size_t bytesSentBestEffort = 0;
     // Okay, done with the "really important" stuff.  Now onto best-effort unreliable stuff.
-    while (m_outgoingNonReliableQueue.SizeInMessages() > 0 and budgetThisTic > 0)
+    while (m_outgoingNonReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
     {
-        if (static_cast<int>(m_packet.Size() + m_outgoingNonReliableQueue.Front().size()) > budgetThisTic)
+        if (static_cast<int>(m_packet.Size() + m_outgoingNonReliableQueue.Front().size()) > m_byteBudget)
         {
             break;
         }
@@ -159,13 +152,13 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
             {
                 const size_t bestEffortBytes = m_packet.Send(i_currentTic, m_sender, i_dest);
                 bytesSentBestEffort         += bestEffortBytes;
-                budgetThisTic               -= static_cast<int>(bestEffortBytes);
+                m_byteBudget                -= static_cast<int>(bestEffortBytes);
             }
             else
             {
                 const size_t reliableBytes = m_packet.Send(i_currentTic, m_sender, i_dest);
                 bytesSentWithReliability  += reliableBytes;
-                budgetThisTic             -= static_cast<int>(reliableBytes);
+                m_byteBudget              -= static_cast<int>(reliableBytes);
             }
         }
     }
@@ -176,7 +169,7 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
     // If it doesn't have anything, nothing happens, we're good.
     const size_t lastReliableBytesSent = m_packet.SizeOfReliablePortion();
     const size_t lastTotalSent         = m_packet.Send(i_currentTic, m_sender, i_dest);
-    budgetThisTic                     -= static_cast<int>(lastTotalSent);
+    m_byteBudget                      -= static_cast<int>(lastTotalSent);
 
     if (lastReliableBytesSent)
     {
@@ -187,7 +180,7 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
         bytesSentBestEffort += lastTotalSent;
     }
 
-    m_lastSendSize = std::max(0, startBudget - budgetThisTic);
+    m_lastSendSize = std::max(0, startBudget - m_byteBudget);
 
     return MessageResultEnum::ACCEPT;
 }
@@ -228,7 +221,10 @@ int SequencedMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& 
 	{
 		if (i_currentTic >= (std::min(m_retransmitDelayInTics, 5) + sendQueueEntry->originatingTic) or sendQueueEntry->lastRetransmitTic != -1)
 		{
-			if (++retransmissionsSent > m_maxPacketsPerRetransmission)
+            // TODO: Working Throttle!
+            //       With 800 KB rate at the nuts.wad wakeup with +50 msec lag (on incoming and outgoing), 10% packet loss
+            //       causes a 900KB - 1000KB spike that causes retransmissions to fail.  For now we just live with that.
+			if (++retransmissionsSent > m_maxPacketsPerRetransmission)// or m_byteBudget <= 0)
 			{
 				break;
 			}
@@ -236,13 +232,11 @@ int SequencedMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& 
 			previousPacketSeq = sendQueueEntry->sequence;
 
 			sendQueueEntry->lastRetransmitTic = i_currentTic;
-			bytesSent += static_cast<int>(m_packet.ReSend(sendQueueEntry->sequence, sendQueueEntry->buf, i_dest));
-
+            const int resendSize = static_cast<int>(m_packet.ReSend(sendQueueEntry->sequence, sendQueueEntry->buf, i_dest));
+			bytesSent    += resendSize;
+            //m_byteBudget -= resendSize;
 		}
 	}
-	m_reliableBps += bytesSent;
-
-    m_bpsBudget -= bytesSent;
 
 	return bytesSent;
 }

@@ -85,7 +85,7 @@ class SequencedMessenger
         {
             m_outgoingReliableQueue.Clear();
             m_outgoingNonReliableQueue.Clear();
-            //m_outgoingAckQueue.Clear();
+            m_outgoingAckQueue.Clear();
         }
 
 		bool MustThrottleTransmission() const { return m_sender.GetMode() == SequenceSender::RECOVERY; }
@@ -98,6 +98,7 @@ class SequencedMessenger
         {
             m_maxRate      = i_maxRate;
             m_perTicBudget = (m_maxRate * 1000) / TICRATE;
+            m_byteBudget   = m_perTicBudget;
         }
 
 		int GetLastSendSize() const { return m_lastSendSize; }
@@ -128,12 +129,10 @@ class SequencedMessenger
 		int m_retransmitDelayInTics       { 0 };
 		int m_maxRate                     { 0 };
 
-        int m_bpsBudget { 0 };  // Signed so that it can also represent debt.
-        int m_perTicBudget {0};
+        int m_byteBudget  { 0 };      // Signed so that it can also represent debt.
+        int m_perTicBudget{ 0 };
 
 		// Metrics
-		size_t m_unreliableBps                {  0 };
-		size_t m_reliableBps                  {  0 };
 		int    m_lastSendSize                 {  0 };
 		int    m_noncontiguousRetransmitCount {  0 };
         int    m_previousUnackedCount         {  0 };
