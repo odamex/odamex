@@ -59,32 +59,10 @@ int SequenceReceiver::NextPacket(buf_t& io_bufferRef)
 	auto iter = m_reliableTable.find(m_currentSequence);
 	if (iter != m_reliableTable.end())
 	{
-        // We clear out the buffer in the reliable receive table to indicate that
-        // there WAS a packet but it is now received, thus the corresponding
-        // non-reliable data is good to process.
-        if (iter->second.buf.size())
-        {
-            io_bufferRef.swap(iter->second.buf);
-            iter->second.buf.clear();
-
-            return m_currentSequence;
-        }
-        else
-        {
-            auto nonreliableIter = m_nonReliableTable.find(m_currentSequence);
-            if (nonreliableIter != m_nonReliableTable.end())
-            {
-                io_bufferRef.swap(nonreliableIter->second.buf);
-                m_nonReliableTable.Erase(nonreliableIter);
-                return m_currentSequence;
-            }
-            else
-            {
-                m_reliableTable.Erase(iter);
-                ++m_currentSequence;
-                return NextPacket(io_bufferRef);
-            }
-        }
+        io_bufferRef.swap(iter->second.buf);
+        return m_currentSequence++;
     }
+
+    // TODO: NonReliable, monotonic sequence with skips
 	return -1;
 }
