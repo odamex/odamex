@@ -223,6 +223,12 @@ class HordeState
 			// Do the boss intro fanfare.
 			SV_BroadcastPrintFmt("The floor trembles as the boss of the wave arrives.\n");
 			S_NetSound(NULL, CHAN_GAMEINFO, "misc/horde/boss", ATTN_NONE);
+			PlayersView ingame = PlayerQuery().execute().players;
+			for (const auto& player : ingame)
+			{
+				MSG_WriteSVC(&player->client.netbuf,
+				             SVC_AnnouncerEvent(ANN_HORDEBOSSSPAWN));
+			}
 			m_bossTime = ::level.time;
 		}
 	}

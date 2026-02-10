@@ -841,11 +841,6 @@ void P_CheckLeadChangeAnnouncement();
 void P_CheckFirstBloodAnnouncement();
 
 /// <summary>
-/// Checks if this tic had the boss spawn in horde mode. If so, play the sound.
-/// </summary>
-void P_CheckBossSpawnAnnouncement();
-
-/// <summary>
 /// Checks if the display player is the last player alive in a survival game.
 /// If so, plays the announcer sound. Client-side only.
 /// </summary>

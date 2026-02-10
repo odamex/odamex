@@ -696,7 +696,7 @@ EXTERN_CVAR(snd_announcesurvival)
 void P_CheckPlayerEliminatedAnnouncement(const player_t* player)
 {
 	// Only play sounds on the client
-	if (!::clientside)
+	if (!::clientside || !::multiplayer)
 		return;
 
 #ifdef CLIENT_APP
@@ -1030,36 +1030,6 @@ void P_CheckFirstBloodAnnouncement()
 	std::string sound = instance.getTokenForEvent(ANN_FIRSTBLOOD);
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
 		instance.queueSound(sound);
-}
-
-#ifdef CLIENT_APP
-EXTERN_CVAR (snd_announcehorde)
-#endif
-
-void P_CheckBossSpawnAnnouncement()
-{
-	// Only play sounds on the client
-	if (!::clientside)
-		return;
-
-	if (!G_IsHordeMode())
-		return;
-
-#ifdef CLIENT_APP
-	if (!snd_announcehorde)
-		return;
-#endif
-
-	const hordeInfo_t& info = P_HordeInfo();
-
-	if (info.hasBoss() && info.bossTic() != 0)
-		return;
-
-	AnnouncerManager& instance = AnnouncerManager::getInstance();
-
-	std::string sound = instance.getTokenForEvent(ANN_HORDEBOSSSPAWN);
-	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
-		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
 }
 
 void P_CheckLastPlayerAliveAnnouncement()
