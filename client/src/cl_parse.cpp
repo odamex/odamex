@@ -2991,52 +2991,45 @@ static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
 
 static void CL_AnnouncerEvent(const odaproto::svc::AnnouncerEvent* msg)
 {
+	AnnouncerManager& instance = AnnouncerManager::getInstance();
+
 	const std::string key = msg->key();
-	const std::string sound = AnnouncerManager::getInstance().getTokenForEvent(key);
+	const std::string sound = instance.getTokenForEvent(key);
 
 	if (sound.empty() || S_FindSound(sound.c_str()) == -1)
 		return;
 
-	if (!snd_announcectf && 
-			std::find(announcerCTFTokens.begin(), announcerCTFTokens.end(), key) != announcerCTFTokens.end())
+	if (!snd_announcectf && instance.isKeyCTFToken(key))
 		return;
 
-	if (!snd_announcehorde && 
-			std::find(announcerHordeTokens.begin(), announcerHordeTokens.end(), key) != announcerHordeTokens.end())
+	if (!snd_announcehorde && instance.isKeyHordeToken(key))
 		return;
 
-	if (!snd_announcesurvival && 
-			std::find(announcerSurvivalTokens.begin(), announcerSurvivalTokens.end(), key) != announcerSurvivalTokens.end())
+	if (!snd_announcesurvival && instance.isKeySurvivalToken(key))
 		return;
 
-	if (!snd_announcecountdown &&
-	    std::find(announcerCountdownTokens.begin(), announcerCountdownTokens.end(), key) != announcerCountdownTokens.end())
+	if (!snd_announcecountdown && instance.isKeyCountdownToken(key))
 		return;
 
-	if (!snd_announcetimewarnings &&
-	    std::find(announcerTimeWarningsTokens.begin(), announcerTimeWarningsTokens.end(), key) != announcerTimeWarningsTokens.end())
+	if (!snd_announcetimewarnings && instance.isKeyTimeWarningsToken(key))
 		return;
 
-	if (!snd_announcefirstblood &&
-	    std::find(announcerFirstBloodTokens.begin(), announcerFirstBloodTokens.end(), key) != announcerFirstBloodTokens.end())
+	if (!snd_announcefirstblood && instance.isKeyFirstBloodToken(key))
 		return;
 
-	if (!snd_announcefragtracking &&
-	    std::find(announcerFragTrackingTokens.begin(), announcerFragTrackingTokens.end(), key) != announcerFragTrackingTokens.end())
+	if (!snd_announcefragtracking && instance.isKeyFragTrackingToken(key))
 		return;
 
-	if (!snd_announceleadtracking &&
-	    std::find(announcerLeadTrackingTokens.begin(), announcerLeadTrackingTokens.end(), key) != announcerLeadTrackingTokens.end())
+	if (!snd_announceleadtracking && instance.isKeyLeadTrackingToken(key))
 		return;
 
-	if (!snd_announceresulttracking &&
-	    std::find(announcerResultTrackingTokens.begin(), announcerResultTrackingTokens.end(), key) != announcerResultTrackingTokens.end())
+	if (!snd_announceresulttracking && instance.isKeyResultTrackingToken(key))
 		return;
 
-	if (!snd_announcesprees && key.find("spree") == 0)
+	if (!snd_announcesprees && instance.isKeySpreeToken(key))
 		return;
 
-	if (!snd_announcemultikills && key.find("multi") == 0)
+	if (!snd_announcemultikills && instance.isKeyMultiToken(key))
 		return;
 
 	S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);

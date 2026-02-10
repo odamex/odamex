@@ -669,6 +669,112 @@ public:
 	/// </summary>
 	void setLeadTied(bool tied) { leadIsTied = tied; }
 
+	/// <summary>
+	/// Checks whether the current key is a CTF announcer sound token.
+	/// <param name="key">The token to check.</param>
+	/// </summary>
+	bool isKeyCTFToken(const std::string& key) const {
+		return std::find(announcerCTFTokens.begin(), announcerCTFTokens.end(), key) !=
+		       announcerCTFTokens.end();
+	};
+
+	/// <summary>
+	/// Checks whether the current key is a Horde announcer sound token.
+	/// <param name="key">The token to check.</param>
+	/// </summary>
+	bool isKeyHordeToken(const std::string& key) const
+	{
+		return std::find(announcerHordeTokens.begin(), announcerHordeTokens.end(), key) !=
+		       announcerHordeTokens.end();
+	};
+
+	/// <summary>
+	/// Checks whether the current key is a Survival announcer sound token.
+	/// <param name="key">The token to check.</param>
+	/// </summary>
+	bool isKeySurvivalToken(const std::string& key) const
+	{
+		return std::find(announcerSurvivalTokens.begin(), announcerSurvivalTokens.end(),
+		                 key) != announcerSurvivalTokens.end();
+	};
+
+	/// <summary>
+	/// Checks whether the current key is a countdown announcer sound token.
+	/// <param name="key">The token to check.</param>
+	/// </summary>
+	bool isKeyCountdownToken(const std::string& key) const
+	{
+		return std::find(announcerCountdownTokens.begin(), announcerCountdownTokens.end(),
+		                 key) != announcerCountdownTokens.end();
+	};
+
+	/// <summary>
+	/// Checks whether the current key is a time warning announcer sound token.
+	/// <param name="key">The token to check.</param>
+	/// </summary>
+	bool isKeyTimeWarningsToken(const std::string& key) const
+	{
+		return std::find(announcerTimeWarningsTokens.begin(),
+		                 announcerTimeWarningsTokens.end(),
+		                 key) != announcerTimeWarningsTokens.end();
+	};
+
+	/// <summary>
+	/// Checks whether the current key is a first blood announcer sound token.
+	/// <param name="key">The token to check.</param>
+	/// </summary>
+	bool isKeyFirstBloodToken(const std::string& key) const
+	{
+		return std::find(announcerFirstBloodTokens.begin(),
+		                 announcerFirstBloodTokens.end(),
+		                 key) != announcerFirstBloodTokens.end();
+	};
+
+	/// <summary>
+	/// Checks whether the current key is a frag tracking announcer sound token.
+	/// <param name="key">The token to check.</param>
+	/// </summary>
+	bool isKeyFragTrackingToken(const std::string& key) const
+	{
+		return std::find(announcerFragTrackingTokens.begin(),
+		                 announcerFragTrackingTokens.end(),
+		                 key) != announcerFragTrackingTokens.end();
+	};
+
+	/// <summary>
+	/// Checks whether the current key is a lead tracking announcer sound token.
+	/// <param name="key">The token to check.</param>
+	/// </summary>
+	bool isKeyLeadTrackingToken(const std::string& key) const
+	{
+		return std::find(announcerLeadTrackingTokens.begin(),
+		                 announcerLeadTrackingTokens.end(),
+		                 key) != announcerLeadTrackingTokens.end();
+	};
+
+	/// <summary>
+	/// Checks whether the current key is a result tracking announcer sound token.
+	/// <param name="key">The token to check.</param>
+	/// </summary>
+	bool isKeyResultTrackingToken(const std::string& key) const
+	{
+		return std::find(announcerResultTrackingTokens.begin(),
+		                 announcerResultTrackingTokens.end(),
+		                 key) != announcerResultTrackingTokens.end();
+	};
+
+	/// <summary>
+	/// Checks whether the current key is a spree announcer sound token.
+	/// <param name="key">The token to check.</param>
+	/// </summary>
+	bool isKeySpreeToken(const std::string& key) const { return key.find("spree") == 0; };
+
+	/// <summary>
+	/// Checks whether the current key is a multi kill announcer sound token.
+	/// <param name="key">The token to check.</param>
+	/// </summary>
+	bool isKeyMultiToken(const std::string& key) const { return key.find("multi") == 0; };
+
 private:
 	/// <summary>
 	/// Contains every named token for announcer packs.
