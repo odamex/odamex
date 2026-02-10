@@ -94,6 +94,8 @@ void P_Ticker (void)
 	P_TicSprees();
 
 	// Announcements
+	P_FlushPendingAnnouncerSounds();
+	P_TickAnnouncerQueue();
 	P_CheckFightAnnouncement();
 	P_CheckCountdownAnnouncements();
 	P_CheckTimeWarnings();
