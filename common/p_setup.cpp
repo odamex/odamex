@@ -2268,8 +2268,8 @@ void P_SetupLevel (const char *lumpname, int position)
 		}
     }
 
-	// clear special respawning que
-	iquehead = iquetail = 0;
+	// clear special respawning queue
+	itemrespawnque = {};
 
 	// killough 3/26/98: Spawn icon landings:
 	P_SpawnBrainTargets();
