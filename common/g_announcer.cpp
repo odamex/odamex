@@ -54,6 +54,7 @@ void AnnouncerManager::reset()
 {
 	announcerDict.clear();
 	loadedAnnouncer = Announcer_s();
+	clearQueue();
 }
 
 bool AnnouncerManager::isAnnouncerLoaded(const std::string& announcer) const
@@ -306,6 +307,126 @@ void AnnouncerManager::loadAnnouncers(const std::unordered_map<std::string, Anno
 			}
 		}
 	}
+}
+
+void AnnouncerManager::playAndSetDelay(const std::string& soundName)
+{
+	S_Sound(CHAN_ANNOUNCER, soundName.c_str(), 1, ATTN_NONE);
+
+	// Look up the sound's duration and convert to tics for the delay.
+	int sfxId = S_FindSound(soundName.c_str());
+	if (sfxId != -1)
+	{
+		unsigned int ms = S_sfx[sfxId].ms;
+		delayTicsRemaining = (ms * TICRATE) / 1000;
+	}
+	else
+	{
+		// Fallback: use a reasonable default delay if we can't find the sound info.
+		delayTicsRemaining = TICRATE; // 1 second
+	}
+}
+
+void AnnouncerManager::queueSound(const std::string& soundName)
+{
+	if (delayTicsRemaining <= 0 && soundQueue.empty())
+	{
+		// Nothing playing, play immediately.
+		playAndSetDelay(soundName);
+	}
+	else
+	{
+		soundQueue.push(soundName);
+	}
+}
+
+void AnnouncerManager::tick()
+{
+	if (delayTicsRemaining > 0)
+		delayTicsRemaining--;
+
+	if (delayTicsRemaining <= 0 && !soundQueue.empty())
+	{
+		std::string nextSound = soundQueue.front();
+		soundQueue.pop();
+		playAndSetDelay(nextSound);
+	}
+}
+
+void AnnouncerManager::clearQueue()
+{
+	std::queue<std::string>().swap(soundQueue);
+	delayTicsRemaining = 0;
+}
+
+void AnnouncerManager::setPendingSpree(int level, const std::string& announcerSound,
+                                       const std::string& gameSfx)
+{
+	if (level > pendingSpreeLevel)
+	{
+		pendingSpreeLevel = level;
+		pendingSpreeAnnouncerSound = announcerSound;
+		pendingSpreeGameSfx = gameSfx;
+	}
+}
+
+void AnnouncerManager::setPendingMultiKill(int level, const std::string& announcerSound,
+                                           const std::string& gameSfx)
+{
+	if (level > pendingMultiKillLevel)
+	{
+		pendingMultiKillLevel = level;
+		pendingMultiKillAnnouncerSound = announcerSound;
+		pendingMultiKillGameSfx = gameSfx;
+	}
+}
+
+void AnnouncerManager::flushPendingSounds()
+{
+	if (pendingSpreeLevel >= 0)
+	{
+		if (!pendingSpreeGameSfx.empty() && S_FindSound(pendingSpreeGameSfx.c_str()) != -1)
+			S_Sound(CHAN_GAMEINFO, pendingSpreeGameSfx.c_str(), 1, ATTN_NONE);
+
+		if (!pendingSpreeAnnouncerSound.empty() &&
+		    S_FindSound(pendingSpreeAnnouncerSound.c_str()) != -1)
+			S_Sound(CHAN_ANNOUNCER, pendingSpreeAnnouncerSound.c_str(), 1, ATTN_NONE);
+
+		pendingSpreeLevel = -1;
+		pendingSpreeAnnouncerSound.clear();
+		pendingSpreeGameSfx.clear();
+	}
+
+	if (pendingMultiKillLevel >= 0)
+	{
+		if (!pendingMultiKillGameSfx.empty() &&
+		    S_FindSound(pendingMultiKillGameSfx.c_str()) != -1)
+			S_Sound(CHAN_GAMEINFO, pendingMultiKillGameSfx.c_str(), 1, ATTN_NONE);
+
+		if (!pendingMultiKillAnnouncerSound.empty() &&
+		    S_FindSound(pendingMultiKillAnnouncerSound.c_str()) != -1)
+			S_Sound(CHAN_ANNOUNCER, pendingMultiKillAnnouncerSound.c_str(), 1, ATTN_NONE);
+
+		pendingMultiKillLevel = -1;
+		pendingMultiKillAnnouncerSound.clear();
+		pendingMultiKillGameSfx.clear();
+	}
+}
+
+void P_FlushPendingAnnouncerSounds()
+{
+	if (!::clientside)
+		return;
+
+	AnnouncerManager::getInstance().flushPendingSounds();
+}
+
+void P_TickAnnouncerQueue()
+{
+	if (!::clientside)
+		return;
+
+	AnnouncerManager::getInstance().tick();
 }
 
 void AnnouncerManager::resetFragWarnings()
@@ -612,7 +733,7 @@ static bool P_GetDisplayPlayerLeadState(bool& outHasLead, bool& outIsTied)
 	player_t& displayPlayer = idplayer(displayplayer_id);
 
 	// Make sure the display player is valid and in the game
-	if (!validplayer(displayPlayer) || !displayPlayer.ingame())
+	if (!validplayer(displayPlayer) || !displayPlayer.ingame() || displayPlayer.spectator)
 		return false;
 
 	if (G_IsTeamGame())
@@ -810,7 +931,7 @@ void P_CheckLeadChangeAnnouncement()
 
 	// Play announcement if we have one
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
-		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+		instance.queueSound(sound);
 }
 
 #ifdef CLIENT_APP
@@ -908,7 +1029,7 @@ void P_CheckFirstBloodAnnouncement()
 	instance.setFirstBloodAnnounced();
 	std::string sound = instance.getTokenForEvent(ANN_FIRSTBLOOD);
 	if (!sound.empty() && S_FindSound(sound.c_str()) != -1)
-		S_Sound(CHAN_ANNOUNCER, sound.c_str(), 1, ATTN_NONE);
+		instance.queueSound(sound);
 }
 
 #ifdef CLIENT_APP

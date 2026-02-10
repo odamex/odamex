@@ -25,6 +25,7 @@
 #pragma once
 
 #include <map>
+#include <queue>
 #include <string>
 
 #include "d_player.h"
@@ -453,6 +454,53 @@ public:
 	void loadAnnouncers(const std::unordered_map<std::string, Announcer_s> newAnnouncers);
 
 	/// <summary>
+	/// Queues an announcer sound to be played. If nothing is currently playing,
+	/// the sound plays immediately. Otherwise it is added to the queue and will
+	/// play after the current sound's duration has elapsed.
+	/// </summary>
+	/// <param name="soundName">The sndinfo token of the sound to play.</param>
+	void queueSound(const std::string& soundName);
+
+	/// <summary>
+	/// Called every game tic to process the announcer sound queue.
+	/// Decrements the delay counter and plays the next queued sound
+	/// when the current one has finished.
+	/// </summary>
+	void tick();
+
+	/// <summary>
+	/// Clears all queued announcer sounds and resets the delay counter.
+	/// </summary>
+	void clearQueue();
+
+	/// <summary>
+	/// Records a pending spree announcement for this tic. Only the highest
+	/// level reached during a single tic will actually be announced.
+	/// </summary>
+	/// <param name="level">The spree level reached.</param>
+	/// <param name="announcerSound">The sndinfo token for the announcer sound.</param>
+	/// <param name="gameSfx">The sndinfo token for the game sfx sound.</param>
+	void setPendingSpree(int level, const std::string& announcerSound,
+	                     const std::string& gameSfx);
+
+	/// <summary>
+	/// Records a pending multi kill announcement for this tic. Only the highest
+	/// level reached during a single tic will actually be announced.
+	/// </summary>
+	/// <param name="level">The multi kill level reached.</param>
+	/// <param name="announcerSound">The sndinfo token for the announcer sound.</param>
+	/// <param name="gameSfx">The sndinfo token for the game sfx sound.</param>
+	void setPendingMultiKill(int level, const std::string& announcerSound,
+	                         const std::string& gameSfx);
+
+	/// <summary>
+	/// Plays the highest pending spree and multi kill sounds accumulated
+	/// during this tic, then resets the pending state.
+	/// Should be called once per tic after all kills have been processed.
+	/// </summary>
+	void flushPendingSounds();
+
+	/// <summary>
 	/// Function to return whether the 3-frag warning has been announced already.
 	/// </summary>
 	bool hasFragWarning3BeenAnnounced() const { return fragWarning3Announced; }
@@ -564,7 +612,6 @@ public:
 		currentLeaderTeam = TEAM_NONE;
 		displayPlayerHasLead = false;
 		leadIsTied = false;
-		leadTrackingInitialized = false;
 	}
 
 	/// <summary>
@@ -581,16 +628,6 @@ public:
 	/// Marks first blood as having been announced.
 	/// </summary>
 	void setFirstBloodAnnounced() { firstBloodAnnounced = true; }
-
-	/// <summary>
-	/// Gets whether lead tracking has been initialized.
-	/// </summary>
-	bool isLeadTrackingInitialized() const { return leadTrackingInitialized; }
-
-	/// <summary>
-	/// Sets lead tracking as initialized.
-	/// </summary>
-	void setLeadTrackingInitialized() { leadTrackingInitialized = true; }
 
 	/// <summary>
 	/// Gets the current leader player ID (for FFA games).
@@ -685,14 +722,57 @@ private:
 	bool leadIsTied = false;
 
 	/// <summary>
-	/// Tracks whether lead tracking has been initialized for this game.
-	/// </summary>
-	bool leadTrackingInitialized = false;
-
-	/// <summary>
 	/// Tracks whether the first blood announcement has been played this game.
 	/// </summary>
 	bool firstBloodAnnounced = false;
+
+	/// <summary>
+	/// The highest spree level pending announcement this tic. -1 means none pending.
+	/// </summary>
+	int pendingSpreeLevel = -1;
+
+	/// <summary>
+	/// The announcer sound token for the pending spree announcement.
+	/// </summary>
+	std::string pendingSpreeAnnouncerSound;
+
+	/// <summary>
+	/// The game sfx token for the pending spree announcement.
+	/// </summary>
+	std::string pendingSpreeGameSfx;
+
+	/// <summary>
+	/// The highest multi kill level pending announcement this tic. -1 means none pending.
+	/// </summary>
+	int pendingMultiKillLevel = -1;
+
+	/// <summary>
+	/// The announcer sound token for the pending multi kill announcement.
+	/// </summary>
+	std::string pendingMultiKillAnnouncerSound;
+
+	/// <summary>
+	/// The game sfx token for the pending multi kill announcement.
+	/// </summary>
+	std::string pendingMultiKillGameSfx;
+
+	/// <summary>
+	/// Queue of pending announcer sound names (sndinfo tokens) waiting to be played.
+	/// </summary>
+	std::queue<std::string> soundQueue;
+
+	/// <summary>
+	/// Number of tics remaining before the next queued sound can play.
+	/// When this reaches 0, the next sound in the queue is played.
+	/// </summary>
+	int delayTicsRemaining = 0;
+
+	/// <summary>
+	/// Plays a sound immediately on the announcer channel and sets the
+	/// delay counter based on the sound's duration.
+	/// </summary>
+	/// <param name="soundName">The sndinfo token of the sound to play.</param>
+	void playAndSetDelay(const std::string& soundName);
 
 	/// <summary>
 	/// Dictionary of all loaded announcers, mapped by their name.
@@ -770,3 +850,17 @@ void P_CheckBossSpawnAnnouncement();
 /// If so, plays the announcer sound. Client-side only.
 /// </summary>
 void P_CheckLastPlayerAliveAnnouncement();
+
+/// <summary>
+/// Ticks the announcer sound queue. Should be called every game tic.
+/// Processes queued sounds and plays the next one when the current sound
+/// has finished playing.
+/// </summary>
+void P_TickAnnouncerQueue();
+
+/// <summary>
+/// Flushes pending spree and multi kill sounds accumulated during this tic.
+/// Only the highest level reached for each category is announced.
+/// Should be called once per tic after all kills have been processed.
+/// </summary>
+void P_FlushPendingAnnouncerSounds();
