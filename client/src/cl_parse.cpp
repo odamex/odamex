@@ -265,6 +265,22 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 		p.pendingweapon = wp_nochange;
 	}
 
+	statenum_t stnum[NUMPSPRITES] = {S_NULL, S_NULL};
+	for (int i = 0; i < NUMPSPRITES; i++)
+	{
+		if (i < msg->player().psprites_size())
+		{
+			const int32_t state = msg->player().psprites().Get(i).statenum();
+            if (!states.contains(state))
+			{
+				continue;
+			}
+			stnum[i] = static_cast<statenum_t>(state);
+		}
+	}
+	for (int i = 0; i < NUMPSPRITES; i++)
+		P_SetPsprite(&p, i, stnum[i]);
+
 	for (int i = 0; i < NUMPOWERS; i++)
 	{
 		if (i < msg->player().powers_size())
