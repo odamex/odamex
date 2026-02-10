@@ -299,6 +299,9 @@ static itemtype OldContType;
 static const char	   *OldAxisMessage;
 static itemtype OldAxisType;
 
+static std::string AnnouncerAuthor;
+static std::string AnnouncerDescription;
+
 /*=======================================
  *
  * Options Menu
@@ -1975,12 +1978,10 @@ void M_OptDrawer (void)
 				if (announcerisavailable)
 				{
 					const AnnouncerMetaData_s& metadata = AnnouncerManager::getInstance().getAnnouncerMetadata(announcername);
-					static char author_data[40];
-					static char desc_data[40];
-					snprintf(author_data, 40, "By: %s%s", TEXTCOLOR_TAN, metadata.author.c_str());
-					snprintf(desc_data, 40, "%s", metadata.description.c_str());
-					AnnouncerItems[ANN_AUTHORLINE].label = author_data;
-					AnnouncerItems[ANN_DESCLINE].label = desc_data;
+					AnnouncerAuthor = truncate("By: " + std::string(TEXTCOLOR_TAN) + metadata.author, 40);
+					AnnouncerDescription = truncate(metadata.description, 40);
+					AnnouncerItems[ANN_AUTHORLINE].label = AnnouncerAuthor.c_str();
+					AnnouncerItems[ANN_DESCLINE].label = AnnouncerDescription.c_str();
 				}
 				else
 				{
