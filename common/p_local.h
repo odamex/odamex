@@ -114,12 +114,9 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo = false);
 #define ONCEILINGZ		limits::MAXINT
 
 // Time interval for item respawning.
-#define ITEMQUESIZE 	128
+// #define ITEMQUESIZE 	128
 
-extern mapthing2_t		itemrespawnque[ITEMQUESIZE];
-extern int				itemrespawntime[ITEMQUESIZE];
-extern int				iquehead;
-extern int				iquetail;
+inline std::queue<std::pair<mapthing2_t, int>> itemrespawnque;
 
 void 	P_ThrustMobj (AActor *mo, angle_t angle, fixed_t move);
 void	P_RespawnSpecials (void);

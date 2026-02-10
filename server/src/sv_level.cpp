@@ -746,7 +746,7 @@ void G_DoResetLevel(bool full_reset)
 
 	// Clear the item respawn queue, otherwise all those actors we just
 	// destroyed and replaced with the serialized items will start respawning.
-	iquehead = iquetail = 0;
+	itemrespawnque = {};
 
 	// Clear player information.
 	for (auto& player : players)
