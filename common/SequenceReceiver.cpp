@@ -74,7 +74,7 @@ int SequenceReceiver::NextPacket(buf_t& io_bufferRef)
             auto nonreliableIter = m_nonReliableTable.find(m_currentSequence);
             if (nonreliableIter != m_nonReliableTable.end())
             {
-                io_bufferRef.swap(iter->second.buf);
+                io_bufferRef.swap(nonreliableIter->second.buf);
                 m_nonReliableTable.Erase(nonreliableIter);
                 return m_currentSequence;
             }

@@ -122,7 +122,7 @@ class SequencedMessenger
                                     // but still be sendable when in recovery.
 
 		// Receive buffer
-		buf_t m_receiveBuffer { MAX_UDP_PACKET };
+		buf_t m_receiveBuffer { 0x100000 };
 
         int m_maxPacketsPerRetransmission { DEFAULT_RETRANSMISSIONS_PER_TIC };
 		int m_retransmitDelayInTics       { 0 };

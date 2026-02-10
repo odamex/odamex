@@ -27,19 +27,19 @@ MessageResultEnum SequencedMessenger::Receive(buf_t& io_rawBuf)
     const size_t startOfNonReliableData = startOfReliableData + header.reliableSize + header.ackSize;
 	const size_t sizeOfNonReliableData  = io_rawBuf.size() - startOfNonReliableData;
 
-	m_receiveBuffer.clear();
+	//m_receiveBuffer.clear();
     if (sizeOfNonReliableData)
     {
 		m_receiveBuffer.WriteChunk(reinterpret_cast<char*>(io_rawBuf.ptr()),
 		                           sizeOfNonReliableData,
 		                           startOfNonReliableData);
 
-        m_receiver.RegisterNonReliablePacket(header.sequence, m_receiveBuffer);
+        //m_receiver.RegisterNonReliablePacket(header.sequence, m_receiveBuffer);
 
 		io_rawBuf.setcursize(startOfNonReliableData);
     }
 
-    m_receiveBuffer.clear();
+    //m_receiveBuffer.clear();
     if (header.ackSize)
     {
 		m_receiveBuffer.WriteChunk(reinterpret_cast<char*>(io_rawBuf.ptr()),
@@ -60,7 +60,7 @@ MessageResultEnum SequencedMessenger::Receive(buf_t& io_rawBuf)
 			ack.WriteLong(header.sequence);
 		}
 	}
-	return header.ackSize ? MessageResultEnum::ACCEPT : MessageResultEnum::DEFER;
+	return (header.ackSize or sizeOfNonReliableData) ? MessageResultEnum::ACCEPT : MessageResultEnum::DEFER;
 }
 
 bool SequencedMessenger::NextReceivedPacket(buf_t& io_rawBuf)
