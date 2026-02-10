@@ -24,7 +24,7 @@
 
 #include <iso646.h>
 
-#include "doomfunc.h"
+//#include "doomfunc.h"
 
 SequenceQueueEntryType* SequenceSender::UnackedIterator::Next()
 {

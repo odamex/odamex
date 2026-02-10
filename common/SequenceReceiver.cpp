@@ -22,15 +22,8 @@
 
 #include "SequenceReceiver.h"
 
-bool SequenceReceiver::RegisterReceivedPacket(int sequence, buf_t& io_bufferRef)
+bool SequenceReceiver::RegisterReliablePacket(int sequence, buf_t& io_bufferRef)
 {
-    /*  I don't think this is needed anymore.
-	if (m_currentSequence < 0)
-	{
-		m_currentSequence = sequence;
-	}
-    */
-
 	if (sequence >= m_currentSequence)
 	{
 		auto result = m_reliableTable.Emplace(sequence);
@@ -42,8 +35,12 @@ bool SequenceReceiver::RegisterReceivedPacket(int sequence, buf_t& io_bufferRef)
 			return true;
 		}
 	}
+    return false;
+}
 
-    else if (sequence < 0 and sequence <= -m_currentSequence)
+bool SequenceReceiver::RegisterNonReliablePacket(int sequence, buf_t& io_bufferRef)
+{
+    if (sequence >= m_currentSequence)
     {
 		auto result = m_nonReliableTable.Emplace(sequence);
 		SequenceQueueEntryType& entryRef = result->second;
@@ -74,7 +71,7 @@ int SequenceReceiver::NextPacket(buf_t& io_bufferRef)
         }
         else
         {
-            auto nonreliableIter = m_nonReliableTable.find(-m_currentSequence);
+            auto nonreliableIter = m_nonReliableTable.find(m_currentSequence);
             if (nonreliableIter != m_nonReliableTable.end())
             {
                 io_bufferRef.swap(iter->second.buf);

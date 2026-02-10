@@ -35,6 +35,18 @@ size_t Packet::AddReliableMessage(const buf_t& i_dataBuffer)
     return packedMessageSize;
 }
 
+size_t Packet::AddAckMessage(const buf_t& i_dataBuffer)
+{
+    const size_t packedMessageSize = AddToOutgoingBuffer(i_dataBuffer);
+
+    if (packedMessageSize)
+    {
+        m_header.ackSize += static_cast<uint16_t>(i_dataBuffer.size());
+    }
+    return packedMessageSize;
+}
+
+
 size_t Packet::AddUnreliableMessage(const buf_t& i_dataBuffer)
 {
     return AddToOutgoingBuffer(i_dataBuffer);
@@ -72,6 +84,7 @@ size_t Packet::ReSend(int sequence, const buf_t& i_dataBuffer, const netadr_t& i
 
     m_header.sequence     = sequence;
     m_header.reliableSize = static_cast<uint16_t>(i_dataBuffer.size());
+    m_header.ackSize      = 0;
     m_header.flags        = 0;
 
     m_header.Pack(m_outgoingPacketBuffer);
@@ -101,7 +114,7 @@ size_t Packet::Send(int i_currentTic, SequenceSender& i_sender, const netadr_t& 
         // The main thing we're trying to avoid is the receiver handling unreliable
         // packets "from the future" when they really do depend on reliable data having
         // arrived beforehand.
-        m_header.sequence = -i_sender.MostRecentAcquiredSequence();
+        m_header.sequence = i_sender.MostRecentAcquiredSequence();
     }
 
     m_outgoingPacketBuffer.SeekWrite(0, buf_t::BT_START);

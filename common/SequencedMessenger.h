@@ -32,16 +32,13 @@ class SequencedMessenger
 		//
 		//  io_rawBuf - the buffer from which to move data.  Must be a valid buffer containing a complete packet with nothing yet read
 		//              from it.  After returning from this function, the given buffer will be left in a valid but indeterminant state.
-		//  i_currentTic - The current timestamp / tic representing "now."  Used for sending an unreliable ack message if necessary.
-		//  i_dest       - The intended recipient for an unreliable message containing acks if one must be sent before this function
-		//                 returns.
 		//
 		// Return values:
 		// ABORT  - Malformed message.
 		// DEFER  - The receive buffer had only reliable data.  You can defer processing and call Receive() again without losing data.
 		// ACCEPT - Unreliable data is awaiting immediately.  Obtain via NextReceivedPacket() and process it before the next call to
 		//          Receive() or LOSE IT FOREVER.  Seriously, handle it immediately, because you don't want to let Acks hit the floor!
-		MessageResultEnum Receive(buf_t& io_rawBuf, int i_currentTic, const netadr_t& i_dest);
+		MessageResultEnum Receive(buf_t& io_rawBuf);
 
 		// Fetches the next packet for processing and moves its content into the given raw buffer.  This provides packets
 		// that have been received via the Receive() API, including reliable and unreliable data.  Unreliable data is

@@ -630,7 +630,7 @@ void SV_GetPackets()
 		{
 			if(player.playerstate != PST_DISCONNECT)
 			{
-                player.client.messenger.Receive(::net_message, gametic, player.client.address);
+                player.client.messenger.Receive(::net_message);
 				player.client.last_received = gametic;
 				SV_ParseCommands(player);
 			}
@@ -1798,9 +1798,8 @@ void SV_ConnectClient()
 		static buf_t smallbuf(1024);
 		if (smallbuf.size() == 0)
 		{
-			MSG_WriteLong(&smallbuf, 0); // First packet.
-			MSG_WriteShort(&smallbuf, 0); // Rel size
-			MSG_WriteByte(&smallbuf, 0); // No flags.
+            PacketHeaderType header(0);
+            header.Pack(smallbuf);
 			MSG_WriteSVCBuffer(&smallbuf, SVC_Disconnect("Server is full\n"));
 		}
 

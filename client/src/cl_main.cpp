@@ -1766,37 +1766,35 @@ bool CL_Connect()
 {
 	players.clear();
 
-	messenger = SequencedMessenger();
-	messenger.SetMaxRate(20);         // FIXME: total guess
-	messenger.SetPacketsPerRetransmit(10);    // To align with the size of the traditional cmd buffer
-    messenger.Clear();                      // To force a reset on the budget.
-	// [AM] This needs to go out ASAP so the server can start sending us
-	//      messages.
-    buf_t& netBuf = messenger.NetBuf().Obtain();
-	MSG_WriteMarker(&netBuf, clc_ack);
-	MSG_WriteLong(&netBuf, 0);
-	messenger.Send(gametic, ::serveraddr);
-
-	PrintFmt("Requesting server state...\n");
-
 	connected = true;
     multiplayer = true;
     network_game = true;
 	serverside = false;
 	simulated_connection = netdemo.isPlaying();
 
-    const int reliableSize = MSG_ReadShort();
-	byte flags = MSG_ReadByte();
-	if (flags & SVF_UNUSED_MASK)
-	{
-		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood.", flags);
+	messenger = SequencedMessenger();
+	messenger.SetMaxRate(20);         // FIXME: total guess
+	messenger.SetPacketsPerRetransmit(10);    // To align with the size of the traditional cmd buffer
+    messenger.Clear();                      // To force a reset on the budget.
+
+    // Rewind!
+    // CL_Connect is only called after we already know that the sequence is 0, so we can just let
+    // the messenger do its thing.
+    ::net_message.SeekRead(0, buf_t::BT_START);
+
+    if (messenger.Receive(::net_message) == MessageResultEnum::ABORT)
+    {
 		CL_QuitNetGame(NQ_PROTO);
-	}
-	else if (flags & SVF_COMPRESSED)
-	{
-		CL_Decompress();
-	}
-	CL_ParseCommands();
+    }
+    else
+    {
+        PrintFmt("Requesting server state...\n");
+        messenger.NextReceivedPacket(::net_message);
+        CL_ParseCommands();
+    }
+
+	messenger.Send(gametic, ::serveraddr);
+
 
 	if (gameaction == ga_fullconsole) // Host_EndGame was called
 		return false;
@@ -1962,7 +1960,7 @@ void CL_Decompress()
 MessageResultEnum CL_ReadPacketHeader()
 {
 	::netgraph.addTrafficIn(::net_message.size());
-	return ::messenger.Receive(::net_message, gametic, ::serveraddr);
+	return ::messenger.Receive(::net_message);
 }
 
 // Returns true if all is good, false if we need to bail out of further processing.

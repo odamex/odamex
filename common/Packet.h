@@ -13,6 +13,7 @@ class Packet
         // This class assumes that Reliable messages will always be packed first.
         // If you have Reliable messages, they MUST go before Unreliable messages.
         size_t AddReliableMessage(const buf_t& i_dataBuffer);
+        size_t AddAckMessage(const buf_t& i_dataBuffer);
         size_t AddUnreliableMessage(const buf_t& i_dataBuffer);
 
         void Compress();
