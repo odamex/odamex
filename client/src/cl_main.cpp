@@ -1775,7 +1775,6 @@ bool CL_Connect()
 	messenger = SequencedMessenger();
 	messenger.SetMaxRate(20);         // FIXME: total guess
 	messenger.SetPacketsPerRetransmit(10);    // To align with the size of the traditional cmd buffer
-    messenger.Clear();                      // To force a reset on the budget.
 
     // Rewind!
     // CL_Connect is only called after we already know that the sequence is 0, so we can just let
