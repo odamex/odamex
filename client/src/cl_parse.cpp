@@ -834,6 +834,12 @@ static void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 {
 	ClientReplay::getInstance().reset();
+	MultiKillManager::getInstance().clearMultiTics();
+	AnnouncerManager::getInstance().resetCountdownAnnouncements();
+	AnnouncerManager::getInstance().resetLeadTracking();
+	AnnouncerManager::getInstance().resetFightAnnouncement();
+	AnnouncerManager::getInstance().resetFirstBloodAnnouncement();
+	AnnouncerManager::getInstance().resetFragWarnings();
 	bool splitnetdemo =
 	    (netdemo.isRecording() && ::cl_splitnetdemos) || ::forcenetdemosplit;
 	::forcenetdemosplit = false;
@@ -1547,11 +1553,7 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 
 	if (flags & SVC_PM_LIVES)
 	{
-		P_CaptureLeadState();
-
 		p.lives = msg->lives();
-
-		P_CheckLeadChangeAnnouncement();
 	}
 
 	if (flags & SVC_PM_DAMAGE)
@@ -1561,8 +1563,6 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 
 	if (flags & SVC_PM_SCORE)
 	{
-		P_CaptureLeadState();
-
 		p.roundwins = msg->roundwins();
 		p.points = msg->points();
 		p.fragcount = msg->fragcount();
@@ -1571,22 +1571,12 @@ static void CL_PlayerMembers(const odaproto::svc::PlayerMembers* msg)
 		p.secretcount = msg->secretcount();
 		p.totalpoints = msg->totalpoints();
 		p.totaldeaths = msg->totaldeaths();
-
-		P_CheckLeadChangeAnnouncement();
-		P_CheckFirstBloodAnnouncement();
 	}
 
 	if (flags & SVC_PM_CHEATS)
 	{
 		if (!p.spectator)
 			p.cheats = msg->cheats();
-	}
-
-	if (p.fragcount > 0 &&
-	    AnnouncerManager::getInstance().hasFirstBloodBeenAnnounced() == false)
-	{
-		// First frag has already been made, so prevent announcing first blood on the next frag.
-		AnnouncerManager::getInstance().setFirstBloodAnnounced();
 	}
 }
 
@@ -1604,12 +1594,8 @@ static void CL_TeamMembers(const odaproto::svc::TeamMembers* msg)
 	if (info->Team >= NUMTEAMS)
 		return;
 
-	P_CaptureLeadState();
-
 	info->Points = points;
 	info->RoundWins = roundWins;
-
-	P_CheckLeadChangeAnnouncement();
 }
 
 static void CL_ActivateLine(const odaproto::svc::ActivateLine* msg)
@@ -1981,6 +1967,8 @@ static void CL_Say(const odaproto::svc::Say* msg)
 
 static void CL_CTFRefresh(const odaproto::svc::CTFRefresh* msg)
 {
+	P_CaptureLeadState();
+
 	// clear player flags client may have imagined
 	for (auto& player : players)
 	{
@@ -2048,8 +2036,6 @@ static void CL_CTFEvent(const odaproto::svc::CTFEvent* msg)
 	player_t& player = idplayer(msg->player_id());
 	team_t player_team = static_cast<team_t>(msg->player_team());
 	TeamInfo* target_teaminfo = GetTeamInfo(target_team);
-
-	P_CaptureLeadState();
 
 	// If our player is valid, assign passed points to them.
 	if (validplayer(player))
