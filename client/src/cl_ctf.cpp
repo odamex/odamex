@@ -427,7 +427,10 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 
 			if (IsPossesiveEvent(playerTeam, flag, team, ev) && S_FindSound(possessiveSound.c_str()))
 			{
-				S_Sound(CHAN_ANNOUNCER, possessiveSound.c_str(), 1, ATTN_NONE);
+				if (ev == SCORE_CAPTURE)
+						AnnouncerManager::getInstance().queueSound(possessiveSound);
+				else
+					S_Sound(CHAN_ANNOUNCER, possessiveSound.c_str(), 1, ATTN_NONE);
 				break;
 			}
 		}
@@ -441,7 +444,10 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 		const std::string teamSound = AnnouncerManager::getInstance().getTokenForEvent(flag_sound[ev][4 + sound]);
 
 		if (S_FindSound(teamSound.c_str()) != -1)
-			S_Sound(CHAN_ANNOUNCER, teamSound.c_str(), 1, ATTN_NONE);
+			if (ev == SCORE_CAPTURE)
+				AnnouncerManager::getInstance().queueSound(teamSound);
+			else
+				S_Sound(CHAN_ANNOUNCER, teamSound.c_str(), 1, ATTN_NONE);
 		break;
 	}
 		[[fallthrough]];
