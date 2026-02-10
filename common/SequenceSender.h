@@ -90,6 +90,8 @@ class SequenceSender
 
 		int GetPendingAckCount() const { return static_cast<int>(m_sendTable.size()); }
 
+        int MostRecentAcquiredSequence() const { return m_nextSequence - 1; }
+
 	protected:
 
         struct IntIdentity
@@ -97,8 +99,8 @@ class SequenceSender
             size_t operator()(const int key) const { return key; }
         };
 
-        std::vector<int> m_unackedSequences;
-        PacketTable      m_sendTable;
+        std::vector<int>  m_unackedSequences;
+        SinglePacketTable m_sendTable;
 
 		int m_nextSequence;                 // The sequence number to assign to the next requested packet.
 

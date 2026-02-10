@@ -31,7 +31,8 @@ class SequenceReceiver
 	public:
 
 		explicit SequenceReceiver(size_t i_initialSize) :
-			m_recvQueue       (i_initialSize),
+			m_reliableTable   (i_initialSize),
+            m_nonReliableTable(i_initialSize),
 			m_currentSequence (0)
 		{
 		}
@@ -65,7 +66,8 @@ class SequenceReceiver
 
 	protected:
 
-		PacketTable m_recvQueue;
+		SinglePacketTable m_reliableTable;
+        MultiPacketTable  m_nonReliableTable;
 
 		int m_currentSequence;  // Index of the place to store the next received packet.
 };

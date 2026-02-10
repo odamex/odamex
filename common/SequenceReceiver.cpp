@@ -24,14 +24,16 @@
 
 bool SequenceReceiver::RegisterReceivedPacket(int sequence, buf_t& io_bufferRef)
 {
+    /*  I don't think this is needed anymore.
 	if (m_currentSequence < 0)
 	{
 		m_currentSequence = sequence;
 	}
+    */
 
 	if (sequence >= m_currentSequence)
 	{
-		auto result = m_recvQueue.Acquire(sequence);
+		auto result = m_reliableTable.Emplace(sequence);
 		if (result.second)      // Was this NOT a repeated reception?
 		{
 			SequenceQueueEntryType& entryRef = result.first->second;
@@ -40,6 +42,15 @@ bool SequenceReceiver::RegisterReceivedPacket(int sequence, buf_t& io_bufferRef)
 			return true;
 		}
 	}
+
+    else if (sequence < 0 and sequence <= -m_currentSequence)
+    {
+		auto result = m_nonReliableTable.Emplace(sequence);
+		SequenceQueueEntryType& entryRef = result->second;
+		entryRef.sequence = sequence;
+		entryRef.buf.swap(io_bufferRef);
+		return true;
+    }
 	return false;
 }
 
@@ -48,12 +59,35 @@ int SequenceReceiver::NextPacket(buf_t& io_bufferRef)
 	// This is deliberately restrictive.  We do NOT want to process packets
 	// "from the future."  We want to keep a strict sequence to try to be as
 	// deterministic as possible.
-	auto iter = m_recvQueue.find(m_currentSequence);
-	if (iter != m_recvQueue.end())
+	auto iter = m_reliableTable.find(m_currentSequence);
+	if (iter != m_reliableTable.end())
 	{
-		io_bufferRef.swap(iter->second.buf);
-		m_recvQueue.Release(iter);
-		return m_currentSequence++;
-	}
+        // We clear out the buffer in the reliable receive table to indicate that
+        // there WAS a packet but it is now received, thus the corresponding
+        // non-reliable data is good to process.
+        if (iter->second.buf.size())
+        {
+            io_bufferRef.swap(iter->second.buf);
+            iter->second.buf.clear();
+
+            return m_currentSequence;
+        }
+        else
+        {
+            auto nonreliableIter = m_nonReliableTable.find(-m_currentSequence);
+            if (nonreliableIter != m_nonReliableTable.end())
+            {
+                io_bufferRef.swap(iter->second.buf);
+                m_nonReliableTable.Erase(nonreliableIter);
+                return m_currentSequence;
+            }
+            else
+            {
+                m_reliableTable.Erase(iter);
+                ++m_currentSequence;
+                return NextPacket(io_bufferRef);
+            }
+        }
+    }
 	return -1;
 }

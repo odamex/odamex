@@ -93,10 +93,19 @@ size_t Packet::Send(int i_currentTic, SequenceSender& i_sender, const netadr_t& 
                                            PacketHeaderType::PACKET_MESSAGE_INDEX);
         }
         m_header.sequence = saveMessage.sequence;
-
-        m_outgoingPacketBuffer.SeekWrite(0, buf_t::BT_START);
-        m_header.Pack(m_outgoingPacketBuffer);
     }
+    else
+    {
+        // We ensure sequential reception of any unreliable packets by indicating the
+        // most-recently acquired reliable message sequence number and negating it.
+        // The main thing we're trying to avoid is the receiver handling unreliable
+        // packets "from the future" when they really do depend on reliable data having
+        // arrived beforehand.
+        m_header.sequence = -i_sender.MostRecentAcquiredSequence();
+    }
+
+    m_outgoingPacketBuffer.SeekWrite(0, buf_t::BT_START);
+    m_header.Pack(m_outgoingPacketBuffer);
 
     return CompressAndSend(i_dest);
 }

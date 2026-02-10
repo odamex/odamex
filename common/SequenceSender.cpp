@@ -53,7 +53,7 @@ SequenceSender::SequenceSender(size_t i_initialSize) :
 
 SequenceSender::QueueEntryResultType SequenceSender::ObtainSendPacket(int currentTic)
 {
-    auto result = m_sendTable.Acquire(m_nextSequence);
+    auto result = m_sendTable.Emplace(m_nextSequence);
     auto iter   = result.first;
 
     m_unackedSequences.push_back(m_nextSequence);
@@ -76,7 +76,7 @@ bool SequenceSender::Acknowledge(int sequence)
 	{
         auto iter = m_sendTable.find(sequence);
 
-        if (m_sendTable.Release(iter))
+        if (m_sendTable.Erase(iter))
         {
             auto unackIter = std::find(m_unackedSequences.begin(),
                                        m_unackedSequences.end(),
