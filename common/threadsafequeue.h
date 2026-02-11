@@ -30,6 +30,10 @@
 #include <optional>
 #include <nonstd/expected.hpp>
 
+/**
+ * @class OConcurrentQueue
+ * @brief A bounded or unbounded thread-safe queue
+ */
 template <typename T,
           typename = std::enable_if_t<std::is_move_constructible_v<T>>>
 class OConcurrentQueue final
@@ -52,8 +56,16 @@ public:
 
 	enum class status_t { success, empty, full, closed };
 
-	using value_type = T;
+	using value_type = T; // for future C++29 compatibility
 
+	/**
+	 * @brief Pop the front of the queue and return it in an optional.
+	 *        If the queue is open, block until the queue has an element
+	 *        to pop.
+	 *
+	 * @return `std::nullopt` if the queue is empty and closed, otherwise
+	 *         the element popped from the queue
+	 */
 	std::optional<T> pop()
 	{
 		std::unique_lock lock(m_mutex);
@@ -73,6 +85,14 @@ public:
 		return val;
 	}
 
+	/**
+	 * @brief Non-blocking variant of `pop`.
+	 *
+	 *        Pop and return the front of the queue if the queue is non-empty.
+	 *
+	 * @return An `expected` containing either the popped element or a status
+	 *         code indicating the reason an element could not be popped.
+	 */
 	nonstd::expected<T, status_t> try_pop()
 	{
 		std::unique_lock lock(m_mutex);
@@ -92,6 +112,15 @@ public:
 		return val;
 	}
 
+	/**
+	 * @brief Push an element to the queue via copy-construction.
+	 *        If the queue is full, block until there is space available
+	 *
+	 *
+	 * @param x value to enqueue
+	 *
+	 * @return `true` if `x` was successfully pushed, `false` if the queue is closed
+	 */
 	bool push(const T& x)
 	{
 		{
@@ -109,6 +138,15 @@ public:
 		return true;
 	}
 
+	/**
+	 * @brief Push an element to the queue via move-construction.
+	 *        If the queue is full, block until there is space available
+	 *
+	 *
+	 * @param x value to enqueue
+	 *
+	 * @return `true` if `x` was successfully pushed, `false` if the queue is closed
+	 */
 	bool push(T&& x)
 	{
 		{
@@ -126,6 +164,14 @@ public:
 		return true;
 	}
 
+	/**
+	 * @brief Construct an element in place at the back of the queue.
+	 *        If the queue is full, block until there is space available
+	 *
+	 * @param args Arguments to pass to the constructor of `T`
+	 *
+	 * @return `true` if the element was successfully emplaced, `false` if the queue is closed
+	 */
 	template <typename... Args,
 	          typename = std::enable_if_t<std::is_constructible_v<T, Args&&...>>>
 	bool emplace(Args&&... args)
@@ -145,6 +191,15 @@ public:
 		return true;
 	}
 
+	/**
+	 * @brief Non-blocking variant of `push`
+	 *
+	 *        Push an element to the queue via copy-construction.
+	 *
+	 * @param x value to enqueue
+	 *
+	 * @return status code indicating success or the reason for failure
+	 */
 	status_t try_push(const T& x)
 	{
 		{
@@ -161,6 +216,15 @@ public:
 		return status_t::success;
 	}
 
+	/**
+	 * @brief Non-blocking variant of `push`
+	 *
+	 *        Push an element to the queue via move-construction.
+	 *
+	 * @param x value to enqueue
+	 *
+	 * @return status code indicating success or the reason for failure
+	 */
 	status_t try_push(T&& x)
 	{
 		{
@@ -177,6 +241,16 @@ public:
 		return status_t::success;
 	}
 
+	/**
+	 * @brief Non-blocking variant of `emplace`
+	 *
+	 *        Construct an element in place at the back of the queue.
+	 *
+	 *
+	 * @param args Arguments to pass to the constructor of `T`
+	 *
+	 * @return status code indicating success or the reason for failure
+	 */
 	template <typename... Args,
 	          typename = std::enable_if_t<std::is_constructible_v<T, Args&&...>>>
 	status_t try_emplace(Args&&... args)
@@ -195,6 +269,9 @@ public:
 		return status_t::success;
 	}
 
+	/**
+	 * @brief Close the queue so that no more elements can be pushed
+	 */
 	void close() noexcept
 	{
 		{
@@ -205,6 +282,9 @@ public:
 		m_isNotEmpty.notify_all();
 	}
 
+	/**
+	 * @return `true` if the queue has been closed
+	 */
 	bool is_closed() const noexcept
 	{
 		std::scoped_lock lock(m_mutex);
