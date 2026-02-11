@@ -38,6 +38,8 @@
 #include "svc_message.h"
 #include "g_gametype.h"
 
+#include "PacketHeaderType.h"
+
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
 
@@ -461,7 +463,7 @@ bool NetDemo::startRecording(const std::string &filename)
 	{
 		// write a simulation of the connection sequence since the server
 		// has already sent it to the client and it wasn't captured
-		static buf_t tempbuf(MAX_UDP_PACKET);
+		static buf_t tempbuf(NETDEMO_STARTUP_PACKET_SIZE);
 
 		// Fake the launcher query response
 		SZ_Clear(&tempbuf);
@@ -898,7 +900,7 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 
 	if (!connected)
 	{
-		int type = MSG_ReadLong();
+		int type = netbuffer->ReadLong();
 		if (type == MSG_CHALLENGE)
 		{
 			CL_PrepareConnect();
@@ -1117,11 +1119,9 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 
 void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 {
-	// The packet sequence id
-	MSG_WriteLong(netbuffer, 0);
+    PacketHeaderType header {0};
 
-	// Flags for our fake packet (none)
-	MSG_WriteByte(netbuffer, 0);
+    header.Pack(*netbuffer);
 
 	// Server sends our player id and digest
 	MSG_WriteSVCBuffer(netbuffer, SVC_ConsolePlayer(consoleplayer(), digest));

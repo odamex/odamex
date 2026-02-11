@@ -28,6 +28,11 @@
 // probably not be considered a reasonable MTU.
 #define MAX_UDP_PACKET 2048
 
+// Netdemos contain a connection sequence for the client, and the whole sequence
+// is written into the file in one big packet.  Here where we set the upper bound
+// on that packet's size.
+#define NETDEMO_STARTUP_PACKET_SIZE 8192
+
 // Maximum safe size for a packet transmitted over UDP.
 // This number comes from Steamworks and seems to be a reasonable default.
 #define MAX_UDP_SIZE 1200
