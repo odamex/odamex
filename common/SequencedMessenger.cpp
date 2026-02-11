@@ -66,6 +66,15 @@ bool SequencedMessenger::NextReceivedPacket(buf_t& io_rawBuf)
 
 //  -------------- Sending functions --------------
 
+void SequencedMessenger::ManageBudget(int i_currentTic)
+{
+    if (i_currentTic != m_latchedTic)
+    {
+        m_latchedTic = i_currentTic;
+        m_byteBudget = std::min(m_perTicBudget, m_byteBudget + m_perTicBudget);
+    }
+}
+
 MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_dest)
 {
 	const int ticPhase = i_currentTic % TICRATE;
@@ -75,7 +84,7 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
         m_perTicBudget           = maxRateInBytes / TICRATE;
 	}
 
-    m_byteBudget = std::min(m_perTicBudget, m_byteBudget + m_perTicBudget);
+    ManageBudget(i_currentTic);
 
     const int startBudget = m_byteBudget;
 
@@ -185,6 +194,8 @@ int SequencedMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& 
 	int retransmissionsSent = 0;
 	int bytesSent = 0;
 
+    ManageBudget(i_currentTic);
+
     // Gather metrics
     m_unackedGrowth       += m_sender.GetPendingAckCount() > m_previousUnackedCount ? 1 : -1;
     m_unackedGrowth        = std::max(0, m_unackedGrowth);
@@ -219,7 +230,7 @@ int SequencedMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& 
             // TODO: Working Throttle!
             //       With 800 KB rate at the nuts.wad wakeup with +50 msec lag (on incoming and outgoing), 10% packet loss
             //       causes a 900KB - 1000KB spike that causes retransmissions to fail.  For now we just live with that.
-			if (++retransmissionsSent > m_maxPacketsPerRetransmission)// or m_byteBudget <= 0)
+			if (++retransmissionsSent > m_maxPacketsPerRetransmission or m_byteBudget <= 0)
 			{
 				break;
 			}
@@ -229,7 +240,7 @@ int SequencedMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& 
 			sendQueueEntry->lastRetransmitTic = i_currentTic;
             const int resendSize = static_cast<int>(m_packet.ReSend(sendQueueEntry->sequence, sendQueueEntry->buf, i_dest));
 			bytesSent    += resendSize;
-            //m_byteBudget -= resendSize;
+            m_byteBudget -= resendSize;
 		}
 	}
 

@@ -109,6 +109,8 @@ class SequencedMessenger
 
 		static void CompressPacket(buf_t& send, const size_t reserved);
 
+        void ManageBudget(int i_currentTic);
+
 		int SendOldPacket(const SequenceQueueEntryType& queueEntry, const netadr_t& i_dest);
 
 		SequenceSender   m_sender;
@@ -128,8 +130,9 @@ class SequencedMessenger
 		int m_retransmitDelayInTics       { 0 };
 		int m_maxRate                     { 0 };
 
-        int m_byteBudget  { 0 };      // Signed so that it can also represent debt.
-        int m_perTicBudget{ 0 };
+        int m_byteBudget  {  0 };       // Signed so that it can also represent debt.
+        int m_perTicBudget{  0 };
+        int m_latchedTic  { -1 };       // Used for detecting new tics and resetting the budget.
 
 		// Metrics
 		int    m_lastSendSize                 {  0 };
