@@ -22,35 +22,15 @@ MessageResultEnum SequencedMessenger::Receive(buf_t& io_rawBuf)
 	}
 
 
+    const size_t fullSize               = io_rawBuf.size();
 	const size_t startOfReliableData    = io_rawBuf.TellRead();
 	const size_t startOfAcks            = startOfReliableData + header.reliableSize;
     const size_t startOfNonReliableData = startOfReliableData + header.reliableSize + header.ackSize;
-	const size_t sizeOfNonReliableData  = io_rawBuf.size() - startOfNonReliableData;
-
-	//m_receiveBuffer.clear();
-    if (sizeOfNonReliableData)
-    {
-		m_receiveBuffer.WriteChunk(reinterpret_cast<char*>(io_rawBuf.ptr()),
-		                           sizeOfNonReliableData,
-		                           startOfNonReliableData);
-
-        //m_receiver.RegisterNonReliablePacket(header.sequence, m_receiveBuffer);
-
-		io_rawBuf.setcursize(startOfNonReliableData);
-    }
-
-    //m_receiveBuffer.clear();
-    if (header.ackSize)
-    {
-		m_receiveBuffer.WriteChunk(reinterpret_cast<char*>(io_rawBuf.ptr()),
-		                           header.ackSize,
-		                           startOfAcks);
-		io_rawBuf.setcursize(startOfAcks);
-    }
+	const size_t sizeOfNonReliableData  = fullSize - startOfNonReliableData;
 
 	if (header.reliableSize)
 	{
-		m_receiver.RegisterReliablePacket(header.sequence, io_rawBuf);
+		m_receiver.RegisterReliablePacket(header.sequence, header.reliableSize, io_rawBuf);
 
 		// Send an ACK to the server only if it contained reliable data.
 		if (not simulated_connection)
@@ -60,15 +40,21 @@ MessageResultEnum SequencedMessenger::Receive(buf_t& io_rawBuf)
 			ack.WriteLong(header.sequence);
 		}
 	}
-	return (header.ackSize or sizeOfNonReliableData) ? MessageResultEnum::ACCEPT : MessageResultEnum::DEFER;
+    if (io_rawBuf.BytesLeftToRead() > 0)
+    {
+        m_quickTurnaroundReceiveBuffer = &io_rawBuf;
+        return MessageResultEnum::ACCEPT;
+    }
+
+	return MessageResultEnum::DEFER;
 }
 
 bool SequencedMessenger::NextReceivedPacket(buf_t& io_rawBuf)
 {
-	if (m_receiveBuffer.size() > 0)
+	if (m_quickTurnaroundReceiveBuffer)
 	{
-		io_rawBuf.swap(m_receiveBuffer);
-		m_receiveBuffer.clear();
+        io_rawBuf.swap(*m_quickTurnaroundReceiveBuffer);
+        m_quickTurnaroundReceiveBuffer = nullptr;
 		return true;
 	}
 	return m_receiver.NextPacket(io_rawBuf) >= 0;

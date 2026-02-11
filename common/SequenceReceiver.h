@@ -51,7 +51,7 @@ class SequenceReceiver
 		// into the queue, leaving the given io_bufferRef in a valid but indeterminant
 		// state, and true is returned.  Otherwise, false is returned and the given
 		// buffer is left unmodified.
-		bool RegisterReliablePacket(int sequence, buf_t& io_bufferRef);
+		bool RegisterReliablePacket(int sequence, size_t i_size, buf_t& io_bufferRef);
 
         bool RegisterNonReliablePacket(int sequence, buf_t& io_bufferRef);
 

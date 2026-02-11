@@ -43,6 +43,7 @@ class PacketTable
             if (pos != m_hashTable.end())
             {
                 m_freePackets.push_back(std::move(pos->second));
+                m_freePackets.back().buf.clear();
                 m_hashTable.erase(pos);
                 return true;
             }

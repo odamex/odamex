@@ -122,8 +122,7 @@ class SequencedMessenger
         MessageQueue m_outgoingAckQueue;   // Because acks must be outside of the reliable channels
                                     // but still be sendable when in recovery.
 
-		// Receive buffer
-		buf_t m_receiveBuffer { MAX_UDP_PACKET };
+        buf_t* m_quickTurnaroundReceiveBuffer { nullptr };
 
         int m_maxPacketsPerRetransmission { DEFAULT_RETRANSMISSIONS_PER_TIC };
 		int m_retransmitDelayInTics       { 0 };

@@ -342,7 +342,8 @@ extern  netadr_t  net_from;  // address of who sent the packet
 class buf_t
 {
 public:
-	std::unique_ptr<byte[]> data;
+	//std::unique_ptr<byte[]> data;
+    std::vector<byte> data;
 	size_t	allocsize, cursize, readpos, writepos;
 	bool	overflowed;  // set to true if the buffer size failed
 
@@ -656,7 +657,12 @@ public:
 
 	byte *ptr()
 	{
-		return data.get();
+		return data.data();
+	}
+
+	const byte *ptr() const
+	{
+		return data.data();
 	}
 
 	size_t size() const
@@ -666,12 +672,12 @@ public:
 
 	size_t maxsize() const
 	{
-		return allocsize;
+		return data.size();
 	}
 
 	void setcursize(size_t len)
 	{
-		cursize = len > allocsize ? allocsize : len;
+		cursize = len > maxsize() ? maxsize() : len;
 	}
 
 	void clear()
@@ -684,16 +690,11 @@ public:
 
 	void resize(size_t len, bool clearbuf = true)
 	{
-		auto newdata = std::make_unique<byte[]>(len);
-		allocsize = len;
+        data.resize(len);
 
 		if (!clearbuf)
 		{
-			if (cursize < len)
-			{
-				memcpy(newdata.get(), data.get(), cursize);
-			}
-			else
+			if (cursize > len)
 			{
 				clear();
 				overflowed = true;
@@ -704,14 +705,11 @@ public:
 		{
 			clear();
 		}
-
-		data = std::move(newdata);
-		allocsize = len;
 	}
 
 	byte *SZ_GetSpace(size_t length)
 	{
-		if (writepos + length >= allocsize)
+		if (writepos + length >= maxsize())
 		{
 			clear();
 			overflowed = true;
@@ -737,16 +735,11 @@ public:
 		if (this == &other)
             return *this;
 
-		data = std::make_unique<byte[]>(other.allocsize);
-		allocsize = other.allocsize;
+        data = other.data;
 		cursize = other.cursize;
 		overflowed = other.overflowed;
 		readpos = other.readpos;
         writepos = other.writepos;
-
-		if(!overflowed)
-			for(size_t i = 0; i < cursize; i++)
-				data[i] = other.data[i];
 
 		return *this;
 	}
@@ -760,7 +753,6 @@ public:
             return;
         }
 		data.swap(other.data);
-		swap(allocsize,  other.allocsize);
 		swap(cursize,    other.cursize);
 		swap(readpos,    other.readpos);
         swap(writepos,   other.writepos);
@@ -779,19 +771,16 @@ public:
     }
 
 	buf_t()
-		: data(nullptr), allocsize(0), cursize(0), readpos(0), writepos(0), overflowed(false)
+		: data(), cursize(0), readpos(0), writepos(0), overflowed(false)
 	{
 	}
 	buf_t(size_t len)
-		: data(new byte[len]), allocsize(len), cursize(0), readpos(0), writepos(0), overflowed(false)
+		: data(len), cursize(0), readpos(0), writepos(0), overflowed(false)
 	{
 	}
 	buf_t(const buf_t &other)
-		: data(new byte[other.allocsize]), allocsize(other.allocsize), cursize(other.cursize), readpos(other.readpos), writepos(other.writepos), overflowed(other.overflowed)
+		: data(other.data), cursize(other.cursize), readpos(other.readpos), writepos(other.writepos), overflowed(other.overflowed)
 	{
-		if(!overflowed)
-			for(size_t i = 0; i < cursize; i++)
-				data[i] = other.data[i];
 	}
     buf_t(buf_t&& other) :
         buf_t()

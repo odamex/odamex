@@ -22,7 +22,7 @@
 
 #include "SequenceReceiver.h"
 
-bool SequenceReceiver::RegisterReliablePacket(int sequence, buf_t& io_bufferRef)
+bool SequenceReceiver::RegisterReliablePacket(int sequence, size_t i_size, buf_t& io_bufferRef)
 {
 	if (sequence >= m_currentSequence)
 	{
@@ -31,7 +31,7 @@ bool SequenceReceiver::RegisterReliablePacket(int sequence, buf_t& io_bufferRef)
 		{
 			SequenceQueueEntryType& entryRef = result.first->second;
 			entryRef.sequence = sequence;
-			entryRef.buf.swap(io_bufferRef);
+			entryRef.buf.WriteChunk(io_bufferRef.ReadChunk(i_size), i_size);
 			return true;
 		}
 	}
@@ -60,6 +60,7 @@ int SequenceReceiver::NextPacket(buf_t& io_bufferRef)
 	if (iter != m_reliableTable.end())
 	{
         io_bufferRef.swap(iter->second.buf);
+        m_reliableTable.Erase(iter);
         return m_currentSequence++;
     }
 

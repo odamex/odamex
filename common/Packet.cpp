@@ -20,7 +20,7 @@ size_t Packet::AddToOutgoingBuffer(const buf_t& i_dataBuffer)
         return 0;
     }
 
-    m_outgoingPacketBuffer.WriteChunk(i_dataBuffer.data.get(), i_dataBuffer.size());
+    m_outgoingPacketBuffer.WriteChunk(i_dataBuffer.ptr(), i_dataBuffer.size());
     return i_dataBuffer.size();
 }
 
@@ -101,7 +101,7 @@ size_t Packet::Send(int i_currentTic, SequenceSender& i_sender, const netadr_t& 
         auto saveMessage = i_sender.ObtainSendPacket(i_currentTic);
         if (saveMessage.buffer)
         {
-            saveMessage.buffer->WriteChunk(m_outgoingPacketBuffer.data.get(),
+            saveMessage.buffer->WriteChunk(m_outgoingPacketBuffer.ptr(),
                                            m_header.reliableSize,
                                            PacketHeaderType::PACKET_MESSAGE_INDEX);
         }
