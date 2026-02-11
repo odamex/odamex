@@ -4093,6 +4093,21 @@ void SV_RunTics()
 	if (cmd.length())
 		AddCommandString(cmd);
 
+	if (rcon::Server::GetInstance())
+	{
+		if (auto something = rcon::Server::GetInstance()->getCommandQueue())
+		{
+			std::visit(OUtil::visitor {
+				[](const rcon::Server::Print& print) {
+					PrintFmt(print.level, "{}", print.text);
+				},
+				[](const rcon::Server::Command& command) {
+					AddCommandString(command.command);
+				}
+			}, *something);
+		}
+	}
+
 	SV_BanlistTics();
 	SV_UpdateMaster();
 

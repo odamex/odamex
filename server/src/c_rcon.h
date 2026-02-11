@@ -32,6 +32,8 @@
 #include <memory>
 #include <thread>
 #include <atomic>
+#include <variant>
+#include "threadsafequeue.h"
 // #include "fmt/compile.h"
 
 inline constexpr uint8_t PROTOCOL_VERSION_MAJOR = 1;
@@ -63,8 +65,22 @@ public:
 		start();
 	};
 
-	void getCommandQueue();
-	void queueResponse(std::string_view response) {};
+	struct Print
+	{
+		std::string text;
+		printlevel_t level;
+	};
+
+	struct Command
+	{
+		std::string command;
+	};
+
+	std::optional<std::variant<Print, Command>> getCommandQueue();
+	void queueResponse(printlevel_t level, std::string response) {
+		if (m_running)
+		frommainthread.emplace(Print{response, level});
+	};
 
 	static void Init(uint16_t port, std::string password)
 	{
@@ -81,21 +97,29 @@ private:
 	std::thread m_serverThread;
 	std::atomic<bool> m_running = false;
 	std::string m_password;
+	OConcurrentQueue<std::variant<Print, Command>> tomainthread{16};
+	OConcurrentQueue<std::variant<Print>> frommainthread{16};
+	struct ConnectionData {
+    	lws* wsi = nullptr;
+	};
+
+	std::mutex clients_mutex;
+	std::unordered_map<ConnectionData*, std::queue<Print>> clients;
 
 	inline static std::unique_ptr<Server> singleton;
 
 	// Callback for the websocket protocol
-	static int callback_json_server(
-		struct lws* wsi,
-		enum lws_callback_reasons reason,
+	static int connection_callback(
+		lws* wsi,
+		lws_callback_reasons reason,
 		void* user, void* in, size_t len);
 
 	// Protocols recognized by this server
 	inline static lws_protocols protocols[] = {
 		{
 			"odamex-rcon",
-			Server::callback_json_server,
-			0,
+			connection_callback,
+			sizeof(ConnectionData),
 			65536,
 			PROTOCOL_VERSION,
 			nullptr,
@@ -105,6 +129,20 @@ private:
 	};
 
 	void run();
+
+	template <typename... ARGS>
+	void log(fmt::format_string<ARGS...> format, ARGS&&... args)
+	{
+		if (m_running)
+		tomainthread.emplace(Print{fmt::format(format, std::forward<ARGS>(args)...), PRINT_HIGH});
+	}
+
+	template <typename... ARGS>
+	void log(const int printlevel, fmt::format_string<ARGS...> format, ARGS&&... args)
+	{
+		if (m_running)
+		tomainthread.emplace(Print{fmt::format(format, std::forward<ARGS>(args)...), printlevel});
+	}
 };
 
 } // namespace rcon

@@ -86,8 +86,6 @@ void C_DoCommand(std::string_view cmd, uint32_t key = 0);
 void daemon_init();
 #endif
 
-void D_DoomLoop (void);
-
 extern bool gameisdead;
 
 extern DThinker ThinkerCap;
@@ -99,9 +97,9 @@ gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
 //
 // D_DoomLoop
 //
-void D_DoomLoop (void)
+[[noreturn]] void D_DoomLoop()
 {
-	while (1)
+	while (true)
 	{
 		try
 		{

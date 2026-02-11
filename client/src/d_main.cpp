@@ -96,8 +96,6 @@ void D_CheckNetGame();
 void D_ProcessEvents();
 void D_DoAdvanceDemo();
 
-void D_DoomLoop();
-
 extern int testingmode;
 extern bool gameisdead;
 extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
@@ -352,7 +350,7 @@ void D_Display()
 //
 //  D_DoomLoop
 //
-void D_DoomLoop()
+[[noreturn]] void D_DoomLoop()
 {
 	while (true)
 	{
