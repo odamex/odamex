@@ -91,6 +91,11 @@ MessageResultEnum SequencedMessenger::Send(int i_currentTic, const netadr_t& i_d
         return m_packet.AddAckMessage(messageBuf);
     };
 
+    if (simulated_connection)
+    {
+        Clear();
+    }
+
     // First phase - send reliables, padded out to MAX_UDP_SIZE-ish with Acks.
     size_t bytesSentWithReliability = 0;
     while (m_outgoingReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
