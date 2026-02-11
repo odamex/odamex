@@ -30,6 +30,8 @@
 #include <optional>
 #include <nonstd/expected.hpp>
 
+enum class oconqueue_status_t { success, empty, full, closed };
+
 /**
  * @class OConcurrentQueue
  * @brief A bounded or unbounded thread-safe queue
@@ -53,10 +55,6 @@ public:
 	OConcurrentQueue(OConcurrentQueue&&) = delete;
 	OConcurrentQueue& operator=(const OConcurrentQueue&) = delete;
 	OConcurrentQueue& operator=(OConcurrentQueue&&) = delete;
-
-	enum class status_t { success, empty, full, closed };
-
-	using value_type = T; // for future C++29 compatibility
 
 	/**
 	 * @brief Pop the front of the queue and return it in an optional.
@@ -93,19 +91,19 @@ public:
 	 * @return An `expected` containing either the popped element or a status
 	 *         code indicating the reason an element could not be popped.
 	 */
-	nonstd::expected<T, status_t> try_pop()
+	nonstd::expected<T, oconqueue_status_t> try_pop()
 	{
 		std::unique_lock lock(m_mutex);
-		// don't block if queue empty, just return empty status_t
+		// don't block if queue empty, just return empty oconqueue_status_t
 		if (m_queue.empty())
 		{
 			if (m_closed)
-				return nonstd::make_unexpected(status_t::closed);
+				return nonstd::make_unexpected(oconqueue_status_t::closed);
 			else
-				return nonstd::make_unexpected(status_t::empty);
+				return nonstd::make_unexpected(oconqueue_status_t::empty);
 		}
 
-		nonstd::expected<T, status_t> val(std::move(m_queue.front()));
+		nonstd::expected<T, oconqueue_status_t> val(std::move(m_queue.front()));
 		m_queue.pop();
 		lock.unlock();
 		m_isNotFull.notify_one();
@@ -200,20 +198,20 @@ public:
 	 *
 	 * @return status code indicating success or the reason for failure
 	 */
-	status_t try_push(const T& x)
+	oconqueue_status_t try_push(const T& x)
 	{
 		{
 			std::unique_lock lock(m_mutex);
 			if (m_closed)
-				return status_t::closed;
+				return oconqueue_status_t::closed;
 
 			if (bound && m_queue.size() >= bound)
-				return status_t::full;
+				return oconqueue_status_t::full;
 
 			m_queue.push(x);
 		}
 		m_isNotEmpty.notify_one();
-		return status_t::success;
+		return oconqueue_status_t::success;
 	}
 
 	/**
@@ -225,20 +223,20 @@ public:
 	 *
 	 * @return status code indicating success or the reason for failure
 	 */
-	status_t try_push(T&& x)
+	oconqueue_status_t try_push(T&& x)
 	{
 		{
 			std::unique_lock lock(m_mutex);
 			if (m_closed)
-				return status_t::closed;
+				return oconqueue_status_t::closed;
 
 			if (bound && m_queue.size() >= bound)
-				return status_t::full;
+				return oconqueue_status_t::full;
 
 			m_queue.push(std::move(x));
 		}
 		m_isNotEmpty.notify_one();
-		return status_t::success;
+		return oconqueue_status_t::success;
 	}
 
 	/**
@@ -253,20 +251,20 @@ public:
 	 */
 	template <typename... Args,
 	          typename = std::enable_if_t<std::is_constructible_v<T, Args&&...>>>
-	status_t try_emplace(Args&&... args)
+	oconqueue_status_t try_emplace(Args&&... args)
 	{
 		{
 			std::unique_lock lock(m_mutex);
 			if (m_closed)
-				return status_t::closed;
+				return oconqueue_status_t::closed;
 
 			if (bound)
-				return status_t::full;
+				return oconqueue_status_t::full;
 
 			m_queue.emplace(std::forward<Args>(args)...);
 		}
 		m_isNotEmpty.notify_one();
-		return status_t::success;
+		return oconqueue_status_t::success;
 	}
 
 	/**
