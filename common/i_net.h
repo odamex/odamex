@@ -342,9 +342,8 @@ extern  netadr_t  net_from;  // address of who sent the packet
 class buf_t
 {
 public:
-	//std::unique_ptr<byte[]> data;
     std::vector<byte> data;
-	size_t	allocsize, cursize, readpos, writepos;
+	size_t	cursize, readpos, writepos;
 	bool	overflowed;  // set to true if the buffer size failed
 
     // Buffer seeking flags

@@ -30,7 +30,11 @@ MessageResultEnum SequencedMessenger::Receive(buf_t& io_rawBuf)
 
 	if (header.reliableSize)
 	{
-		m_receiver.RegisterReliablePacket(header.sequence, header.reliableSize, io_rawBuf);
+		if (not m_receiver.RegisterReliablePacket(header.sequence, header.reliableSize, io_rawBuf))
+        {
+            // Was it a worthless / duplicate retransmit?  Skip over the content.
+            io_rawBuf.SeekRead(header.reliableSize, buf_t::BT_CURRENT);
+        }
 
 		// Send an ACK to the server only if it contained reliable data.
 		if (not simulated_connection)
