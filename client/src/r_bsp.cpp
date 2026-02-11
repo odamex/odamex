@@ -112,7 +112,7 @@ void R_ClearDrawSegs(void)
 	if (drawsegs == NULL)
 	{
 		maxdrawsegs = 256;
-		firstdrawseg = drawsegs = (drawseg_t*)Malloc(maxdrawsegs * sizeof(drawseg_t));
+		firstdrawseg = drawsegs = (drawseg_t*)M_Malloc(maxdrawsegs * sizeof(drawseg_t));
 	}
 	ds_p = drawsegs;
 }

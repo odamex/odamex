@@ -1236,7 +1236,7 @@ void S_ChangeMusic(std::string musicname, bool looping, int order)
     else
 	{
 		length = M_FileLength(f);
-		data = static_cast<byte*>(Malloc(length));
+		data = static_cast<byte*>(M_Malloc(length));
 		const size_t result = fread(data, length, 1, f);
 		fclose(f);
 
