@@ -392,12 +392,6 @@ void SV_KickPlayer(player_t &player, const std::string &reason) {
 // are both presumed unusable after function is done.
 void SV_InvalidateClient(player_t &player, const std::string& reason)
 {
-	if (&(player.client) == NULL)
-	{
-		PrintFmt("Player with NULL client fails security check ({}), client cannot be safely dropped.\n", reason);
-		return;
-	}
-
 	PrintFmt("{} fails security check ({}), dropping client.\n", NET_AdrToString(player.client.address), reason);
 	SV_PlayerPrintFmt(PRINT_ERROR, player.id,
 	                  "The server closed your connection for the following reason: {}.\n",
@@ -4007,12 +4001,9 @@ void SV_GameTics (void)
 
 void SV_TouchSpecial(const AActor& special, player_t& player)
 {
-	client_t *cl = &player.client;
+	client_t& cl = player.client;
 
-	if (cl == nullptr)
-		return;
-
-	MSG_WriteSVC(&cl->reliablebuf, SVC_TouchSpecial(special));
+	MSG_WriteSVC(&cl.reliablebuf, SVC_TouchSpecial(special));
 }
 
 void SV_PlayerTimes (void)
