@@ -343,6 +343,10 @@ typedef struct
 
 extern  netadr_t  net_from;  // address of who sent the packet
 
+struct sockaddr_in;
+
+void SockadrToNetadr (struct sockaddr_in *s, netadr_t *a);
+void NetadrToSockadr (const netadr_t *a, struct sockaddr_in *s);
 
 class buf_t
 {

@@ -26,13 +26,14 @@
 
 #include "win32inc.h"
 #ifdef _WIN32
-    #include <winsock.h>
-    #include <time.h>
+#   define WIN32_LEAN_AND_MEAN
+#   include <winsock2.h>
+#   include <time.h>
 #endif
 
 #ifdef UNIX
-#include <unistd.h>
-#include <sys/time.h>
+#   include <unistd.h>
+#   include <sys/time.h>
 #endif
 
 #include "gstrings.h"
@@ -75,6 +76,8 @@
 
 #include "server.pb.h"
 
+#include "CanarySocket.h"
+
 extern void G_DeferedInitNew (const OLumpName& mapname);
 extern level_locals_t level;
 
@@ -116,6 +119,7 @@ EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_winnerstays)
 EXTERN_CVAR(debug_disconnect)
 EXTERN_CVAR(g_resetinvonexit)
+EXTERN_CVAR(port)
 
 void SexMessage (const char *from, char *to, gender_t gender,
 	std::string_view victim, std::string_view killer);
@@ -462,6 +466,8 @@ static void SendLevelState(SerializedLevelState sls)
 	}
 }
 
+static std::unique_ptr<CanarySocketServer> s_canaries;
+
 //
 // SV_InitNetwork
 //
@@ -481,10 +487,9 @@ void SV_InitNetwork (void)
 	// set up a socket and net_message buffer
 	InitNetCommon();
 
-	// determine my name & address
-	// NET_GetLocalAddress ();
-
 	PrintFmt("UDP Initialized.\n");
+
+    s_canaries = std::make_unique<CanarySocketServer>(port.asInt());
 
 	const char *w = Args.CheckValue ("-maxclients");
 	if (w)
