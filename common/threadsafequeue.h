@@ -85,7 +85,7 @@ public:
 				return nonstd::make_unexpected(status_t::empty);
 		}
 
-		std::optional<T> val(std::move(m_queue.front()));
+		nonstd::expected<T, status_t> val(std::move(m_queue.front()));
 		m_queue.pop();
 		lock.unlock();
 		m_isNotFull.notify_one();
