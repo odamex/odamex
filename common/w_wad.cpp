@@ -494,7 +494,7 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, int space)
 		if (oldlumps + newlumps > numlumps)
 			lumpinfo = (lumpinfo_t*) M_Realloc(lumpinfo, oldlumps + newlumps);
 
-		memcpy (lumpinfo + oldlumps, newlumpinfos.get(), sizeof(lumpinfo_t) * newlumps);
+		std::copy_n(newlumpinfos.get(), newlumps, lumpinfo + oldlumps);
 
 		numlumps = oldlumps + newlumps;
 
