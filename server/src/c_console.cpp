@@ -66,13 +66,16 @@ EXTERN_CVAR (log_fulltimestamps)
 
 std::string TimeStamp()
 {
-	auto now = std::chrono::system_clock::now();
+	const auto now = std::chrono::system_clock::now();
 	std::time_t t = std::chrono::system_clock::to_time_t(now);
+	std::tm local_time = *std::localtime(&t);
+	// TODO: C++20, replace previous 2 lines with:
+	// const auto local_time = std::chrono::current_zone()->to_local(now);
 
 	if (log_fulltimestamps)
-		return fmt::format("[{:%d/%m/%Y %H:%M:%S}]", fmt::localtime(t));
+		return fmt::format("[{:%d/%m/%Y %H:%M:%S}]", local_time);
 	else
-		return fmt::format("[{:%H:%M:%S}]", fmt::localtime(t));
+		return fmt::format("[{:%H:%M:%S}]", local_time);
 }
 
 static size_t PrintString(int printlevel, std::string str)
@@ -89,7 +92,7 @@ static size_t PrintString(int printlevel, std::string str)
 	}
 
 	if (rcon::Server::GetInstance())
-		rcon::Server::GetInstance()->queueResponse(str);
+		rcon::Server::GetInstance()->queueResponse((printlevel_t)printlevel, str);
 
 	return str.length();
 }
