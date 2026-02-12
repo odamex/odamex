@@ -2969,111 +2969,6 @@ void SV_SpyPlayer(player_t &viewer)
 
 namespace
 {
-	class MobjSorter
-	{
-		public:
-
-			MobjSorter() :
-				m_previousSortedMobjCount(static_cast<int>(s_sortedMobjs.size()))
-			{
-				m_freshTime = I_GetTime();
-
-				static_assert(std::is_trivially_destructible_v<decltype(s_sortedMobjs)::value_type>);
-				s_sortedMobjs.clear();  // Expect constant-time because the contained type is trivially destructible.
-
-				auto& unsortedThinkers = DThinker::GetThinkerVectorRef();
-
-				for (DThinker* thinker : unsortedThinkers)
-				{
-					if (thinker->IsKindOf(RUNTIME_CLASS(AActor)))
-					{
-						s_sortedMobjs.emplace_back(static_cast<AActor*>(thinker));
-					}
-				}
-				m_copyTime = I_GetTime();
-			}
-
-			int MobjCount() const
-			{
-				return static_cast<int>(s_sortedMobjs.size());
-			}
-			int PreviousMobjCount() const
-			{
-				return m_previousSortedMobjCount;
-			}
-
-			void Sort(player_t& pl)
-			{
-				// This only makes sense if the player has a position.
-				if (pl.mo)
-				{
-					[[maybe_unused]] const dtime_t startTime = I_GetTime();
-
-					// In testing a 22000 mobj firefight (No Time To Freeze map32) on a Ryzen 9800x3d,
-					// Windows 11, MSVC 2019, looking at JUST the core sort operation itself:
-					//
-					//      - std::sort:                    600-700 usec.
-					//      - Boost spreadsort:             ~300 usec.
-					//      - 3-partition std::nth_element:  40-70 usec.
-					//
-					// We go with dividing up the mobjs into 3 partitions with two calls to std::nth_element
-					// because for the purposes of prioritizing mobj messages to clients, we don't need fine
-					// precision between mobjs by distance.  Three coarse buckets based on approximate distance
-					// is enough.  This gives us three categories of entities based on range:
-					//
-					//      1. The closest 25% of mobjs - we really want to see frequent updates to these.
-					//      2. The next closest 25%     - no problem if these somewhat-distant guys stutter.
-					//      3. Everything else          - we don't care if we don't see them.
-					//
-					//
-					// The end result works well for the heavy-load test case, and only rarely do we see
-					// nearby enemies behave like there's any packet loss.
-
-					// The following block is used for sorting on approximate, relative distance.
-					const int playerMostSignificantX = (pl.mo->x >> 16);
-					const int playerMostSignificantY = (pl.mo->y >> 16);
-
-					for (auto& moPtr : s_sortedMobjs)
-					{
-						// We go with the below block because it's just a bit faster in MSVC (~170 usec) than
-						// P_AproxDistance2 (~200 usec) when looking at 22k mobjs, and we don't need "real"
-						// distance - just comparable values that correlate with distance.
-
-						const int dx = playerMostSignificantX - (moPtr->x >> 16);
-						const int dy = playerMostSignificantY - (moPtr->y >> 16);
-						moPtr->transientInt = dx*dx + dy*dy;
-					}
-					auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1->transientInt < mo2->transientInt; };
-
-					std::nth_element(s_sortedMobjs.begin(),
-					                 s_sortedMobjs.begin() + s_sortedMobjs.size()/2,
-					                 s_sortedMobjs.end(),
-					                 distanceCompare);
-					std::nth_element(s_sortedMobjs.begin(),
-					                 s_sortedMobjs.begin() + s_sortedMobjs.size()/4,
-					                 s_sortedMobjs.begin() + s_sortedMobjs.size()/2,
-					                 distanceCompare);
-					[[maybe_unused]] const dtime_t endTime = I_GetTime();
-
-					//DPrintFmt("{} initial: {}, Player {} sorting all ({}): total {} nsec\n",sizeof(AActor), m_copyTime - m_freshTime, int(pl.id), s_sortedMobjs.size(), endTime - startTime);
-				}
-			}
-
-			auto begin() { return s_sortedMobjs.begin(); }
-			auto end()   { return s_sortedMobjs.end();   }
-
-		protected:
-			// We are going to let this grow naturally.
-			// The first few passes will be slower than normal due to reallocations,
-			// but it will top out at some point.
-			inline static std::vector<AActor*> s_sortedMobjs{};
-
-			const int m_previousSortedMobjCount;
-
-			[[maybe_unused]] dtime_t m_freshTime;
-			[[maybe_unused]] dtime_t m_copyTime;
-	};
-
     struct BaseWorkerCommand
     {
         std::promise<void> promise;
@@ -3290,8 +3185,9 @@ void SV_WriteCommands(void)
 	Unlag::getInstance().recordPlayerPositions();
 	Unlag::getInstance().recordSectorPositions();
 
-//	MobjSorter sortedMobjs;
-
+    // Do an unordered map keyed on our player pointers.  When given a pointer,
+    // well-behaved std::hash implementations just return the address casted to
+    // size_t.
     std::unordered_map<player_t*, WorkerSortCommand> sortJobs;
     for (auto& player : players)
     {
@@ -3338,7 +3234,6 @@ void SV_WriteCommands(void)
         auto& sortJob = sortJobs.find(&*it)->second;
 
         sortJob.GetResult();
-		//sortedMobjs.Sort(*it);
 
 		// We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
 		// Combined with the high-priority to_spawn queue being directly limited in SV_UpdateHiddenMobj,
