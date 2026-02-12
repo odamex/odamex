@@ -84,6 +84,10 @@
 #pragma optimize("",off)
 #endif
 
+#ifndef _WIN32
+#   include <netinet/in.h>
+#endif
+
 // denis - fancy gfx, but no game manipulation
 bool clientside = true, serverside = false;
 baseapp_t baseapp = client;
