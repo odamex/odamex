@@ -147,7 +147,7 @@ void P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage);
 bool P_CheckMissileSpawn(AActor* th);
 AActor* P_SpawnMissile(AActor *source, AActor *dest, mobjtype_t type);
 AActor* P_SpawnPlayerMissile(AActor* source, mobjtype_t type);
-size_t P_GetMapThingPlayerNumber(mapthing2_t* mthing);
+size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing);
 bool P_VisibleToPlayers(const AActor *mo);
 void P_SetMobjBaseline(AActor& mo);
 uint32_t P_GetMobjBaselineFlags(const AActor& mo);
@@ -155,7 +155,7 @@ uint32_t P_GetMobjBaselineFlags(const AActor& mo);
 // [ML] From EE
 int P_ThingInfoHeight(mobjinfo_t *mi);
 bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound);
-void SpawnFlag(mapthing2_t* mthing, team_t flag);
+void SpawnFlag(const mapthing2_t& mthing, team_t flag);
 
 // From MBF
 bool P_SeekerMissile(AActor* actor, AActor* seekTarget, angle_t thresh, angle_t turnMax, bool seekcenter);

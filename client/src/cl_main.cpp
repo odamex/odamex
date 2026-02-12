@@ -591,7 +591,7 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 }
 
 extern bool advancedemo;
-QWORD nextstep = 0;
+uint64_t nextstep = 0;
 int canceltics = 0;
 
 void CL_StepTics(unsigned int count)
