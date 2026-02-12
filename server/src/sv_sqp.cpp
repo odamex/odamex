@@ -266,10 +266,10 @@ next:
 //
 // Sends information regarding the type of information we received (ie: it will
 // send data that is wanted by the enquirer program)
-static uint32_t IntQrySendResponse(const WORD& TagId,
+static uint32_t IntQrySendResponse(const uint16_t& TagId,
                                 const byte& TagApplication,
                                 const byte& TagQRId,
-                                const WORD& TagPacketType)
+                                const uint16_t& TagPacketType)
 {
 	// It isn't a query, throw it away
 	if(TagQRId != 1)
@@ -314,10 +314,10 @@ static uint32_t IntQrySendResponse(const WORD& TagId,
 	}
 
 	uint32_t ReTag = 0;
-	WORD ReId = TAG_ID;
+	uint16_t ReId = TAG_ID;
 	byte ReApplication = 3;
 	byte ReQRId = 2;
-	WORD RePacketType = 0;
+	uint16_t RePacketType = 0;
 
 	switch(TagPacketType)
 	{
@@ -408,10 +408,10 @@ uint32_t SV_QryParseEnquiry(const uint32_t& Tag)
 {
 	// Decode the tag into its fields
 	// TODO: this may not be 100% correct
-	WORD TagId = ((Tag >> 20) & 0x0FFF);
+	uint16_t TagId = ((Tag >> 20) & 0x0FFF);
 	byte TagApplication = ((Tag >> 16) & 0x0F);
 	byte TagQRId = ((Tag >> 12) & 0x0F);
-	WORD TagPacketType = (Tag & 0xFFFF0FFF);
+	uint16_t TagPacketType = (Tag & 0xFFFF0FFF);
 
 	// It is not ours
 	if(TagId != TAG_ID)

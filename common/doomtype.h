@@ -101,9 +101,6 @@ namespace limits
 	inline constexpr int64_t      MINFIXED64 = std::numeric_limits<int64_t>::min();
 }
 
-typedef unsigned short		WORD;
-typedef signed short		SWORD;
-
 typedef uint64_t			dtime_t;
 
 #ifdef _WIN32

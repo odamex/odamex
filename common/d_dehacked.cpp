@@ -1144,7 +1144,7 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 		}
 		else if (iequals(key, "Pain chance"))
 		{
-			info->painchance = (SWORD)val;
+			info->painchance = val;
 		}
 		else if (iequals(key, "Melee range"))
 		{

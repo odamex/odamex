@@ -280,6 +280,8 @@ struct mapthing2_t
 	void Serialize (FArchive &);
 };
 
+using MapThing = mapthing2_t;
+
 #define NO_INDEX ((unsigned short)-1)
 
 // [RH] MapThing flags.
@@ -339,7 +341,7 @@ struct mappatch_t
 struct  maptexture_t
 {
 	char		name[8];
-	WORD		masked;				// [RH] Unused
+	uint16_t	masked;				// [RH] Unused
 	byte		scalex;				// [RH] Scaling (8 is normal)
 	byte		scaley;				// [RH] Same as above
 	short		width;

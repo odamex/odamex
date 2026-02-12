@@ -762,8 +762,8 @@ bool FBehavior::IsGood ()
 
 int *FBehavior::FindScript (int script) const
 {
-	const ScriptPtr *ptr = BinarySearch<ScriptPtr, WORD>
-		((ScriptPtr *)Scripts, NumScripts, &ScriptPtr::Number, (WORD)script);
+	const ScriptPtr *ptr = BinarySearch<ScriptPtr, uint16_t>
+		((ScriptPtr *)Scripts, NumScripts, &ScriptPtr::Number, (uint16_t)script);
 
 	return ptr ? (int *)(ptr->Address + Data) : NULL;
 }
@@ -983,7 +983,7 @@ uint32_t FBehavior::FindLanguage (uint32_t langid, bool ignoreregion) const
 	return 0;
 }
 
-void FBehavior::StartTypedScripts (WORD type, AActor *activator, int arg0, int arg1, int arg2, bool always) const
+void FBehavior::StartTypedScripts (uint16_t type, AActor *activator, int arg0, int arg1, int arg2, bool always) const
 {
 	if (!serverside)
 		return;
@@ -1054,7 +1054,7 @@ void DACSThinker::Serialize (FArchive &arc)
 		for (int i = 0; i < 1000; i++)
 		{
 			if (RunningScripts[i])
-				arc << RunningScripts[i] << (WORD)i;
+				arc << RunningScripts[i] << (uint16_t)i;
 		}
 		arc << static_cast<DLevelScript*>(nullptr);
 	}
@@ -1062,7 +1062,7 @@ void DACSThinker::Serialize (FArchive &arc)
 	{
 		arc >> Scripts >> LastScript;
 
-		WORD scriptnum;
+		uint16_t scriptnum;
 		DLevelScript *script;
 		arc >> script;
 		while (script)

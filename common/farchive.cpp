@@ -647,16 +647,16 @@ FArchive &FArchive::operator>> (byte &c)
 	return *this;
 }
 
-FArchive &FArchive::operator<< (WORD w)
+FArchive &FArchive::operator<< (uint16_t w)
 {
 	SWAP_WORD(w);
-	Write (&w, sizeof(WORD));
+	Write (&w, sizeof(uint16_t));
 	return *this;
 }
 
-FArchive &FArchive::operator>> (WORD &w)
+FArchive &FArchive::operator>> (uint16_t &w)
 {
-	Read (&w, sizeof(WORD));
+	Read (&w, sizeof(uint16_t));
 	SWAP_WORD(w);
 	return *this;
 }
