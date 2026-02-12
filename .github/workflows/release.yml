@@ -176,15 +176,6 @@ jobs:
       run: git submodule update --init --recursive
     - name: Install flatpak
       run: sudo apt update && sudo apt install flatpak flatpak-builder
-    - name: Create escaped branch name
-      env:
-        name: "${{ github.ref_name }}"
-      run: |
-        safe_name="$(printf '%s' "${name}" | sed -E 's#[^A-Za-z0-9._-]+#-#g; s#^[.-]+##; s#[-.]+$##; s#-+#-#g')"
-        if [ -z "${safe_name}" ]; then
-          safe_name="branch"
-        fi
-        echo "MODIFIED_BRANCH_NAME=${safe_name}" >> $GITHUB_ENV
     - name: Remove .git folders
       shell: bash
       run: rm -rf .git
@@ -194,10 +185,10 @@ jobs:
       run: |
         flatpak-builder --force-clean --user --install-deps-from=flathub \
         --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
-        --default-branch="${{ env.MODIFIED_BRANCH_NAME }}" -v
+        --default-branch=release -v
     - name: Pack flatpak
       run: |
-        flatpak build-bundle repo odamex-linux-x86_64-${{ env.new_version }}.flatpak net.odamex.Odamex "${{ env.MODIFIED_BRANCH_NAME }}" \
+        flatpak build-bundle repo odamex-linux-x86_64-${{ env.new_version }}.flatpak net.odamex.Odamex release \
         --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -227,15 +218,6 @@ jobs:
       run: git submodule update --init --recursive
     - name: Install flatpak
       run: sudo apt update && sudo apt install flatpak flatpak-builder
-    - name: Create escaped branch name
-      env:
-        name: "${{ github.ref_name }}"
-      run: |
-        safe_name="$(printf '%s' "${name}" | sed -E 's#[^A-Za-z0-9._-]+#-#g; s#^[.-]+##; s#[-.]+$##; s#-+#-#g')"
-        if [ -z "${safe_name}" ]; then
-          safe_name="branch"
-        fi
-        echo "MODIFIED_BRANCH_NAME=${safe_name}" >> $GITHUB_ENV
     - name: Remove .git folders
       shell: bash
       run: rm -rf .git
@@ -245,10 +227,10 @@ jobs:
       run: |
         flatpak-builder --force-clean --user --install-deps-from=flathub \
         --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
-        --default-branch="${{ env.MODIFIED_BRANCH_NAME }}" -v
+        --default-branch=release -v
     - name: Pack flatpak
       run: |
-        flatpak build-bundle repo odamex-linux-arm64-${{ env.new_version }}.flatpak net.odamex.Odamex "${{ env.MODIFIED_BRANCH_NAME }}" \
+        flatpak build-bundle repo odamex-linux-arm64-${{ env.new_version }}.flatpak net.odamex.Odamex release \
         --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
     - name: Upload artifact
       uses: actions/upload-artifact@v4
@@ -447,7 +429,7 @@ jobs:
     - name: Run build
       run: cmake --build build
     - name: Install bundle
-      run: cmake --install build --prefix "${PWD}/install"
+      run: cmake --install build
     - name: Bundle shared libraries
       shell: bash
       run: |

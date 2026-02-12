@@ -244,11 +244,11 @@ PlayerSnapshot::PlayerSnapshot(int time) :
 {
 }
 
-PlayerSnapshot::PlayerSnapshot(int time, player_t *player) :
+PlayerSnapshot::PlayerSnapshot(int time, const player_t& player) :
 		Snapshot(time), mFields(0xFFFFFFFF),
-		mActorSnap(time, player->mo),
-		mViewHeight(player->viewheight), mDeltaViewHeight(player->deltaviewheight),
-		mJumpTime(player->jumpTics)
+		mActorSnap(time, player.mo),
+		mViewHeight(player.viewheight), mDeltaViewHeight(player.deltaviewheight),
+		mJumpTime(player.jumpTics)
 {
 }
 
@@ -274,19 +274,19 @@ void PlayerSnapshot::merge(const PlayerSnapshot& other)
 		setJumpTime(other.mJumpTime);
 }
 
-void PlayerSnapshot::toPlayer(player_t *player) const
+void PlayerSnapshot::toPlayer(player_t& player) const
 {
-	if (!player || !player->mo)
+	if (!player.mo)
 		return;
 
-	mActorSnap.toActor(player->mo);
+	mActorSnap.toActor(player.mo);
 
 	if (mFields & PLY_VIEWHEIGHT)
-		player->viewheight = mViewHeight;
+		player.viewheight = mViewHeight;
 	if (mFields & PLY_DELTAVIEWHEIGHT)
-		player->deltaviewheight = mDeltaViewHeight;
+		player.deltaviewheight = mDeltaViewHeight;
 	if (mFields & PLY_JUMPTIME)
-		player->jumpTics = mJumpTime;
+		player.jumpTics = mJumpTime;
 }
 
 
@@ -642,32 +642,32 @@ PlayerSnapshot P_LerpPlayerPosition(const PlayerSnapshot &from, const PlayerSnap
 // but would like to apply all of the other player characteristics from the
 // snapshot to the player.
 //
-void P_SetPlayerSnapshotNoPosition(player_t *player, const PlayerSnapshot &snap)
+void P_SetPlayerSnapshotNoPosition(player_t& player, const PlayerSnapshot &snap)
 {
-	if (!player || !player->mo)
+	if (!player.mo)
 		return;
 
-	fixed_t x = player->mo->x;
-	fixed_t y = player->mo->y;
-	fixed_t z = player->mo->z;
-	fixed_t ceilingz = player->mo->ceilingz;
-	fixed_t floorz = player->mo->floorz;
-	fixed_t momx = player->mo->momx;
-	fixed_t momy = player->mo->momy;
-	fixed_t momz = player->mo->momz;
+	fixed_t x = player.mo->x;
+	fixed_t y = player.mo->y;
+	fixed_t z = player.mo->z;
+	fixed_t ceilingz = player.mo->ceilingz;
+	fixed_t floorz = player.mo->floorz;
+	fixed_t momx = player.mo->momx;
+	fixed_t momy = player.mo->momy;
+	fixed_t momz = player.mo->momz;
 
 	snap.toPlayer(player);
 
-	player->mo->UnlinkFromWorld();
-	player->mo->x = x;
-	player->mo->y = y;
-	player->mo->z = z;
-	player->mo->ceilingz = ceilingz;
-	player->mo->floorz = floorz;
-	player->mo->momx = momx;
-	player->mo->momy = momy;
-	player->mo->momz = momz;
-	player->mo->LinkToWorld();
+	player.mo->UnlinkFromWorld();
+	player.mo->x = x;
+	player.mo->y = y;
+	player.mo->z = z;
+	player.mo->ceilingz = ceilingz;
+	player.mo->floorz = floorz;
+	player.mo->momx = momx;
+	player.mo->momy = momy;
+	player.mo->momz = momz;
+	player.mo->LinkToWorld();
 }
 
 
