@@ -1,7 +1,23 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// URL parsing helpers for platform-specific launch paths.
+// $Id$
+//
+// Copyright (C) 2026 by The Odamex Team.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+//
+// DESCRIPTION:
+//	System interface, URL parsing helpers.
 //
 //-----------------------------------------------------------------------------
 
@@ -12,56 +28,70 @@
 OdamexUrlParts I_ParseOdamexUrlParts(std::string_view url)
 {
 	static constexpr std::string_view protocol = "odamex://";
-	std::string_view uri;
-	size_t term;
+	static constexpr std::string_view::size_type protocolSize = protocol.size();
 	OdamexUrlParts parts;
 
+	// Not a valid URL if it's empty or doesn't start with the expected protocol.
 	if (url.empty())
-		return parts;
+	{
+		return {};
+	}
 
-	uri = url;
-	if (uri.size() < protocol.size() || uri.compare(0, protocol.size(), protocol) != 0)
-		return parts;
+	// Check for the protocol prefix.
+	if (url.size() < protocolSize || url.compare(0, protocolSize, protocol) != 0)
+	{
+		return {};
+	}
 
-	uri.remove_prefix(protocol.size());
-	term = uri.find('/');
-	if (term == std::string_view::npos)
-		term = uri.size();
-	if (term == 0)
-		return parts;
+	std::string_view uri = url.substr(protocolSize);
+	const size_t slash = uri.find('/');
 
-	uri = uri.substr(0, term);
+	// If there's a slash, we only care about the part before it for -connect.
+	if (slash == 0)
+	{
+		return {};
+	}
+	else if (slash != std::string_view::npos)
+	{
+		uri = uri.substr(0, slash);
+	}
 
 	const size_t at = uri.find('@');
-	if (at != std::string_view::npos)
-	{
-		if (at == 0 || at + 1 >= uri.size())
-			return parts;
 
-		parts.hostport = std::string(uri.substr(at + 1));
-
-		const std::string_view userinfo = uri.substr(0, at);
-		const size_t colon = userinfo.find(':');
-		if (colon != std::string::npos)
-		{
-			// username:password form
-			parts.username = std::string(userinfo.substr(0, colon));
-			parts.password = std::string(userinfo.substr(colon + 1));
-		}
-		else
-		{
-			// password-only form
-			parts.password = std::string(userinfo);
-		}
-	}
-	else
+	// If there's no '@', the entire URI is treated as host:port.
+	if (at == std::string_view::npos)
 	{
 		parts.hostport = std::string(uri);
+		return parts.hostport.empty() ? OdamexUrlParts{} : parts;
 	}
 
-	if (parts.hostport.empty())
+	// If '@' is at the start or end, it's invalid.
+	if (at == 0 || at + 1 >= uri.size())
+	{
 		return {};
+	}
 
+	const std::string_view userinfo = uri.substr(0, at);
+	parts.hostport = std::string(uri.substr(at + 1));
+
+	// If the host:port portion is empty, it's invalid.
+	if (parts.hostport.empty())
+	{
+		return {};
+	}
+
+	const size_t colon = userinfo.find(':');
+
+	if (colon == std::string_view::npos)
+	{
+		// password-only form
+		parts.password = std::string(userinfo);
+		return parts;
+	}
+
+	// username:password form
+	parts.username = std::string(userinfo.substr(0, colon));
+	parts.password = std::string(userinfo.substr(colon + 1));
 	return parts;
 }
 
