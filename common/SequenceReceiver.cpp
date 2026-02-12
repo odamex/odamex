@@ -35,19 +35,6 @@ bool SequenceReceiver::RegisterReliablePacket(int sequence, size_t i_size, buf_t
 			return true;
 		}
 	}
-    return false;
-}
-
-bool SequenceReceiver::RegisterNonReliablePacket(int sequence, buf_t& io_bufferRef)
-{
-    if (sequence >= m_currentSequence)
-    {
-		auto result = m_nonReliableTable.Emplace(sequence);
-		SequenceQueueEntryType& entryRef = result->second;
-		entryRef.sequence = sequence;
-		entryRef.buf.swap(io_bufferRef);
-		return true;
-    }
 	return false;
 }
 
@@ -59,11 +46,11 @@ int SequenceReceiver::NextPacket(buf_t& io_bufferRef)
 	auto iter = m_reliableTable.find(m_currentSequence);
 	if (iter != m_reliableTable.end())
 	{
-        io_bufferRef.swap(iter->second.buf);
-        m_reliableTable.Erase(iter);
-        return m_currentSequence++;
-    }
+		io_bufferRef.swap(iter->second.buf);
+		m_reliableTable.Erase(iter);
+		return m_currentSequence++;
+	}
 
-    // TODO: NonReliable, monotonic sequence with skips
+	// TODO: NonReliable, monotonic sequence with skips
 	return -1;
 }

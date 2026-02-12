@@ -369,13 +369,13 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 {
 	if(connected)
 	{
-        messenger.Clear();
+		messenger.Clear();
 
-        buf_t& netBuf = messenger.NetBuf().Obtain();
+		buf_t& netBuf = messenger.NetBuf().Obtain();
 		MSG_WriteMarker(&netBuf, clc_disconnect);
-		messenger.Send(gametic, serveraddr);
+		messenger.SendAll(gametic, serveraddr);
 
-        messenger.Clear();
+		messenger.Clear();
 
 		sv_gametype = GM_COOP;
 		ClientReplay::getInstance().reset();
@@ -407,7 +407,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 
 	::messenger = SequencedMessenger();
 	P_ClearAllNetIds();
-    s_canary.reset();
+	s_canary.reset();
 
 	{
 		// [jsd] unlink player pointers from AActors; solves crash in R_ProjectSprites after a svc_disconnect message.
@@ -466,12 +466,12 @@ void CL_Reconnect(void)
 
 	if (connected)
 	{
-        messenger.Clear();
+		messenger.Clear();
 
 		MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_disconnect);
-		messenger.Send(gametic, serveraddr);
+		messenger.SendAll(gametic, serveraddr);
 
-        messenger.Clear();
+		messenger.Clear();
 
 		connected = false;
 		gameaction = ga_fullconsole;
@@ -526,7 +526,7 @@ void CL_CheckDisplayPlayer(void)
 	{
 		// Request information about this player from the server
 		// (weapons, ammo, health, etc)
-        buf_t& netBuf = messenger.NetBuf().Obtain();
+		buf_t& netBuf = messenger.NetBuf().Obtain();
 		MSG_WriteMarker(&netBuf, clc_spy);
 		MSG_WriteByte(&netBuf, newid);
 		displayplayer_id = newid;
@@ -917,7 +917,7 @@ BEGIN_COMMAND (rcon)
 		strncpy(command, args, ARRAY_LENGTH(command) - 1);
 		command[255] = '\0';
 
-        buf_t& netBuf = messenger.NetBuf().Obtain();
+		buf_t& netBuf = messenger.NetBuf().Obtain();
 		MSG_WriteMarker(&netBuf, clc_rcon);
 		MSG_WriteString(&netBuf, command);
 	}
@@ -931,7 +931,7 @@ BEGIN_COMMAND (rcon_password)
 	{
 		bool login = true;
 
-        buf_t& netBuf = messenger.NetBuf().Obtain();
+		buf_t& netBuf = messenger.NetBuf().Obtain();
 		MSG_WriteMarker(&netBuf, clc_rcon_password);
 		MSG_WriteByte(&netBuf, login);
 
@@ -947,7 +947,7 @@ BEGIN_COMMAND (rcon_logout)
 	{
 		bool login = false;
 
-        buf_t& netBuf = messenger.NetBuf().Obtain();
+		buf_t& netBuf = messenger.NetBuf().Obtain();
 		MSG_WriteMarker(&netBuf, clc_rcon_password);
 		MSG_WriteByte(&netBuf, login);
 		MSG_WriteString(&netBuf, "");
@@ -987,7 +987,7 @@ BEGIN_COMMAND (spectate)
 	// Only send message if currently not a spectator, or to remove from play queue
 	if (!spectator || consoleplayer().QueuePosition > 0)
 	{
-        buf_t& netBuf = messenger.NetBuf().Obtain();
+		buf_t& netBuf = messenger.NetBuf().Obtain();
 		MSG_WriteMarker(&netBuf, clc_spectate);
 		MSG_WriteByte(&netBuf, true);
 	}
@@ -996,7 +996,7 @@ END_COMMAND (spectate)
 
 BEGIN_COMMAND(ready)
 {
-    buf_t& netBuf = messenger.NetBuf().Obtain();
+	buf_t& netBuf = messenger.NetBuf().Obtain();
 	MSG_WriteMarker(&netBuf, clc_netcmd);
 	MSG_WriteString(&netBuf, "ready");
 	MSG_WriteByte(&netBuf, 0);
@@ -1026,7 +1026,7 @@ BEGIN_COMMAND(netcmd)
 		return;
 	}
 
-    buf_t& netBuf = messenger.NetBuf().Obtain();
+	buf_t& netBuf = messenger.NetBuf().Obtain();
 	MSG_WriteMarker(&netBuf, clc_netcmd);
 	MSG_WriteString(&netBuf, argv[1]);
 
@@ -1049,7 +1049,7 @@ BEGIN_COMMAND (join)
 	//	return;
 	//}
 
-    buf_t& netBuf = messenger.NetBuf().Obtain();
+	buf_t& netBuf = messenger.NetBuf().Obtain();
 	MSG_WriteMarker(&netBuf, clc_spectate);
 	MSG_WriteByte(&netBuf, false);
 }
@@ -1473,11 +1473,9 @@ void CL_RequestConnectInfo(void)
 
 		PrintFmt(PRINT_HIGH, "Connecting to {}...\n", NET_AdrToString(serveraddr));
 
-        //messenger.SetMaxRate(20);
-        //messenger.Clear();
-        buf_t netBuf {MAX_UDP_PACKET};
+		buf_t netBuf {MAX_UDP_PACKET};
 		MSG_WriteLong(&netBuf, LAUNCHER_CHALLENGE);
-        NET_SendPacket(netBuf, serveraddr);
+		NET_SendPacket(netBuf, serveraddr);
 	}
 
 	connecttimeout--;
@@ -1774,53 +1772,45 @@ bool CL_Connect()
 	players.clear();
 
 	connected = true;
-    multiplayer = true;
-    network_game = true;
+	multiplayer = true;
+	network_game = true;
 	serverside = false;
 	simulated_connection = netdemo.isPlaying();
 
-    if (not simulated_connection)
-    {
-        sockaddr_in tcpAddress;
-        sockaddr_in udpAddress;
+	if (not simulated_connection)
+	{
+		sockaddr_in tcpAddress;
+		sockaddr_in udpAddress;
 
-        NetadrToSockadr(&serveraddr, &tcpAddress);
+		NetadrToSockadr(&serveraddr, &tcpAddress);
 
-        NET_GetSockaddr(udpAddress);
+		NET_GetSockaddr(udpAddress);
 
-        s_canary = std::make_unique<CanarySocketClient>();
-        if (s_canary->Connect(tcpAddress, udpAddress))
-        {
-            PrintFmt("The canary lives!\n");
-        }
-        else
-        {
-            PrintFmt("no canary.\n");
-        }
-    }
+		s_canary = std::make_unique<CanarySocketClient>();
+		s_canary->Connect(tcpAddress, udpAddress);
+	}
 
 	messenger = SequencedMessenger();
 	messenger.SetMaxRate(20);         // FIXME: total guess
 	messenger.SetPacketsPerRetransmit(10);    // To align with the size of the traditional cmd buffer
 
-    // Rewind!
-    // CL_Connect is only called after we already know that the sequence is 0, so we can just let
-    // the messenger do its thing.
-    ::net_message.SeekRead(0, buf_t::BT_START);
+	// Rewind!
+	// CL_Connect is only called after we already know that the sequence is 0, so we can just let
+	// the messenger do its thing.
+	::net_message.SeekRead(0, buf_t::BT_START);
 
-    if (messenger.Receive(::net_message) == MessageResultEnum::ABORT)
-    {
+	if (messenger.Receive(::net_message) == MessageResultEnum::ABORT)
+	{
 		CL_QuitNetGame(NQ_PROTO);
-    }
-    else
-    {
-        PrintFmt("Requesting server state...\n");
-        messenger.NextReceivedPacket(::net_message);
-        CL_ParseCommands();
-    }
+	}
+	else
+	{
+		PrintFmt("Requesting server state...\n");
+		messenger.NextReceivedPacket(::net_message);
+		CL_ParseCommands();
+	}
 
-	messenger.Send(gametic, ::serveraddr);
-
+	messenger.SendAll(gametic, ::serveraddr);
 
 	if (gameaction == ga_fullconsole) // Host_EndGame was called
 		return false;
@@ -1900,11 +1890,11 @@ void CL_TryToConnect(DWORD server_token)
 
 		messenger.Clear();
 
-        // The following is part of the connection sequence that doesn't play
-        // nicely with the rest of the messaging...  This is why we do direct
-        // unmanaged packet sends.
-        //
-        buf_t netBuf {MAX_UDP_PACKET};
+		// The following is part of the connection sequence that doesn't play
+		// nicely with the rest of the messaging...  This is why we do direct
+		// unmanaged packet sends.
+		//
+		buf_t netBuf {MAX_UDP_PACKET};
 		MSG_WriteLong(&netBuf, PROTO_CHALLENGE); // send challenge
 		MSG_WriteLong(&netBuf, server_token); // confirm server token
 		MSG_WriteShort(&netBuf, version); // send client version
@@ -1923,9 +1913,9 @@ void CL_TryToConnect(DWORD server_token)
 		constexpr int rate = 0xFFFF;
 		MSG_WriteLong(&netBuf, rate);
 
-        MSG_WriteString(&netBuf, connectpasshash.c_str());
+		MSG_WriteString(&netBuf, connectpasshash.c_str());
 
-        NET_SendPacket(netBuf, serveraddr);
+		NET_SendPacket(netBuf, serveraddr);
 	}
 
 	connecttimeout--;
@@ -2135,7 +2125,7 @@ void CL_SendCmd(void)
 	// GhostlyDeath -- If we are spectating, tell the server of our new position
 	if (p->spectator)
 	{
-        buf_t& netBuf = messenger.NetBuf().Obtain();
+		buf_t& netBuf = messenger.NetBuf().Obtain();
 
 		MSG_WriteMarker(&netBuf, clc_spectate);
 		MSG_WriteByte(&netBuf, 5);
@@ -2144,7 +2134,7 @@ void CL_SendCmd(void)
 		MSG_WriteLong(&netBuf, p->mo->z);
 	}
 
-    buf_t& reliableBuf = messenger.ReliableBuf().Obtain();
+	buf_t& reliableBuf = messenger.ReliableBuf().Obtain();
 
 	MSG_WriteMarker(&reliableBuf, clc_move);
 
@@ -2156,14 +2146,14 @@ void CL_SendCmd(void)
 	NetCommand& currentNetcmd = localcmds[gametic % MAXSAVETICS];
 	currentNetcmd.write(&reliableBuf);
 
-	messenger.Send(gametic, serveraddr);
+	messenger.SendAll(gametic, serveraddr);
 
 	const int retransmittedByteCount = messenger.HandleRetransmissions(gametic, serveraddr);
 
 	const int currentSendSize    = messenger.GetLastSendSize();
 	const int totalSentByteCount = currentSendSize + retransmittedByteCount;
 
-    netgraph.setReliableNonContiguousRetransmits(messenger.GetNonContiguousRetransmitPackets());
+	netgraph.setReliableNonContiguousRetransmits(messenger.GetNonContiguousRetransmitPackets());
 	netgraph.setReliableSendDepth(messenger.GetPendingAckCount());
 	netgraph.addTrafficOut(totalSentByteCount);
 	outrate += totalSentByteCount;
@@ -2186,7 +2176,7 @@ void CL_PlayerTimes()
 //
 void CL_SendCheat(int cheats)
 {
-    buf_t& netBuf = messenger.NetBuf().Obtain();
+	buf_t& netBuf = messenger.NetBuf().Obtain();
 	MSG_WriteMarker(&netBuf, clc_cheat);
 	MSG_WriteByte(&netBuf, 0);
 	MSG_WriteShort(&netBuf, cheats);
@@ -2197,7 +2187,7 @@ void CL_SendCheat(int cheats)
 //
 void CL_SendGiveCheat(const char* item)
 {
-    buf_t& netBuf = messenger.NetBuf().Obtain();
+	buf_t& netBuf = messenger.NetBuf().Obtain();
 	MSG_WriteMarker(&netBuf, clc_cheat);
 	MSG_WriteByte(&netBuf, 1);
 	MSG_WriteString(&netBuf, item);
@@ -2208,7 +2198,7 @@ void CL_SendGiveCheat(const char* item)
 //
 void CL_SendSummonCheat(const char* summon)
 {
-    buf_t& netBuf = messenger.NetBuf().Obtain();
+	buf_t& netBuf = messenger.NetBuf().Obtain();
 	MSG_WriteMarker(&netBuf, clc_cheat);
 	MSG_WriteByte(&netBuf, 2);
 	MSG_WriteString(&netBuf, summon);
@@ -2219,7 +2209,7 @@ void CL_SendSummonCheat(const char* summon)
 //
 void CL_SendSummonFriendCheat(const char* summon)
 {
-    buf_t& netBuf = messenger.NetBuf().Obtain();
+	buf_t& netBuf = messenger.NetBuf().Obtain();
 	MSG_WriteMarker(&netBuf, clc_cheat);
 	MSG_WriteByte(&netBuf, 3);
 	MSG_WriteString(&netBuf, summon);

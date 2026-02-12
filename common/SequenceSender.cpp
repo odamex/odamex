@@ -24,24 +24,22 @@
 
 #include <iso646.h>
 
-//#include "doomfunc.h"
-
 SequenceQueueEntryType* SequenceSender::UnackedIterator::Next()
 {
-    if (m_iter == m_sequencer->m_unackedSequences.end())
-    {
-        return nullptr;
-    }
+	if (m_iter == m_sequencer->m_unackedSequences.end())
+	{
+		return nullptr;
+	}
 
-    const int sequence = *(m_iter++);
+	const int sequence = *(m_iter++);
 
-    const auto tableIter = m_sequencer->m_sendTable.find(sequence);
-    if (tableIter != m_sequencer->m_sendTable.end())
-    {
-        // check for isAwaiting?  Do we even need that now?
-        return & tableIter->second;
-    }
-    return nullptr;
+	const auto tableIter = m_sequencer->m_sendTable.find(sequence);
+	if (tableIter != m_sequencer->m_sendTable.end())
+	{
+		// check for isAwaiting?  Do we even need that now?
+		return & tableIter->second;
+	}
+	return nullptr;
 }
 
 SequenceSender::SequenceSender(size_t i_initialSize) :
@@ -53,19 +51,19 @@ SequenceSender::SequenceSender(size_t i_initialSize) :
 
 SequenceSender::QueueEntryResultType SequenceSender::ObtainSendPacket(int currentTic)
 {
-    auto result = m_sendTable.Emplace(m_nextSequence);
-    auto iter   = result.first;
+	auto result = m_sendTable.Emplace(m_nextSequence);
+	auto iter   = result.first;
 
-    m_unackedSequences.push_back(m_nextSequence);
-    ++m_nextSequence;
+	m_unackedSequences.push_back(m_nextSequence);
+	++m_nextSequence;
 
-    iter->second.isAwaiting        = true;
-    iter->second.sequence          = iter->first;
-    iter->second.originatingTic    = currentTic;
-    iter->second.lastRetransmitTic = -1;
-    iter->second.buf.clear();
+	iter->second.isAwaiting        = true;
+	iter->second.sequence          = iter->first;
+	iter->second.originatingTic    = currentTic;
+	iter->second.lastRetransmitTic = -1;
+	iter->second.buf.clear();
 
-    return QueueEntryResultType {& iter->second.buf, iter->second.sequence};
+	return QueueEntryResultType {& iter->second.buf, iter->second.sequence};
 }
 
 bool SequenceSender::Acknowledge(int sequence)
@@ -74,20 +72,20 @@ bool SequenceSender::Acknowledge(int sequence)
 	// Just ignore those.
 	if (sequence >= 0)
 	{
-        auto iter = m_sendTable.find(sequence);
+		auto iter = m_sendTable.find(sequence);
 
-        if (m_sendTable.Erase(iter))
-        {
-            auto unackIter = std::find(m_unackedSequences.begin(),
-                                       m_unackedSequences.end(),
-                                       sequence);
-            if (unackIter != m_unackedSequences.end())
-            {
-                m_unackedSequences.erase(unackIter);
-            }
+		if (m_sendTable.Erase(iter))
+		{
+			auto unackIter = std::find(m_unackedSequences.begin(),
+			                           m_unackedSequences.end(),
+			                           sequence);
+			if (unackIter != m_unackedSequences.end())
+			{
+				m_unackedSequences.erase(unackIter);
+			}
 
-            return true;
-        }
-    }
-    return false;
+			return true;
+		}
+	}
+	return false;
 }

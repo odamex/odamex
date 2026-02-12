@@ -89,6 +89,8 @@ CanarySocketServer::iterator CanarySocketServer::FindDead()
             m_canaries.emplace_back(playerId, clientSocket);
         }
 
+        // As we find dead canaries, move them to the end of the vector so that we can easily just erase
+        // them without moving too much data.
         iterator firstDeadCanary = m_canaries.end();
         iterator iter = m_canaries.begin();
         while (iter != firstDeadCanary and numSockets > 0)

@@ -36,7 +36,7 @@ class SequenceSender
 			public:
 				explicit UnackedIterator(SequenceSender* i_sequencer):
 					m_sequencer(i_sequencer),
-                    m_iter     (i_sequencer->m_unackedSequences.begin())
+					m_iter     (i_sequencer->m_unackedSequences.begin())
 				{}
 
 				// Returns the next unacknowledged message.  After the last unacknowledged message
@@ -44,8 +44,8 @@ class SequenceSender
 				SequenceQueueEntryType* Next();
 
 			protected:
-				SequenceSender* m_sequencer;   // non-owning pointer.
-                std::vector<int>::iterator m_iter;
+				SequenceSender*            m_sequencer;   // non-owning pointer.
+				std::vector<int>::iterator m_iter;
 		};
 
 		enum SenderModeEnum
@@ -69,7 +69,7 @@ class SequenceSender
 		{
 		}
 
-        void SetMode(SenderModeEnum i_mode) { m_mode = i_mode; }
+		void SetMode(SenderModeEnum i_mode) { m_mode = i_mode; }
 		SenderModeEnum GetMode() const { return m_mode; }
 
 		// Grab a slot in the reliability sequence and prepare it for transmission.
@@ -90,17 +90,12 @@ class SequenceSender
 
 		int GetPendingAckCount() const { return static_cast<int>(m_sendTable.size()); }
 
-        int MostRecentAcquiredSequence() const { return m_nextSequence - 1; }
+		int MostRecentAcquiredSequence() const { return m_nextSequence - 1; }
 
 	protected:
 
-        struct IntIdentity
-        {
-            size_t operator()(const int key) const { return key; }
-        };
-
-        std::vector<int>  m_unackedSequences;
-        SinglePacketTable m_sendTable;
+		std::vector<int>  m_unackedSequences;
+		SinglePacketTable m_sendTable;
 
 		int m_nextSequence;                 // The sequence number to assign to the next requested packet.
 

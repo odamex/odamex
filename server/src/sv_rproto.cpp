@@ -106,7 +106,7 @@ bool SV_MustThrottleTransmissionsForClient(client_t& client)
 //
 bool SV_SendPacket(player_t &pl)
 {
-    return pl.client.messenger.Send(gametic, pl.client.address) != MessageResultEnum::ABORT;
+	return pl.client.messenger.SendAll(gametic, pl.client.address) != MessageResultEnum::ABORT;
 }
 
 void SV_HandleReliableRetransmissions()
@@ -119,25 +119,25 @@ void SV_HandleReliableRetransmissions()
 			continue;
 		}
 
-        // Total hack:  We check for the player being in the first second of their connection because there's something
-        // in the connection protocol that requires us to do immediate retransmits of the first few reliable messages.
-        if (player.GameTime > 0)
-        {
-            // The following results in fractional tics rounding up.
-            const int pingInTics = (player.ping * TICRATE + 999) / 1000;
+		// Total hack:  We check for the player being in the first second of their connection because there's something
+		// in the connection protocol that requires us to do immediate retransmits of the first few reliable messages.
+		if (player.GameTime > 0)
+		{
+			// The following results in fractional tics rounding up.
+			const int pingInTics = (player.ping * TICRATE + 999) / 1000;
 
-            // Adjust upwards because in the real world, tic boundaries don't align and can drift.
-            const int retransmitDelayInTics = pingInTics + 1;
+			// Adjust upwards because in the real world, tic boundaries don't align and can drift.
+			const int retransmitDelayInTics = pingInTics + 1;
 
-            player.client.messenger.SetRetransmitDelay(retransmitDelayInTics);
-        }
-        else
-        {
-            player.client.messenger.SetRetransmitDelay(0);
-        }
+			player.client.messenger.SetRetransmitDelay(retransmitDelayInTics);
+		}
+		else
+		{
+			player.client.messenger.SetRetransmitDelay(0);
+		}
 
-        player.client.messenger.HandleRetransmissions(gametic, player.client.address);
-    }
+		player.client.messenger.HandleRetransmissions(gametic, player.client.address);
+	}
 }
 
 //

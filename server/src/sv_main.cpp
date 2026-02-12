@@ -481,36 +481,36 @@ static std::unique_ptr<CanarySocketServer> s_canaries;
 
 static int SV_ConnectCanary(sockaddr_in& i_address)
 {
-    netadr_t netAddr;
+	netadr_t netAddr;
 
-    SockadrToNetadr(& i_address, & netAddr);
+	SockadrToNetadr(& i_address, & netAddr);
 
-    const player_t& playerRef = SV_FindPlayerByAddr(netAddr);
+	const player_t& playerRef = SV_FindPlayerByAddr(netAddr);
 
-    if (validplayer(playerRef))
-    {
-        return playerRef.id;
-    }
-    return -1;
+	if (validplayer(playerRef))
+	{
+		return playerRef.id;
+	}
+	return -1;
 }
 
 static void SV_CheckCanaries()
 {
-    if (s_canaries)
-    {
-        auto deadCanaryIter = s_canaries->FindDead();
+	if (s_canaries)
+	{
+		auto deadCanaryIter = s_canaries->FindDead();
 
-        while (deadCanaryIter != s_canaries->end())
-        {
-            player_t& playerRef = idplayer(deadCanaryIter->id);
-            if (validplayer(playerRef) and playerRef.playerstate != PST_DISCONNECT)
-            {
-                SV_BroadcastPrintFmt("{} disconnected abnormally\n", playerRef.userinfo.netname);
-                SV_DropClient(playerRef);
-            }
-            deadCanaryIter = s_canaries->PutOnCart(deadCanaryIter);
-        }
-    }
+		while (deadCanaryIter != s_canaries->end())
+		{
+			player_t& playerRef = idplayer(deadCanaryIter->id);
+			if (validplayer(playerRef) and playerRef.playerstate != PST_DISCONNECT)
+			{
+				SV_BroadcastPrintFmt("{} disconnected abnormally\n", playerRef.userinfo.netname);
+				SV_DropClient(playerRef);
+			}
+			deadCanaryIter = s_canaries->PutOnCart(deadCanaryIter);
+		}
+	}
 }
 
 //
@@ -534,9 +534,9 @@ void SV_InitNetwork (void)
 
 	PrintFmt("UDP Initialized.\n");
 
-    s_canaries = std::make_unique<CanarySocketServer>(port.asInt());
+	s_canaries = std::make_unique<CanarySocketServer>(port.asInt());
 
-    s_canaries->SetConnectCallback(SV_ConnectCanary);
+	s_canaries->SetConnectCallback(SV_ConnectCanary);
 
 	const char *w = Args.CheckValue ("-maxclients");
 	if (w)
@@ -671,7 +671,7 @@ void SV_GetPackets()
 		{
 			if(player.playerstate != PST_DISCONNECT)
 			{
-                player.client.messenger.Receive(::net_message);
+				player.client.messenger.Receive(::net_message);
 				player.client.last_received = gametic;
 				SV_ParseCommands(player);
 			}
