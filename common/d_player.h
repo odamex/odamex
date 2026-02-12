@@ -267,6 +267,7 @@ public:
 	// denis - things that are pending to be sent to this player
 	std::queue<AActor::AActorPtr> to_spawn;
 
+    std::vector<AActor*> sortedMobjs;
 	// denis - client structure is here now for a 1:1
 	struct client_t
 	{

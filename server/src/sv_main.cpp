@@ -72,7 +72,11 @@
 #include "m_cheat.h"
 
 #include <algorithm>
+#include <condition_variable>
+#include <future>
+#include <mutex>
 #include <sstream>
+#include <thread>
 
 #include "server.pb.h"
 
@@ -3069,6 +3073,211 @@ namespace
 			[[maybe_unused]] dtime_t m_freshTime;
 			[[maybe_unused]] dtime_t m_copyTime;
 	};
+
+    struct BaseWorkerCommand
+    {
+        std::promise<void> promise;
+        std::future<void>  future;
+
+        BaseWorkerCommand() :
+            future(promise.get_future())
+        {
+        }
+
+        void SetResult()
+        {
+            promise.set_value();
+        }
+
+        void GetResult()
+        {
+            future.get();
+        }
+
+        virtual void operator()() = 0;
+    };
+
+    struct WorkerQuitCommand : BaseWorkerCommand
+    {
+        void operator()() override {}
+    };
+
+    struct WorkerSortCommand : BaseWorkerCommand
+    {
+        player_t&   player;
+        size_t      previousSortedMobjCount;
+
+			[[maybe_unused]] dtime_t m_freshTime;
+			[[maybe_unused]] dtime_t m_copyTime;
+
+        WorkerSortCommand(player_t& i_playerRef) :
+            player                 (i_playerRef),
+            previousSortedMobjCount(player.sortedMobjs.size())
+        {}
+
+        void operator()() override
+        {
+            // This only makes sense if the player has a position.
+            if (player.mo)
+            {
+				m_freshTime = I_GetTime();
+
+				static_assert(std::is_trivially_destructible_v<decltype(player.sortedMobjs)::value_type>);
+				player.sortedMobjs.clear();  // Expect constant-time because the contained type is trivially destructible.
+
+				auto& unsortedThinkers = DThinker::GetThinkerVectorRef();
+
+				for (DThinker* thinker : unsortedThinkers)
+				{
+					if (thinker->IsKindOf(RUNTIME_CLASS(AActor)))
+					{
+						player.sortedMobjs.emplace_back(static_cast<AActor*>(thinker));
+					}
+				}
+				m_copyTime = I_GetTime();
+
+				[[maybe_unused]] const dtime_t startTime = I_GetTime();
+
+				// In testing a 22000 mobj firefight (No Time To Freeze map32) on a Ryzen 9800x3d,
+				// Windows 11, MSVC 2019, looking at JUST the core sort operation itself:
+				//
+				//      - std::sort:                    600-700 usec.
+				//      - Boost spreadsort:             ~300 usec.
+				//      - 3-partition std::nth_element:  40-70 usec.
+				//
+				// We go with dividing up the mobjs into 3 partitions with two calls to std::nth_element
+				// because for the purposes of prioritizing mobj messages to clients, we don't need fine
+				// precision between mobjs by distance.  Three coarse buckets based on approximate distance
+				// is enough.  This gives us three categories of entities based on range:
+				//
+				//      1. The closest 25% of mobjs - we really want to see frequent updates to these.
+				//      2. The next closest 25%     - no problem if these somewhat-distant guys stutter.
+				//      3. Everything else          - we don't care if we don't see them.
+				//
+				//
+				// The end result works well for the heavy-load test case, and only rarely do we see
+				// nearby enemies behave like there's any packet loss.
+
+				// The following block is used for sorting on approximate, relative distance.
+				const int playerMostSignificantX = (player.mo->x >> 16);
+				const int playerMostSignificantY = (player.mo->y >> 16);
+
+				for (auto& moPtr : player.sortedMobjs)
+				{
+					// We go with the below block because it's just a bit faster in MSVC (~170 usec) than
+					// P_AproxDistance2 (~200 usec) when looking at 22k mobjs, and we don't need "real"
+					// distance - just comparable values that correlate with distance.
+
+					const int dx = playerMostSignificantX - (moPtr->x >> 16);
+					const int dy = playerMostSignificantY - (moPtr->y >> 16);
+					moPtr->transientInt = dx*dx + dy*dy;
+				}
+				auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1->transientInt < mo2->transientInt; };
+
+				std::nth_element(player.sortedMobjs.begin(),
+				                 player.sortedMobjs.begin() + player.sortedMobjs.size()/2,
+				                 player.sortedMobjs.end(),
+				                 distanceCompare);
+				std::nth_element(player.sortedMobjs.begin(),
+				                 player.sortedMobjs.begin() + player.sortedMobjs.size()/4,
+				                 player.sortedMobjs.begin() + player.sortedMobjs.size()/2,
+				                 distanceCompare);
+				[[maybe_unused]] const dtime_t endTime = I_GetTime();
+
+				//DPrintFmt("{} initial: {}, Player {} sorting all ({}): total {} nsec\n",sizeof(AActor), m_copyTime - m_freshTime, int(pl.id), s_sortedMobjs.size(), endTime - startTime);
+			}
+		}
+
+    };
+
+    class WorkerPool
+    {
+        public:
+            WorkerPool()
+            {
+                const int poolSize = std::max(1, static_cast<int>(std::thread::hardware_concurrency()));
+                for (int i = 0; i < poolSize; ++i)
+                {
+                    m_threads.emplace_back(&WorkerPool::EntryPoint, this);
+                }
+            }
+
+            ~WorkerPool()
+            {
+                std::unique_lock lock {m_commandMutex};
+
+                m_commandQueue.clear();
+
+                WorkerQuitCommand quitCommand;
+                for (auto& thread : m_threads)
+                {
+                    m_commandQueue.push_back(&quitCommand);
+                }
+
+                lock.unlock();
+                m_commandCondition.notify_all();
+
+                for (auto& thread : m_threads)
+                {
+                    thread.join();
+                }
+            }
+
+            void PushCommand(BaseWorkerCommand* i_commandPtr)
+            {
+                std::unique_lock lock {m_commandMutex};
+                m_commandQueue.push_back(i_commandPtr);
+                lock.unlock();
+
+                m_commandCondition.notify_one();
+            }
+
+        protected:
+
+            void EntryPoint()
+            {
+                while (1)
+                {
+                    BaseWorkerCommand* command = GetCommand();
+
+                    if (IsQuit(*command))
+                    {
+                        break;
+                    }
+
+                    (*command)();
+                    command->SetResult();
+                }
+            }
+
+            BaseWorkerCommand* GetCommand()
+            {
+                std::unique_lock lock {m_commandMutex};
+
+                while (m_commandQueue.empty())
+                {
+                    m_commandCondition.wait(lock);
+                }
+
+                BaseWorkerCommand* result = m_commandQueue.front();
+                m_commandQueue.pop_front();
+                return result;
+            }
+
+        protected:
+
+            template <typename OtherCommands> bool IsQuit(const OtherCommands&) { return false; }
+            template <> bool IsQuit<WorkerQuitCommand>(const WorkerQuitCommand&) { return true; }
+
+            std::mutex                       m_commandMutex;
+            std::condition_variable          m_commandCondition;
+            std::deque<BaseWorkerCommand*>   m_commandQueue;
+
+            std::vector<std::thread> m_threads;
+    };
+
+
+    WorkerPool s_workers;
 }
 
 //
@@ -3081,7 +3290,14 @@ void SV_WriteCommands(void)
 	Unlag::getInstance().recordPlayerPositions();
 	Unlag::getInstance().recordSectorPositions();
 
-	MobjSorter sortedMobjs;
+//	MobjSorter sortedMobjs;
+
+    std::unordered_map<player_t*, WorkerSortCommand> sortJobs;
+    for (auto& player : players)
+    {
+        auto result = sortJobs.emplace(&player, player);
+        s_workers.PushCommand(&result.first->second);
+    }
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 	{
@@ -3119,14 +3335,17 @@ void SV_WriteCommands(void)
 
 		SV_UpdateConsolePlayer(*it);
 
-		sortedMobjs.Sort(*it);
+        auto& sortJob = sortJobs.find(&*it)->second;
+
+        sortJob.GetResult();
+		//sortedMobjs.Sort(*it);
 
 		// We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
 		// Combined with the high-priority to_spawn queue being directly limited in SV_UpdateHiddenMobj,
 		// we can be sure that both high-priority things like new missiles and deferred map-defined mobjs
 		// get serviced under high-load situations.
 		const int temporaryGrowthBonus = std::min(std::max(0,
-		                                                   sortedMobjs.MobjCount() - sortedMobjs.PreviousMobjCount()),
+		                                                   static_cast<int>(it->sortedMobjs.size() - sortJob.previousSortedMobjCount)),
 		                                          MAX_HIDDEN_MOBJ_UPDATES);
 		const int maxForThisTic = MAX_HIDDEN_MOBJ_UPDATES + temporaryGrowthBonus;
 
@@ -3135,13 +3354,13 @@ void SV_WriteCommands(void)
 
 		if (SV_MustThrottleTransmissionsForClient(*cl))
 		{
-            const auto mobjCountFixed = INT2FIXED64  (sortedMobjs.MobjCount());
+            const auto mobjCountFixed = INT2FIXED64  (it->sortedMobjs.size());
             const auto fractionFixed  = FIXED2FIXED64(cl->messenger.ThrottleFraction());
             throttleCount = FIXED642INT(FixedMul64(mobjCountFixed, fractionFixed));
 			//continue;
 		}
 
-		for (auto& sortedMobj : sortedMobjs)
+		for (auto& sortedMobj : it->sortedMobjs)
 		{
 //            if (throttleCount-- > 0)
 //            {
