@@ -25,7 +25,6 @@
 
 #include <stddef.h>
 
-#ifdef __cplusplus
 #include <string>
 #include <string_view>
 
@@ -42,5 +41,3 @@ struct OdamexUrlParts
 OdamexUrlParts I_ParseOdamexUrlParts(std::string_view url);
 // Extract host[:port] from an odamex:// URL, or return empty on failure.
 std::string I_ParseOdamexUrl(std::string_view url);
-
-#endif
