@@ -34,13 +34,13 @@ OdamexUrlParts I_ParseOdamexUrlParts(std::string_view url)
 	// Not a valid URL if it's empty or doesn't start with the expected protocol.
 	if (url.empty())
 	{
-		return {};
+		return OdamexUrlParts{};
 	}
 
 	// Check for the protocol prefix.
 	if (url.size() < protocolSize || url.compare(0, protocolSize, protocol) != 0)
 	{
-		return {};
+		return OdamexUrlParts{};
 	}
 
 	std::string_view uri = url.substr(protocolSize);
@@ -49,7 +49,7 @@ OdamexUrlParts I_ParseOdamexUrlParts(std::string_view url)
 	// If there's a slash, we only care about the part before it for -connect.
 	if (slash == 0)
 	{
-		return {};
+		return OdamexUrlParts{};
 	}
 	else if (slash != std::string_view::npos)
 	{
@@ -68,7 +68,7 @@ OdamexUrlParts I_ParseOdamexUrlParts(std::string_view url)
 	// If '@' is at the start or end, it's invalid.
 	if (at == 0 || at + 1 >= uri.size())
 	{
-		return {};
+		return OdamexUrlParts{};
 	}
 
 	const std::string_view userinfo = uri.substr(0, at);
@@ -77,7 +77,7 @@ OdamexUrlParts I_ParseOdamexUrlParts(std::string_view url)
 	// If the host:port portion is empty, it's invalid.
 	if (parts.hostport.empty())
 	{
-		return {};
+		return OdamexUrlParts{};
 	}
 
 	const size_t colon = userinfo.find(':');
