@@ -24,8 +24,7 @@ MessageResultEnum SequencedMessenger::Receive(buf_t& io_rawBuf)
 
     const size_t fullSize               = io_rawBuf.size();
 	const size_t startOfReliableData    = io_rawBuf.TellRead();
-	const size_t startOfAcks            = startOfReliableData + header.reliableSize;
-    const size_t startOfNonReliableData = startOfReliableData + header.reliableSize + header.ackSize;
+    const size_t startOfNonReliableData = startOfReliableData + header.reliableSize;
 	const size_t sizeOfNonReliableData  = fullSize - startOfNonReliableData;
 
 	if (header.reliableSize)
@@ -229,7 +228,8 @@ int SequencedMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& 
 		{
             // TODO: Working Throttle!
             //       With 800 KB rate at the nuts.wad wakeup with +50 msec lag (on incoming and outgoing), 10% packet loss
-            //       causes a 900KB - 1000KB spike that causes retransmissions to fail.  For now we just live with that.
+            //       causes a 900KB - 1000KB spike that causes retransmissions to fail, unless retransmissions are set to
+            //       max 25 per tic.  For now we just live with that.
 			if (++retransmissionsSent > m_maxPacketsPerRetransmission or m_byteBudget <= 0)
 			{
 				break;

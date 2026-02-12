@@ -37,15 +37,8 @@ size_t Packet::AddReliableMessage(const buf_t& i_dataBuffer)
 
 size_t Packet::AddAckMessage(const buf_t& i_dataBuffer)
 {
-    const size_t packedMessageSize = AddToOutgoingBuffer(i_dataBuffer);
-
-    if (packedMessageSize)
-    {
-        m_header.ackSize += static_cast<uint16_t>(i_dataBuffer.size());
-    }
-    return packedMessageSize;
+    return  AddToOutgoingBuffer(i_dataBuffer);
 }
-
 
 size_t Packet::AddUnreliableMessage(const buf_t& i_dataBuffer)
 {
@@ -84,7 +77,6 @@ size_t Packet::ReSend(int sequence, const buf_t& i_dataBuffer, const netadr_t& i
 
     m_header.sequence     = sequence;
     m_header.reliableSize = static_cast<uint16_t>(i_dataBuffer.size());
-    m_header.ackSize      = 0;
     m_header.flags        = 0;
 
     m_header.Pack(m_outgoingPacketBuffer);
