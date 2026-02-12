@@ -33,28 +33,11 @@
 #include "d_player.h"
 #include "dobject.h"
 
-// TODO: replace with m_swap stuff
-
-#ifdef __BIG_ENDIAN__
-#define SWAP_WORD(x)
-#define SWAP_DWORD(x)
-#define SWAP_QWORD(x)
-#define SWAP_SIZE(x,y)
-#else
-#define SWAP_WORD(x)		{ x = (((x)<<8) | ((x)>>8)); }
-#define SWAP_DWORD(x)		{ x = (((x)>>24) | (((x)>>8)&0xff00) | (((x)<<8)&0xff0000) | ((x)<<24)); }
+#define SWAP_SHORT(x)       { x = BESHORT(x); }
+#define SWAP_INT(x)         { x = BELONG(x); }
+#define SWAP_LONG(x)        { x = BELONGLONG(x); }
 // Swap any kind of data based on size - x = pointer to data, y = number of bytes
 #define SWAP_SIZE(x, y)		{ std::reverse((unsigned char*)x, (unsigned char*)x+(size_t)y); }
-
-#if 0
-#define SWAP_QWORD(x)		{ x = (((x)>>56) | (((x)>>40)&(0xff<<8)) | (((x)>>24)&(0xff<<16)) | (((x)>>8)&(0xff<<24)) |\
-								   (((x)<<8)&(uint64_t)0xff00000000) | (((x)<<24)&(uint64_t)0xff0000000000) | (((x)<<40)&(uint64_t)0xff000000000000) | ((x)<<56))); }
-#else
-#define SWAP_QWORD(x)		{ uint32_t *y = (uint32_t *)&x; uint32_t t=y[0]; y[0]=y[1]; y[1]=t; SWAP_DWORD(y[0]); SWAP_DWORD(y[1]); }
-#endif
-#endif
-
-#define MAX(a,b)	((a)<(b)?(a):(b))
 
 static constexpr char LZOSig[4] = { 'F', 'L', 'Z', 'O' };
 
@@ -138,8 +121,8 @@ void FLZOFile::PostOpen()
 			{
 				fmt::print("FLZOFile::PostOpen(): failed to read m_File\n");
 			}
-			SWAP_DWORD(sizes[0]);
-			SWAP_DWORD(sizes[1]);
+			SWAP_INT(sizes[0]);
+			SWAP_INT(sizes[1]);
 
 			unsigned int len = sizes[0] == 0 ? sizes[1] : sizes[0];
 			m_Buffer = (byte*) M_Malloc(len + 8);
@@ -150,8 +133,8 @@ void FLZOFile::PostOpen()
 				fmt::print("FLZOFile::PostOpen(): failed to read m_File\n");
 			}
 
-			SWAP_DWORD(sizes[0]);
-			SWAP_DWORD(sizes[1]);
+			SWAP_INT(sizes[0]);
+			SWAP_INT(sizes[1]);
 
 			((uint32_t*)m_Buffer)[0] = sizes[0];
 			((uint32_t*)m_Buffer)[1] = sizes[1];
@@ -445,8 +428,8 @@ void FLZOMemFile::Serialize(FArchive& arc)
 		uint32_t sizes[2];
 		sizes[0] = ((uint32_t*)m_ImplodedBuffer)[0];
 		sizes[1] = ((uint32_t*)m_ImplodedBuffer)[1];
-		SWAP_DWORD(sizes[0]);
-		SWAP_DWORD(sizes[1]);
+		SWAP_INT(sizes[0]);
+		SWAP_INT(sizes[1]);
 		arc.Write(m_ImplodedBuffer, (sizes[0] ? sizes[0] : sizes[1]) + 8);
 	}
 	else
@@ -466,8 +449,8 @@ void FLZOMemFile::Serialize(FArchive& arc)
 		uint32_t len = sizes[0] == 0 ? sizes[1] : sizes[0];
 
 		m_Buffer = (byte*) M_Malloc(len + 8);
-		SWAP_DWORD(sizes[0]);
-		SWAP_DWORD(sizes[1]);
+		SWAP_INT(sizes[0]);
+		SWAP_INT(sizes[1]);
 		((uint32_t*)m_Buffer)[0] = sizes[0];
 		((uint32_t*)m_Buffer)[1] = sizes[1];
 		arc.Read(m_Buffer + 8, len);
@@ -649,7 +632,7 @@ FArchive &FArchive::operator>> (byte &c)
 
 FArchive &FArchive::operator<< (uint16_t w)
 {
-	SWAP_WORD(w);
+	SWAP_SHORT(w);
 	Write (&w, sizeof(uint16_t));
 	return *this;
 }
@@ -657,13 +640,13 @@ FArchive &FArchive::operator<< (uint16_t w)
 FArchive &FArchive::operator>> (uint16_t &w)
 {
 	Read (&w, sizeof(uint16_t));
-	SWAP_WORD(w);
+	SWAP_SHORT(w);
 	return *this;
 }
 
 FArchive &FArchive::operator<< (uint32_t w)
 {
-	SWAP_DWORD(w);
+	SWAP_INT(w);
 	Write (&w, sizeof(uint32_t));
 	return *this;
 }
@@ -671,13 +654,13 @@ FArchive &FArchive::operator<< (uint32_t w)
 FArchive &FArchive::operator>> (uint32_t &w)
 {
 	Read (&w, sizeof(uint32_t));
-	SWAP_DWORD(w);
+	SWAP_INT(w);
 	return *this;
 }
 
 FArchive &FArchive::operator<< (uint64_t w)
 {
-	SWAP_QWORD(w);
+	SWAP_LONG(w);
 	Write (&w, sizeof(uint64_t));
 	return *this;
 }
@@ -685,7 +668,7 @@ FArchive &FArchive::operator<< (uint64_t w)
 FArchive &FArchive::operator>> (uint64_t &w)
 {
 	Read (&w, sizeof(uint64_t));
-	SWAP_QWORD(w);
+	SWAP_LONG(w);
 	return *this;
 }
 
