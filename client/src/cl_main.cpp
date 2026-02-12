@@ -72,6 +72,7 @@
 #include "m_consolecommandstream.h"
 
 #include "SequencedMessenger.h"
+#include "CanarySocket.h"
 
 #include <bitset>
 #include <set>
@@ -119,6 +120,7 @@ netadr_t  lastconaddr;
 extern NetGraph netgraph;
 
 SequencedMessenger messenger;
+static std::unique_ptr<CanarySocketClient> s_canary;
 
 // denis - unique session key provided by the server
 std::string digest;
@@ -401,6 +403,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 
 	::messenger = SequencedMessenger();
 	P_ClearAllNetIds();
+    s_canary.reset();
 
 	{
 		// [jsd] unlink player pointers from AActors; solves crash in R_ProjectSprites after a svc_disconnect message.
@@ -1771,6 +1774,26 @@ bool CL_Connect()
     network_game = true;
 	serverside = false;
 	simulated_connection = netdemo.isPlaying();
+
+    if (not simulated_connection)
+    {
+        sockaddr_in tcpAddress;
+        sockaddr_in udpAddress;
+
+        NetadrToSockadr(&serveraddr, &tcpAddress);
+
+        NET_GetSockaddr(udpAddress);
+
+        s_canary = std::make_unique<CanarySocketClient>();
+        if (s_canary->Connect(tcpAddress, udpAddress))
+        {
+            PrintFmt("The canary lives!\n");
+        }
+        else
+        {
+            PrintFmt("no canary.\n");
+        }
+    }
 
 	messenger = SequencedMessenger();
 	messenger.SetMaxRate(20);         // FIXME: total guess

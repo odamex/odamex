@@ -407,7 +407,7 @@ bool NET_StringToAdr (const char *s, netadr_t *a)
 	return true;
 }
 
-bool NET_CompareAdr (netadr_t a, netadr_t b)
+bool NET_CompareAdr (const netadr_t& a, const netadr_t& b)
 {
 	if (a.ip[0] == b.ip[0] && a.ip[1] == b.ip[1] && a.ip[2] == b.ip[2] && a.ip[3] == b.ip[3] && a.port == b.port)
 		return true;
@@ -1173,6 +1173,14 @@ void InitNetCommon(void)
 
    SZ_Clear(&net_message);
 }
+
+bool NET_GetSockaddr(sockaddr_in& io_sockaddr)
+{
+    socklen_t addrLen = sizeof(io_sockaddr);
+
+    return (getsockname(inet_socket, reinterpret_cast<sockaddr*>(&io_sockaddr), &addrLen) == 0);
+}
+
 
 //
 // NetWaitOrTimeout

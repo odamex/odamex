@@ -50,8 +50,7 @@ class CanarySocketServer
 
         // Bring out your dead!
         iterator FindDead();
-
-        void PutOnCart(iterator i_deadCanaryIter);
+        iterator PutOnCart(iterator i_deadCanaryIter) { return m_canaries.erase(i_deadCanaryIter); }
 
     protected:
 
@@ -65,7 +64,8 @@ class CanarySocketServer
 class CanarySocketClient
 {
     public:
-        void Connect(int i_tcpPort, const sockaddr_in& i_address);
+        ~CanarySocketClient();
+        bool Connect(const sockaddr_in& i_toAddress, const sockaddr_in& i_dataAddress);
 
     protected:
         CANARY_SOCKET_INT m_socket {CANARY_BAD_SOCKET};

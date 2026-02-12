@@ -54,7 +54,7 @@ CanarySocketServer::iterator CanarySocketServer::FindDead()
 
     fd_set sockets;
     FD_ZERO(&sockets);
-
+    FD_SET(m_serverSocket, &sockets);
     CANARY_SOCKET_INT greatestSocketValue = m_serverSocket;
 
     for (auto& canary : m_canaries)
@@ -73,13 +73,18 @@ CanarySocketServer::iterator CanarySocketServer::FindDead()
             --numSockets;
 
             sockaddr_in address;
+            sockaddr_in dataAddress;
+
             socklen_t   addressLength = sizeof(address);
             const CANARY_SOCKET_INT clientSocket = accept(m_serverSocket, reinterpret_cast<sockaddr*>(&address), &addressLength);
 
-            const int playerId = m_connectCallback ? m_connectCallback(address) : -1;
+            dataAddress = address;
+
+            recv(clientSocket, reinterpret_cast<char*>(&dataAddress.sin_port), sizeof(dataAddress.sin_port), MSG_WAITALL);
+
+            const int playerId = m_connectCallback ? m_connectCallback(dataAddress) : -1;
 
             m_canaries.emplace_back(playerId, clientSocket);
-            // new canary.
         }
 
         iterator firstDeadCanary = m_canaries.end();
@@ -104,26 +109,35 @@ CanarySocketServer::iterator CanarySocketServer::FindDead()
     return m_canaries.end();
 }
 
-void CanarySocketServer::PutOnCart(iterator i_deadCanaryIter)
+CanarySocketClient::~CanarySocketClient()
 {
-    if (i_deadCanaryIter < m_canaries.end())
+    if (m_socket >= 0)
     {
-        m_canaries.erase(i_deadCanaryIter, m_canaries.end());
+        closesocket(m_socket);
     }
 }
 
-void CanarySocketClient::Connect(int i_tcpPort, const sockaddr_in& i_address)
+bool CanarySocketClient::Connect(const sockaddr_in& i_toAddress, const sockaddr_in& i_dataAddress)
 {
-    if (m_socket < 0)
+    if (m_socket == CANARY_BAD_SOCKET)
     {
         m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (m_socket >= 0)
         {
-            if (connect(m_socket, reinterpret_cast<const sockaddr*>(&i_address), sizeof(i_address)) < 0)
+            if (connect(m_socket, reinterpret_cast<const sockaddr*>(&i_toAddress), sizeof(i_toAddress)) == 0)
             {
-                closesocket(m_socket);
-                m_socket = CANARY_BAD_SOCKET;
+                // sin_port is already in network byte order.
+                if (send(m_socket,
+                         reinterpret_cast<const char*>(&i_dataAddress.sin_port),
+                         sizeof(i_dataAddress.sin_port),
+                         0) == sizeof(i_dataAddress.sin_port))
+                {
+                    return true;
+                }
             }
+            closesocket(m_socket);
+            m_socket = CANARY_BAD_SOCKET;
         }
     }
+    return false;
 }

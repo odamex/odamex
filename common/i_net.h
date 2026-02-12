@@ -809,7 +809,8 @@ bool NetWaitOrTimeout(size_t ms);
 
 char *NET_AdrToString (netadr_t a);
 bool NET_StringToAdr (const char *s, netadr_t *a);
-bool NET_CompareAdr (netadr_t a, netadr_t b);
+bool NET_CompareAdr (const netadr_t& a, const netadr_t& b);
+bool NET_GetSockaddr(sockaddr_in& io_sockaddr);
 int  NET_GetPacket (void);
 int NET_SendPacket (buf_t &buf, const netadr_t &to);
 std::string NET_GetLocalAddress (void);

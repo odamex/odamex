@@ -466,7 +466,52 @@ static void SendLevelState(SerializedLevelState sls)
 	}
 }
 
+static player_t &SV_FindPlayerByAddr(const netadr_t& netAddr)
+{
+	for (auto& player : players)
+	{
+		if (NET_CompareAdr(player.client.address, netAddr))
+		   return player;
+	}
+
+	return idplayer(0);
+}
+
 static std::unique_ptr<CanarySocketServer> s_canaries;
+
+static int SV_ConnectCanary(sockaddr_in& i_address)
+{
+    netadr_t netAddr;
+
+    SockadrToNetadr(& i_address, & netAddr);
+
+    const player_t& playerRef = SV_FindPlayerByAddr(netAddr);
+
+    if (validplayer(playerRef))
+    {
+        return playerRef.id;
+    }
+    return -1;
+}
+
+static void SV_CheckCanaries()
+{
+    if (s_canaries)
+    {
+        auto deadCanaryIter = s_canaries->FindDead();
+
+        while (deadCanaryIter != s_canaries->end())
+        {
+            player_t& playerRef = idplayer(deadCanaryIter->id);
+            if (validplayer(playerRef) and playerRef.playerstate != PST_DISCONNECT)
+            {
+                SV_BroadcastPrintFmt("{} disconnected abnormally\n", playerRef.userinfo.netname);
+                SV_DropClient(playerRef);
+            }
+            deadCanaryIter = s_canaries->PutOnCart(deadCanaryIter);
+        }
+    }
+}
 
 //
 // SV_InitNetwork
@@ -490,6 +535,8 @@ void SV_InitNetwork (void)
 	PrintFmt("UDP Initialized.\n");
 
     s_canaries = std::make_unique<CanarySocketServer>(port.asInt());
+
+    s_canaries->SetConnectCallback(SV_ConnectCanary);
 
 	const char *w = Args.CheckValue ("-maxclients");
 	if (w)
@@ -532,17 +579,6 @@ Players::iterator SV_GetFreeClient(void)
 	// Return iterator pointing to the just-inserted player
 	Players::iterator it = players.end();
 	return --it;
-}
-
-player_t &SV_FindPlayerByAddr(void)
-{
-	for (auto& player : players)
-	{
-		if (NET_CompareAdr(player.client.address, net_from))
-		   return player;
-	}
-
-	return idplayer(0);
 }
 
 //
@@ -621,7 +657,7 @@ void SV_GetPackets()
 {
 	while (NET_GetPacket())
 	{
-		player_t &player = SV_FindPlayerByAddr();
+		player_t &player = SV_FindPlayerByAddr(net_from);
 
 		if (!validplayer(player)) // no client with net_from address
 		{
@@ -4199,6 +4235,7 @@ void SV_DisplayTics()
 void SV_RunTics()
 {
 	SV_GetPackets();
+	SV_CheckCanaries();
 	SV_HandleReliableRetransmissions();
 
 	std::string cmd = I_ConsoleInput();
