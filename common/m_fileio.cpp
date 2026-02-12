@@ -145,18 +145,17 @@ std::string M_GetCWD()
 // M_FileLength
 //
 // Returns the length of a file using an open descriptor
-int32_t M_FileLength (FILE *f)
+int64_t M_FileLength (FILE *f)
 {
-	int32_t CurrentPosition = -1;
-	int32_t FileSize = -1;
+	int64_t FileSize = -1;
 
-    if (f != NULL)
-    {
-        CurrentPosition = ftell (f);
-        fseek (f, 0, SEEK_END);
-        FileSize = ftell (f);
-        fseek (f, CurrentPosition, SEEK_SET);
-    }
+	if (f != nullptr)
+	{
+		const auto CurrentPosition = ftell(f);
+		fseek (f, 0, SEEK_END);
+		FileSize = ftell (f);
+		fseek (f, CurrentPosition, SEEK_SET);
+	}
 
 	return FileSize;
 }

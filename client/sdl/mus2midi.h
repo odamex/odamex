@@ -36,4 +36,4 @@
 
 #include "m_memio.h"
 
-uint64_t mus2mid(MEMFILE *musinput, MEMFILE *midioutput);
+bool mus2mid(MEMFILE *musinput, MEMFILE *midioutput);
