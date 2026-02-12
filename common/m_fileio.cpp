@@ -145,10 +145,10 @@ std::string M_GetCWD()
 // M_FileLength
 //
 // Returns the length of a file using an open descriptor
-SDWORD M_FileLength (FILE *f)
+int32_t M_FileLength (FILE *f)
 {
-	SDWORD CurrentPosition = -1;
-	SDWORD FileSize = -1;
+	int32_t CurrentPosition = -1;
+	int32_t FileSize = -1;
 
     if (f != NULL)
     {

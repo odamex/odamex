@@ -71,7 +71,7 @@ static std::vector<int> ArgvToArgs(const int (&a)[N])
 struct FBehavior::ArrayInfo
 {
 	int ArraySize;
-	SDWORD *Elements;
+	int32_t *Elements;
 };
 
 static void DoClearInv(player_t* player)
@@ -602,17 +602,17 @@ FBehavior::FBehavior (byte* object, int len)
 	if (Format == ACS_Old)
 	{
 		Chunks = object + len;
-		Scripts = object + ((DWORD *)object)[1];
-		NumScripts = ((DWORD *)Scripts)[0];
+		Scripts = object + ((uint32_t *)object)[1];
+		NumScripts = ((uint32_t *)Scripts)[0];
 		// Check for redesigned ACSE/ACSe
-		if (((DWORD *)object)[1] >= 6*4 &&
-			(((DWORD *)Scripts)[-1] == MAKE_ID('A','C','S','e') ||
-			((DWORD *)Scripts)[-1] == MAKE_ID('A','C','S','E')))
+		if (((uint32_t *)object)[1] >= 6*4 &&
+			(((uint32_t *)Scripts)[-1] == MAKE_ID('A','C','S','e') ||
+			((uint32_t *)Scripts)[-1] == MAKE_ID('A','C','S','E')))
 		{
 			Format = (((byte *)Scripts)[-1] == 'e') ? ACS_LittleEnhanced : ACS_Enhanced;
-			Chunks = object + ((DWORD *)Scripts)[-2];
+			Chunks = object + ((uint32_t *)Scripts)[-2];
 			// Forget about the compatibility cruft at the end of the lump
-			DataSize = ((DWORD *)object)[1] - 8;
+			DataSize = ((uint32_t *)object)[1] - 8;
 		}
 		else
 		{
@@ -630,14 +630,14 @@ FBehavior::FBehavior (byte* object, int len)
 	}
 	else
 	{
-		Chunks = object + ((DWORD *)object)[1];
+		Chunks = object + ((uint32_t *)object)[1];
 	}
 	if (Format != ACS_Old)
 	{
 		Scripts = FindChunk (MAKE_ID('S','P','T','R'));
 		if (object[3] != 0)
 		{
-			NumScripts = ((DWORD *)Scripts)[1] / 12;
+			NumScripts = ((uint32_t *)Scripts)[1] / 12;
 			Scripts += 8;
 			for (i = 0; i < NumScripts; ++i)
 			{
@@ -651,7 +651,7 @@ FBehavior::FBehavior (byte* object, int len)
 		}
 		else
 		{
-			NumScripts = ((DWORD *)Scripts)[1] / 8;
+			NumScripts = ((uint32_t *)Scripts)[1] / 8;
 			Scripts += 8;
 		}
 	}
@@ -664,8 +664,8 @@ FBehavior::FBehavior (byte* object, int len)
 
 	if (Format == ACS_Old)
 	{
-		LanguageNeutral = ((DWORD *)Data)[1];
-		LanguageNeutral += ((DWORD *)(Data + LanguageNeutral))[0] * 12 + 4;
+		LanguageNeutral = ((uint32_t *)Data)[1];
+		LanguageNeutral += ((uint32_t *)(Data + LanguageNeutral))[0] * 12 + 4;
 	}
 	else
 	{
@@ -705,8 +705,8 @@ FBehavior::FBehavior (byte* object, int len)
 			{
 				level.vars[LELONG(chunk[2+i*2])] = i;
 				Arrays[i].ArraySize = LELONG(chunk[3+i*2]);
-				Arrays[i].Elements = new SDWORD[Arrays[i].ArraySize];
-				memset(Arrays[i].Elements, 0, Arrays[i].ArraySize*sizeof(DWORD));
+				Arrays[i].Elements = new int32_t[Arrays[i].ArraySize];
+				memset(Arrays[i].Elements, 0, Arrays[i].ArraySize*sizeof(uint32_t));
 			}
 		}
 
@@ -717,7 +717,7 @@ FBehavior::FBehavior (byte* object, int len)
 			if ((unsigned)arraynum < (unsigned)NumArrays)
 			{
 				int initsize = MIN<int> (Arrays[arraynum].ArraySize, (LELONG(chunk[1])-4)/4);
-				SDWORD *elems = Arrays[arraynum].Elements;
+				int32_t *elems = Arrays[arraynum].Elements;
 				for (i = 0; i < initsize; ++i)
 				{
 					elems[i] = LELONG(chunk[3+i]);
@@ -797,41 +797,41 @@ void FBehavior::SetArrayVal (int arraynum, int index, int value)
 	array->Elements[index] = value;
 }
 
-byte *FBehavior::FindChunk (DWORD id) const
+byte *FBehavior::FindChunk (uint32_t id) const
 {
 	byte *chunk = Chunks;
 
 	while (chunk != NULL && chunk < Data + DataSize)
 	{
-		if (((DWORD *)chunk)[0] == id)
+		if (((uint32_t *)chunk)[0] == id)
 		{
 			return chunk;
 		}
-		chunk += ((DWORD *)chunk)[1] + 8;
+		chunk += ((uint32_t *)chunk)[1] + 8;
 	}
 	return NULL;
 }
 
 byte *FBehavior::NextChunk (byte *chunk) const
 {
-	DWORD id = *(DWORD *)chunk;
-	chunk += ((DWORD *)chunk)[1] + 8;
+	uint32_t id = *(uint32_t *)chunk;
+	chunk += ((uint32_t *)chunk)[1] + 8;
 	while (chunk != NULL && chunk < Data + DataSize)
 	{
-		if (((DWORD *)chunk)[0] == id)
+		if (((uint32_t *)chunk)[0] == id)
 		{
 			return chunk;
 		}
-		chunk += ((DWORD *)chunk)[1] + 8;
+		chunk += ((uint32_t *)chunk)[1] + 8;
 	}
 	return NULL;
 }
 
-const char *FBehavior::LookupString (DWORD index, DWORD ofs) const
+const char *FBehavior::LookupString (uint32_t index, uint32_t ofs) const
 {
 	if (Format == ACS_Old)
 	{
-		DWORD *list = (DWORD *)(Data + LanguageNeutral);
+		uint32_t *list = (uint32_t *)(Data + LanguageNeutral);
 
 		if (index >= list[0])
 			return NULL;	// Out of range for this list;
@@ -847,7 +847,7 @@ const char *FBehavior::LookupString (DWORD index, DWORD ofs) const
 				return NULL;
 			}
 		}
-		DWORD *list = (DWORD *)(Data + ofs);
+		uint32_t *list = (uint32_t *)(Data + ofs);
 
 		if (index >= list[1])
 			return NULL;	// Out of range for this list
@@ -857,16 +857,16 @@ const char *FBehavior::LookupString (DWORD index, DWORD ofs) const
 	}
 }
 
-const char *FBehavior::LocalizeString (DWORD index) const
+const char *FBehavior::LocalizeString (uint32_t index) const
 {
 	if (Format != ACS_Old)
 	{
-		DWORD ofs = Localized;
+		uint32_t ofs = Localized;
 		const char *str = NULL;
 
 		while (ofs != 0 && (str = LookupString (index, ofs)) == NULL)
 		{
-			ofs = ((DWORD *)(Data + ofs))[2];
+			ofs = ((uint32_t *)(Data + ofs))[2];
 		}
 		return str;
 	}
@@ -876,12 +876,12 @@ const char *FBehavior::LocalizeString (DWORD index) const
 	}
 }
 
-void FBehavior::PrepLocale (DWORD userpref, DWORD userdef, DWORD syspref, DWORD sysdef)
+void FBehavior::PrepLocale (uint32_t userpref, uint32_t userdef, uint32_t syspref, uint32_t sysdef)
 {
 	// Clear away any existing links
-	for (byte* chunk = Chunks; chunk < Data + DataSize; chunk += ((DWORD *)chunk)[1] + 8)
+	for (byte* chunk = Chunks; chunk < Data + DataSize; chunk += ((uint32_t *)chunk)[1] + 8)
 	{
-		DWORD* list = (DWORD *)chunk;
+		uint32_t* list = (uint32_t *)chunk;
 		if (list[0] == MAKE_ID('S','T','R','L'))
 		{
 			list[4] = 0;
@@ -909,17 +909,17 @@ void FBehavior::PrepLocale (DWORD userpref, DWORD userdef, DWORD syspref, DWORD 
 	AddLanguage (0);			// Failing that, use language independent strings
 }
 
-void FBehavior::AddLanguage (DWORD langid)
+void FBehavior::AddLanguage (uint32_t langid)
 {
 	// First, make sure language is not already inserted
-	DWORD* ofsput = CheckIfInList (langid);
+	uint32_t* ofsput = CheckIfInList (langid);
 	if (ofsput == NULL)
 	{ // Already in list
 		return;
 	}
 
 	// Try to find an exact match first
-	DWORD ofs = FindLanguage (langid, false);
+	uint32_t ofs = FindLanguage (langid, false);
 	if (ofs != 0)
 	{
 		*ofsput = ofs;
@@ -930,9 +930,9 @@ void FBehavior::AddLanguage (DWORD langid)
 	// type, if not in list already
 	if ((langid & LANGREGIONMASK) == 0)
 	{
-		for (byte* chunk = Chunks; chunk < Data + DataSize; chunk += ((DWORD *)chunk)[1] + 8)
+		for (byte* chunk = Chunks; chunk < Data + DataSize; chunk += ((uint32_t *)chunk)[1] + 8)
 		{
-			DWORD* list = (DWORD *)chunk;
+			uint32_t* list = (uint32_t *)chunk;
 			if (list[0] != MAKE_ID('S','T','R','L'))
 				continue;	// not a string list
 			if ((list[2] & ~LANGREGIONMASK) != langid)
@@ -946,16 +946,16 @@ void FBehavior::AddLanguage (DWORD langid)
 	}
 }
 
-DWORD *FBehavior::CheckIfInList (DWORD langid)
+uint32_t *FBehavior::CheckIfInList (uint32_t langid)
 {
-	DWORD ofs, *ofsput;
-	DWORD *list;
+	uint32_t ofs, *ofsput;
+	uint32_t *list;
 
 	ofs = Localized;
 	ofsput = &Localized;
 	while (ofs != 0)
 	{
-		list = (DWORD *)(Data + ofs);
+		list = (uint32_t *)(Data + ofs);
 		if (list[0] == langid)
 			return NULL;
 		ofsput = &list[2];
@@ -964,17 +964,17 @@ DWORD *FBehavior::CheckIfInList (DWORD langid)
 	return ofsput;
 }
 
-DWORD FBehavior::FindLanguage (DWORD langid, bool ignoreregion) const
+uint32_t FBehavior::FindLanguage (uint32_t langid, bool ignoreregion) const
 {
 	byte *chunk;
-	DWORD *list;
-	DWORD langmask;
+	uint32_t *list;
+	uint32_t langmask;
 
 	langmask = ignoreregion ? ~LANGREGIONMASK : ~0;
 
-	for (chunk = Chunks; chunk < Data + DataSize; chunk += ((DWORD *)chunk)[1] + 8)
+	for (chunk = Chunks; chunk < Data + DataSize; chunk += ((uint32_t *)chunk)[1] + 8)
 	{
-		list = (DWORD *)chunk;
+		list = (uint32_t *)chunk;
 		if (list[0] == MAKE_ID('S','T','R','L') && (list[2] & langmask) == langid)
 		{
 			return chunk - Data + 8;
@@ -1329,7 +1329,7 @@ void DLevelScript::operator delete (void *block)
 
 void DLevelScript::Serialize (FArchive &arc)
 {
-	DWORD i;
+	uint32_t i;
 
 	Super::Serialize (arc);
 

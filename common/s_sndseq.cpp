@@ -225,7 +225,7 @@ void DSeqNode::Serialize (FArchive &arc)
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
 	{
-		arc << (DWORD)SN_GetSequenceOffset (m_Sequence, m_SequencePtr)
+		arc << (uint32_t)SN_GetSequenceOffset (m_Sequence, m_SequencePtr)
 			<< m_DelayTics
 			<< m_Volume
 			<< m_Atten

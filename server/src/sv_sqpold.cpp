@@ -76,7 +76,7 @@ EXTERN_CVAR (sv_natport)
 //
 struct token_t
 {
-	DWORD id;
+	uint32_t id;
 	uint64_t issued;
 	netadr_t from;
 };
@@ -87,7 +87,7 @@ static std::vector<token_t> connect_tokens;
 //
 // SV_NewToken
 //
-DWORD SV_NewToken()
+uint32_t SV_NewToken()
 {
 	uint64_t now = I_MSTime() * TICRATE / 1000;
 
@@ -114,7 +114,7 @@ DWORD SV_NewToken()
 //
 // SV_ValidToken
 //
-bool SV_IsValidToken(DWORD token)
+bool SV_IsValidToken(uint32_t token)
 {
 	uint64_t now = I_MSTime() * TICRATE / 1000;
 
@@ -254,7 +254,7 @@ void SV_SendServerInfo()
 
 //bond===========================
 
-    MSG_WriteLong(&ml_message, (DWORD)0x01020304);
+    MSG_WriteLong(&ml_message, (uint32_t)0x01020304);
     MSG_WriteShort(&ml_message, sv_maxplayers.asInt());
 
     for (const auto& player : players)
@@ -265,7 +265,7 @@ void SV_SendServerInfo()
         }
     }
 
-    MSG_WriteLong(&ml_message, (DWORD)0x01020305);
+    MSG_WriteLong(&ml_message, (uint32_t)0x01020305);
     MSG_WriteShort(&ml_message, strlen(join_password.cstring()) ? 1 : 0);
 
     // GhostlyDeath -- Send Game Version info

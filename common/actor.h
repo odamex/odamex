@@ -471,7 +471,7 @@ public:
 	fixed_t		pitch;
 	angle_t		prevpitch;
 
-	DWORD			effects;			// [RH] see p_effect.h
+	uint32_t	effects;			// [RH] see p_effect.h
 
 	struct subsector_s		*subsector;
 

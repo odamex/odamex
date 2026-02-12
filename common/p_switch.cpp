@@ -54,14 +54,14 @@ public:
 	};
 
 	DActiveButton ();
-	DActiveButton (line_t *, EWhere, SWORD tex, SDWORD time, fixed_t x, fixed_t y);
+	DActiveButton (line_t *, EWhere, SWORD tex, int32_t time, fixed_t x, fixed_t y);
 
 	void RunThink () override;
 
 	line_t	*m_Line;
 	EWhere	m_Where;
 	SWORD	m_Texture;
-	SDWORD	m_Timer;
+	int32_t	m_Timer;
 	fixed_t	m_X, m_Y;	// Location of timer sound
 
 	friend FArchive &operator<< (FArchive &arc, EWhere where)
@@ -358,7 +358,7 @@ DActiveButton::DActiveButton ()
 }
 
 DActiveButton::DActiveButton (line_t *line, EWhere where, SWORD texture,
-							  SDWORD time, fixed_t x, fixed_t y)
+							  int32_t time, fixed_t x, fixed_t y)
 {
 	m_Line = line;
 	m_Where = where;

@@ -986,7 +986,7 @@ public:
 	// [RH] Need these for BOOM-ish transferring ceilings
 	int			m_Texture;
 	short		m_NewSpecial;
-	DWORD		m_NewFlags;
+	uint32_t	m_NewFlags;
 	short		m_NewDamageRate;
 	byte		m_NewLeakRate;
 	byte		m_NewDmgInterval;
@@ -1118,7 +1118,7 @@ public:
 	bool		m_HexenCrush;
 	int 		m_Direction;
 	short		m_NewSpecial;
-	DWORD		m_NewFlags;
+	uint32_t	m_NewFlags;
 	short		m_NewDamageRate;
 	byte		m_NewLeakRate;
 	byte		m_NewDmgInterval;

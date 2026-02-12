@@ -72,8 +72,8 @@ struct CvarField_t
 // IntQryBuildInformation()
 //
 // Protocol building routine, the passed parameter is the enquirer version
-static void IntQryBuildInformation(const DWORD& EqProtocolVersion,
-                                   const DWORD& EqTime)
+static void IntQryBuildInformation(const uint32_t& EqProtocolVersion,
+                                   const uint32_t& EqTime)
 {
 	std::vector<CvarField_t> Cvars;
 
@@ -266,7 +266,7 @@ next:
 //
 // Sends information regarding the type of information we received (ie: it will
 // send data that is wanted by the enquirer program)
-static DWORD IntQrySendResponse(const WORD& TagId,
+static uint32_t IntQrySendResponse(const WORD& TagId,
                                 const byte& TagApplication,
                                 const byte& TagQRId,
                                 const WORD& TagPacketType)
@@ -313,7 +313,7 @@ static DWORD IntQrySendResponse(const WORD& TagId,
 	break;
 	}
 
-	DWORD ReTag = 0;
+	uint32_t ReTag = 0;
 	WORD ReId = TAG_ID;
 	byte ReApplication = 3;
 	byte ReQRId = 2;
@@ -337,9 +337,9 @@ static DWORD IntQrySendResponse(const WORD& TagId,
 	}
 
 	// Begin enquirer version translation
-	DWORD EqVersion = MSG_ReadLong();
-	DWORD EqProtocolVersion = MSG_ReadLong();
-	DWORD EqTime = MSG_ReadLong();
+	uint32_t EqVersion = MSG_ReadLong();
+	uint32_t EqProtocolVersion = MSG_ReadLong();
+	uint32_t EqTime = MSG_ReadLong();
 
 	// Prevent possible divide by zero
 	if(!EqVersion)
@@ -404,7 +404,7 @@ static DWORD IntQrySendResponse(const WORD& TagId,
 // SV_QryParseEnquiry()
 //
 // This decodes the Tag field
-DWORD SV_QryParseEnquiry(const DWORD& Tag)
+uint32_t SV_QryParseEnquiry(const uint32_t& Tag)
 {
 	// Decode the tag into its fields
 	// TODO: this may not be 100% correct

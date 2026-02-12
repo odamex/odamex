@@ -820,8 +820,8 @@ void AActor::RunThink ()
 
 void AActor::Serialize (FArchive &arc)
 {
-	static constexpr DWORD TLATE_NONE = 0xFFFFFFFF;
-	static constexpr DWORD TLATE_BOSS = 0xFFFFFFFE;
+	static constexpr uint32_t TLATE_NONE = 0xFFFFFFFF;
+	static constexpr uint32_t TLATE_BOSS = 0xFFFFFFFE;
 
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
@@ -893,7 +893,7 @@ void AActor::Serialize (FArchive &arc)
 			}
 			else
 			{
-				arc << (DWORD)(translation.getTable() - ::translationtables);
+				arc << (uint32_t)(translation.getTable() - ::translationtables);
 			}
 		}
 		else
@@ -970,7 +970,7 @@ void AActor::Serialize (FArchive &arc)
 
 		P_SetThingId(this, newnetid);
 
-		DWORD trans;
+		uint32_t trans;
 		arc >> trans;
 		if (trans == TLATE_NONE)
 		{

@@ -104,17 +104,6 @@ namespace limits
 typedef unsigned short		WORD;
 typedef signed short		SWORD;
 
-// denis - todo - this 64 bit fix conflicts with windows' idea of long
-#ifndef _WIN32
-typedef unsigned int		DWORD;
-typedef signed int			SDWORD;
-#else
-typedef unsigned long		DWORD;
-typedef signed long			SDWORD;
-#endif
-
-typedef DWORD				BITFIELD;
-
 typedef uint64_t			dtime_t;
 
 #ifdef _WIN32

@@ -330,7 +330,7 @@ struct level_locals_t
 
 	// The following are all used for ACS scripting
 	std::unique_ptr<FBehavior> behavior;
-	SDWORD			vars[NUM_MAPVARS];
+	int32_t			vars[NUM_MAPVARS];
 
 	// The following are used for UMAPINFO
 	OLumpName		exitpic;
