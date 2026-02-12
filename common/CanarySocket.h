@@ -9,6 +9,7 @@
 #   define  CANARY_SOCKET_INT SOCKET
 #   define  CANARY_BAD_SOCKET INVALID_SOCKET
 #else
+#   include <netinet/in.h>
 #   include <sys/socket.h>
 #   define  CANARY_SOCKET_INT int
 #   define  CANARY_BAD_SOCKET -1

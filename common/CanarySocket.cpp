@@ -3,10 +3,12 @@
 
 #include <algorithm>
 #include <iso646.h>
+#include <string.h>
 
 #ifdef _WIN32
 using socklen_t = int;
 #else
+#   include <unistd.h>
 #   define closesocket(x) close(x)
 #endif
 
@@ -63,8 +65,8 @@ CanarySocketServer::iterator CanarySocketServer::FindDead()
         greatestSocketValue = std::max(greatestSocketValue, canary.socket);
     }
 
-    const timeval noWait     = {0, 0};
-    int           numSockets = select(static_cast<int>(greatestSocketValue + 1), &sockets, nullptr, nullptr, &noWait);
+    timeval noWait     = {0, 0};
+    int     numSockets = select(greatestSocketValue + 1, &sockets, nullptr, nullptr, &noWait);
 
     if (numSockets > 0)
     {

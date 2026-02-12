@@ -311,9 +311,9 @@ public:
 
 		client_t(const client_t &other)
 			: address(other.address),
-			messenger(other.messenger),
 			version(other.version),
 			packedversion(other.packedversion),
+			messenger(other.messenger),
 			last_received(other.last_received),
 			lastclientcmdtic(other.lastclientcmdtic),
 			digest(other.digest),
