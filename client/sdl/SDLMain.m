@@ -310,9 +310,6 @@ static void CustomApplicationMain (int argc, char **argv)
 {
     const char *temparg;
 
-    if (!gFinderLaunch)  /* MacOS is passing command line args. */
-        return false;
-
     if (gCalledAppMainline)  /* app has started, ignore this document. */
         return false;
 
@@ -323,7 +320,7 @@ static void CustomApplicationMain (int argc, char **argv)
 /* Called by LaunchServices for odamex:// URLs. */
 - (void)application:(NSApplication *)theApplication openURLs:(NSArray<NSURL *> *)urls
 {
-    if (!gFinderLaunch || gCalledAppMainline)
+    if (gCalledAppMainline)
         return;
 
     for (NSURL *url in urls)
@@ -333,7 +330,7 @@ static void CustomApplicationMain (int argc, char **argv)
 /* Backward-compatible URL handler for older macOS versions. */
 - (bool)application:(NSApplication *)theApplication openURL:(NSURL *)url
 {
-    if (!gFinderLaunch || gCalledAppMainline)
+    if (gCalledAppMainline)
         return false;
 
     return AppendUrlArg(url);

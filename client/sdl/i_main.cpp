@@ -151,14 +151,18 @@ int main(int argc, char *argv[])
 
 		M_InitConsoleInputFile(::Args.CheckValue("-confile"));
 
-		// denis - if argv[1] starts with "odamex://"
-		if (argc >= 2 && argv && argv[1])
+		// If we were launched via an odamex:// URL, convert it to -connect host:port.
+		for (int i = 1; i < argc && argv; ++i)
 		{
-			std::string hostport = I_ParseOdamexUrl(argv[1]);
+			if (!argv[i])
+				continue;
+
+			std::string hostport = I_ParseOdamexUrl(argv[i]);
 			if (!hostport.empty())
 			{
 				Args.AppendArg("-connect");
 				Args.AppendArg(hostport.c_str());
+				break;
 			}
 		}
 

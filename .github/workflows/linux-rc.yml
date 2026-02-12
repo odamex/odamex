@@ -197,7 +197,11 @@ jobs:
       env:
         name: "${{ github.ref_name }}"
       run: |
-        echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
+        safe_name="$(printf '%s' "${name}" | sed -E 's#[^A-Za-z0-9._-]+#-#g; s#^[.-]+##; s#[-.]+$##; s#-+#-#g')"
+        if [ -z "${safe_name}" ]; then
+          safe_name="branch"
+        fi
+        echo "MODIFIED_BRANCH_NAME=${safe_name}" >> $GITHUB_ENV
     - name: Set flatpak repo
       run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     - name: Run build
@@ -246,7 +250,11 @@ jobs:
       env:
         name: "${{ github.ref_name }}"
       run: |
-        echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
+        safe_name="$(printf '%s' "${name}" | sed -E 's#[^A-Za-z0-9._-]+#-#g; s#^[.-]+##; s#[-.]+$##; s#-+#-#g')"
+        if [ -z "${safe_name}" ]; then
+          safe_name="branch"
+        fi
+        echo "MODIFIED_BRANCH_NAME=${safe_name}" >> $GITHUB_ENV
     - name: Set flatpak repo
       run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     - name: Run build
