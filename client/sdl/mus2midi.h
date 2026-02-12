@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -26,7 +26,7 @@
 // DESCRIPTION:
 //	mus2mid.h - http://benryves.com - benryves@benryves.com
 //	Use to convert a MUS file into a single track, type 0 MIDI file.
-// 
+//
 //	[Russell] - Minor modifications to make it compile
 //
 //-----------------------------------------------------------------------------
@@ -36,4 +36,4 @@
 
 #include "m_memio.h"
 
-QWORD mus2mid(MEMFILE *musinput, MEMFILE *midioutput);
+uint64_t mus2mid(MEMFILE *musinput, MEMFILE *midioutput);

@@ -62,7 +62,7 @@ fixed_t			rw_frontfz1, rw_frontfz2;
 
 int rw_start, rw_stop;
 
-static BYTE		FakeSide;
+static byte		FakeSide;
 
 const fixed_t NEARCLIP = 2*FRACUNIT;
 

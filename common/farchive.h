@@ -151,48 +151,48 @@ public:
 	void WriteCount(DWORD count);
 	DWORD ReadCount();
 
-	FArchive& operator<< (BYTE c);
+	FArchive& operator<< (uint8_t c);
 	FArchive& operator<< (WORD s);
 	FArchive& operator<< (DWORD i);
-	FArchive& operator<< (QWORD i);
+	FArchive& operator<< (uint64_t i);
 	FArchive& operator<< (float f);
 	FArchive& operator<< (double d);
 	FArchive& operator<< (argb_t color);
 	FArchive& operator<< (const char* str);
 	FArchive& operator<< (DObject* obj);
 
-	inline	FArchive& operator<< (char c) { return operator<< ((BYTE)c); }
-	inline	FArchive& operator<< (SBYTE c) { return operator<< ((BYTE)c); }
+	inline	FArchive& operator<< (char c) { return operator<< ((uint8_t)c); }
+	inline	FArchive& operator<< (int8_t c) { return operator<< ((uint8_t)c); }
 	inline	FArchive& operator<< (SWORD s) { return operator<< ((WORD)s); }
 	inline	FArchive& operator<< (SDWORD i) { return operator<< ((DWORD)i); }
-	inline	FArchive& operator<< (SQWORD i) { return operator<< ((QWORD)i); }
+	inline	FArchive& operator<< (int64_t i) { return operator<< ((uint64_t)i); }
 	inline	FArchive& operator<< (const unsigned char* str) { return operator<< ((const char* )str); }
 	inline	FArchive& operator<< (const signed char* str) { return operator<< ((const char* )str); }
-	inline	FArchive& operator<< (bool b) { return operator<< ((BYTE)b); }
+	inline	FArchive& operator<< (bool b) { return operator<< ((uint8_t)b); }
 
 	#ifdef _WIN32
 	inline	FArchive& operator<< (int i) { return operator<< ((SDWORD)i); }
 	inline	FArchive& operator<< (unsigned int i) { return operator<< ((DWORD)i); }
 	#endif
 
-	FArchive& operator>> (BYTE& c);
+	FArchive& operator>> (uint8_t& c);
 	FArchive& operator>> (WORD& s);
 	FArchive& operator>> (DWORD& i);
-	FArchive& operator>> (QWORD& i);
+	FArchive& operator>> (uint64_t& i);
 	FArchive& operator>> (float& f);
 	FArchive& operator>> (double& d);
 	FArchive& operator>> (argb_t& color);
 	FArchive& operator>> (std::string& s);
 	FArchive& ReadObject(DObject *&obj, TypeInfo* wanttype);
 
-	inline	FArchive& operator>> (char& c) { BYTE in; operator>> (in); c = (char)in; return *this; }
-	inline	FArchive& operator>> (SBYTE& c) { BYTE in; operator>> (in); c = (SBYTE)in; return *this; }
+	inline	FArchive& operator>> (char& c) { uint8_t in; operator>> (in); c = (char)in; return *this; }
+	inline	FArchive& operator>> (int8_t& c) { uint8_t in; operator>> (in); c = (int8_t)in; return *this; }
 	inline	FArchive& operator>> (SWORD& s) { WORD in; operator>> (in); s = (SWORD)in; return *this; }
 	inline	FArchive& operator>> (SDWORD& i) { DWORD in; operator>> (in); i = (SDWORD)in; return *this; }
-	inline	FArchive& operator>> (SQWORD& i) { QWORD in; operator>> (in); i = (SQWORD)in; return *this; }
+	inline	FArchive& operator>> (int64_t& i) { uint64_t in; operator>> (in); i = (int64_t)in; return *this; }
 	//inline	FArchive& operator>> (unsigned char *&str) { return operator>> ((char *&)str); }
 	//inline	FArchive& operator>> (signed char *&str) { return operator>> ((char *&)str); }
-	inline	FArchive& operator>> (bool& b) { BYTE in; operator>> (in); b = (in != 0); return *this; }
+	inline	FArchive& operator>> (bool& b) { uint8_t in; operator>> (in); b = (in != 0); return *this; }
 	inline  FArchive& operator>> (DObject* &object) { return ReadObject (object, RUNTIME_CLASS(DObject)); }
 
 	#ifdef _WIN32

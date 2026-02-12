@@ -395,11 +395,11 @@ typedef enum
 
 inline FArchive &operator<< (FArchive &arc, podoortype_t type)
 {
-	return arc << (BYTE)type;
+	return arc << (byte)type;
 }
 inline FArchive &operator>> (FArchive &arc, podoortype_t &out)
 {
-	BYTE in; arc >> in; out = (podoortype_t)in; return arc;
+	byte in; arc >> in; out = (podoortype_t)in; return arc;
 }
 
 class DPolyAction : public DThinker

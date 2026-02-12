@@ -66,11 +66,11 @@ public:
 
 	friend FArchive &operator<< (FArchive &arc, EWhere where)
 	{
-		return arc << (BYTE)where;
+		return arc << (byte)where;
 	}
 	friend FArchive &operator>> (FArchive &arc, EWhere &out)
 	{
-		BYTE in; arc >> in; out = (EWhere)in; return arc;
+		byte in; arc >> in; out = (EWhere)in; return arc;
 	}
 };
 

@@ -11,8 +11,8 @@
 struct ScriptPtr
 {
 	WORD Number;
-	BYTE Type;
-	BYTE ArgCount;
+	byte Type;
+	byte ArgCount;
 	DWORD Address;
 };
 
@@ -33,10 +33,10 @@ struct ScriptPtr2
 
 struct ScriptFunction
 {
-	BYTE ArgCount;
-	BYTE LocalCount;
-	BYTE HasReturnValue;
-	BYTE Pad;
+	byte ArgCount;
+	byte LocalCount;
+	byte HasReturnValue;
+	byte Pad;
 	DWORD Address;
 };
 
@@ -59,18 +59,18 @@ enum ACSFormat { ACS_Old, ACS_Enhanced, ACS_LittleEnhanced, ACS_Unknown };
 class FBehavior
 {
 public:
-	FBehavior (BYTE *object, int len);
+	FBehavior (byte *object, int len);
 	~FBehavior ();
 
 	bool IsGood ();
-	BYTE *FindChunk (DWORD id) const;
-	BYTE *NextChunk (BYTE *chunk) const;
+	byte *FindChunk (DWORD id) const;
+	byte *NextChunk (byte *chunk) const;
 	int *FindScript (int number) const;
 	void PrepLocale (DWORD userpref, DWORD userdef, DWORD syspref, DWORD sysdef);
 	const char *LookupString (DWORD index, DWORD ofs=0) const;
 	const char *LocalizeString (DWORD index) const;
 	void StartTypedScripts (WORD type, AActor *activator, int arg0=0, int arg1=0, int arg2=0, bool always = true) const;
-	DWORD PC2Ofs (int *pc) const { return (BYTE *)pc - Data; }
+	DWORD PC2Ofs (int *pc) const { return (byte *)pc - Data; }
 	int *Ofs2PC (DWORD ofs) const { return (int *)(Data + ofs); }
 	ACSFormat GetFormat() const { return Format; }
 	ScriptFunction *GetFunction (int funcnum) const;
@@ -82,12 +82,12 @@ private:
 
 	ACSFormat Format;
 
-	BYTE *Data;
+	byte *Data;
 	int DataSize;
-	BYTE *Chunks;
-	BYTE *Scripts;
+	byte *Chunks;
+	byte *Scripts;
 	int NumScripts;
-	BYTE *Functions;
+	byte *Functions;
 	int NumFunctions;
 	ArrayInfo *Arrays;
 	int NumArrays;
@@ -516,11 +516,11 @@ private:
 
 inline FArchive &operator<< (FArchive &arc, DLevelScript::EScriptState state)
 {
-	return arc << (BYTE)state;
+	return arc << (byte)state;
 }
 inline FArchive &operator>> (FArchive &arc, DLevelScript::EScriptState &state)
 {
-	BYTE in; arc >> in; state = (DLevelScript::EScriptState)in; return arc;
+	byte in; arc >> in; state = (DLevelScript::EScriptState)in; return arc;
 }
 
 class DACSThinker : public DThinker

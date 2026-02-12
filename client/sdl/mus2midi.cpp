@@ -64,7 +64,7 @@ typedef enum
 // Structure to hold MUS file header
 typedef struct
 {
-  BYTE id[4];
+  byte id[4];
   unsigned short scorelength;
   unsigned short scorestart;
   unsigned short primarychannels;
@@ -73,7 +73,7 @@ typedef struct
 } PACKEDATTR musheader;
 
 // Standard MIDI type 0 header + track header
-static BYTE midiheader[] =
+static byte midiheader[] =
 {
 	'M', 'T', 'h', 'd',     // Main header
 	0x00, 0x00, 0x00, 0x06, // Header size
@@ -85,7 +85,7 @@ static BYTE midiheader[] =
 };
 
 // Cached channel velocities
-static BYTE channelvelocities[] =
+static byte channelvelocities[] =
 {
 	127, 127, 127, 127, 127, 127, 127, 127,
 	127, 127, 127, 127, 127, 127, 127, 127
@@ -99,7 +99,7 @@ static unsigned int queuedtime = 0;
 
 static unsigned int tracksize;
 
-static BYTE mus2midi_translation[] =
+static byte mus2midi_translation[] =
 {
 	0x00, 0x20, 0x01, 0x07, 0x0A, 0x0B, 0x5B, 0x5D,
 	0x40, 0x43, 0x78, 0x7B, 0x7E, 0x7F, 0x79
@@ -110,7 +110,7 @@ static BYTE mus2midi_translation[] =
 static bool midi_writetime(unsigned int time, MEMFILE *midioutput)
 {
 	unsigned int buffer = time & 0x7F;
-	BYTE writeval;
+	byte writeval;
 
 	while ((time >>= 7) != 0)
 	{
@@ -120,7 +120,7 @@ static bool midi_writetime(unsigned int time, MEMFILE *midioutput)
 
 	for (;;)
 	{
-		writeval = (BYTE)(buffer & 0xFF);
+		writeval = (byte)(buffer & 0xFF);
 
 		if (mem_fwrite(&writeval, 1, 1, midioutput) != 1)
 		{
@@ -145,7 +145,7 @@ static bool midi_writetime(unsigned int time, MEMFILE *midioutput)
 // Write the end of track marker
 static bool midi_writeendtrack(MEMFILE *midioutput)
 {
-	BYTE endtrack[] = {0xFF, 0x2F, 0x00};
+	byte endtrack[] = {0xFF, 0x2F, 0x00};
 
 	if (midi_writetime(queuedtime, midioutput))
 	{
@@ -162,10 +162,10 @@ static bool midi_writeendtrack(MEMFILE *midioutput)
 }
 
 // Write a key press event
-static bool midi_writepresskey(BYTE channel, BYTE key,
-                              BYTE velocity, MEMFILE *midioutput)
+static bool midi_writepresskey(byte channel, byte key,
+                               byte velocity, MEMFILE *midioutput)
 {
-	BYTE working = midi_presskey | channel;
+	byte working = midi_presskey | channel;
 
 	if (midi_writetime(queuedtime, midioutput))
 	{
@@ -197,10 +197,10 @@ static bool midi_writepresskey(BYTE channel, BYTE key,
 }
 
 // Write a key release event
-static bool midi_writereleasekey(BYTE channel, BYTE key,
-                                MEMFILE *midioutput)
+static bool midi_writereleasekey(byte channel, byte key,
+                                 MEMFILE *midioutput)
 {
-	BYTE working = midi_releasekey | channel;
+	byte working = midi_releasekey | channel;
 
 	if (midi_writetime(queuedtime, midioutput))
 	{
@@ -232,10 +232,10 @@ static bool midi_writereleasekey(BYTE channel, BYTE key,
 }
 
 // Write a pitch wheel/bend event
-static bool midi_writepitchwheel(BYTE channel, short wheel,
-                                MEMFILE *midioutput)
+static bool midi_writepitchwheel(byte channel, short wheel,
+                                 MEMFILE *midioutput)
 {
-	BYTE working = midi_pitchwheel | channel;
+	byte working = midi_pitchwheel | channel;
 
 	if (midi_writetime(queuedtime, midioutput))
 	{
@@ -266,10 +266,10 @@ static bool midi_writepitchwheel(BYTE channel, short wheel,
 }
 
 // Write a patch change event
-static bool midi_writechangepatch(BYTE channel, BYTE patch,
-                                 MEMFILE *midioutput)
+static bool midi_writechangepatch(byte channel, byte patch,
+                                  MEMFILE *midioutput)
 {
-	BYTE working = midi_changepatch | channel;
+	byte working = midi_changepatch | channel;
 
 	if (midi_writetime(queuedtime, midioutput))
 	{
@@ -296,12 +296,12 @@ static bool midi_writechangepatch(BYTE channel, BYTE patch,
 
 
 // Write a valued controller change event
-static bool midi_writechangecontroller_valued(BYTE channel,
-                                             BYTE control,
-                                             BYTE value,
-                                             MEMFILE *midioutput)
+static bool midi_writechangecontroller_valued(byte channel,
+                                              byte control,
+                                              byte value,
+                                              MEMFILE *midioutput)
 {
-	BYTE working = midi_changecontroller | channel;
+	byte working = midi_changecontroller | channel;
 
 	if (midi_writetime(queuedtime, midioutput))
 	{
@@ -343,8 +343,8 @@ static bool midi_writechangecontroller_valued(BYTE channel,
 }
 
 // Write a valueless controller change event
-static BYTE midi_writechangecontroller_valueless(BYTE channel,
-                                                BYTE control,
+static byte midi_writechangecontroller_valueless(byte channel,
+                                                byte control,
                                                 MEMFILE *midioutput)
 {
 	return midi_writechangecontroller_valued(channel, control, 0,
@@ -355,7 +355,7 @@ static bool read_musheader(MEMFILE *file, musheader *header)
 {
 	bool result;
 
-	result = (mem_fread(&header->id, sizeof(BYTE), 4, file) == 4)
+	result = (mem_fread(&header->id, sizeof(byte), 4, file) == 4)
               && (mem_fread(&header->scorelength, sizeof(short), 1, file) == 1)
               && (mem_fread(&header->scorestart, sizeof(short), 1, file) == 1)
               && (mem_fread(&header->primarychannels, sizeof(short), 1, file) == 1)
@@ -380,30 +380,30 @@ static bool read_musheader(MEMFILE *file, musheader *header)
 //
 // Returns 0 on success or 1 on failure.
 
-QWORD mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
+uint64_t mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
 {
 	// Header for the MUS file
 	musheader musfileheader;
 
 	// Descriptor for the current MUS event
-	BYTE eventdescriptor;
+	byte eventdescriptor;
 	int channel; // Channel number
 	musevent event;
 
 
 	// Bunch of vars read from MUS lump
-	BYTE key;
-	BYTE controllernumber;
-	BYTE controllervalue;
+	byte key;
+	byte controllernumber;
+	byte controllervalue;
 
 	// Buffer used for MIDI track size record
-	BYTE tracksizebuffer[4];
+	byte tracksizebuffer[4];
 
 	// Flag for when the score end marker is hit.
 	int hitscoreend = 0;
 
 	// Temp working byte
-	BYTE working;
+	byte working;
 	// Used in building up time delays
 	unsigned int timedelay;
 

@@ -199,21 +199,18 @@ bool M_FileExistsExt(const std::string& filename, const char* ext)
 //
 // Writes a buffer to a new file, if it already exists, the file will be
 // erased and recreated with the new contents
-bool M_WriteFile(std::string filename, void *source, QWORD length)
+bool M_WriteFile(std::string filename, void *source, size_t length)
 {
-    FILE *handle;
-    QWORD count;
+	FILE* handle = fopen(filename.c_str(), "wb");
 
-    handle = fopen(filename.c_str(), "wb");
-
-    if (handle == NULL)
+	if (handle == NULL)
 	{
 		PrintFmt(PRINT_HIGH, "Could not open file {} for writing\n", filename);
 		return false;
 	}
 
-    count = fwrite(source, 1, length, handle);
-    fclose(handle);
+	size_t count = fwrite(source, 1, length, handle);
+	fclose(handle);
 
 	if (count != length)
 	{
@@ -230,13 +227,9 @@ bool M_WriteFile(std::string filename, void *source, QWORD length)
 //
 // Reads a file, it will allocate storage via Z_Malloc for it and return
 // the buffer and the size.
-QWORD M_ReadFile(std::string filename, BYTE **buffer)
+size_t M_ReadFile(std::string filename, byte **buffer)
 {
-    FILE *handle;
-    QWORD count, length;
-    BYTE *buf;
-
-    handle = fopen(filename.c_str(), "rb");
+    FILE* handle = fopen(filename.c_str(), "rb");
 
 	if (handle == NULL)
 	{
@@ -244,10 +237,10 @@ QWORD M_ReadFile(std::string filename, BYTE **buffer)
 		return false;
 	}
 
-    length = M_FileLength(handle);
+    size_t length = M_FileLength(handle);
 
-    buf = (BYTE *)Z_Malloc (length, PU_STATIC, NULL);
-    count = fread(buf, 1, length, handle);
+    byte* buf = (byte *)Z_Malloc (length, PU_STATIC, NULL);
+    size_t count = fread(buf, 1, length, handle);
     fclose (handle);
 
     if (count != length)

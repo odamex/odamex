@@ -124,7 +124,7 @@ next:
 	}
 
 	// Cvar count
-	MSG_WriteByte(&ml_message, (BYTE)Cvars.size());
+	MSG_WriteByte(&ml_message, (byte)Cvars.size());
 
 	// Write cvars
 	for(size_t i = 0; i < Cvars.size(); ++i)
@@ -267,8 +267,8 @@ next:
 // Sends information regarding the type of information we received (ie: it will
 // send data that is wanted by the enquirer program)
 static DWORD IntQrySendResponse(const WORD& TagId,
-                                const BYTE& TagApplication,
-                                const BYTE& TagQRId,
+                                const byte& TagApplication,
+                                const byte& TagQRId,
                                 const WORD& TagPacketType)
 {
 	// It isn't a query, throw it away
@@ -315,8 +315,8 @@ static DWORD IntQrySendResponse(const WORD& TagId,
 
 	DWORD ReTag = 0;
 	WORD ReId = TAG_ID;
-	BYTE ReApplication = 3;
-	BYTE ReQRId = 2;
+	byte ReApplication = 3;
+	byte ReQRId = 2;
 	WORD RePacketType = 0;
 
 	switch(TagPacketType)
@@ -409,8 +409,8 @@ DWORD SV_QryParseEnquiry(const DWORD& Tag)
 	// Decode the tag into its fields
 	// TODO: this may not be 100% correct
 	WORD TagId = ((Tag >> 20) & 0x0FFF);
-	BYTE TagApplication = ((Tag >> 16) & 0x0F);
-	BYTE TagQRId = ((Tag >> 12) & 0x0F);
+	byte TagApplication = ((Tag >> 16) & 0x0F);
+	byte TagQRId = ((Tag >> 12) & 0x0F);
 	WORD TagPacketType = (Tag & 0xFFFF0FFF);
 
 	// It is not ours

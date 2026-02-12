@@ -875,8 +875,8 @@ void TextureManager::addTextureDirectory(const char* lumpname)
 	{
 		char		name[8];
 		WORD		masked;				// [RH] Unused
-		BYTE		scalex;				// [RH] Scaling (8 is normal)
-		BYTE		scaley;				// [RH] Same as above
+		byte		scalex;				// [RH] Scaling (8 is normal)
+		byte		scaley;				// [RH] Same as above
 		short		width;
 		short		height;
 		byte		columndirectory[4];	// OBSOLETE

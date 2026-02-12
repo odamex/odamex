@@ -77,7 +77,7 @@ EXTERN_CVAR (sv_natport)
 struct token_t
 {
 	DWORD id;
-	QWORD issued;
+	uint64_t issued;
 	netadr_t from;
 };
 
@@ -89,7 +89,7 @@ static std::vector<token_t> connect_tokens;
 //
 DWORD SV_NewToken()
 {
-	QWORD now = I_MSTime() * TICRATE / 1000;
+	uint64_t now = I_MSTime() * TICRATE / 1000;
 
 	token_t token;
 	token.id = rand()*time(0);
@@ -116,7 +116,7 @@ DWORD SV_NewToken()
 //
 bool SV_IsValidToken(DWORD token)
 {
-	QWORD now = I_MSTime() * TICRATE / 1000;
+	uint64_t now = I_MSTime() * TICRATE / 1000;
 
 	for(size_t i = 0; i < connect_tokens.size(); i++)
 	{

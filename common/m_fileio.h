@@ -40,8 +40,8 @@ SDWORD M_FileLength (FILE *f);
 bool M_FileExists(const std::string& filename);
 bool M_FileExistsExt(const std::string& filename, const char* ext);
 
-bool M_WriteFile(std::string filename, void *source, QWORD length);
-QWORD M_ReadFile(std::string filename, BYTE **buffer);
+bool M_WriteFile(std::string filename, void *source, size_t length);
+size_t M_ReadFile(std::string filename, byte **buffer);
 
 bool M_AppendExtension (std::string &filename, std::string extension, bool if_needed = true);
 void M_ExtractFilePath(const std::string& filename, std::string &dest);
