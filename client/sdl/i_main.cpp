@@ -95,6 +95,8 @@ void STACK_ARGS nx_early_deinit (void)
 
 #if defined GCONSOLE && !defined __SWITCH__
 int I_Main(int argc, char *argv[])
+#elif defined(__APPLE__) && !defined(GCONSOLE)
+extern "C" int SDL_main(int argc, char *argv[])
 #else
 int main(int argc, char *argv[])
 #endif
