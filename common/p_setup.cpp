@@ -211,15 +211,15 @@ void P_LoadSegsHelper(int side, short angle, int linedef, seg_t *li)
 		li->backsector = sides[ldef->sidenum[side^1]].sector;
 	else
 	{
-		li->backsector = 0;
+		li->backsector = nullptr;
 		ldef->flags &= ~ML_TWOSIDED;
 	}
 
 	// recalculate seg offsets. values in wads are untrustworthy.
-	vertex_t *from = (side == 0)
-		? ldef->v1			// right side: offset is from start of linedef
-		: ldef->v2;			// left side: offset is from end of linedef
-	vertex_t *to = li->v1;	// end point is start of seg, in both cases
+	const vertex_t *from = (side == 0)
+	    ? ldef->v1               // right side: offset is from start of linedef
+	    : ldef->v2;              // left side: offset is from end of linedef
+	const vertex_t *to = li->v1; // end point is start of seg, in both cases
 
 	float dx = FIXED2FLOAT(to->x - from->x);
 	float dy = FIXED2FLOAT(to->y - from->y);
@@ -234,7 +234,8 @@ void P_LoadSegsHelper(int side, short angle, int linedef, seg_t *li)
 //
 // P_LoadSegs
 //
-void P_LoadSegs (int lump, bool isdeepbsp = false)
+template <typename MapSegType>
+void P_LoadSegs (int lump)
 {
 	if (!W_LumpLength(lump))
 	{
@@ -242,57 +243,30 @@ void P_LoadSegs (int lump, bool isdeepbsp = false)
 		    "P_LoadSegs: SEGS lump is empty - levels without nodes are not supported.");
 	}
 
-	byte* data;
-
-	if (isdeepbsp)
-		numsegs = W_LumpLength (lump) / sizeof(mapseg_deepbsp_t);
-	else
-		numsegs = W_LumpLength (lump) / sizeof(mapseg_t);
-	segs = (seg_t *)Z_Malloc (numsegs*sizeof(seg_t), PU_LEVEL, 0);
-	memset (segs, 0, numsegs*sizeof(seg_t));
-	data = (byte*)W_CacheLumpNum (lump, PU_STATIC);
+	numsegs = W_LumpLength (lump) / sizeof(MapSegType);
+	segs = (seg_t*) Z_Malloc(numsegs * sizeof(seg_t), PU_LEVEL, 0);
+	memset(segs, 0, numsegs * sizeof(seg_t));
+	byte* const data = (byte*) W_CacheLumpNum(lump, PU_STATIC);
 
 	for (int i = 0; i < numsegs; i++)
 	{
-		seg_t *li = segs+i;
-		if (isdeepbsp)
-		{
-			const mapseg_deepbsp_t *ml = (mapseg_deepbsp_t*) data+i;
-			uint32_t v = LELONG(ml->v1);
+		seg_t* const li = segs + i;
+		const MapSegType *ml = (MapSegType*) data + i;
+		auto v = LESWAP(ml->v1);
 
-			if(v >= numvertexes)
-				I_Error("P_LoadSegs: invalid vertex {}", v);
-			else
-				li->v1 = &vertexes[v];
-
-			v = LELONG(ml->v2);
-
-			if(v >= numvertexes)
-				I_Error("P_LoadSegs: invalid vertex {}", v);
-			else
-				li->v2 = &vertexes[v];
-
-			P_LoadSegsHelper(LESHORT(ml->side), LESHORT(ml->angle), LESHORT(ml->linedef), li);
-		}
+		if(v >= numvertexes)
+			I_Error("P_LoadSegs: invalid vertex {}", v);
 		else
-		{
-			const mapseg_t *ml = (mapseg_t*) data+i;
-			uint16_t v = LESHORT(ml->v1);
+			li->v1 = &vertexes[v];
 
-			if(v >= numvertexes)
-				I_Error("P_LoadSegs: invalid vertex {}", v);
-			else
-				li->v1 = &vertexes[v];
+		v = LESWAP(ml->v2);
 
-			v = LESHORT(ml->v2);
+		if(v >= numvertexes)
+			I_Error("P_LoadSegs: invalid vertex {}", v);
+		else
+			li->v2 = &vertexes[v];
 
-			if(v >= numvertexes)
-				I_Error("P_LoadSegs: invalid vertex {}", v);
-			else
-				li->v2 = &vertexes[v];
-
-			P_LoadSegsHelper(LESHORT(ml->side), LESHORT(ml->angle), LESHORT(ml->linedef), li);
-		}
+		P_LoadSegsHelper(LESHORT(ml->side), LESHORT(ml->angle), LESHORT(ml->linedef), li);
 	}
 
 	Z_Free (data);
@@ -301,7 +275,8 @@ void P_LoadSegs (int lump, bool isdeepbsp = false)
 //
 // P_LoadSubsectors
 //
-void P_LoadSubsectors(int lump, bool isdeepbsp = false)
+template <typename MapSubsectorType>
+void P_LoadSubsectors(int lump)
 {
 	if (!W_LumpLength(lump))
 	{
@@ -309,32 +284,16 @@ void P_LoadSubsectors(int lump, bool isdeepbsp = false)
 		    "P_LoadSubsectors: SSECTORS lump is empty - levels without nodes are not supported.");
 	}
 
-	byte *data;
-	int i;
-
-	if (isdeepbsp)
-		numsubsectors = W_LumpLength (lump) / sizeof(mapsubsector_deepbsp_t);
-	else
-		numsubsectors = W_LumpLength (lump) / sizeof(mapsubsector_t);
+	numsubsectors = W_LumpLength (lump) / sizeof(MapSubsectorType);
 	subsectors = (subsector_t *)Z_Malloc (numsubsectors*sizeof(subsector_t),PU_LEVEL,0);
-	data = (byte *)W_CacheLumpNum (lump,PU_STATIC);
+	byte* data = (byte *)W_CacheLumpNum (lump,PU_STATIC);
 
 	memset (subsectors, 0, numsubsectors*sizeof(subsector_t));
 
-	if (isdeepbsp) {
-		for (i = 0; i < numsubsectors; i++)
-		{
-			subsectors[i].numlines = (uint32_t)LESHORT(((mapsubsector_deepbsp_t *)data)[i].numsegs);
-			subsectors[i].firstline = (uint32_t)LELONG(((mapsubsector_deepbsp_t *)data)[i].firstseg);
-		}
-	}
-	else
+	for (int i = 0; i < numsubsectors; i++)
 	{
-		for (i = 0; i < numsubsectors; i++)
-		{
-			subsectors[i].numlines = (uint16_t)LESHORT(((mapsubsector_t *)data)[i].numsegs);
-			subsectors[i].firstline = (uint16_t)LESHORT(((mapsubsector_t *)data)[i].firstseg);
-		}
+		subsectors[i].numlines = LESWAP<decltype(MapSubsectorType::numsegs)>(((MapSubsectorType *)data)[i].numsegs);
+		subsectors[i].firstline = LESWAP<decltype(MapSubsectorType::firstseg)>(((MapSubsectorType *)data)[i].firstseg);
 	}
 
 	Z_Free(data);
@@ -486,7 +445,8 @@ nodetype_t P_CheckNodeType(int lump) {
 //
 // P_LoadNodes
 //
-void P_LoadNodes (int lump)
+template <typename MapNodeType>
+void P_LoadNodes(int lump)
 {
 	if (!W_LumpLength(lump))
 	{
@@ -494,28 +454,31 @@ void P_LoadNodes (int lump)
 		    "P_LoadNodes: NODES lump is empty - levels without nodes are not supported.");
 	}
 
-	numnodes = W_LumpLength (lump) / sizeof(mapnode_t);
-	nodes = (node_t *)Z_Malloc (numnodes*sizeof(node_t), PU_LEVEL, 0);
-	byte* data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	numnodes = W_LumpLength(lump) / sizeof(MapNodeType);
+	nodes = (node_t*) Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL, 0);
+	byte* data = (byte*) W_CacheLumpNum(lump, PU_STATIC);
 
-	mapnode_t* mn = (mapnode_t *)data;
+	MapNodeType* mn = (MapNodeType *)data;
 	node_t* no = nodes;
 
 	for (int i = 0; i < numnodes; i++, no++, mn++)
 	{
-		no->x = LESHORT(mn->x)<<FRACBITS;
-		no->y = LESHORT(mn->y)<<FRACBITS;
-		no->dx = LESHORT(mn->dx)<<FRACBITS;
-		no->dy = LESHORT(mn->dy)<<FRACBITS;
+		no->x = LESHORT(mn->x) << FRACBITS;
+		no->y = LESHORT(mn->y) << FRACBITS;
+		no->dx = LESHORT(mn->dx) << FRACBITS;
+		no->dy = LESHORT(mn->dy) << FRACBITS;
 		for (int j = 0; j < 2; j++)
 		{
-			// account for children's promotion to 32 bits
-			unsigned int child = (unsigned short)LESHORT(mn->children[j]);
+			uint32_t child = LESWAP(mn->children[j]);
 
-			if (child == 0xffff)
-				child = 0xffffffff;
-			else if (child & 0x8000)
-				child = (child & ~0x8000) | NF_SUBSECTOR;
+			// account for children's promotion to 32 bits
+			if constexpr (std::is_same_v<std::remove_extent_t<decltype(MapNodeType::children)>, uint16_t>)
+			{
+				if (child == 0xffff)
+					child = 0xffffffff;
+				else if (child & 0x8000)
+					child = (child & ~0x8000) | NF_SUBSECTOR;
+			}
 
 			no->children[j] = child;
 
@@ -525,48 +488,6 @@ void P_LoadNodes (int lump)
 	}
 
 	Z_Free (data);
-}
-
-//
-// P_LoadNodes_DeePBSP
-//
-void P_LoadNodes_DeePBSP(int lump)
-{
-	if (!W_LumpLength(lump))
-	{
-		I_Error(
-		    "P_LoadNodes_DeePBSP: NODES lump is empty - levels without nodes are not supported.");
-	}
-
-	byte*		data;
-	mapnode_deepbsp_t*	mn;
-	node_t* 	no;
-
-	numnodes = (W_LumpLength (lump) - 8) / sizeof(mapnode_deepbsp_t);
-	nodes = (node_t *)Z_Malloc (numnodes*sizeof(node_t), PU_LEVEL, 0);
-	data = (byte*) W_CacheLumpNum (lump, PU_STATIC);
-
-	data += 8;
-
-	mn = (mapnode_deepbsp_t *)data;
-	no = nodes;
-
-	for (int i = 0; i < numnodes; i++, mn++, no++)
-	{
-		no->x = LESHORT(mn->x)<<FRACBITS;
-		no->y = LESHORT(mn->y)<<FRACBITS;
-		no->dx = LESHORT(mn->dx)<<FRACBITS;
-		no->dy = LESHORT(mn->dy)<<FRACBITS;
-		for (int j = 0; j < 2; j++)
-		{
-			no->children[j] = LELONG(mn->children[j]);
-
-			for (int k = 0; k < 4; k++)
-				no->bbox[j][k] = LESHORT(mn->bbox[j][k]) << FRACBITS;
-		}
-	}
-
-	Z_Free (data - 8);
 }
 
 byte* P_DecompressNodes(byte* data, size_t len) {
@@ -641,7 +562,10 @@ byte* P_LoadSegs_XNOD(byte* p) {
 		if (line->flags & ML_TWOSIDED && line->sidenum[side^1] != R_NOSIDE)
 			seg->backsector = sides[line->sidenum[side^1]].sector;
 		else
+		{
 			seg->backsector = NULL;
+			line->flags &= ~ML_TWOSIDED;
+		}
 
 		seg->angle = R_PointToAngle2(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y);
 
@@ -723,7 +647,10 @@ byte* P_LoadSegs_XGL(byte* p)
 				    (line->sidenum[side ^ 1] != NO_INDEX))
 					seg->backsector = sides[line->sidenum[side ^ 1]].sector;
 				else
+				{
 					seg->backsector = nullptr;
+					line->flags &= ~ML_TWOSIDED;
+				}
 
 				// a short version of the offset calculation in P_LoadSegs
 				vertex_t *origin = (side == 0) ? line->v1 : line->v2;
@@ -2209,15 +2136,15 @@ void P_SetupLevel (const char *lumpname, int position)
 			break;
 
 		case nodetype_t::DEEP:
-			P_LoadSubsectors(lumpnum+ML_SSECTORS, true);
-			P_LoadNodes_DeePBSP(lumpnum+ML_NODES);
-			P_LoadSegs(lumpnum+ML_SEGS, true);
+			P_LoadSubsectors<mapsubsector_deepbsp_t>(lumpnum+ML_SSECTORS);
+			P_LoadNodes<mapnode_deepbsp_t>(lumpnum+ML_NODES);
+			P_LoadSegs<mapseg_deepbsp_t>(lumpnum+ML_SEGS);
 			break;
 
 		default:
-			P_LoadSubsectors(lumpnum+ML_SSECTORS);
-			P_LoadNodes(lumpnum+ML_NODES);
-			P_LoadSegs(lumpnum+ML_SEGS);
+			P_LoadSubsectors<mapsubsector_t>(lumpnum+ML_SSECTORS);
+			P_LoadNodes<mapnode_t>(lumpnum+ML_NODES);
+			P_LoadSegs<mapseg_t>(lumpnum+ML_SEGS);
 	}
 
 	rejectmatrix = (byte *)W_CacheLumpNum (lumpnum+ML_REJECT, PU_LEVEL);
