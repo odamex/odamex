@@ -4086,7 +4086,7 @@ void SV_RunTics()
 
 	if (rcon::Server::GetInstance())
 	{
-		if (auto something = rcon::Server::GetInstance()->getCommandQueue())
+		while (auto something = rcon::Server::GetInstance()->getCommandQueue())
 		{
 			std::visit(OUtil::visitor {
 				[](const rcon::Server::Print& print) {

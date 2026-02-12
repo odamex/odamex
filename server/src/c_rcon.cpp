@@ -112,7 +112,6 @@ int Server::connection_callback(
 	case LWS_CALLBACK_ESTABLISHED:
 		self->log("Client connected\n");
 		{
-			std::scoped_lock lock(self->clients_mutex);
 			static_cast<ConnectionData*>(user)->wsi = wsi;
 			self->clients[static_cast<ConnectionData*>(user)];
 		}
@@ -121,41 +120,38 @@ int Server::connection_callback(
 	case LWS_CALLBACK_CLOSED:
 		self->log("Client disconnected\n");
 		{
-			std::scoped_lock lock(self->clients_mutex);
 			self->clients.erase(static_cast<ConnectionData*>(user));
 		}
 		break;
 
 	case LWS_CALLBACK_SERVER_WRITEABLE:
 		{
-			Print print;
-			{
-				std::scoped_lock lock(self->clients_mutex);
-				auto& queue = self->clients[static_cast<ConnectionData*>(user)];
-				if (queue.empty())
-					break;
 
-				print = std::move(queue.front());
+			auto& queue = self->clients[static_cast<ConnectionData*>(user)];
+			while (!queue.empty())
+			{
+
+				Print print = std::move(queue.front());
 				queue.pop();
+
+				const ServerMessage reply
+				{
+					0,
+					rcon::messages::server::Print {
+						print.level,
+						print.text
+					}
+				};
+
+				const std::string reply_str = reply.serialize();
+
+				// libwebsockets requires a preallocated buffer
+				const size_t buf_size = LWS_PRE + reply_str.size();
+				auto buf = std::make_unique<byte[]>(buf_size);
+				memcpy(buf.get() + LWS_PRE, reply_str.data(), reply_str.size());
+
+				lws_write(wsi, buf.get() + LWS_PRE, reply_str.size(), LWS_WRITE_TEXT);
 			}
-
-			const ServerMessage reply
-			{
-				0,
-				rcon::messages::server::Print {
-					print.level,
-					print.text
-				}
-			};
-
-			const std::string reply_str = reply.serialize();
-
-			// libwebsockets requires a preallocated buffer
-			const size_t buf_size = LWS_PRE + reply_str.size();
-			auto buf = std::make_unique<byte[]>(buf_size);
-			memcpy(buf.get() + LWS_PRE, reply_str.data(), reply_str.size());
-
-			lws_write(wsi, buf.get() + LWS_PRE, reply_str.size(), LWS_WRITE_TEXT);
 		}
 		break;
 
@@ -189,13 +185,16 @@ void Server::run()
 
 	while (m_running)
 	{
-		if (auto idk = frommainthread.try_pop())
+		while (auto idk = frommainthread.try_pop())
 		{
-			std::scoped_lock lock(clients_mutex);
 			for (auto& [client, queue] : clients) {
 				queue.push(std::get<Print>(idk.value()));
 				lws_callback_on_writable(client->wsi);
 			}
+		}
+
+		for (auto& [client, _] : clients) {
+			lws_callback_on_writable(client->wsi);
 		}
 
 		lws_service(m_context, 0);

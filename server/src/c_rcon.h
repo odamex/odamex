@@ -103,7 +103,6 @@ private:
     	lws* wsi = nullptr;
 	};
 
-	std::mutex clients_mutex;
 	std::unordered_map<ConnectionData*, std::queue<Print>> clients;
 
 	inline static std::unique_ptr<Server> singleton;
