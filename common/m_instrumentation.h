@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Stopwatch.h"
 #include "StopwatchManager.h"
+
+#include "Stopwatch.h"
 
 class TimingInstr
 {
@@ -11,6 +12,8 @@ class TimingInstr
             static TimingInstr s_instance;
             return s_instance;
         }
+
+        std::shared_ptr<Stopwatch> CreateStopwatch(const std::string& i_name);
 
         size_t EnableStopwatches(const std::string& i_regex);
         size_t DisableStopwatches(const std::string& i_regex);
