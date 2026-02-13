@@ -70,6 +70,7 @@
 #include "m_wdlstats.h"
 #include "svc_message.h"
 #include "m_cheat.h"
+#include "m_instrumentation.h"
 
 #include <algorithm>
 #include <condition_variable>
@@ -3181,11 +3182,15 @@ namespace
     WorkerPool s_workers;
 }
 
+static auto writeCommandsStopwatch = TimingInstr::Get().CreateStopwatch("SV_WriteCommands");
+
 //
 // SV_WriteCommands
 //
 void SV_WriteCommands(void)
 {
+    writeCommandsStopwatch->Start();
+
 	// [SL] 2011-05-11 - Save player positions and moving sector heights so
 	// they can be reconciled later for unlagging
 	Unlag::getInstance().recordPlayerPositions();
@@ -3286,6 +3291,8 @@ void SV_WriteCommands(void)
 	}
 
 	SV_UpdateDeadPlayers(); // Update dying players.
+
+    writeCommandsStopwatch->Stop();
 }
 
 void SV_PlayerTriedToCheat(player_t &player)
