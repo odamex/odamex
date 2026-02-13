@@ -636,7 +636,7 @@ void MSG_WriteSVC(MessageQueue& io_queue, const google::protobuf::Message& msg)
 	if (simulated_connection)
 		return;
 
-	static std::string buffer;
+	std::string& buffer = io_queue.GetSerializationBufferRef();
 	if (!msg.SerializeToString(&buffer))
 	{
 		PrintFmt(

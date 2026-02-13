@@ -1,6 +1,7 @@
 #pragma once
 
 #include <deque>
+#include <string>
 #include <vector>
 
 #include "i_net.h"
@@ -48,10 +49,12 @@ class MessageQueue
 			}
 		}
 
+        std::string& GetSerializationBufferRef() { return m_serializationBuffer; }
 	protected:
 
 		void PopFromQueueToFreeStack();
 
 		std::deque<buf_t>  m_queue;
 		std::vector<buf_t> m_freeStack;
+        std::string        m_serializationBuffer;
 };

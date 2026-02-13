@@ -1279,6 +1279,12 @@ bool SV_IsPlayerAllowedToSee(const player_t &p, const AActor *mo)
 //
 // SV_UpdateHiddenMobj
 //
+
+namespace
+{
+    std::mutex s_spawnSzpMutex;
+}
+
 int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated)
 {
 	if (pl.mo)
@@ -1289,7 +1295,10 @@ int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated)
 			{
 				mo = pl.to_spawn.front();
 
-				pl.to_spawn.pop();
+                {
+                    std::unique_lock lock {s_spawnSzpMutex};
+				    pl.to_spawn.pop();
+                }
 
 				if (mo && !mo->WasDestroyed())
 					updated += SV_AwarenessUpdate(pl, mo);
@@ -3099,10 +3108,15 @@ namespace
         public:
             WorkerPool()
             {
+                //intptr_t mask = 0x1;
+                //SetThreadAffinityMask(GetCurrentThread(), static_cast<DWORD_PTR>(mask));
+
                 const int poolSize = std::max(1, static_cast<int>(std::thread::hardware_concurrency()));
                 for (int i = 0; i < poolSize; ++i)
                 {
                     m_threads.emplace_back(&WorkerPool::EntryPoint, this);
+
+                    //SetThreadAffinityMask(m_threads.back().native_handle(), static_cast<DWORD_PTR>(~mask));
                 }
             }
 
@@ -3182,6 +3196,20 @@ namespace
     WorkerPool s_workers;
 }
 
+void SV_WriteCommandsForPlayer(player_t& player);
+
+struct PlayerWriteCommand : BaseWorkerCommand
+{
+    player_t& player;
+
+    PlayerWriteCommand(player_t& playerRef) : player(playerRef) {}
+
+    void operator()() override
+    {
+        SV_WriteCommandsForPlayer(player);
+    }
+};
+
 //
 // SV_WriteCommands
 //
@@ -3191,6 +3219,8 @@ void SV_WriteCommands(void)
 	// they can be reconciled later for unlagging
 	Unlag::getInstance().recordPlayerPositions();
 	Unlag::getInstance().recordSectorPositions();
+
+#if 0
 
     // Do an unordered map keyed on our player pointers.  When given a pointer,
     // well-behaved std::hash implementations just return the address casted to
@@ -3285,9 +3315,114 @@ void SV_WriteCommands(void)
 		SV_UpdatePing(cl);          // send the ping value of all cients to this client
 
 	}
+#endif
+
+    std::vector<std::shared_ptr<PlayerWriteCommand> > commands;
+    for (player_t& player : players)
+    {
+        commands.emplace_back(std::make_shared<PlayerWriteCommand>(player));
+        s_workers.PushCommand(commands.back());
+    }
+
+    for (auto& playerCommand : commands)
+    {
+        playerCommand->GetResult();
+    }
 
 	SV_UpdateDeadPlayers(); // Update dying players.
 }
+
+
+
+
+void SV_WriteCommandsForPlayer(player_t& player)
+{
+		// [SL] 2011-05-11 - Send the client the server's gametic
+		// this gametic is returned to the server with the client's
+		// next cmd
+		if (player.ingame())
+			SV_SendGametic(&player.client);
+
+		for (player_t& otherPlayer : players)
+        {
+			if (!(otherPlayer.ingame()) || !(otherPlayer.mo))
+				continue;
+
+			// a player is updated about their own position elsewhere
+			if (&player == &otherPlayer)
+				continue;
+
+			// GhostlyDeath -- Screw spectators
+			if (otherPlayer.spectator)
+				continue;
+
+			if(not SV_IsPlayerAllowedToSee(player, otherPlayer.mo))
+				continue;
+
+			MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_MovePlayer(otherPlayer, player.tic));
+        }
+
+		// [SL] Send client info about player he is spying on
+		player_t& target = idplayer(player.spying);
+		if (validplayer(target) && &player != &target && P_CanSpy(player, target))
+        {
+			SV_SendPlayerStateUpdate(&(player.client), &target);
+        }
+
+		SV_UpdateConsolePlayer(player);
+
+        WorkerSortCommand sortJob(player);
+
+        sortJob();
+
+		// We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
+		// Combined with the high-priority to_spawn queue being directly limited in SV_UpdateHiddenMobj,
+		// we can be sure that both high-priority things like new missiles and deferred map-defined mobjs
+		// get serviced under high-load situations.
+		const int temporaryGrowthBonus = std::min(std::max(0,
+		                                                   static_cast<int>(player.sortedMobjs.size() - sortJob.previousSortedMobjCount)),
+		                                          MAX_HIDDEN_MOBJ_UPDATES);
+		const int maxForThisTic = MAX_HIDDEN_MOBJ_UPDATES + temporaryGrowthBonus;
+
+		int hiddenUpdateCount = 0;
+        int throttleCount = std::numeric_limits<int>::max();
+
+		if (SV_MustThrottleTransmissionsForClient(player.client))
+		{
+            const auto mobjCountFixed = INT2FIXED64  (player.sortedMobjs.size());
+            const auto fractionFixed  = FIXED2FIXED64(player.client.messenger.ThrottleFraction());
+            throttleCount = FIXED642INT(FixedMul64(mobjCountFixed, fractionFixed));
+			//continue;
+		}
+
+		for (auto& sortedMobj : player.sortedMobjs)
+		{
+//            if (throttleCount-- > 0)
+//            {
+//                break;
+//            }
+			SV_UpdateMissiles(player, sortedMobj);
+
+			SV_UpdateMonsters(player, sortedMobj);
+
+			if (hiddenUpdateCount <= maxForThisTic)
+			{
+				hiddenUpdateCount = SV_UpdateHiddenMobj(player, sortedMobj, hiddenUpdateCount);
+			}
+		}
+
+		SV_UpdateGametype(player);     // update gametype stuff
+
+		SV_SendPingRequest(& player.client);     // request ping reply
+
+		SV_UpdatePing(& player.client);          // send the ping value of all cients to this client
+}
+
+
+
+
+
+
 
 void SV_PlayerTriedToCheat(player_t &player)
 {
