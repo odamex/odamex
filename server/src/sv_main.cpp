@@ -3081,6 +3081,10 @@ namespace
 
 				//DPrintFmt("{} initial: {}, Player {} sorting all ({}): total {} nsec\n",sizeof(AActor), m_copyTime - m_freshTime, int(pl.id), s_sortedMobjs.size(), endTime - startTime);
 			}
+            else
+            {
+                player.sortedMobjs.clear();
+            }
 		}
 
     };
