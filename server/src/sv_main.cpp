@@ -3012,13 +3012,20 @@ namespace
 
         void operator()() override
         {
+            // Put in a static assert for assurance that the vector-of-pointers clear() will
+            // actually be constant-time.
+			static_assert(std::is_trivially_destructible_v<decltype(player.sortedMobjs)::value_type>);
+
             // This only makes sense if the player has a position.
-            if (player.mo)
+            if (not player.mo)
             {
+                player.sortedMobjs.clear();
+                return;
+            }
+
 				m_freshTime = I_GetTime();
 
-				static_assert(std::is_trivially_destructible_v<decltype(player.sortedMobjs)::value_type>);
-				player.sortedMobjs.clear();  // Expect constant-time because the contained type is trivially destructible.
+				player.sortedMobjs.clear();
 
 				auto& unsortedThinkers = DThinker::GetThinkerVectorRef();
 
@@ -3080,11 +3087,6 @@ namespace
 				[[maybe_unused]] const dtime_t endTime = I_GetTime();
 
 				//DPrintFmt("{} initial: {}, Player {} sorting all ({}): total {} nsec\n",sizeof(AActor), m_copyTime - m_freshTime, int(pl.id), s_sortedMobjs.size(), endTime - startTime);
-			}
-            else
-            {
-                player.sortedMobjs.clear();
-            }
 		}
 
     };
