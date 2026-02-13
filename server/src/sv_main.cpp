@@ -3182,15 +3182,11 @@ namespace
     WorkerPool s_workers;
 }
 
-static auto writeCommandsStopwatch = TimingInstr::Get().CreateStopwatch("SV_WriteCommands");
-
 //
 // SV_WriteCommands
 //
 void SV_WriteCommands(void)
 {
-    writeCommandsStopwatch->Start();
-
 	// [SL] 2011-05-11 - Save player positions and moving sector heights so
 	// they can be reconciled later for unlagging
 	Unlag::getInstance().recordPlayerPositions();
@@ -3291,8 +3287,6 @@ void SV_WriteCommands(void)
 	}
 
 	SV_UpdateDeadPlayers(); // Update dying players.
-
-    writeCommandsStopwatch->Stop();
 }
 
 void SV_PlayerTriedToCheat(player_t &player)
@@ -4310,6 +4304,10 @@ bool SV_Frozen()
 	return sv_emptyfreeze && players.empty() && gamestate == GS_LEVEL;
 }
 
+auto writeCommandsStopwatch = TimingInstr::Get().CreateStopwatch("SV_WriteCommands");
+auto sendPacketsStopwatch = TimingInstr::Get().CreateStopwatch("SV_SendPackets");
+auto gTickerStopwatch     = TimingInstr::Get().CreateStopwatch("G_Ticker");
+auto gameTicsStopwatch     = TimingInstr::Get().CreateStopwatch("SV_GameTics");
 
 //
 // SV_StepTics
@@ -4321,12 +4319,22 @@ void SV_StepTics(QWORD count)
 	// run the newtime tics
 	while (count--)
 	{
+        gameTicsStopwatch->Start();
 		SV_GameTics();
+        gameTicsStopwatch->Stop();
 
+        gTickerStopwatch->Start();
 		G_Ticker();
+        gTickerStopwatch->Stop();
 
+        writeCommandsStopwatch->Start();
 		SV_WriteCommands();
+        writeCommandsStopwatch->Stop();
+
+        sendPacketsStopwatch->Start();
 		SV_SendPackets();
+        sendPacketsStopwatch->Stop();
+
 		SV_CheckTimeouts();
 		SV_DestroyFinishedMovingSectors();
 
@@ -4354,6 +4362,10 @@ void SV_DisplayTics()
 {
 }
 
+auto frameStopwatch = TimingInstr::Get().CreateStopwatch("FrameTime");
+
+auto getPacketsStopwatch = TimingInstr::Get().CreateStopwatch("SV_GetPackets");
+auto retransmitStopwatch = TimingInstr::Get().CreateStopwatch("SV_HandleReliableRetransmissions");
 //
 // SV_RunTics
 //
@@ -4361,9 +4373,15 @@ void SV_DisplayTics()
 //
 void SV_RunTics()
 {
+    frameStopwatch->Start();
+
+    getPacketsStopwatch->Start();
 	SV_GetPackets();
+    getPacketsStopwatch->Stop();
 	SV_CheckCanaries();
+    retransmitStopwatch->Start();
 	SV_HandleReliableRetransmissions();
+    retransmitStopwatch->Stop();
 
 	std::string cmd = I_ConsoleInput();
 	if (cmd.length())
@@ -4411,6 +4429,12 @@ void SV_RunTics()
 		}
 	}
 	last_player_count = players.size();
+
+    frameStopwatch->Stop();
+
+    //DPrintFmt("frame time {} msec\n", static_cast<double>(endTime - startTime) / 1000000.0);
+
+    TimingInstr::Get().ManageRecording(gametic);
 }
 
 

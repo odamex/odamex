@@ -1156,8 +1156,6 @@ void STACK_ARGS D_ClearTaskSchedulers()
 	display_scheduler.reset();
 }
 
-static auto frameStopwatch(TimingInstr::Get().CreateStopwatch("FrameTime"));
-
 //
 // D_RunTics
 //
@@ -1172,8 +1170,6 @@ static auto frameStopwatch(TimingInstr::Get().CreateStopwatch("FrameTime"));
 //
 void D_RunTics(void (*sim_func)(), void(*display_func)())
 {
-    frameStopwatch->Start();
-
 	D_InitTaskSchedulers(sim_func, display_func);
 
 	simulation_scheduler->run();
@@ -1191,12 +1187,6 @@ void D_RunTics(void (*sim_func)(), void(*display_func)())
 #endif
 
 	display_scheduler->run();
-
-    frameStopwatch->Stop();
-
-    //DPrintFmt("frame time {} msec\n", static_cast<double>(endTime - startTime) / 1000000.0);
-
-    TimingInstr::Get().ManageRecording(gametic);
 
 	if (timingdemo)
 		return;
