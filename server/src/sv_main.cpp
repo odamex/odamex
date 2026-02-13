@@ -2979,6 +2979,8 @@ namespace
         {
         }
 
+        virtual ~BaseWorkerCommand() {}
+
         void SetResult()
         {
             promise.set_value();
@@ -3109,10 +3111,9 @@ namespace
 
                 m_commandQueue.clear();
 
-                WorkerQuitCommand quitCommand;
                 for (auto& thread : m_threads)
                 {
-                    m_commandQueue.push_back(&quitCommand);
+                    m_commandQueue.emplace_back(std::make_shared<WorkerQuitCommand>());
                 }
 
                 lock.unlock();
@@ -3124,10 +3125,10 @@ namespace
                 }
             }
 
-            void PushCommand(BaseWorkerCommand* i_commandPtr)
+            void PushCommand(const std::shared_ptr<BaseWorkerCommand>& i_commandPtr)
             {
                 std::unique_lock lock {m_commandMutex};
-                m_commandQueue.push_back(i_commandPtr);
+                m_commandQueue.emplace_back(i_commandPtr);
                 lock.unlock();
 
                 m_commandCondition.notify_one();
@@ -3139,9 +3140,9 @@ namespace
             {
                 while (1)
                 {
-                    BaseWorkerCommand* command = GetCommand();
+                    std::shared_ptr<BaseWorkerCommand> command = GetCommand();
 
-                    if (IsQuit(*command))
+                    if (IsQuit(command))
                     {
                         break;
                     }
@@ -3151,7 +3152,7 @@ namespace
                 }
             }
 
-            BaseWorkerCommand* GetCommand()
+            std::shared_ptr<BaseWorkerCommand> GetCommand()
             {
                 std::unique_lock lock {m_commandMutex};
 
@@ -3160,19 +3161,18 @@ namespace
                     m_commandCondition.wait(lock);
                 }
 
-                BaseWorkerCommand* result = m_commandQueue.front();
+                std::shared_ptr<BaseWorkerCommand> result = std::move(m_commandQueue.front());
                 m_commandQueue.pop_front();
-                return result;
+                return std::move(result);
             }
 
         protected:
 
-            template <typename OtherCommands> bool IsQuit(const OtherCommands&) { return false; }
-            template <> bool IsQuit<WorkerQuitCommand>(const WorkerQuitCommand&) { return true; }
+            bool IsQuit(const std::shared_ptr<BaseWorkerCommand>& i_ptr) { return dynamic_cast<WorkerQuitCommand*>(i_ptr.get()); }
 
-            std::mutex                       m_commandMutex;
-            std::condition_variable          m_commandCondition;
-            std::deque<BaseWorkerCommand*>   m_commandQueue;
+            std::mutex                                      m_commandMutex;
+            std::condition_variable                         m_commandCondition;
+            std::deque<std::shared_ptr<BaseWorkerCommand> > m_commandQueue;
 
             std::vector<std::thread> m_threads;
     };
@@ -3194,11 +3194,11 @@ void SV_WriteCommands(void)
     // Do an unordered map keyed on our player pointers.  When given a pointer,
     // well-behaved std::hash implementations just return the address casted to
     // size_t.
-    std::unordered_map<player_t*, WorkerSortCommand> sortJobs;
+    std::unordered_map<player_t*, std::shared_ptr<WorkerSortCommand> > sortJobs;
     for (auto& player : players)
     {
-        auto result = sortJobs.emplace(&player, player);
-        s_workers.PushCommand(&result.first->second);
+        auto result = sortJobs.emplace(&player, std::make_shared<WorkerSortCommand>(player));
+        s_workers.PushCommand(result.first->second);
     }
 
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
@@ -3239,14 +3239,14 @@ void SV_WriteCommands(void)
 
         auto& sortJob = sortJobs.find(&*it)->second;
 
-        sortJob.GetResult();
+        sortJob->GetResult();
 
 		// We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
 		// Combined with the high-priority to_spawn queue being directly limited in SV_UpdateHiddenMobj,
 		// we can be sure that both high-priority things like new missiles and deferred map-defined mobjs
 		// get serviced under high-load situations.
 		const int temporaryGrowthBonus = std::min(std::max(0,
-		                                                   static_cast<int>(it->sortedMobjs.size() - sortJob.previousSortedMobjCount)),
+		                                                   static_cast<int>(it->sortedMobjs.size() - sortJob->previousSortedMobjCount)),
 		                                          MAX_HIDDEN_MOBJ_UPDATES);
 		const int maxForThisTic = MAX_HIDDEN_MOBJ_UPDATES + temporaryGrowthBonus;
 
