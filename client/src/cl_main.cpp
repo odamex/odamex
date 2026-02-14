@@ -1791,9 +1791,12 @@ bool CL_Connect()
 	}
 
 	messenger = SequencedMessenger();
-	messenger.SetMaxRate(20);         // FIXME: total guess
-	messenger.SetPacketsPerRetransmit(10);    // To align with the size of the traditional cmd buffer
-
+	messenger.SetMaxRate(20);               // FIXME: total guess.
+	messenger.SetPacketsPerRetransmit(10);  // To align with the size of the traditional cmd buffer.
+    messenger.SetRetransmitDelay(0);        // This causes an immediate retransmit to relieve the risk of
+                                            // packet loss on commands from the client.  Reliability comes
+                                            // at the cost of _potential_ additionald latency, and the
+                                            // slight increase in packets/tic is worth latency mitigation...
 	// Rewind!
 	// CL_Connect is only called after we already know that the sequence is 0, so we can just let
 	// the messenger do its thing.
