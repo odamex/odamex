@@ -107,7 +107,9 @@ size_t Packet::Send(int i_currentTic, SequenceSender& i_sender, const netadr_t& 
 		// use the sequence number of the most-recently-produced reliable packet.  Please
 		// note that it very intentionally does NOT affect the need to immediately process
 		// the non-reliable data.
-		m_header.sequence = i_sender.MostRecentAcquiredSequence();
+		//
+		// We also negate it as an eye-catcher for reading packet byte dumps.
+		m_header.sequence = -i_sender.MostRecentAcquiredSequence();
 	}
 
 	m_outgoingPacketBuffer.SeekWrite(0, buf_t::BT_START);
