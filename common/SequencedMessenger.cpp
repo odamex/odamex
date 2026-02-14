@@ -170,6 +170,10 @@ MessageResultEnum SequencedMessenger::SendAll(int i_currentTic, const netadr_t& 
 
 	// Last packet.  Send it, even if overbudget...  We'll borrow against the future.
 	// If it doesn't have anything, nothing happens, we're good.
+	//
+	// Please note that m_packet is smart enough to not actually send the packet if
+	// it contains only a header.
+
 	const size_t lastReliableBytesSent = m_packet.SizeOfReliablePortion();
 	const size_t lastTotalSent         = m_packet.Send(i_currentTic, m_sender, i_dest);
 	m_byteBudget                      -= static_cast<int>(lastTotalSent);
