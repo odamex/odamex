@@ -30,8 +30,8 @@
 //#endif
 /* Follow #ifdef __WIN32__ marks */
 
+#include <mutex>
 #include <stdlib.h>
-
 #include <sstream>
 
 /* [Petteri] Use Winsock for Win32: */
@@ -91,12 +91,6 @@ netadr_t    	net_from;   // address of who sent the packet
 bool simulated_connection;  // .bss initialized to false.
 
 buf_t       net_message(MAX_UDP_PACKET);
-
-// buffer for compression/decompression
-// can't be static to a function because some
-// of the functions
-buf_t compressed, decompressed;
-lzo_byte wrkmem[LZO1X_1_MEM_COMPRESS];
 
 EXTERN_CVAR(port)
 
@@ -465,6 +459,11 @@ int NET_GetPacket (void)
 	return ret;
 }
 
+namespace
+{
+    std::mutex s_sendtoMutex;
+}
+
 int NET_SendPacket (buf_t& buf, const netadr_t& to)
 {
 	int				   ret;
@@ -480,7 +479,10 @@ int NET_SendPacket (buf_t& buf, const netadr_t& to)
 
 	NetadrToSockadr (&to, &addr);
 
-	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
+    {
+        std::unique_lock lock {s_sendtoMutex};
+	    ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
+    }
 
 	buf.clear();
 
@@ -492,6 +494,7 @@ int NET_SendPacket (buf_t& buf, const netadr_t& to)
 		  // wouldblock is silent
 		  if (err == WSAEWOULDBLOCK)
 			  return 0;
+          PrintFmt(PRINT_HIGH, "NET_SendPacket: {}\n", err);
 #else
 		  if (errno == EWOULDBLOCK)
 			  return 0;
@@ -853,20 +856,19 @@ void *MSG_ReadChunk (const size_t &size)
 // size above which packets get compressed (empirical), does not apply to adaptive compression
 #define MINILZO_COMPRESS_MINPACKETSIZE	0xFF
 
-//
-// MSG_DecompressMinilzo
-//
-bool MSG_DecompressMinilzo (buf_t& io_buf)
+bool MiniLzo::Decompress(buf_t& io_buf)
 {
 	// decompress back onto the receive buffer
 	size_t left = io_buf.BytesLeftToRead();
 
-	if(decompressed.maxsize() < io_buf.maxsize())
-		decompressed.resize(io_buf.maxsize());
+	if(m_decompressionBuffer.maxsize() < io_buf.maxsize())
+    {
+		m_decompressionBuffer.resize(io_buf.maxsize());
+    }
 
 	lzo_uint newlen = io_buf.maxsize();
 
-	unsigned int r = lzo1x_decompress_safe (io_buf.ptr() + io_buf.BytesRead(), left, decompressed.ptr(), &newlen, NULL);
+	unsigned int r = lzo1x_decompress_safe (io_buf.ptr() + io_buf.BytesRead(), left, m_decompressionBuffer.ptr(), &newlen, NULL);
 
 	if(r != LZO_E_OK)
 	{
@@ -875,17 +877,14 @@ bool MSG_DecompressMinilzo (buf_t& io_buf)
 	}
 
 	io_buf.clear();
-	memcpy(io_buf.ptr(), decompressed.ptr(), newlen);
+	memcpy(io_buf.ptr(), m_decompressionBuffer.ptr(), newlen);
 
 	io_buf.cursize = newlen;
 
 	return true;
 }
 
-//
-// MSG_CompressMinilzo
-//
-bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap)
+bool MiniLzo::Compress(buf_t &buf, size_t start_offset, size_t write_gap)
 {
 	if(buf.size() < MINILZO_COMPRESS_MINPACKETSIZE)
 		return false;
@@ -893,23 +892,25 @@ bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap)
 	lzo_uint outlen = OUT_LEN(buf.maxsize() - start_offset - write_gap);
 	size_t total_len = outlen + start_offset + write_gap;
 
-	if(compressed.maxsize() < total_len)
-		compressed.resize(total_len);
+	if(m_compressionBuffer.maxsize() < total_len)
+    {
+		m_compressionBuffer.resize(total_len);
+    }
 
 	int r = lzo1x_1_compress (buf.ptr() + start_offset,
 							  buf.size() - start_offset,
-							  compressed.ptr() + start_offset + write_gap,
+							  m_compressionBuffer.ptr() + start_offset + write_gap,
 							  &outlen,
-							  wrkmem);
+							  m_wrkmem);
 
 	// worth the effort?
 	if(r != LZO_E_OK || outlen >= (buf.size() - start_offset - write_gap))
 		return false;
 
-	memcpy(compressed.ptr(), buf.ptr(), start_offset);
+	memcpy(m_compressionBuffer.ptr(), buf.ptr(), start_offset);
 
 	SZ_Clear(&buf);
-	MSG_WriteChunk(&buf, compressed.ptr(), outlen + start_offset + write_gap);
+	MSG_WriteChunk(&buf, m_compressionBuffer.ptr(), outlen + start_offset + write_gap);
 
 	return true;
 }

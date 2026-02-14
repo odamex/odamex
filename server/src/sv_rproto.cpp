@@ -101,14 +101,6 @@ bool SV_MustThrottleTransmissionsForClient(client_t& client)
     return client.messenger.MustThrottleTransmission();
 }
 
-//
-// SV_SendPacket
-//
-bool SV_SendPacket(player_t &pl)
-{
-	return pl.client.messenger.SendAll(gametic, pl.client.address) != MessageResultEnum::ABORT;
-}
-
 void SV_HandleReliableRetransmissions()
 {
 	for (auto& player : players)

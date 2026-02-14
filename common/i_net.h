@@ -52,6 +52,8 @@
 #include "doomtype.h"
 #include "doomfunc.h"
 
+#include "minilzo.h"
+
 /**
  * @brief Types of client buffers.
  */
@@ -861,5 +863,14 @@ bool MSG_ReadProto(MSG& msg)
 	return true;
 }
 
-bool MSG_DecompressMinilzo (buf_t& io_buf);
-bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap);
+class MiniLzo
+{
+    public:
+        bool Decompress(buf_t& io_buf);
+        bool Compress(buf_t &buf, size_t start_offset, size_t write_gap);
+
+    protected:
+        buf_t       m_compressionBuffer;
+        buf_t       m_decompressionBuffer;
+        lzo_byte    m_wrkmem[LZO1X_1_MEM_COMPRESS];
+};

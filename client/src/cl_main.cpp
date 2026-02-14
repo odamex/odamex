@@ -286,7 +286,6 @@ EXTERN_CVAR (waddirs)
 
 void CL_PlayerTimes (void);
 void CL_TryToConnect(DWORD server_token);
-void CL_Decompress();
 
 bool M_FindFreeName(std::string &filename, const std::string &extension);
 
@@ -1957,18 +1956,6 @@ ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, bool dropped);
 void CL_ClearSectorSnapshots()
 {
 	sector_snaps.clear();
-}
-
-// Decompress the packet sequence
-// [Russell] - reason this was failing is because of huffman routines, so just
-// use minilzo for now (cuts a packet size down by roughly 45%), huffman is the
-// if 0'd sections
-void CL_Decompress()
-{
-	if(!MSG_BytesLeft())
-		return;
-
-	MSG_DecompressMinilzo(::net_message);
 }
 
 /**

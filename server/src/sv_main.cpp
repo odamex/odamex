@@ -482,6 +482,131 @@ static player_t &SV_FindPlayerByAddr(const netadr_t& netAddr)
 	return idplayer(0);
 }
 
+namespace
+{
+    struct BaseWorkerCommand
+    {
+        std::promise<void> promise;
+        std::future<void>  future;
+
+        BaseWorkerCommand() :
+            future(promise.get_future())
+        {
+        }
+
+        virtual ~BaseWorkerCommand() {}
+
+        void SetResult()
+        {
+            promise.set_value();
+        }
+
+        void GetResult()
+        {
+            future.get();
+        }
+
+        virtual void operator()() = 0;
+    };
+
+    struct WorkerQuitCommand : BaseWorkerCommand
+    {
+        void operator()() override {}
+    };
+
+    class WorkerPool
+    {
+        public:
+            WorkerPool()
+            {
+                //intptr_t mask = 0x1;
+                //SetThreadAffinityMask(GetCurrentThread(), static_cast<DWORD_PTR>(mask));
+
+                const int poolSize = std::max(1, static_cast<int>(std::thread::hardware_concurrency()));
+                for (int i = 0; i < poolSize; ++i)
+                {
+                    m_threads.emplace_back(&WorkerPool::EntryPoint, this);
+
+                    //SetThreadAffinityMask(m_threads.back().native_handle(), static_cast<DWORD_PTR>(~mask));
+                }
+            }
+
+            ~WorkerPool()
+            {
+                std::unique_lock lock {m_commandMutex};
+
+                m_commandQueue.clear();
+
+                for (auto& thread : m_threads)
+                {
+                    m_commandQueue.emplace_back(std::make_shared<WorkerQuitCommand>());
+                }
+
+                lock.unlock();
+                m_commandCondition.notify_all();
+
+                for (auto& thread : m_threads)
+                {
+                    thread.join();
+                }
+            }
+
+            void PushCommand(const std::shared_ptr<BaseWorkerCommand>& i_commandPtr)
+            {
+                std::unique_lock lock {m_commandMutex};
+                m_commandQueue.emplace_back(i_commandPtr);
+                lock.unlock();
+
+                m_commandCondition.notify_one();
+            }
+
+        protected:
+
+            void EntryPoint()
+            {
+                while (1)
+                {
+                    std::shared_ptr<BaseWorkerCommand> command = GetCommand();
+
+                    if (IsQuit(command))
+                    {
+                        break;
+                    }
+
+                    (*command)();
+                    command->SetResult();
+                }
+            }
+
+            std::shared_ptr<BaseWorkerCommand> GetCommand()
+            {
+                std::unique_lock lock {m_commandMutex};
+
+                while (m_commandQueue.empty())
+                {
+                    m_commandCondition.wait(lock);
+                }
+
+                std::shared_ptr<BaseWorkerCommand> result = std::move(m_commandQueue.front());
+                m_commandQueue.pop_front();
+                return std::move(result);
+            }
+
+        protected:
+
+            bool IsQuit(const std::shared_ptr<BaseWorkerCommand>& i_ptr) { return dynamic_cast<WorkerQuitCommand*>(i_ptr.get()); }
+
+            std::mutex                                      m_commandMutex;
+            std::condition_variable                         m_commandCondition;
+            std::deque<std::shared_ptr<BaseWorkerCommand> > m_commandQueue;
+
+            std::vector<std::thread> m_threads;
+    };
+
+
+    WorkerPool s_workers;
+}
+
 static std::unique_ptr<CanarySocketServer> s_canaries;
 
 static int SV_ConnectCanary(sockaddr_in& i_address)
@@ -1310,6 +1435,28 @@ int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated)
 		updated += SV_AwarenessUpdate(pl, mo);
 	}
 	return updated;
+}
+
+namespace
+{
+    struct WorkerSendCommand : BaseWorkerCommand
+    {
+        player_t& player;
+
+        WorkerSendCommand(player_t& i_playerRef) :
+            player                 (i_playerRef)
+        {}
+
+        void operator()() override
+        {
+            SV_SendPacket(player);
+        }
+    };
+}
+
+bool SV_SendPacket(player_t &pl)
+{
+	return pl.client.messenger.SendAll(gametic, pl.client.address) != MessageResultEnum::ABORT;
 }
 
 void SV_UpdateSector(client_t* cl, int sectornum)
@@ -2927,6 +3074,19 @@ void SV_SendPackets()
 	if (players.empty())
 		return;
 
+    std::vector<std::shared_ptr<WorkerSendCommand>> commands;
+
+    for (auto& player : players)
+    {
+        commands.emplace_back(std::make_shared<WorkerSendCommand>(player));
+        s_workers.PushCommand(commands.back());
+    }
+
+    for (auto& playerCommand : commands)
+    {
+        playerCommand->GetResult();
+    }
+#if 0
 	static size_t fair_send = 0;
 	size_t num_players = players.size();
 
@@ -2955,6 +3115,7 @@ void SV_SendPackets()
 
 	// Advance the send index.
 	fair_send++;
+#endif
 }
 
 void SV_SendPlayerStateUpdate(client_t *client, player_t *player)
@@ -2979,36 +3140,6 @@ void SV_SpyPlayer(player_t &viewer)
 
 namespace
 {
-    struct BaseWorkerCommand
-    {
-        std::promise<void> promise;
-        std::future<void>  future;
-
-        BaseWorkerCommand() :
-            future(promise.get_future())
-        {
-        }
-
-        virtual ~BaseWorkerCommand() {}
-
-        void SetResult()
-        {
-            promise.set_value();
-        }
-
-        void GetResult()
-        {
-            future.get();
-        }
-
-        virtual void operator()() = 0;
-    };
-
-    struct WorkerQuitCommand : BaseWorkerCommand
-    {
-        void operator()() override {}
-    };
-
     struct WorkerSortCommand : BaseWorkerCommand
     {
         player_t&   player;
@@ -3102,98 +3233,6 @@ namespace
 		}
 
     };
-
-    class WorkerPool
-    {
-        public:
-            WorkerPool()
-            {
-                //intptr_t mask = 0x1;
-                //SetThreadAffinityMask(GetCurrentThread(), static_cast<DWORD_PTR>(mask));
-
-                const int poolSize = std::max(1, static_cast<int>(std::thread::hardware_concurrency()));
-                for (int i = 0; i < poolSize; ++i)
-                {
-                    m_threads.emplace_back(&WorkerPool::EntryPoint, this);
-
-                    //SetThreadAffinityMask(m_threads.back().native_handle(), static_cast<DWORD_PTR>(~mask));
-                }
-            }
-
-            ~WorkerPool()
-            {
-                std::unique_lock lock {m_commandMutex};
-
-                m_commandQueue.clear();
-
-                for (auto& thread : m_threads)
-                {
-                    m_commandQueue.emplace_back(std::make_shared<WorkerQuitCommand>());
-                }
-
-                lock.unlock();
-                m_commandCondition.notify_all();
-
-                for (auto& thread : m_threads)
-                {
-                    thread.join();
-                }
-            }
-
-            void PushCommand(const std::shared_ptr<BaseWorkerCommand>& i_commandPtr)
-            {
-                std::unique_lock lock {m_commandMutex};
-                m_commandQueue.emplace_back(i_commandPtr);
-                lock.unlock();
-
-                m_commandCondition.notify_one();
-            }
-
-        protected:
-
-            void EntryPoint()
-            {
-                while (1)
-                {
-                    std::shared_ptr<BaseWorkerCommand> command = GetCommand();
-
-                    if (IsQuit(command))
-                    {
-                        break;
-                    }
-
-                    (*command)();
-                    command->SetResult();
-                }
-            }
-
-            std::shared_ptr<BaseWorkerCommand> GetCommand()
-            {
-                std::unique_lock lock {m_commandMutex};
-
-                while (m_commandQueue.empty())
-                {
-                    m_commandCondition.wait(lock);
-                }
-
-                std::shared_ptr<BaseWorkerCommand> result = std::move(m_commandQueue.front());
-                m_commandQueue.pop_front();
-                return std::move(result);
-            }
-
-        protected:
-
-            bool IsQuit(const std::shared_ptr<BaseWorkerCommand>& i_ptr) { return dynamic_cast<WorkerQuitCommand*>(i_ptr.get()); }
-
-            std::mutex                                      m_commandMutex;
-            std::condition_variable                         m_commandCondition;
-            std::deque<std::shared_ptr<BaseWorkerCommand> > m_commandQueue;
-
-            std::vector<std::thread> m_threads;
-    };
-
-
-    WorkerPool s_workers;
 }
 
 void SV_WriteCommandsForPlayer(player_t& player);

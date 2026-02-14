@@ -50,7 +50,7 @@ size_t Packet::AddUnreliableMessage(const buf_t& i_dataBuffer)
 void Packet::Compress()
 {
 	byte method = 0;
-	if (MSG_CompressMinilzo(m_outgoingPacketBuffer, PacketHeaderType::PACKET_HEADER_SIZE, 0))
+	if (m_compressor.Compress(m_outgoingPacketBuffer, PacketHeaderType::PACKET_HEADER_SIZE, 0))
 	{
 		// Successful compression, set the compression flag bit.
 		method |= SVF_COMPRESSED;

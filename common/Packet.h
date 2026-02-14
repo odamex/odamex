@@ -38,6 +38,8 @@ class Packet
 
 		size_t SizeOfReliablePortion() const { return m_header.reliableSize; }
 
+		MiniLzo& GetCompressorRef() { return m_compressor; }
+
 	protected:
 
 		size_t CompressAndSend(const netadr_t& i_dest);
@@ -45,6 +47,7 @@ class Packet
 
 		void Reset();
 
-		buf_t                m_outgoingPacketBuffer { MAX_UDP_PACKET };
-		PacketHeaderType     m_header;
+		buf_t            m_outgoingPacketBuffer { MAX_UDP_PACKET };
+		MiniLzo          m_compressor;
+		PacketHeaderType m_header;
 };

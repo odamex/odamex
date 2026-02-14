@@ -18,9 +18,8 @@ MessageResultEnum SequencedMessenger::Receive(buf_t& io_rawBuf)
 	}
 	else if (header.flags & SVF_COMPRESSED)
 	{
-		MSG_DecompressMinilzo(io_rawBuf);
+		m_packet.GetCompressorRef().Decompress(io_rawBuf);
 	}
-
 
 	const size_t fullSize               = io_rawBuf.size();
 	const size_t startOfReliableData    = io_rawBuf.TellRead();
