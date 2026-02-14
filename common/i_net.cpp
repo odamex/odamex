@@ -480,7 +480,7 @@ int NET_SendPacket (buf_t& buf, const netadr_t& to)
 	NetadrToSockadr (&to, &addr);
 
     {
-        std::unique_lock lock {s_sendtoMutex};
+//        std::unique_lock lock {s_sendtoMutex};
 	    ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
     }
 
