@@ -1678,7 +1678,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	}
 
 	// Make sure the status bar is displayed correctly
-  R_ForceViewWindowResize();
+	R_ForceViewWindowResize();
 	ST_Start();
 }
 
