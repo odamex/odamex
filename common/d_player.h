@@ -267,7 +267,14 @@ public:
 	// denis - things that are pending to be sent to this player
 	std::queue<AActor::AActorPtr> to_spawn;
 
-    std::vector<AActor*> sortedMobjs;
+    struct ActorDistanceType
+    {
+        AActor* actorPtr;
+        int     distance;
+
+        ActorDistanceType(AActor* i_actorPtr, int i_distance) : actorPtr(i_actorPtr), distance(i_distance) {}
+    };
+    std::vector<ActorDistanceType> sortedMobjs;
 	// denis - client structure is here now for a 1:1
 	struct client_t
 	{

@@ -3176,7 +3176,7 @@ namespace
 				{
 					if (thinker->IsKindOf(RUNTIME_CLASS(AActor)))
 					{
-						player.sortedMobjs.emplace_back(static_cast<AActor*>(thinker));
+						player.sortedMobjs.emplace_back(static_cast<AActor*>(thinker), 0);
 					}
 				}
 				m_copyTime = I_GetTime();
@@ -3207,17 +3207,17 @@ namespace
 				const int playerMostSignificantX = (player.mo->x >> 16);
 				const int playerMostSignificantY = (player.mo->y >> 16);
 
-				for (auto& moPtr : player.sortedMobjs)
+				for (auto& mobjInfo : player.sortedMobjs)
 				{
 					// We go with the below block because it's just a bit faster in MSVC (~170 usec) than
 					// P_AproxDistance2 (~200 usec) when looking at 22k mobjs, and we don't need "real"
 					// distance - just comparable values that correlate with distance.
 
-					const int dx = playerMostSignificantX - (moPtr->x >> 16);
-					const int dy = playerMostSignificantY - (moPtr->y >> 16);
-					moPtr->transientInt = dx*dx + dy*dy;
+					const int dx = playerMostSignificantX - (mobjInfo.actorPtr->x >> 16);
+					const int dy = playerMostSignificantY - (mobjInfo.actorPtr->y >> 16);
+					mobjInfo.distance = dx*dx + dy*dy;
 				}
-				auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1->transientInt < mo2->transientInt; };
+				auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1.distance < mo2.distance; };
 
 				std::nth_element(player.sortedMobjs.begin(),
 				                 player.sortedMobjs.begin() + player.sortedMobjs.size()/2,
@@ -3440,13 +3440,13 @@ void SV_WriteCommandsForPlayer(player_t& player)
 //            {
 //                break;
 //            }
-			SV_UpdateMissiles(player, sortedMobj);
+			SV_UpdateMissiles(player, sortedMobj.actorPtr);
 
-			SV_UpdateMonsters(player, sortedMobj);
+			SV_UpdateMonsters(player, sortedMobj.actorPtr);
 
 			if (hiddenUpdateCount <= maxForThisTic)
 			{
-				hiddenUpdateCount = SV_UpdateHiddenMobj(player, sortedMobj, hiddenUpdateCount);
+				hiddenUpdateCount = SV_UpdateHiddenMobj(player, sortedMobj.actorPtr, hiddenUpdateCount);
 			}
 		}
 
