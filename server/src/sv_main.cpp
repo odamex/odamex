@@ -531,7 +531,7 @@ namespace
 
                 m_commandQueue.clear();
 
-                for (auto& thread : m_threads)
+                for (size_t i = 0; i < m_threads.size(); ++i)
                 {
                     m_commandQueue.emplace_back(std::make_shared<WorkerQuitCommand>());
                 }
