@@ -1401,7 +1401,7 @@ bool SV_IsPlayerAllowedToSee(const player_t &p, const AActor *mo)
 
 namespace
 {
-    std::mutex s_spawnSzpMutex;
+	std::mutex s_spawnSzpMutex;
 }
 
 int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated)
@@ -1414,10 +1414,17 @@ int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated)
 			{
 				mo = pl.to_spawn.front();
 
-                {
-                    std::unique_lock lock {s_spawnSzpMutex};
-				    pl.to_spawn.pop();
-                }
+				// The following lock is needed to dodge a contention issue in the
+				// non-safe portion of the szp utility where it manipulates an
+				// internal linked list.  Arguably the fix belongs in szp itself,
+				// but if we're willing to accept a global overhead hit, then the
+				// right thing to do would be to drop szp and use C++'s shared_ptr
+				// and weak_ptr instead.  For now, the "minimal viable" fix is to
+				// do the locking in the one place that really needs it.
+				{
+					std::unique_lock lock {s_spawnSzpMutex};
+					pl.to_spawn.pop();
+				}
 
 				if (mo && !mo->WasDestroyed())
 					updated += SV_AwarenessUpdate(pl, mo);
@@ -1431,22 +1438,19 @@ int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated)
 	return updated;
 }
 
-namespace
+struct WorkerSendCommand : BaseWorkerCommand
 {
-    struct WorkerSendCommand : BaseWorkerCommand
-    {
-        player_t& player;
+	player_t& player;
 
-        WorkerSendCommand(player_t& i_playerRef) :
-            player                 (i_playerRef)
-        {}
+	WorkerSendCommand(player_t& i_playerRef) :
+	player                 (i_playerRef)
+	{}
 
-        void operator()() override
-        {
-            SV_SendPacket(player);
-        }
-    };
-}
+	void operator()() override
+	{
+		SV_SendPacket(player);
+	}
+};
 
 bool SV_SendPacket(player_t &pl)
 {
@@ -3068,48 +3072,18 @@ void SV_SendPackets()
 	if (players.empty())
 		return;
 
-    std::vector<std::shared_ptr<WorkerSendCommand>> commands;
+	std::vector<std::shared_ptr<WorkerSendCommand>> commands;
 
-    for (auto& player : players)
-    {
-        commands.emplace_back(std::make_shared<WorkerSendCommand>(player));
-        s_workers.PushCommand(commands.back());
-    }
-
-    for (auto& playerCommand : commands)
-    {
-        playerCommand->GetResult();
-    }
-#if 0
-	static size_t fair_send = 0;
-	size_t num_players = players.size();
-
-	// Wrap the starting index around if necessary.
-	if (fair_send >= num_players)
-		fair_send = 0;
-
-	// Shift the starting point.
-	Players::iterator begin = players.begin();
-	for (size_t i = 0;i < fair_send;i++)
-		++begin;
-
-	// Loop through all players in a staggered fashion.
-	Players::iterator it = begin;
-	do
+	for (auto& player : players)
 	{
-		// [AM] Don't send packets to players who haven't acked packet 0
-		if (it->playerstate != PST_CONTACT)
-			SV_SendPacket(*it);
-
-		++it;
-		if (it == players.end())
-			it = players.begin();
+		commands.emplace_back(std::make_shared<WorkerSendCommand>(player));
+		s_workers.PushCommand(commands.back());
 	}
-	while (it != begin);
 
-	// Advance the send index.
-	fair_send++;
-#endif
+	for (auto& playerCommand : commands)
+	{
+		playerCommand->GetResult();
+	}
 }
 
 void SV_SendPlayerStateUpdate(client_t *client, player_t *player)
@@ -3132,110 +3106,189 @@ void SV_SpyPlayer(player_t &viewer)
 	SV_SendPlayerStateUpdate(&viewer.client, &other);
 }
 
-namespace
+struct WorkerSortCommand : BaseWorkerCommand
 {
-    struct WorkerSortCommand : BaseWorkerCommand
-    {
-        player_t&   player;
-        size_t      previousSortedMobjCount;
+	player_t&   player;
+	size_t      previousSortedMobjCount;
 
-        WorkerSortCommand(player_t& i_playerRef) :
-            player                 (i_playerRef),
-            previousSortedMobjCount(player.sortedMobjs.size())
-        {}
+	WorkerSortCommand(player_t& i_playerRef) :
+		player                 (i_playerRef),
+		previousSortedMobjCount(player.sortedMobjs.size())
+	{}
 
-        void operator()() override
-        {
-            // Put in a static assert for assurance that the vector-of-pointers clear() will
-            // actually be constant-time.
-			static_assert(std::is_trivially_destructible_v<decltype(player.sortedMobjs)::value_type>);
+	void operator()() override
+	{
+		// Put in a static assert for assurance that the vector-of-pointers clear() will
+		// actually be constant-time.
+		static_assert(std::is_trivially_destructible_v<decltype(player.sortedMobjs)::value_type>);
 
-            AActor* playerViewPosition = player.camera;
-            if (not playerViewPosition)
-            {
-                playerViewPosition = player.mo;
-            }
-
-            // This only makes sense if the player has a position.
-            if (playerViewPosition)
-            {
-                player.sortedMobjs.clear();
-                return;
-            }
-
-				player.sortedMobjs.clear();
-
-				auto& unsortedThinkers = DThinker::GetThinkerVectorRef();
-
-				for (DThinker* thinker : unsortedThinkers)
-				{
-					if (thinker->IsKindOf(RUNTIME_CLASS(AActor)))
-					{
-						player.sortedMobjs.emplace_back(static_cast<AActor*>(thinker), 0);
-					}
-				}
-
-				// In testing a 22000 mobj firefight (No Time To Freeze map32) on a Ryzen 9800x3d,
-				// Windows 11, MSVC 2019, looking at JUST the core sort operation itself:
-				//
-				//      - std::sort:                    600-700 usec.
-				//      - Boost spreadsort:             ~300 usec.
-				//      - 3-partition std::nth_element:  40-70 usec.
-				//
-				// We go with dividing up the mobjs into 3 partitions with two calls to std::nth_element
-				// because for the purposes of prioritizing mobj messages to clients, we don't need fine
-				// precision between mobjs by distance.  Three coarse buckets based on approximate distance
-				// is enough.  This gives us three categories of entities based on range:
-				//
-				//      1. The closest 25% of mobjs - we really want to see frequent updates to these.
-				//      2. The next closest 25%     - no problem if these somewhat-distant guys stutter.
-				//      3. Everything else          - we don't care if we don't see them.
-				//
-				//
-				// The end result works well for the heavy-load test case, and only rarely do we see
-				// nearby enemies behave like there's any packet loss.
-
-				// The following block is used for sorting on approximate, relative distance.
-				const int playerMostSignificantX = (playerViewPosition->x >> 16);
-				const int playerMostSignificantY = (playerViewPosition->y >> 16);
-
-				for (auto& mobjInfo : player.sortedMobjs)
-				{
-					// We go with the below block because it's just a bit faster in MSVC (~170 usec) than
-					// P_AproxDistance2 (~200 usec) when looking at 22k mobjs, and we don't need "real"
-					// distance - just comparable values that correlate with distance.
-
-					const int dx = playerMostSignificantX - (mobjInfo.actorPtr->x >> 16);
-					const int dy = playerMostSignificantY - (mobjInfo.actorPtr->y >> 16);
-					mobjInfo.distance = dx*dx + dy*dy;
-				}
-				auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1.distance < mo2.distance; };
-
-				std::nth_element(player.sortedMobjs.begin(),
-				                 player.sortedMobjs.begin() + player.sortedMobjs.size()/2,
-				                 player.sortedMobjs.end(),
-				                 distanceCompare);
-				std::nth_element(player.sortedMobjs.begin(),
-				                 player.sortedMobjs.begin() + player.sortedMobjs.size()/4,
-				                 player.sortedMobjs.begin() + player.sortedMobjs.size()/2,
-				                 distanceCompare);
+		AActor* playerViewPosition = player.camera;
+		if (not playerViewPosition)
+		{
+			playerViewPosition = player.mo;
 		}
 
-    };
-}
+		// This only makes sense if the player has a position.
+		if (playerViewPosition)
+		{
+			player.sortedMobjs.clear();
+			return;
+		}
 
-void SV_WriteCommandsForPlayer(player_t& player);
+		player.sortedMobjs.clear();
+
+		auto& unsortedThinkers = DThinker::GetThinkerVectorRef();
+
+		for (DThinker* thinker : unsortedThinkers)
+		{
+			if (thinker->IsKindOf(RUNTIME_CLASS(AActor)))
+			{
+				player.sortedMobjs.emplace_back(static_cast<AActor*>(thinker), 0);
+			}
+		}
+
+		// In testing a 22000 mobj firefight (No Time To Freeze map32) on a Ryzen 9800x3d,
+		// Windows 11, MSVC 2019, looking at JUST the core sort operation itself:
+		//
+		//      - std::sort:                    600-700 usec.
+		//      - Boost spreadsort:             ~300 usec.
+		//      - 3-partition std::nth_element:  40-70 usec.
+		//
+		// We go with dividing up the mobjs into 3 partitions with two calls to std::nth_element
+		// because for the purposes of prioritizing mobj messages to clients, we don't need fine
+		// precision between mobjs by distance.  Three coarse buckets based on approximate distance
+		// is enough.  This gives us three categories of entities based on range:
+		//
+		//      1. The closest 25% of mobjs - we really want to see frequent updates to these.
+		//      2. The next closest 25%     - no problem if these somewhat-distant guys stutter.
+		//      3. Everything else          - we don't care if we don't see them.
+		//
+		//
+		// The end result works well for the heavy-load test case, and only rarely do we see
+		// nearby enemies behave like there's any packet loss.
+
+		// The following block is used for sorting on approximate, relative distance.
+		const int playerMostSignificantX = (playerViewPosition->x >> 16);
+		const int playerMostSignificantY = (playerViewPosition->y >> 16);
+
+		for (auto& mobjInfo : player.sortedMobjs)
+		{
+			// We go with the below block because it's just a bit faster in MSVC (~170 usec) than
+			// P_AproxDistance2 (~200 usec) when looking at 22k mobjs, and we don't need "real"
+			// distance - just comparable values that correlate with distance.
+
+			const int dx = playerMostSignificantX - (mobjInfo.actorPtr->x >> 16);
+			const int dy = playerMostSignificantY - (mobjInfo.actorPtr->y >> 16);
+			mobjInfo.distance = dx*dx + dy*dy;
+		}
+		auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1.distance < mo2.distance; };
+
+		std::nth_element(player.sortedMobjs.begin(),
+		                 player.sortedMobjs.begin() + player.sortedMobjs.size()/2,
+		                 player.sortedMobjs.end(),
+		                 distanceCompare);
+		std::nth_element(player.sortedMobjs.begin(),
+		                 player.sortedMobjs.begin() + player.sortedMobjs.size()/4,
+		                 player.sortedMobjs.begin() + player.sortedMobjs.size()/2,
+		                 distanceCompare);
+	}
+};
+
+void SV_WriteCommandsForPlayer(player_t& player)
+{
+	// [SL] 2011-05-11 - Send the client the server's gametic
+	// this gametic is returned to the server with the client's
+	// next cmd
+	if (player.ingame())
+		SV_SendGametic(&player.client);
+
+	for (player_t& otherPlayer : players)
+	{
+		if (!(otherPlayer.ingame()) || !(otherPlayer.mo))
+			continue;
+
+		// a player is updated about their own position elsewhere
+		if (&player == &otherPlayer)
+			continue;
+
+		// GhostlyDeath -- Screw spectators
+		if (otherPlayer.spectator)
+			continue;
+
+		if(not SV_IsPlayerAllowedToSee(player, otherPlayer.mo))
+			continue;
+
+		MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_MovePlayer(otherPlayer, player.tic));
+	}
+
+	// [SL] Send client info about player he is spying on
+	player_t& target = idplayer(player.spying);
+	if (validplayer(target) && &player != &target && P_CanSpy(player, target))
+	{
+		SV_SendPlayerStateUpdate(&(player.client), &target);
+	}
+
+	SV_UpdateConsolePlayer(player);
+
+	WorkerSortCommand sortJob(player);
+
+	sortJob();
+
+	// We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
+	// Combined with the high-priority to_spawn queue being directly limited in SV_UpdateHiddenMobj,
+	// we can be sure that both high-priority things like new missiles and deferred map-defined mobjs
+	// get serviced under high-load situations.
+	const int temporaryGrowthBonus = std::min(std::max(0,
+	                                                   static_cast<int>(player.sortedMobjs.size() - sortJob.previousSortedMobjCount)),
+	                                          MAX_HIDDEN_MOBJ_UPDATES);
+	const int maxForThisTic = MAX_HIDDEN_MOBJ_UPDATES + temporaryGrowthBonus;
+
+	int hiddenUpdateCount = 0;
+
+	// The following code is commented out pending the implementation of a real Mobj throttle.
+
+//		int throttleCount = std::numeric_limits<int>::max();
+
+//		if (SV_MustThrottleTransmissionsForClient(player.client))
+//		{
+//			const auto mobjCountFixed = INT2FIXED64  (player.sortedMobjs.size());
+//			const auto fractionFixed  = FIXED2FIXED64(player.client.messenger.ThrottleFraction());
+//			throttleCount = FIXED642INT(FixedMul64(mobjCountFixed, fractionFixed));
+//		}
+
+	for (auto& sortedMobj : player.sortedMobjs)
+	{
+//            if (throttleCount-- > 0)
+//            {
+//                break;
+//            }
+		SV_UpdateMissiles(player, sortedMobj.actorPtr);
+
+		SV_UpdateMonsters(player, sortedMobj.actorPtr);
+
+		if (hiddenUpdateCount <= maxForThisTic)
+		{
+			hiddenUpdateCount = SV_UpdateHiddenMobj(player, sortedMobj.actorPtr, hiddenUpdateCount);
+		}
+	}
+
+	SV_UpdateGametype(player);     // update gametype stuff
+
+	SV_SendPingRequest(& player.client);     // request ping reply
+
+	SV_UpdatePing(& player.client);          // send the ping value of all cients to this client
+}
 
 struct PlayerWriteCommand : BaseWorkerCommand
 {
-    player_t& player;
+	player_t& player;
 
-    PlayerWriteCommand(player_t& playerRef) : player(playerRef) {}
+	PlayerWriteCommand(player_t& playerRef) : player(playerRef) {}
 
-    void operator()() override
-    {
-        SV_WriteCommandsForPlayer(player);
-    }
+	void operator()() override
+	{
+		SV_WriteCommandsForPlayer(player);
+	}
 };
 
 //
@@ -3248,210 +3301,21 @@ void SV_WriteCommands(void)
 	Unlag::getInstance().recordPlayerPositions();
 	Unlag::getInstance().recordSectorPositions();
 
-#if 0
-
-    // Do an unordered map keyed on our player pointers.  When given a pointer,
-    // well-behaved std::hash implementations just return the address casted to
-    // size_t.
-    std::unordered_map<player_t*, std::shared_ptr<WorkerSortCommand> > sortJobs;
-    for (auto& player : players)
-    {
-        auto result = sortJobs.emplace(&player, std::make_shared<WorkerSortCommand>(player));
-        s_workers.PushCommand(result.first->second);
-    }
-
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	// Palm off the job of writing the player messages onto the worker threads.
+	std::vector<std::shared_ptr<PlayerWriteCommand> > commands;
+	for (player_t& player : players)
 	{
-		client_t *cl = &(it->client);
-
-		// [SL] 2011-05-11 - Send the client the server's gametic
-		// this gametic is returned to the server with the client's
-		// next cmd
-		if (it->ingame())
-			SV_SendGametic(cl);
-
-		for (Players::iterator pit = players.begin();pit != players.end();++pit)
-		{
-			if (!(pit->ingame()) || !(pit->mo))
-				continue;
-
-			// a player is updated about their own position elsewhere
-			if (&*it == &*pit)
-				continue;
-
-			// GhostlyDeath -- Screw spectators
-			if (pit->spectator)
-				continue;
-
-			if(!SV_IsPlayerAllowedToSee(*it, pit->mo))
-				continue;
-
-			MSG_WriteSVC(cl->messenger.NetBuf(), SVC_MovePlayer(*pit, it->tic));
-		}
-
-		// [SL] Send client info about player he is spying on
-		player_t *target = &idplayer(it->spying);
-		if (validplayer(*target) && &(*it) != target && P_CanSpy(*it, *target))
-			SV_SendPlayerStateUpdate(&(it->client), target);
-
-		SV_UpdateConsolePlayer(*it);
-
-        auto& sortJob = sortJobs.find(&*it)->second;
-
-        sortJob->GetResult();
-
-		// We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
-		// Combined with the high-priority to_spawn queue being directly limited in SV_UpdateHiddenMobj,
-		// we can be sure that both high-priority things like new missiles and deferred map-defined mobjs
-		// get serviced under high-load situations.
-		const int temporaryGrowthBonus = std::min(std::max(0,
-		                                                   static_cast<int>(it->sortedMobjs.size() - sortJob->previousSortedMobjCount)),
-		                                          MAX_HIDDEN_MOBJ_UPDATES);
-		const int maxForThisTic = MAX_HIDDEN_MOBJ_UPDATES + temporaryGrowthBonus;
-
-		int hiddenUpdateCount = 0;
-        int throttleCount = std::numeric_limits<int>::max();
-
-		if (SV_MustThrottleTransmissionsForClient(*cl))
-		{
-            const auto mobjCountFixed = INT2FIXED64  (it->sortedMobjs.size());
-            const auto fractionFixed  = FIXED2FIXED64(cl->messenger.ThrottleFraction());
-            throttleCount = FIXED642INT(FixedMul64(mobjCountFixed, fractionFixed));
-			//continue;
-		}
-
-		for (auto& sortedMobj : it->sortedMobjs)
-		{
-//            if (throttleCount-- > 0)
-//            {
-//                break;
-//            }
-			SV_UpdateMissiles(*it, sortedMobj);
-
-			SV_UpdateMonsters(*it, sortedMobj);
-
-			if (hiddenUpdateCount <= maxForThisTic)
-			{
-				hiddenUpdateCount = SV_UpdateHiddenMobj(*it, sortedMobj, hiddenUpdateCount);
-			}
-		}
-
-		SV_UpdateGametype(*it);     // update gametype stuff
-
-		SV_SendPingRequest(cl);     // request ping reply
-
-		SV_UpdatePing(cl);          // send the ping value of all cients to this client
-
+		commands.emplace_back(std::make_shared<PlayerWriteCommand>(player));
+		s_workers.PushCommand(commands.back());
 	}
-#endif
 
-    std::vector<std::shared_ptr<PlayerWriteCommand> > commands;
-    for (player_t& player : players)
-    {
-        commands.emplace_back(std::make_shared<PlayerWriteCommand>(player));
-        s_workers.PushCommand(commands.back());
-    }
-
-    for (auto& playerCommand : commands)
-    {
-        playerCommand->GetResult();
-    }
+	for (auto& playerCommand : commands)
+	{
+		playerCommand->GetResult();
+	}
 
 	SV_UpdateDeadPlayers(); // Update dying players.
 }
-
-
-
-
-void SV_WriteCommandsForPlayer(player_t& player)
-{
-		// [SL] 2011-05-11 - Send the client the server's gametic
-		// this gametic is returned to the server with the client's
-		// next cmd
-		if (player.ingame())
-			SV_SendGametic(&player.client);
-
-		for (player_t& otherPlayer : players)
-        {
-			if (!(otherPlayer.ingame()) || !(otherPlayer.mo))
-				continue;
-
-			// a player is updated about their own position elsewhere
-			if (&player == &otherPlayer)
-				continue;
-
-			// GhostlyDeath -- Screw spectators
-			if (otherPlayer.spectator)
-				continue;
-
-			if(not SV_IsPlayerAllowedToSee(player, otherPlayer.mo))
-				continue;
-
-			MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_MovePlayer(otherPlayer, player.tic));
-        }
-
-		// [SL] Send client info about player he is spying on
-		player_t& target = idplayer(player.spying);
-		if (validplayer(target) && &player != &target && P_CanSpy(player, target))
-        {
-			SV_SendPlayerStateUpdate(&(player.client), &target);
-        }
-
-		SV_UpdateConsolePlayer(player);
-
-        WorkerSortCommand sortJob(player);
-
-        sortJob();
-
-		// We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
-		// Combined with the high-priority to_spawn queue being directly limited in SV_UpdateHiddenMobj,
-		// we can be sure that both high-priority things like new missiles and deferred map-defined mobjs
-		// get serviced under high-load situations.
-		const int temporaryGrowthBonus = std::min(std::max(0,
-		                                                   static_cast<int>(player.sortedMobjs.size() - sortJob.previousSortedMobjCount)),
-		                                          MAX_HIDDEN_MOBJ_UPDATES);
-		const int maxForThisTic = MAX_HIDDEN_MOBJ_UPDATES + temporaryGrowthBonus;
-
-		int hiddenUpdateCount = 0;
-
-		// The following code is commented out pending the implementation of a real Mobj throttle.
-
-//		int throttleCount = std::numeric_limits<int>::max();
-
-//		if (SV_MustThrottleTransmissionsForClient(player.client))
-//		{
-//			const auto mobjCountFixed = INT2FIXED64  (player.sortedMobjs.size());
-//			const auto fractionFixed  = FIXED2FIXED64(player.client.messenger.ThrottleFraction());
-//			throttleCount = FIXED642INT(FixedMul64(mobjCountFixed, fractionFixed));
-//		}
-
-		for (auto& sortedMobj : player.sortedMobjs)
-		{
-//            if (throttleCount-- > 0)
-//            {
-//                break;
-//            }
-			SV_UpdateMissiles(player, sortedMobj.actorPtr);
-
-			SV_UpdateMonsters(player, sortedMobj.actorPtr);
-
-			if (hiddenUpdateCount <= maxForThisTic)
-			{
-				hiddenUpdateCount = SV_UpdateHiddenMobj(player, sortedMobj.actorPtr, hiddenUpdateCount);
-			}
-		}
-
-		SV_UpdateGametype(player);     // update gametype stuff
-
-		SV_SendPingRequest(& player.client);     // request ping reply
-
-		SV_UpdatePing(& player.client);          // send the ping value of all cients to this client
-}
-
-
-
-
-
 
 
 void SV_PlayerTriedToCheat(player_t &player)
@@ -4470,9 +4334,9 @@ bool SV_Frozen()
 }
 
 auto writeCommandsStopwatch = TimingInstr::Get().CreateStopwatch("SV_WriteCommands");
-auto sendPacketsStopwatch = TimingInstr::Get().CreateStopwatch("SV_SendPackets");
-auto gTickerStopwatch     = TimingInstr::Get().CreateStopwatch("G_Ticker");
-auto gameTicsStopwatch     = TimingInstr::Get().CreateStopwatch("SV_GameTics");
+auto sendPacketsStopwatch   = TimingInstr::Get().CreateStopwatch("SV_SendPackets");
+auto gTickerStopwatch       = TimingInstr::Get().CreateStopwatch("G_Ticker");
+auto gameTicsStopwatch      = TimingInstr::Get().CreateStopwatch("SV_GameTics");
 
 //
 // SV_StepTics
@@ -4484,21 +4348,21 @@ void SV_StepTics(QWORD count)
 	// run the newtime tics
 	while (count--)
 	{
-        gameTicsStopwatch->Start();
+		gameTicsStopwatch->Start();
 		SV_GameTics();
-        gameTicsStopwatch->Stop();
+		gameTicsStopwatch->Stop();
 
-        gTickerStopwatch->Start();
+		gTickerStopwatch->Start();
 		G_Ticker();
-        gTickerStopwatch->Stop();
+		gTickerStopwatch->Stop();
 
-        writeCommandsStopwatch->Start();
+		writeCommandsStopwatch->Start();
 		SV_WriteCommands();
-        writeCommandsStopwatch->Stop();
+		writeCommandsStopwatch->Stop();
 
-        sendPacketsStopwatch->Start();
+		sendPacketsStopwatch->Start();
 		SV_SendPackets();
-        sendPacketsStopwatch->Stop();
+		sendPacketsStopwatch->Stop();
 
 		SV_CheckTimeouts();
 		SV_DestroyFinishedMovingSectors();
@@ -4527,10 +4391,10 @@ void SV_DisplayTics()
 {
 }
 
-auto frameStopwatch = TimingInstr::Get().CreateStopwatch("FrameTime");
-
+auto frameStopwatch      = TimingInstr::Get().CreateStopwatch("FrameTime");
 auto getPacketsStopwatch = TimingInstr::Get().CreateStopwatch("SV_GetPackets");
 auto retransmitStopwatch = TimingInstr::Get().CreateStopwatch("SV_HandleReliableRetransmissions");
+
 //
 // SV_RunTics
 //
@@ -4538,15 +4402,17 @@ auto retransmitStopwatch = TimingInstr::Get().CreateStopwatch("SV_HandleReliable
 //
 void SV_RunTics()
 {
-    frameStopwatch->Start();
+	frameStopwatch->Start();
 
-    getPacketsStopwatch->Start();
+	getPacketsStopwatch->Start();
 	SV_GetPackets();
-    getPacketsStopwatch->Stop();
+	getPacketsStopwatch->Stop();
+
 	SV_CheckCanaries();
-    retransmitStopwatch->Start();
+
+	retransmitStopwatch->Start();
 	SV_HandleReliableRetransmissions();
-    retransmitStopwatch->Stop();
+	retransmitStopwatch->Stop();
 
 	std::string cmd = I_ConsoleInput();
 	if (cmd.length())
@@ -4595,11 +4461,9 @@ void SV_RunTics()
 	}
 	last_player_count = players.size();
 
-    frameStopwatch->Stop();
+	frameStopwatch->Stop();
 
-    //DPrintFmt("frame time {} msec\n", static_cast<double>(endTime - startTime) / 1000000.0);
-
-    TimingInstr::Get().ManageRecording(gametic);
+	TimingInstr::Get().ManageRecording(gametic);
 }
 
 
