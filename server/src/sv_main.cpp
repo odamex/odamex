@@ -3121,18 +3121,17 @@ struct WorkerSortCommand : BaseWorkerCommand
 		// Put in a static assert for assurance that the vector-of-pointers clear() will
 		// actually be constant-time.
 		static_assert(std::is_trivially_destructible_v<decltype(player.sortedMobjs)::value_type>);
+		player.sortedMobjs.clear();
 
 		AActor* playerViewPosition = player.camera;
 		if (not playerViewPosition)
 		{
 			playerViewPosition = player.mo;
-		}
-
-		// This only makes sense if the player has a position.
-		if (playerViewPosition)
-		{
-			player.sortedMobjs.clear();
-			return;
+			if (not playerViewPosition)
+			{
+				// This operation only makes sense if the player has a position.
+				return;
+			}
 		}
 
 		player.sortedMobjs.clear();
