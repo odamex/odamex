@@ -3413,15 +3413,17 @@ void SV_WriteCommandsForPlayer(player_t& player)
 		const int maxForThisTic = MAX_HIDDEN_MOBJ_UPDATES + temporaryGrowthBonus;
 
 		int hiddenUpdateCount = 0;
-        int throttleCount = std::numeric_limits<int>::max();
 
-		if (SV_MustThrottleTransmissionsForClient(player.client))
-		{
-            const auto mobjCountFixed = INT2FIXED64  (player.sortedMobjs.size());
-            const auto fractionFixed  = FIXED2FIXED64(player.client.messenger.ThrottleFraction());
-            throttleCount = FIXED642INT(FixedMul64(mobjCountFixed, fractionFixed));
-			//continue;
-		}
+		// The following code is commented out pending the implementation of a real Mobj throttle.
+
+//		int throttleCount = std::numeric_limits<int>::max();
+
+//		if (SV_MustThrottleTransmissionsForClient(player.client))
+//		{
+//			const auto mobjCountFixed = INT2FIXED64  (player.sortedMobjs.size());
+//			const auto fractionFixed  = FIXED2FIXED64(player.client.messenger.ThrottleFraction());
+//			throttleCount = FIXED642INT(FixedMul64(mobjCountFixed, fractionFixed));
+//		}
 
 		for (auto& sortedMobj : player.sortedMobjs)
 		{
