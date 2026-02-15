@@ -583,7 +583,7 @@ namespace
 
                 std::shared_ptr<BaseWorkerCommand> result = std::move(m_commandQueue.front());
                 m_commandQueue.pop_front();
-                return std::move(result);
+                return result;
             }
 
         protected:
