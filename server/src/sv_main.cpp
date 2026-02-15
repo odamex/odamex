@@ -3145,9 +3145,6 @@ namespace
         player_t&   player;
         size_t      previousSortedMobjCount;
 
-			[[maybe_unused]] dtime_t m_freshTime;
-			[[maybe_unused]] dtime_t m_copyTime;
-
         WorkerSortCommand(player_t& i_playerRef) :
             player                 (i_playerRef),
             previousSortedMobjCount(player.sortedMobjs.size())
@@ -3172,8 +3169,6 @@ namespace
                 return;
             }
 
-				m_freshTime = I_GetTime();
-
 				player.sortedMobjs.clear();
 
 				auto& unsortedThinkers = DThinker::GetThinkerVectorRef();
@@ -3185,9 +3180,6 @@ namespace
 						player.sortedMobjs.emplace_back(static_cast<AActor*>(thinker), 0);
 					}
 				}
-				m_copyTime = I_GetTime();
-
-				[[maybe_unused]] const dtime_t startTime = I_GetTime();
 
 				// In testing a 22000 mobj firefight (No Time To Freeze map32) on a Ryzen 9800x3d,
 				// Windows 11, MSVC 2019, looking at JUST the core sort operation itself:
@@ -3233,9 +3225,6 @@ namespace
 				                 player.sortedMobjs.begin() + player.sortedMobjs.size()/4,
 				                 player.sortedMobjs.begin() + player.sortedMobjs.size()/2,
 				                 distanceCompare);
-				[[maybe_unused]] const dtime_t endTime = I_GetTime();
-
-				//DPrintFmt("{} initial: {}, Player {} sorting all ({}): total {} nsec\n",sizeof(AActor), m_copyTime - m_freshTime, int(pl.id), s_sortedMobjs.size(), endTime - startTime);
 		}
 
     };
