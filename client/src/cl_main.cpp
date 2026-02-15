@@ -71,7 +71,7 @@
 
 #include "m_consolecommandstream.h"
 
-#include "SequencedMessenger.h"
+#include "OdaMessenger.h"
 #include "CanarySocket.h"
 
 #include <bitset>
@@ -123,7 +123,7 @@ netadr_t  lastconaddr;
 
 extern NetGraph netgraph;
 
-SequencedMessenger messenger;
+OdaMessenger messenger;
 static std::unique_ptr<CanarySocketClient> s_canary;
 
 // denis - unique session key provided by the server
@@ -404,7 +404,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 	mute_spectators = 0.f;
 	mute_enemies = 0.f;
 
-	::messenger = SequencedMessenger();
+	::messenger = OdaMessenger();
 	P_ClearAllNetIds();
 	s_canary.reset();
 
@@ -475,7 +475,7 @@ void CL_Reconnect(void)
 		connected = false;
 		gameaction = ga_fullconsole;
 
-		messenger = SequencedMessenger();
+		messenger = OdaMessenger();
 		P_ClearAllNetIds();
 	}
 	else if (lastconaddr.ip[0])
@@ -1789,7 +1789,7 @@ bool CL_Connect()
 		s_canary->Connect(tcpAddress, udpAddress);
 	}
 
-	messenger = SequencedMessenger();
+	messenger = OdaMessenger();
 	messenger.SetMaxRate(20);               // FIXME: total guess.
 	messenger.SetPacketsPerRetransmit(10);  // To align with the size of the traditional cmd buffer.
     messenger.SetRetransmitDelay(0);        // This causes an immediate retransmit to relieve the risk of

@@ -51,7 +51,7 @@
 #include "p_snapshot.h"
 #include "d_netcmd.h"
 
-#include "SequencedMessenger.h"
+#include "OdaMessenger.h"
 
 //
 // Player states.
@@ -286,7 +286,7 @@ public:
 		short		version;
 		int			packedversion;
 
-		SequencedMessenger messenger;
+		OdaMessenger messenger;
 
 		int			last_received;	// for timeouts
 

@@ -30,7 +30,7 @@
 #include "r_defs.h"
 #include "cl_demo.h"
 
-#include "SequencedMessenger.h"
+#include "OdaMessenger.h"
 
 extern netadr_t  serveraddr;
 extern bool      connected;
@@ -39,8 +39,8 @@ extern int       connecttimeout;
 extern bool      noservermsgs;
 extern int       last_received;
 
-extern NetDemo            netdemo;
-extern SequencedMessenger messenger;
+extern NetDemo      netdemo;
+extern OdaMessenger messenger;
 
 #define MAXSAVETICS 70
 

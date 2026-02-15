@@ -12,7 +12,7 @@ enum class MessageResultEnum
 	ABORT
 };
 
-class SequencedMessenger
+class OdaMessenger
 {
 	const static int DEFAULT_RETRANSMISSIONS_PER_TIC = 25;
 

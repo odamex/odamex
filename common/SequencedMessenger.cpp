@@ -1,4 +1,4 @@
-#include "SequencedMessenger.h"
+#include "OdaMessenger.h"
 
 #include "i_net.h"
 
@@ -7,7 +7,7 @@ EXTERN_CVAR (log_packetdebug)
 
 //  -------------- Receiving functions --------------
 
-MessageResultEnum SequencedMessenger::Receive(buf_t& io_rawBuf)
+MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 {
 	const PacketHeaderType header {io_rawBuf};
 
@@ -51,7 +51,7 @@ MessageResultEnum SequencedMessenger::Receive(buf_t& io_rawBuf)
 	return MessageResultEnum::DEFER;
 }
 
-bool SequencedMessenger::NextReceivedPacket(buf_t& io_rawBuf)
+bool OdaMessenger::NextReceivedPacket(buf_t& io_rawBuf)
 {
 	if (m_quickTurnaroundReceiveBuffer)
 	{
@@ -64,7 +64,7 @@ bool SequencedMessenger::NextReceivedPacket(buf_t& io_rawBuf)
 
 //  -------------- Sending functions --------------
 
-void SequencedMessenger::ManageBudget(int i_currentTic)
+void OdaMessenger::ManageBudget(int i_currentTic)
 {
 	if (i_currentTic != m_latchedTic)
 	{
@@ -73,7 +73,7 @@ void SequencedMessenger::ManageBudget(int i_currentTic)
 	}
 }
 
-MessageResultEnum SequencedMessenger::SendAll(int i_currentTic, const netadr_t& i_dest)
+MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest)
 {
 	const int ticPhase = i_currentTic % TICRATE;
 	if (ticPhase == 0)
@@ -191,7 +191,7 @@ MessageResultEnum SequencedMessenger::SendAll(int i_currentTic, const netadr_t& 
 	return m_byteBudget > 0 ? MessageResultEnum::ACCEPT : MessageResultEnum::DEFER;
 }
 
-int SequencedMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& i_dest)
+int OdaMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& i_dest)
 {
 	int retransmissionsSent = 0;
 	int bytesSent = 0;
@@ -250,7 +250,7 @@ int SequencedMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& 
 	return bytesSent;
 }
 
-bool SequencedMessenger::Acknowledge(int sequence)
+bool OdaMessenger::Acknowledge(int sequence)
 {
 	const bool isFreshAck = m_sender.Acknowledge(sequence);
 	if (isFreshAck)

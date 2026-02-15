@@ -2017,7 +2017,7 @@ void SV_ConnectClient()
 	cl->allow_rcon = false;
 	cl->displaydisconnect = false;
 
-	cl->messenger = SequencedMessenger();
+	cl->messenger = OdaMessenger();
 
 	// generate a random string
 	std::stringstream ss;
