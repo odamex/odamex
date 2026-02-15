@@ -61,7 +61,6 @@
 #include "m_resfile.h"
 #include "odainfo.h"
 #include "infomap.h"
-#include "m_instrumentation.h"
 
 OResFiles wadfiles;
 OResFiles patchfiles;

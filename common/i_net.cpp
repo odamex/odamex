@@ -30,7 +30,6 @@
 //#endif
 /* Follow #ifdef __WIN32__ marks */
 
-#include <mutex>
 #include <stdlib.h>
 #include <sstream>
 
@@ -459,11 +458,6 @@ int NET_GetPacket (void)
 	return ret;
 }
 
-namespace
-{
-    std::mutex s_sendtoMutex;
-}
-
 int NET_SendPacket (buf_t& buf, const netadr_t& to)
 {
 	int				   ret;
@@ -479,10 +473,7 @@ int NET_SendPacket (buf_t& buf, const netadr_t& to)
 
 	NetadrToSockadr (&to, &addr);
 
-    {
-//        std::unique_lock lock {s_sendtoMutex};
-	    ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
-    }
+	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
 
 	buf.clear();
 
