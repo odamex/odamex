@@ -3159,8 +3159,14 @@ namespace
             // actually be constant-time.
 			static_assert(std::is_trivially_destructible_v<decltype(player.sortedMobjs)::value_type>);
 
+            AActor* playerViewPosition = player.camera;
+            if (not playerViewPosition)
+            {
+                playerViewPosition = player.mo;
+            }
+
             // This only makes sense if the player has a position.
-            if (not player.mo)
+            if (playerViewPosition)
             {
                 player.sortedMobjs.clear();
                 return;
@@ -3204,8 +3210,8 @@ namespace
 				// nearby enemies behave like there's any packet loss.
 
 				// The following block is used for sorting on approximate, relative distance.
-				const int playerMostSignificantX = (player.mo->x >> 16);
-				const int playerMostSignificantY = (player.mo->y >> 16);
+				const int playerMostSignificantX = (playerViewPosition->x >> 16);
+				const int playerMostSignificantY = (playerViewPosition->y >> 16);
 
 				for (auto& mobjInfo : player.sortedMobjs)
 				{
