@@ -40,6 +40,8 @@
 #include "g_game.h"
 #include "sv_main.h"
 #include "g_spawninv.h"
+#include "g_spree.h"
+#include "g_multikill.h"
 
 void	G_PlayerReborn (player_t &player);
 
@@ -180,20 +182,19 @@ void G_Ticker (void)
 //
 void G_PlayerFinishLevel (player_t &player)
 {
-	player_t *p;
+	player.powers.fill(0);
+	player.cards.fill(false);
 
-	p = &player;
+	SpreeManager::getInstance().erasePoints(player.id);
+	MultiKillManager::getInstance().eraseMultiKills(player.id);
 
-	memset (p->powers, 0, sizeof (p->powers));
-	memset (p->cards, 0, sizeof (p->cards));
+	if(player.mo)
+		player.mo->flags &= ~MF_SHADOW; 	// cancel invisibility
 
-	if(p->mo)
-		p->mo->flags &= ~MF_SHADOW; 	// cancel invisibility
-
-	p->extralight = 0;					// cancel gun flashes
-	p->fixedcolormap = 0;				// cancel ir goggles
-	p->damagecount = 0; 				// no palette changes
-	p->bonuscount = 0;
+	player.extralight = 0;					// cancel gun flashes
+	player.fixedcolormap = 0;				// cancel ir goggles
+	player.damagecount = 0; 				// no palette changes
+	player.bonuscount = 0;
 }
 
 void SV_SendPlayerInfo(player_t& player);

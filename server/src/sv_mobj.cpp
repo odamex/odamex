@@ -32,6 +32,8 @@
 #include "p_acs.h"
 #include "g_spawninv.h"
 #include "m_wdlstats.h"
+#include "g_spree.h"
+#include "g_multikill.h"
 
 EXTERN_CVAR(sv_maxplayers)
 
@@ -109,6 +111,9 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	mobj->player = &player;
 	mobj->health = player.health;
 
+	SpreeManager::getInstance().erasePoints(player.id);
+	MultiKillManager::getInstance().eraseMultiKills(player.id);
+
 	player.fov = 90.0f;
 	if (player.mo)
 	{
@@ -130,7 +135,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 		P_SetSpectatorFlags(player);
 
 	// setup gun psprite
-	P_SetupPsprites(&player);
+	P_SetupPsprites(player);
 
 	// give all cards in death match mode
 	if (!G_IsCoopGame())

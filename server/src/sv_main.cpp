@@ -122,7 +122,7 @@ EXTERN_CVAR(debug_disconnect)
 EXTERN_CVAR(g_resetinvonexit)
 
 void SexMessage (const char *from, char *to, gender_t gender,
-	std::string_view victim, std::string_view killer);
+	std::string_view victim, std::string_view killer, std::string_view spree);
 Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_s* player);
 bool P_LineSpecialMovesSector(short special);
@@ -998,9 +998,9 @@ bool SV_SetupUserInfo(player_t &player)
 			// kill player if team is changed
 			P_DamageMobj(player.mo, 0, 0, 1000, 0);
 			M_LogWDLEvent(WDL_EVENT_DISCONNECT, &player, NULL, old_team,
-			              M_GetPlayerId(&player, old_team), 0, 0);
+			              M_GetPlayerId(player, old_team), 0, 0);
 			M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, player.userinfo.team,
-			              M_GetPlayerId(&player, player.userinfo.team), 0,
+			              M_GetPlayerId(player, player.userinfo.team), 0,
 			              0);
 			SV_BroadcastPrintFmt("{} switched to the {} team.\n",
 			                     player.userinfo.netname,
@@ -2246,9 +2246,9 @@ void SV_DrawScores()
 					              player->id,
 					              NET_AdrToString(player->client.address),
 					              player->userinfo.netname,
-					              P_GetPointCount(player),
+					              P_GetPointCount(*player),
 					              //itplayer->captures,
-					              P_GetFragCount(player),
+					              P_GetFragCount(*player),
 					              player->GameTime / 60);
 				}
 			}
@@ -2299,8 +2299,8 @@ void SV_DrawScores()
 					              player->id,
 					              NET_AdrToString(player->client.address),
 					              player->userinfo.netname,
-					              P_GetFragCount(player),
-					              P_GetDeathCount(player),
+					              P_GetFragCount(*player),
+					              P_GetDeathCount(*player),
 					              SV_CalculateFragDeathRatio(player),
 					              player->GameTime / 60);
 				}
@@ -2339,8 +2339,8 @@ void SV_DrawScores()
 			              player->id,
 			              NET_AdrToString(player->client.address),
 			              player->userinfo.netname,
-			              P_GetFragCount(player),
-			              P_GetDeathCount(player),
+			              P_GetFragCount(*player),
+			              P_GetDeathCount(*player),
 			              SV_CalculateFragDeathRatio(player),
 			              player->GameTime / 60);
 		}
@@ -3279,7 +3279,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 		}
 		#endif
 
-		netcmd->toPlayer(&player);
+		netcmd->toPlayer(player);
 
 		if (!sv_freelook)
 			player.mo->pitch = 0;
@@ -3287,7 +3287,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 		// Apply this ticcmd using the game logic
 		if (gamestate == GS_LEVEL)
 		{
-			P_PlayerThink(&player);
+			P_PlayerThink(player);
 			player.mo->RunThink();
 		}
 
@@ -3373,8 +3373,8 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 		P_DamageMobj(player.mo, 0, 0, 1000, 0);
 
 		M_LogWDLEvent(WDL_EVENT_DISCONNECT, &player, NULL, old_team,
-		              M_GetPlayerId(&player, old_team), 0, 0);
-		M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, team, M_GetPlayerId(&player, team), 0,
+		              M_GetPlayerId(player, old_team), 0, 0);
+		M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, team, M_GetPlayerId(player, team), 0,
 		              0);
 	}
 	SV_BroadcastPrintFmt("{} has joined the {} team.\n", player.userinfo.netname,
@@ -3524,7 +3524,7 @@ void SV_JoinPlayer(player_t& player, bool silent)
 	}
 
 	M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, player.userinfo.team,
-	              M_GetPlayerId(&player, player.userinfo.team), 0, 0);
+	              M_GetPlayerId(player, player.userinfo.team), 0, 0);
 }
 
 void SV_SpecPlayer(player_t &player, bool silent)
@@ -3855,11 +3855,11 @@ void SV_Cheat(player_t &player)
 	{
 		unsigned int cheat = MSG_ReadShort();
 
-		if (!CHEAT_AreCheatsEnabled())
+		if (!cheat::AreCheatsEnabled())
 			return;
 
 		int oldCheats = player.cheats;
-		CHEAT_DoCheat(&player, cheat);
+		cheat::DoCheat(player, cheat);
 
 		if (player.cheats != oldCheats)
 		{
@@ -3875,10 +3875,10 @@ void SV_Cheat(player_t &player)
 	{
 		const char* wantcmd = MSG_ReadString();
 
-		if (!CHEAT_AreCheatsEnabled())
+		if (!cheat::AreCheatsEnabled())
 			return;
 
-		CHEAT_GiveTo(&player, wantcmd);
+		cheat::GiveTo(player, wantcmd);
 
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
@@ -3891,10 +3891,10 @@ void SV_Cheat(player_t &player)
 	{
 		const char* wantsummon = MSG_ReadString();
 
-		if (!CHEAT_AreCheatsEnabled())
+		if (!cheat::AreCheatsEnabled())
 			return;
 
-		AActor* actor = CHEAT_Summon(&player, wantsummon, false);
+		AActor* actor = cheat::Summon(player, wantsummon, false);
 
 		if (actor == NULL)
 			return;
@@ -3909,10 +3909,10 @@ void SV_Cheat(player_t &player)
 	{
 		const char* wantsummon = MSG_ReadString();
 
-		if (!CHEAT_AreCheatsEnabled())
+		if (!cheat::AreCheatsEnabled())
 			return;
 
-		AActor* actor = CHEAT_Summon(&player, wantsummon, true);
+		AActor* actor = cheat::Summon(player, wantsummon, true);
 
 		if (actor == NULL)
 			return;
@@ -4149,11 +4149,11 @@ void SV_GameTics (void)
 		SV_ProcessPlayerCmd(player);
 }
 
-void SV_TouchSpecial(const AActor *special, player_t *player)
+void SV_TouchSpecial(const AActor& special, player_t& player)
 {
-	client_t *cl = &player->client;
+	client_t *cl = &player.client;
 
-	if (cl == NULL || special == NULL)
+	if (cl == nullptr)
 		return;
 
 	MSG_WriteSVC(&cl->reliablebuf, SVC_TouchSpecial(special));

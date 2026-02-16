@@ -121,7 +121,7 @@ LineActivationType P_LineActivationTypeForSPACFlag(const unsigned int activation
 	return LineUse;
 }
 
-void P_CollectSecretZDoom(sector_t* sector, player_t* player)
+void P_CollectSecretZDoom(sector_t& sector, player_t& player)
 {
 	P_CollectSecretCommon(sector, player);
 }
@@ -216,17 +216,17 @@ bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
 // that the player origin is in a special sector
 // Only runs in ZDoom Doom in Hexen format
 //
-void P_PlayerInZDoomSector(player_t* player)
+void P_PlayerInZDoomSector(player_t& player)
 {
 	// Spectators should not be affected by special sectors
-	if (player->spectator)
+	if (player.spectator)
 		return;
 
 	// Falling, not all the way down yet?
-	if (player->mo->z != P_FloorHeight(player->mo) && !player->mo->waterlevel)
+	if (player.mo->z != P_FloorHeight(player.mo) && !player.mo->waterlevel)
 		return;
 
-	sector_t* sector = player->mo->subsector->sector;
+	sector_t* sector = player.mo->subsector->sector;
 
 	static constexpr int heretic_carry[5] = {2048 * 5, 2048 * 10, 2048 * 25, 2048 * 30,
 	                                         2048 * 35};
@@ -237,20 +237,20 @@ void P_PlayerInZDoomSector(player_t* player)
 	{
 		// Some maps, like rjspace9f, abuse the fact that "end sector damage" will actually
 		// not damage the player beyond 1hp, but won't trigger the exit because they're not damaged.
-		short oldhealth = player->health;
+		const int oldhealth = player.health;
 
 		if (sector->flags & SECF_ENDGODMODE)
 		{
-			player->cheats &= ~CF_GODMODE;
+			player.cheats &= ~CF_GODMODE;
 		}
 
-		if (sector->flags & SECF_DMGUNBLOCKABLE || !player->powers[pw_ironfeet] ||
-		    (sector->leakrate && P_Random(player->mo) < sector->leakrate))
+		if (sector->flags & SECF_DMGUNBLOCKABLE || !player.powers[pw_ironfeet] ||
+		    (sector->leakrate && P_Random(player.mo) < sector->leakrate))
 		{
 			if (sector->flags & SECF_HAZARD)
 			{
-				player->hazardcount += sector->damageamount;
-				player->hazardinterval = sector->damageinterval;
+				player.hazardcount += sector->damageamount;
+				player.hazardinterval = sector->damageinterval;
 			}
 
 			if (sector->special == 0) // ZDoom Static Init Damage
@@ -272,10 +272,10 @@ void P_PlayerInZDoomSector(player_t* player)
 			}
 			else if (level.time % sector->damageinterval == 0)
 			{
-				P_DamageMobj(player->mo, NULL, NULL, sector->damageamount);
+				P_DamageMobj(player.mo, NULL, NULL, sector->damageamount);
 			}
 
-			if (sector->flags & SECF_ENDLEVEL && player->health <= 10 && oldhealth != player->health)
+			if (sector->flags & SECF_ENDLEVEL && player.health <= 10 && oldhealth != player.health)
 			{
 				if (serverside && sv_allowexit)
 				{
@@ -293,7 +293,7 @@ void P_PlayerInZDoomSector(player_t* player)
 	switch (sector->special)
 	{
 	case dScroll_EastLavaDamage:
-		P_ThrustMobj(player->mo, 0, 2048 * 28);
+		P_ThrustMobj(player.mo, 0, 2048 * 28);
 		break;
 	case Scroll_Strife_Current:
 		int anglespeed;
@@ -303,21 +303,21 @@ void P_PlayerInZDoomSector(player_t* player)
 		anglespeed = sector->tag - 100;
 		carryspeed = (anglespeed % 10) * 4096;
 		angle = (anglespeed / 10) * ANG45;
-		P_ThrustMobj(player->mo, angle, carryspeed);
+		P_ThrustMobj(player.mo, angle, carryspeed);
 		break;
 	case Scroll_Carry_East5:
 	case Scroll_Carry_East10:
 	case Scroll_Carry_East25:
 	case Scroll_Carry_East30:
 	case Scroll_Carry_East35:
-		P_ThrustMobj(player->mo, 0, heretic_carry[sector->special - Scroll_Carry_East5]);
+		P_ThrustMobj(player.mo, 0, heretic_carry[sector->special - Scroll_Carry_East5]);
 		break;
 	case Scroll_Carry_North5:
 	case Scroll_Carry_North10:
 	case Scroll_Carry_North25:
 	case Scroll_Carry_North30:
 	case Scroll_Carry_North35:
-		P_ThrustMobj(player->mo, ANG90,
+		P_ThrustMobj(player.mo, ANG90,
 		             heretic_carry[sector->special - Scroll_Carry_North5]);
 		break;
 	case Scroll_Carry_South5:
@@ -325,7 +325,7 @@ void P_PlayerInZDoomSector(player_t* player)
 	case Scroll_Carry_South25:
 	case Scroll_Carry_South30:
 	case Scroll_Carry_South35:
-		P_ThrustMobj(player->mo, ANG270,
+		P_ThrustMobj(player.mo, ANG270,
 		             heretic_carry[sector->special - Scroll_Carry_South5]);
 		break;
 	case Scroll_Carry_West5:
@@ -333,52 +333,52 @@ void P_PlayerInZDoomSector(player_t* player)
 	case Scroll_Carry_West25:
 	case Scroll_Carry_West30:
 	case Scroll_Carry_West35:
-		P_ThrustMobj(player->mo, ANG180,
+		P_ThrustMobj(player.mo, ANG180,
 		             heretic_carry[sector->special - Scroll_Carry_West5]);
 		break;
 	case Scroll_North_Slow:
 	case Scroll_North_Medium:
 	case Scroll_North_Fast:
-		P_ThrustMobj(player->mo, ANG90, hexen_carry[sector->special - Scroll_North_Slow]);
+		P_ThrustMobj(player.mo, ANG90, hexen_carry[sector->special - Scroll_North_Slow]);
 		break;
 	case Scroll_East_Slow:
 	case Scroll_East_Medium:
 	case Scroll_East_Fast:
-		P_ThrustMobj(player->mo, 0, hexen_carry[sector->special - Scroll_East_Slow]);
+		P_ThrustMobj(player.mo, 0, hexen_carry[sector->special - Scroll_East_Slow]);
 		break;
 	case Scroll_South_Slow:
 	case Scroll_South_Medium:
 	case Scroll_South_Fast:
-		P_ThrustMobj(player->mo, ANG270,
+		P_ThrustMobj(player.mo, ANG270,
 		             hexen_carry[sector->special - Scroll_South_Slow]);
 		break;
 	case Scroll_West_Slow:
 	case Scroll_West_Medium:
 	case Scroll_West_Fast:
-		P_ThrustMobj(player->mo, ANG180, hexen_carry[sector->special - Scroll_West_Slow]);
+		P_ThrustMobj(player.mo, ANG180, hexen_carry[sector->special - Scroll_West_Slow]);
 		break;
 	case Scroll_NorthWest_Slow:
 	case Scroll_NorthWest_Medium:
 	case Scroll_NorthWest_Fast:
-		P_ThrustMobj(player->mo, ANG135,
+		P_ThrustMobj(player.mo, ANG135,
 		             hexen_carry[sector->special - Scroll_NorthWest_Slow]);
 		break;
 	case Scroll_NorthEast_Slow:
 	case Scroll_NorthEast_Medium:
 	case Scroll_NorthEast_Fast:
-		P_ThrustMobj(player->mo, ANG45,
+		P_ThrustMobj(player.mo, ANG45,
 		             hexen_carry[sector->special - Scroll_NorthEast_Slow]);
 		break;
 	case Scroll_SouthEast_Slow:
 	case Scroll_SouthEast_Medium:
 	case Scroll_SouthEast_Fast:
-		P_ThrustMobj(player->mo, ANG315,
+		P_ThrustMobj(player.mo, ANG315,
 		             hexen_carry[sector->special - Scroll_SouthEast_Slow]);
 		break;
 	case Scroll_SouthWest_Slow:
 	case Scroll_SouthWest_Medium:
 	case Scroll_SouthWest_Fast:
-		P_ThrustMobj(player->mo, ANG225,
+		P_ThrustMobj(player.mo, ANG225,
 		             hexen_carry[sector->special - Scroll_SouthWest_Slow]);
 		break;
 	default:
@@ -387,7 +387,7 @@ void P_PlayerInZDoomSector(player_t* player)
 
 	if (sector->flags & SECF_SECRET)
 	{
-		P_CollectSecretZDoom(sector, player);
+		P_CollectSecretZDoom(*sector, player);
 	}
 }
 

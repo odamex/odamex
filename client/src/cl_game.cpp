@@ -67,6 +67,8 @@
 #include "g_gametype.h"
 #include "p_horde.h"
 #include "g_musinfo.h"
+#include "g_spree.h"
+#include "g_multikill.h"
 
 #include <math.h> // for pow()
 
@@ -862,9 +864,6 @@ void P_CheckInterpPause()
 	}
 }
 
-void P_MovePlayer (player_t *player);
-void P_CalcHeight (player_t *player);
-void P_DeathThink (player_t *player);
 void CL_SimulateWorld();
 //
 // G_Ticker
@@ -1194,22 +1193,22 @@ void G_Ticker (void)
 // G_PlayerFinishLevel
 // Call when a player completes a level.
 //
-void G_PlayerFinishLevel (player_t &player)
+void G_PlayerFinishLevel (player_t& player)
 {
-	player_t *p;
+	player.powers.fill(0);
+	player.cards.fill(false);
 
-	p = &player;
+	if(player.mo)
+		player.mo->flags &= ~MF_SHADOW; 	// cancel invisibility
 
-	memset (p->powers, 0, sizeof (p->powers));
-	memset (p->cards, 0, sizeof (p->cards));
-
-	if(p->mo)
-		p->mo->flags &= ~MF_SHADOW; 	// cancel invisibility
-
-	p->extralight = 0;					// cancel gun flashes
-	p->fixedcolormap = 0;				// cancel ir goggles
-	p->damagecount = 0; 				// no palette changes
-	p->bonuscount = 0;
+	
+	SpreeManager::getInstance().erasePoints(player.id);
+	MultiKillManager::getInstance().eraseMultiKills(player.id);
+	
+	player.extralight = 0;					// cancel gun flashes
+	player.fixedcolormap = 0;				// cancel ir goggles
+	player.damagecount = 0; 				// no palette changes
+	player.bonuscount = 0;
 }
 
 

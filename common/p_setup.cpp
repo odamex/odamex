@@ -54,6 +54,7 @@
 #include "p_mapformat.h"
 #include "g_musinfo.h"
 #include "r_sky.h"
+#include "p_compdb.h"
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t *mthing, int position);
@@ -1168,25 +1169,16 @@ void P_FinishLoadingLineDefs (void)
 
 void P_LoadLineDefs (const int lump)
 {
-	byte *data;
-	int i;
-	line_t *ld;
-
 	numlines = W_LumpLength (lump) / sizeof(maplinedef_t);
 	lines = (line_t *)Z_Malloc (numlines*sizeof(line_t), PU_LEVEL, 0);
 	memset (lines, 0, numlines*sizeof(line_t));
-	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	byte* data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
 
-	// [Blair] Don't mind me, just hackin'
-	// E2M7 has flags masked in that interfere with MBF21 flags.
-	// Boom fixes this with the comp flag comp_reservedlineflag
-	// We'll fix this for now by just checking for the E2M7 FarmHash
-	static constexpr std::string_view e2m7hash = "43ffa244f5ae923b7df59dbf511c0468";
+	const bool reservedLine = P_GetLevelCompData(::level.level_fingerprint).reservedLineFlag;
 
-	bool isE2M7 = (::level.level_fingerprint == e2m7hash);
-
-	ld = lines;
-	for (i=0 ; i<numlines ; i++, ld++)
+	line_t* ld = lines;
+	for (int i = 0; i < numlines; i++, ld++)
 	{
 		const maplinedef_t *mld = ((maplinedef_t *)data) + i;
 
@@ -1199,7 +1191,7 @@ void P_LoadLineDefs (const int lump)
 		ld->args[3] = 0;
 		ld->args[4] = 0;
 
-		ld->flags = P_TranslateCompatibleLineFlags(ld->flags, isE2M7);
+		ld->flags = P_TranslateCompatibleLineFlags(ld->flags, reservedLine);
 
 		unsigned short v = LESHORT(mld->v1);
 
@@ -1225,8 +1217,6 @@ void P_LoadLineDefs (const int lump)
 
 		P_AdjustLine (ld);
 	}
-
-	Z_Free (data);
 }
 
 // [RH] Same as P_LoadLineDefs() except it uses Hexen-style LineDefs.
@@ -2278,8 +2268,8 @@ void P_SetupLevel (const char *lumpname, int position)
 		}
     }
 
-	// clear special respawning que
-	iquehead = iquetail = 0;
+	// clear special respawning queue
+	itemrespawnque = {};
 
 	// killough 3/26/98: Spawn icon landings:
 	P_SpawnBrainTargets();
