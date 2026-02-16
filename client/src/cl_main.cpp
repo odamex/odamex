@@ -223,12 +223,12 @@ void CL_RebuildAllPlayerTranslations()
 	if (demoplayback)
 		return;
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& player : players)
 	{
-		if (it == players.begin() || consoleplayer().spectator || !G_IsTeamColor(r_forceteamcolor, r_forceenemycolor))
-			R_BuildPlayerTranslation(it->id, CL_GetPlayerColor(&*it), it->userinfo.colorpreset);
+		if (&player == &displayplayer() || consoleplayer().spectator || !G_IsTeamColor(r_forceteamcolor, r_forceenemycolor))
+			R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player), player.userinfo.colorpreset);
 		else
-			R_BuildPlayerTranslation(it->id, CL_GetPlayerColor(&*it), NUMCOLOR);
+			R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player), NUMCOLOR);
 	}
 }
 
