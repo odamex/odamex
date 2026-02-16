@@ -61,10 +61,9 @@ bool	IsNum(std::string_view str);
 bool	IsRealNum(const char* str);
 
 template<typename T>
-std::optional<T> ParseNum(std::string_view str)
+std::optional<T> ParseNum(std::string_view str, int base = 10)
 {
     T out;
-	int base = 10;
 	while (!str.empty() && std::isspace(static_cast<unsigned char>(str.front())))
 		str.remove_prefix(1);
 	if (str[0] == '$')

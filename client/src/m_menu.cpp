@@ -1276,7 +1276,7 @@ static const char *genders[4] = { "male", "female", "cyborg", "other" };
 static const char *colorpresets[11] = { "custom", "blue", "indigo", "green", "brown", "red", "gold", "jungle green", "purple", "white", "black" };
 static state_t *PlayerState;
 static int PlayerTics;
-argb_t CL_GetPlayerColor(player_t*);
+argb_t CL_GetPlayerColor(const player_t&);
 
 
 EXTERN_CVAR (cl_name)
@@ -1298,7 +1298,7 @@ void M_PlayerSetup(int choice)
 		fire_surface = I_AllocateSurface(fire_surface_width, fire_surface_height, 8);
 
 	// [Nes] Intialize the player preview color.
-	const argb_t player_color = CL_GetPlayerColor(&consoleplayer());
+	const argb_t player_color = CL_GetPlayerColor(consoleplayer());
 	R_BuildPlayerTranslation(0, player_color);
 }
 
@@ -1540,7 +1540,7 @@ static void M_PlayerSetupDrawer()
 
 		// [Nes] Color of player preview uses the unused translation table (player 0), instead
 		// of the table of the current player color. (Which is different in single, demo, and team)
-		const argb_t player_color = CL_GetPlayerColor(&consoleplayer());
+		const argb_t player_color = CL_GetPlayerColor(consoleplayer());
 		R_BuildPlayerTranslation(0, player_color);
 		V_ColorMap = translationref_t(translationtables, 0);
 

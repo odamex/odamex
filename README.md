@@ -85,35 +85,7 @@ Before submitting a pull request, please make sure it follows [our coding standa
 **Note**: This project contains a demo testing utility that ensures vanilla compatibility by
 running a specific set of demos after each commit. When forking this project to prepare a pull request,
 this functionality will be unavailable by default to protect sensitive files.
-You can restore this functionality by doing the following:
-
-1. Fork [OdaTest-Resources](https://github.com/odamex/odatests-resources) to get the PWADs and demos.
-   Clone it to a directory outside of your odamex clone.
-2. Download the latest [OdaTests](https://github.com/odamex/odatests) release to get the encryption module.
-3. Replace the encrypted IWADs with your own set of encrypted IWADs.
-   1. Delete the **.bin** files.  These are the upstream encrypted IWADS.
-   1. Copy your IWADS into the directory.  The following IWADs (latest versions, see md5sums) are needed to run all tests:
-      - `doom     : C4FE9FD920207691A9F493668E0A2083` (Ultimate Doom v1.9)
-      - `doom1    : F0CEFCA49926D00903CF57551D901ABE` ([Ultimate Doom v1.9 shareware IWAD](https://doomwiki.org/wiki/DOOM1.WAD))
-      - `doom2    : 25E1459CA71D321525F84628F45CA8CD` (Doom 2 v1.9)
-      - `tnt      : 4E158D9953C79CCF97BD0663244CC6B6` (TNT: Evilution v1.9)
-      - `plutonia : 75C8CF89566741FA9D22447604053BD7` (The Plutonia Experiment v1.9)
-   1. Generate an encryption key:
-      ```
-      python .\secret.py genkey
-      ```
-   1. Set the `SECRET_KEY` environment variable to your encryption key.
-   1. Encrypt doom2.wad:
-      ```
-      python .\secret.py encrypt doom2
-      ```
-   1. Repeat the above command for all of your IWADS.
-   1. Add the updated **.bin** files, commit, and push
-4. Create a release for your forked OdaTest-Resources repo.
-5. Enter the following Secrets / Repository Variables in GitHub:
-  - `secrets.DEMOTESTER_IWAD_KEY` - Encryption key for the IWADs
-  - `vars.DEMOTESTER_DOWNLOAD_URL` - Full URL to download the latest OdaTests release.
-  - `vars.DEMORESOURCES_DOWNLOAD_URL` - Full URL to download your personal demo resources
+You can restore this functionality by following the steps for integrating [OdaTests](https://github.com/odamex/odamex/wiki/OdaTests) into your fork.
 
 External Links
 --------------

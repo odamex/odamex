@@ -145,7 +145,7 @@ void SV_CheckTeam(player_t &player);
 void SV_SendUserInfo(const player_t &player, client_t* cl);
 void SV_Suicide(player_t &player);
 void SV_SpawnMobj(AActor *mo);
-void SV_TouchSpecial(const AActor *special, player_t *player);
+void SV_TouchSpecial(const AActor& special, player_t& player);
 
 void SV_Sound (const AActor *mo, byte channel, const char *name, byte attenuation);
 void SV_Sound(player_t& pl, const AActor* mo, const byte channel, const char* name, const byte attenuation);
