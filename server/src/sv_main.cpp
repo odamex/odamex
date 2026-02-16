@@ -3106,92 +3106,79 @@ void SV_SpyPlayer(player_t &viewer)
 	SV_SendPlayerStateUpdate(&viewer.client, &other);
 }
 
-struct WorkerSortCommand : BaseWorkerCommand
+static void SV_SortMobjsForPlayer(player_t& player)
 {
-	player_t&   player;
-	size_t      previousSortedMobjCount;
+	// Put in a static assert for assurance that the vector-of-pointers clear() will
+	// actually be constant-time.
+	static_assert(std::is_trivially_destructible_v<decltype(player.sortedMobjs)::value_type>);
+	player.sortedMobjs.clear();
 
-	WorkerSortCommand(player_t& i_playerRef) :
-		player                 (i_playerRef),
-		previousSortedMobjCount(player.sortedMobjs.size())
-	{}
-
-	void operator()() override
+	AActor* playerViewPosition = player.camera;
+	if (not playerViewPosition)
 	{
-		// Put in a static assert for assurance that the vector-of-pointers clear() will
-		// actually be constant-time.
-		static_assert(std::is_trivially_destructible_v<decltype(player.sortedMobjs)::value_type>);
-		player.sortedMobjs.clear();
-
-		AActor* playerViewPosition = player.camera;
+		playerViewPosition = player.mo;
 		if (not playerViewPosition)
 		{
-			playerViewPosition = player.mo;
-			if (not playerViewPosition)
-			{
-				// This operation only makes sense if the player has a position.
-				return;
-			}
+			// This operation only makes sense if the player has a position.
+			return;
 		}
-
-		player.sortedMobjs.clear();
-
-		auto& unsortedThinkers = DThinker::GetThinkerVectorRef();
-
-		for (DThinker* thinker : unsortedThinkers)
-		{
-			if (thinker->IsKindOf(RUNTIME_CLASS(AActor)))
-			{
-				player.sortedMobjs.emplace_back(static_cast<AActor*>(thinker), 0);
-			}
-		}
-
-		// In testing a 22000 mobj firefight (No Time To Freeze map32) on a Ryzen 9800x3d,
-		// Windows 11, MSVC 2019, looking at JUST the core sort operation itself:
-		//
-		//      - std::sort:                    600-700 usec.
-		//      - Boost spreadsort:             ~300 usec.
-		//      - 3-partition std::nth_element:  40-70 usec.
-		//
-		// We go with dividing up the mobjs into 3 partitions with two calls to std::nth_element
-		// because for the purposes of prioritizing mobj messages to clients, we don't need fine
-		// precision between mobjs by distance.  Three coarse buckets based on approximate distance
-		// is enough.  This gives us three categories of entities based on range:
-		//
-		//      1. The closest 25% of mobjs - we really want to see frequent updates to these.
-		//      2. The next closest 25%     - no problem if these somewhat-distant guys stutter.
-		//      3. Everything else          - we don't care if we don't see them.
-		//
-		//
-		// The end result works well for the heavy-load test case, and only rarely do we see
-		// nearby enemies behave like there's any packet loss.
-
-		// The following block is used for sorting on approximate, relative distance.
-		const int playerMostSignificantX = (playerViewPosition->x >> 16);
-		const int playerMostSignificantY = (playerViewPosition->y >> 16);
-
-		for (auto& mobjInfo : player.sortedMobjs)
-		{
-			// We go with the below block because it's just a bit faster in MSVC (~170 usec) than
-			// P_AproxDistance2 (~200 usec) when looking at 22k mobjs, and we don't need "real"
-			// distance - just comparable values that correlate with distance.
-
-			const int dx = playerMostSignificantX - (mobjInfo.actorPtr->x >> 16);
-			const int dy = playerMostSignificantY - (mobjInfo.actorPtr->y >> 16);
-			mobjInfo.distance = dx*dx + dy*dy;
-		}
-		auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1.distance < mo2.distance; };
-
-		std::nth_element(player.sortedMobjs.begin(),
-		                 player.sortedMobjs.begin() + player.sortedMobjs.size()/2,
-		                 player.sortedMobjs.end(),
-		                 distanceCompare);
-		std::nth_element(player.sortedMobjs.begin(),
-		                 player.sortedMobjs.begin() + player.sortedMobjs.size()/4,
-		                 player.sortedMobjs.begin() + player.sortedMobjs.size()/2,
-		                 distanceCompare);
 	}
-};
+
+	auto& unsortedThinkers = DThinker::GetThinkerVectorRef();
+
+	for (DThinker* thinker : unsortedThinkers)
+	{
+		if (thinker->IsKindOf(RUNTIME_CLASS(AActor)))
+		{
+			player.sortedMobjs.emplace_back(static_cast<AActor*>(thinker), 0);
+		}
+	}
+
+	// In testing a 22000 mobj firefight (No Time To Freeze map32) on a Ryzen 9800x3d,
+	// Windows 11, MSVC 2019, looking at JUST the core sort operation itself:
+	//
+	//      - std::sort:                    600-700 usec.
+	//      - Boost spreadsort:             ~300 usec.
+	//      - 3-partition std::nth_element:  40-70 usec.
+	//
+	// We go with dividing up the mobjs into 3 partitions with two calls to std::nth_element
+	// because for the purposes of prioritizing mobj messages to clients, we don't need fine
+	// precision between mobjs by distance.  Three coarse buckets based on approximate distance
+	// is enough.  This gives us three categories of entities based on range:
+	//
+	//      1. The closest 25% of mobjs - we really want to see frequent updates to these.
+	//      2. The next closest 25%     - no problem if these somewhat-distant guys stutter.
+	//      3. Everything else          - we don't care if we don't see them.
+	//
+	//
+	// The end result works well for the heavy-load test case, and only rarely do we see
+	// nearby enemies behave like there's any packet loss.
+
+	// The following block is used for sorting on approximate, relative distance.
+	const int playerMostSignificantX = (playerViewPosition->x >> 16);
+	const int playerMostSignificantY = (playerViewPosition->y >> 16);
+
+	for (auto& mobjInfo : player.sortedMobjs)
+	{
+		// We go with the below block because it's just a bit faster in MSVC (~170 usec) than
+		// P_AproxDistance2 (~200 usec) when looking at 22k mobjs, and we don't need "real"
+		// distance - just comparable values that correlate with distance.
+
+		const int dx = playerMostSignificantX - (mobjInfo.actorPtr->x >> 16);
+		const int dy = playerMostSignificantY - (mobjInfo.actorPtr->y >> 16);
+		mobjInfo.distance = dx*dx + dy*dy;
+	}
+	auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1.distance < mo2.distance; };
+
+	std::nth_element(player.sortedMobjs.begin(),
+	                 player.sortedMobjs.begin() + player.sortedMobjs.size()/2,
+	                 player.sortedMobjs.end(),
+	                 distanceCompare);
+	std::nth_element(player.sortedMobjs.begin(),
+	                 player.sortedMobjs.begin() + player.sortedMobjs.size()/4,
+	                 player.sortedMobjs.begin() + player.sortedMobjs.size()/2,
+	                 distanceCompare);
+}
 
 void SV_WriteCommandsForPlayer(player_t& player)
 {
@@ -3229,16 +3216,15 @@ void SV_WriteCommandsForPlayer(player_t& player)
 
 	SV_UpdateConsolePlayer(player);
 
-	WorkerSortCommand sortJob(player);
-
-	sortJob();
+	const size_t previousSortedMobjCount = player.sortedMobjs.size();
+	SV_SortMobjsForPlayer(player);
 
 	// We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
 	// Combined with the high-priority to_spawn queue being directly limited in SV_UpdateHiddenMobj,
 	// we can be sure that both high-priority things like new missiles and deferred map-defined mobjs
 	// get serviced under high-load situations.
 	const int temporaryGrowthBonus = std::min(std::max(0,
-	                                                   static_cast<int>(player.sortedMobjs.size() - sortJob.previousSortedMobjCount)),
+	                                                   static_cast<int>(player.sortedMobjs.size() - previousSortedMobjCount)),
 	                                          MAX_HIDDEN_MOBJ_UPDATES);
 	const int maxForThisTic = MAX_HIDDEN_MOBJ_UPDATES + temporaryGrowthBonus;
 
