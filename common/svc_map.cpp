@@ -110,6 +110,9 @@ static void InitMap()
 	MapProto(svc_maplist_index, odaproto::svc::MaplistIndex::descriptor());
 	MapProto(svc_toast, odaproto::svc::Toast::descriptor());
 	MapProto(svc_hordeinfo, odaproto::svc::HordeInfo::descriptor());
+	MapProto(svc_raisemobj, odaproto::svc::RaiseMobj::descriptor());
+	MapProto(svc_spree, odaproto::svc::Spree::descriptor());
+	MapProto(svc_spreebreaker, odaproto::svc::SpreeBreaker::descriptor());
 	MapProto(svc_netdemocap, odaproto::svc::NetdemoCap::descriptor());
 	MapProto(svc_netdemostop, odaproto::svc::NetDemoStop::descriptor());
 	MapProto(svc_netdemoloadsnap, odaproto::svc::NetDemoLoadSnap::descriptor());

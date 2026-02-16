@@ -126,7 +126,7 @@ void MapFormat::init_sector_special(sector_t* sector)
 		P_SpawnCompatibleSectorSpecial(sector);
 }
 
-void MapFormat::player_in_special_sector(player_t* player)
+void MapFormat::player_in_special_sector(player_t& player)
 {
 	if (map_format.zdoom)
 		P_PlayerInZDoomSector(player);

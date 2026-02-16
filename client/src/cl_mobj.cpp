@@ -36,6 +36,8 @@
 #include "p_ctf.h"
 #include "g_gametype.h"
 #include "g_spawninv.h"
+#include "g_spree.h"
+#include "g_multikill.h"
 
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(cl_showspawns)
@@ -106,6 +108,9 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 	mobj->player = &player;
 	mobj->health = player.health;
 
+	SpreeManager::getInstance().erasePoints(player.id);
+	MultiKillManager::getInstance().eraseMultiKills(player.id);
+
 	player.fov = 90.0f;
 	player.mo = player.camera = mobj->ptr();
 	player.playerstate = PST_LIVE;
@@ -134,7 +139,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 		player.cheats = CF_CHASECAM;
 
 	// setup gun psprite
-	P_SetupPsprites(&player);
+	P_SetupPsprites(player);
 
 	// give all cards in death match mode
 	if (!G_IsCoopGame())

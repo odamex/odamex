@@ -202,7 +202,7 @@ static const char *CTF_TimeMSG(unsigned int milliseconds)
 //
 void SV_FlagScore (player_t &player, team_t f)
 {
-	P_GiveTeamPoints(&player, 1);
+	P_GiveTeamPoints(player, 1);
 
 	SV_CTFEvent (f, SCORE_CAPTURE, player);
 
