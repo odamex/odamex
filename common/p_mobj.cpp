@@ -2794,13 +2794,23 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	if (sv_allowshowspawns)
 		P_ShowSpawns(mthing);
 
+	const bool isTeleportDest = mthing->type == 14;
+	const bool isSecAct = (mthing->type >= 9982 && mthing->type <= 9983) ||
+	                      (mthing->type >= 9992 && mthing->type <= 9999);
+	const bool isSoundSource = (mthing->type >= 14001 && mthing->type <= 14065);
+	const bool isMusicChanger = (mthing->type >= 14100 && mthing->type <= 14165);
+
 	// only servers control spawning of items
 	// EXCEPT the client must spawn Type 14 (teleport exit).
 	// otherwise teleporters won't work well.
 	// Also spawn sector special things, fixes some other teleport issues.
+<<<<<<< bugfix/two-sided-crash
 	if (!serverside && (mthing.type != 14)
 	                && !(mthing.type >= 9992 && mthing.type <= 9999)
 	                && !(mthing.type >= 9982 && mthing.type <= 9983))
+=======
+	if (!serverside && !(isTeleportDest || isSecAct || isSoundSource || isMusicChanger))
+>>>>>>> stable
 	{
 		return;
 	}
@@ -2808,9 +2818,13 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	//
 	// Clients also exclusively handle spawning of ambient sounds and music changers
 	//
+<<<<<<< bugfix/two-sided-crash
 	if (!clientside &&
 	    ((mthing.type >= 14001 && mthing.type <= 14065) ||
 	     (mthing.type >= 14100 && mthing.type <= 14165)))
+=======
+	if (!clientside && (isSoundSource || isMusicChanger))
+>>>>>>> stable
 	{
 		return;
 	}
