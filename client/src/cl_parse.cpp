@@ -280,7 +280,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 		}
 	}
 	for (int i = 0; i < NUMPSPRITES; i++)
-		P_SetPsprite(&p, i, stnum[i]);
+		P_SetPsprite(p, i, stnum[i]);
 
 	for (int i = 0; i < NUMPOWERS; i++)
 	{

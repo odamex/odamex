@@ -838,7 +838,7 @@ static void P_GiveCarePack(player_t& player)
 	{
 		// [AM] FIXME: This gives players their inventory, with no
 		//             background flash.
-		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerInfo(*player));
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerInfo(player));
 		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_Print(PRINT_PICKUP, message + "\n"));
 		if (!midmessage.empty())
 		{
