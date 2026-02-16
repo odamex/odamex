@@ -1144,7 +1144,7 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 		}
 		else if (iequals(key, "Pain chance"))
 		{
-			info->painchance = (SWORD)val;
+			info->painchance = val;
 		}
 		else if (iequals(key, "Melee range"))
 		{
@@ -1295,7 +1295,7 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 		}
 		else if (iequals(key, "ID #"))
 		{
-			info->doomednum = (SDWORD)val;
+			info->doomednum = static_cast<int16_t>(val);
 			// update spawn map
 			spawn_map.insert(info, info->doomednum);
 		}

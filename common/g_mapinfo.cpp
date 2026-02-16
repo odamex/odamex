@@ -630,7 +630,7 @@ void MIType_Sky(OScanner& os, bool newStyleMapInfo, void* data, unsigned int fla
 void MIType_SetFlag(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
-	*static_cast<DWORD*>(data) |= flags;
+	*static_cast<uint32_t*>(data) |= flags;
 }
 
 // Sets a compatibility flag for maps
@@ -642,20 +642,20 @@ void MIType_CompatFlag(OScanner& os, bool newStyleMapInfo, void* data, unsigned 
 	{
 		os.mustScanInt();
 		if (os.getTokenInt())
-			*static_cast<DWORD*>(data) |= flags;
+			*static_cast<uint32_t*>(data) |= flags;
 		else
-			*static_cast<DWORD*>(data) &= ~flags;
+			*static_cast<uint32_t*>(data) &= ~flags;
 	}
 	else
 	{
 		if (IsNum(os.getToken().c_str()))
 		{
-			*static_cast<DWORD*>(data) |= os.getTokenInt() ? flags : 0;
+			*static_cast<uint32_t*>(data) |= os.getTokenInt() ? flags : 0;
 		}
 		else
 		{
 			os.unScan();
-			*static_cast<DWORD*>(data) |= flags;
+			*static_cast<uint32_t*>(data) |= flags;
 		}
 	}
 }
@@ -664,7 +664,7 @@ void MIType_CompatFlag(OScanner& os, bool newStyleMapInfo, void* data, unsigned 
 void MIType_SCFlags(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
-	*static_cast<DWORD*>(data) = (*static_cast<DWORD*>(data) & flags2) | flags;
+	*static_cast<uint32_t*>(data) = (*static_cast<uint32_t*>(data) & flags2) | flags;
 }
 
 // Sets a cluster

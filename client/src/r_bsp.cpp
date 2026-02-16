@@ -62,7 +62,7 @@ fixed_t			rw_frontfz1, rw_frontfz2;
 
 int rw_start, rw_stop;
 
-static BYTE		FakeSide;
+static byte		FakeSide;
 
 const fixed_t NEARCLIP = 2*FRACUNIT;
 
@@ -732,7 +732,7 @@ void R_Subsector (int num)
 	// [RH] Add particles
 	if (r_particles)
 	{
-		for (WORD i = ParticlesInSubsec[num]; i != NO_PARTICLE; i = Particles[i].nextinsubsector)
+		for (uint16_t i = ParticlesInSubsec[num]; i != NO_PARTICLE; i = Particles[i].nextinsubsector)
 			R_ProjectParticle(Particles + i, subsectors[num].sector, FakeSide);
 	}
 
@@ -745,7 +745,13 @@ void R_Subsector (int num)
 	}
 
 	while (count--)
-		R_AddLine (line++);
+	{
+		if (line->linedef)
+			R_AddLine(line);
+
+		line++;
+	}
+
 }
 
 

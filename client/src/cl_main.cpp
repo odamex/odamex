@@ -277,8 +277,8 @@ EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (waddirs)
 
-void CL_PlayerTimes (void);
-void CL_TryToConnect(DWORD server_token);
+void CL_PlayerTimes();
+void CL_TryToConnect(uint32_t server_token);
 void CL_Decompress();
 
 bool M_FindFreeName(std::string &filename, const std::string &extension);
@@ -591,7 +591,7 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 }
 
 extern bool advancedemo;
-QWORD nextstep = 0;
+uint64_t nextstep = 0;
 int canceltics = 0;
 
 void CL_StepTics(unsigned int count)
@@ -1538,7 +1538,7 @@ bool CL_PrepareConnect()
 
 	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
 
-	DWORD server_token = MSG_ReadLong();
+	uint32_t server_token = MSG_ReadLong();
 	server_host = MSG_ReadString();
 
 	bool recv_teamplay_stats = 0;
@@ -1836,7 +1836,7 @@ void CL_InitNetwork (void)
     connected = false;
 }
 
-void CL_TryToConnect(DWORD server_token)
+void CL_TryToConnect(uint32_t server_token)
 {
 	if (!serveraddr.ip[0])
 		return;

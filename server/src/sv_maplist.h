@@ -36,7 +36,7 @@ private:
 	bool shuffled;
 	size_t s_index;
 	std::vector<size_t> s_maplist;
-	std::map<int, QWORD> timeout;
+	std::map<int, uint64_t> timeout;
 	byte version;
 	void shuffle(void);
 	void update_shuffle_index(void);
