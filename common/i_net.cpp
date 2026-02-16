@@ -1101,37 +1101,21 @@ static void InitNetMessageFormats()
 #undef SVC_INFO
 #undef CLC_INFO
 
-void SetSocketBufSizeFromCvar(const char* name, int optname, cvar_t& var)
+static void SetSocketBufSize(int socketFd, const char* name, int optname, int desiredSize)
 {
 	int currentBufSize = -1;
 	socklen_t currentBufSizeSize = static_cast<socklen_t>(sizeof(currentBufSize));
-	if (getsockopt(inet_socket, SOL_SOCKET, optname, GETSOCKOPTCAST(&currentBufSize), &currentBufSizeSize) == 0)
+	if (getsockopt(socketFd, SOL_SOCKET, optname, GETSOCKOPTCAST(&currentBufSize), &currentBufSizeSize) == 0)
 	{
-		int n = var.asInt();
-		if (n != currentBufSize)
+		if (desiredSize != currentBufSize)
 		{
-			if (setsockopt(inet_socket, SOL_SOCKET, optname, SETSOCKOPTCAST(&n), static_cast<socklen_t>(sizeof(n))) == -1)
+			if (setsockopt(socketFd, SOL_SOCKET, optname, SETSOCKOPTCAST(&desiredSize), static_cast<socklen_t>(sizeof(desiredSize))) == -1)
 			{
-				PrintFmt(PRINT_HIGH, "{} set buffer size error: {}", name, strerror(errno));
-			}
-			else
-			{
-				PrintFmt(PRINT_HIGH, "{} set to {}\n", name, n);
+				PrintFmt(PRINT_HIGH, "ERROR setting {} buffer size: {}\n", name, strerror(errno));
 			}
 		}
 	}
 }
-
-CVAR_FUNC_IMPL(net_rcvbuf)
-{
-	SetSocketBufSizeFromCvar("net_rcvbuf", SO_RCVBUF, var);
-}
-
-CVAR_FUNC_IMPL(net_sndbuf)
-{
-	SetSocketBufSizeFromCvar("net_sndbuf", SO_SNDBUF, var);
-}
-
 
 //
 // InitNetCommon
@@ -1155,10 +1139,8 @@ void InitNetCommon(void)
    if (ioctlsocket(inet_socket, FIONBIO, &_true) == -1)
        I_FatalError ("UDPsocket: ioctl FIONBIO: {}", strerror(errno));
 
-   // Because it's possible for these to have been set before the socket was valid, we want
-   // to make sure we check and apply the current values at least once after socket creation.
-   net_rcvbuf.Callback();
-   net_sndbuf.Callback();
+   SetSocketBufSize(inet_socket, "SO_RCVBUF", SO_RCVBUF, 128 * 1024);
+   SetSocketBufSize(inet_socket, "SO_SNDBUF", SO_SNDBUF, 128 * 1024);
 
 	// enter message information into message info structs
 	InitNetMessageFormats();
