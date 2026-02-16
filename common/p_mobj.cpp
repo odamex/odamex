@@ -66,8 +66,8 @@ extern bool predicting;
 extern fixed_t attackrange;
 extern AActor *shootthing;
 
-void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
-void P_ShowSpawns(mapthing2_t* mthing);
+void P_SpawnPlayer(player_t &player, const mapthing2_t& mthing);
+void P_ShowSpawns(const mapthing2_t& mthing);
 void P_ExplodeMissile(AActor* mo);
 void SV_SpawnMobj(AActor *mobj);
 void SV_SendDestroyActor(const AActor *);
@@ -820,8 +820,8 @@ void AActor::RunThink ()
 
 void AActor::Serialize (FArchive &arc)
 {
-	static constexpr DWORD TLATE_NONE = 0xFFFFFFFF;
-	static constexpr DWORD TLATE_BOSS = 0xFFFFFFFE;
+	static constexpr uint32_t TLATE_NONE = 0xFFFFFFFF;
+	static constexpr uint32_t TLATE_BOSS = 0xFFFFFFFE;
 
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
@@ -893,7 +893,7 @@ void AActor::Serialize (FArchive &arc)
 			}
 			else
 			{
-				arc << (DWORD)(translation.getTable() - ::translationtables);
+				arc << (uint32_t)(translation.getTable() - ::translationtables);
 			}
 		}
 		else
@@ -970,7 +970,7 @@ void AActor::Serialize (FArchive &arc)
 
 		P_SetThingId(this, newnetid);
 
-		DWORD trans;
+		uint32_t trans;
 		arc >> trans;
 		if (trans == TLATE_NONE)
 		{
@@ -2760,14 +2760,11 @@ void P_ThrustMobj (AActor *mo, angle_t angle, fixed_t move)
 //
 // Returns the player number for a coop player start mapthing
 //
-size_t P_GetMapThingPlayerNumber(mapthing2_t *mthing)
+size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing)
 {
-	if (!mthing)
-		return 0;
-
-	return mthing->type <= 4 ?
-			mthing->type - 1 :
-			(mthing->type - 4001 + 4) % MAXPLAYERSTARTS;
+	return mthing.type <= 4 ?
+			mthing.type - 1 :
+			(mthing.type - 4001 + 4) % MAXPLAYERSTARTS;
 }
 
 int P_IsPickupableThing(short type)
@@ -2787,21 +2784,21 @@ int P_IsPickupableThing(short type)
 //
 // [RH] position is used to weed out unwanted start spots
 //
-void P_SpawnMapThing (mapthing2_t *mthing, int position)
+void P_SpawnMapThing (mapthing2_t& mthing, int position)
 {
 	int32_t type = -1;
 
-	if (mthing->type == 0 || mthing->type == -1)
+	if (mthing.type == 0 || mthing.type == -1)
 		return;
 
 	if (sv_allowshowspawns)
 		P_ShowSpawns(mthing);
 
-	const bool isTeleportDest = mthing->type == 14;
-	const bool isSecAct = (mthing->type >= 9982 && mthing->type <= 9983) ||
-	                      (mthing->type >= 9992 && mthing->type <= 9999);
-	const bool isSoundSource = (mthing->type >= 14001 && mthing->type <= 14065);
-	const bool isMusicChanger = (mthing->type >= 14100 && mthing->type <= 14165);
+	const bool isTeleportDest = mthing.type == 14;
+	const bool isSecAct = (mthing.type >= 9982 && mthing.type <= 9983) ||
+	                      (mthing.type >= 9992 && mthing.type <= 9999);
+	const bool isSoundSource = (mthing.type >= 14001 && mthing.type <= 14065);
+	const bool isMusicChanger = (mthing.type >= 14100 && mthing.type <= 14165);
 
 	// only servers control spawning of items
 	// EXCEPT the client must spawn Type 14 (teleport exit).
@@ -2821,14 +2818,14 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// count deathmatch start positions
-	if (mthing->type == 11 || (!sv_teamspawns && mthing->type >= 5080 && mthing->type <= 5082))
+	if (mthing.type == 11 || (!sv_teamspawns && mthing.type >= 5080 && mthing.type <= 5082))
 	{
 		// [Nes] Maximum vanilla demo starts are fixed at 10.
 		if (DeathMatchStarts.size() >= 10 && demoplayback)
 			return;
 
-		M_LogWDLPlayerSpawn(*mthing);
-		DeathMatchStarts.push_back(*mthing);
+		M_LogWDLPlayerSpawn(mthing);
+		DeathMatchStarts.push_back(mthing);
 		return;
 	}
 
@@ -2838,10 +2835,10 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		{
 			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
 
-			if (mthing->type == teamInfo->TeamSpawnThingNum)
+			if (mthing.type == teamInfo->TeamSpawnThingNum)
 			{
-				teamInfo->Starts.push_back(*mthing);
-				M_LogWDLPlayerSpawn(*mthing);
+				teamInfo->Starts.push_back(mthing);
+				M_LogWDLPlayerSpawn(mthing);
 				return;
 			}
 		}
@@ -2850,53 +2847,53 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	// [RH] Record polyobject-related things
 	if (HexenHack)
 	{
-		switch (mthing->type)
+		switch (mthing.type)
 		{
 		case PO_HEX_ANCHOR_TYPE:
-			mthing->type = PO_ANCHOR_TYPE;
+			mthing.type = PO_ANCHOR_TYPE;
 			break;
 		case PO_HEX_SPAWN_TYPE:
-			mthing->type = PO_SPAWN_TYPE;
+			mthing.type = PO_SPAWN_TYPE;
 			break;
 		case PO_HEX_SPAWNCRUSH_TYPE:
-			mthing->type = PO_SPAWNCRUSH_TYPE;
+			mthing.type = PO_SPAWNCRUSH_TYPE;
 			break;
 		}
 	}
 
-	if (mthing->type == PO_ANCHOR_TYPE ||
-		mthing->type == PO_SPAWN_TYPE ||
-		mthing->type == PO_SPAWNCRUSH_TYPE)
+	if (mthing.type == PO_ANCHOR_TYPE ||
+		mthing.type == PO_SPAWN_TYPE ||
+		mthing.type == PO_SPAWNCRUSH_TYPE)
 	{
 		polyspawns_t *polyspawn = new polyspawns_t;
 		polyspawn->next = polyspawns;
-		polyspawn->x = mthing->x << FRACBITS;
-		polyspawn->y = mthing->y << FRACBITS;
-		polyspawn->angle = mthing->angle;
-		polyspawn->type = mthing->type;
+		polyspawn->x = mthing.x << FRACBITS;
+		polyspawn->y = mthing.y << FRACBITS;
+		polyspawn->angle = mthing.angle;
+		polyspawn->type = mthing.type;
 		polyspawns = polyspawn;
-		if (mthing->type != PO_ANCHOR_TYPE)
+		if (mthing.type != PO_ANCHOR_TYPE)
 			po_NumPolyobjs++;
 		return;
 	}
 
 	// check for players specially
-	if ((mthing->type <= 4 && mthing->type > 0)
-		|| (mthing->type >= 4001 && mthing->type <= 4001 + MAXPLAYERSTARTS - 4))
+	if ((mthing.type <= 4 && mthing.type > 0)
+		|| (mthing.type >= 4001 && mthing.type <= 4001 + MAXPLAYERSTARTS - 4))
 	{
 		// [RH] Only spawn spots that match position.
-		if (mthing->args[0] != position)
+		if (mthing.args[0] != position)
 			return;
 
 		if ((G_IsCoopGame() || G_UsesCoopSpawns()) && !G_IsHordeMode())
-			M_LogWDLPlayerSpawn(*mthing);
+			M_LogWDLPlayerSpawn(mthing);
 
 		size_t playernum = P_GetMapThingPlayerNumber(mthing);
 
 		// search for spots that already are for this player number
 		for (size_t i = 0; i < playerstarts.size(); i++)
 		{
-			size_t otherplayernum = P_GetMapThingPlayerNumber(&playerstarts[i]);
+			const size_t otherplayernum = P_GetMapThingPlayerNumber(playerstarts[i]);
 
 			if (otherplayernum == playernum)
 			{
@@ -2909,12 +2906,12 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		}
 
 		// save spots for respawning in network games
-		playerstarts.push_back(*mthing);
+		playerstarts.push_back(mthing);
 		player_t &p = idplayer(playernum+1);
 
 		if (clientside && G_IsCoopGame() && (validplayer(p) && p.ingame()))
 		{
-			P_SpawnPlayer (p, mthing);
+			P_SpawnPlayer(p, mthing);
 			return;
 		}
 
@@ -2924,89 +2921,89 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	// Filter mapthings based on the gamemode
 	if (!multiplayer && g_thingfilter != -1 && !G_GetCurrentSkill().spawn_multi)
 	{
-		if (!(mthing->flags & MTF_SINGLE))
+		if (!(mthing.flags & MTF_SINGLE))
 			return;
 	}
 	else if (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM)
 	{
-		if (!(mthing->flags & MTF_DEATHMATCH))
+		if (!(mthing.flags & MTF_DEATHMATCH))
 			return;
 	}
 	else if (G_IsCoopGame())
 	{
-		if (!(mthing->flags & MTF_COOPERATIVE))
+		if (!(mthing.flags & MTF_COOPERATIVE))
 			return;
 	}
 
-	if (g_thingfilter == 3 && P_IsPickupableThing(mthing->type))
+	if (g_thingfilter == 3 && P_IsPickupableThing(mthing.type))
 		return;
 
 	// check for appropriate skill level
-	if (!(mthing->flags & G_GetCurrentSkill().spawn_filter))
+	if (!(mthing.flags & G_GetCurrentSkill().spawn_filter))
 		return;
 
 	// [RH] sound sequence overrides
-	if (mthing->type >= 1400 && mthing->type < 1410)
+	if (mthing.type >= 1400 && mthing.type < 1410)
 	{
-		P_PointInSubsector (mthing->x<<FRACBITS,
-			mthing->y<<FRACBITS)->sector->seqType = mthing->type - 1400;
+		subsector_t* sub = P_PointInSubsector(mthing.x << FRACBITS, mthing.y << FRACBITS);
+		sub->sector->seqType = mthing.type - 1400;
 		return;
 	}
-	else if (mthing->type == 1411)
+	else if (mthing.type == 1411)
 	{
-		int type;
+		int seqtype;
 
-		if (mthing->args[0] == 255)
-			type = -1;
+		if (mthing.args[0] == 255)
+			seqtype = -1;
 		else
-			type = mthing->args[0];
+			seqtype = mthing.args[0];
 
-		if (type > 63)
+		if (seqtype > 63)
 		{
-			PrintFmt(PRINT_WARNING, "Sound sequence {} out of range\n", type);
+			PrintFmt(PRINT_WARNING, "Sound sequence {} out of range\n", seqtype);
 		}
 		else
 		{
-			P_PointInSubsector (mthing->x << FRACBITS,
-				mthing->y << FRACBITS)->sector->seqType = type;
+			subsector_t* sub = P_PointInSubsector(mthing.x << FRACBITS, mthing.y << FRACBITS);
+			sub->sector->seqType = seqtype;
 		}
 		return;
 	}
 
-	if (P_IsHordeThing(mthing->type))
+	if (P_IsHordeThing(mthing.type))
 	{
 		type = MT_HORDESPAWN;
 		::level.detected_gametype = GM_HORDE;
 	}
 
-	if (mthing->type == 9081)
+	if (mthing.type == 9081)
 	{
 		type = MT_SKYPICKER;
 	}
-	else if (mthing->type == 9080)
+	else if (mthing.type == 9080)
 	{
 		type = MT_SKYVIEWPOINT;
 	}
-	else if (mthing->type == 9082)
+	else if (mthing.type == 9082)
 	{
 		type = MT_SECTORSILENCER;
 	}
 
 	// [RH] Determine if it is an old ambient thing, and if so,
 	//		map it to MT_AMBIENT with the proper parameter.
-	if (mthing->type >= 14001 && mthing->type <= 14064)
+	if (mthing.type >= 14001 && mthing.type <= 14064)
 	{
-		mthing->args[0] = mthing->type - 14000;
-		mthing->type = mobjinfo[MT_AMBIENT].doomednum;
+		mthing.args[0] = mthing.type - 14000;
+		mthing.type = mobjinfo[MT_AMBIENT].doomednum;
 		type = MT_AMBIENT;
 	}
 
 	// [ML] Determine if it is a musicchanger thing, and if so,
 	//		map it to MT_MUSICSOURCE with the proper parameter.
-	if (mthing->type >= 14100 && mthing->type <= 14164)
+	if (mthing.type >= 14100 && mthing.type <= 14164)
 	{
-		mthing->args[0] = mthing->type - 14100;
-		mthing->type = mobjinfo[MT_MUSICSOURCE].doomednum;
+		mthing.args[0] = mthing.type - 14100;
+		mthing.type = mobjinfo[MT_MUSICSOURCE].doomednum;
 		type = MT_MUSICSOURCE;
 	}
 
@@ -3014,7 +3011,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	mobjinfo_t* info = nullptr;
 	if (type == -1)
 	{
-		auto spawn_it = spawn_map.find(mthing->type);
+		auto spawn_it = spawn_map.find(mthing.type);
 		if (spawn_it != spawn_map.end())
 		{
 			info = spawn_it->second;
@@ -3022,9 +3019,9 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 			type = info->type;
 		}
 		// [RH] Check if it's a particle fountain
-		if (type == -1 && mthing->type >= 9027 && mthing->type <= 9033)
+		if (type == -1 && mthing.type >= 9027 && mthing.type <= 9033)
 		{
-			mthing->args[0] = mthing->type - 9026;
+			mthing.args[0] = mthing.type - 9026;
 			type = MT_FOUNTAIN;
 			info = &mobjinfo[type]; // mt_fountain guaranteed to exist
 		}
@@ -3044,8 +3041,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		// [RH] Don't die if the map tries to spawn an unknown thing
 		PrintFmt(PRINT_WARNING, "P_SpawnMapThing: Unknown type {} at {}, {})\n",
-		         mthing->type,
-		         mthing->x, mthing->y);
+		         mthing.type,
+		         mthing.x, mthing.y);
 		info = &mobjinfo[MT_UNKNOWNTHING]; // [CMB] odamex specific MT_UNKNOWNTHING
 		type = MT_UNKNOWNTHING;
 	}
@@ -3054,7 +3051,7 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	else if (sprites[states[info->spawnstate].sprite].numframes == 0)
 	{
 		PrintFmt(PRINT_WARNING, "P_SpawnMapThing: Type {} at {}, {} has no frames\n",
-		         mthing->type, mthing->x, mthing->y);
+		         mthing.type, mthing.x, mthing.y);
 		info = &mobjinfo[MT_UNKNOWNTHING];
 		type = MT_UNKNOWNTHING;
 	}
@@ -3076,12 +3073,12 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		case MT_MISC28: // plasma gun
 			if (!multiplayer && g_thingfilter != -1 && !G_GetCurrentSkill().spawn_multi)
 			{
-				if ((mthing->flags & (MTF_DEATHMATCH | MTF_SINGLE)) == MTF_DEATHMATCH)
+				if ((mthing.flags & (MTF_DEATHMATCH | MTF_SINGLE)) == MTF_DEATHMATCH)
 					return;
 			}
 			else
 			{
-				if ((mthing->flags & (MTF_FILTER_COOPWPN)))
+				if ((mthing.flags & (MTF_FILTER_COOPWPN)))
 					return;
 			}
 			break;
@@ -3107,8 +3104,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		level.total_items++;
 
 	// spawn it
-	const fixed_t x = mthing->x << FRACBITS;
-	const fixed_t y = mthing->y << FRACBITS;
+	const fixed_t x = mthing.x << FRACBITS;
+	const fixed_t y = mthing.y << FRACBITS;
 	const fixed_t z = (info->flags & MF_SPAWNCEILING) ? ONCEILINGZ : ONFLOORZ;
 
 	if (type == MT_WATERZONE)
@@ -3124,35 +3121,35 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		// Store the spawn type for later.
 		// [CMB] specific types must be checked; otherwise they won't spawn correctly
-		mobj->special1 = mthing->type;
-		if (mthing->type == 5301) // Supply cache (5301)
+		mobj->special1 = mthing.type;
+		if (mthing.type == 5301) // Supply cache (5301)
 			M_LogWDLItemSpawn(*mobj, WDL_PICKUP_CAREPACKAGE);
-		else if (mthing->type == 5307) // Horde Powerup (5307)
+		else if (mthing.type == 5307) // Horde Powerup (5307)
 			M_LogWDLItemSpawn(*mobj, WDL_PICKUP_POWERUPSPAWNER);
 	}
 
 	if (z == ONFLOORZ)
-		mobj->z += mthing->z << FRACBITS;
+		mobj->z += mthing.z << FRACBITS;
 	else if (z == ONCEILINGZ)
-		mobj->z -= mthing->z << FRACBITS;
-	mobj->spawnpoint = *mthing;
+		mobj->z -= mthing.z << FRACBITS;
+	mobj->spawnpoint = mthing;
 
 	if (mobj->flags2 & MF2_FLOATBOB)
 	{ // Seed random starting index for bobbing motion
 		mobj->health = M_Random();
-		mobj->special1 = mthing->z << FRACBITS;
+		mobj->special1 = mthing.z << FRACBITS;
 	}
 
 	// [RH] Set the thing's special
-	mobj->special = mthing->special;
-	memcpy (mobj->args, mthing->args, sizeof(mobj->args));
+	mobj->special = mthing.special;
+	memcpy (mobj->args, mthing.args, sizeof(mobj->args));
 
 	// [RH] If it's an ambient sound, activate it
 	if (type == MT_AMBIENT)
 		S_ActivateAmbient (mobj, mobj->args[0]);
 
 	// [RH] If a fountain and not dormant, start it
-	if (type == MT_FOUNTAIN && !(mthing->flags & MTF_DORMANT))
+	if (type == MT_FOUNTAIN && !(mthing.flags & MTF_DORMANT))
 		mobj->effects = mobj->args[0] << FX_FOUNTAINSHIFT;
 
 	// [SL] ZDoom Custom Bridge Things
@@ -3170,23 +3167,23 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		mobj->tics = 1 + (P_Random(mobj) % mobj->tics);
 
 	if (type != MT_SPARK)
-		mobj->angle = ANG45 * (mthing->angle/45);
+		mobj->angle = ANG45 * (mthing.angle/45);
 
-	if (mthing->flags & MTF_AMBUSH)
+	if (mthing.flags & MTF_AMBUSH)
 		mobj->flags |= MF_AMBUSH;
 
-	if (mthing->flags & MTF_FRIENDLY)
+	if (mthing.flags & MTF_FRIENDLY)
 		mobj->flags |= MF_FRIEND;
 
 	// [RH] Add ThingID to mobj and link it in with the others
-	mobj->tid = mthing->thingid;
+	mobj->tid = mthing.thingid;
 	mobj->AddToHash ();
 
 	SV_SpawnMobj(mobj);
 
 	if (mobj->type == MT_SKYVIEWPOINT)
 	{
-		mobj->angle = mthing->angle;
+		mobj->angle = mthing.angle;
 		// If this actor has no TID, make it the default sky box
 		if (mobj->tid == 0)
 		{
@@ -3205,13 +3202,13 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	if (mobj->type == MT_SKYPICKER)
 	{
 		sector_t* sector = mobj->subsector->sector;
-		if (mthing->args[0] == 0)
+		if (mthing.args[0] == 0)
 		{
 			sector->Skybox = AActor::AActorPtr();
 		}
 		else
 			{
-				TActorIterator<AActor> iterator (mthing->args[0]);
+				TActorIterator<AActor> iterator (mthing.args[0]);
 			    AActor* box = iterator.Next();
 
 				if (box != NULL && box->type == MT_SKYVIEWPOINT)
@@ -3220,15 +3217,15 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 				}
 				else
 				{
-					PrintFmt ("Can't find SkyViewpoint {} for sector {}\n", mthing->args[0],
+					PrintFmt ("Can't find SkyViewpoint {} for sector {}\n", mthing.args[0],
 				           sector - sectors);
 				}
 			}
 			mobj->Destroy ();
 	}
 
-	if ((mthing->type >= 9992 && mthing->type <= 9999) ||
-		(mthing->type >= 9982 && mthing->type <= 9983)) {
+	if ((mthing.type >= 9992 && mthing.type <= 9999) ||
+		(mthing.type >= 9982 && mthing.type <= 9983)) {
 		// Add ourselves to this sector's list of actions.
 		if (mobj->subsector->sector->SecActTarget != NULL) {
 			mobj->tracer = mobj->subsector->sector->SecActTarget->ptr();
@@ -3241,18 +3238,18 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		for (int iTeam = 0; iTeam < sv_teamsinplay; iTeam++)
 		{
 			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
-			if (mthing->type == teamInfo->FlagThingNum)
+			if (mthing.type == teamInfo->FlagThingNum)
 			{
 				SpawnFlag(mthing, teamInfo->Team);
-				M_LogWDLFlagLocation(*mthing, teamInfo->Team);
+				M_LogWDLFlagLocation(mthing, teamInfo->Team);
 				break;
 			}
 		}
 	}
 
 	// [RH] Go dormant as needed
-	if (mthing->flags & MTF_DORMANT)
-		P_DeactivateMobj (mobj);
+	if (mthing.flags & MTF_DORMANT)
+		P_DeactivateMobj(mobj);
 
 	// [Blair] This looks like an item we'd want to log.
 	// Check it and log it if so.
@@ -3287,7 +3284,7 @@ void P_SpawnAvatars()
 }
 
 
-void SpawnFlag(mapthing2_t* mthing, team_t flag)
+void SpawnFlag(const mapthing2_t& mthing, team_t flag)
 {
 	if (GetTeamInfo(flag)->FlagData.flaglocated)
 		return;

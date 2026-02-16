@@ -43,62 +43,74 @@
 #endif
 #endif
 
-inline static unsigned short LESHORT(const unsigned short x)
+inline static uint16_t LESHORT(const uint16_t x) noexcept
 {
 	return nonstd::bit::as_little_endian(x);
 }
 
-inline static short LESHORT(const short x)
+inline static int16_t LESHORT(const int16_t x) noexcept
 {
 	return nonstd::bit::as_little_endian(x);
 }
 
-inline static unsigned int LELONG(const unsigned int x)
+inline static uint32_t LELONG(const uint32_t x) noexcept
 {
 	return nonstd::bit::as_little_endian(x);
 }
 
-inline static int LELONG(const int x)
+inline static int32_t LELONG(const int32_t x) noexcept
 {
 	return nonstd::bit::as_little_endian(x);
 }
 
-inline static unsigned long LELONG(const unsigned long x)
+inline static uint64_t LELONGLONG(const uint64_t x) noexcept
 {
 	return nonstd::bit::as_little_endian(x);
 }
 
-inline static long LELONG(const long x)
+inline static int64_t LELONGLONG(const int64_t x) noexcept
 {
 	return nonstd::bit::as_little_endian(x);
 }
 
-inline static unsigned short BESHORT(const unsigned short x)
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+inline static T LESWAP(const T x) noexcept
+{
+	return nonstd::bit::as_little_endian(x);
+}
+
+inline static uint16_t BESHORT(const uint16_t x) noexcept
 {
 	return nonstd::bit::as_big_endian(x);
 }
 
-inline static short BESHORT(const short x)
+inline static int16_t BESHORT(const int16_t x) noexcept
 {
 	return nonstd::bit::as_big_endian(x);
 }
 
-inline static unsigned int BELONG(const unsigned int x)
+inline static uint32_t BELONG(const uint32_t x) noexcept
 {
 	return nonstd::bit::as_big_endian(x);
 }
 
-inline static int BELONG(const int x)
+inline static int32_t BELONG(const int32_t x) noexcept
 {
 	return nonstd::bit::as_big_endian(x);
 }
 
-inline static unsigned long BELONG(const unsigned long x)
+inline static uint64_t BELONGLONG(const uint64_t x) noexcept
 {
 	return nonstd::bit::as_big_endian(x);
 }
 
-inline static long BELONG(const long x)
+inline static int64_t BELONGLONG(const int64_t x) noexcept
+{
+	return nonstd::bit::as_big_endian(x);
+}
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+inline static T BESWAP(const T x) noexcept
 {
 	return nonstd::bit::as_big_endian(x);
 }

@@ -74,7 +74,7 @@ ticcmd_t *I_BaseTiccmd(void)
 	return &emptycmd;
 }
 
-DWORD LanguageIDs[4];
+uint32_t LanguageIDs[4];
 
 //
 // I_MegabytesToBytes

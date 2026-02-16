@@ -59,7 +59,7 @@ void SV_BroadcastSector(int sectornum) {}
 void SV_UpdateMobj(const AActor* mo) {}
 void SV_UpdateMobjState(const AActor* mo) {}
 
-void CTF_RememberFlagPos(mapthing2_t *mthing) {}
+void CTF_RememberFlagPos(const mapthing2_t& mthing) {}
 void CTF_SpawnFlag(team_t f) {}
 bool SV_AwarenessUpdate(player_t &pl, AActor* mo) { return true; }
 void SV_SendPackets(void) {}

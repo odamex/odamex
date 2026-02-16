@@ -89,7 +89,7 @@ extern int				NumParticles;
 extern int				ActiveParticles;
 extern int				InactiveParticles;
 extern particle_t		*Particles;
-std::vector<WORD>		ParticlesInSubsec;
+std::vector<uint16_t>		ParticlesInSubsec;
 
 
 

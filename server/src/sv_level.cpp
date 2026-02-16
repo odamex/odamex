@@ -434,7 +434,7 @@ void SV_ServerSettingChange();
 
 void G_InitNew(const char *mapname)
 {
-	DWORD previousLevelFlags = level.flags;
+	levelFlags_t previousLevelFlags = level.flags;
 
 	if (!savegamerestore)
 		G_ClearSnapshots ();
