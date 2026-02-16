@@ -1035,7 +1035,7 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 	if (G_IsTeamColor(r_forceteamcolor, r_forceenemycolor))
 		CL_RebuildAllPlayerTranslations();
 	else
-		R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(p), p->userinfo.colorpreset);
+		R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(*p), p->userinfo.colorpreset);
 	R_RebuildPlayerTintTables(p->id);
 
 	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed

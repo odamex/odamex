@@ -1298,7 +1298,7 @@ void M_PlayerSetup(int choice)
 		fire_surface = I_AllocateSurface(fire_surface_width, fire_surface_height, 8);
 
 	// [Nes] Intialize the player preview color.
-	const argb_t player_color = CL_GetPlayerColor(&consoleplayer());
+	const argb_t player_color = CL_GetPlayerColor(consoleplayer());
 	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
 	R_BuildPlayerTranslation(0, player_color, colorpreset);
 }
@@ -1541,7 +1541,7 @@ static void M_PlayerSetupDrawer()
 
 		// [Nes] Color of player preview uses the unused translation table (player 0), instead
 		// of the table of the current player color. (Which is different in single, demo, and team)
-		const argb_t player_color = CL_GetPlayerColor(&consoleplayer());
+		const argb_t player_color = CL_GetPlayerColor(consoleplayer());
 		R_BuildPlayerTranslation(0, player_color, colorpreset);
 		V_ColorMap = translationref_t(translationtables, 0);
 
