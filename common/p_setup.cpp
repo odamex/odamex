@@ -581,7 +581,7 @@ byte* P_LoadSegs_XGL(byte* p)
 
 	for (int i = 0; i < numsubsectors; i++)
 	{
-		for (int j = 0; j < subsectors[i].numlines; j++)
+		for (uint32_t j = 0; j < subsectors[i].numlines; j++)
 		{
 			const uint32_t v1 = LELONG(*(uint32_t *)p); p += 4;
 			const uint32_t partner = LELONG(*(uint32_t *)p); p += 4;
@@ -649,7 +649,7 @@ byte* P_LoadSegs_XGL(byte* p)
 			}
 		}
 
-		for (int j = 0; j < subsectors[i].numlines; j++)
+		for (uint32_t j = 0; j < subsectors[i].numlines; j++)
 		{
 			seg_t* seg = &segs[subsectors[i].firstline + j];
 
