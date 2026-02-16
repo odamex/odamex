@@ -91,19 +91,19 @@ enum weaponstate_t
 	unknownstate
 };
 
-void P_SetupPsprites (player_t* curplayer);
-void P_MovePsprites (player_t* curplayer);
-void P_DropWeapon (player_t* player);
+void P_SetupPsprites (player_t& curplayer);
+void P_MovePsprites (player_t& curplayer);
+void P_DropWeapon (player_t& player);
 
-weaponstate_t P_GetWeaponState(player_t* player);
+weaponstate_t P_GetWeaponState(const player_t& player);
 
 
 //
 // P_USER
 //
 void P_FallingDamage (AActor *ent);
-void P_PlayerThink (player_t *player);
-void P_SetPlayerPowerupStatuses(player_t* player, int powers[NUMPOWERS]);
+void P_PlayerThink (player_t& player);
+void P_SetPlayerPowerupStatuses(player_t& player, nonstd::span<const int, NUMPOWERS> powers);
 bool P_AreTeammates(const player_t& a, const player_t& b);
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo = false);
 
@@ -114,12 +114,9 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo = false);
 #define ONCEILINGZ		limits::MAXINT
 
 // Time interval for item respawning.
-#define ITEMQUESIZE 	128
+// #define ITEMQUESIZE 	128
 
-extern mapthing2_t		itemrespawnque[ITEMQUESIZE];
-extern int				itemrespawntime[ITEMQUESIZE];
-extern int				iquehead;
-extern int				iquetail;
+inline std::queue<std::pair<mapthing2_t, int>> itemrespawnque;
 
 void 	P_ThrustMobj (AActor *mo, angle_t angle, fixed_t move);
 void	P_RespawnSpecials (void);
@@ -131,7 +128,7 @@ AActor* P_SpawnMissile (AActor* source, AActor* dest, mobjtype_t type);
 AActor* P_SpawnPlayerMissile(AActor* source, mobjtype_t type);
 void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle,
                                fixed_t pitch, fixed_t xyofs, fixed_t zofs);
-bool P_CheckSwitchWeapon(player_t* player, weapontype_t weapon);
+bool P_CheckSwitchWeapon(const player_t& player, weapontype_t weapon);
 
 void	P_RailAttack (AActor *source, int damage, int offset);	// [RH] Shoot a railgun
 bool	P_HitFloor (AActor *thing);
@@ -264,7 +261,7 @@ bool	P_TryMove (AActor* thing, fixed_t x, fixed_t y, int dropoff, bool onfloor =
 bool	P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, bool telefrag);	// [RH] Added z and telefrag parameters
 void	P_SlideMove (AActor* mo);
 bool	P_CheckSight (const AActor* t1, const AActor* t2);
-void	P_UseLines (player_t* player);
+void	P_UseLines (player_t& player);
 void	P_ApplyTorque(AActor *mo);
 void	P_CopySector(sector_t *dest, sector_t *src);
 
@@ -297,7 +294,7 @@ v3fixed_t P_LinePlaneIntersection(const plane_t *plane, const v3fixed_t &lineorg
 
 
 bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost);
-bool P_SpecialIsWeapon(const AActor* special);
+bool P_SpecialIsWeapon(const AActor& special);
 
 bool	P_ChangeSector (sector_t* sector, int crunch);
 
@@ -344,8 +341,8 @@ extern std::set<short>	movable_sectors;
 extern int				maxammo[NUMAMMO];
 extern int				clipammo[NUMAMMO];
 
-void P_GiveSpecial(player_t *player, AActor *special);
-void P_TouchSpecialThing (AActor *special, AActor *toucher);
+void P_GiveSpecial(player_t& player, AActor& special);
+void P_TouchSpecialThing (AActor& special, AActor& toucher);
 
 void P_DamageMobj (AActor *target, const AActor *inflictor, AActor *source, int damage, int mod=0, int flags=0);
 

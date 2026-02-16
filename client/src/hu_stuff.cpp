@@ -383,7 +383,7 @@ static void HU_DrawCrosshair()
 		return;
 
     // Don't draw the crosshair when automap is visible.
-	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible())
+	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible(true))
         return;
 
 	// Don't draw the crosshair in spectator mode
@@ -544,6 +544,10 @@ void HU_Drawer()
 		}
 
 		hud::LevelStateHUD();
+
+		hud::MultiKillHud();
+
+		hud::SpreeHud();
 	}
 
 	// [csDoom] draw disconnected wire [Toke] Made this 1337er

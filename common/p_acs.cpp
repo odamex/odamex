@@ -77,8 +77,8 @@ struct FBehavior::ArrayInfo
 static void DoClearInv(player_t* player)
 {
 	player->weaponowned.fill(0);
-	memset(player->powers, 0, sizeof(player->powers));
-	memset(player->cards, 0, sizeof(player->cards));
+	player->powers.fill(0);
+	player->cards.fill(false);
 	player->ammo.fill(0);
 
 	if (player->backpack)
@@ -266,34 +266,34 @@ mobjtype_t FindDoomEntity(const char* type, DoomEntity list[], int size)
 	return MT_NULL;
 }
 
-static void GiveBackpack(player_t* player)
+static void GiveBackpack(player_t& player)
 {
-	if (!player->backpack)
+	if (!player.backpack)
 	{
-		for (int i=0 ; i<NUMAMMO ; i++)
+		for (auto& ammo : player.maxammo)
 		{
-			player->maxammo[i] *= 2;
+			ammo *= 2;
 		}
-		player->backpack = true;
+		player.backpack = true;
 	}
-	for (int i=0 ; i<NUMAMMO ; i++)
+	for (int i = 0; i < NUMAMMO; i++)
 	{
 		P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
 	}
-	SERVER_ONLY(SV_SendPlayerInfo(*player));
+	SERVER_ONLY(SV_SendPlayerInfo(player));
 }
 
-static void DoGiveInv(player_t* player, const char* type, int amount)
+static void DoGiveInv(player_t& player, const char* type, int amount)
 {
-	weapontype_t savedpendingweap = player->pendingweapon;
+	const weapontype_t savedpendingweap = player.pendingweapon;
 
 	// Give ammo
 	for (int i = 0; i < NUMAMMO; i++)
 	{
 		if (strcmp(DoomAmmoNames[i].Name, type) == 0)
 		{
-			player->ammo[i] = MIN(player->ammo[i]+amount, player->maxammo[i]);
-			SERVER_ONLY(SV_SendPlayerInfo(*player));
+			player.ammo[i] = MIN(player.ammo[i]+amount, player.maxammo[i]);
+			SERVER_ONLY(SV_SendPlayerInfo(player));
 			return;
 		}
 	}
@@ -310,9 +310,9 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 			while (--amount > 0);
 
 			// Don't bring it up automatically
-			if (player->readyweapon != NUMWEAPONS && player->pendingweapon != NUMWEAPONS)
-				player->pendingweapon = savedpendingweap;
-			SERVER_ONLY(SV_SendPlayerInfo(*player));
+			if (player.readyweapon != NUMWEAPONS && player.pendingweapon != NUMWEAPONS)
+				player.pendingweapon = savedpendingweap;
+			SERVER_ONLY(SV_SendPlayerInfo(player));
 			return;
 		}
 	}
@@ -327,7 +327,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 				P_GiveCard(player, static_cast<card_t>(i));
 			}
 			while (--amount > 0);
-			SERVER_ONLY(SV_SendPlayerInfo(*player));
+			SERVER_ONLY(SV_SendPlayerInfo(player));
 			return;
 		}
 	}
@@ -342,7 +342,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 				P_GivePower(player, i);
 			}
 			while (--amount > 0);
-			SERVER_ONLY(SV_SendPlayerInfo(*player));
+			SERVER_ONLY(SV_SendPlayerInfo(player));
 			return;
 		}
 	}
@@ -355,7 +355,7 @@ static void DoGiveInv(player_t* player, const char* type, int amount)
 			GiveBackpack(player);
 		}
 		while (--amount > 0);
-		SERVER_ONLY(SV_SendPlayerInfo(*player));
+		SERVER_ONLY(SV_SendPlayerInfo(player));
 		return;
 	}
 
@@ -372,29 +372,29 @@ static void GiveInventory(AActor* activator, const char* type, int amount)
 			for (auto& player : players)
 			{
 				if (player.ingame() && !player.spectator)
-					DoGiveInv(&player, type, amount);
+					DoGiveInv(player, type, amount);
 			}
 		}
 	}
 	else if (activator->player != NULL)
 	{
-		DoGiveInv(activator->player, type, amount);
+		DoGiveInv(*activator->player, type, amount);
 	}
 }
 
-extern void P_SwitchWeapon(player_t *player);
+void P_SwitchWeapon(player_t& player);
 
-static void TakeWeapon(player_t* player, int weapon)
+static void TakeWeapon(player_t& player, int weapon)
 {
-	player->weaponowned[weapon] = false;
-	if (player->readyweapon == weapon || player->pendingweapon == weapon)
+	player.weaponowned[weapon] = false;
+	if (player.readyweapon == weapon || player.pendingweapon == weapon)
 	{
 		P_SwitchWeapon(player);
 
 		bool hasWeapon = false;
 		for (int i = 0; i < NUMWEAPONS; i++)
 		{
-			if (player->weaponowned[i])
+			if (player.weaponowned[i])
 			{
 				hasWeapon = true;
 				break;
@@ -402,38 +402,38 @@ static void TakeWeapon(player_t* player, int weapon)
 		}
 
 		if (!hasWeapon)
-			player->pendingweapon = NUMWEAPONS;
+			player.pendingweapon = NUMWEAPONS;
 	}
-	SERVER_ONLY(SV_SendPlayerInfo(*player));
+	SERVER_ONLY(SV_SendPlayerInfo(player));
 }
 
-extern bool P_CheckAmmo (player_t *player);
+bool P_CheckAmmo (player_t& player);
 
-static void TakeAmmo(player_t* player, int ammo, int amount)
+static void TakeAmmo(player_t& player, int ammo, int amount)
 {
 	if (amount == 0)
 	{
-		player->ammo[ammo] = 0;
+		player.ammo[ammo] = 0;
 	}
 	else
 	{
-		player->ammo[ammo] = MAX(player->ammo[ammo]-amount, 0);
+		player.ammo[ammo] = MAX(player.ammo[ammo]-amount, 0);
 	}
-	if (player->pendingweapon != wp_nochange)
+	if (player.pendingweapon != wp_nochange)
 	{
 		// Make sure we have the ammo for the weapon being switched to
-		weapontype_t readynow = player->readyweapon;
-		player->readyweapon = player->pendingweapon;
-		player->pendingweapon = wp_nochange;
+		weapontype_t readynow = player.readyweapon;
+		player.readyweapon = player.pendingweapon;
+		player.pendingweapon = wp_nochange;
 		if (P_CheckAmmo(player))
 		{
 			// There was enough ammo for the pending weapon, so keep switching
-			player->pendingweapon = player->readyweapon;
-			player->readyweapon = readynow;
+			player.pendingweapon = player.readyweapon;
+			player.readyweapon = readynow;
 		}
 		else
 		{
-			player->pendingweapon = player->readyweapon = readynow;
+			player.pendingweapon = player.readyweapon = readynow;
 			P_CheckAmmo(player);
 		}
 	}
@@ -442,7 +442,7 @@ static void TakeAmmo(player_t* player, int ammo, int amount)
 		// Make sure we still have enough ammo for the current weapon
 		P_CheckAmmo(player);
 	}
-	SERVER_ONLY(SV_SendPlayerInfo(*player));
+	SERVER_ONLY(SV_SendPlayerInfo(player));
 }
 
 static AActor* SingleActorFromTID(int tid, AActor* defactor)
@@ -458,28 +458,26 @@ static AActor* SingleActorFromTID(int tid, AActor* defactor)
 	}
 }
 
-static void TakeBackpack(player_t* player)
+static void TakeBackpack(player_t& player)
 {
-	if (!player->backpack)
+	if (!player.backpack)
 		return;
 
-	player->backpack = false;
+	player.backpack = false;
 	for (int i = 0; i < NUMAMMO; ++i)
 	{
-		player->maxammo[i] /= 2;
-		if (player->ammo[i] > player->maxammo[i])
+		player.maxammo[i] /= 2;
+		if (player.ammo[i] > player.maxammo[i])
 		{
-			player->ammo[i] = player->maxammo[i];
+			player.ammo[i] = player.maxammo[i];
 		}
 	}
-	SERVER_ONLY(SV_SendPlayerInfo(*player));
+	SERVER_ONLY(SV_SendPlayerInfo(player));
 }
 
-static void DoTakeInv(player_t* player, const char* type, int amount)
+static void DoTakeInv(player_t& player, const char* type, int amount)
 {
-	int i;
-
-	for (i = 0; i < NUMAMMO; ++i)
+	for (int i = 0; i < NUMAMMO; ++i)
 	{
 		if (strcmp(DoomAmmoNames[i].Name, type) == 0)
 		{
@@ -487,7 +485,7 @@ static void DoTakeInv(player_t* player, const char* type, int amount)
 			return;
 		}
 	}
-	for (i = 0; i < NUMWEAPONS; ++i)
+	for (int i = 0; i < NUMWEAPONS; ++i)
 	{
 		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
 		{
@@ -495,11 +493,11 @@ static void DoTakeInv(player_t* player, const char* type, int amount)
 			return;
 		}
 	}
-	for (i = 0; i < NUMCARDS; ++i)
+	for (int i = 0; i < NUMCARDS; ++i)
 	{
 		if (strcmp(DoomKeyNames[i].Name, type) == 0)
 		{
-			player->cards[i] = 0;
+			player.cards[i] = 0;
 		}
 	}
 	if (strcmp("Backpack", type) == 0)
@@ -510,17 +508,17 @@ static void DoTakeInv(player_t* player, const char* type, int amount)
 
 static void TakeInventory(AActor* activator, const char* type, int amount)
 {
-	if (activator == NULL)
+	if (activator == nullptr)
 	{
 		for (auto& player : players)
 		{
 			if (player.ingame() && !player.spectator)
-				DoTakeInv(&player, type, amount);
+				DoTakeInv(player, type, amount);
 		}
 	}
-	else if (activator->player != NULL)
+	else if (activator->player != nullptr)
 	{
-		DoTakeInv(activator->player, type, amount);
+		DoTakeInv(*activator->player, type, amount);
 	}
 }
 
@@ -4137,6 +4135,10 @@ void strbin (char *str)
 					break;
 			}
 			p++;
+		}
+		else
+		{
+			// Trainling backlash
 		}
 	}
 	*str = 0;

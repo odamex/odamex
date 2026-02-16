@@ -206,6 +206,10 @@ EXTERN_CVAR(cl_autorecord_teamdm)
 EXTERN_CVAR(cl_autorecord_ctf)
 EXTERN_CVAR(cl_autorecord_horde)
 
+// Spree options
+EXTERN_CVAR(cl_showsprees)
+EXTERN_CVAR(cl_showmultikills)
+
 // Weapon Preferences
 EXTERN_CVAR (cl_switchweapon)
 EXTERN_CVAR (cl_weaponpref_fst)
@@ -857,6 +861,10 @@ EXTERN_CVAR (cl_showfriends)
 EXTERN_CVAR (hud_show_scoreboard_ondeath)
 EXTERN_CVAR (hud_demobar)
 EXTERN_CVAR(hud_targetnames)
+EXTERN_CVAR(am_ovminimap)
+EXTERN_CVAR(am_ovlocation)
+EXTERN_CVAR(am_ovscalewidth)
+EXTERN_CVAR(am_ovscaleheight)
 
 static value_t Wipes[] = {
 	{ 0.0, "None" },
@@ -908,6 +916,8 @@ static menuitem_t VideoItems[] = {
 	{ slider,   "Weapon Visibility",        {&r_drawplayersprites}, {0.0}, {1.0},   {0.1},  {NULL} },
 	{ discrete,	"Visible Spawn Points",		{&cl_showspawns},		{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Center weapon when firing",{&cl_centerbobonfire},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Show Killing Sprees",		{&cl_showsprees},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Show Multi Kills",		{&cl_showmultikills},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Force Team Color",			{&r_forceteamcolor},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redslider,   "Team Color Red",        {&r_teamcolor},  {0.0}, {0.0},   {0.0},  {NULL} },
@@ -1030,7 +1040,7 @@ static menuitem_t HUDItems[] = {
 };
 
 menu_t HUDMenu = {
-    "M_VIDEO",              // title
+    "M_HUD",                // title
     1,                      // lastOn
     ARRAY_LENGTH(HUDItems), // numitems
     0,                      // indent
@@ -1151,6 +1161,15 @@ static value_t AutomapScales[] = {
 	{ 6.0, "6X" },
 };
 
+static value_t MinimapLocations[] = {
+	{ 0.0, "Left Top" },
+	{ 1.0, "Left Middle" },
+	{ 2.0, "Left Bottom" },
+	{ 3.0, "Right Top" },
+	{ 4.0, "Right Middle" },
+	{ 5.0, "Right Bottom" },
+};
+
 static menuitem_t AutomapItems[] = {
 	{ discrete, "Rotate automap",		{&am_rotate},		   	{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Overlay automap",		{&am_overlay},			{4.0}, {0.0},	{0.0},  {Overlays} },
@@ -1168,6 +1187,13 @@ static menuitem_t AutomapItems[] = {
 	{ discrete, "Highlight locked doors",{&am_showlocked},		{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Custom map colors",	{&am_usecustomcolors},	{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ more,     "Reset custom map colors",  {NULL},    {0.0}, {0.0},   {0.0},  {(value_t *)ResetCustomColors} },
+
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
+	{ yellowtext, "Overlay Minimap Options", {NULL},			{0.0}, {0.0},	{0.0},  {NULL} },
+	{ discrete, "Enable Minimap",		{&am_ovminimap},		{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ discrete, "Location",				{&am_ovlocation},		{6.0}, {0.0},	{0.0},  {MinimapLocations} },
+	{ slider,	"Scale Width",			{&am_ovscalewidth},		{0.0}, {1.0},	{0.05}, {NULL} },
+	{ slider,	"Scale Height",			{&am_ovscaleheight},	{0.0}, {1.0},	{0.05}, {NULL} },
 };
 
 menu_t AutomapMenu = {

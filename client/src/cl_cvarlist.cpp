@@ -177,6 +177,23 @@ CVAR(					am_ovexitcolor, "ff ff 00", "",
 CVAR(					am_ovteleportcolor, "ff a3 00", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR(					am_ovminimap, "0", "Overlay minimap enabled",
+						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(					am_ovbackcolor, "00 00 00", "Overlay minimap background color",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_RANGE(				am_ovbackalpha, "0.25", "Transparency of overlay minimap background",
+						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(				am_ovscalewidth, "0.25", "Scale width of overlay minimap",
+						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(				am_ovscaleheight, "0.5", "Scale height of overlay minimap",
+						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(				am_ovlocation, "1", "Overlay minimap location (0:LeftTop, 1:LeftMid, 2:LeftBot, 3:RightTop, 4:RightMid, 5:RightBot)",
+						CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 5.0f)
 
 // Console
 // -------
@@ -426,6 +443,10 @@ CVAR(				cl_showspawns, "0", "Show spawn points as particle fountains",
 
 CVAR_FUNC_DECL(		cl_showfriends, "0", "Show an indicator on friendly monsters.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(cl_showsprees, "1", "Show killing sprees for the display player.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(cl_showmultikills, "1", "Show multi kills for the display player.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 // Netdemo Preferences
 // --------------------

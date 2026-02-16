@@ -33,6 +33,7 @@
 #include "m_fileio.h"
 #include "cl_demo.h"
 #include "p_saveg.h"
+#include "r_main.h"
 #include "st_stuff.h"
 #include "p_mobj.h"
 #include "svc_message.h"
@@ -1658,8 +1659,8 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	// setup psprites and restore player colors
 	for (auto& player : players)
 	{
-		P_SetupPsprites(&player);
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
+		P_SetupPsprites(player);
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player));
 	}
 
 	R_CopyTranslationRGB (0, consoleplayer_id);
@@ -1677,6 +1678,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	}
 
 	// Make sure the status bar is displayed correctly
+	R_ForceViewWindowResize();
 	ST_Start();
 }
 

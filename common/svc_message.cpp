@@ -45,10 +45,10 @@
 /**
  * @brief Pack an array of booleans into a bitfield.
  */
-static uint32_t PackBoolArray(const bool* bools, size_t count)
+static uint32_t PackBoolArray(nonstd::span<const bool> bools)
 {
 	uint32_t out = 0;
-	for (size_t i = 0; i < count; i++)
+	for (size_t i = 0; i < bools.size(); i++)
 	{
 		if (bools[i])
 		{
@@ -77,10 +77,10 @@ odaproto::svc::PlayerInfo SVC_PlayerInfo(const player_t& player)
 {
 	odaproto::svc::PlayerInfo msg;
 
-	uint32_t packedweapons = PackBoolArray(player.weaponowned.data(), NUMWEAPONS);
+	uint32_t packedweapons = PackBoolArray(player.weaponowned);
 	msg.mutable_player()->set_weaponowned(packedweapons);
 
-	uint32_t packedcards = PackBoolArray(player.cards, NUMCARDS);
+	uint32_t packedcards = PackBoolArray(player.cards);
 	msg.mutable_player()->set_cards(packedcards);
 
 	msg.mutable_player()->set_backpack(player.backpack);
@@ -583,7 +583,7 @@ odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player)
 
 	if (sv_sharekeys)
 	{
-		const uint32_t packedcards = PackBoolArray(player.cards, NUMCARDS);
+		const uint32_t packedcards = PackBoolArray(player.cards);
 		msg.set_cards(packedcards);
 	}
 
@@ -993,11 +993,11 @@ odaproto::svc::PlaySound SVC_PlaySound(const PlaySoundType& type, int channel, i
 	return msg;
 }
 
-odaproto::svc::TouchSpecial SVC_TouchSpecial(const AActor* mo)
+odaproto::svc::TouchSpecial SVC_TouchSpecial(const AActor& mo)
 {
 	odaproto::svc::TouchSpecial msg;
 
-	msg.set_netid(mo->netid);
+	msg.set_netid(mo.netid);
 
 	return msg;
 }
@@ -1617,6 +1617,8 @@ odaproto::svc::Toast SVC_Toast(const toast_t& toast)
 	msg.set_right(toast.right);
 	msg.set_right_pid(toast.right_pid);
 	msg.set_icon(toast.icon);
+	msg.set_points(toast.points);
+	msg.set_spree_color(toast.spree_color);
 
 	return msg;
 }
@@ -1635,6 +1637,31 @@ odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde)
 	msg.set_boss_health(horde.bossHealth);
 	msg.set_boss_damage(horde.bossDamage);
 	msg.set_wave_start_health(horde.waveStartHealth);
+
+	return msg;
+}
+
+odaproto::svc::Spree SVC_Spree(const SpreeRecord_t& spree)
+{
+	odaproto::svc::Spree msg;
+
+	msg.set_pid(spree.playerId);
+	msg.set_spree_level(spree.spreeLevel);
+
+	return msg;
+}
+
+odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, const int level, const SpreeBreakerType breakerType)
+{
+	odaproto::svc::SpreeBreaker msg;
+
+	msg.set_victim_pid(breaker.spreeEndedPlayerId);
+	msg.set_victim_name(breaker.spreeEndedName);
+	msg.set_source_pid(breaker.spreeEnderPlayerId);
+	msg.set_source_name(breaker.spreeEnderName);
+	msg.set_spree_level(level);
+	msg.set_spree_points(breaker.endedPoints);
+	msg.set_spree_breaker_type(breakerType);
 
 	return msg;
 }
