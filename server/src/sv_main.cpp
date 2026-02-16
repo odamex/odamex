@@ -505,7 +505,11 @@ namespace
 
     struct WorkerQuitCommand : BaseWorkerCommand
     {
-        void operator()() override {}
+        std::thread::id id;
+        void operator()() override
+        {
+            id = std::this_thread::get_id();
+        }
     };
 
     class WorkerPool
@@ -513,16 +517,6 @@ namespace
         public:
             WorkerPool()
             {
-                //intptr_t mask = 0x1;
-                //SetThreadAffinityMask(GetCurrentThread(), static_cast<DWORD_PTR>(mask));
-
-                const int poolSize = std::max(1, static_cast<int>(std::thread::hardware_concurrency()));
-                for (int i = 0; i < poolSize; ++i)
-                {
-                    m_threads.emplace_back(&WorkerPool::EntryPoint, this);
-
-                    //SetThreadAffinityMask(m_threads.back().native_handle(), static_cast<DWORD_PTR>(~mask));
-                }
             }
 
             ~WorkerPool()
@@ -554,6 +548,44 @@ namespace
                 m_commandCondition.notify_one();
             }
 
+            void Resize(int i_threadCount)
+            {
+                int deltaSize = i_threadCount - static_cast<int>(m_threads.size());
+
+                if (deltaSize > 0)
+                {
+                    while (deltaSize)
+                    {
+                        --deltaSize;
+                        m_threads.emplace_back(&WorkerPool::EntryPoint, this);
+                    }
+                }
+                else if (deltaSize < 0)
+                {
+                    while (deltaSize)
+                    {
+                        ++deltaSize;
+
+                        auto quitCommand = std::make_shared<WorkerQuitCommand>();
+                        PushCommand(quitCommand);
+                        quitCommand->GetResult();
+
+                        const std::thread::id threadId = quitCommand->id;
+                        for (auto iter = m_threads.begin(); iter != m_threads.end(); ++iter)
+                        {
+                            if (threadId == iter->get_id())
+                            {
+                                iter->join();
+                                m_threads.erase(iter);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            size_t ThreadCount() const { return m_threads.size(); }
+
         protected:
 
             void EntryPoint()
@@ -562,13 +594,13 @@ namespace
                 {
                     std::shared_ptr<BaseWorkerCommand> command = GetCommand();
 
+                    (*command)();
+                    command->SetResult();
+
                     if (IsQuit(command))
                     {
                         break;
                     }
-
-                    (*command)();
-                    command->SetResult();
                 }
             }
 
@@ -597,8 +629,26 @@ namespace
             std::vector<std::thread> m_threads;
     };
 
-
     WorkerPool s_workers;
+}
+
+CVAR_FUNC_IMPL(net_maxthreads)
+{
+	int threadCount = var.asInt();
+	if (threadCount > 0)
+	{
+		s_workers.Resize(threadCount);
+	}
+	else
+	{
+		if (threadCount < 0)
+		{
+			PrintFmt("Invalid thread count: {}.  Resetting to default...\n", threadCount);
+		}
+
+		s_workers.Resize(std::thread::hardware_concurrency());
+	}
+	PrintFmt("net_maxthreads pool has {} threads\n", s_workers.ThreadCount());
 }
 
 static std::unique_ptr<CanarySocketServer> s_canaries;
