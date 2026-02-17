@@ -171,6 +171,21 @@ bool CanarySocketClient::Connect(const sockaddr_in& i_toAddress, const sockaddr_
 		m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if (m_socket >= 0)
 		{
+#ifdef _WIN32
+			DWORD timeout = 2000;       // Winsock says the value must be in msec.
+#else
+			timeval timeout;
+			timeout.tv_sec  = 2;
+			timeout.tv_usec = 0;
+#endif
+			if (setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, SETSOCKOPTCAST(&timeout), static_cast<socklen_t>(sizeof(timeout))))
+			{
+				PrintFmt("Failed to set SO_RCVTIMEO on the canary: {}\n", strerror(errno));
+			}
+			else if (setsockopt(m_socket, SOL_SOCKET, SO_SNDTIMEO, SETSOCKOPTCAST(&timeout), static_cast<socklen_t>(sizeof(timeout))))
+			{
+				PrintFmt("Failed to set SO_SNDTIMEO on the canary: {}\n", strerror(errno));
+			}
 			if (connect(m_socket, reinterpret_cast<const sockaddr*>(&i_toAddress), sizeof(i_toAddress)) == 0)
 			{
 				// sin_port is already in network byte order.
@@ -181,6 +196,10 @@ bool CanarySocketClient::Connect(const sockaddr_in& i_toAddress, const sockaddr_
 				{
 					return true;
 				}
+			}
+			else
+			{
+				PrintFmt("Connecting without canary\n");
 			}
 			closesocket(m_socket);
 			m_socket = CANARY_BAD_SOCKET;
