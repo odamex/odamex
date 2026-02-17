@@ -33,6 +33,7 @@ using socklen_t = int;
 
 #else
 #   include <netinet/tcp.h>
+#   include <sys/types.h>
 #   include <unistd.h>
 #   define closesocket(x) close((x))
 #   define SETSOCKOPTCAST(x) ((const void *)(x))
@@ -115,7 +116,11 @@ CanarySocketServer::iterator CanarySocketServer::FindDead()
 			{
 				PrintFmt("Failed to enable SO_KEEPALIVE on the canary: {}\n", strerror(errno));
 			}
-			else if (setsockopt(clientSocket, IPPROTO_TCP, TCP_KEEPIDLE, SETSOCKOPTCAST(&interval), static_cast<socklen_t>(sizeof(interval))))
+#ifdef OSX
+			else if (setsockopt(clientSocket, IPPROTO_TCP, TCP_KEEPALIVE, SETSOCKOPTCAST(&interval), static_cast<socklen_t>(sizeof(interval))))
+#else
+			else if (setsockopt(clientSocket, IPPROTO_TCP, TCP_KEEPIDLE,  SETSOCKOPTCAST(&interval), static_cast<socklen_t>(sizeof(interval))))
+#endif
 			{
 				PrintFmt("Failed to set TCP_KEEPIDLE on the canary: {}\n", strerror(errno));
 			}
