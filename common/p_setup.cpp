@@ -1970,14 +1970,14 @@ void P_SetupSlopes()
 void P_LoadReject(int lumpnum, int totallines)
 {
 	// [SL] 2011-07-01 - Check to see if the reject table is of the proper size
-	// If it's missing, the reject table should be ignored when
+	// If it's empty, the reject table should be ignored when
 	// calling P_CheckSight
 	// [EB] and if exists, but is too small, pad it with 0s until its the right size
 	const auto lumpsize = W_LumpLength(lumpnum);
 	const uint32_t correctsize = (numsectors * numsectors + 7) / 8;
 	// TODO: if we end up using reject to optimize netcodea and it makes a significant difference,
-	// build reject lumps when its completely missing
-	if (lumpsize == 0)
+	// build reject lumps when its completely empty
+	if (!demoplayback && lumpsize == 0)
 	{
 		DPrintFmt("Reject matrix is empty and will be ignored.\n");
 		rejectempty = true;
