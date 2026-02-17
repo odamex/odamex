@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -47,6 +47,7 @@
 #include "sv_sqpold.h"
 #include "sv_master.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "m_argv.h"
@@ -63,7 +64,6 @@
 #include "g_gametype.h"
 #include "sv_banlist.h"
 #include "d_main.h"
-#include "m_fileio.h"
 #include "v_textcolors.h"
 #include "p_lnspec.h"
 #include "m_wdlstats.h"
@@ -119,7 +119,7 @@ EXTERN_CVAR(debug_disconnect)
 EXTERN_CVAR(g_resetinvonexit)
 
 void SexMessage (const char *from, char *to, gender_t gender,
-	std::string_view victim, std::string_view killer);
+	std::string_view victim, std::string_view killer, std::string_view spree);
 Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
 void P_PlayerLeavesGame(player_s* player);
 bool P_LineSpecialMovesSector(short special);
@@ -515,8 +515,7 @@ Players::iterator SV_GetFreeClient(void)
 			free_player_ids.insert(i);
 	}
 
-	players.emplace_back();
-	players.back().playerstate = PST_CONTACT;
+	players.emplace_back().playerstate = PST_CONTACT;
 
 	// generate player id
 	std::set<byte>::iterator id = free_player_ids.begin();
@@ -676,7 +675,7 @@ void SV_BasePrintButPlayer(const int printlevel, const int player_id, const std:
 //
 // SV_Sound
 //
-void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
+void SV_Sound (const AActor *mo, byte channel, const char *name, byte attenuation)
 {
 	const int sfx_id = S_FindSound (name);
 
@@ -695,7 +694,7 @@ void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation)
 	}
 }
 
-void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
+void SV_Sound(player_t& pl, const AActor* mo, const byte channel, const char* name,
               const byte attenuation)
 {
 	const int sfx_id = S_FindSound (name);
@@ -716,7 +715,7 @@ void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name,
 // UV_SoundAvoidPlayer
 // Sends a sound to clients, but doesn't send it to client 'player'.
 //
-void UV_SoundAvoidPlayer (AActor *mo, byte channel, const char *name, byte attenuation)
+void UV_SoundAvoidPlayer (const AActor *mo, byte channel, const char *name, byte attenuation)
 {
 	if (!mo || !mo->player)
 		return;
@@ -794,7 +793,7 @@ void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenu
 //
 // SV_UpdateFrags
 //
-void SV_UpdateFrags(player_t &player)
+void SV_UpdateFrags(const player_t &player)
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -806,17 +805,16 @@ void SV_UpdateFrags(player_t &player)
 //
 // SV_SendUserInfo
 //
-void SV_SendUserInfo (player_t &player, client_t* cl)
+void SV_SendUserInfo (const player_t &player, client_t* cl)
 {
-	player_t *p = &player;
-	MSG_WriteSVC(&cl->reliablebuf, SVC_UserInfo(*p, time(NULL) - p->JoinTime));
+	MSG_WriteSVC(&cl->reliablebuf, SVC_UserInfo(player, time(NULL) - player.JoinTime));
 }
 
 /**
 Spreads a player's userinfo to every client.
 @param player Player to parse info for.
  */
-void SV_BroadcastUserInfo(player_t &player)
+void SV_BroadcastUserInfo(const player_t &player)
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 		SV_SendUserInfo(player, &(it->client));
@@ -883,7 +881,7 @@ bool SV_SetupUserInfo(player_t &player)
 
 	// ensure sane values for userinfo
 	if (gender < 0 || gender >= NUMGENDER)
-		gender = GENDER_NEUTER;
+		gender = GENDER_OTHER;
 
 	aimdist = clamp(aimdist, 0, 5000 * 16384);
 
@@ -971,7 +969,8 @@ bool SV_SetupUserInfo(player_t &player)
 		switch (gender) {
 			case GENDER_MALE:	gendermessage = "his";  break;
 			case GENDER_FEMALE:	gendermessage = "her";  break;
-			default:			gendermessage = "its";  break;
+			case GENDER_CYBORG:	gendermessage = "its";  break;
+			default:			gendermessage = "their";  break;
 		}
 
 		SV_BroadcastPrintFmt("{} changed {} name to {}.\n",
@@ -996,9 +995,9 @@ bool SV_SetupUserInfo(player_t &player)
 			// kill player if team is changed
 			P_DamageMobj(player.mo, 0, 0, 1000, 0);
 			M_LogWDLEvent(WDL_EVENT_DISCONNECT, &player, NULL, old_team,
-			              M_GetPlayerId(&player, old_team), 0, 0);
+			              M_GetPlayerId(player, old_team), 0, 0);
 			M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, player.userinfo.team,
-			              M_GetPlayerId(&player, player.userinfo.team), 0,
+			              M_GetPlayerId(player, player.userinfo.team), 0,
 			              0);
 			SV_BroadcastPrintFmt("{} switched to the {} team.\n",
 			                     player.userinfo.netname,
@@ -1184,7 +1183,7 @@ void SV_SpawnMobj(AActor *mo)
 // [denis] SV_IsPlayerAllowedToSee
 // determine if a client should be able to see an actor
 //
-bool SV_IsPlayerAllowedToSee(player_t &p, AActor *mo)
+bool SV_IsPlayerAllowedToSee(const player_t &p, const AActor *mo)
 {
 	if (!mo)
 		return false;
@@ -2224,9 +2223,9 @@ void SV_DrawScores()
 					              player->id,
 					              NET_AdrToString(player->client.address),
 					              player->userinfo.netname,
-					              P_GetPointCount(player),
+					              P_GetPointCount(*player),
 					              //itplayer->captures,
-					              P_GetFragCount(player),
+					              P_GetFragCount(*player),
 					              player->GameTime / 60);
 				}
 			}
@@ -2277,8 +2276,8 @@ void SV_DrawScores()
 					              player->id,
 					              NET_AdrToString(player->client.address),
 					              player->userinfo.netname,
-					              P_GetFragCount(player),
-					              P_GetDeathCount(player),
+					              P_GetFragCount(*player),
+					              P_GetDeathCount(*player),
 					              SV_CalculateFragDeathRatio(player),
 					              player->GameTime / 60);
 				}
@@ -2317,8 +2316,8 @@ void SV_DrawScores()
 			              player->id,
 			              NET_AdrToString(player->client.address),
 			              player->userinfo.netname,
-			              P_GetFragCount(player),
-			              P_GetDeathCount(player),
+			              P_GetFragCount(*player),
+			              P_GetDeathCount(*player),
 			              SV_CalculateFragDeathRatio(player),
 			              player->GameTime / 60);
 		}
@@ -2622,7 +2621,7 @@ void SV_UpdateMissiles(player_t &pl)
 }
 
 // Update the given actors data immediately.
-void SV_UpdateMobj(AActor* mo)
+void SV_UpdateMobj(const AActor* mo)
 {
 	// Don't use this function to update players.
 	if (mo->player)
@@ -2642,7 +2641,7 @@ void SV_UpdateMobj(AActor* mo)
 }
 
 // Update the given actors state immediately.
-void SV_UpdateMobjState(AActor* mo)
+void SV_UpdateMobjState(const AActor* mo)
 {
 	for (auto& player : players)
 	{
@@ -2721,7 +2720,7 @@ void SV_UpdateGametype(player_t& pl)
 //
 // SV_ActorTarget
 //
-void SV_ActorTarget(AActor *actor)
+void SV_ActorTarget(const AActor *actor)
 {
 	if (actor->player)
 		return;
@@ -2743,7 +2742,7 @@ void SV_ActorTarget(AActor *actor)
 //
 // SV_ActorTracer
 //
-void SV_ActorTracer(AActor *actor)
+void SV_ActorTracer(const AActor *actor)
 {
 	for (auto& player : players)
 	{
@@ -3133,7 +3132,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 		}
 		#endif
 
-		netcmd->toPlayer(&player);
+		netcmd->toPlayer(player);
 
 		if (!sv_freelook)
 			player.mo->pitch = 0;
@@ -3141,7 +3140,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 		// Apply this ticcmd using the game logic
 		if (gamestate == GS_LEVEL)
 		{
-			P_PlayerThink(&player);
+			P_PlayerThink(player);
 			player.mo->RunThink();
 		}
 
@@ -3227,8 +3226,8 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 		P_DamageMobj(player.mo, 0, 0, 1000, 0);
 
 		M_LogWDLEvent(WDL_EVENT_DISCONNECT, &player, NULL, old_team,
-		              M_GetPlayerId(&player, old_team), 0, 0);
-		M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, team, M_GetPlayerId(&player, team), 0,
+		              M_GetPlayerId(player, old_team), 0, 0);
+		M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, team, M_GetPlayerId(player, team), 0,
 		              0);
 	}
 	SV_BroadcastPrintFmt("{} has joined the {} team.\n", player.userinfo.netname,
@@ -3378,7 +3377,7 @@ void SV_JoinPlayer(player_t& player, bool silent)
 	}
 
 	M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, player.userinfo.team,
-	              M_GetPlayerId(&player, player.userinfo.team), 0, 0);
+	              M_GetPlayerId(player, player.userinfo.team), 0, 0);
 }
 
 void SV_SpecPlayer(player_t &player, bool silent)
@@ -3709,11 +3708,11 @@ void SV_Cheat(player_t &player)
 	{
 		unsigned int cheat = MSG_ReadShort();
 
-		if (!CHEAT_AreCheatsEnabled())
+		if (!cheat::AreCheatsEnabled())
 			return;
 
 		int oldCheats = player.cheats;
-		CHEAT_DoCheat(&player, cheat);
+		cheat::DoCheat(player, cheat);
 
 		if (player.cheats != oldCheats)
 		{
@@ -3729,10 +3728,10 @@ void SV_Cheat(player_t &player)
 	{
 		const char* wantcmd = MSG_ReadString();
 
-		if (!CHEAT_AreCheatsEnabled())
+		if (!cheat::AreCheatsEnabled())
 			return;
 
-		CHEAT_GiveTo(&player, wantcmd);
+		cheat::GiveTo(player, wantcmd);
 
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
@@ -3745,10 +3744,28 @@ void SV_Cheat(player_t &player)
 	{
 		const char* wantsummon = MSG_ReadString();
 
-		if (!CHEAT_AreCheatsEnabled())
+		if (!cheat::AreCheatsEnabled())
 			return;
 
-		AActor* actor = CHEAT_Summon(&player, wantsummon, false);
+		AActor* actor = cheat::Summon(player, wantsummon, false);
+
+		if (actor == NULL)
+			return;
+
+		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		{
+			client_t* cl = &it->client;
+			SV_SendMobjToClient(actor, cl);
+		}
+	}
+	else if (cheatType == 3)
+	{
+		const char* wantsummon = MSG_ReadString();
+
+		if (!cheat::AreCheatsEnabled())
+			return;
+
+		AActor* actor = cheat::Summon(player, wantsummon, true);
 
 		if (actor == NULL)
 			return;
@@ -3985,11 +4002,11 @@ void SV_GameTics (void)
 		SV_ProcessPlayerCmd(player);
 }
 
-void SV_TouchSpecial(AActor *special, player_t *player)
+void SV_TouchSpecial(const AActor& special, player_t& player)
 {
-	client_t *cl = &player->client;
+	client_t *cl = &player.client;
 
-	if (cl == NULL || special == NULL)
+	if (cl == nullptr)
 		return;
 
 	MSG_WriteSVC(&cl->reliablebuf, SVC_TouchSpecial(special));
@@ -4019,7 +4036,7 @@ bool SV_Frozen()
 //
 // SV_StepTics
 //
-void SV_StepTics(QWORD count)
+void SV_StepTics(uint64_t count)
 {
 	DObject::BeginFrame();
 
@@ -4073,16 +4090,6 @@ void SV_RunTics()
 	if (cmd.length())
 		AddCommandString(cmd);
 
-	if (CON.is_open())
-	{
-		CON.clear();
-		if (!CON.eof())
-		{
-			std::getline(CON, cmd);
-			AddCommandString(cmd);
-		}
-	}
-
 	SV_BanlistTics();
 	SV_UpdateMaster();
 
@@ -4130,7 +4137,7 @@ void SV_RunTics()
 
 BEGIN_COMMAND(step)
 {
-        QWORD newtics = argc > 1 ? atoi(argv[1]) : 1;
+    uint64_t newtics = argc > 1 ? atoi(argv[1]) : 1;
 
 	extern unsigned char prndindex;
 
@@ -4343,7 +4350,7 @@ void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
 	}
 }
 
-void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, int armorDamage)
+void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage)
 {
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
@@ -4354,7 +4361,7 @@ void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, 
 	}
 }
 
-void SV_SendDamageMobj(AActor *target, int pain)
+void SV_SendDamageMobj(const AActor *target, int pain)
 {
 	if (!target)
 		return;
@@ -4369,7 +4376,7 @@ void SV_SendDamageMobj(AActor *target, int pain)
 	}
 }
 
-void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
+void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor,
 				     bool joinkill)
 {
 	if (!target)
@@ -4387,8 +4394,24 @@ void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor,
 	}
 }
 
+void SV_SendRaiseMobj(const AActor* source, const AActor* corpse)
+{
+	if (!corpse)
+		return;
+
+	for (auto& player : players)
+	{
+		client_t* cl = &(player.client);
+
+		if (!SV_IsPlayerAllowedToSee(player, corpse))
+			continue;
+
+		MSG_WriteSVC(&cl->reliablebuf, SVC_RaiseMobj(source, corpse));
+	}
+}
+
 // Tells clients to remove an actor from the world as it doesn't exist anymore
-void SV_SendDestroyActor(AActor *mo)
+void SV_SendDestroyActor(const AActor *mo)
 {
 	if (mo->netid && mo->type != MT_PUFF)
 	{
@@ -4408,7 +4431,7 @@ void SV_SendDestroyActor(AActor *mo)
 }
 
 // Missile exploded so tell clients about it
-void SV_ExplodeMissile(AActor *mo)
+void SV_ExplodeMissile(const AActor *mo)
 {
 	for (auto& player : players)
 	{
@@ -4571,19 +4594,18 @@ void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer
 		queueUpdates.push_back(disconnectPlayer);
 	}
 
-	for (Players::iterator dest = ::players.begin(); dest != ::players.end(); ++dest)
+	for (auto& dest : ::players)
 	{
-		for (PlayersView::iterator it = queueUpdates.begin(); it != queueUpdates.end();
-		     ++it)
+		for (const auto& source : queueUpdates)
 		{
-			SV_SendPlayerQueuePosition(*it, &(*dest));
+			SV_SendPlayerQueuePosition(source, &dest);
 		}
 	}
 }
 
 void SV_SendPlayerQueuePositions(player_t* dest, bool initConnect)
 {
-	for (auto& player : players)
+	for (const auto& player : players)
 	{
 		if (initConnect && player.QueuePosition == 0)
 			continue;
@@ -4591,7 +4613,7 @@ void SV_SendPlayerQueuePositions(player_t* dest, bool initConnect)
 	}
 }
 
-void SV_SendPlayerQueuePosition(player_t* source, player_t* dest)
+void SV_SendPlayerQueuePosition(const player_t* source, player_t* dest)
 {
 	MSG_WriteSVC(&(dest->client.reliablebuf), SVC_PlayerQueuePos(*source));
 }
@@ -4610,7 +4632,7 @@ void SV_ClearPlayerQueue()
 		SV_SendPlayerQueuePositions(&player, false);
 }
 
-void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, int arg0,
+void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* activator, int arg0,
                                int arg1, int arg2, int arg3, int arg4)
 {
 	if (P_LineSpecialMovesSector(special))
@@ -4633,7 +4655,7 @@ void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, in
 // If playerOnly is true and the activator is a player, then it will only be
 // sent to the activating player.
 //
-void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print,
+void SV_ACSExecuteSpecial(byte special, const AActor* activator, const char* print,
                           bool playerOnly, const std::vector<int>& args)
 {
 	player_s* sendPlayer = nullptr;
@@ -4675,7 +4697,7 @@ void SV_UpdateShareKeys(player_t& player)
 	SV_SendPlayerInfo(player);
 }
 
-void SV_ShareKeys(card_t card, player_t &player)
+void SV_ShareKeys(card_t card, const player_t &player)
 {
 	// Add it to the KeysCheck array
 	keysfound[card] = true;

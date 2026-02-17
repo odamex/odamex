@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2011 by Randy Heit (ZDoom 1.23).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -686,6 +686,32 @@ inline const OString MUSIC_DM2TTL = "MUSIC_DM2TTL";
 inline const OString MUSIC_DM2INT = "MUSIC_DM2INT";
 inline const OString TXT_BUDDHAON = "TXT_BUDDHAON";
 inline const OString TXT_BUDDHAOFF = "TXT_BUDDHAOFF";
+inline const OString OSPREEENDP = "OSPREEENDP";
+inline const OString OSPREEENDS = "OSPREEENDS";
+inline const OString OSPREEENDM = "OSPREEENDM";
+inline const OString OSPREEREP = "OSPREEREP";
+inline const OString OSPREE1 = "OSPREE1";
+inline const OString OSPREE2 = "OSPREE2";
+inline const OString OSPREE3 = "OSPREE3";
+inline const OString OSPREE4 = "OSPREE4";
+inline const OString OSPREE5 = "OSPREE5";
+inline const OString OSPREE6 = "OSPREE6";
+inline const OString OBSPREE1 = "OBSPREE1";
+inline const OString OBSPREE2 = "OBSPREE2";
+inline const OString OBSPREE3 = "OBSPREE3";
+inline const OString OBSPREE4 = "OBSPREE4";
+inline const OString OBSPREE5 = "OBSPREE5";
+inline const OString OBSPREE6 = "OBSPREE6";
+inline const OString OMULTI2 = "OMULTI2";
+inline const OString OMULTI3 = "OMULTI3";
+inline const OString OMULTI4 = "OMULTI4";
+inline const OString OMULTI5 = "OMULTI5";
+inline const OString OMULTI6 = "OMULTI6";
+inline const OString OMULTI7 = "OMULTI7";
+inline const OString OMULTI8 = "OMULTI8";
+inline const OString OMULTI9 = "OMULTI9";
+inline const OString OMULTI10 = "OMULTI10";
+inline const OString OMULTI11 = "OMULTI11";
 
 // Contains every original string in its proper order.
 inline const OString* const stringIndexes[] = {
@@ -1349,4 +1375,30 @@ inline const OString* const stringIndexes[] = {
     &MUSIC_DM2INT,
     &TXT_BUDDHAON,
     &TXT_BUDDHAOFF,
+    &OSPREEENDP,
+    &OSPREEENDS,
+    &OSPREEENDM,
+    &OSPREEREP,
+    &OSPREE1,
+    &OSPREE2,
+    &OSPREE3,
+    &OSPREE4,
+    &OSPREE5,
+    &OSPREE6,
+    &OBSPREE1,
+    &OBSPREE2,
+    &OBSPREE3,
+    &OBSPREE4,
+    &OBSPREE5,
+    &OBSPREE6,
+    &OMULTI2,
+    &OMULTI3,
+    &OMULTI4,
+    &OMULTI5,
+    &OMULTI6,
+    &OMULTI7,
+    &OMULTI8,
+    &OMULTI9,
+    &OMULTI10,
+    &OMULTI11,
 };

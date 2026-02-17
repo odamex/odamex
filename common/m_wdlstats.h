@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -113,6 +113,8 @@ enum WDLPowerups {
 	WDL_PICKUP_CAREPACKAGE,
 	WDL_PICKUP_POWERUPSPAWNER,
 	WDL_PICKUP_UNKNOWN,
+	WDL_PICKUP_EXTRALIFE,
+	WDL_PICKUP_RESTEAMMATE,
 };
 
 inline auto format_as(WDLPowerups ePowerup)
@@ -122,20 +124,20 @@ inline auto format_as(WDLPowerups ePowerup)
 
 void M_StartWDLLog(bool newmap);
 void M_LogWDLEvent(
-	WDLEvents event, player_t* activator, player_t* target,
+	WDLEvents eventtype, const player_t* activator, const player_t* target,
 	int arg0, int arg1, int arg2, int arg3
 );
 void M_LogActorWDLEvent(
-	WDLEvents event, AActor* activator, AActor* target,
+	WDLEvents eventtype, AActor* activator, AActor* target,
 	int arg0, int arg1, int arg2, int arg3
 );
-int M_GetPlayerId(player_t* player, team_t team);
-void M_LogWDLPlayerSpawn(mapthing2_t* mthing);
-void M_RemoveWDLPlayerSpawn(mapthing2_t* mthing);
+int M_GetPlayerId(const player_t& player, team_t team);
+void M_LogWDLPlayerSpawn(const mapthing2_t& mthing);
+void M_RemoveWDLPlayerSpawn(const mapthing2_t& mthing);
 void M_LogWDLItemRespawnEvent(AActor* activator);
-void M_LogWDLFlagLocation(mapthing2_t* activator, team_t team);
-void M_LogWDLPickupEvent(player_t* activator, AActor* target, WDLPowerups pickuptype, bool dropped);
-void M_LogWDLItemSpawn(AActor* target, WDLPowerups type);
+void M_LogWDLFlagLocation(const mapthing2_t& activator, team_t team);
+void M_LogWDLPickupEvent(const player_t* activator, AActor* target, WDLPowerups pickuptype, bool dropped);
+void M_LogWDLItemSpawn(const AActor& target, WDLPowerups type);
 int M_GetPlayerSpawn(int x, int y);
 void M_HandleWDLNameChange(team_t team, std::string oldname, std::string newname, int netid);
 int GetMaxShotsForMod(int mod);

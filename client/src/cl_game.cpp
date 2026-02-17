@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,6 +35,7 @@
 #include "m_random.h"
 #include "i_system.h"
 #include "i_input.h"
+#include "i_time.h"
 #include "i_video.h"
 #include "v_screenshot.h"
 #include "p_saveg.h"
@@ -65,10 +66,9 @@
 #include "g_spawninv.h"
 #include "g_gametype.h"
 #include "p_horde.h"
-
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
+#include "g_musinfo.h"
+#include "g_spree.h"
+#include "g_multikill.h"
 
 #include <math.h> // for pow()
 
@@ -108,31 +108,17 @@ EXTERN_CVAR (in_autosr50)
 
 EXTERN_CVAR (chasedemo)
 
-gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
 
-bool 			paused;
 bool 			sendpause;				// send a pause event next tic
 bool			sendsave;				// send a save event next tic
 bool 			usergame;				// ok to save / end game
 bool			sendcenterview;			// send a center view event next tic
 
-bool			timingdemo; 			// if true, exit with report on completion
 bool			longtics;				// don't quantize yaw for classic vanilla demos
 bool 			nodrawers;				// for comparative timing purposes
 bool 			noblit; 				// for comparative timing purposes
 
-bool	 		viewactive;
-
-// Describes if a network game is being played
-bool			network_game;
-// Describes if this is a multiplayer game or not
-bool			multiplayer;
-// The player vector, contains all player information
-Players			players;
-
-byte			consoleplayer_id;			// player taking events and displaying
-byte			displayplayer_id;			// view being displayed
 int 			gametic;
 
 extern fixed_t bobx;
@@ -197,8 +183,14 @@ CVAR_FUNC_IMPL(cl_mouselook)
 	R_InitSkyMap ();
 }
 
+CVAR_FUNC_IMPL(joy_freelook)
+{
+	// [RV] - Center view, Update Skies
+	AddCommandString("centerview");
+	R_InitSkyMap();
+}
+
 char			demoname[256];
-bool 			demoplayback;
 
 extern bool		simulated_connection;
 
@@ -872,9 +864,6 @@ void P_CheckInterpPause()
 	}
 }
 
-void P_MovePlayer (player_t *player);
-void P_CalcHeight (player_t *player);
-void P_DeathThink (player_t *player);
 void CL_SimulateWorld();
 //
 // G_Ticker
@@ -1205,22 +1194,22 @@ void G_Ticker (void)
 // G_PlayerFinishLevel
 // Call when a player completes a level.
 //
-void G_PlayerFinishLevel (player_t &player)
+void G_PlayerFinishLevel (player_t& player)
 {
-	player_t *p;
+	player.powers.fill(0);
+	player.cards.fill(false);
 
-	p = &player;
+	if(player.mo)
+		player.mo->flags &= ~MF_SHADOW; 	// cancel invisibility
 
-	memset (p->powers, 0, sizeof (p->powers));
-	memset (p->cards, 0, sizeof (p->cards));
 
-	if(p->mo)
-		p->mo->flags &= ~MF_SHADOW; 	// cancel invisibility
+	SpreeManager::getInstance().erasePoints(player.id);
+	MultiKillManager::getInstance().eraseMultiKills(player.id);
 
-	p->extralight = 0;					// cancel gun flashes
-	p->fixedcolormap = 0;				// cancel ir goggles
-	p->damagecount = 0; 				// no palette changes
-	p->bonuscount = 0;
+	player.extralight = 0;					// cancel gun flashes
+	player.fixedcolormap = 0;				// cancel ir goggles
+	player.damagecount = 0; 				// no palette changes
+	player.bonuscount = 0;
 }
 
 
@@ -1268,20 +1257,20 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 // at the given mapthing2_t spot
 // because something is occupying it
 //
-void P_SpawnPlayer (player_t &player, mapthing2_t* mthing);
+void P_SpawnPlayer(player_t &player, const mapthing2_t& mthing);
 
-bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
+bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
 {
 	unsigned			an;
 	AActor* 			mo;
 	fixed_t 			xa,ya;
 
-	fixed_t x = mthing->x << FRACBITS;
-	fixed_t y = mthing->y << FRACBITS;
+	const fixed_t x = mthing.x << FRACBITS;
+	const fixed_t y = mthing.y << FRACBITS;
 	fixed_t z = P_FloorHeight(x, y);
 
 	if (level.flags & LEVEL_USEPLAYERSTARTZ)
-		z = mthing->z << FRACBITS;
+		z = mthing.z << FRACBITS;
 
 	if (!player.mo)
 	{
@@ -1339,13 +1328,13 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 
 		if (co_nosilentspawns)
 		{
-			an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
+			an = ( ANG45 * ((unsigned int)mthing.angle/45) ) >> ANGLETOFINESHIFT;
 			xa = finecosine[an];
 			ya = finesine[an];
 		}
 		else
 		{
-			angle_t mtangle = (angle_t)(mthing->angle / 45);
+			angle_t mtangle = (angle_t)(mthing.angle / 45);
 
 			an = ANG45 * mtangle;
 
@@ -1438,12 +1427,12 @@ static mapthing2_t *SelectFarthestDeathmatchSpot (int selections)
 // [RH] Select a deathmatch spawn spot at random (original mechanism)
 static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections)
 {
-	int i = 0, j;
+	int i = 0;
 
-	for (j = 0; j < 20; j++)
+	for (int j = 0; j < 20; j++)
 	{
 		i = P_Random () % selections;
-		if (G_CheckSpot (player, &DeathMatchStarts[i]) )
+		if (G_CheckSpot (player, DeathMatchStarts[i]) )
 			return &DeathMatchStarts[i];
 	}
 
@@ -1453,19 +1442,16 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 
 void G_DeathMatchSpawnPlayer (player_t &player)
 {
-	size_t selections;
-	mapthing2_t *spot;
-
 	if(!serverside || G_UsesCoopSpawns())
 		return;
 
-	selections = DeathMatchStarts.size();
+	const size_t selections = DeathMatchStarts.size();
 	// [RH] We can get by with just 1 deathmatch start
 	if (selections < 1)
 		I_Error ("No deathmatch starts");
 
 	// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
-	spot = SelectRandomDeathmatchSpot (player, static_cast<int>(selections));
+	mapthing2_t* spot = SelectRandomDeathmatchSpot (player, static_cast<int>(selections));
 
 	if (!spot && !playerstarts.empty())
 	{
@@ -1480,7 +1466,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 			spot->type = player.id+4001-4;	// [RH] > 4 players
 	}
 
-	P_SpawnPlayer (player, spot);
+	P_SpawnPlayer (player, *spot);
 }
 
 //
@@ -1515,24 +1501,24 @@ void G_DoReborn (player_t &player)
 
 	unsigned int playernum = player.id - 1;
 
-	if (G_CheckSpot (player, &playerstarts[playernum%playerstarts.size()]) )
+	if (G_CheckSpot(player, playerstarts[playernum%playerstarts.size()]) )
 	{
-		P_SpawnPlayer (player, &playerstarts[playernum%playerstarts.size()]);
+		P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
 		return;
 	}
 
 	// try to spawn at one of the other players' spots
 	for (auto& playerstart : playerstarts)
 	{
-		if (G_CheckSpot (player, &playerstart) )
+		if (G_CheckSpot(player, playerstart) )
 		{
-			P_SpawnPlayer (player, &playerstart);
+			P_SpawnPlayer(player, playerstart);
 			return;
 		}
 	}
 
 	// he's going to be inside something.  Too bad.
-	P_SpawnPlayer (player, &playerstarts[playernum%playerstarts.size()]);
+	P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
 }
 
 
@@ -1569,41 +1555,36 @@ void G_DoLoadGame (void)
 
 	gameaction = ga_nothing;
 
-	FILE *stdfile = fopen (savename.c_str(), "rb");
-	if (stdfile == NULL)
+	auto stdfile = uqFile(fopen(savename.c_str(), "rb"));
+	if (stdfile == nullptr)
 	{
 		PrintFmt(PRINT_HIGH, "Could not read savegame '{}'\n", savename);
 		return;
 	}
 
-	fseek (stdfile, SAVESTRINGSIZE, SEEK_SET);	// skip the description field
-	size_t readlen = fread (text, 16, 1, stdfile);
+	fseek (stdfile.get(), SAVESTRINGSIZE, SEEK_SET);	// skip the description field
+	size_t readlen = fread (text, 16, 1, stdfile.get());
 	if (readlen < 1)
 	{
 		PrintFmt(PRINT_HIGH, "Failed to read savegame '{}'\n", savename);
-		fclose(stdfile);
 		return;
 	}
 	if (strncmp (text, SAVESIG, 16))
 	{
 		PrintFmt(PRINT_HIGH, "Savegame '{}' is from a different version\n", savename);
-
-		fclose(stdfile);
-
 		return;
 	}
-	readlen = fread (text, 8, 1, stdfile);
+	readlen = fread (text, 8, 1, stdfile.get());
 	if (readlen < 1)
 	{
 		PrintFmt(PRINT_HIGH, "Failed to read savegame '{}'\n", savename);
-		fclose(stdfile);
 		return;
 	}
 	text[8] = 0;
 
 	/*bglobal.RemoveAllBots (true);*/
 
-	FLZOFile savefile (stdfile, FFile::EReading);
+	FLZOFile savefile (stdfile.release(), FFile::EReading);
 
 	if (!savefile.IsOpen ())
 		I_Error("Savegame '{}' is corrupt\n", savename);
@@ -1640,6 +1621,7 @@ void G_DoLoadGame (void)
 
 	arc >> level.time;
 
+	P_SerializeMusInfo(arc);
 
 	for (i = 0; i < NUM_WORLDVARS; i++)
 	{
@@ -1698,11 +1680,7 @@ void G_SaveGame (int slot, std::string_view description)
  */
 void G_BuildSaveName(std::string &name, int slot)
 {
-#ifdef _XBOX
-	std::string path = xbox_GetSavePath(name, slot);
-#else
 	std::string path = M_GetUserFileName(name);
-#endif
 	name = fmt::sprintf("%s" PATHSEP "odasv%d.ods", path, slot);
 }
 
@@ -1721,10 +1699,6 @@ void G_DoSaveGame()
 	{
         return;
 	}
-
-#ifdef _XBOX
-	xbox_WriteSaveMeta(name.substr(0, name.rfind(PATHSEPCHAR)), description.c_str());
-#endif
 
 	PrintFmt(PRINT_HIGH, "Saving game to '{}'...\n", name);
 
@@ -1750,6 +1724,7 @@ void G_DoSaveGame()
 	P_SerializeHorde(arc);
 
 	arc << level.time;
+	P_SerializeMusInfo(arc);
 
 	for (int i = 0; i < NUM_WORLDVARS; i++)
 	{
@@ -1775,8 +1750,7 @@ void G_DoSaveGame()
 		}
 	}
 
-
-	arc << (BYTE)0x1d;			// consistancy marker
+	arc << (byte)0x1d;			// consistancy marker
 
 	gameaction = ga_nothing;
 	savedescription[0] = 0;

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1163,6 +1163,10 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 	if (printlevel == PRINT_FILTERCHAT)
 		return;
 
+	// Do not display filtered normal messages
+	if (printlevel == PRINT_FILTERHIGH)
+		return;
+
 	const int width = I_GetSurfaceWidth() / V_TextScaleXAmount();
 
 	if (addtype == APPENDLINE && NotifyStrings[NUMNOTIFIES-1].printlevel == printlevel)
@@ -1211,15 +1215,14 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 // Prints the given string to stdout, stripping away any color markup
 // escape codes.
 //
-static size_t C_PrintStringStdOut(const char* str)
+static size_t C_PrintStringStdOut(std::string str)
 {
-	std::string sanitized_str(str);
-	StripColorCodes(sanitized_str);
+	StripColorCodes(str);
 
-	fmt::print("{}", sanitized_str);
+	fmt::print("{}", str);
 	fflush(stdout);
 
-	return sanitized_str.length();
+	return str.length();
 }
 
 
@@ -1243,6 +1246,9 @@ static size_t C_PrintString(int printlevel, const char* color_code, const char* 
 	// Revert filtered chat to a normal chat to display to the console
 	if (printlevel == PRINT_FILTERCHAT)
 		printlevel = PRINT_CHAT;
+
+	if (printlevel == PRINT_FILTERHIGH)
+		printlevel = PRINT_HIGH;
 
 	const char* line_start = outline;
 	const char* line_end = line_start;
@@ -1344,7 +1350,7 @@ size_t C_BasePrint(const int printlevel, const char* color_code, const std::stri
 	}
 
 	if (print_stdout && gamestate != GS_FORCEWIPE)
-		C_PrintStringStdOut(newStr.c_str());
+		C_PrintStringStdOut(newStr);
 
 	if (!con_coloredmessages)
 		StripColorCodes(newStr);

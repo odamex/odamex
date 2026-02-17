@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -47,6 +47,7 @@
 
 
 #include "farchive.h"
+#include "m_fixed.h"
 
 //
 // denis
@@ -60,7 +61,8 @@ extern bool clientside, serverside;
 enum baseapp_t
 {
 	client,		// Odamex.exe
-	server		// Odasrv.exe
+	server,		// Odasrv.exe
+	test,		// Odagtest.exe
 };
 
 extern baseapp_t baseapp;
@@ -92,10 +94,10 @@ extern baseapp_t baseapp;
 #define SERVER_ONLY(expr)
 #endif
 
-// 
+//
 // Environment Platform
-// 
-enum gameplatform_t 
+//
+enum gameplatform_t
 {
 	PF_PC,
 	PF_XBOX,
@@ -134,11 +136,22 @@ enum GameMission_t
   pack_tnt, 			// TNT mission pack
   pack_plut,			// Plutonia pack
   chex,					// Chex Quest
+  chex3,				// Chex Quest 3 v2.0
+  chex3v,				// Chex Quest 3 Vanilla Edition
+  chex3d2,              // Chex Quest 3 Vanilla Edition Modding Version
   retail_freedoom,
   commercial_freedoom,	// FreeDoom
   commercial_hacx,		// HACX
   none
 };
+
+inline bool IsChexMission(GameMission_t mission)
+{
+	return mission == chex ||
+	       mission == chex3 ||
+	       mission == chex3v ||
+	       mission == chex3d2;
+}
 
 // If rangecheck is undefined,
 // most parameter validation debugging code will not be compiled
@@ -290,42 +303,54 @@ enum GameMission_t
 
 // Speeds for ceilings/crushers (x/8 units per tic)
 //	(Hexen crushers go up at half the speed that they go down)
-#define C_SLOW 8
-#define C_NORMAL 16
-#define C_FAST 32
-#define C_TURBO 64
-
-#define CEILWAIT 150
+namespace ceilings
+{
+	inline constexpr int16_t SLOW   = 8;
+	inline constexpr int16_t NORMAL = 16;
+	inline constexpr int16_t FAST   = 32;
+	inline constexpr int16_t TURBO  = 64;
+	inline constexpr int16_t WAIT   = 150;
+}
 
 // Speeds for floors (x/8 units per tic)
-#define F_SLOW 8
-#define F_NORMAL 16
-#define F_FAST 32
-#define F_TURBO 64
+namespace floors
+{
+	inline constexpr int16_t SLOW   = 8;
+	inline constexpr int16_t NORMAL = 16;
+	inline constexpr int16_t FAST   = 32;
+	inline constexpr int16_t TURBO  = 64;
+}
 
 // Speeds for doors (x/8 units per tic)
-#define D_SLOW 16
-#define D_NORMAL 32
-#define D_FAST 64
-#define D_TURBO 128
-
-#define VDOORWAIT 150
-#define VDOORSPEED (FRACUNIT * 2)
+namespace doors
+{
+	inline constexpr int16_t SLOW   = 16;
+	inline constexpr int16_t NORMAL = 32;
+	inline constexpr int16_t FAST   = 64;
+	inline constexpr int16_t TURBO  = 128;
+	inline constexpr int16_t WAIT   = 150;
+	inline constexpr fixed_t SPEED  = FRACUNIT * 2;
+}
 
 // Speeds for stairs (x/8 units per tic)
-#define S_SLOW 2
-#define S_NORMAL 4
-#define S_FAST 16
-#define S_TURBO 32
+namespace stairs
+{
+	inline constexpr int16_t SLOW   = 2;
+	inline constexpr int16_t NORMAL = 4;
+	inline constexpr int16_t FAST   = 16;
+	inline constexpr int16_t TURBO  = 32;
+}
 
 // Speeds for plats (Hexen plats stop 8 units above the floor)
-#define P_SLOW 8
-#define P_NORMAL 16
-#define P_FAST 32
-#define P_TURBO 64
-
-#define PLATWAIT 105
-#define PLATSPEED FRACUNIT
+namespace plats
+{
+	inline constexpr int16_t SLOW   = 8;
+	inline constexpr int16_t NORMAL = 16;
+	inline constexpr int16_t FAST   = 32;
+	inline constexpr int16_t TURBO  = 64;
+	inline constexpr int16_t WAIT   = 105;
+	inline constexpr fixed_t SPEED  = FRACUNIT;
+}
 
 #define ELEVATORSPEED 32
 
@@ -414,11 +439,11 @@ enum ItemEquipVal
 
 inline FArchive &operator<< (FArchive &arc, card_t i)
 {
-	return arc << (BYTE)i;
+	return arc << (byte)i;
 }
 inline FArchive &operator>> (FArchive &arc, card_t &i)
 {
-	BYTE in; arc >> in; i = (card_t)in; return arc;
+	byte in; arc >> in; i = (card_t)in; return arc;
 }
 
 
@@ -451,11 +476,11 @@ inline auto format_as(weapontype_t eWeaponType)
 
 inline FArchive &operator<< (FArchive &arc, weapontype_t i)
 {
-	return arc << (BYTE)i;
+	return arc << (byte)i;
 }
 inline FArchive &operator>> (FArchive &arc, weapontype_t &i)
 {
-	BYTE in; arc >> in; i = (weapontype_t)in; return arc;
+	byte in; arc >> in; i = (weapontype_t)in; return arc;
 }
 
 
@@ -478,17 +503,18 @@ inline auto format_as(ammotype_t eAmmoType)
 
 inline FArchive &operator<< (FArchive &arc, ammotype_t i)
 {
-	return arc << (BYTE)i;
+	return arc << (byte)i;
 }
 inline FArchive &operator>> (FArchive &arc, ammotype_t &i)
 {
-	BYTE in; arc >> in; i = (ammotype_t)in; return arc;
+	byte in; arc >> in; i = (ammotype_t)in; return arc;
 }
 
 
 // Power up artifacts.
 enum powertype_t
 {
+	pw_none = -1,
 	pw_invulnerability,
 	pw_strength,
 	pw_invisibility,
@@ -500,11 +526,11 @@ enum powertype_t
 
 inline FArchive &operator<< (FArchive &arc, powertype_t i)
 {
-	return arc << (BYTE)i;
+	return arc << (byte)i;
 }
 inline FArchive &operator>> (FArchive &arc, powertype_t &i)
 {
-	BYTE in; arc >> in; i = (powertype_t)in; return arc;
+	byte in; arc >> in; i = (powertype_t)in; return arc;
 }
 
 

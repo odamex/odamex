@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -113,11 +113,11 @@ void P_RemoveMovingFloor(sector_t *sector);
 bool P_MovingCeilingCompleted(sector_t *sector);
 bool P_MovingFloorCompleted(sector_t *sector);
 bool P_HandleSpecialRepeat(line_t* line);
-void P_ApplySectorDamage(player_t* player, int damage, int leak, int mod = 0);
-void P_ApplySectorDamageNoRandom(player_t* player, int damage, int mod = 0);
-void P_ApplySectorDamageNoWait(player_t* player, int damage, int mod = 0);
-void P_ApplySectorDamageEndLevel(player_t* player);
-void P_CollectSecretCommon(sector_t* sector, player_t* player);
+void P_ApplySectorDamage(player_t& player, int damage, int leak, int mod = 0);
+void P_ApplySectorDamageNoRandom(player_t& player, int damage, int mod = 0);
+void P_ApplySectorDamageNoWait(player_t& player, int damage, int mod = 0);
+void P_ApplySectorDamageEndLevel(player_t& player);
+void P_CollectSecretCommon(sector_t& sector, player_t& player);
 int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start);
 int P_FindLineFromTag(int tag, int start);
 bool P_FloorActive(const sector_t* sec);
@@ -249,11 +249,11 @@ private:
 
 inline FArchive &operator<< (FArchive &arc, DScroller::EScrollType type)
 {
-	return arc << (BYTE)type;
+	return arc << (byte)type;
 }
 inline FArchive &operator>> (FArchive &arc, DScroller::EScrollType &out)
 {
-	BYTE in; arc >> in; out = (DScroller::EScrollType)in; return arc;
+	byte in; arc >> in; out = (DScroller::EScrollType)in; return arc;
 }
 
 inline bool P_WallScrollType(DScroller::EScrollType type)
@@ -335,11 +335,11 @@ protected:
 
 inline FArchive &operator<< (FArchive &arc, DPusher::EPusher type)
 {
-	return arc << (BYTE)type;
+	return arc << (byte)type;
 }
 inline FArchive &operator>> (FArchive &arc, DPusher::EPusher &out)
 {
-	BYTE in; arc >> in; out = (DPusher::EPusher)in; return arc;
+	byte in; arc >> in; out = (DPusher::EPusher)in; return arc;
 }
 
 bool P_CheckKeys (player_t *p, card_t lock, bool remote);
@@ -609,8 +609,8 @@ void	P_InitSwitchList ();
 
 void	P_ProcessSwitchDef ();
 
-short P_GetButtonTexture(line_t* line);
-bool	P_GetButtonInfo (line_t *line, unsigned &state, unsigned &time);
+short P_GetButtonTexture(const line_t* line);
+bool	P_GetButtonInfo (const line_t *line, unsigned &state, unsigned &time);
 bool	P_SetButtonInfo (line_t *line, unsigned state, unsigned time);
 
 void	P_UpdateButtons (client_t *cl);
@@ -704,19 +704,19 @@ private:
 
 inline FArchive &operator<< (FArchive &arc, DPlat::EPlatType type)
 {
-	return arc << (BYTE)type;
+	return arc << (byte)type;
 }
 inline FArchive &operator>> (FArchive &arc, DPlat::EPlatType &out)
 {
-	BYTE in; arc >> in; out = (DPlat::EPlatType)in; return arc;
+	byte in; arc >> in; out = (DPlat::EPlatType)in; return arc;
 }
 inline FArchive &operator<< (FArchive &arc, DPlat::EPlatState state)
 {
-	return arc << (BYTE)state;
+	return arc << (byte)state;
 }
 inline FArchive &operator>> (FArchive &arc, DPlat::EPlatState &out)
 {
-	BYTE in; arc >> in; out = (DPlat::EPlatState)in; return arc;
+	byte in; arc >> in; out = (DPlat::EPlatState)in; return arc;
 }
 
 //
@@ -769,19 +769,19 @@ public:
 
 inline FArchive &operator<< (FArchive &arc, DPillar::EPillar type)
 {
-	return arc << (BYTE)type;
+	return arc << (byte)type;
 }
 inline FArchive &operator>> (FArchive &arc, DPillar::EPillar &out)
 {
-	BYTE in; arc >> in; out = (DPillar::EPillar)in; return arc;
+	byte in; arc >> in; out = (DPillar::EPillar)in; return arc;
 }
 inline FArchive &operator<< (FArchive &arc, DPillar::EPillarState state)
 {
-	return arc << (BYTE)state;
+	return arc << (byte)state;
 }
 inline FArchive &operator>> (FArchive &arc, DPillar::EPillarState &out)
 {
-	BYTE in; arc >> in; out = (DPillar::EPillarState)in; return arc;
+	byte in; arc >> in; out = (DPillar::EPillarState)in; return arc;
 }
 
 bool EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
@@ -868,7 +868,7 @@ public:
 	int			m_LightTag; // ZDoom compat
 
 protected:
-	friend bool	EV_DoDoor (DDoor::EVlDoor type, line_t *line, AActor *thing,
+	friend bool	EV_DoDoor (DDoor::EVlDoor type, line_t *line, const AActor *thing,
                                    int tag, int speed, int delay, card_t lock);
     friend bool EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
 	                         byte speed_byte, int topwait, zdoom_lock_t lock,
@@ -883,19 +883,19 @@ private:
 
 inline FArchive &operator<< (FArchive &arc, DDoor::EVlDoor type)
 {
-	return arc << (BYTE)type;
+	return arc << (byte)type;
 }
 inline FArchive &operator>> (FArchive &arc, DDoor::EVlDoor &out)
 {
-	BYTE in; arc >> in; out = (DDoor::EVlDoor)in; return arc;
+	byte in; arc >> in; out = (DDoor::EVlDoor)in; return arc;
 }
 inline FArchive &operator<< (FArchive &arc, DDoor::EDoorState state)
 {
-	return arc << (BYTE)state;
+	return arc << (byte)state;
 }
 inline FArchive &operator>> (FArchive &arc, DDoor::EDoorState &out)
 {
-	BYTE in; arc >> in; out = (DDoor::EDoorState)in; return arc;
+	byte in; arc >> in; out = (DDoor::EDoorState)in; return arc;
 }
 
 //
@@ -986,7 +986,7 @@ public:
 	// [RH] Need these for BOOM-ish transferring ceilings
 	int			m_Texture;
 	short		m_NewSpecial;
-	DWORD		m_NewFlags;
+	uint32_t	m_NewFlags;
 	short		m_NewDamageRate;
 	byte		m_NewLeakRate;
 	byte		m_NewDmgInterval;
@@ -1007,25 +1007,25 @@ private:
 		int tag, fixed_t speed, fixed_t speed2, fixed_t height,
 		bool crush, int silent, int change);
 	friend bool EV_CeilingCrushStop (int tag);
-	friend void P_ActivateInStasisCeiling (int tag);
+	friend bool P_ActivateInStasisCeiling (int tag);
 	friend bool EV_ZDoomCeilingCrushStop(int tag, bool remove);
 };
 
 inline FArchive &operator<< (FArchive &arc, DCeiling::ECeiling type)
 {
-	return arc << (BYTE)type;
+	return arc << (byte)type;
 }
 inline FArchive &operator>> (FArchive &arc, DCeiling::ECeiling &type)
 {
-	BYTE in; arc >> in; type = (DCeiling::ECeiling)in; return arc;
+	byte in; arc >> in; type = (DCeiling::ECeiling)in; return arc;
 }
 inline FArchive &operator<< (FArchive &arc, DCeiling::ECeilingState state)
 {
-	return arc << (BYTE)state;
+	return arc << (byte)state;
 }
 inline FArchive &operator>> (FArchive &arc, DCeiling::ECeilingState &out)
 {
-	BYTE in; arc >> in; out = (DCeiling::ECeilingState)in; return arc;
+	byte in; arc >> in; out = (DCeiling::ECeilingState)in; return arc;
 }
 
 
@@ -1118,7 +1118,7 @@ public:
 	bool		m_HexenCrush;
 	int 		m_Direction;
 	short		m_NewSpecial;
-	DWORD		m_NewFlags;
+	uint32_t	m_NewFlags;
 	short		m_NewDamageRate;
 	byte		m_NewLeakRate;
 	byte		m_NewDmgInterval;
@@ -1158,19 +1158,19 @@ protected:
 
 inline FArchive &operator<< (FArchive &arc, DFloor::EFloor type)
 {
-	return arc << (BYTE)type;
+	return arc << (byte)type;
 }
 inline FArchive &operator>> (FArchive &arc, DFloor::EFloor &type)
 {
-	BYTE in; arc >> in; type = (DFloor::EFloor)in; return arc;
+	byte in; arc >> in; type = (DFloor::EFloor)in; return arc;
 }
 inline FArchive &operator<< (FArchive &arc, DFloor::EFloorState state)
 {
-	return arc << (BYTE)state;
+	return arc << (byte)state;
 }
 inline FArchive &operator>> (FArchive &arc, DFloor::EFloorState &out)
 {
-	BYTE in; arc >> in; out = (DFloor::EFloorState)in; return arc;
+	byte in; arc >> in; out = (DFloor::EFloorState)in; return arc;
 }
 
 class DElevator : public DMover
@@ -1222,19 +1222,19 @@ private:
 
 inline FArchive &operator<< (FArchive &arc, DElevator::EElevator type)
 {
-	return arc << (BYTE)type;
+	return arc << (byte)type;
 }
 inline FArchive &operator>> (FArchive &arc, DElevator::EElevator &out)
 {
-	BYTE in; arc >> in; out = (DElevator::EElevator)in; return arc;
+	byte in; arc >> in; out = (DElevator::EElevator)in; return arc;
 }
 inline FArchive &operator<< (FArchive &arc, DElevator::EElevatorState state)
 {
-	return arc << (BYTE)state;
+	return arc << (byte)state;
 }
 inline FArchive &operator>> (FArchive &arc, DElevator::EElevatorState &out)
 {
-	BYTE in; arc >> in; out = (DElevator::EElevatorState)in; return arc;
+	byte in; arc >> in; out = (DElevator::EElevatorState)in; return arc;
 }
 
 // Waggle

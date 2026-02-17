@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,7 +41,7 @@
 #endif
 
 #include <cmath>
-
+#include <nonstd/scope.hpp>
 
 #include "m_alloc.h"
 #include "m_random.h"
@@ -62,6 +62,7 @@
 #include "c_dispatch.h"
 #include "i_system.h"
 #include "i_music.h"
+#include "i_time.h"
 #include "i_video.h"
 #include "i_input.h"
 #include "g_game.h"
@@ -84,15 +85,10 @@
 #include "g_horde.h"
 #include "w_ident.h"
 #include "gui_boot.h"
+#include "g_musinfo.h"
 #include "g_episode.h"
-
-#ifdef GEKKO
-#include "i_wii.h"
-#endif
-
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
+#include "g_multikill.h"
+#include "g_spreedef.h"
 
 extern size_t got_heapsize;
 
@@ -108,11 +104,9 @@ extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 
-bool devparm;				// started game with -devparm
 const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 static bool wiping_screen = false;
 
-OLumpName startmap;
 bool autostart;
 bool advancedemo;
 event_t events[MAXEVENTS];
@@ -150,8 +144,6 @@ EXTERN_CVAR (vid_vsync)
 EXTERN_CVAR (g_resetinvonexit)
 EXTERN_CVAR (i_skipbootwin)
 
-std::string LOG_FILE;
-
 void M_RestoreVideoMode();
 void M_ModeFlashTestText();
 
@@ -160,9 +152,9 @@ void D_SetPlatform(void)
 #ifdef GCONSOLE
 	#ifdef _XBOX
 		platform = PF_XBOX;
-	#elif GEKKO
+	#elif defined(GEKKO)
 		platform = PF_WII;
-	#elif __SWITCH__
+	#elif defined(__SWITCH__)
 		platform = PF_SWITCH;
 	#else
 		platform = PF_UNKNOWN;
@@ -609,62 +601,74 @@ EXTERN_CVAR(co_novileghosts)
 EXTERN_CVAR(co_removesoullimit)
 EXTERN_CVAR(co_allowdropoff)
 EXTERN_CVAR(r_clipmaskedspecial)
+EXTERN_CVAR(r_thingsectorlight)
 
 void G_ReadCOMPLVL()
 {
-	if (!serverside)
+	const int lumpnum = W_CheckNumForName("COMPLVL");
+	if (lumpnum == -1)
 		return;
 
-	int lumpnum = W_CheckNumForName("COMPLVL");
-	if (lumpnum != -1)
+	char* complvl = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
+	auto guard = nonstd::make_scope_exit([&]{ Z_Free(complvl); });
+
+	if (!serverside)
 	{
-		char* complvl = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
-
-		co_zdoomphys.Set(0.0f);
-		co_zdoomammo.Set(0.0f);
-
-		if (iequals("vanilla", complvl))
-		{
-			co_boomphys.Set(0.0f);
-			co_mbfphys.Set(0.0f);
-			co_novileghosts.Set(0.0f);
-			co_allowdropoff.Set(0.0f);
-			co_removesoullimit.Set(0.0f);
-			r_clipmaskedspecial.Set(0.0f);
-		}
-		else if (iequals("boom", complvl))
-		{
-			co_boomphys.Set(1.0f);
-			co_mbfphys.Set(0.0f);
-			co_novileghosts.Set(1.0f);
-			co_allowdropoff.Set(1.0f);
-			co_removesoullimit.Set(1.0f);
-			r_clipmaskedspecial.Set(0.0f);
-		}
-		else if (iequals("mbf", complvl))
-		{
-			co_boomphys.Set(1.0f);
-			co_mbfphys.Set(1.0f);
-			co_novileghosts.Set(1.0f);
-			co_allowdropoff.Set(1.0f);
-			co_removesoullimit.Set(1.0f);
-			r_clipmaskedspecial.Set(0.0f);
-		}
-		else if (iequals("mbf21", complvl))
-		{
-			co_boomphys.Set(1.0f);
-			co_mbfphys.Set(1.0f);
-			co_novileghosts.Set(1.0f);
-			co_allowdropoff.Set(1.0f);
-			co_removesoullimit.Set(1.0f);
-			r_clipmaskedspecial.Set(1.0f);
-		}
+		if (iequals("mbf", complvl))
+			r_thingsectorlight.Set(1.0f);
 		else
-		{
-			DPrintFmt("Unrecognized COMPLVL value: {}", complvl);
-		}
+			r_thingsectorlight.Set(0.0f);
 
-		Z_Free(complvl);
+		if (iequals("mbf21", complvl))
+			r_clipmaskedspecial.Set(1.0f);
+		else
+			r_clipmaskedspecial.Set(0.0f);
+
+		return;
+	}
+
+	co_zdoomphys.Set(0.0f);
+	co_zdoomammo.Set(0.0f);
+
+	if (iequals("vanilla", complvl))
+	{
+		co_boomphys.Set(0.0f);
+		co_mbfphys.Set(0.0f);
+		co_novileghosts.Set(0.0f);
+		co_allowdropoff.Set(0.0f);
+		co_removesoullimit.Set(0.0f);
+		r_clipmaskedspecial.Set(0.0f);
+	}
+	else if (iequals("boom", complvl))
+	{
+		co_boomphys.Set(1.0f);
+		co_mbfphys.Set(0.0f);
+		co_novileghosts.Set(1.0f);
+		co_allowdropoff.Set(1.0f);
+		co_removesoullimit.Set(1.0f);
+		r_clipmaskedspecial.Set(0.0f);
+	}
+	else if (iequals("mbf", complvl))
+	{
+		co_boomphys.Set(1.0f);
+		co_mbfphys.Set(1.0f);
+		co_novileghosts.Set(1.0f);
+		co_allowdropoff.Set(1.0f);
+		co_removesoullimit.Set(1.0f);
+		r_clipmaskedspecial.Set(0.0f);
+	}
+	else if (iequals("mbf21", complvl))
+	{
+		co_boomphys.Set(1.0f);
+		co_mbfphys.Set(1.0f);
+		co_novileghosts.Set(1.0f);
+		co_allowdropoff.Set(1.0f);
+		co_removesoullimit.Set(1.0f);
+		r_clipmaskedspecial.Set(1.0f);
+	}
+	else
+	{
+		DPrintFmt("Unrecognized COMPLVL value: {}", complvl);
 	}
 }
 
@@ -693,10 +697,6 @@ void D_Init()
 	// Load palette and set up colormaps
 	V_Init();
 
-//	if (first_time)
-//		Printf(PRINT_HIGH, "Res_InitTextureManager: Init image resource management.\n");
-//	Res_InitTextureManager();
-
 	// init the renderer
 	if (first_time)
 		PrintFmt(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
@@ -713,6 +713,7 @@ void D_Init()
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
+	G_ParseSpreeDef();
 	G_ParseHordeDefs();
 	G_ReadCOMPLVL();
 
@@ -734,8 +735,6 @@ void D_Init()
 		PrintFmt(PRINT_HIGH, "S_Init: default music volume is {:g}\n", snd_musicvolume.value());
 	}
 	S_Init(snd_sfxvolume, snd_musicvolume);
-
-//	R_InitViewBorder();
 
 	// init the status bar
 	if (first_time)
@@ -769,6 +768,7 @@ void STACK_ARGS D_Shutdown()
 	// stop sound effects and music
 	S_Stop();
 	S_Deinit();
+	S_ClearSoundLumps();
 
 	// shutdown automap
 	AM_Stop();
@@ -811,7 +811,6 @@ void STACK_ARGS D_Shutdown()
 
 
 void C_DoCommand(std::string_view cmd, uint32_t key);
-void D_Init_DEHEXTRA_Frames(void);
 
 //
 // D_DoomMain
@@ -830,10 +829,7 @@ void D_DoomMain()
 
 	W_SetupFileIdentifiers();
 
-	// [RH] Initialize items. Still only used for the give command. :-(
-	InitItems();
-	// Initialize all extra frames
-	D_Init_DEHEXTRA_Frames();
+	D_InitializeDoomObjectTables();
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
@@ -924,6 +920,7 @@ void D_DoomMain()
 	D_AddWadCommandLineFiles(newwadfiles);
 	D_AddDehCommandLineFiles(newpatchfiles);
 
+    // do the deh processing
 	D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
 	PrintFmt(PRINT_HIGH, "I_Init: Init hardware.\n");
@@ -933,6 +930,7 @@ void D_DoomMain()
 
 	// [SL] Call init routines that need to be reinitialized every time WAD changes
 	atterm(D_Shutdown);
+	// initialize
 	D_Init();
 
 	atterm(I_Endoom);

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -64,6 +64,9 @@
 #include "infomap.h"
 #include "cl_replay.h"
 #include "r_interp.h"
+#include "m_doomobjcontainer.h"
+#include "g_spree.h"
+#include "g_multikill.h"
 
 // Extern data from other files.
 
@@ -84,6 +87,9 @@ EXTERN_CVAR(hud_revealsecrets)
 EXTERN_CVAR(mute_enemies)
 EXTERN_CVAR(mute_spectators)
 EXTERN_CVAR(show_messages)
+EXTERN_CVAR(co_novileghosts)
+EXTERN_CVAR(sv_sharekeys)
+EXTERN_CVAR(cl_showsprees)
 
 extern std::string digest;
 extern bool forcenetdemosplit;
@@ -95,12 +101,12 @@ extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 extern std::set<byte> teleported_players;
 
 void CL_CheckDisplayPlayer(void);
-void CL_ClearPlayerJustTeleported(player_t* player);
+void CL_ClearPlayerJustTeleported(const player_t& player);
 void CL_ClearSectorSnapshots();
 player_t& CL_FindPlayer(size_t id);
 std::string CL_GenerateNetDemoFileName(
     const std::string& filename = cl_netdemoname.str());
-bool CL_PlayerJustTeleported(player_t* player);
+bool CL_PlayerJustTeleported(const player_t& player);
 void CL_QuitAndTryDownload(const OWantFile& missing_file);
 void CL_ResyncWorldIndex();
 void CL_SpectatePlayer(player_t& player, bool spectate);
@@ -108,13 +114,13 @@ void G_PlayerReborn(player_t& p); // [Toke - todo] clean this function
 void P_DestroyButtonThinkers();
 void P_ExplodeMissile(AActor* mo);
 void P_PlayerLeavesGame(player_s* player);
-void P_SetPsprite(player_t* player, int position, statenum_t stnum);
+void P_SetPsprite(player_t& player, int position, int32_t stnum);
 void P_SetButtonTexture(line_t* line, short texture);
 
 /**
  * @brief Unpack a bitfield into an array of booleans.
  */
-static void UnpackBoolArray(bool* bools, size_t count, uint32_t in)
+static void UnpackBoolArray(nonstd::span<bool> bools, size_t count, uint32_t in)
 {
 	for (size_t i = 0; i < count; i++)
 	{
@@ -190,17 +196,15 @@ static void CL_Noop(const odaproto::svc::Noop* msg)
  */
 static void CL_Disconnect(const odaproto::svc::Disconnect* msg)
 {
-	std::string buffer;
 	if (!msg->message().empty())
 	{
-		buffer = fmt::sprintf("Disconnected from server: %s", msg->message());
+		PrintFmt("Disconnected from server: {}", msg->message());
 	}
 	else
 	{
-		buffer = fmt::sprintf("Disconnected from server\n");
+		PrintFmt("Disconnected from server\n");
 	}
 
-	PrintFmt("{}", msg->message());
 	CL_QuitNetGame(NQ_SILENT);
 }
 
@@ -212,7 +216,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	player_t& p = consoleplayer();
 
 	uint32_t weaponowned = msg->player().weaponowned();
-	UnpackBoolArray(p.weaponowned.data(), NUMWEAPONS, weaponowned);
+	UnpackBoolArray(p.weaponowned, NUMWEAPONS, weaponowned);
 
 	uint32_t cards = msg->player().cards();
 	UnpackBoolArray(p.cards, NUMCARDS, cards);
@@ -272,7 +276,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 		}
 	}
 
-	P_SetPlayerPowerupStatuses(&p, p.powers);
+	P_SetPlayerPowerupStatuses(p, p.powers);
 
 	// Sync mo health with player health
 	// For crosshaircolor, etc.
@@ -292,7 +296,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 {
 	byte who = msg->player().playerid();
-	player_t* p = &idplayer(who);
+	player_t& p = idplayer(who);
 
 	fixed_t x = msg->actor().pos().x();
 	fixed_t y = msg->actor().pos().y();
@@ -311,43 +315,43 @@ static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 	{
 		if (i < msg->player().powers_size())
 		{
-			p->powers[i] = msg->player().powers(i);
+			p.powers[i] = msg->player().powers(i);
 		}
 		else
 		{
-			p->powers[i] = 0;
+			p.powers[i] = 0;
 		}
 	}
 
-	if (!validplayer(*p) || !p->mo)
+	if (!validplayer(p) || !p.mo)
 		return;
 
 	// Mark the gametic this update arrived in for prediction code
-	p->tic = gametic;
+	p.tic = gametic;
 
 	// GhostlyDeath -- Servers will never send updates on spectators
-	if (p->spectator && (p != &consoleplayer()))
-		p->spectator = 0;
+	if (p.spectator && (&p != &consoleplayer()))
+		p.spectator = 0;
 
 	// Set powerup statuses (online games)
 	// in here too because PlayerThink doesn't run against other players online
 	// the players don't think, man
-	P_SetPlayerPowerupStatuses(p, p->powers);
+	P_SetPlayerPowerupStatuses(p, p.powers);
 
 	// This is a very bright frame. Looks cool :)
 	if (frame == PLAYER_FULLBRIGHTFRAME)
 		frame = 32773;
 
 	// denis - fixme - security
-	if (!p->mo->sprite ||
-	    (p->mo->frame & FF_FRAMEMASK) >= sprites[p->mo->sprite].numframes)
+	if (!p.mo->sprite ||
+	    (p.mo->frame & FF_FRAMEMASK) >= sprites[p.mo->sprite].numframes)
 		return;
 
-	p->last_received = gametic;
+	p.last_received = gametic;
 	::last_player_update = gametic;
 
 	// [SL] 2012-02-21 - Save the position information to a snapshot
-	int snaptime = ::last_svgametic;
+	const int snaptime = ::last_svgametic;
 	PlayerSnapshot newsnap(snaptime);
 	newsnap.setAuthoritative(true);
 
@@ -366,7 +370,7 @@ static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 	newsnap.setContinuous(!CL_PlayerJustTeleported(p));
 	CL_ClearPlayerJustTeleported(p);
 
-	p->snapshots.addSnapshot(newsnap);
+	p.snapshots.addSnapshot(newsnap);
 }
 
 static void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
@@ -400,8 +404,8 @@ static void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
 
 	// Mark the snapshot as continuous unless the player just teleported
 	// and lerping should be disabled
-	newsnapshot.setContinuous(!CL_PlayerJustTeleported(&p));
-	CL_ClearPlayerJustTeleported(&p);
+	newsnapshot.setContinuous(!CL_PlayerJustTeleported(p));
+	CL_ClearPlayerJustTeleported(p);
 
 	consoleplayer().snapshots.addSnapshot(newsnapshot);
 }
@@ -504,7 +508,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	mobjtype_t type = static_cast<mobjtype_t>(msg->current().type());
 	statenum_t state = static_cast<statenum_t>(msg->current().statenum());
 
-	if (type < MT_PLAYER || type >= NUMMOBJTYPES)
+	if (!mobjinfo.contains(type))
 		return;
 
 	P_ClearId(netid);
@@ -584,9 +588,11 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	    (mo->target->oflags & hordeBossModMask))
 	{
 		mo->oflags |= MFO_FULLBRIGHT;
-		mo->effects = FX_YELLOWFOUNTAIN;
+		mo->effects |= FX_YELLOWFOUNTAIN;
 		mo->translation = translationref_t(&::bosstable[0]);
 	}
+
+	P_FriendlyEffects(mo);
 
 	AActor* tracer = NULL;
 	if (bflags & baseline_t::TRACER)
@@ -627,7 +633,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			mo->tics = 1;
 	}
 
-	if (state >= S_NULL && state < NUMSTATES)
+    if(state >= S_NULL && states.contains(state))
 	{
 		P_SetMobjState(mo, state);
 	}
@@ -669,9 +675,60 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			mo->height = msg->args().Get(1) << FRACBITS;
 	}
 
+	if (type == MT_SKYVIEWPOINT)
+	{
+		// mo->angle = msg->current().angle(); // done above
+		// If this actor has no TID, make it the default sky box
+		if (mo->tid == 0)
+		{
+			int j;
+
+			for (j = 0; j < numsectors; j++)
+			{
+				if (sectors[j].Skybox == NULL)
+				{
+					sectors[j].Skybox = mo->ptr();
+				}
+			}
+		}
+	}
+
+	if (type == MT_SKYPICKER)
+	{
+		if (!mo || !mo->subsector)
+			return;
+
+		sector_t* sector = mo->subsector->sector;
+		if (mo->args[0] == 0)
+		{
+			sector->Skybox = AActor::AActorPtr();
+		}
+		else
+		{
+			TActorIterator<AActor> iterator(mo->args[0]);
+			AActor* box = iterator.Next();
+
+			if (box != NULL && box->type == MT_SKYVIEWPOINT)
+			{
+				sector->Skybox = box->ptr();
+			}
+			else
+			{
+				PrintFmt("Can't find SkyViewpoint {} for sector {}\n", mo->args[0],
+				         sector - sectors);
+			}
+		}
+		mo->Destroy();
+	}
+
 	if (msg->spawn_flags() & SVC_SM_FLAGS)
 	{
 		mo->flags = msg->current().flags();
+	}
+
+	if (msg->spawn_flags() & SVC_SM_FLAGS2)
+	{
+		mo->flags2 = msg->current().flags2();
 	}
 
 	if (msg->spawn_flags() & SVC_SM_OFLAGS)
@@ -679,7 +736,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->oflags = msg->current().oflags();
 
 		// [AM] HACK! Assume that any monster with a flag is a boss.
-		if (mo->oflags)
+		if (mo->oflags & hordeBossModMask)
 		{
 			mo->effects = FX_YELLOWFOUNTAIN;
 			mo->translation = translationref_t(&::bosstable[0]);
@@ -695,7 +752,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			tics = -1;
 
 		// already spawned as gibs?
-		if (!mo || mo->state - states == S_GIBS)
+		if (!mo || mo->state == &states[S_GIBS])
 			return;
 
 		if ((frame & FF_FRAMEMASK) >= sprites[mo->sprite].numframes)
@@ -958,7 +1015,7 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 
 	p->userinfo.gender = static_cast<gender_t>(msg->gender());
 	if (p->userinfo.gender < 0 || p->userinfo.gender >= NUMGENDER)
-		p->userinfo.gender = GENDER_NEUTER;
+		p->userinfo.gender = GENDER_OTHER;
 
 	p->userinfo.color[0] = 255;
 	p->userinfo.color[1] = msg->color().r();
@@ -967,7 +1024,7 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 
 	p->GameTime = msg->join_time();
 
-	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(p));
+	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(*p));
 	R_RebuildPlayerTintTables(p->id);
 
 	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
@@ -1083,25 +1140,25 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 //
 static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 {
-	size_t playernum = msg->pid();
-	size_t netid = msg->actor().netid();
-	player_t* p = &CL_FindPlayer(playernum);
+	const size_t playernum = msg->pid();
+	const size_t netid = msg->actor().netid();
+	player_t& p = CL_FindPlayer(playernum);
 
-	angle_t angle = msg->actor().angle();
-	fixed_t x = msg->actor().pos().x();
-	fixed_t y = msg->actor().pos().y();
-	fixed_t z = msg->actor().pos().z();
+	const angle_t angle = msg->actor().angle();
+	const fixed_t x = msg->actor().pos().x();
+	const fixed_t y = msg->actor().pos().y();
+	const fixed_t z = msg->actor().pos().z();
 
 	P_ClearId(netid);
 
 	// first disassociate the corpse
-	if (p->mo)
+	if (p.mo)
 	{
-		p->mo->player = NULL;
-		p->mo->health = 0;
+		p.mo->player = nullptr;
+		p.mo->health = 0;
 	}
 
-	G_PlayerReborn(*p);
+	G_PlayerReborn(p);
 
 	AActor* mobj = new AActor(x, y, z, MT_PLAYER);
 
@@ -1111,24 +1168,27 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	mobj->translation = translationref_t(translationtables + 256 * playernum, playernum);
 	mobj->angle = angle;
 	mobj->pitch = 0;
-	mobj->player = p;
-	mobj->health = p->health;
+	mobj->player = &p;
+	mobj->health = p.health;
 	P_SetThingId(mobj, netid);
 
-	p->mo = p->camera = mobj->ptr();
-	p->fov = 90.0f;
-	p->playerstate = PST_LIVE;
-	p->refire = 0;
-	p->damagecount = 0;
-	p->bonuscount = 0;
-	p->extralight = 0;
-	p->fixedcolormap = 0;
+	SpreeManager::getInstance().erasePoints(p.id);
+	MultiKillManager::getInstance().eraseMultiKills(p.id);
+	
+	p.mo = p.camera = mobj->ptr();
+	p.fov = 90.0f;
+	p.playerstate = PST_LIVE;
+	p.refire = 0;
+	p.damagecount = 0;
+	p.bonuscount = 0;
+	p.extralight = 0;
+	p.fixedcolormap = 0;
 
-	p->xviewshift = 0;
-	p->viewheight = VIEWHEIGHT;
+	p.xviewshift = 0;
+	p.viewheight = VIEWHEIGHT;
 
-	p->attacker = AActor::AActorPtr();
-	p->viewz = z + VIEWHEIGHT;
+	p.attacker = AActor::AActorPtr();
+	p.viewz = z + VIEWHEIGHT;
 
 	// spawn a teleport fog
 	// tfog = new AActor (x, y, z + gameinfo.telefogHeight, MT_TFOG);
@@ -1138,10 +1198,17 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 
 	// give all cards in death match mode
 	if (!G_IsCoopGame())
+	{
 		for (size_t i = 0; i < NUMCARDS; i++)
-			p->cards[i] = true;
+			p.cards[i] = true;
+	}
+	else if (sv_sharekeys)
+	{
+		const uint32_t cards = msg->cards();
+		UnpackBoolArray(p.cards, NUMCARDS, cards);
+	}
 
-	if (p->id == consoleplayer_id)
+	if (p.id == consoleplayer_id)
 	{
 		// denis - if this concerns the local player, restart the status bar
 		ST_Start();
@@ -1154,7 +1221,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		movingsectors.clear();
 	}
 
-	if (p->id == displayplayer().id)
+	if (p.id == displayplayer().id)
 	{
 		// [SL] 2012-03-08 - Resync with the server's incoming tic since we don't care
 		// about players/sectors jumping to new positions when the displayplayer spawns
@@ -1162,20 +1229,20 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		OInterpolation::getInstance().resetBobInterpolation();
 	}
 
-	if (level.behavior && !p->spectator && p->playerstate == PST_LIVE)
+	if (level.behavior && !p.spectator && p.playerstate == PST_LIVE)
 	{
-		if (p->deathcount)
-			::level.behavior->StartTypedScripts(SCRIPT_Respawn, p->mo);
+		if (p.deathcount)
+			::level.behavior->StartTypedScripts(SCRIPT_Respawn, p.mo);
 		else
-			::level.behavior->StartTypedScripts(SCRIPT_Enter, p->mo);
+			::level.behavior->StartTypedScripts(SCRIPT_Enter, p.mo);
 	}
 
-	int snaptime = last_svgametic;
+	const int snaptime = last_svgametic;
 	PlayerSnapshot newsnap(snaptime, p);
 	newsnap.setAuthoritative(true);
 	newsnap.setContinuous(false);
-	p->snapshots.clearSnapshots();
-	p->snapshots.addSnapshot(newsnap);
+	p.snapshots.clearSnapshots();
+	p.snapshots.addSnapshot(newsnap);
 }
 
 //
@@ -1305,6 +1372,48 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 	P_KillMobj(source, target, inflictor, joinkill);
 }
 
+//
+// CL_RaiseMobj
+//
+static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
+{
+	uint32_t srcid = msg->source_netid();
+	uint32_t cpsid = msg->corpse().netid();
+
+	AActor* source = P_FindThingById(srcid);
+	AActor* corpsehit = P_FindThingById(cpsid);
+
+	if (!corpsehit)
+		return;
+
+	corpsehit->x = msg->corpse().pos().x();
+	corpsehit->y = msg->corpse().pos().y();
+	corpsehit->z = msg->corpse().pos().z();
+	corpsehit->angle = msg->corpse().angle();
+	corpsehit->momx = msg->corpse().mom().x();
+	corpsehit->momy = msg->corpse().mom().y();
+	corpsehit->momz = msg->corpse().mom().z();
+
+	mobjinfo_t* info = corpsehit->info;
+
+	P_SetMobjState(corpsehit, info->raisestate);
+
+	// [Nes] - Classic demo compatability: Ghost monster bug.
+	if (co_novileghosts)
+	{
+		corpsehit->height = P_ThingInfoHeight(info); // [RH] Use real mobj height
+		corpsehit->radius = info->radius;            // [RH] Use real radius
+	}
+	else
+	{
+		corpsehit->height <<= 2;
+	}
+
+	corpsehit->flags = info->flags;
+	corpsehit->health = info->spawnhealth;
+	corpsehit->target = AActor::AActorPtr();
+}
+
 ///////////////////////////////////////////////////////////
 ///// CL_Fire* called when someone uses a weapon  /////////
 ///////////////////////////////////////////////////////////
@@ -1391,7 +1500,7 @@ static void CL_Print(const odaproto::svc::Print* msg)
 	else if (level == PRINT_TEAMCHAT)
 		PrintFmt(level, "{:c}!{}", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_SERVERCHAT)
-		PrintFmt(level, "{}", TEXTCOLOR_YELLOW, str);
+		PrintFmt(level, "{:s}{}", TEXTCOLOR_YELLOW, str);
 	else
 		PrintFmt(level, "{}", str);
 
@@ -1715,7 +1824,7 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 		return;
 	}
 
-	P_GiveSpecial(&consoleplayer(), mo);
+	P_GiveSpecial(consoleplayer(), *mo);
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -2006,7 +2115,7 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 	if (!::hud_revealsecrets || ::hud_revealsecrets > 2)
 		return;
 
-	PrintFmt("{}", "{}{} {}found a secret!\n", TEXTCOLOR_YELLOW,
+	PrintFmt("{}{} {}found a secret!\n", TEXTCOLOR_YELLOW,
 	                player.userinfo.netname, TEXTCOLOR_NORMAL);
 
 	if (::hud_revealsecrets == 1)
@@ -2160,8 +2269,8 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	{
 		if (i < msg->player().psprites_size())
 		{
-			unsigned int state = msg->player().psprites().Get(i).statenum();
-			if (state >= NUMSTATES)
+			const int32_t state = msg->player().psprites().Get(i).statenum();
+            if (!states.contains(state))
 			{
 				continue;
 			}
@@ -2200,18 +2309,18 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 		player.cards[i] = cardBits[i];
 
 	if (!player.weaponowned[weap])
-		P_GiveWeapon(&player, weap, false);
+		P_GiveWeapon(player, weap, false);
 
 	for (int i = 0; i < NUMAMMO; i++)
 		player.ammo[i] = ammo[i];
 
 	for (int i = 0; i < NUMPSPRITES; i++)
-		P_SetPsprite(&player, i, stnum[i]);
+		P_SetPsprite(player, i, stnum[i]);
 
 	for (int i = 0; i < NUMPOWERS; i++)
 		player.powers[i] = powerups[i];
 
-	P_SetPlayerPowerupStatuses(&player, powerups);
+	P_SetPlayerPowerupStatuses(player, powerups);
 
 	if (!player.spectator)
 		player.cheats = cheats;
@@ -2448,7 +2557,7 @@ static void CL_SetMobjState(const odaproto::svc::MobjState* msg)
 	AActor* mo = P_FindThingById(msg->netid());
 	int s = msg->mostate();
 
-	if (mo == NULL || s < 0 || s >= NUMSTATES)
+    if (mo == NULL || !states.contains(s))
 		return;
 
 	P_SetMobjState(mo, static_cast<statenum_t>(s));
@@ -2791,6 +2900,8 @@ static void CL_Toast(const odaproto::svc::Toast* msg)
 	toast.right = msg->right();
 	toast.right_pid = msg->right_pid();
 	toast.icon = msg->icon();
+	toast.points = msg->points();
+	toast.spree_color = msg->spree_color();
 
 	COM_PushToast(toast);
 }
@@ -2811,6 +2922,35 @@ static void CL_HordeInfo(const odaproto::svc::HordeInfo* msg)
 	info.waveStartHealth = msg->wave_start_health();
 
 	P_SetHordeInfo(info);
+}
+
+static void CL_Spree(const odaproto::svc::Spree* msg)
+{
+	int playerId = msg->pid();
+	int spreeLevel = msg->spree_level();
+
+	bool update = SpreeManager::getInstance().setRawSpree(playerId, spreeLevel);
+
+	if (cl_showsprees && displayplayer_id == playerId && update)
+	{
+		// Play the sound for the new multi kill
+		// S_Sound(CHAN_ANNOUNCER, '', 1, ATTN_NONE);
+	}
+}
+
+static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
+{
+	SpreeBreaker_t breaker;
+
+	breaker.spreeEndedPlayerId = msg->victim_pid();
+	breaker.spreeEndedName = msg->victim_name();
+	breaker.spreeEnderPlayerId = msg->source_pid();
+	breaker.spreeEnderName = msg->source_name();
+	breaker.endedPoints = msg->spree_points();
+	SpreeBreakerType type = static_cast<SpreeBreakerType>(msg->spree_breaker_type());
+	int level = msg->spree_level();
+
+	SpreeManager::getInstance().setRawSpreeBreaker(breaker, level, type);
 }
 
 static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
@@ -3007,6 +3147,7 @@ parseError_e CL_ParseCommand()
 		SV_MSG(svc_spawnplayer, CL_SpawnPlayer, odaproto::svc::SpawnPlayer);
 		SV_MSG(svc_damageplayer, CL_DamagePlayer, odaproto::svc::DamagePlayer);
 		SV_MSG(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
+		SV_MSG(svc_raisemobj, CL_RaiseMobj, odaproto::svc::RaiseMobj);
 		SV_MSG(svc_fireweapon, CL_FireWeapon, odaproto::svc::FireWeapon);
 		SV_MSG(svc_updatesector, CL_UpdateSector, odaproto::svc::UpdateSector);
 		SV_MSG(svc_print, CL_Print, odaproto::svc::Print);
@@ -3050,6 +3191,8 @@ parseError_e CL_ParseCommand()
 		SV_MSG(svc_maplist_index, CL_MaplistIndex, odaproto::svc::MaplistIndex);
 		SV_MSG(svc_toast, CL_Toast, odaproto::svc::Toast);
 		SV_MSG(svc_hordeinfo, CL_HordeInfo, odaproto::svc::HordeInfo);
+		SV_MSG(svc_spree, CL_Spree, odaproto::svc::Spree);
+		SV_MSG(svc_spreebreaker, CL_SpreeBreaker, odaproto::svc::SpreeBreaker);
 		SV_MSG(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
 		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);
@@ -3061,3 +3204,5 @@ parseError_e CL_ParseCommand()
 	RecordProto(static_cast<svc_t>(cmd), msg);
 	return PERR_OK;
 }
+
+VERSION_CONTROL (cl_parse_cpp, "$Id$")

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -43,9 +43,6 @@ namespace fs = std::filesystem;
 
 // Simple logging
 std::ofstream LOG;
-
-// Simple file based console input
-std::ifstream CON;
 
 /**
  * @brief Joins two paths together
@@ -148,18 +145,17 @@ std::string M_GetCWD()
 // M_FileLength
 //
 // Returns the length of a file using an open descriptor
-SDWORD M_FileLength (FILE *f)
+int64_t M_FileLength (FILE *f)
 {
-	SDWORD CurrentPosition = -1;
-	SDWORD FileSize = -1;
+	int64_t FileSize = -1;
 
-    if (f != NULL)
-    {
-        CurrentPosition = ftell (f);
-        fseek (f, 0, SEEK_END);
-        FileSize = ftell (f);
-        fseek (f, CurrentPosition, SEEK_SET);
-    }
+	if (f != nullptr)
+	{
+		const auto CurrentPosition = ftell(f);
+		fseek (f, 0, SEEK_END);
+		FileSize = ftell (f);
+		fseek (f, CurrentPosition, SEEK_SET);
+	}
 
 	return FileSize;
 }
@@ -202,21 +198,18 @@ bool M_FileExistsExt(const std::string& filename, const char* ext)
 //
 // Writes a buffer to a new file, if it already exists, the file will be
 // erased and recreated with the new contents
-bool M_WriteFile(std::string filename, void *source, QWORD length)
+bool M_WriteFile(std::string filename, void *source, size_t length)
 {
-    FILE *handle;
-    QWORD count;
+	FILE* handle = fopen(filename.c_str(), "wb");
 
-    handle = fopen(filename.c_str(), "wb");
-
-    if (handle == NULL)
+	if (handle == NULL)
 	{
 		PrintFmt(PRINT_HIGH, "Could not open file {} for writing\n", filename);
 		return false;
 	}
 
-    count = fwrite(source, 1, length, handle);
-    fclose(handle);
+	size_t count = fwrite(source, 1, length, handle);
+	fclose(handle);
 
 	if (count != length)
 	{
@@ -233,13 +226,9 @@ bool M_WriteFile(std::string filename, void *source, QWORD length)
 //
 // Reads a file, it will allocate storage via Z_Malloc for it and return
 // the buffer and the size.
-QWORD M_ReadFile(std::string filename, BYTE **buffer)
+size_t M_ReadFile(std::string filename, byte **buffer)
 {
-    FILE *handle;
-    QWORD count, length;
-    BYTE *buf;
-
-    handle = fopen(filename.c_str(), "rb");
+    FILE* handle = fopen(filename.c_str(), "rb");
 
 	if (handle == NULL)
 	{
@@ -247,10 +236,10 @@ QWORD M_ReadFile(std::string filename, BYTE **buffer)
 		return false;
 	}
 
-    length = M_FileLength(handle);
+    size_t length = M_FileLength(handle);
 
-    buf = (BYTE *)Z_Malloc (length, PU_STATIC, NULL);
-    count = fread(buf, 1, length, handle);
+    byte* buf = (byte *)Z_Malloc (length, PU_STATIC, NULL);
+    size_t count = fread(buf, 1, length, handle);
     fclose (handle);
 
     if (count != length)
@@ -377,7 +366,7 @@ bool M_IsPathSep(const char ch)
 		return true;
 	}
 
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
 	// This is not the canonical path separator, but it is valid.
 	if (ch == '/')
 	{
@@ -404,13 +393,6 @@ std::string M_GetUserFileName(const std::string& file)
 {
 #ifdef __SWITCH__
 	std::string path = file;
-	return M_CleanPath(path);
-#elif defined(_XBOX)
-	std::string path = "T:";
-
-	path += PATHSEP;
-	path += file;
-
 	return M_CleanPath(path);
 #else
 	fs::path path(file);
@@ -440,9 +422,6 @@ std::string M_GetUserFileName(const std::string& file)
 
 std::string M_GetWriteSubDir(std::string_view folder)
 {
-#if defined(_XBOX)
-	return "T:" PATHSEP;
-#else
 	// Does the folder exist?
 	fs::path path = M_GetWriteDir();
 	path /= folder;
@@ -455,7 +434,6 @@ std::string M_GetWriteSubDir(std::string_view folder)
 	{
 		I_FatalError("Failed to create directory {}: {}\n", path.string(), e.what());
 	}
-#endif
 }
 
 std::string M_GetDownloadDir()
@@ -475,10 +453,7 @@ std::string M_GetNetDemoDir()
 
 std::string M_GetScreenshotFileName(const std::string& file, const std::string& altpath)
 {
-#if defined(_XBOX)
-	fs::path path = "T:";
-	path /= file;
-#elif defined __SWITCH__
+#ifdef __SWITCH__
 	fs::path path = file;
 #else
 	fs::path path;
@@ -509,10 +484,7 @@ std::string M_GetScreenshotFileName(const std::string& file, const std::string& 
 
 std::string M_GetNetDemoFileName(const std::string& file, const std::string& altpath)
 {
-#if defined(_XBOX)
-	fs::path path = "T:";
-	path /= file;
-#elif defined __SWITCH__
+#ifdef __SWITCH__
 	fs::path path = file;
 #else
 	fs::path path;

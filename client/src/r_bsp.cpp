@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -62,12 +62,13 @@ fixed_t			rw_frontfz1, rw_frontfz2;
 
 int rw_start, rw_stop;
 
-static BYTE		FakeSide;
+static byte		FakeSide;
 
 const fixed_t NEARCLIP = 2*FRACUNIT;
 
 drawseg_t*		ds_p;
 drawseg_t*		drawsegs;
+drawseg_t*		firstdrawseg;
 unsigned		maxdrawsegs;
 
 // CPhipps -
@@ -93,8 +94,10 @@ void R_ReallocDrawSegs(void)
 	if (ds_p == drawsegs+maxdrawsegs)		// killough 1/98 -- fix 2s line HOM
 	{
 		unsigned pos = ds_p - drawsegs;	// jff 8/9/98 fix from ZDOOM1.14a
+		unsigned firstofs = firstdrawseg - drawsegs;
 		unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128; // killough
 		drawsegs = (drawseg_t*)M_Realloc(drawsegs, newmax*sizeof(*drawsegs));
+		firstdrawseg = drawsegs + firstofs;
 		ds_p = drawsegs + pos;				// jff 8/9/98 fix from ZDOOM1.14a
 		maxdrawsegs = newmax;
 		DPrintFmt("MaxDrawSegs increased to {}\n", maxdrawsegs);
@@ -106,6 +109,11 @@ void R_ReallocDrawSegs(void)
 //
 void R_ClearDrawSegs(void)
 {
+	if (drawsegs == NULL)
+	{
+		maxdrawsegs = 256;
+		firstdrawseg = drawsegs = (drawseg_t*)Malloc(maxdrawsegs * sizeof(drawseg_t));
+	}
 	ds_p = drawsegs;
 }
 
@@ -687,7 +695,8 @@ void R_Subsector (int num)
 					frontsector->ceiling_yoffs + frontsector->base_ceiling_yoffs,
 					frontsector->ceiling_xscale,
 					frontsector->ceiling_yscale,
-					frontsector->ceiling_angle + frontsector->base_ceiling_angle
+					frontsector->ceiling_angle + frontsector->base_ceiling_angle,
+					frontsector->Skybox
 					) : NULL;
 
 	// killough 3/7/98: Add (x,y) offsets to flats, add deep water check
@@ -706,7 +715,8 @@ void R_Subsector (int num)
 					frontsector->floor_yoffs + frontsector->base_floor_yoffs,
 					frontsector->floor_xscale,
 					frontsector->floor_yscale,
-					frontsector->floor_angle + frontsector->base_floor_angle
+					frontsector->floor_angle + frontsector->base_floor_angle,
+					frontsector->Skybox
 					) : NULL;
 
 	// [RH] set foggy flag
@@ -722,7 +732,7 @@ void R_Subsector (int num)
 	// [RH] Add particles
 	if (r_particles)
 	{
-		for (WORD i = ParticlesInSubsec[num]; i != NO_PARTICLE; i = Particles[i].nextinsubsector)
+		for (uint16_t i = ParticlesInSubsec[num]; i != NO_PARTICLE; i = Particles[i].nextinsubsector)
 			R_ProjectParticle(Particles + i, subsectors[num].sector, FakeSide);
 	}
 
@@ -735,7 +745,13 @@ void R_Subsector (int num)
 	}
 
 	while (count--)
-		R_AddLine (line++);
+	{
+		if (line->linedef)
+			R_AddLine(line);
+
+		line++;
+	}
+
 }
 
 

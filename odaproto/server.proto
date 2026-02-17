@@ -142,6 +142,7 @@ message SpawnPlayer
 {
 	int32 pid = 1;
 	Actor actor = 2;
+	uint32 cards = 3;
 }
 
 // svc_damageplayer
@@ -164,6 +165,13 @@ message KillMobj
 	int32 mod = 5;
 	bool joinkill = 6;
 	sint32 lives = 7; // Default is -1.
+}
+
+// svc_raisemobj
+message RaiseMobj
+{
+	uint32 source_netid = 1;
+	Actor corpse = 2;
 }
 
 // svc_fireweapon
@@ -656,6 +664,8 @@ message Toast
 	string right = 4;
 	sint32 right_pid = 5;
 	sint32 icon = 6;
+	sint32 points = 7;
+	sint32 spree_color = 8;
 }
 
 // svc_hordeinfo
@@ -671,6 +681,25 @@ message HordeInfo
 	int32 boss_damage = 8;
 	int32 wave_start_health = 9;
 	uint64 define_id = 10;
+}
+
+// svc_spree
+message Spree
+{
+	int32 pid = 1;
+	int32 spree_level = 2;
+}
+
+// svc_spreebreaker
+message SpreeBreaker
+{
+	int32 victim_pid = 1;
+	int32 source_pid = 2;
+	string victim_name = 3;
+	string source_name = 4;
+	int32 spree_points = 5;
+	int32 spree_level = 6;
+	int32 spree_breaker_type = 7;
 }
 
 // svc_netdemocap

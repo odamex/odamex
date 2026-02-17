@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -44,7 +44,7 @@ public:
 
 private:
 
-	QWORD last_clock, last_elapsed;
+	uint64_t last_clock, last_elapsed;
 	std::string name;
 	static std::vector<FStat*> stats;
 };

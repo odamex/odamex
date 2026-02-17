@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -225,7 +225,7 @@ void DSeqNode::Serialize (FArchive &arc)
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
 	{
-		arc << (DWORD)SN_GetSequenceOffset (m_Sequence, m_SequencePtr)
+		arc << (uint32_t)SN_GetSequenceOffset (m_Sequence, m_SequencePtr)
 			<< m_DelayTics
 			<< m_Volume
 			<< m_Atten
@@ -290,10 +290,10 @@ void DSeqPolyNode::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
-		arc << (WORD)(m_Poly - polyobjs);
+		arc << (uint16_t)(m_Poly - polyobjs);
 	else
 	{
-		WORD ofs;
+		uint16_t ofs;
 		arc >> ofs;
 		m_Poly = polyobjs + ofs;
 	}
@@ -739,22 +739,22 @@ void SN_StartSequence (polyobj_t *poly, const char *name)
 //
 //==========================================================================
 
-void SN_StopSequence (AActor *actor)
+void SN_StopSequence (const AActor *actor)
 {
 	SN_DoStop (actor);
 }
 
-void SN_StopSequence (sector_t *sector)
+void SN_StopSequence (const sector_t *sector)
 {
 	SN_DoStop (sector);
 }
 
-void SN_StopSequence (polyobj_t *poly)
+void SN_StopSequence (const polyobj_t *poly)
 {
 	SN_DoStop (poly);
 }
 
-void SN_DoStop (void *source)
+void SN_DoStop (const void *source)
 {
 	DSeqNode *node;
 

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include "d_player.h"
+
 //
 // CHEAT SEQUENCE PACKAGE
 //
@@ -40,15 +42,18 @@ struct cheatseq_t
 	bool (*Handler)(cheatseq_t*);
 };
 
+namespace cheat
+{
 // keycheat handlers
-bool CHEAT_AddKey(cheatseq_t* cheat, unsigned char key, bool* eat);
+bool AddKey(cheatseq_t* cheat, unsigned char key, bool* eat);
 
-bool CHEAT_AutoMap(cheatseq_t* cheat);
-bool CHEAT_ChangeLevel(cheatseq_t* cheat);
-bool CHEAT_IdMyPos(cheatseq_t* cheat);
-bool CHEAT_BeholdMenu(cheatseq_t* cheat);
-bool CHEAT_ChangeMusic(cheatseq_t* cheat);
-bool CHEAT_SetGeneric(cheatseq_t* cheat);
+bool AutoMap(cheatseq_t* cheat);
+bool ChangeLevel(cheatseq_t* cheat);
+bool IdMyPos(cheatseq_t* cheat);
+bool BeholdMenu(cheatseq_t* cheat);
+bool ChangeMusic(cheatseq_t* cheat);
+bool SetGeneric(cheatseq_t* cheat);
+}
 #endif
 
 #define COUNT_CHEATS(l) (sizeof(l) / sizeof(l[0]))
@@ -80,15 +85,17 @@ enum ECheatFlags
 };
 
 // [RH] Functions that actually perform the cheating
-class player_s;
-void CHEAT_DoCheat (player_s *player, int cheat, bool silentmsg=false);
-void CHEAT_GiveTo (player_s *player, const char *item);
-AActor* CHEAT_Summon(player_s* player, const std::string& sum, bool friendly);
-bool CHEAT_ValidSummonActor(const std::string& summon);
+namespace cheat
+{
+void DoCheat(player_t& player, int cheat, bool silentmsg = false);
+void GiveTo(player_t& player, const char *item);
+AActor* Summon(player_t& player, const std::string& sum, bool friendly);
+bool ValidSummonActor(const std::string& summon);
 
 // Heretic code (unused)
 #if 0
-void CHEAT_Suicide (player_s *player);
+void Suicide (player_t& player);
 #endif
 
-bool CHEAT_AreCheatsEnabled();
+bool AreCheatsEnabled();
+}

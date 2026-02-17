@@ -2,7 +2,7 @@
 
 | Windows Build Status | Mac Build Status | Linux Build Status | Join our Discord! |
 | -------------------- | ---------------- | ------------------ | ----------------- |
-| [![Windows](https://github.com/odamex/odamex/workflows/Windows/badge.svg)](https://github.com/odamex/odamex/actions?query=workflow%3AWindows) | [![macOS](https://github.com/odamex/odamex/workflows/macOS/badge.svg)](https://github.com/odamex/odamex/actions?query=workflow%3AmacOS) | [![Linux](https://github.com/odamex/odamex/workflows/Linux/badge.svg)](https://github.com/odamex/odamex/actions?query=workflow%3ALinux) | [![Join our discord](https://discordapp.com/api/guilds/236518337671200768/widget.png?style=shield)](https://discord.gg/aMUzcZE) |
+| [![Windows](https://github.com/odamex/odamex/actions/workflows/windows.yml/badge.svg)](https://github.com/odamex/odamex/actions/workflows/windows.yml) | [![macOS](https://github.com/odamex/odamex/actions/workflows/macos.yml/badge.svg)](https://github.com/odamex/odamex/actions/workflows/macos.yml) | [![Linux](https://github.com/odamex/odamex/actions/workflows/linux.yml/badge.svg)](https://github.com/odamex/odamex/actions/workflows/linux.yml) | [![Join our discord](https://discordapp.com/api/guilds/236518337671200768/widget.png?style=shield)](https://discord.gg/aMUzcZE) |
 
 Odamex is a modification of DOOM to allow players to compete with each other over the Internet using a client/server architecture. Thanks to the source code release of DOOM by id Software in December 1997, there have been many modifications that enhanced DOOM in various ways. These modifications are known as "source ports", as early modifications mainly ported DOOM to other platforms and operating systems such as Windows and Macintosh.
 
@@ -16,7 +16,7 @@ Odamex supports the following features:
 * Full Client/Server multiplayer architecture with network compensation features (unlagged, client interpolation and prediction)
 * Support for up to 255 players
 * Various compatibility settings, to emulate vanilla Doom, Boom, or ZDoom physics and fixes
-* Playback and recording of vanilla demos
+* Playback of vanilla demos
 * A fully-featured client netdemo record system with playback control
 * Removal of most vanilla Doom Static limits
 * Support for most Boom and MBF mapping features
@@ -55,7 +55,7 @@ Odamex requires the following tools and libraries:
 * [cURL](https://curl.se/)
 * [libPNG](http://www.libpng.org/pub/png/libpng.html)
 * [zlib](https://zlib.net/)
-* [DeuTex](https://github.com/Doom-Utils/deutex/releases/) (for building the WAD)
+* [Python](https://www.python.org/) (for building the WAD)
 * [wxWidgets](https://www.wxwidgets.org/downloads/) (for the launcher)
 
 `cURL`, `libPNG` and `zlib` are automatically included in-tree as submodules.
@@ -65,6 +65,11 @@ On Windows, all libraries are automatically downloaded if not found.  On \*nix/M
 Please check [this page][1] for further instructions on how to compile Odamex for your platform.
 
 [1]: https://github.com/odamex/odamex/wiki/Compiling-Odamex
+
+MacOS DMG packaging
+-------------------
+
+macOS DMGs are built as universal binaries and include `Odamex.app`, `odalaunch.app`, `odasrv`, `odamex.wad`, config samples, and third-party licenses. The DMG layout and icons are generated in CI to match the release installer.
 
 Contributing to the project
 ---------------------------
@@ -80,19 +85,7 @@ Before submitting a pull request, please make sure it follows [our coding standa
 **Note**: This project contains a demo testing utility that ensures vanilla compatibility by
 running a specific set of demos after each commit. When forking this project to prepare a pull request,
 this functionality will be unavailable by default to protect sensitive files.
-You can restore this functionality by:
-
-1. Forking [OdaTest-Resources](https://github.com/odamex/odatests-resources) to get the PWADs.
-2. Downloading [OdaTests](https://github.com/odamex/odatests) to get the encryption module.
-3. Replacing the encrypted IWADs with your own set of encrypted IWADs.
-Encrypt using `python .\secret.py encrypt doom2` with the environment variable
-`SECRET_KEY` defined to encrypt the IWADs with. The following IWADs (latest version) are needed to run all tests:
-`doom, doom1, doom2, tnt, plutonia`
-4. Create a release for your forked OdaTest-Resources repo.
-5. Enter the following Secrets / Repository Variables in GitHub:
-  - `secrets.DEMOTESTER_IWAD_KEY` - Encryption key for the IWADs
-  - `vars.DEMOTESTER_DOWNLOAD_URL` - Full URL to download the latest OdaTests release.
-  - `vars.DEMORESOURCES_DOWNLOAD_URL` - Full URL to download your personal demo resources
+You can restore this functionality by following the steps for integrating [OdaTests](https://github.com/odamex/odamex/wiki/OdaTests) into your fork.
 
 External Links
 --------------

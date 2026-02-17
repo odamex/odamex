@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -65,19 +65,19 @@ cvar_t* GetFirstCvar(void)
 int cvar_defflags;
 
 cvar_t::cvar_t(const char* var_name, const char* def, const char* help, cvartype_t type,
-		DWORD flags, float minval, float maxval)
+		uint32_t flags, float minval, float maxval)
 {
 	InitSelf(var_name, def, help, type, flags, NULL, minval, maxval);
 }
 
 cvar_t::cvar_t(const char* var_name, const char* def, const char* help, cvartype_t type,
-		DWORD flags, void (*callback)(cvar_t &), float minval, float maxval)
+		uint32_t flags, void (*callback)(cvar_t &), float minval, float maxval)
 {
 	InitSelf(var_name, def, help, type, flags, callback, minval, maxval);
 }
 
 void cvar_t::InitSelf(const char* var_name, const char* def, const char* help, cvartype_t type,
-		DWORD var_flags, void (*callback)(cvar_t &), float minval, float maxval)
+		uint32_t var_flags, void (*callback)(cvar_t &), float minval, float maxval)
 {
 	cvar_t* dummy;
 	cvar_t* var = FindCVar(var_name, &dummy);
@@ -309,7 +309,7 @@ void cvar_t::EnableCallbacks ()
 	}
 }
 
-void cvar_t::FilterCompactCVars (std::vector<cvar_t *> &cvars, DWORD filter)
+void cvar_t::FilterCompactCVars (std::vector<cvar_t *> &cvars, uint32_t filter)
 {
 	cvar_t *cvar = ad.GetCVars();
 	while (cvar)
@@ -325,7 +325,7 @@ void cvar_t::FilterCompactCVars (std::vector<cvar_t *> &cvars, DWORD filter)
 // a pointer of an array of chars to write out a packed byte array
 // of cvars, subtracting the base array size from the total after
 // each advancement.
-void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, size_t array_size, bool compact)
+void cvar_t::C_WriteCVars (byte **demo_p, uint32_t filter, size_t array_size, bool compact)
 {
 	if (array_size <= 0)
 		return;
@@ -395,7 +395,7 @@ void cvar_t::C_ReadCVars (byte **demo_p)
 	if (*ptr == '\\')
 	{	// compact mode
 		std::vector<cvar_t *> cvars;
-		DWORD filter;
+		uint32_t filter;
 
 		ptr++;
 		breakpt = strchr (ptr, '\\');
@@ -751,6 +751,16 @@ BEGIN_COMMAND (toggle)
 	else if (var->flags() & CVAR_NOENABLEDISABLE)
 	{
 		PrintFmt(PRINT_HIGH, "\"{}\" cannot be toggled.\n", argv[1]);
+	}
+	else if (var->flags() & CVAR_NOSET)
+	{
+		PrintFmt(PRINT_HIGH, "{} is write protected.\n", argv[1]);
+		return;
+	}
+	else if (multiplayer && baseapp == client && (var->flags() & CVAR_SERVERINFO))
+	{
+		PrintFmt(PRINT_HIGH, "{} is under server control.\n", argv[1]);
+		return;
 	}
 	else
 	{

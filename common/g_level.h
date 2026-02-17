@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,6 +31,7 @@
 #include "r_defs.h" // line_t
 
 #include <assert.h>
+#include <unordered_map>
 
 #define NUM_MAPVARS				128
 #define NUM_WORLDVARS			256
@@ -101,12 +102,13 @@ struct fhfprint_t
 	std::array<byte, 16> fingerprint{};
 
 	[[nodiscard]]
-	bool operator==(const fhfprint_t& other)
+	bool operator==(const fhfprint_t& other) const
 	{
 		return fingerprint == other.fingerprint;
 	}
 
-	bool operator==(std::string_view other)
+	[[nodiscard]]
+	bool operator==(std::string_view other) const
 	{
 		return other == this->toString();
 	}
@@ -116,7 +118,8 @@ struct fhfprint_t
 		fingerprint.fill(0);
 	}
 
-	std::string toString()
+	[[nodiscard]]
+	std::string toString() const
 	{
 		// [Blair] Serialize the hashes before reading.
 		const uint64_t reconsthash1 = (uint64_t)(fingerprint[0]) |
@@ -138,6 +141,25 @@ struct fhfprint_t
 		                              (uint64_t)(fingerprint[15]) << 56;
 
 		return fmt::format("{:016x}{:016x}", reconsthash1, reconsthash2);
+	}
+
+	[[nodiscard]]
+	static fhfprint_t fromString(std::string_view hashstr)
+	{
+		const uint64_t hash1 = ParseNum<uint64_t>(hashstr.substr(0, 16), 16).value_or(0);
+		const uint64_t hash2 = ParseNum<uint64_t>(hashstr.substr(16), 16).value_or(0);
+
+		fhfprint_t fp{};
+
+		const auto unpack = [&fp](uint64_t hash, size_t index = 0){
+			for (int i = 0; i < 8; i++)
+				fp.fingerprint[i + index] = static_cast<byte>((hash >> (i * 8)) & 0xFF);
+		};
+
+		unpack(hash1);
+		unpack(hash2, 8);
+
+		return fp;
 	}
 };
 
@@ -203,6 +225,9 @@ struct level_pwad_info_t
 	float			gravity    = 0.0f;
 	float			aircontrol = 0.0f;
 	int				airsupply  = 10;
+
+	// MUSINFO
+	std::unordered_map<int, std::string> musinfo_map;
 
 	// The following are necessary for UMAPINFO compatibility
 	OLumpName		exitpic     = "";
@@ -300,9 +325,12 @@ struct level_locals_t
 	fixed_t			airfriction;
 	int 			airsupply;
 
+	// MUSINFO
+	std::unordered_map<int, std::string> musinfo_map;
+
 	// The following are all used for ACS scripting
-	FBehavior*		behavior;
-	SDWORD			vars[NUM_MAPVARS];
+	std::unique_ptr<FBehavior> behavior;
+	int32_t			vars[NUM_MAPVARS];
 
 	// The following are used for UMAPINFO
 	OLumpName		exitpic;
@@ -338,11 +366,10 @@ const static clusterFlags_t CLUSTER_EXITTEXTISLUMP = BIT(1);
 
 struct bossaction_t
 {
-	int type;
-	short special;
-	short tag;
-
-	bossaction_t() : type(MT_NULL), special(), tag() {}
+	int32_t type    = MT_NULL;
+	int32_t flags   = 0;
+	int16_t special = 0;
+	int16_t tag     = 0;
 };
 
 struct cluster_info_t
@@ -416,7 +443,7 @@ inline std::array<ACSWorldGlobalArray, NUM_WORLDVARS> ACS_WorldArrays;
 inline std::array<int, NUM_GLOBALVARS> ACS_GlobalVars;
 inline std::array<ACSWorldGlobalArray, NUM_GLOBALVARS> ACS_GlobalArrays;
 
-extern bool savegamerestore;
+inline bool savegamerestore;
 
 void G_InitNew(const char *mapname);
 inline void G_InitNew(const OLumpName& mapname) { G_InitNew(mapname.c_str()); }
@@ -444,8 +471,6 @@ void G_InitLevelLocals();
 void G_AirControlChanged();
 
 OLumpName CalcMapName(int episode, int level);
-
-void G_ParseMusInfo();
 
 void G_ClearSnapshots();
 void G_SnapshotLevel();

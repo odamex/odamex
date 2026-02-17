@@ -1,0 +1,126 @@
+// The following text colors can be used:
+// brick
+// tan
+// gray or grey
+// green
+// brown
+// gold
+// red
+// blue
+// orange
+// white
+// yellow
+// untranslated
+// black
+// lightblue
+// cream
+// olive
+// darkgreen
+// darkred
+// darkbrown
+// purple
+// darkgray / darkgrey
+// cyan
+
+// Spree intervals (in kills and damage)
+spreekillinterval = 5
+spreedamageinterval = 5000
+
+// Multi kill interval (in seconds)
+multikillinterval = 4
+
+// Spree texts
+spreeendedplayertext = "$OSPREEENDP"
+spreeendedselftext = "$OSPREEENDS"
+spreeendedmonstertext = "$OSPREEENDM"
+repeatingspreetext = "$OSPREEREP"
+
+// A spree section is defined here. It must start at 1 and count up in order.
+spree 1 = { 
+    color = white
+    text = "$OSPREE1"
+    broadcasttext = "$OBSPREE1"
+    gamesfx = "spree/spree1"
+}
+spree 2 = { 
+    color = blue
+    text = "$OSPREE2"
+    broadcasttext = "$OBSPREE2"
+    gamesfx = "spree/spree2"
+}
+spree 3 = { 
+    color = green
+    text = "$OSPREE3"
+    broadcasttext = "$OBSPREE3"
+    gamesfx = "spree/spree3"
+}
+spree 4 = { 
+    color = yellow
+    text = "$OSPREE4"
+    broadcasttext = "$OBSPREE4"
+    gamesfx = "spree/spree4"
+}
+spree 5 = { 
+    color = cyan
+    text = "$OSPREE5"
+    broadcasttext = "$OBSPREE5"
+    gamesfx = "spree/spree5"
+}
+spree 6 = {
+    color = gold
+    text = "$OSPREE6"
+    broadcasttext = "$OBSPREE6"
+    gamesfx = "spree/spree6"
+}
+
+// A multi kill section is defined here. It must start at 2 and count up in order.
+multi 2 = { 
+    color = white
+    text = "$OMULTI2"
+    gamesfx = "multi/multi2"
+}
+multi 3 = {
+    color = tan
+    text = "$OMULTI3"
+    gamesfx = "multi/multi3"
+}
+multi 4 = {
+    color = blue
+    text = "$OMULTI4"
+    gamesfx = "multi/multi4"
+}
+multi 5 = { 
+    color = brick
+    text = "$OMULTI5"
+    gamesfx = "multi/multi5"
+}
+multi 6 = {
+    color = cyan
+    text = "$OMULTI6"
+    gamesfx = "multi/multi6"
+}
+multi 7 = {
+    color = cream
+    text = "$OMULTI7"
+    gamesfx = "multi/multi7"
+}
+multi 8 = { 
+    color = orange
+    text = "$OMULTI8"
+    gamesfx = "multi/multi8"
+}
+multi 9 = {
+    color = purple
+    text = "$OMULTI9"
+    gamesfx = "multi/multi9"
+}
+multi 10 = {
+    color = darkgreen
+    text = "$OMULTI10"
+    gamesfx = "multi/multi10"
+}
+multi 11 = { 
+    color = gold
+    text = "$OMULTI11"
+    gamesfx = "multi/multi11"
+}

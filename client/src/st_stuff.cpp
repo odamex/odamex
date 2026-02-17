@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -69,8 +69,6 @@ IWindowSurface* stnum_surface;
 // functions in st_new.c
 void ST_initNew();
 void ST_unloadNew();
-
-extern bool simulated_connection;
 
 //
 // STATUS BAR DATA
@@ -405,23 +403,23 @@ static byte CheatPowerup[7][10] = {{'i', 'd', 'b', 'e', 'h', 'o', 'l', 'd', 'v',
                                    {'i', 'd', 'b', 'e', 'h', 'o', 'l', 'd', 255}};
 
 cheatseq_t DoomCheats[] = {
-    {CheatMus, 0, 1, 0, {0, 0}, CHEAT_ChangeMusic},
-    {CheatPowerup[6], 0, 1, 0, {0, 0}, CHEAT_BeholdMenu},
-    {CheatMypos, 0, 1, 0, {0, 0}, CHEAT_IdMyPos},
-    {CheatAmap, 0, 0, 0, {0, 0}, CHEAT_AutoMap},
-    {CheatGod, 0, 0, 0, {CHT_IDDQD, 0}, CHEAT_SetGeneric},
-    {CheatAmmo, 0, 0, 0, {CHT_IDKFA, 0}, CHEAT_SetGeneric},
-    {CheatAmmoNoKey, 0, 0, 0, {CHT_IDFA, 0}, CHEAT_SetGeneric},
-    {CheatNoclip, 0, 0, 0, {CHT_NOCLIP, 0}, CHEAT_SetGeneric},  // Special check given !
-    {CheatNoclip2, 0, 0, 0, {CHT_NOCLIP, 1}, CHEAT_SetGeneric}, // Special Check given !
-    {CheatPowerup[0], 0, 0, 0, {CHT_BEHOLDV, 0}, CHEAT_SetGeneric},
-    {CheatPowerup[1], 0, 0, 0, {CHT_BEHOLDS, 0}, CHEAT_SetGeneric},
-    {CheatPowerup[2], 0, 0, 0, {CHT_BEHOLDI, 0}, CHEAT_SetGeneric},
-    {CheatPowerup[3], 0, 0, 0, {CHT_BEHOLDR, 0}, CHEAT_SetGeneric},
-    {CheatPowerup[4], 0, 0, 0, {CHT_BEHOLDA, 0}, CHEAT_SetGeneric},
-    {CheatPowerup[5], 0, 0, 0, {CHT_BEHOLDL, 0}, CHEAT_SetGeneric},
-    {CheatChoppers, 0, 0, 0, {CHT_CHAINSAW, 0}, CHEAT_SetGeneric},
-    {CheatClev, 0, 0, 0, {0, 0}, CHEAT_ChangeLevel}};
+    {CheatMus, 0, 1, 0, {0, 0}, cheat::ChangeMusic},
+    {CheatPowerup[6], 0, 1, 0, {0, 0}, cheat::BeholdMenu},
+    {CheatMypos, 0, 1, 0, {0, 0}, cheat::IdMyPos},
+    {CheatAmap, 0, 0, 0, {0, 0}, cheat::AutoMap},
+    {CheatGod, 0, 0, 0, {CHT_IDDQD, 0}, cheat::SetGeneric},
+    {CheatAmmo, 0, 0, 0, {CHT_IDKFA, 0}, cheat::SetGeneric},
+    {CheatAmmoNoKey, 0, 0, 0, {CHT_IDFA, 0}, cheat::SetGeneric},
+    {CheatNoclip, 0, 0, 0, {CHT_NOCLIP, 0}, cheat::SetGeneric},  // Special check given !
+    {CheatNoclip2, 0, 0, 0, {CHT_NOCLIP, 1}, cheat::SetGeneric}, // Special Check given !
+    {CheatPowerup[0], 0, 0, 0, {CHT_BEHOLDV, 0}, cheat::SetGeneric},
+    {CheatPowerup[1], 0, 0, 0, {CHT_BEHOLDS, 0}, cheat::SetGeneric},
+    {CheatPowerup[2], 0, 0, 0, {CHT_BEHOLDI, 0}, cheat::SetGeneric},
+    {CheatPowerup[3], 0, 0, 0, {CHT_BEHOLDR, 0}, cheat::SetGeneric},
+    {CheatPowerup[4], 0, 0, 0, {CHT_BEHOLDA, 0}, cheat::SetGeneric},
+    {CheatPowerup[5], 0, 0, 0, {CHT_BEHOLDL, 0}, cheat::SetGeneric},
+    {CheatChoppers, 0, 0, 0, {CHT_CHAINSAW, 0}, cheat::SetGeneric},
+    {CheatClev, 0, 0, 0, {0, 0}, cheat::ChangeLevel}};
 
 //
 // STATUS BAR CODE
@@ -547,9 +545,9 @@ bool ST_Responder (event_t *ev)
 	{
 		for (auto& cheat : DoomCheats)
 		{
-			if (CHEAT_AddKey(&cheat, (byte)ev->data1, &eat))
+			if (cheat::AddKey(&cheat, (byte)ev->data1, &eat))
 			{
-				if (cheat.DontCheck || CHEAT_AreCheatsEnabled())
+				if (cheat.DontCheck || cheat::AreCheatsEnabled())
 				{
 					eat |= cheat.Handler(&cheat);
 				}
@@ -563,30 +561,30 @@ bool ST_Responder (event_t *ev)
 // Console cheats
 BEGIN_COMMAND (god)
 {
-	if (!CHEAT_AreCheatsEnabled())
+	if (!cheat::AreCheatsEnabled())
 		return;
 
-	CHEAT_DoCheat(&consoleplayer(), CHT_GOD);
+	cheat::DoCheat(consoleplayer(), CHT_GOD);
 	CL_SendCheat(CHT_GOD);
 }
 END_COMMAND (god)
 
 BEGIN_COMMAND (notarget)
 {
-	if (!CHEAT_AreCheatsEnabled())
+	if (!cheat::AreCheatsEnabled())
 		return;
 
-	CHEAT_DoCheat(&consoleplayer(), CHT_NOTARGET);
+	cheat::DoCheat(consoleplayer(), CHT_NOTARGET);
 	CL_SendCheat(CHT_NOTARGET);
 }
 END_COMMAND (notarget)
 
 BEGIN_COMMAND (fly)
 {
-	if (!consoleplayer().spectator && !CHEAT_AreCheatsEnabled())
+	if (!consoleplayer().spectator && !cheat::AreCheatsEnabled())
 		return;
 
-	CHEAT_DoCheat(&consoleplayer(), CHT_FLY);
+	cheat::DoCheat(consoleplayer(), CHT_FLY);
 
 	if (!consoleplayer().spectator)
 	{
@@ -597,10 +595,10 @@ END_COMMAND (fly)
 
 BEGIN_COMMAND (noclip)
 {
-	if (!CHEAT_AreCheatsEnabled())
+	if (!cheat::AreCheatsEnabled())
 		return;
 
-	CHEAT_DoCheat(&consoleplayer(), CHT_NOCLIP);
+	cheat::DoCheat(consoleplayer(), CHT_NOCLIP);
 	CL_SendCheat(CHT_NOCLIP);
 }
 END_COMMAND (noclip)
@@ -626,10 +624,10 @@ BEGIN_COMMAND (chase)
 	}
 	else
 	{
-		if (!CHEAT_AreCheatsEnabled())
+		if (!cheat::AreCheatsEnabled())
 			return;
 
-		CHEAT_DoCheat(&consoleplayer(), CHT_CHASECAM);
+		cheat::DoCheat(consoleplayer(), CHT_CHASECAM);
 
 	}
 }
@@ -675,7 +673,7 @@ END_COMMAND (idmus)
 
 BEGIN_COMMAND (give)
 {
-	if (!CHEAT_AreCheatsEnabled())
+	if (!cheat::AreCheatsEnabled())
 		return;
 
 	if (argc < 2)
@@ -684,7 +682,7 @@ BEGIN_COMMAND (give)
 	const std::string name = C_ArgCombine(argc - 1, (const char**)(argv + 1));
 	if (name.length())
 	{
-		CHEAT_GiveTo(&consoleplayer(), name.c_str());
+		cheat::GiveTo(consoleplayer(), name.c_str());
 		CL_SendGiveCheat(name.c_str());
 	}
 }
@@ -692,7 +690,7 @@ END_COMMAND (give)
 
 BEGIN_COMMAND (fov)
 {
-	if (multiplayer && !sv_allowfov && (!CHEAT_AreCheatsEnabled() || !m_Instigator))
+	if (multiplayer && !sv_allowfov && (!cheat::AreCheatsEnabled() || !m_Instigator))
 		return;
 
 	if (argc != 2)
@@ -707,10 +705,10 @@ END_COMMAND (fov)
 
 BEGIN_COMMAND(buddha)
 {
-	if (!CHEAT_AreCheatsEnabled())
+	if (!cheat::AreCheatsEnabled())
 		return;
 
-	CHEAT_DoCheat(&consoleplayer(), CHT_BUDDHA);
+	cheat::DoCheat(consoleplayer(), CHT_BUDDHA);
 	CL_SendCheat(CHT_BUDDHA);
 }
 END_COMMAND(buddha)

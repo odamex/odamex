@@ -41,7 +41,7 @@
 #include "cmdlib.h"
 
 size_t P_NumPlayersInGame(void);
-argb_t CL_GetPlayerColor(player_t*);
+argb_t CL_GetPlayerColor(const player_t&);
 
 extern NetDemo netdemo;
 extern fixed_t FocalLengthX;
@@ -136,22 +136,22 @@ static void printWeaponTextIfWeaponOwned(const player_t& plyr, std::ostringstrea
 }
 
 // Returns true if a player is ingame.
-bool ingamePlayer(const player_t* player)
+bool ingamePlayer(const player_t& player)
 {
-	return (player->ingame() && player->spectator == false);
+	return (player.ingame() && player.spectator == false);
 }
 
 // Returns true if a player is ingame and on a specific team
-bool inTeamPlayer(const player_t* player, const byte team)
+bool inTeamPlayer(const player_t& player, const byte team)
 {
-	return (player->ingame() && player->userinfo.team == team &&
-	        player->spectator == false);
+	return (player.ingame() && player.userinfo.team == team &&
+	        player.spectator == false);
 }
 
 // Returns true if a player is a spectator
-bool spectatingPlayer(const player_t* player)
+bool spectatingPlayer(const player_t& player)
 {
-	return (!player->ingame() || player->spectator == true);
+	return (!player.ingame() || player.spectator == true);
 }
 
 // Returns a sorted player list.  Calculates at most once a gametic.
@@ -744,14 +744,14 @@ std::string PlayersSplit() {
 int CountTeamPlayers(byte team)
 {
 	const PlayersView& sortPlayers = sortedPlayers();
-	return std::count_if(sortPlayers.cbegin(), sortPlayers.cend(), [team](const auto& player) { return inTeamPlayer(player, team); });
+	return std::count_if(sortPlayers.cbegin(), sortPlayers.cend(), [team](const player_t* player) { return inTeamPlayer(*player, team); });
 }
 
 // Returns the number of spectators on a team
 int CountSpectators()
 {
 	const PlayersView& sortPlayers = sortedPlayers();
-	return std::count_if(sortPlayers.cbegin(), sortPlayers.cend(), [](const auto& player) { return spectatingPlayer(player); });
+	return std::count_if(sortPlayers.cbegin(), sortPlayers.cend(), [](const player_t* player) { return spectatingPlayer(*player); });
 }
 
 std::string TeamPlayers(int& color, byte team)
@@ -782,7 +782,7 @@ std::string TeamFrags(int& color, byte team)
 
 	int fragcount = 0;
 	for (const auto& player : sortedPlayers()) {
-		if (inTeamPlayer(player, team)) {
+		if (inTeamPlayer(*player, team)) {
 			fragcount += player->fragcount;
 		}
 	}
@@ -844,7 +844,7 @@ std::string TeamKD(int& color, byte team) {
 	int killcount = 0;
 	unsigned int deathcount = 0;
 	for (const auto& player : sortedPlayers()) {
-		if (inTeamPlayer(player, team)) {
+		if (inTeamPlayer(*player, team)) {
 			killcount += player->fragcount;
 			deathcount += player->deathcount;
 		}
@@ -871,7 +871,7 @@ std::string TeamPing(int& color, byte team) {
 
 	unsigned int ping = 0;
 	for (const auto& player : sortedPlayers()) {
-		if (inTeamPlayer(player, team)) {
+		if (inTeamPlayer(*player, team)) {
 			ping += player->ping;
 		}
 	}
@@ -1015,9 +1015,9 @@ void EAPlayerColors(int x, int y,
 		if (limit != 0 && drawn >= limit)
 			break;
 
-		if (ingamePlayer(player))
+		if (ingamePlayer(*player))
 		{
-			argb_t playercolor = CL_GetPlayerColor(player);
+			argb_t playercolor = CL_GetPlayerColor(*player);
 			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, playercolor);
 
 			y += h + padding;
@@ -1042,9 +1042,9 @@ void EATeamPlayerColors(int x, int y,
 		if (limit != 0 && drawn >= limit)
 			break;
 
-		if (inTeamPlayer(player, team))
+		if (inTeamPlayer(*player, team))
 		{
-			argb_t playercolor = CL_GetPlayerColor(player);
+			argb_t playercolor = CL_GetPlayerColor(*player);
 			hud::Clear(x, y, w, h, scale, x_align, y_align, x_origin, y_origin, playercolor);
 
 			y += h + padding;
@@ -1067,7 +1067,7 @@ void EAPlayerNames(int x, int y, const float scale,
 			break;
 		}
 
-		if (ingamePlayer(player)) {
+		if (ingamePlayer(*player)) {
 			int color = CR_GREY;
 			if (player->id == displayplayer().id)
 			{
@@ -1121,7 +1121,7 @@ void EATeamPlayerNames(int x, int y, const float scale,
 			break;
 		}
 
-		if (inTeamPlayer(player, team)) {
+		if (inTeamPlayer(*player, team)) {
 			int color = CR_GREY;
 			if (G_IsTeamGame())
 			{
@@ -1153,7 +1153,7 @@ void EASpectatorNames(int x, int y, const float scale,
 		if (limit != 0 && drawn >= limit)
 			break;
 
-		if (spectatingPlayer(player)) {
+		if (spectatingPlayer(*player)) {
 			if (skip <= 0) {
 				int color = CR_GREY;
 				if (G_IsTeamGame()) {
@@ -1204,7 +1204,7 @@ void EAPlayerRoundWins(int x, int y, const float scale, const x_align_t x_align,
 			break;
 		}
 
-		if (ingamePlayer(player))
+		if (ingamePlayer(*player))
 		{
 			std::string buffer = fmt::sprintf("%d", player->roundwins);
 
@@ -1231,7 +1231,7 @@ void EAPlayerLives(int x, int y, const float scale, const x_align_t x_align,
 			break;
 		}
 
-		if (ingamePlayer(player))
+		if (ingamePlayer(*player))
 		{
 			std::string buffer = fmt::sprintf("%d", player->lives);
 
@@ -1258,7 +1258,7 @@ void EATeamPlayerLives(int x, int y, const float scale, const x_align_t x_align,
 			break;
 		}
 
-		if (inTeamPlayer(player, team))
+		if (inTeamPlayer(*player, team))
 		{
 			std::string buffer = fmt::sprintf("%d", player->lives);
 
@@ -1285,7 +1285,7 @@ void EAPlayerFrags(int x, int y, const float scale,
 			break;
 		}
 
-		if (ingamePlayer(player)) {
+		if (ingamePlayer(*player)) {
 			std::ostringstream buffer;
 			buffer << player->fragcount;
 
@@ -1323,7 +1323,7 @@ void EATeamPlayerFrags(int x, int y, const float scale,
 		}
 
 
-		if (inTeamPlayer(player, team)) {
+		if (inTeamPlayer(*player, team)) {
 			std::ostringstream buffer;
 			buffer << frags;
 
@@ -1350,7 +1350,7 @@ void EAPlayerDamage(int x, int y, const float scale, const x_align_t x_align,
 			break;
 		}
 
-		if (ingamePlayer(player))
+		if (ingamePlayer(*player))
 		{
 			std::ostringstream buffer;
 			buffer << player->monsterdmgcount;
@@ -1377,7 +1377,7 @@ void EAPlayerKills(int x, int y, const float scale,
 			break;
 		}
 
-		if (ingamePlayer(player)) {
+		if (ingamePlayer(*player)) {
 			std::ostringstream buffer;
 			buffer << player->killcount;
 
@@ -1414,7 +1414,7 @@ void EAPlayerDeaths(int x, int y, const float scale,
 		}
 
 
-		if (ingamePlayer(player)) {
+		if (ingamePlayer(*player)) {
 			std::ostringstream buffer;
 			buffer << deaths;
 
@@ -1451,7 +1451,7 @@ void EATeamPlayerPoints(int x, int y, const float scale,
 			points = player->points;
 		}
 
-		if (inTeamPlayer(player, team)) {
+		if (inTeamPlayer(*player, team)) {
 			std::ostringstream buffer;
 			buffer << points;
 
@@ -1479,7 +1479,7 @@ void EAPlayerKD(int x, int y, const float scale,
 			break;
 		}
 
-		if (ingamePlayer(player)) {
+		if (ingamePlayer(*player)) {
 			std::ostringstream buffer;
 			buffer.precision(2);
 			buffer << std::fixed;
@@ -1515,7 +1515,7 @@ void EATeamPlayerKD(int x, int y, const float scale,
 			break;
 		}
 
-		if (inTeamPlayer(player, team)) {
+		if (inTeamPlayer(*player, team)) {
 			std::ostringstream buffer;
 			buffer.precision(2);
 			buffer << std::fixed;
@@ -1550,7 +1550,7 @@ void EAPlayerTimes(int x, int y, const float scale,
 			break;
 		}
 
-		if (ingamePlayer(player)) {
+		if (ingamePlayer(*player)) {
 			std::ostringstream buffer;
 			buffer << player->GameTime / 60;
 
@@ -1577,7 +1577,7 @@ void EATeamPlayerTimes(int x, int y, const float scale,
 			break;
 		}
 
-		if (inTeamPlayer(player, team)) {
+		if (inTeamPlayer(*player, team)) {
 			std::ostringstream buffer;
 			buffer << player->GameTime / 60;
 
@@ -1603,7 +1603,7 @@ void EAPlayerPings(int x, int y, const float scale,
 			break;
 		}
 
-		if (ingamePlayer(player)) {
+		if (ingamePlayer(*player)) {
 			std::ostringstream buffer;
 			buffer << player->ping;
 
@@ -1630,7 +1630,7 @@ void EATeamPlayerPings(int x, int y, const float scale,
 			break;
 		}
 
-		if (inTeamPlayer(player, team)) {
+		if (inTeamPlayer(*player, team)) {
 			std::ostringstream buffer;
 			buffer << player->ping;
 
@@ -1658,7 +1658,7 @@ void EASpectatorPings(int x, int y, const float scale,
 			break;
 		}
 
-		if (spectatingPlayer(player)) {
+		if (spectatingPlayer(*player)) {
 			if (skip <= 0) {
 				std::ostringstream buffer;
 				buffer << player->ping;

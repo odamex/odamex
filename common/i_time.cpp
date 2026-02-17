@@ -1,0 +1,209 @@
+// Emacs style mode select   -*- C++ -*-
+//-----------------------------------------------------------------------------
+//
+// $Id$
+//
+// Copyright (C) 2026 by The Odamex Team.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//      This module contains the basic time functions.
+//
+//-----------------------------------------------------------------------------
+
+#include "i_time.h"
+
+#if defined OSX
+	#include <mach/clock.h>
+	#include <mach/mach.h>
+	#include <unistd.h>
+
+#elif defined UNIX
+	#include <time.h>
+	#include <unistd.h>
+
+#elif defined WIN32
+	#include "win32inc.h"
+
+#elif defined CLIENT_APP
+	#include "i_sdl.h"
+
+#else
+	#error This is an unknown target platform - dont know how to provide a high-res timer!
+
+#endif
+
+//
+// I_GetTime
+//
+// [SL] Retrieve an arbitrarily-based time from a high-resolution timer with
+// nanosecond accuracy.
+//
+dtime_t I_GetTime()
+{
+#if defined OSX
+	clock_serv_t cclock;
+	mach_timespec_t mts;
+
+	host_get_clock_service(mach_host_self(), SYSTEM_CLOCK, &cclock);
+	clock_get_time(cclock, &mts);
+	mach_port_deallocate(mach_task_self(), cclock);
+	return mts.tv_sec * 1000LL * 1000LL * 1000LL + mts.tv_nsec;
+
+#elif defined UNIX
+	timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return ts.tv_sec * 1000LL * 1000LL * 1000LL + ts.tv_nsec;
+
+#elif defined WIN32
+	static bool initialized = false;
+	static LARGE_INTEGER initial_count;
+	static double nanoseconds_per_count;
+
+	if (!initialized)
+	{
+		LARGE_INTEGER freq;
+		QueryPerformanceFrequency(&freq);
+		nanoseconds_per_count = 1000.0 * 1000.0 * 1000.0 / double(freq.QuadPart);
+
+		QueryPerformanceCounter(&initial_count);
+
+		initialized = true;
+	}
+
+	LARGE_INTEGER current_count;
+	QueryPerformanceCounter(&current_count);
+	return static_cast<dtime_t>(nanoseconds_per_count * (current_count.QuadPart - initial_count.QuadPart));
+
+#elif defined CLIENT_APP
+	// [SL] use SDL_GetTicks, but account for the fact that after
+	// 49 days, it wraps around since it returns a 32-bit int
+	static constexpr uint64_t mask = 0xFFFFFFFFLL;
+	static uint64_t last_time = 0LL;
+	uint64_t current_time = SDL_GetTicks();
+
+	if (current_time < (last_time & mask))      // just wrapped around
+		last_time += mask + 1 - (last_time & mask) + current_time;
+	else
+		last_time = current_time;
+
+	return last_time * 1000000LL;
+
+#else
+	#error This is an unknown target platform - unsure how to read time!
+
+#endif
+}
+
+dtime_t I_MSTime()
+{
+	return I_ConvertTimeToMs(I_GetTime());
+}
+
+dtime_t I_ConvertTimeToMs(dtime_t value)
+{
+	return value / 1000000LL;
+}
+
+dtime_t I_ConvertTimeFromMs(dtime_t value)
+{
+	return value * 1000000LL;
+}
+
+//
+// I_Sleep
+//
+// Sleeps for the specified number of nanoseconds, yielding control to the
+// operating system. Nanoseconds are used for consistency with I_GetTime().
+//
+void I_Sleep(dtime_t sleep_time)
+{
+	// Use lldiv because it's the formal way to get both integer quotient and
+	// remainder from a single operation on platforms that can do so.
+#if defined OSX
+	timespec relativeSleepRequest;
+
+	relativeSleepRequest.tv_sec  = 0;
+	relativeSleepRequest.tv_nsec = sleep_time;
+	if (relativeSleepRequest.tv_nsec >= 1000000000LL)
+	{
+		const lldiv_t divisionResult = lldiv(relativeSleepRequest.tv_nsec, 1000000000LL);
+		relativeSleepRequest.tv_sec += divisionResult.quot;
+		relativeSleepRequest.tv_nsec = divisionResult.rem;
+	}
+
+	// Unfortunately OSX doesn't really support clock_nanosleep, so we're forced into
+	// using nanosleep, which only does relative sleep requests.  It's better than
+	// usleep because we can easily continue sleeping after a spurious wakeup, but there's
+	// a slight time leak due to drift between the moment that the relative `remaining`
+	// is written and the moment we enter nanosleep.  IOW, the goalposts move slightly.
+	timespec remaining;
+
+	while (nanosleep(& relativeSleepRequest, & remaining) && errno == EINTR)
+	{
+		// If we're here, it's because some signal interrupted our slumber.
+		// Go back to sleep.
+		relativeSleepRequest = remaining;
+	}
+
+#elif defined UNIX
+	timespec sleepRequest;
+	clock_gettime(CLOCK_MONOTONIC, &sleepRequest);
+	sleepRequest.tv_nsec += sleep_time;
+	if (sleepRequest.tv_nsec >= 1000000000LL)
+	{
+		const lldiv_t divisionResult = lldiv(sleepRequest.tv_nsec, 1000000000LL);
+		sleepRequest.tv_sec += divisionResult.quot;
+		sleepRequest.tv_nsec = divisionResult.rem;
+	}
+
+	while (clock_nanosleep(CLOCK_MONOTONIC,
+	                       TIMER_ABSTIME,       // Use ABSTIME because unlike relative time, it won't drift
+	                       & sleepRequest,      // over successive interruptions.
+	                       nullptr) == EINTR)
+	{
+		// If we're here, it's because some signal interrupted our slumber.
+		// Go back to sleep.
+	}
+
+#elif defined WIN32
+	Sleep(static_cast<DWORD>(sleep_time / 1000000LL));
+
+#elif defined CLIENT_APP
+	SDL_Delay(sleep_time / 1000000LL);
+
+#else
+	#error This is an unknown target platform - dont know how to sleep!
+
+#endif
+}
+
+//
+// I_Yield
+//
+// Sleeps for 1 millisecond
+//
+void I_Yield()
+{
+	I_Sleep(1000LL * 1000LL);       // sleep for 1ms
+}
+
+//
+// I_WaitVBL
+//
+// I_WaitVBL is never used to actually synchronize to the
+// vertical blank. Instead, it's used for delay purposes.
+//
+void I_WaitVBL(int count)
+{
+	I_Sleep(1000000LL * 1000LL * count / 70);
+}

@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,8 +28,6 @@
 #include "d_player.h"
 #include "v_palette.h"
 
-bool menuactive;
-
 void R_ExitLevel() {}
 void D_SetupUserInfo (void) {}
 void D_UserInfoChanged (cvar_t *cvar) {}
@@ -42,8 +40,8 @@ argb_t V_GetColorFromString(const std::string& str)
     return 0;
 }
 
-void PickupMessage(AActor *toucher, const char *message) {}
-void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon) {}
+void PickupMessage(const AActor *toucher, const char *message) {}
+void WeaponPickupMessage(const AActor *toucher, const weapontype_t &Weapon) {}
 
 void AM_Stop(void) {}
 

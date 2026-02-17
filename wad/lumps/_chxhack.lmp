@@ -1,0 +1,196 @@
+Patch File for DeHackEd v3.0
+
+# Adapted from Simon "fraggle" Howard's chex.deh
+
+Doom version = 21
+Patch format = 6
+
+Frame 537
+Duration = 3
+
+Frame 538
+Duration = 3
+
+Frame 539
+Duration = 0
+
+Thing 2 (Flemoidus commonus)
+Close attack frame = 184
+Far attack frame = 0
+Dropped item = 0
+
+Thing 3 (Flemoidus bipedicus)
+Close attack frame = 217
+Far attack frame = 0
+Dropped item = 0
+
+# Remove dropped item from chaingunner
+Thing 11
+Dropped item = 0
+
+Thing 16 (The Flembrane)
+Width = 2883584
+Height = 6553600
+Speed = 0
+
+Thing 19
+Height = 0
+
+# Remove dropped item from SS
+Thing 24
+Dropped item = 0
+
+[STRINGS]
+# Quit Messages
+QUITMSG   = Don't give up now...do\nyou still wish to quit?
+QUITMSG1  = please don't leave, we\nneed your help!
+QUITMSG2  = please don't leave, we\nneed your help!
+QUITMSG3  = please don't leave, we\nneed your help!
+QUITMSG4  = please don't leave, we\nneed your help!
+QUITMSG5  = please don't leave, we\nneed your help!
+QUITMSG6  = please don't leave, we\nneed your help!
+QUITMSG7  = please don't leave, we\nneed your help!
+QUITMSG8  = please don't leave, we\nneed your help!
+QUITMSG9  = please don't leave, we\nneed your help!
+QUITMSG10 = please don't leave, we\nneed your help!
+QUITMSG11 = please don't leave, we\nneed your help!
+QUITMSG12 = please don't leave, we\nneed your help!
+QUITMSG13 = please don't leave, we\nneed your help!
+QUITMSG14 = please don't leave, we\nneed your help!
+
+# Intermission texts
+E1TEXT = Mission accomplished.\n\n\
+         Are you prepared for the next mission?\
+         \n\n\n\n\n\n\n\
+         Press the escape key to continue...\n
+E2TEXT = You've done it!
+E3TEXT = Wonderful Job!
+E4TEXT = Fantastic
+C1TEXT = Great!
+C2TEXT = Way to go!
+C3TEXT = Thanks for the help!
+C4TEXT = Great!\n
+C5TEXT = Fabulous!
+C6TEXT = CONGRATULATIONS!\n
+P1TEXT = Nicely done!
+P2TEXT = Nice Job!
+P3TEXT = Well done!
+P4TEXT = Eat Chex(R)!
+P5TEXT = Are you ready?
+P6TEXT = Were you ready?
+T1TEXT = There's more to come...
+T2TEXT = Keep up the good work!
+T3TEXT = Get ready!
+T4TEXT = Be Proud.
+T5TEXT = Wow!
+T6TEXT = Great.
+
+# New game, save/load, etc.
+LOADNET   = you can't do load while in a net quest!\n\npress a key.
+QLOADNET  = you can't quickload during a netquest!\n\npress a key.
+NETEND    = you can't end a netquest!\n\npress a key.
+QSPROMPT  = quicksave over your quest named\n\n'%s'?\n\npress y or n.
+QLPROMPT  = do you want to quickload the quest named\n\n'%s'?\n\npress y or n.
+NEWGAME   = you can't start a new quest\nwhile in a network quest.\n\npress a key.
+ENDGAME   = are you sure you want to end the quest?\n\npress y or n.
+NIGHTMARE = Careful, this will be tough.\nDo you wish to continue?\n\npress y or n.
+SWSTRING  = this is Chex(R) Quest. look for\n\nfuture levels at www.chexquest.com.\n\npress a key.
+
+# Chat macros - currently unused
+HUSTR_CHATMACRO1 = I'm ready to zorch!
+HUSTR_CHATMACRO2 = I'm feeling great!
+HUSTR_CHATMACRO3 = I'm getting pretty gooed up!
+HUSTR_CHATMACRO4 = Somebody help me!
+HUSTR_CHATMACRO5 = Go back to your own dimension!
+HUSTR_CHATMACRO6 = Stop that Flemoid
+HUSTR_CHATMACRO7 = I think I'm lost!
+HUSTR_CHATMACRO8 = I'll get you out of this gunk.
+
+# Pickup messages
+GOTARMOR    = Picked up the Chex(R) Armor.
+GOTMEGA     = Picked up the Super Chex(R) Armor!
+GOTHTHBONUS = Picked up a glass of water.
+GOTARMBONUS = Picked up slime repellant.
+GOTSTIM     = Picked up a bowl of fruit.
+GOTMEDINEED = Picked up some needed vegetables!
+GOTMEDIKIT  = Picked up a bowl of vegetables.
+GOTSUPER    = Supercharge Breakfast!
+GOTSUIT     = Slimeproof Suit
+GOTBLUECARD = Picked up a blue key.
+GOTYELWCARD = Picked up a yellow key.
+GOTREDCARD  = Picked up a red key.
+GOTCLIP     = Picked up a mini zorch recharge.
+GOTCLIPBOX  = Picked up a mini zorch pack.
+GOTROCKET   = Picked up a zorch propulsor recharge.
+GOTROCKBOX  = Picked up a zorch propulsor pack.
+GOTCELL     = Picked up a phasing zorcher recharge.
+GOTCELLBOX  = Picked up a phasing zorcher pack.
+GOTSHELLS   = Picked up a large zorcher recharge.
+GOTSHELLBOX = Picked up a large zorcher pack.
+GOTBACKPACK = Picked up a Zorchpak!
+GOTBFG9000  = You got the LAZ Device!
+GOTCHAINGUN = You got the Rapid Zorcher!
+GOTCHAINSAW = You got the Super Bootspork!
+GOTLAUNCHER = You got the Zorch Propulsor!
+GOTPLASMA   = You got the Phasing Zorcher!
+GOTSHOTGUN  = You got the Large Zorcher!
+GOTSHOTGUN2 = You got the Super Large Zorcher!
+
+# Cheat messages
+STSTR_DQDON    = Invincible Mode On
+STSTR_DQDOFF   = Invincible Mode Off
+STSTR_FAADDED  = Zorch Added
+STSTR_KFAADDED = Super Zorch Added
+STSTR_CHOPPERS = ... Eat Chex(R)!
+
+# Self talk
+HUSTR_TALKTOSELF1 = I'm feeling great.
+HUSTR_TALKTOSELF2 = I think I'm lost.
+HUSTR_TALKTOSELF3 = Oh No...
+HUSTR_TALKTOSELF4 = Gotta break free.
+HUSTR_TALKTOSELF5 = Hurry!
+
+# Enemy names
+CC_ZOMBIE  = FLEMOIDUS COMMONUS
+CC_SHOTGUN = FLEMOIDUS BIPEDICUS
+CC_DEMON   = FLEMOIDUS BIPEDICUS WITH ARMOR
+CC_BARON   = THE FLEMBRANE
+
+# Obituaries, taken from Woof's chexdeh.lmp
+OB_DEFAULT       = %o was slimed.
+OB_SLIME         = %o sinks into some slime.
+OB_LAVA          = %o got stuck in quick-slime.
+OB_ZOMBIE        = %o was slimed by a flemoid.
+OB_SHOTGUY       = %o was slimed by a bipedicus.
+OB_IMPHIT        = %o was slimed by an armored bipedicus.
+OB_IMP           = %o was slimed by an armored bipedicus.
+OB_DEMONHIT      = %o was slimed by a cycloptis.
+OB_SPECTREHIT    = %o was slimed by a cycloptis.
+OB_BARON         = %o was defeated by the Flembrane.
+OB_BARONHIT      = %o was defeated by the Flembrane.
+OB_SUICIDE       = %o prefers the flemoid dimension.
+OB_KILLEDSELF    = %o zorched %hself.
+OB_MPDEFAULT     = %o was zorched by %k.
+OB_MPFIST        = %o was spoon fed by %k.
+OB_MPCHAINSAW    = %o was thouroughly mixed with %k's bootspork.
+OB_MPPISTOL      = %o was hit by %k's mini-zorcher.
+OB_MPSHOTGUN     = %o was hit by %k's large-zorcher.
+OB_MPSSHOTGUN    = %o was hit by %k's mega-zorcher.
+OB_MPCHAINGUN    = %o was rapid zorched by %k.
+OB_MPROCKET      = %o was zorched by %k's propulsor.
+OB_MPR_SPLASH    = %o was hit by %k's propulsor.
+OB_MPPLASMARIFLE = %o was phase zorched by %k.
+OB_MPBFG_BOOM    = %o fell prey to %k's LAZ device.
+OB_MPBFG_SPLASH  = %o was lazzed by %k.
+
+# Map names
+# These are actually not what Odamex currently uses
+# Instead it loads the CHUSTR_E1Mx strings
+# But this is here for consistency with chex.deh
+HUSTR_E1M1 = E1M1: Landing Zone
+HUSTR_E1M2 = E1M2: Storage Facility
+HUSTR_E1M3 = E1M3: Experimental Lab
+HUSTR_E1M4 = E1M4: Arboretum
+HUSTR_E1M5 = E1M5: Caverns of Bazoik
+
+# Par times are already set in _CHEXNFO

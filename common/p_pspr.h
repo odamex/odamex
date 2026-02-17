@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -62,21 +62,21 @@ void A_ForceWeaponFire(AActor *mo, weapontype_t weapon, int tic);
 
 inline FArchive &operator<< (FArchive &arc, psprnum_t i)
 {
-	return arc << (BYTE)i;
+	return arc << (byte)i;
 }
 inline FArchive &operator>> (FArchive &arc, psprnum_t &out)
 {
-	BYTE in; arc >> in; out = (psprnum_t)in; return arc;
+	byte in; arc >> in; out = (psprnum_t)in; return arc;
 }
 
-typedef struct pspdef_s
+struct pspdef_t
 {
 	state_t*	state;	// a NULL state means not active
 	int 		tics;
 
 	fixed_t 	sx;
 	fixed_t 	sy;
-} pspdef_t;
+};
 
 FArchive &operator<< (FArchive &, pspdef_t &);
 FArchive &operator>> (FArchive &, pspdef_t &);

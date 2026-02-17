@@ -4,6 +4,16 @@ on:
   push:
     branches-ignore:
     - 'release/[0-9]+.[0-9]+.[0-9]+'
+    paths-ignore:
+    - "**/*.md"
+    - README
+    - LICENSE
+    - MAINTAINERS
+    - CHANGELOG
+    - 3RD-PARTY-LICENSES
+    - config-samples/*
+    - documentation/**
+    - tools/**
   pull_request:
 
 
@@ -41,6 +51,8 @@ jobs:
       uses: ammaraskar/msvc-problem-matcher@master
     - name: Run build
       run: cmake --build .\build\ --config RelWithDebInfo --parallel
+    - name: Run unit tests
+      run: .\build\tests\unit-tests\RelWithDebInfo\odagtest
     - name: Prepare artifact
       run: .\ci\win-artifact.ps1
     - name: Stage artifacts for testing

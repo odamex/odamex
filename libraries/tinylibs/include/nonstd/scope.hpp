@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020-2020 Martin Moene
+// Copyright (c) 2020-2025 Martin Moene
 //
 // https://github.com/martinmoene/scope-lite
 //
@@ -13,7 +13,7 @@
 #define NONSTD_SCOPE_LITE_HPP
 
 #define scope_lite_MAJOR  0
-#define scope_lite_MINOR  2
+#define scope_lite_MINOR  3
 #define scope_lite_PATCH  0
 
 #define scope_lite_VERSION  scope_STRINGIFY(scope_lite_MAJOR) "." scope_STRINGIFY(scope_lite_MINOR) "." scope_STRINGIFY(scope_lite_PATCH)
@@ -45,11 +45,15 @@
 # define scope_CONFIG_SELECT_SCOPE  ( scope_HAVE_STD_SCOPE ? scope_SCOPE_STD : scope_SCOPE_NONSTD )
 #endif
 
-// #if !defined( scope_CONFIG_STRICT )
-// # define scope_CONFIG_STRICT  0
-// #endif
+#if !defined( scope_CONFIG_NO_EXTENSIONS )
+# define scope_CONFIG_NO_EXTENSIONS  0
+#endif
 
-// C++ language version detection (C++20 is speculative):
+#if !defined( scope_CONFIG_NO_CONSTEXPR )
+# define scope_CONFIG_NO_CONSTEXPR  (scope_CONFIG_NO_EXTENSIONS || !scope_CPP20_OR_GREATER)
+#endif
+
+// C++ language version detection (C++23 is speculative):
 // Note: VC14.0/1900 (VS2015) lacks too much from C++14.
 
 #ifndef   scope_CPLUSPLUS
@@ -64,25 +68,30 @@
 #define scope_CPP11_OR_GREATER  ( scope_CPLUSPLUS >= 201103L )
 #define scope_CPP14_OR_GREATER  ( scope_CPLUSPLUS >= 201402L )
 #define scope_CPP17_OR_GREATER  ( scope_CPLUSPLUS >= 201703L )
-#define scope_CPP20_OR_GREATER  ( scope_CPLUSPLUS >= 202000L )
+#define scope_CPP20_OR_GREATER  ( scope_CPLUSPLUS >= 202002L )
+#define scope_CPP23_OR_GREATER  ( scope_CPLUSPLUS >= 202300L )
 
 // Use C++yy <scope> if available and requested:
+// Note: __cpp_lib_experimental_scope: a value of at least 201902 indicates that the scope guard are supported
 
 #if scope_CPP20_OR_GREATER && defined(__has_include )
-# if __has_include( <scope> )
+# if   __has_include( <scope> )
 #  define scope_HAVE_STD_SCOPE  1
+#  define scope_HAVE_EXP_SCOPE  0
+# elif __has_include( <experimental/scope> )
+#  define scope_HAVE_STD_SCOPE  0
+#  define scope_HAVE_EXP_SCOPE  1
 # else
 #  define scope_HAVE_STD_SCOPE  0
+#  define scope_HAVE_EXP_SCOPE  0
 # endif
 #else
 # define  scope_HAVE_STD_SCOPE  0
+# define  scope_HAVE_EXP_SCOPE  0
 #endif
 
 #define  scope_USES_STD_SCOPE  ( (scope_CONFIG_SELECT_SCOPE == scope_SCOPE_STD) || ((scope_CONFIG_SELECT_SCOPE == scope_SCOPE_DEFAULT) && scope_HAVE_STD_SCOPE) )
-
-//
-// Using std <scope>:
-//
+#define  scope_USES_EXP_SCOPE  ( (scope_CONFIG_SELECT_SCOPE == scope_SCOPE_STD) || ((scope_CONFIG_SELECT_SCOPE == scope_SCOPE_DEFAULT) && scope_HAVE_EXP_SCOPE) )
 
 #if scope_USES_STD_SCOPE
 
@@ -99,6 +108,23 @@ namespace nonstd
     using std::make_scope_fail;
     using std::make_scope_success;
     using std::make_unique_resource_checked;
+}
+
+#elif scope_USES_EXP_SCOPE
+
+#include <experimental/scope>
+
+namespace nonstd
+{
+    using std::experimental::scope_exit;
+    using std::experimental::scope_fail;
+    using std::experimental::scope_success;
+    using std::experimental::unique_resource;
+
+    using std::experimental::make_scope_exit;
+    using std::experimental::make_scope_fail;
+    using std::experimental::make_scope_success;
+    using std::experimental::make_unique_resource_checked;
 }
 
 #else // scope_USES_STD_SCOPE
@@ -223,7 +249,8 @@ namespace nonstd
 #define scope_HAVE_IS_NOTHROW_ASSIGNABLE  scope_CPP11_110
 #define scope_HAVE_IS_NOTHROW_MOVE_ASSIGNABLE  scope_CPP11_110
 
-#define scope_HAVE_REFERENCE_WRAPPER      scope_CPP11_110
+#define scope_HAVE_FUNCATIONAL            scope_CPP11_110
+#define scope_HAVE_REFERENCE_WRAPPER      scope_HAVE_FUNCATIONAL
 
 #define scope_HAVE_REMOVE_CV              scope_CPP11_90
 #define scope_HAVE_REMOVE_REFERENCE       scope_CPP11_90
@@ -257,6 +284,12 @@ namespace nonstd
 # define scope_constexpr14 constexpr
 #else
 # define scope_constexpr14 /*constexpr*/
+#endif
+
+#if !scope_CONFIG_NO_CONSTEXPR
+#define scope_constexpr_ext  constexpr
+#else
+# define scope_constexpr_ext /*constexpr*/
 #endif
 
 #if scope_HAVE( IS_DELETE )
@@ -297,6 +330,10 @@ namespace nonstd
 #include <limits>       // std::numeric_limits<>
 #include <utility>      // move(), forward<>(), swap()
 
+#if scope_HAVE_FUNCATIONAL
+# include <functional>
+#endif
+
 #if scope_HAVE_TYPE_TRAITS
 # include <type_traits>
 #elif scope_HAVE_TR1_TYPE_TRAITS
@@ -311,7 +348,7 @@ namespace nonstd
 # define scope_ENABLE_IF_R_(VA, R)  R
 #endif
 
-// Method enabling (funtion template argument):
+// Method enabling (function template argument):
 
 #if scope_HAVE( TYPE_TRAITS ) && scope_HAVE( DEFAULT_FUNCTION_TEMPLATE_ARG )
 // VS 2013 seems to have trouble with SFINAE for default non-type arguments:
@@ -480,7 +517,7 @@ struct conditional<false, T, F> { typedef F type; };
     template< class T > struct reference_wrapper{ typedef T type; };
 #endif
 
-} // namepsace std11
+} // namespace std11
 
 // C++14 emulation:
 
@@ -556,7 +593,29 @@ struct same_as : std11::integral_constant<bool, std11::is_same<T,U>::value && st
 template< class T >
 struct type_identity { typedef T type; };
 
-} // namepsace std20
+} // namespace std20
+
+namespace detail {
+
+#if scope_CONFIG_NO_CONSTEXPR
+
+using std17::uncaught_exceptions;
+
+#else
+constexpr int uncaught_exceptions() noexcept
+{
+    if ( std::is_constant_evaluated() )
+    {
+        return 0;
+    }
+    else
+    {
+        return std17::uncaught_exceptions();
+    }
+}
+#endif
+
+} // namespace detail
 
 //
 // For reference:
@@ -646,7 +705,7 @@ public:
             && std11::is_constructible<EF, Fn>::value
         ))
     >
-    explicit scope_exit( Fn&& fn )
+    scope_constexpr_ext explicit scope_exit( Fn&& fn )
     scope_noexcept_op
     ((
         std11::is_nothrow_constructible<EF, Fn>::value
@@ -659,7 +718,7 @@ public:
         , execute_on_destruction( true )
     {}
 
-    scope_exit( scope_exit && other )
+    scope_constexpr_ext scope_exit( scope_exit && other )
     scope_noexcept_op
     ((
         std11::is_nothrow_move_constructible<EF>::value
@@ -671,22 +730,22 @@ public:
         other.release();
     }
 
-    ~scope_exit() scope_noexcept
+    scope_constexpr_ext ~scope_exit() scope_noexcept
     {
         if ( execute_on_destruction )
             exit_function();
     }
 
-    void release() scope_noexcept
+    scope_constexpr_ext void release() scope_noexcept
     {
         execute_on_destruction = false;
     }
 
 scope_is_delete_access:
-    scope_exit( scope_exit const & ) scope_is_delete;
+    scope_constexpr_ext scope_exit( scope_exit const & ) scope_is_delete;
 
-    scope_exit & operator=( scope_exit const & ) scope_is_delete;
-    scope_exit & operator=( scope_exit &&      ) scope_is_delete;
+    scope_constexpr_ext scope_exit & operator=( scope_exit const & ) scope_is_delete;
+    scope_constexpr_ext scope_exit & operator=( scope_exit &&      ) scope_is_delete;
 
 private:
     EF exit_function;
@@ -705,7 +764,7 @@ public:
             && std11::is_constructible<EF, Fn>::value
         ))
     >
-    explicit scope_fail( Fn&& fn )
+    scope_constexpr_ext explicit scope_fail( Fn&& fn )
     scope_noexcept_op
     ((
         std11::is_nothrow_constructible<EF, Fn>::value
@@ -714,10 +773,10 @@ public:
         : exit_function(
             conditional_forward<Fn>( std::forward<Fn>(fn)
             , std11::bool_constant< std11::is_nothrow_constructible<EF, Fn>::value >() ) )
-        , uncaught_on_creation( std17::uncaught_exceptions() )
+        , uncaught_on_creation( detail::uncaught_exceptions() )
     {}
 
-    scope_fail( scope_fail && other )
+    scope_constexpr_ext scope_fail( scope_fail && other )
     scope_noexcept_op
     ((
         std11::is_nothrow_move_constructible<EF>::value
@@ -729,26 +788,26 @@ public:
         other.release();
     }
 
-    ~scope_fail() scope_noexcept
+    scope_constexpr_ext ~scope_fail() scope_noexcept
     {
-        if ( uncaught_on_creation < std17::uncaught_exceptions() )
+        if ( uncaught_on_creation < detail::uncaught_exceptions() )
             exit_function();
     }
 
-    void release() scope_noexcept
+    scope_constexpr_ext void release() scope_noexcept
     {
         uncaught_on_creation = std::numeric_limits<int>::max();
     }
 
 scope_is_delete_access:
-    scope_fail( scope_fail const & ) scope_is_delete;
+    scope_constexpr_ext scope_fail( scope_fail const & ) scope_is_delete;
 
-    scope_fail & operator=( scope_fail const & ) scope_is_delete;
-    scope_fail & operator=( scope_fail &&      ) scope_is_delete;
+    scope_constexpr_ext scope_fail & operator=( scope_fail const & ) scope_is_delete;
+    scope_constexpr_ext scope_fail & operator=( scope_fail &&      ) scope_is_delete;
 
 private:
     EF exit_function;
-    int uncaught_on_creation; // { std17::uncaught_exceptions() };
+    int uncaught_on_creation; // { detail::uncaught_exceptions() };
 };
 
 // scope_success:
@@ -763,7 +822,7 @@ public:
             && std11::is_constructible<EF, Fn>::value
         ))
     >
-    explicit scope_success( Fn&& fn )
+    scope_constexpr_ext explicit scope_success( Fn&& fn )
     scope_noexcept_op
     ((
         std11::is_nothrow_constructible<EF, Fn>::value
@@ -772,10 +831,10 @@ public:
         : exit_function(
             conditional_forward<Fn>( std::forward<Fn>(fn)
             , std11::bool_constant< std11::is_nothrow_constructible<EF, Fn>::value >() ) )
-        , uncaught_on_creation( std17::uncaught_exceptions() )
+        , uncaught_on_creation( detail::uncaught_exceptions() )
     {}
 
-    scope_success( scope_success && other )
+    scope_constexpr_ext scope_success( scope_success && other )
     scope_noexcept_op
     ((
         std11::is_nothrow_move_constructible<EF>::value
@@ -787,26 +846,29 @@ public:
         other.release();
     }
 
-    ~scope_success() scope_noexcept
+    scope_constexpr_ext ~scope_success()
+#if !scope_BETWEEN(scope_COMPILER_GNUC_VERSION, 1, 900) // GCC >= 9, issue #12
+        scope_noexcept_op( scope_noexcept_op(this->exit_function()) )
+#endif
     {
-        if ( uncaught_on_creation >= std17::uncaught_exceptions() )
+        if ( uncaught_on_creation >= detail::uncaught_exceptions() )
             exit_function();
     }
 
-    void release() scope_noexcept
+    scope_constexpr_ext void release() scope_noexcept
     {
         uncaught_on_creation = -1;
     }
 
 scope_is_delete_access:
-    scope_success( scope_success const & ) scope_is_delete;
+    scope_constexpr_ext scope_success( scope_success const & ) scope_is_delete;
 
-    scope_success & operator=( scope_success const & ) scope_is_delete;
-    scope_success & operator=( scope_success &&      ) scope_is_delete;
+    scope_constexpr_ext scope_success & operator=( scope_success const & ) scope_is_delete;
+    scope_constexpr_ext scope_success & operator=( scope_success &&      ) scope_is_delete;
 
 private:
     EF exit_function;
-    int uncaught_on_creation; // { std17::uncaught_exceptions() };
+    int uncaught_on_creation; // { detail::uncaught_exceptions() };
 };
 
 #if scope_HAVE( DEDUCTION_GUIDES )
@@ -818,6 +880,7 @@ template< class EF > scope_success(EF) -> scope_success<EF>;
 // optional factory functions (should at least be present for LFTS3):
 
 template< class EF >
+scope_constexpr_ext
 scope_exit<typename std11::decay<EF>::type>
 make_scope_exit( EF && exit_function )
 {
@@ -825,6 +888,7 @@ make_scope_exit( EF && exit_function )
 }
 
 template< class EF >
+scope_constexpr_ext
 scope_fail<typename std11::decay<EF>::type>
 make_scope_fail( EF && exit_function )
 {
@@ -832,6 +896,7 @@ make_scope_fail( EF && exit_function )
 }
 
 template< class EF >
+scope_constexpr_ext
 scope_success<typename std11::decay<EF>::type>
 make_scope_success( EF && exit_function )
 {
@@ -851,7 +916,7 @@ private:
     );
 
     scope_static_assert(
-          (std11::is_move_constructible<R>::value && std11::is_nothrow_move_constructible<D>::value )
+          (std11::is_move_constructible<D>::value && std11::is_nothrow_move_constructible<D>::value )
         || std11::is_copy_constructible<D>::value
         , "deleter must be nothrow_move_constructible or copy_constructible"
     );
@@ -1196,7 +1261,7 @@ struct on_fail_policy
     mutable int ucount_;
 
     on_fail_policy()
-        : ucount_( std17::uncaught_exceptions() )
+        : ucount_( detail::uncaught_exceptions() )
     {}
 
     on_fail_policy( on_fail_policy const & other )
@@ -1212,7 +1277,7 @@ struct on_fail_policy
 
     bool perform()
     {
-        return ucount_ < std17::uncaught_exceptions();
+        return ucount_ < detail::uncaught_exceptions();
     }
 };
 
@@ -1221,7 +1286,7 @@ struct on_success_policy
     mutable int ucount_;
 
     on_success_policy()
-        : ucount_( std17::uncaught_exceptions() )
+        : ucount_( detail::uncaught_exceptions() )
     {}
 
     on_success_policy( on_success_policy const & other )
@@ -1237,7 +1302,7 @@ struct on_success_policy
 
     bool perform()
     {
-        return ucount_ >= std17::uncaught_exceptions();
+        return ucount_ >= detail::uncaught_exceptions();
     }
 };
 

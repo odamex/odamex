@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,8 +33,10 @@
 
 #ifdef CLIENT_APP
 #define CS_STRING "Odamex Client"
-#else
+#elif defined(SERVER_APP)
 #define CS_STRING "Odamex Server"
+#elif defined(TEST_APP)
+#define CS_STRING "Odamex Unit Tests"
 #endif
 
 // A view to a list of Cvars.
@@ -100,10 +102,9 @@ static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 	case CVARTYPE_STRING:
 		info.push_back("String");
 		break;
-	case CVARTYPE_NONE:
-	case CVARTYPE_MAX:
+	default:
+		out = "";
 		return;
-		break;
 	}
 
 	// Default and range
@@ -164,10 +165,9 @@ static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 			info.push_back(buf);
 		}
 		break;
-	case CVARTYPE_NONE:
-	case CVARTYPE_MAX:
+	default:
+		out = "";
 		return;
-		break;
 	}
 
 	if (cvar.flags() & CVAR_USERINFO)
@@ -237,8 +237,10 @@ BEGIN_COMMAND(cvardoc)
 
 #ifdef CLIENT_APP
 	path += "odamex_cvardoc.html";
-#else
+#elif defined(SERVER_APP)
 	path += "odasrv_cvardoc.html";
+#elif defined(TEST_APP)
+	path += "odagtest_cvardoc.html";
 #endif
 
 	// Try and open a file in our write directory.

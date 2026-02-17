@@ -32,6 +32,7 @@
 #include "c_dispatch.h"
 #include "cmdlib.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "m_fileio.h"
 #include "m_random.h"
 #include "sv_main.h"
@@ -90,16 +91,14 @@ bool Maplist::add(maplist_entry_t &maplist_entry) {
 bool Maplist::insert(const size_t &position, maplist_entry_t &maplist_entry) {
 	// We send the maplist to clients using a short int, so we don't want
 	// more maps in the list than the short int can handle.
-	if (this->maplist.size() > (unsigned short)-1) {
+	if (this->maplist.size() > std::numeric_limits<std::uint16_t>::max()) {
 		this->error = "Maplist is full.";
 		return false;
 	}
 
 	// Desired position is outside of the maplist
 	if (position > this->maplist.size()) {
-		std::ostringstream buffer;
-		buffer << "Index " << position + 1 << " out of range.";
-		this->error = buffer.str();
+		this->error = fmt::format("Index {} out of range.", position + 1);
 		return false;
 	}
 
@@ -109,6 +108,14 @@ bool Maplist::insert(const size_t &position, maplist_entry_t &maplist_entry) {
 	{
 		if (position == 0)
 		{
+			// Loading config at startup, no wads have been loaded,
+			// so we don't know what to put here
+			if (::wadfiles.size() <= 1)
+			{
+				this->error = "Wad could not be inferred from context. Wad must be specified.";
+				return false;
+			}
+
 			// Nothing is 'above us' to yoink from, so just use the currently
 			// loaded WAD files.  Add one to the beginning of wadfiles, since
 			// position 0 stores odamex.wad.
@@ -420,8 +427,8 @@ bool Maplist::set_index(const size_t &index) {
 		return false;
 	}
 
-	this->entered_once = true && gamestate != GS_STARTUP;
-	this->in_maplist = true && gamestate != GS_STARTUP;
+	this->entered_once = true;
+	this->in_maplist = true;
 	this->index = index;
 	this->update_shuffle_index();
 	return true;
@@ -527,7 +534,7 @@ void SV_MaplistIndex(player_t &player) {
 		}
 	}
 
-	MSG_WriteSVC(&cl->reliablebuf, SVC_MaplistIndex(count, next_index, this_index));
+	MSG_WriteSVC(&cl->reliablebuf, SVC_MaplistIndex(count, this_index, next_index));
 }
 
 // Send a full maplist update to a specific player
@@ -681,7 +688,7 @@ BEGIN_COMMAND (maplist) {
 		const auto& [map, _, lastmaps, wads] = *entry;
 		char flag = ' ';
 		if (show_this_map && index == this_index) {
-			flag = '*';
+			flag = '>';
 		} else if (index == next_index) {
 			flag = '+';
 		}

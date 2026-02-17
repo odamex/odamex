@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,8 +22,8 @@
 //-----------------------------------------------------------------------------
 
 
-#if defined _WIN32 && !defined _XBOX && defined _MSC_VER && !defined _DEBUG
-#elif defined UNIX && defined HAVE_BACKTRACE && !defined GEKKO
+#if defined _WIN32 && defined _MSC_VER && !defined _DEBUG
+#elif defined UNIX && defined HAVE_BACKTRACE
 #else
 
 #include "odamex.h"

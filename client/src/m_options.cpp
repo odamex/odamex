@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -39,6 +39,7 @@
 #include "cmdlib.h"
 
 #include "i_system.h"
+#include "i_time.h"
 #include "i_video.h"
 #include "i_input.h"
 #include "z_zone.h"
@@ -126,6 +127,7 @@ EXTERN_CVAR(hud_extendedinfo)
 
 // [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (co_allowdropoff)
+EXTERN_CVAR (co_pursuit)
 EXTERN_CVAR (co_realactorheight)
 EXTERN_CVAR (co_zdoomphys)
 EXTERN_CVAR (co_zdoomsound)
@@ -136,6 +138,14 @@ EXTERN_CVAR (co_fineautoaim)
 EXTERN_CVAR (co_nosilentspawns)
 EXTERN_CVAR (co_boomphys)			// [ML] Roll-up of various compat options
 EXTERN_CVAR (co_mbfphys)
+EXTERN_CVAR (co_helpfriends)
+EXTERN_CVAR (co_monsterbacking)
+EXTERN_CVAR (co_monsterfriction)
+EXTERN_CVAR (co_avoidhazards)
+EXTERN_CVAR (co_monstersclimbsteep)
+EXTERN_CVAR (co_staylift)
+EXTERN_CVAR (co_friend_ledgejumping)
+EXTERN_CVAR (co_friend_distance)
 EXTERN_CVAR (co_removesoullimit)
 EXTERN_CVAR (co_blockmapfix)
 EXTERN_CVAR (co_globalsound)
@@ -168,6 +178,7 @@ EXTERN_CVAR (snd_gamesfx)
 EXTERN_CVAR (snd_voxtype)
 EXTERN_CVAR (cl_connectalert)
 EXTERN_CVAR (cl_disconnectalert)
+EXTERN_CVAR (snd_votesfx)
 
 // Joystick menu -- Hyper_Eye
 void JoystickSetup (void);
@@ -184,11 +195,6 @@ EXTERN_CVAR (joy_freelook)
 EXTERN_CVAR (joy_deadzone)
 
 // Network Options
-EXTERN_CVAR (cl_interp)
-EXTERN_CVAR (cl_prednudge)
-EXTERN_CVAR (cl_predictpickup)
-EXTERN_CVAR (cl_predictsectors)
-EXTERN_CVAR (cl_predictweapons)
 EXTERN_CVAR (cl_serverdownload)
 
 // Demo Options
@@ -200,6 +206,10 @@ EXTERN_CVAR(cl_autorecord_duel)
 EXTERN_CVAR(cl_autorecord_teamdm)
 EXTERN_CVAR(cl_autorecord_ctf)
 EXTERN_CVAR(cl_autorecord_horde)
+
+// Spree options
+EXTERN_CVAR(cl_showsprees)
+EXTERN_CVAR(cl_showmultikills)
 
 // Weapon Preferences
 EXTERN_CVAR (cl_switchweapon)
@@ -336,7 +346,7 @@ menu_t OptionMenu = {
  *=======================================*/
 
 static menuitem_t ControlsItems[] = {
-#ifdef _XBOX
+#ifdef GCONSOLE
 	{ whitetext,"A to change, START to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
 #else
 	{ whitetext,"ENTER to change, BACKSPACE to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
@@ -517,14 +527,6 @@ static menuitem_t JoystickItems[] =
 	{ slider	,	"Turn Sensitivity"						, {&joy_sensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
 	{ slider	,	"Alt. Turn Sensitivity"					, {&joy_fastsensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
 	{ slider	,	"Joystick Deadzone"						, {&joy_deadzone},		{0.0},		{0.75},		{0.05},		{NULL}						},
-#ifdef SDL12
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ whitetext	,	"Press ENTER to change"					, {NULL}, 				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} 						},
-	{ joyaxis	,	"Walk Analog Axis"						, {&joy_forwardaxis},	{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ joyaxis	,	"Strafe Analog Axis"					, {&joy_strafeaxis},	{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ joyaxis	,	"Turn Analog Axis"						, {&joy_turnaxis},		{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ joyaxis	,	"Look Analog Axis"						, {&joy_lookaxis},		{0.0},		{0.0},		{0.0},		{NULL}						},
-#endif
 };
 
 menu_t JoystickMenu = {
@@ -647,7 +649,8 @@ static menuitem_t SoundItems[] = {
 	{ discrete  ,   "Player Connect Alert"     , {&cl_connectalert},    {2.0},        {0.0}, {0.0},      {OnOff} },
 	{ discrete  ,   "Player Disconnect Alert"  , {&cl_disconnectalert}, {2.0},        {0.0}, {0.0},      {OnOff} },
 	{ discrete  ,   "Chat sounds"              , {&cl_chatsounds},      {3.0},        {0.0}, {0.0},      {ChatSndType}},
-};
+     {discrete	,   "Voting Sounds"            , {&snd_votesfx},		{2.0},        {0.0}, {0.0},	     {OnOff}},
+ };
 
 menu_t AdvMidiMenu = {
 	"M_SOUND",
@@ -704,7 +707,16 @@ static menuitem_t CompatItems[] ={
 	{svdiscrete, "BOOM actor/sector/line checks",  {&co_boomphys},			 {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "MBF movement and collision",  {&co_mbfphys},			 {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "ZDOOM 1.23 physics",             {&co_zdoomphys},         {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "ZDOOM 1.23 ammo checks",         {&co_zdoomammo},         {2.0}, {0.0}, {0.0}, {OnOff}},
+  {svdiscrete, "ZDOOM 1.23 ammo checks",         {&co_zdoomammo},         {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "MBF Monster target selection",{&co_pursuit},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Monsters help friends (MBF)",{&co_helpfriends},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Monsters strafe (MBF)",{&co_monsterbacking},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Monster wind/friction (MBF)",{&co_monsterfriction},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Monsters avoid crushers (MBF)",{&co_avoidhazards},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Monsters climb (MBF)",{&co_monstersclimbsteep},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Monsters stay on lifts (MBF)",{&co_staylift},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "Friends can drop off (MBF)",{&co_friend_ledgejumping},      {2.0}, {0.0}, {0.0}, {OnOff}},
+	{slider,		 "Friend distance (MBF)", {&co_friend_distance}, {0.0}, {2048.0}, {64.0}, {NULL}},
 	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{yellowtext, "Sound",							{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
 	{svdiscrete, "Fix silent west spawns",         {&co_nosilentspawns},    {2.0}, {0.0}, {0.0}, {OnOff}},
@@ -730,21 +742,9 @@ menu_t CompatMenu = {
  *
  *=======================================*/
 
-static value_t PredictSectors[] = {
-	{ 0.0, "None" },
-	{ 1.0, "All" },
-	{ 2.0, "Only Mine" }
-};
-
 static menuitem_t NetworkItems[] = {
     { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,	"Adjust Network Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
-	{ slider,		"Interpolation time",			{&cl_interp},		{0.0},		{4.0},		{1.0},		{NULL} },
-	{ slider,		"Smooth collisions",			{&cl_prednudge},	{1.0},		{0.1},		{-0.1},		{NULL} },
-	{ discrete,		"Predict weapon pickups",		{&cl_predictpickup},{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ discrete,		"Predict sector actions",		{&cl_predictsectors},{3.0},		{0.0},		{0.0},		{PredictSectors} },
-	{ discrete,		"Predict weapon effects",		{&cl_predictweapons},{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ redtext,		" ",							{NULL},				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} },
+	{ yellowtext,	"Wad Download Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
 	{ discrete, 	"Download From Internet", 		{&cl_serverdownload}, {2.0}, 		{0.0}, 		{0.0}, 		{OnOff} },
 
 	{ redtext,		" ",							{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
@@ -858,9 +858,14 @@ EXTERN_CVAR (r_painintensity)
 EXTERN_CVAR (cl_movebob)
 EXTERN_CVAR (cl_centerbobonfire)
 EXTERN_CVAR (cl_showspawns)
+EXTERN_CVAR (cl_showfriends)
 EXTERN_CVAR (hud_show_scoreboard_ondeath)
 EXTERN_CVAR (hud_demobar)
 EXTERN_CVAR(hud_targetnames)
+EXTERN_CVAR(am_ovminimap)
+EXTERN_CVAR(am_ovlocation)
+EXTERN_CVAR(am_ovscalewidth)
+EXTERN_CVAR(am_ovscaleheight)
 
 static value_t Wipes[] = {
 	{ 0.0, "None" },
@@ -912,6 +917,8 @@ static menuitem_t VideoItems[] = {
 	{ slider,   "Weapon Visibility",        {&r_drawplayersprites}, {0.0}, {1.0},   {0.1},  {NULL} },
 	{ discrete,	"Visible Spawn Points",		{&cl_showspawns},		{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Center weapon when firing",{&cl_centerbobonfire},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Show Killing Sprees",		{&cl_showsprees},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Show Multi Kills",		{&cl_showmultikills},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Force Team Color",			{&r_forceteamcolor},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redslider,   "Team Color Red",        {&r_teamcolor},  {0.0}, {0.0},   {0.0},  {NULL} },
@@ -933,6 +940,7 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Linear Skies",			    {&r_linearsky},	   		{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Use softer invuln effect", {&r_softinvulneffect},	{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Heart effect on friendlies", {&cl_showfriends},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Screen wipe style",	    {&r_wipetype},			{4.0}, {0.0},	{0.0},  {Wipes} },
 	{ discrete, "Multiplayer Intermissions",{&wi_oldintermission},	{2.0}, {0.0},	{0.0},  {DoomOrOdamex} },
 	{ discrete, "Show loading disk icon",	{&r_loadicon},			{2.0}, {0.0},	{0.0},	{OnOff} },
@@ -1034,7 +1042,7 @@ static menuitem_t HUDItems[] = {
 };
 
 menu_t HUDMenu = {
-    "M_VIDEO",              // title
+    "M_HUD",                // title
     1,                      // lastOn
     ARRAY_LENGTH(HUDItems), // numitems
     0,                      // indent
@@ -1155,6 +1163,15 @@ static value_t AutomapScales[] = {
 	{ 6.0, "6X" },
 };
 
+static value_t MinimapLocations[] = {
+	{ 0.0, "Left Top" },
+	{ 1.0, "Left Middle" },
+	{ 2.0, "Left Bottom" },
+	{ 3.0, "Right Top" },
+	{ 4.0, "Right Middle" },
+	{ 5.0, "Right Bottom" },
+};
+
 static menuitem_t AutomapItems[] = {
 	{ discrete, "Rotate automap",		{&am_rotate},		   	{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Overlay automap",		{&am_overlay},			{4.0}, {0.0},	{0.0},  {Overlays} },
@@ -1172,6 +1189,13 @@ static menuitem_t AutomapItems[] = {
 	{ discrete, "Highlight locked doors",{&am_showlocked},		{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Custom map colors",	{&am_usecustomcolors},	{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ more,     "Reset custom map colors",  {NULL},    {0.0}, {0.0},   {0.0},  {(value_t *)ResetCustomColors} },
+
+	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
+	{ yellowtext, "Overlay Minimap Options", {NULL},			{0.0}, {0.0},	{0.0},  {NULL} },
+	{ discrete, "Enable Minimap",		{&am_ovminimap},		{2.0}, {0.0},	{0.0},  {OnOff} },
+	{ discrete, "Location",				{&am_ovlocation},		{6.0}, {0.0},	{0.0},  {MinimapLocations} },
+	{ slider,	"Scale Width",			{&am_ovscalewidth},		{0.0}, {1.0},	{0.05}, {NULL} },
+	{ slider,	"Scale Height",			{&am_ovscaleheight},	{0.0}, {1.0},	{0.05}, {NULL} },
 };
 
 menu_t AutomapMenu = {
@@ -1228,7 +1252,7 @@ void M_RestoreVideoMode()
 
 static value_t Depths[22];
 
-#ifdef _XBOX
+#ifdef GCONSOLE
 static const char VMEnterText[] = "Press A to set mode";
 static const char VMTestText[] = "Press X to test mode for 5 seconds";
 #else
@@ -2492,7 +2516,7 @@ void M_OptResponder (event_t *ev)
 		}
 		else
 		{
-#ifdef _XBOX
+#ifdef GCONSOLE
 		if (ev->data3 == 't' || ev->data1 == OKEY_JOY3)
 #else
 		if (ev->data3 == 't')

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -51,22 +51,23 @@ typedef struct
 
 } wadinfo_t;
 
-
-typedef struct
+#pragma pack(push, 1)
+struct filelump_t
 {
 	int			filepos;
 	int			size;
 	char		name[8]; // denis - todo - string
 
-} filelump_t;
+};
+#pragma pack(pop)
 
 //
 // WADFILE I/O related stuff.
 //
 typedef struct lumpinfo_s
 {
-	char		name[8]; // denis - todo - string
-	FILE		*handle;
+	OLumpName	name;
+	FILE		*handle; // TODO: uqFile
 	int			position;
 	int			size;
 
@@ -123,7 +124,7 @@ inline int W_CheckNumForName(const OLumpName& name, int ns = ns_global) { return
 int W_GetNumForName(const char *name, int ns = ns_global);
 inline int W_GetNumForName(const OLumpName& name, int ns = ns_global) { return W_GetNumForName(name.c_str(), ns); };
 
-std::string W_LumpName(unsigned lump);
+OLumpName W_LumpName(unsigned lump);
 unsigned	W_LumpLength (unsigned lump);
 void		W_ReadLump (unsigned lump, void *dest);
 unsigned	W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest, unsigned &filelen);
@@ -151,7 +152,7 @@ bool	W_CheckLumpName (unsigned lump, const char *name);	// [RH] True if lump's n
 //unsigned W_LumpNameHash (const char *name);				// [RH] Create hash key from an 8-char name
 
 // [RH] Combine multiple marked ranges of lumps into one.
-void	W_MergeLumps (const char *start, const char *end, int);
+void W_MergeLumps (const OLumpName& start, const OLumpName& end, int);
 
 // [RH] Copy an 8-char string and uppercase it.
 void uppercopy (char *to, const char *from);
@@ -161,6 +162,7 @@ void W_GetLumpName(char* to, unsigned lump);
 
 // Copies the lump name to to
 void W_GetOLumpName(OLumpName& to, unsigned lump);
+OLumpName W_GetOLumpName(unsigned lump);
 
 // [RH] Returns file handle for specified lump
 int W_GetLumpFile (unsigned lump);

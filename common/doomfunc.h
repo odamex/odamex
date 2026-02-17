@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -158,5 +158,12 @@ struct drop_wrapper
  */
 template <typename T>
 inline drop_wrapper<T> drop(T&& iterable, std::size_t count) { return { iterable, count }; }
+
+// Helper for use of std::visit with lambdas
+template<class... Ts>
+struct visitor : Ts... { using Ts::operator()...; };
+// TODO: remove deduction guide in C++20
+template<class... Ts>
+visitor(Ts...) -> visitor<Ts...>;
 
 }

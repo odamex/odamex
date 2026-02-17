@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -110,6 +110,11 @@ enum clientBuf_e
  * @brief svc_spawnmobj: Odamex-specific flags.
  */
 #define SVC_SM_OFLAGS BIT(2)
+
+/**
+ * @brief svc_spawnmobj: ZDoom/Heretic flags.
+ */
+#define SVC_SM_FLAGS2 BIT(3)
 
 /**
  * @brief svc_updatemobj: Supply mobj position and random index.
@@ -247,12 +252,15 @@ enum svc_t
 	svc_maplist_index,     // [AM] - Send the current and next map index to the client.
 	svc_toast,
 	svc_hordeinfo,
+	svc_raisemobj,
+	svc_spree,
+	svc_spreebreaker,
 	svc_netdemocap = 100,  // netdemos - NullPoint
 	svc_netdemostop = 101, // netdemos - NullPoint
 	svc_netdemoloadsnap = 102, // netdemos - NullPoint
 };
 
-static constexpr size_t svc_max = 255;
+inline constexpr size_t svc_max = 255;
 
 enum ThinkerType
 {
@@ -301,7 +309,7 @@ inline auto format_as(clc_t clc)
 	return fmt::underlying(clc);
 }
 
-static constexpr size_t clc_max = 255;
+inline constexpr size_t clc_max = 255;
 
 extern msg_info_t clc_info[clc_max + 1];
 extern msg_info_t svc_info[svc_max + 1];
@@ -327,7 +335,7 @@ extern  netadr_t  net_from;  // address of who sent the packet
 class buf_t
 {
 public:
-	byte	*data;
+	std::unique_ptr<byte[]> data;
 	size_t	allocsize, cursize, readpos;
 	bool	overflowed;  // set to true if the buffer size failed
 
@@ -469,7 +477,7 @@ public:
 		}
 		size_t oldpos = readpos;
 		readpos += size;
-		return data+oldpos;
+		return &data[oldpos];
 	}
 
 	int ReadShort()
@@ -552,7 +560,7 @@ public:
 
 	const char *ReadString()
 	{
-		byte *begin = data + readpos;
+		byte *begin = &data[readpos];
 
 		while(ReadByte() > 0);
 
@@ -621,7 +629,7 @@ public:
 
 	byte *ptr()
 	{
-		return data;
+		return data.get();
 	}
 
 	size_t size() const
@@ -648,15 +656,14 @@ public:
 
 	void resize(size_t len, bool clearbuf = true)
 	{
-		byte *olddata = data;
-		data = new byte[len];
+		auto newdata = std::make_unique<byte[]>(len);
 		allocsize = len;
 
 		if (!clearbuf)
 		{
-			if (cursize < allocsize)
+			if (cursize < len)
 			{
-				memcpy(data, olddata, cursize);
+				memcpy(newdata.get(), data.get(), cursize);
 			}
 			else
 			{
@@ -670,7 +677,8 @@ public:
 			clear();
 		}
 
-		delete[] olddata;
+		data = std::move(newdata);
+		allocsize = len;
 	}
 
 	byte *SZ_GetSpace(size_t length)
@@ -684,7 +692,7 @@ public:
 #endif
 		}
 
-		byte *ret = data + cursize;
+		byte *ret = &data[cursize];
 		cursize += length;
 
 		return ret;
@@ -696,9 +704,7 @@ public:
 		if (this == &other)
             return *this;
 
-		delete[] data;
-
-		data = new byte[other.allocsize];
+		data = std::make_unique<byte[]>(other.allocsize);
 		allocsize = other.allocsize;
 		cursize = other.cursize;
 		overflowed = other.overflowed;
@@ -712,7 +718,7 @@ public:
 	}
 
 	buf_t()
-		: data(0), allocsize(0), cursize(0), readpos(0), overflowed(false)
+		: data(nullptr), allocsize(0), cursize(0), readpos(0), overflowed(false)
 	{
 	}
 	buf_t(size_t len)
@@ -729,8 +735,6 @@ public:
 	}
 	~buf_t()
 	{
-		delete[] data;
-		data = NULL;
 	}
 };
 

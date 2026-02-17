@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -69,16 +69,13 @@
 #include "cl_parse.h"
 #include "cl_replay.h"
 
+#include "m_consolecommandstream.h"
+
 #include <bitset>
-#include <map>
 #include <set>
 #include <sstream>
 
 #include "server.pb.h"
-
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
 
 #if _MSC_VER == 1310
 #pragma optimize("",off)
@@ -192,12 +189,9 @@ argb_t CL_ShadePlayerColor(argb_t base_color, argb_t shade_color)
 // Returns the color for the player after applying game logic (teammate, enemy)
 // and applying CVARs like r_forceteamcolor and r_forceenemycolor.
 //
-argb_t CL_GetPlayerColor(player_t *player)
+argb_t CL_GetPlayerColor(const player_t& player)
 {
-	if (!player)
-		return 0;
-
-	argb_t base_color(255, player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
+	argb_t base_color(255, player.userinfo.color[1], player.userinfo.color[2], player.userinfo.color[3]);
 	argb_t shade_color = base_color;
 
 	bool teammate = false;
@@ -207,10 +201,10 @@ argb_t CL_GetPlayerColor(player_t *player)
 		teammate = false;
 	if (G_IsTeamGame())
 	{
-		teammate = P_AreTeammates(consoleplayer(), *player);
-		base_color = GetTeamInfo(player->userinfo.team)->Color;
+		teammate = P_AreTeammates(consoleplayer(), player);
+		base_color = GetTeamInfo(player.userinfo.team)->Color;
 	}
-	if (player->id != consoleplayer_id && !consoleplayer().spectator)
+	if (player.id != consoleplayer_id && !consoleplayer().spectator)
 	{
 		if (r_forceteamcolor && teammate)
 			base_color = teamcolor;
@@ -230,7 +224,7 @@ static void CL_RebuildAllPlayerTranslations()
 		return;
 
 	for (auto& player : players)
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player));
 }
 
 CVAR_FUNC_IMPL (r_enemycolor)
@@ -283,8 +277,8 @@ EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (waddirs)
 
-void CL_PlayerTimes (void);
-void CL_TryToConnect(DWORD server_token);
+void CL_PlayerTimes();
+void CL_TryToConnect(uint32_t server_token);
 void CL_Decompress();
 
 bool M_FindFreeName(std::string &filename, const std::string &extension);
@@ -298,10 +292,9 @@ void M_Ticker(void);
 
 size_t P_NumPlayersInGame();
 void G_PlayerReborn (player_t &player);
-void P_KillMobj (AActor *source, AActor *target, AActor *inflictor, bool joinkill);
-void P_SetPsprite (player_t *player, int position, statenum_t stnum);
+void P_KillMobj (AActor *source, AActor *target, const AActor *inflictor, bool joinkill);
+void P_SetPsprite (player_t& player, int position, int32_t stnum);
 void P_ExplodeMissile (AActor* mo);
-void P_CalcHeight (player_t *player);
 bool P_CheckMissileSpawn (AActor* th);
 
 void P_PlayerLookUpDown (player_t *p);
@@ -590,13 +583,15 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 				ST_ForceRefresh();
 			}
 
+			P_FriendlyEffects(); // Mark any new friendly monsters with an effect
+
 			return;
 		}
 	} while (it != sentinal);
 }
 
 extern bool advancedemo;
-QWORD nextstep = 0;
+uint64_t nextstep = 0;
 int canceltics = 0;
 
 void CL_StepTics(unsigned int count)
@@ -653,19 +648,9 @@ void CL_DisplayTics()
 //
 void CL_RunTics()
 {
-	std::string cmd = I_ConsoleInput();
+	const std::string cmd = M_ConsoleInput();
 	if (cmd.length())
 		AddCommandString(cmd);
-
-	if (CON.is_open())
-	{
-		CON.clear();
-		if (!CON.eof())
-		{
-			std::getline(CON, cmd);
-			AddCommandString(cmd);
-		}
-	}
 
 	if (step_mode)
 	{
@@ -884,7 +869,7 @@ BEGIN_COMMAND (serverinfo)
 	std::sort(server_cvars.begin(), server_cvars.end());
 
     // Heading
-    PrintFmt("\n{:>{}} - Value\n", MaxFieldLength, "Name");
+    PrintFmt("\n{1:>{0}} - Value\n", MaxFieldLength, "Name");
 
     // Data
 	for (const auto& varname : server_cvars)
@@ -892,7 +877,7 @@ BEGIN_COMMAND (serverinfo)
 		cvar_t *dummy;
 		Cvar = cvar_t::FindCVar(varname.c_str(), &dummy);
 
-		PrintFmt("{:>{}} - {}\n",
+		PrintFmt("{1:>{0}} - {2}\n",
 			     MaxFieldLength,
 			     Cvar->name(),
 			     Cvar->str());
@@ -1411,6 +1396,8 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 	{
 		R_ForceViewWindowResize();		// toggline spectator mode affects status bar visibility
 
+		P_FriendlyEffects(); // Mark any new friendly monsters with an effect
+
 		if (player.spectator)
 		{
 			player.playerstate = PST_LIVE;				// Resurrect dead spectators
@@ -1431,7 +1418,7 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 	}
 	else
 	{
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player));
 	}
 
 	P_ClearPlayerPowerups(player);	// Remove all current powerups
@@ -1551,7 +1538,7 @@ bool CL_PrepareConnect()
 
 	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
 
-	DWORD server_token = MSG_ReadLong();
+	uint32_t server_token = MSG_ReadLong();
 	server_host = MSG_ReadString();
 
 	bool recv_teamplay_stats = 0;
@@ -1603,7 +1590,7 @@ bool CL_PrepareConnect()
 			return false;
 		}
 
-		PrintFmt("> {]\n   {]\n", file.getBasename(),
+		PrintFmt("> {}\n   {}\n", file.getBasename(),
 		         file.getWantedMD5().getHexStr());
 	}
 
@@ -1849,7 +1836,7 @@ void CL_InitNetwork (void)
     connected = false;
 }
 
-void CL_TryToConnect(DWORD server_token)
+void CL_TryToConnect(uint32_t server_token)
 {
 	if (!serveraddr.ip[0])
 		return;
@@ -1894,9 +1881,9 @@ void CL_TryToConnect(DWORD server_token)
 // Returns true if we have received a svc_activateline message from the server
 // involving this player and teleportation
 //
-bool CL_PlayerJustTeleported(player_t *player)
+bool CL_PlayerJustTeleported(const player_t& player)
 {
-	if (player && teleported_players.find(player->id) != teleported_players.end())
+	if (teleported_players.find(player.id) != teleported_players.end())
 		return true;
 
 	return false;
@@ -1905,10 +1892,9 @@ bool CL_PlayerJustTeleported(player_t *player)
 //
 // CL_ClearPlayerJustTeleported
 //
-void CL_ClearPlayerJustTeleported(player_t *player)
+void CL_ClearPlayerJustTeleported(const player_t& player)
 {
-	if (player)
-		teleported_players.erase(player->id);
+	teleported_players.erase(player.id);
 }
 
 ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, bool dropped);
@@ -2069,7 +2055,7 @@ void CL_ParseCommands()
 void CL_SaveCmd(void)
 {
 	NetCommand *netcmd = &localcmds[gametic % MAXSAVETICS];
-	netcmd->fromPlayer(&consoleplayer());
+	netcmd->fromPlayer(consoleplayer());
 	netcmd->setTic(gametic);
 	netcmd->setWorldIndex(world_index);
 }
@@ -2168,8 +2154,18 @@ void CL_SendSummonCheat(const char* summon)
 	MSG_WriteString(&net_buffer, summon);
 }
 
+//
+// CL_SendSummonFriendCheat
+//
+void CL_SendSummonFriendCheat(const char* summon)
+{
+	MSG_WriteMarker(&net_buffer, clc_cheat);
+	MSG_WriteByte(&net_buffer, 3);
+	MSG_WriteString(&net_buffer, summon);
+}
 
-void PickupMessage (AActor *toucher, const char *message)
+
+void PickupMessage (const AActor *toucher, const char *message)
 {
 	// Some maps have multiple items stacked on top of each other.
 	// It looks odd to display pickup messages for all of them.
@@ -2190,7 +2186,7 @@ void PickupMessage (AActor *toucher, const char *message)
 //
 // This is used for displaying weaponstay messages, it is inevitably a hack
 // because weaponstay is a hack
-void WeaponPickupMessage (AActor *toucher, weapontype_t &Weapon)
+void WeaponPickupMessage (const AActor *toucher, const weapontype_t &Weapon)
 {
     switch (Weapon)
     {
@@ -2369,7 +2365,7 @@ void CL_SimulatePlayers()
 			}
 
 			int oldframe = player.mo->frame;
-			snap.toPlayer(&player);
+			snap.toPlayer(player);
 
 			if (player.playerstate != PST_LIVE)
 				player.mo->frame = oldframe;

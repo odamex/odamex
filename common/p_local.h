@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -60,9 +60,15 @@
 #define STOPSPEED						0x1000
 #define FRICTION						0xe800
 
-#define USERANGE		(64*FRACUNIT)
+#ifndef MELEERANGE // TODO: only have a single spot this is defined
 #define MELEERANGE		(64*FRACUNIT)
+#endif
+#define USERANGE		(64*FRACUNIT)
 #define MISSILERANGE	(32*64*FRACUNIT)
+
+// a couple of explicit constants for non-melee things that used to use MELEERANGE
+#define WAKEUPRANGE (64 * FRACUNIT)
+#define SNEAKRANGE (128 * FRACUNIT)
 
 #define WATER_SINK_FACTOR		3
 #define WATER_SINK_SMALL_FACTOR	4
@@ -85,47 +91,44 @@ enum weaponstate_t
 	unknownstate
 };
 
-void P_SetupPsprites (player_t* curplayer);
-void P_MovePsprites (player_t* curplayer);
-void P_DropWeapon (player_t* player);
+void P_SetupPsprites (player_t& curplayer);
+void P_MovePsprites (player_t& curplayer);
+void P_DropWeapon (player_t& player);
 
-weaponstate_t P_GetWeaponState(player_t* player);
+weaponstate_t P_GetWeaponState(const player_t& player);
 
 
 //
 // P_USER
 //
 void P_FallingDamage (AActor *ent);
-void P_PlayerThink (player_t *player);
-void P_SetPlayerPowerupStatuses(player_t* player, int powers[NUMPOWERS]);
+void P_PlayerThink (player_t& player);
+void P_SetPlayerPowerupStatuses(player_t& player, nonstd::span<const int, NUMPOWERS> powers);
 bool P_AreTeammates(const player_t& a, const player_t& b);
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo = false);
 
 //
 // P_MOBJ
 //
-#define ONFLOORZ		MININT
-#define ONCEILINGZ		MAXINT
+#define ONFLOORZ		limits::MININT
+#define ONCEILINGZ		limits::MAXINT
 
 // Time interval for item respawning.
-#define ITEMQUESIZE 	128
+// #define ITEMQUESIZE 	128
 
-extern mapthing2_t		itemrespawnque[ITEMQUESIZE];
-extern int				itemrespawntime[ITEMQUESIZE];
-extern int				iquehead;
-extern int				iquetail;
+inline std::queue<std::pair<mapthing2_t, int>> itemrespawnque;
 
 void 	P_ThrustMobj (AActor *mo, angle_t angle, fixed_t move);
 void	P_RespawnSpecials (void);
 
-bool	P_SetMobjState (AActor* mobj, statenum_t state, bool cl_update = false);
+bool	P_SetMobjState (AActor* mobj, int32_t state, bool cl_update = false);
 
 void	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage);
 AActor* P_SpawnMissile (AActor* source, AActor* dest, mobjtype_t type);
 AActor* P_SpawnPlayerMissile(AActor* source, mobjtype_t type);
 void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle,
                                fixed_t pitch, fixed_t xyofs, fixed_t zofs);
-bool P_CheckSwitchWeapon(player_t* player, weapontype_t weapon);
+bool P_CheckSwitchWeapon(const player_t& player, weapontype_t weapon);
 
 void	P_RailAttack (AActor *source, int damage, int offset);	// [RH] Shoot a railgun
 bool	P_HitFloor (AActor *thing);
@@ -187,7 +190,10 @@ fixed_t P_AproxDistance2 (const AActor *mo, fixed_t x, fixed_t y);
 fixed_t P_AproxDistance2 (const AActor *a, const AActor *b);
 
 bool P_ActorInFOV(const AActor* origin, const AActor* mo , float f, fixed_t dist);
-AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance);
+AActor* P_RoughTargetSearch(AActor* mo, angle_t fov, int distance,
+                            AActor* (*searchFunc)(AActor*, int, angle_t));
+AActor* RoughTracerCheck(AActor* mo, int index, angle_t fov);
+AActor* RoughMonsterCheck(AActor* mo, int index, angle_t fov);
 
 int 	P_PointOnLineSide (fixed_t x, fixed_t y, const line_t *line);
 int 	P_PointOnDivlineSide (fixed_t x, fixed_t y, const divline_t *line);
@@ -200,7 +206,7 @@ extern fixed_t			openbottom;
 extern fixed_t			openrange;
 extern fixed_t			lowfloor;
 
-void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx=MINFIXED, fixed_t refy=0);
+void P_LineOpening (const line_t *linedef, fixed_t x, fixed_t y, fixed_t refx=limits::MINFIXED, fixed_t refy=0);
 
 bool P_BlockLinesIterator (int x, int y, bool(*func)(line_t*) );
 bool P_BlockThingsIterator (int x, int y, bool(*func)(AActor*), AActor *start=NULL);
@@ -229,7 +235,8 @@ angle_t P_PointToAngle(fixed_t xo, fixed_t yo, fixed_t x, fixed_t y);
 
 // If "floatok" true, move would be ok
 // if within "tmfloorz - tmceilingz".
-extern bool				floatok;
+extern int				floatok;
+extern int				felldown;
 extern fixed_t			tmfloorz;
 extern fixed_t			tmceilingz;
 extern msecnode_t		*sector_list;		// phares 3/16/98
@@ -250,11 +257,11 @@ bool	P_CheckPosition (AActor *thing, fixed_t x, fixed_t y);
 AActor	*P_CheckOnmobj (AActor *thing);
 void	P_FakeZMovement (AActor *mo);
 bool	P_CheckSlopeWalk (AActor *actor, fixed_t &xmove, fixed_t &ymove);
-bool	P_TryMove (AActor* thing, fixed_t x, fixed_t y, bool dropoff, bool onfloor = false);
+bool	P_TryMove (AActor* thing, fixed_t x, fixed_t y, int dropoff, bool onfloor = false);
 bool	P_TeleportMove (AActor* thing, fixed_t x, fixed_t y, fixed_t z, bool telefrag);	// [RH] Added z and telefrag parameters
 void	P_SlideMove (AActor* mo);
 bool	P_CheckSight (const AActor* t1, const AActor* t2);
-void	P_UseLines (player_t* player);
+void	P_UseLines (player_t& player);
 void	P_ApplyTorque(AActor *mo);
 void	P_CopySector(sector_t *dest, sector_t *src);
 
@@ -287,7 +294,7 @@ v3fixed_t P_LinePlaneIntersection(const plane_t *plane, const v3fixed_t &lineorg
 
 
 bool P_CheckSightEdges(const AActor* t1, const AActor* t2, float radius_boost);
-bool P_SpecialIsWeapon(AActor* special);
+bool P_SpecialIsWeapon(const AActor& special);
 
 bool	P_ChangeSector (sector_t* sector, int crunch);
 
@@ -309,7 +316,7 @@ void	P_DelSeclist(msecnode_t *);							// phares 3/16/98
 void	P_CreateSecNodeList(AActor*,fixed_t,fixed_t);		// phares 3/14/98
 int		P_GetMoveFactor(const AActor *mo, int *frictionp);	// phares  3/6/98
 int		P_GetFriction(const AActor *mo, int *frictionfactor);
-bool	Check_Sides(AActor *, int, int);					// phares
+bool	Check_Sides(const AActor *, int, int);					// phares
 
 
 //
@@ -334,10 +341,10 @@ extern std::set<short>	movable_sectors;
 extern int				maxammo[NUMAMMO];
 extern int				clipammo[NUMAMMO];
 
-void P_GiveSpecial(player_t *player, AActor *special);
-void P_TouchSpecialThing (AActor *special, AActor *toucher);
+void P_GiveSpecial(player_t& player, AActor& special);
+void P_TouchSpecialThing (AActor& special, AActor& toucher);
 
-void P_DamageMobj (AActor *target, AActor *inflictor, AActor *source, int damage, int mod=0, int flags=0);
+void P_DamageMobj (AActor *target, const AActor *inflictor, AActor *source, int damage, int mod=0, int flags=0);
 
 #define DMG_NO_ARMOR		1
 
@@ -388,11 +395,11 @@ typedef enum
 
 inline FArchive &operator<< (FArchive &arc, podoortype_t type)
 {
-	return arc << (BYTE)type;
+	return arc << (byte)type;
 }
 inline FArchive &operator>> (FArchive &arc, podoortype_t &out)
 {
-	BYTE in; arc >> in; out = (podoortype_t)in; return arc;
+	byte in; arc >> in; out = (podoortype_t)in; return arc;
 }
 
 class DPolyAction : public DThinker
@@ -491,10 +498,16 @@ bool PO_RotatePolyobj (int num, angle_t angle);
 void PO_Init (void);
 bool PO_Busy (int polyobj);
 
-bool P_CheckFov(AActor* t1, AActor* t2, angle_t fov);
-bool P_IsFriendlyThing(AActor* actor, AActor* friendshiptest);
-bool P_IsTeamMate(AActor* actor, AActor* player);
+bool P_CheckFov(const AActor* t1, const AActor* t2, angle_t fov);
+bool P_IsFriendlyThing(const AActor* actor, const AActor* friendshiptest);
 bool P_IsVoodooDoll(const AActor* mo);
+void P_FriendlyEffects();
+void P_FriendlyEffects(AActor* mo);
+void P_GiveFriendlyOwnerInfo(AActor* friendly, const AActor* origin);
+bool P_ProjectileImmune(AActor* target, AActor* source);
+void P_SetupHelpers();
+void P_ClearHelpers();
+void P_RunHelperTics();
 
 
 //

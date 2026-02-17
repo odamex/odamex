@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -104,8 +104,8 @@ typedef enum
 
 #define MAX_PLAYER_SEE_MOBJ	0x7F
 
-static constexpr int ReJoinDelay = TICRATE * 5;
-static constexpr int SuicideDelay = TICRATE * 10;
+inline constexpr int ReJoinDelay = TICRATE * 5;
+inline constexpr int SuicideDelay = TICRATE * 10;
 
 //
 // Extended player object info: player_t
@@ -157,8 +157,8 @@ public:
 	int			armortype;
 
     // Power ups. invinc and invis are tic counters.
-	int			powers[NUMPOWERS];
-	bool		cards[NUMCARDS];
+	std::array<int, NUMPOWERS> powers;
+	std::array<bool, NUMCARDS> cards;
 	bool		backpack;
 
 	// [AM] Lives left.
@@ -168,7 +168,7 @@ public:
 	// [Toke - CTF] Points in a special game mode
 	int			points;
 	// [Toke - CTF - Carry] Remembers the flag when grabbed
-	bool		flags[NUMTEAMS];
+	std::array<bool, NUMTEAMS> flags;
 
     // Frags, deaths, monster kills
 	int			fragcount;
@@ -424,7 +424,7 @@ typedef player_t::client_t client_t;
 
 // Bookkeeping on players - state.
 typedef std::list<player_t> Players;
-extern Players players;
+inline Players players;
 
 // Player taking events, and displaying.
 player_t		&consoleplayer();
@@ -433,6 +433,16 @@ player_t		&listenplayer();
 player_t		&idplayer(byte id);
 player_t		&nameplayer(const std::string &netname);
 bool			validplayer(const player_t &ref);
+
+// A helper spawn object.
+// One object = 1 spawn
+struct HelperSpawns
+{
+	mobjtype_t helpertype;
+	int playerid;
+};
+
+extern std::vector<HelperSpawns> helperspawns;
 
 /**
  * @brief A collection of pointers to players, commonly called a "view".
@@ -660,8 +670,8 @@ size_t P_NumPlayersInGame();
 size_t P_NumReadyPlayersInGame();
 size_t P_NumPlayersOnTeam(team_t team);
 
-extern byte consoleplayer_id;
-extern byte displayplayer_id;
+inline byte consoleplayer_id; // player taking events and displaying
+inline byte displayplayer_id; // view being displayed
 
 //
 
@@ -708,3 +718,13 @@ typedef struct wbstartstruct_s
 
 	std::vector<wbplayerstruct_s> plyr;
 } wbstartstruct_t;
+
+//
+// P_IsPlayerOrAvatar
+//
+// Returns true if thing is a player or an avatar
+//
+inline bool P_IsPlayerOrAvatar(const AActor& mo)
+{
+	return mo.player != nullptr || mo.type == MT_AVATAR;
+}

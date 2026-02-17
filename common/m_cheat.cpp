@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,14 +27,15 @@
 #include <math.h>
 
 #include "g_gametype.h"
-#include "m_cheat.h"
 #include "d_player.h"
+#include "m_cheat.h"
 #include "gstrings.h"
 #include "p_inter.h"
 #include "d_items.h"
 #include "g_skill.h"
 #include "p_local.h"
 #include "infomap.h"
+#include "c_effect.h"
 
 extern bool simulated_connection;
 EXTERN_CVAR(sv_allowcheats)
@@ -54,10 +55,13 @@ void C_DoCommand(std::string_view cmd, uint32_t key = 0);
 
 #ifdef CLIENT_APP
 
+namespace cheat
+{
+
 //-------------
 // THESE ARE MAINLY FOR THE CLIENT
 // Smashing Pumpkins Into Small Piles Of Putrid Debris.
-bool CHEAT_AutoMap(cheatseq_t* cheat)
+bool AutoMap(cheatseq_t* cheat)
 {
 	if (automapactive)
 	{
@@ -69,7 +73,7 @@ bool CHEAT_AutoMap(cheatseq_t* cheat)
 	return false;
 }
 
-bool CHEAT_ChangeLevel(cheatseq_t* cheat)
+bool ChangeLevel(cheatseq_t* cheat)
 {
 	std::string buf;
 
@@ -89,19 +93,19 @@ bool CHEAT_ChangeLevel(cheatseq_t* cheat)
 	return true;
 }
 
-bool CHEAT_IdMyPos(cheatseq_t* cheat)
+bool IdMyPos(cheatseq_t* cheat)
 {
 	C_DoCommand("toggle idmypos", 0);
 	return true;
 }
 
-bool CHEAT_BeholdMenu(cheatseq_t* cheat)
+bool BeholdMenu(cheatseq_t* cheat)
 {
 	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STSTR_BEHOLD));
 	return false;
 }
 
-bool CHEAT_ChangeMusic(cheatseq_t* cheat)
+bool ChangeMusic(cheatseq_t* cheat)
 {
 	char buf[9] = "idmus xx";
 
@@ -115,9 +119,9 @@ bool CHEAT_ChangeMusic(cheatseq_t* cheat)
 // Sets clientside the new cheat flag
 // and also requests its new status serverside
 //
-bool CHEAT_SetGeneric(cheatseq_t* cheat)
+bool SetGeneric(cheatseq_t* cheat)
 {
-	if (!CHEAT_AreCheatsEnabled())
+	if (!AreCheatsEnabled())
 		return true;
 
 	if (cheat->Args[0] == CHT_NOCLIP)
@@ -130,7 +134,7 @@ bool CHEAT_SetGeneric(cheatseq_t* cheat)
 			return true;
 	}
 
-	CHEAT_DoCheat(&consoleplayer(), (ECheatFlags)cheat->Args[0]);
+	DoCheat(consoleplayer(), (ECheatFlags)cheat->Args[0]);
 	CL_SendCheat((ECheatFlags)cheat->Args[0]);
 
 	return true;
@@ -140,7 +144,7 @@ bool CHEAT_SetGeneric(cheatseq_t* cheat)
 // writes some bytes to the network data stream, and the network code
 // later calls us.
 
-bool CHEAT_AddKey(cheatseq_t* cheat, unsigned char key, bool* eat)
+bool AddKey(cheatseq_t* cheat, unsigned char key, bool* eat)
 {
 	if (cheat->Pos == NULL)
 	{
@@ -171,22 +175,24 @@ bool CHEAT_AddKey(cheatseq_t* cheat, unsigned char key, bool* eat)
 	return false;
 }
 
+} // namespace cheat
+
 BEGIN_COMMAND(tntem)
 {
-	if (!CHEAT_AreCheatsEnabled())
+	if (!cheat::AreCheatsEnabled())
 		return;
 
 	if (multiplayer && !G_IsCoopGame())
 		return;
 
-	CHEAT_DoCheat(&consoleplayer(), CHT_MASSACRE);
+	cheat::DoCheat(consoleplayer(), CHT_MASSACRE);
 	CL_SendCheat(CHT_MASSACRE);
 }
 END_COMMAND(tntem)
 
 BEGIN_COMMAND(summon)
 {
-	if (!CHEAT_AreCheatsEnabled())
+	if (!cheat::AreCheatsEnabled())
 		return;
 
 	if (argc < 2)
@@ -194,34 +200,63 @@ BEGIN_COMMAND(summon)
 
 	const std::string mobname = C_ArgCombine(argc - 1, (const char**)(argv + 1));
 
-	if (!CHEAT_ValidSummonActor(mobname))
+	if (!cheat::ValidSummonActor(mobname))
 	{
 		PrintFmt(PRINT_HIGH, "Invalid summon argument: {}. Please use `dumpactors` for a valid list of actor names.\n", mobname);
 		return;
 	}
 
-	CHEAT_Summon(&consoleplayer(), mobname, false);
+	cheat::Summon(consoleplayer(), mobname, false);
 	CL_SendSummonCheat(mobname.c_str());
  }
 END_COMMAND(summon)
 
+BEGIN_COMMAND(summonfriend)
+{
+	if (!cheat::AreCheatsEnabled())
+		return;
+
+	if (argc < 2)
+		return;
+
+	const std::string mobname = C_ArgCombine(argc - 1, (const char**)(argv + 1));
+
+	if (!cheat::ValidSummonActor(mobname.c_str()))
+	{
+		PrintFmt(PRINT_HIGH,
+		         "Invalid summon argument: {}. Please use `dumpactors` for a valid list of "
+		         "actor names.\n",
+		         mobname);
+		return;
+	}
+
+	cheat::Summon(consoleplayer(), mobname.c_str(), true);
+	CL_SendSummonFriendCheat(mobname.c_str());
+}
+END_COMMAND(summonfriend)
+
 BEGIN_COMMAND(mdk)
 {
-	if (!CHEAT_AreCheatsEnabled())
+	if (!cheat::AreCheatsEnabled())
 		return;
 
 	if (multiplayer && !G_IsCoopGame())
 		return;
 
-	CHEAT_DoCheat(&consoleplayer(), CHT_MDK);
+	cheat::DoCheat(consoleplayer(), CHT_MDK);
 	CL_SendCheat(CHT_MDK);
 }
 END_COMMAND(mdk)
 
 #endif
 
+void A_PainDie(AActor*);
+
+namespace cheat
+{
+
 // Checks if all the conditions to enable cheats are met.
-bool CHEAT_AreCheatsEnabled()
+bool AreCheatsEnabled()
 {
 	// [SL] 2012-04-04 - Don't allow cheat codes to be entered while playing
 	// back a netdemo
@@ -255,102 +290,100 @@ bool CHEAT_AreCheatsEnabled()
 	return true;
 }
 
-extern void A_PainDie(AActor*);
-
-void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
+void DoCheat(player_t& player, int cheat, bool silentmsg)
 {
 	std::string msg;
 
-	if (player->health <= 0 || !player)
+	if (player.health <= 0)
 		return;
 
 	switch (cheat)
 	{
 	case CHT_IDDQD:
 
-		if (player->spectator)
+		if (player.spectator)
 			return;
 
-		if (!(player->cheats & CF_GODMODE))
+		if (!(player.cheats & CF_GODMODE))
 		{
-			if (player->mo)
-				player->mo->health = deh.GodHealth;
+			if (player.mo)
+				player.mo->health = deh.GodHealth;
 
-			player->health = deh.GodHealth;
+			player.health = deh.GodHealth;
 		}
 		[[fallthrough]];
 	case CHT_GOD:
 
-		if (player->spectator)
+		if (player.spectator)
 			return;
 
-		player->cheats ^= CF_GODMODE;
-		msg = (player->cheats & CF_GODMODE) ? GStrings(STSTR_DQDON)
+		player.cheats ^= CF_GODMODE;
+		msg = (player.cheats & CF_GODMODE) ? GStrings(STSTR_DQDON)
 		                                    : GStrings(STSTR_DQDOFF);
 		break;
 
 	case CHT_NOCLIP:
-		if (player->spectator)
+		if (player.spectator)
 			silentmsg = true;
 
-		player->cheats ^= CF_NOCLIP;
-		msg = (player->cheats & CF_NOCLIP) ? GStrings(STSTR_NCON) : GStrings(STSTR_NCOFF);
+		player.cheats ^= CF_NOCLIP;
+		msg = (player.cheats & CF_NOCLIP) ? GStrings(STSTR_NCON) : GStrings(STSTR_NCOFF);
 		break;
 
 	case CHT_FLY:
-		player->cheats ^= CF_FLY;
-		msg = (player->cheats & CF_FLY) ? "You feel lighter" : "Gravity weighs you down";
+		player.cheats ^= CF_FLY;
+		msg = (player.cheats & CF_FLY) ? "You feel lighter" : "Gravity weighs you down";
 		break;
 
 	case CHT_NOTARGET:
 
-		if (player->spectator)
+		if (player.spectator)
 			return;
 
-		player->cheats ^= CF_NOTARGET;
-		msg = (player->cheats & CF_NOTARGET) ? "notarget ON" : "notarget OFF";
+		player.cheats ^= CF_NOTARGET;
+		msg = (player.cheats & CF_NOTARGET) ? "notarget ON" : "notarget OFF";
 		break;
 
 	case CHT_CHASECAM:
 
-		if (player->spectator)
+		if (player.spectator)
 			return;
 
-		player->cheats ^= CF_CHASECAM;
-		msg = (player->cheats & CF_CHASECAM) ? "chasecam ON" : "chasecam OFF";
+		player.cheats ^= CF_CHASECAM;
+		msg = (player.cheats & CF_CHASECAM) ? "chasecam ON" : "chasecam OFF";
 		break;
 
 	case CHT_CHAINSAW:
 
-		if (player->spectator)
+		if (player.spectator)
 			return;
 
-		player->weaponowned[wp_chainsaw] = true;
-		player->powers[pw_invulnerability] = true;
+		player.weaponowned[wp_chainsaw] = true;
+		player.powers[pw_invulnerability] = true;
 		msg = GStrings(STSTR_CHOPPERS);
 		break;
 
 	case CHT_IDKFA:
 
-		if (player->spectator)
+		if (player.spectator)
 			return;
 
-		CHEAT_GiveTo(player, "all");
-		player->armorpoints = deh.KFAArmor;
-		player->armortype = deh.KFAAC;
+		GiveTo(player, "all");
+		player.armorpoints = deh.KFAArmor;
+		player.armortype = deh.KFAAC;
 		msg = GStrings(STSTR_KFAADDED);
 		break;
 
 	case CHT_IDFA:
 
-		if (player->spectator)
+		if (player.spectator)
 			return;
 
-		CHEAT_GiveTo(player, "backpack");
-		CHEAT_GiveTo(player, "weapons");
-		CHEAT_GiveTo(player, "ammo");
-		player->armorpoints = deh.FAArmor;
-		player->armortype = deh.FAAC;
+		GiveTo(player, "backpack");
+		GiveTo(player, "weapons");
+		GiveTo(player, "ammo");
+		player.armorpoints = deh.FAArmor;
+		player.armortype = deh.FAAC;
 		msg = GStrings(STSTR_FAADDED);
 		break;
 
@@ -360,17 +393,17 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 	case CHT_BEHOLDR:
 	case CHT_BEHOLDA:
 	case CHT_BEHOLDL: {
-		if (player->spectator)
+		if (player.spectator)
 			return;
 
 		int i = cheat - CHT_BEHOLDV;
 
-		if (!player->powers[i])
+		if (!player.powers[i])
 			P_GivePower(player, i);
 		else if (i != pw_strength)
-			player->powers[i] = 1;
+			player.powers[i] = 1;
 		else
-			player->powers[i] = 0;
+			player.powers[i] = 0;
 	}
 		msg = GStrings(STSTR_BEHOLDX);
 
@@ -387,7 +420,7 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 		AActor* actor;
 		TThinkerIterator<AActor> iterator;
 
-		if (multiplayer && !player->client.allow_rcon)
+		if (multiplayer && !player.client.allow_rcon)
 			return;
 
 		while ((actor = iterator.Next()))
@@ -402,7 +435,7 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 				}
 				if (actor->type == MT_PAIN)
 				{
-					A_PainDie(actor); // killough 2/8/98
+					::A_PainDie(actor); // killough 2/8/98
 					P_SetMobjState(actor, S_PAIN_DIE6);
 				}
 			}
@@ -414,10 +447,10 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 	break;
 
 	case CHT_MDK: {
-		if (multiplayer && !player->client.allow_rcon)
+		if (multiplayer && !player.client.allow_rcon)
 			return;
 
-		if (player->spectator)
+		if (player.spectator)
 			return;
 
 		// Never enable that in PvP, are you crazy?
@@ -426,8 +459,8 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 
 		if (serverside)
 		{
-			P_LineAttack(player->mo, player->mo->angle, 8192 * FRACUNIT,
-			             P_AimLineAttack(player->mo, player->mo->angle, 8192 * FRACUNIT),
+			P_LineAttack(player.mo, player.mo->angle, 8192 * FRACUNIT,
+			             P_AimLineAttack(player.mo, player.mo->angle, 8192 * FRACUNIT),
 			             10000);
 
 			if (multiplayer)
@@ -436,8 +469,8 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 	}
 	break;
 	case CHT_BUDDHA: {
-		player->cheats ^= CF_BUDDHA;
-		msg = (player->cheats & CF_BUDDHA) ? GStrings(TXT_BUDDHAON)
+		player.cheats ^= CF_BUDDHA;
+		msg = (player.cheats & CF_BUDDHA) ? GStrings(TXT_BUDDHAON)
 		                                   : GStrings(TXT_BUDDHAOFF);
 	}
 	break;
@@ -445,19 +478,19 @@ void CHEAT_DoCheat(player_t* player, int cheat, bool silentmsg)
 
 	if (!silentmsg)
 	{
-		if (player == &consoleplayer())
+		if (&player == &consoleplayer())
 		{
 			PrintFmt("{}\n", msg);
 		}
 
 #ifdef SERVER_APP
-		SV_BroadcastPrintFmtButPlayer(PRINT_HIGH, player->id, "{} is a cheater: {}\n",
-		                            player->userinfo.netname, msg);
+		SV_BroadcastPrintFmtButPlayer(PRINT_HIGH, player.id, "{} is a cheater: {}\n",
+		                            player.userinfo.netname, msg);
 #endif
 	}
 }
 
-bool CHEAT_ValidSummonActor(const std::string& summon) {
+bool ValidSummonActor(const std::string& summon) {
 	std::string mobname = "";
 
 	mobjtype_t mobjtype = P_INameToMobj(summon);
@@ -470,12 +503,12 @@ bool CHEAT_ValidSummonActor(const std::string& summon) {
 	return true;
 }
 
-AActor* CHEAT_Summon(player_s* player, const std::string& sum, bool friendly)
+AActor* Summon(player_t& player, const std::string& sum, bool friendly)
 {
 	AActor* entity = AActor::AActorPtr();
-	AActor* source = player->mo;
+	AActor* source = player.mo;
 
-	if (player->spectator || source == NULL)
+	if (player.spectator || source == nullptr)
 		return entity;
 
 	if (serverside)
@@ -486,7 +519,7 @@ AActor* CHEAT_Summon(player_s* player, const std::string& sum, bool friendly)
 		if (mobjtype == MT_NULL)
 		{
 			PrintFmt(PRINT_HIGH, "{} tried to cheat but can't even summon right\n",
-				       player->userinfo.netname);
+				       player.userinfo.netname);
 				return entity;
 		}
 
@@ -508,22 +541,31 @@ AActor* CHEAT_Summon(player_s* player, const std::string& sum, bool friendly)
 		}
 	}
 
+	std::string cheatname = "summon";
+
+	if (friendly)
+	{
+		entity->flags |= MF_FRIEND;
+		cheatname = "summonfriend";
+		P_GiveFriendlyOwnerInfo(entity, player.mo);
+		P_FriendlyEffects(entity);
+	}
+
 	if (multiplayer)
-		PrintFmt(PRINT_HIGH, "{} is a cheater: summon {}\n",
-		         player->userinfo.netname,
-		 sum);
+		PrintFmt(PRINT_HIGH, "{} is a cheater: {} {}\n",
+		         player.userinfo.netname,
+		         cheatname,
+		         sum);
 
 	return entity;
 }
 
-void CHEAT_GiveTo(player_t* player, const char* name)
+void GiveTo(player_t& player, const char* name)
 {
 	bool giveall;
-	int i;
-	gitem_t* it;
 
-	if (player != &consoleplayer())
-		PrintFmt(PRINT_HIGH, "{} is a cheater: give {}\n", player->userinfo.netname,
+	if (&player != &consoleplayer())
+		PrintFmt(PRINT_HIGH, "{} is a cheater: give {}\n", player.userinfo.netname,
 		       name);
 
 	if (stricmp(name, "all") == 0)
@@ -537,22 +579,22 @@ void CHEAT_GiveTo(player_t* player, const char* name)
 
 		if (0 < (h = atoi(name + 6)))
 		{
-			if (player->mo)
+			if (player.mo)
 			{
-				player->mo->health += h;
-				player->health = player->mo->health;
+				player.mo->health += h;
+				player.health = player.mo->health;
 			}
 			else
 			{
-				player->health += h;
+				player.health += h;
 			}
 		}
 		else
 		{
-			if (player->mo)
-				player->mo->health = deh.GodHealth;
+			if (player.mo)
+				player.mo->health = deh.GodHealth;
 
-			player->health = deh.GodHealth;
+			player.health = deh.GodHealth;
 		}
 
 		if (!giveall)
@@ -561,13 +603,13 @@ void CHEAT_GiveTo(player_t* player, const char* name)
 
 	if (giveall || stricmp(name, "backpack") == 0)
 	{
-		if (!player->backpack)
+		if (!player.backpack)
 		{
-			for (i = 0; i < NUMAMMO; i++)
-				player->maxammo[i] *= 2;
-			player->backpack = true;
+			for (int i = 0; i < NUMAMMO; i++)
+				player.maxammo[i] *= 2;
+			player.backpack = true;
 		}
-		for (i = 0; i < NUMAMMO; i++)
+		for (int i = 0; i < NUMAMMO; i++)
 			P_GiveAmmo(player, (ammotype_t)i, 1);
 
 		if (!giveall)
@@ -576,10 +618,10 @@ void CHEAT_GiveTo(player_t* player, const char* name)
 
 	if (giveall || stricmp(name, "weapons") == 0)
 	{
-		weapontype_t pendweap = player->pendingweapon;
-		for (i = 0; i < NUMWEAPONS; i++)
+		weapontype_t pendweap = player.pendingweapon;
+		for (int i = 0; i < NUMWEAPONS; i++)
 			P_GiveWeapon(player, (weapontype_t)i, false);
-		player->pendingweapon = pendweap;
+		player.pendingweapon = pendweap;
 
 		if (!giveall)
 			return;
@@ -587,8 +629,8 @@ void CHEAT_GiveTo(player_t* player, const char* name)
 
 	if (giveall || stricmp(name, "ammo") == 0)
 	{
-		for (i = 0; i < NUMAMMO; i++)
-			player->ammo[i] = player->maxammo[i];
+		for (int i = 0; i < NUMAMMO; i++)
+			player.ammo[i] = player.maxammo[i];
 
 		if (!giveall)
 			return;
@@ -596,8 +638,8 @@ void CHEAT_GiveTo(player_t* player, const char* name)
 
 	if (giveall || stricmp(name, "armor") == 0)
 	{
-		player->armorpoints = 200;
-		player->armortype = 2;
+		player.armorpoints = 200;
+		player.armortype = 2;
 
 		if (!giveall)
 			return;
@@ -605,8 +647,8 @@ void CHEAT_GiveTo(player_t* player, const char* name)
 
 	if (giveall || stricmp(name, "keys") == 0)
 	{
-		for (i = 0; i < NUMCARDS; i++)
-			player->cards[i] = true;
+		for (int i = 0; i < NUMCARDS; i++)
+			player.cards[i] = true;
 
 		if (!giveall)
 			return;
@@ -615,13 +657,13 @@ void CHEAT_GiveTo(player_t* player, const char* name)
 	if (giveall)
 		return;
 
-	it = FindItem(name);
+	gitem_t* it = FindItem(name);
 	if (!it)
 	{
 		it = FindItemByClassname(name);
 		if (!it)
 		{
-			if (player == &consoleplayer())
+			if (&player == &consoleplayer())
 				PrintFmt(PRINT_HIGH, "Unknown item\n");
 			return;
 		}
@@ -658,7 +700,7 @@ void CHEAT_GiveTo(player_t* player, const char* name)
 
 // Heretic cheat code (unused!)
 #if 0
-void CHEAT_Suicide(player_t* plyr)
+void Suicide(player_t& plyr)
 {
 	plyr->mo->flags |= MF_SHOOTABLE;
 	while (plyr->health > 0)
@@ -666,5 +708,7 @@ void CHEAT_Suicide(player_t* plyr)
 	plyr->mo->flags &= ~MF_SHOOTABLE;
 }
 #endif
+
+} // namespace cheat
 
 VERSION_CONTROL(m_cheat_cpp, "$Id$")

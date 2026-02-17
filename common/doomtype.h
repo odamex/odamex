@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include <nonstd/span.hpp>
+
 // Standard libc/STL includes we use in countless places
 
 #include "version.h"
@@ -41,12 +43,7 @@
 // For __BIG_ENDIAN__ macro, requires forceinline
 #include "m_swap.h"
 
-#ifdef GEKKO
-	#include <gctypes.h>
-#endif
-
-typedef unsigned char byte;
-typedef unsigned int uint;
+using byte = uint8_t;
 
 using OByteSpan = nonstd::span<byte>;
 
@@ -57,7 +54,7 @@ using OByteSpan = nonstd::span<byte>;
 #endif
 
 // Predefined with some OS.
-#if !defined(UNIX) && !defined(_WIN32) && !defined(GEKKO)
+#if !defined(UNIX) && !defined(_WIN32)
 	#include <limits.h>
 	#include <float.h>
 #endif
@@ -70,7 +67,7 @@ using OByteSpan = nonstd::span<byte>;
 	#define __int64 long
 #endif
 
-#if (defined _XBOX || defined _MSC_VER)
+#if defined _MSC_VER
 	#define DBL_EPSILON 2.2204460492503131e-016
 	#define FLT_EPSILON 1.192092896e-07F
 #else
@@ -82,70 +79,27 @@ using OByteSpan = nonstd::span<byte>;
 	#define strnicmp strncasecmp
 #endif
 
-#ifndef MAXCHAR
-	#define MAXCHAR 		((char)0x7f)
-#endif
-#ifndef MAXSHORT
-	#define MAXSHORT		((short)0x7fff)
-#endif
+namespace limits
+{
+	inline constexpr char         MAXCHAR  = std::numeric_limits<char>::max();
+	inline constexpr short        MAXSHORT = std::numeric_limits<short>::max();
+	inline constexpr int          MAXINT   = std::numeric_limits<int>::max();
+	inline constexpr unsigned int MAXUINT  = std::numeric_limits<unsigned int>::max();
+	// todo: do we even want to be using long here instead of int32_t/int64_t
+	// this feels like a remnant from before 64 bit
+	inline constexpr long         MAXLONG  = std::numeric_limits<long>::max();
 
-// Max pos 32-bit int.
-#ifndef MAXINT
-	#define MAXINT			(0x7fffffff)
-#endif
-#ifndef MAXUINT
-	#define MAXUINT			(0xffffffff)
-#endif
+	inline constexpr char         MINCHAR  = std::numeric_limits<char>::min();
+	inline constexpr short        MINSHORT = std::numeric_limits<short>::min();
+	inline constexpr int          MININT   = std::numeric_limits<int>::min();
+	inline constexpr unsigned int MINUINT  = std::numeric_limits<unsigned int>::min();
+	inline constexpr long         MINLONG  = std::numeric_limits<long>::min();
 
-#ifndef MAXLONG
-	#ifndef ALPHA
-		#define MAXLONG 		((long)0x7fffffff)
-	#else
-		#define MAXLONG			((long)0x7fffffffffffffff)
-	#endif
-#endif
-
-#ifndef MINCHAR
-	#define MINCHAR 		((char)0x80)
-#endif
-#ifndef MINSHORT
-	#define MINSHORT		((short)0x8000)
-#endif
-
-// Max negative 32-bit integer.
-#ifndef MININT
-	#define MININT			((int)0x80000000)
-#endif
-#ifndef MINLONG
-	#ifndef ALPHA
-		#define MINLONG 		((long)0x80000000)
-	#else
-		#define MINLONG			((long)0x8000000000000000)
-	#endif
-#endif
-
-#define MINFIXED		(signed)(0x80000000)
-#define MAXFIXED		(signed)(0x7fffffff)
-
-typedef unsigned char		BYTE;
-typedef signed char			SBYTE;
-
-typedef unsigned short		WORD;
-typedef signed short		SWORD;
-
-// denis - todo - this 64 bit fix conflicts with windows' idea of long
-#ifndef _WIN32
-typedef unsigned int		DWORD;
-typedef signed int			SDWORD;
-#else
-typedef unsigned long		DWORD;
-typedef signed long			SDWORD;
-#endif
-
-typedef unsigned __int64	QWORD;
-typedef signed __int64		SQWORD;
-
-typedef DWORD				BITFIELD;
+	inline constexpr int32_t      MAXFIXED = std::numeric_limits<int32_t>::max();
+	inline constexpr int32_t      MINFIXED = std::numeric_limits<int32_t>::min();
+	inline constexpr int64_t      MAXFIXED64 = std::numeric_limits<int64_t>::max();
+	inline constexpr int64_t      MINFIXED64 = std::numeric_limits<int64_t>::min();
+}
 
 typedef uint64_t			dtime_t;
 
@@ -193,6 +147,7 @@ typedef enum {
 	PRINT_NORCON,		// Do NOT send the message to any rcon client.
 
 	PRINT_FILTERCHAT,	// Filter the message to not be displayed ingame, but only in the console (ugly hack)
+	PRINT_FILTERHIGH,	// Filter the message to not be displayed ingame, but only in the console (ugly hack)
 
 	PRINT_MAXPRINT
 } printlevel_t;

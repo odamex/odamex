@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,9 +29,7 @@
 
 #include <string>
 
-#ifdef _XBOX
-#include <xtl.h>
-#elif _WIN32
+#ifdef _WIN32
 #include <winsock2.h>
 #include <windows.h>
 #include <ws2tcpip.h>

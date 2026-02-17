@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -73,17 +73,17 @@ void *Realloc (void *memblock, size_t size)
 }
 
 //
-// M_Free
+// M_Free2
 //
 // Wraps around the standard free() memory function. This variation is slightly
 // more safer, as it only frees a block if its not NULL and will NULL it on
 // exiting.
 void M_Free2 (void **memblock)
 {
-    if (*memblock != NULL)
+    if (*memblock != nullptr)
     {
         free(*memblock);
-        *memblock = NULL;
+        *memblock = nullptr;
     }
 }
 

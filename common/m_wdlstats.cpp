@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,8 +32,6 @@
 #include "p_local.h"
 
 #define WDLSTATS_VERSION 6
-
-extern Players players;
 
 EXTERN_CVAR(sv_gametype)
 EXTERN_CVAR(sv_hostname)
@@ -174,90 +172,76 @@ static WDLEventLog wdlevents;
 //	return ::wdlevstrings[i];
 //}
 
-static void AddWDLPlayer(player_t* player)
+static void AddWDLPlayer(const player_t& player)
 {
 	// Don't add player if their name is already in the vector.
 	// [Blair] Check the player's team too as version six tracks all
 	// connects/disconnects/team switches
 	for (const auto& wdlplayer : ::wdlplayers)
 	{
-		if (wdlplayer.netname == player->userinfo.netname &&
-		    wdlplayer.team == player->userinfo.team && wdlplayer.pid == player->id)
+		if (wdlplayer.netname == player.userinfo.netname &&
+		    wdlplayer.team == player.userinfo.team && wdlplayer.pid == player.id)
 			return;
 	}
 
 	WDLPlayer wdlplayer = {
 	    static_cast<int>(::wdlplayers.size() + 1),
-	    player->id,
-	    player->userinfo.netname,
-	    player->userinfo.team,
+	    player.id,
+	    player.userinfo.netname,
+	    player.userinfo.team,
 	};
 	::wdlplayers.push_back(wdlplayer);
 }
 
-static void AddWDLPlayerSpawn(const mapthing2_t* mthing)
+static void AddWDLPlayerSpawn(const mapthing2_t& mthing)
 {
 
 	team_t team = TEAM_NONE;
 
 	if (sv_teamspawns != 0)
 	{
-		if (mthing->type == 5080)
+		if (mthing.type == 5080)
 			team = TEAM_BLUE;
-		else if (mthing->type == 5081)
+		else if (mthing.type == 5081)
 			team = TEAM_RED;
-		else if (mthing->type == 5083)
+		else if (mthing.type == 5083)
 			team = TEAM_GREEN;
 	}
 
 	// [Blair] Add player spawns to the table with team info.
 	for (const auto& spawn : ::wdlplayerspawns)
 	{
-		if (spawn.x == mthing->x && spawn.y == mthing->y && spawn.z == mthing->z &&
+		if (spawn.x == mthing.x && spawn.y == mthing.y && spawn.z == mthing.z &&
 		    spawn.team == team)
 			return;
 	}
 
-	WDLPlayerSpawn wdlplayerspawn = {static_cast<int>(::wdlplayerspawns.size() + 1), mthing->x, mthing->y,
-	                                 mthing->z, team};
+	WDLPlayerSpawn wdlplayerspawn = {static_cast<int>(::wdlplayerspawns.size() + 1), mthing.x, mthing.y,
+	                                 mthing.z, team};
 	::wdlplayerspawns.push_back(wdlplayerspawn);
 }
 
-static void AddWDLFlagLocation(const mapthing2_t* mthing, team_t team)
+static void AddWDLFlagLocation(const mapthing2_t& mthing, team_t team)
 {
 	// [Blair] Add flag pedestals to the table.
 	for (const auto& loc : ::wdlflaglocations)
 	{
-		if (loc.x == mthing->x && loc.y == mthing->y && loc.z == mthing->z &&
+		if (loc.x == mthing.x && loc.y == mthing.y && loc.z == mthing.z &&
 		    loc.team == team)
 			return;
 	}
 
-	WDLFlagLocation wdlflaglocation = {team, mthing->x, mthing->y, mthing->z};
-	::wdlflaglocations.push_back(wdlflaglocation);
+	::wdlflaglocations.push_back({team, mthing.x, mthing.y, mthing.z});
 }
 
-static void RemoveWDLPlayerSpawn(const mapthing2_t* mthing)
+static void RemoveWDLPlayerSpawn(const mapthing2_t& mthing)
 {
-	bool found = false;
-	WDLPlayerSpawn w;
+	const auto it = std::find_if(::wdlplayerspawns.begin(), ::wdlplayerspawns.end(), [&mthing](const auto& spawn){
+		return spawn.x == mthing.x && spawn.y == mthing.y && spawn.z == mthing.z;
+	});
 
-	for (const auto& spawn : ::wdlplayerspawns)
-	{
-		if (spawn.x == mthing->x && spawn.y == mthing->y && spawn.z == mthing->z)
-		{
-			w = spawn;
-			found = true;
-			break;
-		}
-	}
-
-	if (!found)
-		return;
-
-	wdlplayerspawns.erase(std::find(::wdlplayerspawns.begin(), ::wdlplayerspawns.end(), w));
-
-	return;
+	if (it != ::wdlplayerspawns.end())
+		::wdlplayerspawns.erase(it);
 }
 
 int GetItemSpawn(int x, int y, int z, WDLPowerups item)
@@ -270,19 +254,19 @@ int GetItemSpawn(int x, int y, int z, WDLPowerups item)
 	return 0;
 }
 
-void M_LogWDLItemSpawn(AActor* target, WDLPowerups type)
+void M_LogWDLItemSpawn(const AActor& target, WDLPowerups type)
 {
 	// [Blair] Add item spawn to the table.
 	// Don't add an overlapping item spawn, treat it as one.
 	for (const auto& spawn : ::wdlitemspawns)
 	{
-		if (spawn.x == target->x && spawn.y == target->y && spawn.z == target->z &&
+		if (spawn.x == target.x && spawn.y == target.y && spawn.z == target.z &&
 		    spawn.item == type)
 			return;
 	}
 
-	WDLItemSpawn wdlitemspawn = {static_cast<int>(::wdlitemspawns.size() + 1), target->x, target->y,
-	                             target->z, type};
+	WDLItemSpawn wdlitemspawn = {static_cast<int>(::wdlitemspawns.size() + 1), target.x, target.y,
+	                             target.z, type};
 	::wdlitemspawns.push_back(wdlitemspawn);
 }
 
@@ -387,6 +371,12 @@ WDLPowerups M_GetWDLItemByMobjType(const mobjtype_t type)
 		break;
 	case MT_CAREPACK:
 		itemid = WDL_PICKUP_CAREPACKAGE;
+		break;
+	case MT_EXTRALIFE:
+		itemid = WDL_PICKUP_EXTRALIFE;
+		break;
+	case MT_RESTEAMMATE:
+		itemid = WDL_PICKUP_RESTEAMMATE;
 		break;
 	default:
 		itemid = WDL_PICKUP_UNKNOWN;
@@ -511,13 +501,12 @@ void M_StartWDLLog(bool newmap)
  * Returns true if the function successfully appended to an existing event,
  * otherwise false if we need to generate a new event.
  */
-static bool LogDamageEvent(WDLEvents event, player_t* activator, player_t* target,
+static bool LogDamageEvent(WDLEvents eventtype, const player_t& activator, const player_t& target,
                            int arg0, int arg1, int arg2)
 {
-	WDLEventLog::reverse_iterator it = ::wdlevents.rbegin();
-	for (; it != ::wdlevents.rend(); ++it)
+	for (auto& event : OUtil::reverse(::wdlevents))
 	{
-		if ((*it).gametic != ::gametic)
+		if (event.gametic != ::gametic)
 		{
 			// We're too late for events from last tic, so we must have a
 			// new event.
@@ -525,20 +514,20 @@ static bool LogDamageEvent(WDLEvents event, player_t* activator, player_t* targe
 		}
 
 		// Event type is the same?
-		if ((*it).ev != event)
+		if (event.ev != eventtype)
 			continue;
 
 		// Activator is the same?
-		if ((*it).activator != activator->id)
+		if (event.activator != activator.id)
 			continue;
 
 		// Target is the same?
-		if ((*it).target != target->id)
+		if (event.target != target.id)
 			continue;
 
 		// Update our existing event.
-		(*it).arg0 += arg0;
-		(*it).arg1 += arg1;
+		event.arg0 += arg0;
+		event.arg1 += arg1;
 		return true;
 	}
 
@@ -552,16 +541,15 @@ static bool LogDamageEvent(WDLEvents event, player_t* activator, player_t* targe
  * If there's already an accuracy record for this gametic with a populated actor
  * then create a new one because the shot hit more than 1 player.
  */
-bool LogAccuracyShot(WDLEvents event, player_t* activator, int mod, angle_t angle)
+bool LogAccuracyShot(WDLEvents eventtype, const player_t& activator, int mod, angle_t angle)
 {
 	// See if we have an existing accuracy event for this tic.
 	// If not, we need to create a new one
 	// If there is an existing accuracy event for this tic and it has a target,
 	// then there were more than 1 hits, create a new event.
-	WDLEventLog::reverse_iterator it = ::wdlevents.rbegin();
-	for (; it != ::wdlevents.rend(); ++it)
+	for (auto& event : OUtil::reverse(::wdlevents))
 	{
-		if ((*it).gametic != ::gametic)
+		if (event.gametic != ::gametic)
 		{
 			// Whoops, we went a whole gametic without seeing an accuracy
 			// to our name.
@@ -569,11 +557,11 @@ bool LogAccuracyShot(WDLEvents event, player_t* activator, int mod, angle_t angl
 		}
 
 		// Event type is the same?
-		if ((*it).ev != event)
+		if (event.ev != eventtype)
 			continue;
 
 		// Activator is the same?
-		if ((*it).activator != activator->id)
+		if (event.activator != activator.id)
 			continue;
 
 		// We found an existing accuracy event for this tic.
@@ -590,14 +578,13 @@ bool LogAccuracyShot(WDLEvents event, player_t* activator, int mod, angle_t angl
  * Looks for an accuracy log somewhere in the backlog, if there is none, it
  * logs a message but continues.
  */
-bool LogAccuracyHit(WDLEvents event, player_t* activator, player_t* target, int mod,
+bool LogAccuracyHit(WDLEvents eventtype, const player_t& activator, const player_t* target, int mod,
                     int hits)
 {
 	// See if we have an existing accuracy event for this tic.
-	WDLEventLog::reverse_iterator it = ::wdlevents.rbegin();
-	for (; it != ::wdlevents.rend(); ++it)
+	for (auto& event : OUtil::reverse(::wdlevents))
 	{
-		if ((*it).gametic != ::gametic)
+		if (event.gametic != ::gametic)
 		{
 			// Whoops, we went a whole gametic without seeing an accuracy
 			// to our name.
@@ -605,40 +592,32 @@ bool LogAccuracyHit(WDLEvents event, player_t* activator, player_t* target, int 
 		}
 
 		// Event type is the same?
-		if ((*it).ev != event)
+		if (event.ev != eventtype)
 			continue;
 
 		// Activator is the same?
-		if ((*it).activator != activator->id)
+		if (event.activator != activator.id)
 			continue;
+
+		// Target exists?
+		if (target == nullptr)
+			return true; // Can't log a hit if it didn't hit anybody...
 
 		// Target is the same?
-		if ((*it).target != target->id && (*it).target != 0)
+		if (event.target != target->id && event.target != 0)
 			continue;
 
-		// Target
-		int tx = 0;
-		int ty = 0;
-		int tz = 0;
-		if (target != NULL)
-		{
-			tx = target->mo->x;
-			ty = target->mo->y;
-			tz = target->mo->z;
-		}
-		else
-		{
-			// Can't log a hit if it didn't hit anybody...
-			return true;
-		}
+		const int tx = target->mo->x;
+		const int ty = target->mo->y;
+		const int tz = target->mo->z;
 
 		// We found an existing accuracy event for this tic - increment the number of
 		// shots hit if its a spread type
-		(*it).target = target->id;
-		(*it).arg2 += hits;
-		(*it).tpos[0] = tx;
-		(*it).tpos[1] = ty;
-		(*it).tpos[2] = tz;
+		event.target = target->id;
+		event.arg2 += hits;
+		event.tpos[0] = tx;
+		event.tpos[1] = ty;
+		event.tpos[2] = tz;
 		return true;
 	}
 	// Not sure what happened but it can't find the event. Create one.
@@ -676,7 +655,7 @@ int GetMaxShotsForMod(int mod)
  *
  * Logs the initial flag location on spawn and puts it in the flag locations table.
  */
-void M_LogWDLFlagLocation(mapthing2_t* activator, team_t team)
+void M_LogWDLFlagLocation(const mapthing2_t& activator, team_t team)
 {
 	AddWDLFlagLocation(activator, team);
 }
@@ -701,7 +680,7 @@ void M_LogWDLItemRespawnEvent(AActor* activator)
 	int az = 0;
 	if (activator != NULL)
 	{
-		itemtype = M_GetWDLItemByMobjType(activator->type);
+		itemtype = M_GetWDLItemByMobjType(static_cast<mobjtype_t>(activator->type));
 
 		// Add the activator's body information.
 		ax = activator->x;
@@ -728,7 +707,7 @@ void M_LogWDLItemRespawnEvent(AActor* activator)
  * can ignore item pickups that only get picked up at the same location once if item
  * respawn is on.
  */
-void M_LogWDLPickupEvent(player_t* activator, AActor* target, WDLPowerups pickuptype,
+void M_LogWDLPickupEvent(const player_t* activator, AActor* target, WDLPowerups pickuptype,
                          bool dropped)
 {
 	if (!::wdlstate.recording)
@@ -747,7 +726,7 @@ void M_LogWDLPickupEvent(player_t* activator, AActor* target, WDLPowerups pickup
 	if (activator != NULL)
 	{
 		// Add the activator.
-		AddWDLPlayer(activator);
+		AddWDLPlayer(*activator);
 		aid = activator->id;
 
 		// Add the activator's body information.
@@ -788,7 +767,7 @@ void M_LogWDLPickupEvent(player_t* activator, AActor* target, WDLPowerups pickup
  *
  * The particulars of what you pass to this needs to be checked against the document.
  */
-void M_LogWDLEvent(WDLEvents event, player_t* activator, player_t* target, int arg0,
+void M_LogWDLEvent(WDLEvents event, const player_t* activator, const player_t* target, int arg0,
                    int arg1, int arg2, int arg3)
 {
 	if (!::wdlstate.recording)
@@ -805,7 +784,7 @@ void M_LogWDLEvent(WDLEvents event, player_t* activator, player_t* target, int a
 	if (activator != NULL)
 	{
 		// Add the activator.
-		AddWDLPlayer(activator);
+		AddWDLPlayer(*activator);
 		aid = activator->id;
 
 		// Add the activator's body information.
@@ -825,7 +804,7 @@ void M_LogWDLEvent(WDLEvents event, player_t* activator, player_t* target, int a
 	if (target != NULL)
 	{
 		// Add the target.
-		AddWDLPlayer(target);
+		AddWDLPlayer(*target);
 		tid = target->id;
 
 		// Add the target's body information.
@@ -841,7 +820,7 @@ void M_LogWDLEvent(WDLEvents event, player_t* activator, player_t* target, int a
 	if (activator && target &&
 	    (event == WDL_EVENT_DAMAGE || event == WDL_EVENT_CARRIERDAMAGE))
 	{
-		if (LogDamageEvent(event, activator, target, arg0, arg1, arg2))
+		if (LogDamageEvent(event, *activator, *target, arg0, arg1, arg2))
 			return;
 	}
 
@@ -850,7 +829,7 @@ void M_LogWDLEvent(WDLEvents event, player_t* activator, player_t* target, int a
 	     event == WDL_EVENT_PROJACCURACY || event == WDL_EVENT_TRACERACCURACY) &&
 	    arg2 <= 0)
 	{
-		if (LogAccuracyShot(event, activator, arg1, arg0))
+		if (LogAccuracyShot(event, *activator, arg1, arg0))
 			return;
 	}
 
@@ -859,7 +838,7 @@ void M_LogWDLEvent(WDLEvents event, player_t* activator, player_t* target, int a
 	     event == WDL_EVENT_PROJACCURACY || event == WDL_EVENT_TRACERACCURACY) &&
 	    arg2 > 0)
 	{
-		if (LogAccuracyHit(event, activator, target, arg1, arg2))
+		if (LogAccuracyHit(event, *activator, target, arg1, arg2))
 			return;
 	}
 
@@ -889,12 +868,12 @@ void M_LogActorWDLEvent(WDLEvents event, AActor* activator, AActor* target, int 
 	M_LogWDLEvent(event, ap, tp, arg0, arg1, arg2, arg3);
 }
 
-void M_LogWDLPlayerSpawn(mapthing2_t* mthing)
+void M_LogWDLPlayerSpawn(const mapthing2_t& mthing)
 {
 	AddWDLPlayerSpawn(mthing);
 }
 
-void M_RemoveWDLPlayerSpawn(mapthing2_t* mthing)
+void M_RemoveWDLPlayerSpawn(const mapthing2_t& mthing)
 {
 	RemoveWDLPlayerSpawn(mthing);
 }
@@ -928,7 +907,7 @@ int M_GetPlayerSpawn(int x, int y)
 	return 0;
 }
 
-int M_GetPlayerId(player_t* player, team_t team)
+int M_GetPlayerId(const player_t& player, team_t team)
 {
 	if (!::wdlstate.recording)
 		return 0;
@@ -937,13 +916,13 @@ int M_GetPlayerId(player_t* player, team_t team)
 	AddWDLPlayer(player);
 
 	// Make real good sure its in there.
-	WDLPlayers::const_iterator it = ::wdlplayers.begin();
-	for (; it != ::wdlplayers.end(); ++it)
-	{
-		if ((*it).pid == player->id && (*it).netname == player->userinfo.netname &&
-		    (*it).team == team)
-			return (*it).id;
-	}
+	const auto it = std::find_if(::wdlplayers.begin(), ::wdlplayers.end(), [&player, team](const auto& wp){
+		return wp.pid == player.id && wp.netname == player.userinfo.netname && wp.team == team;
+	});
+
+	if (it != ::wdlplayers.end())
+		return (*it).id;
+
 	return 0;
 }
 

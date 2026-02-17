@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -65,7 +65,7 @@ extern int				numspritelumps;
 extern bool				g_ValidLevel;
 
 extern int				numsprites;
-extern spritedef_t* 	sprites;
+extern OHashTable<int32_t, spritedef_t> sprites;
 
 extern int				numvertexes;
 extern vertex_t*		vertexes;
@@ -88,8 +88,6 @@ extern line_t*			lines;
 extern int				numsides;
 extern side_t*			sides;
 
-inline nonstd::span<spritedef_t> R_GetSprites() { return nonstd::span(sprites, numsprites); }
-
 inline nonstd::span<vertex_t>    R_GetVertices() { return nonstd::span(vertexes, numvertexes); }
 
 inline nonstd::span<seg_t>       R_GetSegs() { return nonstd::span(segs, numsegs); }
@@ -109,13 +107,13 @@ extern std::vector<int> originalLightLevels;
 inline FArchive &operator<< (FArchive &arc, sector_t *sec)
 {
 	if (sec)
-		return arc << (WORD)(sec - sectors);
+		return arc << (uint16_t)(sec - sectors);
 	else
-		return arc << (WORD)0xffff;
+		return arc << (uint16_t)0xffff;
 }
 inline FArchive &operator>> (FArchive &arc, sector_t *&sec)
 {
-	WORD ofs;
+	uint16_t ofs;
 	arc >> ofs;
 	if (ofs == 0xffff)
 		sec = NULL;
@@ -127,13 +125,13 @@ inline FArchive &operator>> (FArchive &arc, sector_t *&sec)
 inline FArchive &operator<< (FArchive &arc, line_t *line)
 {
 	if (line)
-		return arc << (WORD)(line - lines);
+		return arc << (uint16_t)(line - lines);
 	else
-		return arc << (WORD)0xffff;
+		return arc << (uint16_t)0xffff;
 }
 inline FArchive &operator>> (FArchive &arc, line_t *&line)
 {
-	WORD ofs;
+	uint16_t ofs;
 	arc >> ofs;
 	if (ofs == 0xffff)
 		line = NULL;

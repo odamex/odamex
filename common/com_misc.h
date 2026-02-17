@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -36,6 +36,7 @@ struct toast_t
 		RIGHT = BIT(2),
 		RIGHT_PID = BIT(3),
 		ICON = BIT(4),
+		SPREE = BIT(5),
 	};
 
 	uint32_t flags;
@@ -44,8 +45,10 @@ struct toast_t
 	std::string right;
 	int right_pid;
 	int icon;
+	int points;
+	int spree_color;
 
-	toast_t() : flags(0), left(""), left_pid(-1), right(""), right_pid(-1), icon(-1) { }
+	toast_t() : flags(0), left(""), left_pid(-1), right(""), right_pid(-1), icon(-1), points(0), spree_color(0) { }
 
 	toast_t(const toast_t& other)
 	{
@@ -55,6 +58,8 @@ struct toast_t
 		right = other.right;
 		right_pid = other.right_pid;
 		icon = other.icon;
+		points = other.points;
+		spree_color = other.spree_color;
 	}
 };
 

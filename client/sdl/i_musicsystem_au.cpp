@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -125,11 +125,11 @@ AuMusicSystem::AuMusicSystem() : m_isInitialized(false)
 	if (NewMusicPlayer(&m_player) != noErr)
 	{
 		PrintFmt(PRINT_HIGH,
-		         "I_InitMusic: Music player creation failed using AudioToolbox\n");
+		       "I_InitMusic: Music player creation failed using AudioToolbox\n");
 		return;
 	}
 
-	PrintFmt(PRINT_HIGH, "I_InitMusic: Music playback enabled using AudioToolbox\n");
+	PrintFmt(PRINT_FILTERHIGH, "I_InitMusic: Music playback enabled using AudioToolbox\n");
 	m_isInitialized = true;
 	return;
 }
@@ -143,7 +143,7 @@ AuMusicSystem::~AuMusicSystem()
 	AUGraphClose(m_graph);
 }
 
-void AuMusicSystem::startSong(byte* data, size_t length, bool loop)
+void AuMusicSystem::startSong(byte* data, size_t length, bool loop, int order)
 {
 	if (!isInitialized())
 		return;
@@ -241,7 +241,7 @@ void AuMusicSystem::startSong(byte* data, size_t length, bool loop)
 		return;
 	}
 
-	MusicSystem::startSong(data, length, loop);
+	MusicSystem::startSong(data, length, loop, order);
 }
 
 //
@@ -329,8 +329,7 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 		mus = mem_fopen_read(data, length);
 		midi = mem_fopen_write();
 
-		int result = mus2mid(mus, midi);
-		if (result == 0)
+		if (!mus2mid(mus, midi))
 		{
 			regdata = (byte*)mem_fgetbuf(midi);
 			reglength = mem_fsize(midi);

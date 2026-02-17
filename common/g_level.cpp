@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -117,8 +117,7 @@ void LevelInfos::clearSnapshots()
 // Add a new levelinfo and return it by reference
 level_pwad_info_t& LevelInfos::create()
 {
-	m_infos.emplace_back();
-	return m_infos.back();
+	return m_infos.emplace_back();
 }
 
 // Find a levelinfo by mapname
@@ -240,8 +239,7 @@ void ClusterInfos::clear()
 // Add a new levelinfo and return it by reference
 cluster_info_t& ClusterInfos::create()
 {
-	m_infos.emplace_back();
-	return m_infos.back();
+	return m_infos.emplace_back();
 }
 
 // Find a clusterinfo by mapname
@@ -266,13 +264,6 @@ size_t ClusterInfos::size() const
 void P_RemoveDefereds()
 {
 	::getLevelInfos().zapDeferreds();
-}
-
-// [ML] Not sure where to put this for now...
-// 	G_ParseMusInfo
-void G_ParseMusInfo()
-{
-	// Nothing yet...
 }
 
 //
@@ -387,8 +378,6 @@ bool G_LoadWad(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles,
 	return true;
 }
 
-std::optional<std::string> ParseString2(std::string_view& data);
-
 //
 // G_LoadWadString
 //
@@ -403,9 +392,8 @@ bool G_LoadWadString(const std::string& str, const std::string& mapname, const m
 	OWantFiles newwadfiles;
 	OWantFiles newpatchfiles;
 
-	std::string_view data = str;
-	std::optional<std::string> token;
-	while(token = ParseString2(data))
+	auto parser = ParseString(str, false);
+	while(std::optional<std::string> token = parser().token)
 	{
 		OWantFile file;
 		if (!OWantFile::make(file, *token, OFILE_UNKNOWN))
@@ -923,6 +911,8 @@ void G_InitLevelLocals()
 	::level.clearlabel = info.clearlabel;
 	::level.author = info.author;
 
+	::level.musinfo_map = info.musinfo_map;
+
 	::level.detected_gametype = GM_COOP;
 
 	movingsectors.clear();
@@ -1010,7 +1000,7 @@ BEGIN_COMMAND(mapinfo)
 	PrintFmt(PRINT_HIGH, "Intermission Graphic: {}\n", info.pname);
 	PrintFmt(PRINT_HIGH, "Next Map: {}\n", info.nextmap);
 	PrintFmt(PRINT_HIGH, "Secret Map: {}\n", info.secretmap);
-	PrintFmt(PRINT_HIGH, "Par Time: %d\n", info.partime);
+	PrintFmt(PRINT_HIGH, "Par Time: {}\n", info.partime);
 	PrintFmt(PRINT_HIGH, "Sky: {}\n", info.skypic);
 	PrintFmt(PRINT_HIGH, "Music: {}\n", info.music);
 

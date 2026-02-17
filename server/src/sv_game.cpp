@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -40,6 +40,8 @@
 #include "g_game.h"
 #include "sv_main.h"
 #include "g_spawninv.h"
+#include "g_spree.h"
+#include "g_multikill.h"
 
 void	G_PlayerReborn (player_t &player);
 
@@ -56,28 +58,15 @@ EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (sv_teamsinplay)
 
-gameaction_t	gameaction;
 gamestate_t 	gamestate = GS_STARTUP;
 
-bool 			paused;
 bool 			sendpause;				// send a pause event next tic
 
-bool			timingdemo; 			// FIXME : delete this variable for odasrv ?
-bool	 		viewactive;
-
-bool			network_game;			// Describes if a network game is being played
-bool			multiplayer;			// Describes if this is a multiplayer game or not
-
-Players			players;				// The player vector, contains all player information
 player_t		nullplayer;				// The null player
 
-byte			consoleplayer_id;		// player taking events and displaying
-byte			displayplayer_id;		// view being displayed
 int 			gametic;
 
-
 FILE			*recorddemo_fp;			// Ch0wW : Keeping this for future serverside demo-recording.
-bool 			demoplayback;			// FIXME : remove this serverside !
 int				demostartgametic;		// FIXME : remove this serverside !
 
 wbstartstruct_t wminfo; 				// parms for world map / intermission
@@ -193,20 +182,19 @@ void G_Ticker (void)
 //
 void G_PlayerFinishLevel (player_t &player)
 {
-	player_t *p;
+	player.powers.fill(0);
+	player.cards.fill(false);
 
-	p = &player;
+	SpreeManager::getInstance().erasePoints(player.id);
+	MultiKillManager::getInstance().eraseMultiKills(player.id);
 
-	memset (p->powers, 0, sizeof (p->powers));
-	memset (p->cards, 0, sizeof (p->cards));
+	if(player.mo)
+		player.mo->flags &= ~MF_SHADOW; 	// cancel invisibility
 
-	if(p->mo)
-		p->mo->flags &= ~MF_SHADOW; 	// cancel invisibility
-
-	p->extralight = 0;					// cancel gun flashes
-	p->fixedcolormap = 0;				// cancel ir goggles
-	p->damagecount = 0; 				// no palette changes
-	p->bonuscount = 0;
+	player.extralight = 0;					// cancel gun flashes
+	player.fixedcolormap = 0;				// cancel ir goggles
+	player.damagecount = 0; 				// no palette changes
+	player.bonuscount = 0;
 }
 
 void SV_SendPlayerInfo(player_t& player);
@@ -265,20 +253,20 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 // at the given mapthing2_t spot
 // because something is occupying it
 //
-void P_SpawnPlayer (player_t &player, mapthing2_t* mthing);
+void P_SpawnPlayer (player_t &player, const mapthing2_t& mthing);
 
-bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
+bool G_CheckSpot (player_t &player, const mapthing2_t& mthing)
 {
 	unsigned			an;
 	AActor* 			mo;
 	fixed_t 			xa,ya;
 
-	fixed_t x = mthing->x << FRACBITS;
-	fixed_t y = mthing->y << FRACBITS;
+	const fixed_t x = mthing.x << FRACBITS;
+	const fixed_t y = mthing.y << FRACBITS;
 	fixed_t z = P_FloorHeight(x, y);
 
 	if (level.flags & LEVEL_USEPLAYERSTARTZ)
-		z = mthing->z << FRACBITS;
+		z = mthing.z << FRACBITS;
 
 	if (!player.mo)
 	{
@@ -336,13 +324,13 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 
 		if (co_nosilentspawns)
 		{
-			an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
+			an = ( ANG45 * ((unsigned int)mthing.angle/45) ) >> ANGLETOFINESHIFT;
 			xa = finecosine[an];
 			ya = finesine[an];
 		}
 		else
 		{
-			angle_t mtangle = (angle_t)(mthing->angle / 45);
+			angle_t mtangle = (angle_t)(mthing.angle / 45);
 
 			an = ANG45 * mtangle;
 
@@ -391,18 +379,17 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 // denis - todo - should this be used somewhere?
 // [Russell] This code is horrible because it does no position checking, even
 // zdoom 2.x still has it!
-static fixed_t PlayersRangeFromSpot (mapthing2_t *spot)
+static fixed_t PlayersRangeFromSpot(const mapthing2_t& spot)
 {
-	fixed_t closest = MAXINT;
-	fixed_t distance;
+	fixed_t closest = limits::MAXFIXED;
 
 	for (const auto& player : players)
 	{
 		if (!player.ingame() || !player.mo || player.health <= 0)
 			continue;
 
-		distance = P_AproxDistance (player.mo->x - spot->x * FRACUNIT,
-									player.mo->y - spot->y * FRACUNIT);
+		const fixed_t distance = P_AproxDistance (player.mo->x - spot.x * FRACUNIT,
+		                         player.mo->y - spot.y * FRACUNIT);
 
 		if (distance < closest)
 			closest = distance;
@@ -415,12 +402,11 @@ static fixed_t PlayersRangeFromSpot (mapthing2_t *spot)
 static mapthing2_t *SelectFarthestDeathmatchSpot (int selections)
 {
 	fixed_t bestdistance = 0;
-	mapthing2_t *bestspot = NULL;
-	int i;
+	mapthing2_t* bestspot = nullptr;
 
-	for (i = 0; i < selections; i++)
+	for (int i = 0; i < selections; i++)
 	{
-		fixed_t distance = PlayersRangeFromSpot (&DeathMatchStarts[i]);
+		fixed_t distance = PlayersRangeFromSpot(DeathMatchStarts[i]);
 
 		if (distance > bestdistance)
 		{
@@ -440,7 +426,7 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 	for (j = 0; j < 20; j++)
 	{
 		i = P_Random () % selections;
-		if (G_CheckSpot (player, &DeathMatchStarts[i]) )
+		if (G_CheckSpot (player, DeathMatchStarts[i]) )
 		{
 			return &DeathMatchStarts[i];
 		}
@@ -455,7 +441,7 @@ static mapthing2_t* SelectTeamSpot(player_t &player, std::vector<mapthing2_t>& s
 	for (size_t j = 0; j < starts.size(); ++j)
 	{
 		size_t i = M_Random() % selections;
-		if (G_CheckSpot(player, &starts[i]))
+		if (G_CheckSpot(player, starts[i]))
 			return &starts[i];
 	}
 	return &starts[0];		// could not find a free spot, use spot 0
@@ -510,14 +496,13 @@ void G_TeamSpawnPlayer(player_t &player) // [Toke - CTF - starts] Modified this 
 			spot->type = player.id+4001-4;
 	}
 
-	P_SpawnPlayer (player, spot);
+	P_SpawnPlayer(player, *spot);
 }
 
 EXTERN_CVAR (sv_dmfarspawn)
 
-void G_DeathMatchSpawnPlayer (player_t &player)
+void G_DeathMatchSpawnPlayer(player_t &player)
 {
-	int selections;
 	mapthing2_t *spot;
 
 	if(G_UsesCoopSpawns())
@@ -525,11 +510,11 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 
 	if(G_IsTeamGame())
 	{
-		G_TeamSpawnPlayer (player);
+		G_TeamSpawnPlayer(player);
 		return;
 	}
 
-	selections = DeathMatchStarts.size();
+	const int selections = DeathMatchStarts.size();
 	// [RH] We can get by with just 1 deathmatch start
 	if (selections < 1)
 		I_Error("No deathmatch starts");
@@ -555,7 +540,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 			spot->type = player.id+4001-4;	// [RH] > 4 players
 	}
 
-	P_SpawnPlayer (player, spot);
+	P_SpawnPlayer (player, *spot);
 }
 
 //
@@ -590,24 +575,24 @@ void G_DoReborn (player_t &player)
 
 	unsigned int playernum = player.id - 1;
 
-	if (G_CheckSpot (player, &playerstarts[playernum%playerstarts.size()]) )
+	if (G_CheckSpot(player, playerstarts[playernum%playerstarts.size()]) )
 	{
-		P_SpawnPlayer (player, &playerstarts[playernum%playerstarts.size()]);
+		P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
 		return;
 	}
 
 	// try to spawn at one of the other players' spots
 	for (auto& playerstart : playerstarts)
 	{
-		if (G_CheckSpot (player, &playerstart) )
+		if (G_CheckSpot(player, playerstart) )
 		{
-			P_SpawnPlayer (player, &playerstart);
+			P_SpawnPlayer(player, playerstart);
 			return;
 		}
 	}
 
 	// he's going to be inside something.  Too bad.
-	P_SpawnPlayer (player, &playerstarts[playernum%playerstarts.size()]);
+	P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
 }
 
 VERSION_CONTROL (g_game_cpp, "$Id$")

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,19 +29,20 @@
 
 #define BONUSADD 6
 
-bool P_GiveFrags(player_t* player, int num);
-bool P_GiveKills(player_t* player, int num);
-bool P_GiveDeaths(player_t* player, int num);
-bool P_GiveMonsterDamage(player_t* player, int num);
-bool P_GiveTeamPoints(player_t* player, int num);
-bool P_GiveLives(player_t* player, int num);
-int P_GetFragCount(const player_t* player);
-int P_GetPointCount(const player_t* player);
-int P_GetDeathCount(const player_t* player);
-ItemEquipVal P_GiveAmmo(player_t* player, ammotype_t ammotype, float num);
-ItemEquipVal P_GiveWeapon(player_t* player, weapontype_t weapon, bool dropped);
-ItemEquipVal P_GiveArmor(player_t* player, int armortype);
-ItemEquipVal P_GiveCard(player_t* player, card_t card);
-ItemEquipVal P_GivePower(player_t* player, int /*powertype_t*/ power);
-void P_KillMobj(AActor* source, AActor* target, AActor* inflictor, bool joinkill);
+bool P_GiveFrags(player_t& player, int num);
+bool P_GiveKills(player_t& player, int num);
+bool P_GiveDeaths(player_t& player, int num);
+bool P_GiveMonsterDamage(player_t& player, int num);
+bool P_GiveTeamPoints(const player_t& player, int num);
+bool P_GiveLives(player_t& player, int num);
+int P_GetFragCount(const player_t& player);
+int P_GetPointCount(const player_t& player);
+int P_GetDeathCount(const player_t& player);
+ItemEquipVal P_GiveAmmo(player_t& player, ammotype_t ammotype, float num);
+ItemEquipVal P_GiveWeapon(player_t& player, weapontype_t weapon, bool dropped);
+ItemEquipVal P_GiveArmor(player_t& player, int armortype);
+ItemEquipVal P_GiveCard(player_t& player, card_t card);
+ItemEquipVal P_GivePower(player_t& player, int /*powertype_t*/ power);
+void P_KillMobj(AActor* source, AActor* target, const AActor* inflictor, bool joinkill);
 void P_HealMobj(AActor* mo, int num);
+bool P_InfightingImmune(AActor* target, AActor* source);

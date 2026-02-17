@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -383,7 +383,7 @@ static void HU_DrawCrosshair()
 		return;
 
     // Don't draw the crosshair when automap is visible.
-	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible())
+	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible(true))
         return;
 
 	// Don't draw the crosshair in spectator mode
@@ -544,6 +544,10 @@ void HU_Drawer()
 		}
 
 		hud::LevelStateHUD();
+
+		hud::MultiKillHud();
+
+		hud::SpreeHud();
 	}
 
 	// [csDoom] draw disconnected wire [Toke] Made this 1337er
@@ -617,7 +621,7 @@ static void ShovePrivMsg(byte pid, std::string str)
 
 BEGIN_COMMAND (messagemode)
 {
-	if(!connected)
+	if (!connected || ::netdemo.isPlaying() || ::netdemo.isPaused())
 		return;
 
 	HU_SetChatMode();
@@ -639,7 +643,8 @@ END_COMMAND (say)
 
 BEGIN_COMMAND (messagemode2)
 {
-	if(!connected || (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF && !consoleplayer().spectator))
+	if (!connected || ::netdemo.isPlaying() || ::netdemo.isPaused() ||
+	   (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF && !consoleplayer().spectator))
 		return;
 
 	HU_SetTeamChatMode();
