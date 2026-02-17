@@ -2958,7 +2958,7 @@ static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 	player_t* clientPlayer = &consoleplayer();
 	fixed_t x, y, z;
 	fixed_t momx, momy, momz;
-	fixed_t pitch, viewz, viewheight, deltaviewheight;
+	fixed_t pitch, viewheight, deltaviewheight; // ,viewz
 	angle_t angle;
 	int jumpTics, reactiontime;
 	byte waterlevel;
@@ -2975,7 +2975,7 @@ static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 	momz = msg->actor().mom().z();
 	angle = msg->actor().angle();
 	pitch = msg->actor().pitch();
-	viewz = msg->player().viewz();
+	//viewz = msg->player().viewz();
 	viewheight = msg->player().viewheight();
 	deltaviewheight = msg->player().deltaviewheight();
 	jumpTics = msg->player().jumptics();
@@ -2994,7 +2994,10 @@ static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 		clientPlayer->mo->momz = momz;
 		clientPlayer->mo->angle = angle;
 		clientPlayer->mo->pitch = pitch;
-		clientPlayer->viewz = viewz;
+    
+    //fix jitter when demo's cl_movebob is dif than user's, viewz will set in P_CalcHeight()
+		//clientPlayer->viewz = viewz;
+
 		clientPlayer->viewheight = viewheight;
 		clientPlayer->deltaviewheight = deltaviewheight;
 		clientPlayer->jumpTics = jumpTics;
