@@ -2110,7 +2110,7 @@ void P_SetupLevel (const char *lumpname, int position)
 	if (rejectsize < minrejectsize)
 	{
 		DPrintFmt("Reject matrix is not valid and will be ignored.\n");
-		rejectempty = true;
+		// rejectempty = true;
 		rejectmatrix = static_cast<byte*>(Z_Malloc(minrejectsize, PU_LEVEL, nullptr));
 		W_ReadLump(lumpnum + ML_REJECT, rejectmatrix);
 		memset(rejectmatrix + rejectsize, 0, minrejectsize - rejectsize);
