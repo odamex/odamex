@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,8 +33,10 @@
 
 #ifdef CLIENT_APP
 #define CS_STRING "Odamex Client"
-#else
+#elif defined(SERVER_APP)
 #define CS_STRING "Odamex Server"
+#elif defined(TEST_APP)
+#define CS_STRING "Odamex Unit Tests"
 #endif
 
 // A view to a list of Cvars.
@@ -100,10 +102,9 @@ static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 	case CVARTYPE_STRING:
 		info.push_back("String");
 		break;
-	case CVARTYPE_NONE:
-	case CVARTYPE_MAX:
+	default:
+		out = "";
 		return;
-		break;
 	}
 
 	// Default and range
@@ -164,10 +165,9 @@ static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 			info.push_back(buf);
 		}
 		break;
-	case CVARTYPE_NONE:
-	case CVARTYPE_MAX:
+	default:
+		out = "";
 		return;
-		break;
 	}
 
 	if (cvar.flags() & CVAR_USERINFO)
@@ -208,11 +208,6 @@ static void HTMLFooter(std::string& out)
 	      "</html>";
 }
 
-static bool CvarCmp(const cvar_t* a, const cvar_t* b)
-{
-	return strcmp(a->name(), b->name()) < 0;
-}
-
 /**
  * @brief Return a "view" of Cvars sorted by name.
  */
@@ -227,7 +222,7 @@ static CvarView GetSortedCvarView()
 		var = var->GetNext();
 	}
 
-	std::sort(view.begin(), view.end(), CvarCmp);
+	std::sort(view.begin(), view.end(), [](const cvar_t* a, const cvar_t* b){ return a->name().compare(b->name()) < 0; });
 	return view;
 }
 
@@ -242,15 +237,17 @@ BEGIN_COMMAND(cvardoc)
 
 #ifdef CLIENT_APP
 	path += "odamex_cvardoc.html";
-#else
+#elif defined(SERVER_APP)
 	path += "odasrv_cvardoc.html";
+#elif defined(TEST_APP)
+	path += "odagtest_cvardoc.html";
 #endif
 
 	// Try and open a file in our write directory.
 	FILE* fh = fopen(path.c_str(), "wt+");
 	if (fh == NULL)
 	{
-		Printf("error: Could not open \"%s\" for writing.\n", path);
+		PrintFmt("error: Could not open \"{}\" for writing.\n", path);
 		return;
 	}
 
@@ -297,6 +294,6 @@ BEGIN_COMMAND(cvardoc)
 	fclose(fh);
 
 	// Success!
-	Printf("Wrote %ld bytes to \"%s\"\n", bytes, path);
+	PrintFmt("Wrote {} bytes to \"{}\"\n", bytes, path);
 }
 END_COMMAND(cvardoc)

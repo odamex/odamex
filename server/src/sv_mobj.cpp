@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,11 +32,13 @@
 #include "p_acs.h"
 #include "g_spawninv.h"
 #include "m_wdlstats.h"
+#include "g_spree.h"
+#include "g_multikill.h"
 
 EXTERN_CVAR(sv_maxplayers)
 
 void G_PlayerReborn(player_t &player);
-void CTF_RememberFlagPos(mapthing2_t *mthing);
+void CTF_RememberFlagPos(const mapthing2_t& mthing);
 
 void P_SetSpectatorFlags(player_t &player)
 {
@@ -58,7 +60,7 @@ void P_SetSpectatorFlags(player_t &player)
 // Most of the player structure stays unchanged
 //	between levels.
 //
-void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
+void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
 {
 	// denis - clients should not control spawning
 	if (!serverside)
@@ -84,8 +86,8 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 //		mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
 
 	//[RK] If level flag for z-height spawning isn't set then, spawn the player on floor
-	mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS,
-		(level.flags & LEVEL_USEPLAYERSTARTZ ? mthing->z << FRACBITS : ONFLOORZ), MT_PLAYER);
+	mobj = new AActor(mthing.x << FRACBITS, mthing.y << FRACBITS,
+		(level.flags & LEVEL_USEPLAYERSTARTZ ? mthing.z << FRACBITS : ONFLOORZ), MT_PLAYER);
 
 	// set color translations for player sprites
 	// [RH] Different now: MF_TRANSLATION is not used.
@@ -101,13 +103,16 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 //		mobj->angle = ANG45 * (mthing->angle/45);
 //		mobj->pitch = 0;
 //	}
-	mobj->angle = ANG45 * (mthing->angle/45);
+	mobj->angle = ANG45 * (mthing.angle/45);
 	mobj->pitch = 0;
 
 
 	mobj->pitch = 0;
 	mobj->player = &player;
 	mobj->health = player.health;
+
+	SpreeManager::getInstance().erasePoints(player.id);
+	MultiKillManager::getInstance().eraseMultiKills(player.id);
 
 	player.fov = 90.0f;
 	player.mo = player.camera = mobj->ptr();
@@ -126,7 +131,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 		P_SetSpectatorFlags(player);
 
 	// setup gun psprite
-	P_SetupPsprites(&player);
+	P_SetupPsprites(player);
 
 	// give all cards in death match mode
 	if (!G_IsCoopGame())
@@ -159,7 +164,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 		if (!player.spectator)
 		{
 			M_LogWDLEvent(WDL_EVENT_SPAWNPLAYER, &player, NULL, team, 0,
-			              M_GetPlayerSpawn(mthing->x, mthing->y), 0);
+			              M_GetPlayerSpawn(mthing.x, mthing.y), 0);
 		}
 
 		// send new objects
@@ -170,6 +175,6 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 /**
  * Stub
  */
-void P_ShowSpawns(mapthing2_t* mthing) { }
+void P_ShowSpawns(const mapthing2_t& mthing) { }
 
 VERSION_CONTROL (sv_mobj_cpp, "$Id$")

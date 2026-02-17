@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -87,3 +87,139 @@ enum EColorRange
 
 #define TEXTCOLOR_NORMAL		"\034-"
 #define TEXTCOLOR_BOLD			"\034+"
+
+inline std::string TextColorFromRange(EColorRange colorRange)
+{
+	switch (colorRange)
+	{
+	case CR_BRICK:			return TEXTCOLOR_BRICK;
+	case CR_TAN:			return TEXTCOLOR_TAN;
+	case CR_GRAY:			return TEXTCOLOR_GRAY;
+	//case CR_GREY:			return TEXTCOLOR_GREY;
+	case CR_GREEN:			return TEXTCOLOR_GREEN;
+	case CR_BROWN:			return TEXTCOLOR_BROWN;
+	case CR_GOLD:			return TEXTCOLOR_GOLD;
+	case CR_RED:			return TEXTCOLOR_RED;
+	case CR_BLUE:			return TEXTCOLOR_BLUE;
+	case CR_ORANGE:			return TEXTCOLOR_ORANGE;
+	case CR_WHITE:			return TEXTCOLOR_WHITE;
+	case CR_YELLOW:			return TEXTCOLOR_YELLOW;
+	case CR_UNTRANSLATED:	return TEXTCOLOR_UNTRANSLATED;
+	case CR_BLACK:			return TEXTCOLOR_BLACK;
+	case CR_LIGHTBLUE:		return TEXTCOLOR_LIGHTBLUE;
+	case CR_CREAM:			return TEXTCOLOR_CREAM;
+	case CR_OLIVE:			return TEXTCOLOR_OLIVE;
+	case CR_DARKGREEN:		return TEXTCOLOR_DARKGREEN;
+	case CR_DARKRED:		return TEXTCOLOR_DARKRED;
+	case CR_DARKBROWN:		return TEXTCOLOR_DARKBROWN;
+	case CR_PURPLE:			return TEXTCOLOR_PURPLE;
+	case CR_DARKGRAY:		return TEXTCOLOR_DARKGRAY;
+	//case CR_DARKGREY:		return TEXTCOLOR_DARKGREY;
+	case CR_CYAN:			return TEXTCOLOR_CYAN;
+	default:				return TEXTCOLOR_NORMAL;
+	}
+}
+
+inline EColorRange TextColorFromString(std::string color)
+{
+	// Convert to lower case
+	std::transform(color.begin(), color.end(), color.begin(),
+	               [](unsigned char c) { return std::tolower(c); });
+
+	// Remove any spaces
+	color.erase(color.begin(), std::find_if(color.begin(), color.end(),
+	                                        [](int c) { return !std::isspace(c); }));
+
+	if (color == "brick")
+	{
+		return CR_BRICK;
+	}
+	else if (color == "tan")
+	{
+		return CR_TAN;
+	}
+	else if (color == "gray" || color == "grey")
+	{
+		return CR_GRAY;
+	}
+	else if (color == "green")
+	{
+		return CR_GREEN;
+	}
+	else if (color == "brown")
+	{
+		return CR_BROWN;
+	}
+	else if (color == "gold")
+	{
+		return CR_GOLD;
+	}
+	else if (color == "red")
+	{
+		return CR_RED;
+	}
+	else if (color == "blue")
+	{
+		return CR_BLUE;
+	}
+	else if (color == "orange")
+	{
+		return CR_ORANGE;
+	}
+	else if (color == "white")
+	{
+		return CR_WHITE;
+	}
+	else if (color == "yellow")
+	{
+		return CR_YELLOW;
+	}
+	else if (color == "untranslated")
+	{
+		return CR_UNTRANSLATED;
+	}
+	else if (color == "black")
+	{
+		return CR_BLACK;
+	}
+	else if (color == "lightblue")
+	{
+		return CR_LIGHTBLUE;
+	}
+	else if (color == "cream")
+	{
+		return CR_CREAM;
+	}
+	else if (color == "olive")
+	{
+		return CR_OLIVE;
+	}
+	else if (color == "darkgreen")
+	{
+		return CR_DARKGREEN;
+	}
+	else if (color == "darkred")
+	{
+		return CR_DARKRED;
+	}
+	else if (color == "darkbrown")
+	{
+		return CR_DARKBROWN;
+	}
+	else if (color == "purple")
+	{
+		return CR_PURPLE;
+	}
+	else if (color == "darkgray" || color == "darkgrey")
+	{
+		return CR_DARKGRAY;
+	}
+	else if (color == "cyan")
+	{
+		return CR_CYAN;
+	}
+	else
+	{
+		return CR_GRAY; // Default to gray
+	}
+}

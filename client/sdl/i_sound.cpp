@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -39,10 +39,6 @@
 #include "m_argv.h"
 #include "m_misc.h"
 #include "w_wad.h"
-
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
 
 #define NUM_CHANNELS 32
 
@@ -230,8 +226,8 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
 
     if (!mem_op)
     {
-        Printf(PRINT_HIGH,
-                "perform_sdlmix_conv - SDL_RWFromMem: %s\n", SDL_GetError());
+        PrintFmt(PRINT_HIGH,
+                 "perform_sdlmix_conv - SDL_RWFromMem: {}\n", SDL_GetError());
 
         return NULL;
     }
@@ -240,8 +236,8 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
 
     if (!chunk)
     {
-        Printf(PRINT_HIGH,
-                "perform_sdlmix_conv - Mix_LoadWAV_RW: %s\n", Mix_GetError());
+        PrintFmt(PRINT_HIGH,
+                 "perform_sdlmix_conv - Mix_LoadWAV_RW: {}\n", Mix_GetError());
 
         return NULL;
     }
@@ -483,28 +479,21 @@ void I_InitSound()
 	if (I_IsHeadless() || Args.CheckParm("-nosound"))
 		return;
 
-    #if defined(SDL12)
-    const char *driver = getenv("SDL_AUDIODRIVER");
-
-	if(!driver)
-		driver = "default";
-
-    Printf(PRINT_HIGH, "I_InitSound: Initializing SDL's sound subsystem (%s)\n", driver);
-    #elif defined(SDL20)
-    Printf("I_InitSound: Initializing SDL's sound subsystem\n");
+    #if defined(SDL20)
+    PrintFmt("I_InitSound: Initializing SDL's sound subsystem\n");
     #endif
 
 	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
 	{
-		Printf(PRINT_ERROR,
-               "I_InitSound: Unable to set up sound: %s\n",
-               SDL_GetError());
+		PrintFmt(PRINT_ERROR,
+                 "I_InitSound: Unable to set up sound: {}\n",
+                 SDL_GetError());
 
 		return;
 	}
 
     #if defined(SDL20)
-	Printf("I_InitSound: Using SDL's audio driver (%s)\n", SDL_GetCurrentAudioDriver());
+	PrintFmt("I_InitSound: Using SDL's audio driver ({})\n", SDL_GetCurrentAudioDriver());
 	#endif
 
 	const SDL_version *ver = Mix_Linked_Version();
@@ -512,7 +501,7 @@ void I_InitSound()
 	if(ver->major != MIX_MAJOR_VERSION
 		|| ver->minor != MIX_MINOR_VERSION)
 	{
-		Printf(PRINT_ERROR, "I_InitSound: SDL_mixer version conflict (%d.%d.%d vs %d.%d.%d dll)\n",
+		PrintFmt(PRINT_ERROR, "I_InitSound: SDL_mixer version conflict ({}.{}.{} vs {}.{}.{} dll)\n",
 			MIX_MAJOR_VERSION, MIX_MINOR_VERSION, MIX_PATCHLEVEL,
 			ver->major, ver->minor, ver->patch);
 		return;
@@ -520,12 +509,12 @@ void I_InitSound()
 
 	if(ver->patch != MIX_PATCHLEVEL)
 	{
-		Printf(PRINT_WARNING, "I_InitSound: SDL_mixer version warning (%d.%d.%d vs %d.%d.%d dll)\n",
+		PrintFmt(PRINT_WARNING, "I_InitSound: SDL_mixer version warning ({}.{}.{} vs {}.{}.{} dll)\n",
 			MIX_MAJOR_VERSION, MIX_MINOR_VERSION, MIX_PATCHLEVEL,
 			ver->major, ver->minor, ver->patch);
 	}
 
-	Printf(PRINT_HIGH, "I_InitSound: Initializing SDL_mixer\n");
+	PrintFmt(PRINT_HIGH, "I_InitSound: Initializing SDL_mixer\n");
 
 #ifdef SDL20
     // Apparently, when Mix_OpenAudio requests a certain number of channels
@@ -539,23 +528,23 @@ void I_InitSound()
 	if (Mix_OpenAudio((int)snd_samplerate, AUDIO_S16SYS, 2, 1024) < 0)
 #endif
 	{
-		Printf(PRINT_ERROR,
-               "I_InitSound: Error initializing SDL_mixer: %s\n",
-               Mix_GetError());
+		PrintFmt(PRINT_ERROR,
+                 "I_InitSound: Error initializing SDL_mixer: {}\n",
+                 Mix_GetError());
 		return;
 	}
 
     if(!Mix_QuerySpec(&mixer_freq, &mixer_format, &mixer_channels))
 	{
-		Printf(PRINT_ERROR,
-               "I_InitSound: Error initializing SDL_mixer: %s\n",
-               Mix_GetError());
+		PrintFmt(PRINT_ERROR,
+                 "I_InitSound: Error initializing SDL_mixer: {}\n",
+                 Mix_GetError());
 		return;
 	}
 
-	Printf("I_InitSound: Using %d channels (freq:%d, fmt:%d, chan:%d)\n",
-           Mix_AllocateChannels(NUM_CHANNELS),
-		   mixer_freq, mixer_format, mixer_channels);
+	PrintFmt("I_InitSound: Using {} channels (freq:{}, fmt:{}, chan:{})\n",
+             Mix_AllocateChannels(NUM_CHANNELS),
+		     mixer_freq, mixer_format, mixer_channels);
 
 	atterm(I_ShutdownSound);
 
@@ -563,7 +552,7 @@ void I_InitSound()
 
 	SDL_PauseAudio(0);
 
-	Printf("I_InitSound: sound module ready\n");
+	PrintFmt("I_InitSound: sound module ready\n");
 
 	I_InitMusic();
 

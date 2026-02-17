@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,6 +41,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "st_stuff.h"
 #include "hu_drawers.h"
 #include "hu_elements.h"
@@ -54,6 +55,8 @@
 #include "c_dispatch.h"
 #include "hu_speedometer.h"
 #include "am_map.h"
+#include "g_multikill.h"
+#include "g_spree.h"
 
 static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
 static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};
@@ -87,6 +90,10 @@ static lumpHandle_t FlagIconTaken[NUMTEAMS];
 static lumpHandle_t FlagIconDropped[NUMTEAMS];
 static lumpHandle_t LivesIcon[NUMTEAMS];
 static lumpHandle_t ToastIcon[NUMMODS];
+static lumpHandle_t ToastSpreeR;
+static lumpHandle_t ToastSpreeM;
+static lumpHandle_t ToastSpreeL;
+static lumpHandle_t ToastSpreeArrow;
 
 extern lumpHandle_t negminus;
 extern lumpHandle_t tallnum[10];
@@ -128,6 +135,7 @@ EXTERN_CVAR(g_horde_waves)
 EXTERN_CVAR(g_roundlimit)
 EXTERN_CVAR(hud_hordeinfo_debug)
 EXTERN_CVAR(g_preroundreset)
+EXTERN_CVAR(cl_showsprees)
 
 void ST_unloadNew()
 {
@@ -190,6 +198,12 @@ void ST_initNew()
 	{
 		::ToastIcon[i] = W_CachePatchHandle(fmt::sprintf("ODAMOD%lu", i), PU_STATIC);
 	}
+
+	::ToastSpreeR = W_CachePatchHandle("DIGSPRER", PU_STATIC);
+	::ToastSpreeM = W_CachePatchHandle("DIGSPREM", PU_STATIC);
+	::ToastSpreeL = W_CachePatchHandle("DIGSPREL", PU_STATIC);
+
+	::ToastSpreeArrow = W_CachePatchHandle("DIG62", PU_STATIC);
 }
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
@@ -438,6 +452,33 @@ void ST_voteDraw (int y) {
 			   true, false, true);
 	ST_DrawBar(CR_GREEN, vote_state.yes, vote_state.yes_needed,
 			   (I_GetSurfaceWidth() >> 1), y, xscale * 40, false, true);
+
+	// [RV] Show bound keys for YES/NO while vote is undecided
+	if (vote_state.result == VOTE_UNDEC)
+	{
+		// Use the same binding helper as the warmup code
+		const std::string yesKey = ::Bindings.GetKeynameFromCommand("vote_yes");
+		const std::string noKey = ::Bindings.GetKeynameFromCommand("vote_no");
+
+		// Fallbacks if nothing bound
+		const char* yesStr = yesKey.empty() ? "Y" : yesKey.c_str();
+		const char* noStr = noKey.empty() ? "N" : noKey.c_str();
+
+		// Match the warmup style (fmt::sprintf + TEXTCOLOR_* tags)
+		const std::string hint = fmt::sprintf(
+		    "Press %s%s%s for %sYES%s, %s%s%s for %sNO%s", TEXTCOLOR_GOLD, yesStr,
+		    TEXTCOLOR_NORMAL, TEXTCOLOR_GREEN, TEXTCOLOR_NORMAL, TEXTCOLOR_GOLD, noStr,
+		    TEXTCOLOR_NORMAL, TEXTCOLOR_RED, TEXTCOLOR_NORMAL);
+
+		int hint_w = V_StringWidth(hint.c_str()) * xscale;
+		int hx = (I_GetSurfaceWidth() - hint_w) >> 1;
+
+		y += yscale * 8; // place one line below the votestring lines
+		if (hud_scale)
+			screen->DrawTextClean(CR_GRAY, hx, y, hint.c_str());
+		else
+			screen->DrawText(CR_GRAY, hx, y, hint.c_str());
+	}
 }
 
 namespace hud {
@@ -1064,6 +1105,9 @@ struct drawToast_t
 	int tic;
 	int pid_highlight;
 	std::string left;
+	bool active_spree;
+	int points;
+	EColorRange spree_color;
 	lumpHandle_t icon;
 	std::string right;
 };
@@ -1121,6 +1165,60 @@ void DrawToasts()
 		hud::DrawPatch(x, y + ceil(yoff), hud_scale, hud::X_RIGHT, hud::Y_TOP,
 		               hud::X_RIGHT, hud::Y_TOP, icon, false, true);
 		x += icon->width() + 1;
+
+			// Draw spree point badge if any
+		if (toast.active_spree && cl_showsprees)
+		{
+			// Draw the arrow
+			const patch_t* arrow = W_ResolvePatchHandle(ToastSpreeArrow);
+			const double ayoff = (static_cast<double>(TOAST_HEIGHT) -
+			                      static_cast<double>(arrow->height())) /
+			                     2.0;
+			hud::DrawTranslatedPatch(x, y + ceil(ayoff), hud_scale, hud::X_RIGHT,
+			                         hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP, arrow,
+			                         Ranges + toast.spree_color * 256, false, true);
+
+			x += arrow->width();
+
+			// Right
+			const patch_t* rpatch = W_ResolvePatchHandle(ToastSpreeR);
+			const double syoff = (static_cast<double>(TOAST_HEIGHT) -
+			                      static_cast<double>(rpatch->height())) /
+			                     2.0;
+			hud::DrawTranslatedPatch(x, y + ceil(syoff), hud_scale, hud::X_RIGHT,
+			                         hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP, rpatch,
+			                         Ranges + toast.spree_color * 256, false, true);
+
+			x += rpatch->width();
+			int pointStartX = x - 1;
+
+			// Draw as many middle segments as needed (based on the string width)
+			// We subtract 2 pixels because we want the text to bleed into the left and
+			// right gfx
+			int points_width =
+			    V_StringWidth(fmt::sprintf("%d", toast.points).c_str()) - 1;
+			const patch_t* mpatch = W_ResolvePatchHandle(ToastSpreeM);
+			for (int i = 0; i < points_width; i++)
+			{
+				hud::DrawTranslatedPatch(x, y + ceil(syoff), hud_scale, hud::X_RIGHT,
+				                         hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP, mpatch,
+				                         Ranges + toast.spree_color * 256, false, true);
+				x += mpatch->width();
+			}
+
+			// Left
+			const patch_t* lpatch = W_ResolvePatchHandle(ToastSpreeL);
+			hud::DrawTranslatedPatch(x, y + ceil(syoff), hud_scale, hud::X_RIGHT,
+			                         hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP, lpatch,
+			                         Ranges + toast.spree_color * 256, false, true);
+
+			x += lpatch->width() + 1;
+
+			// Now draw the number of points
+			hud::DrawText(pointStartX, y + ceil(syoff), hud_scale, hud::X_RIGHT,
+			              hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP,
+			              fmt::sprintf("%d", toast.points).c_str(), CR_GRAY);
+		}
 
 		// Left-hand side.
 		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
@@ -1219,6 +1317,19 @@ void PushToast(const toast_t& toast)
 		buffer += toast.right;
 	}
 
+	if (toast.flags & toast_t::SPREE)
+	{
+		drawToast.active_spree = true;
+		drawToast.points = toast.points;
+		drawToast.spree_color = static_cast<EColorRange>(toast.spree_color);
+	}
+	else
+	{
+		drawToast.active_spree = false;
+		drawToast.points = 0;
+		drawToast.spree_color = CR_GRAY;
+	}
+
 	if (!buffer.empty())
 	{
 		drawToast.right = buffer;
@@ -1269,24 +1380,47 @@ struct levelStateLines_t
 	std::string subtitle[4];
 	float lucent;
 	levelStateLines_t() : lucent(1.0f) { }
-
-	void lucentFade(int tics, const int start, const int end)
-	{
-		if (tics < start)
-		{
-			lucent = 1.0f;
-		}
-		else if (tics < end)
-		{
-			tics %= TICRATE;
-			lucent = static_cast<float>(TICRATE - tics) / TICRATE;
-		}
-		else
-		{
-			lucent = 0.0f;
-		}
-	}
 };
+
+struct multiKillLines_t
+{
+	std::string multiKillText;
+	EColorRange color;
+	float lucent;
+	multiKillLines_t() : lucent(1.0f), color(CR_GRAY) { }
+};
+
+struct bigSpreeLine_t
+{
+	std::string spreeText;
+	EColorRange color;
+	float lucent;
+	bigSpreeLine_t() : lucent(1.0f), color(CR_GRAY) { }
+};
+
+struct smallSpreeLine_t
+{
+	std::string spreeText;
+	float lucent;
+	smallSpreeLine_t() : lucent(1.0f) { }
+};
+
+static float lucentFade(int tics, const int start, const int end)
+{
+	if (tics < start)
+	{
+		return 1.0f;
+	}
+	else if (tics < end)
+	{
+		tics %= TICRATE;
+		return static_cast<float>(TICRATE - tics) / TICRATE;
+	}
+	else
+	{
+		return 0.0f;
+	}
+}
 
 static void LevelStateHorde(levelStateLines_t& lines)
 {
@@ -1349,7 +1483,243 @@ static void LevelStateHorde(levelStateLines_t& lines)
 	}
 
 	// Only render the wave message if it's less than 3 seconds in.
-	lines.lucentFade(tics, TICRATE * 3, TICRATE * 4);
+	lines.lucent = lucentFade(tics, TICRATE * 3, TICRATE * 4);
+}
+
+void DisplaySmallSpreeBreaker(const SpreeBreaker_t& breaker)
+{
+	smallSpreeLine_t line;
+
+	line.spreeText = breaker.spreeEndedBroadcastText;
+
+	V_SetFont("SMALLFONT");
+
+	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
+	int h = 8 * CleanYfac;
+
+	line.lucent = lucentFade(::gametic - breaker.spreeEndedTic, TICRATE * 3, TICRATE * 4);
+
+	const float oldtrans = ::hud_transparency;
+	::hud_transparency = line.lucent;
+
+	if (::hud_transparency > 0.0f)
+	{
+		int y = (surface_height / 4) - h / 2;
+		::screen->DrawTextStretchedLuc(CR_GRAY,
+		                               surface_width / 2 - w / 2, y - (12 * ::CleanYfac),
+		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
+	}
+
+	::hud_transparency.ForceSet(oldtrans);
+}
+
+void DisplayPlayerNormalSpree(const SpreeRecord_t& record)
+{
+	// We handle "still dominating" sprees elsewhere.
+	if (record.stillDominating)
+		return;
+
+	bigSpreeLine_t line;
+
+	line.spreeText = record.spree.spreeText;
+	line.color = record.spree.color;
+
+	V_SetFont("BIGFONT");
+
+	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
+	int h = 12 * CleanYfac;
+
+	line.lucent = lucentFade(::gametic - record.spreeStartTic, TICRATE * 3, TICRATE * 4);
+
+	const float oldtrans = ::hud_transparency;
+	::hud_transparency = line.lucent;
+
+	if (::hud_transparency > 0.0f)
+	{
+		int y = (surface_height / 4) - h / 2;
+		::screen->DrawTextStretchedLuc(line.color, surface_width / 2 - w / 2, y,
+		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
+	}
+
+	::hud_transparency.ForceSet(oldtrans);
+
+	V_SetFont("SMALLFONT");
+}
+
+void DisplaySmallSpree(const SpreeRecord_t& record)
+{
+	smallSpreeLine_t line;
+
+	line.spreeText = record.spree.spreeBroadcastText;
+
+	V_SetFont("SMALLFONT");
+
+	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
+	int h = 8 * CleanYfac;
+
+	line.lucent = lucentFade(::gametic - record.spreeStartTic, TICRATE * 3, TICRATE * 4);
+
+	const float oldtrans = ::hud_transparency;
+	::hud_transparency = line.lucent;
+
+	if (::hud_transparency > 0.0f)
+	{
+		int y = (surface_height / 4) - h / 2;
+		::screen->DrawTextStretchedLuc(CR_GRAY,
+		                               surface_width / 2 - w / 2, y - (12 * ::CleanYfac),
+		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
+	}
+
+	::hud_transparency.ForceSet(oldtrans);
+}
+
+void SpreeHud()
+{
+	if (!validplayer(displayplayer()) || !cl_showsprees)
+		return;
+
+	static SpreeManager& manager = SpreeManager::getInstance();
+
+	// Display the current display player's spree if within time
+	// As big text
+	const player_t& p = displayplayer();
+
+	const SpreeRecord_t& spree_r = manager.getSpreeRecord(p.id);
+
+	// Main spree text
+	if (spree_r.playerId != -1 && !spree_r.stillDominating)
+	{
+		DisplayPlayerNormalSpree(spree_r);
+	}
+
+	// If we're not still dominating, check if someone else has a spree.
+	// We'll get the spree breaker as well, to compare and see which one to display.
+	const SpreeRecord_t& other_spree_r = manager.getLatestSpreeRecord(p.id);
+	const SpreeBreaker_t& global_spree_breaker = manager.getSpreeBreaker();
+
+	bool otherPlayerValid = false;
+	bool spreeBreakerValid = false;
+	bool playerStillDominatingValid = false;
+
+	if (spree_r.playerId == -1 && other_spree_r.playerId == -1 && global_spree_breaker.spreeEndedPlayerId == -1)
+	{
+		// All are invalid, bomb out here.
+		return;
+	}
+
+	// Still dominating text only shows up as small text.
+	if (spree_r.playerId != -1 && spree_r.stillDominating)
+	{
+		playerStillDominatingValid = true;
+	}
+
+	if (other_spree_r.playerId != -1)
+	{
+		otherPlayerValid = true;
+	}
+
+	if (global_spree_breaker.spreeEndedPlayerId != -1)
+	{
+		spreeBreakerValid = true;
+	}
+
+	if (!otherPlayerValid && !spreeBreakerValid && !playerStillDominatingValid)
+	{
+		return;
+	}
+	else if (otherPlayerValid && !spreeBreakerValid && !playerStillDominatingValid)
+	{
+		// Just display the other player's spree
+		DisplaySmallSpree(other_spree_r);
+	}
+	else if (!otherPlayerValid && spreeBreakerValid && !playerStillDominatingValid)
+	{
+		// Just display the spree breaker
+		DisplaySmallSpreeBreaker(global_spree_breaker);
+	}
+	else if (!otherPlayerValid && !spreeBreakerValid && playerStillDominatingValid)
+	{
+		// Just display the still dominating text.
+		DisplaySmallSpree(spree_r);
+	}
+	else
+	{
+		// All 3 are valid, compare times
+		if (other_spree_r.spreeStartTic > global_spree_breaker.spreeEndedTic)
+		{
+
+			if (other_spree_r.spreeStartTic > spree_r.spreeStartTic)
+			{
+				// Display other player's spree
+				DisplaySmallSpree(other_spree_r);
+			}
+			else
+			{
+				// Display still dominating
+				DisplaySmallSpree(spree_r);
+			}
+		}
+		else
+		{
+			if (global_spree_breaker.spreeEndedTic > spree_r.spreeStartTic)
+			{
+				// Display spree breaker
+				DisplaySmallSpreeBreaker(global_spree_breaker);
+			}
+			else
+			{
+				// Display still dominating
+				DisplaySmallSpree(spree_r);
+			}
+		}
+	}
+}
+
+void MultiKillHud()
+{
+	if (!validplayer(displayplayer()))
+		return;
+
+	const player_t& p = displayplayer();
+	const MultiKillTics_s& tics = MultiKillManager::getInstance().getMultiKills(p.id);
+
+	// Display the current display player's multi kills
+	if (tics.multiKills > 1 && ::gametic - tics.lastKillTime < 4 * TICRATE)
+	{
+		const MultiKillLevel_s& multi =
+		    MultiKillManager::getInstance().getMultiKillLevel(tics.multiKills);
+		multiKillLines_t line;
+
+		line.multiKillText = multi.multikilltext;
+		line.color = multi.color;
+
+		V_SetFont("BIGFONT");
+
+		const int surface_width = I_GetSurfaceWidth(),
+			      surface_height = I_GetSurfaceHeight();
+		int w = V_StringWidth(line.multiKillText.c_str()) * CleanYfac;
+		int h = 12 * CleanYfac;
+
+		line.lucent = lucentFade(::gametic - tics.lastKillTime,
+			                      TICRATE * 3, TICRATE * 4);
+
+		const float oldtrans = ::hud_transparency;
+		::hud_transparency = line.lucent;
+
+		if (::hud_transparency > 0.0f)
+		{
+			int y = surface_height - (surface_height / 4) - h / 2;
+			::screen->DrawTextStretchedLuc(line.color, surface_width / 2 - w / 2, y,
+				line.multiKillText.c_str(), ::CleanYfac, ::CleanYfac);
+		}
+
+		::hud_transparency.ForceSet(oldtrans);
+
+		V_SetFont("SMALLFONT");
+	}
 }
 
 void LevelStateHUD()
@@ -1434,7 +1804,7 @@ void LevelStateHUD()
 				}
 
 				// Only render the message if it's less than 2 seconds in.
-				lines.lucentFade(::level.time - ::levelstate.getIngameStartTime(),
+				lines.lucent = lucentFade(::level.time - ::levelstate.getIngameStartTime(),
 				                 TICRATE * 2, TICRATE * 3);
 			}
 			else if (G_IsCoopGame())
@@ -1453,7 +1823,7 @@ void LevelStateHUD()
 			}
 
 			// Only render the "FIGHT" message if it's less than 2 seconds in.
-			lines.lucentFade(::level.time - ::levelstate.getIngameStartTime(),
+			lines.lucent = lucentFade(::level.time - ::levelstate.getIngameStartTime(),
 			                 TICRATE * 2, TICRATE * 3);
 		}
 		break;

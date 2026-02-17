@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,17 +30,7 @@
 #include "sv_main.h"
 #include "v_textcolors.h"
 
-int D_GenderToInt (const char *gender)
-{
-	if (!stricmp (gender, "female"))
-		return GENDER_FEMALE;
-	else if (!stricmp (gender, "cyborg"))
-		return GENDER_NEUTER;
-	else
-		return GENDER_MALE;
-}
-
-bool SetServerVar (const char *name, const char *value)
+bool SetServerVar (std::string_view name, const char *value)
 {
 	cvar_t *dummy;
 	cvar_t *var = cvar_t::FindCVar (name, &dummy);
@@ -59,7 +49,7 @@ bool SetServerVar (const char *name, const char *value)
 
 void D_SendServerInfoChange (const cvar_t *cvar, const char *value)
 {
-	SetServerVar(cvar->name(), value);
+	SetServerVar(cvar->name().c_str(), value);
 	SV_BroadcastPrintFmt("{}{} has been modified to {}!\n", TEXTCOLOR_YELLOW, cvar->name(), value);
 	SV_ServerSettingChange ();
 }

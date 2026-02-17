@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -48,6 +48,7 @@
 #include <cmath>
 
 #include <algorithm>
+#include <unordered_set>
 
 //
 // Graphics.
@@ -289,8 +290,8 @@ void R_GenerateComposite (int texnum)
 	texpatch_t *texpatch = texture->patches;
 
 	// killough 4/9/98: marks to identify transparent regions in merged textures
-	byte *marks = new byte[texture->width * texture->height];
-	memset(marks, 0, texture->width * texture->height);
+	auto marks = std::make_unique<byte[]>(texture->width * texture->height);
+	memset(marks.get(), 0, texture->width * texture->height);
 
 	for (int i = texture->patchcount; --i >=0; texpatch++)
 	{
@@ -309,22 +310,22 @@ void R_GenerateComposite (int texnum)
 			tallpost_t *destpost = (tallpost_t*)(block + texturecolumnofs[texnum][x1]);
 
 			R_DrawColumnInCache(srcpost, destpost->data(), texpatch->originy, texture->height,
-								marks + x1 * texture->height);
+								&marks[x1 * texture->height]);
 		}
 	}
 
 	// killough 4/9/98: Next, convert multipatched columns into true columns,
 	// to fix Medusa bug while still allowing for transparent regions.
 
-	byte *tmpdata = new byte[texture->height];		// temporary post data
+	auto tmpdata = std::make_unique<byte[]>(texture->height);		// temporary post data
 	for (int i = 0; i < texture->width; i++)
 	{
 		tallpost_t *post = (tallpost_t *)(block + texturecolumnofs[texnum][i]);
-		const byte *mark = marks + i * texture->height;
+		const byte *mark = &marks[i * texture->height];
 		int j = 0;
 
 		// save column in temporary so we can shuffle it around
-		memcpy(tmpdata, post->data(), texture->height);
+		memcpy(tmpdata.get(), post->data(), texture->height);
 
 		// reconstruct the column by scanning transparency marks
 		while (true)
@@ -344,13 +345,10 @@ void R_GenerateComposite (int texnum)
 				post->length++;
 
 			// copy opaque pixels from the temporary back into the column
-			memcpy(post->data(), tmpdata + post->topdelta, post->length);
+			memcpy(post->data(), tmpdata.get() + post->topdelta, post->length);
 			post = post->next();
 		}
 	}
-
-	delete [] marks;
-	delete [] tmpdata;
 
 	// Now that the texture has been built in column cache,
 	// it is purgable from zone memory.
@@ -372,9 +370,9 @@ void R_GenerateLookup(int texnum, int *const errors)
 
 	// killough 4/9/98: keep count of posts in addition to patches.
 	// Part of fix for medusa bug for multipatched 2s normals.
-	unsigned short *postcount = new unsigned short[texture->width];
+	auto postcount = std::make_unique<uint16_t[]>(texture->width);
 
-	memset(postcount, 0, sizeof(unsigned short) * texture->width);
+	memset(postcount.get(), 0, sizeof(uint16_t) * texture->width);
 
 	const texpatch_t *texpatch = texture->patches;
 
@@ -433,8 +431,6 @@ void R_GenerateLookup(int texnum, int *const errors)
 	}
 
 	texturecompositesize[texnum] = csize;
-
-	delete [] postcount;
 }
 
 //
@@ -532,7 +528,7 @@ struct texlump_t
 	}
 };
 
-static int32_t R_LoadTextureLump(const texlump_t& texlump, int* patchlookup, int texnum, texhash_t& texhash, int& errors)
+static int32_t R_LoadTextureLump(const texlump_t& texlump, const int* patchlookup, int texnum, texhash_t& texhash, int& errors)
 {
 	int32_t* directory = texlump.directory;
 	int i;
@@ -581,7 +577,7 @@ static int32_t R_LoadTextureLump(const texlump_t& texlump, int* patchlookup, int
 
 void R_InitTextures()
 {
-	int*				patchlookup;
+	std::unique_ptr<int[]> patchlookup;
 
 	int					nummappatches;
 	int					tx_numtextures;
@@ -605,11 +601,16 @@ void R_InitTextures()
 		{
 			numpatches += tx_numtextures;
 		}
-		patchlookup = new int[numpatches];
+		patchlookup = std::make_unique<int[]>(numpatches);
 
 		for (int i = 0; i < nummappatches; i++)
 		{
 			patchlookup[i] = W_CheckNumForName (name_p + i*8);
+
+			// [EB] some wads use the texture namespace but then still use those in pnames
+			if (patchlookup[i] == -1)
+				patchlookup[i] = W_CheckNumForName (name_p + i*8, ns_textures);
+
 			if (patchlookup[i] == -1)
 			{
 				// killough 4/17/98:
@@ -669,8 +670,8 @@ void R_InitTextures()
 	texhash_t texturehash2;
 	// [EB] texture1 goes to texturehash2 because .insert only inserts for keys that don't already exist
 	//      and we need texture2 to override texture1
-	int texnum = R_LoadTextureLump(texture1, patchlookup, 0, texturehash2, errors);
-	texnum = R_LoadTextureLump(texture2, patchlookup, texnum, texturehash, errors);
+	int texnum = R_LoadTextureLump(texture1, patchlookup.get(), 0, texturehash2, errors);
+	texnum = R_LoadTextureLump(texture2, patchlookup.get(), texnum, texturehash, errors);
 	texturehash.insert(texturehash2.begin(), texturehash2.end());
 
 	// TX_ marker (texture namespace) parsed here
@@ -697,8 +698,6 @@ void R_InitTextures()
 			texturehash[texture->name] = i;
 		}
 	}
-
-	delete[] patchlookup;
 
 	if (errors)
 		I_FatalError ("{} errors in R_InitTextures.", errors);
@@ -730,8 +729,6 @@ void R_InitTextures()
 //
 void R_InitFlats (void)
 {
-	int i;
-
 	firstflat = W_GetNumForName ("F_START") + 1;
 	lastflat = W_GetNumForName ("F_END") - 1;
 
@@ -745,7 +742,7 @@ void R_InitFlats (void)
 	// Create translation table for global animation.
 	flattranslation = new int[numflats+1];
 
-	for (i = 0; i < numflats; i++)
+	for (int i = 0; i < numflats; i++)
 		flattranslation[i] = i;
 
 	delete[] flatwarp;
@@ -1079,8 +1076,7 @@ int R_TextureNumForName (const OLumpName& name)
 
 void R_PrecacheLevel (void)
 {
-	byte *hitlist;
-	int i;
+	std::unique_ptr<byte[]> hitlist;
 
 	if (demoplayback)
 		return;
@@ -1088,28 +1084,28 @@ void R_PrecacheLevel (void)
 	{
 		int size = (numflats > numsprites) ? numflats : numsprites;
 
-		hitlist = new byte[(numtextures > size) ? numtextures : size];
+		hitlist = std::make_unique<byte[]>((numtextures > size) ? numtextures : size);
 	}
 
 	// Precache flats.
-	memset (hitlist, 0, numflats);
+	memset (hitlist.get(), 0, numflats);
 
-	for (i = numsectors - 1; i >= 0; i--)
+	for (int i = numsectors - 1; i >= 0; i--)
 		hitlist[sectors[i].floorpic] = hitlist[sectors[i].ceilingpic] = 1;
 
-	for (i = numflats - 1; i >= 0; i--)
+	for (int i = numflats - 1; i >= 0; i--)
 		if (hitlist[i])
 			W_CacheLumpNum (firstflat + i, PU_CACHE);
 
 	std::vector<int> skytextures;
 	#ifdef CLIENT_APP
-	R_ActivateSkies(hitlist, skytextures);
+	R_ActivateSkies(hitlist.get(), skytextures);
 	#endif
 
 	// Precache textures.
-	memset (hitlist, 0, numtextures);
+	memset (hitlist.get(), 0, numtextures);
 
-	for (i = numsides - 1; i >= 0; i--)
+	for (int i = numsides - 1; i >= 0; i--)
 	{
 		hitlist[sides[i].toptexture] =
 			hitlist[sides[i].midtexture] =
@@ -1133,7 +1129,7 @@ void R_PrecacheLevel (void)
 		hitlist[skytexture] = 1;
 	}
 
-	for (i = numtextures - 1; i >= 0; i--)
+	for (int i = numtextures - 1; i >= 0; i--)
 	{
 		if (hitlist[i])
 		{
@@ -1146,23 +1142,25 @@ void R_PrecacheLevel (void)
 	}
 
 	// Precache sprites.
-	memset (hitlist, 0, numsprites);
-
 	{
 		AActor *actor;
 		TThinkerIterator<AActor> iterator;
+		std::unordered_set<int32_t> spriteHitlist;
 
+		// generate a unique list of all the sprites we hit in this level
 		while ( (actor = iterator.Next ()) )
-			hitlist[actor->sprite] = 1;
-	}
+		{
+			// [CMB] spritenum_t can now be negative so a new structure is needed
+			// [CMB] sprites is a pointer in order by index
+			spriteHitlist.insert(actor->sprite);
+		}
 
-	for (i = numsprites - 1; i >= 0; i--)
-	{
-		if (hitlist[i])
-			R_CacheSprite (sprites + i);
+		// cache each of the sprites
+		for (auto sprite : spriteHitlist)
+		{
+			R_CacheSprite (&sprites[sprite]);
+		}
 	}
-
-	delete[] hitlist;
 }
 
 // Utility function,

@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,4 +22,4 @@
 
 #pragma once
 
-DWORD SV_QryParseEnquiry(const DWORD &Tag);
+uint32_t SV_QryParseEnquiry(const uint32_t &Tag);

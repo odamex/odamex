@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,7 +32,7 @@ private:
 	vote_result_t result;
 	std::string votestring;
 	short countdown;
-	QWORD countdown_ms;
+	uint64_t countdown_ms;
 	byte yes;
 	byte yes_needed;
 	byte no;

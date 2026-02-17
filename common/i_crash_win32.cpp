@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,7 +28,7 @@
 //-----------------------------------------------------------------------------
 
 
-#if defined _WIN32 && !defined _XBOX && defined _MSC_VER && !defined _DEBUG
+#if defined _WIN32 && defined _MSC_VER && !defined _DEBUG
 
 #include "odamex.h"
 
@@ -54,59 +54,117 @@
 static TCHAR gCrashDir[CRASH_DIR_LEN];
 
 // Fucntion pointer for MiniDumpWriteDump.
-typedef bool(WINAPI* MINIDUMPWRITEDUMP)(
+typedef bool(WINAPI* MiniDumpWriteDumpPtrType)(
     HANDLE hProcess, DWORD dwPid, HANDLE hFile, MINIDUMP_TYPE DumpType,
     CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
     CONST PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam,
     CONST PMINIDUMP_CALLBACK_INFORMATION CallbackParam);
 
-// Write the minidump to a file.
+class MiniDumper
+{
+	public:
+
+		MiniDumper() :
+			m_dbghelp(nullptr),
+			m_MiniDumpWriteDumpPtr(nullptr)
+		{
+			m_dbghelp = LoadLibrary("dbghelp.dll");
+			if (m_dbghelp)
+			{
+				m_MiniDumpWriteDumpPtr = reinterpret_cast<MiniDumpWriteDumpPtrType>(GetProcAddress(m_dbghelp, "MiniDumpWriteDump"));
+			}
+		}
+
+		~MiniDumper()
+		{
+			if (m_dbghelp)
+			{
+				FreeLibrary(m_dbghelp);
+			}
+		}
+
+		MiniDumper(const MiniDumper&)              = delete;
+		MiniDumper& operator=(const MiniDumper&)   = delete;
+		MiniDumper(const MiniDumper&&)             = delete;
+		MiniDumper& operator==(const MiniDumper&&) = delete;
+
+		void Write(EXCEPTION_POINTERS* exceptionPtrs,
+		           const char*         filepath,
+		           MINIDUMP_TYPE       dumpTypeFlags)
+		{
+			if (m_MiniDumpWriteDumpPtr)
+			{
+				HANDLE hFile = CreateFile(filepath, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_ALWAYS,
+				                          FILE_ATTRIBUTE_NORMAL, 0);
+
+				if (hFile != INVALID_HANDLE_VALUE)
+				{
+					// Prepare exception information.
+					MINIDUMP_EXCEPTION_INFORMATION mei;
+					mei.ThreadId = GetCurrentThreadId();
+					mei.ExceptionPointers = exceptionPtrs;
+					mei.ClientPointers = false;
+
+					// Do the actual dump.
+					m_MiniDumpWriteDumpPtr(GetCurrentProcess(),
+					                       GetCurrentProcessId(),
+					                       hFile,
+					                       dumpTypeFlags,
+					                       & mei,
+					                       0,
+					                       0);
+					CloseHandle(hFile);
+				}
+			}
+		}
+
+	protected:
+
+		HMODULE                  m_dbghelp;
+		MiniDumpWriteDumpPtrType m_MiniDumpWriteDumpPtr;
+};
+
+// Write the minidumps.
 void writeMinidump(EXCEPTION_POINTERS* exceptionPtrs)
 {
-	// Grab the debugging library.
-	HMODULE dbghelp = LoadLibrary("dbghelp.dll");
-	if (dbghelp == NULL)
-	{
-		// We can't load the debugging library - oh well.
-		return;
-	}
+	// Force the variables to be static because we want to ensure that we're as
+	// gentle as possible with the stack in what could be a precarious situation.
 
-	// Grab the dump function.
-	MINIDUMPWRITEDUMP pMiniDumpWriteDump =
-	    (MINIDUMPWRITEDUMP)GetProcAddress(dbghelp, "MiniDumpWriteDump");
-	if (pMiniDumpWriteDump == NULL)
-	{
-		// We can't access the dumping function - oh well.
-		return;
-	}
-
-	// Open a file to write our dump into.
-	SYSTEMTIME dt;
+	static SYSTEMTIME dt;
 	GetSystemTime(&dt);
-	char filename[CRASH_DIR_LEN];
-	sprintf_s(filename, sizeof(filename), "%s\\%s_g%s_%u_%4d%02d%02dT%02d%02d%02d.dmp",
-	          ::gCrashDir, GAMEEXE, GitShortHash(), GetCurrentProcessId(), dt.wYear,
-	          dt.wMonth, dt.wDay, dt.wHour, dt.wMinute, dt.wSecond);
-	HANDLE hFile = CreateFile(filename, GENERIC_WRITE, FILE_SHARE_READ, 0, CREATE_NEW,
-	                          FILE_ATTRIBUTE_NORMAL, 0);
-	if (hFile == INVALID_HANDLE_VALUE)
-	{
-		// We couldn't create a dump file - oh well.
-		return;
-	}
 
-	// Prepare exception information.
-	MINIDUMP_EXCEPTION_INFORMATION mei;
-	mei.ThreadId = GetCurrentThreadId();
-	mei.ExceptionPointers = exceptionPtrs;
-	mei.ClientPointers = false;
+	static char filepath[CRASH_DIR_LEN];
+	sprintf_s(filepath, sizeof(filepath), "%s\\%s_g%s_%4d%02d%02dT%02d%02d%02d_%u.dmp",
+	          ::gCrashDir,
+	          GAMEEXE,
+	          GitShortHash(),
+	          dt.wYear,
+	          dt.wMonth,
+	          dt.wDay,
+	          dt.wHour,
+	          dt.wMinute,
+	          dt.wSecond,
+	          GetCurrentProcessId());
 
-	// Do the actual dump.
-	pMiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile,
-	                   MINIDUMP_TYPE(MiniDumpWithIndirectlyReferencedMemory), &mei, 0, 0);
-	CloseHandle(hFile);
+    static MiniDumper dumper;
+	dumper.Write(exceptionPtrs,
+	             filepath,
+	             static_cast<MINIDUMP_TYPE>(MiniDumpWithIndirectlyReferencedMemory));
 
-	return;
+	// Now make a single massive .dmp that has everything in it for thorough port-mortem
+	// debugging.  Unlike the slim minidump above, this one is intended to be overwriten
+	// with successive crashes, thus we don't include the timestamp, hash, or PID in the
+	// filename.  This is so that we don't have monster dmp files accumulating unbounded
+	// in the CrashDir.
+
+	sprintf_s(filepath, sizeof(filepath), "%s\\%s_FULL.dmp",
+              ::gCrashDir,
+              GAMEEXE);
+
+	dumper.Write(exceptionPtrs,
+	             filepath,
+	             static_cast<MINIDUMP_TYPE>(MiniDumpWithFullMemory |
+	                                        MiniDumpIgnoreInaccessibleMemory));
 }
 
 LONG CALLBACK sehCallback(EXCEPTION_POINTERS* e)

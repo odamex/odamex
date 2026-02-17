@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,7 +26,6 @@
 
 #include "p_local.h"
 #include "sv_main.h"
-#include "huffman.h"
 #include "i_net.h"
 
 #ifdef SIMULATE_LATENCY
@@ -34,7 +33,7 @@
 #include <chrono>
 #endif
 
-QWORD I_MSTime (void);
+dtime_t I_MSTime (void);
 
 EXTERN_CVAR (log_packetdebug)
 #ifdef SIMULATE_LATENCY
@@ -163,7 +162,7 @@ bool SV_SendPacket(player_t &pl)
 	{
 		// copy the reliable data into the buffer.
 		old.sequence = cl->sequence;
-		SZ_Write(&old.data, cl->reliablebuf.data, cl->reliablebuf.cursize);
+		SZ_Write(&old.data, cl->reliablebuf.data.get(), cl->reliablebuf.cursize);
 	}
 	else
 	{
@@ -181,7 +180,7 @@ bool SV_SendPacket(player_t &pl)
 	// copy the reliable message to the packet first
     if (cl->reliablebuf.cursize)
     {
-		SZ_Write (&sendd, cl->reliablebuf.data, cl->reliablebuf.cursize);
+		SZ_Write (&sendd, cl->reliablebuf.data.get(), cl->reliablebuf.cursize);
 		cl->reliable_bps += cl->reliablebuf.cursize;
     }
 
@@ -194,7 +193,7 @@ bool SV_SendPacket(player_t &pl)
 
 	  if (cl->netbuf.cursize && (sendd.maxsize() - sendd.cursize > cl->netbuf.cursize) )
 	  {
-         SZ_Write (&sendd, cl->netbuf.data, cl->netbuf.cursize);
+         SZ_Write (&sendd, cl->netbuf.data.get(), cl->netbuf.cursize);
 	     cl->unreliable_bps += cl->netbuf.cursize;
 	  }
 
@@ -209,7 +208,7 @@ bool SV_SendPacket(player_t &pl)
 
 	if (log_packetdebug)
 	{
-		Printf(PRINT_HIGH, "ply %03u, pkt %06u, size %04lu, tic %07u, time %011llu\n",
+		PrintFmt(PRINT_HIGH, "ply {:03}, pkt {:06}, size {:04}, tic {:07}, time {:011}\n",
 			   pl.id, cl->sequence - 1, sendd.cursize, gametic, I_MSTime());
 	}
 
@@ -246,7 +245,7 @@ static void SendOldPacket(player_t& pl, const int sequence)
 	// copy the reliable message to the packet
 	if (old.data.cursize)
 	{
-		SZ_Write(&send, old.data.data, old.data.cursize);
+		SZ_Write(&send, old.data.data.get(), old.data.cursize);
 		cl.reliable_bps += old.data.cursize;
 	}
 
@@ -267,8 +266,6 @@ void SV_AcknowledgePacket(player_t &player)
 	client_t *cl = &player.client;
 
 	int sequence = MSG_ReadLong();
-
-	cl->compressor.packet_acked(sequence);
 
 	// packet is missed
 	if (sequence - cl->last_sequence > 1)

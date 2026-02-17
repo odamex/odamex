@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,7 +26,6 @@
 //Uncomment to allow for latency simulation - see sv_latency in sv_cvarlist.cpp
 //Note: When compiling for linux you will have link against pthread manually
 //#define SIMULATE_LATENCY
-#include "tarray.h"
 
 #include <cfloat>
 
@@ -123,14 +122,14 @@ class cvar_t
 {
 public:
 	cvar_t(const char* name, const char* def, const char* help, cvartype_t,
-			DWORD flags, float minval = -FLT_MAX, float maxval = FLT_MAX);
+			uint32_t flags, float minval = -FLT_MAX, float maxval = FLT_MAX);
 	cvar_t(const char* name, const char* def, const char* help, cvartype_t,
-			DWORD flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
+			uint32_t flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
 	virtual ~cvar_t ();
 
 	[[nodiscard]] const char *cstring() const {return m_String.c_str(); }
 	[[nodiscard]] const std::string& str() const { return m_String; }
-	[[nodiscard]] const char *name() const { return m_Name.c_str(); }
+	[[nodiscard]] const std::string& name() const { return m_Name; }
 	[[nodiscard]] const char *helptext() const {return m_HelpText.c_str(); }
 	[[nodiscard]] const char *latched() const { return m_LatchedString.c_str(); }
 	[[nodiscard]] float value() const { return m_Value; }
@@ -165,7 +164,7 @@ public:
 
 	// Writes all cvars that could effect demo sync to *demo_p. These are
 	// cvars that have either CVAR_SERVERINFO or CVAR_DEMOSAVE set.
-	static void C_WriteCVars (byte **demo_p, DWORD filter, size_t array_size, bool compact=false);
+	static void C_WriteCVars (byte **demo_p, uint32_t filter, size_t array_size, bool compact=false);
 
 	// Read all cvars from *demo_p and set them appropriately.
 	static void C_ReadCVars (byte **demo_p);
@@ -183,7 +182,7 @@ public:
 	static void C_RestoreCVars (void);
 
 	// Finds a named cvar
-	static cvar_t *FindCVar (const char *var_name, cvar_t **prev);
+	static cvar_t *FindCVar (std::string_view var_name, cvar_t **prev);
 
 	// Called from G_InitNew()
 	static void UnlatchCVars (void);
@@ -197,9 +196,9 @@ public:
 	// the filtering.
 	static void C_SetCVarsToDefaults (unsigned int bitflag = 0xFFFFFFFF);
 
-	static bool SetServerVar (const char *name, const char *value);
+	static bool SetServerVar (std::string_view name, const char *value);
 
-	static void FilterCompactCVars (TArray<cvar_t *> &cvars, DWORD filter);
+	static void FilterCompactCVars (std::vector<cvar_t *> &cvars, uint32_t filter);
 
 	// console variable interaction
 	static cvar_t *cvar_set (const char *var_name, const char *value);
@@ -218,7 +217,7 @@ private:
 	cvar_t(const cvar_t &var) { }
 
 	void InitSelf(const char* name, const char* def, const char* help, cvartype_t,
-				DWORD flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
+				uint32_t flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
 
 	void (*m_Callback)(cvar_t &);
 	cvar_t *m_Next;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -630,7 +630,7 @@ void MIType_Sky(OScanner& os, bool newStyleMapInfo, void* data, unsigned int fla
 void MIType_SetFlag(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
-	*static_cast<DWORD*>(data) |= flags;
+	*static_cast<uint32_t*>(data) |= flags;
 }
 
 // Sets a compatibility flag for maps
@@ -642,20 +642,20 @@ void MIType_CompatFlag(OScanner& os, bool newStyleMapInfo, void* data, unsigned 
 	{
 		os.mustScanInt();
 		if (os.getTokenInt())
-			*static_cast<DWORD*>(data) |= flags;
+			*static_cast<uint32_t*>(data) |= flags;
 		else
-			*static_cast<DWORD*>(data) &= ~flags;
+			*static_cast<uint32_t*>(data) &= ~flags;
 	}
 	else
 	{
 		if (IsNum(os.getToken().c_str()))
 		{
-			*static_cast<DWORD*>(data) |= os.getTokenInt() ? flags : 0;
+			*static_cast<uint32_t*>(data) |= os.getTokenInt() ? flags : 0;
 		}
 		else
 		{
 			os.unScan();
-			*static_cast<DWORD*>(data) |= flags;
+			*static_cast<uint32_t*>(data) |= flags;
 		}
 	}
 }
@@ -664,7 +664,7 @@ void MIType_CompatFlag(OScanner& os, bool newStyleMapInfo, void* data, unsigned 
 void MIType_SCFlags(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
-	*static_cast<DWORD*>(data) = (*static_cast<DWORD*>(data) & flags2) | flags;
+	*static_cast<uint32_t*>(data) = (*static_cast<uint32_t*>(data) & flags2) | flags;
 }
 
 // Sets a cluster
@@ -878,39 +878,24 @@ void MIType_Map07Special(OScanner& os, bool newStyleMapInfo, void* data, unsigne
 	    *static_cast<std::vector<bossaction_t>*>(data);
 
 	// mancubus
-	bossactionvector.emplace_back();
-	bossaction_t& mancaction = bossactionvector.back();
+	bossaction_t& mancaction = bossactionvector.emplace_back();;
 
 	mancaction.type = MT_FATSO;
+	mancaction.flags = MF3_MAP07BOSS1;
 	mancaction.special = 23;
 	mancaction.tag = 666;
 
 	// arachnotron
-	bossactionvector.emplace_back();
-	bossaction_t& arachnoaction = bossactionvector.back();
+	bossaction_t& arachnoaction = bossactionvector.emplace_back();;
 
 	arachnoaction.type = MT_BABY;
+	arachnoaction.flags = MF3_MAP07BOSS2;
 	arachnoaction.special = 30;
 	arachnoaction.tag = 667;
 }
 
-// Sets the map to use the baron bossaction
-void MIType_BaronSpecial(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
-                    unsigned int flags2)
-{
-	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
-
-	if (bossactionvector.size() == 0)
-		bossactionvector.emplace_back();
-
-	for (auto& bossaction : bossactionvector)
-	{
-		bossaction.type = MT_BRUISER;
-	}
-}
-
-// Sets the map to use the cyberdemon bossaction
-void MIType_CyberdemonSpecial(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
+template <int32_t TYPE, int32_t FLAG = 0>
+void MIType_Special(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                          unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector =
@@ -921,97 +906,34 @@ void MIType_CyberdemonSpecial(OScanner& os, bool newStyleMapInfo, void* data, un
 
 	for (auto& bossaction : bossactionvector)
 	{
-		bossaction.type = MT_CYBORG;
+		// don't overwrite map07special
+		if (bossaction.type != MT_BABY && bossaction.type != MT_FATSO)
+		{
+			bossaction.type = TYPE;
+			bossaction.flags = FLAG;
+		}
 	}
 }
 
-// Sets the map to use the cyberdemon bossaction
-void MIType_SpiderMastermindSpecial(OScanner& os, bool newStyleMapInfo, void* data,
-                                    unsigned int flags, unsigned int flags2)
-{
-	std::vector<bossaction_t>& bossactionvector =
-	    *static_cast<std::vector<bossaction_t>*>(data);
-
-	if (bossactionvector.size() == 0)
-		bossactionvector.emplace_back();
-
-	for (auto& bossaction : bossactionvector)
-	{
-		bossaction.type = MT_SPIDER;
-	}
-}
-
-//
-void MIType_SpecialAction_ExitLevel(OScanner& os, bool newStyleMapInfo, void* data,
-                                    unsigned int flags, unsigned int flags2)
+template <int16_t SPECIAL, int16_t TAG = 0>
+void MIType_SpecialAction(OScanner& os, bool newStyleMapInfo, void* data,
+                          unsigned int flags, unsigned int flags2)
 {
 	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
 
 	for (auto& bossaction : bossactionvector)
 	{
-		if (bossaction.type != MT_NULL)
+		if (bossaction.special == 0)
 		{
-			bossaction.special = 11;
-			bossaction.tag = 0;
+			bossaction.special = SPECIAL;
+			bossaction.tag = TAG;
 			return;
 		}
 	}
 
-	bossactionvector.emplace_back();
-	bossaction_t& action = bossactionvector.back();
-	action.special = 11;
-	action.tag = 0;
-}
-
-//
-void MIType_SpecialAction_OpenDoor(OScanner& os, bool newStyleMapInfo, void* data,
-                                   unsigned int flags, unsigned int flags2)
-{
-	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
-
-	for (auto& bossaction : bossactionvector)
-	{
-		if (bossaction.type != MT_NULL)
-		{
-			bossaction.special = 29;
-			bossaction.tag = 666;
-			return;
-		}
-	}
-
-	bossactionvector.emplace_back();
-	bossaction_t& action = bossactionvector.back();
-	action.special = 29;
-	action.tag = 666;
-}
-
-//
-void MIType_SpecialAction_LowerFloor(OScanner& os, bool newStyleMapInfo, void* data,
-                                    unsigned int flags, unsigned int flags2)
-{
-	std::vector<bossaction_t>& bossactionvector = *static_cast<std::vector<bossaction_t>*>(data);
-
-	for (auto& bossaction : bossactionvector)
-	{
-		if (bossaction.type != MT_NULL)
-		{
-			bossaction.special = 23;
-			bossaction.tag = 666;
-			return;
-		}
-	}
-
-	bossactionvector.emplace_back();
-	bossaction_t& action = bossactionvector.back();
-	action.special = 23;
-	action.tag = 666;
-}
-
-//
-void MIType_SpecialAction_KillMonsters(OScanner& os, bool newStyleMapInfo, void* data,
-                                    unsigned int flags, unsigned int flags2)
-{
-	// todo
+	bossaction_t& action = bossactionvector.emplace_back();
+	action.special = SPECIAL;
+	action.tag = TAG;
 }
 
 // border around smaller screen sizes
@@ -1099,85 +1021,33 @@ void MIType_AutomapBase(OScanner& os, bool newStyleMapInfo, void* data, unsigned
 }
 
 //
-bool ScanAndCompareString(OScanner& os, std::string cmp)
-{
-	os.scan();
-	if (!os.compareToken(cmp.c_str()))
-	{
-		os.warning("Expected \"{}\", got \"{}\". Aborting parsing", cmp, os.getToken());
-		return false;
-	}
-
-	return true;
-}
-
-//
-bool ScanAndSetRealNum(OScanner& os, fixed64_t& num)
-{
-	os.scan();
-	if (!IsRealNum(os.getToken().c_str()))
-	{
-		os.warning("Expected number, got \"{}\". Aborting parsing", os.getToken());
-		return false;
-	}
-	num = FLOAT2FIXED64(os.getTokenFloat());
-
-	return true;
-}
-
-// Scans through and interprets a file of lines
-bool InterpretLines(const std::string& name, std::vector<mline_t>& lines)
-{
-	lines.clear();
-
-	const int lump = W_FindLump(name.c_str(), 0);
-	if (lump != -1)
-	{
-		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
-
-		const OScannerConfig config = {
-		    name,  // lumpName
-		    false, // semiComments
-		    true,  // cComments
-		};
-		OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lump));
-
-		while (os.scan())
-		{
-			os.unScan();
-			mline_t ml;
-
-			if (!ScanAndCompareString(os, "(")) break;
-			if (!ScanAndSetRealNum(os, ml.a.x)) break;
-			if (!ScanAndCompareString(os, ",")) break;
-			if (!ScanAndSetRealNum(os, ml.a.y)) break;
-			if (!ScanAndCompareString(os, ")")) break;
-			if (!ScanAndCompareString(os, ",")) break;
-			if (!ScanAndCompareString(os, "(")) break;
-			if (!ScanAndSetRealNum(os, ml.b.x)) break;
-			if (!ScanAndCompareString(os, ",")) break;
-			if (!ScanAndSetRealNum(os, ml.b.y)) break;
-			if (!ScanAndCompareString(os, ")")) break;
-
-			lines.push_back(ml);
-		}
-	}
-	else
-		return false;
-
-	return true;
-}
-
-//
 void MIType_MapArrows(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                       unsigned int flags2)
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
+	auto helper = [&os](std::vector<mline_t>& arrow, const std::string& arrowlump){
+		const auto lines = AM_ParseVectorLump(arrowlump);
+		if (!lines)
+		{
+			switch (lines.error())
+			{
+				case am_lump_parse_error_t::LUMP_NOT_FOUND:
+					os.warning("Map arrow lump \"{}\" could not be found", arrowlump);
+					break;
+				default:
+					os.warning("Error while parsing map arrow lump \"{}\"", arrowlump);
+			}
+		}
+		else
+		{
+			arrow = lines.value();
+		}
+	};
+
 	std::string maparrow = os.getToken();
 
-	if (!InterpretLines(maparrow, gameinfo.mapArrow))
-		os.warning("Map arrow lump \"{}\" could not be found", maparrow);
+	helper(gameinfo.mapArrow, maparrow);
 
 	os.scan();
 	if (os.compareToken(","))
@@ -1185,8 +1055,7 @@ void MIType_MapArrows(OScanner& os, bool newStyleMapInfo, void* data, unsigned i
 		os.mustScan();
 		maparrow = os.getToken();
 
-		if (!InterpretLines(maparrow, gameinfo.mapArrowCheat))
-			os.warning("Map arrow lump \"{}\" could not be found", maparrow);
+		helper(gameinfo.mapArrowCheat, maparrow);
 	}
 	else
 	{
@@ -1201,7 +1070,27 @@ void MIType_MapKey(OScanner& os, bool newStyleMapInfo, void* data, unsigned int 
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
 	const std::string name = os.getToken();
-	InterpretLines(name, *static_cast<std::vector<mline_t>*>(data));
+	const auto lines = AM_ParseVectorLump(name);
+	if (lines)
+	{
+		*static_cast<std::vector<mline_t>*>(data) = lines.value();
+	}
+	else
+	{
+		switch (lines.error())
+		{
+			case am_lump_parse_error_t::LUMP_NOT_FOUND:
+				os.warning("Map key lump \"{}\" could not be found", name);
+				break;
+			default:
+				os.warning("Error while parsing map key lump \"{}\"", name);
+		}
+	}
+}
+
+void MIType_SetInt(OScanner& os, bool newStyleMapInfo, void* data, uint32_t flags, uint32_t flags2)
+{
+	*static_cast<int32_t*>(data) = flags;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1270,12 +1159,18 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "allowmonstertelefrags", &MIType_SetFlag, &ref.flags,
 		       LEVEL_MONSTERSTELEFRAG },
 			{ "map07special", &MIType_Map07Special, &ref.bossactions },
-			{ "baronspecial", &MIType_BaronSpecial, &ref.bossactions },
-			{ "cyberdemonspecial", &MIType_CyberdemonSpecial, &ref.bossactions },
-			{ "spidermastermindspecial", &MIType_SpiderMastermindSpecial, &ref.bossactions },
-			{ "specialaction_exitlevel", &MIType_SpecialAction_ExitLevel, &ref.bossactions },
-			{ "specialaction_opendoor", &MIType_SpecialAction_OpenDoor, &ref.bossactions },
-			{ "specialaction_lowerfloor", &MIType_SpecialAction_LowerFloor, &ref.bossactions },
+			{ "baronspecial", &MIType_Special<MT_BRUISER>, &ref.bossactions },
+			{ "cyberdemonspecial", &MIType_Special<MT_CYBORG>, &ref.bossactions },
+			{ "spidermastermindspecial", &MIType_Special<MT_SPIDER>, &ref.bossactions },
+			{ "e1m8special", &MIType_Special<MT_NULL, MF3_E1M8BOSS>, &ref.bossactions },
+			{ "e2m8special", &MIType_Special<MT_NULL, MF3_E2M8BOSS>, &ref.bossactions },
+			{ "e3m8special", &MIType_Special<MT_NULL, MF3_E3M8BOSS>, &ref.bossactions },
+			{ "e4m6special", &MIType_Special<MT_NULL, MF3_E4M6BOSS>, &ref.bossactions },
+			{ "e4m8special", &MIType_Special<MT_NULL, MF3_E4M8BOSS>, &ref.bossactions },
+			{ "specialaction_exitlevel", &MIType_SpecialAction<11>, &ref.bossactions },
+			{ "specialaction_opendoor", &MIType_SpecialAction<29, 666>, &ref.bossactions },
+			{ "specialaction_lowerfloor", &MIType_SpecialAction<23, 666>, &ref.bossactions },
+			{ "specialaction_killmonsters", &MIType_SpecialAction<280>, &ref.bossactions },
 			{ "lightning" },
 			{ "fadetable", &MIType_LumpName, &ref.fadetable },
 			{ "evenlighting", &MIType_SetFlag, &ref.flags, LEVEL_EVENLIGHTING },
@@ -1313,7 +1208,8 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "compat_limitpain", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_LIMITPAIN },
 			{ "compat_useblocking", &MIType_CompatFlag, &ref.flags }, // special lines block use (not implemented, default odamex behavior)
 		    { "compat_missileclip", &MIType_CompatFlag, &ref.flags }, // original height monsters when it comes to missiles (not implemented)
-			{ "compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF },
+			{ "compat_dropoff", &MIType_CompatFlag, &ref.flags, LEVEL_COMPAT_DROPOFF }, // todo: not implemented
+			{ "compat_crossdropoff", &MIType_CompatFlag, &ref.flags2, LEVEL2_COMPAT_CROSSDROPOFF },
 			{ "compat_trace", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
 			{ "compat_boomscroll", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
 			{ "compat_sectorsounds", &MIType_CompatFlag, &ref.flags }, // todo: not implemented
@@ -1674,7 +1570,8 @@ struct MapInfoDataSetter<SkillInfo>
 			{ "nopain", &MIType_Bool, &ref.no_pain, true },
 			{ "noinfighting", &MIType_SCFlags, &ref.flags, SKILL_NOINFIGHTING, ~SKILL_TOTALINFIGHTING },
 			{ "totalinfighting", &MIType_SCFlags, &ref.flags, SKILL_TOTALINFIGHTING, ~SKILL_NOINFIGHTING },
-			{ "playerrespawn", &MIType_Bool, &ref.player_respawn, true }
+			{ "playerrespawn", &MIType_Bool, &ref.player_respawn, true },
+			{ "defaultskill", &MIType_SetInt, &defaultskillmenu, skillnum }
 		};
 	}
 };
@@ -1894,6 +1791,10 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 
 				MapInfoDataSetter<SkillInfo> setter(info);
 				ParseMapInfoLower<SkillInfo>(os, setter);
+				if (info.ACS_return == limits::MAXINT)
+				{
+					info.ACS_return = skillnum;
+				}
 
 				++skillnum;
 			}
@@ -1960,6 +1861,7 @@ void G_ParseMapInfo()
 	switch (gamemission)
 	{
 	case doom:
+	case chex3v:
 	case retail_freedoom:
 		baseinfoname = "_D1NFO";
 		if (gamemode == shareware)
@@ -1970,6 +1872,7 @@ void G_ParseMapInfo()
 		}
 		break;
 	case doom2:
+	case chex3d2:
 	case commercial_freedoom:
 	case commercial_hacx:
 		baseinfoname = "_D2NFO";
@@ -1987,6 +1890,7 @@ void G_ParseMapInfo()
 		baseinfoname = "_PLUTNFO";
 		break;
 	case chex:
+	case chex3:
 		baseinfoname = "_CHEXNFO";
 		break;
 	case none:

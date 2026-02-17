@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -1771,7 +1771,7 @@ FUNC(LS_Clear_ForceField)
 	return clear;
 }
 
-ItemEquipVal P_GiveBody (player_t *, int);
+ItemEquipVal P_GiveBody (player_t&, int);
 
 FUNC(LS_HealThing)
 // HealThing (amount)
@@ -1780,7 +1780,7 @@ FUNC(LS_HealThing)
 
 	if (it->player)
 	{
-		P_GiveBody (it->player, arg0);
+		P_GiveBody (*it->player, arg0);
 	}
 	else
 	{
@@ -2139,7 +2139,7 @@ struct FThinkerCollection
 	DThinker *Obj;
 };
 
-static TArray<FThinkerCollection> Collection;
+static std::vector<FThinkerCollection> Collection;
 
 void AdjustPusher (int tag, int magnitude, int angle, DPusher::EPusher type)
 {
@@ -2153,29 +2153,24 @@ void AdjustPusher (int tag, int magnitude, int angle, DPusher::EPusher type)
 			if ((collect.RefNum = ((DPusher *)collect.Obj)->CheckForSectorMatch (type, tag)) >= 0)
 			{
 				((DPusher *)collect.Obj)->ChangeValues (magnitude, angle);
-				Collection.Push (collect);
+				Collection.push_back(collect);
 			}
 		}
 	}
 
-	size_t numcollected = Collection.Size ();
 	int secnum = -1;
 
 	// Now create pushers for any sectors that don't already have them.
 	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
 	{
-		size_t i;
-		for (i = 0; i < numcollected; i++)
-		{
-			if (Collection[i].RefNum == sectors[secnum].tag)
-				break;
-		}
-		if (i == numcollected)
+		if (Collection.end() ==
+		    std::find_if(Collection.begin(), Collection.end(),
+		                 [&](const auto& c){ return c.RefNum == sectors[secnum].tag; }))
 		{
 			new DPusher (type, NULL, magnitude, angle, NULL, secnum);
 		}
 	}
-	Collection.Clear ();
+	Collection.clear();
 }
 
 FUNC(LS_Sector_SetWind)
@@ -2259,29 +2254,24 @@ FUNC(LS_Scroll_Texture_Both)
 					lines[sides[collect.RefNum].linenum].sidenum[sidechoice] == collect.RefNum)
 				{
 					((DScroller *)collect.Obj)->SetRate (dx, dy);
-					Collection.Push (collect);
+					Collection.push_back(collect);
 				}
 			}
 		}
 
-		size_t numcollected = Collection.Size ();
 		int linenum = -1;
 
 		// Now create scrollers for any walls that don't already have them.
 		while ((linenum = P_FindLineFromID (arg0, linenum)) >= 0)
 		{
-			size_t i;
-			for (i = 0; i < numcollected; i++)
-			{
-				if (Collection[i].RefNum == lines[linenum].sidenum[sidechoice])
-					break;
-			}
-			if (i == numcollected)
+			if (Collection.end() ==
+			    std::find_if(Collection.begin(), Collection.end(),
+							 [&](const auto& c){ return c.RefNum == lines[linenum].sidenum[sidechoice]; }))
 			{
 				new DScroller (DScroller::sc_side, dx, dy, -1, lines[linenum].sidenum[sidechoice], 0);
 			}
 		}
-		Collection.Clear ();
+		Collection.clear();
 	}
 
 	return true;
@@ -2324,12 +2314,13 @@ static void SetScroller(int tag, DScroller::EScrollType type, fixed_t dx, fixed_
 }
 
 FUNC(LS_Scroll_Floor)
+// Scroll_Floor (tag, x-move, y-move, type)
 {
 	if (IgnoreSpecial)
 		return false;
 
-	fixed_t dx = arg1 * FRACUNIT / 32;
-	fixed_t dy = arg2 * FRACUNIT / 32;
+	const fixed_t dx = arg1 * FRACUNIT / 32;
+	const fixed_t dy = arg2 * FRACUNIT / 32;
 
 	if (arg3 == 0 || arg3 == 2)
 	{
@@ -2351,8 +2342,15 @@ FUNC(LS_Scroll_Floor)
 }
 
 FUNC(LS_Scroll_Ceiling)
+// Scroll_Ceiling (tag, x-move, y-move, unused)
 {
-	return false;
+	if (IgnoreSpecial)
+		return false;
+
+	const fixed_t dx = arg1 * FRACUNIT / 32;
+	const fixed_t dy = arg2 * FRACUNIT / 32;
+	SetScroller(arg0, DScroller::sc_ceiling, -dx, dy);
+	return true;
 }
 
 FUNC(LS_PointPush_SetForce)

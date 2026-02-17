@@ -170,16 +170,16 @@ function ZipDebugX64 {
     # Copy pdb files into zip.  DO NOT THROW THESE AWAY!
     Copy-Item -Force -Path `
         "${CurrentDir}\BuildX64\client\RelWithDebInfo\odamex.pdb" `
-        -Destination "${OutputDir}\odamex-x64-${OdamexVersion}.pdb"
+        -Destination "${OutputDir}\odamex-x64-${OdamexVersion}${OdamexTestSuffix}.pdb"
     Copy-Item -Force -Path `
         "${CurrentDir}\BuildX64\server\RelWithDebInfo\odasrv.pdb" `
-        -Destination "${OutputDir}\odasrv-x64-${OdamexVersion}.pdb"
+        -Destination "${OutputDir}\odasrv-x64-${OdamexVersion}${OdamexTestSuffix}.pdb"
     Copy-Item -Force -Path `
         "${CurrentDir}\BuildX64\odalaunch\RelWithDebInfo\odalaunch.pdb" `
-        -Destination "${OutputDir}\odalaunch-x64-${OdamexVersion}.pdb"
+        -Destination "${OutputDir}\odalaunch-x64-${OdamexVersion}${OdamexTestSuffix}.pdb"
 
     7z.exe a `
-        "${PdbDir}\odamex-debug-pdb-${OdamexVersion}-x64.zip" `
+        "${PdbDir}\odamex-debug-pdb-${OdamexVersion}${OdamexTestSuffix}-x64.zip" `
         "${OutputDir}\*.pdb"
 
     Remove-Item -Force -Path "${OutputDir}\*.pdb"

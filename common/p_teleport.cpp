@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -39,7 +39,7 @@
 #include "r_state.h"
 
 
-extern void P_CalcHeight (player_t *player);
+void P_CalcHeight (player_t& player);
 
 // [AM] From ZDoom SVN, modified for use with Odamex and without the
 //      buggy 2.0.x teleport behavior compatibility fix.  Thanks to both
@@ -144,6 +144,13 @@ static AActor* SelectTeleDest(int tid, int tag)
 	return NULL;
 }
 
+static bool UseFinalDoomTeleportZBug()
+{
+	EXTERN_CVAR(co_boomphys);
+	return ((demoplayback || !co_boomphys) &&
+	        (gamemission == pack_tnt || gamemission == pack_plut));
+}
+
 //
 // TELEPORTATION
 //
@@ -183,7 +190,7 @@ bool EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop
 	// it does not have this quirk.
 	// [AM] For z-teleports, the destination sets the height, don't
 	//      override it here.
-	if (m->type == MT_TELEPORTMAN && (gamemission < pack_tnt || gamemission == chex))
+	if (m->type == MT_TELEPORTMAN && !UseFinalDoomTeleportZBug())
 		thing->z = thing->floorz;
 
 	if (player)
@@ -281,7 +288,7 @@ bool EV_LineTeleport (line_t *line, int side, AActor *thing)
 
 				fixed_t destz;
 
-				if (demoplayback && (gamemission == pack_tnt || gamemission == pack_plut || gamemission == chex))
+				if (UseFinalDoomTeleportZBug())
 					destz = m->z;	// Make sure we have the original Z-Height bug on Final Doom.
 				else
 					destz = (m->type == MT_TELEPORTMAN) ? P_FloorHeight(m) : m->z;
@@ -293,7 +300,7 @@ bool EV_LineTeleport (line_t *line, int side, AActor *thing)
 				// problem between normal doom2 1.9 and final doom
 				// Note that although chex.exe is based on Final Doom,
 				// it does not have this quirk.
-				if (gamemission < pack_tnt || gamemission == chex)
+				if (!UseFinalDoomTeleportZBug())
 						thing->z = thing->floorz;
 
 				if (player)
@@ -396,7 +403,7 @@ bool EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* l
 		player->deltaviewheight = 0;
 
 		// Set player's view according to the newly set parameters
-		P_CalcHeight(player);
+		P_CalcHeight(*player);
 
 		// Reset the delta to have the same dynamics as before
 		player->deltaviewheight = deltaviewheight;
@@ -519,7 +526,7 @@ bool EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 				player->deltaviewheight = 0;
 
 				// Set player's view according to the newly set parameters
-				P_CalcHeight(player);
+				P_CalcHeight(*player);
 
 				// Reset the delta to have the same dynamics as before
 				player->deltaviewheight = deltaviewheight;

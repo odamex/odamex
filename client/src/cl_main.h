@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -71,11 +71,15 @@ bool CL_Connect();
 void CL_SendCheat(int cheats);
 void CL_SendGiveCheat(const char* item);
 void CL_SendSummonCheat(const char* summon);
+void CL_SendSummonFriendCheat(const char* summon);
 
 void CL_DisplayTics();
 void CL_RunTics();
 
 bool CL_SectorIsPredicting(sector_t *sector);
-argb_t CL_GetPlayerColor(player_t* player);
+argb_t CL_GetPlayerColor(const player_t& player);
 
 std::string M_ExpandTokens(const std::string &str);
+
+void SexMessage(const char* from, char* to, gender_t gender, std::string_view victim,
+                std::string_view killer, std::string_view spree);

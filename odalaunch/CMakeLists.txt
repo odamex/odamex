@@ -72,6 +72,7 @@ if(wxWidgets_FOUND)
   set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}")
   set(MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}")
   set(MACOSX_BUNDLE_ICON_FILE odalaunch.icns)
+  set(MACOSX_BUNDLE_GUI_IDENTIFIER net.odamex.odalaunch)
 
   if(APPLE)
     add_custom_command(
@@ -81,6 +82,12 @@ if(wxWidgets_FOUND)
       COMMAND "${CMAKE_COMMAND}" -E copy "${CMAKE_SOURCE_DIR}/media/${MACOSX_BUNDLE_ICON_FILE}" "${CMAKE_CURRENT_BINARY_DIR}/odalaunch.app/Contents/Resources/"
       VERBATIM
     )
+
+    install(CODE "
+      include(BundleUtilities)
+      fixup_bundle(\"${CMAKE_CURRENT_BINARY_DIR}/odalaunch.app\" \"\" \"${wxWidgets_LIBRARY_DIRS}\")
+      "
+      COMPONENT Runtime)
 
     set_directory_properties(
       PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES

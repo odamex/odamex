@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -39,50 +39,50 @@ void NetCommand::clear()
 	mDeltaYaw = mDeltaPitch = 0;
 }
 
-void NetCommand::fromPlayer(player_t *player)
+void NetCommand::fromPlayer(const player_t& player)
 {
-	if (!player || !player->mo)
+	if (!player.mo)
 		return;
 
 	clear();
-	setTic(player->cmd.tic);
-	
-	setButtons(player->cmd.buttons);
-	setImpulse(player->cmd.impulse);
-	
-	if (player->playerstate != PST_DEAD)
+	setTic(player.cmd.tic);
+
+	setButtons(player.cmd.buttons);
+	setImpulse(player.cmd.impulse);
+
+	if (player.playerstate != PST_DEAD)
 	{
-		setAngle(player->mo->angle);
-		setPitch(player->mo->pitch);
-		setForwardMove(player->cmd.forwardmove);
-		setSideMove(player->cmd.sidemove);
-		setUpMove(player->cmd.upmove);
-		setDeltaYaw(player->cmd.yaw);
-		setDeltaPitch(player->cmd.pitch);
+		setAngle(player.mo->angle);
+		setPitch(player.mo->pitch);
+		setForwardMove(player.cmd.forwardmove);
+		setSideMove(player.cmd.sidemove);
+		setUpMove(player.cmd.upmove);
+		setDeltaYaw(player.cmd.yaw);
+		setDeltaPitch(player.cmd.pitch);
 	}
 }
 
-void NetCommand::toPlayer(player_t *player) const
+void NetCommand::toPlayer(player_t& player) const
 {
-	if (!player || !player->mo)
+	if (!player.mo)
 		return;
 
-	player->cmd.clear();
-	player->cmd.tic = getTic();
-	
-	player->cmd.buttons = getButtons();
-	player->cmd.impulse = getImpulse();
-	
-	if (player->playerstate != PST_DEAD)
+	player.cmd.clear();
+	player.cmd.tic = getTic();
+
+	player.cmd.buttons = getButtons();
+	player.cmd.impulse = getImpulse();
+
+	if (player.playerstate != PST_DEAD)
 	{
-		player->cmd.forwardmove = getForwardMove();
-		player->cmd.sidemove = getSideMove();
-		player->cmd.upmove = getUpMove();
-		player->cmd.yaw = getDeltaYaw();
-		player->cmd.pitch = getDeltaPitch();
-		
-		player->mo->angle = getAngle();
-		player->mo->pitch = getPitch();
+		player.cmd.forwardmove = getForwardMove();
+		player.cmd.sidemove = getSideMove();
+		player.cmd.upmove = getUpMove();
+		player.cmd.yaw = getDeltaYaw();
+		player.cmd.pitch = getDeltaPitch();
+
+		player.mo->angle = getAngle();
+		player.mo->pitch = getPitch();
 	}
 }
 
@@ -92,7 +92,7 @@ void NetCommand::write(buf_t *buf)
 	int serialized_fields = getSerializedFields();
 	buf->WriteByte(serialized_fields);
 	buf->WriteLong(mWorldIndex);
-		
+
 	if (serialized_fields & CMD_BUTTONS)
 		buf->WriteByte(mButtons);
 	if (serialized_fields & CMD_ANGLE)
@@ -121,7 +121,7 @@ void NetCommand::read(buf_t *buf)
 	clear();
 	mFields = buf->ReadByte();
 	mWorldIndex = buf->ReadLong();
-	
+
 	if (hasButtons())
 		mButtons = buf->ReadByte();
 	if (hasAngle())

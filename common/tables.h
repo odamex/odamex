@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This source is available for distribution and/or modification
 // only under the terms of the DOOM Source Code License as
@@ -51,7 +51,7 @@
 extern	const fixed_t 		finesine[5*FINEANGLES/4];
 
 // Re-use data, is just PI/2 phase shift.
-extern const fixed_t*		finecosine;
+inline const fixed_t*		finecosine = &finesine[FINEANGLES/4];
 
 
 // Effective size is 4096.
@@ -73,7 +73,7 @@ extern const fixed_t		finetangent[FINEANGLES/2];
 #define SLOPEBITS		11
 #define DBITS			(FRACBITS-SLOPEBITS)
 
-typedef DWORD			angle_t;
+typedef uint32_t			angle_t;
 
 
 // Effective size is 2049;

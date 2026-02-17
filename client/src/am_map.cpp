@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -56,11 +56,12 @@
 #include "g_skill.h"
 #include "p_mapformat.h"
 
-argb_t CL_GetPlayerColor(player_t*);
+argb_t CL_GetPlayerColor(const player_t&);
 
 EXTERN_CVAR(am_followplayer)
 
 static int lockglow = 0;
+static int bossglow = 0;
 
 EXTERN_CVAR(am_rotate)
 EXTERN_CVAR(am_overlay)
@@ -112,6 +113,12 @@ EXTERN_CVAR(am_ovnotseencolor)
 EXTERN_CVAR(am_ovlockedcolor)
 EXTERN_CVAR(am_ovexitcolor)
 EXTERN_CVAR(am_ovteleportcolor)
+EXTERN_CVAR(am_ovminimap)
+EXTERN_CVAR(am_ovbackcolor)
+EXTERN_CVAR(am_ovbackalpha)
+EXTERN_CVAR(am_ovscalewidth)
+EXTERN_CVAR(am_ovscaleheight)
+EXTERN_CVAR(am_ovlocation)
 
 BEGIN_COMMAND(resetcustomcolors)
 {
@@ -194,6 +201,7 @@ typedef struct
 // vector graphics for the automap for things.
 std::vector<mline_t> thintriangle_guy;
 std::vector<mline_t> thinrectangle_guy;
+std::vector<mline_t> hordeboss_guy;
 
 am_default_colors_t AutomapDefaultColors;
 am_colors_t AutomapDefaultCurrentColors;
@@ -270,21 +278,21 @@ void AM_minOutWindowScale();
 BEGIN_COMMAND(am_grid)
 {
 	grid = !grid;
-	Printf(PRINT_HIGH, "%s\n", grid ? GStrings(AMSTR_GRIDON) : GStrings(AMSTR_GRIDOFF));
+	PrintFmt(PRINT_HIGH, "{}\n", grid ? GStrings(AMSTR_GRIDON) : GStrings(AMSTR_GRIDOFF));
 }
 END_COMMAND(am_grid)
 
 BEGIN_COMMAND(am_setmark)
 {
 	AM_addMark();
-	Printf(PRINT_HIGH, "%s %d\n", GStrings(AMSTR_MARKEDSPOT), markpointnum);
+	PrintFmt(PRINT_HIGH, "{} {}\n", GStrings(AMSTR_MARKEDSPOT), markpointnum);
 }
 END_COMMAND(am_setmark)
 
 BEGIN_COMMAND(am_clearmarks)
 {
 	AM_clearMarks();
-	Printf(PRINT_HIGH, "%s\n", GStrings(AMSTR_MARKSCLEARED));
+	PrintFmt(PRINT_HIGH, "{}\n", GStrings(AMSTR_MARKSCLEARED));
 }
 END_COMMAND(am_clearmarks)
 
@@ -304,9 +312,9 @@ END_COMMAND(am_big)
 BEGIN_COMMAND(am_togglefollow)
 {
 	am_followplayer = !am_followplayer;
-	f_oldloc.x = MAXINT;
-	Printf(PRINT_HIGH, "%s\n",
-	       am_followplayer ? GStrings(AMSTR_FOLLOWON) : GStrings(AMSTR_FOLLOWOFF));
+	f_oldloc.x = limits::MAXINT;
+	PrintFmt(PRINT_HIGH, "{}\n",
+	         am_followplayer ? GStrings(AMSTR_FOLLOWON) : GStrings(AMSTR_FOLLOWOFF));
 }
 END_COMMAND(am_togglefollow)
 
@@ -383,18 +391,18 @@ void AM_addMark()
 //
 void AM_findMinMaxBoundaries()
 {
-	M_SetVec2Fixed64(&min, MAXLONG, MAXLONG);
-	M_SetVec2Fixed64(&max, -MAXLONG, -MAXLONG);
+	M_SetVec2Fixed64(&min, limits::MAXFIXED64, limits::MAXFIXED64);
+	M_SetVec2Fixed64(&max, limits::MINFIXED64, limits::MINFIXED64);
 
-	for (int i = 0; i < numvertexes; i++)
+	for (const auto [x, y]: R_GetVertices())
 	{
-		fixed64_t vx = FIXED2FIXED64(vertexes[i].x);
+		fixed64_t vx = FIXED2FIXED64(x);
 		if (vx < min.x)
 			min.x = vx;
 		else if (vx > max.x)
 			max.x = vx;
 
-		fixed64_t vy = FIXED2FIXED64(vertexes[i].y);
+		fixed64_t vy = FIXED2FIXED64(y);
 		if (vy < min.y)
 			min.y = vy;
 		else if (vy > max.y)
@@ -419,7 +427,7 @@ void AM_changeWindowLoc()
 	if (m_paninc.x || m_paninc.y)
 	{
 		am_followplayer.Set(0.0f);
-		f_oldloc.x = MAXINT;
+		f_oldloc.x = limits::MAXINT;
 	}
 
 	M_AddVec2Fixed64(&m_ll, &m_paninc, &m_ll);
@@ -446,6 +454,7 @@ void AM_initVariables()
 
 	thintriangle_guy.clear();
 	thinrectangle_guy.clear();
+	hordeboss_guy.clear();
 
 	mline_t ml;
 
@@ -466,12 +475,30 @@ void AM_initVariables()
 	ADD_TO_VEC(thinrectangle_guy, -1, -1, -1,  1)
 	ADD_TO_VEC(thinrectangle_guy, -1,  1,  1,  1)
 
+	static const OLumpName bossicon = "OBOSSMAP";
+	const auto hordeboss_lines = AM_ParseVectorLump(bossicon);
+	if (!hordeboss_lines)
+	{
+		switch (hordeboss_lines.error())
+		{
+			case am_lump_parse_error_t::LUMP_NOT_FOUND:
+				DPrintFmt("Horde boss automap icon lump \"{}\" could not be found", bossicon);
+				break;
+			default:
+				DPrintFmt("Error while parsing horde boss automap icon lump \"{}\"", bossicon);
+		}
+	}
+	else
+	{
+		hordeboss_guy = hordeboss_lines.value();
+	}
+
 #undef ADD_TO_VEC
 #undef L
 
 	automapactive = true;
 
-	f_oldloc.x = MAXINT;
+	f_oldloc.x = limits::MAXINT;
 	amclock = 0;
 
 	M_SetVec2Fixed64(&m_wh, FTOM(I_GetSurfaceWidth()), FTOM(I_GetSurfaceHeight()));
@@ -596,52 +623,52 @@ void AM_initColors(const bool overlayed)
 
 	if (overlayed && !am_ovshare)
 	{
-		gameinfo.currentAutomapColors.YourColor = AM_GetColorFromString(palette_colors, am_ovyourcolor.cstring());
+		gameinfo.currentAutomapColors.YourColor = AM_GetColorFromString(palette_colors, am_ovyourcolor.str());
 		gameinfo.currentAutomapColors.SecretWallColor = gameinfo.currentAutomapColors.WallColor =
-		    AM_GetColorFromString(palette_colors, am_ovwallcolor.cstring());
-		gameinfo.currentAutomapColors.TSWallColor = AM_GetColorFromString(palette_colors, am_ovtswallcolor.cstring());
-		gameinfo.currentAutomapColors.FDWallColor = AM_GetColorFromString(palette_colors, am_ovfdwallcolor.cstring());
-		gameinfo.currentAutomapColors.CDWallColor = AM_GetColorFromString(palette_colors, am_ovcdwallcolor.cstring());
-		gameinfo.currentAutomapColors.ThingColor = AM_GetColorFromString(palette_colors, am_ovthingcolor.cstring());
-		gameinfo.currentAutomapColors.ThingColor_Item = AM_GetColorFromString(palette_colors, am_ovthingcolor_item.cstring());
-		gameinfo.currentAutomapColors.ThingColor_CountItem = AM_GetColorFromString(palette_colors, am_ovthingcolor_countitem.cstring());
-		gameinfo.currentAutomapColors.ThingColor_Monster = AM_GetColorFromString(palette_colors, am_ovthingcolor_monster.cstring());
-		gameinfo.currentAutomapColors.ThingColor_NoCountMonster = AM_GetColorFromString(palette_colors, am_ovthingcolor_nocountmonster.cstring());
-		gameinfo.currentAutomapColors.ThingColor_Friend = AM_GetColorFromString(palette_colors, am_ovthingcolor_friend.cstring());
-		gameinfo.currentAutomapColors.ThingColor_Projectile = AM_GetColorFromString(palette_colors, am_ovthingcolor_projectile.cstring());
-		gameinfo.currentAutomapColors.GridColor = AM_GetColorFromString(palette_colors, am_ovgridcolor.cstring());
-		gameinfo.currentAutomapColors.XHairColor = AM_GetColorFromString(palette_colors, am_ovxhaircolor.cstring());
-		gameinfo.currentAutomapColors.NotSeenColor = AM_GetColorFromString(palette_colors, am_ovnotseencolor.cstring());
-		gameinfo.currentAutomapColors.LockedColor = AM_GetColorFromString(palette_colors, am_ovlockedcolor.cstring());
-		gameinfo.currentAutomapColors.ExitColor = AM_GetColorFromString(palette_colors, am_ovexitcolor.cstring());
+		    AM_GetColorFromString(palette_colors, am_ovwallcolor.str());
+		gameinfo.currentAutomapColors.TSWallColor = AM_GetColorFromString(palette_colors, am_ovtswallcolor.str());
+		gameinfo.currentAutomapColors.FDWallColor = AM_GetColorFromString(palette_colors, am_ovfdwallcolor.str());
+		gameinfo.currentAutomapColors.CDWallColor = AM_GetColorFromString(palette_colors, am_ovcdwallcolor.str());
+		gameinfo.currentAutomapColors.ThingColor = AM_GetColorFromString(palette_colors, am_ovthingcolor.str());
+		gameinfo.currentAutomapColors.ThingColor_Item = AM_GetColorFromString(palette_colors, am_ovthingcolor_item.str());
+		gameinfo.currentAutomapColors.ThingColor_CountItem = AM_GetColorFromString(palette_colors, am_ovthingcolor_countitem.str());
+		gameinfo.currentAutomapColors.ThingColor_Monster = AM_GetColorFromString(palette_colors, am_ovthingcolor_monster.str());
+		gameinfo.currentAutomapColors.ThingColor_NoCountMonster = AM_GetColorFromString(palette_colors, am_ovthingcolor_nocountmonster.str());
+		gameinfo.currentAutomapColors.ThingColor_Friend = AM_GetColorFromString(palette_colors, am_ovthingcolor_friend.str());
+		gameinfo.currentAutomapColors.ThingColor_Projectile = AM_GetColorFromString(palette_colors, am_ovthingcolor_projectile.str());
+		gameinfo.currentAutomapColors.GridColor = AM_GetColorFromString(palette_colors, am_ovgridcolor.str());
+		gameinfo.currentAutomapColors.XHairColor = AM_GetColorFromString(palette_colors, am_ovxhaircolor.str());
+		gameinfo.currentAutomapColors.NotSeenColor = AM_GetColorFromString(palette_colors, am_ovnotseencolor.str());
+		gameinfo.currentAutomapColors.LockedColor = AM_GetColorFromString(palette_colors, am_ovlockedcolor.str());
+		gameinfo.currentAutomapColors.ExitColor = AM_GetColorFromString(palette_colors, am_ovexitcolor.str());
 		gameinfo.currentAutomapColors.TeleportColor =
-		    AM_GetColorFromString(palette_colors, am_ovteleportcolor.cstring());
+		    AM_GetColorFromString(palette_colors, am_ovteleportcolor.str());
 	}
 	else if (am_usecustomcolors || (overlayed && am_ovshare))
 	{
 		/* Use the custom colors in the am_* cvars */
-		gameinfo.currentAutomapColors.Background = AM_GetColorFromString(palette_colors, am_backcolor.cstring());
-		gameinfo.currentAutomapColors.YourColor = AM_GetColorFromString(palette_colors, am_yourcolor.cstring());
+		gameinfo.currentAutomapColors.Background = AM_GetColorFromString(palette_colors, am_backcolor.str());
+		gameinfo.currentAutomapColors.YourColor = AM_GetColorFromString(palette_colors, am_yourcolor.str());
 		gameinfo.currentAutomapColors.SecretWallColor = gameinfo.currentAutomapColors.WallColor =
-		    AM_GetColorFromString(palette_colors, am_wallcolor.cstring());
-		gameinfo.currentAutomapColors.TSWallColor = AM_GetColorFromString(palette_colors, am_tswallcolor.cstring());
-		gameinfo.currentAutomapColors.FDWallColor = AM_GetColorFromString(palette_colors, am_fdwallcolor.cstring());
-		gameinfo.currentAutomapColors.CDWallColor = AM_GetColorFromString(palette_colors, am_cdwallcolor.cstring());
-		gameinfo.currentAutomapColors.ThingColor = AM_GetColorFromString(palette_colors, am_thingcolor.cstring());
-		gameinfo.currentAutomapColors.ThingColor_Item = AM_GetColorFromString(palette_colors, am_thingcolor_item.cstring());
-		gameinfo.currentAutomapColors.ThingColor_CountItem = AM_GetColorFromString(palette_colors, am_thingcolor_countitem.cstring());
-		gameinfo.currentAutomapColors.ThingColor_Monster = AM_GetColorFromString(palette_colors, am_thingcolor_monster.cstring());
-		gameinfo.currentAutomapColors.ThingColor_NoCountMonster = AM_GetColorFromString(palette_colors, am_thingcolor_nocountmonster.cstring());
-		gameinfo.currentAutomapColors.ThingColor_Friend = AM_GetColorFromString(palette_colors, am_thingcolor_friend.cstring());
-		gameinfo.currentAutomapColors.ThingColor_Projectile = AM_GetColorFromString(palette_colors, am_thingcolor_projectile.cstring());
-		gameinfo.currentAutomapColors.GridColor = AM_GetColorFromString(palette_colors, am_gridcolor.cstring());
-		gameinfo.currentAutomapColors.XHairColor = AM_GetColorFromString(palette_colors, am_xhaircolor.cstring());
-		gameinfo.currentAutomapColors.NotSeenColor = AM_GetColorFromString(palette_colors, am_notseencolor.cstring());
-		gameinfo.currentAutomapColors.LockedColor = AM_GetColorFromString(palette_colors, am_lockedcolor.cstring());
-		gameinfo.currentAutomapColors.ExitColor = AM_GetColorFromString(palette_colors, am_exitcolor.cstring());
-		gameinfo.currentAutomapColors.TeleportColor = AM_GetColorFromString(palette_colors, am_teleportcolor.cstring());
+		    AM_GetColorFromString(palette_colors, am_wallcolor.str());
+		gameinfo.currentAutomapColors.TSWallColor = AM_GetColorFromString(palette_colors, am_tswallcolor.str());
+		gameinfo.currentAutomapColors.FDWallColor = AM_GetColorFromString(palette_colors, am_fdwallcolor.str());
+		gameinfo.currentAutomapColors.CDWallColor = AM_GetColorFromString(palette_colors, am_cdwallcolor.str());
+		gameinfo.currentAutomapColors.ThingColor = AM_GetColorFromString(palette_colors, am_thingcolor.str());
+		gameinfo.currentAutomapColors.ThingColor_Item = AM_GetColorFromString(palette_colors, am_thingcolor_item.str());
+		gameinfo.currentAutomapColors.ThingColor_CountItem = AM_GetColorFromString(palette_colors, am_thingcolor_countitem.str());
+		gameinfo.currentAutomapColors.ThingColor_Monster = AM_GetColorFromString(palette_colors, am_thingcolor_monster.str());
+		gameinfo.currentAutomapColors.ThingColor_NoCountMonster = AM_GetColorFromString(palette_colors, am_thingcolor_nocountmonster.str());
+		gameinfo.currentAutomapColors.ThingColor_Friend = AM_GetColorFromString(palette_colors, am_thingcolor_friend.str());
+		gameinfo.currentAutomapColors.ThingColor_Projectile = AM_GetColorFromString(palette_colors, am_thingcolor_projectile.str());
+		gameinfo.currentAutomapColors.GridColor = AM_GetColorFromString(palette_colors, am_gridcolor.str());
+		gameinfo.currentAutomapColors.XHairColor = AM_GetColorFromString(palette_colors, am_xhaircolor.str());
+		gameinfo.currentAutomapColors.NotSeenColor = AM_GetColorFromString(palette_colors, am_notseencolor.str());
+		gameinfo.currentAutomapColors.LockedColor = AM_GetColorFromString(palette_colors, am_lockedcolor.str());
+		gameinfo.currentAutomapColors.ExitColor = AM_GetColorFromString(palette_colors, am_exitcolor.str());
+		gameinfo.currentAutomapColors.TeleportColor = AM_GetColorFromString(palette_colors, am_teleportcolor.str());
 		{
-			argb_t ba = AM_GetColorFromString(palette_colors, am_backcolor.cstring()).rgb;
+			argb_t ba = AM_GetColorFromString(palette_colors, am_backcolor.str()).rgb;
 
 			if (ba.getr() < 16)
 				ba.setr(ba.getr() + 32);
@@ -919,6 +946,15 @@ void AM_doFollowPlayer()
 		m_ll.y + m_wh.y);
 }
 
+struct
+{
+	std::array<uint8_t, 3> reddoor;
+	std::array<uint8_t, 3> bluedoor;
+	std::array<uint8_t, 3> yellowdoor;
+	std::array<uint8_t, 3> multidoor;
+} doorColors;
+
+
 //
 // Updates on Game Tick
 //
@@ -934,6 +970,77 @@ void AM_Ticker()
 		lockglow++;
 	else
 		lockglow = 0;
+
+	if (bossglow < 60)
+		bossglow++;
+	else
+		bossglow = 0;
+
+	const std::array<uint8_t,3> baseDoorColor = {
+		gameinfo.currentAutomapColors.LockedColor.rgb.getr(),
+		gameinfo.currentAutomapColors.LockedColor.rgb.getg(),
+		gameinfo.currentAutomapColors.LockedColor.rgb.getb()
+	};
+
+	if (am_usecustomcolors || am_showlocked)
+	{
+		const auto lerp = [](uint8_t a, uint8_t b, int t, int max) -> uint8_t
+		{
+			return static_cast<uint8_t>(a + (b - a) * t / max);
+		};
+
+		const auto lerp3 = [&lerp](const std::array<uint8_t,3>& a,
+		                           const std::array<uint8_t,3>& b,
+		                           int t, int max)
+		{
+			return std::array<uint8_t, 3>{
+				lerp(a[0], b[0], t, max),
+				lerp(a[1], b[1], t, max),
+				lerp(a[2], b[2], t, max)
+			};
+		};
+
+		const auto pulse = [&baseDoorColor, &lerp3](const std::array<uint8_t, 3>& color) -> std::array<uint8_t, 3>
+		{
+			if (lockglow < 30)
+			{
+				return lerp3(baseDoorColor, color, lockglow, 30);
+			}
+			else if (lockglow < 60)
+			{
+				return lerp3(baseDoorColor, color, 60 - lockglow, 30);
+			}
+			else
+			{
+				return baseDoorColor;
+			}
+		};
+
+		static constexpr std::array<uint8_t, 3> red = {255, 0, 0};
+		static constexpr std::array<uint8_t, 3> blue = {0, 0, 255};
+		static constexpr std::array<uint8_t, 3> yellow = {255, 255, 0};
+
+		doorColors.reddoor    = pulse(red);
+		doorColors.bluedoor   = pulse(blue);
+		doorColors.yellowdoor = pulse(yellow);
+
+		static constexpr std::array<std::array<uint8_t,3>, 3> seq = {
+			red, blue, yellow
+		};
+
+		const int segment = (lockglow / 30) % 3;
+		const int next    = (segment + 1) % 3;
+		const int t       = lockglow % 30;
+
+		doorColors.multidoor = lerp3(seq[segment], seq[next], t, 30);
+	}
+	else
+	{
+		doorColors.reddoor    = baseDoorColor;
+		doorColors.bluedoor   = baseDoorColor;
+		doorColors.yellowdoor = baseDoorColor;
+		doorColors.multidoor  = baseDoorColor;
+	}
 }
 
 //
@@ -1118,7 +1225,7 @@ static inline void PUTDOT_THICK(
 	const int thickness = (am_thickness == 0) ? (CleanXfac >> 2) : am_thickness.asInt() - 1;
 
 	// Clamp bbox once
-	const int fwm1 = f_w - 1, fhm1 = f_h - 1;
+	const int fwm1 = f.x + f_w - 1, fhm1 = f.y + f_h - 1;
 	int minx = x - thickness; if (minx < 0)   minx = 0;
 	int maxx = x + thickness; if (maxx > fwm1) maxx = fwm1;
 	int miny = y - thickness; if (miny < 0)   miny = 0;
@@ -1149,7 +1256,7 @@ static inline void PUTDOT_THICK(int x, int y, argb_t color)
 
 static inline void PUTDOT_THICK(int x, int y, byte color)
 {
-	PUTDOT_THICK<byte>(x, y, color, [](int x, int y, byte color){ fb[y * f_p + x] = color; }, fb, f_w);
+	PUTDOT_THICK<byte>(x, y, color, [](int x, int y, byte color){ fb[y * f_p + x] = color; }, fb, f_p);
 }
 
 //
@@ -1297,13 +1404,12 @@ void AM_drawWalls()
 {
 	int r, g, b;
 	static mline_t l;
-	float rdif, gdif, bdif;
 	const palette_t* pal = V_GetDefaultPalette();
 
-	for (int i = 0; i < numlines; i++)
+	for (const line_t& line : R_GetLines())
 	{
-		M_SetVec2Fixed64(&l.a, FIXED2FIXED64(lines[i].v1->x), FIXED2FIXED64(lines[i].v1->y));
-		M_SetVec2Fixed64(&l.b, FIXED2FIXED64(lines[i].v2->x), FIXED2FIXED64(lines[i].v2->y));
+		M_SetVec2Fixed64(&l.a, FIXED2FIXED64(line.v1->x), FIXED2FIXED64(line.v1->y));
+		M_SetVec2Fixed64(&l.b, FIXED2FIXED64(line.v2->x), FIXED2FIXED64(line.v2->y));
 
 		if (am_rotate)
 		{
@@ -1311,41 +1417,41 @@ void AM_drawWalls()
 			AM_rotatePoint(l.b);
 		}
 
-		if (am_cheating || (lines[i].flags & ML_MAPPED))
+		if (am_cheating || (line.flags & ML_MAPPED))
 		{
-			if ((lines[i].flags & ML_DONTDRAW) && !am_cheating)
+			if ((line.flags & ML_DONTDRAW) && !am_cheating)
 				continue;
-			if (!lines[i].backsector && ((am_usecustomcolors || viewactive) ||
-			                             (!am_usecustomcolors && !viewactive)))
+			if (!line.backsector && ((am_usecustomcolors || viewactive) ||
+			                         (!am_usecustomcolors && !viewactive)))
 			{
 				AM_drawMline(&l, gameinfo.currentAutomapColors.WallColor);
 			}
 			else
 			{
-				if ((P_IsTeleportLine(lines[i].special)) &&
+				if ((P_IsTeleportLine(line.special)) &&
 				    (am_usecustomcolors || viewactive))
 				{ // teleporters
 					AM_drawMline(&l, gameinfo.currentAutomapColors.TeleportColor);
 				}
-				else if ((P_IsExitLine(lines[i].special)) &&
+				else if ((P_IsExitLine(line.special)) &&
 				         (am_usecustomcolors || viewactive))
 				{ // exit
 					AM_drawMline(&l, gameinfo.currentAutomapColors.ExitColor);
 				}
-				else if (lines[i].flags & ML_SECRET)
+				else if (line.flags & ML_SECRET)
 				{ // secret door
 					if (am_cheating)
 						AM_drawMline(&l, gameinfo.currentAutomapColors.SecretWallColor);
 					else
 						AM_drawMline(&l, gameinfo.currentAutomapColors.WallColor);
 				}
-				else if (lines[i].backsector->floorheight !=
-				         lines[i].frontsector->floorheight)
+				else if (line.backsector->floorheight !=
+				         line.frontsector->floorheight)
 				{
 					AM_drawMline(&l, gameinfo.currentAutomapColors.FDWallColor); // floor level change
 				}
-				else if (lines[i].backsector->ceilingheight !=
-				         lines[i].frontsector->ceilingheight)
+				else if (line.backsector->ceilingheight !=
+				         line.frontsector->ceilingheight)
 				{
 					AM_drawMline(&l, gameinfo.currentAutomapColors.CDWallColor); // ceiling level change
 				}
@@ -1354,49 +1460,56 @@ void AM_drawWalls()
 					AM_drawMline(&l, gameinfo.currentAutomapColors.TSWallColor);
 				}
 
+				// NES - Locked doors glow from a predefined color to either blue,
+				// yellow, or red.
 				if (map_format.getZDoom())
 				{
-					if (lines[i].special == Door_LockedRaise)
+					if (line.special == Door_LockedRaise || line.special == Generic_Door)
 					{
-						// NES - Locked doors glow from a predefined color to either blue,
-						// yellow, or red.
-						r = gameinfo.currentAutomapColors.LockedColor.rgb.getr();
-						g = gameinfo.currentAutomapColors.LockedColor.rgb.getg();
-						b = gameinfo.currentAutomapColors.LockedColor.rgb.getb();
-
-						if (am_usecustomcolors || am_showlocked)
+						const short lock = line.special == Door_LockedRaise ? line.args[3] : line.args[4];
+						switch (lock)
 						{
-							if (lines[i].args[3] == (zk_blue_card | zk_blue))
-							{
-								rdif = (0 - r) / 30;
-								gdif = (0 - g) / 30;
-								bdif = (255 - b) / 30;
-							}
-							else if (lines[i].args[3] == (zk_yellow_card | zk_yellow))
-							{
-								rdif = (255 - r) / 30;
-								gdif = (255 - g) / 30;
-								bdif = (0 - b) / 30;
-							}
-							else
-							{
-								rdif = (255 - r) / 30;
-								gdif = (0 - g) / 30;
-								bdif = (0 - b) / 30;
-							}
-
-							if (lockglow < 30)
-							{
-								r += static_cast<int>(rdif) * lockglow;
-								g += static_cast<int>(gdif) * lockglow;
-								b += static_cast<int>(bdif) * lockglow;
-							}
-							else if (lockglow < 60)
-							{
-								r += static_cast<int>(rdif) * (60 - lockglow);
-								g += static_cast<int>(gdif) * (60 - lockglow);
-								b += static_cast<int>(bdif) * (60 - lockglow);
-							}
+							case zk_blue_card:
+							case zk_blue:
+							case zk_blue_skull:
+							case zk_bluex:
+								r = doorColors.bluedoor[0];
+								g = doorColors.bluedoor[1];
+								b = doorColors.bluedoor[2];
+								break;
+							case zk_yellow_card:
+							case zk_yellow:
+							case zk_yellow_skull:
+							case zk_yellowx:
+								r = doorColors.yellowdoor[0];
+								g = doorColors.yellowdoor[1];
+								b = doorColors.yellowdoor[2];
+								break;
+							case zk_red_card:
+							case zk_red:
+							case zk_red_skull:
+							case zk_redx:
+								r = doorColors.reddoor[0];
+								g = doorColors.reddoor[1];
+								b = doorColors.reddoor[2];
+								break;
+							case zk_all:
+							case zk_any:
+							case zk_each_color:
+								r = doorColors.multidoor[0];
+								g = doorColors.multidoor[1];
+								b = doorColors.multidoor[2];
+								break;
+							case zk_none:
+								r = gameinfo.currentAutomapColors.CDWallColor.rgb.getr();
+								g = gameinfo.currentAutomapColors.CDWallColor.rgb.getg();
+								b = gameinfo.currentAutomapColors.CDWallColor.rgb.getb();
+								break;
+							default:
+								r = gameinfo.currentAutomapColors.LockedColor.rgb.getr();
+								g = gameinfo.currentAutomapColors.LockedColor.rgb.getg();
+								b = gameinfo.currentAutomapColors.LockedColor.rgb.getb();
+								break;
 						}
 
 						AM_drawMline(&l, AM_BestColor(pal->basecolors, r, g, b));
@@ -1404,46 +1517,35 @@ void AM_drawWalls()
 				}
 				else
 				{
-					if (P_IsCompatibleLockedDoorLine(lines[i].special))
+					if (P_IsCompatibleLockedDoorLine(line.special))
 					{
 						// NES - Locked doors glow from a predefined color to either blue,
 						// yellow, or red.
-						r = gameinfo.currentAutomapColors.LockedColor.rgb.getr();
-						g = gameinfo.currentAutomapColors.LockedColor.rgb.getg();
-						b = gameinfo.currentAutomapColors.LockedColor.rgb.getb();
-
-						if (am_usecustomcolors || am_showlocked)
+						if (P_IsCompatibleMultiKeyDoorLine(line.special))
 						{
-							if (P_IsCompatibleBlueDoorLine(lines[i].special))
+							r = doorColors.multidoor[0];
+							g = doorColors.multidoor[1];
+							b = doorColors.multidoor[2];
+						}
+						else
+						{
+							if (P_IsCompatibleBlueDoorLine(line.special))
 							{
-								rdif = (0 - r) / 30;
-								gdif = (0 - g) / 30;
-								bdif = (255 - b) / 30;
+								r = doorColors.bluedoor[0];
+								g = doorColors.bluedoor[1];
+								b = doorColors.bluedoor[2];
 							}
-							else if (P_IsCompatibleYellowDoorLine(lines[i].special))
+							else if (P_IsCompatibleYellowDoorLine(line.special))
 							{
-								rdif = (255 - r) / 30;
-								gdif = (255 - g) / 30;
-								bdif = (0 - b) / 30;
+								r = doorColors.yellowdoor[0];
+								g = doorColors.yellowdoor[1];
+								b = doorColors.yellowdoor[2];
 							}
 							else
 							{
-								rdif = (255 - r) / 30;
-								gdif = (0 - g) / 30;
-								bdif = (0 - b) / 30;
-							}
-
-							if (lockglow < 30)
-							{
-								r += static_cast<int>(rdif) * lockglow;
-								g += static_cast<int>(gdif) * lockglow;
-								b += static_cast<int>(bdif) * lockglow;
-							}
-							else if (lockglow < 60)
-							{
-								r += static_cast<int>(rdif) * (60 - lockglow);
-								g += static_cast<int>(gdif) * (60 - lockglow);
-								b += static_cast<int>(bdif) * (60 - lockglow);
+								r = doorColors.reddoor[0];
+								g = doorColors.reddoor[1];
+								b = doorColors.reddoor[2];
 							}
 						}
 
@@ -1454,7 +1556,7 @@ void AM_drawWalls()
 		}
 		else if (consoleplayer().powers[pw_allmap])
 		{
-			if (!(lines[i].flags & ML_DONTDRAW))
+			if (!(line.flags & ML_DONTDRAW))
 				AM_drawMline(&l, gameinfo.currentAutomapColors.NotSeenColor);
 		}
 	}
@@ -1512,7 +1614,7 @@ void AM_rotatePoint(mpoint_t& pt)
 	pt.y += y;
 }
 
-void AM_drawLineCharacter(const std::vector<mline_t>& lineguy, fixed64_t scale,
+void AM_drawLineCharacter(nonstd::span<const mline_t> lineguy, fixed64_t scale,
                           angle_t angle, am_color_t color, fixed64_t x, fixed64_t y)
 {
 	for (const auto& mline : lineguy)
@@ -1633,7 +1735,7 @@ void AM_drawPlayers()
 		}
 		else
 		{
-			color.rgb = CL_GetPlayerColor(&p);
+			color.rgb = CL_GetPlayerColor(p);
 			color.index = V_BestColor(V_GetDefaultPalette()->basecolors, color.rgb);
 		}
 
@@ -1670,7 +1772,7 @@ void AM_drawPlayers()
 	}
 }
 
-bool AM_actorIsKey(AActor* t)
+bool AM_actorIsKey(const AActor* t)
 {
 	if (t->sprite == SPR_BKEY || t->sprite == SPR_YKEY || t->sprite == SPR_RKEY ||
 	    t->sprite == SPR_BSKU || t->sprite == SPR_YSKU || t->sprite == SPR_RSKU)
@@ -1681,7 +1783,7 @@ bool AM_actorIsKey(AActor* t)
 	return false;
 }
 
-am_color_t AM_getKeyColor(AActor *t)
+am_color_t AM_getKeyColor(const AActor *t)
 {
 	am_color_t color = gameinfo.currentAutomapColors.ThingColor;
 	const argb_t* palette = V_GetDefaultPalette()->colors;
@@ -1696,123 +1798,177 @@ am_color_t AM_getKeyColor(AActor *t)
 	return color;
 }
 
-void AM_drawEasyKeys()
+void AM_drawEasyKey(const AActor* t)
 {
-	for (int i = 0; i < numsectors; i++)
+	if (AM_actorIsKey(t))
 	{
-		AActor* t = sectors[i].thinglist;
-		while (t)
+		mpoint_t p;
+		M_SetVec2Fixed64(&p, FIXED2FIXED64(t->x), FIXED2FIXED64(t->y));
+
+		const am_color_t key_color = AM_getKeyColor(t);
+
+		AM_drawLineCharacter(gameinfo.easyKey, FIXED2FIXED64(t->radius), 0, key_color, p.x, p.y);
+	}
+}
+
+void AM_drawHordeBoss(const AActor* t)
+{
+	OInterpolation& oi = OInterpolation::getInstance();
+
+	if (t->oflags & MFO_BOSSPOOL && t->health > 0)
+	{
+		fixed_t thingx;
+		fixed_t thingy;
+
+		if (oi.enabled())
 		{
-			if (AM_actorIsKey(t))
-			{
-				mpoint_t p;
-				M_SetVec2Fixed64(&p, FIXED2FIXED64(t->x), FIXED2FIXED64(t->y));
-
-				const am_color_t key_color = AM_getKeyColor(t);
-
-				AM_drawLineCharacter(gameinfo.easyKey, FIXED2FIXED64(t->radius), 0, key_color, p.x, p.y);
-			}
-			t = t->snext;
+			thingx = t->prevx + FixedMul(t->x - t->prevx, render_lerp_amount);
+			thingy = t->prevy + FixedMul(t->y - t->prevy, render_lerp_amount);
 		}
+		else
+		{
+			thingx = t->x;
+			thingy = t->y;
+		}
+
+		mpoint_t p;
+		M_SetVec2Fixed64(&p, FIXED2FIXED64(thingx), FIXED2FIXED64(thingy));
+		if (am_rotate)
+			AM_rotatePoint(p);
+
+		const palette_t* palette = V_GetDefaultPalette();
+		am_color_t gold = AM_GetColorFromString(palette->colors, "light goldenrod yellow");
+		auto r = gold.rgb.getr();
+		auto g = gold.rgb.getg();
+		auto b = gold.rgb.getb();
+		float rdif = (255 - r) / 30;
+		float gdif = (0 - g) / 30;
+		float bdif = (0 - b) / 30;
+
+		if (bossglow < 20)
+		{
+			r += static_cast<int>(rdif) * bossglow;
+			g += static_cast<int>(gdif) * bossglow;
+			b += static_cast<int>(bdif) * bossglow;
+		}
+		else if (bossglow < 40)
+		{
+			r += static_cast<int>(rdif) * (40 - bossglow);
+			g += static_cast<int>(gdif) * (40 - bossglow);
+			b += static_cast<int>(bdif) * (40 - bossglow);
+		}
+
+		AM_drawLineCharacter(hordeboss_guy, FIXED2FIXED64(t->radius), 0, AM_BestColor(palette->basecolors, r, g, b),
+		                     p.x, p.y);
+	}
+}
+
+void AM_drawCheatThing(const AActor* t)
+{
+	OInterpolation& oi = OInterpolation::getInstance();
+
+	mpoint_t p;
+
+	fixed_t thingx;
+	fixed_t thingy;
+
+	fixed_t tangle;
+
+	if (oi.enabled())
+	{
+		thingx = t->prevx + FixedMul(t->x - t->prevx, render_lerp_amount);
+		thingy = t->prevy + FixedMul(t->y - t->prevy, render_lerp_amount);
+		tangle = t->prevangle + FixedMul(t->angle - t->prevangle, render_lerp_amount);
+	}
+	else
+	{
+		thingx = t->x;
+		thingy = t->y;
+		tangle = t->angle;
+	}
+
+	M_SetVec2Fixed64(&p, FIXED2FIXED64(thingx), FIXED2FIXED64(thingy));
+	angle_t rotate_angle = 0;
+	angle_t triangle_angle = tangle;
+
+	if (am_rotate)
+	{
+		AM_rotatePoint(p);
+
+		fixed_t conangle;
+
+		if (oi.enabled())
+		{
+			conangle = displayplayer().camera->prevangle +
+				FixedMul(displayplayer().camera->angle -
+				displayplayer().camera->prevangle,
+				render_lerp_amount);
+		}
+		else
+		{
+			conangle = displayplayer().camera->angle;
+		}
+
+		rotate_angle = ANG90 - conangle;
+		triangle_angle += rotate_angle;
+	}
+
+	if (AM_actorIsKey(t))
+	{
+		if (!G_GetCurrentSkill().easy_key)
+		{
+			const am_color_t key_color = AM_getKeyColor(t);
+
+			AM_drawLineCharacter(gameinfo.cheatKey, FIXED2FIXED64(t->radius), 0, key_color, p.x,
+			                     p.y);
+		}
+	}
+	else
+	{
+		am_color_t color = gameinfo.currentAutomapColors.ThingColor;
+
+		AM_drawLineCharacter(thintriangle_guy, FIXED2FIXED64(t->radius), triangle_angle, color,
+		                     p.x, p.y);
+
+		if (t->flags & MF_MISSILE)
+		{
+			color = gameinfo.currentAutomapColors.ThingColor_Projectile;
+		}
+		else if (t->flags & MF_SPECIAL)
+		{
+			if (t->flags & MF_COUNTITEM)
+				color = gameinfo.currentAutomapColors.ThingColor_CountItem;
+			else
+				color = gameinfo.currentAutomapColors.ThingColor_Item;
+		}
+		else if (t->flags & MF_SOLID && t->flags & MF_SHOOTABLE)
+		{
+			if (t->flags & MF_FRIEND)
+				color = gameinfo.currentAutomapColors.ThingColor_Friend;
+			else if (t->flags & MF_COUNTKILL)
+				color = gameinfo.currentAutomapColors.ThingColor_Monster;
+			else
+				color = gameinfo.currentAutomapColors.ThingColor_NoCountMonster;
+		}
+
+		AM_drawLineCharacter(thinrectangle_guy, FIXED2FIXED64(t->radius), rotate_angle, color,
+		                     p.x, p.y);
 	}
 }
 
 void AM_drawThings()
 {
-	OInterpolation& oi = OInterpolation::getInstance();
-
-	for (int i = 0; i < numsectors; i++)
+	for (const sector_t& sector : R_GetSectors())
 	{
-		AActor* t = sectors[i].thinglist;
+		const AActor* t = sector.thinglist;
 		while (t)
 		{
-			mpoint_t p;
-
-			fixed_t thingx;
-			fixed_t thingy;
-
-			fixed_t tangle;
-
-			if (oi.enabled())
-			{
-				thingx = t->prevx + FixedMul(t->x - t->prevx, render_lerp_amount);
-				thingy = t->prevy + FixedMul(t->y - t->prevy, render_lerp_amount);
-				tangle = t->prevangle + FixedMul(t->angle - t->prevangle, render_lerp_amount);
-			}
-			else
-			{
-				thingx = t->x;
-				thingy = t->y;
-				tangle = t->angle;
-			}
-
-			M_SetVec2Fixed64(&p, FIXED2FIXED64(thingx), FIXED2FIXED64(thingy));
-			angle_t rotate_angle = 0;
-			angle_t triangle_angle = tangle;
-
-			if (am_rotate)
-			{
-				AM_rotatePoint(p);
-
-				fixed_t conangle;
-
-				if (oi.enabled())
-				{
-					conangle = displayplayer().camera->prevangle +
-						FixedMul(displayplayer().camera->angle -
-						displayplayer().camera->prevangle,
-						render_lerp_amount);
-				}
-				else
-				{
-					conangle = displayplayer().camera->angle;
-				}
-
-				rotate_angle = ANG90 - conangle;
-				triangle_angle += rotate_angle;
-			}
-
-			if (AM_actorIsKey(t))
-			{
-				if (!G_GetCurrentSkill().easy_key)
-				{
-					const am_color_t key_color = AM_getKeyColor(t);
-
-					AM_drawLineCharacter(gameinfo.cheatKey, FIXED2FIXED64(t->radius), 0, key_color, p.x,
-					                     p.y);
-				}
-			}
-			else
-			{
-				am_color_t color = gameinfo.currentAutomapColors.ThingColor;
-
-				AM_drawLineCharacter(thintriangle_guy, FIXED2FIXED64(t->radius), triangle_angle, color,
-				                     p.x, p.y);
-
-				if (t->flags & MF_MISSILE)
-				{
-					color = gameinfo.currentAutomapColors.ThingColor_Projectile;
-				}
-				else if (t->flags & MF_SPECIAL)
-				{
-					if (t->flags & MF_COUNTITEM)
-						color = gameinfo.currentAutomapColors.ThingColor_CountItem;
-					else
-						color = gameinfo.currentAutomapColors.ThingColor_Item;
-				}
-				else if (t->flags & MF_SOLID && t->flags & MF_SHOOTABLE)
-				{
-					if (t->flags & MF_FRIEND)
-						color = gameinfo.currentAutomapColors.ThingColor_Friend;
-					else if (t->flags & MF_COUNTKILL)
-						color = gameinfo.currentAutomapColors.ThingColor_Monster;
-					else
-						color = gameinfo.currentAutomapColors.ThingColor_NoCountMonster;
-				}
-
-				AM_drawLineCharacter(thinrectangle_guy, FIXED2FIXED64(t->radius), rotate_angle, color,
-				                     p.x, p.y);
-			}
+			if (G_IsHordeMode())
+				AM_drawHordeBoss(t);
+			if (G_GetCurrentSkill().easy_key)
+				AM_drawEasyKey(t);
+			if (am_cheating == 2)
+				AM_drawCheatThing(t);
 			t = t->snext;
 		}
 	}
@@ -1869,6 +2025,8 @@ void AM_Drawer()
 
 	fb = surface->getBuffer();
 
+	minimapactive = false;
+
 	if (AM_ClassicAutomapVisible())
 	{
 		f.x = f.y = 0;
@@ -1878,7 +2036,7 @@ void AM_Drawer()
 
 		AM_clearFB(gameinfo.currentAutomapColors.Background);
 	}
-	else
+	else if (!am_ovminimap)
 	{
 		f.x = R_ViewWindowX(surface_width, surface_height);
 		f.y = R_ViewWindowY(surface_width, surface_height);
@@ -1886,8 +2044,46 @@ void AM_Drawer()
 		f_h = R_ViewHeight(surface_width, surface_height);
 		f_p = surface->getPitch();
 	}
+	else
+	{
+		minimapactive = true;
 
-	if (am_followplayer)
+		const int v_width = R_ViewWidth(surface_width, surface_height);
+		const int v_height = R_ViewHeight(surface_width, surface_height);
+		const int loc = am_ovlocation;
+
+		int x_offset = 0;
+		int y_offset = 0;
+
+		f_w = v_width * am_ovscalewidth;
+		f_h = v_height * am_ovscaleheight;
+
+		switch (loc)
+		{
+		case 1:
+		case 4:
+			y_offset = (v_height - f_h) / 2;
+			break;
+		case 2:
+		case 5:
+			y_offset = v_height - f_h;
+			break;
+		default:
+			break;
+		}
+
+		if (loc >= 3)
+			x_offset = v_width - f_w;
+
+		f.x = R_ViewWindowX(surface_width, surface_height) + x_offset;
+		f.y = R_ViewWindowY(surface_width, surface_height) + y_offset;
+		f_p = surface->getPitch();
+
+		if (const DCanvas* canvas = surface->getDefaultCanvas())
+			canvas->Dim(f.x, f.y, f_w, f_h, am_ovbackcolor.cstring(), am_ovbackalpha);
+	}
+
+	if (am_followplayer || minimapactive)
 	{
 		AM_doFollowPlayer();
 	}
@@ -1922,9 +2118,7 @@ void AM_Drawer()
 
 	AM_drawWalls();
 	AM_drawPlayers();
-	if (G_GetCurrentSkill().easy_key)
-		AM_drawEasyKeys();
-	if (am_cheating == 2)
+	if (G_IsHordeMode() || G_GetCurrentSkill().easy_key || (am_cheating == 2))
 		AM_drawThings();
 
 	if (!(viewactive && am_overlay < 2))

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -568,12 +568,6 @@ class BootWindow : public Fl_Window
 		const size_t value = static_cast<size_t>(m_IWADBrowser->value());
 		scannedIWAD_t iwad = m_IWADs[value - 1];
 		g_SelectedWADs.iwad = iwad.path;
-
-		if (iwad.id != NULL && iwad.id->mIdName == "CHEX QUEST")
-		{
-			g_SelectedWADs.options.push_back("-deh");
-			g_SelectedWADs.options.push_back("chex.deh");
-		}
 
 		// PWADs
 		for (const auto& pwad : m_selectedPWADs)

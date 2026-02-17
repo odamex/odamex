@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,10 +26,6 @@
 #include <iostream>
 #include <string>
 #include <memory>
-
-#ifdef _XBOX
-#include <xtl.h>
-#endif
 
 #include <agar/core.h>
 #include <agar/gui.h>
@@ -86,9 +82,7 @@ int GameCommand::Launch()
 		cmd += AG_PATHSEP;
 
 	// Add the bin to the path
-#ifdef _XBOX
-	cmd += "odamex.xbe";
-#elif _WIN32
+#ifdef _WIN32
 	cmd += "odamex.exe";
 #else
 	cmd += "odamex";
@@ -96,7 +90,7 @@ int GameCommand::Launch()
 
 	// The path with bin tacked on is the first arg
 	argv[0] = strdup(cmd.c_str());
-	
+
 	// Add each param as an arg
 	for(i = Parameters.begin(); i != Parameters.end(); ++i, ++argc)
 		argv[argc] = strdup((*i).c_str());

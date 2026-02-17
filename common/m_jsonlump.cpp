@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -49,18 +49,15 @@ jsonlumpresult_t M_ParseJSONLump(int lumpindex, const char* lumptype, const JSON
 
     Json::CharReaderBuilder builder;
     builder["collectComments"] = false;
-    Json::CharReader* reader = builder.newCharReader();
+    auto reader = std::unique_ptr<Json::CharReader>(builder.newCharReader());
     Json::Value root;
     std::string errs;
 
     if(!reader->parse(jsondata, jsondata + W_LumpLength(lumpindex), &root, &errs))
     {
-        delete reader;
         I_Error("M_ParseJSONLump: JSON parsing error in lump {}:\n{}", W_LumpName(lumpindex), errs);
         return jsonlumpresult_t::PARSEERROR;
     }
-
-    delete reader;
 
 	const Json::Value& type     = root["type"];
 	const Json::Value& version  = root["version"];

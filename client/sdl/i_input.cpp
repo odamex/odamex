@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -40,17 +40,14 @@
 #include "c_bind.h"
 #include "c_console.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "hu_stuff.h"
 
-#ifdef _XBOX
-	#include "i_xbox.h"
-#elif __SWITCH__
+#ifdef __SWITCH__
 	#include "nx_io.h"
 #endif
 
-#if defined(SDL12)
-#include "i_input_sdl12.h"
-#elif defined(SDL20)
+#if defined(SDL20)
 #include "i_input_sdl20.h"
 #endif
 
@@ -594,9 +591,7 @@ bool I_InitInput()
 
 	atterm(I_ShutdownInput);
 
-	#if defined(SDL12)
-	input_subsystem = new ISDL12InputSubsystem();
-	#elif defined(SDL20)
+	#ifdef SDL20
 	input_subsystem = new ISDL20InputSubsystem();
 	#endif
 

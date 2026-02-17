@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,9 +22,6 @@
 //-----------------------------------------------------------------------------
 
 #pragma once
-
-#include "huffman.h"
-
 
 // Default buffer size for a UDP packet.
 // This constant seems to be used as a default buffer size and should
@@ -115,6 +112,11 @@ enum clientBuf_e
 #define SVC_SM_OFLAGS BIT(2)
 
 /**
+ * @brief svc_spawnmobj: ZDoom/Heretic flags.
+ */
+#define SVC_SM_FLAGS2 BIT(3)
+
+/**
  * @brief svc_updatemobj: Supply mobj position and random index.
  */
 #define SVC_UM_POS_RND BIT(0)
@@ -146,7 +148,7 @@ enum clientBuf_e
 
 /**
  * @brief svc_playermembers: Ready status.
- */ 
+ */
 #define SVC_PM_READY BIT(1)
 
 /**
@@ -250,12 +252,15 @@ enum svc_t
 	svc_maplist_index,     // [AM] - Send the current and next map index to the client.
 	svc_toast,
 	svc_hordeinfo,
+	svc_raisemobj,
+	svc_spree,
+	svc_spreebreaker,
 	svc_netdemocap = 100,  // netdemos - NullPoint
 	svc_netdemostop = 101, // netdemos - NullPoint
 	svc_netdemoloadsnap = 102, // netdemos - NullPoint
 };
 
-static constexpr size_t svc_max = 255;
+inline constexpr size_t svc_max = 255;
 
 enum ThinkerType
 {
@@ -299,7 +304,12 @@ enum clc_t
 	clc_privmsg, // [AM] Targeted chat to a specific player.
 };
 
-static constexpr size_t clc_max = 255;
+inline auto format_as(clc_t clc)
+{
+	return fmt::underlying(clc);
+}
+
+inline constexpr size_t clc_max = 255;
 
 extern msg_info_t clc_info[clc_max + 1];
 extern msg_info_t svc_info[svc_max + 1];
@@ -325,7 +335,7 @@ extern  netadr_t  net_from;  // address of who sent the packet
 class buf_t
 {
 public:
-	byte	*data;
+	std::unique_ptr<byte[]> data;
 	size_t	allocsize, cursize, readpos;
 	bool	overflowed;  // set to true if the buffer size failed
 
@@ -342,7 +352,7 @@ public:
 	void WriteByte(byte b)
 	{
 		byte *buf = SZ_GetSpace(sizeof(b));
-		
+
 		if(!overflowed)
 		{
 			*buf = b;
@@ -352,7 +362,7 @@ public:
 	void WriteShort(short s)
 	{
 		byte *buf = SZ_GetSpace(sizeof(s));
-		
+
 		if(!overflowed)
 		{
 			buf[0] = s&0xff;
@@ -363,7 +373,7 @@ public:
 	void WriteLong(int l)
 	{
 		byte *buf = SZ_GetSpace(sizeof(l));
-		
+
 		if(!overflowed)
 		{
 			buf[0] = l&0xff;
@@ -467,7 +477,7 @@ public:
 		}
 		size_t oldpos = readpos;
 		readpos += size;
-		return data+oldpos;
+		return &data[oldpos];
 	}
 
 	int ReadShort()
@@ -550,7 +560,7 @@ public:
 
 	const char *ReadString()
 	{
-		byte *begin = data + readpos;
+		byte *begin = &data[readpos];
 
 		while(ReadByte() > 0);
 
@@ -588,10 +598,11 @@ public:
 
                 readpos += offset;
             }
+			break;
 
             case BT_SEND:
             {
-                if ((int)(readpos-offset) < 0)
+                if (offset > readpos)
                 {
                     // lies, an underflow occured
                     overflowed = true;
@@ -600,6 +611,7 @@ public:
 
                 readpos -= offset;
             }
+			break;
         }
 
         return readpos;
@@ -617,14 +629,14 @@ public:
 
 	byte *ptr()
 	{
-		return data;
+		return data.get();
 	}
 
 	size_t size() const
 	{
 		return cursize;
 	}
-	
+
 	size_t maxsize() const
 	{
 		return allocsize;
@@ -644,21 +656,20 @@ public:
 
 	void resize(size_t len, bool clearbuf = true)
 	{
-		byte *olddata = data;
-		data = new byte[len];
+		auto newdata = std::make_unique<byte[]>(len);
 		allocsize = len;
-		
+
 		if (!clearbuf)
 		{
-			if (cursize < allocsize)
+			if (cursize < len)
 			{
-				memcpy(data, olddata, cursize);
+				memcpy(newdata.get(), data.get(), cursize);
 			}
 			else
 			{
 				clear();
 				overflowed = true;
-				Printf (PRINT_HIGH, "buf_t::resize(): overflow\n");
+				PrintFmt(PRINT_HIGH, "buf_t::resize(): overflow\n");
 			}
 		}
 		else
@@ -666,7 +677,8 @@ public:
 			clear();
 		}
 
-		delete[] olddata;
+		data = std::move(newdata);
+		allocsize = len;
 	}
 
 	byte *SZ_GetSpace(size_t length)
@@ -676,11 +688,11 @@ public:
 			clear();
 			overflowed = true;
 #if defined(ODAMEX_DEBUG)
-			Printf (PRINT_HIGH, "SZ_GetSpace: overflow\n");
+			PrintFmt(PRINT_HIGH, "SZ_GetSpace: overflow\n");
 #endif
 		}
 
-		byte *ret = data + cursize;
+		byte *ret = &data[cursize];
 		cursize += length;
 
 		return ret;
@@ -692,9 +704,7 @@ public:
 		if (this == &other)
             return *this;
 
-		delete[] data;
-		
-		data = new byte[other.allocsize];
+		data = std::make_unique<byte[]>(other.allocsize);
 		allocsize = other.allocsize;
 		cursize = other.cursize;
 		overflowed = other.overflowed;
@@ -706,9 +716,9 @@ public:
 
 		return *this;
 	}
-	
+
 	buf_t()
-		: data(0), allocsize(0), cursize(0), readpos(0), overflowed(false)
+		: data(nullptr), allocsize(0), cursize(0), readpos(0), overflowed(false)
 	{
 	}
 	buf_t(size_t len)
@@ -717,7 +727,7 @@ public:
 	}
 	buf_t(const buf_t &other)
 		: data(new byte[other.allocsize]), allocsize(other.allocsize), cursize(other.cursize), readpos(other.readpos), overflowed(other.overflowed)
-		
+
 	{
 		if(!overflowed)
 			for(size_t i = 0; i < cursize; i++)
@@ -725,8 +735,6 @@ public:
 	}
 	~buf_t()
 	{
-		delete[] data;
-		data = NULL;
 	}
 };
 
@@ -793,6 +801,3 @@ size_t MSG_SetOffset (const size_t &offset, const buf_t::seek_loc_t &loc);
 
 bool MSG_DecompressMinilzo ();
 bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap);
-
-bool MSG_DecompressAdaptive (huffman &huff);
-bool MSG_CompressAdaptive (huffman &huff, buf_t &buf, size_t start_offset, size_t write_gap);

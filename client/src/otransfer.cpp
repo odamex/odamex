@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -465,11 +465,11 @@ bool OTransfer::tick()
 			return false;
 		}
 
-		Printf("Saved to fallback location \"%s\".\n", fallback);
+		PrintFmt("Saved to fallback location \"{}\".\n", fallback);
 	}
 	else
 	{
-		Printf("Saved to location \"%s\".\n", m_filename);
+		PrintFmt("Saved to location \"{}\".\n", m_filename);
 	}
 
 	m_shouldCheckAgain = false;

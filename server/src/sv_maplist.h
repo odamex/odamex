@@ -22,10 +22,8 @@
 
 #pragma once
 
-#include <c_maplist.h>
-#include <d_player.h>
-
-#include <map>
+#include "c_maplist.h"
+#include "d_player.h"
 
 // Serverside maplist structure
 class Maplist {
@@ -38,7 +36,7 @@ private:
 	bool shuffled;
 	size_t s_index;
 	std::vector<size_t> s_maplist;
-	std::map<int, QWORD> timeout;
+	std::map<int, uint64_t> timeout;
 	byte version;
 	void shuffle(void);
 	void update_shuffle_index(void);

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,7 +41,7 @@
 #endif
 
 #include <cmath>
-
+#include <nonstd/scope.hpp>
 
 #include "m_alloc.h"
 #include "m_random.h"
@@ -62,6 +62,7 @@
 #include "c_dispatch.h"
 #include "i_system.h"
 #include "i_music.h"
+#include "i_time.h"
 #include "i_video.h"
 #include "i_input.h"
 #include "g_game.h"
@@ -84,15 +85,10 @@
 #include "g_horde.h"
 #include "w_ident.h"
 #include "gui_boot.h"
+#include "g_musinfo.h"
 #include "g_episode.h"
-
-#ifdef GEKKO
-#include "i_wii.h"
-#endif
-
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
+#include "g_multikill.h"
+#include "g_spreedef.h"
 
 extern size_t got_heapsize;
 
@@ -108,11 +104,9 @@ extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 
-bool devparm;				// started game with -devparm
 const char *D_DrawIcon;			// [RH] Patch name of icon to draw on next refresh
 static bool wiping_screen = false;
 
-OLumpName startmap;
 bool autostart;
 bool advancedemo;
 event_t events[MAXEVENTS];
@@ -150,8 +144,6 @@ EXTERN_CVAR (vid_vsync)
 EXTERN_CVAR (g_resetinvonexit)
 EXTERN_CVAR (i_skipbootwin)
 
-std::string LOG_FILE;
-
 void M_RestoreVideoMode();
 void M_ModeFlashTestText();
 
@@ -160,9 +152,9 @@ void D_SetPlatform(void)
 #ifdef GCONSOLE
 	#ifdef _XBOX
 		platform = PF_XBOX;
-	#elif GEKKO
+	#elif defined(GEKKO)
 		platform = PF_WII;
-	#elif __SWITCH__
+	#elif defined(__SWITCH__)
 		platform = PF_SWITCH;
 	#else
 		platform = PF_UNKNOWN;
@@ -370,7 +362,7 @@ void D_DoomLoop()
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf(PRINT_ERROR, "\nERROR: %s\n", error.GetMsg());
+			PrintFmt(PRINT_ERROR, "\nERROR: {}\n", error.GetMsg());
 
 			// [AM] In case an error is caused by a console command.
 			C_ClearCommand();
@@ -601,6 +593,84 @@ bool HashOk(std::string &required, std::string &available)
 
 void CL_NetDemoPlay(const std::string &filename);
 
+EXTERN_CVAR(co_boomphys)
+EXTERN_CVAR(co_zdoomphys)
+EXTERN_CVAR(co_mbfphys)
+EXTERN_CVAR(co_zdoomammo)
+EXTERN_CVAR(co_novileghosts)
+EXTERN_CVAR(co_removesoullimit)
+EXTERN_CVAR(co_allowdropoff)
+EXTERN_CVAR(r_clipmaskedspecial)
+EXTERN_CVAR(r_thingsectorlight)
+
+void G_ReadCOMPLVL()
+{
+	const int lumpnum = W_CheckNumForName("COMPLVL");
+	if (lumpnum == -1)
+		return;
+
+	char* complvl = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
+	auto guard = nonstd::make_scope_exit([&]{ Z_Free(complvl); });
+
+	if (!serverside)
+	{
+		if (iequals("mbf", complvl))
+			r_thingsectorlight.Set(1.0f);
+		else
+			r_thingsectorlight.Set(0.0f);
+
+		if (iequals("mbf21", complvl))
+			r_clipmaskedspecial.Set(1.0f);
+		else
+			r_clipmaskedspecial.Set(0.0f);
+
+		return;
+	}
+
+	co_zdoomphys.Set(0.0f);
+	co_zdoomammo.Set(0.0f);
+
+	if (iequals("vanilla", complvl))
+	{
+		co_boomphys.Set(0.0f);
+		co_mbfphys.Set(0.0f);
+		co_novileghosts.Set(0.0f);
+		co_allowdropoff.Set(0.0f);
+		co_removesoullimit.Set(0.0f);
+		r_clipmaskedspecial.Set(0.0f);
+	}
+	else if (iequals("boom", complvl))
+	{
+		co_boomphys.Set(1.0f);
+		co_mbfphys.Set(0.0f);
+		co_novileghosts.Set(1.0f);
+		co_allowdropoff.Set(1.0f);
+		co_removesoullimit.Set(1.0f);
+		r_clipmaskedspecial.Set(0.0f);
+	}
+	else if (iequals("mbf", complvl))
+	{
+		co_boomphys.Set(1.0f);
+		co_mbfphys.Set(1.0f);
+		co_novileghosts.Set(1.0f);
+		co_allowdropoff.Set(1.0f);
+		co_removesoullimit.Set(1.0f);
+		r_clipmaskedspecial.Set(0.0f);
+	}
+	else if (iequals("mbf21", complvl))
+	{
+		co_boomphys.Set(1.0f);
+		co_mbfphys.Set(1.0f);
+		co_novileghosts.Set(1.0f);
+		co_allowdropoff.Set(1.0f);
+		co_removesoullimit.Set(1.0f);
+		r_clipmaskedspecial.Set(1.0f);
+	}
+	else
+	{
+		DPrintFmt("Unrecognized COMPLVL value: {}", complvl);
+	}
+}
 
 //
 // D_Init
@@ -622,18 +692,14 @@ void D_Init()
 	// start the Zone memory manager
 	Z_Init();
 	if (first_time)
-		Printf("Z_Init: Using native allocator with OZone bookkeeping.\n");
+		PrintFmt("Z_Init: Using native allocator with OZone bookkeeping.\n");
 
 	// Load palette and set up colormaps
 	V_Init();
 
-//	if (first_time)
-//		Printf(PRINT_HIGH, "Res_InitTextureManager: Init image resource management.\n");
-//	Res_InitTextureManager();
-
 	// init the renderer
 	if (first_time)
-		Printf(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
+		PrintFmt(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
 	R_Init();
 
 //	V_LoadFonts();
@@ -647,32 +713,32 @@ void D_Init()
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
+	G_ParseSpreeDef();
 	G_ParseHordeDefs();
+	G_ReadCOMPLVL();
 
 	// init the menu subsystem
 	if (first_time)
-		Printf(PRINT_HIGH, "M_Init: Init miscellaneous info.\n");
+		PrintFmt(PRINT_HIGH, "M_Init: Init miscellaneous info.\n");
 	M_Init();
 
 	if (first_time)
-		Printf(PRINT_HIGH, "P_Init: Init Playloop state.\n");
+		PrintFmt(PRINT_HIGH, "P_Init: Init Playloop state.\n");
 	P_InitEffects();
 	P_Init();
 
 	// init sound and music
 	if (first_time)
 	{
-		Printf (PRINT_HIGH, "S_Init: Setting up sound.\n");
-		Printf (PRINT_HIGH, "S_Init: default sfx volume is %g\n", (float)snd_sfxvolume);
-		Printf (PRINT_HIGH, "S_Init: default music volume is %g\n", (float)snd_musicvolume);
+		PrintFmt(PRINT_HIGH, "S_Init: Setting up sound.\n");
+		PrintFmt(PRINT_HIGH, "S_Init: default sfx volume is {:g}\n", snd_sfxvolume.value());
+		PrintFmt(PRINT_HIGH, "S_Init: default music volume is {:g}\n", snd_musicvolume.value());
 	}
 	S_Init(snd_sfxvolume, snd_musicvolume);
 
-//	R_InitViewBorder();
-
 	// init the status bar
 	if (first_time)
-		Printf(PRINT_HIGH, "ST_Init: Init status bar.\n");
+		PrintFmt(PRINT_HIGH, "ST_Init: Init status bar.\n");
 	ST_Init();
 
 	first_time = false;
@@ -702,6 +768,7 @@ void STACK_ARGS D_Shutdown()
 	// stop sound effects and music
 	S_Stop();
 	S_Deinit();
+	S_ClearSoundLumps();
 
 	// shutdown automap
 	AM_Stop();
@@ -743,8 +810,7 @@ void STACK_ARGS D_Shutdown()
 }
 
 
-void C_DoCommand(const char *cmd, uint32_t key);
-void D_Init_DEHEXTRA_Frames(void);
+void C_DoCommand(std::string_view cmd, uint32_t key);
 
 //
 // D_DoomMain
@@ -763,10 +829,7 @@ void D_DoomMain()
 
 	W_SetupFileIdentifiers();
 
-	// [RH] Initialize items. Still only used for the give command. :-(
-	InitItems();
-	// Initialize all extra frames
-	D_Init_DEHEXTRA_Frames();
+	D_InitializeDoomObjectTables();
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
@@ -857,15 +920,17 @@ void D_DoomMain()
 	D_AddWadCommandLineFiles(newwadfiles);
 	D_AddDehCommandLineFiles(newpatchfiles);
 
+    // do the deh processing
 	D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
-	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
+	PrintFmt(PRINT_HIGH, "I_Init: Init hardware.\n");
 	atterm(I_ShutdownHardware);
 	I_Init();
 	I_InitInput();
 
 	// [SL] Call init routines that need to be reinitialized every time WAD changes
 	atterm(D_Shutdown);
+	// initialize
 	D_Init();
 
 	atterm(I_Endoom);
@@ -874,17 +939,17 @@ void D_DoomMain()
 	cvar_t::EnableCallbacks();
 
 	// [RH] User-configurable startup strings. Because BOOM does.
-	if (GStrings(STARTUP1)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP1));
-	if (GStrings(STARTUP2)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP2));
-	if (GStrings(STARTUP3)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP3));
-	if (GStrings(STARTUP4)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP4));
-	if (GStrings(STARTUP5)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP5));
+	if (GStrings(STARTUP1)[0])	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STARTUP1));
+	if (GStrings(STARTUP2)[0])	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STARTUP2));
+	if (GStrings(STARTUP3)[0])	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STARTUP3));
+	if (GStrings(STARTUP4)[0])	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STARTUP4));
+	if (GStrings(STARTUP5)[0])	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STARTUP5));
 
     // developer mode
 	devparm = Args.CheckParm("-devparm");
 
 	if (devparm)
-		Printf(PRINT_HIGH, "%s", GStrings(D_DEVSTR));        // D_DEVSTR
+		PrintFmt(PRINT_HIGH, "{}", GStrings(D_DEVSTR));        // D_DEVSTR
 
 	// set the default value for vid_ticker based on the presence of -devparm
 	if (devparm)
@@ -952,7 +1017,7 @@ void D_DoomMain()
 	CL_DownloadInit();
 	atterm(CL_DownloadShutdown);
 
-	Printf(PRINT_HIGH, "D_CheckNetGame: Checking network game status.\n");
+	PrintFmt(PRINT_HIGH, "D_CheckNetGame: Checking network game status.\n");
 	D_CheckNetGame();
 
 	// [RH] Lock any cvars that should be locked now that we're
@@ -978,7 +1043,7 @@ void D_DoomMain()
 		p = Args.CheckParm("+playdemo");
 	if (p && p < Args.NumArgs() - 1)
 	{
-		Printf(PRINT_HIGH, "Playdemo parameter found on command line.\n");
+		PrintFmt(PRINT_HIGH, "Playdemo parameter found on command line.\n");
 		singledemo = true;
 
 		extern std::string defdemoname;

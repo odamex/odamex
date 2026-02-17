@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,9 +33,7 @@
 #include "i_video.h"
 #include "v_video.h"
 
-#if defined(SDL12)
-#include "i_video_sdl12.h"
-#elif defined(SDL20)
+#if defined(SDL20)
 #include "i_video_sdl20.h"
 #else
 #error "no video subsystem selected"
@@ -51,14 +49,11 @@
 
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
 	#include "win32inc.h"
     #include "SDL_syswm.h"
     #include "resource.h"
 #endif	// _WIN32
-
-// Declared in doomtype.h as part of argb_t
-uint8_t argb_t::a_num, argb_t::r_num, argb_t::g_num, argb_t::b_num;
 
 // Global IVideoSubsystem instance for video startup and shutdown
 static IVideoSubsystem* video_subsystem = NULL;
@@ -934,9 +929,7 @@ void I_InitHardware()
 	}
 	else
 	{
-		#if defined(SDL12)
-		video_subsystem = new ISDL12VideoSubsystem();
-		#elif defined(SDL20)
+		#if defined(SDL20)
 		video_subsystem = new ISDL20VideoSubsystem();
 		#endif
 		assert(video_subsystem != NULL);

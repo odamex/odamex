@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -43,41 +43,44 @@
 #include <stdlib.h>
 #include <time.h>
 
-
-#include "m_random.h"
-#include "minilzo.h"
+#include "c_dispatch.h"
+#include "d_dehacked.h"
+#include "d_main.h"
+#include "g_game.h"
+#include "g_horde.h"
+#include "g_mapinfo.h"
+#include "gi.h"
 #include "gstrings.h"
-#include "z_zone.h"
-#include "w_wad.h"
-#include "v_video.h"
+#include "i_system.h"
+#include "i_time.h"
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "m_misc.h"
-#include "c_dispatch.h"
-#include "i_system.h"
-#include "g_game.h"
+#include "m_random.h"
+#include "minilzo.h"
+#include "odainfo.h"
 #include "p_setup.h"
 #include "r_local.h"
 #include "r_sky.h"
-#include "d_main.h"
-#include "d_dehacked.h"
 #include "s_sound.h"
-#include "gi.h"
-#include "g_mapinfo.h"
-#include "sv_main.h"
 #include "sv_banlist.h"
-#include "g_horde.h"
+#include "sv_main.h"
+#include "v_video.h"
+#include "w_wad.h"
+#include "z_zone.h"
+#include "g_musinfo.h"
 
 #include "w_ident.h"
+
+#include "g_spreedef.h"
 
 EXTERN_CVAR (sv_timelimit)
 EXTERN_CVAR (sv_nomonsters)
 EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_fastmonsters)
+EXTERN_CVAR (sv_startwadscript)
 
-extern size_t got_heapsize;
-
-void C_DoCommand(const char *cmd, uint32_t key = 0);
+void C_DoCommand(std::string_view cmd, uint32_t key = 0);
 
 #ifdef UNIX
 void daemon_init();
@@ -90,12 +93,8 @@ extern bool gameisdead;
 extern DThinker ThinkerCap;
 extern dyncolormap_t NormalLight;
 
-bool devparm;				// started game with -devparm
-OLumpName startmap;
 event_t events[MAXEVENTS];
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
-
-std::string LOG_FILE;
 
 //
 // D_DoomLoop
@@ -110,8 +109,8 @@ void D_DoomLoop (void)
 		}
 		catch (CRecoverableError &error)
 		{
-			Printf ("ERROR: %s\n", error.GetMsg());
-			Printf ("sleeping for 10 seconds before map reload...");
+			PrintFmt("ERROR: {}\n", error.GetMsg());
+			PrintFmt("sleeping for 10 seconds before map reload...");
 
 			// denis - drop clients
 			SV_SendDisconnectSignal();
@@ -126,6 +125,56 @@ void D_DoomLoop (void)
 		}
 	}
 }
+
+EXTERN_CVAR(co_boomphys)
+EXTERN_CVAR(co_zdoomphys)
+EXTERN_CVAR(co_mbfphys)
+EXTERN_CVAR(co_zdoomammo)
+EXTERN_CVAR(co_allowdropoff)
+
+void G_ReadCOMPLVL()
+{
+	int lumpnum = W_CheckNumForName("COMPLVL");
+	if (lumpnum != -1)
+	{
+		char* complvl = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
+
+		co_zdoomphys.Set(0.0f);
+		co_zdoomammo.Set(0.0f);
+
+		if (iequals("vanilla", complvl))
+		{
+			co_boomphys.Set(0.0f);
+			co_mbfphys.Set(0.0f);
+			co_allowdropoff.Set(0.0f);
+		}
+		else if (iequals("boom", complvl))
+		{
+			co_boomphys.Set(1.0f);
+			co_mbfphys.Set(0.0f);
+			co_allowdropoff.Set(1.0f);
+		}
+		else if (iequals("mbf", complvl))
+		{
+			co_boomphys.Set(1.0f);
+			co_mbfphys.Set(1.0f);
+			co_allowdropoff.Set(1.0f);
+		}
+		else if (iequals("mbf21", complvl))
+		{
+			co_boomphys.Set(1.0f);
+			co_mbfphys.Set(1.0f);
+			co_allowdropoff.Set(1.0f);
+		}
+		else
+		{
+			DPrintFmt("Unrecognized COMPLVL value: {}", complvl);
+		}
+
+		Z_Free(complvl);
+	}
+}
+
 
 //
 // D_Init
@@ -149,7 +198,7 @@ void D_Init()
 	// start the Zone memory manager
 	Z_Init();
 	if (first_time)
-		Printf("Z_Init: Using native allocator with OZone bookkeeping.\n");
+		PrintFmt("Z_Init: Using native allocator with OZone bookkeeping.\n");
 
 	// Load palette and set up colormaps
 	V_InitPalette("PLAYPAL");
@@ -157,16 +206,25 @@ void D_Init()
 
 	// init the renderer
 	if (first_time)
-		Printf(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
+		PrintFmt(PRINT_HIGH, "R_Init: Init DOOM refresh daemon.\n");
 	R_Init();
 
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
+	G_ParseSpreeDef();
 	G_ParseHordeDefs();
+	G_ReadCOMPLVL();
+
+	// [EB] have to do this elsewhere on startup to be sure that cvar callbacks are enabled
+	if (!first_time)
+	{
+		if (!sv_startwadscript.str().empty())
+			AddCommandString(sv_startwadscript.str());
+	}
 
 	if (first_time)
-		Printf(PRINT_HIGH, "P_Init: Init Playloop state.\n");
+		PrintFmt(PRINT_HIGH, "P_Init: Init Playloop state.\n");
 	P_Init();
 
 	first_time = false;
@@ -190,6 +248,7 @@ void STACK_ARGS D_Shutdown()
 
 	// stop sound effects and music
 	S_Stop();
+	S_ClearSoundLumps();
 
 	DThinker::DestroyAllThinkers();
 
@@ -212,7 +271,7 @@ void STACK_ARGS D_Shutdown()
 	NormalLight.next = NULL;
 }
 
-void D_Init_DEHEXTRA_Frames(void);
+void G_ChangeMapStartup();
 
 //
 // D_DoomMain
@@ -222,16 +281,13 @@ void D_Init_DEHEXTRA_Frames(void);
 //
 void D_DoomMain()
 {
-	unsigned int p;
+	size_t p;
 
 	gamestate = GS_STARTUP;
 
 	W_SetupFileIdentifiers();
 
-	// [RH] Initialize items. Still only used for the give command. :-(
-	InitItems();
-	// Initialize all extra frames
-	D_Init_DEHEXTRA_Frames();
+	D_InitializeDoomObjectTables();
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
@@ -244,6 +300,9 @@ void D_DoomMain()
 	if (!LOG.is_open())
 		C_DoCommand("logfile");
 
+	M_LoadDefaults();					// load before initing other systems
+	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
+
 	OWantFiles newwadfiles, newpatchfiles;
 
 	const char* iwad_filename_cstr = Args.CheckValue("-iwad");
@@ -254,36 +313,30 @@ void D_DoomMain()
 		newwadfiles.push_back(file);
 	}
 
-
-
 	D_AddWadCommandLineFiles(newwadfiles);
 	D_AddDehCommandLineFiles(newpatchfiles);
 
 	D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
-	// Ch0wW: Loading the config here fixes the "addmap" issue.
-	M_LoadDefaults();					// load before initing other systems
-	C_ExecCmdLineParams(true, false);	// [RH] do all +set commands on the command line
-
-	Printf(PRINT_HIGH, "I_Init: Init hardware.\n");
+	PrintFmt(PRINT_HIGH, "I_Init: Init hardware.\n");
 	I_Init();
 
 	// [SL] Call init routines that need to be reinitialized every time WAD changes
 	D_Init();
 	atterm(D_Shutdown);
 
-	Printf(PRINT_HIGH, "SV_InitNetwork: Checking network game status.\n");
+	PrintFmt(PRINT_HIGH, "SV_InitNetwork: Checking network game status.\n");
 	SV_InitNetwork();
 
 	// Base systems have been inited; enable cvar callbacks
 	cvar_t::EnableCallbacks();
 
 	// [RH] User-configurable startup strings. Because BOOM does.
-	if (GStrings(STARTUP1)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP1));
-	if (GStrings(STARTUP2)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP2));
-	if (GStrings(STARTUP3)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP3));
-	if (GStrings(STARTUP4)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP4));
-	if (GStrings(STARTUP5)[0])	Printf(PRINT_HIGH, "%s\n", GStrings(STARTUP5));
+	if (GStrings(STARTUP1)[0])	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STARTUP1));
+	if (GStrings(STARTUP2)[0])	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STARTUP2));
+	if (GStrings(STARTUP3)[0])	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STARTUP3));
+	if (GStrings(STARTUP4)[0])	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STARTUP4));
+	if (GStrings(STARTUP5)[0])	PrintFmt(PRINT_HIGH, "{}\n", GStrings(STARTUP5));
 
 	// developer mode
 	devparm = Args.CheckParm("-devparm");
@@ -314,13 +367,13 @@ void D_DoomMain()
 	if (p && p < Args.NumArgs() - 1)
 	{
 		float time = atof(Args.GetArg(p + 1));
-		Printf(PRINT_HIGH, "Levels will end after %g minute%s.\n", time, time > 1 ? "s" : "");
+		PrintFmt(PRINT_HIGH, "Levels will end after {:g} minute{}.\n", time, time > 1 ? "s" : "");
 		sv_timelimit.Set(time);
 	}
 
 	if (Args.CheckValue("-avg"))
 	{
-		Printf(PRINT_HIGH, "Austin Virtual Gaming: Levels will end after 20 minutes\n");
+		PrintFmt(PRINT_HIGH, "Austin Virtual Gaming: Levels will end after 20 minutes\n");
 		sv_timelimit.Set(20);
 	}
 
@@ -335,7 +388,7 @@ void D_DoomMain()
 	// [AM] Initialize banlist
 	SV_InitBanlist();
 
-	Printf(PRINT_HIGH, "========== Odamex Server Initialized ==========\n");
+	PrintFmt(PRINT_HIGH, "========== Odamex Server Initialized ==========\n");
 
 	#ifdef UNIX
 	if (Args.CheckParm("-fork"))
@@ -371,7 +424,10 @@ void D_DoomMain()
 
 	level.mapname = startmap;
 
-	G_ChangeMap();
+	if (!sv_startwadscript.str().empty())
+		AddCommandString(sv_startwadscript.str());
+
+	G_ChangeMapStartup();
 
 	D_DoomLoop();	// never returns
 }

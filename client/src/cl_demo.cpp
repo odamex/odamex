@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,6 +33,7 @@
 #include "m_fileio.h"
 #include "cl_demo.h"
 #include "p_saveg.h"
+#include "r_main.h"
 #include "st_stuff.h"
 #include "p_mobj.h"
 #include "svc_message.h"
@@ -158,7 +159,7 @@ void NetDemo::cleanUp()
 void NetDemo::error(const std::string &message)
 {
 	cleanUp();
-	Printf(PRINT_HIGH, "%s\n", message);
+	PrintFmt(PRINT_HIGH, "{}\n", message);
 }
 
 /**
@@ -175,7 +176,7 @@ void NetDemo::fatalError(const std::string &message)
 	gameaction = ga_nothing;
 	gamestate = GS_FULLCONSOLE;
 
-	Printf(PRINT_HIGH, "%s\n", message);
+	PrintFmt(PRINT_HIGH, "{}\n", message);
 }
 
 //
@@ -455,7 +456,7 @@ bool NetDemo::startRecording(const std::string &filename)
 
 	state = NetDemo::st_recording;
 	header.starting_gametic = gametic;
-	Printf(PRINT_HIGH, "Recording netdemo %s.\n", filename);
+	PrintFmt(PRINT_HIGH, "Recording netdemo {}.\n", filename);
 
 	if (connected)
 	{
@@ -584,7 +585,7 @@ bool NetDemo::startPlaying(const std::string &filename)
 	fseek(demofp, NetDemo::HEADER_SIZE, SEEK_SET);
 	state = NetDemo::st_playing;
 
-	Printf(PRINT_HIGH, "Playing netdemo %s.\n", filename);
+	PrintFmt(PRINT_HIGH, "Playing netdemo {}.\n", filename);
 
 	return true;
 }
@@ -683,7 +684,7 @@ bool NetDemo::stopRecording()
 	fclose(demofp);
 	demofp = NULL;
 
-	Printf(PRINT_HIGH, "Demo recording has stopped.\n");
+	PrintFmt(PRINT_HIGH, "Demo recording has stopped.\n");
 	reset();
 	return true;
 }
@@ -707,7 +708,7 @@ bool NetDemo::stopPlaying()
 		demofp = NULL;
 	}
 
-	Printf(PRINT_HIGH, "Demo has ended.\n");
+	PrintFmt(PRINT_HIGH, "Demo has ended.\n");
 	reset();
     gameaction = ga_fullconsole;
     gamestate = GS_FULLCONSOLE;
@@ -816,7 +817,7 @@ void NetDemo::writeMessages()
 		captured.push_back(netbuf_localcmd);
 	}
 
-	byte *output_buf = new byte[captured.size() * MAX_UDP_PACKET];
+	auto output_buf = std::make_unique<byte[]>(captured.size() * MAX_UDP_PACKET);
 
 	uint32_t output_len = 0;
 	while (!captured.empty())
@@ -825,15 +826,13 @@ void NetDemo::writeMessages()
 		uint32_t len = netbuf.BytesLeftToRead();
 
 		byte *chunk = netbuf.ReadChunk(len);
-		memcpy(output_buf + output_len, chunk, len);
+		memcpy(&output_buf[output_len], chunk, len);
 		output_len += len;
 
 		captured.pop_front();
 	}
 
-	writeChunk(output_buf, output_len, NetDemo::msg_packet);
-
-	delete [] output_buf;
+	writeChunk(output_buf.get(), output_len, NetDemo::msg_packet);
 }
 
 
@@ -881,12 +880,11 @@ bool NetDemo::readMessageHeader(netdemo_message_t &type, uint32_t &len, uint32_t
 
 void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 {
-	char *msgdata = new char[len];
+	auto msgdata = std::make_unique<char[]>(len);
 
-	size_t cnt = fread(msgdata, 1, len, demofp);
+	size_t cnt = fread(msgdata.get(), 1, len, demofp);
 	if (cnt < len)
 	{
-		delete[] msgdata;
 		fatalError("Can not read netdemo message.");
 		return;
 	}
@@ -897,8 +895,7 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 		netbuffer->resize(len + netbuffer->size() + 1, false);
 	}
 
-	netbuffer->WriteChunk(msgdata, len);
-	delete [] msgdata;
+	netbuffer->WriteChunk(msgdata.get(), len);
 
 	if (!connected)
 	{
@@ -1090,7 +1087,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 		}
 	}
 
-	MSG_WriteLong(netbuffer, (DWORD)0x01020304);
+	MSG_WriteLong(netbuffer, (uint32_t)0x01020304);
 	MSG_WriteShort(netbuffer, sv_maxplayers);
 
 	for (const auto& player : players)
@@ -1099,7 +1096,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 			MSG_WriteBool(netbuffer, player.spectator);
 	}
 
-	MSG_WriteLong	(netbuffer, (DWORD)0x01020305);
+	MSG_WriteLong	(netbuffer, (uint32_t)0x01020305);
 	MSG_WriteShort	(netbuffer, 0);	// join_passowrd
 
 	MSG_WriteLong	(netbuffer, GAMEVER);
@@ -1458,7 +1455,7 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 
 	// write map info
 	arc << level.mapname.c_str();
-	arc << (BYTE)(gamestate == GS_INTERMISSION);
+	arc << (byte)(gamestate == GS_INTERMISSION);
 
 	G_SerializeSnapshots(arc);
 	P_SerializeRNGState(arc);
@@ -1480,7 +1477,7 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 		arc << ACS_WorldVars[i];
 		ACSWorldGlobalArray worldarr = ACS_WorldArrays[i];
 		arc << worldarr.size();
-		for (const auto [key, val] : worldarr)
+		for (const auto& [key, val] : worldarr)
 		{
 			arc << key;
 			arc << val;
@@ -1493,7 +1490,7 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 		arc << ACS_GlobalVars[i];
 		ACSWorldGlobalArray globalarr = ACS_GlobalArrays[i];
 		arc << globalarr.size();
-		for (const auto [key, val] : globalarr)
+		for (const auto& [key, val] : globalarr)
 		{
 			arc << key;
 			arc << val;
@@ -1662,8 +1659,8 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	// setup psprites and restore player colors
 	for (auto& player : players)
 	{
-		P_SetupPsprites(&player);
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(&player));
+		P_SetupPsprites(player);
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player));
 	}
 
 	R_CopyTranslationRGB (0, consoleplayer_id);
@@ -1681,6 +1678,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	}
 
 	// Make sure the status bar is displayed correctly
+	R_ForceViewWindowResize();
 	ST_Start();
 }
 

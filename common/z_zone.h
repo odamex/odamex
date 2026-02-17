@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This source is available for distribution and/or modification
 // only under the terms of the DOOM Source Code License as
@@ -53,10 +53,13 @@ void Z_DumpHeap(const zoneTag_e lowtag, const zoneTag_e hightag);
 // Don't use these, use the macros instead!
 void* Z_Malloc2(size_t size, const zoneTag_e tag, void* user, const char* file,
                 const int line);
+void* Z_Realloc2(void* ptr, size_t size, const zoneTag_e tag, void* user, const char* file,
+                 const int line);
 void Z_Free2(void* ptr, const char* file, int line);
 void Z_Discard2(void** ptr, const char* file, int line);
 void Z_ChangeTag2(void* ptr, const zoneTag_e tag, const char* file, int line);
 void Z_ChangeOwner2(void* ptr, void* user, const char* file, int line);
+char* Z_StrDup2(const char* s, const zoneTag_e tag, const char* file, int line);
 
 typedef struct memblock_s
 {
@@ -105,7 +108,9 @@ inline void Z_Discard2(P ptr, const char* file, int line)
 }
 
 #define Z_Malloc(s,t,p) Z_Malloc2(s,t,p,__FILE__,__LINE__)
+#define Z_Realloc(p,s,t,u) Z_Realloc2(p,s,t,u,__FILE__,__LINE__)
 #define Z_Free(p) Z_Free2(p,__FILE__,__LINE__)
 #define Z_Discard(p) Z_Discard2(p,__FILE__,__LINE__)
 #define Z_ChangeTag(p,t) Z_ChangeTag2(p,t,__FILE__,__LINE__)
 #define Z_ChangeOwner(p,u) Z_ChangeOwner2(p,u,__FILE__,__LINE__)
+#define Z_StrDup(s, t) Z_StrDup2(s,t, __FILE__,__LINE__)

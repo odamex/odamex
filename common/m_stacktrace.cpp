@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -40,5 +40,8 @@ std::string M_GetStacktrace(std::string header)
 		.filter([](const auto& frame)
 			{ return frame.symbol.find("M_GetStacktrace") == std::string::npos; })
 		.filtered_frame_placeholders(false);
-	return formatter.format(cpptrace::generate_trace());
+	return fmt::format(
+		"{}\n\nPlease report this error to the Odamex Team at https://github.com/odamex/odamex/issues",
+		formatter.format(cpptrace::generate_trace())
+	);
 }

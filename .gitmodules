@@ -21,7 +21,6 @@
 [submodule "libraries/jsoncpp"]
 	path = libraries/jsoncpp
 	url = https://github.com/open-source-parsers/jsoncpp.git
-	branch = 0.y.z
 	ignore = dirty
 [submodule "libraries/portmidi"]
 	path = libraries/portmidi
@@ -29,6 +28,9 @@
 [submodule "libraries/libadlmidi"]
 	path = libraries/libadlmidi
 	url = https://github.com/Wohlstand/libADLMIDI.git
+[submodule "libraries/googletest"]
+	path = libraries/googletest
+	url = https://github.com/google/googletest.git
 [submodule "libraries/cpptrace"]
 	path = libraries/cpptrace
 	url = https://github.com/jeremy-rifkin/cpptrace.git

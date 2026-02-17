@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -40,6 +40,7 @@
 #include "g_skill.h"
 #include "i_system.h"
 #include "i_music.h"
+#include "i_time.h"
 #include "minilzo.h"
 #include "m_random.h"
 #include "p_acs.h"
@@ -57,14 +58,15 @@
 #include "wi_stuff.h"
 #include "z_zone.h"
 #include "m_wdlstats.h"
+#include "g_spree.h"
 
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
 
 void CL_ClearSectorSnapshots();
-bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
-void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
+bool G_CheckSpot (player_t &player, const mapthing2_t& mthing);
+void P_SpawnPlayer (player_t &player, const mapthing2_t& mthing);
 
 EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_monstersrespawn)
@@ -79,7 +81,6 @@ dtime_t starttime;
 FLZOMemFile	*reset_snapshot = NULL;
 
 extern bool r_underwater;
-bool savegamerestore;
 
 extern int mousex, mousey, joyforward, joystrafe, joyturn, joylook, Impulse;
 extern bool sendpause, sendsave, sendcenterview;
@@ -114,11 +115,11 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	// [Russell] print out some useful info
 	if (argc == 1)
 	{
-	    Printf(PRINT_HIGH, "Usage: wad pwad [...] [deh/bex [...]]\n");
-	    Printf(PRINT_HIGH, "       wad iwad [pwad [...]] [deh/bex [...]]\n");
-	    Printf(PRINT_HIGH, "\n");
-	    Printf(PRINT_HIGH, "Load a wad file on the fly, pwads/dehs/bexs require extension\n");
-	    Printf(PRINT_HIGH, "eg: wad doom\n");
+	    PrintFmt(PRINT_HIGH, "Usage: wad pwad [...] [deh/bex [...]]\n");
+	    PrintFmt(PRINT_HIGH, "       wad iwad [pwad [...]] [deh/bex [...]]\n");
+	    PrintFmt(PRINT_HIGH, "\n");
+	    PrintFmt(PRINT_HIGH, "Load a wad file on the fly, pwads/dehs/bexs require extension\n");
+	    PrintFmt(PRINT_HIGH, "eg: wad doom\n");
 
 	    return;
 	}
@@ -180,8 +181,6 @@ void G_DoNewGame (void)
 
 void G_InitNew (const char *mapname)
 {
-	size_t i;
-
 	// [RH] Remove all particles
 	R_ClearParticles ();
 
@@ -208,6 +207,8 @@ void G_InitNew (const char *mapname)
 
 	cvar_t::UnlatchCVars ();
 
+	SpreeManager::getInstance().clearSprees();
+
 	if (paused)
 	{
 		paused = false;
@@ -231,38 +232,38 @@ void G_InitNew (const char *mapname)
 	{
 		if (wantFast)
 		{
-			for (i = 0; i < NUMSTATES; i++)
+			for (auto& [_, state] : states)
 			{
-				if (states[i].flags & STATEF_SKILL5FAST &&
-				    (states[i].tics != 1 || demoplayback))
-					states[i].tics >>= 1; // don't change 1->0 since it causes cycles
+				if (state.flags & STATEF_SKILL5FAST &&
+				    (state.tics != 1 || demoplayback))
+					state.tics >>= 1; // don't change 1->0 since it causes cycles
 			}
 
-			for (i = 0; i < NUMMOBJTYPES; ++i)
+			for (auto& [_, minfo] : mobjinfo)
 			{
-				if (mobjinfo[i].altspeed != NO_ALTSPEED)
+				if (minfo.altspeed != NO_ALTSPEED)
 				{
-					int swap = mobjinfo[i].speed;
-					mobjinfo[i].speed = mobjinfo[i].altspeed;
-					mobjinfo[i].altspeed = swap;
+					int swap = minfo.speed;
+					minfo.speed = minfo.altspeed;
+					minfo.altspeed = swap;
 				}
 			}
 		}
 		else
 		{
-			for (i = 0; i < NUMSTATES; i++)
+			for (auto& [_, state] : states)
 			{
-				if (states[i].flags & STATEF_SKILL5FAST)
-					states[i].tics <<= 1; // don't change 1->0 since it causes cycles
+				if (state.flags & STATEF_SKILL5FAST)
+					state.tics <<= 1; // don't change 1->0 since it causes cycles
 			}
 
-			for (i = 0; i < NUMMOBJTYPES; ++i)
+			for (auto& [_, minfo] : mobjinfo)
 			{
-				if (mobjinfo[i].altspeed != NO_ALTSPEED)
+				if (minfo.altspeed != NO_ALTSPEED)
 				{
-					int swap = mobjinfo[i].altspeed;
-					mobjinfo[i].altspeed = mobjinfo[i].speed;
-					mobjinfo[i].speed = swap;
+					int swap = minfo.altspeed;
+					minfo.altspeed = minfo.speed;
+					minfo.speed = swap;
 				}
 			}
 		}
@@ -394,6 +395,8 @@ void G_DoCompleted (void)
 				player.didsecret = true;
 		}
 	}
+
+	SpreeManager::getInstance().clearSprees();
 
 	const WinInfo& win = levelstate.getWinInfo();
 	switch (win.type)
@@ -577,6 +580,8 @@ void G_DoLoadLevel (int position)
 	// [SL] clear the saved sector data from the last level
 	OInterpolation::getInstance().resetGameInterpolation();
 
+	SpreeManager::getInstance().clearSprees();
+
 	// Set the sky map.
 	// First thing, we have a dummy sky texture name,
 	//	a flat. The data is in the WAD only because
@@ -661,15 +666,15 @@ void G_DoLoadLevel (int position)
 		// Check for a co-op start point
 		for (size_t n = 0; n < playerstarts.size() && !consoleplayer().mo; n++)
 		{
-			if (G_CheckSpot(consoleplayer(), &playerstarts[n]))
-				P_SpawnPlayer(consoleplayer(), &playerstarts[n]);
+			if (G_CheckSpot(consoleplayer(), playerstarts[n]))
+				P_SpawnPlayer(consoleplayer(), playerstarts[n]);
 		}
 
 		// Check for a free deathmatch start point
 		for (size_t n = 0; n < DeathMatchStarts.size() && !consoleplayer().mo; n++)
 		{
-			if (G_CheckSpot(consoleplayer(), &DeathMatchStarts[n]))
-				P_SpawnPlayer(consoleplayer(), &DeathMatchStarts[n]);
+			if (G_CheckSpot(consoleplayer(), DeathMatchStarts[n]))
+				P_SpawnPlayer(consoleplayer(), DeathMatchStarts[n]);
 		}
 
 		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
@@ -677,8 +682,8 @@ void G_DoLoadLevel (int position)
 			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
 			for (auto& teamstart : teamInfo->Starts)
 			{
-				if (G_CheckSpot(consoleplayer(), &teamstart))
-					P_SpawnPlayer(consoleplayer(), &teamstart);
+				if (G_CheckSpot(consoleplayer(), teamstart))
+					P_SpawnPlayer(consoleplayer(), teamstart);
 			}
 		}
 	}
@@ -775,7 +780,7 @@ void G_WorldDone()
 			clusters.findByCluster(levels.findByName(::level.secretmap).cluster) :
 			clusters.findByCluster(levels.findByName(::level.nextmap).cluster);
 
-		if (nextcluster.cluster != level.cluster && sv_gametype == GM_COOP) {
+		if (nextcluster.cluster != level.cluster && sv_gametype == GM_COOP && options.text != "-") {
 			// Only start the finale if the next level's cluster is different
 			// than the current one and we're not in deathmatch.
 			if (!nextcluster.entertext.empty())

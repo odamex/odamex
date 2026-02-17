@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -297,19 +297,19 @@ bool HU_Responder(event_t *ev)
 		// send a macro
 		if (ev->data1 >= OKEY_JOY1 && ev->data1 <= OKEY_JOY10)
 		{
-			ShoveChatStr(chat_macros[ev->data1 - OKEY_JOY1]->cstring(), HU_ChatMode()- 1);
+			ShoveChatStr(chat_macros[ev->data1 - OKEY_JOY1]->str(), HU_ChatMode()- 1);
 			HU_UnsetChatMode();
 			return true;
 		}
 		else if (ev->data1 >= '0' && ev->data1 <= '9')
 		{
-			ShoveChatStr(chat_macros[ev->data1 - '0']->cstring(), HU_ChatMode() - 1);
+			ShoveChatStr(chat_macros[ev->data1 - '0']->str(), HU_ChatMode() - 1);
 			HU_UnsetChatMode();
 			return true;
 		}
 		else if (ev->data1 >= OKEYP_1 && ev->data1 <= OKEYP_0 && ev->mod & OMOD_NUM) // Use numpad keys for chat macros if numlock is on
 		{
-			ShoveChatStr(chat_macros[HU_GetMacroForNumpadKey(ev->data1)]->cstring(), HU_ChatMode() - 1);
+			ShoveChatStr(chat_macros[HU_GetMacroForNumpadKey(ev->data1)]->str(), HU_ChatMode() - 1);
 			HU_UnsetChatMode();
 			return true;
 		}
@@ -383,7 +383,7 @@ static void HU_DrawCrosshair()
 		return;
 
     // Don't draw the crosshair when automap is visible.
-	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible())
+	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible(true))
         return;
 
 	// Don't draw the crosshair in spectator mode
@@ -544,6 +544,10 @@ void HU_Drawer()
 		}
 
 		hud::LevelStateHUD();
+
+		hud::MultiKillHud();
+
+		hud::SpreeHud();
 	}
 
 	// [csDoom] draw disconnected wire [Toke] Made this 1337er
@@ -558,11 +562,11 @@ void HU_Drawer()
 		mousegraph.draw(hud_mousegraph);
 
 	if (idmypos && gamestate == GS_LEVEL)
-		Printf (PRINT_HIGH, "ang=%d;x,y,z=(%d,%d,%d)\n",
-				displayplayer().camera->angle/FRACUNIT,
-				displayplayer().camera->x/FRACUNIT,
-				displayplayer().camera->y/FRACUNIT,
-				displayplayer().camera->z/FRACUNIT);
+		PrintFmt(PRINT_HIGH, "ang={};x,y,z=({},{},{})\n",
+			     displayplayer().camera->angle/FRACUNIT,
+			     displayplayer().camera->x/FRACUNIT,
+			     displayplayer().camera->y/FRACUNIT,
+			     displayplayer().camera->z/FRACUNIT);
 
 	// Draw Netdemo info
 	hud::drawNetdemo();
@@ -617,7 +621,7 @@ static void ShovePrivMsg(byte pid, std::string str)
 
 BEGIN_COMMAND (messagemode)
 {
-	if(!connected)
+	if (!connected || ::netdemo.isPlaying() || ::netdemo.isPaused())
 		return;
 
 	HU_SetChatMode();
@@ -639,7 +643,8 @@ END_COMMAND (say)
 
 BEGIN_COMMAND (messagemode2)
 {
-	if(!connected || (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF && !consoleplayer().spectator))
+	if (!connected || ::netdemo.isPlaying() || ::netdemo.isPaused() ||
+	   (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF && !consoleplayer().spectator))
 		return;
 
 	HU_SetTeamChatMode();
@@ -666,7 +671,7 @@ BEGIN_COMMAND (say_to)
 		player_t &player = nameplayer(argv[1]);
 		if (!validplayer(player))
 		{
-			Printf(PRINT_HIGH, "%s isn't the name of anybody on the server.\n", argv[1]);
+			PrintFmt(PRINT_HIGH, "{} isn't the name of anybody on the server.\n", argv[1]);
 			return;
 		}
 
@@ -2159,7 +2164,7 @@ void HU_ConsoleScores(player_t *player)
 		}
 	}
 
-	Printf(PRINT_HIGH, "\n");
+	PrintFmt(PRINT_HIGH, "\n");
 
 	C_ToggleConsole();
 }
@@ -2169,7 +2174,7 @@ BEGIN_COMMAND (displayscores)
 	if (multiplayer)
 	    HU_ConsoleScores(&consoleplayer());
 	else
-		Printf(PRINT_HIGH, "This command is only used for multiplayer games.");
+		PrintFmt(PRINT_HIGH, "This command is only used for multiplayer games.");
 }
 END_COMMAND (displayscores)
 

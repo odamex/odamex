@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -433,12 +433,23 @@ void ISDL20MouseInputDevice::resume()
 {
 	mActive = true;
 	reset();
+
+	// [RV] Always use relative mouse mode and
+	// force unscaled relative motion across supported SDL versions
 	SDL_SetRelativeMouseMode(SDL_TRUE);
+
+	#if SDL_VERSION_ATLEAST(2, 0, 14)
+		SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_SCALING, "0", SDL_HINT_OVERRIDE);
+	#endif
+
+	#if SDL_VERSION_ATLEAST(2, 26, 0)
+		SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_SYSTEM_SCALE, "0", SDL_HINT_OVERRIDE);
+	#endif
+
 	SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
 	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_ENABLE);
 	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_ENABLE);
 }
-
 
 //
 // ISDL20MouseInputDevice::gatherEvents
@@ -912,8 +923,7 @@ void ISDL20InputSubsystem::shutdownKeyboard(int id)
 std::vector<IInputDeviceInfo> ISDL20InputSubsystem::getMouseDevices() const
 {
 	std::vector<IInputDeviceInfo> devices;
-	devices.push_back(IInputDeviceInfo());
-	IInputDeviceInfo& sdl_device_info = devices.back();
+	IInputDeviceInfo& sdl_device_info = devices.emplace_back();
 	sdl_device_info.mId = 0;
 	sdl_device_info.mDeviceName = "SDL 2.0 mouse";
 	return devices;
@@ -970,8 +980,7 @@ std::vector<IInputDeviceInfo> ISDL20InputSubsystem::getJoystickDevices() const
 	std::vector<IInputDeviceInfo> devices;
 	for (int i = 0; i < SDL_NumJoysticks(); i++)
 	{
-		devices.push_back(IInputDeviceInfo());
-		IInputDeviceInfo& device_info = devices.back();
+		IInputDeviceInfo& device_info = devices.emplace_back();
 		device_info.mId = i;
 		const char* name = SDL_GameControllerNameForIndex(i);
 		device_info.mDeviceName = fmt::format("SDL 2.0 joystick ({})", name ? name : "unknown");

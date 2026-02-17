@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -34,7 +34,7 @@ class MusicSystem
 	MusicSystem() { }
 	virtual ~MusicSystem() { }
 
-	virtual void startSong(byte* data, size_t length, bool loop);
+	virtual void startSong(byte* data, size_t length, bool loop, int order);
 	virtual void stopSong();
 	virtual void pauseSong();
 	virtual void resumeSong();
@@ -74,10 +74,10 @@ class SilentMusicSystem : public MusicSystem
   public:
 	SilentMusicSystem()
 	{
-		Printf(PRINT_WARNING, "I_InitMusic: Music playback disabled.\n");
+		PrintFmt(PRINT_WARNING, "I_InitMusic: Music playback disabled.\n");
 	}
 
-	void startSong(byte* data, size_t length, bool loop) override { }
+	void startSong(byte* data, size_t length, bool loop, int order) override { }
 	void stopSong() override { }
 	void pauseSong() override { }
 	void resumeSong() override { }
@@ -109,7 +109,7 @@ class MidiMusicSystem : public MusicSystem
 	MidiMusicSystem();
 	~MidiMusicSystem() override;
 
-	void startSong(byte* data, size_t length, bool loop) override;
+	void startSong(byte* data, size_t length, bool loop, int order) override;
 	void stopSong() override;
 	void pauseSong() override;
 	void resumeSong() override;

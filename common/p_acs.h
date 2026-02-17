@@ -10,34 +10,34 @@
 
 struct ScriptPtr
 {
-	WORD Number;
-	BYTE Type;
-	BYTE ArgCount;
-	DWORD Address;
+	uint16_t Number;
+	byte Type;
+	byte ArgCount;
+	uint32_t Address;
 };
 
 struct ScriptPtr1
 {
-	WORD Number;
-	WORD Type;
-	DWORD Address;
-	DWORD ArgCount;
+	uint16_t Number;
+	uint16_t Type;
+	uint32_t Address;
+	uint32_t ArgCount;
 };
 
 struct ScriptPtr2
 {
-	DWORD Number;	// Type is Number / 1000
-	DWORD Address;
-	DWORD ArgCount;
+	uint32_t Number;	// Type is Number / 1000
+	uint32_t Address;
+	uint32_t ArgCount;
 };
 
 struct ScriptFunction
 {
-	BYTE ArgCount;
-	BYTE LocalCount;
-	BYTE HasReturnValue;
-	BYTE Pad;
-	DWORD Address;
+	byte ArgCount;
+	byte LocalCount;
+	byte HasReturnValue;
+	byte Pad;
+	uint32_t Address;
 };
 
 enum
@@ -59,19 +59,19 @@ enum ACSFormat { ACS_Old, ACS_Enhanced, ACS_LittleEnhanced, ACS_Unknown };
 class FBehavior
 {
 public:
-	FBehavior (BYTE *object, int len);
+	FBehavior (byte *object, int len);
 	~FBehavior ();
 
 	bool IsGood ();
-	BYTE *FindChunk (DWORD id) const;
-	BYTE *NextChunk (BYTE *chunk) const;
+	byte *FindChunk (uint32_t id) const;
+	byte *NextChunk (byte *chunk) const;
 	int *FindScript (int number) const;
-	void PrepLocale (DWORD userpref, DWORD userdef, DWORD syspref, DWORD sysdef);
-	const char *LookupString (DWORD index, DWORD ofs=0) const;
-	const char *LocalizeString (DWORD index) const;
-	void StartTypedScripts (WORD type, AActor *activator, int arg0=0, int arg1=0, int arg2=0, bool always = true) const;
-	DWORD PC2Ofs (int *pc) const { return (BYTE *)pc - Data; }
-	int *Ofs2PC (DWORD ofs) const { return (int *)(Data + ofs); }
+	void PrepLocale (uint32_t userpref, uint32_t userdef, uint32_t syspref, uint32_t sysdef);
+	const char *LookupString (uint32_t index, uint32_t ofs=0) const;
+	const char *LocalizeString (uint32_t index) const;
+	void StartTypedScripts (uint16_t type, AActor *activator, int arg0=0, int arg1=0, int arg2=0, bool always = true) const;
+	uint32_t PC2Ofs (int *pc) const { return (byte *)pc - Data; }
+	int *Ofs2PC (uint32_t ofs) const { return (int *)(Data + ofs); }
 	ACSFormat GetFormat() const { return Format; }
 	ScriptFunction *GetFunction (int funcnum) const;
 	int GetArrayVal (int arraynum, int index) const;
@@ -82,22 +82,22 @@ private:
 
 	ACSFormat Format;
 
-	BYTE *Data;
+	byte *Data;
 	int DataSize;
-	BYTE *Chunks;
-	BYTE *Scripts;
+	byte *Chunks;
+	byte *Scripts;
 	int NumScripts;
-	BYTE *Functions;
+	byte *Functions;
 	int NumFunctions;
 	ArrayInfo *Arrays;
 	int NumArrays;
-	DWORD LanguageNeutral;
-	DWORD Localized;
+	uint32_t LanguageNeutral;
+	uint32_t Localized;
 
 	static int STACK_ARGS SortScripts (const void *a, const void *b);
-	void AddLanguage (DWORD lang);
-	DWORD FindLanguage (DWORD lang, bool ignoreregion) const;
-	DWORD *CheckIfInList (DWORD lang);
+	void AddLanguage (uint32_t lang);
+	uint32_t FindLanguage (uint32_t lang, bool ignoreregion) const;
+	uint32_t *CheckIfInList (uint32_t lang);
 };
 
 class DLevelScript : public DObject
@@ -371,19 +371,19 @@ public:
 	};
 
 
-	static void ACS_SetLineTexture(int* args, byte argCount);
+	static void ACS_SetLineTexture(const int* args, byte argCount);
 	static void ACS_ClearInventory(AActor* actor);
 	static void ACS_Print(byte pcd, AActor* actor, const char* print);
-	static void ACS_ChangeMusic(byte pcd, AActor* activator, int* args, byte argCount);
-	static void ACS_StartSound(byte pcd, AActor* activator, int* args, byte argCount);
-	static void ACS_SetLineBlocking(int* args, byte argCount);
-	static void ACS_SetLineMonsterBlocking(int* args, byte argCount);
-	static void ACS_SetLineSpecial(int* args, byte argCount);
-	static void ACS_SetThingSpecial(int* args, byte argCount);
-	static void ACS_FadeRange(AActor* activator, int* args, byte argCount);
+	static void ACS_ChangeMusic(byte pcd, const AActor* activator, const int* args, byte argCount);
+	static void ACS_StartSound(byte pcd, const AActor* activator, const int* args, byte argCount);
+	static void ACS_SetLineBlocking(const int* args, byte argCount);
+	static void ACS_SetLineMonsterBlocking(const int* args, byte argCount);
+	static void ACS_SetLineSpecial(const int* args, byte argCount);
+	static void ACS_SetThingSpecial(const int* args, byte argCount);
+	static void ACS_FadeRange(AActor* activator, const int* args, byte argCount);
 	static void ACS_CancelFade(AActor* activator);
-	static void ACS_ChangeFlat(byte pcd, int* args, byte argCount);
-	static void ACS_SoundSequence(int* args, byte argCount);
+	static void ACS_ChangeFlat(byte pcd, const int* args, byte argCount);
+	static void ACS_SoundSequence(const int* args, byte argCount);
 
 	// Some constants used by ACS scripts
 	enum {
@@ -496,10 +496,10 @@ protected:
 	static void SetLineSpecial(int lineid, int special, int arg1, int arg2, int arg3, int arg4, int arg5);
 	static void ActivateLineSpecial(byte special, line_t* line, AActor* activator,
 	                                int arg0, int arg1, int arg2, int arg3, int arg4);
-	static void ChangeMusic(byte pcd, AActor* activator, int index, int loop);
-	static void StartSound(byte pcd, AActor* activator, int channel, int index, int volume, int attenuation);
-	static void StartSectorSound(byte pcd, sector_t* sector, int channel, int index, int volume, int attenuation);
-	static void StartThingSound(byte pcd, AActor* actor, int channel, int index, int volume, int attenuation);
+	static void ChangeMusic(byte pcd, const AActor* activator, int index, int loop);
+	static void StartSound(byte pcd, const AActor* activator, int channel, int index, int volume, int attenuation);
+	static void StartSectorSound(byte pcd, const sector_t* sector, int channel, int index, int volume, int attenuation);
+	static void StartThingSound(byte pcd, const AActor* actor, int channel, int index, int volume, int attenuation);
 	static void SetThingSpecial(AActor* actor, int special, int arg1, int arg2, int arg3, int arg4, int arg5);
 	static void CancelFade(AActor* actor);
 	static void StartSoundSequence(sector_t* sec, int index);
@@ -516,11 +516,11 @@ private:
 
 inline FArchive &operator<< (FArchive &arc, DLevelScript::EScriptState state)
 {
-	return arc << (BYTE)state;
+	return arc << (byte)state;
 }
 inline FArchive &operator>> (FArchive &arc, DLevelScript::EScriptState &state)
 {
-	BYTE in; arc >> in; state = (DLevelScript::EScriptState)in; return arc;
+	byte in; arc >> in; state = (DLevelScript::EScriptState)in; return arc;
 }
 
 class DACSThinker : public DThinker

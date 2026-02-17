@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -36,6 +36,8 @@
 #include "p_ctf.h"
 #include "g_gametype.h"
 #include "g_spawninv.h"
+#include "g_spree.h"
+#include "g_multikill.h"
 
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(cl_showspawns)
@@ -51,7 +53,7 @@ void G_PlayerReborn(player_t &player);
 // Most of the player structure stays unchanged
 //	between levels.
 //
-void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
+void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
 {
 	// denis - clients should not control spawning
 	if (!serverside)
@@ -77,7 +79,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 //		mobj = new AActor(player.mo->x, player.mo->y, ONFLOORZ, MT_PLAYER);
 //	else
 //		mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
-	mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
+	mobj = new AActor(mthing.x << FRACBITS, mthing.y << FRACBITS, ONFLOORZ, MT_PLAYER);
 
 	// set color translations for player sprites
 	// [RH] Different now: MF_TRANSLATION is not used.
@@ -100,11 +102,14 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 //		mobj->angle = ANG45 * (mthing->angle/45);
 //		mobj->pitch = 0;
 //	}
-	mobj->angle = ANG45 * (mthing->angle/45);
+	mobj->angle = ANG45 * (mthing.angle/45);
 	mobj->pitch = 0;
 
 	mobj->player = &player;
 	mobj->health = player.health;
+
+	SpreeManager::getInstance().erasePoints(player.id);
+	MultiKillManager::getInstance().eraseMultiKills(player.id);
 
 	player.fov = 90.0f;
 	player.mo = player.camera = mobj->ptr();
@@ -134,7 +139,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 		player.cheats = CF_CHASECAM;
 
 	// setup gun psprite
-	P_SetupPsprites(&player);
+	P_SetupPsprites(player);
 
 	// give all cards in death match mode
 	if (!G_IsCoopGame())
@@ -158,6 +163,8 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 		else if (playerstate == PST_REBORN)
 			level.behavior->StartTypedScripts(SCRIPT_Respawn, player.mo);
 	}
+
+	P_FriendlyEffects(); // Mark any new friendly monsters with an effect
 }
 
 std::vector<AActor*> spawnfountains;
@@ -166,7 +173,7 @@ std::vector<AActor*> spawnfountains;
  * Show spawn points as particle fountains
  * ToDo: Make an independant spawning loop to handle these.
  */
-void P_ShowSpawns(mapthing2_t* mthing)
+void P_ShowSpawns(const mapthing2_t& mthing)
 {
 	// Ch0wW: DO NOT add new spawns to a DOOM2 demo !
 	// It'll immediately desync in DM!
@@ -177,11 +184,11 @@ void P_ShowSpawns(mapthing2_t* mthing)
 	{
 		AActor* spawn = 0;
 
-		if (sv_gametype == GM_DM && mthing->type == 11)
+		if (sv_gametype == GM_DM && mthing.type == 11)
 		{
 			// [RK] If we're not using z-height spawns, spawn the fountain on the floor
-			spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS,
-				(level.flags & LEVEL_USEPLAYERSTARTZ ? mthing->z << FRACBITS : ONFLOORZ), MT_FOUNTAIN);
+			spawn = new AActor(mthing.x << FRACBITS, mthing.y << FRACBITS,
+				(level.flags & LEVEL_USEPLAYERSTARTZ ? mthing.z << FRACBITS : ONFLOORZ), MT_FOUNTAIN);
 
 			spawn->args[0] = 7; // White
 		}
@@ -191,11 +198,11 @@ void P_ShowSpawns(mapthing2_t* mthing)
 			for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 			{
 				TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
-				if (teamInfo->TeamSpawnThingNum == mthing->type)
+				if (teamInfo->TeamSpawnThingNum == mthing.type)
 				{
 					// [RK] If we're not using z-height spawns, spawn the fountain on the floor
-					spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS,
-						(level.flags & LEVEL_USEPLAYERSTARTZ ? mthing->z << FRACBITS : ONFLOORZ), MT_FOUNTAIN);
+					spawn = new AActor(mthing.x << FRACBITS, mthing.y << FRACBITS,
+						(level.flags & LEVEL_USEPLAYERSTARTZ ? mthing.z << FRACBITS : ONFLOORZ), MT_FOUNTAIN);
 
 					spawn->args[0] = teamInfo->FountainColorArg;
 					break;

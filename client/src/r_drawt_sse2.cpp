@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -61,7 +61,7 @@ void R_DrawSpanD_SSE2 (void)
 	if (dspan.x2 < dspan.x1 || dspan.x1 < 0 || dspan.x2 >= viewwidth ||
 		dspan.y >= viewheight || dspan.y < 0)
 	{
-		Printf(PRINT_HIGH, "R_DrawLevelSpan: %i to %i at %i", dspan.x1, dspan.x2, dspan.y);
+		PrintFmt(PRINT_HIGH, "R_DrawLevelSpan: {} to {} at {}", dspan.x1, dspan.x2, dspan.y);
 		return;
 	}
 #endif

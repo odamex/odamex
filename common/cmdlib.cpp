@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1997-2000 by id Software Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,7 +31,6 @@
 
 #include <ctime>
 #include <functional>
-#include <map>
 #include <sstream>
 
 #include "win32inc.h"
@@ -41,17 +40,9 @@
 
 #include "fmt/ranges.h"
 
-#ifdef GEKKO
-#include "i_wii.h"
-#endif
-
 #ifdef __SWITCH__
 #include "nx_system.h"
 #endif
-
-
-char		com_token[8192];
-bool		com_eof;
 
 // Safe string copy function that works like OpenBSD's strlcpy().
 // Returns true if the string was not truncated.
@@ -90,85 +81,6 @@ char *copystring (const char *s)
 		b[0] = '\0';
 	}
 	return b;
-}
-
-
-//
-// COM_Parse
-//
-// Parse a token out of a string
-//
-char *COM_Parse (char *data) // denis - todo - security com_token overrun needs expert check, i have just put simple bounds on len
-{
-	int			c;
-	size_t		len;
-
-	len = 0;
-	com_token[0] = 0;
-
-	if (!data)
-		return NULL;
-
-// skip whitespace
-skipwhite:
-	while ( (c = *data) <= ' ')
-	{
-		if (c == 0)
-		{
-			com_eof = true;
-			return NULL;			// end of file;
-		}
-		data++;
-	}
-
-// skip // comments
-	if (c=='/' && data[1] == '/')
-	{
-		while (*data && *data != '\n')
-			data++;
-		goto skipwhite;
-	}
-
-
-// handle quoted strings specially
-	if (c == '\"')
-	{
-		data++;
-		do
-		{
-			c = *data++;
-			if (c=='\"')
-			{
-				com_token[len] = 0;
-				return data;
-			}
-			com_token[len] = c;
-			len++;
-		} while (len < sizeof(com_token) + 2);
-	}
-
-// parse single characters
-	if (c=='{' || c=='}'|| c==')'|| c=='(' || c=='\'' || c==':' || /*[RH]*/c=='=')
-	{
-		com_token[len] = c;
-		len++;
-		com_token[len] = 0;
-		return data+1;
-	}
-
-// parse a regular word
-	do
-	{
-		com_token[len] = c;
-		data++;
-		len++;
-		c = *data;
-	if (c=='{' || c=='}'|| c==')'|| c=='(' || c=='\'' || c==':' || c=='=')
-			break;
-	} while (c>32 && len < sizeof(com_token) + 2);
-
-	com_token[len] = 0;
-	return data;
 }
 
 //
@@ -210,7 +122,6 @@ int ParseNum(const char* str)
 	return atol(str);
 }
 
-
 // [RH] Returns true if the specified string is a valid decimal number
 
 bool IsNum(const char* str)
@@ -229,6 +140,17 @@ bool IsNum(const char* str)
 	return result;
 }
 
+bool IsNum(std::string_view str)
+{
+	return std::all_of(str.begin(), str.end(), [](char c)
+	{
+		if (((c < '0') || (c > '9')) && (c != '-'))
+		{
+			return false;
+		}
+		return true;
+	});
+}
 
 //
 // IsRealNum
@@ -265,9 +187,11 @@ bool IsRealNum(const char* str)
 
 // [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity
-bool iequals(const std::string& s1, const std::string& s2)
+bool iequals(std::string_view s1, std::string_view s2)
 {
-	return stricmp(s1.c_str(), s2.c_str()) == 0;
+	if (s1.size() != s2.size())
+		return false;
+	return strnicmp(s1.data(), s2.data(), s1.size()) == 0;
 }
 
 size_t StdStringFind(const std::string& haystack, const std::string& needle,
@@ -583,14 +507,14 @@ static int _isspace(int c)
 // Trim whitespace from the start of a string
 std::string &TrimStringStart(std::string &s)
 {
-	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not_fn([](int c){ return _isspace(c); })));
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not_fn( _isspace )));
 	return s;
 }
 
 // Trim whitespace from the end of a string
 std::string &TrimStringEnd(std::string &s)
 {
-	s.erase(std::find_if(s.rbegin(), s.rend(), std::not_fn([](int c){ return _isspace(c); })).base(), s.end());
+	s.erase(std::find_if(s.rbegin(), s.rend(), std::not_fn( _isspace )).base(), s.end());
 	return s;
 }
 
@@ -772,41 +696,6 @@ uint32_t Log2(uint32_t n)
 		return (t = (tt >> 8)) ? 24 + LogTable256[t] : 16 + LogTable256[tt];
 	else
 		return (t = (n >> 8)) ? 8 + LogTable256[t] : LogTable256[n];
-}
-
-/**
- * This file has no copyright assigned and is placed in the Public Domain.
- * This file is part of the mingw-w64 runtime package.
- * No warranty is given; refer to the file DISCLAIMER.PD within this package.
- */
-
-/**
- * @brief Returns the next representable value of from in the direction of to.
- */
-float NextAfter(const float from, const float to)
-{
-	const float x = from;
-	const float y = to;
-	union {
-		float f;
-		unsigned int i;
-	} u;
-	if (isnan(y) || isnan(x))
-		return x + y;
-	if (x == y)
-		/* nextafter (0.0, -O.0) should return -0.0.  */
-		return y;
-	u.f = x;
-	if (x == 0.0F)
-	{
-		u.i = 1;
-		return y > 0.0F ? u.f : -u.f;
-	}
-	if (((x > 0.0F) ^ (y > x)) == 0)
-		u.i++;
-	else
-		u.i--;
-	return u.f;
 }
 
 VERSION_CONTROL (cmdlib_cpp, "$Id$")

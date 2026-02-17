@@ -453,13 +453,13 @@ BEGIN_COMMAND(whereis)
 	OResFile res;
 	if (M_ResolveWantedFile(res, want))
 	{
-		Printf("basename: %s\nfullpath: %s\nCRC32: %s\nMD5: %s\n",
-		       res.getBasename(), res.getFullpath(),
-		       W_CRC32(res.getFullpath()).getHexStr(), res.getMD5().getHexStr());
+		PrintFmt("basename: {}\nfullpath: {}\nCRC32: {}\nMD5: {}\n",
+		         res.getBasename(), res.getFullpath(),
+		         W_CRC32(res.getFullpath()).getHexStr(), res.getMD5().getHexStr());
 		return;
 	}
 
-	Printf("Could not find location of \"%s\".\n", argv[1]);
+	PrintFmt("Could not find location of \"{}\".\n", argv[1]);
 }
 END_COMMAND(whereis)
 
@@ -483,7 +483,7 @@ END_COMMAND(loaded)
 
 BEGIN_COMMAND(searchdirs)
 {
-	Printf("Search Directories:\n");
+	PrintFmt("Search Directories:\n");
 	std::vector<std::string> dirs = M_FileSearchDirs();
 	for (const auto& dir : dirs)
 	{

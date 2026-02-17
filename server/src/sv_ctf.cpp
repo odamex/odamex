@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,6 +30,7 @@
 
 #include "g_gametype.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "m_random.h"
 #include "m_wdlstats.h"
 #include "p_inter.h"
@@ -38,7 +39,7 @@
 #include "svc_message.h"
 #include "v_textcolors.h"
 
-bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
+bool G_CheckSpot (player_t &player, const mapthing2_t& mthing);
 std::string V_GetTeamColor(UserInfo userinfo);
 
 EXTERN_CVAR (sv_teamsinplay)
@@ -201,7 +202,7 @@ static const char *CTF_TimeMSG(unsigned int milliseconds)
 //
 void SV_FlagScore (player_t &player, team_t f)
 {
-	P_GiveTeamPoints(&player, 1);
+	P_GiveTeamPoints(player, 1);
 
 	SV_CTFEvent (f, SCORE_CAPTURE, player);
 
@@ -415,16 +416,16 @@ void CTF_CheckFlags (player_t &player)
 //	[Toke - CTF] CTF_RememberFlagPos
 //	Remembers the position of flag sockets
 //
-void CTF_RememberFlagPos (mapthing2_t *mthing)
+void CTF_RememberFlagPos(const mapthing2_t& mthing)
 {
 	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 	{
 		TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
-		if (mthing->type == teamInfo->FlagThingNum)
+		if (mthing.type == teamInfo->FlagThingNum)
 		{
-			teamInfo->FlagData.x = mthing->x << FRACBITS;
-			teamInfo->FlagData.y = mthing->y << FRACBITS;
-			teamInfo->FlagData.z = mthing->z << FRACBITS;
+			teamInfo->FlagData.x = mthing.x << FRACBITS;
+			teamInfo->FlagData.y = mthing.y << FRACBITS;
+			teamInfo->FlagData.z = mthing.z << FRACBITS;
 
 			teamInfo->FlagData.flaglocated = true;
 			break;

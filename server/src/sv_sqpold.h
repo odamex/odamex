@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2025 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Old version of the server query protocol, kept for clients and older 
+//  Old version of the server query protocol, kept for clients and older
 //  launchers
 //
 //-----------------------------------------------------------------------------
@@ -26,4 +26,4 @@
 #pragma once
 
 void SV_SendServerInfo ();
-bool SV_IsValidToken(DWORD token);
+bool SV_IsValidToken(uint32_t token);
