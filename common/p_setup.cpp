@@ -1647,30 +1647,29 @@ int P_GroupLines()
 	for (int i = 0; i < numsubsectors; i++)
 	{
 		if (subsectors[i].firstline >= (unsigned int)numsegs)
-			I_Error("subsector[{}].firstline exceeds numsegs (%u)", i, numsegs);
+			I_Error("subsector[{}].firstline exceeds numsegs ({})", i, numsegs);
 		subsectors[i].sector = segs[subsectors[i].firstline].sidedef->sector;
 	}
 
 	// count number of lines in each sector
-	line_t* li = lines;
 	int total = 0;
-	for (int i = 0; i < numlines; i++, li++)
+	for (auto& line : R_GetLines())
 	{
 		total++;
-		if (!li->frontsector && li->backsector)
+		if (!line.frontsector && line.backsector)
 		{
 			// swap front and backsectors if a one-sided linedef
 			// does not have a front sector
-			li->frontsector = li->backsector;
-			li->backsector = NULL;
+			line.frontsector = line.backsector;
+			line.backsector = nullptr;
 		}
 
-        if (li->frontsector)
-            li->frontsector->linecount++;
+        if (line.frontsector)
+            line.frontsector->linecount++;
 
-		if (li->backsector && li->backsector != li->frontsector)
+		if (line.backsector && line.backsector != line.frontsector)
 		{
-			li->backsector->linecount++;
+			line.backsector->linecount++;
 			total++;
 		}
 	}
@@ -1683,14 +1682,13 @@ int P_GroupLines()
 	{
 		bbox.ClearBox ();
 		sector->lines = linebuffer;
-		li = lines;
-		for (int j = 0 ; j < numlines ; j++, li++)
+		for (auto& line : R_GetLines())
 		{
-			if (li->frontsector == sector || li->backsector == sector)
+			if (line.frontsector == sector || line.backsector == sector)
 			{
-				*linebuffer++ = li;
-				bbox.AddToBox (li->v1->x, li->v1->y);
-				bbox.AddToBox (li->v2->x, li->v2->y);
+				*linebuffer++ = &line;
+				bbox.AddToBox (line.v1->x, line.v1->y);
+				bbox.AddToBox (line.v2->x, line.v2->y);
 			}
 		}
 		if (linebuffer - sector->lines != sector->linecount)
