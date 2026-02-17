@@ -1641,7 +1641,7 @@ void P_GenerateUniqueMapFingerPrint(int maplumpnum)
 // Builds sector line lists and subsector sector numbers.
 // Finds block bounding boxes for sectors.
 //
-void P_GroupLines (void)
+int P_GroupLines()
 {
 	// look up sector number for each subsector
 	for (int i = 0; i < numsubsectors; i++)
@@ -1717,7 +1717,7 @@ void P_GroupLines (void)
 		block = block < 0 ? 0 : block;
 		sector->blockbox[BOXLEFT]=block;
 	}
-
+	return total;
 }
 
 //
@@ -2100,18 +2100,44 @@ void P_SetupLevel (const char *lumpname, int position)
 			P_LoadSegs<mapseg_t>(lumpnum+ML_SEGS);
 	}
 
-	rejectmatrix = (byte *)W_CacheLumpNum (lumpnum+ML_REJECT, PU_LEVEL);
+	const auto totallines = P_GroupLines();
+
+	// [SL] 2011-07-01 - Check to see if the reject table is of the proper size
+	// If it's too short, the reject table should be ignored when
+	// calling P_CheckSight
+	const auto rejectsize = W_LumpLength(lumpnum + ML_REJECT);
+	const uint32_t minrejectsize = (numsectors * numsectors + 7) / 8;
+	if (rejectsize < minrejectsize)
 	{
-		// [SL] 2011-07-01 - Check to see if the reject table is of the proper size
-		// If it's too short, the reject table should be ignored when
-		// calling P_CheckSight
-		if (W_LumpLength(lumpnum + ML_REJECT) < ((unsigned int)ceil((float)(numsectors * numsectors / 8))))
-		{
-			DPrintFmt("Reject matrix is not valid and will be ignored.\n");
-			rejectempty = true;
+		DPrintFmt("Reject matrix is not valid and will be ignored.\n");
+		rejectempty = true;
+		rejectmatrix = static_cast<byte*>(Z_Malloc(minrejectsize, PU_LEVEL, nullptr));
+		W_ReadLump(lumpnum + ML_REJECT, rejectmatrix);
+		memset(rejectmatrix + rejectsize, 0, minrejectsize - rejectsize);
+		if (demoplayback) {
+			uint32_t rejectpad[4] =
+			{
+				0,       // Size
+				0,       // Part of z_zone block header
+				50,      // PU_LEVEL
+				0x1d4a11 // DOOM_CONST_ZONEID
+			};
+
+			rejectpad[0] = ((totallines * 4 + 3) & ~3) + 24;
+			byte* dest = rejectmatrix + rejectsize;
+
+			for (int i = 0; i < (minrejectsize - rejectsize); i++)
+			{
+				uint32_t byte_num = i % 4;
+				*dest = (rejectpad[i / 4] >> (byte_num * 8)) & 0xff;
+				dest++;
+			}
 		}
 	}
-	P_GroupLines ();
+	else
+	{
+		rejectmatrix = static_cast<byte*>(W_CacheLumpNum(lumpnum + ML_REJECT, PU_LEVEL));
+	}
 
 	// [SL] don't move seg vertices if compatibility is cruical
 	if (!demoplayback)
