@@ -39,21 +39,19 @@ class MaplistCache {
 private:
 	std::vector<deferred_query_t> deferred_queries;
 	std::string error;
-	size_t index;
+	size_t index = 0;
 	std::map<size_t, maplist_entry_t> maplist;
-	size_t next_index;
-	size_t size;
-	maplist_status_t status;
-	QWORD timeout;
-	byte valid_indexes;
+	size_t next_index = 0;
+	size_t size = 0;
+	maplist_status_t status = MAPLIST_EMPTY;
+	uint64_t timeout = 0;
+	byte valid_indexes = 0;
 	void check_complete(void);
 	void invalidate(void);
 	bool query(maplist_qrows_t &result);
 	bool query(const std::vector<std::string> &query, maplist_qrows_t &result);
 public:
-	MaplistCache(void) : error(""), index(0), next_index(0), size(0),
-						 status(MAPLIST_EMPTY), timeout(0),
-						 valid_indexes(0) { };
+	MaplistCache() = default;
 	static MaplistCache& instance(void);
 	// Events
 	void ev_tic(void);

@@ -4036,7 +4036,7 @@ bool SV_Frozen()
 //
 // SV_StepTics
 //
-void SV_StepTics(QWORD count)
+void SV_StepTics(uint64_t count)
 {
 	DObject::BeginFrame();
 
@@ -4137,7 +4137,7 @@ void SV_RunTics()
 
 BEGIN_COMMAND(step)
 {
-        QWORD newtics = argc > 1 ? atoi(argv[1]) : 1;
+    uint64_t newtics = argc > 1 ? atoi(argv[1]) : 1;
 
 	extern unsigned char prndindex;
 

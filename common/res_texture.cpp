@@ -874,9 +874,9 @@ void TextureManager::addTextureDirectory(const char* lumpname)
 	struct maptexture_t
 	{
 		char		name[8];
-		WORD		masked;				// [RH] Unused
-		BYTE		scalex;				// [RH] Scaling (8 is normal)
-		BYTE		scaley;				// [RH] Same as above
+		uint16_t	masked;				// [RH] Unused
+		byte		scalex;				// [RH] Scaling (8 is normal)
+		byte		scaley;				// [RH] Same as above
 		short		width;
 		short		height;
 		byte		columndirectory[4];	// OBSOLETE

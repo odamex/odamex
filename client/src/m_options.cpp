@@ -1093,7 +1093,7 @@ static menuitem_t HUDItems[] = {
 };
 
 menu_t HUDMenu = {
-    "M_VIDEO",              // title
+    "M_HUD",                // title
     1,                      // lastOn
     ARRAY_LENGTH(HUDItems), // numitems
     0,                      // indent
