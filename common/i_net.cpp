@@ -197,7 +197,7 @@ void init_upnp (void)
 	}
 }
 
-void upnp_add_redir (const char * addr, int port)
+void upnp_add_redir (const char * addr, int port, const char* protocol)
 {
 	if (!sv_upnp || !is_upnp_ok)
 		return;
@@ -218,7 +218,7 @@ void upnp_add_redir (const char * addr, int port)
 	}
 
 	const int r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
-		port_str.c_str(), port_str.c_str(), addr, sv_upnp_description.cstring(), "UDP", NULL, 0);
+		port_str.c_str(), port_str.c_str(), addr, sv_upnp_description.cstring(), protocol, NULL, 0);
 
 	if (r != 0)
 	{
@@ -235,7 +235,7 @@ void upnp_add_redir (const char * addr, int port)
 	}
 }
 
-void upnp_rem_redir (int port)
+void upnp_rem_redir (int port, const char* protocol)
 {
 	if (!is_upnp_ok)
 		return;
@@ -245,7 +245,7 @@ void upnp_rem_redir (int port)
 
 	const std::string port_str = fmt::format("{}", port);
 	const int r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype,
-		port_str.c_str(), "UDP", 0);
+		port_str.c_str(), protocol, 0);
 
 	if (r != 0)
 	{
@@ -312,7 +312,8 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 
         PrintFmt(PRINT_HIGH, "UPnP: Internal IP address is: {}\n", ip);
 
-        upnp_add_redir(ip.c_str(), next - 1);
+        upnp_add_redir(ip.c_str(), next - 1, "UDP");
+        upnp_add_redir(ip.c_str(), next - 1, "TCP");
     }
     else
     {
@@ -330,7 +331,8 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 void CloseNetwork (void)
 {
 #ifdef ODA_HAVE_MINIUPNP
-    upnp_rem_redir (port);
+    upnp_rem_redir (port, "UDP");
+    upnp_rem_redir (port, "TCP");
 #endif
 
 	closesocket (inet_socket);
