@@ -28,13 +28,48 @@
 #ifdef _WIN32
 #   define  WIN32_LEAN_AND_MEAN
 #   include <winsock2.h>
+#   include <ws2ipdef.h>            // For the keep alive socket options under IPPROTO_TCP
 #   define  CANARY_SOCKET_INT SOCKET
 #   define  CANARY_BAD_SOCKET INVALID_SOCKET
 
-// Ugh.  Why, Microsoft, why?
+// Ugh.  Why, Microsoft, why?  Time to cleanup after the winsock inclusion...
 #   ifdef max
 #       undef max
 #   endif
+#   ifdef min
+#       undef min
+#   endif
+#   ifdef MAXCHAR
+#       undef MAXCHAR
+#   endif
+#   ifdef MAXSHORT
+#       undef MAXSHORT
+#   endif
+#   ifdef MAXINT
+#       undef MAXINT
+#   endif
+#   ifdef MAXUINT
+#       undef MAXUINT
+#   endif
+#   ifdef MAXLONG
+#       undef MAXLONG
+#   endif
+#   ifdef MINCHAR
+#       undef MINCHAR
+#   endif
+#   ifdef MINSHORT
+#       undef MINSHORT
+#   endif
+#   ifdef MININT
+#       undef MININT
+#   endif
+#   ifdef MINUINT
+#       undef MINUINT
+#   endif
+#   ifdef MINLONG
+#       undef MINLONG
+#   endif
+
 #else
 #   include <netinet/in.h>
 #   include <sys/socket.h>

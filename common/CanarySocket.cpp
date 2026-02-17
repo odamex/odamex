@@ -27,11 +27,18 @@
 #include <string.h>
 
 #ifdef _WIN32
+#   define SETSOCKOPTCAST(x) ((const char *)(x))
+#   define GETSOCKOPTCAST(x) ((char *)(x))
 using socklen_t = int;
+
 #else
 #   include <unistd.h>
-#   define closesocket(x) close(x)
+#   define closesocket(x) close((x))
+#   define SETSOCKOPTCAST(x) ((const void *)(x))
+#   define GETSOCKOPTCAST(x) ((void *)(x))
 #endif
+
+#include "odamex.h"
 
 CanarySocketServer::CanarySocketServer(int i_tcpPort) :
 	m_serverSocket(socket(AF_INET, SOCK_STREAM, IPPROTO_TCP))
@@ -87,7 +94,7 @@ CanarySocketServer::iterator CanarySocketServer::FindDead()
 	}
 
 	timeval noWait     = {0, 0};
-	int     numSockets = select(greatestSocketValue + 1, &sockets, nullptr, nullptr, &noWait);
+	int     numSockets = select(static_cast<int>(greatestSocketValue + 1), &sockets, nullptr, nullptr, &noWait);
 
 	if (numSockets > 0)
 	{
@@ -100,6 +107,21 @@ CanarySocketServer::iterator CanarySocketServer::FindDead()
 
 			socklen_t   addressLength = sizeof(address);
 			const CANARY_SOCKET_INT clientSocket = accept(m_serverSocket, reinterpret_cast<sockaddr*>(&address), &addressLength);
+
+			int enable = 1;
+			int interval = 10;
+			if (setsockopt(clientSocket, SOL_SOCKET, SO_KEEPALIVE, SETSOCKOPTCAST(&enable), static_cast<socklen_t>(sizeof(enable))))
+			{
+				PrintFmt("Failed to enable SO_KEEPALIVE on the canary: {}\n", strerror(errno));
+			}
+			else if (setsockopt(clientSocket, IPPROTO_TCP, TCP_KEEPIDLE, SETSOCKOPTCAST(&interval), static_cast<socklen_t>(sizeof(interval))))
+			{
+				PrintFmt("Failed to set TCP_KEEPIDLE on the canary: {}\n", strerror(errno));
+			}
+			else if (setsockopt(clientSocket, IPPROTO_TCP, TCP_KEEPINTVL, SETSOCKOPTCAST(&interval), static_cast<socklen_t>(sizeof(interval))))
+			{
+				PrintFmt("Failed to set TCP_KEEPINTVL on the canary: {}\n", strerror(errno));
+			}
 
 			dataAddress = address;
 
