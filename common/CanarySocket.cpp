@@ -32,6 +32,7 @@
 using socklen_t = int;
 
 #else
+#   include <netinet/tcp.h>
 #   include <unistd.h>
 #   define closesocket(x) close((x))
 #   define SETSOCKOPTCAST(x) ((const void *)(x))
@@ -94,7 +95,7 @@ CanarySocketServer::iterator CanarySocketServer::FindDead()
 	}
 
 	timeval noWait     = {0, 0};
-	int     numSockets = select(static_cast<int>(greatestSocketValue + 1), &sockets, nullptr, nullptr, &noWait);
+	int     numSockets = select(greatestSocketValue + 1, &sockets, nullptr, nullptr, &noWait);
 
 	if (numSockets > 0)
 	{
