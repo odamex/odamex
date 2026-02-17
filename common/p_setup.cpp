@@ -1994,10 +1994,10 @@ void P_LoadReject(int lumpnum, int totallines)
 		if (demoplayback) {
 			uint32_t rejectpad[4] =
 			{
-				((totallines * 4 + 3) & ~3) + 24, // Size
-				0,                                // Part of z_zone block header
-				50,                               // PU_LEVEL
-				0x1d4a11                          // DOOM_CONST_ZONEID
+				0,       // Size
+				0,       // Part of z_zone block header
+				50,      // PU_LEVEL
+				0x1d4a11 // DOOM_CONST_ZONEID
 			};
 
 			rejectpad[0] = ((totallines * 4 + 3) & ~3) + 24;
