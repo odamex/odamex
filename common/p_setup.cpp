@@ -1967,6 +1967,56 @@ void P_SetupSlopes()
 	}
 }
 
+void P_LoadReject(int lumpnum, int totallines)
+{
+	// [SL] 2011-07-01 - Check to see if the reject table is of the proper size
+	// If it's missing, the reject table should be ignored when
+	// calling P_CheckSight
+	// [EB] and if exists, but is too small, pad it with 0s until its the right size
+	const auto lumpsize = W_LumpLength(lumpnum);
+	const uint32_t correctsize = (numsectors * numsectors + 7) / 8;
+	// TODO: if we end up using reject to optimize netcodea and it makes a significant difference,
+	// build reject lumps when its completely missing
+	if (lumpsize == 0)
+	{
+		DPrintFmt("Reject matrix is empty and will be ignored.\n");
+		rejectempty = true;
+	}
+	else if (lumpsize < correctsize)
+	{
+		DPrintFmt("Reject matrix is not valid. It will be padded to the correct size.\n");
+		rejectmatrix = static_cast<byte*>(Z_Malloc(correctsize, PU_LEVEL, nullptr));
+		W_ReadLump(lumpnum, rejectmatrix);
+		memset(rejectmatrix + lumpsize, 0, correctsize - lumpsize);
+		// vanilla doom just reads pass the edge of the reject table if its too small
+		// so we replace the start of the padding with what would likely have been in memory
+		// when playing on MS-DOS
+		if (demoplayback) {
+			uint32_t rejectpad[4] =
+			{
+				((totallines * 4 + 3) & ~3) + 24, // Size
+				0,                                // Part of z_zone block header
+				50,                               // PU_LEVEL
+				0x1d4a11                          // DOOM_CONST_ZONEID
+			};
+
+			rejectpad[0] = ((totallines * 4 + 3) & ~3) + 24;
+			byte* dest = rejectmatrix + lumpsize;
+
+			for (uint32_t i = 0; i < (correctsize - lumpsize) && i < sizeof(rejectpad); i++)
+			{
+				uint32_t byte_num = i % 4;
+				*dest = (rejectpad[i / 4] >> (byte_num * 8)) & 0xff;
+				dest++;
+			}
+		}
+	}
+	else
+	{
+		rejectmatrix = static_cast<byte*>(W_CacheLumpNum(lumpnum, PU_LEVEL));
+	}
+}
+
 } // namespace
 
 //
@@ -2098,44 +2148,7 @@ void P_SetupLevel (const char *lumpname, int position)
 			P_LoadSegs<mapseg_t>(lumpnum+ML_SEGS);
 	}
 
-	const auto totallines = P_GroupLines();
-
-	// [SL] 2011-07-01 - Check to see if the reject table is of the proper size
-	// If it's too short, the reject table should be ignored when
-	// calling P_CheckSight
-	const auto rejectsize = W_LumpLength(lumpnum + ML_REJECT);
-	const uint32_t minrejectsize = (numsectors * numsectors + 7) / 8;
-	if (rejectsize < minrejectsize)
-	{
-		DPrintFmt("Reject matrix is not valid and will be ignored.\n");
-		// rejectempty = true;
-		rejectmatrix = static_cast<byte*>(Z_Malloc(minrejectsize, PU_LEVEL, nullptr));
-		W_ReadLump(lumpnum + ML_REJECT, rejectmatrix);
-		memset(rejectmatrix + rejectsize, 0, minrejectsize - rejectsize);
-		if (demoplayback) {
-			uint32_t rejectpad[4] =
-			{
-				0,       // Size
-				0,       // Part of z_zone block header
-				50,      // PU_LEVEL
-				0x1d4a11 // DOOM_CONST_ZONEID
-			};
-
-			rejectpad[0] = ((totallines * 4 + 3) & ~3) + 24;
-			byte* dest = rejectmatrix + rejectsize;
-
-			for (int i = 0; i < (minrejectsize - rejectsize) && i < sizeof(rejectpad); i++)
-			{
-				uint32_t byte_num = i % 4;
-				*dest = (rejectpad[i / 4] >> (byte_num * 8)) & 0xff;
-				dest++;
-			}
-		}
-	}
-	else
-	{
-		rejectmatrix = static_cast<byte*>(W_CacheLumpNum(lumpnum + ML_REJECT, PU_LEVEL));
-	}
+	P_LoadReject(lumpnum + ML_REJECT, P_GroupLines());
 
 	// [SL] don't move seg vertices if compatibility is cruical
 	if (!demoplayback)
