@@ -2126,7 +2126,7 @@ void P_SetupLevel (const char *lumpname, int position)
 			rejectpad[0] = ((totallines * 4 + 3) & ~3) + 24;
 			byte* dest = rejectmatrix + rejectsize;
 
-			for (int i = 0; i < (minrejectsize - rejectsize); i++)
+			for (int i = 0; i < (minrejectsize - rejectsize) && i < sizeof(rejectpad); i++)
 			{
 				uint32_t byte_num = i % 4;
 				*dest = (rejectpad[i / 4] >> (byte_num * 8)) & 0xff;
