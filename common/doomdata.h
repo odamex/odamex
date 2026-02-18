@@ -265,6 +265,9 @@ typedef struct
 	short		options;
 } mapthing_t;
 
+// forward declaration
+class FArchive;
+
 // [RH] Hexen-compatible MapThing.
 typedef struct MapThing
 {

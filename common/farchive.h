@@ -25,7 +25,7 @@
 #pragma once
 
 #include "dobject.h"
-
+#include "doomtype.h"
 
 #define FA_RESET (1 << 0)
 
@@ -226,7 +226,7 @@ protected:
 		const TypeInfo* toCurrent;	// maps archive type index to execution type index
 		DWORD toArchive;		// maps execution type index to archive type index
 
-		enum { NO_INDEX = 0xffffffff };
+//		enum { NO_INDEX = 0xffffffff };
 	} *m_TypeMap;
 
 	struct ObjectMap

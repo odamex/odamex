@@ -1080,7 +1080,7 @@ static void SV_VoteUpdate(player_t &player)
 
 	client_t* cl = &player.client;
 
-	MSG_WriteSVC(&cl->netbuf, SVC_VoteUpdate(::vote->serialize()));
+	MSG_WriteSVC(cl->messenger.NetBuf(), SVC_VoteUpdate(::vote->serialize()));
 }
 
 // Send a full vote update to everybody

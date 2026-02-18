@@ -23,6 +23,10 @@
 
 #pragma once
 
+#include "fmt/format.h"
+
+#include "doomstat.h"
+
 #include "v_textcolors.h"
 
 #ifdef SERVER_APP

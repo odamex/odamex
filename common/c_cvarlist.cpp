@@ -487,6 +487,9 @@ CVAR				(r_softinvulneffect, "1",
 CVAR(				developer, "0", "Debugging mode",
 					CVARTYPE_BOOL, CVAR_NULL)
 
+CVAR(			log_packetdebug, "0", "Print debugging messages for each packet sent",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
+
 CVAR(debug_disconnect, "0", "Show source file:line where a disconnect happens",
      CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
@@ -507,14 +510,6 @@ CVAR(				lookspring, "1", "Generate centerview when mlook encountered",
 
 CVAR(				waddirs, "", "Allow custom WAD directories to be specified",
 					CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-CVAR_RANGE_FUNC_DECL(net_rcvbuf, "131072", "Net receive buffer size in bytes",
-					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE,
-					1500.0f, 256.0f * 1024.0f * 1024.0f)
-
-CVAR_RANGE_FUNC_DECL(net_sndbuf, "131072", "Net send buffer size in bytes",
-					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE,
-					1500.0f, 256.0f * 1024.0f * 1024.0f)
 
 // Experimental settings (all categories)
 // =======================================

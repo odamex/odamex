@@ -51,7 +51,7 @@
 #include "p_snapshot.h"
 #include "d_netcmd.h"
 
-#include "SequenceSender.h"
+#include "OdaMessenger.h"
 
 //
 // Player states.
@@ -267,30 +267,30 @@ public:
 	// denis - things that are pending to be sent to this player
 	std::queue<AActor::AActorPtr> to_spawn;
 
+	// For prioritization of mobj updates from server to client.
+	struct ActorDistanceType
+	{
+		AActor* actorPtr;
+		int     distance;
+
+		ActorDistanceType(AActor* i_actorPtr, int i_distance) : actorPtr(i_actorPtr), distance(i_distance) {}
+	};
+	std::vector<ActorDistanceType> sortedMobjs;
+
 	// denis - client structure is here now for a 1:1
 	struct client_t
 	{
 		netadr_t    address;
 
-		buf_t       netbuf;
-		buf_t       reliablebuf;
-
 		// protocol version supported by the client
 		short		version;
 		int			packedversion;
 
-		// for reliable protocol
-		SequenceSender reliableSendSequencer;
-
-		byte        packetnum;
-
-		int         rate;
-		int         reliable_bps;	// bytes per second
-		int         unreliable_bps;
+		OdaMessenger messenger;
 
 		int			last_received;	// for timeouts
 
-		int			lastcmdtic, lastclientcmdtic;
+		int			lastclientcmdtic;
 
 		std::string	digest;			// randomly generated string that the client must use for any hashes it sends back
 		bool        allow_rcon;     // allow remote admin
@@ -304,24 +304,16 @@ public:
 		} download;
 
 		client_t() :
-		    reliableSendSequencer()
+		    messenger()
 		{
 			// GhostlyDeath -- Initialize to Zero
 			memset(&address, 0, sizeof(netadr_t));
 			version = 0;
 			packedversion = 0;
-			packetnum = 0;
-			rate = 0;
-			reliable_bps = 0;
-			unreliable_bps = 0;
 			last_received = 0;
-			lastcmdtic = 0;
 			lastclientcmdtic = 0;
 
 
-			// GhostlyDeath -- done with the {}
-			netbuf = MAX_UDP_PACKET;
-			reliablebuf = MAX_UDP_PACKET;
 			digest = "";
 			allow_rcon = false;
 			displaydisconnect = true;
@@ -329,17 +321,10 @@ public:
 
 		client_t(const client_t &other)
 			: address(other.address),
-			netbuf(other.netbuf),
-			reliablebuf(other.reliablebuf),
 			version(other.version),
 			packedversion(other.packedversion),
-			reliableSendSequencer(other.reliableSendSequencer),
-			packetnum(other.packetnum),
-			rate(other.rate),
-			reliable_bps(other.reliable_bps),
-			unreliable_bps(other.unreliable_bps),
+			messenger(other.messenger),
 			last_received(other.last_received),
-			lastcmdtic(other.lastcmdtic),
 			lastclientcmdtic(other.lastclientcmdtic),
 			digest(other.digest),
 			allow_rcon(false),
@@ -354,17 +339,10 @@ public:
 				return *this;
 
 			address = other.address;
-			netbuf = other.netbuf;
-			reliablebuf = other.reliablebuf;
+			messenger = other.messenger;
 			version = other.version;
 			packedversion = other.packedversion;
-			reliableSendSequencer = other.reliableSendSequencer;
-			packetnum = other.packetnum;
-			rate = other.rate;
-			reliable_bps = other.reliable_bps;
-			unreliable_bps = other.unreliable_bps;
 			last_received = other.last_received;
-			lastcmdtic = other.lastcmdtic;
 			lastclientcmdtic = other.lastclientcmdtic;
 			digest = other.digest;
 			allow_rcon = false;

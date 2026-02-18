@@ -61,6 +61,7 @@
 #include "cl_main.h"
 #include "cl_demo.h"
 #include "cl_replay.h"
+#include "cl_netgraph.h"
 #include "gi.h"
 #include "hu_mousegraph.h"
 #include "g_spawninv.h"
@@ -123,6 +124,7 @@ int 			gametic;
 
 extern fixed_t bobx;
 extern fixed_t boby;
+extern NetGraph netgraph;
 
 enum demoversion_t
 {
@@ -1004,15 +1006,31 @@ void G_Ticker (void)
 			last_received = gametic;
 			noservermsgs = false;
 
-			if (not CL_ReadPacketHeader())
-				continue;
+			const MessageResultEnum initialReadResult = CL_ReadPacketHeader();
 
-			if (not CL_AcceptNetMessage())
+			switch (initialReadResult)
+			{
+				case MessageResultEnum::DEFER:
+					netgraph.addPacketIn();
+					continue;
+				case MessageResultEnum::ABORT:
+					return;
+				case MessageResultEnum::ACCEPT:    // fall-thru: have a purely non-reliable message.
+					netgraph.addPacketIn();
+				default:
+					break;
+			}
+
+			// If we're here it's because we need to accept a message right away.
+
+			const MessageResultEnum nonReliableResult = CL_AcceptNetMessage();
+			if (nonReliableResult == MessageResultEnum::ABORT)
 				return;
 		}
 
 		// With all the latest packets received, process the reliable message in proper sequence.
-		if (not CL_ProcessCurrentReliableMessages())
+		const MessageResultEnum reliableResult = CL_ProcessCurrentReliableMessages();
+		if (reliableResult == MessageResultEnum::ABORT)
 			return;
 
 		if ((gametic % TICRATE) == 0)
@@ -1021,9 +1039,9 @@ void G_Ticker (void)
 			realrate = 0;
 		}
 
-		CL_SaveCmd();      // save console commands
+		CL_SaveCmd();      // save player commands
 		if (!noservermsgs)
-			CL_SendCmd();  // send console commands to the server
+			CL_SendCmd();  // send player commands to the server
 
 		if (!(gametic%TICRATE))
 		{
@@ -1058,8 +1076,9 @@ void G_Ticker (void)
 			else
 			{
 				// we are already connected to this server, quit first
-				MSG_WriteMarker(&net_buffer, clc_disconnect);
-				NET_SendPacket(net_buffer, serveraddr);
+				messenger.Clear();
+				MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_disconnect);
+				messenger.SendAll(gametic, serveraddr);
 
 				PrintFmt(PRINT_WARNING,
 				         "Got unknown challenge {} while connecting, disconnecting.\n", type);

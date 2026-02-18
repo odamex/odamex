@@ -30,6 +30,8 @@
 #include "r_defs.h"
 #include "cl_demo.h"
 
+#include "OdaMessenger.h"
+
 extern netadr_t  serveraddr;
 extern bool      connected;
 extern int       connecttimeout;
@@ -37,9 +39,8 @@ extern int       connecttimeout;
 extern bool      noservermsgs;
 extern int       last_received;
 
-extern buf_t     net_buffer;
-
-extern NetDemo	netdemo;
+extern NetDemo      netdemo;
+extern OdaMessenger messenger;
 
 #define MAXSAVETICS 70
 
@@ -60,14 +61,14 @@ void CL_InitNetwork (void);
 void CL_RequestConnectInfo(void);
 bool CL_PrepareConnect();
 void CL_ParseCommands(void);
-bool CL_ReadPacketHeader();
-bool CL_AcceptNetMessage();
-bool CL_ProcessCurrentReliableMessages();
+MessageResultEnum CL_ReadPacketHeader();
+MessageResultEnum CL_AcceptNetMessage();
+MessageResultEnum CL_ProcessCurrentReliableMessages();
 void CL_SendCmd(void);
 void CL_SaveCmd(void);
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
 void CL_PredictWorld(void);
-void CL_SendUserInfo(void);
+void CL_SendUserInfo(buf_t& netBuf);
 bool CL_Connect();
 
 void CL_SendCheat(int cheats);

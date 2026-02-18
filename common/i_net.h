@@ -26,7 +26,12 @@
 // Default buffer size for a UDP packet.
 // This constant seems to be used as a default buffer size and should
 // probably not be considered a reasonable MTU.
-#define MAX_UDP_PACKET 8192
+#define MAX_UDP_PACKET 2048
+
+// Netdemos contain a connection sequence for the client, and the whole sequence
+// is written into the file in one big packet.  Here where we set the upper bound
+// on that packet's size.
+#define NETDEMO_STARTUP_PACKET_SIZE 8192
 
 // Maximum safe size for a packet transmitted over UDP.
 // This number comes from Steamworks and seems to be a reasonable default.
@@ -41,6 +46,13 @@
 #define MSG_CHALLENGE 5560020     // Signals challenger wants MSG protocol.
 #define LAUNCHER_CHALLENGE 777123 // csdl challenge
 #define VERSION 65                // GhostlyDeath -- this should remain static from now on
+
+#include "fmt/format.h"
+
+#include "doomtype.h"
+#include "doomfunc.h"
+
+#include "minilzo.h"
 
 /**
  * @brief Types of client buffers.
@@ -173,6 +185,7 @@ enum clientBuf_e
 
 extern int   localport;
 extern int   msg_badread;
+extern bool  simulated_connection;
 
 // network message info
 struct msg_info_t
@@ -195,6 +208,7 @@ enum svc_t
 	svc_levellocals, // [AM] Persist one or more level locals
 	svc_pingrequest, // [SL] 2011-05-11 timestamp
 	svc_updateping,
+    svc_ack,                // Overlays the clc type...  FIXME: unify the message identifiers!
 	svc_spawnmobj,
 	svc_disconnectclient,
 	svc_loadmap,
@@ -285,7 +299,7 @@ enum clc_t
 	clc_userinfo,  // send userinfo
 	clc_pingreply, // [SL] 2011-05-11 - timestamp
 	clc_rate,
-	clc_ack,
+	clc_ack,        // Overlays the svc type...  FIXME: unify the message identifiers!
 	clc_rcon,
 	clc_rcon_password,
 	clc_changeteam, // [NightFang] - Change your team
@@ -322,6 +336,8 @@ class Message;
 }
 } // namespace google
 
+class MessageQueue;
+
 typedef struct
 {
    byte    ip[4];
@@ -331,20 +347,24 @@ typedef struct
 
 extern  netadr_t  net_from;  // address of who sent the packet
 
+struct sockaddr_in;
+
+void SockadrToNetadr (struct sockaddr_in *s, netadr_t *a);
+void NetadrToSockadr (const netadr_t *a, struct sockaddr_in *s);
 
 class buf_t
 {
 public:
-	std::unique_ptr<byte[]> data;
-	size_t	allocsize, cursize, readpos;
+    std::vector<byte> data;
+	size_t	cursize, readpos, writepos;
 	bool	overflowed;  // set to true if the buffer size failed
 
     // Buffer seeking flags
     typedef enum
     {
-         BT_SSET // From beginning
-        ,BT_SCUR // From current position
-        ,BT_SEND // From end
+         BT_START   // From beginning
+        ,BT_CURRENT // From current position
+        ,BT_END     // From end
     } seek_loc_t;
 
 public:
@@ -438,13 +458,13 @@ public:
 			WriteByte(0);
 	}
 
-	void WriteChunk(const char *c, unsigned l, int startpos = 0)
+	void WriteChunk(const void *c, size_t l, size_t startpos = 0)
 	{
 		byte *buf = SZ_GetSpace(l);
 
 		if(!overflowed)
 		{
-			memcpy(buf, c + startpos, l);
+			memcpy(buf, static_cast<const byte*>(c) + startpos, l);
 		}
 	}
 
@@ -572,11 +592,21 @@ public:
 		return (const char *)begin;
 	}
 
-    size_t SetOffset (const size_t &offset, const seek_loc_t &loc)
+    size_t SeekRead (const size_t &offset, const seek_loc_t &loc)
+    {
+        return Seek(offset, loc, readpos);
+    }
+
+    size_t SeekWrite (const size_t &offset, const seek_loc_t &loc)
+    {
+        return Seek(offset, loc, writepos);
+    }
+
+    size_t Seek (const size_t &offset, const seek_loc_t &loc, size_t& position)
     {
         switch (loc)
         {
-            case BT_SSET:
+            case BT_START:
             {
                 if (offset > cursize)
                 {
@@ -584,37 +614,37 @@ public:
                     return 0;
                 }
 
-                readpos = offset;
+                position = offset;
             }
             break;
 
-            case BT_SCUR:
+            case BT_CURRENT:
             {
-                if (readpos+offset > cursize)
+                if (position+offset > cursize)
                 {
                     overflowed = true;
                     return 0;
                 }
 
-                readpos += offset;
+                position += offset;
             }
 			break;
 
-            case BT_SEND:
+            case BT_END:
             {
-                if (offset > readpos)
+                if (offset > position)
                 {
                     // lies, an underflow occured
                     overflowed = true;
                     return 0;
                 }
 
-                readpos -= offset;
+                position -= offset;
             }
 			break;
         }
 
-        return readpos;
+        return position;
     }
 
 	size_t BytesLeftToRead() const
@@ -627,9 +657,24 @@ public:
 		return readpos;
 	}
 
+	size_t TellRead() const
+	{
+		return readpos;
+	}
+
+	size_t TellWrite() const
+	{
+		return writepos;
+	}
+
 	byte *ptr()
 	{
-		return data.get();
+		return data.data();
+	}
+
+	const byte *ptr() const
+	{
+		return data.data();
 	}
 
 	size_t size() const
@@ -639,33 +684,29 @@ public:
 
 	size_t maxsize() const
 	{
-		return allocsize;
+		return data.size();
 	}
 
 	void setcursize(size_t len)
 	{
-		cursize = len > allocsize ? allocsize : len;
+		cursize = len > maxsize() ? maxsize() : len;
 	}
 
 	void clear()
 	{
 		cursize = 0;
 		readpos = 0;
+		writepos = 0;
 		overflowed = false;
 	}
 
 	void resize(size_t len, bool clearbuf = true)
 	{
-		auto newdata = std::make_unique<byte[]>(len);
-		allocsize = len;
+        data.resize(len);
 
 		if (!clearbuf)
 		{
-			if (cursize < len)
-			{
-				memcpy(newdata.get(), data.get(), cursize);
-			}
-			else
+			if (cursize > len)
 			{
 				clear();
 				overflowed = true;
@@ -676,14 +717,11 @@ public:
 		{
 			clear();
 		}
-
-		data = std::move(newdata);
-		allocsize = len;
 	}
 
 	byte *SZ_GetSpace(size_t length)
 	{
-		if (cursize + length >= allocsize)
+		if (writepos + length >= maxsize())
 		{
 			clear();
 			overflowed = true;
@@ -692,8 +730,13 @@ public:
 #endif
 		}
 
-		byte *ret = &data[cursize];
-		cursize += length;
+		byte *ret = &data[writepos];
+        writepos += length;
+
+        if (writepos > cursize)
+        {
+            cursize = writepos;
+        }
 
 		return ret;
 	}
@@ -704,15 +747,11 @@ public:
 		if (this == &other)
             return *this;
 
-		data = std::make_unique<byte[]>(other.allocsize);
-		allocsize = other.allocsize;
+        data = other.data;
 		cursize = other.cursize;
 		overflowed = other.overflowed;
 		readpos = other.readpos;
-
-		if(!overflowed)
-			for(size_t i = 0; i < cursize; i++)
-				data[i] = other.data[i];
+        writepos = other.writepos;
 
 		return *this;
 	}
@@ -721,10 +760,14 @@ public:
 	{
 		using std::swap;
 
-		swap(data,       other.data);
-		swap(allocsize,  other.allocsize);
+        if (&other == this)
+        {
+            return;
+        }
+		data.swap(other.data);
 		swap(cursize,    other.cursize);
 		swap(readpos,    other.readpos);
+        swap(writepos,   other.writepos);
 		swap(overflowed, other.overflowed);
 	}
 
@@ -733,22 +776,29 @@ public:
 		lhs.swap(rhs);
 	}
 
+    buf_t& operator=(buf_t&& other)
+    {
+        swap(other);
+        return *this;
+    }
+
 	buf_t()
-		: data(nullptr), allocsize(0), cursize(0), readpos(0), overflowed(false)
+		: data(), cursize(0), readpos(0), writepos(0), overflowed(false)
 	{
 	}
 	buf_t(size_t len)
-		: data(new byte[len]), allocsize(len), cursize(0), readpos(0), overflowed(false)
+		: data(len), cursize(0), readpos(0), writepos(0), overflowed(false)
 	{
 	}
 	buf_t(const buf_t &other)
-		: data(new byte[other.allocsize]), allocsize(other.allocsize), cursize(other.cursize), readpos(other.readpos), overflowed(other.overflowed)
-
+		: data(other.data), cursize(other.cursize), readpos(other.readpos), writepos(other.writepos), overflowed(other.overflowed)
 	{
-		if(!overflowed)
-			for(size_t i = 0; i < cursize; i++)
-				data[i] = other.data[i];
 	}
+    buf_t(buf_t&& other) :
+        buf_t()
+    {
+        swap(other);
+    }
 	~buf_t()
 	{
 	}
@@ -763,14 +813,15 @@ bool NetWaitOrTimeout(size_t ms);
 
 char *NET_AdrToString (netadr_t a);
 bool NET_StringToAdr (const char *s, netadr_t *a);
-bool NET_CompareAdr (netadr_t a, netadr_t b);
+bool NET_CompareAdr (const netadr_t& a, const netadr_t& b);
+bool NET_GetSockaddr(sockaddr_in& io_sockaddr);
 int  NET_GetPacket (void);
-int NET_SendPacket (buf_t &buf, netadr_t &to);
+int NET_SendPacket (buf_t &buf, const netadr_t &to);
 std::string NET_GetLocalAddress (void);
 
 void SZ_Clear (buf_t *buf);
-void SZ_Write (buf_t *b, const void *data, int length);
-void SZ_Write (buf_t *b, const byte *data, int startpos, int length);
+void SZ_Write (buf_t *b, const void *data, size_t length);
+void SZ_Write (buf_t *b, const byte *data, size_t startpos, size_t length);
 
 void MSG_WriteByte (buf_t *b, byte c);
 void MSG_WriteMarker (buf_t *b, svc_t c);
@@ -783,8 +834,9 @@ void MSG_WriteBool(buf_t *b, bool);
 void MSG_WriteFloat(buf_t *b, float);
 void MSG_WriteString (buf_t *b, const char *s);
 void MSG_WriteHexString(buf_t *b, const char *s);
-void MSG_WriteChunk (buf_t *b, const void *p, unsigned l);
-void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg);
+void MSG_WriteChunk (buf_t *b, const void *p, size_t l);
+void MSG_WriteSVC(MessageQueue& io_queue, const google::protobuf::Message& msg);
+void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg);
 void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& msg,
                       const int skipPlayer = -1);
 
@@ -813,7 +865,14 @@ bool MSG_ReadProto(MSG& msg)
 	return true;
 }
 
-size_t MSG_SetOffset (const size_t &offset, const buf_t::seek_loc_t &loc);
+class MiniLzo
+{
+    public:
+        bool Decompress(buf_t& io_buf);
+        bool Compress(buf_t &buf, size_t start_offset, size_t write_gap);
 
-bool MSG_DecompressMinilzo ();
-bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap);
+    protected:
+        buf_t       m_compressionBuffer;
+        buf_t       m_decompressionBuffer;
+        lzo_byte    m_wrkmem[LZO1X_1_MEM_COMPRESS];
+};

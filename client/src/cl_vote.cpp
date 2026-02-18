@@ -151,10 +151,11 @@ void CMD_MapVoteCallback(const maplist_qrows_t &result) {
 	std::ostringstream index;
 	index << result[0].first;
 
-	MSG_WriteMarker(&net_buffer, clc_callvote);
-	MSG_WriteByte(&net_buffer, VOTE_MAP);
-	MSG_WriteByte(&net_buffer, 1);
-	MSG_WriteString(&net_buffer, index.str().c_str());
+    auto& netBuf = messenger.NetBuf().Obtain();
+	MSG_WriteMarker(&netBuf, clc_callvote);
+	MSG_WriteByte(&netBuf, VOTE_MAP);
+	MSG_WriteByte(&netBuf, 1);
+	MSG_WriteString(&netBuf, index.str().c_str());
 }
 
 void CMD_RandmapVoteErrback(const std::string &error) {
@@ -172,9 +173,10 @@ void CMD_RandmapVoteCallback(const maplist_qrows_t &result) {
 		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_callvote);
-	MSG_WriteByte(&net_buffer, VOTE_RANDMAP);
-	MSG_WriteByte(&net_buffer, 0);
+    auto& netBuf = messenger.NetBuf().Obtain();
+	MSG_WriteMarker(&netBuf, clc_callvote);
+	MSG_WriteByte(&netBuf, VOTE_RANDMAP);
+	MSG_WriteByte(&netBuf, 0);
 }
 
 //////// CONSOLE COMMANDS ////////
@@ -266,11 +268,12 @@ BEGIN_COMMAND(callvote) {
 		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_callvote);
-	MSG_WriteByte(&net_buffer, (byte)votecmd);
-	MSG_WriteByte(&net_buffer, (byte)(arguments.size()));
+    auto& netBuf = messenger.NetBuf().Obtain();
+	MSG_WriteMarker(&netBuf, clc_callvote);
+	MSG_WriteByte(&netBuf, (byte)votecmd);
+	MSG_WriteByte(&netBuf, (byte)(arguments.size()));
 	for (const auto& argument : arguments) {
-		MSG_WriteString(&net_buffer, argument.c_str());
+		MSG_WriteString(&netBuf, argument.c_str());
 	}
 } END_COMMAND(callvote)
 
@@ -285,10 +288,11 @@ BEGIN_COMMAND(vote_yes)
 		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_netcmd);
-	MSG_WriteString(&net_buffer, "vote");
-	MSG_WriteByte(&net_buffer, 1);
-	MSG_WriteString(&net_buffer, "yes");
+    auto& netBuf = messenger.NetBuf().Obtain();
+	MSG_WriteMarker(&netBuf, clc_netcmd);
+	MSG_WriteString(&netBuf, "vote");
+	MSG_WriteByte(&netBuf, 1);
+	MSG_WriteString(&netBuf, "yes");
 
 	if (snd_votesfx)
 		S_Sound(CHAN_INTERFACE, "ui/vote/yes", 1.0f, ATTN_NONE);
@@ -306,10 +310,11 @@ BEGIN_COMMAND(vote_no)
 		return;
 	}
 
-	MSG_WriteMarker(&net_buffer, clc_netcmd);
-	MSG_WriteString(&net_buffer, "vote");
-	MSG_WriteByte(&net_buffer, 1);
-	MSG_WriteString(&net_buffer, "no");
+    auto& netBuf = messenger.NetBuf().Obtain();
+	MSG_WriteMarker(&netBuf, clc_netcmd);
+	MSG_WriteString(&netBuf, "vote");
+	MSG_WriteByte(&netBuf, 1);
+	MSG_WriteString(&netBuf, "no");
 
 	if (snd_votesfx)
 		S_Sound(CHAN_INTERFACE, "ui/vote/no", 1.0f, ATTN_NONE);

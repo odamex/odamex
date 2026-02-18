@@ -65,6 +65,7 @@
 #include "cl_replay.h"
 #include "r_interp.h"
 #include "m_doomobjcontainer.h"
+#include "cl_netgraph.h"
 #include "g_spree.h"
 #include "g_multikill.h"
 
@@ -99,6 +100,7 @@ extern NetCommand localcmds[MAXSAVETICS];
 extern bool recv_full_update;
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 extern std::set<byte> teleported_players;
+extern NetGraph netgraph;
 
 void CL_CheckDisplayPlayer(void);
 void CL_ClearPlayerJustTeleported(const player_t& player);
@@ -263,6 +265,22 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	{
 		p.pendingweapon = wp_nochange;
 	}
+
+	statenum_t stnum[NUMPSPRITES] = {S_NULL, S_NULL};
+	for (int i = 0; i < NUMPSPRITES; i++)
+	{
+		if (i < msg->player().psprites_size())
+		{
+			const int32_t state = msg->player().psprites().Get(i).statenum();
+            if (!states.contains(state))
+			{
+				continue;
+			}
+			stnum[i] = static_cast<statenum_t>(state);
+		}
+	}
+	for (int i = 0; i < NUMPSPRITES; i++)
+		P_SetPsprite(p, i, stnum[i]);
 
 	for (int i = 0; i < NUMPOWERS; i++)
 	{
@@ -458,8 +476,9 @@ static void CL_LevelLocals(const odaproto::svc::LevelLocals* msg)
 //
 static void CL_PingRequest(const odaproto::svc::PingRequest* msg)
 {
-	MSG_WriteMarker(&net_buffer, clc_pingreply);
-	MSG_WriteLong(&net_buffer, msg->ms_time());
+    auto& netBuf = messenger.NetBuf().Obtain();
+	MSG_WriteMarker(&netBuf, clc_pingreply);
+	MSG_WriteLong(&netBuf, msg->ms_time());
 }
 
 //
@@ -1440,7 +1459,7 @@ static void CL_FireWeapon(const odaproto::svc::FireWeapon* msg)
 		A_ForceWeaponFire(p->mo, firedweap, servertic);
 
 		// Request the player's ammo status from the server
-		MSG_WriteMarker(&net_buffer, clc_getplayerinfo);
+		MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_getplayerinfo);
 	}
 }
 
@@ -2187,14 +2206,16 @@ static void CL_MidPrint(const odaproto::svc::MidPrint* msg)
 // [SL] 2011-05-11
 static void CL_ServerGametic(const odaproto::svc::ServerGametic* msg)
 {
-	byte t = msg->tic();
+	byte tic = msg->tic();
 
-	int newtic = (::last_svgametic & 0xFFFFFF00) + t;
+	int newtic = (::last_svgametic & 0xFFFFFF00) + tic;
 
 	if (::last_svgametic > newtic + 127)
 		newtic += 256;
 
 	::last_svgametic = newtic;
+
+	netgraph.setServerQueueDepth(msg->reliable_queue_depth());
 
 #ifdef _WORLD_INDEX_DEBUG_
 	PrintFmt(PRINT_HIGH, "Gametic {}, received world index {}\n", gametic, last_svgametic);
@@ -3106,6 +3127,13 @@ parseError_e CL_ParseCommand()
 {
 	// What type of message we have.
 	byte cmd = MSG_ReadByte();
+
+    if (cmd == svc_ack)
+    {
+        const int sequence = MSG_ReadLong();
+        messenger.Acknowledge(sequence);
+        return PERR_OK;
+    }
 
 	// Size of the message.
 	size_t size = MSG_ReadUnVarint();

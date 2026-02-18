@@ -24,14 +24,14 @@
 #include <algorithm>
 #include <vector>
 
-#include "SequenceQueueEntryType.h"
+#include "PacketTable.h"
 
 class SequenceReceiver
 {
 	public:
 
 		explicit SequenceReceiver(size_t i_initialSize) :
-			m_recvQueue       (i_initialSize),
+			m_reliableTable   (i_initialSize),
 			m_currentSequence (0)
 		{
 		}
@@ -46,62 +46,26 @@ class SequenceReceiver
 		// does not pre-date the most-recently processed packet obtained via
 		// NextPacket(), and 2. has not already been received.
 		//
-		// If the message is accepted, the data payload in the given buffer is moved
-		// into the queue, leaving the given io_bufferRef in a valid but indeterminant
-		// state, and true is returned.  Otherwise, false is returned and the given
-		// buffer is left unmodified.
-		bool RegisterReceivedPacket(int sequence, buf_t& io_bufferRef)
-		{
-			const int desiredIndex = sequence % m_recvQueue.size();
+		// If the message is accepted, the data payload in the given buffer is Read
+		// into the table, and true is returned.  Otherwise, false is returned and the
+		// given buffer is left unread.
+		bool RegisterReliablePacket(int sequence, size_t i_size, buf_t& io_bufferRef);
 
-			SequenceQueueEntryType& entryRef = m_recvQueue[desiredIndex];
-
-			if (m_currentSequence < 0)
-			{
-				m_currentSequence = sequence;
-			}
-
-			if (sequence >= m_currentSequence)
-			{
-				if (entryRef.sequence != sequence)
-				{
-					entryRef.sequence = sequence;
-					entryRef.buf.swap(io_bufferRef);
-					return true;
-				}
-			}
-			return false;
-		}
-
-		// Returns the next packet in the sequence of received reliable messages.
+		// Fetches the next packet in the sequence of received reliable messages.
 		// The ordering of messages returned by repeated calls to this function is
-		// dictated by the sequence numbers given to RegisterReceivePacket().  If a
-		// "break" in the sequence is encountered, nullptr is returned.  If no
-		// messages are pending, nullptr is returned.
+		// dictated by the sequence numbers given to RegisterReceivePacket().  The
+		// sequence number of the fetched packet is returned.  If a "break" in the
+		// sequence is encountered, -1 is returned.  If no messages are pending,
+		// -1 is returned.
 		//
 		// Messages obtained and processed in accordance with this function will be
 		// in the correct sequence, even if they were provided to RegisterReceivePacket()
 		// out-of-order.
-		SequenceQueueEntryType* NextPacket()
-		{
-			const int desiredIndex = m_currentSequence % m_recvQueue.size();
-
-			SequenceQueueEntryType& entryRef = m_recvQueue[desiredIndex];
-
-			// This is deliberately restrictive.  We do NOT want to process packets
-			// "from the future."  We want to keep a strict sequence to try to be as
-			// deterministic as possible.
-			if (m_currentSequence == entryRef.sequence)
-			{
-				++m_currentSequence;
-				return &entryRef;
-			}
-			return nullptr;
-		}
+		int NextPacket(buf_t& io_bufferRef);
 
 	protected:
 
-		std::vector<SequenceQueueEntryType> m_recvQueue;
+		SinglePacketTable m_reliableTable;
 
 		int m_currentSequence;  // Index of the place to store the next received packet.
 };

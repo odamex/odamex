@@ -213,7 +213,7 @@ TEST(ReliableSequenceSender, NormalWrap)
     REQUIRE((entry = iter.Next()) == nullptr);
 }
 
-TEST(ReliableSequenceSender, FullUpWrapReuse)
+TEST(ReliableSequenceSender, FreeReuse)
 {
     SequenceSender sender1(5);
 
@@ -221,56 +221,46 @@ TEST(ReliableSequenceSender, FullUpWrapReuse)
 
     packet0.buffer->WriteLong(0x000Fd00d);
 
+    REQUIRE(packet0.sequence       == 0);
     REQUIRE(packet0.buffer->size() == 4);
 
-    sender1.ObtainSendPacket();
-    sender1.ObtainSendPacket();
-    sender1.ObtainSendPacket();
-    sender1.ObtainSendPacket();
+    byte* dataAddr0 = packet0.buffer->ptr();
+
+    sender1.Acknowledge(0);
+
+    REQUIRE(sender1.GetPendingAckCount() == 0);
+
+    auto packet1 = sender1.ObtainSendPacket();
+
+    REQUIRE(packet1.sequence       == 1);
+    REQUIRE(packet1.buffer->size() == 0);
+    REQUIRE(packet1.buffer->ptr()  == dataAddr0);
+
+    auto packet2 = sender1.ObtainSendPacket();
+    auto packet3 = sender1.ObtainSendPacket();
+    auto packet4 = sender1.ObtainSendPacket();
+    auto packet5 = sender1.ObtainSendPacket();
+
+    byte* dataAddr5 = packet5.buffer->ptr();
 
     auto iter = sender1.IterateUnackedPackets();
     SequenceQueueEntryType* entry;
-    REQUIRE((entry = iter.Next()) != nullptr && entry->sequence == 0);
     REQUIRE((entry = iter.Next()) != nullptr && entry->sequence == 1);
     REQUIRE((entry = iter.Next()) != nullptr && entry->sequence == 2);
     REQUIRE((entry = iter.Next()) != nullptr && entry->sequence == 3);
     REQUIRE((entry = iter.Next()) != nullptr && entry->sequence == 4);
+    REQUIRE((entry = iter.Next()) != nullptr && entry->sequence == 5);
     REQUIRE((entry = iter.Next()) == nullptr);
 
-    sender1.Acknowledge(0);
     sender1.Acknowledge(1);
     sender1.Acknowledge(2);
     sender1.Acknowledge(3);
     sender1.Acknowledge(4);
+    sender1.Acknowledge(5);
 
-    auto packet5 = sender1.ObtainSendPacket();
+    auto packet6 = sender1.ObtainSendPacket();
 
-    REQUIRE(packet5.sequence       == 5);
-    REQUIRE(packet5.buffer         == packet0.buffer);
-    REQUIRE(packet5.buffer->size() == 0);
-}
-
-TEST(ReliableSequenceSender, Exhaustion)
-{
-    SequenceSender sender1(5);
-
-    auto packet = sender1.ObtainSendPacket();
-
-    REQUIRE(packet.sequence == 0);
-
-    sender1.ObtainSendPacket();
-    sender1.ObtainSendPacket();
-    sender1.ObtainSendPacket();
-    packet = sender1.ObtainSendPacket();
-
-    REQUIRE(packet.sequence == 4);
-
-    REQUIRE(sender1.GetMode() == SequenceSender::NORMAL);
-
-    packet = sender1.ObtainSendPacket();
-
-    REQUIRE(packet.sequence == -1);
-    REQUIRE(packet.buffer   == nullptr);
-
-    REQUIRE(sender1.GetMode() == SequenceSender::RECOVERY);
+    REQUIRE(packet6.sequence        == 6);
+    REQUIRE(packet6.buffer->ptr()   == dataAddr5);
+    REQUIRE(packet6.buffer->size()  == 0);
 }

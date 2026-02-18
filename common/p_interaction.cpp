@@ -106,7 +106,7 @@ static void PersistPlayerDamage(const player_t& p)
 		if (!player.ingame())
 			continue;
 
-		MSG_WriteSVC(&player.client.netbuf, SVC_PlayerMembers(p, SVC_PM_DAMAGE));
+		MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_PlayerMembers(p, SVC_PM_DAMAGE));
 	}
 }
 
@@ -133,7 +133,7 @@ static void PersistPlayerScore(player_t& p, const bool lives, const bool score)
 		if (!player.ingame())
 			continue;
 
-		MSG_WriteSVC(&player.client.netbuf, SVC_PlayerMembers(p, flags));
+		MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_PlayerMembers(p, flags));
 	}
 }
 
@@ -148,7 +148,7 @@ static void PersistTeamScore(team_t team)
 	{
 		if (!player.ingame())
 			continue;
-		MSG_WriteSVC(&player.client.netbuf, SVC_TeamMembers(team));
+		MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_TeamMembers(team));
 	}
 }
 
@@ -629,7 +629,7 @@ static void P_ResurrectPlayerPowerUp(player_t& player)
 	                   player.userinfo.netname, pl->userinfo.netname);
 
 	// Send a res sound directly to this player.
-	MSG_WriteSVC(&pl->client.reliablebuf, SVC_PlayerInfo(*pl));
+	MSG_WriteSVC(pl->client.messenger.ReliableBuf(), SVC_PlayerInfo(*pl));
 	S_PlayerSound(pl, NULL, CHAN_INTERFACE, "misc/plraise", ATTN_NONE);
 
 	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(*pl, SVC_PM_LIVES),
@@ -652,7 +652,7 @@ static void P_AwardExtraLifePowerUp(player_t& player)
 	                   player.userinfo.netname);
 
 	player.lives += 1;
-	MSG_WriteSVC(&player.client.reliablebuf, SVC_PlayerInfo(player));
+	MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerInfo(player));
 	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(player, SVC_PM_LIVES),
 	                 player.id);
 }
@@ -838,12 +838,12 @@ static void P_GiveCarePack(player_t& player)
 	{
 		// [AM] FIXME: This gives players their inventory, with no
 		//             background flash.
-		MSG_WriteSVC(&player.client.reliablebuf, SVC_PlayerInfo(player));
-		MSG_WriteSVC(&player.client.reliablebuf, SVC_Print(PRINT_PICKUP, message + "\n"));
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerInfo(player));
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_Print(PRINT_PICKUP, message + "\n"));
 		if (!midmessage.empty())
 		{
 			std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
-			MSG_WriteSVC(&player.client.reliablebuf, SVC_MidPrint(buf, 0));
+			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_MidPrint(buf, 0));
 		}
 	}
 	else
