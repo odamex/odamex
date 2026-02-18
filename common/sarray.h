@@ -68,7 +68,7 @@
 using SArrayId = size_t;
 
 // ----------------------------------------------------------------------------
-// SArray interface & inline implementation
+// SArray interface & implementation
 // ----------------------------------------------------------------------------
 
 template <typename VT, int N = 16>
@@ -127,87 +127,87 @@ public:
 		}
 
 		// allow implicit converstion from iterator to const_iterator
-		inline operator ConstThisClass() const
+		operator ConstThisClass() const
 		{
 			return ConstThisClass(mSArray, mSlot);
 		}
 
 		[[nodiscard]]
-		inline bool operator== (const ThisClass& other) const
+		bool operator== (const ThisClass& other) const
 		{
 			return &mSArray == &other.mSArray && mSlot == other.mSlot;
 		}
 
-		inline bool operator!= (const ThisClass& other) const
+		bool operator!= (const ThisClass& other) const
 		{
 			return !(operator==(other));
 		}
 
-		inline reference operator* ()
+		reference operator* ()
 		{
 			return mSArray.mItemRecords[mSlot].mItem;
 		}
 
-		inline const reference operator* () const
+		const reference operator* () const
 		{
 			return mSArray.mItemRecords[mSlot].mItem;
 		}
 
-		inline pointer operator-> ()
+		pointer operator-> ()
 		{
 			return &(mSArray.mItemRecords[mSlot].mItem);
 		}
 
-		inline ThisClass& operator++ ()
+		ThisClass& operator++ ()
 		{
 			mSlot = mSArray.nextUsed(++mSlot);
 			return *this;
 		}
 
-		inline ThisClass operator++ (int)
+		ThisClass operator++ (int)
 		{
 			generic_iterator temp(*this);
 			return temp.operator++ ();
 		}
 
-		inline ThisClass& operator+= (difference_type n)
+		ThisClass& operator+= (difference_type n)
 		{
 			while (n--)
 				operator++ ();
 			return *this;
 		}
 
-		inline ThisClass operator+ (difference_type n) const
+		ThisClass operator+ (difference_type n) const
 		{
 			generic_iterator temp(*this);
 			return temp.operator+= (n);
 		}
 
-		inline reference operator[] (difference_type n)
+		reference operator[] (difference_type n)
 		{
 			generic_iterator temp(operator+ (n));
 			return temp.operator* ();
 		}
 
-		inline bool operator< (const ThisClass& other) const
+		bool operator< (const ThisClass& other) const
 		{
 			assert(&mSArray == &other.mSArray);
 			return mSlot < other.mSlot;
 		}
 
-		inline bool operator<= (const ThisClass& other) const
+		bool operator<= (const ThisClass& other) const
 		{
 			assert(&mSArray == &other.mSArray);
 			return mSlot <= other.mSlot;
 		}
 
-		inline bool operator> (const ThisClass& other) const
+		bool operator> (const ThisClass& other) const
 		{
 			assert(&mSArray == &other.mSArray);
 			return mSlot > other.mSlot;
 		}
 
-		inline bool operator>= (const ThisClass& other) const
+		bool operator>= (const ThisClass& other) const
 		{
 			assert(&mSArray == &other.mSArray);
 			return mSlot >= other.mSlot;
@@ -299,7 +299,7 @@ public:
 	//
 	// Returns true if the container is empty.
 	//
-	inline bool empty() const
+	bool empty() const
 	{
 		return mUsed == 0;
 	}
@@ -309,7 +309,7 @@ public:
 	//
 	// Returns the number of items currently stored in the container.
 	//
-	inline size_t size() const
+	size_t size() const
 	{
 		return mUsed;
 	}
@@ -332,7 +332,7 @@ public:
 	// the storage container is resized to accommodate additional insertions,
 	// up to a maximum capacity dictated by the max_size function.
 	//
-	inline size_t capacity() const
+	size_t capacity() const
 	{
 		return mSize;
 	}
@@ -342,7 +342,7 @@ public:
 	//
 	// Returns an iterator to the first item stored in the container.
 	//
-	inline iterator begin()
+	iterator begin()
 	{
 		if (empty())
 			return end();
@@ -352,7 +352,7 @@ public:
 	//
 	// SArray::begin
 	//
-	inline const_iterator begin() const
+	const_iterator begin() const
 	{
 		if (empty())
 			return end();
@@ -362,7 +362,7 @@ public:
 	//
 	// SArray::end
 	//
-	inline iterator end()
+	iterator end()
 	{
 		return iterator(*this, NOT_FOUND);
 	}
@@ -370,7 +370,7 @@ public:
 	//
 	// SArray::end
 	//
-	inline const_iterator end() const
+	const_iterator end() const
 	{
 		return const_iterator(*this, NOT_FOUND);
 	}
@@ -381,7 +381,7 @@ public:
 	// Indicates whether the given ID represents a valid item in the
 	// storage container.
 	//
-	inline bool validate(const SArrayId id) const
+	bool validate(const SArrayId id) const
 	{
 		return getSlot(id) != NOT_FOUND;
 	}
@@ -391,7 +391,7 @@ public:
 	//
 	// Returns an iterator to the item matching the given ID.
 	//
-	inline iterator find(const SArrayId id)
+	iterator find(const SArrayId id)
 	{
 		return iterator(*this, id);
 	}
@@ -399,7 +399,7 @@ public:
 	//
 	// SArray::find
 	//
-	inline const_iterator find(const SArrayId id) const
+	const_iterator find(const SArrayId id) const
 	{
 		return const_iterator(*this, id);
 	}
@@ -410,7 +410,7 @@ public:
 	// Returns the item matching the given ID. Note that passing an invalid ID
 	// results in undefined behavior.
 	//
-	inline VT& get(const SArrayId id)
+	VT& get(const SArrayId id)
 	{
 		SlotNumber slot = getSlot(id);
 		assert(slot != NOT_FOUND);
@@ -420,7 +420,7 @@ public:
 	//
 	// SArray::get
 	//
-	inline const VT& get(const SArrayId id) const
+	const VT& get(const SArrayId id) const
 	{
 		SlotNumber slot = getSlot(id);
 		assert(slot != NOT_FOUND);
@@ -432,12 +432,12 @@ public:
 	//
 	// Returns the item matching the given ID. Note that passing an invalid ID
 	// results in undefined behavior.
-	inline VT& operator[](const SArrayId id)
+	VT& operator[](const SArrayId id)
 	{
 		return get(id);
 	}
 
-	inline const VT& operator[](const SArrayId id) const
+	const VT& operator[](const SArrayId id) const
 	{
 		return get(id);
 	}
@@ -449,7 +449,7 @@ public:
 	// a reference to an item obtained through the get accessor results in
 	// undefined behavior.
 	//
-	inline SArrayId getId(const VT& item) const
+	SArrayId getId(const VT& item) const
 	{
 		assert(getSlot(item) != NOT_FOUND);
 		return mItemRecords[getSlot(item)].mId;
@@ -461,7 +461,7 @@ public:
 	// Inserts an uninitialized item into the container and returns the ID for
 	// the item.
 	//
-	inline SArrayId insert()
+	SArrayId insert()
 	{
 		SlotNumber slot = insertSlot();
 		return mItemRecords[slot].mId;
@@ -473,7 +473,7 @@ public:
 	// Inserts a copy of the given item into the container and returns the ID
 	// for the item.
 	//
-	inline SArrayId insert(const VT& item)
+	SArrayId insert(const VT& item)
 	{
 		SlotNumber slot = insertSlot();
 		mItemRecords[slot].mItem = item;
@@ -487,7 +487,7 @@ public:
 	// item's destructor will not be called until this SArray instance is
 	// deleted or goes out of scope.
 	//
-	inline void erase(const SArrayId id)
+	void erase(const SArrayId id)
 	{
 		const SlotNumber slot = getSlot(id);
 		assert(slot != NOT_FOUND);
@@ -502,7 +502,7 @@ public:
 	// Additionally, passing an item that is not a reference to an item obtained
 	// through the get accessor results in undefined behavior.
 	//
-	inline void erase(const VT& item)
+	void erase(const VT& item)
 	{
 		const SlotNumber slot = getSlot(item);
 		assert(slot != NOT_FOUND);
@@ -516,7 +516,7 @@ public:
 	// destructor will not be called until this SArray instance is deleted or
 	// goes out of scope.
 	//
-	inline void erase(iterator it)
+	void erase(iterator it)
 	{
 		assert(it.slot != NOT_FOUND);
 		eraseSlot(it.mSlot);
@@ -529,7 +529,7 @@ public:
 	// the items' destructors will not be called until this SArray instance is
 	// deleted or goes out of scope.
 	//
-	inline void erase(iterator it1, iterator it2)
+	void erase(iterator it1, iterator it2)
 	{
 		while (it1 != it2)
 		{
@@ -544,7 +544,7 @@ private:
 	//
 	// Resizes the storage array mItemReocrds to the new specified size.
 	//
-	inline void resize(SizeType newsize)
+	void resize(SizeType newsize)
 	{
 		assert(newsize > mSize);
 		assert(newsize <= MAX_SIZE);
@@ -570,7 +570,7 @@ private:
 	// Returns the slot portion of the given ID, verifying that the key portion
 	// of the ID is correct.
 	//
-	inline SlotNumber getSlot(const SArrayId id) const
+	SlotNumber getSlot(const SArrayId id) const
 	{
 		SlotNumber slot = id & SLOT_MASK;
 		assert(slot < mSize);
@@ -585,7 +585,7 @@ private:
 	// Returns the slot occupied by the given item. The item must be a reference
 	// returned by one of the class's accessor functions.
 	//
-	inline SlotNumber getSlot(const VT& item) const
+	SlotNumber getSlot(const VT& item) const
 	{
 		SlotNumber slot = (ItemRecord*)(&item) - mItemRecords.data();
 		if (slot < mSize && slotUsed(slot))
@@ -599,7 +599,7 @@ private:
 	// Creates a new ID number from a combination of mIdKey and the
 	// given slot number. mIdKey is then incremented, handling wrap-around.
 	//
-	inline SArrayId generateId(SlotNumber slot)
+	SArrayId generateId(SlotNumber slot)
 	{
 		assert(slot < mSize);
 		const SArrayId id = (mIdKey << SLOT_BITS) | slot;
@@ -614,7 +614,7 @@ private:
 	//
 	// Indicates if the given slot is currently in use.
 	//
-	inline bool slotUsed(SlotNumber slot) const
+	bool slotUsed(SlotNumber slot) const
 	{
 		return ((mItemRecords[slot].mId >> SLOT_BITS) >= MIN_KEY);
 	}
@@ -624,7 +624,7 @@ private:
 	//
 	// Returns the slot number for the next slot in use following given slot.
 	//
-	inline SlotNumber nextUsed(SlotNumber slot) const
+	SlotNumber nextUsed(SlotNumber slot) const
 	{
 		while (slot < mNextUnused && !slotUsed(slot))
 			slot++;
@@ -637,7 +637,7 @@ private:
 	//
 	// Returns the slot number for the slot in use that preceeds the given slot.
 	//
-	inline SlotNumber prevUsed(SlotNumber slot) const
+	SlotNumber prevUsed(SlotNumber slot) const
 	{
 		while (slot > 0 && !slotUsed(slot))
 			slot--;
@@ -654,7 +654,7 @@ private:
 	// Tracking variables mFreeHead and mNextUnused are updated as needed.
 	// The number of the slot availible for insertion is returned.
 	//
-	inline SlotNumber insertSlot()
+	SlotNumber insertSlot()
 	{
 		// need to resize?
 		if (mUsed == mSize)
@@ -686,7 +686,7 @@ private:
 	// Marks the given slot as being unused and updates the tracking variables
 	// mFreeHead and mUsed.
 	//
-	inline void eraseSlot(SlotNumber slot)
+	void eraseSlot(SlotNumber slot)
 	{
 		assert(slot < mSize);
 		if (slotUsed(slot))
@@ -703,7 +703,7 @@ private:
 	// Helper function for the assignment operator and copy constructor. Handles
 	// copying the contents of another SArray to this one.
 	//
-	inline void copyFrom(const SArrayType& other)
+	void copyFrom(const SArrayType& other)
 	{
 		mSize = other.mSize;
 		for (SlotNumber i = 0; i < mNextUnused; i++)
