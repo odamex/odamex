@@ -26,9 +26,7 @@
 #include <algorithm>
 #include <iterator>
 #include <cassert>
-
-#include <cstdlib>
-#include <ctime>
+#include <random>
 
 // ============================================================================
 //
@@ -67,7 +65,7 @@
 //
 // ============================================================================
 
-using SArrayId = unsigned int;
+using SArrayId = size_t;
 
 // ----------------------------------------------------------------------------
 // SArray interface & inline implementation
@@ -77,15 +75,16 @@ template <typename VT, int N = 16>
 class SArray
 {
 private:
-	typedef SArray<VT, N> SArrayType;
-	typedef unsigned int SlotNumber;
-
 	struct ItemRecord
 	{
 		VT				mItem;
 		SArrayId		mId;
 	};
 
+	using ItemRecords = std::vector<ItemRecord>;
+	using SizeType = typename ItemRecords::size_type;
+	using SArrayType = SArray<VT, N>;
+	using SlotNumber = SizeType;
 public:
 	// ------------------------------------------------------------------------
 	// SArray::iterator & const_iterator implementation
@@ -105,7 +104,7 @@ public:
 
 	public:
 		using iterator_category = std::forward_iterator_tag;
-		using value_type = SArray;
+		using value_type = IVT;
 		using difference_type = std::ptrdiff_t;
 		using pointer = value_type*;
 		using reference = value_type&;
@@ -144,12 +143,17 @@ public:
 			return !(operator==(other));
 		}
 
-		inline IVT& operator* ()
+		inline reference operator* ()
 		{
 			return mSArray.mItemRecords[mSlot].mItem;
 		}
 
-		inline IVT* operator-> ()
+		inline const reference operator* () const
+		{
+			return mSArray.mItemRecords[mSlot].mItem;
+		}
+
+		inline pointer operator-> ()
 		{
 			return &(mSArray.mItemRecords[mSlot].mItem);
 		}
@@ -166,20 +170,20 @@ public:
 			return temp.operator++ ();
 		}
 
-		inline ThisClass& operator+= (unsigned int n)
+		inline ThisClass& operator+= (difference_type n)
 		{
 			while (n--)
 				operator++ ();
 			return *this;
 		}
 
-		inline ThisClass operator+ (unsigned int n) const
+		inline ThisClass operator+ (difference_type n) const
 		{
 			generic_iterator temp(*this);
 			return temp.operator+= (n);
 		}
 
-		inline IVT& operator[] (unsigned int n)
+		inline reference operator[] (difference_type n)
 		{
 			generic_iterator temp(operator+ (n));
 			return temp.operator* ();
@@ -225,8 +229,8 @@ public:
 	//
 	// Initializes the container to the specified size.
 	//
-	SArray(unsigned int size) :
-		mItemRecords(NULL), mSize(0)
+	SArray(SizeType size) :
+		mSize(0)
 	{
 		clear();
 		resize(size > MAX_SIZE ? MAX_SIZE : size);
@@ -238,7 +242,7 @@ public:
 	// Initializes the container as a copy of the given SArray
 	//
 	SArray(const SArrayType& other) :
-		mItemRecords(NULL), mSize(0)
+		mSize(0)
 	{
 		clear();
 		resize(other.mSize);
@@ -250,10 +254,7 @@ public:
 	//
 	// Frees the memory used by the storage container.
 	//
-	~SArray()
-	{
-		delete [] mItemRecords;
-	}
+	~SArray() {}
 
 	//
 	// SArray::operator=
@@ -264,8 +265,7 @@ public:
 	{
 		if (mSize != other.mSize)
 		{
-			delete [] mItemRecords;
-			mItemRecords = new ItemRecord[other.mSize];
+			mItemRecords.resize(other.mItemRecords.size());
 		}
 
 		copyFrom(other);
@@ -286,11 +286,12 @@ public:
 
 		// Set mIdKey to a random value to further help stale IDs handed out
 		// before clear was called.
-		srand(time(NULL));
-		mIdKey = MIN_KEY + (rand() % (MAX_KEY - MIN_KEY));
+		static std::mt19937 rng(std::random_device{}());
+    	std::uniform_int_distribution<decltype(mIdKey)> dist(MIN_KEY, MAX_KEY - 1);
+		mIdKey = dist(rng);
 
-		for (unsigned int i = 0; i < mSize; i++)
-			mItemRecords[i].mId = NOT_FOUND;
+		std::fill_n(mItemRecords.begin(), mItemRecords.begin() + mSize,
+			[](ItemRecord& r){ r.mId = NOT_FOUND; });
 	}
 
 	//
@@ -543,12 +544,13 @@ private:
 	//
 	// Resizes the storage array mItemReocrds to the new specified size.
 	//
-	inline void resize(unsigned int newsize)
+	inline void resize(SizeType newsize)
 	{
 		assert(newsize > mSize);
 		assert(newsize <= MAX_SIZE);
 
-		ItemRecord* newitemrecords = new ItemRecord[newsize];
+		std::vector<ItemRecord> newitemrecords;
+		newitemrecords.resize(newsize);
 		for (SlotNumber i = 0; i < mNextUnused; i++)
 		{
 			newitemrecords[i].mItem = mItemRecords[i].mItem;
@@ -557,10 +559,9 @@ private:
 		for (SlotNumber i = mNextUnused; i < newsize; i++)
 			newitemrecords[i].mId = NOT_FOUND;
 
-		delete [] mItemRecords;
 		mSize = newsize;
-		mItemRecords = newitemrecords;
-		assert(mItemRecords != NULL);
+		mItemRecords = std::move(newitemrecords);
+		assert(!mItemRecords.empty());
 	}
 
 	//
@@ -586,7 +587,7 @@ private:
 	//
 	inline SlotNumber getSlot(const VT& item) const
 	{
-		SlotNumber slot = (ItemRecord*)(&item) - mItemRecords;
+		SlotNumber slot = (ItemRecord*)(&item) - mItemRecords.data();
 		if (slot < mSize && slotUsed(slot))
 			return slot;
 		return NOT_FOUND;
@@ -658,7 +659,7 @@ private:
 		// need to resize?
 		if (mUsed == mSize)
 		{
-			const unsigned int newsize = 2 * mSize > MAX_SIZE ? MAX_SIZE : 2 * mSize;
+			const SizeType newsize = 2 * mSize > MAX_SIZE ? MAX_SIZE : 2 * mSize;
 			// is it full and not able to be resized?
 			assert(mSize != newsize);
 			if (mSize == newsize)
@@ -717,23 +718,23 @@ private:
 		mIdKey = other.mIdKey;
 	}
 
-	static constexpr unsigned int SLOT_BITS = N;
-	static constexpr unsigned int KEY_BITS = 32 - SLOT_BITS;
-	static constexpr unsigned int MAX_SIZE = 1 << SLOT_BITS;
+	static constexpr SizeType SLOT_BITS = N;
+	static constexpr SizeType KEY_BITS = 32 - SLOT_BITS;
+	static constexpr SizeType MAX_SIZE = 1 << SLOT_BITS;
 
-	static constexpr unsigned int MIN_KEY = 2;
-	static constexpr unsigned int MAX_KEY = (1 << KEY_BITS) - 1;
+	static constexpr SizeType MIN_KEY = 2;
+	static constexpr SizeType MAX_KEY = (1 << KEY_BITS) - 1;
 
-	static constexpr unsigned int MIN_SLOT = 0;
-	static constexpr unsigned int MAX_SLOT = (1 << SLOT_BITS) - 1;
-	static constexpr unsigned int SLOT_MASK = (1 << SLOT_BITS) - 1;
+	static constexpr SizeType MIN_SLOT = 0;
+	static constexpr SizeType MAX_SLOT = (1 << SLOT_BITS) - 1;
+	static constexpr SizeType SLOT_MASK = (1 << SLOT_BITS) - 1;
 
-	static constexpr unsigned int NOT_FOUND = (1 << SLOT_BITS) | MAX_SLOT;
+	static constexpr SizeType NOT_FOUND = (1 << SLOT_BITS) | MAX_SLOT;
 
-	ItemRecord*		mItemRecords;
-	unsigned int	mSize;
-	unsigned int	mUsed;
-	SlotNumber		mNextUnused;
-	SlotNumber		mFreeHead;
-	unsigned int	mIdKey;
+	ItemRecords  mItemRecords;
+	SizeType     mSize;
+	SizeType     mUsed;
+	SlotNumber   mNextUnused;
+	SlotNumber   mFreeHead;
+	SizeType     mIdKey;
 };

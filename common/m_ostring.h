@@ -490,7 +490,7 @@ private:
 	// internal typedefs
 	// ------------------------------------------------------------------------
 
-	typedef unsigned int StringIdType;
+	typedef SArrayId StringIdType;
 	typedef unsigned int HashedStringType;
 
 	typedef SArray<StringRecord> StringTable;
