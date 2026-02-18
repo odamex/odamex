@@ -2995,7 +2995,7 @@ static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 		clientPlayer->mo->angle = angle;
 		clientPlayer->mo->pitch = pitch;
     
-    //fix jitter when demo's cl_movebob is dif than user's, viewz will set in P_CalcHeight()
+		//fix jitter when demo's cl_movebob is dif than user's, viewz will set in P_CalcHeight()
 		//clientPlayer->viewz = viewz;
 
 		clientPlayer->viewheight = viewheight;
