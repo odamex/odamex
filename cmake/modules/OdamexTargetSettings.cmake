@@ -67,6 +67,14 @@ function(odamex_target_settings _TARGET)
         -fsanitize=thread -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls)
       target_link_options("${_TARGET}" PRIVATE -fsanitize=thread)
     endif()
+
+    if(USE_SANITIZE_UNDEFINED)
+      # doom is full of left shifts of negative values, which is UB
+      # but since there's so many, it drowns out the rest of the UB warnings
+      target_compile_options("${_TARGET}" PRIVATE
+        -fsanitize=undefined -fno-sanitize=shift -O1)
+      target_link_options("${_TARGET}" PRIVATE -fsanitize=undefined -fno-sanitize=shift)
+    endif()
   endif()
 
   # Add checked compile options - mostly taken from:
