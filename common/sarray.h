@@ -71,14 +71,19 @@ using SArrayId = size_t;
 // SArray interface & implementation
 // ----------------------------------------------------------------------------
 
-template <typename VT, int N = 16>
+template <typename VT, int N = 16,
+	typename = std::enable_if_t<
+		std::is_default_constructible_v<VT> &&
+		std::is_copy_assignable_v<VT> &&
+		std::is_copy_constructible_v<VT>
+	>>
 class SArray
 {
 private:
 	struct ItemRecord
 	{
 		VT				mItem;
-		SArrayId		mId;
+		SArrayId		mId = NOT_FOUND;
 	};
 
 	using ItemRecords = std::vector<ItemRecord>;
@@ -250,6 +255,18 @@ public:
 	}
 
 	//
+	// SArray:SArray
+	//
+	// Initializes the container by moving from the given SArray
+	//
+	SArray(SArrayType&& other) :
+		mSize(other.mSize)
+	{
+		clear();
+		moveFrom(std::move(other));
+	}
+
+	//
 	// SArray::~SArray
 	//
 	// Frees the memory used by the storage container.
@@ -263,12 +280,33 @@ public:
 	//
 	SArray& operator= (const SArrayType& other)
 	{
+		if (&other == this)
+		{
+			return *this;
+		}
+
 		if (mSize != other.mSize)
 		{
 			mItemRecords.resize(other.mItemRecords.size());
 		}
 
 		copyFrom(other);
+		return *this;
+	}
+
+	//
+	// SArray::operator=
+	//
+	// Moves the contents of the given SArray to this one.
+	//
+	SArray& operator= (SArrayType&& other)
+	{
+		if (mSize != other.mSize)
+		{
+			mItemRecords.resize(other.mItemRecords.size());
+		}
+
+		moveFrom(std::move(other));
 		return *this;
 	}
 
@@ -287,11 +325,14 @@ public:
 		// Set mIdKey to a random value to further help stale IDs handed out
 		// before clear was called.
 		static std::mt19937 rng(std::random_device{}());
-    	std::uniform_int_distribution<decltype(mIdKey)> dist(MIN_KEY, MAX_KEY - 1);
+		std::uniform_int_distribution<decltype(mIdKey)> dist(MIN_KEY, MAX_KEY - 1);
 		mIdKey = dist(rng);
 
-		std::fill_n(mItemRecords.begin(), mItemRecords.begin() + mSize,
-			[](ItemRecord& r){ r.mId = NOT_FOUND; });
+		// make sure destructors are called
+		// the standard guarantees that this
+		// will not (de)allocate the vector storage
+		mItemRecords.clear();
+		mItemRecords.resize(mSize);
 	}
 
 	//
@@ -299,7 +340,7 @@ public:
 	//
 	// Returns true if the container is empty.
 	//
-	bool empty() const
+	bool empty() const noexcept
 	{
 		return mUsed == 0;
 	}
@@ -309,7 +350,7 @@ public:
 	//
 	// Returns the number of items currently stored in the container.
 	//
-	size_t size() const
+	size_t size() const noexcept
 	{
 		return mUsed;
 	}
@@ -320,7 +361,7 @@ public:
 	// Returns the maximum size that the container can grow to. This number
 	// is directly based on the template parameter N.
 	//
-	static constexpr size_t max_size()
+	static constexpr size_t max_size() noexcept
 	{
 		return MAX_SIZE;
 	}
@@ -332,7 +373,7 @@ public:
 	// the storage container is resized to accommodate additional insertions,
 	// up to a maximum capacity dictated by the max_size function.
 	//
-	size_t capacity() const
+	size_t capacity() const noexcept
 	{
 		return mSize;
 	}
@@ -481,6 +522,19 @@ public:
 	}
 
 	//
+	// SArray::insert
+	//
+	// Moves the given item into the container and returns the ID
+	// for the item.
+	//
+	SArrayId insert(VT&& item)
+	{
+		SlotNumber slot = insertSlot();
+		mItemRecords[slot].mItem = std::move(item);
+		return mItemRecords[slot].mId;
+	}
+
+	//
 	// SArray::erase
 	//
 	// Removes the item matching the given ID from the container. Note that the
@@ -548,19 +602,8 @@ private:
 	{
 		assert(newsize > mSize);
 		assert(newsize <= MAX_SIZE);
-
-		std::vector<ItemRecord> newitemrecords;
-		newitemrecords.resize(newsize);
-		for (SlotNumber i = 0; i < mNextUnused; i++)
-		{
-			newitemrecords[i].mItem = mItemRecords[i].mItem;
-			newitemrecords[i].mId = mItemRecords[i].mId;
-		}
-		for (SlotNumber i = mNextUnused; i < newsize; i++)
-			newitemrecords[i].mId = NOT_FOUND;
-
 		mSize = newsize;
-		mItemRecords = std::move(newitemrecords);
+		mItemRecords.resize(newsize);
 		assert(!mItemRecords.empty());
 	}
 
@@ -587,6 +630,7 @@ private:
 	//
 	SlotNumber getSlot(const VT& item) const
 	{
+		// TODO: this is undefined behavior even if item is in the array
 		SlotNumber slot = (ItemRecord*)(&item) - mItemRecords.data();
 		if (slot < mSize && slotUsed(slot))
 			return slot;
@@ -703,14 +747,31 @@ private:
 	// Helper function for the assignment operator and copy constructor. Handles
 	// copying the contents of another SArray to this one.
 	//
-	void copyFrom(const SArrayType& other)
+	void copyFrom(const SArrayType& other) noexcept(std::is_nothrow_copy_assignable_v<VT>)
 	{
 		mSize = other.mSize;
-		for (SlotNumber i = 0; i < mNextUnused; i++)
+		for (SlotNumber i = 0; i < other.mNextUnused; i++)
 		{
 			mItemRecords[i].mItem = other.mItemRecords[i].mItem;
 			mItemRecords[i].mId = other.mItemRecords[i].mId;
 		}
+
+		mUsed = other.mUsed;
+		mNextUnused = other.mNextUnused;
+		mFreeHead = other.mFreeHead;
+		mIdKey = other.mIdKey;
+	}
+
+	//
+	// SArray::moveFrom
+	//
+	// Helper function for the move assignment operator and move constructor. Handles
+	// copying the contents of another SArray to this one.
+	//
+	void moveFrom(SArrayType&& other) noexcept
+	{
+		mSize = other.mSize;
+		mItemRecords = std::move(other.mItemRecords);
 
 		mUsed = other.mUsed;
 		mNextUnused = other.mNextUnused;
