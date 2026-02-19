@@ -631,8 +631,7 @@ private:
 	//
 	SlotNumber getSlot(const VT& item) const noexcept
 	{
-		// TODO: this is undefined behavior even if item is in the array
-		SlotNumber slot = (ItemRecord*)(&item) - mItemRecords.data();
+		SlotNumber slot = reinterpret_cast<const ItemRecord*>(std::addressof(item)) - mItemRecords.data();
 		if (slot < mSize && slotUsed(slot))
 			return slot;
 		return NOT_FOUND;
