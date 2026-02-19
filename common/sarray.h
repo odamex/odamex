@@ -777,6 +777,9 @@ private:
 		mNextUnused = other.mNextUnused;
 		mFreeHead = other.mFreeHead;
 		mIdKey = other.mIdKey;
+		// make sure other members get reset to valid states
+		// that correspond with the now-empty vector
+		other.clear();
 	}
 
 	static constexpr SizeType SLOT_BITS = N;
