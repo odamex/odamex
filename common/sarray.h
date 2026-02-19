@@ -71,14 +71,11 @@ using SArrayId = size_t;
 // SArray interface & implementation
 // ----------------------------------------------------------------------------
 
-template <typename VT, int N = 16,
-	typename = std::enable_if_t<
+template <typename VT, int N = 16
 		// VT has to be default constructible, but this check breaks OString
 		// see https://www.open-std.org/JTC1/SC22/WG21/docs/cwg_active.html#2335
-		// std::is_default_constructible_v<VT> &&
-		std::is_copy_assignable_v<VT> &&
-		std::is_copy_constructible_v<VT>
-	>>
+		// , typename = std::enable_if_t< std::is_default_constructible_v<VT>>
+	>
 class SArray
 {
 private:

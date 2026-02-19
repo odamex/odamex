@@ -162,3 +162,39 @@ TEST(SArray, MoveAssignmentFromSmaller) {
 	EXPECT_EQ(array1.size(), 1);
 	EXPECT_EQ(array1[id1], 5);
 }
+
+TEST(SArray, MoveOnlyType)
+{
+	struct MoveOnly {
+		int value;
+		MoveOnly(int v = 0) : value(v) {}
+
+		MoveOnly(const MoveOnly&) = delete;
+		MoveOnly& operator=(const MoveOnly&) = delete;
+
+		MoveOnly(MoveOnly&&) noexcept = default;
+		MoveOnly& operator=(MoveOnly&&) noexcept = default;
+	};
+
+	SArray<MoveOnly> array(10);
+
+	MoveOnly m(4);
+
+	SArrayId id1 = array.insert(MoveOnly(1));
+	SArrayId id2 = array.insert(MoveOnly(2));
+	SArrayId id3 = array.insert(MoveOnly(3));
+	SArrayId id4 = array.insert(std::move(m));
+
+	SArray<MoveOnly> array2(10);
+	array2 = std::move(array);
+
+	SArray<MoveOnly> array3(std::move(array2));
+
+	ASSERT_TRUE(array.empty());
+	ASSERT_TRUE(array2.empty());
+	ASSERT_EQ(array3.size(), 4);
+	ASSERT_EQ(array3[id1].value, 1);
+	ASSERT_EQ(array3[id2].value, 2);
+	ASSERT_EQ(array3[id3].value, 3);
+	ASSERT_EQ(array3[id4].value, 4);
+}
