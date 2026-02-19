@@ -177,7 +177,7 @@ void SpreeManager::setRawSpreeBreaker(const SpreeBreaker_t& breaker, const int l
 				if (!validplayer(source))
 						break;
 
-				newbreaker.spreeEndedTeam = source.userinfo.team;
+				newbreaker.spreeEnderTeam = source.userinfo.team;
 				}
 		break;
 		case BR_MONSTER:
