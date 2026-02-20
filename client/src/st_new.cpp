@@ -1600,80 +1600,34 @@ void SpreeHud()
 	const SpreeRecord_t& other_spree_r = manager.getLatestSpreeRecord(p.id);
 	const SpreeBreaker_t& global_spree_breaker = manager.getSpreeBreaker();
 
-	bool otherPlayerValid = false;
-	bool spreeBreakerValid = false;
-	bool playerStillDominatingValid = false;
+	int spreeBreakerTic = global_spree_breaker.spreeEndedTic;
+	int spreeTic = other_spree_r.spreeStartTic;
 
-	if (spree_r.playerId == -1 && other_spree_r.playerId == -1 && global_spree_breaker.spreeEndedPlayerId == -1)
-	{
-		// All are invalid, bomb out here.
-		return;
-	}
-
-	// Still dominating text only shows up as small text.
 	if (spree_r.playerId != -1 && spree_r.stillDominating)
 	{
-		playerStillDominatingValid = true;
-	}
-
-	if (other_spree_r.playerId != -1)
-	{
-		otherPlayerValid = true;
-	}
-
-	if (global_spree_breaker.spreeEndedPlayerId != -1)
-	{
-		spreeBreakerValid = true;
-	}
-
-	if (!otherPlayerValid && !spreeBreakerValid && !playerStillDominatingValid)
-	{
-		return;
-	}
-	else if (otherPlayerValid && !spreeBreakerValid && !playerStillDominatingValid)
-	{
-		// Just display the other player's spree
-		DisplaySmallSpree(other_spree_r);
-	}
-	else if (!otherPlayerValid && spreeBreakerValid && !playerStillDominatingValid)
-	{
-		// Just display the spree breaker
-		DisplaySmallSpreeBreaker(global_spree_breaker);
-	}
-	else if (!otherPlayerValid && !spreeBreakerValid && playerStillDominatingValid)
-	{
-		// Just display the still dominating text.
-		DisplaySmallSpree(spree_r);
-	}
-	else
-	{
-		// All 3 are valid, compare times
-		if (other_spree_r.spreeStartTic > global_spree_breaker.spreeEndedTic)
+		// If we're still dominating, we want to show the spree breaker if it's more recent than our spree.
+		if (spreeBreakerTic > spree_r.spreeStartTic)
 		{
-
-			if (other_spree_r.spreeStartTic > spree_r.spreeStartTic)
-			{
-				// Display other player's spree
-				DisplaySmallSpree(other_spree_r);
-			}
-			else
-			{
-				// Display still dominating
-				DisplaySmallSpree(spree_r);
-			}
+			DisplaySmallSpreeBreaker(global_spree_breaker);
+		}
+		else if (spreeTic > spree_r.spreeStartTic)
+		{
+			DisplaySmallSpree(other_spree_r);
 		}
 		else
 		{
-			if (global_spree_breaker.spreeEndedTic > spree_r.spreeStartTic)
-			{
-				// Display spree breaker
-				DisplaySmallSpreeBreaker(global_spree_breaker);
-			}
-			else
-			{
-				// Display still dominating
-				DisplaySmallSpree(spree_r);
-			}
+			DisplaySmallSpree(spree_r);
+		}
+	}
+	else
+	{
+		if (spreeBreakerTic > spreeTic)
+		{
+			DisplaySmallSpreeBreaker(global_spree_breaker);
+		}
+		else if (other_spree_r.playerId != -1)
+		{
+			DisplaySmallSpree(other_spree_r);
 		}
 	}
 }
