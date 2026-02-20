@@ -66,12 +66,16 @@ class StopwatchManager
 		/// enabled, recorded stopwatches.
 		void RecordSamples(int i_tic);
 
-		/// Close the recording file.
-		void StopRecording();
+		/// Close the recording file.  Returns true if there was a recording
+		/// in progress that is now stopped, false otherwise.
+		bool StopRecording();
+
+		const std::string& GetFilename() { return m_outFilename; }
 
 	protected:
 
 		WatchMap                                m_watches;
 		std::unique_ptr<std::ofstream>          m_outFile;
+		std::string                             m_outFilename;
 		std::vector<std::shared_ptr<Stopwatch>> m_activeRecordingWatches;
 };

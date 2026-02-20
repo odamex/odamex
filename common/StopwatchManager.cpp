@@ -116,6 +116,7 @@ bool StopwatchManager::StartRecording(const std::string& i_filepath)
 
 	if (m_outFile->good())
 	{
+		m_outFilename = i_filepath;
 		const std::string headingLine = std::accumulate(m_activeRecordingWatches.begin(),
 		                                                m_activeRecordingWatches.end(),
 		                                                std::string("gametic"),
@@ -147,8 +148,14 @@ void StopwatchManager::RecordSamples(int i_gametic)
 	}
 }
 
-void StopwatchManager::StopRecording()
+bool StopwatchManager::StopRecording()
 {
-	m_outFile.reset();
-	m_activeRecordingWatches.clear();
+	if (m_outFile)
+	{
+		m_outFile.reset();
+		m_outFilename.clear();
+		m_activeRecordingWatches.clear();
+		return true;
+	}
+	return false;
 }

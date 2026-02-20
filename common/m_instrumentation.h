@@ -20,7 +20,9 @@ class TimingInstr
 
         bool StartRecording(const std::string& i_filename);
         void ManageRecording(int i_tic);
-        void StopRecording();
+        bool StopRecording();
+
+        const std::string& GetFilename();
 
     protected:
         TimingInstr() = default;

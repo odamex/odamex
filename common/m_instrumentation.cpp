@@ -47,15 +47,28 @@ BEGIN_COMMAND(instrecord)
 
     const std::string filepath = path + argv[1];
 
-    TimingInstr::Get().StartRecording(path + argv[1]);
-
-    PrintFmt(PRINT_HIGH, "Recording stopwatches to {}\n", filepath);
+    if (TimingInstr::Get().StartRecording(path + argv[1]))
+    {
+        PrintFmt(PRINT_HIGH, "Recording stopwatches to {}\n", filepath);
+    }
+    else
+    {
+        PrintFmt(PRINT_WARNING, "Cannot open file for recording: {}\n", filepath);
+    }
 }
 END_COMMAND(instrecord)
 
 BEGIN_COMMAND(inststop)
 {
-    TimingInstr::Get().StopRecording();
+    const std::string filepath = TimingInstr::Get().GetFilename();
+    if (TimingInstr::Get().StopRecording())
+    {
+        PrintFmt(PRINT_HIGH, "Stopped recording to {}\n", filepath);
+    }
+    else
+    {
+        PrintFmt(PRINT_HIGH, "No recording to stop.\n");
+    }
 }
 END_COMMAND(inststop)
 
@@ -96,8 +109,12 @@ void TimingInstr::ManageRecording(int i_tic)
     m_manager.RecordSamples(i_tic);
 }
 
-void TimingInstr::StopRecording()
+bool TimingInstr::StopRecording()
 {
-    m_manager.StopRecording();
+    return m_manager.StopRecording();
 }
 
+const std::string& TimingInstr::GetFilename()
+{
+    return m_manager.GetFilename();
+}
