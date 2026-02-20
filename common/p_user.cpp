@@ -72,6 +72,7 @@ static player_t nullplayer;		// used to indicate 'player not found' when searchi
 EXTERN_CVAR (sv_allowmovebob)
 EXTERN_CVAR (sv_showplayerpowerups)
 EXTERN_CVAR (cl_movebob)
+EXTERN_CVAR (cl_movebobtype)
 
 player_t &idplayer(byte id)
 {
@@ -475,6 +476,8 @@ void P_CalcHeight (player_t& player)
 	// [SL] Scale view-bobbing based on user's preference (if the server allows)
 	if (sv_allowmovebob || (clientside && serverside))
 		bob *= cl_movebob;
+	if ((sv_allowmovebob || (clientside && serverside)) && cl_movebobtype == 0) // weapon bob only
+		bob = 0;
 
 	player.viewz = player.mo->z + player.viewheight + bob;
 
@@ -1156,9 +1159,11 @@ fixed_t P_TickWeaponBobX()
 {
 	// Update bob - this happens once per gametic
 	player_t& player = displayplayer();
-	const float bob_amount =
-		((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob
-		: 1.0f;
+	const bool allow_custom_bob = (clientside && sv_allowmovebob) || (clientside && serverside);
+	float bob_amount = allow_custom_bob ? cl_movebob : 1.0f;
+	
+	if (allow_custom_bob && cl_movebobtype == 2) // view bob only
+		bob_amount = 0;
 
 	return P_CalculateWeaponBobX(player, bob_amount);
 }
@@ -1167,9 +1172,11 @@ fixed_t P_TickWeaponBobY()
 {
 	// Update bob - this happens once per gametic
 	player_t& player = displayplayer();
-	const float bob_amount =
-		((clientside && sv_allowmovebob) || (clientside && serverside)) ? cl_movebob
-		: 1.0f;
+	const bool allow_custom_bob = (clientside && sv_allowmovebob) || (clientside && serverside);
+	float bob_amount = allow_custom_bob ? cl_movebob : 1.0f;
+
+	if (allow_custom_bob && cl_movebobtype == 2) // view bob only
+		bob_amount = 0;
 
 	return P_CalculateWeaponBobY(player, bob_amount);
 }

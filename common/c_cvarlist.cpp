@@ -455,8 +455,17 @@ CVAR_RANGE(			cl_predictsectors, "1", "Move floors and ceilings immediately inst
 CVAR(				cl_predictpickup, "1", "Predict weapon pickups",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR_RANGE(			cl_movebob, "1.0", "Adjust weapon and movement bobbing",
+CVAR_RANGE(			cl_movebob, "1.0", "Adjust scale of weapon and view bobbing",
 					CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(cl_movebobtype, "1",
+           "When to bob the weapon and/or view, "
+           "values are:\n"
+           "// 0 - Weapon only bobbing, no view bobbing\n"
+           "// 1 - Weapon and view bobbing\n"
+           "// 2 - View only bobbing, no weapon bobbing\n"
+           "// 3 - Weapon and view bobbing on reload only\n",
+           CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 
 CVAR(				cl_centerbobonfire, "0",
 					"Centers the weapon bobbing when firing a weapon",
