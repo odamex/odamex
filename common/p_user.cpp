@@ -475,9 +475,7 @@ void P_CalcHeight (player_t& player)
 
 	// [SL] Scale view-bobbing based on user's preference (if the server allows)
 	if (sv_allowmovebob || (clientside && serverside))
-		bob *= cl_movebob;
-	if ((sv_allowmovebob || (clientside && serverside)) && cl_movebobtype == 0) // weapon bob only
-		bob = 0;
+		bob *= cl_movebobtype == 0 ? 0 : cl_movebob;  // type 0 is weapon bobbing only
 
 	player.viewz = player.mo->z + player.viewheight + bob;
 
