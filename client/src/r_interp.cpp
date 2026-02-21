@@ -207,6 +207,7 @@ void OInterpolation::ticGameInterpolation()
 				if (seen_ceilingsectornums.count(affectee))
 					continue;
 
+				seen_ceilingsectornums.insert(affectee);
 				prev_sectorceilingscrollingflat.emplace_back(
 						std::make_pair(
 							sectors[affectee].ceiling_xoffs,
@@ -218,6 +219,7 @@ void OInterpolation::ticGameInterpolation()
 				if (seen_floorsectornums.count(affectee))
 					continue;
 
+				seen_floorsectornums.insert(affectee);
 				prev_sectorfloorscrollingflat.emplace_back(
 						std::make_pair(
 							sectors[affectee].floor_xoffs,
