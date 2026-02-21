@@ -38,6 +38,8 @@
 #include "p_local.h"
 #include "r_interp.h"
 
+#include <unordered_set>
+
 EXTERN_CVAR(sv_allowmovebob)
 EXTERN_CVAR(cl_movebob)
 
@@ -156,6 +158,9 @@ void OInterpolation::ticGameInterpolation()
 	prev_linescrollingtex.clear();
 	prev_sectorceilingscrollingflat.clear();
 	prev_sectorfloorscrollingflat.clear();
+	seen_wallnums.clear();
+	seen_ceilingsectornums.clear();
+	seen_floorsectornums.clear();
 	prev_sky2offset = 0;
 	prev_camerax = 0;
 	prev_cameray = 0;
@@ -187,8 +192,9 @@ void OInterpolation::ticGameInterpolation()
 			{
 				int wallnum = scroller->GetWallNum();
 
-				if (wallnum >= 0) // huh?!?
+				if (wallnum >= 0 && !seen_wallnums.count(wallnum)) // huh?!?
 				{
+					seen_wallnums.insert(wallnum);
 					prev_linescrollingtex.emplace_back(
 						std::make_pair(
 							sides[wallnum].textureoffset,
@@ -198,6 +204,9 @@ void OInterpolation::ticGameInterpolation()
 			}
 			else if (P_CeilingScrollType(type))
 			{
+				if (seen_ceilingsectornums.count(affectee))
+					continue;
+
 				prev_sectorceilingscrollingflat.emplace_back(
 						std::make_pair(
 							sectors[affectee].ceiling_xoffs,
@@ -206,6 +215,9 @@ void OInterpolation::ticGameInterpolation()
 			}
 			else if (P_FloorScrollType(type))
 			{
+				if (seen_floorsectornums.count(affectee))
+					continue;
+
 				prev_sectorfloorscrollingflat.emplace_back(
 						std::make_pair(
 							sectors[affectee].floor_xoffs,

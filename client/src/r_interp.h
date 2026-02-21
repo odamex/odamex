@@ -30,6 +30,8 @@
 
 #pragma once
 
+#include <unordered_set>
+
 #include "m_fixed.h"
 #include "r_defs.h"
 
@@ -84,12 +86,15 @@ private:
 	// Line scrolling
 	std::vector<fixed_fixed_uint_pair> prev_linescrollingtex; // <x offs, yoffs>, linenum
 	std::vector<fixed_fixed_uint_pair> saved_linescrollingtex;
+	std::unordered_set<int> seen_wallnums;
 
 	// Floor/Ceiling scrolling
 	std::vector<fixed_fixed_uint_pair> prev_sectorceilingscrollingflat; // <x offs, yoffs>, sectornum
 	std::vector<fixed_fixed_uint_pair> saved_sectorceilingscrollingflat;
+	std::unordered_set<int> seen_ceilingsectornums;
 	std::vector<fixed_fixed_uint_pair> prev_sectorfloorscrollingflat; // <x offs, yoffs>, sectornum
 	std::vector<fixed_fixed_uint_pair> saved_sectorfloorscrollingflat;
+	std::unordered_set<int> seen_floorsectornums;
 
 	// Skies
 	fixed_t saved_sky2offset;
