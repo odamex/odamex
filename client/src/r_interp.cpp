@@ -38,8 +38,6 @@
 #include "p_local.h"
 #include "r_interp.h"
 
-#include <unordered_set>
-
 EXTERN_CVAR(sv_allowmovebob)
 EXTERN_CVAR(cl_movebob)
 
