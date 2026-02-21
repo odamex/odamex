@@ -30,13 +30,10 @@
 
 #pragma once
 
-#include <unordered_set>
+#include <unordered_map>
 
 #include "m_fixed.h"
 #include "r_defs.h"
-
-typedef std::pair<fixed_t, unsigned int> fixed_uint_pair;
-typedef std::pair<std::pair<fixed_t, fixed_t>, unsigned int> fixed_fixed_uint_pair;
 
 class OInterpolation
 {
@@ -76,6 +73,10 @@ private:
 	// camera interpolation
 	void interpolateCamera(fixed_t amount, bool use_localview, bool chasecam);
 
+	using fixed_uint_pair = std::pair<fixed_t, uint32_t>;
+	using fixed_fixed_uint_pair = std::pair<std::pair<fixed_t, fixed_t>, uint32_t>;
+	using fixed_fixed_pair = std::pair<fixed_t, fixed_t>;
+
 	// private interpolation state variables
 	// Sector heights
 	std::vector<fixed_uint_pair> prev_ceilingheight;
@@ -84,17 +85,14 @@ private:
 	std::vector<fixed_uint_pair> saved_floorheight;
 
 	// Line scrolling
-	std::vector<fixed_fixed_uint_pair> prev_linescrollingtex; // <x offs, yoffs>, linenum
+	std::unordered_map<uint32_t, fixed_fixed_pair> prev_linescrollingtex; // linenum, <x offs, yoffs>
 	std::vector<fixed_fixed_uint_pair> saved_linescrollingtex;
-	std::unordered_set<int> seen_wallnums;
 
 	// Floor/Ceiling scrolling
-	std::vector<fixed_fixed_uint_pair> prev_sectorceilingscrollingflat; // <x offs, yoffs>, sectornum
+	std::unordered_map<uint32_t, fixed_fixed_pair> prev_sectorceilingscrollingflat; // sectornum, <x offs, yoffs>
 	std::vector<fixed_fixed_uint_pair> saved_sectorceilingscrollingflat;
-	std::unordered_set<int> seen_ceilingsectornums;
-	std::vector<fixed_fixed_uint_pair> prev_sectorfloorscrollingflat; // <x offs, yoffs>, sectornum
+	std::unordered_map<uint32_t, fixed_fixed_pair> prev_sectorfloorscrollingflat; // sectornum, <x offs, yoffs>
 	std::vector<fixed_fixed_uint_pair> saved_sectorfloorscrollingflat;
-	std::unordered_set<int> seen_floorsectornums;
 
 	// Skies
 	fixed_t saved_sky2offset;

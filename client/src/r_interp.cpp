@@ -158,9 +158,6 @@ void OInterpolation::ticGameInterpolation()
 	prev_linescrollingtex.clear();
 	prev_sectorceilingscrollingflat.clear();
 	prev_sectorfloorscrollingflat.clear();
-	seen_wallnums.clear();
-	seen_ceilingsectornums.clear();
-	seen_floorsectornums.clear();
 	prev_sky2offset = 0;
 	prev_camerax = 0;
 	prev_cameray = 0;
@@ -192,39 +189,33 @@ void OInterpolation::ticGameInterpolation()
 			{
 				int wallnum = scroller->GetWallNum();
 
-				if (wallnum >= 0 && !seen_wallnums.count(wallnum)) // huh?!?
+				if (wallnum >= 0) // huh?!?
 				{
-					seen_wallnums.insert(wallnum);
-					prev_linescrollingtex.emplace_back(
+					prev_linescrollingtex.emplace(
+						wallnum,
 						std::make_pair(
 							sides[wallnum].textureoffset,
-							sides[wallnum].rowoffset),
-								wallnum);
+							sides[wallnum].rowoffset)
+					);
 				}
 			}
 			else if (P_CeilingScrollType(type))
 			{
-				if (seen_ceilingsectornums.count(affectee))
-					continue;
-
-				seen_ceilingsectornums.insert(affectee);
-				prev_sectorceilingscrollingflat.emplace_back(
-						std::make_pair(
-							sectors[affectee].ceiling_xoffs,
-							sectors[affectee].ceiling_yoffs),
-								affectee);
+				prev_sectorceilingscrollingflat.emplace(
+					affectee,
+					std::make_pair(
+						sectors[affectee].ceiling_xoffs,
+						sectors[affectee].ceiling_yoffs)
+				);
 			}
 			else if (P_FloorScrollType(type))
 			{
-				if (seen_floorsectornums.count(affectee))
-					continue;
-
-				seen_floorsectornums.insert(affectee);
-				prev_sectorfloorscrollingflat.emplace_back(
-						std::make_pair(
-							sectors[affectee].floor_xoffs,
-							sectors[affectee].floor_yoffs),
-								affectee);
+				prev_sectorfloorscrollingflat.emplace(
+					affectee,
+					std::make_pair(
+						sectors[affectee].floor_xoffs,
+						sectors[affectee].floor_yoffs)
+				);
 			}
 		}
 
@@ -258,7 +249,7 @@ void OInterpolation::interpolateCeilings(fixed_t amount)
 		P_SetCeilingHeight(sector, new_value);
 	}
 
-	for (const auto& [offs, secnum] : prev_sectorceilingscrollingflat)
+	for (const auto& [secnum, offs] : prev_sectorceilingscrollingflat)
 	{
 		const sector_t* sector = &sectors[secnum];
 
@@ -291,7 +282,7 @@ void OInterpolation::interpolateFloors(fixed_t amount)
 		P_SetFloorHeight(sector, new_value);
 	}
 
-	for (const auto& [offs, secnum] : prev_sectorfloorscrollingflat)
+	for (const auto& [secnum, offs] : prev_sectorfloorscrollingflat)
 	{
 		const sector_t* sector = &sectors[secnum];
 
@@ -312,7 +303,7 @@ void OInterpolation::interpolateFloors(fixed_t amount)
 
 void OInterpolation::interpolateWalls(fixed_t amount)
 {
-	for (const auto& [offs, sidenum] : prev_linescrollingtex)
+	for (const auto& [sidenum, offs] : prev_linescrollingtex)
 	{
 		const side_t* side = &sides[sidenum];
 
