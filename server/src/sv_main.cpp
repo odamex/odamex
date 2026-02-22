@@ -1489,22 +1489,6 @@ int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated)
 	return updated;
 }
 
-/*
-struct WorkerSendCommand : BaseWorkerCommand
-{
-	player_t& player;
-
-	WorkerSendCommand(player_t& i_playerRef) :
-	player                 (i_playerRef)
-	{}
-
-	void operator()() override
-	{
-		SV_SendPacket(player);
-	}
-};
-*/
-
 bool SV_SendPacket(player_t &pl)
 {
 	return pl.client.messenger.SendAll(gametic, pl.client.address) != MessageResultEnum::ABORT;
@@ -3130,11 +3114,11 @@ void SV_SendPackets()
 
 	for (auto& player : players)
 	{
-        std::packaged_task task { [&player] () { SV_SendPacket(player); } };
+		std::packaged_task task { [&player] () { SV_SendPacket(player); } };
 
-        futures.emplace_back(task.get_future());
+		futures.emplace_back(task.get_future());
 
-        s_workers.MoveCommand(std::move(task));
+		s_workers.MoveCommand(std::move(task));
 	}
 
 	for (auto& future : futures)
@@ -3321,20 +3305,6 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	SV_UpdatePing(& player.client);          // send the ping value of all cients to this client
 }
 
-/*
-struct PlayerWriteCommand : BaseWorkerCommand
-{
-	player_t& player;
-
-	PlayerWriteCommand(player_t& playerRef) : player(playerRef) {}
-
-	void operator()() override
-	{
-		SV_WriteCommandsForPlayer(player);
-	}
-};
-*/
-
 //
 // SV_WriteCommands
 //
@@ -3346,13 +3316,15 @@ void SV_WriteCommands(void)
 	Unlag::getInstance().recordSectorPositions();
 
 	// Palm off the job of writing the player messages onto the worker threads.
-
-    std::vector<std::future<void> > futures;
+	std::vector<std::future<void> > futures;
 
 	for (player_t& player : players)
 	{
-        std::packaged_task task { [&player]() { SV_WriteCommandsForPlayer(player); } };
-        futures.emplace_back(task.get_future());
+		std::packaged_task task { [&player]()
+			{
+				SV_WriteCommandsForPlayer(player);
+			} };
+		futures.emplace_back(task.get_future());
 		s_workers.MoveCommand(std::move(task));
 	}
 
