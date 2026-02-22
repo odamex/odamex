@@ -14,6 +14,7 @@ endif()
 
 # Enable default SIMD settings for standard builds.
 option(USE_DEFAULT_SIMD "Use default SIMD optimization settings" ON)
+option(ODAMEX_EXPERIMENTAL_VOXELS "Enable experimental software voxel renderer path" ON)
 
 # Client
 set(CLIENT_DIR sdl src)
@@ -149,6 +150,10 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   target_link_libraries(odamex odacommon)
   target_include_directories(odamex PRIVATE src sdl)
   target_compile_definitions(odamex PRIVATE CLIENT_APP)
+
+  if(ODAMEX_EXPERIMENTAL_VOXELS)
+    target_compile_definitions(odamex PRIVATE ODAMEX_EXPERIMENTAL_VOXELS=1)
+  endif()
 
   if(USE_DEFAULT_SIMD)
     if(ODAMEX_TARGET_ARCH STREQUAL "amd64")

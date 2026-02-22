@@ -656,6 +656,9 @@ public:
 		return reinterpret_cast<tallpost_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(this) + ofs));
 	}
 };
+typedef patch_s patch_t;
+
+struct r_voxelvis_s;
 
 // A vissprite_t is a thing
 //	that will be drawn during a refresh.
@@ -700,7 +703,8 @@ struct vissprite_t
 	fixed_t			translucency;
 	byte			FakeFlat;		// [RH] which side of fake/floor ceiling sprite is on
 
-	AActor*			mo;
+	const AActor*			mo;
+	r_voxelvis_s*			voxel;
 };
 
 //

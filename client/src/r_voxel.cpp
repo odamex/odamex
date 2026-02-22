@@ -1,0 +1,750 @@
+// Emacs style mode select   -*- C++ -*-
+//-----------------------------------------------------------------------------
+//
+// Copyright (C) 2026 by The Odamex Team.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+//-----------------------------------------------------------------------------
+
+#include "odamex.h"
+
+#include <array>
+#include <cctype>
+#include <deque>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include "cmdlib.h"
+#include "m_bbox.h"
+#include "m_fileio.h"
+#include "p_local.h"
+#include "r_local.h"
+#include "r_interp.h"
+#include "r_voxel.h"
+#include "w_wad.h"
+#include "z_zone.h"
+
+EXTERN_CVAR(r_voxels)
+EXTERN_CVAR(r_voxeldir)
+void R_AddSprites(sector_t* sec, int lightlevel, int fakeside);
+extern fixed_t FocalLengthX;
+extern fixed_t FocalLengthY;
+
+namespace
+{
+constexpr int kMaxFrames = 29;
+constexpr fixed_t VX_MINZ = 1 * FRACUNIT;
+constexpr fixed_t VX_MAX_DIST = 2048 * FRACUNIT;
+constexpr fixed_t VX_NEAR_RADIUS = 512 * FRACUNIT;
+constexpr fixed_t VX_Z_OFFSET = -3 * FRACUNIT;
+
+struct VoxelModel
+{
+	int x_size = 0;
+	int y_size = 0;
+	int z_size = 0;
+	fixed_t x_pivot = 0;
+	fixed_t y_pivot = 0;
+	fixed_t z_pivot = 0;
+	std::vector<int> offsets;
+	std::vector<byte> data;
+};
+
+enum VoxelFace
+{
+	F_LEFT = 0x01,
+	F_RIGHT = 0x02,
+	F_BACK = 0x04,
+	F_FRONT = 0x08,
+	F_TOP = 0x10,
+	F_BOTTOM = 0x20,
+};
+
+std::unordered_map<uint64_t, VoxelModel> g_voxels;
+std::deque<r_voxelvis_s> g_visibleVoxels;
+bool g_initialized = false;
+fixed_t g_eye_x = 0;
+fixed_t g_eye_y = 0;
+
+uint64_t FrameKey(const int32_t spritenum, const int frame)
+{
+	return (uint64_t(uint32_t(spritenum)) << 32) | uint64_t(uint8_t(frame));
+}
+
+int VX_PaletteIndex(const byte* pal, int r, int g, int b)
+{
+	int best = 0;
+	int best_dist = (1 << 30);
+
+	for (int i = 0; i < 256; i++)
+	{
+		const int dr = r - int(*pal++);
+		const int dg = g - int(*pal++);
+		const int db = b - int(*pal++);
+		const int dist = dr * dr + dg * dg + db * db;
+
+		if (dist < best_dist)
+		{
+			best = i;
+			best_dist = dist;
+		}
+	}
+
+	return best;
+}
+
+void VX_CreateRemapTable(const byte* src, std::array<byte, 256>& table)
+{
+	const byte* pal = static_cast<const byte*>(W_CacheLumpName("PLAYPAL", PU_CACHE));
+
+	for (int c = 0; c < 256; c++)
+	{
+		const int r = int(*src++) << 2;
+		const int g = int(*src++) << 2;
+		const int b = int(*src++) << 2;
+		table[c] = uint8_t(VX_PaletteIndex(pal, r, g, b));
+	}
+}
+
+void VX_RemapSlabColors(VoxelModel& v, int x, int y, const std::array<byte, 256>& table)
+{
+	const int A = v.offsets[y * v.x_size + x];
+	const int B = v.offsets[(y + 1) * v.x_size + x];
+	if (!(A < B))
+		return;
+
+	byte* slab = &v.data[A];
+	const byte* end = &v.data[B];
+
+	while (slab < end)
+	{
+		const byte top = *slab++;
+		const byte len = *slab++;
+		const byte face = *slab++;
+		(void)top;
+		(void)face;
+
+		for (byte i = 0; i < len; i++, slab++)
+			*slab = table[*slab];
+	}
+}
+
+bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
+{
+	if (length < 40 + 768)
+		return false;
+
+	const byte* p = bytes;
+	p += 4; // num_bytes
+
+	out.x_size = int(p[0]);
+	p += 4;
+	out.y_size = int(p[0]);
+	p += 4;
+	out.z_size = int(p[0]);
+	p += 4;
+	if (out.x_size <= 0 || out.y_size <= 0 || out.z_size <= 0)
+		return false;
+	if (out.x_size > 255 || out.y_size > 255)
+		return false;
+
+	out.x_pivot = (p[0] << 8) | (p[1] << 16);
+	p += 4;
+	out.y_pivot = (p[0] << 8) | (p[1] << 16);
+	p += 4;
+	out.z_pivot = (p[0] << 8) | (p[1] << 16);
+	p += 4;
+
+	std::array<int, 260> xoffsets{};
+	for (int x = 0; x <= out.x_size; x++)
+	{
+		xoffsets[x] = int(p[0]) | (p[1] << 8) | (p[2] << 16);
+		p += 4;
+	}
+
+	const int num_offsets = out.x_size * (out.y_size + 1);
+	out.offsets.resize(num_offsets);
+
+	int min_offset = (1 << 30);
+	int max_offset = 0;
+	for (int x = 0; x < out.x_size; x++)
+	{
+		for (int y = 0; y <= out.y_size; y++)
+		{
+			int offset = int(p[0]) | (p[1] << 8);
+			p += 2;
+			offset += xoffsets[x];
+			out.offsets[y * out.x_size + x] = offset;
+			min_offset = MIN(min_offset, offset);
+			max_offset = MAX(max_offset, offset);
+		}
+	}
+
+	const int data_size = max_offset - min_offset;
+	if (data_size <= 0)
+		return false;
+
+	for (int& offset : out.offsets)
+		offset -= min_offset;
+
+	const size_t data_start = (7 * 4) + size_t(min_offset);
+	if (data_start + size_t(data_size) > length)
+		return false;
+
+	out.data.resize(data_size);
+	memcpy(out.data.data(), bytes + data_start, data_size);
+
+	std::array<byte, 256> remap_table{};
+	VX_CreateRemapTable(bytes + (length - 768), remap_table);
+
+	for (int x = 0; x < out.x_size; x++)
+	{
+		for (int y = 0; y < out.y_size; y++)
+			VX_RemapSlabColors(out, x, y, remap_table);
+	}
+
+	return true;
+}
+
+std::string VX_FramePath(const std::string& spriteName, const int frame)
+{
+	std::string base = r_voxeldir.str();
+	if (base.empty())
+		base = "voxels";
+
+	std::string spr = StdStringToLower(spriteName);
+	char frame_ch = char('a' + frame);
+
+	return fmt::format("{}/{}{}.kvx", base, spr, frame_ch);
+}
+
+bool VX_Load(const int32_t spritenum, const std::string& spriteName, const int frame)
+{
+	const std::string filename = VX_FramePath(spriteName, frame);
+	if (!M_FileExists(filename))
+		return false;
+
+	BYTE* buffer = NULL;
+	const QWORD len = M_ReadFile(filename, &buffer);
+	if (!buffer || len == 0)
+		return false;
+
+	VoxelModel model;
+	const bool ok = VX_Decode(buffer, size_t(len), model);
+	Z_Free(buffer);
+
+	if (!ok)
+	{
+		PrintFmt(PRINT_WARNING, "VX_Load: failed to decode {}\n", filename);
+		return false;
+	}
+
+	g_voxels[FrameKey(spritenum, frame)] = std::move(model);
+	return true;
+}
+
+const VoxelModel* VX_GetModel(const int32_t spritenum, const int frame)
+{
+	const auto it = g_voxels.find(FrameKey(spritenum, frame));
+	return it == g_voxels.end() ? nullptr : &it->second;
+}
+
+byte VX_MapColor(const vissprite_t* spr, const byte input)
+{
+	byte c = input;
+	if (spr->translation)
+		c = spr->translation.tlate(c);
+
+	if (spr->colormap.isValid())
+		c = spr->colormap.index(c);
+
+	return c;
+}
+
+void VX_DrawColumn(vissprite_t* spr, int x, int y)
+{
+	r_voxelvis_s* vv = spr->voxel;
+	const VoxelModel* v = static_cast<const VoxelModel*>(vv->model);
+
+	const int ofs1 = v->offsets[y * v->x_size + x];
+	const int ofs2 = v->offsets[(y + 1) * v->x_size + x];
+	if (!(ofs1 < ofs2))
+		return;
+
+	const int qu_x = g_eye_x < (x << FRACBITS) ? 0 : g_eye_x < ((x + 1) << FRACBITS) ? 1 : 2;
+	const int qu_y = g_eye_y < (y << FRACBITS) ? 0 : g_eye_y < ((y + 1) << FRACBITS) ? 1 : 2;
+	const int quadrant = qu_y * 3 + qu_x;
+	if (quadrant == 4)
+		return;
+
+	const fixed_t c = vv->c;
+	const fixed_t s = vv->s;
+
+	fixed_t tx[4], ty[4];
+	tx[0] = vv->TL_x + x * c + y * s;
+	ty[0] = vv->TL_y + x * s - y * c;
+	tx[1] = tx[0] + s;
+	ty[1] = ty[0] - c;
+	tx[2] = tx[1] + c;
+	ty[2] = ty[1] + s;
+	tx[3] = tx[0] + c;
+	ty[3] = ty[0] + s;
+
+	static const int A_corners[9] = {3, 3, 2, 0, -1, 2, 0, 1, 1};
+	int idx = A_corners[quadrant];
+
+	const fixed_t Ax0 = tx[idx];
+	const fixed_t Ay = ty[idx];
+	idx = (idx + 1) & 3;
+	const fixed_t Bx0 = tx[idx];
+	const fixed_t By = ty[idx];
+	idx = (idx + 1) & 3;
+	const fixed_t Cx0 = tx[idx];
+	const fixed_t Cy = ty[idx];
+	idx = (idx + 1) & 3;
+	const fixed_t Dx0 = tx[idx];
+	const fixed_t Dy = ty[idx];
+
+	if (By < VX_MINZ || Ay < VX_MINZ || Cy < VX_MINZ || Dy < VX_MINZ)
+		return;
+
+	const fixed_t A_xscale = FixedDiv(FocalLengthX, Ay);
+	const fixed_t B_xscale = FixedDiv(FocalLengthX, By);
+	const fixed_t C_xscale = FixedDiv(FocalLengthX, Cy);
+	const fixed_t D_xscale = FixedDiv(FocalLengthX, Dy);
+	const fixed_t A_yscale = FixedDiv(FocalLengthY, Ay);
+	const fixed_t B_yscale = FixedDiv(FocalLengthY, By);
+	const fixed_t C_yscale = FixedDiv(FocalLengthY, Cy);
+	const fixed_t D_yscale = FixedDiv(FocalLengthY, Dy);
+
+	const fixed_t Ax = centerxfrac + FixedMul(Ax0, A_xscale);
+	const fixed_t Bx = centerxfrac + FixedMul(Bx0, B_xscale);
+	const fixed_t Cx = centerxfrac + FixedMul(Cx0, C_xscale);
+	const fixed_t Dx = centerxfrac + FixedMul(Dx0, D_xscale);
+
+	static const byte A_faces[9] = {F_BACK, F_BACK, F_RIGHT, F_LEFT, 0, F_RIGHT, F_LEFT, F_FRONT, F_FRONT};
+	static const byte B_faces[9] = {F_LEFT, 0, F_BACK, 0, 0, 0, F_FRONT, 0, F_RIGHT};
+	const byte A_face = A_faces[quadrant];
+	const byte B_face = B_faces[quadrant];
+
+	const bool shadow = (spr->mobjflags & MF_SHADOW) != 0;
+
+	for (fixed_t ux = ((Ax - 1) | (FRACUNIT - 1)) + 1; ux < MAX(Bx, Cx); ux += FRACUNIT)
+	{
+		if (ux >= ((spr->x2 + 1) << FRACBITS))
+			break;
+		if (ux < (spr->x1 << FRACBITS))
+			continue;
+
+		const int screenX = ux >> FRACBITS;
+		const fixed_t clip_y1 = (mceilingclip[screenX] + 1) << FRACBITS;
+		const fixed_t clip_y2 = (mfloorclip[screenX] << FRACBITS) - 1;
+		if (clip_y2 <= clip_y1)
+			continue;
+
+		fixed_t scale = 0;
+		if (ux > Bx)
+			scale = B_yscale + FixedMul(C_yscale - B_yscale, FixedDiv(ux - Bx, Cx - Bx));
+		else
+			scale = A_yscale + FixedMul(B_yscale - A_yscale, FixedDiv(ux - Ax, Bx - Ax));
+		if (scale <= 0)
+			continue;
+
+		const fixed_t iscale = FixedDiv(FRACUNIT, scale);
+
+		const byte* slab = &v->data[ofs1];
+		const byte* end = &v->data[ofs2];
+
+		for (; slab < end;)
+		{
+			const byte top = *slab++;
+			const byte len = *slab++;
+			const byte face = *slab++;
+			if (len == 0)
+				continue;
+
+			const fixed_t top_z = spr->gzt - viewz - (top << FRACBITS);
+			fixed_t uy1 = centeryfrac - FixedMul(top_z, scale);
+			fixed_t uy2 = uy1 + fixed_t(len) * scale;
+			const fixed_t uy0 = uy1;
+
+			if (uy1 >= clip_y2)
+			{
+				slab += len;
+				break;
+			}
+			if (uy2 <= clip_y1)
+			{
+				slab += len;
+				continue;
+			}
+
+			if (uy1 < clip_y1)
+				uy1 = clip_y1;
+			if (uy2 > clip_y2)
+				uy2 = clip_y2;
+
+			const bool has_side = (face & (ux > Bx ? B_face : A_face)) != 0;
+			if (shadow)
+			{
+				if (has_side)
+				{
+					dcol.x = screenX;
+					dcol.yl = uy1 >> FRACBITS;
+					dcol.yh = uy2 >> FRACBITS;
+					if (dcol.yl <= dcol.yh)
+						R_DrawFuzzColumn();
+				}
+				slab += len;
+				continue;
+			}
+
+			const bool has_top = (face & F_TOP) && top_z < 0;
+			const bool has_bottom = (face & F_BOTTOM) && top_z > (int(len) << FRACBITS);
+
+			fixed_t wscale = 0;
+			if (has_top || has_bottom)
+			{
+				if (ux > Cx)
+					wscale = C_yscale + FixedMul(B_yscale - C_yscale, FixedDiv(ux - Cx, Bx - Cx));
+				else if (ux > Dx)
+					wscale = D_yscale + FixedMul(C_yscale - D_yscale, FixedDiv(ux - Dx, Cx - Dx));
+				else
+					wscale = A_yscale + FixedMul(D_yscale - A_yscale, FixedDiv(ux - Ax, Dx - Ax));
+			}
+
+			if (has_top)
+			{
+				fixed_t uy = centeryfrac - FixedMul(top_z, wscale);
+				uy = ((uy - 1) | (FRACUNIT - 1)) + 1;
+				if (uy < clip_y1)
+					uy = clip_y1;
+
+				dcol.x = screenX;
+				dcol.yl = uy >> FRACBITS;
+				dcol.yh = (uy1 - 1) >> FRACBITS;
+				if (dcol.yl <= dcol.yh)
+				{
+					dcol.color = VX_MapColor(spr, slab[0]);
+					R_FillColumn();
+				}
+			}
+			else if (has_bottom)
+			{
+				fixed_t uy = centeryfrac - FixedMul(top_z - (int(len) << FRACBITS), wscale);
+				if (uy > clip_y2)
+					uy = clip_y2;
+
+				dcol.x = screenX;
+				dcol.yl = (uy2 + 1) >> FRACBITS;
+				dcol.yh = uy >> FRACBITS;
+				if (dcol.yl <= dcol.yh)
+				{
+					dcol.color = VX_MapColor(spr, slab[len - 1]);
+					R_FillColumn();
+				}
+			}
+
+			if (has_side)
+			{
+				dcol.x = screenX;
+				dcol.yl = uy1 >> FRACBITS;
+				dcol.yh = uy2 >> FRACBITS;
+
+				dcol.iscale = iscale;
+				dcol.texturefrac =
+				    FixedMul((((dcol.yl << FRACBITS) - uy0) >> FRACBITS) << FRACBITS, iscale);
+
+				int local_yl = dcol.yl;
+				int local_yh = dcol.yh;
+				if (dcol.texturefrac < 0)
+				{
+					const int cnt =
+					    (FixedDiv(-dcol.texturefrac, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
+					local_yl += cnt;
+					dcol.texturefrac += cnt * dcol.iscale;
+				}
+
+				const fixed_t endfrac =
+				    dcol.texturefrac + (local_yh - local_yl) * dcol.iscale;
+				const fixed_t maxfrac = fixed_t(len) << FRACBITS;
+				if (endfrac >= maxfrac)
+				{
+					const int cnt =
+					    (FixedDiv(endfrac - maxfrac - 1, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
+					local_yh -= cnt;
+				}
+
+				dcol.yl = local_yl;
+				dcol.yh = local_yh;
+
+				if (dcol.yl <= dcol.yh)
+				{
+					std::array<byte, 256> translated{};
+					const byte* drawsrc = slab;
+					if (spr->translation)
+					{
+						for (int i = 0; i < len; i++)
+							translated[i] = spr->translation.tlate(slab[i]);
+						drawsrc = translated.data();
+					}
+
+					dcol.colormap = spr->colormap;
+					dcol.source = const_cast<byte*>(drawsrc);
+					R_DrawColumn();
+				}
+			}
+
+			slab += len;
+		}
+	}
+}
+
+void VX_RecursiveDraw(vissprite_t* spr, int x, int y, int w, int h)
+{
+loop:
+	if (w == 1 && h == 1)
+	{
+		VX_DrawColumn(spr, x, y);
+		return;
+	}
+
+	if (w >= h)
+	{
+		if (g_eye_x < ((x * 2 + w) << (FRACBITS - 1)))
+		{
+			VX_RecursiveDraw(spr, x + w / 2, y, (w + 1) / 2, h);
+			w = w / 2;
+		}
+		else
+		{
+			VX_RecursiveDraw(spr, x, y, w / 2, h);
+			x += w / 2;
+			w = (w + 1) / 2;
+		}
+	}
+	else
+	{
+		if (g_eye_y < ((y * 2 + h) << (FRACBITS - 1)))
+		{
+			VX_RecursiveDraw(spr, x, y + h / 2, w, (h + 1) / 2);
+			h = h / 2;
+		}
+		else
+		{
+			VX_RecursiveDraw(spr, x, y, w, h / 2);
+			y += h / 2;
+			h = (h + 1) / 2;
+		}
+	}
+
+	goto loop;
+}
+
+bool VX_CheckBBox(fixed_t* bspcoord)
+{
+	if (bspcoord[BOXRIGHT] <= viewx - VX_NEAR_RADIUS)
+		return false;
+	if (bspcoord[BOXLEFT] >= viewx + VX_NEAR_RADIUS)
+		return false;
+	if (bspcoord[BOXTOP] <= viewy - VX_NEAR_RADIUS)
+		return false;
+	if (bspcoord[BOXBOTTOM] >= viewy + VX_NEAR_RADIUS)
+		return false;
+	return true;
+}
+
+void VX_SpritesInNode(int bspnum)
+{
+	for (;;)
+	{
+		if (bspnum & NF_SUBSECTOR)
+		{
+			subsector_t* sub = &subsectors[bspnum & ~NF_SUBSECTOR];
+			R_AddSprites(sub->sector, sub->sector->lightlevel, FAKED_Center);
+			return;
+		}
+
+		node_t* bsp = &nodes[bspnum];
+		if (VX_CheckBBox(bsp->bbox[0]))
+			VX_SpritesInNode(bsp->children[0]);
+
+		if (VX_CheckBBox(bsp->bbox[1]))
+			bspnum = bsp->children[1];
+		else
+			break;
+	}
+}
+} // namespace
+
+void VX_Init()
+{
+#ifndef ODAMEX_EXPERIMENTAL_VOXELS
+	return;
+#else
+	if (g_initialized)
+		return;
+
+	g_initialized = true;
+	g_voxels.clear();
+	g_visibleVoxels.clear();
+
+	for (const auto& [spritenum, spriteName] : sprnames)
+	{
+		for (int frame = 0; frame < kMaxFrames; frame++)
+		{
+			if (!VX_Load(spritenum, spriteName, frame))
+				break;
+		}
+	}
+
+	PrintFmt(PRINT_HIGH, "VX_Init: loaded {} voxel sprite frames from {}.\n",
+	         g_voxels.size(), r_voxeldir.cstring());
+#endif
+}
+
+void VX_ClearVoxels()
+{
+#ifdef ODAMEX_EXPERIMENTAL_VOXELS
+	g_visibleVoxels.clear();
+#endif
+}
+
+void VX_NearbySprites()
+{
+#ifdef ODAMEX_EXPERIMENTAL_VOXELS
+	if (r_voxels && numnodes > 0)
+		VX_SpritesInNode(numnodes - 1);
+#endif
+}
+
+bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
+{
+#ifndef ODAMEX_EXPERIMENTAL_VOXELS
+	(void)thing;
+	(void)frame;
+	(void)vis;
+	return false;
+#else
+	if (!r_voxels || !thing || !vis || !thing->subsector || !thing->subsector->sector)
+		return false;
+
+	const VoxelModel* v = VX_GetModel(thing->sprite, frame);
+	if (!v)
+		return false;
+
+	fixed_t gx = thing->x;
+	fixed_t gy = thing->y;
+	const fixed_t gz = thing->z;
+
+	if (P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128 * FRACUNIT &&
+	    OInterpolation::getInstance().enabled())
+	{
+		gx = thing->prevx + FixedMul(render_lerp_amount, thing->x - thing->prevx);
+		gy = thing->prevy + FixedMul(render_lerp_amount, thing->y - thing->prevy);
+	}
+
+	const fixed_t tran_x = gx - viewx;
+	const fixed_t tran_y = gy - viewy;
+	if (abs(tran_x) > VX_MAX_DIST || abs(tran_y) > VX_MAX_DIST)
+		return false;
+
+	fixed_t tx, ty;
+	R_RotatePoint(tran_x, tran_y, ANG90 - viewangle, tx, ty);
+	if (ty < VX_MINZ)
+		return false;
+
+	angle_t angle = thing->angle;
+	if (thing->flags & MF_SPECIAL)
+		angle = viewangle + ANG180;
+
+	const angle_t ang2 = ANG180 - viewangle + angle;
+	const fixed_t c = finecosine[ang2 >> ANGLETOFINESHIFT];
+	const fixed_t s = finesine[ang2 >> ANGLETOFINESHIFT];
+
+	const fixed_t TL_x = tx - FixedMul(v->x_pivot, c) - FixedMul(v->y_pivot, s);
+	const fixed_t TL_y = ty - FixedMul(v->x_pivot, s) + FixedMul(v->y_pivot, c);
+
+	const fixed_t xs = v->x_size;
+	const fixed_t ys = v->y_size;
+	const fixed_t BL_x = TL_x + ys * s;
+	const fixed_t BL_y = TL_y - ys * c;
+	const fixed_t TR_x = TL_x + xs * c;
+	const fixed_t TR_y = TL_y + xs * s;
+	const fixed_t BR_x = BL_x + xs * c;
+	const fixed_t BR_y = BL_y + xs * s;
+
+	int x1 = viewwidth - 1;
+	int x2 = 0;
+	for (int i = 0; i < 4; i++)
+	{
+		const fixed_t cx = (i == 0) ? BL_x : (i == 1) ? BR_x : (i == 2) ? TL_x : TR_x;
+		const fixed_t cy = (i == 0) ? BL_y : (i == 1) ? BR_y : (i == 2) ? TL_y : TR_y;
+		if (cy < VX_MINZ)
+		{
+			x1 = 0;
+			x2 = viewwidth - 1;
+			break;
+		}
+
+		const int sx = R_ProjectPointX(cx, cy);
+		x1 = MIN(x1, sx);
+		x2 = MAX(x2, sx);
+	}
+
+	x1 = clamp(x1, 0, viewwidth - 1);
+	x2 = clamp(x2, 0, viewwidth - 1);
+	if (x1 > x2)
+		return false;
+
+	g_visibleVoxels.push_back({v, angle, TL_x, TL_y, c, s});
+	vis->voxel = &g_visibleVoxels.back();
+	vis->x1 = x1;
+	vis->x2 = x2;
+	vis->gx = gx;
+	vis->gy = gy;
+	vis->gzb = gz + VX_Z_OFFSET;
+	vis->gzt = gz + v->z_pivot + VX_Z_OFFSET;
+
+	return true;
+#endif
+}
+
+void VX_DrawVoxel(vissprite_t* spr)
+{
+#ifndef ODAMEX_EXPERIMENTAL_VOXELS
+	(void)spr;
+	return;
+#else
+	if (!spr || !spr->voxel)
+		return;
+
+	const VoxelModel* v = static_cast<const VoxelModel*>(spr->voxel->model);
+	if (!v)
+		return;
+
+	while (spr->x1 <= spr->x2 && mfloorclip[spr->x1] - mceilingclip[spr->x1] < 2)
+		spr->x1++;
+	while (spr->x2 >= spr->x1 && mfloorclip[spr->x2] - mceilingclip[spr->x2] < 2)
+		spr->x2--;
+	if (spr->x1 > spr->x2)
+		return;
+
+	const unsigned int ang = (spr->voxel->angle + ANG90) >> ANGLETOFINESHIFT;
+	const fixed_t c = finecosine[ang];
+	const fixed_t s = finesine[ang];
+
+	const fixed_t delta_x = viewx - spr->gx;
+	const fixed_t delta_y = viewy - spr->gy;
+
+	g_eye_x = v->x_pivot + FixedMul(delta_x, c) + FixedMul(delta_y, s);
+	g_eye_y = v->y_pivot + FixedMul(delta_x, s) - FixedMul(delta_y, c);
+
+	VX_RecursiveDraw(spr, 0, 0, v->x_size, v->y_size);
+#endif
+}

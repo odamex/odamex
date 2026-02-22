@@ -803,6 +803,12 @@ CVAR_RANGE(		r_drawplayersprites, "1", "Weapon Transparency",
 CVAR(			r_particles, "1", "Draw particles",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(			r_voxels, "0", "Enable experimental software voxel renderer path",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			r_voxeldir, "voxels", "Directory containing raw .kvx voxel files",
+				CVARTYPE_STRING, CVAR_CLIENTARCHIVE)
+
 CVAR_RANGE_FUNC_DECL(r_stretchsky, "2", "Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
