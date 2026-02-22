@@ -570,6 +570,7 @@ namespace
                             std::unique_lock lock {m_commandMutex};
                             m_commandQueue.emplace_back(std::move(quitCommandPtr));
                         }
+                        m_commandCondition.notify_one();
 
                         const std::thread::id threadId = quitFuture.get();
                         for (auto iter = m_threads.begin(); iter != m_threads.end(); ++iter)
