@@ -480,36 +480,32 @@ namespace
 {
     struct BaseWorkerCommand
     {
-        std::promise<void> promise;
-        std::future<void>  future;
-
-        BaseWorkerCommand() :
-            future(promise.get_future())
-        {
-        }
-
         virtual ~BaseWorkerCommand() {}
 
-        void SetResult()
-        {
-            promise.set_value();
-        }
-
-        void GetResult()
-        {
-            future.get();
-        }
-
-        virtual void operator()() = 0;
+        virtual void Run() = 0;
     };
 
-    struct WorkerQuitCommand : BaseWorkerCommand
+
+
+    template <typename TaskType>
+    struct WorkerCommand : BaseWorkerCommand
     {
-        std::thread::id id;
-        void operator()() override
+        TaskType task;
+
+        WorkerCommand(TaskType&& i_task) :
+            task(std::move(i_task))
         {
-            id = std::this_thread::get_id();
         }
+
+        void Run() override
+        {
+            task();
+        }
+    };
+
+    struct WorkerQuitCommand : WorkerCommand<std::packaged_task<std::thread::id ()>>
+    {
+        WorkerQuitCommand() : WorkerCommand(std::packaged_task<std::thread::id ()>(std::this_thread::get_id)) {}
     };
 
     class WorkerPool
@@ -527,7 +523,7 @@ namespace
 
                 for (size_t i = 0; i < m_threads.size(); ++i)
                 {
-                    m_commandQueue.emplace_back(std::make_shared<WorkerQuitCommand>());
+                    m_commandQueue.emplace_back(std::make_unique<WorkerQuitCommand>());
                 }
 
                 lock.unlock();
@@ -539,11 +535,13 @@ namespace
                 }
             }
 
-            void PushCommand(const std::shared_ptr<BaseWorkerCommand>& i_commandPtr)
+            template <typename TaskType>
+            void MoveCommand(TaskType&& i_command)
             {
-                std::unique_lock lock {m_commandMutex};
-                m_commandQueue.emplace_back(i_commandPtr);
-                lock.unlock();
+                {
+                    std::unique_lock lock {m_commandMutex};
+                    m_commandQueue.emplace_back(std::make_unique<WorkerCommand<TaskType>>(std::move(i_command)));
+                }
 
                 m_commandCondition.notify_one();
             }
@@ -566,11 +564,15 @@ namespace
                     {
                         ++deltaSize;
 
-                        auto quitCommand = std::make_shared<WorkerQuitCommand>();
-                        PushCommand(quitCommand);
-                        quitCommand->GetResult();
+                        auto quitCommandPtr = std::make_unique<WorkerQuitCommand>();
+                        auto quitFuture     = quitCommandPtr->task.get_future();
+                        {
+                            std::unique_lock lock {m_commandMutex};
+                            m_commandQueue.emplace_back(std::move(quitCommandPtr));
+                        }
+                        m_commandCondition.notify_one();
 
-                        const std::thread::id threadId = quitCommand->id;
+                        const std::thread::id threadId = quitFuture.get();
                         for (auto iter = m_threads.begin(); iter != m_threads.end(); ++iter)
                         {
                             if (threadId == iter->get_id())
@@ -592,10 +594,9 @@ namespace
             {
                 while (1)
                 {
-                    std::shared_ptr<BaseWorkerCommand> command = GetCommand();
+                    std::unique_ptr<BaseWorkerCommand> command = GetCommand();
 
-                    (*command)();
-                    command->SetResult();
+                    command->Run();
 
                     if (IsQuit(command))
                     {
@@ -604,7 +605,7 @@ namespace
                 }
             }
 
-            std::shared_ptr<BaseWorkerCommand> GetCommand()
+            std::unique_ptr<BaseWorkerCommand> GetCommand()
             {
                 std::unique_lock lock {m_commandMutex};
 
@@ -613,18 +614,18 @@ namespace
                     m_commandCondition.wait(lock);
                 }
 
-                std::shared_ptr<BaseWorkerCommand> result = std::move(m_commandQueue.front());
+                std::unique_ptr<BaseWorkerCommand> result = std::move(m_commandQueue.front());
                 m_commandQueue.pop_front();
                 return result;
             }
 
         protected:
 
-            bool IsQuit(const std::shared_ptr<BaseWorkerCommand>& i_ptr) { return dynamic_cast<WorkerQuitCommand*>(i_ptr.get()); }
+            bool IsQuit(const std::unique_ptr<BaseWorkerCommand>& i_ptr) { return dynamic_cast<WorkerQuitCommand*>(i_ptr.get()); }
 
             std::mutex                                      m_commandMutex;
             std::condition_variable                         m_commandCondition;
-            std::deque<std::shared_ptr<BaseWorkerCommand> > m_commandQueue;
+            std::deque<std::unique_ptr<BaseWorkerCommand> > m_commandQueue;
 
             std::vector<std::thread> m_threads;
     };
@@ -1487,20 +1488,6 @@ int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated)
 	}
 	return updated;
 }
-
-struct WorkerSendCommand : BaseWorkerCommand
-{
-	player_t& player;
-
-	WorkerSendCommand(player_t& i_playerRef) :
-	player                 (i_playerRef)
-	{}
-
-	void operator()() override
-	{
-		SV_SendPacket(player);
-	}
-};
 
 bool SV_SendPacket(player_t &pl)
 {
@@ -3122,17 +3109,21 @@ void SV_SendPackets()
 	if (players.empty())
 		return;
 
-	std::vector<std::shared_ptr<WorkerSendCommand>> commands;
+
+	std::vector<std::future<void>> futures;
 
 	for (auto& player : players)
 	{
-		commands.emplace_back(std::make_shared<WorkerSendCommand>(player));
-		s_workers.PushCommand(commands.back());
+		std::packaged_task<void ()> task { [&player] () { SV_SendPacket(player); } };
+
+		futures.emplace_back(task.get_future());
+
+		s_workers.MoveCommand(std::move(task));
 	}
 
-	for (auto& playerCommand : commands)
+	for (auto& future : futures)
 	{
-		playerCommand->GetResult();
+		future.wait();
 	}
 }
 
@@ -3314,18 +3305,6 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	SV_UpdatePing(& player.client);          // send the ping value of all cients to this client
 }
 
-struct PlayerWriteCommand : BaseWorkerCommand
-{
-	player_t& player;
-
-	PlayerWriteCommand(player_t& playerRef) : player(playerRef) {}
-
-	void operator()() override
-	{
-		SV_WriteCommandsForPlayer(player);
-	}
-};
-
 //
 // SV_WriteCommands
 //
@@ -3337,16 +3316,21 @@ void SV_WriteCommands(void)
 	Unlag::getInstance().recordSectorPositions();
 
 	// Palm off the job of writing the player messages onto the worker threads.
-	std::vector<std::shared_ptr<PlayerWriteCommand> > commands;
+	std::vector<std::future<void> > futures;
+
 	for (player_t& player : players)
 	{
-		commands.emplace_back(std::make_shared<PlayerWriteCommand>(player));
-		s_workers.PushCommand(commands.back());
+		std::packaged_task<void ()> task { [&player]()
+			{
+				SV_WriteCommandsForPlayer(player);
+			} };
+		futures.emplace_back(task.get_future());
+		s_workers.MoveCommand(std::move(task));
 	}
 
-	for (auto& playerCommand : commands)
+	for (auto& future : futures)
 	{
-		playerCommand->GetResult();
+		future.wait();
 	}
 
 	SV_UpdateDeadPlayers(); // Update dying players.
