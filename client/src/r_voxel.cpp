@@ -67,7 +67,6 @@ enum VoxelFace
 
 std::unordered_map<uint64_t, VoxelModel> g_voxels;
 std::deque<r_voxelvis_s> g_visibleVoxels;
-bool g_initialized = false;
 fixed_t g_eye_x = 0;
 fixed_t g_eye_y = 0;
 
@@ -225,6 +224,50 @@ std::string VX_FramePath(const std::string& spriteName, const int frame)
 
 bool VX_Load(const int32_t spritenum, const std::string& spriteName, const int frame)
 {
+	const std::string lumpName =
+	    StdStringToUpper(fmt::format("{}{}", spriteName, char('A' + frame)));
+
+	int start = -1;
+	while ((start = W_FindLump("VX_START", start)) != -1)
+	{
+		int end = -1;
+		for (int i = start + 1; i < int(numlumps); i++)
+		{
+			if (W_CheckLumpName(i, "VX_END"))
+			{
+				end = i;
+				break;
+			}
+		}
+		if (end == -1)
+			break;
+
+		for (int i = start + 1; i < end; i++)
+		{
+			if (!W_CheckLumpName(i, lumpName.c_str()))
+				continue;
+
+			const unsigned len = W_LumpLength(i);
+			if (len == 0)
+				return false;
+
+			std::vector<byte> bytes(len);
+			W_ReadLump(i, bytes.data());
+
+			VoxelModel model;
+			if (!VX_Decode(bytes.data(), bytes.size(), model))
+			{
+				PrintFmt(PRINT_WARNING, "VX_Load: failed to decode lump {}\n", lumpName);
+				return false;
+			}
+
+			g_voxels[FrameKey(spritenum, frame)] = std::move(model);
+			return true;
+		}
+
+		start = end;
+	}
+
 	const std::string filename = VX_FramePath(spriteName, frame);
 	if (!M_FileExists(filename))
 		return false;
@@ -587,10 +630,6 @@ void VX_Init()
 #ifndef ODAMEX_EXPERIMENTAL_VOXELS
 	return;
 #else
-	if (g_initialized)
-		return;
-
-	g_initialized = true;
 	g_voxels.clear();
 	g_visibleVoxels.clear();
 
