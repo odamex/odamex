@@ -14,14 +14,17 @@
 
 #include <array>
 #include <cctype>
+#include <cmath>
 #include <deque>
 #include <string>
+#include <unordered_set>
 #include <unordered_map>
 #include <vector>
 
 #include "cmdlib.h"
 #include "m_bbox.h"
 #include "m_fileio.h"
+#include "oscanner.h"
 #include "r_local.h"
 #include "r_voxel.h"
 #include "w_wad.h"
@@ -53,6 +56,15 @@ struct VoxelModel
 	std::vector<byte> data;
 };
 
+struct VoxelRenderOptions
+{
+	std::string voxelName;
+	angle_t angleOffset = 0;
+	bool useActorPitch = false;
+	bool useActorRoll = false;
+	bool fromVoxelDef = false;
+};
+
 enum VoxelFace
 {
 	F_LEFT = 0x01,
@@ -64,13 +76,196 @@ enum VoxelFace
 };
 
 std::unordered_map<uint64_t, VoxelModel> g_voxels;
+std::unordered_map<uint64_t, VoxelRenderOptions> g_voxelOptions;
 std::deque<r_voxelvis_s> g_visibleVoxels;
+std::unordered_set<uint64_t> g_warnedUnsupportedOptions;
 fixed_t g_eye_x = 0;
 fixed_t g_eye_y = 0;
 
 uint64_t FrameKey(const int32_t spritenum, const int frame)
 {
 	return (uint64_t(uint32_t(spritenum)) << 32) | uint64_t(uint8_t(frame));
+}
+
+angle_t VX_DegreesToAngle(double degrees)
+{
+	const double unit = std::fmod(degrees, 360.0);
+	const double wrapped = unit < 0.0 ? (unit + 360.0) : unit;
+	return angle_t((uint64_t(wrapped * 4294967296.0 / 360.0)) & 0xFFFFFFFFu);
+}
+
+int VX_FrameIndexForChar(char frameChar)
+{
+	const unsigned char raw = static_cast<unsigned char>(frameChar);
+	const unsigned char up = static_cast<unsigned char>(std::toupper(raw));
+	const int frame = int(up) - int('A');
+	if (frame < 0 || frame >= kMaxFrames)
+		return -1;
+	return frame;
+}
+
+bool VX_ParseNumberToken(const std::string& token, double& out)
+{
+	char* end = nullptr;
+	out = std::strtod(token.c_str(), &end);
+	return end != nullptr && *end == '\0';
+}
+
+bool VX_ReadNumber(OScanner& os, double& out)
+{
+	os.mustScan();
+	std::string token = os.getToken();
+	if (token == "-")
+	{
+		os.mustScan();
+		token = "-" + os.getToken();
+	}
+
+	if (!VX_ParseNumberToken(token, out))
+	{
+		os.warning("Expected numeric value, got '{}'.", token);
+		return false;
+	}
+
+	return true;
+}
+
+void VX_ParseOptions(OScanner& os, VoxelRenderOptions& opts)
+{
+	while (os.scan())
+	{
+		if (os.compareToken("}"))
+			return;
+
+		const std::string token = os.getToken();
+		if (StdStringToLower(token) == "angleoffset")
+		{
+			os.mustScan();
+			if (!os.compareToken("="))
+			{
+				os.warning("Expected '=' after AngleOffset.");
+				continue;
+			}
+			double degrees = 0.0;
+			if (VX_ReadNumber(os, degrees))
+				opts.angleOffset = VX_DegreesToAngle(degrees);
+			continue;
+		}
+		if (StdStringToLower(token) == "useactorpitch")
+		{
+			opts.useActorPitch = true;
+			continue;
+		}
+		if (StdStringToLower(token) == "useactorroll")
+		{
+			opts.useActorRoll = true;
+			continue;
+		}
+
+		os.warning("Unknown VOXELDEF option '{}'.", token);
+		if (os.scan())
+		{
+			if (!os.compareToken("}") && os.compareToken("="))
+				os.mustScan();
+			else
+				os.unScan();
+		}
+	}
+
+	os.warning("Unterminated VOXELDEF option block.");
+}
+
+void VX_ParseVoxelDefLump(const int lump)
+{
+	const char* data = static_cast<const char*>(W_CacheLumpNum(lump, PU_CACHE));
+	const int len = W_LumpLength(lump);
+	if (!data || len <= 0)
+		return;
+
+	const OScannerConfig config = {
+	    "VOXELDEF", // lumpName
+	    false,      // semiComments
+	    true,       // cComments
+	    false,      // hashComments
+	};
+	OScanner os = OScanner::openBuffer(config, data, data + len);
+
+	std::unordered_map<std::string, int32_t> spriteByName;
+	spriteByName.reserve(sprnames.size());
+	for (const auto& [spritenum, spriteName] : sprnames)
+		spriteByName[StdStringToUpper(spriteName)] = spritenum;
+
+	while (os.scan())
+	{
+		std::vector<std::pair<int32_t, int>> targets;
+		for (;;)
+		{
+			const std::string token = os.getToken();
+			if (token == "=")
+				break;
+
+			const std::string spriteRef = StdStringToUpper(token);
+			if (spriteRef.size() != 4 && spriteRef.size() != 5)
+			{
+				os.warning("Invalid sprite token '{}' in VOXELDEF entry.", token);
+			}
+			else
+			{
+				const std::string spriteName = spriteRef.substr(0, 4);
+				const auto sit = spriteByName.find(spriteName);
+				if (sit == spriteByName.end())
+				{
+					os.warning("Unknown sprite '{}' in VOXELDEF.", spriteName);
+				}
+				else if (spriteRef.size() == 4)
+				{
+					for (int frame = 0; frame < kMaxFrames; frame++)
+						targets.push_back({sit->second, frame});
+				}
+				else
+				{
+					const int frame = VX_FrameIndexForChar(spriteRef[4]);
+					if (frame < 0)
+						os.warning("Invalid sprite frame '{}' in VOXELDEF token '{}'.", spriteRef[4],
+						           token);
+					else
+						targets.push_back({sit->second, frame});
+				}
+			}
+
+			if (!os.scan())
+				return;
+		}
+
+		os.mustScan();
+		if (!os.isQuotedString())
+		{
+			os.warning("Expected quoted voxel name after '='.");
+			continue;
+		}
+
+		VoxelRenderOptions opts;
+		opts.voxelName = os.getToken();
+		opts.fromVoxelDef = true;
+
+		if (os.scan())
+		{
+			if (os.compareToken("{"))
+				VX_ParseOptions(os, opts);
+			else
+				os.unScan();
+		}
+
+		for (const auto& [spritenum, frame] : targets)
+			g_voxelOptions[FrameKey(spritenum, frame)] = opts;
+	}
+}
+
+void VX_ParseVoxelDefs()
+{
+	int lump = -1;
+	while ((lump = W_FindLump("VOXELDEF", lump)) != -1)
+		VX_ParseVoxelDefLump(lump);
 }
 
 int VX_PaletteIndex(const byte* pal, int r, int g, int b)
@@ -208,22 +403,19 @@ bool VX_Decode(const byte* bytes, size_t length, VoxelModel& out)
 	return true;
 }
 
-std::string VX_FramePath(const std::string& spriteName, const int frame)
+std::string VX_NamePath(const std::string& voxelName)
 {
 	std::string base = r_voxeldir.str();
 	if (base.empty())
 		base = "voxels";
 
-	std::string spr = StdStringToLower(spriteName);
-	char frame_ch = char('a' + frame);
-
-	return fmt::format("{}/{}{}.kvx", base, spr, frame_ch);
+	return fmt::format("{}/{}.kvx", base, StdStringToLower(voxelName));
 }
 
-bool VX_Load(const int32_t spritenum, const std::string& spriteName, const int frame)
+bool VX_LoadByName(const int32_t spritenum, const int frame, const std::string& voxelName,
+                   const VoxelRenderOptions& opts)
 {
-	const std::string lumpName =
-	    StdStringToUpper(fmt::format("{}{}", spriteName, char('A' + frame)));
+	const std::string lumpName = StdStringToUpper(voxelName);
 
 	int start = -1;
 	while ((start = W_FindLump("VX_START", start)) != -1)
@@ -260,13 +452,14 @@ bool VX_Load(const int32_t spritenum, const std::string& spriteName, const int f
 			}
 
 			g_voxels[FrameKey(spritenum, frame)] = std::move(model);
+			g_voxelOptions[FrameKey(spritenum, frame)] = opts;
 			return true;
 		}
 
 		start = end;
 	}
 
-	const std::string filename = VX_FramePath(spriteName, frame);
+	const std::string filename = VX_NamePath(voxelName);
 	if (!M_FileExists(filename))
 		return false;
 
@@ -286,13 +479,40 @@ bool VX_Load(const int32_t spritenum, const std::string& spriteName, const int f
 	}
 
 	g_voxels[FrameKey(spritenum, frame)] = std::move(model);
+	g_voxelOptions[FrameKey(spritenum, frame)] = opts;
 	return true;
+}
+
+bool VX_Load(const int32_t spritenum, const std::string& spriteName, const int frame)
+{
+	const uint64_t key = FrameKey(spritenum, frame);
+	const auto dit = g_voxelOptions.find(key);
+	if (dit != g_voxelOptions.end() && dit->second.fromVoxelDef)
+	{
+		if (VX_LoadByName(spritenum, frame, dit->second.voxelName, dit->second))
+			return true;
+
+		PrintFmt(PRINT_WARNING,
+		         "VX_Load: VOXELDEF entry '{}' for {}{} was not found, falling back.\n",
+		         dit->second.voxelName, spriteName, char('A' + frame));
+	}
+
+	VoxelRenderOptions fallback;
+	fallback.voxelName = fmt::format("{}{}", spriteName, char('A' + frame));
+	fallback.fromVoxelDef = false;
+	return VX_LoadByName(spritenum, frame, fallback.voxelName, fallback);
 }
 
 const VoxelModel* VX_GetModel(const int32_t spritenum, const int frame)
 {
 	const auto it = g_voxels.find(FrameKey(spritenum, frame));
 	return it == g_voxels.end() ? nullptr : &it->second;
+}
+
+const VoxelRenderOptions* VX_GetOptions(const int32_t spritenum, const int frame)
+{
+	const auto it = g_voxelOptions.find(FrameKey(spritenum, frame));
+	return it == g_voxelOptions.end() ? nullptr : &it->second;
 }
 
 void VX_DrawSolidShadedColumn(vissprite_t* spr, const int screenX, const int yl, const int yh,
@@ -628,7 +848,11 @@ void VX_Init()
 	return;
 #else
 	g_voxels.clear();
+	g_voxelOptions.clear();
+	g_warnedUnsupportedOptions.clear();
 	g_visibleVoxels.clear();
+
+	VX_ParseVoxelDefs();
 
 	for (const auto& [spritenum, spriteName] : sprnames)
 	{
@@ -639,8 +863,8 @@ void VX_Init()
 		}
 	}
 
-	PrintFmt(PRINT_HIGH, "VX_Init: loaded {} voxel sprite frames from {}.\n",
-	         g_voxels.size(), r_voxeldir.cstring());
+	PrintFmt(PRINT_HIGH, "VX_Init: loaded {} voxel sprite frames ({} VOXELDEF mappings).\n",
+	         g_voxels.size(), g_voxelOptions.size());
 #endif
 }
 
@@ -673,6 +897,7 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 	const VoxelModel* v = VX_GetModel(thing->sprite, frame);
 	if (!v)
 		return false;
+	const VoxelRenderOptions* opts = VX_GetOptions(thing->sprite, frame);
 
 	const fixed_t gx = vis->gx;
 	const fixed_t gy = vis->gy;
@@ -689,12 +914,26 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 		return false;
 
 	angle_t angle = thing->angle;
-	if (thing->flags & MF_SPECIAL)
+	if (thing->flags & MF_SPECIAL && !(opts && opts->fromVoxelDef))
 		angle = viewangle + ANG180;
+	if (opts)
+		angle += opts->angleOffset;
 
 	const angle_t ang2 = ANG180 - viewangle + angle;
 	const fixed_t c = finecosine[ang2 >> ANGLETOFINESHIFT];
 	const fixed_t s = finesine[ang2 >> ANGLETOFINESHIFT];
+
+	if (opts && (opts->useActorPitch || opts->useActorRoll))
+	{
+		const uint64_t key = FrameKey(thing->sprite, frame);
+		if (g_warnedUnsupportedOptions.insert(key).second)
+		{
+			PrintFmt(
+			    PRINT_WARNING,
+			    "VX_ProjectVoxel: {}{} requests UseActorPitch/UseActorRoll, which is parsed but not rendered yet.\n",
+			    sprnames[thing->sprite], char('A' + frame));
+		}
+	}
 
 	const fixed_t TL_x = tx - FixedMul(v->x_pivot, c) - FixedMul(v->y_pivot, s);
 	const fixed_t TL_y = ty - FixedMul(v->x_pivot, s) + FixedMul(v->y_pivot, c);
