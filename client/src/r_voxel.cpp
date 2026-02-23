@@ -22,9 +22,7 @@
 #include "cmdlib.h"
 #include "m_bbox.h"
 #include "m_fileio.h"
-#include "p_local.h"
 #include "r_local.h"
-#include "r_interp.h"
 #include "r_voxel.h"
 #include "w_wad.h"
 #include "z_zone.h"
@@ -297,16 +295,30 @@ const VoxelModel* VX_GetModel(const int32_t spritenum, const int frame)
 	return it == g_voxels.end() ? nullptr : &it->second;
 }
 
-byte VX_MapColor(const vissprite_t* spr, const byte input)
+void VX_DrawSolidShadedColumn(vissprite_t* spr, const int screenX, const int yl, const int yh,
+                              const byte color)
 {
-	byte c = input;
+	if (yl > yh)
+		return;
+
+	byte src = color;
+	dcol.x = screenX;
+	dcol.yl = yl;
+	dcol.yh = yh;
+	dcol.iscale = 0;
+	dcol.texturefrac = 0;
+	dcol.colormap = spr->colormap;
+	dcol.source = &src;
+
 	if (spr->translation)
-		c = spr->translation.tlate(c);
-
-	if (spr->colormap.isValid())
-		c = spr->colormap.index(c);
-
-	return c;
+	{
+		dcol.translation = spr->translation;
+		R_DrawTranslatedColumn();
+	}
+	else
+	{
+		R_DrawColumn();
+	}
 }
 
 void VX_DrawColumn(vissprite_t* spr, int x, int y)
@@ -375,7 +387,8 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 	const byte A_face = A_faces[quadrant];
 	const byte B_face = B_faces[quadrant];
 
-	const bool shadow = (spr->mobjflags & MF_SHADOW) != 0;
+	const bool shadow =
+	    ((spr->mobjflags & MF_SHADOW) != 0) || ((spr->statusflags & SF_INVIS) != 0);
 
 	for (fixed_t ux = ((Ax - 1) | (FRACUNIT - 1)) + 1; ux < MAX(Bx, Cx); ux += FRACUNIT)
 	{
@@ -417,22 +430,17 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 			const fixed_t uy0 = uy1;
 
 			if (uy1 >= clip_y2)
-			{
-				slab += len;
-				break;
-			}
+				uy1 = clip_y2;
 			if (uy2 <= clip_y1)
-			{
-				slab += len;
-				continue;
-			}
+				uy2 = clip_y1;
 
 			if (uy1 < clip_y1)
 				uy1 = clip_y1;
 			if (uy2 > clip_y2)
 				uy2 = clip_y2;
 
-			const bool has_side = (face & (ux > Bx ? B_face : A_face)) != 0;
+			const bool has_side = (face & (ux > Bx ? B_face : A_face)) != 0 && uy1 < clip_y2 &&
+			                      uy2 > clip_y1;
 			if (shadow)
 			{
 				if (has_side)
@@ -468,14 +476,8 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 				if (uy < clip_y1)
 					uy = clip_y1;
 
-				dcol.x = screenX;
-				dcol.yl = uy >> FRACBITS;
-				dcol.yh = (uy1 - 1) >> FRACBITS;
-				if (dcol.yl <= dcol.yh)
-				{
-					dcol.color = VX_MapColor(spr, slab[0]);
-					R_FillColumn();
-				}
+				VX_DrawSolidShadedColumn(spr, screenX, uy >> FRACBITS, (uy1 - 1) >> FRACBITS,
+				                         slab[0]);
 			}
 			else if (has_bottom)
 			{
@@ -483,14 +485,8 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 				if (uy > clip_y2)
 					uy = clip_y2;
 
-				dcol.x = screenX;
-				dcol.yl = (uy2 + 1) >> FRACBITS;
-				dcol.yh = uy >> FRACBITS;
-				if (dcol.yl <= dcol.yh)
-				{
-					dcol.color = VX_MapColor(spr, slab[len - 1]);
-					R_FillColumn();
-				}
+				VX_DrawSolidShadedColumn(spr, screenX, (uy2 + 1) >> FRACBITS, uy >> FRACBITS,
+				                         slab[len - 1]);
 			}
 
 			if (has_side)
@@ -528,18 +524,19 @@ void VX_DrawColumn(vissprite_t* spr, int x, int y)
 
 				if (dcol.yl <= dcol.yh)
 				{
-					std::array<byte, 256> translated{};
-					const byte* drawsrc = slab;
 					if (spr->translation)
 					{
-						for (int i = 0; i < len; i++)
-							translated[i] = spr->translation.tlate(slab[i]);
-						drawsrc = translated.data();
+						dcol.translation = spr->translation;
+						dcol.colormap = spr->colormap;
+						dcol.source = const_cast<byte*>(slab);
+						R_DrawTranslatedColumn();
 					}
-
-					dcol.colormap = spr->colormap;
-					dcol.source = const_cast<byte*>(drawsrc);
-					R_DrawColumn();
+					else
+					{
+						dcol.colormap = spr->colormap;
+						dcol.source = const_cast<byte*>(slab);
+						R_DrawColumn();
+					}
 				}
 			}
 
@@ -677,16 +674,9 @@ bool VX_ProjectVoxel(const AActor* thing, const int frame, vissprite_t* vis)
 	if (!v)
 		return false;
 
-	fixed_t gx = thing->x;
-	fixed_t gy = thing->y;
-	const fixed_t gz = thing->z;
-
-	if (P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128 * FRACUNIT &&
-	    OInterpolation::getInstance().enabled())
-	{
-		gx = thing->prevx + FixedMul(render_lerp_amount, thing->x - thing->prevx);
-		gy = thing->prevy + FixedMul(render_lerp_amount, thing->y - thing->prevy);
-	}
+	const fixed_t gx = vis->gx;
+	const fixed_t gy = vis->gy;
+	const fixed_t gz = vis->gzb;
 
 	const fixed_t tran_x = gx - viewx;
 	const fixed_t tran_y = gy - viewy;
