@@ -106,7 +106,7 @@ static void PersistPlayerDamage(const player_t& p)
 		if (!player.ingame())
 			continue;
 
-		MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_PlayerMembers(p, SVC_PM_DAMAGE));
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerMembers(p, SVC_PM_DAMAGE));
 	}
 }
 
@@ -133,7 +133,7 @@ static void PersistPlayerScore(player_t& p, const bool lives, const bool score)
 		if (!player.ingame())
 			continue;
 
-		MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_PlayerMembers(p, flags));
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerMembers(p, flags));
 	}
 }
 
