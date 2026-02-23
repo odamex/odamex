@@ -505,7 +505,7 @@ namespace
 
     struct WorkerQuitCommand : WorkerCommand<std::packaged_task<std::thread::id ()>>
     {
-        WorkerQuitCommand() : WorkerCommand(std::packaged_task(std::this_thread::get_id)) {}
+        WorkerQuitCommand() : WorkerCommand(std::packaged_task<std::thread::id ()>(std::this_thread::get_id)) {}
     };
 
     class WorkerPool
@@ -3114,7 +3114,7 @@ void SV_SendPackets()
 
 	for (auto& player : players)
 	{
-		std::packaged_task task { [&player] () { SV_SendPacket(player); } };
+		std::packaged_task<void ()> task { [&player] () { SV_SendPacket(player); } };
 
 		futures.emplace_back(task.get_future());
 
@@ -3320,7 +3320,7 @@ void SV_WriteCommands(void)
 
 	for (player_t& player : players)
 	{
-		std::packaged_task task { [&player]()
+		std::packaged_task<void ()> task { [&player]()
 			{
 				SV_WriteCommandsForPlayer(player);
 			} };
