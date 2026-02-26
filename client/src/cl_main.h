@@ -30,6 +30,8 @@
 #include "r_defs.h"
 #include "cl_demo.h"
 
+#include "common.pb.h"
+
 #include "OdaMessenger.h"
 
 extern netadr_t  serveraddr;
@@ -43,6 +45,7 @@ extern NetDemo      netdemo;
 extern OdaMessenger messenger;
 
 #define MAXSAVETICS 70
+extern odaproto::ClientCommand localcmds[MAXSAVETICS];
 
 extern bool predicting;
 
