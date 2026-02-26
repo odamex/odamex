@@ -58,7 +58,7 @@
 #include "p_lnspec.h"
 #include "cl_netgraph.h"
 #include "p_pspr.h"
-#include "d_netcmd.h"
+#include "clc_message.h"
 #include "g_levelstate.h"
 #include "v_text.h"
 #include "hu_stuff.h"
@@ -136,7 +136,7 @@ NetDemo netdemo;
 // [SL] 2011-07-06 - not really connected (playing back a netdemo)
 bool forcenetdemosplit = false;		// need to split demo due to svc_reconnect
 
-NetCommand localcmds[MAXSAVETICS];
+odaproto::ClientCommand localcmds[MAXSAVETICS];
 
 // [SL] 2012-03-07 - Players that were teleported during the current gametic
 std::set<byte> teleported_players;
@@ -2086,10 +2086,10 @@ void CL_ParseCommands()
 
 void CL_SaveCmd(void)
 {
-	NetCommand *netcmd = &localcmds[gametic % MAXSAVETICS];
-	netcmd->fromPlayer(consoleplayer());
-	netcmd->setTic(gametic);
-	netcmd->setWorldIndex(world_index);
+	odaproto::ClientCommand& netcmd = localcmds[gametic % MAXSAVETICS];
+	CLC_ClientCommandFromPlayer(netcmd, consoleplayer());
+	netcmd.set_tic(gametic);
+	netcmd.set_world_index(world_index);
 }
 
 extern int outrate;
@@ -2119,17 +2119,13 @@ void CL_SendCmd(void)
 		MSG_WriteLong(&netBuf, p->mo->z);
 	}
 
-	buf_t& reliableBuf = messenger.ReliableBuf().Obtain();
-
-	MSG_WriteMarker(&reliableBuf, clc_move);
+	odaproto::ClientCommand& currentNetcmd = localcmds[gametic % MAXSAVETICS];
 
 	// Write current client-tic.  Server later sends this back to client
 	// when sending svc_updatelocalplayer so the client knows which ticcmds
 	// need to be used for client's positional prediction.
-	MSG_WriteLong(&reliableBuf, gametic);
-
-	NetCommand& currentNetcmd = localcmds[gametic % MAXSAVETICS];
-	currentNetcmd.write(&reliableBuf);
+	currentNetcmd.set_tic(gametic);
+	MSG_WriteSVC(messenger.ReliableBuf(), currentNetcmd);
 
 	messenger.SendAll(gametic, serveraddr);
 

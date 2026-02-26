@@ -116,6 +116,8 @@ static void InitMap()
 	MapProto(svc_netdemocap, odaproto::svc::NetdemoCap::descriptor());
 	MapProto(svc_netdemostop, odaproto::svc::NetDemoStop::descriptor());
 	MapProto(svc_netdemoloadsnap, odaproto::svc::NetDemoLoadSnap::descriptor());
+	MapProto(svc_clientcommand, odaproto::ClientCommand::descriptor());
+
 }
 
 /**

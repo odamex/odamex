@@ -1070,6 +1070,7 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_maplist_index);
 	SVC_INFO(svc_toast);
 	SVC_INFO(svc_hordeinfo);
+	SVC_INFO(svc_clientcommand);
 	SVC_INFO(svc_max);
 
 	// Client Messages.

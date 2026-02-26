@@ -96,7 +96,7 @@ extern std::string digest;
 extern bool forcenetdemosplit;
 extern int last_svgametic;
 extern int last_player_update;
-extern NetCommand localcmds[MAXSAVETICS];
+extern odaproto::ClientCommand localcmds[MAXSAVETICS];
 extern bool recv_full_update;
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 extern std::set<byte> teleported_players;
@@ -1382,7 +1382,7 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 	{
 		ClientReplay::getInstance().reset();
 		for (size_t i = 0; i < MAXSAVETICS; i++)
-			localcmds[i].clear();
+			localcmds[i].Clear();
 	}
 
 	if (target->player && lives >= 0)
