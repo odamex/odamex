@@ -1032,7 +1032,7 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 	EXTERN_CVAR(r_forceenemycolor)
 	EXTERN_CVAR(r_forceteamcolor)
 
-	if (G_IsTeamColor(r_forceteamcolor, r_forceenemycolor))
+	if (G_IsForcedColor(r_forceteamcolor, r_forceenemycolor))
 		CL_RebuildAllPlayerTranslations();
 	else
 		R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(*p), p->userinfo.colorpreset);

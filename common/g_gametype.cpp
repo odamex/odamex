@@ -347,7 +347,7 @@ bool G_IsTeamGame()
 /**
  * @brief Check if team colors are being enforced due to CVARs and gametype.
  */
-bool G_IsTeamColor(bool forceteamcolor, bool forceenemycolor)
+bool G_IsForcedColor(bool forceteamcolor, bool forceenemycolor)
 {
 	return (forceteamcolor && G_IsCoopGame()) || (forceenemycolor && G_IsFFAGame());
 }

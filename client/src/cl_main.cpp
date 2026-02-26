@@ -223,7 +223,7 @@ void CL_RebuildAllPlayerTranslations()
 
 	for (auto& player : players)
 	{
-		if (&player == &displayplayer() || consoleplayer().spectator || !G_IsTeamColor(r_forceteamcolor, r_forceenemycolor))
+		if (&player == &displayplayer() || consoleplayer().spectator || !G_IsForcedColor(r_forceteamcolor, r_forceenemycolor))
 			R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), player.userinfo.colorpreset);
 		else
 			R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), NUMCOLOR);
@@ -1423,7 +1423,7 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 	}
 	else
 	{
-		if (G_IsTeamColor(r_forceteamcolor, r_forceenemycolor))
+		if (G_IsForcedColor(r_forceteamcolor, r_forceenemycolor))
 			R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), NUMCOLOR);
 		else
 			R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), player.userinfo.colorpreset);
