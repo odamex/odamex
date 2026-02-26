@@ -68,7 +68,6 @@
 #include "v_textcolors.h"
 #include "p_lnspec.h"
 #include "m_wdlstats.h"
-#include "svc_message.h"
 #include "m_cheat.h"
 #include "m_instrumentation.h"
 
@@ -82,6 +81,10 @@
 #include "server.pb.h"
 
 #include "CanarySocket.h"
+
+#include "clc_message.h"
+#include "svc_message.h"
+#include "svc_parse.h"
 
 extern void G_DeferedInitNew (const OLumpName& mapname);
 extern level_locals_t level;
@@ -3344,17 +3347,6 @@ void SV_PlayerTriedToCheat(player_t &player)
 }
 
 //
-// SV_FlushPlayerCmds
-//
-// Clears a player's queue of ticcmds, ignoring and discarding them
-//
-void SV_FlushPlayerCmds(player_t &player)
-{
-	std::queue<NetCommand> empty;
-	std::swap(player.cmdqueue, empty);
-}
-
-//
 // SV_CalculateNumTiccmds
 //
 // [SL] 2011-09-16 - Calculate how many ticcmds should be processed.  Under
@@ -3430,15 +3422,15 @@ void SV_ProcessPlayerCmd(player_t &player)
 
 	for (int i = 0; i < num_cmds && !player.cmdqueue.empty(); i++)
 	{
-		NetCommand *netcmd = &(player.cmdqueue.front());
+		odaproto::ClientCommand& netcmd = player.cmdqueue.front();
 		player.cmd = ticcmd_t();
-		player.tic = netcmd->getTic();
+		player.tic = netcmd.tic();
 
 		// Set the latency amount for Unlagging
-		Unlag::getInstance().setRoundtripDelay(player.id, netcmd->getWorldIndex() & 0xFF);
+		Unlag::getInstance().setRoundtripDelay(player.id, netcmd.world_index() & 0xFF);
 
-		if ((netcmd->hasForwardMove() && abs(netcmd->getForwardMove()) > max_forward_move) ||
-		    (netcmd->hasSideMove() && abs(netcmd->getSideMove()) > max_sr50_side_move))
+		if ((netcmd.has_move_forward() && abs(netcmd.move_forward()) > max_forward_move) ||
+		    (netcmd.has_move_side() && abs(netcmd.move_side()) > max_sr50_side_move))
 		{
 			SV_PlayerTriedToCheat(player);
 			return;
@@ -3454,7 +3446,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 		}
 		#endif
 
-		netcmd->toPlayer(player);
+		CLC_ClientCommandToPlayer(player, netcmd);
 
 		if (!sv_freelook)
 			player.mo->pitch = 0;
@@ -3480,19 +3472,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 
 void SV_GetPlayerCmd(player_t &player)
 {
-	// The client-tic at the time this message was sent.  The server stores
-	// this and sends it back the next time it tells the client
-	const int tic = MSG_ReadLong();
 
-	NetCommand netcmd;
-	netcmd.read(&net_message);
-	netcmd.setTic(tic);
-
-		if (gamestate == GS_LEVEL)
-		{
-			if (!player.spectator)
-				player.cmdqueue.push(netcmd);
-		}
 }
 
 void SV_UpdateConsolePlayer(player_t &player)
@@ -4107,9 +4087,43 @@ void SV_WantWad(player_t &player)
 	return;
 }
 
+void SV_HandleClientCommand(odaproto::ClientCommand& msg, player_t &player)
+{
+	if (gamestate == GS_LEVEL)
+	{
+		if (!player.spectator)
+		{
+			player.cmdqueue.push(std::move(msg));
+		}
+	}
+}
+
 //
 // SV_ParseCommands
 //
+
+parseError_e SV_ParseCommandSVC(const byte cmd, player_t& player)
+{
+    google::protobuf::Message* msgPtrRaw = nullptr;
+    const parseError_e result = SVC_ParseMessage(msgPtrRaw, cmd);
+
+    std::unique_ptr<google::protobuf::Message> msgPtr(msgPtrRaw);
+
+    if (result == PERR_OK)
+    {
+        switch (cmd)
+        {
+            case svc_clientcommand:
+                SV_HandleClientCommand(*static_cast<odaproto::ClientCommand*>(msgPtrRaw), player);
+                break;
+            default:
+                // This case happens when a message was received, parsed, but not handled.
+                PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", cmd);
+                return PERR_BAD_DECODE;
+        }
+    }
+    return result;
+}
 
 void SV_ParseCommands(player_t &player)
 {
@@ -4121,7 +4135,9 @@ void SV_ParseCommands(player_t &player)
 		}
 		while (::net_message.BytesLeftToRead() > 0)
 		{
-			clc_t cmd = static_cast<clc_t>(MSG_ReadByte());
+            const byte cmdRaw = MSG_ReadByte();
+
+			clc_t cmd = static_cast<clc_t>(cmdRaw);
 
 			if(cmd == (clc_t)-1)
 				continue;
@@ -4247,6 +4263,24 @@ void SV_ParseCommands(player_t &player)
 				break;
 
 			default:
+                // It's important to allow the clc_ enum to have priority
+                // over svc_ if we have both types of messages.
+                switch (SV_ParseCommandSVC(cmdRaw, player))
+                {
+                    case PERR_OK:
+                        continue;
+                    case PERR_UNKNOWN_HEADER:   // Data still readable from buffer
+                        PrintFmt(PRINT_WARNING, "SV_ParseCommands: Unmappable command {}\n", cmdRaw);
+                        break;
+                    case PERR_UNKNOWN_MESSAGE:  // Data still readable from buffer
+                        PrintFmt(PRINT_WARNING, "SV_ParseCommands: Command {} unknown to protobuf\n", cmdRaw);
+                        break;
+                    case PERR_BAD_DECODE:       // Data no longer in buffer.  Welp.
+                        PrintFmt(PRINT_WARNING, "SV_ParseCommands: Bad protobuf decode for {}\n", cmdRaw);
+                        break;
+                    default:
+                        break;
+                }
 				PrintFmt("SV_ParseCommands: Unknown client message {}.\n", cmd);
 				SV_DropClient(player);
 				return;

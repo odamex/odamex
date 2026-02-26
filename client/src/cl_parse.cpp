@@ -3076,44 +3076,6 @@ const Protos& CL_GetTicProtos()
 	return ::protos;
 }
 
-/**
- * @brief Given a message type and buffer, return a decoded message in "out".
- *
- * @param out Output message - will not be modified unless successful.
- * @param cmd Command to parse out.
- * @param buffer Buffer to parse, not including the header or initial size.
- * @param size Length of the buffer to parse.
- * @return Error condition, or OK (0) if successful.
- */
-parseError_e CL_ParseMessage(google::protobuf::Message*& out, const byte cmd,
-                             const void* buffer, const size_t size)
-{
-	// A message factory + Descriptor gives us the proper message.
-	google::protobuf::MessageFactory* factory =
-	    google::protobuf::MessageFactory::generated_factory();
-	const google::protobuf::Descriptor* desc = SVC_ResolveHeader(static_cast<svc_t>(cmd));
-	if (desc == NULL)
-	{
-		return PERR_UNKNOWN_HEADER;
-	}
-
-	// Can we get the mssage prototype from the descriptor?
-	const google::protobuf::Message* defmsg = factory->GetPrototype(desc);
-	if (defmsg == NULL)
-	{
-		return PERR_UNKNOWN_MESSAGE;
-	}
-
-	// Allocated with "new" - can't be null, and we own it.
-	google::protobuf::Message* msg = defmsg->New();
-	if (!msg->ParseFromArray(buffer, size))
-	{
-		return PERR_BAD_DECODE;
-	}
-
-	out = msg;
-	return PERR_OK;
-}
 
 #define SV_MSG(header, func, type)           \
 	case header:                             \
@@ -3135,15 +3097,9 @@ parseError_e CL_ParseCommand()
         return PERR_OK;
     }
 
-	// Size of the message.
-	size_t size = MSG_ReadUnVarint();
-
-	// The message itself.
-	void* data = MSG_ReadChunk(size);
-
 	// Turn the message into a protobuf.
 	google::protobuf::Message* msg = NULL;
-	parseError_e err = CL_ParseMessage(msg, cmd, data, size);
+	parseError_e err = SVC_ParseMessage(msg, cmd);
 	if (err)
 	{
 		return err;

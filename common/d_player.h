@@ -31,7 +31,7 @@
 // Finally, for odd reasons, the player input
 // is buffered within the player data struct,
 // as commands per game tick.
-#include "d_ticcmd.h"
+#include "clc_message.h"
 
 
 // The player data structure depends on a number
@@ -129,7 +129,7 @@ public:
 	AActor::AActorPtr	mo;
 
 	struct ticcmd_t cmd;	// the ticcmd currently being processed
-	std::queue<NetCommand> cmdqueue;	// all received ticcmds
+	std::queue<odaproto::ClientCommand> cmdqueue;   // all received Client Commands
 
 	// [RH] who is this?
 	UserInfo	userinfo;

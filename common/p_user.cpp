@@ -1372,7 +1372,7 @@ player_t::player_t() :
 	playerstate(PST_LIVE),
 	mo(AActor::AActorPtr()),
 	cmd(ticcmd_t()),
-	cmdqueue(std::queue<NetCommand>()),
+	cmdqueue(),
 	userinfo(UserInfo()),
 	fov(90.0),
 	viewz(0 << FRACBITS),

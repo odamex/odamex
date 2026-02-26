@@ -269,7 +269,15 @@ enum svc_t
 	svc_raisemobj,
 	svc_spree,
 	svc_spreebreaker,
-	svc_clientcommand,
+	svc_clientcommand,      // SPECIAL KNOWLEDGE AND NOTE HERE: We're entering a transitory phase
+	                        // where client-originated messages are going to start transitioning
+	                        // to protobufs, and this svc enum is the basis for the unified message
+	                        // enumeration.  This enumeration delineates where client-originated
+	                        // messages begin, and it _MUST_ numerically evaluate greater than
+	                        // the values for the clc_t enum so that parsing code on the server that,
+	                        // during this transitory phase, can very easily work with both the
+	                        // new and the old enumerals and naive handling code can be correct.
+
 	svc_netdemocap = 100,  // netdemos - NullPoint
 	svc_netdemostop = 101, // netdemos - NullPoint
 	svc_netdemoloadsnap = 102, // netdemos - NullPoint
