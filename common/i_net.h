@@ -304,7 +304,6 @@ enum clc_t
 	clc_reserved1,      // UNUSED
 	clc_disconnect,
 	clc_say,
-	clc_move,      // send cmds
 	clc_userinfo,  // send userinfo
 	clc_pingreply, // [SL] 2011-05-11 - timestamp
 	clc_rate,

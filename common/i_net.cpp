@@ -1078,7 +1078,6 @@ static void InitNetMessageFormats()
 	CLC_INFO(clc_reserved1);
 	CLC_INFO(clc_disconnect);
 	CLC_INFO(clc_say);
-	CLC_INFO(clc_move);
 	CLC_INFO(clc_userinfo);
 	CLC_INFO(clc_pingreply);
 	CLC_INFO(clc_rate);

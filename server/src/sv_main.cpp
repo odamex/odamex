@@ -3462,19 +3462,6 @@ void SV_ProcessPlayerCmd(player_t &player)
 	}
 }
 
-//
-// SV_GetPlayerCmd
-//
-// Extracts a player's ticcmd message from their network buffer and queues
-// the ticcmd for later processing.  The client always sends its previous
-// ticcmd followed by its current ticcmd just in case there is a dropped
-// packet.
-
-void SV_GetPlayerCmd(player_t &player)
-{
-
-}
-
 void SV_UpdateConsolePlayer(player_t &player)
 {
 	AActor *mo = player.mo;
@@ -4166,10 +4153,6 @@ void SV_ParseCommands(player_t &player)
 			case clc_privmsg:
 				if (!SV_PrivMsg(player))
 					return;
-				break;
-
-			case clc_move:
-				SV_GetPlayerCmd(player);
 				break;
 
 			case clc_pingreply:  // [SL] 2011-05-11 - Changed to clc_pingreply
