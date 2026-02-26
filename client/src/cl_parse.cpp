@@ -96,7 +96,6 @@ extern std::string digest;
 extern bool forcenetdemosplit;
 extern int last_svgametic;
 extern int last_player_update;
-extern odaproto::ClientCommand localcmds[MAXSAVETICS];
 extern bool recv_full_update;
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 extern std::set<byte> teleported_players;

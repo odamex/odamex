@@ -779,29 +779,30 @@ void drawProtos()
 		}
 	}
 
-    // Now draw the current reconstructed ClientCommand.
-    y = top;
-    hud::DrawText(
-            100, y,
-            scale,
-            hud::X_RIGHT,
-            hud::Y_TOP,
-            hud::X_LEFT,
-            hud::Y_TOP,
-            ::svc_info[svc_clientcommand].getName(),
-            ProtoRowColor(svc_clientcommand),
-            true);
+	// Now draw the current reconstructed ClientCommand.
+	y = top;
+	hud::DrawText(
+	        100, y,
+	        scale,
+	        hud::X_RIGHT,
+	        hud::Y_TOP,
+	        hud::X_LEFT,
+	        hud::Y_TOP,
+	        ::svc_info[svc_clientcommand].getName(),
+	        ProtoRowColor(svc_clientcommand),
+	        true);
 
-    y += V_StringHeight(::svc_info[svc_clientcommand].getName());
-    hud::DrawText(
-            100, y,
-            scale,
-            hud::X_RIGHT,
-            hud::Y_TOP,
-            hud::X_LEFT,
-            hud::Y_TOP,
-            ::localcmds[::last_received % MAXSAVETICS].DebugString().c_str(),
-            true);
+	y += V_StringHeight(::svc_info[svc_clientcommand].getName());
+	hud::DrawText(
+	        100, y,
+	        scale,
+	        hud::X_RIGHT,
+	        hud::Y_TOP,
+	        hud::X_LEFT,
+	        hud::Y_TOP,
+	        ::localcmds[::last_received % MAXSAVETICS].DebugString().c_str(),
+	        ProtoRowColor(svc_clientcommand),
+	        true);
 
 	V_SetFont("SMALLFONT");
 }
