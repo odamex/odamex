@@ -717,6 +717,21 @@ static void drawGametype()
 
 size_t proto_selected;
 
+static int ProtoRowColor(int cmd)
+{
+	// Give each protocol header its own unique color.
+	int rowColor = cmd % (NUM_TEXT_COLORS - 2);
+	if (rowColor >= CR_WHITE)
+	{
+		rowColor++;
+	}
+	if (rowColor >= CR_UNTRANSLATED)
+	{
+		rowColor++;
+	}
+	return rowColor;
+}
+
 /**
  * @brief Draw protocol buffer packets
  */
@@ -747,12 +762,7 @@ void drawProtos()
 			              " >", CR_GOLD, true);
 		}
 
-		// Give each protocol header its own unique color.
-		int rowColor = it->header % (NUM_TEXT_COLORS - 2);
-		if (rowColor >= CR_WHITE)
-			rowColor++;
-		if (rowColor >= CR_UNTRANSLATED)
-			rowColor++;
+		const int rowColor = ProtoRowColor(it->header);
 
 		// Draw name
 		hud::DrawText(indent, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
@@ -767,6 +777,19 @@ void drawProtos()
 			y += V_StringHeight(it->data.c_str());
 		}
 	}
+
+    hud::DrawText(
+            100, 7 * 5,
+            0.75f,
+            hud::X_RIGHT,
+            hud::Y_TOP,
+            hud::X_LEFT,
+            hud::Y_TOP,
+            ::svc_info[svc_clientcommand].getName(),
+            ProtoRowColor(svc_clientcommand),
+            true);
+
+    // Now draw the most recent reconstructed ClientCommand.
 
 	V_SetFont("SMALLFONT");
 }
