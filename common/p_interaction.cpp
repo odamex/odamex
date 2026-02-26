@@ -2528,7 +2528,7 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 }
 
 //The player has left the game (in-game to spectator, or in-game disconnect)
-void P_PlayerLeavesGame(player_s* player)
+void P_PlayerLeavesGame(player_t* player)
 {
 	if (level.behavior)
 	{

@@ -27,8 +27,7 @@
 #include "m_fixed.h"
 
 // Forward declaration avoids circular reference
-class player_s;
-typedef player_s player_t;
+class player_t;
 
 inline constexpr short CENTERVIEW = -32768;
 //

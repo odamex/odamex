@@ -291,8 +291,8 @@ enum ThinkerType
 // network messages
 enum clc_t
 {
-	clc_abort,
-	clc_reserved1,
+	clc_abort,          // UNUSED
+	clc_reserved1,      // UNUSED
 	clc_disconnect,
 	clc_say,
 	clc_move,      // send cmds

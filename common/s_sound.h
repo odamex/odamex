@@ -28,8 +28,7 @@
 #define MAX_SNDNAME 63
 
 class AActor;
-class player_s;
-typedef player_s player_t;
+class player_t;
 
 //
 // SoundFX struct.

@@ -96,8 +96,6 @@ typedef vertex_s vertex_t;
 struct line_s;
 struct sector_t;
 
-class player_s;
-
 //
 // The SECTORS record, at runtime.
 // Stores things/mobjs.

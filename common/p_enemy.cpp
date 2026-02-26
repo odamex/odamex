@@ -1096,7 +1096,7 @@ void P_RunHelperTics()
 		// before spawning
 
 		auto it = std::find_if(::players.begin(), ::players.end(),
-			[&](const player_s& p) { return p.id == i->playerid; });
+			[&](const player_t& p) { return p.id == i->playerid; });
 
 		if (it == players.end() || !it->ingame())
 		{

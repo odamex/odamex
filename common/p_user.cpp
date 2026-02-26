@@ -1250,7 +1250,7 @@ BEGIN_COMMAND(cheat_players)
 }
 END_COMMAND(cheat_players)
 
-void player_s::Serialize (FArchive &arc)
+void player_t::Serialize (FArchive &arc)
 {
 	size_t i;
 
@@ -1367,7 +1367,7 @@ void player_s::Serialize (FArchive &arc)
 	}
 }
 
-player_s::player_s() :
+player_t::player_t() :
 	id(0),
 	playerstate(PST_LIVE),
 	mo(AActor::AActorPtr()),
@@ -1430,7 +1430,7 @@ player_s::player_s() :
 	hazardinterval(0),
 	LastMessage(LastMessage_s()),
 	to_spawn(std::queue<AActor::AActorPtr>()),
-	client(player_s::client_t())
+	client(player_t::client_t())
 {
 	cmd.clear();
 	powers.fill(0);
@@ -1454,7 +1454,7 @@ player_s::player_s() :
 	ArrayInit(netcmds, ticcmd_t());
 }
 
-player_s &player_s::operator =(const player_s &other)
+player_t &player_t::operator =(const player_t &other)
 {
 	if (this == &other)
 		return *this;
@@ -1568,7 +1568,7 @@ player_s &player_s::operator =(const player_s &other)
 	return *this;
 }
 
-player_s::~player_s()
+player_t::~player_t()
 {
 }
 

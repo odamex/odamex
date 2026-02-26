@@ -31,12 +31,12 @@
 #include "dobject.h"
 
 class AActor;
-class player_s;
+class player_t;
 struct pspdef_s;
 
 typedef void (*actionf_v)();
 typedef void (*actionf_p1)( AActor* );
-typedef void (*actionf_p2)( player_s*, pspdef_s* );
+typedef void (*actionf_p2)( player_t*, pspdef_s* );
 
 typedef union
 {

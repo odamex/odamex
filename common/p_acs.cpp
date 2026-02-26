@@ -2036,7 +2036,7 @@ void DLevelScript::DoFadeTo(AActor* who, int r, int g, int b, int a, fixed_t tim
 	DoFadeRange(who, 0, 0, 0, -1, r, g, b, a, time);
 }
 
-static void DoActualFadeRange(player_s* viewer, float ftime, bool fadingFrom,
+static void DoActualFadeRange(player_t* viewer, float ftime, bool fadingFrom,
                               float fr1, float fg1, float fb1, float fa1,
                               float fr2, float fg2, float fb2, float fa2)
 {

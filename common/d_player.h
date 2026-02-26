@@ -107,10 +107,7 @@ typedef enum
 inline constexpr int ReJoinDelay = TICRATE * 5;
 inline constexpr int SuicideDelay = TICRATE * 10;
 
-//
-// Extended player object info: player_t
-//
-class player_s
+class player_t
 {
 public:
 	void Serialize (FArchive &arc);
@@ -360,16 +357,15 @@ public:
 		return id - 1;
 	}
 
-	player_s();
-	player_s &operator =(const player_s &other);
+	player_t();
+	player_t &operator =(const player_t &other);
 
-	~player_s();
+	~player_t();
 
 
 };
 
-typedef player_s player_t;
-typedef player_t::client_t client_t;
+using client_t = player_t::client_t;
 
 // Bookkeeping on players - state.
 typedef std::list<player_t> Players;

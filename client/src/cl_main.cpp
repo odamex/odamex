@@ -170,7 +170,7 @@ EXTERN_CVAR(debug_disconnect)
 
 static argb_t enemycolor, teamcolor;
 
-void P_PlayerLeavesGame(player_s* player);
+void P_PlayerLeavesGame(player_t* player);
 
 //
 // CL_ShadePlayerColor
