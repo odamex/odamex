@@ -31,8 +31,7 @@
 // Finally, for odd reasons, the player input
 // is buffered within the player data struct,
 // as commands per game tick.
-#include "clc_message.h"
-
+#include "d_ticcmd.h"
 
 // The player data structure depends on a number
 // of other structs: items (internal inventory),
@@ -49,7 +48,7 @@
 #include "i_net.h"
 
 #include "p_snapshot.h"
-#include "d_netcmd.h"
+#include "clc_message.h"
 
 #include "OdaMessenger.h"
 

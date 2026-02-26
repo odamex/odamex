@@ -602,6 +602,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	if (sendcenterview && ConsoleState == c_up && !menuactive)
 	{
 		sendcenterview = false;
+		const short CENTERVIEW = -32768;
 		cmd->pitch = CENTERVIEW;
 	}
 	else
