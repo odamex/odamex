@@ -463,21 +463,52 @@ static void SendLevelState(SerializedLevelState sls)
 //
 void SV_InitNetwork()
 {
-    network_game = true;
+	network_game = true;
 
-	const char *v = Args.CheckValue ("-port");
-    if (v)
-    {
-       localport = atoi (v);
-       PrintFmt(PRINT_HIGH, "using alternate port {}\n", localport);
+	const auto parseport = [](const char* arg) -> std::optional<uint16_t>
+	{
+		const char *v = Args.CheckValue(arg);
+		if (!v)
+			return std::nullopt;
+
+		if (auto port = ParseNum<uint16_t>(v))
+			return port;
+
+		I_FatalError("{} is not a valid port number. Argument to {} must be in the range 0-65535", v, arg);
+	};
+
+	if (auto port = parseport("-port"))
+	{
+		localport = port.value();
+		PrintFmt(PRINT_HIGH, "Using alternate port {}\n", localport);
     }
 	else
 	   localport = SERVERPORT;
 
 	// set up a socket and net_message buffer
 	InitNetCommon();
+
+	uint16_t rconport;
+	if (auto port = parseport("-rconport"))
+	{
+		rconport = port.value();
+		PrintFmt(PRINT_HIGH, "Using alternate rcon port {}\n", rconport);
+	}
+	else
+	{
+		static constexpr uint16_t offset = 1000;
+		static constexpr uint16_t maxport = std::numeric_limits<uint16_t>::max() - offset;
+
+		if (localport > maxport)
+		{
+			I_FatalError("Value greater than {} passed to -port, -rconport must be be specified too", maxport);
+		}
+
+		rconport = localport + offset;
+	}
+
 	// FIXME: shouldn't set password until after cvar callbacks are enabled
-	rcon::Server::Init(localport, rcon_password);
+	rcon::Server::Init(rconport, rcon_password);
 
 	// determine my name & address
 	// NET_GetLocalAddress ();
