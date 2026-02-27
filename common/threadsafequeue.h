@@ -30,7 +30,7 @@
 #include <optional>
 #include <nonstd/expected.hpp>
 
-enum class oconqueue_status_t { success, empty, full, closed };
+enum class oconqueue_status_t { success, empty, full, closed, busy };
 
 /**
  * @class OConcurrentQueue
@@ -93,7 +93,10 @@ public:
 	 */
 	nonstd::expected<T, oconqueue_status_t> try_pop()
 	{
-		std::unique_lock lock(m_mutex);
+		std::unique_lock lock(m_mutex, std::try_to_lock);
+		if (!lock)
+			return nonstd::make_unexpected(oconqueue_status_t::busy);
+
 		// don't block if queue empty, just return empty oconqueue_status_t
 		if (m_queue.empty())
 		{
@@ -201,7 +204,10 @@ public:
 	oconqueue_status_t try_push(const T& x)
 	{
 		{
-			std::unique_lock lock(m_mutex);
+			std::unique_lock lock(m_mutex, std::try_to_lock);
+			if (!lock)
+				return oconqueue_status_t::busy;
+
 			if (m_closed)
 				return oconqueue_status_t::closed;
 
@@ -226,7 +232,10 @@ public:
 	oconqueue_status_t try_push(T&& x)
 	{
 		{
-			std::unique_lock lock(m_mutex);
+			std::unique_lock lock(m_mutex, std::try_to_lock);
+			if (!lock)
+				return oconqueue_status_t::busy;
+
 			if (m_closed)
 				return oconqueue_status_t::closed;
 
@@ -254,11 +263,14 @@ public:
 	oconqueue_status_t try_emplace(Args&&... args)
 	{
 		{
-			std::unique_lock lock(m_mutex);
+			std::unique_lock lock(m_mutex, std::try_to_lock);
+			if (!lock)
+				return oconqueue_status_t::busy;
+
 			if (m_closed)
 				return oconqueue_status_t::closed;
 
-			if (bound)
+			if (bound && m_queue.size() >= bound)
 				return oconqueue_status_t::full;
 
 			m_queue.emplace(std::forward<Args>(args)...);
