@@ -675,11 +675,10 @@ static fixed_t P_AvoidDropoff(AActor* actor)
 	tmbbox[BOXRIGHT] = actor->x + actor->radius;
 	tmbbox[BOXLEFT] = actor->x - actor->radius;
 
-	int yh = tmbbox[BOXTOP] - bmaporgy;
-	int yl = tmbbox[BOXBOTTOM] - bmaporgy;
-	int xh = tmbbox[BOXRIGHT] - bmaporgx;
-	int xl = tmbbox[BOXLEFT] - bmaporgx;
-	int bx, by;
+	const int yh = tmbbox[BOXTOP] - bmaporgy >> MAPBLOCKSHIFT;
+	const int yl = tmbbox[BOXBOTTOM] - bmaporgy >> MAPBLOCKSHIFT;
+	const int xh = tmbbox[BOXRIGHT] - bmaporgx >> MAPBLOCKSHIFT;
+	const int xl = tmbbox[BOXLEFT] - bmaporgx >> MAPBLOCKSHIFT;
 
 	floorz = actor->z; // remember floor height
 
@@ -688,8 +687,8 @@ static fixed_t P_AvoidDropoff(AActor* actor)
 	// check lines
 
 	validcount++;
-	for (bx = xl; bx <= xh; bx++)
-		for (by = yl; by <= yh; by++)
+	for (int bx = xl; bx <= xh; bx++)
+		for (int by = yl; by <= yh; by++)
 			P_BlockLinesIterator(bx, by, PIT_AvoidDropoff); // all contacted lines
 
 	return dropoff_deltax | dropoff_deltay; // Non-zero if movement prescribed
