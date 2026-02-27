@@ -59,7 +59,7 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 		if (not simulated_connection)
 		{
 			buf_t& ack = m_outgoingAckQueue.Obtain();
-			ack.WriteByte(clc_ack);
+			ack.WriteByte(msg_ack);
 			ack.WriteLong(header.sequence);
 		}
 	}

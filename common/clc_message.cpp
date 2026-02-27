@@ -4,7 +4,7 @@
 
 #include "d_player.h"
 
-void CLC_ClientCommandFromPlayer(odaproto::ClientCommand& msg, const player_t& player)
+void CLC_PackPlayerInputMessageFromPlayer(odaproto::clc::PlayerInput& msg, const player_t& player)
 {
 	if (player.mo)
 	{
@@ -73,7 +73,7 @@ void CLC_ClientCommandFromPlayer(odaproto::ClientCommand& msg, const player_t& p
 	}
 }
 
-void CLC_ClientCommandToPlayer(player_t& player, const odaproto::ClientCommand& msg)
+void CLC_UnpackPlayerInputMessageToPlayer(const odaproto::clc::PlayerInput& msg, player_t& player)
 {
 	if (player.mo)
 	{

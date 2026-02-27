@@ -3422,7 +3422,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 
 	for (int i = 0; i < num_cmds && !player.cmdqueue.empty(); i++)
 	{
-		odaproto::ClientCommand& netcmd = player.cmdqueue.front();
+		odaproto::clc::PlayerInput& netcmd = player.cmdqueue.front();
 		player.cmd = ticcmd_t();
 		player.tic = netcmd.tic();
 
@@ -3446,7 +3446,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 		}
 		#endif
 
-		CLC_ClientCommandToPlayer(player, netcmd);
+		CLC_UnpackPlayerInputMessageToPlayer(netcmd, player);
 
 		if (!sv_freelook)
 			player.mo->pitch = 0;
@@ -4074,7 +4074,7 @@ void SV_WantWad(player_t &player)
 	return;
 }
 
-void SV_HandleClientCommand(odaproto::ClientCommand& msg, player_t &player)
+void SV_HandlePlayerInput(odaproto::clc::PlayerInput& msg, player_t &player)
 {
 	if (gamestate == GS_LEVEL)
 	{
@@ -4100,8 +4100,8 @@ parseError_e SV_ParseCommandSVC(const byte cmd, player_t& player)
     {
         switch (cmd)
         {
-            case svc_clientcommand:
-                SV_HandleClientCommand(*static_cast<odaproto::ClientCommand*>(msgPtrRaw), player);
+            case clc_playerinput:
+                SV_HandlePlayerInput(*static_cast<odaproto::clc::PlayerInput*>(msgPtrRaw), player);
                 break;
             default:
                 // This case happens when a message was received, parsed, but not handled.
@@ -4163,7 +4163,7 @@ void SV_ParseCommands(player_t &player)
 				MSG_ReadLong();		// [SL] Read and ignore. Clients now always use sv_maxrate.
 				break;
 
-			case clc_ack:
+			case msg_ack:
 				SV_AcknowledgePacket(player);
 				break;
 

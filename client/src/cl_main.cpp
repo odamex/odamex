@@ -136,7 +136,7 @@ NetDemo netdemo;
 // [SL] 2011-07-06 - not really connected (playing back a netdemo)
 bool forcenetdemosplit = false;		// need to split demo due to svc_reconnect
 
-odaproto::ClientCommand localcmds[MAXSAVETICS];
+odaproto::clc::PlayerInput localcmds[MAXSAVETICS];
 
 // [SL] 2012-03-07 - Players that were teleported during the current gametic
 std::set<byte> teleported_players;
@@ -2086,8 +2086,8 @@ void CL_ParseCommands()
 
 void CL_SaveCmd(void)
 {
-	odaproto::ClientCommand& netcmd = localcmds[gametic % MAXSAVETICS];
-	CLC_ClientCommandFromPlayer(netcmd, consoleplayer());
+	odaproto::clc::PlayerInput& netcmd = localcmds[gametic % MAXSAVETICS];
+	CLC_PackPlayerInputMessageFromPlayer(netcmd, consoleplayer());
 	netcmd.set_tic(gametic);
 	netcmd.set_world_index(world_index);
 }
@@ -2119,7 +2119,7 @@ void CL_SendCmd(void)
 		MSG_WriteLong(&netBuf, p->mo->z);
 	}
 
-	odaproto::ClientCommand& currentNetcmd = localcmds[gametic % MAXSAVETICS];
+	odaproto::clc::PlayerInput& currentNetcmd = localcmds[gametic % MAXSAVETICS];
 
 	// Write current client-tic.  Server later sends this back to client
 	// when sending svc_updatelocalplayer so the client knows which ticcmds

@@ -3089,7 +3089,7 @@ parseError_e CL_ParseCommand()
 	// What type of message we have.
 	byte cmd = MSG_ReadByte();
 
-    if (cmd == svc_ack)
+    if (cmd == msg_ack)
     {
         const int sequence = MSG_ReadLong();
         messenger.Acknowledge(sequence);

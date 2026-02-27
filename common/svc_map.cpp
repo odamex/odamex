@@ -25,6 +25,7 @@
 
 #include "svc_map.h"
 
+#include "client.pb.h"
 #include "server.pb.h"
 
 #include "hashtable.h"
@@ -116,7 +117,8 @@ static void InitMap()
 	MapProto(svc_netdemocap, odaproto::svc::NetdemoCap::descriptor());
 	MapProto(svc_netdemostop, odaproto::svc::NetDemoStop::descriptor());
 	MapProto(svc_netdemoloadsnap, odaproto::svc::NetDemoLoadSnap::descriptor());
-	MapProto(svc_clientcommand, odaproto::ClientCommand::descriptor());
+
+	MapProto(clc_playerinput, odaproto::clc::PlayerInput::descriptor());
 
 }
 

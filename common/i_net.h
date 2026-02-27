@@ -208,7 +208,7 @@ enum svc_t
 	svc_levellocals, // [AM] Persist one or more level locals
 	svc_pingrequest, // [SL] 2011-05-11 timestamp
 	svc_updateping,
-    svc_ack,                // Overlays the clc type...  FIXME: unify the message identifiers!
+	msg_ack,
 	svc_spawnmobj,
 	svc_disconnectclient,
 	svc_loadmap,
@@ -269,7 +269,7 @@ enum svc_t
 	svc_raisemobj,
 	svc_spree,
 	svc_spreebreaker,
-	svc_clientcommand,      // SPECIAL KNOWLEDGE AND NOTE HERE: We're entering a transitory phase
+	clc_playerinput,        // SPECIAL KNOWLEDGE AND NOTE HERE: We're entering a transitory phase
 	                        // where client-originated messages are going to start transitioning
 	                        // to protobufs, and this svc enum is the basis for the unified message
 	                        // enumeration.  This enumeration delineates where client-originated
@@ -304,10 +304,11 @@ enum clc_t
 	clc_reserved1,      // UNUSED
 	clc_disconnect,
 	clc_say,
+	clc_move_OLD_PLACEHOLDER,       // NOTE: Keep this for transitory compatibility with "non-unified" switch cases.
 	clc_userinfo,  // send userinfo
 	clc_pingreply, // [SL] 2011-05-11 - timestamp
 	clc_rate,
-	clc_ack,        // Overlays the svc type...  FIXME: unify the message identifiers!
+	clc_ack_OLD_PLACEHOLDER,        // NOTE: Keep this for transitory compatibility with "non-unified" switch cases.
 	clc_rcon,
 	clc_rcon_password,
 	clc_changeteam, // [NightFang] - Change your team

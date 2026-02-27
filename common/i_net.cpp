@@ -1070,7 +1070,7 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_maplist_index);
 	SVC_INFO(svc_toast);
 	SVC_INFO(svc_hordeinfo);
-	SVC_INFO(svc_clientcommand);
+	SVC_INFO(clc_playerinput);
 	SVC_INFO(svc_max);
 
 	// Client Messages.
@@ -1081,7 +1081,6 @@ static void InitNetMessageFormats()
 	CLC_INFO(clc_userinfo);
 	CLC_INFO(clc_pingreply);
 	CLC_INFO(clc_rate);
-	CLC_INFO(clc_ack);
 	CLC_INFO(clc_rcon);
 	CLC_INFO(clc_rcon_password);
 	CLC_INFO(clc_changeteam);

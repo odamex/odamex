@@ -108,23 +108,3 @@ message Sector
 	sfixed32 base_floor_angle = 17;
 	sfixed32 base_floor_yoffs = 18;
 }
-
-message ClientCommand
-{
-	         uint32     tic                 =  1;
-	         uint32     world_index         =  2;
-	optional bool       button_attack       =  3;
-	optional bool       button_use          =  4;
-	optional bool       button_pause        =  5;
-	optional bool       button_jump         =  6;
-	optional uint32     button_savegame     =  7;    // If the field is present, the value is the savegame slot.
-	optional uint32     button_weaponchange =  8;
-	optional uint32     impulse             =  9;
-	         sfixed32   angle               = 10;
-	         sfixed32   pitch               = 11;
-	optional int32      move_forward        = 12;
-	optional int32      move_side           = 13;
-	optional int32      move_up             = 14;
-	optional int32      delta_yaw           = 15;
-	optional int32      delta_pitch         = 16;
-}

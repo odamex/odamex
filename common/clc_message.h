@@ -1,8 +1,8 @@
 #pragma once
 
-#include "common.pb.h"
+#include "client.pb.h"
 
 class player_t;
 
-void CLC_ClientCommandFromPlayer(odaproto::ClientCommand& msg, const player_t& player);
-void CLC_ClientCommandToPlayer(player_t& player, const odaproto::ClientCommand& msg);
+void CLC_PackPlayerInputMessageFromPlayer(      odaproto::clc::PlayerInput& msg, const player_t& player);
+void CLC_UnpackPlayerInputMessageToPlayer(const odaproto::clc::PlayerInput& msg,       player_t& player);

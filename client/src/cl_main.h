@@ -30,7 +30,7 @@
 #include "r_defs.h"
 #include "cl_demo.h"
 
-#include "common.pb.h"
+#include "client.pb.h"
 
 #include "OdaMessenger.h"
 
@@ -45,7 +45,7 @@ extern NetDemo      netdemo;
 extern OdaMessenger messenger;
 
 #define MAXSAVETICS 70
-extern odaproto::ClientCommand localcmds[MAXSAVETICS];
+extern odaproto::clc::PlayerInput localcmds[MAXSAVETICS];
 
 extern bool predicting;
 

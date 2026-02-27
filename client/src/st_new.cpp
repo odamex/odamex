@@ -779,7 +779,7 @@ void drawProtos()
 		}
 	}
 
-	// Now draw the current reconstructed ClientCommand.
+	// Now draw the current reconstructed PlayerInput.
 	y = top;
 	hud::DrawText(
 	        100, y,
@@ -788,11 +788,11 @@ void drawProtos()
 	        hud::Y_TOP,
 	        hud::X_LEFT,
 	        hud::Y_TOP,
-	        ::svc_info[svc_clientcommand].getName(),
-	        ProtoRowColor(svc_clientcommand),
+	        ::svc_info[clc_playerinput].getName(),
+	        ProtoRowColor(clc_playerinput),
 	        true);
 
-	y += V_StringHeight(::svc_info[svc_clientcommand].getName());
+	y += V_StringHeight(::svc_info[clc_playerinput].getName());
 	hud::DrawText(
 	        100, y,
 	        scale,
@@ -801,7 +801,7 @@ void drawProtos()
 	        hud::X_LEFT,
 	        hud::Y_TOP,
 	        ::localcmds[::last_received % MAXSAVETICS].DebugString().c_str(),
-	        ProtoRowColor(svc_clientcommand),
+	        ProtoRowColor(clc_playerinput),
 	        true);
 
 	V_SetFont("SMALLFONT");

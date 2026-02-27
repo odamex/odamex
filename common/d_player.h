@@ -128,7 +128,7 @@ public:
 	AActor::AActorPtr	mo;
 
 	struct ticcmd_t cmd;	// the ticcmd currently being processed
-	std::queue<odaproto::ClientCommand> cmdqueue;   // all received Client Commands
+	std::queue<odaproto::clc::PlayerInput> cmdqueue;   // all received Player Inputs
 
 	// [RH] who is this?
 	UserInfo	userinfo;
