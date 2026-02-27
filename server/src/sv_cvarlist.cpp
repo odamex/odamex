@@ -113,9 +113,15 @@ CVAR_RANGE(		sv_flooddelay, "1.5", "Chat flood protection time (in seconds)",
 CVAR_RANGE_FUNC_DECL(sv_maxrate, "200", "Forces clients to be on or below this rate",
 				CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 7.0f, 100000.0f)
 
-#ifdef ODA_HAVE_MINIUPNP
-CVAR(			sv_upnp, "1", "Enable UPnP support",
+CVAR(			sv_rcon, "0", "Enable remote console access from external clients",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
+
+#ifdef ODA_HAVE_MINIUPNP
+CVAR_RANGE(		sv_upnp, "1", "Enable UPnP support\n" \
+				"// 0 - Disable UPnP\n" \
+				"// 1 - Enable UPnP for gameplay\n" \
+				"// 2 - Enable UPnP for gameplay and RCON",
+				CVARTYPE_BYTE, CVAR_SERVERARCHIVE, 0.0f, 2.0f)
 
 CVAR_RANGE(		sv_upnp_discovertimeout, "2000", "UPnP Router discovery timeout",
 				CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 500.0f, 10000.0f)
