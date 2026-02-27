@@ -32,6 +32,7 @@
 
 #include <assert.h>
 #include <unordered_map>
+#include <array>
 
 #define NUM_MAPVARS				128
 #define NUM_WORLDVARS			256
