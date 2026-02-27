@@ -273,8 +273,7 @@ static void ParseSpreeDef(const int lump, const OLumpName name)
 		else
 		{
 			// We don't know what this token is.
-			std::string buffer = fmt::sprintf("Unknown Token \"%s\".", os.getToken());
-			os.error(buffer);
+			os.error("Unknown Token \"{:s}\".", os.getToken());
 		}
 	}
 
