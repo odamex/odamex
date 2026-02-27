@@ -2484,14 +2484,14 @@ mobjinfo_t odamobjinfo[] = {
     // ----------- odamex mobjinfo end -----------
 };
 
-nonstd::span<mobjinfo_t> getOdaMobjinfo() {
+std::span<mobjinfo_t> getOdaMobjinfo() {
     return { odamobjinfo, ARRAY_LENGTH(odamobjinfo) };
 }
 
-nonstd::span<state_t> getOdaStates() {
+std::span<state_t> getOdaStates() {
     return { odastates, ARRAY_LENGTH(odastates) };
 }
 
-nonstd::span<const char*> getOdaSprNames() {
+std::span<const char*> getOdaSprNames() {
     return { odasprnames, ARRAY_LENGTH(odasprnames) };
 }

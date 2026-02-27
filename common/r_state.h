@@ -88,19 +88,19 @@ extern line_t*			lines;
 extern int				numsides;
 extern side_t*			sides;
 
-inline nonstd::span<vertex_t>    R_GetVertices() { return nonstd::span(vertexes, numvertexes); }
+inline std::span<vertex_t>    R_GetVertices() { return std::span(vertexes, numvertexes); }
 
-inline nonstd::span<seg_t>       R_GetSegs() { return nonstd::span(segs, numsegs); }
+inline std::span<seg_t>       R_GetSegs() { return std::span(segs, numsegs); }
 
-inline nonstd::span<sector_t>    R_GetSectors() { return nonstd::span(sectors, numsectors); }
+inline std::span<sector_t>    R_GetSectors() { return std::span(sectors, numsectors); }
 
-inline nonstd::span<subsector_t> R_GetSubsectors() { return nonstd::span(subsectors, numsubsectors); }
+inline std::span<subsector_t> R_GetSubsectors() { return std::span(subsectors, numsubsectors); }
 
-inline nonstd::span<node_t>      R_GetNodes() { return nonstd::span(nodes, numnodes); }
+inline std::span<node_t>      R_GetNodes() { return std::span(nodes, numnodes); }
 
-inline nonstd::span<line_t>      R_GetLines() { return nonstd::span(lines, numlines); }
+inline std::span<line_t>      R_GetLines() { return std::span(lines, numlines); }
 
-inline nonstd::span<side_t>      R_GetSides() { return nonstd::span(sides, numsides); }
+inline std::span<side_t>      R_GetSides() { return std::span(sides, numsides); }
 
 extern std::vector<int> originalLightLevels;
 
