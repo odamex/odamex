@@ -45,7 +45,7 @@
 /**
  * @brief Pack an array of booleans into a bitfield.
  */
-static uint32_t PackBoolArray(nonstd::span<const bool> bools)
+static uint32_t PackBoolArray(std::span<const bool> bools)
 {
 	uint32_t out = 0;
 	for (size_t i = 0; i < bools.size(); i++)
