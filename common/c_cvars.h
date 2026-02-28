@@ -146,18 +146,20 @@ public:
 	[[nodiscard]] int asInt() const { return static_cast<int>(std::round(m_Value)); }
 	[[nodiscard]] bool asBool() const { return m_Value != 0; }
 
-	[[nodiscard]]
-	auto operator<=>(auto e) const
-	requires std::is_enum_v<decltype(e)> || std::is_integral_v<decltype(e)>
+
+	template <typename E>
+		requires std::is_enum_v<E> || std::is_integral_v<E>
+	[[nodiscard]] auto operator<=>(E e) const
 	{
-		return static_cast<decltype(e)>(asInt()) <=> e;
+		return static_cast<E>(asInt()) <=> e;
 	}
 
-	[[nodiscard]]
-	bool operator==(auto e) const
-	requires std::is_enum_v<decltype(e)> || std::is_integral_v<decltype(e)>
+
+	template <typename E>
+		requires std::is_enum_v<E> || std::is_integral_v<E>
+	[[nodiscard]] bool operator==(auto e) const
 	{
-		return static_cast<decltype(e)>(asInt()) == e;
+		return static_cast<E>(asInt()) == e;
 	}
 
 	inline void Callback (){ if (m_Callback) m_Callback (*this); }
