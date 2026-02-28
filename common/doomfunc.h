@@ -166,7 +166,7 @@ inline drop_wrapper<T> drop(T&& iterable, std::size_t count) { return { iterable
 // Helper for use of std::visit with lambdas
 template<class... Ts>
 struct visitor : Ts... { using Ts::operator()...; };
-// TODO: remove deduction guide in C++20
+// This shouldn't be needed in C++20, but for some reason macOS builds fail without it
 template<class... Ts>
 visitor(Ts...) -> visitor<Ts...>;
 

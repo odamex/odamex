@@ -121,7 +121,7 @@ void P_SetButtonTexture(line_t* line, short texture);
 /**
  * @brief Unpack a bitfield into an array of booleans.
  */
-static void UnpackBoolArray(nonstd::span<bool> bools, size_t count, uint32_t in)
+static void UnpackBoolArray(std::span<bool> bools, size_t count, uint32_t in)
 {
 	for (size_t i = 0; i < count; i++)
 	{
@@ -1192,7 +1192,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 
 	SpreeManager::getInstance().erasePoints(p.id);
 	MultiKillManager::getInstance().eraseMultiKills(p.id);
-	
+
 	p.mo = p.camera = mobj->ptr();
 	p.fov = 90.0f;
 	p.playerstate = PST_LIVE;

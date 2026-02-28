@@ -46,7 +46,7 @@
 #include "p_mapformat.h"
 #include "g_multikill.h"
 
-#include <nonstd/span.hpp>
+#include <span>
 
 //
 // Movement.
@@ -872,7 +872,7 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 
 void SV_SendPlayerInfo(player_t &);
 
-void P_SetPlayerInvulnBleed(player_t& player, nonstd::span<const int, NUMPOWERS> powers)
+void P_SetPlayerInvulnBleed(player_t& player, std::span<const int, NUMPOWERS> powers)
 {
 	if (sv_showplayerpowerups)
 	{
@@ -902,7 +902,7 @@ void P_SwitchSpyOnNoLives(const player_t& player)
 	}
 }
 
-void P_SetPlayerPowerupStatuses(player_t& player, nonstd::span<const int, NUMPOWERS> powers)
+void P_SetPlayerPowerupStatuses(player_t& player, std::span<const int, NUMPOWERS> powers)
 {
 	if (!player.mo)
 		return;
@@ -1561,7 +1561,7 @@ player_t &player_t::operator =(const player_t &other)
 
 	doreborn = other.doreborn;
 	QueuePosition = other.QueuePosition;
-	
+
 	hazardcount = other.hazardcount;
 	hazardinterval = other.hazardinterval;
 

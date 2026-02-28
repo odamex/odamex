@@ -144,7 +144,7 @@ jobs:
     - name: Run build
       run: cmake --build ./build/
   build-fedora:
-    name: Build (Fedora 32)
+    name: Build (Fedora 34)
     needs: pre_job
     runs-on: ubuntu-latest
     steps:
@@ -154,8 +154,8 @@ jobs:
       run: git submodule update --init --recursive
     - name: Run build
       run: bash ci/fedora-buildgen.sh
-  build-ubuntu-focal:
-    name: Build (Ubuntu 20.04 LTS)
+  build-ubuntu-jammy:
+    name: Build (Ubuntu 22.04 LTS)
     needs: pre_job
     runs-on: ubuntu-latest
     steps:
@@ -164,7 +164,7 @@ jobs:
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Run build
-      run: bash ci/ubuntu-focal-buildgen.sh
+      run: bash ci/ubuntu-jammy-buildgen.sh
   build-flatpak:
     name: Build Flatpak (Ubuntu Latest)
     needs: pre_job

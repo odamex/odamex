@@ -128,8 +128,7 @@ static void ParseSpree(OScanner& os, std::vector<Spree_s>& spreeLevels)
 		else
 		{
 			// We don't know what this token is.
-			std::string buffer = fmt::sprintf("Unknown Spree Token \"%s\".", os.getToken());
-			os.warning(buffer);
+			os.warning("Unknown Spree Token \"{:s}\".", os.getToken());
 		}
 		os.mustScan();
 	}
@@ -181,9 +180,7 @@ static void ParseMulti(OScanner& os, std::vector<MultiKillLevel_s>& multiKillLev
 		else
 		{
 			// We don't know what this token is.
-			std::string buffer =
-			    fmt::sprintf("Unknown Multi Kill Token \"%s\".", os.getToken());
-			os.warning(buffer);
+			os.warning("Unknown Multi Kill Token \"{:s}\".", os.getToken());
 		}
 		os.mustScan();
 	}
@@ -273,8 +270,7 @@ static void ParseSpreeDef(const int lump, const OLumpName name)
 		else
 		{
 			// We don't know what this token is.
-			std::string buffer = fmt::sprintf("Unknown Token \"%s\".", os.getToken());
-			os.error(buffer);
+			os.error("Unknown Token \"{:s}\".", os.getToken());
 		}
 	}
 

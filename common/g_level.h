@@ -32,6 +32,7 @@
 
 #include <assert.h>
 #include <unordered_map>
+#include <array>
 
 #define NUM_MAPVARS				128
 #define NUM_WORLDVARS			256
@@ -94,7 +95,14 @@ constexpr static levelFlags_t LEVEL2_COMPAT_CROSSDROPOFF = BIT(18);
 
 struct acsdefered_s;
 class FBehavior;
-struct bossaction_t;
+
+struct bossaction_t
+{
+	int32_t type    = MT_NULL;
+	int32_t flags   = 0;
+	int16_t special = 0;
+	int16_t tag     = 0;
+};
 
 // struct that contains a FarmHash 128-bit fingerprint.
 struct fhfprint_t
@@ -363,14 +371,6 @@ typedef uint32_t clusterFlags_t;
 
 const static clusterFlags_t CLUSTER_HUB = BIT(0);
 const static clusterFlags_t CLUSTER_EXITTEXTISLUMP = BIT(1);
-
-struct bossaction_t
-{
-	int32_t type    = MT_NULL;
-	int32_t flags   = 0;
-	int16_t special = 0;
-	int16_t tag     = 0;
-};
 
 struct cluster_info_t
 {

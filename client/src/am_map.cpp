@@ -1614,7 +1614,7 @@ void AM_rotatePoint(mpoint_t& pt)
 	pt.y += y;
 }
 
-void AM_drawLineCharacter(nonstd::span<const mline_t> lineguy, fixed64_t scale,
+void AM_drawLineCharacter(std::span<const mline_t> lineguy, fixed64_t scale,
                           angle_t angle, am_color_t color, fixed64_t x, fixed64_t y)
 {
 	for (const auto& mline : lineguy)
