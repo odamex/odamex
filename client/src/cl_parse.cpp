@@ -116,7 +116,6 @@ void P_ExplodeMissile(AActor* mo);
 void P_PlayerLeavesGame(player_s* player);
 void P_SetPsprite(player_t& player, int position, int32_t stnum);
 void P_SetButtonTexture(line_t* line, short texture);
-void CL_RebuildAllPlayerTranslations();
 
 /**
  * @brief Unpack a bitfield into an array of booleans.
@@ -1029,13 +1028,7 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 
 	p->GameTime = msg->join_time();
 
-	EXTERN_CVAR(r_forceenemycolor)
-	EXTERN_CVAR(r_forceteamcolor)
-
-	if (G_IsForcedColor(r_forceteamcolor, r_forceenemycolor))
-		CL_RebuildAllPlayerTranslations();
-	else
-		R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(*p), p->userinfo.colorpreset);
+	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(*p), p->userinfo.colorpreset);
 	R_RebuildPlayerTintTables(p->id);
 
 	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed

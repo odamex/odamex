@@ -215,7 +215,7 @@ argb_t CL_GetPlayerColor(const player_t& player)
 	return CL_ShadePlayerColor(base_color, shade_color);
 }
 
-void CL_RebuildAllPlayerTranslations()
+static void CL_RebuildAllPlayerTranslations()
 {
 	// [SL] vanilla demo colors override
 	if (demoplayback)
@@ -223,10 +223,7 @@ void CL_RebuildAllPlayerTranslations()
 
 	for (auto& player : players)
 	{
-		if (&player == &displayplayer() || consoleplayer().spectator || !G_IsForcedColor(r_forceteamcolor, r_forceenemycolor))
-			R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), player.userinfo.colorpreset);
-		else
-			R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), NUMCOLOR);
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), player.userinfo.colorpreset);
 	}
 }
 
@@ -1423,10 +1420,7 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 	}
 	else
 	{
-		if (G_IsForcedColor(r_forceteamcolor, r_forceenemycolor))
-			R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), NUMCOLOR);
-		else
-			R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), player.userinfo.colorpreset);
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), player.userinfo.colorpreset);
 	}
 
 	P_ClearPlayerPowerups(player);	// Remove all current powerups
