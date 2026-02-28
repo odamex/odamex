@@ -49,15 +49,14 @@ static const std::unordered_map<fhfprint_t, levelcompdata_t> compdata = {
 		// Congestion 1024 MAP23
 		fhfprint_t::fromString("b0b0b3a99c2ed6780a5a79b325dcc5ca"),
 		{
-			// TODO C++20: use designated initializers for readability here
-			true // reservedLineFlag
+			.reservedLineFlag = true
 		}
 	},
 	{
 		// UDMX MAP32
 		fhfprint_t::fromString("c13f47bbcca3fc2d5013c17a604af645"),
 		{
-			true // reservedLineFlag
+			.reservedLineFlag = true
 		}
 	},
 };
