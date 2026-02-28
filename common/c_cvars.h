@@ -146,6 +146,20 @@ public:
 	[[nodiscard]] int asInt() const { return static_cast<int>(std::round(m_Value)); }
 	[[nodiscard]] bool asBool() const { return m_Value != 0; }
 
+	[[nodiscard]]
+	auto operator<=>(auto e) const
+	requires std::is_enum_v<decltype(e)> || std::is_integral_v<decltype(e)>
+	{
+		return static_cast<decltype(e)>(asInt()) <=> e;
+	}
+
+	[[nodiscard]]
+	bool operator==(auto e) const
+	requires std::is_enum_v<decltype(e)> || std::is_integral_v<decltype(e)>
+	{
+		return static_cast<decltype(e)>(asInt()) == e;
+	}
+
 	inline void Callback (){ if (m_Callback) m_Callback (*this); }
 
 	void SetDefault (const char *value);
