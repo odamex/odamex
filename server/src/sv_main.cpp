@@ -68,7 +68,6 @@
 #include "v_textcolors.h"
 #include "p_lnspec.h"
 #include "m_wdlstats.h"
-#include "svc_message.h"
 #include "m_cheat.h"
 #include "m_instrumentation.h"
 
@@ -82,6 +81,10 @@
 #include "server.pb.h"
 
 #include "CanarySocket.h"
+
+#include "clc_message.h"
+#include "svc_message.h"
+#include "svc_parse.h"
 
 extern void G_DeferedInitNew (const OLumpName& mapname);
 extern level_locals_t level;
@@ -129,7 +132,7 @@ EXTERN_CVAR(port)
 void SexMessage (const char *from, char *to, gender_t gender,
 	std::string_view victim, std::string_view killer, std::string_view spree);
 Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it);
-void P_PlayerLeavesGame(player_s* player);
+void P_PlayerLeavesGame(player_t* player);
 bool P_LineSpecialMovesSector(short special);
 
 void SV_UpdateShareKeys(player_t& player);
@@ -3344,17 +3347,6 @@ void SV_PlayerTriedToCheat(player_t &player)
 }
 
 //
-// SV_FlushPlayerCmds
-//
-// Clears a player's queue of ticcmds, ignoring and discarding them
-//
-void SV_FlushPlayerCmds(player_t &player)
-{
-	std::queue<NetCommand> empty;
-	std::swap(player.cmdqueue, empty);
-}
-
-//
 // SV_CalculateNumTiccmds
 //
 // [SL] 2011-09-16 - Calculate how many ticcmds should be processed.  Under
@@ -3430,15 +3422,15 @@ void SV_ProcessPlayerCmd(player_t &player)
 
 	for (int i = 0; i < num_cmds && !player.cmdqueue.empty(); i++)
 	{
-		NetCommand *netcmd = &(player.cmdqueue.front());
+		odaproto::clc::PlayerInput& netcmd = player.cmdqueue.front();
 		player.cmd = ticcmd_t();
-		player.tic = netcmd->getTic();
+		player.tic = netcmd.tic();
 
 		// Set the latency amount for Unlagging
-		Unlag::getInstance().setRoundtripDelay(player.id, netcmd->getWorldIndex() & 0xFF);
+		Unlag::getInstance().setRoundtripDelay(player.id, netcmd.world_index() & 0xFF);
 
-		if ((netcmd->hasForwardMove() && abs(netcmd->getForwardMove()) > max_forward_move) ||
-		    (netcmd->hasSideMove() && abs(netcmd->getSideMove()) > max_sr50_side_move))
+		if ((netcmd.has_move_forward() && abs(netcmd.move_forward()) > max_forward_move) ||
+		    (netcmd.has_move_side() && abs(netcmd.move_side()) > max_sr50_side_move))
 		{
 			SV_PlayerTriedToCheat(player);
 			return;
@@ -3454,7 +3446,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 		}
 		#endif
 
-		netcmd->toPlayer(player);
+		CLC_UnpackPlayerInputMessageToPlayer(netcmd, player);
 
 		if (!sv_freelook)
 			player.mo->pitch = 0;
@@ -3468,31 +3460,6 @@ void SV_ProcessPlayerCmd(player_t &player)
 
 		player.cmdqueue.pop();		// remove this tic from the queue after being processed
 	}
-}
-
-//
-// SV_GetPlayerCmd
-//
-// Extracts a player's ticcmd message from their network buffer and queues
-// the ticcmd for later processing.  The client always sends its previous
-// ticcmd followed by its current ticcmd just in case there is a dropped
-// packet.
-
-void SV_GetPlayerCmd(player_t &player)
-{
-	// The client-tic at the time this message was sent.  The server stores
-	// this and sends it back the next time it tells the client
-	const int tic = MSG_ReadLong();
-
-	NetCommand netcmd;
-	netcmd.read(&net_message);
-	netcmd.setTic(tic);
-
-		if (gamestate == GS_LEVEL)
-		{
-			if (!player.spectator)
-				player.cmdqueue.push(netcmd);
-		}
 }
 
 void SV_UpdateConsolePlayer(player_t &player)
@@ -4107,161 +4074,211 @@ void SV_WantWad(player_t &player)
 	return;
 }
 
+void SV_HandlePlayerInput(odaproto::clc::PlayerInput& msg, player_t &player)
+{
+	if (gamestate == GS_LEVEL)
+	{
+		if (!player.spectator)
+		{
+			player.cmdqueue.push(std::move(msg));
+		}
+	}
+}
+
 //
 // SV_ParseCommands
 //
 
+parseError_e SV_ParseCommandSVC(const byte cmd, player_t& player)
+{
+    google::protobuf::Message* msgPtrRaw = nullptr;
+    const parseError_e result = SVC_ParseMessage(msgPtrRaw, cmd);
+
+    std::unique_ptr<google::protobuf::Message> msgPtr(msgPtrRaw);
+
+    if (result == PERR_OK)
+    {
+        switch (cmd)
+        {
+            case clc_playerinput:
+                SV_HandlePlayerInput(*static_cast<odaproto::clc::PlayerInput*>(msgPtrRaw), player);
+                break;
+            default:
+                // This case happens when a message was received, parsed, but not handled.
+                PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", cmd);
+                return PERR_BAD_DECODE;
+        }
+    }
+    return result;
+}
+
 void SV_ParseCommands(player_t &player)
 {
-	 while(validplayer(player))
-	 {
-         if (not player.client.messenger.NextReceivedPacket(::net_message))
-         {
-             break;
-         }
-         while (::net_message.BytesLeftToRead() > 0)
-         {
-		clc_t cmd = static_cast<clc_t>(MSG_ReadByte());
-
-		if(cmd == (clc_t)-1)
-			continue;
-
-		switch(cmd)
+	while(validplayer(player))
+	{
+		if (not player.client.messenger.NextReceivedPacket(::net_message))
 		{
-		case clc_disconnect:
-			SV_DisconnectClient(player);
-			return;
-
-		case clc_userinfo:
-			if (!SV_SetupUserInfo(player))
-				return;
-			SV_BroadcastUserInfo(player);
 			break;
+		}
+		while (::net_message.BytesLeftToRead() > 0)
+		{
+            const byte cmdRaw = MSG_ReadByte();
 
-		case clc_getplayerinfo:
-			SV_SendPlayerInfo (player);
-			break;
+			clc_t cmd = static_cast<clc_t>(cmdRaw);
 
-		case clc_say:
-			if (!SV_Say(player))
-				return;
-			break;
+			if(cmd == (clc_t)-1)
+				continue;
 
-		case clc_privmsg:
-			if (!SV_PrivMsg(player))
-				return;
-			break;
-
-		case clc_move:
-			SV_GetPlayerCmd(player);
-			break;
-
-		case clc_pingreply:  // [SL] 2011-05-11 - Changed to clc_pingreply
-			SV_CalcPing(player);
-			break;
-
-		case clc_rate:
-			MSG_ReadLong();		// [SL] Read and ignore. Clients now always use sv_maxrate.
-			break;
-
-		case clc_ack:
-			SV_AcknowledgePacket(player);
-			break;
-
-		case clc_rcon:
+			switch(cmd)
 			{
-				std::string str(MSG_ReadString());
-				StripColorCodes(str);
+			case clc_disconnect:
+				SV_DisconnectClient(player);
+				return;
 
-				if (player.client.allow_rcon)
-				{
-					PrintFmt(PRINT_HIGH, "RCON command from {} - {} -> {}",
-							player.userinfo.netname, NET_AdrToString(net_from), str);
-					AddCommandString(str);
-				}
-			}
-			break;
-
-		case clc_rcon_password:
-			{
-				bool login = MSG_ReadByte();
-
-				if (login)
-					SV_RConPassword(player);
-				else
-					SV_RConLogout(player);
-
+			case clc_userinfo:
+				if (!SV_SetupUserInfo(player))
+					return;
+				SV_BroadcastUserInfo(player);
 				break;
-			}
 
-		case clc_changeteam:
-			SV_ChangeTeam(player);
-			break;
+			case clc_getplayerinfo:
+				SV_SendPlayerInfo (player);
+				break;
 
-		case clc_spectate:
+			case clc_say:
+				if (!SV_Say(player))
+					return;
+				break;
+
+			case clc_privmsg:
+				if (!SV_PrivMsg(player))
+					return;
+				break;
+
+			case clc_pingreply:  // [SL] 2011-05-11 - Changed to clc_pingreply
+				SV_CalcPing(player);
+				break;
+
+			case clc_rate:
+				MSG_ReadLong();		// [SL] Read and ignore. Clients now always use sv_maxrate.
+				break;
+
+			case msg_ack:
+				SV_AcknowledgePacket(player);
+				break;
+
+			case clc_rcon:
+				{
+					std::string str(MSG_ReadString());
+					StripColorCodes(str);
+
+					if (player.client.allow_rcon)
+					{
+						PrintFmt(PRINT_HIGH, "RCON command from {} - {} -> {}",
+								player.userinfo.netname, NET_AdrToString(net_from), str);
+						AddCommandString(str);
+					}
+				}
+				break;
+
+			case clc_rcon_password:
+				{
+					bool login = MSG_ReadByte();
+
+					if (login)
+						SV_RConPassword(player);
+					else
+						SV_RConLogout(player);
+
+					break;
+				}
+
+			case clc_changeteam:
+				SV_ChangeTeam(player);
+				break;
+
+			case clc_spectate:
             {
                 SV_Spectate (player);
             }
-			break;
+				break;
 
-		case clc_netcmd:
-			SV_NetCmd(player);
-			break;
+			case clc_netcmd:
+				SV_NetCmd(player);
+				break;
 
-		case clc_kill:
-			if(player.mo && player.suicidedelay == 0 && gamestate == GS_LEVEL &&
+			case clc_kill:
+				if(player.mo && player.suicidedelay == 0 && gamestate == GS_LEVEL &&
                (sv_allowcheats || G_IsCoopGame()))
             {
-				SV_Suicide (player);
+					SV_Suicide (player);
             }
-			break;
+				break;
 
-		case clc_wantwad:
-			SV_WantWad(player);
-			break;
+			case clc_wantwad:
+				SV_WantWad(player);
+				break;
 
-		case clc_cheat:
-			SV_Cheat(player);
-			break;
+			case clc_cheat:
+				SV_Cheat(player);
+				break;
 
-		case clc_abort:
-			PrintFmt("Client abort.\n");
-			SV_DropClient(player);
-			return;
+			case clc_abort:
+				PrintFmt("Client abort.\n");
+				SV_DropClient(player);
+				return;
 
-		case clc_spy:
-			SV_SpyPlayer(player);
-			break;
+			case clc_spy:
+				SV_SpyPlayer(player);
+				break;
 
-		// [AM] Vote
-		case clc_callvote:
-			SV_Callvote(player);
-			break;
+			// [AM] Vote
+			case clc_callvote:
+				SV_Callvote(player);
+				break;
 
-		// [AM] Maplist
-		case clc_maplist:
-			SV_Maplist(player);
-			break;
-		case clc_maplist_update:
-			SV_MaplistUpdate(player);
-			break;
+			// [AM] Maplist
+			case clc_maplist:
+				SV_Maplist(player);
+				break;
+			case clc_maplist_update:
+				SV_MaplistUpdate(player);
+				break;
 
-		default:
-			PrintFmt("SV_ParseCommands: Unknown client message {}.\n", cmd);
-			SV_DropClient(player);
-			return;
+			default:
+                // It's important to allow the clc_ enum to have priority
+                // over svc_ if we have both types of messages.
+                switch (SV_ParseCommandSVC(cmdRaw, player))
+                {
+                    case PERR_OK:
+                        continue;
+                    case PERR_UNKNOWN_HEADER:   // Data still readable from buffer
+                        PrintFmt(PRINT_WARNING, "SV_ParseCommands: Unmappable command {}\n", cmdRaw);
+                        break;
+                    case PERR_UNKNOWN_MESSAGE:  // Data still readable from buffer
+                        PrintFmt(PRINT_WARNING, "SV_ParseCommands: Command {} unknown to protobuf\n", cmdRaw);
+                        break;
+                    case PERR_BAD_DECODE:       // Data no longer in buffer.  Welp.
+                        PrintFmt(PRINT_WARNING, "SV_ParseCommands: Bad protobuf decode for {}\n", cmdRaw);
+                        break;
+                    default:
+                        break;
+                }
+				PrintFmt("SV_ParseCommands: Unknown client message {}.\n", cmd);
+				SV_DropClient(player);
+				return;
+			}
+
+			if (net_message.overflowed)
+			{
+				PrintFmt("SV_ReadClientMessage: badread {}({})\n",
+						    cmd,
+						    clc_info[cmd].getName());
+				SV_DropClient(player);
+				return;
+			}
 		}
-
-		if (net_message.overflowed)
-		{
-			PrintFmt("SV_ReadClientMessage: badread {}({})\n",
-					    cmd,
-					    clc_info[cmd].getName());
-			SV_DropClient(player);
-			return;
-		}
-         }
-	 }
+	}
 }
 
 
@@ -5009,7 +5026,7 @@ void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* a
 void SV_ACSExecuteSpecial(byte special, const AActor* activator, const char* print,
                           bool playerOnly, const std::vector<int>& args)
 {
-	player_s* sendPlayer = nullptr;
+	player_t* sendPlayer = nullptr;
 	if (playerOnly && activator != nullptr && activator->player != nullptr)
 		sendPlayer = activator->player;
 

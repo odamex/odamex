@@ -33,7 +33,6 @@
 // as commands per game tick.
 #include "d_ticcmd.h"
 
-
 // The player data structure depends on a number
 // of other structs: items (internal inventory),
 // animation states (closely tied to the sprites
@@ -49,7 +48,7 @@
 #include "i_net.h"
 
 #include "p_snapshot.h"
-#include "d_netcmd.h"
+#include "clc_message.h"
 
 #include "OdaMessenger.h"
 
@@ -107,10 +106,7 @@ typedef enum
 inline constexpr int ReJoinDelay = TICRATE * 5;
 inline constexpr int SuicideDelay = TICRATE * 10;
 
-//
-// Extended player object info: player_t
-//
-class player_s
+class player_t
 {
 public:
 	void Serialize (FArchive &arc);
@@ -132,7 +128,7 @@ public:
 	AActor::AActorPtr	mo;
 
 	struct ticcmd_t cmd;	// the ticcmd currently being processed
-	std::queue<NetCommand> cmdqueue;	// all received ticcmds
+	std::queue<odaproto::clc::PlayerInput> cmdqueue;   // all received Player Inputs
 
 	// [RH] who is this?
 	UserInfo	userinfo;
@@ -360,16 +356,15 @@ public:
 		return id - 1;
 	}
 
-	player_s();
-	player_s &operator =(const player_s &other);
+	player_t();
+	player_t &operator =(const player_t &other);
 
-	~player_s();
+	~player_t();
 
 
 };
 
-typedef player_s player_t;
-typedef player_t::client_t client_t;
+using client_t = player_t::client_t;
 
 // Bookkeeping on players - state.
 typedef std::list<player_t> Players;

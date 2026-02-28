@@ -96,7 +96,6 @@ extern std::string digest;
 extern bool forcenetdemosplit;
 extern int last_svgametic;
 extern int last_player_update;
-extern NetCommand localcmds[MAXSAVETICS];
 extern bool recv_full_update;
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 extern std::set<byte> teleported_players;
@@ -115,7 +114,7 @@ void CL_SpectatePlayer(player_t& player, bool spectate);
 void G_PlayerReborn(player_t& p); // [Toke - todo] clean this function
 void P_DestroyButtonThinkers();
 void P_ExplodeMissile(AActor* mo);
-void P_PlayerLeavesGame(player_s* player);
+void P_PlayerLeavesGame(player_t* player);
 void P_SetPsprite(player_t& player, int position, int32_t stnum);
 void P_SetButtonTexture(line_t* line, short texture);
 
@@ -1382,7 +1381,7 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 	{
 		ClientReplay::getInstance().reset();
 		for (size_t i = 0; i < MAXSAVETICS; i++)
-			localcmds[i].clear();
+			localcmds[i].Clear();
 	}
 
 	if (target->player && lives >= 0)
@@ -3076,44 +3075,6 @@ const Protos& CL_GetTicProtos()
 	return ::protos;
 }
 
-/**
- * @brief Given a message type and buffer, return a decoded message in "out".
- *
- * @param out Output message - will not be modified unless successful.
- * @param cmd Command to parse out.
- * @param buffer Buffer to parse, not including the header or initial size.
- * @param size Length of the buffer to parse.
- * @return Error condition, or OK (0) if successful.
- */
-parseError_e CL_ParseMessage(google::protobuf::Message*& out, const byte cmd,
-                             const void* buffer, const size_t size)
-{
-	// A message factory + Descriptor gives us the proper message.
-	google::protobuf::MessageFactory* factory =
-	    google::protobuf::MessageFactory::generated_factory();
-	const google::protobuf::Descriptor* desc = SVC_ResolveHeader(static_cast<svc_t>(cmd));
-	if (desc == NULL)
-	{
-		return PERR_UNKNOWN_HEADER;
-	}
-
-	// Can we get the mssage prototype from the descriptor?
-	const google::protobuf::Message* defmsg = factory->GetPrototype(desc);
-	if (defmsg == NULL)
-	{
-		return PERR_UNKNOWN_MESSAGE;
-	}
-
-	// Allocated with "new" - can't be null, and we own it.
-	google::protobuf::Message* msg = defmsg->New();
-	if (!msg->ParseFromArray(buffer, size))
-	{
-		return PERR_BAD_DECODE;
-	}
-
-	out = msg;
-	return PERR_OK;
-}
 
 #define SV_MSG(header, func, type)           \
 	case header:                             \
@@ -3128,22 +3089,16 @@ parseError_e CL_ParseCommand()
 	// What type of message we have.
 	byte cmd = MSG_ReadByte();
 
-    if (cmd == svc_ack)
+    if (cmd == msg_ack)
     {
         const int sequence = MSG_ReadLong();
         messenger.Acknowledge(sequence);
         return PERR_OK;
     }
 
-	// Size of the message.
-	size_t size = MSG_ReadUnVarint();
-
-	// The message itself.
-	void* data = MSG_ReadChunk(size);
-
 	// Turn the message into a protobuf.
 	google::protobuf::Message* msg = NULL;
-	parseError_e err = CL_ParseMessage(msg, cmd, data, size);
+	parseError_e err = SVC_ParseMessage(msg, cmd);
 	if (err)
 	{
 		return err;

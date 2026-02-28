@@ -515,7 +515,7 @@ public:
 
     // Additional info record for player avatars only.
     // Only valid if type == MT_PLAYER
-	player_s*	player;
+	player_t*	player;
 
     // Player number last looked for.
     unsigned int	lastlook;

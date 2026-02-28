@@ -57,7 +57,7 @@ class PacketTable
 			m_hashTable.max_load_factor(3.0f);   // why not...?
 		}
 
-		decltype(auto) Emplace(int sequence)
+		auto Emplace(int sequence)
 		{
 			if (not m_freePackets.empty())
 			{

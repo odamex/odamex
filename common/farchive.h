@@ -241,7 +241,7 @@ private:
 	void operator= (const FArchive &src) {}
 };
 
-class player_s;
+class player_t;
 
-FArchive &operator<< (FArchive& arc, player_s* p);
-FArchive &operator>> (FArchive& arc, player_s* &p);
+FArchive &operator<< (FArchive& arc, player_t* p);
+FArchive &operator>> (FArchive& arc, player_t* &p);
