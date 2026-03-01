@@ -1077,12 +1077,9 @@ void G_Ticker (void)
 			else
 			{
 				// we are already connected to this server, quit first
-				messenger.Clear();
-				MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_disconnect);
-				messenger.SendAll(gametic, serveraddr);
-
 				PrintFmt(PRINT_WARNING,
 				         "Got unknown challenge {} while connecting, disconnecting.\n", type);
+                CL_CompleteDisconnect();
 			}
 		}
 	}

@@ -64,6 +64,7 @@
 #include "hu_stuff.h"
 #include "p_acs.h"
 #include "i_input.h"
+#include "i_time.h"
 
 #include "g_gametype.h"
 #include "cl_parse.h"
@@ -364,13 +365,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 {
 	if(connected)
 	{
-		messenger.Clear();
-
-		buf_t& netBuf = messenger.NetBuf().Obtain();
-		MSG_WriteMarker(&netBuf, clc_disconnect);
-		messenger.SendAll(gametic, serveraddr);
-
-		messenger.Clear();
+        CL_CompleteDisconnect();
 
 		sv_gametype = GM_COOP;
 		ClientReplay::getInstance().reset();
@@ -383,8 +378,6 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 	}
 
 	memset (&serveraddr, 0, sizeof(serveraddr));
-	connected = false;
-	gameaction = ga_fullconsole;
 	noservermsgs = false;
 	AM_Stop();
 
@@ -399,10 +392,6 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 
 	mute_spectators = 0.f;
 	mute_enemies = 0.f;
-
-	::messenger = OdaMessenger();
-	P_ClearAllNetIds();
-	s_canary.reset();
 
 	{
 		// [jsd] unlink player pointers from AActors; solves crash in R_ProjectSprites after a svc_disconnect message.
@@ -449,6 +438,59 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 		PrintFmt("  ({}:{})\n", file, line);
 }
 
+void CL_CompleteDisconnect()
+{
+    const dtime_t oneTicInNanosec = static_cast<dtime_t>(1000000000.0 / static_cast<double>(TICRATE));
+
+	if (connected)
+	{
+		messenger.Clear();
+
+        // Again, make sure that we allow for immediate retransmits.
+        messenger.SetRetransmitDelay(0);
+
+		MSG_WriteMarker(&messenger.ReliableBuf().Obtain(), clc_disconnect);
+		messenger.SendAll(gametic, serveraddr);
+
+        const dtime_t disconnectStartTime   = I_GetTime();
+        const dtime_t disconnectTimeoutTime = disconnectStartTime + I_ConvertTimeFromMs(2000);
+
+        while (connected and I_GetTime() < disconnectTimeoutTime)
+        {
+            I_Sleep(oneTicInNanosec);
+
+            messenger.HandleRetransmissions(gametic, serveraddr);
+            if (NET_GetPacket())
+            {
+                messenger.Receive(::net_message);
+            }
+
+            if (messenger.NextReceivedPacket(::net_message))
+            {
+                CL_ParseCommands();
+            }
+
+            if (connected == false)
+            {
+                // We received the DisconnectClient message that announced our departure.
+                // Do one final send to make sure the server gets our Ack.
+                messenger.SendAll(gametic, serveraddr);
+            }
+        }
+
+        if (connected)
+        {
+            // Oh boy!  The server didn't react to our disconnect message.
+            // It'll get the message when we close the Canary.
+            connected = false;
+        }
+
+        messenger = OdaMessenger();
+        P_ClearAllNetIds();
+        s_canary.reset();
+		gameaction = ga_fullconsole;
+    }
+}
 
 void CL_Reconnect(void)
 {
@@ -461,18 +503,7 @@ void CL_Reconnect(void)
 
 	if (connected)
 	{
-		messenger.Clear();
-
-		MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_disconnect);
-		messenger.SendAll(gametic, serveraddr);
-
-		messenger.Clear();
-
-		connected = false;
-		gameaction = ga_fullconsole;
-
-		messenger = OdaMessenger();
-		P_ClearAllNetIds();
+        CL_CompleteDisconnect();
 	}
 	else if (lastconaddr.ip[0])
 	{

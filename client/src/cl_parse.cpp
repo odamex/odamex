@@ -803,6 +803,12 @@ static void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 	if (players.empty() || !validplayer(player))
 		return;
 
+    if (player.id == consoleplayer().id)
+    {
+        connected = false;
+        return;
+    }
+
 	if (player.mo)
 	{
 		P_DisconnectEffect(player.mo);

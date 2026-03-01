@@ -847,12 +847,9 @@ void SV_GetPackets()
 		}
 		else
 		{
-			if(player.playerstate != PST_DISCONNECT)
-			{
-				player.client.messenger.Receive(::net_message);
-				player.client.last_received = gametic;
-				SV_ParseCommands(player);
-			}
+			player.client.messenger.Receive(::net_message);
+			player.client.last_received = gametic;
+			SV_ParseCommands(player);
 		}
 	}
 }
