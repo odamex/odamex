@@ -25,9 +25,10 @@
 
 #pragma once
 
-#include <nonstd/span.hpp>
-
 // Standard libc/STL includes we use in countless places
+
+#include <limits>
+#include <span>
 
 #include "version.h"
 #include "errors.h"
@@ -46,7 +47,7 @@
 typedef unsigned char byte;
 typedef unsigned int uint;
 
-using OByteSpan = nonstd::span<byte>;
+using OByteSpan = std::span<byte>;
 
 #if defined(_MSC_VER) || defined(__WATCOMC__)
 	#define STACK_ARGS __cdecl

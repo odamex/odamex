@@ -1011,7 +1011,7 @@ DWORD FArchive::FindObjectIndex (const DObject *obj) const
 	return index;
 }
 
-FArchive &operator<< (FArchive &arc, player_s *p)
+FArchive &operator<< (FArchive &arc, player_t *p)
 {
 	if (p)
 		return arc << (BYTE)(p->id);
@@ -1019,7 +1019,7 @@ FArchive &operator<< (FArchive &arc, player_s *p)
 		return arc << (BYTE)0xff;
 }
 
-FArchive &operator>> (FArchive &arc, player_s *&p)
+FArchive &operator>> (FArchive &arc, player_t *&p)
 {
 	BYTE ofs;
 	arc >> ofs;

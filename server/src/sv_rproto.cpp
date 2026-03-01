@@ -33,20 +33,9 @@
 #include <chrono>
 #endif
 
-dtime_t I_MSTime (void);
-
-EXTERN_CVAR (log_packetdebug)
 #ifdef SIMULATE_LATENCY
 EXTERN_CVAR (sv_latency)
 #endif
-
-buf_t plain(MAX_UDP_PACKET); // denis - todo - call_terms destroys these statics on quit
-buf_t sendd(MAX_UDP_PACKET);
-
-const static size_t PACKET_FLAG_INDEX = sizeof(uint32_t);
-const static size_t PACKET_MESSAGE_INDEX = PACKET_FLAG_INDEX + 1;
-const static size_t PACKET_HEADER_SIZE = PACKET_MESSAGE_INDEX;
-const static size_t PACKET_OLD_MASK = 0xFF;
 
 //
 // CompressPacket
@@ -57,26 +46,6 @@ const static size_t PACKET_OLD_MASK = 0xFF;
 //
 // [AM] Cleaned the old huffman calls for code clarity sake.
 //
-static void CompressPacket(buf_t& send, const size_t reserved, client_t* cl)
-{
-	if (plain.maxsize() < send.maxsize())
-	{
-		plain.resize(send.maxsize());
-	}
-
-	plain.setcursize(send.size());
-	memcpy(plain.ptr(), send.ptr(), send.size());
-
-	byte method = 0;
-	if (MSG_CompressMinilzo(send, reserved, 0))
-	{
-		// Successful compression, set the compression flag bit.
-		method |= SVF_COMPRESSED;
-	}
-
-	send.ptr()[PACKET_FLAG_INDEX] |= method;
-	DPrintFmt("CompressPacket {} {}\n", method, send.size());
-}
 
 #ifdef SIMULATE_LATENCY
 struct DelaySend
@@ -127,135 +96,40 @@ void SV_SendPacketDelayed(buf_t& packet, player_t& pl)
 }
 #endif
 
-//
-// SV_SendPacket
-//
-bool SV_SendPacket(player_t &pl)
+bool SV_MustThrottleTransmissionsForClient(client_t& client)
 {
-	int				bps = 0; // bytes per second, not bits per second
-
-	client_t *cl = &pl.client;
-
-	if (cl->reliablebuf.overflowed)
-	{
-		SZ_Clear(&cl->netbuf);
-		SZ_Clear(&cl->reliablebuf);
-	    SV_DropClient(pl);
-		return false;
-	}
-	else
-		if (cl->netbuf.overflowed)
-			SZ_Clear(&cl->netbuf);
-
-	// [SL] 2012-05-04 - Don't send empty packets - they still have overhead
-	if (cl->reliablebuf.cursize + cl->netbuf.cursize == 0)
-		return true;
-
-	sendd.clear();
-
-	// save the reliable message
-	// it will be retransmited, if it's missed
-	client_t::oldPacket_t& old = cl->oldpackets[cl->sequence & PACKET_OLD_MASK];
-
-	old.data.clear();
-	if (cl->reliablebuf.cursize)
-	{
-		// copy the reliable data into the buffer.
-		old.sequence = cl->sequence;
-		SZ_Write(&old.data, cl->reliablebuf.data.get(), cl->reliablebuf.cursize);
-	}
-	else
-	{
-		old.sequence = -1;
-	}
-
-	cl->packetnum++; // packetnum will never be more than 255
-	                 // because sizeof(packetnum) == 1. Don't need
-	                 // to use &0xff. Cool, eh? ;-)
-
-	// copy sequence
-	MSG_WriteLong(&sendd, cl->sequence++);
-	MSG_WriteByte(&sendd, 0); // Flags, filled out later.
-
-	// copy the reliable message to the packet first
-    if (cl->reliablebuf.cursize)
-    {
-		SZ_Write (&sendd, cl->reliablebuf.data.get(), cl->reliablebuf.cursize);
-		cl->reliable_bps += cl->reliablebuf.cursize;
-    }
-
-	// add the unreliable part if space is available and rate value
-	// allows it
-	if (gametic % 35)
-	    bps = (int)((double)( (cl->unreliable_bps + cl->reliable_bps) * TICRATE)/(double)(gametic%35));
-
-    if (bps < cl->rate*1000)
-
-	  if (cl->netbuf.cursize && (sendd.maxsize() - sendd.cursize > cl->netbuf.cursize) )
-	  {
-         SZ_Write (&sendd, cl->netbuf.data.get(), cl->netbuf.cursize);
-	     cl->unreliable_bps += cl->netbuf.cursize;
-	  }
-
-	SZ_Clear(&cl->netbuf);
-	SZ_Clear(&cl->reliablebuf);
-
-	// compress the packet, but not the sequence id
-	if (sendd.size() > PACKET_HEADER_SIZE)
-	{
-		CompressPacket(sendd, PACKET_HEADER_SIZE, cl);
-	}
-
-	if (log_packetdebug)
-	{
-		PrintFmt(PRINT_HIGH, "ply {:03}, pkt {:06}, size {:04}, tic {:07}, time {:011}\n",
-			   pl.id, cl->sequence - 1, sendd.cursize, gametic, I_MSTime());
-	}
-
-#ifdef SIMULATE_LATENCY
-	SV_SendPacketDelayed(sendd, pl);
-#else
-
-	NET_SendPacket(sendd, cl->address);
-#endif
-	return true;
+    return client.messenger.MustThrottleTransmission();
 }
 
-/**
- * @brief Send an old reliable packet with old data on the wire.
- *
- * @param pl Player to send to.
- * @param sequence Sequence number to send.  This assumss
-*/
-static void SendOldPacket(player_t& pl, const int sequence)
+void SV_HandleReliableRetransmissions()
 {
-	// Send buffer.
-	static buf_t send(MAX_UDP_PACKET);
-	send.clear();
-
-	client_t& cl = pl.client;
-	client_t::oldPacket_t& old = cl.oldpackets[sequence & PACKET_OLD_MASK];
-
-	// This is a lot simpler than a fresh send.  Just send the data we have
-	// have saved out.
-
-	MSG_WriteLong(&send, old.sequence);
-	MSG_WriteByte(&send, 0); // Flags, filled out later.
-
-	// copy the reliable message to the packet
-	if (old.data.cursize)
+	for (auto& player : players)
 	{
-		SZ_Write(&send, old.data.data.get(), old.data.cursize);
-		cl.reliable_bps += old.data.cursize;
-	}
+		// Players that are on their way out don't get any retries.
+		if (player.playerstate == PST_DISCONNECT)
+		{
+			continue;
+		}
 
-	// compress the packet, but not the sequence id
-	if (send.size() > PACKET_HEADER_SIZE)
-	{
-		CompressPacket(send, PACKET_HEADER_SIZE, &cl);
-	}
+		// Total hack:  We check for the player being in the first second of their connection because there's something
+		// in the connection protocol that requires us to do immediate retransmits of the first few reliable messages.
+		if (player.GameTime > 0)
+		{
+			// The following results in fractional tics rounding up.
+			const int pingInTics = (player.ping * TICRATE + 999) / 1000;
 
-	NET_SendPacket(send, cl.address);
+			// Adjust upwards because in the real world, tic boundaries don't align and can drift.
+			const int retransmitDelayInTics = pingInTics + 1;
+
+			player.client.messenger.SetRetransmitDelay(retransmitDelayInTics);
+		}
+		else
+		{
+			player.client.messenger.SetRetransmitDelay(0);
+		}
+
+		player.client.messenger.HandleRetransmissions(gametic, player.client.address);
+	}
 }
 
 //
@@ -263,31 +137,13 @@ static void SendOldPacket(player_t& pl, const int sequence)
 //
 void SV_AcknowledgePacket(player_t &player)
 {
-	client_t *cl = &player.client;
-
 	int sequence = MSG_ReadLong();
 
-	// packet is missed
-	if (sequence - cl->last_sequence > 1)
-	{
-		// resend
-		for (int seq = cl->last_sequence+1; seq < sequence; seq++)
-		{
-			if (cl->oldpackets[seq & PACKET_OLD_MASK].sequence != seq)
-			{
-				// do full update
-				DPrintFmt("need full update\n");
-				cl->last_sequence = sequence;
-				return;
-			}
+	const bool isFresh = player.client.messenger.Acknowledge(sequence);
 
-			SendOldPacket(player, seq);
-		}
-	}
+	//DPrintFmt("player {} tic {} ACKed seq {}\n", int(player.id), gametic, sequence);
 
-	cl->last_sequence = sequence;
-
-	if (cl->last_sequence == 0)
+	if (isFresh and sequence == 0)
 	{
 		// [AM] Finish our connection sequence.
 		SV_ConnectClient2(player);

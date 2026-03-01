@@ -23,15 +23,10 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
 
-
-enum parseError_e
-{
-	PERR_OK,
-	PERR_UNKNOWN_HEADER,
-	PERR_UNKNOWN_MESSAGE,
-	PERR_BAD_DECODE
-};
+#include "svc_parse.h"
 
 struct Proto
 {

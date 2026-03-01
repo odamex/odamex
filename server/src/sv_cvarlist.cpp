@@ -35,9 +35,6 @@ CVAR(sv_latency, "80", "Latency simulation", CVARTYPE_INT, CVAR_SERVERARCHIVE | 
 CVAR(			log_fulltimestamps, "0", "Extended timestamp info (dd/mm/yyyy hh:mm:ss)",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
-CVAR(			log_packetdebug, "0", "Print debugging messages for each packet sent",
-				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
-
 // Server administrative settings
 // ------------------------------
 
@@ -101,6 +98,9 @@ CVAR(			sv_nextmap, "", "Set to the next map to be played",
 CVAR_FUNC_DECL(	sv_shufflemaplist, "0", "Randomly shuffle the maplist",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
+CVAR_RANGE_FUNC_DECL (net_maxthreads, "0", "Number of threads to use for client messaging (0 to auto-select based on core count)",
+                      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 256.0)
+
 // Network settings
 // ----------------
 
@@ -110,7 +110,7 @@ CVAR_RANGE(		sv_natport,	"0", "NAT firewall workaround, this is a port number",
 CVAR_RANGE(		sv_flooddelay, "1.5", "Chat flood protection time (in seconds)",
 				CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 10.0f)
 
-CVAR_RANGE_FUNC_DECL(sv_maxrate, "200", "Forces clients to be on or below this rate",
+CVAR_RANGE_FUNC_DECL(sv_maxrate, "800", "Forces clients to be on or below this rate",
 				CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 7.0f, 100000.0f)
 
 #ifdef ODA_HAVE_MINIUPNP

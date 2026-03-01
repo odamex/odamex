@@ -46,7 +46,7 @@
 #include "p_mapformat.h"
 #include "g_multikill.h"
 
-#include <nonstd/span.hpp>
+#include <span>
 
 //
 // Movement.
@@ -872,7 +872,7 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 
 void SV_SendPlayerInfo(player_t &);
 
-void P_SetPlayerInvulnBleed(player_t& player, nonstd::span<const int, NUMPOWERS> powers)
+void P_SetPlayerInvulnBleed(player_t& player, std::span<const int, NUMPOWERS> powers)
 {
 	if (sv_showplayerpowerups)
 	{
@@ -902,7 +902,7 @@ void P_SwitchSpyOnNoLives(const player_t& player)
 	}
 }
 
-void P_SetPlayerPowerupStatuses(player_t& player, nonstd::span<const int, NUMPOWERS> powers)
+void P_SetPlayerPowerupStatuses(player_t& player, std::span<const int, NUMPOWERS> powers)
 {
 	if (!player.mo)
 		return;
@@ -1250,7 +1250,7 @@ BEGIN_COMMAND(cheat_players)
 }
 END_COMMAND(cheat_players)
 
-void player_s::Serialize (FArchive &arc)
+void player_t::Serialize (FArchive &arc)
 {
 	size_t i;
 
@@ -1367,12 +1367,12 @@ void player_s::Serialize (FArchive &arc)
 	}
 }
 
-player_s::player_s() :
+player_t::player_t() :
 	id(0),
 	playerstate(PST_LIVE),
 	mo(AActor::AActorPtr()),
 	cmd(ticcmd_t()),
-	cmdqueue(std::queue<NetCommand>()),
+	cmdqueue(),
 	userinfo(UserInfo()),
 	fov(90.0),
 	viewz(0 << FRACBITS),
@@ -1430,7 +1430,7 @@ player_s::player_s() :
 	hazardinterval(0),
 	LastMessage(LastMessage_s()),
 	to_spawn(std::queue<AActor::AActorPtr>()),
-	client(player_s::client_t())
+	client(player_t::client_t())
 {
 	cmd.clear();
 	powers.fill(0);
@@ -1454,7 +1454,7 @@ player_s::player_s() :
 	ArrayInit(netcmds, ticcmd_t());
 }
 
-player_s &player_s::operator =(const player_s &other)
+player_t &player_t::operator =(const player_t &other)
 {
 	if (this == &other)
 		return *this;
@@ -1561,14 +1561,14 @@ player_s &player_s::operator =(const player_s &other)
 
 	doreborn = other.doreborn;
 	QueuePosition = other.QueuePosition;
-	
+
 	hazardcount = other.hazardcount;
 	hazardinterval = other.hazardinterval;
 
 	return *this;
 }
 
-player_s::~player_s()
+player_t::~player_t()
 {
 }
 

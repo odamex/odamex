@@ -30,6 +30,10 @@
 #endif
 #include "curl/curl.h"
 
+#ifdef min
+#   undef min
+#endif
+
 #include "c_dispatch.h"
 #include "cl_main.h"
 #include "cmdlib.h"

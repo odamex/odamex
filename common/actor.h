@@ -24,6 +24,8 @@
 #pragma once
 
 // Basics.
+#include "doomdef.h"
+
 #include "tables.h"
 #include "m_fixed.h"
 #include "m_vectors.h"
@@ -122,36 +124,22 @@ public:
 
 	void set(byte id)
 	{
-		int bytenum = id >> 3;
-		int bitnum = id & bytemask;
-
-		bitfield[bytenum] |= (1 << bitnum);
+		bitfield[id] = 1;
 	}
 
 	void unset(byte id)
 	{
-		int bytenum = id >> 3;
-		int bitnum = id & bytemask;
-
-		bitfield[bytenum] &= ~(1 << bitnum);
+		bitfield[id] = 0;
 	}
 
 	[[nodiscard]] bool get(byte id) const
 	{
-		int bytenum = id >> 3;
-		int bitnum = id & bytemask;
-
-		return ((bitfield[bytenum] & (1 << bitnum)) != 0);
+        return bitfield[id];
 	}
 
 private:
-	static constexpr int bytesize = 8 * sizeof(byte);
-	static constexpr int bytemask = bytesize - 1;
 
-	// Hacky way of getting ceil() at compile-time
-	static constexpr size_t fieldsize = (MAXPLAYERS + bytemask) / bytesize;
-
-	byte	bitfield[fieldsize];
+	byte	bitfield[MAXPLAYERS];
 };
 
 //
@@ -527,7 +515,7 @@ public:
 
     // Additional info record for player avatars only.
     // Only valid if type == MT_PLAYER
-	player_s*	player;
+	player_t*	player;
 
     // Player number last looked for.
     unsigned int	lastlook;
@@ -558,7 +546,10 @@ public:
 	struct msecnode_s	*touching_sectorlist;				// phares 3/14/98
 
 	short           deadtic;        // tics after player's death
-	int             oldframe;
+	int             transientInt;   // transient variable for use by algorithms that need a
+	                                // very short-lived, per-actor data value that could be
+	                                // thought of as "throwaway."  For example, a key for a
+	                                // bespoke, immediate sorting operation.
 
 	unsigned char	rndindex;		// denis - because everything should have a random number generator, for prediction
 

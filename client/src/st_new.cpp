@@ -717,6 +717,21 @@ static void drawGametype()
 
 size_t proto_selected;
 
+static int ProtoRowColor(int cmd)
+{
+	// Give each protocol header its own unique color.
+	int rowColor = cmd % (NUM_TEXT_COLORS - 2);
+	if (rowColor >= CR_WHITE)
+	{
+		rowColor++;
+	}
+	if (rowColor >= CR_UNTRANSLATED)
+	{
+		rowColor++;
+	}
+	return rowColor;
+}
+
 /**
  * @brief Draw protocol buffer packets
  */
@@ -731,13 +746,14 @@ void drawProtos()
 	proto_selected = clamp(proto_selected, (size_t)0, protos.size() - 1);
 
 	// Starting y is five rows from the top.
-	int y = 7 * 5;
+	const int top = 7 * 5;
+	const float scale = 0.75f;
+	int y = top;
 
 	const int indent = V_StringWidth(" >");
 
 	for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
 	{
-		static constexpr double scale = 0.75;
 		const bool selected = proto_selected == (it - protos.begin());
 
 		if (selected)
@@ -747,12 +763,7 @@ void drawProtos()
 			              " >", CR_GOLD, true);
 		}
 
-		// Give each protocol header its own unique color.
-		int rowColor = it->header % (NUM_TEXT_COLORS - 2);
-		if (rowColor >= CR_WHITE)
-			rowColor++;
-		if (rowColor >= CR_UNTRANSLATED)
-			rowColor++;
+		const int rowColor = ProtoRowColor(it->header);
 
 		// Draw name
 		hud::DrawText(indent, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
@@ -762,11 +773,36 @@ void drawProtos()
 		if (selected)
 		{
 			// Draw data
-			hud::DrawText(indent, y, 0.75, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT,
+			hud::DrawText(indent, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT,
 			              hud::Y_TOP, it->data.c_str(), CR_WHITE, true);
 			y += V_StringHeight(it->data.c_str());
 		}
 	}
+
+	// Now draw the current reconstructed PlayerInput.
+	y = top;
+	hud::DrawText(
+	        100, y,
+	        scale,
+	        hud::X_RIGHT,
+	        hud::Y_TOP,
+	        hud::X_LEFT,
+	        hud::Y_TOP,
+	        ::svc_info[clc_playerinput].getName(),
+	        ProtoRowColor(clc_playerinput),
+	        true);
+
+	y += V_StringHeight(::svc_info[clc_playerinput].getName());
+	hud::DrawText(
+	        100, y,
+	        scale,
+	        hud::X_RIGHT,
+	        hud::Y_TOP,
+	        hud::X_LEFT,
+	        hud::Y_TOP,
+	        ::localcmds[::last_received % MAXSAVETICS].DebugString().c_str(),
+	        ProtoRowColor(clc_playerinput),
+	        true);
 
 	V_SetFont("SMALLFONT");
 }

@@ -45,7 +45,7 @@
 /**
  * @brief Pack an array of booleans into a bitfield.
  */
-static uint32_t PackBoolArray(nonstd::span<const bool> bools)
+static uint32_t PackBoolArray(std::span<const bool> bools)
 {
 	uint32_t out = 0;
 	for (size_t i = 0; i < bools.size(); i++)
@@ -73,38 +73,53 @@ odaproto::svc::Disconnect SVC_Disconnect(const char* message)
 /**
  * @brief Send information about a player.
  */
+
+static void FillPlayer(odaproto::Player& io_msg, const player_t& player)
+{
+	io_msg.set_playerid(player.id);
+	io_msg.set_health(player.health);
+	io_msg.set_armortype(player.armortype);
+	io_msg.set_armorpoints(player.armorpoints);
+	io_msg.set_lives(player.lives);
+	io_msg.set_readyweapon(player.readyweapon);
+	io_msg.set_pendingweapon(player.pendingweapon);
+
+	uint32_t packedweapons = PackBoolArray(player.weaponowned);
+	io_msg.set_weaponowned(packedweapons);
+
+	uint32_t packedcards = PackBoolArray(player.cards);
+	io_msg.set_cards(packedcards);
+
+	io_msg.set_backpack(player.backpack);
+
+	for (int i = 0; i < NUMAMMO; i++)
+	{
+		io_msg.add_ammo(player.ammo[i]);
+		io_msg.add_maxammo(player.maxammo[i]);
+	}
+
+	for (int i = 0; i < NUMPSPRITES; i++)
+	{
+		const pspdef_t* psp = &player.psprites[i];
+		const int32_t state = psp->state ? psp->state->statenum : 0;
+		odaproto::Player_Psp* plpsp = io_msg.add_psprites();
+		plpsp->set_statenum(state);
+	}
+
+	for (int i = 0; i < NUMPOWERS; i++)
+	{
+		io_msg.add_powers(player.powers[i]);
+	}
+
+	if (!player.spectator)
+		io_msg.set_cheats(player.cheats);
+}
+
 odaproto::svc::PlayerInfo SVC_PlayerInfo(const player_t& player)
 {
 	odaproto::svc::PlayerInfo msg;
 
-	uint32_t packedweapons = PackBoolArray(player.weaponowned);
-	msg.mutable_player()->set_weaponowned(packedweapons);
-
-	uint32_t packedcards = PackBoolArray(player.cards);
-	msg.mutable_player()->set_cards(packedcards);
-
-	msg.mutable_player()->set_backpack(player.backpack);
-
-	for (int i = 0; i < NUMAMMO; i++)
-	{
-		msg.mutable_player()->add_ammo(player.ammo[i]);
-		msg.mutable_player()->add_maxammo(player.maxammo[i]);
-	}
-
-	msg.mutable_player()->set_health(player.health);
-	msg.mutable_player()->set_armorpoints(player.armorpoints);
-	msg.mutable_player()->set_armortype(player.armortype);
-	msg.mutable_player()->set_lives(player.lives);
-	msg.mutable_player()->set_readyweapon(player.readyweapon);
-	msg.mutable_player()->set_pendingweapon(player.pendingweapon);
-
-	for (int i = 0; i < NUMPOWERS; i++)
-	{
-		msg.mutable_player()->add_powers(player.powers[i]);
-	}
-
-	if (!player.spectator)
-		msg.mutable_player()->set_cheats(player.cheats);
+    FillPlayer(*msg.mutable_player(), player);
 
 	return msg;
 }
@@ -1006,46 +1021,14 @@ odaproto::svc::TouchSpecial SVC_TouchSpecial(const AActor& mo)
 /**
  * @brief Send information about a player
  */
+
 odaproto::svc::PlayerState SVC_PlayerState(const player_t& player)
 {
 	odaproto::svc::PlayerState msg;
 
 	odaproto::Player* pl = msg.mutable_player();
 
-	pl->set_playerid(player.id);
-	pl->set_health(player.health);
-	pl->set_armortype(player.armortype);
-	pl->set_armorpoints(player.armorpoints);
-	pl->set_lives(player.lives);
-	pl->set_readyweapon(player.readyweapon);
-
-	std::bitset<6> cardBits;
-	for (int i = 0; i < NUMCARDS; i++)
-	{
-		cardBits.set(i, player.cards[i]);
-	}
-	pl->set_cards(cardBits.to_ulong());
-
-	for (int i = 0; i < NUMAMMO; i++)
-	{
-		pl->add_ammo(player.ammo[i]);
-	}
-
-	for (int i = 0; i < NUMPSPRITES; i++)
-	{
-		const pspdef_t* psp = &player.psprites[i];
-		const int32_t state = psp->state ? psp->state->statenum : 0;
-		odaproto::Player_Psp* plpsp = pl->add_psprites();
-		plpsp->set_statenum(state);
-	}
-
-	for (int i = 0; i < NUMPOWERS; i++)
-	{
-		pl->add_powers(player.powers[i]);
-	}
-
-	if (!player.spectator)
-		pl->set_cheats(player.cheats);
+    FillPlayer(*pl, player);
 
 	return msg;
 }
@@ -1202,11 +1185,12 @@ odaproto::svc::MidPrint SVC_MidPrint(const std::string& message, const int time)
 	return msg;
 }
 
-odaproto::svc::ServerGametic SVC_ServerGametic(const byte tic)
+odaproto::svc::ServerGametic SVC_ServerGametic(const byte tic, const int queueDepth)
 {
 	odaproto::svc::ServerGametic msg;
 
 	msg.set_tic(tic);
+	msg.set_reliable_queue_depth(queueDepth);
 
 	return msg;
 }

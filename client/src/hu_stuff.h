@@ -60,6 +60,6 @@ void OdamexEffect (int xa, int ya, int xb, int yb);
 
 // [RH] Draw deathmatch scores
 
-class player_s;
-void HU_DrawScores (player_s *me);
+class player_t;
+void HU_DrawScores (player_t *me);
 void HU_DisplayTimer (int x, int y, bool scale = true);

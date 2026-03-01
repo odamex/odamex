@@ -72,9 +72,6 @@ const char* doom_sprnames[::NUMSPRITES] = {
     "SP90", "SP91", "SP92", "SP93", "SP94", "SP95", "SP96", "SP97", "SP98", "SP99"
 };
 
-class player_s;
-struct pspdef_s;
-
 // Doesn't work with g++, needs actionf_p1
 void A_Light0(AActor *);
 void A_WeaponReady(AActor *);

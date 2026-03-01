@@ -26,16 +26,17 @@
 
 #pragma once
 
+#include <optional>
 #include <stdlib.h>
 #include "dobject.h"
 
 class AActor;
-class player_s;
+class player_t;
 struct pspdef_s;
 
 typedef void (*actionf_v)();
 typedef void (*actionf_p1)( AActor* );
-typedef void (*actionf_p2)( player_s*, pspdef_s* );
+typedef void (*actionf_p2)( player_t*, pspdef_s* );
 
 typedef union
 {
@@ -78,7 +79,12 @@ public:
 
 	size_t refCount;
 
+	static const std::vector<DThinker*>& GetThinkerVectorRef() { return s_thinkers; }
 private:
+
+	static std::vector<DThinker*> s_thinkers;
+
+	std::optional<size_t> m_optionalVectorIndex;
 	DThinker *m_Next, *m_Prev;
 	bool destroyed;
 

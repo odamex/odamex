@@ -29,6 +29,7 @@
 #include "cl_main.h"
 #include "cl_demo.h"
 #include "cl_netgraph.h"
+#include "clc_message.h"
 
 #include "p_snapshot.h"
 
@@ -40,7 +41,7 @@ extern NetGraph netgraph;
 void P_MovePlayer (player_t& player);
 void P_CalcHeight (player_t& player);
 
-extern NetCommand localcmds[MAXSAVETICS];
+extern odaproto::clc::PlayerInput localcmds[MAXSAVETICS];
 static PlayerSnapshot cl_savedsnaps[MAXSAVETICS];
 
 bool predicting;
@@ -243,8 +244,8 @@ static void CL_PredictLocalPlayer(int predtic)
 	// Copy the player's previous input ticcmd for the tic 'predtic'
 	// to player.cmd so that P_MovePlayer can simulate their movement in
 	// that tic
-	NetCommand *netcmd = &localcmds[predtic % MAXSAVETICS];
-	netcmd->toPlayer(player);
+	odaproto::clc::PlayerInput& netcmd = localcmds[predtic % MAXSAVETICS];
+	CLC_UnpackPlayerInputMessageToPlayer(netcmd, player);
 
 	if (!predicting)
 		P_PlayerThink(player);

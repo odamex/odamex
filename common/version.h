@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2026 by The Odamex Team.
+// Copyright (C) 2006-2025 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -75,10 +75,10 @@
 // Used by configuration files.  upversion.py will update thie field
 // deterministically and unambiguously so newer versions always compare
 // greater.
-#define CONFIGVERSIONSTR "012010"
+#define CONFIGVERSIONSTR "013000"
 
-#define DOTVERSIONSTR "12.1.0"
-#define GAMEVER (MAKEVER(12, 1, 0))
+#define DOTVERSIONSTR "13.0.0"
+#define GAMEVER (MAKEVER(13, 0, 0))
 
 #define COPYRIGHTSTR "Copyright (C) 2006-2026 The Odamex Team"
 
@@ -94,7 +94,7 @@
 // earlier than this version.  Needs to be exactly 16 chars long.
 //
 // upversion.py will update thie field deterministically and unambiguously.
-#define SAVESIG "ODAMEXSAVE012010"
+#define SAVESIG "ODAMEXSAVE013000"
 
 #define NETDEMOVER 3
 

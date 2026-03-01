@@ -33,7 +33,6 @@
 // as commands per game tick.
 #include "d_ticcmd.h"
 
-
 // The player data structure depends on a number
 // of other structs: items (internal inventory),
 // animation states (closely tied to the sprites
@@ -49,7 +48,9 @@
 #include "i_net.h"
 
 #include "p_snapshot.h"
-#include "d_netcmd.h"
+#include "clc_message.h"
+
+#include "OdaMessenger.h"
 
 //
 // Player states.
@@ -102,15 +103,10 @@ typedef enum
 	CF_BUDDHA =			(1 << 8), // [Ch0wW] Buddha Cheatcode
 } cheat_t;
 
-#define MAX_PLAYER_SEE_MOBJ	0x7F
-
 inline constexpr int ReJoinDelay = TICRATE * 5;
 inline constexpr int SuicideDelay = TICRATE * 10;
 
-//
-// Extended player object info: player_t
-//
-class player_s
+class player_t
 {
 public:
 	void Serialize (FArchive &arc);
@@ -132,7 +128,7 @@ public:
 	AActor::AActorPtr	mo;
 
 	struct ticcmd_t cmd;	// the ticcmd currently being processed
-	std::queue<NetCommand> cmdqueue;	// all received ticcmds
+	std::queue<odaproto::clc::PlayerInput> cmdqueue;   // all received Player Inputs
 
 	// [RH] who is this?
 	UserInfo	userinfo;
@@ -267,43 +263,30 @@ public:
 	// denis - things that are pending to be sent to this player
 	std::queue<AActor::AActorPtr> to_spawn;
 
+	// For prioritization of mobj updates from server to client.
+	struct ActorDistanceType
+	{
+		AActor* actorPtr;
+		int     distance;
+
+		ActorDistanceType(AActor* i_actorPtr, int i_distance) : actorPtr(i_actorPtr), distance(i_distance) {}
+	};
+	std::vector<ActorDistanceType> sortedMobjs;
+
 	// denis - client structure is here now for a 1:1
 	struct client_t
 	{
-		struct oldPacket_t
-		{
-			int		sequence;
-			buf_t	data;
-
-			oldPacket_t() : sequence(-1)
-			{
-				data.resize(0);
-			}
-		};
-
 		netadr_t    address;
-
-		buf_t       netbuf;
-		buf_t       reliablebuf;
 
 		// protocol version supported by the client
 		short		version;
 		int			packedversion;
 
-		// for reliable protocol
-		oldPacket_t oldpackets[256];
-
-		int         sequence;
-		int         last_sequence;
-		byte        packetnum;
-
-		int         rate;
-		int         reliable_bps;	// bytes per second
-		int         unreliable_bps;
+		OdaMessenger messenger;
 
 		int			last_received;	// for timeouts
 
-		int			lastcmdtic, lastclientcmdtic;
+		int			lastclientcmdtic;
 
 		std::string	digest;			// randomly generated string that the client must use for any hashes it sends back
 		bool        allow_rcon;     // allow remote admin
@@ -316,31 +299,17 @@ public:
 			unsigned int next_offset = 0;
 		} download;
 
-		client_t()
+		client_t() :
+		    messenger()
 		{
 			// GhostlyDeath -- Initialize to Zero
 			memset(&address, 0, sizeof(netadr_t));
 			version = 0;
 			packedversion = 0;
-			for (auto& [sequence, data] : oldpackets)
-			{
-				sequence = -1;
-				data.resize(MAX_UDP_PACKET);
-			}
-			sequence = 0;
-			last_sequence = 0;
-			packetnum = 0;
-			rate = 0;
-			reliable_bps = 0;
-			unreliable_bps = 0;
 			last_received = 0;
-			lastcmdtic = 0;
 			lastclientcmdtic = 0;
 
 
-			// GhostlyDeath -- done with the {}
-			netbuf = MAX_UDP_PACKET;
-			reliablebuf = MAX_UDP_PACKET;
 			digest = "";
 			allow_rcon = false;
 			displaydisconnect = true;
@@ -348,28 +317,16 @@ public:
 
 		client_t(const client_t &other)
 			: address(other.address),
-			netbuf(other.netbuf),
-			reliablebuf(other.reliablebuf),
 			version(other.version),
 			packedversion(other.packedversion),
-			sequence(other.sequence),
-			last_sequence(other.last_sequence),
-			packetnum(other.packetnum),
-			rate(other.rate),
-			reliable_bps(other.reliable_bps),
-			unreliable_bps(other.unreliable_bps),
+			messenger(other.messenger),
 			last_received(other.last_received),
-			lastcmdtic(other.lastcmdtic),
 			lastclientcmdtic(other.lastclientcmdtic),
 			digest(other.digest),
 			allow_rcon(false),
 			displaydisconnect(true),
 			download(other.download)
 		{
-			for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
-			{
-				oldpackets[i] = other.oldpackets[i];
-			}
 		}
 
 		client_t& operator=(const client_t& other)
@@ -378,27 +335,15 @@ public:
 				return *this;
 
 			address = other.address;
-			netbuf = other.netbuf;
-			reliablebuf = other.reliablebuf;
+			messenger = other.messenger;
 			version = other.version;
 			packedversion = other.packedversion;
-			sequence = other.sequence;
-			last_sequence = other.last_sequence;
-			packetnum = other.packetnum;
-			rate = other.rate;
-			reliable_bps = other.reliable_bps;
-			unreliable_bps = other.unreliable_bps;
 			last_received = other.last_received;
-			lastcmdtic = other.lastcmdtic;
 			lastclientcmdtic = other.lastclientcmdtic;
 			digest = other.digest;
 			allow_rcon = false;
 			displaydisconnect = true;
 			download = other.download;
-			for (size_t i = 0; i < ARRAY_LENGTH(oldpackets); i++)
-			{
-				oldpackets[i] = other.oldpackets[i];
-			}
 
 			return *this;
 		}
@@ -411,16 +356,15 @@ public:
 		return id - 1;
 	}
 
-	player_s();
-	player_s &operator =(const player_s &other);
+	player_t();
+	player_t &operator =(const player_t &other);
 
-	~player_s();
+	~player_t();
 
 
 };
 
-typedef player_s player_t;
-typedef player_t::client_t client_t;
+using client_t = player_t::client_t;
 
 // Bookkeeping on players - state.
 typedef std::list<player_t> Players;

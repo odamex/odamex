@@ -212,7 +212,7 @@ void D_UserInfoChanged (cvar_t *cvar)
 		D_SetupUserInfo();
 
 	if (connected)
-		CL_SendUserInfo();
+		CL_SendUserInfo(messenger.NetBuf().Obtain());
 }
 
 FArchive &operator<< (FArchive &arc, UserInfo &info)

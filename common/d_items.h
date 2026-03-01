@@ -26,7 +26,7 @@
 #include "info.h"
 
 class AActor;
-class player_s;
+class player_t;
 
 // Weapon info: sprite frames, ammunition use.
 struct weaponinfo_s
@@ -79,8 +79,8 @@ extern	weaponinfo_t	weaponinfo[NUMWEAPONS+1];
 struct gitem_s
 {
 		const char		*classname;
-		bool	 		(*pickup)(player_s *ent, class AActor *other);
-		void			(*use)(player_s *ent, struct gitem_s *item);
+		bool	 		(*pickup)(player_t *ent, class AActor *other);
+		void			(*use)(player_t *ent, struct gitem_s *item);
 		byte			flags;
 		byte			offset; 				// For Weapon, Ammo, Armor, Key: Offset in appropriate table
 		byte			quantity;				// For Ammo: How much to pickup

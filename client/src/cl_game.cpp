@@ -61,6 +61,7 @@
 #include "cl_main.h"
 #include "cl_demo.h"
 #include "cl_replay.h"
+#include "cl_netgraph.h"
 #include "gi.h"
 #include "hu_mousegraph.h"
 #include "g_spawninv.h"
@@ -123,6 +124,7 @@ int 			gametic;
 
 extern fixed_t bobx;
 extern fixed_t boby;
+extern NetGraph netgraph;
 
 enum demoversion_t
 {
@@ -600,6 +602,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	if (sendcenterview && ConsoleState == c_up && !menuactive)
 	{
 		sendcenterview = false;
+		const short CENTERVIEW = -32768;
 		cmd->pitch = CENTERVIEW;
 	}
 	else
@@ -981,8 +984,8 @@ void G_Ticker (void)
 		memcpy(&consoleplayer().cmd, &consoleplayer().netcmds[buf], sizeof(ticcmd_t));
 	}
 
-    static int realrate = 0;
-    int packet_size;
+	static int realrate = 0;
+	int packet_size;
 
 	if (demoplayback)
 		G_ReadDemoTiccmd(); // play all player commands
@@ -997,34 +1000,49 @@ void G_Ticker (void)
 		while ((packet_size = NET_GetPacket()) )
 		{
 			// denis - don't accept candy from strangers
-			if(!NET_CompareAdr(serveraddr, net_from))
+			if (not NET_CompareAdr(serveraddr, net_from))
 				break;
 
 			realrate += packet_size;
 			last_received = gametic;
 			noservermsgs = false;
 
-			if (!CL_ReadPacketHeader())
-				continue;
+			const MessageResultEnum initialReadResult = CL_ReadPacketHeader();
 
-			if (netdemo.isRecording())
-				netdemo.capture(&net_message);
+			switch (initialReadResult)
+			{
+				case MessageResultEnum::DEFER:
+					netgraph.addPacketIn();
+					continue;
+				case MessageResultEnum::ABORT:
+					return;
+				case MessageResultEnum::ACCEPT:    // fall-thru: have a purely non-reliable message.
+					netgraph.addPacketIn();
+				default:
+					break;
+			}
 
-			CL_ParseCommands();
+			// If we're here it's because we need to accept a message right away.
 
-			if (gameaction == ga_fullconsole) // Host_EndGame was called
+			const MessageResultEnum nonReliableResult = CL_AcceptNetMessage();
+			if (nonReliableResult == MessageResultEnum::ABORT)
 				return;
 		}
 
-		if (!(gametic%TICRATE))
+		// With all the latest packets received, process the reliable message in proper sequence.
+		const MessageResultEnum reliableResult = CL_ProcessCurrentReliableMessages();
+		if (reliableResult == MessageResultEnum::ABORT)
+			return;
+
+		if ((gametic % TICRATE) == 0)
 		{
 			netin = realrate;
 			realrate = 0;
 		}
 
-		CL_SaveCmd();      // save console commands
+		CL_SaveCmd();      // save player commands
 		if (!noservermsgs)
-			CL_SendCmd();  // send console commands to the server
+			CL_SendCmd();  // send player commands to the server
 
 		if (!(gametic%TICRATE))
 		{
@@ -1059,8 +1077,9 @@ void G_Ticker (void)
 			else
 			{
 				// we are already connected to this server, quit first
-				MSG_WriteMarker(&net_buffer, clc_disconnect);
-				NET_SendPacket(net_buffer, serveraddr);
+				messenger.Clear();
+				MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_disconnect);
+				messenger.SendAll(gametic, serveraddr);
 
 				PrintFmt(PRINT_WARNING,
 				         "Got unknown challenge {} while connecting, disconnecting.\n", type);
@@ -1073,7 +1092,7 @@ void G_Ticker (void)
 
 	// check for special buttons
 	if(serverside && consoleplayer().ingame())
-    {
+	{
 		// [Blair] Let's get all player's commands in a demo playback.
 		// Otherwise we might miss a pause and desync!
 		if (demoplayback)
