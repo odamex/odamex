@@ -1346,7 +1346,7 @@ void CL_SendUserInfo(buf_t& netBuf)
 	MSG_WriteString	(&netBuf, coninfo->netname.c_str());
 	MSG_WriteByte	(&netBuf, coninfo->team); // [Toke]
 	MSG_WriteLong	(&netBuf, coninfo->gender);
-  MSG_WriteLong	(&netBuf, coninfo->colorpreset);
+	MSG_WriteLong	(&netBuf, coninfo->colorpreset);
 
 	for (int i = 3; i >= 0; i--)
 		MSG_WriteByte(&netBuf, coninfo->color[i]);
