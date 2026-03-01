@@ -819,6 +819,9 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 	if (viewer.id == other.id)
 		return true;
 
+	if (demo && other.isNetdemoFreecam)
+		return true;
+
 	// You cannot view those without bodies or spectators.
 	if (!other.mo || other.spectator)
 		return false;

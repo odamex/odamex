@@ -130,7 +130,7 @@ bool inTeamPlayer(const player_t& player, const byte team)
 // Returns true if a player is a spectator
 bool spectatingPlayer(const player_t& player)
 {
-	return (!player.ingame() || player.spectator == true);
+	return (!player.ingame() || (player.spectator && !player.isNetdemoFreecam));
 }
 
 // Returns a sorted player list.  Calculates at most once a gametic.
@@ -152,7 +152,7 @@ const PlayersView& sortedPlayers()
 
 	for (auto& player : players)
 	{
-		if (!player.ingame())
+		if (!player.ingame() || player.isNetdemoFreecam)
 			continue;
 
 		if (player.spectator)
@@ -290,6 +290,11 @@ std::string HelpText()
 		          " to join - " TEXTCOLOR_GREEN "%d" TEXTCOLOR_NORMAL " secs left",
 		          ::Bindings.GetKeynameFromCommand("+use"),
 		          ::levelstate.getJoinTimeLeft());
+	}
+
+	if (displayplayer().isNetdemoFreecam)
+	{
+		return "Freecam";
 	}
 
 	return fmt::sprintf("Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to join",

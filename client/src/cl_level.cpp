@@ -688,7 +688,13 @@ void G_DoLoadLevel (int position)
 		}
 	}
 
-	displayplayer_id = consoleplayer_id;				// view the guy you are playing
+	if (!displayplayer().isNetdemoFreecam)
+	{
+		// view the guy you are playing..
+		// unless level load is from a netdemo snapshot and display is freecam
+		displayplayer_id = consoleplayer_id;
+	}
+	
 	ST_Start();		// [RH] Make sure status bar knows who we are
 	gameaction = ga_nothing;
 

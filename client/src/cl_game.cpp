@@ -693,7 +693,7 @@ void G_AddViewPitch(int pitch)
 		pitch = -pitch;
 
 	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook) ||
-	    consoleplayer().spectator)
+	    consoleplayer().spectator || displayplayer().isNetdemoFreecam)
 	{
 		localview.pitch += pitch << 16;
 		localview.setpitch = true;
@@ -702,7 +702,8 @@ void G_AddViewPitch(int pitch)
 
 bool G_ShouldIgnoreMouseInput()
 {
-	if (consoleplayer().id != displayplayer().id || consoleplayer().playerstate == PST_DEAD)
+	if ((consoleplayer().id != displayplayer().id && !displayplayer().isNetdemoFreecam) || 
+		consoleplayer().playerstate == PST_DEAD)
 		return true;
 
 	return false;
@@ -975,6 +976,11 @@ void G_Ticker (void)
 		{
 			memcpy(&player.cmd, &player.netcmds[buf], sizeof(ticcmd_t));
 		}
+	}
+	// Rude - allow controling displayplayer if freecam
+	else if (netdemo.isPlaying() && displayplayer().isNetdemoFreecam)
+	{
+		memcpy(&displayplayer().cmd, &consoleplayer().netcmds[buf], sizeof(ticcmd_t));
 	}
 	else
 	{

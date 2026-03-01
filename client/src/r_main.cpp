@@ -758,7 +758,9 @@ void R_SetupFrame (player_t *player)
 	player_t &consolePlayer = consoleplayer();
 	const bool use_localview =
 	    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
-	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback);
+	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback) 
+		||
+		displayplayer().isNetdemoFreecam;
 
 	if (camera->player && camera->player->xviewshift && !paused)
 	{
@@ -828,7 +830,8 @@ void R_SetupFrame (player_t *player)
 		memset (scalelightfixed, 0, MAXLIGHTSCALE*sizeof(*scalelightfixed));
 	}
 
-	if (use_localview && !::localview.skippitch)
+	// dont let consoleplayer's localview interfere with the freecam
+	if ((use_localview && !::localview.skippitch) || displayplayer().isNetdemoFreecam)
 	{
 		R_ViewShear(clamp(camera->pitch - ::localview.pitch, -ANG(32), ANG(56)));
 	}

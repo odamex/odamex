@@ -500,7 +500,7 @@ void CL_CheckDisplayPlayer(void)
 	if (!P_CanSpy(consoleplayer(), displayplayer(), demoplayback || netdemo.isPlaying() || netdemo.isPaused()))
 		newid = consoleplayer_id;
 
-	if (displayplayer().spectator)
+	if (displayplayer().spectator && !displayplayer().isNetdemoFreecam)
 		newid = consoleplayer_id;
 
 	if (newid)
@@ -772,7 +772,7 @@ BEGIN_COMMAND (players)
 	// Gather all ingame players
 	std::map<int, std::string> mplayers;
 	for (const auto& player : players) {
-		if (player.ingame()) {
+		if (player.ingame() && !player.isNetdemoFreecam) {
 			mplayers[player.id] = player.userinfo.netname;
 		}
 	}
@@ -1408,7 +1408,11 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 		}
 		else
 		{
-			displayplayer_id = consoleplayer_id; // get out of spynext
+			if (!displayplayer().isNetdemoFreecam)
+			{
+				displayplayer_id = consoleplayer_id; // get out of spynext
+			}
+			
 			player.cheats &= ~CF_FLY;	// remove flying ability
 		}
 

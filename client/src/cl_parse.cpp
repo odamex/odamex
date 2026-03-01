@@ -67,6 +67,7 @@
 #include "m_doomobjcontainer.h"
 #include "g_spree.h"
 #include "g_multikill.h"
+#include "cl_freecam.h"
 
 // Extern data from other files.
 
@@ -962,6 +963,11 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	// write the map index to the netdemo
 	if (netdemo.isRecording())
 		netdemo.writeMapChange();
+
+	if (netdemo.isPlaying() && Freecam::WipedOnLevelChange())
+	{
+		Freecam::RebuildCamOnLevelChange();
+	}
 }
 
 static void CL_ConsolePlayer(const odaproto::svc::ConsolePlayer* msg)
@@ -1148,6 +1154,11 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	const fixed_t x = msg->actor().pos().x();
 	const fixed_t y = msg->actor().pos().y();
 	const fixed_t z = msg->actor().pos().z();
+
+	if (netdemo.isPlaying() && Freecam::NeedPosition())
+	{
+		Freecam::SetStartPosition(x, y, z, angle);
+	}
 
 	P_ClearId(netid);
 

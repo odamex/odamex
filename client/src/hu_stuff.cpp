@@ -524,7 +524,8 @@ void HU_Drawer()
 
 	if (gamestate == GS_LEVEL)
 	{
-		bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
+		bool spechud = (consoleplayer().spectator && consoleplayer_id == displayplayer_id) ||
+						displayplayer().isNetdemoFreecam;
 
 		hud::DrawToasts();
 
