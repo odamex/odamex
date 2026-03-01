@@ -365,7 +365,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 {
 	if(connected)
 	{
-        CL_CompleteDisconnect();
+        CL_CompleteDisconnect(reason);
 
 		sv_gametype = GM_COOP;
 		ClientReplay::getInstance().reset();
@@ -438,11 +438,11 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 		PrintFmt("  ({}:{})\n", file, line);
 }
 
-void CL_CompleteDisconnect()
+void CL_CompleteDisconnect(netQuitReason_e reason)
 {
     const dtime_t oneTicInNanosec = static_cast<dtime_t>(1000000000.0 / static_cast<double>(TICRATE));
 
-	if (connected)
+	if (connected and reason != NQ_SERVER_DROP)
 	{
 		messenger.Clear();
 
@@ -480,16 +480,16 @@ void CL_CompleteDisconnect()
 
         if (connected)
         {
-            // Oh boy!  The server didn't react to our disconnect message.
-            // It'll get the message when we close the Canary.
-            connected = false;
+            PrintFmt(PRINT_WARNING, "Server did not acknowledge the disconnection\n");
         }
-
-        messenger = OdaMessenger();
-        P_ClearAllNetIds();
-        s_canary.reset();
-		gameaction = ga_fullconsole;
     }
+
+    connected = false;
+
+    messenger = OdaMessenger();
+    P_ClearAllNetIds();
+    s_canary.reset();
+	gameaction = ga_fullconsole;
 }
 
 void CL_Reconnect(void)
@@ -503,7 +503,7 @@ void CL_Reconnect(void)
 
 	if (connected)
 	{
-        CL_CompleteDisconnect();
+        CL_CompleteDisconnect(NQ_SILENT);
 	}
 	else if (lastconaddr.ip[0])
 	{

@@ -1079,7 +1079,7 @@ void G_Ticker (void)
 				// we are already connected to this server, quit first
 				PrintFmt(PRINT_WARNING,
 				         "Got unknown challenge {} while connecting, disconnecting.\n", type);
-                CL_CompleteDisconnect();
+                CL_CompleteDisconnect(NQ_ABORT);
 			}
 		}
 	}

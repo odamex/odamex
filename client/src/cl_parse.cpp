@@ -206,7 +206,7 @@ static void CL_Disconnect(const odaproto::svc::Disconnect* msg)
 		PrintFmt("Disconnected from server\n");
 	}
 
-	CL_QuitNetGame(NQ_SILENT);
+	CL_QuitNetGame(NQ_SERVER_DROP);
 }
 
 /**
