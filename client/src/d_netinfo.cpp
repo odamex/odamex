@@ -203,7 +203,7 @@ void D_SetupUserInfo(void)
 
 	// update color translation
 	if (!demoplayback && !connected)
-		R_BuildPlayerTranslation(consoleplayer_id, color, coninfo->colorpreset);
+		R_BuildPlayerTranslation(0, color, coninfo->colorpreset);
 }
 
 void D_UserInfoChanged (cvar_t *cvar)
