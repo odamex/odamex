@@ -219,8 +219,6 @@ argb_t CL_GetPlayerColor(const player_t& player)
 	return CL_ShadePlayerColor(base_color, shade_color);
 }
 
-
-
 static void CL_RebuildAllPlayerTranslations()
 {
 	// [SL] vanilla demo colors override
@@ -228,7 +226,9 @@ static void CL_RebuildAllPlayerTranslations()
 		return;
 
 	for (auto& player : players)
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player));
+	{
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), player.userinfo.colorpreset);
+	}
 }
 
 CVAR_FUNC_IMPL (r_enemycolor)
@@ -829,18 +829,19 @@ BEGIN_COMMAND (playerinfo)
 		player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
 
 	PrintFmt(PRINT_HIGH, "---------------[player info]----------- \n");
-	PrintFmt(PRINT_HIGH, " userinfo.netname - {:s} \n",		player->userinfo.netname);
+	PrintFmt(PRINT_HIGH, " userinfo.netname     - {:s} \n",		player->userinfo.netname);
 
 	if (sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM) {
-		PrintFmt(PRINT_HIGH, " userinfo.team    - {:s} \n",
+		PrintFmt(PRINT_HIGH, " userinfo.team        - {:s} \n",
 		       GetTeamInfo(player->userinfo.team)->ColorizedTeamName());
 	}
-	PrintFmt(PRINT_HIGH, " userinfo.aimdist - {:d} \n",		player->userinfo.aimdist >> FRACBITS);
-	PrintFmt(PRINT_HIGH, " userinfo.color   - {:s} \n",		color);
-	PrintFmt(PRINT_HIGH, " userinfo.gender  - {:d} \n",		player->userinfo.gender);
-	PrintFmt(PRINT_HIGH, " time             - {:d} \n",		player->GameTime);
-	PrintFmt(PRINT_HIGH, " spectator        - {:d} \n",		player->spectator);
-	PrintFmt(PRINT_HIGH, " downloader       - {:d} \n",		player->playerstate == PST_DOWNLOAD);
+	PrintFmt(PRINT_HIGH, " userinfo.aimdist     - {:d} \n",		player->userinfo.aimdist >> FRACBITS);
+	PrintFmt(PRINT_HIGH, " userinfo.colorpreset - {:d} \n",		player->userinfo.colorpreset); 
+	PrintFmt(PRINT_HIGH, " userinfo.color       - {:s} \n",		color);
+	PrintFmt(PRINT_HIGH, " userinfo.gender      - {:d} \n",		player->userinfo.gender);
+	PrintFmt(PRINT_HIGH, " time                 - {:d} \n",		player->GameTime);
+	PrintFmt(PRINT_HIGH, " spectator            - {:d} \n",		player->spectator);
+	PrintFmt(PRINT_HIGH, " downloader           - {:d} \n",		player->playerstate == PST_DOWNLOAD);
 	PrintFmt(PRINT_HIGH, "--------------------------------------- \n");
 }
 END_COMMAND (playerinfo)
@@ -1345,6 +1346,7 @@ void CL_SendUserInfo(buf_t& netBuf)
 	MSG_WriteString	(&netBuf, coninfo->netname.c_str());
 	MSG_WriteByte	(&netBuf, coninfo->team); // [Toke]
 	MSG_WriteLong	(&netBuf, coninfo->gender);
+	MSG_WriteLong	(&netBuf, coninfo->colorpreset);
 
 	for (int i = 3; i >= 0; i--)
 		MSG_WriteByte(&netBuf, coninfo->color[i]);
@@ -1440,7 +1442,7 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 	}
 	else
 	{
-		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player));
+		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), player.userinfo.colorpreset);
 	}
 
 	P_ClearPlayerPowerups(player);	// Remove all current powerups

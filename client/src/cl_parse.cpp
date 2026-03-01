@@ -1035,6 +1035,10 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 	if (p->userinfo.gender < 0 || p->userinfo.gender >= NUMGENDER)
 		p->userinfo.gender = GENDER_OTHER;
 
+	p->userinfo.colorpreset = static_cast<colorpreset_t>(msg->colorpreset());
+	if (p->userinfo.colorpreset < 0 || p->userinfo.colorpreset >= NUMCOLOR)
+		p->userinfo.colorpreset = COLOR_CUSTOM;
+
 	p->userinfo.color[0] = 255;
 	p->userinfo.color[1] = msg->color().r();
 	p->userinfo.color[2] = msg->color().g();
@@ -1042,7 +1046,7 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 
 	p->GameTime = msg->join_time();
 
-	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(*p));
+	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(*p), p->userinfo.colorpreset);
 	R_RebuildPlayerTintTables(p->id);
 
 	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
