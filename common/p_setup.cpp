@@ -180,6 +180,27 @@ void P_LoadVertexes (int lump)
 	Z_Free (data);
 }
 
+bool P_UseHorizonEffect(const seg_t& seg, bool segs_have_angles = false)
+{
+	const short horizon_special = map_format.getZDoom() ? Line_Horizon : 337;
+	if (seg.linedef && seg.linedef->special == horizon_special)
+		return true;
+
+	if (!segs_have_angles)
+		return false;
+
+	const angle_t physical_angle = R_PointToAngle2(seg.v1->x, seg.v1->y, seg.v2->x, seg.v2->y);
+	angle_t diff = seg.angle - physical_angle;
+
+	if (diff > ANG180)
+		diff = ANG360 - diff;
+
+	if (diff > ANG(175))
+		return true;
+
+	return false;
+}
+
 void P_LoadSegsHelper(int side, short angle, int linedef, seg_t *li)
 {
 	li->angle = (angle)<<16;
@@ -189,6 +210,8 @@ void P_LoadSegsHelper(int side, short angle, int linedef, seg_t *li)
 
 	line_t* ldef = &lines[linedef];
 	li->linedef = ldef;
+
+	li->is_horizon = P_UseHorizonEffect(*li, true);
 
 	if (side != 0 && side != 1)
 		side = 1;	// assume invalid value means back
@@ -512,8 +535,8 @@ byte* P_DecompressNodes(byte* data, size_t len) {
 	if (err != Z_STREAM_END)
 		I_Error("P_DecompressNodes: Error during ZDBSP nodes decompression!");
 
-	fmt::print(stderr, "P_DecompressNodes: ZDBSP nodes compression ratio {:.3f}\n",
-	           (float)zstream->total_out/zstream->total_in);
+	DPrintFmt("P_DecompressNodes: ZDBSP nodes compression ratio {:.3f}\n",
+	           static_cast<float>(zstream->total_out)/zstream->total_in);
 
 	if (inflateEnd(zstream) != Z_OK)
 		I_Error("P_DecompressNodes: Error during ZDBSP nodes decompression shut-down!");
@@ -557,6 +580,8 @@ byte* P_LoadSegs_XNOD(byte* p) {
 
 		seg->angle = R_PointToAngle2(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y);
 
+		seg->is_horizon = P_UseHorizonEffect(*seg);
+
 		// a short version of the offset calculation in P_LoadSegs
 		const vertex_t *origin = (side == 0) ? line->v1 : line->v2;
 		const float dx = FIXED2FLOAT(seg->v1->x - origin->x);
@@ -571,92 +596,97 @@ template<typename LineType>
 byte* P_LoadSegs_XGL(byte* p)
 {
 	static_assert(
-        std::is_same_v<LineType, uint16_t> || std::is_same_v<LineType, uint32_t>,
-        "P_LoadSegs_XGL can only be instantiated with uint16_t or uint32_t"
-    );
+		std::is_same_v<LineType, uint16_t> || std::is_same_v<LineType, uint32_t>,
+		"P_LoadSegs_XGL can only be instantiated with uint16_t or uint32_t"
+	);
 
 	numsegs = LELONG(*(uint32_t *)p); p += 4;
 	segs = (seg_t *) Z_Malloc(numsegs * sizeof(*segs), PU_LEVEL, 0);
 	memset(segs, 0, numsegs * sizeof(*segs));
 
+	uint32_t write_index = 0;
 	for (int i = 0; i < numsubsectors; i++)
 	{
-		for (uint32_t j = 0; j < subsectors[i].numlines; j++)
+		subsector_t& subsector = subsectors[i];
+		subsector.firstline = write_index;
+		seg_t* prev_seg = nullptr;
+		seg_t* first_seg = nullptr;
+		for (uint32_t j = 0; j < subsector.numlines; j++)
 		{
 			const uint32_t v1 = LELONG(*(uint32_t *)p); p += 4;
-			const uint32_t partner = LELONG(*(uint32_t *)p); p += 4;
+			// const uint32_t partner = LELONG(*(uint32_t *)p); // unused
+			p += 4;
 			const LineType ld = LESWAP(*(LineType *)p); p += sizeof(LineType);
 			const uint8_t side = *(uint8_t *)p; p += 1;
 
-			seg_t* seg = &segs[subsectors[i].firstline + j];
+			if (ld == std::numeric_limits<LineType>::max())
+				continue;
+
+			seg_t* seg = &segs[write_index++];
+
+			if (!first_seg) first_seg = seg;
+			if (prev_seg) prev_seg->v2 = seg->v1;
+			prev_seg = seg;
 
 			seg->v1 = &vertexes[v1];
-			if (j == 0)
-				seg[subsectors[i].numlines - 1].v2 = seg->v1;
-			else
-				seg[-1].v2 = seg->v1;
 
-			if (ld != std::numeric_limits<LineType>::max())
+			if (ld >= numlines)
 			{
-				if (ld >= numlines)
-				{
-					I_Error("P_LoadSegs_XGL: seg {}, {} references a non-existent linedef {}", i, j, ld);
-				}
+				I_Error("P_LoadSegs_XGL: seg {} in subsector {} references a non-existent linedef {}", j, i, ld);
+			}
 
-				line_t* line = &lines[ld];
-				seg->linedef = line;
+			line_t* line = &lines[ld];
+			seg->linedef = line;
 
-				if (side != 0 && side != 1)
-				{
-					I_Error("P_LoadSegs_XGL: seg {}, {} references a non-existent sidedef {}", i, j, side);
-				}
+			if (side != 0 && side != 1)
+			{
+				I_Error("P_LoadSegs_XGL: seg in subsector {} references a non-existent sidedef {}", j, i, side);
+			}
 
-				seg->sidedef = &sides[line->sidenum[side]];
+			seg->sidedef = &sides[line->sidenum[side]];
 
-				if (line->sidenum[side] != NO_INDEX)
-				{
-					seg->frontsector = sides[line->sidenum[side]].sector;
-				}
-				else
-				{
-					seg->frontsector = nullptr;
-					fmt::print(stderr, "P_LoadSegs_XGL: front of seg {}, {} has no sidedef\n", i, j);
-				}
-
-				if ((line->flags & ML_TWOSIDED) &&
-				    (line->sidenum[side ^ 1] != NO_INDEX))
-					seg->backsector = sides[line->sidenum[side ^ 1]].sector;
-				else
-				{
-					seg->backsector = nullptr;
-					line->flags &= ~ML_TWOSIDED;
-				}
-
-				// a short version of the offset calculation in P_LoadSegs
-				const vertex_t *origin = (side == 0) ? line->v1 : line->v2;
-				const float dx = FIXED2FLOAT(seg->v1->x - origin->x);
-				const float dy = FIXED2FLOAT(seg->v1->y - origin->y);
-				seg->offset = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
+			if (line->sidenum[side] != NO_INDEX)
+			{
+				seg->frontsector = sides[line->sidenum[side]].sector;
 			}
 			else
 			{
-				seg->angle = 0;
-				seg->offset = 0;
-				seg->sidedef = nullptr;
-				seg->linedef = nullptr;
-				seg->frontsector = segs[subsectors[i].firstline].frontsector;
-				seg->backsector = seg->frontsector;
+				seg->frontsector = nullptr;
+				DPrintFmt("P_LoadSegs_XGL: front of seg {} in subsector {} has no sidedef\n", j, i);
 			}
+
+			if ((line->flags & ML_TWOSIDED) &&
+			    (line->sidenum[side ^ 1] != NO_INDEX))
+				seg->backsector = sides[line->sidenum[side ^ 1]].sector;
+			else
+			{
+				seg->backsector = nullptr;
+				line->flags &= ~ML_TWOSIDED;
+			}
+
+			// a short version of the offset calculation in P_LoadSegs
+			const vertex_t *origin = (side == 0) ? line->v1 : line->v2;
+			const float dx = FIXED2FLOAT(seg->v1->x - origin->x);
+			const float dy = FIXED2FLOAT(seg->v1->y - origin->y);
+			seg->offset = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
 		}
 
-		for (uint32_t j = 0; j < subsectors[i].numlines; j++)
-		{
-			seg_t* seg = &segs[subsectors[i].firstline + j];
+		subsector.numlines = write_index - subsector.firstline;
 
-			if (seg->linedef)
-				seg->angle = R_PointToAngle2(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y);
+		if (first_seg && prev_seg)
+			prev_seg->v2 = first_seg->v1;
+
+		for (uint32_t j = 0; j < subsector.numlines; j++)
+		{
+			seg_t* seg = &segs[subsector.firstline + j];
+
+			seg->angle = R_PointToAngle2(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y);
+			seg->is_horizon = P_UseHorizonEffect(*seg);
 		}
 	}
+
+	numsegs = write_index;
+
 	return p;
 }
 
@@ -1561,7 +1591,6 @@ void P_LoadBlockMap (int lump)
 	else
 	{
 		short *wadblockmaplump = (short *)W_CacheLumpNum (lump, PU_LEVEL);
-		int i;
 		blockmaplump = (int *)Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, 0);
 
 		// killough 3/1/98: Expand wad blockmap into larger internal one,
@@ -1571,13 +1600,13 @@ void P_LoadBlockMap (int lump)
 
 		blockmaplump[0] = LESHORT(wadblockmaplump[0]);
 		blockmaplump[1] = LESHORT(wadblockmaplump[1]);
-		blockmaplump[2] = (uint32_t)(LESHORT(wadblockmaplump[2])) & 0xffff;
-		blockmaplump[3] = (uint32_t)(LESHORT(wadblockmaplump[3])) & 0xffff;
+		blockmaplump[2] = static_cast<uint16_t>(LESHORT(wadblockmaplump[2]));
+		blockmaplump[3] = static_cast<uint16_t>(LESHORT(wadblockmaplump[3]));
 
-		for (i=4 ; i<count ; i++)
+		for (int i = 4; i < count; i++)
 		{
-			short t = LESHORT(wadblockmaplump[i]);          // killough 3/1/98
-			blockmaplump[i] = t == -1 ? (uint32_t)0xffffffff : (uint32_t) t & 0xffff;
+			const short t = LESHORT(wadblockmaplump[i]);          // killough 3/1/98
+			blockmaplump[i] = t == -1 ? 0xffffffff : static_cast<uint16_t>(t);
 		}
 
 		Z_Free (wadblockmaplump);
