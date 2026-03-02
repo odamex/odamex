@@ -85,8 +85,7 @@ inline void Z_ChangeTag(const void* ptr, const zoneTag_e tag, const std::source_
  * @param ptr A pointer to the pointer we want to discard.  The pointer must
  *            point to something, but the pointed-to-pointer can be null,
  *            in which case nothing happens.
- * @param file Filename passed in from __FILE__ macro.
- * @param line Line number passed in from __LINE__ macro.
+ * @param location Location in the source code that this function was called
  */
 template <typename P>
 inline void Z_Discard(P ptr, const std::source_location location = std::source_location::current())
