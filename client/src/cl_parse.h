@@ -23,6 +23,7 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -36,7 +37,15 @@ struct Proto
 	std::string data;
 };
 
+struct ParseResultType
+{
+    std::unique_ptr<google::protobuf::Message> msg;
+    parseError_e                               code = PERR_OK;
+    byte                                       cmd  = svc_noop;
+};
+
 typedef std::vector<Proto> Protos;
 
 const Protos& CL_GetTicProtos();
-parseError_e CL_ParseCommand();
+ParseResultType CL_ParseCommand();
+parseError_e    CL_ProcessCommand(const ParseResultType& parsedCommand);

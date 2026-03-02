@@ -467,6 +467,7 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 
             if (messenger.NextReceivedPacket(::net_message))
             {
+                // TODO:  Disable the application handling of everything except the ClientDisconnect message.
                 CL_ParseCommands();
             }
 
@@ -2055,22 +2056,27 @@ void CL_ParseCommands()
 			break;
 		}
 
-		size_t byteStart = ::net_message.BytesRead();
-		parseError_e res = CL_ParseCommand();
-		if (res != PERR_OK || ::net_message.overflowed)
+		const size_t          byteStart = ::net_message.BytesRead();
+		const ParseResultType result    = CL_ParseCommand();
+
+        const parseError_e processResult = result.code == PERR_OK ?
+            CL_ProcessCommand(result) :
+            result.code;
+
+        if (processResult != PERR_OK or ::net_message.overflowed)
 		{
 			const Protos& protos = CL_GetTicProtos();
 
 			std::string err;
-			if (res == PERR_UNKNOWN_HEADER)
+			if (result.code == PERR_UNKNOWN_HEADER)
 			{
 				err = "Unknown message header";
 			}
-			else if (res == PERR_UNKNOWN_MESSAGE)
+			else if (result.code == PERR_UNKNOWN_MESSAGE)
 			{
 				err = "Message is not known to message decoder";
 			}
-			else if (res == PERR_BAD_DECODE)
+			else if (result.code == PERR_BAD_DECODE)
 			{
 				err = "Could not decode message";
 			}
