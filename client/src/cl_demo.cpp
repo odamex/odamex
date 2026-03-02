@@ -1643,8 +1643,6 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	displayplayer_id = consoleplayer_id = 1;
 	savegamerestore = false;
 
-	Freecam::AddFreecamPlayer();
-
 	// read consistancy marker
 	byte check;
 	arc >> check;

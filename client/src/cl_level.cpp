@@ -726,6 +726,13 @@ void G_DoLoadLevel (int position)
 
 	level.starttime = I_MSTime() * TICRATE / 1000;
 	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
+
+	// clientside only freecam, added after demo players are added in G_UnSnapshotLevel
+	if (netdemo.isPlaying())
+	{
+		Freecam::AddFreecamPlayer();
+	}
+
     P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.
 
 	::levelstate.reset();

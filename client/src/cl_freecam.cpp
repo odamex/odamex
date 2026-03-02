@@ -35,13 +35,18 @@ void Freecam::AddFreecamPlayer()
 {
 	player_t* cam = &idplayer(freecam_id);
 
-	if (cam->id != freecam_id && players.size() < MAXPLAYERS)
+	if (Freecam::WipedOnLevelChange(cam))
+	{
+		Freecam::BuildCam(cam);
+	}
+
+	if (cam->id != freecam_id && players.size() < MAXPLAYERS)  // initial add
 	{
 		cam = &players.emplace_back();
 		cam->id = freecam_id;
 
 		Freecam::BuildCam(cam);
-	}	
+	}
 }
 
 void Freecam::BuildCam(player_t* p_cam)
@@ -99,18 +104,9 @@ bool Freecam::NeedPosition()
 	return (Freecam::x == 0 && Freecam::y == 0);
 }
 
-bool Freecam::WipedOnLevelChange()
+bool Freecam::WipedOnLevelChange(player_t* cam)
 {
-	player_t* cam = &idplayer(freecam_id);
-
 	return (cam->id == freecam_id && cam->isNetdemoFreecam && !cam->mo && !cam->camera);
-}
-
-void Freecam::RebuildCamOnLevelChange()
-{
-	player_t* cam = &idplayer(freecam_id);
-
-	Freecam::BuildCam(cam);
 }
 
 void Freecam::Reset()
