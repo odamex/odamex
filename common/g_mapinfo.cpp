@@ -1218,7 +1218,8 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "author", &MIType_String, &ref.author },
 			{ "normalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NORMALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
 			{ "noinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NOINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
-			{ "totalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_TOTALINFIGHTING, ~LEVEL2_INFIGHTINGMASK }
+			{ "totalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_TOTALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
+			{ "smoothlighting" } // TODO: not implemented
 		};
 	}
 };
