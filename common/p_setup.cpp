@@ -1590,7 +1590,6 @@ void P_LoadBlockMap (int lump)
 	else
 	{
 		short *wadblockmaplump = (short *)W_CacheLumpNum (lump, PU_LEVEL);
-		int i;
 		blockmaplump = (int *)Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, 0);
 
 		// killough 3/1/98: Expand wad blockmap into larger internal one,
@@ -1600,13 +1599,13 @@ void P_LoadBlockMap (int lump)
 
 		blockmaplump[0] = LESHORT(wadblockmaplump[0]);
 		blockmaplump[1] = LESHORT(wadblockmaplump[1]);
-		blockmaplump[2] = (uint32_t)(LESHORT(wadblockmaplump[2])) & 0xffff;
-		blockmaplump[3] = (uint32_t)(LESHORT(wadblockmaplump[3])) & 0xffff;
+		blockmaplump[2] = static_cast<uint16_t>(LESHORT(wadblockmaplump[2]));
+		blockmaplump[3] = static_cast<uint16_t>(LESHORT(wadblockmaplump[3]));
 
-		for (i=4 ; i<count ; i++)
+		for (int i = 4; i < count; i++)
 		{
-			short t = LESHORT(wadblockmaplump[i]);          // killough 3/1/98
-			blockmaplump[i] = t == -1 ? (uint32_t)0xffffffff : (uint32_t) t & 0xffff;
+			const short t = LESHORT(wadblockmaplump[i]);          // killough 3/1/98
+			blockmaplump[i] = t == -1 ? 0xffffffff : static_cast<uint16_t>(t);
 		}
 
 		Z_Free (wadblockmaplump);
