@@ -678,29 +678,16 @@ static void SV_CheckDepartingMessengers()
 {
     buf_t throwaway;
 
-    auto iter = s_deadEndMessengers.begin();
-    while (iter != s_deadEndMessengers.end())
+    for (auto& [destAddr, messenger] : s_deadEndMessengers)
     {
         // Just toss out any incoming reliable messages.  We've already sent our acks,
         // otherwise we're not doing anything other than burning down what we've already sent.
-        while (iter->second.NextReceivedPacket(throwaway))
+        while (messenger.NextReceivedPacket(throwaway))
         {
         }
 
-        iter->second.HandleRetransmissions(gametic, iter->first);
-        iter->second.SendAll(gametic, iter->first);
-
-        // We've sent the last "new" message this messenger will ever get.  We just need
-        // to make sure that everything we've sent has been ack'd.  Once that's true,
-        // we can erase the messenger.
-        if (iter->second.GetPendingAckCount() > 0)
-        {
-            ++iter;
-        }
-        else
-        {
-            iter = s_deadEndMessengers.erase(iter);
-        }
+        messenger.HandleRetransmissions(gametic, destAddr);
+        messenger.SendAll(gametic, destAddr);
     }
 }
 
@@ -890,6 +877,18 @@ void SV_GetPackets()
                 {
                     iter->second.HandleAcks(::net_message);
                 }
+            }
+            // Any messenger that's in the dead-end collection is there because we put it there directly
+            // after sending the client's last reliable message.  Therefore, we know the pending Ack
+            // count is going to be > 0.  If we see it go to 0, it's because the client has unambiguously
+            // seen it and moved on.
+            //
+            // Also, we have to remove the old messenger immediately because it's 100% possible that the
+            // client has an immediate reconnection attempt as the very next packet, and we want to handle
+            // it in the `else` case below without delay.
+            if (iter->second.GetPendingAckCount() <= 0)
+            {
+                s_deadEndMessengers.erase(iter);
             }
         }
         else
@@ -2298,6 +2297,11 @@ void SV_DisconnectClient(player_t &who)
 		MSG_WriteSVC(cl.messenger.ReliableBuf(), SVC_DisconnectClient(who));
 	}
 
+    // Put the disconnecting client's final message on the wire right away.
+    // We do this so that we don't have to wait for the next tic before we get
+    // the message out and we put the messenger into the dead-end collection with a
+    // pending Ack count > 0.
+    who.client.messenger.SendAll(gametic, who.client.address);
     s_deadEndMessengers.insert({who.client.address, std::move(who.client.messenger)});
 
 	Maplist_Disconnect(who);
