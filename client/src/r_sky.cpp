@@ -294,7 +294,7 @@ void R_InitSkyMap()
 	if (fskyheight <= (128 << FRACBITS))
 	{
 		defaultskytexturemid = 200 / 2 * FRACUNIT;
-		skystretch = ((r_stretchsky != 0) && consoleplayer().spectator) ||
+		skystretch = ((r_stretchsky != 0) && (consoleplayer().spectator || displayplayer().isNetdemoFreecam)) ||
 		             (r_stretchsky == 1) ||
 		             (r_stretchsky == 2 && sv_freelook && (cl_mouselook || joy_freelook));
 	}
