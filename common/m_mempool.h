@@ -19,8 +19,7 @@
 //	Memory pool allocation
 //	Allocates a large pool of memory and allocates blocks of it when asked.
 //	Memory can only be freed by the clear() function for simplicity. If
-//	the intial memory pool is exhausted, additional pools are allocated. These
-//	are consolodated into one large pool the next time clear() is called.
+//	the intial memory pool is exhausted, additional pools are allocated.
 //
 //
 //-----------------------------------------------------------------------------
