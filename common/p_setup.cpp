@@ -596,9 +596,9 @@ template<typename LineType>
 byte* P_LoadSegs_XGL(byte* p)
 {
 	static_assert(
-        std::is_same_v<LineType, uint16_t> || std::is_same_v<LineType, uint32_t>,
-        "P_LoadSegs_XGL can only be instantiated with uint16_t or uint32_t"
-    );
+		std::is_same_v<LineType, uint16_t> || std::is_same_v<LineType, uint32_t>,
+		"P_LoadSegs_XGL can only be instantiated with uint16_t or uint32_t"
+	);
 
 	numsegs = LELONG(*(uint32_t *)p); p += 4;
 	segs = (seg_t *) Z_Malloc(numsegs * sizeof(*segs), PU_LEVEL, 0);
