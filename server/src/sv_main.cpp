@@ -2272,7 +2272,7 @@ void SV_DisconnectClient(player_t &who)
 // SV_DropClient
 // Called when the player is leaving the server unwillingly.
 //
-void SV_DropClient2(player_t &who, const char* file, const int line)
+void SV_DropClient(player_t &who)
 {
 	client_t *cl = &who.client;
 
@@ -2283,7 +2283,7 @@ void SV_DropClient2(player_t &who, const char* file, const int line)
 	SV_DisconnectClient(who);
 
 	if (::debug_disconnect)
-		PrintFmt("  ({}:{})\n", file, line);
+		PrintFmt("{}\n", M_GetStacktrace("Disconnect location:", false));
 }
 
 //
