@@ -23,9 +23,7 @@
 
 #pragma once
 
-#ifndef __R_LOCAL__
 #include "r_local.h"
-#endif
 
 #include <set>
 
