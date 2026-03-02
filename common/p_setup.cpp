@@ -856,7 +856,7 @@ void P_LoadThings (int lump)
 		// clientside freecam start pos
 		if (netdemo.isPlaying() && Freecam::needPosition() && P_IsNetplaySpawn(mt2.type))
 		{
-			Freecam::setStartPosition(mt2.x << FRACBITS, mt2.y << FRACBITS, ONFLOORZ, mt2.angle << FRACBITS);
+			Freecam::setStartPosition(mt2.x << FRACBITS, mt2.y << FRACBITS, ONFLOORZ, ANG45 * (mt2.angle / 45));
 		}
 
 		P_SpawnMapThing (mt2, 0);
