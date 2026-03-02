@@ -193,7 +193,7 @@ bool P_UseHorizonEffect(const seg_t& seg, bool segs_have_angles = false)
 	angle_t diff = seg.angle - physical_angle;
 
 	if (diff > ANG180)
-		diff = -diff;
+		diff = ANG360 - diff;
 
 	if (diff > ANG(175))
 		return true;
