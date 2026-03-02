@@ -1547,6 +1547,27 @@ void P_CreateBlockMap()
 // jff 10/6/98
 // End new code added to speed up calculation of internal blockmap
 
+void P_SetSkipBlockStart()
+{
+	skipblstart = true;
+
+	for (int y = 0; y < bmapheight; y++)
+	{
+		for (int x = 0; x < bmapwidth; x++)
+		{
+			int32_t* blockoffset = blockmaplump + y * bmapwidth + x + 4;
+
+			int32_t* list = blockmaplump + *blockoffset;
+
+			if (*list != 0)
+			{
+				skipblstart = false;
+				return;
+			}
+		}
+	}
+}
+
 //
 // P_LoadBlockMap
 //
@@ -1593,6 +1614,8 @@ void P_LoadBlockMap (int lump)
 	blocklinks = (AActor **)Z_Malloc (count, PU_LEVEL, 0);
 	memset (blocklinks, 0, count);
 	blockmap = blockmaplump+4;
+
+	P_SetSkipBlockStart();
 }
 
 /*
