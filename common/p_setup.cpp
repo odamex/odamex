@@ -180,6 +180,27 @@ void P_LoadVertexes (int lump)
 	Z_Free (data);
 }
 
+bool P_UseHorizonEffect(const seg_t& seg, bool segs_have_angles = false)
+{
+	const short horizon_special = map_format.getZDoom() ? Line_Horizon : 337;
+	if (seg.linedef && seg.linedef->special == horizon_special)
+		return true;
+
+	if (!segs_have_angles)
+		return false;
+
+	const angle_t physical_angle = R_PointToAngle2(seg.v1->x, seg.v1->y, seg.v2->x, seg.v2->y);
+	angle_t diff = seg.angle - physical_angle;
+
+	if (diff > ANG180)
+		diff = -diff;
+
+	if (diff > ANG135)
+		return true;
+
+	return false;
+}
+
 void P_LoadSegsHelper(int side, short angle, int linedef, seg_t *li)
 {
 	li->angle = (angle)<<16;
@@ -189,6 +210,8 @@ void P_LoadSegsHelper(int side, short angle, int linedef, seg_t *li)
 
 	line_t* ldef = &lines[linedef];
 	li->linedef = ldef;
+
+	li->is_horizon = P_UseHorizonEffect(*li, true);
 
 	if (side != 0 && side != 1)
 		side = 1;	// assume invalid value means back
@@ -557,6 +580,8 @@ byte* P_LoadSegs_XNOD(byte* p) {
 
 		seg->angle = R_PointToAngle2(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y);
 
+		seg->is_horizon = P_UseHorizonEffect(*seg);
+
 		// a short version of the offset calculation in P_LoadSegs
 		const vertex_t *origin = (side == 0) ? line->v1 : line->v2;
 		const float dx = FIXED2FLOAT(seg->v1->x - origin->x);
@@ -584,7 +609,8 @@ byte* P_LoadSegs_XGL(byte* p)
 		for (uint32_t j = 0; j < subsectors[i].numlines; j++)
 		{
 			const uint32_t v1 = LELONG(*(uint32_t *)p); p += 4;
-			const uint32_t partner = LELONG(*(uint32_t *)p); p += 4;
+			// const uint32_t partner = LELONG(*(uint32_t *)p); // unused
+			p += 4;
 			const LineType ld = LESWAP(*(LineType *)p); p += sizeof(LineType);
 			const uint8_t side = *(uint8_t *)p; p += 1;
 
@@ -654,7 +680,10 @@ byte* P_LoadSegs_XGL(byte* p)
 			seg_t* seg = &segs[subsectors[i].firstline + j];
 
 			if (seg->linedef)
+			{
 				seg->angle = R_PointToAngle2(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y);
+				seg->is_horizon = P_UseHorizonEffect(*seg);
+			}
 		}
 	}
 	return p;

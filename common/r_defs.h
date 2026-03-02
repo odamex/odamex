@@ -410,7 +410,7 @@ typedef struct msecnode_s
 //
 // The LineSeg.
 //
-struct seg_s
+struct seg_t
 {
 	vertex_t*	v1;
 	vertex_t*	v2;
@@ -428,8 +428,9 @@ struct seg_s
 	sector_t*	backsector;		// NULL for one-sided lines
 
 	fixed_t		length;
+
+	bool		is_horizon;
 };
-typedef seg_s seg_t;
 
 // ===== Polyobj data =====
 typedef struct FPolyObj
