@@ -26,6 +26,7 @@
 
 #pragma once
 
+#include <source_location>
 
 //
 // ZONE MEMORY
@@ -50,16 +51,18 @@ void Z_Close();
 void Z_FreeTags(const zoneTag_e lowtag, const zoneTag_e hightag);
 void Z_DumpHeap(const zoneTag_e lowtag, const zoneTag_e hightag);
 
+#define SOURCELOC const std::source_location location = std::source_location::current()
+
 // Don't use these, use the macros instead!
-void* Z_Malloc2(size_t size, const zoneTag_e tag, void* user, const char* file,
-                const int line);
-void* Z_Realloc2(void* ptr, size_t size, const zoneTag_e tag, void* user, const char* file,
-                 const int line);
-void Z_Free2(void* ptr, const char* file, int line);
-void Z_Discard2(void** ptr, const char* file, int line);
-void Z_ChangeTag2(void* ptr, const zoneTag_e tag, const char* file, int line);
-void Z_ChangeOwner2(void* ptr, void* user, const char* file, int line);
-char* Z_StrDup2(const char* s, const zoneTag_e tag, const char* file, int line);
+void* Z_Malloc(size_t size, const zoneTag_e tag, void* user, SOURCELOC);
+void* Z_Realloc(void* ptr, size_t size, const zoneTag_e tag, void* user, SOURCELOC);
+void Z_Free(void* ptr, SOURCELOC);
+void Z_Discard(void** ptr, SOURCELOC);
+void Z_ChangeTag(void* ptr, const zoneTag_e tag, SOURCELOC);
+void Z_ChangeOwner(void* ptr, void* user, SOURCELOC);
+char* Z_StrDup(const char* s, const zoneTag_e tag, SOURCELOC);
+
+#undef SOURCELOC
 
 typedef struct memblock_s
 {
@@ -71,9 +74,9 @@ typedef struct memblock_s
 	struct memblock_s*	prev;
 } memblock_t;
 
-inline void Z_ChangeTag2(const void* ptr, const zoneTag_e tag, const char* file, int line)
+inline void Z_ChangeTag(const void* ptr, const zoneTag_e tag, const std::source_location location = std::source_location::current())
 {
-	Z_ChangeTag2(const_cast<void *>(ptr), tag, file, line);
+	Z_ChangeTag(const_cast<void *>(ptr), tag, location);
 }
 
 /**
@@ -86,14 +89,14 @@ inline void Z_ChangeTag2(const void* ptr, const zoneTag_e tag, const char* file,
  * @param line Line number passed in from __LINE__ macro.
  */
 template <typename P>
-inline void Z_Discard2(P ptr, const char* file, int line)
+inline void Z_Discard(P ptr, const std::source_location location = std::source_location::current())
 {
 	if (*ptr == NULL)
 	{
 		return;
 	}
 
-	Z_ChangeTag2(*ptr, PU_CACHE, file, line);
+	Z_ChangeTag(*ptr, PU_CACHE, location);
 	*ptr = NULL;
 }
 
@@ -106,11 +109,3 @@ inline void Z_Discard2(P ptr, const char* file, int line)
       if (( (memblock_t *)( (char *)(p) - sizeof(memblock_t)))->tag > t) \
       Z_ChangeTag (p,t); \
 }
-
-#define Z_Malloc(s,t,p) Z_Malloc2(s,t,p,__FILE__,__LINE__)
-#define Z_Realloc(p,s,t,u) Z_Realloc2(p,s,t,u,__FILE__,__LINE__)
-#define Z_Free(p) Z_Free2(p,__FILE__,__LINE__)
-#define Z_Discard(p) Z_Discard2(p,__FILE__,__LINE__)
-#define Z_ChangeTag(p,t) Z_ChangeTag2(p,t,__FILE__,__LINE__)
-#define Z_ChangeOwner(p,u) Z_ChangeOwner2(p,u,__FILE__,__LINE__)
-#define Z_StrDup(s, t) Z_StrDup2(s,t, __FILE__,__LINE__)

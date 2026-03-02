@@ -60,8 +60,6 @@ struct OFileLine
 	}
 };
 
-#define FILELINE OFileLine::create(__FILE__, __LINE__)
-
 #define CASE_STR(x) \
 	case x:         \
 		return #x
@@ -320,9 +318,9 @@ void Z_Init()
 //
 // Z_Free2
 //
-void Z_Free2(void* ptr, const char* file, int line)
+void Z_Free(void* ptr, const std::source_location location)
 {
-	g_zone.deallocPtr(ptr, OFileLine::create(file, line));
+	g_zone.deallocPtr(ptr, OFileLine::create(location.file_name(), location.line()));
 }
 
 
@@ -333,16 +331,14 @@ void Z_Free2(void* ptr, const char* file, int line)
 #define MINFRAGMENT	64
 #define ALIGN		8
 
-void* Z_Malloc2(size_t size, const zoneTag_e tag, void* user, const char* file,
-                const int line)
+void* Z_Malloc(size_t size, const zoneTag_e tag, void* user, const std::source_location location)
 {
-	return g_zone.alloc(size, tag, user, OFileLine::create(file, line));
+	return g_zone.alloc(size, tag, user, OFileLine::create(location.file_name(), location.line()));
 }
 
-void* Z_Realloc2(void* ptr, size_t size, const zoneTag_e tag, void* user, const char* file,
-                const int line)
+void* Z_Realloc(void* ptr, size_t size, const zoneTag_e tag, void* user, const std::source_location location)
 {
-	return g_zone.realloc(ptr, size, tag, user, OFileLine::create(file, line));
+	return g_zone.realloc(ptr, size, tag, user, OFileLine::create(location.file_name(), location.line()));
 }
 
 //
@@ -356,26 +352,26 @@ void Z_FreeTags(const zoneTag_e lowtag, const zoneTag_e hightag)
 //
 // Z_ChangeTag
 //
-void Z_ChangeTag2(void* ptr, const zoneTag_e tag, const char* file, int line)
+void Z_ChangeTag(void* ptr, const zoneTag_e tag, const std::source_location location)
 {
-	return ::g_zone.changeTag(ptr, tag, OFileLine::create(file, line));
+	return ::g_zone.changeTag(ptr, tag, OFileLine::create(location.file_name(), location.line()));
 }
 
 //
 // Z_ChangeOwner
 //
-void Z_ChangeOwner2(void* ptr, void* user, const char* file, int line)
+void Z_ChangeOwner(void* ptr, void* user, const std::source_location location)
 {
-	return ::g_zone.changeOwner(ptr, user, OFileLine::create(file, line));
+	return ::g_zone.changeOwner(ptr, user, OFileLine::create(location.file_name(), location.line()));
 }
 
 //
 // Z_StrDup
 //
-char* Z_StrDup2(const char* s, const zoneTag_e tag, const char* file, int line)
+char* Z_StrDup(const char* s, const zoneTag_e tag, const std::source_location location)
 {
 	size_t len = strlen(s);
-	char* output = (char*)Z_Malloc2(len + 1, tag, NULL, file, line);
+	char* output = (char*)Z_Malloc(len + 1, tag, NULL, location);
 	strncpy(output, s, len);
 	output[len] = '\0';
 	return output;
