@@ -220,7 +220,7 @@ void R_CopyTranslationRGB (int fromplayer, int toplayer);
 void R_RebuildPlayerTintTables(int player);
 
 // [RH] Actually create a player's translation table.
-void R_BuildPlayerTranslation(int player, argb_t dest_color);
+void R_BuildPlayerTranslation(int player, argb_t dest_color, int colorpreset);
 
 // [Nes] Classic player translation table.
 void R_BuildClassicPlayerTranslation(int player, int color);

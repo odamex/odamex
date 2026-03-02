@@ -42,8 +42,12 @@
 #include "gi.h"
 #include "v_text.h"
 #include "st_stuff.h"
+#include "g_gametype.h"
 
 #undef RANGECHECK
+
+EXTERN_CVAR(r_forceenemycolor)
+EXTERN_CVAR(r_forceteamcolor)
 
 // status bar height at bottom of screen
 // [RH] status bar position at bottom of screen
@@ -489,7 +493,14 @@ void R_BuildClassicPlayerTranslation (int player, int color)
 	const palette_t* pal = V_GetDefaultPalette();
 	int i;
 
-	if (color == 1) // Indigo
+	
+	if (color == 0) // Green
+		for (i = 0x70; i < 0x80; i++)
+		{
+			translationtables[i + (player * 256)] = 0x70 + (i&0xf);
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
+		}
+	else if (color == 1) // Indigo
 		for (i = 0x70; i < 0x80; i++)
 		{
 			translationtables[i+(player * 256)] = 0x60 + (i&0xf);
@@ -505,6 +516,18 @@ void R_BuildClassicPlayerTranslation (int player, int color)
 		for (i = 0x70; i < 0x80; i++)
 		{
 			translationtables[i+(player * 256)] = 0x20 + (i&0xf);
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
+		}
+	else if (color == 4) // Blue
+		for (i = 0x70; i < 0x80; i++)
+		{
+			translationtables[i + (player * 256)] = 0xC0 + (i & 0xf);
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
+		}
+	else if (color == 5) // Orange
+		for (i = 0x70; i < 0x80; i++)
+		{
+			translationtables[i + (player * 256)] = 0xD0 + (i & 0xf);
 			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
 		}
 }
@@ -526,47 +549,69 @@ void R_CopyTranslationRGB (int fromplayer, int toplayer)
 	R_RebuildPlayerTintTables(toplayer);
 }
 
+/*
+[Acts 19 quiz] Check if a specific color is being enforced on a sprite due to CVARs or gametype.
+- G_IsTeamGame(): Team modes (CTF and Team DM/LMS) enforce blue, red, or green on all sprites, no exceptions.
+- r_forceteamcolor 1 enforces a user-specified color on teammates in Coop/Horde, but not DM.
+- r_forceenemycolor 1 enforces a user-specified color on rival players in DM, but not Coop/Horde.
+- player != displayplayer_id: r_forceXXXXcolor is ignored on the display player.
+- !consoleplayer().spectator: r_forceXXXXcolor is ignored on others from a spectating display player's POV.
+- player != 0: r_forceXXXXcolor is ignored on the player preview in PLAYER SETUP.
+*/
+bool R_IsForcedColor(int player, bool forceteamcolor, bool forceenemycolor)
+{
+	return G_IsTeamGame() || (player != displayplayer_id && !consoleplayer().spectator &&
+	       player != 0 && (forceteamcolor && G_IsCoopGame()) || (forceenemycolor && G_IsFFAGame()));
+}
+
 // [RH] Create a player's translation table based on
 //		a given mid-range color.
-void R_BuildPlayerTranslation(int player, argb_t dest_color)
+void R_BuildPlayerTranslation(int player, argb_t dest_color, int colorpreset)
 {
-	const palette_t* pal = V_GetDefaultPalette();
-	byte* table = &translationtables[player * 256];
-
-	const fahsv_t hsv_temp = V_RGBtoHSV(dest_color);
-	const float h = hsv_temp.geth();
-	float s = hsv_temp.gets(), v = hsv_temp.getv();
-
-	s -= 0.23f;
-	if (s < 0.0f)
-		s = 0.0f;
-	float sdelta = 0.014375f;
-
-	v += 0.1f;
-	if (v > 1.0f)
-		v = 1.0f;
-	float vdelta = -0.05882f;
-
-	for (int i = 0x70; i < 0x80; i++)
+	if (!R_IsForcedColor(player, r_forceteamcolor, r_forceenemycolor) && colorpreset < NUMVANILLACOLOR)
 	{
-		const argb_t color(V_HSVtoRGB(fahsv_t(h, s, v)));
+		return R_BuildClassicPlayerTranslation(player, colorpreset);
+	}
+	else
+	{
+		const palette_t* pal = V_GetDefaultPalette();
+		byte* table = &translationtables[player * 256];
 
-		// Set up RGB values for 32bpp translation:
-		translationRGB[player][i - 0x70] = color;
-		table[i] = V_BestColor(pal->basecolors, color);
+		const fahsv_t hsv_temp = V_RGBtoHSV(dest_color);
+		const float h = hsv_temp.geth();
+		float s = hsv_temp.gets(), v = hsv_temp.getv();
 
-		s += sdelta;
-		if (s > 1.0f)
+		s -= 0.23f;
+		if (s < 0.0f)
+			s = 0.0f;
+		float sdelta = 0.014375f;
+
+		v += 0.1f;
+		if (v > 1.0f)
+			v = 1.0f;
+		float vdelta = -0.05882f;
+
+		for (int i = 0x70; i < 0x80; i++)
 		{
-			s = 1.0f;
-			sdelta = 0.0f;
-		}
+			const argb_t color(V_HSVtoRGB(fahsv_t(h, s, v)));
 
-		v += vdelta;
-		if (v < 0.0f)
-		{
-			v = 0.0f;
-			vdelta = 0.0f;
+			// Set up RGB values for 32bpp translation:
+			translationRGB[player][i - 0x70] = color;
+			table[i] = V_BestColor(pal->basecolors, color);
+
+			s += sdelta;
+			if (s > 1.0f)
+			{
+				s = 1.0f;
+				sdelta = 0.0f;
+			}
+
+			v += vdelta;
+			if (v < 0.0f)
+			{
+				v = 0.0f;
+				vdelta = 0.0f;
+			}
 		}
 	}
 }

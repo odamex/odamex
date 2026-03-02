@@ -1131,6 +1131,8 @@ bool SV_SetupUserInfo(player_t &player)
 
 	gender_t gender = static_cast<gender_t>(MSG_ReadLong());
 
+	colorpreset_t colorpreset = static_cast<colorpreset_t>(MSG_ReadLong());
+
 	byte color[4];
 	for (int i = 3; i >= 0; i--)
 		color[i] = MSG_ReadByte();
@@ -1158,6 +1160,9 @@ bool SV_SetupUserInfo(player_t &player)
 	if (gender < 0 || gender >= NUMGENDER)
 		gender = GENDER_OTHER;
 
+	if (colorpreset < 0 || colorpreset >= NUMCOLOR)
+		colorpreset = COLOR_CUSTOM;
+
 	aimdist = clamp(aimdist, 0, 5000 * 16384);
 
 	if (switchweapon >= WPSW_NUMTYPES || switchweapon < 0)
@@ -1171,6 +1176,8 @@ bool SV_SetupUserInfo(player_t &player)
 
 	player.userinfo.gender			= gender;
 	player.userinfo.team			= new_team;
+
+	player.userinfo.colorpreset		= colorpreset;
 
 	memcpy(player.userinfo.color, color, 4);
 	memcpy(player.prefcolor, color, 4);
@@ -4628,16 +4635,17 @@ BEGIN_COMMAND (playerinfo)
 	const std::string& team = GetTeamInfo(player->userinfo.team)->ColorStringUpper;
 
 	PrintFmt("---------------[player info]----------- \n");
-	PrintFmt(" IP Address       - {:s} \n",		ip);
-	PrintFmt(" userinfo.netname - {:s} \n",		player->userinfo.netname);
+	PrintFmt(" IP Address           - {:s} \n",		ip);
+	PrintFmt(" userinfo.netname     - {:s} \n",		player->userinfo.netname);
 	if (sv_gametype == GM_CTF || sv_gametype == GM_TEAMDM) {
-		PrintFmt(" userinfo.team    - {:s} \n", team);
+		PrintFmt(" userinfo.team        - {:s} \n", team);
 	}
-	PrintFmt(" userinfo.aimdist - {:d} \n",		player->userinfo.aimdist >> FRACBITS);
-	PrintFmt(" userinfo.color   - {:s} \n",		color);
-	PrintFmt(" userinfo.gender  - {:d} \n",		player->userinfo.gender);
-	PrintFmt(" time             - {:d} \n",		player->GameTime);
-	PrintFmt(" spectator        - {:d} \n",		player->spectator);
+	PrintFmt(" userinfo.aimdist     - {:d} \n",		player->userinfo.aimdist >> FRACBITS);
+	PrintFmt(" userinfo.colorpreset - {:d} \n",		player->userinfo.colorpreset);
+	PrintFmt(" userinfo.color       - {:s} \n",		color);
+	PrintFmt(" userinfo.gender      - {:d} \n",		player->userinfo.gender);
+	PrintFmt(" time                 - {:d} \n",		player->GameTime);
+	PrintFmt(" spectator            - {:d} \n",		player->spectator);
 	if (G_IsCoopGame())
 	{
 		PrintFmt(" kills - {:d}  deaths - {:d}\n", player->killcount, player->deathcount);

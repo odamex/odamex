@@ -157,7 +157,7 @@ public:
 
 	template <typename E>
 		requires std::is_enum_v<E> || std::is_integral_v<E>
-	[[nodiscard]] bool operator==(auto e) const
+	[[nodiscard]] bool operator==(E e) const
 	{
 		return static_cast<E>(asInt()) == e;
 	}

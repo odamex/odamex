@@ -42,22 +42,32 @@ inline auto format_as(gender_t eGender)
 	return fmt::underlying(eGender);
 }
 
-enum colorpreset_t	// Acts 19 quiz the order must match m_menu.cpp.
+enum colorpreset_t // [Acts 19 quiz] The order must match m_menu.cpp.
 {
-	COLOR_CUSTOM,
-	COLOR_BLUE,
-	COLOR_INDIGO,
 	COLOR_GREEN,
+	COLOR_INDIGO,
 	COLOR_BROWN,
 	COLOR_RED,
+	COLOR_BLUE,
+	COLOR_ORANGE,
 	COLOR_GOLD,
+	NUMVANILLACOLOR = COLOR_GOLD, // [Acts 19 quiz] The first non-indexed color.
 	COLOR_JUNGLEGREEN,
 	COLOR_PURPLE,
 	COLOR_WHITE,
 	COLOR_BLACK,
+	COLOR_CUSTOM,
 
 	NUMCOLOR
 };
+
+// [Acts 19 quiz] The playerinfo prints in cl_main.cpp and sv_main.cpp are dependent
+// on this.
+
+inline auto format_as(colorpreset_t eColorpreset)
+{
+	return fmt::underlying(eColorpreset);
+}
 
 enum weaponswitch_t
 {
@@ -75,6 +85,7 @@ struct UserInfo
 	team_t			team; // [Toke - Teams]
 	fixed_t			aimdist;
 	bool			predict_weapons;
+	colorpreset_t	colorpreset;
 	byte			color[4];
 	gender_t		gender;
 	weaponswitch_t	switchweapon;
