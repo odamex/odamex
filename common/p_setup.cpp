@@ -535,8 +535,8 @@ byte* P_DecompressNodes(byte* data, size_t len) {
 	if (err != Z_STREAM_END)
 		I_Error("P_DecompressNodes: Error during ZDBSP nodes decompression!");
 
-	fmt::print(stderr, "P_DecompressNodes: ZDBSP nodes compression ratio {:.3f}\n",
-	           (float)zstream->total_out/zstream->total_in);
+	DPrintFmt("P_DecompressNodes: ZDBSP nodes compression ratio {:.3f}\n",
+	           static_cast<float>(zstream->total_out)/zstream->total_in);
 
 	if (inflateEnd(zstream) != Z_OK)
 		I_Error("P_DecompressNodes: Error during ZDBSP nodes decompression shut-down!");
@@ -646,7 +646,7 @@ byte* P_LoadSegs_XGL(byte* p)
 				else
 				{
 					seg->frontsector = nullptr;
-					fmt::print(stderr, "P_LoadSegs_XGL: front of seg {}, {} has no sidedef\n", i, j);
+					DPrintFmt("P_LoadSegs_XGL: front of seg {}, {} has no sidedef\n", i, j);
 				}
 
 				if ((line->flags & ML_TWOSIDED) &&
