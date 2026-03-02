@@ -1155,11 +1155,6 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	const fixed_t y = msg->actor().pos().y();
 	const fixed_t z = msg->actor().pos().z();
 
-	if (netdemo.isPlaying() && Freecam::NeedPosition())
-	{
-		Freecam::SetStartPosition(x, y, z, angle);
-	}
-
 	P_ClearId(netid);
 
 	// first disassociate the corpse

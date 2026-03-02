@@ -59,7 +59,7 @@
 #include "z_zone.h"
 #include "m_wdlstats.h"
 #include "g_spree.h"
-
+#include "cl_freecam.h"
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
@@ -203,6 +203,12 @@ void G_InitNew (const char *mapname)
 			level_pwad_info_t& level = levels.at(i);
 			level.flags &= ~LEVEL_VISITED;
 		}
+	}
+
+	if (netdemo.isPlaying() && Freecam::prevmap != mapname)
+	{
+		Freecam::Reset();
+		Freecam::setPrevMap(mapname);
 	}
 
 	cvar_t::UnlatchCVars ();

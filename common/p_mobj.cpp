@@ -2777,7 +2777,14 @@ int P_IsPickupableThing(short type)
 	       );
 }
 
-//
+bool P_IsNetplaySpawn(short type)
+{
+	return (type == 1 || type == 2 || type == 3 || type == 4 ||  // player1-4
+			type == 11 ||										 // DM
+			type == 5080 || type == 5081 || type == 5083);		 // Team
+}
+
+    //
 // P_SpawnMapThing
 // The fields of the mapthing should
 // already be in host byte order.

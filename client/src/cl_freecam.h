@@ -31,19 +31,21 @@ class Freecam
 {
 public:
 	static const byte freecam_id = 255;
+	static std::string prevmap;
 	static void AddFreecamPlayer();
 	static void BuildCam(player_t* p_cam);
 	static void SavePosition();
 	static void Reset();
-	static void SetStartPosition(fixed_t x, fixed_t y, fixed_t z, fixed_t angle);
+	static void SetStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
 	static bool NeedPosition();
 	static bool WipedOnLevelChange();
 	static void RebuildCamOnLevelChange();
+	static void setPrevMap(std::string m);
 
 private:
 	static fixed_t x;
 	static fixed_t y;
 	static fixed_t z;
-	static fixed_t angle;
+	static angle_t angle;
 	static fixed_t pitch;
 };

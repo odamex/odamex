@@ -22,16 +22,14 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "odamex.h"
-
-#include "cl_main.h"
 #include "cl_freecam.h"
 
 fixed_t Freecam::x = 0;
 fixed_t Freecam::y = 0;
 fixed_t Freecam::z = 0;
-fixed_t Freecam::angle = 0;
+angle_t Freecam::angle = 0;
 fixed_t Freecam::pitch = 0;
+std::string Freecam::prevmap = "";
 
 void Freecam::AddFreecamPlayer()
 {
@@ -69,7 +67,7 @@ void Freecam::BuildCam(player_t* p_cam)
 	p_cam->isNetdemoFreecam = true;
 }
 
-void Freecam::SetStartPosition(fixed_t x, fixed_t y, fixed_t z, fixed_t angle)
+void Freecam::SetStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle)
 {
 	Freecam::x = x;
 	Freecam::y = y;
@@ -77,6 +75,10 @@ void Freecam::SetStartPosition(fixed_t x, fixed_t y, fixed_t z, fixed_t angle)
 	Freecam::angle = angle;
 }
 
+void Freecam::setPrevMap(std::string m)
+{
+	Freecam::prevmap = m;
+}
 
 void Freecam::SavePosition()
 {
@@ -94,7 +96,7 @@ void Freecam::SavePosition()
 
 bool Freecam::NeedPosition() 
 {
-	return (x == 0 && y == 0 && z == 0 && angle == 0);
+	return (Freecam::x == 0 && Freecam::y == 0);
 }
 
 bool Freecam::WipedOnLevelChange()
@@ -106,7 +108,6 @@ bool Freecam::WipedOnLevelChange()
 
 void Freecam::RebuildCamOnLevelChange()
 {
-	Freecam::Reset();
 	player_t* cam = &idplayer(freecam_id);
 
 	Freecam::BuildCam(cam);
