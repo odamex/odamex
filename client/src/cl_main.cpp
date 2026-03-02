@@ -438,6 +438,24 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 		PrintFmt("  ({}:{})\n", file, line);
 }
 
+static void CL_HandleDisconnectCompletionPacket()
+{
+    while (::net_message.BytesLeftToRead() > 0)
+    {
+        const ParseResultType result = CL_ParseCommand();
+
+        switch (result.cmd)
+        {
+            case svc_disconnectclient:
+            case msg_ack:               // fall-thru
+                CL_ProcessCommand(result);
+                break;
+            default:
+                break;
+        }
+    }
+}
+
 void CL_CompleteDisconnect(netQuitReason_e reason)
 {
     const dtime_t oneTicInNanosec = static_cast<dtime_t>(1000000000.0 / static_cast<double>(TICRATE));
@@ -455,28 +473,33 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
         const dtime_t disconnectStartTime   = I_GetTime();
         const dtime_t disconnectTimeoutTime = disconnectStartTime + I_ConvertTimeFromMs(2000);
 
+        // We have to maintain a fake tic to ensure that we don't exhaust the messenger's
+        // byte budget.  It doesn't matter that we're faking out the messenger because we'll
+        // be resetting it to default at the end of this function.
+
+        int fakeTics = gametic;
         while (connected and I_GetTime() < disconnectTimeoutTime)
         {
             I_Sleep(oneTicInNanosec);
 
-            messenger.HandleRetransmissions(gametic, serveraddr);
-            if (NET_GetPacket())
+            ++fakeTics;
+            messenger.HandleRetransmissions(fakeTics, serveraddr);
+            while (NET_GetPacket())
             {
-                messenger.Receive(::net_message);
+                if (messenger.Receive(::net_message) == MessageResultEnum::ACCEPT)
+                {
+                    messenger.NextReceivedPacket(::net_message);
+                    CL_HandleDisconnectCompletionPacket();
+                }
             }
 
-            if (messenger.NextReceivedPacket(::net_message))
+            while (messenger.NextReceivedPacket(::net_message))
             {
-                // TODO:  Disable the application handling of everything except the ClientDisconnect message.
-                CL_ParseCommands();
+                CL_HandleDisconnectCompletionPacket();
             }
 
-            if (connected == false)
-            {
-                // We received the DisconnectClient message that announced our departure.
-                // Do one final send to make sure the server gets our Ack.
-                messenger.SendAll(gametic, serveraddr);
-            }
+            // Make sure that the server gets its acks during this packet burndown phase.
+            messenger.SendAll(fakeTics, serveraddr);
         }
 
         if (connected)

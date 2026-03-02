@@ -105,6 +105,12 @@ void SV_HandleReliableRetransmissions()
 {
 	for (auto& player : players)
 	{
+		// Players that are on their way out get their retries serviced elsewhere.
+		if (player.playerstate == PST_DISCONNECT)
+		{
+			continue;
+		}
+
 		// Total hack:  We check for the player being in the first second of their connection because there's something
 		// in the connection protocol that requires us to do immediate retransmits of the first few reliable messages.
 		if (player.GameTime > 0)

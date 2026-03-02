@@ -347,12 +347,12 @@ class Message;
 
 class MessageQueue;
 
-typedef struct
+struct netadr_t
 {
-   byte    ip[4];
-   unsigned short  port;
-   unsigned short  pad;
-} netadr_t;
+   byte             ip[4] = { 0, 0, 0, 0};
+   unsigned short   port  = 0;
+   unsigned short   pad   = 0;
+};
 
 extern  netadr_t  net_from;  // address of who sent the packet
 
@@ -487,7 +487,7 @@ public:
 		return data[readpos++];
 	}
 
-	int NextByte()
+	int PeekByte()
 	{
 		if(readpos+1 > cursize)
 		{
@@ -850,7 +850,7 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
                       const int skipPlayer = -1);
 
 int MSG_BytesLeft(void);
-int MSG_NextByte (void);
+int MSG_PeekByte (void);
 
 int MSG_ReadByte (void);
 void *MSG_ReadChunk (const size_t &size);

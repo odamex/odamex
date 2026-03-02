@@ -655,22 +655,56 @@ CVAR_FUNC_IMPL(net_maxthreads)
 	PrintFmt("net_maxthreads pool has {} threads\n", s_workers.ThreadCount());
 }
 
-static std::unique_ptr<CanarySocketServer> s_canaries;
+// Intentionally use a map here instead of an unordered_map, because a map (a binary tree) tends to be
+// faster for iterating over smaller element counts than an unordered_map (a hash table), the latter
+// of which may require iterating over some number of completely unused buckets.
 
-static int SV_ConnectCanary(sockaddr_in& i_address)
+struct NetAddrLessThan
 {
-	netadr_t netAddr;
+    auto TieNetAddr(const netadr_t& addr) const
+    {
+        return std::tie(addr.ip[0], addr.ip[1], addr.ip[2], addr.ip[3], addr.port);
+    }
 
-	SockadrToNetadr(& i_address, & netAddr);
+    bool operator()(const netadr_t& lhs, const netadr_t& rhs) const
+    {
+        return TieNetAddr(lhs) < TieNetAddr(rhs);
+    }
+};
 
-	const player_t& playerRef = SV_FindPlayerByAddr(netAddr);
+static std::map<netadr_t, OdaMessenger, NetAddrLessThan> s_deadEndMessengers;
 
-	if (validplayer(playerRef))
-	{
-		return playerRef.id;
-	}
-	return -1;
+static void SV_CheckDepartingMessengers()
+{
+    buf_t throwaway;
+
+    auto iter = s_deadEndMessengers.begin();
+    while (iter != s_deadEndMessengers.end())
+    {
+        // Just toss out any incoming reliable messages.  We've already sent our acks,
+        // otherwise we're not doing anything other than burning down what we've already sent.
+        while (iter->second.NextReceivedPacket(throwaway))
+        {
+        }
+
+        iter->second.HandleRetransmissions(gametic, iter->first);
+        iter->second.SendAll(gametic, iter->first);
+
+        // We've sent the last "new" message this messenger will ever get.  We just need
+        // to make sure that everything we've sent has been ack'd.  Once that's true,
+        // we can erase the messenger.
+        if (iter->second.GetPendingAckCount() > 0)
+        {
+            ++iter;
+        }
+        else
+        {
+            iter = s_deadEndMessengers.erase(iter);
+        }
+    }
 }
+
+static std::unique_ptr<CanarySocketServer> s_canaries;
 
 static void SV_CheckCanaries()
 {
@@ -680,12 +714,23 @@ static void SV_CheckCanaries()
 
 		while (deadCanaryIter != s_canaries->end())
 		{
-			player_t& playerRef = idplayer(deadCanaryIter->id);
+            netadr_t netAddr;
+
+            SockadrToNetadr(& deadCanaryIter->udpAddr, & netAddr);
+
+            player_t& playerRef = SV_FindPlayerByAddr(netAddr);
+
 			if (validplayer(playerRef) and playerRef.playerstate != PST_DISCONNECT)
 			{
 				SV_BroadcastPrintFmt("{} disconnected abnormally\n", playerRef.userinfo.netname);
 				SV_DropClient(playerRef);
 			}
+
+            // Canary dropping is a special case where we know for certain that the other end
+            // is truly terminated.  There's no point in letting the dead-end messenger handler
+            // drive the packet sequence to completion.
+            s_deadEndMessengers.erase(netAddr);
+
 			deadCanaryIter = s_canaries->PutOnCart(deadCanaryIter);
 		}
 	}
@@ -713,8 +758,6 @@ void SV_InitNetwork (void)
 	PrintFmt("UDP Initialized.\n");
 
 	s_canaries = std::make_unique<CanarySocketServer>(port.asInt());
-
-	s_canaries->SetConnectCallback(SV_ConnectCanary);
 
 	const char *w = Args.CheckValue ("-maxclients");
 	if (w)
@@ -835,21 +878,38 @@ void SV_GetPackets()
 {
 	while (NET_GetPacket())
 	{
-		player_t &player = SV_FindPlayerByAddr(net_from);
+        auto iter = s_deadEndMessengers.find(net_from);
+        if (iter != s_deadEndMessengers.end())
+        {
+            if (iter->second.Receive(::net_message) == MessageResultEnum::ACCEPT)
+            {
+                // Because we still want to honor acks from a disconnecting client,
+                // we must service them immediately upon receipt from the socket because
+                // they are not queued by the receiver.
+                if (iter->second.NextReceivedPacket(::net_message))
+                {
+                    iter->second.HandleAcks(::net_message);
+                }
+            }
+        }
+        else
+        {
+			player_t &player = SV_FindPlayerByAddr(net_from);
 
-		if (!validplayer(player)) // no client with net_from address
-		{
-			// apparently, someone is trying to connect
-			if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
-				SV_ConnectClient();
+			if (!validplayer(player)) // no client with net_from address
+			{
+				// apparently, someone is trying to connect
+				if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
+					SV_ConnectClient();
 
-			continue;
-		}
-		else
-		{
-			player.client.messenger.Receive(::net_message);
-			player.client.last_received = gametic;
-			SV_ParseCommands(player);
+				continue;
+			}
+			else
+			{
+				player.client.messenger.Receive(::net_message);
+				player.client.last_received = gametic;
+				SV_ParseCommands(player);
+			}
 		}
 	}
 }
@@ -2238,6 +2298,8 @@ void SV_DisconnectClient(player_t &who)
 		MSG_WriteSVC(cl.messenger.ReliableBuf(), SVC_DisconnectClient(who));
 	}
 
+    s_deadEndMessengers.insert({who.client.address, std::move(who.client.messenger)});
+
 	Maplist_Disconnect(who);
 	Vote_Disconnect(who);
 
@@ -3114,11 +3176,15 @@ void SV_SendPackets()
 
 	for (auto& player : players)
 	{
-		std::packaged_task<void ()> task { [&player] () { SV_SendPacket(player); } };
+		// Disconnecting players' messengers send their packets via the dead-end messenger collection.
+		if (player.playerstate != PST_DISCONNECT)
+		{
+			std::packaged_task<void ()> task { [&player] () { SV_SendPacket(player); } };
 
-		futures.emplace_back(task.get_future());
+			futures.emplace_back(task.get_future());
 
-		s_workers.MoveCommand(std::move(task));
+			s_workers.MoveCommand(std::move(task));
+		}
 	}
 
 	for (auto& future : futures)
@@ -4442,6 +4508,7 @@ void SV_RunTics()
 	getPacketsStopwatch->Stop();
 
 	SV_CheckCanaries();
+    SV_CheckDepartingMessengers();
 
 	retransmitStopwatch->Start();
 	SV_HandleReliableRetransmissions();
