@@ -28,7 +28,7 @@
 #include "cpptrace/cpptrace.hpp"
 #include "cpptrace/formatting.hpp"
 
-std::string M_GetStacktrace(std::string header)
+std::string M_GetStacktrace(std::string header, bool report_message)
 {
 	auto formatter = cpptrace::formatter{}
 		.header(header)
@@ -40,8 +40,15 @@ std::string M_GetStacktrace(std::string header)
 		.filter([](const auto& frame)
 			{ return frame.symbol.find("M_GetStacktrace") == std::string::npos; })
 		.filtered_frame_placeholders(false);
-	return fmt::format(
-		"{}\n\nPlease report this error to the Odamex Team at https://github.com/odamex/odamex/issues",
-		formatter.format(cpptrace::generate_trace())
-	);
+	if (report_message)
+	{
+		return fmt::format(
+			"{}\n\nPlease report this error to the Odamex Team at https://github.com/odamex/odamex/issues",
+			formatter.format(cpptrace::generate_trace())
+		);
+	}
+	else
+	{
+		return formatter.format(cpptrace::generate_trace());
+	}
 }
