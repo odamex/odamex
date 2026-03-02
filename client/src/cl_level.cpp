@@ -207,7 +207,7 @@ void G_InitNew (const char *mapname)
 
 	if (netdemo.isPlaying() && Freecam::prevmap != mapname)
 	{
-		Freecam::Reset();
+		Freecam::reset();
 		Freecam::setPrevMap(mapname);
 	}
 
@@ -730,7 +730,7 @@ void G_DoLoadLevel (int position)
 	// clientside only freecam, added after demo players are added in G_UnSnapshotLevel
 	if (netdemo.isPlaying())
 	{
-		Freecam::AddFreecamPlayer();
+		Freecam::addFreecamPlayer();
 	}
 
     P_DoDeferedScripts ();	// [RH] Do script actions that were triggered on another map.

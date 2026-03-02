@@ -31,13 +31,13 @@ angle_t Freecam::angle = 0;
 fixed_t Freecam::pitch = 0;
 std::string Freecam::prevmap = "";
 
-void Freecam::AddFreecamPlayer()
+void Freecam::addFreecamPlayer()
 {
 	player_t* cam = &idplayer(freecam_id);
 
-	if (Freecam::WipedOnLevelChange(cam))
+	if (Freecam::wipedOnLevelChange(cam))
 	{
-		Freecam::BuildCam(cam);
+		Freecam::buildCam(cam);
 	}
 
 	if (cam->id != freecam_id && players.size() < MAXPLAYERS)  // initial add
@@ -45,11 +45,11 @@ void Freecam::AddFreecamPlayer()
 		cam = &players.emplace_back();
 		cam->id = freecam_id;
 
-		Freecam::BuildCam(cam);
+		Freecam::buildCam(cam);
 	}
 }
 
-void Freecam::BuildCam(player_t* p_cam)
+void Freecam::buildCam(player_t* p_cam)
 {
 	AActor* mobj = new AActor(x, y, z, MT_PLAYER);
 	mobj->player = p_cam;
@@ -72,7 +72,7 @@ void Freecam::BuildCam(player_t* p_cam)
 	p_cam->isNetdemoFreecam = true;
 }
 
-void Freecam::SetStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle)
+void Freecam::setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle)
 {
 	Freecam::x = x;
 	Freecam::y = y;
@@ -85,7 +85,7 @@ void Freecam::setPrevMap(std::string m)
 	Freecam::prevmap = m;
 }
 
-void Freecam::SavePosition()
+void Freecam::savePosition()
 {
 	player_t* cam = &idplayer(freecam_id);
 
@@ -99,17 +99,17 @@ void Freecam::SavePosition()
 	}
 }
 
-bool Freecam::NeedPosition() 
+bool Freecam::needPosition() 
 {
 	return (Freecam::x == 0 && Freecam::y == 0);
 }
 
-bool Freecam::WipedOnLevelChange(player_t* cam)
+bool Freecam::wipedOnLevelChange(player_t* cam)
 {
 	return (cam->id == freecam_id && cam->isNetdemoFreecam && !cam->mo && !cam->camera);
 }
 
-void Freecam::Reset()
+void Freecam::reset()
 {
 	x = 0;
 	y = 0;

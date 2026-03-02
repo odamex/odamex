@@ -33,12 +33,12 @@ public:
 	Freecam() = delete; // static / no constructor
 	static const byte freecam_id = 255;
 	static std::string prevmap;
-	static void AddFreecamPlayer();
-	static void BuildCam(player_t* p_cam);
-	static void SavePosition();
-	static void Reset();
-	static void SetStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
-	static bool NeedPosition();
+	static void addFreecamPlayer();
+	static void buildCam(player_t* p_cam);
+	static void savePosition();
+	static void reset();
+	static void setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
+	static bool needPosition();
 	static void setPrevMap(std::string m);
 
 private:
@@ -47,5 +47,5 @@ private:
 	static fixed_t z;
 	static angle_t angle;
 	static fixed_t pitch;
-	static bool WipedOnLevelChange(player_t* cam);
+	static bool wipedOnLevelChange(player_t* cam);
 };

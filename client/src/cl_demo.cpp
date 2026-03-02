@@ -714,7 +714,7 @@ bool NetDemo::stopPlaying()
     gameaction = ga_fullconsole;
     gamestate = GS_FULLCONSOLE;
 
-	Freecam::Reset();
+	Freecam::reset();
 
 	return true;
 }
@@ -1524,7 +1524,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	byte cid = consoleplayer_id;
 	byte did = displayplayer_id;
 
-	Freecam::SavePosition();
+	Freecam::savePosition();
 
 	P_ClearAllNetIds();
 
