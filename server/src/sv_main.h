@@ -135,8 +135,7 @@ void SV_ParseCommands(player_t &player);
 void SV_HandleReliableRetransmissions();
 void SV_UpdateFrags (const player_t &player);
 void SV_RemoveCorpses (void);
-#define SV_DropClient(who) SV_DropClient2(who, __FILE__, __LINE__)
-void SV_DropClient2(player_t& who, const char* file, const int line);
+void SV_DropClient(player_t& who);
 void SV_PlayerTriedToCheat(player_t &player);
 void SV_ActorTarget(const AActor *actor);
 void SV_ActorTracer(const AActor *actor);
