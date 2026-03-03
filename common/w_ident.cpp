@@ -65,10 +65,34 @@ struct identData_t
 #define NERVE_PREFIX "No Rest for the Living"
 #define MASTERLV_PREFIX "Master Levels"
 #define CHEX3_PREFIX "Chex Quest 3"
+#define HERETIC_PREFIX "Heretic"
+#define HERETICSW_PREFIX "Heretic Shareware"
 
 #define PWAD_NO_WEIGHT 0
 
 static constexpr identData_t identdata[] = {
+    // ------------------------------------------------------------------------
+    // HERETIC.WAD / HERETIC1.WAD (filename fallback; hashes TBD)
+    // ------------------------------------------------------------------------
+    {
+        HERETIC_PREFIX " (Unknown)",         // idName
+        "HERETIC.WAD",                      // filename
+        "",                                 // crc32Sum
+        "",                                 // md5Sum
+        HERETIC_PREFIX " (Unknown)",        // groupName
+        IDENT_IWAD,                          // flags
+        500,                                 // weight
+    },
+    {
+        HERETICSW_PREFIX " (Unknown)",      // idName
+        "HERETIC1.WAD",                     // filename
+        "",                                 // crc32Sum
+        "",                                 // md5Sum
+        HERETICSW_PREFIX " (Unknown)",      // groupName
+        IDENT_IWAD,                          // flags
+        510,                                 // weight
+    },
+
     // ------------------------------------------------------------------------
     // DOOM2.WAD
     // ------------------------------------------------------------------------
@@ -1313,6 +1337,16 @@ public:
 				return "FREEDOOM UNKNOWN";
 		}
 
+		// Check for Heretic variants.
+		if (lumpsfound[5])
+		{
+			if (lumpsfound[8])
+				return OStringToUpper(OString(HERETIC_PREFIX " Shadow Unknown"));
+			if (lumpsfound[1])
+				return OStringToUpper(OString(HERETIC_PREFIX " Unknown"));
+			return OStringToUpper(OString(HERETICSW_PREFIX " Unknown"));
+		}
+
 		// Check for Doom II: Hell on Earth or TNT / Plutonia
 		if (lumpsfound[3])
 		{
@@ -1501,6 +1535,22 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "Chex Quest 3";
+	}
+	else if (idname.find(OStringToUpper(OString(HERETICSW_PREFIX))) == 0)
+	{
+		gamemode = shareware_heretic;
+		gamemission = none;
+		gameinfo.flags = GI_SHAREWARE | GI_MENUHACK_RETAIL;
+		gameinfo.maxSwitch = 2;
+		gameinfo.titleString = "Heretic Shareware";
+	}
+	else if (idname.find(OStringToUpper(OString(HERETIC_PREFIX))) == 0)
+	{
+		gamemode = registered_heretic;
+		gamemission = none;
+		gameinfo.flags = GI_MENUHACK_RETAIL;
+		gameinfo.maxSwitch = 2;
+		gameinfo.titleString = "Heretic";
 	}
 	else if (idname.find("CHEX QUEST") == 0)
 	{
