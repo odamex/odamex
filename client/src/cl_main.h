@@ -55,7 +55,7 @@ enum netQuitReason_e
 	NQ_DISCONNECT,      // Generic message for "typical" forced disconnects initiated by the client.
 	NQ_ABORT,           // Connection attempt was aborted
 	NQ_PROTO,           // Encountered something unexpected in the protocol
-	NQ_SERVER_DROP,     // Server dropped us on the floor, so just drop our side of the connection.
+	NQ_SERVER_DROP,     // Server dropped us on the floor, so just ack and drop our side of the connection.
 };
 
 void CL_QuitNetGame(const netQuitReason_e reason);

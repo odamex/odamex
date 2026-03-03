@@ -64,12 +64,12 @@ class OdaMessenger
 		/// Returns true if data was available and has been moved into the given raw buffer, false otherwise.
 		bool NextReceivedPacket(buf_t& io_rawBuf);
 
-        /// Optional function to handle whatever Acknowledgements sit at the front of the given buffer.
-        /// You only need to call this function if you don't want to handle the acks yourself, which there are
-        /// certainly cases where you'll likely want to do that.  If there are Acks at the front of the
-        /// buffer, they will be consumed and the buffer will be left in a state where the buffer is either
-        /// empty or its next message is the first non-ack message in the buffer.
-        void HandleAcks(buf_t& io_rawBuf);
+		/// Optional function to handle whatever Acknowledgements sit at the front of the given buffer.
+		/// You only need to call this function if you don't want to handle the acks yourself, which there are
+		/// certainly cases where you'll likely want to do that.  If there are Acks at the front of the
+		/// buffer, they will be consumed and the buffer will be left in a state where the buffer is either
+		/// empty or its next message is the first non-ack message in the buffer.
+		void HandleAcks(buf_t& io_rawBuf);
 
 		//  -------------- Sending functions --------------
 

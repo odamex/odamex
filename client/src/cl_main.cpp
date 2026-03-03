@@ -365,7 +365,7 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 {
 	if(connected)
 	{
-        CL_CompleteDisconnect(reason);
+		CL_CompleteDisconnect(reason);
 
 		sv_gametype = GM_COOP;
 		ClientReplay::getInstance().reset();
@@ -2122,11 +2122,11 @@ void CL_ParseCommands()
 		const size_t          byteStart = ::net_message.BytesRead();
 		const ParseResultType result    = CL_ParseCommand();
 
-        const parseError_e processResult = result.code == PERR_OK ?
-            CL_ProcessCommand(result) :
-            result.code;
+		const parseError_e processResult = result.code == PERR_OK ?
+			CL_ProcessCommand(result) :
+			result.code;
 
-        if (processResult != PERR_OK or ::net_message.overflowed)
+		if (processResult != PERR_OK or ::net_message.overflowed)
 		{
 			const Protos& protos = CL_GetTicProtos();
 

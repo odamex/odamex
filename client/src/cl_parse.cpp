@@ -803,11 +803,11 @@ static void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 	if (players.empty() || !validplayer(player))
 		return;
 
-    if (player.id == consoleplayer().id)
-    {
-        connected = false;
-        return;
-    }
+	if (player.id == consoleplayer().id)
+	{
+		connected = false;
+		return;
+	}
 
 	if (player.mo)
 	{
@@ -3091,34 +3091,34 @@ const Protos& CL_GetTicProtos()
  */
 ParseResultType CL_ParseCommand()
 {
-    ParseResultType result;
+	ParseResultType result;
 
 	// What type of message we have.
 	result.cmd = MSG_ReadByte();
 
-    if (result.cmd == msg_ack)
-    {
-        // Special case: the ack handling happens here, not in ProcessCommand.
-        // The reason for this is that we don't want to leave this function without
-        // having advanced the underlying packet read buffer to the next encoded
-        // message, and the data payload that we report back from this function is
-        // fundamentally a protobuf message, which acks are not, so we don't have a
-        // proper way of defering ack handling to ProcessCommand.  It's just a lot
-        // easier and less complication overall to say that acks get special handling,
-        // especially as something that has to operate as part of the protocol itself.
-        const int sequence = MSG_ReadLong();
-        messenger.Acknowledge(sequence);
-        result.code = PERR_OK;
-        return result;
-    }
+	if (result.cmd == msg_ack)
+	{
+		// Special case: the ack handling happens here, not in ProcessCommand.
+		// The reason for this is that we don't want to leave this function without
+		// having advanced the underlying packet read buffer to the next encoded
+		// message, and the data payload that we report back from this function is
+		// fundamentally a protobuf message, which acks are not, so we don't have a
+		// proper way of defering ack handling to ProcessCommand.  It's just a lot
+		// easier and less complication overall to say that acks get special handling,
+		// especially as something that has to operate as part of the protocol itself.
+		const int sequence = MSG_ReadLong();
+		messenger.Acknowledge(sequence);
+		result.code = PERR_OK;
+		return result;
+	}
 
 	// Turn the message into a protobuf.
 	google::protobuf::Message* msg = nullptr;
 	result.code = SVC_ParseMessage(msg, result.cmd);
 	result.msg.reset(msg);                      // This does the right thing even if nullptr.
 
-    // Because the result type contains a unique_ptr, which is uncopyable,
-    // we can be sure that copy elision happens here.
+	// Because the result type contains a unique_ptr, which is uncopyable,
+	// we can be sure that copy elision happens here.
 	return result;
 }
 
@@ -3130,14 +3130,14 @@ ParseResultType CL_ParseCommand()
 parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 {
 	// Run the proper message function.
-    switch (parsedCommand.cmd)
+	switch (parsedCommand.cmd)
 	{
-        // Acknowledgements are handled specially at parse time, so if we get here,
-        // we know all's good... We also intentionally DON'T add this to the Protos
-        // history vector because we don't want to clutter it up when reviewing
-        // netdemos.
-        case msg_ack:
-            return PERR_OK;
+		// Acknowledgements are handled specially at parse time, so if we get here,
+		// we know all's good... We also intentionally DON'T add this to the Protos
+		// history vector because we don't want to clutter it up when reviewing
+		// netdemos.
+		case msg_ack:
+			return PERR_OK;
 
 		/* clang-format off */
 		SV_MSG(svc_noop, CL_Noop, odaproto::svc::Noop);
