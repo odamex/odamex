@@ -614,8 +614,8 @@ size_t P_NumPlayersInGame();
 size_t P_NumReadyPlayersInGame();
 size_t P_NumPlayersOnTeam(team_t team);
 
-inline byte consoleplayer_id; // player taking events and displaying
-inline byte displayplayer_id; // view being displayed
+inline byte consoleplayer_id = 1; // player taking events and displaying
+inline byte displayplayer_id = 1; // view being displayed
 
 //
 
