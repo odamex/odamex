@@ -499,11 +499,14 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 			{
 				if (messenger.Receive(::net_message) == MessageResultEnum::ACCEPT)
 				{
+					// If we see ACCEPT, it means we have acks that have to be handled immediately.
 					messenger.NextReceivedPacket(::net_message);
 					CL_HandleDisconnectCompletionPacket();
 				}
 			}
 
+			// Now make sure any received, enqueued reliable packets get serviced.
+			// This is where a svc_disconnectclient would get handled and thereby `connected` goes false.
 			while (messenger.NextReceivedPacket(::net_message))
 			{
 				CL_HandleDisconnectCompletionPacket();
@@ -519,7 +522,7 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 		}
 		else
 		{
-			// In a very high-latency situation, even though we've seen the Disconnect
+			// In a very high-latency situation, even though we've seen the svc_disconnectclient
 			// confirmation from the server, the pipe could still be backed up with
 			// retransmits and acks.  Just drain until we get several consecutive tics
 			// without new packets.

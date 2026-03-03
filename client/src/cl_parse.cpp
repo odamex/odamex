@@ -3118,7 +3118,7 @@ ParseResultType CL_ParseCommand()
 	result.msg.reset(msg);                      // This does the right thing even if nullptr.
 
 	// Because the result type contains a unique_ptr, which is uncopyable,
-	// we can be sure that copy elision happens here.
+	// we can be sure that either copy elision or a move happens here.
 	return result;
 }
 

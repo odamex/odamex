@@ -85,7 +85,6 @@ bool OdaMessenger::NextReceivedPacket(buf_t& io_rawBuf)
 
 void OdaMessenger::HandleAcks(buf_t& io_rawBuf)
 {
-	int messageId = -1;
 	while (io_rawBuf.BytesLeftToRead() > 0)
 	{
 		const int messageId = io_rawBuf.PeekByte();
@@ -97,7 +96,7 @@ void OdaMessenger::HandleAcks(buf_t& io_rawBuf)
 		}
 		else
 		{
-            break;
+			break;
 		}
 	}
 }
