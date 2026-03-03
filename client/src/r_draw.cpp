@@ -491,45 +491,39 @@ void R_FreeTranslationTables (void)
 void R_BuildClassicPlayerTranslation (int player, int color)
 {
 	const palette_t* pal = V_GetDefaultPalette();
-	int i;
 
-	
-	if (color == 0) // Green
-		for (i = 0x70; i < 0x80; i++)
+	const auto buildtranslation = [&](int base)
+	{
+		for (int i = 0x70; i < 0x80; i++)
 		{
-			translationtables[i + (player * 256)] = 0x70 + (i&0xf);
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
+			translationtables[i + (player * 256)] = base + (i & 0xf);
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i + (player * 256)]];
 		}
-	else if (color == 1) // Indigo
-		for (i = 0x70; i < 0x80; i++)
-		{
-			translationtables[i+(player * 256)] = 0x60 + (i&0xf);
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
-		}
-	else if (color == 2) // Brown
-		for (i = 0x70; i < 0x80; i++)
-		{
-			translationtables[i+(player * 256)] = 0x40 + (i&0xf);
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
-		}
-	else if (color == 3) // Red
-		for (i = 0x70; i < 0x80; i++)
-		{
-			translationtables[i+(player * 256)] = 0x20 + (i&0xf);
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
-		}
-	else if (color == 4) // Blue
-		for (i = 0x70; i < 0x80; i++)
-		{
-			translationtables[i + (player * 256)] = 0xC0 + (i & 0xf);
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
-		}
-	else if (color == 5) // Orange
-		for (i = 0x70; i < 0x80; i++)
-		{
-			translationtables[i + (player * 256)] = 0xD0 + (i & 0xf);
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
-		}
+	};
+
+	switch (color)
+	{
+		case COLOR_GREEN:
+			buildtranslation(0x70);
+			break;
+		case COLOR_INDIGO:
+			buildtranslation(0x60);
+			break;
+		case COLOR_BROWN:
+			buildtranslation(0x40);
+			break;
+		case COLOR_RED:
+			buildtranslation(0x20);
+			break;
+		case COLOR_BLUE:
+			buildtranslation(0xC0);
+			break;
+		case COLOR_ORANGE:
+			buildtranslation(0xD0);
+			break;
+		default:
+			break;
+	}
 }
 
 void R_RebuildPlayerTintTables(int playerid)
