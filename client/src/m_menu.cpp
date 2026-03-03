@@ -1543,7 +1543,7 @@ static void M_PlayerSetupDrawer()
 		// of the table of the current player color. (Which is different in single, demo, and team)
 		const argb_t player_color = CL_GetPlayerColor(consoleplayer());
 		R_BuildPlayerTranslation(menuplayer_id, player_color, colorpreset);
-		V_ColorMap = translationref_t(translationtables, 0);
+		V_ColorMap = translationref_t(translationtables, menuplayer_id);
 
 		// Draw box surrounding fire and player:
 		screen->DrawPatchClean(W_CachePatch("M_PBOX"), 320 - 88 - 32 + 36,
