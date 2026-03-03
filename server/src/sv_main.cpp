@@ -440,7 +440,7 @@ void SV_QuitCommand()
 
 BEGIN_COMMAND (rquit)
 {
-	SV_SendReconnectSignal();
+	SV_SendAndFlushReconnectSignal();
 
 	SV_QuitCommand();
 }
@@ -2383,14 +2383,14 @@ void SV_DropClient(player_t &who)
 }
 
 //
-// SV_SendAndFlushDisconnectSignal
+// SV_SendAndFlushClientsFinalSignal
 //
-void SV_SendAndFlushDisconnectSignal()
+static void SV_SendAndFlushClientsFinalSignal(const google::protobuf::Message& finalMessage)
 {
 	// Push out one last reliable message - the Disconnect command.
 	for (auto& player : players)
 	{
-		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_Disconnect("Shutting down\n"));
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), finalMessage);
 		SV_SendPacket(player);
 
 		// Move the client's messenger to the departing messenger manager.
@@ -2425,22 +2425,21 @@ void SV_SendAndFlushDisconnectSignal()
 }
 
 //
-// SV_SendReconnectSignal
-// All clients will reconnect. Called when the server changes a map
+// SV_SendAndFlushDisconnectSignal
+// All clients will leave and idle at the console.
 //
-void SV_SendReconnectSignal()
+void SV_SendAndFlushDisconnectSignal()
 {
-	// tell others clients about it
-	for (auto& player : players)
-	{
-		MSG_WriteSVC((player.client.messenger.ReliableBuf()), odaproto::svc::Reconnect());
-		SV_SendPacket(player);
+    SV_SendAndFlushClientsFinalSignal(SVC_Disconnect("Shutting down\n"));
+}
 
-		if (player.mo)
-			player.mo->Destroy();
-	}
-
-	players.clear();
+//
+// SV_SendAndFlushReconnectSignal
+// All clients will reconnect.
+//
+void SV_SendAndFlushReconnectSignal()
+{
+    SV_SendAndFlushClientsFinalSignal(odaproto::svc::Reconnect());
 }
 
 //

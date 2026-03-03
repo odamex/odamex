@@ -568,7 +568,7 @@ void CL_Reconnect(void)
 
 	if (connected)
 	{
-		CL_CompleteDisconnect(NQ_SILENT);
+		CL_CompleteDisconnect(NQ_SERVER_DROP);
 	}
 	else if (lastconaddr.ip[0])
 	{
