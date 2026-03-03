@@ -558,6 +558,12 @@ bool R_IsForcedColor(int player, bool forceteamcolor, bool forceenemycolor)
 	       player != 0 && (forceteamcolor && G_IsCoopGame()) || (forceenemycolor && G_IsFFAGame()));
 }
 
+CVAR_FUNC_IMPL(cl_customcolor)
+{
+	EXTERN_CVAR(cl_color)
+	cl_color.ForceSet(var.cstring());
+}
+
 // [RH] Create a player's translation table based on
 //		a given mid-range color.
 void R_BuildPlayerTranslation(int player, argb_t dest_color, int colorpreset)

@@ -1754,10 +1754,10 @@ static void SendNewColor(int red, int green, int blue)
 {
 	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
 
-	AddCommandString(fmt::sprintf("cl_color \"%02x %02x %02x\"", red, green, blue));
+	cl_color.ForceSet(fmt::format("{:02x} {:02x} {:02x}", red, green, blue).c_str());
 	if (colorpreset == COLOR_CUSTOM)
 	{
-		AddCommandString(fmt::sprintf("cl_customcolor \"%02x %02x %02x\"", red, green, blue));
+		cl_customcolor.ForceSet(fmt::format("{:02x} {:02x} {:02x}", red, green, blue).c_str());
 	}
 
 	// [SL] not connected to a server so we don't have to wait for the server
