@@ -500,7 +500,7 @@ void CL_CheckDisplayPlayer(void)
 	if (!P_CanSpy(consoleplayer(), displayplayer(), demoplayback || netdemo.isPlaying() || netdemo.isPaused()))
 		newid = consoleplayer_id;
 
-	if (displayplayer().spectator && !displayplayer().isNetdemoFreecam)
+	if (displayplayer().spectator && !displayplayer().isFreecam)
 		newid = consoleplayer_id;
 
 	if (newid)
@@ -772,7 +772,7 @@ BEGIN_COMMAND (players)
 	// Gather all ingame players
 	std::map<int, std::string> mplayers;
 	for (const auto& player : players) {
-		if (player.ingame() && !player.isNetdemoFreecam) {
+		if (player.ingame()) {
 			mplayers[player.id] = player.userinfo.netname;
 		}
 	}
@@ -1408,7 +1408,7 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 		}
 		else
 		{
-			if (!displayplayer().isNetdemoFreecam)
+			if (!displayplayer().isFreecam)
 			{
 				displayplayer_id = consoleplayer_id; // get out of spynext
 			}

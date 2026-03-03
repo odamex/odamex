@@ -557,7 +557,7 @@ void OInterpolation::interpolateView(player_t* player, fixed_t amount)
 	    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
 	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback)
 		||
-		displayplayer().isNetdemoFreecam;
+		displayplayer().isFreecam;
 
 	interpolateCamera(amount, use_localview, player->cheats & CF_CHASECAM);
 }

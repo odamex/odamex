@@ -137,8 +137,8 @@ public:
 	// [RH] who is this?
 	UserInfo	userinfo;
 
-	// is this the freecam player during netdemo playback
-	bool isNetdemoFreecam = false;
+	// is this the clientside-only freecam player?
+	bool isFreecam = false;
 
 	// FOV in degrees
 	float		fov;

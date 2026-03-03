@@ -1656,7 +1656,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 
 	// try to restore display player
 	player_t *disp = &idplayer(did);
-	if ((validplayer(*disp) && disp->ingame() && !disp->spectator) || disp->isNetdemoFreecam)
+	if ((validplayer(*disp) && disp->ingame() && !disp->spectator) || disp->isFreecam)
 		displayplayer_id = did;
 	else
 		displayplayer_id = cid;

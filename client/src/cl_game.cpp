@@ -69,6 +69,7 @@
 #include "g_musinfo.h"
 #include "g_spree.h"
 #include "g_multikill.h"
+#include "cl_freecam.h"
 
 #include <math.h> // for pow()
 
@@ -693,7 +694,7 @@ void G_AddViewPitch(int pitch)
 		pitch = -pitch;
 
 	if ((Actions[ACTION_MLOOK]) || (cl_mouselook && sv_freelook) ||
-	    consoleplayer().spectator || displayplayer().isNetdemoFreecam)
+	    consoleplayer().spectator || displayplayer().isFreecam)
 	{
 		localview.pitch += pitch << 16;
 		localview.setpitch = true;
@@ -702,7 +703,7 @@ void G_AddViewPitch(int pitch)
 
 bool G_ShouldIgnoreMouseInput()
 {
-	if ((consoleplayer().id != displayplayer().id && !displayplayer().isNetdemoFreecam) || 
+	if ((consoleplayer().id != displayplayer().id && !displayplayer().isFreecam) || 
 		consoleplayer().playerstate == PST_DEAD)
 		return true;
 
@@ -978,7 +979,7 @@ void G_Ticker (void)
 		}
 	}
 	// Rude - allow controling displayplayer if freecam
-	else if (netdemo.isPlaying() && displayplayer().isNetdemoFreecam)
+	else if (Freecam::isAllowed() && displayplayer().isFreecam)
 	{
 		memcpy(&displayplayer().cmd, &consoleplayer().netcmds[buf], sizeof(ticcmd_t));
 	}

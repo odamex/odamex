@@ -62,14 +62,14 @@ void Freecam::buildCam(player_t* p_cam)
 	// spec stuff
 	p_cam->cheats |= CF_FLY;
 	p_cam->mo->flags |= MF_NOCLIP;
-	p_cam->playerstate = PST_LIVE;
+	p_cam->playerstate = PST_SPECTATE;
 	p_cam->spectator = true;
 	p_cam->mo->oflags |= MFO_SPECTATOR;
 	p_cam->mo->flags &= ~MF_SOLID;
 	p_cam->mo->flags2 |= MF2_FLY;
 
 	// used throughout code base to allow moving, etc
-	p_cam->isNetdemoFreecam = true;
+	p_cam->isFreecam = true;
 }
 
 void Freecam::setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle)
@@ -89,7 +89,7 @@ void Freecam::savePosition()
 {
 	player_t* cam = &idplayer(freecam_id);
 
-	if (cam->id == freecam_id && cam->isNetdemoFreecam)
+	if (cam->id == freecam_id && cam->isFreecam)
 	{
 		x = cam->mo->x;
 		y = cam->mo->y;
@@ -106,7 +106,7 @@ bool Freecam::needPosition()
 
 bool Freecam::wipedOnLevelChange(player_t* cam)
 {
-	return (cam->id == freecam_id && cam->isNetdemoFreecam && !cam->mo && !cam->camera);
+	return (cam->id == freecam_id && cam->isFreecam && !cam->mo && !cam->camera);
 }
 
 void Freecam::reset()
@@ -116,4 +116,9 @@ void Freecam::reset()
 	z = 0;
 	angle = 0;
 	pitch = 0;
+}
+
+bool Freecam::isAllowed()
+{
+	return (netdemo.isPlaying());
 }

@@ -760,7 +760,7 @@ void R_SetupFrame (player_t *player)
 	    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
 	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback) 
 		||
-		displayplayer().isNetdemoFreecam;
+		displayplayer().isFreecam;
 
 	if (camera->player && camera->player->xviewshift && !paused)
 	{
@@ -831,7 +831,7 @@ void R_SetupFrame (player_t *player)
 	}
 
 	// dont let consoleplayer's localview interfere with the freecam
-	if ((use_localview && !::localview.skippitch) || displayplayer().isNetdemoFreecam)
+	if ((use_localview && !::localview.skippitch) || displayplayer().isFreecam)
 	{
 		R_ViewShear(clamp(camera->pitch - ::localview.pitch, -ANG(32), ANG(56)));
 	}

@@ -1578,7 +1578,7 @@ void DisplaySmallSpree(const SpreeRecord_t& record)
 
 void SpreeHud()
 {
-	if (!validplayer(displayplayer()) || !cl_showsprees || displayplayer().isNetdemoFreecam)
+	if (!validplayer(displayplayer()) || !cl_showsprees || displayplayer().isFreecam)
 		return;
 
 	static SpreeManager& manager = SpreeManager::getInstance();
@@ -1680,7 +1680,7 @@ void SpreeHud()
 
 void MultiKillHud()
 {
-	if (!validplayer(displayplayer()) || displayplayer().isNetdemoFreecam)
+	if (!validplayer(displayplayer()) || displayplayer().isFreecam)
 		return;
 
 	const player_t& p = displayplayer();
@@ -1734,7 +1734,7 @@ void LevelStateHUD()
 	switch (::levelstate.getState())
 	{
 	case LevelState::WARMUP: {
-		if (consoleplayer().spectator || displayplayer().isNetdemoFreecam)
+		if (consoleplayer().spectator || displayplayer().isFreecam)
 		{
 			break;
 		}
@@ -1956,7 +1956,7 @@ void SpectatorHUD()
 // [AM] HUD drawn with the Doom Status Bar.
 void DoomHUD()
 {
-	if (displayplayer().isNetdemoFreecam)
+	if (displayplayer().isFreecam)
 	{
 		return;
 	}

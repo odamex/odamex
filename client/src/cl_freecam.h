@@ -40,6 +40,7 @@ public:
 	static void setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
 	static bool needPosition();
 	static void setPrevMap(std::string m);
+	static bool isAllowed();
 
 private:
 	static fixed_t x;

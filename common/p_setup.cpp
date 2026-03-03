@@ -884,9 +884,9 @@ void P_LoadThings (int lump)
 		mt2.type = LESHORT(mt->type);
 
 		// clientside freecam start pos
-		if (netdemo.isPlaying() && Freecam::needPosition() && P_IsNetplaySpawn(mt2.type))
+		if (Freecam::isAllowed() && Freecam::needPosition() && P_IsNetplaySpawn(mt2.type))
 		{
-			Freecam::setStartPosition(mt2.x << FRACBITS, mt2.y << FRACBITS, ONFLOORZ, ANG45 * (mt2.angle / 45));
+			Freecam::setStartPosition(mt2.x << FRACBITS, mt2.y << FRACBITS, mt2.z << FRACBITS, ANG45 * (mt2.angle / 45));
 		}
 
 		P_SpawnMapThing (mt2, 0);

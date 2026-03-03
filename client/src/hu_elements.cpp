@@ -130,7 +130,7 @@ bool inTeamPlayer(const player_t& player, const byte team)
 // Returns true if a player is a spectator
 bool spectatingPlayer(const player_t& player)
 {
-	return (!player.ingame() || (player.spectator && !player.isNetdemoFreecam));
+	return (!player.ingame() || player.spectator) && !player.isFreecam;
 }
 
 // Returns a sorted player list.  Calculates at most once a gametic.
@@ -152,7 +152,7 @@ const PlayersView& sortedPlayers()
 
 	for (auto& player : players)
 	{
-		if (!player.ingame() || player.isNetdemoFreecam)
+		if (!player.ingame())
 			continue;
 
 		if (player.spectator)
@@ -292,7 +292,7 @@ std::string HelpText()
 		          ::levelstate.getJoinTimeLeft());
 	}
 
-	if (displayplayer().isNetdemoFreecam)
+	if (displayplayer().isFreecam)
 	{
 		return "Freecam";
 	}
@@ -1739,7 +1739,7 @@ void EATargets(int x, int y, const float scale,
 			break;
 		}
 
-		if (target.PlayPtr == &(consoleplayer()) && !displayplayer().isNetdemoFreecam)
+		if (target.PlayPtr == &(consoleplayer()) && !displayplayer().isFreecam)
 		{
 			// You're looking at yourself.
 			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin, "You",

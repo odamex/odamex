@@ -205,7 +205,7 @@ void G_InitNew (const char *mapname)
 		}
 	}
 
-	if (netdemo.isPlaying() && Freecam::prevmap != mapname)
+	if (Freecam::isAllowed() && Freecam::prevmap != mapname)
 	{
 		Freecam::reset();
 		Freecam::setPrevMap(mapname);
@@ -694,7 +694,7 @@ void G_DoLoadLevel (int position)
 		}
 	}
 
-	if (!displayplayer().isNetdemoFreecam)
+	if (!displayplayer().isFreecam)
 	{
 		// view the guy you are playing..
 		// unless level load is from a netdemo snapshot and display is freecam
@@ -728,7 +728,7 @@ void G_DoLoadLevel (int position)
 	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
 
 	// clientside only freecam, added after demo players are added in G_UnSnapshotLevel
-	if (netdemo.isPlaying())
+	if (Freecam::isAllowed())
 	{
 		Freecam::addFreecamPlayer();
 	}
