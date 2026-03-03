@@ -47,6 +47,8 @@
 #define LAUNCHER_CHALLENGE 777123 // csdl challenge
 #define VERSION 65                // GhostlyDeath -- this should remain static from now on
 
+#include <tuple>
+
 #include "fmt/format.h"
 
 #include "doomtype.h"
@@ -352,6 +354,16 @@ struct netadr_t
    byte             ip[4] = { 0, 0, 0, 0};
    unsigned short   port  = 0;
    unsigned short   pad   = 0;
+
+   auto Tie() const
+   {
+      return std::tie(ip[0], ip[1], ip[2], ip[3], port);
+   }
+
+   bool operator<(const netadr_t& other) const
+   {
+      return Tie() < other.Tie();
+   }
 };
 
 extern  netadr_t  net_from;  // address of who sent the packet

@@ -659,20 +659,7 @@ CVAR_FUNC_IMPL(net_maxthreads)
 // faster for iterating over smaller element counts than an unordered_map (a hash table), the latter
 // of which may require iterating over some number of completely unused buckets.
 
-struct NetAddrLessThan
-{
-    auto TieNetAddr(const netadr_t& addr) const
-    {
-        return std::tie(addr.ip[0], addr.ip[1], addr.ip[2], addr.ip[3], addr.port);
-    }
-
-    bool operator()(const netadr_t& lhs, const netadr_t& rhs) const
-    {
-        return TieNetAddr(lhs) < TieNetAddr(rhs);
-    }
-};
-
-static std::map<netadr_t, OdaMessenger, NetAddrLessThan> s_deadEndMessengers;
+static std::map<netadr_t, OdaMessenger> s_deadEndMessengers;
 
 static void SV_CheckDepartingMessengers()
 {
