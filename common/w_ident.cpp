@@ -72,25 +72,52 @@ struct identData_t
 
 static constexpr identData_t identdata[] = {
     // ------------------------------------------------------------------------
-    // HERETIC.WAD / HERETIC1.WAD (filename fallback; hashes TBD)
+    // HERETIC.WAD / HERETIC1.WAD
     // ------------------------------------------------------------------------
     {
-        HERETIC_PREFIX " (Unknown)",         // idName
-        "HERETIC.WAD",                      // filename
-        "",                                 // crc32Sum
-        "",                                 // md5Sum
-        HERETIC_PREFIX " (Unknown)",        // groupName
-        IDENT_IWAD,                          // flags
-        500,                                 // weight
+        HERETIC_PREFIX " Shadow of the Serpent Riders v1.3", // idName
+        "HERETIC.WAD",                                       // filename
+        "5B16049E",                                          // crc32Sum
+        "66D686B1ED6D35FF103F15DBD30E0341",                  // md5Sum
+        HERETIC_PREFIX " v1.3",                              // groupName
+        IDENT_IWAD,                                            // flags
+        500,                                                   // weight
     },
     {
-        HERETICSW_PREFIX " (Unknown)",      // idName
-        "HERETIC1.WAD",                     // filename
-        "",                                 // crc32Sum
-        "",                                 // md5Sum
-        HERETICSW_PREFIX " (Unknown)",      // groupName
-        IDENT_IWAD,                          // flags
-        510,                                 // weight
+        HERETIC_PREFIX " Registered v1.2",                   // idName
+        "HERETIC.WAD",                                       // filename
+        "54759180",                                          // crc32Sum
+        "1E4CB4EF075AD344DD63971637307E04",                  // md5Sum
+        HERETIC_PREFIX " v1.2",                              // groupName
+        IDENT_IWAD | IDENT_DEPRECATED,                         // flags
+        1500,                                                  // weight
+    },
+    {
+        HERETIC_PREFIX " Registered v1.0",                   // idName
+        "HERETIC.WAD",                                       // filename
+        "77482D1E",                                          // crc32Sum
+        "3117E399CDB4298EAA3941625F4B2923",                  // md5Sum
+        HERETIC_PREFIX " v1.0",                              // groupName
+        IDENT_IWAD | IDENT_DEPRECATED,                         // flags
+        1500,                                                  // weight
+    },
+    {
+        HERETICSW_PREFIX " v1.2",                            // idName
+        "HERETIC1.WAD",                                      // filename
+        "22D3F0CA",                                          // crc32Sum
+        "AE779722390EC32FA37B0D361F7D82F8",                  // md5Sum
+        HERETICSW_PREFIX " v1.2",                            // groupName
+        IDENT_IWAD,                                            // flags
+        510,                                                   // weight
+    },
+    {
+        HERETICSW_PREFIX " v1.0",                            // idName
+        "HERETIC1.WAD",                                      // filename
+        "884A3E45",                                          // crc32Sum
+        "023B52175D2F260C3BDC5528DF5D0A8C",                  // md5Sum
+        HERETICSW_PREFIX " v1.0",                            // groupName
+        IDENT_IWAD | IDENT_DEPRECATED,                         // flags
+        1510,                                                  // weight
     },
 
     // ------------------------------------------------------------------------
