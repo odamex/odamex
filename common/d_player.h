@@ -81,7 +81,10 @@ typedef enum
 	PST_DISCONNECT,
 
     // [BC] Entered the game
-	PST_ENTER
+	PST_ENTER,
+	
+	// this player is the freecam
+	PST_FREECAM
 
 } playerstate_t;
 
