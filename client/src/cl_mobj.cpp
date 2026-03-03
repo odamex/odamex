@@ -89,7 +89,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 		// NOTE(jsd): Copy the player setup menu's translation to the player_id's:
 		// [SL] don't screw with vanilla demo player colors
 		if (!demoplayback)
-			R_CopyTranslationRGB(0, player.id);
+			R_CopyTranslationRGB(menuplayer_id, player.id);
 	}
 
 //	if (player.deadspectator && player.mo)
