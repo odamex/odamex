@@ -60,7 +60,7 @@ enum netQuitReason_e
 
 void CL_QuitNetGame(const netQuitReason_e reason);
 void CL_CompleteDisconnect(netQuitReason_e reason);
-void CL_Reconnect();
+void CL_Reconnect(netQuitReason_e reason);
 void CL_InitNetwork (void);
 void CL_RequestConnectInfo(void);
 bool CL_PrepareConnect();

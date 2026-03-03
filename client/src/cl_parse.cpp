@@ -1824,7 +1824,7 @@ static void CL_PlaySound(const odaproto::svc::PlaySound* msg)
 
 static void CL_Reconnect(const odaproto::svc::Reconnect* msg)
 {
-	CL_Reconnect();
+	CL_Reconnect(NQ_SERVER_DROP);
 }
 
 static void CL_ExitLevel(const odaproto::svc::ExitLevel* msg)

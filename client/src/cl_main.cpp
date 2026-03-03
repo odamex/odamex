@@ -555,7 +555,7 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 	gameaction = ga_fullconsole;
 }
 
-void CL_Reconnect(void)
+void CL_Reconnect(netQuitReason_e reason)
 {
 	recv_full_update = false;
 
@@ -566,7 +566,7 @@ void CL_Reconnect(void)
 
 	if (connected)
 	{
-		CL_CompleteDisconnect(NQ_SERVER_DROP);
+		CL_CompleteDisconnect(reason);
 	}
 	else if (lastconaddr.ip[0])
 	{
@@ -872,7 +872,7 @@ END_COMMAND (disconnect)
 
 BEGIN_COMMAND (reconnect)
 {
-	CL_Reconnect();
+	CL_Reconnect(NQ_SILENT);
 }
 END_COMMAND (reconnect)
 
