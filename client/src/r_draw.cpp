@@ -217,7 +217,11 @@ algorithm that uses RGB tables.
 
 argb_t translationRGB[MAXPLAYERS+1][16];
 byte *Ranges;
-static byte *translationtablesmem = NULL;
+struct alignas(256) TranslationTables {
+	// 1 player setup menu + 255 players + 3 classic translations + 21 font translations
+    byte data[256 * (1 + MAXPLAYERS + 3 + 21)];
+};
+static std::unique_ptr<TranslationTables> translationtablesmem = nullptr;
 
 static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end_color)
 {
@@ -415,11 +419,12 @@ void R_InitTranslationTables()
 		::friendtable[i] = V_BestColor(V_GetDefaultPalette()->basecolors, mul);
 	}
 
-	translationtablesmem = new byte[256*(MAXPLAYERS+3+22)+255]; // denis - fixme - magic numbers?
+	translationtablesmem = std::make_unique<TranslationTables>();
 
 	// [Toke - fix13]
 	// denis - cleaned this up somewhat
-	translationtables = (byte *)(((ptrdiff_t)translationtablesmem + 255) & ~255);
+	// [EB] alignment now ensured by alignas on the type
+	translationtables = translationtablesmem->data;
 
 	// [RH] Each player now gets their own translation table
 	//		(soon to be palettes). These are set up during
@@ -483,8 +488,7 @@ void R_InitTranslationTables()
 
 void R_FreeTranslationTables (void)
 {
-    delete[] translationtablesmem;
-    translationtablesmem = NULL;
+	translationtablesmem.reset();
 }
 
 // [Nes] Vanilla player translation table.
