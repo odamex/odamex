@@ -1583,6 +1583,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	{
 		gamemode = shareware_heretic;
 		gamemission = none;
+		gameinfo.gametype = GAMETYPE_HERETIC;
 		gameinfo.flags = GI_SHAREWARE | GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "Heretic Shareware";
@@ -1591,6 +1592,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	{
 		gamemode = registered_heretic;
 		gamemission = none;
+		gameinfo.gametype = GAMETYPE_HERETIC;
 		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "Heretic";

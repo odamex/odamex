@@ -52,9 +52,16 @@ typedef struct
 	OLumpName br;
 } gameborder_t;
 
+typedef enum
+{
+	GAMETYPE_DOOM,
+	GAMETYPE_HERETIC,
+} gametype_t;
+
 typedef struct gameinfo_s
 {
 	int flags;
+	gametype_t gametype;
 	OLumpName titlePage;
 	OLumpName creditPages[2];
 	OLumpName titleMusic;
@@ -94,6 +101,7 @@ typedef struct gameinfo_s
 
 	gameinfo_s()
 		: flags(0)
+		, gametype(GAMETYPE_DOOM)
 		, titlePage("")
 		, creditPages()
 		, titleMusic("")
