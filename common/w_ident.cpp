@@ -1515,6 +1515,17 @@ const fileIdentifier_t* W_GameInfo(const OMD5Hash& md5)
 	return ::identtab.lookupByMd5Sum(md5);
 }
 
+static void W_ApplyHereticTitleBootPresentationDefaults()
+{
+	// NOTE: This is a temporary bootstrap until Heretic MAPINFO parsing is wired.
+	// Keep this in sync with wad/lumps/_herenfo.lmp for these fields.
+	gameinfo.titlePage = "TITLE";
+	gameinfo.creditPages[0] = "CREDIT";
+	gameinfo.titleMusic = "MUS_TITL";
+	gameinfo.titleTime = 8;
+	gameinfo.pageTime = 5;
+}
+
 //
 // W_ConfigureGameInfo
 //
@@ -1587,6 +1598,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_SHAREWARE | GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "Heretic Shareware";
+		W_ApplyHereticTitleBootPresentationDefaults();
 	}
 	else if (idname.find(OStringToUpper(OString(HERETIC_PREFIX))) == 0)
 	{
@@ -1596,6 +1608,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "Heretic";
+		W_ApplyHereticTitleBootPresentationDefaults();
 	}
 	else if (idname.find("CHEX QUEST") == 0)
 	{
