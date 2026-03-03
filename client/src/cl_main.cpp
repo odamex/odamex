@@ -520,33 +520,31 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 		{
 			PrintFmt(PRINT_WARNING, "Server did not acknowledge the disconnection - continuing anyway - expecting (and ignoring) challenge errors...\n");
 		}
-		else
+	}
+
+	// In a very high-latency situation, even though we've seen the svc_disconnectclient
+	// confirmation from the server, the pipe could still be backed up with
+	// retransmits and acks.  Just drain until we get several consecutive tics
+	// without new packets.
+	int         consecutiveTicsWithoutPackets = 0;
+	const int   desiredTicsWithoutPackets     = 5;  // total guess..
+
+	const dtime_t lastTimeout = I_GetTime() + I_ConvertTimeFromMs(2000);
+	while (consecutiveTicsWithoutPackets < desiredTicsWithoutPackets and I_GetTime() < lastTimeout)
+	{
+		I_Sleep(oneTicInNanosec);
+		bool packetWasSeen = false;
+		while (NET_GetPacket())
 		{
-			// In a very high-latency situation, even though we've seen the svc_disconnectclient
-			// confirmation from the server, the pipe could still be backed up with
-			// retransmits and acks.  Just drain until we get several consecutive tics
-			// without new packets.
-			int         consecutiveTicsWithoutPackets = 0;
-			const int   desiredTicsWithoutPackets     = 5;  // total guess..
-
-			const dtime_t lastTimeout = I_GetTime() + I_ConvertTimeFromMs(2000);
-			while (consecutiveTicsWithoutPackets < desiredTicsWithoutPackets and I_GetTime() < lastTimeout)
-			{
-				I_Sleep(oneTicInNanosec);
-				bool packetWasSeen = false;
-				while (NET_GetPacket())
-				{
-					packetWasSeen = true;
-				}
-
-				consecutiveTicsWithoutPackets = packetWasSeen ? 0 : consecutiveTicsWithoutPackets + 1;
-			}
-
-			if (consecutiveTicsWithoutPackets < desiredTicsWithoutPackets)
-			{
-				PrintFmt(PRINT_WARNING, "Still too many packets inbound - continuing anyway - expecting (and ignoring) challenge errors...\n");
-			}
+			packetWasSeen = true;
 		}
+
+		consecutiveTicsWithoutPackets = packetWasSeen ? 0 : consecutiveTicsWithoutPackets + 1;
+	}
+
+	if (consecutiveTicsWithoutPackets < desiredTicsWithoutPackets)
+	{
+		PrintFmt(PRINT_WARNING, "Still too many packets inbound - continuing anyway - expecting (and ignoring) challenge errors...\n");
 	}
 
 	connected = false;
