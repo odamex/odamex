@@ -65,10 +65,61 @@ struct identData_t
 #define NERVE_PREFIX "No Rest for the Living"
 #define MASTERLV_PREFIX "Master Levels"
 #define CHEX3_PREFIX "Chex Quest 3"
+#define HERETIC_PREFIX "Heretic"
+#define HERETICSW_PREFIX "Heretic Shareware"
 
 #define PWAD_NO_WEIGHT 0
 
 static constexpr identData_t identdata[] = {
+    // ------------------------------------------------------------------------
+    // HERETIC.WAD / HERETIC1.WAD
+    // ------------------------------------------------------------------------
+    {
+        HERETIC_PREFIX " Shadow of the Serpent Riders v1.3", // idName
+        "HERETIC.WAD",                                       // filename
+        "5B16049E",                                          // crc32Sum
+        "66D686B1ED6D35FF103F15DBD30E0341",                  // md5Sum
+        HERETIC_PREFIX " v1.3",                              // groupName
+        IDENT_IWAD,                                            // flags
+        500,                                                   // weight
+    },
+    {
+        HERETIC_PREFIX " Registered v1.2",                   // idName
+        "HERETIC.WAD",                                       // filename
+        "54759180",                                          // crc32Sum
+        "1E4CB4EF075AD344DD63971637307E04",                  // md5Sum
+        HERETIC_PREFIX " v1.2",                              // groupName
+        IDENT_IWAD | IDENT_DEPRECATED,                         // flags
+        1500,                                                  // weight
+    },
+    {
+        HERETIC_PREFIX " Registered v1.0",                   // idName
+        "HERETIC.WAD",                                       // filename
+        "77482D1E",                                          // crc32Sum
+        "3117E399CDB4298EAA3941625F4B2923",                  // md5Sum
+        HERETIC_PREFIX " v1.0",                              // groupName
+        IDENT_IWAD | IDENT_DEPRECATED,                         // flags
+        1500,                                                  // weight
+    },
+    {
+        HERETICSW_PREFIX " v1.2",                            // idName
+        "HERETIC1.WAD",                                      // filename
+        "22D3F0CA",                                          // crc32Sum
+        "AE779722390EC32FA37B0D361F7D82F8",                  // md5Sum
+        HERETICSW_PREFIX " v1.2",                            // groupName
+        IDENT_IWAD,                                            // flags
+        510,                                                   // weight
+    },
+    {
+        HERETICSW_PREFIX " v1.0",                            // idName
+        "HERETIC1.WAD",                                      // filename
+        "884A3E45",                                          // crc32Sum
+        "023B52175D2F260C3BDC5528DF5D0A8C",                  // md5Sum
+        HERETICSW_PREFIX " v1.0",                            // groupName
+        IDENT_IWAD | IDENT_DEPRECATED,                         // flags
+        1510,                                                  // weight
+    },
+
     // ------------------------------------------------------------------------
     // DOOM2.WAD
     // ------------------------------------------------------------------------
@@ -1275,20 +1326,36 @@ public:
 		// Not a registered file.
 		// Try to identify if it's compatible with known IWADs.
 
-		static constexpr int NUM_CHECKLUMPS = 12;
+		enum CheckLumpIndex
+		{
+			LUMP_E1M1 = 0,
+			LUMP_E2M1,
+			LUMP_E4M1,
+			LUMP_MAP01,
+			LUMP_ANIMDEFS,
+			LUMP_FINAL2,
+			LUMP_REDTNT2,
+			LUMP_CAMO1,
+			LUMP_EXTENDED,
+			LUMP_DMENUPIC,
+			LUMP_FREEDOOM,
+			LUMP_HACX_R,
+			NUM_CHECKLUMPS
+		};
+
 		static constexpr char checklumps[NUM_CHECKLUMPS][8] = {
-			{ 'E','1','M','1' },					// 0
-			{ 'E','2','M','1' },					// 1
-			{ 'E','4','M','1' },					// 2
-			{ 'M','A','P','0','1' },				// 3
-			{ 'A','N','I','M','D','E','F','S' },	// 4
-			{ 'F','I','N','A','L','2' },			// 5
-			{ 'R','E','D','T','N','T','2' },		// 6
-			{ 'C','A','M','O','1' },				// 7
-			{ 'E','X','T','E','N','D','E','D' },	// 8
-			{ 'D','M','E','N','U','P','I','C' },	// 9
-			{ 'F','R','E','E','D','O','O','M' },	// 10
-			{ 'H','A','C','X','-','R'}				// 11
+			{ 'E','1','M','1' },
+			{ 'E','2','M','1' },
+			{ 'E','4','M','1' },
+			{ 'M','A','P','0','1' },
+			{ 'A','N','I','M','D','E','F','S' },
+			{ 'F','I','N','A','L','2' },
+			{ 'R','E','D','T','N','T','2' },
+			{ 'C','A','M','O','1' },
+			{ 'E','X','T','E','N','D','E','D' },
+			{ 'D','M','E','N','U','P','I','C' },
+			{ 'F','R','E','E','D','O','O','M' },
+			{ 'H','A','C','X','-','R'}
 		};
 
 		bool lumpsfound[NUM_CHECKLUMPS] = { 0 };
@@ -1299,39 +1366,49 @@ public:
 				lumpsfound[i] = true;
 
 		// [ML] Check for HACX 1.2
-		if (lumpsfound[11])
+		if (lumpsfound[LUMP_HACX_R])
 		{
 			return "HACX UNKNOWN";
 		}
 
 		// [SL] Check for FreeDoom / Freedoom: Phase 1
-		if (lumpsfound[10])
+		if (lumpsfound[LUMP_FREEDOOM])
 		{
-			if (lumpsfound[0])
+			if (lumpsfound[LUMP_E1M1])
 				return OStringToUpper(OString(FREEDOOM1_PREFIX " Unknown"));
 			else
 				return "FREEDOOM UNKNOWN";
 		}
 
-		// Check for Doom II: Hell on Earth or TNT / Plutonia
-		if (lumpsfound[3])
+		// Check for Heretic variants.
+		if (lumpsfound[LUMP_FINAL2])
 		{
-			if (lumpsfound[6])
+			if (lumpsfound[LUMP_EXTENDED])
+				return OStringToUpper(OString(HERETIC_PREFIX " Shadow Unknown"));
+			if (lumpsfound[LUMP_E2M1])
+				return OStringToUpper(OString(HERETIC_PREFIX " Unknown"));
+			return OStringToUpper(OString(HERETICSW_PREFIX " Unknown"));
+		}
+
+		// Check for Doom II: Hell on Earth or TNT / Plutonia
+		if (lumpsfound[LUMP_MAP01])
+		{
+			if (lumpsfound[LUMP_REDTNT2])
 				return OStringToUpper(OString(TNT_PREFIX " Unknown"));
-			if (lumpsfound[7])
+			if (lumpsfound[LUMP_CAMO1])
 				return OStringToUpper(OString(PLUTONIA_PREFIX " Unknown"));
-			if (lumpsfound[9])
+			if (lumpsfound[LUMP_DMENUPIC])
 				return OStringToUpper(OString(DOOM2_PREFIX " BFG Edition Unknown"));
 			else
 				return OStringToUpper(OString(DOOM2_PREFIX " Unknown"));
 		}
 
 		// Check for Registered Doom / Ultimate Doom / Chex Quest / Shareware Doom
-		if (lumpsfound[0])
+		if (lumpsfound[LUMP_E1M1])
 		{
-			if (lumpsfound[1])
+			if (lumpsfound[LUMP_E2M1])
 			{
-				if (lumpsfound[2])
+				if (lumpsfound[LUMP_E4M1])
 				{
 					// [ML] 1/7/10: HACK - There's no unique lumps in the chex quest
 					// iwad.  It's ultimate doom with their stuff replacing most things.
@@ -1341,7 +1418,7 @@ public:
 					}
 					else
 					{
-						if (lumpsfound[9])
+						if (lumpsfound[LUMP_DMENUPIC])
 							return UDOOM_PREFIX " BFG UNKNOWN";
 						else
 							return UDOOM_PREFIX " UNKNOWN";
@@ -1501,6 +1578,22 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "Chex Quest 3";
+	}
+	else if (idname.find(OStringToUpper(OString(HERETICSW_PREFIX))) == 0)
+	{
+		gamemode = shareware_heretic;
+		gamemission = none;
+		gameinfo.flags = GI_SHAREWARE | GI_MENUHACK_RETAIL;
+		gameinfo.maxSwitch = 2;
+		gameinfo.titleString = "Heretic Shareware";
+	}
+	else if (idname.find(OStringToUpper(OString(HERETIC_PREFIX))) == 0)
+	{
+		gamemode = registered_heretic;
+		gamemission = none;
+		gameinfo.flags = GI_MENUHACK_RETAIL;
+		gameinfo.maxSwitch = 2;
+		gameinfo.titleString = "Heretic";
 	}
 	else if (idname.find("CHEX QUEST") == 0)
 	{
