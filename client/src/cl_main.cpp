@@ -515,7 +515,7 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 
 		if (connected)
 		{
-			PrintFmt(PRINT_WARNING, "Server did not acknowledge the disconnection\n");
+			PrintFmt(PRINT_WARNING, "Server did not acknowledge the disconnection - continuing anyway - expecting (and ignoring) challenge errors...\n");
 		}
 		else
 		{
