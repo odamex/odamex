@@ -657,6 +657,10 @@ CVAR_FUNC_IMPL(net_maxthreads)
 
 namespace
 {
+	/// This class takes ownership of messengers that belonged to clients that are disconnecting
+	/// and makes sure that their Acknowledgements and Retransmits are serviced to the point
+	/// where the server can be certain that the clients receive their final reliable messages.
+	/// This is a key part of having an orderly disconnect even under high loads.
 	class DepartingMessengerManager
 	{
 		public:
