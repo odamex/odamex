@@ -2390,6 +2390,7 @@ static void SV_SendAndFlushClientsFinalSignal(const google::protobuf::Message& f
 	// Push out one last reliable message - the Disconnect command.
 	for (auto& player : players)
 	{
+		player.client.messenger.Clear();
 		MSG_WriteSVC(player.client.messenger.ReliableBuf(), finalMessage);
 		SV_SendPacket(player);
 
