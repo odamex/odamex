@@ -52,9 +52,16 @@ typedef struct
 	OLumpName br;
 } gameborder_t;
 
+typedef enum
+{
+	GAMEINFO_GAME_DOOM,
+	GAMEINFO_GAME_HERETIC,
+} gameinfo_game_t;
+
 typedef struct gameinfo_s
 {
 	int flags;
+	gameinfo_game_t gameType;
 	OLumpName titlePage;
 	OLumpName creditPages[2];
 	OLumpName titleMusic;
@@ -94,6 +101,7 @@ typedef struct gameinfo_s
 
 	gameinfo_s()
 		: flags(0)
+		, gameType(GAMEINFO_GAME_DOOM)
 		, titlePage("")
 		, creditPages()
 		, titleMusic("")
@@ -123,5 +131,10 @@ typedef struct gameinfo_s
 	{}
 
 } gameinfo_t;
+
+inline bool GI_IsHereticGame()
+{
+	return gameinfo.gameType == GAMEINFO_GAME_HERETIC;
+}
 
 inline gameinfo_t gameinfo;
