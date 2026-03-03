@@ -450,7 +450,7 @@ void P_CalcHeight (player_t& player)
 		bob = 0;
 
 	// move viewheight
-	if (player.playerstate == PST_LIVE)
+	if (player.playerstate == PST_LIVE || player.playerstate == PST_SPECTATE)
 	{
 		player.viewheight += player.deltaviewheight;
 

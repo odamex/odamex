@@ -56,19 +56,17 @@ void Freecam::buildCam(player_t* p_cam)
 	mobj->angle = angle;
 	mobj->pitch = pitch;
 	p_cam->camera = p_cam->mo = mobj->ptr();
-	p_cam->viewz = z;
 	p_cam->prevviewz = 1;
 
 	// spec stuff
 	p_cam->cheats |= CF_FLY;
 	p_cam->mo->flags |= MF_NOCLIP;
-	p_cam->playerstate = PST_SPECTATE;
+	p_cam->playerstate = PST_SPECTATE;  // player.ingame() is false for freecam
 	p_cam->spectator = true;
 	p_cam->mo->oflags |= MFO_SPECTATOR;
 	p_cam->mo->flags &= ~MF_SOLID;
 	p_cam->mo->flags2 |= MF2_FLY;
 
-	// used throughout code base to allow moving, etc
 	p_cam->isFreecam = true;
 }
 
