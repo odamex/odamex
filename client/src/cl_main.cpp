@@ -460,15 +460,23 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 {
     const dtime_t oneTicInNanosec = static_cast<dtime_t>(1000000000.0 / static_cast<double>(TICRATE));
 
-	if (connected and reason != NQ_SERVER_DROP)
+    // The server instructed us to drop, so it's already walking us out the door - we only need to
+    // send the acknowledgements, nothing else.
+    if (reason == NQ_SERVER_DROP)
+    {
+        messenger.SendAll(gametic, serveraddr);
+        connected = false;
+    }
+
+	if (connected)
 	{
 		messenger.Clear();
 
         // Again, make sure that we allow for immediate retransmits.
         messenger.SetRetransmitDelay(0);
 
-		MSG_WriteMarker(&messenger.ReliableBuf().Obtain(), clc_disconnect);
-		messenger.SendAll(gametic, serveraddr);
+        MSG_WriteMarker(&messenger.ReliableBuf().Obtain(), clc_disconnect);
+        messenger.SendAll(gametic, serveraddr);
 
         const dtime_t disconnectStartTime   = I_GetTime();
         const dtime_t disconnectTimeoutTime = disconnectStartTime + I_ConvertTimeFromMs(2000);

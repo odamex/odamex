@@ -655,27 +655,97 @@ CVAR_FUNC_IMPL(net_maxthreads)
 	PrintFmt("net_maxthreads pool has {} threads\n", s_workers.ThreadCount());
 }
 
-// Intentionally use a map here instead of an unordered_map, because a map (a binary tree) tends to be
-// faster for iterating over smaller element counts than an unordered_map (a hash table), the latter
-// of which may require iterating over some number of completely unused buckets.
-
-static std::map<netadr_t, OdaMessenger> s_deadEndMessengers;
-
-static void SV_CheckDepartingMessengers()
+namespace
 {
-    buf_t throwaway;
-
-    for (auto& [destAddr, messenger] : s_deadEndMessengers)
+    class DepartingMessengerManager
     {
-        // Just toss out any incoming reliable messages.  We've already sent our acks,
-        // otherwise we're not doing anything other than burning down what we've already sent.
-        while (messenger.NextReceivedPacket(throwaway))
-        {
-        }
+        public:
 
-        messenger.HandleRetransmissions(gametic, destAddr);
-        messenger.SendAll(gametic, destAddr);
-    }
+            void TakeMessengerFrom(client_t& client)
+            {
+                m_deadEndMessengers.insert({client.address, std::move(client.messenger)});
+            }
+
+            void ServiceMessenger(int currentTic, std::map<netadr_t, OdaMessenger>::iterator iter, buf_t& packetBuffer)
+            {
+                // Because we still want to honor acks from a disconnecting client,
+                // we must service them immediately upon receipt from the socket because
+                // they are not queued by the receiver.
+                while (iter->second.NextReceivedPacket(packetBuffer))
+                {
+                    iter->second.HandleAcks(packetBuffer);
+                }
+
+                iter->second.HandleRetransmissions(currentTic, iter->first);
+                iter->second.SendAll(currentTic, iter->first);
+            }
+
+            size_t CheckMessengers(int currentTic)
+            {
+                buf_t throwaway;
+
+                for (auto iter = m_deadEndMessengers.begin(); iter != m_deadEndMessengers.end(); ++iter)
+                {
+                    ServiceMessenger(currentTic, iter, throwaway);
+                }
+
+                return m_deadEndMessengers.size();
+            }
+
+            bool HandlePacket(int currentTic, const netadr_t& address, buf_t& packetBuffer)
+            {
+                auto iter = m_deadEndMessengers.find(address);
+                if (iter != m_deadEndMessengers.end())
+                {
+                    iter->second.Receive(packetBuffer);
+
+                    ServiceMessenger(currentTic, iter, packetBuffer);
+
+                    // Any messenger that's in the dead-end collection is there because we put it there directly
+                    // after sending the client's last reliable message.  Therefore, we know the pending Ack
+                    // count is going to be > 0.  If we see it go to 0, it's because the client has unambiguously
+                    // seen it and moved on.
+                    //
+                    // Also, we have to remove the old messenger immediately because it's 100% possible that the
+                    // client has an immediate reconnection attempt as the very next packet, and we want to handle
+                    // it in the `else` case below without delay.
+                    if (iter->second.GetPendingAckCount() <= 0)
+                    {
+                        m_deadEndMessengers.erase(iter);
+                    }
+                    return true;
+                }
+                return false;
+            }
+
+            void Drop(const netadr_t& address)
+            {
+                m_deadEndMessengers.erase(address);
+            }
+
+        protected:
+            // Intentionally use a map here instead of an unordered_map, because a map (a binary tree) tends to be
+            // faster for iterating over smaller element counts than an unordered_map (a hash table), the latter
+            // of which may require iterating over some number of completely unused buckets.
+            std::map<netadr_t, OdaMessenger> m_deadEndMessengers;
+    };
+
+    DepartingMessengerManager s_departingMessengers;
+}
+
+static void SV_DepartMessenger(client_t& client)
+{
+    s_departingMessengers.TakeMessengerFrom(client);
+}
+
+static size_t SV_CheckDepartingMessengers(int currentTic)
+{
+    return s_departingMessengers.CheckMessengers(currentTic);
+}
+
+static bool SV_HandleDepartingMessengerPacket(int currentTic, const netadr_t& address, buf_t& packetBuffer)
+{
+    return s_departingMessengers.HandlePacket(currentTic, address, packetBuffer);
 }
 
 static std::unique_ptr<CanarySocketServer> s_canaries;
@@ -703,7 +773,7 @@ static void SV_CheckCanaries()
             // Canary dropping is a special case where we know for certain that the other end
             // is truly terminated.  There's no point in letting the dead-end messenger handler
             // drive the packet sequence to completion.
-            s_deadEndMessengers.erase(netAddr);
+            s_departingMessengers.Drop(netAddr);
 
 			deadCanaryIter = s_canaries->PutOnCart(deadCanaryIter);
 		}
@@ -852,33 +922,7 @@ void SV_GetPackets()
 {
 	while (NET_GetPacket())
 	{
-        auto iter = s_deadEndMessengers.find(net_from);
-        if (iter != s_deadEndMessengers.end())
-        {
-            if (iter->second.Receive(::net_message) == MessageResultEnum::ACCEPT)
-            {
-                // Because we still want to honor acks from a disconnecting client,
-                // we must service them immediately upon receipt from the socket because
-                // they are not queued by the receiver.
-                if (iter->second.NextReceivedPacket(::net_message))
-                {
-                    iter->second.HandleAcks(::net_message);
-                }
-            }
-            // Any messenger that's in the dead-end collection is there because we put it there directly
-            // after sending the client's last reliable message.  Therefore, we know the pending Ack
-            // count is going to be > 0.  If we see it go to 0, it's because the client has unambiguously
-            // seen it and moved on.
-            //
-            // Also, we have to remove the old messenger immediately because it's 100% possible that the
-            // client has an immediate reconnection attempt as the very next packet, and we want to handle
-            // it in the `else` case below without delay.
-            if (iter->second.GetPendingAckCount() <= 0)
-            {
-                s_deadEndMessengers.erase(iter);
-            }
-        }
-        else
+        if (not SV_HandleDepartingMessengerPacket(gametic, net_from, ::net_message))
         {
 			player_t &player = SV_FindPlayerByAddr(net_from);
 
@@ -2296,7 +2340,7 @@ void SV_DisconnectClient(player_t &who)
     // the message out and we put the messenger into the dead-end collection with a
     // pending Ack count > 0.
     who.client.messenger.SendAll(gametic, who.client.address);
-    s_deadEndMessengers.insert({who.client.address, std::move(who.client.messenger)});
+    SV_DepartMessenger(who.client);
 
 	Maplist_Disconnect(who);
 	Vote_Disconnect(who);
@@ -2337,20 +2381,39 @@ void SV_DropClient(player_t &who)
 }
 
 //
-// SV_SendDisconnectSignal
+// SV_SendAndFlushDisconnectSignal
 //
-void SV_SendDisconnectSignal()
+void SV_SendAndFlushDisconnectSignal()
 {
 	for (auto& player : players)
 	{
-		client_t *cl = &(player.client);
-
-		MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_Disconnect("Shutting down\n"));
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_Disconnect("Shutting down\n"));
 		SV_SendPacket(player);
+
+        SV_DepartMessenger(player.client);
 
 		if (player.mo)
 			player.mo->Destroy();
 	}
+
+    int fakeTic = gametic;
+    size_t remainingMessengerCount = players.size();
+    const dtime_t timeoutDeadline = I_GetTime() + I_ConvertTimeFromMs(2000);
+    while (remainingMessengerCount > 0 and I_GetTime() < timeoutDeadline)
+    {
+        I_WaitVBL(1);
+        while (NET_GetPacket())
+        {
+            SV_HandleDepartingMessengerPacket(++fakeTic, net_from, ::net_message);
+        }
+
+        remainingMessengerCount = SV_CheckDepartingMessengers(fakeTic);
+    }
+
+    if (remainingMessengerCount > 0)
+    {
+        PrintFmt(PRINT_WARNING, "{} clients did not acknowledge the server shutdown signal\n", remainingMessengerCount);
+    }
 
 	players.clear();
 }
@@ -4506,7 +4569,7 @@ void SV_RunTics()
 	getPacketsStopwatch->Stop();
 
 	SV_CheckCanaries();
-    SV_CheckDepartingMessengers();
+    SV_CheckDepartingMessengers(gametic);
 
 	retransmitStopwatch->Start();
 	SV_HandleReliableRetransmissions();

@@ -167,7 +167,7 @@ void STACK_ARGS I_Quit (void)
     #endif
 
     G_ClearSnapshots ();
-    SV_SendDisconnectSignal();
+    SV_SendAndFlushDisconnectSignal();
 
     CloseNetwork ();
 
