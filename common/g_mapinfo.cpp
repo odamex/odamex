@@ -1899,6 +1899,18 @@ void G_ParseMapInfo()
 		baseinfoname = "_CHEXNFO";
 		break;
 	case none:
+		if (gameinfo.gametype == GAMETYPE_HERETIC)
+		{
+			baseinfoname = "_HERENFO";
+			if (gamemode == shareware_heretic)
+			{
+				lump = W_GetNumForName(baseinfoname);
+				ParseMapInfoLump(lump, baseinfoname);
+				baseinfoname = "_HESWNFO";
+			}
+			break;
+		}
+		[[fallthrough]];
 	default:
 		I_Error("{}: This IWAD is unknown to Odamex", __FUNCTION__);
 		break;
