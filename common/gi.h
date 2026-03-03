@@ -132,9 +132,9 @@ typedef struct gameinfo_s
 
 } gameinfo_t;
 
+inline gameinfo_t gameinfo;
+
 inline bool GI_IsHereticGame()
 {
 	return gameinfo.gameType == GAMEINFO_GAME_HERETIC;
 }
-
-inline gameinfo_t gameinfo;

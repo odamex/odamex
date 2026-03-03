@@ -1005,6 +1005,20 @@ void MIType_Border(OScanner& os, bool doEquals, void* data,
 }
 
 //
+void MIType_GameType(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
+                     unsigned int flags2)
+{
+	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
+
+	if (os.compareTokenNoCase("doom"))
+		gameinfo.gameType = GAMEINFO_GAME_DOOM;
+	else if (os.compareTokenNoCase("heretic") || os.compareTokenNoCase("raven"))
+		gameinfo.gameType = GAMEINFO_GAME_HERETIC;
+	else
+		os.warning("gametype expected \"doom\" or \"heretic\"; got {}", os.getToken());
+}
+
+//
 void MIType_AutomapBase(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                         unsigned int flags2)
 {
@@ -1258,6 +1272,7 @@ struct MapInfoDataSetter<gameinfo_t>
 	{
 		mapInfoDataContainer = {
 			{ "advisorytime", &MIType_Int, &gameinfo.advisoryTime },
+			{ "gametype", &MIType_GameType },
 			{ "border", &MIType_Border },
 			{ "borderflat", &MIType_LumpName, &gameinfo.borderFlat },
 			{ "chatsound", &MIType_SoundName, &gameinfo.chatSound },
