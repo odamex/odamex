@@ -614,8 +614,10 @@ size_t P_NumPlayersInGame();
 size_t P_NumReadyPlayersInGame();
 size_t P_NumPlayersOnTeam(team_t team);
 
-inline byte consoleplayer_id; // player taking events and displaying
-inline byte displayplayer_id; // view being displayed
+inline byte consoleplayer_id = 1; // player taking events and displaying
+inline byte displayplayer_id = 1; // view being displayed
+inline constexpr byte nullplayer_id = 0; // invalid player
+inline constexpr byte menuplayer_id = 0; // fake player id used by translations for the player setup menu
 
 //
 

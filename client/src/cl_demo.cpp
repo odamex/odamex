@@ -1663,7 +1663,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 		R_BuildPlayerTranslation(player.id, CL_GetPlayerColor(player), player.userinfo.colorpreset);
 	}
 
-	R_CopyTranslationRGB (0, consoleplayer_id);
+	R_CopyTranslationRGB(menuplayer_id, consoleplayer_id);
 
 	// Link the CTF flag actors to CTFdata[i].actor
 	TThinkerIterator<AActor> flagiterator;
