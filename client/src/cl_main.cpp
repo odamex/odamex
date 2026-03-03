@@ -361,7 +361,7 @@ void Host_EndGame(const char *msg)
 	CL_QuitNetGame(NQ_SILENT);
 }
 
-void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int line)
+void CL_QuitNetGame(const netQuitReason_e reason)
 {
 	if(connected)
 	{
@@ -435,7 +435,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 	}
 
 	if (::debug_disconnect)
-		PrintFmt("  ({}:{})\n", file, line);
+		PrintFmt("{}\n", M_GetStacktrace("Disconnect location:", false));
 }
 
 static void CL_HandleDisconnectCompletionPacket()
@@ -891,7 +891,7 @@ BEGIN_COMMAND (playerinfo)
 		       GetTeamInfo(player->userinfo.team)->ColorizedTeamName());
 	}
 	PrintFmt(PRINT_HIGH, " userinfo.aimdist     - {:d} \n",		player->userinfo.aimdist >> FRACBITS);
-	PrintFmt(PRINT_HIGH, " userinfo.colorpreset - {:d} \n",		player->userinfo.colorpreset); 
+	PrintFmt(PRINT_HIGH, " userinfo.colorpreset - {:d} \n",		player->userinfo.colorpreset);
 	PrintFmt(PRINT_HIGH, " userinfo.color       - {:s} \n",		color);
 	PrintFmt(PRINT_HIGH, " userinfo.gender      - {:d} \n",		player->userinfo.gender);
 	PrintFmt(PRINT_HIGH, " time                 - {:d} \n",		player->GameTime);
