@@ -1858,10 +1858,8 @@ void G_ParseMapInfo()
 	// Reset skill definitions
 	skillnum = 0;
 
-	//if (gamemission != heretic)
-	{
-		ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
-	}
+	// Parse common defaults first for all game missions.
+	ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
 
 	switch (gamemission)
 	{
@@ -1898,19 +1896,16 @@ void G_ParseMapInfo()
 	case chex3:
 		baseinfoname = "_CHEXNFO";
 		break;
-	case none:
-		if (gameinfo.gametype == GAMETYPE_HERETIC)
+	case heretic:
+		baseinfoname = "_HERENFO";
+		if (gamemode == shareware_heretic)
 		{
-			baseinfoname = "_HERENFO";
-			if (gamemode == shareware_heretic)
-			{
-				lump = W_GetNumForName(baseinfoname);
-				ParseMapInfoLump(lump, baseinfoname);
-				baseinfoname = "_HESWNFO";
-			}
-			break;
+			lump = W_GetNumForName(baseinfoname);
+			ParseMapInfoLump(lump, baseinfoname);
+			baseinfoname = "_HESWNFO";
 		}
-		[[fallthrough]];
+		break;
+	case none:
 	default:
 		I_Error("{}: This IWAD is unknown to Odamex", __FUNCTION__);
 		break;
