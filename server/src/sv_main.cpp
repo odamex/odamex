@@ -752,6 +752,27 @@ static bool SV_HandleDepartingMessengerPacket(int currentTic, const netadr_t& ad
 	return s_departingMessengers.HandlePacket(currentTic, address, packetBuffer);
 }
 
+/// This function handles the case where a client needs to be dropped and we're not counting on it
+/// to acknowledge anything - we know it's going to be unresponsive.
+static void SV_DropClientUngracefully(player_t& playerRef, const char* disconnectPrintVerb)
+{
+	if (validplayer(playerRef) and playerRef.playerstate != PST_DISCONNECT)
+	{
+		SV_BroadcastPrintFmt("{} {} ({})\n",
+		                     playerRef.userinfo.netname,
+		                     disconnectPrintVerb,
+		                     SV_BuildKillsDeathsStatusString(playerRef));
+
+		playerRef.client.displaydisconnect = false;
+		SV_DropClient(playerRef);
+	}
+
+	// This is a special case where we know for certain that the other end is either
+	// truly terminated or timedout.  There's no point in letting the dead-end messenger
+	// handler drive the packet sequence to completion.
+	s_departingMessengers.Drop(playerRef.client.address);
+}
+
 static std::unique_ptr<CanarySocketServer> s_canaries;
 
 static void SV_CheckCanaries()
@@ -768,16 +789,7 @@ static void SV_CheckCanaries()
 
 			player_t& playerRef = SV_FindPlayerByAddr(netAddr);
 
-			if (validplayer(playerRef) and playerRef.playerstate != PST_DISCONNECT)
-			{
-				SV_BroadcastPrintFmt("{} disconnected abnormally\n", playerRef.userinfo.netname);
-				SV_DropClient(playerRef);
-			}
-
-			// Canary dropping is a special case where we know for certain that the other end
-			// is truly terminated.  There's no point in letting the dead-end messenger handler
-			// drive the packet sequence to completion.
-			s_departingMessengers.Drop(netAddr);
+			SV_DropClientUngracefully(playerRef, "disconnected abnormally");
 
 			deadCanaryIter = s_canaries->PutOnCart(deadCanaryIter);
 		}
@@ -860,7 +872,9 @@ void SV_CheckTimeouts()
 	for (auto& player : players)
 	{
 		if (gametic - player.client.last_received == CLIENT_TIMEOUT * 35)
-		    SV_DropClient(player);
+		{
+			SV_DropClientUngracefully(player, "timed out");
+		}
 	}
 }
 
@@ -2356,13 +2370,9 @@ void SV_DisconnectClient(player_t &who)
 	if (who.client.displaydisconnect)
 	{
 		// print some final stats for the disconnected player
-		std::string status = SV_BuildKillsDeathsStatusString(who);
-		if (gametic - who.client.last_received == CLIENT_TIMEOUT*35)
-			SV_BroadcastPrintFmt("{} timed out. ({})\n",
-							who.userinfo.netname, status);
-		else
-			SV_BroadcastPrintFmt("{} disconnected. ({})\n",
-							who.userinfo.netname, status);
+		SV_BroadcastPrintFmt("{} disconnected. ({})\n",
+		                     who.userinfo.netname,
+		                     SV_BuildKillsDeathsStatusString(who));
 	}
 
 	SV_UpdatePlayerQueuePositions(G_CanJoinGame, &who);
