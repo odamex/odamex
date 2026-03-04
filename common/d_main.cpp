@@ -917,9 +917,7 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 		D_Init();
 
 		// get skill / episode / map from parms
-		startmap = !EpisodeMaps[0].empty()
-		               ? EpisodeMaps[0]
-		               : ((gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+		startmap = EpisodeMaps[0];
 	}
 	catch (CRecoverableError& error)
 	{
@@ -944,9 +942,7 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 			D_Init();
 
 			// get skill / episode / map from parms
-			startmap = !EpisodeMaps[0].empty()
-			               ? EpisodeMaps[0]
-			               : ((gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+			startmap = EpisodeMaps[0];
 		}
 		catch (CRecoverableError& error)
 		{
