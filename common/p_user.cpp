@@ -48,8 +48,9 @@
 
 #include <nonstd/span.hpp>
 
+#ifdef CLIENT_APP
 #include "cl_freecam.h"
-
+#endif
 //
 // Movement.
 //
@@ -821,8 +822,10 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 	if (viewer.id == other.id)
 		return true;
 
-	if (Freecam::isAllowed() && other.isFreecam)
+	#ifdef CLIENT_APP
+	if (other.isFreecam && Freecam::isAllowed())
 		return true;
+	#endif
 
 	// You cannot view those without bodies or spectators.
 	if (!other.mo || other.spectator)

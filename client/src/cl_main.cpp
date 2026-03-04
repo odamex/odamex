@@ -68,6 +68,7 @@
 #include "g_gametype.h"
 #include "cl_parse.h"
 #include "cl_replay.h"
+#include "cl_freecam.h"
 
 #include "m_consolecommandstream.h"
 
@@ -507,8 +508,13 @@ void CL_CheckDisplayPlayer(void)
 	{
 		// Request information about this player from the server
 		// (weapons, ammo, health, etc)
-		MSG_WriteMarker(&net_buffer, clc_spy);
-		MSG_WriteByte(&net_buffer, newid);
+		// server doesnt know about clientside freecam
+		if (!displayplayer().isFreecam && newid != Freecam::freecam_id)
+		{
+			MSG_WriteMarker(&net_buffer, clc_spy);
+			MSG_WriteByte(&net_buffer, newid);
+		}
+		
 		displayplayer_id = newid;
 
 		// Changing display player can sometimes affect status bar visibility

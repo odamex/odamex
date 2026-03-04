@@ -55,7 +55,10 @@
 #include "g_musinfo.h"
 #include "r_sky.h"
 #include "p_compdb.h"
+
+#ifdef CLIENT_APP
 #include "cl_freecam.h"
+#endif
 
 void SV_PreservePlayer(player_t &player);
 void P_SpawnMapThing (mapthing2_t& mthing, int position);
@@ -883,11 +886,13 @@ void P_LoadThings (int lump)
 		mt2.angle = LESHORT(mt->angle);
 		mt2.type = LESHORT(mt->type);
 
-		// clientside freecam start pos
+		// clientside-only freecam start pos
+		#ifdef CLIENT_APP
 		if (Freecam::isAllowed() && Freecam::needPosition() && P_IsNetplaySpawn(mt2.type))
 		{
 			Freecam::setStartPosition(mt2.x << FRACBITS, mt2.y << FRACBITS, mt2.z << FRACBITS, ANG45 * (mt2.angle / 45));
 		}
+		#endif
 
 		P_SpawnMapThing (mt2, 0);
 	}
