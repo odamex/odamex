@@ -741,7 +741,7 @@ void R_Subsector (int num)
 	if (sub.poly)
 	{ // Render the polyobj in the subsector first
 		int polyCount = sub.poly->numsegs;
-		const seg_t **polySeg = sub.poly->segs;
+		seg_t **polySeg = sub.poly->segs;
 		while (polyCount--)
 			R_AddLine (*polySeg++);
 	}
