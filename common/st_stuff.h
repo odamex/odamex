@@ -70,6 +70,13 @@ void ST_Init();
 
 void STACK_ARGS ST_Shutdown();
 
+// Heretic-specific statusbar/HUD scaffold
+void ST_HticInit();
+void ST_HticStart();
+void ST_HticTicker();
+void ST_HticDrawer();
+void ST_HticShutdown();
+
 namespace hud {
 
 void drawNetdemo();
