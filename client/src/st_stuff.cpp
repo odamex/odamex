@@ -59,6 +59,11 @@ static int lu_palette;
 EXTERN_CVAR(sv_allowredscreen)
 EXTERN_CVAR(sv_allowfov)
 EXTERN_CVAR(st_scale)
+
+static inline bool ST_IsHereticGame()
+{
+	return gameinfo.gametype == GAMETYPE_HERETIC;
+}
 EXTERN_CVAR(screenblocks)
 EXTERN_CVAR(g_lives)
 
@@ -973,6 +978,12 @@ void ST_UpdateSurfaceBpp()
 
 void ST_Ticker()
 {
+	if (ST_IsHereticGame())
+	{
+		ST_HticTicker();
+		return;
+	}
+
 	ST_UpdateSurfaceBpp();
 	if (!multiplayer && !demoplayback && (ConsoleState == c_down || ConsoleState == c_falling))
 		return;
@@ -1088,6 +1099,12 @@ static void ST_refreshBackground()
 //
 void ST_Drawer()
 {
+	if (ST_IsHereticGame())
+	{
+		ST_HticDrawer();
+		return;
+	}
+
 	if (st_needrefresh)
 		st_statusbaron = R_StatusBarVisible();
 
@@ -1338,6 +1355,12 @@ void ST_createWidgets()
 
 void ST_Start()
 {
+	if (ST_IsHereticGame())
+	{
+		ST_HticStart();
+		return;
+	}
+
 	ST_ForceRefresh();
 
 	st_gamestate = FirstPersonState;
@@ -1363,6 +1386,12 @@ void ST_Start()
 
 void ST_Init()
 {
+	if (ST_IsHereticGame())
+	{
+		ST_HticInit();
+		return;
+	}
+
 	ST_loadData();
 
 	if (stbar_surface == NULL)
@@ -1383,6 +1412,12 @@ void ST_Init()
 
 void STACK_ARGS ST_Shutdown()
 {
+	if (ST_IsHereticGame())
+	{
+		ST_HticShutdown();
+		return;
+	}
+
 	ST_unloadData();
 
 	I_FreeSurface(stbar_surface);
