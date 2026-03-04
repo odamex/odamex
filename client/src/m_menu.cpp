@@ -1257,10 +1257,18 @@ void M_QuitDOOM(int choice)
 	// We pick index 0 which is language sensitive,
 	//  or one at random, between 1 and maximum number.
 	static std::string endstring;
-	endstring =
-		fmt::sprintf("%s\n\n%s",
-		             GStrings.getIndex(GStrings.toIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)),
-		             GStrings(DOSY));
+
+	if (gameinfo.gametype == GAMETYPE_HERETIC)
+	{
+		endstring = fmt::sprintf("%s\n\n%s", GStrings(RAVENQUITMSG), GStrings(DOSY));
+	}
+	else
+	{
+		endstring =
+			fmt::sprintf("%s\n\n%s",
+			             GStrings.getIndex(GStrings.toIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)),
+			             GStrings(DOSY));
+	}
 
 	M_StartMessage(endstring.c_str(), M_QuitResponse, true);
 }
