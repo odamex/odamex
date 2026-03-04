@@ -937,8 +937,7 @@ void M_DrawMainMenu()
 	else
 	{
 		V_SetFont("BIGFONT");
-		screen->DrawTextCleanMove(CR_GRAY, 110, 8, gameinfo.titleString.c_str());
-		V_SetFont("SMALLFONT");
+		screen->DrawTextCleanMove(CR_RED, 110, 8, gameinfo.titleString.c_str());
 	}
 }
 
@@ -2257,13 +2256,13 @@ void M_Drawer()
 				}
 				else if (currentMenu->menuitems[i].textname[0])
 				{
-					screen->DrawTextCleanMove(CR_GRAY, x, y, currentMenu->menuitems[i].textname);
+					screen->DrawTextCleanMove(CR_RED, x, y, currentMenu->menuitems[i].textname);
 				}
 				else
 				{
 					const char* fallback = MenuFallbackText(currentMenu, i);
 					if (fallback[0])
-						screen->DrawTextCleanMove(CR_GRAY, x, y, fallback);
+						screen->DrawTextCleanMove(CR_RED, x, y, fallback);
 				}
 				y += LINEHEIGHT;
 			}
