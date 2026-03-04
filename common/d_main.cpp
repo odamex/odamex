@@ -51,6 +51,7 @@
 #include "i_system.h"
 #include "i_time.h"
 #include "g_game.h"
+#include "g_episode.h"
 #include "g_spawninv.h"
 #include "r_main.h"
 #include "d_main.h"
@@ -913,10 +914,12 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 	{
 		D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
-		// get skill / episode / map from parms
-		startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
-
 		D_Init();
+
+		// get skill / episode / map from parms
+		startmap = !EpisodeMaps[0].empty()
+		               ? EpisodeMaps[0]
+		               : ((gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 	}
 	catch (CRecoverableError& error)
 	{
@@ -938,10 +941,12 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 		{
 			LoadResolvedFiles(oldwadfiles, oldpatchfiles);
 
-			// get skill / episode / map from parms
-			startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
-
 			D_Init();
+
+			// get skill / episode / map from parms
+			startmap = !EpisodeMaps[0].empty()
+			               ? EpisodeMaps[0]
+			               : ((gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
 		}
 		catch (CRecoverableError& error)
 		{
