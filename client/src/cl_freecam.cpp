@@ -23,6 +23,7 @@
 //-----------------------------------------------------------------------------
 
 #include "cl_freecam.h"
+#include "g_gametype.h"
 
 fixed_t Freecam::x = 0;
 fixed_t Freecam::y = 0;
@@ -118,7 +119,24 @@ void Freecam::reset()
 	pitch = 0;
 }
 
-bool Freecam::isAllowed()
+bool Freecam::allowAdd()
 {
 	return (netdemo.isPlaying());
+}
+
+bool Freecam::allowSpy()
+{
+	return (netdemo.isPlaying());
+}
+
+// a real 255th player connected (CL_UserInfo) and is taking the freecam spot
+void Freecam::retireFor255thPlayer(player_t* cam)
+{
+	cam->isFreecam = false;
+	cam->spectator = false;
+	cam->cheats = 0;
+	cam->playerstate = PST_LIVE;
+	cam->prevviewz = 1;
+	cam->mo->Destroy();
+	cam->camera->Destroy();
 }

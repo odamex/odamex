@@ -888,7 +888,7 @@ void P_LoadThings (int lump)
 
 		// clientside-only freecam start pos
 		#ifdef CLIENT_APP
-		if (Freecam::isAllowed() && Freecam::needPosition() && P_IsNetplaySpawn(mt2.type))
+		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsNetplaySpawn(mt2.type))
 		{
 			Freecam::setStartPosition(mt2.x << FRACBITS, mt2.y << FRACBITS, mt2.z << FRACBITS, ANG45 * (mt2.angle / 45));
 		}

@@ -823,7 +823,7 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 		return true;
 
 	#ifdef CLIENT_APP
-	if (other.isFreecam && Freecam::isAllowed())
+	if (other.isFreecam && Freecam::allowSpy())
 		return true;
 	#endif
 

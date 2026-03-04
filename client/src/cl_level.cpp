@@ -205,7 +205,7 @@ void G_InitNew (const char *mapname)
 		}
 	}
 
-	if (Freecam::isAllowed() && Freecam::prevmap != mapname)
+	if (Freecam::allowAdd() && Freecam::prevmap != mapname)
 	{
 		Freecam::reset();
 		Freecam::setPrevMap(mapname);
@@ -728,7 +728,7 @@ void G_DoLoadLevel (int position)
 	G_UnSnapshotLevel (!savegamerestore);	// [RH] Restore the state of the level.
 
 	// clientside only freecam, added after demo players are added in G_UnSnapshotLevel
-	if (Freecam::isAllowed())
+	if (Freecam::allowAdd())
 	{
 		Freecam::addFreecamPlayer();
 	}

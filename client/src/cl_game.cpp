@@ -703,8 +703,8 @@ void G_AddViewPitch(int pitch)
 
 bool G_ShouldIgnoreMouseInput()
 {
-	if ((consoleplayer().id != displayplayer().id && !displayplayer().isFreecam) || 
-		consoleplayer().playerstate == PST_DEAD)
+	if ((consoleplayer().id != displayplayer().id || consoleplayer().playerstate == PST_DEAD) &&
+		!displayplayer().isFreecam)
 		return true;
 
 	return false;
@@ -979,7 +979,7 @@ void G_Ticker (void)
 		}
 	}
 	// Rude - allow controling displayplayer if freecam
-	else if (Freecam::isAllowed() && displayplayer().isFreecam)
+	else if (Freecam::allowAdd() && displayplayer().isFreecam)
 	{
 		memcpy(&displayplayer().cmd, &consoleplayer().netcmds[buf], sizeof(ticcmd_t));
 	}

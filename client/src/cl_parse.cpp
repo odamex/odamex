@@ -67,6 +67,7 @@
 #include "m_doomobjcontainer.h"
 #include "g_spree.h"
 #include "g_multikill.h"
+#include "cl_freecam.h"
 
 // Extern data from other files.
 
@@ -1006,6 +1007,12 @@ static void CL_RemoveMobj(const odaproto::svc::RemoveMobj* msg)
 static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 {
 	player_t* p = &CL_FindPlayer(msg->pid());
+
+	// 255th player just connected and is replacing the freecam, need to retire freecam
+	if (p->id == Freecam::freecam_id && p->isFreecam)
+	{
+		Freecam::retireFor255thPlayer(p);
+	}
 
 	p->userinfo.netname = msg->netname();
 

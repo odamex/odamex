@@ -40,7 +40,9 @@ public:
 	static void setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
 	static bool needPosition();
 	static void setPrevMap(std::string m);
-	static bool isAllowed();
+	static bool allowAdd();
+	static bool allowSpy();
+	static void retireFor255thPlayer(player_t* cam);
 
 private:
 	static fixed_t x;
