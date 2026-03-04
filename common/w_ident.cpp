@@ -1582,7 +1582,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	else if (idname.find(OStringToUpper(OString(HERETICSW_PREFIX))) == 0)
 	{
 		gamemode = shareware_heretic;
-		gamemission = none;
+		gamemission = heretic;
 		gameinfo.gametype = GAMETYPE_HERETIC;
 		gameinfo.flags = GI_SHAREWARE | GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
@@ -1591,7 +1591,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 	else if (idname.find(OStringToUpper(OString(HERETIC_PREFIX))) == 0)
 	{
 		gamemode = registered_heretic;
-		gamemission = none;
+		gamemission = heretic;
 		gameinfo.gametype = GAMETYPE_HERETIC;
 		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;

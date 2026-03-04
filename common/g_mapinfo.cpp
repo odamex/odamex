@@ -1858,10 +1858,8 @@ void G_ParseMapInfo()
 	// Reset skill definitions
 	skillnum = 0;
 
-	//if (gamemission != heretic)
-	{
-		ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
-	}
+	// Parse common defaults first for all game missions.
+	ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
 
 	switch (gamemission)
 	{
@@ -1897,6 +1895,15 @@ void G_ParseMapInfo()
 	case chex:
 	case chex3:
 		baseinfoname = "_CHEXNFO";
+		break;
+	case heretic:
+		baseinfoname = "_HERENFO";
+		if (gamemode == shareware_heretic)
+		{
+			lump = W_GetNumForName(baseinfoname);
+			ParseMapInfoLump(lump, baseinfoname);
+			baseinfoname = "_HESWNFO";
+		}
 		break;
 	case none:
 	default:

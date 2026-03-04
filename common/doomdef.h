@@ -144,6 +144,7 @@ enum GameMission_t
   retail_freedoom,
   commercial_freedoom,	// FreeDoom
   commercial_hacx,		// HACX
+  heretic,				// Heretic
   none
 };
 
