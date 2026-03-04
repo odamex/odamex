@@ -49,6 +49,7 @@
 #include "g_game.h"
 #include "g_horde.h"
 #include "g_mapinfo.h"
+#include "g_episode.h"
 #include "gi.h"
 #include "gstrings.h"
 #include "i_system.h"
@@ -357,7 +358,7 @@ void D_DoomMain()
 		sv_fastmonsters = 1;
 
 	// get skill / episode / map from parms
-	startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
+	startmap = EpisodeMaps[0];
 
 	const char* val = Args.CheckValue("-skill");
 	if (val)
