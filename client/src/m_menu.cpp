@@ -930,13 +930,28 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 //
 void M_DrawMainMenu()
 {
-	screen->DrawPatchClean(W_CachePatch("M_DOOM"), 94, 2);
+	if (W_CheckNumForName("M_DOOM") >= 0)
+	{
+		screen->DrawPatchClean(W_CachePatch("M_DOOM"), 94, 2);
+	}
+	else
+	{
+		V_SetFont("BIGFONT");
+		screen->DrawTextCleanMove(CR_RED, 110, 8, gameinfo.titleString.c_str());
+	}
 }
 
 void M_DrawNewGame()
 {
-	screen->DrawPatchClean(W_CachePatch("M_NEWG"), 96, 14);
-	screen->DrawPatchClean(W_CachePatch("M_SKILL"), 54, 38);
+	if (W_CheckNumForName("M_NEWG") >= 0)
+		screen->DrawPatchClean(W_CachePatch("M_NEWG"), 96, 14);
+	else
+		screen->DrawTextCleanMove(CR_GRAY, 96, 14, "NEW GAME");
+
+	if (W_CheckNumForName("M_SKILL") >= 0)
+		screen->DrawPatchClean(W_CachePatch("M_SKILL"), 54, 38);
+	else
+		screen->DrawTextCleanMove(CR_GRAY, 54, 38, "CHOOSE SKILL");
 
 	static constexpr int SMALLFONT_OFFSET = 8; // Line up with the skull
 
@@ -950,6 +965,31 @@ void M_DrawNewGame()
 
 namespace
 {
+	const char* MenuFallbackText(const oldmenu_t* menu, int index)
+	{
+		if (menu == &MainDef)
+		{
+			switch (index)
+			{
+			case 0: return "NEW GAME";
+			case 1: return "OPTIONS";
+			case 2: return "LOAD GAME";
+			case 3: return "SAVE GAME";
+			case 4: return (menu->numitems > 5) ? "INFO" : "QUIT GAME";
+			case 5: return "QUIT GAME";
+			default: return "";
+			}
+		}
+
+		if (menu == &EpiDef && index >= 0 && index < episodenum)
+			return EpisodeInfos[index].menu_name.c_str();
+
+		if (menu == &NewDef && index >= 0 && index < skillnum)
+			return SkillInfos[index].menu_name.c_str();
+
+		return "";
+	}
+
 	void SetupEpisodeList()
 	{
 		for (int i = 0; i < episodenum; ++i)
@@ -1041,7 +1081,10 @@ void M_DrawEpisode()
 		y -= LINEHEIGHT * (episodenum / 4);
 	}
 
-	screen->DrawPatchClean(W_CachePatch("M_EPISOD"), 54, y);
+	if (W_CheckNumForName("M_EPISOD") >= 0)
+		screen->DrawPatchClean(W_CachePatch("M_EPISOD"), 54, y);
+	else
+		screen->DrawTextCleanMove(CR_GRAY, 54, y, "CHOOSE EPISODE");
 }
 
 static int skillchoice = 0;
@@ -1257,10 +1300,18 @@ void M_QuitDOOM(int choice)
 	// We pick index 0 which is language sensitive,
 	//  or one at random, between 1 and maximum number.
 	static std::string endstring;
-	endstring =
-		fmt::sprintf("%s\n\n%s",
-		             GStrings.getIndex(GStrings.toIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)),
-		             GStrings(DOSY));
+
+	if (gameinfo.gametype == GAMETYPE_HERETIC)
+	{
+		endstring = fmt::sprintf("%s\n\n%s", GStrings(RAVENQUITMSG), GStrings(DOSY));
+	}
+	else
+	{
+		endstring =
+			fmt::sprintf("%s\n\n%s",
+			             GStrings.getIndex(GStrings.toIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)),
+			             GStrings(DOSY));
+	}
 
 	M_StartMessage(endstring.c_str(), M_QuitResponse, true);
 }
@@ -2198,13 +2249,20 @@ void M_Drawer()
 			V_SetFont("BIGFONT");
 			for (int i = 0; i < max; i++)
 			{
-				if (currentMenu->menuitems[i].name[0])
+				if (currentMenu->menuitems[i].name[0] &&
+					W_CheckNumForName(currentMenu->menuitems[i].name) >= 0)
 				{
 					screen->DrawPatchClean(W_CachePatch(currentMenu->menuitems[i].name), x, y);
 				}
 				else if (currentMenu->menuitems[i].textname[0])
 				{
 					screen->DrawTextCleanMove(CR_RED, x, y, currentMenu->menuitems[i].textname);
+				}
+				else
+				{
+					const char* fallback = MenuFallbackText(currentMenu, i);
+					if (fallback[0])
+						screen->DrawTextCleanMove(CR_RED, x, y, fallback);
 				}
 				y += LINEHEIGHT;
 			}
