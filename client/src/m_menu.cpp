@@ -937,7 +937,7 @@ void M_DrawMainMenu()
 	else
 	{
 		V_SetFont("BIGFONT");
-		screen->DrawTextCleanMove(CR_RED, 110, 8, gameinfo.titleString.c_str());
+		screen->DrawTextCleanMove(CR_GRAY, 110, 8, gameinfo.titleString.c_str());
 		V_SetFont("SMALLFONT");
 	}
 }
@@ -947,12 +947,12 @@ void M_DrawNewGame()
 	if (W_CheckNumForName("M_NEWG") >= 0)
 		screen->DrawPatchClean(W_CachePatch("M_NEWG"), 96, 14);
 	else
-		screen->DrawTextCleanMove(CR_RED, 96, 14, "NEW GAME");
+		screen->DrawTextCleanMove(CR_GRAY, 96, 14, "NEW GAME");
 
 	if (W_CheckNumForName("M_SKILL") >= 0)
 		screen->DrawPatchClean(W_CachePatch("M_SKILL"), 54, 38);
 	else
-		screen->DrawTextCleanMove(CR_RED, 54, 38, "CHOOSE SKILL");
+		screen->DrawTextCleanMove(CR_GRAY, 54, 38, "CHOOSE SKILL");
 
 	static constexpr int SMALLFONT_OFFSET = 8; // Line up with the skull
 
@@ -966,9 +966,29 @@ void M_DrawNewGame()
 
 namespace
 {
-	void SetMenuText(oldmenuitem_t& item, const char* text)
+	const char* MenuFallbackText(const oldmenu_t* menu, int index)
 	{
-		std::snprintf(item.textname, sizeof(item.textname), "%s", text);
+		if (menu == &MainDef)
+		{
+			switch (index)
+			{
+			case 0: return "NEW GAME";
+			case 1: return "OPTIONS";
+			case 2: return "LOAD GAME";
+			case 3: return "SAVE GAME";
+			case 4: return (menu->numitems > 5) ? "INFO" : "QUIT GAME";
+			case 5: return "QUIT GAME";
+			default: return "";
+			}
+		}
+
+		if (menu == &EpiDef && index >= 0 && index < episodenum)
+			return EpisodeInfos[index].menu_name.c_str();
+
+		if (menu == &NewDef && index >= 0 && index < skillnum)
+			return SkillInfos[index].menu_name.c_str();
+
+		return "";
 	}
 
 	void SetupEpisodeList()
@@ -1065,7 +1085,7 @@ void M_DrawEpisode()
 	if (W_CheckNumForName("M_EPISOD") >= 0)
 		screen->DrawPatchClean(W_CachePatch("M_EPISOD"), 54, y);
 	else
-		screen->DrawTextCleanMove(CR_RED, 54, y, "CHOOSE EPISODE");
+		screen->DrawTextCleanMove(CR_GRAY, 54, y, "CHOOSE EPISODE");
 }
 
 static int skillchoice = 0;
@@ -2237,7 +2257,13 @@ void M_Drawer()
 				}
 				else if (currentMenu->menuitems[i].textname[0])
 				{
-					screen->DrawTextCleanMove(CR_RED, x, y, currentMenu->menuitems[i].textname);
+					screen->DrawTextCleanMove(CR_GRAY, x, y, currentMenu->menuitems[i].textname);
+				}
+				else
+				{
+					const char* fallback = MenuFallbackText(currentMenu, i);
+					if (fallback[0])
+						screen->DrawTextCleanMove(CR_GRAY, x, y, fallback);
 				}
 				y += LINEHEIGHT;
 			}
@@ -2368,22 +2394,6 @@ void M_Init()
 	messageToPrint = 0;
 	messageString = NULL;
 	messageLastMenuActive = menuactive;
-
-	if (gameinfo.gametype == GAMETYPE_HERETIC)
-	{
-		SetMenuText(DoomMainMenu[d1_newgame], "NEW GAME");
-		SetMenuText(DoomMainMenu[d1_options], "OPTIONS");
-		SetMenuText(DoomMainMenu[d1_loadgame], "LOAD GAME");
-		SetMenuText(DoomMainMenu[d1_savegame], "SAVE GAME");
-		SetMenuText(DoomMainMenu[d1_readthis], "INFO");
-		SetMenuText(DoomMainMenu[d1_quitdoom], "QUIT GAME");
-
-		SetMenuText(Doom2MainMenu[d2_newgame], "NEW GAME");
-		SetMenuText(Doom2MainMenu[d2_options], "OPTIONS");
-		SetMenuText(Doom2MainMenu[d2_loadgame], "LOAD GAME");
-		SetMenuText(Doom2MainMenu[d2_savegame], "SAVE GAME");
-		SetMenuText(Doom2MainMenu[d2_quitdoom], "QUIT GAME");
-	}
 
     if (gameinfo.flags & GI_MAPxx)
     {
