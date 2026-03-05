@@ -278,6 +278,63 @@ void ST_HticUpdateData()
 	}
 }
 
+void ST_HticShadeChainMouths(IWindowSurface* surface, int left, int right, int top, int height)
+{
+	if (!surface)
+		return;
+
+	const int bpp = surface->getBitsPerPixel();
+	const int pitch = surface->getPitch();
+	const PixelFormat* pf = surface->getPixelFormat();
+	uint8_t* base = surface->getBuffer();
+
+	for (int i = 0; i < 16; i++)
+	{
+		const int lx = left + i;
+		const int rx = right + (15 - i);
+		if (lx < 0 || rx < 0 || lx >= surface->getWidth() || rx >= surface->getWidth())
+			continue;
+
+		// Match legacy feel: darker toward the inner mouth edges.
+		const float t = static_cast<float>(i) / 15.0f;
+		const float brightness = 0.82f - (0.34f * t);
+
+		for (int y = top; y < top + height; y++)
+		{
+			if (y < 0 || y >= surface->getHeight())
+				continue;
+
+			if (bpp == 8)
+			{
+				uint8_t* l = base + y * pitch + lx;
+				uint8_t* r = base + y * pitch + rx;
+				const argb_t* darkener = Col2RGB8[18 + i * 2];
+				const argb_t lbg = darkener[*l] | 0x1f07c1f;
+				const argb_t rbg = darkener[*r] | 0x1f07c1f;
+				*l = RGB32k[0][0][lbg & (lbg >> 15)];
+				*r = RGB32k[0][0][rbg & (rbg >> 15)];
+			}
+			else if (bpp == 32)
+			{
+				uint32_t* l = reinterpret_cast<uint32_t*>(base + y * pitch + lx * 4);
+				uint32_t* r = reinterpret_cast<uint32_t*>(base + y * pitch + rx * 4);
+
+				auto darken32 = [&](uint32_t& px)
+				{
+					const uint8_t a = pf->a(px);
+					const uint8_t rr = static_cast<uint8_t>(pf->r(px) * brightness);
+					const uint8_t gg = static_cast<uint8_t>(pf->g(px) * brightness);
+					const uint8_t bb = static_cast<uint8_t>(pf->b(px) * brightness);
+					px = pf->convert(a, rr, gg, bb);
+				};
+
+				darken32(*l);
+				darken32(*r);
+			}
+		}
+	}
+}
+
 void ST_HticDrawBackgroundAndWidgets()
 {
 	const player_t& plyr = displayplayer();
@@ -307,6 +364,8 @@ void ST_HticDrawBackgroundAndWidgets()
 		canvas->DrawPatch(W_ResolvePatchHandle(hticGodEyesLeft), 16, 9);
 		canvas->DrawPatch(W_ResolvePatchHandle(hticGodEyesRight), 287, 9);
 	}
+
+	ST_HticShadeChainMouths(stbar_surface, 19, 277, 32, 10);
 
 	ST_HticDrawNumber(canvas, hticHealth, 87, 12, 3, hticBigNum);
 	ST_HticDrawNumber(canvas, hticReadyAmmo, 135, 4, 3, hticBigNum);
