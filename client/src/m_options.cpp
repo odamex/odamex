@@ -1701,10 +1701,18 @@ void M_OptDrawer (void)
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
 
-	title = W_CachePatch (CurrentMenu->title);
-	screen->DrawPatchClean (title, 160-title->width()/2, 10);
-
-	y = 15 + title->height();
+	if (W_CheckNumForName(CurrentMenu->title) >= 0)
+	{
+		title = W_CachePatch (CurrentMenu->title);
+		screen->DrawPatchClean (title, 160-title->width()/2, 10);
+		y = 15 + title->height();
+	}
+	else
+	{
+		screen->DrawTextClean(CR_GRAY, 140 - V_StringWidth(CurrentMenu->title.c_str()) / 2, 2, CurrentMenu->title.c_str());
+		theight = 8;
+		y = 15 + theight;
+	}
 	ytop = y + CurrentMenu->scrolltop * 8;
 
 	for (i = 0; i < CurrentMenu->numitems && y <= 192 - theight; i++, y += 8)	// TIJ

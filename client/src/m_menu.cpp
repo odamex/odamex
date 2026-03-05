@@ -2320,8 +2320,7 @@ void M_Drawer()
 				}
 				else if (currentMenu->menuitems[i].textname[0])
 				{
-					screen->DrawTextCleanMove(CR_RED, x, y + HTCTEXTYOFF,
-					                         LocalizedString(currentMenu->menuitems[i].textname));
+					screen->DrawTextCleanMove(CR_RED, x, y, LocalizedString(currentMenu->menuitems[i].textname));
 					y += HTCLINEHEIGHT;
 				}
 			}
