@@ -439,6 +439,10 @@ void D_PageDrawer()
 		primary_surface->blitcrop(page_surface, 0, 0, page_surface->getWidth(), page_surface->getHeight(),
 				(surface_width - destw) / 2, (surface_height - desth) / 2, destw, desth);
 
+		// [ML] If this is the advisory screen in Heretic, draw the "advisor" patch on top of it.
+		if (gamemode == registered_heretic && demosequence == 1)
+			screen->DrawPatchIndirect(W_CachePatch("ADVISOR"),4,160);				
+
 		page_surface->unlock();
 	}
 }
