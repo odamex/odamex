@@ -296,7 +296,7 @@ void ST_HticShadeChainMouths(IWindowSurface* surface, int left, int right, int t
 	for (int i = 0; i < 16; i++)
 	{
 		const int lx = left + i;
-		const int rx = left + diff;
+		const int rx = lx + diff;
 		diff -= 2;
 
 		if (lx < 0 || rx < 0 || lx >= surface->getWidth() || rx >= surface->getWidth())
