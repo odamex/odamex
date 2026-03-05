@@ -1223,7 +1223,10 @@ void M_DrawReadThis3()
 //
 void M_DrawOptions()
 {
-	screen->DrawPatchClean (W_CachePatch("M_OPTTTL"), 108, 15);
+	if (W_CheckNumForName("M_OPTTTL") >= 0)
+		screen->DrawPatchClean(W_CachePatch("M_OPTTTL"), 108, 15);
+	else
+		screen->DrawTextCleanMove(CR_GRAY, 108, 15, "OPTIONS");
 }
 
 void M_Options(int choice)
@@ -1451,8 +1454,15 @@ static void M_PlayerSetupDrawer()
 
 	// Draw title
 	{
-		const patch_t *patch = W_CachePatch ("M_PSTTL");
-        screen->DrawPatchClean (patch, 160-patch->width()/2, 10);
+		if (W_CheckNumForName("M_PSTTL") >= 0)
+		{
+			const patch_t* patch = W_CachePatch("M_PSTTL");
+			screen->DrawPatchClean(patch, 160 - patch->width() / 2, 10);
+		}
+		else
+		{
+			screen->DrawTextCleanMove(CR_GRAY, 110, 10, "PLAYER SETUP");
+		}
 
 		/*screen->DrawPatchClean (patch,
 			160 - (patch->width() >> 1),
