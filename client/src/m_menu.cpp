@@ -112,6 +112,8 @@ menustack_t			MenuStack[16];
 int					MenuStackDepth;
 
 short				itemOn; 			// menu item skull is on
+static int			SkullBaseLump;		// lump number of first large skull in animation
+static int			MenuTime;			// Ticker for Heretic skulls
 short				skullAnimCounter;	// skull animation counter
 short				whichSkull; 		// which skull to draw
 bool				drawSkull;			// [RH] don't always draw skull
@@ -134,12 +136,14 @@ void M_Expansion(int choice);
 void M_ChooseSkill(int choice);
 void M_LoadGame(int choice);
 void M_SaveGame(int choice);
+void M_HtcGameFiles(int choice);
 void M_Options(int choice);
 void M_EndGame(int choice);
 void M_ReadThis(int choice);
 void M_ReadThis2(int choice);
 void M_ReadThis3(int choice);
 void M_QuitDOOM(int choice);
+void M_QuitHeretic(int choice);
 
 void M_ChangeDetail(int choice);
 void M_StartGame(int choice);
@@ -153,6 +157,7 @@ void M_QuickSave();
 void M_QuickLoad();
 
 void M_DrawMainMenu();
+void M_DrawHereticMainMenu();
 void M_DrawReadThis1();
 void M_DrawReadThis2();
 void M_DrawReadThis3();
@@ -162,6 +167,7 @@ void M_DrawOptions();
 void M_DrawSound();
 void M_DrawLoad();
 void M_DrawSave();
+void M_DrawGameFiles(void);
 
 void M_DrawSaveLoadBorder(int x,int y, int len);
 void M_SetupNextMenu(oldmenu_t *menudef);
@@ -260,6 +266,42 @@ oldmenuitem_t Doom2MainMenu[]=
 	{1,"M_QUITG","",M_QuitDOOM,'Q'}
 };
 
+//
+// HERETIC MENU
+//
+enum htc_main_t
+{
+	htc_newgame = 0,
+	htc_options,	
+	htc_gamefiles,				// [RH] Moved
+	htc_info,
+	htc_quitheretic,
+	htc_main_end
+} htc_main_e;
+
+oldmenuitem_t HereticMainMenu[]=
+{
+	{1,"","MNU_NEWGAME",M_NewGame,'N'},
+	{1,"","MNU_OPTIONS",M_Options,'O'},	// [RH] Moved
+    {1,"","MNU_GAMEFILES",M_HtcGameFiles,'G'},
+    {1,"","MNU_INFO",M_ReadThis,'I'},
+	{1,"","MNU_QUITGAME",M_QuitHeretic,'Q'}
+};
+
+oldmenuitem_t HereticGameFilesMenu[]=
+{
+	{1,"","MNU_LOADGAME",M_LoadGame,'l'},
+	{1,"","MNU_SAVEGAME",M_SaveGame,'2'}
+};
+
+oldmenu_t GameFilesDef =
+{
+	htc_main_end,
+	HereticGameFilesMenu,
+	M_DrawGameFiles,
+	110,60,
+	0
+};
 
 // Default used is the Doom Menu
 oldmenu_t MainDef =
@@ -268,6 +310,16 @@ oldmenu_t MainDef =
 	DoomMainMenu,
 	M_DrawMainMenu,
 	97,64,
+	0
+};
+
+// Heretic Main Menu Definition
+oldmenu_t HereticMainDef =
+{
+	htc_main_end,
+	HereticMainMenu,
+	M_DrawHereticMainMenu,
+	110,56,
 	0
 };
 
@@ -608,19 +660,32 @@ BEGIN_COMMAND (menu_player)
 }
 END_COMMAND (menu_player)
 
-/*
-void M_LoadSaveResponse(int choice)
+static const char* LocalizedString(const char* key)
 {
-    // dummy
+	if (GStrings.hasString(key))
+	{
+		const char* s = GStrings(key);
+		if (s && s[0])
+			return s;
+	}
+	return "";
 }
 
-
-void M_LoadGame (int choice)
+//
+//	M_HtcGameFiles & Cie.
+//	[ML] Provides intermediary game files menu option for load/save
+//
+void M_DrawGameFiles(void)
 {
-    M_StartMessage("Loading/saving is not supported\n\n(Press any key to "
-                   "continue)\n", M_LoadSaveResponse, false);
+	// dummy
 }
-*/
+
+void M_HtcGameFiles(int choice)
+{
+     //M_StartMessage("Loading/saving is not supported\n\n(Press any key to "
+     //              "continue)\n", M_HtcGameFilesResponse, false);
+     M_SetupNextMenu(&GameFilesDef);
+}
 
 //
 // M_ReadSaveStrings
@@ -794,8 +859,8 @@ void M_SaveGame (int choice)
 
 
 //
-//		M_QuickSave
-// [ML] 7 Sept 08: Bringing game saving/loading in from
+//	M_QuickSave
+//	[ML] 7 Sept 08: Bringing game saving/loading in from
 //                 zdoom 1.22 source, see MAINTAINERS
 //
 char	tempstring[80];
@@ -923,17 +988,6 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 	screen->DrawPatchClean (W_CachePatch ("M_LSRGHT"), x, y+7);
 }
 
-static const char* MenuLocalizedOrFallback(const char* key, const char* fallback)
-{
-	if (GStrings.hasString(key))
-	{
-		const char* s = GStrings(key);
-		if (s && s[0])
-			return s;
-	}
-	return fallback;
-}
-
 //
 // M_DrawMainMenu
 //
@@ -950,22 +1004,27 @@ void M_DrawMainMenu()
 	}
 }
 
+void M_DrawHereticMainMenu (void)
+{
+	int frame;
+
+	frame = (MenuTime / 3) % 18;
+	screen->DrawPatchIndirect (W_CachePatch("M_HTIC"), 88, 0);
+	//screen->DrawPatchIndirect ((patch_t *)W_CacheLumpNum(SkullBaseLump + (17 - frame), PU_CACHE), 40, 10);
+	//screen->DrawPatchIndirect ((patch_t *)W_CacheLumpNum(SkullBaseLump + frame, PU_CACHE), 232, 10);
+}
+
 void M_DrawNewGame()
 {
 	if (W_CheckNumForName("M_NEWG") >= 0)
-		screen->DrawPatchClean(W_CachePatch("M_NEWG"), 96, 14);
-	else
 	{
-		V_SetFont("BIGFONT");
-		screen->DrawTextCleanMove(CR_GRAY, 96, 14, MenuLocalizedOrFallback("MNU_NEWGAME", "NEW GAME"));
-		V_SetFont("SMALLFONT");
+		screen->DrawPatchClean(W_CachePatch("M_NEWG"), 96, 14);
 	}
 
 	if (W_CheckNumForName("M_SKILL") >= 0)
+	{
 		screen->DrawPatchClean(W_CachePatch("M_SKILL"), 54, 38);
-	else
-		screen->DrawTextCleanMove(CR_GRAY, 54, 38,
-		                         MenuLocalizedOrFallback("MNU_CHOOSESKILL", "CHOOSE SKILL"));
+	}
 
 	static constexpr int SMALLFONT_OFFSET = 8; // Line up with the skull
 
@@ -1074,7 +1133,7 @@ void M_DrawEpisode()
 		screen->DrawPatchClean(W_CachePatch("M_EPISOD"), 54, y);
 	else
 		screen->DrawTextCleanMove(CR_GRAY, 54, y,
-		                         MenuLocalizedOrFallback("MNU_CHOOSEEPISODE", "CHOOSE EPISODE"));
+		                         LocalizedString("MNU_CHOOSEEPISODE"));
 }
 
 static int skillchoice = 0;
@@ -1219,7 +1278,7 @@ void M_DrawOptions()
 	{
 		V_SetFont("BIGFONT");
 		screen->DrawTextCleanMove(CR_GRAY, 108, 15,
-		                         MenuLocalizedOrFallback("MNU_OPTIONS", "OPTIONS"));
+		                         LocalizedString("MNU_OPTIONS"));
 		V_SetFont("SMALLFONT");
 	}
 }
@@ -1297,19 +1356,19 @@ void M_QuitDOOM(int choice)
 {
 	// We pick index 0 which is language sensitive,
 	//  or one at random, between 1 and maximum number.
-	static std::string endstring;
-
-	if (gameinfo.gametype == GAMETYPE_HERETIC)
-	{
-		endstring = fmt::sprintf("%s\n\n%s", GStrings(RAVENQUITMSG), GStrings(DOSY));
-	}
-	else
-	{
-		endstring =
+	static std::string endstring =
 			fmt::sprintf("%s\n\n%s",
 			             GStrings.getIndex(GStrings.toIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)),
 			             GStrings(DOSY));
-	}
+
+	M_StartMessage(endstring.c_str(), M_QuitResponse, true);
+}
+
+void M_QuitHeretic(int choice)
+{
+	// We pick index 0 which is language sensitive,
+	//  or one at random, between 1 and maximum number.
+	static std::string endstring = fmt::sprintf("%s\n\n%s", GStrings(RAVENQUITMSG), GStrings(DOSY));
 
 	M_StartMessage(endstring.c_str(), M_QuitResponse, true);
 }
@@ -1457,7 +1516,7 @@ static void M_PlayerSetupDrawer()
 		else
 		{
 			screen->DrawTextCleanMove(CR_GRAY, 110, 10,
-			                         MenuLocalizedOrFallback("MNU_PLAYERSETUP", "PLAYER SETUP"));
+			                         LocalizedString("MNU_PLAYERSETUP"));
 		}
 
 		/*screen->DrawPatchClean (patch,
@@ -2194,6 +2253,7 @@ void M_StartControlPanel()
 	drawSkull = true;
 	MenuStackDepth = 0;
 	menuactive = 1;
+	MenuTime = 0;
 	currentMenu = &MainDef;
 	itemOn = currentMenu->lastOn;
 	OptionsActive = false;			// [RH] Make sure none of the options menus appear.
@@ -2253,7 +2313,7 @@ void M_Drawer()
 				}
 				else if (currentMenu->menuitems[i].textname[0])
 				{
-					screen->DrawTextCleanMove(CR_RED, x, y, currentMenu->menuitems[i].textname);
+					screen->DrawTextCleanMove(CR_RED, x, y, LocalizedString(currentMenu->menuitems[i].textname));
 				}
 
 				y += LINEHEIGHT;
@@ -2354,7 +2414,11 @@ void M_Ticker()
 	}
 
 	if (currentMenu == &PSetupDef)
+	{
 		M_PlayerSetupTicker ();
+	}
+	
+	MenuTime++;
 }
 
 
@@ -2379,6 +2443,8 @@ void M_Init()
 	currentMenu = &MainDef;
 	OptionsActive = false;
 	menuactive = 0;
+	MenuTime = 0;
+	SkullBaseLump = W_CheckNumForName ("M_SKL00");
 	itemOn = currentMenu->lastOn;
 	whichSkull = 0;
 	skullAnimCounter = 10;
@@ -2395,6 +2461,15 @@ void M_Init()
         MainDef.menuitems = Doom2MainMenu;
 
         MainDef.y += 8;
+    }
+    else if (gameinfo.gametype & GAMETYPE_HERETIC)
+    {
+    	// Heretic changes stuff
+		MainDef.numitems = htc_main_end;
+        MainDef.menuitems = HereticMainMenu;
+        MainDef.routine = M_DrawHereticMainMenu;
+        MainDef.x = 110;
+        MainDef.y = 56;
     }
 
 	M_OptInit ();

@@ -1203,9 +1203,6 @@ void I_DrawLoadingIcon()
 //
 static void I_BlitLoadingIcon()
 {
-	if (W_CheckNumForName("STDISK") < 0)
-		return;
-
 	const patch_t* diskpatch = W_CachePatch("STDISK");
 	IWindowSurface* surface = I_GetPrimarySurface();
 
@@ -1297,6 +1294,8 @@ void I_FinishUpdate()
 {
 	if (I_VideoInitialized())
 	{
+		static const bool show_loading_icon = W_CheckNumForName("STDISK") >= 0 && gametic <= loading_icon_expire;
+
 		// draws little dots on the bottom of the screen
 		if (vid_ticker)
 			V_DrawFPSTicker();
@@ -1306,7 +1305,7 @@ void I_FinishUpdate()
 			V_DrawFPSWidget();
 
 		// draws a disk loading icon in the lower right corner
-		if (gametic <= loading_icon_expire)
+		if (show_loading_icon)
 			I_BlitLoadingIcon();
 
 		// Handle blitting our 8bpp surface to the 32bpp video window surface
@@ -1324,7 +1323,7 @@ void I_FinishUpdate()
 		I_GetWindow()->finishRefresh();
 
 		// restores the background underneath the disk loading icon in the lower right corner
-		if (gametic <= loading_icon_expire)
+		if (show_loading_icon)
 			I_RestoreLoadingIcon();
 	}
 }
