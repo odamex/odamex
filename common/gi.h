@@ -100,6 +100,10 @@ typedef struct gameinfo_s
 	std::string titleString;
 	OLumpName baseMapinfoLump;
 	OLumpName sharewareMapinfoLump;
+	std::string bigFontPattern;
+	int bigFontOffset;
+	std::string smallFontPattern;
+	int smallFontOffset;
 
 	gameinfo_s()
 		: flags(0)
@@ -132,6 +136,10 @@ typedef struct gameinfo_s
 		, titleString("Unknown IWAD")
 		, baseMapinfoLump("")
 		, sharewareMapinfoLump("")
+		, bigFontPattern("FONTB%02d")
+		, bigFontOffset(-32)
+		, smallFontPattern("STCFN%03d")
+		, smallFontOffset(0)
 	{}
 
 } gameinfo_t;
