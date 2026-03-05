@@ -373,8 +373,11 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 	if (::hu_font[0].empty())
 		return;
 
-	if (normalcolor < 0 || normalcolor > NUM_TEXT_COLORS)
+	if (normalcolor < 0 || normalcolor >= NUM_TEXT_COLORS)
 		normalcolor = CR_RED;
+
+	if (!Ranges)
+		return;
 
 	V_ColorMap = translationref_t(Ranges + normalcolor * 256);
 
@@ -391,7 +394,8 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
 		{
 			int new_color = V_GetTextColor(str);
-			V_ColorMap = translationref_t(Ranges + new_color * 256);
+			if (new_color >= 0 && new_color < NUM_TEXT_COLORS)
+				V_ColorMap = translationref_t(Ranges + new_color * 256);
 			str += 2;
 			continue;
 		}

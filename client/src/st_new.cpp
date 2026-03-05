@@ -282,7 +282,7 @@ void ST_DrawBar (int normalcolor, unsigned int value, unsigned int total,
 				 bool cutleft = false, bool cutright = false) {
 	const int xscale = hud_scale ? CleanXfac : 1;
 
-	if (normalcolor > NUM_TEXT_COLORS || normalcolor == CR_GREY) {
+	if (normalcolor < 0 || normalcolor >= NUM_TEXT_COLORS) {
 		normalcolor = CR_RED;
 	}
 
