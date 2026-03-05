@@ -39,7 +39,6 @@
 #include "v_text.h"
 #include "i_video.h"
 #include "cmdlib.h"
-#include "v_textcolors.h"
 
 size_t P_NumPlayersInGame(void);
 argb_t CL_GetPlayerColor(const player_t&);
