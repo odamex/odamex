@@ -741,13 +741,15 @@ std::string ISDL20Window::getVideoDriverName() const
 //
 void ISDL20Window::setPalette(const argb_t* palette_colors)
 {
-	lockSurface();
+	IWindowSurface* primary = getPrimarySurface();
+	if (!primary || !palette_colors)
+		return;
 
-	getPrimarySurface()->setPalette(palette_colors);
-
+	// Keep this lock-free. setPalette() may be called from recoverable-error
+	// paths where rendering surfaces are mid-lock; taking another lock here can
+	// trip debug lock assertions and hide the original fault.
+	primary->setPalette(palette_colors);
 	mNeedPaletteRefresh = true;
-
-	unlockSurface();
 }
 
 
