@@ -17,8 +17,8 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   The freecam is a client-side only player thats injected
-//	 during netdemo playback, lets you free roam
+//   The freecam is a clientside-only player that is injected and used
+//   with spynext to free roam the map during netdemos or allowed gamemodes
 //
 //-----------------------------------------------------------------------------
 
@@ -39,7 +39,6 @@ public:
 	static void reset();
 	static void setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
 	static bool needPosition();
-	static void setPrevMap(std::string m);
 	static bool allowAdd();
 	static bool allowSpy();
 	static void retireFor255thPlayer(player_t* cam);

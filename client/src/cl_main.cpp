@@ -508,7 +508,7 @@ void CL_CheckDisplayPlayer(void)
 	{
 		// Request information about this player from the server
 		// (weapons, ammo, health, etc)
-		// server doesnt know about clientside freecam
+		// server doesnt know about clientside freecam, dont tell it
 		if (!displayplayer().isFreecam && newid != Freecam::freecam_id)
 		{
 			MSG_WriteMarker(&net_buffer, clc_spy);
