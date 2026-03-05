@@ -31,6 +31,7 @@
 #include "i_video.h"
 #include "v_video.h"
 #include "hu_stuff.h"
+#include "gi.h"
 #include "w_wad.h"
 
 #include "hashtable.h"
@@ -62,18 +63,17 @@ extern byte *Ranges;
  */
 void V_TextInit()
 {
-	int j, sub;
+	int j;
 	std::string buffer;
 
-	const char *bigfont = "FONTB%02d";
-	const char *smallfont = "STCFN%.3d";
+	const char *bigfont = gameinfo.bigFontPattern.c_str();
+	const char *smallfont = gameinfo.smallFontPattern.c_str();
 
-	// Level name font, used between levels, starts at index 1.
-	j = 1;
-	sub = 0;
+	// Level name font. Indexing/pattern are gameinfo-driven.
+	j = gameinfo.bigFontLumpStart;
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
-		buffer = fmt::sprintf(bigfont, j++ - sub);
+		buffer = fmt::sprintf(bigfont, j++);
 
 		// Some letters of this font are missing.
 		int num = W_CheckNumForName(buffer.c_str());
@@ -83,13 +83,19 @@ void V_TextInit()
 			::hu_bigfont[i] = W_CachePatchHandle("TNT1A0", PU_STATIC, ns_sprites);
 	}
 
-	// Normal doom chat/message font, starts at index 33.
-	j = HU_FONTSTART;
-	sub = 0;
+	// Chat/message small font.
+	j = gameinfo.smallFontLumpStart;
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
-		buffer = fmt::sprintf(smallfont, j++ - sub);
-		::hu_smallfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
+		buffer = fmt::sprintf(smallfont, j++);
+
+		// Heretic IWAD + partial/custom odamex.wad setups may not carry
+		// complete STCFN glyph coverage.
+		int num = W_CheckNumForName(buffer.c_str());
+		if (num != -1)
+			::hu_smallfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
+		else
+			::hu_smallfont[i] = W_CachePatchHandle("TNT1A0", PU_STATIC, ns_sprites);
 	}
 
 	const char* digfont = "DIG%02d";
