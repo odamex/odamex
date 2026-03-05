@@ -925,6 +925,17 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 	screen->DrawPatchClean (W_CachePatch ("M_LSRGHT"), x, y+7);
 }
 
+static const char* MenuLocalizedOrFallback(const char* key, const char* fallback)
+{
+	if (GStrings.hasString(key))
+	{
+		const char* s = GStrings(key);
+		if (s && s[0])
+			return s;
+	}
+	return fallback;
+}
+
 //
 // M_DrawMainMenu
 //
@@ -946,12 +957,17 @@ void M_DrawNewGame()
 	if (W_CheckNumForName("M_NEWG") >= 0)
 		screen->DrawPatchClean(W_CachePatch("M_NEWG"), 96, 14);
 	else
-		screen->DrawTextCleanMove(CR_GRAY, 96, 14, "NEW GAME");
+	{
+		V_SetFont("BIGFONT");
+		screen->DrawTextCleanMove(CR_GRAY, 96, 14, MenuLocalizedOrFallback("MNU_NEWGAME", "NEW GAME"));
+		V_SetFont("SMALLFONT");
+	}
 
 	if (W_CheckNumForName("M_SKILL") >= 0)
 		screen->DrawPatchClean(W_CachePatch("M_SKILL"), 54, 38);
 	else
-		screen->DrawTextCleanMove(CR_GRAY, 54, 38, "CHOOSE SKILL");
+		screen->DrawTextCleanMove(CR_GRAY, 54, 38,
+		                         MenuLocalizedOrFallback("MNU_CHOOSESKILL", "CHOOSE SKILL"));
 
 	static constexpr int SMALLFONT_OFFSET = 8; // Line up with the skull
 
@@ -971,12 +987,14 @@ namespace
 		{
 			switch (index)
 			{
-			case 0: return "NEW GAME";
-			case 1: return "OPTIONS";
-			case 2: return "LOAD GAME";
-			case 3: return "SAVE GAME";
-			case 4: return (menu->numitems > 5) ? "INFO" : "QUIT GAME";
-			case 5: return "QUIT GAME";
+			case 0: return MenuLocalizedOrFallback("MNU_NEWGAME", "NEW GAME");
+			case 1: return MenuLocalizedOrFallback("MNU_OPTIONS", "OPTIONS");
+			case 2: return MenuLocalizedOrFallback("MNU_LOADGAME", "LOAD GAME");
+			case 3: return MenuLocalizedOrFallback("MNU_SAVEGAME", "SAVE GAME");
+			case 4: return (menu->numitems > 5)
+			                   ? MenuLocalizedOrFallback("MNU_INFO", "INFO")
+			                   : MenuLocalizedOrFallback("MNU_QUITGAME", "QUIT GAME");
+			case 5: return MenuLocalizedOrFallback("MNU_QUITGAME", "QUIT GAME");
 			default: return "";
 			}
 		}
@@ -1084,7 +1102,8 @@ void M_DrawEpisode()
 	if (W_CheckNumForName("M_EPISOD") >= 0)
 		screen->DrawPatchClean(W_CachePatch("M_EPISOD"), 54, y);
 	else
-		screen->DrawTextCleanMove(CR_GRAY, 54, y, "CHOOSE EPISODE");
+		screen->DrawTextCleanMove(CR_GRAY, 54, y,
+		                         MenuLocalizedOrFallback("MNU_CHOOSEEPISODE", "CHOOSE EPISODE"));
 }
 
 static int skillchoice = 0;
@@ -1226,7 +1245,12 @@ void M_DrawOptions()
 	if (W_CheckNumForName("M_OPTTTL") >= 0)
 		screen->DrawPatchClean(W_CachePatch("M_OPTTTL"), 108, 15);
 	else
-		screen->DrawTextCleanMove(CR_GRAY, 108, 15, "OPTIONS");
+	{
+		V_SetFont("BIGFONT");
+		screen->DrawTextCleanMove(CR_GRAY, 108, 15,
+		                         MenuLocalizedOrFallback("MNU_OPTIONS", "OPTIONS"));
+		V_SetFont("SMALLFONT");
+	}
 }
 
 void M_Options(int choice)
@@ -1461,7 +1485,8 @@ static void M_PlayerSetupDrawer()
 		}
 		else
 		{
-			screen->DrawTextCleanMove(CR_GRAY, 110, 10, "PLAYER SETUP");
+			screen->DrawTextCleanMove(CR_GRAY, 110, 10,
+			                         MenuLocalizedOrFallback("MNU_PLAYERSETUP", "PLAYER SETUP"));
 		}
 
 		/*screen->DrawPatchClean (patch,
@@ -2279,11 +2304,19 @@ void M_Drawer()
 			V_SetFont("SMALLFONT");
 
 
-			// DRAW SKULL
+			// DRAW SKULL / selection cursor
 			if (drawSkull)
 			{
-				screen->DrawPatchClean(W_CachePatch(skullName[whichSkull]),
-					x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
+				if (W_CheckNumForName(skullName[whichSkull]) >= 0)
+				{
+					screen->DrawPatchClean(W_CachePatch(skullName[whichSkull]),
+						x + SKULLXOFF, currentMenu->y - 5 + itemOn * LINEHEIGHT);
+				}
+				else
+				{
+					screen->DrawTextCleanMove(CR_RED, x + SKULLXOFF + 8,
+					                         currentMenu->y + itemOn * LINEHEIGHT, ">");
+				}
 			}
 		}
 	}
