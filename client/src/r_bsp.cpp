@@ -726,10 +726,9 @@ void R_Subsector (int num)
 	// killough 9/18/98: Fix underwater slowdown, by passing real sector
 	// instead of fake one. Improve sprite lighting by basing sprite
 	// lightlevels on floor & ceiling lightlevels in the surrounding area.
-	if (r_thingsectorlight)
-		R_AddSprites(sub.sector, (floorlightlevel + ceilinglightlevel) / 2, FakeSide);
-	else
-		R_AddSprites(sub.sector, frontsector->lightlevel, FakeSide);
+	const int lightlevel = r_thingsectorlight ?
+		(floorlightlevel + ceilinglightlevel) / 2 : frontsector->lightlevel;
+	R_AddSprites(sub.sector, lightlevel, FakeSide);
 
 	// [RH] Add particles
 	if (r_particles)
