@@ -1596,7 +1596,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.baseMapinfoLump = "_HERENFO";
 		gameinfo.sharewareMapinfoLump = "_HESWNFO";
 		gameinfo.smallFontPattern = "FONTA%02d";
-		gameinfo.smallFontOffset = -32;
+		gameinfo.smallFontLumpStart = 1;
 	}
 	else if (idname.find(OStringToUpper(OString(HERETIC_PREFIX))) == 0)
 	{
@@ -1608,7 +1608,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.titleString = "Heretic";
 		gameinfo.baseMapinfoLump = "_HERENFO";
 		gameinfo.smallFontPattern = "FONTA%02d";
-		gameinfo.smallFontOffset = -32;
+		gameinfo.smallFontLumpStart = 1;
 	}
 	else if (idname.find("CHEX QUEST") == 0)
 	{

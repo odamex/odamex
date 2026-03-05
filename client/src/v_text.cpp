@@ -63,18 +63,17 @@ extern byte *Ranges;
  */
 void V_TextInit()
 {
-	int j, sub;
+	int j;
 	std::string buffer;
 
 	const char *bigfont = gameinfo.bigFontPattern.c_str();
 	const char *smallfont = gameinfo.smallFontPattern.c_str();
 
 	// Level name font. Indexing/pattern are gameinfo-driven.
-	j = HU_FONTSTART;
-	sub = gameinfo.bigFontOffset;
+	j = gameinfo.bigFontLumpStart;
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
-		buffer = fmt::sprintf(bigfont, j++ + sub);
+		buffer = fmt::sprintf(bigfont, j++);
 
 		// Some letters of this font are missing.
 		int num = W_CheckNumForName(buffer.c_str());
@@ -85,11 +84,10 @@ void V_TextInit()
 	}
 
 	// Chat/message small font.
-	j = HU_FONTSTART;
-	sub = gameinfo.smallFontOffset;
+	j = gameinfo.smallFontLumpStart;
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
-		buffer = fmt::sprintf(smallfont, j++ + sub);
+		buffer = fmt::sprintf(smallfont, j++);
 
 		// Heretic IWAD + partial/custom odamex.wad setups may not carry
 		// complete STCFN glyph coverage.
