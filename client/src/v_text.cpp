@@ -89,7 +89,14 @@ void V_TextInit()
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
 		buffer = fmt::sprintf(smallfont, j++ - sub);
-		::hu_smallfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
+
+		// Heretic IWAD + partial/custom odamex.wad setups may not carry
+		// complete STCFN glyph coverage.
+		int num = W_CheckNumForName(buffer.c_str());
+		if (num != -1)
+			::hu_smallfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
+		else
+			::hu_smallfont[i] = W_CachePatchHandle("TNT1A0", PU_STATIC, ns_sprites);
 	}
 
 	const char* digfont = "DIG%02d";
