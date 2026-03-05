@@ -151,7 +151,7 @@ size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing);
 bool P_VisibleToPlayers(const AActor *mo);
 void P_SetMobjBaseline(AActor& mo);
 uint32_t P_GetMobjBaselineFlags(const AActor& mo);
-bool P_IsNetplaySpawn(short type);
+bool P_IsSpawnThing(short type);
 
 // [ML] From EE
 int P_ThingInfoHeight(mobjinfo_t *mi);

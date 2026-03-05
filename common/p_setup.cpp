@@ -888,7 +888,7 @@ void P_LoadThings (int lump)
 
 		// clientside-only freecam start pos
 		#ifdef CLIENT_APP
-		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsNetplaySpawn(mt2.type))
+		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsSpawnThing(mt2.type))
 		{
 			Freecam::setStartPosition(mt2.x << FRACBITS, mt2.y << FRACBITS, mt2.z << FRACBITS, ANG45 * (mt2.angle / 45));
 		}
@@ -943,8 +943,9 @@ void P_LoadThings2 (int lump, int position)
 		mt->type = LESHORT(mt->type);
 		mt->flags = LESHORT(mt->flags);
 
+		// clientside-only freecam start pos
 		#ifdef CLIENT_APP
-		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsNetplaySpawn(mt->type))
+		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsSpawnThing(mt->type))
 		{
 			Freecam::setStartPosition(mt->x << FRACBITS, mt->y << FRACBITS, mt->z << FRACBITS, ANG45 * (mt->angle / 45));
 		}
