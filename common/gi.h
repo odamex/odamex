@@ -98,6 +98,8 @@ typedef struct gameinfo_s
 	std::vector<mline_t> easyKey;
 
 	std::string titleString;
+	OLumpName baseMapinfoLump;
+	OLumpName sharewareMapinfoLump;
 
 	gameinfo_s()
 		: flags(0)
@@ -128,6 +130,8 @@ typedef struct gameinfo_s
 		, textScreenX(0)
 		, textScreenY(0)
 		, titleString("Unknown IWAD")
+		, baseMapinfoLump("")
+		, sharewareMapinfoLump("")
 	{}
 
 } gameinfo_t;

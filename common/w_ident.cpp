@@ -1587,6 +1587,8 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_SHAREWARE | GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "Heretic Shareware";
+		gameinfo.baseMapinfoLump = "_HERENFO";
+		gameinfo.sharewareMapinfoLump = "_HESWNFO";
 	}
 	else if (idname.find(OStringToUpper(OString(HERETIC_PREFIX))) == 0)
 	{
@@ -1596,6 +1598,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "Heretic";
+		gameinfo.baseMapinfoLump = "_HERENFO";
 	}
 	else if (idname.find("CHEX QUEST") == 0)
 	{

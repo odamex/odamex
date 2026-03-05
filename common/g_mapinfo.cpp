@@ -1861,54 +1861,67 @@ void G_ParseMapInfo()
 	// Parse common defaults first for all game missions.
 	ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
 
-	switch (gamemission)
+	if (!gameinfo.baseMapinfoLump.empty())
 	{
-	case doom:
-	case chex3v:
-	case retail_freedoom:
-		baseinfoname = "_D1NFO";
-		if (gamemode == shareware)
+		baseinfoname = gameinfo.baseMapinfoLump.c_str();
+		if (!gameinfo.sharewareMapinfoLump.empty())
 		{
 			lump = W_GetNumForName(baseinfoname);
 			ParseMapInfoLump(lump, baseinfoname);
-			baseinfoname = "_D1SWNFO";
+			baseinfoname = gameinfo.sharewareMapinfoLump.c_str();
 		}
-		break;
-	case doom2:
-	case chex3d2:
-	case commercial_freedoom:
-	case commercial_hacx:
-		baseinfoname = "_D2NFO";
-		if (gamemode == commercial_bfg)
+	}
+	else
+	{
+		switch (gamemission)
 		{
-			lump = W_GetNumForName(baseinfoname);
-			ParseMapInfoLump(lump, baseinfoname);
-			baseinfoname = "_BFGNFO";
+		case doom:
+		case chex3v:
+		case retail_freedoom:
+			baseinfoname = "_D1NFO";
+			if (gamemode == shareware)
+			{
+				lump = W_GetNumForName(baseinfoname);
+				ParseMapInfoLump(lump, baseinfoname);
+				baseinfoname = "_D1SWNFO";
+			}
+			break;
+		case doom2:
+		case chex3d2:
+		case commercial_freedoom:
+		case commercial_hacx:
+			baseinfoname = "_D2NFO";
+			if (gamemode == commercial_bfg)
+			{
+				lump = W_GetNumForName(baseinfoname);
+				ParseMapInfoLump(lump, baseinfoname);
+				baseinfoname = "_BFGNFO";
+			}
+			break;
+		case pack_tnt:
+			baseinfoname = "_TNTNFO";
+			break;
+		case pack_plut:
+			baseinfoname = "_PLUTNFO";
+			break;
+		case chex:
+		case chex3:
+			baseinfoname = "_CHEXNFO";
+			break;
+		case heretic:
+			baseinfoname = "_HERENFO";
+			if (gamemode == shareware_heretic)
+			{
+				lump = W_GetNumForName(baseinfoname);
+				ParseMapInfoLump(lump, baseinfoname);
+				baseinfoname = "_HESWNFO";
+			}
+			break;
+		case none:
+		default:
+			I_Error("{}: This IWAD is unknown to Odamex", __FUNCTION__);
+			break;
 		}
-		break;
-	case pack_tnt:
-		baseinfoname = "_TNTNFO";
-		break;
-	case pack_plut:
-		baseinfoname = "_PLUTNFO";
-		break;
-	case chex:
-	case chex3:
-		baseinfoname = "_CHEXNFO";
-		break;
-	case heretic:
-		baseinfoname = "_HERENFO";
-		if (gamemode == shareware_heretic)
-		{
-			lump = W_GetNumForName(baseinfoname);
-			ParseMapInfoLump(lump, baseinfoname);
-			baseinfoname = "_HESWNFO";
-		}
-		break;
-	case none:
-	default:
-		I_Error("{}: This IWAD is unknown to Odamex", __FUNCTION__);
-		break;
 	}
 
 	lump = W_GetNumForName(baseinfoname);
