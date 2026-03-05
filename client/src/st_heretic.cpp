@@ -45,6 +45,8 @@ lumpHandle_t hticLeftFace;
 lumpHandle_t hticRightFace;
 lumpHandle_t hticGodEyesLeft;
 lumpHandle_t hticGodEyesRight;
+lumpHandle_t hticTopLeftCap;
+lumpHandle_t hticTopRightCap;
 
 bool hticAssetsLoaded = false;
 bool hticHasCoreStatusbar = false;
@@ -88,6 +90,8 @@ void ST_HticClearAssets()
 	hticRightFace.clear();
 	hticGodEyesLeft.clear();
 	hticGodEyesRight.clear();
+	hticTopLeftCap.clear();
+	hticTopRightCap.clear();
 
 	hticAssetsLoaded = false;
 	hticHasCoreStatusbar = false;
@@ -317,6 +321,28 @@ void ST_HticDrawBackgroundAndWidgets()
 		canvas->DrawPatch(W_ResolvePatchHandle(hticKeys[i]), 153, y);
 	}
 }
+
+void ST_HticDrawTopCaps(IWindowSurface* surface)
+{
+	if (hticTopLeftCap.empty() || hticTopRightCap.empty())
+		return;
+
+	const patch_t* left = W_ResolvePatchHandle(hticTopLeftCap);
+	const patch_t* right = W_ResolvePatchHandle(hticTopRightCap);
+	const int leftW = std::max(1, left->width() * ST_WIDTH / HTIC_BASE_WIDTH);
+	const int leftH = std::max(1, left->height() * ST_HEIGHT / HTIC_BASE_HEIGHT);
+	const int rightW = std::max(1, right->width() * ST_WIDTH / HTIC_BASE_WIDTH);
+	const int rightH = std::max(1, right->height() * ST_HEIGHT / HTIC_BASE_HEIGHT);
+
+	const int leftX = ST_X;
+	const int rightX = ST_X + ST_WIDTH - rightW;
+	const int leftY = ST_Y - leftH + 1;
+	const int rightY = ST_Y - rightH + 1;
+
+	const DCanvas* canvas = surface->getDefaultCanvas();
+	canvas->DrawPatchStretched(left, leftX, leftY, leftW, leftH);
+	canvas->DrawPatchStretched(right, rightX, rightY, rightW, rightH);
+}
 } // namespace
 
 void ST_HticInit()
@@ -347,6 +373,8 @@ void ST_HticInit()
 	hticRightFace = ST_HticTryCachePatch("RTFACE");
 	hticGodEyesLeft = ST_HticTryCachePatch("GOD1");
 	hticGodEyesRight = ST_HticTryCachePatch("GOD2");
+	hticTopLeftCap = ST_HticTryCachePatch("LTFCTOP");
+	hticTopRightCap = ST_HticTryCachePatch("RTFCTOP");
 
 	hticAssetsLoaded = true;
 	hticHasCoreStatusbar = !hticBarMain.empty() && !hticBigNum[0].empty();
@@ -410,6 +438,7 @@ void ST_HticDrawer()
 	IWindowSurface* surface = R_GetRenderingSurface();
 	surface->blitcrop(stbar_surface, 0, 0, HTIC_BASE_WIDTH, HTIC_BASE_HEIGHT, ST_X, ST_Y, ST_WIDTH,
 	                 ST_HEIGHT);
+	ST_HticDrawTopCaps(surface);
 }
 
 void ST_HticShutdown()
