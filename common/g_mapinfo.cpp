@@ -1861,54 +1861,23 @@ void G_ParseMapInfo()
 	// Parse common defaults first for all game missions.
 	ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
 
-	switch (gamemission)
+	const char* sharewareMapinfoLump = NULL;
+
+	baseinfoname = gameinfo.baseMapinfoLump.c_str();
+	if (!baseinfoname || !baseinfoname[0])
 	{
-	case doom:
-	case chex3v:
-	case retail_freedoom:
-		baseinfoname = "_D1NFO";
-		if (gamemode == shareware)
-		{
-			lump = W_GetNumForName(baseinfoname);
-			ParseMapInfoLump(lump, baseinfoname);
-			baseinfoname = "_D1SWNFO";
-		}
-		break;
-	case doom2:
-	case chex3d2:
-	case commercial_freedoom:
-	case commercial_hacx:
-		baseinfoname = "_D2NFO";
-		if (gamemode == commercial_bfg)
-		{
-			lump = W_GetNumForName(baseinfoname);
-			ParseMapInfoLump(lump, baseinfoname);
-			baseinfoname = "_BFGNFO";
-		}
-		break;
-	case pack_tnt:
-		baseinfoname = "_TNTNFO";
-		break;
-	case pack_plut:
-		baseinfoname = "_PLUTNFO";
-		break;
-	case chex:
-	case chex3:
-		baseinfoname = "_CHEXNFO";
-		break;
-	case heretic:
-		baseinfoname = "_HERENFO";
-		if (gamemode == shareware_heretic)
-		{
-			lump = W_GetNumForName(baseinfoname);
-			ParseMapInfoLump(lump, baseinfoname);
-			baseinfoname = "_HESWNFO";
-		}
-		break;
-	case none:
-	default:
-		I_Error("{}: This IWAD is unknown to Odamex", __FUNCTION__);
-		break;
+		I_Error("{}: missing gameinfo.baseMapinfoLump for gamemission={} gamemode={}", __FUNCTION__,
+		        static_cast<int>(gamemission), static_cast<int>(gamemode));
+	}
+
+	if (!gameinfo.sharewareMapinfoLump.empty())
+		sharewareMapinfoLump = gameinfo.sharewareMapinfoLump.c_str();
+
+	if (sharewareMapinfoLump)
+	{
+		lump = W_GetNumForName(baseinfoname);
+		ParseMapInfoLump(lump, baseinfoname);
+		baseinfoname = sharewareMapinfoLump;
 	}
 
 	lump = W_GetNumForName(baseinfoname);
