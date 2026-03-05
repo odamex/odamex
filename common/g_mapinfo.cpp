@@ -1863,46 +1863,12 @@ void G_ParseMapInfo()
 
 	const char* sharewareMapinfoLump = NULL;
 
-	switch (gamemission)
+	baseinfoname = gameinfo.baseMapinfoLump.c_str();
+	if (!baseinfoname || !baseinfoname[0])
 	{
-	case doom:
-	case chex3v:
-	case retail_freedoom:
-		baseinfoname = "_D1NFO";
-		if (gamemode == shareware)
-			sharewareMapinfoLump = "_D1SWNFO";
-		break;
-	case doom2:
-	case chex3d2:
-	case commercial_freedoom:
-	case commercial_hacx:
-		baseinfoname = "_D2NFO";
-		if (gamemode == commercial_bfg)
-			sharewareMapinfoLump = "_BFGNFO";
-		break;
-	case pack_tnt:
-		baseinfoname = "_TNTNFO";
-		break;
-	case pack_plut:
-		baseinfoname = "_PLUTNFO";
-		break;
-	case chex:
-	case chex3:
-		baseinfoname = "_CHEXNFO";
-		break;
-	case heretic:
-		baseinfoname = "_HERENFO";
-		if (gamemode == shareware_heretic)
-			sharewareMapinfoLump = "_HESWNFO";
-		break;
-	case none:
-	default:
-		I_Error("{}: This IWAD is unknown to Odamex", __FUNCTION__);
-		break;
+		I_Error("{}: missing gameinfo.baseMapinfoLump for gamemission={} gamemode={}", __FUNCTION__,
+		        static_cast<int>(gamemission), static_cast<int>(gamemode));
 	}
-
-	if (!gameinfo.baseMapinfoLump.empty())
-		baseinfoname = gameinfo.baseMapinfoLump.c_str();
 
 	if (!gameinfo.sharewareMapinfoLump.empty())
 		sharewareMapinfoLump = gameinfo.sharewareMapinfoLump.c_str();

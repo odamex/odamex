@@ -1538,6 +1538,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "REKKR";
+		gameinfo.baseMapinfoLump = "_D1NFO";
 	}
 	else if (idname.find("HACX") == 0)
 	{
@@ -1546,6 +1547,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "HACX";
+		gameinfo.baseMapinfoLump = "_D2NFO";
 	}
 	else if (idname.find(OStringToUpper(OString(PLUTONIA_PREFIX))) == 0)
 	{
@@ -1554,6 +1556,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "DOOM 2: Plutonia Experiment";
+		gameinfo.baseMapinfoLump = "_PLUTNFO";
 	}
 	else if (idname.find(OStringToUpper(OString(TNT_PREFIX))) == 0)
 	{
@@ -1562,6 +1565,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "DOOM 2: TNT - Evilution";
+		gameinfo.baseMapinfoLump = "_TNTNFO";
 	}
     else if (idname.find("CHEX QUEST 3V MODDING") == 0)
 	{
@@ -1570,6 +1574,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "Chex Quest 3 Modding Version";
+		gameinfo.baseMapinfoLump = "_D2NFO";
 	}
     else if (idname.find(OStringToUpper(OString(CHEX3_PREFIX))) == 0)
 	{
@@ -1578,6 +1583,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "Chex Quest 3";
+		gameinfo.baseMapinfoLump = gamemission == chex3v ? "_D1NFO" : "_CHEXNFO";
 	}
 	else if (idname.find(OStringToUpper(OString(HERETICSW_PREFIX))) == 0)
 	{
@@ -1607,6 +1613,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "Chex Quest";
+		gameinfo.baseMapinfoLump = "_CHEXNFO";
 	}
 	else if (idname.find(OStringToUpper(OString(FREEDOOM1_PREFIX))) == 0)
 	{
@@ -1615,6 +1622,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "FreeDoom: Phase 1";
+		gameinfo.baseMapinfoLump = "_D1NFO";
 	}
 	else if (idname.find("FREEDOOM") == 0)
 	{
@@ -1623,6 +1631,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "FreeDoom: Phase 2";
+		gameinfo.baseMapinfoLump = "_D2NFO";
 	}
 	else if (idname.find(OStringToUpper(OString(FREEDOOM2_PREFIX))) == 0)
 	{
@@ -1631,6 +1640,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "FreeDoom: Phase 2";
+		gameinfo.baseMapinfoLump = "_D2NFO";
 	}
 
 	else if (idname.find(OStringToUpper(OString(FREEDM_PREFIX))) == 0)
@@ -1640,6 +1650,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "FreeDM";
+		gameinfo.baseMapinfoLump = "_D2NFO";
 	}
 	else if (idname.find(OStringToUpper(OString(DOOMSW_PREFIX))) == 0)
 	{
@@ -1676,6 +1687,8 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "DOOM 2: Hell on Earth (BFG Edition)";
+		gameinfo.baseMapinfoLump = "_D2NFO";
+		gameinfo.sharewareMapinfoLump = "_BFGNFO";
 	}
 	else if (idname.find(OStringToUpper(OString(DOOM2_PREFIX))) == 0)
 	{
@@ -1684,6 +1697,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "DOOM 2: Hell on Earth";
+		gameinfo.baseMapinfoLump = "_D2NFO";
 	}
 	else if (idname.find(OStringToUpper(OString(DOOM_PREFIX))) == 0)
 	{
@@ -1701,6 +1715,8 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_SHAREWARE | GI_NOCRAZYDEATH;
 		gameinfo.maxSwitch = 1;
 		gameinfo.titleString = "Unknown IWAD";
+		gameinfo.baseMapinfoLump = "_D1NFO";
+		gameinfo.sharewareMapinfoLump = "_D1SWNFO";
 	}
 }
 
