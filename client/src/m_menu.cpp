@@ -123,6 +123,8 @@ int					PSetupDepth;
 
 // graphic name of skulls
 char				skullName[2][9] = {"M_SKULL1", "M_SKULL2"};
+// graphic name of selector arrow
+char				arrowName[2][9] = {"M_SLCTR1", "M_SLCTR2"};
 
 // current menudef
 oldmenu_t *currentMenu;
@@ -648,7 +650,10 @@ END_COMMAND (quickload)
 BEGIN_COMMAND (menu_quit)
 {	// F10
 	M_StartControlPanel ();
-	M_QuitDOOM(0);
+	if (gameinfo.gametype & GAMETYPE_HERETIC)
+        M_QuitHeretic(0);
+	else
+        M_QuitDOOM(0);
 }
 END_COMMAND (menu_quit)
 
@@ -1009,9 +1014,10 @@ void M_DrawHereticMainMenu (void)
 	int frame;
 
 	frame = (MenuTime / 3) % 18;
+
 	screen->DrawPatchIndirect (W_CachePatch("M_HTIC"), 88, 0);
-	//screen->DrawPatchIndirect ((patch_t *)W_CacheLumpNum(SkullBaseLump + (17 - frame), PU_CACHE), 40, 10);
-	//screen->DrawPatchIndirect ((patch_t *)W_CacheLumpNum(SkullBaseLump + frame, PU_CACHE), 232, 10);
+	screen->DrawPatchIndirect (W_CachePatch(SkullBaseLump + (17 - frame), PU_CACHE), 40, 10);
+	screen->DrawPatchIndirect (W_CachePatch(SkullBaseLump + frame, PU_CACHE), 232, 10);
 }
 
 void M_DrawNewGame()
@@ -2310,13 +2316,13 @@ void M_Drawer()
 					W_CheckNumForName(currentMenu->menuitems[i].name) >= 0)
 				{
 					screen->DrawPatchClean(W_CachePatch(currentMenu->menuitems[i].name), x, y);
+					y += LINEHEIGHT;
 				}
 				else if (currentMenu->menuitems[i].textname[0])
 				{
 					screen->DrawTextCleanMove(CR_RED, x, y, LocalizedString(currentMenu->menuitems[i].textname));
+					y += HTCLINEHEIGHT;
 				}
-
-				y += LINEHEIGHT;
 			}
 			V_SetFont("SMALLFONT");
 
@@ -2324,8 +2330,12 @@ void M_Drawer()
 			// DRAW SKULL
 			if (drawSkull)
 			{
+				if (gameinfo.gametype & GAMETYPE_HERETIC)
+					screen->DrawPatchIndirect (W_CachePatch(arrowName[whichSkull]),
+						x + ARROWXOFF, (currentMenu->y + ARROWYOFF + itemOn*HTCLINEHEIGHT));
+				else
 				screen->DrawPatchClean(W_CachePatch(skullName[whichSkull]),
-					x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
+					x + SKULLXOFF, currentMenu->y + SKULLYOFF + itemOn*LINEHEIGHT);
 			}
 		}
 	}
