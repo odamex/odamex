@@ -348,7 +348,7 @@ static void TransferDone(const OTransferInfo& info)
 	PrintFmt("Download completed at {}/s.\n", bytes);
 
 	if (::dlstate.flags & DL_RECONNECT)
-		CL_Reconnect();
+		CL_Reconnect(NQ_SILENT);
 }
 
 static void TransferError(const char* msg)

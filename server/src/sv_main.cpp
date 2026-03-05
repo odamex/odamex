@@ -440,7 +440,7 @@ void SV_QuitCommand()
 
 BEGIN_COMMAND (rquit)
 {
-	SV_SendReconnectSignal();
+	SV_SendAndFlushReconnectSignal();
 
 	SV_QuitCommand();
 }
@@ -655,22 +655,125 @@ CVAR_FUNC_IMPL(net_maxthreads)
 	PrintFmt("net_maxthreads pool has {} threads\n", s_workers.ThreadCount());
 }
 
-static std::unique_ptr<CanarySocketServer> s_canaries;
-
-static int SV_ConnectCanary(sockaddr_in& i_address)
+namespace
 {
-	netadr_t netAddr;
-
-	SockadrToNetadr(& i_address, & netAddr);
-
-	const player_t& playerRef = SV_FindPlayerByAddr(netAddr);
-
-	if (validplayer(playerRef))
+	/// This class takes ownership of messengers that belonged to clients that are disconnecting
+	/// and makes sure that their Acknowledgements and Retransmits are serviced to the point
+	/// where the server can be certain that the clients receive their final reliable messages.
+	/// This is a key part of having an orderly disconnect even under high loads.
+	class DepartingMessengerManager
 	{
-		return playerRef.id;
-	}
-	return -1;
+		public:
+
+			void TakeMessengerFrom(client_t& client)
+			{
+				m_deadEndMessengers.insert({client.address, std::move(client.messenger)});
+			}
+
+			void ServiceMessenger(int currentTic, std::map<netadr_t, OdaMessenger>::iterator iter, buf_t& packetBuffer)
+			{
+				// Because we still want to honor acks from a disconnecting client,
+				// we must service them immediately upon receipt from the socket because
+				// they are not queued by the receiver.
+				while (iter->second.NextReceivedPacket(packetBuffer))
+				{
+					iter->second.HandleAcks(packetBuffer);
+				}
+
+				iter->second.HandleRetransmissions(currentTic, iter->first);
+				iter->second.SendAll(currentTic, iter->first);
+			}
+
+			size_t CheckMessengers(int currentTic)
+			{
+				buf_t throwaway;
+
+				for (auto iter = m_deadEndMessengers.begin(); iter != m_deadEndMessengers.end(); ++iter)
+				{
+					ServiceMessenger(currentTic, iter, throwaway);
+				}
+
+				return m_deadEndMessengers.size();
+			}
+
+			bool HandlePacket(int currentTic, const netadr_t& address, buf_t& packetBuffer)
+			{
+				auto iter = m_deadEndMessengers.find(address);
+				if (iter != m_deadEndMessengers.end())
+				{
+					iter->second.Receive(packetBuffer);
+
+					ServiceMessenger(currentTic, iter, packetBuffer);
+
+					// Any messenger that's in the dead-end collection is there because we put it there directly
+					// after sending the client's last reliable message.  Therefore, we know the pending Ack
+					// count is going to be > 0.  If we see it go to 0, it's because the client has unambiguously
+					// seen it and moved on.
+					//
+					// Also, we have to remove the old messenger immediately because it's 100% possible that the
+					// client has an immediate reconnection attempt as the very next packet, and we want to handle
+					// it in the `else` case below without delay.
+					if (iter->second.GetPendingAckCount() <= 0)
+					{
+						m_deadEndMessengers.erase(iter);
+					}
+					return true;
+				}
+				return false;
+			}
+
+			void Drop(const netadr_t& address)
+			{
+				m_deadEndMessengers.erase(address);
+			}
+
+		protected:
+			// Intentionally use a map here instead of an unordered_map, because a map (a binary tree) tends to be
+			// faster for iterating over smaller element counts than an unordered_map (a hash table), the latter
+			// of which may require iterating over some number of completely unused buckets.
+			std::map<netadr_t, OdaMessenger> m_deadEndMessengers;
+	};
+
+	DepartingMessengerManager s_departingMessengers;
 }
+
+static void SV_DepartMessenger(client_t& client)
+{
+	s_departingMessengers.TakeMessengerFrom(client);
+}
+
+static size_t SV_CheckDepartingMessengers(int currentTic)
+{
+	return s_departingMessengers.CheckMessengers(currentTic);
+}
+
+static bool SV_HandleDepartingMessengerPacket(int currentTic, const netadr_t& address, buf_t& packetBuffer)
+{
+	return s_departingMessengers.HandlePacket(currentTic, address, packetBuffer);
+}
+
+/// This function handles the case where a client needs to be dropped and we're not counting on it
+/// to acknowledge anything - we know it's going to be unresponsive.
+static void SV_DropClientUngracefully(player_t& playerRef, const char* disconnectPrintVerb)
+{
+	if (validplayer(playerRef) and playerRef.playerstate != PST_DISCONNECT)
+	{
+		SV_BroadcastPrintFmt("{} {} ({})\n",
+		                     playerRef.userinfo.netname,
+		                     disconnectPrintVerb,
+		                     SV_BuildKillsDeathsStatusString(playerRef));
+
+		playerRef.client.displaydisconnect = false;
+		SV_DropClient(playerRef);
+	}
+
+	// This is a special case where we know for certain that the other end is either
+	// truly terminated or timedout.  There's no point in letting the dead-end messenger
+	// handler drive the packet sequence to completion.
+	s_departingMessengers.Drop(playerRef.client.address);
+}
+
+static std::unique_ptr<CanarySocketServer> s_canaries;
 
 static void SV_CheckCanaries()
 {
@@ -680,12 +783,14 @@ static void SV_CheckCanaries()
 
 		while (deadCanaryIter != s_canaries->end())
 		{
-			player_t& playerRef = idplayer(deadCanaryIter->id);
-			if (validplayer(playerRef) and playerRef.playerstate != PST_DISCONNECT)
-			{
-				SV_BroadcastPrintFmt("{} disconnected abnormally\n", playerRef.userinfo.netname);
-				SV_DropClient(playerRef);
-			}
+			netadr_t netAddr;
+
+			SockadrToNetadr(& deadCanaryIter->udpAddr, & netAddr);
+
+			player_t& playerRef = SV_FindPlayerByAddr(netAddr);
+
+			SV_DropClientUngracefully(playerRef, "disconnected abnormally");
+
 			deadCanaryIter = s_canaries->PutOnCart(deadCanaryIter);
 		}
 	}
@@ -713,8 +818,6 @@ void SV_InitNetwork (void)
 	PrintFmt("UDP Initialized.\n");
 
 	s_canaries = std::make_unique<CanarySocketServer>(port.asInt());
-
-	s_canaries->SetConnectCallback(SV_ConnectCanary);
 
 	const char *w = Args.CheckValue ("-maxclients");
 	if (w)
@@ -769,7 +872,9 @@ void SV_CheckTimeouts()
 	for (auto& player : players)
 	{
 		if (gametic - player.client.last_received == CLIENT_TIMEOUT * 35)
-		    SV_DropClient(player);
+		{
+			SV_DropClientUngracefully(player, "timed out");
+		}
 	}
 }
 
@@ -835,24 +940,26 @@ void SV_GetPackets()
 {
 	while (NET_GetPacket())
 	{
+		if (SV_HandleDepartingMessengerPacket(gametic, net_from, ::net_message))
+		{
+			continue;
+		}
+
 		player_t &player = SV_FindPlayerByAddr(net_from);
 
 		if (!validplayer(player)) // no client with net_from address
 		{
 			// apparently, someone is trying to connect
 			if (gamestate == GS_LEVEL || gamestate == GS_INTERMISSION)
+			{
 				SV_ConnectClient();
-
-			continue;
+			}
 		}
 		else
 		{
-			if(player.playerstate != PST_DISCONNECT)
-			{
-				player.client.messenger.Receive(::net_message);
-				player.client.last_received = gametic;
-				SV_ParseCommands(player);
-			}
+			player.client.messenger.Receive(::net_message);
+			player.client.last_received = gametic;
+			SV_ParseCommands(player);
 		}
 	}
 }
@@ -2248,6 +2355,13 @@ void SV_DisconnectClient(player_t &who)
 		MSG_WriteSVC(cl.messenger.ReliableBuf(), SVC_DisconnectClient(who));
 	}
 
+	// Put the disconnecting client's final message on the wire right away.
+	// We do this so that we don't have to wait for the next tic before we get
+	// the message out and we put the messenger into the dead-end collection with a
+	// pending Ack count > 0.
+	who.client.messenger.SendAll(gametic, who.client.address);
+	SV_DepartMessenger(who.client);
+
 	Maplist_Disconnect(who);
 	Vote_Disconnect(who);
 
@@ -2256,13 +2370,9 @@ void SV_DisconnectClient(player_t &who)
 	if (who.client.displaydisconnect)
 	{
 		// print some final stats for the disconnected player
-		std::string status = SV_BuildKillsDeathsStatusString(who);
-		if (gametic - who.client.last_received == CLIENT_TIMEOUT*35)
-			SV_BroadcastPrintFmt("{} timed out. ({})\n",
-							who.userinfo.netname, status);
-		else
-			SV_BroadcastPrintFmt("{} disconnected. ({})\n",
-							who.userinfo.netname, status);
+		SV_BroadcastPrintFmt("{} disconnected. ({})\n",
+		                     who.userinfo.netname,
+		                     SV_BuildKillsDeathsStatusString(who));
 	}
 
 	SV_UpdatePlayerQueuePositions(G_CanJoinGame, &who);
@@ -2287,41 +2397,64 @@ void SV_DropClient(player_t &who)
 }
 
 //
-// SV_SendDisconnectSignal
+// SV_SendAndFlushClientsFinalSignal
 //
-void SV_SendDisconnectSignal()
+static void SV_SendAndFlushClientsFinalSignal(const google::protobuf::Message& finalMessage)
 {
+	// Push out one last reliable message - the Disconnect command.
 	for (auto& player : players)
 	{
-		client_t *cl = &(player.client);
-
-		MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_Disconnect("Shutting down\n"));
+		player.client.messenger.Clear();
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), finalMessage);
 		SV_SendPacket(player);
+
+		// Move the client's messenger to the departing messenger manager.
+		SV_DepartMessenger(player.client);
 
 		if (player.mo)
 			player.mo->Destroy();
+	}
+
+	// Now flush the messengers until everyone's acked every reliable message we've sent, including the
+	// final Disconnect command.
+	int fakeTic = gametic;
+	size_t remainingMessengerCount = players.size();
+	const dtime_t timeoutDeadline = I_GetTime() + I_ConvertTimeFromMs(2000); // .. but don't try for very long!
+	while (remainingMessengerCount > 0 and I_GetTime() < timeoutDeadline)
+	{
+		I_WaitVBL(1);
+		while (NET_GetPacket())
+		{
+			SV_HandleDepartingMessengerPacket(++fakeTic, net_from, ::net_message);
+		}
+
+		remainingMessengerCount = SV_CheckDepartingMessengers(fakeTic);
+	}
+
+	if (remainingMessengerCount > 0)
+	{
+		PrintFmt(PRINT_WARNING, "{} clients did not acknowledge the server shutdown signal\n", remainingMessengerCount);
 	}
 
 	players.clear();
 }
 
 //
-// SV_SendReconnectSignal
-// All clients will reconnect. Called when the server changes a map
+// SV_SendAndFlushDisconnectSignal
+// All clients will leave and idle at the console.
 //
-void SV_SendReconnectSignal()
+void SV_SendAndFlushDisconnectSignal()
 {
-	// tell others clients about it
-	for (auto& player : players)
-	{
-		MSG_WriteSVC((player.client.messenger.ReliableBuf()), odaproto::svc::Reconnect());
-		SV_SendPacket(player);
+    SV_SendAndFlushClientsFinalSignal(SVC_Disconnect("Shutting down\n"));
+}
 
-		if (player.mo)
-			player.mo->Destroy();
-	}
-
-	players.clear();
+//
+// SV_SendAndFlushReconnectSignal
+// All clients will reconnect.
+//
+void SV_SendAndFlushReconnectSignal()
+{
+    SV_SendAndFlushClientsFinalSignal(odaproto::svc::Reconnect());
 }
 
 //
@@ -3124,11 +3257,15 @@ void SV_SendPackets()
 
 	for (auto& player : players)
 	{
-		std::packaged_task<void ()> task { [&player] () { SV_SendPacket(player); } };
+		// Disconnecting players' messengers send their packets via the dead-end messenger collection.
+		if (player.playerstate != PST_DISCONNECT)
+		{
+			std::packaged_task<void ()> task { [&player] () { SV_SendPacket(player); } };
 
-		futures.emplace_back(task.get_future());
+			futures.emplace_back(task.get_future());
 
-		s_workers.MoveCommand(std::move(task));
+			s_workers.MoveCommand(std::move(task));
+		}
 	}
 
 	for (auto& future : futures)
@@ -4452,6 +4589,7 @@ void SV_RunTics()
 	getPacketsStopwatch->Stop();
 
 	SV_CheckCanaries();
+	SV_CheckDepartingMessengers(gametic);
 
 	retransmitStopwatch->Start();
 	SV_HandleReliableRetransmissions();

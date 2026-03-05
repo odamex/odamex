@@ -133,9 +133,7 @@ CanarySocketServer::iterator CanarySocketServer::FindDead()
 
 			recv(clientSocket, reinterpret_cast<char*>(&dataAddress.sin_port), sizeof(dataAddress.sin_port), MSG_WAITALL);
 
-			const int playerId = m_connectCallback ? m_connectCallback(dataAddress) : -1;
-
-			m_canaries.emplace_back(playerId, clientSocket);
+			m_canaries.emplace_back(dataAddress, clientSocket);
 		}
 
 		// As we find dead canaries, move them to the end of the vector so that we can easily just erase

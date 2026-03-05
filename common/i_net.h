@@ -47,6 +47,8 @@
 #define LAUNCHER_CHALLENGE 777123 // csdl challenge
 #define VERSION 65                // GhostlyDeath -- this should remain static from now on
 
+#include <tuple>
+
 #include "fmt/format.h"
 
 #include "doomtype.h"
@@ -347,12 +349,22 @@ class Message;
 
 class MessageQueue;
 
-typedef struct
+struct netadr_t
 {
-   byte    ip[4];
-   unsigned short  port;
-   unsigned short  pad;
-} netadr_t;
+	byte             ip[4] = { 0, 0, 0, 0};
+	unsigned short   port  = 0;
+	unsigned short   pad   = 0;
+
+	auto Tie() const
+	{
+		return std::tie(ip[0], ip[1], ip[2], ip[3], port);
+	}
+
+	bool operator<(const netadr_t& other) const
+	{
+		return Tie() < other.Tie();
+	}
+};
 
 extern  netadr_t  net_from;  // address of who sent the packet
 
@@ -487,7 +499,7 @@ public:
 		return data[readpos++];
 	}
 
-	int NextByte()
+	int PeekByte()
 	{
 		if(readpos+1 > cursize)
 		{
@@ -850,7 +862,7 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
                       const int skipPlayer = -1);
 
 int MSG_BytesLeft(void);
-int MSG_NextByte (void);
+int MSG_PeekByte (void);
 
 int MSG_ReadByte (void);
 void *MSG_ReadChunk (const size_t &size);

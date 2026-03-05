@@ -51,14 +51,16 @@ extern bool predicting;
 
 enum netQuitReason_e
 {
-	NQ_SILENT,     // Don't print a message.
-	NQ_DISCONNECT, // Generic message for "typical" forced disconnects initiated by the client.
-	NQ_ABORT,      // Connection attempt was aborted
-	NQ_PROTO,      // Encountered something unexpected in the protocol
+	NQ_SILENT,          // Don't print a message.
+	NQ_DISCONNECT,      // Generic message for "typical" forced disconnects initiated by the client.
+	NQ_ABORT,           // Connection attempt was aborted
+	NQ_PROTO,           // Encountered something unexpected in the protocol
+	NQ_SERVER_DROP,     // Server dropped us on the floor, so just ack and drop our side of the connection.
 };
 
 void CL_QuitNetGame(const netQuitReason_e reason);
-void CL_Reconnect();
+void CL_CompleteDisconnect(netQuitReason_e reason);
+void CL_Reconnect(netQuitReason_e reason);
 void CL_InitNetwork (void);
 void CL_RequestConnectInfo(void);
 bool CL_PrepareConnect();

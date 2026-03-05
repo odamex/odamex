@@ -64,6 +64,7 @@
 #include "hu_stuff.h"
 #include "p_acs.h"
 #include "i_input.h"
+#include "i_time.h"
 
 #include "g_gametype.h"
 #include "cl_parse.h"
@@ -364,13 +365,7 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 {
 	if(connected)
 	{
-		messenger.Clear();
-
-		buf_t& netBuf = messenger.NetBuf().Obtain();
-		MSG_WriteMarker(&netBuf, clc_disconnect);
-		messenger.SendAll(gametic, serveraddr);
-
-		messenger.Clear();
+		CL_CompleteDisconnect(reason);
 
 		sv_gametype = GM_COOP;
 		ClientReplay::getInstance().reset();
@@ -383,8 +378,6 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 	}
 
 	memset (&serveraddr, 0, sizeof(serveraddr));
-	connected = false;
-	gameaction = ga_fullconsole;
 	noservermsgs = false;
 	AM_Stop();
 
@@ -399,10 +392,6 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 
 	mute_spectators = 0.f;
 	mute_enemies = 0.f;
-
-	::messenger = OdaMessenger();
-	P_ClearAllNetIds();
-	s_canary.reset();
 
 	{
 		// [jsd] unlink player pointers from AActors; solves crash in R_ProjectSprites after a svc_disconnect message.
@@ -449,8 +438,124 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 		PrintFmt("{}\n", M_GetStacktrace("Disconnect location:", false));
 }
 
+static void CL_HandleDisconnectCompletionPacket()
+{
+	// We're in the middle of trying to complete the client-initiated disconnection.
+	// The only thing we care to handle now are Acknowledgements and the DisconnectClient
+	// confirmation.
+	while (::net_message.BytesLeftToRead() > 0)
+	{
+		const ParseResultType result = CL_ParseCommand();
 
-void CL_Reconnect(void)
+		switch (result.cmd)
+		{
+			case svc_disconnectclient:
+			case msg_ack:               // fall-thru
+				CL_ProcessCommand(result);
+				break;
+			default:
+				break;
+		}
+	}
+}
+
+void CL_CompleteDisconnect(netQuitReason_e reason)
+{
+	const dtime_t oneTicInNanosec = static_cast<dtime_t>(1000000000.0 / static_cast<double>(TICRATE));
+
+	// The server instructed us to drop, so it's already walking us out the door - we only need to
+	// send the acknowledgements, nothing else.
+	if (reason == NQ_SERVER_DROP)
+	{
+		messenger.SendAll(gametic, serveraddr);
+		connected = false;
+	}
+
+	if (connected)
+	{
+		messenger.Clear();
+
+		// Again, make sure that we allow for immediate retransmits.
+		messenger.SetRetransmitDelay(0);
+
+		MSG_WriteMarker(&messenger.ReliableBuf().Obtain(), clc_disconnect);
+		messenger.SendAll(gametic, serveraddr);
+
+		const dtime_t disconnectStartTime   = I_GetTime();
+		const dtime_t disconnectTimeoutTime = disconnectStartTime + I_ConvertTimeFromMs(2000);
+
+		// We have to maintain a fake tic to ensure that we don't exhaust the messenger's
+		// byte budget.  It doesn't matter that we're faking out the messenger because we'll
+		// be resetting it to default at the end of this function.
+
+		int fakeTics = gametic;
+		while (connected and I_GetTime() < disconnectTimeoutTime)
+		{
+			I_Sleep(oneTicInNanosec);
+
+			++fakeTics;
+			messenger.HandleRetransmissions(fakeTics, serveraddr);
+			while (NET_GetPacket())
+			{
+				if (messenger.Receive(::net_message) == MessageResultEnum::ACCEPT)
+				{
+					// If we see ACCEPT, it means we have acks that have to be handled immediately.
+					messenger.NextReceivedPacket(::net_message);
+					CL_HandleDisconnectCompletionPacket();
+				}
+			}
+
+			// Now make sure any received, enqueued reliable packets get serviced.
+			// This is where a svc_disconnectclient would get handled and thereby `connected` goes false.
+			while (messenger.NextReceivedPacket(::net_message))
+			{
+				CL_HandleDisconnectCompletionPacket();
+			}
+
+			// Make sure that the server gets its acks during this packet burndown phase.
+			messenger.SendAll(fakeTics, serveraddr);
+		}
+
+		if (connected)
+		{
+			PrintFmt(PRINT_WARNING, "Server did not acknowledge the disconnection - continuing anyway - expecting (and ignoring) challenge errors...\n");
+		}
+	}
+
+	// In a very high-latency situation, even though we've seen the svc_disconnectclient
+	// confirmation from the server, the pipe could still be backed up with
+	// retransmits and acks.  Just drain until we get several consecutive tics
+	// without new packets.
+	int         consecutiveTicsWithoutPackets = 0;
+	const int   desiredTicsWithoutPackets     = 5;  // total guess..
+
+	const dtime_t lastTimeout = I_GetTime() + I_ConvertTimeFromMs(2000);
+	while (consecutiveTicsWithoutPackets < desiredTicsWithoutPackets and I_GetTime() < lastTimeout)
+	{
+		I_Sleep(oneTicInNanosec);
+		bool packetWasSeen = false;
+		while (NET_GetPacket())
+		{
+			packetWasSeen = true;
+		}
+
+		consecutiveTicsWithoutPackets = packetWasSeen ? 0 : consecutiveTicsWithoutPackets + 1;
+	}
+
+	if (consecutiveTicsWithoutPackets < desiredTicsWithoutPackets)
+	{
+		PrintFmt(PRINT_WARNING, "Still too many packets inbound - continuing anyway - expecting (and ignoring) challenge errors...\n");
+	}
+
+	connected = false;
+
+	messenger = OdaMessenger();
+	P_ClearAllNetIds();
+	s_canary.reset();
+	gameaction = ga_fullconsole;
+}
+
+void CL_Reconnect(netQuitReason_e reason)
 {
 	recv_full_update = false;
 
@@ -461,18 +566,7 @@ void CL_Reconnect(void)
 
 	if (connected)
 	{
-		messenger.Clear();
-
-		MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_disconnect);
-		messenger.SendAll(gametic, serveraddr);
-
-		messenger.Clear();
-
-		connected = false;
-		gameaction = ga_fullconsole;
-
-		messenger = OdaMessenger();
-		P_ClearAllNetIds();
+		CL_CompleteDisconnect(reason);
 	}
 	else if (lastconaddr.ip[0])
 	{
@@ -778,7 +872,7 @@ END_COMMAND (disconnect)
 
 BEGIN_COMMAND (reconnect)
 {
-	CL_Reconnect();
+	CL_Reconnect(NQ_SILENT);
 }
 END_COMMAND (reconnect)
 
@@ -2026,22 +2120,27 @@ void CL_ParseCommands()
 			break;
 		}
 
-		size_t byteStart = ::net_message.BytesRead();
-		parseError_e res = CL_ParseCommand();
-		if (res != PERR_OK || ::net_message.overflowed)
+		const size_t          byteStart = ::net_message.BytesRead();
+		const ParseResultType result    = CL_ParseCommand();
+
+		const parseError_e processResult = result.code == PERR_OK ?
+			CL_ProcessCommand(result) :
+			result.code;
+
+		if (processResult != PERR_OK or ::net_message.overflowed)
 		{
 			const Protos& protos = CL_GetTicProtos();
 
 			std::string err;
-			if (res == PERR_UNKNOWN_HEADER)
+			if (result.code == PERR_UNKNOWN_HEADER)
 			{
 				err = "Unknown message header";
 			}
-			else if (res == PERR_UNKNOWN_MESSAGE)
+			else if (result.code == PERR_UNKNOWN_MESSAGE)
 			{
 				err = "Message is not known to message decoder";
 			}
-			else if (res == PERR_BAD_DECODE)
+			else if (result.code == PERR_BAD_DECODE)
 			{
 				err = "Could not decode message";
 			}

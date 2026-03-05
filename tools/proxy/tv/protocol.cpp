@@ -123,7 +123,7 @@ public:
 	{
 		while(in.BytesLeftToRead())
 		{
-			byte cmd = in.NextByte();
+			byte cmd = in.PeekByte();
 //std::cout << cmd << " " << (int)cmd << std::endl;
 			switch(cmd)
 			{
