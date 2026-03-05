@@ -834,7 +834,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	R_DrawVisSprite (vis, vis->x1, vis->x2);
 }
 
-
+EXTERN_CVAR(r_thingsectorlight)
 
 //
 // R_DrawPlayerSprites
@@ -852,8 +852,8 @@ void R_DrawPlayerSprites()
 		(consoleplayer().cheats & CF_CHASECAM))
 		return;
 
-	sector_t* sec = R_FakeFlat(viewsector, &tempsec, &floorlight,
-	                           &ceilinglight, false);
+	const sector_t* sec = R_FakeFlat(viewsector, &tempsec, &floorlight,
+	                                 &ceilinglight, false);
 
 	// [RH] set foggy flag
 	foggy = level.fadeto_color[0] || level.fadeto_color[1] || level.fadeto_color[2] || level.fadeto_color[3]
@@ -863,7 +863,7 @@ void R_DrawPlayerSprites()
 	basecolormap = sec->colormap->maps;
 
 	// get light level
-	const int lightnum = ((floorlight + ceilinglight) >> (LIGHTSEGSHIFT + 1))
+	const int lightnum = ((r_thingsectorlight ? (floorlight + ceilinglight) / 2 : sec->lightlevel) >> LIGHTSEGSHIFT)
 	               + (foggy ? 0 : extralight);
 
 	if (lightnum < 0)
