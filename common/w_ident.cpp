@@ -1648,6 +1648,8 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_SHAREWARE | GI_NOCRAZYDEATH;
 		gameinfo.maxSwitch = 1;
 		gameinfo.titleString = "DOOM Shareware";
+		gameinfo.baseMapinfoLump = "_D1NFO";
+		gameinfo.sharewareMapinfoLump = "_D1SWNFO";
 	}
 	else if (idname.find(OStringToUpper(OString(UDOOM_PREFIX " BFG"))) == 0)
 	{
@@ -1656,6 +1658,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "The Ultimate DOOM (BFG Edition)";
+		gameinfo.baseMapinfoLump = "_D1NFO";
 	}
 	else if (idname.find(OStringToUpper(OString(UDOOM_PREFIX))) == 0)
 	{
@@ -1664,6 +1667,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "The Ultimate DOOM";
+		gameinfo.baseMapinfoLump = "_D1NFO";
 	}
 	else if (idname.find(OStringToUpper(OString(DOOM2_PREFIX " BFG"))) == 0)
 	{
@@ -1688,6 +1692,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = 0;
 		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "DOOM Registered";
+		gameinfo.baseMapinfoLump = "_D1NFO";
 	}
 	else
 	{
