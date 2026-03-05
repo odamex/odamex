@@ -1861,7 +1861,7 @@ void G_ParseMapInfo()
 	// Parse common defaults first for all game missions.
 	ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
 
-	const char* modevariantinfoname = NULL;
+	const char* sharewareMapinfoLump = NULL;
 
 	switch (gamemission)
 	{
@@ -1870,7 +1870,7 @@ void G_ParseMapInfo()
 	case retail_freedoom:
 		baseinfoname = "_D1NFO";
 		if (gamemode == shareware)
-			modevariantinfoname = "_D1SWNFO";
+			sharewareMapinfoLump = "_D1SWNFO";
 		break;
 	case doom2:
 	case chex3d2:
@@ -1878,7 +1878,7 @@ void G_ParseMapInfo()
 	case commercial_hacx:
 		baseinfoname = "_D2NFO";
 		if (gamemode == commercial_bfg)
-			modevariantinfoname = "_BFGNFO";
+			sharewareMapinfoLump = "_BFGNFO";
 		break;
 	case pack_tnt:
 		baseinfoname = "_TNTNFO";
@@ -1893,7 +1893,7 @@ void G_ParseMapInfo()
 	case heretic:
 		baseinfoname = "_HERENFO";
 		if (gamemode == shareware_heretic)
-			modevariantinfoname = "_HESWNFO";
+			sharewareMapinfoLump = "_HESWNFO";
 		break;
 	case none:
 	default:
@@ -1905,13 +1905,13 @@ void G_ParseMapInfo()
 		baseinfoname = gameinfo.baseMapinfoLump.c_str();
 
 	if (!gameinfo.sharewareMapinfoLump.empty())
-		modevariantinfoname = gameinfo.sharewareMapinfoLump.c_str();
+		sharewareMapinfoLump = gameinfo.sharewareMapinfoLump.c_str();
 
-	if (modevariantinfoname)
+	if (sharewareMapinfoLump)
 	{
 		lump = W_GetNumForName(baseinfoname);
 		ParseMapInfoLump(lump, baseinfoname);
-		baseinfoname = modevariantinfoname;
+		baseinfoname = sharewareMapinfoLump;
 	}
 
 	lump = W_GetNumForName(baseinfoname);
