@@ -334,8 +334,11 @@ void ST_HticDrawTopCaps(IWindowSurface* surface)
 	const int rightW = std::max(1, right->width() * ST_WIDTH / HTIC_BASE_WIDTH);
 	const int rightH = std::max(1, right->height() * ST_HEIGHT / HTIC_BASE_HEIGHT);
 
+	// Legacy Heretic places these at x=0 and x=290 in a 320-wide layout.
 	const int leftX = ST_X;
-	const int rightX = ST_X + ST_WIDTH - rightW;
+	const int idealRightX = ST_X + (290 * ST_WIDTH) / HTIC_BASE_WIDTH;
+	const int maxRightX = ST_X + ST_WIDTH - rightW;
+	const int rightX = std::clamp(idealRightX, ST_X, maxRightX);
 	const int leftY = ST_Y - leftH + 1;
 	const int rightY = ST_Y - rightH + 1;
 
