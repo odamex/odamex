@@ -64,6 +64,10 @@ static IWindowSurface* primary_surface = NULL;
 // Global IWindowSurface instance for converting 8bpp data to a 32bpp surface
 static IWindowSurface* converted_surface = NULL;
 
+// True when I_BeginUpdate has locked render surfaces and I_FinishUpdate has
+// not yet unlocked them.
+static bool update_surfaces_locked = false;
+
 // Global IWindowSurface instance constructed from primary_surface.
 // Used when matting is required (letter-boxing/pillar-boxing)
 static IWindowSurface* matted_surface = NULL;
@@ -1275,6 +1279,7 @@ void I_BeginUpdate()
 		I_GetWindow()->startRefresh();
 
 		I_LockAllSurfaces();
+		update_surfaces_locked = true;
 	}
 }
 
@@ -1311,6 +1316,7 @@ void I_FinishUpdate()
 		}
 
 		I_UnlockAllSurfaces();
+		update_surfaces_locked = false;
 
 		I_GetWindow()->finishRefresh();
 
@@ -1318,6 +1324,21 @@ void I_FinishUpdate()
 		if (gametic <= loading_icon_expire)
 			I_RestoreLoadingIcon();
 	}
+}
+
+
+//
+// I_AbortUpdate
+//
+// Used by recoverable-error paths to release surface/window locks when an
+// exception interrupts the normal I_BeginUpdate/I_FinishUpdate lifecycle.
+void I_AbortUpdate()
+{
+	if (!I_VideoInitialized() || !update_surfaces_locked)
+		return;
+
+	I_UnlockAllSurfaces();
+	update_surfaces_locked = false;
 }
 
 

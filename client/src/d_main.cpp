@@ -373,6 +373,10 @@ void D_DoomLoop()
 			// [AM] In case an error is caused by a console command.
 			C_ClearCommand();
 
+			// Release any pending render locks before error recovery paths call
+			// into palette/video routines.
+			I_AbortUpdate();
+
 			CL_QuitNetGame(NQ_SILENT);
 
 			G_ClearSnapshots();
