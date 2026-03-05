@@ -177,8 +177,6 @@ void M_ClearMenus();
 static void M_PlayerSetupTicker();
 static void M_PlayerSetupDrawer();
 static void M_EditPlayerName (int choice);
-//static void M_EditPlayerTeam (int choice);
-//static void M_PlayerTeamChanged (int choice);
 static void M_PlayerNameChanged (int choice);
 static void M_ChangeGender (int choice);
 static void M_ChangeAutoAim (int choice);
@@ -981,33 +979,6 @@ void M_DrawNewGame()
 
 namespace
 {
-	const char* MenuFallbackText(const oldmenu_t* menu, int index)
-	{
-		if (menu == &MainDef)
-		{
-			switch (index)
-			{
-			case 0: return MenuLocalizedOrFallback("MNU_NEWGAME", "NEW GAME");
-			case 1: return MenuLocalizedOrFallback("MNU_OPTIONS", "OPTIONS");
-			case 2: return MenuLocalizedOrFallback("MNU_LOADGAME", "LOAD GAME");
-			case 3: return MenuLocalizedOrFallback("MNU_SAVEGAME", "SAVE GAME");
-			case 4: return (menu->numitems > 5)
-			                   ? MenuLocalizedOrFallback("MNU_INFO", "INFO")
-			                   : MenuLocalizedOrFallback("MNU_QUITGAME", "QUIT GAME");
-			case 5: return MenuLocalizedOrFallback("MNU_QUITGAME", "QUIT GAME");
-			default: return "";
-			}
-		}
-
-		if (menu == &EpiDef && index >= 0 && index < episodenum)
-			return EpisodeInfos[index].menu_name.c_str();
-
-		if (menu == &NewDef && index >= 0 && index < skillnum)
-			return SkillInfos[index].menu_name.c_str();
-
-		return "";
-	}
-
 	void SetupEpisodeList()
 	{
 		for (int i = 0; i < episodenum; ++i)
@@ -1826,15 +1797,6 @@ static void M_PlayerNameChanged (int choice)
 {
 	AddCommandString (fmt::format("cl_name \"{}\"", savegamestrings[0]));
 }
-/*
-static void M_PlayerTeamChanged (int choice)
-{
-	char command[SAVESTRINGSIZE+8];
-
-	sprintf (command, "cl_team \"%s\"", savegamestrings[1]);
-	AddCommandString (command);
-}
-*/
 
 static void SendNewColor(int red, int green, int blue)
 {
@@ -2293,30 +2255,17 @@ void M_Drawer()
 				{
 					screen->DrawTextCleanMove(CR_RED, x, y, currentMenu->menuitems[i].textname);
 				}
-				else
-				{
-					const char* fallback = MenuFallbackText(currentMenu, i);
-					if (fallback[0])
-						screen->DrawTextCleanMove(CR_RED, x, y, fallback);
-				}
+
 				y += LINEHEIGHT;
 			}
 			V_SetFont("SMALLFONT");
 
 
-			// DRAW SKULL / selection cursor
+			// DRAW SKULL
 			if (drawSkull)
 			{
-				if (W_CheckNumForName(skullName[whichSkull]) >= 0)
-				{
-					screen->DrawPatchClean(W_CachePatch(skullName[whichSkull]),
-						x + SKULLXOFF, currentMenu->y - 5 + itemOn * LINEHEIGHT);
-				}
-				else
-				{
-					screen->DrawTextCleanMove(CR_RED, x + SKULLXOFF + 8,
-					                         currentMenu->y + itemOn * LINEHEIGHT, ">");
-				}
+				screen->DrawPatchClean(W_CachePatch(skullName[whichSkull]),
+					x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
 			}
 		}
 	}
@@ -2324,7 +2273,9 @@ void M_Drawer()
 	// [SL] force the status bar to be redrawn in case the menu
 	// draws over a portion of the status bar background
 	if (R_StatusBarVisible() && (menuactive || messageToPrint))
+	{
 		ST_ForceRefresh();
+	}
 }
 
 
