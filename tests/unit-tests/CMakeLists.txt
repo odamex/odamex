@@ -21,7 +21,7 @@ include_directories(${COMMON_DIR} src)
 
 add_executable(odagtest ${COMMON_SOURCES} ${TEST_SOURCES})
 target_link_libraries(odagtest GTest::gtest_main)
-target_link_libraries(odagtest fmt::fmt tinylibs ZLIB::ZLIB odamex-common odaproto minilzo curl_interface cpptrace::cpptrace)
+target_link_libraries(odagtest fmt::fmt tinylibs ZLIB::ZLIB odamex-common odaproto minilzo CURL::libcurl cpptrace::cpptrace)
 if(USE_INTERNAL_JSONCPP)
   target_link_libraries(odagtest jsoncpp_static)
 else()
