@@ -28,7 +28,13 @@
 
 // Some defines...
 #define LINEHEIGHT	16
+#define HTCLINEHEIGHT 20
+#define HTCTEXTYOFF -3
 #define SKULLXOFF	-32
+#define SKULLYOFF	-5
+
+#define ARROWXOFF	-28
+#define ARROWYOFF	-1
 
 //
 // MENUS

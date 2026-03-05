@@ -331,7 +331,24 @@ void MIType_String(OScanner& os, bool newStyleMapInfo, void* data, unsigned int 
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
-	*static_cast<std::string*>(data) = os.getToken();
+	const std::string token = os.getToken();
+	if (!token.empty() && token[0] == '$')
+	{
+		const OString& s = GStrings(StdStringToUpper(token.c_str() + 1));
+		if (s.empty())
+		{
+			// Keep legacy behavior for unresolved lookups in generic string fields.
+			*static_cast<std::string*>(data) = token;
+		}
+		else
+		{
+			*static_cast<std::string*>(data) = s;
+		}
+	}
+	else
+	{
+		*static_cast<std::string*>(data) = token;
+	}
 }
 
 // Sets the inputted data as a color
@@ -1428,13 +1445,29 @@ void ParseEpisodeInfo(OScanner& os)
 			ParseMapInfoHelper<std::string>(os, new_mapinfo);
 
 			if (picisgfx == false)
-				name = os.getToken();
+			{
+				const std::string token = os.getToken();
+				if (!token.empty() && token[0] == '$')
+				{
+					const OString& s = GStrings(StdStringToUpper(token.c_str() + 1));
+					if (s.empty())
+						os.error("Unknown lookup string \"{}\".", token);
+					name = s;
+				}
+				else
+				{
+					name = token;
+				}
+			}
 		}
 		else if (os.compareTokenNoCase("lookup"))
 		{
 			ParseMapInfoHelper<std::string>(os, new_mapinfo);
 
-			// Not implemented
+			const OString& s = GStrings(StdStringToUpper(os.getToken()));
+			if (s.empty())
+				os.error("Unknown lookup string \"{}\".", os.getToken());
+			name = s;
 		}
 		else if (os.compareTokenNoCase("picname"))
 		{
