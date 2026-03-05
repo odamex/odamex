@@ -822,6 +822,7 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 	if (viewer.id == other.id)
 		return true;
 
+	// server doesnt know or care about the freecam
 	#ifdef CLIENT_APP
 	if (other.isFreecam && Freecam::allowSpy())
 		return true;

@@ -116,12 +116,15 @@ void Freecam::reset()
 
 bool Freecam::allowAdd()
 {
-	return (netdemo.isPlaying());
+	return (netdemo.isPlaying() || G_IsLivesGame());
 }
 
 bool Freecam::allowSpy()
 {
-	return (netdemo.isPlaying());
+	return (netdemo.isPlaying() || 
+			(consoleplayer().playerstate == PST_DEAD 
+				&& consoleplayer().lives < 1 
+				&& ::levelstate.getState() == LevelState::INGAME));
 }
 
 // a real 255th player connected (CL_UserInfo) and is taking the freecam spot
