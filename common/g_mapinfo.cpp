@@ -336,8 +336,14 @@ void MIType_String(OScanner& os, bool newStyleMapInfo, void* data, unsigned int 
 	{
 		const OString& s = GStrings(StdStringToUpper(token.c_str() + 1));
 		if (s.empty())
-			os.error("Unknown lookup string \"{}\".", token);
-		*static_cast<std::string*>(data) = s;
+		{
+			// Keep legacy behavior for unresolved lookups in generic string fields.
+			*static_cast<std::string*>(data) = token;
+		}
+		else
+		{
+			*static_cast<std::string*>(data) = s;
+		}
 	}
 	else
 	{
