@@ -79,7 +79,7 @@ void ST_HticShutdown();
 
 namespace hud {
 
-void HereticHud();
+void HereticHUD();
 
 void drawNetdemo();
 
