@@ -737,7 +737,16 @@ void AM_loadPics()
 {
 	for (int i = 0; i < 10; i++)
 	{
-		marknums[i] = W_CachePatchHandle(fmt::format("AMMNUM{}", i), PU_STATIC);
+		const OLumpName lumpName = fmt::format("AMMNUM{}", i);
+		const int lump = W_CheckNumForName(lumpName, ns_global);
+		if (lump < 0)
+		{
+			marknums[i].clear();
+			DPrintFmt("Automap marker lump \"{}\" not found; marker {} disabled", lumpName, i);
+			continue;
+		}
+
+		marknums[i] = W_CachePatchHandle(lump, PU_STATIC);
 	}
 }
 
@@ -1997,7 +2006,8 @@ void AM_drawMarks()
 
 			if (fx >= f.x && fx <= f_w - w && fy >= f.y && fy <= f_h - h)
 			{
-				screen->DrawPatchCleanNoMove(W_ResolvePatchHandle(marknums[i]), fx, fy);
+				if (!marknums[i].empty())
+					screen->DrawPatchCleanNoMove(W_ResolvePatchHandle(marknums[i]), fx, fy);
 			}
 		}
 	}
