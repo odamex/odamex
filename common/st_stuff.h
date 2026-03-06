@@ -76,8 +76,11 @@ void ST_HticStart();
 void ST_HticTicker();
 void ST_HticDrawer();
 void ST_HticShutdown();
+void ST_HticDrawFullscreenHUD();
 
 namespace hud {
+
+void HereticHud();
 
 void drawNetdemo();
 

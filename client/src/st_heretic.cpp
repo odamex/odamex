@@ -398,6 +398,11 @@ void ST_HticDrawTopCaps(IWindowSurface* surface)
 }
 } // namespace
 
+void ST_HticDrawFullscreenHUD()
+{
+	ST_HticDrawFullscreenHealth(R_GetRenderingSurface());
+}
+
 void ST_HticInit()
 {
 	ST_HticClearAssets();
@@ -456,7 +461,6 @@ void ST_HticDrawer()
 	if (!R_StatusBarVisible())
 	{
 		ST_HticSetLayoutHidden();
-		ST_HticDrawFullscreenHealth(R_GetRenderingSurface());
 		return;
 	}
 
