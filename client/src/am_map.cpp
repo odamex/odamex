@@ -2223,30 +2223,26 @@ void AM_Drawer()
 		{
 			int firstmap;
 			int mapoffset = 1;
-			if (heretic_automap)
+			switch (gamemission)
 			{
+			case doom2:
+			case commercial_freedoom:
+			case commercial_hacx:
+				firstmap = GStrings.toIndex(HUSTR_1);
+				break;
+			case pack_plut:
+				firstmap = GStrings.toIndex(PHUSTR_1);
+				break;
+			case pack_tnt:
+				firstmap = GStrings.toIndex(THUSTR_1);
+				break;
+			case heretic:
 				firstmap = GStrings.toIndex(HHUSTR_E1M1);
-			}
-			else
-			{
-				switch (gamemission)
-				{
-				case doom2:
-				case commercial_freedoom:
-				case commercial_hacx:
-					firstmap = GStrings.toIndex(HUSTR_1);
-					break;
-				case pack_plut:
-					firstmap = GStrings.toIndex(PHUSTR_1);
-					break;
-				case pack_tnt:
-					firstmap = GStrings.toIndex(THUSTR_1);
-					break;
-				default:
-					firstmap = GStrings.toIndex(HUSTR_E1M1);
-					mapoffset = level.cluster; // Episodes skip map numbers.
-					break;
-				}
+				break;
+			default:
+				firstmap = GStrings.toIndex(HUSTR_E1M1);
+				mapoffset = level.cluster; // Episodes skip map numbers.
+				break;
 			}
 
 			line = GStrings.getIndex(firstmap + level.levelnum - mapoffset);
