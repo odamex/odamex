@@ -66,7 +66,7 @@ CVAR(					am_showlocked, "0", "Show locked doors on the automap even when custom
 CVAR(					am_ovshare, "0", "Overlay automap uses the same custom colors as the non-overlayed automap.",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(					am_hereticbackdrop, "1", "Use Heretic AUTOPAGE backdrop in full automap view (not overlay).",
+CVAR(					am_backdrop, "1", "Use Heretic AUTOPAGE backdrop in full automap view (not overlay).",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(					am_backcolor, "00 00 3a", "",

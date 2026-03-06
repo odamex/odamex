@@ -74,7 +74,7 @@ EXTERN_CVAR(am_classicmapstring)
 EXTERN_CVAR(am_usecustomcolors)
 EXTERN_CVAR(am_showlocked)
 EXTERN_CVAR(am_ovshare)
-EXTERN_CVAR(am_hereticbackdrop)
+EXTERN_CVAR(am_backdrop)
 
 EXTERN_CVAR(am_backcolor)
 EXTERN_CVAR(am_yourcolor)
@@ -253,7 +253,7 @@ static fixed64_t scale_mtof = static_cast<fixed64_t>(INITSCALEMTOF);
 static fixed64_t scale_ftom;
 
 static lumpHandle_t marknums[10];             // numbers used for marking by the automap
-static std::vector<byte> am_backdrop;         // AUTOPAGE backdrop, raw 320x200 bytes
+static std::vector<byte> am_backdrop_data;    // AUTOPAGE backdrop, raw 320x200 bytes
 static bool am_gotbackdrop = false;
 static mpoint_t markpoints[AM_NUMMARKPOINTS]; // where the points are
 static int markpointnum = 0;                  // next point to be assigned
@@ -752,7 +752,7 @@ void AM_loadPics()
 		marknums[i] = W_CachePatchHandle(lump, PU_STATIC);
 	}
 
-	am_backdrop.clear();
+	am_backdrop_data.clear();
 	am_gotbackdrop = false;
 
 	if (gameinfo.gametype != GAMETYPE_HERETIC)
@@ -770,7 +770,7 @@ void AM_loadPics()
 	}
 
 	const byte* rawBackdrop = static_cast<const byte*>(W_CacheLumpNum(backdropLump, PU_CACHE));
-	am_backdrop.assign(rawBackdrop, rawBackdrop + (320 * 200));
+	am_backdrop_data.assign(rawBackdrop, rawBackdrop + (320 * 200));
 	am_gotbackdrop = true;
 }
 
@@ -779,7 +779,7 @@ void AM_unloadPics()
 	for (auto& marknum : marknums)
 		marknum.clear();
 
-	am_backdrop.clear();
+	am_backdrop_data.clear();
 	am_gotbackdrop = false;
 }
 
@@ -1084,12 +1084,12 @@ void AM_Ticker()
 //
 void AM_clearFB(am_color_t color)
 {
-	const bool useHereticBackdrop = gameinfo.gametype == GAMETYPE_HERETIC && am_hereticbackdrop &&
-	    !AM_OverlayAutomapVisible() && am_gotbackdrop && !am_backdrop.empty();
+	const bool useHereticBackdrop = gameinfo.gametype == GAMETYPE_HERETIC && am_backdrop &&
+	    !AM_OverlayAutomapVisible() && am_gotbackdrop && !am_backdrop_data.empty();
 
 	if (useHereticBackdrop)
 	{
-		const byte* src = am_backdrop.data();
+		const byte* src = am_backdrop_data.data();
 		if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 		{
 			for (int y = 0; y < f_h; y++)
