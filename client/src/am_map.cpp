@@ -74,6 +74,7 @@ EXTERN_CVAR(am_classicmapstring)
 EXTERN_CVAR(am_usecustomcolors)
 EXTERN_CVAR(am_showlocked)
 EXTERN_CVAR(am_ovshare)
+EXTERN_CVAR(am_hereticbackdrop)
 
 EXTERN_CVAR(am_backcolor)
 EXTERN_CVAR(am_yourcolor)
@@ -252,6 +253,8 @@ static fixed64_t scale_mtof = static_cast<fixed64_t>(INITSCALEMTOF);
 static fixed64_t scale_ftom;
 
 static lumpHandle_t marknums[10];             // numbers used for marking by the automap
+static std::vector<byte> am_backdrop;         // AUTOPAGE backdrop, raw 320x200 bytes
+static bool am_gotbackdrop = false;
 static mpoint_t markpoints[AM_NUMMARKPOINTS]; // where the points are
 static int markpointnum = 0;                  // next point to be assigned
 
@@ -575,8 +578,8 @@ void AM_SetBaseColorRaven()
 	gameinfo.defaultAutomapColors.Background		= "00 00 00";
 	gameinfo.defaultAutomapColors.YourColor			= "ff ff ff";
 	gameinfo.defaultAutomapColors.AlmostBackground	= "10 10 10";
-	gameinfo.defaultAutomapColors.SecretWallColor	= "4c 33 11";
-	gameinfo.defaultAutomapColors.WallColor			= "4c 33 11";
+	gameinfo.defaultAutomapColors.SecretWallColor	= "fc 00 00";
+	gameinfo.defaultAutomapColors.WallColor			= "fc 00 00";
 	gameinfo.defaultAutomapColors.TSWallColor		= "59 5e 57";
 	gameinfo.defaultAutomapColors.FDWallColor		= "d0 b0 85";
 	gameinfo.defaultAutomapColors.LockedColor		= "fc fc 00";
@@ -748,12 +751,36 @@ void AM_loadPics()
 
 		marknums[i] = W_CachePatchHandle(lump, PU_STATIC);
 	}
+
+	am_backdrop.clear();
+	am_gotbackdrop = false;
+
+	if (gameinfo.gametype != GAMETYPE_HERETIC)
+		return;
+
+	const int backdropLump = W_CheckNumForName("AUTOPAGE", ns_global);
+	if (backdropLump < 0)
+		return;
+
+	const unsigned backdropSize = W_LumpLength(backdropLump);
+	if (backdropSize < 320u * 200u)
+	{
+		DPrintFmt("AUTOPAGE lump too small ({} bytes); expected at least 64000", backdropSize);
+		return;
+	}
+
+	const byte* rawBackdrop = static_cast<const byte*>(W_CacheLumpNum(backdropLump, PU_CACHE));
+	am_backdrop.assign(rawBackdrop, rawBackdrop + (320 * 200));
+	am_gotbackdrop = true;
 }
 
 void AM_unloadPics()
 {
 	for (auto& marknum : marknums)
 		marknum.clear();
+
+	am_backdrop.clear();
+	am_gotbackdrop = false;
 }
 
 void AM_clearMarks()
@@ -1057,6 +1084,42 @@ void AM_Ticker()
 //
 void AM_clearFB(am_color_t color)
 {
+	const bool useHereticBackdrop = gameinfo.gametype == GAMETYPE_HERETIC && am_hereticbackdrop &&
+	    !AM_OverlayAutomapVisible() && am_gotbackdrop && !am_backdrop.empty();
+
+	if (useHereticBackdrop)
+	{
+		const byte* src = am_backdrop.data();
+		if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+		{
+			for (int y = 0; y < f_h; y++)
+			{
+				byte* dst = fb + y * f_p;
+				const int srcY = y * 200 / f_h;
+				for (int x = 0; x < f_w; x++)
+				{
+					const int srcX = x * 320 / f_w;
+					dst[x] = src[srcY * 320 + srcX];
+				}
+			}
+		}
+		else
+		{
+			const argb_t* paletteColors = V_GetDefaultPalette()->colors;
+			for (int y = 0; y < f_h; y++)
+			{
+				argb_t* line = reinterpret_cast<argb_t*>(fb + y * f_p);
+				const int srcY = y * 200 / f_h;
+				for (int x = 0; x < f_w; x++)
+				{
+					const int srcX = x * 320 / f_w;
+					line[x] = paletteColors[src[srcY * 320 + srcX]];
+				}
+			}
+		}
+		return;
+	}
+
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 	{
 		if (f_w == f_p)
