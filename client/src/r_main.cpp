@@ -1268,7 +1268,7 @@ bool R_BorderVisible()
 //
 bool R_StatusBarVisible()
 {
-	return setblocks <= 10 || AM_ClassicAutomapVisible();
+	return (setblocks <= 10 || AM_ClassicAutomapVisible()) && !displayplayer().spectator;
 }
 
 //
