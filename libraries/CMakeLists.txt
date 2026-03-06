@@ -1,17 +1,9 @@
 # Build libraries.
-#
-# Here we use execute_process and file(DOWNLOAD) to download and compile
-# libraries as we need them.  Some stuff to remember:
-#
-# - C libraries can cross Debug/Release boundaries, but C++ libraries can't.
-#   You'll need to be able to select the proper debug vs release library in
-#   multi-config builds - see JsonCpp for an example.
-# - Xcode does not like it when CMake passes --parallel with no parameter.
-#
 
-# Parallel processor count - needed by Xcode.
-include(ProcessorCount)
-ProcessorCount(PARALLEL_PROC_COUNT)
+# We use FetchContent instead of add_subdirectory specifically because it has
+# the ability to override subsequent calls to find_package for the packages
+# it obtains.  This is especially critical for making sure that sub-dependencies
+# such as libpng -> zlib resolve correctly.
 
 include(FetchContent)
 
@@ -29,9 +21,13 @@ if(BUILD_CLIENT OR BUILD_SERVER)
   target_include_directories(minilzo PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/minilzo")
 endif()
 
-list(APPEND FETCH_CONTENT_PACKAGES)
+set(FETCH_CONTENT_PACKAGES)
 
 if (BUILD_CLIENT OR BUILD_SERVER)
+
+    # ======================================
+    # zlib
+    # ======================================
     if (USE_INTERNAL_ZLIB)
         FetchContent_Declare(
             ZLIB
@@ -56,6 +52,9 @@ if (BUILD_CLIENT OR BUILD_SERVER)
         endif()
     endif()
 
+    # ======================================
+    # fmt
+    # ======================================
     FetchContent_Declare(
         fmt
         URL ${CMAKE_CURRENT_SOURCE_DIR}/fmt
@@ -66,6 +65,9 @@ if (BUILD_CLIENT OR BUILD_SERVER)
     set(FMT_INSTALL OFF)
     set(FMT_TEST    OFF)
 
+    # ======================================
+    # jsoncpp
+    # ======================================
     if (USE_INTERNAL_JSONCPP)
         FetchContent_Declare(
             jsoncpp
@@ -81,6 +83,9 @@ if (BUILD_CLIENT OR BUILD_SERVER)
         set(JSONCPP_WITH_CMAKE_PACKAGE           ON)
     endif()
 
+    # ======================================
+    # Protobuf
+    # ======================================
     FetchContent_Declare(
         Protobuf
         URL ${CMAKE_CURRENT_SOURCE_DIR}/protobuf
@@ -93,6 +98,9 @@ if (BUILD_CLIENT OR BUILD_SERVER)
     set(protobuf_MSVC_STATIC_RUNTIME OFF)
     set(protobuf_INSTALL             OFF)
 
+    # ======================================
+    # cpptrace
+    # ======================================
     if (USE_INTERNAL_CPPTRACE)
         FetchContent_Declare(
             cpptrace
@@ -115,6 +123,10 @@ if (BUILD_CLIENT OR BUILD_SERVER)
     endif()
 
     if (BUILD_SERVER)
+
+        # ======================================
+        # MiniUPnP
+        # ======================================
         if (NOT USE_MINIUPNP)
             message(STATUS "Skipping MiniUPnPc...")
         elseif(USE_INTERNAL_MINIUPNP)
@@ -133,6 +145,10 @@ if (BUILD_CLIENT OR BUILD_SERVER)
     endif()
 
     if (BUILD_CLIENT)
+
+        # ======================================
+        # PNG
+        # ======================================
         if (USE_INTERNAL_PNG)
             FetchContent_Declare(
                 PNG
@@ -157,6 +173,9 @@ if (BUILD_CLIENT OR BUILD_SERVER)
             endif()
         endif()
 
+        # ======================================
+        # CURL
+        # ======================================
         if (USE_INTERNAL_CURL)
             FetchContent_Declare(
                 CURL
@@ -188,6 +207,9 @@ if (BUILD_CLIENT OR BUILD_SERVER)
             find_package(CURL)
         endif()
 
+        # ======================================
+        # FLTK
+        # ======================================
         if (USE_INTERNAL_FLTK)
             FetchContent_Declare(
                 FLTK
@@ -225,6 +247,9 @@ if (BUILD_CLIENT OR BUILD_SERVER)
                 endif()
         endif()
 
+        # ======================================
+        # libADLMidi
+        # ======================================
         if (USE_INTERNAL_LIBADLMIDI)
             FetchContent_Declare(
                 libadlmidi
@@ -239,6 +264,9 @@ if (BUILD_CLIENT OR BUILD_SERVER)
             endif()
         endif()
 
+        # ======================================
+        # SDL
+        # ======================================
         FetchContent_Declare(
             SDL
             GIT_REPOSITORY  https://github.com/libsdl-org/SDL.git
@@ -250,6 +278,9 @@ if (BUILD_CLIENT OR BUILD_SERVER)
         set (SDL_SHARED OFF)
         set (SDL_STATIC ON)
 
+        # ======================================
+        # SDL_mixer
+        # ======================================
         FetchContent_Declare(
             SDL_mixer
             GIT_REPOSITORY  https://github.com/libsdl-org/SDL_mixer.git
@@ -265,6 +296,9 @@ endif()
 
 if (BUILD_LAUNCHER)
 
+    # ======================================
+    # wxWidgets
+    # ======================================
     FetchContent_Declare(
         wxWidgets
         GIT_REPOSITORY  https://github.com/wxWidgets/wxWidgets.git
@@ -275,9 +309,17 @@ if (BUILD_LAUNCHER)
 
 endif()
 
+
+# ----------==================----------
+# Now bring it all in!
+# ----------==================----------
+
 if (FETCH_CONTENT_PACKAGES)
     FetchContent_MakeAvailable(${FETCH_CONTENT_PACKAGES})
 endif()
+
+# Now do some patching to smooth-over any disagreements between the
+# target names as established by building the libs vs. finding them.
 
 if (TARGET libminiupnpc-static AND NOT miniupnpc::miniupnpc)
     add_library(miniupnpc::miniupnpc ALIAS libminiupnpc-static)
