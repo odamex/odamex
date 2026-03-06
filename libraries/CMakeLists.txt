@@ -23,6 +23,23 @@ endif()
 
 set(FETCH_CONTENT_PACKAGES)
 
+if (BUILD_TESTS)
+    # ======================================
+    # GTest
+    # ======================================
+    FetchContent_Declare(
+        GTest
+        URL ${CMAKE_CURRENT_SOURCE_DIR}/googletest
+        OVERRIDE_FIND_PACKAGE
+        )
+
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+    # Just like ZLIB, this is used by other dependencies, we have to configure it early.
+    FetchContent_MakeAvailable(GTest)
+
+endif()
+
 if (BUILD_CLIENT OR BUILD_SERVER)
 
     # ======================================
@@ -97,6 +114,10 @@ if (BUILD_CLIENT OR BUILD_SERVER)
     set(protobuf_BUILD_TESTS         OFF)
     set(protobuf_MSVC_STATIC_RUNTIME OFF)
     set(protobuf_INSTALL             OFF)
+
+    # Protobuf sets a policy older than 3.13, which would force us to set the above
+    # values in the cache explicitly.  Let's just use a modern-day policy here...
+    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)   # option() honors normal variables
 
     # ======================================
     # cpptrace
@@ -311,7 +332,6 @@ if (BUILD_LAUNCHER)
     list(APPEND FETCH_CONTENT_PACKAGES wxWidgets)
 
 endif()
-
 
 # ----------==================----------
 # Now bring it all in!
