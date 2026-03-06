@@ -760,14 +760,17 @@ void AM_loadPics()
 		return;
 
 	const unsigned backdropSize = W_LumpLength(backdropLump);
-	if (backdropSize < 320u * 200u)
+	if (backdropSize >= 320u * 200u)
 	{
-		DPrintFmt("AUTOPAGE lump too small ({} bytes); expected at least 64000", backdropSize);
+		const byte* rawBackdrop = static_cast<const byte*>(W_CacheLumpNum(backdropLump, PU_CACHE));
+		am_backdrop_data.assign(rawBackdrop, rawBackdrop + (320 * 200));
+		am_gotbackdrop = true;
 		return;
 	}
 
-	const byte* rawBackdrop = static_cast<const byte*>(W_CacheLumpNum(backdropLump, PU_CACHE));
-	am_backdrop_data.assign(rawBackdrop, rawBackdrop + (320 * 200));
+	// Fallback for patch-encoded AUTOPAGE variants.
+	const byte* patchBackdrop = reinterpret_cast<const byte*>(W_CachePatch(backdropLump, PU_CACHE));
+	am_backdrop_data.assign(patchBackdrop, patchBackdrop + (320 * 200));
 	am_gotbackdrop = true;
 }
 
@@ -2101,7 +2104,13 @@ void AM_Drawer()
 	{
 		f.x = f.y = 0;
 		f_w = surface_width;
-		f_h = ST_StatusBarY(surface_width, surface_height);
+		const int statusbar_top = ST_StatusBarY(surface_width, surface_height);
+		f_h = statusbar_top;
+
+		// Keep compatibility with Heretic statusbar variants that draw above the
+		// classic Doom statusbar height by honoring ST_Y when available.
+		if (gameinfo.gametype == GAMETYPE_HERETIC && ST_Y > 0)
+			f_h = std::min(f_h, ST_Y);
 		f_p = surface->getPitch();
 
 		AM_clearFB(gameinfo.currentAutomapColors.Background);
