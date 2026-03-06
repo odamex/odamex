@@ -755,9 +755,6 @@ void AM_loadPics()
 	am_backdrop_data.clear();
 	am_gotbackdrop = false;
 
-	if (gameinfo.gametype != GAMETYPE_HERETIC)
-		return;
-
 	const int backdropLump = W_CheckNumForName("AUTOPAGE", ns_global);
 	if (backdropLump < 0)
 		return;
@@ -1084,10 +1081,10 @@ void AM_Ticker()
 //
 void AM_clearFB(am_color_t color)
 {
-	const bool useHereticBackdrop = gameinfo.gametype == GAMETYPE_HERETIC && am_backdrop &&
-	    !AM_OverlayAutomapVisible() && am_gotbackdrop && !am_backdrop_data.empty();
+	const bool useBackdrop = am_backdrop && !AM_OverlayAutomapVisible() && am_gotbackdrop &&
+	    !am_backdrop_data.empty();
 
-	if (useHereticBackdrop)
+	if (useBackdrop)
 	{
 		const byte* src = am_backdrop_data.data();
 		if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
@@ -2206,9 +2203,9 @@ void AM_Drawer()
 
 		const int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
 		const int OV_Y = surface_height - (surface_height * 32 / 200);
-		const bool is_heretic = gameinfo.gametype == GAMETYPE_HERETIC;
-		const int heretic_side_padding =
-		    (!AM_OverlayAutomapVisible() && is_heretic) ? (36 * CleanXfac) : 0;
+		const bool use_side_padding =
+		    !AM_OverlayAutomapVisible() && gameinfo.gametype == GAMETYPE_HERETIC;
+		const int side_padding = use_side_padding ? (36 * CleanXfac) : 0;
 
 		if (G_IsCoopGame())
 		{
@@ -2240,7 +2237,7 @@ void AM_Drawer()
 				}
 				else
 				{
-					x = heretic_side_padding;
+					x = side_padding;
 					y = OV_Y - (text_height * 2) + 1;
 				}
 
@@ -2263,7 +2260,7 @@ void AM_Drawer()
 				}
 				else
 				{
-					x = heretic_side_padding;
+					x = side_padding;
 					y = OV_Y - (text_height * 3) + 1;
 				}
 
@@ -2284,7 +2281,7 @@ void AM_Drawer()
 				}
 				else
 				{
-					x = surface_width - text_width - heretic_side_padding;
+					x = surface_width - text_width - side_padding;
 					y = OV_Y - (text_height * 2) + 1;
 				}
 
@@ -2334,7 +2331,7 @@ void AM_Drawer()
 			}
 			else
 			{
-				x = heretic_side_padding;
+				x = side_padding;
 				y = OV_Y - (text_height * 1) + 1;
 			}
 
@@ -2379,7 +2376,7 @@ void AM_Drawer()
 			}
 			else
 			{
-				x = heretic_side_padding;
+				x = side_padding;
 				y = OV_Y - (text_height * 1) + 1;
 			}
 
@@ -2400,7 +2397,7 @@ void AM_Drawer()
 			}
 			else
 			{
-				x = surface_width - text_width - heretic_side_padding;
+				x = surface_width - text_width - side_padding;
 				y = OV_Y - (text_height * 1) + 1;
 			}
 			if (G_IsHordeMode())
