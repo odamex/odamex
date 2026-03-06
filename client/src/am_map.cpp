@@ -760,17 +760,15 @@ void AM_loadPics()
 		return;
 
 	const unsigned backdropSize = W_LumpLength(backdropLump);
-	if (backdropSize >= 320u * 200u)
+	if (backdropSize < 320u * 200u)
 	{
-		const byte* rawBackdrop = static_cast<const byte*>(W_CacheLumpNum(backdropLump, PU_CACHE));
-		am_backdrop_data.assign(rawBackdrop, rawBackdrop + (320 * 200));
-		am_gotbackdrop = true;
+		DPrintFmt("AUTOPAGE lump too small for raw backdrop ({} bytes); expected at least 64000", backdropSize);
 		return;
 	}
 
-	// Fallback for patch-encoded AUTOPAGE variants.
-	const byte* patchBackdrop = reinterpret_cast<const byte*>(W_CachePatch(backdropLump, PU_CACHE));
-	am_backdrop_data.assign(patchBackdrop, patchBackdrop + (320 * 200));
+	// AUTOPAGE is treated as a raw 320x200 byte buffer, matching Raven behavior.
+	const byte* rawBackdrop = static_cast<const byte*>(W_CacheLumpNum(backdropLump, PU_CACHE));
+	am_backdrop_data.assign(rawBackdrop, rawBackdrop + (320 * 200));
 	am_gotbackdrop = true;
 }
 
