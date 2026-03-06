@@ -253,7 +253,8 @@ static fixed64_t scale_mtof = static_cast<fixed64_t>(INITSCALEMTOF);
 static fixed64_t scale_ftom;
 
 static lumpHandle_t marknums[10];             // numbers used for marking by the automap
-static std::vector<byte> am_backdrop_data;    // AUTOPAGE backdrop, raw 320x200 bytes
+static std::vector<byte> am_backdrop_data;    // AUTOPAGE backdrop, raw 320xN bytes
+static int am_backdrop_height = 0;
 static bool am_gotbackdrop = false;
 static mpoint_t markpoints[AM_NUMMARKPOINTS]; // where the points are
 static int markpointnum = 0;                  // next point to be assigned
@@ -753,6 +754,7 @@ void AM_loadPics()
 	}
 
 	am_backdrop_data.clear();
+	am_backdrop_height = 0;
 	am_gotbackdrop = false;
 
 	const int backdropLump = W_CheckNumForName("AUTOPAGE", ns_global);
@@ -760,15 +762,22 @@ void AM_loadPics()
 		return;
 
 	const unsigned backdropSize = W_LumpLength(backdropLump);
-	if (backdropSize < 320u * 200u)
+	if (backdropSize < 320u || (backdropSize % 320u) != 0)
 	{
-		DPrintFmt("AUTOPAGE lump too small for raw backdrop ({} bytes); expected at least 64000", backdropSize);
+		DPrintFmt("AUTOPAGE raw backdrop has unsupported size {} (expected width 320)", backdropSize);
 		return;
 	}
 
-	// AUTOPAGE is treated as a raw 320x200 byte buffer, matching Raven behavior.
+	am_backdrop_height = backdropSize / 320u;
+	if (am_backdrop_height < 100)
+	{
+		DPrintFmt("AUTOPAGE raw backdrop height too small: {}", am_backdrop_height);
+		am_backdrop_height = 0;
+		return;
+	}
+
 	const byte* rawBackdrop = static_cast<const byte*>(W_CacheLumpNum(backdropLump, PU_CACHE));
-	am_backdrop_data.assign(rawBackdrop, rawBackdrop + (320 * 200));
+	am_backdrop_data.assign(rawBackdrop, rawBackdrop + backdropSize);
 	am_gotbackdrop = true;
 }
 
@@ -778,6 +787,7 @@ void AM_unloadPics()
 		marknum.clear();
 
 	am_backdrop_data.clear();
+	am_backdrop_height = 0;
 	am_gotbackdrop = false;
 }
 
@@ -1083,7 +1093,7 @@ void AM_Ticker()
 void AM_clearFB(am_color_t color)
 {
 	const bool useBackdrop = am_backdrop && !AM_OverlayAutomapVisible() && am_gotbackdrop &&
-	    !am_backdrop_data.empty();
+	    !am_backdrop_data.empty() && am_backdrop_height > 0;
 
 	if (useBackdrop)
 	{
@@ -1093,7 +1103,7 @@ void AM_clearFB(am_color_t color)
 			for (int y = 0; y < f_h; y++)
 			{
 				byte* dst = fb + y * f_p;
-				const int srcY = y * 200 / f_h;
+				const int srcY = y * am_backdrop_height / f_h;
 				for (int x = 0; x < f_w; x++)
 				{
 					const int srcX = x * 320 / f_w;
@@ -1107,7 +1117,7 @@ void AM_clearFB(am_color_t color)
 			for (int y = 0; y < f_h; y++)
 			{
 				argb_t* line = reinterpret_cast<argb_t*>(fb + y * f_p);
-				const int srcY = y * 200 / f_h;
+				const int srcY = y * am_backdrop_height / f_h;
 				for (int x = 0; x < f_w; x++)
 				{
 					const int srcX = x * 320 / f_w;
