@@ -2143,9 +2143,9 @@ void AM_Drawer()
 
 		const int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
 		const int OV_Y = surface_height - (surface_height * 32 / 200);
-		const bool heretic_automap = gameinfo.gametype == GAMETYPE_HERETIC;
+		const bool is_heretic = gameinfo.gametype == GAMETYPE_HERETIC;
 		const int heretic_side_padding =
-		    (!AM_OverlayAutomapVisible() && heretic_automap) ? (36 * CleanXfac) : 0;
+		    (!AM_OverlayAutomapVisible() && is_heretic) ? (36 * CleanXfac) : 0;
 
 		if (G_IsCoopGame())
 		{
