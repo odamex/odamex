@@ -2133,6 +2133,9 @@ void AM_Drawer()
 
 		const int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
 		const int OV_Y = surface_height - (surface_height * 32 / 200);
+		const bool heretic_automap = gameinfo.gametype == GAMETYPE_HERETIC;
+		const int heretic_side_padding =
+		    (!AM_OverlayAutomapVisible() && heretic_automap) ? (36 * CleanXfac) : 0;
 
 		if (G_IsCoopGame())
 		{
@@ -2164,7 +2167,7 @@ void AM_Drawer()
 				}
 				else
 				{
-					x = 0;
+					x = heretic_side_padding;
 					y = OV_Y - (text_height * 2) + 1;
 				}
 
@@ -2187,7 +2190,7 @@ void AM_Drawer()
 				}
 				else
 				{
-					x = 0;
+					x = heretic_side_padding;
 					y = OV_Y - (text_height * 3) + 1;
 				}
 
@@ -2208,7 +2211,7 @@ void AM_Drawer()
 				}
 				else
 				{
-					x = surface_width - text_width;
+					x = surface_width - text_width - heretic_side_padding;
 					y = OV_Y - (text_height * 2) + 1;
 				}
 
@@ -2220,23 +2223,30 @@ void AM_Drawer()
 		{
 			int firstmap;
 			int mapoffset = 1;
-			switch (gamemission)
+			if (heretic_automap)
 			{
-			case doom2:
-			case commercial_freedoom:
-			case commercial_hacx:
-				firstmap = GStrings.toIndex(HUSTR_1);
-				break;
-			case pack_plut:
-				firstmap = GStrings.toIndex(PHUSTR_1);
-				break;
-			case pack_tnt:
-				firstmap = GStrings.toIndex(THUSTR_1);
-				break;
-			default:
-				firstmap = GStrings.toIndex(HUSTR_E1M1);
-				mapoffset = level.cluster; // Episodes skip map numbers.
-				break;
+				firstmap = GStrings.toIndex(HHUSTR_E1M1);
+			}
+			else
+			{
+				switch (gamemission)
+				{
+				case doom2:
+				case commercial_freedoom:
+				case commercial_hacx:
+					firstmap = GStrings.toIndex(HUSTR_1);
+					break;
+				case pack_plut:
+					firstmap = GStrings.toIndex(PHUSTR_1);
+					break;
+				case pack_tnt:
+					firstmap = GStrings.toIndex(THUSTR_1);
+					break;
+				default:
+					firstmap = GStrings.toIndex(HUSTR_E1M1);
+					mapoffset = level.cluster; // Episodes skip map numbers.
+					break;
+				}
 			}
 
 			line = GStrings.getIndex(firstmap + level.levelnum - mapoffset);
@@ -2255,7 +2265,7 @@ void AM_Drawer()
 			}
 			else
 			{
-				x = 0;
+				x = heretic_side_padding;
 				y = OV_Y - (text_height * 1) + 1;
 			}
 
@@ -2300,7 +2310,7 @@ void AM_Drawer()
 			}
 			else
 			{
-				x = 0;
+				x = heretic_side_padding;
 				y = OV_Y - (text_height * 1) + 1;
 			}
 
@@ -2321,7 +2331,7 @@ void AM_Drawer()
 			}
 			else
 			{
-				x = surface_width - text_width;
+				x = surface_width - text_width - heretic_side_padding;
 				y = OV_Y - (text_height * 1) + 1;
 			}
 			if (G_IsHordeMode())
