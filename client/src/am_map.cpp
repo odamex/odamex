@@ -578,8 +578,8 @@ void AM_SetBaseColorRaven()
 	gameinfo.defaultAutomapColors.Background		= "00 00 00";
 	gameinfo.defaultAutomapColors.YourColor			= "ff ff ff";
 	gameinfo.defaultAutomapColors.AlmostBackground	= "10 10 10";
-	gameinfo.defaultAutomapColors.SecretWallColor	= "fc 00 00";
-	gameinfo.defaultAutomapColors.WallColor			= "fc 00 00";
+	gameinfo.defaultAutomapColors.SecretWallColor	= "4c 33 11";
+	gameinfo.defaultAutomapColors.WallColor			= "4c 33 11";
 	gameinfo.defaultAutomapColors.TSWallColor		= "59 5e 57";
 	gameinfo.defaultAutomapColors.FDWallColor		= "d0 b0 85";
 	gameinfo.defaultAutomapColors.LockedColor		= "fc fc 00";
