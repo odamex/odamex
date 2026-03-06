@@ -359,6 +359,17 @@ void ST_HticDrawBackgroundAndWidgets()
 	}
 }
 
+void ST_HticDrawFullscreenHealth(IWindowSurface* surface)
+{
+	if (!surface || hticBigNum[0].empty())
+		return;
+
+	const int y = surface->getHeight() - (20 * CleanYfac);
+	const int rightX = surface->getWidth() - (4 * CleanXfac);
+	const DCanvas* canvas = surface->getDefaultCanvas();
+	ST_HticDrawNumber(canvas, std::max(0, hticHealth), rightX, y, 3, hticBigNum);
+}
+
 void ST_HticDrawTopCaps(IWindowSurface* surface)
 {
 	if (hticTopLeftCap.empty() || hticTopRightCap.empty())
@@ -443,6 +454,7 @@ void ST_HticDrawer()
 	if (!R_StatusBarVisible())
 	{
 		ST_HticSetLayoutHidden();
+		ST_HticDrawFullscreenHealth(R_GetRenderingSurface());
 		return;
 	}
 
