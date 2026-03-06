@@ -122,6 +122,7 @@ bool Freecam::allowAdd()
 bool Freecam::allowSpy()
 {
 	return (netdemo.isPlaying() || 
+			netdemo.isPaused() ||
 			(consoleplayer().playerstate == PST_DEAD 
 				&& consoleplayer().lives < 1 
 				&& ::levelstate.getState() == LevelState::INGAME));
