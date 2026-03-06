@@ -51,6 +51,18 @@ static lumpHandle_t hu_bigfont[HU_FONTSIZE];
 static lumpHandle_t hu_smallfont[HU_FONTSIZE];
 static lumpHandle_t hu_digfont[HU_FONTSIZE];
 
+static int V_FindFirstGlobalLumpByName(const char* name)
+{
+	int lump = -1;
+	while ((lump = W_FindLump(name, lump)) != -1)
+	{
+		if (lumpinfo[lump].namespc == ns_global)
+			return lump;
+	}
+
+	return -1;
+}
+
 static int hu_bigfont_height;
 static int hu_smallfont_height;
 static int hu_digfont_height;
@@ -76,9 +88,14 @@ void V_TextInit()
 		buffer = fmt::sprintf(bigfont, j++);
 
 		// Some letters of this font are missing.
-		int num = W_CheckNumForName(buffer.c_str());
+		int num = -1;
+		if (gameinfo.gametype == GAMETYPE_HERETIC)
+			num = V_FindFirstGlobalLumpByName(buffer.c_str());
+		else
+			num = W_CheckNumForName(buffer.c_str());
+
 		if (num != -1)
-			::hu_bigfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
+			::hu_bigfont[i] = W_CachePatchHandle(num, PU_STATIC);
 		else
 			::hu_bigfont[i] = W_CachePatchHandle("TNT1A0", PU_STATIC, ns_sprites);
 	}
