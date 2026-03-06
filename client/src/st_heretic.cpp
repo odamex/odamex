@@ -359,19 +359,6 @@ void ST_HticDrawBackgroundAndWidgets()
 	}
 }
 
-void ST_HticDrawFullscreenHealth(IWindowSurface* surface)
-{
-	if (!surface || hticBigNum[0].empty())
-		return;
-
-	const patch_t* digit0 = W_ResolvePatchHandle(hticBigNum[0]);
-	const int y = surface->getHeight() - (20 * CleanYfac);
-	const int leftX = 4 * CleanXfac;
-	const int rightX = leftX + digit0->width() * 3;
-	const DCanvas* canvas = surface->getDefaultCanvas();
-	ST_HticDrawNumber(canvas, std::max(0, hticHealth), rightX, y, 3, hticBigNum);
-}
-
 void ST_HticDrawTopCaps(IWindowSurface* surface)
 {
 	if (hticTopLeftCap.empty() || hticTopRightCap.empty())
@@ -397,11 +384,6 @@ void ST_HticDrawTopCaps(IWindowSurface* surface)
 	canvas->DrawPatchStretched(right, rightX, rightY, rightW, rightH);
 }
 } // namespace
-
-void ST_HticDrawFullscreenHUD()
-{
-	ST_HticDrawFullscreenHealth(R_GetRenderingSurface());
-}
 
 void ST_HticInit()
 {
