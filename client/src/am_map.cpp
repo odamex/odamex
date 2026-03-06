@@ -2220,6 +2220,7 @@ void AM_Drawer()
 
 		const int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
 		const int OV_Y = surface_height - (surface_height * 32 / 200);
+		const int fullmap_text_base_y = (ST_Y > 0) ? ST_Y : f_h;
 		const bool use_side_padding =
 		    !AM_OverlayAutomapVisible() && gameinfo.gametype == GAMETYPE_HERETIC;
 		const int side_padding = use_side_padding ? (36 * CleanXfac) : 0;
@@ -2255,7 +2256,7 @@ void AM_Drawer()
 				else
 				{
 					x = side_padding;
-					y = OV_Y - (text_height * 2) + 1;
+					y = fullmap_text_base_y - (text_height * 2) + 1;
 				}
 
 				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
@@ -2278,7 +2279,7 @@ void AM_Drawer()
 				else
 				{
 					x = side_padding;
-					y = OV_Y - (text_height * 3) + 1;
+					y = fullmap_text_base_y - (text_height * 3) + 1;
 				}
 
 				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
@@ -2299,7 +2300,7 @@ void AM_Drawer()
 				else
 				{
 					x = surface_width - text_width - side_padding;
-					y = OV_Y - (text_height * 2) + 1;
+					y = fullmap_text_base_y - (text_height * 2) + 1;
 				}
 
 				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
@@ -2349,7 +2350,7 @@ void AM_Drawer()
 			else
 			{
 				x = side_padding;
-				y = OV_Y - (text_height * 1) + 1;
+				y = fullmap_text_base_y - (text_height * 1) + 1;
 			}
 
 			screen->DrawTextClean(CR_RED, x, y, line.c_str());
@@ -2394,7 +2395,7 @@ void AM_Drawer()
 			else
 			{
 				x = side_padding;
-				y = OV_Y - (text_height * 1) + 1;
+				y = fullmap_text_base_y - (text_height * 1) + 1;
 			}
 
 			screen->DrawTextClean(CR_GREY, x, y, line.c_str());
@@ -2415,7 +2416,7 @@ void AM_Drawer()
 			else
 			{
 				x = surface_width - text_width - side_padding;
-				y = OV_Y - (text_height * 1) + 1;
+				y = fullmap_text_base_y - (text_height * 1) + 1;
 			}
 			if (G_IsHordeMode())
 			{
