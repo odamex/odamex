@@ -1992,7 +1992,7 @@ void SpectatorHUD()
 void HereticHud()
 {
 	const player_t* plyr = &displayplayer();
-	V_SetFont("FONTB");
+	V_SetFont("BIGFONT");
 	const std::string health = fmt::sprintf("%d", std::max(0, plyr->health));
 	hud::DrawText(4, 4, hud_scale, hud::X_LEFT, hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM,
 	              health.c_str(), CR_GREY);
