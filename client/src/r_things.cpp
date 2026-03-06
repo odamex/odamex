@@ -73,7 +73,6 @@ fixed_t boby;
 EXTERN_CVAR (r_drawplayersprites)
 EXTERN_CVAR (r_softinvulneffect)
 EXTERN_CVAR (r_particles)
-EXTERN_CVAR (r_thingsectorlight);
 
 //
 // INITIALIZATION FUNCTIONS
@@ -690,8 +689,7 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 	// Well, now it will be done.
 	sec->validcount = validcount;
 
-	int lightnum = r_thingsectorlight ? lightlevel : sec->lightlevel;
-	lightnum = (lightnum >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
+	int lightnum = (lightlevel >> LIGHTSEGSHIFT) + (foggy ? 0 : extralight);
 
 	if (lightnum < 0)
 		spritelights = scalelight[0];
@@ -836,7 +834,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	R_DrawVisSprite (vis, vis->x1, vis->x2);
 }
 
-
+EXTERN_CVAR(r_thingsectorlight)
 
 //
 // R_DrawPlayerSprites
@@ -854,8 +852,8 @@ void R_DrawPlayerSprites()
 		(consoleplayer().cheats & CF_CHASECAM))
 		return;
 
-	sector_t* sec = R_FakeFlat(viewsector, &tempsec, &floorlight,
-	                           &ceilinglight, false);
+	const sector_t* sec = R_FakeFlat(viewsector, &tempsec, &floorlight,
+	                                 &ceilinglight, false);
 
 	// [RH] set foggy flag
 	foggy = level.fadeto_color[0] || level.fadeto_color[1] || level.fadeto_color[2] || level.fadeto_color[3]
@@ -865,7 +863,7 @@ void R_DrawPlayerSprites()
 	basecolormap = sec->colormap->maps;
 
 	// get light level
-	const int lightnum = ((floorlight + ceilinglight) >> (LIGHTSEGSHIFT + 1))
+	const int lightnum = ((r_thingsectorlight ? (floorlight + ceilinglight) / 2 : sec->lightlevel) >> LIGHTSEGSHIFT)
 	               + (foggy ? 0 : extralight);
 
 	if (lightnum < 0)
