@@ -38,6 +38,7 @@
 #include "c_dispatch.h"
 #include "v_text.h"
 #include "g_gametype.h"
+#include "gi.h"
 
 #include "cl_main.h"
 #include "p_ctf.h"
@@ -534,6 +535,8 @@ void HU_Drawer()
 			{
 				if (spechud)
 					hud::SpectatorHUD();
+				else if (gameinfo.gametype == GAMETYPE_HERETIC)
+					hud::HereticHUD();
 				else
 					hud::OdamexHUD();
 			}

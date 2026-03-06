@@ -79,6 +79,8 @@ void ST_HticShutdown();
 
 namespace hud {
 
+void HereticHUD();
+
 void drawNetdemo();
 
 // [ML] New Odamex fullscreen HUD

@@ -1989,6 +1989,37 @@ void SpectatorHUD()
 	hud::drawGametype();
 }
 
+void HereticHUD()
+{
+	const player_t* plyr = &displayplayer();
+	V_SetFont("BIGFONT");
+	const std::string health = fmt::sprintf("%d", std::max(0, plyr->health));
+	hud::DrawText(4, 4, hud_scale, hud::X_LEFT, hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM,
+	              health.c_str(), CR_GREY);
+	V_SetFont("SMALLFONT");
+
+	int st_y = statusBarY() + 4;
+
+	if (hud_timer)
+	{
+		hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_UNTRANSLATED);
+		st_y += V_LineHeight() + 1;
+	}
+
+	// Draw other player name, if spying
+	hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_UNTRANSLATED);
+	st_y += V_LineHeight() + 1;
+
+	// Draw targeted player names.
+	hud::EATargets(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	               hud::Y_BOTTOM, 1, hud_targetcount);
+	st_y += V_LineHeight() + 1;
+
+	hud::drawGametype();
+}
+
 // [AM] HUD drawn with the Doom Status Bar.
 void DoomHUD()
 {
