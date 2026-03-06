@@ -49,7 +49,6 @@ lumpHandle_t hticTopLeftCap;
 lumpHandle_t hticTopRightCap;
 
 bool hticAssetsLoaded = false;
-bool hticHasCoreStatusbar = false;
 
 int hticHealth = 100;
 int hticArmor = 0;
@@ -94,7 +93,6 @@ void ST_HticClearAssets()
 	hticTopRightCap.clear();
 
 	hticAssetsLoaded = false;
-	hticHasCoreStatusbar = false;
 }
 
 void ST_HticEnsureSurfaces()
@@ -218,28 +216,6 @@ void ST_HticDrawNumber(const DCanvas* canvas, int value, int rightX, int y, int 
 	{
 		canvas->DrawPatch(W_ResolvePatchHandle(hticNegNum), drawX - 8, y);
 	}
-}
-
-void ST_HticDrawTextFallback()
-{
-	const player_t& plyr = displayplayer();
-	const int ammo = ST_HticGetReadyAmmo(plyr);
-	const int lineY = ST_Y + 4 * CleanYfac;
-
-	screen->DrawText(CR_GOLD, ST_X + 8 * CleanXfac, lineY,
-	                 fmt::format("HEALTH {:3d}", std::max(0, plyr.health)).c_str());
-	if (ammo >= 0)
-	{
-		screen->DrawText(CR_GOLD, ST_X + (ST_WIDTH / 2) - (40 * CleanXfac), lineY,
-		                 fmt::format("AMMO {:3d}", ammo).c_str());
-	}
-	else
-	{
-		screen->DrawText(CR_GOLD, ST_X + (ST_WIDTH / 2) - (40 * CleanXfac), lineY, "AMMO ---");
-	}
-
-	screen->DrawText(CR_GOLD, ST_X + ST_WIDTH - (120 * CleanXfac), lineY,
-	                 fmt::format("ARMOR {:3d}", std::max(0, plyr.armorpoints)).c_str());
 }
 
 void ST_HticUpdateData()
@@ -444,7 +420,6 @@ void ST_HticInit()
 	hticTopRightCap = ST_HticTryCachePatch("RTFCTOP");
 
 	hticAssetsLoaded = true;
-	hticHasCoreStatusbar = !hticBarMain.empty() && !hticBigNum[0].empty();
 
 	hticHealth = 100;
 	hticChainHealth = 100;
@@ -478,18 +453,9 @@ void ST_HticDrawer()
 
 	ST_HticSetLayoutVisible();
 
-	if (!hticHasCoreStatusbar)
-	{
-		ST_HticDrawTextFallback();
-		return;
-	}
-
 	ST_HticEnsureSurfaces();
 	if (!stbar_surface)
-	{
-		ST_HticDrawTextFallback();
 		return;
-	}
 
 	if (R_GetRenderingSurface()->getWidth() > ST_WIDTH)
 	{
