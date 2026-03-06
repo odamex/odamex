@@ -32,7 +32,6 @@ constexpr int HTIC_BASE_WIDTH = 320;
 constexpr int HTIC_BASE_HEIGHT = 42;
 
 lumpHandle_t hticBigNum[10];
-lumpHandle_t hticSmallNum[10];
 lumpHandle_t hticNegNum;
 lumpHandle_t hticLameNum;
 lumpHandle_t hticKeys[3];
@@ -66,12 +65,16 @@ lumpHandle_t ST_HticTryCachePatch(const char* name)
 	return W_CachePatchHandle(lump, PU_STATIC);
 }
 
+lumpHandle_t ST_HticCacheRequiredPatch(const char* name)
+{
+	return W_CachePatchHandle(W_GetNumForName(name, ns_global), PU_STATIC);
+}
+
 void ST_HticClearAssets()
 {
 	for (int i = 0; i < 10; i++)
 	{
 		hticBigNum[i].clear();
-		hticSmallNum[i].clear();
 	}
 
 	for (int i = 0; i < 3; i++)
@@ -108,12 +111,6 @@ void ST_HticEnsureSurfaces()
 			I_FreeSurface(stbar_surface);
 			stbar_surface = nullptr;
 		}
-	}
-
-	if (stnum_surface != nullptr)
-	{
-		I_FreeSurface(stnum_surface);
-		stnum_surface = nullptr;
 	}
 
 	if (stbar_surface == nullptr)
@@ -394,21 +391,19 @@ void ST_HticInit()
 
 	for (int i = 0; i < 10; i++)
 	{
-		hticBigNum[i] = ST_HticTryCachePatch(fmt::format("IN{}", i).c_str());
-		hticSmallNum[i] = ST_HticTryCachePatch(fmt::format("SMALLIN{}", i).c_str());
+		hticBigNum[i] = ST_HticCacheRequiredPatch(fmt::format("IN{}", i).c_str());
 	}
 
-	hticNegNum = ST_HticTryCachePatch("NEGNUM");
-	hticLameNum = ST_HticTryCachePatch("LAME");
+	hticNegNum = ST_HticCacheRequiredPatch("NEGNUM");
+	hticLameNum = ST_HticCacheRequiredPatch("LAME");
 
-	hticKeys[0] = ST_HticTryCachePatch("YKEYICON");
-	hticKeys[1] = ST_HticTryCachePatch("GKEYICON");
-	hticKeys[2] = ST_HticTryCachePatch("BKEYICON");
+	hticKeys[0] = ST_HticCacheRequiredPatch("YKEYICON");
+	hticKeys[1] = ST_HticCacheRequiredPatch("GKEYICON");
+	hticKeys[2] = ST_HticCacheRequiredPatch("BKEYICON");
 
-	hticBarBack = ST_HticTryCachePatch("BARBACK");
-	hticBarMain = multiplayer ? ST_HticTryCachePatch("STATBAR") : ST_HticTryCachePatch("LIFEBAR");
-	if (hticBarMain.empty())
-		hticBarMain = ST_HticTryCachePatch("STATBAR");
+	hticBarBack = ST_HticCacheRequiredPatch("BARBACK");
+	hticBarMain = multiplayer ? ST_HticCacheRequiredPatch("STATBAR")
+	                         : ST_HticCacheRequiredPatch("LIFEBAR");
 
 	hticChain = ST_HticTryCachePatch("CHAIN");
 	hticLifeGem = ST_HticTryCachePatch("LIFEGEM2");
