@@ -3040,10 +3040,13 @@ static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 	player_t* clientPlayer = &consoleplayer();
 	fixed_t x, y, z;
 	fixed_t momx, momy, momz;
-	fixed_t pitch, viewz, viewheight, deltaviewheight;
+	fixed_t pitch, viewheight, deltaviewheight;
 	angle_t angle;
 	int jumpTics, reactiontime;
 	byte waterlevel;
+
+	// Note clientPlayer->viewz should not be set with the value from the demo here
+	// it is an aggregate value and will be set correctly later
 
 	clientPlayer->cmd.clear();
 	clientPlayer->cmd.unserialize(msg->player_cmd());
@@ -3057,7 +3060,6 @@ static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 	momz = msg->actor().mom().z();
 	angle = msg->actor().angle();
 	pitch = msg->actor().pitch();
-	viewz = msg->player().viewz();
 	viewheight = msg->player().viewheight();
 	deltaviewheight = msg->player().deltaviewheight();
 	jumpTics = msg->player().jumptics();
@@ -3076,7 +3078,6 @@ static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 		clientPlayer->mo->momz = momz;
 		clientPlayer->mo->angle = angle;
 		clientPlayer->mo->pitch = pitch;
-		clientPlayer->viewz = viewz;
 		clientPlayer->viewheight = viewheight;
 		clientPlayer->deltaviewheight = deltaviewheight;
 		clientPlayer->jumpTics = jumpTics;

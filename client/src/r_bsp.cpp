@@ -745,13 +745,7 @@ void R_Subsector (int num)
 	}
 
 	while (count--)
-	{
-		if (line->linedef)
-			R_AddLine(line);
-
-		line++;
-	}
-
+		R_AddLine(line++);
 }
 
 
