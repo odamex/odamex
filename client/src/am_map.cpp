@@ -576,25 +576,50 @@ void AM_SetBaseColorDoom()
 
 void AM_SetBaseColorRaven()
 {
-	gameinfo.defaultAutomapColors.Background		= "00 00 00";
-	gameinfo.defaultAutomapColors.YourColor			= "ff ff ff";
-	gameinfo.defaultAutomapColors.AlmostBackground	= "10 10 10";
-	gameinfo.defaultAutomapColors.SecretWallColor	= "4c 33 11";
-	gameinfo.defaultAutomapColors.WallColor			= "4c 33 11";
-	gameinfo.defaultAutomapColors.TSWallColor		= "59 5e 57";
-	gameinfo.defaultAutomapColors.FDWallColor		= "d0 b0 85";
-	gameinfo.defaultAutomapColors.LockedColor		= "fc fc 00";
-	gameinfo.defaultAutomapColors.CDWallColor		= "68 3c 20";
-	gameinfo.defaultAutomapColors.ThingColor		= "38 38 38";
-	gameinfo.defaultAutomapColors.ThingColor_Item			= "38 38 38"; // todo
-	gameinfo.defaultAutomapColors.ThingColor_CountItem		= "38 38 38"; // todo
-	gameinfo.defaultAutomapColors.ThingColor_Monster		= "38 38 38"; // todo
-	gameinfo.defaultAutomapColors.ThingColor_NoCountMonster	= "38 38 38"; // todo
-	gameinfo.defaultAutomapColors.ThingColor_Friend			= "38 38 38"; // todo
-	gameinfo.defaultAutomapColors.ThingColor_Projectile		= "38 38 38"; // todo
-	gameinfo.defaultAutomapColors.GridColor			= "4c 4c 4c";
-	gameinfo.defaultAutomapColors.XHairColor		= "80 80 80";
-	gameinfo.defaultAutomapColors.NotSeenColor		= "6c 6c 6c";
+	if (gameinfo.gametype == GAMETYPE_HERETIC)
+	{
+		gameinfo.defaultAutomapColors.Background		= "00 00 00";
+		gameinfo.defaultAutomapColors.YourColor			= "ff ff ff";
+		gameinfo.defaultAutomapColors.AlmostBackground	= "10 10 10";
+		gameinfo.defaultAutomapColors.SecretWallColor	= "fc 00 00";
+		gameinfo.defaultAutomapColors.WallColor			= "fc 00 00";
+		gameinfo.defaultAutomapColors.TSWallColor		= "59 5e 57";
+		gameinfo.defaultAutomapColors.FDWallColor		= "bc 78 48";
+		gameinfo.defaultAutomapColors.LockedColor		= "fc fc 00";
+		gameinfo.defaultAutomapColors.CDWallColor		= "68 3c 20";
+		gameinfo.defaultAutomapColors.ThingColor		= "38 38 38";
+		gameinfo.defaultAutomapColors.ThingColor_Item			= "38 38 38"; // todo
+		gameinfo.defaultAutomapColors.ThingColor_CountItem		= "38 38 38"; // todo
+		gameinfo.defaultAutomapColors.ThingColor_Monster		= "38 38 38"; // todo
+		gameinfo.defaultAutomapColors.ThingColor_NoCountMonster	= "38 38 38"; // todo
+		gameinfo.defaultAutomapColors.ThingColor_Friend			= "38 38 38"; // todo
+		gameinfo.defaultAutomapColors.ThingColor_Projectile		= "38 38 38"; // todo
+		gameinfo.defaultAutomapColors.GridColor			= "4c 4c 4c";
+		gameinfo.defaultAutomapColors.XHairColor		= "80 80 80";
+		gameinfo.defaultAutomapColors.NotSeenColor		= "6c 6c 6c";
+	}
+	else
+	{
+		gameinfo.defaultAutomapColors.Background		= "00 00 00";
+		gameinfo.defaultAutomapColors.YourColor			= "ff ff ff";
+		gameinfo.defaultAutomapColors.AlmostBackground	= "10 10 10";
+		gameinfo.defaultAutomapColors.SecretWallColor	= "4c 33 11";
+		gameinfo.defaultAutomapColors.WallColor			= "4c 33 11";
+		gameinfo.defaultAutomapColors.TSWallColor		= "59 5e 57";
+		gameinfo.defaultAutomapColors.FDWallColor		= "d0 b0 85";
+		gameinfo.defaultAutomapColors.LockedColor		= "fc fc 00";
+		gameinfo.defaultAutomapColors.CDWallColor		= "68 3c 20";
+		gameinfo.defaultAutomapColors.ThingColor		= "38 38 38";
+		gameinfo.defaultAutomapColors.ThingColor_Item			= "38 38 38"; // todo
+		gameinfo.defaultAutomapColors.ThingColor_CountItem		= "38 38 38"; // todo
+		gameinfo.defaultAutomapColors.ThingColor_Monster		= "38 38 38"; // todo
+		gameinfo.defaultAutomapColors.ThingColor_NoCountMonster	= "38 38 38"; // todo
+		gameinfo.defaultAutomapColors.ThingColor_Friend			= "38 38 38"; // todo
+		gameinfo.defaultAutomapColors.ThingColor_Projectile		= "38 38 38"; // todo
+		gameinfo.defaultAutomapColors.GridColor			= "4c 4c 4c";
+		gameinfo.defaultAutomapColors.XHairColor		= "80 80 80";
+		gameinfo.defaultAutomapColors.NotSeenColor		= "6c 6c 6c";
+	}
 }
 
 void AM_SetBaseColorStrife()
@@ -2115,10 +2140,6 @@ void AM_Drawer()
 		const int statusbar_top = ST_StatusBarY(surface_width, surface_height);
 		f_h = statusbar_top;
 
-		// Keep compatibility with Heretic statusbar variants that draw above the
-		// classic Doom statusbar height by honoring ST_Y when available.
-		if (gameinfo.gametype == GAMETYPE_HERETIC && ST_Y > 0)
-			f_h = std::min(f_h, ST_Y);
 		f_p = surface->getPitch();
 
 		AM_clearFB(gameinfo.currentAutomapColors.Background);
