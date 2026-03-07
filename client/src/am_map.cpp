@@ -579,11 +579,11 @@ void AM_SetBaseColorRaven()
 	gameinfo.defaultAutomapColors.Background		= "00 00 00";
 	gameinfo.defaultAutomapColors.YourColor			= "ff ff ff";
 	gameinfo.defaultAutomapColors.AlmostBackground	= "10 10 10";
-	gameinfo.defaultAutomapColors.SecretWallColor	= "4c 33 11";
-	gameinfo.defaultAutomapColors.WallColor			= "4c 33 11";
+	gameinfo.defaultAutomapColors.SecretWallColor	= "ff 00 00";
+	gameinfo.defaultAutomapColors.WallColor			= "ff 00 00";
 	gameinfo.defaultAutomapColors.TSWallColor		= "59 5e 57";
 	gameinfo.defaultAutomapColors.FDWallColor		= "d0 b0 85";
-	gameinfo.defaultAutomapColors.LockedColor		= "fc fc 00";
+	gameinfo.defaultAutomapColors.LockedColor		= "ff ff ff";
 	gameinfo.defaultAutomapColors.CDWallColor		= "68 3c 20";
 	gameinfo.defaultAutomapColors.ThingColor		= "38 38 38";
 	gameinfo.defaultAutomapColors.ThingColor_Item			= "38 38 38"; // todo
@@ -1558,25 +1558,46 @@ void AM_drawWalls()
 							case zk_blue:
 							case zk_blue_skull:
 							case zk_bluex:
-								r = doorColors.bluedoor[0];
-								g = doorColors.bluedoor[1];
-								b = doorColors.bluedoor[2];
+								if (gameinfo.gametype == GAMETYPE_HERETIC)
+								{
+									r = 0; g = 0; b = 255;
+								}
+								else
+								{
+									r = doorColors.bluedoor[0];
+									g = doorColors.bluedoor[1];
+									b = doorColors.bluedoor[2];
+								}
 								break;
 							case zk_yellow_card:
 							case zk_yellow:
 							case zk_yellow_skull:
 							case zk_yellowx:
-								r = doorColors.yellowdoor[0];
-								g = doorColors.yellowdoor[1];
-								b = doorColors.yellowdoor[2];
+								if (gameinfo.gametype == GAMETYPE_HERETIC)
+								{
+									r = 255; g = 255; b = 0;
+								}
+								else
+								{
+									r = doorColors.yellowdoor[0];
+									g = doorColors.yellowdoor[1];
+									b = doorColors.yellowdoor[2];
+								}
 								break;
 							case zk_red_card:
 							case zk_red:
 							case zk_red_skull:
 							case zk_redx:
-								r = doorColors.reddoor[0];
-								g = doorColors.reddoor[1];
-								b = doorColors.reddoor[2];
+								if (gameinfo.gametype == GAMETYPE_HERETIC)
+								{
+									r = 255; g = 0; b = 0;
+								}
+								else
+								{
+									r = doorColors.reddoor[0];
+									g = doorColors.reddoor[1];
+									b = doorColors.reddoor[2];
+								}
 								break;
 							case zk_all:
 							case zk_any:
@@ -1616,21 +1637,42 @@ void AM_drawWalls()
 						{
 							if (P_IsCompatibleBlueDoorLine(line.special))
 							{
-								r = doorColors.bluedoor[0];
-								g = doorColors.bluedoor[1];
-								b = doorColors.bluedoor[2];
+								if (gameinfo.gametype == GAMETYPE_HERETIC)
+								{
+									r = 0; g = 0; b = 255;
+								}
+								else
+								{
+									r = doorColors.bluedoor[0];
+									g = doorColors.bluedoor[1];
+									b = doorColors.bluedoor[2];
+								}
 							}
 							else if (P_IsCompatibleYellowDoorLine(line.special))
 							{
-								r = doorColors.yellowdoor[0];
-								g = doorColors.yellowdoor[1];
-								b = doorColors.yellowdoor[2];
+								if (gameinfo.gametype == GAMETYPE_HERETIC)
+								{
+									r = 255; g = 255; b = 0;
+								}
+								else
+								{
+									r = doorColors.yellowdoor[0];
+									g = doorColors.yellowdoor[1];
+									b = doorColors.yellowdoor[2];
+								}
 							}
 							else
 							{
-								r = doorColors.reddoor[0];
-								g = doorColors.reddoor[1];
-								b = doorColors.reddoor[2];
+								if (gameinfo.gametype == GAMETYPE_HERETIC)
+								{
+									r = 255; g = 0; b = 0;
+								}
+								else
+								{
+									r = doorColors.reddoor[0];
+									g = doorColors.reddoor[1];
+									b = doorColors.reddoor[2];
+								}
 							}
 						}
 
@@ -2217,6 +2259,9 @@ void AM_Drawer()
 		AM_drawCrosshair(gameinfo.currentAutomapColors.XHairColor);
 
 	AM_drawMarks();
+
+	if (gameinfo.gametype == GAMETYPE_HERETIC && !AM_OverlayAutomapVisible())
+		ST_HticDrawTopCaps(surface);
 
 	if (!(viewactive && am_overlay < 2) && !hu_font[0].empty())
 	{
