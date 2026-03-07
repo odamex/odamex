@@ -74,6 +74,7 @@ EXTERN_CVAR(am_classicmapstring)
 EXTERN_CVAR(am_usecustomcolors)
 EXTERN_CVAR(am_showlocked)
 EXTERN_CVAR(am_ovshare)
+EXTERN_CVAR(am_backdrop)
 
 EXTERN_CVAR(am_backcolor)
 EXTERN_CVAR(am_yourcolor)
@@ -252,6 +253,9 @@ static fixed64_t scale_mtof = static_cast<fixed64_t>(INITSCALEMTOF);
 static fixed64_t scale_ftom;
 
 static lumpHandle_t marknums[10];             // numbers used for marking by the automap
+static std::vector<byte> am_backdrop_data;    // AUTOPAGE backdrop, raw 320xN bytes
+static int am_backdrop_height = 0;
+static bool am_gotbackdrop = false;
 static mpoint_t markpoints[AM_NUMMARKPOINTS]; // where the points are
 static int markpointnum = 0;                  // next point to be assigned
 
@@ -579,7 +583,7 @@ void AM_SetBaseColorRaven()
 	gameinfo.defaultAutomapColors.WallColor			= "4c 33 11";
 	gameinfo.defaultAutomapColors.TSWallColor		= "59 5e 57";
 	gameinfo.defaultAutomapColors.FDWallColor		= "d0 b0 85";
-	gameinfo.defaultAutomapColors.LockedColor		= "fc fc 00";
+	gameinfo.defaultAutomapColors.LockedColor		= "ff ff ff";
 	gameinfo.defaultAutomapColors.CDWallColor		= "68 3c 20";
 	gameinfo.defaultAutomapColors.ThingColor		= "38 38 38";
 	gameinfo.defaultAutomapColors.ThingColor_Item			= "38 38 38"; // todo
@@ -737,14 +741,54 @@ void AM_loadPics()
 {
 	for (int i = 0; i < 10; i++)
 	{
-		marknums[i] = W_CachePatchHandle(fmt::format("AMMNUM{}", i), PU_STATIC);
+		const OLumpName lumpName = fmt::format("AMMNUM{}", i);
+		const int lump = W_CheckNumForName(lumpName, ns_global);
+		if (lump < 0)
+		{
+			marknums[i].clear();
+			DPrintFmt("Automap marker lump \"{}\" not found; marker {} disabled", lumpName, i);
+			continue;
+		}
+
+		marknums[i] = W_CachePatchHandle(lump, PU_STATIC);
 	}
+
+	am_backdrop_data.clear();
+	am_backdrop_height = 0;
+	am_gotbackdrop = false;
+
+	const int backdropLump = W_CheckNumForName("AUTOPAGE", ns_global);
+	if (backdropLump < 0)
+		return;
+
+	const unsigned backdropSize = W_LumpLength(backdropLump);
+	if (backdropSize < 320u || (backdropSize % 320u) != 0)
+	{
+		DPrintFmt("AUTOPAGE raw backdrop has unsupported size {} (expected width 320)", backdropSize);
+		return;
+	}
+
+	am_backdrop_height = backdropSize / 320u;
+	if (am_backdrop_height < 100)
+	{
+		DPrintFmt("AUTOPAGE raw backdrop height too small: {}", am_backdrop_height);
+		am_backdrop_height = 0;
+		return;
+	}
+
+	const byte* rawBackdrop = static_cast<const byte*>(W_CacheLumpNum(backdropLump, PU_CACHE));
+	am_backdrop_data.assign(rawBackdrop, rawBackdrop + backdropSize);
+	am_gotbackdrop = true;
 }
 
 void AM_unloadPics()
 {
 	for (auto& marknum : marknums)
 		marknum.clear();
+
+	am_backdrop_data.clear();
+	am_backdrop_height = 0;
+	am_gotbackdrop = false;
 }
 
 void AM_clearMarks()
@@ -762,6 +806,11 @@ void AM_LevelInit()
 {
 	leveljuststarted = false;
 	am_cheating = 0; // force-reset IDDT after loading a map
+
+	if (gameinfo.gametype == GAMETYPE_HERETIC)
+		AM_SetBaseColorRaven();
+	else
+		AM_SetBaseColorDoom();
 
 	AM_clearMarks();
 
@@ -1048,6 +1097,42 @@ void AM_Ticker()
 //
 void AM_clearFB(am_color_t color)
 {
+	const bool useBackdrop = am_backdrop && !AM_OverlayAutomapVisible() && am_gotbackdrop &&
+	    !am_backdrop_data.empty() && am_backdrop_height > 0;
+
+	if (useBackdrop)
+	{
+		const byte* src = am_backdrop_data.data();
+		if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+		{
+			for (int y = 0; y < f_h; y++)
+			{
+				byte* dst = fb + y * f_p;
+				const int srcY = y * am_backdrop_height / f_h;
+				for (int x = 0; x < f_w; x++)
+				{
+					const int srcX = x * 320 / f_w;
+					dst[x] = src[srcY * 320 + srcX];
+				}
+			}
+		}
+		else
+		{
+			const argb_t* paletteColors = V_GetDefaultPalette()->colors;
+			for (int y = 0; y < f_h; y++)
+			{
+				argb_t* line = reinterpret_cast<argb_t*>(fb + y * f_p);
+				const int srcY = y * am_backdrop_height / f_h;
+				for (int x = 0; x < f_w; x++)
+				{
+					const int srcX = x * 320 / f_w;
+					line[x] = paletteColors[src[srcY * 320 + srcX]];
+				}
+			}
+		}
+		return;
+	}
+
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 	{
 		if (f_w == f_p)
@@ -1473,25 +1558,46 @@ void AM_drawWalls()
 							case zk_blue:
 							case zk_blue_skull:
 							case zk_bluex:
-								r = doorColors.bluedoor[0];
-								g = doorColors.bluedoor[1];
-								b = doorColors.bluedoor[2];
+								if (gameinfo.gametype == GAMETYPE_HERETIC)
+								{
+									r = 0; g = 0; b = 255;
+								}
+								else
+								{
+									r = doorColors.bluedoor[0];
+									g = doorColors.bluedoor[1];
+									b = doorColors.bluedoor[2];
+								}
 								break;
 							case zk_yellow_card:
 							case zk_yellow:
 							case zk_yellow_skull:
 							case zk_yellowx:
-								r = doorColors.yellowdoor[0];
-								g = doorColors.yellowdoor[1];
-								b = doorColors.yellowdoor[2];
+								if (gameinfo.gametype == GAMETYPE_HERETIC)
+								{
+									r = 255; g = 255; b = 0;
+								}
+								else
+								{
+									r = doorColors.yellowdoor[0];
+									g = doorColors.yellowdoor[1];
+									b = doorColors.yellowdoor[2];
+								}
 								break;
 							case zk_red_card:
 							case zk_red:
 							case zk_red_skull:
 							case zk_redx:
-								r = doorColors.reddoor[0];
-								g = doorColors.reddoor[1];
-								b = doorColors.reddoor[2];
+								if (gameinfo.gametype == GAMETYPE_HERETIC)
+								{
+									r = 0x4c; g = 0x33; b = 0x11;
+								}
+								else
+								{
+									r = doorColors.reddoor[0];
+									g = doorColors.reddoor[1];
+									b = doorColors.reddoor[2];
+								}
 								break;
 							case zk_all:
 							case zk_any:
@@ -1531,21 +1637,42 @@ void AM_drawWalls()
 						{
 							if (P_IsCompatibleBlueDoorLine(line.special))
 							{
-								r = doorColors.bluedoor[0];
-								g = doorColors.bluedoor[1];
-								b = doorColors.bluedoor[2];
+								if (gameinfo.gametype == GAMETYPE_HERETIC)
+								{
+									r = 0; g = 0; b = 255;
+								}
+								else
+								{
+									r = doorColors.bluedoor[0];
+									g = doorColors.bluedoor[1];
+									b = doorColors.bluedoor[2];
+								}
 							}
 							else if (P_IsCompatibleYellowDoorLine(line.special))
 							{
-								r = doorColors.yellowdoor[0];
-								g = doorColors.yellowdoor[1];
-								b = doorColors.yellowdoor[2];
+								if (gameinfo.gametype == GAMETYPE_HERETIC)
+								{
+									r = 255; g = 255; b = 0;
+								}
+								else
+								{
+									r = doorColors.yellowdoor[0];
+									g = doorColors.yellowdoor[1];
+									b = doorColors.yellowdoor[2];
+								}
 							}
 							else
 							{
-								r = doorColors.reddoor[0];
-								g = doorColors.reddoor[1];
-								b = doorColors.reddoor[2];
+								if (gameinfo.gametype == GAMETYPE_HERETIC)
+								{
+									r = 0x4c; g = 0x33; b = 0x11;
+								}
+								else
+								{
+									r = doorColors.reddoor[0];
+									g = doorColors.reddoor[1];
+									b = doorColors.reddoor[2];
+								}
 							}
 						}
 
@@ -1997,7 +2124,8 @@ void AM_drawMarks()
 
 			if (fx >= f.x && fx <= f_w - w && fy >= f.y && fy <= f_h - h)
 			{
-				screen->DrawPatchCleanNoMove(W_ResolvePatchHandle(marknums[i]), fx, fy);
+				if (!marknums[i].empty())
+					screen->DrawPatchCleanNoMove(W_ResolvePatchHandle(marknums[i]), fx, fy);
 			}
 		}
 	}
@@ -2031,7 +2159,13 @@ void AM_Drawer()
 	{
 		f.x = f.y = 0;
 		f_w = surface_width;
-		f_h = ST_StatusBarY(surface_width, surface_height);
+		const int statusbar_top = ST_StatusBarY(surface_width, surface_height);
+		f_h = statusbar_top;
+
+		// Keep compatibility with Heretic statusbar variants that draw above the
+		// classic Doom statusbar height by honoring ST_Y when available.
+		if (gameinfo.gametype == GAMETYPE_HERETIC && ST_Y > 0)
+			f_h = std::min(f_h, ST_Y);
 		f_p = surface->getPitch();
 
 		AM_clearFB(gameinfo.currentAutomapColors.Background);
@@ -2126,6 +2260,9 @@ void AM_Drawer()
 
 	AM_drawMarks();
 
+	if (gameinfo.gametype == GAMETYPE_HERETIC && !AM_OverlayAutomapVisible())
+		ST_HticDrawTopCaps(surface);
+
 	if (!(viewactive && am_overlay < 2) && !hu_font[0].empty())
 	{
 		std::string line;
@@ -2133,6 +2270,10 @@ void AM_Drawer()
 
 		const int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
 		const int OV_Y = surface_height - (surface_height * 32 / 200);
+		const int fullmap_text_base_y = (ST_Y > 0) ? ST_Y : f_h;
+		const bool use_side_padding =
+		    !AM_OverlayAutomapVisible() && gameinfo.gametype == GAMETYPE_HERETIC;
+		const int side_padding = use_side_padding ? (36 * CleanXfac) : 0;
 
 		if (G_IsCoopGame())
 		{
@@ -2164,8 +2305,8 @@ void AM_Drawer()
 				}
 				else
 				{
-					x = 0;
-					y = OV_Y - (text_height * 2) + 1;
+					x = side_padding;
+					y = fullmap_text_base_y - (text_height * 2) + 1;
 				}
 
 				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
@@ -2187,8 +2328,8 @@ void AM_Drawer()
 				}
 				else
 				{
-					x = 0;
-					y = OV_Y - (text_height * 3) + 1;
+					x = side_padding;
+					y = fullmap_text_base_y - (text_height * 3) + 1;
 				}
 
 				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
@@ -2208,8 +2349,8 @@ void AM_Drawer()
 				}
 				else
 				{
-					x = surface_width - text_width;
-					y = OV_Y - (text_height * 2) + 1;
+					x = surface_width - text_width - side_padding;
+					y = fullmap_text_base_y - (text_height * 2) + 1;
 				}
 
 				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
@@ -2233,6 +2374,9 @@ void AM_Drawer()
 			case pack_tnt:
 				firstmap = GStrings.toIndex(THUSTR_1);
 				break;
+			case heretic:
+				firstmap = GStrings.toIndex(HHUSTR_E1M1);
+				break;
 			default:
 				firstmap = GStrings.toIndex(HUSTR_E1M1);
 				mapoffset = level.cluster; // Episodes skip map numbers.
@@ -2255,8 +2399,8 @@ void AM_Drawer()
 			}
 			else
 			{
-				x = 0;
-				y = OV_Y - (text_height * 1) + 1;
+				x = side_padding;
+				y = fullmap_text_base_y - (text_height * 1) + 1;
 			}
 
 			screen->DrawTextClean(CR_RED, x, y, line.c_str());
@@ -2300,8 +2444,8 @@ void AM_Drawer()
 			}
 			else
 			{
-				x = 0;
-				y = OV_Y - (text_height * 1) + 1;
+				x = side_padding;
+				y = fullmap_text_base_y - (text_height * 1) + 1;
 			}
 
 			screen->DrawTextClean(CR_GREY, x, y, line.c_str());
@@ -2321,8 +2465,8 @@ void AM_Drawer()
 			}
 			else
 			{
-				x = surface_width - text_width;
-				y = OV_Y - (text_height * 1) + 1;
+				x = surface_width - text_width - side_padding;
+				y = fullmap_text_base_y - (text_height * 1) + 1;
 			}
 			if (G_IsHordeMode())
 			{

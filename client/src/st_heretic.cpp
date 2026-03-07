@@ -358,6 +358,7 @@ void ST_HticDrawBackgroundAndWidgets()
 		canvas->DrawPatch(W_ResolvePatchHandle(hticKeys[i]), 153, y);
 	}
 }
+} // namespace
 
 void ST_HticDrawTopCaps(IWindowSurface* surface)
 {
@@ -383,7 +384,6 @@ void ST_HticDrawTopCaps(IWindowSurface* surface)
 	canvas->DrawPatchStretched(left, leftX, leftY, leftW, leftH);
 	canvas->DrawPatchStretched(right, rightX, rightY, rightW, rightH);
 }
-} // namespace
 
 void ST_HticInit()
 {

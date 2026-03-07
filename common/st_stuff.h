@@ -27,6 +27,7 @@
 
 // Forward declaration
 struct event_t;
+class IWindowSurface;
 
 #include "com_misc.h"
 #include "w_wad.h"
@@ -75,6 +76,7 @@ void ST_HticInit();
 void ST_HticStart();
 void ST_HticTicker();
 void ST_HticDrawer();
+void ST_HticDrawTopCaps(IWindowSurface* surface);
 void ST_HticShutdown();
 
 namespace hud {
