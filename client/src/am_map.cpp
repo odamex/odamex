@@ -579,8 +579,8 @@ void AM_SetBaseColorRaven()
 	gameinfo.defaultAutomapColors.Background		= "00 00 00";
 	gameinfo.defaultAutomapColors.YourColor			= "ff ff ff";
 	gameinfo.defaultAutomapColors.AlmostBackground	= "10 10 10";
-	gameinfo.defaultAutomapColors.SecretWallColor	= "ff 00 00";
-	gameinfo.defaultAutomapColors.WallColor			= "ff 00 00";
+	gameinfo.defaultAutomapColors.SecretWallColor	= "4c 33 11";
+	gameinfo.defaultAutomapColors.WallColor			= "4c 33 11";
 	gameinfo.defaultAutomapColors.TSWallColor		= "59 5e 57";
 	gameinfo.defaultAutomapColors.FDWallColor		= "d0 b0 85";
 	gameinfo.defaultAutomapColors.LockedColor		= "ff ff ff";
@@ -1590,7 +1590,7 @@ void AM_drawWalls()
 							case zk_redx:
 								if (gameinfo.gametype == GAMETYPE_HERETIC)
 								{
-									r = 255; g = 0; b = 0;
+									r = 0x4c; g = 0x33; b = 0x11;
 								}
 								else
 								{
@@ -1665,7 +1665,7 @@ void AM_drawWalls()
 							{
 								if (gameinfo.gametype == GAMETYPE_HERETIC)
 								{
-									r = 255; g = 0; b = 0;
+									r = 0x4c; g = 0x33; b = 0x11;
 								}
 								else
 								{
