@@ -2119,6 +2119,18 @@ void AM_Drawer()
 		// classic Doom statusbar height by honoring ST_Y when available.
 		if (gameinfo.gametype == GAMETYPE_HERETIC && ST_Y > 0)
 			f_h = std::min(f_h, ST_Y);
+
+		// Preserve the top horn cap region (LTFCTOP/RTFCTOP) above the statusbar.
+		if (gameinfo.gametype == GAMETYPE_HERETIC)
+		{
+			const int topCapLump = W_CheckNumForName("LTFCTOP", ns_global);
+			if (topCapLump >= 0)
+			{
+				const patch_t* topCap = W_CachePatch(topCapLump, PU_CACHE);
+				const int scaledCapHeight = std::max(1, topCap->height() * ST_HEIGHT / 42);
+				f_h = std::max(0, f_h - scaledCapHeight + 1);
+			}
+		}
 		f_p = surface->getPitch();
 
 		AM_clearFB(gameinfo.currentAutomapColors.Background);
