@@ -2093,41 +2093,6 @@ void AM_drawCrosshair(am_color_t color)
 		PUTDOT_THICK(f_w / 2, (f_h + 1) / 2, color.rgb);
 }
 
-void AM_drawHereticTopCaps(IWindowSurface* surface)
-{
-	if (!surface || gameinfo.gametype != GAMETYPE_HERETIC || !AM_ClassicAutomapVisible() ||
-	    !R_StatusBarVisible())
-		return;
-
-	const int leftLump = W_CheckNumForName("LTFCTOP", ns_global);
-	const int rightLump = W_CheckNumForName("RTFCTOP", ns_global);
-	if (leftLump < 0 || rightLump < 0)
-		return;
-
-	const patch_t* left = W_CachePatch(leftLump, PU_CACHE);
-	const patch_t* right = W_CachePatch(rightLump, PU_CACHE);
-
-	constexpr int HTIC_BASE_WIDTH = 320;
-	constexpr int HTIC_BASE_HEIGHT = 42;
-	const int leftW = std::max(1, left->width() * ST_WIDTH / HTIC_BASE_WIDTH);
-	const int leftH = std::max(1, left->height() * ST_HEIGHT / HTIC_BASE_HEIGHT);
-	const int rightW = std::max(1, right->width() * ST_WIDTH / HTIC_BASE_WIDTH);
-	const int rightH = std::max(1, right->height() * ST_HEIGHT / HTIC_BASE_HEIGHT);
-
-	const int leftX = ST_X;
-	const int idealRightX = ST_X + (290 * ST_WIDTH) / HTIC_BASE_WIDTH;
-	const int maxRightX = ST_X + ST_WIDTH - rightW;
-	const int rightX = std::clamp(idealRightX, ST_X, maxRightX);
-	const int leftY = ST_Y - leftH + 1;
-	const int rightY = ST_Y - rightH + 1;
-
-	if (const DCanvas* canvas = surface->getDefaultCanvas())
-	{
-		canvas->DrawPatchStretched(left, leftX, leftY, leftW, leftH);
-		canvas->DrawPatchStretched(right, rightX, rightY, rightW, rightH);
-	}
-}
-
 //
 // AM_Drawer
 //
@@ -2154,6 +2119,18 @@ void AM_Drawer()
 		// classic Doom statusbar height by honoring ST_Y when available.
 		if (gameinfo.gametype == GAMETYPE_HERETIC && ST_Y > 0)
 			f_h = std::min(f_h, ST_Y);
+
+		// Preserve the top horn cap region (LTFCTOP/RTFCTOP) above the statusbar.
+		if (gameinfo.gametype == GAMETYPE_HERETIC)
+		{
+			const int topCapLump = W_CheckNumForName("LTFCTOP", ns_global);
+			if (topCapLump >= 0)
+			{
+				const patch_t* topCap = W_CachePatch(topCapLump, PU_CACHE);
+				const int scaledCapHeight = std::max(1, topCap->height() * ST_HEIGHT / 42);
+				f_h = std::max(0, f_h - scaledCapHeight + 1);
+			}
+		}
 		f_p = surface->getPitch();
 
 		AM_clearFB(gameinfo.currentAutomapColors.Background);
@@ -2461,8 +2438,6 @@ void AM_Drawer()
 			screen->DrawTextClean(CR_GREY, x, y, line.c_str());
 		}
 	}
-
-	AM_drawHereticTopCaps(surface);
 }
 
 VERSION_CONTROL(am_map_cpp, "$Id$")
