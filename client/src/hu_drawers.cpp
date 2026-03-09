@@ -230,13 +230,23 @@ void DrawShadowedText(int x, int y, const float scale,
 	if (!str)
 		return;
 
+	// Compute base position once in screen-space so offsets are always
+	// visually bottom-right regardless of alignment/origin mode.
+	unsigned short w = V_StringWidth(str);
+	unsigned short h = V_LineHeight();
+	int x_scale, y_scale;
+	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
+
 	const std::string shadow_text = StripTextColorCodes(str);
-	DrawText(x + shadow_x_offset, y + shadow_y_offset, scale,
-	         x_align, y_align, x_origin, y_origin,
-	         shadow_text.c_str(), shadow_color, true);
-	DrawText(x, y, scale,
-	         x_align, y_align, x_origin, y_origin,
-	         str, color, force_opaque);
+	screen->DrawTextStretched(shadow_color,
+	                         x + shadow_x_offset * x_scale,
+	                         y + shadow_y_offset * y_scale,
+	                         shadow_text.c_str(), x_scale, y_scale);
+
+	if (force_opaque)
+		screen->DrawTextStretched(color, x, y, str, x_scale, y_scale);
+	else
+		screen->DrawTextStretchedLuc(color, x, y, str, x_scale, y_scale);
 }
 
 
