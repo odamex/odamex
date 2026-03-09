@@ -29,6 +29,7 @@
 #include "v_text.h"
 
 extern byte* Ranges;
+EXTERN_CVAR(hud_transparency)
 
 namespace hud {
 
@@ -294,10 +295,20 @@ void DrawShadowedText(int x, int y, const float scale,
 				    y + shadow_y_offset * y_scale,
 				    glyph->width() * x_scale, glyph->height() * y_scale);
 			else
+			{
+				const float saved_hud_transparency = ::hud_transparency;
+				float shadow_transparency = saved_hud_transparency * 0.5f;
+				if (shadow_transparency < 0.0f)
+					shadow_transparency = 0.0f;
+				else if (shadow_transparency > 1.0f)
+					shadow_transparency = 1.0f;
+				::hud_transparency = shadow_transparency;
 				screen->DrawColoredLucentPatchStretched(
 				    glyph, draw_x + shadow_x_offset * x_scale,
 				    y + shadow_y_offset * y_scale,
 				    glyph->width() * x_scale, glyph->height() * y_scale);
+				::hud_transparency = saved_hud_transparency;
+			}
 
 			const int fg_color = (current_color >= 0 && current_color < NUM_TEXT_COLORS)
 			                         ? current_color
