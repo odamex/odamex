@@ -198,6 +198,25 @@ void DrawText(int x, int y, const float scale,
 		screen->DrawTextStretchedLuc(color, x, y, str, x_scale, y_scale);
 }
 
+static std::string StripTextColorCodes(const char* str)
+{
+	std::string out;
+	if (!str)
+		return out;
+
+	for (size_t i = 0; str[i] != '\0'; ++i)
+	{
+		if (str[i] == TEXTCOLOR_ESCAPE && str[i + 1] != '\0')
+		{
+			++i;
+			continue;
+		}
+		out.push_back(str[i]);
+	}
+
+	return out;
+}
+
 // Draw hu_font text with an offset shadow pass.
 void DrawShadowedText(int x, int y, const float scale,
                       const x_align_t x_align, const y_align_t y_align,
@@ -211,9 +230,10 @@ void DrawShadowedText(int x, int y, const float scale,
 	if (!str)
 		return;
 
+	const std::string shadow_text = StripTextColorCodes(str);
 	DrawText(x + shadow_x_offset, y + shadow_y_offset, scale,
 	         x_align, y_align, x_origin, y_origin,
-	         str, shadow_color, force_opaque);
+	         shadow_text.c_str(), shadow_color, true);
 	DrawText(x, y, scale,
 	         x_align, y_align, x_origin, y_origin,
 	         str, color, force_opaque);
