@@ -363,12 +363,17 @@ void Host_EndGame(const char *msg)
 
 void CL_QuitNetGame(const netQuitReason_e reason)
 {
-	if(connected)
+	if (connected)
 	{
 		CL_CompleteDisconnect(reason);
 
 		sv_gametype = GM_COOP;
 		ClientReplay::getInstance().reset();
+	}
+	else
+	{
+		// Make sure we do a proper silent disconnect in single player.
+		CL_CompleteDisconnect(NQ_SILENT);
 	}
 
 	if (paused)
