@@ -27,9 +27,10 @@ if (BUILD_TESTS)
     # ======================================
     # GTest
     # ======================================
+    set (FETCHCONTENT_SOURCE_DIR_GTEST "${CMAKE_CURRENT_SOURCE_DIR}/googletest")
     FetchContent_Declare(
         GTest
-        URL ${CMAKE_CURRENT_SOURCE_DIR}/googletest
+        URL "${FETCHCONTENT_SOURCE_DIR_GTEST}"
         OVERRIDE_FIND_PACKAGE
         )
 
@@ -46,9 +47,10 @@ if (BUILD_CLIENT OR BUILD_SERVER)
     # zlib
     # ======================================
     if (USE_INTERNAL_ZLIB)
+        set (FETCHCONTENT_SOURCE_DIR_ZLIB "${CMAKE_CURRENT_SOURCE_DIR}/zlib")
         FetchContent_Declare(
             ZLIB
-            URL ${CMAKE_CURRENT_SOURCE_DIR}/zlib
+            URL "${FETCHCONTENT_SOURCE_DIR_ZLIB}"
             OVERRIDE_FIND_PACKAGE
             )
 
@@ -60,6 +62,7 @@ if (BUILD_CLIENT OR BUILD_SERVER)
 
         if (TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
             add_library(ZLIB::ZLIB ALIAS zlibstatic)
+            set (ZLIB_INCLUDE_DIRS "${FETCHCONTENT_SOURCE_DIR_ZLIB}")
         endif()
 
     else()
@@ -72,9 +75,10 @@ if (BUILD_CLIENT OR BUILD_SERVER)
     # ======================================
     # fmt
     # ======================================
+    set (FETCHCONTENT_SOURCE_DIR_FMT "${CMAKE_CURRENT_SOURCE_DIR}/fmt")
     FetchContent_Declare(
         fmt
-        URL ${CMAKE_CURRENT_SOURCE_DIR}/fmt
+        URL "${FETCHCONTENT_SOURCE_DIR_FMT}"
         OVERRIDE_FIND_PACKAGE
         )
     list(APPEND FETCH_CONTENT_PACKAGES fmt)
@@ -86,9 +90,10 @@ if (BUILD_CLIENT OR BUILD_SERVER)
     # jsoncpp
     # ======================================
     if (USE_INTERNAL_JSONCPP)
+        set (FETCHCONTENT_SOURCE_DIR_JSONCPP "${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp")
         FetchContent_Declare(
             jsoncpp
-            URL ${CMAKE_CURRENT_SOURCE_DIR}/jsoncpp
+            URL "${FETCHCONTENT_SOURCE_DIR_JSONCPP}"
             OVERRIDE_FIND_PACKAGE
             )
         list(APPEND FETCH_CONTENT_PACKAGES jsoncpp)
@@ -103,9 +108,10 @@ if (BUILD_CLIENT OR BUILD_SERVER)
     # ======================================
     # Protobuf
     # ======================================
+    set (FETCHCONTENT_SOURCE_DIR_PROTOBUF "${CMAKE_CURRENT_SOURCE_DIR}/protobuf")
     FetchContent_Declare(
         Protobuf
-        URL ${CMAKE_CURRENT_SOURCE_DIR}/protobuf
+        URL "${FETCHCONTENT_SOURCE_DIR_PROTOBUF}"
         OVERRIDE_FIND_PACKAGE
         )
     list(APPEND FETCH_CONTENT_PACKAGES Protobuf)
@@ -123,9 +129,10 @@ if (BUILD_CLIENT OR BUILD_SERVER)
     # cpptrace
     # ======================================
     if (USE_INTERNAL_CPPTRACE)
+        set (FETCHCONTENT_SOURCE_DIR_CPPTRACE "${CMAKE_CURRENT_SOURCE_DIR}/cpptrace")
         FetchContent_Declare(
             cpptrace
-            URL ${CMAKE_CURRENT_SOURCE_DIR}/cpptrace
+            URL "${FETCHCONTENT_SOURCE_DIR_CPPTRACE}"
             OVERRIDE_FIND_PACKAGE
             )
         list(APPEND FETCH_CONTENT_PACKAGES cpptrace)
@@ -151,9 +158,10 @@ if (BUILD_CLIENT OR BUILD_SERVER)
         if (NOT USE_MINIUPNP)
             message(STATUS "Skipping MiniUPnPc...")
         elseif(USE_INTERNAL_MINIUPNP)
+            set(FETCHCONTENT_SOURCE_DIR_MINIUPNP "${CMAKE_CURRENT_SOURCE_DIR}/miniupnp")
             FetchContent_Declare(
                 miniupnp
-                URL ${CMAKE_CURRENT_SOURCE_DIR}/miniupnp
+                URL "${FETCHCONTENT_SOURCE_DIR_MINIUPNP}"
                 SOURCE_SUBDIR miniupnpc
                 OVERRIDE_FIND_PACKAGE
                 )
@@ -171,9 +179,10 @@ if (BUILD_CLIENT OR BUILD_SERVER)
         # PNG
         # ======================================
         if (USE_INTERNAL_PNG)
+            set(FETCHCONTENT_SOURCE_DIR_PNG "${CMAKE_CURRENT_SOURCE_DIR}/libpng")
             FetchContent_Declare(
                 PNG
-                URL ${CMAKE_CURRENT_SOURCE_DIR}/libpng
+                URL "${FETCHCONTENT_SOURCE_DIR_PNG}"
                 OVERRIDE_FIND_PACKAGE
                 )
             list(APPEND FETCH_CONTENT_PACKAGES PNG)
@@ -198,9 +207,10 @@ if (BUILD_CLIENT OR BUILD_SERVER)
         # CURL
         # ======================================
         if (USE_INTERNAL_CURL)
+            set(FETCHCONTENT_SOURCE_DIR_CURL "${CMAKE_CURRENT_SOURCE_DIR}/curl")
             FetchContent_Declare(
                 CURL
-                URL ${CMAKE_CURRENT_SOURCE_DIR}/curl
+                URL "${FETCHCONTENT_SOURCE_DIR_CURL}"
                 OVERRIDE_FIND_PACKAGE
                 )
             list(APPEND FETCH_CONTENT_PACKAGES CURL)
@@ -235,9 +245,10 @@ if (BUILD_CLIENT OR BUILD_SERVER)
         # FLTK
         # ======================================
         if (USE_INTERNAL_FLTK)
+            set(FETCHCONTENT_SOURCE_DIR_FLTK "${CMAKE_CURRENT_SOURCE_DIR}/fltk")
             FetchContent_Declare(
                 FLTK
-                URL ${CMAKE_CURRENT_SOURCE_DIR}/fltk
+                URL "${FETCHCONTENT_SOURCE_DIR_FLTK}"
                 OVERRIDE_FIND_PACKAGE
                 )
             list(APPEND FETCH_CONTENT_PACKAGES FLTK)
@@ -275,9 +286,10 @@ if (BUILD_CLIENT OR BUILD_SERVER)
         # libADLMidi
         # ======================================
         if (USE_INTERNAL_LIBADLMIDI)
+            set(FETCHCONTENT_SOURCE_DIR_LIBADLMIDI "${CMAKE_CURRENT_SOURCE_DIR}/libadlmidi")
             FetchContent_Declare(
                 libadlmidi
-                URL ${CMAKE_CURRENT_SOURCE_DIR}/libadlmidi
+                URL "${FETCHCONTENT_SOURCE_DIR_LIBADLMIDI}"
                 OVERRIDE_FIND_PACKAGE
                 )
             list(APPEND FETCH_CONTENT_PACKAGES libadlmidi)
