@@ -287,7 +287,7 @@ void DrawShadowedText(int x, int y, const float scale,
 			const int safe_shadow_color =
 			    (shadow_color >= 0 && shadow_color < NUM_TEXT_COLORS) ? shadow_color : CR_BLACK;
 			V_ColorMap = translationref_t(Ranges + safe_shadow_color * 256);
-			V_ColorFill = V_ColorMap.tlate(0xFF);
+			V_ColorFill = V_ColorMap.tlate(0x00);
 			if (force_opaque)
 				screen->DrawColoredPatchStretched(
 				    glyph, draw_x + shadow_x_offset * x_scale,
