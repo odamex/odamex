@@ -2,7 +2,7 @@
 
 gameinfo
 {
-	advisorytime = 6
+	advisorytime = 4
 	border = HereticBorder
 	borderflat = "FLAT513"
 	chatsound = "misc/chat"
@@ -18,7 +18,7 @@ gameinfo
 	telefogheight = 32
 	titlemusic = "MUS_TITL"
 	titlepage = "TITLE"
-	titletime = 8
+	titletime = 6
 	defkickback = 150
 	endoom = "ENDTEXT"
 	pausesign = "PAUSED"

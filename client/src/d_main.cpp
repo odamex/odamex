@@ -492,12 +492,12 @@ void D_DoAdvanceDemo (void)
 		pagename = gameinfo.titlePage;
 
 		currentmusic = gameinfo.titleMusic.c_str();
-		S_StartMusic(currentmusic.c_str());
+		S_StartMusic(currentmusic);
 		break;
 	case 1:
-		if (isheretic)
+		if (gameinfo.advisoryTime > 0)
 		{
-			pagetic = (gameinfo.advisoryTime > 0 ? gameinfo.advisoryTime : gameinfo.titleTime) * TICRATE;
+			pagetic = gameinfo.advisoryTime * TICRATE;
 			gamestate = GS_DEMOSCREEN;
 			pagename = gameinfo.titlePage;
 		}
@@ -545,7 +545,7 @@ void D_DoAdvanceDemo (void)
 				pagename = gameinfo.titlePage;
 				currentmusic = gameinfo.titleMusic.c_str();
 
-				S_StartMusic(currentmusic.c_str());
+				S_StartMusic(currentmusic);
 			}
 			else
 			{
