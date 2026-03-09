@@ -1989,24 +1989,13 @@ void SpectatorHUD()
 	hud::drawGametype();
 }
 
-static void DrawHereticShadowedNumber(int x, int y, const float scale, const std::string& value,
-                                       const int color)
-{
-	for (char ch : value)
-	{
-		char glyph[2] = {ch, '\0'};
-		hud::DrawShadowedText(x, y, scale, hud::X_LEFT, hud::Y_BOTTOM, hud::X_LEFT,
-		                      hud::Y_BOTTOM, glyph, color);
-		x += V_StringWidth(glyph) + 2;
-	}
-}
-
 void HereticHUD()
 {
 	const player_t* plyr = &displayplayer();
 	V_SetFont("BIGFONT");
 	const std::string health = fmt::sprintf("%d", std::max(0, plyr->health));
-	DrawHereticShadowedNumber(4, 8, hud_scale, health, CR_GREY);
+	hud::DrawShadowedText(4, 8, hud_scale, hud::X_LEFT, hud::Y_BOTTOM, hud::X_LEFT,
+	                      hud::Y_BOTTOM, health.c_str(), CR_GREY);
 	V_SetFont("SMALLFONT");
 
 	int st_y = statusBarY() + 4;
