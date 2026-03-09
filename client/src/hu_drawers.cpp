@@ -198,6 +198,27 @@ void DrawText(int x, int y, const float scale,
 		screen->DrawTextStretchedLuc(color, x, y, str, x_scale, y_scale);
 }
 
+// Draw hu_font text with an offset shadow pass.
+void DrawShadowedText(int x, int y, const float scale,
+                      const x_align_t x_align, const y_align_t y_align,
+                      const x_align_t x_origin, const y_align_t y_origin,
+                      const char* str, const int color,
+                      const int shadow_color,
+                      const int shadow_x_offset,
+                      const int shadow_y_offset,
+                      const bool force_opaque)
+{
+	if (!str)
+		return;
+
+	DrawText(x + shadow_x_offset, y + shadow_y_offset, scale,
+	         x_align, y_align, x_origin, y_origin,
+	         str, shadow_color, force_opaque);
+	DrawText(x, y, scale,
+	         x_align, y_align, x_origin, y_origin,
+	         str, color, force_opaque);
+}
+
 
 // Draw a patch.
 void DrawPatch(int x, int y, const float scale,
