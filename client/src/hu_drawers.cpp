@@ -29,7 +29,6 @@
 #include "v_text.h"
 
 extern byte* Ranges;
-EXTERN_CVAR(hud_transparency)
 
 namespace hud {
 
@@ -257,6 +256,11 @@ void DrawShadowedText(int x, int y, const float scale,
 	int x_scale, y_scale;
 	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
 
+	const int safe_shadow_color =
+	    (shadow_color >= 0 && shadow_color < NUM_TEXT_COLORS) ? shadow_color : CR_BLACK;
+	const translationref_t saved_colormap = V_ColorMap;
+	const int saved_color_fill = V_ColorFill;
+
 	int draw_x = x;
 	int glyph_index = 0;
 	int current_color = color;
@@ -285,8 +289,6 @@ void DrawShadowedText(int x, int y, const float scale,
 
 		if (glyph)
 		{
-			const int safe_shadow_color =
-			    (shadow_color >= 0 && shadow_color < NUM_TEXT_COLORS) ? shadow_color : CR_BLACK;
 			V_ColorMap = translationref_t(Ranges + safe_shadow_color * 256);
 			V_ColorFill = V_ColorMap.tlate(0x00);
 			if (force_opaque)
@@ -295,20 +297,10 @@ void DrawShadowedText(int x, int y, const float scale,
 				    y + shadow_y_offset * y_scale,
 				    glyph->width() * x_scale, glyph->height() * y_scale);
 			else
-			{
-				const float saved_hud_transparency = ::hud_transparency;
-				float shadow_transparency = saved_hud_transparency * 0.5f;
-				if (shadow_transparency < 0.0f)
-					shadow_transparency = 0.0f;
-				else if (shadow_transparency > 1.0f)
-					shadow_transparency = 1.0f;
-				::hud_transparency = shadow_transparency;
 				screen->DrawColoredLucentPatchStretched(
 				    glyph, draw_x + shadow_x_offset * x_scale,
 				    y + shadow_y_offset * y_scale,
 				    glyph->width() * x_scale, glyph->height() * y_scale);
-				::hud_transparency = saved_hud_transparency;
-			}
 
 			const int fg_color = (current_color >= 0 && current_color < NUM_TEXT_COLORS)
 			                         ? current_color
@@ -329,6 +321,9 @@ void DrawShadowedText(int x, int y, const float scale,
 			draw_x += 2 * x_scale;
 		glyph_index++;
 	}
+
+	V_ColorMap = saved_colormap;
+	V_ColorFill = saved_color_fill;
 }
 
 
