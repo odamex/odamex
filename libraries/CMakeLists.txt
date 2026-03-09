@@ -51,6 +51,7 @@ if (BUILD_CLIENT OR BUILD_SERVER)
         FetchContent_Declare(
             ZLIB
             URL "${FETCHCONTENT_SOURCE_DIR_ZLIB}"
+            BINARY_DIR ZLIB_bin
             OVERRIDE_FIND_PACKAGE
             )
 
@@ -62,7 +63,7 @@ if (BUILD_CLIENT OR BUILD_SERVER)
 
         if (TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
             add_library(ZLIB::ZLIB ALIAS zlibstatic)
-            set (ZLIB_INCLUDE_DIRS "${FETCHCONTENT_SOURCE_DIR_ZLIB}")
+            set (ZLIB_INCLUDE_DIRS "${FETCHCONTENT_SOURCE_DIR_ZLIB}" "${CMAKE_CURRENT_BINARY_DIR}/ZLIB_bin")
         endif()
 
     else()
