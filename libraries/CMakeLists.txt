@@ -7,6 +7,8 @@
 
 include(FetchContent)
 
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)   # option() honors normal variables
+
 ### tiny libraries ###
 
 add_library(tinylibs INTERFACE)
@@ -51,7 +53,6 @@ if (BUILD_CLIENT OR BUILD_SERVER)
         FetchContent_Declare(
             ZLIB
             URL "${FETCHCONTENT_SOURCE_DIR_ZLIB}"
-            BINARY_DIR ZLIB_bin
             OVERRIDE_FIND_PACKAGE
             )
 
@@ -59,11 +60,15 @@ if (BUILD_CLIENT OR BUILD_SERVER)
         # one shot for ZLIB, because the other projects expect ZLIB::ZLIB to be an
         # *actual target* at the time that they're made available, and we have to declare
         # it as an alias.
+        set(ZLIB_BUILD_SHARED   OFF)
+        set(ZLIB_BUILD_TESTING  OFF)
+        set(ZLIB_BUILD_STATIC    ON)
+
         FetchContent_MakeAvailable(ZLIB)
 
         if (TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
             add_library(ZLIB::ZLIB ALIAS zlibstatic)
-            set (ZLIB_INCLUDE_DIRS "${FETCHCONTENT_SOURCE_DIR_ZLIB}" "${CMAKE_CURRENT_BINARY_DIR}/ZLIB_bin")
+            set (ZLIB_INCLUDE_DIRS "${FETCHCONTENT_SOURCE_DIR_ZLIB}" "${zlib_BINARY_DIR}")
         endif()
 
     else()
@@ -191,7 +196,6 @@ if (BUILD_CLIENT OR BUILD_SERVER)
             set (PNG_SHARED OFF)
             set (PNG_STATIC  ON)
             set (PNG_TESTS  OFF)
-            set (SKIP_INSTALL_ALL ON)
 
             if (APPLE)
                 set (PNG_ARM_NEON                 OFF)
