@@ -69,6 +69,9 @@ if (BUILD_CLIENT OR BUILD_SERVER)
         if (TARGET zlibstatic AND NOT TARGET ZLIB::ZLIB)
             add_library(ZLIB::ZLIB ALIAS zlibstatic)
             set (ZLIB_INCLUDE_DIRS "${FETCHCONTENT_SOURCE_DIR_ZLIB}" "${zlib_BINARY_DIR}")
+            export(TARGETS zlibstatic
+                   NAMESPACE ZLIB::
+                   FILE "${zlib_BINARY_DIR}/zlib-targets.cmake")
         endif()
 
     else()
