@@ -330,8 +330,9 @@ if (BUILD_CLIENT OR BUILD_SERVER)
             )
         list(APPEND FETCH_CONTENT_PACKAGES SDL_mixer)
 
-        set (SDL2MIXER_VENDORED ON)
-        set (BUILD_SHARED_LIBS OFF)
+        set (SDL2MIXER_VENDORED      ON)
+        set (BUILD_SHARED_LIBS      OFF)
+        set (SDL2MIXER_DEPS_SHARED  OFF)
     endif()
 endif()
 
