@@ -78,7 +78,6 @@ modules:
       - -D BUILD_LAUNCHER=1
       - -D BUILD_MASTER=0
       - -D USE_INTERNAL_LIBS=0
-      - -D USE_INTERNAL_WXWIDGETS=1
       - -D ODAMEX_INSTALL_BINDIR=/app/bin
       - -D ODAMEX_INSTALL_DATADIR=/run/host/usr/share
       - -D USE_EXTERNAL_LIBDWARF=1
