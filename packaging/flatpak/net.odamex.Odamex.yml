@@ -45,6 +45,7 @@ modules:
   # cpptrace dependencies
   - name: libdwarf
     buildsystem: cmake-ninja
+    builddir: true
     config-opts:
       - -D BUILD_DWARFDUMP=OFF
     sources:
@@ -68,6 +69,7 @@ modules:
   # Odamex (combined)
   - name: Odamex
     buildsystem: cmake-ninja
+    builddir: true
     config-opts:
       - -D CMAKE_BUILD_TYPE=RelWithDebInfo
       - -D BUILD_OR_FAIL=1
