@@ -58,7 +58,7 @@ if(wxWidgets_FOUND)
     ${XRCRES_HEADER} ${LAUNCH_WIN32_RESOURCES})
   odamex_target_settings(odalaunch)
 
-  target_link_libraries(odalaunch wx::base wx::core wx::adv wx::net wx::xrc)
+  target_link_libraries(odalaunch ${wxWidgets_LIBRARIES})
 
   if(WIN32)
     target_link_libraries(odalaunch ws2_32)

@@ -374,7 +374,8 @@ if (TARGET libcurl_static AND NOT TARGET CURL::libcurl)
 endif()
 
 if (TARGET wxrc AND NOT wxWidgets_wxrc_EXECUTABLE)
-    set(wxWidgets_wxrc_EXECUTABLE wxrc PARENT_SCOPE)
+    set(wxWidgets_wxrc_EXECUTABLE wxrc                                      PARENT_SCOPE)
+    set(wxWidgets_LIBRARIES       wx::base wx::core wx::adv wx::net wx::xrc PARENT_SCOPE)
 endif()
 
 if (TARGET png_static AND NOT TARGET PNG::PNG)
