@@ -336,13 +336,15 @@ if (BUILD_LAUNCHER)
     # ======================================
     # wxWidgets
     # ======================================
-    FetchContent_Declare(
-        wxWidgets
-        GIT_REPOSITORY  https://github.com/wxWidgets/wxWidgets.git
-        GIT_TAG         v3.2.10
-        OVERRIDE_FIND_PACKAGE
-        )
-    list(APPEND FETCH_CONTENT_PACKAGES wxWidgets)
+    if (USE_INTERNAL_WXWIDGETS)
+        FetchContent_Declare(
+            wxWidgets
+            GIT_REPOSITORY  https://github.com/wxWidgets/wxWidgets.git
+            GIT_TAG         v3.2.10
+            OVERRIDE_FIND_PACKAGE
+            )
+        list(APPEND FETCH_CONTENT_PACKAGES wxWidgets)
+    endif()
 
 endif()
 
