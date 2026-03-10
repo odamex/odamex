@@ -95,21 +95,21 @@ function CopyFilesX86 {
         -Destination "${CommonDir}\README.txt"
     Copy-Item -Force -Path "${CurrentDir}\BuildX86\wad\odamex.wad" `
         -Destination "${CommonDir}"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.1\LICENSE.txt" `
-        -Destination "${CommonDir}\licenses\COPYING.SDL2_mixer.txt"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.1\lib\x86\optional\LICENSE.xmp.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\_deps\sdl_mixer-src\LICENSE.txt" `
+        -Destination "${CommonDir}\licenses\LICENSE.SDL2_mixer.txt"
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\_deps\sdl_mixer-src\VisualC\external\optional\x86\LICENSE.xmp.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.1\lib\x86\optional\LICENSE.ogg-vorbis.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\_deps\sdl_mixer-src\VisualC\external\optional\x86\LICENSE.ogg-vorbis.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.1\lib\x86\optional\LICENSE.opus.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\_deps\sdl_mixer-src\VisualC\external\optional\x86\LICENSE.opus.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.1\lib\x86\optional\LICENSE.opusfile.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\_deps\sdl_mixer-src\VisualC\external\optional\x86\LICENSE.opusfile.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.1\lib\x64\optional\LICENSE.wavpack.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\_deps\sdl_mixer-src\VisualC\external\optional\x86\LICENSE.wavpack.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2_mixer-2.8.1\lib\x64\optional\LICENSE.gme.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\_deps\sdl_mixer-src\VisualC\external\optional\x86\LICENSE.gme.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\libraries\SDL2-2.32.8\LICENSE.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\BuildX86\_deps\sdl-src\LICENSE.txt" `
         -Destination "${CommonDir}\licenses\LICENSE.SDL2.txt"
 
     ########################################
@@ -120,22 +120,8 @@ function CopyFilesX86 {
     New-Item -Force -ItemType "directory" -Path "${X86Dir}\redist"
 
     Copy-Item -Force -Path `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libgme.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libwavpack-1.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libxmp.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libogg-0.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libopus-0.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\libopusfile-0.dll", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\odamex.exe", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\SDL2_mixer.dll", `
-        "${CurrentDir}\BuildX86\client\RelWithDebInfo\SDL2.dll", `
         "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\odalaunch.exe", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxbase315u_net_vc14x.dll", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxbase315u_vc14x.dll", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxbase315u_xml_vc14x.dll", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxmsw315u_core_vc14x.dll", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxmsw315u_html_vc14x.dll", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxmsw315u_xrc_vc14x.dll", `
         "${CurrentDir}\BuildX86\server\RelWithDebInfo\odasrv.exe" `
         -Destination "${X86Dir}\"
 
