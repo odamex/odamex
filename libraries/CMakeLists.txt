@@ -245,7 +245,11 @@ if (BUILD_CLIENT OR BUILD_SERVER)
         else()
             find_package(CURL)
             if (TARGET CURL::libcurl)
-                set_target_properties(CURL::libcurl PROPERTIES IMPORTED_GLOBAL True)
+                # Apparently in flatpak builds, this "official" libcurl somehow winds up being an alias.
+                get_target_property(curl_is_alias_of CURL::libcurl ALIASED_TARGET)
+                if (NOT curl_is_alias_of)
+                    set_target_properties(CURL::libcurl PROPERTIES IMPORTED_GLOBAL True)
+                endif()
             endif()
         endif()
 
@@ -311,10 +315,10 @@ if (BUILD_CLIENT OR BUILD_SERVER)
         # ======================================
         # SDL
         # ======================================
+        set(FETCHCONTENT_SOURCE_DIR_SDL "${CMAKE_CURRENT_SOURCE_DIR}/sdl")
         FetchContent_Declare(
             SDL
-            GIT_REPOSITORY  https://github.com/libsdl-org/SDL.git
-            GIT_TAG         release-2.32.10
+            URL "${FETCHCONTENT_SOURCE_DIR_SDL}"
             OVERRIDE_FIND_PACKAGE
             )
         list(APPEND FETCH_CONTENT_PACKAGES SDL)
@@ -325,10 +329,10 @@ if (BUILD_CLIENT OR BUILD_SERVER)
         # ======================================
         # SDL_mixer
         # ======================================
+        set(FETCHCONTENT_SOURCE_DIR_SDL_MIXER "${CMAKE_CURRENT_SOURCE_DIR}/sdl_mixer")
         FetchContent_Declare(
             SDL_mixer
-            GIT_REPOSITORY  https://github.com/libsdl-org/SDL_mixer.git
-            GIT_TAG         release-2.8.1
+            URL "${FETCHCONTENT_SOURCE_DIR_SDL_MIXER}"
             OVERRIDE_FIND_PACKAGE
             )
         list(APPEND FETCH_CONTENT_PACKAGES SDL_mixer)
