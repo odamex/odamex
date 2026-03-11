@@ -30,18 +30,6 @@ modules:
       - type: archive
         url: https://www.libsdl.org/projects/old/SDL_mixer/timidity/timidity.tar.gz
         sha256: ee7c59bb5d5fae206d53eef0e82b5ed739e7cbf69252a3754024f8f52ebe77aa
-  - name: SDL2-mixer
-    buildsystem: cmake-ninja
-    builddir: true
-    config-opts:
-      - -D SDL2MIXER_VENDORED=ON
-      - -D SDL2MIXER_DEPS_SHARED=OFF
-      - -D SDL2MIXER_SAMPLES=OFF
-      - -D CMAKE_INSTALL_LIBDIR=lib
-    sources:
-      - type: git
-        url: https://github.com/libsdl-org/SDL_mixer.git
-        tag: release-2.8.1
   # cpptrace dependencies
   - name: libdwarf
     buildsystem: cmake-ninja
