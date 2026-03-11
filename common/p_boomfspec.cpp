@@ -527,7 +527,6 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		}
 		else
 		{
-			// Doom/Boom: Build Stairs Turbo 16
 			if (EV_BuildStairs(line->id, DFloor::buildUp, line, 16 * FRACUNIT,
 			                   SPEED(stairs::TURBO), TICS(0), 0, 0, 0))
 			{
