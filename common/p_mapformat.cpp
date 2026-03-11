@@ -203,19 +203,8 @@ void MapFormat::post_process_linedef_special(line_t* line)
 void MapFormat::P_ApplyZDoomMapFormat(void)
 {
 	map_format.zdoom = true;
-	map_format.heretic = false;
 	map_format.hexen = true;
 	map_format.generalized_mask = ~0xff;
-
-	P_MigrateActorInfo();
-}
-
-void MapFormat::P_ApplyHereticMapFormat(void)
-{
-	map_format.zdoom = false;
-	map_format.heretic = true;
-	map_format.hexen = false;
-	map_format.generalized_mask = ~31; // todo - is this correct?
 
 	P_MigrateActorInfo();
 }
@@ -223,7 +212,6 @@ void MapFormat::P_ApplyHereticMapFormat(void)
 void MapFormat::P_ApplyDefaultMapFormat(void)
 {
 	map_format.zdoom = false;
-	map_format.heretic = false;
 	map_format.hexen = false;
 	map_format.generalized_mask = ~31;
 
@@ -233,11 +221,6 @@ void MapFormat::P_ApplyDefaultMapFormat(void)
 bool MapFormat::getZDoom(void)
 {
 	return map_format.zdoom;
-}
-
-bool MapFormat::getHeretic(void)
-{
-	return map_format.heretic;
 }
 
 bool MapFormat::getHexen(void)
@@ -404,7 +387,7 @@ bool P_IsExitLine(const short special)
 	if (map_format.getZDoom())
 		return special == 74 || special == 75 || special == 244 || special == 243;
 
-	if (map_format.getHeretic())
+	if (gamemission == heretic)
 		return special == 51 || special == 52 || special == 105;
 
 	return special == 11 || special == 52 || special == 197 || special == 51 ||
@@ -416,7 +399,7 @@ bool P_IsTeleportLine(const short special)
 	if (map_format.getZDoom())
 		return special == 70 || special == 71 || special == 154 || special == 215;
 
-	if (map_format.getHeretic())
+	if (gamemission == heretic)
 		return special == 39 || special == 97;
 
 	return special == 39 || special == 97 || special == 125 || special == 126 ||
@@ -430,7 +413,7 @@ bool P_IsThingTeleportLine(const short special)
 	if (map_format.getZDoom())
 		return false;
 
-	if (map_format.getHeretic())
+	if (gamemission == heretic)
 		return special == 39 || special == 97;
 
 	return special == 39 || special == 97 || special == 125 || special == 126 ||
@@ -440,7 +423,7 @@ bool P_IsThingTeleportLine(const short special)
 
 bool P_IsThingNoFogTeleportLine(const short special)
 {
-	if (map_format.getZDoom() || map_format.getHeretic())
+	if (map_format.getZDoom() || gamemission == heretic)
 		return false;
 
 	return special == 207 || special == 208 || special == 209 || special == 210 ||

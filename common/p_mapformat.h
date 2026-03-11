@@ -30,7 +30,6 @@ class MapFormat
 {
   public:
 	void P_ApplyZDoomMapFormat(void);
-	void P_ApplyHereticMapFormat(void); 
 	void P_ApplyDefaultMapFormat(void);
 
 	bool getZDoom(void);
