@@ -33,7 +33,6 @@ class MapFormat
 	void P_ApplyDefaultMapFormat(void);
 
 	bool getZDoom(void);
-	bool getHeretic(void);
 	bool getHexen(void);
 	short getGeneralizedMask(void);
 
@@ -50,7 +49,6 @@ class MapFormat
 
   protected:
 	bool zdoom;
-	bool heretic;
 	bool hexen;
 	short generalized_mask;
 };
