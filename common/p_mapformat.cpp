@@ -235,9 +235,6 @@ short MapFormat::getGeneralizedMask(void)
 
 bool P_IsSpecialBoomRepeatable(const short special)
 {
-	if (gamemission != heretic && special == 105)
-		return true;
-
 	switch (special)
 	{
 	case 1:
@@ -286,6 +283,9 @@ bool P_IsSpecialBoomRepeatable(const short special)
 	case 97:
 	case 98:
 	case 99:
+	case 105:
+		return gamemission != heretic;
+		break;
 	case 106:
 	case 107:
 	case 114:
