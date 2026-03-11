@@ -519,7 +519,6 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 100:
 		if (gamemission == heretic)
 		{
-			// Heretic: Raise Door 3x Speed
 			if (EV_DoDoor(DDoor::doorRaise, line, thing, line->id,
 			              SPEED(doors::NORMAL * 3), TICS(doors::WAIT), NoKey))
 			{
