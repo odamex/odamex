@@ -36,7 +36,7 @@ add_custom_command(
 source_group("Definitions" FILES ${ODAPROTO_PROTOS})
 source_group("Generated" FILES ${ODAPROTO_SOURCES})
 
-add_library(odaproto STATIC ${ODAPROTO_SOURCES})# ${ODAPROTO_PROTOS})
+add_library(odaproto STATIC ${ODAPROTO_SOURCES} ${ODAPROTO_PROTOS})
 odamex_target_settings(odaproto)
 target_include_directories(odaproto PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 target_link_libraries(odaproto protobuf::libprotobuf)
