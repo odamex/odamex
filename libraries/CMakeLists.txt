@@ -392,29 +392,3 @@ endif()
 if (TARGET ADLMIDI_static AND NOT TARGET libADLMIDI::ADLMIDI_static)
     add_library(libADLMIDI::ADLMIDI_static ALIAS ADLMIDI_static)
 endif()
-
-#find_package(Protobuf)
-
-#include(zlib-lib.cmake)
-
-#include(libpng-lib.cmake)
-
-#include(curl-lib.cmake)
-
-#include(fltk-lib.cmake)
-
-#include(fmt-lib.cmake)
-
-#include(jsoncpp-lib.cmake)
-
-#include(miniupnp-lib.cmake)
-
-#include(protobuf-lib.cmake)
-
-#include(SDL-lib.cmake)
-
-#include(wxWidgets-lib.cmake)
-
-#include(libadlmidi-lib.cmake)
-
-#include(cpptrace-lib.cmake)

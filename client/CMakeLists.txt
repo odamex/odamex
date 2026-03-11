@@ -1,4 +1,3 @@
-include(OdamexCopyLibs)
 include(OdamexCopyWad)
 include(OdamexTargetSettings)
 
@@ -248,7 +247,6 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     endif()
   endif()
 
-  #odamex_copy_libs(odamex)
   odamex_copy_wad(odamex)
 
   set(MACOSX_BUNDLE_BUNDLE_NAME ${CMAKE_PROJECT_NAME})
