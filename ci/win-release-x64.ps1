@@ -95,21 +95,21 @@ function CopyFilesX64 {
         -Destination "${CommonDir}\README.txt"
     Copy-Item -Force -Path "${CurrentDir}\BuildX64\wad\odamex.wad" `
         -Destination "${CommonDir}"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\_deps\sdl_mixer-src\LICENSE.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\libraries\sdl_mixer\LICENSE.txt" `
         -Destination "${CommonDir}\licenses\LICENSE.SDL2_mixer.txt"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\_deps\sdl_mixer-src\VisualC\external\optional\x86\LICENSE.xmp.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\libraries\sdl_mixer\VisualC\external\optional\x86\LICENSE.xmp.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\_deps\sdl_mixer-src\VisualC\external\optional\x86\LICENSE.ogg-vorbis.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\libraries\sdl_mixer\VisualC\external\optional\x86\LICENSE.ogg-vorbis.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\_deps\sdl_mixer-src\VisualC\external\optional\x86\LICENSE.opus.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\libraries\sdl_mixer\VisualC\external\optional\x86\LICENSE.opus.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\_deps\sdl_mixer-src\VisualC\external\optional\x86\LICENSE.opusfile.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\libraries\sdl_mixer\VisualC\external\optional\x86\LICENSE.opusfile.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\_deps\sdl_mixer-src\VisualC\external\optional\x86\LICENSE.wavpack.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\libraries\sdl_mixer\VisualC\external\optional\x86\LICENSE.wavpack.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\_deps\sdl_mixer-src\VisualC\external\optional\x86\LICENSE.gme.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\libraries\sdl_mixer\VisualC\external\optional\x86\LICENSE.gme.txt" `
         -Destination "${CommonDir}\licenses"
-    Copy-Item -Force -Path "${CurrentDir}\BuildX86\_deps\sdl-src\LICENSE.txt" `
+    Copy-Item -Force -Path "${CurrentDir}\libraries\sdl\LICENSE.txt" `
         -Destination "${CommonDir}\licenses\LICENSE.SDL2.txt"
 
     ########################################
