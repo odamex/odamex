@@ -1558,46 +1558,25 @@ void AM_drawWalls()
 							case zk_blue:
 							case zk_blue_skull:
 							case zk_bluex:
-								if (gameinfo.gametype == GAMETYPE_HERETIC)
-								{
-									r = 0; g = 0; b = 255;
-								}
-								else
-								{
-									r = doorColors.bluedoor[0];
-									g = doorColors.bluedoor[1];
-									b = doorColors.bluedoor[2];
-								}
+								r = doorColors.bluedoor[0];
+								g = doorColors.bluedoor[1];
+								b = doorColors.bluedoor[2];
 								break;
 							case zk_yellow_card:
 							case zk_yellow:
 							case zk_yellow_skull:
 							case zk_yellowx:
-								if (gameinfo.gametype == GAMETYPE_HERETIC)
-								{
-									r = 255; g = 255; b = 0;
-								}
-								else
-								{
-									r = doorColors.yellowdoor[0];
-									g = doorColors.yellowdoor[1];
-									b = doorColors.yellowdoor[2];
-								}
+								r = doorColors.yellowdoor[0];
+								g = doorColors.yellowdoor[1];
+								b = doorColors.yellowdoor[2];
 								break;
 							case zk_red_card:
 							case zk_red:
 							case zk_red_skull:
 							case zk_redx:
-								if (gameinfo.gametype == GAMETYPE_HERETIC)
-								{
-									r = 0x4c; g = 0x33; b = 0x11;
-								}
-								else
-								{
-									r = doorColors.reddoor[0];
-									g = doorColors.reddoor[1];
-									b = doorColors.reddoor[2];
-								}
+								r = doorColors.reddoor[0];
+								g = doorColors.reddoor[1];
+								b = doorColors.reddoor[2];
 								break;
 							case zk_all:
 							case zk_any:
@@ -1637,42 +1616,21 @@ void AM_drawWalls()
 						{
 							if (P_IsCompatibleBlueDoorLine(line.special))
 							{
-								if (gameinfo.gametype == GAMETYPE_HERETIC)
-								{
-									r = 0; g = 0; b = 255;
-								}
-								else
-								{
-									r = doorColors.bluedoor[0];
-									g = doorColors.bluedoor[1];
-									b = doorColors.bluedoor[2];
-								}
+								r = doorColors.bluedoor[0];
+								g = doorColors.bluedoor[1];
+								b = doorColors.bluedoor[2];
 							}
 							else if (P_IsCompatibleYellowDoorLine(line.special))
 							{
-								if (gameinfo.gametype == GAMETYPE_HERETIC)
-								{
-									r = 255; g = 255; b = 0;
-								}
-								else
-								{
-									r = doorColors.yellowdoor[0];
-									g = doorColors.yellowdoor[1];
-									b = doorColors.yellowdoor[2];
-								}
+								r = doorColors.yellowdoor[0];
+								g = doorColors.yellowdoor[1];
+								b = doorColors.yellowdoor[2];
 							}
 							else
 							{
-								if (gameinfo.gametype == GAMETYPE_HERETIC)
-								{
-									r = 0x4c; g = 0x33; b = 0x11;
-								}
-								else
-								{
-									r = doorColors.reddoor[0];
-									g = doorColors.reddoor[1];
-									b = doorColors.reddoor[2];
-								}
+								r = doorColors.reddoor[0];
+								g = doorColors.reddoor[1];
+								b = doorColors.reddoor[2];
 							}
 						}
 
