@@ -517,12 +517,24 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		break;
 
 	case 100:
-		// Build Stairs Turbo 16
-		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 16 * FRACUNIT, SPEED(stairs::TURBO),
-		                   TICS(0), 0, 0, 0))
+		if (gamemission == heretic)
 		{
-			return true;
-			//line->special = 0;
+			// Heretic: Raise Door 3x Speed
+			if (EV_DoDoor(DDoor::doorRaise, line, thing, line->id,
+			              SPEED(doors::NORMAL * 3), TICS(doors::WAIT), NoKey))
+			{
+				return true;
+			}
+		}
+		else
+		{
+			// Doom/Boom: Build Stairs Turbo 16
+			if (EV_BuildStairs(line->id, DFloor::buildUp, line, 16 * FRACUNIT,
+			                   SPEED(stairs::TURBO), TICS(0), 0, 0, 0))
+			{
+				return true;
+				//line->special = 0;
+			}
 		}
 		break;
 
@@ -706,6 +718,9 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		return true;
 
 	case 88:
+		if (gamemission == heretic && !thing->player)
+			break;
+
 		// PlatDownWaitUp
 		EV_DoPlat(line->id, line, DPlat::platDownWaitUpStay, 0, SPEED(plats::FAST),
 		          TICS(plats::WAIT), 0 * FRACUNIT, 0);
@@ -789,11 +804,26 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 		break;
 
 	case 106:
+		if (gamemission == heretic)
+		{
+			// Heretic: Build Stairs Turbo 16
+			if (EV_BuildStairs(line->id, DFloor::buildUp, line, 16 * FRACUNIT,
+			                   SPEED(stairs::TURBO), TICS(0), 0, 0, 0))
+			{
+				return true;
+				//line->special = 0;
+			}
+			break;
+		}
+
 		// Blazing Door Open (faster than TURBO!)
 		EV_DoDoor(DDoor::doorOpen, line, thing, line->id, SPEED(doors::FAST), 0, NoKey);
 		return true;
 
 	case 107:
+		if (gamemission == heretic)
+			break;
+
 		// Blazing Door Close (faster than TURBO!)
 		EV_DoDoor(DDoor::doorClose, line, thing, line->id, SPEED(doors::FAST), 0, NoKey);
 		return true;
@@ -2335,9 +2365,18 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		break;
 
 	case 49:
-		// Ceiling Crush And Raise
-		if (EV_DoCeiling(DCeiling::crushAndRaise, line, line->id, SPEED(ceilings::SLOW),
-		                 SPEED(ceilings::SLOW), 0, true, 0, 0))
+		// Ceiling Crush And Raise (Heretic uses lower-and-crush behavior)
+		if (gamemission == heretic)
+		{
+			if (EV_DoCeiling(DCeiling::lowerAndCrush, line, line->id, SPEED(ceilings::SLOW),
+			                 SPEED(ceilings::SLOW), 0, false, 0, 0))
+			{
+				reuse = false;
+				trigger = true;
+			}
+		}
+		else if (EV_DoCeiling(DCeiling::crushAndRaise, line, line->id, SPEED(ceilings::SLOW),
+		                      SPEED(ceilings::SLOW), 0, true, 0, 0))
 		{
 			reuse = false;
 			trigger = true;
