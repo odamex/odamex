@@ -38,6 +38,8 @@ EXTERN_CVAR(co_avoidhazards)
 EXTERN_CVAR(co_monstersclimbsteep)
 EXTERN_CVAR(co_mbfphys)
 
+const int stairspeed = stairs::SLOW * ((gamemission == heretic) ? 4 : 1);
+
 //
 // P_CrossCompatibleSpecialLine - Walkover Trigger Dispatcher
 //
@@ -287,7 +289,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	case 8:
 		// Build Stairs
 		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT,
-		                   SPEED((gamemission == heretic) ? stairs::SLOW * 4 : stairs::SLOW),
+		                   SPEED(stairspeed),
 		                   TICS(0), 0, 0, 0))
 		{
 			return true;
@@ -2207,7 +2209,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	case 7:
 		// Build Stairs
 		if (EV_BuildStairs(line->id, DFloor::buildUp, line, 8 * FRACUNIT,
-		                   SPEED((gamemission == heretic) ? stairs::SLOW * 4 : stairs::SLOW),
+		                   SPEED(stairspeed),
 		                   0, 0, 0, 0))
 		{
 			reuse = false;
