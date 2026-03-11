@@ -64,7 +64,7 @@ function BuildOutCommon {
         -Destination "${CommonDir}\README.txt"
     Copy-Item -Force -Path "${UnzippedX64}\odamex.wad" `
         -Destination "${CommonDir}"
-    Copy-Item -Force -Path "${UnzippedX64}\licenses\COPYING.SDL2_mixer.txt" `
+    Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.SDL2_mixer.txt" `
         -Destination "${CommonDir}\licenses"
     Copy-Item -Force -Path "${UnzippedX64}\licenses\LICENSE.xmp.txt" `
         -Destination "${CommonDir}\licenses"
@@ -92,22 +92,8 @@ function BuildOutX86 {
     New-Item -Force -ItemType "directory" -Path "${OutX86}\redist"
 
     Copy-Item -Force -Path `
-        "${UnzippedX86}\libwavpack-1.dll", `
-        "${UnzippedX86}\libgme.dll", `
-        "${UnzippedX86}\libxmp.dll", `
-        "${UnzippedX86}\libogg-0.dll", `
-        "${UnzippedX86}\libopus-0.dll", `
-        "${UnzippedX86}\libopusfile-0.dll", `
         "${UnzippedX86}\odamex.exe", `
-        "${UnzippedX86}\SDL2_mixer.dll", `
-        "${UnzippedX86}\SDL2.dll", `
         "${UnzippedX86}\odalaunch.exe", `
-        "${UnzippedX86}\wxbase315u_net_vc14x.dll", `
-        "${UnzippedX86}\wxbase315u_vc14x.dll", `
-        "${UnzippedX86}\wxbase315u_xml_vc14x.dll", `
-        "${UnzippedX86}\wxmsw315u_core_vc14x.dll", `
-        "${UnzippedX86}\wxmsw315u_html_vc14x.dll", `
-        "${UnzippedX86}\wxmsw315u_xrc_vc14x.dll", `
         "${UnzippedX86}\odasrv.exe" `
         -Destination "${OutX86}\"
 
@@ -126,22 +112,8 @@ function BuildOutX64 {
     New-Item -Force -ItemType "directory" -Path "${OutX64}\redist"
 
     Copy-Item -Force -Path `
-        "${UnzippedX64}\libwavpack-1.dll", `
-        "${UnzippedX64}\libgme.dll", `
-        "${UnzippedX64}\libxmp.dll", `
-        "${UnzippedX64}\libogg-0.dll", `
-        "${UnzippedX64}\libopus-0.dll", `
-        "${UnzippedX64}\libopusfile-0.dll", `
         "${UnzippedX64}\odamex.exe", `
-        "${UnzippedX64}\SDL2_mixer.dll", `
-        "${UnzippedX64}\SDL2.dll", `
         "${UnzippedX64}\odalaunch.exe", `
-        "${UnzippedX64}\wxbase315u_net_vc14x_x64.dll", `
-        "${UnzippedX64}\wxbase315u_vc14x_x64.dll", `
-        "${UnzippedX64}\wxbase315u_xml_vc14x_x64.dll", `
-        "${UnzippedX64}\wxmsw315u_core_vc14x_x64.dll", `
-        "${UnzippedX64}\wxmsw315u_html_vc14x_x64.dll", `
-        "${UnzippedX64}\wxmsw315u_xrc_vc14x_x64.dll", `
         "${UnzippedX64}\odasrv.exe" `
         -Destination "${OutX64}\"
 

@@ -81,55 +81,47 @@ Source: {#SourcePath}\OutCommon\odamex.wad; DestDir: {app}; Flags: ignoreversion
 ;; 64-BIT FILES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Source: {#SourcePath}\OutX64\libwavpack-1.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\libgme.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\libxmp.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\libopus-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\libopusfile-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
 Source: {#SourcePath}\OutX64\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
 Source: {#SourcePath}\OutX64\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
 Source: {#SourcePath}\OutX64\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\SDL2_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\SDL2.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\wxbase315u_net_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\wxbase315u_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\wxbase315u_xml_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\wxmsw315u_core_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\wxmsw315u_html_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
-Source: {#SourcePath}\OutX64\wxmsw315u_xrc_vc14x_x64.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: Is64BitInstallMode
 Source: {#SourcePath}\OutX64\redist\VC_redist.x64.exe; DestDir: {tmp}; Flags: dontcopy
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 32-BIT FILES
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Source: {#SourcePath}\OutX86\libwavpack-1.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: {#SourcePath}\OutX86\libgme.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: {#SourcePath}\OutX86\libxmp.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: {#SourcePath}\OutX86\libogg-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: {#SourcePath}\OutX86\libopus-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: {#SourcePath}\OutX86\libopusfile-0.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
 Source: {#SourcePath}\OutX86\odalaunch.exe; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
 Source: {#SourcePath}\OutX86\odamex.exe; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
 Source: {#SourcePath}\OutX86\odasrv.exe; DestDir: {app}; Flags: ignoreversion; Components: server; Check: not Is64BitInstallMode
-Source: {#SourcePath}\OutX86\SDL2_mixer.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: {#SourcePath}\OutX86\SDL2.dll; DestDir: {app}; Flags: ignoreversion; Components: client; Check: not Is64BitInstallMode
-Source: {#SourcePath}\OutX86\wxbase315u_net_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
-Source: {#SourcePath}\OutX86\wxbase315u_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
-Source: {#SourcePath}\OutX86\wxbase315u_xml_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
-Source: {#SourcePath}\OutX86\wxmsw315u_core_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
-Source: {#SourcePath}\OutX86\wxmsw315u_html_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
-Source: {#SourcePath}\OutX86\wxmsw315u_xrc_vc14x.dll; DestDir: {app}; Flags: ignoreversion; Components: launcher; Check: not Is64BitInstallMode
 Source: {#SourcePath}\OutX86\redist\VC_redist.x86.exe; DestDir: {tmp}; Flags: dontcopy
 
 [InstallDelete]
 
 Type: files; Name: "{app}\libFLAC-8.dll"
+Type: files; Name: "{app}\libgme.dll"
+Type: files; Name: "{app}\libmodplug-1.dll"
 Type: files; Name: "{app}\libmpg123-0.dll"
+Type: files; Name: "{app}\libogg-0.dll"
+Type: files; Name: "{app}\libopus-0.dll"
+Type: files; Name: "{app}\libopusfile-0.dll"
 Type: files; Name: "{app}\libvorbis-0.dll"
 Type: files; Name: "{app}\libvorbisfile-3.dll"
-Type: files; Name: "{app}\libmodplug-1.dll"
+Type: files; Name: "{app}\libwavpack-1.dll"
+Type: files; Name: "{app}\libxmp.dll"
+Type: files; Name: "{app}\SDL2.dll"
+Type: files; Name: "{app}\SDL2_mixer.dll"
+Type: files; Name: "{app}\wxbase315u_net_vc14x.dll"
+Type: files; Name: "{app}\wxbase315u_net_vc14x_x64.dll"
+Type: files; Name: "{app}\wxbase315u_vc14x.dll"
+Type: files; Name: "{app}\wxbase315u_vc14x_x64.dll"
+Type: files; Name: "{app}\wxbase315u_xml_vc14x.dll"
+Type: files; Name: "{app}\wxbase315u_xml_vc14x_x64.dll"
+Type: files; Name: "{app}\wxmsw315u_core_vc14x.dll"
+Type: files; Name: "{app}\wxmsw315u_core_vc14x_x64.dll"
+Type: files; Name: "{app}\wxmsw315u_html_vc14x.dll"
+Type: files; Name: "{app}\wxmsw315u_html_vc14x_x64.dll"
+Type: files; Name: "{app}\wxmsw315u_xrc_vc14x.dll"
+Type: files; Name: "{app}\wxmsw315u_xrc_vc14x_x64.dll"
 
 [Icons]
 Name: {group}\Odamex Client; Filename: {app}\odamex.exe; WorkingDir: {app}

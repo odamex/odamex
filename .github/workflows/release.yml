@@ -281,7 +281,7 @@ jobs:
           "${DEPS_PREFIX}/lib/libpcre2-32.a" \
           "${DEPS_PREFIX}/lib/libzstd.a" \
           "${DEPS_PREFIX}/licenses/LICENSE.SDL2.txt" \
-          "${DEPS_PREFIX}/licenses/COPYING.SDL2_mixer.txt"
+          "${DEPS_PREFIX}/licenses/LICENSE.SDL2_mixer.txt"
         do
           if [ ! -f "$f" ]; then
             missing=1
@@ -315,7 +315,7 @@ jobs:
         tar -xf SDL2_mixer.tar.gz
         bash "SDL2_mixer-${{ env.sdl2_mixer_version }}/external/download.sh"
         if [ -f "SDL2_mixer-${{ env.sdl2_mixer_version }}/LICENSE.txt" ]; then
-          cp "SDL2_mixer-${{ env.sdl2_mixer_version }}/LICENSE.txt" "${DEPS_PREFIX}/licenses/COPYING.SDL2_mixer.txt"
+          cp "SDL2_mixer-${{ env.sdl2_mixer_version }}/LICENSE.txt" "${DEPS_PREFIX}/licenses/LICENSE.SDL2_mixer.txt"
         fi
         copy_license_glob() {
           local base="$1"
