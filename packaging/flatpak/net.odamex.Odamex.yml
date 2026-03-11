@@ -85,9 +85,7 @@ modules:
       - -D ODAMEX_NO_GITVER=0
     post-install:
       # We're in a build subdir due to builddir: true, so step back out of it.
-      - cd $FLATPAK_BUILDER_BUILDDIR
-      - chmod +x ./flatpak-post-install.sh
-      - "./flatpak-post-install.sh"
+      - cd $FLATPAK_BUILDER_BUILDDIR && chmod +x ./flatpak-post-install.sh && "./flatpak-post-install.sh"
       # delete files that cleanup can't see
       - rm -rf /app/bin/wx*
       - rm -rf /app/lib/cmake
