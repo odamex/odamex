@@ -913,7 +913,7 @@ void DCanvas::DrawBlock(int x, int y, int width, int height, const byte *src) co
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch = mSurface->getPitch();
 	int colstep = mSurface->getBytesPerPixel();
-	int line_length = surface_width * colstep;
+	int line_length = width * colstep;
 
 #ifdef RANGECHECK
 	if (x < 0 || x + width > surface_width || y < 0 || y + height > surface_height)
@@ -944,7 +944,7 @@ void DCanvas::GetBlock(int x, int y, int width, int height, byte *dest) const
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch = mSurface->getPitch();
 	int colstep = mSurface->getBytesPerPixel();
-	int line_length = surface_width * colstep;
+	int line_length = width * colstep;
 
 #ifdef RANGECHECK
 	if (x < 0 || x + width > surface_width || y < 0 || y + height > surface_height)

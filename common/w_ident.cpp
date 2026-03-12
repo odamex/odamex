@@ -1684,7 +1684,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = registered_heretic;
 		gamemission = heretic;
 		gameinfo.enginetype = ENGINE_HERETIC;
-		gameinfo.flags = GI_MENUHACK_RETAIL;
+		gameinfo.flags = GI_PAGESARERAW | GI_MENUHACK_RETAIL;
 		gameinfo.titleString = "Heretic";
 		gameinfo.baseMapinfoLump = "_HERENFO";
 	}

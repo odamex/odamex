@@ -586,31 +586,27 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (!pagename.empty())
 	{
-		const patch_t* patch = W_CachePatch(pagename);
-
-		page_width = patch->width();
-		page_height = patch->height() + (patch->height() / 5);
+		const bool is_raw_patch = (gameinfo.flags & GI_PAGESARERAW) != 0;
+		const patch_t* patch = !is_raw_patch ? W_CachePatch(pagename) : NULL;
+		const int page_width = !is_raw_patch ? patch->width() : 320;
+		const int page_height = !is_raw_patch ? patch->height() : 200;
 
 		I_FreeSurface(page_surface);
+		page_surface = I_AllocateSurface(page_width, page_height, 8);
+		DCanvas* canvas = page_surface->getDefaultCanvas();
+		page_surface->lock();
 
-		if (gameinfo.flags & GI_PAGESARERAW)
+		if (is_raw_patch)
 		{
-			page_surface = I_AllocateSurface(page_width, page_height, 8);
-			DCanvas* canvas = page_surface->getDefaultCanvas();
-
-			page_surface->lock();
-			canvas->DrawBlock(0, 0, page_width, page_height, (byte*)patch);
-			page_surface->unlock();
+			const byte* raw_page = static_cast<const byte*>(W_CacheLumpName(pagename, PU_CACHE));
+			canvas->DrawBlock(0, 0, page_width, page_height, raw_page);
 		}
 		else
 		{
-			page_surface = I_AllocateSurface(patch->width(), patch->height(), 8);
-			DCanvas* canvas = page_surface->getDefaultCanvas();
-
-			page_surface->lock();
 			canvas->DrawPatch(patch, 0, 0);
-			page_surface->unlock();
 		}
+
+		page_surface->unlock();
 	}
 }
 
