@@ -675,10 +675,10 @@ static fixed_t P_AvoidDropoff(AActor* actor)
 	tmbbox[BOXRIGHT] = actor->x + actor->radius;
 	tmbbox[BOXLEFT] = actor->x - actor->radius;
 
-	const int yh = tmbbox[BOXTOP] - bmaporgy >> MAPBLOCKSHIFT;
-	const int yl = tmbbox[BOXBOTTOM] - bmaporgy >> MAPBLOCKSHIFT;
-	const int xh = tmbbox[BOXRIGHT] - bmaporgx >> MAPBLOCKSHIFT;
-	const int xl = tmbbox[BOXLEFT] - bmaporgx >> MAPBLOCKSHIFT;
+	const int yh = (tmbbox[BOXTOP] - bmaporgy) >> MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - bmaporgy) >> MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT] - bmaporgx) >> MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT] - bmaporgx) >> MAPBLOCKSHIFT;
 
 	floorz = actor->z; // remember floor height
 
