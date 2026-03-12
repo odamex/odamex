@@ -34,17 +34,17 @@ std::string Freecam::prevmap = "";
 
 void Freecam::addFreecamPlayer()
 {
-	player_t* cam = &idplayer(freecam_id);
+	player_t* cam = &idplayer(freecamplayer_id);
 
 	if (Freecam::wipedOnLevelChange(cam))
 	{
 		Freecam::buildCam(cam);
 	}
 
-	if (cam->id != freecam_id && players.size() < MAXPLAYERS)  // initial add
+	if (cam->id != freecamplayer_id && players.size() < MAXPLAYERS) // initial add
 	{
 		cam = &players.emplace_back();
-		cam->id = freecam_id;
+		cam->id = freecamplayer_id;
 
 		Freecam::buildCam(cam);
 	}
@@ -83,9 +83,9 @@ void Freecam::setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle)
 
 void Freecam::savePosition()
 {
-	player_t* cam = &idplayer(freecam_id);
+	player_t* cam = &idplayer(freecamplayer_id);
 
-	if (cam->id == freecam_id && cam->isFreecam)
+	if (cam->id == freecamplayer_id && cam->isFreecam)
 	{
 		x = cam->mo->x;
 		y = cam->mo->y;
@@ -102,7 +102,7 @@ bool Freecam::needPosition()
 
 bool Freecam::wipedOnLevelChange(player_t* cam)
 {
-	return (cam->id == freecam_id && cam->isFreecam && !cam->mo && !cam->camera);
+	return (cam->id == freecamplayer_id && cam->isFreecam && !cam->mo && !cam->camera);
 }
 
 void Freecam::reset()

@@ -27,11 +27,12 @@
 #include "odamex.h"
 #include "cl_main.h"
 
+inline constexpr byte freecamplayer_id = 255;
+
 class Freecam
 {
 public:
 	Freecam() = delete; // static / no constructor
-	static const byte freecam_id = 255;
 	static std::string prevmap;
 	static void addFreecamPlayer();
 	static void savePosition();

@@ -1009,7 +1009,7 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 	player_t* p = &CL_FindPlayer(msg->pid());
 
 	// 255th player just connected and is replacing the freecam, need to retire freecam
-	if (p->id == Freecam::freecam_id && p->isFreecam)
+	if (p->id == freecamplayer_id && p->isFreecam)
 	{
 		Freecam::retireFor255thPlayer(p);
 	}
