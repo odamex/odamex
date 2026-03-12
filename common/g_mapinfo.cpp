@@ -1301,6 +1301,8 @@ struct MapInfoDataSetter<gameinfo_t>
 			{ "maparrow", &MIType_MapArrows },
 			{ "cheatkey", &MIType_MapKey, &gameinfo.cheatKey },
 			{ "easykey", &MIType_MapKey, &gameinfo.easyKey },
+
+			// [ML] These aren't part of any UMAPINFO "standard"  
 			{ "maxswitch", &MIType_Int, &gameinfo.maxSwitch },
 			{ "smallfontpattern", &MIType_String,&gameinfo.smallFontPattern },
 			{ "smallfontlumpstart", &MIType_Int, &gameinfo.smallFontLumpStart },
@@ -1896,9 +1898,12 @@ void G_ParseMapInfo()
 
 	// Reset skill definitions
 	skillnum = 0;
+	defaultskillmenu = 0;
 
-	// Parse common defaults first for all game missions.
-	ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
+	// Parse common defaults first for Doom-family game missions.
+	// Heretic has its own complete skill/gameinfo setup in _HERENFO.
+	if (gameinfo.enginetype == ENGINE_DOOM)
+		ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
 
 	const char* sharewareMapinfoLump = NULL;
 

@@ -732,8 +732,8 @@ void M_DrawLoad ()
 	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_LOADG"), 72, 28);
 	for (int i = 0; i < load_end; i++)
 	{
-		M_DrawSaveLoadBorder (LoadDef.x, LoadDef.y+LINEHEIGHT*i, 24);
-		screen->DrawTextCleanMove (CR_RED, LoadDef.x, LoadDef.y+LINEHEIGHT*i, savegamestrings[i]);
+		M_DrawSaveLoadBorder (LoadDef.x, LoadDef.y+gameinfo.bigFontLineHeight*i, 24);
+		screen->DrawTextCleanMove (CR_RED, LoadDef.x, LoadDef.y+gameinfo.bigFontLineHeight*i, savegamestrings[i]);
 	}
 }
 
@@ -777,14 +777,14 @@ void M_DrawSave()
 	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_SAVEG"), 72, 28);
 	for (i = 0; i < load_end; i++)
 	{
-		M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*i,24);
-		screen->DrawTextCleanMove (CR_RED, LoadDef.x, LoadDef.y+LINEHEIGHT*i, savegamestrings[i]);
+		M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+gameinfo.bigFontLineHeight*i,24);
+		screen->DrawTextCleanMove (CR_RED, LoadDef.x, LoadDef.y+gameinfo.bigFontLineHeight*i, savegamestrings[i]);
 	}
 
 	if (genStringEnter != oldmenustring_t::NONE)
 	{
 		i = V_StringWidth(savegamestrings[saveSlot]);
-		screen->DrawTextCleanMove (CR_RED, LoadDef.x + i, LoadDef.y+LINEHEIGHT*saveSlot, "_");
+		screen->DrawTextCleanMove (CR_RED, LoadDef.x + i, LoadDef.y+gameinfo.bigFontLineHeight*saveSlot, "_");
 	}
 }
 
@@ -1035,7 +1035,7 @@ void M_DrawNewGame()
 	static constexpr int SMALLFONT_OFFSET = 8; // Line up with the skull
 
 	const char* pslabel = "Pistol Start Each Level ";
-	const int psy = NewDef.y + (LINEHEIGHT * skillnum) + SMALLFONT_OFFSET;
+	const int psy = NewDef.y + (gameinfo.bigFontLineHeight * skillnum) + SMALLFONT_OFFSET;
 
 	screen->DrawTextCleanMove(CR_RED, NewDef.x, psy, pslabel);
 	screen->DrawTextCleanMove(CR_GREY, NewDef.x + V_StringWidth(pslabel), psy,
@@ -1112,7 +1112,7 @@ void M_NewGame(int choice)
 
 		if (episodenum > 4)
 		{
-			EpiDef.y -= LINEHEIGHT * (episodenum / 4);
+			EpiDef.y -= gameinfo.bigFontLineHeight * (episodenum / 4);
 		}
 
 		epi = 0;
@@ -1141,7 +1141,7 @@ void M_DrawEpisode()
 
 	if (episodenum > 4)
 	{
-		y -= LINEHEIGHT * (episodenum / 4);
+		y -= gameinfo.bigFontLineHeight * (episodenum / 4);
 	}
 
 	if (W_CheckNumForName("M_EPISOD") >= 0)
@@ -1383,7 +1383,7 @@ void M_QuitHeretic(int choice)
 {
 	// We pick index 0 which is language sensitive,
 	//  or one at random, between 1 and maximum number.
-	static std::string endstring = fmt::sprintf("%s\n\n%s", GStrings(RAVENQUITMSG), GStrings(DOSY));
+	static std::string endstring = fmt::sprintf("%s\n", GStrings(RAVENQUITMSG));
 
 	M_StartMessage(endstring.c_str(), M_QuitResponse, true);
 }
@@ -1547,11 +1547,11 @@ static void M_PlayerSetupDrawer()
 	// Draw cursor for either of the above
 	if (genStringEnter != oldmenustring_t::NONE)
 		screen->DrawTextCleanMove(CR_RED, PSetupDef.x + V_StringWidth(savegamestrings[saveSlot]) + 56,
-							PSetupDef.y + ((saveSlot == 0) ? 0 : LINEHEIGHT), "_");
+							PSetupDef.y + ((saveSlot == 0) ? 0 : gameinfo.bigFontLineHeight), "_");
 
 	// Draw player character
 	{
-		int x = 320 - 88 - 32, y = PSetupDef.y + LINEHEIGHT*3 - 14;
+		int x = 320 - 88 - 32, y = PSetupDef.y + gameinfo.bigFontLineHeight*3 - 14;
 
 		x = (x-160)*CleanXfac+(I_GetSurfaceWidth() / 2);
 		y = (y-100)*CleanYfac+(I_GetSurfaceHeight() / 2);
@@ -1678,26 +1678,26 @@ static void M_PlayerSetupDrawer()
 
 		// Draw box surrounding fire and player:
 		screen->DrawPatchClean(W_CachePatch("M_PBOX"), 320 - 88 - 32 + 36,
-			PSetupDef.y + LINEHEIGHT * 3 + 22);
+			PSetupDef.y + gameinfo.bigFontLineHeight * 3 + 22);
 
 		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),
-			320 - 52 - 32, PSetupDef.y + LINEHEIGHT*3 + 46);
+			320 - 52 - 32, PSetupDef.y + gameinfo.bigFontLineHeight*3 + 46);
 	}
 
 	// Draw team setting
 	{
 		const team_t team = D_TeamByName(cl_team.cstring());
 		const int x = V_StringWidth ("Preferred Team") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Preferred Team");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + gameinfo.bigFontLineHeight, "Preferred Team");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + gameinfo.bigFontLineHeight, team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
 	}
 
 	// Draw gender setting
 	{
 		const gender_t gender = D_GenderByName(cl_gender.cstring());
 		const int x = V_StringWidth ("Gender") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*2, "Gender");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*2, genders[gender]);
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + gameinfo.bigFontLineHeight*2, "Gender");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + gameinfo.bigFontLineHeight*2, genders[gender]);
 	}
 
 	// Draw autoaim setting
@@ -1705,8 +1705,8 @@ static void M_PlayerSetupDrawer()
 		const int x = V_StringWidth ("Autoaim") + 8 + PSetupDef.x;
 		const float aim = cl_autoaim;
 
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*3, "Autoaim");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*3,
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + gameinfo.bigFontLineHeight*3, "Autoaim");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + gameinfo.bigFontLineHeight*3,
 			aim == 0 ? "Never" :
 			aim <= 0.25 ? "Very Low" :
 			aim <= 0.5 ? "Low" :
@@ -1718,8 +1718,8 @@ static void M_PlayerSetupDrawer()
 	// Draw color setting
 	{
 		const int x = V_StringWidth ("Color") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*4, "Color");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*4, colorpresets[colorpreset]);
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + gameinfo.bigFontLineHeight*4, "Color");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + gameinfo.bigFontLineHeight*4, colorpresets[colorpreset]);
 	}
 
 	int PSetupSize = sizeof(PlayerSetupMenu) / sizeof(PlayerSetupMenu[0]);
@@ -1729,21 +1729,21 @@ static void M_PlayerSetupDrawer()
 		PSetupDef.numitems = PSetupDef.numitems - 3;
 
 	// Draw player color sliders
-	//V_DrawTextCleanMove (CR_GREY, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Color");
+	//V_DrawTextCleanMove (CR_GREY, PSetupDef.x, PSetupDef.y + gameinfo.bigFontLineHeight, "Color");
 
 	if (colorpreset == COLOR_CUSTOM)
 	{
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*5, "Red");
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Green");
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*7, "Blue");
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + gameinfo.bigFontLineHeight*5, "Red");
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + gameinfo.bigFontLineHeight*6, "Green");
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + gameinfo.bigFontLineHeight*7, "Blue");
 
 		{
 			const int x = V_StringWidth("Green") + 8 + PSetupDef.x;
 			const argb_t playercolor = V_GetColorFromString(cl_color);
 
-			M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*5, 0.0f, 255.0f, playercolor.getr(), 0.0f);
-			M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*6, 0.0f, 255.0f, playercolor.getg(), 0.0f);
-			M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*7, 0.0f, 255.0f, playercolor.getb(), 0.0f);
+			M_DrawSlider(x, PSetupDef.y + gameinfo.bigFontLineHeight*5, 0.0f, 255.0f, playercolor.getr(), 0.0f);
+			M_DrawSlider(x, PSetupDef.y + gameinfo.bigFontLineHeight*6, 0.0f, 255.0f, playercolor.getg(), 0.0f);
+			M_DrawSlider(x, PSetupDef.y + gameinfo.bigFontLineHeight*7, 0.0f, 255.0f, playercolor.getb(), 0.0f);
 		}
 	}
 }
@@ -1940,13 +1940,13 @@ static void M_SlidePlayerBlue (int choice)
 void M_DrawEmptyCell (oldmenu_t *menu, int item)
 {
 	screen->DrawPatchClean (W_CachePatch("M_CELL1"),
-		menu->x - 10, menu->y+item*LINEHEIGHT - 1);
+		menu->x - 10, menu->y+item*gameinfo.bigFontLineHeight - 1);
 }
 
 void M_DrawSelCell (oldmenu_t *menu, int item)
 {
 	screen->DrawPatchClean (W_CachePatch("M_CELL2"),
-		menu->x - 10, menu->y+item*LINEHEIGHT - 1);
+		menu->x - 10, menu->y+item*gameinfo.bigFontLineHeight - 1);
 }
 
 
