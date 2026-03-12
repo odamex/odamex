@@ -978,8 +978,8 @@ void G_Ticker (void)
 			memcpy(&player.cmd, &player.netcmds[buf], sizeof(ticcmd_t));
 		}
 	}
-	// Rude - allow controling displayplayer if freecam
-	else if (Freecam::allowAdd() && displayplayer().isFreecam)
+	// Rude - allow controlling displayplayer if freecam
+	else if (displayplayer().isFreecam)
 	{
 		memcpy(&displayplayer().cmd, &consoleplayer().netcmds[buf], sizeof(ticcmd_t));
 	}

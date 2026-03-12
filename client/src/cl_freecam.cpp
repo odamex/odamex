@@ -50,6 +50,11 @@ void Freecam::addFreecamPlayer()
 	}
 }
 
+bool Freecam::wipedOnLevelChange(player_t* cam)
+{
+	return (cam->id == freecamplayer_id && cam->isFreecam && !cam->mo && !cam->camera);
+}
+
 void Freecam::buildCam(player_t* p_cam)
 {
 	AActor* mobj = new AActor(x, y, z, MT_PLAYER);
@@ -100,18 +105,9 @@ bool Freecam::needPosition()
 	return (Freecam::x == 0 && Freecam::y == 0);
 }
 
-bool Freecam::wipedOnLevelChange(player_t* cam)
-{
-	return (cam->id == freecamplayer_id && cam->isFreecam && !cam->mo && !cam->camera);
-}
-
 void Freecam::reset()
 {
-	x = 0;
-	y = 0;
-	z = 0;
-	angle = 0;
-	pitch = 0;
+	x = y = z = angle = pitch = 0;
 }
 
 bool Freecam::allowAdd()

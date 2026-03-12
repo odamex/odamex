@@ -830,7 +830,7 @@ void R_SetupFrame (player_t *player)
 		memset (scalelightfixed, 0, MAXLIGHTSCALE*sizeof(*scalelightfixed));
 	}
 
-	// dont let consoleplayer's localview interfere with the freecam
+	// dont let consoleplayer's localview.skippitch interfere with the freecam
 	if ((use_localview && !::localview.skippitch) || displayplayer().isFreecam)
 	{
 		R_ViewShear(clamp(camera->pitch - ::localview.pitch, -ANG(32), ANG(56)));

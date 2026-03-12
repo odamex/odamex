@@ -540,7 +540,7 @@ void HU_Drawer()
 					hud::OdamexHUD();
 			}
 		}
-		else 
+		else
 		{
 			hud::DoomHUD();
 		}
