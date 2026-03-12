@@ -5,4 +5,5 @@ gameinfo
 	creditpage = "CREDIT", "HELP2"
 	finalepage = "HELP2", "VICTORY2", "ENDPIC"
 	infopage = "HELP1", "HELP2"
+	maxSwitch = 1
 }

@@ -1,5 +1,10 @@
 // MAPINFO for Doom 2
 
+gameinfo
+{
+	maxSwitch = 3
+}
+
 clearepisodes
 episode map01
 {

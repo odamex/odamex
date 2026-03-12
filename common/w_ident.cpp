@@ -1536,7 +1536,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = retail;
 		gamemission = doom;
 		gameinfo.flags = GI_MENUHACK_RETAIL;
-		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "REKKR";
 		gameinfo.baseMapinfoLump = "_D1NFO";
 	}
@@ -1545,7 +1544,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = commercial;
 		gamemission = commercial_hacx;
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
-		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "HACX";
 		gameinfo.baseMapinfoLump = "_D2NFO";
 	}
@@ -1554,7 +1552,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = commercial;
 		gamemission = pack_plut;
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
-		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "DOOM 2: Plutonia Experiment";
 		gameinfo.baseMapinfoLump = "_PLUTNFO";
 	}
@@ -1563,7 +1560,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = commercial;
 		gamemission = pack_tnt;
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
-		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "DOOM 2: TNT - Evilution";
 		gameinfo.baseMapinfoLump = "_TNTNFO";
 	}
@@ -1572,7 +1568,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemission = chex3d2;
 		gamemode = commercial;
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
-		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "Chex Quest 3 Modding Version";
 		gameinfo.baseMapinfoLump = "_D2NFO";
 	}
@@ -1581,41 +1576,14 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemission = idname.find("VANILLA") != std::string::npos ? chex3v : chex3;
 		gamemode = registered;
 		gameinfo.flags = GI_MENUHACK_RETAIL;
-		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "Chex Quest 3";
 		gameinfo.baseMapinfoLump = gamemission == chex3v ? "_D1NFO" : "_CHEXNFO";
-	}
-	else if (idname.find(OStringToUpper(OString(HERETICSW_PREFIX))) == 0)
-	{
-		gamemode = shareware_heretic;
-		gamemission = heretic;
-		gameinfo.enginetype = ENGINE_HERETIC;
-		gameinfo.flags = GI_SHAREWARE | GI_MENUHACK_RETAIL;
-		gameinfo.maxSwitch = 2;
-		gameinfo.titleString = "Heretic Shareware";
-		gameinfo.baseMapinfoLump = "_HERENFO";
-		gameinfo.sharewareMapinfoLump = "_HESWNFO";
-		gameinfo.smallFontPattern = "FONTA%02d";
-		gameinfo.smallFontLumpStart = 1;
-	}
-	else if (idname.find(OStringToUpper(OString(HERETIC_PREFIX))) == 0)
-	{
-		gamemode = registered_heretic;
-		gamemission = heretic;
-		gameinfo.enginetype = ENGINE_HERETIC;
-		gameinfo.flags = GI_MENUHACK_RETAIL;
-		gameinfo.maxSwitch = 2;
-		gameinfo.titleString = "Heretic";
-		gameinfo.baseMapinfoLump = "_HERENFO";
-		gameinfo.smallFontPattern = "FONTA%02d";
-		gameinfo.smallFontLumpStart = 1;
 	}
 	else if (idname.find("CHEX QUEST") == 0)
 	{
 		gamemission = chex;
 		gamemode = retail_chex;
 		gameinfo.flags = GI_MENUHACK_RETAIL;
-		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "Chex Quest";
 		gameinfo.baseMapinfoLump = "_CHEXNFO";
 	}
@@ -1624,7 +1592,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = retail;
 		gamemission = retail_freedoom;
 		gameinfo.flags = GI_MENUHACK_RETAIL;
-		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "FreeDoom: Phase 1";
 		gameinfo.baseMapinfoLump = "_D1NFO";
 	}
@@ -1633,7 +1600,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = commercial;
 		gamemission = commercial_freedoom;
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
-		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "FreeDoom: Phase 2";
 		gameinfo.baseMapinfoLump = "_D2NFO";
 	}
@@ -1642,17 +1608,14 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = commercial;
 		gamemission = commercial_freedoom;
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
-		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "FreeDoom: Phase 2";
 		gameinfo.baseMapinfoLump = "_D2NFO";
 	}
-
 	else if (idname.find(OStringToUpper(OString(FREEDM_PREFIX))) == 0)
 	{
 		gamemode = commercial;
 		gamemission = commercial_freedoom;
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
-		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "FreeDM";
 		gameinfo.baseMapinfoLump = "_D2NFO";
 	}
@@ -1661,7 +1624,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = shareware;
 		gamemission = doom;
 		gameinfo.flags = GI_SHAREWARE | GI_NOCRAZYDEATH;
-		gameinfo.maxSwitch = 1;
 		gameinfo.titleString = "DOOM Shareware";
 		gameinfo.baseMapinfoLump = "_D1NFO";
 		gameinfo.sharewareMapinfoLump = "_D1SWNFO";
@@ -1671,7 +1633,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = retail_bfg;
 		gamemission = doom;
 		gameinfo.flags = GI_MENUHACK_RETAIL;
-		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "The Ultimate DOOM (BFG Edition)";
 		gameinfo.baseMapinfoLump = "_D1NFO";
 	}
@@ -1680,7 +1641,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = retail;
 		gamemission = doom;
 		gameinfo.flags = GI_MENUHACK_RETAIL;
-		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "The Ultimate DOOM";
 		gameinfo.baseMapinfoLump = "_D1NFO";
 	}
@@ -1689,7 +1649,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = commercial_bfg;
 		gamemission = doom2;
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
-		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "DOOM 2: Hell on Earth (BFG Edition)";
 		gameinfo.baseMapinfoLump = "_D2NFO";
 		gameinfo.sharewareMapinfoLump = "_BFGNFO";
@@ -1699,7 +1658,6 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = commercial;
 		gamemission = doom2;
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
-		gameinfo.maxSwitch = 3;
 		gameinfo.titleString = "DOOM 2: Hell on Earth";
 		gameinfo.baseMapinfoLump = "_D2NFO";
 	}
@@ -1708,16 +1666,33 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = registered;
 		gamemission = doom;
 		gameinfo.flags = 0;
-		gameinfo.maxSwitch = 2;
 		gameinfo.titleString = "DOOM Registered";
 		gameinfo.baseMapinfoLump = "_D1NFO";
+	}
+	else if (idname.find(OStringToUpper(OString(HERETICSW_PREFIX))) == 0)
+	{
+		gamemode = shareware_heretic;
+		gamemission = heretic;
+		gameinfo.enginetype = ENGINE_HERETIC;
+		gameinfo.flags = GI_SHAREWARE | GI_MENUHACK_RETAIL;
+		gameinfo.titleString = "Heretic Shareware";
+		gameinfo.baseMapinfoLump = "_HERENFO";
+		gameinfo.sharewareMapinfoLump = "_HESWNFO";
+	}
+	else if (idname.find(OStringToUpper(OString(HERETIC_PREFIX))) == 0)
+	{
+		gamemode = registered_heretic;
+		gamemission = heretic;
+		gameinfo.enginetype = ENGINE_HERETIC;
+		gameinfo.flags = GI_MENUHACK_RETAIL;
+		gameinfo.titleString = "Heretic";
+		gameinfo.baseMapinfoLump = "_HERENFO";
 	}
 	else
 	{
 		gamemode = undetermined;
 		gamemission = doom;
 		gameinfo.flags = GI_SHAREWARE | GI_NOCRAZYDEATH;
-		gameinfo.maxSwitch = 1;
 		gameinfo.titleString = "Unknown IWAD";
 		gameinfo.baseMapinfoLump = "_D1NFO";
 		gameinfo.sharewareMapinfoLump = "_D1SWNFO";

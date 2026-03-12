@@ -23,6 +23,7 @@ gameinfo
 	maparrow = "DOOMARRO", "DDTARROW"
 	cheatkey = "CHEATKEY"
 	easykey = "EASYKEY"
+	maxSwitch = 2
 }
 
 skill baby

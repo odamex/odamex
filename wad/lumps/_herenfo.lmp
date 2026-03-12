@@ -15,6 +15,7 @@ gameinfo
 	finalemusic = "MUS_CPTD"
 	finalepage = "CREDIT"
 	infopage = "HELP1", "HELP2", "CREDIT"
+	maxSwitch = 2
 	telefogheight = 32
 	titlemusic = "MUS_TITL"
 	titlepage = "TITLE"
@@ -28,6 +29,8 @@ gameinfo
 	maparrow = "DAGGER", "DAGGER"
 	cheatkey = "CHEATKEY"
 	easykey = "EASYKEY"
+	smallFontPattern = "FONTA%02d"
+	smallFontLumpStart = 1
 }
 
 automap
