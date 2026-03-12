@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "am_map.h"
 #include "olumpname.h"
 #include "s_sound.h"
@@ -105,6 +107,9 @@ typedef struct gameinfo_s
 	int bigFontLineHeight;
 	std::string smallFontPattern;
 	int smallFontLumpStart;
+	std::array<OLumpName, 2> menuIndicatorLumps;
+	int menuIndicatorOffsetX;
+	int menuIndicatorOffsetY;
 
 	gameinfo_s()
 		: flags(0)
@@ -142,7 +147,11 @@ typedef struct gameinfo_s
 		, bigFontLineHeight(16)
 		, smallFontPattern("STCFN%03d")
 		, smallFontLumpStart(33)
-	{}
+		, menuIndicatorLumps{ "M_SKULL1", "M_SKULL2" }
+		, menuIndicatorOffsetX(-32)
+		, menuIndicatorOffsetY(-5)
+	{
+	}
 
 } gameinfo_t;
 

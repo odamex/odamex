@@ -32,6 +32,9 @@ gameinfo
 	bigfontlineheight = 20
 	smallfontpattern = "FONTA%02d"
 	smallfontlumpstart = 1
+	menuindicatorlumps = "M_SLCTR1", "M_SLCTR2"
+	menuindicatoroffsetx = -28
+	menuindicatoroffsety = -3
 }
 
 automap

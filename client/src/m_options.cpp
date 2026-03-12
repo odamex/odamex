@@ -78,7 +78,7 @@ EXTERN_CVAR (show_messages)
 extern bool				OptionsActive;
 
 extern int				screenSize;
-extern short			skullAnimCounter;
+extern short			indicatorAnimCounter;
 
 extern NetDemo netdemo;
 
@@ -1589,7 +1589,7 @@ void M_SwitchMenu(menu_t* menu)
 
 	MenuStack[MenuStackDepth].menu.newmenu = menu;
 	MenuStack[MenuStackDepth].isNewStyle = true;
-	MenuStack[MenuStackDepth].drawSkull = false;
+	MenuStack[MenuStackDepth].drawIndicator = false;
 	MenuStackDepth++;
 
 	CanScrollUp = false;
@@ -1751,7 +1751,7 @@ void M_OptDrawer (void)
 				}
 			}
 
-			if (i == CurrentItem && ((item->a.selmode != -1 && (skullAnimCounter < 6 || WaitingForKey))
+			if (i == CurrentItem && ((item->a.selmode != -1 && (indicatorAnimCounter < 6 || WaitingForKey))
 				|| WaitingForAxis || testingmode))
 				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), item->a.selmode * 104 + 8, y);
 		}
@@ -1923,7 +1923,7 @@ void M_OptDrawer (void)
 				break;
 			}
 
-			if (i == CurrentItem && (skullAnimCounter < 6 || WaitingForKey || WaitingForAxis))
+			if (i == CurrentItem && (indicatorAnimCounter < 6 || WaitingForKey || WaitingForAxis))
 			{
 				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), CurrentMenu->indent + 3, y);
 			}

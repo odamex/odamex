@@ -111,20 +111,15 @@ char				savegamestrings[10][SAVESTRINGSIZE];
 menustack_t			MenuStack[16];
 int					MenuStackDepth;
 
-short				itemOn; 			// menu item skull is on
+short				itemOn; 			// menu item indicator is on
 static int			SkullBaseLump;		// lump number of first large skull in animation
 static int			MenuTime;			// Ticker for Heretic skulls
-short				skullAnimCounter;	// skull animation counter
-short				whichSkull; 		// which skull to draw
-bool				drawSkull;			// [RH] don't always draw skull
+short				indicatorAnimCounter;	// indicator animation counter
+short				whichIndicator; 		// which indicator to draw
+bool				drawIndicator;			// [RH] don't always draw indicator
 
 // hack for PlayerSetup
 int					PSetupDepth;
-
-// graphic name of skulls
-char				skullName[2][9] = {"M_SKULL1", "M_SKULL2"};
-// graphic name of selector arrow
-char				arrowName[2][9] = {"M_SLCTR1", "M_SLCTR2"};
 
 // current menudef
 oldmenu_t *currentMenu;
@@ -946,14 +941,14 @@ void M_QuickLoad()
 void M_ReadThis(int choice)
 {
 	choice = 0;
-	drawSkull = false;
+	drawIndicator = false;
 	M_SetupNextMenu(&ReadDef1);
 }
 
 void M_ReadThis2(int choice)
 {
 	choice = 0;
-	drawSkull = false;
+	drawIndicator = false;
 	M_SetupNextMenu(&ReadDef2);
 }
 
@@ -961,7 +956,7 @@ void M_ReadThis3(int choice)
 {
     if (gameinfo.flags & GI_SHAREWARE) {
         choice = 0;
-        drawSkull = false;
+        drawIndicator = false;
         M_SetupNextMenu(&ReadDef3);
     } else {
         M_FinishReadThis(0);
@@ -971,7 +966,7 @@ void M_ReadThis3(int choice)
 void M_FinishReadThis(int choice)
 {
 	choice = 0;
-	drawSkull = true;
+	drawIndicator = true;
 	MenuStackDepth = 0;
 	M_SetupNextMenu(&MainDef);
 }
@@ -1032,7 +1027,7 @@ void M_DrawNewGame()
 		screen->DrawPatchClean(W_CachePatch("M_SKILL"), 54, 38);
 	}
 
-	static constexpr int SMALLFONT_OFFSET = 8; // Line up with the skull
+	static constexpr int SMALLFONT_OFFSET = 8; // Line up with the indicator
 
 	const char* pslabel = "Pistol Start Each Level ";
 	const int psy = NewDef.y + (gameinfo.bigFontLineHeight * skillnum) + SMALLFONT_OFFSET;
@@ -2265,7 +2260,7 @@ void M_StartControlPanel()
 	if (menuactive)
 		return;
 
-	drawSkull = true;
+	drawIndicator = true;
 	MenuStackDepth = 0;
 	menuactive = 1;
 	MenuTime = 0;
@@ -2337,14 +2332,13 @@ void M_Drawer()
 
 
 			// DRAW SKULL
-			if (drawSkull)
+			if (drawIndicator)
 			{
-				if (gameinfo.enginetype == ENGINE_HERETIC)
-					screen->DrawPatchClean (W_CachePatch(arrowName[whichSkull]),
-						x + ARROWXOFF, (currentMenu->y + ARROWYOFF + itemOn*gameinfo.bigFontLineHeight));
-				else
-				screen->DrawPatchClean(W_CachePatch(skullName[whichSkull]),
-					x + SKULLXOFF, currentMenu->y + SKULLYOFF + itemOn*gameinfo.bigFontLineHeight);
+				const patch_t* indicator = W_CachePatch(gameinfo.menuIndicatorLumps[whichIndicator]);
+				const int draw_x = x + gameinfo.menuIndicatorOffsetX;
+				const int draw_y = currentMenu->y + gameinfo.menuIndicatorOffsetY + itemOn*gameinfo.bigFontLineHeight;
+
+				screen->DrawPatchClean (indicator, draw_x, draw_y);
 			}
 		}
 	}
@@ -2366,7 +2360,7 @@ void M_ClearMenus()
 	I_FreeSurface(fire_surface);
 	MenuStackDepth = 0;
 	menuactive = false;
-	drawSkull = true;
+	drawIndicator = true;
 	M_DemoNoPlay = false;
     M_ResumeSound();
 }
@@ -2381,7 +2375,7 @@ void M_SetupNextMenu (oldmenu_t *menudef)
 {
 	MenuStack[MenuStackDepth].menu.old = menudef;
 	MenuStack[MenuStackDepth].isNewStyle = false;
-	MenuStack[MenuStackDepth].drawSkull = drawSkull;
+	MenuStack[MenuStackDepth].drawIndicator = drawIndicator;
 	MenuStackDepth++;
 
 	currentMenu = menudef;
@@ -2403,7 +2397,7 @@ void M_PopMenuStack()
 			currentMenu = MenuStack[MenuStackDepth].menu.old;
 			itemOn = currentMenu->lastOn;
 		}
-		drawSkull = MenuStack[MenuStackDepth].drawSkull;
+		drawIndicator = MenuStack[MenuStackDepth].drawIndicator;
 		MenuStackDepth++;
 		S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	} else {
@@ -2426,10 +2420,10 @@ void M_PopMenuStack()
 //
 void M_Ticker()
 {
-	if (--skullAnimCounter <= 0)
+	if (--indicatorAnimCounter <= 0)
 	{
-		whichSkull ^= 1;
-		skullAnimCounter = 8;
+		whichIndicator ^= 1;
+		indicatorAnimCounter = 8;
 	}
 
 	if (currentMenu == &PSetupDef)
@@ -2465,9 +2459,9 @@ void M_Init()
 	MenuTime = 0;
 	SkullBaseLump = W_CheckNumForName ("M_SKL00");
 	itemOn = currentMenu->lastOn;
-	whichSkull = 0;
-	skullAnimCounter = 10;
-	drawSkull = true;
+	whichIndicator = 0;
+	indicatorAnimCounter = 10;
+	drawIndicator = true;
 	screenSize = (int)screenblocks - 3;
 	messageToPrint = 0;
 	messageString = NULL;

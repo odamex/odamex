@@ -1308,7 +1308,10 @@ struct MapInfoDataSetter<gameinfo_t>
 			{ "smallfontlumpstart", &MIType_Int, &gameinfo.smallFontLumpStart },
 			{ "bigfontpattern", &MIType_String,&gameinfo.bigFontPattern },
 			{ "bigfontlumpstart", &MIType_Int, &gameinfo.bigFontLumpStart },
-			{ "bigfontlineheight", &MIType_Int, &gameinfo.bigFontLineHeight }
+			{ "bigfontlineheight", &MIType_Int, &gameinfo.bigFontLineHeight },
+			{ "menuindicatorlumps", &MIType_Pages, gameinfo.menuIndicatorLumps.data() },
+			{ "menuindicatoroffsetx", &MIType_Int, &gameinfo.menuIndicatorOffsetX },
+			{ "menuindicatoroffsety", &MIType_Int, &gameinfo.menuIndicatorOffsetY }
 		};
 	}
 };

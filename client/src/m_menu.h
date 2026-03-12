@@ -26,13 +26,6 @@
 
 #include "d_event.h"
 
-// Some defines...
-#define SKULLXOFF	-32
-#define SKULLYOFF	-5
-
-#define ARROWXOFF	-28
-#define ARROWYOFF	3
-
 //
 // MENUS
 //
@@ -195,7 +188,7 @@ typedef struct
 		oldmenu_t *old;
 	} menu;
 	bool isNewStyle;
-	bool drawSkull;
+	bool drawIndicator;
 } menustack_t;
 
 extern value_t YesNo[2];

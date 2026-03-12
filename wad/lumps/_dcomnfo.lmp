@@ -25,6 +25,8 @@ gameinfo
 	easykey = "EASYKEY"
 	maxswitch = 2
 	bigfontlineheight = 16
+	menuindicatoroffsetx = -32
+	menuindicatoroffsety = -5
 }
 
 skill baby
