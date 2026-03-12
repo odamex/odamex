@@ -475,9 +475,9 @@ void D_DoAdvanceDemo (void)
     // dynamic one was too dynamic for its own good
     // [Nes] - Newer demo sequence with better flow.
 	const bool hasdemo4 = W_CheckNumForName("DEMO4") >= 0 && gamemode != retail_chex;
-	const bool isheretic = gameinfo.enginetype == ENGINE_HERETIC;
+	const bool is_heretic = gameinfo.enginetype == ENGINE_HERETIC;
 
-	if (isheretic)
+	if (is_heretic)
 		demosequence = (demosequence + 1) % 7;
 	else if (hasdemo4)
 		demosequence = (demosequence + 1) % 8;
@@ -507,7 +507,7 @@ void D_DoAdvanceDemo (void)
 		}
 		break;
 	case 2:
-		if (isheretic)
+		if (is_heretic)
 		{
 			G_DeferedPlayDemo("DEMO1");
 		}
@@ -519,7 +519,7 @@ void D_DoAdvanceDemo (void)
 		}
 		break;
 	case 3:
-		if (isheretic)
+		if (is_heretic)
 		{
 			pagetic = gameinfo.pageTime * TICRATE;
 			gamestate = GS_DEMOSCREEN;
@@ -588,8 +588,9 @@ void D_DoAdvanceDemo (void)
 	{
 		const bool is_raw_patch = (gameinfo.flags & GI_PAGESARERAW) != 0;
 		const patch_t* patch = !is_raw_patch ? W_CachePatch(pagename) : NULL;
-		const int page_width = !is_raw_patch ? patch->width() : 320;
-		const int page_height = !is_raw_patch ? patch->height() : 200;
+		
+		page_width = !is_raw_patch ? patch->width() : 320;
+		page_height = !is_raw_patch ? patch->height() : 200;
 
 		I_FreeSurface(page_surface);
 		page_surface = I_AllocateSurface(page_width, page_height, 8);
