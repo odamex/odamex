@@ -531,7 +531,7 @@ void D_DoAdvanceDemo (void)
 		}
 		break;
 	case 4:
-		if (isheretic)
+		if (is_heretic)
 		{
 			G_DeferedPlayDemo("DEMO2");
 		}
@@ -555,7 +555,7 @@ void D_DoAdvanceDemo (void)
 		}
 		break;
 	case 5:
-		if (isheretic)
+		if (is_heretic)
 		{
 			pagetic = gameinfo.pageTime * TICRATE;
 			gamestate = GS_DEMOSCREEN;
@@ -567,7 +567,7 @@ void D_DoAdvanceDemo (void)
 		}
 		break;
 	case 6:
-		if (isheretic)
+		if (is_heretic)
 		{
 			G_DeferedPlayDemo("DEMO3");
 		}

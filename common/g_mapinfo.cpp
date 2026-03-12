@@ -1300,7 +1300,12 @@ struct MapInfoDataSetter<gameinfo_t>
 			{ "textscreeny", &MIType_Int, &gameinfo.textScreenY },
 			{ "maparrow", &MIType_MapArrows },
 			{ "cheatkey", &MIType_MapKey, &gameinfo.cheatKey },
-			{ "easykey", &MIType_MapKey, &gameinfo.easyKey }
+			{ "easykey", &MIType_MapKey, &gameinfo.easyKey },
+			{ "maxswitch", &MIType_Int, &gameinfo.maxSwitch },
+			{ "smallfontpattern", &MIType_String,&gameinfo.smallFontPattern },
+			{ "smallfontlumpstart", &MIType_Int, &gameinfo.smallFontLumpStart },
+			{ "bigfontpattern", &MIType_String,&gameinfo.bigFontPattern },
+			{ "bigfontlumpstart", &MIType_Int, &gameinfo.bigFontLumpStart }
 		};
 	}
 };
