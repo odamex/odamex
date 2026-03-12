@@ -524,8 +524,7 @@ void HU_Drawer()
 
 	if (gamestate == GS_LEVEL)
 	{
-		bool spechud = (consoleplayer().spectator && consoleplayer_id == displayplayer_id) ||
-						displayplayer().isFreecam;
+		bool spechud = consoleplayer().spectator && consoleplayer_id == displayplayer_id;
 
 		hud::DrawToasts();
 
@@ -535,11 +534,13 @@ void HU_Drawer()
 			{
 				if (spechud)
 					hud::SpectatorHUD();
+				else if (displayplayer().isFreecam)
+					hud::FreecamHUD();
 				else
 					hud::OdamexHUD();
 			}
 		}
-		else
+		else 
 		{
 			hud::DoomHUD();
 		}

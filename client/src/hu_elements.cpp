@@ -292,11 +292,6 @@ std::string HelpText()
 		          ::levelstate.getJoinTimeLeft());
 	}
 
-	if (displayplayer().isFreecam)
-	{
-		return fmt::sprintf(TEXTCOLOR_YELLOW "Freecam");
-	}
-
 	return fmt::sprintf("Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL " to join",
 	                    ::Bindings.GetKeynameFromCommand("+use"));
 }

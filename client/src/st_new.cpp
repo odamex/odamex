@@ -1956,11 +1956,6 @@ void SpectatorHUD()
 // [AM] HUD drawn with the Doom Status Bar.
 void DoomHUD()
 {
-	if (displayplayer().isFreecam)
-	{
-		return;
-	}
-
 	int st_y = statusBarY() + 4;
 
 	// Draw warmup state or timer
@@ -1999,6 +1994,34 @@ void DoomHUD()
 		hud::drawLevelStats();
 }
 
+void FreecamHUD()
+{
+	int iy = 4;
+
+	// Draw warmup state or timer
+	if (::hud_timer)
+	{
+		if (::hud_bigfont)
+		{
+			V_SetFont("BIGFONT");
+		}
+
+		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
+		iy += V_LineHeight() + 1;
+
+		if (::hud_bigfont)
+			V_SetFont("SMALLFONT");
+	}
+
+	hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	              hud::Y_BOTTOM, "Freecam", CR_YELLOW);
+	iy += V_LineHeight() + 1;
+
+	// Draw targeted player names.
+	hud::EATargets(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	               hud::Y_BOTTOM, 1, 0);
+}
 }
 
 BEGIN_COMMAND(netprotoup)
