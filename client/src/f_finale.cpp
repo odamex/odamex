@@ -382,7 +382,7 @@ void F_TextWrite ()
 		if (c == '\n')
 		{
 			cx = gameinfo.textScreenX;
-			cy += 11; // (gamemission == heretic) ? 10 : 11;
+			cy += gameinfo.textScreenY;
 			continue;
 		}
 

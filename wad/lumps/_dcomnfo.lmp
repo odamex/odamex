@@ -19,7 +19,7 @@ gameinfo
 	endoom = "ENDOOM"
 	pausesign = "M_PAUSE"
 	textscreenx = 10
-	textscreeny = 10
+	textscreeny = 11
 	maparrow = "DOOMARRO", "DDTARROW"
 	cheatkey = "CHEATKEY"
 	easykey = "EASYKEY"
