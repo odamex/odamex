@@ -807,7 +807,7 @@ void AM_LevelInit()
 	leveljuststarted = false;
 	am_cheating = 0; // force-reset IDDT after loading a map
 
-	if (gameinfo.gametype == GAMETYPE_HERETIC)
+	if (gameinfo.enginetype == ENGINE_HERETIC)
 		AM_SetBaseColorRaven();
 	else
 		AM_SetBaseColorDoom();
@@ -2122,7 +2122,7 @@ void AM_Drawer()
 
 		// Keep compatibility with Heretic statusbar variants that draw above the
 		// classic Doom statusbar height by honoring ST_Y when available.
-		if (gameinfo.gametype == GAMETYPE_HERETIC && ST_Y > 0)
+		if (gameinfo.enginetype == ENGINE_HERETIC && ST_Y > 0)
 			f_h = std::min(f_h, ST_Y);
 		f_p = surface->getPitch();
 
@@ -2218,7 +2218,7 @@ void AM_Drawer()
 
 	AM_drawMarks();
 
-	if (gameinfo.gametype == GAMETYPE_HERETIC && !AM_OverlayAutomapVisible())
+	if (gameinfo.enginetype == ENGINE_HERETIC && !AM_OverlayAutomapVisible())
 		ST_HticDrawTopCaps(surface);
 
 	if (!(viewactive && am_overlay < 2) && !hu_font[0].empty())
@@ -2230,7 +2230,7 @@ void AM_Drawer()
 		const int OV_Y = surface_height - (surface_height * 32 / 200);
 		const int fullmap_text_base_y = (ST_Y > 0) ? ST_Y : f_h;
 		const bool use_side_padding =
-		    !AM_OverlayAutomapVisible() && gameinfo.gametype == GAMETYPE_HERETIC;
+		    !AM_OverlayAutomapVisible() && gameinfo.enginetype == ENGINE_HERETIC;
 		const int side_padding = use_side_padding ? (36 * CleanXfac) : 0;
 
 		if (G_IsCoopGame())

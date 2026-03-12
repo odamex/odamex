@@ -535,7 +535,7 @@ void HU_Drawer()
 			{
 				if (spechud)
 					hud::SpectatorHUD();
-				else if (gameinfo.gametype == GAMETYPE_HERETIC)
+				else if (gameinfo.enginetype == ENGINE_HERETIC)
 					hud::HereticHUD();
 				else
 					hud::OdamexHUD();

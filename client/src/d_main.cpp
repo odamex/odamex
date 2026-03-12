@@ -318,7 +318,7 @@ void D_Display()
 	{
 		const patch_t* pause = W_CachePatch(gameinfo.pauseSign);
 
-		if (gameinfo.gametype == GAMETYPE_HERETIC)
+		if (gameinfo.enginetype == ENGINE_HERETIC)
 		{
 			screen->DrawPatchClean(pause, 160 - pause->width() / 2, 100 - pause->height() / 2);
 		}
@@ -475,7 +475,7 @@ void D_DoAdvanceDemo (void)
     // dynamic one was too dynamic for its own good
     // [Nes] - Newer demo sequence with better flow.
 	const bool hasdemo4 = W_CheckNumForName("DEMO4") >= 0 && gamemode != retail_chex;
-	const bool isheretic = gameinfo.gametype == GAMETYPE_HERETIC;
+	const bool isheretic = gameinfo.enginetype == ENGINE_HERETIC;
 
 	if (isheretic)
 		demosequence = (demosequence + 1) % 7;

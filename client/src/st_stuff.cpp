@@ -62,7 +62,7 @@ EXTERN_CVAR(st_scale)
 
 static inline bool ST_IsHereticGame()
 {
-	return gameinfo.gametype == GAMETYPE_HERETIC;
+	return gameinfo.enginetype == ENGINE_HERETIC;
 }
 EXTERN_CVAR(screenblocks)
 EXTERN_CVAR(g_lives)

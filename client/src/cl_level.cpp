@@ -689,7 +689,7 @@ void G_DoLoadLevel (int position)
 	}
 
 	displayplayer_id = consoleplayer_id;				// view the guy you are playing
-	if (gameinfo.gametype != GAMETYPE_HERETIC)
+	if (gameinfo.enginetype != ENGINE_HERETIC)
 		ST_Start();		// [RH] Make sure status bar knows who we are
 	gameaction = ga_nothing;
 

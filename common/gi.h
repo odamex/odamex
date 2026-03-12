@@ -54,14 +54,14 @@ typedef struct
 
 typedef enum
 {
-	GAMETYPE_DOOM,
-	GAMETYPE_HERETIC,
-} gametype_t;
+	ENGINE_DOOM,
+	ENGINE_HERETIC,
+} enginetype_t;
 
 typedef struct gameinfo_s
 {
 	int flags;
-	gametype_t gametype;
+	enginetype_t enginetype;
 	OLumpName titlePage;
 	OLumpName creditPages[2];
 	OLumpName titleMusic;
@@ -107,7 +107,7 @@ typedef struct gameinfo_s
 
 	gameinfo_s()
 		: flags(0)
-		, gametype(GAMETYPE_DOOM)
+		, enginetype(ENGINE_DOOM)
 		, titlePage("")
 		, creditPages()
 		, titleMusic("")

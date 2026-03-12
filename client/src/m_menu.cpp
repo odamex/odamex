@@ -650,7 +650,7 @@ END_COMMAND (quickload)
 BEGIN_COMMAND (menu_quit)
 {	// F10
 	M_StartControlPanel ();
-	if (gameinfo.gametype == GAMETYPE_HERETIC)
+	if (gameinfo.enginetype == ENGINE_HERETIC)
         M_QuitHeretic(0);
 	else
         M_QuitDOOM(0);
@@ -2330,7 +2330,7 @@ void M_Drawer()
 			// DRAW SKULL
 			if (drawSkull)
 			{
-				if (gameinfo.gametype == GAMETYPE_HERETIC)
+				if (gameinfo.enginetype == ENGINE_HERETIC)
 					screen->DrawPatchIndirect (W_CachePatch(arrowName[whichSkull]),
 						x + ARROWXOFF, (currentMenu->y + ARROWYOFF + itemOn*HTCLINEHEIGHT));
 				else
@@ -2472,7 +2472,7 @@ void M_Init()
 
         MainDef.y += 8;
     }
-    else if (gameinfo.gametype == GAMETYPE_HERETIC)
+    else if (gameinfo.enginetype == ENGINE_HERETIC)
     {
     	// Heretic changes stuff
 		MainDef.numitems = htc_main_end;
