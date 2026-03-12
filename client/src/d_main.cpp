@@ -757,18 +757,18 @@ void D_Init()
 
 //	V_LoadFonts();
 
-	C_InitConsoleBackground();
-
-	C_InitConCharsFont();
-
-	HU_Init();
-
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
 	G_ParseSpreeDef();
 	G_ParseHordeDefs();
 	G_ReadCOMPLVL();
+
+	C_InitConsoleBackground();
+
+	C_InitConCharsFont();
+
+	HU_Init();
 
 	// init the menu subsystem
 	if (first_time)
