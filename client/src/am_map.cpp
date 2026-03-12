@@ -807,11 +807,6 @@ void AM_LevelInit()
 	leveljuststarted = false;
 	am_cheating = 0; // force-reset IDDT after loading a map
 
-	if (gameinfo.enginetype == ENGINE_HERETIC)
-		AM_SetBaseColorRaven();
-	else
-		AM_SetBaseColorDoom();
-
 	AM_clearMarks();
 
 	AM_findMinMaxBoundaries();

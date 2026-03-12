@@ -30,6 +30,11 @@ gameinfo
 	easykey = "EASYKEY"
 }
 
+automap
+{
+	base = "raven"
+}
+
 skill baby
 {
 	AutoUseHealth
