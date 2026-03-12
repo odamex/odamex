@@ -201,8 +201,7 @@ if (BUILD_CLIENT OR BUILD_SERVER)
             set (PNG_TESTS  OFF)
 
             if (APPLE)
-                set (PNG_ARM_NEON                 OFF)
-                set (PNG_ARM_NEON_CHECK_SUPPORTED OFF)
+                set (PNG_HARDWARE_OPTIMIZATIONS OFF)    # Disable NEON
             endif()
         else()
             find_package(PNG)
