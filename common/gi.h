@@ -102,6 +102,7 @@ typedef struct gameinfo_s
 	OLumpName sharewareMapinfoLump;
 	std::string bigFontPattern;
 	int bigFontLumpStart;
+	int bigFontLineHeight;
 	std::string smallFontPattern;
 	int smallFontLumpStart;
 
@@ -138,6 +139,7 @@ typedef struct gameinfo_s
 		, sharewareMapinfoLump("")
 		, bigFontPattern("FONTB%02d")
 		, bigFontLumpStart(1)
+		, bigFontLineHeight(16)
 		, smallFontPattern("STCFN%03d")
 		, smallFontLumpStart(33)
 	{}

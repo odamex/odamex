@@ -29,6 +29,7 @@ gameinfo
 	cheatkey = "CHEATKEY"
 	easykey = "EASYKEY"
 	maxswitch = 2
+	bigfontlineheight = 20
 	smallfontpattern = "FONTA%02d"
 	smallfontlumpstart = 1
 }
@@ -46,7 +47,7 @@ skill baby
 	DamageFactor = 0.5
 	EasyBossBrain
 	SpawnFilter = Baby
-	Name = "$MNU_WETNURSE"
+	Name = "$SKILL_WETNURSE"
 	EasyKey
 }
 
@@ -54,14 +55,14 @@ skill easy
 {
 	DoubleAmmoFactor = 1.5
 	SpawnFilter = Easy
-	Name = "$MNU_YELLOWBELLIES"
+	Name = "$SKILL_YELLOWBELLIES"
 }
 
 skill normal
 {
 	DoubleAmmoFactor = 1.5
 	SpawnFilter = Normal
-	Name = "$MNU_BRINGEST"
+	Name = "$SKILL_BRINGEST"
 	DefaultSkill
 }
 
@@ -69,7 +70,7 @@ skill hard
 {
 	DoubleAmmoFactor = 1.5
 	SpawnFilter = Hard
-	Name = "$MNU_SMITE"
+	Name = "$SKILL_SMITE"
 }
 
 skill nightmare
@@ -79,38 +80,38 @@ skill nightmare
 	FastMonsters
 	DisableCheats
 	SpawnFilter = Nightmare
-	Name = "$MNU_BLACKPLAGUE"
+	Name = "$SKILL_BLACKPLAGUE"
 }
 
 clearepisodes
 episode e1m1
 {
-	name = "$MNU_COTD"
+	name = "$EPISODE_COTD"
 	key = "c"
 }
 
 episode e2m1
 {
-	name = "$MNU_HELLSMAW"
+	name = "$EPISODE_HELLSMAW"
 	key = "h"
 }
 
 episode e3m1
 {
-	name = "$MNU_DOME"
+	name = "$EPISODE_DOME"
 	key = "d"
 }
 
 episode e4m1
 {
-	name = "$MNU_OSSUARY"
+	name = "$EPISODE_OSSUARY"
 	key = "o"
 	extended
 }
 
 episode e5m1
 {
-	name = "$MNU_DEMESNE"
+	name = "$EPISODE_DEMESNE"
 	key = "s"
 	extended
 }

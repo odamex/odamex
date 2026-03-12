@@ -1305,7 +1305,8 @@ struct MapInfoDataSetter<gameinfo_t>
 			{ "smallfontpattern", &MIType_String,&gameinfo.smallFontPattern },
 			{ "smallfontlumpstart", &MIType_Int, &gameinfo.smallFontLumpStart },
 			{ "bigfontpattern", &MIType_String,&gameinfo.bigFontPattern },
-			{ "bigfontlumpstart", &MIType_Int, &gameinfo.bigFontLumpStart }
+			{ "bigfontlumpstart", &MIType_Int, &gameinfo.bigFontLumpStart },
+			{ "bigfontlineheight", &MIType_Int, &gameinfo.bigFontLineHeight }
 		};
 	}
 };

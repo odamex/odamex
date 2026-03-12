@@ -673,7 +673,7 @@ static const char* LocalizedString(const char* key)
 		if (s && s[0])
 			return s;
 	}
-	return "";
+	return key;
 }
 
 //
@@ -1062,27 +1062,36 @@ namespace
 	}
 
 	void SetupSkillList()
-	{
-	    NewDef.lastOn = defaultskillmenu;
+  	{
+  	    NewDef.lastOn = defaultskillmenu;
 
-	    int i = 0;
-	    for (; i < skillnum; ++i)
-	    {
-		    if (SkillInfos[i].pic_name.empty())
-		    {
-			    strncpy(NewGameMenu[i].textname, SkillInfos[i].menu_name.c_str(), 30);
-		    }
-		    else
-		    {
-			    NewGameMenu[i].name = SkillInfos[i].pic_name;
-		    }
+		for (int i = 0; i < MAX_SKILLS + 1; ++i)
+		{
+			NewGameMenu[i].name.clear();
+			NewGameMenu[i].textname[0] = '\0';
+			NewGameMenu[i].alphaKey = 0;
+		}
+  
+  	    int i = 0;
+  	    for (; i < skillnum; ++i)
+  	    {
+   		    if (SkillInfos[i].pic_name.empty())
+   		    {
+				M_StringCopy(NewGameMenu[i].textname, SkillInfos[i].menu_name.c_str(),
+				             sizeof(NewGameMenu[i].textname));
+   		    }
+   		    else
+   		    {
+  			    NewGameMenu[i].name = SkillInfos[i].pic_name;
+   		    }
 
 			NewGameMenu[i].alphaKey = SkillInfos[i].shortcut;
 	    }
-
-		NewGameMenu[i].name.clear();
-	    NewGameMenu[i].alphaKey = 'p';
-	}
+  
+ 		NewGameMenu[i].name.clear();
+		NewGameMenu[i].textname[0] = '\0';
+  	    NewGameMenu[i].alphaKey = 'p';
+  	}
 }
 
 void M_NewGame(int choice)
@@ -2316,13 +2325,13 @@ void M_Drawer()
 					W_CheckNumForName(currentMenu->menuitems[i].name) >= 0)
 				{
 					screen->DrawPatchClean(W_CachePatch(currentMenu->menuitems[i].name), x, y);
-					y += LINEHEIGHT;
 				}
 				else if (currentMenu->menuitems[i].textname[0])
 				{
 					screen->DrawTextCleanMove(CR_RED, x, y, LocalizedString(currentMenu->menuitems[i].textname));
-					y += HTCLINEHEIGHT;
 				}
+
+				y += gameinfo.bigFontLineHeight;
 			}
 			V_SetFont("SMALLFONT");
 
@@ -2331,11 +2340,11 @@ void M_Drawer()
 			if (drawSkull)
 			{
 				if (gameinfo.enginetype == ENGINE_HERETIC)
-					screen->DrawPatchIndirect (W_CachePatch(arrowName[whichSkull]),
-						x + ARROWXOFF, (currentMenu->y + ARROWYOFF + itemOn*HTCLINEHEIGHT));
+					screen->DrawPatchClean (W_CachePatch(arrowName[whichSkull]),
+						x + ARROWXOFF, (currentMenu->y + ARROWYOFF + itemOn*gameinfo.bigFontLineHeight));
 				else
 				screen->DrawPatchClean(W_CachePatch(skullName[whichSkull]),
-					x + SKULLXOFF, currentMenu->y + SKULLYOFF + itemOn*LINEHEIGHT);
+					x + SKULLXOFF, currentMenu->y + SKULLYOFF + itemOn*gameinfo.bigFontLineHeight);
 			}
 		}
 	}

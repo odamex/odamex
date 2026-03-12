@@ -24,6 +24,7 @@ gameinfo
 	cheatkey = "CHEATKEY"
 	easykey = "EASYKEY"
 	maxswitch = 2
+	bigfontlineheight = 16
 }
 
 skill baby
