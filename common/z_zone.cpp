@@ -37,7 +37,8 @@
 
 auto constexpr operator <=> (zoneTag_e a, zoneTag_e b)
 {
-	return static_cast<std::underlying_type_t<zoneTag_e>>(a) <=> static_cast<std::underlying_type_t<zoneTag_e>>(a);
+	using T = std::underlying_type_t<zoneTag_e>;
+	return static_cast<T>(a) <=> static_cast<T>(b);
 }
 
 struct OFileLine
