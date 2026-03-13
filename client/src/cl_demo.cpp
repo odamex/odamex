@@ -1089,7 +1089,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 		}
 	}
 
-	MSG_WriteLong(netbuffer, (DWORD)0x01020304);
+	MSG_WriteLong(netbuffer, (uint32_t)0x01020304);
 	MSG_WriteShort(netbuffer, sv_maxplayers);
 
 	for (const auto& player : players)
@@ -1098,7 +1098,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 			MSG_WriteBool(netbuffer, player.spectator);
 	}
 
-	MSG_WriteLong	(netbuffer, (DWORD)0x01020305);
+	MSG_WriteLong	(netbuffer, (uint32_t)0x01020305);
 	MSG_WriteShort	(netbuffer, 0);	// join_passowrd
 
 	MSG_WriteLong	(netbuffer, GAMEVER);
@@ -1455,7 +1455,7 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 
 	// write map info
 	arc << level.mapname.c_str();
-	arc << (BYTE)(gamestate == GS_INTERMISSION);
+	arc << (byte)(gamestate == GS_INTERMISSION);
 
 	G_SerializeSnapshots(arc);
 	P_SerializeRNGState(arc);

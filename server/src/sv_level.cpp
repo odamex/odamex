@@ -434,7 +434,7 @@ void SV_ServerSettingChange();
 
 void G_InitNew(const char *mapname)
 {
-	DWORD previousLevelFlags = level.flags;
+	levelFlags_t previousLevelFlags = level.flags;
 
 	if (!savegamerestore)
 		G_ClearSnapshots ();
@@ -477,14 +477,14 @@ void G_InitNew(const char *mapname)
 	{
 		if (wantFast)
 		{
-			for (auto& [_, state] : states)
+			for (auto&& [_, state] : states)
 			{
 				if (state.flags & STATEF_SKILL5FAST &&
 				    (state.tics != 1 || demoplayback))
 					state.tics >>= 1; // don't change 1->0 since it causes cycles
 			}
 
-			for (auto& [_, minfo] : mobjinfo)
+			for (auto&& [_, minfo] : mobjinfo)
 			{
 				if (minfo.altspeed != NO_ALTSPEED)
 				{
@@ -496,13 +496,13 @@ void G_InitNew(const char *mapname)
 		}
 		else
 		{
-			for (auto& [_, state] : states)
+			for (auto&& [_, state] : states)
 			{
 				if (state.flags & STATEF_SKILL5FAST)
 					state.tics <<= 1; // don't change 1->0 since it causes cycles
 			}
 
-			for (auto& [_, minfo] : mobjinfo)
+			for (auto&& [_, minfo] : mobjinfo)
 			{
 				if (minfo.altspeed != NO_ALTSPEED)
 				{

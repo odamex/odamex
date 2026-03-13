@@ -65,8 +65,8 @@
 #define cioffset(x)		offsetof(cluster_info_t,x)
 
 void CL_ClearSectorSnapshots();
-bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
-void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
+bool G_CheckSpot (player_t &player, const mapthing2_t& mthing);
+void P_SpawnPlayer (player_t &player, const mapthing2_t& mthing);
 
 EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_monstersrespawn)
@@ -232,14 +232,14 @@ void G_InitNew (const char *mapname)
 	{
 		if (wantFast)
 		{
-			for (auto& [_, state] : states)
+			for (auto&& [_, state] : states)
 			{
 				if (state.flags & STATEF_SKILL5FAST &&
 				    (state.tics != 1 || demoplayback))
 					state.tics >>= 1; // don't change 1->0 since it causes cycles
 			}
 
-			for (auto& [_, minfo] : mobjinfo)
+			for (auto&& [_, minfo] : mobjinfo)
 			{
 				if (minfo.altspeed != NO_ALTSPEED)
 				{
@@ -251,13 +251,13 @@ void G_InitNew (const char *mapname)
 		}
 		else
 		{
-			for (auto& [_, state] : states)
+			for (auto&& [_, state] : states)
 			{
 				if (state.flags & STATEF_SKILL5FAST)
 					state.tics <<= 1; // don't change 1->0 since it causes cycles
 			}
 
-			for (auto& [_, minfo] : mobjinfo)
+			for (auto&& [_, minfo] : mobjinfo)
 			{
 				if (minfo.altspeed != NO_ALTSPEED)
 				{
@@ -666,15 +666,15 @@ void G_DoLoadLevel (int position)
 		// Check for a co-op start point
 		for (size_t n = 0; n < playerstarts.size() && !consoleplayer().mo; n++)
 		{
-			if (G_CheckSpot(consoleplayer(), &playerstarts[n]))
-				P_SpawnPlayer(consoleplayer(), &playerstarts[n]);
+			if (G_CheckSpot(consoleplayer(), playerstarts[n]))
+				P_SpawnPlayer(consoleplayer(), playerstarts[n]);
 		}
 
 		// Check for a free deathmatch start point
 		for (size_t n = 0; n < DeathMatchStarts.size() && !consoleplayer().mo; n++)
 		{
-			if (G_CheckSpot(consoleplayer(), &DeathMatchStarts[n]))
-				P_SpawnPlayer(consoleplayer(), &DeathMatchStarts[n]);
+			if (G_CheckSpot(consoleplayer(), DeathMatchStarts[n]))
+				P_SpawnPlayer(consoleplayer(), DeathMatchStarts[n]);
 		}
 
 		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
@@ -682,8 +682,8 @@ void G_DoLoadLevel (int position)
 			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
 			for (auto& teamstart : teamInfo->Starts)
 			{
-				if (G_CheckSpot(consoleplayer(), &teamstart))
-					P_SpawnPlayer(consoleplayer(), &teamstart);
+				if (G_CheckSpot(consoleplayer(), teamstart))
+					P_SpawnPlayer(consoleplayer(), teamstart);
 			}
 		}
 	}

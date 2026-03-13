@@ -112,7 +112,7 @@ if(ENABLE_PORTMIDI)
 
     add_library(${PORTMIDI_LIBRARY} STATIC ${PORTMIDI_SOURCES} ${PORTMIDI_HEADERS})
     target_link_libraries(${PORTMIDI_LIBRARY} ${PM_NEEDED_LIBS})
-    message(STATUS "portmidi will be built and staticaly linked when compiling the client application.")
+    message(STATUS "portmidi will be built and statically linked when compiling the client application.")
   endif()
 
   add_definitions(-DPORTMIDI)

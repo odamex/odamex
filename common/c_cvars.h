@@ -122,9 +122,9 @@ class cvar_t
 {
 public:
 	cvar_t(const char* name, const char* def, const char* help, cvartype_t,
-			DWORD flags, float minval = -FLT_MAX, float maxval = FLT_MAX);
+			uint32_t flags, float minval = -FLT_MAX, float maxval = FLT_MAX);
 	cvar_t(const char* name, const char* def, const char* help, cvartype_t,
-			DWORD flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
+			uint32_t flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
 	virtual ~cvar_t ();
 
 	[[nodiscard]] const char *cstring() const {return m_String.c_str(); }
@@ -180,7 +180,7 @@ public:
 
 	// Writes all cvars that could effect demo sync to *demo_p. These are
 	// cvars that have either CVAR_SERVERINFO or CVAR_DEMOSAVE set.
-	static void C_WriteCVars (byte **demo_p, DWORD filter, size_t array_size, bool compact=false);
+	static void C_WriteCVars (byte **demo_p, uint32_t filter, size_t array_size, bool compact=false);
 
 	// Read all cvars from *demo_p and set them appropriately.
 	static void C_ReadCVars (byte **demo_p);
@@ -214,7 +214,7 @@ public:
 
 	static bool SetServerVar (std::string_view name, const char *value);
 
-	static void FilterCompactCVars (std::vector<cvar_t *> &cvars, DWORD filter);
+	static void FilterCompactCVars (std::vector<cvar_t *> &cvars, uint32_t filter);
 
 	// console variable interaction
 	static cvar_t *cvar_set (const char *var_name, const char *value);
@@ -233,7 +233,7 @@ private:
 	cvar_t(const cvar_t &var) { }
 
 	void InitSelf(const char* name, const char* def, const char* help, cvartype_t,
-				DWORD flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
+				uint32_t flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
 
 	void (*m_Callback)(cvar_t &);
 	cvar_t *m_Next;

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Old version of the server query protocol, kept for clients and older 
+//  Old version of the server query protocol, kept for clients and older
 //  launchers
 //
 //-----------------------------------------------------------------------------
@@ -26,4 +26,4 @@
 #pragma once
 
 void SV_SendServerInfo ();
-bool SV_IsValidToken(DWORD token);
+bool SV_IsValidToken(uint32_t token);
