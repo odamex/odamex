@@ -25,6 +25,9 @@
 #pragma once
 
 #include <array>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 #include "am_map.h"
 #include "olumpname.h"
@@ -59,6 +62,36 @@ typedef enum
 	ENGINE_DOOM,
 	ENGINE_HERETIC,
 } enginetype_t;
+
+struct fontdef_t
+{
+	std::string pattern;
+	int lumpStart;
+	int lineHeight;
+
+	fontdef_t()
+		: pattern("")
+		, lumpStart(1)
+		, lineHeight(0)
+	{
+	}
+
+	fontdef_t(const char* fontPattern, int fontLumpStart, int fontLineHeight)
+		: pattern(fontPattern)
+		, lumpStart(fontLumpStart)
+		, lineHeight(fontLineHeight)
+	{
+	}
+};
+
+inline std::unordered_map<std::string, fontdef_t> fontdefs;
+
+inline void G_ResetFontDefs()
+{
+	fontdefs.clear();
+	fontdefs.emplace("BIGFONT", fontdef_t("FONTB%02d", 1, 16));
+	fontdefs.emplace("SMALLFONT", fontdef_t("STCFN%03d", 33, 8));
+}
 
 typedef struct gameinfo_s
 {
@@ -102,14 +135,12 @@ typedef struct gameinfo_s
 	std::string titleString;
 	OLumpName baseMapinfoLump;
 	OLumpName sharewareMapinfoLump;
-	std::string bigFontPattern;
-	int bigFontLumpStart;
-	int bigFontLineHeight;
-	std::string smallFontPattern;
-	int smallFontLumpStart;
+	std::string bigFont;
+	std::string smallFont;
 	std::array<OLumpName, 2> menuIndicatorLumps;
 	int menuIndicatorOffsetX;
 	int menuIndicatorOffsetY;
+	int menuCursorOffsetY;
 
 	gameinfo_s()
 		: flags(0)
@@ -142,14 +173,12 @@ typedef struct gameinfo_s
 		, titleString("Unknown IWAD")
 		, baseMapinfoLump("")
 		, sharewareMapinfoLump("")
-		, bigFontPattern("FONTB%02d")
-		, bigFontLumpStart(1)
-		, bigFontLineHeight(16)
-		, smallFontPattern("STCFN%03d")
-		, smallFontLumpStart(33)
+		, bigFont("BIGFONT")
+		, smallFont("SMALLFONT")
 		, menuIndicatorLumps{ "M_SKULL1", "M_SKULL2" }
 		, menuIndicatorOffsetX(-32)
 		, menuIndicatorOffsetY(-5)
+		, menuCursorOffsetY(0)
 	{
 	}
 

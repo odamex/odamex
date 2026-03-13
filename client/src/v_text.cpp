@@ -58,6 +58,38 @@ static int hu_digfont_height;
 byte *ConChars;
 extern byte *Ranges;
 
+namespace
+{
+const fontdef_t& V_GetResolvedFontDef(const std::string& name)
+{
+	const std::string lookup = StdStringToUpper(name);
+	const auto it = fontdefs.find(lookup);
+	if (it == fontdefs.end())
+		I_Error("Unknown fontdef '{}'", name);
+
+	return it->second;
+}
+
+void V_LoadHudFont(lumpHandle_t* font, const fontdef_t& def)
+{
+	if (def.pattern.empty())
+		I_Error("Fontdef is missing a pattern");
+
+	int lump = def.lumpStart;
+
+	for (int i = 0; i < HU_FONTSIZE; i++)
+	{
+		const std::string buffer = fmt::sprintf(def.pattern.c_str(), lump++);
+
+		int num = W_CheckNumForName(buffer.c_str());
+		if (num != -1)
+			font[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
+		else
+			font[i] = W_CachePatchHandle("TNT1A0", PU_STATIC, ns_sprites);
+	}
+}
+}
+
 /**
  * @brief Initialize fonts.
  */
@@ -65,38 +97,14 @@ void V_TextInit()
 {
 	int j;
 	std::string buffer;
-
-	const char *bigfont = gameinfo.bigFontPattern.c_str();
-	const char *smallfont = gameinfo.smallFontPattern.c_str();
+	const fontdef_t& bigfont = V_GetResolvedFontDef(gameinfo.bigFont);
+	const fontdef_t& smallfont = V_GetResolvedFontDef(gameinfo.smallFont);
 
 	// Level name font. Indexing/pattern are gameinfo-driven.
-	j = gameinfo.bigFontLumpStart;
-	for (int i = 0; i < HU_FONTSIZE; i++)
-	{
-		buffer = fmt::sprintf(bigfont, j++);
-
-		// Some letters of this font are missing.
-		int num = W_CheckNumForName(buffer.c_str());
-		if (num != -1)
-			::hu_bigfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
-		else
-			::hu_bigfont[i] = W_CachePatchHandle("TNT1A0", PU_STATIC, ns_sprites);
-	}
+	V_LoadHudFont(::hu_bigfont, bigfont);
 
 	// Chat/message small font.
-	j = gameinfo.smallFontLumpStart;
-	for (int i = 0; i < HU_FONTSIZE; i++)
-	{
-		buffer = fmt::sprintf(smallfont, j++);
-
-		// Heretic IWAD + partial/custom odamex.wad setups may not carry
-		// complete STCFN glyph coverage.
-		int num = W_CheckNumForName(buffer.c_str());
-		if (num != -1)
-			::hu_smallfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
-		else
-			::hu_smallfont[i] = W_CachePatchHandle("TNT1A0", PU_STATIC, ns_sprites);
-	}
+	V_LoadHudFont(::hu_smallfont, smallfont);
 
 	const char* digfont = "DIG%02d";
 	const char* digfont_literal = "DIG%c";
@@ -128,10 +136,12 @@ void V_TextInit()
 	}
 
 	// Font heights.
-	::hu_bigfont_height =
-	    W_ResolvePatchHandle(::hu_bigfont['M' - HU_FONTSTART])->height();
-	::hu_smallfont_height =
-	    W_ResolvePatchHandle(::hu_smallfont['M' - HU_FONTSTART])->height();
+	::hu_bigfont_height = bigfont.lineHeight > 0
+	    ? bigfont.lineHeight
+	    : W_ResolvePatchHandle(::hu_bigfont['M' - HU_FONTSTART])->height();
+	::hu_smallfont_height = smallfont.lineHeight > 0
+	    ? smallfont.lineHeight
+	    : W_ResolvePatchHandle(::hu_smallfont['M' - HU_FONTSTART])->height();
 	::hu_digfont_height =
 	    W_ResolvePatchHandle(::hu_digfont['M' - HU_FONTSTART])->height();
 
@@ -165,6 +175,18 @@ void V_SetFont(const char* fontname)
 		::hu_font.setFont(::hu_smallfont, ::hu_smallfont_height);
 	else if (!stricmp(fontname, "DIGFONT"))
 		::hu_font.setFont(::hu_digfont, ::hu_digfont_height);
+}
+
+int V_GetFontLineHeight(const char* fontname)
+{
+	if (!stricmp(fontname, "BIGFONT"))
+		return ::hu_bigfont_height > 0 ? ::hu_bigfont_height : 16;
+	if (!stricmp(fontname, "SMALLFONT"))
+		return ::hu_smallfont_height > 0 ? ::hu_smallfont_height : 8;
+	if (!stricmp(fontname, "DIGFONT"))
+		return ::hu_digfont_height > 0 ? ::hu_digfont_height : 8;
+
+	return 8;
 }
 
 int V_TextScaleXAmount()

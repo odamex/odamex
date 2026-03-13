@@ -1,3 +1,17 @@
+fontdef BIGFONT
+{
+	pattern = "FONTB%02d"
+	lumpstart = 1
+	lineheight = 16
+}
+
+fontdef SMALLFONT
+{
+	pattern = "STCFN%03d"
+	lumpstart = 33
+	lineheight = 8
+}
+
 gameinfo
 {
 	advisorytime = 0
@@ -24,7 +38,8 @@ gameinfo
 	cheatkey = "CHEATKEY"
 	easykey = "EASYKEY"
 	maxswitch = 2
-	bigfontlineheight = 16
+	bigfont = BIGFONT
+	smallfont = SMALLFONT
 	menuindicatoroffsetx = -32
 	menuindicatoroffsety = -5
 }

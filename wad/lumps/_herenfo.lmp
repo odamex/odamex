@@ -1,5 +1,19 @@
 // MAPINFO for Heretic (Shareware and Retail)
 
+fontdef BIGFONT
+{
+	pattern = "FONTB%02d"
+	lumpstart = 1
+	lineheight = 20
+}
+
+fontdef SMALLFONT
+{
+	pattern = "FONTA%02d"
+	lumpstart = 1
+	lineheight = 10
+}
+
 gameinfo
 {
 	advisorytime = 4
@@ -29,12 +43,12 @@ gameinfo
 	cheatkey = "CHEATKEY"
 	easykey = "EASYKEY"
 	maxswitch = 2
-	bigfontlineheight = 20
-	smallfontpattern = "FONTA%02d"
-	smallfontlumpstart = 1
+	bigfont = BIGFONT
+	smallfont = SMALLFONT
 	menuindicatorlumps = "M_SLCTR1", "M_SLCTR2"
 	menuindicatoroffsetx = -28
 	menuindicatoroffsety = -3
+	menucursoroffsety = 2
 }
 
 automap

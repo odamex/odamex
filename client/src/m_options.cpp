@@ -59,6 +59,7 @@
 
 #include "m_misc.h"
 #include "cl_demo.h"
+#include "gi.h"
 
 // Data.
 #include "m_menu.h"
@@ -1690,6 +1691,8 @@ void M_OptDrawer (void)
 	int y, width, i, x, ytop;
 	int x1,y1,x2,y2;
 	int theight = 0;
+	int ystart = 15;
+	const int lineHeight = V_GetFontLineHeight("SMALLFONT");
 	menuitem_t *item;
 	patch_t *title;
 	const palette_t* odapal = V_GetPaletteFromLump("ODAPAL");
@@ -1698,10 +1701,10 @@ void M_OptDrawer (void)
 		I_Error("M_OptDrawer: required palette lump ODAPAL is missing");
 
 	x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
-	y1 = (I_GetSurfaceHeight() / 2)-(100*CleanYfac);
+	y1 = (I_GetSurfaceHeight() / 2)-(120*CleanYfac);
 
     x2 = (I_GetSurfaceWidth() / 2)+(160*CleanXfac);
-	y2 = (I_GetSurfaceHeight() / 2)+(100*CleanYfac);
+	y2 = (I_GetSurfaceHeight() / 2)+(120*CleanYfac);
 
 	// Background effect
 	OdamexEffect(x1,y1,x2,y2);
@@ -1710,17 +1713,21 @@ void M_OptDrawer (void)
 	{
 		title = W_CachePatch (CurrentMenu->title);
 		screen->DrawPatchClean (title, 160-title->width()/2, 10);
-		y = 15 + title->height();
+		y = ystart + title->height();
 	}
 	else
-	{
-		screen->DrawTextClean(CR_GRAY, 140 - V_StringWidth(CurrentMenu->title.c_str()) / 2, 2, CurrentMenu->title.c_str());
-		theight = 8;
-		y = 15 + theight;
+	{	
+		V_SetFont("BIGFONT");
+		int titlewidth = V_StringWidth("OPTIONS")*CleanXfac;
+		int titleX = (I_GetSurfaceWidth() / 2) - (titlewidth / 2);
+		int titleY = 20*CleanYfac;
+		screen->DrawTextClean(CR_GRAY, titleX, titleY, "OPTIONS");
+		y = ystart + theight;
+		V_SetFont("SMALLFONT");
 	}
-	ytop = y + CurrentMenu->scrolltop * 8;
+	ytop = y + CurrentMenu->scrolltop * lineHeight;
 
-	for (i = 0; i < CurrentMenu->numitems && y <= 192 - theight; i++, y += 8)	// TIJ
+	for (i = 0; i < CurrentMenu->numitems && y <= 192 - theight; i++, y += lineHeight)	// TIJ
 	{
 		if (i == CurrentMenu->scrolltop)
 			i += CurrentMenu->scrollpos;
@@ -1759,7 +1766,7 @@ void M_OptDrawer (void)
 			if (i == CurrentItem && ((item->a.selmode != -1 && (indicatorAnimCounter < 6 || WaitingForKey))
 				|| WaitingForAxis || testingmode))
 			{
-				screen->DrawPatchCleanWithPalette(W_CachePatch("LITLCURS"), item->a.selmode * 104 + 8, y, odapal);
+				screen->DrawPatchCleanWithPalette(W_CachePatch("LITLCURS"), item->a.selmode * 104 + 8, y+gameinfo.menuCursorOffsetY, odapal);
 			}
 		}
 		else
@@ -1933,7 +1940,7 @@ void M_OptDrawer (void)
 			if (i == CurrentItem && (indicatorAnimCounter < 6 || WaitingForKey || WaitingForAxis))
 			{
 				const patch_t* patch = W_CachePatch("LITLCURS");
-				screen->DrawPatchCleanWithPalette(patch, CurrentMenu->indent + 3, y, odapal);
+				screen->DrawPatchCleanWithPalette(patch, CurrentMenu->indent + 3, y+gameinfo.menuCursorOffsetY, odapal);
 			}
 		}
 	}

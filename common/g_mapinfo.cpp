@@ -34,6 +34,7 @@
 #include "infomap.h"
 #include "p_mapformat.h"
 #include "g_umapinfo.h"
+#include "cmdlib.h"
 
 /// Globals
 bool HexenHack;
@@ -170,6 +171,7 @@ bool ContainsMapInfoTopLevel(const OScanner& os)
 	       os.compareTokenNoCase("cluster") || os.compareTokenNoCase("clusterdef") ||
 	       os.compareTokenNoCase("episode") || os.compareTokenNoCase("clearepisodes") ||
 	       os.compareTokenNoCase("skill") || os.compareTokenNoCase("clearskills") ||
+	       os.compareTokenNoCase("fontdef") ||
 	       os.compareTokenNoCase("gameinfo") || os.compareTokenNoCase("intermission") ||
 	       os.compareTokenNoCase("automap");
 }
@@ -1305,14 +1307,27 @@ struct MapInfoDataSetter<gameinfo_t>
 
 			// [ML] These aren't part of any UMAPINFO "standard"  
 			{ "maxswitch", &MIType_Int, &gameinfo.maxSwitch },
-			{ "smallfontpattern", &MIType_String,&gameinfo.smallFontPattern },
-			{ "smallfontlumpstart", &MIType_Int, &gameinfo.smallFontLumpStart },
-			{ "bigfontpattern", &MIType_String,&gameinfo.bigFontPattern },
-			{ "bigfontlumpstart", &MIType_Int, &gameinfo.bigFontLumpStart },
-			{ "bigfontlineheight", &MIType_Int, &gameinfo.bigFontLineHeight },
+			{ "smallfont", &MIType_String, &gameinfo.smallFont },
+			{ "bigfont", &MIType_String, &gameinfo.bigFont },
 			{ "menuindicatorlumps", &MIType_Pages, gameinfo.menuIndicatorLumps.data() },
 			{ "menuindicatoroffsetx", &MIType_Int, &gameinfo.menuIndicatorOffsetX },
-			{ "menuindicatoroffsety", &MIType_Int, &gameinfo.menuIndicatorOffsetY }
+			{ "menuindicatoroffsety", &MIType_Int, &gameinfo.menuIndicatorOffsetY },
+			{ "menucursoroffsety", &MIType_Int, &gameinfo.menuCursorOffsetY }
+		};
+	}
+};
+
+template <>
+struct MapInfoDataSetter<fontdef_t>
+{
+	MapInfoDataContainer mapInfoDataContainer;
+
+	MapInfoDataSetter(fontdef_t& ref)
+	{
+		mapInfoDataContainer = {
+			{ "pattern", &MIType_String, &ref.pattern },
+			{ "lumpstart", &MIType_Int, &ref.lumpStart },
+			{ "lineheight", &MIType_Int, &ref.lineHeight }
 		};
 	}
 };
@@ -1863,6 +1878,15 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 			MapInfoDataSetter<gameinfo_t> setter;
 			ParseMapInfoLower<gameinfo_t>(os, setter);
 		}
+		else if (os.compareTokenNoCase("fontdef"))
+		{
+			os.mustScan();
+			const std::string name = StdStringToUpper(os.getToken());
+			fontdef_t& info = fontdefs[name];
+
+			MapInfoDataSetter<fontdef_t> setter(info);
+			ParseMapInfoLower<fontdef_t>(os, setter);
+		}
 		else if (os.compareTokenNoCase("intermission"))
 		{
 			// Not implemented
@@ -1903,6 +1927,7 @@ void G_ParseMapInfo()
 	// Reset skill definitions
 	skillnum = 0;
 	defaultskillmenu = 0;
+	G_ResetFontDefs();
 
 	// Parse common defaults first for Doom-family game missions.
 	// Heretic has its own complete skill/gameinfo setup in _HERENFO.
