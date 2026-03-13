@@ -439,7 +439,7 @@ enum ItemEquipVal
 
 inline FArchive &operator<< (FArchive &arc, card_t i)
 {
-	return arc << (byte)i;
+	return arc << static_cast<byte>(i);
 }
 inline FArchive &operator>> (FArchive &arc, card_t &i)
 {
