@@ -246,7 +246,7 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
     *newsize = chunk->alen;
 
     // allocate some space in the zone heap
-    ret_data = (Uint8 *)Z_Malloc(chunk->alen, PU_STATIC, NULL);
+    ret_data = static_cast<Uint8*>(Z_Malloc(chunk->alen, PU_STATIC));
 
     // copy the converted data to the return buffer
     memcpy(ret_data, chunk->abuf, chunk->alen);
@@ -308,7 +308,7 @@ static void getsfx(sfxinfo_struct *sfx)
 	if (length <= 0)
 		return;
 
-    Uint32 expanded_length = (uint32_t)((((uint64_t)length) * mixer_freq) / samplerate);
+    Uint32 expanded_length = static_cast<uint32_t>(((static_cast<uint64_t>(length)) * mixer_freq) / samplerate);
 
     // Double up twice: 8 -> 16 bit and mono -> stereo
 
@@ -317,10 +317,10 @@ static void getsfx(sfxinfo_struct *sfx)
 	chunk = Z_Malloc<Mix_Chunk>(PU_STATIC);
     chunk->allocated = 1;
     chunk->alen = expanded_length;
-	chunk->abuf = (Uint8*)Z_Malloc(expanded_length, PU_STATIC, NULL);
+	chunk->abuf = static_cast<Uint8*>(Z_Malloc(expanded_length, PU_STATIC));
     chunk->volume = MIX_MAX_VOLUME;
 
-    ExpandSoundData((byte*)data + 8, samplerate, 8, length, chunk);
+    ExpandSoundData(static_cast<byte*>(data) + 8, samplerate, 8, length, chunk);
     sfx->data = chunk;
 }
 
@@ -353,7 +353,7 @@ int I_StartSound(int id, float vol, int sep, int pitch, bool loop)
 	if (!sound_initialized)
 		return -1;
 
-	Mix_Chunk *chunk = (Mix_Chunk *)S_sfx[id].data;
+	Mix_Chunk *chunk = static_cast<Mix_Chunk*>(S_sfx[id].data);
 
 	// find a free channel, starting from the first after
 	// the last channel we used
@@ -516,17 +516,13 @@ void I_InitSound()
 
 	PrintFmt(PRINT_HIGH, "I_InitSound: Initializing SDL_mixer\n");
 
-#ifdef SDL20
     // Apparently, when Mix_OpenAudio requests a certain number of channels
     // and the device claims to not support that number of channels, instead
     // of handling it automatically behind the scenes, Mixer might initialize
     // with a broken audio buffer instead.  Using this function instead works
     // around the problem.
-	if (Mix_OpenAudioDevice((int)snd_samplerate, AUDIO_S16SYS, 2, 1024, NULL,
+	if (Mix_OpenAudioDevice(snd_samplerate.asInt(), AUDIO_S16SYS, 2, 1024, NULL,
 	                        SDL_AUDIO_ALLOW_FREQUENCY_CHANGE) < 0)
-#else
-	if (Mix_OpenAudio((int)snd_samplerate, AUDIO_S16SYS, 2, 1024) < 0)
-#endif
 	{
 		PrintFmt(PRINT_ERROR,
                  "I_InitSound: Error initializing SDL_mixer: {}\n",

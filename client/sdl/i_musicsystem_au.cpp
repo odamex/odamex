@@ -331,7 +331,7 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 
 		if (!mus2mid(mus, midi))
 		{
-			regdata = (byte*)mem_fgetbuf(midi);
+			regdata = reinterpret_cast<byte*>(mem_fgetbuf(midi));
 			reglength = mem_fsize(midi);
 		}
 		else

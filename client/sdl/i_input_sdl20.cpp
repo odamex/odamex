@@ -234,7 +234,7 @@ int ISDL20KeyboardInputDevice::getTextEventValue()
 			char* dst = SDL_iconv_string(output_type, "UTF-8", src, SDL_strlen(src) + 1);
 			if (dst)
 			{
-				utf32 = *((uint32_t *)dst);
+				utf32 = *(reinterpret_cast<uint32_t*>(dst));
 				SDL_free(dst);
 			}
 			return utf32;

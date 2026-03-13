@@ -82,16 +82,16 @@ static inline unsigned int __hash_rot(unsigned int x, unsigned int k)
 // See: http://burtleburtle.net/bob/c/lookup3.c
 // ----------------------------------------------------------------------------
 
-static inline unsigned int __hash_jenkins_64bit(unsigned long long key)
+static inline unsigned int __hash_jenkins_64bit(uint64_t key)
 {
-	unsigned int* k = (unsigned int*)&key;
+	auto [k0, k1] = std::bit_cast<std::pair<uint32_t, uint32_t>>(key);
 	const unsigned int initval = 0xABCDEF01;	// any random value
 
   	unsigned int a, b, c;
 	a = b = c = 0xDEADBEEF + 8 + initval;
 
-	b += k[1];
-	a += k[0];
+	b += k1;
+	a += k0;
 
 	c ^= b; c -= __hash_rot(b, 14);
 	a ^= c; a -= __hash_rot(c, 11);
