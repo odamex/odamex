@@ -867,7 +867,7 @@ patch_t* W_CachePatch(unsigned lumpnum, const zoneTag_e tag)
 		else
 		{
 			// invalid patch - just create a header with width = 0, height = 0
-			lumpcache[lumpnum] = Z_Malloc<patch_t>(1, tag, &lumpcache[lumpnum]);
+			lumpcache[lumpnum] = Z_Malloc<patch_t>(tag, &lumpcache[lumpnum]);
 			memset(lumpcache[lumpnum], 0, sizeof(patch_t));
 		}
 	}

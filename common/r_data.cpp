@@ -279,7 +279,7 @@ void R_VanillaTextureHacks(texture_t* tex)
 
 void R_GenerateComposite (int texnum)
 {
-	byte *block = (byte *)Z_Malloc (texturecompositesize[texnum], PU_STATIC,
+	byte *block = Z_Malloc<byte>(texturecompositesize[texnum], PU_STATIC,
 						   (void **) &texturecomposite[texnum]);
 	texturecomposite[texnum] = block;
 	texture_t *texture = textures[texnum];
