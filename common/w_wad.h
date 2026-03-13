@@ -129,9 +129,39 @@ unsigned	W_LumpLength (unsigned lump);
 void		W_ReadLump (unsigned lump, void *dest);
 unsigned	W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest, unsigned &filelen);
 
+// TODO: add similar funcs that return string_views // how to deal with z_free then though?
 void* W_CacheLumpNum(unsigned lump, const zoneTag_e tag);
-void* W_CacheLumpName(const char* name, const zoneTag_e tag);
-void* W_CacheLumpName(const OLumpName& name, const zoneTag_e tag);
+
+//
+// W_CacheLumpNum
+//
+template <typename T>
+requires std::is_object_v<T>
+T* W_CacheLumpNum(unsigned lump, const zoneTag_e tag)
+{
+	return static_cast<T*>(W_CacheLumpNum(lump, tag));
+}
+
+//
+// W_CacheLumpName
+//
+template <typename T = void>
+requires (std::is_object_v<T> || std::is_void_v<T>)
+T* W_CacheLumpName(const char* name, const zoneTag_e tag)
+{
+	return W_CacheLumpNum<T>(W_GetNumForName(name), tag);
+}
+
+//
+// W_CacheLumpName
+//
+template <typename T = void>
+requires (std::is_object_v<T> || std::is_void_v<T>)
+T* W_CacheLumpName(const OLumpName& name, const zoneTag_e tag)
+{
+	return W_CacheLumpNum<T>(W_GetNumForName(name), tag);
+}
+
 patch_t* W_CachePatch(unsigned lump, const zoneTag_e tag = PU_CACHE);
 patch_t* W_CachePatch(const char* name, const zoneTag_e tag = PU_CACHE);
 patch_t* W_CachePatch(const OLumpName& name, const zoneTag_e tag = PU_CACHE);

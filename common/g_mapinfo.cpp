@@ -1664,7 +1664,7 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 
 	level_pwad_info_t defaultinfo{};
 
-	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+	const char* buffer = W_CacheLumpNum<char>(lump, PU_STATIC);
 
 	const OScannerConfig config = {
 	    lumpname, // lumpName

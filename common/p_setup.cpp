@@ -166,14 +166,14 @@ void P_LoadVertexes (int lump)
 	vertexes = Z_Malloc<vertex_t>(numvertexes, PU_LEVEL);
 
 	// Load data into cache.
-	byte* data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	mapvertex_t* data = W_CacheLumpNum<mapvertex_t>(lump, PU_STATIC);
 
 	// Copy and convert vertex coordinates,
 	// internal representation as fixed.
 	for (int i = 0; i < numvertexes; i++)
 	{
-		vertexes[i].x = LESHORT(((mapvertex_t *)data)[i].x)<<FRACBITS;
-		vertexes[i].y = LESHORT(((mapvertex_t *)data)[i].y)<<FRACBITS;
+		vertexes[i].x = LESHORT(data[i].x) << FRACBITS;
+		vertexes[i].y = LESHORT(data[i].y) << FRACBITS;
 	}
 
 	// Free buffer memory.
@@ -248,7 +248,7 @@ void P_LoadSegsHelper(int side, short angle, int linedef, seg_t *li)
 // P_LoadSegs
 //
 template <typename MapSegType>
-void P_LoadSegs (int lump)
+void P_LoadSegs(int lump)
 {
 	if (!W_LumpLength(lump))
 	{
@@ -258,12 +258,12 @@ void P_LoadSegs (int lump)
 
 	numsegs = W_LumpLength (lump) / sizeof(MapSegType);
 	segs = Z_Calloc<seg_t>(numsegs, PU_LEVEL);
-	byte* const data = (byte*) W_CacheLumpNum(lump, PU_STATIC);
+	MapSegType* const data = W_CacheLumpNum<MapSegType>(lump, PU_STATIC);
 
 	for (int i = 0; i < numsegs; i++)
 	{
 		seg_t* const li = segs + i;
-		const MapSegType *ml = (MapSegType*) data + i;
+		const MapSegType* ml = data[i];
 		auto v = LESWAP(ml->v1);
 
 		if(v >= numvertexes)
@@ -281,7 +281,7 @@ void P_LoadSegs (int lump)
 		P_LoadSegsHelper(LESHORT(ml->side), LESHORT(ml->angle), LESHORT(ml->linedef), li);
 	}
 
-	Z_Free (data);
+	Z_Free(data);
 }
 
 //
@@ -298,7 +298,7 @@ void P_LoadSubsectors(int lump)
 
 	numsubsectors = W_LumpLength (lump) / sizeof(MapSubsectorType);
 	subsectors = Z_Calloc<subsector_t>(numsubsectors, PU_LEVEL);
-	MapSubsectorType* data = static_cast<MapSubsectorType*>(W_CacheLumpNum(lump, PU_STATIC));
+	MapSubsectorType* data = W_CacheLumpNum<MapSubsectorType>(lump, PU_STATIC);
 
 	for (int i = 0; i < numsubsectors; i++)
 	{
@@ -325,7 +325,7 @@ void P_LoadSectors (int lump)
 	// denis - properly construct sectors so that smart pointers they contain don't get screwed
 	sectors = new sector_t[numsectors];
 
-	byte* data = (byte*)W_CacheLumpNum(lump, PU_STATIC);
+	byte* data = W_CacheLumpNum<byte>(lump, PU_STATIC);
 
 	const int defSeqType = (level.flags & LEVEL_SNDSEQTOTALCTRL) ? 0 : -1;
 
@@ -421,8 +421,8 @@ enum class nodetype_t {
 };
 
 nodetype_t P_CheckNodeType(int lump) {
-	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
-	auto guard = nonstd::make_scope_exit([&]{ Z_ChangeTag(data, PU_CACHE); });
+	byte *data = W_CacheLumpNum<byte>(lump, PU_STATIC);
+	const auto guard = nonstd::make_scope_exit([&]{ Z_ChangeTag(data, PU_CACHE); });
 
 	static constexpr struct {
         std::string_view bytes;
@@ -466,7 +466,7 @@ void P_LoadNodes(int lump)
 
 	numnodes = W_LumpLength(lump) / sizeof(MapNodeType);
 	nodes = Z_Malloc<node_t>(numnodes, PU_LEVEL);
-	byte* data = (byte*) W_CacheLumpNum(lump, PU_STATIC);
+	byte* data = W_CacheLumpNum<byte>(lump, PU_STATIC);
 
 	const MapNodeType* mn = (MapNodeType *)data;
 	node_t* no = nodes;
@@ -703,10 +703,10 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 				return false;
 		}
 	}();
-	byte *data = static_cast<byte *>(W_CacheLumpNum(lump, PU_STATIC));
+	byte *data = W_CacheLumpNum<byte>(lump, PU_STATIC);
 	byte* data_decompressed = nullptr;
 
-	auto guard = nonstd::make_scope_exit([&]{
+	const auto guard = nonstd::make_scope_exit([&]{
 		Z_Free(data);
 		Z_Free(data_decompressed);
 	});
@@ -820,10 +820,9 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 //
 void P_LoadThings (int lump)
 {
-	mapthing2_t mt2;		// [RH] for translation
-	byte *data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
-	mapthing_t *mt = (mapthing_t *)data;
-	mapthing_t *lastmt = (mapthing_t *)(data + W_LumpLength (lump));
+	mapthing_t* data = W_CacheLumpNum<mapthing_t>(lump, PU_STATIC);
+	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
+	size_t count = W_LumpLength(lump) / sizeof(mapthing_t);
 
 	P_HordeClearSpawns();
 	playerstarts.clear();
@@ -835,47 +834,45 @@ void P_LoadThings (int lump)
 	// [RH] ZDoom now uses Hexen-style maps as its native format. // denis - growwwwl
 	//		Since this is the only place where Doom-style Things are ever
 	//		referenced, we translate them into a Hexen-style thing.
-	for ( ; mt < lastmt; mt++)
+	for (size_t i = 0; i < count; i++)
 	{
-		// [AM] Ensure that we get a fresh mapthing every iteration - sometimes
-		//      P_SpawnMapThing mutates a part of the mapthing that the map
-		//      data doesn't care about, and we don't want it to carry over
-		//      between iterations.
-		memset(&mt2, 0, sizeof(mt2));
-
+		const mapthing_t& mt = data[i];
 		// [RH] At this point, monsters unique to Doom II were weeded out
 		//		if the IWAD wasn't for Doom II. R_SpawnMapThing() can now
 		//		handle these and more cases better, so we just pass it
 		//		everything and let it decide what to do with them.
 
 		// [RH] Need to translate the spawn flags to Hexen format.
-		short flags = LESHORT(mt->options);
+		short flags = LESHORT(mt.options);
 		if (flags & BTF_RESERVED || demoplayback) flags &= BTF_RESERVED_MASK;
-		mt2.flags = (short)((flags & 0xf) | 0x7e0);
+		short flags2 = (short)((flags & 0xf) | 0x7e0);
 		if (flags & BTF_NOTSINGLE)
 		{
 			#ifdef SERVER_APP
 			if (G_IsCoopGame())
 			{
 				if (g_thingfilter == 1)
-					mt2.flags |= MTF_FILTER_COOPWPN;
+					flags2 |= MTF_FILTER_COOPWPN;
 				else if (g_thingfilter == 2)
-					mt2.flags &= ~MTF_COOPERATIVE;
+					flags2 &= ~MTF_COOPERATIVE;
 			}
 			else
 			#endif
-				mt2.flags &= ~MTF_SINGLE;
+				flags2 &= ~MTF_SINGLE;
 		}
-		if (flags & BTF_NOTDEATHMATCH)		mt2.flags &= ~MTF_DEATHMATCH;
-		if (flags & BTF_NOTCOOPERATIVE)		mt2.flags &= ~MTF_COOPERATIVE;
-		if (flags & BTF_FRIEND)				mt2.flags |= MTF_FRIENDLY;
+		if (flags & BTF_NOTDEATHMATCH)  flags2 &= ~MTF_DEATHMATCH;
+		if (flags & BTF_NOTCOOPERATIVE) flags2 &= ~MTF_COOPERATIVE;
+		if (flags & BTF_FRIEND)         flags2 |= MTF_FRIENDLY;
 
-		mt2.x = LESHORT(mt->x);
-		mt2.y = LESHORT(mt->y);
-		mt2.angle = LESHORT(mt->angle);
-		mt2.type = LESHORT(mt->type);
+		mapthing2_t mt2 = {
+			.x = LESHORT(mt.x),
+			.y = LESHORT(mt.y),
+			.angle = LESHORT(mt.angle),
+			.type = LESHORT(mt.type),
+			.flags = flags2
+		};
 
-		P_SpawnMapThing (mt2, 0);
+		P_SpawnMapThing(mt2, 0);
 	}
 
 	// Sort by player number if starts are not in order
@@ -884,8 +881,6 @@ void P_LoadThings (int lump)
 	});
 
 	P_SpawnAvatars();
-
-	Z_Free (data);
 }
 
 // [RH]
@@ -898,9 +893,9 @@ void P_LoadThings (int lump)
 //
 void P_LoadThings2 (int lump, int position)
 {
-	byte *data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
-	mapthing2_t *mt = (mapthing2_t *)data;
-	mapthing2_t *lastmt = (mapthing2_t *)(data + W_LumpLength (lump));
+	mapthing2_t* data = W_CacheLumpNum<mapthing2_t>(lump, PU_STATIC);
+	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
+	size_t count = W_LumpLength(lump) / sizeof(mapthing2_t);
 
 	P_HordeClearSpawns();
 	playerstarts.clear();
@@ -909,25 +904,24 @@ void P_LoadThings2 (int lump, int position)
 	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		GetTeamInfo((team_t)iTeam)->Starts.clear();
 
-	for ( ; mt < lastmt; mt++)
+	for (size_t i = 0; i < count; i++)
 	{
 		// [RH] At this point, monsters unique to Doom II were weeded out
 		//		if the IWAD wasn't for Doom II. R_SpawnMapThing() can now
 		//		handle these and more cases better, so we just pass it
 		//		everything and let it decide what to do with them.
+		mapthing2_t& mt = data[i];
 
-		mt->thingid = LESHORT(mt->thingid);
-		mt->x = LESHORT(mt->x);
-		mt->y = LESHORT(mt->y);
-		mt->z = LESHORT(mt->z);
-		mt->angle = LESHORT(mt->angle);
-		mt->type = LESHORT(mt->type);
-		mt->flags = LESHORT(mt->flags);
+		mt.thingid = LESHORT(mt.thingid);
+		mt.x = LESHORT(mt.x);
+		mt.y = LESHORT(mt.y);
+		mt.z = LESHORT(mt.z);
+		mt.angle = LESHORT(mt.angle);
+		mt.type = LESHORT(mt.type);
+		mt.flags = LESHORT(mt.flags);
 
-		P_SpawnMapThing(*mt, position);
+		P_SpawnMapThing(mt, position);
 	}
-
-	Z_Free (data);
 }
 
 //
@@ -1100,8 +1094,8 @@ void P_LoadLineDefs (const int lump)
 {
 	numlines = W_LumpLength (lump) / sizeof(maplinedef_t);
 	lines = Z_Calloc<line_t>(numlines, PU_LEVEL);
-	byte* data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
-	auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
+	byte* data = W_CacheLumpNum<byte>(lump, PU_STATIC);
+	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
 
 	const bool reservedLine = P_GetLevelCompData(::level.level_fingerprint).reservedLineFlag;
 
@@ -1152,7 +1146,7 @@ void P_LoadLineDefs2 (int lump)
 {
 	numlines = W_LumpLength (lump) / sizeof(maplinedef2_t);
 	lines = Z_Calloc<line_t>(numlines, PU_LEVEL);
-	byte* data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	byte* data = W_CacheLumpNum<byte>(lump, PU_STATIC);
 
 	maplinedef2_t* mld = (maplinedef2_t *)data;
 	line_t* ld = lines;
@@ -1233,7 +1227,7 @@ argb_t P_GetColorFromTextureName(const char* name)
 
 void P_LoadSideDefs2 (int lump)
 {
-	byte* data = (byte*)W_CacheLumpNum(lump, PU_STATIC);
+	byte* data = W_CacheLumpNum<byte>(lump, PU_STATIC);
 
 	for (int i = 0; i < numsides; i++)
 	{
@@ -1601,7 +1595,7 @@ void P_LoadBlockMap (int lump)
 		P_CreateBlockMap();
 	else
 	{
-		short *wadblockmaplump = (short *)W_CacheLumpNum (lump, PU_LEVEL);
+		short *wadblockmaplump = W_CacheLumpNum<short>(lump, PU_LEVEL);
 		blockmaplump = Z_Malloc<int>(count, PU_LEVEL);
 
 		// killough 3/1/98: Expand wad blockmap into larger internal one,
@@ -1651,13 +1645,13 @@ void P_GenerateUniqueMapFingerPrint(int maplumpnum)
 	typedef std::vector<byte> LevelLumps;
 	LevelLumps levellumps;
 
-	const byte* thingbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_THINGS, PU_STATIC));
-	const byte* lindefbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_LINEDEFS, PU_STATIC));
-	const byte* sidedefbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SIDEDEFS, PU_STATIC));
-	const byte* vertexbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_VERTEXES, PU_STATIC));
-	const byte* segsbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SEGS, PU_STATIC));
-	const byte* ssectorsbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SSECTORS, PU_STATIC));
-	const byte* sectorsbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SECTORS, PU_STATIC));
+	const byte* thingbytes    = W_CacheLumpNum<const byte>(maplumpnum+ML_THINGS, PU_STATIC);
+	const byte* lindefbytes   = W_CacheLumpNum<const byte>(maplumpnum+ML_LINEDEFS, PU_STATIC);
+	const byte* sidedefbytes  = W_CacheLumpNum<const byte>(maplumpnum+ML_SIDEDEFS, PU_STATIC);
+	const byte* vertexbytes   = W_CacheLumpNum<const byte>(maplumpnum+ML_VERTEXES, PU_STATIC);
+	const byte* segsbytes     = W_CacheLumpNum<const byte>(maplumpnum+ML_SEGS, PU_STATIC);
+	const byte* ssectorsbytes = W_CacheLumpNum<const byte>(maplumpnum+ML_SSECTORS, PU_STATIC);
+	const byte* sectorsbytes  = W_CacheLumpNum<const byte>(maplumpnum+ML_SECTORS, PU_STATIC);
 
 	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_THINGS), *thingbytes);
 	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_LINEDEFS), *lindefbytes);
@@ -1845,7 +1839,7 @@ void P_RemoveSlimeTrails()
 //
 void P_LoadBehavior (int lumpnum)
 {
-	byte *behavior = (byte *)W_CacheLumpNum (lumpnum, PU_LEVEL);
+	byte *behavior = W_CacheLumpNum<byte>(lumpnum, PU_LEVEL);
 
 	level.behavior = std::make_unique<FBehavior>(behavior, lumpinfo[lumpnum].size);
 
@@ -2052,7 +2046,7 @@ void P_LoadReject(int lumpnum, int totallines)
 	}
 	else
 	{
-		rejectmatrix = static_cast<byte*>(W_CacheLumpNum(lumpnum, PU_LEVEL));
+		rejectmatrix = W_CacheLumpNum<byte>(lumpnum, PU_LEVEL);
 	}
 }
 

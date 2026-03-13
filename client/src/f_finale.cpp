@@ -352,7 +352,7 @@ void F_TextWrite ()
 
 			finale_surface->getDefaultCanvas()->FlatFill(
 			    0, 0, 320, 200, length,
-			    (byte*)W_CacheLumpNum(lump, PU_CACHE));
+			    W_CacheLumpNum<byte>(lump, PU_CACHE));
 
 			primary_surface->blitcrop(finale_surface, 0, 0, 320, 200,
 			    x, y, screenblockWidth, screenblockHeight);

@@ -250,7 +250,7 @@ static void S_StopChannel(unsigned int cnum);
 //
 void S_Init(float sfxVolume, float musicVolume)
 {
-	SoundCurve = (byte *)W_CacheLumpNum(W_GetNumForName("SNDCURVE"), PU_STATIC);
+	SoundCurve = W_CacheLumpName<byte>("SNDCURVE", PU_STATIC);
 
 	// [RH] Read in sound sequences
 	NumSequences = 0;
@@ -1229,7 +1229,7 @@ void S_ChangeMusic(std::string musicname, bool looping, int order)
 			return;
 		}
 
-		data = static_cast<byte*>(W_CacheLumpNum(lumpnum, PU_CACHE));
+		data = W_CacheLumpNum<byte>(lumpnum, PU_CACHE);
 		length = W_LumpLength(lumpnum);
 		I_PlaySong({data, length}, looping, order);
     }

@@ -559,7 +559,7 @@ static void P_InitAnimDefs ()
 
 		while ((lump = W_FindLump("ANIMDEFS", lump)) != -1)
 		{
-			const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+			const char* buffer = W_CacheLumpNum<char>(lump, PU_STATIC);
 
 			OScannerConfig config = {
 			    "ANIMDEFS", // lumpName
@@ -861,7 +861,7 @@ void P_InitPicAnims (void)
 	if (W_CheckNumForName ("ANIMATED") == -1)
 		return;
 
-	animdefs = (byte *)W_CacheLumpName ("ANIMATED", PU_STATIC);
+	animdefs = W_CacheLumpName<byte>("ANIMATED", PU_STATIC);
 
 	// Init animation
 

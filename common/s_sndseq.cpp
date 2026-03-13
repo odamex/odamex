@@ -431,7 +431,7 @@ void S_ParseSndSeq()
 	int lump = -1;
 	while ((lump = W_FindLump("SNDSEQ", lump)) != -1)
 	{
-		const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
+		const char* buffer = W_CacheLumpNum<char>(lump, PU_STATIC);
 
 		OScannerConfig config = {
 		    "SNDSEQ", // lumpName

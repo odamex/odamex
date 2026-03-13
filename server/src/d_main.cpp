@@ -137,7 +137,7 @@ void G_ReadCOMPLVL()
 	int lumpnum = W_CheckNumForName("COMPLVL");
 	if (lumpnum != -1)
 	{
-		char* complvl = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
+		char* complvl = W_CacheLumpNum<char>(lumpnum, PU_STATIC);
 
 		co_zdoomphys.Set(0.0f);
 		co_zdoomammo.Set(0.0f);

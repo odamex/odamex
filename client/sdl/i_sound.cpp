@@ -266,7 +266,7 @@ static void getsfx(sfxinfo_struct *sfx)
 	if (sfx->lumpnum == -1)
 		return;
 
-    Uint8* data = (Uint8*)W_CacheLumpNum(sfx->lumpnum, PU_STATIC);
+    Uint8* data = W_CacheLumpNum<Uint8>(sfx->lumpnum, PU_STATIC);
 	auto guard = nonstd::make_scope_exit([&]{ Z_ChangeTag(data, PU_CACHE); });
 
     // [Russell] - ICKY QUICKY HACKY SPACKY *I HATE THIS SOUND MANAGEMENT SYSTEM!*

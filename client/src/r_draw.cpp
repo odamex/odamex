@@ -1688,7 +1688,7 @@ void R_InitializeScreenblocksCanvas()
 	{
 		// Support high resolution flats
 		unsigned int length = W_LumpLength(lumpnum);
-		const byte* patch_data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
+		const byte* patch_data = W_CacheLumpNum<byte>(lumpnum, PU_CACHE);
 
 		screenblocks_surface->getDefaultCanvas()->FlatFill(0, 0, 320, 200, length, patch_data);
 	}

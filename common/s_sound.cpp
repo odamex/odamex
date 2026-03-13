@@ -153,7 +153,7 @@ void S_ParseSndInfo()
 	int lump = -1;
 	while ((lump = W_FindLump("SNDINFO", lump)) != -1)
 	{
-		char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_CACHE));
+		char* buffer = W_CacheLumpNum<char>(lump, PU_CACHE);
 
 		const OScannerConfig config = {
 		    "SNDINFO", // lumpName

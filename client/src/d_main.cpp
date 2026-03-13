@@ -609,7 +609,7 @@ void G_ReadCOMPLVL()
 	if (lumpnum == -1)
 		return;
 
-	char* complvl = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
+	char* complvl = W_CacheLumpNum<char>(lumpnum, PU_STATIC);
 	auto guard = nonstd::make_scope_exit([&]{ Z_Free(complvl); });
 
 	if (!serverside)

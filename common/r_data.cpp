@@ -515,7 +515,7 @@ struct texlump_t
 		if (lumpnum != -1)
 		{
 			maxoff = W_LumpLength(lumpnum);
-			data = static_cast<int32_t*>(W_CacheLumpNum(lumpnum, PU_STATIC));
+			data = W_CacheLumpNum<int32_t>(lumpnum, PU_STATIC);
 			numtextures = LELONG(*data);
 			directory = data + 1;
 		}
@@ -589,7 +589,7 @@ void R_InitTextures()
 
 	// Load the patch names from pnames.lmp.
 	{
-		char *names = (char *)W_CacheLumpName ("PNAMES", PU_STATIC);
+		char *names = W_CacheLumpName<char>("PNAMES", PU_STATIC);
 		char *name_p = names+4;
 
 		nummappatches = LELONG ( *((int *)names) );
@@ -800,7 +800,7 @@ shademap_t realcolormaps;
 
 void R_ForceDefaultColormap(const char* name)
 {
-	const byte* data = (byte*)W_CacheLumpName(name, PU_CACHE);
+	const byte* data = W_CacheLumpName<byte>(name, PU_CACHE);
 	memcpy(realcolormaps.colormap, data, (NUMCOLORMAPS+1)*256);
 
 #if 0
@@ -898,7 +898,7 @@ void R_InitColormaps()
 		{
 			if (W_LumpLength(i) >= (NUMCOLORMAPS+1)*256)
 			{
-				byte* map = (byte*)W_CacheLumpNum(i, PU_CACHE);
+				byte* map = W_CacheLumpNum<byte>(i, PU_CACHE);
 				byte* colormap = realcolormaps.colormap+(NUMCOLORMAPS+1)*256*j;
 				argb_t* shademap = realcolormaps.shademap+(NUMCOLORMAPS+1)*256*j;
 

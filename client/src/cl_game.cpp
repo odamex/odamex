@@ -1900,7 +1900,7 @@ void G_DoPlayDemo(bool justStreamInput)
 	int demolump = W_CheckNumForName(defdemoname);
 	if (demolump != -1)
 	{
-		demobuffer = demo_p = (byte*)W_CacheLumpNum(demolump, PU_STATIC);
+		demobuffer = demo_p = W_CacheLumpNum<byte>(demolump, PU_STATIC);
 		bytelen = W_LumpLength(demolump);
 	}
 	else

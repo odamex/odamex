@@ -485,7 +485,7 @@ static std::string V_GetColorStringByName(const std::string& name)
 		return "";
 	}
 
-	const char* buffer = static_cast<char*>(W_CacheLumpName("X11R6RGB", PU_CACHE));
+	const char* buffer = W_CacheLumpName<char>("X11R6RGB", PU_CACHE);
 
 	OScannerConfig config = {
 		"X11R6RGB", // lumpName
@@ -608,7 +608,7 @@ void V_InitPalette(const char* lumpname)
 	default_palette.maps.colormap = new palindex_t[(NUMCOLORMAPS + 1) * 256];
 	default_palette.maps.shademap = new argb_t[(NUMCOLORMAPS + 1) * 256];
 
-	const byte* data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
+	const byte* data = W_CacheLumpNum<byte>(lumpnum, PU_CACHE);
 
 	for (int i = 0; i < 256; i++, data += 3)
 		default_palette.basecolors[i] = argb_t(255, data[0], data[1], data[2]);
@@ -1135,7 +1135,7 @@ void V_DoPaletteEffects()
 		{
 			// [SL] Load palette_num from disk and setup game_palette
 			current_palette_num = palette_num;
-			const byte* data = (byte*)W_CacheLumpName(palette_lumpname, PU_CACHE) + palette_num * 768;
+			const byte* data = W_CacheLumpName<byte>(palette_lumpname, PU_CACHE) + palette_num * 768;
 
 			for (int i = 0; i < 256; i++, data += 3)
 			{

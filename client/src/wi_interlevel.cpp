@@ -307,7 +307,7 @@ interlevel_t* WI_GetIntermissionScript(const OLumpName& lumpname)
 	output->layers[2].conditions.emplace_back(animcondition_t::OnEnteringScreen, 0);
 	LevelInfos& levels = getLevelInfos();
 	intermissionscript_t intermissionscript{};
-	const char* buffer = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
+	const char* buffer = W_CacheLumpNum<char>(lumpnum, PU_STATIC);
 
 	const OScannerConfig config = {
 	    lumpname, // lumpName

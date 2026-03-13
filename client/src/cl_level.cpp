@@ -769,7 +769,7 @@ void G_WorldDone()
 		AM_Stop();
 		if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 		{
-			options.text = static_cast<const char*>(W_CacheLumpName(thiscluster.exittext, PU_STATIC));
+			options.text = W_CacheLumpName<const char>(thiscluster.exittext, PU_STATIC);
 		}
 		F_StartFinale(options);
 	}
@@ -805,7 +805,7 @@ void G_WorldDone()
 				AM_Stop();
 				if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 				{
-					options.text = static_cast<const char*>(W_CacheLumpName(thiscluster.exittext, PU_STATIC));
+					options.text = W_CacheLumpName<const char>(thiscluster.exittext, PU_STATIC);
 				}
 				F_StartFinale(options);
 			}

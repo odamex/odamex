@@ -661,7 +661,7 @@ void R_DrawPlanes (void)
 				int useflatnum = flattranslation[pl->picnum < numflats ? pl->picnum : 0];
 
 				dspan.color += 4;	// [RH] color if r_drawflat is 1
-				dspan.source = (byte *)W_CacheLumpNum (firstflat + useflatnum, PU_STATIC);
+				dspan.source = W_CacheLumpNum<byte>(firstflat + useflatnum, PU_STATIC);
 
 				// [RH] warp a flat if desired
 				if (flatwarp[useflatnum])
