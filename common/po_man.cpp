@@ -1087,8 +1087,7 @@ static bool CheckMobjBlocking (seg_t *seg, polyobj_t *po)
 //
 static void InitBlockMap (void)
 {
-	PolyBlockMap = Z_Malloc<polyblock_t*>(bmapwidth*bmapheight, PU_LEVEL);
-	memset (PolyBlockMap, 0, bmapwidth*bmapheight*sizeof(polyblock_t *));
+	PolyBlockMap = Z_Calloc<polyblock_t*>(bmapwidth*bmapheight, PU_LEVEL);
 
 	for (int i = 0; i < po_NumPolyobjs; i++)
 	{
@@ -1341,8 +1340,7 @@ void PO_Init (void)
 	polyspawns_t *polyspawn, **prev;
 	int polyIndex;
 
-	polyobjs = Z_Malloc<polyobj_t>(po_NumPolyobjs, PU_LEVEL, 0);
-	memset (polyobjs, 0, po_NumPolyobjs*sizeof(polyobj_t));
+	polyobjs = Z_Calloc<polyobj_t>(po_NumPolyobjs, PU_LEVEL, 0);
 
 	polyIndex = 0; // index polyobj number
 	// Find the startSpot points, and spawn each polyobj

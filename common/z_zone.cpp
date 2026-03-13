@@ -150,6 +150,7 @@ class OZone
 		}
 	}
 
+	template <bool ZERO_INIT = false>
 	void* alloc(size_t size, zoneTag_e tag, void* user, const OFileLine& info)
 	{
 		// This is implementation-defined behavior with malloc.  Since we
@@ -160,7 +161,12 @@ class OZone
 		}
 
 		// Our interface is malloc-like, so we use malloc and not new.
-		void* ptr = malloc(size);
+		void* ptr;
+		if constexpr (ZERO_INIT)
+			ptr = calloc(1, size);
+		else
+			ptr = malloc(size);
+
 		if (ptr == NULL)
 		{
 			// Don't format these bytes, the byte formatter allocates.
@@ -187,6 +193,11 @@ class OZone
 		}
 
 		return ptr;
+	}
+
+	void* calloc(size_t size, zoneTag_e tag, void* user, const OFileLine& info)
+	{
+		alloc<true>(size, tag, user, info);
 	}
 
 	void* realloc(void* ptr, size_t size, zoneTag_e tag, void* user, const OFileLine& info)
@@ -336,6 +347,11 @@ void Z_Free(void* ptr, const std::source_location location)
 void* z_detail::Z_Malloc2(size_t size, const zoneTag_e tag, void* user, const std::source_location location)
 {
 	return g_zone.alloc(size, tag, user, OFileLine::create(location.file_name(), location.line()));
+}
+
+void* z_detail::Z_Calloc2(size_t size, const zoneTag_e tag, void* user, const std::source_location location)
+{
+	return g_zone.calloc(size, tag, user, OFileLine::create(location.file_name(), location.line()));
 }
 
 void* z_detail::Z_Realloc2(void* ptr, size_t size, const zoneTag_e tag, void* user, const std::source_location location)

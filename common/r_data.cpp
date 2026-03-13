@@ -683,7 +683,7 @@ void R_InitTextures()
 		{
 			const patch_t* tx_patch = W_CachePatch(first_tx + j, PU_CACHE);
 
-			texture_t* texture = textures[i] = static_cast<texture_t*>(Z_Malloc(sizeof(texture_t), PU_STATIC, nullptr));
+			texture_t* texture = textures[i] = Z_Malloc<texture_t>(PU_STATIC);
 
 			texture->name = lumpinfo[first_tx + j].name;
 			texture->width = tx_patch->width();
@@ -882,8 +882,8 @@ void R_InitColormaps()
 		numfakecmaps = lastfakecmap - firstfakecmap;
 	}
 
-	realcolormaps.colormap = (byte*)Z_Malloc(256*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC,0);
-	realcolormaps.shademap = (argb_t*)Z_Malloc(256*sizeof(argb_t)*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC,0);
+	realcolormaps.colormap = Z_Malloc<byte>(256*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC);
+	realcolormaps.shademap = Z_Malloc<argb_t>(256*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC);
 
 	delete[] fakecmaps;
 	fakecmaps = new FakeCmap[numfakecmaps];

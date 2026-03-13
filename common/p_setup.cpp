@@ -257,8 +257,7 @@ void P_LoadSegs (int lump)
 	}
 
 	numsegs = W_LumpLength (lump) / sizeof(MapSegType);
-	segs = Z_Malloc<seg_t>(numsegs, PU_LEVEL);
-	memset(segs, 0, numsegs * sizeof(seg_t));
+	segs = Z_Calloc<seg_t>(numsegs, PU_LEVEL);
 	byte* const data = (byte*) W_CacheLumpNum(lump, PU_STATIC);
 
 	for (int i = 0; i < numsegs; i++)
@@ -298,10 +297,8 @@ void P_LoadSubsectors(int lump)
 	}
 
 	numsubsectors = W_LumpLength (lump) / sizeof(MapSubsectorType);
-	subsectors = Z_Malloc<subsector_t>(numsubsectors, PU_LEVEL);
+	subsectors = Z_Calloc<subsector_t>(numsubsectors, PU_LEVEL);
 	MapSubsectorType* data = static_cast<MapSubsectorType*>(W_CacheLumpNum(lump, PU_STATIC));
-
-	memset (subsectors, 0, numsubsectors*sizeof(subsector_t));
 
 	for (int i = 0; i < numsubsectors; i++)
 	{
@@ -547,8 +544,7 @@ byte* P_DecompressNodes(byte* data, size_t len) {
 
 byte* P_LoadSegs_XNOD(byte* p) {
 	numsegs = LELONG(*(uint32_t *)p); p += 4;
-	segs = Z_Malloc<seg_t>(numsegs, PU_LEVEL);
-	memset(segs, 0, numsegs * sizeof(*segs));
+	segs = Z_Calloc<seg_t>(numsegs, PU_LEVEL);
 
 	for (int i = 0; i < numsegs; i++)
 	{
@@ -601,8 +597,7 @@ byte* P_LoadSegs_XGL(byte* p)
 	);
 
 	numsegs = LELONG(*(uint32_t *)p); p += 4;
-	segs = Z_Malloc<seg_t>(numsegs, PU_LEVEL);
-	memset(segs, 0, numsegs * sizeof(*segs));
+	segs = Z_Calloc<seg_t>(numsegs, PU_LEVEL);
 
 	uint32_t write_index = 0;
 	for (int i = 0; i < numsubsectors; i++)
@@ -761,8 +756,7 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 	// Load subsectors
 
 	numsubsectors = LELONG(*(uint32_t *)p); p += 4;
-	subsectors = Z_Malloc<subsector_t>(numsubsectors, PU_LEVEL);
-	memset(subsectors, 0, numsubsectors * sizeof(*subsectors));
+	subsectors = Z_Calloc<subsector_t>(numsubsectors, PU_LEVEL);
 
 	uint32_t first_seg = 0;
 
@@ -785,8 +779,7 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 	// Load nodes
 
 	numnodes = LELONG(*(uint32_t *)p); p += 4;
-	nodes = Z_Malloc<node_t>(numnodes, PU_LEVEL);
-	memset(nodes, 0, numnodes * sizeof(*nodes));
+	nodes = Z_Calloc<node_t>(numnodes, PU_LEVEL);
 
 	for (int i = 0; i < numnodes; i++)
 	{
@@ -1106,8 +1099,7 @@ void P_FinishLoadingLineDefs (void)
 void P_LoadLineDefs (const int lump)
 {
 	numlines = W_LumpLength (lump) / sizeof(maplinedef_t);
-	lines = Z_Malloc<line_t>(numlines, PU_LEVEL);
-	memset (lines, 0, numlines*sizeof(line_t));
+	lines = Z_Calloc<line_t>(numlines, PU_LEVEL);
 	byte* data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
 	auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
 
@@ -1159,8 +1151,7 @@ void P_LoadLineDefs (const int lump)
 void P_LoadLineDefs2 (int lump)
 {
 	numlines = W_LumpLength (lump) / sizeof(maplinedef2_t);
-	lines = Z_Malloc<line_t>(numlines, PU_LEVEL);
-	memset (lines, 0, numlines*sizeof(line_t));
+	lines = Z_Calloc<line_t>(numlines, PU_LEVEL);
 	byte* data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
 
 	maplinedef2_t* mld = (maplinedef2_t *)data;
@@ -1210,8 +1201,7 @@ void P_LoadLineDefs2 (int lump)
 void P_LoadSideDefs (int lump)
 {
 	numsides = W_LumpLength (lump) / sizeof(mapsidedef_t);
-	sides = Z_Malloc<side_t>(numsides, PU_LEVEL);
-	memset (sides, 0, numsides*sizeof(side_t));
+	sides = Z_Calloc<side_t>(numsides, PU_LEVEL);
 }
 
 
@@ -1639,10 +1629,8 @@ void P_LoadBlockMap (int lump)
 	bmapheight = blockmaplump[3];
 
 	// clear out mobj chains
-	count = sizeof(*blocklinks) * bmapwidth*bmapheight;
-	blocklinks = (AActor **)Z_Malloc (count, PU_LEVEL, 0);
-	memset (blocklinks, 0, count);
-	blockmap = blockmaplump+4;
+	blocklinks = Z_Calloc<AActor*>(bmapwidth * bmapheight, PU_LEVEL);
+	blockmap = blockmaplump + 4;
 
 	P_SetSkipBlockStart();
 }
@@ -1818,8 +1806,7 @@ int P_GroupLines()
 
 void P_RemoveSlimeTrails()
 {
-	byte* hit = Z_Malloc<byte>(numvertexes, PU_LEVEL);
-	memset(hit, 0, numvertexes * sizeof(byte));
+	byte* hit = Z_Calloc<byte>(numvertexes, PU_LEVEL);
 
 	for (int i = 0; i < numsegs; i++)
 	{

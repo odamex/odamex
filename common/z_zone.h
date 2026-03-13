@@ -59,6 +59,7 @@ namespace z_detail
 {
 // Don't use these, use the templated ones instead!
 void* Z_Malloc2(size_t size, const zoneTag_e tag, void* user, SOURCELOC);
+void* Z_Calloc2(size_t size, const zoneTag_e tag, void* user, SOURCELOC);
 void* Z_Realloc2(void* ptr, size_t size, const zoneTag_e tag, void* user, SOURCELOC);
 }
 
@@ -115,6 +116,55 @@ requires std::is_object_v<T>
 T* Z_Malloc(const zoneTag_e tag, void* user = nullptr, SOURCELOC)
 {
 	return static_cast<T*>(z_detail::Z_Malloc2(sizeof(T), tag, user, location));
+}
+
+/**
+ * @brief Allocates zero-initialized memory from the zone allocator.
+ *
+ * If `T` is `void`, the argument is interpreted as a size in bytes.
+ *
+ * If `T` is not `void`, the argument is interpreted as a count of `T`
+ * objects and the allocation size will be `count * sizeof(T)`.
+ *
+ * Does not call constructors.
+ *
+ * @tparam T Element type to allocate. Defaults to `void` for raw byte allocation.
+ * @param count_or_size Number of elements to allocate, or size in bytes if `T = void`.
+ * @param tag Zone memory tag controlling lifetime.
+ * @param user Optional owner pointer.
+ *
+ * @return Pointer to allocated memory.
+ *
+ * @note Prefer the typed form (`Z_Malloc<T>(count, tag)`) whenever possible
+ *       to avoid manual size calculations.
+ */
+template <typename T = void>
+requires (std::is_object_v<T> || std::is_void_v<T>)
+T* Z_Calloc(size_t count_or_size, const zoneTag_e tag, void* user = nullptr, SOURCELOC)
+{
+	if constexpr (std::is_void_v<T>)
+		return z_detail::Z_Calloc2(count_or_size, tag, user, location);
+	else
+		return static_cast<T*>(z_detail::Z_Calloc2(count_or_size * sizeof(T), tag, user, location));
+}
+
+/**
+ * @brief Allocates zero-initialized memory for a single object from the zone allocator.
+ *
+ * Does not call constructors.
+ *
+ * @tparam T Element type to allocate.
+ * @param tag Zone memory tag controlling lifetime.
+ * @param user Optional owner pointer.
+ *
+ * @return Pointer to allocated memory.
+ *
+ */
+template <typename T>
+requires std::is_object_v<T>
+T* Z_Calloc(const zoneTag_e tag, void* user = nullptr, SOURCELOC)
+{
+	return static_cast<T*>(z_detail::Z_Calloc2(sizeof(T), tag, user, location));
 }
 
 /**
