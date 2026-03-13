@@ -1036,7 +1036,31 @@ void DCanvas::DrawPatchWithPalette(const patch_t* patch, int x, int y, const pal
 
 void DCanvas::DrawPatchCleanWithPalette(const patch_t* patch, int x, int y, const palette_t* palette) const
 {
-	DrawPatchWithPalette(patch, getCleanX(x), getCleanY(y), palette);
+	if (palette == NULL)
+	{
+		DrawPatchClean(patch, x, y);
+		return;
+	}
+
+	if (mSurface->getBitsPerPixel() == 8)
+	{
+		palindex_t translation[256];
+		const argb_t* dest_palette = mSurface->getPalette();
+
+		for (int i = 0; i < 256; i++)
+			translation[i] = V_BestColor(dest_palette, palette->colors[i]);
+
+		const translationref_t old_colormap = V_ColorMap;
+		V_ColorMap = translationref_t(translation);
+		DrawCWrapper(EWrapper_Translated, patch, x, y);
+		V_ColorMap = old_colormap;
+		return;
+	}
+
+	const shaderef_t old_palette = V_Palette;
+	V_Palette = shaderef_t(&palette->maps, 0);
+	DrawCWrapper(EWrapper_Normal, patch, x, y);
+	V_Palette = old_palette;
 }
 
 

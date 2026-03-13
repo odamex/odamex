@@ -1044,15 +1044,7 @@ void C_InitConsoleBackground()
 	I_FreeSurface(background_surface);
 	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), bpp);
 	background_surface->lock();
-
-	if (palette == NULL)
-	{
-		background_surface->getDefaultCanvas()->DrawPatch(bg_patch, 0, 0);
-	}
-	else
-	{
-		background_surface->getDefaultCanvas()->DrawPatchWithPalette(bg_patch, 0, 0, palette);
-	}
+	background_surface->getDefaultCanvas()->DrawPatchWithPalette(bg_patch, 0, 0, palette);
 
 	background_surface->unlock();
 }

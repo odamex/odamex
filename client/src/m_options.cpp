@@ -43,6 +43,7 @@
 #include "i_video.h"
 #include "i_input.h"
 #include "z_zone.h"
+#include "v_palette.h"
 #include "v_video.h"
 #include "v_text.h"
 #include "w_wad.h"
@@ -1691,6 +1692,10 @@ void M_OptDrawer (void)
 	int theight = 0;
 	menuitem_t *item;
 	patch_t *title;
+	const palette_t* odapal = V_GetPaletteFromLump("ODAPAL");
+
+	if (odapal == NULL)
+		I_Error("M_OptDrawer: required palette lump ODAPAL is missing");
 
 	x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
 	y1 = (I_GetSurfaceHeight() / 2)-(100*CleanYfac);
@@ -1753,7 +1758,9 @@ void M_OptDrawer (void)
 
 			if (i == CurrentItem && ((item->a.selmode != -1 && (indicatorAnimCounter < 6 || WaitingForKey))
 				|| WaitingForAxis || testingmode))
-				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), item->a.selmode * 104 + 8, y);
+			{
+				screen->DrawPatchCleanWithPalette(W_CachePatch("LITLCURS"), item->a.selmode * 104 + 8, y, odapal);
+			}
 		}
 		else
 		{
@@ -1925,7 +1932,8 @@ void M_OptDrawer (void)
 
 			if (i == CurrentItem && (indicatorAnimCounter < 6 || WaitingForKey || WaitingForAxis))
 			{
-				screen->DrawPatchClean (W_CachePatch ("LITLCURS"), CurrentMenu->indent + 3, y);
+				const patch_t* patch = W_CachePatch("LITLCURS");
+				screen->DrawPatchCleanWithPalette(patch, CurrentMenu->indent + 3, y, odapal);
 			}
 		}
 	}
@@ -1935,10 +1943,16 @@ void M_OptDrawer (void)
 	CanScrollDown = (i < CurrentMenu->numitems);
 
 	if (CanScrollUp)
-		screen->DrawPatchClean (W_CachePatch ("LITLUP"), 3, ytop);
+	{
+		const patch_t* patch = W_CachePatch("LITLUP");
+		screen->DrawPatchCleanWithPalette(patch, 3, ytop, odapal);
+	}
 
 	if (CanScrollDown)
-		screen->DrawPatchClean (W_CachePatch ("LITLDN"), 3, 190);
+	{
+		const patch_t* patch = W_CachePatch("LITLDN");
+		screen->DrawPatchCleanWithPalette(patch, 3, 190, odapal);
+	}
 }
 
 void M_OptResponder (event_t *ev)
