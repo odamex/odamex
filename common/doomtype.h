@@ -44,8 +44,7 @@
 // For __BIG_ENDIAN__ macro, requires forceinline
 #include "m_swap.h"
 
-typedef unsigned char byte;
-typedef unsigned int uint;
+using byte = uint8_t;
 
 using OByteSpan = std::span<byte>;
 
@@ -102,26 +101,6 @@ namespace limits
 	inline constexpr int64_t      MAXFIXED64 = std::numeric_limits<int64_t>::max();
 	inline constexpr int64_t      MINFIXED64 = std::numeric_limits<int64_t>::min();
 }
-
-typedef unsigned char		BYTE;
-typedef signed char			SBYTE;
-
-typedef unsigned short		WORD;
-typedef signed short		SWORD;
-
-// denis - todo - this 64 bit fix conflicts with windows' idea of long
-#ifndef _WIN32
-typedef unsigned int		DWORD;
-typedef signed int			SDWORD;
-#else
-typedef unsigned long		DWORD;
-typedef signed long			SDWORD;
-#endif
-
-typedef unsigned __int64	QWORD;
-typedef signed __int64		SQWORD;
-
-typedef DWORD				BITFIELD;
 
 typedef uint64_t			dtime_t;
 

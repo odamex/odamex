@@ -459,7 +459,7 @@ public:
 	fixed_t		pitch;
 	angle_t		prevpitch;
 
-	DWORD			effects;			// [RH] see p_effect.h
+	uint32_t	effects;			// [RH] see p_effect.h
 
 	struct subsector_s		*subsector;
 
@@ -538,7 +538,7 @@ public:
 	translationref_t translation;	// Translation table (or NULL)
 	fixed_t			translucency;	// 65536=fully opaque, 0=fully invisible
 	byte			waterlevel;		// 0=none, 1=feet, 2=waist, 3=eyes
-	SWORD			gear;			// killough 11/98: used in torque simulation
+	int16_t			gear;			// killough 11/98: used in torque simulation
 
 	bool			onground;		// NES - Fixes infinite jumping bug like a charm.
 

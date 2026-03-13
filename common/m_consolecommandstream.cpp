@@ -32,6 +32,15 @@
 #ifdef _WIN32
 #   define WIN32_LEAN_AND_MEAN
 #   include <windows.h>
+
+//  IMPORTANT WIN32 NOTE:
+//
+//  We used to use the standard C++ threading and sync objects for Win32, but
+//  because we're forced to use TerminateThread on Win32, which, unlike POSIX,
+//  leaves the mutex in a locked state, leading to undefined behavior when
+//  destructed.  On Debug builds, this raises an Abort signal.  By switching to
+//  SRW Locks, which don't even have a destructor, we can destruct at any time.
+
 #endif
 
 namespace {
@@ -71,6 +80,28 @@ namespace {
 			// is returned.
 			//
 			// Meant to be called from the main thread.
+#ifdef _WIN32
+			bool GetCommand(std::string& o_command)
+			{
+				if (TryAcquireSRWLockExclusive(& m_srwLock))
+				{
+					if (not m_command.empty())
+					{
+						o_command.swap(m_command);
+						m_command.clear();
+
+						// Unlock early so that we can be sure that the thread doesn't awake via
+						// the condition variable then turn around and immediately have to wait
+						// on the mutex.
+						ReleaseSRWLockExclusive(& m_srwLock);
+						WakeConditionVariable(& m_commandIsReleasedCondition);
+						return true;
+					}
+					ReleaseSRWLockExclusive(& m_srwLock);
+				}
+				return false;
+			}
+#else
 			bool GetCommand(std::string& o_command)
 			{
 				if (std::unique_lock lock{m_mutex, std::try_to_lock})
@@ -90,6 +121,7 @@ namespace {
 				}
 				return false;
 			}
+#endif
 
 			// Commit to using the given Input File for the CommandStream instead of stdin.  This
 			// must be done before the first attempt to access the CommandStream, and can only be
@@ -111,9 +143,13 @@ namespace {
 
 		protected:
 			explicit CommandStreamReader(std::istream& i_streamRef):
-				m_streamRef(i_streamRef),
-				m_thread(&CommandStreamReader::ThreadMain, this)
+				m_streamRef(i_streamRef)
 			{
+#ifdef _WIN32
+				InitializeSRWLock(& m_srwLock);
+				InitializeConditionVariable(& m_commandIsReleasedCondition);
+#endif
+				m_thread = std::thread(&CommandStreamReader::ThreadMain, this);
 			}
 
 			~CommandStreamReader()
@@ -143,18 +179,37 @@ namespace {
 				}
 			}
 
+#ifdef _WIN32
+			void ThreadMain()
+			{
+				AcquireSRWLockExclusive(& m_srwLock);
+				while(m_streamRef.good())
+				{
+					std::getline(m_streamRef, m_command);
+					while (m_streamRef and not m_command.empty())
+					{
+						SleepConditionVariableSRW(& m_commandIsReleasedCondition,
+						                          & m_srwLock,
+						                          INFINITE,
+						                          0);
+					}
+				}
+				ReleaseSRWLockExclusive(& m_srwLock);
+			}
+#else
 			void ThreadMain()
 			{
 				std::unique_lock lock(m_mutex);
 				while(m_streamRef.good())
 				{
 					std::getline(m_streamRef, m_command);
-					if (m_streamRef and not m_command.empty())
+					while (m_streamRef and not m_command.empty())
 					{
 						m_commandIsReleasedCondition.wait(lock, [this]() { return m_command.empty(); });
 					}
 				}
 			}
+#endif
 
 			static std::unique_ptr<std::ifstream>   s_filePtr;
 
@@ -162,8 +217,13 @@ namespace {
 			std::istream &  m_streamRef;
 			std::string     m_command;
 
+#ifdef _WIN32
+			SRWLOCK                 m_srwLock;
+			CONDITION_VARIABLE      m_commandIsReleasedCondition;
+#else
 			std::mutex              m_mutex;
 			std::condition_variable m_commandIsReleasedCondition;
+#endif
 			std::thread             m_thread;
 	};
 

@@ -58,8 +58,8 @@ CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are sp
 
 void C_AddTabCommand(char const *) {}
 void C_RemoveTabCommand(char const *) {}
-void P_ShowSpawns(MapThing*) {}
-void P_SpawnPlayer(player_t&, mapthing2_t*) {}
+void P_ShowSpawns(const mapthing2_t&) {}
+void P_SpawnPlayer(player_t&, const mapthing2_t&) {}
 void G_DeathMatchSpawnPlayer(player_t&) {}
 player_t& consoleplayer() { return idplayer(consoleplayer_id); }
 player_t& displayplayer() { return idplayer(displayplayer_id); }
@@ -104,7 +104,7 @@ void SV_BroadcastSector(int sectornum) {}
 void SV_UpdateMobj(const AActor* mo) {}
 void SV_UpdateMobjState(const AActor* mo) {}
 
-void CTF_RememberFlagPos(mapthing2_t *mthing) {}
+void CTF_RememberFlagPos(const mapthing2_t& mthing) {}
 void CTF_SpawnFlag(team_t f) {}
 bool SV_AwarenessUpdate(player_t &pl, AActor* mo) { return true; }
 void SV_SendPackets(void) {}

@@ -1144,7 +1144,7 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 		}
 		else if (iequals(key, "Pain chance"))
 		{
-			info->painchance = (SWORD)val;
+			info->painchance = val;
 		}
 		else if (iequals(key, "Melee range"))
 		{
@@ -1295,7 +1295,7 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 		}
 		else if (iequals(key, "ID #"))
 		{
-			info->doomednum = (SDWORD)val;
+			info->doomednum = static_cast<int16_t>(val);
 			// update spawn map
 			spawn_map.insert(info, info->doomednum);
 		}
@@ -2080,7 +2080,7 @@ static void PatchText(int sizes, DehScanner& scanner)
 	DPrintFmt("Searching for text:\n{}\n", *oldStr);
 
 	// Search through sprite names
-	for (auto& [_, sprname] : sprnames)
+	for (auto&& [_, sprname] : sprnames)
 	{
 		if (sprname == *oldStr)
 		{
@@ -2448,7 +2448,7 @@ static void D_PostProcessDeh(const DehScanner::ParsedState& dp)
 		}
 	}
 
-	for (auto& [_, state] : states)
+	for (auto&& [_, state] : states)
 	{
 		const CodePtr* bexptr_match = &null_bexptr;
 
