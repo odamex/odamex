@@ -132,25 +132,25 @@ next:
 		MSG_WriteString(&ml_message, Cvars[i].Name.c_str());
 
 		// Type field
-		MSG_WriteByte(&ml_message, (byte)Cvars[i].Type);
+		MSG_WriteByte(&ml_message, static_cast<byte>(Cvars[i].Type));
 
 		switch(Cvars[i].Type)
 		{
 		case CVARTYPE_BYTE:
 		{
-			MSG_WriteByte(&ml_message, (byte)atoi(Cvars[i].Value.c_str()));
+			MSG_WriteByte(&ml_message, ParseNum<byte>(Cvars[i].Value).value_or(0));
 		}
 		break;
 
 		case CVARTYPE_WORD:
 		{
-			MSG_WriteShort(&ml_message, (short)atoi(Cvars[i].Value.c_str()));
+			MSG_WriteShort(&ml_message, ParseNum<short>(Cvars[i].Value).value_or(0));
 		}
 		break;
 
 		case CVARTYPE_INT:
 		{
-			MSG_WriteLong(&ml_message, (int)atoi(Cvars[i].Value.c_str()));
+			MSG_WriteLong(&ml_message, ParseNum<int>(Cvars[i].Value).value_or(0));
 		}
 		break;
 
@@ -172,9 +172,9 @@ next:
 
 	MSG_WriteString(&ml_message, level.mapname.c_str());
 
-	int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
+	int timeleft = (sv_timelimit.asInt() - level.time/(TICRATE*60));
 
-	if(timeleft < 0)
+	if (timeleft < 0)
 		timeleft = 0;
 
 	// TODO: Remove guard on next release and reset protocol version
@@ -197,7 +197,7 @@ next:
 
 		for (int i = 0; i < teams; i++)
 		{
-			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 			MSG_WriteString(&ml_message, teamInfo->ColorString.c_str());
 			MSG_WriteLong(&ml_message, teamInfo->Color);
 			MSG_WriteShort(&ml_message, teamInfo->Points);

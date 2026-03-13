@@ -327,6 +327,7 @@ void StrFormatBytes(std::string& out, size_t bytes)
 		out = fmt::sprintf("%.0f %s", checkbytes, BYTE_MAGS[magnitude]);
 }
 
+// TODO: update these to use c++20 std::chrono types and drop strptime
 // [AM] Format a tm struct as an ISO8601-compliant extended format string.
 //      Assume that the input time is in UTC.
 bool StrFormatISOTime(std::string& s, const tm* utc_tm) {

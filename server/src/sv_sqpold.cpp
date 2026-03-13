@@ -217,12 +217,12 @@ void SV_SendServerInfo()
 //bond===========================
 	MSG_WriteString(&ml_message, sv_email.cstring());
 
-	int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
-	if (timeleft<0) timeleft=0;
+	int timeleft = (sv_timelimit.asInt() - level.time/(TICRATE*60));
+	if (timeleft < 0) timeleft = 0;
 
-	MSG_WriteShort(&ml_message,sv_timelimit.asInt());
-	MSG_WriteShort(&ml_message,timeleft);
-	MSG_WriteShort(&ml_message,sv_fraglimit.asInt());
+	MSG_WriteShort(&ml_message, sv_timelimit.asInt());
+	MSG_WriteShort(&ml_message, timeleft);
+	MSG_WriteShort(&ml_message, sv_fraglimit.asInt());
 
 	MSG_WriteBool(&ml_message, (sv_itemsrespawn ? true : false));
 	MSG_WriteBool(&ml_message, (sv_weaponstay ? true : false));
