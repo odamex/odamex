@@ -120,7 +120,7 @@ vissprite_t *R_NewVisSprite()
 		int prevvisspritenum = vissprite_p - vissprites;
 
 		MaxVisSprites *= 2;
-		vissprites = (vissprite_t *)M_Realloc (vissprites, MaxVisSprites * sizeof(vissprite_t));
+		vissprites = static_cast<vissprite_t*>(M_Realloc(vissprites, MaxVisSprites * sizeof(vissprite_t)));
 		lastvissprite = &vissprites[MaxVisSprites];
 		firstvissprite = &vissprites[firstvisspritenum];
 		vissprite_p = &vissprites[prevvisspritenum];

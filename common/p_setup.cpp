@@ -509,7 +509,7 @@ byte* P_DecompressNodes(byte* data, size_t len) {
 	byte* output = Z_Malloc<byte>(outlen, PU_STATIC);
 
 	// initialize stream state for decompression
-	z_stream* zstream = (z_stream*)M_Malloc(sizeof(*zstream));
+	z_stream* zstream = static_cast<z_stream*>(M_Malloc(sizeof(*zstream)));
 	memset(zstream, 0, sizeof(*zstream));
 	zstream->next_in = data + 4;
 	zstream->avail_in = static_cast<uInt>(len - 4);

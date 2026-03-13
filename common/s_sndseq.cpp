@@ -321,7 +321,7 @@ static void VerifySeqPtr (int pos, int need)
 	if (pos + need > ScriptTempSize)
 	{
 		ScriptTempSize *= 2;
-		ScriptTemp = (unsigned int *) M_Realloc(ScriptTemp, ScriptTempSize * sizeof(*ScriptTemp));
+		ScriptTemp = static_cast<unsigned int *>(M_Realloc(ScriptTemp, ScriptTempSize * sizeof(*ScriptTemp)));
 	}
 }
 
@@ -425,7 +425,7 @@ void S_ParseSndSeq()
 
 	memset (SeqTrans, -1, sizeof(SeqTrans));
 	name[MAX_SNDNAME] = 0;
-	ScriptTemp = (unsigned int *)M_Malloc (MAX_SEQSIZE * sizeof(*ScriptTemp));
+	ScriptTemp = static_cast<unsigned int *>(M_Malloc(MAX_SEQSIZE * sizeof(*ScriptTemp)));
 	ScriptTempSize = MAX_SEQSIZE;
 
 	int lump = -1;
@@ -465,7 +465,7 @@ void S_ParseSndSeq()
 				if (NumSequences > MaxSequences)
 				{
 					MaxSequences = MaxSequences ? MaxSequences * 2 : 64;
-					Sequences = (sndseq_t **)M_Realloc (Sequences, MaxSequences * sizeof(*Sequences));
+					Sequences = static_cast<sndseq_t**>(M_Realloc(Sequences, MaxSequences * sizeof(*Sequences)));
 				}
 				memset (ScriptTemp, 0, sizeof(*ScriptTemp) * ScriptTempSize);
 				stopsound = -1;

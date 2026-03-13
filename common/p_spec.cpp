@@ -641,7 +641,7 @@ static void ParseAnim(OScanner &os, byte istex)
 			if (lastanim > anims + maxanims)
 			{
 				const size_t newmax = maxanims ? maxanims * 2 : MAXANIMS;
-				anims = static_cast<anim_t*>(Realloc(anims, newmax * sizeof(*anims)));
+				anims = static_cast<anim_t*>(M_Realloc(anims, newmax * sizeof(*anims)));
 				place = anims + maxanims;
 				lastanim = place + 1;
 				maxanims = newmax;
@@ -871,7 +871,7 @@ void P_InitPicAnims (void)
 			if (lastanim >= anims + maxanims)
 			{
 				size_t newmax = maxanims ? maxanims*2 : MAXANIMS;
-				anims = (anim_t*) M_Realloc(anims, newmax*sizeof(*anims));   // killough
+				anims = static_cast<anim_t*>(M_Realloc(anims, newmax*sizeof(*anims)));   // killough
 				lastanim = anims + maxanims;
 				maxanims = newmax;
 			}

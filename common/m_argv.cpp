@@ -250,8 +250,8 @@ void DArgs::SetArgs(const char *cmdline)
 	if (!*cmdline)
 		return;
 
-	outputline = (char *) M_Malloc((strlen(cmdline) + 1) * sizeof(char));
-	outputargv = (char **) M_Malloc(((strlen(cmdline) + 1) / 2) * sizeof(char *));
+	outputline = static_cast<char*>(M_Malloc((strlen(cmdline) + 1) * sizeof(char)));
+	outputargv = static_cast<char**>(M_Malloc(((strlen(cmdline) + 1) / 2) * sizeof(char *)));
 
 	const char *p = cmdline;
 	q = outputline;
@@ -381,7 +381,7 @@ void M_FindResponseFile (void)
 
 			if (argc != 0)
 			{
-				char **argv = (char **) M_Malloc(argc*sizeof(char *) + argsize);
+				char **argv = static_cast<char**>(M_Malloc(argc*sizeof(char *) + argsize));
 				argv[i] = (char *)argv + argc*sizeof(char *);
 				ParseCommandLine (file.get(), NULL, argv+i);
 
