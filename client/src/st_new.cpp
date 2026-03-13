@@ -2015,12 +2015,15 @@ void FreecamHUD()
 	}
 
 	hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
-	              hud::Y_BOTTOM, "Freecam", CR_YELLOW);
+	              hud::Y_BOTTOM, "Freecam", CR_WHITE);
 	iy += V_LineHeight() + 1;
 
 	// Draw targeted player names.
 	hud::EATargets(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	               hud::Y_BOTTOM, 1, 0);
+
+	// Draw gametype scoreboard
+	hud::drawGametype();
 }
 }
 
