@@ -298,10 +298,10 @@ void R_ClipLine(const v2fixed_t* in1, const v2fixed_t* in2,
 	const fixed_t dy = in2->y - in1->y;
 	const fixed_t x = in1->x;
 	const fixed_t y = in1->y;
-	out1->x = x + FixedMul30(lclip, dx);
-	out2->x = x + FixedMul30(rclip, dx);
-	out1->y = y + FixedMul30(lclip, dy);
-	out2->y = y + FixedMul30(rclip, dy);
+	out1->x = x + FixedMulN<30>(lclip, dx);
+	out2->x = x + FixedMulN<30>(rclip, dx);
+	out1->y = y + FixedMulN<30>(lclip, dy);
+	out2->y = y + FixedMulN<30>(rclip, dy);
 }
 
 void R_ClipLine(const vertex_t* in1, const vertex_t* in2,
@@ -340,13 +340,13 @@ bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipd
 			return false;
 
 		// clip the line at the point where p1.y == clipdist
-		lclip = FixedDiv30(clipdist - p1.y, p2.y - p1.y);
+		lclip = FixedDivN<30>(clipdist - p1.y, p2.y - p1.y);
 	}
 
 	if (p2.y < clipdist)
 	{
 		// clip the line at the point where p2.y == clipdist
-		rclip = FixedDiv30(clipdist - p1.y, p2.y - p1.y);
+		rclip = FixedDivN<30>(clipdist - p1.y, p2.y - p1.y);
 	}
 
 	int32_t unclipped_amount = rclip - lclip;
@@ -375,8 +375,8 @@ bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipd
 		if (den == 0)
 			return false;
 
-		int32_t t = FixedDiv30(-yc1 - p1.x, den);
-		lclip += FixedMul30(t, unclipped_amount);
+		int32_t t = FixedDivN<30>(-yc1 - p1.x, den);
+		lclip += FixedMulN<30>(t, unclipped_amount);
 	}
 
 	// is the right vertex off the right side of the screen?
@@ -387,8 +387,8 @@ bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipd
 		if (den == 0)
 			return false;
 
-		int32_t t = FixedDiv30(yc1 - p1.x, den);
-		rclip -= FixedMul30(CLIPUNIT - t, unclipped_amount);
+		int32_t t = FixedDivN<30>(yc1 - p1.x, den);
+		rclip -= FixedMulN<30>(CLIPUNIT - t, unclipped_amount);
 	}
 
 	if (lclip > rclip)
