@@ -298,7 +298,7 @@ void P_LoadSubsectors(int lump)
 	}
 
 	numsubsectors = W_LumpLength (lump) / sizeof(MapSubsectorType);
-	subsectors = static_cast<subsector_t*>(Z_Malloc(numsubsectors*sizeof(subsector_t), PU_LEVEL, nullptr));
+	subsectors = Z_Malloc<subsector_t>(numsubsectors, PU_LEVEL);
 	MapSubsectorType* data = static_cast<MapSubsectorType*>(W_CacheLumpNum(lump, PU_STATIC));
 
 	memset (subsectors, 0, numsubsectors*sizeof(subsector_t));
@@ -468,7 +468,7 @@ void P_LoadNodes(int lump)
 	}
 
 	numnodes = W_LumpLength(lump) / sizeof(MapNodeType);
-	nodes = (node_t*) Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL, 0);
+	nodes = Z_Malloc<node_t>(numnodes, PU_LEVEL);
 	byte* data = (byte*) W_CacheLumpNum(lump, PU_STATIC);
 
 	const MapNodeType* mn = (MapNodeType *)data;
@@ -509,7 +509,7 @@ byte* P_DecompressNodes(byte* data, size_t len) {
 	// first estimate for compression rate:
 	// output buffer size == 2.5 * input size
 	int outlen = 2.5 * len;
-	byte* output = (byte*)Z_Malloc(outlen, PU_STATIC, 0);
+	byte* output = Z_Malloc<byte>(outlen, PU_STATIC);
 
 	// initialize stream state for decompression
 	z_stream* zstream = (z_stream*)M_Malloc(sizeof(*zstream));
@@ -547,7 +547,7 @@ byte* P_DecompressNodes(byte* data, size_t len) {
 
 byte* P_LoadSegs_XNOD(byte* p) {
 	numsegs = LELONG(*(uint32_t *)p); p += 4;
-	segs = (seg_t *) Z_Malloc(numsegs * sizeof(*segs), PU_LEVEL, 0);
+	segs = Z_Malloc<seg_t>(numsegs, PU_LEVEL);
 	memset(segs, 0, numsegs * sizeof(*segs));
 
 	for (int i = 0; i < numsegs; i++)
@@ -601,7 +601,7 @@ byte* P_LoadSegs_XGL(byte* p)
 	);
 
 	numsegs = LELONG(*(uint32_t *)p); p += 4;
-	segs = (seg_t *) Z_Malloc(numsegs * sizeof(*segs), PU_LEVEL, 0);
+	segs = Z_Malloc<seg_t>(numsegs, PU_LEVEL);
 	memset(segs, 0, numsegs * sizeof(*segs));
 
 	uint32_t write_index = 0;
@@ -732,7 +732,7 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 	const uint32_t numorgvert = LELONG(*(uint32_t *)p); p += 4;
 	const uint32_t numnewvert = LELONG(*(uint32_t *)p); p += 4;
 
-	vertex_t *newvert = (vertex_t *) Z_Malloc((numorgvert + numnewvert)*sizeof(*newvert), PU_LEVEL, 0);
+	vertex_t *newvert = Z_Malloc<vertex_t>(numorgvert + numnewvert, PU_LEVEL);
 
 	memcpy(newvert, vertexes, numorgvert*sizeof(*newvert));
 	memset(&newvert[numorgvert], 0, numnewvert * sizeof(*newvert));
@@ -761,7 +761,7 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 	// Load subsectors
 
 	numsubsectors = LELONG(*(uint32_t *)p); p += 4;
-	subsectors = (subsector_t *) Z_Malloc(numsubsectors * sizeof(*subsectors), PU_LEVEL, 0);
+	subsectors = Z_Malloc<subsector_t>(numsubsectors, PU_LEVEL);
 	memset(subsectors, 0, numsubsectors * sizeof(*subsectors));
 
 	uint32_t first_seg = 0;
@@ -785,7 +785,7 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 	// Load nodes
 
 	numnodes = LELONG(*(uint32_t *)p); p += 4;
-	nodes = (node_t *) Z_Malloc(numnodes * sizeof(*nodes), PU_LEVEL, 0);
+	nodes = Z_Malloc<node_t>(numnodes, PU_LEVEL);
 	memset(nodes, 0, numnodes * sizeof(*nodes));
 
 	for (int i = 0; i < numnodes; i++)
@@ -1106,7 +1106,7 @@ void P_FinishLoadingLineDefs (void)
 void P_LoadLineDefs (const int lump)
 {
 	numlines = W_LumpLength (lump) / sizeof(maplinedef_t);
-	lines = (line_t *)Z_Malloc (numlines*sizeof(line_t), PU_LEVEL, 0);
+	lines = Z_Malloc<line_t>(numlines, PU_LEVEL);
 	memset (lines, 0, numlines*sizeof(line_t));
 	byte* data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
 	auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
@@ -1159,7 +1159,7 @@ void P_LoadLineDefs (const int lump)
 void P_LoadLineDefs2 (int lump)
 {
 	numlines = W_LumpLength (lump) / sizeof(maplinedef2_t);
-	lines = (line_t *)Z_Malloc (numlines*sizeof(line_t), PU_LEVEL,0 );
+	lines = Z_Malloc<line_t>(numlines, PU_LEVEL);
 	memset (lines, 0, numlines*sizeof(line_t));
 	byte* data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
 
@@ -1210,7 +1210,7 @@ void P_LoadLineDefs2 (int lump)
 void P_LoadSideDefs (int lump)
 {
 	numsides = W_LumpLength (lump) / sizeof(mapsidedef_t);
-	sides = (side_t *)Z_Malloc (numsides*sizeof(side_t), PU_LEVEL, 0);
+	sides = Z_Malloc<side_t>(numsides, PU_LEVEL);
 	memset (sides, 0, numsides*sizeof(side_t));
 }
 
@@ -1534,7 +1534,7 @@ void P_CreateBlockMap()
 	}
 
 	// Create the blockmap lump
-	blockmaplump = (int *)Z_Malloc(sizeof(*blockmaplump) * (4+NBlocks+linetotal), PU_LEVEL, 0);
+	blockmaplump = Z_Malloc<int>(4 + NBlocks + linetotal, PU_LEVEL);
 
 	// blockmap header
 	//
@@ -1612,7 +1612,7 @@ void P_LoadBlockMap (int lump)
 	else
 	{
 		short *wadblockmaplump = (short *)W_CacheLumpNum (lump, PU_LEVEL);
-		blockmaplump = (int *)Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, 0);
+		blockmaplump = Z_Malloc<int>(count, PU_LEVEL);
 
 		// killough 3/1/98: Expand wad blockmap into larger internal one,
 		// by treating all offsets except -1 as unsigned and zero-extending
@@ -1727,7 +1727,7 @@ int P_GroupLines()
 	}
 
 	// build line tables for each sector
-	line_t** linebuffer = (line_t **)Z_Malloc (total*sizeof(line_t *), PU_LEVEL, 0);
+	line_t** linebuffer = Z_Malloc<line_t*>(total, PU_LEVEL);
 	sector_t* sector = sectors;
 	DBoundingBox bbox;
 	for (int i = 0 ; i < numsectors ; i++, sector++)
@@ -1818,7 +1818,7 @@ int P_GroupLines()
 
 void P_RemoveSlimeTrails()
 {
-	byte* hit = (byte *)Z_Malloc(numvertexes, PU_LEVEL, 0);
+	byte* hit = Z_Malloc<byte>(numvertexes, PU_LEVEL);
 	memset(hit, 0, numvertexes * sizeof(byte));
 
 	for (int i = 0; i < numsegs; i++)
@@ -2037,7 +2037,7 @@ void P_LoadReject(int lumpnum, int totallines)
 	else if (lumpsize < correctsize)
 	{
 		DPrintFmt("Reject matrix is not valid. It will be padded to the correct size.\n");
-		rejectmatrix = static_cast<byte*>(Z_Malloc(correctsize, PU_LEVEL, nullptr));
+		rejectmatrix = Z_Malloc<byte>(correctsize, PU_LEVEL);
 		W_ReadLump(lumpnum, rejectmatrix);
 		memset(rejectmatrix + lumpsize, 0, correctsize - lumpsize);
 		// vanilla doom just reads pass the edge of the reject table if its too small
@@ -2267,7 +2267,7 @@ static std::vector<spriteinfo_t*> P_GetSpriteInfos ()
 	std::vector<spriteinfo_t*> infos;
 	for(auto it = sprnames.begin();it != sprnames.end();++it)
 	{
-		spriteinfo_t* spriteinfo = (spriteinfo_t*) Z_Malloc(sizeof(spriteinfo_t), PU_STATIC, nullptr);
+		spriteinfo_t* spriteinfo = Z_Malloc<spriteinfo_t>(PU_STATIC);
 		spriteinfo->sprite = Z_StrDup(it->second.data(), PU_STATIC);
 		spriteinfo->spritenum = it->first;
 		infos.push_back(spriteinfo);
