@@ -1326,7 +1326,7 @@ IMPLEMENT_SERIAL (DLevelScript, DObject)
 
 void *DLevelScript::operator new (size_t size)
 {
-	return Z_Malloc (sizeof(DLevelScript), PU_LEVACS, 0);
+	return Z_Malloc2(sizeof(DLevelScript), PU_LEVACS, nullptr);
 }
 
 void DLevelScript::operator delete (void *block)

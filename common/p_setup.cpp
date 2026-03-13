@@ -172,7 +172,7 @@ void P_LoadVertexes (int lump)
 	numvertexes = W_LumpLength (lump) / sizeof(mapvertex_t);
 
 	// Allocate zone memory for buffer.
-	vertexes = (vertex_t *)Z_Malloc (numvertexes*sizeof(vertex_t), PU_LEVEL, 0);
+	vertexes = Z_Malloc<vertex_t>(numvertexes, PU_LEVEL);
 
 	// Load data into cache.
 	data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
@@ -248,7 +248,7 @@ void P_LoadSegs (int lump, bool isdeepbsp = false)
 		numsegs = W_LumpLength (lump) / sizeof(mapseg_deepbsp_t);
 	else
 		numsegs = W_LumpLength (lump) / sizeof(mapseg_t);
-	segs = (seg_t *)Z_Malloc (numsegs*sizeof(seg_t), PU_LEVEL, 0);
+	segs = Z_Malloc<seg_t>(numsegs, PU_LEVEL);
 	memset (segs, 0, numsegs*sizeof(seg_t));
 	data = (byte*)W_CacheLumpNum (lump, PU_STATIC);
 
@@ -595,7 +595,7 @@ byte* P_DecompressNodes(byte* data, size_t len) {
 	{
 		int outlen_old = outlen;
 		outlen = 2 * outlen_old;
-		output = (byte*)Z_Realloc(output, outlen, PU_STATIC, 0);
+		output = Z_Realloc<byte>(output, outlen, PU_STATIC);
 		zstream->next_out = output + outlen_old;
 		zstream->avail_out = outlen - outlen_old;
 	}

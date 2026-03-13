@@ -263,7 +263,7 @@ void S_Init(float sfxVolume, float musicVolume)
 	// (the maximum numer of sounds rendered
 	// simultaneously) within zone memory.
 	numChannels = snd_channels.asInt();
-	Channel = (channel_t*)Z_Malloc(numChannels * sizeof(channel_t), PU_STATIC, 0);
+	Channel = Z_Malloc<channel_t>(numChannels, PU_STATIC);
 	for (size_t i = 0; i < numChannels; i++)
 		Channel[i].clear();
 

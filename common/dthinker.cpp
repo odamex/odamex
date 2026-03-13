@@ -276,14 +276,14 @@ void DThinker::RunThinkers ()
 
 void *DThinker::operator new (size_t size)
 {
-	return Z_Malloc (size, PU_LEVSPEC, 0);
+	return Z_Malloc2(size, PU_LEVSPEC, nullptr);
 }
 
 // Deallocation is lazy -- it will not actually be freed
 // until its thinking turn comes up.
 void DThinker::operator delete (void *mem)
 {
-	Z_Free (mem);
+	Z_Free(mem);
 }
 
 bool P_ThinkerIsPlayerType(DThinker* thinker)

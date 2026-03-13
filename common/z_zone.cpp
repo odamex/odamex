@@ -328,15 +328,12 @@ void Z_Free(void* ptr, const std::source_location location)
 // Z_Malloc
 // You can pass a NULL user if the tag is < PU_PURGELEVEL.
 //
-#define MINFRAGMENT	64
-#define ALIGN		8
-
-void* Z_Malloc(size_t size, const zoneTag_e tag, void* user, const std::source_location location)
+void* Z_Malloc2(size_t size, const zoneTag_e tag, void* user, const std::source_location location)
 {
 	return g_zone.alloc(size, tag, user, OFileLine::create(location.file_name(), location.line()));
 }
 
-void* Z_Realloc(void* ptr, size_t size, const zoneTag_e tag, void* user, const std::source_location location)
+void* Z_Realloc2(void* ptr, size_t size, const zoneTag_e tag, void* user, const std::source_location location)
 {
 	return g_zone.realloc(ptr, size, tag, user, OFileLine::create(location.file_name(), location.line()));
 }

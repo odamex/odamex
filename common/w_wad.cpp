@@ -801,7 +801,7 @@ void* W_CacheLumpNum(unsigned int lump, const zoneTag_e tag)
 
 		//DPrintf("cache miss on lump %i\n",lump);
 		unsigned int lump_length = W_LumpLength(lump);
-		lumpcache[lump] = (byte *)Z_Malloc(lump_length + 1, tag, &lumpcache[lump]);
+		lumpcache[lump] = Z_Malloc<byte>(lump_length + 1, tag, &lumpcache[lump]);
 		W_ReadLump(lump, lumpcache[lump]);
 		*((unsigned char*)lumpcache[lump] + lump_length) = 0;
 	}
@@ -858,7 +858,7 @@ patch_t* W_CachePatch(unsigned lumpnum, const zoneTag_e tag)
 		if (newlumplen > 0)
 		{
 			// valid patch
-			lumpcache[lumpnum] = (byte *)Z_Malloc(newlumplen + 1, tag, &lumpcache[lumpnum]);
+			lumpcache[lumpnum] = Z_Malloc<byte>(newlumplen + 1, tag, &lumpcache[lumpnum]);
 			patch_t *newpatch = (patch_t*)lumpcache[lumpnum];
 			*((unsigned char*)lumpcache[lumpnum] + newlumplen) = 0;
 
@@ -867,7 +867,7 @@ patch_t* W_CachePatch(unsigned lumpnum, const zoneTag_e tag)
 		else
 		{
 			// invalid patch - just create a header with width = 0, height = 0
-			lumpcache[lumpnum] = Z_Malloc(sizeof(patch_t), tag, &lumpcache[lumpnum]);
+			lumpcache[lumpnum] = Z_Malloc<patch_t>(1, tag, &lumpcache[lumpnum]);
 			memset(lumpcache[lumpnum], 0, sizeof(patch_t));
 		}
 	}

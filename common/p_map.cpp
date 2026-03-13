@@ -3443,7 +3443,7 @@ msecnode_t *P_GetSecnode()
 		headsecnode = headsecnode->m_snext;
 	}
 	else
-		node = (msecnode_t *)Z_Malloc (sizeof(*node), PU_LEVEL, NULL);
+		node = Z_Malloc<msecnode_t>(1, PU_LEVEL);
 	return node;
 }
 

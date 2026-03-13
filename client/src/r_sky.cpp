@@ -343,7 +343,7 @@ sky_t* R_GetSky(const OLumpName& name, bool create)
 	if (tex < 0) return nullptr;
 
 	OLumpName skytexname;
-	sky_t* sky = (sky_t*)Z_Malloc(sizeof(sky_t), PU_STATIC, nullptr);
+	sky_t* sky = Z_Malloc<sky_t>(1, PU_STATIC);
 	sky->background.scalex = INT2FIXED(1);
 	sky->background.scaley = INT2FIXED(1);
 	sky->background.scrolly = INT2FIXED(0);
@@ -420,7 +420,7 @@ void R_InitSkyDefs()
 				return jsonlumpresult_t::PARSEERROR;
 			}
 
-			sky_t* sky = (sky_t*)Z_Malloc(sizeof(sky_t), PU_STATIC, nullptr);
+			sky_t* sky = Z_Malloc<sky_t>(1, PU_STATIC);
 
 			sky->type = skytype;
 			sky->usedefaultmid = false;
@@ -443,13 +443,13 @@ void R_InitSkyDefs()
 				const Json::Value& fireupdatetime = fireelem["updatetime"];
 
 				if (!firepalette.isArray()) return jsonlumpresult_t::PARSEERROR;
-				sky->numfireentries = (int32_t)firepalette.size();
-				byte* output = sky->firepalette = (byte*)Z_Malloc(sizeof(byte) * sky->numfireentries, PU_STATIC, nullptr);
+				sky->numfireentries = static_cast<int32_t>(firepalette.size());
+				byte* output = sky->firepalette = Z_Malloc<byte>(sky->numfireentries, PU_STATIC);
 				for (const Json::Value& palentry : firepalette)
 				{
 					*output++ = palentry.asUInt();
 				}
-				sky->fireticrate = (int32_t)(fireupdatetime.asFloat() * TICRATE);
+				sky->fireticrate = static_cast<int32_t>((fireupdatetime.asFloat() * TICRATE));
 			}
 			else if (sky->type == skytype_t::DOUBLESKY)
 			{
@@ -562,7 +562,7 @@ void R_InitFireSky(sky_t* sky)
 {
 	int texnum = sky->background.texnum;
 	const texture_t* tex = textures[texnum];
-	sky->firetexturedata = (byte*)Z_Malloc(sizeof(byte) * tex->width * tex->height, PU_LEVEL, nullptr);
+	sky->firetexturedata = Z_Malloc<byte>(tex->width * tex->height, PU_LEVEL);
     for (int i = 0 ; i < tex->width*tex->height; i++)
 	{
 		sky->firetexturedata[i] = 0;

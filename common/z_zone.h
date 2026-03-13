@@ -53,16 +53,32 @@ void Z_DumpHeap(const zoneTag_e lowtag, const zoneTag_e hightag);
 
 #define SOURCELOC const std::source_location location = std::source_location::current()
 
-// Don't use these, use the macros instead!
-void* Z_Malloc(size_t size, const zoneTag_e tag, void* user, SOURCELOC);
-void* Z_Realloc(void* ptr, size_t size, const zoneTag_e tag, void* user, SOURCELOC);
+// Don't use these, use the templated ones instead!
+void* Z_Malloc2(size_t size, const zoneTag_e tag, void* user, SOURCELOC);
+void* Z_Realloc2(void* ptr, size_t size, const zoneTag_e tag, void* user, SOURCELOC);
+
 void Z_Free(void* ptr, SOURCELOC);
 void Z_Discard(void** ptr, SOURCELOC);
 void Z_ChangeTag(void* ptr, const zoneTag_e tag, SOURCELOC);
 void Z_ChangeOwner(void* ptr, void* user, SOURCELOC);
 char* Z_StrDup(const char* s, const zoneTag_e tag, SOURCELOC);
 
-#undef SOURCELOC
+inline void* Z_Malloc(size_t size, const zoneTag_e tag, void* user = nullptr, SOURCELOC)
+{
+	return Z_Malloc2(size, tag, user, location);
+}
+
+template <typename T>
+T* Z_Malloc(size_t count, const zoneTag_e tag, void* user = nullptr, SOURCELOC)
+{
+	return static_cast<T*>(Z_Malloc2(count * sizeof(T), tag, user, location));
+}
+
+template <typename T>
+T* Z_Realloc(T* ptr, size_t count, const zoneTag_e tag, void* user = nullptr, SOURCELOC)
+{
+	return static_cast<T*>(Z_Realloc2(ptr, count * sizeof(T), tag, user, location));
+}
 
 typedef struct memblock_s
 {
@@ -74,7 +90,7 @@ typedef struct memblock_s
 	struct memblock_s*	prev;
 } memblock_t;
 
-inline void Z_ChangeTag(const void* ptr, const zoneTag_e tag, const std::source_location location = std::source_location::current())
+inline void Z_ChangeTag(const void* ptr, const zoneTag_e tag, SOURCELOC)
 {
 	Z_ChangeTag(const_cast<void *>(ptr), tag, location);
 }
@@ -88,7 +104,7 @@ inline void Z_ChangeTag(const void* ptr, const zoneTag_e tag, const std::source_
  * @param location Location in the source code that this function was called
  */
 template <typename P>
-inline void Z_Discard(P ptr, const std::source_location location = std::source_location::current())
+inline void Z_Discard(P ptr, SOURCELOC)
 {
 	if (*ptr == NULL)
 	{
@@ -98,6 +114,8 @@ inline void Z_Discard(P ptr, const std::source_location location = std::source_l
 	Z_ChangeTag(*ptr, PU_CACHE, location);
 	*ptr = NULL;
 }
+
+#undef SOURCELOC
 
 //
 // This is used to get the local FILE:LINE info from CPP
