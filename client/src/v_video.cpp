@@ -1005,6 +1005,40 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch, bool clear) const
 	DrawPatchStretched(patch, x, y, destw, desth);
 }
 
+void DCanvas::DrawPatchWithPalette(const patch_t* patch, int x, int y, const palette_t* palette) const
+{
+	if (palette == NULL)
+	{
+		DrawPatch(patch, x, y);
+		return;
+	}
+
+	if (mSurface->getBitsPerPixel() == 8)
+	{
+		palindex_t translation[256];
+		const argb_t* dest_palette = mSurface->getPalette();
+
+		for (int i = 0; i < 256; i++)
+			translation[i] = V_BestColor(dest_palette, palette->colors[i]);
+
+		const translationref_t old_colormap = V_ColorMap;
+		V_ColorMap = translationref_t(translation);
+		DrawTranslatedPatch(patch, x, y);
+		V_ColorMap = old_colormap;
+		return;
+	}
+
+	const shaderef_t old_palette = V_Palette;
+	V_Palette = shaderef_t(&palette->maps, 0);
+	DrawPatch(patch, x, y);
+	V_Palette = old_palette;
+}
+
+void DCanvas::DrawPatchCleanWithPalette(const patch_t* patch, int x, int y, const palette_t* palette) const
+{
+	DrawPatchWithPalette(patch, getCleanX(x), getCleanY(y), palette);
+}
+
 
 // [RH] Set an area to a specified color
 void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) const

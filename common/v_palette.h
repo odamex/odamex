@@ -24,6 +24,7 @@
 #pragma once
 
 #include "r_defs.h"
+#include "olumpname.h"
 
 struct palette_t
 {
@@ -82,6 +83,8 @@ void V_InitPalette(const char* lumpname);
 
 const palette_t* V_GetDefaultPalette();
 const palette_t* V_GetGamePalette();
+bool V_BuildPaletteFromLump(const OLumpName& lumpname, palette_t& palette);
+const palette_t* V_GetPaletteFromLump(const OLumpName& lumpname);
 
 //
 // V_RestoreScreenPalette

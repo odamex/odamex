@@ -26,6 +26,7 @@
 
 #include <math.h>
 #include <cassert>
+#include <unordered_map>
 
 #include "i_system.h"
 #include "v_video.h"
@@ -43,6 +44,26 @@
 
 static palette_t default_palette;
 static palette_t game_palette;
+static std::unordered_map<OLumpName, palette_t> palette_cache;
+
+static bool V_LoadPaletteFromLumpNum(const int lumpnum, palette_t& palette)
+{
+	if (lumpnum < 0 || W_LumpLength(lumpnum) < 768)
+		return false;
+
+	if (palette.maps.colormap == NULL)
+		palette.maps.colormap = new palindex_t[(NUMCOLORMAPS + 1) * 256];
+	if (palette.maps.shademap == NULL)
+		palette.maps.shademap = new argb_t[(NUMCOLORMAPS + 1) * 256];
+
+	const byte* data = static_cast<const byte*>(W_CacheLumpNum(lumpnum, PU_CACHE));
+	for (int i = 0; i < 256; i++, data += 3)
+		palette.basecolors[i] = argb_t(255, data[0], data[1], data[2]);
+
+	V_GammaAdjustPalette(&palette);
+	BuildDefaultColorAndShademap(&palette, palette.maps);
+	return true;
+}
 
 //
 // V_GetDefaultPalette
@@ -68,6 +89,31 @@ const palette_t* V_GetDefaultPalette()
 const palette_t* V_GetGamePalette()
 {
 	return &game_palette;
+}
+
+bool V_BuildPaletteFromLump(const OLumpName& lumpname, palette_t& palette)
+{
+	if (lumpname.empty())
+		return false;
+
+	const int lumpnum = W_CheckNumForName(lumpname);
+	return V_LoadPaletteFromLumpNum(lumpnum, palette);
+}
+
+const palette_t* V_GetPaletteFromLump(const OLumpName& lumpname)
+{
+	if (lumpname.empty())
+		return NULL;
+
+	const auto it = palette_cache.find(lumpname);
+	if (it != palette_cache.end())
+		return &it->second;
+
+	palette_t palette = {};
+	if (!V_BuildPaletteFromLump(lumpname, palette))
+		return NULL;
+
+	return &palette_cache.emplace(lumpname, palette).first->second;
 }
 
 
@@ -607,13 +653,7 @@ void V_InitPalette(const char* lumpname)
 
 	default_palette.maps.colormap = new palindex_t[(NUMCOLORMAPS + 1) * 256];
 	default_palette.maps.shademap = new argb_t[(NUMCOLORMAPS + 1) * 256];
-
-	const byte* data = (byte*)W_CacheLumpNum(lumpnum, PU_CACHE);
-
-	for (int i = 0; i < 256; i++, data += 3)
-		default_palette.basecolors[i] = argb_t(255, data[0], data[1], data[2]);
-
-	V_GammaAdjustPalette(&default_palette);
+	V_LoadPaletteFromLumpNum(lumpnum, default_palette);
 
 	V_ForceBlend(argb_t(0, 255, 255, 255));
 

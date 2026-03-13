@@ -1260,7 +1260,8 @@ struct MapInfoDataSetter<cluster_info_t>
 			{ "music", &MIType_MusicLumpName, &ref.messagemusic },
 			{ "flat", &MIType_$LumpName, &ref.finaleflat },
 			{ "hub", &MIType_SetFlag, &ref.flags, CLUSTER_HUB },
-			{ "pic", &MIType_$LumpName, &ref.finalepic }
+			{ "pic", &MIType_$LumpName, &ref.finalepic },
+			{ "finalepalette", &MIType_LumpName, &ref.finalepalette }
 	    };
 	}
 };
