@@ -170,7 +170,7 @@ inline bool IsChexMission(GameMission_t mission)
 #define SPEED(a) ((a) * (FRACUNIT / 8))
 #define TICS(a) (((a)*TICRATE) / 35)
 #define OCTICS(a) (((a)*TICRATE) / 8)
-#define BYTEANGLE(a) ((angle_t)((a) << 24))
+#define BYTEANGLE(a) (static_cast<angle_t>((a) << 24))
 
 // [RH] Equivalents for BOOM's generalized sector types
 
@@ -443,7 +443,7 @@ inline FArchive &operator<< (FArchive &arc, card_t i)
 }
 inline FArchive &operator>> (FArchive &arc, card_t &i)
 {
-	byte in; arc >> in; i = (card_t)in; return arc;
+	byte in; arc >> in; i = static_cast<card_t>(in); return arc;
 }
 
 
@@ -476,11 +476,11 @@ inline auto format_as(weapontype_t eWeaponType)
 
 inline FArchive &operator<< (FArchive &arc, weapontype_t i)
 {
-	return arc << (byte)i;
+	return arc << static_cast<byte>(i);
 }
 inline FArchive &operator>> (FArchive &arc, weapontype_t &i)
 {
-	byte in; arc >> in; i = (weapontype_t)in; return arc;
+	byte in; arc >> in; i = static_cast<weapontype_t>(in); return arc;
 }
 
 
@@ -503,11 +503,11 @@ inline auto format_as(ammotype_t eAmmoType)
 
 inline FArchive &operator<< (FArchive &arc, ammotype_t i)
 {
-	return arc << (byte)i;
+	return arc << static_cast<byte>(i);
 }
 inline FArchive &operator>> (FArchive &arc, ammotype_t &i)
 {
-	byte in; arc >> in; i = (ammotype_t)in; return arc;
+	byte in; arc >> in; i = static_cast<ammotype_t>(in); return arc;
 }
 
 
@@ -526,11 +526,11 @@ enum powertype_t
 
 inline FArchive &operator<< (FArchive &arc, powertype_t i)
 {
-	return arc << (byte)i;
+	return arc << static_cast<byte>(i);
 }
 inline FArchive &operator>> (FArchive &arc, powertype_t &i)
 {
-	byte in; arc >> in; i = (powertype_t)in; return arc;
+	byte in; arc >> in; i = static_cast<powertype_t>(in); return arc;
 }
 
 
@@ -564,7 +564,7 @@ inline FArchive &operator>> (FArchive &arc, powertype_t &i)
 
 // Factor to scale scrolling effect into mobj-carrying properties = 3/32.
 // (This is so scrolling floors and objects on them can move at same speed.)
-#define CARRYFACTOR ((fixed_t)(FRACUNIT * .09375))
+#define CARRYFACTOR (static_cast<fixed_t>(FRACUNIT * .09375))
 
 #ifndef __BIG_ENDIAN__
 #define MAKE_ID(a,b,c,d)	((a)|((b)<<8)|((c)<<16)|((d)<<24))

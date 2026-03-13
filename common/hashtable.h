@@ -126,7 +126,7 @@ template <> struct hashfunc<unsigned long>
 {
 	unsigned int operator()(unsigned long val) const
 	{
-		if (sizeof(unsigned long) == 8)
+		if constexpr (sizeof(unsigned long) == 8)
 			return __hash_jenkins_64bit(val);
 		else
 			return __hash_jenkins_32bit(val);
@@ -137,7 +137,7 @@ template <> struct hashfunc<signed long>
 {
 	unsigned int operator()(signed long val) const
 	{
-		if (sizeof(signed long) == 8)
+		if constexpr (sizeof(signed long) == 8)
 			return __hash_jenkins_64bit(val);
 		else
 			return __hash_jenkins_32bit(val);
@@ -150,14 +150,15 @@ template <> struct hashfunc<unsigned long long>
 template <> struct hashfunc<signed long long>
 {	unsigned int operator()(signed long long val) const { return __hash_jenkins_64bit(val); }	};
 
-template <> struct hashfunc<void*>
+template <>
+struct hashfunc<void*>
 {
 	unsigned int operator()(void* ptr) const
 	{
-		if (sizeof(ptrdiff_t) == 8)
-			return __hash_jenkins_64bit((ptrdiff_t)ptr);
+		if constexpr (sizeof(uintptr_t) == 8)
+			return __hash_jenkins_64bit(reinterpret_cast<uintptr_t>(ptr));
 		else
-			return __hash_jenkins_32bit((ptrdiff_t)ptr);
+			return __hash_jenkins_32bit(reinterpret_cast<uintptr_t>(ptr));
 	}
 };
 
@@ -166,10 +167,10 @@ struct hashfunc<const void*>
 {
 	unsigned int operator()(const void* ptr) const
 	{
-		if (sizeof(ptrdiff_t) == 8)
-			return __hash_jenkins_64bit((ptrdiff_t)ptr);
+		if constexpr (sizeof(uintptr_t) == 8)
+			return __hash_jenkins_64bit(reinterpret_cast<uintptr_t>(ptr));
 		else
-			return __hash_jenkins_32bit((ptrdiff_t)ptr);
+			return __hash_jenkins_32bit(reinterpret_cast<uintptr_t>(ptr));
 	}
 };
 
