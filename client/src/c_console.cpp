@@ -940,7 +940,6 @@ EXTERN_CVAR(con_scrlock)
 void C_InitConCharsFont()
 {
 	static palindex_t transcolor = 0xF7;
-	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
 
 	// Load the CONCHARS lump and convert it from patch_t format
 	// to a raw linear byte buffer with a background color of 'transcolor'
@@ -953,11 +952,7 @@ void C_InitConCharsFont()
 
 	// paste the patch into the linear byte bufer
 	const DCanvas* canvas = temp_surface->getDefaultCanvas();
-	const patch_t* conchars_patch = W_CachePatch("CONCHARS");
-	if (palette == NULL)
-		canvas->DrawPatch(conchars_patch, 0, 0);
-	else
-		canvas->DrawPatchWithPalette(conchars_patch, 0, 0, palette);
+	canvas->DrawPatch(W_CachePatch("CONCHARS"), 0, 0);
 
 	ConChars = new byte[256*8*8*2];
 	byte* dest = ConChars;
