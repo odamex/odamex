@@ -302,15 +302,15 @@ void P_LoadSubsectors(int lump)
 	}
 
 	numsubsectors = W_LumpLength (lump) / sizeof(MapSubsectorType);
-	subsectors = (subsector_t *)Z_Malloc (numsubsectors*sizeof(subsector_t),PU_LEVEL,0);
-	byte* data = (byte *)W_CacheLumpNum (lump,PU_STATIC);
+	subsectors = static_cast<subsector_t*>(Z_Malloc(numsubsectors*sizeof(subsector_t), PU_LEVEL, nullptr));
+	MapSubsectorType* data = static_cast<MapSubsectorType*>(W_CacheLumpNum(lump, PU_STATIC));
 
 	memset (subsectors, 0, numsubsectors*sizeof(subsector_t));
 
 	for (int i = 0; i < numsubsectors; i++)
 	{
-		subsectors[i].numlines = LESWAP<decltype(MapSubsectorType::numsegs)>(((MapSubsectorType *)data)[i].numsegs);
-		subsectors[i].firstline = LESWAP<decltype(MapSubsectorType::firstseg)>(((MapSubsectorType *)data)[i].firstseg);
+		subsectors[i].numlines = LESWAP<decltype(MapSubsectorType::numsegs)>(data[i].numsegs);
+		subsectors[i].firstline = LESWAP<decltype(MapSubsectorType::firstseg)>(data[i].firstseg);
 	}
 
 	Z_Free(data);
