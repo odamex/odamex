@@ -10,6 +10,10 @@ function(checked_add_compile_flag _LIST _FLAG _VAR)
 endfunction()
 
 function(odamex_target_settings _TARGET)
+  # we want to enable some extra errors, but some of our targets aren't very well maintained anymore
+  # and this would just prevent them from building
+  # done here instead of in the files for the individual targets to keep things centralized
+  set(WELL_MAINTAINED_TARGETS odasrv odamex odagtest)
   set(ODAMEX_DLLS "")
 
   set_property(TARGET "${_TARGET}" PROPERTY CXX_STANDARD 20)
@@ -70,6 +74,10 @@ function(odamex_target_settings _TARGET)
     checked_add_compile_flag(CHECKED_OPTIONS /permissive- PERMISSIVE_DISABLED)
     checked_add_compile_flag(CHECKED_OPTIONS /Zc:__cplusplus CORRECT_CPLUSPLUS)
     checked_add_compile_flag(CHECKED_RELEASE_OPTIONS /GL MSVC_GL)
+    if("${_TARGET}" IN_LIST WELL_MAINTAINED_TARGETS)
+      # closest msvc has to old-style-cast, it at least helps a bit
+      checked_add_compile_flag(CHECKED_OPTIONS /we26475 W_ERR_FUNCTION_STYLE_CAST)
+    endif()
   else()
     checked_add_compile_flag(CHECKED_OPTIONS -Werror=format-security W_FORMAT_SECURITY)
     checked_add_compile_flag(CHECKED_OPTIONS -Wduplicated-cond W_DUPLICATED_COND)
@@ -79,6 +87,9 @@ function(odamex_target_settings _TARGET)
     checked_add_compile_flag(CHECKED_OPTIONS -Wuseless-cast W_USELESS_CAST)
     checked_add_compile_flag(CHECKED_OPTIONS -Wformat=2 W_FORMAT_2)
     checked_add_compile_flag(CHECKED_OPTIONS -Wno-unused-parameter W_NO_UNUSED_PARAMETER)
+    if("${_TARGET}" IN_LIST WELL_MAINTAINED_TARGETS)
+      checked_add_compile_flag(CHECKED_OPTIONS -Werror=old-style-cast W_ERR_OLD_STYLE_CAST)
+    endif()
   endif()
   target_compile_options("${_TARGET}" PRIVATE ${CHECKED_OPTIONS})
   target_compile_options("${_TARGET}" PRIVATE $<$<NOT:$<CONFIG:Debug>>:${CHECKED_RELEASE_OPTIONS}>)
