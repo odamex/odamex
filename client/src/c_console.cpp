@@ -940,6 +940,7 @@ EXTERN_CVAR(con_scrlock)
 void C_InitConCharsFont()
 {
 	static palindex_t transcolor = 0xF7;
+	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
 
 	// Load the CONCHARS lump and convert it from patch_t format
 	// to a raw linear byte buffer with a background color of 'transcolor'
@@ -952,7 +953,11 @@ void C_InitConCharsFont()
 
 	// paste the patch into the linear byte bufer
 	const DCanvas* canvas = temp_surface->getDefaultCanvas();
-	canvas->DrawPatch(W_CachePatch("CONCHARS"), 0, 0);
+	const patch_t* conchars_patch = W_CachePatch("CONCHARS");
+	if (palette == NULL)
+		canvas->DrawPatch(conchars_patch, 0, 0);
+	else
+		canvas->DrawPatchWithPalette(conchars_patch, 0, 0, palette);
 
 	ConChars = new byte[256*8*8*2];
 	byte* dest = ConChars;
@@ -1039,19 +1044,19 @@ void C_InitConsoleBackground()
 {
 	const patch_t* bg_patch = W_CachePatch(W_GetNumForName("CONBACK"));
 	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
+	const int bpp = I_GetPrimarySurface()->getBitsPerPixel();
 
-	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+	I_FreeSurface(background_surface);
+	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), bpp);
 	background_surface->lock();
 
-	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+	if (palette == NULL)
 	{
-		background_surface->setPalette(V_GetDefaultPalette()->colors);
-		background_surface->getDefaultCanvas()->DrawPatchWithPalette(bg_patch, 0, 0, palette);
+		background_surface->getDefaultCanvas()->DrawPatch(bg_patch, 0, 0);
 	}
 	else
 	{
-		background_surface->setPalette(palette->colors);
-		background_surface->getDefaultCanvas()->DrawPatch(bg_patch, 0, 0);
+		background_surface->getDefaultCanvas()->DrawPatchWithPalette(bg_patch, 0, 0, palette);
 	}
 
 	background_surface->unlock();
@@ -1066,6 +1071,7 @@ void C_InitConsoleBackground()
 void STACK_ARGS C_ShutdownConsoleBackground()
 {
 	I_FreeSurface(background_surface);
+	background_surface = NULL;
 }
 
 
@@ -1564,6 +1570,9 @@ void C_NewModeAdjust()
 	C_FlushDisplay();
 
 	C_AdjustBottom();
+
+	if (I_VideoInitialized())
+		C_InitConsoleBackground();
 }
 
 

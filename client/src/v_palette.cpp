@@ -26,6 +26,7 @@
 
 #include <math.h>
 #include <cassert>
+#include <string>
 #include <unordered_map>
 
 #include "i_system.h"
@@ -44,11 +45,17 @@
 
 static palette_t default_palette;
 static palette_t game_palette;
-static std::unordered_map<OLumpName, palette_t> palette_cache;
+static std::unordered_map<std::string, palette_t> palette_cache;
 
-static bool V_LoadPaletteFromLumpNum(const int lumpnum, palette_t& palette)
+static void V_GammaAdjustPalette(palette_t* palette);
+static void V_EnsureGammaTable();
+
+static bool V_LoadPaletteFromLumpNum(const int lumpnum, palette_t& palette, const size_t palnum = 0)
 {
-	if (lumpnum < 0 || W_LumpLength(lumpnum) < 768)
+	const unsigned lump_length = lumpnum >= 0 ? W_LumpLength(lumpnum) : 0;
+	const size_t palette_offset = palnum * 768;
+
+	if (lumpnum < 0 || lump_length < palette_offset + 768)
 		return false;
 
 	if (palette.maps.colormap == NULL)
@@ -56,10 +63,11 @@ static bool V_LoadPaletteFromLumpNum(const int lumpnum, palette_t& palette)
 	if (palette.maps.shademap == NULL)
 		palette.maps.shademap = new argb_t[(NUMCOLORMAPS + 1) * 256];
 
-	const byte* data = static_cast<const byte*>(W_CacheLumpNum(lumpnum, PU_CACHE));
+	const byte* data = static_cast<const byte*>(W_CacheLumpNum(lumpnum, PU_CACHE)) + palette_offset;
 	for (int i = 0; i < 256; i++, data += 3)
 		palette.basecolors[i] = argb_t(255, data[0], data[1], data[2]);
 
+	V_EnsureGammaTable();
 	V_GammaAdjustPalette(&palette);
 	BuildDefaultColorAndShademap(&palette, palette.maps);
 	return true;
@@ -91,29 +99,30 @@ const palette_t* V_GetGamePalette()
 	return &game_palette;
 }
 
-bool V_BuildPaletteFromLump(const OLumpName& lumpname, palette_t& palette)
+bool V_BuildPaletteFromLump(const OLumpName& lumpname, palette_t& palette, const size_t palnum)
 {
 	if (lumpname.empty())
 		return false;
 
 	const int lumpnum = W_CheckNumForName(lumpname);
-	return V_LoadPaletteFromLumpNum(lumpnum, palette);
+	return V_LoadPaletteFromLumpNum(lumpnum, palette, palnum);
 }
 
-const palette_t* V_GetPaletteFromLump(const OLumpName& lumpname)
+const palette_t* V_GetPaletteFromLump(const OLumpName& lumpname, const size_t palnum)
 {
 	if (lumpname.empty())
 		return NULL;
 
-	const auto it = palette_cache.find(lumpname);
+	const std::string key = fmt::format("{}:{}", lumpname.c_str(), palnum);
+	const auto it = palette_cache.find(key);
 	if (it != palette_cache.end())
 		return &it->second;
 
 	palette_t palette = {};
-	if (!V_BuildPaletteFromLump(lumpname, palette))
+	if (!V_BuildPaletteFromLump(lumpname, palette, palnum))
 		return NULL;
 
-	return &palette_cache.emplace(lumpname, palette).first->second;
+	return &palette_cache.emplace(key, palette).first->second;
 }
 
 
@@ -319,6 +328,15 @@ public:
 static DoomGammaStrategy doomgammastrat;
 static ZDoomGammaStrategy zdoomgammastrat;
 GammaStrategy* gammastrat = &doomgammastrat;
+
+static void V_EnsureGammaTable()
+{
+	if (gammatable[255] == 255)
+		return;
+
+	const float level = clamp(gammalevel.value(), gammastrat->min(), gammastrat->max());
+	gammastrat->generateGammaTable(gammatable, level);
+}
 
 float V_GetMinimumGammaLevel()
 {
@@ -639,6 +657,7 @@ argb_t V_GetColorFromString(const std::string& input_string)
 void V_InitPalette(const char* lumpname)
 {
 	palette_lumpname = lumpname;
+	palette_cache.clear();
 
 	const int lumpnum = W_GetNumForName(palette_lumpname);
 	if (lumpnum < 0)
@@ -653,7 +672,7 @@ void V_InitPalette(const char* lumpname)
 
 	default_palette.maps.colormap = new palindex_t[(NUMCOLORMAPS + 1) * 256];
 	default_palette.maps.shademap = new argb_t[(NUMCOLORMAPS + 1) * 256];
-	V_LoadPaletteFromLumpNum(lumpnum, default_palette);
+	V_LoadPaletteFromLumpNum(lumpnum, default_palette, 0);
 
 	V_ForceBlend(argb_t(0, 255, 255, 255));
 

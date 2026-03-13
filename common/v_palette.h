@@ -83,8 +83,8 @@ void V_InitPalette(const char* lumpname);
 
 const palette_t* V_GetDefaultPalette();
 const palette_t* V_GetGamePalette();
-bool V_BuildPaletteFromLump(const OLumpName& lumpname, palette_t& palette);
-const palette_t* V_GetPaletteFromLump(const OLumpName& lumpname);
+bool V_BuildPaletteFromLump(const OLumpName& lumpname, palette_t& palette, size_t palnum = 0);
+const palette_t* V_GetPaletteFromLump(const OLumpName& lumpname, size_t palnum = 0);
 
 //
 // V_RestoreScreenPalette
