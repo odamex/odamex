@@ -163,9 +163,9 @@ class OZone
 		// Our interface is malloc-like, so we use malloc and not new.
 		void* ptr;
 		if constexpr (ZERO_INIT)
-			ptr = calloc(1, size);
+			ptr = ::calloc(1, size);
 		else
-			ptr = malloc(size);
+			ptr = ::malloc(size);
 
 		if (ptr == NULL)
 		{
@@ -197,7 +197,7 @@ class OZone
 
 	void* calloc(size_t size, zoneTag_e tag, void* user, const OFileLine& info)
 	{
-		alloc<true>(size, tag, user, info);
+		return alloc<true>(size, tag, user, info);
 	}
 
 	void* realloc(void* ptr, size_t size, zoneTag_e tag, void* user, const OFileLine& info)

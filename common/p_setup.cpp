@@ -263,22 +263,22 @@ void P_LoadSegs(int lump)
 	for (int i = 0; i < numsegs; i++)
 	{
 		seg_t* const li = segs + i;
-		const MapSegType* ml = data[i];
-		auto v = LESWAP(ml->v1);
+		const MapSegType& ml = data[i];
+		auto v = LESWAP(ml.v1);
 
 		if(v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex {}", v);
 		else
 			li->v1 = &vertexes[v];
 
-		v = LESWAP(ml->v2);
+		v = LESWAP(ml.v2);
 
 		if(v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex {}", v);
 		else
 			li->v2 = &vertexes[v];
 
-		P_LoadSegsHelper(LESHORT(ml->side), LESHORT(ml->angle), LESHORT(ml->linedef), li);
+		P_LoadSegsHelper(LESHORT(ml.side), LESHORT(ml.angle), LESHORT(ml.linedef), li);
 	}
 
 	Z_Free(data);
