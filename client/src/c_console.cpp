@@ -1038,10 +1038,22 @@ void C_ClearCommand()
 void C_InitConsoleBackground()
 {
 	const patch_t* bg_patch = W_CachePatch(W_GetNumForName("CONBACK"));
+	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
 
 	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
 	background_surface->lock();
-	background_surface->getDefaultCanvas()->DrawPatch(bg_patch, 0, 0);
+
+	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+	{
+		background_surface->setPalette(V_GetDefaultPalette()->colors);
+		background_surface->getDefaultCanvas()->DrawPatchWithPalette(bg_patch, 0, 0, palette);
+	}
+	else
+	{
+		background_surface->setPalette(palette->colors);
+		background_surface->getDefaultCanvas()->DrawPatch(bg_patch, 0, 0);
+	}
+
 	background_surface->unlock();
 }
 
