@@ -58,7 +58,7 @@ MEMFILE *mem_fopen_read(void *buf, size_t buflen)
 {
 	MEMFILE *file;
 
-	file = Z_Malloc<MEMFILE>(1, PU_STATIC);
+	file = Z_Malloc<MEMFILE>(PU_STATIC);
 
 	file->buf = (unsigned char *) buf;
 	file->buflen = buflen;
@@ -106,7 +106,7 @@ MEMFILE *mem_fopen_write(void)
 {
 	MEMFILE *file;
 
-	file = Z_Malloc<MEMFILE>(1, PU_STATIC);
+	file = Z_Malloc<MEMFILE>(PU_STATIC);
 
 	file->alloced = 1024;
 	file->buf = Z_Malloc<byte>(file->alloced, PU_STATIC);

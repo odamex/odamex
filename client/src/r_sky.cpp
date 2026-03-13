@@ -343,7 +343,7 @@ sky_t* R_GetSky(const OLumpName& name, bool create)
 	if (tex < 0) return nullptr;
 
 	OLumpName skytexname;
-	sky_t* sky = Z_Malloc<sky_t>(1, PU_STATIC);
+	sky_t* sky = Z_Malloc<sky_t>(PU_STATIC);
 	sky->background.scalex = INT2FIXED(1);
 	sky->background.scaley = INT2FIXED(1);
 	sky->background.scrolly = INT2FIXED(0);
@@ -420,7 +420,7 @@ void R_InitSkyDefs()
 				return jsonlumpresult_t::PARSEERROR;
 			}
 
-			sky_t* sky = Z_Malloc<sky_t>(1, PU_STATIC);
+			sky_t* sky = Z_Malloc<sky_t>(PU_STATIC);
 
 			sky->type = skytype;
 			sky->usedefaultmid = false;

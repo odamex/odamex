@@ -1044,7 +1044,7 @@ dyncolormap_t* GetSpecialLights(int lr, int lg, int lb, int fr, int fg, int fb)
 	}
 
 	// Not found. Create it.
-	colormap = Z_Malloc<dyncolormap_t>(1, PU_LEVEL);
+	colormap = Z_Malloc<dyncolormap_t>(PU_LEVEL);
 
 	shademap_t* maps = new shademap_t();
 	maps->colormap = Z_Malloc<palindex_t>(NUMCOLORMAPS * 256, PU_LEVEL);

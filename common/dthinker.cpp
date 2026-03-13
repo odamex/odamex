@@ -276,7 +276,7 @@ void DThinker::RunThinkers ()
 
 void *DThinker::operator new (size_t size)
 {
-	return Z_Malloc2(size, PU_LEVSPEC, nullptr);
+	return Z_Malloc<void>(size, PU_LEVSPEC, nullptr);
 }
 
 // Deallocation is lazy -- it will not actually be freed

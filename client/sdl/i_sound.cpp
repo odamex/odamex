@@ -276,7 +276,7 @@ static void getsfx(sfxinfo_struct *sfx)
     // [Russell] is it not a doom sound lump?
     if (((data[1] << 8) | data[0]) != 3)
     {
-        chunk = Z_Malloc<Mix_Chunk>(1, PU_STATIC, 0);
+        chunk = Z_Malloc<Mix_Chunk>(PU_STATIC);
         chunk->allocated = 1;
         if (sfx->length < 8) // too short to be anything of interest
         {
@@ -314,7 +314,7 @@ static void getsfx(sfxinfo_struct *sfx)
 
     expanded_length *= 4;
 
-	chunk = Z_Malloc<Mix_Chunk>(1, PU_STATIC);
+	chunk = Z_Malloc<Mix_Chunk>(PU_STATIC);
     chunk->allocated = 1;
     chunk->alen = expanded_length;
 	chunk->abuf = (Uint8*)Z_Malloc(expanded_length, PU_STATIC, NULL);
