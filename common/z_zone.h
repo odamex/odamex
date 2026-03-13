@@ -32,7 +32,7 @@
 // ZONE MEMORY
 // PU - purge tags.
 // Tags < 100 are not overwritten until freed.
-enum zoneTag_e
+enum struct zoneTag_e
 {
 	PU_FREE = 0,             // a free block [ML] 12/4/06: Readded from Chocodoom
 	PU_STATIC = 1,           // static entire execution time
@@ -45,6 +45,8 @@ enum zoneTag_e
 	PU_PURGELEVEL = 100,     // Level-based tag that can be purged anytime.
 	PU_CACHE = 101,          // Generic purge-anytime tag.
 };
+
+using enum zoneTag_e; // this allows us keep using it without namespacing, like other ports, but it's now more type-safe
 
 void Z_Init();
 void Z_Close();

@@ -35,6 +35,11 @@
 #include "cmdlib.h"
 #include "m_stacktrace.h"
 
+auto constexpr operator <=> (zoneTag_e a, zoneTag_e b)
+{
+	return static_cast<std::underlying_type_t<zoneTag_e>>(a) <=> static_cast<std::underlying_type_t<zoneTag_e>>(a);
+}
+
 struct OFileLine
 {
 	const char* file;
@@ -261,7 +266,7 @@ class OZone
 	/**
 	 * Dealloc all members
 	 */
-	void deallocTags(const int lowtag, const int hightag)
+	void deallocTags(const zoneTag_e lowtag, const zoneTag_e hightag)
 	{
 		for (MemoryBlockTable::iterator it = m_heap.begin();it != m_heap.end();)
 		{
