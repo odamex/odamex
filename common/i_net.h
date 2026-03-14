@@ -54,7 +54,9 @@
 #include "doomtype.h"
 #include "doomfunc.h"
 
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 
 /**
  * @brief Types of client buffers.
@@ -886,6 +888,8 @@ bool MSG_ReadProto(MSG& msg)
 	return true;
 }
 
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
+
 class MiniLzo
 {
     public:
@@ -897,3 +901,5 @@ class MiniLzo
         buf_t       m_decompressionBuffer;
         lzo_byte    m_wrkmem[LZO1X_1_MEM_COMPRESS];
 };
+
+END_DISABLE_WARNING_GNU

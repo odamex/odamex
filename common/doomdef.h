@@ -94,6 +94,30 @@ extern baseapp_t baseapp;
 #define SERVER_ONLY(expr)
 #endif
 
+#define DO_PRAGMA(x) _Pragma(#x)
+
+#ifdef __GNUC__
+/**
+ * @brief Disables the passed warning/error on GCC/clang
+ *
+ * Must be paired with `END_DISABLE_WARNING_GNU`
+ */
+#define BEGIN_DISABLE_WARNING_GNU(w) \
+    DO_PRAGMA(GCC diagnostic push) \
+    DO_PRAGMA(GCC diagnostic ignored w)
+
+#define END_DISABLE_WARNING_GNU \
+    DO_PRAGMA(GCC diagnostic pop)
+#else
+/**
+ * @brief Disables the passed warning/error on GCC/clang
+ *
+ * Must be paired with `END_DISABLE_WARNING_GNU`
+ */
+#define BEGIN_DISABLE_WARNING_GNU(w)
+#define END_DISABLE_WARNING_GNU
+#endif
+
 //
 // Environment Platform
 //
