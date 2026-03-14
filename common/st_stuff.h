@@ -44,6 +44,8 @@ short ST_StatusBarWidth(int surface_width, int surface_height);
 int ST_StatusBarHeight(int surface_width, int surface_height);
 int ST_StatusBarX(int surface_width, int surface_height);
 int ST_StatusBarY(int surface_width, int surface_height);
+short ST_BaseWidth();
+short ST_BaseHeight();
 
 void ST_ForceRefresh();
 
@@ -62,6 +64,7 @@ extern lumpHandle_t keys[NUMCARDS + NUMCARDS / 2];
 struct stbarfns_t
 {
 	int height;
+	short (*BaseWidth)();
 	bool (*Responder)(event_t* ev);
 	void (*Ticker)();
 	void (*Drawer)();
@@ -93,6 +96,8 @@ void STACK_ARGS ST_Shutdown();
 // Engine-specific statusbar implementations.
 bool ST_DoomResponder(event_t* ev);
 bool ST_HticResponder(event_t* ev);
+short ST_DoomBaseWidth();
+short ST_HticBaseWidth();
 void ST_DoomTicker();
 void ST_DoomDrawer();
 void ST_DoomStart();

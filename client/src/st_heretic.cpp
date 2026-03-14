@@ -34,9 +34,6 @@ bool ST_HticResponder(event_t* ev)
 
 namespace
 {
-constexpr int HTIC_BASE_WIDTH = 320;
-constexpr int HTIC_BASE_HEIGHT = 42;
-
 lumpHandle_t hticBigNum[10];
 lumpHandle_t hticNegNum;
 lumpHandle_t hticLameNum;
@@ -76,6 +73,17 @@ lumpHandle_t ST_HticCacheRequiredPatch(const char* name)
 	return W_CachePatchHandle(W_GetNumForName(name, ns_global), PU_STATIC);
 }
 
+short ST_HticResolveBaseWidth()
+{
+	if (!hticBarBack.empty())
+		return W_ResolvePatchHandle(hticBarBack)->width();
+
+	if (!hticBarMain.empty())
+		return W_ResolvePatchHandle(hticBarMain)->width();
+
+	return 320;
+}
+
 void ST_HticClearAssets()
 {
 	for (int i = 0; i < 10; i++)
@@ -107,11 +115,12 @@ void ST_HticClearAssets()
 void ST_HticEnsureSurfaces()
 {
 	const int currentBpp = I_GetVideoBitDepth() == 32 ? 32 : 8;
+	const int baseWidth = ST_HticBaseWidth();
 
 	if (stbar_surface != nullptr)
 	{
-		if (stbar_surface->getWidth() != HTIC_BASE_WIDTH ||
-		    stbar_surface->getHeight() != HTIC_BASE_HEIGHT ||
+		if (stbar_surface->getWidth() != baseWidth ||
+		    stbar_surface->getHeight() != ST_BaseHeight() ||
 		    stbar_surface->getBitsPerPixel() != currentBpp)
 		{
 			I_FreeSurface(stbar_surface);
@@ -121,7 +130,7 @@ void ST_HticEnsureSurfaces()
 
 	if (stbar_surface == nullptr)
 	{
-		stbar_surface = I_AllocateSurface(HTIC_BASE_WIDTH, HTIC_BASE_HEIGHT, currentBpp);
+		stbar_surface = I_AllocateSurface(baseWidth, ST_BaseHeight(), currentBpp);
 	}
 }
 
@@ -154,16 +163,17 @@ void ST_HticSetLayoutVisible()
 
 	const int surfaceWidth = surface->getWidth();
 	const int surfaceHeight = surface->getHeight();
+	const int baseWidth = ST_HticBaseWidth();
 
 	if (st_scale)
 	{
-		ST_HEIGHT = std::max(1, HTIC_BASE_HEIGHT * surfaceHeight / 200);
-		ST_WIDTH = std::max(1, HTIC_BASE_WIDTH * surfaceHeight / 200);
+		ST_HEIGHT = std::max(1, ST_BaseHeight() * surfaceHeight / 200);
+		ST_WIDTH = std::max(1, baseWidth * surfaceHeight / 200);
 	}
 	else
 	{
-		ST_HEIGHT = HTIC_BASE_HEIGHT;
-		ST_WIDTH = HTIC_BASE_WIDTH;
+		ST_HEIGHT = ST_BaseHeight();
+		ST_WIDTH = baseWidth;
 	}
 
 	ST_WIDTH = std::min(ST_WIDTH, surfaceWidth);
@@ -366,21 +376,27 @@ void ST_HticDrawBackgroundAndWidgets()
 }
 } // namespace
 
+short ST_HticBaseWidth()
+{
+	return ST_HticResolveBaseWidth();
+}
+
 void ST_HticDrawTopCaps(IWindowSurface* surface)
 {
 	if (hticTopLeftCap.empty() || hticTopRightCap.empty())
 		return;
 
+	const int baseWidth = ST_HticBaseWidth();
 	const patch_t* left = W_ResolvePatchHandle(hticTopLeftCap);
 	const patch_t* right = W_ResolvePatchHandle(hticTopRightCap);
-	const int leftW = std::max(1, left->width() * ST_WIDTH / HTIC_BASE_WIDTH);
-	const int leftH = std::max(1, left->height() * ST_HEIGHT / HTIC_BASE_HEIGHT);
-	const int rightW = std::max(1, right->width() * ST_WIDTH / HTIC_BASE_WIDTH);
-	const int rightH = std::max(1, right->height() * ST_HEIGHT / HTIC_BASE_HEIGHT);
+	const int leftW = std::max(1, left->width() * ST_WIDTH / baseWidth);
+	const int leftH = std::max(1, left->height() * ST_HEIGHT / ST_BaseHeight());
+	const int rightW = std::max(1, right->width() * ST_WIDTH / baseWidth);
+	const int rightH = std::max(1, right->height() * ST_HEIGHT / ST_BaseHeight());
 
 	// Legacy Heretic places these at x=0 and x=290 in a 320-wide layout.
 	const int leftX = ST_X;
-	const int idealRightX = ST_X + (290 * ST_WIDTH) / HTIC_BASE_WIDTH;
+	const int idealRightX = ST_X + (290 * ST_WIDTH) / baseWidth;
 	const int maxRightX = ST_X + ST_WIDTH - rightW;
 	const int rightX = std::clamp(idealRightX, ST_X, maxRightX);
 	const int leftY = ST_Y - leftH + 1;
@@ -471,8 +487,8 @@ void ST_HticDrawer()
 	stbar_surface->unlock();
 
 	IWindowSurface* surface = R_GetRenderingSurface();
-	surface->blitcrop(stbar_surface, 0, 0, HTIC_BASE_WIDTH, HTIC_BASE_HEIGHT, ST_X, ST_Y, ST_WIDTH,
-	                 ST_HEIGHT);
+	surface->blitcrop(stbar_surface, 0, 0, ST_HticBaseWidth(), ST_BaseHeight(), ST_X, ST_Y,
+	                 ST_WIDTH, ST_HEIGHT);
 	ST_HticDrawTopCaps(surface);
 }
 

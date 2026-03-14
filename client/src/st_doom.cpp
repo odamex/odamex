@@ -657,13 +657,13 @@ static void ST_UpdateSurfaceBpp()
 	if (stbarbpp != currentbpp)
 	{
 		I_FreeSurface(stbar_surface);
-		stbar_surface = I_AllocateSurface(sbar_width, 32, currentbpp);
+		stbar_surface = I_AllocateSurface(sbar_width, ST_BaseHeight(), currentbpp);
 	}
 
 	if (stnumbpp != currentbpp)
 	{
 		I_FreeSurface(stnum_surface);
-		stnum_surface = I_AllocateSurface(sbar_width, 32, currentbpp);
+		stnum_surface = I_AllocateSurface(sbar_width, ST_BaseHeight(), currentbpp);
 	}
 }
 
@@ -974,10 +974,12 @@ void ST_DoomInit()
 	ST_loadData();
 
 	if (stbar_surface == nullptr)
-		stbar_surface = I_AllocateSurface(sbar_width, 32, I_GetVideoBitDepth() == 32 ? 32 : 8);
+		stbar_surface =
+		    I_AllocateSurface(sbar_width, ST_BaseHeight(), I_GetVideoBitDepth() == 32 ? 32 : 8);
 
 	if (stnum_surface == nullptr)
-		stnum_surface = I_AllocateSurface(sbar_width, 32, I_GetVideoBitDepth() == 32 ? 32 : 8);
+		stnum_surface =
+		    I_AllocateSurface(sbar_width, ST_BaseHeight(), I_GetVideoBitDepth() == 32 ? 32 : 8);
 }
 
 void ST_DoomShutdown()
@@ -991,15 +993,5 @@ void ST_DoomShutdown()
 
 	sbar_width = 0;
 }
-
-stbarfns_t DoomStatusBar = {
-    32,
-    ST_DoomResponder,
-    ST_DoomTicker,
-    ST_DoomDrawer,
-    ST_DoomStart,
-    ST_DoomInit,
-    ST_DoomShutdown,
-};
 
 VERSION_CONTROL(st_doom_cpp, "$Id$")

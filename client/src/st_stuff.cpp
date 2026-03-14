@@ -40,11 +40,20 @@ static const stbarfns_t& ST_GetStatusBarFuncs()
 	return gameinfo.enginetype == ENGINE_HERETIC ? HticStatusBar : DoomStatusBar;
 }
 
-extern short ST_DoomBaseWidth();
-
+stbarfns_t DoomStatusBar = {
+    32,
+    ST_DoomBaseWidth,
+    ST_DoomResponder,
+    ST_DoomTicker,
+    ST_DoomDrawer,
+    ST_DoomStart,
+    ST_DoomInit,
+    ST_DoomShutdown,
+};
 
 stbarfns_t HticStatusBar = {
     42,
+    ST_HticBaseWidth,
     ST_HticResponder,
     ST_HticTicker,
     ST_HticDrawer,
@@ -65,15 +74,25 @@ int ST_WIDTH;
 int ST_X;
 int ST_Y;
 
+short ST_BaseHeight()
+{
+	return ST_GetStatusBarFuncs().height;
+}
+
 int ST_StatusBarHeight(int surface_width, int surface_height)
 {
 	if (!R_StatusBarVisible())
 		return 0;
 
 	if (st_scale)
-		return ST_GetStatusBarFuncs().height * surface_height / 200;
+		return ST_BaseHeight() * surface_height / 200;
 
-	return ST_GetStatusBarFuncs().height;
+	return ST_BaseHeight();
+}
+
+short ST_BaseWidth()
+{
+	return ST_GetStatusBarFuncs().BaseWidth();
 }
 
 short ST_StatusBarWidth(int surface_width, int surface_height)
@@ -81,24 +100,22 @@ short ST_StatusBarWidth(int surface_width, int surface_height)
 	if (!R_StatusBarVisible())
 		return 0;
 
-	const short base_width =
-	    gameinfo.enginetype == ENGINE_HERETIC ? 320 : ST_DoomBaseWidth();
-	const short effective_width = base_width > 0 ? base_width : 320;
+	const short base_width = ST_BaseWidth();
 
 	if (I_IsProtectedResolution(surface_width, surface_height))
 	{
 		int height = ST_StatusBarHeight(surface_width, surface_height);
 
-		if (effective_width > 320)
-			return (height / 32) * effective_width;
+		if (base_width > 320)
+			return (height / ST_BaseHeight()) * base_width;
 
 		return 10 * height;
 	}
 
 	if (st_scale)
-		return (effective_width / 80) * surface_height / 3;
+		return (base_width / 80) * surface_height / 3;
 
-	return effective_width;
+	return base_width;
 }
 
 int ST_StatusBarX(int surface_width, int surface_height)
