@@ -427,7 +427,8 @@ void ST_HticStart()
 {
 	ST_ForceRefresh();
 	ST_HticUpdateData();
-	hticChainHealth = hticHealth;
+	hticChainHealth = 0;
+	hticChainWiggle = 0;
 }
 
 void ST_HticTicker()
