@@ -79,6 +79,10 @@ bool				messageNeedsInput;
 
 void	(*messageRoutine)(int response);
 
+static int help_height;
+static int help_width;
+static IWindowSurface* help_surface = NULL;
+
 void	CL_SendUserInfo();
 void	M_ChangeTeam (int choice);
 team_t D_TeamByName (const char *team);
@@ -969,6 +973,53 @@ void M_ReadThis3(int choice)
     }
 }
 
+static int M_GetHelpHeight()
+{
+	const int surface_width = I_GetPrimarySurface()->getWidth();
+	const int surface_height = I_GetPrimarySurface()->getHeight();
+
+	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+		return surface_height;
+
+	if (surface_width * 3 >= surface_height * 4)
+		return surface_height;
+
+	return surface_width * 3 / 4;
+}
+
+static int M_GetHelpWidth(int desth)
+{
+	if (help_width > 320)
+		return I_GetAspectCorrectWidth(desth, help_height, help_width);
+
+	const int display_help_height = (help_height == 200) ? 240 : help_height;
+	return I_GetAspectCorrectWidth(desth, display_help_height, help_width);
+}
+
+static void M_DrawHelpToSurface(const patch_t* patch)
+{
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
+
+	help_width = patch->width();
+	help_height = patch->height();
+
+	const int surface_width = primary_surface->getWidth();
+	const int surface_height = primary_surface->getHeight();
+	const int desth = M_GetHelpHeight();
+	const int destw = M_GetHelpWidth(desth);
+	const int x = (surface_width - destw) / 2;
+	const int y = (surface_height - desth) / 2;
+
+	I_FreeSurface(help_surface);
+	help_surface = I_AllocateSurface(help_width, help_height, 8);
+
+	help_surface->lock();
+	help_surface->getDefaultCanvas()->DrawPatch(patch, 0, 0);
+	primary_surface->blitcrop(help_surface, 0, 0, help_surface->getWidth(),
+		help_surface->getHeight(), x, y, destw, desth);
+	help_surface->unlock();
+}
+
 void M_FinishReadThis(int choice)
 {
 	choice = 0;
@@ -1262,7 +1313,7 @@ void M_Expansion(int choice)
 void M_DrawReadThis1()
 {
 	const patch_t *p = W_CachePatch(gameinfo.infoPage[0]);
-	screen->DrawPatchFullScreen(p, false);
+	M_DrawHelpToSurface(p);
 }
 
 //
@@ -1271,7 +1322,7 @@ void M_DrawReadThis1()
 void M_DrawReadThis2()
 {
 	const patch_t *p = W_CachePatch(gameinfo.infoPage[1]);
-	screen->DrawPatchFullScreen(p, false);
+	M_DrawHelpToSurface(p);
 }
 
 //
@@ -1280,7 +1331,7 @@ void M_DrawReadThis2()
 void M_DrawReadThis3()
 {
 	const patch_t *p = W_CachePatch(gameinfo.infoPage[2]);
-	screen->DrawPatchFullScreen(p, false);
+	M_DrawHelpToSurface(p);
 }
 
 //
