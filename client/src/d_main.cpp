@@ -45,7 +45,9 @@
 
 #include "m_alloc.h"
 #include "m_random.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "gstrings.h"
 #include "z_zone.h"
 #include "w_wad.h"
@@ -835,8 +837,10 @@ void D_DoomMain()
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
+	BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 	if (lzo_init() != LZO_E_OK)	// [RH] Initialize the minilzo package.
 		I_FatalError("Could not initialize LZO routines");
+	END_DISABLE_WARNING_GNU
 
 	C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
 

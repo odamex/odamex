@@ -75,7 +75,9 @@ typedef int SOCKET;
 #include "d_player.h"
 #include "m_alloc.h"
 
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 
 #ifdef ODA_HAVE_MINIUPNP
 #include "miniupnpc/miniwget.h"

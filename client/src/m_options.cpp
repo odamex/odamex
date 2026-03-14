@@ -30,7 +30,9 @@
 #include "odamex.h"
 
 #include "gstrings.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 
 #include "c_console.h"
 #include "c_dispatch.h"

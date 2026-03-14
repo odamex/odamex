@@ -1591,7 +1591,7 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 	for (int i = 0; i < sv_teamsinplay; i++)
 	{
-		color = V_GetTextColor(GetTeamInfo((team_t)i)->TextColor.c_str());
+		color = V_GetTextColor(GetTeamInfo(static_cast<team_t>(i))->TextColor);
 
 		for (short xi = -146 + 1;xi < 146;xi += 2)
 		{

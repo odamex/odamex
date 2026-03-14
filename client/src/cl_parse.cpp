@@ -3062,7 +3062,7 @@ static void RecordProto(const svc_t header, google::protobuf::Message* msg)
 
 	Proto proto;
 	proto.header = header;
-	proto.name = ::svc_info[(byte)header].getName();
+	proto.name = ::svc_info[static_cast<byte>(header)].getName();
 	if (msg)
 	{
 		proto.size = msg->ByteSizeLong();

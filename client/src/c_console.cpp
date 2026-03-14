@@ -321,7 +321,7 @@ void ConsoleCommandLine::doScrolling()
 		n = cursor_position - ConCols + 2;
 
 	// The cursor_position is beyond the visible part of the line
-	if (((int)cursor_position - (int)scrolled_columns) >= (int)(ConCols - 2))
+	if ((static_cast<int>(cursor_position) - static_cast<int>(scrolled_columns)) >= static_cast<int>(ConCols - 2))
 		n = cursor_position - ConCols + 2;
 
 	// The cursor_positionor is in front of the visible part of the line
@@ -1110,7 +1110,7 @@ static void C_SetConsoleDimensions(int width, int height)
 				}
 			}
 
-			if ((unsigned)C_StringWidth(current_line_it->text.c_str()) > ConCols*ConCharSize)
+			if (static_cast<unsigned>(C_StringWidth(current_line_it->text.c_str())) > ConCols*ConCharSize)
 			{
 				ConsoleLineList::iterator next_line_it = current_line_it;
 				++next_line_it;
@@ -1187,7 +1187,7 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 	{
 		if (addtype == NEWLINE)
 			memmove(&NotifyStrings[0], &NotifyStrings[1], sizeof(struct NotifyText) * (NUMNOTIFIES-1));
-		M_StringCopy((char *)NotifyStrings[NUMNOTIFIES-1].text, lines[i].string, 256);
+		M_StringCopy(reinterpret_cast<char*>(NotifyStrings[NUMNOTIFIES-1].text), lines[i].string, 256);
 		NotifyStrings[NUMNOTIFIES-1].timeout = gametic + (con_notifytime.asInt() * TICRATE);
 		NotifyStrings[NUMNOTIFIES-1].printlevel = printlevel;
 		addtype = NEWLINE;
@@ -1345,7 +1345,7 @@ size_t C_BasePrint(const int printlevel, const char* color_code, const std::stri
 		// in our string.
 		const int newLineCount = std::count(logStr.begin(), logStr.end(), '\n');
 
-		if (ConRows < (unsigned int)con_buffersize.asInt())
+		if (ConRows < static_cast<unsigned int>(con_buffersize.asInt()))
 			ConRows += (newLineCount > 1) ? newLineCount + 1 : 1;
 	}
 
@@ -1437,7 +1437,7 @@ void C_Ticker()
 				RowAdjust = 0;
 		}
 
-		if (RowAdjust + (ConBottom/ConCharSize) + 1 > (unsigned int)con_buffersize.asInt())
+		if (RowAdjust + (ConBottom/ConCharSize) + 1 > static_cast<unsigned int>(con_buffersize.asInt()))
 			RowAdjust = con_buffersize.asInt() - (ConBottom/ConCharSize);
 	}
 
@@ -1702,7 +1702,7 @@ void C_DisplayTicker()
 		}
 	}
 
-	if (RowAdjust + (ConBottom / ConCharSize) + 1 > (unsigned int)con_buffersize.asInt())
+	if (RowAdjust + (ConBottom / ConCharSize) + 1 > static_cast<unsigned int>(con_buffersize.asInt()))
 		RowAdjust = con_buffersize.asInt() - (ConBottom / ConCharSize);
 }
 
@@ -1795,8 +1795,8 @@ void C_DrawConsole()
 					else if (i == barchars - 1)
 						ch = '\31'; // empty right
 
-					double barpct = i / (double)barchars;
-					double dlpct = progress.dlnow / (double)progress.dltotal;
+					double barpct = i / static_cast<double>(barchars);
+					double dlpct = progress.dlnow / static_cast<double>(progress.dltotal);
 
 					if (dlpct > barpct)
 						ch += 3; // full bar
@@ -1938,7 +1938,7 @@ void C_DrawConsole()
 		for (; lines > 1 && current_line_it != Lines.rend(); lines--, ++current_line_it)
 		{
 			const char* str = current_line_it->text.c_str();
-			const char* color_code = current_line_it->color_code.c_str();
+			std::string_view color_code = current_line_it->color_code;
 			int color = color_code[0] != '\0' ? V_GetTextColor(color_code) : CR_GRAY;
 			screen->PrintStr(left, offset + lines * CONPX(8), str, color, true, ConScale);
 		}
@@ -2078,7 +2078,7 @@ static bool C_HandleKey(const event_t* ev)
 		}
 		else if (Key_IsPageUpKey(ch, NumLockEnabled))
 		{
-			if ((int)(ConRows) > (int)(ConBottom / ConCharSize))
+			if (static_cast<int>(ConRows) > static_cast<int>(ConBottom / ConCharSize))
 			{
 				if (KeysShifted)
 					// Move to top of console buffer
@@ -2247,7 +2247,7 @@ BEGIN_COMMAND(echo)
 {
 	if (argc > 1)
 	{
-		const std::string str = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		const std::string str = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
 		PrintFmt(PRINT_HIGH, "{}\n", str);
 	}
 }
@@ -2294,9 +2294,9 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 		PrintFmt(PRINT_HIGH, "{}\n", newmsg);
 		midprinting = false;
 
-		if ( (MidMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), (byte *)newmsg)) )
+		if ( (MidMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), reinterpret_cast<byte*>(newmsg))) )
 		{
-			MidTicker = (int)(fmsgtime * TICRATE) + gametic;
+			MidTicker = static_cast<int>(fmsgtime * TICRATE) + gametic;
 
 			for (i = 0; MidMsg[i].width != -1; i++)
 				;
@@ -2331,7 +2331,7 @@ void C_DrawMid()
 		{
 			screen->DrawTextStretched(PrintColors[PRINTLEVELS-1],
 					x - xscale * (MidMsg[i].width / 2),
-					y, (byte *)MidMsg[i].string, xscale, yscale);
+					y, reinterpret_cast<byte*>(MidMsg[i].string), xscale, yscale);
 		}
 
 		if (gametic >= MidTicker)
@@ -2372,9 +2372,9 @@ void C_GMidPrint(const char* msg, int color, int msgtime)
 
 		char *newmsg = strdup(str.c_str());
 
-		if ((GameMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), (byte *)newmsg)) )
+		if ((GameMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), reinterpret_cast<byte*>(newmsg))))
 		{
-			GameTicker = (int)(fmsgtime * TICRATE) + gametic;
+			GameTicker = static_cast<int>(fmsgtime * TICRATE) + gametic;
 
 			for (i = 0;GameMsg[i].width != -1;i++)
 				;
@@ -2413,7 +2413,7 @@ void C_DrawGMid()
 		{
 			screen->DrawTextStretched(GameColor,
 					x - xscale * (GameMsg[i].width / 2),
-					y, (byte*)GameMsg[i].string, xscale, yscale);
+					y, reinterpret_cast<byte*>(GameMsg[i].string), xscale, yscale);
 		}
 
 		if (gametic >= GameTicker)

@@ -57,7 +57,9 @@
 #include "m_fileio.h"
 #include "m_misc.h"
 #include "m_random.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "odainfo.h"
 #include "p_setup.h"
 #include "r_local.h"

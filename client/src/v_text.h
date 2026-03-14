@@ -81,4 +81,4 @@ brokenlines_t *V_BreakLines (int maxwidth, const byte *str);
 void V_FreeBrokenLines (brokenlines_t *lines);
 inline brokenlines_t *V_BreakLines (int maxwidth, const char *str) { return V_BreakLines (maxwidth, reinterpret_cast<const byte*>(str)); }
 
-int V_GetTextColor(const char* str);
+int V_GetTextColor(std::string_view str);

@@ -28,7 +28,9 @@
 
 #include "farchive.h"
 #include "m_alloc.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "i_system.h"
 #include "d_player.h"
 #include "dobject.h"

@@ -25,7 +25,9 @@
 
 #include "odamex.h"
 
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "m_alloc.h"
 #include "z_zone.h"
 #include "f_finale.h"
@@ -425,8 +427,13 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		}
 	}
 
+	const auto joy_to_int = [](int input, int speed)
+	{
+		return static_cast<int>((static_cast<float>(input) / static_cast<float>(SHRT_MAX)) * speed);
+	};
+
 	// Joystick analog strafing -- Hyper_Eye
-	side += (int)(((float)joystrafe / (float)SHRT_MAX) * sidemove[speed]);
+	side += joy_to_int(joystrafe, sidemove[speed]);
 
 	if (Actions[ACTION_LOOKUP])
 	{
@@ -469,9 +476,9 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	if ((joy_freelook && sv_freelook) || consoleplayer().spectator)
 	{
 		if (joy_invert)
-			look += (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
+			look += joy_to_int(joylook, lookspeed[speed]);
 		else
-			look -= (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
+			look -= joy_to_int(joylook, lookspeed[speed]);
 
 		::localview.skippitch = true;
 	}
@@ -524,16 +531,14 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	{
 		if (strafe || lookstrafe)
 		{
-			side += (int)(((float)::joyturn / (float)SHRT_MAX) * ::sidemove[speed]);
+			side += joy_to_int(::joyturn, ::sidemove[speed]);
 		}
 		else
 		{
 			if (Actions[ACTION_FASTTURN])
-				cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) *
-				                    (joy_fastsensitivity / 10));
+				cmd->yaw -= joy_to_int(joyturn, angleturn[1] * (joy_fastsensitivity / 10));
 			else
-				cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) *
-				                    (joy_sensitivity / 10));
+				cmd->yaw -= joy_to_int(joyturn, angleturn[1] * (joy_sensitivity / 10));
 		}
 		::localview.skipangle = true;
 	}
@@ -541,24 +546,24 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	if (Actions[ACTION_MLOOK])
 	{
 		if (joy_invert)
-			look += (int)(((float)joyforward / (float)SHRT_MAX) * lookspeed[speed]);
+			look += joy_to_int(joyforward, lookspeed[speed]);
 		else
-			look -= (int)(((float)joyforward / (float)SHRT_MAX) * lookspeed[speed]);
+			look -= joy_to_int(joyforward, lookspeed[speed]);
 		::localview.skippitch = true;
 	}
 	else
 	{
-		forward -= (int)(((float)joyforward / (float)SHRT_MAX) * forwardmove[speed]);
+		forward -= joy_to_int(joyforward, forwardmove[speed]);
 	}
 
 	if (!consoleplayer().spectator
 		&& !Actions[ACTION_MLOOK] && !cl_mouselook && novert == 0)		// [Toke - Mouse] acts like novert.exe
 	{
-		forward += (int)(float(mousey) * m_forward);
+		forward += static_cast<int>(static_cast<float>(mousey) * m_forward);
 	}
 
 	if (strafe || lookstrafe)
-		side += (int)(float(mousex) * m_side);
+		side += static_cast<int>(static_cast<float>(mousex) * m_side);
 
 	mousex = mousey = 0;
 
@@ -652,8 +657,8 @@ float G_ZDoomDIMouseScaleY(float y)
 void G_ProcessMouseMovementEvent(const event_t& ev)
 {
 	static float fprevx = 0.0f, fprevy = 0.0f;
-	float fmousex = static_cast<float>(ev->data2);
-	float fmousey = static_cast<float>(ev->data3);
+	float fmousex = static_cast<float>(ev.data2);
+	float fmousey = static_cast<float>(ev.data3);
 
 	if (m_filter)
 	{
@@ -1344,13 +1349,13 @@ bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
 
 		if (co_nosilentspawns)
 		{
-			an = ( ANG45 * ((unsigned int)mthing.angle/45) ) >> ANGLETOFINESHIFT;
+			an = ( ANG45 * (static_cast<unsigned int>(mthing.angle)/45) ) >> ANGLETOFINESHIFT;
 			xa = finecosine[an];
 			ya = finesine[an];
 		}
 		else
 		{
-			angle_t mtangle = (angle_t)(mthing.angle / 45);
+			angle_t mtangle = static_cast<angle_t>(mthing.angle / 45);
 
 			an = ANG45 * mtangle;
 
@@ -1766,7 +1771,7 @@ void G_DoSaveGame()
 		}
 	}
 
-	arc << (byte)0x1d;			// consistancy marker
+	arc << static_cast<byte>(0x1d);		// consistancy marker
 
 	gameaction = ga_nothing;
 	savedescription[0] = 0;
@@ -1805,19 +1810,19 @@ void G_ReadDemoTiccmd()
 				return;
 			}
 
-			player.cmd.forwardmove = ((signed char)*demo_p++) << 8;
-			player.cmd.sidemove = ((signed char)*demo_p++) << 8;
+			player.cmd.forwardmove = (static_cast<int8_t>(*demo_p++)) << 8;
+			player.cmd.sidemove = (static_cast<int8_t>(*demo_p++)) << 8;
 
 			if (demoversion == LMP_DOOM_1_9)
 			{
-				player.cmd.yaw = ((unsigned char)*demo_p++) << 8;
+				player.cmd.yaw = (static_cast<byte>(*demo_p++)) << 8;
 			}
 			else
 			{
-				player.cmd.yaw = ((unsigned short)*demo_p++);
-				player.cmd.yaw |= ((unsigned short)*demo_p++) << 8;
+				player.cmd.yaw = (static_cast<uint16_t>(*demo_p++));
+				player.cmd.yaw |= (static_cast<uint16_t>(*demo_p++)) << 8;
 			}
-			player.cmd.buttons = (unsigned char)*demo_p++;
+			player.cmd.buttons = static_cast<byte>(*demo_p++);
 		}
 	}
 }
@@ -1962,13 +1967,13 @@ void G_DoPlayDemo(bool justStreamInput)
 		if (!justStreamInput)
 			players.clear();
 
-		for (size_t i = 0 ; i < MAXPLAYERS_VANILLA; i++)
+		for (byte i = 0 ; i < MAXPLAYERS_VANILLA; i++)
 		{
 			if (*demo_p++ && !justStreamInput)
 			{
 				player_t* player = &players.emplace_back();
 				player->playerstate = PST_REBORN;
-				player->id = (byte)i + 1;
+				player->id = i + 1;
 			}
 		}
 
