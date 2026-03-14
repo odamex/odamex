@@ -84,6 +84,15 @@ static constexpr identData_t identdata[] = {
         500,                                                   // weight
     },
     {
+        HERETIC_PREFIX " (Heretic + Hexen)",                 // idName
+        "HERETIC.WAD",                                       // filename
+        "59FCD031",                                          // crc32Sum
+        "FB50B962DC6570630378A8D9F4679E70",                  // md5Sum
+        HERETIC_PREFIX " v1.3",                              // groupName
+        IDENT_IWAD,                                            // flags
+        495,                                                   // weight
+    },
+    {
         HERETIC_PREFIX " Registered v1.2",                   // idName
         "HERETIC.WAD",                                       // filename
         "54759180",                                          // crc32Sum
