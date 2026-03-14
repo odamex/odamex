@@ -144,8 +144,7 @@ void M_EndGame(int choice);
 void M_ReadThis(int choice);
 void M_ReadThis2(int choice);
 void M_ReadThis3(int choice);
-void M_QuitDOOM(int choice);
-void M_QuitHeretic(int choice);
+void M_QuitGame(int choice);
 
 void M_ChangeDetail(int choice);
 void M_StartGame(int choice);
@@ -247,7 +246,7 @@ oldmenuitem_t DoomMainMenu[]=
     {1,"M_LOADG","",M_LoadGame,'L'},
     {1,"M_SAVEG","",M_SaveGame,'S'},
     {1,"M_RDTHIS","",M_ReadThis,'R'},
-	{1,"M_QUITG","",M_QuitDOOM,'Q'}
+	{1,"M_QUITG","",M_QuitGame,'Q'}
 };
 
 //
@@ -270,7 +269,7 @@ oldmenuitem_t Doom2MainMenu[]=
 	{1,"M_OPTION","",M_Options,'O'},	// [RH] Moved
     {1,"M_LOADG","",M_LoadGame,'L'},
     {1,"M_SAVEG","",M_SaveGame,'S'},
-	{1,"M_QUITG","",M_QuitDOOM,'Q'}
+	{1,"M_QUITG","",M_QuitGame,'Q'}
 };
 
 //
@@ -282,7 +281,7 @@ enum htc_main_t
 	htc_options,	
 	htc_gamefiles,				// [RH] Moved
 	htc_info,
-	htc_quitheretic,
+	htc_quitgame,
 	htc_main_end
 } htc_main_e;
 
@@ -292,7 +291,7 @@ oldmenuitem_t HereticMainMenu[]=
 	{1,"","MNU_OPTIONS",M_Options,'O'},	// [RH] Moved
     {1,"","MNU_GAMEFILES",M_HtcGameFiles,'G'},
     {1,"","MNU_INFO",M_ReadThis,'I'},
-	{1,"","MNU_QUITGAME",M_QuitHeretic,'Q'}
+	{1,"","MNU_QUITGAME",M_QuitGame,'Q'}
 };
 
 oldmenuitem_t HereticGameFilesMenu[]=
@@ -655,10 +654,7 @@ END_COMMAND (quickload)
 BEGIN_COMMAND (menu_quit)
 {	// F10
 	M_StartControlPanel ();
-	if (gameinfo.enginetype == ENGINE_HERETIC)
-        M_QuitHeretic(0);
-	else
-        M_QuitDOOM(0);
+	M_QuitGame(0);
 }
 END_COMMAND (menu_quit)
 
@@ -1340,7 +1336,9 @@ void M_DrawReadThis3()
 void M_DrawOptions()
 {
 	if (W_CheckNumForName("M_OPTTTL") >= 0)
+	{
 		screen->DrawPatchClean(W_CachePatch("M_OPTTTL"), 108, 15);
+	}
 	else
 	{
 		V_SetFont("BIGFONT");
@@ -1387,7 +1385,7 @@ void M_EndGame(int choice)
 }
 
 //
-// M_QuitDOOM
+// M_QuitGame
 //
 
 void STACK_ARGS call_terms();
@@ -1419,24 +1417,24 @@ void M_QuitResponse(int ch)
 	exit(EXIT_SUCCESS);
 }
 
-void M_QuitDOOM(int choice)
+static const std::string M_QuitMessage()
 {
-	// We pick index 0 which is language sensitive,
-	//  or one at random, between 1 and maximum number.
-	static std::string endstring =
-			fmt::sprintf("%s\n\n%s",
-			             GStrings.getIndex(GStrings.toIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)),
-			             GStrings(DOSY));
-
-	M_StartMessage(endstring.c_str(), M_QuitResponse, true);
+	switch (gameinfo.enginetype)
+	{
+		case ENGINE_HERETIC:
+			return fmt::sprintf("%s\n", GStrings(RAVENQUITMSG));
+		default:
+			// We pick index 0 which is language sensitive,
+			//  or one at random, between 1 and maximum number.
+			return fmt::sprintf("%s\n\n%s",
+			                     GStrings.getIndex(GStrings.toIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)),
+			                     GStrings(DOSY));
+	}
 }
 
-void M_QuitHeretic(int choice)
+void M_QuitGame(int choice)
 {
-	// We pick index 0 which is language sensitive,
-	//  or one at random, between 1 and maximum number.
-	static std::string endstring = fmt::sprintf("%s\n", GStrings(RAVENQUITMSG));
-
+	static std::string endstring = M_QuitMessage();
 	M_StartMessage(endstring.c_str(), M_QuitResponse, true);
 }
 

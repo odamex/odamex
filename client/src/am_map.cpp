@@ -2229,7 +2229,6 @@ void AM_Drawer()
 		const int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
 		const int OV_Y = surface_height - (surface_height * 32 / 200);
 		const int fullmap_text_base_y = (ST_Y > 0) ? ST_Y : f_h;
-		const int side_padding = 0;
 
 		if (G_IsCoopGame())
 		{
@@ -2261,7 +2260,7 @@ void AM_Drawer()
 				}
 				else
 				{
-					x = side_padding;
+					x = 0;
 					y = fullmap_text_base_y - (text_height * 2) + 1;
 				}
 
@@ -2284,7 +2283,7 @@ void AM_Drawer()
 				}
 				else
 				{
-					x = side_padding;
+					x = 0;
 					y = fullmap_text_base_y - (text_height * 3) + 1;
 				}
 
@@ -2305,7 +2304,7 @@ void AM_Drawer()
 				}
 				else
 				{
-					x = surface_width - text_width - side_padding;
+					x = surface_width - text_width;
 					y = fullmap_text_base_y - (text_height * 2) + 1;
 				}
 
@@ -2355,7 +2354,7 @@ void AM_Drawer()
 			}
 			else
 			{
-				x = side_padding;
+				x = 0;
 				y = fullmap_text_base_y - (text_height * 1) + 1;
 			}
 
@@ -2400,7 +2399,7 @@ void AM_Drawer()
 			}
 			else
 			{
-				x = side_padding;
+				x = 0;
 				y = fullmap_text_base_y - (text_height * 1) + 1;
 			}
 
@@ -2421,7 +2420,7 @@ void AM_Drawer()
 			}
 			else
 			{
-				x = surface_width - text_width - side_padding;
+				x = surface_width - text_width;
 				y = fullmap_text_base_y - (text_height * 1) + 1;
 			}
 			if (G_IsHordeMode())

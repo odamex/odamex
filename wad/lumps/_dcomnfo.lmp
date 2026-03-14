@@ -1,9 +1,3 @@
-fontdef BIGFONT
-{
-	pattern = "FONTB%02d"
-	lumpstart = 1
-	lineheight = 16
-}
 
 fontdef SMALLFONT
 {

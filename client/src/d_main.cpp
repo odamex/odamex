@@ -438,7 +438,9 @@ void D_PageDrawer()
 
 		// [ML] If this is the advisory screen in Heretic, draw the "advisor" patch on top of it.
 		if (gamemode == registered_heretic && demosequence == 1)
-			screen->DrawPatchIndirect(W_CachePatch("ADVISOR"),4,160);				
+		{
+			screen->DrawPatchIndirect(W_CachePatch("ADVISOR"),4,160);
+		}
 
 		page_surface->unlock();
 	}
@@ -471,113 +473,120 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Old demo sequence used in original games, zdoom's
     // dynamic one was too dynamic for its own good
     // [Nes] - Newer demo sequence with better flow.
+	// [ML] - And now with heretic
 	const bool hasdemo4 = W_CheckNumForName("DEMO4") >= 0 && gamemode != retail_chex;
 	const bool is_heretic = gameinfo.enginetype == ENGINE_HERETIC;
 
 	if (is_heretic)
+	{
 		demosequence = (demosequence + 1) % 7;
+	}
 	else if (hasdemo4)
+	{
 		demosequence = (demosequence + 1) % 8;
+	}
 	else
+	{
 		demosequence = (demosequence + 1) % 6;
+	}
 
 	switch (demosequence)
 	{
-	case 0:
-		pagetic = gameinfo.titleTime * TICRATE;
-		gamestate = GS_DEMOSCREEN;
-		pagename = gameinfo.titlePage;
-
-		currentmusic = gameinfo.titleMusic.c_str();
-		S_StartMusic(currentmusic);
-		break;
-	case 1:
-		if (gameinfo.advisoryTime > 0)
-		{
-			pagetic = gameinfo.advisoryTime * TICRATE;
+		case 0:
+			pagetic = gameinfo.titleTime * TICRATE;
 			gamestate = GS_DEMOSCREEN;
 			pagename = gameinfo.titlePage;
-		}
-		else
-		{
-			G_DeferedPlayDemo("DEMO1");
-		}
-		break;
-	case 2:
-		if (is_heretic)
-		{
-			G_DeferedPlayDemo("DEMO1");
-		}
-		else
-		{
-			pagetic = gameinfo.pageTime * TICRATE;
-			gamestate = GS_DEMOSCREEN;
-			pagename = gameinfo.creditPages[0];
-		}
-		break;
-	case 3:
-		if (is_heretic)
-		{
-			pagetic = gameinfo.pageTime * TICRATE;
-			gamestate = GS_DEMOSCREEN;
-			pagename = gameinfo.creditPages[0];
-		}
-		else
-		{
-			G_DeferedPlayDemo("DEMO2");
-		}
-		break;
-	case 4:
-		if (is_heretic)
-		{
-			G_DeferedPlayDemo("DEMO2");
-		}
-		else
-		{
-			gamestate = GS_DEMOSCREEN;
 
-			if ((gameinfo.flags & GI_MAPxx) || (gameinfo.flags & GI_MENUHACK_RETAIL))
+			currentmusic = gameinfo.titleMusic.c_str();
+			S_StartMusic(currentmusic);
+			break;
+		case 1:
+			if (gameinfo.advisoryTime > 0)
 			{
-				pagetic = gameinfo.titleTime * TICRATE;
+				pagetic = gameinfo.advisoryTime * TICRATE;
+				gamestate = GS_DEMOSCREEN;
 				pagename = gameinfo.titlePage;
-				currentmusic = gameinfo.titleMusic.c_str();
-
-				S_StartMusic(currentmusic);
+			}
+			else
+			{
+				G_DeferedPlayDemo("DEMO1");
+			}
+			break;
+		case 2:
+			if (is_heretic)
+			{
+				G_DeferedPlayDemo("DEMO1");
 			}
 			else
 			{
 				pagetic = gameinfo.pageTime * TICRATE;
+				gamestate = GS_DEMOSCREEN;
+				pagename = gameinfo.creditPages[0];
+			}
+			break;
+		case 3:
+			if (is_heretic)
+			{
+				pagetic = gameinfo.pageTime * TICRATE;
+				gamestate = GS_DEMOSCREEN;
+				pagename = gameinfo.creditPages[0];
+			}
+			else
+			{
+				G_DeferedPlayDemo("DEMO2");
+			}
+			break;
+		case 4:
+			if (is_heretic)
+			{
+				G_DeferedPlayDemo("DEMO2");
+			}
+			else
+			{
+				gamestate = GS_DEMOSCREEN;
+
+				if ((gameinfo.flags & GI_MAPxx) || (gameinfo.flags & GI_MENUHACK_RETAIL))
+				{
+					pagetic = gameinfo.titleTime * TICRATE;
+					pagename = gameinfo.titlePage;
+					currentmusic = gameinfo.titleMusic.c_str();
+
+					S_StartMusic(currentmusic);
+				}
+				else
+				{
+					pagetic = gameinfo.pageTime * TICRATE;
+					pagename = gameinfo.creditPages[1];
+				}
+			}
+			break;
+		case 5:
+			if (is_heretic)
+			{
+				pagetic = gameinfo.pageTime * TICRATE;
+				gamestate = GS_DEMOSCREEN;
+				pagename = gameinfo.creditPages[0];
+			}
+			else
+			{
+				G_DeferedPlayDemo("DEMO3");
+			}
+			break;
+		case 6:
+			if (is_heretic)
+			{
+				G_DeferedPlayDemo("DEMO3");
+			}
+			else
+			{
+				pagetic = gameinfo.pageTime * TICRATE;
+				gamestate = GS_DEMOSCREEN;
 				pagename = gameinfo.creditPages[1];
 			}
-		}
-		break;
-	case 5:
-		if (is_heretic)
-		{
-			pagetic = gameinfo.pageTime * TICRATE;
-			gamestate = GS_DEMOSCREEN;
-			pagename = gameinfo.creditPages[0];
-		}
-		else
-		{
-			G_DeferedPlayDemo("DEMO3");
-		}
-		break;
-	case 6:
-		if (is_heretic)
-		{
-			G_DeferedPlayDemo("DEMO3");
-		}
-		else
-		{
-			pagetic = gameinfo.pageTime * TICRATE;
-			gamestate = GS_DEMOSCREEN;
-			pagename = gameinfo.creditPages[1];
-		}
-		break;
-	case 7:
-		G_DeferedPlayDemo("DEMO4");
-		break;
+			break;
+		case 7:
+			G_DeferedPlayDemo("DEMO4");
+			break;
 	}
 
     // [Russell] - Still need this toilet humor for now unfortunately
