@@ -35,9 +35,11 @@ bool st_needrefresh = true;
 EXTERN_CVAR(st_scale)
 EXTERN_CVAR(screenblocks)
 
-static const stbarfns_t& ST_GetStatusBarFuncs()
+static const stbarfns_t* gStatusBar = &DoomStatusBar;
+
+static const stbarfns_t& ST_GetStatusBar()
 {
-	return gameinfo.enginetype == ENGINE_HERETIC ? HticStatusBar : DoomStatusBar;
+	return *(gStatusBar ? gStatusBar : &DoomStatusBar);
 }
 
 stbarfns_t DoomStatusBar = {
@@ -76,7 +78,7 @@ int ST_Y;
 
 short ST_BaseHeight()
 {
-	return ST_GetStatusBarFuncs().height;
+	return ST_GetStatusBar().height;
 }
 
 int ST_StatusBarHeight(int surface_width, int surface_height)
@@ -92,7 +94,7 @@ int ST_StatusBarHeight(int surface_width, int surface_height)
 
 short ST_BaseWidth()
 {
-	return ST_GetStatusBarFuncs().BaseWidth();
+	return ST_GetStatusBar().BaseWidth();
 }
 
 short ST_StatusBarWidth(int surface_width, int surface_height)
@@ -145,6 +147,11 @@ void ST_ForceRefresh()
 	st_needrefresh = true;
 }
 
+void ST_SetStatusBar(const stbarfns_t* statusBar)
+{
+	gStatusBar = statusBar ? statusBar : &DoomStatusBar;
+}
+
 CVAR_FUNC_IMPL(st_scale)
 {
 	R_SetViewSize((int)screenblocks);
@@ -153,32 +160,32 @@ CVAR_FUNC_IMPL(st_scale)
 
 bool ST_Responder(event_t* ev)
 {
-	return ST_GetStatusBarFuncs().Responder(ev);
+	return ST_GetStatusBar().Responder(ev);
 }
 
 void ST_Ticker()
 {
-	ST_GetStatusBarFuncs().Ticker();
+	ST_GetStatusBar().Ticker();
 }
 
 void ST_Drawer()
 {
-	ST_GetStatusBarFuncs().Drawer();
+	ST_GetStatusBar().Drawer();
 }
 
 void ST_Start()
 {
-	ST_GetStatusBarFuncs().Start();
+	ST_GetStatusBar().Start();
 }
 
 void ST_Init()
 {
-	ST_GetStatusBarFuncs().Init();
+	ST_GetStatusBar().Init();
 }
 
 void STACK_ARGS ST_Shutdown()
 {
-	ST_GetStatusBarFuncs().Shutdown();
+	ST_GetStatusBar().Shutdown();
 }
 
 VERSION_CONTROL(st_stuff_cpp, "$Id$")

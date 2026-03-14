@@ -75,6 +75,7 @@ struct stbarfns_t
 
 extern stbarfns_t DoomStatusBar;
 extern stbarfns_t HticStatusBar;
+void ST_SetStatusBar(const stbarfns_t* statusBar);
 
 // Called by main loop.
 bool ST_Responder(event_t* ev);

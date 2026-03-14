@@ -726,6 +726,22 @@ void G_ReadCOMPLVL()
 }
 
 //
+// D_ConfigureStatusBar
+//
+// Sets up the status bar based on the engine for game being played. 
+// This is called during D_Init.  TODO: SBARDEF
+//
+static void D_ConfigureStatusBar()
+{
+	const stbarfns_t* statusBar = &DoomStatusBar;
+
+	if (gameinfo.enginetype == ENGINE_HERETIC)
+		statusBar = &HticStatusBar;
+
+	ST_SetStatusBar(statusBar);
+}
+
+//
 // D_Init
 //
 // Called to initialize subsystems when loading a new set of WAD resource
@@ -769,6 +785,8 @@ void D_Init()
 	C_InitConCharsFont();
 
 	HU_Init();
+
+	D_ConfigureStatusBar();
 
 	// init the menu subsystem
 	if (first_time)
