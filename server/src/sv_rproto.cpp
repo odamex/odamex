@@ -105,7 +105,7 @@ void SV_HandleReliableRetransmissions()
 {
 	for (auto& player : players)
 	{
-		// Players that are on their way out don't get any retries.
+		// Players that are on their way out get their retries serviced elsewhere.
 		if (player.playerstate == PST_DISCONNECT)
 		{
 			continue;

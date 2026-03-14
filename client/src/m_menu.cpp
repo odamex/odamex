@@ -1424,7 +1424,7 @@ void M_PlayerSetup(int choice)
 	// [Nes] Intialize the player preview color.
 	const argb_t player_color = CL_GetPlayerColor(consoleplayer());
 	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
-	R_BuildPlayerTranslation(0, player_color, colorpreset);
+	R_BuildPlayerTranslation(menuplayer_id, player_color, colorpreset);
 }
 
 static void M_PlayerSetupTicker()
@@ -1674,8 +1674,8 @@ static void M_PlayerSetupDrawer()
 		// [Nes] Color of player preview uses the unused translation table (player 0), instead
 		// of the table of the current player color. (Which is different in single, demo, and team)
 		const argb_t player_color = CL_GetPlayerColor(consoleplayer());
-		R_BuildPlayerTranslation(0, player_color, colorpreset);
-		V_ColorMap = translationref_t(translationtables, 0);
+		R_BuildPlayerTranslation(menuplayer_id, player_color, colorpreset);
+		V_ColorMap = translationref_t(translationtables, menuplayer_id);
 
 		// Draw box surrounding fire and player:
 		screen->DrawPatchClean(W_CachePatch("M_PBOX"), 320 - 88 - 32 + 36,
@@ -1877,10 +1877,10 @@ static void SendNewColor(int red, int green, int blue)
 {
 	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
 
-	AddCommandString(fmt::sprintf("cl_color \"%02x %02x %02x\"", red, green, blue));
+	cl_color.ForceSet(fmt::format("{:02x} {:02x} {:02x}", red, green, blue).c_str());
 	if (colorpreset == COLOR_CUSTOM)
 	{
-		AddCommandString(fmt::sprintf("cl_customcolor \"%02x %02x %02x\"", red, green, blue));
+		cl_customcolor.ForceSet(fmt::format("{:02x} {:02x} {:02x}", red, green, blue).c_str());
 	}
 
 	// [SL] not connected to a server so we don't have to wait for the server
@@ -1888,10 +1888,10 @@ static void SendNewColor(int red, int green, int blue)
 	if (!connected)
 	{
 		// [Nes] Change the player preview color.
-		R_BuildPlayerTranslation(0, V_GetColorFromString(cl_color), colorpreset);
+		R_BuildPlayerTranslation(menuplayer_id, V_GetColorFromString(cl_color), colorpreset);
 
 		if (consoleplayer().ingame())
-			R_CopyTranslationRGB(0, consoleplayer_id);
+			R_CopyTranslationRGB(menuplayer_id, consoleplayer_id);
 	}
 }
 

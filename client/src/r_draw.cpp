@@ -217,7 +217,11 @@ algorithm that uses RGB tables.
 
 argb_t translationRGB[MAXPLAYERS+1][16];
 byte *Ranges;
-static byte *translationtablesmem = NULL;
+struct alignas(256) TranslationTables {
+	// 1 player setup menu + 255 players + 3 classic translations + 21 font translations
+    byte data[256 * (1 + MAXPLAYERS + 3 + 21)];
+};
+static std::unique_ptr<TranslationTables> translationtablesmem = nullptr;
 
 static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end_color)
 {
@@ -415,11 +419,12 @@ void R_InitTranslationTables()
 		::friendtable[i] = V_BestColor(V_GetDefaultPalette()->basecolors, mul);
 	}
 
-	translationtablesmem = new byte[256*(MAXPLAYERS+3+22)+255]; // denis - fixme - magic numbers?
+	translationtablesmem = std::make_unique<TranslationTables>();
 
 	// [Toke - fix13]
 	// denis - cleaned this up somewhat
-	translationtables = (byte *)(((ptrdiff_t)translationtablesmem + 255) & ~255);
+	// [EB] alignment now ensured by alignas on the type
+	translationtables = translationtablesmem->data;
 
 	// [RH] Each player now gets their own translation table
 	//		(soon to be palettes). These are set up during
@@ -483,53 +488,46 @@ void R_InitTranslationTables()
 
 void R_FreeTranslationTables (void)
 {
-    delete[] translationtablesmem;
-    translationtablesmem = NULL;
+	translationtablesmem.reset();
 }
 
 // [Nes] Vanilla player translation table.
 void R_BuildClassicPlayerTranslation (int player, int color)
 {
 	const palette_t* pal = V_GetDefaultPalette();
-	int i;
 
-	
-	if (color == 0) // Green
-		for (i = 0x70; i < 0x80; i++)
+	const auto buildtranslation = [&](int base)
+	{
+		for (int i = 0x70; i < 0x80; i++)
 		{
-			translationtables[i + (player * 256)] = 0x70 + (i&0xf);
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
+			translationtables[i + (player * 256)] = base + (i & 0xf);
+			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i + (player * 256)]];
 		}
-	else if (color == 1) // Indigo
-		for (i = 0x70; i < 0x80; i++)
-		{
-			translationtables[i+(player * 256)] = 0x60 + (i&0xf);
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
-		}
-	else if (color == 2) // Brown
-		for (i = 0x70; i < 0x80; i++)
-		{
-			translationtables[i+(player * 256)] = 0x40 + (i&0xf);
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
-		}
-	else if (color == 3) // Red
-		for (i = 0x70; i < 0x80; i++)
-		{
-			translationtables[i+(player * 256)] = 0x20 + (i&0xf);
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
-		}
-	else if (color == 4) // Blue
-		for (i = 0x70; i < 0x80; i++)
-		{
-			translationtables[i + (player * 256)] = 0xC0 + (i & 0xf);
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
-		}
-	else if (color == 5) // Orange
-		for (i = 0x70; i < 0x80; i++)
-		{
-			translationtables[i + (player * 256)] = 0xD0 + (i & 0xf);
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i+(player * 256)]];
-		}
+	};
+
+	switch (color)
+	{
+		case COLOR_GREEN:
+			buildtranslation(0x70);
+			break;
+		case COLOR_INDIGO:
+			buildtranslation(0x60);
+			break;
+		case COLOR_BROWN:
+			buildtranslation(0x40);
+			break;
+		case COLOR_RED:
+			buildtranslation(0x20);
+			break;
+		case COLOR_BLUE:
+			buildtranslation(0xC0);
+			break;
+		case COLOR_ORANGE:
+			buildtranslation(0xD0);
+			break;
+		default:
+			break;
+	}
 }
 
 void R_RebuildPlayerTintTables(int playerid)
@@ -562,6 +560,12 @@ bool R_IsForcedColor(int player, bool forceteamcolor, bool forceenemycolor)
 {
 	return G_IsTeamGame() || (player != displayplayer_id && !consoleplayer().spectator &&
 	       player != 0 && (forceteamcolor && G_IsCoopGame()) || (forceenemycolor && G_IsFFAGame()));
+}
+
+CVAR_FUNC_IMPL(cl_customcolor)
+{
+	EXTERN_CVAR(cl_color)
+	cl_color.ForceSet(var.cstring());
 }
 
 // [RH] Create a player's translation table based on

@@ -833,9 +833,9 @@ int MSG_ReadByte (void)
     return net_message.ReadByte();
 }
 
-int MSG_NextByte (void)
+int MSG_PeekByte (void)
 {
-	return net_message.NextByte();
+	return net_message.PeekByte();
 }
 
 void *MSG_ReadChunk (const size_t &size)

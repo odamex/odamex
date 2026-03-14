@@ -1463,7 +1463,7 @@ public:
 	}
 
   private:
-	typedef unsigned int IdType;
+	typedef SArrayId IdType;
 
 	typedef SArray<fileIdentifier_t> IdentifierTable;
 	IdentifierTable			mIdentifiers;

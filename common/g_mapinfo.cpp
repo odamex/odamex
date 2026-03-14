@@ -649,7 +649,7 @@ void MIType_Sky(OScanner& os, bool newStyleMapInfo, void* data, unsigned int fla
 void MIType_SetFlag(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
-	*static_cast<DWORD*>(data) |= flags;
+	*static_cast<uint32_t*>(data) |= flags;
 }
 
 // Sets a compatibility flag for maps
@@ -661,20 +661,20 @@ void MIType_CompatFlag(OScanner& os, bool newStyleMapInfo, void* data, unsigned 
 	{
 		os.mustScanInt();
 		if (os.getTokenInt())
-			*static_cast<DWORD*>(data) |= flags;
+			*static_cast<uint32_t*>(data) |= flags;
 		else
-			*static_cast<DWORD*>(data) &= ~flags;
+			*static_cast<uint32_t*>(data) &= ~flags;
 	}
 	else
 	{
 		if (IsNum(os.getToken().c_str()))
 		{
-			*static_cast<DWORD*>(data) |= os.getTokenInt() ? flags : 0;
+			*static_cast<uint32_t*>(data) |= os.getTokenInt() ? flags : 0;
 		}
 		else
 		{
 			os.unScan();
-			*static_cast<DWORD*>(data) |= flags;
+			*static_cast<uint32_t*>(data) |= flags;
 		}
 	}
 }
@@ -683,7 +683,7 @@ void MIType_CompatFlag(OScanner& os, bool newStyleMapInfo, void* data, unsigned 
 void MIType_SCFlags(OScanner& os, bool newStyleMapInfo, void* data, unsigned int flags,
                     unsigned int flags2)
 {
-	*static_cast<DWORD*>(data) = (*static_cast<DWORD*>(data) & flags2) | flags;
+	*static_cast<uint32_t*>(data) = (*static_cast<uint32_t*>(data) & flags2) | flags;
 }
 
 // Sets a cluster
@@ -1107,14 +1107,11 @@ void MIType_MapKey(OScanner& os, bool newStyleMapInfo, void* data, unsigned int 
 	}
 }
 
+template <typename T = int32_t>
+requires std::is_integral_v<T>
 void MIType_SetInt(OScanner& os, bool newStyleMapInfo, void* data, uint32_t flags, uint32_t flags2)
 {
-	*static_cast<int32_t*>(data) = flags;
-}
-
-void MIType_SetByte(OScanner& os, bool newStyleMapInfo, void* data, uint32_t flags, uint32_t flags2)
-{
-	*static_cast<byte*>(data) = static_cast<byte>(flags);
+	*static_cast<T*>(data) = static_cast<T>(flags);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1242,7 +1239,8 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "author", &MIType_String, &ref.author },
 			{ "normalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NORMALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
 			{ "noinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NOINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
-			{ "totalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_TOTALINFIGHTING, ~LEVEL2_INFIGHTINGMASK }
+			{ "totalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_TOTALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
+			{ "smoothlighting" } // TODO: not implemented
 		};
 	}
 };
@@ -1636,7 +1634,7 @@ struct MapInfoDataSetter<SkillInfo>
 			{ "noinfighting", &MIType_SCFlags, &ref.flags, SKILL_NOINFIGHTING, ~SKILL_TOTALINFIGHTING },
 			{ "totalinfighting", &MIType_SCFlags, &ref.flags, SKILL_TOTALINFIGHTING, ~SKILL_NOINFIGHTING },
 			{ "playerrespawn", &MIType_Bool, &ref.player_respawn, true },
-			{ "defaultskill", &MIType_SetByte, &defaultskillmenu, skillnum }
+			{ "defaultskill", &MIType_SetInt<decltype(defaultskillmenu)>, &defaultskillmenu, skillnum }
 		};
 	}
 };

@@ -337,8 +337,8 @@ struct level_locals_t
 	std::unordered_map<int, std::string> musinfo_map;
 
 	// The following are all used for ACS scripting
-	FBehavior*		behavior;
-	SDWORD			vars[NUM_MAPVARS];
+	std::unique_ptr<FBehavior> behavior;
+	int32_t			vars[NUM_MAPVARS];
 
 	// The following are used for UMAPINFO
 	OLumpName		exitpic;

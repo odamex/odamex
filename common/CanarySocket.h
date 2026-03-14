@@ -88,12 +88,12 @@ class CanarySocketServer
 	public:
 		struct PlayerSocketType
 		{
-			int               id;
+			sockaddr_in       udpAddr;
 			CANARY_SOCKET_INT socket;
 			bool              isAlive;
 
-			PlayerSocketType(int i_id, CANARY_SOCKET_INT i_socket) :
-				id      (i_id),
+			PlayerSocketType(const sockaddr_in& i_udpAddr, CANARY_SOCKET_INT i_socket) :
+				udpAddr (i_udpAddr),
 				socket  (i_socket),
 				isAlive (true)
 			{
@@ -104,14 +104,6 @@ class CanarySocketServer
 
 		explicit CanarySocketServer(int i_tcpPort);
 		~CanarySocketServer();
-
-		/// Callback to notify the server code about a new client.
-		/// The callback must accept a reference to sockaddr_in and return the player ID associated
-		/// with the given address.
-		using CallbackType = std::function<int (sockaddr_in& address)>;
-
-		template <typename Callable>
-		void SetConnectCallback(Callable i_func) { m_connectCallback = i_func; }
 
 		iterator end() { return m_canaries.end(); }
 
@@ -124,7 +116,6 @@ class CanarySocketServer
 	protected:
 
 		std::vector<PlayerSocketType> m_canaries;
-		CallbackType                  m_connectCallback;
 		CANARY_SOCKET_INT             m_serverSocket;
 };
 

@@ -53,7 +53,7 @@ void G_PlayerReborn(player_t &player);
 // Most of the player structure stays unchanged
 //	between levels.
 //
-void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
+void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
 {
 	// denis - clients should not control spawning
 	if (!serverside)
@@ -79,7 +79,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 //		mobj = new AActor(player.mo->x, player.mo->y, ONFLOORZ, MT_PLAYER);
 //	else
 //		mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
-	mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
+	mobj = new AActor(mthing.x << FRACBITS, mthing.y << FRACBITS, ONFLOORZ, MT_PLAYER);
 
 	// set color translations for player sprites
 	// [RH] Different now: MF_TRANSLATION is not used.
@@ -89,7 +89,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 		// NOTE(jsd): Copy the player setup menu's translation to the player_id's:
 		// [SL] don't screw with vanilla demo player colors
 		if (!demoplayback)
-			R_CopyTranslationRGB(0, player.id);
+			R_CopyTranslationRGB(menuplayer_id, player.id);
 	}
 
 //	if (player.deadspectator && player.mo)
@@ -102,7 +102,7 @@ void P_SpawnPlayer(player_t& player, mapthing2_t* mthing)
 //		mobj->angle = ANG45 * (mthing->angle/45);
 //		mobj->pitch = 0;
 //	}
-	mobj->angle = ANG45 * (mthing->angle/45);
+	mobj->angle = ANG45 * (mthing.angle/45);
 	mobj->pitch = 0;
 
 	mobj->player = &player;
@@ -173,7 +173,7 @@ std::vector<AActor*> spawnfountains;
  * Show spawn points as particle fountains
  * ToDo: Make an independant spawning loop to handle these.
  */
-void P_ShowSpawns(mapthing2_t* mthing)
+void P_ShowSpawns(const mapthing2_t& mthing)
 {
 	// Ch0wW: DO NOT add new spawns to a DOOM2 demo !
 	// It'll immediately desync in DM!
@@ -184,11 +184,11 @@ void P_ShowSpawns(mapthing2_t* mthing)
 	{
 		AActor* spawn = 0;
 
-		if (sv_gametype == GM_DM && mthing->type == 11)
+		if (sv_gametype == GM_DM && mthing.type == 11)
 		{
 			// [RK] If we're not using z-height spawns, spawn the fountain on the floor
-			spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS,
-				(level.flags & LEVEL_USEPLAYERSTARTZ ? mthing->z << FRACBITS : ONFLOORZ), MT_FOUNTAIN);
+			spawn = new AActor(mthing.x << FRACBITS, mthing.y << FRACBITS,
+				(level.flags & LEVEL_USEPLAYERSTARTZ ? mthing.z << FRACBITS : ONFLOORZ), MT_FOUNTAIN);
 
 			spawn->args[0] = 7; // White
 		}
@@ -198,11 +198,11 @@ void P_ShowSpawns(mapthing2_t* mthing)
 			for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 			{
 				TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
-				if (teamInfo->TeamSpawnThingNum == mthing->type)
+				if (teamInfo->TeamSpawnThingNum == mthing.type)
 				{
 					// [RK] If we're not using z-height spawns, spawn the fountain on the floor
-					spawn = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS,
-						(level.flags & LEVEL_USEPLAYERSTARTZ ? mthing->z << FRACBITS : ONFLOORZ), MT_FOUNTAIN);
+					spawn = new AActor(mthing.x << FRACBITS, mthing.y << FRACBITS,
+						(level.flags & LEVEL_USEPLAYERSTARTZ ? mthing.z << FRACBITS : ONFLOORZ), MT_FOUNTAIN);
 
 					spawn->args[0] = teamInfo->FountainColorArg;
 					break;

@@ -114,7 +114,7 @@ void D_DoomLoop (void)
 			PrintFmt("sleeping for 10 seconds before map reload...");
 
 			// denis - drop clients
-			SV_SendDisconnectSignal();
+			SV_SendAndFlushDisconnectSignal();
 
 			// denis - sleep 10 seconds to conserve server resources (in case of recurring problem)
 			I_Sleep(10 * 1000LL * 1000LL * 1000LL);

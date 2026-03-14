@@ -225,7 +225,7 @@ void DSeqNode::Serialize (FArchive &arc)
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
 	{
-		arc << (DWORD)SN_GetSequenceOffset (m_Sequence, m_SequencePtr)
+		arc << (uint32_t)SN_GetSequenceOffset (m_Sequence, m_SequencePtr)
 			<< m_DelayTics
 			<< m_Volume
 			<< m_Atten
@@ -290,10 +290,10 @@ void DSeqPolyNode::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
-		arc << (WORD)(m_Poly - polyobjs);
+		arc << (uint16_t)(m_Poly - polyobjs);
 	else
 	{
-		WORD ofs;
+		uint16_t ofs;
 		arc >> ofs;
 		m_Poly = polyobjs + ofs;
 	}
