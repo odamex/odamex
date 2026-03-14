@@ -272,8 +272,8 @@ bool OTransferCheck::tick()
 //
 // https://curl.haxx.se/libcurl/c/CURLOPT_PROGRESSFUNCTION.html
 //
-int OTransfer::curlProgress(void* clientp, double dltotal, double dlnow, double ultotal,
-                            double ulnow)
+int OTransfer::curlProgress(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
+                            curl_off_t ulnow)
 {
 	static_cast<OTransfer*>(clientp)->m_progress.dltotal = dltotal;
 	static_cast<OTransfer*>(clientp)->m_progress.dlnow = dlnow;
@@ -333,7 +333,7 @@ bool OTransfer::start()
 	curl_easy_setopt(m_curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(m_curl, CURLOPT_CONNECTTIMEOUT, 5L);
 	curl_easy_setopt(m_curl, CURLOPT_NOPROGRESS, 0L); // turns on xferinfo
-	curl_easy_setopt(m_curl, CURLOPT_PROGRESSFUNCTION, OTransfer::curlProgress);
+	curl_easy_setopt(m_curl, CURLOPT_XFERINFOFUNCTION, OTransfer::curlProgress);
 	curl_easy_setopt(m_curl, CURLOPT_PROGRESSDATA, this);
 	curl_easy_setopt(m_curl, CURLOPT_HEADERFUNCTION, curlHeader);
 	curl_easy_setopt(m_curl, CURLOPT_USERAGENT, ::ODAMEX_USERAGENT);

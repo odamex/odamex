@@ -29,12 +29,8 @@
 
 struct OTransferProgress
 {
-	ptrdiff_t dltotal;
-	ptrdiff_t dlnow;
-
-	OTransferProgress() : dltotal(0), dlnow(0)
-	{
-	}
+	ptrdiff_t dltotal = 0;
+	ptrdiff_t dlnow   = 0;
 };
 
 struct OTransferInfo
@@ -104,8 +100,8 @@ class OTransfer
 	bool m_shouldCheckAgain;
 
 	OTransfer(const OTransfer&);
-	static int curlProgress(void* clientp, double dltotal, double dlnow, double ultotal,
-	                        double ulnow);
+	static int curlProgress(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
+	                        curl_off_t ulnow);
 
   public:
 	OTransfer(OTransferDoneProc done, OTransferErrorProc err)
