@@ -1625,6 +1625,9 @@ bool M_StartOptionsMenu (void)
 
 void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float step)
 {
+	const palette_t* odapal = V_GetPaletteFromLump("ODAPAL");
+	const int drawY = y + gameinfo.menuCursorOffsetY;
+
 	if (leftval < rightval)
 		cur = clamp(cur, leftval, rightval);
 	else
@@ -1632,12 +1635,12 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 
 	float dist = (cur - leftval) / (rightval - leftval);
 
-	screen->DrawPatchClean (W_CachePatch ("LSLIDE"), x, y);
+	screen->DrawPatchCleanWithPalette(W_CachePatch("LSLIDE"), x, drawY, odapal);
 	for (int i = 1; i < 11; i++)
-		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + i*8, y);
-	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
+		screen->DrawPatchCleanWithPalette(W_CachePatch("MSLIDE"), x + i * 8, drawY, odapal);
+	screen->DrawPatchCleanWithPalette(W_CachePatch("RSLIDE"), x + 88, drawY, odapal);
 
-	screen->DrawPatchClean (W_CachePatch ("CSLIDE"), x + 5 + (int)(dist * 78.0), y);
+	screen->DrawPatchCleanWithPalette(W_CachePatch("CSLIDE"), x + 5 + (int)(dist * 78.0), drawY, odapal);
 
 	std::string buf;
 	if (step == 0.0f)
@@ -1653,6 +1656,12 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 
 void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color)
 {
+	const palette_t* odapal = V_GetPaletteFromLump("ODAPAL");
+	const int drawY = y + gameinfo.menuCursorOffsetY;
+
+	if (odapal == NULL)
+		I_Error("M_DrawColoredSlider: required palette lump ODAPAL is missing");
+
 	if (leftval < rightval)
 		cur = clamp(cur, leftval, rightval);
 	else
@@ -1660,18 +1669,18 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 
 	float dist = (cur - leftval) / (rightval - leftval);
 
-	screen->DrawPatchClean(W_CachePatch ("LSLIDE"), x, y);
+	screen->DrawPatchCleanWithPalette(W_CachePatch("LSLIDE"), x, drawY, odapal);
 
 	for (int i = 1; i < 11; i++)
-		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + i*8, y);
+		screen->DrawPatchCleanWithPalette(W_CachePatch("MSLIDE"), x + i * 8, drawY, odapal);
 
-	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
+	screen->DrawPatchCleanWithPalette(W_CachePatch("RSLIDE"), x + 88, drawY, odapal);
 
-	screen->DrawPatchClean (W_CachePatch ("GSLIDE"), x + 5 + (int)(dist * 78.0), y);
+	screen->DrawPatchCleanWithPalette(W_CachePatch("GSLIDE"), x + 5 + (int)(dist * 78.0), drawY, odapal);
 
 	V_ColorFill = V_BestColor(V_GetDefaultPalette()->basecolors, color);
 
-	screen->DrawColoredPatchClean(W_CachePatch("OSLIDE"), x + 5 + (int)(dist * 78.0), y);
+	screen->DrawColoredPatchClean(W_CachePatch("OSLIDE"), x + 5 + (int)(dist * 78.0), drawY);
 }
 
 int M_FindCurVal (float cur, value_t *values, int numvals)
@@ -1712,7 +1721,7 @@ void M_OptDrawer (void)
 	if (W_CheckNumForName(CurrentMenu->title) >= 0)
 	{
 		title = W_CachePatch (CurrentMenu->title);
-		screen->DrawPatchClean (title, 160-title->width()/2, 10);
+		screen->DrawPatchCleanWithPalette(title, 160-title->width()/2, 10, odapal);
 		y = ystart + title->height();
 	}
 	else
