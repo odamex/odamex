@@ -3,7 +3,7 @@
 
 gameinfo
 {
-	maxSwitch = 3
+	maxswitch = 3
 }
 
 clearepisodes

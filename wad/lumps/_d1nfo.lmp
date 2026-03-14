@@ -16,7 +16,7 @@ gameinfo
 	titlemusic = "$MUSIC_INTRO"
 	titlepage = "TITLEPIC"
 	titletime = 5
-	maxSwitch = 2
+	maxswitch = 2
 }
 
 clearepisodes
