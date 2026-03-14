@@ -330,7 +330,7 @@ typedef enum
 	ST_NEGATIVE
 } slopetype_t;
 
-#define R_NOSIDE ((unsigned short)(-1))
+#define R_NOSIDE (static_cast<unsigned short>(-1))
 
 struct line_s
 {

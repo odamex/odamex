@@ -543,7 +543,7 @@ void D_DoAdvanceDemo (void)
 			DCanvas* canvas = page_surface->getDefaultCanvas();
 
 			page_surface->lock();
-			canvas->DrawBlock(0, 0, page_width, page_height, (byte*)patch);
+			canvas->DrawBlock(0, 0, page_width, page_height, reinterpret_cast<const byte*>(patch));
 			page_surface->unlock();
 		}
 		else
@@ -1005,7 +1005,7 @@ void D_DoomMain()
 	if (p && p < Args.NumArgs()-1)
 	{
 		startmap = Args.GetArg(p+1);
-		((char *)Args.GetArg(p))[0] = '-';
+		(const_cast<char*>(Args.GetArg(p))[0]) = '-';
 		autostart = true;
 	}
 

@@ -144,9 +144,9 @@ public:
 		if (bpp != other.bpp)
 			return bpp < other.bpp;
 		if (window_mode != other.window_mode)
-			return (int)window_mode < (int)other.window_mode;
+			return static_cast<int>(window_mode) < static_cast<int>(other.window_mode);
 		if (vsync != other.vsync)
-			return (int)vsync < (int)other.vsync;
+			return static_cast<int>(vsync) < static_cast<int>(other.vsync);
 		if (stretch_mode != other.stretch_mode)
 			return stretch_mode < other.stretch_mode;
 		return false;
