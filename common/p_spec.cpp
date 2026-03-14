@@ -736,9 +736,6 @@ static void ParseAnim(OScanner &os, byte istex)
 //
 bool P_CheckTag(line_t* line)
 {
-	if (gamemission == heretic && line->special == 105)
-		return true;
-
 	/* tag not zero, allowed, or
 	 * killough 11/98: compatibility option */
 	if (line->id) // e6y
@@ -754,6 +751,12 @@ bool P_CheckTag(line_t* line)
 	case 32:
 	case 33:
 	case 34:
+	case 105:
+		if (gamemission == heretic)
+		{
+			return true;
+		}
+	break;
 	case 117:
 	case 118:
 
