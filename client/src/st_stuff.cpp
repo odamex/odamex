@@ -520,14 +520,14 @@ EXTERN_CVAR (sv_allowcheats)
 
 // Respond to keyboard input events, intercept cheats.
 // [RH] Cheats eatkey the last keypress used to trigger them
-bool ST_Responder (event_t *ev)
+bool ST_Responder(const event_t& ev)
 {
 	bool eat = false;
 
 	// Filter automap on/off.
-	if (ev->type == ev_keyup && ((ev->data1 & 0xffff0000) == AM_MSGHEADER))
+	if (ev.type == ev_keyup && ((ev.data1 & 0xffff0000) == AM_MSGHEADER))
 	{
-		switch (ev->data1)
+		switch (ev.data1)
 		{
 		case AM_MSGENTERED:
 			st_gamestate = AutomapState;
@@ -541,11 +541,11 @@ bool ST_Responder (event_t *ev)
 	}
 
 	// if a user keypress...
-	else if (ev->type == ev_keydown && ev->data3)
+	else if (ev.type == ev_keydown && ev.data3)
 	{
 		for (auto& cheat : DoomCheats)
 		{
-			if (cheat::AddKey(&cheat, (byte)ev->data1, &eat))
+			if (cheat::AddKey(&cheat, static_cast<byte>(ev.data1), &eat))
 			{
 				if (cheat.DontCheck || cheat::AreCheatsEnabled())
 				{

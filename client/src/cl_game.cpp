@@ -88,8 +88,8 @@ void	G_DoCompleted (void);
 void	G_DoWorldDone (void);
 void	G_DoSaveGame();
 
-bool	C_DoNetDemoKey(event_t *ev);
-bool	C_DoSpectatorKey(event_t *ev);
+bool	C_DoNetDemoKey(const event_t& ev);
+bool	C_DoSpectatorKey(const event_t& ev);
 
 void	CL_QuitCommand();
 
@@ -649,11 +649,11 @@ float G_ZDoomDIMouseScaleY(float y)
 	return (y * mouse_sensitivity);
 }
 
-void G_ProcessMouseMovementEvent(const event_t *ev)
+void G_ProcessMouseMovementEvent(const event_t& ev)
 {
 	static float fprevx = 0.0f, fprevy = 0.0f;
-	float fmousex = (float)ev->data2;
-	float fmousey = (float)ev->data3;
+	float fmousex = static_cast<float>(ev->data2);
+	float fmousey = static_cast<float>(ev->data3);
 
 	if (m_filter)
 	{
@@ -668,8 +668,8 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 	fmousex = G_ZDoomDIMouseScaleX(fmousex);
 	fmousey = G_ZDoomDIMouseScaleY(fmousey);
 
-	mousex = (int)fmousex;
-	mousey = (int)fmousey;
+	mousex = static_cast<int>(fmousex);
+	mousey = static_cast<int>(fmousey);
 
 	G_AddViewAngle(fmousex * 8.0f * m_yaw);
 	G_AddViewPitch(fmousey * 16.0f * m_pitch);
@@ -715,16 +715,16 @@ bool G_ShouldIgnoreMouseInput()
 // G_Responder
 // Get info needed to make ticcmd_ts for the players.
 //
-bool G_Responder (event_t *ev)
+bool G_Responder (const event_t& ev)
 {
 	// any other key pops up menu if in demos
 	// [RH] But only if the key isn't bound to a "special" command
 	if (gameaction == ga_nothing &&
 		(demoplayback || gamestate == GS_DEMOSCREEN))
 	{
-		const char *cmd = Bindings.GetBind(ev->data1).c_str();
+		const char *cmd = Bindings.GetBind(ev.data1).c_str();
 
-		if (ev->type == ev_keydown)
+		if (ev.type == ev_keydown)
 		{
 
 			if (!cmd || (
@@ -746,7 +746,7 @@ bool G_Responder (event_t *ev)
 			}
 			else
 			{
-				return C_DoKey (ev, &Bindings, &DoubleBindings);
+				return C_DoKey(ev, &Bindings, &DoubleBindings);
 			}
 		}
 		if (cmd && cmd[0] == '+')
@@ -762,24 +762,24 @@ bool G_Responder (event_t *ev)
 		if (C_DoSpectatorKey(ev))
 			return true;
 
-		if (HU_Responder (ev))
+		if (HU_Responder(ev))
 			return true;		// chat ate the event
-		if (ST_Responder (ev))
+		if (ST_Responder(ev))
 			return true;		// status window ate it
 		if (!viewactive)
-			if (AM_Responder (ev))
+			if (AM_Responder(ev))
 				return true;	// automap ate it
 	}
 	else if (gamestate == GS_FINALE)
 	{
-		if (F_Responder (ev))
+		if (F_Responder(ev))
 			return true;		// finale ate the event
 	}
 
-	switch (ev->type)
+	switch (ev.type)
 	{
 	  case ev_keydown:
-		if (C_DoKey (ev, &Bindings, &DoubleBindings))
+		if (C_DoKey(ev, &Bindings, &DoubleBindings))
 			return true;
 		break;
 
@@ -797,16 +797,16 @@ bool G_Responder (event_t *ev)
 		break;
 
 	  case ev_joystick:
-	  	if(ev->data1 == 0) // Axis Movement
+	  	if(ev.data1 == 0) // Axis Movement
 		{
-			if(ev->data2 == joy_strafeaxis) // Strafe
-				joystrafe = ev->data3;
-			else if(ev->data2 == joy_forwardaxis) // Move
-				joyforward = ev->data3;
-			else if(ev->data2 == joy_turnaxis) // Turn
-				joyturn = ev->data3;
-			else if(ev->data2 == joy_lookaxis) // Look
-				joylook = ev->data3;
+			if(ev.data2 == joy_strafeaxis) // Strafe
+				joystrafe = ev.data3;
+			else if(ev.data2 == joy_forwardaxis) // Move
+				joyforward = ev.data3;
+			else if(ev.data2 == joy_turnaxis) // Turn
+				joyturn = ev.data3;
+			else if(ev.data2 == joy_lookaxis) // Look
+				joylook = ev.data3;
 			else
 				break; // The default case will be to treat the analog control as a button -- Hyper_Eye
 		}
@@ -821,9 +821,9 @@ bool G_Responder (event_t *ev)
 	if (gamestate == GS_LEVEL && viewactive)
 		return AM_Responder (ev);
 
-	if (ev->type == ev_keydown ||
-		ev->type == ev_mouse ||
-		ev->type == ev_joystick)
+	if (ev.type == ev_keydown ||
+		ev.type == ev_mouse ||
+		ev.type == ev_joystick)
 		return true;
 	else
 		return false;

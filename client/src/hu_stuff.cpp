@@ -110,7 +110,7 @@ int V_TextScaleYAmount();
 
 void HU_Init();
 void HU_Drawer();
-bool HU_Responder(event_t *ev);
+bool HU_Responder(const event_t& ev);
 
 lumpHandle_t sbline;
 
@@ -269,10 +269,10 @@ static int HU_GetMacroForNumpadKey(int key)
 //
 // Chat mode text entry
 //
-bool HU_Responder(event_t *ev)
+bool HU_Responder(const event_t& ev)
 {
-	if ((ev->mod & OMOD_ALT || (ev->data1 == OKEY_HAT1 && ev->type == ev_keydown)) &&
-	   !(ev->mod & OMOD_RALT && ev->mod & OMOD_LCTRL)) // Ignore AltGr
+	if ((ev.mod & OMOD_ALT || (ev.data1 == OKEY_HAT1 && ev.type == ev_keydown)) &&
+	   !(ev.mod & OMOD_RALT && ev.mod & OMOD_LCTRL)) // Ignore AltGr
 	{
 		altdown = true;
 	}
@@ -281,7 +281,7 @@ bool HU_Responder(event_t *ev)
 		altdown = false;
 	}
 
-	if ((gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) || ev->type != ev_keydown)
+	if ((gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) || ev.type != ev_keydown)
 	{
 		if (HU_ChatMode() != CHAT_INACTIVE)
             return true;
@@ -295,44 +295,44 @@ bool HU_Responder(event_t *ev)
 	if (altdown)
 	{
 		// send a macro
-		if (ev->data1 >= OKEY_JOY1 && ev->data1 <= OKEY_JOY10)
+		if (ev.data1 >= OKEY_JOY1 && ev.data1 <= OKEY_JOY10)
 		{
-			ShoveChatStr(chat_macros[ev->data1 - OKEY_JOY1]->str(), HU_ChatMode()- 1);
+			ShoveChatStr(chat_macros[ev.data1 - OKEY_JOY1]->str(), HU_ChatMode()- 1);
 			HU_UnsetChatMode();
 			return true;
 		}
-		else if (ev->data1 >= '0' && ev->data1 <= '9')
+		else if (ev.data1 >= '0' && ev.data1 <= '9')
 		{
-			ShoveChatStr(chat_macros[ev->data1 - '0']->str(), HU_ChatMode() - 1);
+			ShoveChatStr(chat_macros[ev.data1 - '0']->str(), HU_ChatMode() - 1);
 			HU_UnsetChatMode();
 			return true;
 		}
-		else if (ev->data1 >= OKEYP_1 && ev->data1 <= OKEYP_0 && ev->mod & OMOD_NUM) // Use numpad keys for chat macros if numlock is on
+		else if (ev.data1 >= OKEYP_1 && ev.data1 <= OKEYP_0 && ev.mod & OMOD_NUM) // Use numpad keys for chat macros if numlock is on
 		{
-			ShoveChatStr(chat_macros[HU_GetMacroForNumpadKey(ev->data1)]->str(), HU_ChatMode() - 1);
+			ShoveChatStr(chat_macros[HU_GetMacroForNumpadKey(ev.data1)]->str(), HU_ChatMode() - 1);
 			HU_UnsetChatMode();
 			return true;
 		}
 	}
-	if (ev->data1 == OKEY_ENTER || ev->data1 == OKEYP_ENTER)
+	if (ev.data1 == OKEY_ENTER || ev.data1 == OKEYP_ENTER)
 	{
 		ShoveChatStr(input_text, HU_ChatMode() - 1);
 		HU_UnsetChatMode();
 		return true;
 	}
-	else if (ev->data1 == OKEY_ESCAPE || ev->data1 == OKEY_JOY2)
+	else if (ev.data1 == OKEY_ESCAPE || ev.data1 == OKEY_JOY2)
 	{
 		HU_UnsetChatMode();
 		return true;
 	}
-	else if (ev->data1 == OKEY_BACKSPACE)
+	else if (ev.data1 == OKEY_BACKSPACE)
 	{
 		if (!input_text.empty())
 			input_text.erase(input_text.end() - 1);
 		return true;
 	}
 
-	int textkey = ev->data3;	// [RH] Use localized keymap
+	int textkey = ev.data3;	// [RH] Use localized keymap
 	if (textkey < ' ' || textkey > '~')		// ASCII only please
 		return false;
 

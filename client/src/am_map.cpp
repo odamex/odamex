@@ -860,32 +860,32 @@ END_COMMAND(togglemap)
 //
 // Handle events (user inputs) in automap mode
 //
-bool AM_Responder(event_t* ev)
+bool AM_Responder(const event_t& ev)
 {
-	if (automapactive && (ev->type == ev_keydown || ev->type == ev_keyup))
+	if (automapactive && (ev.type == ev_keydown || ev.type == ev_keyup))
 	{
 		if (am_followplayer)
 		{
 			// check for am_pan* and ignore in follow mode
-			const std::string defbind = AutomapBindings.Binds[ev->data1];
+			const std::string defbind = AutomapBindings.Binds[ev.data1];
 			if (iequals(defbind, "+am_pan"))
 				return false;
 		}
 
-		if (ev->type == ev_keydown)
+		if (ev.type == ev_keydown)
 		{
-			const std::string defbind = Bindings.Binds[ev->data1];
+			const std::string defbind = Bindings.Binds[ev.data1];
 			// Check for automap, in order not to be stuck
 			if (iequals(defbind, "togglemap"))
 				return false;
 		}
 
 		const bool res = C_DoKey(ev, &AutomapBindings, NULL);
-		if (res && ev->type == ev_keyup)
+		if (res && ev.type == ev_keyup)
 		{
 			// If this is a release event we also need to check if it released a button in
 			// the main Bindings so that that button does not get stuck.
-			const std::string defbind = Bindings.Binds[ev->data1];
+			const std::string defbind = Bindings.Binds[ev.data1];
 
 			// Check for automap, in order not to be stuck
 			if (iequals(defbind, "togglemap"))

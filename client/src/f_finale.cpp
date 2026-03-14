@@ -235,10 +235,10 @@ void STACK_ARGS F_ShutdownFinale()
 }
 
 
-bool F_Responder (event_t *event)
+bool F_Responder(const event_t& event)
 {
 	if (finalestage == 2)
-		return F_CastResponder (event);
+		return F_CastResponder(event);
 
 	return false;
 }
@@ -602,9 +602,9 @@ void F_CastTicker()
 // F_CastResponder
 //
 
-bool F_CastResponder (event_t* ev)
+bool F_CastResponder(const event_t& ev)
 {
-	if (ev->type != ev_keydown)
+	if (ev.type != ev_keydown)
 		return false;
 
 	if (castdeath)
