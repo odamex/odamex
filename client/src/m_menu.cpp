@@ -203,6 +203,11 @@ static int M_BigFontLineHeight()
 	return V_GetFontLineHeight("BIGFONT");
 }
 
+static int M_SmallFontLineHeight()
+{
+	return V_GetFontLineHeight("SMALLFONT");
+}
+
 static void M_PauseSound(void)
 {
 	if (paused || gamestate != GS_LEVEL || multiplayer || demoplayback ||
@@ -730,7 +735,17 @@ void M_ReadSaveStrings()
 //
 void M_DrawLoad ()
 {
-	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_LOADG"), 72, 28);
+	if (W_CheckNumForName("M_LOADG") >= 0)
+	{
+		screen->DrawPatchClean(W_CachePatch("M_LOADG"), 72, 28);
+	}
+	else
+	{
+		V_SetFont("BIGFONT");
+		screen->DrawTextCleanMove(CR_GRAY, 108, 15,
+		                         LocalizedString("MNU_LOADGAME"));
+		V_SetFont("SMALLFONT");
+	}
 	for (int i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder (LoadDef.x, LoadDef.y+M_BigFontLineHeight()*i, 24);
@@ -775,7 +790,17 @@ void M_DrawSave()
 {
 	int i;
 
-	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_SAVEG"), 72, 28);
+	if (W_CheckNumForName("M_SAVEG") >= 0)
+	{
+		screen->DrawPatchClean (W_CachePatch("M_SAVEG"), 72, 28);
+	}
+	else
+	{
+		V_SetFont("BIGFONT");
+		screen->DrawTextCleanMove (CR_GRAY, 108, 15,
+		                         LocalizedString("MNU_SAVEGAME"));
+		V_SetFont("SMALLFONT");
+	}
 	for (i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+M_BigFontLineHeight()*i,24);
@@ -1030,15 +1055,22 @@ void M_FinishReadThis(int choice)
 //
 void M_DrawSaveLoadBorder (int x, int y, int len)
 {
-	screen->DrawPatchClean (W_CachePatch ("M_LSLEFT"), x-8, y+7);
-
-	for (int i = 0; i < len; i++)
+	if (W_CheckNumForName("M_FSLOT") >= 0)
 	{
-		screen->DrawPatchClean (W_CachePatch ("M_LSCNTR"), x, y+7);
-		x += 8;
+		screen->DrawPatchClean (W_CachePatch ("M_FSLOT"), x-8, y+7);
 	}
+	else
+	{
+		screen->DrawPatchClean (W_CachePatch ("M_LSLEFT"), x-8, y+7);
 
-	screen->DrawPatchClean (W_CachePatch ("M_LSRGHT"), x, y+7);
+		for (int i = 0; i < len; i++)
+		{
+			screen->DrawPatchClean (W_CachePatch ("M_LSCNTR"), x, y+7);
+			x += 8;
+		}
+
+		screen->DrawPatchClean (W_CachePatch ("M_LSRGHT"), x, y+7);
+	}
 }
 
 //
@@ -1080,10 +1112,8 @@ void M_DrawNewGame()
 		screen->DrawPatchClean(W_CachePatch("M_SKILL"), 54, 38);
 	}
 
-	static constexpr int SMALLFONT_OFFSET = 8; // Line up with the indicator
-
 	const char* pslabel = "Pistol Start Each Level ";
-	const int psy = NewDef.y + (M_BigFontLineHeight() * skillnum) + SMALLFONT_OFFSET;
+	const int psy = NewDef.y + (M_BigFontLineHeight() * skillnum) + M_SmallFontLineHeight();
 
 	screen->DrawTextCleanMove(CR_RED, NewDef.x, psy, pslabel);
 	screen->DrawTextCleanMove(CR_GREY, NewDef.x + V_StringWidth(pslabel), psy,
@@ -1193,10 +1223,9 @@ void M_DrawEpisode()
 	}
 
 	if (W_CheckNumForName("M_EPISOD") >= 0)
+	{
 		screen->DrawPatchClean(W_CachePatch("M_EPISOD"), 54, y);
-	else
-		screen->DrawTextCleanMove(CR_GRAY, 54, y,
-		                         LocalizedString("MNU_CHOOSEEPISODE"));
+	}
 }
 
 static int skillchoice = 0;

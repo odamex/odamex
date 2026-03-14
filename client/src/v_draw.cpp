@@ -701,6 +701,115 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 	}
 }
 
+void DCanvas::DrawColoredLucentPatchStretchedAlpha(const patch_t* patch, int x0, int y0,
+                                                   const int destwidth, const int destheight,
+                                                   float alpha) const
+{
+	if (patch == NULL)
+		return;
+
+	if (patch->width() <= 0 || patch->height() <= 0 ||
+	    destwidth <= 0 || destheight <= 0 || alpha <= 0.0f)
+		return;
+
+	if (alpha >= 1.0f)
+	{
+		DrawColoredPatchStretched(patch, x0, y0, destwidth, destheight);
+		return;
+	}
+
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	int surface_pitch = mSurface->getPitch();
+	int colstep = mSurface->getBytesPerPixel();
+
+	int xinc = (patch->width() << FRACBITS) / destwidth;
+	int yinc = (patch->height() << FRACBITS) / destheight;
+	if (xinc & (FRACUNIT - 1))
+		xinc++;
+	if (yinc & (FRACUNIT - 1))
+		yinc++;
+	int xmul = (destwidth << FRACBITS) / patch->width();
+	int ymul = (destheight << FRACBITS) / patch->height();
+
+	y0 -= (patch->topoffset() * ymul) >> FRACBITS;
+	x0 -= (patch->leftoffset() * xmul) >> FRACBITS;
+
+#ifdef RANGECHECK
+	if (x0 < 0 || x0 + destwidth > surface_width || y0 < 0 || y0 + destheight > surface_height)
+	{
+		DPrintFmt("DCanvas::DrawColoredLucentPatchStretchedAlpha: bad patch dimensions ({} x {}) (ignored)\n",
+		          patch->width(), patch->height());
+		return;
+	}
+#endif
+
+	if (mSurface == I_GetPrimarySurface())
+		V_MarkRect(x0, y0, destwidth, destheight);
+
+	byte* desttop = mSurface->getBuffer() + (y0 * surface_pitch) + (x0 * colstep);
+	int w = MIN(destwidth * xinc, patch->width() << FRACBITS);
+
+	if (mSurface->getBitsPerPixel() == 8)
+	{
+		const fixed_t translevel = (fixed_t)(0xFFFF * alpha);
+		const fixed_t fglevel = translevel & ~0x3ff;
+		const fixed_t bglevel = FRACUNIT - fglevel;
+		argb_t* fg2rgb = Col2RGB8[fglevel >> 10];
+		argb_t* bg2rgb = Col2RGB8[bglevel >> 10];
+		const unsigned int fill = (byte)V_ColorFill;
+
+		for (int col = 0; col < w; col += xinc, desttop += colstep)
+		{
+			tallpost_t* post =
+			    (tallpost_t*)((byte*)patch + LELONG(patch->columnofs[col >> FRACBITS]));
+
+			while (!post->end())
+			{
+				byte* dest = desttop + (((post->topdelta * ymul)) >> FRACBITS) * surface_pitch;
+				int count = (post->length * ymul) >> FRACBITS;
+
+				while (count-- > 0)
+				{
+					unsigned int fg = fg2rgb[fill];
+					unsigned int bg = bg2rgb[*dest];
+					unsigned int mix = (fg + bg) | 0x1f07c1f;
+					*dest = RGB32k[0][0][mix & (mix >> 15)];
+					dest += surface_pitch;
+				}
+
+				post = post->next();
+			}
+		}
+	}
+	else
+	{
+		const int fgAlpha = (int)(alpha * 255);
+		const int bgAlpha = 255 - fgAlpha;
+		const argb_t fill = V_Palette.shade(V_ColorFill);
+
+		for (int col = 0; col < w; col += xinc, desttop += colstep)
+		{
+			tallpost_t* post =
+			    (tallpost_t*)((byte*)patch + LELONG(patch->columnofs[col >> FRACBITS]));
+
+			while (!post->end())
+			{
+				byte* dest = desttop + (((post->topdelta * ymul)) >> FRACBITS) * surface_pitch;
+				int count = (post->length * ymul) >> FRACBITS;
+
+				while (count-- > 0)
+				{
+					argb_t bg = *((argb_t*)dest);
+					*((argb_t*)dest) = alphablend2a(bg, bgAlpha, fill, fgAlpha);
+					dest += surface_pitch;
+				}
+
+				post = post->next();
+			}
+		}
+	}
+}
+
 //
 // V_DrawIWrapper
 // Like V_DrawWrapper except it will stretch the patches as

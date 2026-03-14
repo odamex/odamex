@@ -28,6 +28,8 @@
 #include "v_video.h"
 #include "v_text.h"
 
+EXTERN_CVAR(hud_transparency)
+
 extern byte* Ranges;
 
 namespace hud {
@@ -260,6 +262,7 @@ void DrawShadowedText(int x, int y, const float scale,
 	    (shadow_color >= 0 && shadow_color < NUM_TEXT_COLORS) ? shadow_color : CR_BLACK;
 	const translationref_t saved_colormap = V_ColorMap;
 	const int saved_color_fill = V_ColorFill;
+	const float shadow_transparency = ::hud_transparency * 0.5f;
 
 	int draw_x = x;
 	int glyph_index = 0;
@@ -297,10 +300,11 @@ void DrawShadowedText(int x, int y, const float scale,
 				    y + shadow_y_offset * y_scale,
 				    glyph->width() * x_scale, glyph->height() * y_scale);
 			else
-				screen->DrawColoredLucentPatchStretched(
+				screen->DrawColoredLucentPatchStretchedAlpha(
 				    glyph, draw_x + shadow_x_offset * x_scale,
 				    y + shadow_y_offset * y_scale,
-				    glyph->width() * x_scale, glyph->height() * y_scale);
+				    glyph->width() * x_scale, glyph->height() * y_scale,
+				    shadow_transparency);
 
 			const int fg_color = (current_color >= 0 && current_color < NUM_TEXT_COLORS)
 			                         ? current_color

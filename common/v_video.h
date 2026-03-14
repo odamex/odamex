@@ -168,6 +168,8 @@ public:
 
 	inline void DrawColoredLucentPatch (const patch_t *patch, int x, int y) const;
 	inline void DrawColoredLucentPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const;
+	void DrawColoredLucentPatchStretchedAlpha(const patch_t* patch, int x, int y, int dw,
+	                                          int dh, float alpha) const;
 	inline void DrawColoredLucentPatchDirect (const patch_t *patch, int x, int y) const;
 	inline void DrawColoredLucentPatchIndirect (const patch_t *patch, int x, int y) const;
 	inline void DrawColoredLucentPatchClean (const patch_t *patch, int x, int y) const;
