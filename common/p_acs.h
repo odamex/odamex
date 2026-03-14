@@ -70,8 +70,8 @@ public:
 	const char *LookupString (uint32_t index, uint32_t ofs=0) const;
 	const char *LocalizeString (uint32_t index) const;
 	void StartTypedScripts (uint16_t type, AActor *activator, int arg0=0, int arg1=0, int arg2=0, bool always = true) const;
-	uint32_t PC2Ofs (int *pc) const { return (byte *)pc - Data; }
-	int *Ofs2PC (uint32_t ofs) const { return (int *)(Data + ofs); }
+	uint32_t PC2Ofs (int *pc) const { return reinterpret_cast<byte*>(pc) - Data; }
+	int *Ofs2PC (uint32_t ofs) const { return reinterpret_cast<int*>(Data + ofs); }
 	ACSFormat GetFormat() const { return Format; }
 	ScriptFunction *GetFunction (int funcnum) const;
 	int GetArrayVal (int arraynum, int index) const;
@@ -516,11 +516,11 @@ private:
 
 inline FArchive &operator<< (FArchive &arc, DLevelScript::EScriptState state)
 {
-	return arc << (byte)state;
+	return arc << static_cast<byte>(state);
 }
 inline FArchive &operator>> (FArchive &arc, DLevelScript::EScriptState &state)
 {
-	byte in; arc >> in; state = (DLevelScript::EScriptState)in; return arc;
+	byte in; arc >> in; state = static_cast<DLevelScript::EScriptState>(in); return arc;
 }
 
 class DACSThinker : public DThinker

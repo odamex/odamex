@@ -107,9 +107,9 @@ extern std::vector<int> originalLightLevels;
 inline FArchive &operator<< (FArchive &arc, sector_t *sec)
 {
 	if (sec)
-		return arc << (uint16_t)(sec - sectors);
+		return arc << static_cast<uint16_t>(sec - sectors);
 	else
-		return arc << (uint16_t)0xffff;
+		return arc << static_cast<uint16_t>(0xffff);
 }
 inline FArchive &operator>> (FArchive &arc, sector_t *&sec)
 {
@@ -125,9 +125,9 @@ inline FArchive &operator>> (FArchive &arc, sector_t *&sec)
 inline FArchive &operator<< (FArchive &arc, line_t *line)
 {
 	if (line)
-		return arc << (uint16_t)(line - lines);
+		return arc << static_cast<uint16_t>(line - lines);
 	else
-		return arc << (uint16_t)0xffff;
+		return arc << static_cast<uint16_t>(0xffff);
 }
 inline FArchive &operator>> (FArchive &arc, line_t *&line)
 {
