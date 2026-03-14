@@ -26,7 +26,9 @@
 #include "odamex.h"
 
 #include <assert.h>
+#include <array>
 #include <cmath>
+#include <vector>
 
 #include "i_system.h"
 #include "i_time.h"
@@ -1003,6 +1005,125 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch, bool clear) const
 	mSurface->getDefaultCanvas()->Dim(0, 0, I_GetVideoWidth(), I_GetVideoHeight());
 
 	DrawPatchStretched(patch, x, y, destw, desth);
+}
+
+void DCanvas::DrawRotatedPatchCleanNoMove(const patch_t* patch, int x0, int y0, float radians,
+                                          float scale) const
+{
+	if (patch == NULL)
+		return;
+
+	const int srcw = patch->width();
+	const int srch = patch->height();
+	if (srcw <= 0 || srch <= 0)
+		return;
+
+	if (scale <= 0.0f)
+		return;
+
+	const int scalex = std::max(1, static_cast<int>(std::lround(CleanXfac * scale)));
+	const int scaley = std::max(1, static_cast<int>(std::lround(CleanYfac * scale)));
+	const int destw = srcw * scalex;
+	const int desth = srch * scaley;
+
+	const int base_x = x0 - (patch->leftoffset() * scalex);
+	const int base_y = y0 - (patch->topoffset() * scaley);
+
+	const float c = std::cos(radians);
+	const float s = std::sin(radians);
+	const float src_cx = (srcw - 1) * 0.5f;
+	const float src_cy = (srch - 1) * 0.5f;
+	const float dst_cx = (destw - 1) * 0.5f;
+	const float dst_cy = (desth - 1) * 0.5f;
+
+	const int surface_width = mSurface->getWidth();
+	const int surface_height = mSurface->getHeight();
+
+	// Build clip bounds from the rotated destination rectangle to avoid cutting
+	// off scanlines when the patch is rotated near cardinal angles.
+	const float center_x = base_x + dst_cx;
+	const float center_y = base_y + dst_cy;
+	const float half_w = destw * 0.5f;
+	const float half_h = desth * 0.5f;
+	const float extent_x = std::fabs(c) * half_w + std::fabs(s) * half_h;
+	const float extent_y = std::fabs(s) * half_w + std::fabs(c) * half_h;
+
+	const int clip_l = std::max(0, static_cast<int>(std::floor(center_x - extent_x)) - 1);
+	const int clip_t = std::max(0, static_cast<int>(std::floor(center_y - extent_y)) - 1);
+	const int clip_r = std::min(surface_width, static_cast<int>(std::ceil(center_x + extent_x)) + 2);
+	const int clip_b = std::min(surface_height, static_cast<int>(std::ceil(center_y + extent_y)) + 2);
+	if (clip_l >= clip_r || clip_t >= clip_b)
+		return;
+
+	std::vector<byte> src(srcw * srch, 0xFF);
+	for (int col = 0; col < srcw; col++)
+	{
+		tallpost_t* post = (tallpost_t*)((byte*)patch + LELONG(patch->columnofs[col]));
+		while (!post->end())
+		{
+			const int top = post->topdelta;
+			const int len = post->length;
+			for (int y = 0; y < len; y++)
+			{
+				const int sy = top + y;
+				if (sy >= 0 && sy < srch)
+					src[sy * srcw + col] = post->data()[y];
+			}
+			post = post->next();
+		}
+	}
+
+	V_MarkRect(clip_l, clip_t, clip_r - clip_l, clip_b - clip_t);
+
+	if (mSurface->getBitsPerPixel() == 8)
+	{
+		for (int y = clip_t; y < clip_b; y++)
+		{
+			for (int x = clip_l; x < clip_r; x++)
+			{
+				const float dx = ((x - base_x) - dst_cx) / scalex;
+				const float dy = ((y - base_y) - dst_cy) / scaley;
+				const int sx = static_cast<int>(std::lround(c * dx + s * dy + src_cx));
+				const int sy = static_cast<int>(std::lround(-s * dx + c * dy + src_cy));
+				if (sx < 0 || sx >= srcw || sy < 0 || sy >= srch)
+					continue;
+
+				const byte p = src[sy * srcw + sx];
+				if (p == 0xFF)
+					continue;
+
+				palindex_t* dest = (palindex_t*)mSurface->getBuffer((uint16_t)x, (uint16_t)y);
+				*dest = p;
+			}
+		}
+	}
+	else
+	{
+		std::array<argb_t, 256> colors;
+		const argb_t* palette = V_GetDefaultPalette()->basecolors;
+		for (size_t i = 0; i < colors.size(); i++)
+			colors[i] = V_GammaCorrect(palette[i]);
+
+		for (int y = clip_t; y < clip_b; y++)
+		{
+			for (int x = clip_l; x < clip_r; x++)
+			{
+				const float dx = ((x - base_x) - dst_cx) / scalex;
+				const float dy = ((y - base_y) - dst_cy) / scaley;
+				const int sx = static_cast<int>(std::lround(c * dx + s * dy + src_cx));
+				const int sy = static_cast<int>(std::lround(-s * dx + c * dy + src_cy));
+				if (sx < 0 || sx >= srcw || sy < 0 || sy >= srch)
+					continue;
+
+				const byte p = src[sy * srcw + sx];
+				if (p == 0xFF)
+					continue;
+
+				argb_t* dest = (argb_t*)mSurface->getBuffer((uint16_t)x, (uint16_t)y);
+				*dest = colors[p];
+			}
+		}
+	}
 }
 
 

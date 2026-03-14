@@ -25,6 +25,7 @@
 #include "odamex.h"
 
 #include <algorithm>
+#include <cmath>
 #include <iterator>
 #include <sstream>
 
@@ -41,10 +42,12 @@
 
 #include "cl_main.h"
 #include "p_ctf.h"
+#include "p_playerping.h"
 #include "i_video.h"
 #include "cl_netgraph.h"
 #include "hu_mousegraph.h"
 #include "am_map.h"
+#include "r_main.h"
 
 #include "hu_drawers.h"
 #include "hu_elements.h"
@@ -82,6 +85,7 @@ EXTERN_CVAR(screenblocks)
 EXTERN_CVAR(idmypos)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_lives)
+EXTERN_CVAR(hud_pingindicator)
 
 static int crosshair_lump;
 
@@ -442,6 +446,106 @@ static void HU_DrawCrosshair()
 	}
 }
 
+static void HU_DrawPingIndicator()
+{
+	if (!hud_pingindicator || gamestate != GS_LEVEL || !camera)
+		return;
+
+	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible(true))
+		return;
+
+	patch_t* patch = W_CachePatch("FONTB01");
+	if (patch == nullptr)
+		return;
+	patch_t* arrow = W_CachePatch("LITLUP");
+	if (arrow == nullptr)
+		return;
+
+	const int surfaceW = I_GetSurfaceWidth();
+	const int surfaceH = I_GetSurfaceHeight();
+	const int hudBottom = R_StatusBarVisible() ? ST_StatusBarY(surfaceW, surfaceH) : surfaceH;
+	static constexpr float ArrowScale = 1.75f;
+	const int margin = 10 * CleanXfac;
+
+	const int iconW = patch->width() * CleanXfac;
+	const int iconH = patch->height() * CleanYfac;
+	const int iconLeft = patch->leftoffset() * CleanXfac;
+	const int iconTop = patch->topoffset() * CleanYfac;
+	const int arrowW = std::max(1, static_cast<int>(std::lround(arrow->width() * CleanXfac * ArrowScale)));
+	const int arrowH = std::max(1, static_cast<int>(std::lround(arrow->height() * CleanYfac * ArrowScale)));
+	const int arrowLeft = static_cast<int>(std::lround(arrow->leftoffset() * CleanXfac * ArrowScale));
+	const int arrowTop = static_cast<int>(std::lround(arrow->topoffset() * CleanYfac * ArrowScale));
+
+	const int cx = surfaceW / 2;
+	const int cy = hudBottom / 2;
+	const int ex = std::max(1, (surfaceW / 2) - margin - (iconW / 2));
+	const int ey = std::max(1, (hudBottom / 2) - margin - (iconH / 2));
+
+	const int minX = margin + iconLeft;
+	const int maxX = (surfaceW - margin - iconW) + iconLeft;
+	const int minY = margin + iconTop;
+	const int maxY = (hudBottom - margin - iconH) + iconTop;
+
+	static constexpr double BamPerDegree = 4294967296.0 / 360.0;
+	const double fov = static_cast<double>(displayplayer().fov);
+	const int32_t halfFovBam = static_cast<int32_t>(std::lround(fov * BamPerDegree * 0.5));
+	static constexpr double Tau = 6.28318530717958647692;
+	static constexpr double AngleScale = Tau / 4294967296.0;
+
+	for (const player_t& player : players)
+	{
+		if (!player.player_ping)
+			continue;
+
+		const playerPing_s& ping = *player.player_ping;
+		if (P_IsPingExpired(ping))
+			continue;
+
+		v3fixed_t pingPos{};
+		if (!P_ResolvePingPosition(ping, pingPos))
+			continue;
+
+		if (pingPos.x == camera->x && pingPos.y == camera->y)
+			continue;
+
+		const angle_t target = R_PointToAngle2(camera->x, camera->y, pingPos.x, pingPos.y);
+		const int32_t delta = static_cast<int32_t>(target - camera->angle);
+		if (std::abs(delta) <= halfFovBam)
+			continue;
+
+		const double radians = static_cast<double>(delta) * AngleScale;
+
+		// 0 radians should point up the screen.
+		const double vx = -std::sin(radians);
+		const double vy = -std::cos(radians);
+
+		const double tx = ex / std::max(0.0001, std::abs(vx));
+		const double ty = ey / std::max(0.0001, std::abs(vy));
+		const double t = std::min(tx, ty);
+
+		const int centerX = static_cast<int>(std::lround(cx + vx * t));
+		const int centerY = static_cast<int>(std::lround(cy + vy * t));
+
+		const int iconOffset =
+		    std::max(arrowW, arrowH) / 2 + std::max(iconW, iconH) / 2 + 2 * CleanXfac;
+		const int iconCenterX = centerX - static_cast<int>(std::lround(vx * iconOffset));
+		const int iconCenterY = centerY - static_cast<int>(std::lround(vy * iconOffset));
+		int drawX = iconCenterX - (iconW / 2) + iconLeft;
+		int drawY = iconCenterY - (iconH / 2) + iconTop;
+
+		drawX = std::clamp(drawX, minX, maxX);
+		drawY = std::clamp(drawY, minY, maxY);
+
+		screen->DrawLucentPatchCleanNoMove(patch, drawX, drawY);
+
+		// Center the arrow visual around the edge point, then rotate toward ping.
+		const int arrowX = centerX - (arrowW / 2) + arrowLeft;
+		const int arrowY = centerY - (arrowH / 2) + arrowTop;
+		screen->DrawRotatedPatchCleanNoMove(arrow, arrowX, arrowY, static_cast<float>(-radians),
+		                                    ArrowScale);
+	}
+}
+
 
 static void HU_DrawChatPrompt()
 {
@@ -573,6 +677,9 @@ void HU_Drawer()
 
 	// [AM] Voting HUD!
 	ST_voteDraw(11 * CleanYfac);
+
+	if (gamestate == GS_LEVEL)
+		HU_DrawPingIndicator();
 
 	if (gamestate == GS_LEVEL)
 		HU_DrawCrosshair();

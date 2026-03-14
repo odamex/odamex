@@ -273,6 +273,26 @@ odaproto::svc::UpdatePing SVC_UpdatePing(const player_t& player)
 	return msg;
 }
 
+odaproto::svc::PlayerPing SVC_PlayerPing(const player_t& player)
+{
+	odaproto::svc::PlayerPing msg;
+
+	msg.set_pid(player.id);
+
+	if (player.player_ping)
+	{
+		const playerPing_s& ping = *player.player_ping;
+		odaproto::Vec3* pos = msg.mutable_pos();
+		pos->set_x(ping.pos.x);
+		pos->set_y(ping.pos.y);
+		pos->set_z(ping.pos.z);
+		msg.set_target_netid(ping.target_netid);
+		msg.set_follow_target(ping.follow_target);
+	}
+
+	return msg;
+}
+
 odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 {
 	odaproto::svc::SpawnMobj msg;

@@ -115,6 +115,8 @@ struct playerPing_s
 	v3fixed_t pos{};
 	int lump = -1;
 	int pingtic = -1;
+	uint32_t target_netid = 0;
+	bool follow_target = false;
 };
 
 class player_t

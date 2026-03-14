@@ -87,6 +87,7 @@ odaproto::svc::UpdateLocalPlayer SVC_UpdateLocalPlayer(const AActor& mo, const i
 odaproto::svc::LevelLocals SVC_LevelLocals(const level_locals_t& locals, uint32_t flags);
 odaproto::svc::PingRequest SVC_PingRequest();
 odaproto::svc::UpdatePing SVC_UpdatePing(const player_t& player);
+odaproto::svc::PlayerPing SVC_PlayerPing(const player_t& player);
 odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo);
 odaproto::svc::DisconnectClient SVC_DisconnectClient(const player_t& player);
 odaproto::svc::LoadMap SVC_LoadMap(const OResFiles& wadnames, const OResFiles& patchnames,

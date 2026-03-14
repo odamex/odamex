@@ -1738,7 +1738,7 @@ bool CL_PrepareConnect()
 		version = 62;
 
 	/* GhostlyDeath -- Need the actual version info */
-	if (version == 65)
+	if (version >= 65)
 	{
 		size_t l;
 		MSG_ReadString();

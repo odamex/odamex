@@ -1011,6 +1011,7 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_levellocals);
 	SVC_INFO(svc_pingrequest);
 	SVC_INFO(svc_updateping);
+	SVC_INFO(svc_playerping);
 	SVC_INFO(svc_spawnmobj);
 	SVC_INFO(svc_disconnectclient);
 	SVC_INFO(svc_loadmap);

@@ -708,7 +708,86 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 	}
 }
 
-void R_Add3DHUDSprite(int lump, v3fixed_t pos, translationref_t translation, float translucency)
+static bool R_Clamp3DHUDSpriteSize(vissprite_t* vis, const patch_t* patch, int min_screen_px,
+                                   int max_screen_px)
+{
+	if ((min_screen_px <= 0 && max_screen_px <= 0) || !vis || !patch)
+		return true;
+
+	const fixed_t abs_xiscale = std::max<fixed_t>(1, std::abs(vis->xiscale));
+	const int projected_w = std::max<int>(1, ((int64_t)patch->width() << FRACBITS) / abs_xiscale);
+	if (projected_w <= 0)
+		return false;
+
+	auto smoothstep = [](float t) -> float
+	{
+		t = std::clamp(t, 0.0f, 1.0f);
+		return t * t * (3.0f - 2.0f * t);
+	};
+
+	float target_wf = static_cast<float>(projected_w);
+	if (min_screen_px > 0 && target_wf < min_screen_px)
+	{
+		const float band = std::max(6.0f, min_screen_px * 0.35f);
+		const float t = smoothstep((min_screen_px - target_wf) / band);
+		target_wf += (min_screen_px - target_wf) * t;
+	}
+	if (max_screen_px > 0 && target_wf > max_screen_px)
+	{
+		const float band = std::max(8.0f, max_screen_px * 0.25f);
+		const float t = smoothstep((target_wf - max_screen_px) / band);
+		target_wf += (max_screen_px - target_wf) * t;
+	}
+
+	int target_w = std::max(1, static_cast<int>(target_wf + 0.5f));
+
+	if (target_w == projected_w)
+		return true;
+
+	const int patch_w = std::max(1, static_cast<int>(patch->width()));
+	const int patch_h = std::max(1, static_cast<int>(patch->height()));
+	const int target_h = std::max(1, (patch_h * target_w + patch_w / 2) / patch_w);
+
+	const int cx = (vis->x1 + vis->x2) / 2;
+	const int cy = (vis->y1 + vis->y2) / 2;
+
+	const int raw_x1 = cx - target_w / 2;
+	const int raw_x2 = raw_x1 + target_w - 1;
+	const int raw_y1 = cy - target_h / 2;
+	const int raw_y2 = raw_y1 + target_h - 1;
+
+	vis->x1 = std::clamp(raw_x1, 0, viewwidth - 1);
+	vis->x2 = std::clamp(raw_x2, 0, viewwidth - 1);
+	vis->y1 = std::clamp(raw_y1, 0, viewheight - 1);
+	vis->y2 = std::clamp(raw_y2, 0, viewheight - 1);
+
+	if (vis->x2 < vis->x1 || vis->y2 < vis->y1)
+		return false;
+
+	const fixed_t scale = FixedDiv(target_w << FRACBITS, projected_w << FRACBITS);
+	vis->xscale = FixedMul(vis->xscale, scale);
+	vis->yscale = FixedMul(vis->yscale, scale);
+
+	fixed_t xiscale = FixedDiv(patch_w << FRACBITS, target_w << FRACBITS);
+	if (vis->xiscale < 0)
+		xiscale = -xiscale;
+	vis->xiscale = xiscale;
+
+	const int visible_left = vis->x1 - raw_x1;
+	if (vis->xiscale < 0)
+	{
+		vis->startfrac = (patch_w << FRACBITS) - 1 - visible_left * (-vis->xiscale);
+	}
+	else
+	{
+		vis->startfrac = visible_left * vis->xiscale;
+	}
+
+	return true;
+}
+
+void R_Add3DHUDSprite(int lump, v3fixed_t pos, translationref_t translation, float translucency,
+                      int min_screen_px, int max_screen_px)
 {
 	if (lump == -1)
 		return;
@@ -738,6 +817,9 @@ void R_Add3DHUDSprite(int lump, v3fixed_t pos, translationref_t translation, flo
 	vis->patch = lump;
 	vis->mo = nullptr;
 	vis->colormap = ::basecolormap;
+
+	if (!R_Clamp3DHUDSpriteSize(vis, patch, min_screen_px, max_screen_px))
+		vis->x2 = vis->x1 - 1;
 }
 
 //

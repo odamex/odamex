@@ -133,6 +133,8 @@ public:
 	inline void DrawPatchIndirect (const patch_t *patch, int x, int y) const;
 	inline void DrawPatchClean (const patch_t *patch, int x, int y) const;
 	inline void DrawPatchCleanNoMove (const patch_t *patch, int x, int y) const;
+	void DrawRotatedPatchCleanNoMove(const patch_t* patch, int x, int y, float radians,
+	                                 float scale = 1.0f) const;
 
 	void DrawPatchFullScreen(const patch_t* patch, bool clear) const;
 

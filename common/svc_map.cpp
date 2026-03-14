@@ -56,6 +56,7 @@ static void InitMap()
 	MapProto(svc_levellocals, odaproto::svc::LevelLocals::descriptor());
 	MapProto(svc_pingrequest, odaproto::svc::PingRequest::descriptor());
 	MapProto(svc_updateping, odaproto::svc::UpdatePing::descriptor());
+	MapProto(svc_playerping, odaproto::svc::PlayerPing::descriptor());
 	MapProto(svc_spawnmobj, odaproto::svc::SpawnMobj::descriptor());
 	MapProto(svc_disconnectclient, odaproto::svc::DisconnectClient::descriptor());
 	MapProto(svc_loadmap, odaproto::svc::LoadMap::descriptor());

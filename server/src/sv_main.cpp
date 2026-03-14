@@ -139,6 +139,8 @@ bool P_LineSpecialMovesSector(short special);
 void SV_UpdateShareKeys(player_t& player);
 std::string SV_BuildKillsDeathsStatusString(const player_t& player);
 std::string V_GetTeamColor(UserInfo userinfo);
+void SV_SendPlayerPing(const player_t& source, client_t* dest);
+void SV_BroadcastPlayerPing(const player_t& source);
 
 CVAR_FUNC_IMPL (sv_maxclients)
 {
@@ -1865,6 +1867,10 @@ void SV_ClientFullUpdate(player_t &pl)
 	// update all player members
 	for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_PlayerMembers(*it, SVC_MSG_ALL));
+
+	// send active pings so newly connected players can see them
+	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		SV_SendPlayerPing(*it, cl);
 
 	// [deathz0r] send team frags/captures if teamplay is enabled
 	if (G_IsTeamGame())
@@ -4056,6 +4062,7 @@ void SV_NetCmd(player_t& player)
 		break;
 	case CONST_HASH("player_ping"):
 		P_PlayerPing(player);
+		SV_BroadcastPlayerPing(player);
 		break;
 	default: break;
 	}
@@ -4973,6 +4980,25 @@ void SV_SendPlayerInfo(player_t &player)
 {
 	client_t *cl = &player.client;
 	MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_PlayerInfo(player));
+}
+
+void SV_SendPlayerPing(const player_t& source, client_t* dest)
+{
+	if (!dest || !source.player_ping || P_IsPingExpired(*source.player_ping))
+		return;
+
+	MSG_WriteSVC(dest->messenger.ReliableBuf(), SVC_PlayerPing(source));
+}
+
+void SV_BroadcastPlayerPing(const player_t& source)
+{
+	if (!source.player_ping || P_IsPingExpired(*source.player_ping))
+		return;
+
+	for (auto& player : players)
+	{
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerPing(source));
+	}
 }
 
 //

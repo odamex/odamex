@@ -54,6 +54,7 @@
 #include "p_inter.h"
 #include "p_lnspec.h"
 #include "p_mobj.h"
+#include "p_playerping.h"
 #include "r_sky.h"
 #include "r_state.h"
 #include "s_sound.h"
@@ -491,6 +492,31 @@ static void CL_UpdatePing(const odaproto::svc::UpdatePing* msg)
 		return;
 
 	p.ping = msg->ping();
+}
+
+//
+// CL_PlayerPing
+// Update a player's active world ping.
+//
+static void CL_PlayerPing(const odaproto::svc::PlayerPing* msg)
+{
+	player_t& p = idplayer(msg->pid());
+	if (!validplayer(p))
+		return;
+
+	const int lump = W_GetNumForName("NET");
+	if (lump == -1)
+		return;
+
+	playerPing_s ping{};
+	ping.lump = lump;
+	ping.pingtic = ::gametic;
+	ping.pos.x = msg->pos().x();
+	ping.pos.y = msg->pos().y();
+	ping.pos.z = msg->pos().z();
+	ping.target_netid = msg->target_netid();
+	ping.follow_target = msg->follow_target();
+	p.player_ping = std::make_unique<playerPing_s>(std::move(ping));
 }
 
 //
@@ -3148,6 +3174,7 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_levellocals, CL_LevelLocals, odaproto::svc::LevelLocals);
 		SV_MSG(svc_pingrequest, CL_PingRequest, odaproto::svc::PingRequest);
 		SV_MSG(svc_updateping, CL_UpdatePing, odaproto::svc::UpdatePing);
+		SV_MSG(svc_playerping, CL_PlayerPing, odaproto::svc::PlayerPing);
 		SV_MSG(svc_spawnmobj, CL_SpawnMobj, odaproto::svc::SpawnMobj);
 		SV_MSG(svc_disconnectclient, CL_DisconnectClient, odaproto::svc::DisconnectClient);
 		SV_MSG(svc_loadmap, CL_LoadMap, odaproto::svc::LoadMap);

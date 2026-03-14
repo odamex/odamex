@@ -39,3 +39,16 @@ void P_PlayerPing(player_t &player);
  * @brief Add ping sprites to be rendered.
  */
 void R_AddPingSprites();
+
+/**
+ * @brief Resolve a ping's current world position.
+ *
+ * Follows target actors when configured and falls back to the stored static
+ * position if the target no longer exists.
+ */
+bool P_ResolvePingPosition(const playerPing_s& ping, v3fixed_t& outPos);
+
+/**
+ * @brief Returns true if the ping has expired.
+ */
+bool P_IsPingExpired(const playerPing_s& ping);
