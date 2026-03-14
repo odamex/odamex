@@ -412,6 +412,9 @@ void D_PageDrawer()
 	if (page_surface)
 	{
 		int destw, desth;
+		const int display_page_height = (page_surface->getHeight() == 200)
+			? page_surface->getHeight() + (page_surface->getHeight() / 5)
+			: page_surface->getHeight();
 
 		if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight())) // Always fill/stretch pages on protected resolutions
 		{
@@ -426,13 +429,7 @@ void D_PageDrawer()
 			destw = surface_width, desth = surface_width * 3 / 4;
 		}
 
-		// Using widescreen assets? It may go off screen.
-		// Preserve the aspect ratio and make the box big
-		// Maybe too big? (it will be cropped if so)
-		if (page_width > 320)
-		{
-			destw = I_GetAspectCorrectWidth(desth, page_height, page_width);
-		}
+		destw = I_GetAspectCorrectWidth(desth, display_page_height, page_width);
 
 		page_surface->lock();
 
@@ -589,8 +586,19 @@ void D_DoAdvanceDemo (void)
 		const bool is_raw_patch = (gameinfo.flags & GI_PAGESARERAW) != 0;
 		const patch_t* patch = !is_raw_patch ? W_CachePatch(pagename) : NULL;
 		
-		page_width = !is_raw_patch ? patch->width() : 320;
-		page_height = !is_raw_patch ? patch->height() : 200;
+		if (is_raw_patch)
+		{
+			const int lumpnum = W_GetNumForName(pagename);
+			const unsigned lump_length = W_LumpLength(lumpnum);
+
+			page_height = 200;
+			page_width = (lump_length % page_height == 0) ? lump_length / page_height : 320;
+		}
+		else
+		{
+			page_width = patch->width();
+			page_height = patch->height();
+		}
 
 		I_FreeSurface(page_surface);
 		page_surface = I_AllocateSurface(page_width, page_height, 8);
