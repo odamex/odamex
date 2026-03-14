@@ -84,6 +84,16 @@ short ST_HticResolveBaseWidth()
 	return 320;
 }
 
+int ST_HticSafeAreaLeft()
+{
+	return std::max(0, (ST_HticResolveBaseWidth() - 320) / 2);
+}
+
+int ST_HticSafeAreaRight()
+{
+	return ST_HticSafeAreaLeft() + 320;
+}
+
 void ST_HticClearAssets()
 {
 	for (int i = 0; i < 10; i++)
@@ -333,37 +343,39 @@ void ST_HticDrawBackgroundAndWidgets()
 {
 	const player_t& plyr = displayplayer();
 	DCanvas* canvas = stbar_surface->getDefaultCanvas();
+	const int safeLeft = ST_HticSafeAreaLeft();
+	const int safeRight = ST_HticSafeAreaRight();
 
 	if (!hticBarBack.empty())
 		canvas->DrawPatch(W_ResolvePatchHandle(hticBarBack), 0, 0);
 
-	canvas->DrawPatch(W_ResolvePatchHandle(hticBarMain), 34, 2);
+	canvas->DrawPatch(W_ResolvePatchHandle(hticBarMain), safeLeft + 34, 2);
 
 	const int clampedChainHealth = clamp(hticChainHealth, 0, 100);
 	const int chainPos = (clampedChainHealth << 8) / 100;
 	const int chainY = 32 + ((plyr.health != hticChainHealth) ? hticChainWiggle : 0);
 
 	if (!hticChain.empty())
-		canvas->DrawPatch(W_ResolvePatchHandle(hticChain), 2 + (chainPos % 17), chainY);
+		canvas->DrawPatch(W_ResolvePatchHandle(hticChain), safeLeft + 2 + (chainPos % 17), chainY);
 	if (!hticLifeGem.empty())
-		canvas->DrawPatch(W_ResolvePatchHandle(hticLifeGem), 17 + chainPos, chainY);
+		canvas->DrawPatch(W_ResolvePatchHandle(hticLifeGem), safeLeft + 17 + chainPos, chainY);
 	if (!hticLeftFace.empty())
-		canvas->DrawPatch(W_ResolvePatchHandle(hticLeftFace), 0, 32);
+		canvas->DrawPatch(W_ResolvePatchHandle(hticLeftFace), safeLeft + 0, 32);
 	if (!hticRightFace.empty())
-		canvas->DrawPatch(W_ResolvePatchHandle(hticRightFace), 276, 32);
+		canvas->DrawPatch(W_ResolvePatchHandle(hticRightFace), safeRight - 44, 32);
 
 	if (((plyr.cheats & CF_GODMODE) || plyr.powers[pw_invulnerability]) && !hticGodEyesLeft.empty() &&
 	    !hticGodEyesRight.empty())
 	{
-		canvas->DrawPatch(W_ResolvePatchHandle(hticGodEyesLeft), 16, 9);
-		canvas->DrawPatch(W_ResolvePatchHandle(hticGodEyesRight), 287, 9);
+		canvas->DrawPatch(W_ResolvePatchHandle(hticGodEyesLeft), safeLeft + 16, 9);
+		canvas->DrawPatch(W_ResolvePatchHandle(hticGodEyesRight), safeRight - 33, 9);
 	}
 
-	ST_HticShadeChainMouths(stbar_surface, 19, 277, 32, 10);
+	ST_HticShadeChainMouths(stbar_surface, safeLeft + 19, safeRight - 43, 32, 10);
 
-	ST_HticDrawNumber(canvas, hticHealth, 87, 12, 3, hticBigNum);
-	ST_HticDrawNumber(canvas, hticReadyAmmo, 135, 4, 3, hticBigNum);
-	ST_HticDrawNumber(canvas, hticArmor, 254, 12, 3, hticBigNum);
+	ST_HticDrawNumber(canvas, hticHealth, safeLeft + 87, 12, 3, hticBigNum);
+	ST_HticDrawNumber(canvas, hticReadyAmmo, safeLeft + 135, 4, 3, hticBigNum);
+	ST_HticDrawNumber(canvas, hticArmor, safeRight - 66, 12, 3, hticBigNum);
 
 	for (int i = 0; i < 3; i++)
 	{
@@ -371,7 +383,7 @@ void ST_HticDrawBackgroundAndWidgets()
 			continue;
 
 		const int y = 6 + i * 8;
-		canvas->DrawPatch(W_ResolvePatchHandle(hticKeys[i]), 153, y);
+		canvas->DrawPatch(W_ResolvePatchHandle(hticKeys[i]), safeLeft + 153, y);
 	}
 }
 } // namespace
@@ -387,6 +399,7 @@ void ST_HticDrawTopCaps(IWindowSurface* surface)
 		return;
 
 	const int baseWidth = ST_HticBaseWidth();
+	const int safeLeft = ST_HticSafeAreaLeft();
 	const patch_t* left = W_ResolvePatchHandle(hticTopLeftCap);
 	const patch_t* right = W_ResolvePatchHandle(hticTopRightCap);
 	const int leftW = std::max(1, left->width() * ST_WIDTH / baseWidth);
@@ -395,8 +408,8 @@ void ST_HticDrawTopCaps(IWindowSurface* surface)
 	const int rightH = std::max(1, right->height() * ST_HEIGHT / ST_BaseHeight());
 
 	// Legacy Heretic places these at x=0 and x=290 in a 320-wide layout.
-	const int leftX = ST_X;
-	const int idealRightX = ST_X + (290 * ST_WIDTH) / baseWidth;
+	const int leftX = ST_X + (safeLeft * ST_WIDTH) / baseWidth;
+	const int idealRightX = ST_X + ((safeLeft + 290) * ST_WIDTH) / baseWidth;
 	const int maxRightX = ST_X + ST_WIDTH - rightW;
 	const int rightX = std::clamp(idealRightX, ST_X, maxRightX);
 	const int leftY = ST_Y - leftH + 1;
@@ -482,11 +495,13 @@ void ST_HticDrawer()
 		             R_GetRenderingSurface()->getWidth(), R_GetRenderingSurface()->getHeight());
 	}
 
+	IWindowSurface* surface = R_GetRenderingSurface();
 	stbar_surface->lock();
+	stbar_surface->blitcrop(surface, ST_X, ST_Y, ST_WIDTH, ST_HEIGHT, 0, 0, ST_HticBaseWidth(),
+	                        ST_BaseHeight());
 	ST_HticDrawBackgroundAndWidgets();
 	stbar_surface->unlock();
 
-	IWindowSurface* surface = R_GetRenderingSurface();
 	surface->blitcrop(stbar_surface, 0, 0, ST_HticBaseWidth(), ST_BaseHeight(), ST_X, ST_Y,
 	                 ST_WIDTH, ST_HEIGHT);
 	ST_HticDrawTopCaps(surface);
