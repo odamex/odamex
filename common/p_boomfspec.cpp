@@ -1249,6 +1249,10 @@ void P_PlayerInCompatibleSector(player_t& player)
 	if (player.mo->z != P_FloorHeight(player.mo) && !player.mo->waterlevel)
 		return;
 
+	// Being destroyed / unlinked from the map?
+	if (not (player.mo && player.mo->subsector && player.mo->subsector->sector))
+		return;
+
 	sector_t& sector = *player.mo->subsector->sector;
 	if (sector.special == 0 && sector.damageamount > 0) // Odamex Static Init Damage
 	{
@@ -1379,7 +1383,7 @@ void P_PlayerInCompatibleSector(player_t& player)
 //
 bool P_ActorInCompatibleSector(AActor* actor)
 {
-	if (!actor)
+	if (not (actor && actor->subsector && actor->subsector->sector))
 		return false;
 
 	sector_t* sector = actor->subsector->sector;

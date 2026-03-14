@@ -471,18 +471,9 @@ void P_CheckTouchy(AActor* mo)
 //
 fixed_t P_CalculateMinMom(const AActor *mo)
 {
-	fixed_t levelgravity, sectorgravity;
-
-	if (co_zdoomphys)
-	{
-		levelgravity = FixedDiv(FLOAT2FIXED(level.gravity), 100 << FRACBITS);
-		sectorgravity = FLOAT2FIXED(mo->subsector->sector->gravity);
-	}
-	else
-	{
-		levelgravity = GRAVITY * 8;
-		sectorgravity = FLOAT2FIXED(mo->subsector->sector->gravity);
-	}
+	const float   sectorGravityFloat = (mo && mo->subsector && mo->subsector->sector) ? mo->subsector->sector->gravity : 1.0f;
+	const fixed_t sectorgravity      = FLOAT2FIXED(sectorGravityFloat);
+	const fixed_t levelgravity       = co_zdoomphys ? FixedDiv(FLOAT2FIXED(level.gravity), 100 << FRACBITS) : GRAVITY * 8;
 
 	return -FixedMul(levelgravity, sectorgravity);
 }
@@ -692,8 +683,9 @@ void AActor::RunThink ()
 	// MUSINFO
 	if (type == MT_MUSICSOURCE && clientside)
 	{
-		if (musinfo.mapthing != this &&
-		    subsector->sector == displayplayer().mo->subsector->sector)
+		if (musinfo.mapthing != this
+		    && displayplayer().mo->subsector
+		    && subsector->sector == displayplayer().mo->subsector->sector)
 		{
 			musinfo.lastmapthing = musinfo.mapthing;
 			musinfo.mapthing = this->ptr();
@@ -1005,7 +997,7 @@ void AActor::Serialize (FArchive &arc)
 		touching_sectorlist = NULL;
 
 		LinkToWorld ();
-		floorsector = subsector->sector;
+		floorsector = subsector ? subsector->sector : nullptr;
 
 		AddToHash ();
 		if(playerid && validplayer(idplayer(playerid)))
@@ -1111,7 +1103,10 @@ bool P_SetMobjState(AActor *mobj, int32_t state, bool cl_update)
 //
 static void P_WindThrustActor(AActor* mo)
 {
-	if (mo->flags2 & MF2_WINDTHRUST)
+	if (   mo
+	    && mo->subsector
+	    && mo->subsector->sector
+	    && (mo->flags2 & MF2_WINDTHRUST))
 	{
 		static constexpr int windTab[3] = {2048*5, 2048*10, 2048*25};
 		const int special = mo->subsector->sector->special;
@@ -1378,7 +1373,7 @@ static void P_ApplyXYFriction(AActor* mo)
 //
 void P_XYMovement(AActor *mo)
 {
-	if (!mo || !mo->subsector)
+	if (not (mo && mo->subsector && mo->subsector->sector))
 		return;
 
 	P_WindThrustActor(mo);
@@ -1770,7 +1765,7 @@ static void P_ActorFakeSectorTriggers(AActor* mo, fixed_t oldz)
 	}
 }
 
-void P_ApplyBouncyPhysics(AActor *mo)
+static void P_ApplyBouncyPhysics(AActor *mo)
 {
 	if (mo->flags & MF_BOUNCES && mo->momz)
 	{
@@ -1848,6 +1843,13 @@ void P_ApplyBouncyPhysics(AActor *mo)
 //
 void P_ZMovement(AActor *mo)
 {
+	// This check also protects a bunch of static functions that are only used
+	// as part of Z-Movement.
+	if (not (mo && mo->subsector && mo->subsector->sector))
+	{
+		return;
+	}
+
 	fixed_t oldz = mo->z;
 
 	if (mo->flags & MF_BOUNCES && mo->momz)

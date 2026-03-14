@@ -140,6 +140,11 @@ void P_RecursiveSound (sector_t *sec, int soundblocks, AActor *soundtarget)
 	line_t* 	check;
 	sector_t*	other;
 
+	if (not sec)
+	{
+		return;
+	}
+
 	// wake up all monsters in this sector
 	if (sec->validcount == validcount
 		&& sec->soundtraversed <= soundblocks+1)
@@ -191,6 +196,9 @@ void P_RecursiveSound (sector_t *sec, int soundblocks, AActor *soundtarget)
 void P_NoiseAlert (AActor *target, AActor *emmiter)
 {
 	if (target->player && (!multiplayer && (target->player->cheats & CF_NOTARGET)))
+		return;
+
+	if (not emmiter->subsector)
 		return;
 
 	validcount++;
@@ -468,9 +476,13 @@ bool P_SmartMove(AActor* actor)
 	int dropoff = 0;
 
 	/* killough 9/12/98: Stay on a lift if target is on one */
-	on_lift = co_staylift && target && target->health > 0 &&
-	          target->subsector->sector->tag == actor->subsector->sector->tag &&
-	          P_IsOnLift(actor);
+	on_lift = co_staylift
+	            && target
+	            && target->health > 0
+	            && target->subsector
+	            && target->subsector->sector
+	            && target->subsector->sector->tag == actor->subsector->sector->tag
+	            && P_IsOnLift(actor);
 
 	under_damage = co_avoidhazards && P_IsUnderDamage(actor); // e6y
 
@@ -535,6 +547,9 @@ bool P_TryWalk (AActor *actor)
 
 bool P_IsOnLift(const AActor* actor)
 {
+	if (not (actor && actor->subsector && actor->subsector->sector))
+		return false;
+
 	const sector_t* sec = actor->subsector->sector;
 	line_t line;
 	int l;
@@ -1499,7 +1514,7 @@ void A_Look (AActor *actor)
 	AActor *targ;
 	AActor *newgoal;
 
-	if(!actor->subsector)
+	if(not (actor && actor->subsector && actor->subsector->sector))
 		return;
 
 	// [RH] Set goal now if appropriate
