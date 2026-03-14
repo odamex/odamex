@@ -11,7 +11,7 @@
 //-----------------------------------------------------------------------------
 //
 // DESCRIPTION:
-//   Heretic statusbar/HUD baseline for OdaHeretic milestone work.
+//   Heretic statusbar/HUD (WIP).
 //
 //-----------------------------------------------------------------------------
 
@@ -25,6 +25,12 @@
 #include "st_stuff.h"
 
 EXTERN_CVAR(st_scale)
+
+bool ST_HticResponder(event_t* ev)
+{
+	(void)ev;
+	return false;
+}
 
 namespace
 {

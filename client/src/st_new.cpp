@@ -95,11 +95,6 @@ static lumpHandle_t ToastSpreeM;
 static lumpHandle_t ToastSpreeL;
 static lumpHandle_t ToastSpreeArrow;
 
-extern lumpHandle_t negminus;
-extern lumpHandle_t tallnum[10];
-extern lumpHandle_t faces[];
-extern int st_faceindex;
-extern lumpHandle_t keys[NUMCARDS + NUMCARDS / 2];
 extern byte* Ranges;
 
 extern NetDemo netdemo;

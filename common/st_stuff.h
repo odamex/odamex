@@ -49,10 +49,29 @@ void ST_ForceRefresh();
 
 // for st_lib.cpp
 extern lumpHandle_t negminus;
+extern lumpHandle_t tallnum[10];
+extern lumpHandle_t faces[];
+extern int st_faceindex;
+extern lumpHandle_t keys[NUMCARDS + NUMCARDS / 2];
 
 //
 // STATUS BAR
 //
+
+// From Eternity Engine / Quasar: gameinfo-style status bar function table.
+struct stbarfns_t
+{
+	int height;
+	bool (*Responder)(event_t* ev);
+	void (*Ticker)();
+	void (*Drawer)();
+	void (*Start)();
+	void (*Init)();
+	void (*Shutdown)();
+};
+
+extern stbarfns_t DoomStatusBar;
+extern stbarfns_t HticStatusBar;
 
 // Called by main loop.
 bool ST_Responder(event_t* ev);
@@ -71,7 +90,15 @@ void ST_Init();
 
 void STACK_ARGS ST_Shutdown();
 
-// Heretic-specific statusbar/HUD scaffold
+// Engine-specific statusbar implementations.
+bool ST_DoomResponder(event_t* ev);
+bool ST_HticResponder(event_t* ev);
+void ST_DoomTicker();
+void ST_DoomDrawer();
+void ST_DoomStart();
+void ST_DoomInit();
+void ST_DoomShutdown();
+
 void ST_HticInit();
 void ST_HticStart();
 void ST_HticTicker();
@@ -113,5 +140,3 @@ void SpectatorHUD();
 void DoomHUD();
 
 }
-
-bool ST_Responder(event_t* ev);
