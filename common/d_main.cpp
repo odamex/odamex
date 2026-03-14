@@ -28,6 +28,7 @@
 
 #include <sstream>
 #include <algorithm>
+#include <fstream>
 
 #include "win32inc.h"
 #ifndef _WIN32
@@ -174,6 +175,7 @@ static const char* steam_install_subdirs[] =
 	"steamapps\\common\\ultimate doom\\base\\plutonia",
 	"steamapps\\common\\ultimate doom\\base\\tnt",
 	"steamapps\\common\\ultimate doom\\rerelease",
+	"steamapps\\common\\Heretic + Hexen",
 };
 
 static registry_value_t gog_doom_plus_doom2 =
@@ -203,6 +205,61 @@ static registry_value_t gog_final_doom =
 	SOFTWARE_KEY "\\GOG.com\\Games\\1435848742",
 	"path",
 };
+
+static registry_value_t gog_heretic_hexen =
+{
+	HKEY_LOCAL_MACHINE,
+	SOFTWARE_KEY "\\GOG.com\\Games\\1776058590",
+	"path",
+};
+
+static void D_AddUniquePath(std::vector<std::string>& paths, const std::string& path)
+{
+	std::string cleanPath = M_CleanPath(path);
+	if (std::find(paths.begin(), paths.end(), cleanPath) == paths.end())
+		paths.push_back(cleanPath);
+}
+
+static std::vector<std::string> GetSteamLibraryPaths(const char* install_path)
+{
+	std::vector<std::string> paths;
+
+	if (install_path == nullptr || install_path[0] == '\0')
+		return paths;
+
+	D_AddUniquePath(paths, install_path);
+
+	const std::string vdfpath = fmt::format("{}\\steamapps\\libraryfolders.vdf", install_path);
+	std::ifstream file(vdfpath.c_str());
+	if (!file.is_open())
+		return paths;
+
+	std::string line;
+	while (std::getline(file, line))
+	{
+		if (line.find("\"path\"") == std::string::npos)
+			continue;
+
+		const size_t value_start = line.find('"', line.find("\"path\"") + 6);
+		if (value_start == std::string::npos)
+			continue;
+		const size_t value_end = line.find('"', value_start + 1);
+		if (value_end == std::string::npos)
+			continue;
+
+		std::string path = line.substr(value_start + 1, value_end - value_start - 1);
+		size_t pos = 0;
+		while ((pos = path.find("\\\\", pos)) != std::string::npos)
+		{
+			path.replace(pos, 2, "\\");
+			pos += 1;
+		}
+
+		D_AddUniquePath(paths, path);
+	}
+
+	return paths;
+}
 
 static char *GetRegistryString(registry_value_t *reg_val)
 {
@@ -370,11 +427,15 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 		if (install_path != NULL)
 		{
-			for (const auto& dir : steam_install_subdirs)
+			const auto steam_library_paths = GetSteamLibraryPaths(install_path);
+			for (const auto& library : steam_library_paths)
 			{
-				const std::string subpath = fmt::format("{}\\{}", install_path, dir);
+				for (const auto& dir : steam_install_subdirs)
+				{
+					const std::string subpath = fmt::format("{}\\{}", library, dir);
 
-				D_AddSearchDir(dirs, subpath.c_str(), separator);
+					D_AddSearchDir(dirs, subpath.c_str(), separator);
+				}
 			}
 
 			M_Free(install_path);
@@ -419,6 +480,14 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 			D_AddSearchDir(dirs, plutonia_path.c_str(), separator);
 			D_AddSearchDir(dirs, tnt_path.c_str(), separator);
 			M_Free(final_doom_path);
+		}
+
+		char* heretic_plus_hexen_path = GetRegistryString(&gog_heretic_hexen);
+
+		if (heretic_plus_hexen_path != nullptr)
+		{
+			D_AddSearchDir(dirs, heretic_plus_hexen_path, separator);
+			M_Free(heretic_plus_hexen_path);
 		}
 	}
 
