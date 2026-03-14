@@ -2118,7 +2118,10 @@ void AM_Drawer()
 		// Keep compatibility with Heretic statusbar variants that draw above the
 		// classic Doom statusbar height by honoring ST_Y when available.
 		if (gameinfo.enginetype == ENGINE_HERETIC && ST_Y > 0)
+		{
 			f_h = std::min(f_h, ST_Y);
+		}
+
 		f_p = surface->getPitch();
 
 		AM_clearFB(gameinfo.currentAutomapColors.Background);
@@ -2214,7 +2217,9 @@ void AM_Drawer()
 	AM_drawMarks();
 
 	if (gameinfo.enginetype == ENGINE_HERETIC && !AM_OverlayAutomapVisible())
+	{
 		ST_HticDrawTopCaps(surface);
+	}
 
 	if (!(viewactive && am_overlay < 2) && !hu_font[0].empty())
 	{
@@ -2224,9 +2229,7 @@ void AM_Drawer()
 		const int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
 		const int OV_Y = surface_height - (surface_height * 32 / 200);
 		const int fullmap_text_base_y = (ST_Y > 0) ? ST_Y : f_h;
-		const bool use_side_padding =
-		    !AM_OverlayAutomapVisible() && gameinfo.enginetype == ENGINE_HERETIC;
-		const int side_padding = use_side_padding ? (36 * CleanXfac) : 0;
+		const int side_padding = 0;
 
 		if (G_IsCoopGame())
 		{
