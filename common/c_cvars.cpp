@@ -148,7 +148,7 @@ cvar_t::~cvar_t ()
 	}
 }
 
-void cvar_t::ForceSet(const char* valstr)
+void cvar_t::ForceSet(std::string_view valstr)
 {
 	// [SL] 2013-04-16 - Latched CVARs do not change values until the next map.
 	// Servers and single-player games should abide by this behavior but
@@ -157,10 +157,10 @@ void cvar_t::ForceSet(const char* valstr)
 		(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION))
 	{
 		m_Flags |= CVAR_MODIFIED;
-		if (valstr)
-			m_LatchedString = valstr;
-		else
+		if (valstr.empty())
 			m_LatchedString.clear();
+		else
+			m_LatchedString = valstr;
 	}
 	else
 	{
@@ -170,7 +170,7 @@ void cvar_t::ForceSet(const char* valstr)
 		bool integral_type = m_Type == CVARTYPE_BOOL || m_Type == CVARTYPE_BYTE ||
 					m_Type == CVARTYPE_WORD || m_Type == CVARTYPE_INT;
 		bool floating_type = m_Type == CVARTYPE_FLOAT;
-		float valf = numerical_value ? atof(valstr) : 0.0f;
+		float valf = numerical_value ? ParseNum<float>(valstr).value_or(0.0f) : 0.0f;
 
 		// perform rounding to nearest integer for integral types
 		if (integral_type)
@@ -186,10 +186,10 @@ void cvar_t::ForceSet(const char* valstr)
 		else
 		{
 			// just set m_String to valstr
-			if (valstr)
-				m_String = valstr;
-			else
+			if (valstr.empty())
 				m_String.clear();
+			else
+				m_String = valstr;
 		}
 
 		m_Value = valf;
@@ -214,10 +214,10 @@ void cvar_t::ForceSet(float val)
 	ForceSet(string);
 }
 
-void cvar_t::Set (const char *val)
+void cvar_t::Set(std::string_view val)
 {
 	if (!(m_Flags & CVAR_NOSET) || !m_DoNoSet)
-		ForceSet (val);
+		ForceSet(val);
 }
 
 void cvar_t::Set (float val)
@@ -226,7 +226,7 @@ void cvar_t::Set (float val)
 		ForceSet (val);
 }
 
-void cvar_t::SetDefault (const char *val)
+void cvar_t::SetDefault(const char *val)
 {
 	if(val)
 		m_Default = val;

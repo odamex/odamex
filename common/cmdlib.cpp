@@ -185,6 +185,37 @@ bool IsRealNum(const char* str)
 	return true;
 }
 
+//
+// IsRealNum
+//
+// [SL] Returns true if the specified string is a valid real number
+//
+bool IsRealNum(std::string_view str)
+{
+	bool seen_decimal = false;
+
+	if (str.empty())
+		return false;
+
+	if (str.starts_with('+') || str.starts_with('-'))
+		str.remove_prefix(1);
+
+	for (char c : str)
+	{
+		if (c == '.')
+		{
+			if (seen_decimal)
+				return false;		// second decimal point
+			else
+				seen_decimal = true;
+		}
+		else if (c < '0' || c > '9')
+			return false;
+	}
+
+	return true;
+}
+
 // [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity
 bool iequals(std::string_view s1, std::string_view s2)

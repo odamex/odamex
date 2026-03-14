@@ -166,9 +166,9 @@ public:
 
 	void SetDefault (const char *value);
 	void RestoreDefault ();
-	void Set (const char *value);
+	void Set (std::string_view value);
 	void Set (float value);
-	void ForceSet (const char *value);
+	void ForceSet (std::string_view value);
 	void ForceSet (float value);
 
 	static void Transfer(const char *fromname, const char *toname);
