@@ -160,6 +160,7 @@ static void SetPNGComments(PNGStrings& out, png_struct* png_ptr, png_info* info_
 	for (int i = 0; i < PNG_TEXT_LINES; i++)
 		pngtext[i].compression = PNG_TEXT_COMPRESSION_NONE;
 
+	// TODO: clean up these warnings
 	pngtext[text_line].key = static_cast<png_charp>("Description");
 	pngtext[text_line].text = static_cast<png_charp>("Odamex " DOTVERSIONSTR " Screenshot");
 	text_line++;

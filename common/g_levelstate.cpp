@@ -61,7 +61,7 @@ int LevelState::getCountdown() const
 		return g_preroundtime.asInt();
 	}
 
-	return ceil(period / (float)TICRATE);
+	return ceil(period / static_cast<float>(TICRATE));
 }
 
 /**

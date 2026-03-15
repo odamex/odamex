@@ -2846,7 +2846,7 @@ EXTERN_CVAR (chase_dist)
 
 void P_AimCamera (AActor *t1)
 {
-	fixed_t distance = (fixed_t)(chase_dist * FRACUNIT);
+	fixed_t distance = static_cast<fixed_t>(chase_dist * FRACUNIT);
 	angle_t angle = (t1->angle - ANG180) >> ANGLETOFINESHIFT;
 	fixed_t x2 = t1->x + (distance>>FRACBITS)*finecosine[angle];
 	fixed_t y2 = t1->y + (distance>>FRACBITS)*finesine[angle];
@@ -3176,7 +3176,7 @@ static bool PIT_ZDoomRadiusAttack(AActor* thing)
 
 		fixed_t momx = thing->momx;
 		fixed_t momy = thing->momy;
-		int damage = (int)points;
+		int damage = static_cast<int>(points);
 
 		P_DamageMobj(thing, bombspot, bombsource, damage, bombmod);
 
@@ -3184,15 +3184,15 @@ static bool PIT_ZDoomRadiusAttack(AActor* thing)
 		if (bombsource == thing)
 			thrust *= selfthrustscale;
 
-		float momz = (float)(thing->z + (thing->height>>1) - bombspot->z) * thrust;
+		float momz = static_cast<float>(thing->z + (thing->height>>1) - bombspot->z) * thrust;
 		if (bombsource != thing)
 			momz *= 0.5f;
 		else
 			momz *= 0.8f;
 
-		thing->momx = momx + (fixed_t)((thing->x - bombspot->x) * thrust);
-		thing->momy = momy + (fixed_t)((thing->y - bombspot->y) * thrust);
-		thing->momz += (fixed_t)momz;
+		thing->momx = momx + static_cast<fixed_t>((thing->x - bombspot->x) * thrust);
+		thing->momy = momy + static_cast<fixed_t>((thing->y - bombspot->y) * thrust);
+		thing->momz += static_cast<fixed_t>(momz);
 	}
 	else
 	{

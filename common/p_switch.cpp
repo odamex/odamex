@@ -66,11 +66,11 @@ public:
 
 	friend FArchive &operator<< (FArchive &arc, EWhere where)
 	{
-		return arc << (byte)where;
+		return arc << static_cast<byte>(where);
 	}
 	friend FArchive &operator>> (FArchive &arc, EWhere &out)
 	{
-		byte in; arc >> in; out = (EWhere)in; return arc;
+		byte in; arc >> in; out = static_cast<EWhere>(in); return arc;
 	}
 };
 
@@ -162,26 +162,26 @@ short* P_GetButtonTexturePtr(const line_t* line, short*& altTexture, DActiveButt
 	int texTop = sides[line->sidenum[0]].toptexture;
 	int texMid = sides[line->sidenum[0]].midtexture;
 	int texBot = sides[line->sidenum[0]].bottomtexture;
-	where = (DActiveButton::EWhere)0;
+	where = static_cast<DActiveButton::EWhere>(0);
 	altTexture = NULL;
 
 	for (int i = 0; i < numswitches * 2; i++)
 	{
 		if (switchlist[i] == texTop)
 		{
-			altTexture = (short*)&switchlist[i ^ 1];
+			altTexture = reinterpret_cast<short*>(&switchlist[i ^ 1]);
 			where = DActiveButton::BUTTON_Top;
 			return &sides[line->sidenum[0]].toptexture;
 		}
 		else if (switchlist[i] == texBot)
 		{
-			altTexture = (short*)&switchlist[i ^ 1];
+			altTexture = reinterpret_cast<short*>(&switchlist[i ^ 1]);
 			where = DActiveButton::BUTTON_Bottom;
 			return &sides[line->sidenum[0]].bottomtexture;
 		}
 		else if (switchlist[i] == texMid)
 		{
-			altTexture = (short*)&switchlist[i ^ 1];
+			altTexture = reinterpret_cast<short*>(&switchlist[i ^ 1]);
 			where = DActiveButton::BUTTON_Middle;
 			return &sides[line->sidenum[0]].midtexture;
 		}
@@ -245,7 +245,7 @@ bool P_SetButtonInfo (line_t *line, unsigned state, unsigned time)
 	{
 		if (button->m_Line == line)
 		{
-			button->m_Where = (DActiveButton::EWhere)state;
+			button->m_Where = static_cast<DActiveButton::EWhere>(state);
 			button->m_Timer = time;
 			return true;
 		}

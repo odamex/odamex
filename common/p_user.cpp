@@ -386,7 +386,7 @@ void P_ForwardThrust (player_t& player, angle_t angle, fixed_t move)
 	if ((player.mo->waterlevel || (player.mo->flags2 & MF2_FLY))
 		&& player.mo->pitch != 0)
 	{
-		angle_t pitch = (angle_t)player.mo->pitch >> ANGLETOFINESHIFT;
+		angle_t pitch = static_cast<angle_t>(player.mo->pitch) >> ANGLETOFINESHIFT;
 		fixed_t zpush = FixedMul (move, finesine[pitch]);
 		if (player.mo->waterlevel && player.mo->waterlevel < 2 && zpush < 0)
 			zpush = 0;
@@ -529,8 +529,8 @@ void P_PlayerLookUpDown (player_t& p)
 
 CVAR_FUNC_IMPL (sv_aircontrol)
 {
-	level.aircontrol = (fixed_t)((float)var * 65536.f);
-	G_AirControlChanged ();
+	level.aircontrol = static_cast<fixed_t>(static_cast<float>(var) * 65536.f);
+	G_AirControlChanged();
 }
 
 //
@@ -696,13 +696,13 @@ void P_FallingDamage (AActor *ent)
 		&& (!(ent->flags2 & MF2_ONMOBJ)
 			|| !(ent->z <= ent->floorz)))
 	{
-		delta = (float)ent->player->oldvelocity[2];
+		delta = static_cast<float>(ent->player->oldvelocity[2]);
 	}
 	else
 	{
 		if (!(ent->flags2 & MF2_ONMOBJ))
 			return;
-		delta = (float)(ent->momz - ent->player->oldvelocity[2]);
+		delta = static_cast<float>(ent->momz - ent->player->oldvelocity[2]);
 	}
 	delta = delta*delta * 2.03904313e-11f;
 
@@ -717,7 +717,7 @@ void P_FallingDamage (AActor *ent)
 
 	if (delta > 30)
 	{
-		damage = (int)((delta-30)/2);
+		damage = static_cast<int>((delta-30)/2);
 		if (damage < 1)
 			damage = 1;
 
@@ -766,7 +766,7 @@ void P_DeathThink (player_t& player)
 
 		angle_t delta = angle - player.mo->angle;
 
-		if (delta < ANG5 || delta > (unsigned)-ANG5)
+		if (delta < ANG5 || delta > static_cast<unsigned>(-ANG5))
 			player.mo->angle = angle;
 		else
 		{
@@ -1016,12 +1016,12 @@ void P_PlayerThink (player_t& player)
 	{
 		// [RH] Support direct weapon changes
 		if (player.cmd.impulse) {
-			newweapon = (weapontype_t)(player.cmd.impulse - 50);
+			newweapon = static_cast<weapontype_t>(player.cmd.impulse - 50);
 		} else {
 			// The actual changing of the weapon is done
 			//	when the weapon psprite can do it
 			//	(read: not in the middle of an attack).
-			newweapon = (weapontype_t)((player.cmd.buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT);
+			newweapon = static_cast<weapontype_t>((player.cmd.buttons&BT_WEAPONMASK)>>BT_WEAPONSHIFT);
 
 			if (newweapon == wp_fist
 				&& player.weaponowned[wp_chainsaw]

@@ -298,8 +298,8 @@ class OZone
 		for (const auto& [ptr, block] : m_heap)
 		{
 			total += block.size;
-			PrintFmt("0x{} | size:{} tag:{} user:0x{} {}:{}\n", (void*)ptr,
-			         block.size, TagStr(block.tag), (void*)block.user,
+			PrintFmt("0x{:p} | size:{} tag:{} user:0x{:p} {}:{}\n", ptr,
+			         block.size, TagStr(block.tag), static_cast<void*>(block.user),
 			         block.fileLine.shortFile(), block.fileLine.line);
 		}
 
@@ -390,7 +390,7 @@ void Z_ChangeOwner(void* ptr, void* user, const std::source_location location)
 char* Z_StrDup(const char* s, const zoneTag_e tag, const std::source_location location)
 {
 	size_t len = strlen(s);
-	char* output = (char*)Z_Malloc(len + 1, tag, NULL, location);
+	char* output = Z_Malloc<char>(len + 1, tag, nullptr, location);
 	strncpy(output, s, len);
 	output[len] = '\0';
 	return output;

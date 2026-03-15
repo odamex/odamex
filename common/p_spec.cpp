@@ -113,7 +113,7 @@ crushmode_e P_ArgToCrushMode(byte arg, bool slowdown)
 int P_FindSectorFromLineTag(const line_t* line, int start)
 {
 	start = start >= 0 ? sectors[start].nexttag
-	                   : sectors[(unsigned)line->id % (unsigned)numsectors].firsttag;
+	                   : sectors[static_cast<unsigned>(line->id) % static_cast<unsigned>(numsectors)].firsttag;
 	while (start >= 0 && sectors[start].tag != line->id)
 		start = sectors[start].nexttag;
 	return start;
@@ -123,7 +123,7 @@ int P_FindSectorFromLineTag(const line_t* line, int start)
 int P_FindLineFromLineTag(const line_t* line, int start)
 {
 	start = start >= 0 ? lines[start].nextid
-	                   : lines[(unsigned)line->id % (unsigned)numlines].firstid;
+	                   : lines[static_cast<unsigned>(line->id) % static_cast<unsigned>(numlines)].firstid;
 	while (start >= 0 && lines[start].id != line->id)
 		start = lines[start].nextid;
 	return start;
@@ -132,7 +132,7 @@ int P_FindLineFromLineTag(const line_t* line, int start)
 int P_FindLineFromTag(int tag, int start)
 {
 	start = start >= 0 ? lines[start].nextid
-	                   : lines[(unsigned)tag % (unsigned)numlines].firstid;
+	                   : lines[static_cast<unsigned>(tag) % static_cast<unsigned>(numlines)].firstid;
 	while (start >= 0 && lines[start].id != tag)
 		start = lines[start].nextid;
 	return start;
@@ -203,7 +203,7 @@ int P_IsUnderDamage(const AActor* actor)
 	int dir = 0;
 	for (seclist = actor->touching_sectorlist; seclist; seclist = seclist->m_tnext)
 	{
-		if ((cr = (DCeiling*)seclist->m_sector->ceilingdata) && cr->m_Status == 2) // Down
+		if ((cr = static_cast<DCeiling*>(seclist->m_sector->ceilingdata)) && cr->m_Status == 2) // Down
 		{
 			cr->m_Crush > NO_CRUSH ? dir = 1 : dir = 0;
 		}
@@ -897,8 +897,8 @@ void P_InitPicAnims (void)
 			}
 			else
 			{
-				if (W_CheckNumForName ((char *)anim_p + 10 /* .startname */, ns_flats) == -1 ||
-					W_CheckNumForName ((char *)anim_p + 1 /* .startname */, ns_flats) == -1)
+				if (W_CheckNumForName (reinterpret_cast<char*>(anim_p) + 10 /* .startname */, ns_flats) == -1 ||
+					W_CheckNumForName (reinterpret_cast<char*>(anim_p) + 1 /* .startname */, ns_flats) == -1)
 					continue;
 
 				lastanim->basepic = R_FlatNumForName (anim_p + 10 /* .startname */);
@@ -1419,7 +1419,7 @@ sector_t *P_FindModelCeilingSector (fixed_t ceildestheight, sector_t *sec)
 int P_FindSectorFromTag (int tag, int start)
 {
 	start = start >= 0 ? sectors[start].nexttag :
-		sectors[(unsigned) tag % (unsigned) numsectors].firsttag;
+		sectors[static_cast<unsigned>(tag) % static_cast<unsigned>(numsectors)].firsttag;
 	while (start >= 0 && sectors[start].tag != tag)
 		start = sectors[start].nexttag;
 	return start;
@@ -1430,7 +1430,7 @@ int P_FindSectorFromTag (int tag, int start)
 int P_FindLineFromID (int id, int start)
 {
 	start = start >= 0 ? lines[start].nextid :
-		lines[(unsigned) id % (unsigned) numlines].firstid;
+		lines[static_cast<unsigned>(id) % static_cast<unsigned>(numlines)].firstid;
 	while (start >= 0 && lines[start].id != id)
 		start = lines[start].nextid;
 	return start;
@@ -1841,7 +1841,7 @@ bool P_CheckKeys (player_t *p, card_t lock, bool remote)
 	bool bc, rc, yc, bs, rs, ys;
 	bool equiv = lock & 0x80;
 
-        lock = (card_t)(lock & 0x7f);
+        lock = static_cast<card_t>(lock & 0x7f);
 
 	bc = p->cards[it_bluecard];
 	rc = p->cards[it_redcard];
@@ -2701,7 +2701,7 @@ static void P_SpawnScrollers(void)
 
 fixed_t P_ArgToSpeed(byte arg)
 {
-	return (fixed_t)arg * FRACUNIT / 8;
+	return static_cast<fixed_t>(arg) * FRACUNIT / 8;
 }
 
 bool P_ArgToCrushType(byte arg)
@@ -2930,7 +2930,7 @@ bool PIT_PushThing (AActor *thing)
 		{
 			int x = (thing->x - sx) >> FRACBITS;
 			int y = (thing->y - sy) >> FRACBITS;
-			speed = (int)(((uint64_t)tmpusher->m_Magnitude << 23) / (x * x + y * y + 1));
+			speed = static_cast<int>((static_cast<uint64_t>(tmpusher->m_Magnitude) << 23) / (x * x + y * y + 1));
 		}
 
 		// If speed <= 0, you're outside the effective radius. You also have

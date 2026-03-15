@@ -225,7 +225,7 @@ void DSeqNode::Serialize (FArchive &arc)
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
 	{
-		arc << (uint32_t)SN_GetSequenceOffset (m_Sequence, m_SequencePtr)
+		arc << static_cast<uint32_t>(SN_GetSequenceOffset(m_Sequence, m_SequencePtr))
 			<< m_DelayTics
 			<< m_Volume
 			<< m_Atten
@@ -290,7 +290,7 @@ void DSeqPolyNode::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
-		arc << (uint16_t)(m_Poly - polyobjs);
+		arc << static_cast<uint16_t>(m_Poly - polyobjs);
 	else
 	{
 		uint16_t ofs;
@@ -556,7 +556,7 @@ void S_ParseSndSeq()
 					break;
 
 				case SS_STRING_END:
-					Sequences[curseq] = (sndseq_t *) Z_Malloc(sizeof(sndseq_t) + sizeof(int)*cursize, PU_STATIC, 0);
+					Sequences[curseq] = static_cast<sndseq_t*>(Z_Malloc(sizeof(sndseq_t) + sizeof(int)*cursize, PU_STATIC));
 					M_StringCopy(Sequences[curseq]->name, name, MAX_SNDNAME + 1);
 					memcpy(Sequences[curseq]->script, ScriptTemp, sizeof(int)*cursize);
 					Sequences[curseq]->script[cursize] = SS_CMD_END;
@@ -844,7 +844,7 @@ void DSeqNode::RunThink ()
 	case SS_CMD_PLAYLOOP:
 		m_CurrentSoundID = GetData(*m_SequencePtr);
 		MakeLoopedSound ();
-		m_DelayTics = -(signed)GetData(*(m_SequencePtr+1));
+		m_DelayTics = -static_cast<signed>(GetData(*(m_SequencePtr+1)));
 		break;
 
 	case SS_CMD_DELAY:

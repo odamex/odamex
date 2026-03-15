@@ -730,7 +730,7 @@ bool EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
 	fixed_t speed;
 	DDoor* door;
 
-	speed = (fixed_t)speed_byte * FRACUNIT / 8;
+	speed = static_cast<fixed_t>(speed_byte) * FRACUNIT / 8;
 
 	if (lock && !P_CanUnlockZDoomDoor(mo->player, lock, tag))
 		return false;
@@ -838,7 +838,7 @@ bool EV_DoGenDoor(line_t* line)
 	bool rtn;
 	sector_t* sec;
 	bool manual;
-	unsigned value = (unsigned)line->special - GenDoorBase;
+	unsigned value = static_cast<unsigned>(line->special) - GenDoorBase;
 
 	// parse the bit fields in the line's special type
 
@@ -910,7 +910,7 @@ bool EV_DoGenLockedDoor(line_t* line)
 	bool rtn;
 	sector_t* sec;
 	bool manual;
-	unsigned value = (unsigned)line->special - GenLockedBase;
+	unsigned value = static_cast<unsigned>(line->special) - GenLockedBase;
 
 	// parse the bit fields in the line's special type
 

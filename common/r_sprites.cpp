@@ -225,13 +225,13 @@ static void R_InitSpriteDefs(std::vector<spriteinfo_t*>& namelist)
                 }
 
 		maxframe = -1;
-		const int intname = *(int *)namelist[i]->sprite;
+		const int intname = *reinterpret_cast<const int*>(namelist[i]->sprite);
 
 		// scan the lumps,
 		//	filling in the frames for whatever is found
 		for (int l = lastspritelump; l >= firstspritelump; l--)
 		{
-			if (*(int*)lumpinfo[l].name.c_str() == intname && lumpinfo[l].size > 0)
+			if (*reinterpret_cast<const int*>(lumpinfo[l].name.c_str()) == intname && lumpinfo[l].size > 0)
 			{
 				R_InstallSpriteLump (l,
 									 lumpinfo[l].name[4] - 'A', // denis - fixme - security

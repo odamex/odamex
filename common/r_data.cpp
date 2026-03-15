@@ -106,7 +106,7 @@ size_t R_CalculateNewPatchSize(patch_t *patch, size_t length)
 		return 0;
 
 	int numposts = 0, numpixels = 0;
-	unsigned int *postofs = (unsigned int *)((byte*)patch + 8);
+	unsigned int *postofs = reinterpret_cast<unsigned int*>(reinterpret_cast<byte*>(patch) + 8);
 
 	for (int i = 0; i < patch->width(); i++)
 	{
@@ -116,7 +116,7 @@ size_t R_CalculateNewPatchSize(patch_t *patch, size_t length)
 		if (ofs >= length)
 			return 0;
 
-		post_t *post = (post_t*)((byte*)patch + ofs);
+		post_t *post = reinterpret_cast<post_t*>(reinterpret_cast<byte*>(patch) + ofs);
 
 		while (post->topdelta != 0xFF)
 		{
@@ -125,7 +125,7 @@ size_t R_CalculateNewPatchSize(patch_t *patch, size_t length)
 
 			numposts++;
 			numpixels += post->length;
-			post = (post_t*)((byte*)post + post->length + 4);
+			post = reinterpret_cast<post_t*>(reinterpret_cast<byte*>(post) + post->length + 4);
 		}
 	}
 
@@ -280,7 +280,7 @@ void R_VanillaTextureHacks(texture_t* tex)
 void R_GenerateComposite (int texnum)
 {
 	byte *block = Z_Malloc<byte>(texturecompositesize[texnum], PU_STATIC,
-						   (void **) &texturecomposite[texnum]);
+	                             &texturecomposite[texnum]);
 	texturecomposite[texnum] = block;
 	texture_t *texture = textures[texnum];
 
@@ -306,8 +306,8 @@ void R_GenerateComposite (int texnum)
 		for (; x1 < x2 ; x1++)
 		{
 			// killough 1/25/98, 4/9/98: Fix medusa bug.
-			tallpost_t *srcpost = (tallpost_t*)((byte*)patch + LELONG(cofs[x1]));
-			tallpost_t *destpost = (tallpost_t*)(block + texturecolumnofs[texnum][x1]);
+			tallpost_t *srcpost = reinterpret_cast<tallpost_t*>(reinterpret_cast<byte*>(patch) + LELONG(cofs[x1]));
+			tallpost_t *destpost = reinterpret_cast<tallpost_t*>(block + texturecolumnofs[texnum][x1]);
 
 			R_DrawColumnInCache(srcpost, destpost->data(), texpatch->originy, texture->height,
 								&marks[x1 * texture->height]);
@@ -320,7 +320,7 @@ void R_GenerateComposite (int texnum)
 	auto tmpdata = std::make_unique<byte[]>(texture->height);		// temporary post data
 	for (int i = 0; i < texture->width; i++)
 	{
-		tallpost_t *post = (tallpost_t *)(block + texturecolumnofs[texnum][i]);
+		tallpost_t *post = reinterpret_cast<tallpost_t*>(block + texturecolumnofs[texnum][i]);
 		const byte *mark = &marks[i * texture->height];
 		int j = 0;
 
@@ -392,11 +392,11 @@ void R_GenerateLookup(int texnum, int *const errors)
 			// killough 4/9/98: keep a count of the number of posts in column,
 			// to fix Medusa bug while allowing for transparent multipatches.
 
-			const tallpost_t *post = (tallpost_t*)((byte*)patch + LELONG(cofs[x]));
+			const tallpost_t *post = const_cast<tallpost_t*>(reinterpret_cast<const tallpost_t*>(reinterpret_cast<const byte*>(patch) + LELONG(cofs[x])));
 
 			// NOTE: this offset will be rewritten later if a composite is generated
 			// for this texture (eg, there's more than one patch)
-			texturecolumnofs[texnum][x] = (byte *)post - (byte *)patch;
+			texturecolumnofs[texnum][x] = reinterpret_cast<const byte*>(post) - reinterpret_cast<const byte*>(patch);
 
 			while (!post->end())
 			{
@@ -439,7 +439,7 @@ void R_GenerateLookup(int texnum, int *const errors)
 tallpost_t* R_GetPatchColumn(int lumpnum, int colnum)
 {
 	patch_t* patch = W_CachePatch(lumpnum, PU_CACHE);
-	return (tallpost_t*)((byte*)patch + LELONG(patch->columnofs[colnum]));
+	return reinterpret_cast<tallpost_t*>(reinterpret_cast<byte*>(patch) + LELONG(patch->columnofs[colnum]));
 }
 
 //
@@ -460,13 +460,13 @@ tallpost_t* R_GetTextureColumn(int texnum, int colnum)
 	if (mask + 1 == width)
 		colnum &= mask;
 	else
-		colnum -= width * std::floor((float)colnum / (float)width);
+		colnum -= width * std::floor(static_cast<float>(colnum) / static_cast<float>(width));
 	int ofs = texturecolumnofs[texnum][colnum];
 
 	if (!texturecomposite[texnum])
 		R_GenerateComposite(texnum);
 
-	return (tallpost_t*)(texturecomposite[texnum] + ofs);
+	return reinterpret_cast<tallpost_t*>(texturecomposite[texnum] + ofs);
 }
 
 //
@@ -539,12 +539,12 @@ static int32_t R_LoadTextureLump(const texlump_t& texlump, const int* patchlooku
 		if (offset > texlump.maxoff)
 			I_FatalError("R_InitTextures: bad texture directory");
 
-		maptexture_t* mtexture = (maptexture_t *) ( (byte *)texlump.data + offset);
+		maptexture_t* mtexture = reinterpret_cast<maptexture_t*>(reinterpret_cast<byte*>(texlump.data) + offset);
 
-		texture_t* texture = textures[i] = (texture_t *)
+		texture_t* texture = textures[i] = static_cast<texture_t*>(
 			Z_Malloc (sizeof(texture_t)
 					  + sizeof(texpatch_t)*(SAFESHORT(mtexture->patchcount)-1),
-					  PU_STATIC, nullptr);
+					  PU_STATIC, nullptr));
 
 		texture->width = SAFESHORT(mtexture->width);
 		texture->height = SAFESHORT(mtexture->height);
@@ -592,7 +592,7 @@ void R_InitTextures()
 		char *names = W_CacheLumpName<char>("PNAMES", PU_STATIC);
 		char *name_p = names+4;
 
-		nummappatches = LELONG ( *((int *)names) );
+		nummappatches = LELONG ( *(reinterpret_cast<int*>(names)) );
 		int numpatches = nummappatches;
 		first_tx = W_CheckNumForName("TX_START") + 1;
 		const int last_tx  = W_CheckNumForName("TX_END") - 1;
