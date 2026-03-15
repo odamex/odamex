@@ -559,7 +559,7 @@ void R_CopyTranslationRGB (int fromplayer, int toplayer)
 bool R_IsForcedColor(int player, bool forceteamcolor, bool forceenemycolor)
 {
 	return G_IsTeamGame() || (player != displayplayer_id && !consoleplayer().spectator &&
-	       player != 0 && (forceteamcolor && G_IsCoopGame()) || (forceenemycolor && G_IsFFAGame()));
+	       player != nullplayer_id && ((forceteamcolor && G_IsCoopGame()) || (forceenemycolor && G_IsFFAGame())));
 }
 
 CVAR_FUNC_IMPL(cl_customcolor)

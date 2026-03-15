@@ -79,7 +79,7 @@ ticcmd_t *I_BaseTiccmd (void);
 void STACK_ARGS I_Quit (void);
 
 void I_BaseWarning(const std::string& errortext);
-void I_BaseError(const std::string& errortext);
+[[noreturn]] void I_BaseError(const std::string& errortext);
 [[noreturn]] void I_BaseFatalError(const std::string& errortext);
 
 template <typename... ARGS>
@@ -89,7 +89,7 @@ void I_Warning(fmt::format_string<ARGS...> format, ARGS&&... args)
 }
 
 template <typename... ARGS>
-void I_Error(fmt::format_string<ARGS...> format, ARGS&&... args)
+[[noreturn]] void I_Error(fmt::format_string<ARGS...> format, ARGS&&... args)
 {
 	I_BaseError(fmt::format(format, std::forward<ARGS>(args)...));
 }

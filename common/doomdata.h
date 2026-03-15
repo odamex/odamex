@@ -270,15 +270,15 @@ class FArchive;
 // [RH] Hexen-compatible MapThing.
 struct mapthing2_t
 {
-	unsigned short thingid;
-	short		x;
-	short		y;
-	short		z;
-	short		angle;
-	short		type;
-	short		flags;
-	byte		special;
-	byte		args[5];
+	uint16_t thingid = 0;
+	int16_t  x       = 0;
+	int16_t  y       = 0;
+	int16_t  z       = 0;
+	int16_t  angle   = 0;
+	int16_t  type    = 0;
+	int16_t  flags   = 0;
+	byte     special = 0;
+	byte     args[5] = { 0 };
 
 	void Serialize (FArchive &);
 };

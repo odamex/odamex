@@ -337,7 +337,7 @@ void I_BaseWarning(const std::string& warningtext)
 	PrintFmt(PRINT_WARNING, "\n{}\n", warningtext);
 }
 
-void I_BaseError(const std::string& errortext)
+[[noreturn]] void I_BaseError(const std::string& errortext)
 {
 	std::string messagetext;
 
