@@ -170,6 +170,16 @@ struct visitor : Ts... { using Ts::operator()...; };
 template<class... Ts>
 visitor(Ts...) -> visitor<Ts...>;
 
+// C++23 std::unreachable
+[[noreturn]] inline void unreachable()
+{
+#if defined(_MSC_VER) && !defined(__clang__)
+	__assume(false);
+#else
+	__builtin_unreachable();
+#endif
+}
+
 }
 
 // Literals for stdint types
@@ -228,14 +238,4 @@ consteval uint64_t operator ""_u64(unsigned long long x)
 	if (x > std::numeric_limits<uint64_t>::max())
 		throw "Literal out of range for type uint65_t";
     return static_cast<uint64_t>(x);
-}
-
-// C++23 std::unreachable
-[[noreturn]] inline void unreachable()
-{
-#if defined(_MSC_VER) && !defined(__clang__)
-	__assume(false);
-#else
-	__builtin_unreachable();
-#endif
 }
