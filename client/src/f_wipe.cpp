@@ -27,6 +27,7 @@
 #include "i_video.h"
 #include "v_video.h"
 #include "m_random.h"
+#include "gi.h"
 #include "st_stuff.h"
 #include "r_main.h"
 
@@ -462,10 +463,21 @@ void Wipe_Start()
 	if (in_progress)
 		Wipe_Stop();
 
-	if (r_wipetype.asInt() < 0 || r_wipetype.asInt() >= int(wipe_NUMWIPES))
+	if (r_wipetype.asInt() == wipe_NUMWIPES)
+	{
+		if (gameinfo.defaultWipeType < 0 || gameinfo.defaultWipeType >= int(wipe_NUMWIPES))
+			current_wipe_type = wipe_Melt;
+		else
+			current_wipe_type = static_cast<wipe_type_t>(gameinfo.defaultWipeType);
+	}
+	else if (r_wipetype.asInt() < 0 || r_wipetype.asInt() >= int(wipe_NUMWIPES))
+	{
 		current_wipe_type = wipe_Melt;
+	}
 	else
+	{
 		current_wipe_type = static_cast<wipe_type_t>(r_wipetype.asInt());
+	}
 
 	if (current_wipe_type == wipe_None)
 		return;

@@ -1310,7 +1310,8 @@ struct MapInfoDataSetter<gameinfo_t>
 			{ "menuindicatorlumps", &MIType_Pages, gameinfo.menuIndicatorLumps.data() },
 			{ "menuindicatoroffsetx", &MIType_Int, &gameinfo.menuIndicatorOffsetX },
 			{ "menuindicatoroffsety", &MIType_Int, &gameinfo.menuIndicatorOffsetY },
-			{ "menucursoroffsety", &MIType_Int, &gameinfo.menuCursorOffsetY }
+			{ "menucursoroffsety", &MIType_Int, &gameinfo.menuCursorOffsetY },
+			{ "defaultwipetype", &MIType_Int, &gameinfo.defaultWipeType }
 		};
 	}
 };

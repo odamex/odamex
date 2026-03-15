@@ -141,6 +141,7 @@ typedef struct gameinfo_s
 	int menuIndicatorOffsetX;
 	int menuIndicatorOffsetY;
 	int menuCursorOffsetY;
+	int defaultWipeType;
 
 	gameinfo_s()
 		: flags(0)
@@ -179,6 +180,7 @@ typedef struct gameinfo_s
 		, menuIndicatorOffsetX(-32)
 		, menuIndicatorOffsetY(-5)
 		, menuCursorOffsetY(0)
+		, defaultWipeType(1)
 	{
 	}
 

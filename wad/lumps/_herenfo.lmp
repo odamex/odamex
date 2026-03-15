@@ -49,6 +49,7 @@ gameinfo
 	menuindicatoroffsetx = -28
 	menuindicatoroffsety = -3
 	menucursoroffsety = 2
+	defaultwipetype = 0
 }
 
 automap

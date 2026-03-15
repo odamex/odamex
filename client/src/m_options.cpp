@@ -872,7 +872,8 @@ static value_t Wipes[] = {
 	{ 0.0, "None" },
 	{ 1.0, "Melt" },
 	{ 2.0, "Burn" },
-	{ 3.0, "Crossfade" }
+	{ 3.0, "Crossfade" },
+	{ 4.0, "Auto" }
 };
 
 static value_t Overlays[] = {
@@ -1625,7 +1626,7 @@ bool M_StartOptionsMenu (void)
 
 void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float step)
 {
-	const palette_t* odapal = V_GetPaletteFromLump("ODAPAL");
+	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
 	const int drawY = y + gameinfo.menuCursorOffsetY;
 
 	if (leftval < rightval)
@@ -1635,12 +1636,12 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 
 	float dist = (cur - leftval) / (rightval - leftval);
 
-	screen->DrawPatchCleanWithPalette(W_CachePatch("LSLIDE"), x, drawY, odapal);
+	screen->DrawPatchCleanWithPalette(W_CachePatch("LSLIDE"), x, drawY, palette);
 	for (int i = 1; i < 11; i++)
-		screen->DrawPatchCleanWithPalette(W_CachePatch("MSLIDE"), x + i * 8, drawY, odapal);
-	screen->DrawPatchCleanWithPalette(W_CachePatch("RSLIDE"), x + 88, drawY, odapal);
+		screen->DrawPatchCleanWithPalette(W_CachePatch("MSLIDE"), x + i * 8, drawY, palette);
+	screen->DrawPatchCleanWithPalette(W_CachePatch("RSLIDE"), x + 88, drawY, palette);
 
-	screen->DrawPatchCleanWithPalette(W_CachePatch("CSLIDE"), x + 5 + (int)(dist * 78.0), drawY, odapal);
+	screen->DrawPatchCleanWithPalette(W_CachePatch("CSLIDE"), x + 5 + (int)(dist * 78.0), drawY, palette);
 
 	std::string buf;
 	if (step == 0.0f)
@@ -1656,11 +1657,8 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 
 void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color)
 {
-	const palette_t* odapal = V_GetPaletteFromLump("ODAPAL");
+	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
 	const int drawY = y + gameinfo.menuCursorOffsetY;
-
-	if (odapal == NULL)
-		I_Error("M_DrawColoredSlider: required palette lump ODAPAL is missing");
 
 	if (leftval < rightval)
 		cur = clamp(cur, leftval, rightval);
@@ -1669,14 +1667,14 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 
 	float dist = (cur - leftval) / (rightval - leftval);
 
-	screen->DrawPatchCleanWithPalette(W_CachePatch("LSLIDE"), x, drawY, odapal);
+	screen->DrawPatchCleanWithPalette(W_CachePatch("LSLIDE"), x, drawY, palette);
 
 	for (int i = 1; i < 11; i++)
-		screen->DrawPatchCleanWithPalette(W_CachePatch("MSLIDE"), x + i * 8, drawY, odapal);
+		screen->DrawPatchCleanWithPalette(W_CachePatch("MSLIDE"), x + i * 8, drawY, palette);
 
-	screen->DrawPatchCleanWithPalette(W_CachePatch("RSLIDE"), x + 88, drawY, odapal);
+	screen->DrawPatchCleanWithPalette(W_CachePatch("RSLIDE"), x + 88, drawY, palette);
 
-	screen->DrawPatchCleanWithPalette(W_CachePatch("GSLIDE"), x + 5 + (int)(dist * 78.0), drawY, odapal);
+	screen->DrawPatchCleanWithPalette(W_CachePatch("GSLIDE"), x + 5 + (int)(dist * 78.0), drawY, palette);
 
 	V_ColorFill = V_BestColor(V_GetDefaultPalette()->basecolors, color);
 
@@ -1704,10 +1702,7 @@ void M_OptDrawer (void)
 	const int lineHeight = V_GetFontLineHeight("SMALLFONT");
 	menuitem_t *item;
 	patch_t *title;
-	const palette_t* odapal = V_GetPaletteFromLump("ODAPAL");
-
-	if (odapal == NULL)
-		I_Error("M_OptDrawer: required palette lump ODAPAL is missing");
+	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
 
 	x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
 	y1 = (I_GetSurfaceHeight() / 2)-(120*CleanYfac);
@@ -1721,7 +1716,7 @@ void M_OptDrawer (void)
 	if (W_CheckNumForName(CurrentMenu->title) >= 0)
 	{
 		title = W_CachePatch (CurrentMenu->title);
-		screen->DrawPatchCleanWithPalette(title, 160-title->width()/2, 10, odapal);
+		screen->DrawPatchCleanWithPalette(title, 160-title->width()/2, 10, palette);
 		y = ystart + title->height();
 	}
 	else
@@ -1775,7 +1770,7 @@ void M_OptDrawer (void)
 			if (i == CurrentItem && ((item->a.selmode != -1 && (indicatorAnimCounter < 6 || WaitingForKey))
 				|| WaitingForAxis || testingmode))
 			{
-				screen->DrawPatchCleanWithPalette(W_CachePatch("LITLCURS"), item->a.selmode * 104 + 8, y+gameinfo.menuCursorOffsetY, odapal);
+				screen->DrawPatchCleanWithPalette(W_CachePatch("LITLCURS"), item->a.selmode * 104 + 8, y+gameinfo.menuCursorOffsetY, palette);
 			}
 		}
 		else
@@ -1949,7 +1944,7 @@ void M_OptDrawer (void)
 			if (i == CurrentItem && (indicatorAnimCounter < 6 || WaitingForKey || WaitingForAxis))
 			{
 				const patch_t* patch = W_CachePatch("LITLCURS");
-				screen->DrawPatchCleanWithPalette(patch, CurrentMenu->indent + 3, y+gameinfo.menuCursorOffsetY, odapal);
+				screen->DrawPatchCleanWithPalette(patch, CurrentMenu->indent + 3, y+gameinfo.menuCursorOffsetY, palette);
 			}
 		}
 	}
@@ -1961,13 +1956,13 @@ void M_OptDrawer (void)
 	if (CanScrollUp)
 	{
 		const patch_t* patch = W_CachePatch("LITLUP");
-		screen->DrawPatchCleanWithPalette(patch, 3, ytop, odapal);
+		screen->DrawPatchCleanWithPalette(patch, 3, ytop, palette);
 	}
 
 	if (CanScrollDown)
 	{
 		const patch_t* patch = W_CachePatch("LITLDN");
-		screen->DrawPatchCleanWithPalette(patch, 3, 190, odapal);
+		screen->DrawPatchCleanWithPalette(patch, 3, 190, palette);
 	}
 }
 

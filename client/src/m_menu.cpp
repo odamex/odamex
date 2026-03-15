@@ -2442,6 +2442,8 @@ void M_Drawer()
 void M_ClearMenus()
 {
 	I_FreeSurface(fire_surface);
+	I_FreeSurface(help_surface);
+	help_surface = NULL;
 	MenuStackDepth = 0;
 	menuactive = false;
 	drawIndicator = true;

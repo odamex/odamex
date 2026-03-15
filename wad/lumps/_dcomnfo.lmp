@@ -36,6 +36,7 @@ gameinfo
 	smallfont = SMALLFONT
 	menuindicatoroffsetx = -32
 	menuindicatoroffsety = -5
+	defaultwipetype = 1
 }
 
 skill baby
