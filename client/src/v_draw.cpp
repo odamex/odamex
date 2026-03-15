@@ -56,8 +56,8 @@ DCanvas::vdrawsfunc DCanvas::Psfuncs[6] =
 	DCanvas::DrawLucentPatchSP,
 	DCanvas::DrawTranslatedPatchSP,
 	DCanvas::DrawTlatedLucentPatchSP,
-	reinterpret_cast<vdrawsfunc>(DCanvas::DrawColoredPatchP),
-	reinterpret_cast<vdrawsfunc>(DCanvas::DrawColorLucentPatchP)
+	DCanvas::DrawColoredPatchSP,
+	DCanvas::DrawColorLucentPatchSP
 };
 
 // Direct (true-color) versions of the column drawers
@@ -76,8 +76,8 @@ DCanvas::vdrawsfunc DCanvas::Dsfuncs[6] =
 	DCanvas::DrawLucentPatchSD,
 	DCanvas::DrawTranslatedPatchSD,
 	DCanvas::DrawTlatedLucentPatchSD,
-	reinterpret_cast<vdrawsfunc>(DCanvas::DrawColoredPatchD),
-	reinterpret_cast<vdrawsfunc>(DCanvas::DrawColorLucentPatchD)
+	DCanvas::DrawColoredPatchSD,
+	DCanvas::DrawColorLucentPatchSD
 };
 
 translationref_t V_ColorMap;
@@ -309,6 +309,12 @@ void DCanvas::DrawColoredPatchP (const byte *source, byte *dest, int count, int 
 	} while (--count);
 }
 
+// Even though its the same, we need a wrapper because casting a function pointer is undefined behavior
+void DCanvas::DrawColoredPatchSP(const byte *source, byte *dest, int count, int pitch, int)
+{
+	DCanvas::DrawColoredPatchP(source, dest, count, pitch);
+}
+
 
 // Colored, translucent patch drawer
 //
@@ -342,7 +348,11 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 	} while (--count);
 }
 
-
+// Even though its the same, we need a wrapper because casting a function pointer is undefined behavior
+void DCanvas::DrawColorLucentPatchSP(const byte *source, byte *dest, int count, int pitch, int)
+{
+	DCanvas::DrawColorLucentPatchP(source, dest, count, pitch);
+}
 
 /**************************/
 /*						  */
@@ -515,6 +525,12 @@ void DCanvas::DrawColoredPatchD (const byte *source, byte *dest, int count, int 
 	} while (--count);
 }
 
+// Even though its the same, we need a wrapper because casting a function pointer is undefined behavior
+void DCanvas::DrawColoredPatchSD(const byte *source, byte *dest, int count, int pitch, int)
+{
+	DCanvas::DrawColoredPatchD(source, dest, count, pitch);
+}
+
 
 // Colored, translucent patch drawer
 //
@@ -541,7 +557,11 @@ void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, 
 	} while (--count);
 }
 
-
+// Even though its the same, we need a wrapper because casting a function pointer is undefined behavior
+void DCanvas::DrawColorLucentPatchSD(const byte *source, byte *dest, int count, int pitch, int)
+{
+	DCanvas::DrawColorLucentPatchD(source, dest, count, pitch);
+}
 
 /******************************/
 /*							  */

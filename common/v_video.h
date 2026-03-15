@@ -193,6 +193,8 @@ protected:
 	static void DrawLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
 	static void DrawTranslatedPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
 	static void DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
+	static void DrawColoredPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
+	static void DrawColorLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
 
 	static void DrawPatchD (const byte *source, byte *dest, int count, int pitch);
 	static void DrawLucentPatchD (const byte *source, byte *dest, int count, int pitch);
@@ -205,6 +207,8 @@ protected:
 	static void DrawLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
 	static void DrawTranslatedPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
 	static void DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
+	static void DrawColoredPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
+	static void DrawColorLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
 
 	typedef void (*vdrawfunc) (const byte *source, byte *dest, int count, int pitch);
 	typedef void (*vdrawsfunc) (const byte *source, byte *dest, int count, int pitch, int yinc);
