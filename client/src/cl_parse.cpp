@@ -504,6 +504,11 @@ static void CL_PlayerPing(const odaproto::svc::PlayerPing* msg)
 	if (!validplayer(p))
 		return;
 
+	const bool isLocalPing = p.id == consoleplayer().id;
+	const bool localHadActiveGeneralPing =
+	    isLocalPing && p.player_ping && !P_IsPingExpired(*p.player_ping) &&
+	    p.player_ping->type == PING_GENERAL;
+
 	auto pingLumpForType = [](ping_type_t type) -> int
 	{
 		switch (type)
@@ -538,6 +543,20 @@ static void CL_PlayerPing(const odaproto::svc::PlayerPing* msg)
 	ping.follow_target = msg->follow_target();
 	ping.translation = p.mo ? p.mo->translation : translationref_t{};
 	p.player_ping = std::make_unique<playerPing_s>(std::move(ping));
+
+	if (isLocalPing && !(p.player_ping->type == PING_WARNING && localHadActiveGeneralPing))
+	{
+		const char* pingSound = nullptr;
+		if (S_FindSound("misc/ping") != -1)
+			pingSound = "misc/ping";
+		else if (S_FindSound("oping1") != -1)
+			pingSound = "oping1";
+		else if (S_FindSound("dsoping1") != -1)
+			pingSound = "dsoping1";
+
+		if (pingSound)
+			S_Sound(CHAN_INTERFACE, pingSound, 1.0f, ATTN_NONE);
+	}
 }
 
 //

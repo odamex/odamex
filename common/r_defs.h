@@ -658,6 +658,7 @@ enum vsflags_e : uint
 	VSF_NONE = 0,
 	VSF_SPECTATOR = BIT(0),		// [Blair] Mark if this visprite belongs to a spectator.
 	VSF_NOCLIP = BIT(1),		// [LM] Do no sprite clipping (see through walls)
+	VSF_FOREGROUND = BIT(2),	// Draw after masked world sprites/textures.
 };
 
 // A vissprite_t is a thing

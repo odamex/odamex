@@ -719,34 +719,27 @@ static bool R_Clamp3DHUDSpriteSize(vissprite_t* vis, const patch_t* patch, int m
 	if (projected_w <= 0)
 		return false;
 
-	auto smoothstep = [](float t) -> float
+	int target_w = projected_w;
+	if (min_screen_px > 0 && max_screen_px > 0 && min_screen_px == max_screen_px)
 	{
-		t = std::clamp(t, 0.0f, 1.0f);
-		return t * t * (3.0f - 2.0f * t);
-	};
-
-	float target_wf = static_cast<float>(projected_w);
-	if (min_screen_px > 0 && target_wf < min_screen_px)
-	{
-		const float band = std::max(6.0f, min_screen_px * 0.35f);
-		const float t = smoothstep((min_screen_px - target_wf) / band);
-		target_wf += (min_screen_px - target_wf) * t;
+		// True fixed-size mode in screen pixels.
+		target_w = min_screen_px;
 	}
-	if (max_screen_px > 0 && target_wf > max_screen_px)
+	else
 	{
-		const float band = std::max(8.0f, max_screen_px * 0.25f);
-		const float t = smoothstep((target_wf - max_screen_px) / band);
-		target_wf += (max_screen_px - target_wf) * t;
+		if (min_screen_px > 0)
+			target_w = std::max(target_w, min_screen_px);
+		if (max_screen_px > 0)
+			target_w = std::min(target_w, max_screen_px);
 	}
-
-	int target_w = std::max(1, static_cast<int>(target_wf + 0.5f));
+	target_w = std::max(1, target_w);
 
 	if (target_w == projected_w)
 		return true;
 
 	const int patch_w = std::max(1, static_cast<int>(patch->width()));
 	const int patch_h = std::max(1, static_cast<int>(patch->height()));
-	const int target_h = std::max(1, (patch_h * target_w + patch_w / 2) / patch_w);
+	const int target_h = std::max(1, (patch_h * target_w) / patch_w);
 
 	// Preserve the projected world-point center while resizing so clamping only
 	// affects size, not marker placement.
@@ -766,9 +759,10 @@ static bool R_Clamp3DHUDSpriteSize(vissprite_t* vis, const patch_t* patch, int m
 	if (vis->x2 < vis->x1 || vis->y2 < vis->y1)
 		return false;
 
-	const fixed_t scale = FixedDiv(target_w << FRACBITS, projected_w << FRACBITS);
-	vis->xscale = FixedMul(vis->xscale, scale);
-	vis->yscale = FixedMul(vis->yscale, scale);
+	// In fixed/clamped mode, drive sprite scale directly from target pixel size
+	// so size is independent of depth.
+	vis->xscale = FixedDiv(target_w << FRACBITS, patch_w << FRACBITS);
+	vis->yscale = FixedDiv(target_h << FRACBITS, patch_h << FRACBITS);
 
 	// Re-anchor vertical projection to the desired screen top. Without this,
 	// changing scale only updates clip bounds and the sprite can drift.
@@ -792,6 +786,51 @@ static bool R_Clamp3DHUDSpriteSize(vissprite_t* vis, const patch_t* patch, int m
 	{
 		vis->startfrac = visible_left * vis->xiscale;
 	}
+
+	return true;
+}
+
+static bool R_Set3DHUDSpriteFixedSize(vissprite_t* vis, const patch_t* patch, int fixed_screen_px,
+                                      int anchor_x, int anchor_y)
+{
+	if (!vis || !patch || fixed_screen_px <= 0)
+		return true;
+
+	const int patch_w = std::max(1, static_cast<int>(patch->width()));
+	const int patch_h = std::max(1, static_cast<int>(patch->height()));
+	const int target_w = std::max(1, fixed_screen_px);
+	const int target_h = std::max(1, (patch_h * target_w) / patch_w);
+
+	const int raw_x1 = anchor_x - target_w / 2;
+	const int raw_x2 = raw_x1 + target_w - 1;
+	const int raw_y1 = anchor_y - target_h / 2;
+	const int raw_y2 = raw_y1 + target_h - 1;
+
+	vis->x1 = std::clamp(raw_x1, 0, viewwidth - 1);
+	vis->x2 = std::clamp(raw_x2, 0, viewwidth - 1);
+	vis->y1 = std::clamp(raw_y1, 0, viewheight - 1);
+	vis->y2 = std::clamp(raw_y2, 0, viewheight - 1);
+
+	if (vis->x2 < vis->x1 || vis->y2 < vis->y1)
+		return false;
+
+	vis->xscale = FixedDiv(target_w << FRACBITS, patch_w << FRACBITS);
+	vis->yscale = FixedDiv(target_h << FRACBITS, patch_h << FRACBITS);
+
+	const fixed_t top_screen = raw_y1 << FRACBITS;
+	if (vis->yscale != 0)
+		vis->texturemid = FixedDiv(centeryfrac - top_screen, vis->yscale);
+
+	fixed_t xiscale = FixedDiv(patch_w << FRACBITS, target_w << FRACBITS);
+	if (vis->xiscale < 0)
+		xiscale = -xiscale;
+	vis->xiscale = xiscale;
+
+	const int visible_left = vis->x1 - raw_x1;
+	if (vis->xiscale < 0)
+		vis->startfrac = (patch_w << FRACBITS) - 1 - visible_left * (-vis->xiscale);
+	else
+		vis->startfrac = visible_left * vis->xiscale;
 
 	return true;
 }
@@ -834,7 +873,7 @@ void R_Add3DHUDSprite(int lump, v3fixed_t pos, translationref_t translation, flo
 	vis->statusflags = 0;
 	//vis->xscale = FRACUNIT; // Don't scale this sprite.
 	//vis->yscale = FRACUNIT;
-	vis->visflags = VSF_NOCLIP;
+	vis->visflags = VSF_NOCLIP | VSF_FOREGROUND;
 	vis->translation = translation;
 	vis->translucency = FLOAT2FIXED(translucency) - 1;
 	vis->patch = lump;
@@ -844,7 +883,14 @@ void R_Add3DHUDSprite(int lump, v3fixed_t pos, translationref_t translation, flo
 	const int anchor_x = R_ProjectPointX(tx, ty);
 	const int anchor_y = R_ProjectPointY(pos.z - viewz, ty);
 
-	if (!R_Clamp3DHUDSpriteSize(vis, patch, min_screen_px, max_screen_px, anchor_x, anchor_y))
+	const bool fixed_size_mode =
+	    (min_screen_px > 0 && max_screen_px > 0 && min_screen_px == max_screen_px);
+	const bool size_ok =
+	    fixed_size_mode
+	        ? R_Set3DHUDSpriteFixedSize(vis, patch, min_screen_px, anchor_x, anchor_y)
+	        : R_Clamp3DHUDSpriteSize(vis, patch, min_screen_px, max_screen_px, anchor_x, anchor_y);
+
+	if (!size_ok)
 		vis->x2 = vis->x1 - 1;
 }
 
@@ -1228,6 +1274,8 @@ void R_DrawMasked (void)
 
 	for (auto vis : OUtil::reverse(spritesorter))
 	{
+		if (BITFLAG_TEST(vis->visflags, VSF_FOREGROUND))
+			continue;
 		R_DrawSprite(vis);
 	}
 
@@ -1242,6 +1290,14 @@ void R_DrawMasked (void)
 	for (ds=ds_p ; ds-- > firstdrawseg ; )	// new -- killough
 		if (ds->midposts)
 			R_RenderMaskedSegRange(ds, ds->x1, ds->x2);
+
+	// Foreground sprites draw above masked world geometry and regular sprites.
+	for (auto vis : OUtil::reverse(spritesorter))
+	{
+		if (!BITFLAG_TEST(vis->visflags, VSF_FOREGROUND))
+			continue;
+		R_DrawSprite(vis);
+	}
 
 	// draw the psprites on top of everything
 	R_DrawPlayerSprites();

@@ -86,6 +86,7 @@ DSVTNO
 DSVTYES
 DSVTPASS
 DSVTFAIL
+DSOPING1
 
 # List of Pictures (with insertion point)
 

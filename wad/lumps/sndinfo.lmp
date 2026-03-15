@@ -566,6 +566,7 @@ misc/plpart			dsplpart
 misc/plraise		dsplrais
 misc/horde/boss		dshboss
 misc/lastplayer     dslastpl
+misc/ping           dsoping1
 
 //---------------------------------------------------------------------------
 // DEFAULT ANNOUNCER

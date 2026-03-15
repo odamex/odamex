@@ -552,8 +552,10 @@ void R_AddPingSprites()
 {
 #ifdef CLIENT_APP
 	static constexpr fixed_t StrictHeadOffset = 12 * FRACUNIT;
+	static constexpr fixed_t BossHeadOffset = 24 * FRACUNIT;
 	static constexpr fixed_t FollowPingSmoothing = FRACUNIT / 3;
-	static constexpr int FixedPingScreenPx = 64;
+	static constexpr int FixedPingScreenPx = 56;
+	static constexpr int FixedBossScreenPx = 84;
 	static std::array<v3fixed_t, MAXPLAYERS> followSmoothPos{};
 	static std::array<bool, MAXPLAYERS> followSmoothValid{};
 	static std::unordered_map<uint32_t, v3fixed_t> actorSmoothPos{};
@@ -613,7 +615,9 @@ void R_AddPingSprites()
 					pos.y = target->prevy + FixedMul(render_lerp_amount, target->y - target->prevy);
 					const fixed_t tzt =
 					    target->prevz + FixedMul(render_lerp_amount, target->z - target->prevz);
-					pos.z = tzt + target->height + StrictHeadOffset;
+					const fixed_t headOffset =
+					    ping.type == PING_BOSS ? BossHeadOffset : StrictHeadOffset;
+					pos.z = tzt + target->height + headOffset;
 				}
 				else
 				{
@@ -668,10 +672,10 @@ void R_AddPingSprites()
 				const fixed_t ax = actor->prevx + FixedMul(render_lerp_amount, actor->x - actor->prevx);
 				const fixed_t ay = actor->prevy + FixedMul(render_lerp_amount, actor->y - actor->prevy);
 				const fixed_t az = actor->prevz + FixedMul(render_lerp_amount, actor->z - actor->prevz);
-				v3fixed_t pos{ax, ay, az + actor->height + StrictHeadOffset};
+				v3fixed_t pos{ax, ay, az + actor->height + BossHeadOffset};
 				pos = smoothActorPos(actor->netid, pos);
-				R_Add3DHUDSprite(bossLump, pos, {}, 1.0f, FixedPingScreenPx,
-				                 FixedPingScreenPx, false);
+				R_Add3DHUDSprite(bossLump, pos, {}, 1.0f, FixedBossScreenPx,
+				                 FixedBossScreenPx, false);
 			}
 		}
 	}
@@ -709,6 +713,11 @@ void R_AddPingSprites()
 BEGIN_COMMAND(player_ping)
 {
 	if (::gamestate != GS_LEVEL)
+	{
+		return;
+	}
+
+	if (!multiplayer)
 	{
 		return;
 	}
