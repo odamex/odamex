@@ -106,6 +106,16 @@ typedef enum
 inline constexpr int ReJoinDelay = TICRATE * 5;
 inline constexpr int SuicideDelay = TICRATE * 10;
 
+enum ping_type_t : uint8_t
+{
+	PING_GENERAL = 0,
+	PING_ITEM,
+	PING_MONSTER,
+	PING_BOSS,
+	PING_FLAG,
+	PING_TEAMMATE
+};
+
 /**
  * @brief Player ping struct - describes what a player last pinged.
  */
@@ -117,6 +127,8 @@ struct playerPing_s
 	int pingtic = -1;
 	uint32_t target_netid = 0;
 	bool follow_target = false;
+	ping_type_t type = PING_GENERAL;
+	team_t flag_team = TEAM_NONE;
 };
 
 class player_t

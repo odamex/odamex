@@ -288,6 +288,8 @@ odaproto::svc::PlayerPing SVC_PlayerPing(const player_t& player)
 		pos->set_z(ping.pos.z);
 		msg.set_target_netid(ping.target_netid);
 		msg.set_follow_target(ping.follow_target);
+		msg.set_ping_type(ping.type);
+		msg.set_flag_team(ping.flag_team);
 	}
 
 	return msg;

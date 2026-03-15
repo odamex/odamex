@@ -134,7 +134,8 @@ public:
 	inline void DrawPatchClean (const patch_t *patch, int x, int y) const;
 	inline void DrawPatchCleanNoMove (const patch_t *patch, int x, int y) const;
 	void DrawRotatedPatchCleanNoMove(const patch_t* patch, int x, int y, float radians,
-	                                 float scale = 1.0f) const;
+	                                 float scale = 1.0f,
+	                                 const translationref_t* translation = nullptr) const;
 
 	void DrawPatchFullScreen(const patch_t* patch, bool clear) const;
 

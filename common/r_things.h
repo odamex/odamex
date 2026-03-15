@@ -105,4 +105,5 @@ fixed_t P_CalculateWeaponBobY(player_t& player, float scale_amount);
  * @param max_screen_px Maximum on-screen width in pixels, 0 to disable.
  */
 void R_Add3DHUDSprite(int lump, v3fixed_t pos, translationref_t translation, float translucency,
-                      int min_screen_px = 0, int max_screen_px = 0);
+                      int min_screen_px = 0, int max_screen_px = 0,
+                      bool ignore_view_bob = false);

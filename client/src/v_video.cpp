@@ -1008,7 +1008,7 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch, bool clear) const
 }
 
 void DCanvas::DrawRotatedPatchCleanNoMove(const patch_t* patch, int x0, int y0, float radians,
-                                          float scale) const
+                                          float scale, const translationref_t* translation) const
 {
 	if (patch == NULL)
 		return;
@@ -1092,8 +1092,9 @@ void DCanvas::DrawRotatedPatchCleanNoMove(const patch_t* patch, int x0, int y0, 
 				if (p == 0xFF)
 					continue;
 
+				const byte out = translation ? translation->tlate(p) : p;
 				palindex_t* dest = (palindex_t*)mSurface->getBuffer((uint16_t)x, (uint16_t)y);
-				*dest = p;
+				*dest = out;
 			}
 		}
 	}
@@ -1120,7 +1121,7 @@ void DCanvas::DrawRotatedPatchCleanNoMove(const patch_t* patch, int x0, int y0, 
 					continue;
 
 				argb_t* dest = (argb_t*)mSurface->getBuffer((uint16_t)x, (uint16_t)y);
-				*dest = colors[p];
+				*dest = translation ? V_Palette.tlate(*translation, p) : colors[p];
 			}
 		}
 	}

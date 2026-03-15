@@ -504,18 +504,37 @@ static void CL_PlayerPing(const odaproto::svc::PlayerPing* msg)
 	if (!validplayer(p))
 		return;
 
-	const int lump = W_GetNumForName("NET");
-	if (lump == -1)
-		return;
+	auto pingLumpForType = [](ping_type_t type) -> int
+	{
+		switch (type)
+		{
+		case PING_ITEM:
+			return W_GetNumForName("OPNG_ITM");
+		case PING_MONSTER:
+			return W_GetNumForName("OPNG_MON");
+		case PING_BOSS:
+			return W_GetNumForName("OPNG_BOS");
+		case PING_FLAG:
+			return W_GetNumForName("OPNG_FLG");
+		case PING_TEAMMATE:
+			return W_GetNumForName("OPNG_TM");
+		case PING_GENERAL:
+		default:
+			return W_GetNumForName("OPNG_GEN");
+		}
+	};
 
 	playerPing_s ping{};
-	ping.lump = lump;
+	ping.type = static_cast<ping_type_t>(msg->ping_type());
+	ping.flag_team = ping.type == PING_FLAG ? static_cast<team_t>(msg->flag_team()) : TEAM_NONE;
+	ping.lump = pingLumpForType(ping.type);
 	ping.pingtic = ::gametic;
 	ping.pos.x = msg->pos().x();
 	ping.pos.y = msg->pos().y();
 	ping.pos.z = msg->pos().z();
 	ping.target_netid = msg->target_netid();
 	ping.follow_target = msg->follow_target();
+	ping.translation = p.mo ? p.mo->translation : translationref_t{};
 	p.player_ping = std::make_unique<playerPing_s>(std::move(ping));
 }
 

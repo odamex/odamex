@@ -4061,6 +4061,8 @@ void SV_NetCmd(player_t& player)
 		SV_VoteCmd(player, netargs);
 		break;
 	case CONST_HASH("player_ping"):
+		if (player.spectator)
+			break;
 		P_PlayerPing(player);
 		SV_BroadcastPlayerPing(player);
 		break;

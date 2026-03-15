@@ -25,6 +25,7 @@
 #include "odamex.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <iterator>
 #include <sstream>
@@ -454,23 +455,21 @@ static void HU_DrawPingIndicator()
 	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible(true))
 		return;
 
-	patch_t* patch = W_CachePatch("FONTB01");
-	if (patch == nullptr)
+	patch_t* fallbackIcon = W_CachePatch("OPNG_GEN");
+	if (fallbackIcon == nullptr)
 		return;
-	patch_t* arrow = W_CachePatch("LITLUP");
+	patch_t* arrow = W_CachePatch("OPNG_ARO");
 	if (arrow == nullptr)
 		return;
 
 	const int surfaceW = I_GetSurfaceWidth();
 	const int surfaceH = I_GetSurfaceHeight();
 	const int hudBottom = R_StatusBarVisible() ? ST_StatusBarY(surfaceW, surfaceH) : surfaceH;
-	static constexpr float ArrowScale = 1.75f;
+	static constexpr float ArrowScale = 1.0f;
 	const int margin = 10 * CleanXfac;
 
-	const int iconW = patch->width() * CleanXfac;
-	const int iconH = patch->height() * CleanYfac;
-	const int iconLeft = patch->leftoffset() * CleanXfac;
-	const int iconTop = patch->topoffset() * CleanYfac;
+	const int iconW = fallbackIcon->width() * CleanXfac;
+	const int iconH = fallbackIcon->height() * CleanYfac;
 	const int arrowW = std::max(1, static_cast<int>(std::lround(arrow->width() * CleanXfac * ArrowScale)));
 	const int arrowH = std::max(1, static_cast<int>(std::lround(arrow->height() * CleanYfac * ArrowScale)));
 	const int arrowLeft = static_cast<int>(std::lround(arrow->leftoffset() * CleanXfac * ArrowScale));
@@ -478,27 +477,71 @@ static void HU_DrawPingIndicator()
 
 	const int cx = surfaceW / 2;
 	const int cy = hudBottom / 2;
-	const int ex = std::max(1, (surfaceW / 2) - margin - (iconW / 2));
-	const int ey = std::max(1, (hudBottom / 2) - margin - (iconH / 2));
-
-	const int minX = margin + iconLeft;
-	const int maxX = (surfaceW - margin - iconW) + iconLeft;
-	const int minY = margin + iconTop;
-	const int maxY = (hudBottom - margin - iconH) + iconTop;
+	const int ex = std::max(1, (surfaceW / 2) - margin - (arrowW / 2));
+	const int ey = std::max(1, (hudBottom / 2) - margin - (arrowH / 2));
 
 	static constexpr double BamPerDegree = 4294967296.0 / 360.0;
 	const double fov = static_cast<double>(displayplayer().fov);
 	const int32_t halfFovBam = static_cast<int32_t>(std::lround(fov * BamPerDegree * 0.5));
 	static constexpr double Tau = 6.28318530717958647692;
 	static constexpr double AngleScale = Tau / 4294967296.0;
+	static constexpr float ArrowLerp = 0.25f;
+	static std::array<float, MAXPLAYERS> smoothRadians{};
+	static std::array<bool, MAXPLAYERS> smoothValid{};
+
+	auto iconPatchForPing = [&](const playerPing_s& ping) -> patch_t*
+	{
+		switch (ping.type)
+		{
+		case PING_ITEM:
+			return W_CachePatch("OPNG_ITM");
+		case PING_MONSTER:
+			return W_CachePatch("OPNG_MON");
+		case PING_BOSS:
+			return W_CachePatch("OPNG_BOS");
+		case PING_FLAG:
+			return W_CachePatch("OPNG_FLG");
+		case PING_TEAMMATE:
+			return W_CachePatch("OPNG_TM");
+		case PING_GENERAL:
+		default:
+			return W_CachePatch("OPNG_GEN");
+		}
+	};
+
+	auto playerPingTranslation = [&](const player_t& player, const playerPing_s& ping) -> translationref_t
+	{
+		if (ping.translation)
+			return ping.translation;
+		if (player.mo)
+			return player.mo->translation;
+		return {};
+	};
+
+	auto flagTranslation = [&](team_t team) -> translationref_t
+	{
+		for (const player_t& p : players)
+		{
+			if (!p.ingame() || !p.mo)
+				continue;
+			if (p.userinfo.team == team)
+				return p.mo->translation;
+		}
+		return {};
+	};
 
 	for (const player_t& player : players)
 	{
 		if (!player.player_ping)
 			continue;
+		if (G_IsTeamGame() && player.id != consoleplayer().id &&
+		    player.userinfo.team != consoleplayer().userinfo.team)
+			continue;
 
 		const playerPing_s& ping = *player.player_ping;
 		if (P_IsPingExpired(ping))
+			continue;
+		if (consoleplayer().mo && ping.target_netid == consoleplayer().mo->netid)
 			continue;
 
 		v3fixed_t pingPos{};
@@ -511,9 +554,31 @@ static void HU_DrawPingIndicator()
 		const angle_t target = R_PointToAngle2(camera->x, camera->y, pingPos.x, pingPos.y);
 		const int32_t delta = static_cast<int32_t>(target - camera->angle);
 		if (std::abs(delta) <= halfFovBam)
+		{
+			if (player.id < MAXPLAYERS)
+			{
+				smoothRadians[player.id] = static_cast<float>(delta * AngleScale);
+				smoothValid[player.id] = true;
+			}
 			continue;
+		}
 
-		const double radians = static_cast<double>(delta) * AngleScale;
+		float radians = static_cast<float>(delta * AngleScale);
+		if (player.id < MAXPLAYERS)
+		{
+			if (!smoothValid[player.id])
+			{
+				smoothRadians[player.id] = radians;
+				smoothValid[player.id] = true;
+			}
+			else
+			{
+				const float prev = smoothRadians[player.id];
+				const float diff = std::atan2(std::sin(radians - prev), std::cos(radians - prev));
+				smoothRadians[player.id] = prev + diff * ArrowLerp;
+			}
+			radians = smoothRadians[player.id];
+		}
 
 		// 0 radians should point up the screen.
 		const double vx = -std::sin(radians);
@@ -526,23 +591,52 @@ static void HU_DrawPingIndicator()
 		const int centerX = static_cast<int>(std::lround(cx + vx * t));
 		const int centerY = static_cast<int>(std::lround(cy + vy * t));
 
+		patch_t* iconPatch = iconPatchForPing(ping);
+		if (iconPatch == nullptr)
+			iconPatch = fallbackIcon;
+
+		const int iconPatchW = iconPatch->width() * CleanXfac;
+		const int iconPatchH = iconPatch->height() * CleanYfac;
+		const int iconLeft = iconPatch->leftoffset() * CleanXfac;
+		const int iconTop = iconPatch->topoffset() * CleanYfac;
+
 		const int iconOffset =
-		    std::max(arrowW, arrowH) / 2 + std::max(iconW, iconH) / 2 + 2 * CleanXfac;
+		    std::max(arrowW, arrowH) / 2 + std::max(iconPatchW, iconPatchH) / 2 + 2 * CleanXfac;
 		const int iconCenterX = centerX - static_cast<int>(std::lround(vx * iconOffset));
 		const int iconCenterY = centerY - static_cast<int>(std::lround(vy * iconOffset));
-		int drawX = iconCenterX - (iconW / 2) + iconLeft;
-		int drawY = iconCenterY - (iconH / 2) + iconTop;
+		int drawX = iconCenterX - (iconPatchW / 2) + iconLeft;
+		int drawY = iconCenterY - (iconPatchH / 2) + iconTop;
+
+		const int minX = margin + iconLeft;
+		const int maxX = (surfaceW - margin - iconPatchW) + iconLeft;
+		const int minY = margin + iconTop;
+		const int maxY = (hudBottom - margin - iconPatchH) + iconTop;
 
 		drawX = std::clamp(drawX, minX, maxX);
 		drawY = std::clamp(drawY, minY, maxY);
 
-		screen->DrawLucentPatchCleanNoMove(patch, drawX, drawY);
+		translationref_t iconTranslation{};
+		if (ping.type == PING_FLAG && ping.flag_team != TEAM_NONE)
+			iconTranslation = flagTranslation(ping.flag_team);
+
+		if (iconTranslation)
+		{
+			translationref_t prev = V_ColorMap;
+			V_ColorMap = iconTranslation;
+			screen->DrawTranslatedLucentPatchCleanNoMove(iconPatch, drawX, drawY);
+			V_ColorMap = prev;
+		}
+		else
+		{
+			screen->DrawLucentPatchCleanNoMove(iconPatch, drawX, drawY);
+		}
 
 		// Center the arrow visual around the edge point, then rotate toward ping.
 		const int arrowX = centerX - (arrowW / 2) + arrowLeft;
 		const int arrowY = centerY - (arrowH / 2) + arrowTop;
+		translationref_t arrowTranslation = playerPingTranslation(player, ping);
 		screen->DrawRotatedPatchCleanNoMove(arrow, arrowX, arrowY, static_cast<float>(-radians),
-		                                    ArrowScale);
+		                                    ArrowScale, arrowTranslation ? &arrowTranslation : nullptr);
 	}
 }
 

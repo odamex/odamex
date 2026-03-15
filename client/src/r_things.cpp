@@ -749,12 +749,14 @@ static bool R_Clamp3DHUDSpriteSize(vissprite_t* vis, const patch_t* patch, int m
 	const int target_h = std::max(1, (patch_h * target_w + patch_w / 2) / patch_w);
 
 	const int cx = (vis->x1 + vis->x2) / 2;
-	const int cy = (vis->y1 + vis->y2) / 2;
+	const int anchor_y2 = vis->y2;
 
 	const int raw_x1 = cx - target_w / 2;
 	const int raw_x2 = raw_x1 + target_w - 1;
-	const int raw_y1 = cy - target_h / 2;
-	const int raw_y2 = raw_y1 + target_h - 1;
+	// Keep the marker's bottom edge pinned to the projected world point so
+	// distance-based size clamping does not make it drift up/down on screen.
+	const int raw_y2 = anchor_y2;
+	const int raw_y1 = raw_y2 - target_h + 1;
 
 	vis->x1 = std::clamp(raw_x1, 0, viewwidth - 1);
 	vis->x2 = std::clamp(raw_x2, 0, viewwidth - 1);
@@ -787,7 +789,7 @@ static bool R_Clamp3DHUDSpriteSize(vissprite_t* vis, const patch_t* patch, int m
 }
 
 void R_Add3DHUDSprite(int lump, v3fixed_t pos, translationref_t translation, float translucency,
-                      int min_screen_px, int max_screen_px)
+                      int min_screen_px, int max_screen_px, bool ignore_view_bob)
 {
 	if (lump == -1)
 		return;
@@ -798,8 +800,14 @@ void R_Add3DHUDSprite(int lump, v3fixed_t pos, translationref_t translation, flo
 
 	fixed_t height = patch->height() << FRACBITS;
 	fixed_t width = patch->width() << FRACBITS;
-	short topoffs = patch->topoffset();
-	short sideoffs = patch->leftoffset();
+	fixed_t topoffs = height;
+	fixed_t sideoffs = width >> 1;
+
+	if (ignore_view_bob && camera && camera->player)
+	{
+		const fixed_t bobOffset = viewz - (camera->z + camera->player->viewheight);
+		pos.z += bobOffset;
+	}
 
 	vissprite_t* vis =
 		R_GenerateVisSprite(NULL, FAKED_Center, pos.x, pos.y, pos.z,
@@ -816,7 +824,7 @@ void R_Add3DHUDSprite(int lump, v3fixed_t pos, translationref_t translation, flo
 	vis->translucency = FLOAT2FIXED(translucency) - 1;
 	vis->patch = lump;
 	vis->mo = nullptr;
-	vis->colormap = ::basecolormap;
+	vis->colormap = shaderef_t(&V_GetDefaultPalette()->maps, 0);
 
 	if (!R_Clamp3DHUDSpriteSize(vis, patch, min_screen_px, max_screen_px))
 		vis->x2 = vis->x1 - 1;

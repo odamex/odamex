@@ -75,6 +75,8 @@ message PlayerPing
 	Vec3 pos = 2;
 	uint32 target_netid = 3;
 	bool follow_target = 4;
+	int32 ping_type = 5;
+	int32 flag_team = 6;
 }
 
 // svc_spawnmobj, svc_mobjinfo, svc_corpse
