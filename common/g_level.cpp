@@ -536,7 +536,7 @@ void G_AirControlChanged()
 // serialization and unserialization.
 void G_SerializeLevel(FArchive &arc, bool hubLoad)
 {
-	byte freecamplayer_id = 255;
+	const byte freecamplayer_id = 255;
 	player_t *p = &idplayer(freecamplayer_id);
 
 	if (arc.IsStoring ())
