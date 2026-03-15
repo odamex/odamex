@@ -879,7 +879,7 @@ void AActor::Serialize (FArchive &arc)
 			<< args[3]
 			<< args[4]
 			/*<< goal ? goal->netid : 0*/
-			<< static_cast<unsigned>(0)
+			<< 0_u32
 			<< translucency
 			<< waterlevel
 			<< gear;

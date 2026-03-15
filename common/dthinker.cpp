@@ -59,12 +59,12 @@ void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 		{
 			if (!(arc.IsReset() && P_ThinkerIsPlayerType(thinker)))
 			{
-				arc << static_cast<byte>(1);
+				arc << 1_u8;
 				arc << thinker;
 			}
 			thinker = thinker->m_Next;
 		}
-		arc << static_cast<byte>(0);
+		arc << 0_u8;
 	}
 	else
 	{

@@ -3584,11 +3584,11 @@ void P_PostProcessCompatibleLinedefSpecial(line_t* line)
 #else
 	          // [RH] Second arg controls how opaque it is.
 		if (line->id == 0)
-			line->lucency = static_cast<byte>(128);
+			line->lucency = 128_u8;
 		else
 			for (line_t& lineit : R_GetLines())
 				if (lineit.id == line->id)
-					lineit.lucency = static_cast<byte>(128);
+					lineit.lucency = 128_u8;
 #endif
 		line->special = 0;
 		break;

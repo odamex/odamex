@@ -141,7 +141,7 @@ void P_SerializeWorld (FArchive &arc)
 				<< line.special
 				<< line.lucency
 				<< line.id
-				<< line.args[0] << line.args[1] << line.args[2] << line.args[3] << line.args[4] << static_cast<uint16_t>(0);
+				<< line.args[0] << line.args[1] << line.args[2] << line.args[3] << line.args[4] << 0_u16;
 
 			for (int i = 0; i < 2; i++)
 			{

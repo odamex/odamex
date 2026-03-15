@@ -171,3 +171,61 @@ template<class... Ts>
 visitor(Ts...) -> visitor<Ts...>;
 
 }
+
+// Literals for stdint types
+
+consteval int8_t operator ""_i8(unsigned long long x)
+{
+	if (x >= std::numeric_limits<int8_t>::max())
+		throw "Literal out of range for type int8_t";
+    return static_cast<int8_t>(x);
+}
+
+consteval uint8_t operator ""_u8(unsigned long long x)
+{
+	if (x > std::numeric_limits<uint8_t>::max())
+		throw "Literal out of range for type uint8_t";
+    return static_cast<uint8_t>(x);
+}
+
+consteval int16_t operator ""_i16(unsigned long long x)
+{
+	if (x > std::numeric_limits<int16_t>::max())
+		throw "Literal out of range for type int16_t";
+    return static_cast<int16_t>(x);
+}
+
+consteval uint16_t operator ""_u16(unsigned long long x)
+{
+	if (x > std::numeric_limits<uint16_t>::max())
+		throw "Literal out of range for type uint16_t";
+    return static_cast<uint16_t>(x);
+}
+
+consteval int32_t operator ""_i32(unsigned long long x)
+{
+	if (x > std::numeric_limits<int32_t>::max())
+		throw "Literal out of range for type int32_t";
+    return static_cast<int32_t>(x);
+}
+
+consteval uint32_t operator ""_u32(unsigned long long x)
+{
+	if (x > std::numeric_limits<uint32_t>::max())
+		throw "Literal out of range for type uint32_t";
+    return static_cast<uint32_t>(x);
+}
+
+consteval int64_t operator ""_i64(unsigned long long x)
+{
+	if (x > std::numeric_limits<int64_t>::max())
+		throw "Literal out of range for type int64_t";
+    return static_cast<int64_t>(x);
+}
+
+consteval uint64_t operator ""_u64(unsigned long long x)
+{
+	if (x > std::numeric_limits<uint64_t>::max())
+		throw "Literal out of range for type uint65_t";
+    return static_cast<uint64_t>(x);
+}

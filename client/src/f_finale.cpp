@@ -723,7 +723,7 @@ void F_BunnyScroll()
 	int initialp1x = surface_width - frame_width;
 	int initialp2x = surface_width - (frame_width * 2 - bunnyoverlap);
 
-	float scrollstep = static_cast<float>(abs(initialp2x)) / static_cast<float>(320);
+	float scrollstep = static_cast<float>(abs(initialp2x)) / 320.0f;
 
 	// Does this actually do anything?
 	V_MarkRect (0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());

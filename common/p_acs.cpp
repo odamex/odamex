@@ -4148,12 +4148,12 @@ FArchive &operator<< (FArchive &arc, acsdefered_s *defer)
 {
 	while (defer)
 	{
-		arc << static_cast<byte>(1);
+		arc << 1_u8;
 		arc << static_cast<byte>(defer->type) << defer->script
 			<< defer->arg0 << defer->arg1 << defer->arg2;
 		defer = defer->next;
 	}
-	arc << static_cast<byte>(0);
+	arc << 0_u8;
 	return arc;
 }
 

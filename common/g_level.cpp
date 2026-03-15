@@ -692,7 +692,7 @@ void P_SerializeACSDefereds(FArchive &arc)
 		}
 
 		// Signal end of defereds
-		arc << static_cast<byte>(0);
+		arc << 0_u8;
 	}
 	else
 	{
