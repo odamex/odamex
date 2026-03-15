@@ -177,10 +177,10 @@ EXTERN_CVAR(screenblocks)
 #define F_PANINC (140 / TICRATE)
 // how much zoom-in per tic
 // goes to 2x in 1 second
-#define M_ZOOMIN ((int)(1.02 * FRACUNIT64))
+#define M_ZOOMIN (static_cast<int>(1.02 * FRACUNIT64))
 // how much zoom-out per tic
 // pulls out to 0.5x in 1 second
-#define M_ZOOMOUT ((int)(FRACUNIT64 / 1.02))
+#define M_ZOOMOUT (static_cast<int>(FRACUNIT64 / 1.02))
 
 // translates between frame-buffer and map distances
 #define FTOM(x) FixedMul64((INT2FIXED64((x))), scale_ftom)
@@ -527,7 +527,7 @@ void AM_initVariables()
 	AM_saveScaleAndLoc();
 
 	// inform the status bar of the change
-	ST_Responder(&st_notify);
+	ST_Responder(st_notify);
 }
 
 am_color_t AM_GetColorFromString(const argb_t* palette_colors, const std::string& colorstring)
@@ -784,7 +784,7 @@ void AM_Stop()
 	automapactive = false;
 
 	static event_t st_notify(ev_keyup, AM_MSGEXITED, 0, 0);
-	ST_Responder(&st_notify);
+	ST_Responder(st_notify);
 
 	stopped = true;
 	viewactive = true;
@@ -1251,7 +1251,7 @@ static inline void PUTDOT_THICK(
 
 static inline void PUTDOT_THICK(int x, int y, argb_t color)
 {
-	PUTDOT_THICK<argb_t>(x, y, color, [](int x, int y, argb_t color){ *((argb_t*)(fb + y * f_p + (x << 2))) = color; }, reinterpret_cast<argb_t*>(fb), f_p >> 2);
+	PUTDOT_THICK<argb_t>(x, y, color, [](int x, int y, argb_t color){ *(reinterpret_cast<argb_t*>(fb + y * f_p + (x << 2))) = color; }, reinterpret_cast<argb_t*>(fb), f_p >> 2);
 }
 
 static inline void PUTDOT_THICK(int x, int y, byte color)
@@ -2007,7 +2007,7 @@ void AM_drawCrosshair(am_color_t color)
 {
 	// single point for now
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
-		PUTDOT_THICK(f_w / 2, (f_h + 1) / 2, (byte)color.index);
+		PUTDOT_THICK(f_w / 2, (f_h + 1) / 2, color.index);
 	else
 		PUTDOT_THICK(f_w / 2, (f_h + 1) / 2, color.rgb);
 }

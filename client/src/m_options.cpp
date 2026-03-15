@@ -293,40 +293,40 @@ static itemtype OldAxisType;
  *
  *=======================================*/
 
-static void PlayerSetup (void);
-static void CustomizeControls (void);
-static void VideoOptions (void);
-static void SoundOptions (void);
-static void CompatOptions (void);
-static void NetworkOptions (void);
-static void WeaponOptions (void);
-static void GoToConsole (void);
-void Reset2Defaults (void);
-void Reset2Saved (void);
+static void PlayerSetup();
+static void CustomizeControls();
+static void VideoOptions();
+static void SoundOptions();
+static void CompatOptions();
+static void NetworkOptions();
+static void WeaponOptions();
+static void GoToConsole();
+void Reset2Defaults();
+void Reset2Saved();
 
-static void SetVidMode (void);
+static void SetVidMode();
 
 static menuitem_t OptionItems[] =
 {
-    { more, 	"Player Setup",     	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)PlayerSetup} },
-	{ more,		"Weapon Preferences",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)WeaponOptions} },
- 	{ more,		"Customize Controls",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CustomizeControls} },
-	{ more,		"Mouse Options" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)MouseSetup} },
-	{ more,		"Joystick Setup" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)JoystickSetup} },
+    { more, 	"Player Setup",     	{NULL},					{0.0}, {0.0},	{0.0}, {reinterpret_cast<value_t*>(PlayerSetup)} },
+	{ more,		"Weapon Preferences",	{NULL},					{0.0}, {0.0},	{0.0}, {reinterpret_cast<value_t*>(WeaponOptions)} },
+ 	{ more,		"Customize Controls",	{NULL},					{0.0}, {0.0},	{0.0}, {reinterpret_cast<value_t*>(CustomizeControls)} },
+	{ more,		"Mouse Options" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {reinterpret_cast<value_t*>(MouseSetup)} },
+	{ more,		"Joystick Setup" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {reinterpret_cast<value_t*>(JoystickSetup)} },
  	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
- 	{ more,		"Compatibility Options",{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)CompatOptions} },
-	{ more,		"Network Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)NetworkOptions} },
-	{ more,		"Sound Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SoundOptions} },
- 	{ more,		"Display Options",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)VideoOptions} },
-	{ more,		"Set Video Mode",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)SetVidMode} },
+ 	{ more,		"Compatibility Options",{NULL},					{0.0}, {0.0},	{0.0}, {reinterpret_cast<value_t*>(CompatOptions)} },
+	{ more,		"Network Options",		{NULL},					{0.0}, {0.0},	{0.0}, {reinterpret_cast<value_t*>(NetworkOptions)} },
+	{ more,		"Sound Options",		{NULL},					{0.0}, {0.0},	{0.0}, {reinterpret_cast<value_t*>(SoundOptions)} },
+ 	{ more,		"Display Options",		{NULL},					{0.0}, {0.0},	{0.0}, {reinterpret_cast<value_t*>(VideoOptions)} },
+	{ more,		"Set Video Mode",		{NULL},					{0.0}, {0.0},	{0.0}, {reinterpret_cast<value_t*>(SetVidMode)} },
     { redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ more,		"Go To Console",		{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)GoToConsole} },
+	{ more,		"Go To Console",		{NULL},					{0.0}, {0.0},	{0.0}, {reinterpret_cast<value_t*>(GoToConsole)} },
     { redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ discrete,	"Always Run",			{&cl_run},				{2.0}, {0.0},	{0.0}, {OnOff} },
  	{ discrete, "Skip Boot Window",		{&i_skipbootwin},		{2.0}, {0.0},	{0.0}, {OnOff} },
  	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
- 	{ more,		"Reset to defaults",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Defaults} },
- 	{ more,		"Reset to last saved",	{NULL},					{0.0}, {0.0},	{0.0}, {(value_t *)Reset2Saved} }
+ 	{ more,		"Reset to defaults",	{NULL},					{0.0}, {0.0},	{0.0}, {reinterpret_cast<value_t*>(Reset2Defaults)} },
+ 	{ more,		"Reset to last saved",	{NULL},					{0.0}, {0.0},	{0.0}, {reinterpret_cast<value_t*>(Reset2Saved)} }
 };
 
 menu_t OptionMenu = {
@@ -354,96 +354,96 @@ static menuitem_t ControlsItems[] = {
 #endif
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ yellowtext,"Basic Movement",		{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Move forward",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+forward"} },
-	{ control,	"Move backward",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+back"} },
-	{ control,	"Strafe left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveleft"} },
-	{ control,	"Strafe right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+moveright"} },
-	{ control,	"Turn left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+left"} },
-	{ control,	"Turn right",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+right"} },
-	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+speed"} },
-	{ control,	"Always Run",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"togglerun"} },
-	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+strafe"} },
-	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+jump"} },
-	{ control,	"Turn 180",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"turn180"} },
-	{ control,	"Alternate Turn",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+fastturn"} },
+	{ control,	"Move forward",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+forward"))} },
+	{ control,	"Move backward",		{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+back"))} },
+	{ control,	"Strafe left",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+moveleft"))} },
+	{ control,	"Strafe right",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+moveright"))} },
+	{ control,	"Turn left",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+left"))} },
+	{ control,	"Turn right",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+right"))} },
+	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+speed"))} },
+	{ control,	"Always Run",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("togglerun"))} },
+	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+strafe"))} },
+	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+jump"))} },
+	{ control,	"Turn 180",				{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("turn180"))} },
+	{ control,	"Alternate Turn",		{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+fastturn"))} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ yellowtext,"Actions",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
-	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+use"} },
-	{ control,	"Next weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapnext"} },
-	{ control,	"Previous weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapprev"} },
+	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+attack"))} },
+	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+use"))} },
+	{ control,	"Next weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("weapnext"))} },
+	{ control,	"Previous weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("weapprev"))} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ yellowtext,"Weapons",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Fist/Chainsaw",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 1"} },
-	{ control,	"Pistol",       		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 2"} },
-	{ control,	"Shotgun/SSG",  		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 3"} },
-	{ control,	"Chaingun",     		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 4"} },
-	{ control,	"Rocket Launcher",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 5"} },
-	{ control,	"Plasma Rifle",   		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 6"} },
-	{ control,	"BFG",          		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 7"} },
-	{ control,	"Chainsaw",     		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"impulse 8"} },
+	{ control,	"Fist/Chainsaw",		{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("impulse 1"))} },
+	{ control,	"Pistol",       		{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("impulse 2"))} },
+	{ control,	"Shotgun/SSG",  		{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("impulse 3"))} },
+	{ control,	"Chaingun",     		{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("impulse 4"))} },
+	{ control,	"Rocket Launcher",		{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("impulse 5"))} },
+	{ control,	"Plasma Rifle",   		{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("impulse 6"))} },
+	{ control,	"BFG",          		{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("impulse 7"))} },
+	{ control,	"Chainsaw",     		{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("impulse 8"))} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ yellowtext,	"Automap Controls",	{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,		"Toggle Automap",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"togglemap"} },
-	{ mapcontrol,	"Follow Player",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_togglefollow"} },
-	{ mapcontrol,	"Toggle Grid",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_grid"} },
-	{ mapcontrol,	"Add Marker",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_setmark"} },
-	{ mapcontrol,	"Clear Markers",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_clearmarks"} },
-	{ mapcontrol,	"Big Automap",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"am_big"} },
-	{ mapcontrol,	"Zoom In",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_zoomin"} },
-	{ mapcontrol,	"Zoom Out",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_zoomout"} },
-	{ mapcontrol,	"Pan Up",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panup"} },
-	{ mapcontrol,	"Pan Down",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_pandown"} },
-	{ mapcontrol,	"Pan Left",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panleft"} },
-	{ mapcontrol,	"Pan Right",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"+am_panright"} },
+	{ control,		"Toggle Automap",	{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("togglemap"))} },
+	{ mapcontrol,	"Follow Player",	{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("am_togglefollow"))} },
+	{ mapcontrol,	"Toggle Grid",		{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("am_grid"))} },
+	{ mapcontrol,	"Add Marker",		{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("am_setmark"))} },
+	{ mapcontrol,	"Clear Markers",	{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("am_clearmarks"))} },
+	{ mapcontrol,	"Big Automap",		{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("am_big"))} },
+	{ mapcontrol,	"Zoom In",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+am_zoomin"))} },
+	{ mapcontrol,	"Zoom Out",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+am_zoomout"))} },
+	{ mapcontrol,	"Pan Up",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+am_panup"))} },
+	{ mapcontrol,	"Pan Down",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+am_pandown"))} },
+	{ mapcontrol,	"Pan Left",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+am_panleft"))} },
+	{ mapcontrol,	"Pan Right",		{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+am_panright"))} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ yellowtext,"Advanced Movement",    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Fly / Swim up",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+moveup"} },
-	{ control,	"Fly / Swim down",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"+movedown"} },
-	{ control,	"Toggle flying",		{NULL},	{0.0}, {0.0}, {0.0}, {(value_t *)"fly"} },
-	{ control,	"Look up",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookup"} },
-	{ control,	"Look down",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+lookdown"} },
-	{ control,	"Center view",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"centerview"} },
-	{ control,	"Mouse look",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+mlook"} },
-	{ control,	"Keyboard look",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+klook"} },
+	{ control,	"Fly / Swim up",		{NULL},	{0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+moveup"))} },
+	{ control,	"Fly / Swim down",		{NULL},	{0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+movedown"))} },
+	{ control,	"Toggle flying",		{NULL},	{0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("fly"))} },
+	{ control,	"Look up",				{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+lookup"))} },
+	{ control,	"Look down",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+lookdown"))} },
+	{ control,	"Center view",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("centerview"))} },
+	{ control,	"Mouse look",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+mlook"))} },
+	{ control,	"Keyboard look",		{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+klook"))} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ yellowtext,"Multiplayer",		    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Say",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode"} },
-	{ control,	"Team say",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"messagemode2"} },
-	{ control,	"Ready",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"ready"} },
-	{ control,	"Change teams",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"changeteams"} },
-	{ control,	"Spectate",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"spectate"} },
-	{ control,	"Coop Spy",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"spynext"} },
-	{ control,	"Show Scoreboard",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+showscores"} },
-	{ control,	"Vote Yes", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"vote_yes"} },
-	{ control,	"Vote No", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"vote_no"} },
+	{ control,	"Say",					{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("messagemode"))} },
+	{ control,	"Team say",				{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("messagemode2"))} },
+	{ control,	"Ready",				{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("ready"))} },
+	{ control,	"Change teams",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("changeteams"))} },
+	{ control,	"Spectate",				{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("spectate"))} },
+	{ control,	"Coop Spy",				{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("spynext"))} },
+	{ control,	"Show Scoreboard",		{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("+showscores"))} },
+	{ control,	"Vote Yes", {NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("vote_yes"))} },
+	{ control,	"Vote No", {NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("vote_no"))} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ yellowtext,"Menus",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,  "Main menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_main"} },
-	{ control,	"Help menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_help"} },
-	{ control,	"Save menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_save"} },
-	{ control,	"Load menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_load"} },
-	{ control,	"Options menu",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_options"} },
-	{ control,	"Display options",	    {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_display"} },
-	{ control,	"Player setup menu",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_player"} },
-	{ control,	"Configure controls",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_keys"} },
-	{ control,	"Change resolution",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_video"} },
+	{ control,  "Main menu",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("menu_main"))} },
+	{ control,	"Help menu",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("menu_help"))} },
+	{ control,	"Save menu",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("menu_save"))} },
+	{ control,	"Load menu",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("menu_load"))} },
+	{ control,	"Options menu",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("menu_options"))} },
+	{ control,	"Display options",	    {NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("menu_display"))} },
+	{ control,	"Player setup menu",	{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("menu_player"))} },
+	{ control,	"Configure controls",	{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("menu_keys"))} },
+	{ control,	"Change resolution",	{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("menu_video"))} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ yellowtext,	"Netdemo Controls",	{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ netdemocontrol,"Pause Netdemo",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netpause"} },
-    { netdemocontrol, "Fast Forward", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netff"}},
-    { netdemocontrol, "Rewind", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netrew"}},
-    { netdemocontrol, "Next map", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netnextmap"}},
-	{ netdemocontrol,	"Previous map",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)"netprevmap"} },
+	{ netdemocontrol,"Pause Netdemo",	{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("netpause"))} },
+    { netdemocontrol, "Fast Forward", {NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("netff"))}},
+    { netdemocontrol, "Rewind", {NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("netrew"))}},
+    { netdemocontrol, "Next map", {NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("netnextmap"))}},
+	{ netdemocontrol,	"Previous map",	{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("netprevmap"))} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ yellowtext,"Other",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-    { control,	"Increase screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"sizeup"} },
-	{ control,	"Reduce screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"sizedown"} },
-	{ control,	"Chasecam",				{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"chase"} },
-	{ control,	"Screenshot",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"screenshot"} },
-	{ control,  "Open console",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"toggleconsole"} },
-	{ control,  "End current game",     {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_endgame"} },
-	{ control,  "Quit Odamex",	        {NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"menu_quit"} }
+    { control,	"Increase screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("sizeup"))} },
+	{ control,	"Reduce screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("sizedown"))} },
+	{ control,	"Chasecam",				{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("chase"))} },
+	{ control,	"Screenshot",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("screenshot"))} },
+	{ control,  "Open console",			{NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("toggleconsole"))} },
+	{ control,  "End current game",     {NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("menu_endgame"))} },
+	{ control,  "Quit Odamex",	        {NULL}, {0.0}, {0.0}, {0.0}, {const_cast<value_t*>(reinterpret_cast<const value_t*>("menu_quit"))} }
 
 };
 
@@ -493,7 +493,7 @@ static menuitem_t MouseItems[] =
 	{ slider,	"Horizontal Movement Speed"		, {&m_side},			{0.0},	{15},		{0.5},		{NULL}},
 	{ slider,	"Vertical Movement Speed"		, {&m_forward},			{0.0},	{15},		{0.5},		{NULL}},
 	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
-	{ more,		"Reset mouse to defaults"		, {NULL},				{0.0},	{0.0},		{0.0},		{(value_t *)M_ResetMouseValues}},
+	{ more,		"Reset mouse to defaults"		, {NULL},				{0.0},	{0.0},		{0.0},		{reinterpret_cast<value_t*>(M_ResetMouseValues)}},
 };
 
 
@@ -641,8 +641,8 @@ static menuitem_t SoundItems[] = {
 	{ discrete  ,   "Midi Synth"               , {&snd_musicsystem},    {num_mussys}, {0.0}, {0.0},      {MusSys} },
 	{ discrete  ,   "Disable Music"            , {&snd_nomusic},        {2.0},        {0.0}, {0.0},      {YesNo} },
 	{ redtext   ,	" "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ more      ,   "OPL FM Synth Options"     , {NULL},                {0.0},        {0.0}, {0.0},      {(value_t *)LibAdlMidiOptions}},
-	{ more      ,   "Advanced MIDI Options"    , {NULL},                {0.0},        {0.0}, {0.0},      {(value_t *)AdvMidiOptions}},
+	{ more      ,   "OPL FM Synth Options"     , {NULL},                {0.0},        {0.0}, {0.0},      {reinterpret_cast<value_t*>(LibAdlMidiOptions)}},
+	{ more      ,   "Advanced MIDI Options"    , {NULL},                {0.0},        {0.0}, {0.0},      {reinterpret_cast<value_t*>(AdvMidiOptions)}},
 	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
 	{ yellowtext,   "Sound Options"            , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
 	{ discrete  ,   "Game SFX"                 , {&snd_gamesfx},        {2.0},        {0.0}, {0.0},      {OnOff} },
@@ -907,9 +907,9 @@ CVAR_FUNC_IMPL (ui_transblue)
 static value_t Endoom[] = {{0.0, "Off"}, {1.0, "On"}, {2.0, "PWAD Only"}};
 
 static menuitem_t VideoItems[] = {
-    {more, "Heads-up display", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)StartHUDMenu}},
-	{ more,		"Messages",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartMessagesMenu} },
-	{ more,		"Automap",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartAutomapMenu} },
+    {more, "Heads-up display", {NULL}, {0.0}, {0.0}, {0.0}, {reinterpret_cast<value_t*>(StartHUDMenu)}},
+	{ more,		"Messages",				    {NULL},					{0.0}, {0.0},	{0.0},  {reinterpret_cast<value_t*>(StartMessagesMenu)} },
+	{ more,		"Automap",				    {NULL},					{0.0}, {0.0},	{0.0},  {reinterpret_cast<value_t*>(StartAutomapMenu)} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ slider,	"Screen size",			    {&screenblocks},	   	{3.0}, {12.0},	{1.0},  {NULL} },
 	{ slider,	"Brightness",			    {&gammalevel},			{1.0}, {8.0},	{1.0},  {NULL} },
@@ -1188,7 +1188,7 @@ static menuitem_t AutomapItems[] = {
 	{ yellowtext, "Automap Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
 	{ discrete, "Highlight locked doors",{&am_showlocked},		{2.0}, {0.0},	{0.0},  {OnOff} },
 	{ discrete, "Custom map colors",	{&am_usecustomcolors},	{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ more,     "Reset custom map colors",  {NULL},    {0.0}, {0.0},   {0.0},  {(value_t *)ResetCustomColors} },
+	{ more,     "Reset custom map colors",  {NULL},    {0.0}, {0.0},   {0.0},  {reinterpret_cast<value_t*>(ResetCustomColors)} },
 
 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ yellowtext, "Overlay Minimap Options", {NULL},			{0.0}, {0.0},	{0.0},  {NULL} },
@@ -1637,7 +1637,7 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 		screen->DrawPatchClean (W_CachePatch ("MSLIDE"), x + i*8, y);
 	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
 
-	screen->DrawPatchClean (W_CachePatch ("CSLIDE"), x + 5 + (int)(dist * 78.0), y);
+	screen->DrawPatchClean (W_CachePatch ("CSLIDE"), x + 5 + static_cast<int>(dist * 78.0), y);
 
 	std::string buf;
 	if (step == 0.0f)
@@ -1667,11 +1667,11 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 
 	screen->DrawPatchClean (W_CachePatch ("RSLIDE"), x + 88, y);
 
-	screen->DrawPatchClean (W_CachePatch ("GSLIDE"), x + 5 + (int)(dist * 78.0), y);
+	screen->DrawPatchClean (W_CachePatch ("GSLIDE"), x + 5 + static_cast<int>(dist * 78.0), y);
 
 	V_ColorFill = V_BestColor(V_GetDefaultPalette()->basecolors, color);
 
-	screen->DrawColoredPatchClean(W_CachePatch("OSLIDE"), x + 5 + (int)(dist * 78.0), y);
+	screen->DrawColoredPatchClean(W_CachePatch("OSLIDE"), x + 5 + static_cast<int>(dist * 78.0), y);
 }
 
 int M_FindCurVal (float cur, value_t *values, int numvals)
@@ -1799,7 +1799,7 @@ void M_OptDrawer (void)
 			{
 				int v, vals;
 
-				vals = (int)item->b.leftval;
+				vals = static_cast<int>(item->b.leftval);
 				v = M_FindCurVal(item->a.cvar->value(), item->e.values, vals);
 
 				if (v == vals)
@@ -1820,7 +1820,7 @@ void M_OptDrawer (void)
 
 			case nochoice:
 				screen->DrawTextCleanMove (CR_GOLD, CurrentMenu->indent + 14, y,
-										   (item->e.values[(int)item->b.leftval]).name);
+										   (item->e.values[static_cast<int>(item->b.leftval)]).name);
 				break;
 
 			case slider:
@@ -1892,7 +1892,7 @@ void M_OptDrawer (void)
 
 				size_t numjoy = I_GetJoystickCount();
 
-				if((size_t)item->a.cvar->value() > numjoy)
+				if(static_cast<size_t>(item->a.cvar->value()) > numjoy)
 					item->a.cvar->Set(0.0);
 
 				if(!numjoy)
@@ -1900,7 +1900,7 @@ void M_OptDrawer (void)
 				else
 				{
 					joyname = item->a.cvar->str();
-					joyname += ": " + I_GetJoystickNameFromIndex((int)item->a.cvar->value());
+					joyname += ": " + I_GetJoystickNameFromIndex(item->a.cvar->asInt());
 				}
 
 				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, joyname.c_str());
@@ -1935,21 +1935,20 @@ void M_OptDrawer (void)
 		screen->DrawPatchClean (W_CachePatch ("LITLDN"), 3, 190);
 }
 
-void M_OptResponder (event_t *ev)
+void M_OptResponder(const event_t& ev)
 {
-	menuitem_t *item;
-	int ch = ev->data1;
-	int mod = ev->mod;
+	int ch = ev.data1;
+	int mod = ev.mod;
 	const char *cmd = Bindings.GetBind(ch).c_str();
 
-	item = CurrentMenu->items + CurrentItem;
+	menuitem_t *item = CurrentMenu->items + CurrentItem;
 
 	bool numlock = mod & OMOD_NUM;
 
 	// Waiting on a key press for control binding
 	if (WaitingForKey)
 	{
-		if (ev->type == ev_keydown)
+		if (ev.type == ev_keydown)
 		{
 			if (!Key_IsMenuKey(ch))
 			{
@@ -1973,7 +1972,7 @@ void M_OptResponder (event_t *ev)
 	// Waiting on an analog axis motion for setting analog control
 	if (WaitingForAxis)
 	{
-		if(ev->type == ev_keydown)
+		if(ev.type == ev_keydown)
 		{
 			if (Key_IsCancelKey(ch))
 			{
@@ -1982,28 +1981,28 @@ void M_OptResponder (event_t *ev)
 				CurrentMenu->items[8].type = OldAxisType;
 			}
 		}
-		else if (ev->type == ev_joystick)
+		else if (ev.type == ev_joystick)
 		{
-			if(ev->data1 == 0) // Analog Motion
+			if(ev.data1 == 0) // Analog Motion
 			{
 				// Require the control to be activated to at least the half-way point
 				// to make sure we get the one that is intended -- Hyper_Eye
-				if( (ev->data3 > (SHRT_MAX / 2)) || (ev->data3 < (SHRT_MIN / 2)) )
+				if( (ev.data3 > (SHRT_MAX / 2)) || (ev.data3 < (SHRT_MIN / 2)) )
 				{
-					if ((ev->data2 == joy_forwardaxis.asInt()) &&
+					if ((ev.data2 == joy_forwardaxis.asInt()) &&
 					    joy_forwardaxis.name() != item->a.cvar->name())
 						joy_forwardaxis.Set(item->a.cvar->value());
-					else if ((ev->data2 == joy_strafeaxis.asInt()) &&
+					else if ((ev.data2 == joy_strafeaxis.asInt()) &&
 					         joy_strafeaxis.name() != item->a.cvar->name())
 						joy_strafeaxis.Set(item->a.cvar->value());
-					else if ((ev->data2 == joy_turnaxis.asInt()) &&
+					else if ((ev.data2 == joy_turnaxis.asInt()) &&
 					         joy_turnaxis.name() != item->a.cvar->name())
 						joy_turnaxis.Set(item->a.cvar->value());
-					else if ((ev->data2 == joy_lookaxis.asInt()) &&
+					else if ((ev.data2 == joy_lookaxis.asInt()) &&
 					         joy_lookaxis.name() != item->a.cvar->name())
 						joy_lookaxis.Set(item->a.cvar->value());
 
-					item->a.cvar->Set(ev->data2);
+					item->a.cvar->Set(ev.data2);
 					WaitingForAxis = false;
 					CurrentMenu->items[8].label = OldAxisMessage;
 					CurrentMenu->items[8].type = OldAxisType;
@@ -2234,7 +2233,7 @@ void M_OptResponder (event_t *ev)
 				(multiplayer || demoplayback || netdemo.isPlaying()))
 				break;
 
-			numvals = (int)item->b.leftval;
+			numvals = static_cast<int>(item->b.leftval);
 			cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
 			if (--cur < 0)
 				cur = numvals - 1;
@@ -2276,9 +2275,9 @@ void M_OptResponder (event_t *ev)
 		{
 			size_t numjoy = I_GetJoystickCount();
 
-			if ((size_t)item->a.cvar->value() > numjoy)
+			if (static_cast<size_t>(item->a.cvar->value()) > numjoy)
 				item->a.cvar->Set(0.0);
-			else if ((size_t)item->a.cvar->value() > 0)
+			else if (static_cast<size_t>(item->a.cvar->value()) > 0)
 				item->a.cvar->Set(item->a.cvar->value() - 1);
 		}
 		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
@@ -2360,7 +2359,7 @@ void M_OptResponder (event_t *ev)
 				(multiplayer || demoplayback || netdemo.isPlaying()))
 				break;
 
-			numvals = (int)item->b.leftval;
+			numvals = static_cast<int>(item->b.leftval);
 			cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
 			if (++cur >= numvals)
 				cur = 0;
@@ -2405,9 +2404,9 @@ void M_OptResponder (event_t *ev)
 		{
 			size_t numjoy = I_GetJoystickCount();
 
-			if ((size_t)item->a.cvar->value() >= numjoy)
+			if (static_cast<size_t>(item->a.cvar->value()) >= numjoy)
 				item->a.cvar->Set(0.0);
-			else if ((size_t)item->a.cvar->value() < (numjoy - 1))
+			else if (static_cast<size_t>(item->a.cvar->value()) < (numjoy - 1))
 				item->a.cvar->Set(item->a.cvar->value() + 1);
 
 		}
@@ -2468,7 +2467,7 @@ void M_OptResponder (event_t *ev)
 				    (multiplayer || demoplayback || netdemo.isPlaying()))
 					return;
 
-				numvals = (int)item->b.leftval;
+				numvals = static_cast<int>(item->b.leftval);
 				cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
 				if (++cur >= numvals)
 					cur = 0;

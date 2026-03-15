@@ -310,7 +310,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	else if (translated)
 		R_SetTranslatedDrawFuncs();
 
-	dcol.iscale = 0xffffffffu / (unsigned)vis->yscale;
+	dcol.iscale = 0xffffffffu / static_cast<unsigned>(vis->yscale);
 	dcol.texturemid = vis->texturemid;
 	spryscale = vis->yscale;
 	sprtopscreen = centeryfrac - FixedMul(dcol.texturemid, spryscale);
@@ -593,11 +593,11 @@ void R_ProjectSprite(const AActor *thing, int fakeside)
 		// choose a different rotation based on player view
 		if (sprframe->lump[0] == sprframe->lump[1])
 		{
-			rot = (ang - thing->angle + (angle_t)(ANG45 / 2) * 9) >> 28;
+			rot = (ang - thing->angle + static_cast<angle_t>(ANG45 / 2) * 9) >> 28;
 		}
 		else
 		{
-			rot = (ang - thing->angle + (angle_t)(ANG45 / 2) * 9 - (angle_t)(ANG180 / 16)) >> 28;
+			rot = (ang - thing->angle + static_cast<angle_t>(ANG45 / 2) * 9 - static_cast<angle_t>(ANG180 / 16)) >> 28;
 		}
 
 		lump = sprframe->lump[rot];

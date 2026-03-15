@@ -337,7 +337,7 @@ bool HU_Responder(const event_t& ev)
 		return false;
 
 	if (input_text.length() < MAX_CHATSTR_LEN)
-		input_text += (char)textkey;
+		input_text += static_cast<char>(textkey);
 
 	return true;
 }
@@ -637,7 +637,7 @@ BEGIN_COMMAND (say)
 {
 	if (argc > 1)
 	{
-		std::string chat = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		std::string chat = C_ArgCombine(argc - 1, const_cast<const char **>(argv + 1));
 		ShoveChatStr(chat, 0);
 	}
 }
@@ -660,7 +660,7 @@ BEGIN_COMMAND (say_team)
 {
 	if (argc > 1)
 	{
-		std::string chat = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		std::string chat = C_ArgCombine(argc - 1, const_cast<const char **>(argv + 1));
 		ShoveChatStr(chat, 1);
 	}
 }
@@ -677,7 +677,7 @@ BEGIN_COMMAND (say_to)
 			return;
 		}
 
-		std::string chat = C_ArgCombine(argc - 2, (const char **)(argv + 2));
+		std::string chat = C_ArgCombine(argc - 2, const_cast<const char **>(argv + 2));
 		ShovePrivMsg(player.id, chat);
 	}
 }
@@ -784,11 +784,11 @@ void drawHeader(player_t *player, int y)
 			std::string points;
 			if (g_rounds)
 			{
-				points = fmt::sprintf("%d", GetTeamInfo((team_t)i)->RoundWins);
+				points = fmt::sprintf("%d", GetTeamInfo(static_cast<team_t>(i))->RoundWins);
 			}
 			else
 			{
-				points = fmt::sprintf("%d", GetTeamInfo((team_t)i)->Points);
+				points = fmt::sprintf("%d", GetTeamInfo(static_cast<team_t>(i))->Points);
 			}
 
 			hud::DrawText(-236 + xOffset, y + yOffset, hud_scalescoreboard, hud::X_CENTER,
@@ -1123,7 +1123,7 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 			hud::X_RIGHT, hud::Y_TOP,
 			"PNG", CR_GREY, true);
 
-		color = V_GetTextColor(GetTeamInfo((team_t)i)->TextColor.c_str());
+		color = V_GetTextColor(GetTeamInfo(static_cast<team_t>(i))->TextColor);
 
 		patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 		for (short xi = xOffset; xi < xOffset + 232; xi += 2)

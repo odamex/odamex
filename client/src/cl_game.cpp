@@ -1075,7 +1075,7 @@ void G_Ticker (void)
 			else if(type == 0)
 			{
 				if (!CL_Connect())
-					memset (&serveraddr, 0, sizeof(serveraddr));
+					serveraddr = {};
 
 				connecttimeout = 0;
 			}

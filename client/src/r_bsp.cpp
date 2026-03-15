@@ -135,7 +135,7 @@ static void R_ClipWallSegment(int first, int last, bool makesolid)
 		{
 			// find the first remaining non-solid column
 			// if all columns remaining are solid, we're done
-			byte* p = (byte*)memchr(solidcol + first, 0, last - first + 1);
+			byte* p = static_cast<byte*>(memchr(solidcol + first, 0, last - first + 1));
 			if (p == NULL)
 				return;
 
@@ -145,7 +145,7 @@ static void R_ClipWallSegment(int first, int last, bool makesolid)
 		{
 			int to;
 			// find where the span of non-solid columns ends
-			byte* p = (byte*)memchr(solidcol + first, 1, last - first + 1);
+			byte* p = static_cast<byte*>(memchr(solidcol + first, 1, last - first + 1));
 			if (p == NULL)
 				to = last;
 			else

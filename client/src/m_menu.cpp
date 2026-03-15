@@ -661,7 +661,7 @@ void M_ReadSaveStrings()
 //
 void M_DrawLoad ()
 {
-	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_LOADG"), 72, 28);
+	screen->DrawPatchClean(W_CachePatch("M_LOADG"), 72, 28);
 	for (int i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder (LoadDef.x, LoadDef.y+LINEHEIGHT*i, 24);
@@ -706,7 +706,7 @@ void M_DrawSave()
 {
 	int i;
 
-	screen->DrawPatchClean ((patch_t *)W_CachePatch("M_SAVEG"), 72, 28);
+	screen->DrawPatchClean(W_CachePatch("M_SAVEG"), 72, 28);
 	for (i = 0; i < load_end; i++)
 	{
 		M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*i,24);
@@ -875,24 +875,21 @@ void M_QuickLoad()
 //
 // M_ReadThis
 //
-void M_ReadThis(int choice)
+void M_ReadThis(int)
 {
-	choice = 0;
 	drawSkull = false;
 	M_SetupNextMenu(&ReadDef1);
 }
 
-void M_ReadThis2(int choice)
+void M_ReadThis2(int)
 {
-	choice = 0;
 	drawSkull = false;
 	M_SetupNextMenu(&ReadDef2);
 }
 
-void M_ReadThis3(int choice)
+void M_ReadThis3(int)
 {
     if (gameinfo.flags & GI_SHAREWARE) {
-        choice = 0;
         drawSkull = false;
         M_SetupNextMenu(&ReadDef3);
     } else {
@@ -900,9 +897,8 @@ void M_ReadThis3(int choice)
     }
 }
 
-void M_FinishReadThis(int choice)
+void M_FinishReadThis(int)
 {
-	choice = 0;
 	drawSkull = true;
 	MenuStackDepth = 0;
 	M_SetupNextMenu(&MainDef);
@@ -1207,9 +1203,8 @@ void M_EndGameResponse(int ch)
 	CL_QuitNetGame(NQ_SILENT);
 }
 
-void M_EndGame(int choice)
+void M_EndGame(int)
 {
-	choice = 0;
 	if (!usergame)
 	{
 		S_Sound (CHAN_INTERFACE, "player/male/grunt1", 1, ATTN_NONE);
@@ -1341,8 +1336,8 @@ static forceinline void R_RenderFire(int x, int y)
 
 	for (int b = 0; b < fire_surface_height; b++)
 	{
-		PIXEL_T* to = (PIXEL_T*)surface->getBuffer() + y * surface_pitch + x;
-		const palindex_t* from = (palindex_t*)fire_surface->getBuffer() + b * fire_surface->getPitch();
+		PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + y * surface_pitch + x;
+		const palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) + b * fire_surface->getPitch();
 		y += CleanYfac;
 
 		for (int a = 0; a < fire_surface_width; a++, to += xscale, from++)
@@ -1368,8 +1363,8 @@ static forceinline void R_RenderFire(int x, int y)
 
 	for (int b = 0; b < fire_surface_height; b++)
 	{
-		PIXEL_T* to = (PIXEL_T*)surface->getBuffer() + y * surface_pitch + x;
-		const palindex_t* from = (palindex_t*)fire_surface->getBuffer() + b * fire_surface->getPitch();
+		PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + y * surface_pitch + x;
+		const palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) + b * fire_surface->getPitch();
 		y += CleanYfac;
 
 		for (int a = 0; a < fire_surface_width; a++, to += CleanXfac, from++)
@@ -1434,11 +1429,11 @@ static void M_PlayerSetupDrawer()
 			fire_surface->lock();
 			const int pitch = fire_surface->getPitch();
 
-			palindex_t* from = (palindex_t*)fire_surface->getBuffer() + (fire_surface_height - 3) * pitch;
+			palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) + (fire_surface_height - 3) * pitch;
 			for (int a = 0; a < fire_surface_width; a++, from++)
 				*from = *(from + (pitch << 1)) = M_Random();
 
-			from = (palindex_t*)fire_surface->getBuffer();
+			from = static_cast<palindex_t*>(fire_surface->getBuffer());
 			for (int b = 0; b < fire_surface_height - 4; b += 2)
 			{
 				palindex_t* pixel = from;
@@ -1621,7 +1616,7 @@ void M_ChangeTeam (int choice) // [Toke - Teams]
 {
 	team_t team = D_TeamByName(cl_team.cstring());
 
-	int iTeam = (int)team;
+	int iTeam = static_cast<int>(team);
 	if (choice)
 	{
 		iTeam = (iTeam + 1) % NUMTEAMS;
@@ -1632,7 +1627,7 @@ void M_ChangeTeam (int choice) // [Toke - Teams]
 		if (iTeam < 0)
 			iTeam = NUMTEAMS - 1;
 	}
-	team = (team_t)iTeam;
+	team = static_cast<team_t>(iTeam);
 
 	cl_team = GetTeamInfo(team)->ColorStringUpper.c_str();
 }
@@ -1875,7 +1870,7 @@ int M_StringHeight(char* string)
 //
 // M_Responder
 //
-bool M_Responder (event_t* ev)
+bool M_Responder(const event_t& ev)
 {
 	int ch, ch2, mod;
 
@@ -1884,9 +1879,9 @@ bool M_Responder (event_t* ev)
 	// eat mouse events
 	if(menuactive)
 	{
-		if(ev->type == ev_mouse)
+		if(ev.type == ev_mouse)
 			return true;
-		else if(ev->type == ev_joystick)
+		else if(ev.type == ev_joystick)
 		{
 			if(OptionsActive)
 				M_OptResponder (ev);
@@ -1895,20 +1890,20 @@ bool M_Responder (event_t* ev)
 		}
 	}
 
-	if (ev->type == ev_keyup)
+	if (ev.type == ev_keyup)
 	{
-		if(repeatKey == ev->data1)
+		if(repeatKey == ev.data1)
 		{
 			repeatKey = 0;
 			repeatCount = 0;
 		}
 	}
 
-	if (ev->type == ev_keydown)
+	if (ev.type == ev_keydown)
 	{
-		ch = ev->data1; 		// scancode
-		ch2 = ev->data3;		// ASCII
-		mod = ev->mod;			// key mods
+		ch = ev.data1; 		// scancode
+		ch2 = ev.data3;		// ASCII
+		mod = ev.mod;			// key mods
 	}
 
 	if (ch == -1 || HU_ChatMode() != CHAT_INACTIVE)
@@ -1966,7 +1961,7 @@ bool M_Responder (event_t* ev)
 		}
 		else
 		{
-			ch = ev->data3;	// [RH] Use user keymap
+			ch = ev.data3;	// [RH] Use user keymap
 			if (ch >= 32 && ch <= 127 &&
 				saveCharIndex < genStringLen &&
 				V_StringWidth(savegamestrings[saveSlot]) <
@@ -2127,7 +2122,7 @@ bool M_Responder (event_t* ev)
 	}
 
 	// [RH] Menu now eats all keydown events while active
-	if (ev->type == ev_keydown)
+	if (ev.type == ev_keydown)
 		return true;
 	else
 		return false;
@@ -2331,7 +2326,7 @@ void M_Init()
 	whichSkull = 0;
 	skullAnimCounter = 10;
 	drawSkull = true;
-	screenSize = (int)screenblocks - 3;
+	screenSize = screenblocks.asInt() - 3;
 	messageToPrint = 0;
 	messageString = NULL;
 	messageLastMenuActive = menuactive;

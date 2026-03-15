@@ -90,9 +90,9 @@ team_t D_TeamByName (const char *team)
 {
 	for (int i = 0; i < NUMTEAMS; i++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 		if (stricmp(team, teamInfo->ColorString.c_str()) == 0)
-			return (team_t)i;
+			return static_cast<team_t>(i);
 	}
 
 	if (strcmp(team, "0") == 0)
@@ -181,13 +181,13 @@ void D_SetupUserInfo(void)
 	coninfo->netname			= netname;
 	coninfo->team				= newteam; // [Toke - Teams]
 	coninfo->gender				= D_GenderByName (cl_gender.cstring());
-	coninfo->aimdist			= (fixed_t)(cl_autoaim * 16384.0);
+	coninfo->aimdist			= static_cast<fixed_t>(cl_autoaim * 16384.0);
 	coninfo->predict_weapons	= (cl_predictweapons != 0);
 
 	// sanitize the weapon switching choice
 	if (cl_switchweapon >= WPSW_NUMTYPES || cl_switchweapon < 0)
 		cl_switchweapon.ForceSet(WPSW_ALWAYS);
-	coninfo->switchweapon	= (weaponswitch_t)cl_switchweapon.asInt();
+	coninfo->switchweapon = static_cast<weaponswitch_t>(cl_switchweapon.asInt());
 
 	// Copies the updated cl_weaponpref* cvars to coninfo->weapon_prefs[]
 	D_PrepareWeaponPreferenceUserInfo();

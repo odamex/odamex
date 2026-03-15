@@ -235,7 +235,7 @@ static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end
 	static constexpr palindex_t end_index = 0xBF;
 	const int index_range = end_index - start_index + 1;
 
-	palindex_t* dest = (palindex_t*)Ranges + color_num * 256;
+	palindex_t* dest = static_cast<palindex_t*>(Ranges) + color_num * 256;
 
 	if (IsChexMission(gamemission))
 	{
@@ -940,8 +940,8 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 		const float ustart = iu * mulstart;
 		const float vstart = iv * mulstart;
 
-		fixed_t ufrac = (fixed_t)ustart;
-		fixed_t vfrac = (fixed_t)vstart;
+		fixed_t ufrac = static_cast<fixed_t>(ustart);
+		fixed_t vfrac = static_cast<fixed_t>(vstart);
 
 		iu += ius * SPANJUMP;
 		iv += ivs * SPANJUMP;
@@ -949,8 +949,8 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 		const float uend = iu * mulend;
 		const float vend = iv * mulend;
 
-		const fixed_t ustep = (fixed_t)((uend - ustart) * INTERPSTEP);
-		const fixed_t vstep = (fixed_t)((vend - vstart) * INTERPSTEP);
+		const fixed_t ustep = static_cast<fixed_t>((uend - ustart) * INTERPSTEP);
+		const fixed_t vstep = static_cast<fixed_t>((vend - vstart) * INTERPSTEP);
 
 		int incount = SPANJUMP;
 		while (incount--)
@@ -976,8 +976,8 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 		const float ustart = iu * mulstart;
 		const float vstart = iv * mulstart;
 
-		fixed_t ufrac = (fixed_t)ustart;
-		fixed_t vfrac = (fixed_t)vstart;
+		fixed_t ufrac = static_cast<fixed_t>(ustart);
+		fixed_t vfrac = static_cast<fixed_t>(vstart);
 
 		iu += ius * count;
 		iv += ivs * count;
@@ -985,8 +985,8 @@ static forceinline void R_DrawSlopedSpanGeneric(PIXEL_T* dest, const drawspan_t&
 		const float uend = iu * mulend;
 		const float vend = iv * mulend;
 
-		const fixed_t ustep = (fixed_t)((uend - ustart) / count);
-		const fixed_t vstep = (fixed_t)((vend - vstart) / count);
+		const fixed_t ustep = static_cast<fixed_t>((uend - ustart) / count);
+		const fixed_t vstep = static_cast<fixed_t>((vend - vstart) / count);
 
 		int incount = count;
 		while (incount--)
@@ -1172,7 +1172,7 @@ private:
 //
 // ----------------------------------------------------------------------------
 
-#define FB_COLDEST_P ((palindex_t*)dcol.destination + dcol.yl * dcol.pitch_in_pixels + dcol.x)
+#define FB_COLDEST_P (static_cast<palindex_t*>(dcol.destination) + dcol.yl * dcol.pitch_in_pixels + dcol.x)
 
 //
 // R_FillColumnP
@@ -1498,7 +1498,7 @@ private:
 //
 // ----------------------------------------------------------------------------
 
-#define FB_COLDEST_D ((argb_t*)dcol.destination + dcol.yl * dcol.pitch_in_pixels + dcol.x)
+#define FB_COLDEST_D (reinterpret_cast<argb_t*>(dcol.destination) + dcol.yl * dcol.pitch_in_pixels + dcol.x)
 
 //
 // R_FillColumnD
@@ -1599,7 +1599,7 @@ void R_DrawSkyForegroundColumnD()
 //
 // ----------------------------------------------------------------------------
 
-#define FB_SPANDEST_D ((argb_t*)dspan.destination + dspan.y * dspan.pitch_in_pixels + dspan.x1)
+#define FB_SPANDEST_D (reinterpret_cast<argb_t*>(dspan.destination) + dspan.y * dspan.pitch_in_pixels + dspan.x1)
 
 //
 // R_FillSpanD
@@ -1666,7 +1666,7 @@ void R_InitializeScreenblocksCanvas()
 
 	if (screenblockWidth < surface_width)
 	{
-		float width_scale_ratio = (float)surface_width / (float)screenblockWidth;
+		float width_scale_ratio = static_cast<float>(surface_width) / static_cast<float>(screenblockWidth);
 		screenblockWidth *= width_scale_ratio;
 		screenblockHeight *= width_scale_ratio;
 	}

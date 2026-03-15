@@ -1980,10 +1980,10 @@ void C_DrawConsole()
 }
 
 
-static bool C_HandleKey(const event_t* ev)
+static bool C_HandleKey(const event_t& ev)
 {
-	const int ch = ev->data1;
-	const char* cmd = Bindings.GetBind(ev->data1).c_str();
+	const int ch = ev.data1;
+	const char* cmd = Bindings.GetBind(ev.data1).c_str();
 
 	if (Key_IsMenuKey(ch) || (cmd && stricmp(cmd, "toggleconsole") == 0))
 	{
@@ -2021,10 +2021,10 @@ static bool C_HandleKey(const event_t* ev)
 #endif
 
 	// Add modifiers for these keys
-	KeysCtrl = (ev->mod & OMOD_CTRL);
-	KeysAlt = (ev->mod & OMOD_ALT && !(ev->mod & OMOD_RALT && ev->mod & OMOD_LCTRL)); // Alt without AltGr
-	KeysShifted = (ev->mod & OMOD_SHIFT);
-	NumLockEnabled = (ev->mod & OMOD_NUM);
+	KeysCtrl = (ev.mod & OMOD_CTRL);
+	KeysAlt = (ev.mod & OMOD_ALT && !(ev.mod & OMOD_RALT && ev.mod & OMOD_LCTRL)); // Alt without AltGr
+	KeysShifted = (ev.mod & OMOD_SHIFT);
+	NumLockEnabled = (ev.mod & OMOD_NUM);
 
 	switch (ch)
 	{
@@ -2163,7 +2163,7 @@ static bool C_HandleKey(const event_t* ev)
 		}
 	}
 
-	const char keytext = ev->data3;
+	const char keytext = ev.data3;
 
 	if (KeysCtrl)
 	{
@@ -2173,15 +2173,15 @@ static bool C_HandleKey(const event_t* ev)
 		// event when Ctrl is held down.
 
 		// Go to beginning of line
- 		if (tolower(ev->data1) == 'a')
+ 		if (tolower(ev.data1) == 'a')
 			CmdLine.moveCursorHome();
 
 		// Go to end of line
- 		if (tolower(ev->data1) == 'e')
+ 		if (tolower(ev.data1) == 'e')
 			CmdLine.moveCursorEnd();
 
 		// Paste from clipboard - add each character to command line
- 		if (tolower(ev->data1) == 'v')
+ 		if (tolower(ev.data1) == 'v')
 		{
 			CmdLine.insertString(I_GetClipboardText());
 			TabCycleClear();
@@ -2198,15 +2198,15 @@ static bool C_HandleKey(const event_t* ev)
 	return true;
 }
 
-bool C_Responder(event_t *ev)
+bool C_Responder(const event_t& ev)
 {
 	if (ConsoleState == c_up || ConsoleState == c_rising || ConsoleState == c_risefull || menuactive)
 		return false;
 
-	if (ev->type == ev_keyup)
+	if (ev.type == ev_keyup)
 	{
 		// General Keys used by all systems
-		if (Key_IsPageUpKey(ev->data1, NumLockEnabled) || Key_IsPageDownKey(ev->data1, NumLockEnabled))
+		if (Key_IsPageUpKey(ev.data1, NumLockEnabled) || Key_IsPageDownKey(ev.data1, NumLockEnabled))
 		{
 			ScrollState = SCROLLNO;
 		}
@@ -2215,12 +2215,12 @@ bool C_Responder(event_t *ev)
 				return false;
 		}
 	}
-	else if (ev->type == ev_keydown)
+	else if (ev.type == ev_keydown)
 	{
 		return C_HandleKey(ev);
 	}
 
-	if(ev->type == ev_mouse)
+	if(ev.type == ev_mouse)
 		return true;
 
 	return false;
