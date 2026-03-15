@@ -124,7 +124,7 @@ next:
 	}
 
 	// Cvar count
-	MSG_WriteByte(&ml_message, (byte)Cvars.size());
+	MSG_WriteByte(&ml_message, static_cast<byte>(Cvars.size()));
 
 	// Write cvars
 	for(size_t i = 0; i < Cvars.size(); ++i)

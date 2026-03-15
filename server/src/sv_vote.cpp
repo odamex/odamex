@@ -1070,8 +1070,8 @@ static void SV_GlobalVoteUpdate()
 // Handle callvote commands from the client.
 void SV_Callvote(player_t &player)
 {
-	vote_type_t votecmd = (vote_type_t)MSG_ReadByte();
-	byte argc = (byte)MSG_ReadByte();
+	vote_type_t votecmd = static_cast<vote_type_t>(MSG_ReadByte());
+	byte argc = static_cast<byte>(MSG_ReadByte());
 
 	DPrintFmt("SV_Callvote: Got votecmd {} from player {}, {} additional arguments.\n",
 	        vote_type_cmd[votecmd], player.id, argc);
@@ -1289,7 +1289,7 @@ void Vote_Runtic()
 
 	// Sync the countdown every few seconds.
 	if (vote->get_countdown() % (TICRATE * 5) == 0 &&
-	        vote->get_countdown() != ((unsigned int)sv_vote_timelimit.asInt() * TICRATE))
+	        vote->get_countdown() != (static_cast<unsigned int>(sv_vote_timelimit.asInt()) * TICRATE))
 	{
 		SV_GlobalVoteUpdate();
 	}

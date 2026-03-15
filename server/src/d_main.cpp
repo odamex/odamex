@@ -293,8 +293,10 @@ void D_DoomMain()
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
+	BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 	if (lzo_init () != LZO_E_OK)	// [RH] Initialize the minilzo package.
 		I_FatalError("Could not initialize LZO routines");
+	END_DISABLE_WARNING_GNU
 
 	C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
 
@@ -421,7 +423,7 @@ void D_DoomMain()
 	if (p && p < Args.NumArgs() - 1)
 	{
 		startmap = Args.GetArg(p + 1);
-		((char*)Args.GetArg(p))[0] = '-';
+		(const_cast<char*>(Args.GetArg(p)))[0] = '-';
 	}
 
 	level.mapname = startmap;

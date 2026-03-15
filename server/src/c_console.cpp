@@ -167,7 +167,7 @@ BEGIN_COMMAND (echo)
 {
 	if (argc > 1)
 	{
-		std::string text = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		std::string text = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
 		PrintFmt(PRINT_HIGH, "{}\n", text);
 	}
 }
