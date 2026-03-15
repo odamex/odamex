@@ -39,6 +39,8 @@
 #ifdef CLIENT_APP
 #include "../client/src/cl_main.h"
 #include "r_main.h"
+#include "v_text.h"
+extern byte* Ranges;
 #endif
 #include "../client/sdl/afxres.h"
 
@@ -60,6 +62,8 @@ int P_PingLumpForType(const ping_type_t type)
 		return W_GetNumForName("OPNG_FLG");
 	case PING_TEAMMATE:
 		return W_GetNumForName("OPNG_TM");
+	case PING_WARNING:
+		return W_GetNumForName("OPNG_WRN");
 	case PING_GENERAL:
 	default:
 		return W_GetNumForName("OPNG_GEN");
@@ -113,6 +117,25 @@ translationref_t P_PingTeamTranslation(team_t team)
 #endif
 	return {};
 }
+
+#ifdef CLIENT_APP
+translationref_t P_PingReadablePlayerTranslation(const player_t& pl)
+{
+	const int r = pl.userinfo.color[1];
+	const int g = pl.userinfo.color[2];
+	const int b = pl.userinfo.color[3];
+	const int maxc = (std::max)((std::max)(r, g), b);
+	const int minc = (std::min)((std::min)(r, g), b);
+	const int luma = (r * 54 + g * 183 + b * 19) >> 8;
+	const bool tooDark = luma < 48 || maxc < 48;
+	const bool tooBright = luma > 224 || minc > 224;
+
+	if (tooDark || tooBright)
+		return translationref_t(Ranges + CR_GREY * 256);
+
+	return pl.mo ? pl.mo->translation : translationref_t{};
+}
+#endif
 
 void P_PingFollowTargetPos(const AActor* target, const AActor* view, v3fixed_t& pos)
 {
@@ -400,13 +423,15 @@ void P_PlayerPing(player_t &player)
 			ping.follow_target = false;
 			ping.target_netid = 0;
 		}
-		else if (pingTarget->player && pingTarget->player != &player &&
-		         (G_IsCoopGame() ||
-		          (G_IsTeamGame() && pingTarget->player->userinfo.team == player.userinfo.team)))
-		{
-			ping.type = PING_TEAMMATE;
-			ping.follow_target = ping.target_netid != 0;
-		}
+	else if (pingTarget->player && pingTarget->player != &player &&
+	         (G_IsCoopGame() ||
+	          (G_IsTeamGame() && pingTarget->player->userinfo.team == player.userinfo.team)))
+	{
+		// Teammate markers are now always-on; player ping stays a location ping.
+		ping.type = PING_GENERAL;
+		ping.follow_target = false;
+		ping.target_netid = 0;
+	}
 		else if (pingTarget->player)
 		{
 			// Enemy player pings are location snapshots, not follow-target.
@@ -446,6 +471,24 @@ void P_PlayerPing(player_t &player)
 		ping.follow_target = false;
 		ping.type = PING_GENERAL;
 		ping.flag_team = TEAM_NONE;
+
+		// Double-tap world ping: upgrade to warning if quickly repeated nearby.
+		static constexpr int WarningRetapWindow = TICRATE / 2;
+		static constexpr fixed_t WarningRetapRadius = 96 * FRACUNIT;
+		if (player.player_ping)
+		{
+			const playerPing_s& prev = *player.player_ping;
+			if (!P_IsPingExpired(prev) &&
+			    (prev.type == PING_GENERAL || prev.type == PING_WARNING) &&
+			    (::gametic - prev.pingtic) <= WarningRetapWindow)
+			{
+				const fixed_t dist =
+				    P_AproxDistance(ping.pos.x - prev.pos.x, ping.pos.y - prev.pos.y);
+				if (dist <= WarningRetapRadius)
+					ping.type = PING_WARNING;
+			}
+		}
+
 		PrintFmt("World ping: {}\n", ping.pos);
 	}
 
@@ -550,13 +593,17 @@ void R_AddPingSprites()
 		}
 
 		translationref_t translation = ping.translation;
-		if (!translation && pl.mo)
+		if (ping.type == PING_ITEM)
+			translation = {};
+		else if (ping.type == PING_GENERAL || ping.type == PING_WARNING)
+			translation = P_PingReadablePlayerTranslation(pl);
+		else if (!translation && pl.mo)
 			translation = pl.mo->translation;
 		if (ping.type == PING_FLAG && ping.flag_team != TEAM_NONE)
 			translation = P_PingTeamTranslation(ping.flag_team);
 
 		R_Add3DHUDSprite(ping.lump, pos, translation, 1.0f, FollowPingMinScreenPx,
-		                 FollowPingMaxScreenPx, false);
+		                 FollowPingMaxScreenPx, true);
 	}
 
 	if (G_IsHordeMode())
@@ -576,7 +623,32 @@ void R_AddPingSprites()
 				const fixed_t az = actor->prevz + FixedMul(render_lerp_amount, actor->z - actor->prevz);
 				v3fixed_t pos{ax, ay, az + actor->height + StrictHeadOffset};
 				R_Add3DHUDSprite(bossLump, pos, {}, 1.0f, FollowPingMinScreenPx,
-				                 FollowPingMaxScreenPx, false);
+				                 FollowPingMaxScreenPx, true);
+			}
+		}
+	}
+
+	if (G_IsCoopGame() || G_IsTeamGame())
+	{
+		const int teammateLump = P_PingLumpForType(PING_TEAMMATE);
+		if (teammateLump != -1)
+		{
+			for (const player_t& pl : players)
+			{
+				if (pl.id == consoleplayer().id || !pl.ingame() || pl.spectator || !pl.mo)
+					continue;
+				if (pl.playerstate != PST_LIVE)
+					continue;
+				if (G_IsTeamGame() && pl.userinfo.team != consoleplayer().userinfo.team)
+					continue;
+
+				const fixed_t px = pl.mo->prevx + FixedMul(render_lerp_amount, pl.mo->x - pl.mo->prevx);
+				const fixed_t py = pl.mo->prevy + FixedMul(render_lerp_amount, pl.mo->y - pl.mo->prevy);
+				const fixed_t pz = pl.mo->prevz + FixedMul(render_lerp_amount, pl.mo->z - pl.mo->prevz);
+				v3fixed_t pos{px, py, pz + pl.mo->height + StrictHeadOffset};
+				translationref_t trans = P_PingReadablePlayerTranslation(pl);
+				R_Add3DHUDSprite(teammateLump, pos, trans, 1.0f, FollowPingMinScreenPx,
+				                 FollowPingMaxScreenPx, true);
 			}
 		}
 	}

@@ -113,7 +113,8 @@ enum ping_type_t : uint8_t
 	PING_MONSTER,
 	PING_BOSS,
 	PING_FLAG,
-	PING_TEAMMATE
+	PING_TEAMMATE,
+	PING_WARNING
 };
 
 /**

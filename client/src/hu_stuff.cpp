@@ -503,16 +503,37 @@ static void HU_DrawPingIndicator()
 			return W_CachePatch("OPNG_FLG");
 		case PING_TEAMMATE:
 			return W_CachePatch("OPNG_TM");
+		case PING_WARNING:
+			return W_CachePatch("OPNG_WRN");
 		case PING_GENERAL:
 		default:
 			return W_CachePatch("OPNG_GEN");
 		}
 	};
 
+	auto readablePlayerTranslation = [&](const player_t& player) -> translationref_t
+	{
+		const int r = player.userinfo.color[1];
+		const int g = player.userinfo.color[2];
+		const int b = player.userinfo.color[3];
+		const int maxc = (std::max)((std::max)(r, g), b);
+		const int minc = (std::min)((std::min)(r, g), b);
+		const int luma = (r * 54 + g * 183 + b * 19) >> 8;
+		const bool tooDark = luma < 48 || maxc < 48;
+		const bool tooBright = luma > 224 || minc > 224;
+
+		if (tooDark || tooBright)
+			return translationref_t(Ranges + CR_GREY * 256);
+
+		return player.mo ? player.mo->translation : translationref_t{};
+	};
+
 	auto playerPingTranslation = [&](const player_t& player, const playerPing_s& ping) -> translationref_t
 	{
-		if (ping.translation)
-			return ping.translation;
+		if (ping.type == PING_ITEM)
+			return {};
+		if (ping.type == PING_GENERAL || ping.type == PING_WARNING || ping.type == PING_TEAMMATE)
+			return readablePlayerTranslation(player);
 		if (player.mo)
 			return player.mo->translation;
 		return {};
@@ -528,6 +549,91 @@ static void HU_DrawPingIndicator()
 				return p.mo->translation;
 		}
 		return {};
+	};
+
+	auto drawIndicator = [&](const player_t& srcPlayer, const v3fixed_t& pingPos, patch_t* iconPatch,
+	                         translationref_t iconTranslation,
+	                         translationref_t arrowTranslation) -> void
+	{
+		if (pingPos.x == camera->x && pingPos.y == camera->y)
+			return;
+
+		const angle_t target = R_PointToAngle2(camera->x, camera->y, pingPos.x, pingPos.y);
+		const int32_t delta = static_cast<int32_t>(target - camera->angle);
+		if (std::abs(delta) <= halfFovBam)
+		{
+			if (srcPlayer.id < MAXPLAYERS)
+			{
+				smoothRadians[srcPlayer.id] = static_cast<float>(delta * AngleScale);
+				smoothValid[srcPlayer.id] = true;
+			}
+			return;
+		}
+
+		float radians = static_cast<float>(delta * AngleScale);
+		if (srcPlayer.id < MAXPLAYERS)
+		{
+			if (!smoothValid[srcPlayer.id])
+			{
+				smoothRadians[srcPlayer.id] = radians;
+				smoothValid[srcPlayer.id] = true;
+			}
+			else
+			{
+				const float prev = smoothRadians[srcPlayer.id];
+				const float diff = std::atan2(std::sin(radians - prev), std::cos(radians - prev));
+				smoothRadians[srcPlayer.id] = prev + diff * ArrowLerp;
+			}
+			radians = smoothRadians[srcPlayer.id];
+		}
+
+		const double vx = -std::sin(radians);
+		const double vy = -std::cos(radians);
+		const double tx = ex / std::max(0.0001, std::abs(vx));
+		const double ty = ey / std::max(0.0001, std::abs(vy));
+		const double t = std::min(tx, ty);
+
+		const int centerX = static_cast<int>(std::lround(cx + vx * t));
+		const int centerY = static_cast<int>(std::lround(cy + vy * t));
+
+		if (iconPatch == nullptr)
+			iconPatch = fallbackIcon;
+
+		const int iconPatchW = iconPatch->width() * CleanXfac;
+		const int iconPatchH = iconPatch->height() * CleanYfac;
+		const int iconLeft = iconPatch->leftoffset() * CleanXfac;
+		const int iconTop = iconPatch->topoffset() * CleanYfac;
+
+		const int iconOffset =
+		    std::max(arrowW, arrowH) / 2 + std::max(iconPatchW, iconPatchH) / 2 + 2 * CleanXfac;
+		const int iconCenterX = centerX - static_cast<int>(std::lround(vx * iconOffset));
+		const int iconCenterY = centerY - static_cast<int>(std::lround(vy * iconOffset));
+		int drawX = iconCenterX - (iconPatchW / 2) + iconLeft;
+		int drawY = iconCenterY - (iconPatchH / 2) + iconTop;
+
+		const int minX = margin + iconLeft;
+		const int maxX = (surfaceW - margin - iconPatchW) + iconLeft;
+		const int minY = margin + iconTop;
+		const int maxY = (hudBottom - margin - iconPatchH) + iconTop;
+		drawX = std::clamp(drawX, minX, maxX);
+		drawY = std::clamp(drawY, minY, maxY);
+
+		if (iconTranslation)
+		{
+			translationref_t prev = V_ColorMap;
+			V_ColorMap = iconTranslation;
+			screen->DrawTranslatedLucentPatchCleanNoMove(iconPatch, drawX, drawY);
+			V_ColorMap = prev;
+		}
+		else
+		{
+			screen->DrawLucentPatchCleanNoMove(iconPatch, drawX, drawY);
+		}
+
+		const int arrowX = centerX - (arrowW / 2) + arrowLeft;
+		const int arrowY = centerY - (arrowH / 2) + arrowTop;
+		screen->DrawRotatedPatchCleanNoMove(arrow, arrowX, arrowY, static_cast<float>(-radians),
+		                                    ArrowScale, arrowTranslation ? &arrowTranslation : nullptr);
 	};
 
 	for (const player_t& player : players)
@@ -548,95 +654,34 @@ static void HU_DrawPingIndicator()
 		if (!P_ResolvePingPosition(ping, pingPos))
 			continue;
 
-		if (pingPos.x == camera->x && pingPos.y == camera->y)
-			continue;
-
-		const angle_t target = R_PointToAngle2(camera->x, camera->y, pingPos.x, pingPos.y);
-		const int32_t delta = static_cast<int32_t>(target - camera->angle);
-		if (std::abs(delta) <= halfFovBam)
-		{
-			if (player.id < MAXPLAYERS)
-			{
-				smoothRadians[player.id] = static_cast<float>(delta * AngleScale);
-				smoothValid[player.id] = true;
-			}
-			continue;
-		}
-
-		float radians = static_cast<float>(delta * AngleScale);
-		if (player.id < MAXPLAYERS)
-		{
-			if (!smoothValid[player.id])
-			{
-				smoothRadians[player.id] = radians;
-				smoothValid[player.id] = true;
-			}
-			else
-			{
-				const float prev = smoothRadians[player.id];
-				const float diff = std::atan2(std::sin(radians - prev), std::cos(radians - prev));
-				smoothRadians[player.id] = prev + diff * ArrowLerp;
-			}
-			radians = smoothRadians[player.id];
-		}
-
-		// 0 radians should point up the screen.
-		const double vx = -std::sin(radians);
-		const double vy = -std::cos(radians);
-
-		const double tx = ex / std::max(0.0001, std::abs(vx));
-		const double ty = ey / std::max(0.0001, std::abs(vy));
-		const double t = std::min(tx, ty);
-
-		const int centerX = static_cast<int>(std::lround(cx + vx * t));
-		const int centerY = static_cast<int>(std::lround(cy + vy * t));
-
 		patch_t* iconPatch = iconPatchForPing(ping);
-		if (iconPatch == nullptr)
-			iconPatch = fallbackIcon;
-
-		const int iconPatchW = iconPatch->width() * CleanXfac;
-		const int iconPatchH = iconPatch->height() * CleanYfac;
-		const int iconLeft = iconPatch->leftoffset() * CleanXfac;
-		const int iconTop = iconPatch->topoffset() * CleanYfac;
-
-		const int iconOffset =
-		    std::max(arrowW, arrowH) / 2 + std::max(iconPatchW, iconPatchH) / 2 + 2 * CleanXfac;
-		const int iconCenterX = centerX - static_cast<int>(std::lround(vx * iconOffset));
-		const int iconCenterY = centerY - static_cast<int>(std::lround(vy * iconOffset));
-		int drawX = iconCenterX - (iconPatchW / 2) + iconLeft;
-		int drawY = iconCenterY - (iconPatchH / 2) + iconTop;
-
-		const int minX = margin + iconLeft;
-		const int maxX = (surfaceW - margin - iconPatchW) + iconLeft;
-		const int minY = margin + iconTop;
-		const int maxY = (hudBottom - margin - iconPatchH) + iconTop;
-
-		drawX = std::clamp(drawX, minX, maxX);
-		drawY = std::clamp(drawY, minY, maxY);
 
 		translationref_t iconTranslation{};
 		if (ping.type == PING_FLAG && ping.flag_team != TEAM_NONE)
 			iconTranslation = flagTranslation(ping.flag_team);
+		else if (ping.type == PING_GENERAL || ping.type == PING_WARNING ||
+		         ping.type == PING_TEAMMATE)
+			iconTranslation = readablePlayerTranslation(player);
 
-		if (iconTranslation)
-		{
-			translationref_t prev = V_ColorMap;
-			V_ColorMap = iconTranslation;
-			screen->DrawTranslatedLucentPatchCleanNoMove(iconPatch, drawX, drawY);
-			V_ColorMap = prev;
-		}
-		else
-		{
-			screen->DrawLucentPatchCleanNoMove(iconPatch, drawX, drawY);
-		}
-
-		// Center the arrow visual around the edge point, then rotate toward ping.
-		const int arrowX = centerX - (arrowW / 2) + arrowLeft;
-		const int arrowY = centerY - (arrowH / 2) + arrowTop;
 		translationref_t arrowTranslation = playerPingTranslation(player, ping);
-		screen->DrawRotatedPatchCleanNoMove(arrow, arrowX, arrowY, static_cast<float>(-radians),
-		                                    ArrowScale, arrowTranslation ? &arrowTranslation : nullptr);
+		drawIndicator(player, pingPos, iconPatch, iconTranslation, arrowTranslation);
+	}
+
+	if (G_IsCoopGame() || G_IsTeamGame())
+	{
+		patch_t* teammateHudPatch = W_CachePatch("OPNG_TM2");
+		for (const player_t& teammate : players)
+		{
+			if (teammate.id == consoleplayer().id || !teammate.ingame() || teammate.spectator ||
+			    teammate.playerstate != PST_LIVE || !teammate.mo)
+				continue;
+			if (G_IsTeamGame() && teammate.userinfo.team != consoleplayer().userinfo.team)
+				continue;
+
+			v3fixed_t pos{teammate.mo->x, teammate.mo->y, teammate.mo->z + teammate.mo->height};
+			translationref_t trans = readablePlayerTranslation(teammate);
+			drawIndicator(teammate, pos, teammateHudPatch, trans, trans);
+		}
 	}
 }
 

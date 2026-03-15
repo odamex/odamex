@@ -748,15 +748,15 @@ static bool R_Clamp3DHUDSpriteSize(vissprite_t* vis, const patch_t* patch, int m
 	const int patch_h = std::max(1, static_cast<int>(patch->height()));
 	const int target_h = std::max(1, (patch_h * target_w + patch_w / 2) / patch_w);
 
+	// Preserve the projected screen center while resizing so clamping only
+	// affects size, not marker placement.
 	const int cx = (vis->x1 + vis->x2) / 2;
-	const int anchor_y2 = vis->y2;
+	const int cy = (vis->y1 + vis->y2) / 2;
 
 	const int raw_x1 = cx - target_w / 2;
 	const int raw_x2 = raw_x1 + target_w - 1;
-	// Keep the marker's bottom edge pinned to the projected world point so
-	// distance-based size clamping does not make it drift up/down on screen.
-	const int raw_y2 = anchor_y2;
-	const int raw_y1 = raw_y2 - target_h + 1;
+	const int raw_y1 = cy - target_h / 2;
+	const int raw_y2 = raw_y1 + target_h - 1;
 
 	vis->x1 = std::clamp(raw_x1, 0, viewwidth - 1);
 	vis->x2 = std::clamp(raw_x2, 0, viewwidth - 1);
