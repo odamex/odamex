@@ -27,8 +27,8 @@
 #include <string.h>
 
 #ifdef _WIN32
-#   define SETSOCKOPTCAST(x) ((const char *)(x))
-#   define GETSOCKOPTCAST(x) ((char *)(x))
+#   define SETSOCKOPTCAST(x) (reinterpret_cast<const char*>(x))
+#   define GETSOCKOPTCAST(x) (reinterpret_cast<char*>(x))
 using socklen_t = int;
 
 #else

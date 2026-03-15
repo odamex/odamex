@@ -773,7 +773,7 @@ bool P_CrossBSPNode (int bspnum)
     bsp = &nodes[bspnum];
 
     // decide which side the start point is on
-    side = P_DivlineSide (strace.x, strace.y, (divline_t *)bsp);
+    side = P_DivlineSide(strace.x, strace.y, static_cast<divline_t*>(bsp));
     if (side == 2)
 		side = 0;	// an "on" should cross both sides
 

@@ -285,7 +285,7 @@ struct mapthing2_t
 
 using MapThing = mapthing2_t;
 
-#define NO_INDEX ((unsigned short)-1)
+#define NO_INDEX (static_cast<unsigned short>(-1))
 
 // [RH] MapThing flags.
 

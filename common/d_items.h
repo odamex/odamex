@@ -29,7 +29,7 @@ class AActor;
 class player_t;
 
 // Weapon info: sprite frames, ammunition use.
-struct weaponinfo_s
+struct weaponinfo_t
 {
 	ammotype_t	ammotype;
 	statenum_t	upstate;
@@ -47,7 +47,6 @@ struct weaponinfo_s
 
 	int internalflags;
 };
-typedef struct weaponinfo_s weaponinfo_t;
 
 extern	weaponinfo_t	weaponinfo[NUMWEAPONS+1];
 

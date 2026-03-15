@@ -901,7 +901,9 @@ class MiniLzo
     protected:
         buf_t       m_compressionBuffer;
         buf_t       m_decompressionBuffer;
+		BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
         lzo_byte    m_wrkmem[LZO1X_1_MEM_COMPRESS];
+		END_DISABLE_WARNING_GNU
 };
 
 END_DISABLE_WARNING_GNU

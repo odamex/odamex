@@ -96,53 +96,14 @@ enum ceilingchange_e
 	CChgTyp,
 };
 
-extern std::list<movingsector_t> movingsectors;
-extern std::list<sector_t*> specialdoors;
-extern bool s_SpecialFromServer;
-
-#define IgnoreSpecial !serverside && !s_SpecialFromServer
-#define NO_TEXTURE 0;
-
-#define CEILSPEED FRACUNIT
-
-std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector);
-void P_AddMovingCeiling(sector_t *sector);
-void P_AddMovingFloor(sector_t *sector);
-void P_RemoveMovingCeiling(sector_t *sector);
-void P_RemoveMovingFloor(sector_t *sector);
-bool P_MovingCeilingCompleted(sector_t *sector);
-bool P_MovingFloorCompleted(sector_t *sector);
-bool P_HandleSpecialRepeat(line_t* line);
-void P_ApplySectorDamage(player_t& player, int damage, int leak, int mod = 0);
-void P_ApplySectorDamageNoRandom(player_t& player, int damage, int mod = 0);
-void P_ApplySectorDamageNoWait(player_t& player, int damage, int mod = 0);
-void P_ApplySectorDamageEndLevel(player_t& player);
-void P_CollectSecretCommon(sector_t& sector, player_t& player);
-int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start);
-int P_FindLineFromTag(int tag, int start);
-bool P_FloorActive(const sector_t* sec);
-bool P_LightingActive(const sector_t* sec);
-bool P_CeilingActive(const sector_t* sec);
-fixed_t P_ArgToSpeed(byte arg);
-bool P_ArgToCrushType(byte arg);
-void P_ResetSectorSpecial(sector_t* sector);
-void P_CopySectorSpecial(sector_t* dest, sector_t* source);
-byte P_ArgToChange(byte arg);
-int P_ArgToCrush(byte arg);
-int P_FindSectorFromLineTag(const line_t* line, int start);
-int P_ArgToCrushMode(byte arg, bool slowdown);
-fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f);
-bool P_CheckTag(line_t* line);
-void P_TransferSectorFlags(unsigned int*, unsigned int);
-
 //jff 2/23/98 identify the special classes that can share sectors
 
-typedef enum
+enum special_e
 {
 	floor_special,
 	ceiling_special,
 	lighting_special
-} special_e;
+};
 
 enum crushmode_e
 {
@@ -196,6 +157,45 @@ struct newspecial_s
 	int damageinterval;
 	int damageleakrate;
 };
+
+extern std::list<movingsector_t> movingsectors;
+extern std::list<sector_t*> specialdoors;
+extern bool s_SpecialFromServer;
+
+#define IgnoreSpecial !serverside && !s_SpecialFromServer
+#define NO_TEXTURE 0;
+
+#define CEILSPEED FRACUNIT
+
+std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector);
+void P_AddMovingCeiling(sector_t *sector);
+void P_AddMovingFloor(sector_t *sector);
+void P_RemoveMovingCeiling(sector_t *sector);
+void P_RemoveMovingFloor(sector_t *sector);
+bool P_MovingCeilingCompleted(sector_t *sector);
+bool P_MovingFloorCompleted(sector_t *sector);
+bool P_HandleSpecialRepeat(line_t* line);
+void P_ApplySectorDamage(player_t& player, int damage, int leak, int mod = 0);
+void P_ApplySectorDamageNoRandom(player_t& player, int damage, int mod = 0);
+void P_ApplySectorDamageNoWait(player_t& player, int damage, int mod = 0);
+void P_ApplySectorDamageEndLevel(player_t& player);
+void P_CollectSecretCommon(sector_t& sector, player_t& player);
+int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start);
+int P_FindLineFromTag(int tag, int start);
+bool P_FloorActive(const sector_t* sec);
+bool P_LightingActive(const sector_t* sec);
+bool P_CeilingActive(const sector_t* sec);
+fixed_t P_ArgToSpeed(byte arg);
+bool P_ArgToCrushType(byte arg);
+void P_ResetSectorSpecial(sector_t* sector);
+void P_CopySectorSpecial(sector_t* dest, sector_t* source);
+byte P_ArgToChange(byte arg);
+int P_ArgToCrush(byte arg);
+int P_FindSectorFromLineTag(const line_t* line, int start);
+crushmode_e P_ArgToCrushMode(byte arg, bool slowdown);
+fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f);
+bool P_CheckTag(line_t* line);
+void P_TransferSectorFlags(unsigned int*, unsigned int);
 
 #define FLOORSPEED FRACUNIT
 

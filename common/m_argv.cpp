@@ -382,14 +382,14 @@ void M_FindResponseFile (void)
 			if (argc != 0)
 			{
 				char **argv = static_cast<char**>(M_Malloc(argc*sizeof(char *) + argsize));
-				argv[i] = (char *)argv + argc*sizeof(char *);
+				argv[i] = reinterpret_cast<char*>(argv) + argc*sizeof(char *);
 				ParseCommandLine (file.get(), NULL, argv+i);
 
 				for (index = 0; index < i; ++index)
-					argv[index] = (char*)Args.GetArg (index);
+					argv[index] = const_cast<char*>(Args.GetArg(index));
 
 				for (index = i + 1, i += argcinresp; index < Args.NumArgs (); ++index)
-					argv[i++] = (char*)Args.GetArg (index);
+					argv[i++] = const_cast<char*>(Args.GetArg(index));
 
 				DArgs newargs (i, argv);
 				Args = newargs;
@@ -490,7 +490,7 @@ static long ParseCommandLine (const char *args, int *argc, char **argv)
 	{
 		*argc = count;
 	}
-	return (long)reinterpret_cast<uintptr_t>(buffplace);
+	return static_cast<long>(reinterpret_cast<uintptr_t>(buffplace));
 }
 
 

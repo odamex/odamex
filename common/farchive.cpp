@@ -39,7 +39,7 @@ END_DISABLE_WARNING_GNU
 #define SWAP_INT(x)         { x = BELONG(x); }
 #define SWAP_LONG(x)        { x = BELONGLONG(x); }
 // Swap any kind of data based on size - x = pointer to data, y = number of bytes
-#define SWAP_SIZE(x, y)		{ std::reverse((unsigned char*)x, (unsigned char*)x+(size_t)y); }
+#define SWAP_SIZE(x, y)		{ std::reverse(reinterpret_cast<unsigned char*>(x), reinterpret_cast<unsigned char*>(x)+static_cast<size_t>(y)); }
 
 static constexpr char LZOSig[4] = { 'F', 'L', 'Z', 'O' };
 
@@ -138,8 +138,8 @@ void FLZOFile::PostOpen()
 			SWAP_INT(sizes[0]);
 			SWAP_INT(sizes[1]);
 
-			((uint32_t*)m_Buffer)[0] = sizes[0];
-			((uint32_t*)m_Buffer)[1] = sizes[1];
+			(reinterpret_cast<uint32_t*>(m_Buffer))[0] = sizes[0];
+			(reinterpret_cast<uint32_t*>(m_Buffer))[1] = sizes[1];
 			Explode();
 		}
 	}
@@ -196,7 +196,7 @@ FFile& FLZOFile::Write(const void* mem, unsigned int len)
 	}
 
 	if (len == 1)
-		m_Buffer[m_Pos] = *(byte*)mem;
+		m_Buffer[m_Pos] = *static_cast<const byte*>(mem);
 	else
 		memcpy(m_Buffer + m_Pos, mem, len);
 
@@ -222,7 +222,7 @@ FFile& FLZOFile::Read(void* mem, unsigned int len)
 	}
 
 	if (len == 1)
-		*(byte*)mem = m_Buffer[m_Pos];
+		*static_cast<byte*>(mem) = m_Buffer[m_Pos];
 	else
 		memcpy(mem, m_Buffer + m_Pos, len);
 
@@ -245,7 +245,7 @@ FFile& FLZOFile::Seek(int pos, ESeekPos ofs)
 
 	if (pos < 0)
 		m_Pos = 0;
-	else if ((unsigned)pos > m_BufferSize)
+	else if (static_cast<unsigned>(pos) > m_BufferSize)
 		m_Pos = m_BufferSize;
 	else
 		m_Pos = pos;
@@ -265,7 +265,9 @@ void FLZOFile::Implode()
 	{
 		compressed = std::make_unique<lzo_byte[]>(MaxLZOCompressedLength(input_len));
 
+		BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 		auto wrkmem = std::make_unique<lzo_byte[]>(LZO1X_1_MEM_COMPRESS);
+		END_DISABLE_WARNING_GNU
 		int res = lzo1x_1_compress(m_Buffer, input_len, compressed.get(), &compressed_len, wrkmem.get());
 
 		// If the data could not be compressed, store it as-is.
@@ -289,8 +291,8 @@ void FLZOFile::Implode()
 	m_Buffer = static_cast<byte*>(M_Malloc(m_BufferSize + 8));
 	m_Pos = 0;
 
-	((unsigned int*)m_Buffer)[0] = BELONG((unsigned int)compressed_len);
-	((unsigned int*)m_Buffer)[1] = BELONG((unsigned int)input_len);
+	(reinterpret_cast<unsigned int*>(m_Buffer))[0] = BELONG(static_cast<unsigned int>(compressed_len));
+	(reinterpret_cast<unsigned int*>(m_Buffer))[1] = BELONG(static_cast<unsigned int>(input_len));
 
 	if (compressed_len == 0 || !compressed)
 		memcpy(m_Buffer + 8, oldbuf, input_len);
@@ -304,8 +306,8 @@ void FLZOFile::Explode()
 {
 	if (m_Buffer)
 	{
-		unsigned int compressed_len = BELONG(((unsigned int*)m_Buffer)[0]);
-		unsigned int expanded_len = BELONG(((unsigned int*)m_Buffer)[1]);
+		unsigned int compressed_len = BELONG((reinterpret_cast<unsigned int*>(m_Buffer)[0]));
+		unsigned int expanded_len = BELONG((reinterpret_cast<unsigned int*>(m_Buffer)[1]));
 
 		byte* expanded_buffer = static_cast<byte*>(M_Malloc(expanded_len));
 
@@ -373,7 +375,7 @@ bool FLZOMemFile::Open(void* memblock)
 	// [SL] TODO: what is m_BufferSize?!?
 	Close();
 	m_Mode = EReading;
-	m_Buffer = (byte*)memblock;
+	m_Buffer = static_cast<byte*>(memblock);
 	m_SourceFromMem = true;
 	Explode();
 	m_SourceFromMem = false;
@@ -428,8 +430,8 @@ void FLZOMemFile::Serialize(FArchive& arc)
 		arc.Write(LZOSig, 4);
 
 		uint32_t sizes[2];
-		sizes[0] = ((uint32_t*)m_ImplodedBuffer)[0];
-		sizes[1] = ((uint32_t*)m_ImplodedBuffer)[1];
+		sizes[0] = (reinterpret_cast<uint32_t*>(m_ImplodedBuffer))[0];
+		sizes[1] = (reinterpret_cast<uint32_t*>(m_ImplodedBuffer))[1];
 		SWAP_INT(sizes[0]);
 		SWAP_INT(sizes[1]);
 		arc.Write(m_ImplodedBuffer, (sizes[0] ? sizes[0] : sizes[1]) + 8);
@@ -453,8 +455,8 @@ void FLZOMemFile::Serialize(FArchive& arc)
 		m_Buffer = static_cast<byte*>(M_Malloc(len + 8));
 		SWAP_INT(sizes[0]);
 		SWAP_INT(sizes[1]);
-		((uint32_t*)m_Buffer)[0] = sizes[0];
-		((uint32_t*)m_Buffer)[1] = sizes[1];
+		(reinterpret_cast<uint32_t*>(m_Buffer))[0] = sizes[0];
+		(reinterpret_cast<uint32_t*>(m_Buffer))[1] = sizes[1];
 		arc.Read(m_Buffer + 8, len);
 		m_ImplodedBuffer = m_Buffer;
 		m_Buffer = NULL;
@@ -748,7 +750,7 @@ FArchive &FArchive::operator<< (DObject *obj)
 			//		 "This should not happen.\n");
 			operator<< (NULL_OBJ);
 		}
-		else if (m_TypeMap[type->TypeIndex].toArchive == (uint32_t)~0)
+		else if (m_TypeMap[type->TypeIndex].toArchive == static_cast<uint32_t>(~0))
 		{
 			// No instances of this class have been written out yet.
 			// Write out the class, then write out the object. If this
@@ -759,7 +761,7 @@ FArchive &FArchive::operator<< (DObject *obj)
 				player->mo == obj)
 			{
 				operator<< (NEW_PLYR_CLS_OBJ);
-				operator<< ((byte)(player->id));
+				operator<< (static_cast<byte>(player->id));
 			}
 			else
 			{
@@ -778,14 +780,14 @@ FArchive &FArchive::operator<< (DObject *obj)
 			// controlled actor, remember that.
 			uint32_t index = FindObjectIndex (obj);
 
-			if (index == (uint32_t)~0)
+			if (index == static_cast<uint32_t>(~0))
 			{
 				if (obj->IsKindOf (RUNTIME_CLASS (AActor)) &&
 					(player = static_cast<AActor *>(obj)->player) &&
 					player->mo == obj)
 				{
 					operator<< (NEW_PLYR_OBJ);
-					operator<< ((byte)(player->id));
+					operator<< (static_cast<byte>(player->id));
 				}
 				else
 				{
@@ -889,7 +891,7 @@ uint32_t FArchive::WriteClass (const TypeInfo *info)
 		I_Error("Too many unique classes have been written.\nOnly {} were registered\n",
 			TypeInfo::m_NumTypes);
 	}
-	if (m_TypeMap[info->TypeIndex].toArchive != (uint32_t)~0)
+	if (m_TypeMap[info->TypeIndex].toArchive != static_cast<uint32_t>(~0))
 	{
 		I_Error("Attempt to write '{}' twice.\n", info->Name);
 	}
@@ -964,7 +966,7 @@ uint32_t FArchive::MapObject (const DObject *obj)
 		m_ObjectMap = static_cast<ObjectMap*>(M_Realloc(m_ObjectMap, sizeof(ObjectMap)*m_MaxObjectCount));
 		for (uint32_t i = m_ObjectCount; i < m_MaxObjectCount; i++)
 		{
-			m_ObjectMap[i].hashNext = (unsigned)~0;
+			m_ObjectMap[i].hashNext = static_cast<unsigned>(~0);
 			m_ObjectMap[i].object = NULL;
 		}
 	}
@@ -981,7 +983,7 @@ uint32_t FArchive::MapObject (const DObject *obj)
 
 uint32_t FArchive::HashObject (const DObject *obj) const
 {
-	return (uint32_t)((size_t)obj % EObjectHashSize);
+	return static_cast<uint32_t>(reinterpret_cast<size_t>(obj) % EObjectHashSize);
 }
 
 uint32_t FArchive::FindObjectIndex (const DObject *obj) const
@@ -989,7 +991,7 @@ uint32_t FArchive::FindObjectIndex (const DObject *obj) const
 	if(!m_ObjectMap)
 		return ~0;
 	uint32_t index = m_ObjectHash[HashObject (obj)];
-	while (index != (unsigned)~0 && m_ObjectMap[index].object != obj)
+	while (index != static_cast<unsigned>(~0) && m_ObjectMap[index].object != obj)
 	{
 		index = m_ObjectMap[index].hashNext;
 	}
@@ -999,9 +1001,9 @@ uint32_t FArchive::FindObjectIndex (const DObject *obj) const
 FArchive &operator<< (FArchive &arc, player_t *p)
 {
 	if (p)
-		return arc << (byte)(p->id);
+		return arc << static_cast<byte>(p->id);
 	else
-		return arc << (byte)0xff;
+		return arc << static_cast<byte>(0xff);
 }
 
 FArchive &operator>> (FArchive &arc, player_t *&p)

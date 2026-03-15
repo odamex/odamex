@@ -182,7 +182,7 @@ struct level_info_t
 
 struct level_pwad_info_t
 {
-	// level_info_t
+	// level_info_t // TODO: should this be made into a single member??
 	OLumpName		mapname    = "";
 	int				levelnum   = 0;
 	int				mapnum     = 0;

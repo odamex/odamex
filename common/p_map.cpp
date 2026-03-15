@@ -2427,12 +2427,12 @@ fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance)
 	if (topangle <= ANG360 - ANG180)
 		topslope = finetangent[FINEANGLES/2-1];
 	else
-		topslope = finetangent[FINEANGLES/4-((signed)topangle>>ANGLETOFINESHIFT)];
+		topslope = finetangent[FINEANGLES/4-(static_cast<signed>(topangle)>>ANGLETOFINESHIFT)];
 
 	if (bottomangle >= ANG180)
 		bottomslope = finetangent[0];
 	else
-		bottomslope = finetangent[FINEANGLES/4-((signed)bottomangle>>ANGLETOFINESHIFT)];
+		bottomslope = finetangent[FINEANGLES/4-(static_cast<signed>(bottomangle)>>ANGLETOFINESHIFT)];
 
 	attackrange = distance;
 	linetarget = NULL;
@@ -2853,11 +2853,11 @@ void P_AimCamera (AActor *t1)
 	subsector_t *subsector;
 
 	shootthing = t1;
-	shootz = t1->z + t1->height + (fixed_t)(chase_height * FRACUNIT);
+	shootz = t1->z + t1->height + static_cast<fixed_t>(chase_height * FRACUNIT);
 	attackrange = distance;
 	aimslope = finetangent[FINEANGLES/4+(t1->pitch>>ANGLETOFINESHIFT)];
 
-	CameraZ = shootz + (fixed_t)(chase_dist * aimslope);
+	CameraZ = shootz + static_cast<fixed_t>(chase_dist * aimslope);
 	subsector = P_PointInSubsector (x2, y2);
 	if (subsector) {
 		fixed_t ceilingheight = P_CeilingHeight(x2, y2, subsector->sector) - CAMERA_DIST;
@@ -3222,9 +3222,9 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 	bombspot = spot;
 	bombsource = source;
 	bombdamage = damage;
-	bombdamagefloat = (float)damage;
+	bombdamagefloat = static_cast<float>(damage);
 	bombdistance = distance;
-	bombdistancefloat = 1.f / (float)distance;
+	bombdistancefloat = 1.f / static_cast<float>(distance);
 	DamageSource = hurtSource;
 	bombmod = mod;
 

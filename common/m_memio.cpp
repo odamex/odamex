@@ -60,7 +60,7 @@ MEMFILE *mem_fopen_read(void *buf, size_t buflen)
 
 	file = Z_Malloc<MEMFILE>(PU_STATIC);
 
-	file->buf = (unsigned char *) buf;
+	file->buf = static_cast<unsigned char*>(buf);
 	file->buflen = buflen;
 	file->position = 0;
 	file->mode = MODE_READ;
@@ -183,15 +183,15 @@ int mem_fseek(MEMFILE *stream, signed long position, mem_rel_t whence)
 	switch (whence)
 	{
 		case MEM_SEEK_SET:
-			newpos = (int) position;
+			newpos = static_cast<int>(position);
 			break;
 
 		case MEM_SEEK_CUR:
-			newpos = (int) (stream->position + position);
+			newpos = static_cast<int>(stream->position + position);
 			break;
 
 		case MEM_SEEK_END:
-			newpos = (int) (stream->buflen + position);
+			newpos = static_cast<int>(stream->buflen + position);
 			break;
 		default:
 			return -1;
@@ -216,7 +216,7 @@ size_t mem_fsize(MEMFILE *stream) // [Russell] - get size of stream
 
 char *mem_fgetbuf(MEMFILE *stream) // [Russell] - return stream buffer
 {
-    return (char *)stream->buf;
+    return reinterpret_cast<char*>(stream->buf);
 }
 
 VERSION_CONTROL (memio_cpp, "$Id$")

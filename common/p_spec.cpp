@@ -100,7 +100,7 @@ fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f)
 	return (arg_i << FRACBITS) + (arg_f << FRACBITS) / 100;
 }
 
-int P_ArgToCrushMode(byte arg, bool slowdown)
+crushmode_e P_ArgToCrushMode(byte arg, bool slowdown)
 {
 	static constexpr crushmode_e map[] = {crushDoom, crushHexen, crushSlowdown};
 

@@ -211,7 +211,7 @@ static void ExpandSoundData(byte* data, int samplerate, int bits, int length,
 
 	for (size_t i = 2; i < expanded_length * 2; ++i)
 	{
-		expanded[i] = (Sint16)(alpha * expanded[i] + (1 - alpha) * expanded[i - 2]);
+		expanded[i] = static_cast<Sint16>(alpha * expanded[i] + (1 - alpha) * expanded[i - 2]);
 	}
 }
 
@@ -451,7 +451,7 @@ void I_UpdateSoundParams (int handle, float vol, int sep, int pitch)
 	if(!snd_crossover)
 		sep = 255 - sep;
 
-	int volume = (int)((float)MIX_MAX_VOLUME * basevolume * vol);
+	int volume = static_cast<int>(static_cast<float>(MIX_MAX_VOLUME * basevolume * vol));
 
 	if(volume < 0)
 		volume = 0;

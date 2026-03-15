@@ -186,7 +186,7 @@ inline bool IsChexMission(GameMission_t mission)
 #define MAXPLAYERS_VANILLA		4
 
 // Margin of error used when calculating percentages against player numbers.
-#define MPEPSILON				(float)1 / (MAXPLAYERS * 2)
+#define MPEPSILON				1.0f / (MAXPLAYERS * 2)
 
 // State updates, number of tics / second.
 #define TICRATE 		35

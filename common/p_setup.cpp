@@ -325,18 +325,18 @@ void P_LoadSectors (int lump)
 	// denis - properly construct sectors so that smart pointers they contain don't get screwed
 	sectors = new sector_t[numsectors];
 
-	byte* data = W_CacheLumpNum<byte>(lump, PU_STATIC);
+	mapsector_t* data = W_CacheLumpNum<mapsector_t>(lump, PU_STATIC);
 
 	const int defSeqType = (level.flags & LEVEL_SNDSEQTOTALCTRL) ? 0 : -1;
 
-	const mapsector_t* ms = (mapsector_t*)data;
+	const mapsector_t* ms = data;
 	sector_t* ss = sectors;
 	for (int i = 0; i < numsectors; i++, ss++, ms++)
 	{
 		ss->floorheight = LESHORT(ms->floorheight)<<FRACBITS;
 		ss->ceilingheight = LESHORT(ms->ceilingheight)<<FRACBITS;
-		ss->floorpic = (short)R_FlatNumForName(ms->floorpic);
-		ss->ceilingpic = (short)R_FlatNumForName(ms->ceilingpic);
+		ss->floorpic = static_cast<short>(R_FlatNumForName(ms->floorpic));
+		ss->ceilingpic = static_cast<short>(R_FlatNumForName(ms->ceilingpic));
 		ss->lightlevel = LESHORT(ms->lightlevel);
 		originalLightLevels.push_back(LESHORT(ms->lightlevel));
 		ss->special = LESHORT(ms->special);
@@ -466,9 +466,9 @@ void P_LoadNodes(int lump)
 
 	numnodes = W_LumpLength(lump) / sizeof(MapNodeType);
 	nodes = Z_Malloc<node_t>(numnodes, PU_LEVEL);
-	byte* data = W_CacheLumpNum<byte>(lump, PU_STATIC);
+	MapNodeType* data = W_CacheLumpNum<MapNodeType>(lump, PU_STATIC);
 
-	const MapNodeType* mn = (MapNodeType *)data;
+	const MapNodeType* mn = data;
 	node_t* no = nodes;
 
 	for (int i = 0; i < numnodes; i++, no++, mn++)
@@ -543,15 +543,15 @@ byte* P_DecompressNodes(byte* data, size_t len) {
 }
 
 byte* P_LoadSegs_XNOD(byte* p) {
-	numsegs = LELONG(*(uint32_t *)p); p += 4;
+	numsegs = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
 	segs = Z_Calloc<seg_t>(numsegs, PU_LEVEL);
 
 	for (int i = 0; i < numsegs; i++)
 	{
-		const uint32_t v1 = LELONG(*(uint32_t *)p); p += 4;
-		const uint32_t v2 = LELONG(*(uint32_t *)p); p += 4;
-		const uint16_t ld = LESHORT(*(uint16_t *)p); p += 2;
-		uint8_t side = *(uint8_t *)p; p += 1;
+		const uint32_t v1 = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+		const uint32_t v2 = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+		const uint16_t ld = LESHORT(*reinterpret_cast<uint16_t*>(p)); p += 2;
+		uint8_t side = *reinterpret_cast<uint8_t*>(p); p += 1;
 
 		if (side != 0 && side != 1)
 			side = 1;
@@ -596,7 +596,7 @@ byte* P_LoadSegs_XGL(byte* p)
 		"P_LoadSegs_XGL can only be instantiated with uint16_t or uint32_t"
 	);
 
-	numsegs = LELONG(*(uint32_t *)p); p += 4;
+	numsegs = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
 	segs = Z_Calloc<seg_t>(numsegs, PU_LEVEL);
 
 	uint32_t write_index = 0;
@@ -608,11 +608,11 @@ byte* P_LoadSegs_XGL(byte* p)
 		seg_t* first_seg = nullptr;
 		for (uint32_t j = 0; j < subsector.numlines; j++)
 		{
-			const uint32_t v1 = LELONG(*(uint32_t *)p); p += 4;
-			// const uint32_t partner = LELONG(*(uint32_t *)p); // unused
+			const uint32_t v1 = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+			// const uint32_t partner = LELONG(*reinterpret_cast<uint32_t*>(p)); // unused
 			p += 4;
-			const LineType ld = LESWAP(*(LineType *)p); p += sizeof(LineType);
-			const uint8_t side = *(uint8_t *)p; p += 1;
+			const LineType ld = LESWAP(*reinterpret_cast<LineType*>(p)); p += sizeof(LineType);
+			const uint8_t side = *reinterpret_cast<uint8_t*>(p); p += 1;
 
 			if (ld == std::numeric_limits<LineType>::max())
 				continue;
@@ -724,8 +724,8 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 	}
 
 	// Load vertices
-	const uint32_t numorgvert = LELONG(*(uint32_t *)p); p += 4;
-	const uint32_t numnewvert = LELONG(*(uint32_t *)p); p += 4;
+	const uint32_t numorgvert = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+	const uint32_t numnewvert = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
 
 	vertex_t *newvert = Z_Malloc<vertex_t>(numorgvert + numnewvert, PU_LEVEL);
 
@@ -735,8 +735,8 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 	for (uint32_t i = 0; i < numnewvert; i++)
 	{
 		vertex_t *v = &newvert[numorgvert+i];
-		v->x = LELONG(*(int32_t *)p); p += 4;
-		v->y = LELONG(*(int32_t *)p); p += 4;
+		v->x = LELONG(*reinterpret_cast<int32_t*>(p)); p += 4;
+		v->y = LELONG(*reinterpret_cast<int32_t*>(p)); p += 4;
 	}
 
 	// Adjust linedefs - since we reallocated the vertex array,
@@ -755,7 +755,7 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 
 	// Load subsectors
 
-	numsubsectors = LELONG(*(uint32_t *)p); p += 4;
+	numsubsectors = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
 	subsectors = Z_Calloc<subsector_t>(numsubsectors, PU_LEVEL);
 
 	uint32_t first_seg = 0;
@@ -763,7 +763,7 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 	for (int i = 0; i < numsubsectors; i++)
 	{
 		subsectors[i].firstline = first_seg;
-		subsectors[i].numlines = LELONG(*(uint32_t *)p); p += 4;
+		subsectors[i].numlines = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
 		first_seg += subsectors[i].numlines;
 	}
 
@@ -778,7 +778,7 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 
 	// Load nodes
 
-	numnodes = LELONG(*(uint32_t *)p); p += 4;
+	numnodes = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
 	nodes = Z_Calloc<node_t>(numnodes, PU_LEVEL);
 
 	for (int i = 0; i < numnodes; i++)
@@ -787,30 +787,30 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 
 		if (nodetype == nodetype_t::XGL3 || nodetype == nodetype_t::ZGL3)
 		{
-			node->x = LELONG(*(int32_t *)p); p += 4;
-			node->y = LELONG(*(int32_t *)p); p += 4;
-			node->dx = LELONG(*(int32_t *)p); p += 4;
-			node->dy = LELONG(*(int32_t *)p); p += 4;
+			node->x = LELONG(*reinterpret_cast<int32_t*>(p)); p += 4;
+			node->y = LELONG(*reinterpret_cast<int32_t*>(p)); p += 4;
+			node->dx = LELONG(*reinterpret_cast<int32_t*>(p)); p += 4;
+			node->dy = LELONG(*reinterpret_cast<int32_t*>(p)); p += 4;
 		}
 		else
 		{
-			node->x = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
-			node->y = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
-			node->dx = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
-			node->dy = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
+			node->x = LESHORT(*reinterpret_cast<int16_t*>(p))<<FRACBITS; p += 2;
+			node->y = LESHORT(*reinterpret_cast<int16_t*>(p))<<FRACBITS; p += 2;
+			node->dx = LESHORT(*reinterpret_cast<int16_t*>(p))<<FRACBITS; p += 2;
+			node->dy = LESHORT(*reinterpret_cast<int16_t*>(p))<<FRACBITS; p += 2;
 		}
 
 		for (int j = 0; j < 2; j++)
 		{
 			for (int k = 0; k < 4; k++)
 			{
-				node->bbox[j][k] = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
+				node->bbox[j][k] = LESHORT(*reinterpret_cast<int16_t*>(p))<<FRACBITS; p += 2;
 			}
 		}
 
 		for (int j = 0; j < 2; j++)
 		{
-			node->children[j] = LELONG(*(uint32_t *)p); p += 4;
+			node->children[j] = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
 		}
 	}
 }
@@ -829,7 +829,7 @@ void P_LoadThings (int lump)
 	voodoostarts.clear();
 	DeathMatchStarts.clear();
 	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
-		GetTeamInfo((team_t)iTeam)->Starts.clear();
+		GetTeamInfo(static_cast<team_t>(iTeam))->Starts.clear();
 
 	// [RH] ZDoom now uses Hexen-style maps as its native format. // denis - growwwwl
 	//		Since this is the only place where Doom-style Things are ever
@@ -845,7 +845,7 @@ void P_LoadThings (int lump)
 		// [RH] Need to translate the spawn flags to Hexen format.
 		short flags = LESHORT(mt.options);
 		if (flags & BTF_RESERVED || demoplayback) flags &= BTF_RESERVED_MASK;
-		short flags2 = (short)((flags & 0xf) | 0x7e0);
+		short flags2 = static_cast<short>((flags & 0xf) | 0x7e0);
 		if (flags & BTF_NOTSINGLE)
 		{
 			#ifdef SERVER_APP
@@ -902,7 +902,7 @@ void P_LoadThings2 (int lump, int position)
 	voodoostarts.clear();
 	DeathMatchStarts.clear();
 	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
-		GetTeamInfo((team_t)iTeam)->Starts.clear();
+		GetTeamInfo(static_cast<team_t>(iTeam))->Starts.clear();
 
 	for (size_t i = 0; i < count; i++)
 	{
@@ -1090,11 +1090,11 @@ void P_FinishLoadingLineDefs (void)
 	}
 }
 
-void P_LoadLineDefs (const int lump)
+void P_LoadLineDefs(const int lump)
 {
-	numlines = W_LumpLength (lump) / sizeof(maplinedef_t);
+	numlines = W_LumpLength(lump) / sizeof(maplinedef_t);
 	lines = Z_Calloc<line_t>(numlines, PU_LEVEL);
-	byte* data = W_CacheLumpNum<byte>(lump, PU_STATIC);
+	maplinedef_t* data = W_CacheLumpNum<maplinedef_t>(lump, PU_STATIC);
 	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
 
 	const bool reservedLine = P_GetLevelCompData(::level.level_fingerprint).reservedLineFlag;
@@ -1102,7 +1102,7 @@ void P_LoadLineDefs (const int lump)
 	line_t* ld = lines;
 	for (int i = 0; i < numlines; i++, ld++)
 	{
-		const maplinedef_t *mld = ((maplinedef_t *)data) + i;
+		const maplinedef_t *mld = data + i;
 
 		ld->flags = static_cast<uint32_t>(mld->flags);
 		ld->special = mld->special;
@@ -1146,9 +1146,9 @@ void P_LoadLineDefs2 (int lump)
 {
 	numlines = W_LumpLength (lump) / sizeof(maplinedef2_t);
 	lines = Z_Calloc<line_t>(numlines, PU_LEVEL);
-	byte* data = W_CacheLumpNum<byte>(lump, PU_STATIC);
+	maplinedef2_t* data = W_CacheLumpNum<maplinedef2_t>(lump, PU_STATIC);
 
-	maplinedef2_t* mld = (maplinedef2_t *)data;
+	const maplinedef2_t* mld = data;
 	line_t* ld = lines;
 	for (int i = 0; i < numlines; i++, mld++, ld++)
 	{
@@ -1227,11 +1227,11 @@ argb_t P_GetColorFromTextureName(const char* name)
 
 void P_LoadSideDefs2 (int lump)
 {
-	byte* data = W_CacheLumpNum<byte>(lump, PU_STATIC);
+	mapsidedef_t* data = W_CacheLumpNum<mapsidedef_t>(lump, PU_STATIC);
 
 	for (int i = 0; i < numsides; i++)
 	{
-		mapsidedef_t* msd = (mapsidedef_t*)data + i;
+		mapsidedef_t* msd = data + i;
 		side_t* sd = sides + i;
 		sector_t* sec;
 
@@ -1680,7 +1680,7 @@ int P_GroupLines()
 	// look up sector number for each subsector
 	for (int i = 0; i < numsubsectors; i++)
 	{
-		if (subsectors[i].firstline >= (unsigned int)numsegs)
+		if (subsectors[i].firstline >= static_cast<unsigned int>(numsegs))
 			I_Error("subsector[{}].firstline exceeds numsegs ({})", i, numsegs);
 		subsectors[i].sector = segs[subsectors[i].firstline].sidedef->sector;
 	}
@@ -1823,8 +1823,8 @@ void P_RemoveSlimeTrails()
 						const int64_t dxy = (l->dx >> FRACBITS) * (l->dy >> FRACBITS);
 						const int64_t s = dx2 + dy2;
 						const fixed_t x0 = v->x, y0 = v->y, x1 = l->v1->x, y1 = l->v1->y;
-						v->x = (fixed_t)((dx2 * x0 + dy2 * x1 + dxy * (y0 - y1)) / s);
-						v->y = (fixed_t)((dy2 * y0 + dx2 * y1 + dxy * (x0 - x1)) / s);
+						v->x = static_cast<fixed_t>((dx2 * x0 + dy2 * x1 + dxy * (y0 - y1)) / s);
+						v->y = static_cast<fixed_t>((dy2 * y0 + dx2 * y1 + dxy * (x0 - x1)) / s);
 					}
 				}  // Obsfucated C contest entry:   :)
 			} while ((v != segs[i].v2) && (v = segs[i].v2));
@@ -1856,7 +1856,7 @@ void P_InitTagLists(void)
 		sectors[i].firsttag = -1;
 	for (int i = numsectors; --i >= 0; )		// Proceed from last to first sector
 	{									// so that lower sectors appear first
-		int j = (unsigned)sectors[i].tag % (unsigned)numsectors;	// Hash func
+		int j = static_cast<unsigned>(sectors[i].tag) % static_cast<unsigned>(numsectors);	// Hash func
 		sectors[i].nexttag = sectors[j].firsttag;	// Prepend sector to chain
 		sectors[j].firsttag = i;
 	}
@@ -1867,7 +1867,7 @@ void P_InitTagLists(void)
 		lines[i].firstid = -1;
 	for (int i = numlines; --i >= 0; )        // Proceed from last to first linedef
 	{									// so that lower linedefs appear first
-		int j = (unsigned)lines[i].id % (unsigned)numlines;	// Hash func
+		int j = static_cast<unsigned>(lines[i].id) % static_cast<unsigned>(numlines);	// Hash func
 		lines[i].nextid = lines[j].firstid;	// Prepend linedef to chain
 		lines[j].firstid = i;
 	}

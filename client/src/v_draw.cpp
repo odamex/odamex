@@ -388,7 +388,7 @@ void DCanvas::DrawLucentPatchD (const byte *source, byte *dest, int count, int p
 	if (::hud_transparency >= 1.0)
 		return DrawPatchD(source, dest, count, pitch);
 
-	int alpha = (int)(hud_transparency * 255);
+	int alpha = static_cast<int>(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
 
 	do
@@ -972,7 +972,7 @@ template<typename PIXEL_T>
 static inline void V_GetTransposedBlockGeneric(byte* destbuffer, const byte* sourcebuffer,
 			int x, int y, int width, int height, int sourcepitchpixels)
 {
-	const PIXEL_T* source = reinterpret_cast<PIXEL_T*>(sourcebuffer) + y * sourcepitchpixels + x;
+	const PIXEL_T* source = reinterpret_cast<const PIXEL_T*>(sourcebuffer) + y * sourcepitchpixels + x;
 	PIXEL_T* dest = reinterpret_cast<PIXEL_T*>(destbuffer);
 
 	for (int col = x; col < x + width; col++)

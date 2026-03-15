@@ -134,8 +134,8 @@ bool SetGeneric(cheatseq_t* cheat)
 			return true;
 	}
 
-	DoCheat(consoleplayer(), (ECheatFlags)cheat->Args[0]);
-	CL_SendCheat((ECheatFlags)cheat->Args[0]);
+	DoCheat(consoleplayer(), static_cast<ECheatFlags>(cheat->Args[0]));
+	CL_SendCheat(static_cast<ECheatFlags>(cheat->Args[0]));
 
 	return true;
 }
@@ -198,7 +198,7 @@ BEGIN_COMMAND(summon)
 	if (argc < 2)
 		return;
 
-	const std::string mobname = C_ArgCombine(argc - 1, (const char**)(argv + 1));
+	const std::string mobname = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
 
 	if (!cheat::ValidSummonActor(mobname))
 	{
@@ -219,7 +219,7 @@ BEGIN_COMMAND(summonfriend)
 	if (argc < 2)
 		return;
 
-	const std::string mobname = C_ArgCombine(argc - 1, (const char**)(argv + 1));
+	const std::string mobname = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
 
 	if (!cheat::ValidSummonActor(mobname.c_str()))
 	{
@@ -610,7 +610,7 @@ void GiveTo(player_t& player, const char* name)
 			player.backpack = true;
 		}
 		for (int i = 0; i < NUMAMMO; i++)
-			P_GiveAmmo(player, (ammotype_t)i, 1);
+			P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
 
 		if (!giveall)
 			return;
@@ -620,7 +620,7 @@ void GiveTo(player_t& player, const char* name)
 	{
 		weapontype_t pendweap = player.pendingweapon;
 		for (int i = 0; i < NUMWEAPONS; i++)
-			P_GiveWeapon(player, (weapontype_t)i, false);
+			P_GiveWeapon(player, static_cast<weapontype_t>(i), false);
 		player.pendingweapon = pendweap;
 
 		if (!giveall)
@@ -678,15 +678,15 @@ void GiveTo(player_t& player, const char* name)
 		    else */
 		howmuch = it->quantity;
 
-		P_GiveAmmo(player, (ammotype_t)it->offset, howmuch);
+		P_GiveAmmo(player, static_cast<ammotype_t>(it->offset), howmuch);
 	}
 	else if (it->flags & IT_WEAPON)
 	{
-		P_GiveWeapon(player, (weapontype_t)it->offset, 0);
+		P_GiveWeapon(player, static_cast<weapontype_t>(it->offset), 0);
 	}
 	else if (it->flags & IT_KEY)
 	{
-		P_GiveCard(player, (card_t)it->offset);
+		P_GiveCard(player, static_cast<card_t>(it->offset));
 	}
 	else if (it->flags & IT_POWERUP)
 	{
