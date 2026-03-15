@@ -126,8 +126,7 @@ endfunction()
 # Enable some extra compilation errors that we probably only want to apply to the more well-maintained targets
 function(odamex_target_errors _TARGET)
   if(MSVC)
-    # closest msvc has to old-style-cast, hopefully it at least helps a bit
-    checked_add_compile_flag(CHECKED_OPTIONS /we26475 W_ERR_FUNCTION_STYLE_CAST)
+    # ideally, enable C26475 and C26493, but I can't figure it out
   else()
     checked_add_compile_flag(CHECKED_OPTIONS -Werror=old-style-cast W_ERR_OLD_STYLE_CAST)
     checked_add_compile_flag(CHECKED_OPTIONS -Werror=class-memaccess W_ERR_CLASS_MEMACCESS)
