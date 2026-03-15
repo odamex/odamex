@@ -20,7 +20,7 @@ jobs:
       upload_url: ${{ steps.get_release.outputs.upload_url }}
       new_version: ${{ steps.gitversion.outputs.majorMinorPatch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
       - name: Get release
@@ -70,7 +70,7 @@ jobs:
       new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Turn on problem matcher
@@ -94,12 +94,12 @@ jobs:
         B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
         B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Archive x64 build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Win-x64
         path: Output/zip/*.zip
     - name: Archive x64 pdb artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Win-x64-pdb
         path: Output/pdb/*.zip
@@ -118,7 +118,7 @@ jobs:
       upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Turn on problem matcher
@@ -142,12 +142,12 @@ jobs:
         B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
         B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Archive x86 build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Win-x86
         path: Output/zip/*.zip
     - name: Archive x86 pdb artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Win-x86-pdb
         path: Output/pdb/*.zip
@@ -166,7 +166,7 @@ jobs:
       upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Update metainfo dates
       shell: bash
       run: |
@@ -191,7 +191,7 @@ jobs:
         flatpak build-bundle repo odamex-linux-x86_64-${{ env.new_version }}.flatpak net.odamex.Odamex release \
         --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Flatpak-x86_64
         path: odamex-linux-x86_64-${{ env.new_version }}.flatpak
@@ -208,7 +208,7 @@ jobs:
       upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Update metainfo dates
       shell: bash
       run: |
@@ -233,7 +233,7 @@ jobs:
         flatpak build-bundle repo odamex-linux-arm64-${{ env.new_version }}.flatpak net.odamex.Odamex release \
         --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Flatpak-ARM64
         path: odamex-linux-arm64-${{ env.new_version }}.flatpak
@@ -260,7 +260,7 @@ jobs:
       odamex_install_bindir: "/Applications/Odamex"
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Cache macOS universal deps
@@ -552,7 +552,7 @@ jobs:
           "odamex-macos-${{ env.new_version }}.dmg" \
           "Odamex ${{ env.new_version }}"
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-macOS-universal
         path: odamex-macos-${{ env.new_version }}.dmg
@@ -569,7 +569,7 @@ jobs:
       upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Remove .git folders
@@ -582,11 +582,11 @@ jobs:
         Remove-Item -Path "..\odamex-src-${{ env.new_version }}\.git*" -Recurse -Force
         Compress-Archive -Path "..\odamex-src-${{ env.new_version }}" -DestinationPath "odamex-src-${{ env.new_version }}.zip"
     - name: Download x86 artifacats
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: Odamex-Win-x86
     - name: Download x64 artifacats
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: Odamex-Win-x64
     - name: List directory contents
@@ -602,12 +602,12 @@ jobs:
       run: |
         .\ci\stage-inno-setup-and-run.ps1
     - name: Upload setup installer to Github
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Installer
         path: 'Output/*.exe'
     - name: Upload zip
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-src-zip
         path: './odamex-src-${{ env.new_version }}.zip'
@@ -626,7 +626,7 @@ jobs:
       upload_url: ${{ needs.pre_job.outputs.upload_url }}
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Remove .git folders
@@ -643,12 +643,12 @@ jobs:
         touch odamex-src-${{ env.new_version }}.tar.xz
         tar --transform 's,^,odamex-src-${{ env.new_version }}/,' --exclude='*.zip' --exclude='*.tar.gz' --exclude='*.tar.xz' --exclude-vcs -cJvf odamex-src-${{ env.new_version }}.tar.xz **
     - name: Upload tar.xz
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-tar-xz
         path: './*.tar.xz'
     - name: Upload tar.gz
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-tar-gz
         path: './*.tar.gz'

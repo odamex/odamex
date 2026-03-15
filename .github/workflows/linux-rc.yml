@@ -19,7 +19,7 @@ jobs:
       minor: ${{ steps.gitversion.outputs.minor }}
       patch: ${{ steps.gitversion.outputs.patch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
           fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
@@ -71,7 +71,7 @@ jobs:
       build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
     - name:  Run Upversion
@@ -93,7 +93,7 @@ jobs:
     - name: Prepare artifact
       run: bash ci/ubuntu-artifact.sh
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Linux-x86_64
         path: 'build/artifact/*'
@@ -105,7 +105,7 @@ jobs:
       USE_SDL12: 1
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build
@@ -121,7 +121,7 @@ jobs:
       CXX: /usr/bin/clang++
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build
@@ -134,7 +134,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build
@@ -149,7 +149,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Run build
@@ -160,7 +160,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Run build
@@ -176,7 +176,7 @@ jobs:
       MINORVERSION: ${{ needs.pre_job.outputs.minor }}
       PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
     - name:  Run Upversion
@@ -210,7 +210,7 @@ jobs:
         flatpak build-bundle repo odamex-linux-x86_64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak \
         net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Flatpak-x86_64
         path: odamex-linux-x86_64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak
@@ -225,7 +225,7 @@ jobs:
       MINORVERSION: ${{ needs.pre_job.outputs.minor }}
       PATCHVERSION: ${{ needs.pre_job.outputs.patch }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
     - name:  Run Upversion
@@ -259,7 +259,7 @@ jobs:
         flatpak build-bundle repo odamex-linux-arm64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak \
         net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Flatpak-ARM64
         path: odamex-linux-arm64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak
@@ -271,15 +271,15 @@ jobs:
       build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-tags: true
     - name: Download x86_64 Flatpak
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: Odamex-Flatpak-x86_64
     - name: Download Arm Flatpak
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: Odamex-Flatpak-ARM64
     - name: Create or update prerelease
