@@ -81,6 +81,9 @@ std::optional<T> ParseNum(std::string_view str, int base = 10)
     return out;
 }
 
+namespace cmd_detail
+{
+
 template<typename T>
 concept has_from_chars_float =
 requires(const char* f, const char* l, T v)
@@ -88,11 +91,16 @@ requires(const char* f, const char* l, T v)
     std::from_chars(f, l, v);
 };
 
+template <typename T>
+inline constexpr bool always_false = false;
+
+}
+
 template<typename T>
 requires std::is_floating_point_v<T>
 std::optional<T> ParseNum(std::string_view str)
 {
-	if constexpr (has_from_chars_float<T>)
+	if constexpr (cmd_detail::has_from_chars_float<T>)
 	{
     	T out;
 		while (!str.empty() && std::isspace(static_cast<unsigned char>(str.front())))
@@ -119,7 +127,9 @@ std::optional<T> ParseNum(std::string_view str)
 			else if constexpr (std::is_same_v<T, long double>)
 				return strtold(str, str_end);
 			else
-				[]<bool flag = false>(){static_assert(false, "Unknown floating point type");}();
+			{
+				static_assert(cmd_detail::always_false<T>, "Unknown floating point type");
+			}
 		};
 
 		const auto out = strtof_template(nulltermstr.c_str(), &endptr);
