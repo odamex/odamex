@@ -3853,7 +3853,7 @@ void A_SpawnFly (AActor *mo)
 	// [SL] 2011-06-19 - Emulate vanilla doom bug where monsters spawned after
 	// the start of the level (eg, spawned from a cube) are respawned at map
 	// location (0, 0).
-	memset(&newmobj->spawnpoint, 0, sizeof(newmobj->spawnpoint));
+	newmobj->spawnpoint = {};
 }
 
 
