@@ -1357,6 +1357,10 @@ void P_GiveSpecial(player_t& player, AActor& special)
 	case SpecialSound::Weapon:
 		P_PickupSound(ent, CHAN_ITEM, "misc/w_pkup");
 		break;
+	case SpecialSound::None:
+		break; // do nothing, just for silencing warnings
+	default:
+		OUtil::unreachable();
 	}
 }
 
