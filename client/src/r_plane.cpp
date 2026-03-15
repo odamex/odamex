@@ -74,7 +74,7 @@ visplane_t				*skyplane;
 // Empirically verified to be fairly uniform:
 
 #define visplane_hash(picnum,lightlevel,secplane) \
-  ((unsigned)((picnum)*3+(lightlevel)+(secplane.d)*7) & (MAXVISPLANES-1))
+  (static_cast<unsigned>((picnum)*3+(lightlevel)+(secplane.d)*7) & (MAXVISPLANES-1))
 
 //
 // Clip values are the solid pixel bounding the range.
@@ -178,7 +178,7 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 
 		for (int i = 0; i < len; i++)
 		{
-			int index = (int)(map >> FRACBITS) + 1;
+			int index = static_cast<int>(map >> FRACBITS) + 1;
 			index -= (foggy ? 0 : extralight << 2);
 
 			if (index < 0)
@@ -219,7 +219,7 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 void R_MapLevelPlane(int y, int x1, int x2)
 {
 	fixed_t distance = FixedMul(planeheight, yslope[y]);
-	fixed_t slope = (fixed_t)(focratio * FixedDiv(planeheight, abs(centery - y) << FRACBITS));
+	fixed_t slope = static_cast<fixed_t>(focratio * FixedDiv(planeheight, abs(centery - y) << FRACBITS));
 
 	dspan.xstep = FixedMul(pl_xstepscale, slope);
 	dspan.ystep = FixedMul(pl_ystepscale, slope);
@@ -282,7 +282,7 @@ static visplane_t *new_visplane(unsigned hash)
 
 	if (!check)
 	{
-		check = (visplane_t *)M_Calloc(1, sizeof(*check) + sizeof(*check->top)*2*I_GetSurfaceWidth());
+		check = static_cast<visplane_t*>(M_Calloc(1, sizeof(*check) + sizeof(*check->top)*2*I_GetSurfaceWidth()));
 		check->bottom = &check->top[I_GetSurfaceWidth() + 2];
 	}
 	else
@@ -397,7 +397,7 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 		intrh = stop;
 	}
 
-	for (x = intrl ; x <= intrh && pl->top[x] == (unsigned int)viewheight; x++)
+	for (x = intrl ; x <= intrh && pl->top[x] == static_cast<unsigned int>(viewheight); x++)
 		;
 
 	if (x > intrh)
@@ -529,7 +529,7 @@ void R_DrawSlopedPlane(visplane_t *pl)
 
 	// Translate the points to their position relative to viewx, viewy and
 	// rotate them based on viewangle
-	angle_t rotation = (angle_t)(-(int)viewangle + ANG90);
+	angle_t rotation = static_cast<angle_t>(-static_cast<int>(viewangle) + ANG90);
 	M_TranslateVec3f(&p, &viewpos, rotation);
 	M_TranslateVec3f(&t, &viewpos, rotation);
 	M_TranslateVec3f(&s, &viewpos, rotation);
@@ -784,7 +784,7 @@ void R_DrawSkyBoxes()
 		// Set up ceiling/floor clip arrays for this visplane.
 		for (i = pl->minx; i <= pl->maxx; i++)
 		{
-			if (pl->top[i] == (unsigned int)viewheight)
+			if (pl->top[i] == static_cast<unsigned int>(viewheight))
 			{
 				ceilingclip[i] = viewheight;
 				floorclip[i] = -1;

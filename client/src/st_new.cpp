@@ -552,7 +552,7 @@ static void drawTeamGametype()
 
 	for (int i = 0; i < sv_teamsinplay; i++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 		if (shouldShowScores)
 		{
 			patchPosY -= FLAG_ICON_HEIGHT;
@@ -743,7 +743,7 @@ void drawProtos()
 
 	V_SetFont("DIGFONT");
 
-	proto_selected = clamp(proto_selected, (size_t)0, protos.size() - 1);
+	proto_selected = clamp<size_t>(proto_selected, 0, protos.size() - 1);
 
 	// Starting y is five rows from the top.
 	const int top = 7 * 5;
@@ -874,7 +874,7 @@ static void drawLevelStats()
 	int num_ax = 0, text_ax = 0;
 	if (hud_anchoring.value() < 1.0f)
 	{
-		num_ax = (((float)I_GetSurfaceWidth() - (float)I_GetSurfaceHeight() * 4.0f / 3.0f) / 2.0f) * (1.0f - hud_anchoring.value());
+		num_ax = ((static_cast<float>(I_GetSurfaceWidth()) - static_cast<float>(I_GetSurfaceHeight()) * 4.0f / 3.0f) / 2.0f) * (1.0f - hud_anchoring.value());
 		num_ax = MAX(0, num_ax);
 		text_ax = num_ax / xscale;
 	}
@@ -968,7 +968,7 @@ void OdamexHUD() {
 	int num_ax = 0, text_ax = 0, patch_ax = 0;
 	if (hud_anchoring.value() < 1.0f)
 	{
-		num_ax = (((float)I_GetSurfaceWidth() - (float)I_GetSurfaceHeight() * 4.0f / 3.0f) / 2.0f) * (1.0f - hud_anchoring.value());
+		num_ax = ((static_cast<float>(I_GetSurfaceWidth()) - static_cast<float>(I_GetSurfaceHeight()) * 4.0f / 3.0f) / 2.0f) * (1.0f - hud_anchoring.value());
 		num_ax = MAX(0, num_ax);
 		text_ax = num_ax / xscale;
 		patch_ax = num_ax / xscale;
@@ -1393,7 +1393,7 @@ static std::string WinToColorString(const WinInfo& win)
 	}
 	else if (win.type == WinInfo::WIN_TEAM)
 	{
-		const TeamInfo& tm = *GetTeamInfo((team_t)win.id);
+		const TeamInfo& tm = *GetTeamInfo(static_cast<team_t>(win.id));
 		if (tm.Team == TEAM_NONE)
 		{
 			buf = fmt::sprintf(TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);

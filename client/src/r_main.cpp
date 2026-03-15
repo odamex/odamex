@@ -308,7 +308,7 @@ void R_ClipLine(const vertex_t* in1, const vertex_t* in2,
 				int32_t lclip, int32_t rclip,
 				v2fixed_t* out1, v2fixed_t* out2)
 {
-	R_ClipLine((const v2fixed_t*)in1, (const v2fixed_t*)in2, lclip, rclip, out1, out2);
+	R_ClipLine(reinterpret_cast<const v2fixed_t*>(in1), reinterpret_cast<const v2fixed_t*>(in2), lclip, rclip, out1, out2);
 }
 
 //
@@ -485,10 +485,10 @@ void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 	// convert from camera-space to screen-space
 	int lclip, rclip;
 
-	if (!R_ClipLineToFrustum((v2fixed_t*)&pt1, (v2fixed_t*)&pt2, NEARCLIP, lclip, rclip))
+	if (!R_ClipLineToFrustum(reinterpret_cast<v2fixed_t*>(&pt1), reinterpret_cast<v2fixed_t*>(&pt2), NEARCLIP, lclip, rclip))
 		return;
 
-	R_ClipLine((v2fixed_t*)&pt1, (v2fixed_t*)&pt2, lclip, rclip, (v2fixed_t*)&pt1, (v2fixed_t*)&pt2);
+	R_ClipLine(reinterpret_cast<v2fixed_t*>(&pt1), reinterpret_cast<v2fixed_t*>(&pt2), lclip, rclip, reinterpret_cast<v2fixed_t*>(&pt1), reinterpret_cast<v2fixed_t*>(&pt2));
 
 	int x1 = clamp(R_ProjectPointX(pt1.x, pt1.y), 0, viewwidth - 1);
 	int x2 = clamp(R_ProjectPointX(pt2.x, pt2.y), 0, viewwidth - 1);
@@ -586,7 +586,7 @@ CVAR_FUNC_IMPL(screenblocks)
 void R_Init()
 {
 	R_InitData();
-	R_SetViewSize((int)screenblocks);
+	R_SetViewSize(screenblocks.asInt());
 	R_InitPlanes();
 	R_InitTranslationTables();
 
@@ -1225,7 +1225,7 @@ static void R_InitViewWindow()
 	for (int i = 0; i < surface_width; i++)
 	{
 		negonearray[i] = -1;
-		viewheightarray[i] = (int)viewheight;
+		viewheightarray[i] = static_cast<int>(viewheight);
 	}
 
 	R_InitLightTables(surface_width, surface_height);

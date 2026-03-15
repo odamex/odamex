@@ -515,7 +515,7 @@ std::string I_GetClipboardText()
 			return "";
 		}
 
-		ret = std::string((const char*)data, len);
+		ret = std::string(reinterpret_cast<const char*>(data), len);
 		XFree(data);
 	}
 

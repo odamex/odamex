@@ -556,7 +556,7 @@ static void UpdateDrumMap(const byte *data, size_t length)
 		data[9] == 0xF7)   // SysEx EOX
 	{
 		byte idx;
-		byte checksum = 128 - ((int)data[4] + data[5] + data[6] + data[7]) % 128;
+		byte checksum = 128 - (static_cast<int>(data[4]) + data[5] + data[6] + data[7]) % 128;
 
 		if (data[8] != checksum)
 			return;

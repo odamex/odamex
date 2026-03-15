@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -33,7 +33,7 @@ void r_dimpatchD_c(IWindowSurface* surface, argb_t color, int alpha, int x1, int
 {
 	const int surface_pitch_pixels = surface->getPitchInPixels();
 
-	argb_t* line = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels;
+	argb_t* line = reinterpret_cast<argb_t*>(surface->getBuffer()) + y1 * surface_pitch_pixels;
 
 	for (int y = y1; y < y1 + h; y++)
 	{
@@ -44,6 +44,6 @@ void r_dimpatchD_c(IWindowSurface* surface, argb_t color, int alpha, int x1, int
 	}
 }
 
-	
+
 VERSION_CONTROL (r_drawt_cpp, "$Id$")
 

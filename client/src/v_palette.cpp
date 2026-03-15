@@ -227,11 +227,11 @@ public:
 		// This generates a 1:1 match with the original gammatable but also
 		// allows for intermediate values.
 
-		const double basefac = pow(2.0, (double)level) * (255.0/256.0);
+		const double basefac = pow(2.0, static_cast<double>(level)) * (255.0/256.0);
 		const double exp = 1.0 - 0.125 * level;
 
 		for (int i = 0; i < 256; i++)
-			table[i] = (byte)(0.5 + basefac * pow(double(i) + 1.0, exp));
+			table[i] = static_cast<byte>(0.5 + basefac * pow(static_cast<double>(i) + 1.0, exp));
 	}
 };
 
@@ -266,7 +266,7 @@ public:
 		const double invgamma = 1.0 / level;
 
 		for (int i = 0; i < 256; i++)
-			table[i] = (byte)(255.0 * pow(double(i) / 255.0, invgamma));
+			table[i] = static_cast<byte>(255.0 * pow(double(i) / 255.0, invgamma));
 	}
 };
 
@@ -453,9 +453,9 @@ void V_ClosestColors(const argb_t* palette_colors, palindex_t& color1, palindex_
 			if (x == y)
 				continue;
 
-			int dr = (int)palette_colors[y].getr() - (int)palette_colors[x].getr();
-			int dg = (int)palette_colors[y].getg() - (int)palette_colors[x].getg();
-			int db = (int)palette_colors[y].getb() - (int)palette_colors[x].getb();
+			int dr = static_cast<int>(palette_colors[y].getr()) - static_cast<int>(palette_colors[x].getr());
+			int dg = static_cast<int>(palette_colors[y].getg()) - static_cast<int>(palette_colors[x].getg());
+			int db = static_cast<int>(palette_colors[y].getb()) - static_cast<int>(palette_colors[x].getb());
 			int distortion = dr*dr + dg*dg + db*db;
 			if (distortion < bestdistortion)
 			{
@@ -674,7 +674,7 @@ static float lightScale(float a)
 	static float e1 = exp(1.0f);
 	static float e1sube0 = e1 - exp(-1.0f);
 
-	return clamp(1.0f - (e1 - (float)exp(a * 2.0f - 1.0f)) / e1sube0, 0.0f, 1.0f);
+	return clamp(1.0f - (e1 - static_cast<float>(exp(a * 2.0f - 1.0f))) / e1sube0, 0.0f, 1.0f);
 }
 
 void BuildLightRamp (shademap_t &maps)
@@ -683,7 +683,7 @@ void BuildLightRamp (shademap_t &maps)
 	// Build light ramp:
 	for (l = 0; l < 256; ++l)
 	{
-		int a = (int)(255 * lightScale(l / 255.0f));
+		int a = static_cast<int>(255 * lightScale(l / 255.0f));
 		maps.ramp[l] = a;
 	}
 }
@@ -721,7 +721,7 @@ void BuildDefaultColorAndShademap(const palette_t* pal, shademap_t& maps)
 	// build special maps (e.g. invulnerability)
 	for (int c = 0; c < 256; c++)
 	{
-		int grayint = (int)(255.0f * clamp(1.0f -
+		int grayint = static_cast<int>(255.0f * clamp(1.0f -
 						(palette[c].getr() * 0.00116796875f +
 						 palette[c].getg() * 0.00229296875f +
 			 			 palette[c].getb() * 0.0005625f), 0.0f, 1.0f));
@@ -763,7 +763,7 @@ void BuildDefaultShademap(const palette_t* pal, shademap_t& maps)
 	// build special maps (e.g. invulnerability)
 	for (int c = 0; c < 256; c++)
 	{
-		int grayint = (int)(255.0f * clamp(1.0f -
+		int grayint = static_cast<int>(255.0f * clamp(1.0f -
 						(palette[c].getr() * 0.00116796875f +
 						 palette[c].getg() * 0.00229296875f +
 			 			 palette[c].getb() * 0.0005625f), 0.0f, 1.0f));
@@ -877,7 +877,7 @@ BEGIN_COMMAND (testblend)
 	{
 		argb_t color(V_GetColorFromString(argv[1]));
 
-		int alpha = 255.0 * clamp((float)atof(argv[2]), 0.0f, 1.0f);
+		int alpha = 255.0 * clamp(static_cast<float>(atof(argv[2])), 0.0f, 1.0f);
 		R_SetSectorBlend(argb_t(alpha, color.getr(), color.getg(), color.getb()));
 	}
 }
@@ -1071,7 +1071,7 @@ BEGIN_COMMAND (testcolor)
 	{
 		argb_t color(V_GetColorFromString(argv[1]));
 
-		BuildColoredLights((shademap_t*)NormalLight.maps.map(),
+		BuildColoredLights(const_cast<shademap_t*>(NormalLight.maps.map()),
 				color.getr(), color.getg(), color.getb(),
 				level.fadeto_color[1], level.fadeto_color[2], level.fadeto_color[3]);
 	}
@@ -1094,17 +1094,17 @@ void V_DoPaletteEffects()
 	{
 		int palette_num = 0;
 
-		float red_count = (float)plyr->damagecount;
+		float red_count = static_cast<float>(plyr->damagecount);
 		if (!multiplayer || sv_allowredscreen)
 			red_count *= r_painintensity;
 
 		// slowly fade the berzerk out
 		if (plyr->powers[pw_strength])
-			red_count = MAX(red_count, 12.0f - float(plyr->powers[pw_strength] >> 6));
+			red_count = MAX(red_count, 12.0f - static_cast<float>(plyr->powers[pw_strength] >> 6));
 
 		if (red_count > 0.0f)
 		{
-			palette_num = ((int)red_count + 7) >> 3;
+			palette_num = (static_cast<int>(red_count) + 7) >> 3;
 
 			if (IsChexMission(gamemission))
 				palette_num = RADIATIONPAL;
@@ -1180,7 +1180,7 @@ void V_DoPaletteEffects()
 		// yellow tint for item pickup
 		if (plyr->bonuscount)
 		{
-			float bonus_amount = (float)plyr->bonuscount;
+			float bonus_amount = static_cast<float>(plyr->bonuscount);
 			if (bonus_amount > 0.0f)
 			{
 				bonus_amount = MIN(bonus_amount, 24.0f);

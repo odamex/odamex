@@ -119,7 +119,7 @@ static bool midi_writetime(unsigned int time, MEMFILE *midioutput)
 
 	for (;;)
 	{
-		byte writeval = (byte)(buffer & 0xFF);
+		byte writeval = static_cast<byte>(buffer & 0xFF);
 
 		if (mem_fwrite(&writeval, 1, 1, midioutput) != 1)
 		{
@@ -425,7 +425,7 @@ bool mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
 	}
 
 	// Seek to where the data is held
-	if (mem_fseek(musinput, (long)musfileheader.scorestart, MEM_SEEK_SET) != 0)
+	if (mem_fseek(musinput, static_cast<long>(musfileheader.scorestart), MEM_SEEK_SET) != 0)
 	{
 		return true;
 	}
@@ -451,7 +451,7 @@ bool mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
 			}
 
 			channel = eventdescriptor & 0x0F;
-			event = (musevent)(eventdescriptor & 0x70);
+			event = static_cast<musevent>(eventdescriptor & 0x70);
 
 			// Swap channels 15 and 9.
 			// MIDI channel 9 = percussion.
@@ -509,7 +509,7 @@ bool mus2mid(MEMFILE *musinput, MEMFILE *midioutput)
 					{
 						break;
 					}
-					if (midi_writepitchwheel(channel, (short)(key * 64), midioutput))
+					if (midi_writepitchwheel(channel, static_cast<short>(key * 64), midioutput))
 					{
 						return true;
 					}

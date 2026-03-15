@@ -336,7 +336,7 @@ void cvar_t::C_WriteCVars (byte **demo_p, uint32_t filter, size_t array_size, bo
 	if (compact)
 	{
 		std::vector<cvar_t *> cvars;
-		chars = snprintf((char*)ptr, array_size, "\\\\%ux", (unsigned int)filter);
+		chars = snprintf(reinterpret_cast<char*>(ptr), array_size, "\\\\%ux", static_cast<unsigned int>(filter));
 
 		ptr += chars;
 		array_size -= chars;
@@ -350,7 +350,7 @@ void cvar_t::C_WriteCVars (byte **demo_p, uint32_t filter, size_t array_size, bo
 				return;
 			}
 
-			chars = snprintf ((char *)ptr, array_size, "\\%s", cvar->cstring());
+			chars = snprintf (reinterpret_cast<char *>(ptr), array_size, "\\%s", cvar->cstring());
 
 			ptr += chars;
 			array_size -= chars;
@@ -371,7 +371,7 @@ void cvar_t::C_WriteCVars (byte **demo_p, uint32_t filter, size_t array_size, bo
 					return;
 				}
 
-				chars = snprintf((char*)ptr, array_size, "\\%s\\%s",
+				chars = snprintf(reinterpret_cast<char*>(ptr), array_size, "\\%s\\%s",
 								cvar->name().c_str(), cvar->cstring());
 
 				ptr += chars;
@@ -386,7 +386,7 @@ void cvar_t::C_WriteCVars (byte **demo_p, uint32_t filter, size_t array_size, bo
 
 void cvar_t::C_ReadCVars (byte **demo_p)
 {
-	char *ptr = *((char **)demo_p);
+	char *ptr = *(reinterpret_cast<char**>(demo_p));
 	char *breakpt;
 
 	if (*ptr++ != '\\')
@@ -446,7 +446,7 @@ void cvar_t::C_ReadCVars (byte **demo_p)
 			}
 		}
 	}
-	*demo_p += strlen (*((char **)demo_p)) + 1;
+	*demo_p += strlen (*(reinterpret_cast<char**>(demo_p))) + 1;
 }
 
 static struct backup_s
@@ -574,8 +574,8 @@ void cvar_t::C_ArchiveCVars (void *f)
 		if ((baseapp == client && (cvar->m_Flags & CVAR_CLIENTARCHIVE))
 			|| (baseapp == server && (cvar->m_Flags & CVAR_SERVERARCHIVE)))
 		{
-			fmt::print((FILE *)f, "// {}\n", cvar->helptext());
-			fmt::print((FILE *)f, "set {} {}\n\n", C_QuoteString(cvar->name()), C_QuoteString(cvar->str()));
+			fmt::print(static_cast<FILE*>(f), "// {}\n", cvar->helptext());
+			fmt::print(static_cast<FILE*>(f), "set {} {}\n\n", C_QuoteString(cvar->name()), C_QuoteString(cvar->str()));
 		}
 		cvar = cvar->m_Next;
 	}
@@ -681,12 +681,12 @@ BEGIN_COMMAND (set)
 			if (strcmp("enabled", argv[2]) == 0 ||
 			    strcmp("true", argv[2]) == 0)
 			{
-				argv[2] = (char *)"1";
+				argv[2] = const_cast<char*>("1");
 			}
 			else if (strcmp("disabled", argv[2]) == 0 ||
 			         strcmp("false", argv[2]) == 0)
 			{
-				argv[2] = (char *)"0";
+				argv[2] = const_cast<char*>("0");
 			}
 		}
 

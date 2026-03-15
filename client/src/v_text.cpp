@@ -261,7 +261,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 	{
 		int skip = -(x - (char_size - 1)) / char_size;
 		x += skip * char_size;
-		if ((int)strlen(str) <= skip)
+		if (static_cast<int>(strlen(str)) <= skip)
 			return;
 
 		str += skip;
@@ -293,12 +293,12 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 			continue;
 		}
 
-		int c = *(byte*)str;
+		int c = static_cast<byte>(*str);
 
 		if (mSurface->getBitsPerPixel() == 8)
 		{
-			const byte* source = (byte*)&ConChars[c * 128];
-			palindex_t* dest = (palindex_t*)destline + x;
+			const byte* source = &ConChars[c * 128];
+			palindex_t* dest = static_cast<palindex_t*>(destline + x);
 			for (int z = 0; z < 8; z++)
 			{
 				// repeat each scanline based on scale
@@ -320,8 +320,8 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 		}
 		else
 		{
-			byte* source = (byte*)&ConChars[c * 128];
-			argb_t* dest = (argb_t*)destline + x;
+			byte* source = &ConChars[c * 128];
+			argb_t* dest = reinterpret_cast<argb_t*>(destline + x);
 			for (int z = 0; z < 8; z++)
 			{
 				// repeat each scanline based on scale
@@ -378,7 +378,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 	int cx = x;
 	int cy = y;
 
-	const char*	str = (const char*)string;
+	const char*	str = reinterpret_cast<const char*>(string);
 
 	while (1)
 	{
@@ -495,7 +495,7 @@ static void breakit(brokenlines_t* line, const byte* start, const byte* string, 
 	if (prefix_len)
 		strncpy(line->string + 0, prefix, prefix_len);
 
-	strncpy(line->string + prefix_len, (char*)start, string - start);
+	strncpy(line->string + prefix_len, reinterpret_cast<const char*>(start), string - start);
 	line->string[string - start + prefix_len] = 0;
 	line->width = V_StringWidth(line->string);
 }

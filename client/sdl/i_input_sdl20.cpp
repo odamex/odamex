@@ -759,11 +759,11 @@ int ISDL20JoystickInputDevice::calcAxisValue(int raw_value)
 	// Normalize.
 	if (raw_value > 0)
 	{
-		value = (float)raw_value / (float)SDL_JOYSTICK_AXIS_MAX;
+		value = static_cast<float>(raw_value) / static_cast<float>(SDL_JOYSTICK_AXIS_MAX);
 	}
 	else if (raw_value < 0)
 	{
-		value = (float)raw_value / (float)abs(SDL_JOYSTICK_AXIS_MIN);
+		value = static_cast<float>(raw_value) / static_cast<float>(abs(SDL_JOYSTICK_AXIS_MIN));
 	}
 	else
 	{

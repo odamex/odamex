@@ -187,7 +187,7 @@ void D_SetupUserInfo(void)
 	// sanitize the weapon switching choice
 	if (cl_switchweapon >= WPSW_NUMTYPES || cl_switchweapon < 0)
 		cl_switchweapon.ForceSet(WPSW_ALWAYS);
-	coninfo->switchweapon = static_cast<weaponswitch_t>(cl_switchweapon.asInt());
+	coninfo->switchweapon = cl_switchweapon.asEnum<weaponswitch_t>();
 
 	// Copies the updated cl_weaponpref* cvars to coninfo->weapon_prefs[]
 	D_PrepareWeaponPreferenceUserInfo();

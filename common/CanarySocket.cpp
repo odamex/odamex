@@ -36,8 +36,8 @@ using socklen_t = int;
 #   include <sys/types.h>
 #   include <unistd.h>
 #   define closesocket(x) close((x))
-#   define SETSOCKOPTCAST(x) ((const void *)(x))
-#   define GETSOCKOPTCAST(x) ((void *)(x))
+#   define SETSOCKOPTCAST(x) (static_cast<const void*>(x))
+#   define GETSOCKOPTCAST(x) (static_cast<void*>(x))
 #endif
 
 #include "odamex.h"
