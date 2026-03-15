@@ -298,7 +298,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 		if (mSurface->getBitsPerPixel() == 8)
 		{
 			const byte* source = &ConChars[c * 128];
-			palindex_t* dest = static_cast<palindex_t*>(destline + x);
+			palindex_t* dest = static_cast<palindex_t*>(destline) + x;
 			for (int z = 0; z < 8; z++)
 			{
 				// repeat each scanline based on scale
@@ -321,7 +321,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 		else
 		{
 			byte* source = &ConChars[c * 128];
-			argb_t* dest = reinterpret_cast<argb_t*>(destline + x);
+			argb_t* dest = reinterpret_cast<argb_t*>(destline) + x;
 			for (int z = 0; z < 8; z++)
 			{
 				// repeat each scanline based on scale
