@@ -370,10 +370,10 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 #if defined(__ppc__) || defined(__POWERPC__)
 	if (MusicSequenceLoadSMFData(m_sequence, m_cfd) != noErr)
 #else
-	if (MusicSequenceLoadSMFDataWithFlags(m_sequence, (m_cfd, 0) != noErr)
+	if (MusicSequenceLoadSMFDataWithFlags(m_sequence, m_cfd, 0) != noErr)
 #endif
 #else /* MusicSequenceFileLoadData() requires 10.5 or later. */
-	if (MusicSequenceFileLoadData(m_sequence, m_cfd, (MusicSequenceFileTypeID)0, 0) != noErr)
+	if (MusicSequenceFileLoadData(m_sequence, m_cfd, static_cast<MusicSequenceFileTypeID>(0), 0) != noErr)
 #endif
 	{
 		DisposeMusicSequence(m_sequence);
