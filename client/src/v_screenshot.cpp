@@ -120,9 +120,9 @@ static void V_SetPNGPalette(png_struct* png_ptr, png_info* info_ptr, const argb_
 
 	for (int i = 0; i < 256; i++)
 	{
-		pngpalette[i].red   = static_cast<png_byte>(palette_colors[i].getr());
-		pngpalette[i].green = static_cast<png_byte>(palette_colors[i].getg());
-		pngpalette[i].blue  = static_cast<png_byte>(palette_colors[i].getb());
+		pngpalette[i].red   = palette_colors[i].getr();
+		pngpalette[i].green = palette_colors[i].getg();
+		pngpalette[i].blue  = palette_colors[i].getb();
 	}
 
 	png_set_PLTE(png_ptr, info_ptr, pngpalette, 256);
@@ -160,38 +160,36 @@ static void SetPNGComments(PNGStrings& out, png_struct* png_ptr, png_info* info_
 	for (int i = 0; i < PNG_TEXT_LINES; i++)
 		pngtext[i].compression = PNG_TEXT_COMPRESSION_NONE;
 
-	// TODO: clean up these warnings
-	pngtext[text_line].key = static_cast<png_charp>("Description");
-	pngtext[text_line].text = static_cast<png_charp>("Odamex " DOTVERSIONSTR " Screenshot");
+	pngtext[text_line].key = const_cast<png_charp>("Description");
+	pngtext[text_line].text = const_cast<png_charp>("Odamex " DOTVERSIONSTR " Screenshot");
 	text_line++;
 
 	char datebuf[80];
-	const char* dateformat = "%A, %B %d, %Y, %I:%M:%S %p GMT";
-	strftime(datebuf, ARRAY_LENGTH(datebuf), dateformat, gmtime(now));
+	strftime(datebuf, ARRAY_LENGTH(datebuf), "%A, %B %d, %Y, %I:%M:%S %p GMT", gmtime(now));
 	out.at(text_line) = datebuf;
-	pngtext[text_line].key = static_cast<png_charp>("Created Time");
-	pngtext[text_line].text = static_cast<png_charp>(out.at(text_line).data());
+	pngtext[text_line].key = const_cast<png_charp>("Created Time");
+	pngtext[text_line].text = out.at(text_line).data();
 	text_line++;
 
 	out.at(text_line) = M_ExpandTokens("%g");
-	pngtext[text_line].key = static_cast<png_charp>("Game Mode");
-	pngtext[text_line].text = static_cast<png_charp>(out.at(text_line).data());
+	pngtext[text_line].key = const_cast<png_charp>("Game Mode");
+	pngtext[text_line].text = out.at(text_line).data();
 	text_line++;
 
-	pngtext[text_line].key = static_cast<png_charp>("In-Game Video Mode");
+	pngtext[text_line].key = const_cast<png_charp>("In-Game Video Mode");
 	pngtext[text_line].text = (I_GetPrimarySurface()->getBitsPerPixel() == 8)
-	                              ? static_cast<png_charp>("8bpp")
-	                              : static_cast<png_charp>("32bpp");
+	                              ? const_cast<png_charp>("8bpp")
+	                              : const_cast<png_charp>("32bpp");
 	text_line++;
 
 	out.at(text_line) = fmt::sprintf("%#.3f", gammalevel.value());
-	pngtext[text_line].key = static_cast<png_charp>("In-game Gamma Correction Level");
-	pngtext[text_line].text = static_cast<png_charp>(out.at(text_line).data());
+	pngtext[text_line].key = const_cast<png_charp>("In-game Gamma Correction Level");
+	pngtext[text_line].text = out.at(text_line).data();
 	text_line++;
 
-	pngtext[text_line].key = static_cast<png_charp>("In-Game Gamma Correction Type");
+	pngtext[text_line].key = const_cast<png_charp>("In-Game Gamma Correction Type");
 	pngtext[text_line].text =
-	    (vid_gammatype == 0) ? static_cast<png_charp>("Classic Doom") : static_cast<png_charp>("ZDoom");
+	    (vid_gammatype == 0) ? const_cast<png_charp>("Classic Doom") : const_cast<png_charp>("ZDoom");
 	text_line++;
 
 	png_set_text(png_ptr, info_ptr, pngtext, PNG_TEXT_LINES);
@@ -294,7 +292,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	{
 		V_SetPNGPalette(png_ptr, info_ptr, surface->getPalette());
 
-		const palindex_t* source = static_cast<palindex_t*>(surface->getBuffer());
+		const palindex_t* source = surface->getBuffer();
 		const int pitch_remainder = surface->getPitchInPixels() - width;
 
 		for (unsigned int y = 0; y < height; y++)
@@ -330,9 +328,9 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 
 				// write color components to current pixel of PNG row
 				// note: PNG is a big-endian file format
-				*row++ = static_cast<png_byte>(pixel.getr());
-				*row++ = static_cast<png_byte>(pixel.getg());
-				*row++ = static_cast<png_byte>(pixel.getb());
+				*row++ = pixel.getr();
+				*row++ = pixel.getg();
+				*row++ = pixel.getb();
 			}
 
 			source += pitch_remainder;
