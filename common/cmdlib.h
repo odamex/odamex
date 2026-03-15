@@ -119,7 +119,7 @@ std::optional<T> ParseNum(std::string_view str)
 			else if constexpr (std::is_same_v<T, long double>)
 				return strtold(str, str_end);
 			else
-				static_assert(false, "Unknown floating point type");
+				[]<bool flag = false>(){static_assert(false, "Unknown floating point type");}();
 		};
 
 		const auto out = strtof_template(nulltermstr.c_str(), &endptr);
