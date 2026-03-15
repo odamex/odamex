@@ -2516,9 +2516,9 @@ void M_OptResponder(const event_t& ev)
 		else
 		{
 #ifdef GCONSOLE
-		if (ev->data3 == 't' || ev->data1 == OKEY_JOY3)
+		if (ev.data3 == 't' || ev.data1 == OKEY_JOY3)
 #else
-		if (ev->data3 == 't')
+		if (ev.data3 == 't')
 #endif
 		{
 			// Test selected resolution

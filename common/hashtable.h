@@ -26,6 +26,8 @@
 #include <cassert>
 #include <utility>
 #include <memory>
+#include <bit>
+#include <array>
 
 // ============================================================================
 //
@@ -84,7 +86,7 @@ static inline unsigned int __hash_rot(unsigned int x, unsigned int k)
 
 static inline unsigned int __hash_jenkins_64bit(uint64_t key)
 {
-	auto [k0, k1] = std::bit_cast<std::array<uint32_t, 2>>(key);
+	const auto [k0, k1] = std::bit_cast<std::array<uint32_t, 2>>(key);
 	const unsigned int initval = 0xABCDEF01;	// any random value
 
   	unsigned int a, b, c;
