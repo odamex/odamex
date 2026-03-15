@@ -37,6 +37,8 @@
 #include "teaminfo.h"
 #include "w_wad.h"
 #ifdef CLIENT_APP
+#include <unordered_map>
+
 #include "../client/src/cl_main.h"
 #include "r_main.h"
 #include "v_text.h"
@@ -327,8 +329,8 @@ void P_ClampPingToWorld(v3fixed_t& point, const fixed_t shootz, const fixed_t sl
 	}
 }
 
-v3fixed_t P_TracePingEndpoint(const AActor* source, angle_t angle, fixed_t slope, fixed_t range,
-                              AActor*& outTarget)
+v3fixed_t P_TracePingEndpoint(const AActor* source, fixed_t shootz, angle_t angle, fixed_t slope,
+                              fixed_t range, AActor*& outTarget)
 {
 	const int angleidx = angle >> ANGLETOFINESHIFT;
 	const fixed_t x1 = source->x;
@@ -342,7 +344,7 @@ v3fixed_t P_TracePingEndpoint(const AActor* source, angle_t angle, fixed_t slope
 	g_pingTrace.y1 = y1;
 	g_pingTrace.dx = x2 - x1;
 	g_pingTrace.dy = y2 - y1;
-	g_pingTrace.shootz = source->z + (source->height >> 1) + 8 * FRACUNIT;
+	g_pingTrace.shootz = shootz;
 	g_pingTrace.slope = slope;
 	g_pingTrace.range = range;
 	g_pingTrace.hit = {x2, y2, g_pingTrace.shootz + FixedMul(range, slope)};
@@ -379,8 +381,9 @@ void P_PlayerPing(player_t &player)
 	angle_t aimAngle = player.mo->angle;
 	const fixed_t pitchSlope =
 	    finetangent[FINEANGLES / 4 - (player.mo->pitch >> ANGLETOFINESHIFT)];
+	const fixed_t shootz = player.mo->z + player.viewheight;
 	AActor* pingTarget = nullptr;
-	ping.pos = P_TracePingEndpoint(player.mo, aimAngle, pitchSlope, PingRange, pingTarget);
+	ping.pos = P_TracePingEndpoint(player.mo, shootz, aimAngle, pitchSlope, PingRange, pingTarget);
 
 	// Item ping assist: sweep nearby angles and auto-select a pickup if visible.
 	if (!(pingTarget && (pingTarget->flags & MF_SPECIAL)))
@@ -391,8 +394,8 @@ void P_PlayerPing(player_t &player)
 			{
 				angle_t testAngle = player.mo->angle + dir * sweep * ItemAssistStep;
 				AActor* testTarget = nullptr;
-				v3fixed_t testPos =
-				    P_TracePingEndpoint(player.mo, testAngle, pitchSlope, PingRange, testTarget);
+				v3fixed_t testPos = P_TracePingEndpoint(player.mo, shootz, testAngle, pitchSlope,
+				                                        PingRange, testTarget);
 				if (testTarget && (testTarget->flags & MF_SPECIAL))
 				{
 					aimAngle = testAngle;
@@ -548,9 +551,36 @@ bool P_ResolvePingPosition(const playerPing_s& ping, v3fixed_t& outPos)
 void R_AddPingSprites()
 {
 #ifdef CLIENT_APP
-	static constexpr int FollowPingMinScreenPx = 48;
-	static constexpr int FollowPingMaxScreenPx = 128;
 	static constexpr fixed_t StrictHeadOffset = 12 * FRACUNIT;
+	static constexpr fixed_t FollowPingSmoothing = FRACUNIT / 3;
+	static constexpr int FixedPingScreenPx = 64;
+	static std::array<v3fixed_t, MAXPLAYERS> followSmoothPos{};
+	static std::array<bool, MAXPLAYERS> followSmoothValid{};
+	static std::unordered_map<uint32_t, v3fixed_t> actorSmoothPos{};
+
+	auto smoothFixed = [](fixed_t from, fixed_t to) -> fixed_t
+	{
+		return from + FixedMul(FollowPingSmoothing, to - from);
+	};
+
+	auto smoothActorPos = [&](uint32_t netid, const v3fixed_t& targetPos) -> v3fixed_t
+	{
+		if (netid == 0)
+			return targetPos;
+
+		auto it = actorSmoothPos.find(netid);
+		if (it == actorSmoothPos.end())
+		{
+			actorSmoothPos.emplace(netid, targetPos);
+			return targetPos;
+		}
+
+		v3fixed_t& cur = it->second;
+		cur.x = smoothFixed(cur.x, targetPos.x);
+		cur.y = smoothFixed(cur.y, targetPos.y);
+		cur.z = smoothFixed(cur.z, targetPos.z);
+		return cur;
+	};
 
 	for (auto &pl : players)
 	{
@@ -590,6 +620,23 @@ void R_AddPingSprites()
 					P_PingFollowTargetPos(target, view, pos);
 				}
 			}
+
+			if (pl.id < MAXPLAYERS)
+			{
+				if (!followSmoothValid[pl.id])
+				{
+					followSmoothPos[pl.id] = pos;
+					followSmoothValid[pl.id] = true;
+				}
+				else
+				{
+					followSmoothPos[pl.id].x = smoothFixed(followSmoothPos[pl.id].x, pos.x);
+					followSmoothPos[pl.id].y = smoothFixed(followSmoothPos[pl.id].y, pos.y);
+					followSmoothPos[pl.id].z = smoothFixed(followSmoothPos[pl.id].z, pos.z);
+				}
+
+				pos = followSmoothPos[pl.id];
+			}
 		}
 
 		translationref_t translation = ping.translation;
@@ -602,8 +649,8 @@ void R_AddPingSprites()
 		if (ping.type == PING_FLAG && ping.flag_team != TEAM_NONE)
 			translation = P_PingTeamTranslation(ping.flag_team);
 
-		R_Add3DHUDSprite(ping.lump, pos, translation, 1.0f, FollowPingMinScreenPx,
-		                 FollowPingMaxScreenPx, true);
+		R_Add3DHUDSprite(ping.lump, pos, translation, 1.0f, FixedPingScreenPx,
+		                 FixedPingScreenPx, false);
 	}
 
 	if (G_IsHordeMode())
@@ -622,8 +669,9 @@ void R_AddPingSprites()
 				const fixed_t ay = actor->prevy + FixedMul(render_lerp_amount, actor->y - actor->prevy);
 				const fixed_t az = actor->prevz + FixedMul(render_lerp_amount, actor->z - actor->prevz);
 				v3fixed_t pos{ax, ay, az + actor->height + StrictHeadOffset};
-				R_Add3DHUDSprite(bossLump, pos, {}, 1.0f, FollowPingMinScreenPx,
-				                 FollowPingMaxScreenPx, true);
+				pos = smoothActorPos(actor->netid, pos);
+				R_Add3DHUDSprite(bossLump, pos, {}, 1.0f, FixedPingScreenPx,
+				                 FixedPingScreenPx, false);
 			}
 		}
 	}
@@ -646,9 +694,10 @@ void R_AddPingSprites()
 				const fixed_t py = pl.mo->prevy + FixedMul(render_lerp_amount, pl.mo->y - pl.mo->prevy);
 				const fixed_t pz = pl.mo->prevz + FixedMul(render_lerp_amount, pl.mo->z - pl.mo->prevz);
 				v3fixed_t pos{px, py, pz + pl.mo->height + StrictHeadOffset};
+				pos = smoothActorPos(pl.mo->netid, pos);
 				translationref_t trans = P_PingReadablePlayerTranslation(pl);
-				R_Add3DHUDSprite(teammateLump, pos, trans, 1.0f, FollowPingMinScreenPx,
-				                 FollowPingMaxScreenPx, true);
+				R_Add3DHUDSprite(teammateLump, pos, trans, 1.0f, FixedPingScreenPx,
+				                 FixedPingScreenPx, false);
 			}
 		}
 	}

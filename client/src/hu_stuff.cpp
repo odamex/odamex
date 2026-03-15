@@ -530,9 +530,9 @@ static void HU_DrawPingIndicator()
 
 	auto playerPingTranslation = [&](const player_t& player, const playerPing_s& ping) -> translationref_t
 	{
-		if (ping.type == PING_ITEM)
-			return {};
 		if (ping.type == PING_GENERAL || ping.type == PING_WARNING || ping.type == PING_TEAMMATE)
+			return readablePlayerTranslation(player);
+		if (ping.type == PING_ITEM)
 			return readablePlayerTranslation(player);
 		if (player.mo)
 			return player.mo->translation;

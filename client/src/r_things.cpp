@@ -709,7 +709,7 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 }
 
 static bool R_Clamp3DHUDSpriteSize(vissprite_t* vis, const patch_t* patch, int min_screen_px,
-                                   int max_screen_px)
+                                   int max_screen_px, int anchor_x, int anchor_y)
 {
 	if ((min_screen_px <= 0 && max_screen_px <= 0) || !vis || !patch)
 		return true;
@@ -748,10 +748,10 @@ static bool R_Clamp3DHUDSpriteSize(vissprite_t* vis, const patch_t* patch, int m
 	const int patch_h = std::max(1, static_cast<int>(patch->height()));
 	const int target_h = std::max(1, (patch_h * target_w + patch_w / 2) / patch_w);
 
-	// Preserve the projected screen center while resizing so clamping only
+	// Preserve the projected world-point center while resizing so clamping only
 	// affects size, not marker placement.
-	const int cx = (vis->x1 + vis->x2) / 2;
-	const int cy = (vis->y1 + vis->y2) / 2;
+	const int cx = anchor_x;
+	const int cy = anchor_y;
 
 	const int raw_x1 = cx - target_w / 2;
 	const int raw_x2 = raw_x1 + target_w - 1;
@@ -769,6 +769,14 @@ static bool R_Clamp3DHUDSpriteSize(vissprite_t* vis, const patch_t* patch, int m
 	const fixed_t scale = FixedDiv(target_w << FRACBITS, projected_w << FRACBITS);
 	vis->xscale = FixedMul(vis->xscale, scale);
 	vis->yscale = FixedMul(vis->yscale, scale);
+
+	// Re-anchor vertical projection to the desired screen top. Without this,
+	// changing scale only updates clip bounds and the sprite can drift.
+	if (vis->yscale != 0)
+	{
+		const fixed_t top_screen = raw_y1 << FRACBITS;
+		vis->texturemid = FixedDiv(centeryfrac - top_screen, vis->yscale);
+	}
 
 	fixed_t xiscale = FixedDiv(patch_w << FRACBITS, target_w << FRACBITS);
 	if (vis->xiscale < 0)
@@ -800,17 +808,24 @@ void R_Add3DHUDSprite(int lump, v3fixed_t pos, translationref_t translation, flo
 
 	fixed_t height = patch->height() << FRACBITS;
 	fixed_t width = patch->width() << FRACBITS;
+	// R_GenerateVisSprite treats z as the bottom and topoffs as sprite height.
+	// To anchor the marker center exactly at pos.z, shift bottom down by half
+	// the sprite height before projecting.
 	fixed_t topoffs = height;
 	fixed_t sideoffs = width >> 1;
+	fixed_t zbase = pos.z - (height >> 1);
+	fixed_t tx, ty;
+	R_RotatePoint(pos.x - viewx, pos.y - viewy, ANG90 - viewangle, tx, ty);
 
 	if (ignore_view_bob && camera && camera->player)
 	{
 		const fixed_t bobOffset = viewz - (camera->z + camera->player->viewheight);
 		pos.z += bobOffset;
+		zbase += bobOffset;
 	}
 
 	vissprite_t* vis =
-		R_GenerateVisSprite(NULL, FAKED_Center, pos.x, pos.y, pos.z,
+		R_GenerateVisSprite(NULL, FAKED_Center, pos.x, pos.y, zbase,
 							height, width, topoffs, sideoffs, false);
 	if (vis == NULL)
 		return;
@@ -826,7 +841,10 @@ void R_Add3DHUDSprite(int lump, v3fixed_t pos, translationref_t translation, flo
 	vis->mo = nullptr;
 	vis->colormap = shaderef_t(&V_GetDefaultPalette()->maps, 0);
 
-	if (!R_Clamp3DHUDSpriteSize(vis, patch, min_screen_px, max_screen_px))
+	const int anchor_x = R_ProjectPointX(tx, ty);
+	const int anchor_y = R_ProjectPointY(pos.z - viewz, ty);
+
+	if (!R_Clamp3DHUDSpriteSize(vis, patch, min_screen_px, max_screen_px, anchor_x, anchor_y))
 		vis->x2 = vis->x1 - 1;
 }
 
