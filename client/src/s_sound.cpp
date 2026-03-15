@@ -240,7 +240,7 @@ static bool S_UseMap8Volume()
 //
 // Internals.
 //
-static void S_StopChannel(unsigned int cnum);
+static void S_StopChannel(size_t cnum);
 
 
 //
@@ -933,7 +933,7 @@ void S_Sound(fixed_t x, fixed_t y, int channel, const char *name, float volume, 
 //
 // S_StopChannel
 //
-static void S_StopChannel(unsigned int cnum)
+static void S_StopChannel(size_t cnum)
 {
 	if (::Channel == nullptr)
 		return;
@@ -1096,7 +1096,7 @@ void S_UpdateSounds(const AActor* listener)
 	if (::Channel == nullptr)
 		return;
 
-	for (int cnum = 0; cnum < (int)numChannels; cnum++)
+	for (size_t cnum = 0; cnum < numChannels; cnum++)
 	{
 		channel_t* c = &Channel[cnum];
 		const sfxinfo_t* sfx = c->sfxinfo;
@@ -1273,8 +1273,8 @@ static void SetTicker(int *tics, AmbientSound *ambient)
 	}
 	else if (ambient->mode == amb_mode_t::RANDOM)
 	{
-		*tics = (int)(((float)rand() / (float)RAND_MAX) *
-				(float)(ambient->periodmax - ambient->periodmin)) +
+		*tics = static_cast<int>((static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) *
+				static_cast<float>(ambient->periodmax - ambient->periodmin)) +
 				ambient->periodmin;
 	}
 	else
