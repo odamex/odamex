@@ -226,7 +226,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	info_ptr = png_create_info_struct(png_ptr);
 	if (info_ptr == NULL)
 	{
-		png_destroy_write_struct(&png_ptr, (png_infop*)NULL);
+		png_destroy_write_struct(&png_ptr, nullptr);
 		PrintFmt(PRINT_HIGH, "I_SavePNG: png_create_info_struct failed\n");
 		return -1;
 	}
