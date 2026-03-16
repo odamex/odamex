@@ -117,7 +117,7 @@ typedef enum
 
     ,CVARTYPE_MAX = 255
 } cvartype_t;
-
+// TODO: make cvar_t an abstract class with subclasses for string/float/integral type
 class cvar_t
 {
 public:
@@ -146,6 +146,9 @@ public:
 	[[nodiscard]] int asInt() const { return static_cast<int>(std::round(m_Value)); }
 	[[nodiscard]] bool asBool() const { return m_Value != 0; }
 
+	template <typename E>
+		requires std::is_enum_v<E>
+	[[nodiscard]] E asEnum() const { return static_cast<E>(asInt()); }
 
 	template <typename E>
 		requires std::is_enum_v<E> || std::is_integral_v<E>
@@ -166,9 +169,9 @@ public:
 
 	void SetDefault (const char *value);
 	void RestoreDefault ();
-	void Set (const char *value);
+	void Set (std::string_view value);
 	void Set (float value);
-	void ForceSet (const char *value);
+	void ForceSet (std::string_view value);
 	void ForceSet (float value);
 
 	static void Transfer(const char *fromname, const char *toname);

@@ -133,8 +133,8 @@ static inline void Wipe_DrawMeltLoop(int x, int starty)
 	int surface_height = surface->getHeight();
 	int surface_pitch_pixels = surface->getPitchInPixels();
 
-	PIXEL_T* to = (PIXEL_T*)surface->getBuffer() + starty * surface_pitch_pixels + x;
-	const PIXEL_T* from = (PIXEL_T*)wipe_screen + surface_height * x;
+	PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + starty * surface_pitch_pixels + x;
+	const PIXEL_T* from = reinterpret_cast<PIXEL_T*>(wipe_screen) + surface_height * x;
 
 	int y = surface_height - starty;
 	while (y--)
@@ -322,8 +322,8 @@ static inline void Wipe_DrawBurnGeneric()
 	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 	int surface_pitch_pixels = surface->getPitchInPixels();
 
-	PIXEL_T* to = (PIXEL_T*)surface->getBuffer();
-	const PIXEL_T* from = (PIXEL_T*)wipe_screen;
+	PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer());
+	const PIXEL_T* from = reinterpret_cast<PIXEL_T*>(wipe_screen);
 
 	fixed_t firex, firey;
 	int x, y;
@@ -393,8 +393,8 @@ static inline void Wipe_DrawFadeGeneric()
 	int surface_width = surface->getWidth(), surface_height = surface->getHeight();
 	int surface_pitch_pixels = surface->getPitchInPixels();
 
-	PIXEL_T* to = (PIXEL_T*)surface->getBuffer();
-	const PIXEL_T* from = (PIXEL_T*)wipe_screen;
+	PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer());
+	const PIXEL_T* from = reinterpret_cast<PIXEL_T*>(wipe_screen);
 
 	fixed_t newfade = fade - 2;
 
@@ -475,9 +475,7 @@ void Wipe_Start()
 		current_wipe_type = wipe_Melt;
 	}
 	else
-	{
-		current_wipe_type = static_cast<wipe_type_t>(r_wipetype.asInt());
-	}
+		current_wipe_type = r_wipetype.asEnum<wipe_type_t>();
 
 	if (current_wipe_type == wipe_None)
 		return;

@@ -278,7 +278,7 @@ angle_t R_PointToAngle2(fixed_t viewx, fixed_t viewy, fixed_t x, fixed_t y)
 	}
 	else
 	{
-      return (angle_t)(atan2((double)y, (double)x) * (ANG180 / PI));
+      return static_cast<angle_t>(atan2(static_cast<double>(y), static_cast<double>(x)) * (ANG180 / PI));
 	}
 
    return 0;
@@ -356,12 +356,12 @@ dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
 	}
 
 	// Not found. Create it.
-	colormap = (dyncolormap_t *)Z_Malloc (sizeof(*colormap), PU_LEVEL, 0);
+	colormap = Z_Malloc<dyncolormap_t>(PU_LEVEL);
 	shademap_t *maps = new shademap_t();
-	maps->colormap = (byte *)Z_Malloc (NUMCOLORMAPS*256*sizeof(byte)+3+255, PU_LEVEL, 0);
-	maps->colormap = (byte *)(((ptrdiff_t)maps->colormap + 255) & ~0xff);
-	maps->shademap = (argb_t *)Z_Malloc (NUMCOLORMAPS*256*sizeof(argb_t)+3+255, PU_LEVEL, 0);
-	maps->shademap = (argb_t *)(((ptrdiff_t)maps->shademap + 255) & ~0xff);
+	maps->colormap = static_cast<byte*>(Z_Malloc(NUMCOLORMAPS*256*sizeof(byte)+3+255, PU_LEVEL));
+	maps->colormap = reinterpret_cast<byte*>(((reinterpret_cast<ptrdiff_t>(maps->colormap) + 255) & ~0xff));
+	maps->shademap = static_cast<argb_t*>(Z_Malloc (NUMCOLORMAPS*256*sizeof(argb_t)+3+255, PU_LEVEL));
+	maps->shademap = reinterpret_cast<argb_t*>(((reinterpret_cast<ptrdiff_t>(maps->shademap) + 255) & ~0xff));
 
 	colormap->maps = shaderef_t(maps, 0);
 	colormap->color = color;
@@ -382,7 +382,7 @@ void CTF_CheckFlags (player_t &player)
 		if(player.flags[i])
 		{
 			player.flags[i] = false;
-			GetTeamInfo((team_t)i)->FlagData.flagger = 0;
+			GetTeamInfo(static_cast<team_t>(i))->FlagData.flagger = 0;
 		}
 	}
 }

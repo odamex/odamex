@@ -37,10 +37,7 @@ namespace hud {
 // Round float to short integer.  Used by the scaling function.
 short roundToShort(float f)
 {
-	if (f >= 0.0f)
-		return (short)(f + 0.5f);
-	else
-		return (short)(f - 0.5f);
+	return static_cast<short>(std::round(f));
 }
 
 // Return the number of scaled available horizontal pixels to draw on.
@@ -415,8 +412,8 @@ void DrawPatchStretched(int x, int y,
 	if (!use_patch_offsets)
 	{
 		// Negate scaled patch offsets.
-		x += (roundToShort(patch->leftoffset() * ((float)w / patch->width()))) * x_scale;
-		y += (roundToShort(patch->topoffset() * ((float)h / patch->height()))) * y_scale;
+		x += (roundToShort(patch->leftoffset() * (static_cast<float>(w) / patch->width()))) * x_scale;
+		y += (roundToShort(patch->topoffset() * (static_cast<float>(h) / patch->height()))) * y_scale;
 	}
 
 	if (force_opaque)
@@ -438,8 +435,8 @@ void DrawPatchScaled(const int x, const int y,
 		return;
 
 	// Calculate aspect ratios of patch and destination.
-	float patch_aspect = patch->width() / (float)patch->height();
-	float dest_aspect = w / (float)h;
+	float patch_aspect = patch->width() / static_cast<float>(patch->height());
+	float dest_aspect = w / static_cast<float>(h);
 
 	if (patch_aspect < dest_aspect) {
 		// Destination is wider than patch.  Keep height, calculate width.

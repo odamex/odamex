@@ -45,7 +45,9 @@
 
 #include "m_alloc.h"
 #include "m_random.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "gstrings.h"
 #include "z_zone.h"
 #include "w_wad.h"
@@ -170,8 +172,6 @@ void D_SetPlatform(void)
 //
 void D_ProcessEvents (void)
 {
-	event_t *ev;
-
 	// [RH] If testing mode, do not accept input until test is over
 	if (testingmode)
 	{
@@ -185,12 +185,12 @@ void D_ProcessEvents (void)
 
 	for (; eventtail != eventhead ; eventtail = ++eventtail<MAXEVENTS ? eventtail : 0)
 	{
-		ev = &events[eventtail];
-		if (C_Responder (ev))
+		const event_t& ev = events[eventtail];
+		if (C_Responder(ev))
 			continue;				// console ate the event
-		if (M_Responder (ev))
+		if (M_Responder(ev))
 			continue;				// menu ate the event
-		G_Responder (ev);
+		G_Responder(ev);
 	}
 }
 
@@ -198,16 +198,16 @@ void D_ProcessEvents (void)
 // D_PostEvent
 // Called by the I/O functions when input is detected
 //
-void D_PostEvent (const event_t* ev)
+void D_PostEvent(const event_t& ev)
 {
-	if (ev->type == ev_mouse && !menuactive && gamestate == GS_LEVEL &&
+	if (ev.type == ev_mouse && !menuactive && gamestate == GS_LEVEL &&
 		!paused && ConsoleState != c_down && ConsoleState != c_falling)
 	{
-		G_Responder((event_t*)ev);
+		G_Responder(ev);
 		return;
 	}
 
-	events[eventhead] = *ev;
+	events[eventhead] = ev;
 
 	if(++eventhead >= MAXEVENTS)
 		eventhead = 0;
@@ -593,7 +593,6 @@ void D_DoAdvanceDemo (void)
 		{
 			const int lumpnum = W_GetNumForName(pagename);
 			const unsigned lump_length = W_LumpLength(lumpnum);
-
 			page_height = 200;
 			page_width = (lump_length % page_height == 0) ? lump_length / page_height : 320;
 		}
@@ -610,7 +609,7 @@ void D_DoAdvanceDemo (void)
 
 		if (is_raw_patch)
 		{
-			const byte* raw_page = static_cast<const byte*>(W_CacheLumpName(pagename, PU_CACHE));
+			const byte* raw_page = W_CacheLumpName<byte>(pagename, PU_CACHE);
 			canvas->DrawBlock(0, 0, page_width, page_height, raw_page);
 		}
 		else
@@ -673,7 +672,7 @@ void G_ReadCOMPLVL()
 	if (lumpnum == -1)
 		return;
 
-	char* complvl = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
+	char* complvl = W_CacheLumpNum<char>(lumpnum, PU_STATIC);
 	auto guard = nonstd::make_scope_exit([&]{ Z_Free(complvl); });
 
 	if (!serverside)
@@ -917,8 +916,10 @@ void D_DoomMain()
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
+	BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 	if (lzo_init() != LZO_E_OK)	// [RH] Initialize the minilzo package.
 		I_FatalError("Could not initialize LZO routines");
+	END_DISABLE_WARNING_GNU
 
 	C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
 
@@ -1087,7 +1088,7 @@ void D_DoomMain()
 	if (p && p < Args.NumArgs()-1)
 	{
 		startmap = Args.GetArg(p+1);
-		((char *)Args.GetArg(p))[0] = '-';
+		(const_cast<char*>(Args.GetArg(p))[0]) = '-';
 		autostart = true;
 	}
 

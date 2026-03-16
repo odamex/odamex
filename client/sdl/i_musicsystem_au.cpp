@@ -331,7 +331,7 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 
 		if (!mus2mid(mus, midi))
 		{
-			regdata = (byte*)mem_fgetbuf(midi);
+			regdata = reinterpret_cast<byte*>(mem_fgetbuf(midi));
 			reglength = mem_fsize(midi);
 		}
 		else
@@ -353,7 +353,7 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 		return;
 	}
 
-	m_cfd = CFDataCreate(NULL, (const Uint8*)regdata, reglength);
+	m_cfd = CFDataCreate(NULL, reinterpret_cast<const Uint8*>(regdata), reglength);
 
 	if (!m_cfd)
 	{
@@ -368,12 +368,12 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
  * So, we use MusicSequenceLoadSMFData() for powerpc versions
  * but the *WithFlags() on intel which require 10.4 anyway. */
 #if defined(__ppc__) || defined(__POWERPC__)
-	if (MusicSequenceLoadSMFData(m_sequence, (CFDataRef)m_cfd) != noErr)
+	if (MusicSequenceLoadSMFData(m_sequence, m_cfd) != noErr)
 #else
-	if (MusicSequenceLoadSMFDataWithFlags(m_sequence, (CFDataRef)m_cfd, 0) != noErr)
+	if (MusicSequenceLoadSMFDataWithFlags(m_sequence, m_cfd, 0) != noErr)
 #endif
 #else /* MusicSequenceFileLoadData() requires 10.5 or later. */
-	if (MusicSequenceFileLoadData(m_sequence, (CFDataRef)m_cfd, (MusicSequenceFileTypeID)0, 0) != noErr)
+	if (MusicSequenceFileLoadData(m_sequence, m_cfd, static_cast<MusicSequenceFileTypeID>(0), 0) != noErr)
 #endif
 	{
 		DisposeMusicSequence(m_sequence);

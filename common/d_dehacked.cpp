@@ -688,14 +688,14 @@ static bool HandleKey(std::span<const Key> keys, void* structure, std::string_vi
 	{
 		if (iequals(keyit.name, key))
 		{
-			if (structsize && keyit.offset + (int)sizeof(int) > structsize)
+			if (structsize && keyit.offset + static_cast<int>(sizeof(int)) > structsize)
 			{
 				// Handle unknown or unimplemented data
 				DPrintFmt("DeHackEd: Cannot apply key {}, offset would overrun.\n", keyit.name);
 				return true;
 			}
 
-			*((int*)(((byte*)structure) + keyit.offset)) = value;
+			*(reinterpret_cast<int*>((static_cast<byte*>(structure)) + keyit.offset)) = value;
 			return false;
 		}
 	}
@@ -990,7 +990,7 @@ static void PatchThing(int thingNum, DehScanner& scanner)
 	MobjIterator mobjinfo_it = mobjinfo.find(thingNum);
 	if (mobjinfo_it == mobjinfo.end())
 	{
-		info = &mobjinfo.insert(mobjinfo_t{}, (mobjtype_t) thingNum);
+		info = &mobjinfo.insert(mobjinfo_t{}, static_cast<mobjtype_t>(thingNum));
 		// set the type
 		info->type = thingNum;
 	} else

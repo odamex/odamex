@@ -30,12 +30,6 @@
 #include "m_ostring.h"
 
 
-// initialize static member variables
-bool OString::mInitialized = false;
-OString::StringTable* OString::mStrings = NULL;
-OString::StringLookupTable* OString::mStringLookup = NULL;
-std::string* OString::mEmptyString = NULL;
-
 // ------------------------------------------------------------------------
 // startup / shutdown
 // ------------------------------------------------------------------------
@@ -44,9 +38,8 @@ void OString::startup()
 {
 	if (!mInitialized)
 	{
-		mStrings = new StringTable(OString::MAX_STRINGS);
-		mStringLookup = new StringLookupTable(OString::MAX_STRINGS);
-		mEmptyString = new std::string("");
+		mStrings = std::make_unique<StringTable>(OString::MAX_STRINGS);
+		mStringLookup = std::make_unique<StringLookupTable>(OString::MAX_STRINGS);
 		mInitialized = true;
 	}
 }
@@ -54,12 +47,8 @@ void OString::startup()
 
 void OString::shutdown()
 {
-	delete mStrings;
-	mStrings = NULL;
-	delete mStringLookup;
-	mStringLookup = NULL;
-	delete mEmptyString;
-	mEmptyString = NULL;
+	mStrings.reset();
+	mStringLookup.reset();
 	mInitialized = false;
 }
 

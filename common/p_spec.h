@@ -96,53 +96,14 @@ enum ceilingchange_e
 	CChgTyp,
 };
 
-extern std::list<movingsector_t> movingsectors;
-extern std::list<sector_t*> specialdoors;
-extern bool s_SpecialFromServer;
-
-#define IgnoreSpecial !serverside && !s_SpecialFromServer
-#define NO_TEXTURE 0;
-
-#define CEILSPEED FRACUNIT
-
-std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector);
-void P_AddMovingCeiling(sector_t *sector);
-void P_AddMovingFloor(sector_t *sector);
-void P_RemoveMovingCeiling(sector_t *sector);
-void P_RemoveMovingFloor(sector_t *sector);
-bool P_MovingCeilingCompleted(sector_t *sector);
-bool P_MovingFloorCompleted(sector_t *sector);
-bool P_HandleSpecialRepeat(line_t* line);
-void P_ApplySectorDamage(player_t& player, int damage, int leak, int mod = 0);
-void P_ApplySectorDamageNoRandom(player_t& player, int damage, int mod = 0);
-void P_ApplySectorDamageNoWait(player_t& player, int damage, int mod = 0);
-void P_ApplySectorDamageEndLevel(player_t& player);
-void P_CollectSecretCommon(sector_t& sector, player_t& player);
-int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start);
-int P_FindLineFromTag(int tag, int start);
-bool P_FloorActive(const sector_t* sec);
-bool P_LightingActive(const sector_t* sec);
-bool P_CeilingActive(const sector_t* sec);
-fixed_t P_ArgToSpeed(byte arg);
-bool P_ArgToCrushType(byte arg);
-void P_ResetSectorSpecial(sector_t* sector);
-void P_CopySectorSpecial(sector_t* dest, sector_t* source);
-byte P_ArgToChange(byte arg);
-int P_ArgToCrush(byte arg);
-int P_FindSectorFromLineTag(const line_t* line, int start);
-int P_ArgToCrushMode(byte arg, bool slowdown);
-fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f);
-bool P_CheckTag(line_t* line);
-void P_TransferSectorFlags(unsigned int*, unsigned int);
-
 //jff 2/23/98 identify the special classes that can share sectors
 
-typedef enum
+enum special_e
 {
 	floor_special,
 	ceiling_special,
 	lighting_special
-} special_e;
+};
 
 enum crushmode_e
 {
@@ -197,6 +158,45 @@ struct newspecial_s
 	int damageleakrate;
 };
 
+extern std::list<movingsector_t> movingsectors;
+extern std::list<sector_t*> specialdoors;
+extern bool s_SpecialFromServer;
+
+#define IgnoreSpecial !serverside && !s_SpecialFromServer
+#define NO_TEXTURE 0;
+
+#define CEILSPEED FRACUNIT
+
+std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector);
+void P_AddMovingCeiling(sector_t *sector);
+void P_AddMovingFloor(sector_t *sector);
+void P_RemoveMovingCeiling(sector_t *sector);
+void P_RemoveMovingFloor(sector_t *sector);
+bool P_MovingCeilingCompleted(sector_t *sector);
+bool P_MovingFloorCompleted(sector_t *sector);
+bool P_HandleSpecialRepeat(line_t* line);
+void P_ApplySectorDamage(player_t& player, int damage, int leak, int mod = 0);
+void P_ApplySectorDamageNoRandom(player_t& player, int damage, int mod = 0);
+void P_ApplySectorDamageNoWait(player_t& player, int damage, int mod = 0);
+void P_ApplySectorDamageEndLevel(player_t& player);
+void P_CollectSecretCommon(sector_t& sector, player_t& player);
+int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start);
+int P_FindLineFromTag(int tag, int start);
+bool P_FloorActive(const sector_t* sec);
+bool P_LightingActive(const sector_t* sec);
+bool P_CeilingActive(const sector_t* sec);
+fixed_t P_ArgToSpeed(byte arg);
+bool P_ArgToCrushType(byte arg);
+void P_ResetSectorSpecial(sector_t* sector);
+void P_CopySectorSpecial(sector_t* dest, sector_t* source);
+byte P_ArgToChange(byte arg);
+int P_ArgToCrush(byte arg);
+int P_FindSectorFromLineTag(const line_t* line, int start);
+crushmode_e P_ArgToCrushMode(byte arg, bool slowdown);
+fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f);
+bool P_CheckTag(line_t* line);
+void P_TransferSectorFlags(unsigned int*, unsigned int);
+
 #define FLOORSPEED FRACUNIT
 
 bool P_CanUnlockZDoomDoor(player_t* player, zdoom_lock_t lock, bool remote);
@@ -249,11 +249,11 @@ private:
 
 inline FArchive &operator<< (FArchive &arc, DScroller::EScrollType type)
 {
-	return arc << (byte)type;
+	return arc << static_cast<byte>(type);
 }
 inline FArchive &operator>> (FArchive &arc, DScroller::EScrollType &out)
 {
-	byte in; arc >> in; out = (DScroller::EScrollType)in; return arc;
+	byte in; arc >> in; out = static_cast<DScroller::EScrollType>(in); return arc;
 }
 
 inline bool P_WallScrollType(DScroller::EScrollType type)
@@ -335,11 +335,11 @@ protected:
 
 inline FArchive &operator<< (FArchive &arc, DPusher::EPusher type)
 {
-	return arc << (byte)type;
+	return arc << static_cast<byte>(type);
 }
 inline FArchive &operator>> (FArchive &arc, DPusher::EPusher &out)
 {
-	byte in; arc >> in; out = (DPusher::EPusher)in; return arc;
+	byte in; arc >> in; out = static_cast<DPusher::EPusher>(in); return arc;
 }
 
 bool P_CheckKeys (player_t *p, card_t lock, bool remote);
@@ -663,8 +663,8 @@ public:
 
 	void RunThink () override;
 
-	void SetState(byte state, int count) { m_Status = (EPlatState)state; m_Count = count; }
-	void GetState(byte &state, int &count) { state = (byte)m_Status; count = m_Count; }
+	void SetState(byte state, int count) { m_Status = static_cast<EPlatState>(state); m_Count = count; }
+	void GetState(byte &state, int &count) { state = static_cast<byte>(m_Status); count = m_Count; }
 
 	DPlat(sector_t *sector);
 	DPlat(sector_t *sector, DPlat::EPlatType type, fixed_t height, int speed, int delay, fixed_t lip);
@@ -704,19 +704,19 @@ private:
 
 inline FArchive &operator<< (FArchive &arc, DPlat::EPlatType type)
 {
-	return arc << (byte)type;
+	return arc << static_cast<byte>(type);
 }
 inline FArchive &operator>> (FArchive &arc, DPlat::EPlatType &out)
 {
-	byte in; arc >> in; out = (DPlat::EPlatType)in; return arc;
+	byte in; arc >> in; out = static_cast<DPlat::EPlatType>(in); return arc;
 }
 inline FArchive &operator<< (FArchive &arc, DPlat::EPlatState state)
 {
-	return arc << (byte)state;
+	return arc << static_cast<byte>(state);
 }
 inline FArchive &operator>> (FArchive &arc, DPlat::EPlatState &out)
 {
-	byte in; arc >> in; out = (DPlat::EPlatState)in; return arc;
+	byte in; arc >> in; out = static_cast<DPlat::EPlatState>(in); return arc;
 }
 
 //
@@ -769,19 +769,19 @@ public:
 
 inline FArchive &operator<< (FArchive &arc, DPillar::EPillar type)
 {
-	return arc << (byte)type;
+	return arc << static_cast<byte>(type);
 }
 inline FArchive &operator>> (FArchive &arc, DPillar::EPillar &out)
 {
-	byte in; arc >> in; out = (DPillar::EPillar)in; return arc;
+	byte in; arc >> in; out = static_cast<DPillar::EPillar>(in); return arc;
 }
 inline FArchive &operator<< (FArchive &arc, DPillar::EPillarState state)
 {
-	return arc << (byte)state;
+	return arc << static_cast<byte>(state);
 }
 inline FArchive &operator>> (FArchive &arc, DPillar::EPillarState &out)
 {
-	byte in; arc >> in; out = (DPillar::EPillarState)in; return arc;
+	byte in; arc >> in; out = static_cast<DPillar::EPillarState>(in); return arc;
 }
 
 bool EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
@@ -883,19 +883,19 @@ private:
 
 inline FArchive &operator<< (FArchive &arc, DDoor::EVlDoor type)
 {
-	return arc << (byte)type;
+	return arc << static_cast<byte>(type);
 }
 inline FArchive &operator>> (FArchive &arc, DDoor::EVlDoor &out)
 {
-	byte in; arc >> in; out = (DDoor::EVlDoor)in; return arc;
+	byte in; arc >> in; out = static_cast<DDoor::EVlDoor>(in); return arc;
 }
 inline FArchive &operator<< (FArchive &arc, DDoor::EDoorState state)
 {
-	return arc << (byte)state;
+	return arc << static_cast<byte>(state);
 }
 inline FArchive &operator>> (FArchive &arc, DDoor::EDoorState &out)
 {
-	byte in; arc >> in; out = (DDoor::EDoorState)in; return arc;
+	byte in; arc >> in; out = static_cast<DDoor::EDoorState>(in); return arc;
 }
 
 //
@@ -1013,19 +1013,19 @@ private:
 
 inline FArchive &operator<< (FArchive &arc, DCeiling::ECeiling type)
 {
-	return arc << (byte)type;
+	return arc << static_cast<byte>(type);
 }
 inline FArchive &operator>> (FArchive &arc, DCeiling::ECeiling &type)
 {
-	byte in; arc >> in; type = (DCeiling::ECeiling)in; return arc;
+	byte in; arc >> in; type = static_cast<DCeiling::ECeiling>(in); return arc;
 }
 inline FArchive &operator<< (FArchive &arc, DCeiling::ECeilingState state)
 {
-	return arc << (byte)state;
+	return arc << static_cast<byte>(state);
 }
 inline FArchive &operator>> (FArchive &arc, DCeiling::ECeilingState &out)
 {
-	byte in; arc >> in; out = (DCeiling::ECeilingState)in; return arc;
+	byte in; arc >> in; out = static_cast<DCeiling::ECeilingState>(in); return arc;
 }
 
 
@@ -1158,19 +1158,19 @@ protected:
 
 inline FArchive &operator<< (FArchive &arc, DFloor::EFloor type)
 {
-	return arc << (byte)type;
+	return arc << static_cast<byte>(type);
 }
 inline FArchive &operator>> (FArchive &arc, DFloor::EFloor &type)
 {
-	byte in; arc >> in; type = (DFloor::EFloor)in; return arc;
+	byte in; arc >> in; type = static_cast<DFloor::EFloor>(in); return arc;
 }
 inline FArchive &operator<< (FArchive &arc, DFloor::EFloorState state)
 {
-	return arc << (byte)state;
+	return arc << static_cast<byte>(state);
 }
 inline FArchive &operator>> (FArchive &arc, DFloor::EFloorState &out)
 {
-	byte in; arc >> in; out = (DFloor::EFloorState)in; return arc;
+	byte in; arc >> in; out = static_cast<DFloor::EFloorState>(in); return arc;
 }
 
 class DElevator : public DMover
@@ -1222,19 +1222,19 @@ private:
 
 inline FArchive &operator<< (FArchive &arc, DElevator::EElevator type)
 {
-	return arc << (byte)type;
+	return arc << static_cast<byte>(type);
 }
 inline FArchive &operator>> (FArchive &arc, DElevator::EElevator &out)
 {
-	byte in; arc >> in; out = (DElevator::EElevator)in; return arc;
+	byte in; arc >> in; out = static_cast<DElevator::EElevator>(in); return arc;
 }
 inline FArchive &operator<< (FArchive &arc, DElevator::EElevatorState state)
 {
-	return arc << (byte)state;
+	return arc << static_cast<byte>(state);
 }
 inline FArchive &operator>> (FArchive &arc, DElevator::EElevatorState &out)
 {
-	byte in; arc >> in; out = (DElevator::EElevatorState)in; return arc;
+	byte in; arc >> in; out = static_cast<DElevator::EElevatorState>(in); return arc;
 }
 
 // Waggle

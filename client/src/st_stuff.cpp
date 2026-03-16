@@ -154,7 +154,7 @@ void ST_SetStatusBar(const stbarfns_t* statusBar)
 
 CVAR_FUNC_IMPL(st_scale)
 {
-	R_SetViewSize((int)screenblocks);
+	R_SetViewSize(screenblocks.asInt());
 	ST_ForceRefresh();
 }
 

@@ -74,12 +74,12 @@ struct brokenlines_t
 };
 
 int V_StringWidth(const byte* str);
-inline int V_StringWidth(const char* str) { return V_StringWidth((const byte*)str); }
+inline int V_StringWidth(const char* str) { return V_StringWidth(reinterpret_cast<const byte*>(str)); }
 int V_StringHeight(const char* str);
 int V_LineHeight();
 
 brokenlines_t *V_BreakLines (int maxwidth, const byte *str);
 void V_FreeBrokenLines (brokenlines_t *lines);
-inline brokenlines_t *V_BreakLines (int maxwidth, const char *str) { return V_BreakLines (maxwidth, (const byte *)str); }
+inline brokenlines_t *V_BreakLines (int maxwidth, const char *str) { return V_BreakLines (maxwidth, reinterpret_cast<const byte*>(str)); }
 
-int V_GetTextColor(const char* str);
+int V_GetTextColor(std::string_view str);

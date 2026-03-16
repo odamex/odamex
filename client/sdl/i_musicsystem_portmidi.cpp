@@ -198,7 +198,7 @@ void PortMidiMusicSystem::writeSysEx(int time, const byte *data, size_t length)
 
 void PortMidiMusicSystem::writeVolume(int time, byte channel, byte volume)
 {
-	byte scaled = (byte)(volume * m_volumeScale + 0.5f) & 0x7F;
+	byte scaled = static_cast<byte>(volume * m_volumeScale + 0.5f) & 0x7F;
 	writeControl(time, channel, MIDI_CONTROLLER_VOLUME_MSB, scaled);
 	m_channelVolume[channel] = volume & 0x7F;
 }

@@ -1,4 +1,4 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
@@ -70,7 +70,7 @@
 #  define BYTE_ORDER 0
 #endif
 
-#define T_MASK ((md5_word_t)~0)
+#define T_MASK (static_cast<md5_word_t>(~0))
 #define T1 /* 0xd76aa478 */ (T_MASK ^ 0x28955b87)
 #define T2 /* 0xe8c7b756 */ (T_MASK ^ 0x173848a9)
 #define T3    0x242070db
@@ -162,7 +162,7 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
 	 */
 	static const int w = 1;
 
-	if (*((const md5_byte_t *)&w)) /* dynamic little-endian */
+	if (*(reinterpret_cast<const md5_byte_t*>(&w))) /* dynamic little-endian */
 #endif
 #if BYTE_ORDER <= 0		/* little-endian */
 	{
@@ -172,7 +172,7 @@ md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
 	     */
 	    if (!((reinterpret_cast<uintptr_t>(data)) & 3)) {
 		/* data are properly aligned */
-		X = (const md5_word_t *)data;
+		X = reinterpret_cast<const md5_word_t*>(data);
 	    } else {
 		/* not aligned */
 		memcpy(xbuf, data, 64);
@@ -334,7 +334,7 @@ md5_append(md5_state_t *pms, const md5_byte_t *data, int nbytes)
     const md5_byte_t *p = data;
     int left = nbytes;
     int offset = (pms->count[0] >> 3) & 63;
-    md5_word_t nbits = (md5_word_t)(nbytes << 3);
+    md5_word_t nbits = static_cast<md5_word_t>(nbytes << 3);
 
     if (nbytes <= 0)
 	return;
@@ -380,13 +380,13 @@ md5_finish(md5_state_t *pms, md5_byte_t digest[16])
 
     /* Save the length before padding. */
     for (i = 0; i < 8; ++i)
-	data[i] = (md5_byte_t)(pms->count[i >> 2] >> ((i & 3) << 3));
+	data[i] = static_cast<md5_byte_t>(pms->count[i >> 2] >> ((i & 3) << 3));
     /* Pad to 56 bytes mod 64. */
     md5_append(pms, pad, ((55 - (pms->count[0] >> 3)) & 63) + 1);
     /* Append the length. */
     md5_append(pms, data, 8);
     for (i = 0; i < 16; ++i)
-	digest[i] = (md5_byte_t)(pms->abcd[i >> 2] >> ((i & 3) << 3));
+	digest[i] = static_cast<md5_byte_t>(pms->abcd[i >> 2] >> ((i & 3) << 3));
 }
 
 // denis lukianov 2006
@@ -402,7 +402,7 @@ std::string MD5SUM(const void *in, size_t size)
 	md5_state_t state;
 	md5_init(&state);
 
-	md5_append(&state, (const unsigned char *)in, size);
+	md5_append(&state, static_cast<const unsigned char*>(in), size);
 
 	md5_byte_t digest[16];
 	md5_finish(&state, digest);
@@ -410,7 +410,7 @@ std::string MD5SUM(const void *in, size_t size)
 	std::stringstream hash;
 
 	for(int i = 0; i < 16; i++)
-		hash << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << (short)digest[i];
+		hash << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << static_cast<short>(digest[i]);
 
 	return hash.str();
 }

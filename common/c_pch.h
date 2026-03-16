@@ -28,10 +28,11 @@
 #include "info.h"
 #include "i_net.h"
 #include "i_system.h"
-#include "lzoconf.h"
 #include "lzodefs.h"
 #include "md5.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "m_alloc.h"
 #include "m_argv.h"
 #include "m_bbox.h"

@@ -207,54 +207,57 @@ int V_TextScaleYAmount()
 // color translation to use. This assumes that str is at least three characters
 // in length.
 //
-int V_GetTextColor(const char* str)
+int V_GetTextColor(std::string_view str)
 {
-	static int table[128];
-	static bool initialized = false;
+	static constexpr std::array<int, 128> table = []{
+        std::array<int, 128> t{};
+        t.fill(-1);
 
-	if (!initialized)
-	{
-		for (int i = 0; i < 128; i++)
-			table[i] = -1;
+        auto set = [&](char ch, char ch2, int color){
+            t[static_cast<unsigned char>(ch)] = color;
+            t[static_cast<unsigned char>(ch2)] = color;
+        };
 
-		table[static_cast<unsigned char>('A')] = table[static_cast<unsigned char>('a')] = CR_BRICK;
-		table[static_cast<unsigned char>('B')] = table[static_cast<unsigned char>('b')] = CR_TAN;
-		table[static_cast<unsigned char>('C')] = table[static_cast<unsigned char>('c')] = CR_GRAY;
-		table[static_cast<unsigned char>('D')] = table[static_cast<unsigned char>('d')] = CR_GREEN;
-		table[static_cast<unsigned char>('E')] = table[static_cast<unsigned char>('e')] = CR_BROWN;
-		table[static_cast<unsigned char>('F')] = table[static_cast<unsigned char>('f')] = CR_GOLD;
-		table[static_cast<unsigned char>('G')] = table[static_cast<unsigned char>('g')] = CR_RED;
-		table[static_cast<unsigned char>('H')] = table[static_cast<unsigned char>('h')] = CR_BLUE;
-		table[static_cast<unsigned char>('I')] = table[static_cast<unsigned char>('i')] = CR_ORANGE;
-		table[static_cast<unsigned char>('J')] = table[static_cast<unsigned char>('j')] = CR_WHITE;
-		table[static_cast<unsigned char>('K')] = table[static_cast<unsigned char>('k')] = CR_YELLOW;
-		table[static_cast<unsigned char>('M')] = table[static_cast<unsigned char>('m')] = CR_BLACK;
-		table[static_cast<unsigned char>('N')] = table[static_cast<unsigned char>('n')] = CR_LIGHTBLUE;
-		table[static_cast<unsigned char>('O')] = table[static_cast<unsigned char>('o')] = CR_CREAM;
-		table[static_cast<unsigned char>('P')] = table[static_cast<unsigned char>('p')] = CR_OLIVE;
-		table[static_cast<unsigned char>('Q')] = table[static_cast<unsigned char>('q')] = CR_DARKGREEN;
-		table[static_cast<unsigned char>('R')] = table[static_cast<unsigned char>('r')] = CR_DARKRED;
-		table[static_cast<unsigned char>('S')] = table[static_cast<unsigned char>('s')] = CR_DARKBROWN;
-		table[static_cast<unsigned char>('T')] = table[static_cast<unsigned char>('t')] = CR_PURPLE;
-		table[static_cast<unsigned char>('U')] = table[static_cast<unsigned char>('u')] = CR_DARKGRAY;
-		table[static_cast<unsigned char>('V')] = table[static_cast<unsigned char>('v')] = CR_CYAN;
+        set('A', 'a', CR_BRICK);
+        set('B', 'b', CR_TAN);
+        set('C', 'c', CR_GRAY);
+        set('D', 'd', CR_GREEN);
+        set('E', 'e', CR_BROWN);
+        set('F', 'f', CR_GOLD);
+        set('G', 'e', CR_RED);
+        set('H', 'h', CR_BLUE);
+        set('I', 'i', CR_ORANGE);
+        set('J', 'j', CR_WHITE);
+        set('K', 'k', CR_YELLOW);
+        set('M', 'm', CR_BLACK);
+        set('N', 'n', CR_LIGHTBLUE);
+        set('O', 'o', CR_CREAM);
+        set('P', 'p', CR_OLIVE);
+        set('Q', 'q', CR_DARKGREEN);
+        set('R', 'r', CR_DARKRED);
+        set('S', 's', CR_DARKBROWN);
+        set('T', 't', CR_PURPLE);
+        set('U', 'u', CR_DARKGRAY);
+        set('V', 'v', CR_CYAN);
 
-		initialized = true;
-	}
+        return t;
+    }();
 
 	if (str[0] == TEXTCOLOR_ESCAPE && str[1] < 128)
 	{
-		int c = str[1];
-		if (c == '-')
-			return msg2color;		// use print color
-		if (c == '+')
-			return CR_GREEN;		// use print bold color
-		if (c == '*')
-			return msg3color;		// use chat color
-		if (c == '!')
-			return msg4color;		// use team chat color
-
-		return table[c];
+		switch (int c = str[1])
+		{
+			case '-':
+				return msg2color; // use print color
+			case '+':
+				return CR_GREEN;  // use print bold color
+			case '*':
+				return msg3color; // use chat color
+			case '!':
+				return msg4color; // use team chat color
+			default:
+				return table[c];
+		}
 	}
 	return -1;
 }
@@ -286,7 +289,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 	{
 		int skip = -(x - (char_size - 1)) / char_size;
 		x += skip * char_size;
-		if ((int)strlen(str) <= skip)
+		if (static_cast<int>(strlen(str)) <= skip)
 			return;
 
 		str += skip;
@@ -318,12 +321,12 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 			continue;
 		}
 
-		int c = *(byte*)str;
+		int c = static_cast<byte>(*str);
 
 		if (mSurface->getBitsPerPixel() == 8)
 		{
-			const byte* source = (byte*)&ConChars[c * 128];
-			palindex_t* dest = (palindex_t*)destline + x;
+			const byte* source = &ConChars[c * 128];
+			palindex_t* dest = static_cast<palindex_t*>(destline) + x;
 			for (int z = 0; z < 8; z++)
 			{
 				// repeat each scanline based on scale
@@ -345,8 +348,8 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 		}
 		else
 		{
-			byte* source = (byte*)&ConChars[c * 128];
-			argb_t* dest = (argb_t*)destline + x;
+			byte* source = &ConChars[c * 128];
+			argb_t* dest = reinterpret_cast<argb_t*>(destline) + x;
 			for (int z = 0; z < 8; z++)
 			{
 				// repeat each scanline based on scale
@@ -406,7 +409,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 	int cx = x;
 	int cy = y;
 
-	const char*	str = (const char*)string;
+	const char*	str = reinterpret_cast<const char*>(string);
 
 	while (1)
 	{
@@ -524,7 +527,7 @@ static void breakit(brokenlines_t* line, const byte* start, const byte* string, 
 	if (prefix_len)
 		strncpy(line->string + 0, prefix, prefix_len);
 
-	strncpy(line->string + prefix_len, (char*)start, string - start);
+	strncpy(line->string + prefix_len, reinterpret_cast<const char*>(start), string - start);
 	line->string[string - start + prefix_len] = 0;
 	line->width = V_StringWidth(line->string);
 }

@@ -197,7 +197,7 @@ void P_ShowSpawns(const mapthing2_t& mthing)
 		{
 			for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 			{
-				TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+				TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(iTeam));
 				if (teamInfo->TeamSpawnThingNum == mthing.type)
 				{
 					// [RK] If we're not using z-height spawns, spawn the fountain on the floor

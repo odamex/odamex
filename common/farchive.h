@@ -62,7 +62,7 @@ public:
 
 	virtual	unsigned int Tell() const = 0;
 	virtual	FFile& Seek(int, ESeekPos) = 0;
-	inline	FFile& Seek(unsigned int i, ESeekPos p) { return Seek((int)i, p); }
+	inline	FFile& Seek(unsigned int i, ESeekPos p) { return Seek(static_cast<int>(i), p); }
 };
 
 class FLZOFile : public FFile
@@ -161,14 +161,14 @@ public:
 	FArchive& operator<< (const char* str);
 	FArchive& operator<< (DObject* obj);
 
-	inline	FArchive& operator<< (char c) { return operator<< ((uint8_t)c); }
-	inline	FArchive& operator<< (int8_t c) { return operator<< ((uint8_t)c); }
-	inline	FArchive& operator<< (int16_t s) { return operator<< ((uint16_t)s); }
-	inline	FArchive& operator<< (int32_t i) { return operator<< ((uint32_t)i); }
-	inline	FArchive& operator<< (int64_t i) { return operator<< ((uint64_t)i); }
-	inline	FArchive& operator<< (const unsigned char* str) { return operator<< ((const char* )str); }
-	inline	FArchive& operator<< (const signed char* str) { return operator<< ((const char* )str); }
-	inline	FArchive& operator<< (bool b) { return operator<< ((uint8_t)b); }
+	inline	FArchive& operator<< (char c) { return operator<< (static_cast<uint8_t>(c)); }
+	inline	FArchive& operator<< (int8_t c) { return operator<< (static_cast<uint8_t>(c)); }
+	inline	FArchive& operator<< (int16_t s) { return operator<< (static_cast<uint16_t>(s)); }
+	inline	FArchive& operator<< (int32_t i) { return operator<< (static_cast<uint32_t>(i)); }
+	inline	FArchive& operator<< (int64_t i) { return operator<< (static_cast<uint64_t>(i)); }
+	inline	FArchive& operator<< (const unsigned char* str) { return operator<< (reinterpret_cast<const char*>(str)); }
+	inline	FArchive& operator<< (const signed char* str) { return operator<< (reinterpret_cast<const char*>(str)); }
+	inline	FArchive& operator<< (bool b) { return operator<< (static_cast<uint8_t>(b)); }
 
 	FArchive& operator>> (uint8_t& c);
 	FArchive& operator>> (uint16_t& s);
@@ -180,11 +180,11 @@ public:
 	FArchive& operator>> (std::string& s);
 	FArchive& ReadObject(DObject *&obj, TypeInfo* wanttype);
 
-	inline	FArchive& operator>> (char& c) { uint8_t in; operator>> (in); c = (char)in; return *this; }
-	inline	FArchive& operator>> (int8_t& c) { uint8_t in; operator>> (in); c = (int8_t)in; return *this; }
-	inline	FArchive& operator>> (int16_t& s) { uint16_t in; operator>> (in); s = (int16_t)in; return *this; }
-	inline	FArchive& operator>> (int32_t& i) { uint32_t in; operator>> (in); i = (int32_t)in; return *this; }
-	inline	FArchive& operator>> (int64_t& i) { uint64_t in; operator>> (in); i = (int64_t)in; return *this; }
+	inline	FArchive& operator>> (char& c) { uint8_t in; operator>> (in); c = static_cast<char>(in); return *this; }
+	inline	FArchive& operator>> (int8_t& c) { uint8_t in; operator>> (in); c = static_cast<int8_t>(in); return *this; }
+	inline	FArchive& operator>> (int16_t& s) { uint16_t in; operator>> (in); s = static_cast<int16_t>(in); return *this; }
+	inline	FArchive& operator>> (int32_t& i) { uint32_t in; operator>> (in); i = static_cast<int32_t>(in); return *this; }
+	inline	FArchive& operator>> (int64_t& i) { uint64_t in; operator>> (in); i = static_cast<int64_t>(in); return *this; }
 	//inline	FArchive& operator>> (unsigned char *&str) { return operator>> ((char *&)str); }
 	//inline	FArchive& operator>> (signed char *&str) { return operator>> ((char *&)str); }
 	inline	FArchive& operator>> (bool& b) { uint8_t in; operator>> (in); b = (in != 0); return *this; }

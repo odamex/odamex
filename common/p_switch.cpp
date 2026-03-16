@@ -66,11 +66,11 @@ public:
 
 	friend FArchive &operator<< (FArchive &arc, EWhere where)
 	{
-		return arc << (byte)where;
+		return arc << static_cast<byte>(where);
 	}
 	friend FArchive &operator>> (FArchive &arc, EWhere &out)
 	{
-		byte in; arc >> in; out = (EWhere)in; return arc;
+		byte in; arc >> in; out = static_cast<EWhere>(in); return arc;
 	}
 };
 
@@ -85,7 +85,7 @@ static int  numswitches;
 //		MAXSWITCHES limit.
 void P_InitSwitchList(void)
 {
-	byte *alphSwitchList = (byte *)W_CacheLumpName ("SWITCHES", PU_STATIC);
+	byte *alphSwitchList = W_CacheLumpName<byte>("SWITCHES", PU_STATIC);
 	byte *list_p;
 	int i;
 
@@ -94,13 +94,13 @@ void P_InitSwitchList(void)
 
 	if (i == 0)
 	{
-		switchlist = (int *)Z_Malloc (sizeof(*switchlist), PU_STATIC, 0);
+		switchlist = Z_Malloc<int>(1, PU_STATIC);
 		*switchlist = -1;
 		numswitches = 0;
 	}
 	else
 	{
-		switchlist = (int *)Z_Malloc (sizeof(*switchlist)*(i*2+1), PU_STATIC, 0);
+		switchlist = Z_Malloc<int>(i * 2 + 1, PU_STATIC);
 
 		for (i = 0, list_p = alphSwitchList; list_p[18] || list_p[19]; list_p += 20)
 		{
@@ -162,26 +162,26 @@ short* P_GetButtonTexturePtr(const line_t* line, short*& altTexture, DActiveButt
 	int texTop = sides[line->sidenum[0]].toptexture;
 	int texMid = sides[line->sidenum[0]].midtexture;
 	int texBot = sides[line->sidenum[0]].bottomtexture;
-	where = (DActiveButton::EWhere)0;
+	where = static_cast<DActiveButton::EWhere>(0);
 	altTexture = NULL;
 
 	for (int i = 0; i < numswitches * 2; i++)
 	{
 		if (switchlist[i] == texTop)
 		{
-			altTexture = (short*)&switchlist[i ^ 1];
+			altTexture = reinterpret_cast<short*>(&switchlist[i ^ 1]);
 			where = DActiveButton::BUTTON_Top;
 			return &sides[line->sidenum[0]].toptexture;
 		}
 		else if (switchlist[i] == texBot)
 		{
-			altTexture = (short*)&switchlist[i ^ 1];
+			altTexture = reinterpret_cast<short*>(&switchlist[i ^ 1]);
 			where = DActiveButton::BUTTON_Bottom;
 			return &sides[line->sidenum[0]].bottomtexture;
 		}
 		else if (switchlist[i] == texMid)
 		{
-			altTexture = (short*)&switchlist[i ^ 1];
+			altTexture = reinterpret_cast<short*>(&switchlist[i ^ 1]);
 			where = DActiveButton::BUTTON_Middle;
 			return &sides[line->sidenum[0]].midtexture;
 		}
@@ -245,7 +245,7 @@ bool P_SetButtonInfo (line_t *line, unsigned state, unsigned time)
 	{
 		if (button->m_Line == line)
 		{
-			button->m_Where = (DActiveButton::EWhere)state;
+			button->m_Where = static_cast<DActiveButton::EWhere>(state);
 			button->m_Timer = time;
 			return true;
 		}

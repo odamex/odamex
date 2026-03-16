@@ -54,7 +54,11 @@
 #include "doomtype.h"
 #include "doomfunc.h"
 
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
+END_DISABLE_WARNING_GNU
 
 /**
  * @brief Types of client buffers.
@@ -530,7 +534,7 @@ public:
 		}
 		size_t oldpos = readpos;
 		readpos += 2;
-		return (short)(data[oldpos] + (data[oldpos+1]<<8));
+		return static_cast<short>(data[oldpos] + (data[oldpos+1]<<8));
 	}
 
 	int ReadLong()
@@ -570,7 +574,7 @@ public:
 				return -1;
 
 			// Shove the first seven bits into our output variable.
-			out |= (unsigned int)(b & 0x7F) << offset;
+			out |= static_cast<unsigned int>(b & 0x7F) << offset;
 			offset += 7;
 
 			// Is the flag bit set?
@@ -610,7 +614,7 @@ public:
 			return "";
 		}
 
-		return (const char *)begin;
+		return reinterpret_cast<const char*>(begin);
 	}
 
     size_t SeekRead (const size_t &offset, const seek_loc_t &loc)
@@ -886,6 +890,8 @@ bool MSG_ReadProto(MSG& msg)
 	return true;
 }
 
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
+
 class MiniLzo
 {
     public:
@@ -895,5 +901,9 @@ class MiniLzo
     protected:
         buf_t       m_compressionBuffer;
         buf_t       m_decompressionBuffer;
+		BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
         lzo_byte    m_wrkmem[LZO1X_1_MEM_COMPRESS];
+		END_DISABLE_WARNING_GNU
 };
+
+END_DISABLE_WARNING_GNU

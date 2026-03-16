@@ -37,3 +37,4 @@ elseif(UNIX AND NOT APPLE)
 endif()
 
 odamex_target_settings(odagtest)
+odamex_target_errors(odagtest)

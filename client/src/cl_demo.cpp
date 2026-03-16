@@ -190,7 +190,7 @@ void NetDemo::fatalError(const std::string &message)
 
 bool NetDemo::writeHeader()
 {
-	strncpy(header.identifier, "ODAD", 4);
+	memcpy(header.identifier, "ODAD", 4);
 	header.version = NETDEMOVER;
 	header.compression = 0;
 	header.snapshot_spacing = NetDemo::SNAPSHOT_SPACING;
@@ -740,7 +740,7 @@ void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
 	memset(&msgheader, 0, sizeof(msgheader));
 
 	msgheader.type = static_cast<byte>(type);
-	msgheader.length = LELONG((uint32_t)size);
+	msgheader.length = LELONG(static_cast<uint32_t>(size));
 	msgheader.gametic = LELONG(gametic);
 
 	size_t cnt = 0;
@@ -1089,7 +1089,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 		}
 	}
 
-	MSG_WriteLong(netbuffer, (uint32_t)0x01020304);
+	MSG_WriteLong(netbuffer, static_cast<uint32_t>(0x01020304));
 	MSG_WriteShort(netbuffer, sv_maxplayers);
 
 	for (const auto& player : players)
@@ -1098,7 +1098,7 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 			MSG_WriteBool(netbuffer, player.spectator);
 	}
 
-	MSG_WriteLong	(netbuffer, (uint32_t)0x01020305);
+	MSG_WriteLong	(netbuffer, static_cast<uint32_t>(0x01020305));
 	MSG_WriteShort	(netbuffer, 0);	// join_passowrd
 
 	MSG_WriteLong	(netbuffer, GAMEVER);
@@ -1185,7 +1185,7 @@ int NetDemo::getCurrentSnapshotIndex() const
 
 	for (int i = 0; i < header.snapshot_index_size - 1; i++)
 	{
-		if ((int)snapshot_index[i + 1].ticnum > gametic)
+		if (static_cast<int>(snapshot_index[i + 1].ticnum) > gametic)
 			return i;
 	}
 
@@ -1206,7 +1206,7 @@ int NetDemo::getCurrentMapIndex() const
 
 	for (int i = 0; i < header.map_index_size - 1; i++)
 	{
-		if ((int)map_index[i + 1].ticnum > gametic)
+		if (static_cast<int>(map_index[i + 1].ticnum) > gametic)
 			return i;
 	}
 
@@ -1439,14 +1439,14 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	arc.Write(vars, vars_p - vars);
 
 	// write wad info
-	arc << (byte)(wadfiles.size() - 1);
+	arc << static_cast<byte>(wadfiles.size() - 1);
 	for (size_t i = 1; i < wadfiles.size(); i++)
 	{
 		arc << D_CleanseFileName(::wadfiles[i].getBasename()).c_str();
 		arc << ::wadfiles[i].getMD5().getHexCStr();
 	}
 
-	arc << (byte)patchfiles.size();
+	arc << static_cast<byte>(patchfiles.size());
 	for (const auto& file : patchfiles)
 	{
 		arc << D_CleanseFileName(file.getBasename()).c_str();
@@ -1455,7 +1455,7 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 
 	// write map info
 	arc << level.mapname.c_str();
-	arc << (byte)(gamestate == GS_INTERMISSION);
+	arc << static_cast<byte>(gamestate == GS_INTERMISSION);
 
 	G_SerializeSnapshots(arc);
 	P_SerializeRNGState(arc);
@@ -1464,11 +1464,11 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 
 	// Save the status of the flags in CTF
 	for (int i = 0; i < NUMTEAMS; i++)
-		arc << GetTeamInfo((team_t)i)->FlagData;
+		arc << GetTeamInfo(static_cast<team_t>(i))->FlagData;
 
 	// Save team points
 	for (int i = 0; i < NUMTEAMS; i++)
-		arc << GetTeamInfo((team_t)i)->Points;
+		arc << GetTeamInfo(static_cast<team_t>(i))->Points;
 
 	arc << level.time;
 
@@ -1592,11 +1592,11 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 
 	// Read the status of flags in CTF
 	for (int i = 0; i < NUMTEAMS; i++)
-		arc >> GetTeamInfo((team_t)i)->FlagData;
+		arc >> GetTeamInfo(static_cast<team_t>(i))->FlagData;
 
 	// Read team points
 	for (int i = 0; i < NUMTEAMS; i++)
-		arc >> GetTeamInfo((team_t)i)->Points;
+		arc >> GetTeamInfo(static_cast<team_t>(i))->Points;
 
 	arc >> level.time;
 
@@ -1671,7 +1671,7 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	{
 		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		{
-			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+			TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(iTeam));
 			if (mo->sprite == teamInfo->FlagDownSprite || mo->sprite == teamInfo->FlagCarrySprite)
 				teamInfo->FlagData.actor = mo->ptr();
 		}

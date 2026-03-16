@@ -135,7 +135,7 @@ public: \
 	void Serialize(FArchive &) override; \
 	inline friend FArchive &operator>> (FArchive &arc, cls* &object) \
 	{ \
-		return arc.ReadObject ((DObject* &)object, RUNTIME_CLASS(cls)); \
+		return arc.ReadObject (reinterpret_cast<DObject*&>(object), RUNTIME_CLASS(cls)); \
 	}
 
 #define DECLARE_SERIAL(cls,parent) \

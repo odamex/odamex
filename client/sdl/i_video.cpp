@@ -120,7 +120,7 @@ EXTERN_CVAR(sv_allowwidescreen)
 IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelFormat* format,
 								void* buffer, uint16_t pitch) :
 	mCanvas(NULL),
-	mSurfaceBuffer((uint8_t*)buffer), mOwnsSurfaceBuffer(buffer == NULL),
+	mSurfaceBuffer(static_cast<uint8_t*>(buffer)), mOwnsSurfaceBuffer(buffer == NULL),
 	mPalette(V_GetDefaultPalette()->colors), mPixelFormat(*format),
 	mWidth(width), mHeight(height), mPitch(pitch), mLocks(0)
 {
@@ -143,7 +143,7 @@ IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelForma
 		uint8_t* buffer = new uint8_t[mPitch * mHeight + alignment];
 
 		// calculate the offset from buffer to the next aligned memory address
-		uintptr_t offset = ((uintptr_t)(buffer + alignment) & ~(alignment - 1)) - (uintptr_t)buffer;
+		uintptr_t offset = (reinterpret_cast<uintptr_t>(buffer + alignment) & ~(alignment - 1)) - reinterpret_cast<uintptr_t>(buffer);
 
 		mSurfaceBuffer = buffer + offset;
 
@@ -179,7 +179,7 @@ IWindowSurface::IWindowSurface(IWindowSurface* base_surface, uint16_t width, uin
 	uint16_t x = (base_surface->getWidth() - mWidth) / 2;
 	uint16_t y = (base_surface->getHeight() - mHeight) / 2;
 
-	mSurfaceBuffer = (uint8_t*)base_surface->getBuffer(x, y);
+	mSurfaceBuffer = static_cast<uint8_t*>(base_surface->getBuffer(x, y));
 
 	mPalette = base_surface->mPalette;
 }
@@ -422,8 +422,8 @@ void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, in
 	if (srcbits == 8 && destbits == 8)
 	{
 		const palindex_t* source =
-		    (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
-		palindex_t* dest = (palindex_t*)getBuffer() + buffery * destpitchpixels + bufferx;
+		    static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
+		palindex_t* dest = static_cast<palindex_t*>(getBuffer()) + buffery * destpitchpixels + bufferx;
 
 		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels,
 			destw, desth,
@@ -436,8 +436,8 @@ void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, in
 			return;
 
 		const palindex_t* source =
-		    (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
-		argb_t* dest = (argb_t*)getBuffer() + buffery * destpitchpixels + bufferx;
+		    static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + buffery * destpitchpixels + bufferx;
 
 		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels,
 				destw, desth,
@@ -452,8 +452,8 @@ void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, in
 	else if (srcbits == 32 && destbits == 32)
 	{
 		const argb_t* source =
-		    (argb_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
-		argb_t* dest = (argb_t*)getBuffer() + buffery * destpitchpixels + bufferx;
+		    reinterpret_cast<const argb_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + buffery * destpitchpixels + bufferx;
 
 		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels,
 			destw, desth,
@@ -526,8 +526,8 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 
 	if (srcbits == 8 && destbits == 8)
 	{
-		const palindex_t* source = (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
-		palindex_t* dest = (palindex_t*)getBuffer() + desty * destpitchpixels + destx;
+		const palindex_t* source = static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
+		palindex_t* dest = static_cast<palindex_t*>(getBuffer()) + desty * destpitchpixels + destx;
 
 		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
 	}
@@ -536,8 +536,8 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 		if (palette == NULL)
 			return;
 
-		const palindex_t* source = (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
-		argb_t* dest = (argb_t*)getBuffer() + desty * destpitchpixels + destx;
+		const palindex_t* source = static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + desty * destpitchpixels + destx;
 
 		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
 	}
@@ -548,8 +548,8 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	}
 	else if (srcbits == 32 && destbits == 32)
 	{
-		const argb_t* source = (argb_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
-		argb_t* dest = (argb_t*)getBuffer() + desty * destpitchpixels + destx;
+		const argb_t* source = reinterpret_cast<const argb_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + desty * destpitchpixels + destx;
 
 		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
 	}
@@ -571,7 +571,7 @@ void IWindowSurface::clear()
 	{
 		const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
 		palindex_t color_index = V_BestColor(palette_colors, color);
-		palindex_t* dest = (palindex_t*)getBuffer();
+		palindex_t* dest = static_cast<palindex_t*>(getBuffer());
 
 		for (int y = 0; y < getHeight(); y++)
 		{
@@ -581,7 +581,7 @@ void IWindowSurface::clear()
 	}
 	else
 	{
-		argb_t* dest = (argb_t*)getBuffer();
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer());
 
 		for (int y = 0; y < getHeight(); y++)
 		{
@@ -1443,7 +1443,7 @@ const PixelFormat* I_Get32bppPixelFormat()
 
 int I_GetAspectCorrectWidth(int surface_height, int asset_height, int asset_width)
 {
-	float aspect_scale_ratio = (float)surface_height / (float)asset_height;
+	float aspect_scale_ratio = static_cast<float>(surface_height) / static_cast<float>(asset_height);
 	return aspect_scale_ratio * asset_width;
 }
 

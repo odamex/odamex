@@ -105,12 +105,12 @@ static const char *ampm[] = {
  */
 
 static int
-match_string (const char **buf, const char **strs)
+match_string(const char **buf, const char **strs)
 {
     int i = 0;
     for (i = 0; strs[i] != NULL; ++i) {
-		int len = (int)strlen (strs[i]);
-		if (strncasecmp (*buf, strs[i], len) == 0) {
+		size_t len = strlen(strs[i]);
+		if (strncasecmp(*buf, strs[i], len) == 0) {
 			*buf += len;
 			return i;
 		}
@@ -439,7 +439,7 @@ strptime (const char *buf, const char *fmt, struct tm *timeptr)
 		return NULL;
 	}
     }
-    return (char *)buf;
+    return const_cast<char*>(buf);
 }
 
 #endif /* WIN32 */

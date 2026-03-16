@@ -238,21 +238,24 @@ public:
 
 	OString& assign(const OString& other)
 	{
+		if (&other == this)
+			return *this;
+
 		const StringIdType old_id = mId;
 		mId = mEmptyStringId;
 
 		if (other.mId != mEmptyStringId)
 		{
-			StringRecord* inc_rec = &mStrings->get(other.mId);
+			StringRecord& inc_rec = mStrings->get(other.mId);
 			increaseRefCount(inc_rec);
 			mId = other.mId;
 		}
 
 		if (old_id != mEmptyStringId)
 		{
-			StringRecord* dec_rec = &mStrings->get(old_id);
+			StringRecord& dec_rec = mStrings->get(old_id);
 			decreaseRefCount(dec_rec);
-			if (dec_rec->mRefCount == 0)
+			if (dec_rec.mRefCount == 0)
 				removeString(dec_rec);
 		}
 		return *this;
@@ -270,16 +273,16 @@ public:
 
 		if (s[0] != 0)		// not empty string
 		{
-			StringRecord* inc_rec = insertString(s, n);
+			StringRecord& inc_rec = insertString(s, n);
 			increaseRefCount(inc_rec);
-			mId = mStrings->getId(*inc_rec);
+			mId = mStrings->getId(inc_rec);
 		}
 
 		if (old_id != mEmptyStringId)
 		{
-			StringRecord* dec_rec = &mStrings->get(old_id);
+			StringRecord& dec_rec = mStrings->get(old_id);
 			decreaseRefCount(dec_rec);
-			if (dec_rec->mRefCount == 0)
+			if (dec_rec.mRefCount == 0)
 				removeString(dec_rec);
 		}
 		return *this;
@@ -503,10 +506,10 @@ private:
 
 	StringIdType				mId;
 
-	static bool					mInitialized;
-	static StringTable*			mStrings;
-	static StringLookupTable*	mStringLookup;
-	static std::string*			mEmptyString;
+	static inline bool                               mInitialized = false;
+	static inline std::unique_ptr<StringTable>       mStrings;
+	static inline std::unique_ptr<StringLookupTable> mStringLookup;
+	static inline const std::string mEmptyString   = "";
 	static constexpr StringIdType	mEmptyStringId = 0;
 
 
@@ -549,7 +552,7 @@ private:
 			if (it != mStrings->end())
 				return &(*it);
 		}
-		return NULL;	// not_found
+		return nullptr;	// not_found
 	}
 
 
@@ -559,12 +562,10 @@ private:
 	// Increments the reference counter for the given string record;
 	// ------------------------------------------------------------------------
 
-	inline void increaseRefCount(StringRecord* rec)
+	inline void increaseRefCount(StringRecord& rec)
 	{
-		assert(rec != NULL);
-		assert(rec->mRefCount >= 0);
-		rec->mRefCount++;
-		assert(rec->mRefCount >= 1);
+		rec.mRefCount++;
+		assert(rec.mRefCount >= 1);
 	}
 
 
@@ -574,12 +575,10 @@ private:
 	// Decrements the reference counter for the given string record;
 	// ------------------------------------------------------------------------
 
-	inline void decreaseRefCount(StringRecord* rec)
+	inline void decreaseRefCount(StringRecord& rec)
 	{
-		assert(rec != NULL);
-		assert(rec->mRefCount >= 1);
-		rec->mRefCount--;
-		assert(rec->mRefCount >= 0);
+		assert(rec.mRefCount >= 1);
+		rec.mRefCount--;
 	}
 
 
@@ -590,7 +589,7 @@ private:
 	// If the string already exists in the string table, nothing is added.
 	// ------------------------------------------------------------------------
 
-	inline StringRecord* insertString(const char* str, size_t length = npos)
+	inline StringRecord& insertString(const char* str, size_t length = npos)
 	{
 		assert(str != NULL);
 
@@ -605,7 +604,7 @@ private:
 			rec = &mStrings->get(id);
 			mStringLookup->emplace(hash_value, id);
 		}
-		return rec;
+		return *rec;
 	}
 
 
@@ -615,15 +614,14 @@ private:
 	// Removes a string entry from the string table.
 	// ------------------------------------------------------------------------
 
-	inline void removeString(StringRecord* rec)
+	inline void removeString(StringRecord& rec)
 	{
-		assert(rec != NULL);
-		assert(rec->mRefCount == 0);
+		assert(rec.mRefCount == 0);
 
-		const StringIdType old_id = mStrings->getId(*rec);
-		const HashedStringType hash_value = hash(rec->mString.c_str());
+		const StringIdType old_id = mStrings->getId(rec);
+		const HashedStringType hash_value = hash(rec.mString.c_str());
 		mStringLookup->erase(hash_value);
-		rec->mString.clear();	// allow std::string to free unused strings
+		rec.mString.clear();	// allow std::string to free unused strings
 		mStrings->erase(old_id);
 	}
 
@@ -638,7 +636,7 @@ private:
 	{
 		assert(mInitialized);
 		if (mId == mEmptyStringId)
-			return *mEmptyString;
+			return mEmptyString;
 
 		assert(mStrings->find(mId) != mStrings->end());
 		return mStrings->get(mId).mString;

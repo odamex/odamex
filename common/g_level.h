@@ -130,25 +130,8 @@ struct fhfprint_t
 	std::string toString() const
 	{
 		// [Blair] Serialize the hashes before reading.
-		const uint64_t reconsthash1 = (uint64_t)(fingerprint[0]) |
-		                              (uint64_t)(fingerprint[1]) << 8 |
-		                              (uint64_t)(fingerprint[2]) << 16 |
-		                              (uint64_t)(fingerprint[3]) << 24 |
-		                              (uint64_t)(fingerprint[4]) << 32 |
-		                              (uint64_t)(fingerprint[5]) << 40 |
-		                              (uint64_t)(fingerprint[6]) << 48 |
-		                              (uint64_t)(fingerprint[7]) << 56;
-
-		const uint64_t reconsthash2 = (uint64_t)(fingerprint[8]) |
-		                              (uint64_t)(fingerprint[9]) << 8 |
-		                              (uint64_t)(fingerprint[10]) << 16 |
-		                              (uint64_t)(fingerprint[11]) << 24 |
-		                              (uint64_t)(fingerprint[12]) << 32 |
-		                              (uint64_t)(fingerprint[13]) << 40 |
-		                              (uint64_t)(fingerprint[14]) << 48 |
-		                              (uint64_t)(fingerprint[15]) << 56;
-
-		return fmt::format("{:016x}{:016x}", reconsthash1, reconsthash2);
+		const auto [reconsthash1, reconsthash2] = std::bit_cast<std::array<uint64_t, 2>>(fingerprint);
+		return fmt::format("{:016x}{:016x}", LELONGLONG(reconsthash1), LELONGLONG(reconsthash2));
 	}
 
 	[[nodiscard]]
@@ -199,7 +182,7 @@ struct level_info_t
 
 struct level_pwad_info_t
 {
-	// level_info_t
+	// level_info_t // TODO: should this be made into a single member??
 	OLumpName		mapname    = "";
 	int				levelnum   = 0;
 	int				mapnum     = 0;
