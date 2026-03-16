@@ -1171,7 +1171,7 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 	const int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	const int surface_pitch_pixels = mSurface->getPitchInPixels();
 
-	if (x1 < 0 || x1 + w > surface_width || y1 < 0 || y1 + h > surface_height)
+	if (x1 < 0 || x1 + w > surface_pitch_pixels || y1 < 0 || y1 + h > surface_height)
 		return;
 
 	if (famount <= 0.0f)
