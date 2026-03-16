@@ -1245,12 +1245,12 @@ void P_PlayerInCompatibleSector(player_t& player)
 	if (player.spectator)
 		return;
 
-	// Falling, not all the way down yet?
-	if (player.mo->z != P_FloorHeight(player.mo) && !player.mo->waterlevel)
-		return;
-
 	// Being destroyed / unlinked from the map?
 	if (not (player.mo && player.mo->subsector && player.mo->subsector->sector))
+		return;
+
+	// Falling, not all the way down yet?
+	if (player.mo->z != P_FloorHeight(player.mo) && !player.mo->waterlevel)
 		return;
 
 	sector_t& sector = *player.mo->subsector->sector;
@@ -1383,12 +1383,12 @@ void P_PlayerInCompatibleSector(player_t& player)
 //
 bool P_ActorInCompatibleSector(AActor* actor)
 {
-	if (not (actor && actor->subsector && actor->subsector->sector))
+	if (not (actor && actor->subsector))
 		return false;
 
-	sector_t* sector = actor->subsector->sector;
+	const bool sectorHasKillMonstersAction = actor->subsector->sector & KILL_MONSTERS_MASK;
 
-	if (sector && sector->special & KILL_MONSTERS_MASK && actor->z == actor->floorz &&
+	if (sectorHasKillMonstersAction && actor->z == actor->floorz &&
 	    !P_IsPlayerOrAvatar(*actor) && actor->flags & MF_SHOOTABLE && !(actor->flags & MF_FLOAT))
 	{
 		P_DamageMobj(actor, NULL, NULL, 10000);

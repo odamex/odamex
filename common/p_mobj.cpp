@@ -471,7 +471,7 @@ void P_CheckTouchy(AActor* mo)
 //
 fixed_t P_CalculateMinMom(const AActor *mo)
 {
-	const float   sectorGravityFloat = (mo && mo->subsector && mo->subsector->sector) ? mo->subsector->sector->gravity : 1.0f;
+	const float   sectorGravityFloat = (mo && mo->subsector) ? mo->subsector->sector->gravity : 1.0f;
 	const fixed_t sectorgravity      = FLOAT2FIXED(sectorGravityFloat);
 	const fixed_t levelgravity       = co_zdoomphys ? FixedDiv(FLOAT2FIXED(level.gravity), 100 << FRACBITS) : GRAVITY * 8;
 

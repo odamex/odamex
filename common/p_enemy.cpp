@@ -134,55 +134,48 @@ extern bool isFast;
 // sound blocking lines cut off traversal.
 //
 
-void P_RecursiveSound (sector_t *sec, int soundblocks, AActor *soundtarget)
+static void P_RecursiveSound (sector_t& sector, int soundblocks, AActor *soundtarget)
 {
-	int 		i;
-	line_t* 	check;
-	sector_t*	other;
-
-	if (not sec)
-	{
-		return;
-	}
-
 	// wake up all monsters in this sector
-	if (sec->validcount == validcount
-		&& sec->soundtraversed <= soundblocks+1)
+	if (sector.validcount == validcount
+		&& sector.soundtraversed <= soundblocks+1)
 	{
-		return; 		// already flooded
+		return;         // already flooded
 	}
 
-	sec->validcount = validcount;
-	sec->soundtraversed = soundblocks+1;
-	sec->soundtarget = soundtarget->ptr();
+	sector.validcount     = validcount;
+	sector.soundtraversed = soundblocks + 1;
+	sector.soundtarget    = soundtarget->ptr();
 
-	for (i=0 ;i<sec->linecount ; i++)
+	for (int i = 0; i < sector.linecount; i++)
 	{
-		check = sec->lines[i];
+		const line_t* check = sector.lines[i];
 		if (! (check->flags & ML_TWOSIDED) )
 			continue;
 
-		if ( sides[ check->sidenum[0] ].sector == sec)
-			other = sides[ check->sidenum[1] ] .sector;
-		else
-			other = sides[ check->sidenum[0] ].sector;
+		// It's tempting to rely on C++'s conversion of bool false/true to int 0 or 1.
+		// However, I'd much rather just explicitly state what I mean with exact index
+		// numbers and let the compiler micro-optimize it if it insists.
+
+		const size_t otherSidenumIndex = sides[ check->sidenum[0] ].sector == &sector ? 1 : 0;
+		sector_t&    otherRef          = sides[ check->sidenum[otherSidenumIndex] ].sector;
 
 		// [SL] 2012-02-08 - FIXME: Currently only checks for a line opening at
 		// midpoint of a sloped linedef.  P_RecursiveSound() in ZDoom 1.23 causes
 		// demo desyncs.
 		P_LineOpening(check, (check->v1->x >> 1) + (check->v2->x >> 1),
-							 (check->v1->y >> 1) + (check->v2->y >> 1));
+		                     (check->v1->y >> 1) + (check->v2->y >> 1));
 
 		if (openrange <= 0)
-			continue;	// closed door
+			continue;   // closed door
 
 		if (check->flags & ML_SOUNDBLOCK)
 		{
 			if (!soundblocks)
-				P_RecursiveSound (other, 1, soundtarget);
+				P_RecursiveSound (otherRef, 1, soundtarget);
 		}
 		else
-			P_RecursiveSound (other, soundblocks, soundtarget);
+			P_RecursiveSound (otherRef, soundblocks, soundtarget);
 	}
 }
 
@@ -202,7 +195,7 @@ void P_NoiseAlert (AActor *target, AActor *emmiter)
 		return;
 
 	validcount++;
-	P_RecursiveSound (emmiter->subsector->sector, 0, target);
+	P_RecursiveSound (* emmiter->subsector->sector, 0, target);
 }
 
 

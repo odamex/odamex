@@ -1256,10 +1256,6 @@ bool P_TryMove (AActor *thing, fixed_t x, fixed_t y,
 	{
 		I_Error("P_TryMove: Thing {{type: {}, info->type: {}}} subsector was null", thing->type, thing->info->type);
 	}
-	if(not thing->subsector->sector)
-	{
-		I_Error("P_TryMove: Thing {{type: {}, info->type: {}}} sector was null", thing->type, thing->info->type);
-	}
 
 	sector_t*	oldsec = thing->subsector->sector;	// [RH] for sector actions
 
