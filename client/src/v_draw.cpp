@@ -780,8 +780,9 @@ void DCanvas::DrawColoredLucentPatchStretchedAlpha(const patch_t* patch, int x0,
 
 		for (int col = 0; col < w; col += xinc, desttop += colstep)
 		{
-			tallpost_t* post = reinterpret_cast<tallpost_t*>(
-			    reinterpret_cast<byte*>(patch) + LELONG(patch->columnofs[col >> FRACBITS]));
+			const tallpost_t* post = reinterpret_cast<const tallpost_t*>(
+			    reinterpret_cast<const byte*>(patch) +
+			    LELONG(patch->columnofs[col >> FRACBITS]));
 
 			while (!post->end())
 			{
@@ -809,8 +810,9 @@ void DCanvas::DrawColoredLucentPatchStretchedAlpha(const patch_t* patch, int x0,
 
 		for (int col = 0; col < w; col += xinc, desttop += colstep)
 		{
-			tallpost_t* post = reinterpret_cast<tallpost_t*>(
-			    reinterpret_cast<byte*>(patch) + LELONG(patch->columnofs[col >> FRACBITS]));
+			const tallpost_t* post = reinterpret_cast<const tallpost_t*>(
+			    reinterpret_cast<const byte*>(patch) +
+			    LELONG(patch->columnofs[col >> FRACBITS]));
 
 			while (!post->end())
 			{
