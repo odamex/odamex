@@ -321,7 +321,7 @@ public:
 		const double invgamma = 1.0 / level;
 
 		for (int i = 0; i < 256; i++)
-			table[i] = static_cast<byte>(255.0 * pow(double(i) / 255.0, invgamma));
+			table[i] = static_cast<byte>(255.0 * pow(static_cast<double>(i) / 255.0, invgamma));
 	}
 };
 

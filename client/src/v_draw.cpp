@@ -771,17 +771,17 @@ void DCanvas::DrawColoredLucentPatchStretchedAlpha(const patch_t* patch, int x0,
 
 	if (mSurface->getBitsPerPixel() == 8)
 	{
-		const fixed_t translevel = (fixed_t)(0xFFFF * alpha);
+		const fixed_t translevel = static_cast<fixed_t>(0xFFFF * alpha);
 		const fixed_t fglevel = translevel & ~0x3ff;
 		const fixed_t bglevel = FRACUNIT - fglevel;
 		argb_t* fg2rgb = Col2RGB8[fglevel >> 10];
 		argb_t* bg2rgb = Col2RGB8[bglevel >> 10];
-		const unsigned int fill = (byte)V_ColorFill;
+		const unsigned int fill = static_cast<byte>(V_ColorFill);
 
 		for (int col = 0; col < w; col += xinc, desttop += colstep)
 		{
-			tallpost_t* post =
-			    (tallpost_t*)((byte*)patch + LELONG(patch->columnofs[col >> FRACBITS]));
+			tallpost_t* post = reinterpret_cast<tallpost_t*>(
+			    reinterpret_cast<byte*>(patch) + LELONG(patch->columnofs[col >> FRACBITS]));
 
 			while (!post->end())
 			{
@@ -803,14 +803,14 @@ void DCanvas::DrawColoredLucentPatchStretchedAlpha(const patch_t* patch, int x0,
 	}
 	else
 	{
-		const int fgAlpha = (int)(alpha * 255);
+		const int fgAlpha = static_cast<int>(alpha * 255);
 		const int bgAlpha = 255 - fgAlpha;
 		const argb_t fill = V_Palette.shade(V_ColorFill);
 
 		for (int col = 0; col < w; col += xinc, desttop += colstep)
 		{
-			tallpost_t* post =
-			    (tallpost_t*)((byte*)patch + LELONG(patch->columnofs[col >> FRACBITS]));
+			tallpost_t* post = reinterpret_cast<tallpost_t*>(
+			    reinterpret_cast<byte*>(patch) + LELONG(patch->columnofs[col >> FRACBITS]));
 
 			while (!post->end())
 			{
@@ -819,8 +819,8 @@ void DCanvas::DrawColoredLucentPatchStretchedAlpha(const patch_t* patch, int x0,
 
 				while (count-- > 0)
 				{
-					argb_t bg = *((argb_t*)dest);
-					*((argb_t*)dest) = alphablend2a(bg, bgAlpha, fill, fgAlpha);
+					argb_t bg = *reinterpret_cast<argb_t*>(dest);
+					*reinterpret_cast<argb_t*>(dest) = alphablend2a(bg, bgAlpha, fill, fgAlpha);
 					dest += surface_pitch;
 				}
 
