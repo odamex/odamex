@@ -341,7 +341,7 @@ void P_DrawRailTrail(const v3double_t &start, const v3double_t &end)
 	M_SubVec3(&dir, &end, &start);
 
 	double length = M_LengthVec3(&dir);
-	int steps = (int)(length*0.3333);
+	int steps = static_cast<int>(length*0.3333);
 
 	if (!length)	// line is 0 length, so nothing to do
 		return;

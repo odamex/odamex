@@ -59,8 +59,10 @@ int 	ParseNum(const char *str);
 bool	IsNum(const char* str);		// [RH] added
 bool	IsNum(std::string_view str);
 bool	IsRealNum(const char* str);
+bool	IsRealNum(std::string_view str);
 
 template<typename T>
+requires std::is_integral_v<T>
 std::optional<T> ParseNum(std::string_view str, int base = 10)
 {
     T out;
@@ -78,6 +80,66 @@ std::optional<T> ParseNum(std::string_view str, int base = 10)
     }
     return out;
 }
+
+namespace cmd_detail
+{
+
+template<typename T>
+concept has_from_chars_float =
+requires(const char* f, const char* l, T v)
+{
+    std::from_chars(f, l, v);
+};
+
+template <typename T>
+inline constexpr bool always_false = false;
+
+}
+
+template<typename T>
+requires std::is_floating_point_v<T>
+std::optional<T> ParseNum(std::string_view str)
+{
+	if constexpr (cmd_detail::has_from_chars_float<T>)
+	{
+    	T out;
+		while (!str.empty() && std::isspace(static_cast<unsigned char>(str.front())))
+			str.remove_prefix(1);
+
+    	const std::from_chars_result result = std::from_chars(str.data(), str.data() + str.size(), out);
+    	if (result.ec != std::errc())
+    	{
+    	    return std::nullopt;
+    	}
+    	return out;
+	}
+	else
+	{
+		std::string nulltermstr(str);
+		char* endptr = nullptr;
+		errno = 0;
+		const auto strtof_template = [](const char* str, char** str_end)
+		{
+			if constexpr (std::is_same_v<T, float>)
+				return strtof(str, str_end);
+			else if constexpr (std::is_same_v<T, double>)
+				return strtod(str, str_end);
+			else if constexpr (std::is_same_v<T, long double>)
+				return strtold(str, str_end);
+			else
+			{
+				static_assert(cmd_detail::always_false<T>, "Unknown floating point type");
+			}
+		};
+
+		const auto out = strtof_template(nulltermstr.c_str(), &endptr);
+		if (errno == ERANGE || endptr == nulltermstr.c_str())
+			return std::nullopt;
+		else
+			return out;
+	}
+}
+
 
 // [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity

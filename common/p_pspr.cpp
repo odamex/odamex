@@ -372,7 +372,7 @@ weapontype_t P_GetNextWeapon(player_t *player, bool forward)
 			continue;
 		if (itemlist[index].offset == wp_supershotgun && gamemode != commercial && gamemode != commercial_bfg)
 			continue;
-		return (weapontype_t)itemlist[index].offset;
+		return static_cast<weapontype_t>(itemlist[index].offset);
 	}
 
 	return wp_nochange;
@@ -738,7 +738,7 @@ void A_Saw(AActor* mo)
 							 linetarget->x, linetarget->y);
 	if (angle - player.mo->angle > ANG180)
 	{
-		if (angle - player.mo->angle < (angle_t)(-ANG90/20))
+		if (angle - player.mo->angle < static_cast<angle_t>(-ANG90/20))
 			player.mo->angle = angle + ANG90/21;
 		else
 			player.mo->angle -= ANG90/20;
@@ -878,7 +878,7 @@ void A_WeaponJump(AActor* mo)
 		return;
 
 	if (P_Random(mo) < psp.state->args[1])
-		P_SetPspriteRef(player, psp, (statenum_t)psp.state->args[0]);
+		P_SetPspriteRef(player, psp, static_cast<statenum_t>(psp.state->args[0]));
 }
 
 
@@ -906,7 +906,7 @@ void A_CheckAmmo(AActor* mo)
 		amount = weaponinfo[player.readyweapon].ammopershot;
 
 	if (player.ammo[type] < amount)
-		P_SetPspriteRef(player, psp, (statenum_t)psp.state->args[0]);
+		P_SetPspriteRef(player, psp, static_cast<statenum_t>(psp.state->args[0]));
 }
 
 
@@ -963,7 +963,7 @@ void A_RefireTo(AActor* mo)
 	    (player.pendingweapon == wp_nochange && player.health))
 	{
 		player.refire++;
-		P_SetPspriteRef(player, psp, (statenum_t)psp.state->args[0]);
+		P_SetPspriteRef(player, psp, static_cast<statenum_t>(psp.state->args[0]));
 	}
 	else
 	{
@@ -988,7 +988,7 @@ void A_GunFlashTo(AActor* mo)
 	if (!psp.state->args[1])
 		P_SetMobjState(player.mo, S_PLAY_ATK2);
 
-	P_SetPsprite(player, ps_flash, (statenum_t)psp.state->args[0]);
+	P_SetPsprite(player, ps_flash, static_cast<statenum_t>(psp.state->args[0]));
 }
 
 //
@@ -1016,13 +1016,13 @@ void A_WeaponProjectile(AActor* mo)
 	spawnofs_xy = psp->state->args[3];
 	spawnofs_z = psp->state->args[4];
 
-	if (!CheckIfDehActorDefined((mobjtype_t)type))
+	if (!CheckIfDehActorDefined(static_cast<mobjtype_t>(type)))
 	{
 		I_Error("A_WeaponProjectile: Attempted to spawn undefined projectile type.");
 	}
 
 	if (serverside)
-		P_SpawnMBF21PlayerMissile(player->mo, (mobjtype_t)type, angle, pitch, spawnofs_xy, spawnofs_z);
+		P_SpawnMBF21PlayerMissile(player->mo, static_cast<mobjtype_t>(type), angle, pitch, spawnofs_xy, spawnofs_z);
 }
 
 //
@@ -1066,7 +1066,7 @@ void A_WeaponBulletAttack(AActor* mo)
 	{
 		int bangle = angle;
 		damage = (P_Random(mo) % damagemod + 1) * damagebase;
-		bangle = angle + (int)player->mo->angle + P_RandomHitscanAngle(hspread);
+		bangle = angle + static_cast<int>(player->mo->angle) + P_RandomHitscanAngle(hspread);
 		slope = bulletslope + P_RandomHitscanSlope(vspread);
 
 		P_LineAttack(player->mo, bangle, MISSILERANGE, slope, damage);
@@ -1202,7 +1202,7 @@ void A_FirePlasma(AActor* mo)
 
 	P_SetPsprite (player,
 				  ps_flash,
-				  (statenum_t)(weaponinfo[player.readyweapon].flashstate+(P_Random (player.mo)&1)));
+				  static_cast<statenum_t>(weaponinfo[player.readyweapon].flashstate+(P_Random (player.mo)&1)));
 
 	if (serverside)
 	{
@@ -1225,7 +1225,7 @@ void A_FireRailgun(AActor* mo)
 
 	P_SetPsprite (player,
 				  ps_flash,
-				  (statenum_t)(weaponinfo[player.readyweapon].flashstate+(P_Random (player.mo)&1)));
+				  static_cast<statenum_t>(weaponinfo[player.readyweapon].flashstate+(P_Random (player.mo)&1)));
 
 	if (sv_gametype > 0)
 		damage = 100;

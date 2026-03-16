@@ -1002,7 +1002,7 @@ bool EV_DoGenFloor(line_t* line)
 	bool rtn;
 	bool manual;
 	sector_t* sec;
-	unsigned value = (unsigned)line->special - GenFloorBase;
+	unsigned value = static_cast<unsigned>(line->special) - GenFloorBase;
 
 	// parse the bit fields in the line's special type
 
@@ -1181,7 +1181,7 @@ bool EV_DoGenStairs(line_t* line)
 	fixed_t stairsize;
 	fixed_t speed;
 
-	unsigned value = (unsigned)line->special - GenStairsBase;
+	unsigned value = static_cast<unsigned>(line->special) - GenStairsBase;
 
 	  // parse the bit fields in the line's special type
 

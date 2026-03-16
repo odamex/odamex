@@ -188,8 +188,7 @@ static void R_InstallSprite(const char *name, int32_t num)
 
 	// allocate space for the frames present and copy sprtemp to it
 	sprites[num].numframes = maxframe;
-	sprites[num].spriteframes = (spriteframe_t *)
-		Z_Malloc (maxframe * sizeof(spriteframe_t), PU_STATIC, NULL);
+	sprites[num].spriteframes = Z_Malloc<spriteframe_t>(maxframe, PU_STATIC);
 	memcpy (sprites[num].spriteframes, sprtemp, maxframe * sizeof(spriteframe_t));
 	sprites[num].spritenum = num;
 }
@@ -226,13 +225,13 @@ static void R_InitSpriteDefs(std::vector<spriteinfo_t*>& namelist)
                 }
 
 		maxframe = -1;
-		const int intname = *(int *)namelist[i]->sprite;
+		const int intname = *reinterpret_cast<const int*>(namelist[i]->sprite);
 
 		// scan the lumps,
 		//	filling in the frames for whatever is found
 		for (int l = lastspritelump; l >= firstspritelump; l--)
 		{
-			if (*(int*)lumpinfo[l].name.c_str() == intname && lumpinfo[l].size > 0)
+			if (*reinterpret_cast<const int*>(lumpinfo[l].name.c_str()) == intname && lumpinfo[l].size > 0)
 			{
 				R_InstallSpriteLump (l,
 									 lumpinfo[l].name[4] - 'A', // denis - fixme - security
@@ -271,7 +270,7 @@ void R_InitSprites(std::vector<spriteinfo_t*>& sprites)
 
 	M_Free(vissprites);
 
-	firstvissprite = vissprites = (vissprite_t *) M_Malloc(MaxVisSprites * sizeof(vissprite_t));
+	firstvissprite = vissprites = static_cast<vissprite_t*>(M_Malloc(MaxVisSprites * sizeof(vissprite_t)));
 	lastvissprite = &vissprites[MaxVisSprites];
 
 	R_InitSpriteDefs (sprites);

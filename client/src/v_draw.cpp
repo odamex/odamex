@@ -56,8 +56,8 @@ DCanvas::vdrawsfunc DCanvas::Psfuncs[6] =
 	DCanvas::DrawLucentPatchSP,
 	DCanvas::DrawTranslatedPatchSP,
 	DCanvas::DrawTlatedLucentPatchSP,
-	(vdrawsfunc)DCanvas::DrawColoredPatchP,
-	(vdrawsfunc)DCanvas::DrawColorLucentPatchP
+	DCanvas::DrawColoredPatchSP,
+	DCanvas::DrawColorLucentPatchSP
 };
 
 // Direct (true-color) versions of the column drawers
@@ -76,8 +76,8 @@ DCanvas::vdrawsfunc DCanvas::Dsfuncs[6] =
 	DCanvas::DrawLucentPatchSD,
 	DCanvas::DrawTranslatedPatchSD,
 	DCanvas::DrawTlatedLucentPatchSD,
-	(vdrawsfunc)DCanvas::DrawColoredPatchD,
-	(vdrawsfunc)DCanvas::DrawColorLucentPatchD
+	DCanvas::DrawColoredPatchSD,
+	DCanvas::DrawColorLucentPatchSD
 };
 
 translationref_t V_ColorMap;
@@ -136,7 +136,7 @@ void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int p
 	{
 		fixed_t fglevel, bglevel, translevel;
 
-		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		translevel = static_cast<fixed_t>(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -170,7 +170,7 @@ void DCanvas::DrawLucentPatchSP (const byte *source, byte *dest, int count, int 
 	{
 		fixed_t fglevel, bglevel, translevel;
 
-		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		translevel = static_cast<fixed_t>(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -235,7 +235,7 @@ void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count,
 	{
 		fixed_t fglevel, bglevel, translevel;
 
-		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		translevel = static_cast<fixed_t>(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -269,7 +269,7 @@ void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count
 	{
 		fixed_t fglevel, bglevel, translevel;
 
-		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		translevel = static_cast<fixed_t>(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -300,13 +300,19 @@ void DCanvas::DrawColoredPatchP (const byte *source, byte *dest, int count, int 
 	if (count <= 0)
 		return;
 
-	byte fill = (byte)V_ColorFill;
+	byte fill = static_cast<byte>(V_ColorFill);
 
 	do
 	{
 		*dest = fill;
 		dest += pitch;
 	} while (--count);
+}
+
+// Even though its the same, we need a wrapper because casting a function pointer is undefined behavior
+void DCanvas::DrawColoredPatchSP(const byte *source, byte *dest, int count, int pitch, int)
+{
+	DCanvas::DrawColoredPatchP(source, dest, count, pitch);
 }
 
 
@@ -327,7 +333,7 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 	{
 		fixed_t fglevel, bglevel, translevel;
 
-		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		translevel = static_cast<fixed_t>(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		bg2rgb = Col2RGB8[bglevel>>10];
@@ -342,7 +348,11 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 	} while (--count);
 }
 
-
+// Even though its the same, we need a wrapper because casting a function pointer is undefined behavior
+void DCanvas::DrawColorLucentPatchSP(const byte *source, byte *dest, int count, int pitch, int)
+{
+	DCanvas::DrawColorLucentPatchP(source, dest, count, pitch);
+}
 
 /**************************/
 /*						  */
@@ -358,7 +368,7 @@ void DCanvas::DrawPatchD (const byte *source, byte *dest, int count, int pitch)
 
 	do
 	{
-		*((argb_t *)dest) = V_Palette.shade(*source++);
+		*(reinterpret_cast<argb_t*>(dest)) = V_Palette.shade(*source++);
 		dest += pitch;
 	} while (--count);
 }
@@ -372,7 +382,7 @@ void DCanvas::DrawPatchSD (const byte *source, byte *dest, int count, int pitch,
 
 	do
 	{
-		*((argb_t *)dest) = V_Palette.shade(source[c >> 16]);
+		*(reinterpret_cast<argb_t*>(dest)) = V_Palette.shade(source[c >> 16]);
 		dest += pitch;
 		c += yinc;
 	} while (--count);
@@ -388,14 +398,14 @@ void DCanvas::DrawLucentPatchD (const byte *source, byte *dest, int count, int p
 	if (::hud_transparency >= 1.0)
 		return DrawPatchD(source, dest, count, pitch);
 
-	int alpha = (int)(hud_transparency * 255);
+	int alpha = static_cast<int>(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
 
 	do
 	{
 		argb_t fg = V_Palette.shade(*source++);
-		argb_t bg = *((argb_t *)dest);
-		*((argb_t *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
+		argb_t bg = *(reinterpret_cast<argb_t*>(dest));
+		*(reinterpret_cast<argb_t*>(dest)) = alphablend2a(bg, invAlpha, fg, alpha);
 		dest += pitch;
 	} while (--count);
 }
@@ -408,7 +418,7 @@ void DCanvas::DrawLucentPatchSD (const byte *source, byte *dest, int count, int 
 	if (::hud_transparency >= 1.0)
 		return DrawPatchSD(source, dest, count, pitch, yinc);
 
-	int alpha = (int)(hud_transparency * 255);
+	int alpha = static_cast<int>(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
 
 	int c = 0;
@@ -416,8 +426,8 @@ void DCanvas::DrawLucentPatchSD (const byte *source, byte *dest, int count, int 
 	do
 	{
 		argb_t fg = V_Palette.shade(source[c >> 16]);
-		argb_t bg = *((argb_t *)dest);
-		*((argb_t *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
+		argb_t bg = *(reinterpret_cast<argb_t*>(dest));
+		*(reinterpret_cast<argb_t*>(dest)) = alphablend2a(bg, invAlpha, fg, alpha);
 		dest += pitch;
 		c += yinc;
 	} while (--count);
@@ -432,7 +442,7 @@ void DCanvas::DrawTranslatedPatchD (const byte *source, byte *dest, int count, i
 
 	do
 	{
-		*((argb_t *)dest) = V_Palette.tlate(V_ColorMap, *source++);
+		*(reinterpret_cast<argb_t*>(dest)) = V_Palette.tlate(V_ColorMap, *source++);
 		dest += pitch;
 	} while (--count);
 }
@@ -446,7 +456,7 @@ void DCanvas::DrawTranslatedPatchSD (const byte *source, byte *dest, int count, 
 
 	do
 	{
-		*((argb_t *)dest) = V_Palette.tlate(V_ColorMap, source[c >> 16]);
+		*(reinterpret_cast<argb_t*>(dest)) = V_Palette.tlate(V_ColorMap, source[c >> 16]);
 		dest += pitch;
 		c += yinc;
 	} while (--count);
@@ -462,14 +472,14 @@ void DCanvas::DrawTlatedLucentPatchD (const byte *source, byte *dest, int count,
 	if (::hud_transparency >= 1.0)
 		return DrawTranslatedPatchD(source, dest, count, pitch);
 
-	int alpha = (int)(hud_transparency * 255);
+	int alpha = static_cast<int>(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
 
 	do
 	{
 		argb_t fg = V_Palette.tlate(V_ColorMap, *source++);
-		argb_t bg = *((argb_t *)dest);
-		*((argb_t *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
+		argb_t bg = *(reinterpret_cast<argb_t*>(dest));
+		*(reinterpret_cast<argb_t*>(dest)) = alphablend2a(bg, invAlpha, fg, alpha);
 		dest += pitch;
 	} while (--count);
 }
@@ -482,7 +492,7 @@ void DCanvas::DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count
 	if (::hud_transparency >= 1.0)
 		return DrawTranslatedPatchSD(source, dest, count, pitch, yinc);
 
-	int alpha = (int)(hud_transparency * 255);
+	int alpha = static_cast<int>(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
 
 	int c = 0;
@@ -490,8 +500,8 @@ void DCanvas::DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count
 	do
 	{
 		argb_t fg = V_Palette.tlate(V_ColorMap, source[c >> 16]);
-		argb_t bg = *((argb_t *)dest);
-		*((argb_t *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
+		argb_t bg = *(reinterpret_cast<argb_t*>(dest));
+		*(reinterpret_cast<argb_t*>(dest))= alphablend2a(bg, invAlpha, fg, alpha);
 		dest += pitch;
 		c += yinc;
 	} while (--count);
@@ -510,9 +520,15 @@ void DCanvas::DrawColoredPatchD (const byte *source, byte *dest, int count, int 
 	argb_t color = V_Palette.shade(V_ColorFill);
 	do
 	{
-		*((argb_t *)dest) = color;
+		*(reinterpret_cast<argb_t*>(dest)) = color;
 		dest += pitch;
 	} while (--count);
+}
+
+// Even though its the same, we need a wrapper because casting a function pointer is undefined behavior
+void DCanvas::DrawColoredPatchSD(const byte *source, byte *dest, int count, int pitch, int)
+{
+	DCanvas::DrawColoredPatchD(source, dest, count, pitch);
 }
 
 
@@ -528,20 +544,24 @@ void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, 
 	if (::hud_transparency >= 1.0)
 		return DrawColoredPatchD(source, dest, count, pitch);
 
-	int alpha = (int)(hud_transparency * 255);
+	int alpha = static_cast<int>(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
 
 	argb_t fg = V_Palette.shade(V_ColorFill);
 
 	do
 	{
-		argb_t bg = *((argb_t *)dest);
-		*((argb_t *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
+		argb_t bg = *(reinterpret_cast<argb_t*>(dest));
+		*(reinterpret_cast<argb_t*>(dest)) = alphablend2a(bg, invAlpha, fg, alpha);
 		dest += pitch;
 	} while (--count);
 }
 
-
+// Even though its the same, we need a wrapper because casting a function pointer is undefined behavior
+void DCanvas::DrawColorLucentPatchSD(const byte *source, byte *dest, int count, int pitch, int)
+{
+	DCanvas::DrawColorLucentPatchD(source, dest, count, pitch);
+}
 
 /******************************/
 /*							  */
@@ -601,7 +621,7 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t* patch, int x, int 
 	for (int col = 0; col < patchwidth; x++, col++, desttop += colstep)
 	{
 		tallpost_t *post =
-				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
+				reinterpret_cast<tallpost_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(patch)) + LELONG(patch->columnofs[col]));
 
 		// step through the posts in a column
 		while (!post->end())
@@ -686,7 +706,7 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 	for (int col = 0; col < w; col += xinc, desttop += colstep)
 	{
 		tallpost_t *post =
-				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col >> FRACBITS]));
+				reinterpret_cast<tallpost_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(patch)) + LELONG(patch->columnofs[col >> FRACBITS]));
 
 		// step through the posts in a column
 		while (!post->end())
@@ -818,7 +838,7 @@ void DCanvas::DrawPatchFlipped(const patch_t *patch, int x, int y) const
 	for (int col = (patchwidth - 1); col >= 0 ; col--, desttop += colstep)
 	{
 		tallpost_t *post =
-				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col]));
+				reinterpret_cast<tallpost_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(patch)) + LELONG(patch->columnofs[col]));
 
 		// step through the posts in a column
 		while (!post->end())
@@ -890,7 +910,7 @@ void DCanvas::DrawPatchIndirectFlipped(const patch_t *patch, int x0, int y0) con
 	for (int col = (destwidth - 1) * xinc; col >= 0 ; col -= xinc, desttop += colstep)
 	{
 		tallpost_t *post =
-				(tallpost_t *)((byte *)patch + LELONG(patch->columnofs[col >> 16]));
+				reinterpret_cast<tallpost_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(patch)) + LELONG(patch->columnofs[col >> 16]));
 
 		// step through the posts in a column
 		while (!post->end())
@@ -972,8 +992,8 @@ template<typename PIXEL_T>
 static inline void V_GetTransposedBlockGeneric(byte* destbuffer, const byte* sourcebuffer,
 			int x, int y, int width, int height, int sourcepitchpixels)
 {
-	const PIXEL_T* source = (PIXEL_T*)sourcebuffer + y * sourcepitchpixels + x;
-	PIXEL_T* dest = (PIXEL_T*)destbuffer;
+	const PIXEL_T* source = reinterpret_cast<const PIXEL_T*>(sourcebuffer) + y * sourcepitchpixels + x;
+	PIXEL_T* dest = reinterpret_cast<PIXEL_T*>(destbuffer);
 
 	for (int col = x; col < x + width; col++)
 	{

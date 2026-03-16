@@ -422,7 +422,7 @@ fixed_t P_InterceptVector (const divline_t *v2, const divline_t *v1)
 				int64_t(v1->x - v2->x) * int64_t(v1->dy) +
 				int64_t(v2->y - v1->y) * int64_t(v1->dx);
 
-		return (fixed_t)(num / den);
+		return static_cast<fixed_t>(num / den);
 	}
 	else
 	{

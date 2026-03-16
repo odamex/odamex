@@ -1113,7 +1113,7 @@ bool EV_DoGenCeiling(line_t* line)
 	bool rtn;
 	bool manual;
 	sector_t* sec;
-	unsigned value = (unsigned)line->special - GenCeilingBase;
+	unsigned value = static_cast<unsigned>(line->special) - GenCeilingBase;
 
 	// parse the bit fields in the line's special type
 
@@ -1181,7 +1181,7 @@ bool EV_DoGenCrusher(line_t* line)
 	bool rtn;
 	bool manual;
 	sector_t* sec;
-	unsigned value = (unsigned)line->special - GenCrusherBase;
+	unsigned value = static_cast<unsigned>(line->special) - GenCrusherBase;
 
 	// parse the bit fields in the line's special type
 

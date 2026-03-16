@@ -110,7 +110,7 @@ int V_TextScaleYAmount();
 
 void HU_Init();
 void HU_Drawer();
-bool HU_Responder(event_t *ev);
+bool HU_Responder(const event_t& ev);
 
 lumpHandle_t sbline;
 
@@ -269,10 +269,10 @@ static int HU_GetMacroForNumpadKey(int key)
 //
 // Chat mode text entry
 //
-bool HU_Responder(event_t *ev)
+bool HU_Responder(const event_t& ev)
 {
-	if ((ev->mod & OMOD_ALT || (ev->data1 == OKEY_HAT1 && ev->type == ev_keydown)) &&
-	   !(ev->mod & OMOD_RALT && ev->mod & OMOD_LCTRL)) // Ignore AltGr
+	if ((ev.mod & OMOD_ALT || (ev.data1 == OKEY_HAT1 && ev.type == ev_keydown)) &&
+	   !(ev.mod & OMOD_RALT && ev.mod & OMOD_LCTRL)) // Ignore AltGr
 	{
 		altdown = true;
 	}
@@ -281,7 +281,7 @@ bool HU_Responder(event_t *ev)
 		altdown = false;
 	}
 
-	if ((gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) || ev->type != ev_keydown)
+	if ((gamestate != GS_LEVEL && gamestate != GS_INTERMISSION) || ev.type != ev_keydown)
 	{
 		if (HU_ChatMode() != CHAT_INACTIVE)
             return true;
@@ -295,49 +295,49 @@ bool HU_Responder(event_t *ev)
 	if (altdown)
 	{
 		// send a macro
-		if (ev->data1 >= OKEY_JOY1 && ev->data1 <= OKEY_JOY10)
+		if (ev.data1 >= OKEY_JOY1 && ev.data1 <= OKEY_JOY10)
 		{
-			ShoveChatStr(chat_macros[ev->data1 - OKEY_JOY1]->str(), HU_ChatMode()- 1);
+			ShoveChatStr(chat_macros[ev.data1 - OKEY_JOY1]->str(), HU_ChatMode()- 1);
 			HU_UnsetChatMode();
 			return true;
 		}
-		else if (ev->data1 >= '0' && ev->data1 <= '9')
+		else if (ev.data1 >= '0' && ev.data1 <= '9')
 		{
-			ShoveChatStr(chat_macros[ev->data1 - '0']->str(), HU_ChatMode() - 1);
+			ShoveChatStr(chat_macros[ev.data1 - '0']->str(), HU_ChatMode() - 1);
 			HU_UnsetChatMode();
 			return true;
 		}
-		else if (ev->data1 >= OKEYP_1 && ev->data1 <= OKEYP_0 && ev->mod & OMOD_NUM) // Use numpad keys for chat macros if numlock is on
+		else if (ev.data1 >= OKEYP_1 && ev.data1 <= OKEYP_0 && ev.mod & OMOD_NUM) // Use numpad keys for chat macros if numlock is on
 		{
-			ShoveChatStr(chat_macros[HU_GetMacroForNumpadKey(ev->data1)]->str(), HU_ChatMode() - 1);
+			ShoveChatStr(chat_macros[HU_GetMacroForNumpadKey(ev.data1)]->str(), HU_ChatMode() - 1);
 			HU_UnsetChatMode();
 			return true;
 		}
 	}
-	if (ev->data1 == OKEY_ENTER || ev->data1 == OKEYP_ENTER)
+	if (ev.data1 == OKEY_ENTER || ev.data1 == OKEYP_ENTER)
 	{
 		ShoveChatStr(input_text, HU_ChatMode() - 1);
 		HU_UnsetChatMode();
 		return true;
 	}
-	else if (ev->data1 == OKEY_ESCAPE || ev->data1 == OKEY_JOY2)
+	else if (ev.data1 == OKEY_ESCAPE || ev.data1 == OKEY_JOY2)
 	{
 		HU_UnsetChatMode();
 		return true;
 	}
-	else if (ev->data1 == OKEY_BACKSPACE)
+	else if (ev.data1 == OKEY_BACKSPACE)
 	{
 		if (!input_text.empty())
 			input_text.erase(input_text.end() - 1);
 		return true;
 	}
 
-	int textkey = ev->data3;	// [RH] Use localized keymap
+	int textkey = ev.data3;	// [RH] Use localized keymap
 	if (textkey < ' ' || textkey > '~')		// ASCII only please
 		return false;
 
 	if (input_text.length() < MAX_CHATSTR_LEN)
-		input_text += (char)textkey;
+		input_text += static_cast<char>(textkey);
 
 	return true;
 }
@@ -637,7 +637,7 @@ BEGIN_COMMAND (say)
 {
 	if (argc > 1)
 	{
-		std::string chat = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		std::string chat = C_ArgCombine(argc - 1, const_cast<const char **>(argv + 1));
 		ShoveChatStr(chat, 0);
 	}
 }
@@ -660,7 +660,7 @@ BEGIN_COMMAND (say_team)
 {
 	if (argc > 1)
 	{
-		std::string chat = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		std::string chat = C_ArgCombine(argc - 1, const_cast<const char **>(argv + 1));
 		ShoveChatStr(chat, 1);
 	}
 }
@@ -677,7 +677,7 @@ BEGIN_COMMAND (say_to)
 			return;
 		}
 
-		std::string chat = C_ArgCombine(argc - 2, (const char **)(argv + 2));
+		std::string chat = C_ArgCombine(argc - 2, const_cast<const char **>(argv + 2));
 		ShovePrivMsg(player.id, chat);
 	}
 }
@@ -784,11 +784,11 @@ void drawHeader(player_t *player, int y)
 			std::string points;
 			if (g_rounds)
 			{
-				points = fmt::sprintf("%d", GetTeamInfo((team_t)i)->RoundWins);
+				points = fmt::sprintf("%d", GetTeamInfo(static_cast<team_t>(i))->RoundWins);
 			}
 			else
 			{
-				points = fmt::sprintf("%d", GetTeamInfo((team_t)i)->Points);
+				points = fmt::sprintf("%d", GetTeamInfo(static_cast<team_t>(i))->Points);
 			}
 
 			hud::DrawText(-236 + xOffset, y + yOffset, hud_scalescoreboard, hud::X_CENTER,
@@ -1123,7 +1123,7 @@ void drawTeamScores(player_t *player, int& y, byte extra_rows) {
 			hud::X_RIGHT, hud::Y_TOP,
 			"PNG", CR_GREY, true);
 
-		color = V_GetTextColor(GetTeamInfo((team_t)i)->TextColor.c_str());
+		color = V_GetTextColor(GetTeamInfo(static_cast<team_t>(i))->TextColor);
 
 		patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 		for (short xi = xOffset; xi < xOffset + 232; xi += 2)
@@ -1591,7 +1591,7 @@ void drawLowTeamScores(player_t *player, int y, byte extra_rows) {
 	patch_t* pSBLine = W_ResolvePatchHandle(::sbline);
 	for (int i = 0; i < sv_teamsinplay; i++)
 	{
-		color = V_GetTextColor(GetTeamInfo((team_t)i)->TextColor.c_str());
+		color = V_GetTextColor(GetTeamInfo(static_cast<team_t>(i))->TextColor);
 
 		for (short xi = -146 + 1;xi < 146;xi += 2)
 		{

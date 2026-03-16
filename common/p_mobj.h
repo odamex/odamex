@@ -118,7 +118,7 @@ inline static fixed_t DegToSlope(fixed_t a)
 	if (a >= 0)
 		return AngleToSlope(FixedToAngle(a));
 	else
-		return AngleToSlope(-(int)FixedToAngle(-a));
+		return AngleToSlope(-static_cast<int>(FixedToAngle(-a)));
 }
 
 // killough 11/98:

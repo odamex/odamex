@@ -239,20 +239,20 @@ static void R_InitXToViewAngle()
 
 			for (int i = centerx, slope = 0; i <= t; i++, slope += slopestep)
 			{
-				xtoviewangle[i]   = (angle_t)-(signed)tantoangle[slope >> DBITS];
-				linearskyangle[i] = (0.5 - i / (double)viewwidth) * FIXED2DOUBLE(hitan) * ANG90;
+				xtoviewangle[i]   = static_cast<angle_t>(-static_cast<signed>(tantoangle[slope >> DBITS]));
+				linearskyangle[i] = (0.5 - i / static_cast<double>(viewwidth)) * FIXED2DOUBLE(hitan) * ANG90;
 			}
 
 			for (int i = t + 1; i <= viewwidth; i++)
 			{
 				xtoviewangle[i]   = ANG270+tantoangle[dfocus / (i - centerx)];
-				linearskyangle[i] = (0.5 - i / (double)viewwidth) * FIXED2DOUBLE(hitan) * ANG90;
+				linearskyangle[i] = (0.5 - i / static_cast<double>(viewwidth)) * FIXED2DOUBLE(hitan) * ANG90;
 			}
 
 			for (int i = 0; i < centerx; i++)
 			{
-				xtoviewangle[i]   = (angle_t)(-(signed)xtoviewangle[viewwidth-i-1]);
-				linearskyangle[i] = (angle_t)(-(signed)linearskyangle[viewwidth-i-1]);
+				xtoviewangle[i]   = static_cast<angle_t>(-static_cast<signed>(xtoviewangle[viewwidth-i-1]));
+				linearskyangle[i] = static_cast<angle_t>(-static_cast<signed>(linearskyangle[viewwidth-i-1]));
 			}
 		}
 		else
@@ -343,7 +343,7 @@ sky_t* R_GetSky(const OLumpName& name, bool create)
 	if (tex < 0) return nullptr;
 
 	OLumpName skytexname;
-	sky_t* sky = (sky_t*)Z_Malloc(sizeof(sky_t), PU_STATIC, nullptr);
+	sky_t* sky = Z_Malloc<sky_t>(PU_STATIC);
 	sky->background.scalex = INT2FIXED(1);
 	sky->background.scaley = INT2FIXED(1);
 	sky->background.scrolly = INT2FIXED(0);
@@ -420,7 +420,7 @@ void R_InitSkyDefs()
 				return jsonlumpresult_t::PARSEERROR;
 			}
 
-			sky_t* sky = (sky_t*)Z_Malloc(sizeof(sky_t), PU_STATIC, nullptr);
+			sky_t* sky = Z_Malloc<sky_t>(PU_STATIC);
 
 			sky->type = skytype;
 			sky->usedefaultmid = false;
@@ -443,13 +443,13 @@ void R_InitSkyDefs()
 				const Json::Value& fireupdatetime = fireelem["updatetime"];
 
 				if (!firepalette.isArray()) return jsonlumpresult_t::PARSEERROR;
-				sky->numfireentries = (int32_t)firepalette.size();
-				byte* output = sky->firepalette = (byte*)Z_Malloc(sizeof(byte) * sky->numfireentries, PU_STATIC, nullptr);
+				sky->numfireentries = static_cast<int32_t>(firepalette.size());
+				byte* output = sky->firepalette = Z_Malloc<byte>(sky->numfireentries, PU_STATIC);
 				for (const Json::Value& palentry : firepalette)
 				{
 					*output++ = palentry.asUInt();
 				}
-				sky->fireticrate = (int32_t)(fireupdatetime.asFloat() * TICRATE);
+				sky->fireticrate = static_cast<int32_t>((fireupdatetime.asFloat() * TICRATE));
 			}
 			else if (sky->type == skytype_t::DOUBLESKY)
 			{
@@ -528,7 +528,7 @@ void spreadFire(int src, byte* firepixels, int width)
 		if (copyloc0 >= 0)
 			firepixels[copyloc0] = 0;
 	} else {
-		const int rand = (int)std::round(M_RandomFloat() * 3.0) & 3;
+		const int rand = static_cast<int>(std::round(M_RandomFloat() * 3.0)) & 3;
 		const int copyloc1 = copyloc0 - rand + 1;
 		if (copyloc1 >= 0)
 			firepixels[copyloc1] = pixel - (rand & 1);
@@ -562,7 +562,7 @@ void R_InitFireSky(sky_t* sky)
 {
 	int texnum = sky->background.texnum;
 	const texture_t* tex = textures[texnum];
-	sky->firetexturedata = (byte*)Z_Malloc(sizeof(byte) * tex->width * tex->height, PU_LEVEL, nullptr);
+	sky->firetexturedata = Z_Malloc<byte>(tex->width * tex->height, PU_LEVEL);
     for (int i = 0 ; i < tex->width*tex->height; i++)
 	{
 		sky->firetexturedata[i] = 0;
@@ -860,7 +860,7 @@ void R_RenderSkyRange(visplane_t* pl)
 			skyposts[x] = skypost;
 		}
 
-		R_RenderColumnRange(pl->minx, pl->maxx, (int*)pl->top, (int*)pl->bottom,
+		R_RenderColumnRange(pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom),
 				skyposts, SkyColumnBlaster, false, columnmethod);
 	}
 
@@ -879,7 +879,7 @@ void R_RenderSkyRange(visplane_t* pl)
 			skyposts[x] = skypost;
 		}
 
-		R_RenderColumnRange(pl->minx, pl->maxx, (int*)pl->top, (int*)pl->bottom,
+		R_RenderColumnRange(pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom),
 			skyposts, SkyColumnBlaster, false, columnmethod);
 	}
 	else
@@ -890,10 +890,10 @@ void R_RenderSkyRange(visplane_t* pl)
 			sky1colnum = FIXED2INT(FixedMul(INT2FIXED(sky1colnum), sky1scalex));
 			tallpost_t* skypost = R_GetTextureColumn(frontskytex, sky1colnum);
 
-			int count = MIN<int> (512, textureheight[frontskytex] >> FRACBITS);
+			int count = MIN<int>(512, textureheight[frontskytex] >> FRACBITS);
 			int destpostlen = 0;
 
-			tallpost_t* destpost = (tallpost_t*)transparentskybuffer[x];
+			tallpost_t* destpost = reinterpret_cast<tallpost_t*>(transparentskybuffer[x]);
 
 			tallpost_t* orig = destpost;
 
@@ -937,7 +937,7 @@ void R_RenderSkyRange(visplane_t* pl)
 
 		R_SetSkyForegroundDrawFuncs();
 
-		R_RenderColumnRange(pl->minx, pl->maxx, (int*)pl->top, (int*)pl->bottom,
+		R_RenderColumnRange(pl->minx, pl->maxx, reinterpret_cast<int*>(pl->top), reinterpret_cast<int*>(pl->bottom),
 			skyposts, SkyColumnBlaster, false, columnmethod);
 	}
 

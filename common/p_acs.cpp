@@ -602,25 +602,25 @@ FBehavior::FBehavior (byte* object, int len)
 	if (Format == ACS_Old)
 	{
 		Chunks = object + len;
-		Scripts = object + ((uint32_t *)object)[1];
-		NumScripts = ((uint32_t *)Scripts)[0];
+		Scripts = object + (reinterpret_cast<uint32_t*>(object))[1];
+		NumScripts = (reinterpret_cast<uint32_t*>(Scripts))[0];
 		// Check for redesigned ACSE/ACSe
-		if (((uint32_t *)object)[1] >= 6*4 &&
-			(((uint32_t *)Scripts)[-1] == MAKE_ID('A','C','S','e') ||
-			((uint32_t *)Scripts)[-1] == MAKE_ID('A','C','S','E')))
+		if ((reinterpret_cast<uint32_t*>(object))[1] >= 6*4 &&
+			((reinterpret_cast<uint32_t*>(Scripts))[-1] == MAKE_ID('A','C','S','e') ||
+			(reinterpret_cast<uint32_t*>(Scripts))[-1] == MAKE_ID('A','C','S','E')))
 		{
-			Format = (((byte *)Scripts)[-1] == 'e') ? ACS_LittleEnhanced : ACS_Enhanced;
-			Chunks = object + ((uint32_t *)Scripts)[-2];
+			Format = ((reinterpret_cast<byte*>(Scripts))[-1] == 'e') ? ACS_LittleEnhanced : ACS_Enhanced;
+			Chunks = object + (reinterpret_cast<uint32_t*>(Scripts))[-2];
 			// Forget about the compatibility cruft at the end of the lump
-			DataSize = ((uint32_t *)object)[1] - 8;
+			DataSize = (reinterpret_cast<uint32_t*>(object))[1] - 8;
 		}
 		else
 		{
 			Scripts += 4;
 			for (i = 0; i < NumScripts; ++i)
 			{
-				ScriptPtr2 ptr1 = *(ScriptPtr2 *)(Scripts + 12*i);
-				ScriptPtr *ptr2 =  (ScriptPtr  *)(Scripts +  8*i);
+				ScriptPtr2 ptr1 = *reinterpret_cast<ScriptPtr2*>(Scripts + 12*i);
+				ScriptPtr *ptr2 =  reinterpret_cast<ScriptPtr*> (Scripts +  8*i);
 				ptr2->Number = ptr1.Number % 1000;
 				ptr2->Type = ptr1.Number / 1000;
 				ptr2->ArgCount = ptr1.ArgCount;
@@ -630,19 +630,19 @@ FBehavior::FBehavior (byte* object, int len)
 	}
 	else
 	{
-		Chunks = object + ((uint32_t *)object)[1];
+		Chunks = object + (reinterpret_cast<uint32_t*>(object))[1];
 	}
 	if (Format != ACS_Old)
 	{
 		Scripts = FindChunk (MAKE_ID('S','P','T','R'));
 		if (object[3] != 0)
 		{
-			NumScripts = ((uint32_t *)Scripts)[1] / 12;
+			NumScripts = (reinterpret_cast<uint32_t*>(Scripts))[1] / 12;
 			Scripts += 8;
 			for (i = 0; i < NumScripts; ++i)
 			{
-				ScriptPtr1 ptr1 = *(ScriptPtr1 *)(Scripts + 12*i);
-				ScriptPtr *ptr2 =  (ScriptPtr  *)(Scripts +  8*i);
+				ScriptPtr1 ptr1 = *reinterpret_cast<ScriptPtr1*>(Scripts + 12*i);
+				ScriptPtr *ptr2 =  reinterpret_cast<ScriptPtr *>(Scripts +  8*i);
 				ptr2->Number = ptr1.Number;
 				ptr2->Type = ptr1.Type;
 				ptr2->ArgCount = ptr1.ArgCount;
@@ -651,7 +651,7 @@ FBehavior::FBehavior (byte* object, int len)
 		}
 		else
 		{
-			NumScripts = ((uint32_t *)Scripts)[1] / 8;
+			NumScripts = (reinterpret_cast<uint32_t*>(Scripts))[1] / 8;
 			Scripts += 8;
 		}
 	}
@@ -664,8 +664,8 @@ FBehavior::FBehavior (byte* object, int len)
 
 	if (Format == ACS_Old)
 	{
-		LanguageNeutral = ((uint32_t *)Data)[1];
-		LanguageNeutral += ((uint32_t *)(Data + LanguageNeutral))[0] * 12 + 4;
+		LanguageNeutral = (reinterpret_cast<uint32_t*>(Data))[1];
+		LanguageNeutral += (reinterpret_cast<uint32_t*>(Data + LanguageNeutral))[0] * 12 + 4;
 	}
 	else
 	{
@@ -680,11 +680,11 @@ FBehavior::FBehavior (byte* object, int len)
 		Functions = FindChunk(MAKE_ID('F','U','N','C'));
 		if (Functions != NULL)
 		{
-			NumFunctions = LELONG(((uint32_t *)Functions)[1]);
+			NumFunctions = LELONG((reinterpret_cast<uint32_t*>(Functions))[1]);
 			Functions += 8;
 		}
 
-		chunk = (uint32_t *)FindChunk(MAKE_ID('M','I','N','I'));
+		chunk = reinterpret_cast<uint32_t*>(FindChunk(MAKE_ID('M','I','N','I')));
 		if (chunk != NULL)
 		{
 			int numvars = LELONG(chunk[1])/4;
@@ -695,7 +695,7 @@ FBehavior::FBehavior (byte* object, int len)
 			}
 		}
 
-		chunk = (uint32_t *)FindChunk(MAKE_ID('A','R','A','Y'));
+		chunk = reinterpret_cast<uint32_t*>(FindChunk(MAKE_ID('A','R','A','Y')));
 		if (chunk != NULL)
 		{
 			NumArrays = LELONG(chunk[1])/8;
@@ -710,11 +710,11 @@ FBehavior::FBehavior (byte* object, int len)
 			}
 		}
 
-		chunk = (uint32_t *)FindChunk(MAKE_ID('A','I','N','I'));
+		chunk = reinterpret_cast<uint32_t*>(FindChunk(MAKE_ID('A','I','N','I')));
 		while (chunk != NULL)
 		{
 			int arraynum = level.vars[LELONG(chunk[2])];
-			if ((unsigned)arraynum < (unsigned)NumArrays)
+			if (static_cast<unsigned>(arraynum) < static_cast<unsigned>(NumArrays))
 			{
 				int initsize = MIN<int> (Arrays[arraynum].ArraySize, (LELONG(chunk[1])-4)/4);
 				int32_t *elems = Arrays[arraynum].Elements;
@@ -723,7 +723,7 @@ FBehavior::FBehavior (byte* object, int len)
 					elems[i] = LELONG(chunk[3+i]);
 				}
 			}
-			chunk = (uint32_t *)NextChunk((byte *)chunk);
+			chunk = reinterpret_cast<uint32_t*>(NextChunk(reinterpret_cast<byte*>(chunk)));
 		}
 	}
 
@@ -750,8 +750,8 @@ FBehavior::~FBehavior ()
 
 int STACK_ARGS FBehavior::SortScripts (const void *a, const void *b)
 {
-	ScriptPtr *ptr1 = (ScriptPtr *)a;
-	ScriptPtr *ptr2 = (ScriptPtr *)b;
+	const ScriptPtr *ptr1 = reinterpret_cast<const ScriptPtr*>(a);
+	const ScriptPtr *ptr2 = reinterpret_cast<const ScriptPtr*>(b);
 	return ptr1->Number - ptr2->Number;
 }
 
@@ -763,36 +763,36 @@ bool FBehavior::IsGood ()
 int *FBehavior::FindScript (int script) const
 {
 	const ScriptPtr *ptr = BinarySearch<ScriptPtr, uint16_t>
-		((ScriptPtr *)Scripts, NumScripts, &ScriptPtr::Number, (uint16_t)script);
+		(reinterpret_cast<ScriptPtr*>(Scripts), NumScripts, &ScriptPtr::Number, static_cast<uint16_t>(script));
 
-	return ptr ? (int *)(ptr->Address + Data) : NULL;
+	return ptr ? reinterpret_cast<int*>(ptr->Address + Data) : NULL;
 }
 
 ScriptFunction *FBehavior::GetFunction (int funcnum) const
 {
-	if ((unsigned)funcnum >= (unsigned)NumFunctions)
+	if (static_cast<unsigned>(funcnum) >= static_cast<unsigned>(NumFunctions))
 	{
 		return NULL;
 	}
-	return (ScriptFunction *)Functions + funcnum;
+	return reinterpret_cast<ScriptFunction*>(Functions) + funcnum;
 }
 
 int FBehavior::GetArrayVal (int arraynum, int index) const
 {
-	if ((unsigned)arraynum >= (unsigned)NumArrays)
+	if (static_cast<unsigned>(arraynum) >= static_cast<unsigned>(NumArrays))
 		return 0;
 	const ArrayInfo *array = &Arrays[arraynum];
-	if ((unsigned)index >= (unsigned)array->ArraySize)
+	if (static_cast<unsigned>(index) >= static_cast<unsigned>(array->ArraySize))
 		return 0;
 	return array->Elements[index];
 }
 
 void FBehavior::SetArrayVal (int arraynum, int index, int value)
 {
-	if ((unsigned)arraynum >= (unsigned)NumArrays)
+	if (static_cast<unsigned>(arraynum) >= static_cast<unsigned>(NumArrays))
 		return;
 	const ArrayInfo *array = &Arrays[arraynum];
-	if ((unsigned)index >= (unsigned)array->ArraySize)
+	if (static_cast<unsigned>(index) >= static_cast<unsigned>(array->ArraySize))
 		return;
 	array->Elements[index] = value;
 }
@@ -803,26 +803,26 @@ byte *FBehavior::FindChunk (uint32_t id) const
 
 	while (chunk != NULL && chunk < Data + DataSize)
 	{
-		if (((uint32_t *)chunk)[0] == id)
+		if ((reinterpret_cast<uint32_t*>(chunk))[0] == id)
 		{
 			return chunk;
 		}
-		chunk += ((uint32_t *)chunk)[1] + 8;
+		chunk += (reinterpret_cast<uint32_t*>(chunk))[1] + 8;
 	}
 	return NULL;
 }
 
 byte *FBehavior::NextChunk (byte *chunk) const
 {
-	uint32_t id = *(uint32_t *)chunk;
-	chunk += ((uint32_t *)chunk)[1] + 8;
+	uint32_t id = *reinterpret_cast<uint32_t*>(chunk);
+	chunk += (reinterpret_cast<uint32_t*>(chunk))[1] + 8;
 	while (chunk != NULL && chunk < Data + DataSize)
 	{
-		if (((uint32_t *)chunk)[0] == id)
+		if ((reinterpret_cast<uint32_t*>(chunk))[0] == id)
 		{
 			return chunk;
 		}
-		chunk += ((uint32_t *)chunk)[1] + 8;
+		chunk += (reinterpret_cast<uint32_t*>(chunk))[1] + 8;
 	}
 	return NULL;
 }
@@ -831,11 +831,11 @@ const char *FBehavior::LookupString (uint32_t index, uint32_t ofs) const
 {
 	if (Format == ACS_Old)
 	{
-		uint32_t *list = (uint32_t *)(Data + LanguageNeutral);
+		uint32_t *list = reinterpret_cast<uint32_t*>(Data + LanguageNeutral);
 
 		if (index >= list[0])
 			return NULL;	// Out of range for this list;
-		return (const char *)(Data + list[1+index]);
+		return reinterpret_cast<const char*>(Data + list[1+index]);
 	}
 	else
 	{
@@ -847,13 +847,13 @@ const char *FBehavior::LookupString (uint32_t index, uint32_t ofs) const
 				return NULL;
 			}
 		}
-		uint32_t *list = (uint32_t *)(Data + ofs);
+		uint32_t *list = reinterpret_cast<uint32_t*>(Data + ofs);
 
 		if (index >= list[1])
 			return NULL;	// Out of range for this list
 		if (list[3+index] == 0)
 			return NULL;	// Not defined in this list
-		return (const char *)(Data + ofs + list[3+index]);
+		return reinterpret_cast<const char*>(Data + ofs + list[3+index]);
 	}
 }
 
@@ -866,7 +866,7 @@ const char *FBehavior::LocalizeString (uint32_t index) const
 
 		while (ofs != 0 && (str = LookupString (index, ofs)) == NULL)
 		{
-			ofs = ((uint32_t *)(Data + ofs))[2];
+			ofs = (reinterpret_cast<uint32_t*>(Data + ofs))[2];
 		}
 		return str;
 	}
@@ -879,9 +879,9 @@ const char *FBehavior::LocalizeString (uint32_t index) const
 void FBehavior::PrepLocale (uint32_t userpref, uint32_t userdef, uint32_t syspref, uint32_t sysdef)
 {
 	// Clear away any existing links
-	for (byte* chunk = Chunks; chunk < Data + DataSize; chunk += ((uint32_t *)chunk)[1] + 8)
+	for (byte* chunk = Chunks; chunk < Data + DataSize; chunk += (reinterpret_cast<uint32_t*>(chunk))[1] + 8)
 	{
-		uint32_t* list = (uint32_t *)chunk;
+		uint32_t* list = reinterpret_cast<uint32_t*>(chunk);
 		if (list[0] == MAKE_ID('S','T','R','L'))
 		{
 			list[4] = 0;
@@ -930,9 +930,9 @@ void FBehavior::AddLanguage (uint32_t langid)
 	// type, if not in list already
 	if ((langid & LANGREGIONMASK) == 0)
 	{
-		for (byte* chunk = Chunks; chunk < Data + DataSize; chunk += ((uint32_t *)chunk)[1] + 8)
+		for (byte* chunk = Chunks; chunk < Data + DataSize; chunk += (reinterpret_cast<uint32_t*>(chunk))[1] + 8)
 		{
-			uint32_t* list = (uint32_t *)chunk;
+			uint32_t* list = reinterpret_cast<uint32_t*>(chunk);
 			if (list[0] != MAKE_ID('S','T','R','L'))
 				continue;	// not a string list
 			if ((list[2] & ~LANGREGIONMASK) != langid)
@@ -955,7 +955,7 @@ uint32_t *FBehavior::CheckIfInList (uint32_t langid)
 	ofsput = &Localized;
 	while (ofs != 0)
 	{
-		list = (uint32_t *)(Data + ofs);
+		list = reinterpret_cast<uint32_t*>(Data + ofs);
 		if (list[0] == langid)
 			return NULL;
 		ofsput = &list[2];
@@ -972,9 +972,9 @@ uint32_t FBehavior::FindLanguage (uint32_t langid, bool ignoreregion) const
 
 	langmask = ignoreregion ? ~LANGREGIONMASK : ~0;
 
-	for (chunk = Chunks; chunk < Data + DataSize; chunk += ((uint32_t *)chunk)[1] + 8)
+	for (chunk = Chunks; chunk < Data + DataSize; chunk += (reinterpret_cast<uint32_t*>(chunk))[1] + 8)
 	{
-		list = (uint32_t *)chunk;
+		list = reinterpret_cast<uint32_t*>(chunk);
 		if (list[0] == MAKE_ID('S','T','R','L') && (list[2] & langmask) == langid)
 		{
 			return chunk - Data + 8;
@@ -988,16 +988,13 @@ void FBehavior::StartTypedScripts (uint16_t type, AActor *activator, int arg0, i
 	if (!serverside)
 		return;
 
-	ScriptPtr *ptr;
-	int i;
-
-	for (i = 0; i < NumScripts; ++i)
+	for (int i = 0; i < NumScripts; ++i)
 	{
-		ptr = (ScriptPtr *)(Scripts + 8*i);
+		ScriptPtr* ptr = reinterpret_cast<ScriptPtr*>(Scripts + 8*i);
 		if (ptr->Type == type)
 		{
 			P_GetScriptGoing (activator, NULL, ptr->Number,
-				(int *)(ptr->Address + Data), 0, arg0, arg1, arg2, always, true);
+				reinterpret_cast<int*>(ptr->Address + Data), 0, arg0, arg1, arg2, always, true);
 		}
 	}
 }
@@ -1054,7 +1051,7 @@ void DACSThinker::Serialize (FArchive &arc)
 		for (int i = 0; i < 1000; i++)
 		{
 			if (RunningScripts[i])
-				arc << RunningScripts[i] << (uint16_t)i;
+				arc << RunningScripts[i] << static_cast<uint16_t>(i);
 		}
 		arc << static_cast<DLevelScript*>(nullptr);
 	}
@@ -1125,7 +1122,7 @@ void DFlashFader::DestroyedPointer(DObject *obj)
 DFlashFader::DFlashFader (float r1, float g1, float b1, float a1,
 						  float r2, float g2, float b2, float a2,
 						  float time, AActor *who)
-	: TotalTics ((int)(time*TICRATE)), StartTic (level.time), ForWho (who)
+	: TotalTics (static_cast<int>(time*TICRATE)), StartTic (level.time), ForWho (who)
 {
 	Blends[0][0]=r1; Blends[0][1]=g1; Blends[0][2]=b1; Blends[0][3]=a1;
 	Blends[1][0]=r2; Blends[1][1]=g2; Blends[1][2]=b2; Blends[1][3]=a2;
@@ -1171,7 +1168,7 @@ void DFlashFader::RunThink ()
 		Destroy ();
 		return;
 	}
-	SetBlend ((float)(level.time - StartTic) / (float)TotalTics);
+	SetBlend (static_cast<float>(level.time - StartTic) / static_cast<float>(TotalTics));
 }
 
 void DFlashFader::SetBlend (float time)
@@ -1319,7 +1316,7 @@ IMPLEMENT_SERIAL (DLevelScript, DObject)
 
 void *DLevelScript::operator new (size_t size)
 {
-	return Z_Malloc (sizeof(DLevelScript), PU_LEVACS, 0);
+	return Z_Malloc<void>(sizeof(DLevelScript), PU_LEVACS, nullptr);
 }
 
 void DLevelScript::operator delete (void *block)
@@ -1465,7 +1462,7 @@ int DLevelScript::Random (int min, int max)
 	num = ((num1 << 24) | (num2 << 16) | (num3 << 8) | num4);
 	num %= (max - min + 1);
 	num += min;
-	return (int)num;
+	return static_cast<int>(num);
 }
 
 int DLevelScript::ThingCount (int type, int tid)
@@ -1857,7 +1854,7 @@ void DLevelScript::StartSound(byte pcd, const AActor* activator, int channel, in
 
 		const char* lookup = level.behavior->LookupString(index);
 		if (lookup != NULL)
-			S_Sound(channel, lookup, (float)volume / 127.0F, attenuation);
+			S_Sound(channel, lookup, static_cast<float>(volume) / 127.0F, attenuation);
 	}
 
 	if (serverside)
@@ -1874,7 +1871,7 @@ void DLevelScript::StartSectorSound(byte pcd, const sector_t* sector, int channe
 	{
 		const char* lookup = level.behavior->LookupString(index);
 		if (lookup != NULL)
-			S_Sound(sector->soundorg, channel, lookup, (float)volume / 127.0F, attenuation);
+			S_Sound(sector->soundorg, channel, lookup, static_cast<float>(volume) / 127.0F, attenuation);
 	}
 
 	if (serverside)
@@ -1892,7 +1889,7 @@ void DLevelScript::StartThingSound(byte pcd, const AActor* actor, int channel, i
 	{
 		const char* lookup = level.behavior->LookupString(index);
 		if (lookup != NULL)
-			S_Sound(actor, channel, lookup, (float)volume / 127.0F, attenuation);
+			S_Sound(actor, channel, lookup, static_cast<float>(volume) / 127.0F, attenuation);
 	}
 
 	if (serverside)
@@ -2008,7 +2005,7 @@ int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, in
 		}
 	}
 
-	return (int)reinterpret_cast<uintptr_t>(actor);
+	return static_cast<int>(reinterpret_cast<uintptr_t>(actor));
 }
 
 int DLevelScript::DoSpawnSpot(int type, int spot, int tid, int angle)
@@ -2065,22 +2062,22 @@ void DLevelScript::DoFadeRange(AActor* who, int r1, int g1, int b1, int a1,
 {
 	if (clientside && who->player != NULL)
 	{
-		float ftime = (float)time / 65536.f;
+		float ftime = static_cast<float>(time) / 65536.f;
 		bool fadingFrom = a1 >= 0;
 		float fr1 = 0.f, fg1 = 0.f, fb1 = 0.f, fa1 = 0.f;
 		float fr2, fg2, fb2, fa2;
 
-		fr2 = (float)r2 / 255.f;
-		fg2 = (float)g2 / 255.f;
-		fb2 = (float)b2 / 255.f;
-		fa2 = (float)a2 / 65536.f;
+		fr2 = static_cast<float>(r2) / 255.f;
+		fg2 = static_cast<float>(g2) / 255.f;
+		fb2 = static_cast<float>(b2) / 255.f;
+		fa2 = static_cast<float>(a2) / 65536.f;
 
 		if (fadingFrom)
 		{
-			fr1 = (float)r1 / 255.f;
-			fg1 = (float)g1 / 255.f;
-			fb1 = (float)b1 / 255.f;
-			fa1 = (float)a1 / 65536.f;
+			fr1 = static_cast<float>(r1) / 255.f;
+			fg1 = static_cast<float>(g1) / 255.f;
+			fb1 = static_cast<float>(b1) / 255.f;
+			fa1 = static_cast<float>(a1) / 65536.f;
 		}
 
 		DoActualFadeRange(who->player, ftime, fadingFrom, fr1, fg1, fb1, fa1, fr2, fg2, fb2, fa2);
@@ -2096,9 +2093,21 @@ void DLevelScript::DoFadeRange(AActor* who, int r1, int g1, int b1, int a1,
 
 inline int getbyte (int *&pc)
 {
-	int res = *(byte *)pc;
-	pc = (int *)((byte *)pc+1);
+	int res = *reinterpret_cast<byte*>(pc);
+	pc = reinterpret_cast<int*>(reinterpret_cast<byte*>(pc)+1);
 	return res;
+}
+
+template <int N>
+inline std::array<byte, N> getbytes (int *&pc)
+{
+	auto* p = reinterpret_cast<byte*>(pc);
+
+    std::array<byte, N> out;
+    memcpy(out.data(), p, N);
+
+    pc = reinterpret_cast<int*>(p + N);
+	return out;
 }
 
 void DLevelScript::RunScript ()
@@ -2216,50 +2225,50 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_PUSHBYTE:
-			PushToStack(*(byte*)pc);
-			pc = (int*)((byte*)pc + 1);
+			PushToStack(*reinterpret_cast<byte*>(pc));
+			pc = reinterpret_cast<int*>(reinterpret_cast<byte*>(pc) + 1);
 			break;
 
 		case PCD_PUSH2BYTES:
-			Stack[sp] = ((byte*)pc)[0];
-			Stack[sp + 1] = ((byte*)pc)[1];
+			Stack[sp] = (reinterpret_cast<byte*>(pc))[0];
+			Stack[sp + 1] = (reinterpret_cast<byte*>(pc))[1];
 			sp += 2;
-			pc = (int*)((byte*)pc + 2);
+			pc = reinterpret_cast<int*>(reinterpret_cast<byte*>(pc) + 2);
 			break;
 
 		case PCD_PUSH3BYTES:
-			Stack[sp] = ((byte*)pc)[0];
-			Stack[sp + 1] = ((byte*)pc)[1];
-			Stack[sp + 2] = ((byte*)pc)[2];
+			Stack[sp] = (reinterpret_cast<byte*>(pc))[0];
+			Stack[sp + 1] = (reinterpret_cast<byte*>(pc))[1];
+			Stack[sp + 2] = (reinterpret_cast<byte*>(pc))[2];
 			sp += 3;
-			pc = (int*)((byte*)pc + 3);
+			pc = reinterpret_cast<int*>(reinterpret_cast<byte*>(pc) + 3);
 			break;
 
 		case PCD_PUSH4BYTES:
-			Stack[sp] = ((byte*)pc)[0];
-			Stack[sp + 1] = ((byte*)pc)[1];
-			Stack[sp + 2] = ((byte*)pc)[2];
-			Stack[sp + 3] = ((byte*)pc)[3];
+			Stack[sp] = (reinterpret_cast<byte*>(pc))[0];
+			Stack[sp + 1] = (reinterpret_cast<byte*>(pc))[1];
+			Stack[sp + 2] = (reinterpret_cast<byte*>(pc))[2];
+			Stack[sp + 3] = (reinterpret_cast<byte*>(pc))[3];
 			sp += 4;
-			pc = (int*)((byte*)pc + 4);
+			pc = reinterpret_cast<int*>(reinterpret_cast<byte*>(pc) + 4);
 			break;
 
 		case PCD_PUSH5BYTES:
-			Stack[sp] = ((byte*)pc)[0];
-			Stack[sp + 1] = ((byte*)pc)[1];
-			Stack[sp + 2] = ((byte*)pc)[2];
-			Stack[sp + 3] = ((byte*)pc)[3];
-			Stack[sp + 4] = ((byte*)pc)[4];
+			Stack[sp] = (reinterpret_cast<byte*>(pc))[0];
+			Stack[sp + 1] = (reinterpret_cast<byte*>(pc))[1];
+			Stack[sp + 2] = (reinterpret_cast<byte*>(pc))[2];
+			Stack[sp + 3] = (reinterpret_cast<byte*>(pc))[3];
+			Stack[sp + 4] = (reinterpret_cast<byte*>(pc))[4];
 			sp += 5;
-			pc = (int*)((byte*)pc + 5);
+			pc = reinterpret_cast<int*>(reinterpret_cast<byte*>(pc) + 5);
 			break;
 
 		case PCD_PUSHBYTES:
-			temp = *(byte*)pc;
-			pc = (int*)((byte*)pc + temp + 1);
+			temp = *reinterpret_cast<byte*>(pc);
+			pc = reinterpret_cast<int*>(reinterpret_cast<byte*>(pc) + temp + 1);
 			for (temp = -temp; temp; temp++)
 			{
-				PushToStack(*((byte*)pc + temp));
+				PushToStack(*(reinterpret_cast<byte*>(pc) + temp));
 			}
 			break;
 
@@ -2339,37 +2348,35 @@ void DLevelScript::RunScript ()
 			pc += 5;
 			break;
 
-		case PCD_LSPEC1DIRECTB:
-			ActivateLineSpecial(((byte *)pc)[0], activationline, activator,
-				((byte *)pc)[1], 0, 0, 0, 0);
-			pc = (int *)((byte *)pc + 2);
+		case PCD_LSPEC1DIRECTB: {
+			const auto [special, arg0] = getbytes<2>(pc);
+			ActivateLineSpecial(special, activationline, activator, arg0, 0, 0, 0, 0);
 			break;
+		}
 
-		case PCD_LSPEC2DIRECTB:
-			ActivateLineSpecial(((byte *)pc)[0], activationline, activator,
-				((byte *)pc)[1], ((byte *)pc)[2], 0, 0, 0);
-			pc = (int *)((byte *)pc + 3);
+		case PCD_LSPEC2DIRECTB: {
+			const auto [special, arg0, arg1] = getbytes<3>(pc);
+			ActivateLineSpecial(special, activationline, activator, arg0, arg1, 0, 0, 0);
 			break;
+		}
 
-		case PCD_LSPEC3DIRECTB:
-			ActivateLineSpecial(((byte *)pc)[0], activationline, activator,
-				((byte *)pc)[1], ((byte *)pc)[2], ((byte *)pc)[3], 0, 0);
-			pc = (int *)((byte *)pc + 4);
+		case PCD_LSPEC3DIRECTB: {
+			const auto [special, arg0, arg1, arg2] = getbytes<4>(pc);
+			ActivateLineSpecial(special, activationline, activator, arg0, arg1, arg2, 0, 0);
 			break;
+		}
 
-		case PCD_LSPEC4DIRECTB:
-			ActivateLineSpecial(((byte *)pc)[0], activationline, activator,
-				((byte *)pc)[1], ((byte *)pc)[2], ((byte *)pc)[3],
-				((byte *)pc)[4], 0);
-			pc = (int *)((byte *)pc + 5);
+		case PCD_LSPEC4DIRECTB: {
+			const auto [special, arg0, arg1, arg2, arg3] = getbytes<5>(pc);
+			ActivateLineSpecial(special, activationline, activator, arg0, arg1, arg2, arg3, 0);
 			break;
+		}
 
-		case PCD_LSPEC5DIRECTB:
-			ActivateLineSpecial(((byte *)pc)[0], activationline, activator,
-				((byte *)pc)[1], ((byte *)pc)[2], ((byte *)pc)[3],
-				((byte *)pc)[4], ((byte *)pc)[5]);
-			pc = (int *)((byte *)pc + 6);
+		case PCD_LSPEC5DIRECTB: {
+			const auto [special, arg0, arg1, arg2, arg3, arg4] = getbytes<6>(pc);
+			ActivateLineSpecial(special, activationline, activator, arg0, arg1, arg2, arg3, arg4);
 			break;
+		}
 
 		case PCD_CALL:
 		case PCD_CALLDISCARD: {
@@ -2400,9 +2407,9 @@ void DLevelScript::RunScript ()
 				Stack[sp + i] = 0;
 			}
 			sp += i;
-			((CallReturn*)&Stack[sp])->ReturnAddress = level.behavior->PC2Ofs(pc);
-			((CallReturn*)&Stack[sp])->ReturnFunction = activeFunction;
-			((CallReturn*)&Stack[sp])->bDiscardResult = (pcd == PCD_CALLDISCARD);
+			(reinterpret_cast<CallReturn*>(&Stack[sp]))->ReturnAddress = level.behavior->PC2Ofs(pc);
+			(reinterpret_cast<CallReturn*>(&Stack[sp]))->ReturnFunction = activeFunction;
+			(reinterpret_cast<CallReturn*>(&Stack[sp]))->bDiscardResult = (pcd == PCD_CALLDISCARD);
 			sp += sizeof(CallReturn) / sizeof(int);
 			pc = level.behavior->Ofs2PC(func->Address);
 			activeFunction = func;
@@ -2423,7 +2430,7 @@ void DLevelScript::RunScript ()
 				value = 0;
 			}
 			sp -= sizeof(CallReturn) / sizeof(int);
-			retState = (CallReturn*)&Stack[sp];
+			retState = reinterpret_cast<CallReturn*>(&Stack[sp]);
 			pc = level.behavior->Ofs2PC(retState->ReturnAddress);
 			sp -= activeFunction->ArgCount + activeFunction->LocalCount;
 			activeFunction = retState->ReturnFunction;
@@ -3003,8 +3010,7 @@ void DLevelScript::RunScript ()
 
 		case PCD_DELAYDIRECTB:
 			state = SCRIPT_Delayed;
-			statedata = *(byte *)pc;
-			pc = (int *)((byte *)pc + 1);
+			statedata = getbyte(pc);
 			break;
 
 		case PCD_RANDOM:
@@ -3017,10 +3023,11 @@ void DLevelScript::RunScript ()
 			pc += 2;
 			break;
 
-		case PCD_RANDOMDIRECTB:
-			PushToStack (Random (((byte *)pc)[0], ((byte *)pc)[1]));
-			pc = (int *)((byte *)pc + 2);
+		case PCD_RANDOMDIRECTB: {
+			const auto [b1, b2] = getbytes<2>(pc);
+			PushToStack(Random (b1, b2));
 			break;
+		}
 
 		case PCD_THINGCOUNT:
 			STACK(2) = ThingCount (STACK(2), STACK(1));
@@ -3206,7 +3213,7 @@ void DLevelScript::RunScript ()
 			{
 				player_t *player = NULL;
 
-				if (STACK(1) == 0 || (unsigned)STACK(1) > MAXPLAYERS)
+				if (STACK(1) == 0 || static_cast<unsigned>(STACK(1)) > MAXPLAYERS)
 				{
 					if (activator)
 					{
@@ -3451,12 +3458,12 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_SETGRAVITY:
-			level.gravity = (float)STACK(1) / 65536.f;
+			level.gravity = static_cast<float>(STACK(1)) / 65536.f;
 			sp--;
 			break;
 
 		case PCD_SETGRAVITYDIRECT:
-			level.gravity = (float)pc[0] / 65536.f;
+			level.gravity = static_cast<float>(pc[0]) / 65536.f;
 			pc++;
 			break;
 
@@ -3955,7 +3962,7 @@ void P_DoDeferedScripts (void)
 			scriptdata = level.behavior->FindScript (def->script);
 			if (scriptdata)
 			{
-				if ((unsigned)def->playernum < MAXPLAYERS && idplayer(def->playernum).ingame())
+				if (static_cast<unsigned>(def->playernum) < MAXPLAYERS && idplayer(def->playernum).ingame())
 					gomo = idplayer(def->playernum).mo;
 
 				P_GetScriptGoing (gomo, NULL, def->script, scriptdata, 0, def->arg0, def->arg1, def->arg2, def->type == acsdefered_t::defexealways, true);
@@ -4141,12 +4148,12 @@ FArchive &operator<< (FArchive &arc, acsdefered_s *defer)
 {
 	while (defer)
 	{
-		arc << (byte)1;
-		arc << (byte)defer->type << defer->script
+		arc << 1_u8;
+		arc << static_cast<byte>(defer->type) << defer->script
 			<< defer->arg0 << defer->arg1 << defer->arg2;
 		defer = defer->next;
 	}
-	arc << (byte)0;
+	arc << 0_u8;
 	return arc;
 }
 
@@ -4160,7 +4167,7 @@ FArchive &operator>> (FArchive &arc, acsdefered_s* &defertop)
 	{
 		*defer = new acsdefered_s;
 		arc >> inbyte;
-		(*defer)->type = (acsdefered_s::EType)inbyte;
+		(*defer)->type = static_cast<acsdefered_s::EType>(inbyte);
 		arc >> (*defer)->script
 			>> (*defer)->arg0 >> (*defer)->arg1 >> (*defer)->arg2;
 		defer = &((*defer)->next);

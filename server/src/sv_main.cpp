@@ -424,7 +424,7 @@ BEGIN_COMMAND (say)
 {
 	if (argc > 1)
 	{
-		std::string chat = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		std::string chat = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
 		SV_BroadcastPrintFmt(PRINT_SERVERCHAT, "[console]: {}\n", chat);
 	}
 }
@@ -1385,14 +1385,14 @@ team_t SV_GoodTeam (void)
 
 	// Find the smallest team
 	size_t smallest_team_size = MAXPLAYERS;
-	team_t smallest_team = (team_t)0;
+	team_t smallest_team = static_cast<team_t>(0);
 	for (int i = 0;i < teamcount;i++)
 	{
-		size_t team_size = P_NumPlayersOnTeam((team_t)i);
+		size_t team_size = P_NumPlayersOnTeam(static_cast<team_t>(i));
 		if (team_size < smallest_team_size)
 		{
 			smallest_team_size = team_size;
-			smallest_team = (team_t)i;
+			smallest_team = static_cast<team_t>(i);
 		}
 	}
 
@@ -2196,7 +2196,7 @@ void SV_ConnectClient()
 	}
 
 	// Get the userinfo from the client.
-	clc_t userinfo = (clc_t)MSG_ReadByte();
+	clc_t userinfo = static_cast<clc_t>(MSG_ReadByte());
 	if (userinfo != clc_userinfo)
 	{
 		SV_InvalidateClient(*player, "Client didn't send any userinfo");
@@ -2296,7 +2296,7 @@ void SV_ConnectClient2(player_t& player)
 	SV_SendPlayerQueuePositions(&player, true);
 
 	// Send out the server's MOTD.
-	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
+	SV_MidPrint(sv_motd.cstring(), &player, 6);
 }
 
 
@@ -3633,7 +3633,7 @@ void SV_UpdateConsolePlayer(player_t &player)
 //
 void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 {
-	team_t team = (team_t)MSG_ReadByte();
+	team_t team = static_cast<team_t>(MSG_ReadByte());
 
 	if (team >= TEAM_NONE || team < 0)
 		return;
@@ -4017,7 +4017,7 @@ static void ReadyCmd(player_t &player)
  */
 void MOTDCmd(player_t& player)
 {
-	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
+	SV_MidPrint(sv_motd.cstring(), &player, 6);
 }
 
 /**
@@ -4270,7 +4270,7 @@ void SV_ParseCommands(player_t &player)
 
 			clc_t cmd = static_cast<clc_t>(cmdRaw);
 
-			if(cmd == (clc_t)-1)
+			if(cmd == static_cast<clc_t>(-1))
 				continue;
 
 			switch(cmd)

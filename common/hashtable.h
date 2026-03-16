@@ -26,6 +26,8 @@
 #include <cassert>
 #include <utility>
 #include <memory>
+#include <bit>
+#include <array>
 
 // ============================================================================
 //
@@ -82,16 +84,16 @@ static inline unsigned int __hash_rot(unsigned int x, unsigned int k)
 // See: http://burtleburtle.net/bob/c/lookup3.c
 // ----------------------------------------------------------------------------
 
-static inline unsigned int __hash_jenkins_64bit(unsigned long long key)
+static inline unsigned int __hash_jenkins_64bit(uint64_t key)
 {
-	unsigned int* k = (unsigned int*)&key;
+	const auto [k0, k1] = std::bit_cast<std::array<uint32_t, 2>>(key);
 	const unsigned int initval = 0xABCDEF01;	// any random value
 
   	unsigned int a, b, c;
 	a = b = c = 0xDEADBEEF + 8 + initval;
 
-	b += k[1];
-	a += k[0];
+	b += k1;
+	a += k0;
 
 	c ^= b; c -= __hash_rot(b, 14);
 	a ^= c; a -= __hash_rot(c, 11);
@@ -126,7 +128,7 @@ template <> struct hashfunc<unsigned long>
 {
 	unsigned int operator()(unsigned long val) const
 	{
-		if (sizeof(unsigned long) == 8)
+		if constexpr (sizeof(unsigned long) == 8)
 			return __hash_jenkins_64bit(val);
 		else
 			return __hash_jenkins_32bit(val);
@@ -137,7 +139,7 @@ template <> struct hashfunc<signed long>
 {
 	unsigned int operator()(signed long val) const
 	{
-		if (sizeof(signed long) == 8)
+		if constexpr (sizeof(signed long) == 8)
 			return __hash_jenkins_64bit(val);
 		else
 			return __hash_jenkins_32bit(val);
@@ -150,14 +152,15 @@ template <> struct hashfunc<unsigned long long>
 template <> struct hashfunc<signed long long>
 {	unsigned int operator()(signed long long val) const { return __hash_jenkins_64bit(val); }	};
 
-template <> struct hashfunc<void*>
+template <>
+struct hashfunc<void*>
 {
 	unsigned int operator()(void* ptr) const
 	{
-		if (sizeof(ptrdiff_t) == 8)
-			return __hash_jenkins_64bit((ptrdiff_t)ptr);
+		if constexpr (sizeof(uintptr_t) == 8)
+			return __hash_jenkins_64bit(reinterpret_cast<uintptr_t>(ptr));
 		else
-			return __hash_jenkins_32bit((ptrdiff_t)ptr);
+			return __hash_jenkins_32bit(reinterpret_cast<uintptr_t>(ptr));
 	}
 };
 
@@ -166,10 +169,10 @@ struct hashfunc<const void*>
 {
 	unsigned int operator()(const void* ptr) const
 	{
-		if (sizeof(ptrdiff_t) == 8)
-			return __hash_jenkins_64bit((ptrdiff_t)ptr);
+		if constexpr (sizeof(uintptr_t) == 8)
+			return __hash_jenkins_64bit(reinterpret_cast<uintptr_t>(ptr));
 		else
-			return __hash_jenkins_32bit((ptrdiff_t)ptr);
+			return __hash_jenkins_32bit(reinterpret_cast<uintptr_t>(ptr));
 	}
 };
 

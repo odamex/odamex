@@ -394,11 +394,11 @@ typedef enum
 
 inline FArchive &operator<< (FArchive &arc, podoortype_t type)
 {
-	return arc << (byte)type;
+	return arc << static_cast<byte>(type);
 }
 inline FArchive &operator>> (FArchive &arc, podoortype_t &out)
 {
-	byte in; arc >> in; out = (podoortype_t)in; return arc;
+	byte in; arc >> in; out = static_cast<podoortype_t>(in); return arc;
 }
 
 class DPolyAction : public DThinker

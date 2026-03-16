@@ -32,14 +32,14 @@ struct std::hash<fhfprint_t>
 {
 	constexpr size_t operator()(const fhfprint_t& f) const noexcept
 	{
-		const size_t halfhash = (size_t)(f.fingerprint[0]) |
-		                        (size_t)(f.fingerprint[1]) << 8 |
-		                        (size_t)(f.fingerprint[2]) << 16 |
-		                        (size_t)(f.fingerprint[3]) << 24 |
-		                        (size_t)(f.fingerprint[4]) << 32 |
-		                        (size_t)(f.fingerprint[5]) << 40 |
-		                        (size_t)(f.fingerprint[6]) << 48 |
-		                        (size_t)(f.fingerprint[7]) << 56;
+		const size_t halfhash = static_cast<size_t>(f.fingerprint[0]) |
+		                        static_cast<size_t>(f.fingerprint[1]) << 8 |
+		                        static_cast<size_t>(f.fingerprint[2]) << 16 |
+		                        static_cast<size_t>(f.fingerprint[3]) << 24 |
+		                        static_cast<size_t>(f.fingerprint[4]) << 32 |
+		                        static_cast<size_t>(f.fingerprint[5]) << 40 |
+		                        static_cast<size_t>(f.fingerprint[6]) << 48 |
+		                        static_cast<size_t>(f.fingerprint[7]) << 56;
 		return halfhash;
 	}
 };

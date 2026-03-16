@@ -524,8 +524,8 @@ void G_AirControlChanged()
 	else
 	{
 		// Friction is inversely proportional to the amount of control
-		float fric = ((float)level.aircontrol/65536.f) * -0.0941f + 1.0004f;
-		level.airfriction = (fixed_t)(fric * 65536.f);
+		float fric = (static_cast<float>(level.aircontrol)/65536.f) * -0.0941f + 1.0004f;
+		level.airfriction = static_cast<fixed_t>(fric * 65536.f);
 	}
 }
 
@@ -692,7 +692,7 @@ void P_SerializeACSDefereds(FArchive &arc)
 		}
 
 		// Signal end of defereds
-		arc << (byte)0;
+		arc << 0_u8;
 	}
 	else
 	{
@@ -769,7 +769,7 @@ void G_InitLevelLocals()
 
 	// [ML] 5/11/06 - Remove sky scrolling and sky2
 	// [SL] 2012-03-19 - Add sky2 back
-	::level.info = (level_info_t*)&info;
+	::level.info = reinterpret_cast<level_info_t*>(&info); // TODO: this is UB, should rework so static_cast is valid
 	::level.skypic2 = info.skypic2;
 	::level.fadeto_color = info.fadeto_color;
 

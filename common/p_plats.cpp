@@ -566,7 +566,7 @@ bool EV_DoGenLift(line_t* line)
 	sector_t* sec;
 	bool rtn = false;
 	bool manual = false;
-	unsigned value = (unsigned)line->special - GenLiftBase;
+	unsigned value = static_cast<unsigned>(line->special) - GenLiftBase;
 
     int Targ = (value & LiftTarget) >> LiftTargetShift;
 	int Dely = (value & LiftDelay) >> LiftDelayShift;

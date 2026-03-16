@@ -245,7 +245,7 @@ ISDL20TextureWindowSurfaceManager::ISDL20TextureWindowSurfaceManager(
 		int windowWidth, windowHeight;
 		SDL_GetWindowSize(mWindow->mSDLWindow, &windowWidth, &windowHeight);
 
-		float ratio = (mWidth* windowHeight) / (float)(windowWidth * mHeight);
+		float ratio = (mWidth* windowHeight) / static_cast<float>(windowWidth * mHeight);
 		int logicalWidth = windowWidth * ratio;
 
 		mLogicalRect.h = windowHeight;
@@ -602,7 +602,7 @@ void ISDL20Window::getEvents()
 					DPrintFmt("SDL_WINDOWEVENT_RESIZED ({}x{})\n", width, height);
 
 					int current_time = I_MSTime();
-					if ((EWindowMode)vid_fullscreen.asInt() == WINDOW_Windowed && current_time > mAcceptResizeEventsTime)
+					if (vid_fullscreen.asEnum<EWindowMode>() == WINDOW_Windowed && current_time > mAcceptResizeEventsTime)
 					{
 						AddCommandString(fmt::format("vid_setmode {} {}", width, height));
 					}
@@ -687,7 +687,7 @@ void ISDL20Window::setWindowIcon()
 
 	#if !defined(_WIN32)
 	SDL_Surface* icon_surface = SDL_CreateRGBSurfaceFrom(
-											(void*)app_icon.pixel_data, app_icon.width, app_icon.height,
+											const_cast<byte*>(app_icon.pixel_data), app_icon.width, app_icon.height,
 											app_icon.bytes_per_pixel * 8, app_icon.width * app_icon.bytes_per_pixel,
 											0xff << 0, 0xff << 8, 0xff << 16, 0xff << 24);
 

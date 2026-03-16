@@ -220,7 +220,7 @@ bool P_Thing_Spawn (int tid, int type, angle_t angle, bool fog)
 		else
 			z = spot->z;
 
-		AActor* mobj = new AActor(spot->x, spot->y, z, (mobjtype_t)kind);
+		AActor* mobj = new AActor(spot->x, spot->y, z, static_cast<mobjtype_t>(kind));
 
 		if (mobj)
 		{
@@ -269,7 +269,7 @@ bool P_Thing_Projectile (int tid, int type, angle_t angle,
 		if (spot->type != MT_MAPSPOT && spot->type != MT_MAPSPOTGRAVITY)
 			continue;
 
-		mobj = new AActor (spot->x, spot->y, spot->z, (mobjtype_t)kind);
+		mobj = new AActor (spot->x, spot->y, spot->z, static_cast<mobjtype_t>(kind));
 
 		if (mobj)
 		{

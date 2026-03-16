@@ -2427,12 +2427,12 @@ fixed_t P_AimLineAttack (AActor *t1, angle_t angle, fixed_t distance)
 	if (topangle <= ANG360 - ANG180)
 		topslope = finetangent[FINEANGLES/2-1];
 	else
-		topslope = finetangent[FINEANGLES/4-((signed)topangle>>ANGLETOFINESHIFT)];
+		topslope = finetangent[FINEANGLES/4-(static_cast<signed>(topangle)>>ANGLETOFINESHIFT)];
 
 	if (bottomangle >= ANG180)
 		bottomslope = finetangent[0];
 	else
-		bottomslope = finetangent[FINEANGLES/4-((signed)bottomangle>>ANGLETOFINESHIFT)];
+		bottomslope = finetangent[FINEANGLES/4-(static_cast<signed>(bottomangle)>>ANGLETOFINESHIFT)];
 
 	attackrange = distance;
 	linetarget = NULL;
@@ -2698,7 +2698,7 @@ bool PTR_RailTraverse (intercept_t *in)
 	if (NumRailHits >= MaxRailHits)
 	{
 		MaxRailHits = MaxRailHits ? MaxRailHits * 2 : 16;
-		RailHits = (SRailHit *) M_Realloc(RailHits, sizeof(*RailHits) * MaxRailHits);
+		RailHits = static_cast<SRailHit*>(M_Realloc(RailHits, sizeof(*RailHits) * MaxRailHits));
 	}
 	RailHits[NumRailHits].hitthing = th;
 	RailHits[NumRailHits].x = x;
@@ -2846,18 +2846,18 @@ EXTERN_CVAR (chase_dist)
 
 void P_AimCamera (AActor *t1)
 {
-	fixed_t distance = (fixed_t)(chase_dist * FRACUNIT);
+	fixed_t distance = static_cast<fixed_t>(chase_dist * FRACUNIT);
 	angle_t angle = (t1->angle - ANG180) >> ANGLETOFINESHIFT;
 	fixed_t x2 = t1->x + (distance>>FRACBITS)*finecosine[angle];
 	fixed_t y2 = t1->y + (distance>>FRACBITS)*finesine[angle];
 	subsector_t *subsector;
 
 	shootthing = t1;
-	shootz = t1->z + t1->height + (fixed_t)(chase_height * FRACUNIT);
+	shootz = t1->z + t1->height + static_cast<fixed_t>(chase_height * FRACUNIT);
 	attackrange = distance;
 	aimslope = finetangent[FINEANGLES/4+(t1->pitch>>ANGLETOFINESHIFT)];
 
-	CameraZ = shootz + (fixed_t)(chase_dist * aimslope);
+	CameraZ = shootz + static_cast<fixed_t>(chase_dist * aimslope);
 	subsector = P_PointInSubsector (x2, y2);
 	if (subsector) {
 		fixed_t ceilingheight = P_CeilingHeight(x2, y2, subsector->sector) - CAMERA_DIST;
@@ -3176,7 +3176,7 @@ static bool PIT_ZDoomRadiusAttack(AActor* thing)
 
 		fixed_t momx = thing->momx;
 		fixed_t momy = thing->momy;
-		int damage = (int)points;
+		int damage = static_cast<int>(points);
 
 		P_DamageMobj(thing, bombspot, bombsource, damage, bombmod);
 
@@ -3184,15 +3184,15 @@ static bool PIT_ZDoomRadiusAttack(AActor* thing)
 		if (bombsource == thing)
 			thrust *= selfthrustscale;
 
-		float momz = (float)(thing->z + (thing->height>>1) - bombspot->z) * thrust;
+		float momz = static_cast<float>(thing->z + (thing->height>>1) - bombspot->z) * thrust;
 		if (bombsource != thing)
 			momz *= 0.5f;
 		else
 			momz *= 0.8f;
 
-		thing->momx = momx + (fixed_t)((thing->x - bombspot->x) * thrust);
-		thing->momy = momy + (fixed_t)((thing->y - bombspot->y) * thrust);
-		thing->momz += (fixed_t)momz;
+		thing->momx = momx + static_cast<fixed_t>((thing->x - bombspot->x) * thrust);
+		thing->momy = momy + static_cast<fixed_t>((thing->y - bombspot->y) * thrust);
+		thing->momz += static_cast<fixed_t>(momz);
 	}
 	else
 	{
@@ -3222,9 +3222,9 @@ void P_RadiusAttack(AActor *spot, AActor *source, int damage, int distance,
 	bombspot = spot;
 	bombsource = source;
 	bombdamage = damage;
-	bombdamagefloat = (float)damage;
+	bombdamagefloat = static_cast<float>(damage);
 	bombdistance = distance;
-	bombdistancefloat = 1.f / (float)distance;
+	bombdistancefloat = 1.f / static_cast<float>(distance);
 	DamageSource = hurtSource;
 	bombmod = mod;
 
@@ -3443,7 +3443,7 @@ msecnode_t *P_GetSecnode()
 		headsecnode = headsecnode->m_snext;
 	}
 	else
-		node = (msecnode_t *)Z_Malloc (sizeof(*node), PU_LEVEL, NULL);
+		node = Z_Malloc<msecnode_t>(PU_LEVEL);
 	return node;
 }
 

@@ -192,7 +192,7 @@ void I_InitMusic(MusicSystemType musicsystem_type)
 		return;
 	}
 
-	switch ((int)musicsystem_type)
+	switch (musicsystem_type)
 	{
 		#ifdef OSX
 		case MS_AUDIOUNIT:
@@ -230,7 +230,7 @@ void STACK_ARGS I_ShutdownMusic(void)
 
 CVAR_FUNC_IMPL (snd_musicsystem)
 {
-	if ((int)current_musicsystem_type == snd_musicsystem.asInt())
+	if (current_musicsystem_type == snd_musicsystem)
 		return;
 
 	if (musicsystem)
@@ -282,7 +282,7 @@ static MusicSystemType I_SelectMusicSystem(byte *data, size_t length)
 	bool ismidi = (S_MusicIsMus(data, length) || S_MusicIsMidi(data, length));
 
 	if (ismidi)
-		return static_cast<MusicSystemType>(snd_musicsystem.asInt());
+		return snd_musicsystem.asEnum<MusicSystemType>();
 
 	// Non-midi music always uses SDL_Mixer (for now at least)
 	return MS_SDLMIXER;

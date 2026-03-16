@@ -987,7 +987,7 @@ static void LinkPolyobj (polyobj_t *po)
 				link = &PolyBlockMap[j+i];
 				if(!(*link))
 				{ // Create a new link at the current block cell
-					*link = (polyblock_t *)Z_Malloc(sizeof(polyblock_t), PU_LEVEL, 0);
+					*link = Z_Malloc<polyblock_t>(PU_LEVEL);
 					(*link)->next = NULL;
 					(*link)->prev = NULL;
 					(*link)->polyobj = po;
@@ -1008,8 +1008,7 @@ static void LinkPolyobj (polyobj_t *po)
 				}
 				else
 				{
-					tempLink->next = (polyblock_t *)Z_Malloc (sizeof(polyblock_t),
-						PU_LEVEL, 0);
+					tempLink->next = Z_Malloc<polyblock_t>(PU_LEVEL);
 					tempLink->next->next = NULL;
 					tempLink->next->prev = tempLink;
 					tempLink->next->polyobj = po;
@@ -1088,13 +1087,9 @@ static bool CheckMobjBlocking (seg_t *seg, polyobj_t *po)
 //
 static void InitBlockMap (void)
 {
-	int i;
+	PolyBlockMap = Z_Calloc<polyblock_t*>(bmapwidth*bmapheight, PU_LEVEL);
 
-	PolyBlockMap = (polyblock_t **)Z_Malloc (bmapwidth*bmapheight*sizeof(polyblock_t *),
-		PU_LEVEL, 0);
-	memset (PolyBlockMap, 0, bmapwidth*bmapheight*sizeof(polyblock_t *));
-
-	for (i = 0; i < po_NumPolyobjs; i++)
+	for (int i = 0; i < po_NumPolyobjs; i++)
 	{
 		LinkPolyobj(&polyobjs[i]);
 	}
@@ -1160,8 +1155,7 @@ static void SpawnPolyobj (int index, int tag, bool crush)
 			IterFindPolySegs(segs[i].v2->x, segs[i].v2->y, NULL);
 
 			polyobjs[index].numsegs = PolySegCount;
-			polyobjs[index].segs = (seg_t **)Z_Malloc (PolySegCount*sizeof(seg_t *),
-				PU_LEVEL, 0);
+			polyobjs[index].segs = Z_Malloc<seg_t*>(PolySegCount, PU_LEVEL);
 			polyobjs[index].segs[0] = &segs[i]; // insert the first seg
 			IterFindPolySegs (segs[i].v2->x, segs[i].v2->y,
 				polyobjs[index].segs+1);
@@ -1236,8 +1230,7 @@ static void SpawnPolyobj (int index, int tag, bool crush)
 			PolySegCount = polyobjs[index].numsegs; // PolySegCount used globally
 			polyobjs[index].crush = crush;
 			polyobjs[index].tag = tag;
-			polyobjs[index].segs = (seg_t **)Z_Malloc (polyobjs[index].numsegs
-				*sizeof(seg_t *), PU_LEVEL, 0);
+			polyobjs[index].segs = Z_Malloc<seg_t*>(polyobjs[index].numsegs, PU_LEVEL);
 			for (i = 0; i < polyobjs[index].numsegs; i++)
 			{
 				polyobjs[index].segs[i] = polySegList[i];
@@ -1285,8 +1278,8 @@ static void TranslateToStartSpot (int tag, int originX, int originY)
 	{
 		I_Error("TranslateToStartSpot: Anchor point located without a StartSpot point: {}\n", tag);
 	}
-	po->originalPts = (vertex_t *)Z_Malloc(po->numsegs*sizeof(vertex_t), PU_LEVEL, 0);
-	po->prevPts = (vertex_t *)Z_Malloc(po->numsegs*sizeof(vertex_t), PU_LEVEL, 0);
+	po->originalPts = Z_Malloc<vertex_t>(po->numsegs, PU_LEVEL);
+	po->prevPts = Z_Malloc<vertex_t>(po->numsegs, PU_LEVEL);
 	deltaX = originX-po->startSpot[0];
 	deltaY = originY-po->startSpot[1];
 
@@ -1347,8 +1340,7 @@ void PO_Init (void)
 	polyspawns_t *polyspawn, **prev;
 	int polyIndex;
 
-	polyobjs = (polyobj_t *)Z_Malloc (po_NumPolyobjs*sizeof(polyobj_t), PU_LEVEL, 0);
-	memset (polyobjs, 0, po_NumPolyobjs*sizeof(polyobj_t));
+	polyobjs = Z_Calloc<polyobj_t>(po_NumPolyobjs, PU_LEVEL, 0);
 
 	polyIndex = 0; // index polyobj number
 	// Find the startSpot points, and spawn each polyobj

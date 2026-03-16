@@ -127,7 +127,7 @@ ItemEquipVal SV_FlagGrab (player_t &player, team_t f, bool firstgrab)
 		for (int i = 0; i < NUMTEAMS; i++)
 		{
 			// Already carrying an enemy flag, can't pick up more than one
-			if ((team_t)i != player.userinfo.team && player.flags[i])
+			if (static_cast<team_t>(i) != player.userinfo.team && player.flags[i])
 				return IEV_NotEquipped;
 		}
 	}
@@ -191,7 +191,7 @@ static const char *CTF_TimeMSG(unsigned int milliseconds)
 	milliseconds /= 60;
 	int mi = milliseconds;
 
-	snprintf((char *)&msg, 64, "%d:%.2d.%.2d", mi, se, ms);
+	snprintf(msg, 64, "%d:%.2d.%.2d", mi, se, ms);
 
 	return msg;
 }
@@ -294,10 +294,10 @@ void SV_SocketTouch (player_t &player, team_t f)
 	// Scoring with enemy flag.
 	for (size_t i = 0; i < NUMTEAMS; i++)
 	{
-		if (player.userinfo.team == f && player.userinfo.team != (team_t)i &&
+		if (player.userinfo.team == f && player.userinfo.team != static_cast<team_t>(i) &&
 			player.flags[i] && (!ctf_flagathometoscore || teamInfo->FlagData.state == flag_home))
 		{
-			SV_FlagScore(player, (team_t)i);
+			SV_FlagScore(player, static_cast<team_t>(i));
 		}
 	}
 }
@@ -338,7 +338,7 @@ void CTF_RunTics (void)
 
 	for(size_t i = 0; i < NUMTEAMS; i++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 
 		if(teamInfo->FlagData.state != flag_dropped)
 			continue;
@@ -394,7 +394,7 @@ void CTF_SpawnDroppedFlag (team_t f, int x, int y, int z)
 
 	teamInfo->FlagData.actor = flag->ptr();
 	teamInfo->FlagData.state = flag_dropped;
-	teamInfo->FlagData.timeout = (size_t)(ctf_flagtimeout * TICRATE);
+	teamInfo->FlagData.timeout = static_cast<size_t>(ctf_flagtimeout * TICRATE);
 	teamInfo->FlagData.flagger = 0;
 	teamInfo->FlagData.firstgrab = false;
 }
@@ -408,7 +408,7 @@ void CTF_CheckFlags (player_t &player)
 	for (size_t i = 0; i < NUMTEAMS; i++)
 	{
 		if (player.flags[i])
-			SV_FlagDrop(player, (team_t)i);
+			SV_FlagDrop(player, static_cast<team_t>(i));
 	}
 }
 
@@ -420,7 +420,7 @@ void CTF_RememberFlagPos(const mapthing2_t& mthing)
 {
 	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+		TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(iTeam));
 		if (mthing.type == teamInfo->FlagThingNum)
 		{
 			teamInfo->FlagData.x = mthing.x << FRACBITS;

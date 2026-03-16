@@ -163,17 +163,17 @@ void P_LoadVertexes (int lump)
 	numvertexes = W_LumpLength (lump) / sizeof(mapvertex_t);
 
 	// Allocate zone memory for buffer.
-	vertexes = (vertex_t *)Z_Malloc (numvertexes*sizeof(vertex_t), PU_LEVEL, 0);
+	vertexes = Z_Malloc<vertex_t>(numvertexes, PU_LEVEL);
 
 	// Load data into cache.
-	byte* data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	mapvertex_t* data = W_CacheLumpNum<mapvertex_t>(lump, PU_STATIC);
 
 	// Copy and convert vertex coordinates,
 	// internal representation as fixed.
 	for (int i = 0; i < numvertexes; i++)
 	{
-		vertexes[i].x = LESHORT(((mapvertex_t *)data)[i].x)<<FRACBITS;
-		vertexes[i].y = LESHORT(((mapvertex_t *)data)[i].y)<<FRACBITS;
+		vertexes[i].x = LESHORT(data[i].x) << FRACBITS;
+		vertexes[i].y = LESHORT(data[i].y) << FRACBITS;
 	}
 
 	// Free buffer memory.
@@ -248,7 +248,7 @@ void P_LoadSegsHelper(int side, short angle, int linedef, seg_t *li)
 // P_LoadSegs
 //
 template <typename MapSegType>
-void P_LoadSegs (int lump)
+void P_LoadSegs(int lump)
 {
 	if (!W_LumpLength(lump))
 	{
@@ -257,32 +257,31 @@ void P_LoadSegs (int lump)
 	}
 
 	numsegs = W_LumpLength (lump) / sizeof(MapSegType);
-	segs = (seg_t*) Z_Malloc(numsegs * sizeof(seg_t), PU_LEVEL, 0);
-	memset(segs, 0, numsegs * sizeof(seg_t));
-	byte* const data = (byte*) W_CacheLumpNum(lump, PU_STATIC);
+	segs = Z_Calloc<seg_t>(numsegs, PU_LEVEL);
+	MapSegType* const data = W_CacheLumpNum<MapSegType>(lump, PU_STATIC);
 
 	for (int i = 0; i < numsegs; i++)
 	{
 		seg_t* const li = segs + i;
-		const MapSegType *ml = (MapSegType*) data + i;
-		auto v = LESWAP(ml->v1);
+		const MapSegType& ml = data[i];
+		auto v = LESWAP(ml.v1);
 
 		if(v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex {}", v);
 		else
 			li->v1 = &vertexes[v];
 
-		v = LESWAP(ml->v2);
+		v = LESWAP(ml.v2);
 
 		if(v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex {}", v);
 		else
 			li->v2 = &vertexes[v];
 
-		P_LoadSegsHelper(LESHORT(ml->side), LESHORT(ml->angle), LESHORT(ml->linedef), li);
+		P_LoadSegsHelper(LESHORT(ml.side), LESHORT(ml.angle), LESHORT(ml.linedef), li);
 	}
 
-	Z_Free (data);
+	Z_Free(data);
 }
 
 //
@@ -298,10 +297,8 @@ void P_LoadSubsectors(int lump)
 	}
 
 	numsubsectors = W_LumpLength (lump) / sizeof(MapSubsectorType);
-	subsectors = static_cast<subsector_t*>(Z_Malloc(numsubsectors*sizeof(subsector_t), PU_LEVEL, nullptr));
-	MapSubsectorType* data = static_cast<MapSubsectorType*>(W_CacheLumpNum(lump, PU_STATIC));
-
-	memset (subsectors, 0, numsubsectors*sizeof(subsector_t));
+	subsectors = Z_Calloc<subsector_t>(numsubsectors, PU_LEVEL);
+	MapSubsectorType* data = W_CacheLumpNum<MapSubsectorType>(lump, PU_STATIC);
 
 	for (int i = 0; i < numsubsectors; i++)
 	{
@@ -328,18 +325,18 @@ void P_LoadSectors (int lump)
 	// denis - properly construct sectors so that smart pointers they contain don't get screwed
 	sectors = new sector_t[numsectors];
 
-	byte* data = (byte*)W_CacheLumpNum(lump, PU_STATIC);
+	mapsector_t* data = W_CacheLumpNum<mapsector_t>(lump, PU_STATIC);
 
 	const int defSeqType = (level.flags & LEVEL_SNDSEQTOTALCTRL) ? 0 : -1;
 
-	const mapsector_t* ms = (mapsector_t*)data;
+	const mapsector_t* ms = data;
 	sector_t* ss = sectors;
 	for (int i = 0; i < numsectors; i++, ss++, ms++)
 	{
 		ss->floorheight = LESHORT(ms->floorheight)<<FRACBITS;
 		ss->ceilingheight = LESHORT(ms->ceilingheight)<<FRACBITS;
-		ss->floorpic = (short)R_FlatNumForName(ms->floorpic);
-		ss->ceilingpic = (short)R_FlatNumForName(ms->ceilingpic);
+		ss->floorpic = static_cast<short>(R_FlatNumForName(ms->floorpic));
+		ss->ceilingpic = static_cast<short>(R_FlatNumForName(ms->ceilingpic));
 		ss->lightlevel = LESHORT(ms->lightlevel);
 		originalLightLevels.push_back(LESHORT(ms->lightlevel));
 		ss->special = LESHORT(ms->special);
@@ -424,8 +421,8 @@ enum class nodetype_t {
 };
 
 nodetype_t P_CheckNodeType(int lump) {
-	byte *data = (byte *) W_CacheLumpNum(lump, PU_STATIC);
-	auto guard = nonstd::make_scope_exit([&]{ Z_ChangeTag(data, PU_CACHE); });
+	byte *data = W_CacheLumpNum<byte>(lump, PU_STATIC);
+	const auto guard = nonstd::make_scope_exit([&]{ Z_ChangeTag(data, PU_CACHE); });
 
 	static constexpr struct {
         std::string_view bytes;
@@ -468,10 +465,10 @@ void P_LoadNodes(int lump)
 	}
 
 	numnodes = W_LumpLength(lump) / sizeof(MapNodeType);
-	nodes = (node_t*) Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL, 0);
-	byte* data = (byte*) W_CacheLumpNum(lump, PU_STATIC);
+	nodes = Z_Malloc<node_t>(numnodes, PU_LEVEL);
+	MapNodeType* data = W_CacheLumpNum<MapNodeType>(lump, PU_STATIC);
 
-	const MapNodeType* mn = (MapNodeType *)data;
+	const MapNodeType* mn = data;
 	node_t* no = nodes;
 
 	for (int i = 0; i < numnodes; i++, no++, mn++)
@@ -509,10 +506,10 @@ byte* P_DecompressNodes(byte* data, size_t len) {
 	// first estimate for compression rate:
 	// output buffer size == 2.5 * input size
 	int outlen = 2.5 * len;
-	byte* output = (byte*)Z_Malloc(outlen, PU_STATIC, 0);
+	byte* output = Z_Malloc<byte>(outlen, PU_STATIC);
 
 	// initialize stream state for decompression
-	z_stream* zstream = (z_stream*)M_Malloc(sizeof(*zstream));
+	z_stream* zstream = static_cast<z_stream*>(M_Malloc(sizeof(*zstream)));
 	memset(zstream, 0, sizeof(*zstream));
 	zstream->next_in = data + 4;
 	zstream->avail_in = static_cast<uInt>(len - 4);
@@ -527,7 +524,7 @@ byte* P_DecompressNodes(byte* data, size_t len) {
 	{
 		int outlen_old = outlen;
 		outlen = 2 * outlen_old;
-		output = (byte*)Z_Realloc(output, outlen, PU_STATIC, 0);
+		output = Z_Realloc<byte>(output, outlen, PU_STATIC);
 		zstream->next_out = output + outlen_old;
 		zstream->avail_out = outlen - outlen_old;
 	}
@@ -546,16 +543,15 @@ byte* P_DecompressNodes(byte* data, size_t len) {
 }
 
 byte* P_LoadSegs_XNOD(byte* p) {
-	numsegs = LELONG(*(uint32_t *)p); p += 4;
-	segs = (seg_t *) Z_Malloc(numsegs * sizeof(*segs), PU_LEVEL, 0);
-	memset(segs, 0, numsegs * sizeof(*segs));
+	numsegs = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+	segs = Z_Calloc<seg_t>(numsegs, PU_LEVEL);
 
 	for (int i = 0; i < numsegs; i++)
 	{
-		const uint32_t v1 = LELONG(*(uint32_t *)p); p += 4;
-		const uint32_t v2 = LELONG(*(uint32_t *)p); p += 4;
-		const uint16_t ld = LESHORT(*(uint16_t *)p); p += 2;
-		uint8_t side = *(uint8_t *)p; p += 1;
+		const uint32_t v1 = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+		const uint32_t v2 = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+		const uint16_t ld = LESHORT(*reinterpret_cast<uint16_t*>(p)); p += 2;
+		uint8_t side = *reinterpret_cast<uint8_t*>(p); p += 1;
 
 		if (side != 0 && side != 1)
 			side = 1;
@@ -600,9 +596,8 @@ byte* P_LoadSegs_XGL(byte* p)
 		"P_LoadSegs_XGL can only be instantiated with uint16_t or uint32_t"
 	);
 
-	numsegs = LELONG(*(uint32_t *)p); p += 4;
-	segs = (seg_t *) Z_Malloc(numsegs * sizeof(*segs), PU_LEVEL, 0);
-	memset(segs, 0, numsegs * sizeof(*segs));
+	numsegs = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+	segs = Z_Calloc<seg_t>(numsegs, PU_LEVEL);
 
 	uint32_t write_index = 0;
 	for (int i = 0; i < numsubsectors; i++)
@@ -613,11 +608,11 @@ byte* P_LoadSegs_XGL(byte* p)
 		seg_t* first_seg = nullptr;
 		for (uint32_t j = 0; j < subsector.numlines; j++)
 		{
-			const uint32_t v1 = LELONG(*(uint32_t *)p); p += 4;
-			// const uint32_t partner = LELONG(*(uint32_t *)p); // unused
+			const uint32_t v1 = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+			// const uint32_t partner = LELONG(*reinterpret_cast<uint32_t*>(p)); // unused
 			p += 4;
-			const LineType ld = LESWAP(*(LineType *)p); p += sizeof(LineType);
-			const uint8_t side = *(uint8_t *)p; p += 1;
+			const LineType ld = LESWAP(*reinterpret_cast<LineType*>(p)); p += sizeof(LineType);
+			const uint8_t side = *reinterpret_cast<uint8_t*>(p); p += 1;
 
 			if (ld == std::numeric_limits<LineType>::max())
 				continue;
@@ -708,10 +703,10 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 				return false;
 		}
 	}();
-	byte *data = static_cast<byte *>(W_CacheLumpNum(lump, PU_STATIC));
+	byte *data = W_CacheLumpNum<byte>(lump, PU_STATIC);
 	byte* data_decompressed = nullptr;
 
-	auto guard = nonstd::make_scope_exit([&]{
+	const auto guard = nonstd::make_scope_exit([&]{
 		Z_Free(data);
 		Z_Free(data_decompressed);
 	});
@@ -729,10 +724,10 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 	}
 
 	// Load vertices
-	const uint32_t numorgvert = LELONG(*(uint32_t *)p); p += 4;
-	const uint32_t numnewvert = LELONG(*(uint32_t *)p); p += 4;
+	const uint32_t numorgvert = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+	const uint32_t numnewvert = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
 
-	vertex_t *newvert = (vertex_t *) Z_Malloc((numorgvert + numnewvert)*sizeof(*newvert), PU_LEVEL, 0);
+	vertex_t *newvert = Z_Malloc<vertex_t>(numorgvert + numnewvert, PU_LEVEL);
 
 	memcpy(newvert, vertexes, numorgvert*sizeof(*newvert));
 	memset(&newvert[numorgvert], 0, numnewvert * sizeof(*newvert));
@@ -740,8 +735,8 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 	for (uint32_t i = 0; i < numnewvert; i++)
 	{
 		vertex_t *v = &newvert[numorgvert+i];
-		v->x = LELONG(*(int32_t *)p); p += 4;
-		v->y = LELONG(*(int32_t *)p); p += 4;
+		v->x = LELONG(*reinterpret_cast<int32_t*>(p)); p += 4;
+		v->y = LELONG(*reinterpret_cast<int32_t*>(p)); p += 4;
 	}
 
 	// Adjust linedefs - since we reallocated the vertex array,
@@ -760,16 +755,15 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 
 	// Load subsectors
 
-	numsubsectors = LELONG(*(uint32_t *)p); p += 4;
-	subsectors = (subsector_t *) Z_Malloc(numsubsectors * sizeof(*subsectors), PU_LEVEL, 0);
-	memset(subsectors, 0, numsubsectors * sizeof(*subsectors));
+	numsubsectors = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+	subsectors = Z_Calloc<subsector_t>(numsubsectors, PU_LEVEL);
 
 	uint32_t first_seg = 0;
 
 	for (int i = 0; i < numsubsectors; i++)
 	{
 		subsectors[i].firstline = first_seg;
-		subsectors[i].numlines = LELONG(*(uint32_t *)p); p += 4;
+		subsectors[i].numlines = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
 		first_seg += subsectors[i].numlines;
 	}
 
@@ -784,9 +778,8 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 
 	// Load nodes
 
-	numnodes = LELONG(*(uint32_t *)p); p += 4;
-	nodes = (node_t *) Z_Malloc(numnodes * sizeof(*nodes), PU_LEVEL, 0);
-	memset(nodes, 0, numnodes * sizeof(*nodes));
+	numnodes = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
+	nodes = Z_Calloc<node_t>(numnodes, PU_LEVEL);
 
 	for (int i = 0; i < numnodes; i++)
 	{
@@ -794,30 +787,30 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 
 		if (nodetype == nodetype_t::XGL3 || nodetype == nodetype_t::ZGL3)
 		{
-			node->x = LELONG(*(int32_t *)p); p += 4;
-			node->y = LELONG(*(int32_t *)p); p += 4;
-			node->dx = LELONG(*(int32_t *)p); p += 4;
-			node->dy = LELONG(*(int32_t *)p); p += 4;
+			node->x = LELONG(*reinterpret_cast<int32_t*>(p)); p += 4;
+			node->y = LELONG(*reinterpret_cast<int32_t*>(p)); p += 4;
+			node->dx = LELONG(*reinterpret_cast<int32_t*>(p)); p += 4;
+			node->dy = LELONG(*reinterpret_cast<int32_t*>(p)); p += 4;
 		}
 		else
 		{
-			node->x = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
-			node->y = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
-			node->dx = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
-			node->dy = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
+			node->x = LESHORT(*reinterpret_cast<int16_t*>(p))<<FRACBITS; p += 2;
+			node->y = LESHORT(*reinterpret_cast<int16_t*>(p))<<FRACBITS; p += 2;
+			node->dx = LESHORT(*reinterpret_cast<int16_t*>(p))<<FRACBITS; p += 2;
+			node->dy = LESHORT(*reinterpret_cast<int16_t*>(p))<<FRACBITS; p += 2;
 		}
 
 		for (int j = 0; j < 2; j++)
 		{
 			for (int k = 0; k < 4; k++)
 			{
-				node->bbox[j][k] = LESHORT(*(int16_t *)p)<<FRACBITS; p += 2;
+				node->bbox[j][k] = LESHORT(*reinterpret_cast<int16_t*>(p))<<FRACBITS; p += 2;
 			}
 		}
 
 		for (int j = 0; j < 2; j++)
 		{
-			node->children[j] = LELONG(*(uint32_t *)p); p += 4;
+			node->children[j] = LELONG(*reinterpret_cast<uint32_t*>(p)); p += 4;
 		}
 	}
 }
@@ -827,62 +820,59 @@ void P_LoadExtendedNodes(int lump, nodetype_t nodetype)
 //
 void P_LoadThings (int lump)
 {
-	mapthing2_t mt2;		// [RH] for translation
-	byte *data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
-	mapthing_t *mt = (mapthing_t *)data;
-	mapthing_t *lastmt = (mapthing_t *)(data + W_LumpLength (lump));
+	mapthing_t* data = W_CacheLumpNum<mapthing_t>(lump, PU_STATIC);
+	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
+	size_t count = W_LumpLength(lump) / sizeof(mapthing_t);
 
 	P_HordeClearSpawns();
 	playerstarts.clear();
 	voodoostarts.clear();
 	DeathMatchStarts.clear();
 	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
-		GetTeamInfo((team_t)iTeam)->Starts.clear();
+		GetTeamInfo(static_cast<team_t>(iTeam))->Starts.clear();
 
 	// [RH] ZDoom now uses Hexen-style maps as its native format. // denis - growwwwl
 	//		Since this is the only place where Doom-style Things are ever
 	//		referenced, we translate them into a Hexen-style thing.
-	for ( ; mt < lastmt; mt++)
+	for (size_t i = 0; i < count; i++)
 	{
-		// [AM] Ensure that we get a fresh mapthing every iteration - sometimes
-		//      P_SpawnMapThing mutates a part of the mapthing that the map
-		//      data doesn't care about, and we don't want it to carry over
-		//      between iterations.
-		memset(&mt2, 0, sizeof(mt2));
-
+		const mapthing_t& mt = data[i];
 		// [RH] At this point, monsters unique to Doom II were weeded out
 		//		if the IWAD wasn't for Doom II. R_SpawnMapThing() can now
 		//		handle these and more cases better, so we just pass it
 		//		everything and let it decide what to do with them.
 
 		// [RH] Need to translate the spawn flags to Hexen format.
-		short flags = LESHORT(mt->options);
+		short flags = LESHORT(mt.options);
 		if (flags & BTF_RESERVED || demoplayback) flags &= BTF_RESERVED_MASK;
-		mt2.flags = (short)((flags & 0xf) | 0x7e0);
+		short flags2 = static_cast<short>((flags & 0xf) | 0x7e0);
 		if (flags & BTF_NOTSINGLE)
 		{
 			#ifdef SERVER_APP
 			if (G_IsCoopGame())
 			{
 				if (g_thingfilter == 1)
-					mt2.flags |= MTF_FILTER_COOPWPN;
+					flags2 |= MTF_FILTER_COOPWPN;
 				else if (g_thingfilter == 2)
-					mt2.flags &= ~MTF_COOPERATIVE;
+					flags2 &= ~MTF_COOPERATIVE;
 			}
 			else
 			#endif
-				mt2.flags &= ~MTF_SINGLE;
+				flags2 &= ~MTF_SINGLE;
 		}
-		if (flags & BTF_NOTDEATHMATCH)		mt2.flags &= ~MTF_DEATHMATCH;
-		if (flags & BTF_NOTCOOPERATIVE)		mt2.flags &= ~MTF_COOPERATIVE;
-		if (flags & BTF_FRIEND)				mt2.flags |= MTF_FRIENDLY;
+		if (flags & BTF_NOTDEATHMATCH)  flags2 &= ~MTF_DEATHMATCH;
+		if (flags & BTF_NOTCOOPERATIVE) flags2 &= ~MTF_COOPERATIVE;
+		if (flags & BTF_FRIEND)         flags2 |= MTF_FRIENDLY;
 
-		mt2.x = LESHORT(mt->x);
-		mt2.y = LESHORT(mt->y);
-		mt2.angle = LESHORT(mt->angle);
-		mt2.type = LESHORT(mt->type);
+		mapthing2_t mt2 = {
+			.x = LESHORT(mt.x),
+			.y = LESHORT(mt.y),
+			.angle = LESHORT(mt.angle),
+			.type = LESHORT(mt.type),
+			.flags = flags2
+		};
 
-		P_SpawnMapThing (mt2, 0);
+		P_SpawnMapThing(mt2, 0);
 	}
 
 	// Sort by player number if starts are not in order
@@ -891,8 +881,6 @@ void P_LoadThings (int lump)
 	});
 
 	P_SpawnAvatars();
-
-	Z_Free (data);
 }
 
 // [RH]
@@ -905,36 +893,35 @@ void P_LoadThings (int lump)
 //
 void P_LoadThings2 (int lump, int position)
 {
-	byte *data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
-	mapthing2_t *mt = (mapthing2_t *)data;
-	mapthing2_t *lastmt = (mapthing2_t *)(data + W_LumpLength (lump));
+	mapthing2_t* data = W_CacheLumpNum<mapthing2_t>(lump, PU_STATIC);
+	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
+	size_t count = W_LumpLength(lump) / sizeof(mapthing2_t);
 
 	P_HordeClearSpawns();
 	playerstarts.clear();
 	voodoostarts.clear();
 	DeathMatchStarts.clear();
 	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
-		GetTeamInfo((team_t)iTeam)->Starts.clear();
+		GetTeamInfo(static_cast<team_t>(iTeam))->Starts.clear();
 
-	for ( ; mt < lastmt; mt++)
+	for (size_t i = 0; i < count; i++)
 	{
 		// [RH] At this point, monsters unique to Doom II were weeded out
 		//		if the IWAD wasn't for Doom II. R_SpawnMapThing() can now
 		//		handle these and more cases better, so we just pass it
 		//		everything and let it decide what to do with them.
+		mapthing2_t& mt = data[i];
 
-		mt->thingid = LESHORT(mt->thingid);
-		mt->x = LESHORT(mt->x);
-		mt->y = LESHORT(mt->y);
-		mt->z = LESHORT(mt->z);
-		mt->angle = LESHORT(mt->angle);
-		mt->type = LESHORT(mt->type);
-		mt->flags = LESHORT(mt->flags);
+		mt.thingid = LESHORT(mt.thingid);
+		mt.x = LESHORT(mt.x);
+		mt.y = LESHORT(mt.y);
+		mt.z = LESHORT(mt.z);
+		mt.angle = LESHORT(mt.angle);
+		mt.type = LESHORT(mt.type);
+		mt.flags = LESHORT(mt.flags);
 
-		P_SpawnMapThing(*mt, position);
+		P_SpawnMapThing(mt, position);
 	}
-
-	Z_Free (data);
 }
 
 //
@@ -1103,20 +1090,19 @@ void P_FinishLoadingLineDefs (void)
 	}
 }
 
-void P_LoadLineDefs (const int lump)
+void P_LoadLineDefs(const int lump)
 {
-	numlines = W_LumpLength (lump) / sizeof(maplinedef_t);
-	lines = (line_t *)Z_Malloc (numlines*sizeof(line_t), PU_LEVEL, 0);
-	memset (lines, 0, numlines*sizeof(line_t));
-	byte* data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
-	auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
+	numlines = W_LumpLength(lump) / sizeof(maplinedef_t);
+	lines = Z_Calloc<line_t>(numlines, PU_LEVEL);
+	maplinedef_t* data = W_CacheLumpNum<maplinedef_t>(lump, PU_STATIC);
+	const auto guard = nonstd::make_scope_exit([&]{ Z_Free(data); });
 
 	const bool reservedLine = P_GetLevelCompData(::level.level_fingerprint).reservedLineFlag;
 
 	line_t* ld = lines;
 	for (int i = 0; i < numlines; i++, ld++)
 	{
-		const maplinedef_t *mld = ((maplinedef_t *)data) + i;
+		const maplinedef_t *mld = data + i;
 
 		ld->flags = static_cast<uint32_t>(mld->flags);
 		ld->special = mld->special;
@@ -1159,11 +1145,10 @@ void P_LoadLineDefs (const int lump)
 void P_LoadLineDefs2 (int lump)
 {
 	numlines = W_LumpLength (lump) / sizeof(maplinedef2_t);
-	lines = (line_t *)Z_Malloc (numlines*sizeof(line_t), PU_LEVEL,0 );
-	memset (lines, 0, numlines*sizeof(line_t));
-	byte* data = (byte *)W_CacheLumpNum (lump, PU_STATIC);
+	lines = Z_Calloc<line_t>(numlines, PU_LEVEL);
+	maplinedef2_t* data = W_CacheLumpNum<maplinedef2_t>(lump, PU_STATIC);
 
-	maplinedef2_t* mld = (maplinedef2_t *)data;
+	const maplinedef2_t* mld = data;
 	line_t* ld = lines;
 	for (int i = 0; i < numlines; i++, mld++, ld++)
 	{
@@ -1210,8 +1195,7 @@ void P_LoadLineDefs2 (int lump)
 void P_LoadSideDefs (int lump)
 {
 	numsides = W_LumpLength (lump) / sizeof(mapsidedef_t);
-	sides = (side_t *)Z_Malloc (numsides*sizeof(side_t), PU_LEVEL, 0);
-	memset (sides, 0, numsides*sizeof(side_t));
+	sides = Z_Calloc<side_t>(numsides, PU_LEVEL);
 }
 
 
@@ -1243,11 +1227,11 @@ argb_t P_GetColorFromTextureName(const char* name)
 
 void P_LoadSideDefs2 (int lump)
 {
-	byte* data = (byte*)W_CacheLumpNum(lump, PU_STATIC);
+	mapsidedef_t* data = W_CacheLumpNum<mapsidedef_t>(lump, PU_STATIC);
 
 	for (int i = 0; i < numsides; i++)
 	{
-		mapsidedef_t* msd = (mapsidedef_t*)data + i;
+		mapsidedef_t* msd = data + i;
 		side_t* sd = sides + i;
 		sector_t* sec;
 
@@ -1534,7 +1518,7 @@ void P_CreateBlockMap()
 	}
 
 	// Create the blockmap lump
-	blockmaplump = (int *)Z_Malloc(sizeof(*blockmaplump) * (4+NBlocks+linetotal), PU_LEVEL, 0);
+	blockmaplump = Z_Malloc<int>(4 + NBlocks + linetotal, PU_LEVEL);
 
 	// blockmap header
 	//
@@ -1611,8 +1595,8 @@ void P_LoadBlockMap (int lump)
 		P_CreateBlockMap();
 	else
 	{
-		short *wadblockmaplump = (short *)W_CacheLumpNum (lump, PU_LEVEL);
-		blockmaplump = (int *)Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, 0);
+		short *wadblockmaplump = W_CacheLumpNum<short>(lump, PU_LEVEL);
+		blockmaplump = Z_Malloc<int>(count, PU_LEVEL);
 
 		// killough 3/1/98: Expand wad blockmap into larger internal one,
 		// by treating all offsets except -1 as unsigned and zero-extending
@@ -1639,10 +1623,8 @@ void P_LoadBlockMap (int lump)
 	bmapheight = blockmaplump[3];
 
 	// clear out mobj chains
-	count = sizeof(*blocklinks) * bmapwidth*bmapheight;
-	blocklinks = (AActor **)Z_Malloc (count, PU_LEVEL, 0);
-	memset (blocklinks, 0, count);
-	blockmap = blockmaplump+4;
+	blocklinks = Z_Calloc<AActor*>(bmapwidth * bmapheight, PU_LEVEL);
+	blockmap = blockmaplump + 4;
 
 	P_SetSkipBlockStart();
 }
@@ -1663,13 +1645,13 @@ void P_GenerateUniqueMapFingerPrint(int maplumpnum)
 	typedef std::vector<byte> LevelLumps;
 	LevelLumps levellumps;
 
-	const byte* thingbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_THINGS, PU_STATIC));
-	const byte* lindefbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_LINEDEFS, PU_STATIC));
-	const byte* sidedefbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SIDEDEFS, PU_STATIC));
-	const byte* vertexbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_VERTEXES, PU_STATIC));
-	const byte* segsbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SEGS, PU_STATIC));
-	const byte* ssectorsbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SSECTORS, PU_STATIC));
-	const byte* sectorsbytes = static_cast<const byte*>(W_CacheLumpNum(maplumpnum+ML_SECTORS, PU_STATIC));
+	const byte* thingbytes    = W_CacheLumpNum<const byte>(maplumpnum+ML_THINGS, PU_STATIC);
+	const byte* lindefbytes   = W_CacheLumpNum<const byte>(maplumpnum+ML_LINEDEFS, PU_STATIC);
+	const byte* sidedefbytes  = W_CacheLumpNum<const byte>(maplumpnum+ML_SIDEDEFS, PU_STATIC);
+	const byte* vertexbytes   = W_CacheLumpNum<const byte>(maplumpnum+ML_VERTEXES, PU_STATIC);
+	const byte* segsbytes     = W_CacheLumpNum<const byte>(maplumpnum+ML_SEGS, PU_STATIC);
+	const byte* ssectorsbytes = W_CacheLumpNum<const byte>(maplumpnum+ML_SSECTORS, PU_STATIC);
+	const byte* sectorsbytes  = W_CacheLumpNum<const byte>(maplumpnum+ML_SECTORS, PU_STATIC);
 
 	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_THINGS), *thingbytes);
 	levellumps.insert(levellumps.end(), W_LumpLength(maplumpnum+ML_LINEDEFS), *lindefbytes);
@@ -1698,7 +1680,7 @@ int P_GroupLines()
 	// look up sector number for each subsector
 	for (int i = 0; i < numsubsectors; i++)
 	{
-		if (subsectors[i].firstline >= (unsigned int)numsegs)
+		if (subsectors[i].firstline >= static_cast<unsigned int>(numsegs))
 			I_Error("subsector[{}].firstline exceeds numsegs ({})", i, numsegs);
 		subsectors[i].sector = segs[subsectors[i].firstline].sidedef->sector;
 	}
@@ -1727,7 +1709,7 @@ int P_GroupLines()
 	}
 
 	// build line tables for each sector
-	line_t** linebuffer = (line_t **)Z_Malloc (total*sizeof(line_t *), PU_LEVEL, 0);
+	line_t** linebuffer = Z_Malloc<line_t*>(total, PU_LEVEL);
 	sector_t* sector = sectors;
 	DBoundingBox bbox;
 	for (int i = 0 ; i < numsectors ; i++, sector++)
@@ -1818,8 +1800,7 @@ int P_GroupLines()
 
 void P_RemoveSlimeTrails()
 {
-	byte* hit = (byte *)Z_Malloc(numvertexes, PU_LEVEL, 0);
-	memset(hit, 0, numvertexes * sizeof(byte));
+	byte* hit = Z_Calloc<byte>(numvertexes, PU_LEVEL);
 
 	for (int i = 0; i < numsegs; i++)
 	{
@@ -1842,8 +1823,8 @@ void P_RemoveSlimeTrails()
 						const int64_t dxy = (l->dx >> FRACBITS) * (l->dy >> FRACBITS);
 						const int64_t s = dx2 + dy2;
 						const fixed_t x0 = v->x, y0 = v->y, x1 = l->v1->x, y1 = l->v1->y;
-						v->x = (fixed_t)((dx2 * x0 + dy2 * x1 + dxy * (y0 - y1)) / s);
-						v->y = (fixed_t)((dy2 * y0 + dx2 * y1 + dxy * (x0 - x1)) / s);
+						v->x = static_cast<fixed_t>((dx2 * x0 + dy2 * x1 + dxy * (y0 - y1)) / s);
+						v->y = static_cast<fixed_t>((dy2 * y0 + dx2 * y1 + dxy * (x0 - x1)) / s);
 					}
 				}  // Obsfucated C contest entry:   :)
 			} while ((v != segs[i].v2) && (v = segs[i].v2));
@@ -1858,7 +1839,7 @@ void P_RemoveSlimeTrails()
 //
 void P_LoadBehavior (int lumpnum)
 {
-	byte *behavior = (byte *)W_CacheLumpNum (lumpnum, PU_LEVEL);
+	byte *behavior = W_CacheLumpNum<byte>(lumpnum, PU_LEVEL);
 
 	level.behavior = std::make_unique<FBehavior>(behavior, lumpinfo[lumpnum].size);
 
@@ -1875,7 +1856,7 @@ void P_InitTagLists(void)
 		sectors[i].firsttag = -1;
 	for (int i = numsectors; --i >= 0; )		// Proceed from last to first sector
 	{									// so that lower sectors appear first
-		int j = (unsigned)sectors[i].tag % (unsigned)numsectors;	// Hash func
+		int j = static_cast<unsigned>(sectors[i].tag) % static_cast<unsigned>(numsectors);	// Hash func
 		sectors[i].nexttag = sectors[j].firsttag;	// Prepend sector to chain
 		sectors[j].firsttag = i;
 	}
@@ -1886,7 +1867,7 @@ void P_InitTagLists(void)
 		lines[i].firstid = -1;
 	for (int i = numlines; --i >= 0; )        // Proceed from last to first linedef
 	{									// so that lower linedefs appear first
-		int j = (unsigned)lines[i].id % (unsigned)numlines;	// Hash func
+		int j = static_cast<unsigned>(lines[i].id) % static_cast<unsigned>(numlines);	// Hash func
 		lines[i].nextid = lines[j].firstid;	// Prepend linedef to chain
 		lines[j].firstid = i;
 	}
@@ -2037,7 +2018,7 @@ void P_LoadReject(int lumpnum, int totallines)
 	else if (lumpsize < correctsize)
 	{
 		DPrintFmt("Reject matrix is not valid. It will be padded to the correct size.\n");
-		rejectmatrix = static_cast<byte*>(Z_Malloc(correctsize, PU_LEVEL, nullptr));
+		rejectmatrix = Z_Malloc<byte>(correctsize, PU_LEVEL);
 		W_ReadLump(lumpnum, rejectmatrix);
 		memset(rejectmatrix + lumpsize, 0, correctsize - lumpsize);
 		// vanilla doom just reads pass the edge of the reject table if its too small
@@ -2065,7 +2046,7 @@ void P_LoadReject(int lumpnum, int totallines)
 	}
 	else
 	{
-		rejectmatrix = static_cast<byte*>(W_CacheLumpNum(lumpnum, PU_LEVEL));
+		rejectmatrix = W_CacheLumpNum<byte>(lumpnum, PU_LEVEL);
 	}
 }
 
@@ -2267,7 +2248,7 @@ static std::vector<spriteinfo_t*> P_GetSpriteInfos ()
 	std::vector<spriteinfo_t*> infos;
 	for(auto it = sprnames.begin();it != sprnames.end();++it)
 	{
-		spriteinfo_t* spriteinfo = (spriteinfo_t*) Z_Malloc(sizeof(spriteinfo_t), PU_STATIC, nullptr);
+		spriteinfo_t* spriteinfo = Z_Malloc<spriteinfo_t>(PU_STATIC);
 		spriteinfo->sprite = Z_StrDup(it->second.data(), PU_STATIC);
 		spriteinfo->spritenum = it->first;
 		infos.push_back(spriteinfo);

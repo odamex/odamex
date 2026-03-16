@@ -879,7 +879,7 @@ void AActor::Serialize (FArchive &arc)
 			<< args[3]
 			<< args[4]
 			/*<< goal ? goal->netid : 0*/
-			<< (unsigned)0
+			<< 0_u32
 			<< translucency
 			<< waterlevel
 			<< gear;
@@ -894,7 +894,7 @@ void AActor::Serialize (FArchive &arc)
 			}
 			else
 			{
-				arc << (uint32_t)(translation.getTable() - ::translationtables);
+				arc << static_cast<uint32_t>(translation.getTable() - ::translationtables);
 			}
 		}
 		else
@@ -1555,7 +1555,7 @@ static fixed_t P_CalculateActorGravityDoom(AActor* mo)
 //
 static fixed_t P_CalculateActorGravityZDoom(AActor* mo)
 {
-	fixed_t velocity_change = (fixed_t)(level.gravity * mo->subsector->sector->gravity * 81.92f);
+	fixed_t velocity_change = static_cast<fixed_t>(level.gravity * mo->subsector->sector->gravity * 81.92f);
 
 	if (mo->flags2 & MF2_LOGRAV)
 		velocity_change >>= 3;
@@ -1788,9 +1788,9 @@ void P_ApplyBouncyPhysics(AActor *mo)
 					               ? // floaters fall slowly
 					               mo->flags & MF_DROPOFF
 					                   ? // DROPOFF indicates rate
-					                   FixedMul(mo->momz, (fixed_t)(FRACUNIT * .85))
-					                   : FixedMul(mo->momz, (fixed_t)(FRACUNIT * .70))
-					               : FixedMul(mo->momz, (fixed_t)(FRACUNIT * .45));
+					                   FixedMul(mo->momz, static_cast<fixed_t>(FRACUNIT * .85))
+					                   : FixedMul(mo->momz, static_cast<fixed_t>(FRACUNIT * .70))
+					               : FixedMul(mo->momz, static_cast<fixed_t>(FRACUNIT * .45));
 
 					// Bring it to rest below a certain speed
 					if (abs(mo->momz) <= mo->info->mass * (GRAVITY * 4 / 256))
@@ -1916,7 +1916,7 @@ void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
 		// [SL] 2011-06-16 - ZDoom Oomphiness
 		if (mo->health > 0)
 		{
-			if (mo->momz < (fixed_t)(level.gravity * mo->subsector->sector->gravity * -983.04f))
+			if (mo->momz < static_cast<fixed_t>(level.gravity * mo->subsector->sector->gravity * -983.04f))
 				UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/land1", ATTN_NORM);
 
 			UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/land1", ATTN_NORM);
@@ -2572,7 +2572,7 @@ void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle, f
 		S_Sound(th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
 
 	th->target = source->ptr();
-	an += (angle_t)(((int64_t)angle << 16) / 360);
+	an += static_cast<angle_t>((static_cast<int64_t>(angle) << 16) / 360);
 	th->angle = an;
 
 	if (co_zdoomphys)
@@ -2835,7 +2835,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	{
 		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		{
-			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+			TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(iTeam));
 
 			if (mthing.type == teamInfo->TeamSpawnThingNum)
 			{
@@ -3251,7 +3251,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	{
 		for (int iTeam = 0; iTeam < sv_teamsinplay; iTeam++)
 		{
-			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+			TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(iTeam));
 			if (mthing.type == teamInfo->FlagThingNum)
 			{
 				SpawnFlag(mthing, teamInfo->Team);

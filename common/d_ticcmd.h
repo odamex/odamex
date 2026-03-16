@@ -159,7 +159,7 @@ inline FArchive &operator<< (FArchive &arc, ticcmd_t &cmd)
 	}
 
 	byte len = ptr - buf;
-	arc << (byte)(len + 1) << flags;
+	arc << static_cast<byte>(len + 1) << flags;
 	arc.Write(buf, len);
 
 	return arc;

@@ -238,7 +238,7 @@ size_t M_ReadFile(std::string filename, byte **buffer)
 
     size_t length = M_FileLength(handle);
 
-    byte* buf = (byte *)Z_Malloc (length, PU_STATIC, NULL);
+    byte* buf = Z_Malloc<byte>(length, PU_STATIC);
     size_t count = fread(buf, 1, length, handle);
     fclose (handle);
 

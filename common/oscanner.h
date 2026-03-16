@@ -93,7 +93,7 @@ class OScanner
 	}
 
 	template <typename... ARGS>
-	void error(fmt::format_string<ARGS...> format, ARGS&&... args) const
+	[[noreturn]] void error(fmt::format_string<ARGS...> format, ARGS&&... args) const
 	{
 		I_Error("Parse Error: {}:{}: {}", m_config.lumpName, m_lineNumber,
 		        fmt::format(format, std::forward<ARGS>(args)...));

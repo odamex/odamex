@@ -121,7 +121,7 @@ void W_HashLumps(void)
 
 	for (unsigned int i = 0; i < numlumps; i++)
 	{
-		unsigned int j = W_LumpNameHash(lumpinfo[i].name.c_str()) % (unsigned int)numlumps;
+		unsigned int j = W_LumpNameHash(lumpinfo[i].name.c_str()) % static_cast<unsigned int>(numlumps);
 		lumpinfo[i].next = lumpinfo[j].index;     // Prepend to list
 		lumpinfo[j].index = i;
 	}
@@ -194,7 +194,7 @@ OMD5Hash W_MD5(const std::string& filename)
 	unsigned char buf[file_chunk_size];
 
 	while((n = fread(buf, 1, sizeof(buf), fp.get())))
-		md5_append(&state, (unsigned char *)buf, n);
+		md5_append(&state, static_cast<byte*>(buf), n);
 
 	md5_byte_t digest[16];
 	md5_finish(&state, digest);
@@ -202,7 +202,7 @@ OMD5Hash W_MD5(const std::string& filename)
 	std::stringstream hashStr;
 
 	for(int i = 0; i < 16; i++)
-		hashStr << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << (short)digest[i];
+		hashStr << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << static_cast<short>(digest[i]);
 
 	OMD5Hash::makeFromHexStr(rvo, hashStr.str());
 	return rvo; // bubble up failure
@@ -224,7 +224,7 @@ fhfprint_t W_FarmHash128(const byte* lumpdata, int length)
 	if (!lumpdata)
 		return fhfngprnt;
 
-	util::uint128_t fingerprint128 = util::Fingerprint128((const char*)lumpdata, length);
+	util::uint128_t fingerprint128 = util::Fingerprint128(reinterpret_cast<const char*>(lumpdata), length);
 
 	// Store the bytes of the hashes in the array.
 	fhfngprnt.fingerprint[0] = fingerprint128.first >> 8 * 0;
@@ -260,7 +260,7 @@ fhfprint_t W_FarmHash128(const byte* lumpdata, int length)
 //
 void W_AddLumps(FILE* handle, const filelump_t* fileinfo, size_t newlumps, bool clientonly)
 {
-	lumpinfo = (lumpinfo_t*) M_Realloc(lumpinfo, (numlumps + newlumps) * sizeof(lumpinfo_t));
+	lumpinfo = static_cast<lumpinfo_t*>(M_Realloc(lumpinfo, (numlumps + newlumps) * sizeof(lumpinfo_t)));
 	if (!lumpinfo)
 		I_Error("Couldn't realloc lumpinfo");
 
@@ -337,7 +337,7 @@ void AddFile(const OResFile& file)
 		header.infotableofs = LELONG(header.infotableofs);
 		size_t length = header.numlumps * sizeof(filelump_t);
 
-		if (length > (unsigned)M_FileLength(handle.get()))
+		if (length > M_FileLength(handle.get()))
 		{
 			PrintFmt(PRINT_WARNING, "\nbad number of lumps for {}\n", filename);
 			return;
@@ -492,9 +492,9 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, int space)
 	if (newlumps)
 	{
 		if (oldlumps + newlumps > numlumps)
-			lumpinfo = (lumpinfo_t*) M_Realloc(lumpinfo, oldlumps + newlumps);
+			lumpinfo = static_cast<lumpinfo_t*>(M_Realloc(lumpinfo, oldlumps + newlumps));
 
-		memcpy (lumpinfo + oldlumps, newlumpinfos.get(), sizeof(lumpinfo_t) * newlumps);
+		std::copy_n(newlumpinfos.get(), newlumps, lumpinfo + oldlumps);
 
 		numlumps = oldlumps + newlumps;
 
@@ -560,7 +560,7 @@ void W_InitMultipleFiles(const OResFiles& files)
 	M_Free(lumpcache);
 
 	size_t size = numlumps * sizeof(*lumpcache);
-	lumpcache = (void **) M_Malloc(size);
+	lumpcache = static_cast<void**>(M_Malloc(size));
 
 	if (!lumpcache)
 		I_Error("Couldn't allocate lumpcache");
@@ -693,19 +693,16 @@ unsigned W_LumpLength (unsigned lump)
 //
 void W_ReadLump(unsigned int lump, void* dest)
 {
-	int		c;
-	lumpinfo_t*	l;
-
 	if (lump >= numlumps)
 		I_Error("W_ReadLump: {} >= numlumps", lump);
 
-	l = lumpinfo + lump;
+	lumpinfo_t* l = lumpinfo + lump;
 
 	if (lump != stdisk_lumpnum)
     	I_BeginRead();
 
 	fseek (l->handle, l->position, SEEK_SET);
-	c = fread (dest, l->size, 1, l->handle);
+	int c = fread (dest, l->size, 1, l->handle);
 
 	if (feof(l->handle))
 		I_Error("W_ReadLump: only read {} of {} on lump {}", c, l->size, lump);
@@ -788,7 +785,7 @@ OLumpName W_GetOLumpName(unsigned lump)
 //
 void* W_CacheLumpNum(unsigned int lump, const zoneTag_e tag)
 {
-	if ((unsigned)lump >= numlumps)
+	if (lump >= numlumps)
 		I_Error("W_CacheLumpNum: {} >= numlumps",lump);
 
 	if (!lumpcache[lump])
@@ -801,9 +798,9 @@ void* W_CacheLumpNum(unsigned int lump, const zoneTag_e tag)
 
 		//DPrintf("cache miss on lump %i\n",lump);
 		unsigned int lump_length = W_LumpLength(lump);
-		lumpcache[lump] = (byte *)Z_Malloc(lump_length + 1, tag, &lumpcache[lump]);
+		lumpcache[lump] = Z_Malloc<byte>(lump_length + 1, tag, &lumpcache[lump]);
 		W_ReadLump(lump, lumpcache[lump]);
-		*((unsigned char*)lumpcache[lump] + lump_length) = 0;
+		*(static_cast<byte*>(lumpcache[lump]) + lump_length) = 0;
 	}
 	else
 	{
@@ -812,22 +809,6 @@ void* W_CacheLumpNum(unsigned int lump, const zoneTag_e tag)
 	}
 
 	return lumpcache[lump];
-}
-
-//
-// W_CacheLumpName
-//
-void* W_CacheLumpName(const char* name, const zoneTag_e tag)
-{
-	return W_CacheLumpNum(W_GetNumForName(name), tag);
-}
-
-//
-// W_CacheLumpName
-//
-void* W_CacheLumpName(const OLumpName& name, const zoneTag_e tag)
-{
-	return W_CacheLumpNum(W_GetNumForName(name), tag);
 }
 
 size_t R_CalculateNewPatchSize(patch_t *patch, size_t length);
@@ -851,24 +832,23 @@ patch_t* W_CachePatch(unsigned lumpnum, const zoneTag_e tag)
 		auto rawlumpdata = std::make_unique<byte[]>(W_LumpLength(lumpnum));
 
 		W_ReadLump(lumpnum, rawlumpdata.get());
-		patch_t *rawpatch = (patch_t*)(rawlumpdata.get());
+		patch_t *rawpatch = reinterpret_cast<patch_t*>(rawlumpdata.get());
 
 		size_t newlumplen = R_CalculateNewPatchSize(rawpatch, W_LumpLength(lumpnum));
 
 		if (newlumplen > 0)
 		{
 			// valid patch
-			lumpcache[lumpnum] = (byte *)Z_Malloc(newlumplen + 1, tag, &lumpcache[lumpnum]);
-			patch_t *newpatch = (patch_t*)lumpcache[lumpnum];
-			*((unsigned char*)lumpcache[lumpnum] + newlumplen) = 0;
+			lumpcache[lumpnum] = Z_Malloc<byte>(newlumplen + 1, tag, &lumpcache[lumpnum]);
+			patch_t *newpatch = static_cast<patch_t*>(lumpcache[lumpnum]);
+			*(static_cast<byte*>(lumpcache[lumpnum]) + newlumplen) = 0;
 
 			R_ConvertPatch(newpatch, rawpatch, lumpnum);
 		}
 		else
 		{
 			// invalid patch - just create a header with width = 0, height = 0
-			lumpcache[lumpnum] = Z_Malloc(sizeof(patch_t), tag, &lumpcache[lumpnum]);
-			memset(lumpcache[lumpnum], 0, sizeof(patch_t));
+			lumpcache[lumpnum] = Z_Calloc<patch_t>(tag, &lumpcache[lumpnum]);
 		}
 	}
 	else
@@ -879,7 +859,7 @@ patch_t* W_CachePatch(unsigned lumpnum, const zoneTag_e tag)
 	// denis - todo - would be good to check whether the patch violates W_LumpLength here
 	// denis - todo - would be good to check for width/height == 0 here, and maybe replace those with a valid patch
 
-	return (patch_t*)lumpcache[lumpnum];
+	return static_cast<patch_t*>(lumpcache[lumpnum]);
 }
 
 patch_t* W_CachePatch(const char* name, const zoneTag_e tag)
@@ -951,7 +931,7 @@ int W_FindLump (const char *name, int lastlump)
 	if (lastlump < -1)
 		lastlump = -1;
 
-	for (int i = lastlump + 1; i < (int)numlumps; i++)
+	for (size_t i = lastlump + 1; i < numlumps; i++)
 	{
 		if (strnicmp(lumpinfo[i].name.c_str(), name, 8) == 0)
 			return i;
