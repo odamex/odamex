@@ -250,13 +250,13 @@ short ST_DoomBaseWidth()
 	return sbar_width;
 }
 
-bool ST_DoomResponder(event_t* ev)
+bool ST_DoomResponder(const event_t& ev)
 {
 	bool eat = false;
 
-	if (ev->type == ev_keyup && ((ev->data1 & 0xffff0000) == AM_MSGHEADER))
+	if (ev.type == ev_keyup && ((ev.data1 & 0xffff0000) == AM_MSGHEADER))
 	{
-		switch (ev->data1)
+		switch (ev.data1)
 		{
 		case AM_MSGENTERED:
 			st_gamestate = AutomapState;
@@ -268,11 +268,11 @@ bool ST_DoomResponder(event_t* ev)
 			break;
 		}
 	}
-	else if (ev->type == ev_keydown && ev->data3)
+	else if (ev.type == ev_keydown && ev.data3)
 	{
 		for (auto& cheat : DoomCheats)
 		{
-			if (cheat::AddKey(&cheat, (byte)ev->data1, &eat))
+			if (cheat::AddKey(&cheat, (byte)ev.data1, &eat))
 			{
 				if (cheat.DontCheck || cheat::AreCheatsEnabled())
 				{

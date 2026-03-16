@@ -26,7 +26,7 @@
 
 EXTERN_CVAR(st_scale)
 
-bool ST_HticResponder(event_t* ev)
+bool ST_HticResponder(const event_t& ev)
 {
 	(void)ev;
 	return false;

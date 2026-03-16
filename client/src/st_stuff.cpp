@@ -158,7 +158,7 @@ CVAR_FUNC_IMPL(st_scale)
 	ST_ForceRefresh();
 }
 
-bool ST_Responder(event_t* ev)
+bool ST_Responder(const event_t& ev)
 {
 	return ST_GetStatusBar().Responder(ev);
 }

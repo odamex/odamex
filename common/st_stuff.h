@@ -65,7 +65,7 @@ struct stbarfns_t
 {
 	int height;
 	short (*BaseWidth)();
-	bool (*Responder)(event_t* ev);
+	bool (*Responder)(const event_t& ev);
 	void (*Ticker)();
 	void (*Drawer)();
 	void (*Start)();
@@ -95,8 +95,8 @@ void ST_Init();
 void STACK_ARGS ST_Shutdown();
 
 // Engine-specific statusbar implementations.
-bool ST_DoomResponder(event_t* ev);
-bool ST_HticResponder(event_t* ev);
+bool ST_DoomResponder(const event_t& ev);
+bool ST_HticResponder(const event_t& ev);
 short ST_DoomBaseWidth();
 short ST_HticBaseWidth();
 void ST_DoomTicker();
