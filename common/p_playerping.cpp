@@ -120,6 +120,40 @@ translationref_t P_PingTeamTranslation(team_t team)
 	return {};
 }
 
+fixed_t P_PingItemTopOffset(const AActor* actor)
+{
+	if (!actor)
+		return 0;
+	if (actor->sprite < 0 || actor->sprite >= numsprites)
+		return actor->height;
+
+	const spritedef_t& sprdef = sprites[actor->sprite];
+	const int frame = actor->frame & FF_FRAMEMASK;
+	if (frame < 0 || frame >= sprdef.numframes || sprdef.spriteframes == nullptr)
+		return actor->height;
+
+	const spriteframe_t& sprframe = sprdef.spriteframes[frame];
+	fixed_t topoff = 0;
+	if (!sprframe.rotate)
+	{
+		topoff = sprframe.topoffset[0];
+	}
+	else
+	{
+		for (int i = 0; i < 16; i++)
+		{
+			if (sprframe.lump[i] == -1)
+				continue;
+			topoff = (std::max)(topoff, sprframe.topoffset[i]);
+		}
+	}
+
+	if (topoff <= 0)
+		return actor->height;
+
+	return (std::max)(actor->height, topoff);
+}
+
 void P_PingFollowTargetPos(const AActor* target, const AActor* view, v3fixed_t& pos)
 {
 	static constexpr fixed_t FollowPingHeadOffset = 4 * FRACUNIT;
@@ -468,9 +502,10 @@ void P_PlayerPing(player_t &player)
 		{
 			ping.type = PING_ITEM;
 			ping.follow_target = false;
+			const fixed_t itemTop = P_PingItemTopOffset(pingTarget);
 			ping.pos.x = pingTarget->x;
 			ping.pos.y = pingTarget->y;
-			ping.pos.z = pingTarget->z + pingTarget->height + 8 * FRACUNIT;
+			ping.pos.z = pingTarget->z + itemTop + 8 * FRACUNIT;
 		}
 		else if (G_IsHordeMode() && P_IsHordeBossForPing(pingTarget))
 		{
@@ -561,9 +596,10 @@ bool P_ResolvePingPosition(const playerPing_s& ping, v3fixed_t& outPos)
 		if (!target)
 			return false;
 
+		const fixed_t itemTop = P_PingItemTopOffset(target);
 		outPos.x = target->x;
 		outPos.y = target->y;
-		outPos.z = target->z + target->height + 8 * FRACUNIT;
+		outPos.z = target->z + itemTop + 8 * FRACUNIT;
 		return true;
 	}
 
