@@ -1645,7 +1645,7 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 		screen->DrawPatchCleanWithPalette(W_CachePatch("MSLIDE"), x + i * 8, drawY, palette);
 	screen->DrawPatchCleanWithPalette(W_CachePatch("RSLIDE"), x + 88, drawY, palette);
 
-	screen->DrawPatchCleanWithPalette(W_CachePatch("CSLIDE"), x + 5 + (int)(dist * 78.0), drawY, palette);
+		screen->DrawPatchCleanWithPalette(W_CachePatch("CSLIDE"), x + 5 + static_cast<int>(dist * 78.0), drawY, palette);
 
 	std::string buf;
 	if (step == 0.0f)
@@ -1678,11 +1678,11 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 
 	screen->DrawPatchCleanWithPalette(W_CachePatch("RSLIDE"), x + 88, drawY, palette);
 
-	screen->DrawPatchCleanWithPalette(W_CachePatch("GSLIDE"), x + 5 + (int)(dist * 78.0), drawY, palette);
+		screen->DrawPatchCleanWithPalette(W_CachePatch("GSLIDE"), x + 5 + static_cast<int>(dist * 78.0), drawY, palette);
 
 	V_ColorFill = V_BestColor(V_GetDefaultPalette()->basecolors, color);
 
-	screen->DrawColoredPatchClean(W_CachePatch("OSLIDE"), x + 5 + (int)(dist * 78.0), drawY);
+		screen->DrawColoredPatchClean(W_CachePatch("OSLIDE"), x + 5 + static_cast<int>(dist * 78.0), drawY);
 }
 
 int M_FindCurVal (float cur, value_t *values, int numvals)
