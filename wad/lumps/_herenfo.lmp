@@ -1,8 +1,22 @@
 // MAPINFO for Heretic (Shareware and Retail)
 
+fontdef BIGFONT
+{
+	pattern = "FONTB%02d"
+	lumpstart = 1
+	lineheight = 20
+}
+
+fontdef SMALLFONT
+{
+	pattern = "FONTA%02d"
+	lumpstart = 1
+	lineheight = 10
+}
+
 gameinfo
 {
-	advisorytime = 6
+	advisorytime = 4
 	border = HereticBorder
 	borderflat = "FLAT513"
 	chatsound = "misc/chat"
@@ -18,16 +32,29 @@ gameinfo
 	telefogheight = 32
 	titlemusic = "MUS_TITL"
 	titlepage = "TITLE"
-	titletime = 8
+	titletime = 6
 	defkickback = 150
 	endoom = "ENDTEXT"
 	pausesign = "PAUSED"
 	gibfactor = 0.5
 	textscreenx = 20
-	textscreeny = 5
-	maparrow = "DAGGER"
+	textscreeny = 10
+	maparrow = "DAGGER", "DAGGER"
 	cheatkey = "CHEATKEY"
 	easykey = "EASYKEY"
+	maxswitch = 2
+	bigfont = BIGFONT
+	smallfont = SMALLFONT
+	menuindicatorlumps = "M_SLCTR1", "M_SLCTR2"
+	menuindicatoroffsetx = -28
+	menuindicatoroffsety = -3
+	menucursoroffsety = 2
+	defaultwipetype = 0
+}
+
+automap
+{
+	base = "raven"
 }
 
 skill baby
@@ -38,7 +65,7 @@ skill baby
 	DamageFactor = 0.5
 	EasyBossBrain
 	SpawnFilter = Baby
-	Name = "$MNU_WETNURSE"
+	Name = "$SKILL_WETNURSE"
 	EasyKey
 }
 
@@ -46,14 +73,14 @@ skill easy
 {
 	DoubleAmmoFactor = 1.5
 	SpawnFilter = Easy
-	Name = "$MNU_YELLOWBELLIES"
+	Name = "$SKILL_YELLOWBELLIES"
 }
 
 skill normal
 {
 	DoubleAmmoFactor = 1.5
 	SpawnFilter = Normal
-	Name = "$MNU_BRINGEST"
+	Name = "$SKILL_BRINGEST"
 	DefaultSkill
 }
 
@@ -61,7 +88,7 @@ skill hard
 {
 	DoubleAmmoFactor = 1.5
 	SpawnFilter = Hard
-	Name = "$MNU_SMITE"
+	Name = "$SKILL_SMITE"
 }
 
 skill nightmare
@@ -71,38 +98,38 @@ skill nightmare
 	FastMonsters
 	DisableCheats
 	SpawnFilter = Nightmare
-	Name = "$MNU_BLACKPLAGUE"
+	Name = "$SKILL_BLACKPLAGUE"
 }
 
 clearepisodes
 episode e1m1
 {
-	name = "$MNU_COTD"
+	name = "$EPISODE_COTD"
 	key = "c"
 }
 
 episode e2m1
 {
-	name = "$MNU_HELLSMAW"
+	name = "$EPISODE_HELLSMAW"
 	key = "h"
 }
 
 episode e3m1
 {
-	name = "$MNU_DOME"
+	name = "$EPISODE_DOME"
 	key = "d"
 }
 
 episode e4m1
 {
-	name = "$MNU_OSSUARY"
+	name = "$EPISODE_OSSUARY"
 	key = "o"
 	extended
 }
 
 episode e5m1
 {
-	name = "$MNU_DEMESNE"
+	name = "$EPISODE_DEMESNE"
 	key = "s"
 	extended
 }

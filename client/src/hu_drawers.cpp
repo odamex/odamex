@@ -28,6 +28,10 @@
 #include "v_video.h"
 #include "v_text.h"
 
+EXTERN_CVAR(hud_transparency)
+
+extern byte* Ranges;
+
 namespace hud {
 
 // Round float to short integer.  Used by the scaling function.
@@ -193,6 +197,134 @@ void DrawText(int x, int y, const float scale,
 		screen->DrawTextStretched(color, x, y, str, x_scale, y_scale);
 	else
 		screen->DrawTextStretchedLuc(color, x, y, str, x_scale, y_scale);
+}
+
+struct shadow_text_metrics_t
+{
+	int width;
+	int glyphs;
+};
+
+static shadow_text_metrics_t GetShadowTextMetrics(const char* str)
+{
+	shadow_text_metrics_t metrics = {0, 0};
+	if (!str)
+		return metrics;
+
+	for (const unsigned char* p = reinterpret_cast<const unsigned char*>(str); *p != '\0'; ++p)
+	{
+		if (*p == TEXTCOLOR_ESCAPE && p[1] != '\0')
+		{
+			++p;
+			continue;
+		}
+		if (*p == '\n')
+			break;
+
+		int c = toupper((*p) & 0x7f) - HU_FONTSTART;
+		if (c < 0 || c >= HU_FONTSIZE || hu_font[c].empty())
+			metrics.width += 4;
+		else
+			metrics.width += W_ResolvePatchHandle(hu_font[c])->width();
+
+		metrics.glyphs++;
+	}
+
+	if (metrics.glyphs > 1)
+		metrics.width += (metrics.glyphs - 1) * 2;
+
+	return metrics;
+}
+
+// Draw hu_font text with an offset shadow pass.
+void DrawShadowedText(int x, int y, const float scale,
+                      const x_align_t x_align, const y_align_t y_align,
+                      const x_align_t x_origin, const y_align_t y_origin,
+                      const char* str, const int color,
+                      const int shadow_color,
+                      const int shadow_x_offset,
+                      const int shadow_y_offset,
+                      const bool force_opaque)
+{
+	if (!str)
+		return;
+
+	const shadow_text_metrics_t metrics = GetShadowTextMetrics(str);
+	unsigned short w = metrics.width;
+	unsigned short h = V_LineHeight();
+	int x_scale, y_scale;
+	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
+
+	const int safe_shadow_color =
+	    (shadow_color >= 0 && shadow_color < NUM_TEXT_COLORS) ? shadow_color : CR_BLACK;
+	const translationref_t saved_colormap = V_ColorMap;
+	const int saved_color_fill = V_ColorFill;
+	const float shadow_transparency = ::hud_transparency * 0.5f;
+
+	int draw_x = x;
+	int glyph_index = 0;
+	int current_color = color;
+
+	for (const unsigned char* p = reinterpret_cast<const unsigned char*>(str); *p != '\0'; ++p)
+	{
+		if (*p == TEXTCOLOR_ESCAPE && p[1] != '\0')
+		{
+			const int new_color = V_GetTextColor(reinterpret_cast<const char*>(p));
+			if (new_color >= 0)
+				current_color = new_color;
+			++p;
+			continue;
+		}
+		if (*p == '\n')
+			break;
+
+		int c = toupper((*p) & 0x7f) - HU_FONTSTART;
+		int glyph_width = 4;
+		const patch_t* glyph = NULL;
+		if (c >= 0 && c < HU_FONTSIZE && !hu_font[c].empty())
+		{
+			glyph = W_ResolvePatchHandle(hu_font[c]);
+			glyph_width = glyph->width();
+		}
+
+		if (glyph)
+		{
+			V_ColorMap = translationref_t(Ranges + safe_shadow_color * 256);
+			V_ColorFill = V_ColorMap.tlate(0x00);
+			if (force_opaque)
+				screen->DrawColoredPatchStretched(
+				    glyph, draw_x + shadow_x_offset * x_scale,
+				    y + shadow_y_offset * y_scale,
+				    glyph->width() * x_scale, glyph->height() * y_scale);
+			else
+				screen->DrawColoredLucentPatchStretchedAlpha(
+				    glyph, draw_x + shadow_x_offset * x_scale,
+				    y + shadow_y_offset * y_scale,
+				    glyph->width() * x_scale, glyph->height() * y_scale,
+				    shadow_transparency);
+
+			const int fg_color = (current_color >= 0 && current_color < NUM_TEXT_COLORS)
+			                         ? current_color
+			                         : color;
+			V_ColorMap = translationref_t(Ranges + fg_color * 256);
+			if (force_opaque)
+				screen->DrawTranslatedPatchStretched(
+				    glyph, draw_x, y,
+				    glyph->width() * x_scale, glyph->height() * y_scale);
+			else
+				screen->DrawTranslatedLucentPatchStretched(
+				    glyph, draw_x, y,
+				    glyph->width() * x_scale, glyph->height() * y_scale);
+		}
+
+		draw_x += glyph_width * x_scale;
+		if (glyph_index < metrics.glyphs - 1)
+			draw_x += 2 * x_scale;
+		glyph_index++;
+	}
+
+	V_ColorMap = saved_colormap;
+	V_ColorFill = saved_color_fill;
 }
 
 

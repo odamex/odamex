@@ -76,12 +76,50 @@ enum finale_lump_t
 
 std::string finaletext;
 OLumpName finalelump;
+OLumpName finalepalettelump;
 finale_lump_t finalelumptype = FINALE_NONE;
 
 void	F_StartCast();
 void	F_CastTicker();
 bool	F_CastResponder(const event_t&ev);
 void	F_CastDrawer();
+
+static void F_DrawPatchToSurface(IWindowSurface* surface, const patch_t* patch, const palette_t* palette)
+{
+	if (palette == NULL)
+	{
+		surface->getDefaultCanvas()->DrawPatch(patch, 0, 0);
+		return;
+	}
+
+	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+	{
+		surface->setPalette(V_GetDefaultPalette()->colors);
+		surface->getDefaultCanvas()->DrawPatchWithPalette(patch, 0, 0, palette);
+		return;
+	}
+
+	surface->setPalette(palette->colors);
+	surface->getDefaultCanvas()->DrawPatch(patch, 0, 0);
+}
+
+static void F_DrawPatchPage(const patch_t* patch, const palette_t* palette, int destx, int desty,
+	int destw, int desth)
+{
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
+
+	finale_width = patch->width();
+	finale_height = patch->height() + (patch->height() / 5);
+
+	I_FreeSurface(finale_surface);
+	finale_surface = I_AllocateSurface(patch->width(), patch->height(), 8);
+
+	finale_surface->lock();
+	F_DrawPatchToSurface(finale_surface, patch, palette);
+	primary_surface->blitcrop(finale_surface, 0, 0, patch->width(), patch->height(),
+		destx, desty, destw, desth);
+	finale_surface->unlock();
+}
 
 
 //
@@ -187,16 +225,19 @@ void F_StartFinale(finale_options_t& options)
 	{
 		::finalelumptype = FINALE_GRAPHIC;
 		::finalelump = options.pic;
+		::finalepalettelump = options.palette;
 	}
 	else if (!options.flat.empty())
 	{
 		::finalelumptype = FINALE_FLAT;
 		::finalelump = options.flat;
+		::finalepalettelump.clear();
 	}
 	else
 	{
 		::finalelumptype = FINALE_FLAT;
 		::finalelump = gameinfo.finaleFlat;
+		::finalepalettelump.clear();
 	}
 
 	if (!options.text.empty())
@@ -335,7 +376,14 @@ void F_TextWrite ()
 		lump = W_CheckNumForName(finalelump, ns_global);
 		if (lump >= 0)
 		{
-			screen->DrawPatchFullScreen(W_CachePatch(lump, PU_CACHE), true);
+			const patch_t* patch = W_CachePatch(lump, PU_CACHE);
+			const palette_t* palette = V_GetPaletteFromLump(finalepalettelump);
+			const int dest_height = (patch->width() > 320) ? primary_surface->getHeight() : height;
+			const int dest_width = (patch->width() > 320) ? primary_surface->getWidth() : width;
+			const int dest_x = (primary_surface->getWidth() - dest_width) / 2;
+			const int dest_y = (primary_surface->getHeight() - dest_height) / 2;
+
+			F_DrawPatchPage(patch, palette, dest_x, dest_y, dest_width, dest_height);
 		}
 		break;
 	case FINALE_FLAT:
@@ -382,7 +430,7 @@ void F_TextWrite ()
 		if (c == '\n')
 		{
 			cx = gameinfo.textScreenX;
-			cy += 11; // (gamemission == heretic) ? 10 : 11;
+			cy += gameinfo.textScreenY;
 			continue;
 		}
 
@@ -806,18 +854,13 @@ void F_BunnyScroll()
 // the screen and may be too wide for the
 // viewport. It will be cropped in that case.
 //
-void F_DrawEndPic(const OLumpName& page)
+void F_DrawEndPic(const OLumpName& page, const OLumpName& palette_lump)
 {
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
 	primary_surface->clear(); // ensure black background in matted modes
 
 	const patch_t* background_patch = W_CachePatch(page);
-
-	finale_width = background_patch->width();
-	finale_height = background_patch->height() + (background_patch->height() / 5);
-
-	I_FreeSurface(finale_surface);
-	finale_surface = I_AllocateSurface(background_patch->width(), background_patch->height(), 8);
+	const palette_t* palette = V_GetPaletteFromLump(palette_lump);
 
 	const int width = F_GetCWidth();
 	const int height = primary_surface->getHeight();
@@ -825,15 +868,7 @@ void F_DrawEndPic(const OLumpName& page)
 	const int x = (primary_surface->getWidth() - width) / 2;
 	const int y = (primary_surface->getHeight() - height) / 2;
 
-	// draw the background to the surface
-	finale_surface->lock();
-
-	finale_surface->getDefaultCanvas()->DrawPatch(background_patch, 0, 0);
-
-	primary_surface->blitcrop(finale_surface, 0, 0, finale_width, finale_height, x, y,
-	   width, height);
-
-	finale_surface->unlock();
+	F_DrawPatchPage(background_patch, palette, x, y, width, height);
 }
 
 
@@ -854,19 +889,18 @@ void F_Drawer (void)
 				default:
 				case '1':
 				{
-					const OLumpName& page = !level.endpic.empty() ? level.endpic : gameinfo.finalePage[0];
-
-					F_DrawEndPic(page);
+					F_DrawEndPic(!level.endpic.empty() ? level.endpic : gameinfo.finalePage[0],
+					             "");
 					break;
 				}
 				case '2':
-			        F_DrawEndPic(gameinfo.finalePage[1]);
+			        F_DrawEndPic(gameinfo.finalePage[1], "");
 					break;
 				case '3':
 					F_BunnyScroll ();
 					break;
 				case '4':
-			        F_DrawEndPic(gameinfo.finalePage[2]);
+			        F_DrawEndPic(gameinfo.finalePage[2], "");
 					break;
 			}
 			break;

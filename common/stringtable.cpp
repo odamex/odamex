@@ -50,6 +50,11 @@ static bool IfGameZDoom(const std::string& str)
 		return true;
 	}
 
+	if (!stricmp(str.c_str(), "heretic") && ::gamemission == heretic)
+	{
+		return true;
+	}
+
 	if (!stricmp(str.c_str(), "chex") && IsChexMission(::gamemission))
 	{
 		return true;

@@ -1005,6 +1005,64 @@ void DCanvas::DrawPatchFullScreen(const patch_t* patch, bool clear) const
 	DrawPatchStretched(patch, x, y, destw, desth);
 }
 
+void DCanvas::DrawPatchWithPalette(const patch_t* patch, int x, int y, const palette_t* palette) const
+{
+	if (palette == NULL)
+	{
+		DrawPatch(patch, x, y);
+		return;
+	}
+
+	if (mSurface->getBitsPerPixel() == 8)
+	{
+		palindex_t translation[256];
+		const argb_t* dest_palette = mSurface->getPalette();
+
+		for (int i = 0; i < 256; i++)
+			translation[i] = V_BestColor(dest_palette, palette->colors[i]);
+
+		const translationref_t old_colormap = V_ColorMap;
+		V_ColorMap = translationref_t(translation);
+		DrawTranslatedPatch(patch, x, y);
+		V_ColorMap = old_colormap;
+		return;
+	}
+
+	const shaderef_t old_palette = V_Palette;
+	V_Palette = shaderef_t(&palette->maps, 0);
+	DrawPatch(patch, x, y);
+	V_Palette = old_palette;
+}
+
+void DCanvas::DrawPatchCleanWithPalette(const patch_t* patch, int x, int y, const palette_t* palette) const
+{
+	if (palette == NULL)
+	{
+		DrawPatchClean(patch, x, y);
+		return;
+	}
+
+	if (mSurface->getBitsPerPixel() == 8)
+	{
+		palindex_t translation[256];
+		const argb_t* dest_palette = mSurface->getPalette();
+
+		for (int i = 0; i < 256; i++)
+			translation[i] = V_BestColor(dest_palette, palette->colors[i]);
+
+		const translationref_t old_colormap = V_ColorMap;
+		V_ColorMap = translationref_t(translation);
+		DrawCWrapper(EWrapper_Translated, patch, x, y);
+		V_ColorMap = old_colormap;
+		return;
+	}
+
+	const shaderef_t old_palette = V_Palette;
+	V_Palette = shaderef_t(&palette->maps, 0);
+	DrawCWrapper(EWrapper_Normal, patch, x, y);
+	V_Palette = old_palette;
+}
+
 
 // [RH] Set an area to a specified color
 void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) const
@@ -1113,7 +1171,7 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 	const int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	const int surface_pitch_pixels = mSurface->getPitchInPixels();
 
-	if (x1 < 0 || x1 + w > surface_width || y1 < 0 || y1 + h > surface_height)
+	if (x1 < 0 || x1 + w > surface_pitch_pixels || y1 < 0 || y1 + h > surface_height)
 		return;
 
 	if (famount <= 0.0f)

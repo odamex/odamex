@@ -159,7 +159,7 @@ void S_UpdateSounds(void *listener_p) {}
 void S_UpdateMusic() {}
 void S_SetMusicVolume(float volume) {}
 void S_SetSfxVolume(float volume) {}
-void S_StartMusic(const char *m_id) {}
+void S_StartMusic(std::string musicname) {}
 void S_ChangeMusic(std::string musicname, bool looping, int order)  {}
 void S_StopMusic() {}
 void A_Ambient(AActor *actor) {}

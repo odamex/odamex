@@ -201,7 +201,7 @@ void S_SetSfxVolume(float volume)
 //
 // Starts some music with the music id found in sounds.h.
 //
-void S_StartMusic(const char *m_id)
+void S_StartMusic(std::string musicname)
 {
 }
 

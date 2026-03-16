@@ -1038,10 +1038,14 @@ void C_ClearCommand()
 void C_InitConsoleBackground()
 {
 	const patch_t* bg_patch = W_CachePatch(W_GetNumForName("CONBACK"));
+	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
+	const int bpp = I_GetPrimarySurface()->getBitsPerPixel();
 
-	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+	I_FreeSurface(background_surface);
+	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), bpp);
 	background_surface->lock();
-	background_surface->getDefaultCanvas()->DrawPatch(bg_patch, 0, 0);
+	background_surface->getDefaultCanvas()->DrawPatchWithPalette(bg_patch, 0, 0, palette);
+
 	background_surface->unlock();
 }
 
@@ -1054,6 +1058,7 @@ void C_InitConsoleBackground()
 void STACK_ARGS C_ShutdownConsoleBackground()
 {
 	I_FreeSurface(background_surface);
+	background_surface = NULL;
 }
 
 
@@ -1552,6 +1557,9 @@ void C_NewModeAdjust()
 	C_FlushDisplay();
 
 	C_AdjustBottom();
+
+	if (I_VideoInitialized())
+		C_InitConsoleBackground();
 }
 
 

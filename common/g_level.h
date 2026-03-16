@@ -364,10 +364,11 @@ struct cluster_info_t
 	std::string		entertext;
 	int				flags;
 	OLumpName		finalepic;
+	OLumpName		finalepalette;
 
 	cluster_info_t()
 	    : cluster(0), messagemusic(""), finaleflat(""), exittext(""), entertext(""),
-	      flags(0)
+	      flags(0), finalepic(""), finalepalette("")
 	{
 	}
 

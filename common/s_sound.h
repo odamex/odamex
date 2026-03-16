@@ -161,11 +161,11 @@ bool S_GetSoundPlayingInfo(const fixed_t* pt, int sound_id);
 // Moves all sounds from one mobj to another
 void S_RelinkSound(const AActor* from, const AActor* to);
 
-// Start music using <music_name>
-void S_StartMusic(const char* music_name);
+// Start music using <musicname>
+void S_StartMusic(std::string musicname);
 
-// Start music using <music_name>, and set whether looping, and what MOD order to start from
-void S_ChangeMusic(std::string music_name, bool looping, int order = 0);
+// Start music using <musicname>, and set whether looping, and what MOD order to start from
+void S_ChangeMusic(std::string musicname, bool looping, int order = 0);
 
 // Stops the music fer sure.
 void S_StopMusic();

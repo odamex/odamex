@@ -318,9 +318,9 @@ void D_Display()
 	{
 		const patch_t* pause = W_CachePatch(gameinfo.pauseSign);
 
-		// todo: properly center "PAUSED" graphic for Heretic
 		const int y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
-		screen->DrawPatchCleanNoMove (pause, (I_GetSurfaceWidth()-(pause->width())*CleanXfac)/2, y);
+		const int x = (I_GetSurfaceWidth() - pause->width() * CleanXfac) / 2;
+		screen->DrawPatchCleanNoMove(pause, 0, y);
 	}
 
 	// [RH] Draw icon, if any
@@ -367,6 +367,10 @@ void D_DoomLoop()
 			// [AM] In case an error is caused by a console command.
 			C_ClearCommand();
 
+			// Release any pending render locks before error recovery paths call
+			// into palette/video routines.
+			I_AbortUpdate();
+
 			CL_QuitNetGame(NQ_SILENT);
 
 			G_ClearSnapshots();
@@ -402,6 +406,9 @@ void D_PageDrawer()
 	if (page_surface)
 	{
 		int destw, desth;
+		const int display_page_height = (page_surface->getHeight() == 200)
+			? page_surface->getHeight() + (page_surface->getHeight() / 5)
+			: page_surface->getHeight();
 
 		if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight())) // Always fill/stretch pages on protected resolutions
 		{
@@ -416,18 +423,18 @@ void D_PageDrawer()
 			destw = surface_width, desth = surface_width * 3 / 4;
 		}
 
-		// Using widescreen assets? It may go off screen.
-		// Preserve the aspect ratio and make the box big
-		// Maybe too big? (it will be cropped if so)
-		if (page_width > 320)
-		{
-			destw = I_GetAspectCorrectWidth(desth, page_height, page_width);
-		}
+		destw = I_GetAspectCorrectWidth(desth, display_page_height, page_width);
 
 		page_surface->lock();
 
 		primary_surface->blitcrop(page_surface, 0, 0, page_surface->getWidth(), page_surface->getHeight(),
 				(surface_width - destw) / 2, (surface_height - desth) / 2, destw, desth);
+
+		// [ML] If this is the advisory screen in Heretic, draw the "advisor" patch on top of it.
+		if (gamemode == registered_heretic && demosequence == 1)
+		{
+			screen->DrawPatchIndirect(W_CachePatch("ADVISOR"),4,160);
+		}
 
 		page_surface->unlock();
 	}
@@ -460,101 +467,157 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Old demo sequence used in original games, zdoom's
     // dynamic one was too dynamic for its own good
     // [Nes] - Newer demo sequence with better flow.
-    if (W_CheckNumForName("DEMO4") >= 0 && gamemode != retail_chex)
-        demosequence = (demosequence+1)%8;
-    else
-        demosequence = (demosequence+1)%6;
+	// [ML] - And now with heretic
+	const bool hasdemo4 = W_CheckNumForName("DEMO4") >= 0 && gamemode != retail_chex;
+	const bool is_heretic = gameinfo.enginetype == ENGINE_HERETIC;
 
-    switch (demosequence)
-    {
-        case 0:
-            pagetic = gameinfo.titleTime * TICRATE;
+	if (is_heretic)
+	{
+		demosequence = (demosequence + 1) % 7;
+	}
+	else if (hasdemo4)
+	{
+		demosequence = (demosequence + 1) % 8;
+	}
+	else
+	{
+		demosequence = (demosequence + 1) % 6;
+	}
 
-            gamestate = GS_DEMOSCREEN;
-            pagename = gameinfo.titlePage;
+	switch (demosequence)
+	{
+		case 0:
+			pagetic = gameinfo.titleTime * TICRATE;
+			gamestate = GS_DEMOSCREEN;
+			pagename = gameinfo.titlePage;
 
-            currentmusic = gameinfo.titleMusic.c_str();
+			currentmusic = gameinfo.titleMusic.c_str();
+			S_StartMusic(currentmusic);
+			break;
+		case 1:
+			if (gameinfo.advisoryTime > 0)
+			{
+				pagetic = gameinfo.advisoryTime * TICRATE;
+				gamestate = GS_DEMOSCREEN;
+				pagename = gameinfo.titlePage;
+			}
+			else
+			{
+				G_DeferedPlayDemo("DEMO1");
+			}
+			break;
+		case 2:
+			if (is_heretic)
+			{
+				G_DeferedPlayDemo("DEMO1");
+			}
+			else
+			{
+				pagetic = gameinfo.pageTime * TICRATE;
+				gamestate = GS_DEMOSCREEN;
+				pagename = gameinfo.creditPages[0];
+			}
+			break;
+		case 3:
+			if (is_heretic)
+			{
+				pagetic = gameinfo.pageTime * TICRATE;
+				gamestate = GS_DEMOSCREEN;
+				pagename = gameinfo.creditPages[0];
+			}
+			else
+			{
+				G_DeferedPlayDemo("DEMO2");
+			}
+			break;
+		case 4:
+			if (is_heretic)
+			{
+				G_DeferedPlayDemo("DEMO2");
+			}
+			else
+			{
+				gamestate = GS_DEMOSCREEN;
 
-            S_StartMusic(currentmusic.c_str());
+				if ((gameinfo.flags & GI_MAPxx) || (gameinfo.flags & GI_MENUHACK_RETAIL))
+				{
+					pagetic = gameinfo.titleTime * TICRATE;
+					pagename = gameinfo.titlePage;
+					currentmusic = gameinfo.titleMusic.c_str();
 
-            break;
-        case 1:
-            G_DeferedPlayDemo("DEMO1");
-
-            break;
-        case 2:
-            pagetic = gameinfo.pageTime * TICRATE;
-            gamestate = GS_DEMOSCREEN;
-            pagename = gameinfo.creditPages[0];
-
-            break;
-        case 3:
-            G_DeferedPlayDemo("DEMO2");
-
-            break;
-        case 4:
-            gamestate = GS_DEMOSCREEN;
-
-            if ((gameinfo.flags & GI_MAPxx) || (gameinfo.flags & GI_MENUHACK_RETAIL))
-            {
-                pagetic = gameinfo.titleTime * TICRATE;
-
-                pagename = gameinfo.titlePage;
-                currentmusic = gameinfo.titleMusic.c_str();
-
-                S_StartMusic(currentmusic.c_str());
-            }
-            else
-            {
-                pagetic = gameinfo.pageTime * TICRATE;
-                pagename = gameinfo.creditPages[1];
-            }
-
-            break;
-        case 5:
-            G_DeferedPlayDemo("DEMO3");
-
-            break;
-        case 6:
-            pagetic = gameinfo.pageTime * TICRATE;
-            gamestate = GS_DEMOSCREEN;
-            pagename = gameinfo.creditPages[1];
-
-            break;
-        case 7:
-            G_DeferedPlayDemo("DEMO4");
-
-            break;
-    }
+					S_StartMusic(currentmusic);
+				}
+				else
+				{
+					pagetic = gameinfo.pageTime * TICRATE;
+					pagename = gameinfo.creditPages[1];
+				}
+			}
+			break;
+		case 5:
+			if (is_heretic)
+			{
+				pagetic = gameinfo.pageTime * TICRATE;
+				gamestate = GS_DEMOSCREEN;
+				pagename = gameinfo.creditPages[0];
+			}
+			else
+			{
+				G_DeferedPlayDemo("DEMO3");
+			}
+			break;
+		case 6:
+			if (is_heretic)
+			{
+				G_DeferedPlayDemo("DEMO3");
+			}
+			else
+			{
+				pagetic = gameinfo.pageTime * TICRATE;
+				gamestate = GS_DEMOSCREEN;
+				pagename = gameinfo.creditPages[1];
+			}
+			break;
+		case 7:
+			G_DeferedPlayDemo("DEMO4");
+			break;
+	}
 
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (!pagename.empty())
 	{
-		const patch_t* patch = W_CachePatch(pagename);
-
-		page_width = patch->width();
-		page_height = patch->height() + (patch->height() / 5);
-
-		I_FreeSurface(page_surface);
-
-		if (gameinfo.flags & GI_PAGESARERAW)
+		const bool is_raw_patch = (gameinfo.flags & GI_PAGESARERAW) != 0;
+		const patch_t* patch = !is_raw_patch ? W_CachePatch(pagename) : NULL;
+		
+		if (is_raw_patch)
 		{
-			page_surface = I_AllocateSurface(page_width, page_height, 8);
-			DCanvas* canvas = page_surface->getDefaultCanvas();
-
-			page_surface->lock();
-			canvas->DrawBlock(0, 0, page_width, page_height, reinterpret_cast<const byte*>(patch));
-			page_surface->unlock();
+			const int lumpnum = W_GetNumForName(pagename);
+			const unsigned lump_length = W_LumpLength(lumpnum);
+			page_height = 200;
+			page_width = (lump_length % page_height == 0) ? lump_length / page_height : 320;
 		}
 		else
 		{
-			page_surface = I_AllocateSurface(patch->width(), patch->height(), 8);
-			DCanvas* canvas = page_surface->getDefaultCanvas();
-
-			page_surface->lock();
-			canvas->DrawPatch(patch, 0, 0);
-			page_surface->unlock();
+			page_width = patch->width();
+			page_height = patch->height();
 		}
+
+		I_FreeSurface(page_surface);
+		page_surface = I_AllocateSurface(page_width, page_height, 8);
+		DCanvas* canvas = page_surface->getDefaultCanvas();
+		page_surface->lock();
+
+		if (is_raw_patch)
+		{
+			const byte* raw_page = W_CacheLumpName<byte>(pagename, PU_CACHE);
+			canvas->DrawBlock(0, 0, page_width, page_height, raw_page);
+		}
+		else
+		{
+			canvas->DrawPatch(patch, 0, 0);
+		}
+
+		page_surface->unlock();
 	}
 }
 
@@ -673,6 +736,22 @@ void G_ReadCOMPLVL()
 }
 
 //
+// D_ConfigureStatusBar
+//
+// Sets up the status bar based on the engine for game being played. 
+// This is called during D_Init.  TODO: SBARDEF
+//
+static void D_ConfigureStatusBar()
+{
+	const stbarfns_t* statusBar = &DoomStatusBar;
+
+	if (gameinfo.enginetype == ENGINE_HERETIC)
+		statusBar = &HticStatusBar;
+
+	ST_SetStatusBar(statusBar);
+}
+
+//
 // D_Init
 //
 // Called to initialize subsystems when loading a new set of WAD resource
@@ -704,18 +783,20 @@ void D_Init()
 
 //	V_LoadFonts();
 
-	C_InitConsoleBackground();
-
-	C_InitConCharsFont();
-
-	HU_Init();
-
 	G_ParseMapInfo();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
 	G_ParseSpreeDef();
 	G_ParseHordeDefs();
 	G_ReadCOMPLVL();
+
+	C_InitConsoleBackground();
+
+	C_InitConCharsFont();
+
+	HU_Init();
+
+	D_ConfigureStatusBar();
 
 	// init the menu subsystem
 	if (first_time)

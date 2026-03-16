@@ -27,6 +27,7 @@
 
 // Forward declaration
 struct event_t;
+class IWindowSurface;
 
 #include "com_misc.h"
 #include "w_wad.h"
@@ -43,15 +44,38 @@ short ST_StatusBarWidth(int surface_width, int surface_height);
 int ST_StatusBarHeight(int surface_width, int surface_height);
 int ST_StatusBarX(int surface_width, int surface_height);
 int ST_StatusBarY(int surface_width, int surface_height);
+short ST_BaseWidth();
+short ST_BaseHeight();
 
 void ST_ForceRefresh();
 
 // for st_lib.cpp
 extern lumpHandle_t negminus;
+extern lumpHandle_t tallnum[10];
+extern lumpHandle_t faces[];
+extern int st_faceindex;
+extern lumpHandle_t keys[NUMCARDS + NUMCARDS / 2];
 
 //
 // STATUS BAR
 //
+
+// From Eternity Engine / Quasar: gameinfo-style status bar function table.
+struct stbarfns_t
+{
+	int height;
+	short (*BaseWidth)();
+	bool (*Responder)(const event_t& ev);
+	void (*Ticker)();
+	void (*Drawer)();
+	void (*Start)();
+	void (*Init)();
+	void (*Shutdown)();
+};
+
+extern stbarfns_t DoomStatusBar;
+extern stbarfns_t HticStatusBar;
+void ST_SetStatusBar(const stbarfns_t* statusBar);
 
 // Called by main loop.
 bool ST_Responder(const event_t& ev);
@@ -70,7 +94,27 @@ void ST_Init();
 
 void STACK_ARGS ST_Shutdown();
 
+// Engine-specific statusbar implementations.
+bool ST_DoomResponder(const event_t& ev);
+bool ST_HticResponder(const event_t& ev);
+short ST_DoomBaseWidth();
+short ST_HticBaseWidth();
+void ST_DoomTicker();
+void ST_DoomDrawer();
+void ST_DoomStart();
+void ST_DoomInit();
+void ST_DoomShutdown();
+
+void ST_HticInit();
+void ST_HticStart();
+void ST_HticTicker();
+void ST_HticDrawer();
+void ST_HticDrawTopCaps(IWindowSurface* surface);
+void ST_HticShutdown();
+
 namespace hud {
+
+void HereticHUD();
 
 void drawNetdemo();
 

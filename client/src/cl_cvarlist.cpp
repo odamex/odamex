@@ -66,6 +66,9 @@ CVAR(					am_showlocked, "0", "Show locked doors on the automap even when custom
 CVAR(					am_ovshare, "0", "Overlay automap uses the same custom colors as the non-overlayed automap.",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(					am_backdrop, "1", "Use AUTOPAGE backdrop in full automap view (not overlay).",
+						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(					am_backcolor, "00 00 3a", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
@@ -803,8 +806,8 @@ CVAR_FUNC_DECL(	r_forceteamcolor, "0", "Changes the color of all teammates to th
 CVAR_FUNC_DECL(	r_teamcolor, "40 cf 00", "",
 				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_RANGE(		r_wipetype, "1", "",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
+CVAR_RANGE(		r_wipetype, "4", "",
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
 
 CVAR_RANGE(		r_showendoom, "0", "Display the ENDDOOM text after quitting",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)   // [ML] 1/5/10: Add endoom support

@@ -34,6 +34,7 @@
 #include "infomap.h"
 #include "p_mapformat.h"
 #include "g_umapinfo.h"
+#include "cmdlib.h"
 
 /// Globals
 bool HexenHack;
@@ -170,6 +171,7 @@ bool ContainsMapInfoTopLevel(const OScanner& os)
 	       os.compareTokenNoCase("cluster") || os.compareTokenNoCase("clusterdef") ||
 	       os.compareTokenNoCase("episode") || os.compareTokenNoCase("clearepisodes") ||
 	       os.compareTokenNoCase("skill") || os.compareTokenNoCase("clearskills") ||
+	       os.compareTokenNoCase("fontdef") ||
 	       os.compareTokenNoCase("gameinfo") || os.compareTokenNoCase("intermission") ||
 	       os.compareTokenNoCase("automap");
 }
@@ -331,7 +333,24 @@ void MIType_String(OScanner& os, bool newStyleMapInfo, void* data, unsigned int 
 {
 	ParseMapInfoHelper<std::string>(os, newStyleMapInfo);
 
-	*static_cast<std::string*>(data) = os.getToken();
+	const std::string token = os.getToken();
+	if (!token.empty() && token[0] == '$')
+	{
+		const OString& s = GStrings(StdStringToUpper(token.c_str() + 1));
+		if (s.empty())
+		{
+			// Keep legacy behavior for unresolved lookups in generic string fields.
+			*static_cast<std::string*>(data) = token;
+		}
+		else
+		{
+			*static_cast<std::string*>(data) = s;
+		}
+	}
+	else
+	{
+		*static_cast<std::string*>(data) = token;
+	}
 }
 
 // Sets the inputted data as a color
@@ -1241,7 +1260,8 @@ struct MapInfoDataSetter<cluster_info_t>
 			{ "music", &MIType_MusicLumpName, &ref.messagemusic },
 			{ "flat", &MIType_$LumpName, &ref.finaleflat },
 			{ "hub", &MIType_SetFlag, &ref.flags, CLUSTER_HUB },
-			{ "pic", &MIType_$LumpName, &ref.finalepic }
+			{ "pic", &MIType_$LumpName, &ref.finalepic },
+			{ "finalepalette", &MIType_LumpName, &ref.finalepalette }
 	    };
 	}
 };
@@ -1281,7 +1301,32 @@ struct MapInfoDataSetter<gameinfo_t>
 			{ "textscreeny", &MIType_Int, &gameinfo.textScreenY },
 			{ "maparrow", &MIType_MapArrows },
 			{ "cheatkey", &MIType_MapKey, &gameinfo.cheatKey },
-			{ "easykey", &MIType_MapKey, &gameinfo.easyKey }
+			{ "easykey", &MIType_MapKey, &gameinfo.easyKey },
+
+			// [ML] These aren't part of any UMAPINFO "standard"  
+			{ "maxswitch", &MIType_Int, &gameinfo.maxSwitch },
+			{ "smallfont", &MIType_String, &gameinfo.smallFont },
+			{ "bigfont", &MIType_String, &gameinfo.bigFont },
+			{ "menuindicatorlumps", &MIType_Pages, gameinfo.menuIndicatorLumps.data() },
+			{ "menuindicatoroffsetx", &MIType_Int, &gameinfo.menuIndicatorOffsetX },
+			{ "menuindicatoroffsety", &MIType_Int, &gameinfo.menuIndicatorOffsetY },
+			{ "menucursoroffsety", &MIType_Int, &gameinfo.menuCursorOffsetY },
+			{ "defaultwipetype", &MIType_Int, &gameinfo.defaultWipeType }
+		};
+	}
+};
+
+template <>
+struct MapInfoDataSetter<fontdef_t>
+{
+	MapInfoDataContainer mapInfoDataContainer;
+
+	MapInfoDataSetter(fontdef_t& ref)
+	{
+		mapInfoDataContainer = {
+			{ "pattern", &MIType_String, &ref.pattern },
+			{ "lumpstart", &MIType_Int, &ref.lumpStart },
+			{ "lineheight", &MIType_Int, &ref.lineHeight }
 		};
 	}
 };
@@ -1426,13 +1471,29 @@ void ParseEpisodeInfo(OScanner& os)
 			ParseMapInfoHelper<std::string>(os, new_mapinfo);
 
 			if (picisgfx == false)
-				name = os.getToken();
+			{
+				const std::string token = os.getToken();
+				if (!token.empty() && token[0] == '$')
+				{
+					const OString& s = GStrings(StdStringToUpper(token.c_str() + 1));
+					if (s.empty())
+						os.error("Unknown lookup string \"{}\".", token);
+					name = s;
+				}
+				else
+				{
+					name = token;
+				}
+			}
 		}
 		else if (os.compareTokenNoCase("lookup"))
 		{
 			ParseMapInfoHelper<std::string>(os, new_mapinfo);
 
-			// Not implemented
+			const OString& s = GStrings(StdStringToUpper(os.getToken()));
+			if (s.empty())
+				os.error("Unknown lookup string \"{}\".", os.getToken());
+			name = s;
 		}
 		else if (os.compareTokenNoCase("picname"))
 		{
@@ -1816,6 +1877,15 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 			MapInfoDataSetter<gameinfo_t> setter;
 			ParseMapInfoLower<gameinfo_t>(os, setter);
 		}
+		else if (os.compareTokenNoCase("fontdef"))
+		{
+			os.mustScan();
+			const std::string name = StdStringToUpper(os.getToken());
+			fontdef_t& info = fontdefs[name];
+
+			MapInfoDataSetter<fontdef_t> setter(info);
+			ParseMapInfoLower<fontdef_t>(os, setter);
+		}
 		else if (os.compareTokenNoCase("intermission"))
 		{
 			// Not implemented
@@ -1855,51 +1925,31 @@ void G_ParseMapInfo()
 
 	// Reset skill definitions
 	skillnum = 0;
+	defaultskillmenu = 0;
+	G_ResetFontDefs();
 
-	//if (gamemission != heretic)
-	{
+	// Parse common defaults first for Doom-family game missions.
+	// Heretic has its own complete skill/gameinfo setup in _HERENFO.
+	if (gameinfo.enginetype == ENGINE_DOOM)
 		ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
+
+	const char* sharewareMapinfoLump = NULL;
+
+	baseinfoname = gameinfo.baseMapinfoLump.c_str();
+	if (!baseinfoname || !baseinfoname[0])
+	{
+		I_Error("{}: missing gameinfo.baseMapinfoLump for gamemission={} gamemode={}", __FUNCTION__,
+		        static_cast<int>(gamemission), static_cast<int>(gamemode));
 	}
 
-	switch (gamemission)
+	if (!gameinfo.sharewareMapinfoLump.empty())
+		sharewareMapinfoLump = gameinfo.sharewareMapinfoLump.c_str();
+
+	if (sharewareMapinfoLump)
 	{
-	case doom:
-	case chex3v:
-	case retail_freedoom:
-		baseinfoname = "_D1NFO";
-		if (gamemode == shareware)
-		{
-			lump = W_GetNumForName(baseinfoname);
-			ParseMapInfoLump(lump, baseinfoname);
-			baseinfoname = "_D1SWNFO";
-		}
-		break;
-	case doom2:
-	case chex3d2:
-	case commercial_freedoom:
-	case commercial_hacx:
-		baseinfoname = "_D2NFO";
-		if (gamemode == commercial_bfg)
-		{
-			lump = W_GetNumForName(baseinfoname);
-			ParseMapInfoLump(lump, baseinfoname);
-			baseinfoname = "_BFGNFO";
-		}
-		break;
-	case pack_tnt:
-		baseinfoname = "_TNTNFO";
-		break;
-	case pack_plut:
-		baseinfoname = "_PLUTNFO";
-		break;
-	case chex:
-	case chex3:
-		baseinfoname = "_CHEXNFO";
-		break;
-	case none:
-	default:
-		I_Error("{}: This IWAD is unknown to Odamex", __FUNCTION__);
-		break;
+		lump = W_GetNumForName(baseinfoname);
+		ParseMapInfoLump(lump, baseinfoname);
+		baseinfoname = sharewareMapinfoLump;
 	}
 
 	lump = W_GetNumForName(baseinfoname);

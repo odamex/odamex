@@ -24,6 +24,11 @@
 
 #pragma once
 
+#include <array>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 #include "am_map.h"
 #include "olumpname.h"
 #include "s_sound.h"
@@ -52,9 +57,46 @@ typedef struct
 	OLumpName br;
 } gameborder_t;
 
+typedef enum
+{
+	ENGINE_DOOM,
+	ENGINE_HERETIC,
+} enginetype_t;
+
+struct fontdef_t
+{
+	std::string pattern;
+	int lumpStart;
+	int lineHeight;
+
+	fontdef_t()
+		: pattern("")
+		, lumpStart(1)
+		, lineHeight(0)
+	{
+	}
+
+	fontdef_t(const char* fontPattern, int fontLumpStart, int fontLineHeight)
+		: pattern(fontPattern)
+		, lumpStart(fontLumpStart)
+		, lineHeight(fontLineHeight)
+	{
+	}
+};
+
+inline std::unordered_map<std::string, fontdef_t> fontdefs;
+
+inline void G_ResetFontDefs()
+{
+	fontdefs.clear();
+	fontdefs.emplace("BIGFONT", fontdef_t("FONTB%02d", 1, 16));
+	fontdefs.emplace("SMALLFONT", fontdef_t("STCFN%03d", 33, 8));
+}
+
 typedef struct gameinfo_s
 {
 	int flags;
+	enginetype_t enginetype;
 	OLumpName titlePage;
 	OLumpName creditPages[2];
 	OLumpName titleMusic;
@@ -91,9 +133,19 @@ typedef struct gameinfo_s
 	std::vector<mline_t> easyKey;
 
 	std::string titleString;
+	OLumpName baseMapinfoLump;
+	OLumpName sharewareMapinfoLump;
+	std::string bigFont;
+	std::string smallFont;
+	std::array<OLumpName, 2> menuIndicatorLumps;
+	int menuIndicatorOffsetX;
+	int menuIndicatorOffsetY;
+	int menuCursorOffsetY;
+	int defaultWipeType;
 
 	gameinfo_s()
 		: flags(0)
+		, enginetype(ENGINE_DOOM)
 		, titlePage("")
 		, creditPages()
 		, titleMusic("")
@@ -120,7 +172,17 @@ typedef struct gameinfo_s
 		, textScreenX(0)
 		, textScreenY(0)
 		, titleString("Unknown IWAD")
-	{}
+		, baseMapinfoLump("")
+		, sharewareMapinfoLump("")
+		, bigFont("BIGFONT")
+		, smallFont("SMALLFONT")
+		, menuIndicatorLumps{ "M_SKULL1", "M_SKULL2" }
+		, menuIndicatorOffsetX(-32)
+		, menuIndicatorOffsetY(-5)
+		, menuCursorOffsetY(0)
+		, defaultWipeType(1)
+	{
+	}
 
 } gameinfo_t;
 

@@ -1,3 +1,11 @@
+
+fontdef SMALLFONT
+{
+	pattern = "STCFN%03d"
+	lumpstart = 33
+	lineheight = 8
+}
+
 gameinfo
 {
 	advisorytime = 0
@@ -19,10 +27,16 @@ gameinfo
 	endoom = "ENDOOM"
 	pausesign = "M_PAUSE"
 	textscreenx = 10
-	textscreeny = 10
+	textscreeny = 11
 	maparrow = "DOOMARRO", "DDTARROW"
 	cheatkey = "CHEATKEY"
 	easykey = "EASYKEY"
+	maxswitch = 2
+	bigfont = BIGFONT
+	smallfont = SMALLFONT
+	menuindicatoroffsetx = -32
+	menuindicatoroffsety = -5
+	defaultwipetype = 1
 }
 
 skill baby
