@@ -318,15 +318,9 @@ void D_Display()
 	{
 		const patch_t* pause = W_CachePatch(gameinfo.pauseSign);
 
-		if (gameinfo.enginetype == ENGINE_HERETIC)
-		{
-			screen->DrawPatchClean(pause, 160 - pause->width() / 2, 100 - pause->height() / 2);
-		}
-		else
-		{
-			const int y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
-			screen->DrawPatchCleanNoMove(pause, (I_GetSurfaceWidth() - (pause->width()) * CleanXfac) / 2, y);
-		}
+		const int y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
+		const int x = (I_GetSurfaceWidth() - pause->width() * CleanXfac) / 2;
+		screen->DrawPatchCleanNoMove(pause, 0, y);
 	}
 
 	// [RH] Draw icon, if any
