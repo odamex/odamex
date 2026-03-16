@@ -272,7 +272,7 @@ bool ST_DoomResponder(const event_t& ev)
 	{
 		for (auto& cheat : DoomCheats)
 		{
-			if (cheat::AddKey(&cheat, (byte)ev.data1, &eat))
+			if (cheat::AddKey(&cheat, static_cast<byte>(ev.data1), &eat))
 			{
 				if (cheat.DontCheck || cheat::AreCheatsEnabled())
 				{
@@ -402,7 +402,8 @@ BEGIN_COMMAND(give)
 	if (argc < 2)
 		return;
 
-	const std::string name = C_ArgCombine(argc - 1, (const char**)(argv + 1));
+	const std::string name =
+		C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
 	if (name.length())
 	{
 		cheat::GiveTo(consoleplayer(), name.c_str());
@@ -420,7 +421,7 @@ BEGIN_COMMAND(fov)
 		PrintFmt(PRINT_HIGH, "FOV is {:g}\n", m_Instigator->player->fov);
 	else
 	{
-		m_Instigator->player->fov = clamp((float)atof(argv[1]), 45.0f, 135.0f);
+		m_Instigator->player->fov = clamp(static_cast<float>(atof(argv[1])), 45.0f, 135.0f);
 		R_ForceViewWindowResize();
 	}
 }
