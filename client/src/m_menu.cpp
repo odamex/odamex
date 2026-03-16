@@ -44,6 +44,7 @@
 #include "m_random.h"
 #include "s_sound.h"
 #include "m_menu.h"
+#include "v_palette.h"
 #include "v_text.h"
 #include "st_stuff.h"
 #include "p_ctf.h"
@@ -1584,23 +1585,15 @@ static forceinline void R_RenderFire(int x, int y)
 
 static void M_PlayerSetupDrawer()
 {
-	const int x1 = (I_GetSurfaceWidth() / 2) - (160 * CleanXfac);
-	const int y1 = (I_GetSurfaceHeight() / 2) - (100 * CleanYfac);
-
-	const int x2 = (I_GetSurfaceWidth() / 2) + (160 * CleanXfac);
-	const int y2 = (I_GetSurfaceHeight() / 2) + (100 * CleanYfac);
-
+	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
 	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
-
-	// Background effect
-	OdamexEffect(x1,y1,x2,y2);
 
 	// Draw title
 	{
 		if (W_CheckNumForName("M_PSTTL") >= 0)
 		{
 			const patch_t* patch = W_CachePatch("M_PSTTL");
-			screen->DrawPatchClean(patch, 160 - patch->width() / 2, 10);
+			screen->DrawPatchCleanWithPalette(patch, 160 - patch->width() / 2, 10, palette);
 		}
 		else
 		{
@@ -1751,8 +1744,8 @@ static void M_PlayerSetupDrawer()
 		V_ColorMap = translationref_t(translationtables, menuplayer_id);
 
 		// Draw box surrounding fire and player:
-		screen->DrawPatchClean(W_CachePatch("M_PBOX"), 320 - 88 - 32 + 36,
-			PSetupDef.y + M_BigFontLineHeight() * 3 + 22);
+		screen->DrawPatchCleanWithPalette(W_CachePatch("M_PBOX"), 320 - 88 - 32 + 36,
+			PSetupDef.y + M_BigFontLineHeight() * 3 + 22, palette);
 
 		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),
 			320 - 52 - 32, PSetupDef.y + M_BigFontLineHeight()*3 + 46);
@@ -1796,7 +1789,7 @@ static void M_PlayerSetupDrawer()
 		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + M_BigFontLineHeight()*4, colorpresets[colorpreset]);
 	}
 
-	int PSetupSize = sizeof(PlayerSetupMenu) / sizeof(PlayerSetupMenu[0]);
+	int PSetupSize = static_cast<int>(ARRAY_LENGTH(PlayerSetupMenu));
 	if (colorpreset == COLOR_CUSTOM && PSetupDef.numitems < PSetupSize)
 		PSetupDef.numitems = PSetupDef.numitems + 3;
 	else if (colorpreset != COLOR_CUSTOM && PSetupDef.numitems > PSetupSize - 3)
@@ -1844,7 +1837,7 @@ void M_ChangeTeam (int choice) // [Toke - Teams]
 
 static void M_ChangeGender (int choice)
 {
-	static constexpr int MAX_GENDER = ARRAY_LENGTH(genders) - 1;
+	static constexpr int MAX_GENDER = static_cast<int>(ARRAY_LENGTH(genders)) - 1;
 	int gender = D_GenderByName(cl_gender.cstring());
 
 	if (!choice)
@@ -1885,7 +1878,7 @@ static void M_ChangeAutoAim (int choice)
 
 static void M_ChangeColorPreset (int choice)
 {
-	static constexpr int MAX_PRESET = ARRAY_LENGTH(colorpresets) - 1;
+	static constexpr int MAX_PRESET = static_cast<int>(ARRAY_LENGTH(colorpresets)) - 1;
 	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
 	argb_t customcolor = V_GetColorFromString(cl_customcolor);
 
@@ -2352,6 +2345,20 @@ void M_StartControlPanel()
 
 
 //
+// [Toke] M_DimBackground
+// Draws the 50% reduction in brightness effect
+//
+void M_DimBackground ()
+{
+	int destx,desty;
+
+    destx = I_GetSurfaceWidth();
+	desty = I_GetSurfaceHeight();
+
+	screen->Dim(0, 0, destx, desty);
+}
+
+//
 // M_Drawer
 // Called after the view has been rendered,
 // but before it has been blitted.
@@ -2379,6 +2386,9 @@ void M_Drawer()
 	}
 	else if (menuactive)
 	{
+		// Background effect
+		M_DimBackground();
+
 		if (OptionsActive)
 		{
 			M_OptDrawer();

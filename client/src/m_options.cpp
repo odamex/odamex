@@ -334,7 +334,7 @@ static menuitem_t OptionItems[] =
 menu_t OptionMenu = {
 	"M_OPTTTL",
 	0,
-	ARRAY_LENGTH(OptionItems),
+	static_cast<int>(ARRAY_LENGTH(OptionItems)),
 	177,
 	OptionItems,
 	0,
@@ -452,7 +452,7 @@ static menuitem_t ControlsItems[] = {
 menu_t ControlsMenu = {
 	"M_CONTRO",
 	3,
-	ARRAY_LENGTH(ControlsItems),
+	static_cast<int>(ARRAY_LENGTH(ControlsItems)),
 	0,
 	ControlsItems,
 	2,
@@ -502,7 +502,7 @@ static menuitem_t MouseItems[] =
 menu_t MouseMenu = {
     "M_MOUSET",
     0,
-    ARRAY_LENGTH(MouseItems),
+    static_cast<int>(ARRAY_LENGTH(MouseItems)),
     177,
     MouseItems,
 	0,
@@ -535,7 +535,7 @@ static menuitem_t JoystickItems[] =
 menu_t JoystickMenu = {
     "M_JOYSTK",
     0,
-    ARRAY_LENGTH(JoystickItems),
+    static_cast<int>(ARRAY_LENGTH(JoystickItems)),
     177,
     JoystickItems,
 	0,
@@ -658,7 +658,7 @@ static menuitem_t SoundItems[] = {
 menu_t AdvMidiMenu = {
 	"M_SOUND",
 	3,
-	ARRAY_LENGTH(AdvMidiItems),
+	static_cast<int>(ARRAY_LENGTH(AdvMidiItems)),
 	177,
 	AdvMidiItems,
 	0,
@@ -669,7 +669,7 @@ menu_t AdvMidiMenu = {
 menu_t LibAdlMidiMenu = {
 	"M_SOUND",
 	3,
-	ARRAY_LENGTH(LibAdlMidiItems),
+	static_cast<int>(ARRAY_LENGTH(LibAdlMidiItems)),
 	177,
 	LibAdlMidiItems,
 	0,
@@ -680,7 +680,7 @@ menu_t LibAdlMidiMenu = {
 menu_t SoundMenu = {
 	"M_SOUND",
 	2,
-	ARRAY_LENGTH(SoundItems),
+	static_cast<int>(ARRAY_LENGTH(SoundItems)),
 	177,
 	SoundItems,
 	0,
@@ -730,7 +730,7 @@ static menuitem_t CompatItems[] ={
 menu_t CompatMenu = {
 	"M_COMPAT",
 	1,
-	ARRAY_LENGTH(CompatItems),
+	static_cast<int>(ARRAY_LENGTH(CompatItems)),
 	240,
 	CompatItems,
 	0,
@@ -768,7 +768,7 @@ static menuitem_t NetworkItems[] = {
 menu_t NetworkMenu = {
 	"M_NETWRK",
 	2,
-	ARRAY_LENGTH(NetworkItems),
+	static_cast<int>(ARRAY_LENGTH(NetworkItems)),
 	177,
 	NetworkItems,
 	1,
@@ -818,7 +818,7 @@ static menuitem_t WeaponItems[] = {
 menu_t WeaponMenu = {
 	"M_WEAPON",
 	1,
-	ARRAY_LENGTH(WeaponItems),
+	static_cast<int>(ARRAY_LENGTH(WeaponItems)),
 	177,
 	WeaponItems,
 	0,
@@ -967,7 +967,7 @@ static void M_UpdateDisplayOptions()
 menu_t VideoMenu = {
 	"M_VIDEO",
 	0,
-	ARRAY_LENGTH(VideoItems),
+	static_cast<int>(ARRAY_LENGTH(VideoItems)),
 	0,
 	VideoItems,
 	4,
@@ -1047,7 +1047,7 @@ static menuitem_t HUDItems[] = {
 menu_t HUDMenu = {
     "M_HUD",                // title
     1,                      // lastOn
-    ARRAY_LENGTH(HUDItems), // numitems
+    static_cast<int>(ARRAY_LENGTH(HUDItems)), // numitems
     0,                      // indent
     HUDItems,               // items
     0,                      // scrolltop
@@ -1137,7 +1137,7 @@ static menuitem_t MessagesItems[] = {
 menu_t MessagesMenu = {
 	"M_MESS",
 	0,
-	ARRAY_LENGTH(MessagesItems),
+	static_cast<int>(ARRAY_LENGTH(MessagesItems)),
 	0,
 	MessagesItems,
 	0,
@@ -1204,7 +1204,7 @@ static menuitem_t AutomapItems[] = {
 menu_t AutomapMenu = {
 	"M_AUTOMP",
 	0,
-	ARRAY_LENGTH(AutomapItems),
+	static_cast<int>(ARRAY_LENGTH(AutomapItems)),
 	0,
 	AutomapItems,
 	0,
@@ -1325,7 +1325,7 @@ static menuitem_t ModesItems[] = {
 menu_t ModesMenu = {
 	"M_VIDMOD",
 	0,
-	ARRAY_LENGTH(ModesItems),
+	static_cast<int>(ARRAY_LENGTH(ModesItems)),
 	130,
 	ModesItems,
 	0,
@@ -1700,22 +1700,12 @@ void M_OptDrawer (void)
 {
 	int color;
 	int y, width, i, x, ytop;
-	int x1,y1,x2,y2;
 	int theight = 0;
 	int ystart = 15;
-	const int lineHeight = V_GetFontLineHeight("SMALLFONT");
 	menuitem_t *item;
 	patch_t *title;
+	const int lineHeight = V_GetFontLineHeight("SMALLFONT");
 	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
-
-	x1 = (I_GetSurfaceWidth() / 2)-(160*CleanXfac);
-	y1 = (I_GetSurfaceHeight() / 2)-(120*CleanYfac);
-
-    x2 = (I_GetSurfaceWidth() / 2)+(160*CleanXfac);
-	y2 = (I_GetSurfaceHeight() / 2)+(120*CleanYfac);
-
-	// Background effect
-	OdamexEffect(x1,y1,x2,y2);
 
 	if (W_CheckNumForName(CurrentMenu->title) >= 0)
 	{

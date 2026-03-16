@@ -1850,19 +1850,6 @@ void HU_DrawScores(player_t *player)
 }
 
 //
-// [Toke] OdamexEffect
-// Draws the 50% reduction in brightness effect
-//
-void OdamexEffect (int xa, int ya, int xb, int yb)
-{
-	if (xa < 0 || ya < 0 || xb > I_GetSurfaceWidth() || yb > I_GetSurfaceHeight())
-		return;
-
-	screen->Dim(xa, ya, xb - xa, yb - ya);
-}
-
-
-//
 // Comparison functors for sorting vectors of players
 //
 struct compare_player_frags
