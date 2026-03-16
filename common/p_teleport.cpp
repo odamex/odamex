@@ -65,7 +65,7 @@ static AActor* SelectTeleDest(int tid, int tag)
 			if (searcher->tid != tid)
 				continue;
 
-			if (tag == 0 || (searcher->subsector && searcher->subsector->sector && searcher->subsector->sector->tag == tag))
+			if (tag == 0 || (searcher->subsector && searcher->subsector->sector->tag == tag))
 				count++;
 		}
 
@@ -109,7 +109,7 @@ static AActor* SelectTeleDest(int tid, int tag)
 					continue;
 				if (searcher->tid != tid)
 					continue;
-				if (tag == 0 || (searcher->subsector && searcher->subsector->sector && searcher->subsector->sector->tag == tag))
+				if (tag == 0 || (searcher->subsector && searcher->subsector->sector->tag == tag))
 					count--;
 			}
 		}

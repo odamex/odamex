@@ -230,7 +230,7 @@ void P_PlayerInZDoomSector(player_t& player)
 	if (player.mo->z != P_FloorHeight(player.mo) && !player.mo->waterlevel)
 		return;
 
-	sector_t& sectorRef = player.mo->subsector->sector;
+	sector_t& sectorRef = *player.mo->subsector->sector;
 
 	static constexpr int heretic_carry[5] = {2048 * 5, 2048 * 10, 2048 * 25, 2048 * 30,
 	                                         2048 * 35};

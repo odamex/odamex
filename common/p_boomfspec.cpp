@@ -1246,7 +1246,7 @@ void P_PlayerInCompatibleSector(player_t& player)
 		return;
 
 	// Being destroyed / unlinked from the map?
-	if (not (player.mo && player.mo->subsector && player.mo->subsector->sector))
+	if (not (player.mo && player.mo->subsector))
 		return;
 
 	// Falling, not all the way down yet?
@@ -1386,7 +1386,7 @@ bool P_ActorInCompatibleSector(AActor* actor)
 	if (not (actor && actor->subsector))
 		return false;
 
-	const bool sectorHasKillMonstersAction = actor->subsector->sector & KILL_MONSTERS_MASK;
+	const bool sectorHasKillMonstersAction = actor->subsector->sector->special & KILL_MONSTERS_MASK;
 
 	if (sectorHasKillMonstersAction && actor->z == actor->floorz &&
 	    !P_IsPlayerOrAvatar(*actor) && actor->flags & MF_SHOOTABLE && !(actor->flags & MF_FLOAT))

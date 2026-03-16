@@ -287,7 +287,6 @@ int P_GetFriction (const AActor *mo, int *frictionfactor)
 		friction = FRICTION_FLY;
 	}
 	else if (mo->subsector
-			&& mo->subsector->sector
 			&& ((!(mo->flags & MF_NOGRAVITY) && mo->waterlevel > 1)
 				|| (mo->waterlevel == 1 && (mo->z > mo->floorz + 6*FRACUNIT)))
 			)
@@ -3006,7 +3005,7 @@ void P_UseLines (player_t& player)
 
 	if (P_PathTraverse (x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse)) {
 		// [RH] Give sector a chance to eat the use
-		if (usething->subsector && usething->subsector->sector)
+		if (usething->subsector)
 		{
 			sector_t *sec = usething->subsector->sector;
 			int spac = SECSPAC_Use;
@@ -3673,7 +3672,7 @@ void P_CreateSecNodeList (AActor *thing, fixed_t x, fixed_t y)
 
 	// Add the sector of the (x,y) point to sector_list.
 
-	if (thing->subsector && thing->subsector->sector)
+	if (thing->subsector)
 	{
 		sector_list = P_AddSecnode (thing->subsector->sector,thing,sector_list);
 	}

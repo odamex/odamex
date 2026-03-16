@@ -2248,7 +2248,6 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		if (sv_gametype == GM_COOP || sv_allowexit)
 		{
 			if (   target->subsector
-			    && target->subsector->sector
 			    && (target->subsector->sector->special & 255) == special
 			    && damage >= target->health)
 			{

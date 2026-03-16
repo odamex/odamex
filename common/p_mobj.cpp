@@ -1105,7 +1105,6 @@ static void P_WindThrustActor(AActor* mo)
 {
 	if (   mo
 	    && mo->subsector
-	    && mo->subsector->sector
 	    && (mo->flags2 & MF2_WINDTHRUST))
 	{
 		static constexpr int windTab[3] = {2048*5, 2048*10, 2048*25};
@@ -1373,7 +1372,7 @@ static void P_ApplyXYFriction(AActor* mo)
 //
 void P_XYMovement(AActor *mo)
 {
-	if (not (mo && mo->subsector && mo->subsector->sector))
+	if (!mo || !mo->subsector)
 		return;
 
 	P_WindThrustActor(mo);
@@ -1845,7 +1844,7 @@ void P_ZMovement(AActor *mo)
 {
 	// This check also protects a bunch of static functions that are only used
 	// as part of Z-Movement.
-	if (not (mo && mo->subsector && mo->subsector->sector))
+	if (not (mo && mo->subsector))
 	{
 		return;
 	}

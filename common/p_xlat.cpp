@@ -626,9 +626,7 @@ void P_TranslateTeleportThings()
 			continue;
 
 		// wrong tag
-		if (   not mo->subsector
-		    || not mo->subsector->sector
-		    ||     mo->subsector->sector->tag != 0)
+		if ((not mo->subsector) || mo->subsector->sector->tag != 0)
 			continue;
 
 		mo->tid = 1;

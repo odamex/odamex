@@ -157,8 +157,8 @@ static void P_RecursiveSound (sector_t& sector, int soundblocks, AActor *soundta
 		// However, I'd much rather just explicitly state what I mean with exact index
 		// numbers and let the compiler micro-optimize it if it insists.
 
-		const size_t otherSidenumIndex = sides[ check->sidenum[0] ].sector == &sector ? 1 : 0;
-		sector_t&    otherRef          = sides[ check->sidenum[otherSidenumIndex] ].sector;
+		const size_t otherSidenumIndex =  sides[ check->sidenum[0] ].sector == &sector ? 1 : 0;
+		sector_t&    otherRef          = *sides[ check->sidenum[otherSidenumIndex] ].sector;
 
 		// [SL] 2012-02-08 - FIXME: Currently only checks for a line opening at
 		// midpoint of a sloped linedef.  P_RecursiveSound() in ZDoom 1.23 causes
@@ -473,7 +473,6 @@ bool P_SmartMove(AActor* actor)
 	            && target
 	            && target->health > 0
 	            && target->subsector
-	            && target->subsector->sector
 	            && target->subsector->sector->tag == actor->subsector->sector->tag
 	            && P_IsOnLift(actor);
 
@@ -540,7 +539,7 @@ bool P_TryWalk (AActor *actor)
 
 bool P_IsOnLift(const AActor* actor)
 {
-	if (not (actor && actor->subsector && actor->subsector->sector))
+	if (not (actor && actor->subsector))
 		return false;
 
 	const sector_t* sec = actor->subsector->sector;
@@ -1507,7 +1506,7 @@ void A_Look (AActor *actor)
 	AActor *targ;
 	AActor *newgoal;
 
-	if(not (actor && actor->subsector && actor->subsector->sector))
+	if(not (actor && actor->subsector))
 		return;
 
 	// [RH] Set goal now if appropriate
