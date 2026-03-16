@@ -41,6 +41,13 @@ void P_PlayerPing(player_t &player);
 void R_AddPingSprites();
 
 /**
+ * @brief Clear all active player pings.
+ *
+ * Used for graceful cleanup during disconnect and level transitions.
+ */
+void P_ClearAllPlayerPings();
+
+/**
  * @brief Resolve a ping's current world position.
  *
  * Follows target actors when configured and falls back to the stored static
@@ -52,3 +59,13 @@ bool P_ResolvePingPosition(const playerPing_s& ping, v3fixed_t& outPos);
  * @brief Returns true if the ping has expired.
  */
 bool P_IsPingExpired(const playerPing_s& ping);
+
+#ifdef CLIENT_APP
+/**
+ * @brief Return a readable ping translation for a player's color.
+ *
+ * Uses the player's exact translation for normal colors, and a hue-aware
+ * readable fallback for colors that are too close to black/white.
+ */
+translationref_t P_PingReadablePlayerTranslation(const player_t& pl);
+#endif

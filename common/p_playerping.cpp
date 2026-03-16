@@ -120,25 +120,6 @@ translationref_t P_PingTeamTranslation(team_t team)
 	return {};
 }
 
-#ifdef CLIENT_APP
-translationref_t P_PingReadablePlayerTranslation(const player_t& pl)
-{
-	const int r = pl.userinfo.color[1];
-	const int g = pl.userinfo.color[2];
-	const int b = pl.userinfo.color[3];
-	const int maxc = (std::max)((std::max)(r, g), b);
-	const int minc = (std::min)((std::min)(r, g), b);
-	const int luma = (r * 54 + g * 183 + b * 19) >> 8;
-	const bool tooDark = luma < 48 || maxc < 48;
-	const bool tooBright = luma > 224 || minc > 224;
-
-	if (tooDark || tooBright)
-		return translationref_t(Ranges + CR_GREY * 256);
-
-	return pl.mo ? pl.mo->translation : translationref_t{};
-}
-#endif
-
 void P_PingFollowTargetPos(const AActor* target, const AActor* view, v3fixed_t& pos)
 {
 	static constexpr fixed_t FollowPingHeadOffset = 4 * FRACUNIT;
@@ -184,6 +165,8 @@ struct pingTrace_t
 	fixed_t hitfrac = FRACUNIT;
 	v3fixed_t hit{};
 	bool blocked = false;
+	bool allow_autoaim = false;
+	fixed_t autoaim_dist = 0;
 } g_pingTrace;
 
 bool PTR_PingTraverse(intercept_t* in)
@@ -204,30 +187,35 @@ bool PTR_PingTraverse(intercept_t* in)
 		    thing->player == nullptr)
 			return true;
 
-		if (isPickup)
-		{
-			g_pingTrace.target = thing;
-			g_pingTrace.hitfrac = std::clamp(in->frac, 0, FRACUNIT);
-			g_pingTrace.hit.x = g_pingTrace.x1 + FixedMul(g_pingTrace.dx, g_pingTrace.hitfrac);
-			g_pingTrace.hit.y = g_pingTrace.y1 + FixedMul(g_pingTrace.dy, g_pingTrace.hitfrac);
-			g_pingTrace.hit.z = z;
-			return false;
-		}
-
 		const fixed_t dist = FixedMul(g_pingTrace.range, in->frac);
 		if (dist <= 0)
 			return true;
 
 		const fixed_t topSlope = FixedDiv(thing->z + thing->height - g_pingTrace.shootz, dist);
 		const fixed_t bottomSlope = FixedDiv(thing->z - g_pingTrace.shootz, dist);
+		fixed_t hitSlope = g_pingTrace.slope;
 		if (topSlope < g_pingTrace.slope || bottomSlope > g_pingTrace.slope)
-			return true;
+		{
+			if (!g_pingTrace.allow_autoaim || g_pingTrace.autoaim_dist <= 0)
+				return true;
+
+			// Clamp desired slope into actor's vertical span and only accept
+			// if within the player's configured autoaim range.
+			hitSlope = g_pingTrace.slope;
+			if (hitSlope > topSlope)
+				hitSlope = topSlope;
+			else if (hitSlope < bottomSlope)
+				hitSlope = bottomSlope;
+
+			if (std::abs(hitSlope - g_pingTrace.slope) > g_pingTrace.autoaim_dist)
+				return true;
+		}
 
 		g_pingTrace.target = thing;
 		g_pingTrace.hitfrac = std::clamp(in->frac, 0, FRACUNIT);
 		g_pingTrace.hit.x = g_pingTrace.x1 + FixedMul(g_pingTrace.dx, g_pingTrace.hitfrac);
 		g_pingTrace.hit.y = g_pingTrace.y1 + FixedMul(g_pingTrace.dy, g_pingTrace.hitfrac);
-		g_pingTrace.hit.z = z;
+		g_pingTrace.hit.z = g_pingTrace.shootz + FixedMul(hitSlope, dist);
 		return false;
 	}
 
@@ -266,7 +254,7 @@ bool PTR_PingTraverse(intercept_t* in)
 	return false;
 }
 
-void P_ClampPingToWorld(v3fixed_t& point, const fixed_t shootz, const fixed_t slope,
+bool P_ClampPingToWorld(v3fixed_t& point, const fixed_t shootz, const fixed_t slope,
                         const fixed_t range, const fixed_t x1, const fixed_t y1,
                         const fixed_t dx, const fixed_t dy, const fixed_t maxfrac)
 {
@@ -274,10 +262,6 @@ void P_ClampPingToWorld(v3fixed_t& point, const fixed_t shootz, const fixed_t sl
 	// floor/ceiling pings land where the shot would hit.
 	static constexpr int Steps = 32;
 	fixed_t prevFrac = 0;
-	fixed_t prevX = x1;
-	fixed_t prevY = y1;
-	fixed_t prevZ = shootz;
-	bool hadPrev = false;
 
 	for (int i = 1; i <= Steps; i++)
 	{
@@ -311,26 +295,18 @@ void P_ClampPingToWorld(v3fixed_t& point, const fixed_t shootz, const fixed_t sl
 			point.x = x1 + FixedMul(dx, hitFrac);
 			point.y = y1 + FixedMul(dy, hitFrac);
 			point.z = hitFloor ? P_FloorHeight(point.x, point.y) : P_CeilingHeight(point.x, point.y);
-			return;
+			return true;
 		}
 
 		prevFrac = frac;
-		prevX = x;
-		prevY = y;
-		prevZ = z;
-		hadPrev = true;
 	}
 
-	if (hadPrev)
-	{
-		point.x = prevX;
-		point.y = prevY;
-		point.z = prevZ;
-	}
+	return false;
 }
 
 v3fixed_t P_TracePingEndpoint(const AActor* source, fixed_t shootz, angle_t angle, fixed_t slope,
-                              fixed_t range, AActor*& outTarget)
+                              fixed_t range, AActor*& outTarget, bool& outHit,
+                              bool allowAutoAim)
 {
 	const int angleidx = angle >> ANGLETOFINESHIFT;
 	const fixed_t x1 = source->x;
@@ -347,21 +323,52 @@ v3fixed_t P_TracePingEndpoint(const AActor* source, fixed_t shootz, angle_t angl
 	g_pingTrace.shootz = shootz;
 	g_pingTrace.slope = slope;
 	g_pingTrace.range = range;
+	g_pingTrace.allow_autoaim = allowAutoAim;
+	g_pingTrace.autoaim_dist =
+	    source && source->player ? source->player->userinfo.aimdist : 0;
 	g_pingTrace.hit = {x2, y2, g_pingTrace.shootz + FixedMul(range, slope)};
 	g_pingTrace.hitfrac = FRACUNIT;
 
 	P_PathTraverse(x1, y1, x2, y2, PT_ADDLINES | PT_ADDTHINGS, PTR_PingTraverse);
+	outHit = g_pingTrace.target != nullptr || g_pingTrace.blocked;
 	if (!g_pingTrace.target)
 	{
-		P_ClampPingToWorld(g_pingTrace.hit, g_pingTrace.shootz, g_pingTrace.slope, g_pingTrace.range,
-		                   g_pingTrace.x1, g_pingTrace.y1, g_pingTrace.dx, g_pingTrace.dy,
-		                   g_pingTrace.hitfrac);
+		const bool worldHit = P_ClampPingToWorld(g_pingTrace.hit, g_pingTrace.shootz,
+		                                         g_pingTrace.slope, g_pingTrace.range,
+		                                         g_pingTrace.x1, g_pingTrace.y1, g_pingTrace.dx,
+		                                         g_pingTrace.dy, g_pingTrace.hitfrac);
+		outHit = outHit || worldHit;
 	}
 
 	outTarget = g_pingTrace.target;
 	return g_pingTrace.hit;
 }
+
+bool P_IsSpecificPingTarget(const AActor* target)
+{
+	if (!target)
+		return false;
+	if ((target->flags & MF_SPECIAL) != 0)
+		return true;
+	if (P_PingFlagTeamForActor(target) != TEAM_NONE)
+		return true;
+	if (G_IsHordeMode() && P_IsHordeBossForPing(target))
+		return true;
+	return !target->player && (target->flags & MF_SHOOTABLE) != 0;
+}
 } // namespace
+
+//------------------------------------------------------------------------------
+
+#ifdef CLIENT_APP
+translationref_t P_PingReadablePlayerTranslation(const player_t& pl)
+{
+	if (pl.id < MAXPLAYERS)
+		return translationref_t(translationtables + 256 * pl.id, pl.id);
+
+	return pl.mo ? pl.mo->translation : translationref_t{};
+}
+#endif
 
 //------------------------------------------------------------------------------
 
@@ -370,9 +377,13 @@ void P_PlayerPing(player_t &player)
 	if (!player.mo || player.spectator)
 		return;
 
-	static constexpr fixed_t PingRange = 16 * 64 * FRACUNIT;
-	static constexpr angle_t ItemAssistStep = 1 << 24;
-	static constexpr int ItemAssistSweeps = 6;
+	static constexpr fixed_t PingRange = 64 * 64 * FRACUNIT;
+	static constexpr angle_t SpecificAssistStep = ANG(1);
+	static constexpr int SpecificAssistSweeps = 5;
+
+	const int32_t signedPitch = static_cast<int32_t>(player.mo->pitch);
+	const bool nearLevelPitch = std::abs(signedPitch) <= static_cast<int32_t>(ANG(3));
+	const bool enableActorAutoAim = player.userinfo.aimdist > 0 && nearLevelPitch;
 
 	playerPing_s ping{};
 	ping.translation = player.mo->translation;
@@ -383,29 +394,40 @@ void P_PlayerPing(player_t &player)
 	    finetangent[FINEANGLES / 4 - (player.mo->pitch >> ANGLETOFINESHIFT)];
 	const fixed_t shootz = player.mo->z + player.viewheight;
 	AActor* pingTarget = nullptr;
-	ping.pos = P_TracePingEndpoint(player.mo, shootz, aimAngle, pitchSlope, PingRange, pingTarget);
+	bool pingHit = false;
+	ping.pos = P_TracePingEndpoint(player.mo, shootz, aimAngle, pitchSlope, PingRange, pingTarget,
+	                               pingHit, enableActorAutoAim);
 
-	// Item ping assist: sweep nearby angles and auto-select a pickup if visible.
-	if (!(pingTarget && (pingTarget->flags & MF_SPECIAL)))
+	// Specific-target assist (~10 degree cone): sweep nearby angles and select
+	// a specific ping target (item/monster/boss/flag).
+	//
+	// We don't get a direct cl_mouselook userinfo bit on the server, so use
+	// autoaim range + near-level pitch as a practical proxy for "autoaim mode".
+	const bool useSpecificAssist =
+	    enableActorAutoAim && !P_IsSpecificPingTarget(pingTarget);
+	if (useSpecificAssist)
 	{
-		for (int sweep = 1; sweep <= ItemAssistSweeps; sweep++)
+		for (int sweep = 1; sweep <= SpecificAssistSweeps; sweep++)
 		{
 			for (int dir = -1; dir <= 1; dir += 2)
 			{
-				angle_t testAngle = player.mo->angle + dir * sweep * ItemAssistStep;
+				angle_t testAngle = player.mo->angle + dir * sweep * SpecificAssistStep;
 				AActor* testTarget = nullptr;
+				bool testHit = false;
 				v3fixed_t testPos = P_TracePingEndpoint(player.mo, shootz, testAngle, pitchSlope,
-				                                        PingRange, testTarget);
-				if (testTarget && (testTarget->flags & MF_SPECIAL))
+				                                        PingRange, testTarget, testHit,
+				                                        enableActorAutoAim);
+				if (P_IsSpecificPingTarget(testTarget))
 				{
 					aimAngle = testAngle;
 					pingTarget = testTarget;
 					ping.pos = testPos;
+					pingHit = true;
 					break;
 				}
 			}
 
-			if (pingTarget && (pingTarget->flags & MF_SPECIAL))
+			if (P_IsSpecificPingTarget(pingTarget))
 				break;
 		}
 	}
@@ -470,6 +492,9 @@ void P_PlayerPing(player_t &player)
 	}
 	else
 	{
+		if (!pingHit)
+			return;
+
 		ping.target_netid = 0;
 		ping.follow_target = false;
 		ping.type = PING_GENERAL;
@@ -488,7 +513,11 @@ void P_PlayerPing(player_t &player)
 				const fixed_t dist =
 				    P_AproxDistance(ping.pos.x - prev.pos.x, ping.pos.y - prev.pos.y);
 				if (dist <= WarningRetapRadius)
+				{
 					ping.type = PING_WARNING;
+					// Keep warning anchored at the original world ping location.
+					ping.pos = prev.pos;
+				}
 			}
 		}
 
@@ -512,6 +541,14 @@ bool P_IsPingExpired(const playerPing_s& ping)
 		return true;
 
 	return (::gametic - ping.pingtic) > PingLifetimeTics;
+}
+
+void P_ClearAllPlayerPings()
+{
+	for (player_t& pl : players)
+	{
+		pl.player_ping.reset();
+	}
 }
 
 //------------------------------------------------------------------------------

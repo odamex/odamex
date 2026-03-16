@@ -175,8 +175,17 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 
 		if (endfrac >= maxfrac)
 		{
-			int cnt = (FixedDiv(endfrac - maxfrac - 1, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
-			dcol.yh -= cnt;
+			// Guard against sampling exactly at maxfrac (one texel past the post),
+			// which can show as a 1px bleed line on some scaled HUD/world sprites.
+			const int64_t over = static_cast<int64_t>(endfrac) - (static_cast<int64_t>(maxfrac) - 1);
+			if (over > 0)
+			{
+				int cnt =
+				    static_cast<int>((over + static_cast<int64_t>(dcol.iscale) - 1) / dcol.iscale);
+				if (cnt < 1)
+					cnt = 1;
+				dcol.yh -= cnt;
+			}
 		}
 
 		dcol.source = post->data();
@@ -875,7 +884,7 @@ void R_Add3DHUDSprite(int lump, v3fixed_t pos, translationref_t translation, flo
 	//vis->yscale = FRACUNIT;
 	vis->visflags = VSF_NOCLIP | VSF_FOREGROUND;
 	vis->translation = translation;
-	vis->translucency = FLOAT2FIXED(translucency) - 1;
+	vis->translucency = clamp(FLOAT2FIXED(translucency), 0, FRACUNIT);
 	vis->patch = lump;
 	vis->mo = nullptr;
 	vis->colormap = shaderef_t(&V_GetDefaultPalette()->maps, 0);

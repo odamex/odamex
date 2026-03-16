@@ -43,6 +43,7 @@
 #include "gi.h"
 #include "g_skill.h"
 #include "p_mapformat.h"
+#include "p_playerping.h"
 #include "p_unlag.h"
 
 #ifdef SERVER_APP
@@ -2530,6 +2531,11 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 //The player has left the game (in-game to spectator, or in-game disconnect)
 void P_PlayerLeavesGame(player_t* player)
 {
+	if (player)
+	{
+		player->player_ping.reset();
+	}
+
 	if (level.behavior)
 	{
 		level.behavior->StartTypedScripts(SCRIPT_Disconnect, player->mo, player->GetPlayerNumber());

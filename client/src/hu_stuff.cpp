@@ -466,6 +466,11 @@ static void HU_DrawPingIndicator()
 	const int surfaceH = I_GetSurfaceHeight();
 	const int hudBottom = R_StatusBarVisible() ? ST_StatusBarY(surfaceW, surfaceH) : surfaceH;
 	static constexpr float ArrowScale = 1.0f;
+	static constexpr int ZPulseNudgePx = 10;
+	static constexpr int ZPulseCount = 3;
+	static constexpr int ZPulsePeriodTics = 6;
+	static constexpr int ZPulsePauseTics = 22;
+	static constexpr int ZCenterLaneInsetPx = 10;
 	const int margin = 10 * CleanXfac;
 
 	const int iconW = fallbackIcon->width() * CleanXfac;
@@ -486,6 +491,8 @@ static void HU_DrawPingIndicator()
 	static constexpr double Tau = 6.28318530717958647692;
 	static constexpr double AngleScale = Tau / 4294967296.0;
 	static constexpr float ArrowLerp = 0.25f;
+	static constexpr int WorldPingScreenPx = 56;
+	static constexpr int WorldBossScreenPx = 84;
 	static std::array<float, MAXPLAYERS> smoothRadians{};
 	static std::array<bool, MAXPLAYERS> smoothValid{};
 
@@ -511,29 +518,12 @@ static void HU_DrawPingIndicator()
 		}
 	};
 
-	auto readablePlayerTranslation = [&](const player_t& player) -> translationref_t
-	{
-		const int r = player.userinfo.color[1];
-		const int g = player.userinfo.color[2];
-		const int b = player.userinfo.color[3];
-		const int maxc = (std::max)((std::max)(r, g), b);
-		const int minc = (std::min)((std::min)(r, g), b);
-		const int luma = (r * 54 + g * 183 + b * 19) >> 8;
-		const bool tooDark = luma < 48 || maxc < 48;
-		const bool tooBright = luma > 224 || minc > 224;
-
-		if (tooDark || tooBright)
-			return translationref_t(Ranges + CR_GREY * 256);
-
-		return player.mo ? player.mo->translation : translationref_t{};
-	};
-
 	auto playerPingTranslation = [&](const player_t& player, const playerPing_s& ping) -> translationref_t
 	{
 		if (ping.type == PING_GENERAL || ping.type == PING_WARNING || ping.type == PING_TEAMMATE)
-			return readablePlayerTranslation(player);
+			return P_PingReadablePlayerTranslation(player);
 		if (ping.type == PING_ITEM)
-			return readablePlayerTranslation(player);
+			return P_PingReadablePlayerTranslation(player);
 		if (player.mo)
 			return player.mo->translation;
 		return {};
@@ -553,14 +543,51 @@ static void HU_DrawPingIndicator()
 
 	auto drawIndicator = [&](const player_t& srcPlayer, const v3fixed_t& pingPos, patch_t* iconPatch,
 	                         translationref_t iconTranslation,
-	                         translationref_t arrowTranslation) -> void
+	                         translationref_t arrowTranslation,
+	                         int worldMarkerPx) -> void
 	{
 		if (pingPos.x == camera->x && pingPos.y == camera->y)
 			return;
 
+		// First, use the same projection path as the world renderer to decide
+		// whether the ping is already visible on-screen.
+		fixed_t projTx = 0, projTy = 0;
+		int zDir = 0; // -1 = above view, +1 = below view
+		R_RotatePoint(pingPos.x - viewx, pingPos.y - viewy, ANG90 - viewangle, projTx, projTy);
+		if (projTy > FRACUNIT)
+		{
+			const int projX = R_ProjectPointX(projTx, projTy);
+			const int projY = R_ProjectPointY(pingPos.z - viewz, projTy);
+			const int halfMarker = std::max(1, worldMarkerPx / 2);
+			const int markerLeft = projX - halfMarker;
+			const int markerRight = projX + halfMarker;
+			const int markerTop = projY - halfMarker;
+			const int markerBottom = projY + halfMarker;
+			const bool inViewport = markerRight >= viewwindowx &&
+			                        markerLeft < (viewwindowx + viewwidth) &&
+			                        markerBottom >= viewwindowy &&
+			                        markerTop < (viewwindowy + viewheight);
+			if (projY < viewwindowy + margin)
+				zDir = -1;
+			else if (projY >= (viewwindowy + viewheight - margin))
+				zDir = 1;
+			if (inViewport)
+			{
+				if (srcPlayer.id < MAXPLAYERS)
+				{
+					const angle_t target = R_PointToAngle2(camera->x, camera->y, pingPos.x, pingPos.y);
+					const int32_t delta = static_cast<int32_t>(target - viewangle);
+					smoothRadians[srcPlayer.id] = static_cast<float>(delta * AngleScale);
+					smoothValid[srcPlayer.id] = true;
+				}
+				return;
+			}
+		}
+
 		const angle_t target = R_PointToAngle2(camera->x, camera->y, pingPos.x, pingPos.y);
-		const int32_t delta = static_cast<int32_t>(target - camera->angle);
-		if (std::abs(delta) <= halfFovBam)
+		const int32_t delta = static_cast<int32_t>(target - viewangle);
+		const bool inFront = std::abs(delta) <= halfFovBam;
+		if (std::abs(delta) <= halfFovBam && zDir == 0)
 		{
 			if (srcPlayer.id < MAXPLAYERS)
 			{
@@ -571,7 +598,27 @@ static void HU_DrawPingIndicator()
 		}
 
 		float radians = static_cast<float>(delta * AngleScale);
-		if (srcPlayer.id < MAXPLAYERS)
+		bool centerVerticalCue = false;
+		int centerVerticalOffset = 0;
+		if (inFront && zDir != 0)
+		{
+			centerVerticalCue = true;
+			radians = zDir < 0 ? 0.0f : 3.14159265f;
+
+			const float burstLen = static_cast<float>(ZPulseCount * ZPulsePeriodTics + ZPulsePauseTics);
+			const float interpTic =
+			    static_cast<float>(::gametic) + static_cast<float>(render_lerp_amount) / FRACUNIT;
+			const float t = burstLen > 0.0f ? std::fmod(interpTic, burstLen) : 0.0f;
+			if (t < static_cast<float>(ZPulseCount * ZPulsePeriodTics))
+			{
+				const float p = std::fmod(t, static_cast<float>(ZPulsePeriodTics));
+				const float half = std::max(1.0f, static_cast<float>(ZPulsePeriodTics) * 0.5f);
+				const float wave = (p < half) ? (p / half) : ((static_cast<float>(ZPulsePeriodTics) - p) / half);
+				const int nudge = static_cast<int>(std::lround(wave * (ZPulseNudgePx * CleanYfac)));
+				centerVerticalOffset = zDir < 0 ? -nudge : nudge;
+			}
+		}
+		if (srcPlayer.id < MAXPLAYERS && !centerVerticalCue)
 		{
 			if (!smoothValid[srcPlayer.id])
 			{
@@ -593,8 +640,15 @@ static void HU_DrawPingIndicator()
 		const double ty = ey / std::max(0.0001, std::abs(vy));
 		const double t = std::min(tx, ty);
 
-		const int centerX = static_cast<int>(std::lround(cx + vx * t));
-		const int centerY = static_cast<int>(std::lround(cy + vy * t));
+		const int centerX = centerVerticalCue ? cx : static_cast<int>(std::lround(cx + vx * t));
+		const int zLaneInset = ZCenterLaneInsetPx * CleanYfac;
+		const int zTopCenterY = std::clamp(margin + zLaneInset, margin, hudBottom - margin);
+		const int zBottomCenterY =
+		    std::clamp(hudBottom - margin - zLaneInset, margin, hudBottom - margin);
+		const int centerYBase = centerVerticalCue
+		                            ? ((zDir < 0 ? zTopCenterY : zBottomCenterY) + centerVerticalOffset)
+		                            : static_cast<int>(std::lround(cy + vy * t));
+		const int centerY = std::clamp(centerYBase, margin, hudBottom - margin);
 
 		if (iconPatch == nullptr)
 			iconPatch = fallbackIcon;
@@ -661,10 +715,11 @@ static void HU_DrawPingIndicator()
 			iconTranslation = flagTranslation(ping.flag_team);
 		else if (ping.type == PING_GENERAL || ping.type == PING_WARNING ||
 		         ping.type == PING_TEAMMATE)
-			iconTranslation = readablePlayerTranslation(player);
+			iconTranslation = P_PingReadablePlayerTranslation(player);
 
 		translationref_t arrowTranslation = playerPingTranslation(player, ping);
-		drawIndicator(player, pingPos, iconPatch, iconTranslation, arrowTranslation);
+		const int worldMarkerPx = ping.type == PING_BOSS ? WorldBossScreenPx : WorldPingScreenPx;
+		drawIndicator(player, pingPos, iconPatch, iconTranslation, arrowTranslation, worldMarkerPx);
 	}
 
 	if (G_IsCoopGame() || G_IsTeamGame())
@@ -679,8 +734,8 @@ static void HU_DrawPingIndicator()
 				continue;
 
 			v3fixed_t pos{teammate.mo->x, teammate.mo->y, teammate.mo->z + teammate.mo->height};
-			translationref_t trans = readablePlayerTranslation(teammate);
-			drawIndicator(teammate, pos, teammateHudPatch, trans, trans);
+			translationref_t trans = P_PingReadablePlayerTranslation(teammate);
+			drawIndicator(teammate, pos, teammateHudPatch, trans, trans, WorldPingScreenPx);
 		}
 	}
 }

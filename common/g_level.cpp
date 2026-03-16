@@ -38,6 +38,7 @@
 #include "i_system.h"
 #include "p_acs.h"
 #include "p_local.h"
+#include "p_playerping.h"
 #include "p_saveg.h"
 #include "p_unlag.h"
 #include "r_data.h"
@@ -753,6 +754,7 @@ void G_InitLevelLocals()
 	const std::array<byte, 4> old_fadeto_color = level.fadeto_color;
 
 	R_ExitLevel();
+	P_ClearAllPlayerPings();
 
 	NormalLight.maps = shaderef_t(&realcolormaps, 0);
 	//NormalLight.maps = shaderef_t(&DefaultPalette->maps, 0);
