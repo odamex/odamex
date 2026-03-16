@@ -408,7 +408,7 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 	{
 	case 2:
 		// Possessive (yours/theirs)
-		if (!consoleplayer().spectator)
+		if (!consoleplayer().spectator && !displayplayer().isFreecam)
 		{
 			team_t playerTeam = consoleplayer().userinfo.team;
 			PossessiveType sound = Theirs;
@@ -466,7 +466,7 @@ void CTF_Message(team_t flag, team_t team, flag_score_t ev)
 	{
 	case 2:
 		// Possessive (yours/theirs)
-		if (!consoleplayer().spectator)
+		if (!consoleplayer().spectator && !displayplayer().isFreecam)
 		{
 			PossessiveType msg = Theirs;
 			color = CR_BRICK;
