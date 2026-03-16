@@ -159,7 +159,6 @@ void M_QuickSave();
 void M_QuickLoad();
 
 void M_DrawMainMenu();
-void M_DrawHereticMainMenu();
 void M_DrawReadThis1();
 void M_DrawReadThis2();
 void M_DrawReadThis3();
@@ -175,7 +174,6 @@ void M_DrawSaveLoadBorder(int x,int y, int len);
 void M_SetupNextMenu(oldmenu_t *menudef);
 void M_DrawEmptyCell(oldmenu_t *menu,int item);
 void M_DrawSelCell(oldmenu_t *menu,int item);
-int  M_StringHeight(char *string);
 void M_StartControlPanel();
 void M_StartMessage(const char *string,void (*routine)(int),bool input);
 void M_StopMessage();
@@ -330,7 +328,7 @@ oldmenu_t HereticMainDef =
 {
 	htc_main_end,
 	HereticMainMenu,
-	M_DrawHereticMainMenu,
+	M_DrawMainMenu,
 	110,56,
 	0
 };
@@ -743,7 +741,7 @@ void M_DrawLoad ()
 	else
 	{
 		V_SetFont("BIGFONT");
-		screen->DrawTextCleanMove(CR_GRAY, 108, 15,
+		screen->DrawTextClean(CR_GRAY, 108, 15,
 		                         LocalizedString("MNU_LOADGAME"));
 		V_SetFont("SMALLFONT");
 	}
@@ -1054,7 +1052,7 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 {
 	if (W_CheckNumForName("M_FSLOT") >= 0)
 	{
-		screen->DrawPatchClean (W_CachePatch ("M_FSLOT"), x-8, y+7);
+		screen->DrawPatchClean (W_CachePatch ("M_FSLOT"), x-8, y);
 	}
 	else
 	{
@@ -1075,26 +1073,23 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 //
 void M_DrawMainMenu()
 {
-	if (W_CheckNumForName("M_DOOM") >= 0)
-	{
-		screen->DrawPatchClean(W_CachePatch("M_DOOM"), 94, 2);
-	}
-	else
-	{
-		V_SetFont("BIGFONT");
-		screen->DrawTextCleanMove(CR_RED, 110, 8, gameinfo.titleString.c_str());
-	}
-}
-
-void M_DrawHereticMainMenu (void)
-{
 	int frame;
 
 	frame = (MenuTime / 3) % 18;
 
-	screen->DrawPatchIndirect (W_CachePatch("M_HTIC"), 88, 0);
-	screen->DrawPatchIndirect (W_CachePatch(SkullBaseLump + (17 - frame), PU_CACHE), 40, 10);
-	screen->DrawPatchIndirect (W_CachePatch(SkullBaseLump + frame, PU_CACHE), 232, 10);
+	const char* menu_title = gameinfo.enginetype == ENGINE_HERETIC ? "M_HTIC" : "M_DOOM";
+	const int menu_title_x = (gameinfo.enginetype == ENGINE_HERETIC) ? 88 : 94;
+	const int menu_title_y = (gameinfo.enginetype == ENGINE_HERETIC) ? 0 : 2;
+
+	if (W_CheckNumForName(menu_title) >= 0)
+	{
+		screen->DrawPatchClean(W_CachePatch(menu_title), menu_title_x, menu_title_y);
+	}
+	if (SkullBaseLump >= 0)
+	{
+		screen->DrawPatchClean (W_CachePatch(SkullBaseLump + (17 - frame), PU_CACHE), 40, 10);
+		screen->DrawPatchClean (W_CachePatch(SkullBaseLump + frame, PU_CACHE), 232, 10);
+	}
 }
 
 void M_DrawNewGame()
@@ -2027,34 +2022,11 @@ void M_StartMessage (const char *string, void (*routine)(int), bool input)
 	menuactive = true;
 }
 
-
-
 void M_StopMessage()
 {
 	menuactive = messageLastMenuActive;
 	messageToPrint = 0;
 }
-
-
-//
-//		Find string height from hu_font chars
-//
-int M_StringHeight(char* string)
-{
-	// Default height without a working font is 8.
-	if (::hu_font[0].empty())
-		return 8;
-
-	const int height = W_ResolvePatchHandle(hu_font[0])->height();
-
-	int h = height;
-	while (*string)
-		if ((*string++) == '\n')
-			h += height;
-
-	return h;
-}
-
 
 
 //
@@ -2350,12 +2322,16 @@ void M_StartControlPanel()
 //
 void M_DimBackground ()
 {
-	int destx,desty;
+	// [ML] Temporarily forcing 4:3 to see the safe area for the menu.
+	const int surface_width = screen->getSurface()->getWidth();
+	const int surface_height = screen->getSurface()->getHeight();
+	const int dim_width = (surface_height * 4) / 3;
+	const int srcx = (surface_width - dim_width) / 2;
+	const int srcy = 0;
+	const int width = dim_width;
+	const int height = surface_height;
 
-    destx = I_GetSurfaceWidth();
-	desty = I_GetSurfaceHeight();
-
-	screen->Dim(0, 0, destx, desty);
+	screen->Dim(srcx, srcy, width, height);
 }
 
 //
@@ -2571,7 +2547,6 @@ void M_Init()
     	// Heretic changes stuff
 		MainDef.numitems = htc_main_end;
         MainDef.menuitems = HereticMainMenu;
-        MainDef.routine = M_DrawHereticMainMenu;
         MainDef.x = 110;
         MainDef.y = 56;
     }

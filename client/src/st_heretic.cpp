@@ -174,20 +174,19 @@ void ST_HticSetLayoutVisible()
 	const int surfaceWidth = surface->getWidth();
 	const int surfaceHeight = surface->getHeight();
 	const int baseWidth = ST_HticBaseWidth();
+	const int baseHeight = ST_BaseHeight();
 
 	if (st_scale)
 	{
-		ST_HEIGHT = std::max(1, ST_BaseHeight() * surfaceHeight / 200);
-		ST_WIDTH = std::max(1, baseWidth * surfaceHeight / 200);
+		ST_HEIGHT = std::min(std::max(1, baseHeight * surfaceHeight / 200), surfaceHeight);
+		ST_WIDTH = std::min(std::max(1, baseWidth * surfaceHeight / 200), surfaceWidth);
 	}
 	else
 	{
-		ST_HEIGHT = ST_BaseHeight();
-		ST_WIDTH = baseWidth;
+		ST_HEIGHT = std::min(baseHeight, surfaceHeight);
+		ST_WIDTH = std::min(baseWidth, surfaceWidth);
 	}
 
-	ST_WIDTH = std::min(ST_WIDTH, surfaceWidth);
-	ST_HEIGHT = std::min(ST_HEIGHT, surfaceHeight);
 	ST_X = (surfaceWidth - ST_WIDTH) / 2;
 	ST_Y = surfaceHeight - ST_HEIGHT;
 }
