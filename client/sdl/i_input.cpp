@@ -202,6 +202,8 @@ static void I_InitializeKeyNameTable()
 	key_names[OKEY_MOUSE5] = "mouse5";
 	key_names[OKEY_MWHEELDOWN] = "mwheeldown";
 	key_names[OKEY_MWHEELUP] = "mwheelup";
+	key_names[OKEY_MWHEELLEFT] = "mwheelleft";
+	key_names[OKEY_MWHEELRIGHT] = "mwheelright";
 	key_names[OKEY_JOY1] = "joy1";
 	key_names[OKEY_JOY2] = "joy2";
 	key_names[OKEY_JOY3] = "joy3";
