@@ -1307,6 +1307,7 @@ struct MapInfoDataSetter<gameinfo_t>
 			{ "maxswitch", &MIType_Int, &gameinfo.maxSwitch },
 			{ "smallfont", &MIType_String, &gameinfo.smallFont },
 			{ "bigfont", &MIType_String, &gameinfo.bigFont },
+			{ "menutitle", &MIType_LumpName, &gameinfo.menuTitle },
 			{ "menuindicatorlumps", &MIType_Pages, gameinfo.menuIndicatorLumps.data() },
 			{ "menuindicatoroffsetx", &MIType_Int, &gameinfo.menuIndicatorOffsetX },
 			{ "menuindicatoroffsety", &MIType_Int, &gameinfo.menuIndicatorOffsetY },

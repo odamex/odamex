@@ -139,7 +139,6 @@ public:
 	inline void DrawLucentPatch (const patch_t *patch, int x, int y) const;
 	inline void DrawLucentPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const;
 	inline void DrawLucentPatchDirect (const patch_t *patch, int x, int y) const;
-	inline void DrawLucentPatchIndirect (const patch_t *patch, int x, int y) const;
 	inline void DrawLucentPatchClean (const patch_t *patch, int x, int y) const;
 	inline void DrawLucentPatchCleanNoMove (const patch_t *patch, int x, int y) const;
 
@@ -325,10 +324,6 @@ inline void DCanvas::DrawLucentPatchStretched (const patch_t *patch, int x, int 
 inline void DCanvas::DrawLucentPatchDirect (const patch_t *patch, int x, int y) const
 {
 	DrawWrapper (EWrapper_Lucent, patch, x, y);
-}
-inline void DCanvas::DrawLucentPatchIndirect (const patch_t *patch, int x, int y) const
-{
-	DrawIWrapper (EWrapper_Lucent, patch, x, y);
 }
 inline void DCanvas::DrawLucentPatchClean (const patch_t *patch, int x, int y) const
 {

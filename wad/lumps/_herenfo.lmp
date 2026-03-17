@@ -45,6 +45,7 @@ gameinfo
 	maxswitch = 2
 	bigfont = BIGFONT
 	smallfont = SMALLFONT
+	menutitle = "M_HTIC"
 	menuindicatorlumps = "M_SLCTR1", "M_SLCTR2"
 	menuindicatoroffsetx = -28
 	menuindicatoroffsety = -3

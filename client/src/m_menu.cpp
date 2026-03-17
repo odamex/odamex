@@ -557,7 +557,16 @@ oldmenu_t LoadDef =
 	load_end,
 	LoadSavegameMenu,
 	M_DrawLoad,
-	80,54,
+	76,54,
+	0
+};
+
+oldmenu_t HticLoadDef =
+{
+	load_end,
+	LoadSavegameMenu,
+	M_DrawLoad,
+	62,20,
 	0
 };
 
@@ -581,7 +590,15 @@ oldmenu_t SaveDef =
 	load_end,
 	SaveMenu,
 	M_DrawSave,
-	80,54,
+	76,54,
+	0
+};
+oldmenu_t HticSaveDef =
+{
+	load_end,
+	SaveMenu,
+	M_DrawSave,
+	62,20,
 	0
 };
 
@@ -732,8 +749,18 @@ void M_ReadSaveStrings()
 //
 // M_LoadGame & Cie.
 //
+const int slot_height = M_BigFontLineHeight(); // HACK
+const int slot_width = 24;
+void M_DrawInputBox (int slot, char *name, int x, int y, int width) 
+{
+	M_DrawSaveLoadBorder(x, y, width);
+	screen->DrawTextCleanMove (CR_RED, x+(M_SmallFontLineHeight()/2), y, name);
+}
+
 void M_DrawLoad ()
 {
+	int i, list_y;
+
 	if (W_CheckNumForName("M_LOADG") >= 0)
 	{
 		screen->DrawPatchClean(W_CachePatch("M_LOADG"), 72, 28);
@@ -741,14 +768,13 @@ void M_DrawLoad ()
 	else
 	{
 		V_SetFont("BIGFONT");
-		screen->DrawTextClean(CR_GRAY, 108, 15,
-		                         LocalizedString("MNU_LOADGAME"));
+		screen->DrawTextCleanMove(CR_GRAY, 160-V_StringWidth(LocalizedString("MNU_LOADGAME"))/2, 0, LocalizedString("MNU_LOADGAME"));
 		V_SetFont("SMALLFONT");
 	}
-	for (int i = 0; i < load_end; i++)
+	for (i = 0; i < load_end; i++)
 	{
-		M_DrawSaveLoadBorder (LoadDef.x, LoadDef.y+M_BigFontLineHeight()*i, 24);
-		screen->DrawTextCleanMove (CR_RED, LoadDef.x, LoadDef.y+M_BigFontLineHeight()*i, savegamestrings[i]);
+		list_y = LoadDef.y + slot_height * i;
+		M_DrawInputBox(i, savegamestrings[i], LoadDef.x, list_y, slot_width);
 	}
 }
 
@@ -787,7 +813,7 @@ void M_LoadGame (int choice)
 //
 void M_DrawSave()
 {
-	int i;
+	int i, list_y;
 
 	if (W_CheckNumForName("M_SAVEG") >= 0)
 	{
@@ -796,20 +822,20 @@ void M_DrawSave()
 	else
 	{
 		V_SetFont("BIGFONT");
-		screen->DrawTextCleanMove (CR_GRAY, 108, 15,
-		                         LocalizedString("MNU_SAVEGAME"));
+		screen->DrawTextCleanMove (CR_GRAY, 160-V_StringWidth(LocalizedString("MNU_SAVEGAME"))/2, 0, LocalizedString("MNU_SAVEGAME"));
 		V_SetFont("SMALLFONT");
 	}
+
 	for (i = 0; i < load_end; i++)
 	{
-		M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+M_BigFontLineHeight()*i,24);
-		screen->DrawTextCleanMove (CR_RED, LoadDef.x, LoadDef.y+M_BigFontLineHeight()*i, savegamestrings[i]);
+		int list_y = SaveDef.y + slot_height * i;
+		M_DrawInputBox(i, savegamestrings[i], SaveDef.x, list_y, slot_width);
 	}
 
 	if (genStringEnter != oldmenustring_t::NONE)
 	{
-		i = V_StringWidth(savegamestrings[saveSlot]);
-		screen->DrawTextCleanMove (CR_RED, LoadDef.x + i, LoadDef.y+M_BigFontLineHeight()*saveSlot, "_");
+		const int string_width = V_StringWidth(savegamestrings[saveSlot]);
+		screen->DrawTextCleanMove(CR_RED, SaveDef.x + string_width, SaveDef.y+M_BigFontLineHeight()*saveSlot, "_");
 	}
 }
 
@@ -1052,16 +1078,16 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 {
 	if (W_CheckNumForName("M_FSLOT") >= 0)
 	{
-		screen->DrawPatchClean (W_CachePatch ("M_FSLOT"), x-8, y);
+		screen->DrawPatchClean (W_CachePatch ("M_FSLOT"), x, y);
 	}
 	else
 	{
-		screen->DrawPatchClean (W_CachePatch ("M_LSLEFT"), x-8, y+7);
+		screen->DrawPatchClean (W_CachePatch ("M_LSLEFT"), x, y+7);
 
 		for (int i = 0; i < len; i++)
 		{
+			x += M_SmallFontLineHeight();
 			screen->DrawPatchClean (W_CachePatch ("M_LSCNTR"), x, y+7);
-			x += 8;
 		}
 
 		screen->DrawPatchClean (W_CachePatch ("M_LSRGHT"), x, y+7);
@@ -1077,18 +1103,18 @@ void M_DrawMainMenu()
 
 	frame = (MenuTime / 3) % 18;
 
-	const char* menu_title = gameinfo.enginetype == ENGINE_HERETIC ? "M_HTIC" : "M_DOOM";
+	const patch_t* menu_title = W_CachePatch(gameinfo.menuTitle);
 	const int menu_title_x = (gameinfo.enginetype == ENGINE_HERETIC) ? 88 : 94;
 	const int menu_title_y = (gameinfo.enginetype == ENGINE_HERETIC) ? 0 : 2;
 
-	if (W_CheckNumForName(menu_title) >= 0)
+	if (menu_title != NULL)
 	{
-		screen->DrawPatchClean(W_CachePatch(menu_title), menu_title_x, menu_title_y);
+		screen->DrawPatchClean(menu_title, menu_title_x, menu_title_y);
 	}
 	if (SkullBaseLump >= 0)
 	{
-		screen->DrawPatchClean (W_CachePatch(SkullBaseLump + (17 - frame), PU_CACHE), 40, 10);
-		screen->DrawPatchClean (W_CachePatch(SkullBaseLump + frame, PU_CACHE), 232, 10);
+		screen->DrawPatchClean(W_CachePatch(SkullBaseLump + (17 - frame), PU_CACHE), 40, 10);
+		screen->DrawPatchClean(W_CachePatch(SkullBaseLump + frame, PU_CACHE), 232, 10);
 	}
 }
 
@@ -2549,6 +2575,8 @@ void M_Init()
         MainDef.menuitems = HereticMainMenu;
         MainDef.x = 110;
         MainDef.y = 56;
+		LoadDef = HticLoadDef;
+		SaveDef = HticSaveDef;
     }
 
 	M_OptInit ();
