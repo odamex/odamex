@@ -97,10 +97,10 @@ CVAR_RANGE(			sv_ping_spam_max_tokens, "5", "Maximum ping tokens per player in t
 CVAR_RANGE(			sv_ping_spam_window, "20", "Seconds to fully refill ping spam tokens.",
 					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1.0f, 120.0f)
 
-CVAR(				sv_ping_teammates, "1", "Allow clients to see teammate ping markers.",
+CVAR(				sv_marker_teammates, "1", "Allow clients to see teammate markers.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
-CVAR(				sv_ping_hordebosses, "1", "Allow clients to see horde boss ping markers.",
+CVAR(				sv_marker_hordebosses, "1", "Allow clients to see horde boss markers.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR_RANGE(			sv_fraglimit,     "0", "Sets the amount of frags a player can accumulate before the game ends",

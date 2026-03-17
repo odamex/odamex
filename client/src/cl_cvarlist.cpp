@@ -581,9 +581,6 @@ CVAR_RANGE(		hud_targetcount, "2", "Number of players to reveal",
 CVAR(			hud_targetnames, "1", "Show names of players you're aiming at",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(			hud_pingindicator, "1", "Show ping indicator on the HUD edge.",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
-
 CVAR(			cl_ping_hudindicators, "1", "Show ping edge indicators on the HUD.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
@@ -602,10 +599,10 @@ CVAR(			cl_ping_monsters, "1", "Allow pinging monsters and bosses.",
 CVAR(			cl_ping_flags, "1", "Allow pinging CTF flags.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(			cl_ping_teammates, "1", "Show teammate ping markers.",
+CVAR(			hud_marker_teammates, "1", "Show teammate markers in the HUD/world.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(			cl_ping_hordebosses, "1", "Show horde boss ping markers.",
+CVAR(			hud_marker_hordebosses, "1", "Show horde boss markers in the HUD/world.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(hud_targethealth_debug, "0",

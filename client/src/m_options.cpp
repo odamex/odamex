@@ -129,8 +129,8 @@ EXTERN_CVAR(cl_ping_sound)
 EXTERN_CVAR(cl_ping_pickups)
 EXTERN_CVAR(cl_ping_monsters)
 EXTERN_CVAR(cl_ping_flags)
-EXTERN_CVAR(cl_ping_teammates)
-EXTERN_CVAR(cl_ping_hordebosses)
+EXTERN_CVAR(hud_marker_teammates)
+EXTERN_CVAR(hud_marker_hordebosses)
 
 // [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (co_allowdropoff)
@@ -1027,6 +1027,11 @@ static menuitem_t HUDItems[] = {
     {discrete, "Extended hud", {&hud_extendedinfo}, {5.0}, {0.0}, {0.0}, {ExtendedHudStyles}},
     {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
 
+    {yellowtext, "Markers", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+    {discrete, "Show teammates", {&hud_marker_teammates}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {discrete, "Show horde bosses", {&hud_marker_hordebosses}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+
     {yellowtext, "Scoreboard", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
     {slider, "Scale scoreboard", {&hud_scalescoreboard}, {0.0}, {1.0}, {0.125}, {NULL}},
     // clang-format off
@@ -1077,10 +1082,6 @@ static menuitem_t PingItems[] = {
 	{ discrete, "Ping pickups", {&cl_ping_pickups}, {2.0}, {0.0}, {0.0}, {OnOff} },
 	{ discrete, "Ping monsters", {&cl_ping_monsters}, {2.0}, {0.0}, {0.0}, {OnOff} },
 	{ discrete, "Ping CTF flags", {&cl_ping_flags}, {2.0}, {0.0}, {0.0}, {OnOff} },
-	{ redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext, "Auto Markers", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-	{ discrete, "Show teammates", {&cl_ping_teammates}, {2.0}, {0.0}, {0.0}, {OnOff} },
-	{ discrete, "Show horde bosses", {&cl_ping_hordebosses}, {2.0}, {0.0}, {0.0}, {OnOff} },
 };
 
 menu_t PingMenu = {

@@ -48,8 +48,8 @@ EXTERN_CVAR(cl_showpings)
 EXTERN_CVAR(cl_ping_pickups)
 EXTERN_CVAR(cl_ping_monsters)
 EXTERN_CVAR(cl_ping_flags)
-EXTERN_CVAR(cl_ping_teammates)
-EXTERN_CVAR(cl_ping_hordebosses)
+EXTERN_CVAR(hud_marker_teammates)
+EXTERN_CVAR(hud_marker_hordebosses)
 #endif
 #include "../client/sdl/afxres.h"
 
@@ -57,8 +57,8 @@ EXTERN_CVAR(sv_ping_spam_enabled)
 EXTERN_CVAR(sv_ping_spam_max_tokens)
 EXTERN_CVAR(sv_ping_spam_window)
 EXTERN_CVAR(sv_pingsystem)
-EXTERN_CVAR(sv_ping_teammates)
-EXTERN_CVAR(sv_ping_hordebosses)
+EXTERN_CVAR(sv_marker_teammates)
+EXTERN_CVAR(sv_marker_hordebosses)
 
 //------------------------------------------------------------------------------
 
@@ -765,8 +765,8 @@ void R_AddPingSprites()
 	if (!sv_pingsystem || !cl_showpings)
 		return;
 
-	const bool allowTeammateMarkers = sv_ping_teammates && cl_ping_teammates;
-	const bool allowHordeBossMarkers = sv_ping_hordebosses && cl_ping_hordebosses;
+	const bool allowTeammateMarkers = sv_marker_teammates && hud_marker_teammates;
+	const bool allowHordeBossMarkers = sv_marker_hordebosses && hud_marker_hordebosses;
 
 	static constexpr fixed_t StrictHeadOffset = 12 * FRACUNIT;
 	static constexpr fixed_t BossHeadOffset = 24 * FRACUNIT;
