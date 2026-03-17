@@ -318,6 +318,8 @@ bool PTR_PingTraverse(intercept_t* in)
 		AActor* thing = in->d.thing;
 		if (!thing || thing == g_pingTrace.source)
 			return true;
+		if (thing->player)
+			return true;
 		const bool isPickup = (thing->flags & MF_SPECIAL) != 0;
 		const team_t flagTeam = P_PingFlagTeamForActor(thing);
 		const bool isMonsterTarget =
