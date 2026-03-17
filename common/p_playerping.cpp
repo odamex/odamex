@@ -904,6 +904,11 @@ void R_AddPingSprites()
 	static constexpr fixed_t FollowPingSmoothing = FRACUNIT / 3;
 	static constexpr int FixedPingScreenPx = 56;
 	static constexpr int FixedBossScreenPx = 84;
+	static constexpr fixed_t PingScaleNearDist = 512 * FRACUNIT;
+	static constexpr fixed_t ItemScaleNearDist = 128 * FRACUNIT;
+	static constexpr fixed_t ItemScaleFarDist = 768 * FRACUNIT;
+	static constexpr fixed_t MonsterScaleNearDist = 1024 * FRACUNIT;
+	static constexpr fixed_t PingScaleFarDist = 2048 * FRACUNIT;
 	static std::array<v3fixed_t, MAXPLAYERS> followSmoothPos{};
 	static std::array<bool, MAXPLAYERS> followSmoothValid{};
 	static std::unordered_map<uint32_t, v3fixed_t> actorSmoothPos{};
@@ -930,6 +935,44 @@ void R_AddPingSprites()
 		cur.y = smoothFixed(cur.y, targetPos.y);
 		cur.z = smoothFixed(cur.z, targetPos.z);
 		return cur;
+	};
+
+	auto scaledPingPx = [&](const ping_type_t type, const v3fixed_t& pos) -> int
+	{
+		// Only scale item/monster/general/warning pings.
+		if (type != PING_ITEM && type != PING_MONSTER && type != PING_GENERAL &&
+		    type != PING_WARNING)
+			return FixedPingScreenPx;
+
+		AActor* view = consoleplayer().camera ? consoleplayer().camera : consoleplayer().mo;
+		if (!view)
+			return FixedPingScreenPx;
+
+		const fixed_t dist = P_AproxDistance(view->x - pos.x, view->y - pos.y);
+		const int nearPx = FixedPingScreenPx;
+		int farPx = nearPx / 2;
+
+		fixed_t nearDist = PingScaleNearDist;
+		fixed_t farDist = PingScaleFarDist;
+		if (type == PING_ITEM)
+		{
+			nearDist = ItemScaleNearDist;
+			farDist = ItemScaleFarDist;
+			farPx = (nearPx * 2) / 5; // 40%
+		}
+		else if (type == PING_MONSTER)
+		{
+			nearDist = MonsterScaleNearDist;
+		}
+
+		if (dist <= nearDist)
+			return nearPx;
+		if (dist >= farDist)
+			return farPx;
+
+		const fixed_t t = FixedDiv(dist - nearDist, farDist - nearDist);
+		const int deltaPx = nearPx - farPx;
+		return nearPx - ((deltaPx * t) >> FRACBITS);
 	};
 
 	for (auto &pl : players)
@@ -1005,10 +1048,9 @@ void R_AddPingSprites()
 		if (ping.type == PING_FLAG && ping.flag_team != TEAM_NONE)
 			translation = P_PingTeamTranslationInternal(ping.flag_team);
 
-		R_Add3DHUDSprite(
-		    ping.lump, pos, translation, 1.0f,
-		    ping.type == PING_BOSS ? FixedBossScreenPx : FixedPingScreenPx,
-		    ping.type == PING_BOSS ? FixedBossScreenPx : FixedPingScreenPx, false);
+		const int pingPx = ping.type == PING_BOSS ? FixedBossScreenPx : scaledPingPx(ping.type, pos);
+
+		R_Add3DHUDSprite(ping.lump, pos, translation, 1.0f, pingPx, pingPx, false);
 	}
 
 	if (G_IsHordeMode() && allowHordeBossMarkers)
