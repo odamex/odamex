@@ -511,8 +511,7 @@ void ISDL20MouseInputDevice::gatherEvents()
 					ev.data1 = OKEY_MWHEELUP;
 				else if (direction * sdl_ev.wheel.y < 0)
 					ev.data1 = OKEY_MWHEELDOWN;
-
-				if (direction * sdl_ev.wheel.x > 0)
+				else if (direction * sdl_ev.wheel.x > 0)
 					ev.data1 = OKEY_MWHEELRIGHT;
 				else if (direction * sdl_ev.wheel.x < 0)
 					ev.data1 = OKEY_MWHEELLEFT;
