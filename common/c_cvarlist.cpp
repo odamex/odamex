@@ -100,7 +100,7 @@ CVAR_RANGE(			sv_ping_spam_window, "20", "Seconds to fully refill ping spam toke
 CVAR(				sv_marker_teammates, "1", "Allow clients to see teammate markers.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
-CVAR(				sv_marker_hordebosses, "1", "Allow clients to see horde boss markers.",
+CVAR(				sv_marker_hordeboss, "1", "Allow clients to see horde boss markers.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR_RANGE(			sv_fraglimit,     "0", "Sets the amount of frags a player can accumulate before the game ends",

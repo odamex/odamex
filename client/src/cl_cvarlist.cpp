@@ -602,7 +602,7 @@ CVAR(			cl_ping_flags, "1", "Allow pinging CTF flags.",
 CVAR(			hud_marker_teammates, "1", "Show teammate markers in the HUD/world.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(			hud_marker_hordebosses, "1", "Show horde boss markers in the HUD/world.",
+CVAR(			hud_marker_hordeboss, "1", "Show horde boss markers in the HUD/world.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(hud_targethealth_debug, "0",

@@ -130,7 +130,7 @@ EXTERN_CVAR(cl_ping_pickups)
 EXTERN_CVAR(cl_ping_monsters)
 EXTERN_CVAR(cl_ping_flags)
 EXTERN_CVAR(hud_marker_teammates)
-EXTERN_CVAR(hud_marker_hordebosses)
+EXTERN_CVAR(hud_marker_hordeboss)
 
 // [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (co_allowdropoff)
@@ -1029,7 +1029,7 @@ static menuitem_t HUDItems[] = {
 
     {yellowtext, "Markers", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
     {discrete, "Show teammates", {&hud_marker_teammates}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    {discrete, "Show horde bosses", {&hud_marker_hordebosses}, {2.0}, {0.0}, {0.0}, {OnOff}},
+    {discrete, "Show horde bosses", {&hud_marker_hordeboss}, {2.0}, {0.0}, {0.0}, {OnOff}},
     {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
 
     {yellowtext, "Scoreboard", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},

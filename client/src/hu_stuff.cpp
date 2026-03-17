@@ -89,9 +89,9 @@ EXTERN_CVAR(g_lives)
 EXTERN_CVAR(cl_ping_hudindicators)
 EXTERN_CVAR(cl_showpings)
 EXTERN_CVAR(hud_marker_teammates)
-EXTERN_CVAR(hud_marker_hordebosses)
+EXTERN_CVAR(hud_marker_hordeboss)
 EXTERN_CVAR(sv_marker_teammates)
-EXTERN_CVAR(sv_marker_hordebosses)
+EXTERN_CVAR(sv_marker_hordeboss)
 EXTERN_CVAR(sv_pingsystem)
 
 static int crosshair_lump;
@@ -705,7 +705,7 @@ static void HU_DrawPingIndicator()
 			continue;
 		if (ping.type == PING_TEAMMATE && (!sv_marker_teammates || !hud_marker_teammates))
 			continue;
-		if (ping.type == PING_BOSS && (!sv_marker_hordebosses || !hud_marker_hordebosses))
+		if (ping.type == PING_BOSS && (!sv_marker_hordeboss || !hud_marker_hordeboss))
 			continue;
 
 		v3fixed_t pingPos{};
