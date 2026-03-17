@@ -2351,13 +2351,12 @@ void M_DimBackground ()
 	// [ML] Temporarily forcing 4:3 to see the safe area for the menu.
 	const int surface_width = screen->getSurface()->getWidth();
 	const int surface_height = screen->getSurface()->getHeight();
-	const int dim_width = (surface_height * 4) / 3;
+	const int dim_width = 320 * CleanXfac;
+	const int dim_height = 240 * CleanYfac;
 	const int srcx = (surface_width - dim_width) / 2;
-	const int srcy = 0;
-	const int width = dim_width;
-	const int height = surface_height;
+	const int srcy = (surface_height - dim_height) / 2;
 
-	screen->Dim(srcx, srcy, width, height);
+	screen->Dim(srcx, srcy, dim_width, dim_height);
 }
 
 //

@@ -830,9 +830,6 @@ CVAR_FUNC_DECL(	vid_defheight, "720", "",
 CVAR_FUNC_DECL(	vid_widescreen, "1", "Widescreen mode (0: Off, 1: Auto, 2: 16:10, 3: 16:9, 4: 21:9, 5: 32:9)",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_FUNC_DECL(	vid_pillarbox, "0", "Pillarbox 4:3 resolutions in widescreen",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
-
 CVAR(			vid_autoadjust, "1", "Force fullscreen resolution to the closest available video mode.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
