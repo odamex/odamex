@@ -527,13 +527,7 @@ static void HU_DrawPingIndicator()
 
 	auto playerPingTranslation = [&](const player_t& player, const playerPing_s& ping) -> translationref_t
 	{
-		if (ping.type == PING_GENERAL || ping.type == PING_WARNING || ping.type == PING_TEAMMATE)
-			return P_PingReadablePlayerTranslation(player);
-		if (ping.type == PING_ITEM)
-			return P_PingReadablePlayerTranslation(player);
-		if (player.mo)
-			return player.mo->translation;
-		return {};
+		return P_PingReadablePlayerTranslation(player);
 	};
 
 	auto flagTranslation = [&](team_t team) -> translationref_t
@@ -722,8 +716,6 @@ static void HU_DrawPingIndicator()
 			iconTranslation = P_PingReadablePlayerTranslation(player);
 
 		translationref_t arrowTranslation = playerPingTranslation(player, ping);
-		if (ping.type == PING_FLAG && ping.flag_team != TEAM_NONE)
-			arrowTranslation = iconTranslation;
 		const int worldMarkerPx = ping.type == PING_BOSS ? WorldBossScreenPx : WorldPingScreenPx;
 		drawIndicator(player, pingPos, iconPatch, iconTranslation, arrowTranslation, worldMarkerPx);
 	}

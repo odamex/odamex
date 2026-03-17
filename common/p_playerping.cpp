@@ -336,7 +336,7 @@ bool PTR_PingTraverse(intercept_t* in)
 		}
 
 		if ((thing->flags & MF_SHOOTABLE) == 0 && !isPickup &&
-		    thing->player == nullptr)
+		    flagTeam == TEAM_NONE && thing->player == nullptr)
 			return true;
 
 		const fixed_t dist = FixedMul(g_pingTrace.range, in->frac);
@@ -359,7 +359,14 @@ bool PTR_PingTraverse(intercept_t* in)
 			else if (hitSlope < bottomSlope)
 				hitSlope = bottomSlope;
 
-			if (std::abs(hitSlope - g_pingTrace.slope) > g_pingTrace.autoaim_dist)
+			fixed_t autoAimAllowance = g_pingTrace.autoaim_dist;
+			if (flagTeam != TEAM_NONE)
+			{
+				// Slightly taller vertical capture window for CTF flags.
+				autoAimAllowance = FixedMul(autoAimAllowance, FRACUNIT + (FRACUNIT >> 1));
+			}
+
+			if (std::abs(hitSlope - g_pingTrace.slope) > autoAimAllowance)
 				return true;
 		}
 
@@ -509,6 +516,11 @@ bool P_IsSpecificPingTarget(const AActor* target)
 		return true;
 	return !target->player && (target->flags & MF_SHOOTABLE) != 0;
 }
+
+bool P_IsFlagPingTarget(const AActor* target)
+{
+	return P_PingFlagTeamForActor(target) != TEAM_NONE;
+}
 } // namespace
 
 //------------------------------------------------------------------------------
@@ -541,9 +553,11 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter)
 	static constexpr fixed_t PingRange = 64 * 64 * FRACUNIT;
 	static constexpr angle_t SpecificAssistStep = ANG(1);
 	static constexpr int SpecificAssistSweeps = 5;
+	static constexpr int FlagAssistExtraSweeps = 2;
 
 	const int32_t signedPitch = static_cast<int32_t>(player.mo->pitch);
 	const bool nearLevelPitch = std::abs(signedPitch) <= static_cast<int32_t>(ANG(3));
+	const bool nearLevelPitchFlags = std::abs(signedPitch) <= static_cast<int32_t>(ANG(8));
 	const bool enableActorAutoAim = player.userinfo.aimdist > 0 && nearLevelPitch;
 
 	playerPing_s ping{};
@@ -593,6 +607,36 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter)
 		}
 	}
 
+	// Slightly wider/taller assist for flags to make quick CTF flag pings easier.
+	if (filter.flags && !P_IsFlagPingTarget(pingTarget) && player.userinfo.aimdist > 0 &&
+	    nearLevelPitchFlags)
+	{
+		const int flagAssistSweeps = SpecificAssistSweeps + FlagAssistExtraSweeps;
+		for (int sweep = 1; sweep <= flagAssistSweeps; sweep++)
+		{
+			for (int dir = -1; dir <= 1; dir += 2)
+			{
+				const angle_t testAngle = player.mo->angle + dir * sweep * SpecificAssistStep;
+				AActor* testTarget = nullptr;
+				bool testHit = false;
+				const v3fixed_t testPos = P_TracePingEndpoint(player.mo, shootz, testAngle, pitchSlope,
+				                                              PingRange, testTarget, testHit, true,
+				                                              filter);
+				if (P_IsFlagPingTarget(testTarget))
+				{
+					aimAngle = testAngle;
+					pingTarget = testTarget;
+					ping.pos = testPos;
+					pingHit = true;
+					break;
+				}
+			}
+
+			if (P_IsFlagPingTarget(pingTarget))
+				break;
+		}
+	}
+
 	if (pingTarget)
 	{
 		team_t flagTeam = P_PingFlagTeamForActor(pingTarget);
@@ -608,6 +652,8 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter)
 			ping.type = PING_FLAG;
 			ping.follow_target = false;
 			ping.target_netid = 0;
+			const fixed_t flagTop = P_PingItemTopOffset(pingTarget);
+			ping.pos.z = pingTarget->z + flagTop + 8 * FRACUNIT;
 		}
 	else if (pingTarget->player && pingTarget->player != &player &&
 	         (G_IsCoopGame() ||
@@ -706,6 +752,15 @@ bool P_IsPingExpired(const playerPing_s& ping)
 	static constexpr int PingLifetimeTics = 10 * TICRATE;
 	if (ping.pingtic < 0)
 		return true;
+	if (ping.type == PING_FLAG)
+	{
+		if (ping.flag_team <= TEAM_NONE || ping.flag_team >= NUMTEAMS)
+			return true;
+
+		const TeamInfo* team = GetTeamInfo(ping.flag_team);
+		if (!team || team->FlagData.state != flag_dropped)
+			return true;
+	}
 
 	return (::gametic - ping.pingtic) > PingLifetimeTics;
 }
