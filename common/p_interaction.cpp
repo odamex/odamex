@@ -2533,7 +2533,7 @@ void P_PlayerLeavesGame(player_t* player)
 {
 	if (player)
 	{
-		player->player_ping.reset();
+		P_ClearPlayerPingState(*player);
 	}
 
 	if (level.behavior)

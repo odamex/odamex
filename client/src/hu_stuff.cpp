@@ -86,7 +86,13 @@ EXTERN_CVAR(screenblocks)
 EXTERN_CVAR(idmypos)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_lives)
-EXTERN_CVAR(hud_pingindicator)
+EXTERN_CVAR(cl_ping_hudindicators)
+EXTERN_CVAR(cl_showpings)
+EXTERN_CVAR(cl_ping_teammates)
+EXTERN_CVAR(cl_ping_hordebosses)
+EXTERN_CVAR(sv_ping_teammates)
+EXTERN_CVAR(sv_ping_hordebosses)
+EXTERN_CVAR(sv_pingsystem)
 
 static int crosshair_lump;
 
@@ -449,7 +455,8 @@ static void HU_DrawCrosshair()
 
 static void HU_DrawPingIndicator()
 {
-	if (!hud_pingindicator || gamestate != GS_LEVEL || !camera)
+	if (!sv_pingsystem || !cl_showpings || !cl_ping_hudindicators || gamestate != GS_LEVEL ||
+	    !camera)
 		return;
 
 	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible(true))
@@ -531,14 +538,7 @@ static void HU_DrawPingIndicator()
 
 	auto flagTranslation = [&](team_t team) -> translationref_t
 	{
-		for (const player_t& p : players)
-		{
-			if (!p.ingame() || !p.mo)
-				continue;
-			if (p.userinfo.team == team)
-				return p.mo->translation;
-		}
-		return {};
+		return P_PingTeamTranslation(team);
 	};
 
 	auto drawIndicator = [&](const player_t& srcPlayer, const v3fixed_t& pingPos, patch_t* iconPatch,
@@ -703,6 +703,10 @@ static void HU_DrawPingIndicator()
 			continue;
 		if (consoleplayer().mo && ping.target_netid == consoleplayer().mo->netid)
 			continue;
+		if (ping.type == PING_TEAMMATE && (!sv_ping_teammates || !cl_ping_teammates))
+			continue;
+		if (ping.type == PING_BOSS && (!sv_ping_hordebosses || !cl_ping_hordebosses))
+			continue;
 
 		v3fixed_t pingPos{};
 		if (!P_ResolvePingPosition(ping, pingPos))
@@ -718,26 +722,12 @@ static void HU_DrawPingIndicator()
 			iconTranslation = P_PingReadablePlayerTranslation(player);
 
 		translationref_t arrowTranslation = playerPingTranslation(player, ping);
+		if (ping.type == PING_FLAG && ping.flag_team != TEAM_NONE)
+			arrowTranslation = iconTranslation;
 		const int worldMarkerPx = ping.type == PING_BOSS ? WorldBossScreenPx : WorldPingScreenPx;
 		drawIndicator(player, pingPos, iconPatch, iconTranslation, arrowTranslation, worldMarkerPx);
 	}
 
-	if (G_IsCoopGame() || G_IsTeamGame())
-	{
-		patch_t* teammateHudPatch = W_CachePatch("OPNG_TM2");
-		for (const player_t& teammate : players)
-		{
-			if (teammate.id == consoleplayer().id || !teammate.ingame() || teammate.spectator ||
-			    teammate.playerstate != PST_LIVE || !teammate.mo)
-				continue;
-			if (G_IsTeamGame() && teammate.userinfo.team != consoleplayer().userinfo.team)
-				continue;
-
-			v3fixed_t pos{teammate.mo->x, teammate.mo->y, teammate.mo->z + teammate.mo->height};
-			translationref_t trans = P_PingReadablePlayerTranslation(teammate);
-			drawIndicator(teammate, pos, teammateHudPatch, trans, trans, WorldPingScreenPx);
-		}
-	}
 }
 
 

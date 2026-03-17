@@ -83,6 +83,7 @@ EXTERN_CVAR(cl_chatsounds)
 EXTERN_CVAR(cl_connectalert)
 EXTERN_CVAR(cl_disconnectalert)
 EXTERN_CVAR(cl_netdemoname)
+EXTERN_CVAR(cl_ping_sound)
 EXTERN_CVAR(cl_splitnetdemos)
 EXTERN_CVAR(cl_team)
 EXTERN_CVAR(hud_revealsecrets)
@@ -544,7 +545,8 @@ static void CL_PlayerPing(const odaproto::svc::PlayerPing* msg)
 	ping.translation = translationref_t(translationtables + 256 * p.id, p.id);
 	p.player_ping = std::make_unique<playerPing_s>(std::move(ping));
 
-	if (isLocalPing && !(p.player_ping->type == PING_WARNING && localHadActiveGeneralPing))
+	if (cl_ping_sound && isLocalPing &&
+	    !(p.player_ping->type == PING_WARNING && localHadActiveGeneralPing))
 	{
 		const char* pingSound = nullptr;
 		if (S_FindSound("misc/ping") != -1)

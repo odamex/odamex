@@ -584,6 +584,30 @@ CVAR(			hud_targetnames, "1", "Show names of players you're aiming at",
 CVAR(			hud_pingindicator, "1", "Show ping indicator on the HUD edge.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(			cl_ping_hudindicators, "1", "Show ping edge indicators on the HUD.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			cl_showpings, "1", "Enable or disable the client ping system.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			cl_ping_sound, "1", "Play a sound when your own ping is placed.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			cl_ping_pickups, "1", "Allow pinging pickup items.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			cl_ping_monsters, "1", "Allow pinging monsters and bosses.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			cl_ping_flags, "1", "Allow pinging CTF flags.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			cl_ping_teammates, "1", "Show teammate ping markers.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(			cl_ping_hordebosses, "1", "Show horde boss ping markers.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(hud_targethealth_debug, "0",
      "Show health of friendly players you're aiming at - this feature has known "
      "shortcomings with inaccurate health values and will be fixed in a future version "

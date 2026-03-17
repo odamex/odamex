@@ -85,6 +85,24 @@ CVAR(				sv_freelook, "0", "Allow Looking up and down",
 CVAR(				sv_allowtargetnames, "0", "When set, names of players appear in the FOV",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
+CVAR(				sv_pingsystem, "1", "Enable or disable the ping system.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR(				sv_ping_spam_enabled, "1", "Enable ping spam protection token bucket.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR_RANGE(			sv_ping_spam_max_tokens, "5", "Maximum ping tokens per player in the spam limiter.",
+					CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1.0f, 20.0f)
+
+CVAR_RANGE(			sv_ping_spam_window, "20", "Seconds to fully refill ping spam tokens.",
+					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1.0f, 120.0f)
+
+CVAR(				sv_ping_teammates, "1", "Allow clients to see teammate ping markers.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR(				sv_ping_hordebosses, "1", "Allow clients to see horde boss ping markers.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 CVAR_RANGE(			sv_fraglimit,     "0", "Sets the amount of frags a player can accumulate before the game ends",
 					CVARTYPE_WORD, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 65536.0f)
 

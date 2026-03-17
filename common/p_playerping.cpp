@@ -42,14 +42,85 @@
 #include "../client/src/cl_main.h"
 #include "r_main.h"
 #include "v_text.h"
+#include "v_video.h"
 extern byte* Ranges;
+EXTERN_CVAR(cl_showpings)
+EXTERN_CVAR(cl_ping_pickups)
+EXTERN_CVAR(cl_ping_monsters)
+EXTERN_CVAR(cl_ping_flags)
+EXTERN_CVAR(cl_ping_teammates)
+EXTERN_CVAR(cl_ping_hordebosses)
 #endif
 #include "../client/sdl/afxres.h"
+
+EXTERN_CVAR(sv_ping_spam_enabled)
+EXTERN_CVAR(sv_ping_spam_max_tokens)
+EXTERN_CVAR(sv_ping_spam_window)
+EXTERN_CVAR(sv_pingsystem)
+EXTERN_CVAR(sv_ping_teammates)
+EXTERN_CVAR(sv_ping_hordebosses)
 
 //------------------------------------------------------------------------------
 
 namespace
 {
+struct pingSpamState_t
+{
+	float tokens = 0.0f;
+	int lasttic = 0;
+	bool initialized = false;
+};
+
+std::array<pingSpamState_t, MAXPLAYERS> g_pingSpamState{};
+
+void P_ResetPingSpamState(player_t& player)
+{
+	if (player.id < MAXPLAYERS)
+	{
+		g_pingSpamState[player.id] = pingSpamState_t{};
+	}
+}
+
+void P_ResetAllPingSpamState()
+{
+	for (pingSpamState_t& state : g_pingSpamState)
+	{
+		state = pingSpamState_t{};
+	}
+}
+
+bool P_ConsumePingToken(player_t& player)
+{
+	if (!serverside || !sv_ping_spam_enabled)
+		return true;
+	if (player.id >= MAXPLAYERS)
+		return true;
+
+	pingSpamState_t& state = g_pingSpamState[player.id];
+	const float maxTokens = (std::max)(1.0f, static_cast<float>(sv_ping_spam_max_tokens));
+	const float refillWindow = (std::max)(1.0f, static_cast<float>(sv_ping_spam_window));
+	const float refillPerTic = maxTokens / (refillWindow * TICRATE);
+
+	if (!state.initialized)
+	{
+		state.tokens = maxTokens;
+		state.lasttic = ::gametic;
+		state.initialized = true;
+	}
+	else
+	{
+		const int elapsed = (std::max)(0, ::gametic - state.lasttic);
+		state.tokens = (std::min)(maxTokens, state.tokens + refillPerTic * elapsed);
+		state.lasttic = ::gametic;
+	}
+
+	if (state.tokens < 1.0f)
+		return false;
+
+	state.tokens -= 1.0f;
+	return true;
+}
+
 int P_PingLumpForType(const ping_type_t type)
 {
 	switch (type)
@@ -103,19 +174,49 @@ team_t P_PingFlagTeamForActor(const AActor* actor)
 	return TEAM_NONE;
 }
 
-translationref_t P_PingTeamTranslation(team_t team)
+translationref_t P_PingTeamTranslationInternal(team_t team)
 {
 #ifdef CLIENT_APP
-	for (const player_t& pl : players)
+	static std::array<std::array<byte, 256>, NUMTEAMS> teamTrans{};
+	static bool built = false;
+	if (!built)
 	{
-		if (!pl.ingame() || !pl.mo)
-			continue;
-		if (pl.userinfo.team == team)
-			return pl.mo->translation;
+		for (int t = 0; t < NUMTEAMS; t++)
+		{
+			for (int i = 0; i < 256; i++)
+				teamTrans[t][i] = static_cast<byte>(i);
+		}
+
+		const palette_t* pal = V_GetDefaultPalette();
+		auto buildRamp = [&](team_t t)
+		{
+			const TeamInfo* teamInfo = GetTeamInfo(t);
+			if (!teamInfo)
+				return;
+			const int tr = teamInfo->Color.getr();
+			const int tg = teamInfo->Color.getg();
+			const int tb = teamInfo->Color.getb();
+
+			for (int i = 0; i < 16; i++)
+			{
+				const argb_t src = pal->basecolors[0x70 + i];
+				// Preserve source ramp lighting and tint it toward the team hue.
+				const int intensity = (src.getr() * 54 + src.getg() * 183 + src.getb() * 19) >> 8;
+				const int r = (tr * intensity) / 255;
+				const int g = (tg * intensity) / 255;
+				const int b = (tb * intensity) / 255;
+				teamTrans[t][0x70 + i] = static_cast<byte>(V_BestColor(pal->basecolors, r, g, b));
+			}
+		};
+
+		buildRamp(TEAM_BLUE);
+		buildRamp(TEAM_RED);
+		buildRamp(TEAM_GREEN);
+		built = true;
 	}
 
-	if (team == TEAM_RED)
-		return translationref_t(translationtables + (MAXPLAYERS + 2) * 256);
+	if (team >= TEAM_BLUE && team < NUMTEAMS)
+		return translationref_t(teamTrans[team].data());
 #endif
 	return {};
 }
@@ -201,6 +302,7 @@ struct pingTrace_t
 	bool blocked = false;
 	bool allow_autoaim = false;
 	fixed_t autoaim_dist = 0;
+	ping_filter_t filter{};
 } g_pingTrace;
 
 bool PTR_PingTraverse(intercept_t* in)
@@ -217,6 +319,20 @@ bool PTR_PingTraverse(intercept_t* in)
 		if (!thing || thing == g_pingTrace.source)
 			return true;
 		const bool isPickup = (thing->flags & MF_SPECIAL) != 0;
+		const team_t flagTeam = P_PingFlagTeamForActor(thing);
+		const bool isMonsterTarget =
+		    ((G_IsHordeMode() && P_IsHordeBossForPing(thing)) ||
+		     (!thing->player && (thing->flags & MF_SHOOTABLE) != 0));
+
+		if ((flagTeam != TEAM_NONE && !g_pingTrace.filter.flags) ||
+		    (flagTeam == TEAM_NONE && isPickup && !g_pingTrace.filter.pickups) ||
+		    (isMonsterTarget && !g_pingTrace.filter.monsters))
+		{
+			// Ignore filtered actor targets so pinging can continue through to
+			// other valid targets/world geometry.
+			return true;
+		}
+
 		if ((thing->flags & MF_SHOOTABLE) == 0 && !isPickup &&
 		    thing->player == nullptr)
 			return true;
@@ -340,7 +456,7 @@ bool P_ClampPingToWorld(v3fixed_t& point, const fixed_t shootz, const fixed_t sl
 
 v3fixed_t P_TracePingEndpoint(const AActor* source, fixed_t shootz, angle_t angle, fixed_t slope,
                               fixed_t range, AActor*& outTarget, bool& outHit,
-                              bool allowAutoAim)
+                              bool allowAutoAim, const ping_filter_t& filter)
 {
 	const int angleidx = angle >> ANGLETOFINESHIFT;
 	const fixed_t x1 = source->x;
@@ -360,6 +476,7 @@ v3fixed_t P_TracePingEndpoint(const AActor* source, fixed_t shootz, angle_t angl
 	g_pingTrace.allow_autoaim = allowAutoAim;
 	g_pingTrace.autoaim_dist =
 	    source && source->player ? source->player->userinfo.aimdist : 0;
+	g_pingTrace.filter = filter;
 	g_pingTrace.hit = {x2, y2, g_pingTrace.shootz + FixedMul(range, slope)};
 	g_pingTrace.hitfrac = FRACUNIT;
 
@@ -402,14 +519,22 @@ translationref_t P_PingReadablePlayerTranslation(const player_t& pl)
 
 	return pl.mo ? pl.mo->translation : translationref_t{};
 }
+
+translationref_t P_PingTeamTranslation(team_t team)
+{
+	return P_PingTeamTranslationInternal(team);
+}
 #endif
 
 //------------------------------------------------------------------------------
 
-void P_PlayerPing(player_t &player)
+ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter)
 {
+	if (!sv_pingsystem)
+		return PING_SUBMIT_NONE;
+
 	if (!player.mo || player.spectator)
-		return;
+		return PING_SUBMIT_NONE;
 
 	static constexpr fixed_t PingRange = 64 * 64 * FRACUNIT;
 	static constexpr angle_t SpecificAssistStep = ANG(1);
@@ -430,7 +555,7 @@ void P_PlayerPing(player_t &player)
 	AActor* pingTarget = nullptr;
 	bool pingHit = false;
 	ping.pos = P_TracePingEndpoint(player.mo, shootz, aimAngle, pitchSlope, PingRange, pingTarget,
-	                               pingHit, enableActorAutoAim);
+	                               pingHit, enableActorAutoAim, filter);
 
 	// Specific-target assist (~10 degree cone): sweep nearby angles and select
 	// a specific ping target (item/monster/boss/flag).
@@ -450,7 +575,7 @@ void P_PlayerPing(player_t &player)
 				bool testHit = false;
 				v3fixed_t testPos = P_TracePingEndpoint(player.mo, shootz, testAngle, pitchSlope,
 				                                        PingRange, testTarget, testHit,
-				                                        enableActorAutoAim);
+				                                        enableActorAutoAim, filter);
 				if (P_IsSpecificPingTarget(testTarget))
 				{
 					aimAngle = testAngle;
@@ -523,12 +648,11 @@ void P_PlayerPing(player_t &player)
 			ping.follow_target = ping.target_netid != 0;
 		}
 
-		PrintFmt("Ping: {}\n", ping.pos);
 	}
 	else
 	{
 		if (!pingHit)
-			return;
+			return PING_SUBMIT_NONE;
 
 		ping.target_netid = 0;
 		ping.follow_target = false;
@@ -556,15 +680,21 @@ void P_PlayerPing(player_t &player)
 			}
 		}
 
-		PrintFmt("World ping: {}\n", ping.pos);
+	}
+
+	const bool retapWarning = ping.type == PING_WARNING;
+	if (!retapWarning && !P_ConsumePingToken(player))
+	{
+		return PING_SUBMIT_RATE_LIMITED;
 	}
 
 	int lump = P_PingLumpForType(ping.type);
 	if (lump == -1)
-		return;
+		return PING_SUBMIT_NONE;
 	ping.lump = lump;
 
 	player.player_ping = std::make_unique<playerPing_s>(std::move(ping));
+	return retapWarning ? PING_SUBMIT_PLACED_RETAP_WARNING : PING_SUBMIT_PLACED;
 }
 
 //------------------------------------------------------------------------------
@@ -584,6 +714,14 @@ void P_ClearAllPlayerPings()
 	{
 		pl.player_ping.reset();
 	}
+
+	P_ResetAllPingSpamState();
+}
+
+void P_ClearPlayerPingState(player_t& player)
+{
+	player.player_ping.reset();
+	P_ResetPingSpamState(player);
 }
 
 //------------------------------------------------------------------------------
@@ -624,6 +762,12 @@ bool P_ResolvePingPosition(const playerPing_s& ping, v3fixed_t& outPos)
 void R_AddPingSprites()
 {
 #ifdef CLIENT_APP
+	if (!sv_pingsystem || !cl_showpings)
+		return;
+
+	const bool allowTeammateMarkers = sv_ping_teammates && cl_ping_teammates;
+	const bool allowHordeBossMarkers = sv_ping_hordebosses && cl_ping_hordebosses;
+
 	static constexpr fixed_t StrictHeadOffset = 12 * FRACUNIT;
 	static constexpr fixed_t BossHeadOffset = 24 * FRACUNIT;
 	static constexpr fixed_t FollowPingSmoothing = FRACUNIT / 3;
@@ -670,6 +814,10 @@ void R_AddPingSprites()
 		if (P_IsPingExpired(ping))
 			continue;
 		if (consoleplayer().mo && ping.target_netid == consoleplayer().mo->netid)
+			continue;
+		if (ping.type == PING_TEAMMATE && !allowTeammateMarkers)
+			continue;
+		if (ping.type == PING_BOSS && !allowHordeBossMarkers)
 			continue;
 
 		v3fixed_t pos{};
@@ -724,13 +872,15 @@ void R_AddPingSprites()
 		else if (!translation && pl.mo)
 			translation = pl.mo->translation;
 		if (ping.type == PING_FLAG && ping.flag_team != TEAM_NONE)
-			translation = P_PingTeamTranslation(ping.flag_team);
+			translation = P_PingTeamTranslationInternal(ping.flag_team);
 
-		R_Add3DHUDSprite(ping.lump, pos, translation, 1.0f, FixedPingScreenPx,
-		                 FixedPingScreenPx, false);
+		R_Add3DHUDSprite(
+		    ping.lump, pos, translation, 1.0f,
+		    ping.type == PING_BOSS ? FixedBossScreenPx : FixedPingScreenPx,
+		    ping.type == PING_BOSS ? FixedBossScreenPx : FixedPingScreenPx, false);
 	}
 
-	if (G_IsHordeMode())
+	if (G_IsHordeMode() && allowHordeBossMarkers)
 	{
 		AActor* view = consoleplayer().camera ? consoleplayer().camera : consoleplayer().mo;
 		const int bossLump = P_PingLumpForType(PING_BOSS);
@@ -753,11 +903,17 @@ void R_AddPingSprites()
 		}
 	}
 
-	if (G_IsCoopGame() || G_IsTeamGame())
+	if ((G_IsCoopGame() || G_IsTeamGame()) && allowTeammateMarkers)
 	{
 		const int teammateLump = P_PingLumpForType(PING_TEAMMATE);
 		if (teammateLump != -1)
 		{
+			static constexpr int TeammateNearPx = 56;
+			static constexpr int TeammateFarPx = 22;
+			static constexpr fixed_t TeammateNearDist = 512 * FRACUNIT;
+			static constexpr fixed_t TeammateFarDist = 4096 * FRACUNIT;
+			AActor* view = consoleplayer().camera ? consoleplayer().camera : consoleplayer().mo;
+
 			for (const player_t& pl : players)
 			{
 				if (pl.id == consoleplayer().id || !pl.ingame() || pl.spectator || !pl.mo)
@@ -772,9 +928,36 @@ void R_AddPingSprites()
 				const fixed_t pz = pl.mo->prevz + FixedMul(render_lerp_amount, pl.mo->z - pl.mo->prevz);
 				v3fixed_t pos{px, py, pz + pl.mo->height + StrictHeadOffset};
 				pos = smoothActorPos(pl.mo->netid, pos);
+
+				int teammatePx = TeammateNearPx;
+				if (view)
+				{
+					const fixed_t dist = P_AproxDistance(view->x - px, view->y - py);
+					const fixed_t clamped =
+					    std::clamp(dist, TeammateNearDist, TeammateFarDist);
+					const fixed_t t = FixedDiv(clamped - TeammateNearDist,
+					                           TeammateFarDist - TeammateNearDist);
+					teammatePx = TeammateNearPx -
+					             ((TeammateNearPx - TeammateFarPx) * t >> FRACBITS);
+
+					// Keep teammate icon from exceeding the projected sprite width.
+					// This adapts automatically to modded player radii/sprite scales.
+					fixed_t projTx = 0, projTy = 0;
+					R_RotatePoint(px - viewx, py - viewy, ANG90 - viewangle, projTx, projTy);
+					if (projTy > FRACUNIT)
+					{
+						const int left = R_ProjectPointX(projTx - pl.mo->radius, projTy);
+						const int right = R_ProjectPointX(projTx + pl.mo->radius, projTy);
+						const int projectedWidth = right >= left ? (right - left) : (left - right);
+						if (projectedWidth > 0)
+							teammatePx = (std::min)(teammatePx, projectedWidth);
+					}
+				}
+				teammatePx = (std::max)(24, teammatePx);
+
 				translationref_t trans = P_PingReadablePlayerTranslation(pl);
-				R_Add3DHUDSprite(teammateLump, pos, trans, 1.0f, FixedPingScreenPx,
-				                 FixedPingScreenPx, false);
+				R_Add3DHUDSprite(teammateLump, pos, trans, 1.0f, teammatePx,
+				                 teammatePx, false);
 			}
 		}
 	}
@@ -807,6 +990,13 @@ BEGIN_COMMAND(player_ping)
 	}
 
 #ifdef CLIENT_APP
+	ping_filter_t filter{};
+	if (!cl_showpings)
+		return;
+	filter.pickups = cl_ping_pickups;
+	filter.monsters = cl_ping_monsters;
+	filter.flags = cl_ping_flags;
+
 	// Connected clients must request ping creation from the server so that
 	// other clients receive the replicated ping message.
 	if (connected)
@@ -814,11 +1004,20 @@ BEGIN_COMMAND(player_ping)
 		buf_t& netBuf = messenger.NetBuf().Obtain();
 		MSG_WriteMarker(&netBuf, clc_netcmd);
 		MSG_WriteString(&netBuf, "player_ping");
-		MSG_WriteByte(&netBuf, 0);
+		MSG_WriteByte(&netBuf, 3);
+		MSG_WriteString(&netBuf, filter.pickups ? "1" : "0");
+		MSG_WriteString(&netBuf, filter.monsters ? "1" : "0");
+		MSG_WriteString(&netBuf, filter.flags ? "1" : "0");
 		return;
 	}
+#else
+	ping_filter_t filter{};
 #endif
 
-	P_PlayerPing(consoleplayer());
+	const ping_submit_result_t result = P_PlayerPing(consoleplayer(), filter);
+	if (result == PING_SUBMIT_RATE_LIMITED)
+	{
+		PrintFmt(PRINT_HIGH, "Ping cooling down. Please wait.\n");
+	}
 }
 END_COMMAND(player_ping)

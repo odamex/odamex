@@ -28,12 +28,27 @@
 
 #include "d_player.h"
 
+enum ping_submit_result_t
+{
+	PING_SUBMIT_NONE = 0,
+	PING_SUBMIT_PLACED,
+	PING_SUBMIT_PLACED_RETAP_WARNING,
+	PING_SUBMIT_RATE_LIMITED
+};
+
+struct ping_filter_t
+{
+	bool pickups = true;
+	bool monsters = true;
+	bool flags = true;
+};
+
 /**
  * @brief A player wants to ping something, try to do so.
  *
  * @param player Player who wants to ping.
  */
-void P_PlayerPing(player_t &player);
+ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter = ping_filter_t{});
 
 /**
  * @brief Add ping sprites to be rendered.
@@ -46,6 +61,11 @@ void R_AddPingSprites();
  * Used for graceful cleanup during disconnect and level transitions.
  */
 void P_ClearAllPlayerPings();
+
+/**
+ * @brief Clear ping state for a specific player (including spam limiter state).
+ */
+void P_ClearPlayerPingState(player_t& player);
 
 /**
  * @brief Resolve a ping's current world position.
@@ -68,4 +88,11 @@ bool P_IsPingExpired(const playerPing_s& ping);
  * readable fallback for colors that are too close to black/white.
  */
 translationref_t P_PingReadablePlayerTranslation(const player_t& pl);
+
+/**
+ * @brief Return a fixed team-color translation for ping markers.
+ *
+ * This is deterministic and does not depend on player colors.
+ */
+translationref_t P_PingTeamTranslation(team_t team);
 #endif

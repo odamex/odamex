@@ -148,9 +148,15 @@ fixed_t 		sprtopscreen;
 void R_BlastSpriteColumn(void (*drawfunc)())
 {
 	tallpost_t* post = dcol.post;
+	static bool warnedMalformedSpritePost = false;
+	static constexpr uint32_t MaxPostStepBytes = 1u << 20;
+	static constexpr uint32_t MaxPostChain = 8192;
 
-	while (!post->end())
+	for (uint32_t i = 0; i < MaxPostChain; i++)
 	{
+		if (post->end())
+			return;
+
 		// calculate unclipped screen coordinates for post
 		int topscreen = sprtopscreen + spryscale * post->topdelta + 1;
 
@@ -193,7 +199,25 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 		if (dcol.yl >= 0 && dcol.yh < viewheight && dcol.yl <= dcol.yh)
 			drawfunc();
 
-		post = post->next();
+		const uintptr_t cur = reinterpret_cast<uintptr_t>(post);
+		const uintptr_t next = cur + 4u + static_cast<uint32_t>(post->length);
+		if (next <= cur || (next - cur) > MaxPostStepBytes)
+		{
+			if (!warnedMalformedSpritePost)
+			{
+				warnedMalformedSpritePost = true;
+				PrintFmt(PRINT_WARNING, "Malformed sprite post data detected; skipping column.\n");
+			}
+			return;
+		}
+
+		post = reinterpret_cast<tallpost_t*>(next);
+	}
+
+	if (!warnedMalformedSpritePost)
+	{
+		warnedMalformedSpritePost = true;
+		PrintFmt(PRINT_WARNING, "Sprite post chain exceeded sanity limit; skipping column.\n");
 	}
 }
 
@@ -231,14 +255,14 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	// [AM] Ensure that we're not going to fall off the side of the patch.
 	const short patchWidth = W_CachePatch(vis->patch, PU_CACHE)->width();
 	const int start = vis->startfrac >> FRACBITS;
-	if (start < 0 || start > patchWidth)
+	if (start < 0 || start >= patchWidth)
 	{
 		return;
 	}
 
 	const int enditers = vis->x2 - vis->x1;
 	const int end = (vis->startfrac + (enditers * vis->xiscale)) >> FRACBITS;
-	if (end < 0 || end > patchWidth)
+	if (end < 0 || end >= patchWidth)
 	{
 		return;
 	}

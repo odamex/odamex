@@ -123,6 +123,14 @@ EXTERN_CVAR (hud_revealsecrets)
 EXTERN_CVAR(hud_feedobits)
 EXTERN_CVAR(hud_feedtime)
 EXTERN_CVAR(hud_extendedinfo)
+EXTERN_CVAR(cl_ping_hudindicators)
+EXTERN_CVAR(cl_showpings)
+EXTERN_CVAR(cl_ping_sound)
+EXTERN_CVAR(cl_ping_pickups)
+EXTERN_CVAR(cl_ping_monsters)
+EXTERN_CVAR(cl_ping_flags)
+EXTERN_CVAR(cl_ping_teammates)
+EXTERN_CVAR(cl_ping_hordebosses)
 
 // [Ralphis - Menu] Compatibility Menu
 EXTERN_CVAR (co_allowdropoff)
@@ -368,6 +376,7 @@ static menuitem_t ControlsItems[] = {
 	{ yellowtext,"Actions",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
 	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+use"} },
+	{ control,	"Ping",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"player_ping"} },
 	{ control,	"Next weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapnext"} },
 	{ control,	"Previous weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapprev"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
@@ -831,6 +840,7 @@ menu_t WeaponMenu = {
 static void StartHUDMenu();
 static void StartMessagesMenu (void);
 static void StartAutomapMenu (void);
+static void StartPingMenu (void);
 void ResetCustomColors (void);
 
 EXTERN_CVAR (am_rotate)
@@ -908,6 +918,7 @@ static menuitem_t VideoItems[] = {
     {more, "Heads-up display", {NULL}, {0.0}, {0.0}, {0.0}, {(value_t*)StartHUDMenu}},
 	{ more,		"Messages",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartMessagesMenu} },
 	{ more,		"Automap",				    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartAutomapMenu} },
+	{ more,		"Ping System",			    {NULL},					{0.0}, {0.0},	{0.0},  {(value_t *)StartPingMenu} },
 	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
 	{ slider,	"Screen size",			    {&screenblocks},	   	{3.0}, {12.0},	{1.0},  {NULL} },
 	{ slider,	"Brightness",			    {&gammalevel},			{1.0}, {8.0},	{1.0},  {NULL} },
@@ -1048,6 +1059,39 @@ menu_t HUDMenu = {
     0,                      // scrolltop
     0,                      // scrollpos
     NULL,                   // refreshfunc
+};
+
+/*=======================================
+ *
+ * Ping System Menu
+ *
+ *=======================================*/
+
+static menuitem_t PingItems[] = {
+	{ yellowtext, "General", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+	{ discrete, "Enable ping system", {&cl_showpings}, {2.0}, {0.0}, {0.0}, {OnOff} },
+	{ discrete, "Show HUD indicators", {&cl_ping_hudindicators}, {2.0}, {0.0}, {0.0}, {OnOff} },
+	{ discrete, "Play ping sound", {&cl_ping_sound}, {2.0}, {0.0}, {0.0}, {OnOff} },
+	{ redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext, "Ping Targets", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+	{ discrete, "Ping pickups", {&cl_ping_pickups}, {2.0}, {0.0}, {0.0}, {OnOff} },
+	{ discrete, "Ping monsters", {&cl_ping_monsters}, {2.0}, {0.0}, {0.0}, {OnOff} },
+	{ discrete, "Ping CTF flags", {&cl_ping_flags}, {2.0}, {0.0}, {0.0}, {OnOff} },
+	{ redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+	{ yellowtext, "Auto Markers", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+	{ discrete, "Show teammates", {&cl_ping_teammates}, {2.0}, {0.0}, {0.0}, {OnOff} },
+	{ discrete, "Show horde bosses", {&cl_ping_hordebosses}, {2.0}, {0.0}, {0.0}, {OnOff} },
+};
+
+menu_t PingMenu = {
+	"M_VIDEO",
+	1,
+	ARRAY_LENGTH(PingItems),
+	0,
+	PingItems,
+	0,
+	0,
+	NULL,
 };
 
 /*=======================================
@@ -2582,6 +2626,11 @@ static void StartMessagesMenu (void)
 static void StartAutomapMenu (void)
 {
 	M_SwitchMenu (&AutomapMenu);
+}
+
+static void StartPingMenu (void)
+{
+	M_SwitchMenu(&PingMenu);
 }
 
 void ResetCustomColors (void)

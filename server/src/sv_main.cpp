@@ -1182,6 +1182,7 @@ bool SV_SetupUserInfo(player_t &player)
 	}
 	if (new_team == TEAM_NONE || (new_team == TEAM_GREEN && sv_teamsinplay < NUMTEAMS))
 		new_team = TEAM_BLUE; // Set the default team to the player.
+	const bool team_changed = new_team != old_team;
 
 	gender_t gender = static_cast<gender_t>(MSG_ReadLong());
 
@@ -1230,6 +1231,10 @@ bool SV_SetupUserInfo(player_t &player)
 
 	player.userinfo.gender			= gender;
 	player.userinfo.team			= new_team;
+	if (team_changed)
+	{
+		P_ClearPlayerPingState(player);
+	}
 
 	player.userinfo.colorpreset		= colorpreset;
 
@@ -1353,7 +1358,12 @@ void SV_ForceSetTeam (player_t &who, team_t team)
 {
 	client_t *cl = &who.client;
 
+	const team_t oldTeam = who.userinfo.team;
 	who.userinfo.team = team;
+	if (team != oldTeam)
+	{
+		P_ClearPlayerPingState(who);
+	}
 	PrintFmt(PRINT_HIGH, "Forcing {} to {} team\n", who.userinfo.netname.c_str(), team == TEAM_NONE ? "NONE" : V_GetTeamColor(team).c_str());
 
 	MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_ForceTeam(team));
@@ -4063,8 +4073,28 @@ void SV_NetCmd(player_t& player)
 	case CONST_HASH("player_ping"):
 		if (player.spectator)
 			break;
-		P_PlayerPing(player);
-		SV_BroadcastPlayerPing(player);
+		{
+			ping_filter_t filter{};
+			if (netargs.size() >= 4)
+			{
+				filter.pickups = netargs[1] != "0";
+				filter.monsters = netargs[2] != "0";
+				filter.flags = netargs[3] != "0";
+			}
+
+			switch (P_PlayerPing(player, filter))
+			{
+			case PING_SUBMIT_RATE_LIMITED:
+				SV_PlayerPrintFmt(PRINT_HIGH, player.id, "Ping cooling down. Please wait.\n");
+				break;
+			case PING_SUBMIT_PLACED:
+			case PING_SUBMIT_PLACED_RETAP_WARNING:
+				SV_BroadcastPlayerPing(player);
+				break;
+			default:
+				break;
+			}
+		}
 		break;
 	default: break;
 	}
