@@ -2247,8 +2247,9 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 		// end of game hell hack
 		if (sv_gametype == GM_COOP || sv_allowexit)
 		{
-			if ((target->subsector->sector->special & 255) == special
-				&& damage >= target->health)
+			if (   target->subsector
+			    && (target->subsector->sector->special & 255) == special
+			    && damage >= target->health)
 			{
 				damage = target->health - 1;
 			}

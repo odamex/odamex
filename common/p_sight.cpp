@@ -480,6 +480,9 @@ bool P_CheckSightZDoom(const AActor *t1, const AActor *t2)
 
 bool P_CheckSightEdgesZDoom(const AActor *t1, const AActor *t2, float radius_boost)
 {
+	if(!t1 || !t2 || !t1->subsector || !t2->subsector)
+		return false;
+
 	const sector_t *s1 = t1->subsector->sector;
 	const sector_t *s2 = t2->subsector->sector;
 	int pnum = (s1 - sectors) * numsectors + (s2 - sectors);
