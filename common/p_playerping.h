@@ -41,6 +41,7 @@ struct ping_filter_t
 	bool pickups = true;
 	bool monsters = true;
 	bool flags = true;
+	bool mouselook = false;
 };
 
 /**
@@ -48,7 +49,8 @@ struct ping_filter_t
  *
  * @param player Player who wants to ping.
  */
-ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter = ping_filter_t{});
+ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter = ping_filter_t{},
+                                  bool dropAtSelf = false);
 
 /**
  * @brief Add ping sprites to be rendered.

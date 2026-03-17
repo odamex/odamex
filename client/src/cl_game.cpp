@@ -317,6 +317,9 @@ BEGIN_COMMAND (turnspeeds)
 END_COMMAND (turnspeeds)
 
 static int turntick;
+static bool pingactiondown;
+static bool pingactionfired;
+static dtime_t pingactionstartms;
 BEGIN_COMMAND (turn180)
 {
 	turntick = TURN180_TICKS;
@@ -359,6 +362,8 @@ extern constate_e ConsoleState;
 //
 void G_BuildTiccmd(ticcmd_t *cmd)
 {
+	static constexpr dtime_t PING_HOLD_MS = 300;
+
 	::localview.skipangle = false;
 	::localview.skippitch = false;
 
@@ -374,6 +379,29 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 
 	if ((&consoleplayer())->spectator && Actions[ACTION_USE] && connected)
 		AddCommandString("join");
+
+	const bool pingDown = Actions[ACTION_PING] != 0;
+	if (pingDown && !pingactiondown)
+	{
+		pingactiondown = true;
+		pingactionfired = false;
+		pingactionstartms = I_MSTime();
+	}
+	else if (pingDown && pingactiondown && !pingactionfired)
+	{
+		const dtime_t held = I_MSTime() - pingactionstartms;
+		if (held >= PING_HOLD_MS)
+		{
+			AddCommandString("player_ping_self");
+			pingactionfired = true;
+		}
+	}
+	else if (!pingDown && pingactiondown)
+	{
+		pingactiondown = false;
+		if (!pingactionfired)
+			AddCommandString("player_ping");
+	}
 
 	// [RH] only use two stage accelerative turning on the keyboard
 	//		and not the joystick, since we treat the joystick as

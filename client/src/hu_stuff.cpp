@@ -519,6 +519,8 @@ static void HU_DrawPingIndicator()
 			return W_CachePatch("OPNG_TM");
 		case PING_WARNING:
 			return W_CachePatch("OPNG_WRN");
+		case PING_DROP:
+			return W_CachePatch("FONTB01");
 		case PING_GENERAL:
 		default:
 			return W_CachePatch("OPNG_GEN");
@@ -712,6 +714,7 @@ static void HU_DrawPingIndicator()
 		if (ping.type == PING_FLAG && ping.flag_team != TEAM_NONE)
 			iconTranslation = flagTranslation(ping.flag_team);
 		else if (ping.type == PING_GENERAL || ping.type == PING_WARNING ||
+		         ping.type == PING_DROP ||
 		         ping.type == PING_TEAMMATE)
 			iconTranslation = P_PingReadablePlayerTranslation(player);
 

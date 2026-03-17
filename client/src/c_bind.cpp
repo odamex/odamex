@@ -90,7 +90,7 @@ OBinding DefaultBindings[] =
 #else
 	{"mouse1", "+attack"},
 	{"mouse2", "+strafe"},
-	{"mouse3", "player_ping"},
+	{"mouse3", "+ping"},
 	{"mouse4", "+jump"},		// <- So is this <- change to jump
 	{"mouse5", "+speed"},		// <- new for +speed
 	{"joy1", "+jump"},

@@ -4075,14 +4075,19 @@ void SV_NetCmd(player_t& player)
 			break;
 		{
 			ping_filter_t filter{};
+			bool dropAtSelf = false;
 			if (netargs.size() >= 4)
 			{
 				filter.pickups = netargs[1] != "0";
 				filter.monsters = netargs[2] != "0";
 				filter.flags = netargs[3] != "0";
+				if (netargs.size() >= 5)
+					filter.mouselook = netargs[4] != "0";
+				if (netargs.size() >= 6)
+					dropAtSelf = netargs[5] != "0";
 			}
 
-			switch (P_PlayerPing(player, filter))
+			switch (P_PlayerPing(player, filter, dropAtSelf))
 			{
 			case PING_SUBMIT_RATE_LIMITED:
 				SV_PlayerPrintFmt(PRINT_HIGH, player.id, "Ping cooling down. Please wait.\n");

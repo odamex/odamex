@@ -526,6 +526,8 @@ static void CL_PlayerPing(const odaproto::svc::PlayerPing* msg)
 			return W_GetNumForName("OPNG_TM");
 		case PING_WARNING:
 			return W_GetNumForName("OPNG_WRN");
+		case PING_DROP:
+			return W_GetNumForName("FONTB01");
 		case PING_GENERAL:
 		default:
 			return W_GetNumForName("OPNG_GEN");

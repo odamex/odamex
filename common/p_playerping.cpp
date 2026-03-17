@@ -48,6 +48,8 @@ EXTERN_CVAR(cl_showpings)
 EXTERN_CVAR(cl_ping_pickups)
 EXTERN_CVAR(cl_ping_monsters)
 EXTERN_CVAR(cl_ping_flags)
+EXTERN_CVAR(cl_mouselook)
+EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(hud_marker_teammates)
 EXTERN_CVAR(hud_marker_hordeboss)
 #endif
@@ -137,6 +139,8 @@ int P_PingLumpForType(const ping_type_t type)
 		return W_GetNumForName("OPNG_TM");
 	case PING_WARNING:
 		return W_GetNumForName("OPNG_WRN");
+	case PING_DROP:
+		return W_GetNumForName("FONTB01");
 	case PING_GENERAL:
 	default:
 		return W_GetNumForName("OPNG_GEN");
@@ -333,6 +337,10 @@ bool PTR_PingTraverse(intercept_t* in)
 	if (!in)
 		return true;
 
+	static constexpr fixed_t PickupMaxPingDist = 1536 * FRACUNIT;
+	static constexpr fixed_t PickupAimSpanToleranceMouselook = FRACUNIT / 32;
+	static constexpr fixed_t PickupAimCenterToleranceMouselook = FRACUNIT / 28;
+
 	const fixed_t z =
 	    g_pingTrace.shootz + FixedMul(g_pingTrace.slope, FixedMul(in->frac, g_pingTrace.range));
 
@@ -380,6 +388,31 @@ bool PTR_PingTraverse(intercept_t* in)
 		const fixed_t dist = FixedMul(g_pingTrace.range, in->frac);
 		if (dist <= 0)
 			return true;
+
+		if (isPickup)
+		{
+			// Keep item pinging deliberate: no long-range item grabs.
+			if (dist > PickupMaxPingDist)
+				return true;
+
+			// When freelook-style aiming is active, keep selection close to
+			// where the player is actually looking.
+			if (g_pingTrace.filter.mouselook)
+			{
+				const fixed_t itemCenterSlope =
+				    FixedDiv((thing->z + (thing->height >> 1)) - g_pingTrace.shootz, dist);
+				const fixed_t itemTopSlope =
+				    FixedDiv(thing->z + thing->height - g_pingTrace.shootz, dist);
+				const fixed_t itemBottomSlope =
+				    FixedDiv(thing->z - g_pingTrace.shootz, dist);
+				if (g_pingTrace.slope > itemTopSlope + PickupAimSpanToleranceMouselook ||
+				    g_pingTrace.slope < itemBottomSlope - PickupAimSpanToleranceMouselook)
+					return true;
+				if (std::abs(itemCenterSlope - g_pingTrace.slope) >
+				    PickupAimCenterToleranceMouselook)
+					return true;
+			}
+		}
 
 		const fixed_t topSlope = FixedDiv(thing->z + thing->height - g_pingTrace.shootz, dist);
 		const fixed_t bottomSlope = FixedDiv(thing->z - g_pingTrace.shootz, dist);
@@ -579,7 +612,7 @@ AActor* P_FindAssistFlagTarget(const player_t& player, const fixed_t shootz, con
 
 	AActor* best = nullptr;
 	fixed_t bestDist = maxRange + FRACUNIT;
-	static constexpr angle_t FlagAssistCone = ANG(12);
+	static constexpr angle_t FlagAssistCone = ANG(9);
 
 	for (int i = TEAM_BLUE; i < NUMTEAMS; i++)
 	{
@@ -607,7 +640,7 @@ AActor* P_FindAssistFlagTarget(const player_t& player, const fixed_t shootz, con
 		fixed_t allowance = player.userinfo.aimdist;
 		if (allowance <= 0)
 			allowance = FRACUNIT / 2;
-		allowance = FixedMul(allowance, FRACUNIT + (FRACUNIT >> 1)); // 1.5x tolerance
+		allowance = FixedMul(allowance, FRACUNIT + (FRACUNIT >> 2)); // 1.25x tolerance
 		if (std::abs(desiredSlope - pitchSlope) > allowance)
 			continue;
 
@@ -644,7 +677,7 @@ translationref_t P_PingTeamTranslation(team_t team)
 
 //------------------------------------------------------------------------------
 
-ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter)
+ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter, bool dropAtSelf)
 {
 	if (!sv_pingsystem)
 		return PING_SUBMIT_NONE;
@@ -658,8 +691,13 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter)
 	static constexpr int FlagAssistExtraSweeps = 2;
 
 	const int32_t signedPitch = static_cast<int32_t>(player.mo->pitch);
+	ping_filter_t effectiveFilter = filter;
+	// If the player is pitched away from 0, treat this as freelook-style aiming
+	// even when explicit client mouselook state is unavailable.
+	if (signedPitch != 0)
+		effectiveFilter.mouselook = true;
 	const bool nearLevelPitch = std::abs(signedPitch) <= static_cast<int32_t>(ANG(3));
-	const bool nearLevelPitchFlags = std::abs(signedPitch) <= static_cast<int32_t>(ANG(8));
+	const bool nearLevelPitchFlags = std::abs(signedPitch) <= static_cast<int32_t>(ANG(6));
 	const bool enableActorAutoAim = player.userinfo.aimdist > 0 && nearLevelPitch;
 
 	playerPing_s ping{};
@@ -673,7 +711,7 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter)
 	AActor* pingTarget = nullptr;
 	bool pingHit = false;
 	ping.pos = P_TracePingEndpoint(player.mo, shootz, aimAngle, pitchSlope, PingRange, pingTarget,
-	                               pingHit, enableActorAutoAim, filter);
+	                               pingHit, enableActorAutoAim, effectiveFilter);
 
 	// Specific-target assist (~10 degree cone): sweep nearby angles and select
 	// a specific ping target (item/monster/boss/flag).
@@ -693,7 +731,7 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter)
 				bool testHit = false;
 				v3fixed_t testPos = P_TracePingEndpoint(player.mo, shootz, testAngle, pitchSlope,
 				                                        PingRange, testTarget, testHit,
-				                                        enableActorAutoAim, filter);
+				                                        enableActorAutoAim, effectiveFilter);
 				if (P_IsSpecificPingTarget(testTarget))
 				{
 					aimAngle = testAngle;
@@ -710,7 +748,7 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter)
 	}
 
 	// Slightly wider/taller assist for flags to make quick CTF flag pings easier.
-	if (filter.flags && !P_IsFlagPingTarget(pingTarget) && player.userinfo.aimdist > 0 &&
+	if (effectiveFilter.flags && !P_IsFlagPingTarget(pingTarget) && player.userinfo.aimdist > 0 &&
 	    nearLevelPitchFlags)
 	{
 		const int flagAssistSweeps = SpecificAssistSweeps + FlagAssistExtraSweeps;
@@ -723,7 +761,7 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter)
 				bool testHit = false;
 				const v3fixed_t testPos = P_TracePingEndpoint(player.mo, shootz, testAngle, pitchSlope,
 				                                              PingRange, testTarget, testHit, true,
-				                                              filter);
+				                                              effectiveFilter);
 				if (P_IsFlagPingTarget(testTarget))
 				{
 					aimAngle = testAngle;
@@ -740,7 +778,7 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter)
 	}
 
 	// Final fallback: search active CTF flag actors directly using cone/slope/sight.
-	if (filter.flags && !P_IsFlagPingTarget(pingTarget))
+	if (effectiveFilter.flags && !P_IsFlagPingTarget(pingTarget))
 	{
 		if (AActor* assistFlag = P_FindAssistFlagTarget(player, shootz, pitchSlope, PingRange))
 		{
@@ -753,10 +791,11 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter)
 	}
 
 	// Prefer monsters over pickups when both are in the targeting cone.
-	if (filter.monsters && filter.pickups && pingTarget && (pingTarget->flags & MF_SPECIAL) != 0)
+	if (effectiveFilter.monsters && effectiveFilter.pickups && pingTarget &&
+	    (pingTarget->flags & MF_SPECIAL) != 0)
 	{
 		AActor* const pickupTarget = pingTarget;
-		ping_filter_t monsterOnlyFilter = filter;
+		ping_filter_t monsterOnlyFilter = effectiveFilter;
 		monsterOnlyFilter.pickups = false;
 		monsterOnlyFilter.flags = false;
 
@@ -813,6 +852,19 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter)
 				pingHit = monsterHit;
 			}
 		}
+	}
+
+	if (dropAtSelf)
+	{
+		pingTarget = nullptr;
+		pingHit = true;
+		ping.pos.x = player.mo->x;
+		ping.pos.y = player.mo->y;
+		ping.pos.z = player.mo->z + 8 * FRACUNIT;
+		ping.target_netid = 0;
+		ping.follow_target = false;
+		ping.type = PING_DROP;
+		ping.flag_team = TEAM_NONE;
 	}
 
 	if (pingTarget)
@@ -880,6 +932,12 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter)
 		if (!pingHit)
 			return PING_SUBMIT_NONE;
 
+		if (dropAtSelf)
+		{
+			// Hold-to-drop is always a dedicated self marker, never upgraded.
+		}
+		else
+		{
 		ping.target_netid = 0;
 		ping.follow_target = false;
 		ping.type = PING_GENERAL;
@@ -904,6 +962,7 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter)
 					ping.pos = prev.pos;
 				}
 			}
+		}
 		}
 
 	}
@@ -1010,6 +1069,8 @@ void R_AddPingSprites()
 	static constexpr fixed_t PingScaleNearDist = 512 * FRACUNIT;
 	static constexpr fixed_t ItemScaleNearDist = 128 * FRACUNIT;
 	static constexpr fixed_t ItemScaleFarDist = 768 * FRACUNIT;
+	static constexpr fixed_t FlagScaleNearDist = 256 * FRACUNIT;
+	static constexpr fixed_t FlagScaleFarDist = 768 * FRACUNIT;
 	static constexpr fixed_t MonsterScaleNearDist = 1024 * FRACUNIT;
 	static constexpr fixed_t PingScaleFarDist = 2048 * FRACUNIT;
 	static std::array<v3fixed_t, MAXPLAYERS> followSmoothPos{};
@@ -1042,9 +1103,9 @@ void R_AddPingSprites()
 
 	auto scaledPingPx = [&](const ping_type_t type, const v3fixed_t& pos) -> int
 	{
-		// Only scale item/monster/general/warning pings.
-		if (type != PING_ITEM && type != PING_MONSTER && type != PING_GENERAL &&
-		    type != PING_WARNING)
+		// Only scale item/monster/flag/general/warning pings.
+		if (type != PING_ITEM && type != PING_MONSTER && type != PING_FLAG &&
+		    type != PING_GENERAL && type != PING_WARNING && type != PING_DROP)
 			return FixedPingScreenPx;
 
 		AActor* view = consoleplayer().camera ? consoleplayer().camera : consoleplayer().mo;
@@ -1062,6 +1123,12 @@ void R_AddPingSprites()
 			nearDist = ItemScaleNearDist;
 			farDist = ItemScaleFarDist;
 			farPx = (nearPx * 2) / 5; // 40%
+		}
+		else if (type == PING_FLAG)
+		{
+			nearDist = FlagScaleNearDist;
+			farDist = FlagScaleFarDist;
+			farPx = nearPx / 2; // 50%
 		}
 		else if (type == PING_MONSTER)
 		{
@@ -1144,7 +1211,7 @@ void R_AddPingSprites()
 		translationref_t translation = ping.translation;
 		if (ping.type == PING_ITEM)
 			translation = {};
-		else if (ping.type == PING_GENERAL || ping.type == PING_WARNING)
+		else if (ping.type == PING_GENERAL || ping.type == PING_WARNING || ping.type == PING_DROP)
 			translation = P_PingReadablePlayerTranslation(pl);
 		else if (!translation && pl.mo)
 			translation = pl.mo->translation;
@@ -1272,6 +1339,7 @@ BEGIN_COMMAND(player_ping)
 	filter.pickups = cl_ping_pickups;
 	filter.monsters = cl_ping_monsters;
 	filter.flags = cl_ping_flags;
+	filter.mouselook = cl_mouselook && sv_freelook;
 
 	// Connected clients must request ping creation from the server so that
 	// other clients receive the replicated ping message.
@@ -1280,10 +1348,11 @@ BEGIN_COMMAND(player_ping)
 		buf_t& netBuf = messenger.NetBuf().Obtain();
 		MSG_WriteMarker(&netBuf, clc_netcmd);
 		MSG_WriteString(&netBuf, "player_ping");
-		MSG_WriteByte(&netBuf, 3);
+		MSG_WriteByte(&netBuf, 4);
 		MSG_WriteString(&netBuf, filter.pickups ? "1" : "0");
 		MSG_WriteString(&netBuf, filter.monsters ? "1" : "0");
 		MSG_WriteString(&netBuf, filter.flags ? "1" : "0");
+		MSG_WriteString(&netBuf, filter.mouselook ? "1" : "0");
 		return;
 	}
 #else
@@ -1297,3 +1366,48 @@ BEGIN_COMMAND(player_ping)
 	}
 }
 END_COMMAND(player_ping)
+
+BEGIN_COMMAND(player_ping_self)
+{
+	if (::gamestate != GS_LEVEL)
+		return;
+	if (!multiplayer)
+		return;
+	if (consoleplayer().spectator)
+		return;
+	if (consoleplayer().playerstate != PST_LIVE)
+		return;
+
+#ifdef CLIENT_APP
+	ping_filter_t filter{};
+	if (!cl_showpings)
+		return;
+	filter.pickups = cl_ping_pickups;
+	filter.monsters = cl_ping_monsters;
+	filter.flags = cl_ping_flags;
+	filter.mouselook = cl_mouselook && sv_freelook;
+
+	if (connected)
+	{
+		buf_t& netBuf = messenger.NetBuf().Obtain();
+		MSG_WriteMarker(&netBuf, clc_netcmd);
+		MSG_WriteString(&netBuf, "player_ping");
+		MSG_WriteByte(&netBuf, 5);
+		MSG_WriteString(&netBuf, filter.pickups ? "1" : "0");
+		MSG_WriteString(&netBuf, filter.monsters ? "1" : "0");
+		MSG_WriteString(&netBuf, filter.flags ? "1" : "0");
+		MSG_WriteString(&netBuf, filter.mouselook ? "1" : "0");
+		MSG_WriteString(&netBuf, "1");
+		return;
+	}
+#else
+	ping_filter_t filter{};
+#endif
+
+	const ping_submit_result_t result = P_PlayerPing(consoleplayer(), filter, true);
+	if (result == PING_SUBMIT_RATE_LIMITED)
+	{
+		PrintFmt(PRINT_HIGH, "Ping cooling down. Please wait.\n");
+	}
+}
+END_COMMAND(player_ping_self)

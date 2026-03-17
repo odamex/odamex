@@ -60,6 +60,7 @@ struct ActionBits actionbits[NUM_ACTIONS] =
 	{ 0x0074d, ACTION_BACK,				"back" },
 	{ 0x007e4, ACTION_LEFT,				"left" },
 	{ 0x00816, ACTION_JUMP,				"jump" },
+	{ 0x00827, ACTION_PING,				"ping" },
 	{ 0x0106d, ACTION_KLOOK,			"klook" },
 	{ 0x0109d, ACTION_MLOOK,			"mlook" },
 	{ 0x010d8, ACTION_RIGHT,			"right" },

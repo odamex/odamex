@@ -376,7 +376,7 @@ static menuitem_t ControlsItems[] = {
 	{ yellowtext,"Actions",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
 	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+attack"} },
 	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+use"} },
-	{ control,	"Ping",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"player_ping"} },
+	{ control,	"Ping",					{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"+ping"} },
 	{ control,	"Next weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapnext"} },
 	{ control,	"Previous weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {(value_t *)"weapprev"} },
 	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
