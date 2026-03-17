@@ -158,11 +158,34 @@ team_t P_PingFlagTeamForActor(const AActor* actor)
 	if (!actor)
 		return TEAM_NONE;
 
+	// Prefer explicit mobj type matching for CTF flag actors.
+	switch (actor->type)
+	{
+	case MT_BFLG:
+	case MT_BDWN:
+	case MT_BCAR:
+		return TEAM_BLUE;
+	case MT_RFLG:
+	case MT_RDWN:
+	case MT_RCAR:
+		return TEAM_RED;
+	case MT_GFLG:
+	case MT_GDWN:
+	case MT_GCAR:
+		return TEAM_GREEN;
+	default:
+		break;
+	}
+
 	for (int i = TEAM_BLUE; i < NUMTEAMS; i++)
 	{
 		const TeamInfo* team = GetTeamInfo(static_cast<team_t>(i));
 		if (!team)
 			continue;
+
+		// Most reliable path: current CTF tracked flag actor for this team.
+		if (team->FlagData.actor && team->FlagData.actor == actor)
+			return static_cast<team_t>(i);
 
 		if (actor->sprite == team->FlagSprite || actor->sprite == team->FlagDownSprite ||
 		    actor->sprite == team->FlagCarrySprite)
@@ -333,6 +356,21 @@ bool PTR_PingTraverse(intercept_t* in)
 			// Ignore filtered actor targets so pinging can continue through to
 			// other valid targets/world geometry.
 			return true;
+		}
+
+		if (flagTeam != TEAM_NONE)
+		{
+			// Flags are rare/high-priority callouts: if the ray intersects a flag actor,
+			// accept it directly instead of requiring strict vertical slope matching.
+			const fixed_t dist = FixedMul(g_pingTrace.range, in->frac);
+			g_pingTrace.target = thing;
+			g_pingTrace.hitfrac = std::clamp(in->frac, 0, FRACUNIT);
+			g_pingTrace.hit.x = thing->x;
+			g_pingTrace.hit.y = thing->y;
+			g_pingTrace.hit.z = thing->z + (thing->height >> 1);
+			if (dist > 0)
+				g_pingTrace.hit.z = g_pingTrace.shootz + FixedMul(g_pingTrace.slope, dist);
+			return false;
 		}
 
 		if ((thing->flags & MF_SHOOTABLE) == 0 && !isPickup &&
@@ -532,6 +570,59 @@ bool P_IsFlagPingTarget(const AActor* target)
 {
 	return P_PingFlagTeamForActor(target) != TEAM_NONE;
 }
+
+AActor* P_FindAssistFlagTarget(const player_t& player, const fixed_t shootz, const fixed_t pitchSlope,
+                               const fixed_t maxRange)
+{
+	if (!player.mo)
+		return nullptr;
+
+	AActor* best = nullptr;
+	fixed_t bestDist = maxRange + FRACUNIT;
+	static constexpr angle_t FlagAssistCone = ANG(12);
+
+	for (int i = TEAM_BLUE; i < NUMTEAMS; i++)
+	{
+		const TeamInfo* team = GetTeamInfo(static_cast<team_t>(i));
+		if (!team || !team->FlagData.actor)
+			continue;
+
+		const AActor* actor = team->FlagData.actor.operator->();
+		if (!actor || actor == player.mo)
+			continue;
+
+		const fixed_t dx = actor->x - player.mo->x;
+		const fixed_t dy = actor->y - player.mo->y;
+		const fixed_t dist = P_AproxDistance(dx, dy);
+		if (dist <= 0 || dist > maxRange)
+			continue;
+
+		const angle_t to = R_PointToAngle2(player.mo->x, player.mo->y, actor->x, actor->y);
+		const int32_t delta = static_cast<int32_t>(to - player.mo->angle);
+		if (std::abs(delta) > static_cast<int32_t>(FlagAssistCone))
+			continue;
+
+		const fixed_t centerz = actor->z + (actor->height >> 1);
+		const fixed_t desiredSlope = FixedDiv(centerz - shootz, dist);
+		fixed_t allowance = player.userinfo.aimdist;
+		if (allowance <= 0)
+			allowance = FRACUNIT / 2;
+		allowance = FixedMul(allowance, FRACUNIT + (FRACUNIT >> 1)); // 1.5x tolerance
+		if (std::abs(desiredSlope - pitchSlope) > allowance)
+			continue;
+
+		if (!P_CheckSight(player.mo, const_cast<AActor*>(actor)))
+			continue;
+
+		if (dist < bestDist)
+		{
+			bestDist = dist;
+			best = const_cast<AActor*>(actor);
+		}
+	}
+
+	return best;
+}
 } // namespace
 
 //------------------------------------------------------------------------------
@@ -648,6 +739,19 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter)
 		}
 	}
 
+	// Final fallback: search active CTF flag actors directly using cone/slope/sight.
+	if (filter.flags && !P_IsFlagPingTarget(pingTarget))
+	{
+		if (AActor* assistFlag = P_FindAssistFlagTarget(player, shootz, pitchSlope, PingRange))
+		{
+			pingTarget = assistFlag;
+			ping.pos.x = assistFlag->x;
+			ping.pos.y = assistFlag->y;
+			ping.pos.z = assistFlag->z + (assistFlag->height >> 1);
+			pingHit = true;
+		}
+	}
+
 	// Prefer monsters over pickups when both are in the targeting cone.
 	if (filter.monsters && filter.pickups && pingTarget && (pingTarget->flags & MF_SPECIAL) != 0)
 	{
@@ -725,7 +829,7 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter)
 		{
 			ping.type = PING_FLAG;
 			ping.follow_target = false;
-			ping.target_netid = 0;
+			ping.target_netid = pingTarget->netid;
 			const fixed_t flagTop = P_PingItemTopOffset(pingTarget);
 			ping.pos.z = pingTarget->z + flagTop + 8 * FRACUNIT;
 		}
@@ -828,11 +932,10 @@ bool P_IsPingExpired(const playerPing_s& ping)
 		return true;
 	if (ping.type == PING_FLAG)
 	{
-		if (ping.flag_team <= TEAM_NONE || ping.flag_team >= NUMTEAMS)
-			return true;
-
-		const TeamInfo* team = GetTeamInfo(ping.flag_team);
-		if (!team || team->FlagData.state != flag_dropped)
+		// Expire flag pings when their original flag actor disappears (e.g. a
+		// dropped flag gets grabbed/returned and replaced), otherwise use the
+		// normal ping lifetime.
+		if (ping.target_netid != 0 && P_FindThingById(ping.target_netid) == nullptr)
 			return true;
 	}
 

@@ -5024,7 +5024,7 @@ void SV_SendPlayerPing(const player_t& source, client_t* dest)
 
 void SV_BroadcastPlayerPing(const player_t& source)
 {
-	if (!source.player_ping || P_IsPingExpired(*source.player_ping))
+	if (!source.player_ping)
 		return;
 
 	for (auto& player : players)
