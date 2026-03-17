@@ -824,7 +824,7 @@ void F_BunnyScroll()
 	}
 	if (finalecount < 1180)
 	{
-		screen->DrawPatchIndirect(W_CachePatch("END0"), (320-13*8)/2, (200-8*8)/2);
+		screen->DrawPatchClean(W_CachePatch("END0"), (320-13*8)/2, (200-8*8)/2);
 		laststage = 0;
 		return;
 	}
@@ -839,7 +839,7 @@ void F_BunnyScroll()
 	}
 
 	OLumpName name = fmt::format("END{}", stage);
-	screen->DrawPatchIndirect(W_CachePatch(name), (320-13*8)/2, (200-8*8)/2);
+	screen->DrawPatchClean(W_CachePatch(name), (320-13*8)/2, (200-8*8)/2);
 }
 
 //

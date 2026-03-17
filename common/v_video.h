@@ -124,7 +124,6 @@ public:
 	inline void DrawTextStretchedLuc (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const;
 
 	// Patch drawing functions
-	void DrawPatchIndirectFlipped (const patch_t *patch, int x, int y) const;
 	void DrawPatchFlipped (const patch_t *patch, int x, int y) const;
 
 	inline void DrawPatch (const patch_t *patch, int x, int y) const;
@@ -132,7 +131,6 @@ public:
 	void DrawPatchCleanWithPalette(const patch_t* patch, int x, int y, const palette_t* palette) const;
 	inline void DrawPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const;
 	inline void DrawPatchDirect (const patch_t *patch, int x, int y) const;
-	inline void DrawPatchIndirect (const patch_t *patch, int x, int y) const;
 	inline void DrawPatchClean (const patch_t *patch, int x, int y) const;
 	inline void DrawPatchCleanNoMove (const patch_t *patch, int x, int y) const;
 
@@ -306,10 +304,6 @@ inline void DCanvas::DrawPatchStretched (const patch_t *patch, int x, int y, int
 inline void DCanvas::DrawPatchDirect (const patch_t *patch, int x, int y) const
 {
 	DrawWrapper (EWrapper_Normal, patch, x, y);
-}
-inline void DCanvas::DrawPatchIndirect (const patch_t *patch, int x, int y) const
-{
-	DrawIWrapper (EWrapper_Normal, patch, x, y);
 }
 inline void DCanvas::DrawPatchClean (const patch_t *patch, int x, int y) const
 {

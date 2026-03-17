@@ -333,7 +333,7 @@ void D_Display()
 		{
 			const patch_t *p = W_CachePatch(lump);
 
-			screen->DrawPatchIndirect(p, 160-p->width()/2, 100-p->height()/2);
+			screen->DrawPatchClean(p, 160-p->width()/2, 100-p->height()/2);
 		}
 		NoWipe = 10;
 	}
@@ -433,7 +433,7 @@ void D_PageDrawer()
 		// [ML] If this is the advisory screen in Heretic, draw the "advisor" patch on top of it.
 		if (gamemode == registered_heretic && demosequence == 1)
 		{
-			screen->DrawPatchIndirect(W_CachePatch("ADVISOR"),4,160);
+			screen->DrawPatchClean(W_CachePatch("ADVISOR"),4,160);
 		}
 
 		page_surface->unlock();
