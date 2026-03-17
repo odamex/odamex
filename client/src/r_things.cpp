@@ -828,7 +828,9 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 	}
 
 	// Don't display the weapon sprite if using spectating without spynext
-	if (consoleplayer().spectator && displayplayer_id == consoleplayer_id)
+	// or using freecam
+	if ((consoleplayer().spectator && displayplayer_id == consoleplayer_id) ||
+		displayplayer().isFreecam)
 		return;
 
 	R_DrawVisSprite (vis, vis->x1, vis->x2);
