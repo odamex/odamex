@@ -502,7 +502,7 @@ void ISDL20MouseInputDevice::gatherEvents()
 			{
 				ev.type = ev_keydown;
 				int direction = 1;
-				#if (SDL_VERSION >= SDL_VERSIONNUM(2, 0, 4))
+				#if SDL_VERSION_ATLEAST(2, 0, 4)
 				if (sdl_ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
 					direction = -1;
 				#endif
