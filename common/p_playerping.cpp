@@ -517,6 +517,17 @@ bool P_IsSpecificPingTarget(const AActor* target)
 	return !target->player && (target->flags & MF_SHOOTABLE) != 0;
 }
 
+bool P_IsMonsterPingTarget(const AActor* target)
+{
+	if (!target || target->player)
+		return false;
+	if (P_PingFlagTeamForActor(target) != TEAM_NONE)
+		return false;
+	if (G_IsHordeMode() && P_IsHordeBossForPing(target))
+		return true;
+	return (target->flags & MF_SHOOTABLE) != 0;
+}
+
 bool P_IsFlagPingTarget(const AActor* target)
 {
 	return P_PingFlagTeamForActor(target) != TEAM_NONE;
@@ -634,6 +645,69 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter)
 
 			if (P_IsFlagPingTarget(pingTarget))
 				break;
+		}
+	}
+
+	// Prefer monsters over pickups when both are in the targeting cone.
+	if (filter.monsters && filter.pickups && pingTarget && (pingTarget->flags & MF_SPECIAL) != 0)
+	{
+		AActor* const pickupTarget = pingTarget;
+		ping_filter_t monsterOnlyFilter = filter;
+		monsterOnlyFilter.pickups = false;
+		monsterOnlyFilter.flags = false;
+
+		AActor* monsterTarget = nullptr;
+		bool monsterHit = false;
+		v3fixed_t monsterPos =
+		    P_TracePingEndpoint(player.mo, shootz, aimAngle, pitchSlope, PingRange, monsterTarget,
+		                       monsterHit, enableActorAutoAim, monsterOnlyFilter);
+
+		if (!P_IsMonsterPingTarget(monsterTarget) && enableActorAutoAim)
+		{
+			for (int sweep = 1; sweep <= SpecificAssistSweeps; sweep++)
+			{
+				for (int dir = -1; dir <= 1; dir += 2)
+				{
+					const angle_t testAngle = player.mo->angle + dir * sweep * SpecificAssistStep;
+					AActor* testTarget = nullptr;
+					bool testHit = false;
+					const v3fixed_t testPos = P_TracePingEndpoint(
+					    player.mo, shootz, testAngle, pitchSlope, PingRange, testTarget, testHit,
+					    enableActorAutoAim, monsterOnlyFilter);
+
+					if (P_IsMonsterPingTarget(testTarget))
+					{
+						aimAngle = testAngle;
+						monsterTarget = testTarget;
+						monsterPos = testPos;
+						monsterHit = true;
+						break;
+					}
+				}
+
+				if (P_IsMonsterPingTarget(monsterTarget))
+					break;
+			}
+		}
+
+		if (P_IsMonsterPingTarget(monsterTarget))
+		{
+			// Keep the pickup if it is substantially closer than the monster.
+			static constexpr fixed_t PickupCloserRatioNum = 3 * FRACUNIT; // 0.60
+			static constexpr fixed_t PickupCloserRatioDen = 5 * FRACUNIT;
+			const fixed_t pickupDist =
+			    P_AproxDistance(pickupTarget->x - player.mo->x, pickupTarget->y - player.mo->y);
+			const fixed_t monsterDist =
+			    P_AproxDistance(monsterTarget->x - player.mo->x, monsterTarget->y - player.mo->y);
+			const fixed_t pickupThreshold =
+			    FixedDiv(FixedMul(monsterDist, PickupCloserRatioNum), PickupCloserRatioDen);
+
+			if (pickupDist > pickupThreshold)
+			{
+				pingTarget = monsterTarget;
+				ping.pos = monsterPos;
+				pingHit = monsterHit;
+			}
 		}
 	}
 
