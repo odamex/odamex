@@ -205,7 +205,7 @@ void G_InitNew (const char *mapname)
 		}
 	}
 
-	if (Freecam::allowAdd() && Freecam::prevmap != mapname)
+	if (Freecam::allowAdd() && (Freecam::prevmap != mapname || Freecam::wadchanged))
 	{
 		Freecam::reset();
 		Freecam::prevmap = mapname;

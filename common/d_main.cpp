@@ -62,6 +62,10 @@
 #include "odainfo.h"
 #include "infomap.h"
 
+#ifdef CLIENT_APP
+#include "cl_freecam.h"
+#endif
+
 OResFiles wadfiles;
 OResFiles patchfiles;
 OWantFiles missingfiles;
@@ -909,6 +913,11 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 	OResFiles oldwadfiles = ::wadfiles;
 	OResFiles oldpatchfiles = ::patchfiles;
 	std::string failmsg;
+
+	#ifdef CLIENT_APP
+	Freecam::wadchanged = true;
+	#endif
+
 	try
 	{
 		D_LoadResourceFiles(newwadfiles, newpatchfiles);
