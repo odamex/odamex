@@ -135,11 +135,11 @@ oldmenu_t *currentMenu;
 //
 void M_NewGame(int choice);
 void M_Episode(int choice);
+void M_GameFiles(int choice);
 void M_Expansion(int choice);
 void M_ChooseSkill(int choice);
 void M_LoadGame(int choice);
 void M_SaveGame(int choice);
-void M_HtcGameFiles(int choice);
 void M_Options(int choice);
 void M_EndGame(int choice);
 void M_ReadThis(int choice);
@@ -163,12 +163,12 @@ void M_DrawReadThis1();
 void M_DrawReadThis2();
 void M_DrawReadThis3();
 void M_DrawNewGame();
+void M_DrawGameFiles();
 void M_DrawEpisode();
 void M_DrawOptions();
 void M_DrawSound();
 void M_DrawLoad();
 void M_DrawSave();
-void M_DrawGameFiles(void);
 
 void M_DrawSaveLoadBorder(int x,int y, int len);
 void M_SetupNextMenu(oldmenu_t *menudef);
@@ -293,24 +293,15 @@ oldmenuitem_t HereticMainMenu[]=
 {
 	{1,"","MNU_NEWGAME",M_NewGame,'N'},
 	{1,"","MNU_OPTIONS",M_Options,'O'},	// [RH] Moved
-    {1,"","MNU_GAMEFILES",M_HtcGameFiles,'G'},
+    {1,"","MNU_GAMEFILES",M_GameFiles,'G'},
     {1,"","MNU_INFO",M_ReadThis,'I'},
 	{1,"","MNU_QUITGAME",M_QuitGame,'Q'}
 };
 
-oldmenuitem_t HereticGameFilesMenu[]=
+oldmenuitem_t GameFilesMenu[]=
 {
 	{1,"","MNU_LOADGAME",M_LoadGame,'l'},
 	{1,"","MNU_SAVEGAME",M_SaveGame,'2'}
-};
-
-oldmenu_t GameFilesDef =
-{
-	htc_main_end,
-	HereticGameFilesMenu,
-	M_DrawGameFiles,
-	110,60,
-	0
 };
 
 // Default used is the Doom Menu
@@ -459,7 +450,6 @@ oldmenu_t PSetupDef = {
 //
 bool OptionsActive;
 
-
 //
 // Read This!
 //
@@ -521,6 +511,25 @@ oldmenu_t ReadDef3 =
 	ReadMenu3,
 	M_DrawReadThis3,
 	330,175,
+	0
+};
+
+//
+// GAME FILES MENU
+//
+enum gamefiles_t
+{
+	gamefiles_load,
+	gamefiles_save,
+	gamefiles_end
+} gamefiles_e;
+
+oldmenu_t GameFilesDef =
+{
+	gamefiles_end,
+	GameFilesMenu,
+	M_DrawGameFiles,
+	110,60,
 	0
 };
 
@@ -699,19 +708,17 @@ static const char* LocalizedString(const char* key)
 }
 
 //
-//	M_HtcGameFiles & Cie.
+//	M_GameFiles & Cie.
 //	[ML] Provides intermediary game files menu option for load/save
 //
-void M_DrawGameFiles(void)
+void M_GameFiles(int choice)
 {
-	// dummy
+	M_SetupNextMenu(&GameFilesDef);
 }
 
-void M_HtcGameFiles(int choice)
+void M_DrawGameFiles()
 {
-     //M_StartMessage("Loading/saving is not supported\n\n(Press any key to "
-     //              "continue)\n", M_HtcGameFilesResponse, false);
-     M_SetupNextMenu(&GameFilesDef);
+	// Unused
 }
 
 //
@@ -749,17 +756,22 @@ void M_ReadSaveStrings()
 //
 // M_LoadGame & Cie.
 //
-const int slot_height = M_BigFontLineHeight(); // HACK
-const int slot_width = 24;
 void M_DrawInputBox (int slot, char *name, int x, int y, int width) 
 {
+	const int mod = gameinfo.enginetype == ENGINE_HERETIC ?
+		(M_BigFontLineHeight()/2 - M_SmallFontLineHeight()/2) :
+		0;
+
 	M_DrawSaveLoadBorder(x, y, width);
-	screen->DrawTextCleanMove (CR_RED, x+(M_SmallFontLineHeight()/2), y, name);
+	screen->DrawTextCleanMove (CR_RED, x+(M_SmallFontLineHeight()/2), y+mod, name);
 }
 
 void M_DrawLoad ()
 {
 	int i, list_y;
+	const int slot_width = 24;
+	const int slot_padding = 2;
+	const int slot_height = M_BigFontLineHeight() - slot_padding;
 
 	if (W_CheckNumForName("M_LOADG") >= 0)
 	{
@@ -771,10 +783,12 @@ void M_DrawLoad ()
 		screen->DrawTextCleanMove(CR_GRAY, 160-V_StringWidth(LocalizedString("MNU_LOADGAME"))/2, 0, LocalizedString("MNU_LOADGAME"));
 		V_SetFont("SMALLFONT");
 	}
+
+	list_y = LoadDef.y;
 	for (i = 0; i < load_end; i++)
 	{
-		list_y = LoadDef.y + slot_height * i;
 		M_DrawInputBox(i, savegamestrings[i], LoadDef.x, list_y, slot_width);
+		list_y += slot_height + slot_padding;
 	}
 }
 
@@ -814,6 +828,9 @@ void M_LoadGame (int choice)
 void M_DrawSave()
 {
 	int i, list_y;
+	const int slot_width = 24;
+	const int slot_padding = 2;
+	const int slot_height = M_BigFontLineHeight() - slot_padding;
 
 	if (W_CheckNumForName("M_SAVEG") >= 0)
 	{
@@ -826,10 +843,11 @@ void M_DrawSave()
 		V_SetFont("SMALLFONT");
 	}
 
+	list_y = SaveDef.y;
 	for (i = 0; i < load_end; i++)
 	{
-		int list_y = SaveDef.y + slot_height * i;
 		M_DrawInputBox(i, savegamestrings[i], SaveDef.x, list_y, slot_width);
+		list_y += slot_height + slot_padding;
 	}
 
 	if (genStringEnter != oldmenustring_t::NONE)
@@ -1076,21 +1094,26 @@ void M_FinishReadThis(int)
 //
 void M_DrawSaveLoadBorder (int x, int y, int len)
 {
-	if (W_CheckNumForName("M_FSLOT") >= 0)
+	patch_t* full_slot = W_CheckNumForName("M_FSLOT") >= 0 ? W_CachePatch("M_FSLOT") : NULL;
+	patch_t* left_slot = W_CheckNumForName("M_LSLEFT") >= 0 ? W_CachePatch("M_LSLEFT") : NULL;
+	patch_t* center_slot = W_CheckNumForName("M_LSCNTR") >= 0 ? W_CachePatch("M_LSCNTR") : NULL;
+	patch_t* right_slot = W_CheckNumForName("M_LSRGHT") >= 0 ? W_CachePatch("M_LSRGHT") : NULL;
+
+	if (full_slot != NULL)
 	{
-		screen->DrawPatchClean (W_CachePatch ("M_FSLOT"), x, y);
+		screen->DrawPatchClean (full_slot, x, y);
 	}
 	else
 	{
-		screen->DrawPatchClean (W_CachePatch ("M_LSLEFT"), x, y+7);
+		screen->DrawPatchClean (left_slot, x, y+7);
 
 		for (int i = 0; i < len; i++)
 		{
 			x += M_SmallFontLineHeight();
-			screen->DrawPatchClean (W_CachePatch ("M_LSCNTR"), x, y+7);
+			screen->DrawPatchClean (center_slot, x, y+7);
 		}
 
-		screen->DrawPatchClean (W_CachePatch ("M_LSRGHT"), x, y+7);
+		screen->DrawPatchClean (right_slot, x, y+7);
 	}
 }
 
@@ -2348,13 +2371,10 @@ void M_StartControlPanel()
 //
 void M_DimBackground ()
 {
-	// [ML] Temporarily forcing 4:3 to see the safe area for the menu.
-	const int surface_width = screen->getSurface()->getWidth();
-	const int surface_height = screen->getSurface()->getHeight();
-	const int dim_width = 320 * CleanXfac;
-	const int dim_height = 240 * CleanYfac;
-	const int srcx = (surface_width - dim_width) / 2;
-	const int srcy = (surface_height - dim_height) / 2;
+	const int dim_width = screen->getSurface()->getWidth();
+	const int dim_height = screen->getSurface()->getHeight();
+	const int srcx = 0;
+	const int srcy = 0;
 
 	screen->Dim(srcx, srcy, dim_width, dim_height);
 }
