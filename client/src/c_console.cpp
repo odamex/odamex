@@ -293,7 +293,7 @@ public:
 
 	std::string		text;
 	size_t			cursor_position;
-	int			scrolled_columns;
+	size_t			scrolled_columns;
 
 private:
 	void doScrolling();
@@ -314,22 +314,20 @@ private:
 //
 void ConsoleCommandLine::doScrolling()
 {
-	int n = scrolled_columns;
+	size_t n = scrolled_columns;
+	const size_t visible_columns = ConCols > 2 ? static_cast<size_t>(ConCols - 2) : 0;
 
 	// Start of visible line is beyond end of line
 	if (scrolled_columns >= text.length())
-		n = cursor_position - ConCols + 2;
+		n = cursor_position > visible_columns ? cursor_position - visible_columns : 0;
 
 	// The cursor_position is beyond the visible part of the line
-	if ((static_cast<int>(cursor_position) - static_cast<int>(scrolled_columns)) >= static_cast<int>(ConCols - 2))
-		n = cursor_position - ConCols + 2;
+	if (cursor_position >= scrolled_columns + visible_columns)
+		n = cursor_position > visible_columns ? cursor_position - visible_columns : 0;
 
 	// The cursor_positionor is in front of the visible part of the line
 	if (scrolled_columns > cursor_position)
 		n = cursor_position;
-
-	if (n < 0)
-		n = 0;
 
 	scrolled_columns = n;
 }
