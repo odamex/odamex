@@ -751,6 +751,7 @@ bool P_CheckTag(line_t* line)
 	case 32:
 	case 33:
 	case 34:
+		return true; // zero tag allowed
 	case 105:
 		if (gamemission == heretic)
 		{
