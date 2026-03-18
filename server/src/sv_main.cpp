@@ -701,9 +701,12 @@ namespace
 				auto iter = m_deadEndMessengers.find(address);
 				if (iter != m_deadEndMessengers.end())
 				{
-					iter->second.Receive(packetBuffer);
+					const MessageResultEnum receiveResult = iter->second.Receive(packetBuffer);
 
-					ServiceMessenger(currentTic, iter, packetBuffer);
+					if (receiveResult != MessageResultEnum::ABORT)
+					{
+						ServiceMessenger(currentTic, iter, packetBuffer);
+					}
 
 					// Any messenger that's in the dead-end collection is there because we put it there directly
 					// after sending the client's last reliable message.  Therefore, we know the pending Ack
@@ -713,7 +716,12 @@ namespace
 					// Also, we have to remove the old messenger immediately because it's 100% possible that the
 					// client has an immediate reconnection attempt as the very next packet, and if that's the case
 					// we want to handle it in the rest of the calling SV_GetPackets.
-					if (iter->second.GetPendingAckCount() <= 0)
+					//
+					// Finally, drop the messenger if it tells us that things have gone sideways.  It could be that
+					// the client has moved on and is trying to reconnect, in which case, it's probably failing
+					// the reconnect, so drop the old messenger on the floor.  The client's next connection packet
+					// will be handled properly.
+					if (iter->second.GetPendingAckCount() <= 0 or receiveResult == MessageResultEnum::ABORT)
 					{
 						m_deadEndMessengers.erase(iter);
 					}
