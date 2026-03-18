@@ -711,8 +711,8 @@ namespace
 					// seen it and moved on.
 					//
 					// Also, we have to remove the old messenger immediately because it's 100% possible that the
-					// client has an immediate reconnection attempt as the very next packet, and we want to handle
-					// it in the `else` case below without delay.
+					// client has an immediate reconnection attempt as the very next packet, and if that's the case
+					// we want to handle it in the rest of the calling SV_GetPackets.
 					if (iter->second.GetPendingAckCount() <= 0)
 					{
 						m_deadEndMessengers.erase(iter);
