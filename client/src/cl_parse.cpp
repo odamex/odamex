@@ -505,6 +505,13 @@ static void CL_PlayerPing(const odaproto::svc::PlayerPing* msg)
 	if (!validplayer(p))
 		return;
 
+	// Empty player-ping message means "clear active ping" for this player.
+	if (!msg->has_pos())
+	{
+		p.player_ping.reset();
+		return;
+	}
+
 	const bool isLocalPing = p.id == consoleplayer().id;
 	const bool localHadActiveGeneralPing =
 	    isLocalPing && p.player_ping && !P_IsPingExpired(*p.player_ping) &&
@@ -527,7 +534,7 @@ static void CL_PlayerPing(const odaproto::svc::PlayerPing* msg)
 		case PING_WARNING:
 			return W_GetNumForName("OPNG_WRN");
 		case PING_DROP:
-			return W_GetNumForName("FONTB01");
+			return W_GetNumForName("OPNG_PIN");
 		case PING_GENERAL:
 		default:
 			return W_GetNumForName("OPNG_GEN");

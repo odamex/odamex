@@ -520,7 +520,7 @@ static void HU_DrawPingIndicator()
 		case PING_WARNING:
 			return W_CachePatch("OPNG_WRN");
 		case PING_DROP:
-			return W_CachePatch("FONTB01");
+			return W_CachePatch("OPNG_PIN");
 		case PING_GENERAL:
 		default:
 			return W_CachePatch("OPNG_GEN");

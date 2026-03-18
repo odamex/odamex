@@ -1234,6 +1234,7 @@ bool SV_SetupUserInfo(player_t &player)
 	if (team_changed)
 	{
 		P_ClearPlayerPingState(player);
+		SV_BroadcastPlayerPing(player);
 	}
 
 	player.userinfo.colorpreset		= colorpreset;
@@ -1363,6 +1364,7 @@ void SV_ForceSetTeam (player_t &who, team_t team)
 	if (team != oldTeam)
 	{
 		P_ClearPlayerPingState(who);
+		SV_BroadcastPlayerPing(who);
 	}
 	PrintFmt(PRINT_HIGH, "Forcing {} to {} team\n", who.userinfo.netname.c_str(), team == TEAM_NONE ? "NONE" : V_GetTeamColor(team).c_str());
 
@@ -3660,6 +3662,11 @@ void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 
 	team_t old_team = player.userinfo.team;
 	player.userinfo.team = team;
+	if (player.userinfo.team != old_team)
+	{
+		P_ClearPlayerPingState(player);
+		SV_BroadcastPlayerPing(player);
+	}
 
 	if (G_IsTeamGame() && player.mo && player.userinfo.team != old_team &&
 	    !G_IsLevelState(LevelState::WARMUP))
@@ -5029,9 +5036,6 @@ void SV_SendPlayerPing(const player_t& source, client_t* dest)
 
 void SV_BroadcastPlayerPing(const player_t& source)
 {
-	if (!source.player_ping)
-		return;
-
 	for (auto& player : players)
 	{
 		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerPing(source));

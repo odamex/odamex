@@ -140,7 +140,7 @@ int P_PingLumpForType(const ping_type_t type)
 	case PING_WARNING:
 		return W_GetNumForName("OPNG_WRN");
 	case PING_DROP:
-		return W_GetNumForName("FONTB01");
+		return W_GetNumForName("OPNG_PIN");
 	case PING_GENERAL:
 	default:
 		return W_GetNumForName("OPNG_GEN");
@@ -1073,6 +1073,11 @@ void R_AddPingSprites()
 	static constexpr fixed_t FlagScaleFarDist = 768 * FRACUNIT;
 	static constexpr fixed_t MonsterScaleNearDist = 1024 * FRACUNIT;
 	static constexpr fixed_t PingScaleFarDist = 2048 * FRACUNIT;
+	static constexpr float PingMinAlpha = 0.45f;
+	static constexpr int PingSolidTics = (3 * TICRATE) / 2; // 1.5s
+	static constexpr int PingFadeTics = TICRATE / 2;        // 0.5s
+	static constexpr fixed_t PingAlphaNearDist = 192 * FRACUNIT;
+	static constexpr fixed_t PingAlphaFarDist = 512 * FRACUNIT;
 	static std::array<v3fixed_t, MAXPLAYERS> followSmoothPos{};
 	static std::array<bool, MAXPLAYERS> followSmoothValid{};
 	static std::unordered_map<uint32_t, v3fixed_t> actorSmoothPos{};
@@ -1143,6 +1148,42 @@ void R_AddPingSprites()
 		const fixed_t t = FixedDiv(dist - nearDist, farDist - nearDist);
 		const int deltaPx = nearPx - farPx;
 		return nearPx - ((deltaPx * t) >> FRACBITS);
+	};
+
+	auto pingWorldAlpha = [&](const playerPing_s& ping, const v3fixed_t& pos) -> float
+	{
+		// Teammate/boss markers are separate features and stay fully opaque.
+		if (ping.type == PING_BOSS || ping.type == PING_TEAMMATE)
+			return 1.0f;
+
+		const int age = (std::max)(0, ::gametic - ping.pingtic);
+		float ageAlpha = 1.0f;
+		if (age > PingSolidTics)
+		{
+			const float t = (std::min)(
+			    1.0f, static_cast<float>(age - PingSolidTics) / static_cast<float>((std::max)(1, PingFadeTics)));
+			ageAlpha = 1.0f + (PingMinAlpha - 1.0f) * t;
+		}
+
+		fixed_t dist = 0;
+		if (consoleplayer().camera)
+			dist = P_AproxDistance(consoleplayer().camera->x - pos.x, consoleplayer().camera->y - pos.y);
+		else if (consoleplayer().mo)
+			dist = P_AproxDistance(consoleplayer().mo->x - pos.x, consoleplayer().mo->y - pos.y);
+
+		float distAlpha = PingMinAlpha;
+		if (dist <= PingAlphaNearDist)
+		{
+			distAlpha = 1.0f;
+		}
+		else if (dist < PingAlphaFarDist)
+		{
+			const float t = static_cast<float>(dist - PingAlphaNearDist) /
+			                static_cast<float>(PingAlphaFarDist - PingAlphaNearDist);
+			distAlpha = 1.0f + (PingMinAlpha - 1.0f) * t;
+		}
+
+		return (std::max)(ageAlpha, distAlpha);
 	};
 
 	for (auto &pl : players)
@@ -1219,8 +1260,8 @@ void R_AddPingSprites()
 			translation = P_PingTeamTranslationInternal(ping.flag_team);
 
 		const int pingPx = ping.type == PING_BOSS ? FixedBossScreenPx : scaledPingPx(ping.type, pos);
-
-		R_Add3DHUDSprite(ping.lump, pos, translation, 1.0f, pingPx, pingPx, false);
+		const float alpha = pingWorldAlpha(ping, pos);
+		R_Add3DHUDSprite(ping.lump, pos, translation, alpha, pingPx, pingPx, false);
 	}
 
 	if (G_IsHordeMode() && allowHordeBossMarkers)
