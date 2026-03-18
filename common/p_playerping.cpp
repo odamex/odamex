@@ -612,7 +612,12 @@ AActor* P_FindAssistFlagTarget(const player_t& player, const fixed_t shootz, con
 
 	AActor* best = nullptr;
 	fixed_t bestDist = maxRange + FRACUNIT;
-	static constexpr angle_t FlagAssistCone = ANG(9);
+	static constexpr fixed_t FlagConeNearDist = 512 * FRACUNIT;
+	static constexpr fixed_t FlagConeFarDist = 2048 * FRACUNIT;
+	static constexpr angle_t FlagAssistConeNearDropped = ANG(7);
+	static constexpr angle_t FlagAssistConeFarDropped = ANG(3);
+	static constexpr angle_t FlagAssistConeNearHome = ANG(6);
+	static constexpr angle_t FlagAssistConeFarHome = ANG(2);
 
 	for (int i = TEAM_BLUE; i < NUMTEAMS; i++)
 	{
@@ -630,9 +635,23 @@ AActor* P_FindAssistFlagTarget(const player_t& player, const fixed_t shootz, con
 		if (dist <= 0 || dist > maxRange)
 			continue;
 
+		const bool droppedFlag = team->FlagData.state == flag_dropped;
+		const angle_t nearCone = droppedFlag ? FlagAssistConeNearDropped : FlagAssistConeNearHome;
+		const angle_t farCone = droppedFlag ? FlagAssistConeFarDropped : FlagAssistConeFarHome;
+		angle_t cone = nearCone;
+		if (dist >= FlagConeFarDist)
+		{
+			cone = farCone;
+		}
+		else if (dist > FlagConeNearDist)
+		{
+			const fixed_t t = FixedDiv(dist - FlagConeNearDist, FlagConeFarDist - FlagConeNearDist);
+			cone = nearCone - static_cast<angle_t>(FixedMul(t, nearCone - farCone));
+		}
+
 		const angle_t to = R_PointToAngle2(player.mo->x, player.mo->y, actor->x, actor->y);
 		const int32_t delta = static_cast<int32_t>(to - player.mo->angle);
-		if (std::abs(delta) > static_cast<int32_t>(FlagAssistCone))
+		if (std::abs(delta) > static_cast<int32_t>(cone))
 			continue;
 
 		const fixed_t centerz = actor->z + (actor->height >> 1);
@@ -640,7 +659,7 @@ AActor* P_FindAssistFlagTarget(const player_t& player, const fixed_t shootz, con
 		fixed_t allowance = player.userinfo.aimdist;
 		if (allowance <= 0)
 			allowance = FRACUNIT / 2;
-		allowance = FixedMul(allowance, FRACUNIT + (FRACUNIT >> 2)); // 1.25x tolerance
+		allowance = FixedMul(allowance, FRACUNIT + (FRACUNIT >> 3)); // 1.125x tolerance
 		if (std::abs(desiredSlope - pitchSlope) > allowance)
 			continue;
 
@@ -1067,6 +1086,7 @@ void R_AddPingSprites()
 	static constexpr int FixedPingScreenPx = 56;
 	static constexpr int FixedBossScreenPx = 84;
 	static constexpr fixed_t PingScaleNearDist = 512 * FRACUNIT;
+	static constexpr fixed_t DropScaleFarDist = 1024 * FRACUNIT;
 	static constexpr fixed_t ItemScaleNearDist = 128 * FRACUNIT;
 	static constexpr fixed_t ItemScaleFarDist = 768 * FRACUNIT;
 	static constexpr fixed_t FlagScaleNearDist = 256 * FRACUNIT;
@@ -1128,6 +1148,11 @@ void R_AddPingSprites()
 			nearDist = ItemScaleNearDist;
 			farDist = ItemScaleFarDist;
 			farPx = (nearPx * 2) / 5; // 40%
+		}
+		else if (type == PING_DROP)
+		{
+			farDist = DropScaleFarDist;
+			farPx = nearPx / 2; // 50%
 		}
 		else if (type == PING_FLAG)
 		{

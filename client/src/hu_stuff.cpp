@@ -43,6 +43,7 @@
 
 #include "cl_main.h"
 #include "p_ctf.h"
+#include "p_mobj.h"
 #include "p_playerping.h"
 #include "i_video.h"
 #include "cl_netgraph.h"
@@ -87,6 +88,7 @@ EXTERN_CVAR(idmypos)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_lives)
 EXTERN_CVAR(cl_ping_hudindicators)
+EXTERN_CVAR(cl_ping_distancelabels)
 EXTERN_CVAR(cl_showpings)
 EXTERN_CVAR(hud_marker_teammates)
 EXTERN_CVAR(hud_marker_hordeboss)
@@ -725,6 +727,237 @@ static void HU_DrawPingIndicator()
 
 }
 
+static void HU_DrawPingDistances()
+{
+	if (!sv_pingsystem || !cl_showpings || !cl_ping_distancelabels || gamestate != GS_LEVEL ||
+	    !camera)
+		return;
+
+	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible(true))
+		return;
+
+	static constexpr int WorldBossScreenPx = 84;
+	static constexpr int FixedPingScreenPx = 56;
+	static constexpr int LabelYOffsetPx = 12;
+	static constexpr double UnitsPerMarineMeter = 32.0;
+	static constexpr float PingMinAlpha = 0.45f;
+	static constexpr int PingSolidTics = (3 * TICRATE) / 2; // 1.5s
+	static constexpr int PingFadeTics = TICRATE / 2;        // 0.5s
+	static constexpr fixed_t PingAlphaNearDist = 192 * FRACUNIT;
+	static constexpr fixed_t PingAlphaFarDist = 512 * FRACUNIT;
+	static constexpr fixed_t StrictHeadOffset = 12 * FRACUNIT;
+	static constexpr fixed_t BossHeadOffset = 24 * FRACUNIT;
+	static constexpr fixed_t FollowPingSmoothing = FRACUNIT / 3;
+	static constexpr fixed_t PingScaleNearDist = 512 * FRACUNIT;
+	static constexpr fixed_t DropScaleFarDist = 1024 * FRACUNIT;
+	static constexpr fixed_t ItemScaleNearDist = 128 * FRACUNIT;
+	static constexpr fixed_t ItemScaleFarDist = 768 * FRACUNIT;
+	static constexpr fixed_t FlagScaleNearDist = 256 * FRACUNIT;
+	static constexpr fixed_t FlagScaleFarDist = 768 * FRACUNIT;
+	static constexpr fixed_t MonsterScaleNearDist = 1024 * FRACUNIT;
+	static constexpr fixed_t PingScaleFarDist = 2048 * FRACUNIT;
+	static std::array<v3fixed_t, MAXPLAYERS> followSmoothPos{};
+	static std::array<bool, MAXPLAYERS> followSmoothValid{};
+
+	V_SetFont("DIGFONT");
+	const int textScaleX = std::max(1, CleanXfac / 2);
+	const int textScaleY = std::max(1, CleanYfac / 2);
+
+	auto smoothFixed = [](fixed_t from, fixed_t to) -> fixed_t
+	{
+		return from + FixedMul(FollowPingSmoothing, to - from);
+	};
+
+	auto scaledPingPx = [&](const ping_type_t type, const v3fixed_t& pos) -> int
+	{
+		if (type != PING_ITEM && type != PING_MONSTER && type != PING_FLAG &&
+		    type != PING_GENERAL && type != PING_WARNING && type != PING_DROP)
+			return FixedPingScreenPx;
+
+		AActor* view = consoleplayer().camera ? consoleplayer().camera : consoleplayer().mo;
+		if (!view)
+			return FixedPingScreenPx;
+
+		const fixed_t dist = P_AproxDistance(view->x - pos.x, view->y - pos.y);
+		const int nearPx = FixedPingScreenPx;
+		int farPx = nearPx / 2;
+
+		fixed_t nearDist = PingScaleNearDist;
+		fixed_t farDist = PingScaleFarDist;
+		if (type == PING_ITEM)
+		{
+			nearDist = ItemScaleNearDist;
+			farDist = ItemScaleFarDist;
+			farPx = (nearPx * 2) / 5;
+		}
+		else if (type == PING_DROP)
+		{
+			farDist = DropScaleFarDist;
+			farPx = nearPx / 2;
+		}
+		else if (type == PING_FLAG)
+		{
+			nearDist = FlagScaleNearDist;
+			farDist = FlagScaleFarDist;
+			farPx = nearPx / 2;
+		}
+		else if (type == PING_MONSTER)
+		{
+			nearDist = MonsterScaleNearDist;
+		}
+
+		if (dist <= nearDist)
+			return nearPx;
+		if (dist >= farDist)
+			return farPx;
+
+		const fixed_t t = FixedDiv(dist - nearDist, farDist - nearDist);
+		const int deltaPx = nearPx - farPx;
+		return nearPx - ((deltaPx * t) >> FRACBITS);
+	};
+
+	auto pingLabelAlpha = [&](const playerPing_s& ping, const v3fixed_t& pos) -> float
+	{
+		if (ping.type == PING_BOSS || ping.type == PING_TEAMMATE)
+			return 1.0f;
+
+		const int age = (std::max)(0, ::gametic - ping.pingtic);
+		float ageAlpha = 1.0f;
+		if (age > PingSolidTics)
+		{
+			const float t = (std::min)(
+			    1.0f, static_cast<float>(age - PingSolidTics) /
+			              static_cast<float>((std::max)(1, PingFadeTics)));
+			ageAlpha = 1.0f + (PingMinAlpha - 1.0f) * t;
+		}
+
+		const fixed_t dx = pos.x - viewx;
+		const fixed_t dy = pos.y - viewy;
+		const fixed_t dist = P_AproxDistance(dx, dy);
+		float distAlpha = PingMinAlpha;
+		if (dist <= PingAlphaNearDist)
+		{
+			distAlpha = 1.0f;
+		}
+		else if (dist < PingAlphaFarDist)
+		{
+			const float t = static_cast<float>(dist - PingAlphaNearDist) /
+			                static_cast<float>(PingAlphaFarDist - PingAlphaNearDist);
+			distAlpha = 1.0f + (PingMinAlpha - 1.0f) * t;
+		}
+
+		return (std::max)(ageAlpha, distAlpha);
+	};
+
+	for (const player_t& player : players)
+	{
+		if (!player.player_ping)
+			continue;
+		if (G_IsTeamGame() && player.id != consoleplayer().id &&
+		    player.userinfo.team != consoleplayer().userinfo.team)
+			continue;
+
+		const playerPing_s& ping = *player.player_ping;
+		if (P_IsPingExpired(ping))
+			continue;
+		if (consoleplayer().mo && ping.target_netid == consoleplayer().mo->netid)
+			continue;
+		if (ping.type == PING_TEAMMATE && (!sv_marker_teammates || !hud_marker_teammates))
+			continue;
+		if (ping.type == PING_BOSS && (!sv_marker_hordeboss || !hud_marker_hordeboss))
+			continue;
+
+		v3fixed_t pingPos{};
+		if (!P_ResolvePingPosition(ping, pingPos))
+			continue;
+		if (ping.follow_target && ping.target_netid != 0)
+		{
+			AActor* target = P_FindThingById(ping.target_netid);
+			AActor* view = consoleplayer().camera ? consoleplayer().camera : consoleplayer().mo;
+			if (target && view)
+			{
+				if (ping.type == PING_MONSTER || ping.type == PING_BOSS)
+				{
+					pingPos.x = target->prevx + FixedMul(render_lerp_amount, target->x - target->prevx);
+					pingPos.y = target->prevy + FixedMul(render_lerp_amount, target->y - target->prevy);
+					const fixed_t tzt =
+					    target->prevz + FixedMul(render_lerp_amount, target->z - target->prevz);
+					const fixed_t headOffset =
+					    ping.type == PING_BOSS ? BossHeadOffset : StrictHeadOffset;
+					pingPos.z = tzt + target->height + headOffset;
+				}
+			}
+			if (player.id < MAXPLAYERS)
+			{
+				if (!followSmoothValid[player.id])
+				{
+					followSmoothPos[player.id] = pingPos;
+					followSmoothValid[player.id] = true;
+				}
+				else
+				{
+					followSmoothPos[player.id].x = smoothFixed(followSmoothPos[player.id].x, pingPos.x);
+					followSmoothPos[player.id].y = smoothFixed(followSmoothPos[player.id].y, pingPos.y);
+					followSmoothPos[player.id].z = smoothFixed(followSmoothPos[player.id].z, pingPos.z);
+				}
+				pingPos = followSmoothPos[player.id];
+			}
+		}
+
+		fixed_t projTx = 0, projTy = 0;
+		R_RotatePoint(pingPos.x - viewx, pingPos.y - viewy, ANG90 - viewangle, projTx, projTy);
+		if (projTy <= FRACUNIT)
+			continue;
+
+		const int projX = R_ProjectPointX(projTx, projTy);
+		const int projY = R_ProjectPointY(pingPos.z - viewz, projTy);
+		const int markerPx =
+		    ping.type == PING_BOSS ? WorldBossScreenPx : scaledPingPx(ping.type, pingPos);
+		const int halfMarker = std::max(1, markerPx / 2);
+
+		const int markerLeft = projX - halfMarker;
+		const int markerRight = projX + halfMarker;
+		const int markerTop = projY - halfMarker;
+		const int markerBottom = projY + halfMarker;
+		const bool inViewport = markerRight >= viewwindowx &&
+		                        markerLeft < (viewwindowx + viewwidth) &&
+		                        markerBottom >= viewwindowy &&
+		                        markerTop < (viewwindowy + viewheight);
+		if (!inViewport)
+			continue;
+
+		const fixed_t dx = pingPos.x - viewx;
+		const fixed_t dy = pingPos.y - viewy;
+		const fixed_t dz = pingPos.z - viewz;
+		const fixed_t distXY = P_AproxDistance(dx, dy);
+		const fixed_t dist = P_AproxDistance(distXY, std::abs(dz));
+		const int units = std::max(0, dist >> FRACBITS);
+		const int marineMeters =
+		    std::max(0, static_cast<int>(std::lround(static_cast<double>(units) / UnitsPerMarineMeter)));
+		const std::string label = std::to_string(marineMeters) + "M";
+		const float alpha = pingLabelAlpha(ping, pingPos);
+
+		const int textW = V_StringWidth(label.c_str()) * textScaleX;
+		const int textH = V_LineHeight() * textScaleY;
+		// Keep the label anchored by center point, like ping markers.
+		const int labelCenterX = projX;
+		const int labelCenterY = projY - halfMarker - LabelYOffsetPx - textH / 2;
+		const int textX = labelCenterX - textW / 2;
+		const int textY = labelCenterY - textH / 2;
+
+		if (alpha >= 0.99f)
+		{
+			screen->DrawTextStretched(CR_GREY, textX, textY, label.c_str(), textScaleX, textScaleY);
+		}
+		else
+		{
+			screen->DrawTextStretchedLuc(CR_GREY, textX, textY, label.c_str(), textScaleX, textScaleY);
+		}
+	}
+
+	V_SetFont("SMALLFONT");
+}
+
 
 static void HU_DrawChatPrompt()
 {
@@ -859,6 +1092,8 @@ void HU_Drawer()
 
 	if (gamestate == GS_LEVEL)
 		HU_DrawPingIndicator();
+	if (gamestate == GS_LEVEL)
+		HU_DrawPingDistances();
 
 	if (gamestate == GS_LEVEL)
 		HU_DrawCrosshair();

@@ -126,6 +126,7 @@ EXTERN_CVAR(hud_extendedinfo)
 EXTERN_CVAR(cl_ping_hudindicators)
 EXTERN_CVAR(cl_showpings)
 EXTERN_CVAR(cl_ping_sound)
+EXTERN_CVAR(cl_ping_distancelabels)
 EXTERN_CVAR(cl_ping_pickups)
 EXTERN_CVAR(cl_ping_monsters)
 EXTERN_CVAR(cl_ping_flags)
@@ -1076,6 +1077,7 @@ static menuitem_t PingItems[] = {
 	{ yellowtext, "General", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
 	{ discrete, "Enable ping system", {&cl_showpings}, {2.0}, {0.0}, {0.0}, {OnOff} },
 	{ discrete, "Show HUD indicators", {&cl_ping_hudindicators}, {2.0}, {0.0}, {0.0}, {OnOff} },
+	{ discrete, "Show distance labels", {&cl_ping_distancelabels}, {2.0}, {0.0}, {0.0}, {OnOff} },
 	{ discrete, "Play ping sound", {&cl_ping_sound}, {2.0}, {0.0}, {0.0}, {OnOff} },
 	{ redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
 	{ yellowtext, "Ping Targets", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },

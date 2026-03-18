@@ -590,6 +590,9 @@ CVAR(			cl_showpings, "1", "Enable or disable the client ping system.",
 CVAR(			cl_ping_sound, "1", "Play a sound when your own ping is placed.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(			cl_ping_distancelabels, "1", "Show distance labels above world ping markers.",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(			cl_ping_pickups, "1", "Allow pinging pickup items.",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
