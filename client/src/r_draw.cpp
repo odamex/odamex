@@ -1447,16 +1447,24 @@ class DirectTranslatedTranslucentColormapFunc
 {
 public:
 	DirectTranslatedTranslucentColormapFunc(const drawcolumn_t& drawcolumn) :
-			tlatefunc(drawcolumn), translation(drawcolumn.translation) { }
+			colormap(drawcolumn.colormap), translation(drawcolumn.translation)
+	{
+		fga = (drawcolumn.translevel & ~0x03FF) >> 8;
+		fga = fga > 255 ? 255 : fga;
+		bga = 255 - fga;
+	}
 
 	forceinline void operator()(byte c, argb_t* dest) const
 	{
-		tlatefunc(translation.tlate(c), dest);
+		const argb_t fg = colormap.tlate(translation, c);
+		const argb_t bg = *dest;
+		*dest = alphablend2a(bg, bga, fg, fga);
 	}
 
 private:
-	DirectTranslucentColormapFunc tlatefunc;
+	const shaderef_t& colormap;
 	const translationref_t& translation;
+	int fga, bga;
 };
 
 class DirectSlopeColormapFunc
