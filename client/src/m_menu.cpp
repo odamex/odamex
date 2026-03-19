@@ -1122,20 +1122,19 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 //
 void M_DrawMainMenu()
 {
-	int frame;
+	const patch_t* menu_title = W_CheckNumForName(gameinfo.menuTitle) ?
+		W_CachePatch(gameinfo.menuTitle) : nullptr;
 
-	frame = (MenuTime / 3) % 18;
-
-	const patch_t* menu_title = W_CachePatch(gameinfo.menuTitle);
-	const int menu_title_x = (gameinfo.enginetype == ENGINE_HERETIC) ? 88 : 94;
-	const int menu_title_y = (gameinfo.enginetype == ENGINE_HERETIC) ? 0 : 2;
-
-	if (menu_title != NULL)
+	if (menu_title != nullptr)
 	{
+		const int menu_title_x = gameinfo.menuTitleOffsetX > 0 ?
+			gameinfo.menuTitleOffsetX : (320 - menu_title->width()) / 2;
+		const int menu_title_y = 1;
 		screen->DrawPatchClean(menu_title, menu_title_x, menu_title_y);
 	}
 	if (SkullBaseLump >= 0)
 	{
+		const int frame = (MenuTime / 3) % 18;
 		screen->DrawPatchClean(W_CachePatch(SkullBaseLump + (17 - frame), PU_CACHE), 40, 10);
 		screen->DrawPatchClean(W_CachePatch(SkullBaseLump + frame, PU_CACHE), 232, 10);
 	}

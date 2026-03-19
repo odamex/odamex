@@ -136,6 +136,7 @@ typedef struct gameinfo_s
 	OLumpName baseMapinfoLump;
 	OLumpName sharewareMapinfoLump;
 	OLumpName menuTitle;
+	int menuTitleOffsetX;
 	std::string bigFont;
 	std::string smallFont;
 	std::array<OLumpName, 2> menuIndicatorLumps;
@@ -176,6 +177,7 @@ typedef struct gameinfo_s
 		, baseMapinfoLump("")
 		, sharewareMapinfoLump("")
 		, menuTitle("")
+		, menuTitleOffsetX(0)
 		, bigFont("BIGFONT")
 		, smallFont("SMALLFONT")
 		, menuIndicatorLumps{ "M_SKULL1", "M_SKULL2" }

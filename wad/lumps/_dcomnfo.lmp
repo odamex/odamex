@@ -35,6 +35,7 @@ gameinfo
 	bigfont = BIGFONT
 	smallfont = SMALLFONT
 	menutitle = "M_DOOM"
+	menutitleoffsetx = 94
 	menuindicatoroffsetx = -32
 	menuindicatoroffsety = -5
 	defaultwipetype = 1
