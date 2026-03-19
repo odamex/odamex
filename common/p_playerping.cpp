@@ -617,8 +617,8 @@ AActor* P_FindAssistFlagTarget(const player_t& player, const fixed_t shootz, con
 	static constexpr fixed_t FlagConeFarDist = 2048 * FRACUNIT;
 	static constexpr angle_t FlagAssistConeNearDropped = ANG(7);
 	static constexpr angle_t FlagAssistConeFarDropped = ANG(3);
-	static constexpr angle_t FlagAssistConeNearHome = ANG(6);
-	static constexpr angle_t FlagAssistConeFarHome = ANG(2);
+	static constexpr angle_t FlagAssistConeNearHome = ANG(5);
+	static constexpr angle_t FlagAssistConeFarHome = ANG(1.5);
 
 	for (int i = TEAM_BLUE; i < NUMTEAMS; i++)
 	{
@@ -660,7 +660,9 @@ AActor* P_FindAssistFlagTarget(const player_t& player, const fixed_t shootz, con
 		fixed_t allowance = player.userinfo.aimdist;
 		if (allowance <= 0)
 			allowance = FRACUNIT / 2;
-		allowance = FixedMul(allowance, FRACUNIT + (FRACUNIT >> 3)); // 1.125x tolerance
+		allowance = droppedFlag
+		                ? FixedMul(allowance, FRACUNIT + (FRACUNIT >> 3))  // 1.125x tolerance
+		                : FixedMul(allowance, FRACUNIT - (FRACUNIT >> 3)); // 0.875x tolerance
 		if (std::abs(desiredSlope - pitchSlope) > allowance)
 			continue;
 
