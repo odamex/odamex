@@ -265,7 +265,7 @@ void P_LoadSegs (int lump)
 	{
 		seg_t* const li = segs + i;
 		const MapSegType *ml = (MapSegType*) data + i;
-		auto v = LESWAP(ml->v1);
+		auto v = OUtil::to_unsigned(LESWAP(ml->v1));
 
 		if(v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex {}", v);
