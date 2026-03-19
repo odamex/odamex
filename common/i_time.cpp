@@ -31,7 +31,7 @@
 	#include <time.h>
 	#include <unistd.h>
 
-#elif defined(_WIN32) || defined(WIN32)
+#elif defined WIN32
 	#include "win32inc.h"
 
 #elif defined CLIENT_APP
@@ -64,7 +64,7 @@ dtime_t I_GetTime()
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	return ts.tv_sec * 1000LL * 1000LL * 1000LL + ts.tv_nsec;
 
-#elif defined(_WIN32) || defined(WIN32)
+#elif defined WIN32
 	static bool initialized = false;
 	static LARGE_INTEGER initial_count;
 	static double nanoseconds_per_count;
@@ -175,7 +175,7 @@ void I_Sleep(dtime_t sleep_time)
 		// Go back to sleep.
 	}
 
-#elif defined(_WIN32) || defined(WIN32)
+#elif defined WIN32
 	Sleep(static_cast<DWORD>(sleep_time / 1000000LL));
 
 #elif defined CLIENT_APP
