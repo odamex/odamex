@@ -525,6 +525,7 @@ inline const OString TXT_CHEATTICKERON = "TXT_CHEATTICKERON";
 inline const OString TXT_CHEATTICKEROFF = "TXT_CHEATTICKEROFF";
 inline const OString TXT_CHEATARTIFACTS3 = "TXT_CHEATARTIFACTS3";
 inline const OString RAVENQUITMSG = "RAVENQUITMSG";
+inline const OString RAVENENDGAME = "RAVENENDGAME";
 inline const OString TXT_MANA_1 = "TXT_MANA_1";
 inline const OString TXT_MANA_2 = "TXT_MANA_2";
 inline const OString TXT_MANA_BOTH = "TXT_MANA_BOTH";

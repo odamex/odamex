@@ -1449,7 +1449,10 @@ void M_EndGame(int)
 		return;
 	}
 
-	M_StartMessage(GStrings(multiplayer ? NETEND : ENDGAME), M_EndGameResponse, true);
+	const OString endgame_message = multiplayer ? NETEND : 
+		(gameinfo.enginetype == ENGINE_HERETIC ? RAVENENDGAME : ENDGAME);
+
+	M_StartMessage(GStrings(endgame_message), M_EndGameResponse, true);
 }
 
 //
