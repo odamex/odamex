@@ -76,6 +76,7 @@ END_DISABLE_WARNING_GNU
 #include "p_setup.h"
 #include "r_local.h"
 #include "r_sky.h"
+#include "d_pages.h"
 #include "d_main.h"
 #include "d_dehacked.h"
 #include "cl_download.h"
@@ -117,10 +118,7 @@ int eventtail;
 gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
 bool demotest = false;
 
-IWindowSurface* page_surface;
-
-static int page_height;
-static int page_width;
+static page_image_t page_image;
 
 static int demosequence;
 static int pagetic;
@@ -400,43 +398,15 @@ void D_PageTicker()
 void D_PageDrawer()
 {
 	IWindowSurface* primary_surface = I_GetPrimarySurface();
-	int surface_width = primary_surface->getWidth(), surface_height = primary_surface->getHeight();
-	primary_surface->clear();		// ensure black background in matted modes
+	D_DrawPageImage(page_image, primary_surface, true);
 
-	if (page_surface)
+	if (page_image.surface)
 	{
-		int destw, desth;
-		const int display_page_height = (page_surface->getHeight() == 200)
-			? page_surface->getHeight() + (page_surface->getHeight() / 5)
-			: page_surface->getHeight();
-
-		if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight())) // Always fill/stretch pages on protected resolutions
-		{
-			destw = surface_width, desth = surface_height;
-		}
-		else if (surface_width * 3 >= surface_height * 4)
-		{
-			destw = surface_height * 4 / 3, desth = surface_height;
-		}
-		else
-		{
-			destw = surface_width, desth = surface_width * 3 / 4;
-		}
-
-		destw = I_GetAspectCorrectWidth(desth, display_page_height, page_width);
-
-		page_surface->lock();
-
-		primary_surface->blitcrop(page_surface, 0, 0, page_surface->getWidth(), page_surface->getHeight(),
-				(surface_width - destw) / 2, (surface_height - desth) / 2, destw, desth);
-
 		// [ML] If this is the advisory screen in Heretic, draw the "advisor" patch on top of it.
 		if (gamemode == registered_heretic && demosequence == 1)
 		{
 			screen->DrawPatchClean(W_CachePatch("ADVISOR"),4,160);
 		}
-
-		page_surface->unlock();
 	}
 }
 
@@ -587,37 +557,7 @@ void D_DoAdvanceDemo (void)
 	if (!pagename.empty())
 	{
 		const bool is_raw_patch = (gameinfo.flags & GI_PAGESARERAW) != 0;
-		const patch_t* patch = !is_raw_patch ? W_CachePatch(pagename) : NULL;
-		
-		if (is_raw_patch)
-		{
-			const int lumpnum = W_GetNumForName(pagename);
-			const unsigned lump_length = W_LumpLength(lumpnum);
-			page_height = 200;
-			page_width = (lump_length % page_height == 0) ? lump_length / page_height : 320;
-		}
-		else
-		{
-			page_width = patch->width();
-			page_height = patch->height();
-		}
-
-		I_FreeSurface(page_surface);
-		page_surface = I_AllocateSurface(page_width, page_height, 8);
-		DCanvas* canvas = page_surface->getDefaultCanvas();
-		page_surface->lock();
-
-		if (is_raw_patch)
-		{
-			const byte* raw_page = W_CacheLumpName<byte>(pagename, PU_CACHE);
-			canvas->DrawBlock(0, 0, page_width, page_height, raw_page);
-		}
-		else
-		{
-			canvas->DrawPatch(patch, 0, 0);
-		}
-
-		page_surface->unlock();
+		D_LoadPageImage(page_image, pagename, is_raw_patch);
 	}
 }
 
@@ -626,11 +566,9 @@ void D_DoAdvanceDemo (void)
 //
 void STACK_ARGS D_Close()
 {
-	I_FreeSurface(page_surface);
+	D_FreePageImage(page_image);
 
 	D_ClearTaskSchedulers();
-
-	page_height = 0, page_width = 0;
 }
 
 //
