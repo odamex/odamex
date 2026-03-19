@@ -651,9 +651,8 @@ public:
 		return reinterpret_cast<tallpost_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(this) + ofs));
 	}
 };
-typedef patch_s patch_t;
 
-enum vsflags_e : uint
+enum vsflags_e : unsigned int
 {
 	VSF_NONE = 0,
 	VSF_SPECTATOR = BIT(0),		// [Blair] Mark if this visprite belongs to a spectator.
@@ -697,7 +696,7 @@ struct vissprite_t
 
 	int 			mobjflags;
 	int				statusflags;	// Status of player to show (powers, etc)
-	uint			visflags;		// [LM] Odamex-specific vissprite flags. 
+	unsigned int	visflags;		// [LM] Odamex-specific vissprite flags. 
 
 	translationref_t translation;	// [RH] for translation;
 	sector_t*		heightsec;		// killough 3/27/98: height sector for underwater/fake ceiling
