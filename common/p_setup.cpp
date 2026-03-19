@@ -305,8 +305,8 @@ void P_LoadSubsectors(int lump)
 
 	for (int i = 0; i < numsubsectors; i++)
 	{
-		subsectors[i].numlines = LESWAP<decltype(MapSubsectorType::numsegs)>(data[i].numsegs);
-		subsectors[i].firstline = LESWAP<decltype(MapSubsectorType::firstseg)>(data[i].firstseg);
+		subsectors[i].numlines = LESWAP(data[i].numsegs);
+		subsectors[i].firstline = LESWAP(data[i].firstseg);
 	}
 
 	Z_Free(data);
