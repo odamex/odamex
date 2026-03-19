@@ -29,6 +29,8 @@
 
 #include "p_playerping.h"
 
+#include <limits>
+
 #include "c_effect.h"
 #include "c_dispatch.h"
 #include "g_gametype.h"
@@ -400,10 +402,10 @@ bool PTR_PingTraverse(intercept_t* in)
 			// where the player is actually looking.
 			if (g_pingTrace.filter.mouselook)
 			{
-				const fixed_t itemCenterSlope =
-				    FixedDiv((thing->z + (thing->height >> 1)) - g_pingTrace.shootz, dist);
-				const fixed_t itemTopSlope =
-				    FixedDiv(thing->z + thing->height - g_pingTrace.shootz, dist);
+				const fixed_t itemTop = thing->z + P_PingItemTopOffset(thing);
+				const fixed_t itemCenter = thing->z + ((itemTop - thing->z) >> 1);
+				const fixed_t itemCenterSlope = FixedDiv(itemCenter - g_pingTrace.shootz, dist);
+				const fixed_t itemTopSlope = FixedDiv(itemTop - g_pingTrace.shootz, dist);
 				const fixed_t itemBottomSlope =
 				    FixedDiv(thing->z - g_pingTrace.shootz, dist);
 				if (g_pingTrace.slope > itemTopSlope + PickupAimSpanToleranceMouselook ||
@@ -678,6 +680,101 @@ AActor* P_FindAssistFlagTarget(const player_t& player, const fixed_t shootz, con
 
 	return best;
 }
+
+AActor* P_FindMouselookPickupTarget(const player_t& player, const fixed_t shootz,
+                                    const fixed_t pitchSlope, const fixed_t maxRange)
+{
+	if (!player.mo)
+		return nullptr;
+
+	static constexpr fixed_t PickupMaxPingDist = 1536 * FRACUNIT;
+	static constexpr fixed_t PickupConeNearDist = 256 * FRACUNIT;
+	static constexpr fixed_t PickupConeFarDist = 1536 * FRACUNIT;
+	static constexpr angle_t PickupConeNear = ANG(2);
+	static constexpr angle_t PickupConeFar = ANG(1);
+	static constexpr fixed_t PickupSlopeTolNear = FRACUNIT / 24;
+	static constexpr fixed_t PickupSlopeTolFar = FRACUNIT / 32;
+
+	const fixed_t cappedRange = (std::min)(maxRange, PickupMaxPingDist);
+	AActor* best = nullptr;
+	int64_t bestScore = (std::numeric_limits<int64_t>::max)();
+
+	TThinkerIterator<AActor> iterator;
+	while (AActor* thing = iterator.Next())
+	{
+		if (!thing || thing == player.mo)
+			continue;
+		if ((thing->flags & MF_SPECIAL) == 0)
+			continue;
+		if (P_PingFlagTeamForActor(thing) != TEAM_NONE)
+			continue;
+
+		const fixed_t dx = thing->x - player.mo->x;
+		const fixed_t dy = thing->y - player.mo->y;
+		const fixed_t dist = P_AproxDistance(dx, dy);
+		if (dist <= 0 || dist > cappedRange)
+			continue;
+
+		angle_t cone = PickupConeNear;
+		if (dist >= PickupConeFarDist)
+		{
+			cone = PickupConeFar;
+		}
+		else if (dist > PickupConeNearDist)
+		{
+			const fixed_t t =
+			    FixedDiv(dist - PickupConeNearDist, PickupConeFarDist - PickupConeNearDist);
+			cone = PickupConeNear - static_cast<angle_t>(FixedMul(t, PickupConeNear - PickupConeFar));
+		}
+
+		const angle_t to = R_PointToAngle2(player.mo->x, player.mo->y, thing->x, thing->y);
+		const int32_t angleDelta = std::abs(static_cast<int32_t>(to - player.mo->angle));
+		if (angleDelta > static_cast<int32_t>(cone))
+			continue;
+
+		const fixed_t itemTop = thing->z + P_PingItemTopOffset(thing);
+		const fixed_t itemCenter = thing->z + ((itemTop - thing->z) >> 1);
+		const fixed_t desiredSlope = FixedDiv(itemCenter - shootz, dist);
+
+		fixed_t slopeTol = PickupSlopeTolNear;
+		if (dist >= PickupConeFarDist)
+		{
+			slopeTol = PickupSlopeTolFar;
+		}
+		else if (dist > PickupConeNearDist)
+		{
+			const fixed_t t =
+			    FixedDiv(dist - PickupConeNearDist, PickupConeFarDist - PickupConeNearDist);
+			slopeTol = PickupSlopeTolNear - FixedMul(t, PickupSlopeTolNear - PickupSlopeTolFar);
+		}
+
+		const fixed_t slopeDelta = std::abs(desiredSlope - pitchSlope);
+		if (slopeDelta > slopeTol)
+			continue;
+
+		if (!P_CheckSight(player.mo, thing))
+			continue;
+
+		const int64_t angleScore =
+		    (static_cast<int64_t>(angleDelta) << FRACBITS) /
+		    (std::max)(1, static_cast<int32_t>(cone));
+		const int64_t slopeScore =
+		    (static_cast<int64_t>(slopeDelta) << FRACBITS) /
+		    (std::max)(1, static_cast<int32_t>(slopeTol));
+		const int64_t distScore =
+		    (static_cast<int64_t>(dist) << FRACBITS) /
+		    (std::max)(1, static_cast<int32_t>(cappedRange));
+		const int64_t totalScore = angleScore * 5 + slopeScore * 5 + distScore;
+
+		if (totalScore < bestScore)
+		{
+			bestScore = totalScore;
+			best = thing;
+		}
+	}
+
+	return best;
+}
 } // namespace
 
 //------------------------------------------------------------------------------
@@ -935,6 +1032,21 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter,
 			ping.pos.y = assistFlag->y;
 			ping.pos.z = assistFlag->z + (assistFlag->height >> 1);
 			pingHit = true;
+		}
+	}
+
+	// Mouselook pickup fallback: if no specific target was found by trace,
+	// search a tight geometric cone around the crosshair for pickup actors.
+	if (effectiveFilter.mouselook && effectiveFilter.pickups && !P_IsSpecificPingTarget(pingTarget))
+	{
+		if (AActor* assistPickup =
+		        P_FindMouselookPickupTarget(player, shootz, pitchSlope, PingRange))
+		{
+			pingTarget = assistPickup;
+			pingHit = true;
+			ping.pos.x = assistPickup->x;
+			ping.pos.y = assistPickup->y;
+			ping.pos.z = assistPickup->z + (P_PingItemTopOffset(assistPickup) >> 1);
 		}
 	}
 
