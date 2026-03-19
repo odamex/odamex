@@ -19,9 +19,6 @@
 // DESCRIPTION:
 //     Player Ping system
 //
-// ORIGINAL AUTHOR:
-//     Lexi Mayfield
-//
 //-----------------------------------------------------------------------------
 
 #pragma once
