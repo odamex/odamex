@@ -49,9 +49,9 @@ bool D_LoadPageImage(page_image_t& page, const OLumpName& lumpname)
 
 	int page_width = 0;
 	int page_height = 0;
-	bool is_raw = (gameinfo.flags & GI_PAGESARERAW) != 0;
+	bool page_is_raw = (gameinfo.flags & GI_PAGESARERAW) != 0;
 
-	if (is_raw)
+	if (page_is_raw)
 	{
 		const int lumpnum = W_GetNumForName(lumpname);
 		const unsigned lump_length = W_LumpLength(lumpnum);
@@ -105,30 +105,19 @@ void D_DrawPageImage(const page_image_t& page, IWindowSurface* dest_surface, con
 		dest_surface->clear();
 	}
 
-	int destw;
-	int desth;
+	const int desth =
+		I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()) ||
+		surface_width * 3 >= surface_height * 4
+			? surface_height
+			: surface_width * 3 / 4;
 
-	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
-	{
-		destw = surface_width;
-		desth = surface_height;
-	}
-	else if (surface_width * 3 >= surface_height * 4)
-	{
-		destw = surface_height * 4 / 3;
-		desth = surface_height;
-	}
-	else
-	{
-		destw = surface_width;
-		desth = surface_width * 3 / 4;
-	}
-
-	destw = I_GetAspectCorrectWidth(desth, page.display_height, page.width);
+	const int destw = I_GetAspectCorrectWidth(desth, page.display_height, page.width);
+	const int x = (surface_width - destw) / 2;
+	const int y = (surface_height - desth) / 2;
 
 	page.surface->lock();
 	dest_surface->blitcrop(page.surface, 0, 0, page.surface->getWidth(), page.surface->getHeight(),
-	                      (surface_width - destw) / 2, (surface_height - desth) / 2, destw, desth);
+	                       x, y, destw, desth);
 	page.surface->unlock();
 }
 
