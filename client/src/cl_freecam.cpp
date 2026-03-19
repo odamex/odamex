@@ -67,11 +67,10 @@ void Freecam::buildCam(player_t* p_cam)
 
 	// spec stuff
 	p_cam->cheats |= CF_FLY;
-	p_cam->mo->flags |= MF_NOCLIP;
+	p_cam->cheats |= CF_NOCLIP;
 	p_cam->spectator = true;
 	p_cam->mo->oflags |= MFO_SPECTATOR;
 	p_cam->mo->flags &= ~MF_SOLID;
-	p_cam->mo->flags2 |= MF2_FLY;
 
 	// player.ingame() should always be false for the freecam
 	p_cam->playerstate = PST_FREECAM;  
