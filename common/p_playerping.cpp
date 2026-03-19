@@ -926,6 +926,8 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter,
 {
 	if (!sv_pingsystem)
 		return PING_SUBMIT_NONE;
+	if (G_IsFFAGame())
+		return PING_SUBMIT_NONE;
 
 	if (!player.mo || player.spectator)
 		return PING_SUBMIT_NONE;
