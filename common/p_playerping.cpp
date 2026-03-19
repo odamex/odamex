@@ -38,6 +38,7 @@
 #include "w_wad.h"
 #ifdef CLIENT_APP
 #include <unordered_map>
+#include <cmath>
 
 #include "../client/src/cl_main.h"
 #include "r_main.h"
@@ -682,10 +683,136 @@ AActor* P_FindAssistFlagTarget(const player_t& player, const fixed_t shootz, con
 #ifdef CLIENT_APP
 translationref_t P_PingReadablePlayerTranslation(const player_t& pl)
 {
-	if (pl.id < MAXPLAYERS)
-		return translationref_t(translationtables + 256 * pl.id, pl.id);
+	static constexpr float kDarkEnterThreshold = 0.0015f;
+	static constexpr float kDarkExitThreshold = 0.0025f;
+	static constexpr float kDarkLift = 2.0f;
+	static constexpr float kDarkBiasSrgb = 55.0f;
 
-	return pl.mo ? pl.mo->translation : translationref_t{};
+	auto srgbToLinear = [](float s) -> float
+	{
+		s = std::clamp(s / 255.0f, 0.0f, 1.0f);
+		if (s <= 0.04045f)
+			return s / 12.92f;
+		return std::pow((s + 0.055f) / 1.055f, 2.4f);
+	};
+	auto linearToSrgb = [](float l) -> float
+	{
+		l = std::clamp(l, 0.0f, 1.0f);
+		if (l <= 0.0031308f)
+			return 12.92f * l;
+		return 1.055f * std::pow(l, 1.0f / 2.4f) - 0.055f;
+	};
+
+	auto luminance = [&](const argb_t& c) -> float
+	{
+		const float r = srgbToLinear(static_cast<float>(c.getr()));
+		const float g = srgbToLinear(static_cast<float>(c.getg()));
+		const float b = srgbToLinear(static_cast<float>(c.getb()));
+		return 0.2126f * r + 0.7152f * g + 0.0722f * b;
+	};
+
+	if (pl.id >= MAXPLAYERS)
+		return pl.mo ? pl.mo->translation : translationref_t{};
+
+	if (!translationtables)
+		return pl.mo ? pl.mo->translation : translationref_t{};
+
+	translationref_t normal = translationref_t(translationtables + 256 * pl.id, pl.id);
+	const palette_t* pal = V_GetDefaultPalette();
+	if (!pal || !pal->basecolors)
+		return normal;
+
+	std::array<float, 16> yPal{};
+	uint64_t rampHash = 1469598103934665603ull; // FNV-1a offset basis
+	for (int i = 0; i < 16; i++)
+	{
+		const byte pidx = translationtables[pl.id * 256 + 0x70 + i];
+		rampHash ^= static_cast<uint32_t>(pidx);
+		rampHash *= 1099511628211ull; // FNV-1a prime
+		const argb_t pc = pal->basecolors[pidx];
+		yPal[i] = luminance(pc);
+	}
+	auto palSorted = yPal;
+	std::sort(palSorted.begin(), palSorted.end());
+	const float medPal = (palSorted[7] + palSorted[8]) * 0.5f;
+
+	static std::array<bool, MAXPLAYERS> darkMode{};
+	const float enterT = std::clamp(kDarkEnterThreshold, 0.0f, 1.0f);
+	const float exitT = std::clamp(kDarkExitThreshold, enterT, 1.0f);
+	if (!darkMode[pl.id] && medPal < enterT)
+		darkMode[pl.id] = true;
+	else if (darkMode[pl.id] && medPal > exitT)
+		darkMode[pl.id] = false;
+
+	if (!darkMode[pl.id])
+		return normal;
+
+	static std::array<std::array<byte, 256>, MAXPLAYERS> darkTables{};
+	static std::array<uint64_t, MAXPLAYERS> darkKeys{};
+	static std::array<bool, MAXPLAYERS> darkBuilt{};
+
+	const float lift = std::clamp(kDarkLift, 1.0f, 3.0f);
+	const float bias = std::clamp(kDarkBiasSrgb, 0.0f, 255.0f);
+	const uint64_t liftKey = static_cast<uint64_t>(std::lround(lift * 1000.0f));
+	const uint64_t biasKey = static_cast<uint64_t>(std::lround(bias * 10.0f));
+	const uint64_t darkKey = rampHash ^ (liftKey << 1) ^ (biasKey << 33);
+
+	if (!darkBuilt[pl.id] || darkKeys[pl.id] != darkKey)
+	{
+		std::array<byte, 256>& table = darkTables[pl.id];
+		for (int i = 0; i < 256; i++)
+			table[i] = static_cast<byte>(i);
+
+		// Hue-preserving dark protection:
+		// 1) convert user color to linear RGB
+		// 2) enforce a minimum luminance by uniform scaling (keeps hue/chroma)
+		// 3) apply ramp intensity in linear space using the original 0x70..0x7F shape
+		float uR = srgbToLinear(static_cast<float>(pl.userinfo.color[1]));
+		float uG = srgbToLinear(static_cast<float>(pl.userinfo.color[2]));
+		float uB = srgbToLinear(static_cast<float>(pl.userinfo.color[3]));
+		const float userY = 0.2126f * uR + 0.7152f * uG + 0.0722f * uB;
+		// Interpret bias in display-space (sRGB), then convert to linear luminance.
+		const float floorUserY = srgbToLinear(std::clamp(bias, 0.0f, 255.0f));
+		const float minVisibleY = srgbToLinear(1.0f); // Ensure 0,0,0 is never pure black.
+		const float targetY = (std::max)(floorUserY, minVisibleY);
+
+		float userScale = lift;
+		if (userY > 0.0f && userY < targetY)
+			userScale *= (targetY / userY);
+
+		uR = std::clamp(uR * userScale, 0.0f, 1.0f);
+		uG = std::clamp(uG * userScale, 0.0f, 1.0f);
+		uB = std::clamp(uB * userScale, 0.0f, 1.0f);
+
+		// Very-low luminance colors (e.g. 1,0,0 or 0,1,0) can over-spike into saturated hues.
+		// Blend toward a neutral floor for this tiny range to keep the marker readable and stable.
+		const float nearBlackY = 0.002f;
+		if (userY <= nearBlackY)
+		{
+			const float t = std::clamp(userY / nearBlackY, 0.0f, 1.0f);
+			uR = targetY * (1.0f - t) + uR * t;
+			uG = targetY * (1.0f - t) + uG * t;
+			uB = targetY * (1.0f - t) + uB * t;
+		}
+
+		for (int i = 0; i < 16; i++)
+		{
+			const argb_t src = pal->basecolors[0x70 + i];
+			const float intensity = luminance(src);
+			const float rLin = std::clamp(uR * intensity, 0.0f, 1.0f);
+			const float gLin = std::clamp(uG * intensity, 0.0f, 1.0f);
+			const float bLin = std::clamp(uB * intensity, 0.0f, 1.0f);
+			const int r = std::clamp(static_cast<int>(std::lround(linearToSrgb(rLin) * 255.0f)), 0, 255);
+			const int g = std::clamp(static_cast<int>(std::lround(linearToSrgb(gLin) * 255.0f)), 0, 255);
+			const int b = std::clamp(static_cast<int>(std::lround(linearToSrgb(bLin) * 255.0f)), 0, 255);
+			table[0x70 + i] = static_cast<byte>(V_BestColor(pal->basecolors, r, g, b));
+		}
+		darkKeys[pl.id] = darkKey;
+		darkBuilt[pl.id] = true;
+	}
+
+	// Ping-only table: don't tag as player-id translation.
+	return translationref_t(darkTables[pl.id].data());
 }
 
 translationref_t P_PingTeamTranslation(team_t team)
