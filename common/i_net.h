@@ -45,7 +45,7 @@
 #define PROTO_CHALLENGE -5560020  // Signals challenger wants protobufs.
 #define MSG_CHALLENGE 5560020     // Signals challenger wants MSG protocol.
 #define LAUNCHER_CHALLENGE 777123 // csdl challenge
-#define VERSION 66                // Protocol updated for svc_playerping replication.
+#define VERSION 65                // GhostlyDeath - this should remain static from now on
 
 #include <tuple>
 
