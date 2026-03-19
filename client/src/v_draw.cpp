@@ -644,7 +644,7 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t* patch, int x, int 
  * @param destheight
  */
 void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, int y0,
-                           const int destwidth, const int destheight) const
+                           const int destwidth, const int destheight, bool offsets) const
 {
 	if (patch == NULL)
 		return;
@@ -680,9 +680,11 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, in
 	int xmul = (destwidth << FRACBITS) / patch->width();
 	int ymul = (destheight << FRACBITS) / patch->height();
 
-	y0 -= (patch->topoffset() * ymul) >> FRACBITS;
-	x0 -= (patch->leftoffset() * xmul) >> FRACBITS;
-
+	if (offsets)
+	{
+		y0 -= (patch->topoffset() * ymul) >> FRACBITS;
+		x0 -= (patch->leftoffset() * xmul) >> FRACBITS;
+	}
 #ifdef RANGECHECK
 	if (x0 < 0 || x0 + destwidth > surface_width || y0 < 0 || y0 + destheight > surface_height)
 	{
@@ -856,7 +858,7 @@ void DCanvas::DrawIWrapper(EWrapperCode drawer, const patch_t *patch, int x0, in
 // V_DrawCWrapper
 // Like V_DrawIWrapper, except it only uses integral multipliers.
 //
-void DCanvas::DrawCWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
+void DCanvas::DrawCWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0, bool offsets) const
 {
 	if (patch == NULL)
 		return;
@@ -868,7 +870,7 @@ void DCanvas::DrawCWrapper(EWrapperCode drawer, const patch_t *patch, int x0, in
 	else
 		DrawSWrapper(drawer, patch,
 			(x0-160)*CleanXfac+(surface_width/2), (y0-100)*CleanYfac+(surface_height/2),
-			patch->width() * CleanXfac, patch->height() * CleanYfac);
+			patch->width() * CleanXfac, patch->height() * CleanYfac, offsets);
 }
 
 //

@@ -133,6 +133,7 @@ public:
 	inline void DrawPatchDirect (const patch_t *patch, int x, int y) const;
 	inline void DrawPatchClean (const patch_t *patch, int x, int y) const;
 	inline void DrawPatchCleanNoMove (const patch_t *patch, int x, int y) const;
+	inline void DrawPatchCleanNoOffsets (const patch_t *patch, int x, int y) const;
 
 	void DrawPatchFullScreen(const patch_t* patch, bool clear) const;
 
@@ -178,9 +179,9 @@ protected:
 	void TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string, int scalex, int scaley) const;
 
 	void DrawWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y) const;
-	void DrawSWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y, int destwidth, int destheight) const;
+	void DrawSWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y, int destwidth, int destheight, bool offsets = true) const;
 	void DrawIWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y) const;
-	void DrawCWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y) const;
+	void DrawCWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y, bool offsets = true) const;
 	void DrawCNMWrapper (EWrapperCode drawer, const patch_t *patch, int x, int y) const;
 
 	static void DrawPatchP (const byte *source, byte *dest, int count, int pitch);
@@ -311,6 +312,10 @@ inline void DCanvas::DrawPatchClean (const patch_t *patch, int x, int y) const
 inline void DCanvas::DrawPatchCleanNoMove (const patch_t *patch, int x, int y) const
 {
 	DrawCNMWrapper (EWrapper_Normal, patch, x, y);
+}
+inline void DCanvas::DrawPatchCleanNoOffsets (const patch_t *patch, int x, int y) const
+{
+	DrawCWrapper (EWrapper_Normal, patch, x, y, false);
 }
 
 inline void DCanvas::DrawLucentPatch (const patch_t *patch, int x, int y) const

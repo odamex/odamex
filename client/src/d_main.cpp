@@ -319,8 +319,8 @@ void D_Display()
 		const patch_t* pause = W_CachePatch(gameinfo.pauseSign);
 
 		const int y = AM_ClassicAutomapVisible() ? 4 : viewwindowy + 4;
-		const int x = (I_GetSurfaceWidth() - pause->width() * CleanXfac) / 2;
-		screen->DrawPatchCleanNoMove(pause, 0, y);
+		const int x = ((I_GetSurfaceWidth() - (pause->width() * CleanXfac)) / 2)+(pause->leftoffset()* CleanXfac);
+		screen->DrawPatchCleanNoMove(pause, x, y);
 	}
 
 	// [RH] Draw icon, if any

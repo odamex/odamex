@@ -758,12 +758,10 @@ void M_ReadSaveStrings()
 //
 void M_DrawInputBox (int slot, char *name, int x, int y, int width) 
 {
-	const int mod = gameinfo.enginetype == ENGINE_HERETIC ?
-		(M_BigFontLineHeight()/2 - M_SmallFontLineHeight()/2) :
-		0;
+	const int text_y =  y+(M_BigFontLineHeight()/2 - M_SmallFontLineHeight()/2);
 
 	M_DrawSaveLoadBorder(x, y, width);
-	screen->DrawTextCleanMove (CR_RED, x+(M_SmallFontLineHeight()/2), y+mod, name);
+	screen->DrawTextCleanMove (CR_RED, x+(M_SmallFontLineHeight()/2),text_y, name);
 }
 
 void M_DrawLoad ()
@@ -779,8 +777,9 @@ void M_DrawLoad ()
 	}
 	else
 	{
+		const char* title = LocalizedString("MNU_LOADGAME");
 		V_SetFont("BIGFONT");
-		screen->DrawTextCleanMove(CR_GRAY, 160-V_StringWidth(LocalizedString("MNU_LOADGAME"))/2, 0, LocalizedString("MNU_LOADGAME"));
+		screen->DrawTextCleanMove(CR_GRAY, 160-V_StringWidth(title)/2, 0, title);
 		V_SetFont("SMALLFONT");
 	}
 
@@ -838,8 +837,9 @@ void M_DrawSave()
 	}
 	else
 	{
+		const char* title = LocalizedString("MNU_SAVEGAME");
 		V_SetFont("BIGFONT");
-		screen->DrawTextCleanMove (CR_GRAY, 160-V_StringWidth(LocalizedString("MNU_SAVEGAME"))/2, 0, LocalizedString("MNU_SAVEGAME"));
+		screen->DrawTextCleanMove (CR_GRAY, 160-V_StringWidth(title)/2, 0, title);
 		V_SetFont("SMALLFONT");
 	}
 
@@ -1094,26 +1094,26 @@ void M_FinishReadThis(int)
 //
 void M_DrawSaveLoadBorder (int x, int y, int len)
 {
-	patch_t* full_slot = W_CheckNumForName("M_FSLOT") >= 0 ? W_CachePatch("M_FSLOT") : NULL;
-	patch_t* left_slot = W_CheckNumForName("M_LSLEFT") >= 0 ? W_CachePatch("M_LSLEFT") : NULL;
-	patch_t* center_slot = W_CheckNumForName("M_LSCNTR") >= 0 ? W_CachePatch("M_LSCNTR") : NULL;
-	patch_t* right_slot = W_CheckNumForName("M_LSRGHT") >= 0 ? W_CachePatch("M_LSRGHT") : NULL;
+	patch_t* full_slot = W_CheckNumForName("M_FSLOT") >= 0 ? W_CachePatch("M_FSLOT") : nullptr;
+	patch_t* left_slot = W_CheckNumForName("M_LSLEFT") >= 0 ? W_CachePatch("M_LSLEFT") : nullptr;
+	patch_t* center_slot = W_CheckNumForName("M_LSCNTR") >= 0 ? W_CachePatch("M_LSCNTR") : nullptr;
+	patch_t* right_slot = W_CheckNumForName("M_LSRGHT") >= 0 ? W_CachePatch("M_LSRGHT") : nullptr;
 
-	if (full_slot != NULL)
+	if (full_slot != nullptr)
 	{
 		screen->DrawPatchClean (full_slot, x, y);
 	}
 	else
 	{
-		screen->DrawPatchClean (left_slot, x, y+7);
+		screen->DrawPatchCleanNoOffsets (left_slot, x, y);
 
 		for (int i = 0; i < len; i++)
 		{
 			x += M_SmallFontLineHeight();
-			screen->DrawPatchClean (center_slot, x, y+7);
+			screen->DrawPatchCleanNoOffsets (center_slot, x, y);
 		}
 
-		screen->DrawPatchClean (right_slot, x, y+7);
+		screen->DrawPatchCleanNoOffsets (right_slot, x, y);
 	}
 }
 
