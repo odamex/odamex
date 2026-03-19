@@ -34,7 +34,6 @@ class Freecam
 public:
 	Freecam() = delete; // static / no constructor
 	static std::string prevmap;
-	static bool wadchanged;
 	static void addFreecamPlayer();
 	static void savePosition();
 	static void reset();

@@ -915,7 +915,7 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 	std::string failmsg;
 
 	#ifdef CLIENT_APP
-	Freecam::wadchanged = true;
+	Freecam::reset();
 	#endif
 
 	try

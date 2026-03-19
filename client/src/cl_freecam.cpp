@@ -31,7 +31,6 @@ fixed_t Freecam::z = 0;
 angle_t Freecam::angle = 0;
 fixed_t Freecam::pitch = 0;
 std::string Freecam::prevmap = "";
-bool Freecam::wadchanged = false;
 
 void Freecam::addFreecamPlayer()
 {
@@ -108,7 +107,6 @@ bool Freecam::needPosition()
 void Freecam::reset()
 {
 	x = y = z = angle = pitch = 0;
-	wadchanged = false;
 }
 
 bool Freecam::allowAdd()
