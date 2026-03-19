@@ -577,7 +577,7 @@ byte* P_LoadSegs_XNOD(byte* p) {
 			seg->backsector = sides[line->sidenum[side^1]].sector;
 		else
 		{
-			seg->backsector = NULL;
+			seg->backsector = nullptr;
 			line->flags &= ~ML_TWOSIDED;
 		}
 
