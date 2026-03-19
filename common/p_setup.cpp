@@ -470,7 +470,7 @@ void P_LoadNodes(int lump)
 	static constexpr size_t headerSize =
 		std::is_same_v<MapNodeType, mapnode_deepbsp_t> ? 8 : 0;
 
-	numnodes = W_LumpLength(lump - headerSize) / sizeof(MapNodeType);
+	numnodes = (W_LumpLength(lump) - headerSize) / sizeof(MapNodeType);
 	nodes = (node_t*) Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL, 0);
 	byte* data = (byte*) W_CacheLumpNum(lump, PU_STATIC);
 
