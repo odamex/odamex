@@ -467,11 +467,14 @@ void P_LoadNodes(int lump)
 		    "P_LoadNodes: NODES lump is empty - levels without nodes are not supported.");
 	}
 
-	numnodes = W_LumpLength(lump) / sizeof(MapNodeType);
+	static constexpr size_t headerSize =
+		std::is_same_v<MapNodeType, mapnode_deepbsp_t> ? 8 : 0;
+
+	numnodes = W_LumpLength(lump - headerSize) / sizeof(MapNodeType);
 	nodes = (node_t*) Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL, 0);
 	byte* data = (byte*) W_CacheLumpNum(lump, PU_STATIC);
 
-	const MapNodeType* mn = (MapNodeType *)data;
+	const MapNodeType* mn = (MapNodeType *)(data + headerSize);
 	node_t* no = nodes;
 
 	for (int i = 0; i < numnodes; i++, no++, mn++)
@@ -500,7 +503,7 @@ void P_LoadNodes(int lump)
 		}
 	}
 
-	Z_Free (data);
+	Z_Free(data);
 }
 
 byte* P_DecompressNodes(byte* data, size_t len) {
