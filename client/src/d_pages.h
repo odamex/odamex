@@ -11,6 +11,6 @@ struct page_image_t
 	int display_height = 0;
 };
 
-bool D_LoadPageImage(page_image_t& page, const OLumpName& lumpname, bool is_raw);
+bool D_LoadPageImage(page_image_t& page, const OLumpName& lumpname);
 void D_FreePageImage(page_image_t& page);
 void D_DrawPageImage(const page_image_t& page, IWindowSurface* dest_surface, bool clear);

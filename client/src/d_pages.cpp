@@ -28,6 +28,7 @@
 
 #include "d_pages.h"
 
+#include <gi.h>
 #include "i_video.h"
 #include "v_video.h"
 #include "w_wad.h"
@@ -37,7 +38,7 @@ static int D_GetDisplayPageHeight(const int page_height)
 	return (page_height == 200) ? page_height + (page_height / 5) : page_height;
 }
 
-bool D_LoadPageImage(page_image_t& page, const OLumpName& lumpname, const bool is_raw)
+bool D_LoadPageImage(page_image_t& page, const OLumpName& lumpname)
 {
 	D_FreePageImage(page);
 
@@ -48,6 +49,7 @@ bool D_LoadPageImage(page_image_t& page, const OLumpName& lumpname, const bool i
 
 	int page_width = 0;
 	int page_height = 0;
+	bool is_raw = (gameinfo.flags & GI_PAGESARERAW) != 0;
 
 	if (is_raw)
 	{
@@ -129,3 +131,5 @@ void D_DrawPageImage(const page_image_t& page, IWindowSurface* dest_surface, con
 	                      (surface_width - destw) / 2, (surface_height - desth) / 2, destw, desth);
 	page.surface->unlock();
 }
+
+VERSION_CONTROL (d_pages_cpp, "$Id$")

@@ -556,8 +556,7 @@ void D_DoAdvanceDemo (void)
     // [Russell] - Still need this toilet humor for now unfortunately
 	if (!pagename.empty())
 	{
-		const bool is_raw_patch = (gameinfo.flags & GI_PAGESARERAW) != 0;
-		D_LoadPageImage(page_image, pagename, is_raw_patch);
+		D_LoadPageImage(page_image, pagename);
 	}
 }
 

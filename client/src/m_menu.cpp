@@ -1014,14 +1014,14 @@ void M_QuickLoad()
 void M_ReadThis(int)
 {
 	drawIndicator = false;
-	D_LoadPageImage(help_page, gameinfo.infoPage[0], (gameinfo.flags & GI_PAGESARERAW) != 0);
+	D_LoadPageImage(help_page, gameinfo.infoPage[0]);
 	M_SetupNextMenu(&ReadDef1);
 }
 
 void M_ReadThis2(int)
 {
 	drawIndicator = false;
-	D_LoadPageImage(help_page, gameinfo.infoPage[1], (gameinfo.flags & GI_PAGESARERAW) != 0);
+	D_LoadPageImage(help_page, gameinfo.infoPage[1]);
 	M_SetupNextMenu(&ReadDef2);
 }
 
@@ -1029,7 +1029,7 @@ void M_ReadThis3(int)
 {
     if (gameinfo.flags & GI_SHAREWARE) {
         drawIndicator = false;
-        D_LoadPageImage(help_page, gameinfo.infoPage[2], (gameinfo.flags & GI_PAGESARERAW) != 0);
+        D_LoadPageImage(help_page, gameinfo.infoPage[2]);
         M_SetupNextMenu(&ReadDef3);
     } else {
         M_FinishReadThis(0);
