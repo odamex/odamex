@@ -42,7 +42,7 @@
 
 EXTERN_CVAR (r_particles)
 
-seg_t*			curline;
+const seg_t*	curline;
 side_t* 		sidedef;
 line_t* 		linedef;
 sector_t*		frontsector;
@@ -62,7 +62,7 @@ fixed_t			rw_frontfz1, rw_frontfz2;
 
 int rw_start, rw_stop;
 
-static BYTE		FakeSide;
+static byte		FakeSide;
 
 const fixed_t NEARCLIP = 2*FRACUNIT;
 
@@ -96,7 +96,7 @@ void R_ReallocDrawSegs(void)
 		unsigned pos = ds_p - drawsegs;	// jff 8/9/98 fix from ZDOOM1.14a
 		unsigned firstofs = firstdrawseg - drawsegs;
 		unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128; // killough
-		drawsegs = (drawseg_t*)M_Realloc(drawsegs, newmax*sizeof(*drawsegs));
+		drawsegs = static_cast<drawseg_t*>(M_Realloc(drawsegs, newmax*sizeof(*drawsegs)));
 		firstdrawseg = drawsegs + firstofs;
 		ds_p = drawsegs + pos;				// jff 8/9/98 fix from ZDOOM1.14a
 		maxdrawsegs = newmax;
@@ -112,7 +112,7 @@ void R_ClearDrawSegs(void)
 	if (drawsegs == NULL)
 	{
 		maxdrawsegs = 256;
-		firstdrawseg = drawsegs = (drawseg_t*)Malloc(maxdrawsegs * sizeof(drawseg_t));
+		firstdrawseg = drawsegs = static_cast<drawseg_t*>(M_Malloc(maxdrawsegs * sizeof(drawseg_t)));
 	}
 	ds_p = drawsegs;
 }
@@ -135,7 +135,7 @@ static void R_ClipWallSegment(int first, int last, bool makesolid)
 		{
 			// find the first remaining non-solid column
 			// if all columns remaining are solid, we're done
-			byte* p = (byte*)memchr(solidcol + first, 0, last - first + 1);
+			byte* p = static_cast<byte*>(memchr(solidcol + first, 0, last - first + 1));
 			if (p == NULL)
 				return;
 
@@ -145,7 +145,7 @@ static void R_ClipWallSegment(int first, int last, bool makesolid)
 		{
 			int to;
 			// find where the span of non-solid columns ends
-			byte* p = (byte*)memchr(solidcol + first, 1, last - first + 1);
+			byte* p = static_cast<byte*>(memchr(solidcol + first, 1, last - first + 1));
 			if (p == NULL)
 				to = last;
 			else
@@ -448,7 +448,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 // Clips the given segment
 // and adds any visible pieces to the line list.
 //
-void R_AddLine (seg_t *line)
+void R_AddLine (const seg_t *line)
 {
 	curline = line;
 
@@ -648,6 +648,8 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 	return false;
 }
 
+EXTERN_CVAR(r_thingsectorlight)
+
 //
 // R_Subsector
 // Determine floor/ceiling planes.
@@ -656,9 +658,6 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 //
 void R_Subsector (int num)
 {
-	int 		 count;
-	seg_t*		 line;
-	subsector_t *sub;
 	sector_t     tempsec;				// killough 3/7/98: deep water hack
 	int          floorlightlevel;		// killough 3/16/98: set floor lightlevel
 	int          ceilinglightlevel;		// killough 4/11/98
@@ -670,10 +669,10 @@ void R_Subsector (int num)
 				numsubsectors);
 #endif
 
-	sub = &subsectors[num];
-	frontsector = sub->sector;
-	count = sub->numlines;
-	line = &segs[sub->firstline];
+	const subsector_t& sub = subsectors[num];
+	frontsector = sub.sector;
+	int count = sub.numlines;
+	const seg_t* line = &segs[sub.firstline];
 
 	// killough 3/8/98, 4/4/98: Deep water / fake ceiling effect
 	frontsector = R_FakeFlat(frontsector, &tempsec, &floorlightlevel,
@@ -727,25 +726,27 @@ void R_Subsector (int num)
 	// killough 9/18/98: Fix underwater slowdown, by passing real sector
 	// instead of fake one. Improve sprite lighting by basing sprite
 	// lightlevels on floor & ceiling lightlevels in the surrounding area.
-	R_AddSprites (sub->sector, (floorlightlevel + ceilinglightlevel) / 2, FakeSide);
+	const int lightlevel = r_thingsectorlight ?
+		(floorlightlevel + ceilinglightlevel) / 2 : frontsector->lightlevel;
+	R_AddSprites(sub.sector, lightlevel, FakeSide);
 
 	// [RH] Add particles
 	if (r_particles)
 	{
-		for (WORD i = ParticlesInSubsec[num]; i != NO_PARTICLE; i = Particles[i].nextinsubsector)
+		for (uint16_t i = ParticlesInSubsec[num]; i != NO_PARTICLE; i = Particles[i].nextinsubsector)
 			R_ProjectParticle(Particles + i, subsectors[num].sector, FakeSide);
 	}
 
-	if (sub->poly)
+	if (sub.poly)
 	{ // Render the polyobj in the subsector first
-		int polyCount = sub->poly->numsegs;
-		seg_t **polySeg = sub->poly->segs;
+		int polyCount = sub.poly->numsegs;
+		seg_t **polySeg = sub.poly->segs;
 		while (polyCount--)
 			R_AddLine (*polySeg++);
 	}
 
 	while (count--)
-		R_AddLine (line++);
+		R_AddLine(line++);
 }
 
 

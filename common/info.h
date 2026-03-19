@@ -258,8 +258,8 @@ inline auto format_as(spritenum_t eSpriteNum)
 	return fmt::underlying(eSpriteNum);
 }
 
-inline FArchive &operator<< (FArchive &arc, spritenum_t i) { DWORD out; out = i; return arc << out; }
-inline FArchive &operator>> (FArchive &arc, spritenum_t &i) { DWORD in; arc >> in; i = (spritenum_t)in; return arc; }
+inline FArchive &operator<< (FArchive &arc, spritenum_t i) { uint32_t out; out = i; return arc << out; }
+inline FArchive &operator>> (FArchive &arc, spritenum_t &i) { uint32_t in; arc >> in; i = static_cast<spritenum_t>(in); return arc; }
 
 enum statenum_t: int32_t
 {
@@ -1411,8 +1411,8 @@ inline auto format_as(statenum_t eStateNum)
 	return fmt::underlying(eStateNum);
 }
 
-inline FArchive &operator<< (FArchive &arc, statenum_t i) { DWORD out; out = i; return arc << out; }
-inline FArchive &operator>> (FArchive &arc, statenum_t &i) { DWORD in; arc >> in; i = (statenum_t)in; return arc; }
+inline FArchive &operator<< (FArchive &arc, statenum_t i) { uint32_t out; out = i; return arc << out; }
+inline FArchive &operator>> (FArchive &arc, statenum_t &i) { uint32_t in; arc >> in; i = static_cast<statenum_t>(in); return arc; }
 
 
 #define MAXSTATEARGS 8
@@ -1449,9 +1449,9 @@ extern state_t odastates[];
 inline FArchive &operator<< (FArchive &arc, state_t *state)
 {
 	if (state)
-		return arc << (int32_t)(state->statenum);
+		return arc << static_cast<int32_t>(state->statenum);
 	else
-		return arc << (int32_t)0xffffffff;
+		return arc << static_cast<int32_t>(0xffffffff);
 }
 
 inline FArchive &operator>> (FArchive &arc, state_t *&state)
@@ -1725,8 +1725,8 @@ inline auto format_as(mobjtype_t eType)
 	return fmt::underlying(eType);
 }
 
-inline FArchive &operator<< (FArchive &arc, mobjtype_t i) { DWORD out; out = i; return arc << out; }
-inline FArchive &operator>> (FArchive &arc, mobjtype_t &i) { DWORD in; arc >> in; i = (mobjtype_t)in; return arc; }
+inline FArchive &operator<< (FArchive &arc, mobjtype_t i) { uint32_t out; out = i; return arc << out; }
+inline FArchive &operator>> (FArchive &arc, mobjtype_t &i) { uint32_t in; arc >> in; i = static_cast<mobjtype_t>(in); return arc; }
 
 enum infighting_group_t
 {
@@ -1843,9 +1843,9 @@ void D_BuildSpawnMap();
 inline FArchive &operator<< (FArchive &arc, mobjinfo_t *info)
 {
 	if (info)
-		return arc << (int32_t)(info->type);
+		return arc << static_cast<int32_t>(info->type);
 	else
-		return arc << (int32_t)0xffffffff;
+		return arc << static_cast<int32_t>(0xffffffff);
 }
 
 inline FArchive &operator>> (FArchive &arc, mobjinfo_t *&info)

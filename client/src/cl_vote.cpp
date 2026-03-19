@@ -204,7 +204,7 @@ BEGIN_COMMAND(callvote) {
 			if (votecmd_s.compare(vote_type_cmd[i]) == 0) {
 				// Found it.  Set our votecmd and get rid of our
 				// first argument, since we don't need it anymore.
-				votecmd = (vote_type_t)i;
+				votecmd = static_cast<vote_type_t>(i);
 				arguments.erase(arguments.begin());
 			}
 		}
@@ -270,8 +270,8 @@ BEGIN_COMMAND(callvote) {
 
     auto& netBuf = messenger.NetBuf().Obtain();
 	MSG_WriteMarker(&netBuf, clc_callvote);
-	MSG_WriteByte(&netBuf, (byte)votecmd);
-	MSG_WriteByte(&netBuf, (byte)(arguments.size()));
+	MSG_WriteByte(&netBuf, static_cast<byte>(votecmd));
+	MSG_WriteByte(&netBuf, static_cast<byte>(arguments.size()));
 	for (const auto& argument : arguments) {
 		MSG_WriteString(&netBuf, argument.c_str());
 	}

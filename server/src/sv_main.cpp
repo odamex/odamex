@@ -427,7 +427,7 @@ BEGIN_COMMAND (say)
 {
 	if (argc > 1)
 	{
-		std::string chat = C_ArgCombine(argc - 1, (const char **)(argv + 1));
+		std::string chat = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
 		SV_BroadcastPrintFmt(PRINT_SERVERCHAT, "[console]: {}\n", chat);
 	}
 }
@@ -704,9 +704,12 @@ namespace
 				auto iter = m_deadEndMessengers.find(address);
 				if (iter != m_deadEndMessengers.end())
 				{
-					iter->second.Receive(packetBuffer);
+					const MessageResultEnum receiveResult = iter->second.Receive(packetBuffer);
 
-					ServiceMessenger(currentTic, iter, packetBuffer);
+					if (receiveResult != MessageResultEnum::ABORT)
+					{
+						ServiceMessenger(currentTic, iter, packetBuffer);
+					}
 
 					// Any messenger that's in the dead-end collection is there because we put it there directly
 					// after sending the client's last reliable message.  Therefore, we know the pending Ack
@@ -714,9 +717,14 @@ namespace
 					// seen it and moved on.
 					//
 					// Also, we have to remove the old messenger immediately because it's 100% possible that the
-					// client has an immediate reconnection attempt as the very next packet, and we want to handle
-					// it in the `else` case below without delay.
-					if (iter->second.GetPendingAckCount() <= 0)
+					// client has an immediate reconnection attempt as the very next packet, and if that's the case
+					// we want to handle it in the rest of the calling SV_GetPackets.
+					//
+					// Finally, drop the messenger if it tells us that things have gone sideways.  It could be that
+					// the client has moved on and is trying to reconnect, in which case, it's probably failing
+					// the reconnect, so drop the old messenger on the floor.  The client's next connection packet
+					// will be handled properly.
+					if (iter->second.GetPendingAckCount() <= 0 or receiveResult == MessageResultEnum::ABORT)
 					{
 						m_deadEndMessengers.erase(iter);
 					}
@@ -1400,14 +1408,14 @@ team_t SV_GoodTeam (void)
 
 	// Find the smallest team
 	size_t smallest_team_size = MAXPLAYERS;
-	team_t smallest_team = (team_t)0;
+	team_t smallest_team = static_cast<team_t>(0);
 	for (int i = 0;i < teamcount;i++)
 	{
-		size_t team_size = P_NumPlayersOnTeam((team_t)i);
+		size_t team_size = P_NumPlayersOnTeam(static_cast<team_t>(i));
 		if (team_size < smallest_team_size)
 		{
 			smallest_team_size = team_size;
-			smallest_team = (team_t)i;
+			smallest_team = static_cast<team_t>(i);
 		}
 	}
 
@@ -2215,7 +2223,7 @@ void SV_ConnectClient()
 	}
 
 	// Get the userinfo from the client.
-	clc_t userinfo = (clc_t)MSG_ReadByte();
+	clc_t userinfo = static_cast<clc_t>(MSG_ReadByte());
 	if (userinfo != clc_userinfo)
 	{
 		SV_InvalidateClient(*player, "Client didn't send any userinfo");
@@ -2315,7 +2323,7 @@ void SV_ConnectClient2(player_t& player)
 	SV_SendPlayerQueuePositions(&player, true);
 
 	// Send out the server's MOTD.
-	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
+	SV_MidPrint(sv_motd.cstring(), &player, 6);
 }
 
 
@@ -3652,7 +3660,7 @@ void SV_UpdateConsolePlayer(player_t &player)
 //
 void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
 {
-	team_t team = (team_t)MSG_ReadByte();
+	team_t team = static_cast<team_t>(MSG_ReadByte());
 
 	if (team >= TEAM_NONE || team < 0)
 		return;
@@ -4041,7 +4049,7 @@ static void ReadyCmd(player_t &player)
  */
 void MOTDCmd(player_t& player)
 {
-	SV_MidPrint((char*)sv_motd.cstring(), &player, 6);
+	SV_MidPrint(sv_motd.cstring(), &player, 6);
 }
 
 /**
@@ -4326,7 +4334,7 @@ void SV_ParseCommands(player_t &player)
 
 			clc_t cmd = static_cast<clc_t>(cmdRaw);
 
-			if(cmd == (clc_t)-1)
+			if(cmd == static_cast<clc_t>(-1))
 				continue;
 
 			switch(cmd)
@@ -4577,7 +4585,7 @@ auto gameTicsStopwatch      = TimingInstr::Get().CreateStopwatch("SV_GameTics");
 //
 // SV_StepTics
 //
-void SV_StepTics(QWORD count)
+void SV_StepTics(uint64_t count)
 {
 	DObject::BeginFrame();
 
@@ -4706,7 +4714,7 @@ void SV_RunTics()
 
 BEGIN_COMMAND(step)
 {
-        QWORD newtics = argc > 1 ? atoi(argv[1]) : 1;
+    uint64_t newtics = argc > 1 ? atoi(argv[1]) : 1;
 
 	extern unsigned char prndindex;
 

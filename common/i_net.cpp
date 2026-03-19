@@ -59,11 +59,11 @@ typedef int SOCKET;
 #endif
 
 #ifdef _WIN32
-#define SETSOCKOPTCAST(x) ((const char *)(x))
-#define GETSOCKOPTCAST(x) ((char *)(x))
+#define SETSOCKOPTCAST(x) (reinterpret_cast<const char*>(x))
+#define GETSOCKOPTCAST(x) (reinterpret_cast<char*>(x))
 #else
-#define SETSOCKOPTCAST(x) ((const void *)(x))
-#define GETSOCKOPTCAST(x) ((void *)(x))
+#define SETSOCKOPTCAST(x) (static_cast<const void*>(x))
+#define GETSOCKOPTCAST(x) (static_cast<void*>(x))
 #endif
 
 #include <google/protobuf/message.h>
@@ -75,7 +75,9 @@ typedef int SOCKET;
 #include "d_player.h"
 #include "m_alloc.h"
 
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 
 #ifdef ODA_HAVE_MINIUPNP
 #include "miniupnpc/miniwget.h"
@@ -161,9 +163,9 @@ void init_upnp (void)
 		//	dev->descURL, dev->st);
 
 #if MINIUPNPC_API_VERSION < 16
-	descXML = (char *)miniwget(dev->descURL, &descXMLsize, 0);
+	descXML = static_cast<char*>(miniwget(dev->descURL, &descXMLsize, 0));
 #else
-	descXML = (char *)miniwget(dev->descURL, &descXMLsize, 0, &res);
+	descXML = static_cast<char*>(miniwget(dev->descURL, &descXMLsize, 0, &res));
 #endif
 
 	if (descXML)
@@ -290,7 +292,7 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 	{
 		address.sin_port = htons(next++);
 
-		v = bind (s, (sockaddr *)&address, sizeof(address));
+		v = bind (s, reinterpret_cast<sockaddr*>(&address), sizeof(address));
 
 		if(next > wanted + 32)
 		{
@@ -395,7 +397,7 @@ bool NET_StringToAdr (const char *s, netadr_t *a)
 	if (! (h = gethostbyname(copy)) )
 		return 0;
 
-	*(int *)&sadr.sin_addr = *(int *)h->h_addr_list[0];
+	*reinterpret_cast<int*>(&sadr.sin_addr) = *reinterpret_cast<int*>(h->h_addr_list[0]);
 
 	SockadrToNetadr (&sadr, a);
 
@@ -422,7 +424,7 @@ int NET_GetPacket (void)
 
 	fromlen = sizeof(from);
 	net_message.clear();
-	ret = recvfrom (inet_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (struct sockaddr *)&from, &fromlen);
+	ret = recvfrom (inet_socket, reinterpret_cast<char*>(net_message.ptr()), net_message.maxsize(), 0, reinterpret_cast<sockaddr*>(&from), &fromlen);
 
 	if (ret == -1)
 	{
@@ -475,7 +477,7 @@ int NET_SendPacket (buf_t& buf, const netadr_t& to)
 
 	NetadrToSockadr (&to, &addr);
 
-	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
+	ret = sendto(inet_socket, reinterpret_cast<const char*>(buf.ptr()), buf.size(), 0, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
 
 	buf.clear();
 
@@ -519,7 +521,7 @@ std::string NET_GetLocalAddress (void)
     // Return the first, IPv4 address
     if (ent && ent->h_addrtype == AF_INET && ent->h_addr_list[0] != NULL)
     {
-        addr.s_addr = *(u_long *)ent->h_addr_list[0];
+        addr.s_addr = *reinterpret_cast<u_long*>(ent->h_addr_list[0]);
 
 		std::string ipstr = inet_ntoa(addr);
 		PrintFmt(PRINT_HIGH, "Bound to IP: {}\n", ipstr);
@@ -545,7 +547,7 @@ void SZ_Write (buf_t *b, const void *data, size_t length)
 
 void SZ_Write (buf_t *b, const byte *data, size_t startpos, size_t length)
 {
-	b->WriteChunk((const char *)data, length, startpos);
+	b->WriteChunk(reinterpret_cast<const char*>(data), length, startpos);
 }
 
 //
@@ -573,14 +575,14 @@ void MSG_WriteMarker (buf_t *b, clc_t c)
 {
 	if (simulated_connection)
 		return;
-	b->WriteByte((byte)c);
+	b->WriteByte(static_cast<byte>(c));
 }
 
 void MSG_WriteByte (buf_t *b, byte c)
 {
 	if (simulated_connection)
 		return;
-	b->WriteByte((byte)c);
+	b->WriteByte(static_cast<byte>(c));
 }
 
 
@@ -588,7 +590,7 @@ void MSG_WriteChunk (buf_t *b, const void *p, size_t l)
 {
 	if (simulated_connection)
 		return;
-	b->WriteChunk((const char *)p, l);
+	b->WriteChunk(static_cast<const char*>(p), l);
 }
 
 void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg)
@@ -815,10 +817,10 @@ void MSG_WriteHexString(buf_t *b, const char *s)
 
     for (size_t i = 0; i < numdigits; ++i)
     {
-        output[i] = (char)(16 * toInt(s[2*i]) + toInt(s[2*i+1]));
+        output[i] = static_cast<char>(16 * toInt(s[2*i]) + toInt(s[2*i+1]));
     }
 
-    MSG_WriteByte(b, (byte)numdigits);
+    MSG_WriteByte(b, static_cast<byte>(numdigits));
 
     MSG_WriteChunk(b, output, numdigits);
 }

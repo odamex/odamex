@@ -314,7 +314,7 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 {
 	short special = mld->special;
 	short tag = mld->tag;
-	unsigned int flags = (unsigned short)mld->flags;
+	unsigned int flags = static_cast<unsigned short>(mld->flags);
 	bool passthrough = (flags & ML_PASSUSE);
 	int i;
 
@@ -562,17 +562,17 @@ void P_TranslateLineDef (line_t *ld, maplinedef_t *mld)
 		{
 			// Generalized ceiling (tag, speed, height, target, change/model/direct/crush)
 			// Generalized floor (tag, speed, height, target, change/model/direct/crush)
-			if ((unsigned)special >= GenFloorBase)
+			if (static_cast<unsigned>(special) >= GenFloorBase)
 			{
 				ld->special = Generic_Floor;
 			}
-			else if ((unsigned)special >= GenCeilingBase)
+			else if (static_cast<unsigned>(special) >= GenCeilingBase)
 			{
 				ld->special = Generic_Ceiling;
 			}
 			else
 			{
-				PrintFmt(PRINT_HIGH, "Unknown special {}\n", (unsigned)special);
+				PrintFmt(PRINT_HIGH, "Unknown special {}\n", static_cast<unsigned>(special));
 			}
 
 			switch (special & 0x0018)

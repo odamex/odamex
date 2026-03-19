@@ -51,7 +51,7 @@
 static inline uintptr_t R_GetBytesUntilAligned(void* data, uintptr_t alignment)
 {
 	uintptr_t mask = alignment - 1;
-	return (alignment - ((uintptr_t)data & mask)) & mask;
+	return (alignment - (reinterpret_cast<uintptr_t>(data) & mask)) & mask;
 }
 
 
@@ -75,7 +75,7 @@ void R_DrawSpanD_SSE2 (void)
 	dsfixed_t vstep = dspan.xstep;
 
 	const byte* source = dspan.source;
-	argb_t* dest = (argb_t*)dspan.destination + dspan.y * dspan.pitch_in_pixels + dspan.x1;
+	argb_t* dest = reinterpret_cast<argb_t*>(dspan.destination) + dspan.y * dspan.pitch_in_pixels + dspan.x1;
 
 	shaderef_t colormap = dspan.colormap;
 
@@ -130,7 +130,7 @@ void R_DrawSpanD_SSE2 (void)
 		__m128i u = _mm_and_si128(_mm_srli_epi32(mufrac, ushift), mumask);
 		__m128i v = _mm_and_si128(_mm_srli_epi32(mvfrac, vshift), mvmask);
 		__m128i mspots = _mm_or_si128(u, v);
-		unsigned int* spots = (unsigned int*)&mspots;
+		const auto spots = std::bit_cast<std::array<uint32_t, 4>>(mspots);
 
 		// get the color of the pixels at each of the spots
 		byte pixel0 = source[spots[0]];
@@ -145,7 +145,7 @@ void R_DrawSpanD_SSE2 (void)
 			colormap.shade(pixel3)
 		);
 
-		_mm_store_si128((__m128i*)dest, finalColors);
+		_mm_store_si128(reinterpret_cast<__m128i*>(dest), finalColors);
 
 		dest += 4;
 
@@ -153,9 +153,9 @@ void R_DrawSpanD_SSE2 (void)
 		mvfrac = _mm_add_epi32(mvfrac, mvfracinc);
 	}
 
-	dsfixed_t* ufracs = (dsfixed_t*)&mufrac;
+	dsfixed_t* ufracs = reinterpret_cast<dsfixed_t*>(&mufrac);
 	ufrac = *ufracs;
-	dsfixed_t* vfracs = (dsfixed_t*)&mvfrac;
+	dsfixed_t* vfracs = reinterpret_cast<dsfixed_t*>(&mvfrac);
 	vfrac = *vfracs;
 
 	// blit the remaining 0 - 3 pixels
@@ -197,7 +197,7 @@ void R_DrawSlopeSpanD_SSE2 (void)
 	float id = dspan.id, ids = dspan.idstep;
 
 	// framebuffer
-	argb_t* dest = (argb_t*)dspan.destination + dspan.y * dspan.pitch_in_pixels + dspan.x1;
+	argb_t* dest = reinterpret_cast<argb_t*>(dspan.destination) + dspan.y * dspan.pitch_in_pixels + dspan.x1;
 
 	// texture data
 	byte *src = dspan.source;
@@ -214,8 +214,8 @@ void R_DrawSlopeSpanD_SSE2 (void)
 		const float ustart = iu * mulstart;
 		const float vstart = iv * mulstart;
 
-		fixed_t ufrac = (fixed_t)ustart;
-		fixed_t vfrac = (fixed_t)vstart;
+		fixed_t ufrac = static_cast<fixed_t>(ustart);
+		fixed_t vfrac = static_cast<fixed_t>(vstart);
 
 		iu += ius * SPANJUMP;
 		iv += ivs * SPANJUMP;
@@ -223,13 +223,13 @@ void R_DrawSlopeSpanD_SSE2 (void)
 		const float uend = iu * mulend;
 		const float vend = iv * mulend;
 
-		fixed_t ustep = (fixed_t)((uend - ustart) * INTERPSTEP);
-		fixed_t vstep = (fixed_t)((vend - vstart) * INTERPSTEP);
+		fixed_t ustep = static_cast<fixed_t>((uend - ustart) * INTERPSTEP);
+		fixed_t vstep = static_cast<fixed_t>((vend - vstart) * INTERPSTEP);
 
 		int incount = SPANJUMP;
 
 		// Blit up to the first 16-byte aligned position:
-		while ((((size_t)dest) & 15) && (incount > 0))
+		while (((reinterpret_cast<size_t>(dest)) & 15) && (incount > 0))
 		{
 			const shaderef_t &colormap = dspan.slopelighting[ltindex++];
 			*dest = colormap.shade(src[((vfrac >> 10) & 0xFC0) | ((ufrac >> 16) & 63)]);
@@ -257,7 +257,7 @@ void R_DrawSlopeSpanD_SSE2 (void)
 						dspan.slopelighting[ltindex+2].shade(src[spot2]),
 						dspan.slopelighting[ltindex+3].shade(src[spot3])
 					);
-					_mm_store_si128((__m128i *)dest, finalColors);
+					_mm_store_si128(reinterpret_cast<__m128i*>(dest), finalColors);
 
 					dest += 4;
 					ltindex += 4;
@@ -296,8 +296,8 @@ void R_DrawSlopeSpanD_SSE2 (void)
 		const float ustart = iu * mulstart;
 		const float vstart = iv * mulstart;
 
-		fixed_t ufrac = (fixed_t)ustart;
-		fixed_t vfrac = (fixed_t)vstart;
+		fixed_t ufrac = static_cast<fixed_t>(ustart);
+		fixed_t vfrac = static_cast<fixed_t>(vstart);
 
 		iu += ius * count;
 		iv += ivs * count;
@@ -305,8 +305,8 @@ void R_DrawSlopeSpanD_SSE2 (void)
 		const float uend = iu * mulend;
 		const float vend = iv * mulend;
 
-		fixed_t ustep = (fixed_t)((uend - ustart) / count);
-		fixed_t vstep = (fixed_t)((vend - vstart) / count);
+		fixed_t ustep = static_cast<fixed_t>((uend - ustart) / count);
+		fixed_t vstep = static_cast<fixed_t>((vend - vstart) / count);
 
 		int incount = count;
 		while (incount--)
@@ -331,7 +331,7 @@ void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, 
 	const __m128i vec_alphacolor	= _mm_mullo_epi16(vec_color, _mm_set1_epi16(alpha));
 	const __m128i vec_invalpha		= _mm_set1_epi16(256 - alpha);
 
-	argb_t* dest = (argb_t*)surface->getBuffer() + y1 * surface_pitch_pixels + x1;
+	argb_t* dest = reinterpret_cast<argb_t*>(surface->getBuffer()) + y1 * surface_pitch_pixels + x1;
 
 	for (int rowcount = h; rowcount > 0; --rowcount)
 	{
@@ -356,8 +356,8 @@ void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, 
 		while (batches--)
 		{
 			// Load 4 pixels into input0 and 4 pixels into input1
-			const __m128i vec_input0 = _mm_load_si128((__m128i*)(dest + 0));
-			const __m128i vec_input1 = _mm_load_si128((__m128i*)(dest + 4));
+			const __m128i vec_input0 = _mm_load_si128(reinterpret_cast<__m128i*>(dest + 0));
+			const __m128i vec_input1 = _mm_load_si128(reinterpret_cast<__m128i*>(dest + 4));
 
 			// Expand the width of each color channel from 8-bits to 16-bits
 			// by splitting each input vector into two 128-bit variables, each
@@ -375,8 +375,8 @@ void r_dimpatchD_SSE2(IWindowSurface* surface, argb_t color, int alpha, int x1, 
 			vec_upper1 = _mm_srli_epi16(_mm_add_epi16(_mm_mullo_epi16(vec_upper1, vec_invalpha), vec_alphacolor), 8);
 
 			// Compress the width of each color channel to 8-bits again and store in dest
-			_mm_store_si128((__m128i*)(dest + 0), _mm_packus_epi16(vec_lower0, vec_upper0));
-			_mm_store_si128((__m128i*)(dest + 4), _mm_packus_epi16(vec_lower1, vec_upper1));
+			_mm_store_si128(reinterpret_cast<__m128i*>(dest + 0), _mm_packus_epi16(vec_lower0, vec_upper0));
+			_mm_store_si128(reinterpret_cast<__m128i*>(dest + 4), _mm_packus_epi16(vec_lower1, vec_upper1));
 
 			dest += batch_size;
 		}

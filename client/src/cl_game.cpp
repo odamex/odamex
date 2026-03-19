@@ -25,7 +25,9 @@
 
 #include "odamex.h"
 
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "m_alloc.h"
 #include "z_zone.h"
 #include "f_finale.h"
@@ -88,8 +90,8 @@ void	G_DoCompleted (void);
 void	G_DoWorldDone (void);
 void	G_DoSaveGame();
 
-bool	C_DoNetDemoKey(event_t *ev);
-bool	C_DoSpectatorKey(event_t *ev);
+bool	C_DoNetDemoKey(const event_t& ev);
+bool	C_DoSpectatorKey(const event_t& ev);
 
 void	CL_QuitCommand();
 
@@ -453,8 +455,13 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		}
 	}
 
+	const auto joy_to_int = [](int input, int speed)
+	{
+		return static_cast<int>((static_cast<float>(input) / static_cast<float>(SHRT_MAX)) * speed);
+	};
+
 	// Joystick analog strafing -- Hyper_Eye
-	side += (int)(((float)joystrafe / (float)SHRT_MAX) * sidemove[speed]);
+	side += joy_to_int(joystrafe, sidemove[speed]);
 
 	if (Actions[ACTION_LOOKUP])
 	{
@@ -497,9 +504,9 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	if ((joy_freelook && sv_freelook) || consoleplayer().spectator)
 	{
 		if (joy_invert)
-			look += (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
+			look += joy_to_int(joylook, lookspeed[speed]);
 		else
-			look -= (int)(((float)joylook / (float)SHRT_MAX) * lookspeed[speed]);
+			look -= joy_to_int(joylook, lookspeed[speed]);
 
 		::localview.skippitch = true;
 	}
@@ -552,16 +559,14 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	{
 		if (strafe || lookstrafe)
 		{
-			side += (int)(((float)::joyturn / (float)SHRT_MAX) * ::sidemove[speed]);
+			side += joy_to_int(::joyturn, ::sidemove[speed]);
 		}
 		else
 		{
 			if (Actions[ACTION_FASTTURN])
-				cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) *
-				                    (joy_fastsensitivity / 10));
+				cmd->yaw -= joy_to_int(joyturn, angleturn[1] * (joy_fastsensitivity / 10));
 			else
-				cmd->yaw -= (short)((((float)joyturn / (float)SHRT_MAX) * angleturn[1]) *
-				                    (joy_sensitivity / 10));
+				cmd->yaw -= joy_to_int(joyturn, angleturn[1] * (joy_sensitivity / 10));
 		}
 		::localview.skipangle = true;
 	}
@@ -569,24 +574,24 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	if (Actions[ACTION_MLOOK])
 	{
 		if (joy_invert)
-			look += (int)(((float)joyforward / (float)SHRT_MAX) * lookspeed[speed]);
+			look += joy_to_int(joyforward, lookspeed[speed]);
 		else
-			look -= (int)(((float)joyforward / (float)SHRT_MAX) * lookspeed[speed]);
+			look -= joy_to_int(joyforward, lookspeed[speed]);
 		::localview.skippitch = true;
 	}
 	else
 	{
-		forward -= (int)(((float)joyforward / (float)SHRT_MAX) * forwardmove[speed]);
+		forward -= joy_to_int(joyforward, forwardmove[speed]);
 	}
 
 	if (!consoleplayer().spectator
 		&& !Actions[ACTION_MLOOK] && !cl_mouselook && novert == 0)		// [Toke - Mouse] acts like novert.exe
 	{
-		forward += (int)(float(mousey) * m_forward);
+		forward += static_cast<int>(static_cast<float>(mousey) * m_forward);
 	}
 
 	if (strafe || lookstrafe)
-		side += (int)(float(mousex) * m_side);
+		side += static_cast<int>(static_cast<float>(mousex) * m_side);
 
 	mousex = mousey = 0;
 
@@ -677,11 +682,11 @@ float G_ZDoomDIMouseScaleY(float y)
 	return (y * mouse_sensitivity);
 }
 
-void G_ProcessMouseMovementEvent(const event_t *ev)
+void G_ProcessMouseMovementEvent(const event_t& ev)
 {
 	static float fprevx = 0.0f, fprevy = 0.0f;
-	float fmousex = (float)ev->data2;
-	float fmousey = (float)ev->data3;
+	float fmousex = static_cast<float>(ev.data2);
+	float fmousey = static_cast<float>(ev.data3);
 
 	if (m_filter)
 	{
@@ -696,8 +701,8 @@ void G_ProcessMouseMovementEvent(const event_t *ev)
 	fmousex = G_ZDoomDIMouseScaleX(fmousex);
 	fmousey = G_ZDoomDIMouseScaleY(fmousey);
 
-	mousex = (int)fmousex;
-	mousey = (int)fmousey;
+	mousex = static_cast<int>(fmousex);
+	mousey = static_cast<int>(fmousey);
 
 	G_AddViewAngle(fmousex * 8.0f * m_yaw);
 	G_AddViewPitch(fmousey * 16.0f * m_pitch);
@@ -743,16 +748,16 @@ bool G_ShouldIgnoreMouseInput()
 // G_Responder
 // Get info needed to make ticcmd_ts for the players.
 //
-bool G_Responder (event_t *ev)
+bool G_Responder (const event_t& ev)
 {
 	// any other key pops up menu if in demos
 	// [RH] But only if the key isn't bound to a "special" command
 	if (gameaction == ga_nothing &&
 		(demoplayback || gamestate == GS_DEMOSCREEN))
 	{
-		const char *cmd = Bindings.GetBind(ev->data1).c_str();
+		const char *cmd = Bindings.GetBind(ev.data1).c_str();
 
-		if (ev->type == ev_keydown)
+		if (ev.type == ev_keydown)
 		{
 
 			if (!cmd || (
@@ -774,7 +779,7 @@ bool G_Responder (event_t *ev)
 			}
 			else
 			{
-				return C_DoKey (ev, &Bindings, &DoubleBindings);
+				return C_DoKey(ev, &Bindings, &DoubleBindings);
 			}
 		}
 		if (cmd && cmd[0] == '+')
@@ -790,24 +795,24 @@ bool G_Responder (event_t *ev)
 		if (C_DoSpectatorKey(ev))
 			return true;
 
-		if (HU_Responder (ev))
+		if (HU_Responder(ev))
 			return true;		// chat ate the event
-		if (ST_Responder (ev))
+		if (ST_Responder(ev))
 			return true;		// status window ate it
 		if (!viewactive)
-			if (AM_Responder (ev))
+			if (AM_Responder(ev))
 				return true;	// automap ate it
 	}
 	else if (gamestate == GS_FINALE)
 	{
-		if (F_Responder (ev))
+		if (F_Responder(ev))
 			return true;		// finale ate the event
 	}
 
-	switch (ev->type)
+	switch (ev.type)
 	{
 	  case ev_keydown:
-		if (C_DoKey (ev, &Bindings, &DoubleBindings))
+		if (C_DoKey(ev, &Bindings, &DoubleBindings))
 			return true;
 		break;
 
@@ -825,16 +830,16 @@ bool G_Responder (event_t *ev)
 		break;
 
 	  case ev_joystick:
-	  	if(ev->data1 == 0) // Axis Movement
+	  	if(ev.data1 == 0) // Axis Movement
 		{
-			if(ev->data2 == joy_strafeaxis) // Strafe
-				joystrafe = ev->data3;
-			else if(ev->data2 == joy_forwardaxis) // Move
-				joyforward = ev->data3;
-			else if(ev->data2 == joy_turnaxis) // Turn
-				joyturn = ev->data3;
-			else if(ev->data2 == joy_lookaxis) // Look
-				joylook = ev->data3;
+			if(ev.data2 == joy_strafeaxis) // Strafe
+				joystrafe = ev.data3;
+			else if(ev.data2 == joy_forwardaxis) // Move
+				joyforward = ev.data3;
+			else if(ev.data2 == joy_turnaxis) // Turn
+				joyturn = ev.data3;
+			else if(ev.data2 == joy_lookaxis) // Look
+				joylook = ev.data3;
 			else
 				break; // The default case will be to treat the analog control as a button -- Hyper_Eye
 		}
@@ -849,9 +854,9 @@ bool G_Responder (event_t *ev)
 	if (gamestate == GS_LEVEL && viewactive)
 		return AM_Responder (ev);
 
-	if (ev->type == ev_keydown ||
-		ev->type == ev_mouse ||
-		ev->type == ev_joystick)
+	if (ev.type == ev_keydown ||
+		ev.type == ev_mouse ||
+		ev.type == ev_joystick)
 		return true;
 	else
 		return false;
@@ -1098,7 +1103,7 @@ void G_Ticker (void)
 			else if(type == 0)
 			{
 				if (!CL_Connect())
-					memset (&serveraddr, 0, sizeof(serveraddr));
+					serveraddr = {};
 
 				connecttimeout = 0;
 			}
@@ -1246,10 +1251,10 @@ void G_PlayerFinishLevel (player_t& player)
 	if(player.mo)
 		player.mo->flags &= ~MF_SHADOW; 	// cancel invisibility
 
-	
+
 	SpreeManager::getInstance().erasePoints(player.id);
 	MultiKillManager::getInstance().eraseMultiKills(player.id);
-	
+
 	player.extralight = 0;					// cancel gun flashes
 	player.fixedcolormap = 0;				// cancel ir goggles
 	player.damagecount = 0; 				// no palette changes
@@ -1301,20 +1306,20 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 // at the given mapthing2_t spot
 // because something is occupying it
 //
-void P_SpawnPlayer (player_t &player, mapthing2_t* mthing);
+void P_SpawnPlayer(player_t &player, const mapthing2_t& mthing);
 
-bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
+bool G_CheckSpot(player_t &player, const mapthing2_t& mthing)
 {
 	unsigned			an;
 	AActor* 			mo;
 	fixed_t 			xa,ya;
 
-	fixed_t x = mthing->x << FRACBITS;
-	fixed_t y = mthing->y << FRACBITS;
+	const fixed_t x = mthing.x << FRACBITS;
+	const fixed_t y = mthing.y << FRACBITS;
 	fixed_t z = P_FloorHeight(x, y);
 
 	if (level.flags & LEVEL_USEPLAYERSTARTZ)
-		z = mthing->z << FRACBITS;
+		z = mthing.z << FRACBITS;
 
 	if (!player.mo)
 	{
@@ -1372,13 +1377,13 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 
 		if (co_nosilentspawns)
 		{
-			an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
+			an = ( ANG45 * (static_cast<unsigned int>(mthing.angle)/45) ) >> ANGLETOFINESHIFT;
 			xa = finecosine[an];
 			ya = finesine[an];
 		}
 		else
 		{
-			angle_t mtangle = (angle_t)(mthing->angle / 45);
+			angle_t mtangle = static_cast<angle_t>(mthing.angle / 45);
 
 			an = ANG45 * mtangle;
 
@@ -1471,12 +1476,12 @@ static mapthing2_t *SelectFarthestDeathmatchSpot (int selections)
 // [RH] Select a deathmatch spawn spot at random (original mechanism)
 static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections)
 {
-	int i = 0, j;
+	int i = 0;
 
-	for (j = 0; j < 20; j++)
+	for (int j = 0; j < 20; j++)
 	{
 		i = P_Random () % selections;
-		if (G_CheckSpot (player, &DeathMatchStarts[i]) )
+		if (G_CheckSpot (player, DeathMatchStarts[i]) )
 			return &DeathMatchStarts[i];
 	}
 
@@ -1486,19 +1491,16 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 
 void G_DeathMatchSpawnPlayer (player_t &player)
 {
-	size_t selections;
-	mapthing2_t *spot;
-
 	if(!serverside || G_UsesCoopSpawns())
 		return;
 
-	selections = DeathMatchStarts.size();
+	const size_t selections = DeathMatchStarts.size();
 	// [RH] We can get by with just 1 deathmatch start
 	if (selections < 1)
 		I_Error ("No deathmatch starts");
 
 	// [Toke - dmflags] Old location of DF_SPAWN_FARTHEST
-	spot = SelectRandomDeathmatchSpot (player, static_cast<int>(selections));
+	mapthing2_t* spot = SelectRandomDeathmatchSpot (player, static_cast<int>(selections));
 
 	if (!spot && !playerstarts.empty())
 	{
@@ -1513,7 +1515,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 			spot->type = player.id+4001-4;	// [RH] > 4 players
 	}
 
-	P_SpawnPlayer (player, spot);
+	P_SpawnPlayer (player, *spot);
 }
 
 //
@@ -1548,24 +1550,24 @@ void G_DoReborn (player_t &player)
 
 	unsigned int playernum = player.id - 1;
 
-	if (G_CheckSpot (player, &playerstarts[playernum%playerstarts.size()]) )
+	if (G_CheckSpot(player, playerstarts[playernum%playerstarts.size()]) )
 	{
-		P_SpawnPlayer (player, &playerstarts[playernum%playerstarts.size()]);
+		P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
 		return;
 	}
 
 	// try to spawn at one of the other players' spots
 	for (auto& playerstart : playerstarts)
 	{
-		if (G_CheckSpot (player, &playerstart) )
+		if (G_CheckSpot(player, playerstart) )
 		{
-			P_SpawnPlayer (player, &playerstart);
+			P_SpawnPlayer(player, playerstart);
 			return;
 		}
 	}
 
 	// he's going to be inside something.  Too bad.
-	P_SpawnPlayer (player, &playerstarts[playernum%playerstarts.size()]);
+	P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
 }
 
 
@@ -1797,7 +1799,7 @@ void G_DoSaveGame()
 		}
 	}
 
-	arc << (BYTE)0x1d;			// consistancy marker
+	arc << static_cast<byte>(0x1d);		// consistancy marker
 
 	gameaction = ga_nothing;
 	savedescription[0] = 0;
@@ -1836,19 +1838,19 @@ void G_ReadDemoTiccmd()
 				return;
 			}
 
-			player.cmd.forwardmove = ((signed char)*demo_p++) << 8;
-			player.cmd.sidemove = ((signed char)*demo_p++) << 8;
+			player.cmd.forwardmove = (static_cast<int8_t>(*demo_p++)) << 8;
+			player.cmd.sidemove = (static_cast<int8_t>(*demo_p++)) << 8;
 
 			if (demoversion == LMP_DOOM_1_9)
 			{
-				player.cmd.yaw = ((unsigned char)*demo_p++) << 8;
+				player.cmd.yaw = (static_cast<byte>(*demo_p++)) << 8;
 			}
 			else
 			{
-				player.cmd.yaw = ((unsigned short)*demo_p++);
-				player.cmd.yaw |= ((unsigned short)*demo_p++) << 8;
+				player.cmd.yaw = (static_cast<uint16_t>(*demo_p++));
+				player.cmd.yaw |= (static_cast<uint16_t>(*demo_p++)) << 8;
 			}
-			player.cmd.buttons = (unsigned char)*demo_p++;
+			player.cmd.buttons = static_cast<byte>(*demo_p++);
 		}
 	}
 }
@@ -1931,7 +1933,7 @@ void G_DoPlayDemo(bool justStreamInput)
 	int demolump = W_CheckNumForName(defdemoname);
 	if (demolump != -1)
 	{
-		demobuffer = demo_p = (byte*)W_CacheLumpNum(demolump, PU_STATIC);
+		demobuffer = demo_p = W_CacheLumpNum<byte>(demolump, PU_STATIC);
 		bytelen = W_LumpLength(demolump);
 	}
 	else
@@ -1993,13 +1995,13 @@ void G_DoPlayDemo(bool justStreamInput)
 		if (!justStreamInput)
 			players.clear();
 
-		for (size_t i = 0 ; i < MAXPLAYERS_VANILLA; i++)
+		for (byte i = 0 ; i < MAXPLAYERS_VANILLA; i++)
 		{
 			if (*demo_p++ && !justStreamInput)
 			{
 				player_t* player = &players.emplace_back();
 				player->playerstate = PST_REBORN;
-				player->id = (byte)i + 1;
+				player->id = i + 1;
 			}
 		}
 

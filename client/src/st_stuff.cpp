@@ -511,7 +511,7 @@ void ST_ForceRefresh()
 
 CVAR_FUNC_IMPL (st_scale)
 {
-	R_SetViewSize((int)screenblocks);
+	R_SetViewSize(screenblocks.asInt());
 	ST_ForceRefresh();
 }
 
@@ -520,14 +520,14 @@ EXTERN_CVAR (sv_allowcheats)
 
 // Respond to keyboard input events, intercept cheats.
 // [RH] Cheats eatkey the last keypress used to trigger them
-bool ST_Responder (event_t *ev)
+bool ST_Responder(const event_t& ev)
 {
 	bool eat = false;
 
 	// Filter automap on/off.
-	if (ev->type == ev_keyup && ((ev->data1 & 0xffff0000) == AM_MSGHEADER))
+	if (ev.type == ev_keyup && ((ev.data1 & 0xffff0000) == AM_MSGHEADER))
 	{
-		switch (ev->data1)
+		switch (ev.data1)
 		{
 		case AM_MSGENTERED:
 			st_gamestate = AutomapState;
@@ -541,11 +541,11 @@ bool ST_Responder (event_t *ev)
 	}
 
 	// if a user keypress...
-	else if (ev->type == ev_keydown && ev->data3)
+	else if (ev.type == ev_keydown && ev.data3)
 	{
 		for (auto& cheat : DoomCheats)
 		{
-			if (cheat::AddKey(&cheat, (byte)ev->data1, &eat))
+			if (cheat::AddKey(&cheat, static_cast<byte>(ev.data1), &eat))
 			{
 				if (cheat.DontCheck || cheat::AreCheatsEnabled())
 				{
@@ -679,7 +679,7 @@ BEGIN_COMMAND (give)
 	if (argc < 2)
 		return;
 
-	const std::string name = C_ArgCombine(argc - 1, (const char**)(argv + 1));
+	const std::string name = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
 	if (name.length())
 	{
 		cheat::GiveTo(consoleplayer(), name.c_str());
@@ -697,7 +697,7 @@ BEGIN_COMMAND (fov)
 		PrintFmt(PRINT_HIGH, "FOV is {:g}\n", m_Instigator->player->fov);
 	else
 	{
-		m_Instigator->player->fov = clamp((float)atof(argv[1]), 45.0f, 135.0f);
+		m_Instigator->player->fov = clamp(static_cast<float>(atof(argv[1])), 45.0f, 135.0f);
 		R_ForceViewWindowResize();
 	}
 }

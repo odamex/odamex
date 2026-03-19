@@ -57,7 +57,9 @@
 #include "m_fileio.h"
 #include "m_misc.h"
 #include "m_random.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "odainfo.h"
 #include "p_setup.h"
 #include "r_local.h"
@@ -137,7 +139,7 @@ void G_ReadCOMPLVL()
 	int lumpnum = W_CheckNumForName("COMPLVL");
 	if (lumpnum != -1)
 	{
-		char* complvl = static_cast<char*>(W_CacheLumpNum(lumpnum, PU_STATIC));
+		char* complvl = W_CacheLumpNum<char>(lumpnum, PU_STATIC);
 
 		co_zdoomphys.Set(0.0f);
 		co_zdoomammo.Set(0.0f);
@@ -291,8 +293,10 @@ void D_DoomMain()
 
 	M_FindResponseFile();		// [ML] 23/1/07 - Add Response file support back in
 
+	BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 	if (lzo_init () != LZO_E_OK)	// [RH] Initialize the minilzo package.
 		I_FatalError("Could not initialize LZO routines");
+	END_DISABLE_WARNING_GNU
 
 	C_ExecCmdLineParams(false, true);	// [Nes] test for +logfile command
 
@@ -419,7 +423,7 @@ void D_DoomMain()
 	if (p && p < Args.NumArgs() - 1)
 	{
 		startmap = Args.GetArg(p + 1);
-		((char*)Args.GetArg(p))[0] = '-';
+		(const_cast<char*>(Args.GetArg(p)))[0] = '-';
 	}
 
 	level.mapname = startmap;

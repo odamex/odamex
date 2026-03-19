@@ -122,7 +122,7 @@ void TeamInfo_ResetScores(bool fullreset)
 		for (auto& player : players)
 			player.flags[i] = false;
 
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 		teamInfo->FlagData.flagger = 0;
 		teamInfo->FlagData.state = flag_home;
 		teamInfo->FlagData.firstgrab = false;

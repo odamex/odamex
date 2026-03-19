@@ -117,14 +117,14 @@ typedef enum
 
     ,CVARTYPE_MAX = 255
 } cvartype_t;
-
+// TODO: make cvar_t an abstract class with subclasses for string/float/integral type
 class cvar_t
 {
 public:
 	cvar_t(const char* name, const char* def, const char* help, cvartype_t,
-			DWORD flags, float minval = -FLT_MAX, float maxval = FLT_MAX);
+			uint32_t flags, float minval = -FLT_MAX, float maxval = FLT_MAX);
 	cvar_t(const char* name, const char* def, const char* help, cvartype_t,
-			DWORD flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
+			uint32_t flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
 	virtual ~cvar_t ();
 
 	[[nodiscard]] const char *cstring() const {return m_String.c_str(); }
@@ -146,6 +146,9 @@ public:
 	[[nodiscard]] int asInt() const { return static_cast<int>(std::round(m_Value)); }
 	[[nodiscard]] bool asBool() const { return m_Value != 0; }
 
+	template <typename E>
+		requires std::is_enum_v<E>
+	[[nodiscard]] E asEnum() const { return static_cast<E>(asInt()); }
 
 	template <typename E>
 		requires std::is_enum_v<E> || std::is_integral_v<E>
@@ -166,9 +169,9 @@ public:
 
 	void SetDefault (const char *value);
 	void RestoreDefault ();
-	void Set (const char *value);
+	void Set (std::string_view value);
 	void Set (float value);
-	void ForceSet (const char *value);
+	void ForceSet (std::string_view value);
 	void ForceSet (float value);
 
 	static void Transfer(const char *fromname, const char *toname);
@@ -180,7 +183,7 @@ public:
 
 	// Writes all cvars that could effect demo sync to *demo_p. These are
 	// cvars that have either CVAR_SERVERINFO or CVAR_DEMOSAVE set.
-	static void C_WriteCVars (byte **demo_p, DWORD filter, size_t array_size, bool compact=false);
+	static void C_WriteCVars (byte **demo_p, uint32_t filter, size_t array_size, bool compact=false);
 
 	// Read all cvars from *demo_p and set them appropriately.
 	static void C_ReadCVars (byte **demo_p);
@@ -214,7 +217,7 @@ public:
 
 	static bool SetServerVar (std::string_view name, const char *value);
 
-	static void FilterCompactCVars (std::vector<cvar_t *> &cvars, DWORD filter);
+	static void FilterCompactCVars (std::vector<cvar_t *> &cvars, uint32_t filter);
 
 	// console variable interaction
 	static cvar_t *cvar_set (const char *var_name, const char *value);
@@ -233,7 +236,7 @@ private:
 	cvar_t(const cvar_t &var) { }
 
 	void InitSelf(const char* name, const char* def, const char* help, cvartype_t,
-				DWORD flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
+				uint32_t flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
 
 	void (*m_Callback)(cvar_t &);
 	cvar_t *m_Next;

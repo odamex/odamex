@@ -73,7 +73,7 @@ extern const fixed_t		finetangent[FINEANGLES/2];
 #define SLOPEBITS		11
 #define DBITS			(FRACBITS-SLOPEBITS)
 
-typedef DWORD			angle_t;
+typedef uint32_t			angle_t;
 
 
 // Effective size is 2049;
@@ -91,5 +91,5 @@ void Table_SetTanToAngle(int version);
 // These are straight from Eternity so demos stay in sync.
 inline static angle_t FixedToAngle(fixed_t a)
 {
-	return (angle_t)(((uint64_t)a * ANG(1)) >> FRACBITS);
+	return static_cast<angle_t>((static_cast<uint64_t>(a) * ANG(1)) >> FRACBITS);
 }

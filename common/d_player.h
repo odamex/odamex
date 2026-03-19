@@ -304,21 +304,21 @@ public:
 	// denis - client structure is here now for a 1:1
 	struct client_t
 	{
-		netadr_t    address;
+		netadr_t    address = {};
 
 		// protocol version supported by the client
-		short		version;
-		int			packedversion;
+		short		version = 0;
+		int			packedversion = 0;
 
 		OdaMessenger messenger;
 
-		int			last_received;	// for timeouts
+		int			last_received = 0;	// for timeouts
 
-		int			lastclientcmdtic;
+		int			lastclientcmdtic = 0;
 
-		std::string	digest;			// randomly generated string that the client must use for any hashes it sends back
-		bool        allow_rcon;     // allow remote admin
-		bool		displaydisconnect; // display disconnect message when disconnecting
+		std::string	digest = "";			// randomly generated string that the client must use for any hashes it sends back
+		bool        allow_rcon = false;     // allow remote admin
+		bool		displaydisconnect = true; // display disconnect message when disconnecting
 
 		struct download_t
 		{
@@ -330,17 +330,6 @@ public:
 		client_t() :
 		    messenger()
 		{
-			// GhostlyDeath -- Initialize to Zero
-			memset(&address, 0, sizeof(netadr_t));
-			version = 0;
-			packedversion = 0;
-			last_received = 0;
-			lastclientcmdtic = 0;
-
-
-			digest = "";
-			allow_rcon = false;
-			displaydisconnect = true;
 		}
 
 		client_t(const client_t &other)

@@ -311,7 +311,7 @@ static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammo, int 
 				    weaponinfo[i].ammopershot > oldammo &&
 				    weaponinfo[i].ammopershot <= player.ammo[ammo])
 				{
-					player.pendingweapon = (weapontype_t)i;
+					player.pendingweapon = static_cast<weapontype_t>(i);
 					break;
 				}
 			}
@@ -1194,7 +1194,7 @@ void P_GiveSpecial(player_t& player, AActor& special)
 			}
 			for (int i = 0; i < NUMAMMO; i++)
 			{
-				P_GiveAmmo(player, (ammotype_t)i, 1);
+				P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
 			}
 			msg = &GOTBACKPACK;
 			break;
@@ -1302,7 +1302,7 @@ void P_GiveSpecial(player_t& player, AActor& special)
 			bool teamItemSuccess = false;
 			for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 			{
-				TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+				TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(iTeam));
 
 				if (teamInfo->FlagSprite == special.sprite || teamInfo->FlagDownSprite == special.sprite)
 				{
@@ -1358,6 +1358,10 @@ void P_GiveSpecial(player_t& player, AActor& special)
 	case SpecialSound::Weapon:
 		P_PickupSound(ent, CHAN_ITEM, "misc/w_pkup");
 		break;
+	case SpecialSound::None:
+		break; // do nothing, just for silencing warnings
+	default:
+		OUtil::unreachable();
 	}
 }
 
@@ -1872,7 +1876,7 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 					}
 					else if (sv_gametype == GM_CTF)
 					{
-						SV_CTFEvent((team_t)0, SCORE_BETRAYAL, *splayer);
+						SV_CTFEvent(static_cast<team_t>(0), SCORE_BETRAYAL, *splayer);
 					}
 				}
 				else
@@ -1887,11 +1891,12 @@ void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool jo
 					{
 						if (tplayer->flags[splayer->userinfo.team])
 						{
-							SV_CTFEvent((team_t)0, SCORE_CARRIERKILL, *splayer);
+							// TODO: why is this not just TEAM_BLUE??
+							SV_CTFEvent(static_cast<team_t>(0), SCORE_CARRIERKILL, *splayer);
 						}
 						else
 						{
-							SV_CTFEvent((team_t)0, SCORE_KILL, *splayer);
+							SV_CTFEvent(static_cast<team_t>(0), SCORE_KILL, *splayer);
 						}
 					}
 				}
@@ -2182,7 +2187,7 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
 			{
 				if ((*player).flags[i])
 				{
-					f = (team_t)i;
+					f = static_cast<team_t>(i);
 				}
 			}
 		}
@@ -2557,7 +2562,7 @@ void P_PlayerLeavesGame(player_t* player)
 			{
 				if ((*player).flags[i])
 				{
-					f = (team_t)i;
+					f = static_cast<team_t>(i);
 				}
 			}
 		}

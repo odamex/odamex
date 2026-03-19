@@ -108,7 +108,7 @@ ticcmd_t *I_BaseTiccmd(void)
 	return &emptycmd;
 }
 
-DWORD LanguageIDs[4];
+uint32_t LanguageIDs[4];
 
 // Endoom screen is showing
 bool in_endoom = false;
@@ -245,8 +245,6 @@ void I_Endoom()
 
 	int lump = -1;
 	int count = 0;
-	int y;
-	int indent;
 	while (count < 2 && (lump = W_FindLump("ENDOOM", lump)) != -1)
 	{
 		count++;
@@ -258,7 +256,7 @@ void I_Endoom()
 	// Hack to stop crash with disk icon
 	in_endoom = true;
 
-	unsigned char* endoom_data = (unsigned char*)W_CacheLumpName(gameinfo.endoom, PU_STATIC);
+	byte* endoom_data = W_CacheLumpName<byte>(gameinfo.endoom, PU_STATIC);
 
 	// Set up text mode screen
 
@@ -271,11 +269,11 @@ void I_Endoom()
 
 	unsigned char* screendata = TXT_GetScreenData();
 
-	if(NULL != screendata)
+	if (NULL != screendata)
 	{
-		indent = (ENDOOM_W - TXT_SCREEN_W) / 2;
+		const int indent = (ENDOOM_W - TXT_SCREEN_W) / 2;
 
-		for (y=0; y<TXT_SCREEN_H; ++y)
+		for (int y = 0; y < TXT_SCREEN_H; ++y)
 		{
 			memcpy(screendata + (y * TXT_SCREEN_W * 2),
 			endoom_data + (y * ENDOOM_W + indent) * 2,
@@ -339,7 +337,7 @@ void I_BaseWarning(const std::string& warningtext)
 	PrintFmt(PRINT_WARNING, "\n{}\n", warningtext);
 }
 
-void I_BaseError(const std::string& errortext)
+[[noreturn]] void I_BaseError(const std::string& errortext)
 {
 	std::string messagetext;
 
@@ -517,7 +515,7 @@ std::string I_GetClipboardText()
 			return "";
 		}
 
-		ret = std::string((const char*)data, len);
+		ret = std::string(reinterpret_cast<const char*>(data), len);
 		XFree(data);
 	}
 

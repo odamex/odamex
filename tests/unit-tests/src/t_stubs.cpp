@@ -58,8 +58,8 @@ CVAR (sv_maxplayers,		"0", "maximum players who can join the game, others are sp
 
 void C_AddTabCommand(char const *) {}
 void C_RemoveTabCommand(char const *) {}
-void P_ShowSpawns(MapThing*) {}
-void P_SpawnPlayer(player_t&, mapthing2_t*) {}
+void P_ShowSpawns(const mapthing2_t&) {}
+void P_SpawnPlayer(player_t&, const mapthing2_t&) {}
 void G_DeathMatchSpawnPlayer(player_t&) {}
 player_t& consoleplayer() { return idplayer(consoleplayer_id); }
 player_t& displayplayer() { return idplayer(displayplayer_id); }
@@ -104,7 +104,7 @@ void SV_BroadcastSector(int sectornum) {}
 void SV_UpdateMobj(const AActor* mo) {}
 void SV_UpdateMobjState(const AActor* mo) {}
 
-void CTF_RememberFlagPos(mapthing2_t *mthing) {}
+void CTF_RememberFlagPos(const mapthing2_t& mthing) {}
 void CTF_SpawnFlag(team_t f) {}
 bool SV_AwarenessUpdate(player_t &pl, AActor* mo) { return true; }
 void SV_SendPackets(void) {}
@@ -278,7 +278,7 @@ angle_t R_PointToAngle2(fixed_t viewx, fixed_t viewy, fixed_t x, fixed_t y)
 	}
 	else
 	{
-      return (angle_t)(atan2((double)y, (double)x) * (ANG180 / PI));
+      return static_cast<angle_t>(atan2(static_cast<double>(y), static_cast<double>(x)) * (ANG180 / PI));
 	}
 
    return 0;
@@ -356,12 +356,12 @@ dyncolormap_t *GetSpecialLights (int lr, int lg, int lb, int fr, int fg, int fb)
 	}
 
 	// Not found. Create it.
-	colormap = (dyncolormap_t *)Z_Malloc (sizeof(*colormap), PU_LEVEL, 0);
+	colormap = Z_Malloc<dyncolormap_t>(PU_LEVEL);
 	shademap_t *maps = new shademap_t();
-	maps->colormap = (byte *)Z_Malloc (NUMCOLORMAPS*256*sizeof(byte)+3+255, PU_LEVEL, 0);
-	maps->colormap = (byte *)(((ptrdiff_t)maps->colormap + 255) & ~0xff);
-	maps->shademap = (argb_t *)Z_Malloc (NUMCOLORMAPS*256*sizeof(argb_t)+3+255, PU_LEVEL, 0);
-	maps->shademap = (argb_t *)(((ptrdiff_t)maps->shademap + 255) & ~0xff);
+	maps->colormap = static_cast<byte*>(Z_Malloc(NUMCOLORMAPS*256*sizeof(byte)+3+255, PU_LEVEL));
+	maps->colormap = reinterpret_cast<byte*>(((reinterpret_cast<ptrdiff_t>(maps->colormap) + 255) & ~0xff));
+	maps->shademap = static_cast<argb_t*>(Z_Malloc (NUMCOLORMAPS*256*sizeof(argb_t)+3+255, PU_LEVEL));
+	maps->shademap = reinterpret_cast<argb_t*>(((reinterpret_cast<ptrdiff_t>(maps->shademap) + 255) & ~0xff));
 
 	colormap->maps = shaderef_t(maps, 0);
 	colormap->color = color;
@@ -382,7 +382,7 @@ void CTF_CheckFlags (player_t &player)
 		if(player.flags[i])
 		{
 			player.flags[i] = false;
-			GetTeamInfo((team_t)i)->FlagData.flagger = 0;
+			GetTeamInfo(static_cast<team_t>(i))->FlagData.flagger = 0;
 		}
 	}
 }

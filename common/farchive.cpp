@@ -28,31 +28,18 @@
 
 #include "farchive.h"
 #include "m_alloc.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "i_system.h"
 #include "d_player.h"
 #include "dobject.h"
 
-#ifdef __BIG_ENDIAN__
-#define SWAP_WORD(x)
-#define SWAP_DWORD(x)
-#define SWAP_QWORD(x)
-#define SWAP_SIZE(x,y)
-#else
-#define SWAP_WORD(x)		{ x = (((x)<<8) | ((x)>>8)); }
-#define SWAP_DWORD(x)		{ x = (((x)>>24) | (((x)>>8)&0xff00) | (((x)<<8)&0xff0000) | ((x)<<24)); }
+#define SWAP_SHORT(x)       { x = BESHORT(x); }
+#define SWAP_INT(x)         { x = BELONG(x); }
+#define SWAP_LONG(x)        { x = BELONGLONG(x); }
 // Swap any kind of data based on size - x = pointer to data, y = number of bytes
-#define SWAP_SIZE(x, y)		{ std::reverse((unsigned char*)x, (unsigned char*)x+(size_t)y); }
-
-#if 0
-#define SWAP_QWORD(x)		{ x = (((x)>>56) | (((x)>>40)&(0xff<<8)) | (((x)>>24)&(0xff<<16)) | (((x)>>8)&(0xff<<24)) |\
-								   (((x)<<8)&(QWORD)0xff00000000) | (((x)<<24)&(QWORD)0xff0000000000) | (((x)<<40)&(QWORD)0xff000000000000) | ((x)<<56))); }
-#else
-#define SWAP_QWORD(x)		{ DWORD *y = (DWORD *)&x; DWORD t=y[0]; y[0]=y[1]; y[1]=t; SWAP_DWORD(y[0]); SWAP_DWORD(y[1]); }
-#endif
-#endif
-
-#define MAX(a,b)	((a)<(b)?(a):(b))
+#define SWAP_SIZE(x, y)		{ std::reverse(reinterpret_cast<unsigned char*>(x), reinterpret_cast<unsigned char*>(x)+static_cast<size_t>(y)); }
 
 static constexpr char LZOSig[4] = { 'F', 'L', 'Z', 'O' };
 
@@ -130,17 +117,17 @@ void FLZOFile::PostOpen()
 		}
 		else
 		{
-			DWORD sizes[2];
-			readlen = fread(sizes, sizeof(DWORD), 2, m_File);
+			uint32_t sizes[2];
+			readlen = fread(sizes, sizeof(uint32_t), 2, m_File);
 			if ( readlen < 1 )
 			{
 				fmt::print("FLZOFile::PostOpen(): failed to read m_File\n");
 			}
-			SWAP_DWORD(sizes[0]);
-			SWAP_DWORD(sizes[1]);
+			SWAP_INT(sizes[0]);
+			SWAP_INT(sizes[1]);
 
 			unsigned int len = sizes[0] == 0 ? sizes[1] : sizes[0];
-			m_Buffer = (byte*) M_Malloc(len + 8);
+			m_Buffer = static_cast<byte*>(M_Malloc(len + 8));
 
 			readlen = fread(m_Buffer + 8, len, 1, m_File);
 			if ( readlen < 1 )
@@ -148,11 +135,11 @@ void FLZOFile::PostOpen()
 				fmt::print("FLZOFile::PostOpen(): failed to read m_File\n");
 			}
 
-			SWAP_DWORD(sizes[0]);
-			SWAP_DWORD(sizes[1]);
+			SWAP_INT(sizes[0]);
+			SWAP_INT(sizes[1]);
 
-			((DWORD*)m_Buffer)[0] = sizes[0];
-			((DWORD*)m_Buffer)[1] = sizes[1];
+			(reinterpret_cast<uint32_t*>(m_Buffer))[0] = sizes[0];
+			(reinterpret_cast<uint32_t*>(m_Buffer))[1] = sizes[1];
 			Explode();
 		}
 	}
@@ -205,11 +192,11 @@ FFile& FLZOFile::Write(const void* mem, unsigned int len)
 			m_BufferSize = m_MaxBufferSize = m_BufferSize ? m_BufferSize * 2 : 16384;
 		} while (m_Pos + len > m_BufferSize);
 
-		m_Buffer = (byte*)M_Realloc(m_Buffer, m_BufferSize);
+		m_Buffer = static_cast<byte*>(M_Realloc(m_Buffer, m_BufferSize));
 	}
 
 	if (len == 1)
-		m_Buffer[m_Pos] = *(byte*)mem;
+		m_Buffer[m_Pos] = *static_cast<const byte*>(mem);
 	else
 		memcpy(m_Buffer + m_Pos, mem, len);
 
@@ -235,7 +222,7 @@ FFile& FLZOFile::Read(void* mem, unsigned int len)
 	}
 
 	if (len == 1)
-		*(byte*)mem = m_Buffer[m_Pos];
+		*static_cast<byte*>(mem) = m_Buffer[m_Pos];
 	else
 		memcpy(mem, m_Buffer + m_Pos, len);
 
@@ -258,7 +245,7 @@ FFile& FLZOFile::Seek(int pos, ESeekPos ofs)
 
 	if (pos < 0)
 		m_Pos = 0;
-	else if ((unsigned)pos > m_BufferSize)
+	else if (static_cast<unsigned>(pos) > m_BufferSize)
 		m_Pos = m_BufferSize;
 	else
 		m_Pos = pos;
@@ -278,7 +265,9 @@ void FLZOFile::Implode()
 	{
 		compressed = std::make_unique<lzo_byte[]>(MaxLZOCompressedLength(input_len));
 
+		BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 		auto wrkmem = std::make_unique<lzo_byte[]>(LZO1X_1_MEM_COMPRESS);
+		END_DISABLE_WARNING_GNU
 		int res = lzo1x_1_compress(m_Buffer, input_len, compressed.get(), &compressed_len, wrkmem.get());
 
 		// If the data could not be compressed, store it as-is.
@@ -299,11 +288,11 @@ void FLZOFile::Implode()
 	else
 		m_BufferSize = m_MaxBufferSize = compressed_len;
 
-	m_Buffer = (byte*) M_Malloc(m_BufferSize + 8);
+	m_Buffer = static_cast<byte*>(M_Malloc(m_BufferSize + 8));
 	m_Pos = 0;
 
-	((unsigned int*)m_Buffer)[0] = BELONG((unsigned int)compressed_len);
-	((unsigned int*)m_Buffer)[1] = BELONG((unsigned int)input_len);
+	(reinterpret_cast<unsigned int*>(m_Buffer))[0] = BELONG(static_cast<unsigned int>(compressed_len));
+	(reinterpret_cast<unsigned int*>(m_Buffer))[1] = BELONG(static_cast<unsigned int>(input_len));
 
 	if (compressed_len == 0 || !compressed)
 		memcpy(m_Buffer + 8, oldbuf, input_len);
@@ -317,10 +306,10 @@ void FLZOFile::Explode()
 {
 	if (m_Buffer)
 	{
-		unsigned int compressed_len = BELONG(((unsigned int*)m_Buffer)[0]);
-		unsigned int expanded_len = BELONG(((unsigned int*)m_Buffer)[1]);
+		unsigned int compressed_len = BELONG((reinterpret_cast<unsigned int*>(m_Buffer)[0]));
+		unsigned int expanded_len = BELONG((reinterpret_cast<unsigned int*>(m_Buffer)[1]));
 
-		byte* expanded_buffer = (byte*) M_Malloc(expanded_len);
+		byte* expanded_buffer = static_cast<byte*>(M_Malloc(expanded_len));
 
 		if (compressed_len != 0)
 		{
@@ -386,7 +375,7 @@ bool FLZOMemFile::Open(void* memblock)
 	// [SL] TODO: what is m_BufferSize?!?
 	Close();
 	m_Mode = EReading;
-	m_Buffer = (byte*)memblock;
+	m_Buffer = static_cast<byte*>(memblock);
 	m_SourceFromMem = true;
 	Explode();
 	m_SourceFromMem = false;
@@ -399,7 +388,7 @@ bool FLZOMemFile::Open()
 	m_Mode = EWriting;
 	m_BufferSize = 0;
 	m_MaxBufferSize = 16384;
-	m_Buffer = (unsigned char*) M_Malloc(16384);
+	m_Buffer = static_cast<unsigned char*>(M_Malloc(16384));
 	m_Pos = 0;
 	return true;
 }
@@ -440,11 +429,11 @@ void FLZOMemFile::Serialize(FArchive& arc)
 		}
 		arc.Write(LZOSig, 4);
 
-		DWORD sizes[2];
-		sizes[0] = ((DWORD*)m_ImplodedBuffer)[0];
-		sizes[1] = ((DWORD*)m_ImplodedBuffer)[1];
-		SWAP_DWORD(sizes[0]);
-		SWAP_DWORD(sizes[1]);
+		uint32_t sizes[2];
+		sizes[0] = (reinterpret_cast<uint32_t*>(m_ImplodedBuffer))[0];
+		sizes[1] = (reinterpret_cast<uint32_t*>(m_ImplodedBuffer))[1];
+		SWAP_INT(sizes[0]);
+		SWAP_INT(sizes[1]);
 		arc.Write(m_ImplodedBuffer, (sizes[0] ? sizes[0] : sizes[1]) + 8);
 	}
 	else
@@ -453,7 +442,7 @@ void FLZOMemFile::Serialize(FArchive& arc)
 		m_Mode = EReading;
 
 		char sig[4];
-		DWORD sizes[2];
+		uint32_t sizes[2];
 
 		arc.Read(sig, 4);
 
@@ -461,13 +450,13 @@ void FLZOMemFile::Serialize(FArchive& arc)
 			I_Error("Expected to extract an LZO-compressed file\n");
 
 		arc >> sizes[0] >> sizes[1];
-		DWORD len = sizes[0] == 0 ? sizes[1] : sizes[0];
+		uint32_t len = sizes[0] == 0 ? sizes[1] : sizes[0];
 
-		m_Buffer = (byte*) M_Malloc(len + 8);
-		SWAP_DWORD(sizes[0]);
-		SWAP_DWORD(sizes[1]);
-		((DWORD*)m_Buffer)[0] = sizes[0];
-		((DWORD*)m_Buffer)[1] = sizes[1];
+		m_Buffer = static_cast<byte*>(M_Malloc(len + 8));
+		SWAP_INT(sizes[0]);
+		SWAP_INT(sizes[1]);
+		(reinterpret_cast<uint32_t*>(m_Buffer))[0] = sizes[0];
+		(reinterpret_cast<uint32_t*>(m_Buffer))[1] = sizes[1];
 		arc.Read(m_Buffer + 8, len);
 		m_ImplodedBuffer = m_Buffer;
 		m_Buffer = NULL;
@@ -569,7 +558,7 @@ void FArchive::Close()
 	}
 }
 
-void FArchive::WriteCount(DWORD count)
+void FArchive::WriteCount(uint32_t count)
 {
 	// [AM] Hoisted out of loop due to MSVC/ASan detecting as
 	//      use-after-scope.
@@ -585,15 +574,15 @@ void FArchive::WriteCount(DWORD count)
 
 }
 
-DWORD FArchive::ReadCount()
+uint32_t FArchive::ReadCount()
 {
 	byte in;
-	DWORD count = 0;
+	uint32_t count = 0;
 	int ofs = 0;
 
 	do
 	{
-		Read(&in, sizeof(BYTE));
+		Read(&in, sizeof(byte));
 		count |= (in & 0x7f) << ofs;
 		ofs += 7;
 	} while (in & 0x80);
@@ -609,7 +598,7 @@ FArchive &FArchive::operator<< (const char *str)
 	}
 	else
 	{
-		DWORD size = strlen (str) + 1;
+		uint32_t size = strlen (str) + 1;
 		WriteCount (size);
 		Write (str, size - 1);
 	}
@@ -618,7 +607,7 @@ FArchive &FArchive::operator<< (const char *str)
 
 FArchive &FArchive::operator>> (std::string &s)
 {
-	DWORD size = ReadCount ();
+	uint32_t size = ReadCount ();
 	if (size == 0)
 		s = "";
 	else
@@ -633,57 +622,57 @@ FArchive &FArchive::operator>> (std::string &s)
 	return *this;
 }
 
-FArchive &FArchive::operator<< (BYTE c)
+FArchive &FArchive::operator<< (byte c)
 {
-	Write (&c, sizeof(BYTE));
+	Write (&c, sizeof(byte));
 	return *this;
 }
 
-FArchive &FArchive::operator>> (BYTE &c)
+FArchive &FArchive::operator>> (byte &c)
 {
-	Read (&c, sizeof(BYTE));
+	Read (&c, sizeof(byte));
 	return *this;
 }
 
-FArchive &FArchive::operator<< (WORD w)
+FArchive &FArchive::operator<< (uint16_t w)
 {
-	SWAP_WORD(w);
-	Write (&w, sizeof(WORD));
+	SWAP_SHORT(w);
+	Write (&w, sizeof(uint16_t));
 	return *this;
 }
 
-FArchive &FArchive::operator>> (WORD &w)
+FArchive &FArchive::operator>> (uint16_t &w)
 {
-	Read (&w, sizeof(WORD));
-	SWAP_WORD(w);
+	Read (&w, sizeof(uint16_t));
+	SWAP_SHORT(w);
 	return *this;
 }
 
-FArchive &FArchive::operator<< (DWORD w)
+FArchive &FArchive::operator<< (uint32_t w)
 {
-	SWAP_DWORD(w);
-	Write (&w, sizeof(DWORD));
+	SWAP_INT(w);
+	Write (&w, sizeof(uint32_t));
 	return *this;
 }
 
-FArchive &FArchive::operator>> (DWORD &w)
+FArchive &FArchive::operator>> (uint32_t &w)
 {
-	Read (&w, sizeof(DWORD));
-	SWAP_DWORD(w);
+	Read (&w, sizeof(uint32_t));
+	SWAP_INT(w);
 	return *this;
 }
 
-FArchive &FArchive::operator<< (QWORD w)
+FArchive &FArchive::operator<< (uint64_t w)
 {
-	SWAP_QWORD(w);
-	Write (&w, sizeof(QWORD));
+	SWAP_LONG(w);
+	Write (&w, sizeof(uint64_t));
 	return *this;
 }
 
-FArchive &FArchive::operator>> (QWORD &w)
+FArchive &FArchive::operator>> (uint64_t &w)
 {
-	Read (&w, sizeof(QWORD));
-	SWAP_QWORD(w);
+	Read (&w, sizeof(uint64_t));
+	SWAP_LONG(w);
 	return *this;
 }
 
@@ -736,12 +725,12 @@ FArchive& FArchive::operator>> (argb_t& color)
 	return *this;
 }
 
-#define NEW_OBJ				((BYTE)1)
-#define NEW_CLS_OBJ			((BYTE)2)
-#define OLD_OBJ				((BYTE)3)
-#define NULL_OBJ			((BYTE)4)
-#define NEW_PLYR_OBJ		((BYTE)5)
-#define NEW_PLYR_CLS_OBJ	((BYTE)6)
+static constexpr byte NEW_OBJ          = 1;
+static constexpr byte NEW_CLS_OBJ      = 2;
+static constexpr byte OLD_OBJ          = 3;
+static constexpr byte NULL_OBJ         = 4;
+static constexpr byte NEW_PLYR_OBJ     = 5;
+static constexpr byte NEW_PLYR_CLS_OBJ = 6;
 
 FArchive &FArchive::operator<< (DObject *obj)
 {
@@ -761,7 +750,7 @@ FArchive &FArchive::operator<< (DObject *obj)
 			//		 "This should not happen.\n");
 			operator<< (NULL_OBJ);
 		}
-		else if (m_TypeMap[type->TypeIndex].toArchive == (DWORD)~0)
+		else if (m_TypeMap[type->TypeIndex].toArchive == static_cast<uint32_t>(~0))
 		{
 			// No instances of this class have been written out yet.
 			// Write out the class, then write out the object. If this
@@ -772,7 +761,7 @@ FArchive &FArchive::operator<< (DObject *obj)
 				player->mo == obj)
 			{
 				operator<< (NEW_PLYR_CLS_OBJ);
-				operator<< ((BYTE)(player->id));
+				operator<< (static_cast<byte>(player->id));
 			}
 			else
 			{
@@ -789,16 +778,16 @@ FArchive &FArchive::operator<< (DObject *obj)
 			// to the saved object. Otherwise, save a reference to the
 			// class, then save the object. Again, if this is a player-
 			// controlled actor, remember that.
-			DWORD index = FindObjectIndex (obj);
+			uint32_t index = FindObjectIndex (obj);
 
-			if (index == (DWORD)~0)
+			if (index == static_cast<uint32_t>(~0))
 			{
 				if (obj->IsKindOf (RUNTIME_CLASS (AActor)) &&
 					(player = static_cast<AActor *>(obj)->player) &&
 					player->mo == obj)
 				{
 					operator<< (NEW_PLYR_OBJ);
-					operator<< ((BYTE)(player->id));
+					operator<< (static_cast<byte>(player->id));
 				}
 				else
 				{
@@ -820,10 +809,10 @@ FArchive &FArchive::operator<< (DObject *obj)
 
 FArchive &FArchive::ReadObject (DObject* &obj, TypeInfo *wanttype)
 {
-	BYTE objHead;
+	byte objHead;
 	const TypeInfo *type;
-	BYTE playerNum;
-	DWORD index;
+	byte playerNum;
+	uint32_t index;
 
 	operator>> (objHead);
 
@@ -895,14 +884,14 @@ FArchive &FArchive::ReadObject (DObject* &obj, TypeInfo *wanttype)
 	return *this;
 }
 
-DWORD FArchive::WriteClass (const TypeInfo *info)
+uint32_t FArchive::WriteClass (const TypeInfo *info)
 {
 	if (m_ClassCount >= TypeInfo::m_NumTypes)
 	{
 		I_Error("Too many unique classes have been written.\nOnly {} were registered\n",
 			TypeInfo::m_NumTypes);
 	}
-	if (m_TypeMap[info->TypeIndex].toArchive != (DWORD)~0)
+	if (m_TypeMap[info->TypeIndex].toArchive != static_cast<uint32_t>(~0))
 	{
 		I_Error("Attempt to write '{}' twice.\n", info->Name);
 	}
@@ -954,7 +943,7 @@ const TypeInfo *FArchive::ReadClass (const TypeInfo *wanttype)
 
 const TypeInfo *FArchive::ReadStoredClass (const TypeInfo *wanttype)
 {
-	DWORD index = ReadCount ();
+	uint32_t index = ReadCount ();
 	if (index >= m_ClassCount)
 	{
 		I_Error("Class reference too high ({}; max is {})\n", index, m_ClassCount);
@@ -969,23 +958,21 @@ const TypeInfo *FArchive::ReadStoredClass (const TypeInfo *wanttype)
 	return type;
 }
 
-DWORD FArchive::MapObject (const DObject *obj)
+uint32_t FArchive::MapObject (const DObject *obj)
 {
-	DWORD i;
-
 	if (m_ObjectCount >= m_MaxObjectCount)
 	{
 		m_MaxObjectCount = m_MaxObjectCount ? m_MaxObjectCount * 2 : 1024;
-		m_ObjectMap = (ObjectMap *)M_Realloc(m_ObjectMap, sizeof(ObjectMap)*m_MaxObjectCount);
-		for (i = m_ObjectCount; i < m_MaxObjectCount; i++)
+		m_ObjectMap = static_cast<ObjectMap*>(M_Realloc(m_ObjectMap, sizeof(ObjectMap)*m_MaxObjectCount));
+		for (uint32_t i = m_ObjectCount; i < m_MaxObjectCount; i++)
 		{
-			m_ObjectMap[i].hashNext = (unsigned)~0;
+			m_ObjectMap[i].hashNext = static_cast<unsigned>(~0);
 			m_ObjectMap[i].object = NULL;
 		}
 	}
 
-	DWORD index = m_ObjectCount++;
-	DWORD hash = HashObject (obj);
+	uint32_t index = m_ObjectCount++;
+	uint32_t hash = HashObject (obj);
 
 	m_ObjectMap[index].object = obj;
 	m_ObjectMap[index].hashNext = m_ObjectHash[hash];
@@ -994,17 +981,17 @@ DWORD FArchive::MapObject (const DObject *obj)
 	return index;
 }
 
-DWORD FArchive::HashObject (const DObject *obj) const
+uint32_t FArchive::HashObject (const DObject *obj) const
 {
-	return (DWORD)((size_t)obj % EObjectHashSize);
+	return static_cast<uint32_t>(reinterpret_cast<size_t>(obj) % EObjectHashSize);
 }
 
-DWORD FArchive::FindObjectIndex (const DObject *obj) const
+uint32_t FArchive::FindObjectIndex (const DObject *obj) const
 {
 	if(!m_ObjectMap)
 		return ~0;
-	DWORD index = m_ObjectHash[HashObject (obj)];
-	while (index != (unsigned)~0 && m_ObjectMap[index].object != obj)
+	uint32_t index = m_ObjectHash[HashObject (obj)];
+	while (index != static_cast<unsigned>(~0) && m_ObjectMap[index].object != obj)
 	{
 		index = m_ObjectMap[index].hashNext;
 	}
@@ -1014,14 +1001,14 @@ DWORD FArchive::FindObjectIndex (const DObject *obj) const
 FArchive &operator<< (FArchive &arc, player_t *p)
 {
 	if (p)
-		return arc << (BYTE)(p->id);
+		return arc << static_cast<byte>(p->id);
 	else
-		return arc << (BYTE)0xff;
+		return arc << static_cast<byte>(0xff);
 }
 
 FArchive &operator>> (FArchive &arc, player_t *&p)
 {
-	BYTE ofs;
+	byte ofs;
 	arc >> ofs;
 	if (ofs == 0xff)
 		p = NULL;

@@ -422,7 +422,7 @@ fixed_t P_InterceptVector (const divline_t *v2, const divline_t *v1)
 				int64_t(v1->x - v2->x) * int64_t(v1->dy) +
 				int64_t(v2->y - v1->y) * int64_t(v1->dx);
 
-		return (fixed_t)(num / den);
+		return static_cast<fixed_t>(num / den);
 	}
 	else
 	{
@@ -691,7 +691,7 @@ bool P_BlockLinesIterator (int x, int y, bool(*func)(line_t*))
 	// referencing linedef 0). Using this first entry (as vanilla Doom does) can
 	// cause hitscan weapons to erroneously hit the first linedef entry regardless
 	// of where that linedef is located in relation to the block.
-	if (co_blockmapfix)
+	if (!demoplayback && skipblstart)
 		++list;
 
 	for (; *list != -1; list++)

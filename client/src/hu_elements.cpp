@@ -718,17 +718,15 @@ int CountSpectators()
 
 std::string TeamPlayers(int& color, byte team)
 {
-	color = V_GetTextColor(GetTeamInfo((team_t)team)->TextColor.c_str());
+	color = V_GetTextColor(GetTeamInfo(static_cast<team_t>(team))->TextColor);
 
-	std::ostringstream buffer;
-	buffer << (short)CountTeamPlayers(team);
-	return buffer.str();
+	return fmt::format("{:d}", CountTeamPlayers(team));
 }
 
 std::string TeamName(int& color, byte team)
 {
-	TeamInfo* teamInfo = GetTeamInfo((team_t)team);
-	color = V_GetTextColor(teamInfo->TextColor.c_str());
+	TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(team));
+	color = V_GetTextColor(teamInfo->TextColor);
 	std::string name = teamInfo->ColorStringUpper;
 	return name.append(" TEAM");
 }
@@ -740,7 +738,7 @@ std::string TeamFrags(int& color, byte team)
 		return "---";
 	}
 
-	color = V_GetTextColor(GetTeamInfo((team_t)team)->TextColor.c_str());
+	color = V_GetTextColor(GetTeamInfo(static_cast<team_t>(team))->TextColor);
 
 	int fragcount = 0;
 	for (const auto& player : sortedPlayers()) {
@@ -760,8 +758,8 @@ std::string TeamPoints(int& color, byte team) {
 		return "---";
 	}
 
-	TeamInfo* teamInfo = GetTeamInfo((team_t)team);
-	color = V_GetTextColor(teamInfo->TextColor.c_str());
+	TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(team));
+	color = V_GetTextColor(teamInfo->TextColor);
 
 	std::ostringstream buffer;
 	buffer << teamInfo->Points;
@@ -784,8 +782,8 @@ void TeamLives(std::string& str, int& color, byte team)
 		return;
 	}
 
-	TeamInfo* teamInfo = GetTeamInfo((team_t)team);
-	color = V_GetTextColor(teamInfo->TextColor.c_str());
+	TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(team));
+	color = V_GetTextColor(teamInfo->TextColor);
 
 	PlayerResults results = PlayerQuery().hasLives().onTeam(static_cast<team_t>(team)).execute();
 	int lives = 0;
@@ -801,7 +799,7 @@ std::string TeamKD(int& color, byte team) {
 		return "---";
 	}
 
-	color = V_GetTextColor(GetTeamInfo((team_t)team)->TextColor.c_str());
+	color = V_GetTextColor(GetTeamInfo(static_cast<team_t>(team))->TextColor);
 
 	int killcount = 0;
 	unsigned int deathcount = 0;
@@ -817,9 +815,9 @@ std::string TeamKD(int& color, byte team) {
 	buffer << std::fixed;
 	float kd;
 	if (deathcount == 0)
-		kd = (float)killcount / 1.0f;
+		kd = static_cast<float>(killcount) / 1.0f;
 	else {
-		kd = (float)killcount / (float)deathcount;
+		kd = static_cast<float>(killcount) / static_cast<float>(deathcount);
 	}
 	buffer << kd;
 	return buffer.str();
@@ -1055,7 +1053,7 @@ static EColorRange GetTeamPlayerColor(player_t* player)
 		for (int i = 0; i < NUMTEAMS; i++)
 		{
 			if (player->flags[i])
-				return (EColorRange)V_GetTextColor(GetTeamInfo((team_t)i)->TextColor.c_str());
+				return static_cast<EColorRange>(V_GetTextColor(GetTeamInfo(static_cast<team_t>(i))->TextColor));
 		}
 	}
 
@@ -1132,10 +1130,9 @@ void EASpectatorNames(int x, int y, const float scale,
 				std::string drawName = player->userinfo.netname;
 				if (player->QueuePosition)
 				{
-					std::ostringstream ss;
-					ss << (int)player->QueuePosition << ". " << player->userinfo.netname;
+					std::string buffer = fmt::format("{:d}. {}", player->QueuePosition, player->userinfo.netname);
 					hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
-						ss.str().c_str(), color, force_opaque);
+						buffer.c_str(), color, force_opaque);
 				}
 				else
 				{
@@ -1447,9 +1444,9 @@ void EAPlayerKD(int x, int y, const float scale,
 			buffer << std::fixed;
 			float kd;
 			if (player->deathcount == 0)
-				kd = (float)player->fragcount / 1.0f;
+				kd = static_cast<float>(player->fragcount) / 1.0f;
 			else {
-				kd = (float)player->fragcount / (float)player->deathcount;
+				kd = static_cast<float>(player->fragcount) / static_cast<float>(player->deathcount);
 			}
 			buffer << kd;
 
@@ -1483,9 +1480,9 @@ void EATeamPlayerKD(int x, int y, const float scale,
 			buffer << std::fixed;
 			float kd;
 			if (player->deathcount == 0)
-				kd = (float)player->fragcount / 1.0f;
+				kd = static_cast<float>(player->fragcount) / 1.0f;
 			else {
-				kd = (float)player->fragcount / (float)player->deathcount;
+				kd = static_cast<float>(player->fragcount) / static_cast<float>(player->deathcount);
 			}
 			buffer << kd;
 

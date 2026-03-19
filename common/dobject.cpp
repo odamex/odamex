@@ -28,7 +28,6 @@
 #include "m_alloc.h"		// Ideally, DObjects can be used independant of Doom.
 #include "d_player.h"		// See p_user.cpp to find out why this doesn't work.
 #include "z_zone.h"
-#include "m_stacktrace.h"
 
 ClassInit::ClassInit (TypeInfo *type)
 {
@@ -44,7 +43,7 @@ void TypeInfo::RegisterType ()
 	if (m_NumTypes == m_MaxTypes)
 	{
 		m_MaxTypes = m_MaxTypes ? m_MaxTypes*2 : 32;
-		m_Types = (TypeInfo **)M_Realloc (m_Types, m_MaxTypes * sizeof(*m_Types));
+		m_Types = static_cast<TypeInfo**>(M_Realloc(m_Types, m_MaxTypes * sizeof(*m_Types)));
 	}
 	m_Types[m_NumTypes] = this;
 	TypeIndex = m_NumTypes;

@@ -2114,13 +2114,11 @@ const angle_t *p_tantoangle = tantoangle;
 //
 void Table_InitTanToAngle(void)
 {
-   int i;
-
-   for(i = 0; i <= SLOPERANGE; ++i)
+   for (int i = 0; i <= SLOPERANGE; ++i)
    {
-      double angle = atan2((double)i, (double)SLOPERANGE) / 6.28318530718;
+      double angle = atan2(static_cast<double>(i), static_cast<double>(SLOPERANGE)) / 6.28318530718;
 
-      tantoangle_acc[i] = (angle_t)(angle * ANG360);
+      tantoangle_acc[i] = static_cast<angle_t>(angle * ANG360);
    }
 }
 

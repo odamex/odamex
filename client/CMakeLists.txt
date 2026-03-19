@@ -112,7 +112,7 @@ if(ENABLE_PORTMIDI)
 
     add_library(${PORTMIDI_LIBRARY} STATIC ${PORTMIDI_SOURCES} ${PORTMIDI_HEADERS})
     target_link_libraries(${PORTMIDI_LIBRARY} ${PM_NEEDED_LIBS})
-    message(STATUS "portmidi will be built and staticaly linked when compiling the client application.")
+    message(STATUS "portmidi will be built and statically linked when compiling the client application.")
   endif()
 
   add_definitions(-DPORTMIDI)
@@ -158,6 +158,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   add_executable(odamex MACOSX_BUNDLE WIN32
     ${CLIENT_SOURCES} ${CLIENT_SDL_SOURCES} ${COMMON_SOURCES} ${CLIENT_GUI_SOURCES})
   odamex_target_settings(odamex)
+  odamex_target_errors(odamex)
 
   if(USE_DEFAULT_SIMD)
     if(ODAMEX_TARGET_ARCH STREQUAL "amd64")

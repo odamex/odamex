@@ -573,7 +573,7 @@ void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
 
 // Client wants to know the status of the maplist.
 void SV_Maplist(player_t &player) {
-	maplist_status_t status = (maplist_status_t)MSG_ReadByte();
+	maplist_status_t status = static_cast<maplist_status_t>(MSG_ReadByte());
 
 	// If the maplist is empty, say so
 	if (Maplist::instance().empty()) {

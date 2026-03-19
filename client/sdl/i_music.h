@@ -57,7 +57,7 @@ EXTERN_CVAR(snd_musicsystem)
 // [ML] Keep track of the currently loaded music lump name
 extern std::string currentmusic;
 
-void I_InitMusic(MusicSystemType musicsystem_type = (MusicSystemType)snd_musicsystem.asInt());
+void I_InitMusic(MusicSystemType musicsystem_type = snd_musicsystem.asEnum<MusicSystemType>());
 void STACK_ARGS I_ShutdownMusic(void);
 // Volume.
 void I_SetMusicVolume (float volume);

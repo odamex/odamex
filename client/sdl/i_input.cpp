@@ -659,7 +659,7 @@ void I_GetEvents(bool mouseOnly)
 	while (input_subsystem->hasEvent())
 	{
 		input_subsystem->getEvent(&ev);
-		D_PostEvent(&ev);
+		D_PostEvent(ev);
 	}
 }
 

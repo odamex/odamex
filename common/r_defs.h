@@ -272,7 +272,7 @@ struct sector_t
 
 	bool alwaysfake = false;	// [RH] Always apply heightsec modifications?
 	byte waterzone = 0;		// [RH] Sector is underwater?
-	WORD MoreFlags = 0;		// [RH] Misc sector flags
+	uint16_t MoreFlags = 0;		// [RH] Misc sector flags
 
 	// [RH] Action specials for sectors. Like Skull Tag, but more
 	// flexible in a Bloody way. SecActTarget forms a list of actors
@@ -330,7 +330,7 @@ typedef enum
 	ST_NEGATIVE
 } slopetype_t;
 
-#define R_NOSIDE ((unsigned short)(-1))
+#define R_NOSIDE (static_cast<unsigned short>(-1))
 
 struct line_s
 {
@@ -408,7 +408,7 @@ typedef struct msecnode_s
 //
 // The LineSeg.
 //
-struct seg_s
+struct seg_t
 {
 	vertex_t*	v1;
 	vertex_t*	v2;
@@ -426,8 +426,9 @@ struct seg_s
 	sector_t*	backsector;		// NULL for one-sided lines
 
 	fixed_t		length;
+
+	bool		is_horizon;
 };
-typedef seg_s seg_t;
 
 // ===== Polyobj data =====
 typedef struct FPolyObj
@@ -523,7 +524,7 @@ struct post_t
 	 */
 	byte* data() const
 	{
-		return (byte*)(this) + 3;
+		return const_cast<byte*>(reinterpret_cast<const byte*>(this) + 3);
 	}
 
 	/**
@@ -531,7 +532,7 @@ struct post_t
 	 */
 	post_t* next() const
 	{
-		return (post_t*)((byte*)this + length + 4);
+		return reinterpret_cast<post_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(this) + length + 4));
 	}
 
 	/**
@@ -557,11 +558,11 @@ struct tallpost_t
 	}
 	byte* data() const
 	{
-		return (byte*)(this) + 4;
+		return const_cast<byte*>(reinterpret_cast<const byte*>(this) + 4);
 	}
 	tallpost_t* next() const
 	{
-		return (tallpost_t*)((byte*)(this) + 4 + length);
+		return reinterpret_cast<tallpost_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(this) + length + 4));
 	}
 	bool end() const
 	{
@@ -577,9 +578,9 @@ struct tallpost_t
 // OTHER TYPES
 //
 
-struct drawseg_s
+struct drawseg_t
 {
-	seg_t*			curline;
+	const seg_t*	curline;
 
     int				x1;
     int				x2;
@@ -599,14 +600,13 @@ struct drawseg_s
     int*			sprbottomclip;
 	tallpost_t**	midposts;
 };
-typedef drawseg_s drawseg_t;
 
 
 // Patches.
 // A patch holds one or more columns.
 // Patches are used for sprites and all masked pictures, and we compose
 // textures from the TEXTURE1/2 lists of patches.
-struct patch_s
+struct patch_t
 {
 private:
 	short			_width;			// bounding box size
@@ -636,7 +636,7 @@ public:
 	}
 	uint32_t* ofs() const
 	{
-		return (uint32_t*)((byte*)this + 8);
+		return reinterpret_cast<uint32_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(this) + 8));
 	}
 	uint32_t datastart() const
 	{
@@ -644,11 +644,11 @@ public:
 	}
 	post_t* post(const uint32_t ofs)
 	{
-		return (post_t*)((byte*)this + ofs);
+		return reinterpret_cast<post_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(this) + ofs));
 	}
 	tallpost_t* tallpost(const uint32_t ofs)
 	{
-		return (tallpost_t*)((byte*)this + ofs);
+		return reinterpret_cast<tallpost_t*>(const_cast<byte*>(reinterpret_cast<const byte*>(this) + ofs));
 	}
 };
 typedef patch_s patch_t;
@@ -664,7 +664,7 @@ enum vsflags_e : uint
 // A vissprite_t is a thing
 //	that will be drawn during a refresh.
 // I.e. a sprite object that is partly visible.
-struct vissprite_s
+struct vissprite_t
 {
     int				x1;
     int				x2;
@@ -706,7 +706,6 @@ struct vissprite_s
 
 	const AActor*			mo;
 };
-typedef vissprite_s vissprite_t;
 
 //
 // Sprites are patches with a special naming convention
@@ -757,9 +756,9 @@ struct spritedef_t
 //
 // The infamous visplane
 //
-struct visplane_s
+struct visplane_t
 {
-	visplane_s *next;		// Next visplane in hash chain -- killough
+	visplane_t *next;		// Next visplane in hash chain -- killough
 
 	plane_t		secplane;
 
@@ -778,4 +777,3 @@ struct visplane_s
 	unsigned int pad;				//		allocated immediately after the
 	unsigned int top[3];			//		visplane.
 };
-typedef visplane_s visplane_t;

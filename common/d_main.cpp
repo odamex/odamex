@@ -1097,7 +1097,7 @@ public:
 		// mAccumulator can be greater than mFrameDuration so only get the
 		// time remaining until the next frame
 		dtime_t remaining_time = mAccumulator % mFrameDuration;
-		return (float)(double(remaining_time) / mFrameDuration);
+		return static_cast<float>(static_cast<double>(remaining_time) / mFrameDuration);
 	}
 
 private:

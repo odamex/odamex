@@ -65,19 +65,19 @@ cvar_t* GetFirstCvar(void)
 int cvar_defflags;
 
 cvar_t::cvar_t(const char* var_name, const char* def, const char* help, cvartype_t type,
-		DWORD flags, float minval, float maxval)
+		uint32_t flags, float minval, float maxval)
 {
 	InitSelf(var_name, def, help, type, flags, NULL, minval, maxval);
 }
 
 cvar_t::cvar_t(const char* var_name, const char* def, const char* help, cvartype_t type,
-		DWORD flags, void (*callback)(cvar_t &), float minval, float maxval)
+		uint32_t flags, void (*callback)(cvar_t &), float minval, float maxval)
 {
 	InitSelf(var_name, def, help, type, flags, callback, minval, maxval);
 }
 
 void cvar_t::InitSelf(const char* var_name, const char* def, const char* help, cvartype_t type,
-		DWORD var_flags, void (*callback)(cvar_t &), float minval, float maxval)
+		uint32_t var_flags, void (*callback)(cvar_t &), float minval, float maxval)
 {
 	cvar_t* dummy;
 	cvar_t* var = FindCVar(var_name, &dummy);
@@ -148,7 +148,7 @@ cvar_t::~cvar_t ()
 	}
 }
 
-void cvar_t::ForceSet(const char* valstr)
+void cvar_t::ForceSet(std::string_view valstr)
 {
 	// [SL] 2013-04-16 - Latched CVARs do not change values until the next map.
 	// Servers and single-player games should abide by this behavior but
@@ -157,10 +157,10 @@ void cvar_t::ForceSet(const char* valstr)
 		(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION))
 	{
 		m_Flags |= CVAR_MODIFIED;
-		if (valstr)
-			m_LatchedString = valstr;
-		else
+		if (valstr.empty())
 			m_LatchedString.clear();
+		else
+			m_LatchedString = valstr;
 	}
 	else
 	{
@@ -170,7 +170,7 @@ void cvar_t::ForceSet(const char* valstr)
 		bool integral_type = m_Type == CVARTYPE_BOOL || m_Type == CVARTYPE_BYTE ||
 					m_Type == CVARTYPE_WORD || m_Type == CVARTYPE_INT;
 		bool floating_type = m_Type == CVARTYPE_FLOAT;
-		float valf = numerical_value ? atof(valstr) : 0.0f;
+		float valf = numerical_value ? ParseNum<float>(valstr).value_or(0.0f) : 0.0f;
 
 		// perform rounding to nearest integer for integral types
 		if (integral_type)
@@ -186,10 +186,10 @@ void cvar_t::ForceSet(const char* valstr)
 		else
 		{
 			// just set m_String to valstr
-			if (valstr)
-				m_String = valstr;
-			else
+			if (valstr.empty())
 				m_String.clear();
+			else
+				m_String = valstr;
 		}
 
 		m_Value = valf;
@@ -214,10 +214,10 @@ void cvar_t::ForceSet(float val)
 	ForceSet(string);
 }
 
-void cvar_t::Set (const char *val)
+void cvar_t::Set(std::string_view val)
 {
 	if (!(m_Flags & CVAR_NOSET) || !m_DoNoSet)
-		ForceSet (val);
+		ForceSet(val);
 }
 
 void cvar_t::Set (float val)
@@ -226,7 +226,7 @@ void cvar_t::Set (float val)
 		ForceSet (val);
 }
 
-void cvar_t::SetDefault (const char *val)
+void cvar_t::SetDefault(const char *val)
 {
 	if(val)
 		m_Default = val;
@@ -309,7 +309,7 @@ void cvar_t::EnableCallbacks ()
 	}
 }
 
-void cvar_t::FilterCompactCVars (std::vector<cvar_t *> &cvars, DWORD filter)
+void cvar_t::FilterCompactCVars (std::vector<cvar_t *> &cvars, uint32_t filter)
 {
 	cvar_t *cvar = ad.GetCVars();
 	while (cvar)
@@ -325,7 +325,7 @@ void cvar_t::FilterCompactCVars (std::vector<cvar_t *> &cvars, DWORD filter)
 // a pointer of an array of chars to write out a packed byte array
 // of cvars, subtracting the base array size from the total after
 // each advancement.
-void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, size_t array_size, bool compact)
+void cvar_t::C_WriteCVars (byte **demo_p, uint32_t filter, size_t array_size, bool compact)
 {
 	if (array_size <= 0)
 		return;
@@ -336,7 +336,7 @@ void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, size_t array_size, bool 
 	if (compact)
 	{
 		std::vector<cvar_t *> cvars;
-		chars = snprintf((char*)ptr, array_size, "\\\\%ux", (unsigned int)filter);
+		chars = snprintf(reinterpret_cast<char*>(ptr), array_size, "\\\\%ux", static_cast<unsigned int>(filter));
 
 		ptr += chars;
 		array_size -= chars;
@@ -350,7 +350,7 @@ void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, size_t array_size, bool 
 				return;
 			}
 
-			chars = snprintf ((char *)ptr, array_size, "\\%s", cvar->cstring());
+			chars = snprintf (reinterpret_cast<char *>(ptr), array_size, "\\%s", cvar->cstring());
 
 			ptr += chars;
 			array_size -= chars;
@@ -371,7 +371,7 @@ void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, size_t array_size, bool 
 					return;
 				}
 
-				chars = snprintf((char*)ptr, array_size, "\\%s\\%s",
+				chars = snprintf(reinterpret_cast<char*>(ptr), array_size, "\\%s\\%s",
 								cvar->name().c_str(), cvar->cstring());
 
 				ptr += chars;
@@ -386,7 +386,7 @@ void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, size_t array_size, bool 
 
 void cvar_t::C_ReadCVars (byte **demo_p)
 {
-	char *ptr = *((char **)demo_p);
+	char *ptr = *(reinterpret_cast<char**>(demo_p));
 	char *breakpt;
 
 	if (*ptr++ != '\\')
@@ -395,7 +395,7 @@ void cvar_t::C_ReadCVars (byte **demo_p)
 	if (*ptr == '\\')
 	{	// compact mode
 		std::vector<cvar_t *> cvars;
-		DWORD filter;
+		uint32_t filter;
 
 		ptr++;
 		breakpt = strchr (ptr, '\\');
@@ -446,7 +446,7 @@ void cvar_t::C_ReadCVars (byte **demo_p)
 			}
 		}
 	}
-	*demo_p += strlen (*((char **)demo_p)) + 1;
+	*demo_p += strlen (*(reinterpret_cast<char**>(demo_p))) + 1;
 }
 
 static struct backup_s
@@ -574,8 +574,8 @@ void cvar_t::C_ArchiveCVars (void *f)
 		if ((baseapp == client && (cvar->m_Flags & CVAR_CLIENTARCHIVE))
 			|| (baseapp == server && (cvar->m_Flags & CVAR_SERVERARCHIVE)))
 		{
-			fmt::print((FILE *)f, "// {}\n", cvar->helptext());
-			fmt::print((FILE *)f, "set {} {}\n\n", C_QuoteString(cvar->name()), C_QuoteString(cvar->str()));
+			fmt::print(static_cast<FILE*>(f), "// {}\n", cvar->helptext());
+			fmt::print(static_cast<FILE*>(f), "set {} {}\n\n", C_QuoteString(cvar->name()), C_QuoteString(cvar->str()));
 		}
 		cvar = cvar->m_Next;
 	}
@@ -653,7 +653,14 @@ BEGIN_COMMAND (set)
 
 		var = cvar_t::FindCVar (argv[1], &prev);
 		if (!var)
-			var = new cvar_t(argv[1], NULL, "", CVARTYPE_NONE,  CVAR_AUTO | CVAR_UNSETTABLE | cvar_defflags);
+		{
+			const std::string description = "Unsupported in Odamex v" + std::string(NiceVersion());
+			var = new cvar_t(argv[1], argv[2], description.c_str(), CVARTYPE_NONE,
+			                 CVAR_NOENABLEDISABLE |         // If we got here due to LoadDefaults, make sure we save the value back out as-is.
+			                 CVAR_AUTO |
+			                 CVAR_UNSETTABLE |
+			                 cvar_defflags);
+		}
 
 		if (var->flags() & CVAR_NOSET)
 		{
@@ -674,12 +681,12 @@ BEGIN_COMMAND (set)
 			if (strcmp("enabled", argv[2]) == 0 ||
 			    strcmp("true", argv[2]) == 0)
 			{
-				argv[2] = (char *)"1";
+				argv[2] = const_cast<char*>("1");
 			}
 			else if (strcmp("disabled", argv[2]) == 0 ||
 			         strcmp("false", argv[2]) == 0)
 			{
-				argv[2] = (char *)"0";
+				argv[2] = const_cast<char*>("0");
 			}
 		}
 

@@ -59,12 +59,12 @@ void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 		{
 			if (!(arc.IsReset() && P_ThinkerIsPlayerType(thinker)))
 			{
-				arc << (BYTE)1;
+				arc << 1_u8;
 				arc << thinker;
 			}
 			thinker = thinker->m_Next;
 		}
-		arc << (BYTE)0;
+		arc << 0_u8;
 	}
 	else
 	{
@@ -73,7 +73,7 @@ void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 		else
 			DestroyAllThinkers ();
 
-		BYTE more;
+		byte more;
 		arc >> more;
 		while (more)
 		{
@@ -276,14 +276,14 @@ void DThinker::RunThinkers ()
 
 void *DThinker::operator new (size_t size)
 {
-	return Z_Malloc (size, PU_LEVSPEC, 0);
+	return Z_Malloc<void>(size, PU_LEVSPEC, nullptr);
 }
 
 // Deallocation is lazy -- it will not actually be freed
 // until its thinking turn comes up.
 void DThinker::operator delete (void *mem)
 {
-	Z_Free (mem);
+	Z_Free(mem);
 }
 
 bool P_ThinkerIsPlayerType(DThinker* thinker)

@@ -25,7 +25,9 @@
 
 #include "odamex.h"
 
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "d_netinf.h"
 #include "z_zone.h"
 #include "m_misc.h"
@@ -253,20 +255,20 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 // at the given mapthing2_t spot
 // because something is occupying it
 //
-void P_SpawnPlayer (player_t &player, mapthing2_t* mthing);
+void P_SpawnPlayer (player_t &player, const mapthing2_t& mthing);
 
-bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
+bool G_CheckSpot (player_t &player, const mapthing2_t& mthing)
 {
 	unsigned			an;
 	AActor* 			mo;
 	fixed_t 			xa,ya;
 
-	fixed_t x = mthing->x << FRACBITS;
-	fixed_t y = mthing->y << FRACBITS;
+	const fixed_t x = mthing.x << FRACBITS;
+	const fixed_t y = mthing.y << FRACBITS;
 	fixed_t z = P_FloorHeight(x, y);
 
 	if (level.flags & LEVEL_USEPLAYERSTARTZ)
-		z = mthing->z << FRACBITS;
+		z = mthing.z << FRACBITS;
 
 	if (!player.mo)
 	{
@@ -324,13 +326,13 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 
 		if (co_nosilentspawns)
 		{
-			an = ( ANG45 * ((unsigned int)mthing->angle/45) ) >> ANGLETOFINESHIFT;
+			an = ( ANG45 * (static_cast<unsigned int>(mthing.angle)/45) ) >> ANGLETOFINESHIFT;
 			xa = finecosine[an];
 			ya = finesine[an];
 		}
 		else
 		{
-			angle_t mtangle = (angle_t)(mthing->angle / 45);
+			angle_t mtangle = static_cast<angle_t>(mthing.angle / 45);
 
 			an = ANG45 * mtangle;
 
@@ -379,18 +381,17 @@ bool G_CheckSpot (player_t &player, mapthing2_t *mthing)
 // denis - todo - should this be used somewhere?
 // [Russell] This code is horrible because it does no position checking, even
 // zdoom 2.x still has it!
-static fixed_t PlayersRangeFromSpot (mapthing2_t *spot)
+static fixed_t PlayersRangeFromSpot(const mapthing2_t& spot)
 {
 	fixed_t closest = limits::MAXFIXED;
-	fixed_t distance;
 
 	for (const auto& player : players)
 	{
 		if (!player.ingame() || !player.mo || player.health <= 0)
 			continue;
 
-		distance = P_AproxDistance (player.mo->x - spot->x * FRACUNIT,
-									player.mo->y - spot->y * FRACUNIT);
+		const fixed_t distance = P_AproxDistance (player.mo->x - spot.x * FRACUNIT,
+		                         player.mo->y - spot.y * FRACUNIT);
 
 		if (distance < closest)
 			closest = distance;
@@ -403,12 +404,11 @@ static fixed_t PlayersRangeFromSpot (mapthing2_t *spot)
 static mapthing2_t *SelectFarthestDeathmatchSpot (int selections)
 {
 	fixed_t bestdistance = 0;
-	mapthing2_t *bestspot = NULL;
-	int i;
+	mapthing2_t* bestspot = nullptr;
 
-	for (i = 0; i < selections; i++)
+	for (int i = 0; i < selections; i++)
 	{
-		fixed_t distance = PlayersRangeFromSpot (&DeathMatchStarts[i]);
+		fixed_t distance = PlayersRangeFromSpot(DeathMatchStarts[i]);
 
 		if (distance > bestdistance)
 		{
@@ -428,7 +428,7 @@ static mapthing2_t *SelectRandomDeathmatchSpot (player_t &player, int selections
 	for (j = 0; j < 20; j++)
 	{
 		i = P_Random () % selections;
-		if (G_CheckSpot (player, &DeathMatchStarts[i]) )
+		if (G_CheckSpot (player, DeathMatchStarts[i]) )
 		{
 			return &DeathMatchStarts[i];
 		}
@@ -443,7 +443,7 @@ static mapthing2_t* SelectTeamSpot(player_t &player, std::vector<mapthing2_t>& s
 	for (size_t j = 0; j < starts.size(); ++j)
 	{
 		size_t i = M_Random() % selections;
-		if (G_CheckSpot(player, &starts[i]))
+		if (G_CheckSpot(player, starts[i]))
 			return &starts[i];
 	}
 	return &starts[0];		// could not find a free spot, use spot 0
@@ -498,14 +498,13 @@ void G_TeamSpawnPlayer(player_t &player) // [Toke - CTF - starts] Modified this 
 			spot->type = player.id+4001-4;
 	}
 
-	P_SpawnPlayer (player, spot);
+	P_SpawnPlayer(player, *spot);
 }
 
 EXTERN_CVAR (sv_dmfarspawn)
 
-void G_DeathMatchSpawnPlayer (player_t &player)
+void G_DeathMatchSpawnPlayer(player_t &player)
 {
-	int selections;
 	mapthing2_t *spot;
 
 	if(G_UsesCoopSpawns())
@@ -513,11 +512,11 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 
 	if(G_IsTeamGame())
 	{
-		G_TeamSpawnPlayer (player);
+		G_TeamSpawnPlayer(player);
 		return;
 	}
 
-	selections = DeathMatchStarts.size();
+	const int selections = DeathMatchStarts.size();
 	// [RH] We can get by with just 1 deathmatch start
 	if (selections < 1)
 		I_Error("No deathmatch starts");
@@ -543,7 +542,7 @@ void G_DeathMatchSpawnPlayer (player_t &player)
 			spot->type = player.id+4001-4;	// [RH] > 4 players
 	}
 
-	P_SpawnPlayer (player, spot);
+	P_SpawnPlayer (player, *spot);
 }
 
 //
@@ -578,24 +577,24 @@ void G_DoReborn (player_t &player)
 
 	unsigned int playernum = player.id - 1;
 
-	if (G_CheckSpot (player, &playerstarts[playernum%playerstarts.size()]) )
+	if (G_CheckSpot(player, playerstarts[playernum%playerstarts.size()]) )
 	{
-		P_SpawnPlayer (player, &playerstarts[playernum%playerstarts.size()]);
+		P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
 		return;
 	}
 
 	// try to spawn at one of the other players' spots
 	for (auto& playerstart : playerstarts)
 	{
-		if (G_CheckSpot (player, &playerstart) )
+		if (G_CheckSpot(player, playerstart) )
 		{
-			P_SpawnPlayer (player, &playerstart);
+			P_SpawnPlayer(player, playerstart);
 			return;
 		}
 	}
 
 	// he's going to be inside something.  Too bad.
-	P_SpawnPlayer (player, &playerstarts[playernum%playerstarts.size()]);
+	P_SpawnPlayer(player, playerstarts[playernum%playerstarts.size()]);
 }
 
 VERSION_CONTROL (g_game_cpp, "$Id$")

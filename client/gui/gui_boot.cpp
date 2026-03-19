@@ -466,7 +466,7 @@ class BootWindow : public Fl_Window
 		m_IWADs = M_ScanIWADs();
 		for (const auto& iwad : m_IWADs)
 		{
-			m_IWADBrowser->add(iwad.id->mNiceName.c_str(), (void*)iwad.id);
+			m_IWADBrowser->add(iwad.id->mNiceName.c_str(), const_cast<fileIdentifier_t*>(iwad.id));
 		}
 		m_genWADDirs = ::waddirs.str();
 	}
@@ -646,7 +646,7 @@ scannedWADs_t GUI_BootWindow()
 	win->updateWADDirBrowser();
 	win->rescanIWADs();
 	win->position((Fl::w() - win->w()) / 2, (Fl::h() - win->h()) / 2);
-	win->show(fltkargs.NumArgs(), (char**)fltkargs.GetArgv().data());
+	win->show(fltkargs.NumArgs(), const_cast<char**>(fltkargs.GetArgv().data()));
 
 	// Blocks until the boot window has been closed.
 	Fl::run();

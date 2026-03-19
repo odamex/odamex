@@ -76,8 +76,8 @@ EXTERN_CVAR (sv_natport)
 //
 struct token_t
 {
-	DWORD id;
-	QWORD issued;
+	uint32_t id;
+	uint64_t issued;
 	netadr_t from;
 };
 
@@ -87,9 +87,9 @@ static std::vector<token_t> connect_tokens;
 //
 // SV_NewToken
 //
-DWORD SV_NewToken()
+uint32_t SV_NewToken()
 {
-	QWORD now = I_MSTime() * TICRATE / 1000;
+	uint64_t now = I_MSTime() * TICRATE / 1000;
 
 	token_t token;
 	token.id = rand()*time(0);
@@ -114,9 +114,9 @@ DWORD SV_NewToken()
 //
 // SV_ValidToken
 //
-bool SV_IsValidToken(DWORD token)
+bool SV_IsValidToken(uint32_t token)
 {
-	QWORD now = I_MSTime() * TICRATE / 1000;
+	uint64_t now = I_MSTime() * TICRATE / 1000;
 
 	for(size_t i = 0; i < connect_tokens.size(); i++)
 	{
@@ -205,7 +205,7 @@ void SV_SendServerInfo()
 		{
 			if ((sv_gametype == GM_CTF && i < 2) || (sv_gametype != GM_CTF && i < sv_teamsinplay)) {
 				MSG_WriteByte(&ml_message, 1);
-				MSG_WriteLong(&ml_message, GetTeamInfo((team_t)i)->Points);
+				MSG_WriteLong(&ml_message, GetTeamInfo(static_cast<team_t>(i))->Points);
 			} else {
 				MSG_WriteByte(&ml_message, 0);
 			}
@@ -217,12 +217,12 @@ void SV_SendServerInfo()
 //bond===========================
 	MSG_WriteString(&ml_message, sv_email.cstring());
 
-	int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
-	if (timeleft<0) timeleft=0;
+	int timeleft = (sv_timelimit.asInt() - level.time/(TICRATE*60));
+	if (timeleft < 0) timeleft = 0;
 
-	MSG_WriteShort(&ml_message,sv_timelimit.asInt());
-	MSG_WriteShort(&ml_message,timeleft);
-	MSG_WriteShort(&ml_message,sv_fraglimit.asInt());
+	MSG_WriteShort(&ml_message, sv_timelimit.asInt());
+	MSG_WriteShort(&ml_message, timeleft);
+	MSG_WriteShort(&ml_message, sv_fraglimit.asInt());
 
 	MSG_WriteBool(&ml_message, (sv_itemsrespawn ? true : false));
 	MSG_WriteBool(&ml_message, (sv_weaponstay ? true : false));
@@ -254,7 +254,7 @@ void SV_SendServerInfo()
 
 //bond===========================
 
-    MSG_WriteLong(&ml_message, (DWORD)0x01020304);
+    MSG_WriteLong(&ml_message, 0x01020304_u32);
     MSG_WriteShort(&ml_message, sv_maxplayers.asInt());
 
     for (const auto& player : players)
@@ -265,7 +265,7 @@ void SV_SendServerInfo()
         }
     }
 
-    MSG_WriteLong(&ml_message, (DWORD)0x01020305);
+    MSG_WriteLong(&ml_message, 0x01020305_u32);
     MSG_WriteShort(&ml_message, strlen(join_password.cstring()) ? 1 : 0);
 
     // GhostlyDeath -- Send Game Version info

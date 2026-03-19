@@ -260,8 +260,6 @@ bool P_CheckMeleeRange (AActor *actor)
 //
 bool P_CheckMissileRange (AActor *actor)
 {
-	fixed_t dist;
-
 	if (!P_CheckSight (actor, actor->target))
 		return false;
 
@@ -292,8 +290,8 @@ bool P_CheckMissileRange (AActor *actor)
 		return false;	// do not attack yet
 
 	// OPTIMIZE: get this from a global checksight
-	dist = P_AproxDistance ( actor->x-actor->target->x,
-							 actor->y-actor->target->y) - 64*FRACUNIT;
+	fixed_t dist = P_AproxDistance(actor->x-actor->target->x,
+                                   actor->y-actor->target->y) - 64*FRACUNIT;
 
 	if (!actor->info->meleestate)
 		dist -= 128*FRACUNIT;	// no melee attack, so fire more
@@ -338,10 +336,6 @@ extern	std::vector<line_t*> spechit;
 
 bool P_Move (AActor *actor, int dropoff = 0)
 {
-	fixed_t tryx, tryy, deltax, deltay, origx, origy;
-	bool try_ok;
-	int good;
-	int speed;
 	int movefactor = ORIG_FRICTION_FACTOR;
 	int friction = ORIG_FRICTION;
 
@@ -369,10 +363,10 @@ bool P_Move (AActor *actor, int dropoff = 0)
 		}
 	}
 
-	if ((unsigned)actor->movedir >= 8)
+	if (static_cast<unsigned>(actor->movedir) >= 8)
 		I_Error("Weird actor->movedir!");
 
-	speed = actor->info->speed;
+	int speed = actor->info->speed;
 
 	// [AM] Quick monsters are faster.
 	if (actor->oflags & MFO_QUICK)
@@ -389,10 +383,11 @@ bool P_Move (AActor *actor, int dropoff = 0)
 		   * speed) / ORIG_FRICTION_FACTOR))
 		speed = 1;	// always give the monster a little bit of speed
 
-	tryx = (origx = actor->x) + (deltax = speed * xspeed[actor->movedir]);
-	tryy = (origy = actor->y) + (deltay = speed * yspeed[actor->movedir]);
+	fixed_t deltax, deltay, origx, origy;
+	const fixed_t tryx = (origx = actor->x) + (deltax = speed * xspeed[actor->movedir]);
+	const fixed_t tryy = (origy = actor->y) + (deltay = speed * yspeed[actor->movedir]);
 
-	try_ok = P_TryMove(actor, tryx, tryy, dropoff);
+	const bool try_ok = P_TryMove(actor, tryx, tryy, dropoff);
 
 	if (try_ok && friction > ORIG_FRICTION)
 	{
@@ -429,7 +424,7 @@ bool P_Move (AActor *actor, int dropoff = 0)
 
 		actor->movedir = DI_NODIR;
 
-		good = false;
+		bool good = false;
 		while (!spechit.empty())
 		{
 			line_t *ld = spechit.back();
@@ -464,15 +459,14 @@ bool P_Move (AActor *actor, int dropoff = 0)
 bool P_SmartMove(AActor* actor)
 {
 	AActor* target = actor->target;
-	bool on_lift, under_damage = false;
 	int dropoff = 0;
 
 	/* killough 9/12/98: Stay on a lift if target is on one */
-	on_lift = co_staylift && target && target->health > 0 &&
-	          target->subsector->sector->tag == actor->subsector->sector->tag &&
-	          P_IsOnLift(actor);
+	bool on_lift = co_staylift && target && target->health > 0 &&
+	               target->subsector->sector->tag == actor->subsector->sector->tag &&
+	               P_IsOnLift(actor);
 
-	under_damage = co_avoidhazards && P_IsUnderDamage(actor); // e6y
+	bool under_damage = co_avoidhazards && P_IsUnderDamage(actor); // e6y
 
 	// killough 10/98: allow dogs to drop off of taller ledges sometimes.
 	// dropoff==1 means always allow it, dropoff==2 means only up to 128 high,
@@ -494,6 +488,7 @@ bool P_SmartMove(AActor* actor)
 	     !P_IsOnLift(actor)) ||
 	    (co_avoidhazards && !under_damage && // e6y  // Get away from damage
 	     (under_damage = P_IsUnderDamage(actor)) &&
+		 // TODO: should we change under_damage to an int and make P_IsUnderDamage return 3 values like other ports?
 	     (under_damage < 0 || P_Random(actor) < 200)))
 		actor->movedir = DI_NODIR; // avoid the area (most of the time anyway)
 
@@ -540,7 +535,7 @@ bool P_IsOnLift(const AActor* actor)
 	int l;
 
 	// Short-circuit: it's on a lift which is active.
-	if (sec->floordata && ((DFloor*)sec->floordata)->m_Status == DFloor::up)
+	if (sec->floordata && (static_cast<DFloor*>(sec->floordata))->m_Status == DFloor::up)
 		return true;
 
 	// Check to see if it's in a sector which can be activated as a lift.
@@ -675,11 +670,10 @@ static fixed_t P_AvoidDropoff(AActor* actor)
 	tmbbox[BOXRIGHT] = actor->x + actor->radius;
 	tmbbox[BOXLEFT] = actor->x - actor->radius;
 
-	int yh = tmbbox[BOXTOP] - bmaporgy;
-	int yl = tmbbox[BOXBOTTOM] - bmaporgy;
-	int xh = tmbbox[BOXRIGHT] - bmaporgx;
-	int xl = tmbbox[BOXLEFT] - bmaporgx;
-	int bx, by;
+	const int yh = (tmbbox[BOXTOP] - bmaporgy) >> MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - bmaporgy) >> MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT] - bmaporgx) >> MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT] - bmaporgx) >> MAPBLOCKSHIFT;
 
 	floorz = actor->z; // remember floor height
 
@@ -688,8 +682,8 @@ static fixed_t P_AvoidDropoff(AActor* actor)
 	// check lines
 
 	validcount++;
-	for (bx = xl; bx <= xh; bx++)
-		for (by = yl; by <= yh; by++)
+	for (int bx = xl; bx <= xh; bx++)
+		for (int by = yl; by <= yh; by++)
 			P_BlockLinesIterator(bx, by, PIT_AvoidDropoff); // all contacted lines
 
 	return dropoff_deltax | dropoff_deltay; // Non-zero if movement prescribed
@@ -711,7 +705,7 @@ static void P_DoNewChaseDir(AActor* actor, fixed_t deltax, fixed_t deltay)
 	dirtype_t d[3];
 
 	int tdir;
-	dirtype_t olddir = (dirtype_t)actor->movedir;
+	dirtype_t olddir = static_cast<dirtype_t>(actor->movedir);
 
 	dirtype_t turnaround = turnaround = opposite[olddir];
 
@@ -742,7 +736,7 @@ static void P_DoNewChaseDir(AActor* actor, fixed_t deltax, fixed_t deltay)
 	{
 		tdir = d[1];
 		d[1] = d[2];
-		d[2] = (dirtype_t)tdir;
+		d[2] = static_cast<dirtype_t>(tdir);
 	}
 
 	if (d[1] == turnaround)
@@ -1627,7 +1621,7 @@ void A_Chase (AActor *actor)
 		A_FaceTarget(actor);
 	else if (actor->movedir < 8)
 	{
-		actor->angle &= (angle_t)(7<<29);
+		actor->angle &= static_cast<angle_t>(7<<29);
 		delta = actor->angle - (actor->movedir << 29);
 
 		if (delta > 0)
@@ -1812,7 +1806,7 @@ void A_MonsterRail (AActor *actor)
 									actor->target->y);
 
 	//actor->pitch = tantoangle[P_AimLineAttack (actor, actor->angle, MISSILERANGE) >> DBITS];
-	actor->pitch = -(int)(tan ((float)P_AimLineAttack (actor, actor->angle, MISSILERANGE)/65536.0f)*ANG180/PI);
+	actor->pitch = -static_cast<int>(tan (static_cast<float>(P_AimLineAttack(actor, actor->angle, MISSILERANGE))/65536.0f)*ANG180/PI);
 
 	// Let the aim trail behind the player
 	actor->angle = R_PointToAngle2 (actor->x,
@@ -2589,18 +2583,18 @@ void A_SpawnObject(AActor* actor)
 	vel_y = actor->state->args[6];
 	vel_z = actor->state->args[7];
 
-	if (!CheckIfDehActorDefined((mobjtype_t)type))
+	if (!CheckIfDehActorDefined(static_cast<mobjtype_t>(type)))
 	{
 		I_Error("A_SpawnObject: Attempted to spawn undefined object type.");
 	}
 
 	// calculate position offsets
-	an = actor->angle + (unsigned int)(((int64_t)angle << 16) / 360);
+	an = actor->angle + static_cast<unsigned int>((static_cast<int64_t>(angle) << 16) / 360);
 	fan = an >> ANGLETOFINESHIFT;
 	dx = FixedMul(ofs_x, finecosine[fan]) - FixedMul(ofs_y, finesine[fan]);
 	dy = FixedMul(ofs_x, finesine[fan]) + FixedMul(ofs_y, finecosine[fan]);
 	// spawn it, yo
-	mo = new AActor(actor->x + dx, actor->y + dy, actor->z + ofs_z, (mobjtype_t)type);
+	mo = new AActor(actor->x + dx, actor->y + dy, actor->z + ofs_z, static_cast<mobjtype_t>(type));
 	if (!mo)
 		return;
 
@@ -2649,32 +2643,28 @@ void A_SpawnObject(AActor* actor)
 //
 void A_MonsterProjectile(AActor* actor)
 {
-	int type, angle, pitch, spawnofs_xy, spawnofs_z;
-	AActor* mo;
-	int an;
-
 	if (!actor->target || !actor->state->args[0] || !serverside)
 		return;
 
-	type = actor->state->args[0] - 1;
-	angle = actor->state->args[1];
-	pitch = actor->state->args[2];
-	spawnofs_xy = actor->state->args[3];
-	spawnofs_z = actor->state->args[4];
+	const int type = actor->state->args[0] - 1;
+	const int angle = actor->state->args[1];
+	const int pitch = actor->state->args[2];
+	const int spawnofs_xy = actor->state->args[3];
+	const int spawnofs_z = actor->state->args[4];
 
-	if (!CheckIfDehActorDefined((mobjtype_t)type))
+	if (!CheckIfDehActorDefined(static_cast<mobjtype_t>(type)))
 	{
 		I_Error("A_MonsterProjectile: Attempted to spawn undefined projectile type.");
 	}
 
 	A_FaceTarget(actor);
-	mo = P_SpawnMissile(actor, actor->target, (mobjtype_t)type);
+	AActor* mo = P_SpawnMissile(actor, actor->target, static_cast<mobjtype_t>(type));
 	if (!mo)
 		return;
 
 	// adjust angle
-	mo->angle += (angle_t)(((int64_t)angle << 16) / 360);
-	an = mo->angle >> ANGLETOFINESHIFT;
+	mo->angle += static_cast<angle_t>((static_cast<int64_t>(angle) << 16) / 360);
+	int an = mo->angle >> ANGLETOFINESHIFT;
 	mo->momx = FixedMul(mo->info->speed, finecosine[an]);
 	mo->momy = FixedMul(mo->info->speed, finesine[an]);
 
@@ -2707,28 +2697,25 @@ void A_MonsterProjectile(AActor* actor)
 
 void A_MonsterBulletAttack(AActor* actor)
 {
-	int hspread, vspread, numbullets, damagebase, damagemod;
-	int aimslope, i, damage, angle, slope;
-
 	if (!actor->target)
 		return;
 
-	hspread = actor->state->args[0];
-	vspread = actor->state->args[1];
-	numbullets = actor->state->args[2];
-	damagebase = actor->state->args[3];
-	damagemod = actor->state->args[4];
+	const int hspread = actor->state->args[0];
+	const int vspread = actor->state->args[1];
+	const int numbullets = actor->state->args[2];
+	const int damagebase = actor->state->args[3];
+	const int damagemod = actor->state->args[4];
 
 	A_FaceTarget(actor);
 	S_Sound(actor, CHAN_WEAPON, actor->info->attacksound, 1, ATTN_NORM);
 
-	aimslope = P_AimLineAttack(actor, actor->angle, MISSILERANGE);
+	const int aimslope = P_AimLineAttack(actor, actor->angle, MISSILERANGE);
 
-	for (i = 0; i < numbullets; i++)
+	for (int i = 0; i < numbullets; i++)
 	{
-		damage = (P_Random(actor) % damagemod + 1) * damagebase;
-		angle = (int)actor->angle + P_RandomHitscanAngle(hspread);
-		slope = aimslope + P_RandomHitscanSlope(vspread);
+		const int damage = (P_Random(actor) % damagemod + 1) * damagebase;
+		const int angle = static_cast<int>(actor->angle) + P_RandomHitscanAngle(hspread);
+		const int slope = aimslope + P_RandomHitscanSlope(vspread);
 
 		P_LineAttack(actor, angle, MISSILERANGE, slope, damage);
 	}
@@ -2743,16 +2730,13 @@ void A_MonsterBulletAttack(AActor* actor)
 //
 void A_MonsterMeleeAttack(AActor* actor)
 {
-	int damagebase, damagemod, hitsound, range;
-	int damage;
-
 	if (!actor->target)
 		return;
 
-	damagebase = actor->state->args[0];
-	damagemod = actor->state->args[1];
-	hitsound = actor->state->args[2];
-	range = actor->state->args[3];
+	const int damagebase = actor->state->args[0];
+	const int damagemod = actor->state->args[1];
+	const int hitsound = actor->state->args[2];
+	int range = actor->state->args[3];
 
 	if (range <= 0)
 		range = actor->info->meleerange;
@@ -2765,7 +2749,7 @@ void A_MonsterMeleeAttack(AActor* actor)
 
 	S_Sound(actor, CHAN_WEAPON, SoundMap[hitsound].c_str(), 1, ATTN_NORM);
 
-	damage = (P_Random(actor) % damagemod + 1) * damagebase;
+	const int damage = (P_Random(actor) % damagemod + 1) * damagebase;
 	P_DamageMobj(actor->target, actor, actor, damage, MOD_HIT);
 }
 
@@ -2861,7 +2845,7 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 					A_FaceTarget(actor);
 					actor->target = temp;
 
-					P_SetMobjState(actor, (statenum_t)healstate, true);
+					P_SetMobjState(actor, static_cast<statenum_t>(healstate), true);
 
 					if (!clientside)
 						SV_Sound(corpsehit, CHAN_BODY, SoundMap[healsound].c_str(), ATTN_IDLE);
@@ -2995,16 +2979,14 @@ void A_ClearTracer(AActor* actor)
 //
 void A_JumpIfHealthBelow(AActor* actor)
 {
-	int state, health;
-
 	if (!actor)
 		return;
 
-	state = actor->state->args[0];
-	health = actor->state->args[1];
+	const int state = actor->state->args[0];
+	const int health = actor->state->args[1];
 
 	if (actor->health < health)
-		P_SetMobjState(actor, (statenum_t)state, true);
+		P_SetMobjState(actor, static_cast<statenum_t>(state), true);
 }
 
 //
@@ -3016,21 +2998,18 @@ void A_JumpIfHealthBelow(AActor* actor)
 //
 void A_JumpIfTargetInSight(AActor* actor)
 {
-	int state;
-	angle_t fov;
-
 	if (!actor || !actor->target)
 		return;
 
-	state = (actor->state->args[0]);
-	fov = FixedToAngle(actor->state->args[1]);
+	const int state = (actor->state->args[0]);
+	const angle_t fov = FixedToAngle(actor->state->args[1]);
 
 	// Check FOV first since it's faster
 	if (fov > 0 && !P_CheckFov(actor, actor->target, fov))
 		return;
 
 	if (P_CheckSight(actor, actor->target))
-		P_SetMobjState(actor, (statenum_t)state, true);
+		P_SetMobjState(actor, static_cast<statenum_t>(state), true);
 }
 
 
@@ -3042,17 +3021,15 @@ void A_JumpIfTargetInSight(AActor* actor)
 //
 void A_JumpIfTargetCloser(AActor* actor)
 {
-	int state, distance;
-
 	if (!actor || !actor->target)
 		return;
 
-	state = actor->state->args[0];
-	distance = actor->state->args[1];
+	const int state = actor->state->args[0];
+	const int distance = actor->state->args[1];
 
 	if (distance >
 	    P_AproxDistance(actor->x - actor->target->x, actor->y - actor->target->y))
-		P_SetMobjState(actor, (statenum_t)state, true);
+		P_SetMobjState(actor, static_cast<statenum_t>(state), true);
 }
 
 //
@@ -3064,14 +3041,11 @@ void A_JumpIfTargetCloser(AActor* actor)
 //
 void A_JumpIfTracerInSight(AActor* actor)
 {
-	angle_t fov;
-	int state;
-
 	if (!actor || !actor->tracer || !serverside)
 		return;
 
-	state = (actor->state->args[0]);
-	fov = FixedToAngle(actor->state->args[1]);
+	const int state = (actor->state->args[0]);
+	const angle_t fov = FixedToAngle(actor->state->args[1]);
 
 	// Check FOV first since it's faster
 	if (fov > 0 && !P_CheckFov(actor, actor->tracer, fov))
@@ -3081,7 +3055,7 @@ void A_JumpIfTracerInSight(AActor* actor)
 		return;
 
 	if (P_CheckSight(actor, actor->tracer))
-		P_SetMobjState(actor, (statenum_t)state, true);
+		P_SetMobjState(actor, static_cast<statenum_t>(state), true);
 }
 
 //
@@ -3093,20 +3067,18 @@ void A_JumpIfTracerInSight(AActor* actor)
 //
 void A_JumpIfTracerCloser(AActor* actor)
 {
-	int state, distance;
-
 	if (!actor || !actor->tracer || !serverside)
 		return;
 
-	state = actor->state->args[0];
-	distance = actor->state->args[1];
+	const int state = actor->state->args[0];
+	const int distance = actor->state->args[1];
 
 	if (actor->tracer->health <= 0)
 		return;
 
 	if (distance >
 		P_AproxDistance(actor->x - actor->tracer->x, actor->y - actor->tracer->y))
-		P_SetMobjState(actor, (statenum_t)state, true);
+		P_SetMobjState(actor, static_cast<statenum_t>(state), true);
 }
 
 //
@@ -3131,7 +3103,7 @@ void A_JumpIfFlagsSet(AActor* actor)
 	if ((actor->flags & flags) == flags &&
 	    (actor->flags2 & flags2) == flags2 &&
 	    (actor->flags3 & flags3) == flags3)
-		P_SetMobjState(actor, (statenum_t)state, true);
+		P_SetMobjState(actor, static_cast<statenum_t>(state), true);
 }
 
 
@@ -3685,9 +3657,9 @@ void P_SpawnBrainTargets (void)	// killough 3/26/98: renamed old function
 		{	// killough 2/7/98: remove limit on icon landings:
 			if (numbraintargets >= numbraintargets_alloc)
 			{
-				braintargets = (AActor **)M_Realloc (braintargets,
+				braintargets = static_cast<AActor**>(M_Realloc (braintargets,
 					(numbraintargets_alloc = numbraintargets_alloc ?
-					 numbraintargets_alloc*2 : 32) *sizeof *braintargets);
+					 numbraintargets_alloc*2 : 32) *sizeof *braintargets));
 			}
 			braintargets[numbraintargets++] = other;
 		}
@@ -3881,7 +3853,7 @@ void A_SpawnFly (AActor *mo)
 	// [SL] 2011-06-19 - Emulate vanilla doom bug where monsters spawned after
 	// the start of the level (eg, spawned from a cube) are respawned at map
 	// location (0, 0).
-	memset(&newmobj->spawnpoint, 0, sizeof(newmobj->spawnpoint));
+	newmobj->spawnpoint = {};
 }
 
 
@@ -3945,7 +3917,7 @@ void A_Spawn(AActor* mo)
 		AActor* newmobj;
 
 		newmobj = new AActor(mo->x, mo->y, (mo->state->misc2 << FRACBITS) + mo->z,
-			                    (mobjtype_t)(mo->state->misc1 - 1));
+			                    static_cast<mobjtype_t>(mo->state->misc1 - 1));
 
 		newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
 
@@ -3956,12 +3928,12 @@ void A_Spawn(AActor* mo)
 
 void A_Turn(AActor* mo)
 {
-	mo->angle += (angle_t)(((uint64_t)mo->state->misc1 << 32) / 360);
+	mo->angle += static_cast<angle_t>((static_cast<uint64_t>(mo->state->misc1) << 32) / 360);
 }
 
 void A_Face(AActor* mo)
 {
-	mo->angle = (angle_t)(((uint64_t)mo->state->misc1 << 32) / 360);
+	mo->angle = static_cast<angle_t>((static_cast<uint64_t>(mo->state->misc1) << 32) / 360);
 }
 
 void A_Scratch(AActor* mo)
@@ -4005,7 +3977,7 @@ void A_PlaySound(AActor* mo)
 void A_RandomJump(AActor* mo)
 {
 	if (P_Random(mo) < mo->state->misc2)
-		P_SetMobjState(mo, (statenum_t)mo->state->misc1);
+		P_SetMobjState(mo, static_cast<statenum_t>(mo->state->misc1));
 }
 
 //
@@ -4018,14 +3990,14 @@ void A_LineEffect(AActor* mo)
 	if (!(mo->oflags & MFO_LINEDONE))                // Unless already used up
 	{
 		line_t junk = *lines;                          // Fake linedef set to 1st
-		if ((junk.special = (short)mo->state->misc1))  // Linedef type
+		if ((junk.special = static_cast<short>(mo->state->misc1))) // Linedef type
 		{
 			// [FG] made static
 			static player_t player;                    // Remember player status
 			player_t* oldplayer = mo->player;          // Remember player status
 			mo->player = &player;                      // Fake player
 			player.health = 100;                       // Alive player
-			junk.id = (short)mo->state->misc2;        // Sector tag for linedef
+			junk.id = static_cast<short>(mo->state->misc2); // Sector tag for linedef
 			if (!P_UseSpecialLine(mo, &junk, 0, mo->flags & MF2_BOSS))       // Try using it
 				P_CrossSpecialLine(&junk, 0, mo, mo->flags & MF2_BOSS); // Try crossing it
 			if (!junk.special)                         // If type cleared,

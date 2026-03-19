@@ -74,7 +74,7 @@ ticcmd_t *I_BaseTiccmd(void)
 	return &emptycmd;
 }
 
-DWORD LanguageIDs[4];
+uint32_t LanguageIDs[4];
 
 //
 // I_MegabytesToBytes
@@ -135,7 +135,7 @@ bool gameisdead;
 
 #define MAX_ERRORTEXT	1024
 
-void I_BaseError(const std::string& errortext)
+[[noreturn]] void I_BaseError(const std::string& errortext)
 {
 	throw CRecoverableError(errortext);
 }

@@ -78,10 +78,10 @@ std::string finaletext;
 OLumpName finalelump;
 finale_lump_t finalelumptype = FINALE_NONE;
 
-void	F_StartCast (void);
-void	F_CastTicker (void);
-bool	F_CastResponder (event_t *ev);
-void	F_CastDrawer (void);
+void	F_StartCast();
+void	F_CastTicker();
+bool	F_CastResponder(const event_t&ev);
+void	F_CastDrawer();
 
 
 //
@@ -235,10 +235,10 @@ void STACK_ARGS F_ShutdownFinale()
 }
 
 
-bool F_Responder (event_t *event)
+bool F_Responder(const event_t& event)
 {
 	if (finalestage == 2)
-		return F_CastResponder (event);
+		return F_CastResponder(event);
 
 	return false;
 }
@@ -352,7 +352,7 @@ void F_TextWrite ()
 
 			finale_surface->getDefaultCanvas()->FlatFill(
 			    0, 0, 320, 200, length,
-			    (byte*)W_CacheLumpNum(lump, PU_CACHE));
+			    W_CacheLumpNum<byte>(lump, PU_CACHE));
 
 			primary_surface->blitcrop(finale_surface, 0, 0, 320, 200,
 			    x, y, screenblockWidth, screenblockHeight);
@@ -602,9 +602,9 @@ void F_CastTicker()
 // F_CastResponder
 //
 
-bool F_CastResponder (event_t* ev)
+bool F_CastResponder(const event_t& ev)
 {
-	if (ev->type != ev_keydown)
+	if (ev.type != ev_keydown)
 		return false;
 
 	if (castdeath)
@@ -715,7 +715,7 @@ void F_BunnyScroll()
 
 	int bunnyextra = bunnywidth - 320;
 
-	float aspect_scale_ratio = (float)surface_height / (float)bunnyheight;
+	float aspect_scale_ratio = static_cast<float>(surface_height) / static_cast<float>(bunnyheight);
 	int frame_width = aspect_scale_ratio * bunnywidth;
 
 	int bunnyoverlap = bunnyextra * aspect_scale_ratio;
@@ -723,7 +723,7 @@ void F_BunnyScroll()
 	int initialp1x = surface_width - frame_width;
 	int initialp2x = surface_width - (frame_width * 2 - bunnyoverlap);
 
-	float scrollstep = (float)abs(initialp2x) / (float)320;
+	float scrollstep = static_cast<float>(abs(initialp2x)) / 320.0f;
 
 	// Does this actually do anything?
 	V_MarkRect (0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());

@@ -72,8 +72,8 @@ struct CvarField_t
 // IntQryBuildInformation()
 //
 // Protocol building routine, the passed parameter is the enquirer version
-static void IntQryBuildInformation(const DWORD& EqProtocolVersion,
-                                   const DWORD& EqTime)
+static void IntQryBuildInformation(const uint32_t& EqProtocolVersion,
+                                   const uint32_t& EqTime)
 {
 	std::vector<CvarField_t> Cvars;
 
@@ -124,7 +124,7 @@ next:
 	}
 
 	// Cvar count
-	MSG_WriteByte(&ml_message, (BYTE)Cvars.size());
+	MSG_WriteByte(&ml_message, static_cast<byte>(Cvars.size()));
 
 	// Write cvars
 	for(size_t i = 0; i < Cvars.size(); ++i)
@@ -132,25 +132,25 @@ next:
 		MSG_WriteString(&ml_message, Cvars[i].Name.c_str());
 
 		// Type field
-		MSG_WriteByte(&ml_message, (byte)Cvars[i].Type);
+		MSG_WriteByte(&ml_message, static_cast<byte>(Cvars[i].Type));
 
 		switch(Cvars[i].Type)
 		{
 		case CVARTYPE_BYTE:
 		{
-			MSG_WriteByte(&ml_message, (byte)atoi(Cvars[i].Value.c_str()));
+			MSG_WriteByte(&ml_message, ParseNum<byte>(Cvars[i].Value).value_or(0));
 		}
 		break;
 
 		case CVARTYPE_WORD:
 		{
-			MSG_WriteShort(&ml_message, (short)atoi(Cvars[i].Value.c_str()));
+			MSG_WriteShort(&ml_message, ParseNum<short>(Cvars[i].Value).value_or(0));
 		}
 		break;
 
 		case CVARTYPE_INT:
 		{
-			MSG_WriteLong(&ml_message, (int)atoi(Cvars[i].Value.c_str()));
+			MSG_WriteLong(&ml_message, ParseNum<int>(Cvars[i].Value).value_or(0));
 		}
 		break;
 
@@ -172,9 +172,9 @@ next:
 
 	MSG_WriteString(&ml_message, level.mapname.c_str());
 
-	int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
+	int timeleft = (sv_timelimit.asInt() - level.time/(TICRATE*60));
 
-	if(timeleft < 0)
+	if (timeleft < 0)
 		timeleft = 0;
 
 	// TODO: Remove guard on next release and reset protocol version
@@ -197,7 +197,7 @@ next:
 
 		for (int i = 0; i < teams; i++)
 		{
-			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 			MSG_WriteString(&ml_message, teamInfo->ColorString.c_str());
 			MSG_WriteLong(&ml_message, teamInfo->Color);
 			MSG_WriteShort(&ml_message, teamInfo->Points);
@@ -266,10 +266,10 @@ next:
 //
 // Sends information regarding the type of information we received (ie: it will
 // send data that is wanted by the enquirer program)
-static DWORD IntQrySendResponse(const WORD& TagId,
-                                const BYTE& TagApplication,
-                                const BYTE& TagQRId,
-                                const WORD& TagPacketType)
+static uint32_t IntQrySendResponse(const uint16_t& TagId,
+                                const byte& TagApplication,
+                                const byte& TagQRId,
+                                const uint16_t& TagPacketType)
 {
 	// It isn't a query, throw it away
 	if(TagQRId != 1)
@@ -313,11 +313,11 @@ static DWORD IntQrySendResponse(const WORD& TagId,
 	break;
 	}
 
-	DWORD ReTag = 0;
-	WORD ReId = TAG_ID;
-	BYTE ReApplication = 3;
-	BYTE ReQRId = 2;
-	WORD RePacketType = 0;
+	uint32_t ReTag = 0;
+	uint16_t ReId = TAG_ID;
+	byte ReApplication = 3;
+	byte ReQRId = 2;
+	uint16_t RePacketType = 0;
 
 	switch(TagPacketType)
 	{
@@ -337,9 +337,9 @@ static DWORD IntQrySendResponse(const WORD& TagId,
 	}
 
 	// Begin enquirer version translation
-	DWORD EqVersion = MSG_ReadLong();
-	DWORD EqProtocolVersion = MSG_ReadLong();
-	DWORD EqTime = MSG_ReadLong();
+	uint32_t EqVersion = MSG_ReadLong();
+	uint32_t EqProtocolVersion = MSG_ReadLong();
+	uint32_t EqTime = MSG_ReadLong();
 
 	// Prevent possible divide by zero
 	if(!EqVersion)
@@ -404,14 +404,14 @@ static DWORD IntQrySendResponse(const WORD& TagId,
 // SV_QryParseEnquiry()
 //
 // This decodes the Tag field
-DWORD SV_QryParseEnquiry(const DWORD& Tag)
+uint32_t SV_QryParseEnquiry(const uint32_t& Tag)
 {
 	// Decode the tag into its fields
 	// TODO: this may not be 100% correct
-	WORD TagId = ((Tag >> 20) & 0x0FFF);
-	BYTE TagApplication = ((Tag >> 16) & 0x0F);
-	BYTE TagQRId = ((Tag >> 12) & 0x0F);
-	WORD TagPacketType = (Tag & 0xFFFF0FFF);
+	uint16_t TagId = ((Tag >> 20) & 0x0FFF);
+	byte TagApplication = ((Tag >> 16) & 0x0F);
+	byte TagQRId = ((Tag >> 12) & 0x0F);
+	uint16_t TagPacketType = (Tag & 0xFFFF0FFF);
 
 	// It is not ours
 	if(TagId != TAG_ID)

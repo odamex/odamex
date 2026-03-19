@@ -79,9 +79,7 @@ bool Vote::setup_check_cvar()
 {
 	if (!*(this->cvar))
 	{
-		std::ostringstream buffer;
-		buffer << this->name << " vote has been disabled by the server.";
-		this->error = buffer.str();
+		this->error = fmt::format("{} vote has been disabled by the server.", this->name);
 		return false;
 	}
 	return true;
@@ -146,11 +144,8 @@ public:
 			return false;
 		}
 
-		std::ostringstream vote_string;
-		vote_string << "lives " << lives;
-
 		this->lives = lives;
-		this->votestring = vote_string.str();
+		this->votestring = fmt::format("lives {}", lives);
 		return true;
 	}
 	bool exec() override
@@ -191,9 +186,7 @@ public:
 		this->netname = idplayer(pid).userinfo.netname;
 
 		// Create votestring
-		std::ostringstream buffer;
-		buffer << "forcespec " << this->netname << " (id:" << pid << ")";
-		this->votestring = buffer.str();
+		this->votestring = fmt::format("forcespec {} (id:{:d})", this->netname, pid);
 
 		return true;
 	}
@@ -201,16 +194,12 @@ public:
 	{
 		if (!validplayer(idplayer(this->id)))
 		{
-			std::ostringstream buffer;
-			buffer << this->netname << " left the server.";
-			this->error = buffer.str();
+			this->error = fmt::format("{} left the server", this->netname);
 			return false;
 		}
 		if (idplayer(this->id).spectator)
 		{
-			std::ostringstream buffer;
-			buffer << this->netname << " became a spectator on his own.";
-			this->error = buffer.str();
+			this->error = fmt::format("{} became a spectator on their own.", this->netname);
 			return false;
 		}
 		return true;
@@ -294,11 +283,8 @@ public:
 			return false;
 		}
 
-		std::ostringstream vote_string;
-		vote_string << "fraglimit " << fraglimit;
-
 		this->fraglimit = fraglimit;
-		this->votestring = vote_string.str();
+		this->votestring = fmt::format("fraglimit {}", fraglimit);;
 		return true;
 	}
 	bool exec() override
@@ -342,13 +328,12 @@ public:
 		this->netname = idplayer(pid).userinfo.netname;
 
 		// Create votestring
-		std::ostringstream buffer;
-		buffer << "kick " << this->netname << " (id:" << (int)this->id << ")";
+		std::string reason;
 		if (!this->reason.empty())
 		{
-			buffer << " \"" << this->reason << "\"";
+			reason = fmt::format(" \"{}\"", this->reason);
 		}
-		this->votestring = buffer.str();
+		this->votestring = fmt::format("kick {} (id: {:d}){}", this->netname, this->id, reason);
 
 		return true;
 	}
@@ -356,25 +341,23 @@ public:
 	{
 		if (!validplayer(idplayer(this->id)))
 		{
-			std::ostringstream buffer;
-			buffer << this->netname << " left the server.";
-			this->error = buffer.str();
+			this->error = fmt::format("{} left the server", this->netname);
 			return false;
 		}
 		return true;
 	}
 	bool exec() override
 	{
-		std::ostringstream buffer;
+		std::string buffer;
 		if (this->reason.empty())
 		{
-			buffer << "Votekick called by " << this->caller << " passed.";
+			buffer = fmt::format("Votekick called by {} passed.", this->caller);
 		}
 		else
 		{
-			buffer << "Votekick called by " << this->caller << " passed: \""<< this->reason << "\".";
+			buffer = fmt::format("Votekick called by {} passed: \"{}\".", this->caller, this->reason);
 		}
-		SV_KickPlayer(idplayer(this->id), buffer.str());
+		SV_KickPlayer(idplayer(this->id), buffer);
 		return true;
 	}
 };
@@ -555,9 +538,7 @@ public:
 		}
 
 		// Construct argstring...turn it into a nice '#v#'.
-		std::ostringstream buffer;
-		buffer << "randpickup " << (this->num_players / 2) << "v" << (this->num_players / 2);
-		this->votestring = buffer.str();
+		this->votestring = fmt::format("randpickup {0}v{0}", (this->num_players / 2));
 		return true;
 	}
 	bool exec() override
@@ -635,11 +616,8 @@ public:
 			return false;
 		}
 
-		std::ostringstream vote_string;
-		vote_string << "scorelimit " << scorelimit;
-
 		this->scorelimit = scorelimit;
-		this->votestring = vote_string.str();
+		this->votestring = fmt::format("scorelimit {}", scorelimit);
 		return true;
 	}
 	bool exec() override
@@ -692,11 +670,8 @@ public:
 			return false;
 		}
 
-		std::ostringstream vote_string;
-		vote_string << "timelimit " << timelimit;
-
 		this->timelimit = timelimit;
-		this->votestring = vote_string.str();
+		this->votestring = fmt::format("timelimit {}", timelimit);
 		return true;
 	}
 	bool exec() override
@@ -800,12 +775,12 @@ size_t Vote::calc_yes(const bool noabs) const
 	}
 
 	float f_calc = size * sv_vote_majority;
-	size_t i_calc = (int)floor(f_calc + 0.5f);
+	size_t i_calc = static_cast<size_t>(std::round(f_calc));
 	if (f_calc > i_calc - MPEPSILON && f_calc < i_calc + MPEPSILON)
 	{
 		return i_calc + 1;
 	}
-	return (int)ceil(f_calc);
+	return static_cast<size_t>(ceil(f_calc));
 }
 
 // Tally up the number of players who are voting against the current callvote.
@@ -835,12 +810,12 @@ size_t Vote::count_no() const
 size_t Vote::calc_no() const
 {
 	float f_calc = this->tally.size() * (1.0f - sv_vote_majority);
-	size_t i_calc = (int)floor(f_calc + 0.5f);
+	size_t i_calc = static_cast<size_t>(std::round(f_calc));
 	if (f_calc > i_calc - MPEPSILON && f_calc < i_calc + MPEPSILON)
 	{
 		return i_calc;
 	}
-	return (int)ceil(f_calc);
+	return static_cast<size_t>(ceil(f_calc));
 }
 
 size_t Vote::count_abs() const
@@ -1095,8 +1070,8 @@ static void SV_GlobalVoteUpdate()
 // Handle callvote commands from the client.
 void SV_Callvote(player_t &player)
 {
-	vote_type_t votecmd = (vote_type_t)MSG_ReadByte();
-	byte argc = (byte)MSG_ReadByte();
+	vote_type_t votecmd = static_cast<vote_type_t>(MSG_ReadByte());
+	byte argc = static_cast<byte>(MSG_ReadByte());
 
 	DPrintFmt("SV_Callvote: Got votecmd {} from player {}, {} additional arguments.\n",
 	        vote_type_cmd[votecmd], player.id, argc);
@@ -1314,7 +1289,7 @@ void Vote_Runtic()
 
 	// Sync the countdown every few seconds.
 	if (vote->get_countdown() % (TICRATE * 5) == 0 &&
-	        vote->get_countdown() != ((unsigned int)sv_vote_timelimit.asInt() * TICRATE))
+	        vote->get_countdown() != (static_cast<unsigned int>(sv_vote_timelimit.asInt()) * TICRATE))
 	{
 		SV_GlobalVoteUpdate();
 	}

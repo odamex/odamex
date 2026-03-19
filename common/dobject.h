@@ -135,7 +135,7 @@ public: \
 	void Serialize(FArchive &) override; \
 	inline friend FArchive &operator>> (FArchive &arc, cls* &object) \
 	{ \
-		return arc.ReadObject ((DObject* &)object, RUNTIME_CLASS(cls)); \
+		return arc.ReadObject (reinterpret_cast<DObject*&>(object), RUNTIME_CLASS(cls)); \
 	}
 
 #define DECLARE_SERIAL(cls,parent) \
@@ -190,7 +190,7 @@ public:
 	static void BeginFrame ();
 	static void EndFrame ();
 
-	DWORD ObjectFlags = 0;
+	uint32_t ObjectFlags = 0;
 
 	static void STACK_ARGS StaticShutdown ();
 

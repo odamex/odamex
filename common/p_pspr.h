@@ -62,11 +62,11 @@ void A_ForceWeaponFire(AActor *mo, weapontype_t weapon, int tic);
 
 inline FArchive &operator<< (FArchive &arc, psprnum_t i)
 {
-	return arc << (BYTE)i;
+	return arc << static_cast<byte>(i);
 }
 inline FArchive &operator>> (FArchive &arc, psprnum_t &out)
 {
-	BYTE in; arc >> in; out = (psprnum_t)in; return arc;
+	byte in; arc >> in; out = static_cast<psprnum_t>(in); return arc;
 }
 
 struct pspdef_t

@@ -235,14 +235,14 @@ static void CL_RebuildAllPlayerTranslations()
 CVAR_FUNC_IMPL (r_enemycolor)
 {
 	// cache the color whenever the user changes it
-	enemycolor = argb_t(V_GetColorFromString(var));
+	enemycolor = V_GetColorFromString(var);
 	CL_RebuildAllPlayerTranslations();
 }
 
 CVAR_FUNC_IMPL (r_teamcolor)
 {
 	// cache the color whenever the user changes it
-	teamcolor = argb_t(V_GetColorFromString(var));
+	teamcolor = V_GetColorFromString(var);
 	CL_RebuildAllPlayerTranslations();
 }
 
@@ -282,8 +282,8 @@ EXTERN_CVAR (sv_freelook)
 EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (waddirs)
 
-void CL_PlayerTimes (void);
-void CL_TryToConnect(DWORD server_token);
+void CL_PlayerTimes();
+void CL_TryToConnect(uint32_t server_token);
 
 bool M_FindFreeName(std::string &filename, const std::string &extension);
 
@@ -363,12 +363,17 @@ void Host_EndGame(const char *msg)
 
 void CL_QuitNetGame(const netQuitReason_e reason)
 {
-	if(connected)
+	if (connected)
 	{
 		CL_CompleteDisconnect(reason);
 
 		sv_gametype = GM_COOP;
 		ClientReplay::getInstance().reset();
+	}
+	else
+	{
+		// Make sure we do a proper silent disconnect in single player.
+		CL_CompleteDisconnect(NQ_SILENT);
 	}
 
 	if (paused)
@@ -377,7 +382,7 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 		S_ResumeMusic();
 	}
 
-	memset (&serveraddr, 0, sizeof(serveraddr));
+	serveraddr = {};
 	noservermsgs = false;
 	AM_Stop();
 
@@ -700,7 +705,7 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 }
 
 extern bool advancedemo;
-QWORD nextstep = 0;
+uint64_t nextstep = 0;
 int canceltics = 0;
 
 void CL_StepTics(unsigned int count)
@@ -854,7 +859,7 @@ BEGIN_COMMAND (connect)
 		else
 		{
 			PrintFmt("Could not resolve host {}\n", target);
-			memset(&serveraddr, 0, sizeof(serveraddr));
+			serveraddr = {};
 		}
 	}
 
@@ -1057,9 +1062,9 @@ END_COMMAND (playerteam)
 
 BEGIN_COMMAND (changeteams)
 {
-	int iTeam = (int)consoleplayer().userinfo.team;
+	int iTeam = static_cast<int>(consoleplayer().userinfo.team);
 	iTeam = (iTeam + 1) % sv_teamsinplay.asInt();
-	cl_team.Set(GetTeamInfo((team_t)iTeam)->ColorStringUpper.c_str());
+	cl_team.Set(GetTeamInfo(static_cast<team_t>(iTeam))->ColorStringUpper);
 }
 END_COMMAND (changeteams)
 
@@ -1151,7 +1156,7 @@ BEGIN_COMMAND (flagnext)
 	{
 		for (int i = 0; i < NUMTEAMS; i++)
 		{
-			byte id = GetTeamInfo((team_t)i)->FlagData.flagger;
+			byte id = GetTeamInfo(static_cast<team_t>(i))->FlagData.flagger;
 			if (id != 0 && displayplayer_id != id)
 			{
 				displayplayer_id = id;
@@ -1451,7 +1456,7 @@ void CL_SendUserInfo(buf_t& netBuf)
 	MSG_WriteLong	(&netBuf, coninfo->aimdist);
 	MSG_WriteBool	(&netBuf, true);	// [SL] deprecated "cl_unlag" CVAR
 	MSG_WriteBool	(&netBuf, coninfo->predict_weapons);
-	MSG_WriteByte	(&netBuf, (char)coninfo->switchweapon);
+	MSG_WriteByte	(&netBuf, static_cast<byte>(coninfo->switchweapon));
 	for (const auto& pref : coninfo->weapon_prefs)
 	{
 		MSG_WriteByte (&netBuf, pref);
@@ -1656,7 +1661,7 @@ bool CL_PrepareConnect()
 
 	cvar_t::C_BackupCVars(CVAR_SERVERINFO);
 
-	DWORD server_token = MSG_ReadLong();
+	uint32_t server_token = MSG_ReadLong();
 	server_host = MSG_ReadString();
 
 	bool recv_teamplay_stats = 0;
@@ -1971,7 +1976,7 @@ void CL_InitNetwork (void)
     connected = false;
 }
 
-void CL_TryToConnect(DWORD server_token)
+void CL_TryToConnect(uint32_t server_token)
 {
 	if (!serveraddr.ip[0])
 		return;

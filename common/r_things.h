@@ -38,8 +38,8 @@ struct particle_s {
 	byte	size;
 	byte	fade;
 	int		color;
-	WORD	next;
-	WORD	nextinsubsector;
+	uint16_t next;
+	uint16_t nextinsubsector;
 };
 typedef struct particle_s particle_t;
 
@@ -47,9 +47,9 @@ extern int	NumParticles;
 extern int	ActiveParticles;
 extern int	InactiveParticles;
 extern particle_t *Particles;
-extern std::vector<WORD> ParticlesInSubsec;
+extern std::vector<uint16_t> ParticlesInSubsec;
 
-constexpr WORD NO_PARTICLE = 0xffff;
+inline constexpr uint16_t NO_PARTICLE = 0xffff;
 
 inline particle_t *NewParticle()
 {

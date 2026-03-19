@@ -35,7 +35,9 @@
 
 #include "i_system.h"
 #include "i_time.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "m_random.h"
 #include "p_acs.h"
 #include "p_ctf.h"
@@ -434,7 +436,7 @@ void SV_ServerSettingChange();
 
 void G_InitNew(const char *mapname)
 {
-	DWORD previousLevelFlags = level.flags;
+	levelFlags_t previousLevelFlags = level.flags;
 
 	if (!savegamerestore)
 		G_ClearSnapshots ();
@@ -477,14 +479,14 @@ void G_InitNew(const char *mapname)
 	{
 		if (wantFast)
 		{
-			for (auto& [_, state] : states)
+			for (auto&& [_, state] : states)
 			{
 				if (state.flags & STATEF_SKILL5FAST &&
 				    (state.tics != 1 || demoplayback))
 					state.tics >>= 1; // don't change 1->0 since it causes cycles
 			}
 
-			for (auto& [_, minfo] : mobjinfo)
+			for (auto&& [_, minfo] : mobjinfo)
 			{
 				if (minfo.altspeed != NO_ALTSPEED)
 				{
@@ -496,13 +498,13 @@ void G_InitNew(const char *mapname)
 		}
 		else
 		{
-			for (auto& [_, state] : states)
+			for (auto&& [_, state] : states)
 			{
 				if (state.flags & STATEF_SKILL5FAST)
 					state.tics <<= 1; // don't change 1->0 since it causes cycles
 			}
 
-			for (auto& [_, minfo] : mobjinfo)
+			for (auto&& [_, minfo] : mobjinfo)
 			{
 				if (minfo.altspeed != NO_ALTSPEED)
 				{
@@ -929,7 +931,7 @@ void G_DoLoadLevel (int position)
 	if (sv_gametype == GM_CTF) {
 
 		for (int i = 0; i < NUMTEAMS; i++)
-			GetTeamInfo((team_t)i)->FlagData.flaglocated = false;
+			GetTeamInfo(static_cast<team_t>(i))->FlagData.flaglocated = false;
 	}
 
 	specialdoors.clear();
@@ -941,7 +943,7 @@ void G_DoLoadLevel (int position)
 	{
 		for (int i = 0; i < sv_teamsinplay; i++)
 		{
-			TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+			TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 			if (!teamInfo->FlagData.flaglocated)
 			{
 				const char* teamColor = teamInfo->ColorString.c_str();

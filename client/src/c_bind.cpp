@@ -261,28 +261,28 @@ void OKeyBindings::SetBinds(const OBinding* binds)
 // NetDemo playback.  Returns false if the key pressed is not
 // bound to any netdemo command.
 //
-bool C_DoNetDemoKey (event_t *ev)
+bool C_DoNetDemoKey(const event_t& ev)
 {
 	if (!netdemo.isPlaying() && !netdemo.isPaused())
 		return false;
 
-	std::string *binding;
+	const std::string *binding = nullptr;
 
-	if (ev->type != ev_keydown && ev->type != ev_keyup)
+	if (ev.type != ev_keydown && ev.type != ev_keyup)
 		return false;
 
-	binding = &NetDemoBindings.Binds[ev->data1];
+	binding = &NetDemoBindings.Binds[ev.data1];
 
 	// hardcode the pause key to also control netpause
-	if (iequals(Bindings.Binds[ev->data1], "pause"))
+	if (iequals(Bindings.Binds[ev.data1], "pause"))
 		binding = &NetDemoBindings.Binds[I_GetKeyFromName("space")];
 
 	// nothing bound to this key specific to netdemos?
 	if (binding->empty())
 		return false;
 
-	if (ev->type == ev_keydown)
-		AddCommandString(*binding, ev->data1);
+	if (ev.type == ev_keydown)
+		AddCommandString(*binding, ev.data1);
 
 	return true;
 }
@@ -295,7 +295,7 @@ bool C_DoNetDemoKey (event_t *ev)
 // or during NetDemo playback.  Returns false if the key pressed is not
 // bound to any spectating command such as spynext.
 //
-bool C_DoSpectatorKey (event_t *ev)
+bool C_DoSpectatorKey (const event_t& ev)
 {
 	if (G_IsLivesGame())
 	{
@@ -309,14 +309,14 @@ bool C_DoSpectatorKey (event_t *ev)
 		return false;
 	}
 
-	if (ev->type == ev_keydown && Key_IsSpyPrevKey(ev->data1))
+	if (ev.type == ev_keydown && Key_IsSpyPrevKey(ev.data1))
 	{
-		AddCommandString("spyprev", ev->data1);
+		AddCommandString("spyprev", ev.data1);
 		return true;
 	}
-	if (ev->type == ev_keydown && Key_IsSpyNextKey(ev->data1))
+	if (ev.type == ev_keydown && Key_IsSpyNextKey(ev.data1))
 	{
-		AddCommandString("spynext", ev->data1);
+		AddCommandString("spynext", ev.data1);
 		return true;
 	}
 
@@ -324,16 +324,16 @@ bool C_DoSpectatorKey (event_t *ev)
 }
 
 
-bool C_DoKey(event_t* ev, OKeyBindings* binds, OKeyBindings* doublebinds)
+bool C_DoKey(const event_t& ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 {
-	if (ev->type != ev_keydown && ev->type != ev_keyup)
+	if (ev.type != ev_keydown && ev.type != ev_keyup)
 		return false;
 
 	const std::string* binding = NULL;
-	int key = ev->data1;
+	int key = ev.data1;
 
 	KeyState& key_state = KeyStates[key];
-	if (doublebinds != NULL && ev->type == ev_keydown && key_state.double_click_time > level.time)
+	if (doublebinds != NULL && ev.type == ev_keydown && key_state.double_click_time > level.time)
 	{
 		// Key pressed for a double click
 		binding = &doublebinds->Binds[key];
@@ -341,7 +341,7 @@ bool C_DoKey(event_t* ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 	}
 	else
 	{
-		if (ev->type == ev_keydown)
+		if (ev.type == ev_keydown)
 		{
 			// Key pressed for a normal press
 			binding = &binds->Binds[key];
@@ -364,12 +364,12 @@ bool C_DoKey(event_t* ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 
 	if (!binding->empty() && (HU_ChatMode() == CHAT_INACTIVE || key < 256))
 	{
-		if (ev->type == ev_keydown)
+		if (ev.type == ev_keydown)
 		{
 			AddCommandString(*binding, key);
 			key_state.key_down = true;
 		}
-		else if (ev->type == ev_keyup)
+		else if (ev.type == ev_keyup)
 		{
 			key_state.key_down = false;
 
