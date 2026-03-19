@@ -746,7 +746,7 @@ static bool R_Clamp3DHUDSpriteSize(vissprite_t* vis, const patch_t* patch, int m
 		return true;
 
 	const fixed_t abs_xiscale = std::max<fixed_t>(1, std::abs(vis->xiscale));
-	const int projected_w = std::max<int>(1, ((int64_t)patch->width() << FRACBITS) / abs_xiscale);
+	const int projected_w = std::max<int>(1, (static_cast<int64_t>(patch->width()) << FRACBITS) / abs_xiscale);
 	if (projected_w <= 0)
 		return false;
 
