@@ -279,9 +279,9 @@ constexpr uint32_t CONST_HASH(const char* str)
 	return hash;
 }
 
-constexpr uint32_t CONST_HASH(const std::string& str)
+constexpr uint32_t CONST_HASH(const std::string_view& str)
 {
-	return CONST_HASH(str.c_str(), str.length());
+    return CONST_HASH(str.data(), str.length());
 }
 
 // ----------------------------------------------------------------------------
