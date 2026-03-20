@@ -53,7 +53,6 @@ EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(hud_marker_teammates)
 EXTERN_CVAR(hud_marker_hordeboss)
 #endif
-#include "../client/sdl/afxres.h"
 
 EXTERN_CVAR(sv_ping_spam_enabled)
 EXTERN_CVAR(sv_ping_spam_max_tokens)
