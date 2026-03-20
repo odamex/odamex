@@ -83,14 +83,14 @@ static const char* steam_install_subdirs[] =
 	"steamapps/common/Doom 2/masterbase",
 	"steamapps/common/final doom/base",
 	"steamapps/common/Doom 2/finaldoombase",
-	"steamapps/common/ultimate doom/base",
+	"steamapps/common/Ultimate Doom/base",
 	"steamapps/common/DOOM 3 BFG Edition/base/wads",
 	"steamapps/common/master levels of doom/master/wads", // Let Odamex find the Master Levels pwads too
-	"steamapps/common/ultimate doom/base/doom2", // 2024 Steam re-release additions here and below
-	"steamapps/common/ultimate doom/base/master/wads",
-	"steamapps/common/ultimate doom/base/plutonia",
-	"steamapps/common/ultimate doom/base/tnt",
-	"steamapps/common/ultimate doom/rerelease",
+	"steamapps/common/Ultimate Doom/base/doom2", // 2024 Steam re-release additions here and below
+	"steamapps/common/Ultimate Doom/base/master/wads",
+	"steamapps/common/Ultimate Doom/base/plutonia",
+	"steamapps/common/Ultimate Doom/base/tnt",
+	"steamapps/common/Ultimate Doom/rerelease",
 	"steamapps/common/Heretic + Hexen",
 };
 
@@ -535,6 +535,8 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 	#if defined(__APPLE__)
 		steam_install_paths.emplace_back("~/Library/Application Support/Steam");
 	#else
+		if (const char* xdg_data_home = std::getenv("XDG_DATA_HOME"))
+			steam_install_paths.emplace_back(std::string(xdg_data_home) + PATHSEP + "Steam");
 		steam_install_paths.emplace_back("~/.steam/steam");
 		steam_install_paths.emplace_back("~/.local/share/Steam");
 		steam_install_paths.emplace_back("~/.var/app/com.valvesoftware.Steam/.local/share/Steam");
