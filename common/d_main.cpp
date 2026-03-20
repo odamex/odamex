@@ -79,13 +79,13 @@ float maxfps = 35.0f;
 // Subdirs of a Steam library where IWADs are found.
 static const char* steam_install_subdirs[] =
 {
-	"steamapps/common/doom 2/base",
-	"steamapps/common/Doom 2/masterbase",
-	"steamapps/common/final doom/base",
+	"steamapps/common/Doom 2/base",
+	"steamapps/common/Doom 2/masterbase/master/wads",
+	"steamapps/common/Final Doom/base",
 	"steamapps/common/Doom 2/finaldoombase",
 	"steamapps/common/Ultimate Doom/base",
 	"steamapps/common/DOOM 3 BFG Edition/base/wads",
-	"steamapps/common/master levels of doom/master/wads", // Let Odamex find the Master Levels pwads too
+	"steamapps/common/Master Levels of Doom/master/wads", // Let Odamex find the Master Levels pwads too
 	"steamapps/common/Ultimate Doom/base/doom2", // 2024 Steam re-release additions here and below
 	"steamapps/common/Ultimate Doom/base/master/wads",
 	"steamapps/common/Ultimate Doom/base/plutonia",
