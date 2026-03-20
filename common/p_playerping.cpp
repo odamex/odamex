@@ -1322,6 +1322,8 @@ void R_AddPingSprites()
 	static constexpr fixed_t StrictHeadOffset = 12 * FRACUNIT;
 	static constexpr fixed_t BossHeadOffset = 24 * FRACUNIT;
 	static constexpr fixed_t FollowPingSmoothing = FRACUNIT / 3;
+	static constexpr float PingReferenceHeight = 1080.0f;
+	static constexpr float PingMinResScale = 0.40f;
 	static constexpr int FixedPingScreenPx = 56;
 	static constexpr int FixedBossScreenPx = 84;
 	static constexpr fixed_t PingScaleNearDist = 512 * FRACUNIT;
@@ -1365,19 +1367,27 @@ void R_AddPingSprites()
 		return cur;
 	};
 
+	auto resolutionScaledPx = [&](const int basePx) -> int
+	{
+		const int currentViewH = (std::max)(1, viewheight);
+		const float scale = std::clamp(static_cast<float>(currentViewH) / PingReferenceHeight,
+		                               PingMinResScale, 1.0f);
+		return (std::max)(1, static_cast<int>(std::lround(static_cast<float>(basePx) * scale)));
+	};
+
 	auto scaledPingPx = [&](const ping_type_t type, const v3fixed_t& pos) -> int
 	{
 		// Only scale item/monster/flag/general/warning pings.
 		if (type != PING_ITEM && type != PING_MONSTER && type != PING_FLAG &&
 		    type != PING_GENERAL && type != PING_WARNING && type != PING_DROP)
-			return FixedPingScreenPx;
+			return resolutionScaledPx(FixedPingScreenPx);
 
 		AActor* view = consoleplayer().camera ? consoleplayer().camera : consoleplayer().mo;
 		if (!view)
-			return FixedPingScreenPx;
+			return resolutionScaledPx(FixedPingScreenPx);
 
 		const fixed_t dist = P_AproxDistance(view->x - pos.x, view->y - pos.y);
-		const int nearPx = FixedPingScreenPx;
+		const int nearPx = resolutionScaledPx(FixedPingScreenPx);
 		int farPx = nearPx / 2;
 
 		fixed_t nearDist = PingScaleNearDist;
@@ -1386,7 +1396,7 @@ void R_AddPingSprites()
 		{
 			nearDist = ItemScaleNearDist;
 			farDist = ItemScaleFarDist;
-			farPx = (nearPx * 2) / 5; // 40%
+			farPx = static_cast<int>(std::lround(static_cast<float>(nearPx) * 0.4f)); // 40%
 		}
 		else if (type == PING_DROP)
 		{
@@ -1523,7 +1533,8 @@ void R_AddPingSprites()
 		if (ping.type == PING_FLAG && ping.flag_team != TEAM_NONE)
 			translation = P_PingTeamTranslationInternal(ping.flag_team);
 
-		const int pingPx = ping.type == PING_BOSS ? FixedBossScreenPx : scaledPingPx(ping.type, pos);
+		const int pingPx =
+		    ping.type == PING_BOSS ? resolutionScaledPx(FixedBossScreenPx) : scaledPingPx(ping.type, pos);
 		const float alpha = pingWorldAlpha(ping, pos);
 		R_Add3DHUDSprite(ping.lump, pos, translation, alpha, pingPx, pingPx, false);
 	}
@@ -1545,8 +1556,8 @@ void R_AddPingSprites()
 				const fixed_t az = actor->prevz + FixedMul(render_lerp_amount, actor->z - actor->prevz);
 				v3fixed_t pos{ax, ay, az + actor->height + BossHeadOffset};
 				pos = smoothActorPos(actor->netid, pos);
-				R_Add3DHUDSprite(bossLump, pos, {}, 1.0f, FixedBossScreenPx,
-				                 FixedBossScreenPx, false);
+				const int bossPx = resolutionScaledPx(FixedBossScreenPx);
+				R_Add3DHUDSprite(bossLump, pos, {}, 1.0f, bossPx, bossPx, false);
 			}
 		}
 	}
@@ -1577,7 +1588,9 @@ void R_AddPingSprites()
 				v3fixed_t pos{px, py, pz + pl.mo->height + StrictHeadOffset};
 				pos = smoothActorPos(pl.mo->netid, pos);
 
-				int teammatePx = TeammateNearPx;
+				const int teammateNearPx = resolutionScaledPx(TeammateNearPx);
+				const int teammateFarPx = resolutionScaledPx(TeammateFarPx);
+				int teammatePx = teammateNearPx;
 				if (view)
 				{
 					const fixed_t dist = P_AproxDistance(view->x - px, view->y - py);
@@ -1585,8 +1598,8 @@ void R_AddPingSprites()
 					    std::clamp(dist, TeammateNearDist, TeammateFarDist);
 					const fixed_t t = FixedDiv(clamped - TeammateNearDist,
 					                           TeammateFarDist - TeammateNearDist);
-					teammatePx = TeammateNearPx -
-					             ((TeammateNearPx - TeammateFarPx) * t >> FRACBITS);
+					teammatePx = teammateNearPx -
+					             ((teammateNearPx - teammateFarPx) * t >> FRACBITS);
 
 					// Keep teammate icon from exceeding the projected sprite width.
 					// This adapts automatically to modded player radii/sprite scales.
@@ -1601,7 +1614,7 @@ void R_AddPingSprites()
 							teammatePx = (std::min)(teammatePx, projectedWidth);
 					}
 				}
-				teammatePx = (std::max)(24, teammatePx);
+				teammatePx = (std::max)(resolutionScaledPx(24), teammatePx);
 
 				translationref_t trans = P_PingReadablePlayerTranslation(pl);
 				R_Add3DHUDSprite(teammateLump, pos, trans, 1.0f, teammatePx,

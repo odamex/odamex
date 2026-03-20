@@ -739,6 +739,8 @@ static void HU_DrawPingDistances()
 	static constexpr int WorldBossScreenPx = 84;
 	static constexpr int FixedPingScreenPx = 56;
 	static constexpr int LabelYOffsetPx = 12;
+	static constexpr float PingReferenceHeight = 1080.0f;
+	static constexpr float PingMinResScale = 0.40f;
 	static constexpr double UnitsPerMarineMeter = 32.0;
 	static constexpr float PingMinAlpha = 0.45f;
 	static constexpr int PingSolidTics = (3 * TICRATE) / 2; // 1.5s
@@ -768,18 +770,26 @@ static void HU_DrawPingDistances()
 		return from + FixedMul(FollowPingSmoothing, to - from);
 	};
 
+	auto resolutionScaledPx = [&](const int basePx) -> int
+	{
+		const int currentViewH = (std::max)(1, viewheight);
+		const float scale = std::clamp(
+		    static_cast<float>(currentViewH) / PingReferenceHeight, PingMinResScale, 1.0f);
+		return (std::max)(1, static_cast<int>(std::lround(static_cast<float>(basePx) * scale)));
+	};
+
 	auto scaledPingPx = [&](const ping_type_t type, const v3fixed_t& pos) -> int
 	{
 		if (type != PING_ITEM && type != PING_MONSTER && type != PING_FLAG &&
 		    type != PING_GENERAL && type != PING_WARNING && type != PING_DROP)
-			return FixedPingScreenPx;
+			return resolutionScaledPx(FixedPingScreenPx);
 
 		AActor* view = consoleplayer().camera ? consoleplayer().camera : consoleplayer().mo;
 		if (!view)
-			return FixedPingScreenPx;
+			return resolutionScaledPx(FixedPingScreenPx);
 
 		const fixed_t dist = P_AproxDistance(view->x - pos.x, view->y - pos.y);
-		const int nearPx = FixedPingScreenPx;
+		const int nearPx = resolutionScaledPx(FixedPingScreenPx);
 		int farPx = nearPx / 2;
 
 		fixed_t nearDist = PingScaleNearDist;
@@ -912,7 +922,8 @@ static void HU_DrawPingDistances()
 		const int projX = R_ProjectPointX(projTx, projTy);
 		const int projY = R_ProjectPointY(pingPos.z - viewz, projTy);
 		const int markerPx =
-		    ping.type == PING_BOSS ? WorldBossScreenPx : scaledPingPx(ping.type, pingPos);
+		    ping.type == PING_BOSS ? resolutionScaledPx(WorldBossScreenPx)
+		                           : scaledPingPx(ping.type, pingPos);
 		const int halfMarker = std::max(1, markerPx / 2);
 
 		const int markerLeft = projX - halfMarker;
