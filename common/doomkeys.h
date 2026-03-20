@@ -126,6 +126,8 @@
 #define OKEY_MOUSE5          0x20000004
 #define OKEY_MWHEELDOWN      0x20000005
 #define OKEY_MWHEELUP        0x20000006
+#define OKEY_MWHEELLEFT      0x20000007
+#define OKEY_MWHEELRIGHT     0x20000008
 #define OKEY_JOY1            0x20000010
 #define OKEY_JOY2            0x20000011
 #define OKEY_JOY3            0x20000012
