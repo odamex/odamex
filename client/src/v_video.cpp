@@ -1058,8 +1058,8 @@ void DCanvas::DrawRotatedPatchCleanNoMove(const patch_t* patch, int x0, int y0, 
 	std::vector<byte> src(srcw * srch, 0xFF);
 	for (int col = 0; col < srcw; col++)
 	{
-		tallpost_t* post = reinterpret_cast<tallpost_t*>(
-			    reinterpret_cast<byte*>(patch) + LELONG(patch->columnofs[col]));
+		tallpost_t *post = reinterpret_cast<tallpost_t*>(
+			const_cast<byte*>(reinterpret_cast<const byte*>(patch)) + LELONG(patch->columnofs[col]));
 		while (!post->end())
 		{
 			const int top = post->topdelta;
@@ -1095,7 +1095,7 @@ void DCanvas::DrawRotatedPatchCleanNoMove(const patch_t* patch, int x0, int y0, 
 
 				const byte out = translation ? translation->tlate(p) : p;
 				palindex_t* dest = reinterpret_cast<palindex_t*>(
-					    mSurface->getBuffer(static_cast<uint16_t>(x), static_cast<uint16_t>(y)));
+					mSurface->getBuffer(static_cast<uint16_t>(x), static_cast<uint16_t>(y)));
 				*dest = out;
 			}
 		}
@@ -1123,7 +1123,7 @@ void DCanvas::DrawRotatedPatchCleanNoMove(const patch_t* patch, int x0, int y0, 
 					continue;
 
 				argb_t* dest = reinterpret_cast<argb_t*>(
-					    mSurface->getBuffer(static_cast<uint16_t>(x), static_cast<uint16_t>(y)));
+					mSurface->getBuffer(static_cast<uint16_t>(x), static_cast<uint16_t>(y)));
 				*dest = translation ? V_Palette.tlate(*translation, p) : colors[p];
 			}
 		}
