@@ -76,6 +76,95 @@ extern bool step_mode;
 bool capfps = true;
 float maxfps = 35.0f;
 
+// Subdirs of a Steam library where IWADs are found.
+static const char* steam_install_subdirs[] =
+{
+	"steamapps/common/doom 2/base",
+	"steamapps/common/Doom 2/masterbase",
+	"steamapps/common/final doom/base",
+	"steamapps/common/Doom 2/finaldoombase",
+	"steamapps/common/ultimate doom/base",
+	"steamapps/common/DOOM 3 BFG Edition/base/wads",
+	"steamapps/common/master levels of doom/master/wads", // Let Odamex find the Master Levels pwads too
+	"steamapps/common/ultimate doom/base/doom2", // 2024 Steam re-release additions here and below
+	"steamapps/common/ultimate doom/base/master/wads",
+	"steamapps/common/ultimate doom/base/plutonia",
+	"steamapps/common/ultimate doom/base/tnt",
+	"steamapps/common/ultimate doom/rerelease",
+	"steamapps/common/Heretic + Hexen",
+};
+
+static void D_AddUniquePath(std::vector<std::string>& paths, const std::string& path)
+{
+	std::string cleanPath = M_CleanPath(path);
+	if (std::find(paths.begin(), paths.end(), cleanPath) == paths.end())
+		paths.push_back(cleanPath);
+}
+
+static bool D_IsExistingDir(const std::string& path)
+{
+	std::error_code ec;
+	return std::filesystem::is_directory(std::filesystem::path(path), ec);
+}
+
+static std::vector<std::string> GetSteamLibraryPaths(const std::string& install_path)
+{
+	std::vector<std::string> paths;
+
+	if (install_path.empty())
+		return paths;
+
+	D_AddUniquePath(paths, install_path);
+
+	const std::filesystem::path vdfpath =
+		std::filesystem::path(install_path) / "steamapps" / "libraryfolders.vdf";
+	std::ifstream file(vdfpath);
+	if (!file.is_open())
+		return paths;
+
+	std::string line;
+	while (std::getline(file, line))
+	{
+		if (line.find("\"path\"") == std::string::npos)
+			continue;
+
+		const size_t value_start = line.find('"', line.find("\"path\"") + 6);
+		if (value_start == std::string::npos)
+			continue;
+		const size_t value_end = line.find('"', value_start + 1);
+		if (value_end == std::string::npos)
+			continue;
+
+		std::string path = line.substr(value_start + 1, value_end - value_start - 1);
+		size_t pos = 0;
+		while ((pos = path.find("\\\\", pos)) != std::string::npos)
+		{
+			path.replace(pos, 2, "\\");
+			pos += 1;
+		}
+
+		D_AddUniquePath(paths, path);
+	}
+
+	return paths;
+}
+
+static void D_AddSteamSearchDirs(std::vector<std::string>& dirs,
+                                 const std::vector<std::string>& steam_library_paths,
+                                 const char separator)
+{
+	for (const auto& library : steam_library_paths)
+	{
+		for (const auto& dir : steam_install_subdirs)
+		{
+			const std::string subpath =
+				(std::filesystem::path(library) / std::filesystem::path(dir)).string();
+
+			D_AddSearchDir(dirs, subpath.c_str(), separator, missing_dir_policy::silent);
+		}
+	}
+}
+
 #if defined(_WIN32)
 
 typedef struct
@@ -161,24 +250,6 @@ static registry_value_t steam_install_location =
 	"InstallPath",
 };
 
-// Subdirs of the steam install directory where IWADs are found
-static const char* steam_install_subdirs[] =
-{
-	"steamapps\\common\\doom 2\\base",
-	"steamapps\\common\\Doom 2\\masterbase",
-	"steamapps\\common\\final doom\\base",
-	"steamapps\\common\\Doom 2\\finaldoombase",
-	"steamapps\\common\\ultimate doom\\base",
-	"steamapps\\common\\DOOM 3 BFG Edition\\base\\wads",
-	"steamapps\\common\\master levels of doom\\master\\wads", //Let Odamex find the Master Levels pwads too
-	"steamapps\\common\\ultimate doom\\base\\doom2", //2024 Steam re-release additions here and below
-	"steamapps\\common\\ultimate doom\\base\\master\\wads",
-	"steamapps\\common\\ultimate doom\\base\\plutonia",
-	"steamapps\\common\\ultimate doom\\base\\tnt",
-	"steamapps\\common\\ultimate doom\\rerelease",
-	"steamapps\\common\\Heretic + Hexen",
-};
-
 static registry_value_t gog_doom_plus_doom2 =
 {
 	HKEY_LOCAL_MACHINE,
@@ -213,60 +284,6 @@ static registry_value_t gog_heretic_hexen =
 	SOFTWARE_KEY "\\GOG.com\\Games\\1776058590",
 	"path",
 };
-
-static void D_AddUniquePath(std::vector<std::string>& paths, const std::string& path)
-{
-	std::string cleanPath = M_CleanPath(path);
-	if (std::find(paths.begin(), paths.end(), cleanPath) == paths.end())
-		paths.push_back(cleanPath);
-}
-
-static bool D_IsExistingDir(const std::string& path)
-{
-	std::error_code ec;
-	return std::filesystem::is_directory(std::filesystem::path(path), ec);
-}
-
-static std::vector<std::string> GetSteamLibraryPaths(const char* install_path)
-{
-	std::vector<std::string> paths;
-
-	if (install_path == nullptr || install_path[0] == '\0')
-		return paths;
-
-	D_AddUniquePath(paths, install_path);
-
-	const std::string vdfpath = fmt::format("{}\\steamapps\\libraryfolders.vdf", install_path);
-	std::ifstream file(vdfpath.c_str());
-	if (!file.is_open())
-		return paths;
-
-	std::string line;
-	while (std::getline(file, line))
-	{
-		if (line.find("\"path\"") == std::string::npos)
-			continue;
-
-		const size_t value_start = line.find('"', line.find("\"path\"") + 6);
-		if (value_start == std::string::npos)
-			continue;
-		const size_t value_end = line.find('"', value_start + 1);
-		if (value_end == std::string::npos)
-			continue;
-
-		std::string path = line.substr(value_start + 1, value_end - value_start - 1);
-		size_t pos = 0;
-		while ((pos = path.find("\\\\", pos)) != std::string::npos)
-		{
-			path.replace(pos, 2, "\\");
-			pos += 1;
-		}
-
-		D_AddUniquePath(paths, path);
-	}
-
-	return paths;
-}
 
 static char *GetRegistryString(registry_value_t *reg_val)
 {
@@ -400,12 +417,12 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 			val = GetRegistryString(&uninstallval);
 
-			if (val == NULL)
+			if (val == nullptr)
 				continue;
 
 			unstr = strstr(val, uninstaller_string);
 
-			if (unstr == NULL)
+			if (unstr == nullptr)
 			{
 				M_Free(val);
 			}
@@ -423,7 +440,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 	{
 		char* install_path = GetRegistryString(&collectors_edition_value);
 
-		if (install_path != NULL)
+		if (install_path != nullptr)
 		{
 			for (const auto& dir : collectors_edition_subdirs)
 			{
@@ -440,18 +457,10 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 	{
 		char* install_path = GetRegistryString(&steam_install_location);
 
-		if (install_path != NULL)
+		if (install_path != nullptr)
 		{
 			const auto steam_library_paths = GetSteamLibraryPaths(install_path);
-			for (const auto& library : steam_library_paths)
-			{
-				for (const auto& dir : steam_install_subdirs)
-				{
-					const std::string subpath = fmt::format("{}\\{}", library, dir);
-
-					D_AddSearchDir(dirs, subpath.c_str(), separator, missing_dir_policy::silent);
-				}
-			}
+			D_AddSteamSearchDirs(dirs, steam_library_paths, separator);
 
 			M_Free(install_path);
 		}
@@ -488,7 +497,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 		char* final_doom_path = GetRegistryString(&gog_final_doom);
 
-		if (final_doom_path != NULL)
+		if (final_doom_path != nullptr)
 		{
 			const std::string plutonia_path = fmt::format("{}\\{}", final_doom_path, "Plutonia");
 			const std::string tnt_path = fmt::format("{}\\{}", final_doom_path, "TNT");
@@ -518,6 +527,26 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 	#elif defined(UNIX)
 
 	const char separator = ':';
+
+	// Doom on Steam
+	{
+		std::vector<std::string> steam_install_paths;
+
+	#if defined(__APPLE__)
+		steam_install_paths.emplace_back("~/Library/Application Support/Steam");
+	#else
+		steam_install_paths.emplace_back("~/.steam/steam");
+		steam_install_paths.emplace_back("~/.local/share/Steam");
+		steam_install_paths.emplace_back("~/.var/app/com.valvesoftware.Steam/.local/share/Steam");
+	#endif
+
+		for (auto& install_path : steam_install_paths)
+		{
+			M_ExpandHomeDir(install_path);
+			const auto steam_library_paths = GetSteamLibraryPaths(install_path);
+			D_AddSteamSearchDirs(dirs, steam_library_paths, separator);
+		}
+	}
 
 	#if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR)
 	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/odamex", separator, missing_dir_policy::developer_warn);
