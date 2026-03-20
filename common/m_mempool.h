@@ -19,102 +19,38 @@
 //	Memory pool allocation
 //	Allocates a large pool of memory and allocates blocks of it when asked.
 //	Memory can only be freed by the clear() function for simplicity. If
-//	the intial memory pool is exhausted, additional pools are allocated. These
-//	are consolodated into one large pool the next time clear() is called.
+//	the intial memory pool is exhausted, additional pools are allocated.
 //
 //
 //-----------------------------------------------------------------------------
 
-
 #pragma once
 
+#include <memory_resource>
 
 template <typename T>
 class Pool
 {
 public:
-	Pool(size_t initial_max_count) :
-		num_blocks(0), block_size(NULL), data_block(NULL), free_block(NULL)
-	{
-		resize(initial_max_count);
-	}
+	explicit Pool(size_t initial_max_count) :
+		pool(initial_max_count * sizeof(T)) {}
 
-	~Pool()
-	{
-		free_data();
-	}
+	Pool(const Pool&) = delete;
+	Pool& operator=(const Pool&) = delete;
+	Pool(Pool&&) = default;
+	Pool& operator=(Pool&&) = default;
 
 	void clear()
 	{
-		if (num_blocks <= 1)
-		{
-			free_block = data_block[0];
-			return;
-		}
-
-		size_t new_size = 0;
-		if (block_size != NULL)
-			new_size = block_size[num_blocks - 1];
-		free_data();
-		resize(new_size);
+		pool.release();
 	}
 
+	[[nodiscard]]
 	T* alloc(size_t count = 1)
 	{
-		while (free_block + count * sizeof(T) > data_block[num_blocks - 1] + block_size[num_blocks - 1])
-			resize(2 * block_size[num_blocks - 1]);
-
-		T* ptr = reinterpret_cast<T*>(free_block);
-		free_block += count * sizeof(T);
-		return ptr;
+		return static_cast<T*>(pool.allocate(sizeof(T) * count, alignof(T)));
 	}
 
 private:
-	void resize(size_t new_max_count)
-	{
-		size_t new_size = new_max_count * sizeof(T);
-
-		if (new_size == 0)
-			return;
-
-		num_blocks++;
-
-		size_t* new_block_size = new size_t[num_blocks];
-		if (block_size != NULL)
-		{
-			memcpy(new_block_size, block_size, (num_blocks - 1) * sizeof(size_t));
-			delete [] block_size;
-		}
-		new_block_size[num_blocks - 1] = new_size;
-		block_size = new_block_size;
-
-		byte** new_data_block = new byte*[num_blocks];
-		if (data_block != NULL)
-		{
-			memcpy(new_data_block, data_block, (num_blocks - 1) * sizeof(byte*));
-			delete [] data_block;
-		}
-		new_data_block[num_blocks - 1] = new byte[new_size];
-		data_block = new_data_block;
-
-		free_block = data_block[num_blocks - 1];
-	}
-
-	void free_data()
-	{
-		for (size_t i = 0; i < num_blocks; i++)
-			delete [] data_block[i];
-
-		delete [] block_size;
-		delete [] data_block;
-		num_blocks = 0;
-		block_size = NULL;
-		data_block = NULL;
-		free_block = NULL;
-	}
-
-	size_t		num_blocks;
-	size_t*		block_size;
-	byte**		data_block;
-	byte*		free_block;
+	std::pmr::monotonic_buffer_resource pool;
 };

@@ -180,6 +180,27 @@ void P_LoadVertexes (int lump)
 	Z_Free (data);
 }
 
+bool P_UseHorizonEffect(const seg_t& seg, bool segs_have_angles = false)
+{
+	const short horizon_special = map_format.getZDoom() ? Line_Horizon : 337;
+	if (seg.linedef && seg.linedef->special == horizon_special)
+		return true;
+
+	if (!segs_have_angles)
+		return false;
+
+	const angle_t physical_angle = R_PointToAngle2(seg.v1->x, seg.v1->y, seg.v2->x, seg.v2->y);
+	angle_t diff = seg.angle - physical_angle;
+
+	if (diff > ANG180)
+		diff = ANG360 - diff;
+
+	if (diff > ANG(175))
+		return true;
+
+	return false;
+}
+
 void P_LoadSegsHelper(int side, short angle, int linedef, seg_t *li)
 {
 	li->angle = (angle)<<16;
@@ -189,6 +210,8 @@ void P_LoadSegsHelper(int side, short angle, int linedef, seg_t *li)
 
 	line_t* ldef = &lines[linedef];
 	li->linedef = ldef;
+
+	li->is_horizon = P_UseHorizonEffect(*li, true);
 
 	if (side != 0 && side != 1)
 		side = 1;	// assume invalid value means back
@@ -242,7 +265,7 @@ void P_LoadSegs (int lump)
 	{
 		seg_t* const li = segs + i;
 		const MapSegType *ml = (MapSegType*) data + i;
-		auto v = LESWAP(ml->v1);
+		auto v = OUtil::to_unsigned(LESWAP(ml->v1));
 
 		if(v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex {}", v);
@@ -275,15 +298,15 @@ void P_LoadSubsectors(int lump)
 	}
 
 	numsubsectors = W_LumpLength (lump) / sizeof(MapSubsectorType);
-	subsectors = (subsector_t *)Z_Malloc (numsubsectors*sizeof(subsector_t),PU_LEVEL,0);
-	byte* data = (byte *)W_CacheLumpNum (lump,PU_STATIC);
+	subsectors = static_cast<subsector_t*>(Z_Malloc(numsubsectors*sizeof(subsector_t), PU_LEVEL, nullptr));
+	MapSubsectorType* data = static_cast<MapSubsectorType*>(W_CacheLumpNum(lump, PU_STATIC));
 
 	memset (subsectors, 0, numsubsectors*sizeof(subsector_t));
 
 	for (int i = 0; i < numsubsectors; i++)
 	{
-		subsectors[i].numlines = LESWAP<decltype(MapSubsectorType::numsegs)>(((MapSubsectorType *)data)[i].numsegs);
-		subsectors[i].firstline = LESWAP<decltype(MapSubsectorType::firstseg)>(((MapSubsectorType *)data)[i].firstseg);
+		subsectors[i].numlines = LESWAP(data[i].numsegs);
+		subsectors[i].firstline = LESWAP(data[i].firstseg);
 	}
 
 	Z_Free(data);
@@ -444,11 +467,14 @@ void P_LoadNodes(int lump)
 		    "P_LoadNodes: NODES lump is empty - levels without nodes are not supported.");
 	}
 
-	numnodes = W_LumpLength(lump) / sizeof(MapNodeType);
+	static constexpr size_t headerSize =
+		std::is_same_v<MapNodeType, mapnode_deepbsp_t> ? 8 : 0;
+
+	numnodes = (W_LumpLength(lump) - headerSize) / sizeof(MapNodeType);
 	nodes = (node_t*) Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL, 0);
 	byte* data = (byte*) W_CacheLumpNum(lump, PU_STATIC);
 
-	const MapNodeType* mn = (MapNodeType *)data;
+	const MapNodeType* mn = (MapNodeType *)(data + headerSize);
 	node_t* no = nodes;
 
 	for (int i = 0; i < numnodes; i++, no++, mn++)
@@ -477,7 +503,7 @@ void P_LoadNodes(int lump)
 		}
 	}
 
-	Z_Free (data);
+	Z_Free(data);
 }
 
 byte* P_DecompressNodes(byte* data, size_t len) {
@@ -512,8 +538,8 @@ byte* P_DecompressNodes(byte* data, size_t len) {
 	if (err != Z_STREAM_END)
 		I_Error("P_DecompressNodes: Error during ZDBSP nodes decompression!");
 
-	fmt::print(stderr, "P_DecompressNodes: ZDBSP nodes compression ratio {:.3f}\n",
-	           (float)zstream->total_out/zstream->total_in);
+	DPrintFmt("P_DecompressNodes: ZDBSP nodes compression ratio {:.3f}\n",
+	           static_cast<float>(zstream->total_out)/zstream->total_in);
 
 	if (inflateEnd(zstream) != Z_OK)
 		I_Error("P_DecompressNodes: Error during ZDBSP nodes decompression shut-down!");
@@ -551,11 +577,13 @@ byte* P_LoadSegs_XNOD(byte* p) {
 			seg->backsector = sides[line->sidenum[side^1]].sector;
 		else
 		{
-			seg->backsector = NULL;
+			seg->backsector = nullptr;
 			line->flags &= ~ML_TWOSIDED;
 		}
 
 		seg->angle = R_PointToAngle2(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y);
+
+		seg->is_horizon = P_UseHorizonEffect(*seg);
 
 		// a short version of the offset calculation in P_LoadSegs
 		const vertex_t *origin = (side == 0) ? line->v1 : line->v2;
@@ -571,92 +599,97 @@ template<typename LineType>
 byte* P_LoadSegs_XGL(byte* p)
 {
 	static_assert(
-        std::is_same_v<LineType, uint16_t> || std::is_same_v<LineType, uint32_t>,
-        "P_LoadSegs_XGL can only be instantiated with uint16_t or uint32_t"
-    );
+		std::is_same_v<LineType, uint16_t> || std::is_same_v<LineType, uint32_t>,
+		"P_LoadSegs_XGL can only be instantiated with uint16_t or uint32_t"
+	);
 
 	numsegs = LELONG(*(uint32_t *)p); p += 4;
 	segs = (seg_t *) Z_Malloc(numsegs * sizeof(*segs), PU_LEVEL, 0);
 	memset(segs, 0, numsegs * sizeof(*segs));
 
+	uint32_t write_index = 0;
 	for (int i = 0; i < numsubsectors; i++)
 	{
-		for (uint32_t j = 0; j < subsectors[i].numlines; j++)
+		subsector_t& subsector = subsectors[i];
+		subsector.firstline = write_index;
+		seg_t* prev_seg = nullptr;
+		seg_t* first_seg = nullptr;
+		for (uint32_t j = 0; j < subsector.numlines; j++)
 		{
 			const uint32_t v1 = LELONG(*(uint32_t *)p); p += 4;
-			const uint32_t partner = LELONG(*(uint32_t *)p); p += 4;
+			// const uint32_t partner = LELONG(*(uint32_t *)p); // unused
+			p += 4;
 			const LineType ld = LESWAP(*(LineType *)p); p += sizeof(LineType);
 			const uint8_t side = *(uint8_t *)p; p += 1;
 
-			seg_t* seg = &segs[subsectors[i].firstline + j];
+			if (ld == std::numeric_limits<LineType>::max())
+				continue;
+
+			seg_t* seg = &segs[write_index++];
+
+			if (!first_seg) first_seg = seg;
+			if (prev_seg) prev_seg->v2 = seg->v1;
+			prev_seg = seg;
 
 			seg->v1 = &vertexes[v1];
-			if (j == 0)
-				seg[subsectors[i].numlines - 1].v2 = seg->v1;
-			else
-				seg[-1].v2 = seg->v1;
 
-			if (ld != std::numeric_limits<LineType>::max())
+			if (ld >= numlines)
 			{
-				if (ld >= numlines)
-				{
-					I_Error("P_LoadSegs_XGL: seg {}, {} references a non-existent linedef {}", i, j, ld);
-				}
+				I_Error("P_LoadSegs_XGL: seg {} in subsector {} references a non-existent linedef {}", j, i, ld);
+			}
 
-				line_t* line = &lines[ld];
-				seg->linedef = line;
+			line_t* line = &lines[ld];
+			seg->linedef = line;
 
-				if (side != 0 && side != 1)
-				{
-					I_Error("P_LoadSegs_XGL: seg {}, {} references a non-existent sidedef {}", i, j, side);
-				}
+			if (side != 0 && side != 1)
+			{
+				I_Error("P_LoadSegs_XGL: seg in subsector {} references a non-existent sidedef {}", j, i, side);
+			}
 
-				seg->sidedef = &sides[line->sidenum[side]];
+			seg->sidedef = &sides[line->sidenum[side]];
 
-				if (line->sidenum[side] != NO_INDEX)
-				{
-					seg->frontsector = sides[line->sidenum[side]].sector;
-				}
-				else
-				{
-					seg->frontsector = nullptr;
-					fmt::print(stderr, "P_LoadSegs_XGL: front of seg {}, {} has no sidedef\n", i, j);
-				}
-
-				if ((line->flags & ML_TWOSIDED) &&
-				    (line->sidenum[side ^ 1] != NO_INDEX))
-					seg->backsector = sides[line->sidenum[side ^ 1]].sector;
-				else
-				{
-					seg->backsector = nullptr;
-					line->flags &= ~ML_TWOSIDED;
-				}
-
-				// a short version of the offset calculation in P_LoadSegs
-				const vertex_t *origin = (side == 0) ? line->v1 : line->v2;
-				const float dx = FIXED2FLOAT(seg->v1->x - origin->x);
-				const float dy = FIXED2FLOAT(seg->v1->y - origin->y);
-				seg->offset = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
+			if (line->sidenum[side] != NO_INDEX)
+			{
+				seg->frontsector = sides[line->sidenum[side]].sector;
 			}
 			else
 			{
-				seg->angle = 0;
-				seg->offset = 0;
-				seg->sidedef = nullptr;
-				seg->linedef = nullptr;
-				seg->frontsector = segs[subsectors[i].firstline].frontsector;
-				seg->backsector = seg->frontsector;
+				seg->frontsector = nullptr;
+				DPrintFmt("P_LoadSegs_XGL: front of seg {} in subsector {} has no sidedef\n", j, i);
 			}
+
+			if ((line->flags & ML_TWOSIDED) &&
+			    (line->sidenum[side ^ 1] != NO_INDEX))
+				seg->backsector = sides[line->sidenum[side ^ 1]].sector;
+			else
+			{
+				seg->backsector = nullptr;
+				line->flags &= ~ML_TWOSIDED;
+			}
+
+			// a short version of the offset calculation in P_LoadSegs
+			const vertex_t *origin = (side == 0) ? line->v1 : line->v2;
+			const float dx = FIXED2FLOAT(seg->v1->x - origin->x);
+			const float dy = FIXED2FLOAT(seg->v1->y - origin->y);
+			seg->offset = FLOAT2FIXED(sqrt(dx * dx + dy * dy));
 		}
 
-		for (uint32_t j = 0; j < subsectors[i].numlines; j++)
-		{
-			seg_t* seg = &segs[subsectors[i].firstline + j];
+		subsector.numlines = write_index - subsector.firstline;
 
-			if (seg->linedef)
-				seg->angle = R_PointToAngle2(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y);
+		if (first_seg && prev_seg)
+			prev_seg->v2 = first_seg->v1;
+
+		for (uint32_t j = 0; j < subsector.numlines; j++)
+		{
+			seg_t* seg = &segs[subsector.firstline + j];
+
+			seg->angle = R_PointToAngle2(seg->v1->x, seg->v1->y, seg->v2->x, seg->v2->y);
+			seg->is_horizon = P_UseHorizonEffect(*seg);
 		}
 	}
+
+	numsegs = write_index;
+
 	return p;
 }
 
@@ -1547,6 +1580,27 @@ void P_CreateBlockMap()
 // jff 10/6/98
 // End new code added to speed up calculation of internal blockmap
 
+void P_SetSkipBlockStart()
+{
+	skipblstart = true;
+
+	for (int y = 0; y < bmapheight; y++)
+	{
+		for (int x = 0; x < bmapwidth; x++)
+		{
+			int32_t* blockoffset = blockmaplump + y * bmapwidth + x + 4;
+
+			int32_t* list = blockmaplump + *blockoffset;
+
+			if (*list != 0)
+			{
+				skipblstart = false;
+				return;
+			}
+		}
+	}
+}
+
 //
 // P_LoadBlockMap
 //
@@ -1561,7 +1615,6 @@ void P_LoadBlockMap (int lump)
 	else
 	{
 		short *wadblockmaplump = (short *)W_CacheLumpNum (lump, PU_LEVEL);
-		int i;
 		blockmaplump = (int *)Z_Malloc(sizeof(*blockmaplump) * count, PU_LEVEL, 0);
 
 		// killough 3/1/98: Expand wad blockmap into larger internal one,
@@ -1571,13 +1624,13 @@ void P_LoadBlockMap (int lump)
 
 		blockmaplump[0] = LESHORT(wadblockmaplump[0]);
 		blockmaplump[1] = LESHORT(wadblockmaplump[1]);
-		blockmaplump[2] = (uint32_t)(LESHORT(wadblockmaplump[2])) & 0xffff;
-		blockmaplump[3] = (uint32_t)(LESHORT(wadblockmaplump[3])) & 0xffff;
+		blockmaplump[2] = static_cast<uint16_t>(LESHORT(wadblockmaplump[2]));
+		blockmaplump[3] = static_cast<uint16_t>(LESHORT(wadblockmaplump[3]));
 
-		for (i=4 ; i<count ; i++)
+		for (int i = 4; i < count; i++)
 		{
-			short t = LESHORT(wadblockmaplump[i]);          // killough 3/1/98
-			blockmaplump[i] = t == -1 ? (uint32_t)0xffffffff : (uint32_t) t & 0xffff;
+			const short t = LESHORT(wadblockmaplump[i]);          // killough 3/1/98
+			blockmaplump[i] = t == -1 ? 0xffffffff : static_cast<uint16_t>(t);
 		}
 
 		Z_Free (wadblockmaplump);
@@ -1593,6 +1646,8 @@ void P_LoadBlockMap (int lump)
 	blocklinks = (AActor **)Z_Malloc (count, PU_LEVEL, 0);
 	memset (blocklinks, 0, count);
 	blockmap = blockmaplump+4;
+
+	P_SetSkipBlockStart();
 }
 
 /*
@@ -1641,36 +1696,35 @@ void P_GenerateUniqueMapFingerPrint(int maplumpnum)
 // Builds sector line lists and subsector sector numbers.
 // Finds block bounding boxes for sectors.
 //
-void P_GroupLines (void)
+int P_GroupLines()
 {
 	// look up sector number for each subsector
 	for (int i = 0; i < numsubsectors; i++)
 	{
 		if (subsectors[i].firstline >= (unsigned int)numsegs)
-			I_Error("subsector[{}].firstline exceeds numsegs (%u)", i, numsegs);
+			I_Error("subsector[{}].firstline exceeds numsegs ({})", i, numsegs);
 		subsectors[i].sector = segs[subsectors[i].firstline].sidedef->sector;
 	}
 
 	// count number of lines in each sector
-	line_t* li = lines;
 	int total = 0;
-	for (int i = 0; i < numlines; i++, li++)
+	for (auto& line : R_GetLines())
 	{
 		total++;
-		if (!li->frontsector && li->backsector)
+		if (!line.frontsector && line.backsector)
 		{
 			// swap front and backsectors if a one-sided linedef
 			// does not have a front sector
-			li->frontsector = li->backsector;
-			li->backsector = NULL;
+			line.frontsector = line.backsector;
+			line.backsector = nullptr;
 		}
 
-        if (li->frontsector)
-            li->frontsector->linecount++;
+        if (line.frontsector)
+            line.frontsector->linecount++;
 
-		if (li->backsector && li->backsector != li->frontsector)
+		if (line.backsector && line.backsector != line.frontsector)
 		{
-			li->backsector->linecount++;
+			line.backsector->linecount++;
 			total++;
 		}
 	}
@@ -1683,14 +1737,13 @@ void P_GroupLines (void)
 	{
 		bbox.ClearBox ();
 		sector->lines = linebuffer;
-		li = lines;
-		for (int j = 0 ; j < numlines ; j++, li++)
+		for (auto& line : R_GetLines())
 		{
-			if (li->frontsector == sector || li->backsector == sector)
+			if (line.frontsector == sector || line.backsector == sector)
 			{
-				*linebuffer++ = li;
-				bbox.AddToBox (li->v1->x, li->v1->y);
-				bbox.AddToBox (li->v2->x, li->v2->y);
+				*linebuffer++ = &line;
+				bbox.AddToBox (line.v1->x, line.v1->y);
+				bbox.AddToBox (line.v2->x, line.v2->y);
 			}
 		}
 		if (linebuffer - sector->lines != sector->linecount)
@@ -1717,7 +1770,7 @@ void P_GroupLines (void)
 		block = block < 0 ? 0 : block;
 		sector->blockbox[BOXLEFT]=block;
 	}
-
+	return total;
 }
 
 //
@@ -1969,6 +2022,56 @@ void P_SetupSlopes()
 	}
 }
 
+void P_LoadReject(int lumpnum, int totallines)
+{
+	// [SL] 2011-07-01 - Check to see if the reject table is of the proper size
+	// If it's empty, the reject table should be ignored when
+	// calling P_CheckSight
+	// [EB] and if exists, but is too small, pad it with 0s until its the right size
+	const auto lumpsize = W_LumpLength(lumpnum);
+	const uint32_t correctsize = (numsectors * numsectors + 7) / 8;
+	// TODO: if we end up using reject to optimize netcodea and it makes a significant difference,
+	// build reject lumps when its completely empty
+	if (!demoplayback && lumpsize == 0)
+	{
+		DPrintFmt("Reject matrix is empty and will be ignored.\n");
+		rejectempty = true;
+	}
+	else if (lumpsize < correctsize)
+	{
+		DPrintFmt("Reject matrix is not valid. It will be padded to the correct size.\n");
+		rejectmatrix = static_cast<byte*>(Z_Malloc(correctsize, PU_LEVEL, nullptr));
+		W_ReadLump(lumpnum, rejectmatrix);
+		memset(rejectmatrix + lumpsize, 0, correctsize - lumpsize);
+		// vanilla doom just reads pass the edge of the reject table if its too small
+		// so we replace the start of the padding with what would likely have been in memory
+		// when playing on MS-DOS
+		if (demoplayback) {
+			uint32_t rejectpad[4] =
+			{
+				0,       // Size
+				0,       // Part of z_zone block header
+				50,      // PU_LEVEL
+				0x1d4a11 // DOOM_CONST_ZONEID
+			};
+
+			rejectpad[0] = ((totallines * 4 + 3) & ~3) + 24;
+			byte* dest = rejectmatrix + lumpsize;
+
+			for (uint32_t i = 0; i < (correctsize - lumpsize) && i < sizeof(rejectpad); i++)
+			{
+				uint32_t byte_num = i % 4;
+				*dest = (rejectpad[i / 4] >> (byte_num * 8)) & 0xff;
+				dest++;
+			}
+		}
+	}
+	else
+	{
+		rejectmatrix = static_cast<byte*>(W_CacheLumpNum(lumpnum, PU_LEVEL));
+	}
+}
+
 } // namespace
 
 //
@@ -2100,18 +2203,7 @@ void P_SetupLevel (const char *lumpname, int position)
 			P_LoadSegs<mapseg_t>(lumpnum+ML_SEGS);
 	}
 
-	rejectmatrix = (byte *)W_CacheLumpNum (lumpnum+ML_REJECT, PU_LEVEL);
-	{
-		// [SL] 2011-07-01 - Check to see if the reject table is of the proper size
-		// If it's too short, the reject table should be ignored when
-		// calling P_CheckSight
-		if (W_LumpLength(lumpnum + ML_REJECT) < ((unsigned int)ceil((float)(numsectors * numsectors / 8))))
-		{
-			DPrintFmt("Reject matrix is not valid and will be ignored.\n");
-			rejectempty = true;
-		}
-	}
-	P_GroupLines ();
+	P_LoadReject(lumpnum + ML_REJECT, P_GroupLines());
 
 	// [SL] don't move seg vertices if compatibility is cruical
 	if (!demoplayback)

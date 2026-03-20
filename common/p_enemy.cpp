@@ -134,50 +134,48 @@ extern bool isFast;
 // sound blocking lines cut off traversal.
 //
 
-void P_RecursiveSound (sector_t *sec, int soundblocks, AActor *soundtarget)
+static void P_RecursiveSound (sector_t& sector, int soundblocks, AActor *soundtarget)
 {
-	int 		i;
-	line_t* 	check;
-	sector_t*	other;
-
 	// wake up all monsters in this sector
-	if (sec->validcount == validcount
-		&& sec->soundtraversed <= soundblocks+1)
+	if (sector.validcount == validcount
+		&& sector.soundtraversed <= soundblocks+1)
 	{
-		return; 		// already flooded
+		return;         // already flooded
 	}
 
-	sec->validcount = validcount;
-	sec->soundtraversed = soundblocks+1;
-	sec->soundtarget = soundtarget->ptr();
+	sector.validcount     = validcount;
+	sector.soundtraversed = soundblocks + 1;
+	sector.soundtarget    = soundtarget->ptr();
 
-	for (i=0 ;i<sec->linecount ; i++)
+	for (int i = 0; i < sector.linecount; i++)
 	{
-		check = sec->lines[i];
+		const line_t* check = sector.lines[i];
 		if (! (check->flags & ML_TWOSIDED) )
 			continue;
 
-		if ( sides[ check->sidenum[0] ].sector == sec)
-			other = sides[ check->sidenum[1] ] .sector;
-		else
-			other = sides[ check->sidenum[0] ].sector;
+		// It's tempting to rely on C++'s conversion of bool false/true to int 0 or 1.
+		// However, I'd much rather just explicitly state what I mean with exact index
+		// numbers and let the compiler micro-optimize it if it insists.
+
+		const size_t otherSidenumIndex =  sides[ check->sidenum[0] ].sector == &sector ? 1 : 0;
+		sector_t&    otherRef          = *sides[ check->sidenum[otherSidenumIndex] ].sector;
 
 		// [SL] 2012-02-08 - FIXME: Currently only checks for a line opening at
 		// midpoint of a sloped linedef.  P_RecursiveSound() in ZDoom 1.23 causes
 		// demo desyncs.
 		P_LineOpening(check, (check->v1->x >> 1) + (check->v2->x >> 1),
-							 (check->v1->y >> 1) + (check->v2->y >> 1));
+		                     (check->v1->y >> 1) + (check->v2->y >> 1));
 
 		if (openrange <= 0)
-			continue;	// closed door
+			continue;   // closed door
 
 		if (check->flags & ML_SOUNDBLOCK)
 		{
 			if (!soundblocks)
-				P_RecursiveSound (other, 1, soundtarget);
+				P_RecursiveSound (otherRef, 1, soundtarget);
 		}
 		else
-			P_RecursiveSound (other, soundblocks, soundtarget);
+			P_RecursiveSound (otherRef, soundblocks, soundtarget);
 	}
 }
 
@@ -193,8 +191,11 @@ void P_NoiseAlert (AActor *target, AActor *emmiter)
 	if (target->player && (!multiplayer && (target->player->cheats & CF_NOTARGET)))
 		return;
 
+	if (not emmiter->subsector)
+		return;
+
 	validcount++;
-	P_RecursiveSound (emmiter->subsector->sector, 0, target);
+	P_RecursiveSound (* emmiter->subsector->sector, 0, target);
 }
 
 
@@ -468,9 +469,12 @@ bool P_SmartMove(AActor* actor)
 	int dropoff = 0;
 
 	/* killough 9/12/98: Stay on a lift if target is on one */
-	on_lift = co_staylift && target && target->health > 0 &&
-	          target->subsector->sector->tag == actor->subsector->sector->tag &&
-	          P_IsOnLift(actor);
+	on_lift = co_staylift
+	            && target
+	            && target->health > 0
+	            && target->subsector
+	            && target->subsector->sector->tag == actor->subsector->sector->tag
+	            && P_IsOnLift(actor);
 
 	under_damage = co_avoidhazards && P_IsUnderDamage(actor); // e6y
 
@@ -535,6 +539,9 @@ bool P_TryWalk (AActor *actor)
 
 bool P_IsOnLift(const AActor* actor)
 {
+	if (not (actor && actor->subsector))
+		return false;
+
 	const sector_t* sec = actor->subsector->sector;
 	line_t line;
 	int l;
@@ -675,11 +682,10 @@ static fixed_t P_AvoidDropoff(AActor* actor)
 	tmbbox[BOXRIGHT] = actor->x + actor->radius;
 	tmbbox[BOXLEFT] = actor->x - actor->radius;
 
-	int yh = tmbbox[BOXTOP] - bmaporgy;
-	int yl = tmbbox[BOXBOTTOM] - bmaporgy;
-	int xh = tmbbox[BOXRIGHT] - bmaporgx;
-	int xl = tmbbox[BOXLEFT] - bmaporgx;
-	int bx, by;
+	const int yh = (tmbbox[BOXTOP] - bmaporgy) >> MAPBLOCKSHIFT;
+	const int yl = (tmbbox[BOXBOTTOM] - bmaporgy) >> MAPBLOCKSHIFT;
+	const int xh = (tmbbox[BOXRIGHT] - bmaporgx) >> MAPBLOCKSHIFT;
+	const int xl = (tmbbox[BOXLEFT] - bmaporgx) >> MAPBLOCKSHIFT;
 
 	floorz = actor->z; // remember floor height
 
@@ -688,8 +694,8 @@ static fixed_t P_AvoidDropoff(AActor* actor)
 	// check lines
 
 	validcount++;
-	for (bx = xl; bx <= xh; bx++)
-		for (by = yl; by <= yh; by++)
+	for (int bx = xl; bx <= xh; bx++)
+		for (int by = yl; by <= yh; by++)
 			P_BlockLinesIterator(bx, by, PIT_AvoidDropoff); // all contacted lines
 
 	return dropoff_deltax | dropoff_deltay; // Non-zero if movement prescribed
@@ -1500,7 +1506,7 @@ void A_Look (AActor *actor)
 	AActor *targ;
 	AActor *newgoal;
 
-	if(!actor->subsector)
+	if(not (actor && actor->subsector))
 		return;
 
 	// [RH] Set goal now if appropriate
