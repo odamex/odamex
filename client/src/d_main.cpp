@@ -553,11 +553,7 @@ void D_DoAdvanceDemo (void)
 			break;
 	}
 
-    // [Russell] - Still need this toilet humor for now unfortunately
-	if (!pagename.empty())
-	{
-		D_LoadPageImage(page_image, pagename);
-	}
+	D_LoadPageImage(page_image, pagename);
 }
 
 //

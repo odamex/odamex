@@ -28,6 +28,7 @@
 
 #include <sstream>
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 
 #include "win32inc.h"
@@ -220,6 +221,12 @@ static void D_AddUniquePath(std::vector<std::string>& paths, const std::string& 
 		paths.push_back(cleanPath);
 }
 
+static bool D_IsExistingDir(const std::string& path)
+{
+	std::error_code ec;
+	return std::filesystem::is_directory(std::filesystem::path(path), ec);
+}
+
 static std::vector<std::string> GetSteamLibraryPaths(const char* install_path)
 {
 	std::vector<std::string> paths;
@@ -345,7 +352,8 @@ void D_InitializeDoomObjectTables()
 // D_AddSearchDir
 // denis - Split a new directory string using the separator and append results to the output
 //
-void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator)
+void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator,
+                    const missing_dir_policy policy)
 {
 	if(!dir)
 		return;
@@ -363,8 +371,15 @@ void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char 
 
 		M_ExpandHomeDir(segment);
 		segment = M_CleanPath(segment);
-
-		dirs.push_back(segment);
+		if (D_IsExistingDir(segment))
+		{
+			dirs.push_back(segment);
+		}
+		else if (policy == missing_dir_policy::warn ||
+		         (policy == missing_dir_policy::developer_warn && (::developer || ::devparm)))
+		{
+			PrintFmt(PRINT_HIGH, "{}: search dir not found: {}\n", __FUNCTION__, segment);
+		}
 	}
 }
 
@@ -399,7 +414,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 				path = unstr + strlen(uninstaller_string);
 
 				const char* cpath = path;
-				D_AddSearchDir(dirs, cpath, separator);
+				D_AddSearchDir(dirs, cpath, separator, missing_dir_policy::silent);
 			}
 		}
 	}
@@ -414,7 +429,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 			{
 				const std::string subpath = fmt::format("{}\\{}", install_path, dir);
 
-				D_AddSearchDir(dirs, subpath.c_str(), separator);
+				D_AddSearchDir(dirs, subpath.c_str(), separator, missing_dir_policy::silent);
 			}
 
 			M_Free(install_path);
@@ -434,7 +449,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 				{
 					const std::string subpath = fmt::format("{}\\{}", library, dir);
 
-					D_AddSearchDir(dirs, subpath.c_str(), separator);
+					D_AddSearchDir(dirs, subpath.c_str(), separator, missing_dir_policy::silent);
 				}
 			}
 
@@ -448,7 +463,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 		if (doom_plus_doom2_path != nullptr)
 		{
-			D_AddSearchDir(dirs, doom_plus_doom2_path, separator);
+			D_AddSearchDir(dirs, doom_plus_doom2_path, separator, missing_dir_policy::silent);
 			M_Free(doom_plus_doom2_path);
 		}
 
@@ -456,7 +471,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 		if (doom_path != nullptr)
 		{
-			D_AddSearchDir(dirs, doom_path, separator);
+			D_AddSearchDir(dirs, doom_path, separator, missing_dir_policy::silent);
 			M_Free(doom_path);
 		}
 
@@ -466,8 +481,8 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 		{
 			const std::string full_doom2_path = fmt::format("{}\\{}", doom2_path, "doom2");
 			const std::string master_levels_path = fmt::format("{}\\{}", doom2_path, "master\\wads");
-			D_AddSearchDir(dirs, full_doom2_path.c_str(), separator);
-			D_AddSearchDir(dirs, master_levels_path.c_str(), separator);
+			D_AddSearchDir(dirs, full_doom2_path.c_str(), separator, missing_dir_policy::silent);
+			D_AddSearchDir(dirs, master_levels_path.c_str(), separator, missing_dir_policy::silent);
 			M_Free(doom2_path);
 		}
 
@@ -477,8 +492,8 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 		{
 			const std::string plutonia_path = fmt::format("{}\\{}", final_doom_path, "Plutonia");
 			const std::string tnt_path = fmt::format("{}\\{}", final_doom_path, "TNT");
-			D_AddSearchDir(dirs, plutonia_path.c_str(), separator);
-			D_AddSearchDir(dirs, tnt_path.c_str(), separator);
+			D_AddSearchDir(dirs, plutonia_path.c_str(), separator, missing_dir_policy::silent);
+			D_AddSearchDir(dirs, tnt_path.c_str(), separator, missing_dir_policy::silent);
 			M_Free(final_doom_path);
 		}
 
@@ -486,43 +501,43 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 		if (heretic_plus_hexen_path != nullptr)
 		{
-			D_AddSearchDir(dirs, heretic_plus_hexen_path, separator);
+			D_AddSearchDir(dirs, heretic_plus_hexen_path, separator, missing_dir_policy::silent);
 			M_Free(heretic_plus_hexen_path);
 		}
 	}
 
 	// DOS Doom via DEICE
-	D_AddSearchDir(dirs, "\\doom2", separator);    // Doom II
-	D_AddSearchDir(dirs, "\\plutonia", separator); // Final Doom
-	D_AddSearchDir(dirs, "\\tnt", separator);
-	D_AddSearchDir(dirs, "\\doom_se", separator);  // Ultimate Doom
-	D_AddSearchDir(dirs, "\\doom", separator);     // Shareware / Registered Doom
-	D_AddSearchDir(dirs, "\\dooms", separator);    // Shareware versions
-	D_AddSearchDir(dirs, "\\doomsw", separator);
+	D_AddSearchDir(dirs, "\\doom2", separator, missing_dir_policy::developer_warn);    // Doom II
+	D_AddSearchDir(dirs, "\\plutonia", separator, missing_dir_policy::developer_warn); // Final Doom
+	D_AddSearchDir(dirs, "\\tnt", separator, missing_dir_policy::developer_warn);
+	D_AddSearchDir(dirs, "\\doom_se", separator, missing_dir_policy::developer_warn);  // Ultimate Doom
+	D_AddSearchDir(dirs, "\\doom", separator, missing_dir_policy::developer_warn);     // Shareware / Registered Doom
+	D_AddSearchDir(dirs, "\\dooms", separator, missing_dir_policy::developer_warn);    // Shareware versions
+	D_AddSearchDir(dirs, "\\doomsw", separator, missing_dir_policy::developer_warn);
 
 	#elif defined(UNIX)
 
 	const char separator = ':';
 
 	#if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR)
-	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/odamex", separator);
-	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex", separator);
+	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/odamex", separator, missing_dir_policy::developer_warn);
+	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex", separator, missing_dir_policy::developer_warn);
 	#endif
 	// Search the maintainer-directed data directory for WADs
 	#if defined(ODAMEX_INSTALL_DATADIR)
-	D_AddSearchDir(dirs, ODAMEX_INSTALL_DATADIR, separator);
+	D_AddSearchDir(dirs, ODAMEX_INSTALL_DATADIR, separator, missing_dir_policy::developer_warn);
 	#endif
 
-	D_AddSearchDir(dirs, "/usr/share/doom", separator);
-	D_AddSearchDir(dirs, "/usr/share/games/doom", separator);
-	D_AddSearchDir(dirs, "/usr/local/share/games/doom", separator);
-	D_AddSearchDir(dirs, "/usr/local/share/doom", separator);
+	D_AddSearchDir(dirs, "/usr/share/doom", separator, missing_dir_policy::developer_warn);
+	D_AddSearchDir(dirs, "/usr/share/games/doom", separator, missing_dir_policy::developer_warn);
+	D_AddSearchDir(dirs, "/usr/local/share/games/doom", separator, missing_dir_policy::developer_warn);
+	D_AddSearchDir(dirs, "/usr/local/share/doom", separator, missing_dir_policy::developer_warn);
 	// Flatpak sandbox default directories
 	// (Since you need to pass envvars to a Flatpak)
-	D_AddSearchDir(dirs, "/run/host/usr/share/doom", separator);
-	D_AddSearchDir(dirs, "/run/host/usr/share/games/doom", separator);
-	D_AddSearchDir(dirs, "/run/host/usr/local/share/games/doom", separator);
-	D_AddSearchDir(dirs, "/run/host/usr/local/share/doom", separator);
+	D_AddSearchDir(dirs, "/run/host/usr/share/doom", separator, missing_dir_policy::developer_warn);
+	D_AddSearchDir(dirs, "/run/host/usr/share/games/doom", separator, missing_dir_policy::developer_warn);
+	D_AddSearchDir(dirs, "/run/host/usr/local/share/games/doom", separator, missing_dir_policy::developer_warn);
+	D_AddSearchDir(dirs, "/run/host/usr/local/share/doom", separator, missing_dir_policy::developer_warn);
 
 	#endif
 }
