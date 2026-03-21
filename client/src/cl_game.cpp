@@ -62,6 +62,7 @@ END_DISABLE_WARNING_GNU
 #include "g_game.h"
 #include "cl_main.h"
 #include "cl_demo.h"
+#include "cl_vanillademo.h"
 #include "cl_replay.h"
 #include "cl_netgraph.h"
 #include "gi.h"
@@ -80,7 +81,6 @@ END_DISABLE_WARNING_GNU
 #define TURN180_TICKS	9				// [RH] # of ticks to complete a turn180
 
 bool	G_CheckDemoStatus (void);
-void	G_ReadDemoTiccmd ();
 void	G_WriteDemoTiccmd ();
 void	G_PlayerReborn (player_t &player);
 
@@ -127,21 +127,6 @@ int 			gametic;
 extern fixed_t bobx;
 extern fixed_t boby;
 extern NetGraph netgraph;
-
-enum demoversion_t
-{
-	LMP_DOOM_1_9,
-	LMP_DOOM_1_9_1, // longtics hack
-}demoversion;
-
-#define DOOM_1_4_DEMO		0x68
-#define DOOM_1_5_DEMO		0x69
-#define DOOM_1_6_DEMO		0x6A
-#define DOOM_1_7_DEMO		0x6B
-#define DOOM_1_8_DEMO		0x6C
-#define DOOM_1_9_DEMO		0x6D
-#define DOOM_1_9p_DEMO		0x6E
-#define DOOM_1_9_1_DEMO		0x6F
 
 EXTERN_CVAR(sv_nomonsters)
 EXTERN_CVAR(sv_fastmonsters)
@@ -993,7 +978,7 @@ void G_Ticker (void)
 	int packet_size;
 
 	if (demoplayback)
-		G_ReadDemoTiccmd(); // play all player commands
+		G_ReadDemoTiccmd(demo_p, demo_e); // play all player commands
 
 	if(netdemo.isPlaying())
 	{
@@ -1786,47 +1771,6 @@ void G_DoSaveGame()
     }
 }
 
-
-
-
-//
-// DEMO RECORDING
-//
-#define DEMOMARKER				0x80
-#define DEMOSTOP				0x07
-
-void G_ReadDemoTiccmd()
-{
-	if (demoversion == LMP_DOOM_1_9 || demoversion == LMP_DOOM_1_9_1)
-	{
-		int demostep = (demoversion == LMP_DOOM_1_9_1) ? 5 : 4;
-
-		for (auto& player : players)
-		{
-			if ((demo_e - demo_p < demostep) || (*demo_p == DEMOMARKER))
-			{
-				// end of demo data stream
-				G_CheckDemoStatus();
-				return;
-			}
-
-			player.cmd.forwardmove = (static_cast<int8_t>(*demo_p++)) << 8;
-			player.cmd.sidemove = (static_cast<int8_t>(*demo_p++)) << 8;
-
-			if (demoversion == LMP_DOOM_1_9)
-			{
-				player.cmd.yaw = (static_cast<byte>(*demo_p++)) << 8;
-			}
-			else
-			{
-				player.cmd.yaw = (static_cast<uint16_t>(*demo_p++));
-				player.cmd.yaw |= (static_cast<uint16_t>(*demo_p++)) << 8;
-			}
-			player.cmd.buttons = static_cast<byte>(*demo_p++);
-		}
-	}
-}
-
 //
 // G_PlayDemo
 //
@@ -1899,6 +1843,8 @@ void G_DoPlayDemo(bool justStreamInput)
 	if (!justStreamInput)
 		CL_QuitNetGame(NQ_SILENT);
 
+	G_ClearDemoCodec();
+
 	gameaction = ga_nothing;
 	int bytelen;
 
@@ -1926,142 +1872,112 @@ void G_DoPlayDemo(bool justStreamInput)
 
 	demo_e = demo_p + bytelen;
 
-	if (bytelen < 14)
+	demo_header_t header;
+	if (!G_TryReadDemoHeader(header, gameinfo.demoformat, demo_p, demo_e))
 	{
 		if (bytelen)
 			Z_Free(demobuffer);
+		G_ClearDemoCodec();
 
-		PrintFmt(PRINT_WARNING, "DOOM Demo file too short\n");
+		PrintFmt(PRINT_WARNING, "Unsupported or invalid demo format\n");
 		gameaction = ga_fullconsole;
 		return;
 	}
 
-	if (demo_p[0] == DOOM_1_4_DEMO ||
-		demo_p[0] == DOOM_1_5_DEMO ||
-		demo_p[0] == DOOM_1_6_DEMO ||
-		demo_p[0] == DOOM_1_7_DEMO ||
-		demo_p[0] == DOOM_1_8_DEMO ||
-		demo_p[0] == DOOM_1_9_DEMO ||
-		demo_p[0] == DOOM_1_9p_DEMO ||
-		demo_p[0] == DOOM_1_9_1_DEMO)
+	PrintFmt(PRINT_HIGH, "Playing {} demo {}\n", G_GetCurrentDemoCodecName(), defdemoname);
+
+	demostartgametic = gametic;
+
+	const OLumpName mapname = gameinfo.flags & GI_MAPxx ?
+		fmt::format("MAP{:02d}", header.map) :
+		fmt::format("E{}M{}", header.episode, header.map);
+
+	if (!justStreamInput)
+		players.clear();
+
+	for (byte i = 0; i < MAXPLAYERS_VANILLA; ++i)
 	{
-		PrintFmt(PRINT_HIGH, "Playing DOOM demo {}\n", defdemoname);
-
-		demostartgametic = gametic;
-		demoversion = *demo_p++ == DOOM_1_9_1_DEMO ? LMP_DOOM_1_9_1 : LMP_DOOM_1_9;
-
-		byte skill = *demo_p++ + 1;
-
-		byte episode = *demo_p++;
-		byte map = *demo_p++;
-		const OLumpName mapname = gameinfo.flags & GI_MAPxx ?
-			fmt::format("MAP{:02d}", map) :
-			fmt::format("E{}M{}", episode, map);
-
-		int deathmatch = *demo_p++;
-		bool monstersrespawn = *demo_p++;
-		bool fastmonsters = *demo_p++;
-		bool nomonsters = *demo_p++;
-		byte who = *demo_p++;
-
-		if (!justStreamInput)
-			players.clear();
-
-		for (byte i = 0 ; i < MAXPLAYERS_VANILLA; i++)
+		if (header.playerPresent[i] && !justStreamInput)
 		{
-			if (*demo_p++ && !justStreamInput)
-			{
-				player_t* player = &players.emplace_back();
-				player->playerstate = PST_REBORN;
-				player->id = i + 1;
-			}
+			player_t* player = &players.emplace_back();
+			player->playerstate = PST_REBORN;
+			player->id = i + 1;
 		}
-
-		demoplayback = true;
-
-		if (!justStreamInput)
-		{
-			player_t &con = idplayer(who + 1);
-
-			if (!validplayer(con))
-			{
-				Z_Free(demobuffer);
-				PrintFmt(PRINT_HIGH, "DOOM Demo: invalid console player {} of {}\n", who + 1, players.size());
-				gameaction = ga_fullconsole;
-				return;
-			}
-
-			consoleplayer_id = displayplayer_id = con.id;
-
-			if (players.size() > 1)
-				multiplayer = true;
-			else
-				multiplayer = false;
-
-			serverside = true;
-
-			// [SL] 2012-12-26 - Backup any cvars that need to be set to default to
-			// ensure demo compatibility. CVAR_SERVERINFO cvars is a handy superset
-			// of those cvars
-			cvar_t::C_BackupCVars(CVAR_SERVERINFO);
-			cvar_t::C_SetCVarsToDefaults(CVAR_SERVERINFO);
-
-			sv_skill.Set(skill);
-			sv_monstersrespawn.Set(monstersrespawn);
-			sv_fastmonsters.Set(fastmonsters);
-			sv_nomonsters.Set(nomonsters);
-
-			if (deathmatch == 2)
-			{
-				// Altdeath
-				sv_gametype.Set(GM_DM);
-				sv_weaponstay.Set(0.0f);
-				sv_itemsrespawn.Set(1.0f);
-			}
-			else if (deathmatch == 1)
-			{
-				// Classic deathmatch
-				sv_gametype.Set(GM_DM);
-				sv_weaponstay.Set(1.0f);
-				sv_itemsrespawn.Set(0.0f);
-			}
-			else
-			{
-				// Co-op
-				sv_gametype.Set(GM_COOP);
-				sv_weaponstay.Set(1.0f);
-				sv_itemsrespawn.Set(0.0f);
-			}
-
-			sv_respawnsuper.Set(0.0f);
-
-			usergame = false;
-		}
-
-		// Set up the colors and names for the demo players
-		for (auto& player : players)
-		{
-			R_BuildClassicPlayerTranslation(player.id, player.id - 1);
-			argb_t color(translationRGB[player.id][0]);
-
-			player.userinfo.color[0] = color.geta();
-			player.userinfo.color[1] = color.getr();
-			player.userinfo.color[2] = color.getg();
-			player.userinfo.color[3] = color.getb();
-
-			player.userinfo.netname = fmt::format("Players {}", player.id);
-		}
-
-		if (!justStreamInput)
-			G_InitNew(mapname);
-
 	}
-	else
+
+	demoplayback = true;
+
+	if (!justStreamInput)
 	{
-		PrintFmt(PRINT_WARNING, "Unsupported demo format.  If you are trying to play an Odamex " \
-						"netdemo, please use the netplay command\n");
-		gameaction = ga_nothing;
+		player_t& con = idplayer(header.consoleplayer + 1);
+
+		if (!validplayer(con))
+		{
+			Z_Free(demobuffer);
+			PrintFmt(PRINT_HIGH, "{} Demo: invalid console player {} of {}\n",
+			         G_GetCurrentDemoCodecName(), header.consoleplayer + 1, players.size());
+			G_ClearDemoCodec();
+			gameaction = ga_fullconsole;
+			return;
+		}
+
+		consoleplayer_id = displayplayer_id = con.id;
+		multiplayer = players.size() > 1;
+		serverside = true;
+
+		// [SL] 2012-12-26 - Backup any cvars that need to be set to default to
+		// ensure demo compatibility. CVAR_SERVERINFO cvars is a handy superset
+		// of those cvars
+		cvar_t::C_BackupCVars(CVAR_SERVERINFO);
+		cvar_t::C_SetCVarsToDefaults(CVAR_SERVERINFO);
+
+		sv_skill.Set(header.skill);
+		sv_monstersrespawn.Set(header.monstersrespawn);
+		sv_fastmonsters.Set(header.fastmonsters);
+		sv_nomonsters.Set(header.nomonsters);
+
+		if (header.deathmatch == 2)
+		{
+			// Altdeath
+			sv_gametype.Set(GM_DM);
+			sv_weaponstay.Set(0.0f);
+			sv_itemsrespawn.Set(1.0f);
+		}
+		else if (header.deathmatch == 1)
+		{
+			// Classic deathmatch
+			sv_gametype.Set(GM_DM);
+			sv_weaponstay.Set(1.0f);
+			sv_itemsrespawn.Set(0.0f);
+		}
+		else
+		{
+			// Co-op
+			sv_gametype.Set(GM_COOP);
+			sv_weaponstay.Set(1.0f);
+			sv_itemsrespawn.Set(0.0f);
+		}
+
+		sv_respawnsuper.Set(0.0f);
+		usergame = false;
 	}
+
+	// Set up the colors and names for the demo players
+	for (auto& player : players)
+	{
+		R_BuildClassicPlayerTranslation(player.id, player.id - 1);
+		argb_t color(translationRGB[player.id][0]);
+
+		player.userinfo.color[0] = color.geta();
+		player.userinfo.color[1] = color.getr();
+		player.userinfo.color[2] = color.getg();
+		player.userinfo.color[3] = color.getb();
+
+		player.userinfo.netname = fmt::format("Players {}", player.id);
+	}
+
+	if (!justStreamInput)
+		G_InitNew(mapname);
 }
 
 //
@@ -2107,6 +2023,7 @@ void G_CleanupDemo()
 	if (demoplayback)
 	{
 		Z_Free(demobuffer);
+		G_ClearDemoCodec();
 
 		demoplayback = false;
 		multiplayer = false;

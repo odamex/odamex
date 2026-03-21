@@ -63,6 +63,12 @@ typedef enum
 	ENGINE_HERETIC,
 } enginetype_t;
 
+typedef enum
+{
+	DEMOFORMAT_DOOM_VANILLA,
+	DEMOFORMAT_HERETIC_VANILLA,
+} demoformat_t;
+
 struct fontdef_t
 {
 	std::string pattern;
@@ -97,6 +103,7 @@ typedef struct gameinfo_s
 {
 	int flags;
 	enginetype_t enginetype;
+	demoformat_t demoformat;
 	OLumpName titlePage;
 	OLumpName creditPages[2];
 	OLumpName titleMusic;
@@ -148,6 +155,7 @@ typedef struct gameinfo_s
 	gameinfo_s()
 		: flags(0)
 		, enginetype(ENGINE_DOOM)
+		, demoformat(DEMOFORMAT_DOOM_VANILLA)
 		, titlePage("")
 		, creditPages()
 		, titleMusic("")

@@ -1683,6 +1683,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = shareware_heretic;
 		gamemission = heretic;
 		gameinfo.enginetype = ENGINE_HERETIC;
+		gameinfo.demoformat = DEMOFORMAT_HERETIC_VANILLA;
 		gameinfo.flags = GI_SHAREWARE | GI_MENUHACK_RETAIL;
 		gameinfo.titleString = "Heretic Shareware";
 		gameinfo.baseMapinfoLump = "_HERENFO";
@@ -1693,6 +1694,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gamemode = registered_heretic;
 		gamemission = heretic;
 		gameinfo.enginetype = ENGINE_HERETIC;
+		gameinfo.demoformat = DEMOFORMAT_HERETIC_VANILLA;
 		gameinfo.flags = GI_PAGESARERAW | GI_MENUHACK_RETAIL;
 		gameinfo.titleString = "Heretic";
 		gameinfo.baseMapinfoLump = "_HERENFO";
