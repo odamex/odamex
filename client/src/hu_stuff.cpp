@@ -743,8 +743,8 @@ static void HU_DrawPingDistances()
 	static constexpr float PingMinResScale = 0.40f;
 	static constexpr double UnitsPerMarineMeter = 32.0;
 	static constexpr float PingMinAlpha = 0.45f;
-	static constexpr int PingSolidTics = (3 * TICRATE) / 2; // 1.5s
-	static constexpr int PingFadeTics = TICRATE / 2;        // 0.5s
+	static constexpr int PingSolidTics = TICRATE;     // 1.0s
+	static constexpr int PingFadeTics = TICRATE / 2; // 0.5s (ends at 1.5s)
 	static constexpr fixed_t PingAlphaNearDist = 192 * FRACUNIT;
 	static constexpr fixed_t PingAlphaFarDist = 512 * FRACUNIT;
 	static constexpr fixed_t StrictHeadOffset = 12 * FRACUNIT;
