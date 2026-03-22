@@ -323,7 +323,7 @@ TEST(FixedMath64, Multiplication) {
 	EXPECT_EQ(FixedMul64(2_fx64, 16383.5_fx64), 32767_fx64);
 }
 
-TEST(FixedMath64, DISABLED_Division) {
+TEST(FixedMath64, Division) {
 	EXPECT_EQ(FixedDiv64(0_fx64, 1_fx64), 0_fx64);
 	EXPECT_EQ(FixedDiv64(1_fx64, 1_fx64), 1_fx64);
 	EXPECT_EQ(FixedDiv64(32767_fx64, 2_fx64), 16383.5_fx64);
