@@ -213,7 +213,7 @@ consteval fixed_t operator ""_fx(unsigned long long x)
 {
 	if (x > static_cast<unsigned long long>(std::numeric_limits<int32_t>::max() >> FRACBITS))
 		throw "Literal out of range for type fixed_t";
-	return INT2FIXED(x);
+	return INT2FIXED(static_cast<int32_t>(x));
 }
 
 [[nodiscard]]
@@ -221,7 +221,7 @@ consteval fixed64_t operator ""_fx64(unsigned long long x)
 {
 	if (x > static_cast<unsigned long long>(std::numeric_limits<int64_t>::max() >> FRACBITS64))
 		throw "Literal out of range for type fixed64_t";
-    return INT2FIXED64(x);
+    return INT2FIXED64(static_cast<int64_t>(x));
 }
 
 [[nodiscard]]
@@ -234,7 +234,7 @@ consteval fixed_t operator ""_fx(long double x)
 
 	if (x < min || x > max)
 		throw "Literal out of range for type fixed_t";
-    return DOUBLE2FIXED(x);
+    return DOUBLE2FIXED(static_cast<double>(x));
 }
 
 [[nodiscard]]
@@ -247,5 +247,5 @@ consteval fixed64_t operator ""_fx64(long double x)
 
 	if (x < min || x > max)
 		throw "Literal out of range for type fixed64_t";
-    return DOUBLE2FIXED64(x);
+    return DOUBLE2FIXED64(static_cast<double>(x));
 }
