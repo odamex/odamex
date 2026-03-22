@@ -125,7 +125,7 @@ inline constexpr fixed_t FIXED642FIXED(fixed64_t x)
 [[nodiscard]]
 inline constexpr fixed64_t FIXED2FIXED64(fixed_t x)
 {
-	return static_cast<fixed64_t>(x << (FRACBITS64 - FRACBITS));
+	return static_cast<fixed64_t>(x) << (FRACBITS64 - FRACBITS);
 }
 
 //
