@@ -6,6 +6,7 @@ gameinfo
 	borderflat = "FLOOR7_2"
 	chatsound = "misc/chat2"
 	creditpage = "CREDIT"
+	demoloop = "DDEMOLP"
 	pagetime = 5
 	intermissionmusic = "$MUSIC_INTER"
 	quitsound = "menu/quit1"

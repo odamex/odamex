@@ -105,6 +105,7 @@ typedef struct gameinfo_s
 	enginetype_t enginetype;
 	demoformat_t demoformat;
 	OLumpName titlePage;
+	OLumpName demoLoop;
 	OLumpName creditPages[2];
 	OLumpName titleMusic;
 	int titleTime;
@@ -157,6 +158,7 @@ typedef struct gameinfo_s
 		, enginetype(ENGINE_DOOM)
 		, demoformat(DEMOFORMAT_DOOM_VANILLA)
 		, titlePage("")
+		, demoLoop("")
 		, creditPages()
 		, titleMusic("")
 		, titleTime(0)

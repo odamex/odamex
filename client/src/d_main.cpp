@@ -76,6 +76,7 @@ END_DISABLE_WARNING_GNU
 #include "p_setup.h"
 #include "r_local.h"
 #include "r_sky.h"
+#include "d_demoloop.h"
 #include "d_pages.h"
 #include "d_main.h"
 #include "d_dehacked.h"
@@ -119,6 +120,7 @@ gamestate_t wipegamestate = GS_DEMOSCREEN;	// can be -1 to force a wipe
 bool demotest = false;
 
 static page_image_t page_image;
+static bool show_advisor_overlay;
 
 static int demosequence;
 static int pagetic;
@@ -402,10 +404,9 @@ void D_PageDrawer()
 
 	if (page_image.surface)
 	{
-		// [ML] If this is the advisory screen in Heretic, draw the "advisor" patch on top of it.
-		if (gamemode == registered_heretic && demosequence == 1)
+		if (show_advisor_overlay)
 		{
-			screen->DrawPatchClean(W_CachePatch("ADVISOR"),4,160);
+			screen->DrawPatchClean(W_CachePatch("ADVISOR"), 4, 160);
 		}
 	}
 }
@@ -426,134 +427,14 @@ void D_DoAdvanceDemo (void)
 {
 	S_StopAmbientSound();
 
-	OLumpName pagename;
-
 	consoleplayer().playerstate = PST_LIVE;	// not reborn
 	advancedemo = false;
+	show_advisor_overlay = false;
 	usergame = false;				// no save / end game here
 	paused = false;
 	gameaction = ga_nothing;
 
-    // [Russell] - Old demo sequence used in original games, zdoom's
-    // dynamic one was too dynamic for its own good
-    // [Nes] - Newer demo sequence with better flow.
-	// [ML] - And now with heretic
-	const bool hasdemo4 = W_CheckNumForName("DEMO4") >= 0 && gamemode != retail_chex;
-	const bool is_heretic = gameinfo.enginetype == ENGINE_HERETIC;
-
-	if (is_heretic)
-	{
-		demosequence = (demosequence + 1) % 7;
-	}
-	else if (hasdemo4)
-	{
-		demosequence = (demosequence + 1) % 8;
-	}
-	else
-	{
-		demosequence = (demosequence + 1) % 6;
-	}
-
-	switch (demosequence)
-	{
-		case 0:
-			pagetic = gameinfo.titleTime * TICRATE;
-			gamestate = GS_DEMOSCREEN;
-			pagename = gameinfo.titlePage;
-
-			currentmusic = gameinfo.titleMusic.c_str();
-			S_StartMusic(currentmusic);
-			break;
-		case 1:
-			if (gameinfo.advisoryTime > 0)
-			{
-				pagetic = gameinfo.advisoryTime * TICRATE;
-				gamestate = GS_DEMOSCREEN;
-				pagename = gameinfo.titlePage;
-			}
-			else
-			{
-				G_DeferedPlayDemo("DEMO1");
-			}
-			break;
-		case 2:
-			if (is_heretic)
-			{
-				G_DeferedPlayDemo("DEMO1");
-			}
-			else
-			{
-				pagetic = gameinfo.pageTime * TICRATE;
-				gamestate = GS_DEMOSCREEN;
-				pagename = gameinfo.creditPages[0];
-			}
-			break;
-		case 3:
-			if (is_heretic)
-			{
-				pagetic = gameinfo.pageTime * TICRATE;
-				gamestate = GS_DEMOSCREEN;
-				pagename = gameinfo.creditPages[0];
-			}
-			else
-			{
-				G_DeferedPlayDemo("DEMO2");
-			}
-			break;
-		case 4:
-			if (is_heretic)
-			{
-				G_DeferedPlayDemo("DEMO2");
-			}
-			else
-			{
-				gamestate = GS_DEMOSCREEN;
-
-				if ((gameinfo.flags & GI_MAPxx) || (gameinfo.flags & GI_MENUHACK_RETAIL))
-				{
-					pagetic = gameinfo.titleTime * TICRATE;
-					pagename = gameinfo.titlePage;
-					currentmusic = gameinfo.titleMusic.c_str();
-
-					S_StartMusic(currentmusic);
-				}
-				else
-				{
-					pagetic = gameinfo.pageTime * TICRATE;
-					pagename = gameinfo.creditPages[1];
-				}
-			}
-			break;
-		case 5:
-			if (is_heretic)
-			{
-				pagetic = gameinfo.pageTime * TICRATE;
-				gamestate = GS_DEMOSCREEN;
-				pagename = gameinfo.creditPages[0];
-			}
-			else
-			{
-				G_DeferedPlayDemo("DEMO3");
-			}
-			break;
-		case 6:
-			if (is_heretic)
-			{
-				G_DeferedPlayDemo("DEMO3");
-			}
-			else
-			{
-				pagetic = gameinfo.pageTime * TICRATE;
-				gamestate = GS_DEMOSCREEN;
-				pagename = gameinfo.creditPages[1];
-			}
-			break;
-		case 7:
-			G_DeferedPlayDemo("DEMO4");
-			break;
-	}
-
-	D_LoadPageImage(page_image, pagename);
+	D_DoAdvanceDemoLoop(page_image, pagetic, show_advisor_overlay);
 }
 
 //
@@ -575,6 +456,8 @@ void D_StartTitle (void)
 
 	gameaction = ga_nothing;
 	demosequence = -1;
+	show_advisor_overlay = false;
+	D_ResetDemoLoop();
 	D_AdvanceDemo();
 }
 

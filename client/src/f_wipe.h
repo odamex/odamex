@@ -32,5 +32,7 @@ void Wipe_Stop();
 void Wipe_Start();
 bool Wipe_Ticker();
 void Wipe_Drawer();
+void Wipe_ClearNextTypeOverride();
+void Wipe_SetNextTypeOverride(int wipeType);
 
 extern int NoWipe;

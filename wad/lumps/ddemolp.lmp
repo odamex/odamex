@@ -1,0 +1,17 @@
+{
+  "type": "demoloop",
+  "version": "1.0.0",
+  "metadata": null,
+  "data": {
+    "entries": [
+      { "type": 0, "primarylump": "TITLEPIC", "secondarylump": "$MUSIC_INTRO", "duration": 5 },
+      { "type": 1, "primarylump": "DEMO1" },
+      { "type": 0, "primarylump": "CREDIT", "duration": 5 },
+      { "type": 1, "primarylump": "DEMO2" },
+      { "type": 0, "primarylump": "TITLEPIC", "secondarylump": "$MUSIC_INTRO", "duration": 5 },
+      { "type": 1, "primarylump": "DEMO3" },
+      { "type": 0, "primarylump": "TITLEPIC", "secondarylump": "$MUSIC_INTRO", "duration": 5 },
+      { "type": 1, "primarylump": "DEMO4" }
+    ]
+  }
+}

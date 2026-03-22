@@ -24,6 +24,8 @@
 
 #include "odamex.h"
 
+#include <optional>
+
 #include "i_video.h"
 #include "v_video.h"
 #include "m_random.h"
@@ -50,6 +52,7 @@ int NoWipe;			// [RH] Don't wipe when travelling in hubs
 					// [RH] Allow wipe? (Needs to be set each time)
 
 static wipe_type_t current_wipe_type;
+static std::optional<wipe_type_t> next_wipe_type_override;
 EXTERN_CVAR (r_wipetype)
 
 static byte* wipe_screen = NULL;
@@ -62,6 +65,22 @@ static inline void Wipe_Blend(palindex_t* to, const palindex_t* from, int fgleve
 static inline void Wipe_Blend(argb_t* to, const argb_t* from, int fglevel, int bglevel)
 {
 	*to = alphablend2a(*from, bglevel << 2, *to, fglevel << 2);
+}
+
+void Wipe_ClearNextTypeOverride()
+{
+	next_wipe_type_override.reset();
+}
+
+void Wipe_SetNextTypeOverride(const int wipeType)
+{
+	if (wipeType < 0 || wipeType >= int(wipe_NUMWIPES))
+	{
+		next_wipe_type_override.reset();
+		return;
+	}
+
+	next_wipe_type_override = static_cast<wipe_type_t>(wipeType);
 }
 
 
@@ -463,19 +482,31 @@ void Wipe_Start()
 	if (in_progress)
 		Wipe_Stop();
 
-	if (r_wipetype.asInt() == wipe_NUMWIPES)
+	if (next_wipe_type_override.has_value())
+	{
+		current_wipe_type = *next_wipe_type_override;
+	}
+	else if (r_wipetype.asInt() == wipe_NUMWIPES)
 	{
 		if (gameinfo.defaultWipeType < 0 || gameinfo.defaultWipeType >= int(wipe_NUMWIPES))
+		{
 			current_wipe_type = wipe_Melt;
+		}
 		else
+		{
 			current_wipe_type = static_cast<wipe_type_t>(gameinfo.defaultWipeType);
+		}
 	}
 	else if (r_wipetype.asInt() < 0 || r_wipetype.asInt() >= int(wipe_NUMWIPES))
 	{
 		current_wipe_type = wipe_Melt;
 	}
 	else
+	{
 		current_wipe_type = r_wipetype.asEnum<wipe_type_t>();
+	}
+
+	Wipe_ClearNextTypeOverride();
 
 	if (current_wipe_type == wipe_None)
 		return;

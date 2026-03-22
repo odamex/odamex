@@ -2,6 +2,7 @@
 
 gameinfo
 {
+	demoloop = "D2DEMOLP"
 	maxswitch = 3
 }
 

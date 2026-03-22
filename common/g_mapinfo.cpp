@@ -1294,6 +1294,7 @@ struct MapInfoDataSetter<gameinfo_t>
 			{ "titlepage", &MIType_LumpName, &gameinfo.titlePage },
 			{ "titletime", &MIType_Int, &gameinfo.titleTime },
 			{ "defkickback", &MIType_Int, &gameinfo.defKickback },
+			{ "demoloop", &MIType_LumpName, &gameinfo.demoLoop },
 			{ "endoom", &MIType_LumpName, &gameinfo.endoom },
 			{ "pausesign", &MIType_LumpName, &gameinfo.pauseSign },
 			{ "gibfactor", &MIType_Float, &gameinfo.gibFactor },
