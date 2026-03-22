@@ -142,7 +142,7 @@ typedef struct gameinfo_s
 
 	std::string titleString;
 	OLumpName baseMapinfoLump;
-	OLumpName sharewareMapinfoLump;
+	OLumpName overrideMapinfoLump;
 	OLumpName menuTitle;
 	int menuTitleOffsetX;
 	std::string bigFont;
@@ -185,7 +185,7 @@ typedef struct gameinfo_s
 		, textScreenY(0)
 		, titleString("Unknown IWAD")
 		, baseMapinfoLump("")
-		, sharewareMapinfoLump("")
+		, overrideMapinfoLump("")
 		, menuTitle("")
 		, menuTitleOffsetX(0)
 		, bigFont("BIGFONT")

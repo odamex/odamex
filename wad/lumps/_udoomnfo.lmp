@@ -1,0 +1,6 @@
+// MAPINFO overrides for The Ultimate DOOM
+
+gameinfo
+{
+	demoloop = "UDDEMOLP"
+}

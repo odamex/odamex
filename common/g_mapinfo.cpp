@@ -1936,7 +1936,7 @@ void G_ParseMapInfo()
 	if (gameinfo.enginetype == ENGINE_DOOM)
 		ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
 
-	const char* sharewareMapinfoLump = NULL;
+	const char* overrideMapinfoLump = NULL;
 
 	baseinfoname = gameinfo.baseMapinfoLump.c_str();
 	if (!baseinfoname || !baseinfoname[0])
@@ -1945,14 +1945,14 @@ void G_ParseMapInfo()
 		        static_cast<int>(gamemission), static_cast<int>(gamemode));
 	}
 
-	if (!gameinfo.sharewareMapinfoLump.empty())
-		sharewareMapinfoLump = gameinfo.sharewareMapinfoLump.c_str();
+	if (!gameinfo.overrideMapinfoLump.empty())
+		overrideMapinfoLump = gameinfo.overrideMapinfoLump.c_str();
 
-	if (sharewareMapinfoLump)
+	if (overrideMapinfoLump)
 	{
 		lump = W_GetNumForName(baseinfoname);
 		ParseMapInfoLump(lump, baseinfoname);
-		baseinfoname = sharewareMapinfoLump;
+		baseinfoname = overrideMapinfoLump;
 	}
 
 	lump = W_GetNumForName(baseinfoname);

@@ -1635,7 +1635,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_SHAREWARE | GI_NOCRAZYDEATH;
 		gameinfo.titleString = "DOOM Shareware";
 		gameinfo.baseMapinfoLump = "_D1NFO";
-		gameinfo.sharewareMapinfoLump = "_D1SWNFO";
+		gameinfo.overrideMapinfoLump = "_D1SWNFO";
 	}
 	else if (idname.find(OStringToUpper(OString(UDOOM_PREFIX " BFG"))) == 0)
 	{
@@ -1644,6 +1644,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.titleString = "The Ultimate DOOM (BFG Edition)";
 		gameinfo.baseMapinfoLump = "_D1NFO";
+		gameinfo.overrideMapinfoLump = "_UDOOMNFO";
 	}
 	else if (idname.find(OStringToUpper(OString(UDOOM_PREFIX))) == 0)
 	{
@@ -1652,6 +1653,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.titleString = "The Ultimate DOOM";
 		gameinfo.baseMapinfoLump = "_D1NFO";
+		gameinfo.overrideMapinfoLump = "_UDOOMNFO";
 	}
 	else if (idname.find(OStringToUpper(OString(DOOM2_PREFIX " BFG"))) == 0)
 	{
@@ -1660,7 +1662,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MAPxx | GI_MENUHACK_COMMERCIAL;
 		gameinfo.titleString = "DOOM 2: Hell on Earth (BFG Edition)";
 		gameinfo.baseMapinfoLump = "_D2NFO";
-		gameinfo.sharewareMapinfoLump = "_BFGNFO";
+		gameinfo.overrideMapinfoLump = "_BFGNFO";
 	}
 	else if (idname.find(OStringToUpper(OString(DOOM2_PREFIX))) == 0)
 	{
@@ -1687,7 +1689,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_SHAREWARE | GI_MENUHACK_RETAIL;
 		gameinfo.titleString = "Heretic Shareware";
 		gameinfo.baseMapinfoLump = "_HERENFO";
-		gameinfo.sharewareMapinfoLump = "_HESWNFO";
+		gameinfo.overrideMapinfoLump = "_HESWNFO";
 	}
 	else if (idname.find(OStringToUpper(OString(HERETIC_PREFIX))) == 0)
 	{
@@ -1706,7 +1708,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_SHAREWARE | GI_NOCRAZYDEATH;
 		gameinfo.titleString = "Unknown IWAD";
 		gameinfo.baseMapinfoLump = "_D1NFO";
-		gameinfo.sharewareMapinfoLump = "_D1SWNFO";
+		gameinfo.overrideMapinfoLump = "_D1SWNFO";
 	}
 }
 
