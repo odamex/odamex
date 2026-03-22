@@ -8,7 +8,7 @@
 
 struct ReliableSequenceReceiverData
 {
-    SequenceQueueEntryType packet;
+    SequenceQueueEntryType packet {16};
 };
 
 struct ReliableSequenceReceiver : ReliableSequenceReceiverData, testing::Test

@@ -37,14 +37,6 @@ struct SequenceQueueEntryType
 	int   lastRetransmitTic;///< The tic number on which this packet was last retransmitted.
 	bool  isAwaiting;       ///< True if this packet needs yet to be acked.
 
-	SequenceQueueEntryType() :
-		buf           (),
-		sequence      (-1),
-		originatingTic(-1),
-		lastRetransmitTic(-1),
-		isAwaiting    (false)
-	{}
-
 	explicit SequenceQueueEntryType(size_t length) :
 		buf           (length),
 		sequence      (-1),
