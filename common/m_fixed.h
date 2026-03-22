@@ -24,6 +24,7 @@
 #pragma once
 
 #include <stdlib.h>
+#include <stdint.h>
 
 //
 // Fixed point, 32bit as 16.16.
@@ -203,4 +204,48 @@ inline constexpr int32_t FixedDivN(int32_t a, int32_t b)
 {
 	static_assert(N >= 1 && N <= 32, "Shift out of range");
 	return static_cast<int32_t>((static_cast<int64_t>(a) << N) / b);
+}
+
+// fixed_t and fixed64_t literals
+
+[[nodiscard]]
+consteval fixed_t operator ""_fx(unsigned long long x)
+{
+	if (x > static_cast<unsigned long long>(std::numeric_limits<int32_t>::max() >> FRACBITS))
+		throw "Literal out of range for type fixed_t";
+	return INT2FIXED(x);
+}
+
+[[nodiscard]]
+consteval fixed64_t operator ""_fx64(unsigned long long x)
+{
+	if (x > static_cast<unsigned long long>(std::numeric_limits<int64_t>::max() >> FRACBITS64))
+		throw "Literal out of range for type fixed64_t";
+    return INT2FIXED64(x);
+}
+
+[[nodiscard]]
+consteval fixed_t operator ""_fx(long double x)
+{
+	constexpr long double max =
+		static_cast<long double>(std::numeric_limits<int32_t>::max()) / (1ULL << FRACBITS);
+	constexpr long double min =
+		static_cast<long double>(std::numeric_limits<int32_t>::min()) / (1ULL << FRACBITS);
+
+	if (x < min || x > max)
+		throw "Literal out of range for type fixed_t";
+    return DOUBLE2FIXED(x);
+}
+
+[[nodiscard]]
+consteval fixed64_t operator ""_fx64(long double x)
+{
+	constexpr long double max =
+		static_cast<long double>(std::numeric_limits<int64_t>::max()) / (1ULL << FRACBITS64);
+	constexpr long double min =
+		static_cast<long double>(std::numeric_limits<int64_t>::min()) / (1ULL << FRACBITS64);
+
+	if (x < min || x > max)
+		throw "Literal out of range for type fixed64_t";
+    return DOUBLE2FIXED64(x);
 }
