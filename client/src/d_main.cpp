@@ -122,7 +122,6 @@ bool demotest = false;
 static page_image_t page_image;
 static bool show_advisor_overlay;
 
-static int demosequence;
 static int pagetic;
 
 EXTERN_CVAR (sv_allowexit)
@@ -413,7 +412,7 @@ void D_PageDrawer()
 
 //
 // D_AdvanceDemo
-// Called after each demo or intro demosequence finishes
+// Called after each demo loop entry finishes
 //
 void D_AdvanceDemo (void)
 {
@@ -455,7 +454,6 @@ void D_StartTitle (void)
 	// CL_QuitNetGame(NQ_SILENT);
 
 	gameaction = ga_nothing;
-	demosequence = -1;
 	show_advisor_overlay = false;
 	D_ResetDemoLoop();
 	D_AdvanceDemo();
