@@ -25,7 +25,7 @@ jobs:
       should_skip: ${{ steps.check_skip.outputs.should_skip }}
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build
@@ -50,7 +50,7 @@ jobs:
     - name: Prepare artifact
       run: bash ci/ubuntu-artifact.sh
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Linux-x86_64
         path: 'build/artifact/*'
@@ -64,7 +64,7 @@ jobs:
       CXX: /usr/bin/clang++
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build
@@ -80,7 +80,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build
@@ -98,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Run build
@@ -110,7 +110,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Run build
@@ -122,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Update metainfo dates
       shell: bash
       run: |
@@ -149,7 +149,7 @@ jobs:
         flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
         --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Flatpak-x86_64
         path: odamex.flatpak
@@ -160,7 +160,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
     - name: Checkout source
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
     - name: Update metainfo dates
       shell: bash
       run: |
@@ -187,7 +187,7 @@ jobs:
         flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
         --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Flatpak-ARM64
         path: odamex.flatpak

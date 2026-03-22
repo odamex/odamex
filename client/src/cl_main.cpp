@@ -1414,11 +1414,10 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 		}
 		else
 		{
-			if (!displayplayer().isFreecam)
+			if (!netdemo.isPlaying())
 			{
 				displayplayer_id = consoleplayer_id; // get out of spynext
 			}
-			
 			player.cheats &= ~CF_FLY;	// remove flying ability
 		}
 

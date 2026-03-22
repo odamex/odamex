@@ -80,9 +80,9 @@ class DoomPalette:
         closest_distsq: float = float("inf")
         for color in self.playpal.keys():
             # [LM] Calling rgb_unpack slows this down
-            cr = rgb & 0xFF
-            cg = (rgb >> 8) & 0xFF
-            cb = (rgb >> 16) & 0xFF
+            cr = color & 0xFF
+            cg = (color >> 8) & 0xFF
+            cb = (color >> 16) & 0xFF
 
             dr = r - cr
             dg = g - cg

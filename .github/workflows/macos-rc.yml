@@ -19,7 +19,7 @@ jobs:
       minor: ${{ steps.gitversion.outputs.minor }}
       patch: ${{ steps.gitversion.outputs.patch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
           fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
@@ -80,7 +80,7 @@ jobs:
       zstd_version: "1.5.7"
       odamex_install_bindir: "/Applications/Odamex"
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
     - name: Run Upversion
@@ -382,7 +382,7 @@ jobs:
           "odamex-macos-${{ env.new_version }}-prerelease.${{ env.build_number }}.dmg" \
           "Odamex ${{ env.new_version }}"
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-macOS-universal
         path: odamex-macos-${{ env.new_version }}-prerelease.${{ env.build_number }}.dmg
@@ -394,11 +394,11 @@ jobs:
       build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-tags: true
     - name: Download universal artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: Odamex-macOS-universal
     - name: Create or update prerelease

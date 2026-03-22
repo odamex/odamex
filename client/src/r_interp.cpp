@@ -478,7 +478,7 @@ void OInterpolation::endGameInterpolation()
 void OInterpolation::interpolateCamera(fixed_t amount, bool use_localview,
                                          bool chasecam)
 {
-	if (gamestate == GS_LEVEL && camera)
+	if (gamestate == GS_LEVEL && camera && camera->subsector)
 	{
 		fixed_t x = camera->x;
 		fixed_t y = camera->y;

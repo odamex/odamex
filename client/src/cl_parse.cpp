@@ -241,7 +241,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	p.armorpoints = msg->player().armorpoints();
 	p.armortype = msg->player().armortype();
 
-	if (p.lives == 0 && msg->player().lives() > 0)
+	if ((p.lives == 0 && msg->player().lives() > 0) && !netdemo.isPlaying())
 	{
 		// Stop spying so you know you're back from the dead.
 		::displayplayer_id = ::consoleplayer_id;
