@@ -25,3 +25,4 @@ CMakeSettings.json
 /libraries/fmt/run-msbuild.bat
 
 /*tmp
+/.*_tmp
