@@ -1001,7 +1001,11 @@ void D_DoomMain()
 	// Play a demo, start a map, or show the title screen
 	if (singledemo)
 	{
-		G_DoPlayDemo();
+		if (gameaction != ga_playdemo)
+		{
+			extern std::string defdemoname;
+			G_DeferedPlayDemo(defdemoname.c_str(), true);
+		}
 	}
 	else if (autostart)
 	{
