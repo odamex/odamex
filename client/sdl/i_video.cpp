@@ -1253,6 +1253,11 @@ static void I_BlitLoadingIcon()
 //
 static void I_RestoreLoadingIcon()
 {
+	if (loading_icon_background_surface == NULL)
+	{
+		return;
+	}
+
 	IWindowSurface* surface = I_GetPrimarySurface();
 
 	surface->lock();
