@@ -1203,7 +1203,11 @@ void I_DrawLoadingIcon()
 //
 static void I_BlitLoadingIcon()
 {
-	const patch_t* diskpatch = W_CachePatch("STDISK");
+	OLumpName disk_lump_name("STDISK");
+	if (W_CheckNumForName(disk_lump_name) == -1)
+		return;
+
+	const patch_t* diskpatch = W_CachePatch(disk_lump_name);
 	IWindowSurface* surface = I_GetPrimarySurface();
 
 	surface->lock();
@@ -1294,7 +1298,7 @@ void I_FinishUpdate()
 {
 	if (I_VideoInitialized())
 	{
-		static const bool show_loading_icon = W_CheckNumForName("STDISK") >= 0 && gametic <= loading_icon_expire;
+		const bool show_loading_icon = gametic <= loading_icon_expire;
 
 		// draws little dots on the bottom of the screen
 		if (vid_ticker)
