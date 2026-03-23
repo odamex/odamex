@@ -818,19 +818,19 @@ bool P_AreTeammates(const player_t &a, const player_t &b)
 
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 {
-	// skip if out of lives in survival
-	if (G_IsLivesGame() && other.lives < 1 && !other.isFreecam)
-		return false;
-
-	// otherwise viewers can always spy themselves.
-	if (viewer.id == other.id)
-		return true;
-
 	// server doesnt know or care about the freecam
 	#ifdef CLIENT_APP
 	if (other.isFreecam && Freecam::allowSpy())
 		return true;
 	#endif
+
+	// skip if out of lives in survival
+	if (G_IsLivesGame() && other.lives < 1)
+		return false;
+
+	// otherwise viewers can always spy themselves.
+	if (viewer.id == other.id)
+		return true;
 
 	// You cannot view those without bodies or spectators.
 	if (!other.mo || other.spectator)
