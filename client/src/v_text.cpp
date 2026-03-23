@@ -387,6 +387,92 @@ void DCanvas::TextWrapper(EWrapperCode drawer, int normalcolor, int x, int y, co
 	TextSWrapper(drawer, normalcolor, x, y, string, 1, 1);
 }
 
+void DCanvas::DrawText(const char* fontname, int normalcolor, int x, int y, const byte* string) const
+{
+	V_FontScope scope(fontname);
+	DrawText(normalcolor, x, y, string);
+}
+
+void DCanvas::DrawTextLuc(const char* fontname, int normalcolor, int x, int y, const byte* string) const
+{
+	V_FontScope scope(fontname);
+	DrawTextLuc(normalcolor, x, y, string);
+}
+
+void DCanvas::DrawTextClean(const char* fontname, int normalcolor, int x, int y, const byte* string) const
+{
+	V_FontScope scope(fontname);
+	DrawTextClean(normalcolor, x, y, string);
+}
+
+void DCanvas::DrawTextCleanLuc(const char* fontname, int normalcolor, int x, int y, const byte* string) const
+{
+	V_FontScope scope(fontname);
+	DrawTextCleanLuc(normalcolor, x, y, string);
+}
+
+void DCanvas::DrawTextCleanMove(const char* fontname, int normalcolor, int x, int y,
+                                const byte* string) const
+{
+	V_FontScope scope(fontname);
+	DrawTextCleanMove(normalcolor, x, y, string);
+}
+
+void DCanvas::DrawTextStretched(const char* fontname, int normalcolor, int x, int y,
+                                const byte* string, int scalex, int scaley) const
+{
+	V_FontScope scope(fontname);
+	DrawTextStretched(normalcolor, x, y, string, scalex, scaley);
+}
+
+void DCanvas::DrawTextStretchedLuc(const char* fontname, int normalcolor, int x, int y,
+                                   const byte* string, int scalex, int scaley) const
+{
+	V_FontScope scope(fontname);
+	DrawTextStretchedLuc(normalcolor, x, y, string, scalex, scaley);
+}
+
+void DCanvas::DrawText(const char* fontname, int normalcolor, int x, int y, const char* string) const
+{
+	DrawText(fontname, normalcolor, x, y, reinterpret_cast<const byte*>(string));
+}
+
+void DCanvas::DrawTextLuc(const char* fontname, int normalcolor, int x, int y, const char* string) const
+{
+	DrawTextLuc(fontname, normalcolor, x, y, reinterpret_cast<const byte*>(string));
+}
+
+void DCanvas::DrawTextClean(const char* fontname, int normalcolor, int x, int y, const char* string) const
+{
+	DrawTextClean(fontname, normalcolor, x, y, reinterpret_cast<const byte*>(string));
+}
+
+void DCanvas::DrawTextCleanLuc(const char* fontname, int normalcolor, int x, int y,
+                               const char* string) const
+{
+	DrawTextCleanLuc(fontname, normalcolor, x, y, reinterpret_cast<const byte*>(string));
+}
+
+void DCanvas::DrawTextCleanMove(const char* fontname, int normalcolor, int x, int y,
+                                const char* string) const
+{
+	DrawTextCleanMove(fontname, normalcolor, x, y, reinterpret_cast<const byte*>(string));
+}
+
+void DCanvas::DrawTextStretched(const char* fontname, int normalcolor, int x, int y,
+                                const char* string, int scalex, int scaley) const
+{
+	DrawTextStretched(fontname, normalcolor, x, y, reinterpret_cast<const byte*>(string), scalex,
+	                  scaley);
+}
+
+void DCanvas::DrawTextStretchedLuc(const char* fontname, int normalcolor, int x, int y,
+                                   const char* string, int scalex, int scaley) const
+{
+	DrawTextStretchedLuc(fontname, normalcolor, x, y, reinterpret_cast<const byte*>(string),
+	                     scalex, scaley);
+}
+
 void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const
 {
 	TextSWrapper(drawer, normalcolor, x, y, string, CleanXfac, CleanYfac);
@@ -484,6 +570,12 @@ int V_StringWidth(const byte* str)
 	return width;
 }
 
+int V_StringWidth(const char* fontname, const byte* str)
+{
+	V_FontScope scope(fontname);
+	return V_StringWidth(str);
+}
+
 int V_StringHeight(const char* str)
 {
 	// Default width without a font loaded is 8.
@@ -511,6 +603,12 @@ int V_StringHeight(const char* str)
 	return height;
 }
 
+int V_StringHeight(const char* fontname, const char* str)
+{
+	V_FontScope scope(fontname);
+	return V_StringHeight(str);
+}
+
 //
 // Break long lines of text into multiple lines no longer than maxwidth pixels
 //
@@ -535,6 +633,12 @@ static void breakit(brokenlines_t* line, const byte* start, const byte* string, 
 int V_LineHeight()
 {
 	return ::hu_font.lineHeight();
+}
+
+int V_LineHeight(const char* fontname)
+{
+	V_FontScope scope(fontname);
+	return V_LineHeight();
 }
 
 brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
@@ -637,6 +741,12 @@ brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 
 		return broken;
 	}
+}
+
+brokenlines_t* V_BreakLines(const char* fontname, int maxwidth, const byte* str)
+{
+	V_FontScope scope(fontname);
+	return V_BreakLines(maxwidth, str);
 }
 
 void V_FreeBrokenLines(brokenlines_t* lines)

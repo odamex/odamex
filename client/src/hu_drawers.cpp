@@ -199,6 +199,29 @@ void DrawText(int x, int y, const float scale,
 		screen->DrawTextStretchedLuc(color, x, y, str, x_scale, y_scale);
 }
 
+void DrawText(const char* fontname,
+              int x, int y, const float scale,
+              const x_align_t x_align, const y_align_t y_align,
+              const x_align_t x_origin, const y_align_t y_origin,
+              const char* str, const int color,
+              const bool force_opaque)
+{
+	// No string?  Don't bother with this function.
+	if (!str)
+		return;
+
+	unsigned short w = V_StringWidth(fontname, str);
+	unsigned short h = V_LineHeight(fontname);
+
+	int x_scale, y_scale;
+	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
+
+	if (force_opaque)
+		screen->DrawTextStretched(fontname, color, x, y, str, x_scale, y_scale);
+	else
+		screen->DrawTextStretchedLuc(fontname, color, x, y, str, x_scale, y_scale);
+}
+
 struct shadow_text_metrics_t
 {
 	int width;
@@ -325,6 +348,21 @@ void DrawShadowedText(int x, int y, const float scale,
 
 	V_ColorMap = saved_colormap;
 	V_ColorFill = saved_color_fill;
+}
+
+void DrawShadowedText(const char* fontname,
+                      int x, int y, const float scale,
+                      const x_align_t x_align, const y_align_t y_align,
+                      const x_align_t x_origin, const y_align_t y_origin,
+                      const char* str, const int color,
+                      const int shadow_color,
+                      const int shadow_x_offset,
+                      const int shadow_y_offset,
+                      const bool force_opaque)
+{
+	V_FontScope scope(fontname);
+	DrawShadowedText(x, y, scale, x_align, y_align, x_origin, y_origin, str, color,
+	                 shadow_color, shadow_x_offset, shadow_y_offset, force_opaque);
 }
 
 

@@ -107,6 +107,26 @@ public:
 	void PrintStr(int x, int y, const char *s, int default_color = -1, bool use_color_codes = true, int scale = 1) const;
 
 	// Output some text with wad heads-up font
+	void DrawText(const char* fontname, int normalcolor, int x, int y, const byte* string) const;
+	void DrawTextLuc(const char* fontname, int normalcolor, int x, int y, const byte* string) const;
+	void DrawTextClean(const char* fontname, int normalcolor, int x, int y, const byte* string) const;
+	void DrawTextCleanLuc(const char* fontname, int normalcolor, int x, int y, const byte* string) const;
+	void DrawTextCleanMove(const char* fontname, int normalcolor, int x, int y, const byte* string) const;
+	void DrawTextStretched(const char* fontname, int normalcolor, int x, int y, const byte* string,
+	                       int scalex, int scaley) const;
+	void DrawTextStretchedLuc(const char* fontname, int normalcolor, int x, int y, const byte* string,
+	                          int scalex, int scaley) const;
+
+	void DrawText(const char* fontname, int normalcolor, int x, int y, const char* string) const;
+	void DrawTextLuc(const char* fontname, int normalcolor, int x, int y, const char* string) const;
+	void DrawTextClean(const char* fontname, int normalcolor, int x, int y, const char* string) const;
+	void DrawTextCleanLuc(const char* fontname, int normalcolor, int x, int y, const char* string) const;
+	void DrawTextCleanMove(const char* fontname, int normalcolor, int x, int y, const char* string) const;
+	void DrawTextStretched(const char* fontname, int normalcolor, int x, int y, const char* string,
+	                       int scalex, int scaley) const;
+	void DrawTextStretchedLuc(const char* fontname, int normalcolor, int x, int y, const char* string,
+	                          int scalex, int scaley) const;
+
 	inline void DrawText (int normalcolor, int x, int y, const byte *string) const;
 	inline void DrawTextLuc (int normalcolor, int x, int y, const byte *string) const;
 	inline void DrawTextClean (int normalcolor, int x, int y, const byte *string) const;		// Does not adjust x and y

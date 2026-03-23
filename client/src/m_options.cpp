@@ -1714,13 +1714,11 @@ void M_OptDrawer (void)
 	}
 	else
 	{	
-		V_SetFont("BIGFONT");
-		int titlewidth = V_StringWidth("OPTIONS")*CleanXfac;
+		int titlewidth = V_StringWidth("BIGFONT", "OPTIONS") * CleanXfac;
 		int titleX = (I_GetSurfaceWidth() / 2) - (titlewidth / 2);
 		int titleY = 20*CleanYfac;
-		screen->DrawTextClean(CR_GRAY, titleX, titleY, "OPTIONS");
+		screen->DrawTextClean("BIGFONT", CR_GRAY, titleX, titleY, "OPTIONS");
 		y = ystart + theight;
-		V_SetFont("SMALLFONT");
 	}
 	ytop = y + CurrentMenu->scrolltop * lineHeight;
 

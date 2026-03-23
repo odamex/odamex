@@ -67,6 +67,27 @@ int V_GetFontLineHeight(const char* fontname);
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
 
+struct V_FontScope
+{
+	explicit V_FontScope(const char* fontname)
+		: m_saved(hu_font)
+		, m_active(fontname != nullptr && fontname[0] != '\0')
+	{
+		if (m_active)
+			V_SetFont(fontname);
+	}
+
+	~V_FontScope()
+	{
+		if (m_active)
+			hu_font = m_saved;
+	}
+
+  private:
+	OGlobalFont m_saved;
+	bool m_active;
+};
+
 struct brokenlines_t
 {
 	int width;
@@ -74,12 +95,24 @@ struct brokenlines_t
 };
 
 int V_StringWidth(const byte* str);
+int V_StringWidth(const char* fontname, const byte* str);
 inline int V_StringWidth(const char* str) { return V_StringWidth(reinterpret_cast<const byte*>(str)); }
+inline int V_StringWidth(const char* fontname, const char* str)
+{
+	return V_StringWidth(fontname, reinterpret_cast<const byte*>(str));
+}
 int V_StringHeight(const char* str);
+int V_StringHeight(const char* fontname, const char* str);
 int V_LineHeight();
+int V_LineHeight(const char* fontname);
 
 brokenlines_t *V_BreakLines (int maxwidth, const byte *str);
+brokenlines_t *V_BreakLines (const char* fontname, int maxwidth, const byte *str);
 void V_FreeBrokenLines (brokenlines_t *lines);
 inline brokenlines_t *V_BreakLines (int maxwidth, const char *str) { return V_BreakLines (maxwidth, reinterpret_cast<const byte*>(str)); }
+inline brokenlines_t* V_BreakLines(const char* fontname, int maxwidth, const char* str)
+{
+	return V_BreakLines(fontname, maxwidth, reinterpret_cast<const byte*>(str));
+}
 
 int V_GetTextColor(std::string_view str);

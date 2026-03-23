@@ -755,12 +755,12 @@ void M_ReadSaveStrings()
 //
 // M_LoadGame & Cie.
 //
-void M_DrawInputBox (int slot, char *name, int x, int y, int width) 
+void M_DrawInputBox (char *text, int x, int y, int width) 
 {
 	const int text_y =  y+(M_BigFontLineHeight()/2 - M_SmallFontLineHeight()/2);
 
 	M_DrawSaveLoadBorder(x, y, width);
-	screen->DrawTextCleanMove (CR_RED, x+(M_SmallFontLineHeight()/2),text_y, name);
+	screen->DrawTextCleanMove("SMALLFONT", CR_RED, x + (M_SmallFontLineHeight() / 2), text_y, text);
 }
 
 void M_DrawLoad ()
@@ -777,15 +777,14 @@ void M_DrawLoad ()
 	else
 	{
 		const char* title = LocalizedString("MNU_LOADGAME");
-		V_SetFont("BIGFONT");
-		screen->DrawTextCleanMove(CR_GRAY, 160-V_StringWidth(title)/2, 0, title);
-		V_SetFont("SMALLFONT");
+		screen->DrawTextCleanMove("BIGFONT", CR_GRAY, 160 - V_StringWidth("BIGFONT", title) / 2, 0,
+		                          title);
 	}
 
 	list_y = LoadDef.y;
 	for (i = 0; i < load_end; i++)
 	{
-		M_DrawInputBox(i, savegamestrings[i], LoadDef.x, list_y, slot_width);
+		M_DrawInputBox(savegamestrings[i], LoadDef.x, list_y, slot_width);
 		list_y += slot_height + slot_padding;
 	}
 }
@@ -837,22 +836,22 @@ void M_DrawSave()
 	else
 	{
 		const char* title = LocalizedString("MNU_SAVEGAME");
-		V_SetFont("BIGFONT");
-		screen->DrawTextCleanMove (CR_GRAY, 160-V_StringWidth(title)/2, 0, title);
-		V_SetFont("SMALLFONT");
+		screen->DrawTextCleanMove("BIGFONT", CR_GRAY, 160 - V_StringWidth("BIGFONT", title) / 2, 0,
+		                          title);
 	}
 
 	list_y = SaveDef.y;
 	for (i = 0; i < load_end; i++)
 	{
-		M_DrawInputBox(i, savegamestrings[i], SaveDef.x, list_y, slot_width);
+		M_DrawInputBox(savegamestrings[i], SaveDef.x, list_y, slot_width);
 		list_y += slot_height + slot_padding;
 	}
 
 	if (genStringEnter != oldmenustring_t::NONE)
 	{
-		const int string_width = V_StringWidth(savegamestrings[saveSlot]);
-		screen->DrawTextCleanMove(CR_RED, SaveDef.x + string_width, SaveDef.y+M_BigFontLineHeight()*saveSlot, "_");
+		const int string_width = V_StringWidth("SMALLFONT", savegamestrings[saveSlot]);
+		screen->DrawTextCleanMove("SMALLFONT", CR_RED, SaveDef.x + string_width,
+		                          SaveDef.y + M_BigFontLineHeight() * saveSlot, "_");
 	}
 }
 
@@ -1368,10 +1367,7 @@ void M_DrawOptions()
 	}
 	else
 	{
-		V_SetFont("BIGFONT");
-		screen->DrawTextCleanMove(CR_GRAY, 108, 15,
-		                         LocalizedString("MNU_OPTIONS"));
-		V_SetFont("SMALLFONT");
+		screen->DrawTextCleanMove("BIGFONT", CR_GRAY, 108, 15, LocalizedString("MNU_OPTIONS"));
 	}
 }
 
@@ -1604,16 +1600,11 @@ static void M_PlayerSetupDrawer()
 			screen->DrawTextCleanMove(CR_GRAY, 110, 10,
 			                         LocalizedString("MNU_PLAYERSETUP"));
 		}
-
-		/*screen->DrawPatchClean (patch,
-			160 - (patch->width() >> 1),
-			PSetupDef.y - (patch->height() * 3));*/
 	}
 
 	// Draw player name box
 	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y, "Name");
-	M_DrawSaveLoadBorder (PSetupDef.x + 56, PSetupDef.y, MAXPLAYERNAME+1);
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x + 56, PSetupDef.y, savegamestrings[0]);
+	M_DrawInputBox(savegamestrings[0], PSetupDef.x + 56, PSetupDef.y-4, MAXPLAYERNAME+1);
 
 	// Draw cursor for either of the above
 	if (genStringEnter != oldmenustring_t::NONE)
@@ -2383,7 +2374,6 @@ void M_Drawer()
 			const int x = currentMenu->x;
 			int y = currentMenu->y;
 			const int max = currentMenu->numitems;
-			V_SetFont("BIGFONT");
 			for (int i = 0; i < max; i++)
 			{
 				if (currentMenu->menuitems[i].name[0] &&
@@ -2393,12 +2383,12 @@ void M_Drawer()
 				}
 				else if (currentMenu->menuitems[i].textname[0])
 				{
-					screen->DrawTextCleanMove(CR_RED, x, y, LocalizedString(currentMenu->menuitems[i].textname));
+					screen->DrawTextCleanMove("BIGFONT", CR_RED, x, y,
+					                          LocalizedString(currentMenu->menuitems[i].textname));
 				}
 
 				y += M_BigFontLineHeight();
 			}
-			V_SetFont("SMALLFONT");
 
 
 			// DRAW SKULL

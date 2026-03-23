@@ -630,7 +630,7 @@ static void drawHordeGametype()
 {
 	static constexpr int SCREEN_BORDER = 4;
 	static constexpr int ABOVE_AMMO = 24;
-	const int LINE_SPACING = V_LineHeight() + 1;
+	const int LINE_SPACING = V_LineHeight("SMALLFONT") + 1;
 	static constexpr int BAR_BORDER = 5;
 
 	const hordeInfo_t& info = P_HordeInfo();
@@ -672,8 +672,6 @@ static void drawHordeGametype()
 
 	if (hud_hordeinfo_debug)
 	{
-		V_SetFont("DIGFONT");
-
 		int min, max;
 		P_NextSpawnTime(min, max);
 
@@ -689,10 +687,8 @@ static void drawHordeGametype()
 		buf = fmt::sprintf("Min HP: %d\nAlive HP: %d\nMax HP: %d\nSpawn: %s",
 		                   define.minTotalHealth(), info.alive(), define.maxTotalHealth(),
 		                   buf2);
-		hud::DrawText(SCREEN_BORDER, 64, ::hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
+		hud::DrawText("DIGFONT", SCREEN_BORDER, 64, ::hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
 		              hud::X_LEFT, hud::Y_BOTTOM, buf.c_str(), CR_GREY);
-
-		V_SetFont("SMALLFONT");
 	}
 }
 
@@ -736,8 +732,6 @@ void drawProtos()
 	if (protos.size() == 0)
 		return;
 
-	V_SetFont("DIGFONT");
-
 	proto_selected = clamp<size_t>(proto_selected, 0, protos.size() - 1);
 
 	// Starting y is five rows from the top.
@@ -745,7 +739,7 @@ void drawProtos()
 	const float scale = 0.75f;
 	int y = top;
 
-	const int indent = V_StringWidth(" >");
+	const int indent = V_StringWidth("DIGFONT", " >");
 
 	for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
 	{
@@ -754,29 +748,30 @@ void drawProtos()
 		if (selected)
 		{
 			// Draw arrow
-			hud::DrawText(0, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
+			hud::DrawText("DIGFONT", 0, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
 			              " >", CR_GOLD, true);
 		}
 
 		const int rowColor = ProtoRowColor(it->header);
 
 		// Draw name
-		hud::DrawText(indent, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
+		hud::DrawText("DIGFONT", indent, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
 		              it->name.c_str(), rowColor, true);
-		y += V_StringHeight(it->name.c_str());
+		y += V_StringHeight("DIGFONT", it->name.c_str());
 
 		if (selected)
 		{
 			// Draw data
-			hud::DrawText(indent, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT,
+			hud::DrawText("DIGFONT", indent, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT,
 			              hud::Y_TOP, it->data.c_str(), CR_WHITE, true);
-			y += V_StringHeight(it->data.c_str());
+			y += V_StringHeight("DIGFONT", it->data.c_str());
 		}
 	}
 
 	// Now draw the current reconstructed PlayerInput.
 	y = top;
 	hud::DrawText(
+	        "DIGFONT",
 	        100, y,
 	        scale,
 	        hud::X_RIGHT,
@@ -787,8 +782,9 @@ void drawProtos()
 	        ProtoRowColor(clc_playerinput),
 	        true);
 
-	y += V_StringHeight(::svc_info[clc_playerinput].getName());
+	y += V_StringHeight("DIGFONT", ::svc_info[clc_playerinput].getName());
 	hud::DrawText(
+	        "DIGFONT",
 	        100, y,
 	        scale,
 	        hud::X_RIGHT,
@@ -799,7 +795,6 @@ void drawProtos()
 	        ProtoRowColor(clc_playerinput),
 	        true);
 
-	V_SetFont("SMALLFONT");
 }
 
 // [AM] Draw netdemo state
@@ -815,8 +810,6 @@ void drawNetdemo() {
 	const int xscale = hud_scale ? CleanXfac : 1;
 	const int yscale = hud_scale ? CleanYfac : 1;
 
-	V_SetFont("DIGFONT");
-
 	int color = CR_GOLD;
 	if (netdemo.isPlaying())
 	{
@@ -829,18 +822,16 @@ void drawNetdemo() {
 		hud::X_LEFT, hud::Y_BOTTOM);
 
 	// Draw demo elapsed time
-	hud::DrawText(2, 47, hud_scale,
+	hud::DrawText("DIGFONT", 2, 47, hud_scale,
 	              hud::X_LEFT, hud::Y_BOTTOM,
 	              hud::X_LEFT, hud::Y_BOTTOM,
 	              hud::NetdemoElapsed().c_str(), color);
 
 	// Draw map number/total
-	hud::DrawText(74, 47, hud_scale,
+	hud::DrawText("DIGFONT", 74, 47, hud_scale,
 	              hud::X_LEFT, hud::Y_BOTTOM,
 	              hud::X_RIGHT, hud::Y_BOTTOM,
 	              hud::NetdemoMaps().c_str(), CR_BRICK);
-
-	V_SetFont("SMALLFONT");
 
 	// Draw the bar.
 	// TODO: Once status bar notches have been implemented, put map
