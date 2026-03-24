@@ -78,6 +78,11 @@ size_t P_NumPlayersOnTeam(team_t team);
 
 namespace hud {
 
+static const OFont* HU_ElementFont()
+{
+	return OFonts.small();
+}
+
 // Player sorting functions
 static bool cmpFrags(const player_t* arg1, const player_t* arg2)
 {
@@ -1037,7 +1042,7 @@ void EAPlayerNames(int x, int y, const float scale,
 			{
 				color = CR_DARKGRAY;
 			}
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 			              player->userinfo.netname.c_str(), color, force_opaque);
 
 			y += 7 + padding;
@@ -1091,7 +1096,7 @@ void EATeamPlayerNames(int x, int y, const float scale,
 			{
 				color = CR_GOLD;
 			}
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 			              player->userinfo.netname.c_str(), color, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
@@ -1131,12 +1136,12 @@ void EASpectatorNames(int x, int y, const float scale,
 				if (player->QueuePosition)
 				{
 					std::string buffer = fmt::format("{:d}. {}", player->QueuePosition, player->userinfo.netname);
-					hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+					hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 						buffer.c_str(), color, force_opaque);
 				}
 				else
 				{
-					hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+					hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 						player->userinfo.netname.c_str(), color, force_opaque);
 				}
 				y += 7 + padding;
@@ -1167,7 +1172,7 @@ void EAPlayerRoundWins(int x, int y, const float scale, const x_align_t x_align,
 		{
 			std::string buffer = fmt::sprintf("%d", player->roundwins);
 
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.c_str(), CR_GREY, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
@@ -1194,7 +1199,7 @@ void EAPlayerLives(int x, int y, const float scale, const x_align_t x_align,
 		{
 			std::string buffer = fmt::sprintf("%d", player->lives);
 
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.c_str(), CR_GREY, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
@@ -1221,7 +1226,7 @@ void EATeamPlayerLives(int x, int y, const float scale, const x_align_t x_align,
 		{
 			std::string buffer = fmt::sprintf("%d", player->lives);
 
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.c_str(), CR_GREY, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
@@ -1248,7 +1253,7 @@ void EAPlayerFrags(int x, int y, const float scale,
 			std::ostringstream buffer;
 			buffer << player->fragcount;
 
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.str().c_str(), CR_GREY, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
@@ -1286,7 +1291,7 @@ void EATeamPlayerFrags(int x, int y, const float scale,
 			std::ostringstream buffer;
 			buffer << frags;
 
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.str().c_str(), CR_GREY, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
@@ -1314,7 +1319,7 @@ void EAPlayerDamage(int x, int y, const float scale, const x_align_t x_align,
 			std::ostringstream buffer;
 			buffer << player->monsterdmgcount;
 
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.str().c_str(), CR_GREY, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
@@ -1340,7 +1345,7 @@ void EAPlayerKills(int x, int y, const float scale,
 			std::ostringstream buffer;
 			buffer << player->killcount;
 
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.str().c_str(), CR_GREY, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
@@ -1377,7 +1382,7 @@ void EAPlayerDeaths(int x, int y, const float scale,
 			std::ostringstream buffer;
 			buffer << deaths;
 
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.str().c_str(), CR_GREY, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
@@ -1414,7 +1419,7 @@ void EATeamPlayerPoints(int x, int y, const float scale,
 			std::ostringstream buffer;
 			buffer << points;
 
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.str().c_str(), CR_GREY, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
@@ -1450,7 +1455,7 @@ void EAPlayerKD(int x, int y, const float scale,
 			}
 			buffer << kd;
 
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.str().c_str(), CR_GREY, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
@@ -1486,7 +1491,7 @@ void EATeamPlayerKD(int x, int y, const float scale,
 			}
 			buffer << kd;
 
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.str().c_str(), CR_GREY, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
@@ -1513,7 +1518,7 @@ void EAPlayerTimes(int x, int y, const float scale,
 			std::ostringstream buffer;
 			buffer << player->GameTime / 60;
 
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.str().c_str(), CR_GREY, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
@@ -1540,7 +1545,7 @@ void EATeamPlayerTimes(int x, int y, const float scale,
 			std::ostringstream buffer;
 			buffer << player->GameTime / 60;
 
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.str().c_str(), CR_GREY, force_opaque);
 			y += 7 + padding;
 			drawn += 1;
@@ -1566,7 +1571,7 @@ void EAPlayerPings(int x, int y, const float scale,
 			std::ostringstream buffer;
 			buffer << player->ping;
 
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.str().c_str(), pingTextColor(player->ping),
 			              force_opaque);
 			y += 7 + padding;
@@ -1593,7 +1598,7 @@ void EATeamPlayerPings(int x, int y, const float scale,
 			std::ostringstream buffer;
 			buffer << player->ping;
 
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 			              buffer.str().c_str(), pingTextColor(player->ping),
 			              force_opaque);
 			y += 7 + padding;
@@ -1622,7 +1627,7 @@ void EASpectatorPings(int x, int y, const float scale,
 				std::ostringstream buffer;
 				buffer << player->ping;
 
-				hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+				hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 				              buffer.str().c_str(), pingTextColor(player->ping),
 				              force_opaque);
 				y += 7 + padding;
@@ -1734,7 +1739,7 @@ void EATargets(int x, int y, const float scale,
 		if (target.PlayPtr == &(consoleplayer()))
 		{
 			// You're looking at yourself.
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin, "You",
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin, "You",
 			              target.Color);
 		}
 		else
@@ -1765,7 +1770,7 @@ void EATargets(int x, int y, const float scale,
 			{
 				nameplate = target.PlayPtr->userinfo.netname;
 			}
-			hud::DrawText(x, y, scale, x_align, y_align, x_origin, y_origin,
+			hud::DrawText(HU_ElementFont(), x, y, scale, x_align, y_align, x_origin, y_origin,
 			              nameplate.c_str(), target.Color);
 		}
 

@@ -148,20 +148,21 @@ size_t numChannels;
 //
 void S_NoiseDebug()
 {
+	const OFont* smallFont = OFonts.small();
 	fixed_t ox, oy;
 
 	int y = 32 * CleanYfac;
 	if (gametic & 16)
-		screen->DrawText (CR_TAN, 0, y, "*** SOUND DEBUG INFO ***");
+		screen->DrawText(smallFont, CR_TAN, 0, y, "*** SOUND DEBUG INFO ***");
 	y += 8;
 
-	screen->DrawText (CR_GREY, 0, y, "name");
-	screen->DrawText (CR_GREY, 70, y, "x");
-	screen->DrawText (CR_GREY, 120, y, "y");
-	screen->DrawText (CR_GREY, 170, y, "vol");
-	screen->DrawText (CR_GREY, 200, y, "pri");
-	screen->DrawText (CR_GREY, 240, y, "dist");
-	screen->DrawText (CR_GREY, 280, y, "chan");
+	screen->DrawText(smallFont, CR_GREY, 0, y, "name");
+	screen->DrawText(smallFont, CR_GREY, 70, y, "x");
+	screen->DrawText(smallFont, CR_GREY, 120, y, "y");
+	screen->DrawText(smallFont, CR_GREY, 170, y, "vol");
+	screen->DrawText(smallFont, CR_GREY, 200, y, "pri");
+	screen->DrawText(smallFont, CR_GREY, 240, y, "dist");
+	screen->DrawText(smallFont, CR_GREY, 280, y, "chan");
 	y += 8;
 
 	for (unsigned int i = 0; ((i < numChannels) && (y < I_GetVideoHeight() - 16)); i++, y += 8)
@@ -188,23 +189,23 @@ void S_NoiseDebug()
 			}
 			const int color = Channel[i].loop ? CR_BROWN : CR_GREY;
 			M_StringCopy(temp, lumpinfo[Channel[i].sfxinfo->lumpnum].name.c_str(), 9);
-			screen->DrawText (color, 0, y, temp);
+			screen->DrawText(smallFont, color, 0, y, temp);
 			snprintf (temp, 16, "%d", ox / FRACUNIT);
-			screen->DrawText (color, 70, y, temp);
+			screen->DrawText(smallFont, color, 70, y, temp);
 			snprintf(temp, 16, "%d", oy / FRACUNIT);
-			screen->DrawText (color, 120, y, temp);
+			screen->DrawText(smallFont, color, 120, y, temp);
 			snprintf(temp, 16, "%.2f", Channel[i].volume);
-			screen->DrawText (color, 170, y, temp);
+			screen->DrawText(smallFont, color, 170, y, temp);
 			snprintf(temp, 16, "%d", Channel[i].priority);
-			screen->DrawText (color, 200, y, temp);
+			screen->DrawText(smallFont, color, 200, y, temp);
 			snprintf(temp, 16, "%d", P_AproxDistance2 (listenplayer().camera, ox, oy) / FRACUNIT);
-			screen->DrawText (color, 240, y, temp);
+			screen->DrawText(smallFont, color, 240, y, temp);
 			snprintf(temp, 16, "%d", Channel[i].entchannel);
-			screen->DrawText (color, 280, y, temp);
+			screen->DrawText(smallFont, color, 280, y, temp);
 		}
 		else
 		{
-			screen->DrawText (CR_GREY, 0, y, "------");
+			screen->DrawText(smallFont, CR_GREY, 0, y, "------");
 		}
 	}
 }

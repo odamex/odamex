@@ -24,29 +24,40 @@
 
 #pragma once
 
+#include <array>
 #include <stdexcept>
+#include <string>
+#include <string_view>
+#include <unordered_map>
 
 #include "v_textcolors.h"	// Ch0wW : Colorized textcodes
 #include "hu_stuff.h"
 #include "r_defs.h"
 #include "w_wad.h"
 
-struct OGlobalFont
+struct OFont
 {
 	lumpHandle_t operator[](const size_t idx) const
 	{
-		return m_fontData[idx];
+		return m_glyphs[idx];
 	}
 	lumpHandle_t at(const size_t idx) const
 	{
 		if (idx >= HU_FONTSIZE)
 			throw std::out_of_range("Out-of-bounds font char");
 
-		return m_fontData[idx];
+		return m_glyphs[idx];
 	}
-	void setFont(const lumpHandle_t* font, const int lineHeight)
+	bool empty() const
 	{
-		m_fontData = font;
+		return m_glyphs[0].empty();
+	}
+	void setGlyph(const size_t idx, const lumpHandle_t glyph)
+	{
+		m_glyphs[idx] = glyph;
+	}
+	void setLineHeight(const int lineHeight)
+	{
 		m_lineHeight = lineHeight;
 	}
 	int lineHeight() const
@@ -54,39 +65,32 @@ struct OGlobalFont
 		return m_lineHeight;
 	}
   private:
-	const lumpHandle_t* m_fontData;
-	int m_lineHeight;
+	std::array<lumpHandle_t, HU_FONTSIZE> m_glyphs{};
+	int m_lineHeight = 0;
 };
 
-extern OGlobalFont hu_font;
+class OFontRegistry
+{
+  public:
+	void clear();
+	const OFont* find(std::string_view name) const;
+	OFont& create(const std::string& name);
+	const OFont* big() const;
+	const OFont* small() const;
+	const OFont* digits() const;
+
+ private:
+	std::unordered_map<std::string, OFont> m_fonts;
+};
+
+extern OFontRegistry OFonts;
 
 void V_TextInit();
 void V_TextShutdown();
-void V_SetFont(const char* fontname);
+const OFont* V_GetFont(const char* fontname);
 int V_GetFontLineHeight(const char* fontname);
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
-
-struct V_FontScope
-{
-	explicit V_FontScope(const char* fontname)
-		: m_saved(hu_font)
-		, m_active(fontname != nullptr && fontname[0] != '\0')
-	{
-		if (m_active)
-			V_SetFont(fontname);
-	}
-
-	~V_FontScope()
-	{
-		if (m_active)
-			hu_font = m_saved;
-	}
-
-  private:
-	OGlobalFont m_saved;
-	bool m_active;
-};
 
 struct brokenlines_t
 {
@@ -94,22 +98,28 @@ struct brokenlines_t
 	char *string;
 };
 
-int V_StringWidth(const byte* str);
+int V_StringWidth(const OFont* font, const byte* str);
 int V_StringWidth(const char* fontname, const byte* str);
-inline int V_StringWidth(const char* str) { return V_StringWidth(reinterpret_cast<const byte*>(str)); }
+inline int V_StringWidth(const OFont* font, const char* str)
+{
+	return V_StringWidth(font, reinterpret_cast<const byte*>(str));
+}
 inline int V_StringWidth(const char* fontname, const char* str)
 {
 	return V_StringWidth(fontname, reinterpret_cast<const byte*>(str));
 }
-int V_StringHeight(const char* str);
+int V_StringHeight(const OFont* font, const char* str);
 int V_StringHeight(const char* fontname, const char* str);
-int V_LineHeight();
+int V_LineHeight(const OFont* font);
 int V_LineHeight(const char* fontname);
 
-brokenlines_t *V_BreakLines (int maxwidth, const byte *str);
+brokenlines_t *V_BreakLines (const OFont* font, int maxwidth, const byte *str);
 brokenlines_t *V_BreakLines (const char* fontname, int maxwidth, const byte *str);
 void V_FreeBrokenLines (brokenlines_t *lines);
-inline brokenlines_t *V_BreakLines (int maxwidth, const char *str) { return V_BreakLines (maxwidth, reinterpret_cast<const byte*>(str)); }
+inline brokenlines_t* V_BreakLines(const OFont* font, int maxwidth, const char* str)
+{
+	return V_BreakLines(font, maxwidth, reinterpret_cast<const byte*>(str));
+}
 inline brokenlines_t* V_BreakLines(const char* fontname, int maxwidth, const char* str)
 {
 	return V_BreakLines(fontname, maxwidth, reinterpret_cast<const byte*>(str));

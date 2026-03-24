@@ -198,12 +198,12 @@ static constexpr int fire_surface_height = 77;
 
 static int M_BigFontLineHeight()
 {
-	return V_GetFontLineHeight("BIGFONT");
+	return V_LineHeight(OFonts.big());
 }
 
 static int M_SmallFontLineHeight()
 {
-	return V_GetFontLineHeight("SMALLFONT");
+	return V_LineHeight(OFonts.small());
 }
 
 static void M_PauseSound(void)
@@ -757,14 +757,16 @@ void M_ReadSaveStrings()
 //
 void M_DrawInputBox (char *text, int x, int y, int width) 
 {
+	const OFont* smallFont = OFonts.small();
 	const int text_y =  y+(M_BigFontLineHeight()/2 - M_SmallFontLineHeight()/2);
 
 	M_DrawSaveLoadBorder(x, y, width);
-	screen->DrawTextCleanMove("SMALLFONT", CR_RED, x + (M_SmallFontLineHeight() / 2), text_y, text);
+	screen->DrawTextCleanMove(smallFont, CR_RED, x + (M_SmallFontLineHeight() / 2), text_y, text);
 }
 
 void M_DrawLoad ()
 {
+	const OFont* bigFont = OFonts.big();
 	int i, list_y;
 	const int slot_width = 24;
 	const int slot_padding = 2;
@@ -777,7 +779,7 @@ void M_DrawLoad ()
 	else
 	{
 		const char* title = LocalizedString("MNU_LOADGAME");
-		screen->DrawTextCleanMove("BIGFONT", CR_GRAY, 160 - V_StringWidth("BIGFONT", title) / 2, 0,
+		screen->DrawTextCleanMove(bigFont, CR_GRAY, 160 - V_StringWidth(bigFont, title) / 2, 0,
 		                          title);
 	}
 
@@ -824,6 +826,8 @@ void M_LoadGame (int choice)
 //
 void M_DrawSave()
 {
+	const OFont* bigFont = OFonts.big();
+	const OFont* smallFont = OFonts.small();
 	int i, list_y;
 	const int slot_width = 24;
 	const int slot_padding = 2;
@@ -836,7 +840,7 @@ void M_DrawSave()
 	else
 	{
 		const char* title = LocalizedString("MNU_SAVEGAME");
-		screen->DrawTextCleanMove("BIGFONT", CR_GRAY, 160 - V_StringWidth("BIGFONT", title) / 2, 0,
+		screen->DrawTextCleanMove(bigFont, CR_GRAY, 160 - V_StringWidth(bigFont, title) / 2, 0,
 		                          title);
 	}
 
@@ -849,8 +853,8 @@ void M_DrawSave()
 
 	if (genStringEnter != oldmenustring_t::NONE)
 	{
-		const int string_width = V_StringWidth("SMALLFONT", savegamestrings[saveSlot]);
-		screen->DrawTextCleanMove("SMALLFONT", CR_RED, SaveDef.x + string_width,
+		const int string_width = V_StringWidth(smallFont, savegamestrings[saveSlot]);
+		screen->DrawTextCleanMove(smallFont, CR_RED, SaveDef.x + string_width,
 		                          SaveDef.y + M_BigFontLineHeight() * saveSlot, "_");
 	}
 }
@@ -1102,6 +1106,7 @@ void M_DrawMainMenu()
 
 void M_DrawNewGame()
 {
+	const OFont* smallFont = OFonts.small();
 	if (W_CheckNumForName("M_NEWG") >= 0)
 	{
 		screen->DrawPatchClean(W_CachePatch("M_NEWG"), 96, 14);
@@ -1115,9 +1120,9 @@ void M_DrawNewGame()
 	const char* pslabel = "Pistol Start Each Level ";
 	const int psy = NewDef.y + (M_BigFontLineHeight() * skillnum) + M_SmallFontLineHeight();
 
-	screen->DrawTextCleanMove("SMALLFONT", CR_RED, NewDef.x, psy, pslabel);
-	screen->DrawTextCleanMove("SMALLFONT", CR_GREY,
-	                          NewDef.x + V_StringWidth("SMALLFONT", pslabel), psy,
+	screen->DrawTextCleanMove(smallFont, CR_RED, NewDef.x, psy, pslabel);
+	screen->DrawTextCleanMove(smallFont, CR_GREY,
+	                          NewDef.x + V_StringWidth(smallFont, pslabel), psy,
 	                          g_resetinvonexit ? "ON" : "OFF");
 }
 
@@ -1368,7 +1373,7 @@ void M_DrawOptions()
 	}
 	else
 	{
-		screen->DrawTextCleanMove("BIGFONT", CR_GRAY, 108, 15, LocalizedString("MNU_OPTIONS"));
+		screen->DrawTextCleanMove(OFonts.big(), CR_GRAY, 108, 15, LocalizedString("MNU_OPTIONS"));
 	}
 }
 
@@ -1586,6 +1591,7 @@ static forceinline void R_RenderFire(int x, int y)
 
 static void M_PlayerSetupDrawer()
 {
+	const OFont* smallFont = OFonts.small();
 	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
 	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
 
@@ -1598,19 +1604,19 @@ static void M_PlayerSetupDrawer()
 		}
 		else
 		{
-			screen->DrawTextCleanMove("SMALLFONT", CR_GRAY, 110, 10,
+			screen->DrawTextCleanMove(smallFont, CR_GRAY, 110, 10,
 			                         LocalizedString("MNU_PLAYERSETUP"));
 		}
 	}
 
 	// Draw player name box
-	screen->DrawTextCleanMove("SMALLFONT", CR_RED, PSetupDef.x, PSetupDef.y, "Name");
+	screen->DrawTextCleanMove(smallFont, CR_RED, PSetupDef.x, PSetupDef.y, "Name");
 	M_DrawInputBox(savegamestrings[0], PSetupDef.x + 56, PSetupDef.y-4, MAXPLAYERNAME+1);
 
 	// Draw cursor for either of the above
 	if (genStringEnter != oldmenustring_t::NONE)
-		screen->DrawTextCleanMove("SMALLFONT", CR_RED,
-							PSetupDef.x + V_StringWidth("SMALLFONT", savegamestrings[saveSlot]) + 56,
+		screen->DrawTextCleanMove(smallFont, CR_RED,
+							PSetupDef.x + V_StringWidth(smallFont, savegamestrings[saveSlot]) + 56,
 							PSetupDef.y + ((saveSlot == 0) ? 0 : M_BigFontLineHeight()), "_");
 
 	// Draw player character
@@ -1750,27 +1756,30 @@ static void M_PlayerSetupDrawer()
 
 	// Draw team setting
 	{
+		const OFont* smallFont = OFonts.small();
 		const team_t team = D_TeamByName(cl_team.cstring());
-		const int x = V_StringWidth ("Preferred Team") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight(), "Preferred Team");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + M_BigFontLineHeight(), team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
+		const int x = V_StringWidth(smallFont, "Preferred Team") + 8 + PSetupDef.x;
+		screen->DrawTextCleanMove(smallFont, CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight(), "Preferred Team");
+		screen->DrawTextCleanMove(smallFont, CR_GREY, x, PSetupDef.y + M_BigFontLineHeight(), team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
 	}
 
 	// Draw gender setting
 	{
+		const OFont* smallFont = OFonts.small();
 		const gender_t gender = D_GenderByName(cl_gender.cstring());
-		const int x = V_StringWidth ("Gender") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*2, "Gender");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + M_BigFontLineHeight()*2, genders[gender]);
+		const int x = V_StringWidth(smallFont, "Gender") + 8 + PSetupDef.x;
+		screen->DrawTextCleanMove(smallFont, CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*2, "Gender");
+		screen->DrawTextCleanMove(smallFont, CR_GREY, x, PSetupDef.y + M_BigFontLineHeight()*2, genders[gender]);
 	}
 
 	// Draw autoaim setting
 	{
-		const int x = V_StringWidth ("Autoaim") + 8 + PSetupDef.x;
+		const OFont* smallFont = OFonts.small();
+		const int x = V_StringWidth(smallFont, "Autoaim") + 8 + PSetupDef.x;
 		const float aim = cl_autoaim;
 
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*3, "Autoaim");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + M_BigFontLineHeight()*3,
+		screen->DrawTextCleanMove(smallFont, CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*3, "Autoaim");
+		screen->DrawTextCleanMove(smallFont, CR_GREY, x, PSetupDef.y + M_BigFontLineHeight()*3,
 			aim == 0 ? "Never" :
 			aim <= 0.25 ? "Very Low" :
 			aim <= 0.5 ? "Low" :
@@ -1781,9 +1790,10 @@ static void M_PlayerSetupDrawer()
 
 	// Draw color setting
 	{
-		const int x = V_StringWidth ("Color") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*4, "Color");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + M_BigFontLineHeight()*4, colorpresets[colorpreset]);
+		const OFont* smallFont = OFonts.small();
+		const int x = V_StringWidth(smallFont, "Color") + 8 + PSetupDef.x;
+		screen->DrawTextCleanMove(smallFont, CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*4, "Color");
+		screen->DrawTextCleanMove(smallFont, CR_GREY, x, PSetupDef.y + M_BigFontLineHeight()*4, colorpresets[colorpreset]);
 	}
 
 	int PSetupSize = static_cast<int>(ARRAY_LENGTH(PlayerSetupMenu));
@@ -1797,12 +1807,12 @@ static void M_PlayerSetupDrawer()
 
 	if (colorpreset == COLOR_CUSTOM)
 	{
-		screen->DrawTextCleanMove("SMALLFONT", CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*5, "Red");
-		screen->DrawTextCleanMove("SMALLFONT", CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*6, "Green");
-		screen->DrawTextCleanMove("SMALLFONT", CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*7, "Blue");
+		screen->DrawTextCleanMove(smallFont, CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*5, "Red");
+		screen->DrawTextCleanMove(smallFont, CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*6, "Green");
+		screen->DrawTextCleanMove(smallFont, CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*7, "Blue");
 
 		{
-			const int x = V_StringWidth("SMALLFONT", "Green") + 8 + PSetupDef.x;
+			const int x = V_StringWidth(smallFont, "Green") + 8 + PSetupDef.x;
 			const argb_t playercolor = V_GetColorFromString(cl_color);
 
 			M_DrawSlider(x, PSetupDef.y + M_BigFontLineHeight()*5, 0.0f, 255.0f, playercolor.getr(), 0.0f);
@@ -2040,6 +2050,7 @@ void M_StopMessage()
 //
 bool M_Responder(const event_t& ev)
 {
+	const OFont* smallFont = OFonts.small();
 	int ch, ch2, mod;
 
 	ch = ch2 = mod = -1;
@@ -2132,7 +2143,7 @@ bool M_Responder(const event_t& ev)
 			ch = ev.data3;	// [RH] Use user keymap
 			if (ch >= 32 && ch <= 127 &&
 				saveCharIndex < genStringLen &&
-				V_StringWidth("SMALLFONT", savegamestrings[saveSlot]) <
+				V_StringWidth(smallFont, savegamestrings[saveSlot]) <
 				(genStringLen - 1) * 8)
 			{
 				savegamestrings[saveSlot][saveCharIndex++] = ch;
@@ -2339,21 +2350,21 @@ void M_DimBackground ()
 //
 void M_Drawer()
 {
-	if (messageToPrint && !::hu_font[0].empty())
+	const OFont* smallFont = OFonts.small();
+	const OFont* bigFont = OFonts.big();
+	if (messageToPrint && smallFont != nullptr)
 	{
 		// Horiz. & Vertically center string and print it.
-		brokenlines_t *lines = V_BreakLines (320, messageString);
+		brokenlines_t *lines = V_BreakLines(smallFont, 320, messageString);
 		int y = 100;
 
-		const patch_t* ch = W_ResolvePatchHandle(hu_font[0]);
-
 		for (int i = 0; lines[i].width != -1; i++)
-			y -= ch->height() / 2;
+			y -= V_LineHeight(smallFont) / 2;
 
 		for (int i = 0; lines[i].width != -1; i++)
 		{
-			screen->DrawTextCleanMove("SMALLFONT", CR_RED, 160 - lines[i].width/2, y, lines[i].string);
-			y += ch->height();
+			screen->DrawTextCleanMove(smallFont, CR_RED, 160 - lines[i].width/2, y, lines[i].string);
+			y += V_LineHeight(smallFont);
 		}
 
 		V_FreeBrokenLines (lines);
@@ -2385,7 +2396,7 @@ void M_Drawer()
 				}
 				else if (currentMenu->menuitems[i].textname[0])
 				{
-					screen->DrawTextCleanMove("BIGFONT", CR_RED, x, y,
+					screen->DrawTextCleanMove(bigFont, CR_RED, x, y,
 					                          LocalizedString(currentMenu->menuitems[i].textname));
 				}
 

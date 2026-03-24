@@ -349,8 +349,10 @@ void F_Ticker()
 
 void F_TextWrite ()
 {
+	const OFont* smallFont = OFonts.small();
+
 	// Don't draw text without a working font.
-	if (::hu_font[0].empty())
+	if (smallFont == nullptr)
 		return;
 
 	// erase the entire screen to a tiled background
@@ -441,7 +443,7 @@ void F_TextWrite ()
 			continue;
 		}
 
-		const patch_t* chr = W_ResolvePatchHandle(hu_font[c]);
+		const patch_t* chr = W_ResolvePatchHandle((*smallFont)[c]);
 
 		const int w = chr->width();
 		if (cx + w > width)
@@ -712,8 +714,9 @@ void F_CastDrawer()
 
 	cast_surface->unlock();
 
-	screen->DrawTextClean(CR_RED,
-		x + (width - CleanXfac * V_StringWidth(castorder[castnum].name)) / 2,
+	const OFont* smallFont = OFonts.small();
+	screen->DrawTextClean(smallFont, CR_RED,
+		x + (width - CleanXfac * V_StringWidth(smallFont, castorder[castnum].name)) / 2,
 		y + (height * 180 / 200),
 		castorder[castnum].name);
 }

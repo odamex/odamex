@@ -24,6 +24,8 @@
 
 #include "r_defs.h"
 
+struct OFont;
+
 namespace hud {
 
 enum x_align_t {
@@ -52,7 +54,7 @@ void DrawText(int x, int y, const float scale,
               const x_align_t x_origin, const y_align_t y_origin,
               const char* str, const int color,
               const bool force_opaque = false);
-void DrawText(const char* fontname,
+void DrawText(const OFont* font,
               int x, int y, const float scale,
               const x_align_t x_align, const y_align_t y_align,
               const x_align_t x_origin, const y_align_t y_origin,
@@ -66,7 +68,7 @@ void DrawShadowedText(int x, int y, const float scale,
                       const int shadow_x_offset = 2,
                       const int shadow_y_offset = 2,
                       const bool force_opaque = false);
-void DrawShadowedText(const char* fontname,
+void DrawShadowedText(const OFont* font,
                       int x, int y, const float scale,
                       const x_align_t x_align, const y_align_t y_align,
                       const x_align_t x_origin, const y_align_t y_origin,

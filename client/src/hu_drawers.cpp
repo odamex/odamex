@@ -174,32 +174,18 @@ void Dim(int x, int y,
 }
 
 
-// Draw hu_font text.
+// Draw HUD text.
 void DrawText(int x, int y, const float scale,
               const x_align_t x_align, const y_align_t y_align,
               const x_align_t x_origin, const y_align_t y_origin,
               const char* str, const int color,
               const bool force_opaque)
 {
-	// No string?  Don't bother with this function.
-	if (!str)
-		return;
-
-	// Calculate width and height of string
-	unsigned short w = V_StringWidth(str);
-	unsigned short h = V_LineHeight();
-
-	// Turn our scaled coordinates into real coordinates.
-	int x_scale, y_scale;
-	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
-
-	if (force_opaque)
-		screen->DrawTextStretched(color, x, y, str, x_scale, y_scale);
-	else
-		screen->DrawTextStretchedLuc(color, x, y, str, x_scale, y_scale);
+	DrawText(OFonts.small(), x, y, scale, x_align, y_align, x_origin, y_origin, str, color,
+	         force_opaque);
 }
 
-void DrawText(const char* fontname,
+void DrawText(const OFont* font,
               int x, int y, const float scale,
               const x_align_t x_align, const y_align_t y_align,
               const x_align_t x_origin, const y_align_t y_origin,
@@ -207,19 +193,19 @@ void DrawText(const char* fontname,
               const bool force_opaque)
 {
 	// No string?  Don't bother with this function.
-	if (!str)
+	if (!str || font == nullptr)
 		return;
 
-	unsigned short w = V_StringWidth(fontname, str);
-	unsigned short h = V_LineHeight(fontname);
+	unsigned short w = V_StringWidth(font, str);
+	unsigned short h = V_LineHeight(font);
 
 	int x_scale, y_scale;
 	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
 
 	if (force_opaque)
-		screen->DrawTextStretched(fontname, color, x, y, str, x_scale, y_scale);
+		screen->DrawTextStretched(font, color, x, y, str, x_scale, y_scale);
 	else
-		screen->DrawTextStretchedLuc(fontname, color, x, y, str, x_scale, y_scale);
+		screen->DrawTextStretchedLuc(font, color, x, y, str, x_scale, y_scale);
 }
 
 struct shadow_text_metrics_t
@@ -228,10 +214,10 @@ struct shadow_text_metrics_t
 	int glyphs;
 };
 
-static shadow_text_metrics_t GetShadowTextMetrics(const char* str)
+static shadow_text_metrics_t GetShadowTextMetrics(const OFont* font, const char* str)
 {
 	shadow_text_metrics_t metrics = {0, 0};
-	if (!str)
+	if (!str || font == nullptr)
 		return metrics;
 
 	for (const unsigned char* p = reinterpret_cast<const unsigned char*>(str); *p != '\0'; ++p)
@@ -245,10 +231,10 @@ static shadow_text_metrics_t GetShadowTextMetrics(const char* str)
 			break;
 
 		int c = toupper((*p) & 0x7f) - HU_FONTSTART;
-		if (c < 0 || c >= HU_FONTSIZE || hu_font[c].empty())
+		if (c < 0 || c >= HU_FONTSIZE || (*font)[c].empty())
 			metrics.width += 4;
 		else
-			metrics.width += W_ResolvePatchHandle(hu_font[c])->width();
+			metrics.width += W_ResolvePatchHandle((*font)[c])->width();
 
 		metrics.glyphs++;
 	}
@@ -259,7 +245,7 @@ static shadow_text_metrics_t GetShadowTextMetrics(const char* str)
 	return metrics;
 }
 
-// Draw hu_font text with an offset shadow pass.
+// Draw HUD text with an offset shadow pass.
 void DrawShadowedText(int x, int y, const float scale,
                       const x_align_t x_align, const y_align_t y_align,
                       const x_align_t x_origin, const y_align_t y_origin,
@@ -269,12 +255,26 @@ void DrawShadowedText(int x, int y, const float scale,
                       const int shadow_y_offset,
                       const bool force_opaque)
 {
-	if (!str)
+	DrawShadowedText(OFonts.small(), x, y, scale, x_align, y_align, x_origin, y_origin, str,
+	                 color, shadow_color, shadow_x_offset, shadow_y_offset, force_opaque);
+}
+
+void DrawShadowedText(const OFont* font,
+                      int x, int y, const float scale,
+                      const x_align_t x_align, const y_align_t y_align,
+                      const x_align_t x_origin, const y_align_t y_origin,
+                      const char* str, const int color,
+                      const int shadow_color,
+                      const int shadow_x_offset,
+                      const int shadow_y_offset,
+                      const bool force_opaque)
+{
+	if (!str || font == nullptr)
 		return;
 
-	const shadow_text_metrics_t metrics = GetShadowTextMetrics(str);
+	const shadow_text_metrics_t metrics = GetShadowTextMetrics(font, str);
 	unsigned short w = metrics.width;
-	unsigned short h = V_LineHeight();
+	unsigned short h = V_LineHeight(font);
 	int x_scale, y_scale;
 	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
 
@@ -304,9 +304,9 @@ void DrawShadowedText(int x, int y, const float scale,
 		int c = toupper((*p) & 0x7f) - HU_FONTSTART;
 		int glyph_width = 4;
 		const patch_t* glyph = NULL;
-		if (c >= 0 && c < HU_FONTSIZE && !hu_font[c].empty())
+		if (c >= 0 && c < HU_FONTSIZE && !(*font)[c].empty())
 		{
-			glyph = W_ResolvePatchHandle(hu_font[c]);
+			glyph = W_ResolvePatchHandle((*font)[c]);
 			glyph_width = glyph->width();
 		}
 
@@ -349,22 +349,6 @@ void DrawShadowedText(int x, int y, const float scale,
 	V_ColorMap = saved_colormap;
 	V_ColorFill = saved_color_fill;
 }
-
-void DrawShadowedText(const char* fontname,
-                      int x, int y, const float scale,
-                      const x_align_t x_align, const y_align_t y_align,
-                      const x_align_t x_origin, const y_align_t y_origin,
-                      const char* str, const int color,
-                      const int shadow_color,
-                      const int shadow_x_offset,
-                      const int shadow_y_offset,
-                      const bool force_opaque)
-{
-	V_FontScope scope(fontname);
-	DrawShadowedText(x, y, scale, x_align, y_align, x_origin, y_origin, str, color,
-	                 shadow_color, shadow_x_offset, shadow_y_offset, force_opaque);
-}
-
 
 // Draw a patch.
 void DrawPatch(int x, int y, const float scale,

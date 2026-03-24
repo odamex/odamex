@@ -1610,7 +1610,7 @@ void M_SwitchMenu(menu_t* menu)
 			item = menu->items + i;
 			if (item->type != whitetext && item->type != redtext && item->type != orangetext)
 			{
-				thiswidth = V_StringWidth (item->label);
+				thiswidth = V_StringWidth(OFonts.small(), item->label);
 				if (thiswidth > widest)
 					widest = thiswidth;
 			}
@@ -1629,6 +1629,7 @@ bool M_StartOptionsMenu (void)
 
 void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float step)
 {
+	const OFont* smallFont = OFonts.small();
 	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
 	const int drawY = y + gameinfo.menuCursorOffsetY;
 
@@ -1655,7 +1656,7 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 		buf = fmt::sprintf("%.1f", cur);
 	else
 		buf = fmt::sprintf("%.2f", cur);
-	screen->DrawTextCleanMove("SMALLFONT", CR_GREEN, x + 96, y, buf.c_str());
+	screen->DrawTextCleanMove(smallFont, CR_GREEN, x + 96, y, buf.c_str());
 }
 
 void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color)
@@ -1697,13 +1698,15 @@ int M_FindCurVal (float cur, value_t *values, int numvals)
 
 void M_OptDrawer (void)
 {
+	const OFont* smallFont = OFonts.small();
+	const OFont* bigFont = OFonts.big();
 	int color;
 	int y, width, i, x, ytop;
 	int theight = 0;
 	int ystart = 15;
 	menuitem_t *item;
 	patch_t *title;
-	const int lineHeight = V_GetFontLineHeight("SMALLFONT");
+	const int lineHeight = V_LineHeight(smallFont);
 	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
 
 	if (W_CheckNumForName(CurrentMenu->title) >= 0)
@@ -1714,10 +1717,10 @@ void M_OptDrawer (void)
 	}
 	else
 	{	
-		int titlewidth = V_StringWidth("BIGFONT", "OPTIONS") * CleanXfac;
+		int titlewidth = V_StringWidth(bigFont, "OPTIONS") * CleanXfac;
 		int titleX = (I_GetSurfaceWidth() / 2) - (titlewidth / 2);
 		int titleY = 20*CleanYfac;
-		screen->DrawTextClean("BIGFONT", CR_GRAY, titleX, titleY, "OPTIONS");
+		screen->DrawTextClean(bigFont, CR_GRAY, titleX, titleY, "OPTIONS");
 		y = ystart + theight;
 	}
 	ytop = y + CurrentMenu->scrolltop * lineHeight;
@@ -1754,7 +1757,7 @@ void M_OptDrawer (void)
 					else
 						color = CR_RED;
 
-					screen->DrawTextCleanMove("SMALLFONT", color, 104 * x + 20, y, str);
+					screen->DrawTextCleanMove(smallFont, color, 104 * x + 20, y, str);
 				}
 			}
 
@@ -1766,7 +1769,7 @@ void M_OptDrawer (void)
 		}
 		else
 		{
-			width = V_StringWidth("SMALLFONT", item->label);
+			width = V_StringWidth(smallFont, item->label);
 			switch (item->type)
 			{
 			case more:
@@ -1804,7 +1807,7 @@ void M_OptDrawer (void)
 				color = CR_RED;
 				break;
 			}
-			screen->DrawTextCleanMove("SMALLFONT", color, x, y, item->label);
+			screen->DrawTextCleanMove(smallFont, color, x, y, item->label);
 
 			switch (item->type)
 			{
@@ -1819,7 +1822,7 @@ void M_OptDrawer (void)
 
 				if (v == vals)
 				{
-					screen->DrawTextCleanMove("SMALLFONT", CR_GREY, CurrentMenu->indent + 14, y, "Unknown");
+					screen->DrawTextCleanMove(smallFont, CR_GREY, CurrentMenu->indent + 14, y, "Unknown");
 				}
 				else
 				{
@@ -1827,14 +1830,14 @@ void M_OptDrawer (void)
 					if (item->type == cdiscrete)
 						color_num = item->a.cvar->asInt();
 
-					screen->DrawTextCleanMove("SMALLFONT", color_num, CurrentMenu->indent + 14, y, item->e.values[v].name);
+					screen->DrawTextCleanMove(smallFont, color_num, CurrentMenu->indent + 14, y, item->e.values[v].name);
 				}
 
 			}
 			break;
 
 			case nochoice:
-				screen->DrawTextCleanMove("SMALLFONT", CR_GOLD, CurrentMenu->indent + 14, y,
+				screen->DrawTextCleanMove(smallFont, CR_GOLD, CurrentMenu->indent + 14, y,
 										   (item->e.values[static_cast<int>(item->b.leftval)]).name);
 				break;
 
@@ -1864,21 +1867,21 @@ void M_OptDrawer (void)
 			case control:
 			{
 				std::string desc = Bindings.GetNameKeys(item->b.key1, item->c.key2);
-				screen->DrawTextCleanMove("SMALLFONT", CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+				screen->DrawTextCleanMove(smallFont, CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
 			}
 			break;
 
 			case mapcontrol:
 			{
 				std::string desc = AutomapBindings.GetNameKeys(item->b.key1, item->c.key2);
-				screen->DrawTextCleanMove("SMALLFONT", CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+				screen->DrawTextCleanMove(smallFont, CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
 			}
 			break;
 
 			case netdemocontrol:
 			{
 				std::string desc = NetDemoBindings.GetNameKeys(item->b.key1, item->c.key2);
-				screen->DrawTextCleanMove("SMALLFONT", CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+				screen->DrawTextCleanMove(smallFont, CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
 			}
 			break;
 
@@ -1897,7 +1900,7 @@ void M_OptDrawer (void)
 				else
 					str = value[0].name;
 
-				screen->DrawTextCleanMove("SMALLFONT", CR_GREY, CurrentMenu->indent + 14, y, str);
+				screen->DrawTextCleanMove(smallFont, CR_GREY, CurrentMenu->indent + 14, y, str);
 			}
 			break;
 
@@ -1918,13 +1921,13 @@ void M_OptDrawer (void)
 					joyname += ": " + I_GetJoystickNameFromIndex(item->a.cvar->asInt());
 				}
 
-				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, joyname.c_str());
+				screen->DrawTextCleanMove(smallFont, CR_GREY, CurrentMenu->indent + 14, y, joyname.c_str());
 			}
 			break;
 
 			case joyaxis:
 			{
-				screen->DrawTextCleanMove (CR_GREY, CurrentMenu->indent + 14, y, item->a.cvar->cstring());
+				screen->DrawTextCleanMove(smallFont, CR_GREY, CurrentMenu->indent + 14, y, item->a.cvar->cstring());
 			}
 			break;
 

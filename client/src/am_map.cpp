@@ -2221,12 +2221,13 @@ void AM_Drawer()
 		ST_HticDrawTopCaps(surface);
 	}
 
-	if (!(viewactive && am_overlay < 2) && !hu_font[0].empty())
+	const OFont* font = OFonts.small();
+	if (!(viewactive && am_overlay < 2) && font != nullptr)
 	{
 		std::string line;
 		const int time = level.time / TICRATE;
 
-		const int text_height = (W_ResolvePatchHandle(hu_font[0])->height() + 1) * CleanYfac;
+		const int text_height = (V_LineHeight(font) + 1) * CleanYfac;
 		const int OV_Y = surface_height - (surface_height * 32 / 200);
 		const int fullmap_text_base_y = (ST_Y > 0) ? ST_Y : f_h;
 
@@ -2247,7 +2248,7 @@ void AM_Drawer()
 				}
 
 				int x, y;
-				const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
+				const int text_width = V_StringWidth(font, line.c_str()) * CleanXfac;
 
 				if (AM_OverlayAutomapVisible())
 				{
@@ -2264,7 +2265,7 @@ void AM_Drawer()
 					y = fullmap_text_base_y - (text_height * 2) + 1;
 				}
 
-				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
+				screen->DrawTextClean(font, CR_GREY, x, y, line.c_str());
 			}
 
 			if (am_showitems && !G_IsHordeMode())
@@ -2274,7 +2275,7 @@ void AM_Drawer()
 				                    level.total_items);
 
 				int x, y;
-				const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
+				const int text_width = V_StringWidth(font, line.c_str()) * CleanXfac;
 
 				if (AM_OverlayAutomapVisible())
 				{
@@ -2287,7 +2288,7 @@ void AM_Drawer()
 					y = fullmap_text_base_y - (text_height * 3) + 1;
 				}
 
-				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
+				screen->DrawTextClean(font, CR_GREY, x, y, line.c_str());
 			}
 
 			if (am_showsecrets && !G_IsHordeMode())
@@ -2295,7 +2296,7 @@ void AM_Drawer()
 				line = fmt::sprintf(TEXTCOLOR_RED "SECRETS:" TEXTCOLOR_NORMAL " %d / %d",
 				                    level.found_secrets, level.total_secrets);
 				int x, y;
-				const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
+				const int text_width = V_StringWidth(font, line.c_str()) * CleanXfac;
 
 				if (AM_OverlayAutomapVisible())
 				{
@@ -2308,7 +2309,7 @@ void AM_Drawer()
 					y = fullmap_text_base_y - (text_height * 2) + 1;
 				}
 
-				screen->DrawTextClean(CR_GREY, x, y, line.c_str());
+				screen->DrawTextClean(font, CR_GREY, x, y, line.c_str());
 			}
 		}
 
@@ -2341,7 +2342,7 @@ void AM_Drawer()
 			line = GStrings.getIndex(firstmap + level.levelnum - mapoffset);
 
 			int x, y;
-			const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
+			const int text_width = V_StringWidth(font, line.c_str()) * CleanXfac;
 
 			if (AM_OverlayAutomapVisible())
 			{
@@ -2358,7 +2359,7 @@ void AM_Drawer()
 				y = fullmap_text_base_y - (text_height * 1) + 1;
 			}
 
-			screen->DrawTextClean(CR_RED, x, y, line.c_str());
+			screen->DrawTextClean(font, CR_RED, x, y, line.c_str());
 		}
 		else
 		{
@@ -2386,7 +2387,7 @@ void AM_Drawer()
 			line += level.level_name;
 
 			int x, y;
-			const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
+			const int text_width = V_StringWidth(font, line.c_str()) * CleanXfac;
 
 			if (AM_OverlayAutomapVisible())
 			{
@@ -2403,7 +2404,7 @@ void AM_Drawer()
 				y = fullmap_text_base_y - (text_height * 1) + 1;
 			}
 
-			screen->DrawTextClean(CR_GREY, x, y, line.c_str());
+			screen->DrawTextClean(font, CR_GREY, x, y, line.c_str());
 		}
 
 		if (am_showtime)
@@ -2411,7 +2412,7 @@ void AM_Drawer()
 			line = fmt::sprintf(" %02d:%02d:%02d", time / 3600, (time % 3600) / 60, time % 60); // Time
 
 			int x, y;
-			const int text_width = V_StringWidth(line.c_str()) * CleanXfac;
+			const int text_width = V_StringWidth(font, line.c_str()) * CleanXfac;
 
 			if (AM_OverlayAutomapVisible())
 			{
@@ -2428,7 +2429,7 @@ void AM_Drawer()
 				y -= text_height * 3;
 			}
 
-			screen->DrawTextClean(CR_GREY, x, y, line.c_str());
+			screen->DrawTextClean(font, CR_GREY, x, y, line.c_str());
 		}
 	}
 }

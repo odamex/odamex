@@ -45,32 +45,19 @@ EXTERN_CVAR(msg4color)
 
 EXTERN_CVAR(hud_scaletext)
 
-OGlobalFont hu_font;
-
-static lumpHandle_t hu_bigfont[HU_FONTSIZE];
-static lumpHandle_t hu_smallfont[HU_FONTSIZE];
-static lumpHandle_t hu_digfont[HU_FONTSIZE];
-
-static int hu_bigfont_height;
-static int hu_smallfont_height;
-static int hu_digfont_height;
+OFontRegistry OFonts;
 
 byte *ConChars;
 extern byte *Ranges;
 
 namespace
 {
-const fontdef_t& V_GetResolvedFontDef(const std::string& name)
+std::string V_NormalizeFontName(std::string_view name)
 {
-	const std::string lookup = StdStringToUpper(name);
-	const auto it = fontdefs.find(lookup);
-	if (it == fontdefs.end())
-		I_Error("Unknown fontdef '{}'", name);
-
-	return it->second;
+	return StdStringToUpper(std::string(name));
 }
 
-void V_LoadHudFont(lumpHandle_t* font, const fontdef_t& def)
+void V_LoadFont(OFont& font, const fontdef_t& def)
 {
 	if (def.pattern.empty())
 		I_Error("Fontdef is missing a pattern");
@@ -99,11 +86,48 @@ void V_LoadHudFont(lumpHandle_t* font, const fontdef_t& def)
 
 		int num = W_CheckNumForName(buffer.c_str());
 		if (num != -1)
-			font[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
+			font.setGlyph(i, W_CachePatchHandle(buffer.c_str(), PU_STATIC));
 		else
-			font[i] = W_CachePatchHandle("TNT1A0", PU_STATIC, ns_sprites);
+			font.setGlyph(i, W_CachePatchHandle("TNT1A0", PU_STATIC, ns_sprites));
 	}
+
+	int lineHeight = def.lineHeight;
+	if (lineHeight <= 0)
+		lineHeight = W_ResolvePatchHandle(font['M' - HU_FONTSTART])->height();
+
+	font.setLineHeight(lineHeight);
 }
+}
+
+void OFontRegistry::clear()
+{
+	m_fonts.clear();
+}
+
+const OFont* OFontRegistry::find(std::string_view name) const
+{
+	const auto it = m_fonts.find(V_NormalizeFontName(name));
+	return it != m_fonts.end() ? &it->second : nullptr;
+}
+
+OFont& OFontRegistry::create(const std::string& name)
+{
+	return m_fonts[V_NormalizeFontName(name)];
+}
+
+const OFont* OFontRegistry::big() const
+{
+	return find("BIGFONT");
+}
+
+const OFont* OFontRegistry::small() const
+{
+	return find("SMALLFONT");
+}
+
+const OFont* OFontRegistry::digits() const
+{
+	return find("DIGFONT");
 }
 
 /**
@@ -111,34 +135,14 @@ void V_LoadHudFont(lumpHandle_t* font, const fontdef_t& def)
  */
 void V_TextInit()
 {
-	std::string buffer;
-	const fontdef_t& bigfont = V_GetResolvedFontDef(gameinfo.bigFont);
-	const fontdef_t& smallfont = V_GetResolvedFontDef(gameinfo.smallFont);
-	const fontdef_t& digfont = V_GetResolvedFontDef(gameinfo.digFont);
+	OFonts.clear();
 
+	for (const auto& [name, def] : fontdefs)
+	{
+		OFont& font = OFonts.create(name);
+		V_LoadFont(font, def);
+	}
 
-	// Level name font. Indexing/pattern are gameinfo-driven.
-	V_LoadHudFont(::hu_bigfont, bigfont);
-
-	// Chat/message small font.
-	V_LoadHudFont(::hu_smallfont, smallfont);
-
-	// Status bar digits.
-	V_LoadHudFont(::hu_digfont, digfont);
-
-	// Font heights.
-	::hu_bigfont_height = bigfont.lineHeight > 0
-	    ? bigfont.lineHeight
-	    : W_ResolvePatchHandle(::hu_bigfont['M' - HU_FONTSTART])->height();
-	::hu_smallfont_height = smallfont.lineHeight > 0
-	    ? smallfont.lineHeight
-	    : W_ResolvePatchHandle(::hu_smallfont['M' - HU_FONTSTART])->height();
-	::hu_digfont_height = digfont.lineHeight > 0
-	    ? digfont.lineHeight
-	    : W_ResolvePatchHandle(::hu_digfont['M' - HU_FONTSTART])->height();
-
-	// Default font is SMALLFONT.
-	V_SetFont("SMALLFONT");
 }
 
 /**
@@ -146,39 +150,27 @@ void V_TextInit()
  */
 void V_TextShutdown()
 {
-	for (int i = 0; i < HU_FONTSIZE; i++)
-	{
-		::hu_bigfont[i].clear();
-		::hu_smallfont[i].clear();
-		::hu_digfont[i].clear();
-	}
+	OFonts.clear();
 }
 
-/**
- * @brief Set the current font.
- *
- * @param fontname Font name, can be one of "BIGFONT" or "SMALLFONT".
- */
-void V_SetFont(const char* fontname)
+const OFont* V_GetFont(const char* fontname)
 {
-	if (!stricmp(fontname, "BIGFONT"))
-		::hu_font.setFont(::hu_bigfont, ::hu_bigfont_height);
-	else if (!stricmp(fontname, "SMALLFONT"))
-		::hu_font.setFont(::hu_smallfont, ::hu_smallfont_height);
-	else if (!stricmp(fontname, "DIGFONT"))
-		::hu_font.setFont(::hu_digfont, ::hu_digfont_height);
+	if (fontname == nullptr || fontname[0] == '\0')
+		return nullptr;
+
+	const OFont* font = OFonts.find(fontname);
+	if (font == nullptr)
+	{
+		PrintFmt(PRINT_HIGH, "Unknown font '{}'\n", fontname != nullptr ? fontname : "(null)");
+		return nullptr;
+	}
+
+	return font;
 }
 
 int V_GetFontLineHeight(const char* fontname)
 {
-	if (!stricmp(fontname, "BIGFONT"))
-		return ::hu_bigfont_height > 0 ? ::hu_bigfont_height : 16;
-	if (!stricmp(fontname, "SMALLFONT"))
-		return ::hu_smallfont_height > 0 ? ::hu_smallfont_height : 8;
-	if (!stricmp(fontname, "DIGFONT"))
-		return ::hu_digfont_height > 0 ? ::hu_digfont_height : 8;
-
-	return 8;
+	return V_LineHeight(V_GetFont(fontname));
 }
 
 int V_TextScaleXAmount()
@@ -371,109 +363,104 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 //
 // V_DrawText
 //
-// Write a string using the hu_font
+// Write a string using an explicit font.
 //
 
-void DCanvas::TextWrapper(EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const
+void DCanvas::TextWrapper(EWrapperCode drawer, const OFont* font, int normalcolor, int x, int y,
+                          const byte* string) const
 {
-	TextSWrapper(drawer, normalcolor, x, y, string, 1, 1);
+	TextSWrapper(drawer, font, normalcolor, x, y, string, 1, 1);
 }
 
-void DCanvas::DrawText(const char* fontname, int normalcolor, int x, int y, const byte* string) const
+void DCanvas::DrawText(const OFont* font, int normalcolor, int x, int y, const byte* string) const
 {
-	V_FontScope scope(fontname);
-	DrawText(normalcolor, x, y, string);
+	TextWrapper(EWrapper_Translated, font, normalcolor, x, y, string);
 }
 
-void DCanvas::DrawTextLuc(const char* fontname, int normalcolor, int x, int y, const byte* string) const
+void DCanvas::DrawTextLuc(const OFont* font, int normalcolor, int x, int y, const byte* string) const
 {
-	V_FontScope scope(fontname);
-	DrawTextLuc(normalcolor, x, y, string);
+	TextWrapper(EWrapper_TlatedLucent, font, normalcolor, x, y, string);
 }
 
-void DCanvas::DrawTextClean(const char* fontname, int normalcolor, int x, int y, const byte* string) const
+void DCanvas::DrawTextClean(const OFont* font, int normalcolor, int x, int y, const byte* string) const
 {
-	V_FontScope scope(fontname);
-	DrawTextClean(normalcolor, x, y, string);
+	TextSWrapper(EWrapper_Translated, font, normalcolor, x, y, string);
 }
 
-void DCanvas::DrawTextCleanLuc(const char* fontname, int normalcolor, int x, int y, const byte* string) const
+void DCanvas::DrawTextCleanLuc(const OFont* font, int normalcolor, int x, int y, const byte* string) const
 {
-	V_FontScope scope(fontname);
-	DrawTextCleanLuc(normalcolor, x, y, string);
+	TextSWrapper(EWrapper_TlatedLucent, font, normalcolor, x, y, string);
 }
 
-void DCanvas::DrawTextCleanMove(const char* fontname, int normalcolor, int x, int y,
+void DCanvas::DrawTextCleanMove(const OFont* font, int normalcolor, int x, int y,
                                 const byte* string) const
 {
-	V_FontScope scope(fontname);
-	DrawTextCleanMove(normalcolor, x, y, string);
+	TextSWrapper(EWrapper_Translated, font, normalcolor, getCleanX(x), getCleanY(y), string);
 }
 
-void DCanvas::DrawTextStretched(const char* fontname, int normalcolor, int x, int y,
+void DCanvas::DrawTextStretched(const OFont* font, int normalcolor, int x, int y,
                                 const byte* string, int scalex, int scaley) const
 {
-	V_FontScope scope(fontname);
-	DrawTextStretched(normalcolor, x, y, string, scalex, scaley);
+	TextSWrapper(EWrapper_Translated, font, normalcolor, x, y, string, scalex, scaley);
 }
 
-void DCanvas::DrawTextStretchedLuc(const char* fontname, int normalcolor, int x, int y,
+void DCanvas::DrawTextStretchedLuc(const OFont* font, int normalcolor, int x, int y,
                                    const byte* string, int scalex, int scaley) const
 {
-	V_FontScope scope(fontname);
-	DrawTextStretchedLuc(normalcolor, x, y, string, scalex, scaley);
+	TextSWrapper(EWrapper_TlatedLucent, font, normalcolor, x, y, string, scalex, scaley);
 }
 
-void DCanvas::DrawText(const char* fontname, int normalcolor, int x, int y, const char* string) const
+void DCanvas::DrawText(const OFont* font, int normalcolor, int x, int y, const char* string) const
 {
-	DrawText(fontname, normalcolor, x, y, reinterpret_cast<const byte*>(string));
+	DrawText(font, normalcolor, x, y, reinterpret_cast<const byte*>(string));
 }
 
-void DCanvas::DrawTextLuc(const char* fontname, int normalcolor, int x, int y, const char* string) const
+void DCanvas::DrawTextLuc(const OFont* font, int normalcolor, int x, int y, const char* string) const
 {
-	DrawTextLuc(fontname, normalcolor, x, y, reinterpret_cast<const byte*>(string));
+	DrawTextLuc(font, normalcolor, x, y, reinterpret_cast<const byte*>(string));
 }
 
-void DCanvas::DrawTextClean(const char* fontname, int normalcolor, int x, int y, const char* string) const
+void DCanvas::DrawTextClean(const OFont* font, int normalcolor, int x, int y, const char* string) const
 {
-	DrawTextClean(fontname, normalcolor, x, y, reinterpret_cast<const byte*>(string));
+	DrawTextClean(font, normalcolor, x, y, reinterpret_cast<const byte*>(string));
 }
 
-void DCanvas::DrawTextCleanLuc(const char* fontname, int normalcolor, int x, int y,
+void DCanvas::DrawTextCleanLuc(const OFont* font, int normalcolor, int x, int y,
                                const char* string) const
 {
-	DrawTextCleanLuc(fontname, normalcolor, x, y, reinterpret_cast<const byte*>(string));
+	DrawTextCleanLuc(font, normalcolor, x, y, reinterpret_cast<const byte*>(string));
 }
 
-void DCanvas::DrawTextCleanMove(const char* fontname, int normalcolor, int x, int y,
+void DCanvas::DrawTextCleanMove(const OFont* font, int normalcolor, int x, int y,
                                 const char* string) const
 {
-	DrawTextCleanMove(fontname, normalcolor, x, y, reinterpret_cast<const byte*>(string));
+	DrawTextCleanMove(font, normalcolor, x, y, reinterpret_cast<const byte*>(string));
 }
 
-void DCanvas::DrawTextStretched(const char* fontname, int normalcolor, int x, int y,
+void DCanvas::DrawTextStretched(const OFont* font, int normalcolor, int x, int y,
                                 const char* string, int scalex, int scaley) const
 {
-	DrawTextStretched(fontname, normalcolor, x, y, reinterpret_cast<const byte*>(string), scalex,
+	DrawTextStretched(font, normalcolor, x, y, reinterpret_cast<const byte*>(string), scalex,
 	                  scaley);
 }
 
-void DCanvas::DrawTextStretchedLuc(const char* fontname, int normalcolor, int x, int y,
+void DCanvas::DrawTextStretchedLuc(const OFont* font, int normalcolor, int x, int y,
                                    const char* string, int scalex, int scaley) const
 {
-	DrawTextStretchedLuc(fontname, normalcolor, x, y, reinterpret_cast<const byte*>(string),
+	DrawTextStretchedLuc(font, normalcolor, x, y, reinterpret_cast<const byte*>(string),
 	                     scalex, scaley);
 }
 
-void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const
+void DCanvas::TextSWrapper(EWrapperCode drawer, const OFont* font, int normalcolor, int x, int y,
+                           const byte* string) const
 {
-	TextSWrapper(drawer, normalcolor, x, y, string, CleanXfac, CleanYfac);
+	TextSWrapper(drawer, font, normalcolor, x, y, string, CleanXfac, CleanYfac);
 }
 
-void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
-							const byte *string, int scalex, int scaley) const
+void DCanvas::TextSWrapper(EWrapperCode drawer, const OFont* font, int normalcolor, int x, int y,
+                           const byte* string, int scalex, int scaley) const
 {
-	if (::hu_font[0].empty())
+	if (font == nullptr || font->empty())
 		return;
 
 	if (normalcolor < 0 || normalcolor >= NUM_TEXT_COLORS)
@@ -506,7 +493,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 		if (str[0] == '\n')
 		{
 			cx = x;
-			cy += V_LineHeight() * scalex;
+			cy += V_LineHeight(font) * scalex;
 			str++;
 			continue;
 		}
@@ -520,7 +507,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 			continue;
 		}
 
-		patch_t* ch = W_ResolvePatchHandle(hu_font[c]);
+		patch_t* ch = W_ResolvePatchHandle((*font)[c]);
 
 		int w = ch->width() * scalex;
 		if (cx + w > I_GetSurfaceWidth())
@@ -533,12 +520,12 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 }
 
 //
-// Find string width from hu_font chars
+// Find string width from explicit font chars.
 //
-int V_StringWidth(const byte* str)
+int V_StringWidth(const OFont* font, const byte* str)
 {
 	// Default width without a font loaded is 8.
-	if (::hu_font[0].empty())
+	if (font == nullptr || font->empty())
 		return 8;
 
 	int width = 0;
@@ -556,7 +543,7 @@ int V_StringWidth(const byte* str)
 		if (c < 0 || c >= HU_FONTSIZE)
 			width += 4;
 		else
-			width += W_ResolvePatchHandle(hu_font[c])->width();
+			width += W_ResolvePatchHandle((*font)[c])->width();
 	}
 
 	return width;
@@ -564,17 +551,16 @@ int V_StringWidth(const byte* str)
 
 int V_StringWidth(const char* fontname, const byte* str)
 {
-	V_FontScope scope(fontname);
-	return V_StringWidth(str);
+	return V_StringWidth(V_GetFont(fontname), str);
 }
 
-int V_StringHeight(const char* str)
+int V_StringHeight(const OFont* font, const char* str)
 {
 	// Default width without a font loaded is 8.
-	if (::hu_font[0].empty())
+	if (font == nullptr || font->empty())
 		return 8;
 
-	int lineheight = V_LineHeight();
+	int lineheight = V_LineHeight(font);
 	int height = lineheight;
 
 	while (str[0] != '\0')
@@ -597,14 +583,14 @@ int V_StringHeight(const char* str)
 
 int V_StringHeight(const char* fontname, const char* str)
 {
-	V_FontScope scope(fontname);
-	return V_StringHeight(str);
+	return V_StringHeight(V_GetFont(fontname), str);
 }
 
 //
 // Break long lines of text into multiple lines no longer than maxwidth pixels
 //
-static void breakit(brokenlines_t* line, const byte* start, const byte* string, const char* prefix = NULL)
+static void breakit(const OFont* font, brokenlines_t* line, const byte* start, const byte* string,
+                    const char* prefix = NULL)
 {
 	// Leave out trailing white space
 	while (string > start && isspace(*(string - 1)))
@@ -619,24 +605,23 @@ static void breakit(brokenlines_t* line, const byte* start, const byte* string, 
 
 	strncpy(line->string + prefix_len, reinterpret_cast<const char*>(start), string - start);
 	line->string[string - start + prefix_len] = 0;
-	line->width = V_StringWidth(line->string);
+	line->width = V_StringWidth(font, line->string);
 }
 
-int V_LineHeight()
+int V_LineHeight(const OFont* font)
 {
-	return ::hu_font.lineHeight();
+	return font != nullptr ? font->lineHeight() : 0;
 }
 
 int V_LineHeight(const char* fontname)
 {
-	V_FontScope scope(fontname);
-	return V_LineHeight();
+	return V_LineHeight(V_GetFont(fontname));
 }
 
-brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
+brokenlines_t* V_BreakLines(const OFont* font, int maxwidth, const byte* str)
 {
-	if (::hu_font[0].empty())
-		return NULL;
+	if (font == nullptr || font->empty())
+		return nullptr;
 
 	brokenlines_t lines[128];	// Support up to 128 lines (should be plenty)
 
@@ -676,7 +661,7 @@ brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 		if (c < HU_FONTSTART || c >= HU_FONTSTART + HU_FONTSIZE)
 			nw = 4;
 		else
-			nw = W_ResolvePatchHandle(hu_font[c - HU_FONTSTART])->width();
+			nw = W_ResolvePatchHandle((*font)[c - HU_FONTSTART])->width();
 
 		if (w + nw > maxwidth || c == '\n')
 		{
@@ -684,7 +669,7 @@ brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 			if (!space)
 				space = str - 1;
 
-			breakit(&lines[i], start, space, color_code_str);
+			breakit(font, &lines[i], start, space, color_code_str);
 
 			i++;
 			w = 0;
@@ -717,7 +702,7 @@ brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 		{
 			if (!isspace (*s++))
 			{
-				breakit(&lines[i++], start, str, color_code_str);
+				breakit(font, &lines[i++], start, str, color_code_str);
 				break;
 			}
 		}
@@ -737,8 +722,7 @@ brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 
 brokenlines_t* V_BreakLines(const char* fontname, int maxwidth, const byte* str)
 {
-	V_FontScope scope(fontname);
-	return V_BreakLines(maxwidth, str);
+	return V_BreakLines(V_GetFont(fontname), maxwidth, str);
 }
 
 void V_FreeBrokenLines(brokenlines_t* lines)

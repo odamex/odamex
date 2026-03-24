@@ -257,7 +257,7 @@ void NetGraph::drawTrafficIn(int x, int y)
 	std::ostringstream buf;
 	buf.precision(2);
 	buf << "Traffic In: " << std::fixed << totalTraffic / 1024.0 << " kb/s";
-	screen->DrawText(textcolor, x, y, buf.str().c_str());
+	screen->DrawText(OFonts.small(), textcolor, x, y, buf.str().c_str());
 }
 
 void NetGraph::drawTrafficOut(int x, int y)
@@ -277,7 +277,7 @@ void NetGraph::drawTrafficOut(int x, int y)
 	std::ostringstream buf;
 	buf.precision(2);
 	buf << "Traffic Out: " << std::fixed << totalTraffic / 1024.0 << " kb/s";
-	screen->DrawText(textcolor, x, y, buf.str().c_str());
+	screen->DrawText(OFonts.small(), textcolor, x, y, buf.str().c_str());
 }
 
 void NetGraph::drawPackets(int x, int y)
@@ -301,7 +301,7 @@ void NetGraph::drawPackets(int x, int y)
 
 	std::ostringstream buf;
 	buf << "Packets In: " << std::setw(5) << maxPackets;
-	screen->DrawText(textcolor, x, y, buf.str().c_str());
+	screen->DrawText(OFonts.small(), textcolor, x, y, buf.str().c_str());
 }
 
 void NetGraph::draw()
@@ -309,15 +309,15 @@ void NetGraph::draw()
 	static constexpr int textcolor = CR_GREY;
 	static constexpr int fontheight = 8;
 
-    screen->DrawText(textcolor, mX, mY, "World Index Sync");
+    screen->DrawText(OFonts.small(), textcolor, mX, mY, "World Index Sync");
 	drawWorldIndexSync(mX, mY + fontheight);
 
-    screen->DrawText(textcolor, mX, mY + 64, "Mispredictions");
+    screen->DrawText(OFonts.small(), textcolor, mX, mY + 64, "Mispredictions");
 	drawMispredictions(mX, mY + 64 + fontheight);
 
     const int nowIndex = (gametic - 1) % MAX_HISTORY_TICS;
 
-    screen->DrawText(textcolor, mX + 128, mY, ("Reliable Send Queue: " + std::to_string(mReliableSendDepth[nowIndex])).c_str());
+    screen->DrawText(OFonts.small(), textcolor, mX + 128, mY, ("Reliable Send Queue: " + std::to_string(mReliableSendDepth[nowIndex])).c_str());
     drawReliableSendDepth(mX + 128, mY + fontheight);
 
     std::string serverQueueNumber;
@@ -325,7 +325,7 @@ void NetGraph::draw()
     {
         serverQueueNumber = std::to_string(mServerQueueDepth[nowIndex]);
     }
-    screen->DrawText(textcolor, mX + 290, mY, ("Server-side Queue: " + serverQueueNumber).c_str());
+    screen->DrawText(OFonts.small(), textcolor, mX + 290, mY, ("Server-side Queue: " + serverQueueNumber).c_str());
     drawServerQueueDepth(mX + 290, mY + fontheight);
 
 	drawTrafficIn(mX, mY + 128 + fontheight);

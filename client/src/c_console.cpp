@@ -1175,11 +1175,11 @@ void C_AddNotifyString(int printlevel, const char* color_code, const char* sourc
 	if (addtype == APPENDLINE && NotifyStrings[NUMNOTIFIES-1].printlevel == printlevel)
 	{
 		snprintf(work, MAX_LINE_LENGTH, "%s%s", NotifyStrings[NUMNOTIFIES - 1].text, source);
-		lines = V_BreakLines(width, work);
+		lines = V_BreakLines(OFonts.small(), width, work);
 	}
 	else
 	{
-		lines = V_BreakLines(width, source);
+		lines = V_BreakLines(OFonts.small(), width, source);
 		addtype = (addtype == APPENDLINE) ? NEWLINE : addtype;
 	}
 
@@ -1479,8 +1479,8 @@ static void C_DrawNotifyText()
 			else
 				color = PrintColors[notify.printlevel];
 
-			screen->DrawTextStretched(color, 0, ypos, notify.text,
-						V_TextScaleXAmount(), V_TextScaleYAmount());
+			screen->DrawTextStretched(OFonts.small(), color, 0, ypos, notify.text,
+				V_TextScaleXAmount(), V_TextScaleYAmount());
 			ypos += 8 * V_TextScaleYAmount();
 		}
 	}
@@ -2300,7 +2300,8 @@ void C_MidPrint(const char *msg, player_t *p, int msgtime)
 		PrintFmt(PRINT_HIGH, "{}\n", newmsg);
 		midprinting = false;
 
-		if ( (MidMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), reinterpret_cast<byte*>(newmsg))) )
+		if ((MidMsg = V_BreakLines(OFonts.small(), I_GetSurfaceWidth() / V_TextScaleXAmount(),
+				reinterpret_cast<byte*>(newmsg))))
 		{
 			MidTicker = static_cast<int>(fmsgtime * TICRATE) + gametic;
 
@@ -2335,7 +2336,7 @@ void C_DrawMid()
 
 		for (int i = 0; i < MidLines; i++, y += line_height)
 		{
-			screen->DrawTextStretched(PrintColors[PRINTLEVELS-1],
+			screen->DrawTextStretched(OFonts.small(), PrintColors[PRINTLEVELS-1],
 					x - xscale * (MidMsg[i].width / 2),
 					y, reinterpret_cast<byte*>(MidMsg[i].string), xscale, yscale);
 		}
@@ -2378,7 +2379,8 @@ void C_GMidPrint(const char* msg, int color, int msgtime)
 
 		char *newmsg = strdup(str.c_str());
 
-		if ((GameMsg = V_BreakLines(I_GetSurfaceWidth() / V_TextScaleXAmount(), reinterpret_cast<byte*>(newmsg))))
+		if ((GameMsg = V_BreakLines(OFonts.small(), I_GetSurfaceWidth() / V_TextScaleXAmount(),
+				reinterpret_cast<byte*>(newmsg))))
 		{
 			GameTicker = static_cast<int>(fmsgtime * TICRATE) + gametic;
 
@@ -2417,7 +2419,7 @@ void C_DrawGMid()
 
 		for (int i = 0; i < GameLines; i++, y += line_height)
 		{
-			screen->DrawTextStretched(GameColor,
+			screen->DrawTextStretched(OFonts.small(), GameColor,
 					x - xscale * (GameMsg[i].width / 2),
 					y, reinterpret_cast<byte*>(GameMsg[i].string), xscale, yscale);
 		}
