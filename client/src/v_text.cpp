@@ -504,9 +504,8 @@ void DCanvas::TextSWrapper(EWrapperCode drawer, const OFont* font, int normalcol
 //
 int V_StringWidth(const OFont* font, const byte* str)
 {
-	// Default width without a font loaded is 8.
 	if (font == nullptr || font->empty())
-		return 8;
+		return 0;
 
 	int width = 0;
 
@@ -531,9 +530,8 @@ int V_StringWidth(const OFont* font, const byte* str)
 
 int V_StringHeight(const OFont* font, const char* str)
 {
-	// Default width without a font loaded is 8.
 	if (font == nullptr || font->empty())
-		return 8;
+		return 0;
 
 	int lineheight = font->lineHeight();
 	int height = lineheight;

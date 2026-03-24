@@ -1702,7 +1702,6 @@ void M_OptDrawer (void)
 	const OFont* bigFont = OFonts.big();
 	int color;
 	int y, width, i, x, ytop;
-	int theight = 0;
 	int ystart = 15;
 	menuitem_t *item;
 	patch_t *title;
@@ -1721,11 +1720,11 @@ void M_OptDrawer (void)
 		int titleX = (I_GetSurfaceWidth() / 2) - (titlewidth / 2);
 		int titleY = 20*CleanYfac;
 		screen->DrawTextClean(bigFont, CR_GRAY, titleX, titleY, "OPTIONS");
-		y = ystart + theight;
+		y = ystart;
 	}
 	ytop = y + CurrentMenu->scrolltop * lineHeight;
 
-	for (i = 0; i < CurrentMenu->numitems && y <= 192 - theight; i++, y += lineHeight)	// TIJ
+	for (i = 0; i < CurrentMenu->numitems && y <= 200 - lineHeight; i++, y += lineHeight)	// TIJ
 	{
 		if (i == CurrentMenu->scrolltop)
 			i += CurrentMenu->scrollpos;

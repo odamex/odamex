@@ -198,12 +198,14 @@ static constexpr int fire_surface_height = 77;
 
 static int M_BigFontLineHeight()
 {
-	return OFonts.big() != nullptr ? OFonts.big()->lineHeight() : 0;
+	const OFont* font = OFonts.big();
+	return font != nullptr ? font->lineHeight() : 0;
 }
 
 static int M_SmallFontLineHeight()
 {
-	return OFonts.small() != nullptr ? OFonts.small()->lineHeight() : 0;
+	const OFont* font = OFonts.small();
+	return font != nullptr ? font->lineHeight() : 0;
 }
 
 static void M_PauseSound(void)
