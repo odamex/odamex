@@ -146,9 +146,6 @@ typedef struct gameinfo_s
 	OLumpName overrideMapinfoLump;
 	OLumpName menuTitle;
 	int menuTitleOffsetX;
-	std::string bigFont;
-	std::string smallFont;
-	std::string digFont;
 	std::array<OLumpName, 2> menuIndicatorLumps;
 	int menuIndicatorOffsetX;
 	int menuIndicatorOffsetY;
@@ -190,9 +187,6 @@ typedef struct gameinfo_s
 		, overrideMapinfoLump("")
 		, menuTitle("")
 		, menuTitleOffsetX(0)
-		, bigFont("BIGFONT")
-		, smallFont("SMALLFONT")
-		, digFont("DIGFONT")
 		, menuIndicatorLumps{ "M_SKULL1", "M_SKULL2" }
 		, menuIndicatorOffsetX(-32)
 		, menuIndicatorOffsetY(-5)

@@ -1306,8 +1306,6 @@ struct MapInfoDataSetter<gameinfo_t>
 
 			// [ML] These aren't part of any UMAPINFO "standard"  
 			{ "maxswitch", &MIType_Int, &gameinfo.maxSwitch },
-			{ "smallfont", &MIType_String, &gameinfo.smallFont },
-			{ "bigfont", &MIType_String, &gameinfo.bigFont },
 			{ "menutitle", &MIType_LumpName, &gameinfo.menuTitle },
 			{ "menutitleoffsetx", &MIType_Int, &gameinfo.menuTitleOffsetX },
 			{ "menuindicatorlumps", &MIType_Pages, gameinfo.menuIndicatorLumps.data() },
