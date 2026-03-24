@@ -1644,7 +1644,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.titleString = "The Ultimate DOOM (BFG Edition)";
 		gameinfo.baseMapinfoLump = "_D1NFO";
-		gameinfo.overrideMapinfoLump = "_UDOOMNFO";
+		gameinfo.overrideMapinfoLump = "_UDNFO";
 	}
 	else if (idname.find(OStringToUpper(OString(UDOOM_PREFIX))) == 0)
 	{
@@ -1653,7 +1653,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_MENUHACK_RETAIL;
 		gameinfo.titleString = "The Ultimate DOOM";
 		gameinfo.baseMapinfoLump = "_D1NFO";
-		gameinfo.overrideMapinfoLump = "_UDOOMNFO";
+		gameinfo.overrideMapinfoLump = "_UDNFO";
 	}
 	else if (idname.find(OStringToUpper(OString(DOOM2_PREFIX " BFG"))) == 0)
 	{

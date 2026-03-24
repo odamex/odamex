@@ -1,8 +1,24 @@
+// MAPINFO for all doom engine games (Shareware and Retail)
 
-fontdef SMALLFONT
+font BIGFONT
+{
+	pattern = "FONTB%02d"
+	lumpstart = 1
+	lineheight = 16
+}
+
+font SMALLFONT
 {
 	pattern = "STCFN%03d"
 	lumpstart = 33
+	lineheight = 8
+}
+
+font DIGFONT
+{
+	pattern = "DIGFONT%02d"
+	pattern_literal = "DIG%c"
+	lumpstart = 1
 	lineheight = 8
 }
 

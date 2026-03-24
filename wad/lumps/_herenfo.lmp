@@ -1,17 +1,25 @@
 // MAPINFO for Heretic (Shareware and Retail)
 
-fontdef BIGFONT
+font BIGFONT
 {
 	pattern = "FONTB%02d"
 	lumpstart = 1
 	lineheight = 20
 }
 
-fontdef SMALLFONT
+font SMALLFONT
 {
 	pattern = "FONTA%02d"
 	lumpstart = 1
 	lineheight = 10
+}
+
+font DIGFONT
+{
+	pattern = "DIGFONT%02d"
+	pattern_literal = "DIG%c"
+	lumpstart = 1
+	lineheight = 8
 }
 
 gameinfo

@@ -74,18 +74,21 @@ struct fontdef_t
 	std::string pattern;
 	int lumpStart;
 	int lineHeight;
+	std::string pattern_literal;
 
 	fontdef_t()
 		: pattern("")
 		, lumpStart(1)
 		, lineHeight(0)
+		, pattern_literal("")
 	{
 	}
 
-	fontdef_t(const char* fontPattern, int fontLumpStart, int fontLineHeight)
+	fontdef_t(const char* fontPattern, int fontLumpStart, int fontLineHeight, const char* pattern_literal = "")
 		: pattern(fontPattern)
 		, lumpStart(fontLumpStart)
 		, lineHeight(fontLineHeight)
+		, pattern_literal(pattern_literal)
 	{
 	}
 };
@@ -95,8 +98,6 @@ inline std::unordered_map<std::string, fontdef_t> fontdefs;
 inline void G_ResetFontDefs()
 {
 	fontdefs.clear();
-	fontdefs.emplace("BIGFONT", fontdef_t("FONTB%02d", 1, 16));
-	fontdefs.emplace("SMALLFONT", fontdef_t("STCFN%03d", 33, 8));
 }
 
 typedef struct gameinfo_s
@@ -147,6 +148,7 @@ typedef struct gameinfo_s
 	int menuTitleOffsetX;
 	std::string bigFont;
 	std::string smallFont;
+	std::string digFont;
 	std::array<OLumpName, 2> menuIndicatorLumps;
 	int menuIndicatorOffsetX;
 	int menuIndicatorOffsetY;
@@ -190,6 +192,7 @@ typedef struct gameinfo_s
 		, menuTitleOffsetX(0)
 		, bigFont("BIGFONT")
 		, smallFont("SMALLFONT")
+		, digFont("DIGFONT")
 		, menuIndicatorLumps{ "M_SKULL1", "M_SKULL2" }
 		, menuIndicatorOffsetX(-32)
 		, menuIndicatorOffsetY(-5)
