@@ -37,6 +37,7 @@
 #include "s_sound.h"
 #include "v_text.h"
 #include "g_gametype.h"
+#include "hu_stuff.h"
 
 static int tintglow = 0;
 
@@ -531,16 +532,16 @@ void CTF_Message(team_t flag, team_t team, flag_score_t ev)
 
 			if (IsPossesiveEvent(playerTeam, flag, team, ev))
 			{
-				C_GMidPrint(flag_message[ev][msg], color, 0);
+				HU_GameMidPrint(flag_message[ev][msg], color, 0);
 				break;
 			}
 		}
 		[[fallthrough]];
 	case 1:
 		if (ev == SCORE_CAPTURE)
-			C_GMidPrint(flag_message[ev][2 + team], V_GetTextColor(GetTeamInfo(team)->TextColor), 0);
+			HU_GameMidPrint(flag_message[ev][2 + team], V_GetTextColor(GetTeamInfo(team)->TextColor), 0);
 		else
-			C_GMidPrint(flag_message[ev][2 + flag], V_GetTextColor(GetTeamInfo(flag)->TextColor), 0);
+			HU_GameMidPrint(flag_message[ev][2 + flag], V_GetTextColor(GetTeamInfo(flag)->TextColor), 0);
 		break;
 	default:
 		break;

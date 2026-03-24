@@ -28,6 +28,7 @@
 #include <iterator>
 #include <sstream>
 
+#include "m_alloc.h"
 #include "z_zone.h"
 #include "hu_stuff.h"
 #include "w_wad.h"
@@ -68,6 +69,7 @@ extern DCanvas *screen;
 extern byte *Ranges;
 
 EXTERN_CVAR(hud_scaletext)
+EXTERN_CVAR(con_midtime)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_timelimit)
 EXTERN_CVAR(sv_scorelimit)
@@ -188,6 +190,160 @@ cvar_t *chat_macros[10] =
 };
 
 static constexpr int HiResolutionWidth = 480;
+static brokenlines_t* MidPrintMsg = nullptr;
+static int MidPrintTicker = 0;
+static int MidPrintLines = 0;
+static bool midprinting = false;
+static brokenlines_t* GameMidPrintMsg = nullptr;
+static int GameMidPrintColor = CR_GREY;
+static int GameMidPrintLines = 0;
+
+bool HU_IsMidPrinting()
+{
+	return midprinting;
+}
+
+void HU_MidPrint(const char* msg, int msgtime)
+{
+	unsigned int i;
+	const float fmsgtime = msgtime ? float(msgtime) : con_midtime;
+
+	if (MidPrintMsg)
+		V_FreeBrokenLines(MidPrintMsg);
+
+	if (msg)
+	{
+		midprinting = true;
+
+		std::string str = msg;
+		for (size_t pos = str.find("\\n"); pos != std::string::npos; pos = str.find("\\n", pos))
+		{
+			str[pos] = '\n';
+			str.erase(pos + 1, 1);
+		}
+
+		char* newmsg = strdup(str.c_str());
+
+		PrintFmt(PRINT_HIGH, "{}\n", newmsg);
+		midprinting = false;
+
+		if ((MidPrintMsg = V_BreakLines(OFonts.small(),
+				I_GetSurfaceWidth() / V_TextScaleXAmount(),
+				reinterpret_cast<byte*>(newmsg))))
+		{
+			MidPrintTicker = static_cast<int>(fmsgtime * TICRATE) + gametic;
+
+			for (i = 0; MidPrintMsg[i].width != -1; i++)
+				;
+
+			MidPrintLines = i;
+		}
+
+		M_Free(newmsg);
+	}
+	else
+	{
+		midprinting = false;
+		MidPrintMsg = nullptr;
+	}
+}
+
+void HU_DrawMid()
+{
+	if (MidPrintMsg)
+	{
+		const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+		const int xscale = V_TextScaleXAmount();
+		const int yscale = V_TextScaleYAmount();
+		const int line_height = 8 * yscale;
+		const int bottom =
+		    R_StatusBarVisible() ? ST_StatusBarY(surface_width, surface_height) : surface_height;
+		const int x = surface_width / 2;
+		int y = (bottom - line_height * MidPrintLines) / 2;
+
+		for (int i = 0; i < MidPrintLines; i++, y += line_height)
+		{
+			screen->DrawTextStretched(OFonts.small(), CR_GOLD,
+				x - xscale * (MidPrintMsg[i].width / 2), y,
+				reinterpret_cast<byte*>(MidPrintMsg[i].string), xscale, yscale);
+		}
+
+		if (gametic >= MidPrintTicker)
+		{
+			V_FreeBrokenLines(MidPrintMsg);
+			MidPrintMsg = nullptr;
+		}
+	}
+}
+
+void HU_GameMidPrint(const char* msg, int color, int msgtime)
+{
+	unsigned int i;
+	const float fmsgtime = msgtime ? float(msgtime) : con_midtime;
+
+	if (GameMidPrintMsg)
+		V_FreeBrokenLines(GameMidPrintMsg);
+
+	if (msg)
+	{
+		std::string str = msg;
+		for (size_t pos = str.find("\\n"); pos != std::string::npos; pos = str.find("\\n", pos))
+		{
+			str[pos] = '\n';
+			str.erase(pos + 1, 1);
+		}
+
+		char* newmsg = strdup(str.c_str());
+
+		if ((GameMidPrintMsg = V_BreakLines(OFonts.small(),
+				I_GetSurfaceWidth() / V_TextScaleXAmount(),
+				reinterpret_cast<byte*>(newmsg))))
+		{
+			MidPrintTicker = static_cast<int>(fmsgtime * TICRATE) + gametic;
+
+			for (i = 0; GameMidPrintMsg[i].width != -1; i++)
+				;
+
+			GameMidPrintLines = i;
+		}
+
+		GameMidPrintColor = color;
+		M_Free(newmsg);
+	}
+	else
+	{
+		GameMidPrintMsg = nullptr;
+		GameMidPrintColor = CR_GREY;
+	}
+}
+
+void HU_DrawGameMid()
+{
+	if (GameMidPrintMsg)
+	{
+		const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+		const int xscale = V_TextScaleXAmount();
+		const int yscale = V_TextScaleYAmount();
+		const int line_height = 8 * yscale;
+		const int bottom =
+		    R_StatusBarVisible() ? ST_StatusBarY(surface_width, surface_height) : surface_height;
+		const int x = surface_width / 2;
+		int y = (bottom / 2 - line_height * GameMidPrintLines) / 2;
+
+		for (int i = 0; i < GameMidPrintLines; i++, y += line_height)
+		{
+			screen->DrawTextStretched(OFonts.small(), GameMidPrintColor,
+				x - xscale * (GameMidPrintMsg[i].width / 2), y,
+				reinterpret_cast<byte*>(GameMidPrintMsg[i].string), xscale, yscale);
+		}
+
+		if (gametic >= MidPrintTicker)
+		{
+			V_FreeBrokenLines(GameMidPrintMsg);
+			GameMidPrintMsg = nullptr;
+		}
+	}
+}
 
 //
 // HU_Init

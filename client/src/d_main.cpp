@@ -288,15 +288,15 @@ void D_Display()
 
 			CTF_DrawHud();
 			HU_Drawer();
-			C_DrawMid();
-			C_DrawGMid();
+			HU_DrawMid();
+			HU_DrawGameMid();
 			break;
 
 		case GS_INTERMISSION:
 			CTF_DrawHud();
 			WI_Drawer();
 			HU_Drawer();
-			C_DrawMid();
+			HU_DrawMid();
 			V_ResetPalette();
 			break;
 

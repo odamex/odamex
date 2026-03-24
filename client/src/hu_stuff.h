@@ -61,3 +61,8 @@ void HU_ReleaseKeyStates();
 class player_t;
 void HU_DrawScores (player_t *me);
 void HU_DisplayTimer (int x, int y, bool scale = true);
+void HU_MidPrint(const char* msg, int msgtime = 0);
+void HU_DrawMid();
+void HU_GameMidPrint(const char* msg, int color, int msgtime);
+void HU_DrawGameMid();
+bool HU_IsMidPrinting();

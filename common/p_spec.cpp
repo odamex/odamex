@@ -1667,7 +1667,7 @@ bool P_CanUnlockZDoomDoor(player_t* player, zdoom_lock_t lock, bool remote)
 
 		if (msg != NULL)
 		{
-			C_MidPrint(GStrings(*msg), player);
+			C_MidPrint(GStrings(*msg));
 		}
 	}
 
@@ -1824,7 +1824,7 @@ bool P_CanUnlockGenDoor(line_t* line, player_t* player)
 
 		if (msg != NULL)
 		{
-			C_MidPrint(GStrings(*msg), player);
+			C_MidPrint(GStrings(*msg));
 		}
 	}
 
@@ -1927,7 +1927,7 @@ bool P_CheckKeys (player_t *p, card_t lock, bool remote)
 			UV_SoundAvoidPlayer (p->mo, CHAN_VOICE, "player/male/grunt1", ATTN_NORM);
 
 		if (msg != NULL)
-			C_MidPrint(GStrings(*msg), p);
+			C_MidPrint(GStrings(*msg));
 	}
 
 	return false;

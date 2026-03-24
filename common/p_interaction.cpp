@@ -852,7 +852,7 @@ static void P_GiveCarePack(player_t& player)
 		if (!midmessage.empty())
 		{
 			std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
-			C_MidPrint(buf.c_str(), NULL, 0);
+			C_MidPrint(buf.c_str(), 0);
 		}
 	}
 }

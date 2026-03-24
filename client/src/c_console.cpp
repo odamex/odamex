@@ -47,6 +47,7 @@
 #include "cl_responderkeys.h"
 #include "cl_download.h"
 #include "g_gametype.h"
+#include "hu_stuff.h"
 #include "m_fileio.h"
 
 #include <list>
@@ -87,8 +88,6 @@ bool		KeysShifted;
 bool		KeysCtrl;
 bool		KeysAlt;
 bool		NumLockEnabled;
-
-static bool midprinting;
 
 #define SCROLLUP 1
 #define SCROLLDN 2
@@ -1237,7 +1236,7 @@ static size_t C_PrintStringStdOut(std::string str)
 //
 static size_t C_PrintString(int printlevel, const char* color_code, const char* outline)
 {
-	if (I_VideoInitialized() && !midprinting)
+	if (I_VideoInitialized() && !HU_IsMidPrinting())
 	{
 		const bool noPickups = printlevel == PRINT_PICKUP && !::message_showpickups;
 		const bool noObits = printlevel == PRINT_OBITUARY && !::message_showobituaries;
@@ -2268,168 +2267,9 @@ END_COMMAND(toggleconsole)
 
 /* Printing in the middle of the screen */
 
-static brokenlines_t *MidMsg = NULL;
-static int MidTicker = 0, MidLines;
-EXTERN_CVAR(con_midtime)
-
-void C_MidPrint(const char *msg, player_t *p, int msgtime)
+void C_MidPrint(const char* msg, player_t*, int msgtime)
 {
-	unsigned int i;
-
-	const float fmsgtime = msgtime ? float(msgtime) : con_midtime;
-
-	if (MidMsg)
-		V_FreeBrokenLines(MidMsg);
-
-	if (msg)
-	{
-		midprinting = true;
-
-		// [Russell] - convert textual "\n" into the binary representation for
-		// line breaking
-		std::string str = msg;
-
-		for (size_t pos = str.find("\\n"); pos != std::string::npos; pos = str.find("\\n", pos))
-		{
-			str[pos] = '\n';
-			str.erase(pos+1, 1);
-		}
-
-		char *newmsg = strdup(str.c_str());
-
-		PrintFmt(PRINT_HIGH, "{}\n", newmsg);
-		midprinting = false;
-
-		if ((MidMsg = V_BreakLines(OFonts.small(), I_GetSurfaceWidth() / V_TextScaleXAmount(),
-				reinterpret_cast<byte*>(newmsg))))
-		{
-			MidTicker = static_cast<int>(fmsgtime * TICRATE) + gametic;
-
-			for (i = 0; MidMsg[i].width != -1; i++)
-				;
-
-			MidLines = i;
-		}
-
-		M_Free(newmsg);
-	}
-	else
-		MidMsg = NULL;
-}
-
-void C_DrawMid()
-{
-	if (MidMsg)
-	{
-		const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-
-		const int xscale = V_TextScaleXAmount();
-		const int yscale = V_TextScaleYAmount();
-
-		const int line_height = 8 * yscale;
-
-		const int bottom = R_StatusBarVisible()
-			                   ? ST_StatusBarY(surface_width, surface_height) : surface_height;
-
-		const int x = surface_width / 2;
-		int y = (bottom - line_height * MidLines) / 2;
-
-		for (int i = 0; i < MidLines; i++, y += line_height)
-		{
-			screen->DrawTextStretched(OFonts.small(), PrintColors[PRINTLEVELS-1],
-					x - xscale * (MidMsg[i].width / 2),
-					y, reinterpret_cast<byte*>(MidMsg[i].string), xscale, yscale);
-		}
-
-		if (gametic >= MidTicker)
-		{
-			V_FreeBrokenLines(MidMsg);
-			MidMsg = NULL;
-		}
-	}
-}
-
-static brokenlines_t *GameMsg = NULL;
-static int GameTicker = 0, GameColor = CR_GREY, GameLines;
-
-// [AM] This is literally the laziest excuse of a copy-paste job I have ever
-//      done, but I really want CTF messages in time for 0.6.2.  Please replace
-//      me eventually.  The two statics above, the two functions below, and
-//      any direct calls to these two functions are all you need to remove.
-void C_GMidPrint(const char* msg, int color, int msgtime)
-{
-	unsigned int i;
-
-	const float fmsgtime = msgtime ? float(msgtime) : con_midtime;
-
-	if (GameMsg)
-		V_FreeBrokenLines(GameMsg);
-
-	if (msg)
-	{
-		// [Russell] - convert textual "\n" into the binary representation for
-		// line breaking
-		std::string str = msg;
-
-		for (size_t pos = str.find("\\n");pos != std::string::npos;pos = str.find("\\n", pos))
-		{
-			str[pos] = '\n';
-			str.erase(pos + 1, 1);
-		}
-
-		char *newmsg = strdup(str.c_str());
-
-		if ((GameMsg = V_BreakLines(OFonts.small(), I_GetSurfaceWidth() / V_TextScaleXAmount(),
-				reinterpret_cast<byte*>(newmsg))))
-		{
-			GameTicker = static_cast<int>(fmsgtime * TICRATE) + gametic;
-
-			for (i = 0;GameMsg[i].width != -1;i++)
-				;
-
-			GameLines = i;
-		}
-
-		GameColor = color;
-		M_Free(newmsg);
-	}
-	else
-	{
-		GameMsg = NULL;
-		GameColor = CR_GREY;
-	}
-}
-
-void C_DrawGMid()
-{
-	if (GameMsg)
-	{
-		const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-
-		const int xscale = V_TextScaleXAmount();
-		const int yscale = V_TextScaleYAmount();
-
-		const int line_height = 8 * yscale;
-
-		const int bottom = R_StatusBarVisible()
-			                   ? ST_StatusBarY(surface_width, surface_height) : surface_height;
-
-		const int x = surface_width / 2;
-		int y = (bottom / 2 - line_height * GameLines) / 2;
-
-		for (int i = 0; i < GameLines; i++, y += line_height)
-		{
-			screen->DrawTextStretched(OFonts.small(), GameColor,
-					x - xscale * (GameMsg[i].width / 2),
-					y, reinterpret_cast<byte*>(GameMsg[i].string), xscale, yscale);
-		}
-
-		if (gametic >= GameTicker)
-		{
-			V_FreeBrokenLines(GameMsg);
-			GameMsg = NULL;
-		}
-	}
+	HU_MidPrint(msg, msgtime);
 }
 
 // denis - moved secret discovery message to this function
@@ -2439,7 +2279,7 @@ void C_RevealSecret()
 	if(!hud_revealsecrets || !G_IsCoopGame() || !show_messages) // [ML] 09/4/06: Check for hud_revealsecrets
 		return;                      // NES - Also check for deathmatch
 
-	C_MidPrint("A secret is revealed!");
+	HU_MidPrint("A secret is revealed!");
 
 	if (hud_revealsecrets == 1 || hud_revealsecrets == 3)
 		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);

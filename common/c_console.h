@@ -28,7 +28,6 @@
 #include "d_event.h"
 #include "cmdlib.h"
 #include "d_player.h"
-
 #define C_BLINKRATE			(TICRATE/2)
 #define MAX_CHATSTR_LEN		128
 
@@ -67,10 +66,7 @@ void C_FlushDisplay (void);
 void C_InitTicker (const char *label, unsigned int max);
 void C_SetTicker (unsigned int at);
 
-void C_MidPrint (const char *msg, player_t *p = NULL, int msgtime=0);
-void C_DrawMid (void);
-void C_GMidPrint(const char* msg, int color, int msgtime);
-void C_DrawGMid (void);
+void C_MidPrint(const char* msg, player_t* p = nullptr, int msgtime = 0);
 
 bool C_Responder(const event_t& ev);
 

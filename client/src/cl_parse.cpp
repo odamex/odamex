@@ -68,6 +68,7 @@
 #include "cl_netgraph.h"
 #include "g_spree.h"
 #include "g_multikill.h"
+#include "hu_stuff.h"
 
 // Extern data from other files.
 
@@ -2203,7 +2204,7 @@ static void CL_ConnectClient(const odaproto::svc::ConnectClient* msg)
 // Print a message in the middle of the screen
 static void CL_MidPrint(const odaproto::svc::MidPrint* msg)
 {
-	C_MidPrint(msg->message().c_str(), NULL, msg->time());
+	HU_MidPrint(msg->message().c_str(), msg->time());
 }
 
 //
