@@ -106,9 +106,6 @@ typedef std::vector<const patch_t**> PathFreeList;
  */
 PathFreeList freelist;
 
-int V_TextScaleXAmount();
-int V_TextScaleYAmount();
-
 EXTERN_CVAR(hud_demoprotos)
 EXTERN_CVAR(hud_scale)
 EXTERN_CVAR(hud_bigfont)

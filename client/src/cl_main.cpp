@@ -1138,12 +1138,6 @@ END_COMMAND(netcmd)
 
 BEGIN_COMMAND (join)
 {
-	//if (P_NumPlayersInGame() >= sv_maxplayers)
-	//{
-	//	C_MidPrint("The game is currently full", NULL);
-	//	return;
-	//}
-
 	buf_t& netBuf = messenger.NetBuf().Obtain();
 	MSG_WriteMarker(&netBuf, clc_spectate);
 	MSG_WriteByte(&netBuf, false);
