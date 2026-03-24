@@ -372,12 +372,16 @@ void P_ClearAllNetIds()
 //
 AActor* P_FindThingById(uint32_t id)
 {
-	netid_map_t::iterator i = actor_by_netid.find(id);
+	if (id)
+	{
+		netid_map_t::iterator i = actor_by_netid.find(id);
 
-	if(i == actor_by_netid.end())
-		return AActor::AActorPtr();
-	else
-		return i->second;
+		if(i != actor_by_netid.end())
+		{
+			return i->second;
+		}
+	}
+	return nullptr;
 }
 
 //
@@ -386,7 +390,10 @@ AActor* P_FindThingById(uint32_t id)
 void P_SetThingId(AActor *mo, uint32_t newnetid)
 {
 	mo->netid = newnetid;
-	actor_by_netid[newnetid] = mo->ptr();
+	if (newnetid)
+	{
+		actor_by_netid[newnetid] = mo->ptr();
+	}
 }
 
 
