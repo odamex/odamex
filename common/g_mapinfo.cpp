@@ -1880,7 +1880,7 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 			MapInfoDataSetter<gameinfo_t> setter;
 			ParseMapInfoLower<gameinfo_t>(os, setter);
 		}
-		else if (os.compareTokenNoCase("fontdef"))
+		else if (os.compareTokenNoCase("font"))
 		{
 			os.mustScan();
 			const std::string name = StdStringToUpper(os.getToken());
@@ -1924,19 +1924,23 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 void G_ParseMapInfo()
 {
 	const char* baseinfoname = NULL;
+	const char* overrideMapinfoLump = NULL;
+
 	int lump;
 
 	// Reset skill definitions
 	skillnum = 0;
 	defaultskillmenu = 0;
+
+	// Reset fonts
 	G_ResetFontDefs();
 
 	// Parse common defaults first for Doom-family game missions.
 	// Heretic has its own complete skill/gameinfo setup in _HERENFO.
 	if (gameinfo.enginetype == ENGINE_DOOM)
+	{
 		ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");
-
-	const char* overrideMapinfoLump = NULL;
+	}
 
 	baseinfoname = gameinfo.baseMapinfoLump.c_str();
 	if (!baseinfoname || !baseinfoname[0])
@@ -1945,18 +1949,15 @@ void G_ParseMapInfo()
 		        static_cast<int>(gamemission), static_cast<int>(gamemode));
 	}
 
-	if (!gameinfo.overrideMapinfoLump.empty())
-		overrideMapinfoLump = gameinfo.overrideMapinfoLump.c_str();
-
-	if (overrideMapinfoLump)
-	{
-		lump = W_GetNumForName(baseinfoname);
-		ParseMapInfoLump(lump, baseinfoname);
-		baseinfoname = overrideMapinfoLump;
-	}
-
 	lump = W_GetNumForName(baseinfoname);
 	ParseMapInfoLump(lump, baseinfoname);
+
+	if (!gameinfo.overrideMapinfoLump.empty())
+	{
+		overrideMapinfoLump = gameinfo.overrideMapinfoLump.c_str();
+		lump = W_GetNumForName(overrideMapinfoLump);
+		ParseMapInfoLump(lump, overrideMapinfoLump);		
+	}
 
 	// Parse MAPINFO then UMAPINFO, like dsda
 	lump = -1;

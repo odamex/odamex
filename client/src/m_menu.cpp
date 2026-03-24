@@ -1115,8 +1115,9 @@ void M_DrawNewGame()
 	const char* pslabel = "Pistol Start Each Level ";
 	const int psy = NewDef.y + (M_BigFontLineHeight() * skillnum) + M_SmallFontLineHeight();
 
-	screen->DrawTextCleanMove(CR_RED, NewDef.x, psy, pslabel);
-	screen->DrawTextCleanMove(CR_GREY, NewDef.x + V_StringWidth(pslabel), psy,
+	screen->DrawTextCleanMove("SMALLFONT", CR_RED, NewDef.x, psy, pslabel);
+	screen->DrawTextCleanMove("SMALLFONT", CR_GREY,
+	                          NewDef.x + V_StringWidth("SMALLFONT", pslabel), psy,
 	                          g_resetinvonexit ? "ON" : "OFF");
 }
 
@@ -1597,18 +1598,19 @@ static void M_PlayerSetupDrawer()
 		}
 		else
 		{
-			screen->DrawTextCleanMove(CR_GRAY, 110, 10,
+			screen->DrawTextCleanMove("SMALLFONT", CR_GRAY, 110, 10,
 			                         LocalizedString("MNU_PLAYERSETUP"));
 		}
 	}
 
 	// Draw player name box
-	screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y, "Name");
+	screen->DrawTextCleanMove("SMALLFONT", CR_RED, PSetupDef.x, PSetupDef.y, "Name");
 	M_DrawInputBox(savegamestrings[0], PSetupDef.x + 56, PSetupDef.y-4, MAXPLAYERNAME+1);
 
 	// Draw cursor for either of the above
 	if (genStringEnter != oldmenustring_t::NONE)
-		screen->DrawTextCleanMove(CR_RED, PSetupDef.x + V_StringWidth(savegamestrings[saveSlot]) + 56,
+		screen->DrawTextCleanMove("SMALLFONT", CR_RED,
+							PSetupDef.x + V_StringWidth("SMALLFONT", savegamestrings[saveSlot]) + 56,
 							PSetupDef.y + ((saveSlot == 0) ? 0 : M_BigFontLineHeight()), "_");
 
 	// Draw player character
@@ -1795,12 +1797,12 @@ static void M_PlayerSetupDrawer()
 
 	if (colorpreset == COLOR_CUSTOM)
 	{
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*5, "Red");
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*6, "Green");
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*7, "Blue");
+		screen->DrawTextCleanMove("SMALLFONT", CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*5, "Red");
+		screen->DrawTextCleanMove("SMALLFONT", CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*6, "Green");
+		screen->DrawTextCleanMove("SMALLFONT", CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*7, "Blue");
 
 		{
-			const int x = V_StringWidth("Green") + 8 + PSetupDef.x;
+			const int x = V_StringWidth("SMALLFONT", "Green") + 8 + PSetupDef.x;
 			const argb_t playercolor = V_GetColorFromString(cl_color);
 
 			M_DrawSlider(x, PSetupDef.y + M_BigFontLineHeight()*5, 0.0f, 255.0f, playercolor.getr(), 0.0f);
@@ -2130,7 +2132,7 @@ bool M_Responder(const event_t& ev)
 			ch = ev.data3;	// [RH] Use user keymap
 			if (ch >= 32 && ch <= 127 &&
 				saveCharIndex < genStringLen &&
-				V_StringWidth(savegamestrings[saveSlot]) <
+				V_StringWidth("SMALLFONT", savegamestrings[saveSlot]) <
 				(genStringLen - 1) * 8)
 			{
 				savegamestrings[saveSlot][saveCharIndex++] = ch;
@@ -2350,7 +2352,7 @@ void M_Drawer()
 
 		for (int i = 0; lines[i].width != -1; i++)
 		{
-			screen->DrawTextCleanMove(CR_RED, 160 - lines[i].width/2, y, lines[i].string);
+			screen->DrawTextCleanMove("SMALLFONT", CR_RED, 160 - lines[i].width/2, y, lines[i].string);
 			y += ch->height();
 		}
 

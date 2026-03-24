@@ -410,15 +410,15 @@ void ST_voteDraw (int y) {
 	}
 
 	int x1, x2;
-	x1 = (I_GetSurfaceWidth() - V_StringWidth(result_string.c_str()) * xscale) >> 1;
+	x1 = (I_GetSurfaceWidth() - V_StringWidth("SMALLFONT", result_string.c_str()) * xscale) >> 1;
 	if (hud_scale) {
-		screen->DrawTextClean(result_color, x1, y, result_string.c_str());
+		screen->DrawTextClean("SMALLFONT", result_color, x1, y, result_string.c_str());
 	} else {
-		screen->DrawText(result_color, x1, y, result_string.c_str());
+		screen->DrawText("SMALLFONT", result_color, x1, y, result_string.c_str());
 	}
 
 	// Votestring - Break lines
-	brokenlines_t *votestring = V_BreakLines(320, vote_state.votestring.c_str());
+	brokenlines_t *votestring = V_BreakLines("SMALLFONT", 320, vote_state.votestring.c_str());
 	for (byte i = 0;i < 4;i++) {
 		if (votestring[i].width == -1) {
 			break;
@@ -428,9 +428,9 @@ void ST_voteDraw (int y) {
 		y += yscale * 8;
 
 		if (hud_scale) {
-			screen->DrawTextClean(CR_GREY, x2, y, votestring[i].string);
+			screen->DrawTextClean("SMALLFONT", CR_GREY, x2, y, votestring[i].string);
 		} else {
-			screen->DrawText(CR_GREY, x2, y, votestring[i].string);
+			screen->DrawText("SMALLFONT", CR_GREY, x2, y, votestring[i].string);
 		}
 	}
 	V_FreeBrokenLines(votestring);
@@ -465,14 +465,14 @@ void ST_voteDraw (int y) {
 		    TEXTCOLOR_NORMAL, TEXTCOLOR_GREEN, TEXTCOLOR_NORMAL, TEXTCOLOR_GOLD, noStr,
 		    TEXTCOLOR_NORMAL, TEXTCOLOR_RED, TEXTCOLOR_NORMAL);
 
-		int hint_w = V_StringWidth(hint.c_str()) * xscale;
+		int hint_w = V_StringWidth("SMALLFONT", hint.c_str()) * xscale;
 		int hx = (I_GetSurfaceWidth() - hint_w) >> 1;
 
 		y += yscale * 8; // place one line below the votestring lines
 		if (hud_scale)
-			screen->DrawTextClean(CR_GRAY, hx, y, hint.c_str());
+			screen->DrawTextClean("SMALLFONT", CR_GRAY, hx, y, hint.c_str());
 		else
-			screen->DrawText(CR_GRAY, hx, y, hint.c_str());
+			screen->DrawText("SMALLFONT", CR_GRAY, hx, y, hint.c_str());
 	}
 }
 
@@ -662,12 +662,12 @@ static void drawHordeGametype()
 	}
 
 	const int y = R_StatusBarVisible() ? statusBarY() + SCREEN_BORDER : ABOVE_AMMO;
-	hud::DrawText(SCREEN_BORDER, y, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+	hud::DrawText("SMALLFONT", SCREEN_BORDER, y, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
 	              hud::X_RIGHT, hud::Y_BOTTOM, waverow.c_str(), CR_GREY);
 	hud::EleBar(SCREEN_BORDER, y + LINE_SPACING, V_StringWidth("WAVE:0/0"), ::hud_scale,
 	            hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, killPct,
 	            killColor);
-	hud::DrawText(SCREEN_BORDER, y + LINE_SPACING + BAR_BORDER, ::hud_scale, hud::X_RIGHT,
+	hud::DrawText("SMALLFONT", SCREEN_BORDER, y + LINE_SPACING + BAR_BORDER, ::hud_scale, hud::X_RIGHT,
 	              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, killrow.c_str(), CR_GREY);
 
 	if (hud_hordeinfo_debug)
@@ -866,13 +866,14 @@ static void drawLevelStats()
 	}
 
 	std::string line;
-	const int LINE_SPACING = V_LineHeight() + 1;
+	const char* stat_font =
+	    (hud_extendedinfo == 1 || hud_extendedinfo == 3) ? "DIGFONT" : "SMALLFONT";
+	const int LINE_SPACING = V_LineHeight(stat_font) + 1;
 	int font_offset = 0;
 	unsigned int x = R_StatusBarVisible() ? (text_ax + 2) : (text_ax + 10), y = R_StatusBarVisible() ? statusBarY() + 1 : 44;
 
 	if (hud_extendedinfo == 1 || hud_extendedinfo == 3)
 	{
-		V_SetFont("DIGFONT");
 		font_offset = 1;
 	}
 
@@ -881,7 +882,7 @@ static void drawLevelStats()
 		line = fmt::sprintf(TEXTCOLOR_RED "K" TEXTCOLOR_NORMAL " %d",
 	                        level.killed_monsters);
 
-		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
+		hud::DrawText(stat_font, x, y, ::hud_scale, hud::X_LEFT,
 	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, line.c_str(), CR_GREY);
 	}
 	else if (hud_extendedinfo >= 3 || !R_StatusBarVisible())
@@ -890,11 +891,11 @@ static void drawLevelStats()
 		std::string itemrow;
 		std::string secretrow;
 
-		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
+		hud::DrawText(stat_font, x, y, ::hud_scale, hud::X_LEFT,
 		              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "S", CR_GREY);
-		hud::DrawText(x + font_offset, y + LINE_SPACING, ::hud_scale, hud::X_LEFT,
+		hud::DrawText(stat_font, x + font_offset, y + LINE_SPACING, ::hud_scale, hud::X_LEFT,
 	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "I", CR_GREY);
-		hud::DrawText(x, y + LINE_SPACING * 2, ::hud_scale, hud::X_LEFT,
+		hud::DrawText(stat_font, x, y + LINE_SPACING * 2, ::hud_scale, hud::X_LEFT,
 	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "K", CR_GREY);
 
 		killrow = fmt::sprintf("%s %d/%d",
@@ -910,11 +911,11 @@ static void drawLevelStats()
 
 		x += 9 - font_offset * 4;
 
-		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
+		hud::DrawText(stat_font, x, y, ::hud_scale, hud::X_LEFT,
 		              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, secretrow.c_str(), CR_GREY);
-		hud::DrawText(x, y + LINE_SPACING, ::hud_scale, hud::X_LEFT,
+		hud::DrawText(stat_font, x, y + LINE_SPACING, ::hud_scale, hud::X_LEFT,
 	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, itemrow.c_str(), CR_GREY);
-		hud::DrawText(x, y + LINE_SPACING * 2, ::hud_scale, hud::X_LEFT,
+		hud::DrawText(stat_font, x, y + LINE_SPACING * 2, ::hud_scale, hud::X_LEFT,
 		              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, killrow.c_str(), CR_GREY);
 
 	}
@@ -931,11 +932,9 @@ static void drawLevelStats()
 		                    (level.found_secrets >= level.total_secrets ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
 		                    level.found_secrets, level.total_secrets);
 
-		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
+		hud::DrawText(stat_font, x, y, ::hud_scale, hud::X_LEFT,
 		    hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, line.c_str(), CR_GREY);
 	}
-
-	V_SetFont("SMALLFONT");
 }
 
 // [ML] 9/29/2011: New fullscreen HUD, based on Ralphis's work
@@ -992,7 +991,7 @@ void OdamexHUD() {
 			lives_color = CR_DARKGREY;
 
 		buf = fmt::sprintf("x%d", plyr->lives);
-		hud::DrawText(text_ax + 48 + 2 + 20 + 2, 10 + 2, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
+		hud::DrawText("SMALLFONT", text_ax + 48 + 2 + 20 + 2, 10 + 2, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
 		              hud::X_LEFT, hud::Y_MIDDLE, buf.c_str(), lives_color, false);
 	}
 
@@ -1028,80 +1027,63 @@ void OdamexHUD() {
 
 	std::string str;
 	int iy = 4;
+	const char* status_font = ::hud_bigfont ? "BIGFONT" : "SMALLFONT";
 
 	if (::hud_timer)
 	{
-		if (::hud_bigfont)
-			V_SetFont("BIGFONT");
-
-		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		hud::DrawText(status_font, 0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
-		iy += V_LineHeight() + 1;
-
-		if (::hud_bigfont)
-			V_SetFont("SMALLFONT");
+		iy += V_LineHeight(status_font) + 1;
 	}
 
 	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
 	{
-		if (::hud_bigfont)
-			V_SetFont("BIGFONT");
-
 		buf = fmt::sprintf("%d" TEXTCOLOR_DARKGREY "ups",
 		          static_cast<int>(HU_GetPlayerSpeed()));
-		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		hud::DrawText(status_font, 0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, buf.c_str(), CR_GREY);
-		iy += V_LineHeight() + 1;
-
-		if (::hud_bigfont)
-			V_SetFont("SMALLFONT");
+		iy += V_LineHeight(status_font) + 1;
 	}
 
 	// Draw other player name, if spying
-	hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	hud::DrawText(status_font, 0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_GREY);
-	iy += V_LineHeight() + 1;
+	iy += V_LineHeight(status_font) + 1;
 
 	// Draw targeted player names.
 	hud::EATargets(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	               hud::Y_BOTTOM, 1, hud_targetcount);
-	iy += V_LineHeight() + 1;
+	iy += V_LineHeight(status_font) + 1;
 
 	// Draw stat lines.  Vertically aligned with the bottom of the armor
 	// number on the other side of the screen.
-	if (::hud_bigfont)
-		V_SetFont("BIGFONT");
-
 	// Special 3 line formatting for match duel
 	int spreadheight, scoreheight, placeheight;
 
 	if (G_IsMatchDuelGame())
 	{
-		spreadheight = 24 + (V_LineHeight() * 2) + 2;
-		scoreheight = 24 + V_LineHeight() + 1;
+		spreadheight = 24 + (V_LineHeight(status_font) * 2) + 2;
+		scoreheight = 24 + V_LineHeight(status_font) + 1;
 		placeheight = 24;
 	}
 	else
 	{
-		spreadheight = 24 + V_LineHeight() + 1;
+		spreadheight = 24 + V_LineHeight(status_font) + 1;
 		scoreheight = 24;
 		placeheight = 0; // No place height drawn if not match duel
 	}
 
-	hud::DrawText(text_ax + 4, spreadheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	hud::DrawText(status_font, text_ax + 4, spreadheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
 	              hud::Y_BOTTOM, hud::PersonalSpread().c_str(), CR_GREY);
-	hud::DrawText(text_ax + 4, scoreheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
+	hud::DrawText(status_font, text_ax + 4, scoreheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM, hud::X_RIGHT,
 	              hud::Y_BOTTOM, hud::PersonalScore().c_str(), CR_GREY);
 
 	if (G_IsMatchDuelGame())
 	{
-		hud::DrawText(text_ax + 4, placeheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
+		hud::DrawText(status_font, text_ax + 4, placeheight, ::hud_scale, hud::X_RIGHT, hud::Y_BOTTOM,
 		              hud::X_RIGHT, hud::Y_BOTTOM,
 		              hud::PersonalMatchDuelPlacement().c_str(), CR_GREY);
 	}
-
-	if (::hud_bigfont)
-		V_SetFont("SMALLFONT");
 
 	// Draw keys in coop
 	if (G_IsCoopGame()) {
@@ -1146,8 +1128,7 @@ void DrawToasts()
 	const int fadeDoneTics = (hud_feedtime * float(TICRATE));
 	const int fadeOutTics = fadeDoneTics - TICRATE;
 
-	V_SetFont("DIGFONT");
-	const int TOAST_HEIGHT = V_LineHeight() + 2;
+	const int TOAST_HEIGHT = V_LineHeight("DIGFONT") + 2;
 
 	std::string buffer;
 	int y = 0;
@@ -1174,9 +1155,9 @@ void DrawToasts()
 		int x = 1;
 
 		// Right-hand side.
-		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
+		hud::DrawText("DIGFONT", x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
 		              hud::Y_TOP, toast.right.c_str(), CR_GREY);
-		x += V_StringWidth(toast.right.c_str()) + 1;
+		x += V_StringWidth("DIGFONT", toast.right.c_str()) + 1;
 
 		// Icon
 		const patch_t* icon = W_ResolvePatchHandle(toast.icon);
@@ -1218,7 +1199,7 @@ void DrawToasts()
 			// We subtract 2 pixels because we want the text to bleed into the left and
 			// right gfx
 			int points_width =
-			    V_StringWidth(fmt::sprintf("%d", toast.points).c_str()) - 1;
+			    V_StringWidth("DIGFONT", fmt::sprintf("%d", toast.points).c_str()) - 1;
 			const patch_t* mpatch = W_ResolvePatchHandle(ToastSpreeM);
 			for (int i = 0; i < points_width; i++)
 			{
@@ -1237,20 +1218,19 @@ void DrawToasts()
 			x += lpatch->width() + 1;
 
 			// Now draw the number of points
-			hud::DrawText(pointStartX, y + ceil(syoff), hud_scale, hud::X_RIGHT,
+			hud::DrawText("DIGFONT", pointStartX, y + ceil(syoff), hud_scale, hud::X_RIGHT,
 			              hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP,
 			              fmt::sprintf("%d", toast.points).c_str(), CR_GRAY);
 		}
 
 		// Left-hand side.
-		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
+		hud::DrawText("DIGFONT", x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
 		              hud::Y_TOP, toast.left.c_str(), CR_GREY);
 
 		y += TOAST_HEIGHT;
 	}
 	::hud_transparency.ForceSet(oldtrans);
 
-	V_SetFont("SMALLFONT");
 }
 
 void ToastTicker()
@@ -1510,10 +1490,8 @@ void DisplaySmallSpreeBreaker(const SpreeBreaker_t& breaker)
 
 	line.spreeText = breaker.spreeEndedBroadcastText;
 
-	V_SetFont("SMALLFONT");
-
 	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
+	int w = V_StringWidth("SMALLFONT", line.spreeText.c_str()) * CleanYfac;
 	int h = 8 * CleanYfac;
 
 	line.lucent = lucentFade(::gametic - breaker.spreeEndedTic, TICRATE * 3, TICRATE * 4);
@@ -1524,7 +1502,7 @@ void DisplaySmallSpreeBreaker(const SpreeBreaker_t& breaker)
 	if (::hud_transparency > 0.0f)
 	{
 		int y = (surface_height / 4) - h / 2;
-		::screen->DrawTextStretchedLuc(CR_GRAY,
+		::screen->DrawTextStretchedLuc("SMALLFONT", CR_GRAY,
 		                               surface_width / 2 - w / 2, y - (12 * ::CleanYfac),
 		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
 	}
@@ -1543,10 +1521,8 @@ void DisplayPlayerNormalSpree(const SpreeRecord_t& record)
 	line.spreeText = record.spree.spreeText;
 	line.color = record.spree.color;
 
-	V_SetFont("BIGFONT");
-
 	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
+	int w = V_StringWidth("BIGFONT", line.spreeText.c_str()) * CleanYfac;
 	int h = 12 * CleanYfac;
 
 	line.lucent = lucentFade(::gametic - record.spreeStartTic, TICRATE * 3, TICRATE * 4);
@@ -1557,13 +1533,11 @@ void DisplayPlayerNormalSpree(const SpreeRecord_t& record)
 	if (::hud_transparency > 0.0f)
 	{
 		int y = (surface_height / 4) - h / 2;
-		::screen->DrawTextStretchedLuc(line.color, surface_width / 2 - w / 2, y,
+		::screen->DrawTextStretchedLuc("BIGFONT", line.color, surface_width / 2 - w / 2, y,
 		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
 	}
 
 	::hud_transparency.ForceSet(oldtrans);
-
-	V_SetFont("SMALLFONT");
 }
 
 void DisplaySmallSpree(const SpreeRecord_t& record)
@@ -1572,10 +1546,8 @@ void DisplaySmallSpree(const SpreeRecord_t& record)
 
 	line.spreeText = record.spree.spreeBroadcastText;
 
-	V_SetFont("SMALLFONT");
-
 	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
+	int w = V_StringWidth("SMALLFONT", line.spreeText.c_str()) * CleanYfac;
 	int h = 8 * CleanYfac;
 
 	line.lucent = lucentFade(::gametic - record.spreeStartTic, TICRATE * 3, TICRATE * 4);
@@ -1586,7 +1558,7 @@ void DisplaySmallSpree(const SpreeRecord_t& record)
 	if (::hud_transparency > 0.0f)
 	{
 		int y = (surface_height / 4) - h / 2;
-		::screen->DrawTextStretchedLuc(CR_GRAY,
+		::screen->DrawTextStretchedLuc("SMALLFONT", CR_GRAY,
 		                               surface_width / 2 - w / 2, y - (12 * ::CleanYfac),
 		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
 	}
@@ -1714,11 +1686,9 @@ void MultiKillHud()
 		line.multiKillText = multi.multikilltext;
 		line.color = multi.color;
 
-		V_SetFont("BIGFONT");
-
 		const int surface_width = I_GetSurfaceWidth(),
 			      surface_height = I_GetSurfaceHeight();
-		int w = V_StringWidth(line.multiKillText.c_str()) * CleanYfac;
+		int w = V_StringWidth("BIGFONT", line.multiKillText.c_str()) * CleanYfac;
 		int h = 12 * CleanYfac;
 
 		line.lucent = lucentFade(::gametic - tics.lastKillTime,
@@ -1730,13 +1700,11 @@ void MultiKillHud()
 		if (::hud_transparency > 0.0f)
 		{
 			int y = surface_height - (surface_height / 4) - h / 2;
-			::screen->DrawTextStretchedLuc(line.color, surface_width / 2 - w / 2, y,
+			::screen->DrawTextStretchedLuc("BIGFONT", line.color, surface_width / 2 - w / 2, y,
 				line.multiKillText.c_str(), ::CleanYfac, ::CleanYfac);
 		}
 
 		::hud_transparency.ForceSet(oldtrans);
-
-		V_SetFont("SMALLFONT");
 	}
 }
 
@@ -1901,10 +1869,8 @@ void LevelStateHUD()
 		break;
 	}
 
-	V_SetFont("BIGFONT");
-
 	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
-	int w = V_StringWidth(lines.title.c_str()) * CleanYfac;
+	int w = V_StringWidth("BIGFONT", lines.title.c_str()) * CleanYfac;
 	int h = 12 * CleanYfac;
 
 	const float oldtrans = ::hud_transparency;
@@ -1912,22 +1878,21 @@ void LevelStateHUD()
 
 	if (::hud_transparency > 0.0f)
 	{
-		::screen->DrawTextStretchedLuc(CR_GREY, surface_width / 2 - w / 2,
+		::screen->DrawTextStretchedLuc("BIGFONT", CR_GREY, surface_width / 2 - w / 2,
 		                               surface_height / 4 - h / 2, lines.title.c_str(),
 		                               ::CleanYfac, ::CleanYfac);
 	}
 
-	V_SetFont("SMALLFONT");
-	const int height = V_StringHeight("M") + 1;
+	const int height = V_StringHeight("SMALLFONT", "M") + 1;
 
 	for (size_t i = 0; i < lines.subtitle.size(); i++)
 	{
-		w = V_StringWidth(lines.subtitle[i].c_str()) * ::CleanYfac;
+		w = V_StringWidth("SMALLFONT", lines.subtitle[i].c_str()) * ::CleanYfac;
 		h = 8 * ::CleanYfac;
 		if (::hud_transparency > 0.0f)
 		{
 			::screen->DrawTextStretchedLuc(
-			    CR_GREY, surface_width / 2 - w / 2,
+			    "SMALLFONT", CR_GREY, surface_width / 2 - w / 2,
 			    (surface_height / 4 - h / 2) + (12 * ::CleanYfac) +
 			        (i * height * ::CleanYfac),
 			    lines.subtitle[i].c_str(), ::CleanYfac, ::CleanYfac);
@@ -1942,26 +1907,20 @@ void SpectatorHUD()
 {
 	int iy = 4;
 
+	const char* spectator_font = ::hud_bigfont ? "BIGFONT" : "SMALLFONT";
+
 	// Draw warmup state or timer
 	if (::hud_timer)
 	{
-		if (::hud_bigfont)
-		{
-			V_SetFont("BIGFONT");
-		}
-
-		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		hud::DrawText(spectator_font, 0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_GREY);
-		iy += V_LineHeight() + 1;
-
-		if (::hud_bigfont)
-			V_SetFont("SMALLFONT");
+		iy += V_LineHeight(spectator_font) + 1;
 	}
 
 	// Draw help text - spy player name is handled elsewhere.
-	hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	hud::DrawText("SMALLFONT", 0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	              hud::Y_BOTTOM, hud::HelpText().c_str(), CR_GREY);
-	iy += V_LineHeight() + 1;
+	iy += V_LineHeight("SMALLFONT") + 1;
 
 	// Draw targeted player names.
 	hud::EATargets(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
@@ -1974,32 +1933,30 @@ void SpectatorHUD()
 void HereticHUD()
 {
 	const player_t* plyr = &displayplayer();
-	V_SetFont("BIGFONT");
 	const std::string health = fmt::sprintf("%d", std::max(0, plyr->health));
-	hud::DrawShadowedText(4, 8, hud_scale, hud::X_LEFT, hud::Y_BOTTOM, hud::X_LEFT,
+	hud::DrawShadowedText("BIGFONT", 4, 8, hud_scale, hud::X_LEFT, hud::Y_BOTTOM, hud::X_LEFT,
 	                      hud::Y_BOTTOM, health.c_str(), CR_GREY);
-	V_SetFont("SMALLFONT");
 
 	int st_y = statusBarY() + 4;
 
 	if (hud_timer)
 	{
-		hud::DrawShadowedText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM,
+		hud::DrawShadowedText("SMALLFONT", 0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM,
 		                      hud::X_CENTER, hud::Y_BOTTOM, hud::Timer().c_str(),
 		                      CR_UNTRANSLATED);
-		st_y += V_LineHeight() + 1;
+		st_y += V_LineHeight("SMALLFONT") + 1;
 	}
 
 	// Draw other player name, if spying
-	hud::DrawShadowedText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM,
+	hud::DrawShadowedText("SMALLFONT", 0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM,
 	                      hud::X_CENTER, hud::Y_BOTTOM, hud::SpyPlayerName().c_str(),
 	                      CR_UNTRANSLATED);
-	st_y += V_LineHeight() + 1;
+	st_y += V_LineHeight("SMALLFONT") + 1;
 
 	// Draw targeted player names.
 	hud::EATargets(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	               hud::Y_BOTTOM, 1, hud_targetcount);
-	st_y += V_LineHeight() + 1;
+	st_y += V_LineHeight("SMALLFONT") + 1;
 
 	hud::drawGametype();
 }
@@ -2012,9 +1969,9 @@ void DoomHUD()
 	// Draw warmup state or timer
 	if (hud_timer)
 	{
-		hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		hud::DrawText("SMALLFONT", 0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, hud::Timer().c_str(), CR_UNTRANSLATED);
-		st_y += V_LineHeight() + 1;
+		st_y += V_LineHeight("SMALLFONT") + 1;
 	}
 
 	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
@@ -2022,20 +1979,20 @@ void DoomHUD()
 		std::string buf;
 		buf = fmt::sprintf("%d" TEXTCOLOR_DARKGREY "ups",
 		                   static_cast<int>(HU_GetPlayerSpeed()));
-		hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+		hud::DrawText("SMALLFONT", 0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, buf.c_str(), CR_GREY);
-		st_y += V_LineHeight() + 1;
+		st_y += V_LineHeight("SMALLFONT") + 1;
 	}
 
 	// Draw other player name, if spying
-	hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
+	hud::DrawText("SMALLFONT", 0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	              hud::Y_BOTTOM, hud::SpyPlayerName().c_str(), CR_UNTRANSLATED);
-	st_y += V_LineHeight() + 1;
+	st_y += V_LineHeight("SMALLFONT") + 1;
 
 	// Draw targeted player names.
 	hud::EATargets(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 	               hud::Y_BOTTOM, 1, hud_targetcount);
-	st_y += V_LineHeight() + 1;
+	st_y += V_LineHeight("SMALLFONT") + 1;
 
 	// Draw gametype scoreboard
 	hud::drawGametype();

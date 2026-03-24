@@ -70,13 +70,13 @@ void calculateOrigin(int& x, int& y,
 		return;
 
 	// Since Doom's assets are so low-resolution, scaling is done by simple
-	// doubling/tripling/etc. of the pixels with no alising.
+	// doubling/tripling/etc. of the pixels with no aliasing.
 	x_scale = std::max(1, int(scale * CleanXfac));
 	y_scale = std::max(1, int(scale * CleanYfac));
 
 	// "Alignment" is the side of the screen that the passed x and y values
 	// are relative to.  Note that for X_RIGHT and Y_BOTTOM, the coordinate
-	// system is flippxed.
+	// system is flipped.
 	switch (x_align)
 	{
 	case X_LEFT:

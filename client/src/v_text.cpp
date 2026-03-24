@@ -76,10 +76,26 @@ void V_LoadHudFont(lumpHandle_t* font, const fontdef_t& def)
 		I_Error("Fontdef is missing a pattern");
 
 	int lump = def.lumpStart;
+	int j = HU_FONTSTART;
+	std::string buffer;
 
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
-		const std::string buffer = fmt::sprintf(def.pattern.c_str(), lump++);
+		if (!def.pattern_literal.empty())
+		{
+			if ((j >= '0' && j <= '9') || (j >= 'A' && j <= 'Z'))
+			{
+				buffer = fmt::sprintf(def.pattern_literal.c_str(), j++);
+			}
+			else
+			{
+				buffer = fmt::sprintf(def.pattern.c_str(), j++);
+			}
+		}
+		else
+		{
+			buffer = fmt::sprintf(def.pattern.c_str(), lump++);
+		}
 
 		int num = W_CheckNumForName(buffer.c_str());
 		if (num != -1)
@@ -95,10 +111,11 @@ void V_LoadHudFont(lumpHandle_t* font, const fontdef_t& def)
  */
 void V_TextInit()
 {
-	int j;
 	std::string buffer;
 	const fontdef_t& bigfont = V_GetResolvedFontDef(gameinfo.bigFont);
 	const fontdef_t& smallfont = V_GetResolvedFontDef(gameinfo.smallFont);
+	const fontdef_t& digfont = V_GetResolvedFontDef(gameinfo.digFont);
+
 
 	// Level name font. Indexing/pattern are gameinfo-driven.
 	V_LoadHudFont(::hu_bigfont, bigfont);
@@ -106,34 +123,8 @@ void V_TextInit()
 	// Chat/message small font.
 	V_LoadHudFont(::hu_smallfont, smallfont);
 
-	const char* digfont = "DIG%02d";
-	const char* digfont_literal = "DIG%c";
-
-	// BOOM "Dig" font, way more complicated than it needed to be.  Letters
-	// and numbers are themselves, other characters are their ASCII values.
-	j = HU_FONTSTART;
-	for (int i = 0; i < HU_FONTSIZE; i++)
-	{
-		if ((j >= '0' && j <= '9') || (j >= 'A' && j <= 'Z'))
-		{
-			buffer = fmt::sprintf(digfont_literal, j++);
-		}
-		else
-		{
-			buffer = fmt::sprintf(digfont, j++);
-		}
-
-		// Some letters of this font might be missing.
-		int num = W_CheckNumForName(buffer.c_str());
-		if (num != -1)
-		{
-			::hu_digfont[i] = W_CachePatchHandle(buffer.c_str(), PU_STATIC);
-		}
-		else
-		{
-			::hu_digfont[i] = W_CachePatchHandle("TNT1A0", PU_STATIC, ns_sprites);
-		}
-	}
+	// Status bar digits.
+	V_LoadHudFont(::hu_digfont, digfont);
 
 	// Font heights.
 	::hu_bigfont_height = bigfont.lineHeight > 0
@@ -142,8 +133,9 @@ void V_TextInit()
 	::hu_smallfont_height = smallfont.lineHeight > 0
 	    ? smallfont.lineHeight
 	    : W_ResolvePatchHandle(::hu_smallfont['M' - HU_FONTSTART])->height();
-	::hu_digfont_height =
-	    W_ResolvePatchHandle(::hu_digfont['M' - HU_FONTSTART])->height();
+	::hu_digfont_height = digfont.lineHeight > 0
+	    ? digfont.lineHeight
+	    : W_ResolvePatchHandle(::hu_digfont['M' - HU_FONTSTART])->height();
 
 	// Default font is SMALLFONT.
 	V_SetFont("SMALLFONT");
