@@ -2227,7 +2227,7 @@ void AM_Drawer()
 		std::string line;
 		const int time = level.time / TICRATE;
 
-		const int text_height = (V_LineHeight(font) + 1) * CleanYfac;
+		const int text_height = (font->lineHeight() + 1) * CleanYfac;
 		const int OV_Y = surface_height - (surface_height * 32 / 200);
 		const int fullmap_text_base_y = (ST_Y > 0) ? ST_Y : f_h;
 

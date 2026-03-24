@@ -153,26 +153,6 @@ void V_TextShutdown()
 	OFonts.clear();
 }
 
-const OFont* V_GetFont(const char* fontname)
-{
-	if (fontname == nullptr || fontname[0] == '\0')
-		return nullptr;
-
-	const OFont* font = OFonts.find(fontname);
-	if (font == nullptr)
-	{
-		PrintFmt(PRINT_HIGH, "Unknown font '{}'\n", fontname != nullptr ? fontname : "(null)");
-		return nullptr;
-	}
-
-	return font;
-}
-
-int V_GetFontLineHeight(const char* fontname)
-{
-	return V_LineHeight(V_GetFont(fontname));
-}
-
 int V_TextScaleXAmount()
 {
 	return hud_scaletext.asInt();
@@ -493,7 +473,7 @@ void DCanvas::TextSWrapper(EWrapperCode drawer, const OFont* font, int normalcol
 		if (str[0] == '\n')
 		{
 			cx = x;
-			cy += V_LineHeight(font) * scalex;
+			cy += font->lineHeight() * scalex;
 			str++;
 			continue;
 		}
@@ -549,18 +529,13 @@ int V_StringWidth(const OFont* font, const byte* str)
 	return width;
 }
 
-int V_StringWidth(const char* fontname, const byte* str)
-{
-	return V_StringWidth(V_GetFont(fontname), str);
-}
-
 int V_StringHeight(const OFont* font, const char* str)
 {
 	// Default width without a font loaded is 8.
 	if (font == nullptr || font->empty())
 		return 8;
 
-	int lineheight = V_LineHeight(font);
+	int lineheight = font->lineHeight();
 	int height = lineheight;
 
 	while (str[0] != '\0')
@@ -579,11 +554,6 @@ int V_StringHeight(const OFont* font, const char* str)
 	}
 
 	return height;
-}
-
-int V_StringHeight(const char* fontname, const char* str)
-{
-	return V_StringHeight(V_GetFont(fontname), str);
 }
 
 //
@@ -606,16 +576,6 @@ static void breakit(const OFont* font, brokenlines_t* line, const byte* start, c
 	strncpy(line->string + prefix_len, reinterpret_cast<const char*>(start), string - start);
 	line->string[string - start + prefix_len] = 0;
 	line->width = V_StringWidth(font, line->string);
-}
-
-int V_LineHeight(const OFont* font)
-{
-	return font != nullptr ? font->lineHeight() : 0;
-}
-
-int V_LineHeight(const char* fontname)
-{
-	return V_LineHeight(V_GetFont(fontname));
 }
 
 brokenlines_t* V_BreakLines(const OFont* font, int maxwidth, const byte* str)
@@ -718,11 +678,6 @@ brokenlines_t* V_BreakLines(const OFont* font, int maxwidth, const byte* str)
 
 		return broken;
 	}
-}
-
-brokenlines_t* V_BreakLines(const char* fontname, int maxwidth, const byte* str)
-{
-	return V_BreakLines(V_GetFont(fontname), maxwidth, str);
 }
 
 void V_FreeBrokenLines(brokenlines_t* lines)

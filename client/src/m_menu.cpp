@@ -198,12 +198,12 @@ static constexpr int fire_surface_height = 77;
 
 static int M_BigFontLineHeight()
 {
-	return V_LineHeight(OFonts.big());
+	return OFonts.big() != nullptr ? OFonts.big()->lineHeight() : 0;
 }
 
 static int M_SmallFontLineHeight()
 {
-	return V_LineHeight(OFonts.small());
+	return OFonts.small() != nullptr ? OFonts.small()->lineHeight() : 0;
 }
 
 static void M_PauseSound(void)
@@ -2359,12 +2359,12 @@ void M_Drawer()
 		int y = 100;
 
 		for (int i = 0; lines[i].width != -1; i++)
-			y -= V_LineHeight(smallFont) / 2;
+			y -= smallFont->lineHeight() / 2;
 
 		for (int i = 0; lines[i].width != -1; i++)
 		{
 			screen->DrawTextCleanMove(smallFont, CR_RED, 160 - lines[i].width/2, y, lines[i].string);
-			y += V_LineHeight(smallFont);
+			y += smallFont->lineHeight();
 		}
 
 		V_FreeBrokenLines (lines);

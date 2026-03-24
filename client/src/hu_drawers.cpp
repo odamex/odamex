@@ -197,7 +197,7 @@ void DrawText(const OFont* font,
 		return;
 
 	unsigned short w = V_StringWidth(font, str);
-	unsigned short h = V_LineHeight(font);
+	unsigned short h = font->lineHeight();
 
 	int x_scale, y_scale;
 	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
@@ -274,7 +274,7 @@ void DrawShadowedText(const OFont* font,
 
 	const shadow_text_metrics_t metrics = GetShadowTextMetrics(font, str);
 	unsigned short w = metrics.width;
-	unsigned short h = V_LineHeight(font);
+	unsigned short h = font->lineHeight();
 	int x_scale, y_scale;
 	calculateOrigin(x, y, w, h, scale, x_scale, y_scale, x_align, y_align, x_origin, y_origin);
 

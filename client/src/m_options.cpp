@@ -1706,7 +1706,7 @@ void M_OptDrawer (void)
 	int ystart = 15;
 	menuitem_t *item;
 	patch_t *title;
-	const int lineHeight = V_LineHeight(smallFont);
+	const int lineHeight = smallFont->lineHeight();
 	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
 
 	if (W_CheckNumForName(CurrentMenu->title) >= 0)
