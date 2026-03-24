@@ -1326,6 +1326,7 @@ struct MapInfoDataSetter<fontdef_t>
 	{
 		mapInfoDataContainer = {
 			{ "pattern", &MIType_String, &ref.pattern },
+			{ "pattern_literal", &MIType_String, &ref.pattern_literal },
 			{ "lumpstart", &MIType_Int, &ref.lumpStart },
 			{ "lineheight", &MIType_Int, &ref.lineHeight }
 		};
