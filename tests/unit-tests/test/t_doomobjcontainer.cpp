@@ -64,12 +64,12 @@ TEST_F(DoomObjectContainerIterators, NestedIterationIsStable)
 	int outer_count = 0;
 	int inner_total = 0;
 
-	for (auto&& outer : c)
+	for ([[maybe_unused]] auto&& outer : c)
 	{
 		++outer_count;
 
 		int inner_count = 0;
-		for (auto&& inner : c)
+		for ([[maybe_unused]] auto&& inner : c)
 			++inner_count;
 
 		EXPECT_EQ(inner_count, 3);
