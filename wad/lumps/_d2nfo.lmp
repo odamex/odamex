@@ -4,6 +4,7 @@ gameinfo
 {
 	demoloop = "D2DEMOLP"
 	maxswitch = 3
+	menuconfoverride = "_D2MENU"
 }
 
 clearepisodes

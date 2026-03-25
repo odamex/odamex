@@ -1,0 +1,572 @@
+{
+  "type": "menuconf",
+  "version": "1.0.0",
+  "metadata": {
+    "author": "Odamex Team",
+    "timestamp": "2026-03-24T23:20:00-05:00",
+    "application": "Odamex",
+    "description": "Proposed odamex.wad base ODXMENU defining shared options menus and widgets."
+  },
+  "data": {
+    "theme": {
+      "cursorPatch": "LITLCURS",
+      "cursorOffsetY": 0,
+      "upPatch": "LITLUP",
+      "downPatch": "LITLDN",
+      "slider": {
+        "leftPatch": "LSLIDE",
+        "middlePatch": "MSLIDE",
+        "rightPatch": "RSLIDE",
+        "knobPatch": "CSLIDE",
+        "greenKnobPatch": "GSLIDE",
+        "overlayPatch": "OSLIDE"
+      },
+      "inputBox": {
+        "fullPatch": "M_FSLOT"
+      },
+      "fonts": {
+        "title": "big",
+        "item": "small",
+        "value": "small"
+      },
+      "colors": {
+        "title": "gray",
+        "item": "red",
+        "itemHighlight": "gray",
+        "value": "gray",
+        "label": "yellow",
+        "warning": "orange"
+      },
+      "sounds": {},
+      "layout": {
+        "lineHeight": "auto"
+      }
+    },
+    "menus": {
+      "options": {
+        "header": {
+          "patch": "M_OPTTTL",
+          "text": "OPTIONS"
+        },
+        "layout": {
+          "style": "optionsList",
+          "indent": 177
+        },
+        "items": [
+          { "kind": "action", "text": "Player Setup", "target": "builtin:playerSetup" },
+          { "kind": "submenu", "text": "Weapon Preferences", "target": "options.weapons" },
+          { "kind": "submenu", "text": "Customize Controls", "target": "options.controls" },
+          { "kind": "submenu", "text": "Mouse Options", "target": "options.mouse" },
+          { "kind": "submenu", "text": "Joystick Setup", "target": "options.joystick" },
+          { "kind": "separator" },
+          { "kind": "submenu", "text": "Compatibility Options", "target": "options.compat" },
+          { "kind": "submenu", "text": "Network Options", "target": "options.network" },
+          { "kind": "submenu", "text": "Sound Options", "target": "options.sound" },
+          { "kind": "submenu", "text": "Display Options", "target": "options.display" },
+          { "kind": "action", "text": "Set Video Mode", "target": "builtin:videoMode" },
+          { "kind": "separator" },
+          { "kind": "action", "text": "Go To Console", "action": "openConsole" },
+          { "kind": "separator" },
+          { "kind": "cvarDiscrete", "text": "Always Run", "cvar": "cl_run", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Skip Boot Window", "cvar": "i_skipbootwin", "values": "OnOff" },
+          { "kind": "separator" },
+          { "kind": "action", "text": "Reset to defaults", "action": "resetDefaults" },
+          { "kind": "action", "text": "Reset to last saved", "action": "resetSaved" }
+        ]
+      },
+      "options.controls": {
+        "header": {
+          "patch": "M_CONTRO",
+          "text": "CONTROLS"
+        },
+        "layout": {
+          "style": "optionsList",
+          "indent": 0,
+          "scroll": true
+        },
+        "items": [
+          { "kind": "label", "text": "ENTER to change, BACKSPACE to clear", "style": "white" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Basic Movement", "style": "heading" },
+          { "kind": "controlBinding", "text": "Move forward", "bindingSet": "game", "command": "+forward" },
+          { "kind": "controlBinding", "text": "Move backward", "bindingSet": "game", "command": "+back" },
+          { "kind": "controlBinding", "text": "Strafe left", "bindingSet": "game", "command": "+moveleft" },
+          { "kind": "controlBinding", "text": "Strafe right", "bindingSet": "game", "command": "+moveright" },
+          { "kind": "controlBinding", "text": "Turn left", "bindingSet": "game", "command": "+left" },
+          { "kind": "controlBinding", "text": "Turn right", "bindingSet": "game", "command": "+right" },
+          { "kind": "controlBinding", "text": "Run", "bindingSet": "game", "command": "+speed" },
+          { "kind": "controlBinding", "text": "Always Run", "bindingSet": "game", "command": "togglerun" },
+          { "kind": "controlBinding", "text": "Strafe", "bindingSet": "game", "command": "+strafe" },
+          { "kind": "controlBinding", "text": "Jump", "bindingSet": "game", "command": "+jump" },
+          { "kind": "controlBinding", "text": "Turn 180", "bindingSet": "game", "command": "turn180" },
+          { "kind": "controlBinding", "text": "Alternate Turn", "bindingSet": "game", "command": "+fastturn" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Actions", "style": "heading" },
+          { "kind": "controlBinding", "text": "Fire", "bindingSet": "game", "command": "+attack" },
+          { "kind": "controlBinding", "text": "Use / Open", "bindingSet": "game", "command": "+use" },
+          { "kind": "controlBinding", "text": "Next weapon", "bindingSet": "game", "command": "weapnext" },
+          { "kind": "controlBinding", "text": "Previous weapon", "bindingSet": "game", "command": "weapprev" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Weapons", "style": "heading" },
+          { "kind": "controlBinding", "text": "Fist/Chainsaw", "bindingSet": "game", "command": "impulse 1" },
+          { "kind": "controlBinding", "text": "Pistol", "bindingSet": "game", "command": "impulse 2" },
+          { "kind": "controlBinding", "text": "Shotgun/SSG", "bindingSet": "game", "command": "impulse 3" },
+          { "kind": "controlBinding", "text": "Chaingun", "bindingSet": "game", "command": "impulse 4" },
+          { "kind": "controlBinding", "text": "Rocket Launcher", "bindingSet": "game", "command": "impulse 5" },
+          { "kind": "controlBinding", "text": "Plasma Rifle", "bindingSet": "game", "command": "impulse 6" },
+          { "kind": "controlBinding", "text": "BFG", "bindingSet": "game", "command": "impulse 7" },
+          { "kind": "controlBinding", "text": "Chainsaw", "bindingSet": "game", "command": "impulse 8" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Automap Controls", "style": "heading" },
+          { "kind": "controlBinding", "text": "Toggle Automap", "bindingSet": "automap", "command": "togglemap" },
+          { "kind": "controlBinding", "text": "Follow Player", "bindingSet": "automap", "command": "am_togglefollow" },
+          { "kind": "controlBinding", "text": "Toggle Grid", "bindingSet": "automap", "command": "am_grid" },
+          { "kind": "controlBinding", "text": "Add Marker", "bindingSet": "automap", "command": "am_setmark" },
+          { "kind": "controlBinding", "text": "Clear Markers", "bindingSet": "automap", "command": "am_clearmarks" },
+          { "kind": "controlBinding", "text": "Big Automap", "bindingSet": "automap", "command": "am_big" },
+          { "kind": "controlBinding", "text": "Zoom In", "bindingSet": "automap", "command": "+am_zoomin" },
+          { "kind": "controlBinding", "text": "Zoom Out", "bindingSet": "automap", "command": "+am_zoomout" },
+          { "kind": "controlBinding", "text": "Pan Up", "bindingSet": "automap", "command": "+am_panup" },
+          { "kind": "controlBinding", "text": "Pan Down", "bindingSet": "automap", "command": "+am_pandown" },
+          { "kind": "controlBinding", "text": "Pan Left", "bindingSet": "automap", "command": "+am_panleft" },
+          { "kind": "controlBinding", "text": "Pan Right", "bindingSet": "automap", "command": "+am_panright" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Advanced Movement", "style": "heading" },
+          { "kind": "controlBinding", "text": "Fly / Swim up", "bindingSet": "game", "command": "+moveup" },
+          { "kind": "controlBinding", "text": "Fly / Swim down", "bindingSet": "game", "command": "+movedown" },
+          { "kind": "controlBinding", "text": "Toggle flying", "bindingSet": "game", "command": "fly" },
+          { "kind": "controlBinding", "text": "Look up", "bindingSet": "game", "command": "+lookup" },
+          { "kind": "controlBinding", "text": "Look down", "bindingSet": "game", "command": "+lookdown" },
+          { "kind": "controlBinding", "text": "Center view", "bindingSet": "game", "command": "centerview" },
+          { "kind": "controlBinding", "text": "Mouse look", "bindingSet": "game", "command": "+mlook" },
+          { "kind": "controlBinding", "text": "Keyboard look", "bindingSet": "game", "command": "+klook" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Multiplayer", "style": "heading" },
+          { "kind": "controlBinding", "text": "Say", "bindingSet": "game", "command": "messagemode" },
+          { "kind": "controlBinding", "text": "Team say", "bindingSet": "game", "command": "messagemode2" },
+          { "kind": "controlBinding", "text": "Ready", "bindingSet": "game", "command": "ready" },
+          { "kind": "controlBinding", "text": "Change teams", "bindingSet": "game", "command": "changeteams" },
+          { "kind": "controlBinding", "text": "Spectate", "bindingSet": "game", "command": "spectate" },
+          { "kind": "controlBinding", "text": "Coop Spy", "bindingSet": "game", "command": "spynext" },
+          { "kind": "controlBinding", "text": "Show Scoreboard", "bindingSet": "game", "command": "+showscores" },
+          { "kind": "controlBinding", "text": "Vote Yes", "bindingSet": "game", "command": "vote_yes" },
+          { "kind": "controlBinding", "text": "Vote No", "bindingSet": "game", "command": "vote_no" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Menus", "style": "heading" },
+          { "kind": "controlBinding", "text": "Main menu", "bindingSet": "game", "command": "menu_main" },
+          { "kind": "controlBinding", "text": "Help menu", "bindingSet": "game", "command": "menu_help" },
+          { "kind": "controlBinding", "text": "Save menu", "bindingSet": "game", "command": "menu_save" },
+          { "kind": "controlBinding", "text": "Load menu", "bindingSet": "game", "command": "menu_load" },
+          { "kind": "controlBinding", "text": "Options menu", "bindingSet": "game", "command": "menu_options" },
+          { "kind": "controlBinding", "text": "Display options", "bindingSet": "game", "command": "menu_display" },
+          { "kind": "controlBinding", "text": "Player setup menu", "bindingSet": "game", "command": "menu_player" },
+          { "kind": "controlBinding", "text": "Configure controls", "bindingSet": "game", "command": "menu_keys" },
+          { "kind": "controlBinding", "text": "Change resolution", "bindingSet": "game", "command": "menu_video" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Netdemo Controls", "style": "heading" },
+          { "kind": "controlBinding", "text": "Pause Netdemo", "bindingSet": "netdemo", "command": "netpause" },
+          { "kind": "controlBinding", "text": "Fast Forward", "bindingSet": "netdemo", "command": "netff" },
+          { "kind": "controlBinding", "text": "Rewind", "bindingSet": "netdemo", "command": "netrew" },
+          { "kind": "controlBinding", "text": "Next map", "bindingSet": "netdemo", "command": "netnextmap" },
+          { "kind": "controlBinding", "text": "Previous map", "bindingSet": "netdemo", "command": "netprevmap" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Other", "style": "heading" },
+          { "kind": "controlBinding", "text": "Increase screen size", "bindingSet": "game", "command": "sizeup" },
+          { "kind": "controlBinding", "text": "Reduce screen size", "bindingSet": "game", "command": "sizedown" },
+          { "kind": "controlBinding", "text": "Chasecam", "bindingSet": "game", "command": "chase" },
+          { "kind": "controlBinding", "text": "Screenshot", "bindingSet": "game", "command": "screenshot" },
+          { "kind": "controlBinding", "text": "Open console", "bindingSet": "game", "command": "toggleconsole" },
+          { "kind": "controlBinding", "text": "End current game", "bindingSet": "game", "command": "menu_endgame" },
+          { "kind": "controlBinding", "text": "Quit Odamex", "bindingSet": "game", "command": "menu_quit" }
+        ]
+      },
+      "options.mouse": {
+        "header": {
+          "patch": "M_MOUSET",
+          "text": "MOUSE"
+        },
+        "layout": {
+          "style": "optionsList",
+          "indent": 177
+        },
+        "items": [
+          { "kind": "cvarSlider", "text": "Overall Sensitivity", "cvar": "mouse_sensitivity", "min": 0.05, "max": 2.5, "step": 0.05 },
+          { "kind": "cvarSlider", "text": "Freelook Sensitivity", "cvar": "m_pitch", "min": 0.05, "max": 2.5, "step": 0.05 },
+          { "kind": "separator" },
+          { "kind": "cvarDiscrete", "text": "Always FreeLook", "cvar": "cl_mouselook", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Invert Mouse", "cvar": "invertmouse", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Auto SR50 on Strafe", "cvar": "in_autosr50", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Lookspring", "cvar": "lookspring", "values": "OnOff" },
+          { "kind": "separator" },
+          { "kind": "cvarDiscrete", "text": "Horizontal Movement", "cvar": "lookstrafe", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Vertical Movement", "cvar": "novert", "values": "OffOn" },
+          { "kind": "cvarSlider", "text": "Horizontal Movement Speed", "cvar": "m_side", "min": 0, "max": 15, "step": 0.5 },
+          { "kind": "cvarSlider", "text": "Vertical Movement Speed", "cvar": "m_forward", "min": 0, "max": 15, "step": 0.5 },
+          { "kind": "separator" },
+          { "kind": "action", "text": "Reset mouse to defaults", "action": "resetMouseDefaults" }
+        ]
+      },
+      "options.joystick": {
+        "header": {
+          "patch": "M_JOYSTK",
+          "text": "JOYSTICK"
+        },
+        "layout": {
+          "style": "optionsList",
+          "indent": 177
+        },
+        "items": [
+          { "kind": "cvarDiscrete", "text": "Use Joystick", "cvar": "use_joystick", "values": "OnOff" },
+          { "kind": "separator" },
+          { "kind": "dynamic", "text": "Active Joystick", "provider": "activeJoystick", "cvar": "joy_active" },
+          { "kind": "separator" },
+          { "kind": "cvarDiscrete", "text": "Always FreeLook", "cvar": "joy_freelook", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Invert Look Axis", "cvar": "joy_invert", "values": "OnOff" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Sensitivity Settings", "style": "white" },
+          { "kind": "cvarSlider", "text": "Turn Sensitivity", "cvar": "joy_sensitivity", "min": 1, "max": 30, "step": 1 },
+          { "kind": "cvarSlider", "text": "Alt. Turn Sensitivity", "cvar": "joy_fastsensitivity", "min": 1, "max": 30, "step": 1 },
+          { "kind": "cvarSlider", "text": "Joystick Deadzone", "cvar": "joy_deadzone", "min": 0, "max": 0.75, "step": 0.05 }
+        ]
+      },
+      "options.sound": {
+        "header": {
+          "patch": "M_SOUND",
+          "text": "SOUND"
+        },
+        "layout": {
+          "style": "optionsList",
+          "indent": 177
+        },
+        "items": [
+          { "kind": "separator" },
+          { "kind": "label", "text": "Sound Levels", "style": "heading" },
+          { "kind": "cvarSlider", "text": "Music Volume", "cvar": "snd_musicvolume", "min": 0, "max": 1, "step": 0.015625 },
+          { "kind": "cvarSlider", "text": "Sound Volume", "cvar": "snd_sfxvolume", "min": 0, "max": 1, "step": 0.015625 },
+          { "kind": "cvarSlider", "text": "Announcer Volume", "cvar": "snd_announcervolume", "min": 0, "max": 1, "step": 0.015625 },
+          { "kind": "cvarDiscrete", "text": "Stereo Switch", "cvar": "snd_crossover", "values": "OnOff" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Music Options", "style": "heading" },
+          { "kind": "cvarDiscrete", "text": "Midi Synth", "cvar": "snd_musicsystem", "values": "MusSys" },
+          { "kind": "cvarDiscrete", "text": "Disable Music", "cvar": "snd_nomusic", "values": "YesNo" },
+          { "kind": "separator" },
+          { "kind": "submenu", "text": "OPL FM Synth Options", "target": "options.sound.opl" },
+          { "kind": "submenu", "text": "Advanced MIDI Options", "target": "options.sound.advancedMidi" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Sound Options", "style": "heading" },
+          { "kind": "cvarDiscrete", "text": "Game SFX", "cvar": "snd_gamesfx", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Announcer Type", "cvar": "snd_voxtype", "values": "VoxType" },
+          { "kind": "cvarDiscrete", "text": "Player Connect Alert", "cvar": "cl_connectalert", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Player Disconnect Alert", "cvar": "cl_disconnectalert", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Chat sounds", "cvar": "cl_chatsounds", "values": "ChatSndType" },
+          { "kind": "cvarDiscrete", "text": "Voting Sounds", "cvar": "snd_votesfx", "values": "OnOff" }
+        ]
+      },
+      "options.sound.advancedMidi": {
+        "header": {
+          "patch": "M_SOUND",
+          "text": "ADVANCED MIDI"
+        },
+        "layout": {
+          "style": "optionsList",
+          "indent": 177
+        },
+        "items": [
+          { "kind": "separator" },
+          { "kind": "label", "text": "Advanced MIDI Options", "style": "heading" },
+          { "kind": "separator" },
+          { "kind": "cvarDiscrete", "text": "MIDI Instrument Fallback", "cvar": "snd_midifallback", "values": "OnOff" },
+          { "kind": "cvarSlider", "text": "MIDI Reset Delay (ms)", "cvar": "snd_mididelay", "min": 0, "max": 2000, "step": 50 },
+          { "kind": "separator" },
+          { "kind": "label", "text": "! ! ! NOTICE ! ! !", "style": "heading" },
+          { "kind": "label", "text": "Modifying these settings may cause", "style": "warning" },
+          { "kind": "label", "text": "unwanted behavior during MIDI playback!", "style": "warning" }
+        ]
+      },
+      "options.sound.opl": {
+        "header": {
+          "patch": "M_SOUND",
+          "text": "OPL FM SYNTH"
+        },
+        "layout": {
+          "style": "optionsList",
+          "indent": 177
+        },
+        "items": [
+          { "kind": "separator" },
+          { "kind": "label", "text": "OPL FM Synth Options", "style": "heading" },
+          { "kind": "separator" },
+          { "kind": "cvarDiscrete", "text": "OPL quality", "cvar": "snd_oplcore", "values": "OplCore" },
+          { "kind": "cvarDiscrete", "text": "Full OPL panning", "cvar": "snd_oplpan", "values": "OnOff" },
+          { "kind": "cvarSlider", "text": "# of OPL chips", "cvar": "snd_oplchips", "min": 1, "max": 8, "step": 1 },
+          { "kind": "cvarDiscrete", "text": "OPL instruments", "cvar": "snd_oplbank", "values": "OplBank" }
+        ]
+      },
+      "options.compat": {
+        "header": {
+          "patch": "M_COMPAT",
+          "text": "COMPATIBILITY"
+        },
+        "layout": {
+          "style": "optionsList",
+          "indent": 240
+        },
+        "items": [
+          { "kind": "label", "text": "Gameplay", "style": "heading" },
+          { "kind": "cvarDiscrete", "text": "Finer-precision Autoaim", "cvar": "co_fineautoaim", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Fix hit detection at grid edges", "cvar": "co_blockmapfix", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Remove pain elemental spawn limit", "cvar": "co_removesoullimit", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Fix arch-vile ghost bug", "cvar": "co_novileghosts", "values": "OnOff" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Items and Decoration", "style": "heading" },
+          { "kind": "cvarDiscrete", "text": "Fix invisible puffs under skies", "cvar": "co_fixweaponimpacts", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Items can be walked over/under", "cvar": "co_realactorheight", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Items can drop off ledges", "cvar": "co_allowdropoff", "values": "OnOff" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Engine Compatibility", "style": "heading" },
+          { "kind": "cvarDiscrete", "text": "BOOM actor/sector/line checks", "cvar": "co_boomphys", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "MBF movement and collision", "cvar": "co_mbfphys", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "ZDOOM 1.23 physics", "cvar": "co_zdoomphys", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "ZDOOM 1.23 ammo checks", "cvar": "co_zdoomammo", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "MBF Monster target selection", "cvar": "co_pursuit", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Monsters help friends (MBF)", "cvar": "co_helpfriends", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Monsters strafe (MBF)", "cvar": "co_monsterbacking", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Monster wind/friction (MBF)", "cvar": "co_monsterfriction", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Monsters avoid crushers (MBF)", "cvar": "co_avoidhazards", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Monsters climb (MBF)", "cvar": "co_monstersclimbsteep", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Monsters stay on lifts (MBF)", "cvar": "co_staylift", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Friends can drop off (MBF)", "cvar": "co_friend_ledgejumping", "values": "OnOff" },
+          { "kind": "cvarSlider", "text": "Friend distance (MBF)", "cvar": "co_friend_distance", "min": 0, "max": 2048, "step": 64 },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Sound", "style": "heading" },
+          { "kind": "cvarDiscrete", "text": "Fix silent west spawns", "cvar": "co_nosilentspawns", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "ZDoom Sound Response", "cvar": "co_zdoomsound", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Global Pickup Sounds", "cvar": "co_globalsound", "values": "OnOff" }
+        ]
+      },
+      "options.network": {
+        "header": {
+          "patch": "M_NETWRK",
+          "text": "NETWORK"
+        },
+        "layout": {
+          "style": "optionsList",
+          "indent": 177
+        },
+        "items": [
+          { "kind": "separator" },
+          { "kind": "label", "text": "Wad Download Settings", "style": "heading" },
+          { "kind": "cvarDiscrete", "text": "Download From Internet", "cvar": "cl_serverdownload", "values": "OnOff" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Netdemo Settings", "style": "heading" },
+          { "kind": "cvarDiscrete", "text": "Autorecord demos", "cvar": "cl_autorecord", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Split every map", "cvar": "cl_splitnetdemos", "values": "OnOff" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Autorecord filters", "style": "heading" },
+          { "kind": "cvarDiscrete", "text": "Cooperation", "cvar": "cl_autorecord_coop", "values": "DemoRestrictions" },
+          { "kind": "cvarDiscrete", "text": "Deathmatch", "cvar": "cl_autorecord_deathmatch", "values": "DemoRestrictions" },
+          { "kind": "cvarDiscrete", "text": "Duel", "cvar": "cl_autorecord_duel", "values": "DemoRestrictions" },
+          { "kind": "cvarDiscrete", "text": "Team Deathmatch", "cvar": "cl_autorecord_teamdm", "values": "DemoRestrictions" },
+          { "kind": "cvarDiscrete", "text": "Capture the Flag", "cvar": "cl_autorecord_ctf", "values": "DemoRestrictions" },
+          { "kind": "cvarDiscrete", "text": "Horde", "cvar": "cl_autorecord_horde", "values": "DemoRestrictions" }
+        ]
+      },
+      "options.weapons": {
+        "header": {
+          "patch": "M_WEAPON",
+          "text": "WEAPONS"
+        },
+        "layout": {
+          "style": "optionsList",
+          "indent": 177
+        },
+        "items": [
+          { "kind": "label", "text": "Weapon Preferences", "style": "heading" },
+          { "kind": "cvarDiscrete", "text": "Switch on pickup", "cvar": "cl_switchweapon", "values": "WeapSwitch" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Weapon Switch Order", "style": "heading" },
+          { "kind": "cvarSlider", "text": null, "textProvider": "weaponName:0", "cvar": "cl_weaponpref_fst", "min": 0, "max": 8, "step": 1 },
+          { "kind": "cvarSlider", "text": null, "textProvider": "weaponName:7", "cvar": "cl_weaponpref_csw", "min": 0, "max": 8, "step": 1 },
+          { "kind": "cvarSlider", "text": null, "textProvider": "weaponName:1", "cvar": "cl_weaponpref_pis", "min": 0, "max": 8, "step": 1 },
+          { "kind": "cvarSlider", "text": null, "textProvider": "weaponName:2", "cvar": "cl_weaponpref_sg", "min": 0, "max": 8, "step": 1 },
+          { "kind": "cvarSlider", "text": null, "textProvider": "weaponName:8", "cvar": "cl_weaponpref_ssg", "min": 0, "max": 8, "step": 1 },
+          { "kind": "cvarSlider", "text": null, "textProvider": "weaponName:3", "cvar": "cl_weaponpref_cg", "min": 0, "max": 8, "step": 1 },
+          { "kind": "cvarSlider", "text": null, "textProvider": "weaponName:4", "cvar": "cl_weaponpref_rl", "min": 0, "max": 8, "step": 1 },
+          { "kind": "cvarSlider", "text": null, "textProvider": "weaponName:5", "cvar": "cl_weaponpref_pls", "min": 0, "max": 8, "step": 1 },
+          { "kind": "cvarSlider", "text": null, "textProvider": "weaponName:6", "cvar": "cl_weaponpref_bfg", "min": 0, "max": 8, "step": 1 },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Weapons with higher", "style": "white" },
+          { "kind": "label", "text": "preference are selected first", "style": "white" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "! ! ! NOTICE ! ! !", "style": "heading" },
+          { "kind": "label", "text": "While playing online, this feature", "style": "warning" },
+          { "kind": "label", "text": "only works when the server allows it!", "style": "warning" }
+        ]
+      },
+      "options.display": {
+        "header": {
+          "patch": "M_VIDEO",
+          "text": "DISPLAY"
+        },
+        "layout": {
+          "style": "optionsList",
+          "indent": 0
+        },
+        "items": [
+          { "kind": "submenu", "text": "Heads-up display", "target": "options.display.hud" },
+          { "kind": "submenu", "text": "Messages", "target": "options.display.messages" },
+          { "kind": "submenu", "text": "Automap", "target": "options.display.automap" },
+          { "kind": "separator" },
+          { "kind": "cvarSlider", "text": "Screen size", "cvar": "screenblocks", "min": 3, "max": 12, "step": 1 },
+          { "kind": "dynamic", "text": "Brightness", "provider": "gammaSlider", "cvar": "gammalevel" },
+          { "kind": "cvarSlider", "text": "Red Pain Intensity", "cvar": "r_painintensity", "min": 0, "max": 1, "step": 0.1 },
+          { "kind": "cvarSlider", "text": "Movement bobbing", "cvar": "cl_movebob", "min": 0, "max": 1, "step": 0.1 },
+          { "kind": "cvarSlider", "text": "Weapon Visibility", "cvar": "r_drawplayersprites", "min": 0, "max": 1, "step": 0.1 },
+          { "kind": "cvarDiscrete", "text": "Visible Spawn Points", "cvar": "cl_showspawns", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Center weapon when firing", "cvar": "cl_centerbobonfire", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Show Killing Sprees", "cvar": "cl_showsprees", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Show Multi Kills", "cvar": "cl_showmultikills", "values": "OnOff" },
+          { "kind": "separator" },
+          { "kind": "cvarDiscrete", "text": "Force Team Color", "cvar": "r_forceteamcolor", "values": "OnOff" },
+          { "kind": "cvarSlider", "text": "Team Color Red", "cvar": "r_teamcolor", "widget": "colorChannel", "channel": "red", "min": 0, "max": 255, "step": 17 },
+          { "kind": "cvarSlider", "text": "Team Color Green", "cvar": "r_teamcolor", "widget": "colorChannel", "channel": "green", "min": 0, "max": 255, "step": 17 },
+          { "kind": "cvarSlider", "text": "Team Color Blue", "cvar": "r_teamcolor", "widget": "colorChannel", "channel": "blue", "min": 0, "max": 255, "step": 17 },
+          { "kind": "separator" },
+          { "kind": "cvarDiscrete", "text": "Force Enemy Color", "cvar": "r_forceenemycolor", "values": "OnOff" },
+          { "kind": "cvarSlider", "text": "Enemy Color Red", "cvar": "r_enemycolor", "widget": "colorChannel", "channel": "red", "min": 0, "max": 255, "step": 17 },
+          { "kind": "cvarSlider", "text": "Enemy Color Green", "cvar": "r_enemycolor", "widget": "colorChannel", "channel": "green", "min": 0, "max": 255, "step": 17 },
+          { "kind": "cvarSlider", "text": "Enemy Color Blue", "cvar": "r_enemycolor", "widget": "colorChannel", "channel": "blue", "min": 0, "max": 255, "step": 17 },
+          { "kind": "separator" },
+          { "kind": "cvarSlider", "text": "UI Background Red", "cvar": "ui_transred", "min": 0, "max": 255, "step": 16 },
+          { "kind": "cvarSlider", "text": "UI Background Green", "cvar": "ui_transgreen", "min": 0, "max": 255, "step": 16 },
+          { "kind": "cvarSlider", "text": "UI Background Blue", "cvar": "ui_transblue", "min": 0, "max": 255, "step": 16 },
+          { "kind": "cvarSlider", "text": "UI Background Visibility", "cvar": "ui_dimamount", "min": 0, "max": 1, "step": 0.1 },
+          { "kind": "separator" },
+          { "kind": "cvarDiscrete", "text": "See killer on Death", "cvar": "cl_deathcam", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Stretch short skies", "cvar": "r_stretchsky", "values": "OnOffAuto" },
+          { "kind": "cvarDiscrete", "text": "Linear Skies", "cvar": "r_linearsky", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Invuln changes skies", "cvar": "r_skypalette", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Use softer invuln effect", "cvar": "r_softinvulneffect", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Heart effect on friendlies", "cvar": "cl_showfriends", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Screen wipe style", "cvar": "r_wipetype", "values": "Wipes" },
+          { "kind": "cvarDiscrete", "text": "Multiplayer Intermissions", "cvar": "wi_oldintermission", "values": "DoomOrOdamex" },
+          { "kind": "cvarDiscrete", "text": "Show loading disk icon", "cvar": "r_loadicon", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Show DOS ending screen", "cvar": "r_showendoom", "values": "Endoom" }
+        ]
+      },
+      "options.display.hud": {
+        "header": {
+          "patch": "M_HUD",
+          "text": "HUD"
+        },
+        "layout": {
+          "style": "optionsList",
+          "indent": 0
+        },
+        "items": [
+          { "kind": "label", "text": "Status Bar", "style": "heading" },
+          { "kind": "cvarDiscrete", "text": "Scale status bar", "cvar": "st_scale", "values": "OnOff" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Floating HUD elements", "style": "heading" },
+          { "kind": "cvarDiscrete", "text": "Scale HUD elements", "cvar": "hud_scale", "values": "OnOff" },
+          { "kind": "cvarSlider", "text": "HUD Transparency", "cvar": "hud_transparency", "min": 0, "max": 1, "step": 0.1 },
+          { "kind": "cvarSlider", "text": "HUD Anchoring", "cvar": "hud_anchoring", "min": 0, "max": 1, "step": 0.1 },
+          { "kind": "cvarDiscrete", "text": "Bigger font in HUD", "cvar": "hud_bigfont", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Show Secret Messages", "cvar": "hud_revealsecrets", "values": "SecretOptions" },
+          { "kind": "cvarDiscrete", "text": "Player target names", "cvar": "hud_targetnames", "values": "HideShow" },
+          { "kind": "cvarDiscrete", "text": "Timer Type", "cvar": "hud_timer", "values": "TimerStyles" },
+          { "kind": "cvarDiscrete", "text": "Speedometer", "cvar": "hud_speedometer", "values": "OnOff" },
+          { "kind": "cvarSlider", "text": "Feed Timeout", "cvar": "hud_feedtime", "min": 1, "max": 10, "step": 0.25 },
+          { "kind": "cvarDiscrete", "text": "Show Kills in Feed", "cvar": "hud_feedobits", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Netdemo infos", "cvar": "hud_demobar", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Extended hud", "cvar": "hud_extendedinfo", "values": "ExtendedHudStyles" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Scoreboard", "style": "heading" },
+          { "kind": "cvarSlider", "text": "Scale scoreboard", "cvar": "hud_scalescoreboard", "min": 0, "max": 1, "step": 0.125 },
+          { "kind": "cvarDiscrete", "text": "Scores on Death", "cvar": "hud_show_scoreboard_ondeath", "values": "OnOff" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Capture the Flag", "style": "heading" },
+          { "kind": "cvarDiscrete", "text": "Event Message Type", "cvar": "hud_gamemsgtype", "values": "VoxType" },
+          { "kind": "cvarDiscrete", "text": "Held Flag Border", "cvar": "hud_heldflag", "values": "FlagHelds" },
+          { "kind": "cvarDiscrete", "text": "Held Flag Flashes", "cvar": "hud_heldflag_flash", "values": "OnOff" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Crosshair", "style": "heading" },
+          { "kind": "cvarDiscrete", "text": "Crosshair type", "cvar": "hud_crosshair", "values": "Crosshairs" },
+          { "kind": "cvarDiscrete", "text": "Scale crosshair", "cvar": "hud_crosshairscale", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Crosshair health", "cvar": "hud_crosshairhealth", "values": "OnOff" },
+          { "kind": "cvarSlider", "text": "Crosshair Red", "cvar": "hud_crosshaircolor", "widget": "colorChannel", "channel": "red", "min": 0, "max": 255, "step": 17 },
+          { "kind": "cvarSlider", "text": "Crosshair Green", "cvar": "hud_crosshaircolor", "widget": "colorChannel", "channel": "green", "min": 0, "max": 255, "step": 17 },
+          { "kind": "cvarSlider", "text": "Crosshair Blue", "cvar": "hud_crosshaircolor", "widget": "colorChannel", "channel": "blue", "min": 0, "max": 255, "step": 17 },
+          { "kind": "separator" }
+        ]
+      },
+      "options.display.messages": {
+        "header": {
+          "patch": "M_MESS",
+          "text": "MESSAGES"
+        },
+        "layout": {
+          "style": "optionsList",
+          "indent": 0
+        },
+        "items": [
+          { "kind": "cvarSlider", "text": "Message Timeout", "cvar": "con_notifytime", "min": 1, "max": 10, "step": 0.25 },
+          { "kind": "cvarSlider", "text": "Center Message Timeout", "cvar": "con_midtime", "min": 1, "max": 10, "step": 0.25 },
+          { "kind": "cvarSlider", "text": "Scale message text", "cvar": "hud_scaletext", "min": 1, "max": 4, "step": 1 },
+          { "kind": "cvarDiscrete", "text": "Colorize messages", "cvar": "con_coloredmessages", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Scale console text", "cvar": "con_scaletext", "values": "ScaleFactors" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Display settings", "style": "heading" },
+          { "kind": "cvarDiscrete", "text": "Pickup messages", "cvar": "message_showpickups", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Death messages", "cvar": "message_showobituaries", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Spectator messages", "cvar": "mute_spectators", "values": "OffOn" },
+          { "kind": "cvarDiscrete", "text": "Enemy messages", "cvar": "mute_enemies", "values": "OffOn" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Message Colors", "style": "heading" },
+          { "kind": "cvarDiscrete", "text": "Item Pickup", "cvar": "msg0color", "values": "TextColors", "widget": "colorChoice" },
+          { "kind": "cvarDiscrete", "text": "Obituaries", "cvar": "msg1color", "values": "TextColors", "widget": "colorChoice" },
+          { "kind": "cvarDiscrete", "text": "Critical Messages", "cvar": "msg2color", "values": "TextColors", "widget": "colorChoice" },
+          { "kind": "cvarDiscrete", "text": "Chat Messages", "cvar": "msg3color", "values": "TextColors", "widget": "colorChoice" },
+          { "kind": "cvarDiscrete", "text": "Team Messages", "cvar": "msg4color", "values": "TextColors", "widget": "colorChoice" },
+          { "kind": "cvarDiscrete", "text": "Centered Messages", "cvar": "msgmidcolor", "values": "TextColors", "widget": "colorChoice" }
+        ]
+      },
+      "options.display.automap": {
+        "header": {
+          "patch": "M_AUTOMP",
+          "text": "AUTOMAP"
+        },
+        "layout": {
+          "style": "optionsList",
+          "indent": 0
+        },
+        "items": [
+          { "kind": "cvarDiscrete", "text": "Rotate automap", "cvar": "am_rotate", "values": "OnOff" },
+          { "kind": "dynamic", "text": "Overlay automap", "provider": "overlayMode", "cvar": "am_overlay" },
+          { "kind": "separator" },
+          { "kind": "cvarDiscrete", "text": "Line Thickeness", "cvar": "am_thickness", "values": "AutomapScales" },
+          { "kind": "separator" },
+          { "kind": "cvarDiscrete", "text": "Show item count", "cvar": "am_showitems", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Show monster count", "cvar": "am_showmonsters", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Show secrets count", "cvar": "am_showsecrets", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Show map timer", "cvar": "am_showtime", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Map name style", "cvar": "am_classicmapstring", "values": "ClassicMapStringTypes" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Automap Colors", "style": "heading" },
+          { "kind": "cvarDiscrete", "text": "Highlight locked doors", "cvar": "am_showlocked", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Custom map colors", "cvar": "am_usecustomcolors", "values": "OnOff" },
+          { "kind": "action", "text": "Reset custom map colors", "action": "resetCustomMapColors" },
+          { "kind": "separator" },
+          { "kind": "label", "text": "Overlay Minimap Options", "style": "heading" },
+          { "kind": "cvarDiscrete", "text": "Enable Minimap", "cvar": "am_ovminimap", "values": "OnOff" },
+          { "kind": "cvarDiscrete", "text": "Location", "cvar": "am_ovlocation", "values": "MinimapLocations" },
+          { "kind": "cvarSlider", "text": "Scale Width", "cvar": "am_ovscalewidth", "min": 0, "max": 1, "step": 0.05 },
+          { "kind": "cvarSlider", "text": "Scale Height", "cvar": "am_ovscaleheight", "min": 0, "max": 1, "step": 0.05 }
+        ]
+      }
+    },
+    "entrypoints": {
+      "optionsMenu": "options"
+    }
+  }
+}

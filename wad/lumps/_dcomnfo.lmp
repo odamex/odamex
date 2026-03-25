@@ -52,6 +52,7 @@ gameinfo
 	cheatkey = "CHEATKEY"
 	easykey = "EASYKEY"
 	maxswitch = 2
+	menuconf = "_DMENU"
 	menutitle = "M_DOOM"
 	menutitleoffsetx = 94
 	menuindicatoroffsetx = -32

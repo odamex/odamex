@@ -1,0 +1,129 @@
+{
+  "type": "menuconf",
+  "version": "1.0.0",
+  "metadata": {
+    "author": "Odamex Team",
+    "timestamp": "2026-03-24T21:15:00-05:00",
+    "application": "Odamex"
+  },
+  "data": {
+    "theme": {
+      "indicator": {
+        "patches": ["M_SKULL1", "M_SKULL2"],
+        "offsetX": -32,
+        "offsetY": -5
+      },
+      "cursorPatch": "LITLCURS",
+      "cursorOffsetY": 0,
+      "upPatch": "LITLUP",
+      "downPatch": "LITLDN",
+      "slider": {
+        "leftPatch": "LSLIDE",
+        "middlePatch": "MSLIDE",
+        "rightPatch": "RSLIDE",
+        "knobPatch": "CSLIDE",
+        "greenKnobPatch": "GSLIDE",
+        "overlayPatch": "OSLIDE"
+      },
+      "inputBox": {
+        "leftPatch": "M_LSLEFT",
+        "middlePatch": "M_LSCNTR",
+        "rightPatch": "M_LSRGHT"
+      },
+      "fonts": {
+        "title": "big",
+        "item": "small",
+        "value": "small"
+      },
+      "colors": {
+        "title": "gray",
+        "item": "red",
+        "itemHighlight": "gray",
+        "value": "gray",
+        "label": "yellow",
+        "warning": "orange"
+      },
+      "sounds": {
+        "navigate": "plats/pt1_stop",
+        "select": "weapons/pistol",
+        "back": "switches/exitbutn",
+        "open": "switches/normbutn",
+        "changeValue": "plats/pt1_mid",
+        "prompt": "switches/exitbutn"
+      }
+    },
+    "menus": {
+      "main": {
+        "header": {
+          "patch": "M_DOOM",
+          "text": null,
+          "align": "absolute",
+          "x": 94,
+          "y": 1
+        },
+        "layout": {
+          "style": "classicMenu",
+          "x": 97,
+          "y": 64,
+          "topPadding": 0,
+          "itemSpacing": "font"
+        },
+        "items": [
+          { "kind": "submenu", "patch": "M_NGAME", "text": null, "languageKey": "MNU_NEWGAME", "target": "episodes", "hotkey": "N" },
+          { "kind": "submenu", "patch": "M_OPTION", "text": null, "languageKey": "MNU_OPTIONS", "target": "options", "hotkey": "O" },
+          { "kind": "action", "patch": "M_LOADG", "text": null, "languageKey": "MNU_LOADGAME", "target": "builtin:loadGame", "hotkey": "L" },
+          { "kind": "action", "patch": "M_SAVEG", "text": null, "languageKey": "MNU_SAVEGAME", "target": "builtin:saveGame", "hotkey": "S" },
+          { "kind": "action", "patch": "M_RDTHIS", "text": "READ THIS!", "languageKey": null, "target": "builtin:help", "hotkey": "R" },
+          { "kind": "action", "patch": "M_QUITG", "text": null, "languageKey": "MNU_QUITGAME", "action": "quitGame", "hotkey": "Q" }
+        ]
+      },
+      "episodes": {
+        "header": {
+          "patch": "M_EPISOD",
+          "text": "NEW GAME",
+          "y": 38
+        },
+        "layout": {
+          "style": "textList",
+          "x": 48,
+          "y": 63,
+          "topPadding": 0,
+          "itemSpacing": "font"
+        },
+        "items": [
+          { "kind": "action", "patch": "M_EPI1", "text": "KNEE-DEEP IN THE DEAD", "action": "chooseEpisode", "params": { "episode": "doom.ep1" }, "target": "skills", "hotkey": "K" },
+          { "kind": "action", "patch": "M_EPI2", "text": "THE SHORES OF HELL", "action": "chooseEpisode", "params": { "episode": "doom.ep2" }, "target": "skills", "hotkey": "T" },
+          { "kind": "action", "patch": "M_EPI3", "text": "INFERNO", "action": "chooseEpisode", "params": { "episode": "doom.ep3" }, "target": "skills", "hotkey": "I" },
+          { "kind": "action", "patch": "M_EPI4", "text": "THY FLESH CONSUMED", "action": "chooseEpisode", "params": { "episode": "doom.ep4" }, "target": "skills", "hotkey": "T" }
+        ]
+      },
+      "skills": {
+        "header": {
+          "patch": "M_SKILL",
+          "text": "CHOOSE SKILL",
+          "align": "absolute",
+          "x": 54,
+          "y": 38
+        },
+        "layout": {
+          "style": "textList",
+          "x": 48,
+          "y": 63,
+          "topPadding": 0,
+          "itemSpacing": "font"
+        },
+        "items": [
+          { "kind": "action", "patch": "M_JKILL", "text": null, "languageKey": "SKILL_BABY", "action": "startGame", "params": { "skill": "baby" }, "hotkey": "I" },
+          { "kind": "action", "patch": "M_ROUGH", "text": null, "languageKey": "SKILL_EASY", "action": "startGame", "params": { "skill": "easy" }, "hotkey": "H" },
+          { "kind": "action", "patch": "M_HURT", "text": null, "languageKey": "SKILL_NORMAL", "action": "startGame", "params": { "skill": "normal" }, "hotkey": "H" },
+          { "kind": "action", "patch": "M_ULTRA", "text": null, "languageKey": "SKILL_HARD", "action": "startGame", "params": { "skill": "hard" }, "hotkey": "U" },
+          { "kind": "action", "patch": "M_NMARE", "text": null, "languageKey": "SKILL_NIGHTMARE", "action": "startGame", "params": { "skill": "nightmare" }, "hotkey": "N" }
+        ]
+      }
+    },
+    "entrypoints": {
+      "mainMenu": "main",
+      "newGameMenu": "episodes"
+    }
+  }
+}

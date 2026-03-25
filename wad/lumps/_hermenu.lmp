@@ -1,0 +1,160 @@
+{
+  "type": "menuconf",
+  "version": "1.0.0",
+  "metadata": {
+    "author": "Odamex Team",
+    "timestamp": "2026-03-24T21:15:00-05:00",
+    "application": "Odamex"
+  },
+  "data": {
+    "theme": {
+      "indicator": {
+        "patches": ["M_SLCTR1", "M_SLCTR2"],
+        "offsetX": -28,
+        "offsetY": -3
+      },
+      "cursorPatch": "LITLCURS",
+      "cursorOffsetY": 2,
+      "upPatch": "LITLUP",
+      "downPatch": "LITLDN",
+      "slider": {
+        "leftPatch": "LSLIDE",
+        "middlePatch": "MSLIDE",
+        "rightPatch": "RSLIDE",
+        "knobPatch": "CSLIDE",
+        "greenKnobPatch": "GSLIDE",
+        "overlayPatch": "OSLIDE"
+      },
+      "inputBox": {
+        "fullPatch": "M_FSLOT"
+      },
+      "fonts": {
+        "title": "big",
+        "item": "small",
+        "value": "small"
+      },
+      "colors": {
+        "title": "gray",
+        "item": "red",
+        "itemHighlight": "gray",
+        "value": "gray",
+        "label": "yellow",
+        "warning": "orange"
+      },
+      "sounds": {
+        "navigate": "sfx_switch",
+        "select": "sfx_dorcls",
+        "back": "sfx_switch",
+        "open": "sfx_dorcls",
+        "changeValue": "sfx_keyup",
+        "prompt": "sfx_chat"
+      }
+    },
+    "menus": {
+      "main": {
+        "header": {
+          "patch": "M_HTIC",
+          "text": null,
+          "align": "centered",
+          "x": 0,
+          "y": 1,
+          "decorations": {
+            "left": {
+              "basePatch": "M_SKL00",
+              "frameCount": 18,
+              "x": 40,
+              "y": 10,
+              "animateDirection": "reverse"
+            },
+            "right": {
+              "basePatch": "M_SKL00",
+              "frameCount": 18,
+              "x": 232,
+              "y": 10,
+              "animateDirection": "forward"
+            },
+            "frameTics": 3
+          }
+        },
+        "layout": {
+          "style": "textList",
+          "x": 110,
+          "y": 56,
+          "topPadding": 0,
+          "itemSpacing": "font"
+        },
+        "items": [
+          { "kind": "submenu", "patch": null, "text": null, "languageKey": "MNU_NEWGAME", "target": "episodes", "hotkey": "N" },
+          { "kind": "submenu", "patch": null, "text": null, "languageKey": "MNU_OPTIONS", "target": "options", "hotkey": "O" },
+          { "kind": "submenu", "patch": null, "text": null, "languageKey": "MNU_GAMEFILES", "target": "gamefiles", "hotkey": "G" },
+          { "kind": "action", "patch": null, "text": null, "languageKey": "MNU_INFO", "target": "builtin:help", "hotkey": "I" },
+          { "kind": "action", "patch": null, "text": null, "languageKey": "MNU_QUITGAME", "action": "quitGame", "hotkey": "Q" }
+        ]
+      },
+      "episodes": {
+        "header": {
+          "patch": null,
+          "text": "NEW GAME",
+          "align": "centered"
+        },
+        "layout": {
+          "style": "textList",
+          "x": 80,
+          "y": 60,
+          "topPadding": 0,
+          "itemSpacing": "font"
+        },
+        "items": [
+          { "kind": "action", "patch": null, "text": null, "languageKey": "EPISODE_COTD", "action": "chooseEpisode", "params": { "episode": "heretic.ep1" }, "target": "skills", "hotkey": "C" },
+          { "kind": "action", "patch": null, "text": null, "languageKey": "EPISODE_HELLSMAW", "action": "chooseEpisode", "params": { "episode": "heretic.ep2" }, "target": "skills", "hotkey": "H" },
+          { "kind": "action", "patch": null, "text": null, "languageKey": "EPISODE_DOME", "action": "chooseEpisode", "params": { "episode": "heretic.ep3" }, "target": "skills", "hotkey": "D" },
+          { "kind": "action", "patch": null, "text": null, "languageKey": "EPISODE_OSSUARY", "action": "chooseEpisode", "params": { "episode": "heretic.ep4" }, "target": "skills", "hotkey": "O" },
+          { "kind": "action", "patch": null, "text": null, "languageKey": "EPISODE_DEMESNE", "action": "chooseEpisode", "params": { "episode": "heretic.ep5" }, "target": "skills", "hotkey": "S" }
+        ]
+      },
+      "skills": {
+        "header": {
+          "patch": null,
+          "text": "CHOOSE SKILL",
+          "align": "centered"
+        },
+        "layout": {
+          "style": "textList",
+          "x": 80,
+          "y": 60,
+          "topPadding": 0,
+          "itemSpacing": "font"
+        },
+        "items": [
+          { "kind": "action", "patch": null, "text": null, "languageKey": "SKILL_WETNURSE", "action": "startGame", "params": { "skill": "baby" }, "hotkey": "T" },
+          { "kind": "action", "patch": null, "text": null, "languageKey": "SKILL_YELLOWBELLIES", "action": "startGame", "params": { "skill": "easy" }, "hotkey": "Y" },
+          { "kind": "action", "patch": null, "text": null, "languageKey": "SKILL_BRINGEST", "action": "startGame", "params": { "skill": "normal" }, "hotkey": "B" },
+          { "kind": "action", "patch": null, "text": null, "languageKey": "SKILL_SMITE", "action": "startGame", "params": { "skill": "hard" }, "hotkey": "T" },
+          { "kind": "action", "patch": null, "text": null, "languageKey": "SKILL_BLACKPLAGUE", "action": "startGame", "params": { "skill": "nightmare" }, "hotkey": "B" }
+        ]
+      },
+      "gamefiles": {
+        "header": {
+          "patch": null,
+          "text": "GAME FILES",
+          "align": "centered"
+        },
+        "layout": {
+          "style": "textList",
+          "x": 110,
+          "y": 60,
+          "topPadding": 0,
+          "itemSpacing": "font"
+        },
+        "items": [
+          { "kind": "action", "patch": null, "text": null, "languageKey": "MNU_LOADGAME", "target": "builtin:loadGame", "hotkey": "L" },
+          { "kind": "action", "patch": null, "text": null, "languageKey": "MNU_SAVEGAME", "target": "builtin:saveGame", "hotkey": "S" }
+        ]
+      }
+    },
+    "entrypoints": {
+      "mainMenu": "main",
+      "newGameMenu": "episodes"
+    }
+  }
+}

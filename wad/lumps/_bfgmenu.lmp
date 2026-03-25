@@ -1,0 +1,85 @@
+{
+  "type": "menuconf",
+  "version": "1.0.0",
+  "metadata": {
+    "author": "Odamex Team",
+    "timestamp": "2026-03-24T23:55:00-05:00",
+    "application": "Odamex"
+  },
+  "data": {
+    "menus": {
+      "main": {
+        "header": {
+          "patch": "M_DOOM",
+          "text": null,
+          "align": "absolute",
+          "x": 94,
+          "y": 1
+        },
+        "layout": {
+          "style": "classicMenu",
+          "x": 97,
+          "y": 72,
+          "topPadding": 0,
+          "itemSpacing": "font"
+        },
+        "items": [
+          { "kind": "submenu", "patch": "M_NGAME", "text": null, "languageKey": "MNU_NEWGAME", "target": "missions", "hotkey": "N" },
+          { "kind": "submenu", "patch": "M_OPTION", "text": null, "languageKey": "MNU_OPTIONS", "target": "options", "hotkey": "O" },
+          { "kind": "action", "patch": "M_LOADG", "text": null, "languageKey": "MNU_LOADGAME", "target": "builtin:loadGame", "hotkey": "L" },
+          { "kind": "action", "patch": "M_SAVEG", "text": null, "languageKey": "MNU_SAVEGAME", "target": "builtin:saveGame", "hotkey": "S" },
+          { "kind": "action", "patch": "M_QUITG", "text": null, "languageKey": "MNU_QUITGAME", "action": "quitGame", "hotkey": "Q" }
+        ]
+      },
+      "missions": {
+        "header": {
+          "patch": "M_EPISOD",
+          "text": "MISSIONS",
+          "align": "absolute",
+          "x": 54,
+          "y": 38,
+          "decorations": null
+        },
+        "layout": {
+          "style": "textList",
+          "x": 48,
+          "y": 63,
+          "topPadding": 0,
+          "itemSpacing": "font"
+        },
+        "items": [
+          { "kind": "action", "patch": "M_EPI1", "text": "HELL ON EARTH", "action": "chooseEpisode", "params": { "episode": "doom2.main" }, "target": "skills", "hotkey": "H" },
+          { "kind": "action", "patch": "M_EPI2", "text": "NO REST FOR THE LIVING", "action": "chooseEpisode", "params": { "episode": "doom2.nerve" }, "target": "skills", "hotkey": "N" }
+        ]
+      },
+      "skills": {
+        "header": {
+          "patch": "M_SKILL",
+          "text": "CHOOSE SKILL",
+          "align": "absolute",
+          "x": 54,
+          "y": 38,
+          "decorations": null
+        },
+        "layout": {
+          "style": "textList",
+          "x": 48,
+          "y": 63,
+          "topPadding": 0,
+          "itemSpacing": "font"
+        },
+        "items": [
+          { "kind": "action", "patch": "M_JKILL", "text": null, "languageKey": "SKILL_BABY", "action": "startGame", "params": { "skill": "baby" }, "hotkey": "I" },
+          { "kind": "action", "patch": "M_ROUGH", "text": null, "languageKey": "SKILL_EASY", "action": "startGame", "params": { "skill": "easy" }, "hotkey": "H" },
+          { "kind": "action", "patch": "M_HURT", "text": null, "languageKey": "SKILL_NORMAL", "action": "startGame", "params": { "skill": "normal" }, "hotkey": "H" },
+          { "kind": "action", "patch": "M_ULTRA", "text": null, "languageKey": "SKILL_HARD", "action": "startGame", "params": { "skill": "hard" }, "hotkey": "U" },
+          { "kind": "action", "patch": "M_NMARE", "text": null, "languageKey": "SKILL_NIGHTMARE", "action": "startGame", "params": { "skill": "nightmare" }, "hotkey": "N" }
+        ]
+      }
+    },
+    "entrypoints": {
+      "mainMenu": "main",
+      "newGameMenu": "missions"
+    }
+  }
+}

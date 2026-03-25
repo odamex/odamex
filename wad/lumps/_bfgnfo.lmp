@@ -3,6 +3,7 @@
 gameinfo
 {
 	titlepage = "DMENUPIC"
+	menuconfoverride = "_BFGMENU"
 }
 
 clearepisodes
