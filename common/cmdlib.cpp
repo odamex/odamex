@@ -395,7 +395,7 @@ std::optional<std::optional<sysclock::time_point>> StrToTime(std::string str)
 	if ("eternity"sv.starts_with(str) ||
 		"forever"sv.starts_with(str) ||
 		"permanent"sv.starts_with(str)) {
-		return std::optional<sysclock::time_point>{};
+		return { std::optional<sysclock::time_point>{} };
 	}
 
 	// Gather tokens from string representation.
