@@ -489,6 +489,13 @@ message SectorProperties
 	Sector sector = 3;
 }
 
+// svc_sectorsoundtarget
+message SectorSoundtarget
+{
+	uint32 sectornum = 1;
+	uint32 soundtarget_netid = 2;
+}
+
 // svc_linesideupdate
 message LineSideUpdate
 {

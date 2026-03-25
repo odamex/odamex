@@ -116,6 +116,7 @@ void SV_SendRaiseMobj(const AActor* source, const AActor* corpse);
 void SV_UpdateMobj(const AActor* mo);
 void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation);
 void SV_SpawnMobj(AActor* mobj);
+void SV_BroadcastSectorSoundtargetUpdate(sector_t& sector, AActor& soundtarget);
 
 extern bool isFast;
 
@@ -146,6 +147,14 @@ void P_RecursiveSound (sector_t *sec, int soundblocks, AActor *soundtarget)
 	{
 		return; 		// already flooded
 	}
+
+    SERVER_ONLY
+    (
+        if (sec->soundtarget != soundtarget)
+        {
+            SV_BroadcastSectorSoundtargetUpdate(*sec, *soundtarget);
+        }
+    )
 
 	sec->validcount = validcount;
 	sec->soundtraversed = soundblocks+1;

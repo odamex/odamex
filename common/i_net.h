@@ -257,8 +257,7 @@ enum svc_t
 	svc_resetmap,        // [AM] Server is resetting the map
 	svc_playerqueuepos,  // Notify clients of player queue postion
 	svc_fullupdatestart, // Inform client the full update has started
-	svc_lineupdate, // Sync client with any line property changes - e.g. SetLineTexture,
-	                // SetLineBlocking, SetLineSpecial, etc.
+	svc_lineupdate,      // Sync client with any line property changes - e.g. SetLineTexture, SetLineBlocking, SetLineSpecial, etc.
 	svc_sectorproperties,
 	svc_linesideupdate,
 	svc_mobjstate,
@@ -275,6 +274,7 @@ enum svc_t
 	svc_raisemobj,
 	svc_spree,
 	svc_spreebreaker,
+	svc_sectorsoundtarget,
 	clc_playerinput,        // SPECIAL KNOWLEDGE AND NOTE HERE: We're entering a transitory phase
 	                        // where client-originated messages are going to start transitioning
 	                        // to protobufs, and this svc enum is the basis for the unified message

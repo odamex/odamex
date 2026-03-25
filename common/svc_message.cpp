@@ -1232,6 +1232,16 @@ odaproto::svc::LineUpdate SVC_LineUpdate(const line_t& line)
 	return msg;
 }
 
+odaproto::svc::SectorSoundtarget SVC_SectorSoundtarget(const sector_t& sector, AActor& soundtarget)
+{
+	odaproto::svc::SectorSoundtarget msg;
+
+	msg.set_sectornum(&sector - ::sectors);
+	msg.set_soundtarget_netid(soundtarget.netid);
+
+	return msg;
+}
+
 odaproto::svc::SectorProperties SVC_SectorProperties(const sector_t& sector)
 {
 	odaproto::svc::SectorProperties msg;

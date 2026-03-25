@@ -2983,6 +2983,20 @@ static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
 	SpreeManager::getInstance().setRawSpreeBreaker(breaker, level, type);
 }
 
+static void CL_SectorSoundtarget(const odaproto::svc::SectorSoundtarget* msg)
+{
+    const uint32_t sectorIndex = msg->sectornum();
+
+    if (sectorIndex < static_cast<uint32_t>(::numsectors))
+    {
+        sector_t& sector = sectors[sectorIndex];
+
+        AActor* soundtarget = P_FindThingById(msg->soundtarget_netid());
+
+        sector.soundtarget = soundtarget->ptr();
+    }
+}
+
 static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 {
 	player_t* clientPlayer = &consoleplayer();
@@ -3206,6 +3220,7 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_hordeinfo, CL_HordeInfo, odaproto::svc::HordeInfo);
 		SV_MSG(svc_spree, CL_Spree, odaproto::svc::Spree);
 		SV_MSG(svc_spreebreaker, CL_SpreeBreaker, odaproto::svc::SpreeBreaker);
+		SV_MSG(svc_sectorsoundtarget, CL_SectorSoundtarget, odaproto::svc::SectorSoundtarget);
 		SV_MSG(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
 		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);

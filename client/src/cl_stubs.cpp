@@ -71,6 +71,7 @@ void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* a
 
 void SV_UpdateMonsterRespawnCount() {}
 void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation) {}
+void SV_BroadcastSectorSoundtargetUpdate(sector_t& , AActor& ) {}
 
 
 CVAR_FUNC_IMPL(sv_sharekeys) {}
