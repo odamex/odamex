@@ -34,6 +34,9 @@ gameinfo
 	intermissioncounter = true
 	intermissionmusic = "$MUSIC_DM2INT"
 	quitsound = "menu/quit2"
+	quitmessage = "QUITMSG"
+	quitmessagecount = 15
+	quitprompt = "DOSY"
 	finaleflat = "SLIME16"
 	finalemusic = "$MUSIC_READ_M"
 	finalepage = "CREDIT"

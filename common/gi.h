@@ -119,6 +119,9 @@ typedef struct gameinfo_s
 	OLumpName finalePage[3];
 	OLumpName infoPage[3];
 	char quitSound[MAX_SNDNAME + 1];
+	std::string quitMessage;
+	int quitMessageCount;
+	std::string quitPrompt;
 	int maxSwitch;
 	OLumpName borderFlat;
 	gameborder_t border;
@@ -170,6 +173,9 @@ typedef struct gameinfo_s
 		, finalePage()
 		, infoPage()
 		, quitSound()
+		, quitMessage("QUITMSG")
+		, quitMessageCount(15)
+		, quitPrompt("DOSY")
 		, maxSwitch(1)
 		, borderFlat("")
 		, border()

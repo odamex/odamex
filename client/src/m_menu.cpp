@@ -1452,17 +1452,29 @@ void M_QuitResponse(int ch)
 
 static const std::string M_QuitMessage()
 {
-	switch (gameinfo.enginetype)
+	const int count = gameinfo.quitMessageCount > 0 ? gameinfo.quitMessageCount : 1;
+	const int base_index = GStrings.toIndex(StdStringToUpper(gameinfo.quitMessage));
+
+	std::string message;
+	if (base_index < 0)
 	{
-		case ENGINE_HERETIC:
-			return fmt::sprintf("%s\n", GStrings(RAVENQUITMSG));
-		default:
-			// We pick index 0 which is language sensitive,
-			//  or one at random, between 1 and maximum number.
-			return fmt::sprintf("%s\n\n%s",
-			                     GStrings.getIndex(GStrings.toIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)),
-			                     GStrings(DOSY));
+		message = LocalizedString(gameinfo.quitMessage.c_str());
 	}
+	else
+	{
+		const int offset = count > 1 ? gametic % count : 0;
+		const char* indexed = GStrings.getIndex(base_index + offset);
+
+		message = (indexed == nullptr || indexed[0] == '\0') ? 
+			LocalizedString(gameinfo.quitMessage.c_str()) : indexed;
+	}
+
+	if (!gameinfo.quitPrompt.empty())
+	{
+		return fmt::sprintf("%s\n\n%s", message, LocalizedString(gameinfo.quitPrompt.c_str()));
+	}
+
+	return fmt::sprintf("%s\n", message);
 }
 
 void M_QuitGame(int choice)
