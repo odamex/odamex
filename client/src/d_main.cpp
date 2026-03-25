@@ -57,6 +57,7 @@ END_DISABLE_WARNING_GNU
 #include "f_wipe.h"
 #include "m_argv.h"
 #include "m_fileio.h"
+#include "m_menuconf.h"
 #include "m_misc.h"
 #include "m_menu.h"
 #include "c_console.h"
@@ -598,6 +599,7 @@ void D_Init()
 //	V_LoadFonts();
 
 	G_ParseMapInfo();
+	M_LoadMenuConf();
 	G_ParseMusInfo();
 	S_ParseSndInfo();
 	G_ParseSpreeDef();

@@ -147,6 +147,8 @@ typedef struct gameinfo_s
 	std::string titleString;
 	OLumpName baseMapinfoLump;
 	OLumpName overrideMapinfoLump;
+	OLumpName baseMenuConfLump;
+	OLumpName overrideMenuConfLump;
 	OLumpName menuTitle;
 	int menuTitleOffsetX;
 	std::array<OLumpName, 2> menuIndicatorLumps;
@@ -191,6 +193,8 @@ typedef struct gameinfo_s
 		, titleString("Unknown IWAD")
 		, baseMapinfoLump("")
 		, overrideMapinfoLump("")
+		, baseMenuConfLump("")
+		, overrideMenuConfLump("")
 		, menuTitle("")
 		, menuTitleOffsetX(0)
 		, menuIndicatorLumps{ "M_SKULL1", "M_SKULL2" }
