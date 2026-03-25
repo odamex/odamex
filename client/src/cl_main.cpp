@@ -476,7 +476,7 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 		connected = false;
 	}
 
-	if (connected)
+	if (connected and not simulated_connection)
 	{
 		messenger.Clear();
 
