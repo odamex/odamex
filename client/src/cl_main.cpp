@@ -464,68 +464,62 @@ static void CL_HandleDisconnectCompletionPacket()
 	}
 }
 
-void CL_CompleteDisconnect(netQuitReason_e reason)
+static void CL_GracefulClientInitiatedDisconnect()
 {
 	const dtime_t oneTicInNanosec = static_cast<dtime_t>(1000000000.0 / static_cast<double>(TICRATE));
 
-	// The server instructed us to drop, so it's already walking us out the door - we only need to
-	// send the acknowledgements, nothing else.
-	if (reason == NQ_SERVER_DROP)
+	messenger.Clear();
+
+	// Again, make sure that we allow for immediate retransmits.
+	messenger.SetRetransmitDelay(0);
+
+	MSG_WriteMarker(&messenger.ReliableBuf().Obtain(), clc_disconnect);
+	messenger.SendAll(gametic, serveraddr);
+
+	const dtime_t disconnectStartTime   = I_GetTime();
+	const dtime_t disconnectTimeoutTime = disconnectStartTime + I_ConvertTimeFromMs(2000);
+
+	// We have to maintain a fake tic to ensure that we don't exhaust the messenger's
+	// byte budget.  It doesn't matter that we're faking out the messenger because we'll
+	// be resetting it to default at the end of this function.
+
+	int fakeTics = gametic;
+	while (connected and I_GetTime() < disconnectTimeoutTime)
 	{
-		messenger.SendAll(gametic, serveraddr);
-		connected = false;
-	}
+		I_Sleep(oneTicInNanosec);
 
-	if (connected and not simulated_connection)
-	{
-		messenger.Clear();
-
-		// Again, make sure that we allow for immediate retransmits.
-		messenger.SetRetransmitDelay(0);
-
-		MSG_WriteMarker(&messenger.ReliableBuf().Obtain(), clc_disconnect);
-		messenger.SendAll(gametic, serveraddr);
-
-		const dtime_t disconnectStartTime   = I_GetTime();
-		const dtime_t disconnectTimeoutTime = disconnectStartTime + I_ConvertTimeFromMs(2000);
-
-		// We have to maintain a fake tic to ensure that we don't exhaust the messenger's
-		// byte budget.  It doesn't matter that we're faking out the messenger because we'll
-		// be resetting it to default at the end of this function.
-
-		int fakeTics = gametic;
-		while (connected and I_GetTime() < disconnectTimeoutTime)
+		++fakeTics;
+		messenger.HandleRetransmissions(fakeTics, serveraddr);
+		while (NET_GetPacket())
 		{
-			I_Sleep(oneTicInNanosec);
-
-			++fakeTics;
-			messenger.HandleRetransmissions(fakeTics, serveraddr);
-			while (NET_GetPacket())
+			if (messenger.Receive(::net_message) == MessageResultEnum::ACCEPT)
 			{
-				if (messenger.Receive(::net_message) == MessageResultEnum::ACCEPT)
-				{
-					// If we see ACCEPT, it means we have acks that have to be handled immediately.
-					messenger.NextReceivedPacket(::net_message);
-					CL_HandleDisconnectCompletionPacket();
-				}
-			}
-
-			// Now make sure any received, enqueued reliable packets get serviced.
-			// This is where a svc_disconnectclient would get handled and thereby `connected` goes false.
-			while (messenger.NextReceivedPacket(::net_message))
-			{
+				// If we see ACCEPT, it means we have acks that have to be handled immediately.
+				messenger.NextReceivedPacket(::net_message);
 				CL_HandleDisconnectCompletionPacket();
 			}
-
-			// Make sure that the server gets its acks during this packet burndown phase.
-			messenger.SendAll(fakeTics, serveraddr);
 		}
 
-		if (connected)
+		// Now make sure any received, enqueued reliable packets get serviced.
+		// This is where a svc_disconnectclient would get handled and thereby `connected` goes false.
+		while (messenger.NextReceivedPacket(::net_message))
 		{
-			PrintFmt(PRINT_WARNING, "Server did not acknowledge the disconnection - continuing anyway - expecting (and ignoring) challenge errors...\n");
+			CL_HandleDisconnectCompletionPacket();
 		}
+
+		// Make sure that the server gets its acks during this packet burndown phase.
+		messenger.SendAll(fakeTics, serveraddr);
 	}
+
+	if (connected)
+	{
+		PrintFmt(PRINT_WARNING, "Server did not acknowledge the disconnection - continuing anyway - expecting (and ignoring) challenge errors...\n");
+	}
+}
+
+static void CL_DrainSocket()
+{
+	const dtime_t oneTicInNanosec = static_cast<dtime_t>(1000000000.0 / static_cast<double>(TICRATE));
 
 	// In a very high-latency situation, even though we've seen the svc_disconnectclient
 	// confirmation from the server, the pipe could still be backed up with
@@ -550,6 +544,25 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 	if (consecutiveTicsWithoutPackets < desiredTicsWithoutPackets)
 	{
 		PrintFmt(PRINT_WARNING, "Still too many packets inbound - continuing anyway - expecting (and ignoring) challenge errors...\n");
+	}
+}
+
+void CL_CompleteDisconnect(netQuitReason_e reason)
+{
+	if (connected and not simulated_connection)
+	{
+		// The server instructed us to drop, so it's already walking us out the door - we only need to
+		// send the acknowledgements, nothing else.
+		if (reason == NQ_SERVER_DROP)
+		{
+			messenger.SendAll(gametic, serveraddr);
+		}
+		else
+		{
+			CL_GracefulClientInitiatedDisconnect();
+		}
+
+		CL_DrainSocket();
 	}
 
 	connected = false;
