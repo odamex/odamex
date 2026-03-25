@@ -53,6 +53,7 @@
 #include "cl_main.h"
 #include "c_bind.h"
 #include "cl_responderkeys.h"
+#include "m_menuconf.h"
 
 #include "gi.h"
 #include "g_skill.h"
@@ -708,6 +709,102 @@ static const char* LocalizedString(const char* key)
 	return key;
 }
 
+namespace
+{
+	const menuconftheme_t& MenuConfTheme()
+	{
+		return M_MenuConf().theme;
+	}
+
+	const menuconfmenu_t* MenuConfMenu(const char* id)
+	{
+		const auto it = M_MenuConf().menus.find(id);
+		return it != M_MenuConf().menus.end() ? &it->second : nullptr;
+	}
+
+	const patch_t* MenuConfPatch(const std::string& name)
+	{
+		return !name.empty() && W_CheckNumForName(name.c_str()) >= 0 ? W_CachePatch(name.c_str()) : nullptr;
+	}
+
+	const patch_t* MenuIndicatorPatch(int which)
+	{
+		const auto& patches = MenuConfTheme().indicator.patches;
+		if (patches.empty())
+		{
+			static constexpr const char* kFallback[] = { "M_SKULL1", "M_SKULL2" };
+			return MenuConfPatch(kFallback[which & 1]);
+		}
+
+		const std::string& name = patches[which % patches.size()];
+		return MenuConfPatch(name);
+	}
+
+	const patch_t* MenuInputBoxFullPatch()
+	{
+		const patch_t* patch = MenuConfPatch(MenuConfTheme().inputBox.fullPatch);
+		return patch != nullptr ? patch : MenuConfPatch("M_FSLOT");
+	}
+
+	const patch_t* MenuInputBoxLeftPatch()
+	{
+		const patch_t* patch = MenuConfPatch(MenuConfTheme().inputBox.leftPatch);
+		return patch != nullptr ? patch : MenuConfPatch("M_LSLEFT");
+	}
+
+	const patch_t* MenuInputBoxMiddlePatch()
+	{
+		const patch_t* patch = MenuConfPatch(MenuConfTheme().inputBox.middlePatch);
+		return patch != nullptr ? patch : MenuConfPatch("M_LSCNTR");
+	}
+
+	const patch_t* MenuInputBoxRightPatch()
+	{
+		const patch_t* patch = MenuConfPatch(MenuConfTheme().inputBox.rightPatch);
+		return patch != nullptr ? patch : MenuConfPatch("M_LSRGHT");
+	}
+
+	void DrawMainMenuHeaderDecorations()
+	{
+		const menuconfmenu_t* mainMenu = MenuConfMenu("main");
+		if (mainMenu == nullptr || !mainMenu->header.decorations.defined)
+		{
+			return;
+		}
+
+		const auto& decorations = mainMenu->header.decorations;
+		const int frameCount = std::max(1, decorations.left.frameCount > 0 ?
+			decorations.left.frameCount : decorations.right.frameCount);
+		const int frameTics = std::max(1, decorations.frameTics);
+		const int frame = (MenuTime / frameTics) % frameCount;
+
+		auto drawSide = [frame, frameCount](const menuconfheadertside_t& side)
+		{
+			if (side.basePatch.empty())
+			{
+				return;
+			}
+
+			const int baseLump = W_CheckNumForName(side.basePatch.c_str());
+			if (baseLump < 0)
+			{
+				return;
+			}
+
+			int drawFrame = frame;
+			if (iequals(side.animateDirection, "reverse"))
+			{
+				drawFrame = frameCount - 1 - frame;
+			}
+
+			screen->DrawPatchClean(W_CachePatch(baseLump + drawFrame, PU_CACHE), side.x, side.y);
+		};
+
+		drawSide(decorations.left);
+		drawSide(decorations.right);
+	}
+}
+
 //
 //	M_GameFiles & Cie.
 //	[ML] Provides intermediary game files menu option for load/save
@@ -1060,10 +1157,10 @@ void M_FinishReadThis(int)
 //
 void M_DrawSaveLoadBorder (int x, int y, int len)
 {
-	patch_t* full_slot = W_CheckNumForName("M_FSLOT") >= 0 ? W_CachePatch("M_FSLOT") : nullptr;
-	patch_t* left_slot = W_CheckNumForName("M_LSLEFT") >= 0 ? W_CachePatch("M_LSLEFT") : nullptr;
-	patch_t* center_slot = W_CheckNumForName("M_LSCNTR") >= 0 ? W_CachePatch("M_LSCNTR") : nullptr;
-	patch_t* right_slot = W_CheckNumForName("M_LSRGHT") >= 0 ? W_CachePatch("M_LSRGHT") : nullptr;
+	const patch_t* full_slot = MenuInputBoxFullPatch();
+	const patch_t* left_slot = MenuInputBoxLeftPatch();
+	const patch_t* center_slot = MenuInputBoxMiddlePatch();
+	const patch_t* right_slot = MenuInputBoxRightPatch();
 
 	if (full_slot != nullptr)
 	{
@@ -1088,22 +1185,34 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 //
 void M_DrawMainMenu()
 {
-	const patch_t* menu_title = W_CheckNumForName(gameinfo.menuTitle) ?
-		W_CachePatch(gameinfo.menuTitle) : nullptr;
+	const menuconfmenu_t* mainMenu = MenuConfMenu("main");
+	if (mainMenu == nullptr)
+	{
+		return;
+	}
 
-	if (menu_title != nullptr)
+	const patch_t* menu_title = MenuConfPatch(mainMenu->header.patch);
+	if (menu_title == nullptr)
 	{
-		const int menu_title_x = gameinfo.menuTitleOffsetX > 0 ?
-			gameinfo.menuTitleOffsetX : (320 - menu_title->width()) / 2;
-		const int menu_title_y = 1;
-		screen->DrawPatchClean(menu_title, menu_title_x, menu_title_y);
+		return;
 	}
-	if (SkullBaseLump >= 0)
+
+	int menu_title_x = (320 - menu_title->width()) / 2;
+	int menu_title_y = 1;
+
+	const auto& header = mainMenu->header;
+	if (iequals(header.align, "absolute"))
 	{
-		const int frame = (MenuTime / 3) % 18;
-		screen->DrawPatchClean(W_CachePatch(SkullBaseLump + (17 - frame), PU_CACHE), 40, 10);
-		screen->DrawPatchClean(W_CachePatch(SkullBaseLump + frame, PU_CACHE), 232, 10);
+		menu_title_x = header.x;
 	}
+	else
+	{
+		menu_title_x += header.x;
+	}
+	menu_title_y = header.y;
+
+	screen->DrawPatchClean(menu_title, menu_title_x, menu_title_y);
+	DrawMainMenuHeaderDecorations();
 }
 
 void M_DrawNewGame()
@@ -2421,11 +2530,14 @@ void M_Drawer()
 			// DRAW SKULL
 			if (drawIndicator)
 			{
-				const patch_t* indicator = W_CachePatch(gameinfo.menuIndicatorLumps[whichIndicator]);
-				const int draw_x = x + gameinfo.menuIndicatorOffsetX;
-				const int draw_y = currentMenu->y + gameinfo.menuIndicatorOffsetY + itemOn*M_BigFontLineHeight();
+				if (const patch_t* indicator = MenuIndicatorPatch(whichIndicator))
+				{
+					const int draw_x = x + MenuConfTheme().indicator.offsetX;
+					const int draw_y =
+						currentMenu->y + MenuConfTheme().indicator.offsetY + itemOn * M_BigFontLineHeight();
 
-				screen->DrawPatchClean (indicator, draw_x, draw_y);
+					screen->DrawPatchClean(indicator, draw_x, draw_y);
+				}
 			}
 		}
 	}
@@ -2563,7 +2675,7 @@ void M_Init()
 
         MainDef.y += 8;
     }
-    else if (gameinfo.enginetype == ENGINE_HERETIC)
+	else if (gameinfo.enginetype == ENGINE_HERETIC)
     {
     	// Heretic changes stuff
 		MainDef.numitems = htc_main_end;
@@ -2573,6 +2685,18 @@ void M_Init()
 		LoadDef = HticLoadDef;
 		SaveDef = HticSaveDef;
     }
+
+	if (const menuconfmenu_t* mainMenu = MenuConfMenu("main"))
+	{
+		if (mainMenu->layout.x != 0)
+		{
+			MainDef.x = mainMenu->layout.x;
+		}
+		if (mainMenu->layout.y != 0)
+		{
+			MainDef.y = mainMenu->layout.y;
+		}
+	}
 
 	M_OptInit ();
 

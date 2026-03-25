@@ -49,6 +49,7 @@
 #include "w_wad.h"
 #include "m_argv.h"
 #include "m_fileio.h"
+#include "m_menuconf.h"
 #include "c_console.h"
 #include "i_system.h"
 #include "i_time.h"

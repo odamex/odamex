@@ -62,6 +62,7 @@ END_DISABLE_WARNING_GNU
 #include "m_misc.h"
 #include "cl_demo.h"
 #include "gi.h"
+#include "m_menuconf.h"
 
 // Data.
 #include "m_menu.h"
@@ -78,6 +79,66 @@ EXTERN_CVAR (hud_revealsecrets)
 
 // Show messages has default, 0 = off, 1 = on
 EXTERN_CVAR (show_messages)
+
+namespace
+{
+	const menuconftheme_t& MenuConfTheme()
+	{
+		return M_MenuConf().theme;
+	}
+
+	const patch_t* MenuConfPatch(const std::string& name)
+	{
+		return !name.empty() && W_CheckNumForName(name.c_str()) >= 0 ? W_CachePatch(name.c_str()) : nullptr;
+	}
+
+	int MenuCursorOffsetY()
+	{
+		return MenuConfTheme().cursorOffsetY;
+	}
+
+	const patch_t* MenuCursorPatch()
+	{
+		const patch_t* patch = MenuConfPatch(MenuConfTheme().cursorPatch);
+		return patch != nullptr ? patch : MenuConfPatch("LITLCURS");
+	}
+
+	const patch_t* MenuSliderLeftPatch()
+	{
+		const patch_t* patch = MenuConfPatch(MenuConfTheme().slider.leftPatch);
+		return patch != nullptr ? patch : MenuConfPatch("LSLIDE");
+	}
+
+	const patch_t* MenuSliderMiddlePatch()
+	{
+		const patch_t* patch = MenuConfPatch(MenuConfTheme().slider.middlePatch);
+		return patch != nullptr ? patch : MenuConfPatch("MSLIDE");
+	}
+
+	const patch_t* MenuSliderRightPatch()
+	{
+		const patch_t* patch = MenuConfPatch(MenuConfTheme().slider.rightPatch);
+		return patch != nullptr ? patch : MenuConfPatch("RSLIDE");
+	}
+
+	const patch_t* MenuSliderKnobPatch()
+	{
+		const patch_t* patch = MenuConfPatch(MenuConfTheme().slider.knobPatch);
+		return patch != nullptr ? patch : MenuConfPatch("CSLIDE");
+	}
+
+	const patch_t* MenuSliderGreenKnobPatch()
+	{
+		const patch_t* patch = MenuConfPatch(MenuConfTheme().slider.greenKnobPatch);
+		return patch != nullptr ? patch : MenuConfPatch("GSLIDE");
+	}
+
+	const patch_t* MenuSliderOverlayPatch()
+	{
+		const patch_t* patch = MenuConfPatch(MenuConfTheme().slider.overlayPatch);
+		return patch != nullptr ? patch : MenuConfPatch("OSLIDE");
+	}
+}
 
 extern bool				OptionsActive;
 
@@ -1631,7 +1692,11 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 {
 	const OFont* smallFont = OFonts.small();
 	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
-	const int drawY = y + gameinfo.menuCursorOffsetY;
+	const int drawY = y + MenuCursorOffsetY();
+	const patch_t* leftPatch = MenuSliderLeftPatch();
+	const patch_t* middlePatch = MenuSliderMiddlePatch();
+	const patch_t* rightPatch = MenuSliderRightPatch();
+	const patch_t* knobPatch = MenuSliderKnobPatch();
 
 	if (leftval < rightval)
 		cur = clamp(cur, leftval, rightval);
@@ -1640,12 +1705,12 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 
 	float dist = (cur - leftval) / (rightval - leftval);
 
-	screen->DrawPatchCleanWithPalette(W_CachePatch("LSLIDE"), x, drawY, palette);
+	screen->DrawPatchCleanWithPalette(leftPatch, x, drawY, palette);
 	for (int i = 1; i < 11; i++)
-		screen->DrawPatchCleanWithPalette(W_CachePatch("MSLIDE"), x + i * 8, drawY, palette);
-	screen->DrawPatchCleanWithPalette(W_CachePatch("RSLIDE"), x + 88, drawY, palette);
+		screen->DrawPatchCleanWithPalette(middlePatch, x + i * 8, drawY, palette);
+	screen->DrawPatchCleanWithPalette(rightPatch, x + 88, drawY, palette);
 
-		screen->DrawPatchCleanWithPalette(W_CachePatch("CSLIDE"), x + 5 + static_cast<int>(dist * 78.0), drawY, palette);
+	screen->DrawPatchCleanWithPalette(knobPatch, x + 5 + static_cast<int>(dist * 78.0), drawY, palette);
 
 	std::string buf;
 	if (step == 0.0f)
@@ -1662,7 +1727,12 @@ void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float
 void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color)
 {
 	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
-	const int drawY = y + gameinfo.menuCursorOffsetY;
+	const int drawY = y + MenuCursorOffsetY();
+	const patch_t* leftPatch = MenuSliderLeftPatch();
+	const patch_t* middlePatch = MenuSliderMiddlePatch();
+	const patch_t* rightPatch = MenuSliderRightPatch();
+	const patch_t* greenKnobPatch = MenuSliderGreenKnobPatch();
+	const patch_t* overlayPatch = MenuSliderOverlayPatch();
 
 	if (leftval < rightval)
 		cur = clamp(cur, leftval, rightval);
@@ -1671,18 +1741,18 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 
 	float dist = (cur - leftval) / (rightval - leftval);
 
-	screen->DrawPatchCleanWithPalette(W_CachePatch("LSLIDE"), x, drawY, palette);
+	screen->DrawPatchCleanWithPalette(leftPatch, x, drawY, palette);
 
 	for (int i = 1; i < 11; i++)
-		screen->DrawPatchCleanWithPalette(W_CachePatch("MSLIDE"), x + i * 8, drawY, palette);
+		screen->DrawPatchCleanWithPalette(middlePatch, x + i * 8, drawY, palette);
 
-	screen->DrawPatchCleanWithPalette(W_CachePatch("RSLIDE"), x + 88, drawY, palette);
+	screen->DrawPatchCleanWithPalette(rightPatch, x + 88, drawY, palette);
 
-		screen->DrawPatchCleanWithPalette(W_CachePatch("GSLIDE"), x + 5 + static_cast<int>(dist * 78.0), drawY, palette);
+	screen->DrawPatchCleanWithPalette(greenKnobPatch, x + 5 + static_cast<int>(dist * 78.0), drawY, palette);
 
 	V_ColorFill = V_BestColor(V_GetDefaultPalette()->basecolors, color);
 
-		screen->DrawColoredPatchClean(W_CachePatch("OSLIDE"), x + 5 + static_cast<int>(dist * 78.0), drawY);
+	screen->DrawColoredPatchClean(overlayPatch, x + 5 + static_cast<int>(dist * 78.0), drawY);
 }
 
 int M_FindCurVal (float cur, value_t *values, int numvals)
@@ -1763,7 +1833,11 @@ void M_OptDrawer (void)
 			if (i == CurrentItem && ((item->a.selmode != -1 && (indicatorAnimCounter < 6 || WaitingForKey))
 				|| WaitingForAxis || testingmode))
 			{
-				screen->DrawPatchCleanWithPalette(W_CachePatch("LITLCURS"), item->a.selmode * 104 + 8, y+gameinfo.menuCursorOffsetY, palette);
+				if (const patch_t* cursor = MenuCursorPatch())
+				{
+					screen->DrawPatchCleanWithPalette(cursor, item->a.selmode * 104 + 8,
+					                                  y + MenuCursorOffsetY(), palette);
+				}
 			}
 		}
 		else
@@ -1936,8 +2010,11 @@ void M_OptDrawer (void)
 
 			if (i == CurrentItem && (indicatorAnimCounter < 6 || WaitingForKey || WaitingForAxis))
 			{
-				const patch_t* patch = W_CachePatch("LITLCURS");
-				screen->DrawPatchCleanWithPalette(patch, CurrentMenu->indent + 3, y+gameinfo.menuCursorOffsetY, palette);
+				if (const patch_t* patch = MenuCursorPatch())
+				{
+					screen->DrawPatchCleanWithPalette(patch, CurrentMenu->indent + 3,
+					                                  y + MenuCursorOffsetY(), palette);
+				}
 			}
 		}
 	}
