@@ -24,9 +24,10 @@
 #pragma once
 
 #include <algorithm>
-#include <ctime>
-#include <optional>
 #include <charconv>
+#include <chrono>
+#include <optional>
+#include <variant>
 #include <vector>
 
 #ifdef _MSC_VER
@@ -37,7 +38,6 @@
 #pragma warning(disable : 4018)     // signed/unsigned mismatch
 #pragma warning(disable : 4305)     // truncate from double to float
 #endif
-
 
 #include <stdlib.h>
 #include <errno.h>
@@ -173,9 +173,9 @@ typedef std::vector<std::string> StringTokens;
 StringTokens TokenizeString(const std::string& str, const std::string& delim);
 
 void StrFormatBytes(std::string& out, size_t bytes);
-bool StrFormatISOTime(std::string& s, const tm* utc_tm);
-bool StrParseISOTime(const std::string& s, tm* utc_tm);
-bool StrToTime(std::string str, time_t &tim);
+std::string StrFormatISOTime(std::chrono::system_clock::time_point tp);
+std::optional<std::chrono::system_clock::time_point> StrParseISOTime(const std::string& s);
+std::optional<std::optional<std::chrono::system_clock::time_point>> StrToTime(std::string str);
 
 void TicsToTime(OTimespan& span, int time, bool ceilsec = false);
 

@@ -24,7 +24,7 @@
 
 #include "odamex.h"
 
-#include <ctime>
+#include <chrono>
 #include <sstream>
 
 #include "win32inc.h"
@@ -33,6 +33,7 @@
 #include "i_time.h"
 
 #include "json/json.h"
+#include "fmt/chrono.h"
 
 #include "c_dispatch.h"
 #include "cmdlib.h"
@@ -188,7 +189,7 @@ size_t Banlist::size()
 	return this->banlist.size();
 }
 
-bool Banlist::add(const std::string &address, const time_t expire,
+bool Banlist::add(const std::string &address, const Ban::expire_t expire,
                   const std::string &name, const std::string &reason)
 {
 	Ban ban;
@@ -211,7 +212,7 @@ bool Banlist::add(const std::string &address, const time_t expire,
 }
 
 // We have a specific client that we want to add to the banlist.
-bool Banlist::add(player_t &player, const time_t expire,
+bool Banlist::add(player_t &player, const Ban::expire_t expire,
                   const std::string &reason)
 {
 	// Player must be valid.
@@ -288,8 +289,8 @@ bool Banlist::check(const netadr_t &address, Ban &baninfo)
 	// Check against banlist.
 	for (const auto& ban : this->banlist)
 	{
-		if (ban.range.check(address) && (ban.expire == 0 ||
-		                                 ban.expire > time(NULL)))
+		if (ban.range.check(address) && (!ban.expire ||
+		                                 ban.expire.value() > std::chrono::system_clock::now()))
 		{
 			baninfo = ban;
 			return true;
@@ -449,21 +450,14 @@ void Banlist::clear_exceptions()
 // Fills a JSON array with bans.
 bool Banlist::json(Json::Value &json_bans)
 {
-	std::string expire;
-	tm* tmp;
-
 	for (const auto& ban : this->banlist)
 	{
 		Json::Value json_ban(Json::objectValue);
 		json_ban["range"] = ban.range.string();
 		// Expire time is optional.
-		if (ban.expire != 0)
+		if (ban.expire)
 		{
-			tmp = gmtime(&ban.expire);
-			if (StrFormatISOTime(expire, tmp))
-			{
-				json_ban["expire"] = expire;
-			}
+			json_ban["expire"] = StrFormatISOTime(ban.expire.value());
 		}
 		// Name is optional.
 		if (!ban.name.empty())
@@ -508,8 +502,8 @@ bool Banlist::json_replace(const Json::Value &json_bans)
 		value = json_ban.get("expire", Json::Value::null);
 		if (!value.isNull())
 		{
-			if (StrParseISOTime(value.asString(), &tmp))
-				ban.expire = timegm(&tmp);
+			if (const auto time = StrParseISOTime(value.asString()))
+				ban.expire = time;
 		}
 
 		// Name
@@ -559,19 +553,24 @@ BEGIN_COMMAND(ban)
 	}
 
 	// If a length is specified, turn the length into an expire time.
-	time_t tim;
+	Ban::expire_t tim;
 	if (arguments.size() > 1)
 	{
-		if (!StrToTime(arguments[1], tim))
+		auto result = StrToTime(arguments[1]);
+		if (!result)
 		{
 			PrintFmt(PRINT_HIGH, "ban: invalid ban time (try a period of time like \"2 hours\" or \"permanent\")\n");
 			return;
+		}
+		else
+		{
+			tim = result.value();
 		}
 	}
 	else
 	{
 		// Default is a permaban.
-		tim = 0;
+		tim = std::nullopt;
 	}
 
 	// If a reason is specified, add it too.
@@ -614,19 +613,24 @@ BEGIN_COMMAND(addban)
 	std::string address = arguments[0];
 
 	// If a length is specified, turn the length into an expire time.
-	time_t tim;
+	Ban::expire_t tim;
 	if (arguments.size() > 1)
 	{
-		if (!StrToTime(arguments[1], tim))
+		auto result = StrToTime(arguments[1]);
+		if (!result)
 		{
 			PrintFmt(PRINT_HIGH, "addban: invalid ban time (try a period of time like \"2 hours\" or \"permanent\")\n");
 			return;
+		}
+		else
+		{
+			tim = result.value();
 		}
 	}
 	else
 	{
 		// Default is a permaban.
-		tim = 0;
+		tim = std::nullopt;
 	}
 
 	// If the player's name is specified, add it too.
@@ -804,27 +808,20 @@ BEGIN_COMMAND(banlist)
 		return;
 	}
 
-	char expire[20];
-	tm* tmp;
-
 	for (const auto& [num, ban] : results)
 	{
 		std::ostringstream buffer;
-		buffer << num + 1 << ". " << ban->range.string();
+		buffer << num + 1 << ". " << ban->range.string() << " ";
 
-		if (ban->expire == 0)
+		if (!ban->expire)
 		{
-			strncpy(expire, "Permanent", 19);
+			buffer << "Permanent";
 		}
 		else
 		{
-			tmp = localtime(&(ban->expire));
-			if (!strftime(expire, 20, "%Y-%m-%d %H:%M:%S", tmp))
-			{
-				strncpy(expire, "???", 19);
-			}
+			std::chrono::zoned_time zt{std::chrono::current_zone(), ban->expire.value()};
+			buffer << fmt::format("{:%Y-%m-%d %H:%M:%S}", zt);
 		}
-		buffer << " " << expire;
 
 		bool has_name = !ban->name.empty();
 		bool has_reason = !ban->reason.empty();
@@ -1005,7 +1002,7 @@ bool SV_BanCheck(client_t* cl)
 	}
 
 	std::ostringstream buffer;
-	if (ban.expire == 0)
+	if (!ban.expire)
 	{
 		buffer << "You are indefinitely banned from this server.\n";
 	}
@@ -1013,15 +1010,8 @@ bool SV_BanCheck(client_t* cl)
 	{
 		buffer << "You are banned from this server until ";
 
-		char tbuffer[32];
-		if (strftime(tbuffer, 32, "%c %Z", localtime(&ban.expire)))
-		{
-			buffer << tbuffer << ".\n";
-		}
-		else
-		{
-			buffer << ban.expire << " seconds after midnight on January 1st, 1970.\n";
-		}
+		std::chrono::zoned_time zt{std::chrono::current_zone(), ban.expire.value()};
+		buffer << fmt::format("{:%c %Z}", zt) << ".\n";
 	}
 
 	int name = ban.name.compare("");

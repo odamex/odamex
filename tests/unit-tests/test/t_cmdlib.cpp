@@ -68,3 +68,51 @@ TEST(CmdLib, TrimString) {
     test = "he   llo";
     EXPECT_EQ(TrimString(test), "he   llo");
 }
+
+TEST(CmdLib, ParseISOTime) {
+    using namespace std::chrono_literals;
+    using namespace std::chrono;
+    std::string strtime = "2026-03-2519:12:16Z";
+    auto parsed = StrParseISOTime(strtime);
+    EXPECT_FALSE(parsed.has_value());
+    strtime = "2026-03-25T19:12:16Z";
+    parsed = StrParseISOTime(strtime);
+    ASSERT_TRUE(parsed.has_value());
+    auto tp = parsed.value();
+    auto expected = sys_days{2026y/March/25} + 19h + 12min + 16s;
+    EXPECT_EQ(tp, expected);
+}
+
+TEST(CmdLib, FormatISOTime) {
+    using namespace std::chrono_literals;
+    using namespace std::chrono;
+    auto tp = sys_days{2026y/March/25} + 19h + 12min + 16s;
+    EXPECT_EQ(StrFormatISOTime(tp), "2026-03-25T19:12:16Z");
+}
+
+TEST(CmdLib, StrToTimeForever) {
+    auto expect_forever = [](std::string str){
+        auto result = StrToTime(str);
+        ASSERT_TRUE(result.has_value());
+        EXPECT_FALSE(result.value().has_value());
+    };
+    expect_forever("forever");
+    expect_forever("permanent");
+    expect_forever("eternity");
+    expect_forever("Eternity");
+    expect_forever(" forever ");
+}
+
+TEST(CmdLib, StrToTimeErrors) {
+    auto expect_err = [](std::string str){
+        auto result = StrToTime(str);
+        EXPECT_FALSE(result.has_value());
+    };
+    expect_err("2 forever");
+    expect_err("");
+    expect_err("     ");
+    expect_err("2 huors");
+    expect_err("hours 2");
+}
+
+// Not sure how to test valid non-forever times, since it depends on current system time

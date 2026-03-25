@@ -29,7 +29,6 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-#include <ctime>
 #include <functional>
 #include <sstream>
 
@@ -39,6 +38,7 @@
 #include "cmdlib.h"
 
 #include "fmt/ranges.h"
+#include "fmt/chrono.h"
 
 #ifdef __SWITCH__
 #include "nx_system.h"
@@ -358,57 +358,58 @@ void StrFormatBytes(std::string& out, size_t bytes)
 		out = fmt::sprintf("%.0f %s", checkbytes, BYTE_MAGS[magnitude]);
 }
 
-// TODO: update these to use c++20 std::chrono types and drop strptime
+using sysclock = std::chrono::system_clock;
+
 // [AM] Format a tm struct as an ISO8601-compliant extended format string.
 //      Assume that the input time is in UTC.
-bool StrFormatISOTime(std::string& s, const tm* utc_tm) {
-	char buffer[21];
-	if (!strftime(buffer, 21, "%Y-%m-%dT%H:%M:%SZ", utc_tm)) {
-		return false;
-	}
-	s = buffer;
-	return true;
+// [EB] Now formats from a std::chrono::system_clock::time_point
+std::string StrFormatISOTime(const sysclock::time_point tp)
+{
+	auto tp_secs = std::chrono::time_point_cast<std::chrono::seconds>(tp);
+	return fmt::format("{:%Y-%m-%dT%H:%M:%SZ}", tp_secs);
 }
 
 // [AM] Parse an ISO8601-formatted string time into a tm* struct.
-bool StrParseISOTime(const std::string& s, tm* utc_tm) {
-	if (!strptime(s.c_str(), "%Y-%m-%dT%H:%M:%SZ", utc_tm)) {
-		return false;
-	}
-	return true;
+// [EB] Now parses to a std::chrono::system_clock::time_point
+std::optional<sysclock::time_point> StrParseISOTime(const std::string& s)
+{
+	sysclock::time_point tp;
+	std::istringstream iss{s};
+	iss >> std::chrono::parse("%Y-%m-%dT%H:%M:%SZ", tp);
+	return iss.fail() ? std::nullopt : std::optional(tp);
 }
 
 // [AM] Turn a string representation of a length of time into a time_t
 //      relative to the current time.
-bool StrToTime(std::string str, time_t &tim) {
-	tim = time(NULL);
+// [EB] Now turns into a std::chrono::system_clock::time_point
+std::optional<std::optional<sysclock::time_point>> StrToTime(std::string str)
+{
 	str = TrimString(str);
 	str = StdStringToLower(str);
 
 	if (str.empty()) {
-		return false;
+		return std::nullopt;
 	}
 
-	// We use 0 as a synonym for forever.
-	if (str.compare(std::string("eternity").substr(0, str.size())) == 0 ||
-		str.compare(std::string("forever").substr(0, str.size())) == 0 ||
-		str.compare(std::string("permanent").substr(0, str.size())) == 0) {
-		tim = 0;
-		return true;
+	// We use std::nullopt as a synonym for forever.
+	if ("eternity"sv.starts_with(str) ||
+		"forever"sv.starts_with(str) ||
+		"permanent"sv.starts_with(str)) {
+		return std::optional<sysclock::time_point>{};
 	}
 
 	// Gather tokens from string representation.
-	typedef std::pair<unsigned short, std::string> token_t;
-	typedef std::vector<token_t> tokens_t;
+	using token_t = std::pair<uint16_t, std::string_view>;
+	using tokens_t = std::vector<token_t>;
 	tokens_t tokens;
 
 	size_t i, j;
 	size_t size = str.size();
 	i = j = 0;
 
+	sysclock::time_point tim = sysclock::now();
 	while (i < size) {
-		unsigned short num = 0;
-		std::string timeword;
+		uint16_t num = 0;
 
 		// Grab a number.
 		j = i;
@@ -418,12 +419,12 @@ bool StrToTime(std::string str, time_t &tim) {
 
 		if (i == j) {
 			// There is no number.
-			return false;
+			return std::nullopt;
 		}
 
 		if (!(j < size)) {
 			// We were expecting a number but ran off the end of the string.
-			return false;
+			return std::nullopt;
 		}
 
 		std::istringstream num_buffer(str.substr(i, j - i));
@@ -443,10 +444,10 @@ bool StrToTime(std::string str, time_t &tim) {
 
 		if (i == j) {
 			// There is no time word.
-			return false;
+			return std::nullopt;
 		}
 
-		timeword = str.substr(i, j - i);
+		std::string_view timeword = str.substr(i, j - i);
 		i = j;
 
 		// Push to tokens vector
@@ -458,32 +459,31 @@ bool StrToTime(std::string str, time_t &tim) {
 		}
 	}
 
+	using namespace std::chrono;
+	using namespace std::string_view_literals;
+
 	for (const auto& [count, timeword] : tokens) {
-		if (timeword.compare(std::string("seconds").substr(0, timeword.size())) == 0) {
-			tim += count;
-		} else if (timeword.compare("secs") == 0) {
-			tim += count;
-		} else if (timeword.compare(std::string("minutes").substr(0, timeword.size())) == 0) {
-			tim += count * 60;
-		} else if (timeword.compare("mins") == 0) {
-			tim += count * 60;
-		} else if (timeword.compare(std::string("hours").substr(0, timeword.size())) == 0) {
-			tim += count * 3600;
-		} else if (timeword.compare(std::string("days").substr(0, timeword.size())) == 0) {
-			tim += count * 86400;
-		} else if (timeword.compare(std::string("weeks").substr(0, timeword.size())) == 0) {
-			tim += count * 604800;
-		} else if (timeword.compare(std::string("months").substr(0, timeword.size())) == 0) {
-			tim += count * 2592000;
-		} else if (timeword.compare(std::string("years").substr(0, timeword.size())) == 0) {
-			tim += count * 31536000;
+		if ("seconds"sv.starts_with(timeword) || timeword == "secs") {
+			tim += seconds(count);
+		} else if ("minutes"sv.starts_with(timeword) || timeword == "mins") {
+			tim += minutes(count);
+		} else if ("hours"sv.starts_with(timeword)) {
+			tim += hours(count);
+		} else if ("days"sv.starts_with(timeword)) {
+			tim += days(count);
+		} else if ("weeks"sv.starts_with(timeword)) {
+			tim += weeks(count);
+		} else if ("months"sv.starts_with(timeword)) {
+			tim += months(count);
+		} else if ("years"sv.starts_with(timeword)) {
+			tim += years(count);
 		} else {
 			// Unrecognized timeword
-			return false;
+			return std::nullopt;
 		}
 	}
 
-	return true;
+	return { std::optional(tim) };
 }
 
 /**

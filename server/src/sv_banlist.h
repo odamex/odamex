@@ -23,7 +23,8 @@
 
 #pragma once
 
-#include <ctime>
+#include <chrono>
+#include <optional>
 #include <sstream>
 
 #include "json/json.h"
@@ -47,8 +48,8 @@ public:
 
 struct Ban
 {
-	Ban(void) : expire(0) { };
-	time_t expire;
+	using expire_t = std::optional<std::chrono::system_clock::time_point>;
+	expire_t expire;
 	std::string name;
 	IPRange range;
 	std::string reason;
@@ -69,10 +70,10 @@ class Banlist
 {
 public:
 	size_t size();
-	bool add(const std::string &address, const time_t expire = 0,
+	bool add(const std::string &address, const Ban::expire_t expire = std::nullopt,
 	         const std::string &name = std::string(),
 	         const std::string &reason = std::string());
-	bool add(player_t &player, const time_t expire = 0,
+	bool add(player_t &player, const Ban::expire_t expire = std::nullopt,
 	         const std::string &reason = std::string());
 	bool add_exception(const std::string &address,
 	                   const std::string &name = std::string());
