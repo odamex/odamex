@@ -162,8 +162,7 @@ void M_QuickSave();
 void M_QuickLoad();
 
 void M_DrawMainMenu();
-void M_DrawLoad();
-void M_DrawSave();
+void M_DrawSaveLoadScreen();
 
 void M_DrawSaveLoadBorder(int x,int y, int len);
 void M_SetupNextMenu(oldmenu_t *menudef);
@@ -188,6 +187,7 @@ static void M_SlidePlayerBlue (int choice);
 static void M_OpenNewGameMenu();
 static void M_OpenLoadGameScreen();
 static void M_OpenSaveGameScreen();
+static void M_ActivateSaveLoadSlot(int choice);
 static void M_OpenOptionsMenu();
 static void M_DrawHelpPage();
 static void M_OpenHelpScreen();
@@ -397,6 +397,12 @@ oldmenu_t GameFilesDef =
 //
 // LOAD GAME MENU
 //
+enum class saveloadmode_t
+{
+	load,
+	save
+};
+
 enum load_t
 {
 	load1,
@@ -410,67 +416,43 @@ enum load_t
 	load_end
 } load_e;
 
-static oldmenuitem_t LoadSavegameMenu[]=
+static oldmenuitem_t SaveLoadMenuItems[]=
 {
-	{1,"","\0", M_LoadSelect,'1'},
-	{1,"","\0", M_LoadSelect,'2'},
-	{1,"","\0", M_LoadSelect,'3'},
-	{1,"","\0", M_LoadSelect,'4'},
-	{1,"","\0", M_LoadSelect,'5'},
-	{1,"","\0", M_LoadSelect,'6'},
-	{1,"","\0", M_LoadSelect,'7'},
-	{1,"","\0", M_LoadSelect,'8'},
+	{1,"","\0", M_ActivateSaveLoadSlot,'1'},
+	{1,"","\0", M_ActivateSaveLoadSlot,'2'},
+	{1,"","\0", M_ActivateSaveLoadSlot,'3'},
+	{1,"","\0", M_ActivateSaveLoadSlot,'4'},
+	{1,"","\0", M_ActivateSaveLoadSlot,'5'},
+	{1,"","\0", M_ActivateSaveLoadSlot,'6'},
+	{1,"","\0", M_ActivateSaveLoadSlot,'7'},
+	{1,"","\0", M_ActivateSaveLoadSlot,'8'},
 };
 
-oldmenu_t LoadDef =
+static saveloadmode_t gSaveLoadMode = saveloadmode_t::load;
+static bool gSaveSlotOccupied[load_end] = {};
+
+oldmenu_t SaveLoadDef =
 {
 	load_end,
-	LoadSavegameMenu,
-	M_DrawLoad,
+	SaveLoadMenuItems,
+	M_DrawSaveLoadScreen,
 	76,54,
 	0
 };
 
-oldmenu_t HticLoadDef =
+static void M_ConfigureSaveLoadScreen()
 {
-	load_end,
-	LoadSavegameMenu,
-	M_DrawLoad,
-	62,20,
-	0
-};
-
-//
-// SAVE GAME MENU
-//
-oldmenuitem_t SaveMenu[]=
-{
-	{1,"","\0", M_SaveSelect,'1'},
-	{1,"","\0", M_SaveSelect,'2'},
-	{1,"","\0", M_SaveSelect,'3'},
-	{1,"","\0", M_SaveSelect,'4'},
-	{1,"","\0", M_SaveSelect,'5'},
-	{1,"","\0", M_SaveSelect,'6'},
-	{1,"","\0", M_SaveSelect,'7'},
-	{1,"","\0", M_SaveSelect,'8'}
-};
-
-oldmenu_t SaveDef =
-{
-	load_end,
-	SaveMenu,
-	M_DrawSave,
-	76,54,
-	0
-};
-oldmenu_t HticSaveDef =
-{
-	load_end,
-	SaveMenu,
-	M_DrawSave,
-	62,20,
-	0
-};
+	if (gameinfo.enginetype == ENGINE_HERETIC)
+	{
+		SaveLoadDef.x = 62;
+		SaveLoadDef.y = 20;
+	}
+	else
+	{
+		SaveLoadDef.x = 76;
+		SaveLoadDef.y = 54;
+	}
+}
 
 // [RH] Most menus can now be accessed directly
 // through console commands.
@@ -1537,7 +1519,8 @@ void M_ReadSaveStrings()
 		if (handle == nullptr)
 		{
 			M_StringCopy(&savegamestrings[i][0], GStrings(EMPTYSTRING), SAVESTRINGSIZE);
-			LoadSavegameMenu[i].status = 0;
+			gSaveSlotOccupied[i] = false;
+			SaveLoadMenuItems[i].status = gSaveLoadMode == saveloadmode_t::save ? 1 : 0;
 		}
 		else
 		{
@@ -1547,7 +1530,8 @@ void M_ReadSaveStrings()
 				fmt::print("M_Read_SaveStrings(): Failed to read handle.\n");
 				return;
 			}
-			LoadSavegameMenu[i].status = 1;
+			gSaveSlotOccupied[i] = true;
+			SaveLoadMenuItems[i].status = 1;
 		}
 	}
 }
@@ -1565,30 +1549,42 @@ void M_DrawInputBox (char *text, int x, int y, int width)
 	screen->DrawTextCleanMove(smallFont, CR_RED, x + (M_SmallFontLineHeight() / 2), text_y, text);
 }
 
-void M_DrawLoad ()
+void M_DrawSaveLoadScreen()
 {
 	const OFont* bigFont = OFonts.big();
+	const OFont* smallFont = OFonts.small();
 	int i, list_y;
 	const int slot_width = 24;
 	const int slot_padding = 2;
 	const int slot_height = M_BigFontLineHeight() - slot_padding;
 
-	if (W_CheckNumForName("M_LOADG") >= 0)
+	const bool saveMode = gSaveLoadMode == saveloadmode_t::save;
+	const char* patchName = saveMode ? "M_SAVEG" : "M_LOADG";
+	const char* titleKey = saveMode ? "MNU_SAVEGAME" : "MNU_LOADGAME";
+
+	if (W_CheckNumForName(patchName) >= 0)
 	{
-		screen->DrawPatchClean(W_CachePatch("M_LOADG"), 72, 28);
+		screen->DrawPatchClean(W_CachePatch(patchName), 72, 28);
 	}
 	else
 	{
-		const char* title = LocalizedString("MNU_LOADGAME");
+		const char* title = LocalizedString(titleKey);
 		screen->DrawTextCleanMove(bigFont, CR_GRAY, 160 - V_StringWidth(bigFont, title) / 2, 0,
 		                          title);
 	}
 
-	list_y = LoadDef.y;
+	list_y = SaveLoadDef.y;
 	for (i = 0; i < load_end; i++)
 	{
-		M_DrawInputBox(savegamestrings[i], LoadDef.x, list_y, slot_width);
+		M_DrawInputBox(savegamestrings[i], SaveLoadDef.x, list_y, slot_width);
 		list_y += slot_height + slot_padding;
+	}
+
+	if (genStringEnter != oldmenustring_t::NONE)
+	{
+		const int string_width = V_StringWidth(smallFont, savegamestrings[saveSlot]);
+		screen->DrawTextCleanMove(smallFont, CR_RED, SaveLoadDef.x + string_width,
+		                          SaveLoadDef.y + M_BigFontLineHeight() * saveSlot, "_");
 	}
 }
 
@@ -1609,54 +1605,23 @@ void M_LoadSelect (int choice)
 	}
 }
 
-//
-// Selected from DOOM menu
-// [ML] 7 Sept 08: Bringing game saving/loading in from
-//                 zdoom 1.22 source, see MAINTAINERS
-//
 static void M_OpenLoadGameScreen()
 {
-	M_SetupNextMenu (&LoadDef);
-	M_ReadSaveStrings ();
+	gSaveLoadMode = saveloadmode_t::load;
+	M_ConfigureSaveLoadScreen();
+	M_SetupNextMenu(&SaveLoadDef);
+	M_ReadSaveStrings();
 }
 
-//
-//	M_SaveGame & Cie.
-// [ML] 7 Sept 08: Bringing game saving/loading in from
-//                 zdoom 1.22 source, see MAINTAINERS
-//
-void M_DrawSave()
+static void M_ActivateSaveLoadSlot(int choice)
 {
-	const OFont* bigFont = OFonts.big();
-	const OFont* smallFont = OFonts.small();
-	int i, list_y;
-	const int slot_width = 24;
-	const int slot_padding = 2;
-	const int slot_height = M_BigFontLineHeight() - slot_padding;
-
-	if (W_CheckNumForName("M_SAVEG") >= 0)
+	if (gSaveLoadMode == saveloadmode_t::save)
 	{
-		screen->DrawPatchClean (W_CachePatch("M_SAVEG"), 72, 28);
+		M_SaveSelect(choice);
 	}
 	else
 	{
-		const char* title = LocalizedString("MNU_SAVEGAME");
-		screen->DrawTextCleanMove(bigFont, CR_GRAY, 160 - V_StringWidth(bigFont, title) / 2, 0,
-		                          title);
-	}
-
-	list_y = SaveDef.y;
-	for (i = 0; i < load_end; i++)
-	{
-		M_DrawInputBox(savegamestrings[i], SaveDef.x, list_y, slot_width);
-		list_y += slot_height + slot_padding;
-	}
-
-	if (genStringEnter != oldmenustring_t::NONE)
-	{
-		const int string_width = V_StringWidth(smallFont, savegamestrings[saveSlot]);
-		screen->DrawTextCleanMove(smallFont, CR_RED, SaveDef.x + string_width,
-		                          SaveDef.y + M_BigFontLineHeight() * saveSlot, "_");
+		M_LoadSelect(choice);
 	}
 }
 
@@ -1696,7 +1661,7 @@ void M_SaveSelect (int choice)
 	// If on a game console, auto-fill with date and time to save name
 
 #ifndef GCONSOLE
-	if (!LoadSavegameMenu[choice].status)
+	if (!gSaveSlotOccupied[choice])
 #endif
 	{
 		strncpy(savegamestrings[choice], asctime(lt) + 4, 20);
@@ -1730,7 +1695,9 @@ static void M_OpenSaveGameScreen()
 	if (gamestate != GS_LEVEL)
 		return;
 
-	M_SetupNextMenu(&SaveDef);
+	gSaveLoadMode = saveloadmode_t::save;
+	M_ConfigureSaveLoadScreen();
+	M_SetupNextMenu(&SaveLoadDef);
 	M_ReadSaveStrings();
 }
 
@@ -1773,8 +1740,10 @@ void M_QuickSave()
 	if (quickSaveSlot < 0)
 	{
 		M_StartControlPanel();
+		gSaveLoadMode = saveloadmode_t::save;
+		M_ConfigureSaveLoadScreen();
 		M_ReadSaveStrings();
-		M_SetupNextMenu(&SaveDef);
+		M_SetupNextMenu(&SaveLoadDef);
 		quickSaveSlot = -2; 	// means to pick a slot now
 		return;
 	}
@@ -3283,9 +3252,9 @@ void M_Init()
 	{
 		MainDef.x = 110;
 		MainDef.y = 56;
-		LoadDef = HticLoadDef;
-		SaveDef = HticSaveDef;
 	}
+
+	M_ConfigureSaveLoadScreen();
 
 	if (!BuildGeneratedOldMenu(gGeneratedMainMenu, "main", MainDef, M_DrawMainMenu))
 	{
