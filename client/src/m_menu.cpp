@@ -162,9 +162,6 @@ void M_QuickSave();
 void M_QuickLoad();
 
 void M_DrawMainMenu();
-void M_DrawReadThis1();
-void M_DrawReadThis2();
-void M_DrawReadThis3();
 void M_DrawLoad();
 void M_DrawSave();
 
@@ -192,15 +189,12 @@ static void M_OpenNewGameMenu();
 static void M_OpenLoadGameScreen();
 static void M_OpenSaveGameScreen();
 static void M_OpenOptionsMenu();
+static void M_DrawHelpPage();
 static void M_OpenHelpScreen();
-static void M_OpenHelpPage2();
-static void M_OpenHelpPage3OrFinish();
 static void M_FinishHelpScreen();
 static void M_BeginEndGamePrompt();
 static void M_BeginQuitGamePrompt();
-static void M_ReadThis2Callback(int choice);
-static void M_ReadThis3Callback(int choice);
-static void M_FinishReadThisCallback(int choice);
+static void M_AdvanceHelpScreen(int choice);
 namespace
 {
 	struct menudestination_t;
@@ -336,66 +330,27 @@ bool OptionsActive;
 //
 // Read This!
 //
-enum read_t
+enum helpmenu_t
 {
-	rdthsempty1,
-	read1_end
-} read_e;
+	help_next,
+	help_end
+} helpmenu_e;
 
-oldmenuitem_t ReadMenu1[] =
+oldmenuitem_t HelpMenu[] =
 {
-	{1,"","\0",M_ReadThis2Callback,0}
+	{1,"","\0",M_AdvanceHelpScreen,0}
 };
 
-oldmenu_t	ReadDef1 =
+oldmenu_t HelpDef =
 {
-	read1_end,
-	ReadMenu1,
-	M_DrawReadThis1,
+	help_end,
+	HelpMenu,
+	M_DrawHelpPage,
 	280,185,
 	0
 };
 
-enum read_t2
-{
-	rdthsempty2,
-	read2_end
-} read_e2;
-
-oldmenuitem_t ReadMenu2[]=
-{
-	{1,"","\0",M_ReadThis3Callback,0}
-};
-
-oldmenu_t ReadDef2 =
-{
-	read2_end,
-	ReadMenu2,
-	M_DrawReadThis2,
-	330,175,
-	0
-};
-
-enum read_t3
-{
-	rdthsempty3,
-	read3_end
-} read_e3;
-
-
-oldmenuitem_t ReadMenu3[]=
-{
-	{1,"","\0",M_FinishReadThisCallback,0}
-};
-
-oldmenu_t ReadDef3 =
-{
-	read3_end,
-	ReadMenu3,
-	M_DrawReadThis3,
-	330,175,
-	0
-};
+static int gHelpPageIndex = 0;
 
 oldmenu_t GameFilesDef =
 {
@@ -1830,36 +1785,9 @@ void M_QuickLoad()
 static void M_OpenHelpScreen()
 {
 	drawIndicator = false;
+	gHelpPageIndex = 0;
 	D_LoadPageImage(help_page, gameinfo.infoPage[0]);
-	M_SetupNextMenu(&ReadDef1);
-}
-
-static void M_OpenHelpPage2()
-{
-	drawIndicator = false;
-	D_LoadPageImage(help_page, gameinfo.infoPage[1]);
-	M_SetupNextMenu(&ReadDef2);
-}
-
-static void M_OpenHelpPage3OrFinish()
-{
-    if (gameinfo.flags & GI_SHAREWARE) {
-        drawIndicator = false;
-        D_LoadPageImage(help_page, gameinfo.infoPage[2]);
-        M_SetupNextMenu(&ReadDef3);
-    } else {
-        M_FinishHelpScreen();
-    }
-}
-
-static void M_ReadThis2Callback(int)
-{
-	M_OpenHelpPage2();
-}
-
-static void M_ReadThis3Callback(int)
-{
-	M_OpenHelpPage3OrFinish();
+	M_SetupNextMenu(&HelpDef);
 }
 
 static void M_DrawHelpPage()
@@ -1867,17 +1795,27 @@ static void M_DrawHelpPage()
 	D_DrawPageImage(help_page, I_GetPrimarySurface(), true);
 }
 
+static void M_AdvanceHelpScreen(int)
+{
+	const int maxPage = (gameinfo.flags & GI_SHAREWARE) ? 2 : 1;
+	if (gHelpPageIndex >= maxPage)
+	{
+		M_FinishHelpScreen();
+		return;
+	}
+
+	++gHelpPageIndex;
+	drawIndicator = false;
+	D_LoadPageImage(help_page, gameinfo.infoPage[gHelpPageIndex]);
+}
+
 static void M_FinishHelpScreen()
 {
 	drawIndicator = true;
 	D_FreePageImage(help_page);
+	gHelpPageIndex = 0;
 	MenuStackDepth = 0;
 	M_SetupNextMenu(&MainDef);
-}
-
-static void M_FinishReadThisCallback(int)
-{
-	M_FinishHelpScreen();
 }
 
 //
@@ -2045,31 +1983,6 @@ void M_ChooseSkill(int choice)
 	}
 
 	M_StartGame(choice);
-}
-
-//
-// Read This Menus
-// Had a "quick hack to fix romero bug"
-//
-void M_DrawReadThis1()
-{
-	M_DrawHelpPage();
-}
-
-//
-// Read This Menus - optional second page.
-//
-void M_DrawReadThis2()
-{
-	M_DrawHelpPage();
-}
-
-//
-// Read This Menus - shareware third page.
-//
-void M_DrawReadThis3()
-{
-	M_DrawHelpPage();
 }
 
 static void M_OpenOptionsMenu()
