@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include <string>
+
 #include "d_event.h"
 
 //
@@ -54,6 +56,9 @@ void M_StartControlPanel (void);
 
 // [RH] Setup options menu
 bool M_StartOptionsMenu (void);
+bool M_OpenGeneratedOptionsMenu(const std::string& menuId);
+bool M_OpenMenuTarget(const std::string& target);
+bool M_OpenMenuEntrypoint(const std::string& name);
 
 // [RH] Handle keys for options menu
 void M_OptResponder(const event_t& ev);
@@ -199,6 +204,9 @@ extern value_t NoYes[2];
 extern value_t OnOff[2];
 extern value_t OffOn[2];
 extern value_t OnOffAuto[3];
+extern value_t HideShow[2];
+extern value_t DemoRestrictions[2];
+extern value_t DoomOrOdamex[2];
 
 extern menustack_t MenuStack[16];
 extern int MenuStackDepth;

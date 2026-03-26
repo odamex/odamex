@@ -63,6 +63,7 @@ END_DISABLE_WARNING_GNU
 #include "cl_demo.h"
 #include "gi.h"
 #include "m_menuconf.h"
+#include "m_options_valuesets.h"
 
 // Data.
 #include "m_menu.h"
@@ -82,10 +83,28 @@ EXTERN_CVAR (show_messages)
 
 namespace
 {
+	const char* LocalizedMenuString(const char* key)
+	{
+		if (GStrings.hasString(key))
+		{
+			const char* s = GStrings(key);
+			if (s && s[0])
+			{
+				return s;
+			}
+		}
+
+		return key;
+	}
+
 	const menuconftheme_t& MenuConfTheme()
 	{
 		return M_MenuConf().theme;
 	}
+
+	struct configuredoptionsbridge_t;
+	configuredoptionsbridge_t* ConfiguredOptionsBridgeByMenu(menu_t* menu);
+	menu_t* OptionsMenuSlotById(const std::string& menuId);
 
 	const patch_t* MenuConfPatch(const std::string& name)
 	{
@@ -216,7 +235,6 @@ EXTERN_CVAR (co_globalsound)
 EXTERN_CVAR (co_novileghosts)
 
 // [Toke - Menu] New Menu Stuff.
-void MouseSetup (void);
 EXTERN_CVAR (mouse_sensitivity)
 EXTERN_CVAR (m_pitch)
 EXTERN_CVAR (novert)
@@ -245,7 +263,6 @@ EXTERN_CVAR (cl_disconnectalert)
 EXTERN_CVAR (snd_votesfx)
 
 // Joystick menu -- Hyper_Eye
-void JoystickSetup (void);
 EXTERN_CVAR (use_joystick)
 EXTERN_CVAR (joy_active)
 EXTERN_CVAR (joy_forwardaxis)
@@ -297,48 +314,6 @@ static bool CanScrollUp;
 static bool CanScrollDown;
 static int VisBottom;
 
-value_t YesNo[2] = {
-	{ 0.0, "No" },
-	{ 1.0, "Yes" }
-};
-
-value_t NoYes[2] = {
-	{ 0.0, "Yes" },
-	{ 1.0, "No" }
-};
-
-value_t OnOff[2] = {
-	{ 0.0, "Off" },
-	{ 1.0, "On" }
-};
-
-value_t HideShow[2] = {
-	{ 0.0, "Hide" },
-	{ 1.0, "Show" }
-};
-
-value_t OffOn[2] = {
-	{ 0.0, "On" },
-	{ 1.0, "Off" }
-};
-
-value_t OnOffAuto[3] = {
-	{ 0.0, "Off" },
-	{ 1.0, "On" },
-	{ 2.0, "Auto" }
-};
-
-value_t DemoRestrictions[2] = {
-	{ 0.0, "Restrict" },
-	{ 1.0, "Allow" }
-};
-
-static value_t DoomOrOdamex[2] =
-{
-	{ 0.0, "Odamex" },
-	{ 1.0, "Doom" }
-};
-
 menu_t  *CurrentMenu;
 int		CurrentItem;
 bool configuring_controls = false;
@@ -355,52 +330,15 @@ static itemtype OldAxisType;
  *
  *=======================================*/
 
-static void PlayerSetup();
-static void CustomizeControls();
-static void VideoOptions();
-static void SoundOptions();
-static void CompatOptions();
-static void NetworkOptions();
-static void WeaponOptions();
 static void GoToConsole();
 void Reset2Defaults();
 void Reset2Saved();
 
 static void SetVidMode();
+static void M_UpdateDisplayOptions();
 
-static menuitem_t OptionItems[] =
-{
-    { more, 	"Player Setup",     	{NULL},					{0.0}, {0.0},	{0.0}, {.mfunc = PlayerSetup} },
-	{ more,		"Weapon Preferences",	{NULL},					{0.0}, {0.0},	{0.0}, {.mfunc = WeaponOptions} },
- 	{ more,		"Customize Controls",	{NULL},					{0.0}, {0.0},	{0.0}, {.mfunc = CustomizeControls} },
-	{ more,		"Mouse Options" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {.mfunc = MouseSetup} },
-	{ more,		"Joystick Setup" ,	    {NULL},					{0.0}, {0.0},	{0.0}, {.mfunc = JoystickSetup} },
- 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
- 	{ more,		"Compatibility Options",{NULL},					{0.0}, {0.0},	{0.0}, {.mfunc = CompatOptions} },
-	{ more,		"Network Options",		{NULL},					{0.0}, {0.0},	{0.0}, {.mfunc = NetworkOptions} },
-	{ more,		"Sound Options",		{NULL},					{0.0}, {0.0},	{0.0}, {.mfunc = SoundOptions} },
- 	{ more,		"Display Options",		{NULL},					{0.0}, {0.0},	{0.0}, {.mfunc = VideoOptions} },
-	{ more,		"Set Video Mode",		{NULL},					{0.0}, {0.0},	{0.0}, {.mfunc = SetVidMode} },
-    { redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ more,		"Go To Console",		{NULL},					{0.0}, {0.0},	{0.0}, {.mfunc = GoToConsole} },
-    { redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete,	"Always Run",			{&cl_run},				{2.0}, {0.0},	{0.0}, {OnOff} },
- 	{ discrete, "Skip Boot Window",		{&i_skipbootwin},		{2.0}, {0.0},	{0.0}, {OnOff} },
- 	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
- 	{ more,		"Reset to defaults",	{NULL},					{0.0}, {0.0},	{0.0}, {.mfunc = Reset2Defaults} },
- 	{ more,		"Reset to last saved",	{NULL},					{0.0}, {0.0},	{0.0}, {.mfunc = Reset2Saved} }
-};
 
-menu_t OptionMenu = {
-	"M_OPTTTL",
-	0,
-	static_cast<int>(ARRAY_LENGTH(OptionItems)),
-	177,
-	OptionItems,
-	0,
-	0,
-	NULL
-};
+menu_t OptionMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
 /*=======================================
  *
@@ -408,117 +346,8 @@ menu_t OptionMenu = {
  *
  *=======================================*/
 
-static menuitem_t ControlsItems[] = {
-#ifdef GCONSOLE
-	{ whitetext,"A to change, START to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-#else
-	{ whitetext,"ENTER to change, BACKSPACE to clear", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-#endif
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,"Basic Movement",		{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Move forward",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+forward"} },
-	{ control,	"Move backward",		{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+back"} },
-	{ control,	"Strafe left",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+moveleft"} },
-	{ control,	"Strafe right",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+moveright"} },
-	{ control,	"Turn left",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+left"} },
-	{ control,	"Turn right",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+right"} },
-	{ control,	"Run",					{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+speed"} },
-	{ control,	"Always Run",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "togglerun"} },
-	{ control,	"Strafe",				{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+strafe"} },
-	{ control,	"Jump",					{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+jump"} },
-	{ control,	"Turn 180",				{NULL}, {0.0}, {0.0}, {0.0}, {.command = "turn180"} },
-	{ control,	"Alternate Turn",		{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+fastturn"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,"Actions",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Fire",					{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+attack"} },
-	{ control,	"Use / Open",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+use"} },
-	{ control,	"Next weapon",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "weapnext"} },
-	{ control,	"Previous weapon",		{NULL}, {0.0}, {0.0}, {0.0}, {.command = "weapprev"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,"Weapons",		        {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Fist/Chainsaw",		{NULL}, {0.0}, {0.0}, {0.0}, {.command = "impulse 1"} },
-	{ control,	"Pistol",       		{NULL}, {0.0}, {0.0}, {0.0}, {.command = "impulse 2"} },
-	{ control,	"Shotgun/SSG",  		{NULL}, {0.0}, {0.0}, {0.0}, {.command = "impulse 3"} },
-	{ control,	"Chaingun",     		{NULL}, {0.0}, {0.0}, {0.0}, {.command = "impulse 4"} },
-	{ control,	"Rocket Launcher",		{NULL}, {0.0}, {0.0}, {0.0}, {.command = "impulse 5"} },
-	{ control,	"Plasma Rifle",   		{NULL}, {0.0}, {0.0}, {0.0}, {.command = "impulse 6"} },
-	{ control,	"BFG",          		{NULL}, {0.0}, {0.0}, {0.0}, {.command = "impulse 7"} },
-	{ control,	"Chainsaw",     		{NULL}, {0.0}, {0.0}, {0.0}, {.command = "impulse 8"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,	"Automap Controls",	{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,		"Toggle Automap",	{NULL}, {0.0}, {0.0}, {0.0}, {.command = "togglemap"} },
-	{ mapcontrol,	"Follow Player",	{NULL}, {0.0}, {0.0}, {0.0}, {.command = "am_togglefollow"} },
-	{ mapcontrol,	"Toggle Grid",		{NULL}, {0.0}, {0.0}, {0.0}, {.command = "am_grid"} },
-	{ mapcontrol,	"Add Marker",		{NULL}, {0.0}, {0.0}, {0.0}, {.command = "am_setmark"} },
-	{ mapcontrol,	"Clear Markers",	{NULL}, {0.0}, {0.0}, {0.0}, {.command = "am_clearmarks"} },
-	{ mapcontrol,	"Big Automap",		{NULL}, {0.0}, {0.0}, {0.0}, {.command = "am_big"} },
-	{ mapcontrol,	"Zoom In",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+am_zoomin"} },
-	{ mapcontrol,	"Zoom Out",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+am_zoomout"} },
-	{ mapcontrol,	"Pan Up",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+am_panup"} },
-	{ mapcontrol,	"Pan Down",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+am_pandown"} },
-	{ mapcontrol,	"Pan Left",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+am_panleft"} },
-	{ mapcontrol,	"Pan Right",		{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+am_panright"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,"Advanced Movement",    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Fly / Swim up",		{NULL},	{0.0}, {0.0}, {0.0}, {.command = "+moveup"} },
-	{ control,	"Fly / Swim down",		{NULL},	{0.0}, {0.0}, {0.0}, {.command = "+movedown"} },
-	{ control,	"Toggle flying",		{NULL},	{0.0}, {0.0}, {0.0}, {.command = "fly"} },
-	{ control,	"Look up",				{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+lookup"} },
-	{ control,	"Look down",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+lookdown"} },
-	{ control,	"Center view",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "centerview"} },
-	{ control,	"Mouse look",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+mlook"} },
-	{ control,	"Keyboard look",		{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+klook"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,"Multiplayer",		    {NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,	"Say",					{NULL}, {0.0}, {0.0}, {0.0}, {.command = "messagemode"} },
-	{ control,	"Team say",				{NULL}, {0.0}, {0.0}, {0.0}, {.command = "messagemode2"} },
-	{ control,	"Ready",				{NULL}, {0.0}, {0.0}, {0.0}, {.command = "ready"} },
-	{ control,	"Change teams",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "changeteams"} },
-	{ control,	"Spectate",				{NULL}, {0.0}, {0.0}, {0.0}, {.command = "spectate"} },
-	{ control,	"Coop Spy",				{NULL}, {0.0}, {0.0}, {0.0}, {.command = "spynext"} },
-	{ control,	"Show Scoreboard",		{NULL}, {0.0}, {0.0}, {0.0}, {.command = "+showscores"} },
-	{ control,	"Vote Yes", {NULL}, {0.0}, {0.0}, {0.0}, {.command = "vote_yes"} },
-	{ control,	"Vote No", {NULL}, {0.0}, {0.0}, {0.0}, {.command = "vote_no"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,"Menus",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ control,  "Main menu",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "menu_main"} },
-	{ control,	"Help menu",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "menu_help"} },
-	{ control,	"Save menu",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "menu_save"} },
-	{ control,	"Load menu",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "menu_load"} },
-	{ control,	"Options menu",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "menu_options"} },
-	{ control,	"Display options",	    {NULL}, {0.0}, {0.0}, {0.0}, {.command = "menu_display"} },
-	{ control,	"Player setup menu",	{NULL}, {0.0}, {0.0}, {0.0}, {.command = "menu_player"} },
-	{ control,	"Configure controls",	{NULL}, {0.0}, {0.0}, {0.0}, {.command = "menu_keys"} },
-	{ control,	"Change resolution",	{NULL}, {0.0}, {0.0}, {0.0}, {.command = "menu_video"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,	"Netdemo Controls",	{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ netdemocontrol,"Pause Netdemo",	{NULL}, {0.0}, {0.0}, {0.0}, {.command = "netpause"} },
-    { netdemocontrol, "Fast Forward", {NULL}, {0.0}, {0.0}, {0.0}, {.command = "netff"}},
-    { netdemocontrol, "Rewind", {NULL}, {0.0}, {0.0}, {0.0}, {.command = "netrew"}},
-    { netdemocontrol, "Next map", {NULL}, {0.0}, {0.0}, {0.0}, {.command = "netnextmap"}},
-	{ netdemocontrol,	"Previous map",	{NULL}, {0.0}, {0.0}, {0.0}, {.command = "netprevmap"} },
-	{ redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,"Other",				{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-    { control,	"Increase screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {.command = "sizeup"} },
-	{ control,	"Reduce screen size",	{NULL}, {0.0}, {0.0}, {0.0}, {.command = "sizedown"} },
-	{ control,	"Chasecam",				{NULL}, {0.0}, {0.0}, {0.0}, {.command = "chase"} },
-	{ control,	"Screenshot",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "screenshot"} },
-	{ control,  "Open console",			{NULL}, {0.0}, {0.0}, {0.0}, {.command = "toggleconsole"} },
-	{ control,  "End current game",     {NULL}, {0.0}, {0.0}, {0.0}, {.command = "menu_endgame"} },
-	{ control,  "Quit Odamex",	        {NULL}, {0.0}, {0.0}, {0.0}, {.command = "menu_quit"} }
 
-};
-
-menu_t ControlsMenu = {
-	"M_CONTRO",
-	3,
-	static_cast<int>(ARRAY_LENGTH(ControlsItems)),
-	0,
-	ControlsItems,
-	2,
-	0,
-	NULL
-};
+menu_t ControlsMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
 // -------------------------------------------------------
 //
@@ -539,36 +368,8 @@ void M_ResetMouseValues()
 }
 
 
-static menuitem_t MouseItems[] =
-{
-	{ slider,	"Overall Sensitivity"			, {&mouse_sensitivity},	{0.05},	{2.5},		{0.05},		{NULL}},
-	{ slider,	"Freelook Sensitivity"			, {&m_pitch},			{0.05},	{2.5},		{0.05},		{NULL}},
 
-	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
-	{ discrete,	"Always FreeLook"				, {&cl_mouselook},		{2.0},	{0.0},		{0.0},		{OnOff}},
-	{ discrete,	"Invert Mouse"					, {&invertmouse},		{2.0},	{0.0},		{0.0},		{OnOff}},
-	{ discrete, "Auto SR50 on Strafe"			, {&in_autosr50},		{2.0},	{0.0},		{0.0},		{OnOff}}, // [AM] Does not belong here
-	{ discrete, "Lookspring"					, {&lookspring},		{2.0},	{0.0},		{0.0},		{OnOff}},
-	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
-	{ discrete,	"Horizontal Movement"			, {&lookstrafe},		{2.0},	{0.0},		{0.0},		{OnOff}},
-	{ discrete,	"Vertical Movement"				, {&novert},			{2.0},	{0.0},		{0.0},		{OffOn}},
-	{ slider,	"Horizontal Movement Speed"		, {&m_side},			{0.0},	{15},		{0.5},		{NULL}},
-	{ slider,	"Vertical Movement Speed"		, {&m_forward},			{0.0},	{15},		{0.5},		{NULL}},
-	{ redtext,	" "								, {NULL},				{0.0},	{0.0},		{0.0},		{NULL}},
-	{ more,		"Reset mouse to defaults"		, {NULL},				{0.0},	{0.0},		{0.0},		{.mfunc = M_ResetMouseValues}},
-};
-
-
-menu_t MouseMenu = {
-    "M_MOUSET",
-    0,
-    static_cast<int>(ARRAY_LENGTH(MouseItems)),
-    177,
-    MouseItems,
-	0,
-	0,
-	NULL
-};
+menu_t MouseMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
 
 /*=======================================
@@ -577,31 +378,8 @@ menu_t MouseMenu = {
  *
  *=======================================*/
 
-static menuitem_t JoystickItems[] =
-{
-	{ discrete	,	"Use Joystick"							, {&use_joystick},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ joyactive	,	"Active Joystick"						, {&joy_active},		{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ discrete	,	"Always FreeLook"						, {&joy_freelook},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ discrete	,	"Invert Look Axis"						, {&joy_invert},		{2.0},		{0.0},		{0.0},		{OnOff}						},
-	{ redtext	,	" "										, {NULL},				{0.0},		{0.0},		{0.0},		{NULL}						},
-	{ whitetext	,	"Sensitivity Settings"					, {NULL}, 				{0.0}, 		{0.0}, 		{0.0}, 		{NULL} 						},
-	{ slider	,	"Turn Sensitivity"						, {&joy_sensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
-	{ slider	,	"Alt. Turn Sensitivity"					, {&joy_fastsensitivity},	{1.0},		{30.0},		{1.0},		{NULL}						},
-	{ slider	,	"Joystick Deadzone"						, {&joy_deadzone},		{0.0},		{0.75},		{0.05},		{NULL}						},
-};
 
-menu_t JoystickMenu = {
-    "M_JOYSTK",
-    0,
-    static_cast<int>(ARRAY_LENGTH(JoystickItems)),
-    177,
-    JoystickItems,
-	0,
-	0,
-	NULL
-};
+menu_t JoystickMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
  /*=======================================
   *
@@ -660,93 +438,12 @@ static constexpr float num_mussys = static_cast<float>(ARRAY_LENGTH(MusSys));
 
 EXTERN_CVAR(cl_chatsounds)
 
-static menuitem_t AdvMidiItems[] = {
-	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext, "Advanced MIDI Options" , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ discrete  , "MIDI Instrument Fallback", {&snd_midifallback}, {4.0}, {0.0}, {0.0}, {OnOff} },
-	{ slider    , "MIDI Reset Delay (ms)", {&snd_mididelay}, {0.0}, {2000.0}, {50.0}, {NULL} },
-	#ifdef PORTMIDI
-	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext, "PortMidi Options", {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ discrete  , "MIDI Reset"      , {&snd_midireset}, {4.0}, {0.0}, {0.0}, {MidiReset} },
-	{ discrete  , "Read MIDI SysEx" , {&snd_midisysex}, {4.0}, {0.0}, {0.0}, {OnOff} },
-	#endif
-	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ redtext   , " "               , {NULL}          , {0.0}, {0.0}, {0.0}, {NULL} },
-	{yellowtext, "! ! ! NOTICE ! ! !", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {orangetext, "Modifying these settings may cause", {NULL},{0.0}, {0.0}, {0.0}, {NULL}},
-    {orangetext, "unwanted behavior during MIDI playback!", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-};
 
- static menuitem_t LibAdlMidiItems[] = {
-	{ redtext   , " "                   , {NULL}         , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext, "OPL FM Synth Options", {NULL}         , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ redtext   , " "                   , {NULL}         , {0.0}, {0.0}, {0.0}, {NULL} },
-	{ discrete  , "OPL quality"         , {&snd_oplcore} , {3.0}, {0.0}, {0.0}, {OplCore} },
-	{ discrete  , "Full OPL panning"    , {&snd_oplpan}  , {2.0}, {0.0}, {0.0}, {OnOff} },
-	{ slider    , "# of OPL chips"      , {&snd_oplchips}, {1.0}, {8.0}, {1.0}, {NULL} },
-	{ discrete  , "OPL instruments"     , {&snd_oplbank} , {3.0}, {0.0}, {0.0}, {OplBank} },
-};
+menu_t AdvMidiMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
-static menuitem_t SoundItems[] = {
-	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ yellowtext,   "Sound Levels"             , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ slider    ,	"Music Volume"             , {&snd_musicvolume},    {0.0},        {1.0}, {0.015625}, {NULL} },
-	{ slider    ,	"Sound Volume"             , {&snd_sfxvolume},      {0.0},        {1.0}, {0.015625}, {NULL} },
-	{ slider    ,	"Announcer Volume"         , {&snd_announcervolume},{0.0},        {1.0}, {0.015625}, {NULL} },
-	{ discrete  ,   "Stereo Switch"            , {&snd_crossover},      {2.0},        {0.0}, {0.0},      {OnOff} },
-	{ redtext   ,	" "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ yellowtext,   "Music Options"            , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ discrete  ,   "Midi Synth"               , {&snd_musicsystem},    {num_mussys}, {0.0}, {0.0},      {MusSys} },
-	{ discrete  ,   "Disable Music"            , {&snd_nomusic},        {2.0},        {0.0}, {0.0},      {YesNo} },
-	{ redtext   ,	" "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ more      ,   "OPL FM Synth Options"     , {NULL},                {0.0},        {0.0}, {0.0},      {.mfunc = LibAdlMidiOptions}},
-	{ more      ,   "Advanced MIDI Options"    , {NULL},                {0.0},        {0.0}, {0.0},      {.mfunc = AdvMidiOptions}},
-	{ redtext   ,   " "                        , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ yellowtext,   "Sound Options"            , {NULL},                {0.0},        {0.0}, {0.0},      {NULL} },
-	{ discrete  ,   "Game SFX"                 , {&snd_gamesfx},        {2.0},        {0.0}, {0.0},      {OnOff} },
-	{ discrete  ,   "Announcer Type"           , {&snd_voxtype},        {3.0},        {0.0}, {0.0},      {VoxType} },
-	{ discrete  ,   "Player Connect Alert"     , {&cl_connectalert},    {2.0},        {0.0}, {0.0},      {OnOff} },
-	{ discrete  ,   "Player Disconnect Alert"  , {&cl_disconnectalert}, {2.0},        {0.0}, {0.0},      {OnOff} },
-	{ discrete  ,   "Chat sounds"              , {&cl_chatsounds},      {3.0},        {0.0}, {0.0},      {ChatSndType}},
-     {discrete	,   "Voting Sounds"            , {&snd_votesfx},		{2.0},        {0.0}, {0.0},	     {OnOff}},
- };
+menu_t LibAdlMidiMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
-menu_t AdvMidiMenu = {
-	"M_SOUND",
-	3,
-	static_cast<int>(ARRAY_LENGTH(AdvMidiItems)),
-	177,
-	AdvMidiItems,
-	0,
-	0,
-	NULL
-};
-
-menu_t LibAdlMidiMenu = {
-	"M_SOUND",
-	3,
-	static_cast<int>(ARRAY_LENGTH(LibAdlMidiItems)),
-	177,
-	LibAdlMidiItems,
-	0,
-	0,
-	NULL
-};
-
-menu_t SoundMenu = {
-	"M_SOUND",
-	2,
-	static_cast<int>(ARRAY_LENGTH(SoundItems)),
-	177,
-	SoundItems,
-	0,
-	0,
-	NULL
-};
+menu_t SoundMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
 
 /*=======================================
@@ -754,49 +451,8 @@ menu_t SoundMenu = {
  * Compatibility Options Menu
  *
  *=======================================*/
-static menuitem_t CompatItems[] ={
-	{yellowtext, "Gameplay",							{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{svdiscrete, "Finer-precision Autoaim",        {&co_fineautoaim},       {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Fix hit detection at grid edges",{&co_blockmapfix},       {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Remove pain elemental spawn limit",{&co_removesoullimit}, {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Fix arch-vile ghost bug",			{&co_novileghosts}, {2.0}, {0.0}, {0.0}, {OnOff}},
-	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{yellowtext, "Items and Decoration",				{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{svdiscrete, "Fix invisible puffs under skies",{&co_fixweaponimpacts},  {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Items can be walked over/under", {&co_realactorheight},   {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Items can drop off ledges",      {&co_allowdropoff},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{yellowtext, "Engine Compatibility",				{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{svdiscrete, "BOOM actor/sector/line checks",  {&co_boomphys},			 {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "MBF movement and collision",  {&co_mbfphys},			 {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "ZDOOM 1.23 physics",             {&co_zdoomphys},         {2.0}, {0.0}, {0.0}, {OnOff}},
-  {svdiscrete, "ZDOOM 1.23 ammo checks",         {&co_zdoomammo},         {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "MBF Monster target selection",{&co_pursuit},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Monsters help friends (MBF)",{&co_helpfriends},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Monsters strafe (MBF)",{&co_monsterbacking},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Monster wind/friction (MBF)",{&co_monsterfriction},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Monsters avoid crushers (MBF)",{&co_avoidhazards},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Monsters climb (MBF)",{&co_monstersclimbsteep},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Monsters stay on lifts (MBF)",{&co_staylift},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "Friends can drop off (MBF)",{&co_friend_ledgejumping},      {2.0}, {0.0}, {0.0}, {OnOff}},
-	{slider,		 "Friend distance (MBF)", {&co_friend_distance}, {0.0}, {2048.0}, {64.0}, {NULL}},
-	{redtext,   " ",								{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{yellowtext, "Sound",							{NULL},                  {0.0}, {0.0}, {0.0}, {NULL}},
-	{svdiscrete, "Fix silent west spawns",         {&co_nosilentspawns},    {2.0}, {0.0}, {0.0}, {OnOff}},
-	{svdiscrete, "ZDoom Sound Response",			{&co_zdoomsound},		 {2.0}, {0.0}, {0.0}, {OnOff}},
-    {svdiscrete, "Global Pickup Sounds",			{&co_globalsound},		 {2.0}, {0.0}, {0.0}, {OnOff}},
-};
 
-menu_t CompatMenu = {
-	"M_COMPAT",
-	1,
-	static_cast<int>(ARRAY_LENGTH(CompatItems)),
-	240,
-	CompatItems,
-	0,
-	0,
-	NULL,
-};
+menu_t CompatMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
 
 /*=======================================
@@ -805,36 +461,8 @@ menu_t CompatMenu = {
  *
  *=======================================*/
 
-static menuitem_t NetworkItems[] = {
-    { redtext,	" ",					{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,	"Wad Download Settings",		{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
-	{ discrete, 	"Download From Internet", 		{&cl_serverdownload}, {2.0}, 		{0.0}, 		{0.0}, 		{OnOff} },
 
-	{ redtext,		" ",							{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
-	{ yellowtext,	"Netdemo Settings",				{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
-	{ discrete,		"Autorecord demos",				{&cl_autorecord},	{2.0},		{0.0},		{0.0},		{OnOff} },
-	{ discrete,		"Split every map",				{&cl_splitnetdemos},	{2.0},		{0.0},		{0.0},		{OnOff} },
-
-	{ redtext,		" ",							{NULL},	{0.0}, {0.0}, {0.0}, {NULL} },
-	{ yellowtext,	"Autorecord filters",			{NULL},				{0.0},		{0.0},		{0.0},		{NULL} },
-	{ discrete,		"Cooperation",					{&cl_autorecord_coop},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
-	{ discrete,		"Deathmatch",					{&cl_autorecord_deathmatch},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
-	{ discrete,		"Duel",							{&cl_autorecord_duel},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
-	{ discrete,		"Team Deathmatch",				{&cl_autorecord_teamdm},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
-	{ discrete,		"Capture the Flag",				{&cl_autorecord_ctf},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
-	{ discrete,		"Horde",						{&cl_autorecord_horde},{2.0},		{0.0},		{0.0},		{DemoRestrictions} },
-};
-
-menu_t NetworkMenu = {
-	"M_NETWRK",
-	2,
-	static_cast<int>(ARRAY_LENGTH(NetworkItems)),
-	177,
-	NetworkItems,
-	1,
-	0,
-	NULL
-};
+menu_t NetworkMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
 
 /*=======================================
@@ -852,39 +480,8 @@ static value_t WeapSwitch[] = {
 
 extern const char *weaponnames[];
 
-static menuitem_t WeaponItems[] = {
-	{yellowtext, "Weapon Preferences",  {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
-	{discrete,  "Switch on pickup",    {&cl_switchweapon},   {4.0}, {0.0}, {0.0}, {WeapSwitch}},
-	{redtext,   " ",                   {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
-	{yellowtext, "Weapon Switch Order", {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
-	{slider,    weaponnames[0],        {&cl_weaponpref_fst}, {0.0}, {8.0}, {1.0}, {NULL}},
-	{slider,    weaponnames[7],        {&cl_weaponpref_csw}, {0.0}, {8.0}, {1.0}, {NULL}},
-	{slider,    weaponnames[1],        {&cl_weaponpref_pis}, {0.0}, {8.0}, {1.0}, {NULL}},
-	{slider,    weaponnames[2],        {&cl_weaponpref_sg},  {0.0}, {8.0}, {1.0}, {NULL}},
-	{slider,    weaponnames[8],        {&cl_weaponpref_ssg}, {0.0}, {8.0}, {1.0}, {NULL}},
-	{slider,    weaponnames[3],        {&cl_weaponpref_cg},  {0.0}, {8.0}, {1.0}, {NULL}},
-	{slider,    weaponnames[4],        {&cl_weaponpref_rl},  {0.0}, {8.0}, {1.0}, {NULL}},
-	{slider,    weaponnames[5],        {&cl_weaponpref_pls}, {0.0}, {8.0}, {1.0}, {NULL}},
-	{slider,    weaponnames[6],        {&cl_weaponpref_bfg}, {0.0}, {8.0}, {1.0}, {NULL}},
-	{redtext,   " ",                   {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
-	{whitetext, "Weapons with higher", {NULL},               {0.0}, {0.0}, {0.0}, {NULL}},
-	{whitetext, "preference are selected first", {NULL},     {0.0}, {0.0}, {0.0}, {NULL}},
-    {redtext,	" ",				   {NULL},				 {0.0}, {0.0}, {0.0}, {NULL}},
-    {yellowtext, "! ! ! NOTICE ! ! !", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {orangetext, "While playing online, this feature", {NULL},{0.0}, {0.0}, {0.0}, {NULL}},
-    {orangetext, "only works when the server allows it!", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-};
 
-menu_t WeaponMenu = {
-	"M_WEAPON",
-	1,
-	static_cast<int>(ARRAY_LENGTH(WeaponItems)),
-	177,
-	WeaponItems,
-	0,
-	0,
-	NULL
-};
+menu_t WeaponMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
 
 /*=======================================
@@ -892,9 +489,6 @@ menu_t WeaponMenu = {
  * Display Options Menu
  *
  *=======================================*/
-static void StartHUDMenu();
-static void StartMessagesMenu (void);
-static void StartAutomapMenu (void);
 void ResetCustomColors (void);
 
 EXTERN_CVAR (am_rotate)
@@ -969,71 +563,7 @@ CVAR_FUNC_IMPL (ui_transblue)
 
 static value_t Endoom[] = {{0.0, "Off"}, {1.0, "On"}, {2.0, "PWAD Only"}};
 
-static menuitem_t VideoItems[] = {
-	{ more, "Heads-up display", {NULL}, {0.0}, {0.0}, {0.0}, {.mfunc = StartHUDMenu}},
-	{ more,		"Messages",				    {NULL},					{0.0}, {0.0},	{0.0},  {.mfunc = StartMessagesMenu} },
-	{ more,		"Automap",				    {NULL},					{0.0}, {0.0},	{0.0},  {.mfunc = StartAutomapMenu} },
-	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
-	{ slider,	"Screen size",			    {&screenblocks},	   	{3.0}, {12.0},	{1.0},  {NULL} },
-	{ slider,	"Brightness",			    {&gammalevel},			{1.0}, {8.0},	{1.0},  {NULL} },
-	{ slider,	"Red Pain Intensity",		{&r_painintensity},		{0.0}, {1.0},	{0.1},  {NULL} },
-	{ slider,	"Movement bobbing",			{&cl_movebob},			{0.0}, {1.0},	{0.1},	{NULL} },
-	{ slider,   "Weapon Visibility",        {&r_drawplayersprites}, {0.0}, {1.0},   {0.1},  {NULL} },
-	{ discrete,	"Visible Spawn Points",		{&cl_showspawns},		{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Center weapon when firing",{&cl_centerbobonfire},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Show Killing Sprees",		{&cl_showsprees},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Show Multi Kills",		{&cl_showmultikills},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
-	{ discrete, "Force Team Color",			{&r_forceteamcolor},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ redslider,   "Team Color Red",        {&r_teamcolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ greenslider, "Team Color Green",      {&r_teamcolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ blueslider,  "Team Color Blue",       {&r_teamcolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
-	{ discrete, "Force Enemy Color",        {&r_forceenemycolor},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ redslider,   "Enemy Color Red",       {&r_enemycolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ greenslider, "Enemy Color Green",     {&r_enemycolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ blueslider,  "Enemy Color Blue",      {&r_enemycolor},  {0.0}, {0.0},   {0.0},  {NULL} },
-	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
-	{ slider,   "UI Background Red",        {&ui_transred},         {0.0}, {255.0}, {16.0}, {NULL} },
-	{ slider,   "UI Background Green",      {&ui_transgreen},       {0.0}, {255.0}, {16.0}, {NULL} },
-	{ slider,   "UI Background Blue",       {&ui_transblue},        {0.0}, {255.0}, {16.0}, {NULL} },
-	{ slider,   "UI Background Visibility", {&ui_dimamount},        {0.0}, {1.0},   {0.1},  {NULL} },
-	{ redtext,	" ",					    {NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
-	{ discrete, "See killer on Death",			{&cl_deathcam},   {2.0}, {0.0}, {0.0}, {OnOff}},
-	{ discrete, "Stretch short skies",	    {&r_stretchsky},	   	{3.0}, {0.0},	{0.0},  {OnOffAuto} },
-	{ discrete, "Linear Skies",			    {&r_linearsky},	   		{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ discrete, "Invuln changes skies",		{&r_skypalette},		{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Use softer invuln effect", {&r_softinvulneffect},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Heart effect on friendlies", {&cl_showfriends},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Screen wipe style",	    {&r_wipetype},			{5.0}, {0.0},	{0.0},  {Wipes} },
-	{ discrete, "Multiplayer Intermissions",{&wi_oldintermission},	{2.0}, {0.0},	{0.0},  {DoomOrOdamex} },
-	{ discrete, "Show loading disk icon",	{&r_loadicon},			{2.0}, {0.0},	{0.0},	{OnOff} },
-    { discrete,	"Show DOS ending screen" ,  {&r_showendoom},		{3.0}, {0.0},	{0.0},  {Endoom} },
-
-
-};
-
-static void M_UpdateDisplayOptions()
-{
-	const static size_t menu_length = ARRAY_LENGTH(VideoItems);
-	const static size_t gamma_index = M_FindCvarInMenu(gammalevel, VideoItems, menu_length);
-
-	// update the parameters for gammalevel based on vid_gammatype (doom or zdoom gamma)
-	VideoItems[gamma_index].b.leftval = V_GetMinimumGammaLevel();
-	VideoItems[gamma_index].c.rightval = V_GetMaximumGammaLevel();
-	VideoItems[gamma_index].d.step = 0.1f;
-}
-
-menu_t VideoMenu = {
-	"M_VIDEO",
-	0,
-	static_cast<int>(ARRAY_LENGTH(VideoItems)),
-	0,
-	VideoItems,
-	4,
-	0,
-	&M_UpdateDisplayOptions
-};
+menu_t VideoMenu = {"", 0, 0, 0, nullptr, 0, 0, &M_UpdateDisplayOptions};
 
 /*=======================================
  *
@@ -1060,60 +590,8 @@ static value_t Crosshairs[] = {{0.0, "None"}, {1.0, "Cross 1"}, {2.0, "Cross 2"}
 static value_t ExtendedHudStyles[] = {{0.0, "Off"}, {1.0, "Horizontal 1"}, {2.0, "Horizontal 2"},
 								 {3.0, "Vertical 1"}, {4.0, "Vertical 2"},};
 
-static menuitem_t HUDItems[] = {
-    {yellowtext, "Status Bar", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {discrete, "Scale status bar", {&st_scale}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {yellowtext, "Floating HUD elements", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {discrete, "Scale HUD elements", {&hud_scale}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    {slider, "HUD Transparency", {&hud_transparency}, {0.0}, {1.0}, {0.1}, {NULL}},
-    {slider, "HUD Anchoring", {&hud_anchoring}, {0.0}, {1.0}, {0.1}, {NULL}},
-    {discrete, "Bigger font in HUD", {&hud_bigfont}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    // clang-format off
-    {discrete, "Show Secret Messages", {&hud_revealsecrets}, {4.0}, {0.0}, {0.0}, {SecretOptions}},
-    {discrete, "Player target names", {&hud_targetnames}, {2.0}, {0.0}, {0.0}, {HideShow}},
-    // clang-format on
-    {discrete, "Timer Type", {&hud_timer}, {3.0}, {0.0}, {0.0}, {TimerStyles}},
-    {discrete, "Speedometer", {&hud_speedometer}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    {slider, "Feed Timeout", {&hud_feedtime}, {1.0}, {10.0}, {0.25}, {NULL}},
-    {discrete, "Show Kills in Feed", {&hud_feedobits}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    {discrete, "Netdemo infos", {&hud_demobar}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    {discrete, "Extended hud", {&hud_extendedinfo}, {5.0}, {0.0}, {0.0}, {ExtendedHudStyles}},
-    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
 
-    {yellowtext, "Scoreboard", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {slider, "Scale scoreboard", {&hud_scalescoreboard}, {0.0}, {1.0}, {0.125}, {NULL}},
-    // clang-format off
-	{discrete, "Scores on Death", {&hud_show_scoreboard_ondeath}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    // clang-format on
-    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-
-    {yellowtext, "Capture the Flag", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {discrete, "Event Message Type", {&hud_gamemsgtype}, {3.0}, {0.0}, {0.0}, {VoxType}},
-    {discrete, "Held Flag Border", {&hud_heldflag}, {3.0}, {0.0}, {0.0}, {FlagHelds}},
-    {discrete, "Held Flag Flashes", {&hud_heldflag_flash}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-
-    {yellowtext, "Crosshair", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {discrete, "Crosshair type", {&hud_crosshair}, {9.0}, {0.0}, {0.0}, {Crosshairs}},
-    {discrete, "Scale crosshair", {&hud_crosshairscale}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    {discrete, "Crosshair health", {&hud_crosshairhealth}, {2.0}, {0.0}, {0.0}, {OnOff}},
-    {redslider, "Crosshair Red", {&hud_crosshaircolor}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {greenslider, "Crosshair Green", {&hud_crosshaircolor}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {blueslider, "Crosshair Blue", {&hud_crosshaircolor}, {0.0}, {0.0}, {0.0}, {NULL}},
-    {redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
-};
-
-menu_t HUDMenu = {
-    "M_HUD",                // title
-    1,                      // lastOn
-    static_cast<int>(ARRAY_LENGTH(HUDItems)), // numitems
-    0,                      // indent
-    HUDItems,               // items
-    0,                      // scrolltop
-    0,                      // scrollpos
-    NULL,                   // refreshfunc
-};
+menu_t HUDMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
 /*=======================================
  *
@@ -1168,42 +646,8 @@ static value_t TextColors[] =
 static value_t ScaleFactors[] = {{0.0, "Auto"}, {1.0, "1X"}, {2.0, "2X"},
                                  {3.0, "3X"},   {4.0, "4X"}, {5.0, "5X"}};
 
-static menuitem_t MessagesItems[] = {
-#if 0
-	{ discrete, "Language", 			 {&language},		   	{4.0}, {0.0},   {0.0}, {Languages} },
-#endif
-	{ slider,	"Message Timeout",		 {&con_notifytime},		{1.0}, {10.0},	{0.25}, {NULL} },
-	{ slider,	"Center Message Timeout",{&con_midtime},		{1.0}, {10.0},	{0.25}, {NULL} },
-	{ slider,	"Scale message text",    {&hud_scaletext},		{1.0}, {4.0}, 	{1.0}, {NULL} },
-	{ discrete,	"Colorize messages",	{&con_coloredmessages},	{2.0}, {0.0},   {0.0},	{OnOff} },
-	{ discrete,	"Scale console text",   {&con_scaletext},		{5.0}, {0.0}, 	{0.0}, {ScaleFactors} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ yellowtext,"Display settings",	{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete,	"Pickup messages",		{&message_showpickups},	{2.0}, {0.0},   {0.0},	{OnOff} },
-	{ discrete,	"Death messages",		{&message_showobituaries},	{2.0}, {0.0},   {0.0},	{OnOff} },
-	{ discrete,	"Spectator messages",	{&mute_spectators},	{2.0}, {0.0},   {0.0},	{OffOn} },
-	{ discrete,	"Enemy messages",		{&mute_enemies},	{2.0}, {0.0},   {0.0},	{OffOn} },
 
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ yellowtext, "Message Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ cdiscrete, "Item Pickup",			{&msg0color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Obituaries",			{&msg1color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Critical Messages",	{&msg2color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Chat Messages",		{&msg3color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Team Messages",		{&msg4color},		   	{21.0}, {0.0},	{0.0}, {TextColors} },
-	{ cdiscrete, "Centered Messages",	{&msgmidcolor},			{21.0}, {0.0},	{0.0}, {TextColors} }
-};
-
-menu_t MessagesMenu = {
-	"M_MESS",
-	0,
-	static_cast<int>(ARRAY_LENGTH(MessagesItems)),
-	0,
-	MessagesItems,
-	0,
-	0,
-	NULL
-};
+menu_t MessagesMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
 /*=======================================
  *
@@ -1235,42 +679,8 @@ static value_t MinimapLocations[] = {
 	{ 5.0, "Right Bottom" },
 };
 
-static menuitem_t AutomapItems[] = {
-	{ discrete, "Rotate automap",		{&am_rotate},		   	{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ discrete, "Overlay automap",		{&am_overlay},			{4.0}, {0.0},	{0.0},  {Overlays} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete, "Line Thickeness",		{&am_thickness},		{7.0}, {0.0},	{0.0},  {AutomapScales} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-    { discrete, "Show item count",		{&am_showitems},		{2.0}, {0.0},	{0.0},  {OnOff} },
-    { discrete, "Show monster count",	{&am_showmonsters},		{2.0}, {0.0},	{0.0},	{OnOff} },
-    { discrete, "Show secrets count",	{&am_showsecrets},	   	{2.0}, {0.0},	{0.0},  {OnOff} },
-    { discrete, "Show map timer", 	    {&am_showtime}, 	   	{2.0}, {0.0},	{0.0},  {OnOff} },
-    { discrete, "Map name style",       {&am_classicmapstring},	{2.0}, {0.0},	{0.0},  {ClassicMapStringTypes} },
 
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ yellowtext, "Automap Colors",		{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ discrete, "Highlight locked doors",{&am_showlocked},		{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ discrete, "Custom map colors",	{&am_usecustomcolors},	{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ more,     "Reset custom map colors",  {NULL},    {0.0}, {0.0},   {0.0},  {.mfunc = ResetCustomColors} },
-
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0},  {NULL} },
-	{ yellowtext, "Overlay Minimap Options", {NULL},			{0.0}, {0.0},	{0.0},  {NULL} },
-	{ discrete, "Enable Minimap",		{&am_ovminimap},		{2.0}, {0.0},	{0.0},  {OnOff} },
-	{ discrete, "Location",				{&am_ovlocation},		{6.0}, {0.0},	{0.0},  {MinimapLocations} },
-	{ slider,	"Scale Width",			{&am_ovscalewidth},		{0.0}, {1.0},	{0.05}, {NULL} },
-	{ slider,	"Scale Height",			{&am_ovscaleheight},	{0.0}, {1.0},	{0.05}, {NULL} },
-};
-
-menu_t AutomapMenu = {
-	"M_AUTOMP",
-	0,
-	static_cast<int>(ARRAY_LENGTH(AutomapItems)),
-	0,
-	AutomapItems,
-	0,
-	0,
-	NULL
-};
+menu_t AutomapMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
 
 /*=======================================
@@ -1392,6 +802,537 @@ menu_t ModesMenu = {
 	0,
 	NULL
 };
+
+namespace
+{
+	struct configuredoptionsbridge_t
+	{
+		std::string menuId;
+		menu_t* menu = nullptr;
+		menuconfheader_t header;
+		std::vector<menuconfitem_t> sourceItems;
+		std::vector<menuitem_t> generatedItems;
+		std::vector<std::string> labels;
+		std::vector<std::string> commands;
+	};
+
+	std::vector<configuredoptionsbridge_t> gConfiguredOptionsMenus;
+
+	void WarnMenuConfOption(const std::string& message)
+	{
+		PrintFmt(PRINT_WARNING, "MENUCONF: {}\n", message);
+	}
+
+	configuredoptionsbridge_t* ConfiguredOptionsBridgeByMenu(menu_t* menu)
+	{
+		for (configuredoptionsbridge_t& bridge : gConfiguredOptionsMenus)
+		{
+			if (bridge.menu == menu)
+			{
+				return &bridge;
+			}
+		}
+
+		return nullptr;
+	}
+
+	const configuredoptionsbridge_t* ConfiguredOptionsBridgeByMenu(const menu_t* menu)
+	{
+		for (const configuredoptionsbridge_t& bridge : gConfiguredOptionsMenus)
+		{
+			if (bridge.menu == menu)
+			{
+				return &bridge;
+			}
+		}
+
+		return nullptr;
+	}
+
+	menu_t* OptionsMenuSlotById(const std::string& menuId)
+	{
+		if (menuId == "options") return &OptionMenu;
+		if (menuId == "options.controls") return &ControlsMenu;
+		if (menuId == "options.mouse") return &MouseMenu;
+		if (menuId == "options.joystick") return &JoystickMenu;
+		if (menuId == "options.sound") return &SoundMenu;
+		if (menuId == "options.sound.advancedMidi") return &AdvMidiMenu;
+		if (menuId == "options.sound.opl") return &LibAdlMidiMenu;
+		if (menuId == "options.compat") return &CompatMenu;
+		if (menuId == "options.network") return &NetworkMenu;
+		if (menuId == "options.weapons") return &WeaponMenu;
+		if (menuId == "options.display") return &VideoMenu;
+		if (menuId == "options.display.hud") return &HUDMenu;
+		if (menuId == "options.display.messages") return &MessagesMenu;
+		if (menuId == "options.display.automap") return &AutomapMenu;
+		return nullptr;
+	}
+
+	const char* ResolveOptionLabel(const menuconfitem_t& item)
+	{
+		if (!item.languageKey.empty())
+		{
+			return LocalizedMenuString(item.languageKey.c_str());
+		}
+
+		if (!item.text.empty())
+		{
+			return item.text.c_str();
+		}
+
+		if (item.textProvider.rfind("weaponName:", 0) == 0)
+		{
+			const int index = atoi(item.textProvider.c_str() + 11);
+			return index >= 0 && index < 9 ? weaponnames[index] : "";
+		}
+
+		return "";
+	}
+
+	itemtype ResolveGeneratedLabelType(const menuconfitem_t& item)
+	{
+		if (item.kind == menuconfitemkind_t::separator)
+		{
+			return redtext;
+		}
+
+		if (item.kind == menuconfitemkind_t::label)
+		{
+			if (item.style == "heading") return yellowtext;
+			if (item.style == "warning") return orangetext;
+			return whitetext;
+		}
+
+		if (item.kind == menuconfitemkind_t::submenu || item.kind == menuconfitemkind_t::action)
+		{
+			return more;
+		}
+
+		if (item.kind == menuconfitemkind_t::controlBinding)
+		{
+			if (item.bindingSet == "automap") return mapcontrol;
+			if (item.bindingSet == "netdemo") return netdemocontrol;
+			return control;
+		}
+
+		if (item.kind == menuconfitemkind_t::dynamic)
+		{
+			if (item.provider == "activeJoystick") return joyactive;
+			if (item.provider == "gammaSlider") return slider;
+			if (item.provider == "overlayMode") return discrete;
+		}
+
+		if (item.kind == menuconfitemkind_t::cvarSlider)
+		{
+			if (item.cvar == "ui_transred") return redslider;
+			if (item.cvar == "ui_transgreen") return greenslider;
+			if (item.cvar == "ui_transblue") return blueslider;
+
+			if (item.widget == "colorChannel")
+			{
+				if (item.channel == "red") return redslider;
+				if (item.channel == "green") return greenslider;
+				if (item.channel == "blue") return blueslider;
+			}
+
+			return slider;
+		}
+
+		if (item.kind == menuconfitemkind_t::cvarDiscrete)
+		{
+			if (item.widget == "colorChoice")
+			{
+				return cdiscrete;
+			}
+
+			cvar_t* dummy = nullptr;
+			if (cvar_t* cvar = cvar_t::FindCVar(item.cvar, &dummy))
+			{
+				if (cvar->flags() & CVAR_SERVERINFO)
+				{
+					return svdiscrete;
+				}
+			}
+
+			return discrete;
+		}
+
+		return nochoice;
+	}
+
+	cvar_t* ResolveOptionCVar(const std::string& name)
+	{
+		if (name.empty())
+		{
+			return nullptr;
+		}
+
+		cvar_t* dummy = nullptr;
+		return cvar_t::FindCVar(name, &dummy);
+	}
+
+	bool HasBindingItems(const configuredoptionsbridge_t& bridge)
+	{
+		for (const menuitem_t& item : bridge.generatedItems)
+		{
+			if (item.type == control || item.type == mapcontrol || item.type == netdemocontrol)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	bool IsUIChannelSlider(const cvar_t* cvar)
+	{
+		if (cvar == nullptr)
+		{
+			return false;
+		}
+
+		return iequals(cvar->name(), "ui_transred") || iequals(cvar->name(), "ui_transgreen") ||
+		       iequals(cvar->name(), "ui_transblue");
+	}
+
+	argb_t MenuSliderColor(const menuitem_t& item)
+	{
+		if (IsUIChannelSlider(item.a.cvar))
+		{
+			return argb_t(ui_transred.asInt(), ui_transgreen.asInt(), ui_transblue.asInt());
+		}
+
+		return V_GetColorFromString(*item.a.cvar);
+	}
+
+	int MenuSliderChannelValue(const menuitem_t& item)
+	{
+		if (IsUIChannelSlider(item.a.cvar))
+		{
+			return item.a.cvar->asInt();
+		}
+
+		const argb_t color = V_GetColorFromString(*item.a.cvar);
+		switch (item.type)
+		{
+		case redslider: return color.getr();
+		case greenslider: return color.getg();
+		case blueslider: return color.getb();
+		default: return 0;
+		}
+	}
+
+	void SetMenuSliderChannelValue(menuitem_t& item, int part)
+	{
+		part = clamp(part, 0, 255);
+
+		if (IsUIChannelSlider(item.a.cvar))
+		{
+			item.a.cvar->Set(static_cast<float>(part));
+			return;
+		}
+
+		const char* oldcolor = item.a.cvar->cstring();
+		char newcolor[9];
+
+		if (strlen(oldcolor) == 8)
+			memcpy(newcolor, oldcolor, 9);
+		else
+			memcpy(newcolor, "00 00 00", 9);
+
+		char singlecolor[3];
+		snprintf(singlecolor, 3, "%02x", part);
+
+		if (item.type == redslider)
+			memcpy(newcolor, singlecolor, 2);
+		else if (item.type == greenslider)
+			memcpy(newcolor + 3, singlecolor, 2);
+		else if (item.type == blueslider)
+			memcpy(newcolor + 6, singlecolor, 2);
+
+		item.a.cvar->Set(newcolor);
+	}
+
+	bool IsSelectableOptionItem(const menuitem_t& item)
+	{
+		if (item.type == redtext || item.type == whitetext || item.type == yellowtext ||
+		    item.type == orangetext)
+		{
+			return false;
+		}
+
+		if (item.type == screenres && !item.b.res1)
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	int FirstSelectableOptionIndex(const configuredoptionsbridge_t& bridge)
+	{
+		for (size_t i = 0; i < bridge.generatedItems.size(); ++i)
+		{
+			if (IsSelectableOptionItem(bridge.generatedItems[i]))
+			{
+				return static_cast<int>(i);
+			}
+		}
+
+		return 0;
+	}
+
+	void ActivateConfiguredOptionsItem()
+	{
+		configuredoptionsbridge_t* bridge = ConfiguredOptionsBridgeByMenu(CurrentMenu);
+		if (bridge == nullptr || CurrentItem < 0 ||
+		    static_cast<size_t>(CurrentItem) >= bridge->sourceItems.size())
+		{
+			return;
+		}
+
+		const menuconfitem_t& item = bridge->sourceItems[CurrentItem];
+
+		if (item.action == "openConsole")
+		{
+			GoToConsole();
+			return;
+		}
+		if (item.action == "resetDefaults")
+		{
+			Reset2Defaults();
+			return;
+		}
+		if (item.action == "resetSaved")
+		{
+			Reset2Saved();
+			return;
+		}
+		if (item.action == "resetMouseDefaults")
+		{
+			M_ResetMouseValues();
+			return;
+		}
+		if (item.action == "resetCustomMapColors")
+		{
+			ResetCustomColors();
+			return;
+		}
+
+		if (!item.target.empty())
+		{
+			M_OpenMenuTarget(item.target);
+			return;
+		}
+
+		if (!item.action.empty())
+		{
+			WarnMenuConfOption(fmt::sprintf("options action \"%s\" is not wired yet",
+			                                item.action.c_str()));
+		}
+	}
+
+	bool BuildConfiguredOptionsMenu(configuredoptionsbridge_t& bridge, const std::string& menuId,
+	                                menu_t& slot)
+	{
+		const auto it = M_MenuConf().menus.find(menuId);
+		if (it == M_MenuConf().menus.end())
+		{
+			slot.numitems = 0;
+			slot.items = nullptr;
+			return false;
+		}
+
+		const menuconfmenu_t& authored = it->second;
+		bridge.menuId = menuId;
+		bridge.menu = &slot;
+		bridge.header = authored.header;
+		bridge.sourceItems = authored.items;
+		bridge.generatedItems.clear();
+		bridge.labels.clear();
+		bridge.commands.clear();
+		bridge.generatedItems.reserve(authored.items.size());
+		bridge.labels.reserve(authored.items.size());
+		bridge.commands.reserve(authored.items.size());
+
+		for (const menuconfitem_t& item : bridge.sourceItems)
+		{
+			menuitem_t generated = {};
+			generated.type = ResolveGeneratedLabelType(item);
+
+			std::string label = ResolveOptionLabel(item);
+			if (generated.type == redtext && item.kind == menuconfitemkind_t::separator)
+			{
+				label = " ";
+			}
+			bridge.labels.push_back(std::move(label));
+			generated.label = bridge.labels.back().c_str();
+
+			if (generated.type == more)
+			{
+				generated.e.mfunc = ActivateConfiguredOptionsItem;
+			}
+			else if (generated.type == control || generated.type == mapcontrol ||
+			         generated.type == netdemocontrol)
+			{
+				bridge.commands.push_back(item.command);
+				generated.e.command = bridge.commands.back().c_str();
+			}
+			else if (generated.type == joyactive)
+			{
+				generated.a.cvar = ResolveOptionCVar(item.cvar);
+			}
+			else if (generated.type == slider || generated.type == redslider ||
+			         generated.type == greenslider || generated.type == blueslider)
+			{
+				generated.a.cvar = ResolveOptionCVar(item.cvar);
+				generated.b.leftval = static_cast<float>(item.min);
+				generated.c.rightval = static_cast<float>(item.max);
+				generated.d.step = static_cast<float>(item.step);
+			}
+			else if (generated.type == discrete || generated.type == cdiscrete ||
+			         generated.type == svdiscrete)
+			{
+				generated.a.cvar = ResolveOptionCVar(item.cvar);
+				if (item.provider == "overlayMode")
+				{
+					int count = 0;
+					generated.e.values = M_OptionValueSet("Overlays", count);
+					generated.b.leftval = static_cast<float>(count);
+				}
+				else
+				{
+					int count = 0;
+					generated.e.values = M_OptionValueSet(item.values, count);
+					generated.b.leftval = static_cast<float>(count);
+				}
+			}
+
+			if ((generated.type == slider || generated.type == redslider ||
+			     generated.type == greenslider || generated.type == blueslider ||
+			     generated.type == joyactive || generated.type == discrete ||
+			     generated.type == cdiscrete || generated.type == svdiscrete) &&
+			    generated.a.cvar == nullptr)
+			{
+				WarnMenuConfOption(fmt::sprintf("options item \"%s\" references unknown cvar \"%s\"",
+				                                generated.label ? generated.label : "",
+				                                item.cvar.c_str()));
+				continue;
+			}
+
+			if ((generated.type == discrete || generated.type == cdiscrete ||
+			     generated.type == svdiscrete) &&
+			    generated.e.values == nullptr)
+			{
+				WarnMenuConfOption(fmt::sprintf("options item \"%s\" references unknown value set \"%s\"",
+				                                generated.label ? generated.label : "",
+				                                item.values.c_str()));
+				continue;
+			}
+
+			bridge.generatedItems.push_back(generated);
+		}
+
+		slot.title = authored.header.patch.empty() ? "" : authored.header.patch.c_str();
+		slot.lastOn = FirstSelectableOptionIndex(bridge);
+		slot.numitems = static_cast<int>(bridge.generatedItems.size());
+		slot.indent = authored.layout.indent;
+		slot.items = bridge.generatedItems.data();
+		slot.scrolltop = authored.layout.scroll ? 0 : 0;
+		slot.scrollpos = 0;
+		slot.refreshfunc = menuId == "options.display" ? &M_UpdateDisplayOptions : NULL;
+		return true;
+	}
+
+	void BuildConfiguredOptionsMenus()
+	{
+		static const char* const kMenuIds[] = {
+			"options",
+			"options.controls",
+			"options.mouse",
+			"options.joystick",
+			"options.sound",
+			"options.sound.advancedMidi",
+			"options.sound.opl",
+			"options.compat",
+			"options.network",
+			"options.weapons",
+			"options.display",
+			"options.display.hud",
+			"options.display.messages",
+			"options.display.automap",
+		};
+
+		gConfiguredOptionsMenus.clear();
+		gConfiguredOptionsMenus.reserve(ARRAY_LENGTH(kMenuIds));
+
+		for (const char* menuId : kMenuIds)
+		{
+			menu_t* slot = OptionsMenuSlotById(menuId);
+			if (slot == nullptr)
+			{
+				continue;
+			}
+
+			gConfiguredOptionsMenus.emplace_back();
+			if (!BuildConfiguredOptionsMenu(gConfiguredOptionsMenus.back(), menuId, *slot))
+			{
+				gConfiguredOptionsMenus.pop_back();
+			}
+		}
+	}
+
+	const patch_t* MenuArrowPatch(const std::string& name)
+	{
+		return MenuConfPatch(name);
+	}
+
+	const char* ConfiguredOptionsHeaderText(const configuredoptionsbridge_t* bridge)
+	{
+		if (bridge == nullptr)
+		{
+			return "OPTIONS";
+		}
+
+		if (!bridge->header.languageKey.empty())
+		{
+			return LocalizedMenuString(bridge->header.languageKey.c_str());
+		}
+
+		if (!bridge->header.text.empty())
+		{
+			return bridge->header.text.c_str();
+		}
+
+		return "OPTIONS";
+	}
+}
+
+static void M_UpdateDisplayOptions()
+{
+	menu_t* menu = OptionsMenuSlotById("options.display");
+	if (menu == nullptr || menu->items == nullptr)
+	{
+		return;
+	}
+
+	configuredoptionsbridge_t* bridge = ConfiguredOptionsBridgeByMenu(menu);
+	if (bridge == nullptr)
+	{
+		return;
+	}
+
+	for (menuitem_t& item : bridge->generatedItems)
+	{
+		if (item.a.cvar == &gammalevel)
+		{
+			item.b.leftval = V_GetMinimumGammaLevel();
+			item.c.rightval = V_GetMaximumGammaLevel();
+			item.d.step = 0.1f;
+			break;
+		}
+	}
+}
 
 static void BuildModesList(int hiwidth, int hiheight)
 {
@@ -1588,6 +1529,8 @@ void M_OptInit (void)
 	default:
 		break;
 	}
+
+	BuildConfiguredOptionsMenus();
 }
 
 
@@ -1684,7 +1627,39 @@ void M_SwitchMenu(menu_t* menu)
 
 bool M_StartOptionsMenu (void)
 {
-	M_SwitchMenu (&OptionMenu);
+	return M_OpenGeneratedOptionsMenu("options");
+}
+
+bool M_OpenGeneratedOptionsMenu(const std::string& menuId)
+{
+	menu_t* menu = OptionsMenuSlotById(menuId);
+	if (menu == nullptr)
+	{
+		WarnMenuConfOption(fmt::sprintf("options target \"%s\" is not mapped to a runtime menu",
+		                                menuId.c_str()));
+		return false;
+	}
+
+	const configuredoptionsbridge_t* bridge = ConfiguredOptionsBridgeByMenu(menu);
+	if (bridge == nullptr)
+	{
+		WarnMenuConfOption(fmt::sprintf("options menu \"%s\" is not available", menuId.c_str()));
+		return false;
+	}
+
+	if (HasBindingItems(*bridge))
+	{
+		M_BuildKeyList(menu->items, menu->numitems);
+	}
+
+	if (menu->numitems > 0 &&
+	    (menu->lastOn < 0 || menu->lastOn >= menu->numitems ||
+	     !IsSelectableOptionItem(menu->items[menu->lastOn])))
+	{
+		menu->lastOn = FirstSelectableOptionIndex(*bridge);
+	}
+
+	M_SwitchMenu(menu);
 	return true;
 }
 
@@ -1777,6 +1752,7 @@ void M_OptDrawer (void)
 	patch_t *title;
 	const int lineHeight = smallFont->lineHeight();
 	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
+	const configuredoptionsbridge_t* bridge = ConfiguredOptionsBridgeByMenu(CurrentMenu);
 
 	if (W_CheckNumForName(CurrentMenu->title) >= 0)
 	{
@@ -1786,10 +1762,11 @@ void M_OptDrawer (void)
 	}
 	else
 	{	
-		int titlewidth = V_StringWidth(bigFont, "OPTIONS") * CleanXfac;
+		const char* titleText = ConfiguredOptionsHeaderText(bridge);
+		int titlewidth = V_StringWidth(bigFont, titleText) * CleanXfac;
 		int titleX = (I_GetSurfaceWidth() / 2) - (titlewidth / 2);
 		int titleY = 20*CleanYfac;
-		screen->DrawTextClean(bigFont, CR_GRAY, titleX, titleY, "OPTIONS");
+		screen->DrawTextClean(bigFont, CR_GRAY, titleX, titleY, titleText);
 		y = ystart;
 	}
 	ytop = y + CurrentMenu->scrolltop * lineHeight;
@@ -1920,20 +1897,23 @@ void M_OptDrawer (void)
 
 			case redslider:
 			{
-				argb_t color = V_GetColorFromString(*item->a.cvar);
-				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.getr(), color);
+				argb_t color = MenuSliderColor(*item);
+				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255,
+				                    static_cast<float>(MenuSliderChannelValue(*item)), color);
 			}
 			break;
 			case greenslider:
 			{
-				argb_t color = V_GetColorFromString(*item->a.cvar);
-				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.getg(), color);
+				argb_t color = MenuSliderColor(*item);
+				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255,
+				                    static_cast<float>(MenuSliderChannelValue(*item)), color);
 			}
 			break;
 			case blueslider:
 			{
-				argb_t color = V_GetColorFromString(*item->a.cvar);
-				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255, color.getb(), color);
+				argb_t color = MenuSliderColor(*item);
+				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255,
+				                    static_cast<float>(MenuSliderChannelValue(*item)), color);
 			}
 			break;
 
@@ -2025,14 +2005,18 @@ void M_OptDrawer (void)
 
 	if (CanScrollUp)
 	{
-		const patch_t* patch = W_CachePatch("LITLUP");
-		screen->DrawPatchCleanWithPalette(patch, 3, ytop, palette);
+		if (const patch_t* patch = MenuArrowPatch(M_MenuConf().theme.upPatch))
+		{
+			screen->DrawPatchCleanWithPalette(patch, 3, ytop, palette);
+		}
 	}
 
 	if (CanScrollDown)
 	{
-		const patch_t* patch = W_CachePatch("LITLDN");
-		screen->DrawPatchCleanWithPalette(patch, 3, 190, palette);
+		if (const patch_t* patch = MenuArrowPatch(M_MenuConf().theme.downPatch))
+		{
+			screen->DrawPatchCleanWithPalette(patch, 3, 190, palette);
+		}
 	}
 }
 
@@ -2289,40 +2273,9 @@ void M_OptResponder(const event_t& ev)
 		case greenslider:
 		case blueslider:
 		{
-			const char* oldcolor = item->a.cvar->cstring();
-			char newcolor[9];
-
-			if (strlen(oldcolor) == 8)
-				memcpy(newcolor, oldcolor, 9);
-			else
-				memcpy(newcolor, "00 00 00", 9);
-
-			argb_t color = V_GetColorFromString(oldcolor);
-			int part = 0;
-
-			if (item->type == redslider)
-				part = color.getr();
-			else if (item->type == greenslider)
-				part = color.getg();
-			else if (item->type == blueslider)
-				part = color.getb();
-
-			if (part > 0x00)
-				part -= 0x11;
-			if (part < 0x00)
-				part = 0x00;
-
-			char singlecolor[3];
-			snprintf(singlecolor, 3, "%02x", part);
-
-			if (item->type == redslider)
-				memcpy(newcolor, singlecolor, 2);
-			else if (item->type == greenslider)
-				memcpy(newcolor + 3, singlecolor, 2);
-			else if (item->type == blueslider)
-				memcpy(newcolor + 6, singlecolor, 2);
-
-			item->a.cvar->Set(newcolor);
+			int part = MenuSliderChannelValue(*item);
+			part -= static_cast<int>(item->d.step > 0.0f ? item->d.step : 0x11);
+			SetMenuSliderChannelValue(*item, part);
 		}
 		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 		break;
@@ -2415,40 +2368,9 @@ void M_OptResponder(const event_t& ev)
 		case greenslider:
 		case blueslider:
 		{
-			const char* oldcolor = item->a.cvar->cstring();
-			char newcolor[9];
-
-			if (strlen(oldcolor) == 8)
-				memcpy(newcolor, oldcolor, 9);
-			else
-				memcpy(newcolor, "00 00 00", 9);
-
-			argb_t color = V_GetColorFromString(oldcolor);
-			int part = 0;
-
-			if (item->type == redslider)
-				part = color.getr();
-			else if (item->type == greenslider)
-				part = color.getg();
-			else if (item->type == blueslider)
-				part = color.getb();
-
-			if (part < 0xff)
-				part += 0x11;
-			if (part > 0xff)
-				part = 0xff;
-
-			char singlecolor[3];
-			snprintf(singlecolor, 3, "%02x", part);
-
-			if (item->type == redslider)
-				memcpy(newcolor, singlecolor, 2);
-			else if (item->type == greenslider)
-				memcpy(newcolor + 3, singlecolor, 2);
-			else if (item->type == blueslider)
-				memcpy(newcolor + 6, singlecolor, 2);
-
-			item->a.cvar->Set(newcolor);
+			int part = MenuSliderChannelValue(*item);
+			part += static_cast<int>(item->d.step > 0.0f ? item->d.step : 0x11);
+			SetMenuSliderChannelValue(*item, part);
 		}
 		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
 		break;
@@ -2675,99 +2597,24 @@ void Reset2Saved (void)
 	UpdateStuff();
 }
 
-static void StartHUDMenu()
-{
-	M_SwitchMenu(&HUDMenu);
-}
-
-static void StartMessagesMenu (void)
-{
-	M_SwitchMenu (&MessagesMenu);
-}
-
-static void StartAutomapMenu (void)
-{
-	M_SwitchMenu (&AutomapMenu);
-}
-
 void ResetCustomColors (void)
 {
 	AddCommandString ("resetcustomcolors");
-}
-
-void MouseSetup (void) // [Toke] for mouse menu
-{
-	M_SwitchMenu (&MouseMenu);
-}
-
-void JoystickSetup (void)
-{
-	M_SwitchMenu (&JoystickMenu);
-}
-
-static void CustomizeControls (void)
-{
-	M_BuildKeyList (ControlsMenu.items, ControlsMenu.numitems);
-	M_SwitchMenu (&ControlsMenu);
-}
-
-// [Russell] - Hack for getting to the player setup menu, doesn't
-// record the last menu though, unfortunately
-static void PlayerSetup (void)
-{
-    M_ClearMenus ();
-    M_StartControlPanel ();
-	M_PlayerSetup(0);
 }
 
 BEGIN_COMMAND (menu_keys)
 {
 	M_StartControlPanel ();
 	OptionsActive = true;
-	CustomizeControls();
+	M_OpenGeneratedOptionsMenu("options.controls");
 }
 END_COMMAND (menu_keys)
-
-static void VideoOptions (void)
-{
-	M_SwitchMenu (&VideoMenu);
-}
-
-void AdvMidiOptions (void)
-{
-	M_SwitchMenu (&AdvMidiMenu);
-}
-
-void LibAdlMidiOptions (void)
-{
-	M_SwitchMenu (&LibAdlMidiMenu);
-}
-
-void SoundOptions (void) // [Ralphis] for sound menu
-{
-	M_SwitchMenu (&SoundMenu);
-}
-
-void CompatOptions (void) // [Ralphis] for compatibility menu
-{
-	M_SwitchMenu (&CompatMenu);
-}
-
-void NetworkOptions (void)
-{
-	M_SwitchMenu (&NetworkMenu);
-}
-
-void WeaponOptions (void)
-{
-	M_SwitchMenu (&WeaponMenu);
-}
 
 BEGIN_COMMAND (menu_display)
 {
 	M_StartControlPanel ();
 	OptionsActive = true;
-	M_SwitchMenu (&VideoMenu);
+	M_OpenGeneratedOptionsMenu("options.display");
 }
 END_COMMAND (menu_display)
 
@@ -2781,3 +2628,6 @@ BEGIN_COMMAND (menu_video)
 END_COMMAND (menu_video)
 
 VERSION_CONTROL (m_options_cpp, "$Id$")
+
+
+

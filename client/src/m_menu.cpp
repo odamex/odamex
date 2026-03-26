@@ -17,8 +17,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//		DOOM selection menu, options, episode etc.
-//		Sliders and icons. Kinda widget stuff.
+//   Menu widget stuff, episode selection and such.
 //
 //-----------------------------------------------------------------------------
 
@@ -201,8 +200,8 @@ static void M_SlidePlayerBlue (int choice);
 namespace
 {
 	struct menudestination_t;
-	bool M_OpenMenuTarget(const std::string& target);
-	bool M_OpenMenuEntrypoint(const std::string& name);
+	bool M_OpenMenuTargetImpl(const std::string& target);
+	bool M_OpenMenuEntrypointImpl(const std::string& name);
 }
 bool M_DemoNoPlay;
 
@@ -809,7 +808,10 @@ namespace
 		}
 		if (builtinId == "playerSetup")
 		{
+			M_ClearMenus();
+			M_StartControlPanel();
 			M_PlayerSetup(0);
+			PSetupDepth = 0;
 			return true;
 		}
 		if (builtinId == "videoMode")
@@ -835,10 +837,10 @@ namespace
 				M_SetupNextMenu(&MainDef);
 				return true;
 			}
-			if (destination.id == "options")
+			if (destination.id.rfind("options", 0) == 0)
 			{
-				OptionsActive = M_StartOptionsMenu();
-				return true;
+				OptionsActive = M_OpenGeneratedOptionsMenu(destination.id);
+				return OptionsActive;
 			}
 			if (destination.id == "episodes")
 			{
@@ -871,13 +873,13 @@ namespace
 		}
 	}
 
-	bool M_OpenMenuTarget(const std::string& target)
+	bool M_OpenMenuTargetImpl(const std::string& target)
 	{
 		menudestination_t destination;
 		return M_ResolveMenuTarget(target, destination) && M_OpenResolvedDestination(destination);
 	}
 
-	bool M_OpenMenuEntrypoint(const std::string& name)
+	bool M_OpenMenuEntrypointImpl(const std::string& name)
 	{
 		menudestination_t destination;
 		return M_ResolveMenuEntrypoint(name, destination) && M_OpenResolvedDestination(destination);
@@ -987,6 +989,16 @@ namespace
 		drawSide(decorations.left);
 		drawSide(decorations.right);
 	}
+}
+
+bool M_OpenMenuTarget(const std::string& target)
+{
+	return M_OpenMenuTargetImpl(target);
+}
+
+bool M_OpenMenuEntrypoint(const std::string& name)
+{
+	return M_OpenMenuEntrypointImpl(name);
 }
 
 void M_ActivateConfiguredMenuItem(int choice)
