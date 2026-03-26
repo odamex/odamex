@@ -2,6 +2,7 @@
 
 gameinfo
 {
+	demoloop = "BFGDMLP"
 	titlepage = "DMENUPIC"
 	menuconfoverride = "_BFGMENU"
 }
@@ -19,7 +20,6 @@ episode level01
 	name = "No Rest for the Living"
 	picname = "M_EPI2"
 	key = "n"
-	optional
 }
 
 map MAP02 lookup "HUSTR_2"

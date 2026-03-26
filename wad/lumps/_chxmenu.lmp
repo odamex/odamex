@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "metadata": {
     "author": "Odamex Team",
-    "timestamp": "2026-03-24T21:15:00-05:00",
+    "timestamp": "2026-03-25T12:25:00-05:00",
     "application": "Odamex"
   },
   "data": {
@@ -19,21 +19,21 @@
         "layout": {
           "style": "classicMenu",
           "x": 97,
-          "y": 72,
+          "y": 64,
           "topPadding": 0,
           "itemSpacing": "font"
         },
         "items": [
-          { "kind": "submenu", "patch": "M_NGAME", "text": null, "languageKey": "MNU_NEWGAME", "target": "skills", "hotkey": "N" },
+          { "kind": "action", "patch": "M_NGAME", "text": null, "languageKey": "MNU_NEWGAME", "action": "chooseEpisode", "params": { "episode": "chex.ep1" }, "target": "skills", "hotkey": "N" },
           { "kind": "submenu", "patch": "M_OPTION", "text": null, "languageKey": "MNU_OPTIONS", "target": "options", "hotkey": "O" },
           { "kind": "action", "patch": "M_LOADG", "text": null, "languageKey": "MNU_LOADGAME", "target": "builtin:loadGame", "hotkey": "L" },
           { "kind": "action", "patch": "M_SAVEG", "text": null, "languageKey": "MNU_SAVEGAME", "target": "builtin:saveGame", "hotkey": "S" },
+          { "kind": "action", "patch": "M_RDTHIS", "text": "READ THIS!", "languageKey": null, "target": "builtin:help", "hotkey": "R" },
           { "kind": "action", "patch": "M_QUITG", "text": null, "languageKey": "MNU_QUITGAME", "action": "quitGame", "hotkey": "Q" }
         ]
       }
     },
     "entrypoints": {
-      "mainMenu": "main",
       "newGameMenu": "skills"
     }
   }

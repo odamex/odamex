@@ -17,6 +17,8 @@ gameinfo
 	titlepage = "TITLEPIC"
 	titletime = 5
 	maxswitch = 2
+	menuconf = "_DMENU"
+	menuconfoverride = "_CHXMENU"
 }
 
 clearepisodes

@@ -59,8 +59,6 @@
 #include "g_skill.h"
 #include "m_fileio.h"
 
-EXTERN_CVAR(g_resetinvonexit)
-
 // temp for screenblocks (0-9)
 int 				screenSize;
 
@@ -129,14 +127,25 @@ int					PSetupDepth;
 
 // current menudef
 oldmenu_t *currentMenu;
+struct configuredoldmenubridge_t
+{
+	const char* menuId = nullptr;
+	oldmenu_t* menu = nullptr;
+	std::vector<menuconfitem_t> items;
+	std::vector<oldmenuitem_t> legacyItems;
+};
+
+static configuredoldmenubridge_t gConfiguredMainBridge;
+static configuredoldmenubridge_t gConfiguredEpisodeBridge;
+static configuredoldmenubridge_t gConfiguredExpansionBridge;
+static configuredoldmenubridge_t gConfiguredSkillBridge;
+static configuredoldmenubridge_t gConfiguredGameFilesBridge;
+static std::string gSelectedEpisodeId;
 
 //
 // PROTOTYPES
 //
 void M_NewGame(int choice);
-void M_Episode(int choice);
-void M_GameFiles(int choice);
-void M_Expansion(int choice);
 void M_ChooseSkill(int choice);
 void M_LoadGame(int choice);
 void M_SaveGame(int choice);
@@ -146,6 +155,7 @@ void M_ReadThis(int choice);
 void M_ReadThis2(int choice);
 void M_ReadThis3(int choice);
 void M_QuitGame(int choice);
+void M_ActivateConfiguredMenuItem(int choice);
 
 void M_ChangeDetail(int choice);
 void M_StartGame(int choice);
@@ -162,9 +172,6 @@ void M_DrawMainMenu();
 void M_DrawReadThis1();
 void M_DrawReadThis2();
 void M_DrawReadThis3();
-void M_DrawNewGame();
-void M_DrawGameFiles();
-void M_DrawEpisode();
 void M_DrawOptions();
 void M_DrawSound();
 void M_DrawLoad();
@@ -191,6 +198,12 @@ static void SendNewColor (int red, int green, int blue);
 static void M_SlidePlayerRed (int choice);
 static void M_SlidePlayerGreen (int choice);
 static void M_SlidePlayerBlue (int choice);
+namespace
+{
+	struct menudestination_t;
+	bool M_OpenMenuTarget(const std::string& target);
+	bool M_OpenMenuEntrypoint(const std::string& name);
+}
 bool M_DemoNoPlay;
 
 static IWindowSurface* fire_surface;
@@ -231,153 +244,31 @@ static void M_ResumeSound(void)
 	S_ResumeSound();
 }
 
-//
-// DOOM MENU
-//
-enum d1_main_t
-{
-	d1_newgame = 0,
-	d1_options,					// [RH] Moved
-	d1_loadgame,
-	d1_savegame,
-	d1_readthis,
-	d1_quitdoom,
-	d1_main_end
-}d1_main_e;
-
-oldmenuitem_t DoomMainMenu[]=
-{
-	{1,"M_NGAME","",M_NewGame,'N'},
-	{1,"M_OPTION","",M_Options,'O'},	// [RH] Moved
-    {1,"M_LOADG","",M_LoadGame,'L'},
-    {1,"M_SAVEG","",M_SaveGame,'S'},
-    {1,"M_RDTHIS","",M_ReadThis,'R'},
-	{1,"M_QUITG","",M_QuitGame,'Q'}
-};
-
-//
-// DOOM 2 MENU
-//
-
-enum d2_main_t
-{
-	d2_newgame = 0,
-	d2_options,					// [RH] Moved
-	d2_loadgame,
-	d2_savegame,
-	d2_quitdoom,
-	d2_main_end
-}d2_main_e;
-
-oldmenuitem_t Doom2MainMenu[]=
-{
-	{1,"M_NGAME","",M_NewGame,'N'},
-	{1,"M_OPTION","",M_Options,'O'},	// [RH] Moved
-    {1,"M_LOADG","",M_LoadGame,'L'},
-    {1,"M_SAVEG","",M_SaveGame,'S'},
-	{1,"M_QUITG","",M_QuitGame,'Q'}
-};
-
-//
-// HERETIC MENU
-//
-enum htc_main_t
-{
-	htc_newgame = 0,
-	htc_options,	
-	htc_gamefiles,				// [RH] Moved
-	htc_info,
-	htc_quitgame,
-	htc_main_end
-} htc_main_e;
-
-oldmenuitem_t HereticMainMenu[]=
-{
-	{1,"","MNU_NEWGAME",M_NewGame,'N'},
-	{1,"","MNU_OPTIONS",M_Options,'O'},	// [RH] Moved
-    {1,"","MNU_GAMEFILES",M_GameFiles,'G'},
-    {1,"","MNU_INFO",M_ReadThis,'I'},
-	{1,"","MNU_QUITGAME",M_QuitGame,'Q'}
-};
-
-oldmenuitem_t GameFilesMenu[]=
-{
-	{1,"","MNU_LOADGAME",M_LoadGame,'l'},
-	{1,"","MNU_SAVEGAME",M_SaveGame,'2'}
-};
-
-// Default used is the Doom Menu
 oldmenu_t MainDef =
 {
-	d1_main_end,
-	DoomMainMenu,
+	0,
+	nullptr,
 	M_DrawMainMenu,
 	97,64,
 	0
 };
 
-// Heretic Main Menu Definition
-oldmenu_t HereticMainDef =
-{
-	htc_main_end,
-	HereticMainMenu,
-	M_DrawMainMenu,
-	110,56,
-	0
-};
-
-//
-// EPISODE SELECT
-//
-
-oldmenuitem_t EpisodeMenu[MAX_EPISODES] =
-{
-	{1,"","\0", M_Episode,0},
-	{1,"","\0", M_Episode,0},
-	{1,"","\0", M_Episode,0},
-	{1,"","\0", M_Episode,0},
-	{1,"","\0", M_Episode,0},
-	{1,"","\0", M_Episode,0},
-	{1,"","\0", M_Episode,0},
-	{1,"","\0", M_Episode,0},
-	{1,"","\0", M_Episode,0},
-	{1,"","\0", M_Episode,0}
-};
-
 oldmenu_t EpiDef =
 {
 	0,
-	EpisodeMenu,		// oldmenuitem_t ->
-	M_DrawEpisode,		// drawing routine ->
+	nullptr,
+	nullptr,
 	48,63,				// x,y
 	0	 				// lastOn
 };
 
-int epi;
-
-//
-// EXPANSION SELECT (DOOM2 BFG)
-//
-enum expansions_t
-{
-	hoe,
-	nrftl,
-	exp_end
-} expansions_e;
-
-oldmenuitem_t ExpansionMenu[]=
-{
-	{1,"M_EPI1","\0", M_Expansion,'h'},
-	{1,"M_EPI2","\0", M_Expansion,'n'},
-};
-
 oldmenu_t ExpDef =
 {
-	exp_end,	 		// # of menu items
-	ExpansionMenu,		// oldmenuitem_t ->
-	M_DrawEpisode,		// drawing routine ->
+	0,
+	nullptr,
+	nullptr,
 	48,63,				// x,y
-	hoe 				// lastOn
+	0
 };
 
 
@@ -385,24 +276,11 @@ oldmenu_t ExpDef =
 // NEW GAME
 //
 
-oldmenuitem_t NewGameMenu[MAX_SKILLS + 1]=
-{
-	{1,"","\0", M_ChooseSkill,0},
-	{1,"","\0", M_ChooseSkill,0},
-	{1,"","\0", M_ChooseSkill,0},
-	{1,"","\0", M_ChooseSkill,0},
-	{1,"","\0", M_ChooseSkill,0},
-	{1,"","\0", M_ChooseSkill,0},
-	{1,"","\0", M_ChooseSkill,0},
-	{1,"","\0", M_ChooseSkill,0},
-	//{1,"\0", M_ChooseSkill,0}
-};
-
 oldmenu_t NewDef =
 {
-	0,			// # of menu items
-	NewGameMenu,		// oldmenuitem_t ->
-	M_DrawNewGame,		// drawing routine ->
+	0,
+	nullptr,
+	nullptr,
 	48,63,				// x,y
 	0				// lastOn
 };
@@ -516,21 +394,11 @@ oldmenu_t ReadDef3 =
 	0
 };
 
-//
-// GAME FILES MENU
-//
-enum gamefiles_t
-{
-	gamefiles_load,
-	gamefiles_save,
-	gamefiles_end
-} gamefiles_e;
-
 oldmenu_t GameFilesDef =
 {
-	gamefiles_end,
-	GameFilesMenu,
-	M_DrawGameFiles,
+	0,
+	nullptr,
+	nullptr,
 	110,60,
 	0
 };
@@ -618,8 +486,10 @@ oldmenu_t HticSaveDef =
 BEGIN_COMMAND (menu_main)
 {
 	M_StartControlPanel ();
-	M_SetupNextMenu (&MainDef);
-	PSetupDepth = 2;
+	if (M_OpenMenuEntrypoint("mainMenu"))
+	{
+		PSetupDepth = 2;
+	}
 }
 END_COMMAND (menu_main)
 
@@ -653,8 +523,10 @@ BEGIN_COMMAND (menu_options)
 {
     // F4
     M_StartControlPanel ();
-	M_Options(0);
-	PSetupDepth = 1;
+	if (M_OpenMenuEntrypoint("optionsMenu"))
+	{
+		PSetupDepth = 1;
+	}
 }
 END_COMMAND (menu_options)
 
@@ -711,6 +583,40 @@ static const char* LocalizedString(const char* key)
 
 namespace
 {
+	enum class menudestinationkind_t
+	{
+		invalid,
+		menu,
+		builtin
+	};
+
+	struct menudestination_t
+	{
+		menudestinationkind_t kind = menudestinationkind_t::invalid;
+		std::string id;
+	};
+
+	configuredoldmenubridge_t* MenuBridgeByMenu(oldmenu_t* menu)
+	{
+		configuredoldmenubridge_t* bridges[] = {
+			&gConfiguredMainBridge,
+			&gConfiguredEpisodeBridge,
+			&gConfiguredExpansionBridge,
+			&gConfiguredSkillBridge,
+			&gConfiguredGameFilesBridge
+		};
+
+		for (configuredoldmenubridge_t* bridge : bridges)
+		{
+			if (bridge->menu == menu)
+			{
+				return bridge;
+			}
+		}
+
+		return nullptr;
+	}
+
 	const menuconftheme_t& MenuConfTheme()
 	{
 		return M_MenuConf().theme;
@@ -764,6 +670,284 @@ namespace
 		return patch != nullptr ? patch : MenuConfPatch("M_LSRGHT");
 	}
 
+	void WarnMenuConf(const std::string& message)
+	{
+		PrintFmt(PRINT_WARNING, "MENUCONF: {}\n", message);
+	}
+
+	int SkillIndexForId(const std::string& id)
+	{
+		if (id == "baby") return 0;
+		if (id == "easy") return 1;
+		if (id == "normal") return 2;
+		if (id == "hard") return 3;
+		if (id == "nightmare") return 4;
+		return -1;
+	}
+
+	void DrawConfiguredMenu()
+	{
+		configuredoldmenubridge_t* bridge = MenuBridgeByMenu(currentMenu);
+		if (bridge == nullptr || bridge->menuId == nullptr)
+		{
+			return;
+		}
+
+		const menuconfmenu_t* menu = MenuConfMenu(bridge->menuId);
+		if (menu == nullptr)
+		{
+			return;
+		}
+
+		const patch_t* headerPatch = MenuConfPatch(menu->header.patch);
+		if (headerPatch != nullptr)
+		{
+			int x = (320 - headerPatch->width()) / 2;
+			if (iequals(menu->header.align, "absolute"))
+			{
+				x = menu->header.x;
+			}
+			else
+			{
+				x += menu->header.x;
+			}
+
+			screen->DrawPatchClean(headerPatch, x, menu->header.y);
+			return;
+		}
+
+		const char* headerText = nullptr;
+		if (!menu->header.languageKey.empty())
+		{
+			headerText = LocalizedString(menu->header.languageKey.c_str());
+		}
+		else if (!menu->header.text.empty())
+		{
+			headerText = menu->header.text.c_str();
+		}
+
+		if (headerText != nullptr)
+		{
+			const OFont* bigFont = OFonts.big();
+			int x = 160 - V_StringWidth(bigFont, headerText) / 2;
+			if (iequals(menu->header.align, "absolute"))
+			{
+				x = menu->header.x;
+			}
+			else
+			{
+				x += menu->header.x;
+			}
+
+			screen->DrawTextCleanMove(bigFont, CR_GRAY, x, menu->header.y, headerText);
+		}
+	}
+
+	bool M_ResolveMenuTarget(const std::string& target, menudestination_t& out)
+	{
+		out = menudestination_t();
+		if (target.empty())
+		{
+			return false;
+		}
+
+		if (target.rfind("builtin:", 0) == 0)
+		{
+			const std::string builtinId = target.substr(8);
+			if (builtinId == "help" || builtinId == "loadGame" || builtinId == "saveGame" ||
+			    builtinId == "playerSetup" || builtinId == "videoMode")
+			{
+				out.kind = menudestinationkind_t::builtin;
+				out.id = builtinId;
+				return true;
+			}
+
+			WarnMenuConf(fmt::sprintf("unsupported builtin target \"%s\"", target.c_str()));
+			return false;
+		}
+
+		if (M_MenuConf().menus.find(target) == M_MenuConf().menus.end())
+		{
+			WarnMenuConf(fmt::sprintf("unknown menu target \"%s\"", target.c_str()));
+			return false;
+		}
+
+		out.kind = menudestinationkind_t::menu;
+		out.id = target;
+		return true;
+	}
+
+	bool M_ResolveMenuEntrypoint(const std::string& name, menudestination_t& out)
+	{
+		const auto it = M_MenuConf().entrypoints.find(name);
+		if (it == M_MenuConf().entrypoints.end())
+		{
+			WarnMenuConf(fmt::sprintf("missing entrypoint \"%s\"", name.c_str()));
+			out = menudestination_t();
+			return false;
+		}
+
+		return M_ResolveMenuTarget(it->second, out);
+	}
+
+	bool M_OpenBuiltinTarget(const std::string& builtinId)
+	{
+		if (builtinId == "help")
+		{
+			M_ReadThis(0);
+			return true;
+		}
+		if (builtinId == "loadGame")
+		{
+			M_LoadGame(0);
+			return true;
+		}
+		if (builtinId == "saveGame")
+		{
+			M_SaveGame(0);
+			return true;
+		}
+		if (builtinId == "playerSetup")
+		{
+			M_PlayerSetup(0);
+			return true;
+		}
+		if (builtinId == "videoMode")
+		{
+			AddCommandString("menu_video");
+			return true;
+		}
+
+		WarnMenuConf(fmt::sprintf("unsupported builtin target \"builtin:%s\"", builtinId.c_str()));
+		return false;
+	}
+
+	bool M_OpenResolvedDestination(const menudestination_t& destination)
+	{
+		switch (destination.kind)
+		{
+		case menudestinationkind_t::builtin:
+			return M_OpenBuiltinTarget(destination.id);
+
+		case menudestinationkind_t::menu:
+			if (destination.id == "main")
+			{
+				M_SetupNextMenu(&MainDef);
+				return true;
+			}
+			if (destination.id == "options")
+			{
+				OptionsActive = M_StartOptionsMenu();
+				return true;
+			}
+			if (destination.id == "episodes")
+			{
+				M_SetupNextMenu(&EpiDef);
+				return true;
+			}
+			if (destination.id == "skills")
+			{
+				M_SetupNextMenu(&NewDef);
+				return true;
+			}
+			if (destination.id == "expansions")
+			{
+				M_SetupNextMenu(&ExpDef);
+				return true;
+			}
+			if (destination.id == "gamefiles")
+			{
+				M_SetupNextMenu(&GameFilesDef);
+				return true;
+			}
+
+			WarnMenuConf(fmt::sprintf("menu target \"%s\" is not wired to the legacy runtime yet",
+			                          destination.id.c_str()));
+			return false;
+
+		case menudestinationkind_t::invalid:
+		default:
+			return false;
+		}
+	}
+
+	bool M_OpenMenuTarget(const std::string& target)
+	{
+		menudestination_t destination;
+		return M_ResolveMenuTarget(target, destination) && M_OpenResolvedDestination(destination);
+	}
+
+	bool M_OpenMenuEntrypoint(const std::string& name)
+	{
+		menudestination_t destination;
+		return M_ResolveMenuEntrypoint(name, destination) && M_OpenResolvedDestination(destination);
+	}
+
+	bool BuildConfiguredOldMenu(configuredoldmenubridge_t& bridge, const char* menuId, oldmenu_t& menu,
+	                            void (*routine)())
+	{
+		const menuconfmenu_t* configuredMenu = MenuConfMenu(menuId);
+		if (configuredMenu == nullptr || configuredMenu->items.empty())
+		{
+			bridge.items.clear();
+			bridge.legacyItems.clear();
+			bridge.menuId = menuId;
+			bridge.menu = &menu;
+			menu.menuitems = nullptr;
+			menu.numitems = 0;
+			return false;
+		}
+
+		bridge.menuId = menuId;
+		bridge.menu = &menu;
+		bridge.items = configuredMenu->items;
+		if (iequals(menuId, "episodes") &&
+		    episodenum > 0 && static_cast<int>(bridge.items.size()) > episodenum)
+		{
+			bridge.items.resize(episodenum);
+		}
+		bridge.legacyItems.clear();
+		bridge.legacyItems.reserve(bridge.items.size());
+
+		for (const menuconfitem_t& item : bridge.items)
+		{
+			oldmenuitem_t legacy = {};
+			legacy.status = item.kind == menuconfitemkind_t::separator ? -1 : 1;
+			legacy.routine = legacy.status == -1 ? nullptr : M_ActivateConfiguredMenuItem;
+			legacy.alphaKey = item.hotkey.empty() ? 0 : item.hotkey[0];
+
+			if (!item.patch.empty())
+			{
+				legacy.name = item.patch.c_str();
+			}
+
+			const char* text = nullptr;
+			if (!item.languageKey.empty())
+			{
+				text = item.languageKey.c_str();
+			}
+			else if (!item.text.empty())
+			{
+				text = item.text.c_str();
+			}
+
+			if (text != nullptr)
+			{
+				M_StringCopy(legacy.textname, text, sizeof(legacy.textname));
+			}
+
+			bridge.legacyItems.push_back(legacy);
+		}
+
+		menu.menuitems = bridge.legacyItems.data();
+		menu.numitems = static_cast<short>(bridge.legacyItems.size());
+		menu.routine = routine;
+		menu.lastOn = iequals(menuId, "skills") ? defaultskillmenu : 0;
+		if (configuredMenu->layout.x != 0) menu.x = configuredMenu->layout.x;
+		if (configuredMenu->layout.y != 0) menu.y = configuredMenu->layout.y;
+		return true;
+	}
+
 	void DrawMainMenuHeaderDecorations()
 	{
 		const menuconfmenu_t* mainMenu = MenuConfMenu("main");
@@ -805,18 +989,80 @@ namespace
 	}
 }
 
-//
-//	M_GameFiles & Cie.
-//	[ML] Provides intermediary game files menu option for load/save
-//
-void M_GameFiles(int choice)
+void M_ActivateConfiguredMenuItem(int choice)
 {
-	M_SetupNextMenu(&GameFilesDef);
-}
+	configuredoldmenubridge_t* bridge = MenuBridgeByMenu(currentMenu);
+	if (bridge == nullptr || choice < 0 || static_cast<size_t>(choice) >= bridge->items.size())
+	{
+		return;
+	}
 
-void M_DrawGameFiles()
-{
-	// Unused
+	const menuconfitem_t& item = bridge->items[choice];
+	bool actionSucceeded = true;
+
+	if (!item.action.empty())
+	{
+		if (item.action == "quitGame")
+		{
+			M_QuitGame(choice);
+		}
+		else if (item.action == "chooseEpisode")
+		{
+			if ((gameinfo.flags & GI_SHAREWARE) && choice > 0)
+			{
+				const char* sharewareMessage =
+				    gameinfo.sharewareMessage.empty() ? GStrings(SWSTRING) :
+				                                       LocalizedString(gameinfo.sharewareMessage.c_str());
+				M_StartMessage(sharewareMessage, NULL, false);
+				M_ClearMenus();
+				return;
+			}
+
+			gSelectedEpisodeId.clear();
+			if (item.params.isObject() && item.params["episode"].isString())
+			{
+				gSelectedEpisodeId = item.params["episode"].asString();
+			}
+
+			if (choice >= 0 && choice < episodenum && EpisodeInfos[choice].noskillmenu)
+			{
+				M_StartGame(defaultskillmenu);
+				return;
+			}
+		}
+		else if (item.action == "startGame")
+		{
+			if (!(item.params.isObject() && item.params["skill"].isString()))
+			{
+				WarnMenuConf("startGame item is missing a string skill param");
+				actionSucceeded = false;
+			}
+			else
+			{
+				const int skill = SkillIndexForId(item.params["skill"].asString());
+				if (skill < 0)
+				{
+					WarnMenuConf(fmt::sprintf("unknown skill id \"%s\"",
+					                          item.params["skill"].asCString()));
+					actionSucceeded = false;
+				}
+				else
+				{
+					M_ChooseSkill(skill);
+				}
+			}
+		}
+		else
+		{
+			WarnMenuConf(fmt::sprintf("menu action \"%s\" is not wired yet", item.action.c_str()));
+			actionSucceeded = false;
+		}
+	}
+
+	if (actionSucceeded && !item.target.empty())
+	{
+		M_OpenMenuTarget(item.target);
+	}
 }
 
 //
@@ -1215,134 +1461,10 @@ void M_DrawMainMenu()
 	DrawMainMenuHeaderDecorations();
 }
 
-void M_DrawNewGame()
-{
-	const OFont* smallFont = OFonts.small();
-	if (W_CheckNumForName("M_NEWG") >= 0)
-	{
-		screen->DrawPatchClean(W_CachePatch("M_NEWG"), 96, 14);
-	}
-
-	if (W_CheckNumForName("M_SKILL") >= 0)
-	{
-		screen->DrawPatchClean(W_CachePatch("M_SKILL"), 54, 38);
-	}
-
-	const char* pslabel = "Pistol Start Each Level ";
-	const int psy = NewDef.y + (M_BigFontLineHeight() * skillnum) + M_SmallFontLineHeight();
-
-	screen->DrawTextCleanMove(smallFont, CR_RED, NewDef.x, psy, pslabel);
-	screen->DrawTextCleanMove(smallFont, CR_GREY,
-	                          NewDef.x + V_StringWidth(smallFont, pslabel), psy,
-	                          g_resetinvonexit ? "ON" : "OFF");
-}
-
-namespace
-{
-	void SetupEpisodeList()
-	{
-		for (int i = 0; i < episodenum; ++i)
-		{
-			if (EpisodeInfos[i].fulltext)
-			{
-				strncpy(EpisodeMenu[i].textname, EpisodeInfos[i].menu_name.c_str(), 30);
-			}
-			else
-			{
-				EpisodeMenu[i].name = EpisodeInfos[i].pic_name;
-			}
-
-			EpisodeMenu[i].alphaKey = EpisodeInfos[i].key;
-		}
-	}
-
-	void SetupSkillList()
-  	{
-  	    NewDef.lastOn = defaultskillmenu;
-
-		for (int i = 0; i < MAX_SKILLS + 1; ++i)
-		{
-			NewGameMenu[i].name.clear();
-			NewGameMenu[i].textname[0] = '\0';
-			NewGameMenu[i].alphaKey = 0;
-		}
-  
-  	    int i = 0;
-  	    for (; i < skillnum; ++i)
-  	    {
-   		    if (SkillInfos[i].pic_name.empty())
-   		    {
-				M_StringCopy(NewGameMenu[i].textname, SkillInfos[i].menu_name.c_str(),
-				             sizeof(NewGameMenu[i].textname));
-   		    }
-   		    else
-   		    {
-  			    NewGameMenu[i].name = SkillInfos[i].pic_name;
-   		    }
-
-			NewGameMenu[i].alphaKey = SkillInfos[i].shortcut;
-	    }
-  
- 		NewGameMenu[i].name.clear();
-		NewGameMenu[i].textname[0] = '\0';
-  	    NewGameMenu[i].alphaKey = 'p';
-  	}
-}
-
 void M_NewGame(int choice)
 {
-	NewDef.numitems = skillnum + 1;
-
-	if (gamemode == commercial_bfg)
-    {
-        M_SetupNextMenu(&ExpDef);
-    }
-	else
-	{
-		EpiDef.numitems = episodenum;
-
-		// Set up episode menu positioning
-		EpiDef.x = 48;
-		EpiDef.y = 63;
-
-		if (episodenum > 4)
-		{
-			EpiDef.y -= M_BigFontLineHeight() * (episodenum / 4);
-		}
-
-		epi = 0;
-
-		if (episodenum > 1)
-		{
-			SetupEpisodeList();
-			M_SetupNextMenu(&EpiDef);
-		}
-		else
-		{
-			SetupSkillList();
-			M_SetupNextMenu(&NewDef);
-		}
-	}
-}
-
-
-//
-//		M_Episode
-//
-
-void M_DrawEpisode()
-{
-	int y = 38;
-
-	if (episodenum > 4)
-	{
-		y -= M_BigFontLineHeight() * (episodenum / 4);
-	}
-
-	if (W_CheckNumForName("M_EPISOD") >= 0)
-	{
-		screen->DrawPatchClean(W_CachePatch("M_EPISOD"), 54, y);
-	}
+	gSelectedEpisodeId.clear();
+	M_OpenMenuEntrypoint("newGameMenu");
 }
 
 static int skillchoice = 0;
@@ -1363,46 +1485,68 @@ void M_StartGame(int choice)
 	sv_skill.Set (static_cast<float>(choice + 1));
 	sv_gametype = GM_COOP;
 
-    if (gamemode == commercial_bfg)     // Funky external loading madness fun time (DOOM 2 BFG)
-    {
-	    const std::string str = "nerve.wad";
+	if (gamemode == commercial_bfg)     // Funky external loading madness fun time (DOOM 2 BFG)
+	{
+		if (gSelectedEpisodeId.empty())
+		{
+			WarnMenuConf("startGame was invoked without a selected expansion");
+			return;
+		}
 
-        if (epi)
-        {
-            // Load No Rest for The Living Externally
-            epi = 0;
-            G_LoadWadString(str, "");
-        }
-        else
-        {
-            // Check for nerve.wad, if it's loaded re-load with just iwad (DOOM 2 BFG)
-            for (unsigned int i = 2; i < wadfiles.size(); i++)
-            {
-                if (iequals(str, wadfiles[i].getBasename()))
-                {
-                    G_LoadWadString(wadfiles[1].getFullpath(), "");
-                }
-            }
+		const std::string str = "nerve.wad";
+		const bool isNerve = iequals(gSelectedEpisodeId, "doom2.nerve");
 
-            G_DeferedInitNew (CalcMapName (epi+1, 1));
-        }
-    }
-    else
-    {
-        G_DeferedInitNew (EpisodeMaps[epi]);
-    }
+		if (isNerve)
+		{
+			G_LoadWadString(str, "");
+		}
+		else
+		{
+			for (unsigned int i = 2; i < wadfiles.size(); i++)
+			{
+				if (iequals(str, wadfiles[i].getBasename()))
+				{
+					G_LoadWadString(wadfiles[1].getFullpath(), "");
+				}
+			}
 
-    M_ClearMenus ();
+			G_DeferedInitNew(CalcMapName(1, 1));
+		}
+	}
+	else if (gamemode == commercial)
+	{
+		G_DeferedInitNew(CalcMapName(1, 1));
+	}
+	else if (!gSelectedEpisodeId.empty())
+	{
+		const std::string::size_type end = gSelectedEpisodeId.find_last_not_of("0123456789");
+		const std::string::size_type pos = end == std::string::npos ? 0 : end + 1;
+		if (pos < gSelectedEpisodeId.size())
+		{
+			const int episodeIndex =
+			    clamp(std::max(1, atoi(gSelectedEpisodeId.c_str() + pos)) - 1, 0, episodenum - 1);
+			G_DeferedInitNew(EpisodeMaps[episodeIndex]);
+		}
+		else
+		{
+			WarnMenuConf(fmt::sprintf("episode id \"%s\" has no numeric suffix",
+			                          gSelectedEpisodeId.c_str()));
+			return;
+		}
+	}
+	else
+	{
+		WarnMenuConf("startGame was invoked without a selected episode");
+		return;
+	}
+
+	M_ClearMenus ();
+	gSelectedEpisodeId.clear();
 }
 
 void M_ChooseSkill(int choice)
 {
-	if (choice == skillnum)
-	{
-		g_resetinvonexit = !g_resetinvonexit;
-		return;
-	}
-	else if (SkillInfos[choice].must_confirm)
+	if (SkillInfos[choice].must_confirm)
 	{
 		const char* must_confirm_text = SkillInfos[choice].must_confirm_text.c_str();
 
@@ -1418,34 +1562,6 @@ void M_ChooseSkill(int choice)
 	}
 
 	M_StartGame(choice);
-}
-
-void M_Episode(int choice)
-{
-	if ((gameinfo.flags & GI_SHAREWARE) && choice)
-	{
-		M_StartMessage(GStrings(SWSTRING),NULL,false);
-		//M_SetupNextMenu(&ReadDef1);
-		M_ClearMenus();
-		return;
-	}
-
-	epi = choice;
-
-	if (EpisodeInfos[epi].noskillmenu)
-		M_StartGame(defaultskillmenu);
-	else
-	{
-		SetupSkillList();
-		M_SetupNextMenu(&NewDef);
-	}
-}
-
-void M_Expansion(int choice)
-{
-	epi = choice;
-	SetupSkillList();
-	M_SetupNextMenu(&NewDef);
 }
 
 //
@@ -1490,8 +1606,7 @@ void M_DrawOptions()
 
 void M_Options(int choice)
 {
-	//M_SetupNextMenu(&OptionsDef);
-	OptionsActive = M_StartOptionsMenu();
+	M_OpenMenuEntrypoint("optionsMenu");
 }
 
 //
@@ -2642,16 +2757,10 @@ EXTERN_CVAR (screenblocks)
 
 void M_Init()
 {
-    // [Russell] - Set this beforehand, because when you switch wads
-    // (ie from doom to doom2 back to doom), you will have less menu items
-    {
-        MainDef.numitems = d1_main_end;
-        MainDef.menuitems = DoomMainMenu;
-        MainDef.routine = M_DrawMainMenu,
-        MainDef.lastOn = 0;
-        MainDef.x = 97;
-        MainDef.y = 64;
-    }
+	MainDef.routine = M_DrawMainMenu;
+	MainDef.lastOn = 0;
+	MainDef.x = 97;
+	MainDef.y = 64;
 
 	currentMenu = &MainDef;
 	OptionsActive = false;
@@ -2667,24 +2776,26 @@ void M_Init()
 	messageString = NULL;
 	messageLastMenuActive = menuactive;
 
-    if (gameinfo.flags & GI_MAPxx)
-    {
-        // Commercial has no "read this" entry.
-        MainDef.numitems = d2_main_end;
-        MainDef.menuitems = Doom2MainMenu;
-
-        MainDef.y += 8;
-    }
+	if (gameinfo.flags & GI_MAPxx)
+	{
+		MainDef.y += 8;
+	}
 	else if (gameinfo.enginetype == ENGINE_HERETIC)
-    {
-    	// Heretic changes stuff
-		MainDef.numitems = htc_main_end;
-        MainDef.menuitems = HereticMainMenu;
-        MainDef.x = 110;
-        MainDef.y = 56;
+	{
+		MainDef.x = 110;
+		MainDef.y = 56;
 		LoadDef = HticLoadDef;
 		SaveDef = HticSaveDef;
-    }
+	}
+
+	if (!BuildConfiguredOldMenu(gConfiguredMainBridge, "main", MainDef, M_DrawMainMenu))
+	{
+		I_Error("M_Init: MENUCONF main menu is missing or empty");
+	}
+	BuildConfiguredOldMenu(gConfiguredEpisodeBridge, "episodes", EpiDef, DrawConfiguredMenu);
+	BuildConfiguredOldMenu(gConfiguredExpansionBridge, "expansions", ExpDef, DrawConfiguredMenu);
+	BuildConfiguredOldMenu(gConfiguredSkillBridge, "skills", NewDef, DrawConfiguredMenu);
+	BuildConfiguredOldMenu(gConfiguredGameFilesBridge, "gamefiles", GameFilesDef, DrawConfiguredMenu);
 
 	if (const menuconfmenu_t* mainMenu = MenuConfMenu("main"))
 	{

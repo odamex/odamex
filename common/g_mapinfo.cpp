@@ -1288,6 +1288,7 @@ struct MapInfoDataSetter<gameinfo_t>
 			{ "quitmessage", &MIType_String, &gameinfo.quitMessage },
 			{ "quitmessagecount", &MIType_Int, &gameinfo.quitMessageCount },
 			{ "quitprompt", &MIType_String, &gameinfo.quitPrompt },
+			{ "sharewaremessage", &MIType_String, &gameinfo.sharewareMessage },
 			{ "finaleflat", &MIType_LumpName, &gameinfo.finaleFlat },
 			{ "finalemusic", &MIType_MusicLumpName, &gameinfo.finaleMusic },
 			{ "finalepage", &MIType_Pages, &gameinfo.finalePage, 1 },

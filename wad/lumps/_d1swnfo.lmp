@@ -6,4 +6,5 @@ gameinfo
 	finalepage = "HELP2", "VICTORY2", "ENDPIC"
 	infopage = "HELP1", "HELP2"
 	maxswitch = 1
+	sharewaremessage = "SWSTRING"
 }

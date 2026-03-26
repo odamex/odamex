@@ -35,6 +35,7 @@ QLPROMPT = "do you want to quickload the game named\n\n'%s'?\n\npress y or n.";
 NEWGAME = "you can't start a new game\nwhile in a network game.\n\npress a key.";
 NIGHTMARE = "are you sure? this skill level\nisn't even remotely fair.\n\npress y or n.";
 SWSTRING = "this is the shareware version of doom.\n\nyou need to order the entire trilogy.\n\npress a key.";
+HERETICREGISTEREDONLY = "ONLY AVAILABLE IN THE REGISTERED VERSION";
 MSGOFF = "Messages OFF";
 MSGON = "Messages ON";
 NETEND = "you can't end a netgame!\n\npress a key.";
@@ -1198,6 +1199,7 @@ NIGHTMARE = "VOUS CONFIRMEZ? CE NIVEAU EST\n"
             "VRAIMENT IMPITOYABLE!nAPPUYEZ SUR Y OU N";
 SWSTRING = "CECI EST UNE VERSION SHAREWARE DE DOOM.\n\n"
            "VOUS DEVRIEZ COMMANDER LA TRILOGIE COMPLETE.\n\nAPPUYEZ SUR UNE TOUCHE.";
+HERETICREGISTEREDONLY = "DISPONIBLE UNIQUEMENT DANS LA VERSION ENREGISTREE";
 MSGOFF = "MESSAGES OFF";
 MSGON = "MESSAGES ON";
 NETEND = "VOUS NE POUVEZ PAS METTRE FIN A UN JEU SUR "
@@ -1584,6 +1586,7 @@ QLPROMPT = "Vuoi eseguire il quickload della partita\n\n'%s'?\n\npremere y oppur
 NEWGAME = "non puoi iniziare una nuova partita\ndurante una partita in rete.\n\npremere un tasto.";
 NIGHTMARE = "sei sicuro? quello livello di difficolta'\nnon e' minimamente semplice.\n\npremere y oppure n.";
 SWSTRING = "questa e' la versione shareware di doom.\n\ndevi ordinare la trilogia completa.\n\npremere un tasto.";
+HERETICREGISTEREDONLY = "DISPONIBILE SOLO NELLA VERSIONE REGISTRATA";
 MSGOFF = "Messaggi Disattivati";
 MSGON = "Messaggi Attivati";
 NETEND = "non puoi terminare un netgame!\n\npremere un tasto";

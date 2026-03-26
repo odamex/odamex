@@ -122,6 +122,7 @@ typedef struct gameinfo_s
 	std::string quitMessage;
 	int quitMessageCount;
 	std::string quitPrompt;
+	std::string sharewareMessage;
 	int maxSwitch;
 	OLumpName borderFlat;
 	gameborder_t border;
@@ -178,6 +179,7 @@ typedef struct gameinfo_s
 		, quitMessage("QUITMSG")
 		, quitMessageCount(15)
 		, quitPrompt("DOSY")
+		, sharewareMessage("SWSTRING")
 		, maxSwitch(1)
 		, borderFlat("")
 		, border()

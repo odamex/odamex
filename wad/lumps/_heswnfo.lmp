@@ -3,4 +3,5 @@
 gameinfo
 {
 	borderflat = "FLOOR04"
+	sharewaremessage = "HERETICREGISTEREDONLY"
 }
