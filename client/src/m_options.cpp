@@ -337,17 +337,11 @@ void Reset2Saved();
 static void SetVidMode();
 static void M_UpdateDisplayOptions();
 
-
-menu_t OptionMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
-
 /*=======================================
  *
  * Controls Menu
  *
  *=======================================*/
-
-
-menu_t ControlsMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
 // -------------------------------------------------------
 //
@@ -369,17 +363,11 @@ void M_ResetMouseValues()
 
 
 
-menu_t MouseMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
-
-
 /*=======================================
  *
  * Joystick Menu
  *
  *=======================================*/
-
-
-menu_t JoystickMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
  /*=======================================
   *
@@ -387,63 +375,8 @@ menu_t JoystickMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
   *
   *=======================================*/
 
-static value_t MusSys[] = {
-	#ifndef _WIN32
-	{ MS_SDLMIXER,	"SDL Mixer"},
-	#endif
-	{ MS_LIBADLMIDI,"libADLMIDI (OPL3 FM)"},
-	#ifdef OSX
-	{ MS_AUDIOUNIT,	"AudioUnit"},
-	#endif	// OSX
-	#ifdef PORTMIDI
-	{ MS_PORTMIDI,	"PortMidi"},
-	#endif	// PORTMIDI
-};
-
-static value_t MidiReset[] = {
-	{ 0.0,			"None" },
-	{ 1.0,			"GM" },
-	{ 2.0,			"GS" },
-	{ 3.0,			"XG" }
-};
-
-static value_t OplCore[] = {
-	{ 0.0,			"Fast (Dosbox)"},
-	{ 1.0,			"Balanced (Nuked 1.74)"},
-	{ 2.0,			"Accurate (Nuked 1.8)"}
-};
-
-static value_t OplBank[] = {
-	{ 0.0,			"Doom"},
-	{ 1.0,			"Doom II"},
-	{ 2.0,			"DMXOPL3"}
-};
-
-static value_t VoxType[] = {
-	{ 0.0,			"Off" },
-	{ 1.0,			"Team Colors" },
-	{ 2.0,			"Possessive" }
-};
-
-static value_t ChatSndType[] = {
-	{ 0.0,			"Disabled" },
-	{ 1.0,			"Enabled" },
-	{ 2.0,			"Teamchat only" }
-};
-
-static void AdvMidiOptions (void);
-static void LibAdlMidiOptions (void);
-
-static constexpr float num_mussys = static_cast<float>(ARRAY_LENGTH(MusSys));
-
 EXTERN_CVAR(cl_chatsounds)
 
-
-menu_t AdvMidiMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
-
-menu_t LibAdlMidiMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
-
-menu_t SoundMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
 
 /*=======================================
@@ -451,8 +384,6 @@ menu_t SoundMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
  * Compatibility Options Menu
  *
  *=======================================*/
-
-menu_t CompatMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
 
 /*=======================================
@@ -462,26 +393,13 @@ menu_t CompatMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
  *=======================================*/
 
 
-menu_t NetworkMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
-
-
 /*=======================================
  *
  * Weapon Preferences Menu
  *
  *=======================================*/
 
-static value_t WeapSwitch[] = {
-	{ 0.0,			"Never" },
-	{ 1.0,			"Always" },
-	{ 2.0,			"By Preference" },
-    { 3.0,			"Attack Cancels PWO"}
-};
-
 extern const char *weaponnames[];
-
-
-menu_t WeaponMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
 
 /*=======================================
@@ -524,27 +442,10 @@ EXTERN_CVAR(am_ovlocation)
 EXTERN_CVAR(am_ovscalewidth)
 EXTERN_CVAR(am_ovscaleheight)
 
-static value_t Wipes[] = {
-	{ 0.0, "None" },
-	{ 1.0, "Melt" },
-	{ 2.0, "Burn" },
-	{ 3.0, "Crossfade" },
-	{ 4.0, "Auto" }
-};
-
-static value_t Overlays[] = {
-    { 0.0, "Off" },
-    { 1.0, "Standard" },
-    { 2.0, "Full" },
-    { 3.0, "Full Only" }
-};
-
 static void M_SendUINewColor (int red, int green, int blue);
 static void M_SlideUIRed (int);
 static void M_SlideUIGreen (int);
 static void M_SlideUIBlue (int);
-
-int dummy = 0;
 
 CVAR_FUNC_IMPL (ui_transred)
 {
@@ -561,9 +462,6 @@ CVAR_FUNC_IMPL (ui_transblue)
     M_SlideUIBlue(var.asInt());
 }
 
-static value_t Endoom[] = {{0.0, "Off"}, {1.0, "On"}, {2.0, "PWAD Only"}};
-
-menu_t VideoMenu = {"", 0, 0, 0, nullptr, 0, 0, &M_UpdateDisplayOptions};
 
 /*=======================================
  *
@@ -571,27 +469,6 @@ menu_t VideoMenu = {"", 0, 0, 0, nullptr, 0, 0, &M_UpdateDisplayOptions};
  *
  *=======================================*/
 
-static value_t SecretOptions[] = {
-    {0.0, "Off"},
-    {1.0, "On (with sounds)"},
-    {2.0, "On (w/o sounds)"},
-    {3.0, "Own only"},
-};
-
-static value_t TimerStyles[] = {
-    {0.0, "No Timer"}, {1.0, "Count Down"}, {2.0, "Count Up"}};
-
-static value_t FlagHelds[] = {{0.0, "Off"}, {1.0, "Complete"}, {2.0, "Simple"}};
-
-static value_t Crosshairs[] = {{0.0, "None"}, {1.0, "Cross 1"}, {2.0, "Cross 2"},
-                               {3.0, "X"},    {4.0, "Diamond"}, {5.0, "Dot"},
-                               {6.0, "Box"},  {7.0, "Angle"},   {8.0, "Big Thing"}};
-
-static value_t ExtendedHudStyles[] = {{0.0, "Off"}, {1.0, "Horizontal 1"}, {2.0, "Horizontal 2"},
-								 {3.0, "Vertical 1"}, {4.0, "Vertical 2"},};
-
-
-menu_t HUDMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
 /*=======================================
  *
@@ -610,31 +487,6 @@ EXTERN_CVAR (msg3color)
 EXTERN_CVAR (msg4color)
 EXTERN_CVAR (msgmidcolor)
 
-static value_t TextColors[] =
-{
-	{ CR_BRICK,		"brick" },
-	{ CR_TAN,		"tan" },
-	{ CR_GRAY,		"gray" },
-	{ CR_GREEN,		"green" },
-	{ CR_BROWN,		"brown" },
-	{ CR_GOLD, 		"gold" },
-	{ CR_RED,		"red" },
-	{ CR_BLUE,		"blue" },
-	{ CR_ORANGE,	"orange" },
-	{ CR_WHITE,		"white" },
-	{ CR_YELLOW,	"yellow" },
-	{ CR_BLACK,		"black" },
-	{ CR_LIGHTBLUE,	"light blue" },
-	{ CR_CREAM,		"cream" },
-	{ CR_OLIVE,		"olive" },
-	{ CR_DARKGREEN,	"dark green" },
-	{ CR_DARKRED,	"dark red" },
-	{ CR_DARKBROWN,	"dark brown" },
-	{ CR_PURPLE,	"purple" },
-	{ CR_DARKGRAY,	"dark gray" },
-	{ CR_CYAN,		"cyan" }
-};
-
 // TODO: Put all language info in one array, auto detect what's in the lump?
 //static value_t Languages[] = { // unused
 //	{ 0.0, "Auto" },
@@ -643,44 +495,12 @@ static value_t TextColors[] =
 //	{ 3.0, "Italian" }
 //};
 
-static value_t ScaleFactors[] = {{0.0, "Auto"}, {1.0, "1X"}, {2.0, "2X"},
-                                 {3.0, "3X"},   {4.0, "4X"}, {5.0, "5X"}};
-
-
-menu_t MessagesMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
-
 /*=======================================
  *
  * Automap Menu
  *
  *=======================================*/
 
-static value_t ClassicMapStringTypes[] = {
-	{ 0.0, "Odamex" },
-	{ 1.0, "Classic" }
-};
-
-static value_t AutomapScales[] = {
-	{ 0.0, "Auto" },
-	{ 1.0, "1X" },
-	{ 2.0, "2X" },
-	{ 3.0, "3X" },
-	{ 4.0, "4X" },
-	{ 5.0, "5X" },
-	{ 6.0, "6X" },
-};
-
-static value_t MinimapLocations[] = {
-	{ 0.0, "Left Top" },
-	{ 1.0, "Left Middle" },
-	{ 2.0, "Left Bottom" },
-	{ 3.0, "Right Top" },
-	{ 4.0, "Right Middle" },
-	{ 5.0, "Right Bottom" },
-};
-
-
-menu_t AutomapMenu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 
 
 /*=======================================
@@ -808,7 +628,7 @@ namespace
 	struct configuredoptionsbridge_t
 	{
 		std::string menuId;
-		menu_t* menu = nullptr;
+		menu_t menu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
 		menuconfheader_t header;
 		std::vector<menuconfitem_t> sourceItems;
 		std::vector<menuitem_t> generatedItems;
@@ -827,7 +647,7 @@ namespace
 	{
 		for (configuredoptionsbridge_t& bridge : gConfiguredOptionsMenus)
 		{
-			if (bridge.menu == menu)
+			if (&bridge.menu == menu)
 			{
 				return &bridge;
 			}
@@ -840,7 +660,7 @@ namespace
 	{
 		for (const configuredoptionsbridge_t& bridge : gConfiguredOptionsMenus)
 		{
-			if (bridge.menu == menu)
+			if (&bridge.menu == menu)
 			{
 				return &bridge;
 			}
@@ -851,21 +671,31 @@ namespace
 
 	menu_t* OptionsMenuSlotById(const std::string& menuId)
 	{
-		if (menuId == "options") return &OptionMenu;
-		if (menuId == "options.controls") return &ControlsMenu;
-		if (menuId == "options.mouse") return &MouseMenu;
-		if (menuId == "options.joystick") return &JoystickMenu;
-		if (menuId == "options.sound") return &SoundMenu;
-		if (menuId == "options.sound.advancedMidi") return &AdvMidiMenu;
-		if (menuId == "options.sound.opl") return &LibAdlMidiMenu;
-		if (menuId == "options.compat") return &CompatMenu;
-		if (menuId == "options.network") return &NetworkMenu;
-		if (menuId == "options.weapons") return &WeaponMenu;
-		if (menuId == "options.display") return &VideoMenu;
-		if (menuId == "options.display.hud") return &HUDMenu;
-		if (menuId == "options.display.messages") return &MessagesMenu;
-		if (menuId == "options.display.automap") return &AutomapMenu;
+		for (configuredoptionsbridge_t& bridge : gConfiguredOptionsMenus)
+		{
+			if (bridge.menuId == menuId)
+			{
+				return &bridge.menu;
+			}
+		}
+
 		return nullptr;
+	}
+
+	float CurrentDiscreteValue(const menuitem_t& item)
+	{
+		if (item.a.cvar == nullptr)
+		{
+			return 0.0f;
+		}
+
+		if ((item.a.cvar->flags() & CVAR_LATCH) && (item.a.cvar->flags() & CVAR_MODIFIED) &&
+		    item.a.cvar->latched()[0] != '\0')
+		{
+			return static_cast<float>(atof(item.a.cvar->latched()));
+		}
+
+		return item.a.cvar->value();
 	}
 
 	const char* ResolveOptionLabel(const menuconfitem_t& item)
@@ -1132,20 +962,18 @@ namespace
 		}
 	}
 
-	bool BuildConfiguredOptionsMenu(configuredoptionsbridge_t& bridge, const std::string& menuId,
-	                                menu_t& slot)
+	bool BuildConfiguredOptionsMenu(configuredoptionsbridge_t& bridge, const std::string& menuId)
 	{
 		const auto it = M_MenuConf().menus.find(menuId);
 		if (it == M_MenuConf().menus.end())
 		{
-			slot.numitems = 0;
-			slot.items = nullptr;
+			bridge.menu.numitems = 0;
+			bridge.menu.items = nullptr;
 			return false;
 		}
 
 		const menuconfmenu_t& authored = it->second;
 		bridge.menuId = menuId;
-		bridge.menu = &slot;
 		bridge.header = authored.header;
 		bridge.sourceItems = authored.items;
 		bridge.generatedItems.clear();
@@ -1233,14 +1061,14 @@ namespace
 			bridge.generatedItems.push_back(generated);
 		}
 
-		slot.title = authored.header.patch.empty() ? "" : authored.header.patch.c_str();
-		slot.lastOn = FirstSelectableOptionIndex(bridge);
-		slot.numitems = static_cast<int>(bridge.generatedItems.size());
-		slot.indent = authored.layout.indent;
-		slot.items = bridge.generatedItems.data();
-		slot.scrolltop = authored.layout.scroll ? 0 : 0;
-		slot.scrollpos = 0;
-		slot.refreshfunc = menuId == "options.display" ? &M_UpdateDisplayOptions : NULL;
+		bridge.menu.title = authored.header.patch.empty() ? "" : authored.header.patch.c_str();
+		bridge.menu.lastOn = FirstSelectableOptionIndex(bridge);
+		bridge.menu.numitems = static_cast<int>(bridge.generatedItems.size());
+		bridge.menu.indent = authored.layout.indent;
+		bridge.menu.items = bridge.generatedItems.data();
+		bridge.menu.scrolltop = authored.layout.scroll ? 0 : 0;
+		bridge.menu.scrollpos = 0;
+		bridge.menu.refreshfunc = menuId == "options.display" ? &M_UpdateDisplayOptions : NULL;
 		return true;
 	}
 
@@ -1268,14 +1096,8 @@ namespace
 
 		for (const char* menuId : kMenuIds)
 		{
-			menu_t* slot = OptionsMenuSlotById(menuId);
-			if (slot == nullptr)
-			{
-				continue;
-			}
-
 			gConfiguredOptionsMenus.emplace_back();
-			if (!BuildConfiguredOptionsMenu(gConfiguredOptionsMenus.back(), menuId, *slot))
+			if (!BuildConfiguredOptionsMenu(gConfiguredOptionsMenus.back(), menuId))
 			{
 				gConfiguredOptionsMenus.pop_back();
 			}
@@ -1868,7 +1690,7 @@ void M_OptDrawer (void)
 				int v, vals;
 
 				vals = static_cast<int>(item->b.leftval);
-				v = M_FindCurVal(item->a.cvar->value(), item->e.values, vals);
+				v = M_FindCurVal(CurrentDiscreteValue(*item), item->e.values, vals);
 
 				if (v == vals)
 				{
@@ -2291,7 +2113,7 @@ void M_OptResponder(const event_t& ev)
 				break;
 
 			numvals = static_cast<int>(item->b.leftval);
-			cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
+			cur = M_FindCurVal(CurrentDiscreteValue(*item), item->e.values, numvals);
 			if (--cur < 0)
 				cur = numvals - 1;
 
@@ -2386,7 +2208,7 @@ void M_OptResponder(const event_t& ev)
 				break;
 
 			numvals = static_cast<int>(item->b.leftval);
-			cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
+			cur = M_FindCurVal(CurrentDiscreteValue(*item), item->e.values, numvals);
 			if (++cur >= numvals)
 				cur = 0;
 
@@ -2494,7 +2316,7 @@ void M_OptResponder(const event_t& ev)
 					return;
 
 				numvals = static_cast<int>(item->b.leftval);
-				cur = M_FindCurVal(item->a.cvar->value(), item->e.values, numvals);
+				cur = M_FindCurVal(CurrentDiscreteValue(*item), item->e.values, numvals);
 				if (++cur >= numvals)
 					cur = 0;
 
