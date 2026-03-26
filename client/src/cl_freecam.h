@@ -3,7 +3,6 @@
 //
 // $Id$
 //
-// Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -29,26 +28,17 @@
 
 inline constexpr byte freecamplayer_id = 255;
 
-class Freecam
+namespace Freecam
 {
-public:
-	Freecam() = delete; // static / no constructor
-	static std::string prevmap;
-	static void addFreecamPlayer();
-	static void savePosition();
-	static void reset();
-	static void setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
-	static bool needPosition();
-	static bool allowAdd();
-	static bool allowSpy();
-	static void retireFor255thPlayer(player_t* cam);
-
-private:
-	static fixed_t x;
-	static fixed_t y;
-	static fixed_t z;
-	static angle_t angle;
-	static fixed_t pitch;
-	static bool wipedOnLevelChange(player_t* cam);
-	static void buildCam(player_t* p_cam);
+	extern std::string prevmap;
+	void addFreecamPlayer();
+	void savePosition();
+	void reset();
+	void setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle);
+	bool needPosition();
+	bool allowAdd();
+	bool allowSpy();
+	void retireFor255thPlayer(player_t* cam);	
+	bool wipedOnLevelChange(player_t* cam);
+	void buildCam(player_t* p_cam);
 };

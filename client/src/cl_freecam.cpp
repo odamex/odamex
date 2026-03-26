@@ -3,7 +3,6 @@
 //
 // $Id$
 //
-// Copyright (C) 1998-2006 by Randy Heit (ZDoom).
 // Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
@@ -25,11 +24,12 @@
 #include "cl_freecam.h"
 #include "g_gametype.h"
 
-fixed_t Freecam::x = 0;
-fixed_t Freecam::y = 0;
-fixed_t Freecam::z = 0;
-angle_t Freecam::angle = 0;
-fixed_t Freecam::pitch = 0;
+fixed_t cam_x = 0;
+fixed_t cam_y = 0;
+fixed_t cam_z = 0;
+angle_t cam_angle = 0;
+fixed_t cam_pitch = 0;
+
 std::string Freecam::prevmap = "";
 
 void Freecam::addFreecamPlayer()
@@ -57,10 +57,10 @@ bool Freecam::wipedOnLevelChange(player_t* cam)
 
 void Freecam::buildCam(player_t* p_cam)
 {
-	AActor* mobj = new AActor(x, y, z, MT_PLAYER);
+	AActor* mobj = new AActor(cam_x, cam_y, cam_z, MT_PLAYER);
 	mobj->player = p_cam;
-	mobj->angle = angle;
-	mobj->pitch = pitch;
+	mobj->angle = cam_angle;
+	mobj->pitch = cam_pitch;
 	p_cam->camera = p_cam->mo = mobj->ptr();
 	p_cam->prevviewz = 1;
 
@@ -79,10 +79,10 @@ void Freecam::buildCam(player_t* p_cam)
 
 void Freecam::setStartPosition(fixed_t x, fixed_t y, fixed_t z, angle_t angle)
 {
-	Freecam::x = x;
-	Freecam::y = y;
-	Freecam::z = z;
-	Freecam::angle = angle;
+	cam_x = x;
+	cam_y = y;
+	cam_z = z;
+	cam_angle = angle;
 }
 
 void Freecam::savePosition()
@@ -91,22 +91,22 @@ void Freecam::savePosition()
 
 	if (cam->id == freecamplayer_id && cam->isFreecam)
 	{
-		x = cam->mo->x;
-		y = cam->mo->y;
-		z = cam->mo->z;
-		angle = cam->mo->angle;
-		pitch = cam->mo->pitch;
+		cam_x = cam->mo->x;
+		cam_y = cam->mo->y;
+		cam_z = cam->mo->z;
+		cam_angle = cam->mo->angle;
+		cam_pitch = cam->mo->pitch;
 	}
 }
 
 bool Freecam::needPosition() 
 {
-	return (Freecam::x == 0 && Freecam::y == 0);
+	return (cam_x == 0 && cam_y == 0);
 }
 
 void Freecam::reset()
 {
-	x = y = z = angle = pitch = 0;
+	cam_x = cam_y = cam_z = cam_angle = cam_pitch = 0;
 }
 
 bool Freecam::allowAdd()
@@ -122,7 +122,7 @@ bool Freecam::allowSpy()
 				&& consoleplayer().lives < 1 
 				&& ::levelstate.getState() == LevelState::INGAME));
 }
-
+    
 // a real 255th player connected (CL_UserInfo) and is taking the freecam spot
 void Freecam::retireFor255thPlayer(player_t* cam)
 {
