@@ -206,8 +206,10 @@ typedef struct
 	union {
 		menu_t *newmenu;
 		oldmenu_t *old;
+		int builtin;
 	} menu;
 	bool isNewStyle;
+	bool isBuiltin;
 	bool drawIndicator;
 } menustack_t;
 

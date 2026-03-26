@@ -1,0 +1,165 @@
+{
+  "OnOff": [
+    { "value": 0, "label": "Off" },
+    { "value": 1, "label": "On" }
+  ],
+  "YesNo": [
+    { "value": 0, "label": "No" },
+    { "value": 1, "label": "Yes" }
+  ],
+  "OffOn": [
+    { "value": 0, "label": "On" },
+    { "value": 1, "label": "Off" }
+  ],
+  "HideShow": [
+    { "value": 0, "label": "Hide" },
+    { "value": 1, "label": "Show" }
+  ],
+  "OnOffAuto": [
+    { "value": 0, "label": "Off" },
+    { "value": 1, "label": "On" },
+    { "value": 2, "label": "Auto" }
+  ],
+  "DemoRestrictions": [
+    { "value": 0, "label": "Restrict" },
+    { "value": 1, "label": "Allow" }
+  ],
+  "DoomOrOdamex": [
+    { "value": 0, "label": "Odamex" },
+    { "value": 1, "label": "Doom" }
+  ],
+  "MusSys": [
+    { "value": 1, "label": "libADLMIDI (OPL3 FM)" },
+    { "value": 3, "label": "PortMidi" }
+  ],
+  "MidiReset": [
+    { "value": 0, "label": "None" },
+    { "value": 1, "label": "GM" },
+    { "value": 2, "label": "GS" },
+    { "value": 3, "label": "XG" }
+  ],
+  "OplCore": [
+    { "value": 0, "label": "Fast (Dosbox)" },
+    { "value": 1, "label": "Balanced (Nuked 1.74)" },
+    { "value": 2, "label": "Accurate (Nuked 1.8)" }
+  ],
+  "OplBank": [
+    { "value": 0, "label": "Doom" },
+    { "value": 1, "label": "Doom II" },
+    { "value": 2, "label": "DMXOPL3" }
+  ],
+  "VoxType": [
+    { "value": 0, "label": "Off" },
+    { "value": 1, "label": "Team Colors" },
+    { "value": 2, "label": "Possessive" }
+  ],
+  "ChatSndType": [
+    { "value": 0, "label": "Disabled" },
+    { "value": 1, "label": "Enabled" },
+    { "value": 2, "label": "Teamchat only" }
+  ],
+  "WeapSwitch": [
+    { "value": 0, "label": "Never" },
+    { "value": 1, "label": "Always" },
+    { "value": 2, "label": "By Preference" },
+    { "value": 3, "label": "Attack Cancels PWO" }
+  ],
+  "Wipes": [
+    { "value": 0, "label": "None" },
+    { "value": 1, "label": "Melt" },
+    { "value": 2, "label": "Burn" },
+    { "value": 3, "label": "Crossfade" },
+    { "value": 4, "label": "Auto" }
+  ],
+  "Endoom": [
+    { "value": 0, "label": "Off" },
+    { "value": 1, "label": "On" },
+    { "value": 2, "label": "PWAD Only" }
+  ],
+  "SecretOptions": [
+    { "value": 0, "label": "Off" },
+    { "value": 1, "label": "On (with sounds)" },
+    { "value": 2, "label": "On (w/o sounds)" },
+    { "value": 3, "label": "Own only" }
+  ],
+  "TimerStyles": [
+    { "value": 0, "label": "No Timer" },
+    { "value": 1, "label": "Count Down" },
+    { "value": 2, "label": "Count Up" }
+  ],
+  "FlagHelds": [
+    { "value": 0, "label": "Off" },
+    { "value": 1, "label": "Complete" },
+    { "value": 2, "label": "Simple" }
+  ],
+  "Crosshairs": [
+    { "value": 0, "label": "None" },
+    { "value": 1, "label": "Cross 1" },
+    { "value": 2, "label": "Cross 2" },
+    { "value": 3, "label": "X" },
+    { "value": 4, "label": "Diamond" },
+    { "value": 5, "label": "Dot" },
+    { "value": 6, "label": "Box" },
+    { "value": 7, "label": "Angle" },
+    { "value": 8, "label": "Big Thing" }
+  ],
+  "ExtendedHudStyles": [
+    { "value": 0, "label": "Off" },
+    { "value": 1, "label": "Horizontal 1" },
+    { "value": 2, "label": "Horizontal 2" },
+    { "value": 3, "label": "Vertical 1" },
+    { "value": 4, "label": "Vertical 2" }
+  ],
+  "TextColors": [
+    { "value": 0, "label": "brick" },
+    { "value": 1, "label": "tan" },
+    { "value": 2, "label": "gray" },
+    { "value": 3, "label": "green" },
+    { "value": 4, "label": "brown" },
+    { "value": 5, "label": "gold" },
+    { "value": 6, "label": "red" },
+    { "value": 7, "label": "blue" },
+    { "value": 8, "label": "orange" },
+    { "value": 9, "label": "white" },
+    { "value": 10, "label": "yellow" },
+    { "value": 11, "label": "black" },
+    { "value": 12, "label": "light blue" },
+    { "value": 13, "label": "cream" },
+    { "value": 14, "label": "olive" },
+    { "value": 15, "label": "dark green" },
+    { "value": 16, "label": "dark red" },
+    { "value": 17, "label": "dark brown" },
+    { "value": 18, "label": "purple" },
+    { "value": 19, "label": "dark gray" },
+    { "value": 20, "label": "cyan" }
+  ],
+  "ScaleFactors": [
+    { "value": 0, "label": "Auto" },
+    { "value": 1, "label": "1X" },
+    { "value": 2, "label": "2X" },
+    { "value": 3, "label": "3X" },
+    { "value": 4, "label": "4X" },
+    { "value": 5, "label": "5X" }
+  ],
+  "ClassicMapStringTypes": [
+    { "value": 0, "label": "Odamex" },
+    { "value": 1, "label": "Classic" }
+  ],
+  "AutomapScales": [
+    { "value": 0, "label": "Auto" },
+    { "value": 1, "label": "1X" },
+    { "value": 2, "label": "2X" },
+    { "value": 3, "label": "3X" },
+    { "value": 4, "label": "4X" },
+    { "value": 5, "label": "5X" },
+    { "value": 6, "label": "6X" }
+  ],
+  "MinimapLocations": [
+    { "value": 0, "label": "Left Top" },
+    { "value": 1, "label": "Left Middle" },
+    { "value": 2, "label": "Left Bottom" },
+    { "value": 3, "label": "Right Top" },
+    { "value": 4, "label": "Right Middle" },
+    { "value": 5, "label": "Right Bottom" }
+  ]
+}

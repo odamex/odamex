@@ -127,8 +127,18 @@ short				indicatorAnimCounter;	// indicator animation counter
 short				whichIndicator; 		// which indicator to draw
 bool				drawIndicator;			// [RH] don't always draw indicator
 
-// hack for PlayerSetup
-int					PSetupDepth;
+enum class builtinscreenkind_t
+{
+	none,
+	help,
+	saveload,
+	playersetup
+};
+
+static builtinscreenkind_t CurrentBuiltinScreen = builtinscreenkind_t::none;
+static int CurrentBuiltinItem = 0;
+static int gLoadLastOn = 0;
+static int gSaveLastOn = 0;
 
 // current menudef
 oldmenu_t *currentMenu;
@@ -195,6 +205,8 @@ static void M_FinishHelpScreen();
 static void M_BeginEndGamePrompt();
 static void M_BeginQuitGamePrompt();
 static void M_AdvanceHelpScreen(int choice);
+static void M_PushBuiltinScreen(builtinscreenkind_t screen, int initialItem, bool newDrawIndicator);
+static void M_BuiltinResponder(int ch, int ch2, bool numlock);
 namespace
 {
 	struct menudestination_t;
@@ -300,25 +312,7 @@ enum psetup_t
 	psetup_end
 } psetup_e;
 
-oldmenuitem_t PlayerSetupMenu[] =
-{
-	{ 1,"","\0", M_EditPlayerName, 'N' },
-	{ 2,"","\0", M_ChangeTeam, 'T' },
-	{ 2,"","\0", M_ChangeGender, 'E' },
-	{ 2,"","\0", M_ChangeAutoAim, 'A' },
-    { 2,"","\0", M_ChangeColorPreset, 'C' },
-	{ 2,"","\0", M_SlidePlayerRed, 'R' },
-	{ 2,"","\0", M_SlidePlayerGreen, 'G' },
-	{ 2,"","\0", M_SlidePlayerBlue, 'B' }
-};
-
-oldmenu_t PSetupDef = {
-	psetup_end,
-	PlayerSetupMenu,
-	M_PlayerSetupDrawer,
-	48,	47,
-	playername
-};
+static int gPlayerSetupLastOn = playername;
 
 //
 // OPTIONS MENU
@@ -330,26 +324,6 @@ bool OptionsActive;
 //
 // Read This!
 //
-enum helpmenu_t
-{
-	help_next,
-	help_end
-} helpmenu_e;
-
-oldmenuitem_t HelpMenu[] =
-{
-	{1,"","\0",M_AdvanceHelpScreen,0}
-};
-
-oldmenu_t HelpDef =
-{
-	help_end,
-	HelpMenu,
-	M_DrawHelpPage,
-	280,185,
-	0
-};
-
 static int gHelpPageIndex = 0;
 
 static int M_HelpPageCount()
@@ -416,41 +390,22 @@ enum load_t
 	load_end
 } load_e;
 
-static oldmenuitem_t SaveLoadMenuItems[]=
-{
-	{1,"","\0", M_ActivateSaveLoadSlot,'1'},
-	{1,"","\0", M_ActivateSaveLoadSlot,'2'},
-	{1,"","\0", M_ActivateSaveLoadSlot,'3'},
-	{1,"","\0", M_ActivateSaveLoadSlot,'4'},
-	{1,"","\0", M_ActivateSaveLoadSlot,'5'},
-	{1,"","\0", M_ActivateSaveLoadSlot,'6'},
-	{1,"","\0", M_ActivateSaveLoadSlot,'7'},
-	{1,"","\0", M_ActivateSaveLoadSlot,'8'},
-};
-
 static saveloadmode_t gSaveLoadMode = saveloadmode_t::load;
 static bool gSaveSlotOccupied[load_end] = {};
-
-oldmenu_t SaveLoadDef =
-{
-	load_end,
-	SaveLoadMenuItems,
-	M_DrawSaveLoadScreen,
-	76,54,
-	0
-};
+static int gSaveLoadX = 76;
+static int gSaveLoadY = 54;
 
 static void M_ConfigureSaveLoadScreen()
 {
 	if (gameinfo.enginetype == ENGINE_HERETIC)
 	{
-		SaveLoadDef.x = 62;
-		SaveLoadDef.y = 20;
+		gSaveLoadX = 62;
+		gSaveLoadY = 20;
 	}
 	else
 	{
-		SaveLoadDef.x = 76;
-		SaveLoadDef.y = 54;
+		gSaveLoadX = 76;
+		gSaveLoadY = 54;
 	}
 }
 
@@ -461,7 +416,6 @@ BEGIN_COMMAND (menu_main)
 	M_StartControlPanel ();
 	if (M_OpenMenuEntrypoint("mainMenu"))
 	{
-		PSetupDepth = 2;
 	}
 }
 END_COMMAND (menu_main)
@@ -498,7 +452,6 @@ BEGIN_COMMAND (menu_options)
     M_StartControlPanel ();
 	if (M_OpenMenuEntrypoint("optionsMenu"))
 	{
-		PSetupDepth = 1;
 	}
 }
 END_COMMAND (menu_options)
@@ -1520,7 +1473,6 @@ void M_ReadSaveStrings()
 		{
 			M_StringCopy(&savegamestrings[i][0], GStrings(EMPTYSTRING), SAVESTRINGSIZE);
 			gSaveSlotOccupied[i] = false;
-			SaveLoadMenuItems[i].status = gSaveLoadMode == saveloadmode_t::save ? 1 : 0;
 		}
 		else
 		{
@@ -1531,7 +1483,6 @@ void M_ReadSaveStrings()
 				return;
 			}
 			gSaveSlotOccupied[i] = true;
-			SaveLoadMenuItems[i].status = 1;
 		}
 	}
 }
@@ -1573,18 +1524,18 @@ void M_DrawSaveLoadScreen()
 		                          title);
 	}
 
-	list_y = SaveLoadDef.y;
+	list_y = gSaveLoadY;
 	for (i = 0; i < load_end; i++)
 	{
-		M_DrawInputBox(savegamestrings[i], SaveLoadDef.x, list_y, slot_width);
+		M_DrawInputBox(savegamestrings[i], gSaveLoadX, list_y, slot_width);
 		list_y += slot_height + slot_padding;
 	}
 
 	if (genStringEnter != oldmenustring_t::NONE)
 	{
 		const int string_width = V_StringWidth(smallFont, savegamestrings[saveSlot]);
-		screen->DrawTextCleanMove(smallFont, CR_RED, SaveLoadDef.x + string_width,
-		                          SaveLoadDef.y + M_BigFontLineHeight() * saveSlot, "_");
+		screen->DrawTextCleanMove(smallFont, CR_RED, gSaveLoadX + string_width,
+		                          gSaveLoadY + M_BigFontLineHeight() * saveSlot, "_");
 	}
 }
 
@@ -1609,7 +1560,7 @@ static void M_OpenLoadGameScreen()
 {
 	gSaveLoadMode = saveloadmode_t::load;
 	M_ConfigureSaveLoadScreen();
-	M_SetupNextMenu(&SaveLoadDef);
+	M_PushBuiltinScreen(builtinscreenkind_t::saveload, gLoadLastOn, true);
 	M_ReadSaveStrings();
 }
 
@@ -1697,7 +1648,7 @@ static void M_OpenSaveGameScreen()
 
 	gSaveLoadMode = saveloadmode_t::save;
 	M_ConfigureSaveLoadScreen();
-	M_SetupNextMenu(&SaveLoadDef);
+	M_PushBuiltinScreen(builtinscreenkind_t::saveload, gSaveLastOn, true);
 	M_ReadSaveStrings();
 }
 
@@ -1742,8 +1693,8 @@ void M_QuickSave()
 		M_StartControlPanel();
 		gSaveLoadMode = saveloadmode_t::save;
 		M_ConfigureSaveLoadScreen();
+		M_PushBuiltinScreen(builtinscreenkind_t::saveload, gSaveLastOn, true);
 		M_ReadSaveStrings();
-		M_SetupNextMenu(&SaveLoadDef);
 		quickSaveSlot = -2; 	// means to pick a slot now
 		return;
 	}
@@ -1796,7 +1747,7 @@ static void M_OpenHelpScreen()
 	drawIndicator = false;
 	gHelpPageIndex = 0;
 	D_LoadPageImage(help_page, gameinfo.infoPage[0]);
-	M_SetupNextMenu(&HelpDef);
+	M_PushBuiltinScreen(builtinscreenkind_t::help, 0, false);
 }
 
 static void M_DrawHelpPage()
@@ -1823,7 +1774,8 @@ static void M_FinishHelpScreen()
 	drawIndicator = true;
 	D_FreePageImage(help_page);
 	gHelpPageIndex = 0;
-	MenuStackDepth = 0;
+	M_ClearMenus();
+	M_StartControlPanel();
 	M_SetupNextMenu(&MainDef);
 }
 
@@ -2110,6 +2062,8 @@ static const char* colorpresets[12] = { "green", "indigo", "brown", "red", "blue
 static state_t *PlayerState;
 static int PlayerTics;
 argb_t CL_GetPlayerColor(const player_t&);
+static constexpr int PLAYERSETUP_X = 48;
+static constexpr int PLAYERSETUP_Y = 47;
 
 
 EXTERN_CVAR (cl_name)
@@ -2120,14 +2074,70 @@ EXTERN_CVAR (cl_color)
 EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_autoaim)
 
+static int M_PlayerSetupItemCount()
+{
+	return D_ColorPreset(cl_colorpreset.cstring()) == COLOR_CUSTOM ? psetup_end :
+	                                                                playercolorpreset + 1;
+}
+
+static void M_ClampPlayerSetupItem()
+{
+	const int max = M_PlayerSetupItemCount();
+	if (CurrentBuiltinItem >= max)
+	{
+		CurrentBuiltinItem = max - 1;
+	}
+	if (CurrentBuiltinItem < 0)
+	{
+		CurrentBuiltinItem = 0;
+	}
+	gPlayerSetupLastOn = CurrentBuiltinItem;
+}
+
+static void M_ActivatePlayerSetupItem(int choice)
+{
+	switch (CurrentBuiltinItem)
+	{
+	case playername:
+		M_EditPlayerName(choice);
+		break;
+	case playerteam:
+		M_ChangeTeam(choice);
+		break;
+	case playersex:
+		M_ChangeGender(choice);
+		break;
+	case playeraim:
+		M_ChangeAutoAim(choice);
+		break;
+	case playercolorpreset:
+		M_ChangeColorPreset(choice);
+		break;
+	case playerred:
+		M_SlidePlayerRed(choice);
+		break;
+	case playergreen:
+		M_SlidePlayerGreen(choice);
+		break;
+	case playerblue:
+		M_SlidePlayerBlue(choice);
+		break;
+	default:
+		break;
+	}
+
+	M_ClampPlayerSetupItem();
+}
+
 void M_OpenPlayerSetupScreen(void)
 {
-	M_ClearMenus();
-	M_StartControlPanel();
-	PSetupDepth = 0;
+	if (!menuactive)
+	{
+		M_StartControlPanel();
+	}
 
 	M_StringCopy(savegamestrings[0], cl_name.cstring(), SAVESTRINGSIZE);
-	M_SetupNextMenu (&PSetupDef);
+	M_PushBuiltinScreen(builtinscreenkind_t::playersetup, gPlayerSetupLastOn, true);
 	PlayerState = &states[mobjinfo[MT_PLAYER].seestate];
 	PlayerTics = PlayerState->tics;
 
@@ -2138,6 +2148,7 @@ void M_OpenPlayerSetupScreen(void)
 	const argb_t player_color = CL_GetPlayerColor(consoleplayer());
 	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
 	R_BuildPlayerTranslation(menuplayer_id, player_color, colorpreset);
+	M_ClampPlayerSetupItem();
 }
 
 static void M_PlayerSetupTicker()
@@ -2243,18 +2254,18 @@ static void M_PlayerSetupDrawer()
 	}
 
 	// Draw player name box
-	screen->DrawTextCleanMove(smallFont, CR_RED, PSetupDef.x, PSetupDef.y, "Name");
-	M_DrawInputBox(savegamestrings[0], PSetupDef.x + 56, PSetupDef.y-4, MAXPLAYERNAME+1);
+	screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X, PLAYERSETUP_Y, "Name");
+	M_DrawInputBox(savegamestrings[0], PLAYERSETUP_X + 56, PLAYERSETUP_Y - 4, MAXPLAYERNAME + 1);
 
 	// Draw cursor for either of the above
 	if (genStringEnter != oldmenustring_t::NONE)
 		screen->DrawTextCleanMove(smallFont, CR_RED,
-							PSetupDef.x + V_StringWidth(smallFont, savegamestrings[saveSlot]) + 56,
-							PSetupDef.y + ((saveSlot == 0) ? 0 : M_BigFontLineHeight()), "_");
+							PLAYERSETUP_X + V_StringWidth(smallFont, savegamestrings[saveSlot]) + 56,
+							PLAYERSETUP_Y + ((saveSlot == 0) ? 0 : M_BigFontLineHeight()), "_");
 
 	// Draw player character
 	{
-		int x = 320 - 88 - 32, y = PSetupDef.y + M_BigFontLineHeight()*3 - 14;
+		int x = 320 - 88 - 32, y = PLAYERSETUP_Y + M_BigFontLineHeight() * 3 - 14;
 
 		x = (x-160)*CleanXfac+(I_GetSurfaceWidth() / 2);
 		y = (y-100)*CleanYfac+(I_GetSurfaceHeight() / 2);
@@ -2381,38 +2392,38 @@ static void M_PlayerSetupDrawer()
 
 		// Draw box surrounding fire and player:
 		screen->DrawPatchCleanWithPalette(W_CachePatch("M_PBOX"), 320 - 88 - 32 + 36,
-			PSetupDef.y + M_BigFontLineHeight() * 3 + 22, palette);
+			PLAYERSETUP_Y + M_BigFontLineHeight() * 3 + 22, palette);
 
 		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),
-			320 - 52 - 32, PSetupDef.y + M_BigFontLineHeight()*3 + 46);
+			320 - 52 - 32, PLAYERSETUP_Y + M_BigFontLineHeight() * 3 + 46);
 	}
 
 	// Draw team setting
 	{
 		const OFont* smallFont = OFonts.small();
 		const team_t team = D_TeamByName(cl_team.cstring());
-		const int x = V_StringWidth(smallFont, "Preferred Team") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove(smallFont, CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight(), "Preferred Team");
-		screen->DrawTextCleanMove(smallFont, CR_GREY, x, PSetupDef.y + M_BigFontLineHeight(), team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
+		const int x = V_StringWidth(smallFont, "Preferred Team") + 8 + PLAYERSETUP_X;
+		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X, PLAYERSETUP_Y + M_BigFontLineHeight(), "Preferred Team");
+		screen->DrawTextCleanMove(smallFont, CR_GREY, x, PLAYERSETUP_Y + M_BigFontLineHeight(), team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
 	}
 
 	// Draw gender setting
 	{
 		const OFont* smallFont = OFonts.small();
 		const gender_t gender = D_GenderByName(cl_gender.cstring());
-		const int x = V_StringWidth(smallFont, "Gender") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove(smallFont, CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*2, "Gender");
-		screen->DrawTextCleanMove(smallFont, CR_GREY, x, PSetupDef.y + M_BigFontLineHeight()*2, genders[gender]);
+		const int x = V_StringWidth(smallFont, "Gender") + 8 + PLAYERSETUP_X;
+		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X, PLAYERSETUP_Y + M_BigFontLineHeight() * 2, "Gender");
+		screen->DrawTextCleanMove(smallFont, CR_GREY, x, PLAYERSETUP_Y + M_BigFontLineHeight() * 2, genders[gender]);
 	}
 
 	// Draw autoaim setting
 	{
 		const OFont* smallFont = OFonts.small();
-		const int x = V_StringWidth(smallFont, "Autoaim") + 8 + PSetupDef.x;
+		const int x = V_StringWidth(smallFont, "Autoaim") + 8 + PLAYERSETUP_X;
 		const float aim = cl_autoaim;
 
-		screen->DrawTextCleanMove(smallFont, CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*3, "Autoaim");
-		screen->DrawTextCleanMove(smallFont, CR_GREY, x, PSetupDef.y + M_BigFontLineHeight()*3,
+		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X, PLAYERSETUP_Y + M_BigFontLineHeight() * 3, "Autoaim");
+		screen->DrawTextCleanMove(smallFont, CR_GREY, x, PLAYERSETUP_Y + M_BigFontLineHeight() * 3,
 			aim == 0 ? "Never" :
 			aim <= 0.25 ? "Very Low" :
 			aim <= 0.5 ? "Low" :
@@ -2424,35 +2435,31 @@ static void M_PlayerSetupDrawer()
 	// Draw color setting
 	{
 		const OFont* smallFont = OFonts.small();
-		const int x = V_StringWidth(smallFont, "Color") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove(smallFont, CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*4, "Color");
-		screen->DrawTextCleanMove(smallFont, CR_GREY, x, PSetupDef.y + M_BigFontLineHeight()*4, colorpresets[colorpreset]);
+		const int x = V_StringWidth(smallFont, "Color") + 8 + PLAYERSETUP_X;
+		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X, PLAYERSETUP_Y + M_BigFontLineHeight() * 4, "Color");
+		screen->DrawTextCleanMove(smallFont, CR_GREY, x, PLAYERSETUP_Y + M_BigFontLineHeight() * 4, colorpresets[colorpreset]);
 	}
 
-	int PSetupSize = static_cast<int>(ARRAY_LENGTH(PlayerSetupMenu));
-	if (colorpreset == COLOR_CUSTOM && PSetupDef.numitems < PSetupSize)
-		PSetupDef.numitems = PSetupDef.numitems + 3;
-	else if (colorpreset != COLOR_CUSTOM && PSetupDef.numitems > PSetupSize - 3)
-		PSetupDef.numitems = PSetupDef.numitems - 3;
-
 	// Draw player color sliders
-	//V_DrawTextCleanMove (CR_GREY, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight(), "Color");
+	//V_DrawTextCleanMove (CR_GREY, PLAYERSETUP_X, PLAYERSETUP_Y + M_BigFontLineHeight(), "Color");
 
 	if (colorpreset == COLOR_CUSTOM)
 	{
-		screen->DrawTextCleanMove(smallFont, CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*5, "Red");
-		screen->DrawTextCleanMove(smallFont, CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*6, "Green");
-		screen->DrawTextCleanMove(smallFont, CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*7, "Blue");
+		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X, PLAYERSETUP_Y + M_BigFontLineHeight() * 5, "Red");
+		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X, PLAYERSETUP_Y + M_BigFontLineHeight() * 6, "Green");
+		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X, PLAYERSETUP_Y + M_BigFontLineHeight() * 7, "Blue");
 
 		{
-			const int x = V_StringWidth(smallFont, "Green") + 8 + PSetupDef.x;
+			const int x = V_StringWidth(smallFont, "Green") + 8 + PLAYERSETUP_X;
 			const argb_t playercolor = V_GetColorFromString(cl_color);
 
-			M_DrawSlider(x, PSetupDef.y + M_BigFontLineHeight()*5, 0.0f, 255.0f, playercolor.getr(), 0.0f);
-			M_DrawSlider(x, PSetupDef.y + M_BigFontLineHeight()*6, 0.0f, 255.0f, playercolor.getg(), 0.0f);
-			M_DrawSlider(x, PSetupDef.y + M_BigFontLineHeight()*7, 0.0f, 255.0f, playercolor.getb(), 0.0f);
+			M_DrawSlider(x, PLAYERSETUP_Y + M_BigFontLineHeight() * 5, 0.0f, 255.0f, playercolor.getr(), 0.0f);
+			M_DrawSlider(x, PLAYERSETUP_Y + M_BigFontLineHeight() * 6, 0.0f, 255.0f, playercolor.getg(), 0.0f);
+			M_DrawSlider(x, PLAYERSETUP_Y + M_BigFontLineHeight() * 7, 0.0f, 255.0f, playercolor.getb(), 0.0f);
 		}
 	}
+
+	M_ClampPlayerSetupItem();
 }
 
 void M_ChangeTeam (int choice) // [Toke - Teams]
@@ -2826,6 +2833,12 @@ bool M_Responder(const event_t& ev)
 		}
 	}
 
+	if (CurrentBuiltinScreen != builtinscreenkind_t::none)
+	{
+		M_BuiltinResponder(ch, ch2, numlock);
+		return ev.type == ev_keydown;
+	}
+
 	// Keys usable within menu
 	{
 		if (Key_IsDownKey(ch, numlock))
@@ -2941,6 +2954,7 @@ void M_StartControlPanel()
 	MenuStackDepth = 0;
 	menuactive = 1;
 	MenuTime = 0;
+	CurrentBuiltinScreen = builtinscreenkind_t::none;
 	currentMenu = &MainDef;
 	itemOn = currentMenu->lastOn;
 	OptionsActive = false;			// [RH] Make sure none of the options menus appear.
@@ -2997,6 +3011,44 @@ void M_Drawer()
 		if (OptionsActive)
 		{
 			M_OptDrawer();
+		}
+		else if (CurrentBuiltinScreen == builtinscreenkind_t::help)
+		{
+			M_DrawHelpPage();
+		}
+		else if (CurrentBuiltinScreen == builtinscreenkind_t::saveload)
+		{
+			M_DrawSaveLoadScreen();
+
+			if (drawIndicator)
+			{
+				if (const patch_t* indicator = MenuIndicatorPatch(whichIndicator))
+				{
+					const int draw_x = gSaveLoadX + MenuConfTheme().indicator.offsetX;
+					const int draw_y =
+					    gSaveLoadY + MenuConfTheme().indicator.offsetY +
+					    CurrentBuiltinItem * M_BigFontLineHeight();
+
+					screen->DrawPatchClean(indicator, draw_x, draw_y);
+				}
+			}
+		}
+		else if (CurrentBuiltinScreen == builtinscreenkind_t::playersetup)
+		{
+			M_PlayerSetupDrawer();
+
+			if (drawIndicator && genStringEnter == oldmenustring_t::NONE)
+			{
+				if (const patch_t* indicator = MenuIndicatorPatch(whichIndicator))
+				{
+					const int draw_x = PLAYERSETUP_X + MenuConfTheme().indicator.offsetX;
+					const int draw_y =
+					    PLAYERSETUP_Y + MenuConfTheme().indicator.offsetY +
+					    CurrentBuiltinItem * M_BigFontLineHeight();
+
+					screen->DrawPatchClean(indicator, draw_x, draw_y);
+				}
+			}
 		}
 		else
 		{
@@ -3087,6 +3139,7 @@ void M_ClearMenus()
 	D_FreePageImage(help_page);
 	MenuStackDepth = 0;
 	menuactive = false;
+	CurrentBuiltinScreen = builtinscreenkind_t::none;
 	drawIndicator = true;
 	M_DemoNoPlay = false;
     M_ResumeSound();
@@ -3102,6 +3155,7 @@ void M_SetupNextMenu (oldmenu_t *menudef)
 {
 	MenuStack[MenuStackDepth].menu.old = menudef;
 	MenuStack[MenuStackDepth].isNewStyle = false;
+	MenuStack[MenuStackDepth].isBuiltin = false;
 	MenuStack[MenuStackDepth].drawIndicator = drawIndicator;
 	MenuStackDepth++;
 
@@ -3113,11 +3167,25 @@ void M_PushNewMenu(menu_t* menu, bool newDrawIndicator)
 {
 	MenuStack[MenuStackDepth].menu.newmenu = menu;
 	MenuStack[MenuStackDepth].isNewStyle = true;
+	MenuStack[MenuStackDepth].isBuiltin = false;
 	MenuStack[MenuStackDepth].drawIndicator = newDrawIndicator;
 	MenuStackDepth++;
 
 	CurrentMenu = menu;
 	CurrentItem = menu->lastOn;
+}
+
+static void M_PushBuiltinScreen(builtinscreenkind_t screen, int initialItem, bool newDrawIndicator)
+{
+	MenuStack[MenuStackDepth].menu.builtin = static_cast<int>(screen);
+	MenuStack[MenuStackDepth].isNewStyle = false;
+	MenuStack[MenuStackDepth].isBuiltin = true;
+	MenuStack[MenuStackDepth].drawIndicator = newDrawIndicator;
+	MenuStackDepth++;
+
+	OptionsActive = false;
+	CurrentBuiltinScreen = screen;
+	CurrentBuiltinItem = initialItem;
 }
 
 void M_BuildKeyList(menuitem_t* item, int numitems)
@@ -3166,6 +3234,147 @@ int M_FindCurVal(float cur, value_t* values, int numvals)
 	return v;
 }
 
+static void M_BuiltinResponder(int ch, int ch2, bool numlock)
+{
+	switch (CurrentBuiltinScreen)
+	{
+	case builtinscreenkind_t::help:
+		if (Key_IsAcceptKey(ch))
+		{
+			M_AdvanceHelpScreen(0);
+		}
+		else if (Key_IsCancelKey(ch))
+		{
+			M_PopMenuStack();
+		}
+		break;
+
+	case builtinscreenkind_t::saveload:
+		if (Key_IsDownKey(ch, numlock))
+		{
+			CurrentBuiltinItem = (CurrentBuiltinItem + 1) % load_end;
+			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		}
+		else if (Key_IsUpKey(ch, numlock))
+		{
+			CurrentBuiltinItem = CurrentBuiltinItem > 0 ? CurrentBuiltinItem - 1 : load_end - 1;
+			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		}
+		else if (Key_IsAcceptKey(ch))
+		{
+			if (gSaveLoadMode == saveloadmode_t::save || gSaveSlotOccupied[CurrentBuiltinItem])
+			{
+				if (gSaveLoadMode == saveloadmode_t::save)
+				{
+					gSaveLastOn = CurrentBuiltinItem;
+				}
+				else
+				{
+					gLoadLastOn = CurrentBuiltinItem;
+				}
+
+				M_ActivateSaveLoadSlot(CurrentBuiltinItem);
+				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+			}
+		}
+		else if (Key_IsCancelKey(ch))
+		{
+			if (gSaveLoadMode == saveloadmode_t::save)
+			{
+				gSaveLastOn = CurrentBuiltinItem;
+			}
+			else
+			{
+				gLoadLastOn = CurrentBuiltinItem;
+			}
+
+			M_PopMenuStack();
+		}
+		else if (ch2 >= '1' && ch2 <= '8')
+		{
+			CurrentBuiltinItem = ch2 - '1';
+			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		}
+		break;
+
+	case builtinscreenkind_t::playersetup:
+		if (Key_IsDownKey(ch, numlock))
+		{
+			const int count = M_PlayerSetupItemCount();
+			CurrentBuiltinItem = (CurrentBuiltinItem + 1) % count;
+			gPlayerSetupLastOn = CurrentBuiltinItem;
+			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		}
+		else if (Key_IsUpKey(ch, numlock))
+		{
+			const int count = M_PlayerSetupItemCount();
+			CurrentBuiltinItem = CurrentBuiltinItem > 0 ? CurrentBuiltinItem - 1 : count - 1;
+			gPlayerSetupLastOn = CurrentBuiltinItem;
+			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		}
+		else if (Key_IsLeftKey(ch, numlock))
+		{
+			if (CurrentBuiltinItem != playername)
+			{
+				M_ActivatePlayerSetupItem(0);
+				S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+			}
+		}
+		else if (Key_IsRightKey(ch, numlock))
+		{
+			if (CurrentBuiltinItem != playername)
+			{
+				M_ActivatePlayerSetupItem(1);
+				S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+			}
+		}
+		else if (Key_IsAcceptKey(ch))
+		{
+			M_ActivatePlayerSetupItem(CurrentBuiltinItem == playername ? CurrentBuiltinItem : 1);
+			gPlayerSetupLastOn = CurrentBuiltinItem;
+			S_Sound(CHAN_INTERFACE,
+			        CurrentBuiltinItem == playername ? "weapons/pistol" : "plats/pt1_mid", 1,
+			        ATTN_NONE);
+		}
+		else if (Key_IsCancelKey(ch))
+		{
+			gPlayerSetupLastOn = CurrentBuiltinItem;
+			M_PopMenuStack();
+		}
+		else if (ch2 && ch < OKEY_JOY1)
+		{
+			const char alpha = static_cast<char>(tolower(ch2));
+			static constexpr char alphaKeys[psetup_end] = { 'n', 't', 'e', 'a', 'c', 'r', 'g',
+				                                            'b' };
+			for (int i = CurrentBuiltinItem + 1; i < M_PlayerSetupItemCount(); ++i)
+			{
+				if (alphaKeys[i] == alpha)
+				{
+					CurrentBuiltinItem = i;
+					gPlayerSetupLastOn = CurrentBuiltinItem;
+					S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+					return;
+				}
+			}
+			for (int i = 0; i <= CurrentBuiltinItem && i < M_PlayerSetupItemCount(); ++i)
+			{
+				if (alphaKeys[i] == alpha)
+				{
+					CurrentBuiltinItem = i;
+					gPlayerSetupLastOn = CurrentBuiltinItem;
+					S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+					return;
+				}
+			}
+		}
+		break;
+
+	case builtinscreenkind_t::none:
+	default:
+		break;
+	}
+}
+
 
 void M_PopMenuStack()
 {
@@ -3174,10 +3383,29 @@ void M_PopMenuStack()
 		MenuStackDepth -= 2;
 		if (MenuStack[MenuStackDepth].isNewStyle) {
 			OptionsActive = true;
+			CurrentBuiltinScreen = builtinscreenkind_t::none;
 			CurrentMenu = MenuStack[MenuStackDepth].menu.newmenu;
 			CurrentItem = CurrentMenu->lastOn;
+		} else if (MenuStack[MenuStackDepth].isBuiltin) {
+			OptionsActive = false;
+			CurrentBuiltinScreen =
+			    static_cast<builtinscreenkind_t>(MenuStack[MenuStackDepth].menu.builtin);
+			if (CurrentBuiltinScreen == builtinscreenkind_t::help)
+			{
+				CurrentBuiltinItem = 0;
+			}
+			else if (CurrentBuiltinScreen == builtinscreenkind_t::saveload)
+			{
+				CurrentBuiltinItem =
+				    gSaveLoadMode == saveloadmode_t::save ? gSaveLastOn : gLoadLastOn;
+			}
+			else if (CurrentBuiltinScreen == builtinscreenkind_t::playersetup)
+			{
+				CurrentBuiltinItem = gPlayerSetupLastOn;
+			}
 		} else {
 			OptionsActive = false;
+			CurrentBuiltinScreen = builtinscreenkind_t::none;
 			currentMenu = MenuStack[MenuStackDepth].menu.old;
 			itemOn = currentMenu->lastOn;
 		}
@@ -3186,15 +3414,7 @@ void M_PopMenuStack()
 		S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	} else {
 		M_ClearMenus ();
-		if (currentMenu == &PSetupDef && PSetupDepth > 0)			// hack for PlayerSetup
-		{
-			M_StartControlPanel();
-			if (PSetupDepth == 2)
-				M_SetupNextMenu(&MainDef);
-			M_OpenOptionsMenu();
-		}
-		else
-			S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
+		S_Sound (CHAN_INTERFACE, "switches/exitbutn", 1, ATTN_NONE);
 	}
 }
 
@@ -3210,7 +3430,7 @@ void M_Ticker()
 		indicatorAnimCounter = 8;
 	}
 
-	if (currentMenu == &PSetupDef)
+	if (CurrentBuiltinScreen == builtinscreenkind_t::playersetup)
 	{
 		M_PlayerSetupTicker ();
 	}
