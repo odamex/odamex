@@ -352,6 +352,39 @@ oldmenu_t HelpDef =
 
 static int gHelpPageIndex = 0;
 
+static int M_HelpPageCount()
+{
+	int count = 0;
+
+	for (int i = 0; i < 3; ++i)
+	{
+		const OLumpName& page = gameinfo.infoPage[i];
+		if (page.empty())
+		{
+			break;
+		}
+
+		bool duplicate = false;
+		for (int j = 0; j < i; ++j)
+		{
+			if (iequals(page, gameinfo.infoPage[j]))
+			{
+				duplicate = true;
+				break;
+			}
+		}
+
+		if (duplicate)
+		{
+			break;
+		}
+
+		++count;
+	}
+
+	return count;
+}
+
 oldmenu_t GameFilesDef =
 {
 	0,
@@ -1784,6 +1817,13 @@ void M_QuickLoad()
 //
 static void M_OpenHelpScreen()
 {
+	const int pageCount = M_HelpPageCount();
+	if (pageCount <= 0)
+	{
+		M_ClearMenus();
+		return;
+	}
+
 	drawIndicator = false;
 	gHelpPageIndex = 0;
 	D_LoadPageImage(help_page, gameinfo.infoPage[0]);
@@ -1797,8 +1837,8 @@ static void M_DrawHelpPage()
 
 static void M_AdvanceHelpScreen(int)
 {
-	const int maxPage = (gameinfo.flags & GI_SHAREWARE) ? 2 : 1;
-	if (gHelpPageIndex >= maxPage)
+	const int pageCount = M_HelpPageCount();
+	if (pageCount <= 0 || gHelpPageIndex + 1 >= pageCount)
 	{
 		M_FinishHelpScreen();
 		return;
