@@ -94,8 +94,8 @@
       "episodes": {
         "layout": {
           "style": "textList",
-          "x": 80,
-          "y": 60,
+          "x": 44,
+          "y": 44,
           "topPadding": 0,
           "itemSpacing": "font"
         },
@@ -110,8 +110,8 @@
       "skills": {
         "layout": {
           "style": "textList",
-          "x": 80,
-          "y": 60,
+          "x": 44,
+          "y": 44,
           "topPadding": 0,
           "itemSpacing": "font"
         },

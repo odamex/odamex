@@ -91,6 +91,7 @@ struct menuconflayout_t
 	int x = 0;
 	int y = 0;
 	int indent = 0;
+	int scrollTop = 0;
 	std::string lineHeight = "auto";
 	bool scroll = false;
 	int topPadding = 0;

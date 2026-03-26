@@ -29,6 +29,8 @@
 
 #include "odamex.h"
 
+#include <chrono>
+
 #include "gstrings.h"
 BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
@@ -54,16 +56,13 @@ END_DISABLE_WARNING_GNU
 
 #include "m_memio.h"
 
-#include "s_sound.h"
-#include "i_music.h"
-#include "i_musicsystem.h"
-
-
 #include "m_misc.h"
 #include "cl_demo.h"
 #include "gi.h"
 #include "m_menuconf.h"
 #include "m_options_valuesets.h"
+
+#include <unordered_map>
 
 // Data.
 #include "m_menu.h"
@@ -83,80 +82,12 @@ EXTERN_CVAR (show_messages)
 
 namespace
 {
-	const char* LocalizedMenuString(const char* key)
-	{
-		if (GStrings.hasString(key))
-		{
-			const char* s = GStrings(key);
-			if (s && s[0])
-			{
-				return s;
-			}
-		}
-
-		return key;
-	}
-
-	const menuconftheme_t& MenuConfTheme()
-	{
-		return M_MenuConf().theme;
-	}
-
-	struct configuredoptionsbridge_t;
-	configuredoptionsbridge_t* ConfiguredOptionsBridgeByMenu(menu_t* menu);
+	struct generatedoptionsmenu_t;
+	generatedoptionsmenu_t* GeneratedOptionsMenuByMenu(menu_t* menu);
 	menu_t* OptionsMenuSlotById(const std::string& menuId);
-
-	const patch_t* MenuConfPatch(const std::string& name)
-	{
-		return !name.empty() && W_CheckNumForName(name.c_str()) >= 0 ? W_CachePatch(name.c_str()) : nullptr;
-	}
-
-	int MenuCursorOffsetY()
-	{
-		return MenuConfTheme().cursorOffsetY;
-	}
-
-	const patch_t* MenuCursorPatch()
-	{
-		const patch_t* patch = MenuConfPatch(MenuConfTheme().cursorPatch);
-		return patch != nullptr ? patch : MenuConfPatch("LITLCURS");
-	}
-
-	const patch_t* MenuSliderLeftPatch()
-	{
-		const patch_t* patch = MenuConfPatch(MenuConfTheme().slider.leftPatch);
-		return patch != nullptr ? patch : MenuConfPatch("LSLIDE");
-	}
-
-	const patch_t* MenuSliderMiddlePatch()
-	{
-		const patch_t* patch = MenuConfPatch(MenuConfTheme().slider.middlePatch);
-		return patch != nullptr ? patch : MenuConfPatch("MSLIDE");
-	}
-
-	const patch_t* MenuSliderRightPatch()
-	{
-		const patch_t* patch = MenuConfPatch(MenuConfTheme().slider.rightPatch);
-		return patch != nullptr ? patch : MenuConfPatch("RSLIDE");
-	}
-
-	const patch_t* MenuSliderKnobPatch()
-	{
-		const patch_t* patch = MenuConfPatch(MenuConfTheme().slider.knobPatch);
-		return patch != nullptr ? patch : MenuConfPatch("CSLIDE");
-	}
-
-	const patch_t* MenuSliderGreenKnobPatch()
-	{
-		const patch_t* patch = MenuConfPatch(MenuConfTheme().slider.greenKnobPatch);
-		return patch != nullptr ? patch : MenuConfPatch("GSLIDE");
-	}
-
-	const patch_t* MenuSliderOverlayPatch()
-	{
-		const patch_t* patch = MenuConfPatch(MenuConfTheme().slider.overlayPatch);
-		return patch != nullptr ? patch : MenuConfPatch("OSLIDE");
-	}
+	std::string_view CurrentOptionsMenuId();
+	const std::string* CurrentOptionsItemSound();
+	void PlayCurrentOptionsSound(std::string_view role);
 }
 
 extern bool				OptionsActive;
@@ -310,10 +241,6 @@ void M_StartControlPanel(void);
 
 void M_ClearMenus (void);
 
-static bool CanScrollUp;
-static bool CanScrollDown;
-static int VisBottom;
-
 bool configuring_controls = false;
 static bool	WaitingForKey;
 static bool	WaitingForAxis;
@@ -322,30 +249,12 @@ static itemtype OldContType;
 static const char	   *OldAxisMessage;
 static itemtype OldAxisType;
 
-/*=======================================
- *
- * Options Menu
- *
- *=======================================*/
-
 static void GoToConsole();
 void Reset2Defaults();
 void Reset2Saved();
 
 static void SetVidMode();
 static void M_UpdateDisplayOptions();
-
-/*=======================================
- *
- * Controls Menu
- *
- *=======================================*/
-
-// -------------------------------------------------------
-//
-//	[Toke] New [ Mouse Menu ]
-//
-// -------------------------------------------------------
 
 void M_ResetMouseValues()
 {
@@ -360,51 +269,10 @@ void M_ResetMouseValues()
 }
 
 
-
-/*=======================================
- *
- * Joystick Menu
- *
- *=======================================*/
-
- /*=======================================
-  *
-  * Sound Menu [Ralphis]
-  *
-  *=======================================*/
-
 EXTERN_CVAR(cl_chatsounds)
-
-
-
-/*=======================================
- *
- * Compatibility Options Menu
- *
- *=======================================*/
-
-
-/*=======================================
- *
- * Network Options Menu
- *
- *=======================================*/
-
-
-/*=======================================
- *
- * Weapon Preferences Menu
- *
- *=======================================*/
 
 extern const char *weaponnames[];
 
-
-/*=======================================
- *
- * Display Options Menu
- *
- *=======================================*/
 void ResetCustomColors (void);
 
 EXTERN_CVAR (am_rotate)
@@ -444,6 +312,7 @@ static void M_SendUINewColor (int red, int green, int blue);
 static void M_SlideUIRed (int);
 static void M_SlideUIGreen (int);
 static void M_SlideUIBlue (int);
+static cvar_t *flagsvar;
 
 CVAR_FUNC_IMPL (ui_transred)
 {
@@ -460,19 +329,6 @@ CVAR_FUNC_IMPL (ui_transblue)
     M_SlideUIBlue(var.asInt());
 }
 
-
-/*=======================================
- *
- * HUD Menu
- *
- *=======================================*/
-
-
-/*=======================================
- *
- * Messages Menu
- *
- *=======================================*/
 EXTERN_CVAR(message_showpickups)
 EXTERN_CVAR(message_showobituaries)
 EXTERN_CVAR (con_coloredmessages)
@@ -492,14 +348,6 @@ EXTERN_CVAR (msgmidcolor)
 //	{ 2.0, "French" },
 //	{ 3.0, "Italian" }
 //};
-
-/*=======================================
- *
- * Automap Menu
- *
- *=======================================*/
-
-
 
 /*=======================================
  *
@@ -623,7 +471,7 @@ menu_t ModesMenu = {
 
 namespace
 {
-	struct configuredoptionsbridge_t
+	struct generatedoptionsmenu_t
 	{
 		std::string menuId;
 		menu_t menu = {"", 0, 0, 0, nullptr, 0, 0, NULL};
@@ -631,36 +479,32 @@ namespace
 		std::vector<menuconfitem_t> sourceItems;
 		std::vector<menuitem_t> generatedItems;
 		std::vector<std::string> labels;
+		std::vector<int> labelWidths;
 		std::vector<std::string> commands;
 	};
 
-	std::vector<configuredoptionsbridge_t> gConfiguredOptionsMenus;
+	std::vector<generatedoptionsmenu_t> gGeneratedOptionsMenus;
 
-	void WarnMenuConfOption(const std::string& message)
+	generatedoptionsmenu_t* GeneratedOptionsMenuByMenu(menu_t* menu)
 	{
-		PrintFmt(PRINT_WARNING, "MENUCONF: {}\n", message);
-	}
-
-	configuredoptionsbridge_t* ConfiguredOptionsBridgeByMenu(menu_t* menu)
-	{
-		for (configuredoptionsbridge_t& bridge : gConfiguredOptionsMenus)
+		for (generatedoptionsmenu_t& generatedMenu : gGeneratedOptionsMenus)
 		{
-			if (&bridge.menu == menu)
+			if (&generatedMenu.menu == menu)
 			{
-				return &bridge;
+				return &generatedMenu;
 			}
 		}
 
 		return nullptr;
 	}
 
-	const configuredoptionsbridge_t* ConfiguredOptionsBridgeByMenu(const menu_t* menu)
+	const generatedoptionsmenu_t* GeneratedOptionsMenuByMenu(const menu_t* menu)
 	{
-		for (const configuredoptionsbridge_t& bridge : gConfiguredOptionsMenus)
+		for (const generatedoptionsmenu_t& generatedMenu : gGeneratedOptionsMenus)
 		{
-			if (&bridge.menu == menu)
+			if (&generatedMenu.menu == menu)
 			{
-				return &bridge;
+				return &generatedMenu;
 			}
 		}
 
@@ -669,15 +513,39 @@ namespace
 
 	menu_t* OptionsMenuSlotById(const std::string& menuId)
 	{
-		for (configuredoptionsbridge_t& bridge : gConfiguredOptionsMenus)
+		for (generatedoptionsmenu_t& generatedMenu : gGeneratedOptionsMenus)
 		{
-			if (bridge.menuId == menuId)
+			if (generatedMenu.menuId == menuId)
 			{
-				return &bridge.menu;
+				return &generatedMenu.menu;
 			}
 		}
 
 		return nullptr;
+	}
+
+	std::string_view CurrentOptionsMenuId()
+	{
+		const generatedoptionsmenu_t* generatedMenu = GeneratedOptionsMenuByMenu(CurrentMenu);
+		return generatedMenu != nullptr ? std::string_view(generatedMenu->menuId) : std::string_view();
+	}
+
+	const std::string* CurrentOptionsItemSound()
+	{
+		const generatedoptionsmenu_t* generatedMenu = GeneratedOptionsMenuByMenu(CurrentMenu);
+		if (generatedMenu == nullptr || CurrentItem < 0 ||
+		    static_cast<size_t>(CurrentItem) >= generatedMenu->sourceItems.size())
+		{
+			return nullptr;
+		}
+
+		const std::string& sound = generatedMenu->sourceItems[CurrentItem].sound;
+		return sound.empty() ? nullptr : &sound;
+	}
+
+	void PlayCurrentOptionsSound(std::string_view role)
+	{
+		M_PlayMenuSound(role, CurrentOptionsItemSound(), CurrentOptionsMenuId());
 	}
 
 	float CurrentDiscreteValue(const menuitem_t& item)
@@ -700,7 +568,7 @@ namespace
 	{
 		if (!item.languageKey.empty())
 		{
-			return LocalizedMenuString(item.languageKey.c_str());
+			return M_LocalizedMenuString(item.languageKey.c_str());
 		}
 
 		if (!item.text.empty())
@@ -799,9 +667,9 @@ namespace
 		return cvar_t::FindCVar(name, &dummy);
 	}
 
-	bool HasBindingItems(const configuredoptionsbridge_t& bridge)
+	bool HasBindingItems(const generatedoptionsmenu_t& generatedMenu)
 	{
-		for (const menuitem_t& item : bridge.generatedItems)
+		for (const menuitem_t& item : generatedMenu.generatedItems)
 		{
 			if (item.type == control || item.type == mapcontrol || item.type == netdemocontrol)
 			{
@@ -823,31 +691,89 @@ namespace
 		       iequals(cvar->name(), "ui_transblue");
 	}
 
-	argb_t MenuSliderColor(const menuitem_t& item)
+	int MenuSliderChannelValue(const menuitem_t& item);
+
+	struct colorsliderstate_t
 	{
-		if (IsUIChannelSlider(item.a.cvar))
+		argb_t tint;
+		int value = 0;
+	};
+
+	argb_t CachedMenuColor(const cvar_t* cvar)
+	{
+		struct cachedmenucolor_t
 		{
-			return argb_t(ui_transred.asInt(), ui_transgreen.asInt(), ui_transblue.asInt());
+			std::string text;
+			argb_t color;
+		};
+
+		static std::unordered_map<const cvar_t*, cachedmenucolor_t> cache;
+
+		if (cvar == nullptr)
+		{
+			return argb_t();
 		}
 
-		return V_GetColorFromString(*item.a.cvar);
+		const char* current = cvar->cstring();
+		cachedmenucolor_t& entry = cache[cvar];
+		if (entry.text != current)
+		{
+			entry.text = current;
+			entry.color = V_GetColorFromString(entry.text);
+		}
+
+		return entry.color;
+	}
+
+	colorsliderstate_t MenuColorSliderState(const menuitem_t& item)
+	{
+		colorsliderstate_t state;
+
+		if (IsUIChannelSlider(item.a.cvar))
+		{
+			state.value = item.a.cvar->asInt();
+			switch (item.type)
+			{
+			case redslider:
+				state.tint = argb_t(state.value, 0, 0);
+				break;
+			case greenslider:
+				state.tint = argb_t(0, state.value, 0);
+				break;
+			case blueslider:
+				state.tint = argb_t(0, 0, state.value);
+				break;
+			default:
+				break;
+			}
+			return state;
+		}
+
+		const argb_t color = CachedMenuColor(item.a.cvar);
+		switch (item.type)
+		{
+		case redslider:
+			state.value = color.getr();
+			state.tint = argb_t(state.value, 0, 0);
+			break;
+		case greenslider:
+			state.value = color.getg();
+			state.tint = argb_t(0, state.value, 0);
+			break;
+		case blueslider:
+			state.value = color.getb();
+			state.tint = argb_t(0, 0, state.value);
+			break;
+		default:
+			break;
+		}
+
+		return state;
 	}
 
 	int MenuSliderChannelValue(const menuitem_t& item)
 	{
-		if (IsUIChannelSlider(item.a.cvar))
-		{
-			return item.a.cvar->asInt();
-		}
-
-		const argb_t color = V_GetColorFromString(*item.a.cvar);
-		switch (item.type)
-		{
-		case redslider: return color.getr();
-		case greenslider: return color.getg();
-		case blueslider: return color.getb();
-		default: return 0;
-		}
+		return MenuColorSliderState(item).value;
 	}
 
 	void SetMenuSliderChannelValue(menuitem_t& item, int part)
@@ -897,11 +823,11 @@ namespace
 		return true;
 	}
 
-	int FirstSelectableOptionIndex(const configuredoptionsbridge_t& bridge)
+	int FirstSelectableOptionIndex(const generatedoptionsmenu_t& generatedMenu)
 	{
-		for (size_t i = 0; i < bridge.generatedItems.size(); ++i)
+		for (size_t i = 0; i < generatedMenu.generatedItems.size(); ++i)
 		{
-			if (IsSelectableOptionItem(bridge.generatedItems[i]))
+			if (IsSelectableOptionItem(generatedMenu.generatedItems[i]))
 			{
 				return static_cast<int>(i);
 			}
@@ -910,16 +836,16 @@ namespace
 		return 0;
 	}
 
-	void ActivateConfiguredOptionsItem()
+	void ActivateGeneratedOptionsItem()
 	{
-		configuredoptionsbridge_t* bridge = ConfiguredOptionsBridgeByMenu(CurrentMenu);
-		if (bridge == nullptr || CurrentItem < 0 ||
-		    static_cast<size_t>(CurrentItem) >= bridge->sourceItems.size())
+		generatedoptionsmenu_t* generatedMenu = GeneratedOptionsMenuByMenu(CurrentMenu);
+		if (generatedMenu == nullptr || CurrentItem < 0 ||
+		    static_cast<size_t>(CurrentItem) >= generatedMenu->sourceItems.size())
 		{
 			return;
 		}
 
-		const menuconfitem_t& item = bridge->sourceItems[CurrentItem];
+		const menuconfitem_t& item = generatedMenu->sourceItems[CurrentItem];
 
 		if (item.action == "openConsole")
 		{
@@ -955,33 +881,36 @@ namespace
 
 		if (!item.action.empty())
 		{
-			WarnMenuConfOption(fmt::sprintf("options action \"%s\" is not wired yet",
-			                                item.action.c_str()));
+			M_WarnMenuConf(fmt::sprintf("options action \"%s\" is not wired yet",
+			                            item.action.c_str()));
 		}
 	}
 
-	bool BuildConfiguredOptionsMenu(configuredoptionsbridge_t& bridge, const std::string& menuId)
+	bool BuildGeneratedOptionsMenu(generatedoptionsmenu_t& generatedMenu, const std::string& menuId)
 	{
 		const auto it = M_MenuConf().menus.find(menuId);
 		if (it == M_MenuConf().menus.end())
 		{
-			bridge.menu.numitems = 0;
-			bridge.menu.items = nullptr;
+			generatedMenu.menu.numitems = 0;
+			generatedMenu.menu.items = nullptr;
 			return false;
 		}
 
 		const menuconfmenu_t& authored = it->second;
-		bridge.menuId = menuId;
-		bridge.header = authored.header;
-		bridge.sourceItems = authored.items;
-		bridge.generatedItems.clear();
-		bridge.labels.clear();
-		bridge.commands.clear();
-		bridge.generatedItems.reserve(authored.items.size());
-		bridge.labels.reserve(authored.items.size());
-		bridge.commands.reserve(authored.items.size());
+		generatedMenu.menuId = menuId;
+		generatedMenu.header = authored.header;
+		generatedMenu.sourceItems = authored.items;
+		generatedMenu.generatedItems.clear();
+		generatedMenu.labels.clear();
+		generatedMenu.labelWidths.clear();
+		generatedMenu.commands.clear();
+		generatedMenu.generatedItems.reserve(authored.items.size());
+		generatedMenu.labels.reserve(authored.items.size());
+		generatedMenu.labelWidths.reserve(authored.items.size());
+		generatedMenu.commands.reserve(authored.items.size());
+		const OFont* smallFont = OFonts.small();
 
-		for (const menuconfitem_t& item : bridge.sourceItems)
+		for (const menuconfitem_t& item : generatedMenu.sourceItems)
 		{
 			menuitem_t generated = {};
 			generated.type = ResolveGeneratedLabelType(item);
@@ -991,18 +920,20 @@ namespace
 			{
 				label = " ";
 			}
-			bridge.labels.push_back(std::move(label));
-			generated.label = bridge.labels.back().c_str();
+			generatedMenu.labels.push_back(std::move(label));
+			generatedMenu.labelWidths.push_back(
+			    smallFont != nullptr ? V_StringWidth(smallFont, generatedMenu.labels.back().c_str()) : 0);
+			generated.label = generatedMenu.labels.back().c_str();
 
 			if (generated.type == more)
 			{
-				generated.e.mfunc = ActivateConfiguredOptionsItem;
+				generated.e.mfunc = ActivateGeneratedOptionsItem;
 			}
 			else if (generated.type == control || generated.type == mapcontrol ||
 			         generated.type == netdemocontrol)
 			{
-				bridge.commands.push_back(item.command);
-				generated.e.command = bridge.commands.back().c_str();
+				generatedMenu.commands.push_back(item.command);
+				generated.e.command = generatedMenu.commands.back().c_str();
 			}
 			else if (generated.type == joyactive)
 			{
@@ -1040,9 +971,9 @@ namespace
 			     generated.type == cdiscrete || generated.type == svdiscrete) &&
 			    generated.a.cvar == nullptr)
 			{
-				WarnMenuConfOption(fmt::sprintf("options item \"%s\" references unknown cvar \"%s\"",
-				                                generated.label ? generated.label : "",
-				                                item.cvar.c_str()));
+				M_WarnMenuConf(fmt::sprintf("options item \"%s\" references unknown cvar \"%s\"",
+				                            generated.label ? generated.label : "",
+				                            item.cvar.c_str()));
 				continue;
 			}
 
@@ -1050,27 +981,27 @@ namespace
 			     generated.type == svdiscrete) &&
 			    generated.e.values == nullptr)
 			{
-				WarnMenuConfOption(fmt::sprintf("options item \"%s\" references unknown value set \"%s\"",
-				                                generated.label ? generated.label : "",
-				                                item.values.c_str()));
+				M_WarnMenuConf(fmt::sprintf("options item \"%s\" references unknown value set \"%s\"",
+				                            generated.label ? generated.label : "",
+				                            item.values.c_str()));
 				continue;
 			}
 
-			bridge.generatedItems.push_back(generated);
+			generatedMenu.generatedItems.push_back(generated);
 		}
 
-		bridge.menu.title = authored.header.patch.empty() ? "" : authored.header.patch.c_str();
-		bridge.menu.lastOn = FirstSelectableOptionIndex(bridge);
-		bridge.menu.numitems = static_cast<int>(bridge.generatedItems.size());
-		bridge.menu.indent = authored.layout.indent;
-		bridge.menu.items = bridge.generatedItems.data();
-		bridge.menu.scrolltop = authored.layout.scroll ? 0 : 0;
-		bridge.menu.scrollpos = 0;
-		bridge.menu.refreshfunc = menuId == "options.display" ? &M_UpdateDisplayOptions : NULL;
+		generatedMenu.menu.title = authored.header.patch.empty() ? "" : authored.header.patch.c_str();
+		generatedMenu.menu.lastOn = FirstSelectableOptionIndex(generatedMenu);
+		generatedMenu.menu.numitems = static_cast<int>(generatedMenu.generatedItems.size());
+		generatedMenu.menu.indent = authored.layout.indent;
+		generatedMenu.menu.items = generatedMenu.generatedItems.data();
+		generatedMenu.menu.scrolltop = authored.layout.scrollTop;
+		generatedMenu.menu.scrollpos = 0;
+		generatedMenu.menu.refreshfunc = menuId == "options.display" ? &M_UpdateDisplayOptions : NULL;
 		return true;
 	}
 
-	void BuildConfiguredOptionsMenus()
+	void BuildGeneratedOptionsMenus()
 	{
 		static const char* const kMenuIds[] = {
 			"options",
@@ -1089,39 +1020,34 @@ namespace
 			"options.display.automap",
 		};
 
-		gConfiguredOptionsMenus.clear();
-		gConfiguredOptionsMenus.reserve(ARRAY_LENGTH(kMenuIds));
+		gGeneratedOptionsMenus.clear();
+		gGeneratedOptionsMenus.reserve(ARRAY_LENGTH(kMenuIds));
 
 		for (const char* menuId : kMenuIds)
 		{
-			gConfiguredOptionsMenus.emplace_back();
-			if (!BuildConfiguredOptionsMenu(gConfiguredOptionsMenus.back(), menuId))
+			gGeneratedOptionsMenus.emplace_back();
+			if (!BuildGeneratedOptionsMenu(gGeneratedOptionsMenus.back(), menuId))
 			{
-				gConfiguredOptionsMenus.pop_back();
+				gGeneratedOptionsMenus.pop_back();
 			}
 		}
 	}
 
-	const patch_t* MenuArrowPatch(const std::string& name)
+	const char* GeneratedOptionsHeaderText(const generatedoptionsmenu_t* generatedMenu)
 	{
-		return MenuConfPatch(name);
-	}
-
-	const char* ConfiguredOptionsHeaderText(const configuredoptionsbridge_t* bridge)
-	{
-		if (bridge == nullptr)
+		if (generatedMenu == nullptr)
 		{
 			return "OPTIONS";
 		}
 
-		if (!bridge->header.languageKey.empty())
+		if (!generatedMenu->header.languageKey.empty())
 		{
-			return LocalizedMenuString(bridge->header.languageKey.c_str());
+			return M_LocalizedMenuString(generatedMenu->header.languageKey.c_str());
 		}
 
-		if (!bridge->header.text.empty())
+		if (!generatedMenu->header.text.empty())
 		{
-			return bridge->header.text.c_str();
+			return generatedMenu->header.text.c_str();
 		}
 
 		return "OPTIONS";
@@ -1136,13 +1062,13 @@ static void M_UpdateDisplayOptions()
 		return;
 	}
 
-	configuredoptionsbridge_t* bridge = ConfiguredOptionsBridgeByMenu(menu);
-	if (bridge == nullptr)
+	generatedoptionsmenu_t* generatedMenu = GeneratedOptionsMenuByMenu(menu);
+	if (generatedMenu == nullptr)
 	{
 		return;
 	}
 
-	for (menuitem_t& item : bridge->generatedItems)
+	for (menuitem_t& item : generatedMenu->generatedItems)
 	{
 		if (item.a.cvar == &gammalevel)
 		{
@@ -1285,12 +1211,19 @@ static void SetVidMode()
 		if (ModesMenu.items[ModesMenu.lastOn].a.selmode == -1)
 			ModesMenu.items[ModesMenu.lastOn].a.selmode++;
 	}
+	CanScrollUp = false;
+	CanScrollDown = false;
+	flagsvar = NULL;
 	M_SwitchMenu(&ModesMenu);
 }
 
+void M_OpenVideoModeScreen(void)
+{
+	OptionsActive = true;
+	SetVidMode();
+}
 
 
-static cvar_t *flagsvar;
 
 EXTERN_CVAR(ui_dimcolor)
 
@@ -1350,7 +1283,7 @@ void M_OptInit (void)
 		break;
 	}
 
-	BuildConfiguredOptionsMenus();
+	BuildGeneratedOptionsMenus();
 }
 
 
@@ -1386,82 +1319,35 @@ void M_SizeDisplay (float diff)
 BEGIN_COMMAND (sizedown)
 {
 	M_SizeDisplay (-1.0);
-	S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+	M_PlayMenuSound("changeValue");
 }
 END_COMMAND (sizedown)
 
 BEGIN_COMMAND (sizeup)
 {
 	M_SizeDisplay(1.0);
-	S_Sound (CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+	M_PlayMenuSound("changeValue");
 }
 END_COMMAND (sizeup)
 
-void M_BuildKeyList (menuitem_t *item, int numitems)
+bool M_PrepareGeneratedOptionsMenu(const std::string& menuId, menu_t*& menu)
 {
-	int i;
-
-	for (i = 0; i < numitems; i++, item++)
-	{
-		if (item->type == control)
-			Bindings.GetKeysForCommand (item->e.command, &item->b.key1, &item->c.key2);
-		if (item->type == mapcontrol)
-			AutomapBindings.GetKeysForCommand(item->e.command, &item->b.key1, &item->c.key2);
-		if (item->type == netdemocontrol)
-			NetDemoBindings.GetKeysForCommand(item->e.command, &item->b.key1, &item->c.key2);
-	}
-}
-
-void M_SwitchMenu(menu_t* menu)
-{
-	int i, widest = 0, thiswidth;
-	menuitem_t *item;
-
-	CanScrollUp = false;
-	CanScrollDown = false;
-	M_PushNewMenu(menu, false);
-
-	if (!menu->indent)
-	{
-		for (i = 0; i < menu->numitems; i++)
-		{
-			item = menu->items + i;
-			if (item->type != whitetext && item->type != redtext && item->type != orangetext)
-			{
-				thiswidth = V_StringWidth(OFonts.small(), item->label);
-				if (thiswidth > widest)
-					widest = thiswidth;
-			}
-		}
-		menu->indent = widest + 6;
-	}
-
-	flagsvar = NULL;
-}
-
-bool M_StartOptionsMenu (void)
-{
-	return M_OpenGeneratedOptionsMenu("options");
-}
-
-bool M_OpenGeneratedOptionsMenu(const std::string& menuId)
-{
-	menu_t* menu = OptionsMenuSlotById(menuId);
+	menu = OptionsMenuSlotById(menuId);
 	if (menu == nullptr)
 	{
-		WarnMenuConfOption(fmt::sprintf("options target \"%s\" is not mapped to a runtime menu",
-		                                menuId.c_str()));
+		M_WarnMenuConf(fmt::sprintf("options target \"%s\" is not mapped to a runtime menu",
+		                            menuId.c_str()));
 		return false;
 	}
 
-	const configuredoptionsbridge_t* bridge = ConfiguredOptionsBridgeByMenu(menu);
-	if (bridge == nullptr)
+	const generatedoptionsmenu_t* generatedMenu = GeneratedOptionsMenuByMenu(menu);
+	if (generatedMenu == nullptr)
 	{
-		WarnMenuConfOption(fmt::sprintf("options menu \"%s\" is not available", menuId.c_str()));
+		M_WarnMenuConf(fmt::sprintf("options menu \"%s\" is not available", menuId.c_str()));
 		return false;
 	}
 
-	if (HasBindingItems(*bridge))
+	if (HasBindingItems(*generatedMenu))
 	{
 		M_BuildKeyList(menu->items, menu->numitems);
 	}
@@ -1470,89 +1356,13 @@ bool M_OpenGeneratedOptionsMenu(const std::string& menuId)
 	    (menu->lastOn < 0 || menu->lastOn >= menu->numitems ||
 	     !IsSelectableOptionItem(menu->items[menu->lastOn])))
 	{
-		menu->lastOn = FirstSelectableOptionIndex(*bridge);
+		menu->lastOn = FirstSelectableOptionIndex(*generatedMenu);
 	}
 
-	M_SwitchMenu(menu);
+	CanScrollUp = false;
+	CanScrollDown = false;
+	flagsvar = NULL;
 	return true;
-}
-
-void M_DrawSlider (int x, int y, float leftval, float rightval, float cur, float step)
-{
-	const OFont* smallFont = OFonts.small();
-	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
-	const int drawY = y + MenuCursorOffsetY();
-	const patch_t* leftPatch = MenuSliderLeftPatch();
-	const patch_t* middlePatch = MenuSliderMiddlePatch();
-	const patch_t* rightPatch = MenuSliderRightPatch();
-	const patch_t* knobPatch = MenuSliderKnobPatch();
-
-	if (leftval < rightval)
-		cur = clamp(cur, leftval, rightval);
-	else
-		cur = clamp(cur, rightval, leftval);
-
-	float dist = (cur - leftval) / (rightval - leftval);
-
-	screen->DrawPatchCleanWithPalette(leftPatch, x, drawY, palette);
-	for (int i = 1; i < 11; i++)
-		screen->DrawPatchCleanWithPalette(middlePatch, x + i * 8, drawY, palette);
-	screen->DrawPatchCleanWithPalette(rightPatch, x + 88, drawY, palette);
-
-	screen->DrawPatchCleanWithPalette(knobPatch, x + 5 + static_cast<int>(dist * 78.0), drawY, palette);
-
-	std::string buf;
-	if (step == 0.0f)
-		return;
-	else if (step >= 1.0f)
-		buf = fmt::sprintf("%.0f", cur);
-	else if (step >= 0.1f)
-		buf = fmt::sprintf("%.1f", cur);
-	else
-		buf = fmt::sprintf("%.2f", cur);
-	screen->DrawTextCleanMove(smallFont, CR_GREEN, x + 96, y, buf.c_str());
-}
-
-void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color)
-{
-	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
-	const int drawY = y + MenuCursorOffsetY();
-	const patch_t* leftPatch = MenuSliderLeftPatch();
-	const patch_t* middlePatch = MenuSliderMiddlePatch();
-	const patch_t* rightPatch = MenuSliderRightPatch();
-	const patch_t* greenKnobPatch = MenuSliderGreenKnobPatch();
-	const patch_t* overlayPatch = MenuSliderOverlayPatch();
-
-	if (leftval < rightval)
-		cur = clamp(cur, leftval, rightval);
-	else
-		cur = clamp(cur, rightval, leftval);
-
-	float dist = (cur - leftval) / (rightval - leftval);
-
-	screen->DrawPatchCleanWithPalette(leftPatch, x, drawY, palette);
-
-	for (int i = 1; i < 11; i++)
-		screen->DrawPatchCleanWithPalette(middlePatch, x + i * 8, drawY, palette);
-
-	screen->DrawPatchCleanWithPalette(rightPatch, x + 88, drawY, palette);
-
-	screen->DrawPatchCleanWithPalette(greenKnobPatch, x + 5 + static_cast<int>(dist * 78.0), drawY, palette);
-
-	V_ColorFill = V_BestColor(V_GetDefaultPalette()->basecolors, color);
-
-	screen->DrawColoredPatchClean(overlayPatch, x + 5 + static_cast<int>(dist * 78.0), drawY);
-}
-
-int M_FindCurVal (float cur, value_t *values, int numvals)
-{
-	int v;
-
-	for (v = 0; v < numvals; v++)
-		if (values[v].value == cur)
-			break;
-
-	return v;
 }
 
 void M_OptDrawer (void)
@@ -1566,7 +1376,7 @@ void M_OptDrawer (void)
 	patch_t *title;
 	const int lineHeight = smallFont->lineHeight();
 	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
-	const configuredoptionsbridge_t* bridge = ConfiguredOptionsBridgeByMenu(CurrentMenu);
+	const generatedoptionsmenu_t* generatedMenu = GeneratedOptionsMenuByMenu(CurrentMenu);
 
 	if (W_CheckNumForName(CurrentMenu->title) >= 0)
 	{
@@ -1576,7 +1386,7 @@ void M_OptDrawer (void)
 	}
 	else
 	{	
-		const char* titleText = ConfiguredOptionsHeaderText(bridge);
+		const char* titleText = GeneratedOptionsHeaderText(generatedMenu);
 		int titlewidth = V_StringWidth(bigFont, titleText) * CleanXfac;
 		int titleX = (I_GetSurfaceWidth() / 2) - (titlewidth / 2);
 		int titleY = 20*CleanYfac;
@@ -1616,7 +1426,6 @@ void M_OptDrawer (void)
 						color = CR_GREY;
 					else
 						color = CR_RED;
-
 					screen->DrawTextCleanMove(smallFont, color, 104 * x + 20, y, str);
 				}
 			}
@@ -1624,16 +1433,18 @@ void M_OptDrawer (void)
 			if (i == CurrentItem && ((item->a.selmode != -1 && (indicatorAnimCounter < 6 || WaitingForKey))
 				|| WaitingForAxis || testingmode))
 			{
-				if (const patch_t* cursor = MenuCursorPatch())
+				if (const patch_t* cursor = M_MenuCursorPatch())
 				{
 					screen->DrawPatchCleanWithPalette(cursor, item->a.selmode * 104 + 8,
-					                                  y + MenuCursorOffsetY(), palette);
+					                                  y + M_MenuCursorOffsetY(), palette);
 				}
 			}
 		}
 		else
 		{
-			width = V_StringWidth(smallFont, item->label);
+			width = generatedMenu != nullptr && static_cast<size_t>(i) < generatedMenu->labelWidths.size() ?
+			            generatedMenu->labelWidths[i] :
+			            V_StringWidth(smallFont, item->label);
 			switch (item->type)
 			{
 			case more:
@@ -1693,7 +1504,6 @@ void M_OptDrawer (void)
 					int color_num = CR_GREY;
 					if (item->type == cdiscrete)
 						color_num = item->a.cvar->asInt();
-
 					screen->DrawTextCleanMove(smallFont, color_num, CurrentMenu->indent + 14, y, item->e.values[v].name);
 				}
 
@@ -1711,23 +1521,23 @@ void M_OptDrawer (void)
 
 			case redslider:
 			{
-				argb_t color = MenuSliderColor(*item);
+				const colorsliderstate_t state = MenuColorSliderState(*item);
 				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255,
-				                    static_cast<float>(MenuSliderChannelValue(*item)), color);
+				                    static_cast<float>(state.value), state.tint);
 			}
 			break;
 			case greenslider:
 			{
-				argb_t color = MenuSliderColor(*item);
+				const colorsliderstate_t state = MenuColorSliderState(*item);
 				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255,
-				                    static_cast<float>(MenuSliderChannelValue(*item)), color);
+				                    static_cast<float>(state.value), state.tint);
 			}
 			break;
 			case blueslider:
 			{
-				argb_t color = MenuSliderColor(*item);
+				const colorsliderstate_t state = MenuColorSliderState(*item);
 				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255,
-				                    static_cast<float>(MenuSliderChannelValue(*item)), color);
+				                    static_cast<float>(state.value), state.tint);
 			}
 			break;
 
@@ -1766,7 +1576,6 @@ void M_OptDrawer (void)
 					str = value[1].name;
 				else
 					str = value[0].name;
-
 				screen->DrawTextCleanMove(smallFont, CR_GREY, CurrentMenu->indent + 14, y, str);
 			}
 			break;
@@ -1787,7 +1596,6 @@ void M_OptDrawer (void)
 					joyname = item->a.cvar->str();
 					joyname += ": " + I_GetJoystickNameFromIndex(item->a.cvar->asInt());
 				}
-
 				screen->DrawTextCleanMove(smallFont, CR_GREY, CurrentMenu->indent + 14, y, joyname.c_str());
 			}
 			break;
@@ -1804,10 +1612,10 @@ void M_OptDrawer (void)
 
 			if (i == CurrentItem && (indicatorAnimCounter < 6 || WaitingForKey || WaitingForAxis))
 			{
-				if (const patch_t* patch = MenuCursorPatch())
+				if (const patch_t* patch = M_MenuCursorPatch())
 				{
 					screen->DrawPatchCleanWithPalette(patch, CurrentMenu->indent + 3,
-					                                  y + MenuCursorOffsetY(), palette);
+					                                  y + M_MenuCursorOffsetY(), palette);
 				}
 			}
 		}
@@ -1819,7 +1627,8 @@ void M_OptDrawer (void)
 
 	if (CanScrollUp)
 	{
-		if (const patch_t* patch = MenuArrowPatch(M_MenuConf().theme.upPatch))
+		if (const patch_t* patch =
+		        M_MenuConfConfiguredPatch(M_MenuConf().theme.upPatch, "theme.upPatch"))
 		{
 			screen->DrawPatchCleanWithPalette(patch, 3, ytop, palette);
 		}
@@ -1827,7 +1636,8 @@ void M_OptDrawer (void)
 
 	if (CanScrollDown)
 	{
-		if (const patch_t* patch = MenuArrowPatch(M_MenuConf().theme.downPatch))
+		if (const patch_t* patch =
+		        M_MenuConfConfiguredPatch(M_MenuConf().theme.downPatch, "theme.downPatch"))
 		{
 			screen->DrawPatchCleanWithPalette(patch, 3, 190, palette);
 		}
@@ -1975,7 +1785,7 @@ void M_OptResponder(const event_t& ev)
 			if (CurrentMenu->items[CurrentItem].type == screenres)
 				CurrentMenu->items[CurrentItem].a.selmode = modecol;
 
-			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			PlayCurrentOptionsSound("navigate");
 		}
 		else if (Key_IsUpKey(ch, numlock))
 		{
@@ -2016,7 +1826,7 @@ void M_OptResponder(const event_t& ev)
 			if (CurrentMenu->items[CurrentItem].type == screenres)
 				CurrentMenu->items[CurrentItem].a.selmode = modecol;
 
-			S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+			PlayCurrentOptionsSound("navigate");
 		}
 		else if (Key_IsPageUpKey(ch, numlock))
 		{
@@ -2037,7 +1847,7 @@ void M_OptResponder(const event_t& ev)
 				{
 					++CurrentItem;
 				}
-				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+				PlayCurrentOptionsSound("navigate");
 			}
 		}
 		else if (Key_IsPageDownKey(ch, numlock))
@@ -2060,7 +1870,7 @@ void M_OptResponder(const event_t& ev)
 				{
 					++CurrentItem;
 				}
-				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+				PlayCurrentOptionsSound("navigate");
 			}
 		}
 		else if (Key_IsLeftKey(ch, numlock))
@@ -2081,7 +1891,7 @@ void M_OptResponder(const event_t& ev)
 			else
 				item->a.cvar->Set(newval);
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		PlayCurrentOptionsSound("changeValue");
 		break;
 		case redslider:
 		case greenslider:
@@ -2091,7 +1901,7 @@ void M_OptResponder(const event_t& ev)
 			part -= static_cast<int>(item->d.step > 0.0f ? item->d.step : 0x11);
 			SetMenuSliderChannelValue(*item, part);
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		PlayCurrentOptionsSound("changeValue");
 		break;
 		case discrete:
 		case cdiscrete:
@@ -2115,7 +1925,7 @@ void M_OptResponder(const event_t& ev)
 			if (item->e.values == Depths)
 				BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		PlayCurrentOptionsSound("changeValue");
 		break;
 
 		case screenres:
@@ -2139,7 +1949,7 @@ void M_OptResponder(const event_t& ev)
 				item->a.selmode = col;
 			}
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		PlayCurrentOptionsSound("navigate");
 		break;
 
 		case joyactive:
@@ -2151,7 +1961,7 @@ void M_OptResponder(const event_t& ev)
 			else if (static_cast<size_t>(item->a.cvar->value()) > 0)
 				item->a.cvar->Set(item->a.cvar->value() - 1);
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		PlayCurrentOptionsSound("changeValue");
 		break;
 
 		default:
@@ -2176,7 +1986,7 @@ void M_OptResponder(const event_t& ev)
 			else
 				item->a.cvar->Set(newval);
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		PlayCurrentOptionsSound("changeValue");
 		break;
 		case redslider:
 		case greenslider:
@@ -2186,7 +1996,7 @@ void M_OptResponder(const event_t& ev)
 			part += static_cast<int>(item->d.step > 0.0f ? item->d.step : 0x11);
 			SetMenuSliderChannelValue(*item, part);
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		PlayCurrentOptionsSound("changeValue");
 		break;
 		case discrete:
 		case cdiscrete:
@@ -2210,7 +2020,7 @@ void M_OptResponder(const event_t& ev)
 			if (item->e.values == Depths)
 				BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		PlayCurrentOptionsSound("changeValue");
 		break;
 
 		case screenres:
@@ -2237,7 +2047,7 @@ void M_OptResponder(const event_t& ev)
 				item->a.selmode = col;
 			}
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		PlayCurrentOptionsSound("navigate");
 		break;
 
 		case joyactive:
@@ -2250,7 +2060,7 @@ void M_OptResponder(const event_t& ev)
 				item->a.cvar->Set(item->a.cvar->value() + 1);
 
 		}
-		S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		PlayCurrentOptionsSound("changeValue");
 		break;
 
 		default:
@@ -2289,12 +2099,12 @@ void M_OptResponder(const event_t& ev)
 				}
 
 				M_SetVideoMode(width, height);
-				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				PlayCurrentOptionsSound("select");
 			}
 			else if (item->type == more && item->e.mfunc)
 			{
 				CurrentMenu->lastOn = CurrentItem;
-				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				PlayCurrentOptionsSound("select");
 				item->e.mfunc();
 			}
 			else if (item->type == discrete || item->type == cdiscrete ||
@@ -2317,7 +2127,7 @@ void M_OptResponder(const event_t& ev)
 				// Hack hack. Rebuild list of resolutions
 				if (item->e.values == Depths)
 					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
-				S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+				PlayCurrentOptionsSound("changeValue");
 			}
 			else if (item->type == control || item->type == mapcontrol || item->type == netdemocontrol)
 			{
@@ -2332,7 +2142,7 @@ void M_OptResponder(const event_t& ev)
 			else if (item->type == listelement)
 			{
 				CurrentMenu->lastOn = CurrentItem;
-				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				PlayCurrentOptionsSound("select");
 				item->e.lfunc(CurrentItem);
 			}
 			else if (item->type == joyaxis)
@@ -2376,7 +2186,7 @@ void M_OptResponder(const event_t& ev)
 				testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
 				M_SetVideoMode(width, height);
 
-				S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
+				PlayCurrentOptionsSound("select");
 			}
 		}
 		}
@@ -2416,32 +2226,4 @@ void ResetCustomColors (void)
 	AddCommandString ("resetcustomcolors");
 }
 
-BEGIN_COMMAND (menu_keys)
-{
-	M_StartControlPanel ();
-	OptionsActive = true;
-	M_OpenGeneratedOptionsMenu("options.controls");
-}
-END_COMMAND (menu_keys)
-
-BEGIN_COMMAND (menu_display)
-{
-	M_StartControlPanel ();
-	OptionsActive = true;
-	M_OpenGeneratedOptionsMenu("options.display");
-}
-END_COMMAND (menu_display)
-
-
-BEGIN_COMMAND (menu_video)
-{
-	M_StartControlPanel ();
-	OptionsActive = true;
-	SetVidMode ();
-}
-END_COMMAND (menu_video)
-
 VERSION_CONTROL (m_options_cpp, "$Id$")
-
-
-

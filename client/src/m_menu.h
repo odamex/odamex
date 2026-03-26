@@ -25,6 +25,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 
 #include "d_event.h"
 
@@ -55,10 +56,16 @@ void M_Init (void);
 void M_StartControlPanel (void);
 
 // [RH] Setup options menu
-bool M_StartOptionsMenu (void);
 bool M_OpenGeneratedOptionsMenu(const std::string& menuId);
+bool M_PrepareGeneratedOptionsMenu(const std::string& menuId, struct menu_s*& menu);
 bool M_OpenMenuTarget(const std::string& target);
 bool M_OpenMenuEntrypoint(const std::string& name);
+const char* M_LocalizedMenuString(const char* key);
+const patch_t* M_MenuConfConfiguredPatch(const std::string& name, const char* context);
+void M_WarnMenuConf(const std::string& message);
+void M_PlayMenuSound(std::string_view role,
+                     const std::string* overrideSound = nullptr,
+                     std::string_view menuId = std::string_view());
 
 // [RH] Handle keys for options menu
 void M_OptResponder(const event_t& ev);
@@ -68,8 +75,8 @@ void M_OptDrawer (void);
 
 // [RH] Initialize options menu
 void M_OptInit (void);
-
-void M_PlayerSetup (int choice);
+void M_OpenVideoModeScreen(void);
+void M_OpenPlayerSetupScreen(void);
 
 struct menu_s;
 void M_SwitchMenu (struct menu_s *menu);
@@ -79,6 +86,10 @@ void M_PopMenuStack (void);
 
 // [RH] Called whenever the display mode changes
 void M_RefreshModesList ();
+int M_MenuCursorOffsetY();
+const patch_t* M_MenuCursorPatch();
+void M_DrawSlider(int x, int y, float leftval, float rightval, float cur, float step);
+void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color);
 
 //
 // MENU TYPEDEFS
@@ -200,11 +211,17 @@ typedef struct
 	bool drawIndicator;
 } menustack_t;
 
+void M_BuildKeyList(menuitem_t* item, int numitems);
+int M_FindCurVal(float cur, value_t* values, int numvals);
+
 extern menustack_t MenuStack[16];
 extern int MenuStackDepth;
 
 extern menu_t  *CurrentMenu;
 extern int		CurrentItem;
+extern bool     CanScrollUp;
+extern bool     CanScrollDown;
+extern int      VisBottom;
 
 extern short	 itemOn;
 extern oldmenu_t *currentMenu;

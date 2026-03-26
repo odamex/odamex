@@ -206,6 +206,7 @@ namespace
 		const Json::Value& xpos = elem["x"];
 		const Json::Value& ypos = elem["y"];
 		const Json::Value& indent = elem["indent"];
+		const Json::Value& scrollTop = elem["scrollTop"];
 		const Json::Value& lineHeight = elem["lineHeight"];
 		const Json::Value& scroll = elem["scroll"];
 		const Json::Value& topPadding = elem["topPadding"];
@@ -215,6 +216,7 @@ namespace
 			|| !(xpos.isInt() || xpos.isNull())
 			|| !(ypos.isInt() || ypos.isNull())
 			|| !(indent.isInt() || indent.isNull())
+			|| !(scrollTop.isInt() || scrollTop.isNull())
 			|| !(lineHeight.isString() || lineHeight.isInt() || lineHeight.isNull())
 			|| !(scroll.isBool() || scroll.isNull())
 			|| !(topPadding.isInt() || topPadding.isNull())
@@ -227,6 +229,7 @@ namespace
 		if (!xpos.isNull()) output.x = xpos.asInt();
 		if (!ypos.isNull()) output.y = ypos.asInt();
 		if (!indent.isNull()) output.indent = indent.asInt();
+		if (!scrollTop.isNull()) output.scrollTop = scrollTop.asInt();
 		if (!lineHeight.isNull()) output.lineHeight = lineHeight.isString() ? lineHeight.asString() : std::to_string(lineHeight.asInt());
 		if (!scroll.isNull()) output.scroll = scroll.asBool();
 		if (!topPadding.isNull()) output.topPadding = topPadding.asInt();
@@ -656,7 +659,7 @@ void menuconfdatabase_t::merge(const menuconfdatabase_t& other)
 	for (const auto& [key, value] : other.theme.fonts) theme.fonts[key] = value;
 	for (const auto& [key, value] : other.theme.colors) theme.colors[key] = value;
 	if (!other.theme.layout.style.empty() || other.theme.layout.x != 0 || other.theme.layout.y != 0
-		|| other.theme.layout.indent != 0 || other.theme.layout.lineHeight != "auto"
+		|| other.theme.layout.indent != 0 || other.theme.layout.scrollTop != 0 || other.theme.layout.lineHeight != "auto"
 		|| other.theme.layout.scroll || other.theme.layout.topPadding != 0
 		|| other.theme.layout.itemSpacing != "font")
 	{

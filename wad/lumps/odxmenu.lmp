@@ -410,7 +410,8 @@
         },
         "layout": {
           "style": "optionsList",
-          "indent": 0
+          "indent": 0,
+          "scrollTop": 4
         },
         "items": [
           { "kind": "submenu", "text": "Heads-up display", "target": "options.display.hud" },
