@@ -1239,7 +1239,7 @@ odaproto::svc::NoiseAlert SVC_NoiseAlert(const sector_t& sector)
 	msg.set_sectornum(&sector - ::sectors);
 	if (sector.soundtarget)
 	{
-	    msg.set_soundtarget_netid(sector.soundtarget->netid);
+		msg.set_soundtarget_netid(sector.soundtarget->netid);
 	}
 
 	return msg;

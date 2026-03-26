@@ -72,6 +72,7 @@ void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* a
 void SV_UpdateMonsterRespawnCount() {}
 void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation) {}
 
+
 CVAR_FUNC_IMPL(sv_sharekeys) {}
 
 VERSION_CONTROL (cl_stubs_cpp, "$Id$")

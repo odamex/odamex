@@ -2985,19 +2985,19 @@ static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
 
 static void CL_NoiseAlert(const odaproto::svc::NoiseAlert* msg)
 {
-    const uint32_t sectorIndex = msg->sectornum();
+	const uint32_t sectorIndex = msg->sectornum();
 
-    if (sectorIndex < static_cast<uint32_t>(::numsectors))
-    {
-        sector_t& sector = ::sectors[sectorIndex];
+	if (sectorIndex < static_cast<uint32_t>(::numsectors))
+	{
+		sector_t& sector = ::sectors[sectorIndex];
 
-        AActor* soundtarget = P_FindThingById(msg->soundtarget_netid());
+		AActor* soundtarget = P_FindThingById(msg->soundtarget_netid());
 
-        if (soundtarget)
-        {
-            P_NoiseAlert(*soundtarget, sector);
-        }
-    }
+		if (soundtarget)
+		{
+			P_NoiseAlert(*soundtarget, sector);
+		}
+	}
 }
 
 static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)

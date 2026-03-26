@@ -137,7 +137,6 @@ extern bool isFast;
 
 bool P_RecursiveSound (sector_t& sec, int soundblocks, AActor& soundtarget)
 {
-	int 		i;
 	line_t* 	check;
 	sector_t*	other;
 
@@ -145,7 +144,7 @@ bool P_RecursiveSound (sector_t& sec, int soundblocks, AActor& soundtarget)
 	if (sec.validcount == validcount
 		&& sec.soundtraversed <= soundblocks+1)
 	{
-		return false; 		// already flooded
+		return false;         // already flooded
 	}
 
 	bool soundtargetWasChanged = sec.soundtarget != soundtarget.ptr();
@@ -154,7 +153,7 @@ bool P_RecursiveSound (sector_t& sec, int soundblocks, AActor& soundtarget)
 	sec.soundtraversed = soundblocks+1;
 	sec.soundtarget = soundtarget.ptr();
 
-	for (i=0 ;i<sec.linecount ; i++)
+	for (int i = 0; i < sec. linecount; i++)
 	{
 		check = sec.lines[i];
 		if (! (check->flags & ML_TWOSIDED) )
@@ -196,6 +195,7 @@ bool P_RecursiveSound (sector_t& sec, int soundblocks, AActor& soundtarget)
 //
 // P_NoiseAlert
 // Propagates any sound that sets off monsters against the given target.
+// Returns true if any sector's soundtarget was actually changed as a result of the sound.
 //
 bool P_NoiseAlert (AActor& target, sector_t& sec)
 {
@@ -205,20 +205,20 @@ bool P_NoiseAlert (AActor& target, sector_t& sec)
 	validcount++;
 	const bool soundtargetWasChanged = P_RecursiveSound (sec, 0, target);
 
-    SERVER_ONLY
-    (
-        if (soundtargetWasChanged)
-        {
-            SV_BroadcastNoiseAlert(sec);
-        }
-    )
+	SERVER_ONLY
+	(
+		if (soundtargetWasChanged)
+		{
+			SV_BroadcastNoiseAlert(sec);
+		}
+	)
 
-    return soundtargetWasChanged;
+	return soundtargetWasChanged;
 }
 
 bool P_NoiseAlert (AActor *target, AActor *emmiter)
 {
-    return P_NoiseAlert(*target, *emmiter->subsector->sector);
+	return P_NoiseAlert(*target, *emmiter->subsector->sector);
 }
 
 

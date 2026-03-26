@@ -1621,6 +1621,11 @@ bool SV_SendPacket(player_t &pl)
 
 void SV_BroadcastNoiseAlert(const sector_t& sector)
 {
+	// Please note that we still send the noise alert back to the player that created it.
+	// This is intentional so that in the case that there's another player in a nearby sector
+	// also making a bunch of noise with overlapping areas of influence, the client plays back
+	// the same sequence of noise alerts, ultimately leading to the soundtarget states matching
+	// the server.
 	for (auto& player : players)
 	{
 		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_NoiseAlert(sector));
