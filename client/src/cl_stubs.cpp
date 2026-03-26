@@ -54,7 +54,6 @@ void SV_UpdateFrags(player_t &player) {}
 void SV_ActorTarget(const AActor *actor) {}
 void SV_SendDestroyActor(const AActor *mo) {}
 void SV_ExplodeMissile(const AActor *mo) {}
-void SV_SendPlayerInfo(player_t &player) {}
 void SV_PreservePlayer(player_t &player) {}
 void SV_BroadcastSector(int sectornum) {}
 void SV_UpdateMobj(const AActor* mo) {}

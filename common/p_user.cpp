@@ -870,8 +870,6 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 	return false;
 }
 
-void SV_SendPlayerInfo(player_t &);
-
 void P_SetPlayerInvulnBleed(player_t& player, std::span<const int, NUMPOWERS> powers)
 {
 	if (sv_showplayerpowerups)
