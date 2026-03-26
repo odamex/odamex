@@ -1619,12 +1619,12 @@ bool SV_SendPacket(player_t &pl)
 	return pl.client.messenger.SendAll(gametic, pl.client.address) != MessageResultEnum::ABORT;
 }
 
-void SV_BroadcastSectorSoundtargetUpdate(sector_t& sector, AActor& soundtarget)
+void SV_BroadcastNoiseAlert(const sector_t& sector)
 {
 	for (auto& player : players)
-    {
-        MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_SectorSoundtarget(sector, soundtarget));
-    }
+	{
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_NoiseAlert(sector));
+	}
 }
 
 void SV_UpdateSector(client_t* cl, int sectornum)

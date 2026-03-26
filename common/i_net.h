@@ -274,7 +274,7 @@ enum svc_t
 	svc_raisemobj,
 	svc_spree,
 	svc_spreebreaker,
-	svc_sectorsoundtarget,
+	svc_noisealert,
 	clc_playerinput,        // SPECIAL KNOWLEDGE AND NOTE HERE: We're entering a transitory phase
 	                        // where client-originated messages are going to start transitioning
 	                        // to protobufs, and this svc enum is the basis for the unified message

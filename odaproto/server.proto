@@ -489,8 +489,8 @@ message SectorProperties
 	Sector sector = 3;
 }
 
-// svc_sectorsoundtarget
-message SectorSoundtarget
+// svc_noisealert
+message NoiseAlert
 {
 	uint32 sectornum = 1;
 	uint32 soundtarget_netid = 2;

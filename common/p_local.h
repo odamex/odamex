@@ -145,7 +145,9 @@ bool	P_DeactivateMobj (AActor *mobj);
 //
 // P_ENEMY
 //
-void	P_NoiseAlert (AActor* target, AActor* emmiter);
+bool P_NoiseAlert (AActor* target, AActor* emmiter);
+bool P_NoiseAlert (AActor& target, sector_t& sec);
+
 void	P_SpawnBrainTargets(void);	// killough 3/26/98: spawn icon landings
 
 extern struct brain_s {				// killough 3/26/98: global state of boss brain

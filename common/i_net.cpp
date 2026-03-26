@@ -1072,7 +1072,7 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_maplist_index);
 	SVC_INFO(svc_toast);
 	SVC_INFO(svc_hordeinfo);
-	SVC_INFO(svc_sectorsoundtarget);
+	SVC_INFO(svc_noisealert);
 	SVC_INFO(clc_playerinput);
 	SVC_INFO(svc_max);
 
