@@ -314,8 +314,6 @@ static bool CanScrollUp;
 static bool CanScrollDown;
 static int VisBottom;
 
-menu_t  *CurrentMenu;
-int		CurrentItem;
 bool configuring_controls = false;
 static bool	WaitingForKey;
 static bool	WaitingForAxis;
@@ -1419,15 +1417,9 @@ void M_SwitchMenu(menu_t* menu)
 	int i, widest = 0, thiswidth;
 	menuitem_t *item;
 
-	MenuStack[MenuStackDepth].menu.newmenu = menu;
-	MenuStack[MenuStackDepth].isNewStyle = true;
-	MenuStack[MenuStackDepth].drawIndicator = false;
-	MenuStackDepth++;
-
 	CanScrollUp = false;
 	CanScrollDown = false;
-	CurrentMenu = menu;
-	CurrentItem = menu->lastOn;
+	M_PushNewMenu(menu, false);
 
 	if (!menu->indent)
 	{

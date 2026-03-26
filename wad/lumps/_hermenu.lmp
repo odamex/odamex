@@ -120,7 +120,8 @@
           { "kind": "action", "patch": null, "text": null, "languageKey": "SKILL_YELLOWBELLIES", "action": "startGame", "params": { "skill": "easy" }, "hotkey": "Y" },
           { "kind": "action", "patch": null, "text": null, "languageKey": "SKILL_BRINGEST", "action": "startGame", "params": { "skill": "normal" }, "hotkey": "B" },
           { "kind": "action", "patch": null, "text": null, "languageKey": "SKILL_SMITE", "action": "startGame", "params": { "skill": "hard" }, "hotkey": "T" },
-          { "kind": "action", "patch": null, "text": null, "languageKey": "SKILL_BLACKPLAGUE", "action": "startGame", "params": { "skill": "nightmare" }, "hotkey": "B" }
+          { "kind": "action", "patch": null, "text": null, "languageKey": "SKILL_BLACKPLAGUE", "action": "startGame", "params": { "skill": "nightmare" }, "hotkey": "B" },
+          { "kind": "cvarDiscrete", "patch": null, "text": "Wand start each level", "cvar": "g_resetinvonexit", "values": "OnOff", "hotkey": "P" }
         ]
       },
       "gamefiles": {

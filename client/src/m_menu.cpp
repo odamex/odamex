@@ -44,6 +44,7 @@
 #include "m_random.h"
 #include "s_sound.h"
 #include "m_menu.h"
+#include "m_options_valuesets.h"
 #include "v_palette.h"
 #include "v_text.h"
 #include "st_stuff.h"
@@ -113,6 +114,8 @@ char				savegamestrings[10][SAVESTRINGSIZE];
 
 menustack_t			MenuStack[16];
 int					MenuStackDepth;
+menu_t*             CurrentMenu;
+int                 CurrentItem;
 
 short				itemOn; 			// menu item indicator is on
 static int			SkullBaseLump;		// lump number of first large skull in animation
@@ -914,7 +917,8 @@ namespace
 		for (const menuconfitem_t& item : bridge.items)
 		{
 			oldmenuitem_t legacy = {};
-			legacy.status = item.kind == menuconfitemkind_t::separator ? -1 : 1;
+			legacy.status = item.kind == menuconfitemkind_t::separator ? -1 :
+			                item.kind == menuconfitemkind_t::cvarDiscrete ? 2 : 1;
 			legacy.routine = legacy.status == -1 ? nullptr : M_ActivateConfiguredMenuItem;
 			legacy.alphaKey = item.hotkey.empty() ? 0 : item.hotkey[0];
 
@@ -948,6 +952,57 @@ namespace
 		if (configuredMenu->layout.x != 0) menu.x = configuredMenu->layout.x;
 		if (configuredMenu->layout.y != 0) menu.y = configuredMenu->layout.y;
 		return true;
+	}
+
+	float CurrentConfiguredDiscreteValue(const menuconfitem_t& item)
+	{
+		cvar_t* dummy = nullptr;
+		cvar_t* cvar = cvar_t::FindCVar(item.cvar, &dummy);
+		if (cvar == nullptr)
+		{
+			return 0.0f;
+		}
+
+		if ((cvar->flags() & CVAR_LATCH) && (cvar->flags() & CVAR_MODIFIED) &&
+		    cvar->latched()[0] != '\0')
+		{
+			return static_cast<float>(atof(cvar->latched()));
+		}
+
+		return cvar->value();
+	}
+
+	const char* ConfiguredDiscreteValueName(const menuconfitem_t& item)
+	{
+		int count = 0;
+		value_t* values = M_OptionValueSet(item.values, count);
+		if (values == nullptr || count <= 0)
+		{
+			return "";
+		}
+
+		const float value = CurrentConfiguredDiscreteValue(item);
+		for (int i = 0; i < count; ++i)
+		{
+			if (values[i].value == value)
+			{
+				return values[i].name;
+			}
+		}
+
+		return "";
+	}
+
+	std::string ConfiguredOldMenuItemText(const menuconfitem_t& item, const oldmenuitem_t& legacy)
+	{
+		const char* base = legacy.textname[0] ? LocalizedString(legacy.textname) : "";
+		if (item.kind != menuconfitemkind_t::cvarDiscrete)
+		{
+			return base;
+		}
+
+		const char* value = ConfiguredDiscreteValueName(item);
+		return value[0] ? fmt::format("{}: {}", base, value) : std::string(base);
 	}
 
 	void DrawMainMenuHeaderDecorations()
@@ -1004,13 +1059,62 @@ bool M_OpenMenuEntrypoint(const std::string& name)
 void M_ActivateConfiguredMenuItem(int choice)
 {
 	configuredoldmenubridge_t* bridge = MenuBridgeByMenu(currentMenu);
-	if (bridge == nullptr || choice < 0 || static_cast<size_t>(choice) >= bridge->items.size())
+	if (bridge == nullptr)
 	{
 		return;
 	}
 
-	const menuconfitem_t& item = bridge->items[choice];
+	const int itemIndex = currentMenu != nullptr && itemOn >= 0 &&
+	                      static_cast<size_t>(itemOn) < bridge->items.size() &&
+	                      currentMenu->menuitems[itemOn].status == 2 ? itemOn : choice;
+	if (itemIndex < 0 || static_cast<size_t>(itemIndex) >= bridge->items.size())
+	{
+		return;
+	}
+
+	const menuconfitem_t& item = bridge->items[itemIndex];
 	bool actionSucceeded = true;
+
+	if (item.kind == menuconfitemkind_t::cvarDiscrete)
+	{
+		cvar_t* dummy = nullptr;
+		cvar_t* cvar = cvar_t::FindCVar(item.cvar, &dummy);
+		int count = 0;
+		value_t* values = M_OptionValueSet(item.values, count);
+		if (cvar == nullptr || values == nullptr || count <= 0)
+		{
+			const char* label = item.text.empty() ? item.cvar.c_str() : item.text.c_str();
+			WarnMenuConf(fmt::sprintf("discrete menu item \"%s\" is not wired correctly",
+			                          label));
+			return;
+		}
+
+		int current = 0;
+		const float value = CurrentConfiguredDiscreteValue(item);
+		for (; current < count; ++current)
+		{
+			if (values[current].value == value)
+			{
+				break;
+			}
+		}
+		if (current >= count)
+		{
+			current = 0;
+		}
+
+		if (choice == 0)
+		{
+			current = current > 0 ? current - 1 : count - 1;
+		}
+		else
+		{
+			current = (current + 1) % count;
+		}
+
+		cvar->Set(values[current].value);
+		return;
+	}
 
 	if (!item.action.empty())
 	{
@@ -2646,8 +2750,38 @@ void M_Drawer()
 				}
 				else if (currentMenu->menuitems[i].textname[0])
 				{
-					screen->DrawTextCleanMove(bigFont, CR_RED, x, y,
-					                          LocalizedString(currentMenu->menuitems[i].textname));
+					const configuredoldmenubridge_t* bridge = MenuBridgeByMenu(currentMenu);
+					if (bridge != nullptr && static_cast<size_t>(i) < bridge->items.size())
+					{
+						const std::string text =
+						    ConfiguredOldMenuItemText(bridge->items[i], currentMenu->menuitems[i]);
+						if (bridge->items[i].kind == menuconfitemkind_t::cvarDiscrete)
+						{
+							const char* base = currentMenu->menuitems[i].textname[0] ?
+							                   LocalizedString(currentMenu->menuitems[i].textname) : "";
+							const char* value = ConfiguredDiscreteValueName(bridge->items[i]);
+							const int smallY =
+							    y + (M_BigFontLineHeight() / 2 - M_SmallFontLineHeight() / 2) + 5;
+
+							screen->DrawTextCleanMove(smallFont, CR_RED, x, smallY, base);
+							if (value[0])
+							{
+								screen->DrawTextCleanMove(
+								    smallFont, CR_GREY,
+								    x + V_StringWidth(smallFont, base) + M_SmallFontLineHeight(), smallY,
+								    value);
+							}
+						}
+						else
+						{
+							screen->DrawTextCleanMove(bigFont, CR_RED, x, y, text.c_str());
+						}
+					}
+					else
+					{
+						screen->DrawTextCleanMove(bigFont, CR_RED, x, y,
+						                          LocalizedString(currentMenu->menuitems[i].textname));
+					}
 				}
 
 				y += M_BigFontLineHeight();
@@ -2707,6 +2841,17 @@ void M_SetupNextMenu (oldmenu_t *menudef)
 
 	currentMenu = menudef;
 	itemOn = currentMenu->lastOn;
+}
+
+void M_PushNewMenu(menu_t* menu, bool newDrawIndicator)
+{
+	MenuStack[MenuStackDepth].menu.newmenu = menu;
+	MenuStack[MenuStackDepth].isNewStyle = true;
+	MenuStack[MenuStackDepth].drawIndicator = newDrawIndicator;
+	MenuStackDepth++;
+
+	CurrentMenu = menu;
+	CurrentItem = menu->lastOn;
 }
 
 

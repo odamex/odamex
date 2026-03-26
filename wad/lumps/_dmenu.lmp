@@ -117,7 +117,8 @@
           { "kind": "action", "patch": "M_ROUGH", "text": null, "languageKey": "SKILL_EASY", "action": "startGame", "params": { "skill": "easy" }, "hotkey": "H" },
           { "kind": "action", "patch": "M_HURT", "text": null, "languageKey": "SKILL_NORMAL", "action": "startGame", "params": { "skill": "normal" }, "hotkey": "H" },
           { "kind": "action", "patch": "M_ULTRA", "text": null, "languageKey": "SKILL_HARD", "action": "startGame", "params": { "skill": "hard" }, "hotkey": "U" },
-          { "kind": "action", "patch": "M_NMARE", "text": null, "languageKey": "SKILL_NIGHTMARE", "action": "startGame", "params": { "skill": "nightmare" }, "hotkey": "N" }
+          { "kind": "action", "patch": "M_NMARE", "text": null, "languageKey": "SKILL_NIGHTMARE", "action": "startGame", "params": { "skill": "nightmare" }, "hotkey": "N" },
+          { "kind": "cvarDiscrete", "patch": null, "text": "Pistol start each level", "cvar": "g_resetinvonexit", "values": "OnOff", "hotkey": "P" }
         ]
       }
     },

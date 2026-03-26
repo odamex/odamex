@@ -73,6 +73,7 @@ void M_PlayerSetup (int choice);
 
 struct menu_s;
 void M_SwitchMenu (struct menu_s *menu);
+void M_PushNewMenu(struct menu_s* menu, bool drawIndicator = false);
 
 void M_PopMenuStack (void);
 
