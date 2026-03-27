@@ -54,6 +54,7 @@ void M_Init (void);
 // Called by intro code to force menu up upon a keypress,
 // does nothing if menu is already up.
 void M_StartControlPanel (void);
+void M_ClearMenus(void);
 
 // [RH] Setup options menu
 bool M_OpenGeneratedOptionsMenu(const std::string& menuId);
@@ -174,42 +175,18 @@ typedef struct menu_s {
 	void			(*refreshfunc)();	// Callback func for M_OptResponder
 } menu_t;
 
-typedef struct
-{
-	// -1 = no cursor here, 1 = ok, 2 = arrows ok
-	short		status;
-
-	OLumpName	name;
-	char		textname[32];
-
-	// choice = menu item #.
-	// if status = 2,
-	//	 choice=0:leftarrow,1:rightarrow
-	void		(*routine)(int choice);
-
-	// hotkey in menu
-	char		alphaKey;
-} oldmenuitem_t;
-
-typedef struct oldmenu_s
-{
-	short				numitems;		// # of menu items
-	oldmenuitem_t		*menuitems;		// menu items
-	void				(*routine)(void);	// draw routine
-	short				x;
-	short				y;				// x,y of menu
-	short				lastOn; 		// last item user was on in menu
-} oldmenu_t;
+struct generatedmenu_t;
 
 typedef struct
 {
 	union {
 		menu_t *newmenu;
-		oldmenu_t *old;
+		generatedmenu_t *generated;
 		int builtin;
 	} menu;
 	bool isNewStyle;
 	bool isBuiltin;
+	bool isGenerated;
 	bool drawIndicator;
 } menustack_t;
 
@@ -224,8 +201,5 @@ extern int		CurrentItem;
 extern bool     CanScrollUp;
 extern bool     CanScrollDown;
 extern int      VisBottom;
-
-extern short	 itemOn;
-extern oldmenu_t *currentMenu;
 
 size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length);

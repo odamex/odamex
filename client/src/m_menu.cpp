@@ -26,6 +26,7 @@
 
 #include <ctime>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "gstrings.h"
 #include "c_console.h"
@@ -121,7 +122,6 @@ bool                CanScrollUp;
 bool                CanScrollDown;
 int                 VisBottom;
 
-short				itemOn; 			// menu item indicator is on
 static int			MenuTime;			// Ticker for Heretic skulls
 short				indicatorAnimCounter;	// indicator animation counter
 short				whichIndicator; 		// which indicator to draw
@@ -140,21 +140,22 @@ static int CurrentBuiltinItem = 0;
 static int gLoadLastOn = 0;
 static int gSaveLastOn = 0;
 
-// current menudef
-oldmenu_t *currentMenu;
-struct generatedoldmenu_t
+struct generatedmenu_t
 {
 	const char* menuId = nullptr;
-	oldmenu_t* menu = nullptr;
 	std::vector<menuconfitem_t> items;
-	std::vector<oldmenuitem_t> legacyItems;
+	int x = 0;
+	int y = 0;
+	int lastOn = 0;
 };
 
-static generatedoldmenu_t gGeneratedMainMenu;
-static generatedoldmenu_t gGeneratedEpisodeMenu;
-static generatedoldmenu_t gGeneratedExpansionMenu;
-static generatedoldmenu_t gGeneratedSkillMenu;
-static generatedoldmenu_t gGeneratedGameFilesMenu;
+static generatedmenu_t* CurrentGeneratedMenu = nullptr;
+static int CurrentGeneratedItem = 0;
+static generatedmenu_t gGeneratedMainMenu;
+static generatedmenu_t gGeneratedEpisodeMenu;
+static generatedmenu_t gGeneratedExpansionMenu;
+static generatedmenu_t gGeneratedSkillMenu;
+static generatedmenu_t gGeneratedGameFilesMenu;
 static std::string gSelectedEpisodeId;
 
 //
@@ -171,21 +172,24 @@ void M_ReadSaveStrings();
 void M_QuickSave();
 void M_QuickLoad();
 
-void M_DrawMainMenu();
 void M_DrawSaveLoadScreen();
 
 void M_DrawSaveLoadBorder(int x,int y, int len);
-void M_SetupNextMenu(oldmenu_t *menudef);
 void M_StartControlPanel();
 void M_StartMessage(const char *string,void (*routine)(int),bool input);
 void M_StopMessage();
 void M_ClearMenus();
+void M_OpenGeneratedMenu(generatedmenu_t& menu, bool newDrawIndicator = true);
+void M_DrawGeneratedMenu();
+void M_GeneratedMenuResponder(int ch, int ch2, bool numlock);
+static bool GeneratedMenuItemSelectable(const menuconfitem_t& item);
 
 // [RH] For player setup menu.
 static void M_PlayerSetupTicker();
 static void M_PlayerSetupDrawer();
-static void M_EditPlayerName (int choice);
-static void M_PlayerNameChanged (int choice);
+static void M_EditPlayerName();
+static void M_PlayerNameChanged();
+static void M_PlayerNameChangedSlot(int);
 static void M_ChangeGender (int choice);
 static void M_ChangeAutoAim (int choice);
 static void M_ChangeColorPreset (int choice);
@@ -204,7 +208,7 @@ static void M_OpenHelpScreen();
 static void M_FinishHelpScreen();
 static void M_BeginEndGamePrompt();
 static void M_BeginQuitGamePrompt();
-static void M_AdvanceHelpScreen(int choice);
+static void M_AdvanceHelpScreen();
 static void M_PushBuiltinScreen(builtinscreenkind_t screen, int initialItem, bool newDrawIndicator);
 static void M_BuiltinResponder(int ch, int ch2, bool numlock);
 namespace
@@ -253,46 +257,10 @@ static void M_ResumeSound(void)
 	S_ResumeSound();
 }
 
-oldmenu_t MainDef =
-{
-	0,
-	nullptr,
-	M_DrawMainMenu,
-	97,64,
-	0
-};
-
-oldmenu_t EpiDef =
-{
-	0,
-	nullptr,
-	nullptr,
-	48,63,				// x,y
-	0	 				// lastOn
-};
-
-oldmenu_t ExpDef =
-{
-	0,
-	nullptr,
-	nullptr,
-	48,63,				// x,y
-	0
-};
-
-
-//
-// NEW GAME
-//
-
-oldmenu_t NewDef =
-{
-	0,
-	nullptr,
-	nullptr,
-	48,63,				// x,y
-	0				// lastOn
-};
+static constexpr int MAINMENU_DEFAULT_X = 97;
+static constexpr int MAINMENU_DEFAULT_Y = 64;
+static constexpr int SUBMENU_DEFAULT_X = 48;
+static constexpr int SUBMENU_DEFAULT_Y = 63;
 
 //
 // [RH] Player Setup Menu
@@ -359,14 +327,8 @@ static int M_HelpPageCount()
 	return count;
 }
 
-oldmenu_t GameFilesDef =
-{
-	0,
-	nullptr,
-	nullptr,
-	110,60,
-	0
-};
+static constexpr int GAMEFILES_DEFAULT_X = 110;
+static constexpr int GAMEFILES_DEFAULT_Y = 60;
 
 //
 // LOAD GAME MENU
@@ -414,9 +376,7 @@ static void M_ConfigureSaveLoadScreen()
 BEGIN_COMMAND (menu_main)
 {
 	M_StartControlPanel ();
-	if (M_OpenMenuEntrypoint("mainMenu"))
-	{
-	}
+	M_OpenMenuEntrypoint("mainMenu");
 }
 END_COMMAND (menu_main)
 
@@ -546,9 +506,9 @@ namespace
 		std::string id;
 	};
 
-	generatedoldmenu_t* GeneratedOldMenuByMenu(oldmenu_t* menu)
+	generatedmenu_t* GeneratedMenuById(const char* menuId)
 	{
-		generatedoldmenu_t* menus[] = {
+		generatedmenu_t* menus[] = {
 			&gGeneratedMainMenu,
 			&gGeneratedEpisodeMenu,
 			&gGeneratedExpansionMenu,
@@ -556,9 +516,9 @@ namespace
 			&gGeneratedGameFilesMenu
 		};
 
-		for (generatedoldmenu_t* generatedMenu : menus)
+		for (generatedmenu_t* generatedMenu : menus)
 		{
-			if (generatedMenu->menu == menu)
+			if (generatedMenu->menuId != nullptr && iequals(generatedMenu->menuId, menuId))
 			{
 				return generatedMenu;
 			}
@@ -579,6 +539,15 @@ namespace
 	}
 
 	void WarnMenuConf(const std::string& message);
+
+	void WarnMenuConfOnce(const std::string& message)
+	{
+		static std::unordered_set<std::string> warnedMessages;
+		if (warnedMessages.insert(message).second)
+		{
+			WarnMenuConf(message);
+		}
+	}
 
 	const patch_t* MenuConfPatch(const std::string& name)
 	{
@@ -656,7 +625,8 @@ namespace
 		const patch_t* patch = MenuConfPatch(name);
 		if (patch == nullptr)
 		{
-			WarnMenuConf(fmt::sprintf("%s references missing patch \"%s\"", context, name.c_str()));
+			WarnMenuConfOnce(
+			    fmt::sprintf("%s references missing patch \"%s\"", context, name.c_str()));
 		}
 
 		return patch;
@@ -838,15 +808,16 @@ namespace
 		return -1;
 	}
 
-	void DrawConfiguredMenu()
+	void DrawMainMenuHeaderDecorations();
+
+	void DrawGeneratedMenuHeader(const generatedmenu_t& generatedMenu)
 	{
-		generatedoldmenu_t* generatedMenu = GeneratedOldMenuByMenu(currentMenu);
-		if (generatedMenu == nullptr || generatedMenu->menuId == nullptr)
+		if (generatedMenu.menuId == nullptr)
 		{
 			return;
 		}
 
-		const menuconfmenu_t* menu = MenuConfMenu(generatedMenu->menuId);
+		const menuconfmenu_t* menu = MenuConfMenu(generatedMenu.menuId);
 		if (menu == nullptr)
 		{
 			return;
@@ -867,33 +838,39 @@ namespace
 			}
 
 			screen->DrawPatchClean(headerPatch, x, menu->header.y);
-			return;
 		}
-
-		const char* headerText = nullptr;
-		if (!menu->header.languageKey.empty())
+		else
 		{
-			headerText = LocalizedString(menu->header.languageKey.c_str());
-		}
-		else if (!menu->header.text.empty())
-		{
-			headerText = menu->header.text.c_str();
-		}
-
-		if (headerText != nullptr)
-		{
-			const OFont* bigFont = OFonts.big();
-			int x = 160 - V_StringWidth(bigFont, headerText) / 2;
-			if (iequals(menu->header.align, "absolute"))
+			const char* headerText = nullptr;
+			if (!menu->header.languageKey.empty())
 			{
-				x = menu->header.x;
+				headerText = LocalizedString(menu->header.languageKey.c_str());
 			}
-			else
+			else if (!menu->header.text.empty())
 			{
-				x += menu->header.x;
+				headerText = menu->header.text.c_str();
 			}
 
-			screen->DrawTextCleanMove(bigFont, CR_GRAY, x, menu->header.y, headerText);
+			if (headerText != nullptr)
+			{
+				const OFont* bigFont = OFonts.big();
+				int x = 160 - V_StringWidth(bigFont, headerText) / 2;
+				if (iequals(menu->header.align, "absolute"))
+				{
+					x = menu->header.x;
+				}
+				else
+				{
+					x += menu->header.x;
+				}
+
+				screen->DrawTextCleanMove(bigFont, CR_GRAY, x, menu->header.y, headerText);
+			}
+		}
+
+		if (iequals(generatedMenu.menuId, "main"))
+		{
+			DrawMainMenuHeaderDecorations();
 		}
 	}
 
@@ -984,40 +961,23 @@ namespace
 			return M_OpenBuiltinTarget(destination.id);
 
 		case menudestinationkind_t::menu:
-			if (destination.id == "main")
-			{
-				M_SetupNextMenu(&MainDef);
-				return true;
-			}
+		{
 			if (destination.id.rfind("options", 0) == 0)
 			{
 				OptionsActive = M_OpenGeneratedOptionsMenu(destination.id);
 				return OptionsActive;
 			}
-			if (destination.id == "episodes")
+			generatedmenu_t* generatedMenu = GeneratedMenuById(destination.id.c_str());
+			if (generatedMenu == nullptr || generatedMenu->items.empty())
 			{
-				M_SetupNextMenu(&EpiDef);
-				return true;
-			}
-			if (destination.id == "skills")
-			{
-				M_SetupNextMenu(&NewDef);
-				return true;
-			}
-			if (destination.id == "expansions")
-			{
-				M_SetupNextMenu(&ExpDef);
-				return true;
-			}
-			if (destination.id == "gamefiles")
-			{
-				M_SetupNextMenu(&GameFilesDef);
-				return true;
+				WarnMenuConf(fmt::sprintf("menu target \"%s\" is not wired to the generated runtime yet",
+				                          destination.id.c_str()));
+				return false;
 			}
 
-			WarnMenuConf(fmt::sprintf("menu target \"%s\" is not wired to the legacy runtime yet",
-			                          destination.id.c_str()));
-			return false;
+			M_OpenGeneratedMenu(*generatedMenu);
+			return true;
+		}
 
 		case menudestinationkind_t::invalid:
 		default:
@@ -1037,70 +997,30 @@ namespace
 		return M_ResolveMenuEntrypoint(name, destination) && M_OpenResolvedDestination(destination);
 	}
 
-	bool BuildGeneratedOldMenu(generatedoldmenu_t& generatedMenu, const char* menuId,
-	                           oldmenu_t& menu,
-	                            void (*routine)())
+	bool BuildGeneratedMenu(generatedmenu_t& generatedMenu, const char* menuId,
+	                        int defaultX, int defaultY, int defaultLastOn)
 	{
 		const menuconfmenu_t* authoredMenu = MenuConfMenu(menuId);
 		if (authoredMenu == nullptr || authoredMenu->items.empty())
 		{
 			generatedMenu.items.clear();
-			generatedMenu.legacyItems.clear();
 			generatedMenu.menuId = menuId;
-			generatedMenu.menu = &menu;
-			menu.menuitems = nullptr;
-			menu.numitems = 0;
+			generatedMenu.x = defaultX;
+			generatedMenu.y = defaultY;
+			generatedMenu.lastOn = defaultLastOn;
 			return false;
 		}
 
 		generatedMenu.menuId = menuId;
-		generatedMenu.menu = &menu;
 		generatedMenu.items = authoredMenu->items;
 		if (iequals(menuId, "episodes") &&
 		    episodenum > 0 && static_cast<int>(generatedMenu.items.size()) > episodenum)
 		{
 			generatedMenu.items.resize(episodenum);
 		}
-		generatedMenu.legacyItems.clear();
-		generatedMenu.legacyItems.reserve(generatedMenu.items.size());
-
-		for (const menuconfitem_t& item : generatedMenu.items)
-		{
-			oldmenuitem_t legacy = {};
-			legacy.status = item.kind == menuconfitemkind_t::separator ? -1 :
-			                item.kind == menuconfitemkind_t::cvarDiscrete ? 2 : 1;
-			legacy.routine = legacy.status == -1 ? nullptr : M_ActivateGeneratedMenuItem;
-			legacy.alphaKey = item.hotkey.empty() ? 0 : item.hotkey[0];
-
-			if (!item.patch.empty())
-			{
-				legacy.name = item.patch.c_str();
-			}
-
-			const char* text = nullptr;
-			if (!item.languageKey.empty())
-			{
-				text = item.languageKey.c_str();
-			}
-			else if (!item.text.empty())
-			{
-				text = item.text.c_str();
-			}
-
-			if (text != nullptr)
-			{
-				M_StringCopy(legacy.textname, text, sizeof(legacy.textname));
-			}
-
-			generatedMenu.legacyItems.push_back(legacy);
-		}
-
-		menu.menuitems = generatedMenu.legacyItems.data();
-		menu.numitems = static_cast<short>(generatedMenu.legacyItems.size());
-		menu.routine = routine;
-		menu.lastOn = iequals(menuId, "skills") ? defaultskillmenu : 0;
-		if (authoredMenu->layout.x != 0) menu.x = authoredMenu->layout.x;
-		if (authoredMenu->layout.y != 0) menu.y = authoredMenu->layout.y;
+		generatedMenu.lastOn = iequals(menuId, "skills") ? defaultskillmenu : defaultLastOn;
+		generatedMenu.x = authoredMenu->layout.x != 0 ? authoredMenu->layout.x : defaultX;
+		generatedMenu.y = authoredMenu->layout.y != 0 ? authoredMenu->layout.y : defaultY;
 		return true;
 	}
 
@@ -1143,9 +1063,10 @@ namespace
 		return "";
 	}
 
-	std::string GeneratedOldMenuItemText(const menuconfitem_t& item, const oldmenuitem_t& legacy)
+	std::string GeneratedMenuItemText(const menuconfitem_t& item)
 	{
-		const char* base = legacy.textname[0] ? LocalizedString(legacy.textname) : "";
+		const char* base = !item.languageKey.empty() ? LocalizedString(item.languageKey.c_str()) :
+		                   item.text.c_str();
 		if (item.kind != menuconfitemkind_t::cvarDiscrete)
 		{
 			return base;
@@ -1179,8 +1100,8 @@ namespace
 			const int baseLump = W_CheckNumForName(side.basePatch.c_str());
 			if (baseLump < 0)
 			{
-				WarnMenuConf(fmt::sprintf("header decoration references missing patch \"%s\"",
-				                          side.basePatch.c_str()));
+				WarnMenuConfOnce(fmt::sprintf("header decoration references missing patch \"%s\"",
+				                              side.basePatch.c_str()));
 				return;
 			}
 
@@ -1333,15 +1254,18 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 
 void M_ActivateGeneratedMenuItem(int choice)
 {
-	generatedoldmenu_t* generatedMenu = GeneratedOldMenuByMenu(currentMenu);
+	generatedmenu_t* generatedMenu = CurrentGeneratedMenu;
 	if (generatedMenu == nullptr)
 	{
 		return;
 	}
 
-	const int itemIndex = currentMenu != nullptr && itemOn >= 0 &&
-	                      static_cast<size_t>(itemOn) < generatedMenu->items.size() &&
-	                      currentMenu->menuitems[itemOn].status == 2 ? itemOn : choice;
+	const int itemIndex = CurrentGeneratedItem >= 0 &&
+	                      static_cast<size_t>(CurrentGeneratedItem) < generatedMenu->items.size() &&
+	                      generatedMenu->items[CurrentGeneratedItem].kind ==
+	                          menuconfitemkind_t::cvarDiscrete
+	                          ? CurrentGeneratedItem
+	                          : choice;
 	if (itemIndex < 0 || static_cast<size_t>(itemIndex) >= generatedMenu->items.size())
 	{
 		return;
@@ -1755,7 +1679,7 @@ static void M_DrawHelpPage()
 	D_DrawPageImage(help_page, I_GetPrimarySurface(), true);
 }
 
-static void M_AdvanceHelpScreen(int)
+static void M_AdvanceHelpScreen()
 {
 	const int pageCount = M_HelpPageCount();
 	if (pageCount <= 0 || gHelpPageIndex + 1 >= pageCount)
@@ -1776,7 +1700,7 @@ static void M_FinishHelpScreen()
 	gHelpPageIndex = 0;
 	M_ClearMenus();
 	M_StartControlPanel();
-	M_SetupNextMenu(&MainDef);
+	M_OpenMenuEntrypoint("mainMenu");
 }
 
 //
@@ -1808,39 +1732,98 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 	}
 }
 
-//
-// M_DrawMainMenu
-//
-void M_DrawMainMenu()
+void M_OpenGeneratedMenu(generatedmenu_t& menu, bool newDrawIndicator)
 {
-	const menuconfmenu_t* mainMenu = MenuConfMenu("main");
-	if (mainMenu == nullptr)
+	MenuStack[MenuStackDepth].menu.generated = &menu;
+	MenuStack[MenuStackDepth].isNewStyle = false;
+	MenuStack[MenuStackDepth].isBuiltin = false;
+	MenuStack[MenuStackDepth].isGenerated = true;
+	MenuStack[MenuStackDepth].drawIndicator = newDrawIndicator;
+	MenuStackDepth++;
+
+	OptionsActive = false;
+	CurrentBuiltinScreen = builtinscreenkind_t::none;
+	CurrentMenu = nullptr;
+	CurrentGeneratedMenu = &menu;
+	CurrentGeneratedItem = menu.lastOn;
+	if (!menu.items.empty())
+	{
+		CurrentGeneratedItem =
+		    clamp(CurrentGeneratedItem, 0, static_cast<int>(menu.items.size()) - 1);
+		if (!GeneratedMenuItemSelectable(menu.items[CurrentGeneratedItem]))
+		{
+			for (size_t i = 0; i < menu.items.size(); ++i)
+			{
+				if (GeneratedMenuItemSelectable(menu.items[i]))
+				{
+					CurrentGeneratedItem = static_cast<int>(i);
+					break;
+				}
+			}
+		}
+		menu.lastOn = CurrentGeneratedItem;
+	}
+}
+
+void M_DrawGeneratedMenu()
+{
+	if (CurrentGeneratedMenu == nullptr)
 	{
 		return;
 	}
 
-	const patch_t* menu_title = MenuConfPatch(mainMenu->header.patch);
-	if (menu_title == nullptr)
+	const OFont* bigFont = OFonts.big();
+	const OFont* smallFont = OFonts.small();
+	DrawGeneratedMenuHeader(*CurrentGeneratedMenu);
+
+	const int x = CurrentGeneratedMenu->x;
+	int y = CurrentGeneratedMenu->y;
+	for (size_t i = 0; i < CurrentGeneratedMenu->items.size(); ++i)
 	{
-		return;
+		const menuconfitem_t& item = CurrentGeneratedMenu->items[i];
+		if (!item.patch.empty() && W_CheckNumForName(item.patch.c_str()) >= 0)
+		{
+			screen->DrawPatchClean(W_CachePatch(item.patch.c_str()), x, y);
+		}
+		else if (!item.languageKey.empty() || !item.text.empty())
+		{
+			if (item.kind == menuconfitemkind_t::cvarDiscrete)
+			{
+				const char* base = !item.languageKey.empty() ?
+				                       LocalizedString(item.languageKey.c_str()) :
+				                       item.text.c_str();
+				const char* value = GeneratedDiscreteValueName(item);
+				const int smallY = y + (M_BigFontLineHeight() / 2 - M_SmallFontLineHeight() / 2) + 5;
+
+				screen->DrawTextCleanMove(smallFont, CR_RED, x, smallY, base);
+				if (value[0])
+				{
+					screen->DrawTextCleanMove(smallFont, CR_GREY,
+					                          x + V_StringWidth(smallFont, base) +
+					                              M_SmallFontLineHeight(),
+					                          smallY, value);
+				}
+			}
+			else
+			{
+				const std::string text = GeneratedMenuItemText(item);
+				screen->DrawTextCleanMove(bigFont, CR_RED, x, y, text.c_str());
+			}
+		}
+
+		y += M_BigFontLineHeight();
 	}
 
-	int menu_title_x = (320 - menu_title->width()) / 2;
-	int menu_title_y = 1;
-
-	const auto& header = mainMenu->header;
-	if (iequals(header.align, "absolute"))
+	if (drawIndicator)
 	{
-		menu_title_x = header.x;
+		if (const patch_t* indicator = MenuIndicatorPatch(whichIndicator))
+		{
+			const int draw_x = x + MenuConfTheme().indicator.offsetX;
+			const int draw_y = CurrentGeneratedMenu->y + MenuConfTheme().indicator.offsetY +
+			                   CurrentGeneratedItem * M_BigFontLineHeight();
+			screen->DrawPatchClean(indicator, draw_x, draw_y);
+		}
 	}
-	else
-	{
-		menu_title_x += header.x;
-	}
-	menu_title_y = header.y;
-
-	screen->DrawPatchClean(menu_title, menu_title_x, menu_title_y);
-	DrawMainMenuHeaderDecorations();
 }
 
 static void M_OpenNewGameMenu()
@@ -1962,7 +1945,6 @@ void M_EndGameResponse(int ch)
 		return;
 	}
 
-	currentMenu->lastOn = itemOn;
 	S_StopAmbientSound();
 	M_ClearMenus ();
 	D_StartTitle ();
@@ -2099,7 +2081,7 @@ static void M_ActivatePlayerSetupItem(int choice)
 	switch (CurrentBuiltinItem)
 	{
 	case playername:
-		M_EditPlayerName(choice);
+		M_EditPlayerName();
 		break;
 	case playerteam:
 		M_ChangeTeam(choice);
@@ -2567,11 +2549,11 @@ static void M_ChangeColorPreset (int choice)
 		SendNewColor(customcolor.getr(), customcolor.getg(), customcolor.getb());
 }
 
-static void M_EditPlayerName (int choice)
+static void M_EditPlayerName()
 {
 	// we are going to be intercepting all chars
 	genStringEnter = oldmenustring_t::PLAYERNAME;
-	genStringEnd = M_PlayerNameChanged;
+	genStringEnd = M_PlayerNameChangedSlot;
 	genStringLen = MAXPLAYERNAME;
 
 	saveSlot = 0;
@@ -2581,9 +2563,14 @@ static void M_EditPlayerName (int choice)
 	saveCharIndex = strlen(savegamestrings[0]);
 }
 
-static void M_PlayerNameChanged (int choice)
+static void M_PlayerNameChanged()
 {
 	AddCommandString (fmt::format("cl_name \"{}\"", savegamestrings[0]));
+}
+
+static void M_PlayerNameChangedSlot(int)
+{
+	M_PlayerNameChanged();
 }
 
 static void SendNewColor(int red, int green, int blue)
@@ -2839,98 +2826,10 @@ bool M_Responder(const event_t& ev)
 		return ev.type == ev_keydown;
 	}
 
-	// Keys usable within menu
+	if (CurrentGeneratedMenu != nullptr)
 	{
-		if (Key_IsDownKey(ch, numlock))
-		{
-			do {
-				if (itemOn + 1 > currentMenu->numitems - 1)
-					itemOn = 0;
-				else
-					itemOn++;
-				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-			} while (currentMenu->menuitems[itemOn].status == -1);
-			return true;
-		}
-		else if (Key_IsUpKey(ch, numlock))
-		{
-			do {
-				if (!itemOn)
-					itemOn = currentMenu->numitems - 1;
-				else
-					itemOn--;
-				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-			} while (currentMenu->menuitems[itemOn].status == -1);
-			return true;
-		}
-		else if (Key_IsLeftKey(ch, numlock))
-		{
-			if (currentMenu->menuitems[itemOn].routine &&
-				currentMenu->menuitems[itemOn].status == 2)
-			{
-				S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-				currentMenu->menuitems[itemOn].routine(0);
-			}
-			return true;
-		}
-		else if (Key_IsRightKey(ch, numlock))
-		{
-			if (currentMenu->menuitems[itemOn].routine &&
-				currentMenu->menuitems[itemOn].status == 2)
-			{
-				S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-				currentMenu->menuitems[itemOn].routine(1);
-			}
-			return true;
-		}
-		else if (Key_IsAcceptKey(ch))
-		{
-			if (currentMenu->menuitems[itemOn].routine &&
-				currentMenu->menuitems[itemOn].status)
-			{
-				currentMenu->lastOn = itemOn;
-				if (currentMenu->menuitems[itemOn].status == 2)
-				{
-					currentMenu->menuitems[itemOn].routine(1);		// right arrow
-					S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
-				}
-				else
-				{
-					currentMenu->menuitems[itemOn].routine(itemOn);
-					S_Sound(CHAN_INTERFACE, "weapons/pistol", 1, ATTN_NONE);
-				}
-			}
-			return true;
-		}
-		else if (Key_IsCancelKey(ch))
-		{
-			// [RH] Escaping now moves back one menu instead of
-			//	  quitting the menu system. Thus, backspace
-			//	  is now ignored.
-			currentMenu->lastOn = itemOn;
-			M_PopMenuStack();
-			return true;
-		}
-		else
-		{
-			if (ch2 && (ch < OKEY_JOY1))
-			{
-				for (int i = itemOn + 1; i < currentMenu->numitems; i++)
-					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
-					{
-						itemOn = i;
-						S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-						return true;
-					}
-				for (int i = 0; i <= itemOn; i++)
-					if (tolower(currentMenu->menuitems[i].alphaKey) == ch2)
-					{
-						itemOn = i;
-						S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
-						return true;
-					}
-			}
-		}
+		M_GeneratedMenuResponder(ch, ch2, numlock);
+		return ev.type == ev_keydown;
 	}
 
 	// [RH] Menu now eats all keydown events while active
@@ -2955,8 +2854,8 @@ void M_StartControlPanel()
 	menuactive = 1;
 	MenuTime = 0;
 	CurrentBuiltinScreen = builtinscreenkind_t::none;
-	currentMenu = &MainDef;
-	itemOn = currentMenu->lastOn;
+	CurrentMenu = nullptr;
+	CurrentGeneratedMenu = nullptr;
 	OptionsActive = false;			// [RH] Make sure none of the options menus appear.
 	M_PauseSound();
 	S_Sound(CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
@@ -3050,74 +2949,9 @@ void M_Drawer()
 				}
 			}
 		}
-		else
+		else if (CurrentGeneratedMenu != nullptr)
 		{
-			if (currentMenu->routine)
-				currentMenu->routine(); 		// call Draw routine
-
-			// DRAW MENU
-			const int x = currentMenu->x;
-			int y = currentMenu->y;
-			const int max = currentMenu->numitems;
-			for (int i = 0; i < max; i++)
-			{
-				if (currentMenu->menuitems[i].name[0] &&
-					W_CheckNumForName(currentMenu->menuitems[i].name) >= 0)
-				{
-					screen->DrawPatchClean(W_CachePatch(currentMenu->menuitems[i].name), x, y);
-				}
-				else if (currentMenu->menuitems[i].textname[0])
-				{
-					const generatedoldmenu_t* generatedMenu = GeneratedOldMenuByMenu(currentMenu);
-					if (generatedMenu != nullptr && static_cast<size_t>(i) < generatedMenu->items.size())
-					{
-						const std::string text =
-						    GeneratedOldMenuItemText(generatedMenu->items[i], currentMenu->menuitems[i]);
-						if (generatedMenu->items[i].kind == menuconfitemkind_t::cvarDiscrete)
-						{
-							const char* base = currentMenu->menuitems[i].textname[0] ?
-							                   LocalizedString(currentMenu->menuitems[i].textname) : "";
-							const char* value = GeneratedDiscreteValueName(generatedMenu->items[i]);
-							const int smallY =
-							    y + (M_BigFontLineHeight() / 2 - M_SmallFontLineHeight() / 2) + 5;
-
-							screen->DrawTextCleanMove(smallFont, CR_RED, x, smallY, base);
-							if (value[0])
-							{
-								screen->DrawTextCleanMove(
-								    smallFont, CR_GREY,
-								    x + V_StringWidth(smallFont, base) + M_SmallFontLineHeight(), smallY,
-								    value);
-							}
-						}
-						else
-						{
-							screen->DrawTextCleanMove(bigFont, CR_RED, x, y, text.c_str());
-						}
-					}
-					else
-					{
-						screen->DrawTextCleanMove(bigFont, CR_RED, x, y,
-						                          LocalizedString(currentMenu->menuitems[i].textname));
-					}
-				}
-
-				y += M_BigFontLineHeight();
-			}
-
-
-			// DRAW SKULL
-			if (drawIndicator)
-			{
-				if (const patch_t* indicator = MenuIndicatorPatch(whichIndicator))
-				{
-					const int draw_x = x + MenuConfTheme().indicator.offsetX;
-					const int draw_y =
-						currentMenu->y + MenuConfTheme().indicator.offsetY + itemOn * M_BigFontLineHeight();
-
-					screen->DrawPatchClean(indicator, draw_x, draw_y);
-				}
-			}
+			M_DrawGeneratedMenu();
 		}
 	}
 
@@ -3140,6 +2974,8 @@ void M_ClearMenus()
 	MenuStackDepth = 0;
 	menuactive = false;
 	CurrentBuiltinScreen = builtinscreenkind_t::none;
+	CurrentMenu = nullptr;
+	CurrentGeneratedMenu = nullptr;
 	drawIndicator = true;
 	M_DemoNoPlay = false;
     M_ResumeSound();
@@ -3151,28 +2987,19 @@ void M_ClearMenus()
 //
 // M_SetupNextMenu
 //
-void M_SetupNextMenu (oldmenu_t *menudef)
-{
-	MenuStack[MenuStackDepth].menu.old = menudef;
-	MenuStack[MenuStackDepth].isNewStyle = false;
-	MenuStack[MenuStackDepth].isBuiltin = false;
-	MenuStack[MenuStackDepth].drawIndicator = drawIndicator;
-	MenuStackDepth++;
-
-	currentMenu = menudef;
-	itemOn = currentMenu->lastOn;
-}
-
 void M_PushNewMenu(menu_t* menu, bool newDrawIndicator)
 {
 	MenuStack[MenuStackDepth].menu.newmenu = menu;
 	MenuStack[MenuStackDepth].isNewStyle = true;
 	MenuStack[MenuStackDepth].isBuiltin = false;
+	MenuStack[MenuStackDepth].isGenerated = false;
 	MenuStack[MenuStackDepth].drawIndicator = newDrawIndicator;
 	MenuStackDepth++;
 
 	CurrentMenu = menu;
 	CurrentItem = menu->lastOn;
+	CurrentGeneratedMenu = nullptr;
+	CurrentBuiltinScreen = builtinscreenkind_t::none;
 }
 
 static void M_PushBuiltinScreen(builtinscreenkind_t screen, int initialItem, bool newDrawIndicator)
@@ -3180,12 +3007,15 @@ static void M_PushBuiltinScreen(builtinscreenkind_t screen, int initialItem, boo
 	MenuStack[MenuStackDepth].menu.builtin = static_cast<int>(screen);
 	MenuStack[MenuStackDepth].isNewStyle = false;
 	MenuStack[MenuStackDepth].isBuiltin = true;
+	MenuStack[MenuStackDepth].isGenerated = false;
 	MenuStack[MenuStackDepth].drawIndicator = newDrawIndicator;
 	MenuStackDepth++;
 
 	OptionsActive = false;
 	CurrentBuiltinScreen = screen;
+	CurrentMenu = nullptr;
 	CurrentBuiltinItem = initialItem;
+	CurrentGeneratedMenu = nullptr;
 }
 
 void M_BuildKeyList(menuitem_t* item, int numitems)
@@ -3241,7 +3071,7 @@ static void M_BuiltinResponder(int ch, int ch2, bool numlock)
 	case builtinscreenkind_t::help:
 		if (Key_IsAcceptKey(ch))
 		{
-			M_AdvanceHelpScreen(0);
+			M_AdvanceHelpScreen();
 		}
 		else if (Key_IsCancelKey(ch))
 		{
@@ -3375,6 +3205,116 @@ static void M_BuiltinResponder(int ch, int ch2, bool numlock)
 	}
 }
 
+static bool GeneratedMenuItemSelectable(const menuconfitem_t& item)
+{
+	return item.kind != menuconfitemkind_t::separator;
+}
+
+void M_GeneratedMenuResponder(int ch, int ch2, bool numlock)
+{
+	if (CurrentGeneratedMenu == nullptr || CurrentGeneratedMenu->items.empty())
+	{
+		return;
+	}
+
+	const int count = static_cast<int>(CurrentGeneratedMenu->items.size());
+	auto moveToSelectable = [count](int direction)
+	{
+		int next = CurrentGeneratedItem;
+		do
+		{
+			next += direction;
+			if (next >= count)
+			{
+				next = 0;
+			}
+			else if (next < 0)
+			{
+				next = count - 1;
+			}
+		} while (!GeneratedMenuItemSelectable(CurrentGeneratedMenu->items[next]));
+		CurrentGeneratedItem = next;
+		CurrentGeneratedMenu->lastOn = next;
+	};
+
+	if (Key_IsDownKey(ch, numlock))
+	{
+		moveToSelectable(1);
+		S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		return;
+	}
+	if (Key_IsUpKey(ch, numlock))
+	{
+		moveToSelectable(-1);
+		S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+		return;
+	}
+	if (Key_IsLeftKey(ch, numlock))
+	{
+		if (CurrentGeneratedMenu->items[CurrentGeneratedItem].kind == menuconfitemkind_t::cvarDiscrete)
+		{
+			M_ActivateGeneratedMenuItem(0);
+			S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		}
+		return;
+	}
+	if (Key_IsRightKey(ch, numlock))
+	{
+		if (CurrentGeneratedMenu->items[CurrentGeneratedItem].kind == menuconfitemkind_t::cvarDiscrete)
+		{
+			M_ActivateGeneratedMenuItem(1);
+			S_Sound(CHAN_INTERFACE, "plats/pt1_mid", 1, ATTN_NONE);
+		}
+		return;
+	}
+	if (Key_IsAcceptKey(ch))
+	{
+		const menuconfitem_t& item = CurrentGeneratedMenu->items[CurrentGeneratedItem];
+		if (GeneratedMenuItemSelectable(item))
+		{
+			M_ActivateGeneratedMenuItem(item.kind == menuconfitemkind_t::cvarDiscrete ?
+			                                1 :
+			                                CurrentGeneratedItem);
+			S_Sound(CHAN_INTERFACE,
+			        item.kind == menuconfitemkind_t::cvarDiscrete ? "plats/pt1_mid" :
+			                                                         "weapons/pistol",
+			        1, ATTN_NONE);
+		}
+		return;
+	}
+	if (Key_IsCancelKey(ch))
+	{
+		M_PopMenuStack();
+		return;
+	}
+	if (ch2 && (ch < OKEY_JOY1))
+	{
+		const char alpha = static_cast<char>(tolower(ch2));
+		for (int i = CurrentGeneratedItem + 1; i < count; ++i)
+		{
+			if (!CurrentGeneratedMenu->items[i].hotkey.empty() &&
+			    tolower(CurrentGeneratedMenu->items[i].hotkey[0]) == alpha)
+			{
+				CurrentGeneratedItem = i;
+				CurrentGeneratedMenu->lastOn = i;
+				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+				return;
+			}
+		}
+		for (int i = 0; i <= CurrentGeneratedItem; ++i)
+		{
+			if (!CurrentGeneratedMenu->items[i].hotkey.empty() &&
+			    tolower(CurrentGeneratedMenu->items[i].hotkey[0]) == alpha)
+			{
+				CurrentGeneratedItem = i;
+				CurrentGeneratedMenu->lastOn = i;
+				S_Sound(CHAN_INTERFACE, "plats/pt1_stop", 1, ATTN_NONE);
+				return;
+			}
+		}
+	}
+}
+
 
 void M_PopMenuStack()
 {
@@ -3384,10 +3324,13 @@ void M_PopMenuStack()
 		if (MenuStack[MenuStackDepth].isNewStyle) {
 			OptionsActive = true;
 			CurrentBuiltinScreen = builtinscreenkind_t::none;
+			CurrentGeneratedMenu = nullptr;
 			CurrentMenu = MenuStack[MenuStackDepth].menu.newmenu;
 			CurrentItem = CurrentMenu->lastOn;
 		} else if (MenuStack[MenuStackDepth].isBuiltin) {
 			OptionsActive = false;
+			CurrentGeneratedMenu = nullptr;
+			CurrentMenu = nullptr;
 			CurrentBuiltinScreen =
 			    static_cast<builtinscreenkind_t>(MenuStack[MenuStackDepth].menu.builtin);
 			if (CurrentBuiltinScreen == builtinscreenkind_t::help)
@@ -3403,11 +3346,12 @@ void M_PopMenuStack()
 			{
 				CurrentBuiltinItem = gPlayerSetupLastOn;
 			}
-		} else {
+		} else if (MenuStack[MenuStackDepth].isGenerated) {
 			OptionsActive = false;
 			CurrentBuiltinScreen = builtinscreenkind_t::none;
-			currentMenu = MenuStack[MenuStackDepth].menu.old;
-			itemOn = currentMenu->lastOn;
+			CurrentMenu = nullptr;
+			CurrentGeneratedMenu = MenuStack[MenuStackDepth].menu.generated;
+			CurrentGeneratedItem = CurrentGeneratedMenu->lastOn;
 		}
 		drawIndicator = MenuStack[MenuStackDepth].drawIndicator;
 		MenuStackDepth++;
@@ -3446,16 +3390,11 @@ EXTERN_CVAR (screenblocks)
 
 void M_Init()
 {
-	MainDef.routine = M_DrawMainMenu;
-	MainDef.lastOn = 0;
-	MainDef.x = 97;
-	MainDef.y = 64;
-
-	currentMenu = &MainDef;
 	OptionsActive = false;
 	menuactive = 0;
 	MenuTime = 0;
-	itemOn = currentMenu->lastOn;
+	CurrentGeneratedMenu = nullptr;
+	CurrentGeneratedItem = 0;
 	whichIndicator = 0;
 	indicatorAnimCounter = 10;
 	drawIndicator = true;
@@ -3466,36 +3405,30 @@ void M_Init()
 
 	if (gameinfo.flags & GI_MAPxx)
 	{
-		MainDef.y += 8;
+		gGeneratedMainMenu.x = MAINMENU_DEFAULT_X;
+		gGeneratedMainMenu.y = MAINMENU_DEFAULT_Y + 8;
 	}
 	else if (gameinfo.enginetype == ENGINE_HERETIC)
 	{
-		MainDef.x = 110;
-		MainDef.y = 56;
+		gGeneratedMainMenu.x = 110;
+		gGeneratedMainMenu.y = 56;
+	}
+	else
+	{
+		gGeneratedMainMenu.x = MAINMENU_DEFAULT_X;
+		gGeneratedMainMenu.y = MAINMENU_DEFAULT_Y;
 	}
 
 	M_ConfigureSaveLoadScreen();
 
-	if (!BuildGeneratedOldMenu(gGeneratedMainMenu, "main", MainDef, M_DrawMainMenu))
+	if (!BuildGeneratedMenu(gGeneratedMainMenu, "main", gGeneratedMainMenu.x, gGeneratedMainMenu.y, 0))
 	{
 		I_Error("M_Init: MENUCONF main menu is missing or empty");
 	}
-	BuildGeneratedOldMenu(gGeneratedEpisodeMenu, "episodes", EpiDef, DrawConfiguredMenu);
-	BuildGeneratedOldMenu(gGeneratedExpansionMenu, "expansions", ExpDef, DrawConfiguredMenu);
-	BuildGeneratedOldMenu(gGeneratedSkillMenu, "skills", NewDef, DrawConfiguredMenu);
-	BuildGeneratedOldMenu(gGeneratedGameFilesMenu, "gamefiles", GameFilesDef, DrawConfiguredMenu);
-
-	if (const menuconfmenu_t* mainMenu = MenuConfMenu("main"))
-	{
-		if (mainMenu->layout.x != 0)
-		{
-			MainDef.x = mainMenu->layout.x;
-		}
-		if (mainMenu->layout.y != 0)
-		{
-			MainDef.y = mainMenu->layout.y;
-		}
-	}
+	BuildGeneratedMenu(gGeneratedEpisodeMenu, "episodes", SUBMENU_DEFAULT_X, SUBMENU_DEFAULT_Y, 0);
+	BuildGeneratedMenu(gGeneratedExpansionMenu, "expansions", SUBMENU_DEFAULT_X, SUBMENU_DEFAULT_Y, 0);
+	BuildGeneratedMenu(gGeneratedSkillMenu, "skills", SUBMENU_DEFAULT_X, SUBMENU_DEFAULT_Y, defaultskillmenu);
+	BuildGeneratedMenu(gGeneratedGameFilesMenu, "gamefiles", GAMEFILES_DEFAULT_X, GAMEFILES_DEFAULT_Y, 0);
 
 	M_OptInit ();
 

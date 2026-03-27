@@ -732,6 +732,10 @@ bool G_Responder (const event_t& ev)
                 stricmp (cmd, "step")))
 			{
 				M_StartControlPanel ();
+				if (!M_OpenMenuEntrypoint("mainMenu"))
+				{
+					M_ClearMenus();
+				}
 				return true;
 			}
 			else

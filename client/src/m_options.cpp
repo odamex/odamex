@@ -29,8 +29,6 @@
 
 #include "odamex.h"
 
-#include <chrono>
-
 #include "gstrings.h"
 BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
@@ -2192,7 +2190,7 @@ void M_OptResponder(const event_t& ev)
 		}
 	}
 
-	if (CurrentMenu->refreshfunc)
+	if (OptionsActive && CurrentMenu != nullptr && CurrentMenu->refreshfunc)
 		(*CurrentMenu->refreshfunc)();
 }
 
