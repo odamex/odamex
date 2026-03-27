@@ -2781,13 +2781,26 @@ int P_IsPickupableThing(short type)
 //
 // P_IsSpawnThing
 //
-// Returns true if the thing type is a spawn
+// Returns true if the mapthing2_t is a spawn
 //
-bool P_IsSpawnThing(short type)
+bool P_IsSpawnThing(const mapthing2_t& mt)
 {
-	return (type == 1 || type == 2 || type == 3 || type == 4 ||  // player1-4
-			type == 11 ||										 // DM
-			type == 5080 || type == 5081 || type == 5083);		 // Team
+	if (mt.type == 1 || mt.type == 2 || mt.type == 3 || mt.type == 4 || mt.type == 11)  // player1-4, DM
+	{
+		return true;
+	}
+
+	for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
+	{
+		TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+
+		if (mt.type == teamInfo->TeamSpawnThingNum)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 //

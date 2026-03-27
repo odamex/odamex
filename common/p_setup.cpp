@@ -891,7 +891,7 @@ void P_LoadThings (int lump)
 
 		// clientside-only freecam start pos
 		#ifdef CLIENT_APP
-		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsSpawnThing(mt2.type))
+		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsSpawnThing(mt2))
 		{
 			Freecam::setStartPosition(mt2.x << FRACBITS, mt2.y << FRACBITS, ONFLOORZ, ANG45 * (mt2.angle / 45));
 		}
@@ -948,7 +948,7 @@ void P_LoadThings2 (int lump, int position)
 
 		// clientside-only freecam start pos
 		#ifdef CLIENT_APP
-		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsSpawnThing(mt->type))
+		if (Freecam::allowAdd() && Freecam::needPosition() && P_IsSpawnThing(*mt))
 		{
 			Freecam::setStartPosition(mt->x << FRACBITS, mt->y << FRACBITS, ONFLOORZ, ANG45 * (mt->angle / 45));
 		}
