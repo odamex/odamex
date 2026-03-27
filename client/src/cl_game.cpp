@@ -731,11 +731,7 @@ bool G_Responder (const event_t& ev)
                 stricmp (cmd, "stepmode") &&
                 stricmp (cmd, "step")))
 			{
-				M_StartControlPanel ();
-				if (!M_OpenMenuEntrypoint("mainMenu"))
-				{
-					M_ClearMenus();
-				}
+				M_OpenMenuEntrypoint("mainMenu");
 				return true;
 			}
 			else

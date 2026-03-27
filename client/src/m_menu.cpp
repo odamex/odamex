@@ -375,7 +375,6 @@ static void M_ConfigureSaveLoadScreen()
 // through console commands.
 BEGIN_COMMAND (menu_main)
 {
-	M_StartControlPanel ();
 	M_OpenMenuEntrypoint("mainMenu");
 }
 END_COMMAND (menu_main)
@@ -383,7 +382,6 @@ END_COMMAND (menu_main)
 BEGIN_COMMAND (menu_help)
 {
     // F1
-	M_StartControlPanel ();
 	M_OpenMenuTarget("builtin:help");
 }
 END_COMMAND (menu_help)
@@ -391,7 +389,6 @@ END_COMMAND (menu_help)
 BEGIN_COMMAND (menu_save)
 {
     // F2
-	M_StartControlPanel ();
 	M_OpenMenuTarget("builtin:saveGame");
 	//Printf (PRINT_WARNING, "Saving is not available at this time.\n");
 }
@@ -400,7 +397,6 @@ END_COMMAND (menu_save)
 BEGIN_COMMAND (menu_load)
 {
     // F3
-	M_StartControlPanel ();
 	M_OpenMenuTarget("builtin:loadGame");
 	//Printf (PRINT_WARNING, "Loading is not available at this time.\n");
 }
@@ -409,17 +405,13 @@ END_COMMAND (menu_load)
 BEGIN_COMMAND (menu_options)
 {
     // F4
-    M_StartControlPanel ();
-	if (M_OpenMenuEntrypoint("optionsMenu"))
-	{
-	}
+	M_OpenMenuEntrypoint("optionsMenu");
 }
 END_COMMAND (menu_options)
 
 BEGIN_COMMAND (quicksave)
 {
     // F6
-	M_StartControlPanel ();
 	M_QuickSave ();
 	//Printf (PRINT_WARNING, "Saving is not available at this time.\n");
 }
@@ -427,7 +419,6 @@ END_COMMAND (quicksave)
 
 BEGIN_COMMAND (menu_endgame)
 {	// F7
-	M_StartControlPanel ();
 	M_BeginEndGamePrompt();
 }
 END_COMMAND (menu_endgame)
@@ -435,7 +426,6 @@ END_COMMAND (menu_endgame)
 BEGIN_COMMAND (quickload)
 {
     // F9
-	M_StartControlPanel ();
 	M_QuickLoad ();
 	//Printf (PRINT_WARNING, "Loading is not available at this time.\n");
 }
@@ -443,7 +433,6 @@ END_COMMAND (quickload)
 
 BEGIN_COMMAND (menu_quit)
 {	// F10
-	M_StartControlPanel ();
 	M_BeginQuitGamePrompt();
 }
 END_COMMAND (menu_quit)
@@ -456,21 +445,18 @@ END_COMMAND (menu_player)
 
 BEGIN_COMMAND (menu_keys)
 {
-	M_StartControlPanel();
 	M_OpenMenuTarget("options.controls");
 }
 END_COMMAND (menu_keys)
 
 BEGIN_COMMAND (menu_display)
 {
-	M_StartControlPanel();
 	M_OpenMenuTarget("options.display");
 }
 END_COMMAND (menu_display)
 
 BEGIN_COMMAND (menu_video)
 {
-	M_StartControlPanel();
 	M_OpenMenuTarget("builtin:videoMode");
 }
 END_COMMAND (menu_video)
@@ -1121,7 +1107,18 @@ namespace
 
 bool M_OpenMenuTarget(const std::string& target)
 {
-	return M_OpenMenuTargetImpl(target);
+	if (!menuactive)
+	{
+		M_StartControlPanel();
+	}
+
+	const bool opened = M_OpenMenuTargetImpl(target);
+	if (!opened && !menuactive)
+	{
+		M_ClearMenus();
+	}
+
+	return opened;
 }
 
 const patch_t* M_MenuConfConfiguredPatch(const std::string& name, const char* context)
@@ -1165,7 +1162,18 @@ bool M_OpenGeneratedOptionsMenu(const std::string& menuId)
 
 bool M_OpenMenuEntrypoint(const std::string& name)
 {
-	return M_OpenMenuEntrypointImpl(name);
+	if (!menuactive)
+	{
+		M_StartControlPanel();
+	}
+
+	const bool opened = M_OpenMenuEntrypointImpl(name);
+	if (!opened && !menuactive)
+	{
+		M_ClearMenus();
+	}
+
+	return opened;
 }
 
 void M_DrawSlider(int x, int y, float leftval, float rightval, float cur, float step)
@@ -1482,6 +1490,11 @@ void M_LoadSelect (int choice)
 
 static void M_OpenLoadGameScreen()
 {
+	if (!menuactive)
+	{
+		M_StartControlPanel();
+	}
+
 	gSaveLoadMode = saveloadmode_t::load;
 	M_ConfigureSaveLoadScreen();
 	M_PushBuiltinScreen(builtinscreenkind_t::saveload, gLoadLastOn, true);
@@ -1570,6 +1583,11 @@ static void M_OpenSaveGameScreen()
 	if (gamestate != GS_LEVEL)
 		return;
 
+	if (!menuactive)
+	{
+		M_StartControlPanel();
+	}
+
 	gSaveLoadMode = saveloadmode_t::save;
 	M_ConfigureSaveLoadScreen();
 	M_PushBuiltinScreen(builtinscreenkind_t::saveload, gSaveLastOn, true);
@@ -1614,11 +1632,7 @@ void M_QuickSave()
 
 	if (quickSaveSlot < 0)
 	{
-		M_StartControlPanel();
-		gSaveLoadMode = saveloadmode_t::save;
-		M_ConfigureSaveLoadScreen();
-		M_PushBuiltinScreen(builtinscreenkind_t::saveload, gSaveLastOn, true);
-		M_ReadSaveStrings();
+		M_OpenSaveGameScreen();
 		quickSaveSlot = -2; 	// means to pick a slot now
 		return;
 	}
@@ -1647,7 +1661,6 @@ void M_QuickLoad()
 {
 	if (quickSaveSlot < 0)
 	{
-		M_StartControlPanel();
 		M_OpenLoadGameScreen();
 		return;
 	}
@@ -1661,6 +1674,11 @@ void M_QuickLoad()
 //
 static void M_OpenHelpScreen()
 {
+	if (!menuactive)
+	{
+		M_StartControlPanel();
+	}
+
 	const int pageCount = M_HelpPageCount();
 	if (pageCount <= 0)
 	{
@@ -1699,7 +1717,6 @@ static void M_FinishHelpScreen()
 	D_FreePageImage(help_page);
 	gHelpPageIndex = 0;
 	M_ClearMenus();
-	M_StartControlPanel();
 	M_OpenMenuEntrypoint("mainMenu");
 }
 
