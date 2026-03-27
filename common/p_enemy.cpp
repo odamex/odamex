@@ -116,6 +116,7 @@ void SV_SendRaiseMobj(const AActor* source, const AActor* corpse);
 void SV_UpdateMobj(const AActor* mo);
 void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation);
 void SV_SpawnMobj(AActor* mobj);
+void SV_BroadcastNoiseAlert(const sector_t& sector);
 
 extern bool isFast;
 
@@ -134,30 +135,31 @@ extern bool isFast;
 // sound blocking lines cut off traversal.
 //
 
-void P_RecursiveSound (sector_t *sec, int soundblocks, AActor *soundtarget)
+bool P_RecursiveSound (sector_t& sec, int soundblocks, AActor& soundtarget)
 {
-	int 		i;
 	line_t* 	check;
 	sector_t*	other;
 
 	// wake up all monsters in this sector
-	if (sec->validcount == validcount
-		&& sec->soundtraversed <= soundblocks+1)
+	if (sec.validcount == validcount
+		&& sec.soundtraversed <= soundblocks+1)
 	{
-		return; 		// already flooded
+		return false;         // already flooded
 	}
 
-	sec->validcount = validcount;
-	sec->soundtraversed = soundblocks+1;
-	sec->soundtarget = soundtarget->ptr();
+	bool soundtargetWasChanged = sec.soundtarget != soundtarget.ptr();
 
-	for (i=0 ;i<sec->linecount ; i++)
+	sec.validcount = validcount;
+	sec.soundtraversed = soundblocks+1;
+	sec.soundtarget = soundtarget.ptr();
+
+	for (int i = 0; i < sec. linecount; i++)
 	{
-		check = sec->lines[i];
+		check = sec.lines[i];
 		if (! (check->flags & ML_TWOSIDED) )
 			continue;
 
-		if ( sides[ check->sidenum[0] ].sector == sec)
+		if ( sides[ check->sidenum[0] ].sector == &sec)
 			other = sides[ check->sidenum[1] ] .sector;
 		else
 			other = sides[ check->sidenum[0] ].sector;
@@ -166,7 +168,7 @@ void P_RecursiveSound (sector_t *sec, int soundblocks, AActor *soundtarget)
 		// midpoint of a sloped linedef.  P_RecursiveSound() in ZDoom 1.23 causes
 		// demo desyncs.
 		P_LineOpening(check, (check->v1->x >> 1) + (check->v2->x >> 1),
-							 (check->v1->y >> 1) + (check->v2->y >> 1));
+		                     (check->v1->y >> 1) + (check->v2->y >> 1));
 
 		if (openrange <= 0)
 			continue;	// closed door
@@ -174,27 +176,49 @@ void P_RecursiveSound (sector_t *sec, int soundblocks, AActor *soundtarget)
 		if (check->flags & ML_SOUNDBLOCK)
 		{
 			if (!soundblocks)
-				P_RecursiveSound (other, 1, soundtarget);
+			{
+				const bool propagatedSoundtargetWasChanged = P_RecursiveSound (*other, 1, soundtarget);
+				soundtargetWasChanged = soundtargetWasChanged or propagatedSoundtargetWasChanged;
+			}
 		}
 		else
-			P_RecursiveSound (other, soundblocks, soundtarget);
+		{
+			const bool propagatedSoundtargetWasChanged = P_RecursiveSound (*other, soundblocks, soundtarget);
+			soundtargetWasChanged = soundtargetWasChanged or propagatedSoundtargetWasChanged;
+		}
 	}
+	return soundtargetWasChanged;
 }
 
 
 
 //
 // P_NoiseAlert
-// If a monster yells at a player,
-// it will alert other monsters to the player.
+// Propagates any sound that sets off monsters against the given target.
+// Returns true if any sector's soundtarget was actually changed as a result of the sound.
 //
-void P_NoiseAlert (AActor *target, AActor *emmiter)
+bool P_NoiseAlert (AActor& target, sector_t& sec)
 {
-	if (target->player && (!multiplayer && (target->player->cheats & CF_NOTARGET)))
-		return;
+	if (target.player && (!multiplayer && (target.player->cheats & CF_NOTARGET)))
+		return false;
 
 	validcount++;
-	P_RecursiveSound (emmiter->subsector->sector, 0, target);
+	const bool soundtargetWasChanged = P_RecursiveSound (sec, 0, target);
+
+	SERVER_ONLY
+	(
+		if (soundtargetWasChanged)
+		{
+			SV_BroadcastNoiseAlert(sec);
+		}
+	)
+
+	return soundtargetWasChanged;
+}
+
+bool P_NoiseAlert (AActor *target, AActor *emmiter)
+{
+	return P_NoiseAlert(*target, *emmiter->subsector->sector);
 }
 
 
