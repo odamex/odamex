@@ -60,6 +60,7 @@ END_DISABLE_WARNING_GNU
 #include "m_menuconf.h"
 #include "m_misc.h"
 #include "m_menu.h"
+#include "m_videomodes.h"
 #include "c_console.h"
 #include "c_bind.h"
 #include "c_dispatch.h"
@@ -103,7 +104,6 @@ void D_DoAdvanceDemo();
 
 void D_DoomLoop();
 
-extern int testingmode;
 extern bool gameisdead;
 extern bool M_DemoNoPlay;	// [RH] if true, then skip any demos in the loop
 extern DThinker ThinkerCap;
@@ -145,9 +145,6 @@ EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_vsync)
 EXTERN_CVAR (g_resetinvonexit)
 EXTERN_CVAR (i_skipbootwin)
-
-void M_RestoreVideoMode();
-void M_ModeFlashTestText();
 
 void D_SetPlatform(void)
 {
