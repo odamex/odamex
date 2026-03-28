@@ -84,13 +84,13 @@ namespace
 
 	static IWindowSurface* fire_surface = nullptr;
 	static byte FireRemap[256];
-	static int gPlayerSetupLastOn = playername;
+	static int playerSetupLastOn = playername;
 	static state_t* PlayerState = nullptr;
 	static int PlayerTics = 0;
-	static bool gEditingName = false;
-	static size_t gNameCharIndex = 0;
-	static char gPlayerNameString[MAXPLAYERNAME + 1];
-	static char gPlayerNameOldString[MAXPLAYERNAME + 1];
+	static bool editingName = false;
+	static size_t nameCharIndex = 0;
+	static char playerNameString[MAXPLAYERNAME + 1];
+	static char playerNameOldString[MAXPLAYERNAME + 1];
 
 	static int BigFontLineHeight()
 	{
@@ -107,7 +107,7 @@ namespace
 	static void ClampPlayerSetupItem(int& currentItem)
 	{
 		currentItem = std::clamp(currentItem, 0, PlayerSetupItemCount() - 1);
-		gPlayerSetupLastOn = currentItem;
+		playerSetupLastOn = currentItem;
 	}
 
 	static void SendNewColor(int red, int green, int blue)
@@ -281,18 +281,18 @@ namespace
 
 	static void BeginPlayerNameEdit()
 	{
-		gEditingName = true;
-		M_StringCopy(gPlayerNameOldString, gPlayerNameString, MAXPLAYERNAME + 1);
-		if (!strcmp(gPlayerNameString, GStrings(EMPTYSTRING)))
+		editingName = true;
+		M_StringCopy(playerNameOldString, playerNameString, MAXPLAYERNAME + 1);
+		if (!strcmp(playerNameString, GStrings(EMPTYSTRING)))
 		{
-			gPlayerNameString[0] = 0;
+			playerNameString[0] = 0;
 		}
-		gNameCharIndex = strlen(gPlayerNameString);
+		nameCharIndex = strlen(playerNameString);
 	}
 
 	static void CommitPlayerName()
 	{
-		AddCommandString(fmt::format("cl_name \"{}\"", gPlayerNameString));
+		AddCommandString(fmt::format("cl_name \"{}\"", playerNameString));
 	}
 
 	static void ActivatePlayerSetupItem(int currentItem, int choice)
@@ -418,16 +418,16 @@ void M_PlayerSetupShutdown()
 	fire_surface = nullptr;
 	PlayerState = nullptr;
 	PlayerTics = 0;
-	gEditingName = false;
-	gNameCharIndex = 0;
+	editingName = false;
+	nameCharIndex = 0;
 }
 
 void M_PlayerSetupOpen(int& currentItem)
 {
-	currentItem = gPlayerSetupLastOn;
-	M_StringCopy(gPlayerNameString, cl_name.cstring(), MAXPLAYERNAME + 1);
-	gEditingName = false;
-	gNameCharIndex = strlen(gPlayerNameString);
+	currentItem = playerSetupLastOn;
+	M_StringCopy(playerNameString, cl_name.cstring(), MAXPLAYERNAME + 1);
+	editingName = false;
+	nameCharIndex = strlen(playerNameString);
 	PlayerState = &states[mobjinfo[MT_PLAYER].seestate];
 	PlayerTics = PlayerState->tics;
 
@@ -479,12 +479,12 @@ void M_PlayerSetupDrawer(bool drawIndicator, int whichIndicator, int currentItem
 	}
 
 	screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X, PLAYERSETUP_Y, "Name");
-	M_DrawInputBox(gPlayerNameString, PLAYERSETUP_X + 56, PLAYERSETUP_Y - 4, MAXPLAYERNAME + 1);
+	M_DrawInputBox(playerNameString, PLAYERSETUP_X + 56, PLAYERSETUP_Y - 4, MAXPLAYERNAME + 1);
 
-	if (gEditingName)
+	if (editingName)
 	{
 		screen->DrawTextCleanMove(smallFont, CR_RED,
-		                          PLAYERSETUP_X + V_StringWidth(smallFont, gPlayerNameString) + 56,
+		                          PLAYERSETUP_X + V_StringWidth(smallFont, playerNameString) + 56,
 		                          PLAYERSETUP_Y, "_");
 	}
 
@@ -685,7 +685,7 @@ void M_PlayerSetupDrawer(bool drawIndicator, int whichIndicator, int currentItem
 
 	ClampPlayerSetupItem(currentItem);
 
-	if (drawIndicator && !gEditingName)
+	if (drawIndicator && !editingName)
 	{
 		if (const patch_t* indicator = M_MenuIndicatorPatch(whichIndicator))
 		{
@@ -701,34 +701,34 @@ void M_PlayerSetupResponder(int ch, int ch2, bool numlock, int& currentItem)
 {
 	const OFont* smallFont = OFonts.small();
 
-	if (gEditingName)
+	if (editingName)
 	{
 		if (ch == OKEY_BACKSPACE)
 		{
-			if (gNameCharIndex > 0)
+			if (nameCharIndex > 0)
 			{
-				--gNameCharIndex;
-				gPlayerNameString[gNameCharIndex] = 0;
+				--nameCharIndex;
+				playerNameString[nameCharIndex] = 0;
 			}
 		}
 		else if (Key_IsCancelKey(ch))
 		{
-			gEditingName = false;
-			M_StringCopy(gPlayerNameString, gPlayerNameOldString, MAXPLAYERNAME + 1);
+			editingName = false;
+			M_StringCopy(playerNameString, playerNameOldString, MAXPLAYERNAME + 1);
 		}
 		else if (Key_IsAcceptKey(ch))
 		{
-			gEditingName = false;
-			if (gPlayerNameString[0] != '\0')
+			editingName = false;
+			if (playerNameString[0] != '\0')
 			{
 				CommitPlayerName();
 			}
 		}
-		else if (ch2 >= 32 && ch2 <= 127 && gNameCharIndex < MAXPLAYERNAME &&
-		         V_StringWidth(smallFont, gPlayerNameString) < (MAXPLAYERNAME - 1) * 8)
+		else if (ch2 >= 32 && ch2 <= 127 && nameCharIndex < MAXPLAYERNAME &&
+		         V_StringWidth(smallFont, playerNameString) < (MAXPLAYERNAME - 1) * 8)
 		{
-			gPlayerNameString[gNameCharIndex++] = static_cast<char>(ch2);
-			gPlayerNameString[gNameCharIndex] = 0;
+			playerNameString[nameCharIndex++] = static_cast<char>(ch2);
+			playerNameString[nameCharIndex] = 0;
 		}
 
 		return;
@@ -737,7 +737,7 @@ void M_PlayerSetupResponder(int ch, int ch2, bool numlock, int& currentItem)
 	if (Key_IsDownKey(ch, numlock))
 	{
 		currentItem = (currentItem + 1) % PlayerSetupItemCount();
-		gPlayerSetupLastOn = currentItem;
+		playerSetupLastOn = currentItem;
 		M_PlayMenuSound("navigate");
 		return;
 	}
@@ -745,7 +745,7 @@ void M_PlayerSetupResponder(int ch, int ch2, bool numlock, int& currentItem)
 	if (Key_IsUpKey(ch, numlock))
 	{
 		currentItem = currentItem > 0 ? currentItem - 1 : PlayerSetupItemCount() - 1;
-		gPlayerSetupLastOn = currentItem;
+		playerSetupLastOn = currentItem;
 		M_PlayMenuSound("navigate");
 		return;
 	}
@@ -783,7 +783,7 @@ void M_PlayerSetupResponder(int ch, int ch2, bool numlock, int& currentItem)
 
 	if (Key_IsCancelKey(ch))
 	{
-		gPlayerSetupLastOn = currentItem;
+		playerSetupLastOn = currentItem;
 		M_PopMenuStack();
 		return;
 	}
@@ -798,7 +798,7 @@ void M_PlayerSetupResponder(int ch, int ch2, bool numlock, int& currentItem)
 			if (alphaKeys[i] == alpha)
 			{
 				currentItem = i;
-				gPlayerSetupLastOn = currentItem;
+				playerSetupLastOn = currentItem;
 				M_PlayMenuSound("navigate");
 				return;
 			}
@@ -809,7 +809,7 @@ void M_PlayerSetupResponder(int ch, int ch2, bool numlock, int& currentItem)
 			if (alphaKeys[i] == alpha)
 			{
 				currentItem = i;
-				gPlayerSetupLastOn = currentItem;
+				playerSetupLastOn = currentItem;
 				M_PlayMenuSound("navigate");
 				return;
 			}
