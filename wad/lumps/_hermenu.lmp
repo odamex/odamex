@@ -46,6 +46,8 @@
         "select": "sfx_dorcls",
         "back": "sfx_switch",
         "open": "sfx_dorcls",
+        "close": "sfx_dorcls",
+        "invalid": "sfx_chat",
         "changeValue": "sfx_keyup",
         "prompt": "sfx_chat"
       }

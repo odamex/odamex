@@ -37,7 +37,15 @@
         "label": "yellow",
         "warning": "orange"
       },
-      "sounds": {},
+      "sounds": {
+        "open": "switches/normbutn",
+        "back": "switches/normbutn",
+        "close": "switches/exitbutn",
+        "invalid": "player/male/grunt1",
+        "navigate": "plats/pt1_stop",
+        "changeValue": "plats/pt1_mid",
+        "select": "weapons/pistol"
+      },
       "layout": {
         "lineHeight": "auto"
       }

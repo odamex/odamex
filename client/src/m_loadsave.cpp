@@ -53,17 +53,17 @@ enum class saveloadmode_t
 	save
 };
 
-char gSaveStrings[10][SaveStringSize];
-bool gSaveSlotOccupied[SaveSlotCount] = {};
-saveloadmode_t gSaveLoadMode = saveloadmode_t::load;
-int gLoadLastOn = 0;
-int gSaveLastOn = 0;
-int gSaveLoadX = 76;
-int gSaveLoadY = 54;
-bool gEditingSaveName = false;
-int gEditingSlot = 0;
-size_t gEditingCharIndex = 0;
-char gOldSaveString[SaveStringSize];
+char saveStrings[10][SaveStringSize];
+bool saveSlotOccupied[SaveSlotCount] = {};
+saveloadmode_t saveLoadMode = saveloadmode_t::load;
+int loadLastOn = 0;
+int saveLastOn = 0;
+int saveLoadX = 76;
+int saveLoadY = 54;
+bool editingSaveName = false;
+int editingSlot = 0;
+size_t editingCharIndex = 0;
+char oldSaveString[SaveStringSize];
 
 int BigFontLineHeight()
 {
@@ -75,13 +75,13 @@ void ConfigureSaveLoadScreen()
 {
 	if (gameinfo.enginetype == ENGINE_HERETIC)
 	{
-		gSaveLoadX = 62;
-		gSaveLoadY = 20;
+		saveLoadX = 62;
+		saveLoadY = 20;
 	}
 	else
 	{
-		gSaveLoadX = 76;
-		gSaveLoadY = 54;
+		saveLoadX = 76;
+		saveLoadY = 54;
 	}
 }
 
@@ -95,18 +95,18 @@ void ReadSaveStrings()
 		auto handle = uqFile(fopen(name.c_str(), "rb"));
 		if (handle == nullptr)
 		{
-			M_StringCopy(&gSaveStrings[i][0], GStrings(EMPTYSTRING), SaveStringSize);
-			gSaveSlotOccupied[i] = false;
+			M_StringCopy(&saveStrings[i][0], GStrings(EMPTYSTRING), SaveStringSize);
+			saveSlotOccupied[i] = false;
 			continue;
 		}
 
-		const size_t readlen = fread(&gSaveStrings[i], SaveStringSize, 1, handle.get());
+		const size_t readlen = fread(&saveStrings[i], SaveStringSize, 1, handle.get());
 		if (readlen < 1)
 		{
 			fmt::print("M_Read_SaveStrings(): Failed to read handle.\n");
 			return;
 		}
-		gSaveSlotOccupied[i] = true;
+		saveSlotOccupied[i] = true;
 	}
 }
 
@@ -115,23 +115,23 @@ void BeginSaveEdit(int slot)
 	const time_t ti = time(nullptr);
 	const tm* lt = localtime(&ti);
 
-	gEditingSaveName = true;
-	gEditingSlot = slot;
-	M_StringCopy(gOldSaveString, gSaveStrings[slot], SaveStringSize);
+	editingSaveName = true;
+	editingSlot = slot;
+	M_StringCopy(oldSaveString, saveStrings[slot], SaveStringSize);
 
 #ifndef GCONSOLE
-	if (!gSaveSlotOccupied[slot])
+	if (!saveSlotOccupied[slot])
 #endif
 	{
-		strncpy(gSaveStrings[slot], asctime(lt) + 4, 20);
+		strncpy(saveStrings[slot], asctime(lt) + 4, 20);
 	}
 
-	gEditingCharIndex = strlen(gSaveStrings[slot]);
+	editingCharIndex = strlen(saveStrings[slot]);
 }
 
 void ActivateSaveLoadSlot(int slot)
 {
-	if (gSaveLoadMode == saveloadmode_t::save)
+	if (saveLoadMode == saveloadmode_t::save)
 	{
 		BeginSaveEdit(slot);
 	}
@@ -149,25 +149,25 @@ void M_LoadSaveInit()
 
 void M_LoadSaveOpenLoad(int& currentItem)
 {
-	gSaveLoadMode = saveloadmode_t::load;
+	saveLoadMode = saveloadmode_t::load;
 	ConfigureSaveLoadScreen();
-	gEditingSaveName = false;
+	editingSaveName = false;
 	ReadSaveStrings();
-	currentItem = gLoadLastOn;
+	currentItem = loadLastOn;
 }
 
 void M_LoadSaveOpenSave(int& currentItem)
 {
-	gSaveLoadMode = saveloadmode_t::save;
+	saveLoadMode = saveloadmode_t::save;
 	ConfigureSaveLoadScreen();
-	gEditingSaveName = false;
+	editingSaveName = false;
 	ReadSaveStrings();
-	currentItem = gSaveLastOn;
+	currentItem = saveLastOn;
 }
 
 void M_LoadSaveRestore(int& currentItem)
 {
-	currentItem = gSaveLoadMode == saveloadmode_t::save ? gSaveLastOn : gLoadLastOn;
+	currentItem = saveLoadMode == saveloadmode_t::save ? saveLastOn : loadLastOn;
 }
 
 void M_LoadSaveDrawer(int currentItem, bool drawIndicator, int whichIndicator)
@@ -177,7 +177,7 @@ void M_LoadSaveDrawer(int currentItem, bool drawIndicator, int whichIndicator)
 	const int slotWidth = 24;
 	const int slotPadding = 2;
 	const int slotHeight = BigFontLineHeight() - slotPadding;
-	const bool saveMode = gSaveLoadMode == saveloadmode_t::save;
+	const bool saveMode = saveLoadMode == saveloadmode_t::save;
 	const char* patchName = saveMode ? "M_SAVEG" : "M_LOADG";
 	const char* titleKey = saveMode ? "MNU_SAVEGAME" : "MNU_LOADGAME";
 	const patch_t* titlePatch =
@@ -197,26 +197,26 @@ void M_LoadSaveDrawer(int currentItem, bool drawIndicator, int whichIndicator)
 		}
 	}
 
-	int listY = gSaveLoadY;
+	int listY = saveLoadY;
 	for (int i = 0; i < SaveSlotCount; ++i)
 	{
-		M_DrawInputBox(gSaveStrings[i], gSaveLoadX, listY, slotWidth);
+		M_DrawInputBox(saveStrings[i], saveLoadX, listY, slotWidth);
 		listY += slotHeight + slotPadding;
 	}
 
-	if (gEditingSaveName)
+	if (editingSaveName)
 	{
-		const int stringWidth = V_StringWidth(smallFont, gSaveStrings[gEditingSlot]);
-		screen->DrawTextCleanMove(smallFont, CR_RED, gSaveLoadX + stringWidth,
-		                          gSaveLoadY + BigFontLineHeight() * gEditingSlot, "_");
+		const int stringWidth = V_StringWidth(smallFont, saveStrings[editingSlot]);
+		screen->DrawTextCleanMove(smallFont, CR_RED, saveLoadX + stringWidth,
+		                          saveLoadY + BigFontLineHeight() * editingSlot, "_");
 	}
 
-	if (drawIndicator && !gEditingSaveName)
+	if (drawIndicator && !editingSaveName)
 	{
 		if (const patch_t* indicator = M_MenuIndicatorPatch(whichIndicator))
 		{
-			const int drawX = gSaveLoadX + M_MenuIndicatorOffsetX();
-			const int drawY = gSaveLoadY + M_MenuIndicatorOffsetY() +
+			const int drawX = saveLoadX + M_MenuIndicatorOffsetX();
+			const int drawY = saveLoadY + M_MenuIndicatorOffsetY() +
 			                  currentItem * BigFontLineHeight();
 			screen->DrawPatchClean(indicator, drawX, drawY);
 		}
@@ -238,7 +238,7 @@ void M_LoadSaveLoadSlot(int slot)
 
 void M_LoadSaveSaveSlot(int slot)
 {
-	G_SaveGame(slot, { gSaveStrings[slot], SaveStringSize });
+	G_SaveGame(slot, { saveStrings[slot], SaveStringSize });
 	M_ClearMenus();
 	if (quickSaveSlot == -2)
 	{
@@ -248,44 +248,44 @@ void M_LoadSaveSaveSlot(int slot)
 
 const char* M_LoadSaveSlotName(int slot)
 {
-	return slot >= 0 && slot < SaveSlotCount ? gSaveStrings[slot] : "";
+	return slot >= 0 && slot < SaveSlotCount ? saveStrings[slot] : "";
 }
 
 void M_LoadSaveResponder(int ch, int ch2, bool numlock, int& currentItem)
 {
 	const OFont* smallFont = OFonts.small();
 
-	if (gEditingSaveName)
+	if (editingSaveName)
 	{
 		if (ch == OKEY_BACKSPACE)
 		{
-			if (gEditingCharIndex > 0)
+			if (editingCharIndex > 0)
 			{
-				--gEditingCharIndex;
-				gSaveStrings[gEditingSlot][gEditingCharIndex] = 0;
+				--editingCharIndex;
+				saveStrings[editingSlot][editingCharIndex] = 0;
 			}
 		}
 		else if (Key_IsCancelKey(ch))
 		{
 			M_ClearMenus();
-			gEditingSaveName = false;
-			M_StringCopy(gSaveStrings[gEditingSlot], gOldSaveString, SaveStringSize);
+			editingSaveName = false;
+			M_StringCopy(saveStrings[editingSlot], oldSaveString, SaveStringSize);
 		}
 		else if (Key_IsAcceptKey(ch))
 		{
 			M_ClearMenus();
-			gEditingSaveName = false;
-			if (gSaveStrings[gEditingSlot][0])
+			editingSaveName = false;
+			if (saveStrings[editingSlot][0])
 			{
-				M_LoadSaveSaveSlot(gEditingSlot);
+				M_LoadSaveSaveSlot(editingSlot);
 			}
 		}
-		else if (ch2 >= 32 && ch2 <= 127 && gEditingCharIndex < SaveStringSize - 1 &&
-		         V_StringWidth(smallFont, gSaveStrings[gEditingSlot]) <
+		else if (ch2 >= 32 && ch2 <= 127 && editingCharIndex < SaveStringSize - 1 &&
+		         V_StringWidth(smallFont, saveStrings[editingSlot]) <
 		             (SaveStringSize - 1) * 8)
 		{
-			gSaveStrings[gEditingSlot][gEditingCharIndex++] = static_cast<char>(ch2);
-			gSaveStrings[gEditingSlot][gEditingCharIndex] = 0;
+			saveStrings[editingSlot][editingCharIndex++] = static_cast<char>(ch2);
+			saveStrings[editingSlot][editingCharIndex] = 0;
 		}
 
 		return;
@@ -307,15 +307,15 @@ void M_LoadSaveResponder(int ch, int ch2, bool numlock, int& currentItem)
 
 	if (Key_IsAcceptKey(ch))
 	{
-		if (gSaveLoadMode == saveloadmode_t::save || gSaveSlotOccupied[currentItem])
+		if (saveLoadMode == saveloadmode_t::save || saveSlotOccupied[currentItem])
 		{
-			if (gSaveLoadMode == saveloadmode_t::save)
+			if (saveLoadMode == saveloadmode_t::save)
 			{
-				gSaveLastOn = currentItem;
+				saveLastOn = currentItem;
 			}
 			else
 			{
-				gLoadLastOn = currentItem;
+				loadLastOn = currentItem;
 			}
 
 			ActivateSaveLoadSlot(currentItem);
@@ -326,13 +326,13 @@ void M_LoadSaveResponder(int ch, int ch2, bool numlock, int& currentItem)
 
 	if (Key_IsCancelKey(ch))
 	{
-		if (gSaveLoadMode == saveloadmode_t::save)
+		if (saveLoadMode == saveloadmode_t::save)
 		{
-			gSaveLastOn = currentItem;
+			saveLastOn = currentItem;
 		}
 		else
 		{
-			gLoadLastOn = currentItem;
+			loadLastOn = currentItem;
 		}
 
 		M_PopMenuStack();
