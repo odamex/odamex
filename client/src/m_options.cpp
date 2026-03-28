@@ -59,6 +59,8 @@ END_DISABLE_WARNING_GNU
 #include "gi.h"
 #include "m_menuconf.h"
 #include "m_options_valuesets.h"
+#include "m_videomodes.h"
+#include "m_widgets.h"
 
 #include <unordered_map>
 
@@ -248,8 +250,8 @@ static const char	   *OldAxisMessage;
 static itemtype OldAxisType;
 
 static void GoToConsole();
-void Reset2Defaults();
-void Reset2Saved();
+void ResetToDefaults();
+void ResetToSaved();
 
 static void SetVidMode();
 static void M_UpdateDisplayOptions();
@@ -312,6 +314,13 @@ static void M_SlideUIGreen (int);
 static void M_SlideUIBlue (int);
 static cvar_t *flagsvar;
 
+void M_ResetOptionsBuiltinState()
+{
+	CanScrollUp = false;
+	CanScrollDown = false;
+	flagsvar = NULL;
+}
+
 CVAR_FUNC_IMPL (ui_transred)
 {
     M_SlideUIRed(var.asInt());
@@ -339,23 +348,6 @@ EXTERN_CVAR (msg3color)
 EXTERN_CVAR (msg4color)
 EXTERN_CVAR (msgmidcolor)
 
-// TODO: Put all language info in one array, auto detect what's in the lump?
-//static value_t Languages[] = { // unused
-//	{ 0.0, "Auto" },
-//	{ 1.0, "English" },
-//	{ 2.0, "French" },
-//	{ 3.0, "Italian" }
-//};
-
-/*=======================================
- *
- * Video Modes Menu
- *
- *=======================================*/
-
-int testingmode;		// Holds time to revert to old mode
-
-static bool GetSelectedSize(int line, int *width, int *height);
 
 EXTERN_CVAR (vid_widescreen)
 EXTERN_CVAR (vid_maxfps)
@@ -364,108 +356,6 @@ EXTERN_CVAR (vid_overscan)
 EXTERN_CVAR (vid_fullscreen)
 EXTERN_CVAR (vid_32bpp)
 EXTERN_CVAR(vid_vsync)
-
-static uint16_t old_width, old_height;
-
-static void SetModesMenu(int w, int h);
-
-static void M_SetVideoMode(uint16_t width, uint16_t height)
-{
-	old_width = I_GetVideoWidth();
-	old_height = I_GetVideoHeight();
-
-	AddCommandString(fmt::format("vid_setmode {} {}", width, height));
-
-	SetModesMenu(width, height);
-}
-
-
-void M_RestoreVideoMode()
-{
-	testingmode = 0;
-	M_SetVideoMode(old_width, old_height);
-}
-
-
-static value_t Depths[22];
-
-#ifdef GCONSOLE
-static const char VMEnterText[] = "Press A to set mode";
-static const char VMTestText[] = "Press X to test mode for 5 seconds";
-#else
-static const char VMEnterText[] = "Press ENTER to set mode";
-static const char VMTestText[] = "Press T to test mode for 5 seconds";
-#endif
-
-static const char VMTestWaitText[] = "Please wait 5 seconds...";
-
-static value_t VidFPSCaps[] = {
-	{ 35.0,		"35fps" },
-	{ 60.0,		"60fps" },
-	{ 70.0,		"70fps" },
-   	{ 105.0,	"105fps"},
-	{ 120.0,	"120fps" },
-	{ 140.0,	"140fps"},
-    	{ 144.0,	"144fps"},
-    	{ 240.0,	"240fps"},
-	{ 0.0,		"Unlimited" }
-};
-
-static value_t FullScreenOptions[] = {
-	{ WINDOW_Windowed,			"Window" },
-	{ WINDOW_Fullscreen,		"Full Screen Exclusive" },
-	{ WINDOW_DesktopFullscreen,	"Full Screen Window" }
-};
-
-static value_t WidescreenMode[] = {
-	{ 0.0,			"Off" },
-	{ 1.0,			"Auto" },
-	{ 2.0,			"16:10" },
-	{ 3.0,			"16:9" },
-	{ 4.0,			"21:9" },
-	{ 5.0,			"32:9" }
-};
-
-static menuitem_t ModesItems[] = {
-#ifdef GCONSOLE
-	{ slider, "Overscan",				{&vid_overscan},		{0.84375}, {1.0}, {0.03125}, {NULL} },
-#else
-	{ discrete, "Fullscreen",			{&vid_fullscreen},		{3.0}, {0.0},	{0.0}, {FullScreenOptions} },
-#endif
-	{ discrete,	"Widescreen",			{&vid_widescreen},		{6.0}, {0.0},	{0.0}, {WidescreenMode} } ,
-	{ discrete,	"VSync",				{&vid_vsync},			{2.0}, {0.0},	{0.0}, {YesNo} },
-	{ discrete, "Framerate",			{&vid_maxfps},			{9.0}, {0.0},	{0.0}, {VidFPSCaps} },
-	{ discrete, "32-bit color",			{&vid_32bpp},			{2.0}, {0.0},	{0.0}, {YesNo} },
-	{ redtext,	"",						{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ screenres, NULL,					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ whitetext, " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ redtext,	" ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-	{ yellowtext, " ",					{NULL},					{0.0}, {0.0},	{0.0}, {NULL} },
-};
-
-#define VM_DEPTHITEM	0
-#define VM_RESSTART		6
-#define VM_ENTERLINE	15
-#define VM_TESTLINE		17
-
-menu_t ModesMenu = {
-	"M_VIDMOD",
-	0,
-	static_cast<int>(ARRAY_LENGTH(ModesItems)),
-	130,
-	ModesItems,
-	0,
-	0,
-	NULL
-};
 
 namespace
 {
@@ -689,8 +579,6 @@ namespace
 		       iequals(cvar->name(), "ui_transblue");
 	}
 
-	int MenuSliderChannelValue(const menuitem_t& item);
-
 	struct colorsliderstate_t
 	{
 		argb_t tint;
@@ -852,12 +740,12 @@ namespace
 		}
 		if (item.action == "resetDefaults")
 		{
-			Reset2Defaults();
+			ResetToDefaults();
 			return;
 		}
 		if (item.action == "resetSaved")
 		{
-			Reset2Saved();
+			ResetToSaved();
 			return;
 		}
 		if (item.action == "resetMouseDefaults")
@@ -1078,151 +966,6 @@ static void M_UpdateDisplayOptions()
 	}
 }
 
-static void BuildModesList(int hiwidth, int hiheight)
-{
-	// gathers a list of unique resolutions availible for the current
-	// screen mode (windowed or fullscreen)
-	bool fullscreen = I_GetWindow()->getVideoMode().isFullScreen();
-
-	typedef std::vector< std::pair<uint16_t, uint16_t> > MenuModeList;
-	MenuModeList menumodelist;
-
-	const IVideoModeList* videomodelist = I_GetVideoCapabilities()->getSupportedVideoModes();
-	for (const auto& mode : *videomodelist)
-		if (mode.isFullScreen() == fullscreen)
-			menumodelist.emplace_back(mode.width, mode.height);
-	menumodelist.erase(std::unique(menumodelist.begin(), menumodelist.end()), menumodelist.end());
-
-	MenuModeList::const_iterator mode_it = menumodelist.begin();
-
-	char** str = NULL;
-
-	for (int i = VM_RESSTART; ModesItems[i].type == screenres; i++)
-	{
-		ModesItems[i].e.highlight = -1;
-		for (int col = 0; col < 3; col++)
-		{
-			if (col == 0)
-				str = &ModesItems[i].b.res1;
-			else if (col == 1)
-				str = &ModesItems[i].c.res2;
-			else if (col == 2)
-				str = &ModesItems[i].d.res3;
-
-			if (mode_it != menumodelist.end())
-			{
-				auto [width, height] = *mode_it;
-				++mode_it;
-
-				if (width == hiwidth && height == hiheight)
-					ModesItems[i].e.highlight = ModesItems[i].a.selmode = col;
-
-				char strtemp[32];
-				snprintf(strtemp, 32, "%dx%d", width, height);
-				ReplaceString(str, strtemp);
-			}
-			else
-			{
-				str = NULL;
-			}
-		}
-	}
-}
-
-void M_RefreshModesList()
-{
-	BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
-}
-
-static bool GetSelectedSize(int line, int* width, int* height)
-{
-	if (ModesItems[line].type != screenres)
-		return false;
-
-	int mode_num = (line - VM_RESSTART) * 3 + ModesItems[line].a.selmode;
-
-	const char* resolution_str = NULL;
-
-	if (mode_num % 3 == 0)
-		resolution_str = ModesItems[line].b.res1;
-	else if (mode_num % 3 == 1)
-		resolution_str = ModesItems[line].c.res2;
-	else if (mode_num % 3 == 2)
-		resolution_str = ModesItems[line].d.res3;
-
-	if (!resolution_str)
-		return false;
-
-	size_t xpos = 0;
-	for (const char* s = resolution_str; s; s++, xpos++)
-		if (*s == 'x' || *s == 'X')
-			break;
-
-	char width_str[5] = { 0 }, height_str[5] = { 0 };
-	strncpy(width_str, resolution_str, xpos);
-	strncpy(height_str, resolution_str + xpos + 1, 4);
-
-	*width = atoi(width_str);
-	*height = atoi(height_str);
-
-	return true;
-}
-
-static void SetModesMenu(int w, int h)
-{
-	if (!testingmode)
-	{
-		ModesItems[VM_ENTERLINE].label = VMEnterText;
-		ModesItems[VM_TESTLINE].label = VMTestText;
-	}
-	else
-	{
-		static char enter_text[64];
-		snprintf(enter_text, 64, "TESTING %dx%d", w, h);
-
-		ModesItems[VM_ENTERLINE].label = enter_text;
-		ModesItems[VM_TESTLINE].label = VMTestWaitText;
-	}
-
-	BuildModesList(w, h);
-}
-
-//
-// M_ModeFlashTestText
-//
-// Flashes the video mode testing text
-//
-void M_ModeFlashTestText()
-{
-	if (I_MSTime() & 256)
-		ModesItems[VM_TESTLINE].label = VMTestWaitText;
-	else
-		ModesItems[VM_TESTLINE].label = "";
-}
-
-static void SetVidMode()
-{
-	SetModesMenu(I_GetVideoWidth(), I_GetVideoHeight());
-
-	if (ModesMenu.items[ModesMenu.lastOn].type == screenres)
-	{
-		if (ModesMenu.items[ModesMenu.lastOn].a.selmode == -1)
-			ModesMenu.items[ModesMenu.lastOn].a.selmode++;
-	}
-	CanScrollUp = false;
-	CanScrollDown = false;
-	flagsvar = NULL;
-	M_SwitchMenu(&ModesMenu);
-}
-
-void M_OpenVideoModeScreen(void)
-{
-	OptionsActive = true;
-	SetVidMode();
-}
-
-
-
 EXTERN_CVAR(ui_dimcolor)
 
 // [Russell] - Modified to send new colours
@@ -1253,34 +996,9 @@ static void M_SlideUIBlue (int val)
 }
 
 
-//
-//		Set some stuff up for the video modes menu
-//
-
 void M_OptInit (void)
 {
-	for (int i = 0; i < 22; i++)
-	{
-		Depths[i].value = i;
-		Depths[i].name = NULL;
-	}
-
-	switch (I_GetVideoCapabilities()->getDisplayType())
-	{
-	// FIXME: this is overriding widescreen even though both fullscreen and windowed
-	// should be allowed to toggle it
-	case DISPLAY_FullscreenOnly:
-		ModesItems[2].type = nochoice;
-		ModesItems[2].b.leftval = 1.f;
-		break;
-	case DISPLAY_WindowOnly:
-		ModesItems[2].type = nochoice;
-		ModesItems[2].b.leftval = 0.f;
-		break;
-	default:
-		break;
-	}
-
+	M_VideoModesInit();
 	BuildGeneratedOptionsMenus();
 }
 
@@ -1357,9 +1075,7 @@ bool M_PrepareGeneratedOptionsMenu(const std::string& menuId, menu_t*& menu)
 		menu->lastOn = FirstSelectableOptionIndex(*generatedMenu);
 	}
 
-	CanScrollUp = false;
-	CanScrollDown = false;
-	flagsvar = NULL;
+	M_ResetOptionsBuiltinState();
 	return true;
 }
 
@@ -1429,7 +1145,7 @@ void M_OptDrawer (void)
 			}
 
 			if (i == CurrentItem && ((item->a.selmode != -1 && (indicatorAnimCounter < 6 || WaitingForKey))
-				|| WaitingForAxis || testingmode))
+				|| WaitingForAxis || M_VideoModesIsTesting()))
 			{
 				if (const patch_t* cursor = M_MenuCursorPatch())
 				{
@@ -1645,6 +1361,7 @@ void M_OptDrawer (void)
 void M_OptResponder(const event_t& ev)
 {
 	int ch = ev.data1;
+	int ch2 = ev.data3;
 	int mod = ev.mod;
 	const char *cmd = Bindings.GetBind(ch).c_str();
 
@@ -1873,6 +1590,12 @@ void M_OptResponder(const event_t& ev)
 		}
 		else if (Key_IsLeftKey(ch, numlock))
 		{
+		if (M_VideoModesOwnsMenu(CurrentMenu) &&
+		    M_VideoModesResponder(ch, ch2, numlock, item, CurrentItem))
+		{
+			PlayCurrentOptionsSound(item->type == screenres ? "navigate" : "changeValue");
+			return;
+		}
 		switch (item->type)
 		{
 		case slider:
@@ -1920,34 +1643,10 @@ void M_OptResponder(const event_t& ev)
 			item->a.cvar->Set(item->e.values[cur].value);
 
 			// Hack hack. Rebuild list of resolutions
-			if (item->e.values == Depths)
-				BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
+			if (M_VideoModesOwnsMenu(CurrentMenu) && item->e.values == M_VideoModesDepths())
+				M_VideoModesDepthChanged();
 		}
 		PlayCurrentOptionsSound("changeValue");
-		break;
-
-		case screenres:
-		{
-			int col;
-
-			col = item->a.selmode - 1;
-			if (col < 0)
-			{
-				if (CurrentItem > 0)
-				{
-					if (CurrentMenu->items[CurrentItem - 1].type == screenres)
-					{
-						item->a.selmode = -1;
-						CurrentMenu->items[--CurrentItem].a.selmode = 2;
-					}
-				}
-			}
-			else
-			{
-				item->a.selmode = col;
-			}
-		}
-		PlayCurrentOptionsSound("navigate");
 		break;
 
 		case joyactive:
@@ -1968,6 +1667,12 @@ void M_OptResponder(const event_t& ev)
 		}
 		else if (Key_IsRightKey(ch, numlock))
 		{
+		if (M_VideoModesOwnsMenu(CurrentMenu) &&
+		    M_VideoModesResponder(ch, ch2, numlock, item, CurrentItem))
+		{
+			PlayCurrentOptionsSound(item->type == screenres ? "navigate" : "changeValue");
+			return;
+		}
 		switch (item->type)
 		{
 		case slider:
@@ -2015,37 +1720,10 @@ void M_OptResponder(const event_t& ev)
 			item->a.cvar->Set(item->e.values[cur].value);
 
 			// Hack hack. Rebuild list of resolutions
-			if (item->e.values == Depths)
-				BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
+			if (M_VideoModesOwnsMenu(CurrentMenu) && item->e.values == M_VideoModesDepths())
+				M_VideoModesDepthChanged();
 		}
 		PlayCurrentOptionsSound("changeValue");
-		break;
-
-		case screenres:
-		{
-			int col;
-
-			col = item->a.selmode + 1;
-			if ((col > 2) || (col == 2 && !item->d.res3) || (col == 1 && !item->c.res2))
-			{
-				if (CurrentMenu->numitems - 1 > CurrentItem)
-				{
-					if (CurrentMenu->items[CurrentItem + 1].type == screenres)
-					{
-						if (CurrentMenu->items[CurrentItem + 1].b.res1)
-						{
-							item->a.selmode = -1;
-							CurrentMenu->items[++CurrentItem].a.selmode = 0;
-						}
-					}
-				}
-			}
-			else
-			{
-				item->a.selmode = col;
-			}
-		}
-		PlayCurrentOptionsSound("navigate");
 		break;
 
 		case joyactive:
@@ -2085,19 +1763,12 @@ void M_OptResponder(const event_t& ev)
 		}
 		else if (Key_IsAcceptKey(ch))
 		{
-			if (CurrentMenu == &ModesMenu)
+			if (M_VideoModesOwnsMenu(CurrentMenu))
 			{
-				int width, height;
-
-				if (!(item->type == screenres &&
-				      GetSelectedSize(CurrentItem, &width, &height)))
+				if (M_VideoModesResponder(ch, ch2, numlock, item, CurrentItem))
 				{
-					width = I_GetVideoWidth();
-					height = I_GetVideoHeight();
+					PlayCurrentOptionsSound("select");
 				}
-
-				M_SetVideoMode(width, height);
-				PlayCurrentOptionsSound("select");
 			}
 			else if (item->type == more && item->e.mfunc)
 			{
@@ -2123,8 +1794,8 @@ void M_OptResponder(const event_t& ev)
 				item->a.cvar->Set(item->e.values[cur].value);
 
 				// Hack hack. Rebuild list of resolutions
-				if (item->e.values == Depths)
-					BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
+				if (M_VideoModesOwnsMenu(CurrentMenu) && item->e.values == M_VideoModesDepths())
+					M_VideoModesDepthChanged();
 				PlayCurrentOptionsSound("changeValue");
 			}
 			else if (item->type == control || item->type == mapcontrol || item->type == netdemocontrol)
@@ -2171,20 +1842,12 @@ void M_OptResponder(const event_t& ev)
 #endif
 		{
 			// Test selected resolution
-			if (CurrentMenu == &ModesMenu)
+			if (M_VideoModesOwnsMenu(CurrentMenu))
 			{
-				int width, height;
-
-				if (!(item->type == screenres && GetSelectedSize(CurrentItem, &width, &height)))
+				if (M_VideoModesResponder(ch, ev.data3, numlock, item, CurrentItem))
 				{
-					width = I_GetVideoWidth();
-					height = I_GetVideoHeight();
+					PlayCurrentOptionsSound("select");
 				}
-
-				testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
-				M_SetVideoMode(width, height);
-
-				PlayCurrentOptionsSound("select");
 			}
 		}
 		}
@@ -2200,23 +1863,18 @@ static void GoToConsole (void)
 	C_ToggleConsole ();
 }
 
-static void UpdateStuff (void)
-{
-	M_SizeDisplay (0.0);
-}
-
-void Reset2Defaults (void)
+void ResetToDefaults (void)
 {
 	AddCommandString ("unbindall; binddefaults");
 	cvar_t::C_SetCVarsToDefaults(CVAR_CLIENTARCHIVE);
-	UpdateStuff();
+	M_SizeDisplay (0.0);
 }
 
-void Reset2Saved (void)
+void ResetToSaved (void)
 {
 	std::string cmd = "exec " + C_QuoteString(M_GetConfigPath());
 	AddCommandString(cmd);
-	UpdateStuff();
+	M_SizeDisplay (0.0);
 }
 
 void ResetCustomColors (void)

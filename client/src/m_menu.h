@@ -28,6 +28,7 @@
 #include <string_view>
 
 #include "d_event.h"
+#include "m_widgets.h"
 
 //
 // MENUS
@@ -62,8 +63,6 @@ bool M_PrepareGeneratedOptionsMenu(const std::string& menuId, struct menu_s*& me
 bool M_OpenMenuTarget(const std::string& target);
 bool M_OpenMenuEntrypoint(const std::string& name);
 const char* M_LocalizedMenuString(const char* key);
-const patch_t* M_MenuConfConfiguredPatch(const std::string& name, const char* context);
-void M_WarnMenuConf(const std::string& message);
 void M_PlayMenuSound(std::string_view role,
                      const std::string* overrideSound = nullptr,
                      std::string_view menuId = std::string_view());
@@ -73,6 +72,7 @@ void M_OptResponder(const event_t& ev);
 
 // [RH] Draw options menu
 void M_OptDrawer (void);
+void M_ResetOptionsBuiltinState();
 
 // [RH] Initialize options menu
 void M_OptInit (void);
@@ -87,10 +87,6 @@ void M_PopMenuStack (void);
 
 // [RH] Called whenever the display mode changes
 void M_RefreshModesList ();
-int M_MenuCursorOffsetY();
-const patch_t* M_MenuCursorPatch();
-void M_DrawSlider(int x, int y, float leftval, float rightval, float cur, float step);
-void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color);
 
 //
 // MENU TYPEDEFS
@@ -200,6 +196,7 @@ extern menu_t  *CurrentMenu;
 extern int		CurrentItem;
 extern bool     CanScrollUp;
 extern bool     CanScrollDown;
+extern bool     OptionsActive;
 extern int      VisBottom;
 
 size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length);
