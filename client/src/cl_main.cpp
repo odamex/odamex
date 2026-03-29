@@ -2394,7 +2394,7 @@ void CL_RemoveCompletedMovingSectors()
 	std::erase_if(sector_snaps, [](const auto& pair){
 		const auto& mgr = pair.second;
 		const int time = mgr.getMostRecentTime();
-		return (world_index - time > NUM_SNAPSHOTS) || mgr->empty();
+		return (world_index - time > NUM_SNAPSHOTS) || mgr.empty();
 	});
 }
 
