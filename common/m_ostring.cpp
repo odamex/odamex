@@ -684,12 +684,6 @@ static OString OStringConverter(const char* s, size_t length)
 	}
 }
 
-
-OString OStringToUpper(const char* s, size_t length)
-{
-	return OStringConverter<UpperFunctor>(s, length);
-}
-
 OString OStringToUpper(std::string_view s)
 {
 	return OStringConverter<UpperFunctor>(s.data(), s.length());
@@ -698,11 +692,6 @@ OString OStringToUpper(std::string_view s)
 OString OStringToUpper(const OString& str)
 {
 	return OStringConverter<UpperFunctor>(str.c_str(), str.length());
-}
-
-OString OStringToLower(const char* s, size_t length)
-{
-	return OStringConverter<LowerFunctor>(s, length);
 }
 
 OString OStringToLower(std::string_view s)

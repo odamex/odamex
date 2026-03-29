@@ -644,10 +644,8 @@ template <> struct hashfunc<OString>
 // utility functions
 // ----------------------------------------------------------------------------
 
-OString OStringToUpper(const char* s, size_t n = OString::npos);
 OString OStringToUpper(std::string_view s);
 OString OStringToUpper(const OString& str);
-OString OStringToLower(const char* s, size_t n = OString::npos);
 OString OStringToLower(std::string_view s);
 OString OStringToLower(const OString& str);
 auto inline format_as(const OString& str) { return str.data(); }
