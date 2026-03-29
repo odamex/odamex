@@ -525,9 +525,9 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
 		{
 			// Filenames with supplied hashes always match first.
 			cmp_files.push_back(
-			    StdStringToUpper(name + "." + hash.getHexStr().substr(0, 6) + ext));
+			    OStringToUpper(name + "." + hash.getHexStr().substr(0, 6) + ext));
 		}
-		cmp_files.push_back(StdStringToUpper(name + ext));
+		cmp_files.push_back(OStringToUpper(name + ext));
 	}
 
 	// denis - list files in the directory of interest, case-desensitize
@@ -544,7 +544,7 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& name,
 			// Not only find a match, but check if it is a better match than we
 			// found previously.
 			fs::path filename = entry.path().filename();
-			OString check = StdStringToUpper(filename.string());
+			OString check = OStringToUpper(filename.string());
 			std::vector<OString>::iterator this_it =
 			    std::find(cmp_files.begin(), cmp_files.end(), check);
 			if (this_it < found_it)
@@ -603,7 +603,7 @@ std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString
 			// Find the file.
 			std::string filename = entry.path().filename().string();
 			std::vector<OString>::iterator it =
-		    	std::find(files.begin(), files.end(), StdStringToUpper(filename));
+		    	std::find(files.begin(), files.end(), OStringToUpper(filename));
 
 			if (it == files.end())
 				continue;

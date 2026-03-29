@@ -714,7 +714,7 @@ class SectorSnapshotManager
 public:
 	SectorSnapshotManager();
 
-	bool empty();
+	bool empty() const;
 	void clearSnapshots();
 
 	int getMostRecentTime() const { return mMostRecent; }
