@@ -2390,20 +2390,12 @@ void WeaponPickupMessage (const AActor *toucher, const weapontype_t &Weapon)
 
 void CL_RemoveCompletedMovingSectors()
 {
-	std::map<unsigned short, SectorSnapshotManager>::iterator itr;
-	itr = sector_snaps.begin();
-
-	while (itr != sector_snaps.end())
-	{
-		SectorSnapshotManager *mgr = &(itr->second);
-		int time = mgr->getMostRecentTime();
-
-		// are all the snapshots in the container invalid or too old?
-		if (world_index - time > NUM_SNAPSHOTS || mgr->empty())
-			sector_snaps.erase(itr++);
-		else
-			++itr;
-	}
+	// are all the snapshots in the container invalid or too old?
+	std::erase_if(sector_snaps, [](const auto& pair){
+		const auto& mgr = pair.second;
+		const int time = mgr.getMostRecentTime();
+		return (world_index - time > NUM_SNAPSHOTS) || mgr->empty();
+	});
 }
 
 CVAR_FUNC_IMPL (cl_interp)
