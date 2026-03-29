@@ -91,6 +91,8 @@ public:
 
 	OString();
 	OString(const OString& other);
+	// TODO: consider making these explicit, right now strings try to implicitly convert to OString
+	// and use its comparison operators, and we rarely want OStrings unless explicitly indicated.
 	OString(const std::string& str);
 	OString(std::string_view str);
 	OString(const OString& other, size_t pos, size_t len = npos);
