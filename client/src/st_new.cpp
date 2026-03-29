@@ -1267,22 +1267,12 @@ void ToastTicker()
 	const int fadeDoneTics = (hud_feedtime * float(TICRATE));
 
 	// Remove stale toasts in a loop.
-	drawToasts_t::iterator it = g_Toasts.begin();
-	while (it != g_Toasts.end())
-	{
-		const int tics = ::gametic - it->tic;
-
+	std::erase_if(g_Toasts, [fadeDoneTics](const drawToast_t& toast){
 		// The gametic may move backwards in case of netdemo rewinding
 		// If this happens, we need to remove the toast as it hasn't happened yet.
-		if (tics >= fadeDoneTics || it->tic > ::gametic)
-		{
-			it = g_Toasts.erase(it);
-		}
-		else
-		{
-			++it;
-		}
-	}
+		const int tics = ::gametic - toast.tic;
+		return tics >= fadeDoneTics || toast.tic > ::gametic;
+	});
 }
 
 void PushToast(const toast_t& toast)

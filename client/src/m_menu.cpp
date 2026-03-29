@@ -1291,7 +1291,7 @@ void M_ChooseSkill(int choice)
 		const char* must_confirm_text = SkillInfos[choice].must_confirm_text.c_str();
 
 		if (must_confirm_text[0] == '$')
-			M_StartMessage(GStrings(StdStringToUpper(must_confirm_text + 1)),
+			M_StartMessage(GStrings(OStringToUpper(must_confirm_text + 1)),
 		               M_VerifyNightmare, true);
 		else
 			M_StartMessage(must_confirm_text, M_VerifyNightmare, true);

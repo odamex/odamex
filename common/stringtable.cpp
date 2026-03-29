@@ -71,7 +71,7 @@ static bool IfGameZDoom(const std::string& str)
 
 bool StringTable::canSetPassString(int pass, const std::string& name) const
 {
-	StringHash::const_iterator it = _stringHash.find(name);
+	StringHash::const_iterator it = _stringHash.find(OString(name));
 
 	// New string?
 	if (it == _stringHash.end())
@@ -215,7 +215,7 @@ void StringTable::loadLanguage(const char* code, bool exactMatch, int pass, char
 				{
 					continue;
 				}
-				setPassString(pass, name, value);
+				setPassString(pass, OString(name), OString(value));
 			}
 		}
 		else
@@ -287,7 +287,7 @@ void StringTable::prepareIndexes()
 		StringHash::iterator it = _stringHash.find(name);
 		if (it == _stringHash.end())
 		{
-			TableEntry entry = {std::make_pair(false, ""), 0xFF, static_cast<int>(i)};
+			TableEntry entry = {std::make_pair(false, ""_os), 0xFF, static_cast<int>(i)};
 			_stringHash.emplace(name, entry);
 		}
 	}
@@ -376,7 +376,7 @@ const OString& StringTable::matchString(const OString& string) const
 			return first;
 	}
 
-	static OString empty = "";
+	static OString empty = ""_os;
 	return empty;
 }
 

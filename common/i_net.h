@@ -355,19 +355,15 @@ class MessageQueue;
 
 struct netadr_t
 {
-	byte             ip[4] = { 0, 0, 0, 0};
-	unsigned short   port  = 0;
-	unsigned short   pad   = 0;
+	std::array<byte, 4> ip   = { 0, 0, 0, 0};
+	uint16_t            port = 0;
+	uint16_t            pad  = 0;
 
-	auto Tie() const
-	{
-		return std::tie(ip[0], ip[1], ip[2], ip[3], port);
-	}
-
-	bool operator<(const netadr_t& other) const
-	{
-		return Tie() < other.Tie();
-	}
+	[[nodiscard]]
+    constexpr auto operator<=>(const netadr_t& other) const
+    {
+        return std::tie(ip, port) <=> std::tie(other.ip, other.port);
+    }
 };
 
 extern  netadr_t  net_from;  // address of who sent the packet

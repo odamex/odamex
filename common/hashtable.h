@@ -366,6 +366,11 @@ public:
 		return emptyBucket(findBucket(key)) ? 0 : 1;
 	}
 
+	bool contains(const KT& key) const
+	{
+		return !emptyBucket(findBucket(key));
+	}
+
 	void clear()
 	{
 		for (unsigned int i = 0; i < mSize; i++)

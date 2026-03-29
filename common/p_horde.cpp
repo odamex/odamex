@@ -466,7 +466,7 @@ class HordeState
 	 */
 	void recountMonstersHelper(mobjCounts_t& monsterCounts, int32_t type)
 	{
-		if (monsterCounts.count(type))
+		if (monsterCounts.contains(type))
 		{
 			monsterCounts[type] += 1;
 		}
@@ -518,14 +518,14 @@ class HordeState
 	{
 		if (mo->oflags & MFO_BOSSPOOL)
 		{
-			if (m_bossCounts.count(mo->type))
+			if (m_bossCounts.contains(mo->type))
 			{
 				m_bossCounts[mo->type] -= 1;
 			}
 		}
 		else
 		{
-			if (m_monsterCounts.count(mo->type))
+			if (m_monsterCounts.contains(mo->type))
 			{
 				m_monsterCounts[mo->type] -= 1;
 			}

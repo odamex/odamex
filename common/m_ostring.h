@@ -42,31 +42,11 @@ class OString;
 [[nodiscard]] bool operator== (const std::string& lhs, const OString& rhs);
 [[nodiscard]] bool operator== (const OString& lhs, const char* rhs);
 [[nodiscard]] bool operator== (const char* lhs, const OString& rhs);
-bool operator!= (const OString& lhs, const OString& rhs);
-bool operator!= (const OString& lhs, const std::string& rhs);
-bool operator!= (const std::string& lhs, const OString& rhs);
-bool operator!= (const OString& lhs, const char* rhs);
-bool operator!= (const char* lhs, const OString& rhs);
-bool operator< (const OString& lhs, const OString& rhs);
-bool operator< (const OString& lhs, const std::string& rhs);
-bool operator< (const std::string& lhs, const OString& rhs);
-bool operator< (const OString& lhs, const char* rhs);
-bool operator< (const char* lhs, const OString& rhs);
-bool operator<= (const OString& lhs, const OString& rhs);
-bool operator<= (const OString& lhs, const std::string& rhs);
-bool operator<= (const std::string& lhs, const OString& rhs);
-bool operator<= (const OString& lhs, const char* rhs);
-bool operator<= (const char* lhs, const OString& rhs);
-bool operator> (const OString& lhs, const OString& rhs);
-bool operator> (const OString& lhs, const std::string& rhs);
-bool operator> (const std::string& lhs, const OString& rhs);
-bool operator> (const OString& lhs, const char* rhs);
-bool operator> (const char* lhs, const OString& rhs);
-bool operator>= (const OString& lhs, const OString& rhs);
-bool operator>= (const OString& lhs, const std::string& rhs);
-bool operator>= (const std::string& lhs, const OString& rhs);
-bool operator>= (const OString& lhs, const char* rhs);
-bool operator>= (const char* lhs, const OString& rhs);
+[[nodiscard]] std::strong_ordering operator<=> (const OString& lhs, const OString& rhs);
+[[nodiscard]] std::strong_ordering operator<=> (const OString& lhs, const std::string& rhs);
+[[nodiscard]] std::strong_ordering operator<=> (const std::string& lhs, const OString& rhs);
+[[nodiscard]] std::strong_ordering operator<=> (const OString& lhs, const char* rhs);
+[[nodiscard]] std::strong_ordering operator<=> (const char* lhs, const OString& rhs);
 
 namespace std {
 	void swap(::OString& x, ::OString& y);
@@ -110,12 +90,12 @@ public:
 
 	OString();
 	OString(const OString& other);
-	OString(const std::string& str);
-	OString(std::string_view str);
+	explicit OString(const std::string& str);
+	explicit OString(std::string_view str);
 	OString(const OString& other, size_t pos, size_t len = npos);
 	OString(const std::string& str, size_t pos, size_t len = npos);
 	OString(std::string_view str, size_t pos, size_t len = npos);
-	OString(const char* s, size_t n = npos);
+	explicit OString(const char* s, size_t n = npos);
 	OString(size_t n, char c);
 
 	template <class InputIterator>
@@ -664,8 +644,13 @@ template <> struct hashfunc<OString>
 // utility functions
 // ----------------------------------------------------------------------------
 
-OString OStringToUpper(const char* s, size_t n = OString::npos);
+OString OStringToUpper(std::string_view s);
 OString OStringToUpper(const OString& str);
-OString OStringToLower(const char* s, size_t n = OString::npos);
+OString OStringToLower(std::string_view s);
 OString OStringToLower(const OString& str);
 auto inline format_as(const OString& str) { return str.data(); }
+
+inline OString operator""_os (const char* s, size_t l)
+{
+	return OString(s, l);
+}

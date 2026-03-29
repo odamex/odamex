@@ -1995,10 +1995,10 @@ static void PatchMusic(int dummy, DehScanner& scanner)
 		const auto& [key, value] = *line;
 		const std::string_view newname = value;
 
-		OString keystring = fmt::format("MUSIC_{}", key);
+		OString keystring(fmt::format("MUSIC_{}", key));
 		if (GStrings.hasString(keystring))
 		{
-			GStrings.setString(keystring, newname);
+			GStrings.setString(keystring, OString(newname));
 			DPrintFmt("Music {} set to:\n{}\n", keystring, newname);
 		}
 	}
@@ -2102,10 +2102,10 @@ static void PatchText(int sizes, DehScanner& scanner)
 	}
 
 	// Search through most other texts
-	const OString& name = ENGStrings.matchString(*oldStr);
+	const OString& name = ENGStrings.matchString(OString(*oldStr));
 	if (!name.empty())
 	{
-		GStrings.setString(name, *newStr);
+		GStrings.setString(name, OString(*newStr));
 		return;
 	}
 
@@ -2133,14 +2133,17 @@ static void PatchStrings(int dummy, DehScanner& scanner)
 		}
 		string += nextpart;
 
-		int i = GStrings.toIndex(key);
+		const OString okey(key);
+		const OString ostring(string);
+
+		int i = GStrings.toIndex(okey);
 		if (iequals("DEHTHING_", key.substr(0, 9)))
 		{
 			if (auto type = ParseNum<int32_t>(string))
 			{
 				(*type)--;
 				P_MapDehThing(static_cast<mobjtype_t>(*type), std::string(key)); // TODO: rework so no casting needed
-				GStrings.setString(key, string);
+				GStrings.setString(okey, ostring);
 				DPrintFmt("{} set to:\n{}\n", key, string);
 			}
 			else
@@ -2153,7 +2156,7 @@ static void PatchStrings(int dummy, DehScanner& scanner)
 			if (iequals("USER_", key.substr(0, 5)))
 			{
 				ReplaceSpecialChars(string);
-				GStrings.setString(key, string);
+				GStrings.setString(okey, ostring);
 				DPrintFmt("{} set to:\n{}\n", key, string);
 			}
 			else
@@ -2181,7 +2184,7 @@ static void PatchStrings(int dummy, DehScanner& scanner)
 				}
 			}
 			// [CMB] TODO: Language string table change // [EB] what is this comment about??
-			GStrings.setString(key, string);
+			GStrings.setString(okey, ostring);
 			DPrintFmt("{} set to:\n{}\n", key, string);
 		}
 	}

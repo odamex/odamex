@@ -715,7 +715,7 @@ inline bool R_PostDataIsTransparent(byte* data)
 
 bool R_IsSkyFlat(int flatnum)
 {
-	return flatnum == skyflatnum || skyflatlookup.count(flatnum);
+	return flatnum == skyflatnum || skyflatlookup.contains(flatnum);
 }
 
 //
