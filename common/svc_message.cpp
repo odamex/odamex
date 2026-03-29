@@ -1232,6 +1232,19 @@ odaproto::svc::LineUpdate SVC_LineUpdate(const line_t& line)
 	return msg;
 }
 
+odaproto::svc::NoiseAlert SVC_NoiseAlert(const sector_t& sector)
+{
+	odaproto::svc::NoiseAlert msg;
+
+	msg.set_sectornum(&sector - ::sectors);
+	if (sector.soundtarget)
+	{
+		msg.set_soundtarget_netid(sector.soundtarget->netid);
+	}
+
+	return msg;
+}
+
 odaproto::svc::SectorProperties SVC_SectorProperties(const sector_t& sector)
 {
 	odaproto::svc::SectorProperties msg;
