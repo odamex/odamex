@@ -461,7 +461,7 @@ void M_PlayerSetupTicker()
 	PlayerTics = PlayerState->tics;
 }
 
-void M_PlayerSetupDrawer(bool drawIndicator, int whichIndicator, int currentItem)
+void M_PlayerSetupDrawer(int currentItem)
 {
 	const OFont* smallFont = OFonts.small();
 	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
@@ -685,16 +685,18 @@ void M_PlayerSetupDrawer(bool drawIndicator, int whichIndicator, int currentItem
 
 	ClampPlayerSetupItem(currentItem);
 
-	if (drawIndicator && !editingName)
+}
+
+bool M_PlayerSetupIndicatorPosition(int currentItem, int& x, int& y)
+{
+	if (editingName)
 	{
-		if (const patch_t* indicator = M_MenuIndicatorPatch(whichIndicator))
-		{
-			const int drawX = PLAYERSETUP_X + M_MenuIndicatorOffsetX();
-			const int drawY = PLAYERSETUP_Y + M_MenuIndicatorOffsetY() +
-			                  currentItem * BigFontLineHeight();
-			screen->DrawPatchClean(indicator, drawX, drawY);
-		}
+		return false;
 	}
+
+	x = PLAYERSETUP_X + M_MenuIndicatorOffsetX();
+	y = PLAYERSETUP_Y + M_MenuIndicatorOffsetY() + currentItem * BigFontLineHeight();
+	return true;
 }
 
 void M_PlayerSetupResponder(int ch, int ch2, bool numlock, int& currentItem)

@@ -25,7 +25,7 @@
 #pragma once
 
 bool M_HelpOpen();
-void M_HelpDrawer();
-void M_HelpResponder(int ch);
+void M_HelpDrawer(int currentItem);
+void M_HelpResponder(int ch, int ch2, bool numlock, int& currentItem);
 void M_HelpRestore(int& currentItem);
 void M_HelpShutdown();

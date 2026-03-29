@@ -11,5 +11,5 @@ void M_RefreshModesList();
 
 void M_VideoModesOpen(int& currentItem);
 void M_VideoModesRestore(int& currentItem);
-void M_VideoModesDrawer(bool drawIndicator, int currentItem);
+void M_VideoModesDrawer(int currentItem);
 void M_VideoModesResponder(int ch, int ch2, bool numlock, int& currentItem);

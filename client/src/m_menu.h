@@ -75,7 +75,7 @@ void M_OptDrawer (void);
 void M_ResetOptionsBuiltinState();
 
 // [RH] Initialize options menu
-void M_OptInit (void);
+void M_BuildGeneratedOptionsMenus(void);
 void M_OpenVideoModeScreen(void);
 void M_OpenPlayerSetupScreen(void);
 

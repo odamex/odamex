@@ -24,6 +24,7 @@
 
 #include "odamex.h"
 
+#include <array>
 #include <unordered_set>
 
 #include "gstrings.h"
@@ -110,11 +111,23 @@ enum class BuiltInScreen
 	help,
 	saveload,
 	playersetup,
-	videomodes
+	videomodes,
+	count
 };
 
 static BuiltInScreen CurrentBuiltinScreen = BuiltInScreen::none;
 static int CurrentBuiltinItem = 0;
+
+struct builtinscreendef_t
+{
+	void (*init)() = nullptr;
+	void (*restore)(int&) = nullptr;
+	void (*draw)(int) = nullptr;
+	bool (*indicatorPosition)(int, int&, int&) = nullptr;
+	void (*respond)(int, int, bool, int&) = nullptr;
+	void (*ticker)() = nullptr;
+	void (*shutdown)() = nullptr;
+};
 
 struct generatedmenu_t
 {
@@ -170,6 +183,81 @@ namespace
 	bool M_OpenMenuEntrypointImpl(const std::string& name);
 }
 bool M_DemoNoPlay;
+static int M_BigFontLineHeight();
+
+namespace
+{
+	const builtinscreendef_t* BuiltInScreenDef(BuiltInScreen screen);
+
+	bool GeneratedMenuIndicatorPosition(int& x, int& y)
+	{
+		if (CurrentGeneratedMenu == nullptr || !drawIndicator)
+		{
+			return false;
+		}
+
+		x = CurrentGeneratedMenu->x + M_MenuIndicatorOffsetX();
+		y = CurrentGeneratedMenu->y + M_MenuIndicatorOffsetY() +
+		    CurrentGeneratedItem * M_BigFontLineHeight();
+		return true;
+	}
+
+	void M_DrawMenuIndicatorOverlay()
+	{
+		if (!drawIndicator)
+		{
+			return;
+		}
+
+		int x = 0;
+		int y = 0;
+		bool havePosition = false;
+
+		if (CurrentGeneratedMenu != nullptr)
+		{
+			havePosition = GeneratedMenuIndicatorPosition(x, y);
+		}
+		else if (const builtinscreendef_t* builtin = BuiltInScreenDef(CurrentBuiltinScreen);
+		         builtin != nullptr && builtin->indicatorPosition != nullptr)
+		{
+			havePosition = builtin->indicatorPosition(CurrentBuiltinItem, x, y);
+		}
+
+		if (!havePosition)
+		{
+			return;
+		}
+
+		if (const patch_t* indicator = M_MenuIndicatorPatch(whichIndicator))
+		{
+			screen->DrawPatchClean(indicator, x, y);
+		}
+	}
+
+	constexpr auto BuiltInScreenDefs = std::array{
+	    builtinscreendef_t{},
+	    builtinscreendef_t{nullptr, M_HelpRestore, M_HelpDrawer, nullptr,
+	                      M_HelpResponder,
+	                      nullptr, M_HelpShutdown},
+	    builtinscreendef_t{M_LoadSaveInit, M_LoadSaveRestore, M_LoadSaveDrawer,
+	                      M_LoadSaveIndicatorPosition,
+	                      M_LoadSaveResponder, nullptr, nullptr},
+	    builtinscreendef_t{M_PlayerSetupInit, M_PlayerSetupOpen,
+	                      M_PlayerSetupDrawer, M_PlayerSetupIndicatorPosition,
+	                      M_PlayerSetupResponder,
+	                      M_PlayerSetupTicker, M_PlayerSetupShutdown},
+	    builtinscreendef_t{M_VideoModesInit, M_VideoModesRestore, M_VideoModesDrawer,
+	                      nullptr,
+	                      M_VideoModesResponder, nullptr, nullptr},
+	};
+	static_assert(BuiltInScreenDefs.size() == static_cast<size_t>(BuiltInScreen::count));
+
+	const builtinscreendef_t* BuiltInScreenDef(BuiltInScreen screen)
+	{
+		const size_t index = static_cast<size_t>(screen);
+		return index < BuiltInScreenDefs.size() ? &BuiltInScreenDefs[index] : nullptr;
+	}
+}
 
 static int M_BigFontLineHeight()
 {
@@ -1146,16 +1234,6 @@ void M_DrawGeneratedMenu()
 		y += M_BigFontLineHeight();
 	}
 
-	if (drawIndicator)
-	{
-		if (const patch_t* indicator = M_MenuIndicatorPatch(whichIndicator))
-		{
-			const int draw_x = x + MenuConfTheme().indicator.offsetX;
-			const int draw_y = CurrentGeneratedMenu->y + MenuConfTheme().indicator.offsetY +
-			                   CurrentGeneratedItem * M_BigFontLineHeight();
-			screen->DrawPatchClean(indicator, draw_x, draw_y);
-		}
-	}
 }
 
 static void M_OpenNewGameMenu()
@@ -1615,30 +1693,21 @@ void M_Drawer()
 		// Background effect
 		M_DimBackground();
 
-		if (CurrentBuiltinScreen == BuiltInScreen::videomodes)
-		{
-			M_VideoModesDrawer(drawIndicator, CurrentBuiltinItem);
-		}
-		else if (OptionsActive)
+		if (OptionsActive)
 		{
 			M_OptDrawer();
 		}
-		else if (CurrentBuiltinScreen == BuiltInScreen::help)
+		else if (const builtinscreendef_t* builtin = BuiltInScreenDef(CurrentBuiltinScreen);
+		         builtin != nullptr && builtin->draw != nullptr)
 		{
-			M_HelpDrawer();
-		}
-		else if (CurrentBuiltinScreen == BuiltInScreen::saveload)
-		{
-			M_LoadSaveDrawer(CurrentBuiltinItem, drawIndicator, whichIndicator);
-		}
-		else if (CurrentBuiltinScreen == BuiltInScreen::playersetup)
-		{
-			M_PlayerSetupDrawer(drawIndicator, whichIndicator, CurrentBuiltinItem);
+			builtin->draw(CurrentBuiltinItem);
 		}
 		else if (CurrentGeneratedMenu != nullptr)
 		{
 			M_DrawGeneratedMenu();
 		}
+
+		M_DrawMenuIndicatorOverlay();
 	}
 
 	// [SL] force the status bar to be redrawn in case the menu
@@ -1655,8 +1724,13 @@ void M_Drawer()
 //
 void M_ClearMenus()
 {
-	M_PlayerSetupShutdown();
-	M_HelpShutdown();
+	for (const builtinscreendef_t& builtin : BuiltInScreenDefs)
+	{
+		if (builtin.shutdown != nullptr)
+		{
+			builtin.shutdown();
+		}
+	}
 	MenuStackDepth = 0;
 	menuactive = false;
 	CurrentBuiltinScreen = BuiltInScreen::none;
@@ -1754,27 +1828,10 @@ int M_FindCurVal(float cur, value_t* values, int numvals)
 
 static void M_BuiltinResponder(int ch, int ch2, bool numlock)
 {
-	switch (CurrentBuiltinScreen)
+	if (const builtinscreendef_t* builtin = BuiltInScreenDef(CurrentBuiltinScreen);
+	    builtin != nullptr && builtin->respond != nullptr)
 	{
-	case BuiltInScreen::help:
-		M_HelpResponder(ch);
-		break;
-
-	case BuiltInScreen::saveload:
-		M_LoadSaveResponder(ch, ch2, numlock, CurrentBuiltinItem);
-		break;
-
-	case BuiltInScreen::playersetup:
-		M_PlayerSetupResponder(ch, ch2, numlock, CurrentBuiltinItem);
-		break;
-
-	case BuiltInScreen::videomodes:
-		M_VideoModesResponder(ch, ch2, numlock, CurrentBuiltinItem);
-		break;
-
-	case BuiltInScreen::none:
-	default:
-		break;
+		builtin->respond(ch, ch2, numlock, CurrentBuiltinItem);
 	}
 }
 
@@ -1904,21 +1961,11 @@ void M_PopMenuStack()
 			CurrentMenu = nullptr;
 			CurrentBuiltinScreen =
 			    static_cast<BuiltInScreen>(MenuStack[MenuStackDepth].menu.builtin);
-			if (CurrentBuiltinScreen == BuiltInScreen::help)
+
+			const builtinscreendef_t* builtin = BuiltInScreenDef(CurrentBuiltinScreen);
+			if (builtin != nullptr && builtin->restore != nullptr)
 			{
-				M_HelpRestore(CurrentBuiltinItem);
-			}
-			else if (CurrentBuiltinScreen == BuiltInScreen::saveload)
-			{
-				M_LoadSaveRestore(CurrentBuiltinItem);
-			}
-			else if (CurrentBuiltinScreen == BuiltInScreen::playersetup)
-			{
-				M_PlayerSetupOpen(CurrentBuiltinItem);
-			}
-			else if (CurrentBuiltinScreen == BuiltInScreen::videomodes)
-			{
-				M_VideoModesRestore(CurrentBuiltinItem);
+				builtin->restore(CurrentBuiltinItem);
 			}
 		} else if (MenuStack[MenuStackDepth].isGenerated) {
 			OptionsActive = false;
@@ -1948,9 +1995,10 @@ void M_Ticker()
 		indicatorAnimCounter = 8;
 	}
 
-	if (CurrentBuiltinScreen == BuiltInScreen::playersetup)
+	const builtinscreendef_t* builtin = BuiltInScreenDef(CurrentBuiltinScreen);
+	if (builtin != nullptr && builtin->ticker != nullptr)
 	{
-		M_PlayerSetupTicker ();
+		builtin->ticker();
 	}
 	
 	MenuTime++;
@@ -1993,8 +2041,13 @@ void M_Init()
 		generatedMainMenu.y = MAINMENU_DEFAULT_Y;
 	}
 
-	M_LoadSaveInit();
-	M_PlayerSetupInit();
+	for (const builtinscreendef_t& builtin : BuiltInScreenDefs)
+	{
+		if (builtin.init != nullptr)
+		{
+			builtin.init();
+		}
+	}
 
 	if (!BuildGeneratedMenu(generatedMainMenu, "main", generatedMainMenu.x, generatedMainMenu.y, 0))
 	{
@@ -2005,7 +2058,7 @@ void M_Init()
 	BuildGeneratedMenu(generatedSkillMenu, "skills", SUBMENU_DEFAULT_X, SUBMENU_DEFAULT_Y, defaultskillmenu);
 	BuildGeneratedMenu(generatedGameFilesMenu, "gamefiles", GAMEFILES_DEFAULT_X, GAMEFILES_DEFAULT_Y, 0);
 
-	M_OptInit ();
+	M_BuildGeneratedOptionsMenus();
 }
 
 //

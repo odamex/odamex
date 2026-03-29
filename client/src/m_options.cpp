@@ -59,7 +59,6 @@ END_DISABLE_WARNING_GNU
 #include "gi.h"
 #include "m_menuconf.h"
 #include "m_options_valuesets.h"
-#include "m_videomodes.h"
 #include "m_widgets.h"
 
 #include <unordered_map>
@@ -887,38 +886,6 @@ namespace
 		return true;
 	}
 
-	void BuildGeneratedOptionsMenus()
-	{
-		static const char* const kMenuIds[] = {
-			"options",
-			"options.controls",
-			"options.mouse",
-			"options.joystick",
-			"options.sound",
-			"options.sound.advancedMidi",
-			"options.sound.opl",
-			"options.compat",
-			"options.network",
-			"options.weapons",
-			"options.display",
-			"options.display.hud",
-			"options.display.messages",
-			"options.display.automap",
-		};
-
-		gGeneratedOptionsMenus.clear();
-		gGeneratedOptionsMenus.reserve(ARRAY_LENGTH(kMenuIds));
-
-		for (const char* menuId : kMenuIds)
-		{
-			gGeneratedOptionsMenus.emplace_back();
-			if (!BuildGeneratedOptionsMenu(gGeneratedOptionsMenus.back(), menuId))
-			{
-				gGeneratedOptionsMenus.pop_back();
-			}
-		}
-	}
-
 	const char* GeneratedOptionsHeaderText(const generatedoptionsmenu_t* generatedMenu)
 	{
 		if (generatedMenu == nullptr)
@@ -966,6 +933,38 @@ static void M_UpdateDisplayOptions()
 	}
 }
 
+void M_BuildGeneratedOptionsMenus()
+{
+	static const char* const kMenuIds[] = {
+		"options",
+		"options.controls",
+		"options.mouse",
+		"options.joystick",
+		"options.sound",
+		"options.sound.advancedMidi",
+		"options.sound.opl",
+		"options.compat",
+		"options.network",
+		"options.weapons",
+		"options.display",
+		"options.display.hud",
+		"options.display.messages",
+		"options.display.automap",
+	};
+
+	gGeneratedOptionsMenus.clear();
+	gGeneratedOptionsMenus.reserve(ARRAY_LENGTH(kMenuIds));
+
+	for (const char* menuId : kMenuIds)
+	{
+		gGeneratedOptionsMenus.emplace_back();
+		if (!BuildGeneratedOptionsMenu(gGeneratedOptionsMenus.back(), menuId))
+		{
+			gGeneratedOptionsMenus.pop_back();
+		}
+	}
+}
+
 EXTERN_CVAR(ui_dimcolor)
 
 // [Russell] - Modified to send new colours
@@ -993,13 +992,6 @@ static void M_SlideUIBlue (int val)
 	argb_t color = V_GetColorFromString(ui_dimcolor);
 	color.setb(val);
 	M_SendUINewColor(color.getr(), color.getg(), color.getb());
-}
-
-
-void M_OptInit (void)
-{
-	M_VideoModesInit();
-	BuildGeneratedOptionsMenus();
 }
 
 

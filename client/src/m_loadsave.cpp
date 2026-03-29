@@ -170,7 +170,7 @@ void M_LoadSaveRestore(int& currentItem)
 	currentItem = saveLoadMode == saveloadmode_t::save ? saveLastOn : loadLastOn;
 }
 
-void M_LoadSaveDrawer(int currentItem, bool drawIndicator, int whichIndicator)
+void M_LoadSaveDrawer(int currentItem)
 {
 	const OFont* bigFont = OFonts.big();
 	const OFont* smallFont = OFonts.small();
@@ -211,16 +211,18 @@ void M_LoadSaveDrawer(int currentItem, bool drawIndicator, int whichIndicator)
 		                          saveLoadY + BigFontLineHeight() * editingSlot, "_");
 	}
 
-	if (drawIndicator && !editingSaveName)
+}
+
+bool M_LoadSaveIndicatorPosition(int currentItem, int& x, int& y)
+{
+	if (editingSaveName)
 	{
-		if (const patch_t* indicator = M_MenuIndicatorPatch(whichIndicator))
-		{
-			const int drawX = saveLoadX + M_MenuIndicatorOffsetX();
-			const int drawY = saveLoadY + M_MenuIndicatorOffsetY() +
-			                  currentItem * BigFontLineHeight();
-			screen->DrawPatchClean(indicator, drawX, drawY);
-		}
+		return false;
 	}
+
+	x = saveLoadX + M_MenuIndicatorOffsetX();
+	y = saveLoadY + M_MenuIndicatorOffsetY() + currentItem * BigFontLineHeight();
+	return true;
 }
 
 void M_LoadSaveLoadSlot(int slot)

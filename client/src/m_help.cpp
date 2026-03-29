@@ -104,12 +104,12 @@ bool M_HelpOpen()
 	return true;
 }
 
-void M_HelpDrawer()
+void M_HelpDrawer(int)
 {
 	D_DrawPageImage(helpPage, I_GetPrimarySurface(), true);
 }
 
-void M_HelpResponder(int ch)
+void M_HelpResponder(int ch, int, bool, int&)
 {
 	if (Key_IsAcceptKey(ch))
 	{

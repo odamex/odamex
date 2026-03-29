@@ -410,7 +410,7 @@ void M_VideoModesRestore(int& currentItem)
 	EnsureSelectedResolutionColumn(currentItem);
 }
 
-void M_VideoModesDrawer(bool, int currentItem)
+void M_VideoModesDrawer(int currentItem)
 {
 	const OFont* smallFont = OFonts.small();
 	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
