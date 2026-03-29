@@ -56,6 +56,7 @@
 #include "m_menuconf.h"
 #include "m_help.h"
 #include "m_loadsave.h"
+#include "m_videomodes.h"
 #include "m_widgets.h"
 #include "m_playersetup.h"
 
@@ -108,7 +109,8 @@ enum class BuiltInScreen
 	none,
 	help,
 	saveload,
-	playersetup
+	playersetup,
+	videomodes
 };
 
 static BuiltInScreen CurrentBuiltinScreen = BuiltInScreen::none;
@@ -1372,6 +1374,17 @@ void M_OpenPlayerSetupScreen(void)
 	M_PlayerSetupOpen(CurrentBuiltinItem);
 }
 
+void M_OpenVideoModeScreen(void)
+{
+	if (!menuactive)
+	{
+		M_StartControlPanel();
+	}
+
+	M_PushBuiltinScreen(BuiltInScreen::videomodes, 0, true);
+	M_VideoModesOpen(CurrentBuiltinItem);
+}
+
 
 //
 //		Menu Functions
@@ -1602,7 +1615,11 @@ void M_Drawer()
 		// Background effect
 		M_DimBackground();
 
-		if (OptionsActive)
+		if (CurrentBuiltinScreen == BuiltInScreen::videomodes)
+		{
+			M_VideoModesDrawer(drawIndicator, CurrentBuiltinItem);
+		}
+		else if (OptionsActive)
 		{
 			M_OptDrawer();
 		}
@@ -1644,6 +1661,8 @@ void M_ClearMenus()
 	menuactive = false;
 	CurrentBuiltinScreen = BuiltInScreen::none;
 	CurrentMenu = nullptr;
+	CurrentItem = 0;
+	CurrentBuiltinItem = 0;
 	CurrentGeneratedMenu = nullptr;
 	drawIndicator = true;
 	M_DemoNoPlay = false;
@@ -1747,6 +1766,10 @@ static void M_BuiltinResponder(int ch, int ch2, bool numlock)
 
 	case BuiltInScreen::playersetup:
 		M_PlayerSetupResponder(ch, ch2, numlock, CurrentBuiltinItem);
+		break;
+
+	case BuiltInScreen::videomodes:
+		M_VideoModesResponder(ch, ch2, numlock, CurrentBuiltinItem);
 		break;
 
 	case BuiltInScreen::none:
@@ -1892,6 +1915,10 @@ void M_PopMenuStack()
 			else if (CurrentBuiltinScreen == BuiltInScreen::playersetup)
 			{
 				M_PlayerSetupOpen(CurrentBuiltinItem);
+			}
+			else if (CurrentBuiltinScreen == BuiltInScreen::videomodes)
+			{
+				M_VideoModesRestore(CurrentBuiltinItem);
 			}
 		} else if (MenuStack[MenuStackDepth].isGenerated) {
 			OptionsActive = false;

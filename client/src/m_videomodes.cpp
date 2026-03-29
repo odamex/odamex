@@ -1,5 +1,7 @@
 #include "odamex.h"
 
+#include <algorithm>
+
 #include "cl_responderkeys.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"
@@ -9,7 +11,11 @@
 #include "m_menu.h"
 #include "m_options_valuesets.h"
 #include "m_videomodes.h"
+#include "m_widgets.h"
+#include "v_palette.h"
 #include "v_text.h"
+#include "v_video.h"
+#include "w_wad.h"
 
 EXTERN_CVAR(vid_widescreen)
 EXTERN_CVAR(vid_maxfps)
@@ -18,19 +24,23 @@ EXTERN_CVAR(vid_fullscreen)
 EXTERN_CVAR(vid_32bpp)
 EXTERN_CVAR(vid_vsync)
 
+extern short indicatorAnimCounter;
+
 namespace
 {
-	constexpr int VM_DEPTHITEM = 0;
+#ifndef GCONSOLE
+	constexpr int VM_FULLSCREENITEM = 0;
+#endif
+	constexpr int VM_WIDESCREENITEM = 1;
+	constexpr int VM_VSYNCITEM = 2;
+	constexpr int VM_FRAMERATEITEM = 3;
+	constexpr int VM_32BPPITEM = 4;
 	constexpr int VM_RESSTART = 6;
 	constexpr int VM_ENTERLINE = 15;
 	constexpr int VM_TESTLINE = 17;
 
-	bool GetSelectedSize(int line, int* width, int* height);
-	void SetModesMenu(int w, int h);
-
-	uint16_t old_width = 0;
-	uint16_t old_height = 0;
-	value_t Depths[22];
+	uint16_t oldWidth = 0;
+	uint16_t oldHeight = 0;
 
 #ifdef GCONSOLE
 	const char VMEnterText[] = "Press A to set mode";
@@ -43,123 +53,146 @@ namespace
 	const char VMTestWaitText[] = "Please wait 5 seconds...";
 
 	value_t VidFPSCaps[] = {
-		{ 35.0, "35fps" },
-		{ 60.0, "60fps" },
-		{ 70.0, "70fps" },
-		{ 105.0, "105fps" },
-		{ 120.0, "120fps" },
-		{ 140.0, "140fps" },
-		{ 144.0, "144fps" },
-		{ 240.0, "240fps" },
-		{ 0.0, "Unlimited" }
+		{35.0, "35fps"},
+		{60.0, "60fps"},
+		{70.0, "70fps"},
+		{105.0, "105fps"},
+		{120.0, "120fps"},
+		{140.0, "140fps"},
+		{144.0, "144fps"},
+		{240.0, "240fps"},
+		{0.0, "Unlimited"},
 	};
 
 	value_t FullScreenOptions[] = {
-		{ WINDOW_Windowed, "Window" },
-		{ WINDOW_Fullscreen, "Full Screen Exclusive" },
-		{ WINDOW_DesktopFullscreen, "Full Screen Window" }
+		{WINDOW_Windowed, "Window"},
+		{WINDOW_Fullscreen, "Full Screen Exclusive"},
+		{WINDOW_DesktopFullscreen, "Full Screen Window"},
 	};
 
 	value_t WidescreenMode[] = {
-		{ 0.0, "Off" },
-		{ 1.0, "Auto" },
-		{ 2.0, "16:10" },
-		{ 3.0, "16:9" },
-		{ 4.0, "21:9" },
-		{ 5.0, "32:9" }
+		{0.0, "Off"},
+		{1.0, "Auto"},
+		{2.0, "16:10"},
+		{3.0, "16:9"},
+		{4.0, "21:9"},
+		{5.0, "32:9"},
 	};
 
-	menuitem_t ModesItems[] = {
+	menuitem_t videoModeItems[] = {
 #ifdef GCONSOLE
-		{ slider, "Overscan", {&vid_overscan}, {0.84375}, {1.0}, {0.03125}, {NULL} },
+		{slider, "Overscan", {&vid_overscan}, {0.84375}, {1.0}, {0.03125}, {NULL}},
 #else
-		{ discrete, "Fullscreen", {&vid_fullscreen}, {3.0}, {0.0}, {0.0}, {FullScreenOptions} },
+		{discrete, "Fullscreen", {&vid_fullscreen}, {3.0}, {0.0}, {0.0}, {FullScreenOptions}},
 #endif
-		{ discrete, "Widescreen", {&vid_widescreen}, {6.0}, {0.0}, {0.0}, {WidescreenMode} },
-		{ discrete, "VSync", {&vid_vsync}, {2.0}, {0.0}, {0.0}, {YesNo} },
-		{ discrete, "Framerate", {&vid_maxfps}, {9.0}, {0.0}, {0.0}, {VidFPSCaps} },
-		{ discrete, "32-bit color", {&vid_32bpp}, {2.0}, {0.0}, {0.0}, {YesNo} },
-		{ redtext, "", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-		{ screenres, NULL, {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-		{ screenres, NULL, {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-		{ screenres, NULL, {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-		{ screenres, NULL, {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-		{ screenres, NULL, {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-		{ screenres, NULL, {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-		{ screenres, NULL, {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-		{ screenres, NULL, {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-		{ redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-		{ whitetext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-		{ redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
-		{ yellowtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL} },
+		{discrete, "Widescreen", {&vid_widescreen}, {6.0}, {0.0}, {0.0}, {WidescreenMode}},
+		{discrete, "VSync", {&vid_vsync}, {2.0}, {0.0}, {0.0}, {nullptr}},
+		{discrete, "Framerate", {&vid_maxfps}, {9.0}, {0.0}, {0.0}, {VidFPSCaps}},
+		{discrete, "32-bit color", {&vid_32bpp}, {2.0}, {0.0}, {0.0}, {nullptr}},
+		{redtext, "", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+		{screenres, NULL, {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+		{screenres, NULL, {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+		{screenres, NULL, {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+		{screenres, NULL, {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+		{screenres, NULL, {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+		{screenres, NULL, {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+		{screenres, NULL, {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+		{screenres, NULL, {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+		{redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+		{whitetext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+		{redtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
+		{yellowtext, " ", {NULL}, {0.0}, {0.0}, {0.0}, {NULL}},
 	};
 
-	menu_t ModesMenu = {
+	menu_t videoModesMenu = {
 		"M_VIDMOD",
 		0,
-		static_cast<int>(ARRAY_LENGTH(ModesItems)),
+		static_cast<int>(ARRAY_LENGTH(videoModeItems)),
 		130,
-		ModesItems,
+		videoModeItems,
 		0,
 		0,
-		NULL
+		NULL,
 	};
+
+	bool VideoModeSelectable(const menuitem_t& item)
+	{
+		if (item.type == redtext || item.type == whitetext || item.type == yellowtext ||
+		    item.type == orangetext)
+		{
+			return false;
+		}
+
+		if (item.type == screenres && item.b.res1 == nullptr)
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	void EnsureSelectedResolutionColumn(int currentItem)
+	{
+		if (currentItem >= 0 && currentItem < videoModesMenu.numitems &&
+		    videoModesMenu.items[currentItem].type == screenres &&
+		    videoModesMenu.items[currentItem].a.selmode < 0)
+		{
+			videoModesMenu.items[currentItem].a.selmode = 0;
+		}
+	}
 
 	void SetVideoMode(uint16_t width, uint16_t height)
 	{
-		old_width = I_GetVideoWidth();
-		old_height = I_GetVideoHeight();
+		oldWidth = I_GetVideoWidth();
+		oldHeight = I_GetVideoHeight();
 
 		AddCommandString(fmt::format("vid_setmode {} {}", width, height));
-		SetModesMenu(width, height);
 	}
 
 	void BuildModesList(int hiwidth, int hiheight)
 	{
-		const bool fullscreen = I_GetWindow()->getVideoMode().isFullScreen();
-		typedef std::vector<std::pair<uint16_t, uint16_t>> MenuModeList;
-		MenuModeList menumodelist;
+		using MenuModeList = std::vector<std::pair<uint16_t, uint16_t>>;
 
-		const IVideoModeList* videomodelist = I_GetVideoCapabilities()->getSupportedVideoModes();
-		for (const auto& mode : *videomodelist)
+		const bool fullscreen = I_GetWindow()->getVideoMode().isFullScreen();
+		MenuModeList menuModeList;
+		const IVideoModeList* videoModeList = I_GetVideoCapabilities()->getSupportedVideoModes();
+
+		for (const auto& mode : *videoModeList)
 		{
 			if (mode.isFullScreen() == fullscreen)
 			{
-				menumodelist.emplace_back(mode.width, mode.height);
+				menuModeList.emplace_back(mode.width, mode.height);
 			}
 		}
-		menumodelist.erase(std::unique(menumodelist.begin(), menumodelist.end()), menumodelist.end());
 
-		MenuModeList::const_iterator mode_it = menumodelist.begin();
-		char** str = NULL;
+		menuModeList.erase(std::unique(menuModeList.begin(), menuModeList.end()), menuModeList.end());
 
-		for (int i = VM_RESSTART; ModesItems[i].type == screenres; i++)
+		auto modeIt = menuModeList.begin();
+		for (int i = VM_RESSTART; videoModeItems[i].type == screenres; ++i)
 		{
-			ModesItems[i].e.highlight = -1;
-			for (int col = 0; col < 3; col++)
+			videoModeItems[i].e.highlight = -1;
+			videoModeItems[i].a.selmode = -1;
+
+			char** columns[] = {&videoModeItems[i].b.res1, &videoModeItems[i].c.res2,
+			                    &videoModeItems[i].d.res3};
+			for (int col = 0; col < 3; ++col)
 			{
-				if (col == 0)
-					str = &ModesItems[i].b.res1;
-				else if (col == 1)
-					str = &ModesItems[i].c.res2;
-				else
-					str = &ModesItems[i].d.res3;
-
-				if (mode_it != menumodelist.end())
+				if (modeIt != menuModeList.end())
 				{
-					auto [width, height] = *mode_it;
-					++mode_it;
-
+					const auto [width, height] = *modeIt++;
 					if (width == hiwidth && height == hiheight)
-						ModesItems[i].e.highlight = ModesItems[i].a.selmode = col;
+					{
+						videoModeItems[i].e.highlight = col;
+						videoModeItems[i].a.selmode = col;
+					}
 
-					char strtemp[32];
-					snprintf(strtemp, 32, "%dx%d", width, height);
-					ReplaceString(str, strtemp);
+					char resolution[32];
+					snprintf(resolution, sizeof(resolution), "%dx%d", width, height);
+					ReplaceString(columns[col], resolution);
 				}
 				else
 				{
-					str = NULL;
+					ReplaceString(columns[col], nullptr);
 				}
 			}
 		}
@@ -167,109 +200,196 @@ namespace
 
 	bool GetSelectedSize(int line, int* width, int* height)
 	{
-		if (ModesItems[line].type != screenres)
+		if (videoModeItems[line].type != screenres)
+		{
 			return false;
+		}
 
-		int mode_num = (line - VM_RESSTART) * 3 + ModesItems[line].a.selmode;
-		const char* resolution_str = NULL;
+		const char* resolution = nullptr;
+		switch (videoModeItems[line].a.selmode)
+		{
+		case 0:
+			resolution = videoModeItems[line].b.res1;
+			break;
+		case 1:
+			resolution = videoModeItems[line].c.res2;
+			break;
+		case 2:
+			resolution = videoModeItems[line].d.res3;
+			break;
+		default:
+			break;
+		}
 
-		if (mode_num % 3 == 0)
-			resolution_str = ModesItems[line].b.res1;
-		else if (mode_num % 3 == 1)
-			resolution_str = ModesItems[line].c.res2;
-		else
-			resolution_str = ModesItems[line].d.res3;
-
-		if (!resolution_str)
+		if (resolution == nullptr)
+		{
 			return false;
+		}
 
-		size_t xpos = 0;
-		for (const char* s = resolution_str; s; s++, xpos++)
-			if (*s == 'x' || *s == 'X')
-				break;
+		const char* xpos = strchr(resolution, 'x');
+		if (xpos == nullptr)
+		{
+			xpos = strchr(resolution, 'X');
+		}
+		if (xpos == nullptr)
+		{
+			return false;
+		}
 
-		char width_str[5] = {0}, height_str[5] = {0};
-		strncpy(width_str, resolution_str, xpos);
-		strncpy(height_str, resolution_str + xpos + 1, 4);
-
-		*width = atoi(width_str);
-		*height = atoi(height_str);
+		*width = atoi(std::string(resolution, xpos - resolution).c_str());
+		*height = atoi(xpos + 1);
 		return true;
 	}
 
-	void SetModesMenu(int w, int h)
+	void SetModesMenu(int width, int height)
 	{
 		if (!testingmode)
 		{
-			ModesItems[VM_ENTERLINE].label = VMEnterText;
-			ModesItems[VM_TESTLINE].label = VMTestText;
+			videoModeItems[VM_ENTERLINE].label = VMEnterText;
+			videoModeItems[VM_TESTLINE].label = VMTestText;
 		}
 		else
 		{
-			static char enter_text[64];
-			snprintf(enter_text, 64, "TESTING %dx%d", w, h);
-			ModesItems[VM_ENTERLINE].label = enter_text;
-			ModesItems[VM_TESTLINE].label = VMTestWaitText;
+			static char enterText[64];
+			snprintf(enterText, sizeof(enterText), "TESTING %dx%d", width, height);
+			videoModeItems[VM_ENTERLINE].label = enterText;
+			videoModeItems[VM_TESTLINE].label = VMTestWaitText;
 		}
 
-		BuildModesList(w, h);
+		BuildModesList(width, height);
 	}
 
-	void SetVidMode()
+	bool ApplySelectedMode(int currentItem)
 	{
-		SetModesMenu(I_GetVideoWidth(), I_GetVideoHeight());
+		int width = I_GetVideoWidth();
+		int height = I_GetVideoHeight();
 
-		if (ModesMenu.items[ModesMenu.lastOn].type == screenres &&
-		    ModesMenu.items[ModesMenu.lastOn].a.selmode == -1)
+		if (videoModeItems[currentItem].type == screenres)
 		{
-			ModesMenu.items[ModesMenu.lastOn].a.selmode++;
+			GetSelectedSize(currentItem, &width, &height);
 		}
 
-		M_ResetOptionsBuiltinState();
-		M_SwitchMenu(&ModesMenu);
+		SetVideoMode(width, height);
+		SetModesMenu(width, height);
+		return true;
 	}
-}
+
+	bool TestSelectedMode(int currentItem)
+	{
+		int width = I_GetVideoWidth();
+		int height = I_GetVideoHeight();
+
+		if (videoModeItems[currentItem].type == screenres)
+		{
+			GetSelectedSize(currentItem, &width, &height);
+		}
+
+		testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
+		SetVideoMode(width, height);
+		SetModesMenu(width, height);
+		return true;
+	}
+
+	void MoveSelection(int direction, int& currentItem)
+	{
+		int next = currentItem;
+		do
+		{
+			next += direction;
+			if (next >= videoModesMenu.numitems)
+			{
+				next = 0;
+			}
+			else if (next < 0)
+			{
+				next = videoModesMenu.numitems - 1;
+			}
+		} while (!VideoModeSelectable(videoModeItems[next]));
+
+		if (videoModeItems[currentItem].type == screenres)
+		{
+			videoModeItems[currentItem].a.selmode = -1;
+		}
+
+		currentItem = next;
+		EnsureSelectedResolutionColumn(currentItem);
+		videoModesMenu.lastOn = currentItem;
+	}
+
+	void ChangeSelectedValue(menuitem_t& item, int direction)
+	{
+		if (item.type == slider)
+		{
+			float newValue = item.a.cvar->value() + (direction > 0 ? item.d.step : -item.d.step);
+			if (item.b.leftval < item.c.rightval)
+			{
+			newValue = std::clamp(newValue, item.b.leftval, item.c.rightval);
+			}
+			else
+			{
+			newValue = std::clamp(newValue, item.c.rightval, item.b.leftval);
+			}
+			item.a.cvar->Set(newValue);
+			return;
+		}
+
+		if (item.type == discrete)
+		{
+			const int numValues = static_cast<int>(item.b.leftval);
+			int currentValue = M_FindCurVal(item.a.cvar->value(), item.e.values, numValues);
+			currentValue += direction > 0 ? 1 : -1;
+			if (currentValue < 0)
+			{
+				currentValue = numValues - 1;
+			}
+			else if (currentValue >= numValues)
+			{
+				currentValue = 0;
+			}
+
+			item.a.cvar->Set(item.e.values[currentValue].value);
+		}
+	}
+} // namespace
 
 int testingmode = 0;
 
 void M_VideoModesInit()
 {
-	for (int i = 0; i < 22; i++)
-	{
-		Depths[i].value = i;
-		Depths[i].name = NULL;
-	}
+	int yesNoCount = 0;
+	value_t* yesNo = M_OptionValueSet("YesNo", yesNoCount);
+	videoModeItems[VM_VSYNCITEM].e.values = yesNo;
+	videoModeItems[VM_32BPPITEM].e.values = yesNo;
 
+#ifndef GCONSOLE
 	switch (I_GetVideoCapabilities()->getDisplayType())
 	{
 	case DISPLAY_FullscreenOnly:
-		ModesItems[2].type = nochoice;
-		ModesItems[2].b.leftval = 1.f;
+		videoModeItems[VM_FULLSCREENITEM].type = nochoice;
+		videoModeItems[VM_FULLSCREENITEM].b.leftval = 1.0f;
 		break;
+
 	case DISPLAY_WindowOnly:
-		ModesItems[2].type = nochoice;
-		ModesItems[2].b.leftval = 0.f;
+		videoModeItems[VM_FULLSCREENITEM].type = nochoice;
+		videoModeItems[VM_FULLSCREENITEM].b.leftval = 0.0f;
 		break;
+
 	default:
 		break;
 	}
+#endif
 }
 
 void M_RestoreVideoMode()
 {
 	testingmode = 0;
-	SetVideoMode(old_width, old_height);
+	SetVideoMode(oldWidth, oldHeight);
+	SetModesMenu(oldWidth, oldHeight);
 }
 
 void M_ModeFlashTestText()
 {
-	ModesItems[VM_TESTLINE].label = (I_MSTime() & 256) ? VMTestWaitText : "";
-}
-
-void M_OpenVideoModeScreen(void)
-{
-	OptionsActive = true;
-	SetVidMode();
+	videoModeItems[VM_TESTLINE].label = (I_MSTime() & 256) ? VMTestWaitText : "";
 }
 
 void M_RefreshModesList()
@@ -277,118 +397,228 @@ void M_RefreshModesList()
 	BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
 }
 
-menu_t* M_VideoModesMenu()
+void M_VideoModesOpen(int& currentItem)
 {
-	return &ModesMenu;
+	SetModesMenu(I_GetVideoWidth(), I_GetVideoHeight());
+	currentItem = videoModesMenu.lastOn;
+	EnsureSelectedResolutionColumn(currentItem);
 }
 
-value_t* M_VideoModesDepths()
+void M_VideoModesRestore(int& currentItem)
 {
-	return Depths;
+	currentItem = videoModesMenu.lastOn;
+	EnsureSelectedResolutionColumn(currentItem);
 }
 
-bool M_VideoModesIsTesting()
+void M_VideoModesDrawer(bool, int currentItem)
 {
-	return testingmode != 0;
-}
+	const OFont* smallFont = OFonts.small();
+	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
+	int y = 15;
 
-bool M_VideoModesOwnsMenu(const menu_t* menu)
-{
-	return menu == &ModesMenu;
-}
-
-void M_VideoModesDepthChanged()
-{
-	BuildModesList(I_GetVideoWidth(), I_GetVideoHeight());
-}
-
-static bool ApplySelectedMode(int currentItem, menuitem_t* item)
-{
-	if (item == nullptr)
+	if (W_CheckNumForName(videoModesMenu.title) >= 0)
 	{
-		return false;
+		const patch_t* title = W_CachePatch(videoModesMenu.title);
+		screen->DrawPatchCleanWithPalette(title, 160 - title->width() / 2, 10, palette);
+		y += title->height();
 	}
 
-	int width = I_GetVideoWidth();
-	int height = I_GetVideoHeight();
-
-	if (item->type == screenres)
+	for (int i = 0; i < videoModesMenu.numitems; ++i, y += smallFont->lineHeight())
 	{
-		GetSelectedSize(currentItem, &width, &height);
-	}
+		menuitem_t& item = videoModeItems[i];
 
-	SetVideoMode(width, height);
-	return true;
-}
-
-static bool TestSelectedMode(int currentItem, menuitem_t* item)
-{
-	if (item == nullptr)
-	{
-		return false;
-	}
-
-	int width = I_GetVideoWidth();
-	int height = I_GetVideoHeight();
-
-	if (item->type == screenres)
-	{
-		GetSelectedSize(currentItem, &width, &height);
-	}
-
-	testingmode = I_MSTime() * TICRATE / 1000 + 5 * TICRATE;
-	SetVideoMode(width, height);
-	return true;
-}
-
-bool M_VideoModesResponder(int ch, int ch2, bool numlock, menuitem_t* item, int& currentItem)
-{
-	if (item == nullptr)
-	{
-		return false;
-	}
-
-	if (Key_IsLeftKey(ch, numlock) && item->type == screenres)
-	{
-		int col = item->a.selmode - 1;
-		if (col < 0)
+		if (item.type == screenres)
 		{
-			if (currentItem > 0 && ModesMenu.items[currentItem - 1].type == screenres)
+			const char* columns[] = {item.b.res1, item.c.res2, item.d.res3};
+			for (int column = 0; column < 3; ++column)
 			{
-				item->a.selmode = -1;
-				ModesMenu.items[--currentItem].a.selmode = 2;
+				if (columns[column] == nullptr)
+				{
+					continue;
+				}
+
+				const int color = column == item.e.highlight ? CR_GREY : CR_RED;
+				screen->DrawTextCleanMove(smallFont, color, 104 * column + 20, y, columns[column]);
+			}
+
+			if (i == currentItem &&
+			    (((item.a.selmode != -1) && indicatorAnimCounter < 6) || testingmode != 0))
+			{
+				if (const patch_t* cursor = M_MenuCursorPatch())
+				{
+					screen->DrawPatchCleanWithPalette(cursor, item.a.selmode * 104 + 8,
+					                                  y + M_MenuCursorOffsetY(), palette);
+				}
+			}
+			continue;
+		}
+
+		const int width = item.label != nullptr ? V_StringWidth(smallFont, item.label) : 0;
+		int x = videoModesMenu.indent - width;
+		int color = CR_RED;
+
+		switch (item.type)
+		{
+		case redtext:
+			x = 160 - width / 2;
+			color = CR_RED;
+			break;
+		case whitetext:
+			x = 160 - width / 2;
+			color = CR_GREY;
+			break;
+		case yellowtext:
+			x = 160 - width / 2;
+			color = CR_YELLOW;
+			break;
+		default:
+			break;
+		}
+
+		if (item.label != nullptr)
+		{
+			screen->DrawTextCleanMove(smallFont, color, x, y, item.label);
+		}
+
+		switch (item.type)
+		{
+		case discrete:
+		{
+			const int numValues = static_cast<int>(item.b.leftval);
+			const int currentValue = M_FindCurVal(item.a.cvar->value(), item.e.values, numValues);
+			const char* value = currentValue == numValues ? "Unknown" : item.e.values[currentValue].name;
+			screen->DrawTextCleanMove(smallFont, CR_GREY, videoModesMenu.indent + 14, y, value);
+			break;
+		}
+
+		case nochoice:
+			screen->DrawTextCleanMove(smallFont, CR_GOLD, videoModesMenu.indent + 14, y,
+			                          item.e.values[static_cast<int>(item.b.leftval)].name);
+			break;
+
+		case slider:
+			M_DrawSlider(videoModesMenu.indent + 8, y, item.b.leftval, item.c.rightval,
+			             item.a.cvar->value(), item.d.step);
+			break;
+
+		default:
+			break;
+		}
+
+		if (i == currentItem && indicatorAnimCounter < 6)
+		{
+			if (const patch_t* cursor = M_MenuCursorPatch())
+			{
+				screen->DrawPatchCleanWithPalette(cursor, videoModesMenu.indent + 3,
+				                                  y + M_MenuCursorOffsetY(), palette);
 			}
 		}
-		else
-		{
-			item->a.selmode = col;
-		}
-		return true;
+	}
+}
+
+void M_VideoModesResponder(int ch, int ch2, bool numlock, int& currentItem)
+{
+	menuitem_t& item = videoModeItems[currentItem];
+
+	if (Key_IsDownKey(ch, numlock))
+	{
+		MoveSelection(1, currentItem);
+		M_PlayMenuSound("navigate");
+		return;
 	}
 
-	if (Key_IsRightKey(ch, numlock) && item->type == screenres)
+	if (Key_IsUpKey(ch, numlock))
 	{
-		int col = item->a.selmode + 1;
-		if ((col > 2) || (col == 2 && !item->d.res3) || (col == 1 && !item->c.res2))
+		MoveSelection(-1, currentItem);
+		M_PlayMenuSound("navigate");
+		return;
+	}
+
+	if (Key_IsLeftKey(ch, numlock))
+	{
+		if (item.type == screenres)
 		{
-			if (ModesMenu.numitems - 1 > currentItem &&
-			    ModesMenu.items[currentItem + 1].type == screenres &&
-			    ModesMenu.items[currentItem + 1].b.res1)
+			if (item.a.selmode > 0)
 			{
-				item->a.selmode = -1;
-				ModesMenu.items[++currentItem].a.selmode = 0;
+				item.a.selmode--;
+				M_PlayMenuSound("navigate");
+			}
+			else if (currentItem > VM_RESSTART &&
+			         videoModeItems[currentItem - 1].type == screenres &&
+			         videoModeItems[currentItem - 1].b.res1 != nullptr)
+			{
+				item.a.selmode = -1;
+				--currentItem;
+				videoModeItems[currentItem].a.selmode =
+				    videoModeItems[currentItem].d.res3 != nullptr ? 2 :
+				    videoModeItems[currentItem].c.res2 != nullptr ? 1 :
+				                                             0;
+				M_PlayMenuSound("navigate");
 			}
 		}
-		else
+		else if (item.type == discrete || item.type == slider)
 		{
-			item->a.selmode = col;
+			ChangeSelectedValue(item, -1);
+			M_PlayMenuSound("changeValue");
 		}
-		return true;
+
+		videoModesMenu.lastOn = currentItem;
+		return;
+	}
+
+	if (Key_IsRightKey(ch, numlock))
+	{
+		if (item.type == screenres)
+		{
+			const bool hasNextColumn =
+			    (item.a.selmode == 0 && item.c.res2 != nullptr) ||
+			    (item.a.selmode == 1 && item.d.res3 != nullptr);
+			if (hasNextColumn)
+			{
+				item.a.selmode++;
+				M_PlayMenuSound("navigate");
+			}
+			else if (currentItem + 1 < videoModesMenu.numitems &&
+			         videoModeItems[currentItem + 1].type == screenres &&
+			         videoModeItems[currentItem + 1].b.res1 != nullptr)
+			{
+				item.a.selmode = -1;
+				++currentItem;
+				videoModeItems[currentItem].a.selmode = 0;
+				M_PlayMenuSound("navigate");
+			}
+		}
+		else if (item.type == discrete || item.type == slider)
+		{
+			ChangeSelectedValue(item, 1);
+			M_PlayMenuSound("changeValue");
+		}
+
+		videoModesMenu.lastOn = currentItem;
+		return;
 	}
 
 	if (Key_IsAcceptKey(ch))
 	{
-		return ApplySelectedMode(currentItem, item);
+		if (item.type == discrete || item.type == slider)
+		{
+			ChangeSelectedValue(item, 1);
+			M_PlayMenuSound("changeValue");
+		}
+		else if (ApplySelectedMode(currentItem))
+		{
+			M_PlayMenuSound("select");
+		}
+
+		videoModesMenu.lastOn = currentItem;
+		return;
+	}
+
+	if (Key_IsCancelKey(ch))
+	{
+		videoModesMenu.lastOn = currentItem;
+		M_PopMenuStack();
+		return;
 	}
 
 #ifdef GCONSOLE
@@ -397,8 +627,9 @@ bool M_VideoModesResponder(int ch, int ch2, bool numlock, menuitem_t* item, int&
 	if (ch2 == 't')
 #endif
 	{
-		return TestSelectedMode(currentItem, item);
+		if (TestSelectedMode(currentItem))
+		{
+			M_PlayMenuSound("select");
+		}
 	}
-
-	return false;
 }
