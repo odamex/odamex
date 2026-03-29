@@ -75,6 +75,7 @@ modules:
       - -D BUILD_SERVER=1
       - -D BUILD_LAUNCHER=1
       - -D BUILD_MASTER=0
+      - -D BUILD_TESTS=0
       - -D USE_INTERNAL_LIBS=0
       - -D USE_INTERNAL_WXWIDGETS=1
       - -D ODAMEX_INSTALL_BINDIR=/app/bin
