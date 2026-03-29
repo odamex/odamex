@@ -1144,8 +1144,9 @@ void M_OptDrawer (void)
 				}
 			}
 
-			if (i == CurrentItem && ((item->a.selmode != -1 && (indicatorAnimCounter < 6 || WaitingForKey))
-				|| WaitingForAxis || M_VideoModesIsTesting()))
+			if (i == CurrentItem &&
+			    ((item->a.selmode != -1 && (indicatorAnimCounter < 6 || WaitingForKey)) ||
+			     WaitingForAxis))
 			{
 				if (const patch_t* cursor = M_MenuCursorPatch())
 				{
@@ -1280,11 +1281,12 @@ void M_OptDrawer (void)
 			{
 				value_t *value;
 				const char *str;
+				int count = 0;
 
 				if (item->b.leftval)
-					value = NoYes;
+					value = M_OptionValueSet("NoYes", count);
 				else
-					value = YesNo;
+					value = M_OptionValueSet("YesNo", count);
 
 				if (*item->e.flagint & item->a.flagmask)
 					str = value[1].name;
@@ -1590,12 +1592,6 @@ void M_OptResponder(const event_t& ev)
 		}
 		else if (Key_IsLeftKey(ch, numlock))
 		{
-		if (M_VideoModesOwnsMenu(CurrentMenu) &&
-		    M_VideoModesResponder(ch, ch2, numlock, item, CurrentItem))
-		{
-			PlayCurrentOptionsSound(item->type == screenres ? "navigate" : "changeValue");
-			return;
-		}
 		switch (item->type)
 		{
 		case slider:
@@ -1642,9 +1638,6 @@ void M_OptResponder(const event_t& ev)
 
 			item->a.cvar->Set(item->e.values[cur].value);
 
-			// Hack hack. Rebuild list of resolutions
-			if (M_VideoModesOwnsMenu(CurrentMenu) && item->e.values == M_VideoModesDepths())
-				M_VideoModesDepthChanged();
 		}
 		PlayCurrentOptionsSound("changeValue");
 		break;
@@ -1667,12 +1660,6 @@ void M_OptResponder(const event_t& ev)
 		}
 		else if (Key_IsRightKey(ch, numlock))
 		{
-		if (M_VideoModesOwnsMenu(CurrentMenu) &&
-		    M_VideoModesResponder(ch, ch2, numlock, item, CurrentItem))
-		{
-			PlayCurrentOptionsSound(item->type == screenres ? "navigate" : "changeValue");
-			return;
-		}
 		switch (item->type)
 		{
 		case slider:
@@ -1719,9 +1706,6 @@ void M_OptResponder(const event_t& ev)
 
 			item->a.cvar->Set(item->e.values[cur].value);
 
-			// Hack hack. Rebuild list of resolutions
-			if (M_VideoModesOwnsMenu(CurrentMenu) && item->e.values == M_VideoModesDepths())
-				M_VideoModesDepthChanged();
 		}
 		PlayCurrentOptionsSound("changeValue");
 		break;
@@ -1763,14 +1747,7 @@ void M_OptResponder(const event_t& ev)
 		}
 		else if (Key_IsAcceptKey(ch))
 		{
-			if (M_VideoModesOwnsMenu(CurrentMenu))
-			{
-				if (M_VideoModesResponder(ch, ch2, numlock, item, CurrentItem))
-				{
-					PlayCurrentOptionsSound("select");
-				}
-			}
-			else if (item->type == more && item->e.mfunc)
+			if (item->type == more && item->e.mfunc)
 			{
 				CurrentMenu->lastOn = CurrentItem;
 				PlayCurrentOptionsSound("select");
@@ -1793,9 +1770,6 @@ void M_OptResponder(const event_t& ev)
 
 				item->a.cvar->Set(item->e.values[cur].value);
 
-				// Hack hack. Rebuild list of resolutions
-				if (M_VideoModesOwnsMenu(CurrentMenu) && item->e.values == M_VideoModesDepths())
-					M_VideoModesDepthChanged();
 				PlayCurrentOptionsSound("changeValue");
 			}
 			else if (item->type == control || item->type == mapcontrol || item->type == netdemocontrol)
@@ -1842,13 +1816,6 @@ void M_OptResponder(const event_t& ev)
 #endif
 		{
 			// Test selected resolution
-			if (M_VideoModesOwnsMenu(CurrentMenu))
-			{
-				if (M_VideoModesResponder(ch, ev.data3, numlock, item, CurrentItem))
-				{
-					PlayCurrentOptionsSound("select");
-				}
-			}
 		}
 		}
 	}

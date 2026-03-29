@@ -26,13 +26,4 @@
 
 #include "m_menu.h"
 
-extern value_t YesNo[2];
-extern value_t NoYes[2];
-extern value_t OnOff[2];
-extern value_t OffOn[2];
-extern value_t OnOffAuto[3];
-extern value_t HideShow[2];
-extern value_t DemoRestrictions[2];
-extern value_t DoomOrOdamex[2];
-
 value_t* M_OptionValueSet(std::string_view name, int& count);
