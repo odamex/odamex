@@ -95,7 +95,7 @@ public:
 	OString(const OString& other, size_t pos, size_t len = npos);
 	OString(const std::string& str, size_t pos, size_t len = npos);
 	OString(std::string_view str, size_t pos, size_t len = npos);
-	OString(const char* s, size_t n = npos);
+	explicit OString(const char* s, size_t n = npos);
 	OString(size_t n, char c);
 
 	template <class InputIterator>
@@ -649,3 +649,8 @@ OString OStringToUpper(const OString& str);
 OString OStringToLower(std::string_view s);
 OString OStringToLower(const OString& str);
 auto inline format_as(const OString& str) { return str.data(); }
+
+inline OString operator""_os (const char* s, size_t l)
+{
+	return OString(s, l);
+}

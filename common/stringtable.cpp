@@ -282,7 +282,7 @@ void StringTable::prepareIndexes()
 		StringHash::iterator it = _stringHash.find(name);
 		if (it == _stringHash.end())
 		{
-			TableEntry entry = {std::make_pair(false, ""), 0xFF, static_cast<int>(i)};
+			TableEntry entry = {std::make_pair(false, ""_os), 0xFF, static_cast<int>(i)};
 			_stringHash.emplace(name, entry);
 		}
 	}
@@ -371,7 +371,7 @@ const OString& StringTable::matchString(const OString& string) const
 			return first;
 	}
 
-	static OString empty = "";
+	static OString empty = ""_os;
 	return empty;
 }
 
