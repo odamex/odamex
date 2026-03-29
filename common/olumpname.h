@@ -112,3 +112,8 @@ struct std::hash<OLumpName>
 };
 
 auto inline format_as(const OLumpName& s) { return s.data(); }
+
+OLumpName operator""_ln(const char* s, size_t)
+{
+	return OLumpName(s);
+}

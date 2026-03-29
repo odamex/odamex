@@ -279,7 +279,8 @@ class BootWindow : public Fl_Window
 		Fl_Group* clicked = static_cast<Fl_Group*>(tabs->value());
 
 		// Have waddirs changed?
-		bool waddirsChanged = boot->m_genWADDirs != ::waddirs;
+		// needs .str() otherwise it tries to use operator!= for OString
+		bool waddirsChanged = boot->m_genWADDirs != ::waddirs.str();
 
 		// User clicked on the first tab, regenerate the
 		// list of IWADs if waddirs changed.
@@ -646,7 +647,7 @@ scannedWADs_t GUI_BootWindow()
 	win->updateWADDirBrowser();
 	win->rescanIWADs();
 	win->position((Fl::w() - win->w()) / 2, (Fl::h() - win->h()) / 2);
-	win->show(fltkargs.NumArgs(), const_cast<char**>(fltkargs.GetArgv().data()));
+	win->show(static_cast<int>(fltkargs.NumArgs()), const_cast<char**>(fltkargs.GetArgv().data()));
 
 	// Blocks until the boot window has been closed.
 	Fl::run();
