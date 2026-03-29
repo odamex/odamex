@@ -183,9 +183,8 @@ public:
 			insert(obj, idx++);
 	}
 
-	template <typename T = ObjType>
-	requires std::is_same_v<T, std::string>
 	void insert(std::span<const char*> objs, IdxType start_idx)
+	requires std::same_as<ObjType, std::string>
 	{
 		IdxType idx = start_idx;
 		reserve(m_lookuptable.size() + objs.size()); // reserve is not additive
