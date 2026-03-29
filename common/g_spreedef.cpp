@@ -33,7 +33,7 @@ static std::string UseStringTableOrToken(std::string token)
 {
 	if (token.find_first_of("$") == 0)
 	{
-		std::string text = GStrings(token.substr(1));
+		std::string text = GStrings(OString(token.substr(1)));
 		if (text.empty())
 		{
 			return token;

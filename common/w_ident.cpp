@@ -1190,7 +1190,7 @@ public:
 
 	bool isCommercialFilename(const std::string& filename) const
 	{
-		OString upper = StdStringToUpper(filename);
+		OString upper = OStringToUpper(filename);
 		for (const auto& id : mIdentifiers)
 		{
 			if (id.mIsCommercial && id.mFilename == upper)
@@ -1201,7 +1201,7 @@ public:
 
 	bool isKnownIWADFilename(const std::string& filename) const
 	{
-		OString upper = StdStringToUpper(filename);
+		OString upper = OStringToUpper(filename);
 		for (const auto& id : mIdentifiers)
 		{
 			if (id.mIsIWAD && id.mFilename == upper)

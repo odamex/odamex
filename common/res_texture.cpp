@@ -576,7 +576,7 @@ void TextureManager::readAnimDefLump()
 					texture_type = Texture::TEX_FLAT;
 
 				os.mustScan();
-				anim.basepic = texturemanager.getHandle(os.getToken(), texture_type);
+				anim.basepic = texturemanager.getHandle(OString(os.getToken()), texture_type);
 
 				anim.curframe = 0;
 				anim.numframes = 0;
@@ -646,7 +646,7 @@ void TextureManager::readAnimDefLump()
 
 					os.mustScan();
 
-					const texhandle_t texhandle = texturemanager.getHandle(os.getToken(), texture_type);
+					const texhandle_t texhandle = texturemanager.getHandle(OString(os.getToken()), texture_type);
 					if (texhandle == TextureManager::NOT_FOUND_TEXTURE_HANDLE ||
 						texhandle == TextureManager::NO_TEXTURE_HANDLE)
 						continue;

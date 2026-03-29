@@ -66,7 +66,7 @@ static bool IfGameZDoom(const std::string& str)
 
 bool StringTable::canSetPassString(int pass, const std::string& name) const
 {
-	StringHash::const_iterator it = _stringHash.find(name);
+	StringHash::const_iterator it = _stringHash.find(OString(name));
 
 	// New string?
 	if (it == _stringHash.end())
@@ -210,7 +210,7 @@ void StringTable::loadLanguage(const char* code, bool exactMatch, int pass, char
 				{
 					continue;
 				}
-				setPassString(pass, name, value);
+				setPassString(pass, OString(name), OString(value));
 			}
 		}
 		else

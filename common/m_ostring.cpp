@@ -646,13 +646,13 @@ void swap(::OString& x, ::OString& y)
 struct UpperFunctor
 {
 	inline char operator()(const char c) const
-	{	return toupper(c);	}
+	{	return toupper(static_cast<unsigned char>(c));	}
 };
 
 struct LowerFunctor
 {
 	inline char operator()(const char c) const
-	{	return tolower(c);	}
+	{	return tolower(static_cast<unsigned char>(c));	}
 };
 
 template <typename FUNC>
@@ -690,6 +690,11 @@ OString OStringToUpper(const char* s, size_t length)
 	return OStringConverter<UpperFunctor>(s, length);
 }
 
+OString OStringToUpper(std::string_view s)
+{
+	return OStringConverter<UpperFunctor>(s.data(), s.length());
+}
+
 OString OStringToUpper(const OString& str)
 {
 	return OStringConverter<UpperFunctor>(str.c_str(), str.length());
@@ -698,6 +703,11 @@ OString OStringToUpper(const OString& str)
 OString OStringToLower(const char* s, size_t length)
 {
 	return OStringConverter<LowerFunctor>(s, length);
+}
+
+OString OStringToLower(std::string_view s)
+{
+	return OStringConverter<LowerFunctor>(s.data(), s.length());
 }
 
 OString OStringToLower(const OString& str)

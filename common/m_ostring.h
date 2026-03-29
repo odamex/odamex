@@ -91,10 +91,8 @@ public:
 
 	OString();
 	OString(const OString& other);
-	// TODO: consider making these explicit, right now strings try to implicitly convert to OString
-	// and use its comparison operators, and we rarely want OStrings unless explicitly indicated.
-	OString(const std::string& str);
-	OString(std::string_view str);
+	explicit OString(const std::string& str);
+	explicit OString(std::string_view str);
 	OString(const OString& other, size_t pos, size_t len = npos);
 	OString(const std::string& str, size_t pos, size_t len = npos);
 	OString(std::string_view str, size_t pos, size_t len = npos);
@@ -648,7 +646,9 @@ template <> struct hashfunc<OString>
 // ----------------------------------------------------------------------------
 
 OString OStringToUpper(const char* s, size_t n = OString::npos);
+OString OStringToUpper(std::string_view s);
 OString OStringToUpper(const OString& str);
 OString OStringToLower(const char* s, size_t n = OString::npos);
+OString OStringToLower(std::string_view s);
 OString OStringToLower(const OString& str);
 auto inline format_as(const OString& str) { return str.data(); }
