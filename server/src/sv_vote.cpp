@@ -843,7 +843,7 @@ vote_state_t Vote::serialize() const
 void Vote::ev_disconnect(player_t &player)
 {
 	// If the player had an entry in the tally, delete it.
-	if (this->tally.count(player.id) > 0)
+	if (this->tally.contains(player.id))
 	{
 		this->tally.erase(player.id);
 	}

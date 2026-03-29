@@ -183,7 +183,8 @@ public:
 			insert(obj, idx++);
 	}
 
-	template <typename T = ObjType, typename = std::enable_if_t<std::is_same_v<T, std::string>>>
+	template <typename T = ObjType>
+	requires std::is_same_v<T, std::string>
 	void insert(std::span<const char*> objs, IdxType start_idx)
 	{
 		IdxType idx = start_idx;
