@@ -578,174 +578,33 @@ bool operator== (const OString& lhs, const OString& rhs)
 	return lhs.equals(rhs);
 }
 
-bool operator== (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) == 0;
-}
-
-bool operator== (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) == 0;
-}
-
-bool operator== (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) == 0;
-}
-
-bool operator== (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) == 0;
-}
-
-
 // ------------------------------------------------------------------------
-// operator!=
+// operator<=>
 // ------------------------------------------------------------------------
 
-bool operator!= (const OString& lhs, const OString& rhs)
+std::strong_ordering operator<=> (const OString& lhs, const OString& rhs)
 {
-	return !(lhs.equals(rhs));
+	return lhs.compare(rhs) <=> 0;
 }
 
-bool operator!= (const OString& lhs, const std::string& rhs)
+std::strong_ordering operator<=> (const OString& lhs, const std::string& rhs)
 {
-	return lhs.compare(rhs) != 0;
+	return lhs.compare(rhs) <=> 0;
 }
 
-bool operator!= (const std::string& lhs, const OString& rhs)
+std::strong_ordering operator<=> (const std::string& lhs, const OString& rhs)
 {
-	return rhs.compare(lhs) != 0;
+	return 0 <=> rhs.compare(lhs);
 }
 
-bool operator!= (const OString& lhs, const char* rhs)
+std::strong_ordering operator<=> (const OString& lhs, const char* rhs)
 {
-	return lhs.compare(rhs) != 0;
+	return lhs.compare(rhs) <=> 0;
 }
 
-bool operator!= (const char* lhs, const OString& rhs)
+std::strong_ordering operator<=> (const char* lhs, const OString& rhs)
 {
-	return rhs.compare(lhs) != 0;
-}
-
-
-// ------------------------------------------------------------------------
-// operator<
-// ------------------------------------------------------------------------
-
-bool operator< (const OString& lhs, const OString& rhs)
-{
-	return lhs.compare(rhs) < 0;
-}
-
-bool operator< (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) < 0;
-}
-
-bool operator< (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) > 0;
-}
-
-bool operator< (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) < 0;
-}
-
-bool operator< (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) > 0;
-}
-
-
-// ------------------------------------------------------------------------
-// operator<=
-// ------------------------------------------------------------------------
-
-bool operator<= (const OString& lhs, const OString& rhs)
-{
-	return lhs.equals(rhs) || lhs.compare(rhs) < 0;
-}
-
-bool operator<= (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) < 0;
-}
-
-bool operator<= (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) > 0;
-}
-
-bool operator<= (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) < 0;
-}
-
-bool operator<= (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) > 0;
-}
-
-
-// ------------------------------------------------------------------------
-// operator>
-// ------------------------------------------------------------------------
-
-bool operator> (const OString& lhs, const OString& rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator> (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator> (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) < 0;
-}
-
-bool operator> (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator> (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) < 0;
-}
-
-
-// ------------------------------------------------------------------------
-// operator>=
-// ------------------------------------------------------------------------
-
-bool operator>= (const OString& lhs, const OString& rhs)
-{
-	return lhs.equals(rhs) || lhs.compare(rhs) > 0;
-}
-
-bool operator>= (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator>= (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) < 0;
-}
-
-bool operator>= (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator>= (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) < 0;
+	return 0 <=> rhs.compare(lhs);
 }
 
 // ------------------------------------------------------------------------
