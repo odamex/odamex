@@ -578,6 +578,26 @@ bool operator== (const OString& lhs, const OString& rhs)
 	return lhs.equals(rhs);
 }
 
+bool operator== (const OString& lhs, const std::string& rhs)
+{
+	return lhs.compare(rhs) == 0;
+}
+
+bool operator== (const std::string& lhs, const OString& rhs)
+{
+	return rhs.compare(lhs) == 0;
+}
+
+bool operator== (const OString& lhs, const char* rhs)
+{
+	return lhs.compare(rhs) == 0;
+}
+
+bool operator== (const char* lhs, const OString& rhs)
+{
+	return rhs.compare(lhs) == 0;
+}
+
 // ------------------------------------------------------------------------
 // operator<=>
 // ------------------------------------------------------------------------
