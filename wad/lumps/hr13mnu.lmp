@@ -1,0 +1,29 @@
+{
+  "type": "menuconf",
+  "version": "1.0.0",
+  "metadata": {
+    "author": "Odamex Team",
+    "timestamp": "2026-03-30T12:45:00-05:00",
+    "application": "Odamex"
+  },
+  "data": {
+    "menus": {
+      "episodes": {
+        "layout": {
+          "style": "textList",
+          "x": 44,
+          "y": 44,
+          "topPadding": 0,
+          "itemSpacing": "font"
+        },
+        "items": [
+          { "kind": "action", "patch": null, "text": null, "languageKey": "EPISODE_COTD", "action": "chooseEpisode", "params": { "episode": "heretic.ep1" }, "target": "skills", "hotkey": "C" },
+          { "kind": "action", "patch": null, "text": null, "languageKey": "EPISODE_HELLSMAW", "action": "chooseEpisode", "params": { "episode": "heretic.ep2" }, "target": "skills", "hotkey": "H" },
+          { "kind": "action", "patch": null, "text": null, "languageKey": "EPISODE_DOME", "action": "chooseEpisode", "params": { "episode": "heretic.ep3" }, "target": "skills", "hotkey": "D" },
+          { "kind": "action", "patch": null, "text": null, "languageKey": "EPISODE_OSSUARY", "action": "chooseEpisode", "params": { "episode": "heretic.ep4" }, "target": "skills", "hotkey": "O" },
+          { "kind": "action", "patch": null, "text": null, "languageKey": "EPISODE_DEMESNE", "action": "chooseEpisode", "params": { "episode": "heretic.ep5" }, "target": "skills", "hotkey": "S" }
+        ]
+      }
+    }
+  }
+}

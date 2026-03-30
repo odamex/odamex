@@ -93,8 +93,7 @@
         "items": [
           { "kind": "action", "patch": "M_EPI1", "text": "KNEE-DEEP IN THE DEAD", "action": "chooseEpisode", "params": { "episode": "doom.ep1" }, "target": "skills", "hotkey": "K" },
           { "kind": "action", "patch": "M_EPI2", "text": "THE SHORES OF HELL", "action": "chooseEpisode", "params": { "episode": "doom.ep2" }, "target": "skills", "hotkey": "T" },
-          { "kind": "action", "patch": "M_EPI3", "text": "INFERNO", "action": "chooseEpisode", "params": { "episode": "doom.ep3" }, "target": "skills", "hotkey": "I" },
-          { "kind": "action", "patch": "M_EPI4", "text": "THY FLESH CONSUMED", "action": "chooseEpisode", "params": { "episode": "doom.ep4" }, "target": "skills", "hotkey": "T" }
+          { "kind": "action", "patch": "M_EPI3", "text": "INFERNO", "action": "chooseEpisode", "params": { "episode": "doom.ep3" }, "target": "skills", "hotkey": "I" }
         ]
       },
       "skills": {

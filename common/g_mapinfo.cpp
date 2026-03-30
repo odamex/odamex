@@ -1935,7 +1935,7 @@ void G_ParseMapInfo()
 	G_ResetFontDefs();
 
 	// Parse common defaults first for Doom-family game missions.
-	// Heretic has its own complete skill/gameinfo setup in _HERENFO.
+	// Heretic has its own complete skill/gameinfo setup in _HRNFO.
 	if (gameinfo.enginetype == ENGINE_DOOM)
 	{
 		ParseMapInfoLump(W_GetNumForName("_DCOMNFO"), "_DCOMNFO");

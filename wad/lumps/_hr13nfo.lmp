@@ -1,0 +1,6 @@
+// MAPINFO overrides for Heretic v1.3 / Shadow of the Serpent Riders
+
+gameinfo
+{
+	menuconfoverride = "HR13MNU"
+}

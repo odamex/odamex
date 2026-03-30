@@ -55,7 +55,7 @@ gameinfo
 	cheatkey = "CHEATKEY"
 	easykey = "EASYKEY"
 	maxswitch = 2
-	menuconf = "_HERMENU"
+	menuconf = "_HRMENU"
 	defaultwipetype = 0
 }
 

@@ -1688,8 +1688,8 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.demoformat = DEMOFORMAT_HERETIC_VANILLA;
 		gameinfo.flags = GI_SHAREWARE | GI_MENUHACK_RETAIL;
 		gameinfo.titleString = "Heretic Shareware";
-		gameinfo.baseMapinfoLump = "_HERENFO";
-		gameinfo.overrideMapinfoLump = "_HESWNFO";
+		gameinfo.baseMapinfoLump = "_HRNFO";
+		gameinfo.overrideMapinfoLump = "_HRSWNFO";
 	}
 	else if (idname.find(OStringToUpper(OString(HERETIC_PREFIX))) == 0)
 	{
@@ -1699,7 +1699,11 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.demoformat = DEMOFORMAT_HERETIC_VANILLA;
 		gameinfo.flags = GI_PAGESARERAW | GI_MENUHACK_RETAIL;
 		gameinfo.titleString = "Heretic";
-		gameinfo.baseMapinfoLump = "_HERENFO";
+		gameinfo.baseMapinfoLump = "_HRNFO";
+		if (idname.find(" V1.3") != std::string::npos)
+		{
+			gameinfo.overrideMapinfoLump = "_HR13NFO";
+		}
 	}
 	else
 	{
