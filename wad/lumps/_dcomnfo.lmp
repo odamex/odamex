@@ -29,7 +29,7 @@ gameinfo
 	borderflat = "GRNROCK"
 	chatsound = "misc/chat"
 	creditpage = "CREDIT"
-	demoloop = "DDEMOLP"
+	demoloop = "_DDEMOLP"
 	pagetime = 5
 	intermissioncounter = true
 	intermissionmusic = "$MUSIC_DM2INT"

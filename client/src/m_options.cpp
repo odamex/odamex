@@ -1354,6 +1354,11 @@ void M_OptDrawer (void)
 
 void M_OptResponder(const event_t& ev)
 {
+	if (CurrentMenu == nullptr)
+	{
+		return;
+	}
+
 	int ch = ev.data1;
 	int ch2 = ev.data3;
 	int mod = ev.mod;

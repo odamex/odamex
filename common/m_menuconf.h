@@ -163,7 +163,7 @@ struct menuconfdatabase_t
 
 inline constexpr JSONLumpVersion MENUCONF_VERSION = {1, 0, 0};
 inline constexpr std::string_view MENUCONF_LUMPTYPE = "menuconf";
-inline constexpr std::string_view MENUCONF_BASE_LUMPNAME = "ODXMENU";
+inline constexpr std::string_view MENUCONF_BASE_LUMPNAME = "_ODXMENU";
 inline constexpr std::string_view MENUCONF_OVERRIDE_LUMPNAME = "MENUCONF";
 
 jsonlumpresult_t M_ParseMenuConf(menuconfdatabase_t& out, int lumpindex);

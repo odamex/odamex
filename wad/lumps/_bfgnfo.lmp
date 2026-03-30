@@ -2,7 +2,7 @@
 
 gameinfo
 {
-	demoloop = "BFGDMLP"
+	demoloop = "_BFGDMLP"
 	titlepage = "DMENUPIC"
 	menuconfoverride = "_BFGMENU"
 }

@@ -29,7 +29,7 @@ gameinfo
 	borderflat = "FLAT513"
 	chatsound = "misc/chat"
 	creditpage = "CREDIT"
-	demoloop = "HRDEMOLP"
+	demoloop = "_hrdmolp"
 	pagetime = 5
 	intermissioncounter = false
 	intermissionmusic = "mus_intr"

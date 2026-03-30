@@ -2,5 +2,5 @@
 
 gameinfo
 {
-	menuconfoverride = "HR13MNU"
+	menuconfoverride = "_HR13MNU"
 }

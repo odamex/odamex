@@ -2,7 +2,7 @@
 
 gameinfo
 {
-	demoloop = "D2DEMOLP"
+	demoloop = "_D2DMOLP"
 	maxswitch = 3
 	menuconfoverride = "_D2MENU"
 }

@@ -1522,13 +1522,6 @@ bool M_Responder(const event_t& ev)
 	if (ch == -1 || HU_ChatMode() != CHAT_INACTIVE)
 		return false;
 
-	// Transfer any action to the Options Menu Responder
-	// if we're not on the main menu.
-	if (menuactive && OptionsActive) {
-		M_OptResponder (ev);
-		return true;
-	}
-
 	bool numlock = mod & OKEY_NUMLOCK;
 
 	// Handle Repeat
@@ -1566,6 +1559,13 @@ bool M_Responder(const event_t& ev)
 		menuactive = false;
 		M_ResumeSound();
 		M_PlayMenuSound("close");
+		return true;
+	}
+
+	// Transfer any action to the Options Menu Responder
+	// if we're not on the main menu.
+	if (menuactive && OptionsActive) {
+		M_OptResponder (ev);
 		return true;
 	}
 
