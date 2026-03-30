@@ -197,12 +197,6 @@ typedef struct gameinfo_s
 		, overrideMapinfoLump("")
 		, baseMenuConfLump("")
 		, overrideMenuConfLump("")
-		, menuTitle("")
-		, menuTitleOffsetX(0)
-		, menuIndicatorLumps{ "M_SKULL1", "M_SKULL2" }
-		, menuIndicatorOffsetX(-32)
-		, menuIndicatorOffsetY(-5)
-		, menuCursorOffsetY(0)
 		, defaultWipeType(1)
 	{
 	}

@@ -56,11 +56,6 @@ gameinfo
 	easykey = "EASYKEY"
 	maxswitch = 2
 	menuconf = "_HERMENU"
-	menutitle = "M_HTIC"
-	menuindicatorlumps = "M_SLCTR1", "M_SLCTR2"
-	menuindicatoroffsetx = -28
-	menuindicatoroffsety = -3
-	menucursoroffsety = 2
 	defaultwipetype = 0
 }
 
