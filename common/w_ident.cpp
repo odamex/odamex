@@ -1537,6 +1537,8 @@ const fileIdentifier_t* W_GameInfo(const OMD5Hash& md5)
 void W_ConfigureGameInfo(const OResFile& iwad)
 {
 	const OString idname = identtab.identify(iwad);
+	const fileIdentifier_t* fileid = W_GameInfo(iwad.getMD5());
+	const OString groupname = fileid != nullptr ? fileid->mGroupName : OString();
 
     gameinfo = gameinfo_t();
 
@@ -1700,7 +1702,7 @@ void W_ConfigureGameInfo(const OResFile& iwad)
 		gameinfo.flags = GI_PAGESARERAW | GI_MENUHACK_RETAIL;
 		gameinfo.titleString = "Heretic";
 		gameinfo.baseMapinfoLump = "_HRNFO";
-		if (idname.find(" V1.3") != std::string::npos)
+		if (groupname.find(OStringToUpper(OString(HERETIC_PREFIX " v1.3"))) == 0)
 		{
 			gameinfo.overrideMapinfoLump = "_HR13NFO";
 		}
