@@ -407,7 +407,7 @@ BEGIN_COMMAND (menu_video)
 }
 END_COMMAND (menu_video)
 
-const char* M_LocalizedString(const char* key)
+const char* M_LocalizedMenuString(const char* key)
 {
 	if (GStrings.hasString(key))
 	{
@@ -593,7 +593,7 @@ namespace
 			const char* headerText = nullptr;
 			if (!menu->header.languageKey.empty())
 			{
-				headerText = M_LocalizedString(menu->header.languageKey.c_str());
+				headerText = M_LocalizedMenuString(menu->header.languageKey.c_str());
 			}
 			else if (!menu->header.text.empty())
 			{
@@ -807,7 +807,7 @@ namespace
 
 	std::string GeneratedMenuItemText(const menuconfitem_t& item)
 	{
-		const char* base = !item.languageKey.empty() ? M_LocalizedString(item.languageKey.c_str()) :
+		const char* base = !item.languageKey.empty() ? M_LocalizedMenuString(item.languageKey.c_str()) :
 		                   item.text.c_str();
 		if (item.kind != menuconfitemkind_t::cvarDiscrete)
 		{
@@ -947,7 +947,7 @@ void M_ActivateGeneratedMenuItem(int choice)
 			{
 				const char* sharewareMessage =
 				    gameinfo.sharewareMessage.empty() ? GStrings(SWSTRING) :
-				                                       M_LocalizedString(gameinfo.sharewareMessage.c_str());
+				                                       M_LocalizedMenuString(gameinfo.sharewareMessage.c_str());
 				M_StartMessage(sharewareMessage, NULL, false);
 				M_ClearMenus();
 				return;
@@ -1196,7 +1196,7 @@ void M_DrawGeneratedMenu()
 			if (item.kind == menuconfitemkind_t::cvarDiscrete)
 			{
 				const char* base = !item.languageKey.empty() ?
-				                       M_LocalizedString(item.languageKey.c_str()) :
+				                       M_LocalizedMenuString(item.languageKey.c_str()) :
 				                       item.text.c_str();
 				const char* value = GeneratedDiscreteValueName(item);
 				const int smallY = y + (M_BigFontLineHeight() / 2 - M_SmallFontLineHeight() / 2) + 5;
@@ -1402,7 +1402,7 @@ static const std::string M_QuitMessage()
 	std::string message;
 	if (base_index < 0)
 	{
-		message = M_LocalizedString(gameinfo.quitMessage.c_str());
+		message = M_LocalizedMenuString(gameinfo.quitMessage.c_str());
 	}
 	else
 	{
@@ -1410,12 +1410,12 @@ static const std::string M_QuitMessage()
 		const char* indexed = GStrings.getIndex(base_index + offset);
 
 		message = (indexed == nullptr || indexed[0] == '\0') ? 
-			M_LocalizedString(gameinfo.quitMessage.c_str()) : indexed;
+			M_LocalizedMenuString(gameinfo.quitMessage.c_str()) : indexed;
 	}
 
 	if (!gameinfo.quitPrompt.empty())
 	{
-		return fmt::sprintf("%s\n\n%s", message, M_LocalizedString(gameinfo.quitPrompt.c_str()));
+		return fmt::sprintf("%s\n\n%s", message, M_LocalizedMenuString(gameinfo.quitPrompt.c_str()));
 	}
 
 	return fmt::sprintf("%s\n", message);
