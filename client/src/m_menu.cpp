@@ -25,6 +25,7 @@
 #include "odamex.h"
 
 #include <array>
+#include <unordered_map>
 #include <unordered_set>
 
 #include "gstrings.h"
@@ -131,7 +132,7 @@ struct builtinscreendef_t
 
 struct generatedmenu_t
 {
-	const char* menuId = nullptr;
+	std::string menuId;
 	std::vector<menuconfitem_t> items;
 	int x = 0;
 	int y = 0;
@@ -140,11 +141,7 @@ struct generatedmenu_t
 
 static generatedmenu_t* CurrentGeneratedMenu = nullptr;
 static int CurrentGeneratedItem = 0;
-static generatedmenu_t generatedMainMenu;
-static generatedmenu_t generatedEpisodeMenu;
-static generatedmenu_t generatedExpansionMenu;
-static generatedmenu_t generatedSkillMenu;
-static generatedmenu_t generatedGameFilesMenu;
+static std::unordered_map<std::string, generatedmenu_t> generatedMenus;
 static std::string selectedEpisodeId;
 
 //
@@ -188,6 +185,7 @@ static int M_BigFontLineHeight();
 namespace
 {
 	const builtinscreendef_t* BuiltInScreenDef(BuiltInScreen screen);
+	bool BuildGeneratedMenu(generatedmenu_t& generatedMenu, const char* menuId, int defaultLastOn);
 
 	bool GeneratedMenuIndicatorPosition(int& x, int& y)
 	{
@@ -200,6 +198,28 @@ namespace
 		y = CurrentGeneratedMenu->y + M_MenuIndicatorOffsetY() +
 		    CurrentGeneratedItem * M_BigFontLineHeight();
 		return true;
+	}
+
+	int DefaultGeneratedMenuLastOn(const std::string& menuId)
+	{
+		return iequals(menuId, "skills") ? defaultskillmenu : 0;
+	}
+
+	void M_BuildGeneratedMenus()
+	{
+		generatedMenus.clear();
+		generatedMenus.reserve(M_MenuConf().menus.size());
+
+		for (const auto& [menuId, authoredMenu] : M_MenuConf().menus)
+		{
+			if (authoredMenu.items.empty())
+			{
+				continue;
+			}
+
+			generatedmenu_t& generatedMenu = generatedMenus[menuId];
+			BuildGeneratedMenu(generatedMenu, menuId.c_str(), DefaultGeneratedMenuLastOn(menuId));
+		}
 	}
 
 	void M_DrawMenuIndicatorOverlay()
@@ -293,20 +313,12 @@ static void M_ResumeSound(void)
 	S_ResumeSound();
 }
 
-static constexpr int MAINMENU_DEFAULT_X = 97;
-static constexpr int MAINMENU_DEFAULT_Y = 64;
-static constexpr int SUBMENU_DEFAULT_X = 48;
-static constexpr int SUBMENU_DEFAULT_Y = 63;
-
 //
 // OPTIONS MENU
 //
 // [RH] This menu is now handled in m_options.c
 //
 bool OptionsActive;
-
-static constexpr int GAMEFILES_DEFAULT_X = 110;
-static constexpr int GAMEFILES_DEFAULT_Y = 60;
 
 // [RH] Most menus can now be accessed directly
 // through console commands.
@@ -431,23 +443,8 @@ namespace
 
 	generatedmenu_t* GeneratedMenuById(const char* menuId)
 	{
-		generatedmenu_t* menus[] = {
-			&generatedMainMenu,
-			&generatedEpisodeMenu,
-			&generatedExpansionMenu,
-			&generatedSkillMenu,
-			&generatedGameFilesMenu
-		};
-
-		for (generatedmenu_t* generatedMenu : menus)
-		{
-			if (generatedMenu->menuId != nullptr && iequals(generatedMenu->menuId, menuId))
-			{
-				return generatedMenu;
-			}
-		}
-
-		return nullptr;
+		const auto it = generatedMenus.find(menuId);
+		return it != generatedMenus.end() ? &it->second : nullptr;
 	}
 
 	const menuconftheme_t& MenuConfTheme()
@@ -569,12 +566,12 @@ namespace
 
 	void DrawGeneratedMenuHeader(const generatedmenu_t& generatedMenu)
 	{
-		if (generatedMenu.menuId == nullptr)
+		if (generatedMenu.menuId.empty())
 		{
 			return;
 		}
 
-		const menuconfmenu_t* menu = MenuConfMenu(generatedMenu.menuId);
+		const menuconfmenu_t* menu = MenuConfMenu(generatedMenu.menuId.c_str());
 		if (menu == nullptr)
 		{
 			return;
@@ -753,30 +750,24 @@ namespace
 		return M_ResolveMenuEntrypoint(name, destination) && M_OpenResolvedDestination(destination);
 	}
 
-	bool BuildGeneratedMenu(generatedmenu_t& generatedMenu, const char* menuId,
-	                        int defaultX, int defaultY, int defaultLastOn)
+	bool BuildGeneratedMenu(generatedmenu_t& generatedMenu, const char* menuId, int defaultLastOn)
 	{
 		const menuconfmenu_t* authoredMenu = MenuConfMenu(menuId);
 		if (authoredMenu == nullptr || authoredMenu->items.empty())
 		{
 			generatedMenu.items.clear();
 			generatedMenu.menuId = menuId;
-			generatedMenu.x = defaultX;
-			generatedMenu.y = defaultY;
+			generatedMenu.x = 0;
+			generatedMenu.y = 0;
 			generatedMenu.lastOn = defaultLastOn;
 			return false;
 		}
 
 		generatedMenu.menuId = menuId;
 		generatedMenu.items = authoredMenu->items;
-		if (iequals(menuId, "episodes") &&
-		    episodenum > 0 && static_cast<int>(generatedMenu.items.size()) > episodenum)
-		{
-			generatedMenu.items.resize(episodenum);
-		}
 		generatedMenu.lastOn = iequals(menuId, "skills") ? defaultskillmenu : defaultLastOn;
-		generatedMenu.x = authoredMenu->layout.x != 0 ? authoredMenu->layout.x : defaultX;
-		generatedMenu.y = authoredMenu->layout.y != 0 ? authoredMenu->layout.y : defaultY;
+		generatedMenu.x = authoredMenu->layout.x;
+		generatedMenu.y = authoredMenu->layout.y;
 		return true;
 	}
 
@@ -2025,22 +2016,6 @@ void M_Init()
 	messageString = NULL;
 	messageLastMenuActive = menuactive;
 
-	if (gameinfo.flags & GI_MAPxx)
-	{
-		generatedMainMenu.x = MAINMENU_DEFAULT_X;
-		generatedMainMenu.y = MAINMENU_DEFAULT_Y + 8;
-	}
-	else if (gameinfo.enginetype == ENGINE_HERETIC)
-	{
-		generatedMainMenu.x = 110;
-		generatedMainMenu.y = 56;
-	}
-	else
-	{
-		generatedMainMenu.x = MAINMENU_DEFAULT_X;
-		generatedMainMenu.y = MAINMENU_DEFAULT_Y;
-	}
-
 	for (const builtinscreendef_t& builtin : BuiltInScreenDefs)
 	{
 		if (builtin.init != nullptr)
@@ -2049,14 +2024,13 @@ void M_Init()
 		}
 	}
 
-	if (!BuildGeneratedMenu(generatedMainMenu, "main", generatedMainMenu.x, generatedMainMenu.y, 0))
+	M_BuildGeneratedMenus();
+
+	generatedmenu_t* mainMenu = GeneratedMenuById("main");
+	if (mainMenu == nullptr || mainMenu->items.empty())
 	{
 		I_Error("M_Init: MENUCONF main menu is missing or empty");
 	}
-	BuildGeneratedMenu(generatedEpisodeMenu, "episodes", SUBMENU_DEFAULT_X, SUBMENU_DEFAULT_Y, 0);
-	BuildGeneratedMenu(generatedExpansionMenu, "expansions", SUBMENU_DEFAULT_X, SUBMENU_DEFAULT_Y, 0);
-	BuildGeneratedMenu(generatedSkillMenu, "skills", SUBMENU_DEFAULT_X, SUBMENU_DEFAULT_Y, defaultskillmenu);
-	BuildGeneratedMenu(generatedGameFilesMenu, "gamefiles", GAMEFILES_DEFAULT_X, GAMEFILES_DEFAULT_Y, 0);
 
 	M_BuildGeneratedOptionsMenus();
 }
