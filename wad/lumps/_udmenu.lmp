@@ -11,7 +11,7 @@
       "episodes": {
         "header": {
           "patch": "M_EPISOD",
-          "text": "NEW GAME",
+          "text": "WHICH EPISODE?",
           "y": 38
         },
         "layout": {

@@ -3,4 +3,5 @@
 gameinfo
 {
 	demoloop = "_uddmolp"
+	menuconfoverride = "_UDMENU"
 }
