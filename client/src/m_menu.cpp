@@ -232,13 +232,14 @@ namespace
 		int x = 0;
 		int y = 0;
 		bool havePosition = false;
+		const builtinscreendef_t* builtin = BuiltInScreenDef(CurrentBuiltinScreen);
+		const patch_t* indicator = M_MenuIndicatorPatch(whichIndicator);
 
 		if (CurrentGeneratedMenu != nullptr)
 		{
 			havePosition = GeneratedMenuIndicatorPosition(x, y);
 		}
-		else if (const builtinscreendef_t* builtin = BuiltInScreenDef(CurrentBuiltinScreen);
-		         builtin != nullptr && builtin->indicatorPosition != nullptr)
+		else if (builtin != nullptr && builtin->indicatorPosition != nullptr)
 		{
 			havePosition = builtin->indicatorPosition(CurrentBuiltinItem, x, y);
 		}
@@ -248,10 +249,7 @@ namespace
 			return;
 		}
 
-		if (const patch_t* indicator = M_MenuIndicatorPatch(whichIndicator))
-		{
-			screen->DrawPatchClean(indicator, x, y);
-		}
+		screen->DrawPatchClean(indicator, x, y);
 	}
 
 	constexpr auto BuiltInScreenDefs = std::array{
@@ -339,7 +337,6 @@ BEGIN_COMMAND (menu_save)
 {
     // F2
 	M_OpenMenuTarget("builtin:saveGame");
-	//Printf (PRINT_WARNING, "Saving is not available at this time.\n");
 }
 END_COMMAND (menu_save)
 
@@ -347,7 +344,6 @@ BEGIN_COMMAND (menu_load)
 {
     // F3
 	M_OpenMenuTarget("builtin:loadGame");
-	//Printf (PRINT_WARNING, "Loading is not available at this time.\n");
 }
 END_COMMAND (menu_load)
 
@@ -358,30 +354,37 @@ BEGIN_COMMAND (menu_options)
 }
 END_COMMAND (menu_options)
 
+BEGIN_COMMAND (menu_display)
+{
+	// F5
+	M_OpenMenuTarget("options.display");
+}
+END_COMMAND (menu_display)
+
 BEGIN_COMMAND (quicksave)
 {
     // F6
 	M_QuickSave ();
-	//Printf (PRINT_WARNING, "Saving is not available at this time.\n");
 }
 END_COMMAND (quicksave)
 
 BEGIN_COMMAND (menu_endgame)
-{	// F7
+{
+	// F7
 	M_BeginEndGamePrompt();
 }
 END_COMMAND (menu_endgame)
 
 BEGIN_COMMAND (quickload)
 {
-    // F9
+	// F9
 	M_QuickLoad ();
-	//Printf (PRINT_WARNING, "Loading is not available at this time.\n");
 }
 END_COMMAND (quickload)
 
 BEGIN_COMMAND (menu_quit)
-{	// F10
+{
+	// F10
 	M_BeginQuitGamePrompt();
 }
 END_COMMAND (menu_quit)
@@ -398,19 +401,13 @@ BEGIN_COMMAND (menu_keys)
 }
 END_COMMAND (menu_keys)
 
-BEGIN_COMMAND (menu_display)
-{
-	M_OpenMenuTarget("options.display");
-}
-END_COMMAND (menu_display)
-
 BEGIN_COMMAND (menu_video)
 {
 	M_OpenMenuTarget("builtin:videoMode");
 }
 END_COMMAND (menu_video)
 
-static const char* LocalizedString(const char* key)
+const char* M_LocalizedString(const char* key)
 {
 	if (GStrings.hasString(key))
 	{
@@ -419,11 +416,6 @@ static const char* LocalizedString(const char* key)
 			return s;
 	}
 	return key;
-}
-
-const char* M_LocalizedMenuString(const char* key)
-{
-	return LocalizedString(key);
 }
 
 namespace
@@ -514,11 +506,14 @@ namespace
 
 	int SkillIndexForId(const std::string& id)
 	{
-		if (id == "baby") return 0;
-		if (id == "easy") return 1;
-		if (id == "normal") return 2;
-		if (id == "hard") return 3;
-		if (id == "nightmare") return 4;
+		for (int i = 0; i < skillnum; ++i)
+		{
+			if (iequals(SkillInfos[i].name, id))
+			{
+				return i;
+			}
+		}
+
 		return -1;
 	}
 
@@ -598,7 +593,7 @@ namespace
 			const char* headerText = nullptr;
 			if (!menu->header.languageKey.empty())
 			{
-				headerText = LocalizedString(menu->header.languageKey.c_str());
+				headerText = M_LocalizedString(menu->header.languageKey.c_str());
 			}
 			else if (!menu->header.text.empty())
 			{
@@ -812,7 +807,7 @@ namespace
 
 	std::string GeneratedMenuItemText(const menuconfitem_t& item)
 	{
-		const char* base = !item.languageKey.empty() ? LocalizedString(item.languageKey.c_str()) :
+		const char* base = !item.languageKey.empty() ? M_LocalizedString(item.languageKey.c_str()) :
 		                   item.text.c_str();
 		if (item.kind != menuconfitemkind_t::cvarDiscrete)
 		{
@@ -952,7 +947,7 @@ void M_ActivateGeneratedMenuItem(int choice)
 			{
 				const char* sharewareMessage =
 				    gameinfo.sharewareMessage.empty() ? GStrings(SWSTRING) :
-				                                       LocalizedString(gameinfo.sharewareMessage.c_str());
+				                                       M_LocalizedString(gameinfo.sharewareMessage.c_str());
 				M_StartMessage(sharewareMessage, NULL, false);
 				M_ClearMenus();
 				return;
@@ -1201,7 +1196,7 @@ void M_DrawGeneratedMenu()
 			if (item.kind == menuconfitemkind_t::cvarDiscrete)
 			{
 				const char* base = !item.languageKey.empty() ?
-				                       LocalizedString(item.languageKey.c_str()) :
+				                       M_LocalizedString(item.languageKey.c_str()) :
 				                       item.text.c_str();
 				const char* value = GeneratedDiscreteValueName(item);
 				const int smallY = y + (M_BigFontLineHeight() / 2 - M_SmallFontLineHeight() / 2) + 5;
@@ -1407,7 +1402,7 @@ static const std::string M_QuitMessage()
 	std::string message;
 	if (base_index < 0)
 	{
-		message = LocalizedString(gameinfo.quitMessage.c_str());
+		message = M_LocalizedString(gameinfo.quitMessage.c_str());
 	}
 	else
 	{
@@ -1415,12 +1410,12 @@ static const std::string M_QuitMessage()
 		const char* indexed = GStrings.getIndex(base_index + offset);
 
 		message = (indexed == nullptr || indexed[0] == '\0') ? 
-			LocalizedString(gameinfo.quitMessage.c_str()) : indexed;
+			M_LocalizedString(gameinfo.quitMessage.c_str()) : indexed;
 	}
 
 	if (!gameinfo.quitPrompt.empty())
 	{
-		return fmt::sprintf("%s\n\n%s", message, LocalizedString(gameinfo.quitPrompt.c_str()));
+		return fmt::sprintf("%s\n\n%s", message, M_LocalizedString(gameinfo.quitPrompt.c_str()));
 	}
 
 	return fmt::sprintf("%s\n", message);
@@ -1681,15 +1676,15 @@ void M_Drawer()
 	}
 	else if (menuactive)
 	{
-		// Background effect
+		const builtinscreendef_t* builtin = BuiltInScreenDef(CurrentBuiltinScreen);
+
 		M_DimBackground();
 
 		if (OptionsActive)
 		{
 			M_OptDrawer();
 		}
-		else if (const builtinscreendef_t* builtin = BuiltInScreenDef(CurrentBuiltinScreen);
-		         builtin != nullptr && builtin->draw != nullptr)
+		else if (builtin != nullptr && builtin->draw != nullptr)
 		{
 			builtin->draw(CurrentBuiltinItem);
 		}
@@ -1819,8 +1814,9 @@ int M_FindCurVal(float cur, value_t* values, int numvals)
 
 static void M_BuiltinResponder(int ch, int ch2, bool numlock)
 {
-	if (const builtinscreendef_t* builtin = BuiltInScreenDef(CurrentBuiltinScreen);
-	    builtin != nullptr && builtin->respond != nullptr)
+	const builtinscreendef_t* builtin = BuiltInScreenDef(CurrentBuiltinScreen);
+
+	if (builtin != nullptr && builtin->respond != nullptr)
 	{
 		builtin->respond(ch, ch2, numlock, CurrentBuiltinItem);
 	}

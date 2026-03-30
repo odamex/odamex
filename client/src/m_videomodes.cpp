@@ -444,11 +444,9 @@ void M_VideoModesDrawer(int currentItem)
 			if (i == currentItem &&
 			    (((item.a.selmode != -1) && indicatorAnimCounter < 6) || testingmode != 0))
 			{
-				if (const patch_t* cursor = M_MenuCursorPatch())
-				{
-					screen->DrawPatchCleanWithPalette(cursor, item.a.selmode * 104 + 8,
-					                                  y + M_MenuCursorOffsetY(), palette);
-				}
+				const patch_t* cursor = M_MenuCursorPatch();
+				screen->DrawPatchCleanWithPalette(cursor, item.a.selmode * 104 + 8,
+				                                  y + M_MenuCursorOffsetY(), palette);
 			}
 			continue;
 		}
@@ -475,10 +473,7 @@ void M_VideoModesDrawer(int currentItem)
 			break;
 		}
 
-		if (item.label != nullptr)
-		{
-			screen->DrawTextCleanMove(smallFont, color, x, y, item.label);
-		}
+		screen->DrawTextCleanMove(smallFont, color, x, y, item.label);
 
 		switch (item.type)
 		{
@@ -507,11 +502,9 @@ void M_VideoModesDrawer(int currentItem)
 
 		if (i == currentItem && indicatorAnimCounter < 6)
 		{
-			if (const patch_t* cursor = M_MenuCursorPatch())
-			{
-				screen->DrawPatchCleanWithPalette(cursor, videoModesMenu.indent + 3,
-				                                  y + M_MenuCursorOffsetY(), palette);
-			}
+			const patch_t* cursor = M_MenuCursorPatch();
+			screen->DrawPatchCleanWithPalette(cursor, videoModesMenu.indent + 3,
+												y + M_MenuCursorOffsetY(), palette);
 		}
 	}
 }

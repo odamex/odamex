@@ -1140,11 +1140,9 @@ void M_OptDrawer (void)
 			    ((item->a.selmode != -1 && (indicatorAnimCounter < 6 || WaitingForKey)) ||
 			     WaitingForAxis))
 			{
-				if (const patch_t* cursor = M_MenuCursorPatch())
-				{
-					screen->DrawPatchCleanWithPalette(cursor, item->a.selmode * 104 + 8,
-					                                  y + M_MenuCursorOffsetY(), palette);
-				}
+				const patch_t* cursor = M_MenuCursorPatch();
+				screen->DrawPatchCleanWithPalette(cursor, item->a.selmode * 104 + 8,
+						y + M_MenuCursorOffsetY(), palette);
 			}
 		}
 		else
@@ -1320,11 +1318,9 @@ void M_OptDrawer (void)
 
 			if (i == CurrentItem && (indicatorAnimCounter < 6 || WaitingForKey || WaitingForAxis))
 			{
-				if (const patch_t* patch = M_MenuCursorPatch())
-				{
-					screen->DrawPatchCleanWithPalette(patch, CurrentMenu->indent + 3,
+				const patch_t* cursor = M_MenuCursorPatch();
+				screen->DrawPatchCleanWithPalette(cursor, CurrentMenu->indent + 3,
 					                                  y + M_MenuCursorOffsetY(), palette);
-				}
 			}
 		}
 	}
@@ -1335,20 +1331,14 @@ void M_OptDrawer (void)
 
 	if (CanScrollUp)
 	{
-		if (const patch_t* patch =
-		        M_MenuConfConfiguredPatch(M_MenuConf().theme.upPatch, "theme.upPatch"))
-		{
-			screen->DrawPatchCleanWithPalette(patch, 3, ytop, palette);
-		}
+		const patch_t* upPatch = M_MenuConfConfiguredPatch(M_MenuConf().theme.upPatch, "theme.upPatch");
+		screen->DrawPatchCleanWithPalette(upPatch, 3, ytop, palette);
 	}
 
 	if (CanScrollDown)
 	{
-		if (const patch_t* patch =
-		        M_MenuConfConfiguredPatch(M_MenuConf().theme.downPatch, "theme.downPatch"))
-		{
-			screen->DrawPatchCleanWithPalette(patch, 3, 190, palette);
-		}
+		const patch_t* downPatch = M_MenuConfConfiguredPatch(M_MenuConf().theme.downPatch, "theme.downPatch");
+		screen->DrawPatchCleanWithPalette(downPatch, 3, 190, palette);
 	}
 }
 

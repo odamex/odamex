@@ -247,9 +247,7 @@ const patch_t* M_MenuCursorPatch()
 {
 	return CachedMenuPatch(MenuConfTheme().cursorPatch, []()
 	{
-		const patch_t* patch =
-		    M_MenuConfConfiguredPatch(MenuConfTheme().cursorPatch, "theme.cursorPatch");
-		return patch != nullptr ? patch : MenuConfPatch("LITLCURS");
+		return M_MenuConfConfiguredPatch(MenuConfTheme().cursorPatch, "theme.cursorPatch");
 	});
 }
 
@@ -258,8 +256,7 @@ const patch_t* M_MenuIndicatorPatch(int which)
 	const auto& patches = MenuConfTheme().indicator.patches;
 	if (patches.empty())
 	{
-		static constexpr const char* kFallback[] = { "M_SKULL1", "M_SKULL2" };
-		return MenuConfPatch(kFallback[which & 1]);
+		return nullptr;
 	}
 
 	const std::string& name = patches[which % patches.size()];
@@ -275,19 +272,19 @@ void M_DrawSlider(int x, int y, float leftval, float rightval, float cur, float 
 	const patch_t* middlePatch = MenuSliderMiddlePatch();
 	const patch_t* rightPatch = MenuSliderRightPatch();
 	const patch_t* knobPatch = MenuSliderKnobPatch();
-
-	if (leftval < rightval)
-		cur = clamp(cur, leftval, rightval);
-	else
-		cur = clamp(cur, rightval, leftval);
+	
+	cur = leftval < rightval ? clamp(cur, leftval, rightval) : clamp(cur, rightval, leftval);
 
 	const float dist = (cur - leftval) / (rightval - leftval);
 
 	DrawPatchCleanWithCachedPalette(leftPatch, x, drawY, palette);
-	for (int i = 1; i < 11; i++)
-		DrawPatchCleanWithCachedPalette(middlePatch, x + i * 8, drawY, palette);
-	DrawPatchCleanWithCachedPalette(rightPatch, x + 88, drawY, palette);
 
+	for (int i = 1; i < 11; i++)
+	{
+		DrawPatchCleanWithCachedPalette(middlePatch, x + i * 8, drawY, palette);
+	}
+
+	DrawPatchCleanWithCachedPalette(rightPatch, x + 88, drawY, palette);
 	DrawPatchCleanWithCachedPalette(knobPatch, x + 5 + static_cast<int>(dist * 78.0), drawY,
 	                                palette);
 
@@ -315,16 +312,16 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 	const patch_t* greenKnobPatch = MenuSliderGreenKnobPatch();
 	const patch_t* overlayPatch = MenuSliderOverlayPatch();
 
-	if (leftval < rightval)
-		cur = clamp(cur, leftval, rightval);
-	else
-		cur = clamp(cur, rightval, leftval);
+	cur = leftval < rightval ? clamp(cur, leftval, rightval) : clamp(cur, rightval, leftval);
 
 	const float dist = (cur - leftval) / (rightval - leftval);
 
 	DrawPatchCleanWithCachedPalette(leftPatch, x, drawY, palette);
 	for (int i = 1; i < 11; i++)
+	{
 		DrawPatchCleanWithCachedPalette(middlePatch, x + i * 8, drawY, palette);
+	}
+
 	DrawPatchCleanWithCachedPalette(rightPatch, x + 88, drawY, palette);
 	DrawPatchCleanWithCachedPalette(greenKnobPatch,
 	                                x + 5 + static_cast<int>(dist * 78.0), drawY, palette);
@@ -336,6 +333,7 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 	    (static_cast<color_key_t>(color.getg()) << 8) |
 	    static_cast<color_key_t>(color.getb());
 	auto fillIt = fillCache.find(colorKey);
+
 	if (fillIt == fillCache.end())
 	{
 		fillIt = fillCache.emplace(colorKey,
@@ -357,19 +355,18 @@ void M_DrawSaveLoadBorder(int x, int y, int len)
 	if (fullSlot != nullptr)
 	{
 		screen->DrawPatchClean(fullSlot, x, y);
+		return;
 	}
-	else
+
+	screen->DrawPatchCleanNoOffsets(leftSlot, x, y);
+
+	for (int i = 0; i < len; i++)
 	{
-		screen->DrawPatchCleanNoOffsets(leftSlot, x, y);
-
-		for (int i = 0; i < len; i++)
-		{
-			x += SmallFontLineHeight();
-			screen->DrawPatchCleanNoOffsets(centerSlot, x, y);
-		}
-
-		screen->DrawPatchCleanNoOffsets(rightSlot, x, y);
+		x += SmallFontLineHeight();
+		screen->DrawPatchCleanNoOffsets(centerSlot, x, y);
 	}
+
+	screen->DrawPatchCleanNoOffsets(rightSlot, x, y);
 }
 
 void M_DrawInputBox(char* text, int x, int y, int width)

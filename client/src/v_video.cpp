@@ -1021,7 +1021,7 @@ void DCanvas::DrawPatchWithPalette(const patch_t* patch, int x, int y, const pal
 
 void DCanvas::DrawPatchCleanWithPalette(const patch_t* patch, int x, int y, const palette_t* palette) const
 {
-	if (palette == NULL)
+	if (palette == nullptr)
 	{
 		DrawPatchClean(patch, x, y);
 		return;

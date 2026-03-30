@@ -579,7 +579,7 @@ void DCanvas::DrawColorLucentPatchSD(const byte *source, byte *dest, int count, 
  */
 void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t* patch, int x, int y) const
 {
-	if (patch == NULL)
+	if (patch == nullptr)
 		return;
 
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
@@ -646,7 +646,7 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const patch_t* patch, int x, int 
 void DCanvas::DrawSWrapper(EWrapperCode drawer, const patch_t* patch, int x0, int y0,
                            const int destwidth, const int destheight, bool offsets) const
 {
-	if (patch == NULL)
+	if (patch == nullptr)
 		return;
 
 	if (patch->width() <= 0 || patch->height() <= 0 ||
@@ -727,7 +727,7 @@ void DCanvas::DrawColoredLucentPatchStretchedAlpha(const patch_t* patch, int x0,
                                                    const int destwidth, const int destheight,
                                                    float alpha) const
 {
-	if (patch == NULL)
+	if (patch == nullptr)
 		return;
 
 	if (patch->width() <= 0 || patch->height() <= 0 ||
@@ -841,7 +841,7 @@ void DCanvas::DrawColoredLucentPatchStretchedAlpha(const patch_t* patch, int x0,
 //
 void DCanvas::DrawIWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
 {
-	if (patch == NULL)
+	if (patch == nullptr)
 		return;
 
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
@@ -860,7 +860,7 @@ void DCanvas::DrawIWrapper(EWrapperCode drawer, const patch_t *patch, int x0, in
 //
 void DCanvas::DrawCWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0, bool offsets) const
 {
-	if (patch == NULL)
+	if (patch == nullptr)
 		return;
 
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
@@ -879,7 +879,7 @@ void DCanvas::DrawCWrapper(EWrapperCode drawer, const patch_t *patch, int x0, in
 //
 void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const patch_t *patch, int x0, int y0) const
 {
-	if (patch == NULL)
+	if (patch == nullptr)
 		return;
 
 	if (CleanXfac == 1 && CleanYfac == 1)
@@ -908,7 +908,7 @@ void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const patch_t *patch, int x0, 
 //
 void DCanvas::DrawPatchFlipped(const patch_t *patch, int x, int y) const
 {
-	if (patch == NULL)
+	if (patch == nullptr)
 		return;
 
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
