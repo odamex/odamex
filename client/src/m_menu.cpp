@@ -173,19 +173,16 @@ static void M_BeginEndGamePrompt();
 static void M_BeginQuitGamePrompt();
 static void M_PushBuiltinScreen(BuiltInScreen screen, int initialItem, bool newDrawIndicator);
 static void M_BuiltinResponder(int ch, int ch2, bool numlock);
-namespace
-{
-	struct menudestination_t;
-	bool M_OpenMenuTargetImpl(const std::string& target);
-	bool M_OpenMenuEntrypointImpl(const std::string& name);
-}
-bool M_DemoNoPlay;
 static int M_BigFontLineHeight();
+bool M_DemoNoPlay;
 
 namespace
 {
+	struct menudestination_t;
 	const builtinscreendef_t* BuiltInScreenDef(BuiltInScreen screen);
 	bool BuildGeneratedMenu(generatedmenu_t& generatedMenu, const char* menuId, int defaultLastOn);
+	bool M_OpenMenuTargetImpl(const std::string& target);
+	bool M_OpenMenuEntrypointImpl(const std::string& name);
 
 	bool GeneratedMenuIndicatorPosition(int& x, int& y)
 	{
@@ -275,151 +272,7 @@ namespace
 		const size_t index = static_cast<size_t>(screen);
 		return index < BuiltInScreenDefs.size() ? &BuiltInScreenDefs[index] : nullptr;
 	}
-}
 
-static int M_BigFontLineHeight()
-{
-	const OFont* font = OFonts.big();
-	return font != nullptr ? font->lineHeight() : 0;
-}
-
-static int M_SmallFontLineHeight()
-{
-	const OFont* font = OFonts.small();
-	return font != nullptr ? font->lineHeight() : 0;
-}
-
-static void M_PauseSound(void)
-{
-	if (paused || gamestate != GS_LEVEL || multiplayer || demoplayback ||
-	    netdemo.isPlaying())
-	{
-		return;
-	}
-
-	S_PauseSound();
-}
-
-static void M_ResumeSound(void)
-{
-	if (paused || gamestate != GS_LEVEL || multiplayer || demoplayback ||
-	    netdemo.isPlaying())
-	{
-		return;
-	}
-
-	S_ResumeSound();
-}
-
-//
-// OPTIONS MENU
-//
-// [RH] This menu is now handled in m_options.c
-//
-bool OptionsActive;
-
-// [RH] Most menus can now be accessed directly
-// through console commands.
-BEGIN_COMMAND (menu_main)
-{
-	M_OpenMenuEntrypoint("mainMenu");
-}
-END_COMMAND (menu_main)
-
-BEGIN_COMMAND (menu_help)
-{
-    // F1
-	M_OpenMenuTarget("builtin:help");
-}
-END_COMMAND (menu_help)
-
-BEGIN_COMMAND (menu_save)
-{
-    // F2
-	M_OpenMenuTarget("builtin:saveGame");
-}
-END_COMMAND (menu_save)
-
-BEGIN_COMMAND (menu_load)
-{
-    // F3
-	M_OpenMenuTarget("builtin:loadGame");
-}
-END_COMMAND (menu_load)
-
-BEGIN_COMMAND (menu_options)
-{
-    // F4
-	M_OpenMenuEntrypoint("optionsMenu");
-}
-END_COMMAND (menu_options)
-
-BEGIN_COMMAND (menu_display)
-{
-	// F5
-	M_OpenMenuTarget("options.display");
-}
-END_COMMAND (menu_display)
-
-BEGIN_COMMAND (quicksave)
-{
-    // F6
-	M_QuickSave ();
-}
-END_COMMAND (quicksave)
-
-BEGIN_COMMAND (menu_endgame)
-{
-	// F7
-	M_BeginEndGamePrompt();
-}
-END_COMMAND (menu_endgame)
-
-BEGIN_COMMAND (quickload)
-{
-	// F9
-	M_QuickLoad ();
-}
-END_COMMAND (quickload)
-
-BEGIN_COMMAND (menu_quit)
-{
-	// F10
-	M_BeginQuitGamePrompt();
-}
-END_COMMAND (menu_quit)
-
-BEGIN_COMMAND (menu_player)
-{
-	M_OpenMenuTarget("builtin:playerSetup");
-}
-END_COMMAND (menu_player)
-
-BEGIN_COMMAND (menu_keys)
-{
-	M_OpenMenuTarget("options.controls");
-}
-END_COMMAND (menu_keys)
-
-BEGIN_COMMAND (menu_video)
-{
-	M_OpenMenuTarget("builtin:videoMode");
-}
-END_COMMAND (menu_video)
-
-const char* M_LocalizedMenuString(const char* key)
-{
-	if (GStrings.hasString(key))
-	{
-		const char* s = GStrings(key);
-		if (s && s[0])
-			return s;
-	}
-	return key;
-}
-
-namespace
-{
 	enum class menudestinationkind_t
 	{
 		invalid,
@@ -504,6 +357,7 @@ namespace
 		S_Sound(CHAN_INTERFACE, sound->c_str(), 1, ATTN_NONE);
 	}
 
+	static int skillchoice = 0;
 	int SkillIndexForId(const std::string& id)
 	{
 		for (int i = 0; i < skillnum; ++i)
@@ -819,6 +673,151 @@ namespace
 	}
 }
 
+static int M_BigFontLineHeight()
+{
+	const OFont* font = OFonts.big();
+	return font != nullptr ? font->lineHeight() : 0;
+}
+
+static int M_SmallFontLineHeight()
+{
+	const OFont* font = OFonts.small();
+	return font != nullptr ? font->lineHeight() : 0;
+}
+
+static void M_PauseSound(void)
+{
+	if (paused || gamestate != GS_LEVEL || multiplayer || demoplayback ||
+	    netdemo.isPlaying())
+	{
+		return;
+	}
+
+	S_PauseSound();
+}
+
+static void M_ResumeSound(void)
+{
+	if (paused || gamestate != GS_LEVEL || multiplayer || demoplayback ||
+	    netdemo.isPlaying())
+	{
+		return;
+	}
+
+	S_ResumeSound();
+}
+
+//
+// OPTIONS MENU
+//
+// [RH] This menu is now handled in m_options.c
+//
+bool OptionsActive;
+
+// [RH] Most menus can now be accessed directly
+// through console commands.
+BEGIN_COMMAND (menu_main)
+{
+	M_OpenMenuEntrypoint("mainMenu");
+}
+END_COMMAND (menu_main)
+
+BEGIN_COMMAND (menu_help)
+{
+    // F1
+	M_OpenMenuTarget("builtin:help");
+}
+END_COMMAND (menu_help)
+
+BEGIN_COMMAND (menu_save)
+{
+    // F2
+	M_OpenMenuTarget("builtin:saveGame");
+}
+END_COMMAND (menu_save)
+
+BEGIN_COMMAND (menu_load)
+{
+    // F3
+	M_OpenMenuTarget("builtin:loadGame");
+}
+END_COMMAND (menu_load)
+
+BEGIN_COMMAND (menu_options)
+{
+    // F4
+	M_OpenMenuEntrypoint("optionsMenu");
+}
+END_COMMAND (menu_options)
+
+BEGIN_COMMAND (menu_display)
+{
+	// F5
+	M_OpenMenuTarget("options.display");
+}
+END_COMMAND (menu_display)
+
+BEGIN_COMMAND (quicksave)
+{
+    // F6
+	M_QuickSave ();
+}
+END_COMMAND (quicksave)
+
+BEGIN_COMMAND (menu_endgame)
+{
+	// F7
+	M_BeginEndGamePrompt();
+}
+END_COMMAND (menu_endgame)
+
+BEGIN_COMMAND (quickload)
+{
+	// F9
+	M_QuickLoad ();
+}
+END_COMMAND (quickload)
+
+BEGIN_COMMAND (menu_quit)
+{
+	// F10
+	M_BeginQuitGamePrompt();
+}
+END_COMMAND (menu_quit)
+
+BEGIN_COMMAND (menu_player)
+{
+	M_OpenMenuTarget("builtin:playerSetup");
+}
+END_COMMAND (menu_player)
+
+BEGIN_COMMAND (menu_keys)
+{
+	M_OpenMenuTarget("options.controls");
+}
+END_COMMAND (menu_keys)
+
+BEGIN_COMMAND (menu_video)
+{
+	M_OpenMenuTarget("builtin:videoMode");
+}
+END_COMMAND (menu_video)
+
+const char* M_LocalizedMenuString(const char* key)
+{
+	if (GStrings.hasString(key))
+	{
+		const char* s = GStrings(key);
+		if (s && s[0])
+			return s;
+	}
+	return key;
+}
+
+namespace
+{
+}
+
 bool M_OpenMenuTarget(const std::string& target)
 {
 	const bool startedControlPanel = !menuactive;
@@ -1010,11 +1009,6 @@ static void M_OpenLoadGameScreen()
 	M_LoadSaveOpenLoad(CurrentBuiltinItem);
 }
 
-//
-// Selected from DOOM menu
-// [ML] 7 Sept 08: Bringing game saving/loading in from
-//                 zdoom 1.22 source, see MAINTAINERS
-//
 static bool M_OpenSaveGameScreen()
 {
 	if (multiplayer && !demoplayback)
@@ -1039,14 +1033,12 @@ static bool M_OpenSaveGameScreen()
 	return true;
 }
 
-
 //
 //	M_QuickSave
 //	[ML] 7 Sept 08: Bringing game saving/loading in from
 //                 zdoom 1.22 source, see MAINTAINERS
 //
 char	tempstring[80];
-
 void M_QuickSaveResponse(int ch)
 {
 	if (ch == 'y' || Key_IsYesKey(ch))
@@ -1085,13 +1077,6 @@ void M_QuickSave()
 	M_StartMessage (tempstring, M_QuickSaveResponse, true);
 }
 
-
-
-//
-// M_QuickLoad
-// [ML] 7 Sept 08: Bringing game saving/loading in from
-//                 zdoom 1.22 source, see MAINTAINERS
-//
 void M_QuickLoadResponse(int ch)
 {
 	if (ch == 'y' || Key_IsYesKey(ch))
@@ -1100,7 +1085,6 @@ void M_QuickLoadResponse(int ch)
 		M_PlayMenuSound("close");
 	}
 }
-
 
 void M_QuickLoad()
 {
@@ -1112,7 +1096,6 @@ void M_QuickLoad()
 	snprintf(tempstring, 80, GStrings(QLPROMPT), M_LoadSaveSlotName(quickSaveSlot));
 	M_StartMessage(tempstring,M_QuickLoadResponse,true);
 }
-
 
 //
 // M_ReadThis
@@ -1227,8 +1210,6 @@ static void M_OpenNewGameMenu()
 	selectedEpisodeId.clear();
 	M_OpenMenuEntrypoint("newGameMenu");
 }
-
-static int skillchoice = 0;
 
 void M_VerifyNightmare(int ch)
 {
@@ -1364,7 +1345,6 @@ static void M_BeginEndGamePrompt()
 //
 // M_QuitGame
 //
-
 void STACK_ARGS call_terms();
 
 void M_QuitResponse(int ch)
@@ -1449,10 +1429,6 @@ void M_OpenVideoModeScreen(void)
 	M_VideoModesOpen(CurrentBuiltinItem);
 }
 
-
-//
-//		Menu Functions
-//
 void M_StartMessage (const char *string, void (*routine)(int), bool input)
 {
 	messageLastMenuActive = menuactive;
@@ -1485,13 +1461,13 @@ bool M_Responder(const event_t& ev)
 	ch = ch2 = mod = -1;
 
 	// eat mouse events
-	if(menuactive)
+	if (menuactive)
 	{
 		if(ev.type == ev_mouse)
 			return true;
 		else if(ev.type == ev_joystick)
 		{
-			if(OptionsActive)
+			if (OptionsActive)
 				M_OptResponder (ev);
 			// Eat joystick events for now -- Hyper_Eye
 			return true;
@@ -1730,8 +1706,6 @@ void M_ClearMenus()
 }
 
 
-
-
 //
 // M_SetupNextMenu
 //
@@ -1929,7 +1903,6 @@ void M_GeneratedMenuResponder(int ch, int ch2, bool numlock)
 		}
 	}
 }
-
 
 void M_PopMenuStack()
 {

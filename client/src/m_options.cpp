@@ -235,7 +235,7 @@ EXTERN_CVAR (cl_weaponpref_pls)
 EXTERN_CVAR (cl_weaponpref_bfg)
 
 void M_ChangeMessages(void);
-void M_SizeDisplay(float diff);
+void M_IncrementDisplaySize(float diff);
 void M_StartControlPanel(void);
 
 void M_ClearMenus (void);
@@ -249,8 +249,8 @@ static const char	   *OldAxisMessage;
 static itemtype OldAxisType;
 
 static void GoToConsole();
-void ResetToDefaults();
-void ResetToSaved();
+void M_ResetToDefaults();
+void M_ResetToSaved();
 
 static void SetVidMode();
 static void M_UpdateDisplayOptions();
@@ -272,7 +272,7 @@ EXTERN_CVAR(cl_chatsounds)
 
 extern const char *weaponnames[];
 
-void ResetCustomColors (void);
+void M_ResetCustomColors (void);
 
 EXTERN_CVAR (am_rotate)
 EXTERN_CVAR (am_overlay)
@@ -335,8 +335,8 @@ CVAR_FUNC_IMPL (ui_transblue)
     M_SlideUIBlue(var.asInt());
 }
 
-EXTERN_CVAR(message_showpickups)
-EXTERN_CVAR(message_showobituaries)
+EXTERN_CVAR (message_showpickups)
+EXTERN_CVAR (message_showobituaries)
 EXTERN_CVAR (con_coloredmessages)
 EXTERN_CVAR (con_scaletext)
 EXTERN_CVAR (hud_scaletext)
@@ -346,15 +346,7 @@ EXTERN_CVAR (msg2color)
 EXTERN_CVAR (msg3color)
 EXTERN_CVAR (msg4color)
 EXTERN_CVAR (msgmidcolor)
-
-
-EXTERN_CVAR (vid_widescreen)
-EXTERN_CVAR (vid_maxfps)
-
-EXTERN_CVAR (vid_overscan)
-EXTERN_CVAR (vid_fullscreen)
-EXTERN_CVAR (vid_32bpp)
-EXTERN_CVAR(vid_vsync)
+EXTERN_CVAR (ui_dimcolor)
 
 namespace
 {
@@ -739,12 +731,12 @@ namespace
 		}
 		if (item.action == "resetDefaults")
 		{
-			ResetToDefaults();
+			M_ResetToDefaults();
 			return;
 		}
 		if (item.action == "resetSaved")
 		{
-			ResetToSaved();
+			M_ResetToSaved();
 			return;
 		}
 		if (item.action == "resetMouseDefaults")
@@ -754,7 +746,7 @@ namespace
 		}
 		if (item.action == "resetCustomMapColors")
 		{
-			ResetCustomColors();
+			M_ResetCustomColors();
 			return;
 		}
 
@@ -965,8 +957,6 @@ void M_BuildGeneratedOptionsMenus()
 	}
 }
 
-EXTERN_CVAR(ui_dimcolor)
-
 // [Russell] - Modified to send new colours
 static void M_SendUINewColor (int red, int green, int blue)
 {
@@ -993,50 +983,6 @@ static void M_SlideUIBlue (int val)
 	color.setb(val);
 	M_SendUINewColor(color.getr(), color.getg(), color.getb());
 }
-
-
-//
-//		Toggle messages on/off
-//
-void M_ChangeMessages (void)
-{
-	if (show_messages)
-	{
-		PrintFmt(128, "{}\n", GStrings(MSGOFF));
-		show_messages.Set (0.0f);
-	}
-	else
-	{
-		PrintFmt(128, "{}\n", GStrings(MSGON));
-		show_messages.Set (1.0f);
-	}
-}
-
-BEGIN_COMMAND (togglemessages)
-{
-	M_ChangeMessages ();
-}
-END_COMMAND (togglemessages)
-
-void M_SizeDisplay (float diff)
-{
-	// changing screenblocks automatically resizes the display
-	screenblocks.Set (screenblocks + diff);
-}
-
-BEGIN_COMMAND (sizedown)
-{
-	M_SizeDisplay (-1.0);
-	M_PlayMenuSound("changeValue");
-}
-END_COMMAND (sizedown)
-
-BEGIN_COMMAND (sizeup)
-{
-	M_SizeDisplay(1.0);
-	M_PlayMenuSound("changeValue");
-}
-END_COMMAND (sizeup)
 
 bool M_PrepareGeneratedOptionsMenu(const std::string& menuId, menu_t*& menu)
 {
@@ -1811,29 +1757,72 @@ void M_OptResponder(const event_t& ev)
 		(*CurrentMenu->refreshfunc)();
 }
 
+//
+//	ADDITONAL MENU ACTIONS
+//
+void M_ChangeMessages (void)
+{
+	if (show_messages)
+	{
+		PrintFmt(128, "{}\n", GStrings(MSGOFF));
+		show_messages.Set (0.0f);
+	}
+	else
+	{
+		PrintFmt(128, "{}\n", GStrings(MSGON));
+		show_messages.Set (1.0f);
+	}
+}
+
+BEGIN_COMMAND (togglemessages)
+{
+	M_ChangeMessages ();
+}
+END_COMMAND (togglemessages)
+
+void M_IncrementDisplaySize (float diff)
+{
+	// changing screenblocks automatically resizes the display
+	screenblocks.Set (screenblocks + diff);
+}
+
+BEGIN_COMMAND (sizedown)
+{
+	M_IncrementDisplaySize (-1.0);
+	M_PlayMenuSound("changeValue");
+}
+END_COMMAND (sizedown)
+
+BEGIN_COMMAND (sizeup)
+{
+	M_IncrementDisplaySize(1.0);
+	M_PlayMenuSound("changeValue");
+}
+END_COMMAND (sizeup)
+
 static void GoToConsole (void)
 {
 	M_ClearMenus ();
 	C_ToggleConsole ();
 }
 
-void ResetToDefaults (void)
+void M_ResetToDefaults (void)
 {
 	AddCommandString ("unbindall; binddefaults");
 	cvar_t::C_SetCVarsToDefaults(CVAR_CLIENTARCHIVE);
-	M_SizeDisplay (0.0);
+	M_IncrementDisplaySize (0.0);
 }
 
-void ResetToSaved (void)
+void M_ResetToSaved (void)
 {
 	std::string cmd = "exec " + C_QuoteString(M_GetConfigPath());
 	AddCommandString(cmd);
-	M_SizeDisplay (0.0);
+	M_IncrementDisplaySize (0.0);
 }
 
-void ResetCustomColors (void)
+void M_ResetCustomColors (void)
 {
-	AddCommandString ("resetcustomcolors");
+	AddCommandString ("M_ResetCustomColors");
 }
 
 VERSION_CONTROL (m_options_cpp, "$Id$")
