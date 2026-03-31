@@ -88,7 +88,6 @@ void PlayerStateRoller::Roll(int i_oldTic, Callable&& i_callable)
         assert(rollingIter != m_history.end());
 
         i_callable(rollingIter);
-        //ApplyDeltaArray(rollingIter->ammo, deltaItemData.ammo);
     }
 }
 
@@ -106,42 +105,20 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
         const bool ammoRequiresRoll    = RequiresCorrection(deltaItemData.ammo);
         const bool maxammoRequiresRoll = RequiresCorrection(deltaItemData.maxammo);
 
-        // Developer note:  I really wanted to make this generic, but couldn't because
-        // the in-memory array in the history items that we're rolling is dependent on
-        // the history lookup.  It could be done with some fancy metaprogramming
-        // footwork, but then we've passed the elbow in the curve on readability for
-        // "sophistication," and it's more important to be easy to read than "sophisticated."
-        //
-        // And to be practical, there's too little to be gained by being extra-clever here.
-        // None of these arrays are large enough and this operation isn't frequent
-        // enough for extra-clever gains to be worth the loss of readability.
-
         if (ammoRequiresRoll)
         {
             Roll(i_oldTic, [&deltaItemData](auto& rollingIter)
                 {
                     ApplyDeltaArray(rollingIter->second.ammo, deltaItemData.ammo);
                 });
-            /*
-            for (int rollingTic = i_oldTic; rollingTic <= m_mostRecentTic; ++rollingTic)
-            {
-                auto rollingIter = m_history.find(rollingTic);
-                std::assert(rollingIter != m_history.end());
-
-                ApplyDeltaArray(rollingIter->ammo, deltaItemData.ammo);
-            }
-            */
         }
 
         if (maxammoRequiresRoll)
         {
-            for (int rollingTic = i_oldTic; rollingTic <= m_mostRecentTic; ++rollingTic)
-            {
-                auto rollingIter = m_history.find(rollingTic);
-                assert(rollingIter != m_history.end());
-
-                ApplyDeltaArray(rollingIter->second.maxammo, deltaItemData.maxammo);
-            }
+            Roll(i_oldTic, [&deltaItemData](auto& rollingIter)
+                {
+                    ApplyDeltaArray(rollingIter->second.maxammo, deltaItemData.maxammo);
+                });
         }
 
         bool weaponOwnedRequiresRoll = false;
@@ -150,14 +127,11 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
             if (historyIter->second.weaponowned[i] != i_itemData.weaponowned[i])
             {
                 weaponOwnedRequiresRoll = true;
-                for (int rollingTic = i_oldTic; rollingTic <= m_mostRecentTic; ++rollingTic)
-                {
-                    auto rollingIter = m_history.find(rollingTic);
-                    assert(rollingIter != m_history.end());
-
-                    // Just copy the whole array and be done with it - this is nothing but bools.
-                    rollingIter->second.weaponowned = i_itemData.weaponowned;
-                }
+                Roll(i_oldTic, [&i_itemData](auto& rollingIter)
+                    {
+                        // Just copy the whole array and be done with it - this is nothing but bools.
+                        rollingIter->second.weaponowned = i_itemData.weaponowned;
+                    });
                 break;
             }
         }
@@ -165,6 +139,19 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
         const bool readyweaponRequiresRoll = i_itemData.readyweapon != historyIter->second.readyweapon;
         if (readyweaponRequiresRoll)
         {
+            Roll(i_oldTic, [&i_itemData](auto& rollingIter)
+                {
+                    rollingIter->second.readyweapon = i_itemData.readyweapon;
+                });
+        }
+
+        const bool pendingweaponRequiresRoll = i_itemData.pendingweapon != historyIter->second.pendingweapon;
+        if (pendingweaponRequiresRoll)
+        {
+            Roll(i_oldTic, [&i_itemData](auto& rollingIter)
+                {
+                    rollingIter->second.pendingweapon = i_itemData.pendingweapon;
+                });
         }
     }
 
