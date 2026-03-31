@@ -15,14 +15,12 @@ file(GLOB_RECURSE ODAWAD_SOURCES
 # documentation.
 
 macro(odamex_copy_wad _target)
-  if (TARGET ${_target})
-    add_custom_command(
-        APPEND
-        OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/odamex.wad"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/odamex.wad" $<TARGET_FILE_DIR:${_target}>
-        )
-    add_dependencies(odawad ${_target}) # Ensure the target directory actually is created first!
-  endif()
+  add_custom_command(
+      APPEND
+      OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/odamex.wad"
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/odamex.wad" $<TARGET_FILE_DIR:${_target}>
+      )
+  add_dependencies(odawad ${_target}) # Ensure the target directory actually is created first!
 endmacro()
 
 # If Python is available, use it to build the WAD.
@@ -39,8 +37,12 @@ if(Python_FOUND)
   add_custom_target(odawad ALL
     DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/odamex.wad")
 
-  odamex_copy_wad(odamex)
-  odamex_copy_wad(odasrv)
+  if (BUILD_CLIENT)
+    odamex_copy_wad(odamex)
+  endif()
+  if (BUILD_SERVER)
+    odamex_copy_wad(odasrv)
+  endif()
 
   if(WIN32)
     install(FILES "${CMAKE_CURRENT_BINARY_DIR}/odamex.wad"
