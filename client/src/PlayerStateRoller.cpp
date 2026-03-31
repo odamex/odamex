@@ -153,6 +153,22 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
                     rollingIter->second.pendingweapon = i_itemData.pendingweapon;
                 });
         }
+
+        const bool playerObjectRequiresRefresh =    ammoRequiresRoll
+                                                 or maxammoRequiresRoll
+                                                 or weaponOwnedRequiresRoll
+                                                 or readyweaponRequiresRoll
+                                                 or pendingweaponRequiresRoll;
+
+        if (playerObjectRequiresRefresh)
+        {
+            auto mostRecentIter = m_history.find(m_mostRecentTic);
+            assert(mostRecentIter != m_history.end());
+
+            mostRecentIter->second.ToPlayer(io_player);
+        }
+
+        return playerObjectRequiresRefresh;
     }
 
     return false;

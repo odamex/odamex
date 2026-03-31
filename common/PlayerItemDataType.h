@@ -41,20 +41,16 @@ struct PlayerItemDataType
     {
     }
 
-    template <typename ArrayType>
-    static void Subtractor(ArrayType& outArray, const ArrayType& lhs, const ArrayType& rhs)
+    void ToPlayer(player_t& player)
     {
-        for (size_t i = 0; i < outArray.size(); ++i)
-        {
-            outArray[i] = lhs[i] - rhs[i];
-        }
-    }
+        player.ammo            = ammo;
+        player.maxammo         = maxammo;
+        //player.powers          = powers;        // TODO: Fix the clearing of MF_SHADOW in PlayerThink.  It should not happen only when a decrement to zero happens.  Just check for value == 0.
+        player.readyweapon     = readyweapon;
+        player.pendingweapon   = pendingweapon;
+        player.weaponowned     = weaponowned;
+        //player.cards           = cards;
+        //player.backpack        = backpack;
 
-    PlayerItemDataType operator-(const PlayerItemDataType& rhs) const
-    {
-        PlayerItemDataType result;
-
-        Subtractor(result.ammo, ammo, rhs.ammo);
-        Subtractor(result.maxammo, maxammo, rhs.maxammo);
     }
 };
