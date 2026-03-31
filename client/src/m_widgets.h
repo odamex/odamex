@@ -18,6 +18,8 @@
 
 const patch_t* M_MenuConfConfiguredPatch(const std::string& name, const char* context);
 void M_WarnMenuConf(const std::string& message);
+int M_BigFontLineHeight();
+int M_SmallFontLineHeight();
 int M_MenuCursorOffsetY();
 const patch_t* M_MenuCursorPatch();
 const patch_t* M_MenuIndicatorPatch(int which);

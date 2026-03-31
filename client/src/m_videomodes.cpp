@@ -423,7 +423,7 @@ void M_VideoModesDrawer(int currentItem)
 		y += title->height();
 	}
 
-	for (int i = 0; i < videoModesMenu.numitems; ++i, y += smallFont->lineHeight())
+	for (int i = 0; i < videoModesMenu.numitems; ++i, y += M_SmallFontLineHeight())
 	{
 		menuitem_t& item = videoModeItems[i];
 
@@ -509,25 +509,25 @@ void M_VideoModesDrawer(int currentItem)
 	}
 }
 
-void M_VideoModesResponder(int ch, int ch2, bool numlock, int& currentItem)
+void M_VideoModesResponder(int keyCode, int typedChar, bool numlock, int& currentItem)
 {
 	menuitem_t& item = videoModeItems[currentItem];
 
-	if (Key_IsDownKey(ch, numlock))
+	if (Key_IsDownKey(keyCode, numlock))
 	{
 		MoveSelection(1, currentItem);
 		M_PlayMenuSound("navigate");
 		return;
 	}
 
-	if (Key_IsUpKey(ch, numlock))
+	if (Key_IsUpKey(keyCode, numlock))
 	{
 		MoveSelection(-1, currentItem);
 		M_PlayMenuSound("navigate");
 		return;
 	}
 
-	if (Key_IsLeftKey(ch, numlock))
+	if (Key_IsLeftKey(keyCode, numlock))
 	{
 		if (item.type == screenres)
 		{
@@ -559,7 +559,7 @@ void M_VideoModesResponder(int ch, int ch2, bool numlock, int& currentItem)
 		return;
 	}
 
-	if (Key_IsRightKey(ch, numlock))
+	if (Key_IsRightKey(keyCode, numlock))
 	{
 		if (item.type == screenres)
 		{
@@ -591,7 +591,7 @@ void M_VideoModesResponder(int ch, int ch2, bool numlock, int& currentItem)
 		return;
 	}
 
-	if (Key_IsAcceptKey(ch))
+	if (Key_IsAcceptKey(keyCode))
 	{
 		if (item.type == discrete || item.type == slider)
 		{
@@ -607,7 +607,7 @@ void M_VideoModesResponder(int ch, int ch2, bool numlock, int& currentItem)
 		return;
 	}
 
-	if (Key_IsCancelKey(ch))
+	if (Key_IsCancelKey(keyCode))
 	{
 		videoModesMenu.lastOn = currentItem;
 		M_PopMenuStack();
@@ -615,9 +615,9 @@ void M_VideoModesResponder(int ch, int ch2, bool numlock, int& currentItem)
 	}
 
 #ifdef GCONSOLE
-	if (ch2 == 't' || ch == OKEY_JOY3)
+	if (typedChar == 't' || keyCode == OKEY_JOY3)
 #else
-	if (ch2 == 't')
+	if (typedChar == 't')
 #endif
 	{
 		if (TestSelectedMode(currentItem))

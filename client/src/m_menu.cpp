@@ -173,7 +173,6 @@ static void M_BeginEndGamePrompt();
 static void M_BeginQuitGamePrompt();
 static void M_PushBuiltinScreen(BuiltInScreen screen, int initialItem, bool newDrawIndicator);
 static void M_BuiltinResponder(int ch, int ch2, bool numlock);
-static int M_BigFontLineHeight();
 bool M_DemoNoPlay;
 
 namespace
@@ -671,18 +670,6 @@ namespace
 		const char* value = GeneratedDiscreteValueName(item);
 		return value[0] ? fmt::format("{}: {}", base, value) : std::string(base);
 	}
-}
-
-static int M_BigFontLineHeight()
-{
-	const OFont* font = OFonts.big();
-	return font != nullptr ? font->lineHeight() : 0;
-}
-
-static int M_SmallFontLineHeight()
-{
-	const OFont* font = OFonts.small();
-	return font != nullptr ? font->lineHeight() : 0;
 }
 
 static void M_PauseSound(void)

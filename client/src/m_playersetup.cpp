@@ -92,12 +92,6 @@ namespace
 	static char playerNameString[MAXPLAYERNAME + 1];
 	static char playerNameOldString[MAXPLAYERNAME + 1];
 
-	static int BigFontLineHeight()
-	{
-		const OFont* font = OFonts.big();
-		return font != nullptr ? font->lineHeight() : 0;
-	}
-
 	static int PlayerSetupItemCount()
 	{
 		return D_ColorPreset(cl_colorpreset.cstring()) == COLOR_CUSTOM ? psetup_end :
@@ -490,7 +484,7 @@ void M_PlayerSetupDrawer(int currentItem)
 
 	{
 		int x = 320 - 88 - 32;
-		int y = PLAYERSETUP_Y + BigFontLineHeight() * 3 - 14;
+		int y = PLAYERSETUP_Y + M_BigFontLineHeight() * 3 - 14;
 
 		x = (x - 160) * CleanXfac + (I_GetSurfaceWidth() / 2);
 		y = (y - 100) * CleanYfac + (I_GetSurfaceHeight() / 2);
@@ -612,20 +606,20 @@ void M_PlayerSetupDrawer(int currentItem)
 
 		screen->DrawPatchCleanWithPalette(
 		    W_CachePatch("M_PBOX"), 320 - 88 - 32 + 36,
-		    PLAYERSETUP_Y + BigFontLineHeight() * 3 + 22, palette);
+		    PLAYERSETUP_Y + M_BigFontLineHeight() * 3 + 22, palette);
 
 		screen->DrawTranslatedPatchClean(
 		    W_CachePatch(sprframe->lump[0]), 320 - 52 - 32,
-		    PLAYERSETUP_Y + BigFontLineHeight() * 3 + 46);
+		    PLAYERSETUP_Y + M_BigFontLineHeight() * 3 + 46);
 	}
 
 	{
 		const team_t team = D_TeamByName(cl_team.cstring());
 		const int x = V_StringWidth(smallFont, "Preferred Team") + 8 + PLAYERSETUP_X;
 		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X,
-		                          PLAYERSETUP_Y + BigFontLineHeight(), "Preferred Team");
+		                          PLAYERSETUP_Y + M_BigFontLineHeight(), "Preferred Team");
 		screen->DrawTextCleanMove(
-		    smallFont, CR_GREY, x, PLAYERSETUP_Y + BigFontLineHeight(),
+		    smallFont, CR_GREY, x, PLAYERSETUP_Y + M_BigFontLineHeight(),
 		    team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
 	}
 
@@ -633,9 +627,9 @@ void M_PlayerSetupDrawer(int currentItem)
 		const gender_t gender = D_GenderByName(cl_gender.cstring());
 		const int x = V_StringWidth(smallFont, "Gender") + 8 + PLAYERSETUP_X;
 		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X,
-		                          PLAYERSETUP_Y + BigFontLineHeight() * 2, "Gender");
+		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 2, "Gender");
 		screen->DrawTextCleanMove(smallFont, CR_GREY, x,
-		                          PLAYERSETUP_Y + BigFontLineHeight() * 2, genders[gender]);
+		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 2, genders[gender]);
 	}
 
 	{
@@ -650,36 +644,36 @@ void M_PlayerSetupDrawer(int currentItem)
 		                                       "Always";
 
 		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X,
-		                          PLAYERSETUP_Y + BigFontLineHeight() * 3, "Autoaim");
+		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 3, "Autoaim");
 		screen->DrawTextCleanMove(smallFont, CR_GREY, x,
-		                          PLAYERSETUP_Y + BigFontLineHeight() * 3, aimLabel);
+		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 3, aimLabel);
 	}
 
 	{
 		const int x = V_StringWidth(smallFont, "Color") + 8 + PLAYERSETUP_X;
 		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X,
-		                          PLAYERSETUP_Y + BigFontLineHeight() * 4, "Color");
+		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 4, "Color");
 		screen->DrawTextCleanMove(smallFont, CR_GREY, x,
-		                          PLAYERSETUP_Y + BigFontLineHeight() * 4,
+		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 4,
 		                          colorpresets[colorpreset]);
 	}
 
 	if (colorpreset == COLOR_CUSTOM)
 	{
 		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X,
-		                          PLAYERSETUP_Y + BigFontLineHeight() * 5, "Red");
+		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 5, "Red");
 		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X,
-		                          PLAYERSETUP_Y + BigFontLineHeight() * 6, "Green");
+		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 6, "Green");
 		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X,
-		                          PLAYERSETUP_Y + BigFontLineHeight() * 7, "Blue");
+		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 7, "Blue");
 
 		const int x = V_StringWidth(smallFont, "Green") + 8 + PLAYERSETUP_X;
 		const argb_t playercolor = V_GetColorFromString(cl_color);
-		M_DrawSlider(x, PLAYERSETUP_Y + BigFontLineHeight() * 5, 0.0F, 255.0F,
+		M_DrawSlider(x, PLAYERSETUP_Y + M_BigFontLineHeight() * 5, 0.0F, 255.0F,
 		             playercolor.getr(), 0.0F);
-		M_DrawSlider(x, PLAYERSETUP_Y + BigFontLineHeight() * 6, 0.0F, 255.0F,
+		M_DrawSlider(x, PLAYERSETUP_Y + M_BigFontLineHeight() * 6, 0.0F, 255.0F,
 		             playercolor.getg(), 0.0F);
-		M_DrawSlider(x, PLAYERSETUP_Y + BigFontLineHeight() * 7, 0.0F, 255.0F,
+		M_DrawSlider(x, PLAYERSETUP_Y + M_BigFontLineHeight() * 7, 0.0F, 255.0F,
 		             playercolor.getb(), 0.0F);
 	}
 
@@ -695,17 +689,17 @@ bool M_PlayerSetupIndicatorPosition(int currentItem, int& x, int& y)
 	}
 
 	x = PLAYERSETUP_X + M_MenuIndicatorOffsetX();
-	y = PLAYERSETUP_Y + M_MenuIndicatorOffsetY() + currentItem * BigFontLineHeight();
+	y = PLAYERSETUP_Y + M_MenuIndicatorOffsetY() + currentItem * M_BigFontLineHeight();
 	return true;
 }
 
-void M_PlayerSetupResponder(int ch, int ch2, bool numlock, int& currentItem)
+void M_PlayerSetupResponder(int keyCode, int typedChar, bool numlock, int& currentItem)
 {
 	const OFont* smallFont = OFonts.small();
 
 	if (editingName)
 	{
-		if (ch == OKEY_BACKSPACE)
+		if (keyCode == OKEY_BACKSPACE)
 		{
 			if (nameCharIndex > 0)
 			{
@@ -713,12 +707,12 @@ void M_PlayerSetupResponder(int ch, int ch2, bool numlock, int& currentItem)
 				playerNameString[nameCharIndex] = 0;
 			}
 		}
-		else if (Key_IsCancelKey(ch))
+		else if (Key_IsCancelKey(keyCode))
 		{
 			editingName = false;
 			M_StringCopy(playerNameString, playerNameOldString, MAXPLAYERNAME + 1);
 		}
-		else if (Key_IsAcceptKey(ch))
+		else if (Key_IsAcceptKey(keyCode))
 		{
 			editingName = false;
 			if (playerNameString[0] != '\0')
@@ -726,17 +720,17 @@ void M_PlayerSetupResponder(int ch, int ch2, bool numlock, int& currentItem)
 				CommitPlayerName();
 			}
 		}
-		else if (ch2 >= 32 && ch2 <= 127 && nameCharIndex < MAXPLAYERNAME &&
+		else if (typedChar >= 32 && typedChar <= 127 && nameCharIndex < MAXPLAYERNAME &&
 		         V_StringWidth(smallFont, playerNameString) < (MAXPLAYERNAME - 1) * 8)
 		{
-			playerNameString[nameCharIndex++] = static_cast<char>(ch2);
+			playerNameString[nameCharIndex++] = static_cast<char>(typedChar);
 			playerNameString[nameCharIndex] = 0;
 		}
 
 		return;
 	}
 
-	if (Key_IsDownKey(ch, numlock))
+	if (Key_IsDownKey(keyCode, numlock))
 	{
 		currentItem = (currentItem + 1) % PlayerSetupItemCount();
 		playerSetupLastOn = currentItem;
@@ -744,7 +738,7 @@ void M_PlayerSetupResponder(int ch, int ch2, bool numlock, int& currentItem)
 		return;
 	}
 
-	if (Key_IsUpKey(ch, numlock))
+	if (Key_IsUpKey(keyCode, numlock))
 	{
 		currentItem = currentItem > 0 ? currentItem - 1 : PlayerSetupItemCount() - 1;
 		playerSetupLastOn = currentItem;
@@ -752,7 +746,7 @@ void M_PlayerSetupResponder(int ch, int ch2, bool numlock, int& currentItem)
 		return;
 	}
 
-	if (Key_IsLeftKey(ch, numlock))
+	if (Key_IsLeftKey(keyCode, numlock))
 	{
 		if (currentItem != playername)
 		{
@@ -763,7 +757,7 @@ void M_PlayerSetupResponder(int ch, int ch2, bool numlock, int& currentItem)
 		return;
 	}
 
-	if (Key_IsRightKey(ch, numlock))
+	if (Key_IsRightKey(keyCode, numlock))
 	{
 		if (currentItem != playername)
 		{
@@ -774,7 +768,7 @@ void M_PlayerSetupResponder(int ch, int ch2, bool numlock, int& currentItem)
 		return;
 	}
 
-	if (Key_IsAcceptKey(ch))
+	if (Key_IsAcceptKey(keyCode))
 	{
 		const bool editingName = currentItem == playername;
 		ActivatePlayerSetupItem(currentItem, editingName ? currentItem : 1);
@@ -783,16 +777,16 @@ void M_PlayerSetupResponder(int ch, int ch2, bool numlock, int& currentItem)
 		return;
 	}
 
-	if (Key_IsCancelKey(ch))
+	if (Key_IsCancelKey(keyCode))
 	{
 		playerSetupLastOn = currentItem;
 		M_PopMenuStack();
 		return;
 	}
 
-	if (ch2 && ch < OKEY_JOY1)
+	if (typedChar && keyCode < OKEY_JOY1)
 	{
-		const char alpha = static_cast<char>(tolower(ch2));
+		const char alpha = static_cast<char>(tolower(typedChar));
 		static constexpr char alphaKeys[psetup_end] = { 'n', 't', 'e', 'a', 'c', 'r', 'g', 'b' };
 
 		for (int i = currentItem + 1; i < PlayerSetupItemCount(); ++i)

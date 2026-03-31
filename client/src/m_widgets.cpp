@@ -31,18 +31,6 @@ namespace
 		return M_MenuConf().theme;
 	}
 
-	int BigFontLineHeight()
-	{
-		const OFont* font = OFonts.big();
-		return font != nullptr ? font->lineHeight() : 0;
-	}
-
-	int SmallFontLineHeight()
-	{
-		const OFont* font = OFonts.small();
-		return font != nullptr ? font->lineHeight() : 0;
-	}
-
 	void WarnMenuConfOnce(const std::string& message)
 	{
 		static std::unordered_set<std::string> warnedMessages;
@@ -207,6 +195,18 @@ namespace
 	}
 }
 
+int M_BigFontLineHeight()
+{
+	const OFont* font = OFonts.big();
+	return font != nullptr ? font->lineHeight() : 0;
+}
+
+int M_SmallFontLineHeight()
+{
+	const OFont* font = OFonts.small();
+	return font != nullptr ? font->lineHeight() : 0;
+}
+
 const patch_t* M_MenuConfConfiguredPatch(const std::string& name, const char* context)
 {
 	if (name.empty())
@@ -362,7 +362,7 @@ void M_DrawSaveLoadBorder(int x, int y, int len)
 
 	for (int i = 0; i < len; i++)
 	{
-		x += SmallFontLineHeight();
+		x += M_SmallFontLineHeight();
 		screen->DrawPatchCleanNoOffsets(centerSlot, x, y);
 	}
 
@@ -372,8 +372,8 @@ void M_DrawSaveLoadBorder(int x, int y, int len)
 void M_DrawInputBox(char* text, int x, int y, int width)
 {
 	const OFont* smallFont = OFonts.small();
-	const int textY = y + (BigFontLineHeight() / 2 - SmallFontLineHeight() / 2);
+	const int textY = y + (M_BigFontLineHeight() / 2 - M_SmallFontLineHeight() / 2);
 
 	M_DrawSaveLoadBorder(x, y, width);
-	screen->DrawTextCleanMove(smallFont, CR_RED, x + (SmallFontLineHeight() / 2), textY, text);
+	screen->DrawTextCleanMove(smallFont, CR_RED, x + (M_SmallFontLineHeight() / 2), textY, text);
 }

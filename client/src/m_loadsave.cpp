@@ -46,8 +46,12 @@ namespace
 {
 constexpr int SaveStringSize = 24;
 constexpr int SaveSlotCount = 8;
+constexpr int SaveSlotTimestampLength = 20;
+constexpr int ScreenCenterX = 160;
+constexpr int TitleY = 10;
+constexpr int ListTopSpacing = 16;
 
-enum class saveloadmode_t
+enum class saveloadmode
 {
 	load,
 	save
@@ -55,34 +59,83 @@ enum class saveloadmode_t
 
 char saveStrings[10][SaveStringSize];
 bool saveSlotOccupied[SaveSlotCount] = {};
-saveloadmode_t saveLoadMode = saveloadmode_t::load;
+saveloadmode saveLoadMode = saveloadmode::load;
 int loadLastOn = 0;
 int saveLastOn = 0;
-int saveLoadX = 76;
-int saveLoadY = 54;
 bool editingSaveName = false;
 int editingSlot = 0;
 size_t editingCharIndex = 0;
 char oldSaveString[SaveStringSize];
 
-int BigFontLineHeight()
+struct saveloadlayout_t
 {
-	const OFont* font = OFonts.big();
-	return font != nullptr ? font->lineHeight() : 0;
+	int titleX = 0;
+	int titleY = 0;
+	int titleHeight = 0;
+	int listX = 0;
+	int listY = 0;
+};
+
+struct saveloadscreenstate_t
+{
+	const patch_t* titlePatch = nullptr;
+	const char* titleText = nullptr;
+	saveloadlayout_t layout;
+};
+
+constexpr int SaveLoadSlotWidth = 24;
+
+saveloadscreenstate_t loadScreenState;
+saveloadscreenstate_t saveScreenState;
+
+bool IsPrintableMenuChar(int ch)
+{
+	return ch >= 32 && ch <= 127;
 }
 
-void ConfigureSaveLoadScreen()
+int SaveLoadBoxPixelWidth(int slotWidth)
 {
-	if (gameinfo.enginetype == ENGINE_HERETIC)
+	return slotWidth * M_SmallFontLineHeight();
+}
+
+saveloadlayout_t SaveLoadLayout(const patch_t* titlePatch, const char* title, int slotWidth)
+{
+	saveloadlayout_t layout;
+	layout.titleY = TitleY;
+
+	if (titlePatch != nullptr)
 	{
-		saveLoadX = 62;
-		saveLoadY = 20;
+		layout.titleX = ScreenCenterX - titlePatch->width() / 2;
+		layout.titleHeight = titlePatch->height();
 	}
-	else
+	else if (title != nullptr && title[0] != '\0')
 	{
-		saveLoadX = 76;
-		saveLoadY = 54;
+		const OFont* bigFont = OFonts.big();
+		layout.titleX = ScreenCenterX - V_StringWidth(bigFont, title) / 2;
+		layout.titleHeight = M_BigFontLineHeight();
 	}
+
+	layout.listX = ScreenCenterX - SaveLoadBoxPixelWidth(slotWidth) / 2;
+	layout.listY = layout.titleY + layout.titleHeight + ListTopSpacing;
+	return layout;
+}
+
+saveloadscreenstate_t BuildSaveLoadScreenState(saveloadmode mode)
+{
+	saveloadscreenstate_t state;
+	const bool saveMode = mode == saveloadmode::save;
+	const char* patchName = saveMode ? "M_SAVEG" : "M_LOADG";
+	const char* titleKey = saveMode ? "MNU_SAVEGAME" : "MNU_LOADGAME";
+
+	state.titlePatch = W_CheckNumForName(patchName) >= 0 ? W_CachePatch(patchName) : nullptr;
+	state.titleText = state.titlePatch == nullptr ? M_LocalizedMenuString(titleKey) : nullptr;
+	state.layout = SaveLoadLayout(state.titlePatch, state.titleText, SaveLoadSlotWidth);
+	return state;
+}
+
+const saveloadscreenstate_t& CurrentSaveLoadScreenState()
+{
+	return saveLoadMode == saveloadmode::save ? saveScreenState : loadScreenState;
 }
 
 void ReadSaveStrings()
@@ -123,7 +176,7 @@ void BeginSaveEdit(int slot)
 	if (!saveSlotOccupied[slot])
 #endif
 	{
-		strncpy(saveStrings[slot], asctime(lt) + 4, 20);
+		strncpy(saveStrings[slot], asctime(lt) + 4, SaveSlotTimestampLength);
 	}
 
 	editingCharIndex = strlen(saveStrings[slot]);
@@ -131,7 +184,7 @@ void BeginSaveEdit(int slot)
 
 void ActivateSaveLoadSlot(int slot)
 {
-	if (saveLoadMode == saveloadmode_t::save)
+	if (saveLoadMode == saveloadmode::save)
 	{
 		BeginSaveEdit(slot);
 	}
@@ -144,13 +197,13 @@ void ActivateSaveLoadSlot(int slot)
 
 void M_LoadSaveInit()
 {
-	ConfigureSaveLoadScreen();
+	loadScreenState = BuildSaveLoadScreenState(saveloadmode::load);
+	saveScreenState = BuildSaveLoadScreenState(saveloadmode::save);
 }
 
 void M_LoadSaveOpenLoad(int& currentItem)
 {
-	saveLoadMode = saveloadmode_t::load;
-	ConfigureSaveLoadScreen();
+	saveLoadMode = saveloadmode::load;
 	editingSaveName = false;
 	ReadSaveStrings();
 	currentItem = loadLastOn;
@@ -158,8 +211,7 @@ void M_LoadSaveOpenLoad(int& currentItem)
 
 void M_LoadSaveOpenSave(int& currentItem)
 {
-	saveLoadMode = saveloadmode_t::save;
-	ConfigureSaveLoadScreen();
+	saveLoadMode = saveloadmode::save;
 	editingSaveName = false;
 	ReadSaveStrings();
 	currentItem = saveLastOn;
@@ -167,50 +219,41 @@ void M_LoadSaveOpenSave(int& currentItem)
 
 void M_LoadSaveRestore(int& currentItem)
 {
-	currentItem = saveLoadMode == saveloadmode_t::save ? saveLastOn : loadLastOn;
+	currentItem = saveLoadMode == saveloadmode::save ? saveLastOn : loadLastOn;
 }
 
 void M_LoadSaveDrawer(int currentItem)
 {
 	const OFont* bigFont = OFonts.big();
 	const OFont* smallFont = OFonts.small();
-	const int slotWidth = 24;
 	const int slotPadding = 2;
-	const int slotHeight = BigFontLineHeight() - slotPadding;
-	const bool saveMode = saveLoadMode == saveloadmode_t::save;
-	const char* patchName = saveMode ? "M_SAVEG" : "M_LOADG";
-	const char* titleKey = saveMode ? "MNU_SAVEGAME" : "MNU_LOADGAME";
-	const patch_t* titlePatch =
-	    W_CheckNumForName(patchName) >= 0 ? W_CachePatch(patchName) : nullptr;
+	const int slotHeight = M_BigFontLineHeight() - slotPadding;
+	const saveloadscreenstate_t& screenState = CurrentSaveLoadScreenState();
+	const saveloadlayout_t& layout = screenState.layout;
 
-	if (titlePatch != nullptr)
+	if (screenState.titlePatch != nullptr)
 	{
-		screen->DrawPatchClean(titlePatch, 72, 28);
+		screen->DrawPatchClean(screenState.titlePatch, layout.titleX, layout.titleY);
 	}
-	else
+	else if (screenState.titleText != nullptr && screenState.titleText[0] != '\0')
 	{
-		const char* title = M_LocalizedMenuString(titleKey);
-		if (title != nullptr && title[0] != '\0')
-		{
-			screen->DrawTextCleanMove(bigFont, CR_GRAY,
-			                          160 - V_StringWidth(bigFont, title) / 2, 0, title);
-		}
+		screen->DrawTextCleanMove(
+		    bigFont, CR_GRAY, layout.titleX, layout.titleY, screenState.titleText);
 	}
 
-	int listY = saveLoadY;
+	int listY = layout.listY;
 	for (int i = 0; i < SaveSlotCount; ++i)
 	{
-		M_DrawInputBox(saveStrings[i], saveLoadX, listY, slotWidth);
+		M_DrawInputBox(saveStrings[i], layout.listX, listY, SaveLoadSlotWidth);
 		listY += slotHeight + slotPadding;
 	}
 
 	if (editingSaveName)
 	{
 		const int stringWidth = V_StringWidth(smallFont, saveStrings[editingSlot]);
-		screen->DrawTextCleanMove(smallFont, CR_RED, saveLoadX + stringWidth,
-		                          saveLoadY + BigFontLineHeight() * editingSlot, "_");
+		screen->DrawTextCleanMove(smallFont, CR_RED, layout.listX + stringWidth,
+		                          layout.listY + M_BigFontLineHeight() * editingSlot, "_");
 	}
-
 }
 
 bool M_LoadSaveIndicatorPosition(int currentItem, int& x, int& y)
@@ -220,8 +263,10 @@ bool M_LoadSaveIndicatorPosition(int currentItem, int& x, int& y)
 		return false;
 	}
 
-	x = saveLoadX + M_MenuIndicatorOffsetX();
-	y = saveLoadY + M_MenuIndicatorOffsetY() + currentItem * BigFontLineHeight();
+	const saveloadlayout_t& layout = CurrentSaveLoadScreenState().layout;
+
+	x = layout.listX + M_MenuIndicatorOffsetX();
+	y = layout.listY + M_MenuIndicatorOffsetY() + currentItem * M_BigFontLineHeight();
 	return true;
 }
 
@@ -253,13 +298,13 @@ const char* M_LoadSaveSlotName(int slot)
 	return slot >= 0 && slot < SaveSlotCount ? saveStrings[slot] : "";
 }
 
-void M_LoadSaveResponder(int ch, int ch2, bool numlock, int& currentItem)
+void M_LoadSaveResponder(int keyCode, int typedChar, bool numlock, int& currentItem)
 {
 	const OFont* smallFont = OFonts.small();
 
 	if (editingSaveName)
 	{
-		if (ch == OKEY_BACKSPACE)
+		if (keyCode == OKEY_BACKSPACE)
 		{
 			if (editingCharIndex > 0)
 			{
@@ -267,13 +312,13 @@ void M_LoadSaveResponder(int ch, int ch2, bool numlock, int& currentItem)
 				saveStrings[editingSlot][editingCharIndex] = 0;
 			}
 		}
-		else if (Key_IsCancelKey(ch))
+		else if (Key_IsCancelKey(keyCode))
 		{
 			M_ClearMenus();
 			editingSaveName = false;
 			M_StringCopy(saveStrings[editingSlot], oldSaveString, SaveStringSize);
 		}
-		else if (Key_IsAcceptKey(ch))
+		else if (Key_IsAcceptKey(keyCode))
 		{
 			M_ClearMenus();
 			editingSaveName = false;
@@ -282,36 +327,36 @@ void M_LoadSaveResponder(int ch, int ch2, bool numlock, int& currentItem)
 				M_LoadSaveSaveSlot(editingSlot);
 			}
 		}
-		else if (ch2 >= 32 && ch2 <= 127 && editingCharIndex < SaveStringSize - 1 &&
+		else if (IsPrintableMenuChar(typedChar) && editingCharIndex < SaveStringSize - 1 &&
 		         V_StringWidth(smallFont, saveStrings[editingSlot]) <
 		             (SaveStringSize - 1) * 8)
 		{
-			saveStrings[editingSlot][editingCharIndex++] = static_cast<char>(ch2);
+			saveStrings[editingSlot][editingCharIndex++] = static_cast<char>(typedChar);
 			saveStrings[editingSlot][editingCharIndex] = 0;
 		}
 
 		return;
 	}
 
-	if (Key_IsDownKey(ch, numlock))
+	if (Key_IsDownKey(keyCode, numlock))
 	{
 		currentItem = (currentItem + 1) % SaveSlotCount;
 		M_PlayMenuSound("navigate");
 		return;
 	}
 
-	if (Key_IsUpKey(ch, numlock))
+	if (Key_IsUpKey(keyCode, numlock))
 	{
 		currentItem = currentItem > 0 ? currentItem - 1 : SaveSlotCount - 1;
 		M_PlayMenuSound("navigate");
 		return;
 	}
 
-	if (Key_IsAcceptKey(ch))
+	if (Key_IsAcceptKey(keyCode))
 	{
-		if (saveLoadMode == saveloadmode_t::save || saveSlotOccupied[currentItem])
+		if (saveLoadMode == saveloadmode::save || saveSlotOccupied[currentItem])
 		{
-			if (saveLoadMode == saveloadmode_t::save)
+			if (saveLoadMode == saveloadmode::save)
 			{
 				saveLastOn = currentItem;
 			}
@@ -326,9 +371,9 @@ void M_LoadSaveResponder(int ch, int ch2, bool numlock, int& currentItem)
 		return;
 	}
 
-	if (Key_IsCancelKey(ch))
+	if (Key_IsCancelKey(keyCode))
 	{
-		if (saveLoadMode == saveloadmode_t::save)
+		if (saveLoadMode == saveloadmode::save)
 		{
 			saveLastOn = currentItem;
 		}
@@ -341,9 +386,9 @@ void M_LoadSaveResponder(int ch, int ch2, bool numlock, int& currentItem)
 		return;
 	}
 
-	if (ch2 >= '1' && ch2 <= '8')
+	if (typedChar >= '1' && typedChar < '1' + SaveSlotCount)
 	{
-		currentItem = ch2 - '1';
+		currentItem = typedChar - '1';
 		M_PlayMenuSound("navigate");
 	}
 }
