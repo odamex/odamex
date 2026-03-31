@@ -2206,9 +2206,7 @@ void CL_ParseCommands()
 void CL_SaveCmd(void)
 {
 	odaproto::clc::PlayerInput& netcmd = localcmds[gametic % MAXSAVETICS];
-	CLC_PackPlayerInputMessageFromPlayer(netcmd, consoleplayer());
-	netcmd.set_tic(gametic);
-	netcmd.set_world_index(world_index);
+	CLC_PackPlayerInputMessageFromPlayer(netcmd, consoleplayer(), gametic, world_index);
 }
 
 extern int outrate;
@@ -2242,7 +2240,7 @@ void CL_SendCmd(void)
 
 	// Write current client-tic.  Server later sends this back to client
 	// when sending svc_updatelocalplayer so the client knows which ticcmds
-	// need to be used for client's positional prediction.
+	// need to be used for client's positional prediction and item data reconciliation.
 	currentNetcmd.set_tic(gametic);
 	MSG_WriteSVC(messenger.ReliableBuf(), currentNetcmd);
 

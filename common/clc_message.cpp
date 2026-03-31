@@ -4,12 +4,13 @@
 
 #include "d_player.h"
 
-void CLC_PackPlayerInputMessageFromPlayer(odaproto::clc::PlayerInput& msg, const player_t& player)
+void CLC_PackPlayerInputMessageFromPlayer(odaproto::clc::PlayerInput& msg, const player_t& player, int clientTic, int clientWorldIndex)
 {
 	if (player.mo)
 	{
 		msg.Clear();
-		msg.set_tic(player.cmd.tic);
+		msg.set_tic(clientTic);
+		msg.set_world_index(clientWorldIndex);
 
 		if (player.cmd.buttons & BT_ATTACK)
 		{
@@ -78,7 +79,6 @@ void CLC_UnpackPlayerInputMessageToPlayer(const odaproto::clc::PlayerInput& msg,
 	if (player.mo)
 	{
 		player.cmd.clear();
-		player.cmd.tic = msg.tic();
 
 		if (msg.button_attack())
 		{
