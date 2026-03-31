@@ -134,6 +134,7 @@ public:
 	inline void DrawPatch (const patch_t *patch, int x, int y) const;
 	void DrawPatchWithPalette(const patch_t* patch, int x, int y, const palette_t* palette) const;
 	void DrawPatchCleanWithPalette(const patch_t* patch, int x, int y, const palette_t* palette) const;
+	void DrawPatchCleanWithPaletteFlipped(const patch_t* patch, int x, int y, const palette_t* palette) const;
 	inline void DrawPatchStretched (const patch_t *patch, int x, int y, int dw, int dh) const;
 	inline void DrawPatchDirect (const patch_t *patch, int x, int y) const;
 	inline void DrawPatchClean (const patch_t *patch, int x, int y) const;

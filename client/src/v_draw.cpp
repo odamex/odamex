@@ -964,6 +964,112 @@ void DCanvas::DrawPatchFlipped(const patch_t *patch, int x, int y) const
 	}
 }
 
+void DCanvas::DrawPatchCleanWithPaletteFlipped(const patch_t* patch, int x0, int y0,
+                                               const palette_t* palette) const
+{
+	if (patch == nullptr)
+		return;
+
+	if (patch->width() <= 0 || patch->height() <= 0)
+		return;
+
+	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	int surface_pitch = mSurface->getPitch();
+	int colstep = mSurface->getBytesPerPixel();
+	vdrawsfunc drawfunc;
+	EWrapperCode drawer = EWrapper_Normal;
+
+	const translationref_t old_colormap = V_ColorMap;
+	const shaderef_t old_palette = V_Palette;
+
+	if (palette != nullptr)
+	{
+		if (mSurface->getBitsPerPixel() == 8)
+		{
+			palindex_t translation[256];
+			const argb_t* dest_palette = mSurface->getPalette();
+
+			for (int i = 0; i < 256; ++i)
+				translation[i] = V_BestColor(dest_palette, palette->colors[i]);
+
+			V_ColorMap = translationref_t(translation);
+			drawer = EWrapper_Translated;
+		}
+		else
+		{
+			V_Palette = shaderef_t(&palette->maps, 0);
+		}
+	}
+
+	const int destwidth = patch->width() * CleanXfac;
+	const int destheight = patch->height() * CleanYfac;
+
+	int x = (x0 - 160) * CleanXfac + (surface_width / 2);
+	int y = (y0 - 100) * CleanYfac + (surface_height / 2);
+
+	int xinc = (patch->width() << FRACBITS) / destwidth;
+	int yinc = (patch->height() << FRACBITS) / destheight;
+	if (xinc & (FRACUNIT - 1))
+		xinc++;
+	if (yinc & (FRACUNIT - 1))
+		yinc++;
+
+	const int xmul = (destwidth << FRACBITS) / patch->width();
+	const int ymul = (destheight << FRACBITS) / patch->height();
+
+	y -= (patch->topoffset() * ymul) >> FRACBITS;
+	x -= ((patch->width() - patch->leftoffset()) * xmul) >> FRACBITS;
+
+#ifdef RANGECHECK
+	if (x < 0 || x + destwidth > surface_width || y < 0 || y + destheight > surface_height)
+	{
+		DPrintFmt("DCanvas::DrawPatchCleanWithPaletteFlipped: bad patch dimensions ({} x {}) (ignored)\n",
+		          patch->width(), patch->height());
+		if (palette != nullptr)
+		{
+			V_ColorMap = old_colormap;
+			V_Palette = old_palette;
+		}
+		return;
+	}
+#endif
+
+	if (mSurface->getBitsPerPixel() == 8)
+		drawfunc = Psfuncs[drawer];
+	else
+		drawfunc = Dsfuncs[drawer];
+
+	if (mSurface == I_GetPrimarySurface())
+		V_MarkRect(x, y, destwidth, destheight);
+
+	byte* desttop = mSurface->getBuffer() + (y * surface_pitch) + (x * colstep);
+	const int w = MIN(destwidth * xinc, patch->width() << FRACBITS);
+
+	for (int col = 0; col < w; col += xinc, desttop += colstep)
+	{
+		const int sourcecol = patch->width() - 1 - (col >> FRACBITS);
+		tallpost_t* post = reinterpret_cast<tallpost_t*>(
+		    const_cast<byte*>(reinterpret_cast<const byte*>(patch)) +
+		    LELONG(patch->columnofs[sourcecol]));
+
+		while (!post->end())
+		{
+			drawfunc(post->data(),
+			         desttop + (((post->topdelta * ymul)) >> FRACBITS) * surface_pitch,
+			         (post->length * ymul) >> FRACBITS,
+			         surface_pitch, yinc);
+
+			post = post->next();
+		}
+	}
+
+	if (palette != nullptr)
+	{
+		V_ColorMap = old_colormap;
+		V_Palette = old_palette;
+	}
+}
+
 //
 // V_DrawBlock
 // Draw a linear block of pixels into the view buffer.

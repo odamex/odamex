@@ -28,5 +28,4 @@ void M_PlayerSetupShutdown();
 void M_PlayerSetupOpen(int& currentItem);
 void M_PlayerSetupTicker();
 void M_PlayerSetupDrawer(int currentItem);
-bool M_PlayerSetupIndicatorPosition(int currentItem, int& x, int& y);
 void M_PlayerSetupResponder(int keyCode, int typedChar, bool numlock, int& currentItem);
