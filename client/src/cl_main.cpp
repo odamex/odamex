@@ -717,6 +717,20 @@ void CL_SpyCycle(Iterator begin, Iterator end)
 	} while (it != sentinal);
 }
 
+void D_ProcessEvents();
+void G_BuildTiccmd (ticcmd_t& cmd);
+
+//
+// NetUpdate
+// Reads inputs, processes them, builds ticcmd for console player.
+//
+void NetUpdate (void)
+{
+	I_StartTic ();
+	D_ProcessEvents ();
+	G_BuildTiccmd (consoleplayer().netcmds[gametic % BACKUPTICS]);
+}
+
 extern bool advancedemo;
 uint64_t nextstep = 0;
 int canceltics = 0;
@@ -753,6 +767,9 @@ void CL_StepTics(unsigned int count)
 		OInterpolation::getInstance().ticGameInterpolation();
 
 		G_Ticker ();
+
+        // TODO: Record the item data.
+
 		gametic++;
 		if (netdemo.isPlaying() && !netdemo.isPaused())
 			netdemo.ticker();

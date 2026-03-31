@@ -30,7 +30,6 @@
 #pragma once
 
 #include "doomdata.h"
-#include "d_net.h"
 #include "g_level.h"
 
 // We also need the definition of a cvar

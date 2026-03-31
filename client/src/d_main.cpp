@@ -166,6 +166,21 @@ void D_SetPlatform(void)
 #endif
 }
 
+bool step_mode = false;
+
+//
+// D_CheckNetGame
+// Works out player numbers among the net participants
+//
+void D_CheckNetGame (void)
+{
+    CL_InitNetwork ();
+
+    D_SetupUserInfo();
+
+    step_mode = ((Args.CheckParm ("-stepmode")) != 0);
+}
+
 //
 // D_ProcessEvents
 // Send all the events of the given timestamp down the responder chain

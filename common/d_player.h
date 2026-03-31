@@ -106,6 +106,8 @@ typedef enum
 inline constexpr int ReJoinDelay = TICRATE * 5;
 inline constexpr int SuicideDelay = TICRATE * 10;
 
+inline constexpr int BACKUPTICS = 12;
+
 class player_t
 {
 public:
