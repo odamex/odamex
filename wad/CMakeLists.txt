@@ -10,6 +10,17 @@ file(GLOB_RECURSE ODAWAD_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/lumps/*.wav
   ${CMAKE_CURRENT_SOURCE_DIR}/sprites/*.png)
 
+macro(odamex_copy_wad _target)
+  if (TARGET ${_target})
+    add_custom_command(
+        APPEND
+        OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/odamex.wad"
+        DEPENDS ${_target}
+        COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/odamex.wad" $<TARGET_FILE_DIR:${_target}>
+        )
+  endif()
+endmacro()
+
 # If Python is available, use it to build the WAD.
 if(Python_FOUND)
   message(STATUS "Found Python: ${Python_EXECUTABLE}")
@@ -20,6 +31,9 @@ if(Python_FOUND)
     DEPENDS ${ODAWAD_SOURCES}
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     VERBATIM)
+
+  odamex_copy_wad(odamex)
+  odamex_copy_wad(odasrv)
 
   add_custom_target(odawad ALL
     DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/odamex.wad")
