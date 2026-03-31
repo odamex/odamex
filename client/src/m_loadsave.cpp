@@ -88,11 +88,6 @@ constexpr int SaveLoadSlotWidth = 24;
 saveloadscreenstate_t loadScreenState;
 saveloadscreenstate_t saveScreenState;
 
-bool IsPrintableMenuChar(int ch)
-{
-	return ch >= 32 && ch <= 127;
-}
-
 int SaveLoadBoxPixelWidth(int slotWidth)
 {
 	return slotWidth * M_SmallFontLineHeight();
@@ -190,7 +185,7 @@ void ActivateSaveLoadSlot(int slot)
 	}
 	else
 	{
-		M_LoadSaveLoadSlot(slot);
+		M_LoadSlot(slot);
 	}
 }
 } // namespace
@@ -199,22 +194,6 @@ void M_LoadSaveInit()
 {
 	loadScreenState = BuildSaveLoadScreenState(saveloadmode::load);
 	saveScreenState = BuildSaveLoadScreenState(saveloadmode::save);
-}
-
-void M_LoadSaveOpenLoad(int& currentItem)
-{
-	saveLoadMode = saveloadmode::load;
-	editingSaveName = false;
-	ReadSaveStrings();
-	currentItem = loadLastOn;
-}
-
-void M_LoadSaveOpenSave(int& currentItem)
-{
-	saveLoadMode = saveloadmode::save;
-	editingSaveName = false;
-	ReadSaveStrings();
-	currentItem = saveLastOn;
 }
 
 void M_LoadSaveRestore(int& currentItem)
@@ -270,7 +249,7 @@ bool M_LoadSaveIndicatorPosition(int currentItem, int& x, int& y)
 	return true;
 }
 
-void M_LoadSaveLoadSlot(int slot)
+void M_LoadSlot(int slot)
 {
 	std::string name;
 	G_BuildSaveName(name, slot);
@@ -283,7 +262,46 @@ void M_LoadSaveLoadSlot(int slot)
 	}
 }
 
-void M_LoadSaveSaveSlot(int slot)
+const char* M_LoadSaveSlotName(int slot)
+{
+	return slot >= 0 && slot < SaveSlotCount ? saveStrings[slot] : "";
+}
+
+void M_QuickSaveResponse(int keyCode)
+{
+	if (keyCode == 'y' || Key_IsYesKey(keyCode))
+	{
+		M_SaveSlot(quickSaveSlot);
+		M_PlayMenuSound("close");
+	}
+}
+
+void M_QuickLoadResponse(int keyCode)
+{
+	if (keyCode == 'y' || Key_IsYesKey(keyCode))
+	{
+		M_LoadSlot(quickSaveSlot);
+		M_PlayMenuSound("close");
+	}
+}
+
+void M_OpenLoad(int& currentItem)
+{
+	saveLoadMode = saveloadmode::load;
+	editingSaveName = false;
+	ReadSaveStrings();
+	currentItem = loadLastOn;
+}
+
+void M_OpenSave(int& currentItem)
+{
+	saveLoadMode = saveloadmode::save;
+	editingSaveName = false;
+	ReadSaveStrings();
+	currentItem = saveLastOn;
+}
+
+void M_SaveSlot(int slot)
 {
 	G_SaveGame(slot, { saveStrings[slot], SaveStringSize });
 	M_ClearMenus();
@@ -291,11 +309,6 @@ void M_LoadSaveSaveSlot(int slot)
 	{
 		quickSaveSlot = slot;
 	}
-}
-
-const char* M_LoadSaveSlotName(int slot)
-{
-	return slot >= 0 && slot < SaveSlotCount ? saveStrings[slot] : "";
 }
 
 void M_LoadSaveResponder(int keyCode, int typedChar, bool numlock, int& currentItem)
@@ -324,10 +337,10 @@ void M_LoadSaveResponder(int keyCode, int typedChar, bool numlock, int& currentI
 			editingSaveName = false;
 			if (saveStrings[editingSlot][0])
 			{
-				M_LoadSaveSaveSlot(editingSlot);
+				M_SaveSlot(editingSlot);
 			}
 		}
-		else if (IsPrintableMenuChar(typedChar) && editingCharIndex < SaveStringSize - 1 &&
+		else if (Key_IsPrintableChar(typedChar) && editingCharIndex < SaveStringSize - 1 &&
 		         V_StringWidth(smallFont, saveStrings[editingSlot]) <
 		             (SaveStringSize - 1) * 8)
 		{

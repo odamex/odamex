@@ -101,7 +101,7 @@ bool                CanScrollUp;
 bool                CanScrollDown;
 int                 VisBottom;
 
-static int			MenuTime;			// Ticker for Heretic skulls
+static int			MenuTime;			// Ticker for main menu header animations
 short				indicatorAnimCounter;	// indicator animation counter
 short				whichIndicator; 		// which indicator to draw
 bool				drawIndicator;			// [RH] don't always draw indicator
@@ -257,7 +257,7 @@ namespace
 	                      M_LoadSaveIndicatorPosition,
 	                      M_LoadSaveResponder, nullptr, nullptr},
 	    builtinscreendef_t{M_PlayerSetupInit, M_PlayerSetupOpen,
-	                      M_PlayerSetupDrawer, M_PlayerSetupIndicatorPosition,
+	                      M_PlayerSetupDrawer, nullptr,
 	                      M_PlayerSetupResponder,
 	                      M_PlayerSetupTicker, M_PlayerSetupShutdown},
 	    builtinscreendef_t{M_VideoModesInit, M_VideoModesRestore, M_VideoModesDrawer,
@@ -801,10 +801,6 @@ const char* M_LocalizedMenuString(const char* key)
 	return key;
 }
 
-namespace
-{
-}
-
 bool M_OpenMenuTarget(const std::string& target)
 {
 	const bool startedControlPanel = !menuactive;
@@ -993,7 +989,7 @@ static void M_OpenLoadGameScreen()
 		M_StartControlPanel();
 	}
 	M_PushBuiltinScreen(BuiltInScreen::saveload, 0, true);
-	M_LoadSaveOpenLoad(CurrentBuiltinItem);
+	M_OpenLoad(CurrentBuiltinItem);
 }
 
 static bool M_OpenSaveGameScreen()
@@ -1016,7 +1012,7 @@ static bool M_OpenSaveGameScreen()
 		M_StartControlPanel();
 	}
 	M_PushBuiltinScreen(BuiltInScreen::saveload, 0, true);
-	M_LoadSaveOpenSave(CurrentBuiltinItem);
+	M_OpenSave(CurrentBuiltinItem);
 	return true;
 }
 
@@ -1026,15 +1022,6 @@ static bool M_OpenSaveGameScreen()
 //                 zdoom 1.22 source, see MAINTAINERS
 //
 char	tempstring[80];
-void M_QuickSaveResponse(int ch)
-{
-	if (ch == 'y' || Key_IsYesKey(ch))
-	{
-		M_LoadSaveSaveSlot(quickSaveSlot);
-		M_PlayMenuSound("close");
-	}
-}
-
 void M_QuickSave()
 {
 	if (multiplayer)
@@ -1060,17 +1047,9 @@ void M_QuickSave()
 		quickSaveSlot = -2; 	// means to pick a slot now
 		return;
 	}
-	snprintf (tempstring, 80, GStrings(QSPROMPT), M_LoadSaveSlotName(quickSaveSlot));
+	snprintf(tempstring, ARRAY_LENGTH(tempstring), GStrings(QSPROMPT),
+	         M_LoadSaveSlotName(quickSaveSlot));
 	M_StartMessage (tempstring, M_QuickSaveResponse, true);
-}
-
-void M_QuickLoadResponse(int ch)
-{
-	if (ch == 'y' || Key_IsYesKey(ch))
-	{
-		M_LoadSaveLoadSlot(quickSaveSlot);
-		M_PlayMenuSound("close");
-	}
 }
 
 void M_QuickLoad()
@@ -1080,7 +1059,8 @@ void M_QuickLoad()
 		M_OpenLoadGameScreen();
 		return;
 	}
-	snprintf(tempstring, 80, GStrings(QLPROMPT), M_LoadSaveSlotName(quickSaveSlot));
+	snprintf(tempstring, ARRAY_LENGTH(tempstring), GStrings(QLPROMPT),
+	         M_LoadSaveSlotName(quickSaveSlot));
 	M_StartMessage(tempstring,M_QuickLoadResponse,true);
 }
 

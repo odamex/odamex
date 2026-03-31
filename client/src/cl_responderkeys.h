@@ -47,3 +47,8 @@ bool Key_IsSpyPrevKey(int key);
 bool Key_IsSpyNextKey(int key);
 
 bool Key_IsTabulationKey(int key);
+
+inline bool Key_IsPrintableChar(int key)
+{
+	return key >= 32 && key <= 127;
+}
