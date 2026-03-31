@@ -223,6 +223,11 @@ struct alignas(256) TranslationTables {
 };
 static std::unique_ptr<TranslationTables> translationtablesmem = nullptr;
 
+static int R_PaletteIntensity(const argb_t& color)
+{
+	return (54 * color.getr() + 183 * color.getg() + 19 * color.getb()) / 256;
+}
+
 static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end_color)
 {
 	static constexpr palindex_t chexstart_index = 0x70;
@@ -236,6 +241,26 @@ static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end
 	const int index_range = end_index - start_index + 1;
 
 	palindex_t* dest = static_cast<palindex_t*>(Ranges) + color_num * 256;
+
+	if (gameinfo.enginetype == ENGINE_HERETIC)
+	{
+		const palette_t* pal = V_GetDefaultPalette();
+		const int r_diff = start_color.getr() - end_color.getr();
+		const int g_diff = start_color.getg() - end_color.getg();
+		const int b_diff = start_color.getb() - end_color.getb();
+
+		for (int index = 0; index < 256; ++index)
+		{
+			const int intensity = R_PaletteIntensity(pal->basecolors[index]);
+			const int r = end_color.getr() + intensity * r_diff / 255;
+			const int g = end_color.getg() + intensity * g_diff / 255;
+			const int b = end_color.getb() + intensity * b_diff / 255;
+
+			dest[index] = V_BestColor(pal->basecolors, r, g, b);
+		}
+
+		return;
+	}
 
 	if (IsChexMission(gamemission))
 	{
