@@ -133,7 +133,7 @@ TEST_P(PistolStartLatencyMultiShotSuite, HappyPistolStartAndShots)
 
     for (int i = 0; i < roundTripTimeInTics - 1; ++i)
     {
-        // Odd-numbered tic?
+        // Odd-numbered tic?  Pull trigger.
         if (i & 0x1)
         {
             clientPlayer.ammo[am_clip] -= 1;
@@ -151,4 +151,46 @@ TEST_P(PistolStartLatencyMultiShotSuite, HappyPistolStartAndShots)
 INSTANTIATE_TEST_SUITE_P(VariousHappyPistolStartsAndMultiShots,
                          PistolStartLatencyMultiShotSuite,
                          testing::Range(10, 300, 10));
+
+// Multiple shots with desynched ammo pickup
+// -----------------------------------------
+struct PistolStartMultiShotGhostAmmoPickupSuite : PistolStartLatencyFixture
+{
+};
+
+TEST_P(PistolStartMultiShotGhostAmmoPickupSuite, BasicTest)
+{
+    // Do some shooting.
+    clientPlayer.ammo[am_clip] = 40;
+
+    // Locally mispredict a pickup.
+    //
+    clientPlayer.ammo[am_clip] = 90;
+
+    // Pretend that we send a generic notification that stimulates the server to respond to us in one full round-trip period.
+    // Only, that response is going to indicate that we DID NOT pickup the ammo!
+    {
+        auto& msgRef = FutureServerResponse();
+        msgRef.ammo[am_clip] = 40;
+    }
+
+    EXPECT_GT(roundTripTimeInTics, 1);
+
+    for (int i = 0; i < roundTripTimeInTics - 1; ++i)
+    {
+        EXPECT_EQ(false, Frame());
+        clientPlayer.ammo[am_clip] -= 1;        // keep shootin'
+    }
+
+    EXPECT_EQ(90 - (roundTripTimeInTics - 1), clientPlayer.ammo[am_clip]);
+
+    EXPECT_EQ(true, Frame());
+    EXPECT_EQ(true, correctionWasRequired);
+
+    EXPECT_EQ(40 - (roundTripTimeInTics - 1), clientPlayer.ammo[am_clip]);        // Ammo corrected??
+};
+
+INSTANTIATE_TEST_SUITE_P(GhostAmmoPickup,
+                         PistolStartMultiShotGhostAmmoPickupSuite,
+                         testing::Values(75));
 
