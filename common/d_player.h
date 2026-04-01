@@ -230,7 +230,7 @@ public:
     int         ping;                   // [Fly] guess what :)
 	int         last_received;
 
-	int         tic;					// gametic last update for player was received
+	int         tic;					// client-side gametic last update for player was received
 
 	PlayerSnapshotManager snapshots;	// Previous player positions
 
