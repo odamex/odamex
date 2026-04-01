@@ -24,7 +24,6 @@ struct LatencyFixture
 
     PlayerStateRoller   rollerState;
     player_t            clientPlayer;
-    player_t            reconciledPlayer;
     bool                correctionWasRequired;
 
     explicit LatencyFixture(int pingTimeInMsec) :
@@ -36,16 +35,22 @@ struct LatencyFixture
     {
     }
 
-    void Frame()
+    // Returns true if a "server response" was "received" at the start of this new tic.
+    bool Frame()
     {
-        clientPlayer = reconciledPlayer;
         rollerState.Record(currentTic, clientPlayer);
 
         messagesInFlight.erase(currentTic);
         ++currentTic;
 
-        auto& serverResponse = messagesInFlight[currentTic];
-        correctionWasRequired = rollerState.Resolve(serverResponse.tic, serverResponse.msg, reconciledPlayer);
+        auto serverResponseIter = messagesInFlight.find(currentTic);
+        if (serverResponseIter != messagesInFlight.end())
+        {
+            correctionWasRequired = rollerState.Resolve(serverResponseIter->second.tic, serverResponseIter->second.msg, clientPlayer);
+            return true;
+        }
+        correctionWasRequired = false;
+        return false;
     }
 
     PlayerItemDataType& FutureServerResponse()
@@ -86,7 +91,18 @@ TEST_P(PistolStartLatencyFixture, HappyPistolStartAndShoot)
 
     EXPECT_EQ(clientPlayer.ammo[am_clip], 50);
 
+    clientPlayer.ammo[am_clip] -= 1;
+    SetHappyResponse();
 
+    for (int i = 0; i < roundTripTimeInTics - 1; ++i)
+    {
+        const bool newMessageReceived = Frame();
+
+        EXPECT_EQ(false, newMessageReceived);
+    }
+
+    EXPECT_EQ(true,  Frame());
+    EXPECT_EQ(false, correctionWasRequired);
 }
 
 INSTANTIATE_TEST_SUITE_P(VariousHappyPistolStartsAndShots,
