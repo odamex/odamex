@@ -84,7 +84,13 @@ struct PistolStartLatencyFixture : LatencyFixture, testing::TestWithParam<int>
     }
 };
 
-TEST_P(PistolStartLatencyFixture, HappyPistolStartAndShoot)
+struct PistolStartLatencySingleShotSuite : PistolStartLatencyFixture
+{
+};
+
+// Single happy shot
+// -----------------
+TEST_P(PistolStartLatencySingleShotSuite, HappyPistolStartAndShoot)
 {
     // This is baby's first check.  Start with a basic sanity check.
     EXPECT_GT(roundTripTimeInTics, 0);
@@ -106,6 +112,43 @@ TEST_P(PistolStartLatencyFixture, HappyPistolStartAndShoot)
 }
 
 INSTANTIATE_TEST_SUITE_P(VariousHappyPistolStartsAndShots,
-                         PistolStartLatencyFixture,
+                         PistolStartLatencySingleShotSuite,
+                         testing::Range(10, 300, 10));
+
+// Multiple happy shots
+// ---------------------
+struct PistolStartLatencyMultiShotSuite : PistolStartLatencyFixture
+{
+};
+
+TEST_P(PistolStartLatencyMultiShotSuite, HappyPistolStartAndShots)
+{
+    // This is baby's first check.  Start with a basic sanity check.
+    EXPECT_GT(roundTripTimeInTics, 0);
+
+    EXPECT_EQ(clientPlayer.ammo[am_clip], 50);
+
+    clientPlayer.ammo[am_clip] -= 1;
+    SetHappyResponse();
+
+    for (int i = 0; i < roundTripTimeInTics - 1; ++i)
+    {
+        // Odd-numbered tic?
+        if (i & 0x1)
+        {
+            clientPlayer.ammo[am_clip] -= 1;
+        }
+
+        const bool newMessageReceived = Frame();
+
+        EXPECT_EQ(false, newMessageReceived);
+    }
+
+    EXPECT_EQ(true,  Frame());
+    EXPECT_EQ(false, correctionWasRequired);
+}
+
+INSTANTIATE_TEST_SUITE_P(VariousHappyPistolStartsAndMultiShots,
+                         PistolStartLatencyMultiShotSuite,
                          testing::Range(10, 300, 10));
 
