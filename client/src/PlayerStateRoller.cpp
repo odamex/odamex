@@ -59,9 +59,7 @@ namespace
     {
         for (size_t i = 0; i < io_array.size(); ++i)
         {
-            // According to optimization tests on godbolt, we get a nice SIMD vectorized
-            // summation if we just do the addition without any checks.
-            io_array[i] += i_delta[i];
+            io_array[i] = std::max(i_delta[i] + io_array[i], 0);
         }
     }
 
