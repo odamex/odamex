@@ -192,5 +192,5 @@ TEST_P(PistolStartMultiShotGhostAmmoPickupSuite, BasicTest)
 
 INSTANTIATE_TEST_SUITE_P(GhostAmmoPickup,
                          PistolStartMultiShotGhostAmmoPickupSuite,
-                         testing::Values(75));
+                         testing::Range(10, 300, 10));
 
