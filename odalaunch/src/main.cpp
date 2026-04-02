@@ -42,7 +42,9 @@ IMPLEMENT_APP(Application)
 
 bool Application::OnInit()
 {
-		SetClassName("net.odamex.Odamex.Launcher");
+	#ifdef __linux__
+	SetClassName("net.odamex.Odamex.Launcher");
+	#endif
 
 	if(BufferedSocket::InitializeSocketAPI() == false)
 		return false;
@@ -53,10 +55,6 @@ bool Application::OnInit()
 
 	// load resources
 	InitXmlResource();
-
-	#ifdef __linux__
-	SetClassName("net.odamex.Odamex.Launcher");
-	#endif
 
 	// create main window, get size dimensions and show it
 	MAIN_DIALOG = new dlgMain(0L);
