@@ -53,14 +53,15 @@ modules:
         tag: v2.1.0
   # Odalaunch dependencies
   - name: WxWidgets
-    buildsystem: cmake-ninja
+    buildsystem: autotools
     config-opts:
-      - -D wxBUILD_SHARED=ON
-      - -D wxBUILD_TESTS=OFF
-      - -D wxBUILD_SAMPLES=OFF
-      - -D wxBUILD_DEMOS=OFF
-      - -D wxBUILD_TOOLKIT=gtk3
-      - -D wxUSE_SYS_LIBS=sys
+      - --with-gtk=3
+      # - -D wxBUILD_SHARED=ON
+      # - -D wxBUILD_TESTS=OFF
+      # - -D wxBUILD_SAMPLES=OFF
+      # - -D wxBUILD_DEMOS=OFF
+      # - -D wxBUILD_TOOLKIT=gtk3
+      # - -D wxUSE_SYS_LIBS=sys
     cleanup:
       - "/lib/wx"
       - "/share/aclocal"
