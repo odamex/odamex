@@ -26,7 +26,7 @@
 #include <wx/msgdlg.h>
 #include <wx/app.h>
 #include <wx/fileconf.h>
-#include <wx/log.h> 
+#include <wx/log.h>
 
 #include "plat_utils.h"
 #include "oda_defs.h"
@@ -57,8 +57,8 @@ void QueryThread::Receive(QueryThread::Message &Msg)
 void QueryThread::SetStatus(const QueryThread::Status &Sts)
 {
     wxMutexLocker ML(m_StatusMutex);
-    
-    m_StatusMessage = Sts;   
+
+    m_StatusMessage = Sts;
 }
 
 QueryThread::Status QueryThread::GetStatus()
@@ -75,7 +75,7 @@ void QueryThread::GracefulExit()
 	Post(QueryThread::Exit);
 
 	// Wait until the thread has closed completely
-	wxThread::Wait();
+	wxThread::Wait(wxTHREAD_WAIT_YIELD);
 }
 
 void QueryThread::Signal(odalpapi::Server* QueryServer, const std::string& Address, const wxUint16 Port, wxInt32 ServerIndex, wxUint32 ServerTimeout, wxInt8 Retries)
@@ -100,7 +100,7 @@ void* QueryThread::Entry()
 	odalpapi::BufferedSocket Socket;
     int Index;
     QueryThread::Message Msg;
-	
+
 	// Keeps the thread alive, it will wait for commands instead of the
 	// killing itself/creating itself overhead
 	while(1)
@@ -108,7 +108,7 @@ void* QueryThread::Entry()
         // Wait for work to be posted
         SetStatus(QueryThread::Waiting);
         Receive(Msg);
-        
+
         // Translate the posted command to a status update
         switch (Msg)
         {
