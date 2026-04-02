@@ -6,18 +6,16 @@ if(BUILD_LAUNCHER)
       file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets")
       set(wxWidgets_ROOT_DIR "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets" CACHE PATH "")
 
-      # Cross-compiler headers
-      file(DOWNLOAD
-        "https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.5/wxWidgets-3.1.5-headers.7z"
-        "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.1.5-headers.7z"
-        EXPECTED_HASH SHA256=5BEF630B59CBE515152EBAABC2B5BB83BBB908B798ACCBF28E4F3D79480EC0E2)
-      execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
-        "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.1.5-headers.7z"
-        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets")
-
       if(MSVC_VERSION GREATER_EQUAL 1900)
         # Visual Studio 2015/2017/2019
         if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+          file(DOWNLOAD
+            "https://github.com/wxWidgets/wxWidgets/releases/download/v3.3.2/wxWidgets-3.3.2-headers.7z"
+            "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.3.2-headers.7z"
+            EXPECTED_HASH SHA256=6d0c866b4a4612f6a667194d1574049639181181f29dd6abceb50c5e5b2baa29)
+          execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
+            "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.3.2-headers.7z"
+            WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets")
           file(DOWNLOAD
             "https://github.com/wxWidgets/wxWidgets/releases/download/v3.3.2/wxMSW-3.3.2_vc14x_x64_Dev.7z"
             "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.3.2_vc14x_x64_Dev.7z"
@@ -37,6 +35,13 @@ if(BUILD_LAUNCHER)
             "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets/lib/vc14x_x64_dll/wxrc.exe"
             CACHE FILEPATH "")
         else()
+          file(DOWNLOAD
+            "https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.5/wxWidgets-3.1.5-headers.7z"
+            "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.1.5-headers.7z"
+            EXPECTED_HASH SHA256=5BEF630B59CBE515152EBAABC2B5BB83BBB908B798ACCBF28E4F3D79480EC0E2)
+          execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
+            "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.1.5-headers.7z"
+            WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets")
           file(DOWNLOAD
             "https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.5/wxMSW-3.1.5_vc14x_Dev.7z"
             "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.1.5_vc14x_Dev.7z"
@@ -59,11 +64,18 @@ if(BUILD_LAUNCHER)
       elseif(MINGW)
         # MinGW
         file(DOWNLOAD
-          "https://github.com/wxWidgets/wxWidgets/releases/download/v3.3.2/wxMSW-3.3.2_gcc810_x64_Dev.7z"
-          "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.3.2_gcc810_x64_Dev.7z"
+          "https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.5/wxWidgets-3.1.5-headers.7z"
+          "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.1.5-headers.7z"
+          EXPECTED_HASH SHA256=5BEF630B59CBE515152EBAABC2B5BB83BBB908B798ACCBF28E4F3D79480EC0E2)
+        execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
+          "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets-3.1.5-headers.7z"
+          WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets")
+        file(DOWNLOAD
+          "https://github.com/wxWidgets/wxWidgets/releases/download/v3.1.5/wxMSW-3.1.5_gcc810_x64_Dev.7z"
+          "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.1.5_gcc810_x64_Dev.7z"
           EXPECTED_HASH SHA256=65ED68EF72C5E9807B64FE664EBA561D4C33F494D71DCDF21D39110C601FD327)
         execute_process(COMMAND "${CMAKE_COMMAND}" -E tar xf
-          "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.3.2_gcc810_x64_Dev.7z"
+          "${CMAKE_CURRENT_BINARY_DIR}/wxMSW-3.1.5_gcc810_x64_Dev.7z"
           WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/wxWidgets")
 
         # Move the lib directory to where FindwxWidgets.cmake can find it.
