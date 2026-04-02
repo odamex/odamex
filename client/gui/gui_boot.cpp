@@ -650,6 +650,7 @@ scannedWADs_t GUI_BootWindow()
 
 	// Blocks until the boot window has been closed.
 	Fl::run();
+	Fl::check();
 
 	// Return the full IWAD path.
 	return g_SelectedWADs;
