@@ -505,7 +505,6 @@ void wxAdvancedListCtrl::DoRestoreRow(size_t row)
 wxString CreateFilter(wxString s)
 {
 	wxString Result;
-	size_t i;
 
 	if(s.IsEmpty())
 		return "";
