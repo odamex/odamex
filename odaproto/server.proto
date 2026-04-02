@@ -711,6 +711,14 @@ message SpreeBreaker
 	int32 spree_breaker_type = 7;
 }
 
+// svc_playerinventory
+message PlayerInventory
+{
+	uint32         playerid     = 1;
+	uint32         client_tic   = 2;
+	InventoryState inventory    = 3;
+}
+
 // svc_netdemocap
 message NetdemoCap
 {

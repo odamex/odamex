@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package odaproto.clc;
 
+// clc_playerinput
 message PlayerInput
 {
 	         uint32     tic                 =  1;
@@ -20,4 +21,10 @@ message PlayerInput
 	optional int32      move_up             = 14;
 	optional int32      delta_yaw           = 15;
 	optional int32      delta_pitch         = 16;
+}
+
+// clc_playerinventorycheck
+message PlayerInventoryCheck
+{
+	uint32 tic = 1;
 }
