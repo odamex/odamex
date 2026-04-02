@@ -50,8 +50,20 @@ message Actor
 	fixed32 flags2 = 19;
 }
 
+message InventoryState
+{
+	int32 pendingweapon     = 1;
+	int32 readyweapon       = 2;
+	uint32 weaponowned      = 3;
+	repeated int32 ammo     = 4;
+	repeated int32 maxammo  = 5;
+}
+
 message Player
 {
+    // The following deleted fields are moved to Inventory.
+    reserved 13 to 17;
+
 	message Psp
 	{
 		int32 statenum = 1;
@@ -72,13 +84,9 @@ message Player
 	bool backpack = 10;
 	int32 lives = 11;
 	uint32 cheats = 12;
-	int32 pendingweapon = 13;
-	int32 readyweapon = 14;
-	uint32 weaponowned = 15;
-	repeated int32 ammo = 16;
-	repeated int32 maxammo = 17;
 	repeated Psp psprites = 18;
 	int32 jumptics = 19;
+	InventoryState inventory = 20;
 }
 
 message Sector

@@ -209,6 +209,43 @@ static void CL_Disconnect(const odaproto::svc::Disconnect* msg)
 	CL_QuitNetGame(NQ_SERVER_DROP);
 }
 
+static void DirectUnpackInventory(const odaproto::InventoryState& inventory, player_t& player)
+{
+	const uint32_t weaponowned = inventory.weaponowned();
+	UnpackBoolArray(player.weaponowned, NUMWEAPONS, weaponowned);
+
+	for (int i = 0; i < NUMAMMO; i++)
+	{
+		if (i < inventory.ammo_size())
+			player.ammo[i] = inventory.ammo(i);
+		else
+			player.ammo[i] = 0;
+
+		if (i < inventory.maxammo_size())
+			player.maxammo[i] = inventory.maxammo(i);
+		else
+			player.maxammo[i] = 0;
+	}
+
+	const weapontype_t pending = static_cast<weapontype_t>(inventory.pendingweapon());
+	if (pending != wp_nochange && pending < NUMWEAPONS)
+	{
+		player.pendingweapon = pending;
+	}
+	const weapontype_t readyweapon = static_cast<weapontype_t>(inventory.readyweapon());
+	if (readyweapon != player.readyweapon && readyweapon < NUMWEAPONS)
+	{
+		player.pendingweapon = readyweapon;
+	}
+
+	// Tic was replayed? Don't try and use the replays's autoswitch at the same tic as weapon correction.
+	if (ClientReplay::getInstance().wasReplayed() && pending == wp_nochange)
+	{
+		player.pendingweapon = wp_nochange;
+	}
+
+}
+
 /**
  * @brief svc_playerinfo - Your personal arsenal, as supplied by the server.
  */
@@ -216,26 +253,12 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 {
 	player_t& p = consoleplayer();
 
-	uint32_t weaponowned = msg->player().weaponowned();
-	UnpackBoolArray(p.weaponowned, NUMWEAPONS, weaponowned);
+    DirectUnpackInventory(msg->player().inventory(), p);
 
 	uint32_t cards = msg->player().cards();
 	UnpackBoolArray(p.cards, NUMCARDS, cards);
 
 	p.backpack = msg->player().backpack();
-
-	for (int i = 0; i < NUMAMMO; i++)
-	{
-		if (i < msg->player().ammo_size())
-			p.ammo[i] = msg->player().ammo(i);
-		else
-			p.ammo[i] = 0;
-
-		if (i < msg->player().maxammo_size())
-			p.maxammo[i] = msg->player().maxammo(i);
-		else
-			p.maxammo[i] = 0;
-	}
 
 	p.health = msg->player().health();
 	p.armorpoints = msg->player().armorpoints();
@@ -247,23 +270,6 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 		::displayplayer_id = ::consoleplayer_id;
 	}
 	p.lives = msg->player().lives();
-
-	weapontype_t pending = static_cast<weapontype_t>(msg->player().pendingweapon());
-	if (pending != wp_nochange && pending < NUMWEAPONS)
-	{
-		p.pendingweapon = pending;
-	}
-	weapontype_t readyweapon = static_cast<weapontype_t>(msg->player().readyweapon());
-	if (readyweapon != p.readyweapon && readyweapon < NUMWEAPONS)
-	{
-		p.pendingweapon = readyweapon;
-	}
-
-	// Tic was replayed? Don't try and use the replays's autoswitch at the same tic as weapon correction.
-	if (ClientReplay::getInstance().wasReplayed() && pending == wp_nochange)
-	{
-		p.pendingweapon = wp_nochange;
-	}
 
 	statenum_t stnum[NUMPSPRITES] = {S_NULL, S_NULL};
 	for (int i = 0; i < NUMPSPRITES; i++)
@@ -2276,7 +2282,7 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	int armortype = msg->player().armortype();
 	int armorpoints = msg->player().armorpoints();
 	int lives = msg->player().lives();
-	weapontype_t weap = static_cast<weapontype_t>(msg->player().readyweapon());
+	weapontype_t weap = static_cast<weapontype_t>(msg->player().inventory().readyweapon());
 
 	byte cardByte = msg->player().cards();
 	std::bitset<6> cardBits(cardByte);
@@ -2284,9 +2290,9 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	int ammo[NUMAMMO];
 	for (int i = 0; i < NUMAMMO; i++)
 	{
-		if (i < msg->player().ammo_size())
+		if (i < msg->player().inventory().ammo_size())
 		{
-			ammo[i] = msg->player().ammo().Get(i);
+			ammo[i] = msg->player().inventory().ammo().Get(i);
 		}
 		else
 		{
@@ -3029,9 +3035,9 @@ static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 	deltaviewheight = msg->player().deltaviewheight();
 	jumpTics = msg->player().jumptics();
 	reactiontime = msg->actor().reactiontime();
-	clientPlayer->readyweapon = static_cast<weapontype_t>(msg->player().readyweapon());
+	clientPlayer->readyweapon = static_cast<weapontype_t>(msg->player().inventory().readyweapon());
 	clientPlayer->pendingweapon =
-	    static_cast<weapontype_t>(msg->player().pendingweapon());
+	    static_cast<weapontype_t>(msg->player().inventory().pendingweapon());
 
 	if (clientPlayer->mo)
 	{

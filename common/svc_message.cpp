@@ -74,6 +74,21 @@ odaproto::svc::Disconnect SVC_Disconnect(const char* message)
  * @brief Send information about a player.
  */
 
+static void FillInventory(odaproto::InventoryState& io_msg, const player_t& player)
+{
+	io_msg.set_readyweapon(player.readyweapon);
+	io_msg.set_pendingweapon(player.pendingweapon);
+
+	uint32_t packedweapons = PackBoolArray(player.weaponowned);
+	io_msg.set_weaponowned(packedweapons);
+
+	for (int i = 0; i < NUMAMMO; i++)
+	{
+		io_msg.add_ammo(player.ammo[i]);
+		io_msg.add_maxammo(player.maxammo[i]);
+	}
+}
+
 static void FillPlayer(odaproto::Player& io_msg, const player_t& player)
 {
 	io_msg.set_playerid(player.id);
@@ -81,22 +96,13 @@ static void FillPlayer(odaproto::Player& io_msg, const player_t& player)
 	io_msg.set_armortype(player.armortype);
 	io_msg.set_armorpoints(player.armorpoints);
 	io_msg.set_lives(player.lives);
-	io_msg.set_readyweapon(player.readyweapon);
-	io_msg.set_pendingweapon(player.pendingweapon);
 
-	uint32_t packedweapons = PackBoolArray(player.weaponowned);
-	io_msg.set_weaponowned(packedweapons);
+	FillInventory(*io_msg.mutable_inventory(), player);
 
 	uint32_t packedcards = PackBoolArray(player.cards);
 	io_msg.set_cards(packedcards);
 
 	io_msg.set_backpack(player.backpack);
-
-	for (int i = 0; i < NUMAMMO; i++)
-	{
-		io_msg.add_ammo(player.ammo[i]);
-		io_msg.add_maxammo(player.maxammo[i]);
-	}
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
@@ -1689,8 +1695,8 @@ odaproto::svc::NetdemoCap SVC_NetdemoCap(const player_t* player)
 	play->set_deltaviewheight(player->deltaviewheight);
 	play->set_jumptics(player->jumpTics);
 	act->set_reactiontime(mo->reactiontime);
-	play->set_readyweapon(player->readyweapon);
-	play->set_pendingweapon(player->pendingweapon);
+	play->mutable_inventory()->set_readyweapon(player->readyweapon);
+	play->mutable_inventory()->set_pendingweapon(player->pendingweapon);
 
 	return msg;
 }
