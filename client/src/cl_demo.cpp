@@ -781,7 +781,7 @@ void NetDemo::ticker()
 	netdemotic++;
 	if (netdemotic == pause_netdemotic)
 	{
-		pause_netdemotic = netdemotic - 1;
+		pause_netdemotic = 0;
 		pause();
 		::paused = true;
 	}
