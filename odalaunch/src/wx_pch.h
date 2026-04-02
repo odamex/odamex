@@ -47,7 +47,6 @@
 #include "net_io.h"
 #include "net_packet.h"
 #include "net_utils.h"
-#include "typedefs.h"
 
 #include "oda_defs.h"
 #include "lst_custom.h"

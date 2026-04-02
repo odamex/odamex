@@ -28,6 +28,7 @@
 #ifndef NET_PACKET_H
 #define NET_PACKET_H
 
+#include <stdint.h>
 #include <cstdlib>
 #include <string>
 #include <vector>
@@ -40,7 +41,6 @@
 #endif
 
 #include "net_io.h"
-#include "typedefs.h"
 #include "threads/mutex_factory.h"
 
 /**
