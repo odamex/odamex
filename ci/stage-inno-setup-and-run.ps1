@@ -136,12 +136,12 @@ function BuildOutX64 {
         "${UnzippedX64}\SDL2_mixer.dll", `
         "${UnzippedX64}\SDL2.dll", `
         "${UnzippedX64}\odalaunch.exe", `
-        "${UnzippedX64}\wxbase315u_net_vc14x_x64.dll", `
-        "${UnzippedX64}\wxbase315u_vc14x_x64.dll", `
-        "${UnzippedX64}\wxbase315u_xml_vc14x_x64.dll", `
-        "${UnzippedX64}\wxmsw315u_core_vc14x_x64.dll", `
-        "${UnzippedX64}\wxmsw315u_html_vc14x_x64.dll", `
-        "${UnzippedX64}\wxmsw315u_xrc_vc14x_x64.dll", `
+        "${UnzippedX64}\wxbase332u_net_vc14x_x64.dll", `
+        "${UnzippedX64}\wxbase332u_vc14x_x64.dll", `
+        "${UnzippedX64}\wxbase332u_xml_vc14x_x64.dll", `
+        "${UnzippedX64}\wxmsw332u_core_vc14x_x64.dll", `
+        "${UnzippedX64}\wxmsw332u_html_vc14x_x64.dll", `
+        "${UnzippedX64}\wxmsw332u_xrc_vc14x_x64.dll", `
         "${UnzippedX64}\odasrv.exe" `
         -Destination "${OutX64}\"
 
