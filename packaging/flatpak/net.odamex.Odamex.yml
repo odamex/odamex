@@ -59,7 +59,7 @@ modules:
       - -D wxBUILD_TESTS=OFF
       - -D wxBUILD_SAMPLES=OFF
       - -D wxBUILD_DEMOS=OFF
-      - -D wxBUILD_TOOLKIT=gtk
+      - -D wxBUILD_TOOLKIT=gtk3
     cleanup:
       - "/lib/wx"
       - "/share/aclocal"
