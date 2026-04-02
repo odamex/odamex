@@ -448,7 +448,7 @@ static const wxCmdLineEntryDesc cmdLineDesc[] =
 		wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL | wxCMD_LINE_NEEDS_SEPARATOR
 	},
 
-	{ wxCMD_LINE_NONE }
+	{ wxCMD_LINE_NONE, nullptr, nullptr, nullptr, wxCMD_LINE_VAL_NONE, 0 }
 };
 
 void dlgMain::LoadMasterServers()
@@ -523,7 +523,6 @@ void dlgMain::GetWebsitePageSource(wxString &SiteSrc)
 void dlgMain::GetVersionInfoFromWebsite(const wxString &SiteSrc, wxString &ver)
 {
     wxString VerStr = "Latest version: ";
-    int Ch;
 
     // Extract version number from website source
     size_t Pos = SiteSrc.find(VerStr);
@@ -926,6 +925,7 @@ void* dlgMain::Entry()
 	{
 		if(MonThrGetMasterList() == false)
 			break;
+		[[fallthrough]];
 	}
 
 	// Query the current list of servers that are available to us

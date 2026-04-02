@@ -315,12 +315,10 @@ void LstOdaServerList::AddServerToList(const Server& s,
 	bool LineHighlight;
 	wxString HighlightColour;
 
-	wxInt32 i = 0;
 	wxListItem li;
 
 	wxUint64 Ping = 0;
 	wxString GameType = "";
-	size_t WadCount = 0;
 
 	li.m_mask = wxLIST_MASK_TEXT;
 
@@ -407,7 +405,7 @@ void LstOdaServerList::AddServerToList(const Server& s,
 	SetItem(li);
 
 	// WAD files column
-	WadCount = s.Info.Wads.size();
+	const size_t WadCount = s.Info.Wads.size();
 
 	// build a list of pwads
 	if(WadCount)
@@ -416,7 +414,7 @@ void LstOdaServerList::AddServerToList(const Server& s,
 		std::string wadlist;
 		std::string pwad;
 
-		for(i = 2; i < WadCount; ++i)
+		for(size_t i = 2; i < WadCount; ++i)
 		{
 			pwad = s.Info.Wads[i].Name.substr(0, s.Info.Wads[i].Name.find('.'));
 
