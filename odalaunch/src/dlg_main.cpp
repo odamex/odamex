@@ -200,7 +200,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
 	for(size_t i = 0; i < NUM_THREADS; ++i)
 	{
-		threadVector.push_back(new QueryThread(this));
+		threadVector.emplace_back(new QueryThread(this));
 	}
 
 	{
@@ -349,15 +349,11 @@ void dlgMain::OnClose(wxCloseEvent& event)
 	// Gracefully terminate any running worker threads and then deallocate
 	// their memory
 	{
-        std::vector<QueryThread*>::reverse_iterator it;
-
-        for(it = threadVector.rbegin(); it != threadVector.rend(); it++)
+        for(auto it = threadVector.rbegin(); it != threadVector.rend(); it++)
         {
             if((*it)->IsRunning())
             {
                 (*it)->GracefulExit();
-                delete *it;
-                *it = NULL;
             }
         }
 
@@ -835,7 +831,7 @@ void dlgMain::MonThrGetServerList()
 	{
 		for(size_t i = 0; i < thrvec_size; ++i)
 		{
-			QueryThread* OdaQT = threadVector[i];
+			QueryThread* OdaQT = threadVector[i].get();
 			QueryThread::Status Status = OdaQT->GetStatus();
 
 			// Check if the user wants us to exit
@@ -873,7 +869,7 @@ void dlgMain::MonThrGetServerList()
 	// Wait until all threads have finished before posting an event
 	for(size_t i = 0; i < thrvec_size; ++i)
 	{
-		QueryThread* OdaQT = threadVector[i];
+		const QueryThread* OdaQT = threadVector[i].get();
 
 		while(OdaQT->GetStatus() == QueryThread::Running)
 			OdaTH->Sleep(15);

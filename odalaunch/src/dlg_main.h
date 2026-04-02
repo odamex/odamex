@@ -48,6 +48,7 @@
 #include <wx/url.h>
 
 #include <vector>
+#include <memory>
 
 #include "query_thread.h"
 #include "net_packet.h"
@@ -264,7 +265,7 @@ protected:
 	// Our monitoring thread entry point, from wxThreadHelper
 	void* Entry();
 
-	std::vector<QueryThread*> threadVector;
+	std::vector<std::unique_ptr<QueryThread>> threadVector;
 
 private:
 

@@ -59,7 +59,7 @@ public:
 	{
 	}
 
-	QueryThread::Status GetStatus();
+	QueryThread::Status GetStatus() const;
 
 	void Signal(odalpapi::Server* QueryServer,
 	            const std::string& Address,
@@ -90,7 +90,7 @@ private:
 
     wxMessageQueue<QueryThread::Message> m_Message;
 
-    wxMutex m_StatusMutex;
+    mutable wxMutex m_StatusMutex;
     QueryThread::Status m_StatusMessage;
 };
 

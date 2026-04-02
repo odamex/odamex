@@ -61,7 +61,7 @@ void QueryThread::SetStatus(const QueryThread::Status &Sts)
     m_StatusMessage = Sts;
 }
 
-QueryThread::Status QueryThread::GetStatus()
+QueryThread::Status QueryThread::GetStatus() const
 {
     wxMutexLocker ML(m_StatusMutex);
 
