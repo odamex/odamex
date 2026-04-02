@@ -62,7 +62,7 @@ modules:
       # - -D wxBUILD_DEMOS=OFF
       # - -D wxBUILD_TOOLKIT=gtk3
       # - -D wxUSE_SYS_LIBS=sys
-      - --with-gtk=3
+      - --with-gtk=4
       - --disable-tests
     cleanup:
       - "/lib/wx"
@@ -81,6 +81,7 @@ modules:
       - -D BUILD_CLIENT=1
       - -D BUILD_SERVER=1
       - -D BUILD_LAUNCHER=1
+      - -D BUILD_TESTS=0
       - -D BUILD_MASTER=0
       - -D BUILD_TESTS=0
       - -D USE_INTERNAL_LIBS=0
