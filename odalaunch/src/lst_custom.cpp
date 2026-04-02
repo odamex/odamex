@@ -148,10 +148,10 @@ static wxUniChar SafeAt(const wxString& string, size_t index)
 
 /**
  * @brief Unicode-aware isspace.
- * 
+ *
  * @detail This can't be complete in such a short space, so instead I borrowed
  *         Golang's definition of a space in the standard Latin-1 space.
- * 
+ *
  * @param ch Character to check.
  * @return If the passed character is a space.
 */
@@ -310,9 +310,11 @@ int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2,
 	wxInt32 SortCol, SortOrder;
 	wxListItem Item;
 	wxString Str1, Str2;
-	wxAdvancedListCtrl* ListCtrl;
 
-	ListCtrl = (wxAdvancedListCtrl*)sortData;
+	wxAdvancedListCtrl* ListCtrl = reinterpret_cast<wxAdvancedListCtrl*>(sortData);
+
+	if (ListCtrl->IsEmpty())
+		return 0;
 
 	ListCtrl->GetSortColumnAndOrder(SortCol, SortOrder);
 
