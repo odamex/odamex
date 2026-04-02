@@ -43,20 +43,20 @@
 
 #include <vector>
 
-typedef struct
+struct CS_Subst_t
 {
 	bool     Enabled;
 	wxString Address;
 	wxUint16 Port;
-} CS_Subst_t;
+};
 
-typedef struct
+struct CustomServer_t
 {
 	wxString Address;
 	wxUint16 Port;
 
 	CS_Subst_t Subst;
-} CustomServer_t;
+};
 
 class dlgServers: public wxDialog
 {

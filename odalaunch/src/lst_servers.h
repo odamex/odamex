@@ -27,7 +27,7 @@
 #include "net_packet.h"
 #include "lst_custom.h"
 
-typedef enum
+enum serverlist_fields_t
 {
 	serverlist_field_attr
 	,serverlist_field_name
@@ -40,7 +40,7 @@ typedef enum
 	,serverlist_field_address
 
 	,max_serverlist_fields
-} serverlist_fields_t;
+};
 
 class LstOdaServerList : public wxAdvancedListCtrl
 {

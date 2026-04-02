@@ -38,7 +38,7 @@ BEGIN_EVENT_TABLE(LstOdaPlayerList, wxAdvancedListCtrl)
 	EVT_WINDOW_CREATE(LstOdaPlayerList::OnCreateControl)
 END_EVENT_TABLE()
 
-typedef enum
+enum playerlist_fields_t
 {
 	playerlist_field_attr
 	,playerlist_field_name
@@ -52,7 +52,7 @@ typedef enum
 	,playerlist_field_teamscore
 
 	,max_playerlist_fields
-} playerlist_fields_t;
+};
 
 static int ImageList_Spectator = -1;
 static int ImageList_RedBullet = -1;

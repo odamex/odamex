@@ -37,22 +37,22 @@ wxDECLARE_EVENT(wxEVT_THREAD_WORKER_SIGNAL, wxCommandEvent);
 class QueryThread : public wxThread
 {
 public:
-    typedef enum
+    enum Message
     {
         Message_MIN = 0
         ,Run
         ,Exit
         ,Message_MAX
-    } Message;
+    };
 
-    typedef enum
+    enum Status
     {
          Status_MIN = 0
-        ,Running  
+        ,Running
         ,Waiting
         ,Exiting
         ,Status_MAX
-    } Status;
+    };
 
 	QueryThread(wxEvtHandler* EventHandler);
 	~QueryThread()

@@ -179,7 +179,7 @@ protected:
 	// Monitor Thread Command Signals
 	// Sends a signal to the monitoring thread to instruct it to carry out
 	// a command of some sort (get a list of servers for example)
-	typedef enum
+	enum mtcs_t
 	{
 		mtcs_none
 		,mtcs_getmaster
@@ -188,14 +188,14 @@ protected:
 		,mtcs_exit       // Shutdown now!
 
 		,mtcs_max
-	} mtcs_t;
+	};
 
-	typedef struct
+	struct mtcs_struct_t
 	{
 		mtcs_t Signal;
 		wxInt32 Index;
 		wxInt32 ServerListIndex;
-	} mtcs_struct_t;
+	};
 
 	// Only set these below if you got a response!
 	// [Russell] - iirc, volatile on a struct doesn't work as well as it
@@ -205,7 +205,7 @@ protected:
 	// Monitor Thread Return Signals
 	// The result of the signal sent above, sent to the callback function
 	// below
-	typedef enum
+	enum mtrs_t
 	{
 		mtrs_master_success
 		,mtrs_master_timeout   // Dead
@@ -218,31 +218,31 @@ protected:
 		,mtrs_servers_querydone // Query of all servers complete
 
 		,mtrs_max
-	} mtrs_t;
+	};
 
-	typedef struct
+	struct mtrs_struct_t
 	{
 		mtrs_t Signal;
 		wxInt32 Index;
 		wxInt32 ServerListIndex;
-	} mtrs_struct_t;
+	};
 
 	mtrs_struct_t mtrs_Result;
 
-	typedef enum
+	enum wtrs_t
 	{
 		wtrs_server_success
 		,wtrs_server_timeout
 
 		,wtrs_max
-	} wtrs_t;
+	};
 
-	typedef struct
+	struct wtrs_struct_t
 	{
 		wtrs_t Signal;
 		wxInt32 Index;
 		wxInt32 ServerListIndex;
-	} wtrs_struct_t;
+	};
 
 	wtrs_struct_t wtrs_Result;
 
