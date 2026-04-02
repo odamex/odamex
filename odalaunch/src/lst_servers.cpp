@@ -337,7 +337,7 @@ void LstOdaServerList::AddServerToList(const Server& s,
 		ClearItemCells(index);
 
 		li.m_itemId = index;
-		
+
         // Reset line text colour to control text colour
         SetItemTextColour(li.GetId(), GetTextColour());
 	}
@@ -357,7 +357,7 @@ void LstOdaServerList::AddServerToList(const Server& s,
         ConfigInfo.Read(CSHLCOLOUR, &HighlightColour, ODA_UICSHSHIGHLIGHTCOLOUR);
 
 		Colour.Set(HighlightColour);
-        
+
         if (LineHighlight)
             SetItemTextColour(li.GetId(), Colour);
     }
@@ -380,7 +380,7 @@ void LstOdaServerList::AddServerToList(const Server& s,
 	Ping = s.GetPing();
 
 	li.m_col = serverlist_field_ping;
-	li.m_text = wxString::Format("%lu", (wxInt32)Ping);
+	li.m_text = wxString::Format("%llu", Ping);
 
 	SetItem(li);
 
