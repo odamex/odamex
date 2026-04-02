@@ -113,8 +113,6 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
 	EVT_MENU(XRCID("Id_MnuItmRefreshServer"), dlgMain::OnRefreshServer)
 	EVT_MENU(XRCID("Id_MnuItmRefreshAll"), dlgMain::OnRefreshAll)
 
-	//EVT_MENU(XRCID("Id_MnuItmDownloadWad"), dlgMain::OnOpenOdaGet)
-
 	EVT_MENU(wxID_PREFERENCES, dlgMain::OnOpenSettingsDialog)
 
 	EVT_MENU(XRCID("Id_MnuItmCheckVersion"), dlgMain::OnOpenWebsite)
@@ -193,13 +191,6 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	m_TimerNewList = new wxTimer(this, TIMER_ID_NEWLIST);
 
 	LoadMasterServers();
-
-	/* Get the first directory for wad downloading */
-	/*
-	wxInt32 Pos = launchercfg_s.wad_paths.Find(PATH_DELIMITER), false);
-	wxString FirstDirectory = launchercfg_s.wad_paths.Mid(0, Pos);
-
-	OdaGet = new frmOdaGet(this, -1, FirstDirectory);*/
 
     InfoBar = new OdaInfoBar(this);
 
@@ -1244,12 +1235,6 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent& event)
 		m_TimerNewList->Start(m_NewListInterval);
 		m_TimerRefresh->Start(m_RefreshInterval);
 	}
-}
-
-void dlgMain::OnOpenOdaGet(wxCommandEvent& event)
-{
-	//    if (OdaGet)
-	//      OdaGet->Show();
 }
 
 // Quick-Launch button click
