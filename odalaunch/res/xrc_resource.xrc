@@ -181,7 +181,7 @@
       </object>
       <object class="separator"/>
       <object class="wxSearchCtrl" name="Id_SrchCtrlGlobal">
-        <size>75,-1</size>
+        <size>175,-1</size>
         <value></value>
       </object>
     </object>
