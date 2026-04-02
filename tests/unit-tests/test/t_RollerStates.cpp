@@ -175,7 +175,6 @@ TEST_P(PistolStartMultiShotGhostAmmoPickupSuite, BasicTest)
     }
 
     EXPECT_GT(roundTripTimeInTics, 1);
-
     for (int i = 0; i < roundTripTimeInTics - 1; ++i)
     {
         EXPECT_EQ(false, Frame());
@@ -194,3 +193,65 @@ INSTANTIATE_TEST_SUITE_P(GhostAmmoPickup,
                          PistolStartMultiShotGhostAmmoPickupSuite,
                          testing::Range(10, 300, 10));
 
+// Pickup weapon and ammo desync
+// -----------------------------------------
+struct PickupWeaponAndAmmoSuite : PistolStartLatencyFixture
+{
+};
+
+TEST_P(PickupWeaponAndAmmoSuite, BasicTest)
+{
+    // Starting point:  player's running around, locally predicts a pickup, sends a pickup notice, sets state.
+    //
+    SetHappyResponse();     // Ensures the server response has the pre-pickup state.
+    clientPlayer.weaponowned[wp_missile] = true;
+    clientPlayer.ammo       [am_misl]    = 2;
+
+    EXPECT_GT(roundTripTimeInTics, 1);
+    for (int i = 0; i < roundTripTimeInTics - 1; ++i)
+    {
+        EXPECT_EQ(false, Frame());
+    }
+
+    EXPECT_EQ(true, clientPlayer.weaponowned[wp_missile]);
+    EXPECT_EQ(2,    clientPlayer.ammo[am_misl]);
+
+    EXPECT_EQ(true, Frame());
+    EXPECT_EQ(true, correctionWasRequired);
+
+    EXPECT_EQ(false, clientPlayer.weaponowned[wp_missile]);
+    EXPECT_EQ(0,     clientPlayer.ammo[am_misl]);
+}
+
+TEST_P(PickupWeaponAndAmmoSuite, TestWithInterimFire)
+{
+    // Starting point:  player's running around, locally predicts a pickup, sends a pickup notice, sets state.
+    //
+    SetHappyResponse();     // Ensures the server response has the pre-pickup state.
+    clientPlayer.weaponowned[wp_missile] = true;
+    clientPlayer.ammo       [am_misl]    = 2;
+
+    EXPECT_GT(roundTripTimeInTics, 1);
+    for (int i = 0; i < roundTripTimeInTics - 1; ++i)
+    {
+        if (i == roundTripTimeInTics - 2)
+        {
+            clientPlayer.ammo[am_misl] -= 1;        // Fire!
+        }
+
+        EXPECT_EQ(false, Frame());
+    }
+
+    EXPECT_EQ(true, clientPlayer.weaponowned[wp_missile]);
+    EXPECT_EQ(1,    clientPlayer.ammo[am_misl]);
+
+    EXPECT_EQ(true, Frame());
+    EXPECT_EQ(true, correctionWasRequired);
+
+    EXPECT_EQ(false, clientPlayer.weaponowned[wp_missile]);
+    EXPECT_EQ(0,     clientPlayer.ammo[am_misl]);
+}
+
+INSTANTIATE_TEST_SUITE_P(WeaponDesync,
+                         PickupWeaponAndAmmoSuite,
+                         testing::Range(10, 300, 10));
