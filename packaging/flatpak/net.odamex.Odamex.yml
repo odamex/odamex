@@ -60,6 +60,7 @@ modules:
       - -D wxBUILD_SAMPLES=OFF
       - -D wxBUILD_DEMOS=OFF
       - -D wxBUILD_TOOLKIT=gtk3
+      - -D wxUSE_SYS_LIBS=sys
     cleanup:
       - "/lib/wx"
       - "/share/aclocal"
