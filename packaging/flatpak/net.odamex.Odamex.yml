@@ -53,23 +53,23 @@ modules:
         tag: v2.1.0
   # Odalaunch dependencies
   - name: WxWidgets
-    buildsystem: autotools
+    buildsystem: cmake-ninja
     config-opts:
-      - --with-gtk=3
-      # - -D wxBUILD_SHARED=ON
-      # - -D wxBUILD_TESTS=OFF
-      # - -D wxBUILD_SAMPLES=OFF
-      # - -D wxBUILD_DEMOS=OFF
-      # - -D wxBUILD_TOOLKIT=gtk3
-      # - -D wxUSE_SYS_LIBS=sys
+      - -D wxBUILD_SHARED=ON
+      - -D wxBUILD_TESTS=OFF
+      - -D wxBUILD_SAMPLES=OFF
+      - -D wxBUILD_DEMOS=OFF
+      - -D wxBUILD_TOOLKIT=gtk3
+      - -D wxUSE_SYS_LIBS=sys
     cleanup:
       - "/lib/wx"
       - "/share/aclocal"
       - "/share/bakefile"
     sources:
-      - type: archive
-        url: https://github.com/wxWidgets/wxWidgets/releases/download/v3.3.2/wxWidgets-3.3.2.tar.bz2
-        sha256: 50a28cb668de47b0e006cd6ebed8cf4f76c1cac6116fb3c978c44478219103f2
+      - type: git
+        url: https://github.com/wxWidgets/wxWidgets.git
+        # replace with tag: 3.3.3 when that releases
+        commit: c456ccb28f96f536774896b312aca1aa9ebb5b0a
   # Odamex (combined)
   - name: Odamex
     buildsystem: cmake-ninja
