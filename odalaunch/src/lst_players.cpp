@@ -172,7 +172,6 @@ LstOdaPlayerList::~LstOdaPlayerList()
 {
 	wxFileConfig ConfigInfo;
 	wxInt32 PlayerListSortOrder, PlayerListSortColumn;
-	wxListItem li;
 
 	// Write to the global configuration
 
@@ -201,12 +200,7 @@ LstOdaPlayerList::~LstOdaPlayerList()
 
 	// Team and Team Scores are shown dynamically, so handle the case of them
 	// not existing
-	// GetColumn is bugged in newer wxwidgets, with a failing assert instead of just
-	// return false for a missing column
-	// GetColumnCount is more fragile, but works well enough for now
 	if (GetColumnCount() <= playerlist_field_team)
-	// if(!GetColumn((int)playerlist_field_team, li) ||
-	        // !GetColumn((int)playerlist_field_teamscore, li))
 	{
 		return;
 	}
