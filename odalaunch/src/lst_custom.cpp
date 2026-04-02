@@ -341,20 +341,21 @@ void wxAdvancedListCtrl::Sort()
 	// prime 'er up
 	while(itemid != -1)
 	{
-		auto* sortkey = new sortKey();
 		Item.SetId(itemid);
 		GetItem(Item);
+		// TODO: memory leak
+		auto* sortkey = new sortKey();
 		if(SortCol == GetSpecialSortColumn())
 			sortkey->image = Item.GetImage();
 		else
 			sortkey->text = Item.GetText();
 
-		SetItemData(itemid, (wxIntPtr)sortkey);
+		SetItemData(itemid, reinterpret_cast<wxIntPtr>(sortkey));
 
 		itemid = GetNextItem(itemid);
 	}
 
-	SortItems(wxCompareFunction, (wxIntPtr)this);
+	SortItems(wxCompareFunction, reinterpret_cast<wxIntPtr>(this));
 
 	ColourList();
 }
