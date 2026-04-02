@@ -172,6 +172,7 @@ LstOdaPlayerList::~LstOdaPlayerList()
 {
 	wxFileConfig ConfigInfo;
 	wxInt32 PlayerListSortOrder, PlayerListSortColumn;
+	wxListItem li;
 
 	// Write to the global configuration
 

@@ -304,65 +304,68 @@ wxInt32 NaturalCompare(wxString aString, wxString bString, bool CaseSensitive = 
 	}
 }
 
+struct sortkey{
+	wxString text;
+	int thing;
+};
+
 int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2,
                                  wxIntPtr sortData)
 {
 	wxInt32 SortCol, SortOrder;
 	wxListItem Item;
-	wxString Str1, Str2;
 
-	wxAdvancedListCtrl* ListCtrl = reinterpret_cast<wxAdvancedListCtrl*>(sortData);
-
-	if (ListCtrl->IsEmpty())
-		return 0;
+	auto* ListCtrl = reinterpret_cast<wxAdvancedListCtrl*>(sortData);
 
 	ListCtrl->GetSortColumnAndOrder(SortCol, SortOrder);
 
 	Item.SetColumn(SortCol);
 	Item.SetMask(wxLIST_MASK_TEXT);
 
-	long id1 = ListCtrl->FindItem(-1, item1);
-	long id2 = ListCtrl->FindItem(-1, item2);
+	// long id1 = ListCtrl->FindItem(-1, item1);
+	// long id2 = ListCtrl->FindItem(-1, item2);
 
-	if (id1 == -1 || id2 == -1)
-	{
-		return 0;
-	}
+	// if (id1 == -1 || id2 == -1)
+	// {
+	// 	return 0;
+	// }
 
-	if(SortCol == ListCtrl->GetSpecialSortColumn())
-	{
-		int Img1, Img2;
+	// if(SortCol == ListCtrl->GetSpecialSortColumn())
+	// {
+	// 	Item.SetMask(wxLIST_MASK_IMAGE);
 
-		Item.SetMask(wxLIST_MASK_IMAGE);
+	// 	Item.SetId(id1);
 
-		Item.SetId(ListCtrl->FindItem(-1, item1));
+	// 	ListCtrl->GetItem(Item);
 
-		ListCtrl->GetItem(Item);
+	// 	int Img1 = Item.GetImage();
 
-		Img1 = Item.GetImage();
+	// 	Item.SetId(id2);
 
-		Item.SetId(ListCtrl->FindItem(-1, item2));
+	// 	ListCtrl->GetItem(Item);
 
-		ListCtrl->GetItem(Item);
+	// 	int Img2 = Item.GetImage();
 
-		Img2 = Item.GetImage();
+	// 	return SortOrder ? Img2 - Img1 : Img1 - Img2;
+	// }
 
-		return SortOrder ? Img2 - Img1 : Img1 - Img2;
-	}
+	// Item.SetId(id1);
 
-	Item.SetId(ListCtrl->FindItem(-1, item1));
+	// ListCtrl->GetItem(Item);
 
-	ListCtrl->GetItem(Item);
+	// wxString Str1 = Item.GetText();
 
-	Str1 = Item.GetText();
+	// Item.SetId(id2);
 
-	Item.SetId(ListCtrl->FindItem(-1, item2));
+	// ListCtrl->GetItem(Item);
 
-	ListCtrl->GetItem(Item);
+	// wxString Str2 = Item.GetText();
 
-	Str2 = Item.GetText();
+	// return SortOrder ? NaturalCompare(Str1, Str2) : NaturalCompare(Str2, Str1);
+	auto* idk1 = (sortkey*)item1;
+	auto* idk2 = (sortkey*)item2;
 
-	return SortOrder ? NaturalCompare(Str1, Str2) : NaturalCompare(Str2, Str1);
+	return SortOrder ? NaturalCompare(idk1->text, idk2->text) : NaturalCompare(idk2->text, idk1->text);
 }
 
 void wxAdvancedListCtrl::Sort()
@@ -374,7 +377,15 @@ void wxAdvancedListCtrl::Sort()
 	// prime 'er up
 	while(itemid != -1)
 	{
-		SetItemData(itemid, itemid);
+		auto* idk = new sortkey();
+		wxListItem Item;
+		Item.SetId(itemid);
+		Item.SetColumn(SortCol);
+		Item.SetMask(wxLIST_MASK_TEXT);
+		GetItem(Item);
+
+		idk->text = Item.GetText();
+		SetItemData(itemid, (wxIntPtr)idk);
 
 		itemid = GetNextItem(itemid);
 	}
@@ -382,8 +393,6 @@ void wxAdvancedListCtrl::Sort()
 	SortItems(wxCompareFunction, (wxIntPtr)this);
 
 	ColourList();
-
-	return;
 }
 
 void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent& event)
