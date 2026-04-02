@@ -56,7 +56,7 @@ modules:
     buildsystem: autotools
     config-opts:
       - --enable-unicode
-      - --with-gtk3
+      - --with-gtk=3
     cleanup:
       - "/lib/wx"
       - "/share/aclocal"

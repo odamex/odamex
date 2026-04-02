@@ -42,6 +42,8 @@ IMPLEMENT_APP(Application)
 
 bool Application::OnInit()
 {
+		SetClassName("net.odamex.Odamex.Launcher");
+
 	if(BufferedSocket::InitializeSocketAPI() == false)
 		return false;
 

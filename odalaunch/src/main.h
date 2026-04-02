@@ -48,6 +48,13 @@ public:
 	wxInt32 OnExit();
 
 	dlgMain* MAIN_DIALOG;
+
+	Application() : wxApp()
+	{
+		#ifdef __linux__
+		SetClassName("net.odamex.Odamex.Launcher");
+		#endif
+	}
 };
 
 #endif
