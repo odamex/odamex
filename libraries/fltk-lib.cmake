@@ -49,7 +49,7 @@ if(BUILD_CLIENT AND USE_INTERNAL_FLTK)
   function(odamex_define_fltk_targets libdir incdir extra_libs)
     add_library(fltk::fltk INTERFACE IMPORTED GLOBAL)
     set(_fltk_core_libs
-      "${libdir}/${libprefix}fltk${libsuffix};${libdir}/${libprefix}fltk_forms${libsuffix}")
+      "${libdir}/${libprefix}fltk${libsuffix}")
     if(extra_libs)
       set(_fltk_core_libs "${_fltk_core_libs};${extra_libs}")
     endif()
