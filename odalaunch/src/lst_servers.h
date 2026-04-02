@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __LST_SERVERS_H__
-#define __LST_SERVERS_H__
+#pragma once
 
 #include "odalaunch.h"
 
@@ -49,9 +48,9 @@ public:
 	LstOdaServerList();
 	virtual ~LstOdaServerList();
 
-	void AddServerToList(const odalpapi::Server& s, 
-                      wxInt32 index, 
-                      bool insert = true, 
+	void AddServerToList(const odalpapi::Server& s,
+                      wxInt32 index,
+                      bool insert = true,
                       bool IsCustomServer = false);
 
 	wxInt32 FindServer(wxString Address);
@@ -79,5 +78,3 @@ private:
 
 	DECLARE_EVENT_TABLE()
 };
-
-#endif // __LST_SERVERS_H__

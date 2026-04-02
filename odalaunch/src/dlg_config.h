@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef DLG_CONFIG_H
-#define DLG_CONFIG_H
+#pragma once
 
 #include "odalaunch.h"
 
@@ -121,5 +120,3 @@ private:
 
 	DECLARE_EVENT_TABLE()
 };
-
-#endif

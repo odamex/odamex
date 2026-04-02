@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef LST_CUSTOM_H
-#define LST_CUSTOM_H
+#pragma once
 
 #include "odalaunch.h"
 
@@ -115,5 +113,3 @@ protected:
 	DECLARE_DYNAMIC_CLASS(wxAdvancedListCtrl)
 	DECLARE_EVENT_TABLE()
 };
-
-#endif
