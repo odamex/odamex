@@ -304,88 +304,52 @@ wxInt32 NaturalCompare(wxString aString, wxString bString, bool CaseSensitive = 
 	}
 }
 
-struct sortkey{
+struct sortKey
+{
 	wxString text;
-	int thing;
+	int image;
 };
 
 int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2,
                                  wxIntPtr sortData)
 {
 	wxInt32 SortCol, SortOrder;
-	wxListItem Item;
-
 	auto* ListCtrl = reinterpret_cast<wxAdvancedListCtrl*>(sortData);
-
 	ListCtrl->GetSortColumnAndOrder(SortCol, SortOrder);
 
-	Item.SetColumn(SortCol);
-	Item.SetMask(wxLIST_MASK_TEXT);
+	auto* key1 = (sortKey*)item1;
+	auto* key2 = (sortKey*)item2;
 
-	// long id1 = ListCtrl->FindItem(-1, item1);
-	// long id2 = ListCtrl->FindItem(-1, item2);
-
-	// if (id1 == -1 || id2 == -1)
-	// {
-	// 	return 0;
-	// }
-
-	// if(SortCol == ListCtrl->GetSpecialSortColumn())
-	// {
-	// 	Item.SetMask(wxLIST_MASK_IMAGE);
-
-	// 	Item.SetId(id1);
-
-	// 	ListCtrl->GetItem(Item);
-
-	// 	int Img1 = Item.GetImage();
-
-	// 	Item.SetId(id2);
-
-	// 	ListCtrl->GetItem(Item);
-
-	// 	int Img2 = Item.GetImage();
-
-	// 	return SortOrder ? Img2 - Img1 : Img1 - Img2;
-	// }
-
-	// Item.SetId(id1);
-
-	// ListCtrl->GetItem(Item);
-
-	// wxString Str1 = Item.GetText();
-
-	// Item.SetId(id2);
-
-	// ListCtrl->GetItem(Item);
-
-	// wxString Str2 = Item.GetText();
-
-	// return SortOrder ? NaturalCompare(Str1, Str2) : NaturalCompare(Str2, Str1);
-	auto* idk1 = (sortkey*)item1;
-	auto* idk2 = (sortkey*)item2;
-
-	return SortOrder ? NaturalCompare(idk1->text, idk2->text) : NaturalCompare(idk2->text, idk1->text);
+	if(SortCol == ListCtrl->GetSpecialSortColumn())
+		return SortOrder ? key2->image - key1->image : key1->image - key2->image;
+	else
+		return SortOrder ? NaturalCompare(key1->text, key2->text) : NaturalCompare(key2->text, key1->text);
 }
 
 void wxAdvancedListCtrl::Sort()
 {
 	SetSortArrow(SortCol, SortOrder);
+	wxListItem Item;
+	Item.SetColumn(SortCol);
+	if(SortCol == GetSpecialSortColumn())
+		Item.SetMask(wxLIST_MASK_IMAGE);
+	else
+		Item.SetMask(wxLIST_MASK_TEXT);
 
 	long itemid = GetNextItem(-1);
 
 	// prime 'er up
 	while(itemid != -1)
 	{
-		auto* idk = new sortkey();
-		wxListItem Item;
+		auto* sortkey = new sortKey();
 		Item.SetId(itemid);
-		Item.SetColumn(SortCol);
-		Item.SetMask(wxLIST_MASK_TEXT);
 		GetItem(Item);
+		if(SortCol == GetSpecialSortColumn())
+			sortkey->image = Item.GetImage();
+		else
+			sortkey->text = Item.GetText();
 
-		idk->text = Item.GetText();
-		SetItemData(itemid, (wxIntPtr)idk);
+		SetItemData(itemid, (wxIntPtr)sortkey);
 
 		itemid = GetNextItem(itemid);
 	}
