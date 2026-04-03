@@ -367,7 +367,7 @@ ItemEquipVal P_GiveAmmo(player_t& player, ammotype_t ammotype, float num)
     // If we are not playing as the server, make sure we ask the real server to confirm our pickup.
     if (not serverside)
     {
-        player.RequestInventoryCheckFromServer();
+        player.RequestInventoryCheckFromServer(gametic);
     }
 
 	// If non zero ammo,

@@ -121,3 +121,12 @@ void CLC_UnpackPlayerInputMessageToPlayer(const odaproto::clc::PlayerInput& msg,
 		}
 	}
 }
+
+odaproto::clc::PlayerInventoryCheck CLC_PlayerInventoryCheck(int clientTic)
+{
+    odaproto::clc::PlayerInventoryCheck msg;
+
+    msg.set_tic(static_cast<uint32_t>(clientTic));
+
+    return msg;
+}

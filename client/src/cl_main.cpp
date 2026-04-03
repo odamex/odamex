@@ -2233,24 +2233,24 @@ extern int outrate;
 //
 void CL_SendCmd(void)
 {
-	player_t *p = &consoleplayer();
+	player_t& player = consoleplayer();
 
 	if (netdemo.isPlaying())	// we're not really connected to a server
 		return;
 
-	if (!p->mo || gametic < 1 )
+	if (not player.mo or gametic < 1 )
 		return;
 
 	// GhostlyDeath -- If we are spectating, tell the server of our new position
-	if (p->spectator)
+	if (player.spectator)
 	{
 		buf_t& netBuf = messenger.NetBuf().Obtain();
 
 		MSG_WriteMarker(&netBuf, clc_spectate);
 		MSG_WriteByte(&netBuf, 5);
-		MSG_WriteLong(&netBuf, p->mo->x);
-		MSG_WriteLong(&netBuf, p->mo->y);
-		MSG_WriteLong(&netBuf, p->mo->z);
+		MSG_WriteLong(&netBuf, player.mo->x);
+		MSG_WriteLong(&netBuf, player.mo->y);
+		MSG_WriteLong(&netBuf, player.mo->z);
 	}
 
 	odaproto::clc::PlayerInput& currentNetcmd = localcmds[gametic % MAXSAVETICS];
@@ -2260,6 +2260,20 @@ void CL_SendCmd(void)
 	// need to be used for client's positional prediction and item data reconciliation.
 	currentNetcmd.set_tic(gametic);
 	MSG_WriteSVC(messenger.ReliableBuf(), currentNetcmd);
+
+	// NOTE: The decision was made to send the inventory check immediately after the PlayerInput
+    // message in order to keep packet count low by aggregating them.  The tradeoff is that the
+    // inventory check has an extra tic of latency because this means that we're sending out the
+    // prior tic's request.  It's important that we send out the request tagged with the local tic
+    // on which we locally predicted an inventory change, which is why we store the tic number as
+    // part of the request.  That way, the response aligns exactly and we close any potential
+    // window for a tic or two where the inventory can locally change but not get corrected if
+    // it's wrong.
+	if (player.inventoryCheckIsRequestedForTic >= 0)
+	{
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_PlayerInventoryCheck(player.inventoryCheckIsRequestedForTic));
+		player.inventoryCheckIsRequestedForTic = -1;
+	}
 
 	messenger.SendAll(gametic, serveraddr);
 

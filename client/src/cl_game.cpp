@@ -1168,7 +1168,7 @@ void G_Ticker (void)
 			// believe we get as a result of this.
 			consoleplayer().inventoryCheckRequestsAreEnabled = isClientSideOnly and isActuallyConnected;
 
-			if(isClientSideOnly)
+			if (isClientSideOnly)
 			{
 				if (!consoleplayer().mo)
 				{

@@ -1429,7 +1429,7 @@ player_t::player_t() :
 	LastMessage(LastMessage_s()),
 	to_spawn(std::queue<AActor::AActorPtr>()),
 	inventoryCheckRequestsAreEnabled(false),
-	inventoryCheckIsRequested(false),
+	inventoryCheckIsRequestedForTic(-1),
 	client(player_t::client_t())
 {
 	cmd.clear();
