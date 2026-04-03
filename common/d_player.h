@@ -275,7 +275,10 @@ public:
 	};
 	std::vector<ActorDistanceType> sortedMobjs;
 
+	bool inventoryCheckRequestsAreEnabled;
 	bool inventoryCheckIsRequested;
+
+	void RequestInventoryCheckFromServer() { inventoryCheckIsRequested = inventoryCheckRequestsAreEnabled; }
 
 	// denis - client structure is here now for a 1:1
 	struct client_t
@@ -350,7 +353,6 @@ public:
 	}
 
 	player_t();
-//	player_t &operator =(const player_t &other);
 
 	~player_t();
 

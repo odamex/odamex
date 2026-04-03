@@ -1158,32 +1158,45 @@ void G_Ticker (void)
 	switch (gamestate)
 	{
 	case GS_LEVEL:
-		if(clientside && !serverside)
 		{
-			if (!consoleplayer().mo)
+			const bool isClientSideOnly    = clientside and not serverside;
+			const bool isActuallyConnected = connected  and not simulated_connection;
+
+			// We're about to locally tick the client-side sim - aka predict.
+			//
+			// Make sure that the server gives us a canonical inventory statement about any pickups we
+			// believe we get as a result of this.
+			consoleplayer().inventoryCheckRequestsAreEnabled = isClientSideOnly and isActuallyConnected;
+
+			if(isClientSideOnly)
 			{
-				// [SL] 2011-12-14 - Spawn message from server has not arrived
-				// yet.  Fake it and hope it arrives soon.
-				AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
-				mobj->flags &= ~MF_SOLID;
-				mobj->flags2 |= MF2_DONTDRAW;
-				consoleplayer().mo = consoleplayer().camera = mobj->ptr();
-				consoleplayer().mo->player = &consoleplayer();
-				G_PlayerReborn(consoleplayer());
-				DPrintFmt("Did not receive spawn for consoleplayer.\n");
+				if (!consoleplayer().mo)
+				{
+					// [SL] 2011-12-14 - Spawn message from server has not arrived
+					// yet.  Fake it and hope it arrives soon.
+					AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
+					mobj->flags &= ~MF_SOLID;
+					mobj->flags2 |= MF2_DONTDRAW;
+					consoleplayer().mo = consoleplayer().camera = mobj->ptr();
+					consoleplayer().mo->player = &consoleplayer();
+					G_PlayerReborn(consoleplayer());
+					DPrintFmt("Did not receive spawn for consoleplayer.\n");
+				}
+
+				CL_SimulateWorld();
+				CL_PredictWorld();
+
+				// Replay item pickups if the items arrived now.
+				ClientReplay::getInstance().itemReplay();
 			}
+			P_CheckInterpPause();
+			P_Ticker ();
+			P_BobTicker();
+			ST_Ticker ();
+			AM_Ticker ();
 
-			CL_SimulateWorld();
-			CL_PredictWorld();
-
-			// Replay item pickups if the items arrived now.
-			ClientReplay::getInstance().itemReplay();
+			consoleplayer().inventoryCheckRequestsAreEnabled = false;
 		}
-		P_CheckInterpPause();
-		P_Ticker ();
-		P_BobTicker();
-		ST_Ticker ();
-		AM_Ticker ();
 		break;
 
 	case GS_INTERMISSION:
