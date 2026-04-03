@@ -115,7 +115,7 @@ void* QueryThread::Entry()
             case QueryThread::Exit:
             {
                 SetStatus(QueryThread::Exiting);
-                return NULL;
+                return nullptr;
             }
             break;
 
@@ -126,7 +126,7 @@ void* QueryThread::Entry()
             break;
 
             default:
-                return NULL;
+                return nullptr;
         }
 
         // Set the required data so we can query the server
@@ -144,7 +144,7 @@ void* QueryThread::Entry()
 		wxPostEvent(m_EventHandler, newEvent);
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 int QueryThread::GetIdealThreadCount()

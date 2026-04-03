@@ -194,7 +194,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
     InfoBar = new OdaInfoBar(this);
 
-	QServer = NULL;
+	QServer = nullptr;
 
 	NUM_THREADS = QueryThread::GetIdealThreadCount();
 
@@ -293,7 +293,7 @@ dlgMain::~dlgMain()
 {
 	delete[] QServer;
 
-	QServer = NULL;
+	QServer = nullptr;
 }
 
 void dlgMain::OnWindowCreate(wxWindowCreateEvent& event)
@@ -337,9 +337,9 @@ void dlgMain::OnClose(wxCloseEvent& event)
 {
     // Stop any running timers and free their memory
     delete m_TimerNewList;
-    m_TimerNewList = NULL;
+    m_TimerNewList = nullptr;
     delete m_TimerRefresh;
-    m_TimerRefresh = NULL;
+    m_TimerRefresh = nullptr;
 
     /* Threading system shutdown */
     // Wait for the monitor thread to finish
@@ -374,12 +374,12 @@ void dlgMain::OnClose(wxCloseEvent& event)
 	ConfigInfo.Flush();
 
 	delete InfoBar;
-	InfoBar = NULL;
+	InfoBar = nullptr;
 
-    if(config_dlg != NULL)
+    if(config_dlg != nullptr)
 		config_dlg->Destroy();
 
-	if(server_dlg != NULL)
+	if(server_dlg != nullptr)
 		server_dlg->Destroy();
 
 	Destroy();
@@ -469,7 +469,7 @@ void dlgMain::LoadMasterServers()
 	}
 
 	// Add default master servers
-	while(def_masterlist[i] != NULL)
+	while(def_masterlist[i] != nullptr)
 	{
 		MServer.AddMaster(def_masterlist[i]);
 		++i;
@@ -785,7 +785,7 @@ bool dlgMain::MonThrGetMasterList()
 	// Free the server list array (if it exists) and reallocate a new sized
 	// array of server objects
 	delete[] QServer;
-	QServer = NULL;
+	QServer = nullptr;
 
 	if(ServerCount > 0)
 		QServer = new Server [ServerCount];
@@ -945,7 +945,7 @@ void* dlgMain::Entry()
 	// Reset the signal and then exit out
 	mtcs_Request.Signal = mtcs_none;
 
-	return NULL;
+	return nullptr;
 }
 
 void dlgMain::OnMonitorSignal(wxCommandEvent& event)

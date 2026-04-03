@@ -74,7 +74,7 @@ bool Application::OnInit()
 	InitXmlResource();
 
 	// create main window, get size dimensions and show it
-	MAIN_DIALOG = new dlgMain(0L);
+	MAIN_DIALOG = new dlgMain(nullptr);
 
 	if(MAIN_DIALOG)
 		MAIN_DIALOG->Show();

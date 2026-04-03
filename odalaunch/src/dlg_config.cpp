@@ -81,7 +81,7 @@ END_EVENT_TABLE()
 
 // Window constructor
 dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id) :
-	m_Notebook(NULL)
+	m_Notebook(nullptr)
 {
 	// Set up the dialog and its widgets
 	wxXmlResource::Get()->LoadDialog(this, parent, "dlgConfig");
@@ -227,7 +227,7 @@ void dlgConfig::OnTextChange(wxCommandEvent& event)
 void dlgConfig::OnNotebookPageChanged(wxBookCtrlEvent& event)
 {
 	// This is a workaround for notebook layout issues on some platforms
-	if(NULL != m_Notebook)
+	if(nullptr != m_Notebook)
 	{
 		wxWindowList pages = m_Notebook->GetChildren();
 
@@ -235,7 +235,7 @@ void dlgConfig::OnNotebookPageChanged(wxBookCtrlEvent& event)
 		{
 			wxPanel* page = dynamic_cast<wxPanel*>(pages[event.GetSelection()]);
 
-			if(NULL != page)
+			if(nullptr != page)
 			{
 				page->Layout();
 			}

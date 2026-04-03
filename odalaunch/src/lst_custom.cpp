@@ -65,7 +65,7 @@ void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent& event)
 // Add any additional bitmaps/icons to the internal image list
 int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 {
-	if(GetImageList(wxIMAGE_LIST_SMALL) == NULL)
+	if(GetImageList(wxIMAGE_LIST_SMALL) == nullptr)
 	{
 		wxImageList* ImageList = new wxImageList(16, 16, true);
 		AssignImageList(ImageList, wxIMAGE_LIST_SMALL);
