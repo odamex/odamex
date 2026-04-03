@@ -735,7 +735,13 @@ void NetUpdate (void)
 	G_BuildTiccmd (consoleplayer().netcmds[gametic % BACKUPTICS]);
 }
 
-
+void CL_ResolveInventory(int oldTic, const PlayerItemDataType& inventoryResponse)
+{
+    if (rollerState.Resolve(oldTic, inventoryResponse, consoleplayer()))
+    {
+        PrintFmt("Reconciled conflicting inventory that diverged on tic {}\n", oldTic);
+    }
+}
 
 extern bool advancedemo;
 uint64_t nextstep = 0;
@@ -774,13 +780,16 @@ void CL_StepTics(unsigned int count)
 
 		G_Ticker ();
 
+        if (not netdemo.isPaused())
+        {
 		if (not rollerState.Record(gametic, consoleplayer()))
 		{
 			PrintFmt(PRINT_WARNING, "Failed to record player rollerstate on tic {}\n", gametic);
 		}
+        }
 
 		gametic++;
-		if (netdemo.isPlaying() && !netdemo.isPaused())
+		if (netdemo.isPlaying())
 			netdemo.ticker();
 	}
 

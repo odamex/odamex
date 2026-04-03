@@ -82,11 +82,8 @@ static void FillInventory(odaproto::InventoryState& io_msg, const player_t& play
 	uint32_t packedweapons = PackBoolArray(player.weaponowned);
 	io_msg.set_weaponowned(packedweapons);
 
-	for (int i = 0; i < NUMAMMO; i++)
-	{
-		io_msg.add_ammo(player.ammo[i]);
-		io_msg.add_maxammo(player.maxammo[i]);
-	}
+	io_msg.mutable_ammo()->Add   (player.ammo.begin(),    player.ammo.end());
+	io_msg.mutable_maxammo()->Add(player.maxammo.begin(), player.maxammo.end());
 }
 
 static void FillPlayer(odaproto::Player& io_msg, const player_t& player)
@@ -125,7 +122,7 @@ odaproto::svc::PlayerInfo SVC_PlayerInfo(const player_t& player)
 {
 	odaproto::svc::PlayerInfo msg;
 
-    FillPlayer(*msg.mutable_player(), player);
+	FillPlayer(*msg.mutable_player(), player);
 
 	return msg;
 }

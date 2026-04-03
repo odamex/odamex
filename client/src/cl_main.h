@@ -58,6 +58,8 @@ enum netQuitReason_e
 	NQ_SERVER_DROP,     // Server dropped us on the floor, so just ack and drop our side of the connection.
 };
 
+struct PlayerItemDataType;
+
 void CL_QuitNetGame(const netQuitReason_e reason);
 void CL_CompleteDisconnect(netQuitReason_e reason);
 void CL_Reconnect(netQuitReason_e reason);
@@ -73,6 +75,7 @@ void CL_SaveCmd(void);
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
 void CL_PredictWorld(void);
 void CL_SendUserInfo(buf_t& netBuf);
+void CL_ResolveInventory(int oldTic, const PlayerItemDataType& inventoryResponse);
 bool CL_Connect();
 
 void CL_SendCheat(int cheats);

@@ -69,6 +69,8 @@
 #include "g_spree.h"
 #include "g_multikill.h"
 
+#include "PlayerItemDataType.h"
+
 // Extern data from other files.
 
 EXTERN_CVAR(cl_autorecord)
@@ -3006,6 +3008,29 @@ static void CL_NoiseAlert(const odaproto::svc::NoiseAlert* msg)
 	}
 }
 
+static void CL_PlayerInventory(const odaproto::svc::PlayerInventory* msg)
+{
+    PlayerItemDataType inventoryResponse;
+
+    const size_t ammoElementCount = std::min(inventoryResponse.ammo.size(), static_cast<size_t>(msg->inventory().ammo_size()));
+
+    std::copy(msg->inventory().ammo().begin(),
+              msg->inventory().ammo().begin() + ammoElementCount,
+              inventoryResponse.ammo.begin());
+
+    std::copy(msg->inventory().maxammo().begin(),
+              msg->inventory().maxammo().begin() + ammoElementCount,
+              inventoryResponse.maxammo.begin());
+
+	const uint32_t weaponowned = msg->inventory().weaponowned();
+	UnpackBoolArray(inventoryResponse.weaponowned, NUMWEAPONS, weaponowned);
+
+    inventoryResponse.readyweapon   = static_cast<weapontype_t>(msg->inventory().readyweapon());
+    inventoryResponse.pendingweapon = static_cast<weapontype_t>(msg->inventory().pendingweapon());
+
+    CL_ResolveInventory(msg->client_tic(), inventoryResponse);
+}
+
 static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 {
 	player_t* clientPlayer = &consoleplayer();
@@ -3230,6 +3255,7 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_spree, CL_Spree, odaproto::svc::Spree);
 		SV_MSG(svc_spreebreaker, CL_SpreeBreaker, odaproto::svc::SpreeBreaker);
 		SV_MSG(svc_noisealert, CL_NoiseAlert, odaproto::svc::NoiseAlert);
+		SV_MSG(svc_playerinventory, CL_PlayerInventory, odaproto::svc::PlayerInventory);
 		SV_MSG(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
 		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);
