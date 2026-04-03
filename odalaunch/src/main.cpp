@@ -44,24 +44,7 @@ IMPLEMENT_APP(Application)
 bool Application::OnInit()
 {
 	#ifdef __linux__
-		SetClassName("net.odamex.Odamex.Launcher");
-
-		#if wxCHECK_VERSION(3, 3, 0)
-			const auto res = wxFileConfig::MigrateLocalFile(".odalaunch", wxCONFIG_USE_XDG);
-			if(!res.oldPath.empty())
-			{
-				if(res.error.empty())
-				{
-					wxLogMessage("Config file was migrated from \"%s\" to \"%s\"",
-					             res.oldPath, res.newPath);
-				}
-				else
-				{
-					wxLogWarning("Migrating old config failed: %s.", res.error);
-				}
-			}
-			wxStandardPaths::Get().SetFileLayout(wxStandardPaths::FileLayout_XDG);
-		#endif
+	SetClassName("net.odamex.Odamex.Launcher");
 	#endif
 
 	if(BufferedSocket::InitializeSocketAPI() == false)

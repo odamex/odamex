@@ -181,6 +181,23 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	m_SrchCtrlGlobal = XRCCTRL(*this, "Id_SrchCtrlGlobal", wxSearchCtrl);
 	m_StatusBar = GetStatusBar();
 
+	#if defined(__linux__) && wxCHECK_VERSION(3, 3, 0)
+	const auto res = wxFileConfig::MigrateLocalFile(".odalaunch", wxCONFIG_USE_XDG);
+	if(!res.oldPath.empty())
+	{
+		if(res.error.empty())
+		{
+			wxLogMessage("Config file was migrated from \"%s\" to \"%s\"",
+			             res.oldPath, res.newPath);
+		}
+		else
+		{
+			wxLogWarning("Migrating old config failed: %s.", res.error);
+		}
+	}
+	wxStandardPaths::Get().SetFileLayout(wxStandardPaths::FileLayout_XDG);
+	#endif
+
 	/* Init sub dialogs and load settings */
 	config_dlg = new dlgConfig(this);
 	server_dlg = new dlgServers(&MServer, this);
