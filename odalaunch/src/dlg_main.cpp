@@ -172,6 +172,8 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
 	SetLabel(Version);
 
+	wxLogWarning("MYOur home directory is: %s", wxGetHomeDir());
+
 	// wxMAC: There is no file menu on OSX platforms
 	OdaMacRemoveFileMenu(this);
 
@@ -184,6 +186,10 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
 	#if defined(__linux__) && wxCHECK_VERSION(3, 3, 0)
 	const auto res = wxFileConfig::MigrateLocalFile("odalaunch", wxCONFIG_USE_XDG);
+
+wxLogWarning("old: %s", res.oldPath);
+wxLogWarning("new: %s", res.newPath);
+wxLogWarning("error: %s", res.error);
 	if(!res.oldPath.empty())
 	{
 		if(res.error.empty())
