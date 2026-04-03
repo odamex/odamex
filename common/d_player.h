@@ -350,7 +350,7 @@ public:
 	}
 
 	player_t();
-	player_t &operator =(const player_t &other);
+//	player_t &operator =(const player_t &other);
 
 	~player_t();
 
