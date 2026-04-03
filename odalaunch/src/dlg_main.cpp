@@ -172,9 +172,6 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
 	SetLabel(Version);
 
-	wxLogWarning("MYOur home directory is: %s", wxGetHomeDir());
-wxLogWarning("your config file is: %s", wxFileConfig::GetLocalFileName("odalaunch"));
-
 	// wxMAC: There is no file menu on OSX platforms
 	OdaMacRemoveFileMenu(this);
 
@@ -186,14 +183,7 @@ wxLogWarning("your config file is: %s", wxFileConfig::GetLocalFileName("odalaunc
 	m_StatusBar = GetStatusBar();
 
 	#if defined(__linux__) && wxCHECK_VERSION(3, 3, 0)
-wxLogWarning("your config file is: %s", wxFileConfig::GetLocalFileName("odalaunch", wxCONFIG_USE_HOME));
-wxLogWarning("your new config file is: %s", wxFileConfig::GetLocalFileName("odalaunch", wxCONFIG_USE_XDG));
-
 	const auto res = wxFileConfig::MigrateLocalFile("odalaunch", wxCONFIG_USE_XDG, wxCONFIG_USE_LOCAL_FILE);
-
-wxLogWarning("old: %s", res.oldPath);
-wxLogWarning("new: %s", res.newPath);
-wxLogWarning("error: %s", res.error);
 	if(!res.oldPath.empty())
 	{
 		if(res.error.empty())
@@ -206,7 +196,6 @@ wxLogWarning("error: %s", res.error);
 			wxLogWarning("Migrating old config failed: %s.", res.error);
 		}
 	}
-	wxLogWarning("Migrating old config failed: oldpath was empty.");
 	wxStandardPaths::Get().SetFileLayout(wxStandardPaths::FileLayout_XDG);
 	#endif
 
