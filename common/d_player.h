@@ -275,6 +275,8 @@ public:
 	};
 	std::vector<ActorDistanceType> sortedMobjs;
 
+	bool inventoryCheckIsRequested;
+
 	// denis - client structure is here now for a 1:1
 	struct client_t
 	{

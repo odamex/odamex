@@ -364,6 +364,12 @@ ItemEquipVal P_GiveAmmo(player_t& player, ammotype_t ammotype, float num)
 		player.ammo[ammotype] = player.maxammo[ammotype];
     }
 
+    // If we are not playing as the server, make sure we ask the real server to confirm our pickup.
+    if (not serverside)
+    {
+        player.inventoryCheckIsRequested = true;
+    }
+
 	// If non zero ammo,
 	// don't change up weapons,
 	// player was lower on purpose.
@@ -1378,6 +1384,7 @@ void P_TouchSpecialThing(AActor& special, AActor& toucher)
 	if (!P_IsPlayerOrAvatar(toucher))
 		return;
 
+	// Don't touch things during a non-canonical prediction.
 	if (predicting)
 		return;
 
