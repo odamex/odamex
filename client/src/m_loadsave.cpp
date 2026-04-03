@@ -208,7 +208,6 @@ void M_LoadSaveRestore(int& currentItem)
 void M_LoadSaveDrawer(int currentItem)
 {
 	const OFont* bigFont = OFonts.big();
-	const OFont* smallFont = OFonts.small();
 	const int slotPadding = 2;
 	const int slotHeight = M_BigFontLineHeight() - slotPadding;
 	const saveloadscreenstate_t& screenState = CurrentSaveLoadScreenState();
@@ -227,16 +226,9 @@ void M_LoadSaveDrawer(int currentItem)
 	int listY = layout.listY;
 	for (int i = 0; i < SaveSlotCount; ++i)
 	{
-		M_DrawInputBox(saveStrings[i], layout.listX, listY, SaveLoadSlotWidth);
+		menu::inputbox::Draw(saveStrings[i], layout.listX, listY, SaveLoadSlotWidth,
+		                     editingSaveName && i == editingSlot);
 		listY += slotHeight + slotPadding;
-	}
-
-	if (editingSaveName)
-	{
-		const int stringWidth = V_StringWidth(smallFont, saveStrings[editingSlot]);
-		screen->DrawTextCleanMove(smallFont, M_MenuTextColor("item"),
-		                          layout.listX + stringWidth,
-		                          layout.listY + M_BigFontLineHeight() * editingSlot, "_");
 	}
 }
 
@@ -318,39 +310,24 @@ void M_SaveSlot(int slot)
 
 void M_LoadSaveResponder(int keyCode, int typedChar, bool numlock, int& currentItem)
 {
-	const OFont* smallFont = OFonts.small();
-
 	if (editingSaveName)
 	{
-		if (keyCode == OKEY_BACKSPACE)
+		switch (menu::inputbox::Respond(saveStrings[editingSlot], SaveStringSize,
+		                                editingCharIndex, keyCode, typedChar))
 		{
-			if (editingCharIndex > 0)
-			{
-				--editingCharIndex;
-				saveStrings[editingSlot][editingCharIndex] = 0;
-			}
-		}
-		else if (Key_IsCancelKey(keyCode))
-		{
+		case menu::inputbox::response::cancel:
 			M_ClearMenus();
 			editingSaveName = false;
 			M_StringCopy(saveStrings[editingSlot], oldSaveString, SaveStringSize);
-		}
-		else if (Key_IsAcceptKey(keyCode))
-		{
+			break;
+		case menu::inputbox::response::accept:
 			M_ClearMenus();
 			editingSaveName = false;
 			if (saveStrings[editingSlot][0])
 			{
 				M_SaveSlot(editingSlot);
 			}
-		}
-		else if (Key_IsPrintableChar(typedChar) && editingCharIndex < SaveStringSize - 1 &&
-		         V_StringWidth(smallFont, saveStrings[editingSlot]) <
-		             (SaveStringSize - 1) * 8)
-		{
-			saveStrings[editingSlot][editingCharIndex++] = static_cast<char>(typedChar);
-			saveStrings[editingSlot][editingCharIndex] = 0;
+			break;
 		}
 
 		return;

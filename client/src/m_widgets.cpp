@@ -17,6 +17,7 @@
 
 #include "m_widgets.h"
 
+#include "cl_responderkeys.h"
 #include "i_video.h"
 #include "m_menuconf.h"
 #include "v_palette.h"
@@ -166,42 +167,116 @@ namespace
 		});
 	}
 
-	const patch_t* MenuInputBoxFullPatch()
-	{
-		const patch_t* patch =
-		    M_MenuConfConfiguredPatch(MenuConfTheme().inputBox.fullPatch, "theme.inputBox.fullPatch");
-		return patch != nullptr ? patch : MenuConfPatch("M_FSLOT");
-	}
+}
 
-	const patch_t* MenuInputBoxLeftPatch()
+namespace menu
+{
+	namespace inputbox
 	{
-		const patch_t* patch =
-		    M_MenuConfConfiguredPatch(MenuConfTheme().inputBox.leftPatch, "theme.inputBox.leftPatch");
-		return patch != nullptr ? patch : MenuConfPatch("M_LSLEFT");
-	}
+		const patch_t* _FullPatch()
+		{
+			return M_MenuConfConfiguredPatch(MenuConfTheme().inputBox.fullPatch, "theme.inputBox.fullPatch");
+		}
 
-	const patch_t* MenuInputBoxMiddlePatch()
-	{
-		const patch_t* patch = M_MenuConfConfiguredPatch(MenuConfTheme().inputBox.middlePatch,
-		                                                 "theme.inputBox.middlePatch");
-		return patch != nullptr ? patch : MenuConfPatch("M_LSCNTR");
-	}
+		const patch_t* _LeftPatch()
+		{
+			return M_MenuConfConfiguredPatch(MenuConfTheme().inputBox.leftPatch, "theme.inputBox.leftPatch");
+		}
 
-	const patch_t* MenuInputBoxRightPatch()
-	{
-		const patch_t* patch = M_MenuConfConfiguredPatch(MenuConfTheme().inputBox.rightPatch,
-		                                                 "theme.inputBox.rightPatch");
-		return patch != nullptr ? patch : MenuConfPatch("M_LSRGHT");
+		const patch_t* _MiddlePatch()
+		{
+			return M_MenuConfConfiguredPatch(MenuConfTheme().inputBox.middlePatch, "theme.inputBox.middlePatch");
+		}
+
+		const patch_t* _RightPatch()
+		{
+			return M_MenuConfConfiguredPatch(MenuConfTheme().inputBox.rightPatch, "theme.inputBox.rightPatch");
+		}
+
+		static void _DrawBox(int x, int y, int len)
+		{
+			const patch_t* fullSlot = _FullPatch();
+			const patch_t* leftSlot = _LeftPatch();
+			const patch_t* centerSlot = _MiddlePatch();
+			const patch_t* rightSlot = _RightPatch();
+
+			if (fullSlot != nullptr)
+			{
+				screen->DrawPatchClean(fullSlot, x, y);
+				return;
+			}
+
+			screen->DrawPatchCleanNoOffsets(leftSlot, x, y);
+
+			for (int i = 0; i < len; i++)
+			{
+				x += M_SmallFontLineHeight();
+				screen->DrawPatchCleanNoOffsets(centerSlot, x, y);
+			}
+
+			screen->DrawPatchCleanNoOffsets(rightSlot, x, y);
+		}
+
+		void Draw(const char* text, int x, int y, int width, bool isEditing)
+		{
+			const OFont* smallFont = OFonts.small();
+			const int textY = y + (M_BigFontLineHeight() / 2 - M_SmallFontLineHeight() / 2);
+			const std::string textColor = MenuConfTheme().inputBox.textColor;
+			const std::string displayText = fmt::sprintf("%s%s", text, isEditing ? "_" : "");
+
+			_DrawBox(x, y, width);
+			screen->DrawTextCleanMove(smallFont, TextColorFromString(textColor),
+									x + (M_SmallFontLineHeight() / 2), textY,
+									displayText.c_str());
+		}
+		response Respond(char* text, size_t textCapacity, size_t& cursor, int keyCode, int typedChar)
+		{
+			const OFont* smallFont = OFonts.small();
+			if (text == nullptr || textCapacity == 0)
+			{
+				return response::none;
+			}
+
+			if (keyCode == OKEY_BACKSPACE)
+			{
+				if (cursor > 0)
+				{
+					--cursor;
+					text[cursor] = '\0';
+					return response::changed;
+				}
+			}
+
+			if (Key_IsCancelKey(keyCode))
+			{
+				return response::cancel;
+			}
+
+			if (Key_IsAcceptKey(keyCode))
+			{
+				return response::accept;
+			}
+
+			if (Key_IsPrintableChar(typedChar) && cursor + 1 < textCapacity &&
+				V_StringWidth(smallFont, text) < static_cast<int>(textCapacity - 1) * smallFont->lineHeight())
+			{
+				text[cursor++] = static_cast<char>(typedChar);
+				text[cursor] = '\0';
+				return response::changed;
+			}
+
+			return response::none;
+		}
 	}
 }
 
-int M_BigFontLineHeight()
+const int M_BigFontLineHeight()
 {
 	const OFont* font = OFonts.big();
 	return font != nullptr ? font->lineHeight() : 0;
 }
 
-int M_SmallFontLineHeight()
+const int M_SmallFontLineHeight()
 {
 	const OFont* font = OFonts.small();
 	return font != nullptr ? font->lineHeight() : 0;
@@ -374,39 +449,4 @@ void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur,
 	V_ColorFill = fillIt->second;
 
 	screen->DrawColoredPatchClean(overlayPatch, x + 5 + static_cast<int>(dist * 78.0), drawY);
-}
-
-void M_DrawSaveLoadBorder(int x, int y, int len)
-{
-	const patch_t* fullSlot = MenuInputBoxFullPatch();
-	const patch_t* leftSlot = MenuInputBoxLeftPatch();
-	const patch_t* centerSlot = MenuInputBoxMiddlePatch();
-	const patch_t* rightSlot = MenuInputBoxRightPatch();
-
-	if (fullSlot != nullptr)
-	{
-		screen->DrawPatchClean(fullSlot, x, y);
-		return;
-	}
-
-	screen->DrawPatchCleanNoOffsets(leftSlot, x, y);
-
-	for (int i = 0; i < len; i++)
-	{
-		x += M_SmallFontLineHeight();
-		screen->DrawPatchCleanNoOffsets(centerSlot, x, y);
-	}
-
-	screen->DrawPatchCleanNoOffsets(rightSlot, x, y);
-}
-
-void M_DrawInputBox(char* text, int x, int y, int width)
-{
-	const OFont* smallFont = OFonts.small();
-	const int textY = y + (M_BigFontLineHeight() / 2 - M_SmallFontLineHeight() / 2);
-	const std::string textColor = MenuConfTheme().inputBox.textColor;
-
-	M_DrawSaveLoadBorder(x, y, width);
-	screen->DrawTextCleanMove(smallFont, TextColorFromString(textColor),
-	                          x + (M_SmallFontLineHeight() / 2), textY, text);
 }

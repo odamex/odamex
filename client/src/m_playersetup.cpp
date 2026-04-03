@@ -68,7 +68,7 @@ namespace
 	static constexpr int PLAYERSETUP_Y = 47;
 	static constexpr int PlayerSetupTitleY = 10;
 	static constexpr int PlayerSetupFallbackTitleX = 110;
-	static constexpr int PlayerNameInputOffsetX = 60;
+	static constexpr int PlayerNameInputOffsetX = 56;
 	static constexpr int PlayerNameInputOffsetY = -4;
 	static constexpr int PlayerSetupCursorGap = 3;
 	static constexpr int PlayerPreviewFireX = 200;
@@ -653,16 +653,9 @@ void M_PlayerSetupDrawer(int currentItem)
 	}
 
 	screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X, PLAYERSETUP_Y, "Name");
-	M_DrawInputBox(playerNameString, PLAYERSETUP_X + PlayerNameInputOffsetX,
-	               PLAYERSETUP_Y + PlayerNameInputOffsetY, MAXPLAYERNAME + 1);
-
-	if (editingName)
-	{
-		screen->DrawTextCleanMove(smallFont, itemColor,
-		                          PLAYERSETUP_X + V_StringWidth(smallFont, playerNameString) +
-		                              PlayerNameInputOffsetX,
-		                          PLAYERSETUP_Y, "_");
-	}
+	menu::inputbox::Draw(playerNameString, PLAYERSETUP_X + PlayerNameInputOffsetX,
+	                     PLAYERSETUP_Y + PlayerNameInputOffsetY, MAXPLAYERNAME + 1,
+	                     editingName);
 
 	DrawPlayerPreviewFire(preview);
 	DrawPlayerPreviewSprite(preview, palette, colorpreset);
@@ -745,36 +738,22 @@ void M_PlayerSetupDrawer(int currentItem)
 
 void M_PlayerSetupResponder(int keyCode, int typedChar, bool numlock, int& currentItem)
 {
-	const OFont* smallFont = OFonts.small();
-
 	if (editingName)
 	{
-		if (keyCode == OKEY_BACKSPACE)
+		switch (menu::inputbox::Respond(playerNameString, ARRAY_LENGTH(playerNameString),
+		                                nameCharIndex, keyCode, typedChar))
 		{
-			if (nameCharIndex > 0)
-			{
-				--nameCharIndex;
-				playerNameString[nameCharIndex] = 0;
-			}
-		}
-		else if (Key_IsCancelKey(keyCode))
-		{
+		case menu::inputbox::response::cancel:
 			editingName = false;
 			M_StringCopy(playerNameString, playerNameOldString, MAXPLAYERNAME + 1);
-		}
-		else if (Key_IsAcceptKey(keyCode))
-		{
+			break;
+		case menu::inputbox::response::accept:
 			editingName = false;
 			if (playerNameString[0] != '\0')
 			{
 				CommitPlayerName();
 			}
-		}
-		else if (Key_IsPrintableChar(typedChar) && nameCharIndex < MAXPLAYERNAME &&
-		         V_StringWidth(smallFont, playerNameString) < (MAXPLAYERNAME - 1) * 8)
-		{
-			playerNameString[nameCharIndex++] = static_cast<char>(typedChar);
-			playerNameString[nameCharIndex] = 0;
+			break;
 		}
 
 		return;

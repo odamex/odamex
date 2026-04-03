@@ -18,10 +18,24 @@
 #include "odamex.h"
 #include "v_textcolors.h"
 
+namespace menu::inputbox
+{
+	enum class response
+	{
+		none,
+		changed,
+		accept,
+		cancel
+	};
+
+	void Draw(const char* text, int x, int y, int width, bool isEditing = false);
+	response Respond(char* text, size_t textCapacity, size_t& cursor, int keyCode, int typedChar);
+}
+
 const patch_t* M_MenuConfConfiguredPatch(const std::string& name, const char* context);
 void M_WarnMenuConf(const std::string& message);
-int M_BigFontLineHeight();
-int M_SmallFontLineHeight();
+const int M_BigFontLineHeight();
+const int M_SmallFontLineHeight();
 int M_MenuCursorOffsetY();
 const patch_t* M_MenuCursorPatch();
 const patch_t* M_MenuIndicatorPatch(int which);
@@ -31,5 +45,3 @@ EColorRange M_MenuTextColor(std::string_view role, std::string_view menuId = {},
                             const std::string* overrideColor = nullptr);
 void M_DrawSlider(int x, int y, float leftval, float rightval, float cur, float step);
 void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color);
-void M_DrawSaveLoadBorder(int x, int y, int len);
-void M_DrawInputBox(char* text, int x, int y, int width);
