@@ -74,6 +74,7 @@
 
 #include "OdaMessenger.h"
 #include "CanarySocket.h"
+#include "PlayerStateRoller.h"
 
 #include <bitset>
 #include <set>
@@ -126,6 +127,8 @@ extern NetGraph netgraph;
 
 OdaMessenger messenger;
 static std::unique_ptr<CanarySocketClient> s_canary;
+
+PlayerStateRoller rollerState {0};
 
 // denis - unique session key provided by the server
 std::string digest;
@@ -570,6 +573,7 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 	messenger = OdaMessenger();
 	P_ClearAllNetIds();
 	s_canary.reset();
+	rollerState = PlayerStateRoller{gametic};
 	gameaction = ga_fullconsole;
 }
 
@@ -731,6 +735,8 @@ void NetUpdate (void)
 	G_BuildTiccmd (consoleplayer().netcmds[gametic % BACKUPTICS]);
 }
 
+
+
 extern bool advancedemo;
 uint64_t nextstep = 0;
 int canceltics = 0;
@@ -768,7 +774,10 @@ void CL_StepTics(unsigned int count)
 
 		G_Ticker ();
 
-        // TODO: Record the item data.
+		if (not rollerState.Record(gametic, consoleplayer()))
+		{
+			PrintFmt(PRINT_WARNING, "Failed to record player rollerstate on tic {}\n", gametic);
+		}
 
 		gametic++;
 		if (netdemo.isPlaying() && !netdemo.isPaused())
@@ -1940,6 +1949,8 @@ bool CL_Connect()
 	}
 
 	messenger.SendAll(gametic, ::serveraddr);
+
+	rollerState = PlayerStateRoller {gametic};
 
 	if (gameaction == ga_fullconsole) // Host_EndGame was called
 		return false;
