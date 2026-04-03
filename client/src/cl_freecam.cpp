@@ -23,6 +23,7 @@
 
 #include "cl_freecam.h"
 #include "g_gametype.h"
+#include "p_local.h"
 
 fixed_t cam_x = 0;
 fixed_t cam_y = 0;
@@ -63,6 +64,8 @@ void Freecam::buildCam(player_t* p_cam)
 	mobj->pitch = cam_pitch;
 	p_cam->camera = p_cam->mo = mobj->ptr();
 	p_cam->prevviewz = 1;
+	p_cam->viewz = 1;
+	p_cam->viewheight = VIEWHEIGHT;
 
 	// spec stuff
 	p_cam->cheats |= CF_FLY;
