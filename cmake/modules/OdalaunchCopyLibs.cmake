@@ -25,7 +25,11 @@ function(odalaunch_copy_libs TARGET)
 
   # Copy library files to target directory.
   foreach(ODAMEX_DLL ${ODAMEX_DLLS})
-    string(REPLACE "315ud_" "315u_" ODAMEX_RELEASE_DLL "${ODAMEX_DLL}")
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+      string(REPLACE "332ud_" "332u_" ODAMEX_RELEASE_DLL "${ODAMEX_DLL}")
+    else()
+      string(REPLACE "32ud_" "32u_" ODAMEX_RELEASE_DLL "${ODAMEX_DLL}")
+    endif()
     add_custom_command(TARGET ${TARGET} POST_BUILD
       COMMAND "${CMAKE_COMMAND}" -E copy_if_different
       $<$<CONFIG:Debug>:${ODAMEX_DLL}>
