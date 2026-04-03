@@ -231,7 +231,7 @@ void dlgConfig::OnNotebookPageChanged(wxBookCtrlEvent& event)
 	{
 		wxWindowList pages = m_Notebook->GetChildren();
 
-		if(pages.size() > event.GetSelection())
+		if(static_cast<int>(pages.size()) > event.GetSelection())
 		{
 			wxPanel* page = dynamic_cast<wxPanel*>(pages[event.GetSelection()]);
 
@@ -261,7 +261,7 @@ void dlgConfig::LoadSettings()
 	bool AutoServerRefresh;
 	int ThreadMul, ThreadMax, MasterTimeout, ServerTimeout, RetryCount;
     int RefreshInterval;
-	wxString DelimWadPaths, OdamexDirectory, ExtraCmdLineArgs;
+	wxString OdamexDirectory, ExtraCmdLineArgs;
 	wxString SoundFile, HighlightColour, CustomServerColour;
 	wxInt32 PQGood, PQPlayable, PQLaggy;
 
@@ -271,7 +271,6 @@ void dlgConfig::LoadSettings()
 	                ODA_UISHOWBLOCKEDSERVERS);
     ConfigInfo.Read(CHECKFORUPDATES, &CheckForUpdates,
 	                ODA_UIAUTOCHECKFORUPDATES);
-	ConfigInfo.Read(DELIMWADPATHS, &DelimWadPaths, OdaGetDataDir());
 	ConfigInfo.Read(ODAMEX_DIRECTORY, &OdamexDirectory, OdaGetInstallDir());
 	ConfigInfo.Read(MASTERTIMEOUT, &MasterTimeout, ODA_QRYMASTERTIMEOUT);
 	ConfigInfo.Read(SERVERTIMEOUT, &ServerTimeout, ODA_QRYSERVERTIMEOUT);

@@ -663,16 +663,10 @@ void dlgMain::OnManualConnect(wxCommandEvent& event)
 		}
 	}
 
-	wxString OdamexDirectory, DelimWadPaths;
+	wxString OdamexDirectory;
+	ConfigInfo.Read(ODAMEX_DIRECTORY, &OdamexDirectory, OdaGetInstallDir());
 
-	{
-		ConfigInfo.Read(ODAMEX_DIRECTORY, &OdamexDirectory,
-		                OdaGetInstallDir());
-
-		ConfigInfo.Read(DELIMWADPATHS, &DelimWadPaths, OdaGetDataDir());
-	}
-
-	LaunchGame(ted_result, OdamexDirectory, DelimWadPaths, ped_result);
+	LaunchGame(ted_result, OdamexDirectory, ped_result);
 }
 
 // Various timers
@@ -950,8 +944,7 @@ void* dlgMain::Entry()
 
 void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 {
-	mtrs_struct_t* Result = (mtrs_struct_t*)event.GetClientData();
-	wxInt32 i;
+	const mtrs_struct_t* Result = static_cast<mtrs_struct_t*>(event.GetClientData());
 
 	switch(Result->Signal)
 	{
@@ -1000,9 +993,9 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 	{
 		bool ShowBlockedServers;
 		Server &ThisServer = QServer[Result->Index];
-        std::string Address = ThisServer.GetAddress();
+        const std::string Address = ThisServer.GetAddress();
 
-		i = m_LstCtrlServers->FindServer(stdstr_towxstr(Address));
+		const wxInt32 i = m_LstCtrlServers->FindServer(stdstr_towxstr(Address));
 
 		m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
 
@@ -1031,7 +1024,7 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 	{
 		Server &ThisServer = QServer[Result->Index];
 
-		bool cs = MServer.IsCustomServer(ThisServer.GetAddress());
+		const bool cs = MServer.IsCustomServer(ThisServer.GetAddress());
 
 		m_LstCtrlServers->AddServerToList(ThisServer, Result->ServerListIndex,
                                     false, cs);
@@ -1112,18 +1105,16 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 // worker threads post to this callback
 void dlgMain::OnWorkerSignal(wxCommandEvent& event)
 {
-	wxInt32 i;
-
 	switch(event.GetId())
 	{
 	case 0: // server query timed out
 	{
 		bool ShowBlockedServers;
-        int ServerIndex = event.GetInt();
+        const int ServerIndex = event.GetInt();
 		Server &ThisServer = QServer[ServerIndex];
-        std::string Address = ThisServer.GetAddress();
+        const std::string Address = ThisServer.GetAddress();
 
-		i = m_LstCtrlServers->FindServer(stdstr_towxstr(Address));
+		const wxInt32 i = m_LstCtrlServers->FindServer(stdstr_towxstr(Address));
 
 		m_LstCtrlPlayers->DeleteAllItems();
 
@@ -1139,7 +1130,7 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
 		if(ShowBlockedServers == false)
 			break;
 
-        bool cs = MServer.IsCustomServer(Address);
+        const bool cs = MServer.IsCustomServer(Address);
 
 		if(i == -1)
 			m_LstCtrlServers->AddServerToList(ThisServer, ServerIndex, true, cs);
@@ -1151,10 +1142,10 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
 
 	case 1: // server queried successfully
 	{
-        int ServerIndex = event.GetInt();
+        const int ServerIndex = event.GetInt();
 		Server &ThisServer = QServer[ServerIndex];
 
-		bool cs = MServer.IsCustomServer(ThisServer.GetAddress());
+		const bool cs = MServer.IsCustomServer(ThisServer.GetAddress());
 
 		m_LstCtrlServers->AddServerToList(ThisServer, ServerIndex, true, cs);
 
@@ -1236,17 +1227,15 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent& event)
 // Quick-Launch button click
 void dlgMain::OnQuickLaunch(wxCommandEvent& event)
 {
-	wxString OdamexDirectory, DelimWadPaths;
+	wxString OdamexDirectory;
 
 	{
 		wxFileConfig ConfigInfo;
 
-		ConfigInfo.Read(ODAMEX_DIRECTORY, &OdamexDirectory,
-		                OdaGetInstallDir());
-		ConfigInfo.Read(DELIMWADPATHS, &DelimWadPaths, OdaGetDataDir());
+		ConfigInfo.Read(ODAMEX_DIRECTORY, &OdamexDirectory, OdaGetInstallDir());
 	}
 
-	LaunchGame("", OdamexDirectory, DelimWadPaths);
+	LaunchGame("", OdamexDirectory);
 
 }
 
@@ -1311,18 +1300,17 @@ void dlgMain::OnLaunch(wxCommandEvent& event)
 		}
 	}
 
-	wxString OdamexDirectory, DelimWadPaths;
+	wxString OdamexDirectory;
 
 	{
 		wxFileConfig ConfigInfo;
 
 		ConfigInfo.Read(ODAMEX_DIRECTORY, &OdamexDirectory,
 		                OdaGetInstallDir());
-		ConfigInfo.Read(DELIMWADPATHS, &DelimWadPaths, OdaGetDataDir());
 	}
 
 	LaunchGame(stdstr_towxstr(QServer[i].GetAddress()), OdamexDirectory,
-	           DelimWadPaths, Password);
+	           Password);
 }
 
 // Update program state and get a new list of servers
@@ -1437,7 +1425,7 @@ void dlgMain::OnServerListClick(wxListEvent& event)
 }
 
 void dlgMain::LaunchGame(const wxString& Address, const wxString& ODX_Path,
-                         const wxString& waddirs, const wxString& Password)
+                         const wxString& Password)
 {
 	wxFileConfig ConfigInfo;
 
@@ -1478,13 +1466,6 @@ void dlgMain::LaunchGame(const wxString& Address, const wxString& ODX_Path,
 	{
 		CmdLine += " ";
 		CmdLine += Password;
-	}
-
-	if(!waddirs.IsEmpty())
-	{
-		CmdLine += " -waddir \"";
-		CmdLine += waddirs;
-		CmdLine += "\"";
 	}
 
 	// Check for any user command line arguments
