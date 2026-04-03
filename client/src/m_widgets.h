@@ -13,8 +13,10 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 
 #include "odamex.h"
+#include "v_textcolors.h"
 
 const patch_t* M_MenuConfConfiguredPatch(const std::string& name, const char* context);
 void M_WarnMenuConf(const std::string& message);
@@ -25,6 +27,8 @@ const patch_t* M_MenuCursorPatch();
 const patch_t* M_MenuIndicatorPatch(int which);
 int M_MenuIndicatorOffsetX();
 int M_MenuIndicatorOffsetY();
+EColorRange M_MenuTextColor(std::string_view role, std::string_view menuId = {}, 
+                            const std::string* overrideColor = nullptr);
 void M_DrawSlider(int x, int y, float leftval, float rightval, float cur, float step);
 void M_DrawColoredSlider(int x, int y, float leftval, float rightval, float cur, argb_t color);
 void M_DrawSaveLoadBorder(int x, int y, int len);

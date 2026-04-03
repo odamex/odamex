@@ -28,7 +28,8 @@
       "inputBox": {
         "leftPatch": "M_LSLEFT",
         "middlePatch": "M_LSCNTR",
-        "rightPatch": "M_LSRGHT"
+        "rightPatch": "M_LSRGHT",
+        "textColor": "red"
       },
       "fonts": {
         "title": "big",

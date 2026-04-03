@@ -24,6 +24,7 @@
 #pragma once
 
 #include "d_player.h"
+#include "gi.h"
 #include "r_data.h"
 #include "v_palette.h"
 #include "m_vectors.h"
@@ -233,10 +234,22 @@ inline byte shaderef_t::ramp() const
 
 extern argb_t translationRGB[MAXPLAYERS+1][16];
 
+static constexpr int PLAYER_TRANSLATION_RANGE_SIZE = 16;
+
+inline palindex_t R_PlayerTranslationRangeStart()
+{
+	return gameinfo.playerTranslationRangeStart;
+}
+
+inline palindex_t R_PlayerTranslationRangeStop()
+{
+	return R_PlayerTranslationRangeStart() + PLAYER_TRANSLATION_RANGE_SIZE - 1;
+}
+
 inline argb_t shaderef_t::tlate(const translationref_t &translation, const byte c) const
 {
-	static constexpr palindex_t range_start = 0x70;
-	static constexpr palindex_t range_stop = 0x7F;
+	const palindex_t range_start = R_PlayerTranslationRangeStart();
+	const palindex_t range_stop = R_PlayerTranslationRangeStop();
 
 	const int pid = translation.getPlayerID();
 

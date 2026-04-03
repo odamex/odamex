@@ -100,6 +100,8 @@ inline void G_ResetFontDefs()
 	fontdefs.clear();
 }
 
+static constexpr size_t PLAYER_TRANSLATION_CLASSIC_PRESETS = 6;
+
 typedef struct gameinfo_s
 {
 	int flags;
@@ -156,6 +158,8 @@ typedef struct gameinfo_s
 	int menuIndicatorOffsetX;
 	int menuIndicatorOffsetY;
 	int menuCursorOffsetY;
+	byte playerTranslationRangeStart;
+	std::array<int, PLAYER_TRANSLATION_CLASSIC_PRESETS> playerTranslationRampBases;
 	int defaultWipeType;
 
 	gameinfo_s()
@@ -197,6 +201,8 @@ typedef struct gameinfo_s
 		, overrideMapinfoLump("")
 		, baseMenuConfLump("")
 		, overrideMenuConfLump("")
+		, playerTranslationRangeStart(0x70)
+		, playerTranslationRampBases{{0x70, 0x60, 0x40, 0x20, 0xC0, 0xD0}}
 		, defaultWipeType(1)
 	{
 	}

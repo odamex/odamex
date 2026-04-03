@@ -243,6 +243,37 @@ int M_MenuIndicatorOffsetY()
 	return MenuConfTheme().indicator.offsetY;
 }
 
+EColorRange M_MenuTextColor(std::string_view role, std::string_view menuId,
+							const std::string* overrideColor)
+{
+	if (overrideColor != nullptr && !overrideColor->empty())
+	{
+		return TextColorFromString(*overrideColor);
+	}
+
+	const std::string roleKey(role);
+	if (!menuId.empty())
+	{
+		const auto menuIt = M_MenuConf().menus.find(std::string(menuId));
+		if (menuIt != M_MenuConf().menus.end())
+		{
+			const auto colorIt = menuIt->second.colors.find(roleKey);
+			if (colorIt != menuIt->second.colors.end() && !colorIt->second.empty())
+			{
+				return TextColorFromString(colorIt->second);
+			}
+		}
+	}
+
+	const auto themeIt = MenuConfTheme().colors.find(roleKey);
+	if (themeIt != MenuConfTheme().colors.end() && !themeIt->second.empty())
+	{
+		return TextColorFromString(themeIt->second);
+	}
+
+	return CR_GRAY;
+}
+
 const patch_t* M_MenuCursorPatch()
 {
 	return CachedMenuPatch(MenuConfTheme().cursorPatch, []()
@@ -373,7 +404,9 @@ void M_DrawInputBox(char* text, int x, int y, int width)
 {
 	const OFont* smallFont = OFonts.small();
 	const int textY = y + (M_BigFontLineHeight() / 2 - M_SmallFontLineHeight() / 2);
+	const std::string textColor = MenuConfTheme().inputBox.textColor;
 
 	M_DrawSaveLoadBorder(x, y, width);
-	screen->DrawTextCleanMove(smallFont, CR_RED, x + (M_SmallFontLineHeight() / 2), textY, text);
+	screen->DrawTextCleanMove(smallFont, TextColorFromString(textColor),
+	                          x + (M_SmallFontLineHeight() / 2), textY, text);
 }

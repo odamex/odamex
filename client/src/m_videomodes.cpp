@@ -414,6 +414,11 @@ void M_VideoModesDrawer(int currentItem)
 {
 	const OFont* smallFont = OFonts.small();
 	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
+	const EColorRange titleColor = M_MenuTextColor("title");
+	const EColorRange itemColor = M_MenuTextColor("item");
+	const EColorRange itemHighlightColor = M_MenuTextColor("itemHighlight");
+	const EColorRange valueColor = M_MenuTextColor("value");
+	const EColorRange labelColor = M_MenuTextColor("label");
 	int y = 15;
 
 	if (W_CheckNumForName(videoModesMenu.title) >= 0)
@@ -437,7 +442,7 @@ void M_VideoModesDrawer(int currentItem)
 					continue;
 				}
 
-				const int color = column == item.e.highlight ? CR_GREY : CR_RED;
+				const int color = column == item.e.highlight ? itemHighlightColor : itemColor;
 				screen->DrawTextCleanMove(smallFont, color, 104 * column + 20, y, columns[column]);
 			}
 
@@ -453,21 +458,21 @@ void M_VideoModesDrawer(int currentItem)
 
 		const int width = item.label != nullptr ? V_StringWidth(smallFont, item.label) : 0;
 		int x = videoModesMenu.indent - width;
-		int color = CR_RED;
+		int color = itemColor;
 
 		switch (item.type)
 		{
 		case redtext:
 			x = 160 - width / 2;
-			color = CR_RED;
+			color = itemColor;
 			break;
 		case whitetext:
 			x = 160 - width / 2;
-			color = CR_GREY;
+			color = itemHighlightColor;
 			break;
 		case yellowtext:
 			x = 160 - width / 2;
-			color = CR_YELLOW;
+			color = labelColor;
 			break;
 		default:
 			break;
@@ -482,12 +487,12 @@ void M_VideoModesDrawer(int currentItem)
 			const int numValues = static_cast<int>(item.b.leftval);
 			const int currentValue = M_FindCurVal(item.a.cvar->value(), item.e.values, numValues);
 			const char* value = currentValue == numValues ? "Unknown" : item.e.values[currentValue].name;
-			screen->DrawTextCleanMove(smallFont, CR_GREY, videoModesMenu.indent + 14, y, value);
+			screen->DrawTextCleanMove(smallFont, valueColor, videoModesMenu.indent + 14, y, value);
 			break;
 		}
 
 		case nochoice:
-			screen->DrawTextCleanMove(smallFont, CR_GOLD, videoModesMenu.indent + 14, y,
+			screen->DrawTextCleanMove(smallFont, labelColor, videoModesMenu.indent + 14, y,
 			                          item.e.values[static_cast<int>(item.b.leftval)].name);
 			break;
 

@@ -68,7 +68,7 @@ namespace
 	static constexpr int PLAYERSETUP_Y = 47;
 	static constexpr int PlayerSetupTitleY = 10;
 	static constexpr int PlayerSetupFallbackTitleX = 110;
-	static constexpr int PlayerNameInputOffsetX = 56;
+	static constexpr int PlayerNameInputOffsetX = 60;
 	static constexpr int PlayerNameInputOffsetY = -4;
 	static constexpr int PlayerSetupCursorGap = 3;
 	static constexpr int PlayerPreviewFireX = 200;
@@ -635,6 +635,9 @@ void M_PlayerSetupDrawer(int currentItem)
 	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
 	const int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
 	const playerpreviewlayout_t preview = PlayerPreviewLayout();
+	const EColorRange titleColor = M_MenuTextColor("title");
+	const EColorRange itemColor = M_MenuTextColor("item");
+	const EColorRange valueColor = M_MenuTextColor("value");
 
 	if (W_CheckNumForName("M_PSTTL") >= 0)
 	{
@@ -645,17 +648,17 @@ void M_PlayerSetupDrawer(int currentItem)
 	else
 	{
 		screen->DrawTextCleanMove(
-		    smallFont, CR_GRAY, PlayerSetupFallbackTitleX, PlayerSetupTitleY,
+		    smallFont, titleColor, PlayerSetupFallbackTitleX, PlayerSetupTitleY,
 		    M_LocalizedMenuString("MNU_PLAYERSETUP"));
 	}
 
-	screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X, PLAYERSETUP_Y, "Name");
+	screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X, PLAYERSETUP_Y, "Name");
 	M_DrawInputBox(playerNameString, PLAYERSETUP_X + PlayerNameInputOffsetX,
 	               PLAYERSETUP_Y + PlayerNameInputOffsetY, MAXPLAYERNAME + 1);
 
 	if (editingName)
 	{
-		screen->DrawTextCleanMove(smallFont, CR_RED,
+		screen->DrawTextCleanMove(smallFont, itemColor,
 		                          PLAYERSETUP_X + V_StringWidth(smallFont, playerNameString) +
 		                              PlayerNameInputOffsetX,
 		                          PLAYERSETUP_Y, "_");
@@ -667,19 +670,19 @@ void M_PlayerSetupDrawer(int currentItem)
 	{
 		const team_t team = D_TeamByName(cl_team.cstring());
 		const int x = V_StringWidth(smallFont, "Preferred Team") + 8 + PLAYERSETUP_X;
-		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X,
+		screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X,
 		                          PLAYERSETUP_Y + M_BigFontLineHeight(), "Preferred Team");
 		screen->DrawTextCleanMove(
-		    smallFont, CR_GREY, x, PLAYERSETUP_Y + M_BigFontLineHeight(),
+		    smallFont, valueColor, x, PLAYERSETUP_Y + M_BigFontLineHeight(),
 		    team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
 	}
 
 	{
 		const gender_t gender = D_GenderByName(cl_gender.cstring());
 		const int x = V_StringWidth(smallFont, "Gender") + 8 + PLAYERSETUP_X;
-		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X,
+		screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X,
 		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 2, "Gender");
-		screen->DrawTextCleanMove(smallFont, CR_GREY, x,
+		screen->DrawTextCleanMove(smallFont, valueColor, x,
 		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 2, genders[gender]);
 	}
 
@@ -694,38 +697,38 @@ void M_PlayerSetupDrawer(int currentItem)
 		                       aim <= 3     ? "Very High" :
 		                                       "Always";
 
-		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X,
+		screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X,
 		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 3, "Autoaim");
-		screen->DrawTextCleanMove(smallFont, CR_GREY, x,
+		screen->DrawTextCleanMove(smallFont, valueColor, x,
 		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 3, aimLabel);
 	}
 
 	{
 		const int x = V_StringWidth(smallFont, "Color") + 8 + PLAYERSETUP_X;
-		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X,
+		screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X,
 		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 4, "Color");
-		screen->DrawTextCleanMove(smallFont, CR_GREY, x,
+		screen->DrawTextCleanMove(smallFont, valueColor, x,
 		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 4,
 		                          colorpresets[colorpreset]);
 	}
 
 	if (colorpreset == COLOR_CUSTOM)
 	{
-		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X,
+		screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X,
 		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 5, "Red");
-		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X,
+		screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X,
 		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 6, "Green");
-		screen->DrawTextCleanMove(smallFont, CR_RED, PLAYERSETUP_X,
+		screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X,
 		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 7, "Blue");
 
 		const int x = V_StringWidth(smallFont, "Green") + 8 + PLAYERSETUP_X;
 		const argb_t playercolor = V_GetColorFromString(cl_color);
-		M_DrawSlider(x, PLAYERSETUP_Y + M_BigFontLineHeight() * 5, 0.0F, 255.0F,
-		             playercolor.getr(), 0.0F);
-		M_DrawSlider(x, PLAYERSETUP_Y + M_BigFontLineHeight() * 6, 0.0F, 255.0F,
-		             playercolor.getg(), 0.0F);
-		M_DrawSlider(x, PLAYERSETUP_Y + M_BigFontLineHeight() * 7, 0.0F, 255.0F,
-		             playercolor.getb(), 0.0F);
+		M_DrawColoredSlider(x, PLAYERSETUP_Y + M_BigFontLineHeight() * 5, 0.0F, 255.0F,
+		                    playercolor.getr(), argb_t(playercolor.getr(), 0, 0));
+		M_DrawColoredSlider(x, PLAYERSETUP_Y + M_BigFontLineHeight() * 6, 0.0F, 255.0F,
+		                    playercolor.getg(), argb_t(0, playercolor.getg(), 0));
+		M_DrawColoredSlider(x, PLAYERSETUP_Y + M_BigFontLineHeight() * 7, 0.0F, 255.0F,
+		                    playercolor.getb(), argb_t(0, 0, playercolor.getb()));
 	}
 
 	ClampPlayerSetupItem(currentItem);

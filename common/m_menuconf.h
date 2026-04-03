@@ -55,6 +55,7 @@ struct menuconfinputbox_t
 	std::string leftPatch;
 	std::string middlePatch;
 	std::string rightPatch;
+	std::string textColor;
 };
 
 struct menuconfheadertside_t

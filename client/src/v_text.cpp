@@ -52,6 +52,11 @@ extern byte *Ranges;
 
 namespace
 {
+int V_DefaultNormalTextColor()
+{
+	return gameinfo.enginetype == ENGINE_HERETIC ? CR_UNTRANSLATED : CR_RED;
+}
+
 std::string V_NormalizeFontName(std::string_view name)
 {
 	return StdStringToUpper(std::string(name));
@@ -444,7 +449,7 @@ void DCanvas::TextSWrapper(EWrapperCode drawer, const OFont* font, int normalcol
 		return;
 
 	if (normalcolor < 0 || normalcolor >= NUM_TEXT_COLORS)
-		normalcolor = CR_RED;
+		normalcolor = V_DefaultNormalTextColor();
 
 	if (!Ranges)
 		return;

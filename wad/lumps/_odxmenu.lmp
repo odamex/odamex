@@ -22,7 +22,8 @@
         "overlayPatch": "OSLIDE"
       },
       "inputBox": {
-        "fullPatch": "M_FSLOT"
+        "fullPatch": "M_FSLOT",
+        "textColor": "red"
       },
       "fonts": {
         "title": "big",
@@ -30,7 +31,7 @@
         "value": "small"
       },
       "colors": {
-        "title": "gray",
+        "title": "untranslated",
         "item": "red",
         "itemHighlight": "gray",
         "value": "gray",

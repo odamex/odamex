@@ -325,11 +325,13 @@ namespace
 		const Json::Value& leftPatch = elem["leftPatch"];
 		const Json::Value& middlePatch = elem["middlePatch"];
 		const Json::Value& rightPatch = elem["rightPatch"];
+		const Json::Value& textColor = elem["textColor"];
 
 		if (!(fullPatch.isString() || fullPatch.isNull())
 			|| !(leftPatch.isString() || leftPatch.isNull())
 			|| !(middlePatch.isString() || middlePatch.isNull())
-			|| !(rightPatch.isString() || rightPatch.isNull()))
+			|| !(rightPatch.isString() || rightPatch.isNull())
+			|| !(textColor.isString() || textColor.isNull()))
 		{
 			return jsonlumpresult_t::PARSEERROR;
 		}
@@ -338,6 +340,7 @@ namespace
 		if (!leftPatch.isNull()) output.leftPatch = leftPatch.asString();
 		if (!middlePatch.isNull()) output.middlePatch = middlePatch.asString();
 		if (!rightPatch.isNull()) output.rightPatch = rightPatch.asString();
+		if (!textColor.isNull()) output.textColor = textColor.asString();
 
 		const bool hasFull = !output.fullPatch.empty();
 		const bool hasParts = !output.leftPatch.empty() || !output.middlePatch.empty() || !output.rightPatch.empty();
@@ -652,7 +655,8 @@ void menuconfdatabase_t::merge(const menuconfdatabase_t& other)
 		theme.slider = other.theme.slider;
 	}
 	if (!other.theme.inputBox.fullPatch.empty() || !other.theme.inputBox.leftPatch.empty()
-		|| !other.theme.inputBox.middlePatch.empty() || !other.theme.inputBox.rightPatch.empty())
+		|| !other.theme.inputBox.middlePatch.empty() || !other.theme.inputBox.rightPatch.empty()
+		|| !other.theme.inputBox.textColor.empty())
 	{
 		theme.inputBox = other.theme.inputBox;
 	}

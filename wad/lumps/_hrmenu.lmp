@@ -26,7 +26,8 @@
         "overlayPatch": "OSLIDE"
       },
       "inputBox": {
-        "fullPatch": "M_FSLOT"
+        "fullPatch": "M_FSLOT",
+        "textColor": "white"
       },
       "fonts": {
         "title": "big",
@@ -34,8 +35,8 @@
         "value": "small"
       },
       "colors": {
-        "title": "gray",
-        "item": "red",
+        "title": "untranslated",
+        "item": "green",
         "itemHighlight": "gray",
         "value": "gray",
         "label": "yellow",
@@ -54,6 +55,9 @@
     },
     "menus": {
       "main": {
+        "colors": {
+          "item": "untranslated"
+        },
         "header": {
           "patch": "M_HTIC",
           "text": null,
@@ -94,6 +98,9 @@
         ]
       },
       "episodes": {
+        "colors": {
+          "item": "untranslated"
+        },
         "layout": {
           "style": "textList",
           "x": 44,
@@ -108,6 +115,9 @@
         ]
       },
       "skills": {
+        "colors": {
+          "item": "untranslated"
+        },
         "layout": {
           "style": "textList",
           "x": 44,
@@ -125,6 +135,9 @@
         ]
       },
       "gamefiles": {
+        "colors": {
+          "item": "untranslated"
+        },
         "layout": {
           "style": "textList",
           "x": 110,

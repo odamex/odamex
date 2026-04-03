@@ -409,6 +409,12 @@ namespace
 		return generatedMenu != nullptr ? std::string_view(generatedMenu->menuId) : std::string_view();
 	}
 
+	EColorRange OptionsMenuColor(std::string_view role,
+	                             const std::string* overrideColor = nullptr)
+	{
+		return M_MenuTextColor(role, CurrentOptionsMenuId(), overrideColor);
+	}
+
 	const std::string* CurrentOptionsItemSound()
 	{
 		const generatedoptionsmenu_t* generatedMenu = GeneratedOptionsMenuByMenu(CurrentMenu);
@@ -1042,7 +1048,8 @@ void M_OptDrawer (void)
 		int titlewidth = V_StringWidth(bigFont, titleText) * CleanXfac;
 		int titleX = (I_GetSurfaceWidth() / 2) - (titlewidth / 2);
 		int titleY = 20*CleanYfac;
-		screen->DrawTextClean(bigFont, CR_GRAY, titleX, titleY, titleText);
+		screen->DrawTextClean(bigFont, OptionsMenuColor("title"), titleX, titleY,
+		                      titleText);
 		y = ystart;
 	}
 	ytop = y + CurrentMenu->scrolltop * lineHeight;
@@ -1075,9 +1082,9 @@ void M_OptDrawer (void)
 				if (str)
 				{
 					if (x == item->e.highlight)
-						color = CR_GREY;
+						color = OptionsMenuColor("itemHighlight");
 					else
-						color = CR_RED;
+						color = OptionsMenuColor("item");
 					screen->DrawTextCleanMove(smallFont, color, 104 * x + 20, y, str);
 				}
 			}
@@ -1100,37 +1107,37 @@ void M_OptDrawer (void)
 			{
 			case more:
 				x = CurrentMenu->indent - width;
-				color = CR_GREY;
+				color = OptionsMenuColor("itemHighlight");
 				break;
 
 			case redtext:
 				x = 160 - width / 2;
-				color = CR_RED;
+				color = OptionsMenuColor("item");
 				break;
 
 			case whitetext:
 				x = 160 - width / 2;
-				color = CR_GREY;
+				color = OptionsMenuColor("value");
 				break;
 
 			case yellowtext:
 				x = 160 - width / 2;
-				color = CR_YELLOW;
+				color = OptionsMenuColor("label");
 				break;
 
 			case orangetext:
 				x = 160 - width / 2;
-				color = CR_ORANGE;
+				color = OptionsMenuColor("warning");
 				break;
 
 			case listelement:
 				x = CurrentMenu->indent + 14;
-				color = CR_RED;
+				color = OptionsMenuColor("item");
 				break;
 
 			default:
 				x = CurrentMenu->indent - width;
-				color = CR_RED;
+				color = OptionsMenuColor("item");
 				break;
 			}
 			screen->DrawTextCleanMove(smallFont, color, x, y, item->label);
@@ -1148,11 +1155,12 @@ void M_OptDrawer (void)
 
 				if (v == vals)
 				{
-					screen->DrawTextCleanMove(smallFont, CR_GREY, CurrentMenu->indent + 14, y, "Unknown");
+					screen->DrawTextCleanMove(smallFont, OptionsMenuColor("value"),
+					                          CurrentMenu->indent + 14, y, "Unknown");
 				}
 				else
 				{
-					int color_num = CR_GREY;
+					int color_num = OptionsMenuColor("value");
 					if (item->type == cdiscrete)
 						color_num = item->a.cvar->asInt();
 					screen->DrawTextCleanMove(smallFont, color_num, CurrentMenu->indent + 14, y, item->e.values[v].name);
@@ -1162,7 +1170,8 @@ void M_OptDrawer (void)
 			break;
 
 			case nochoice:
-				screen->DrawTextCleanMove(smallFont, CR_GOLD, CurrentMenu->indent + 14, y,
+				screen->DrawTextCleanMove(smallFont, OptionsMenuColor("label"),
+				                          CurrentMenu->indent + 14, y,
 										   (item->e.values[static_cast<int>(item->b.leftval)]).name);
 				break;
 
@@ -1195,21 +1204,24 @@ void M_OptDrawer (void)
 			case control:
 			{
 				std::string desc = Bindings.GetNameKeys(item->b.key1, item->c.key2);
-				screen->DrawTextCleanMove(smallFont, CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+				screen->DrawTextCleanMove(smallFont, OptionsMenuColor("value"),
+				                          CurrentMenu->indent + 14, y, desc.c_str());
 			}
 			break;
 
 			case mapcontrol:
 			{
 				std::string desc = AutomapBindings.GetNameKeys(item->b.key1, item->c.key2);
-				screen->DrawTextCleanMove(smallFont, CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+				screen->DrawTextCleanMove(smallFont, OptionsMenuColor("value"),
+				                          CurrentMenu->indent + 14, y, desc.c_str());
 			}
 			break;
 
 			case netdemocontrol:
 			{
 				std::string desc = NetDemoBindings.GetNameKeys(item->b.key1, item->c.key2);
-				screen->DrawTextCleanMove(smallFont, CR_GREY, CurrentMenu->indent + 14, y, desc.c_str());
+				screen->DrawTextCleanMove(smallFont, OptionsMenuColor("value"),
+				                          CurrentMenu->indent + 14, y, desc.c_str());
 			}
 			break;
 
@@ -1228,7 +1240,8 @@ void M_OptDrawer (void)
 					str = value[1].name;
 				else
 					str = value[0].name;
-				screen->DrawTextCleanMove(smallFont, CR_GREY, CurrentMenu->indent + 14, y, str);
+				screen->DrawTextCleanMove(smallFont, OptionsMenuColor("value"),
+				                          CurrentMenu->indent + 14, y, str);
 			}
 			break;
 
@@ -1248,13 +1261,15 @@ void M_OptDrawer (void)
 					joyname = item->a.cvar->str();
 					joyname += ": " + I_GetJoystickNameFromIndex(item->a.cvar->asInt());
 				}
-				screen->DrawTextCleanMove(smallFont, CR_GREY, CurrentMenu->indent + 14, y, joyname.c_str());
+				screen->DrawTextCleanMove(smallFont, OptionsMenuColor("value"),
+				                          CurrentMenu->indent + 14, y, joyname.c_str());
 			}
 			break;
 
 			case joyaxis:
 			{
-				screen->DrawTextCleanMove(smallFont, CR_GREY, CurrentMenu->indent + 14, y, item->a.cvar->cstring());
+				screen->DrawTextCleanMove(smallFont, OptionsMenuColor("value"),
+				                          CurrentMenu->indent + 14, y, item->a.cvar->cstring());
 			}
 			break;
 

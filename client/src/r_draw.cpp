@@ -228,6 +228,37 @@ static int R_PaletteIntensity(const argb_t& color)
 	return (54 * color.getr() + 183 * color.getg() + 19 * color.getb()) / 256;
 }
 
+static void R_BuildCustomPlayerTranslation(int player, argb_t dest_color)
+{
+	const palette_t* pal = V_GetDefaultPalette();
+	byte* table = &translationtables[player * 256];
+	const palindex_t range_start = R_PlayerTranslationRangeStart();
+	const palindex_t range_stop = R_PlayerTranslationRangeStop();
+	const fahsv_t hsv = V_RGBtoHSV(dest_color);
+
+	int max_intensity = 0;
+	for (int i = range_start; i <= range_stop; ++i)
+	{
+		max_intensity = std::max(max_intensity, R_PaletteIntensity(pal->basecolors[i]));
+	}
+	if (max_intensity <= 0)
+	{
+		max_intensity = 1;
+	}
+
+	for (int i = range_start; i <= range_stop; ++i)
+	{
+		const int range_index = i - range_start;
+		const float intensity =
+		    static_cast<float>(R_PaletteIntensity(pal->basecolors[i])) /
+		    static_cast<float>(max_intensity);
+		const argb_t color = V_HSVtoRGB(fahsv_t(hsv.geth(), hsv.gets(), hsv.getv() * intensity));
+
+		translationRGB[player][range_index] = color;
+		table[i] = V_BestColor(pal->basecolors, color);
+	}
+}
+
 static void R_BuildFontTranslation(int color_num, argb_t start_color, argb_t end_color)
 {
 	static constexpr palindex_t chexstart_index = 0x70;
@@ -365,12 +396,14 @@ static byte SoftLight(const byte bot, const byte top)
 void R_RebuildPlayerGreenTintTables(int player)
 {
 	argb_t gtop(0x62, 0xff, 0x5c);
+	const palindex_t range_start = R_PlayerTranslationRangeStart();
+	const palindex_t range_stop = R_PlayerTranslationRangeStop();
 	for (size_t i = 0; i < ARRAY_LENGTH(::greentable[player]); i++)
 	{
 		argb_t bot = argb_t();
-		if (i > 0x70 && i < 0x80)
+		if (i >= range_start && i <= range_stop)
 		{
-			bot = translationRGB[player][i - 0x70];
+			bot = translationRGB[player][i - range_start];
 		}
 		else
 		{
@@ -388,12 +421,14 @@ void R_RebuildPlayerGreenTintTables(int player)
 void R_RebuildPlayerRedTintTables(int player)
 {
 	argb_t rtop(0xff, 0x28, 0x28);
+	const palindex_t range_start = R_PlayerTranslationRangeStart();
+	const palindex_t range_stop = R_PlayerTranslationRangeStop();
 	for (size_t i = 0; i < ARRAY_LENGTH(::redtable[player]); i++)
 	{
 		argb_t bot = argb_t();
-		if (i > 0x70 && i < 0x80)
+		if (i >= range_start && i <= range_stop)
 		{
-			bot = translationRGB[player][i - 0x70];
+			bot = translationRGB[player][i - range_start];
 		}
 		else
 		{
@@ -462,21 +497,24 @@ void R_InitTranslationTables()
 
 	// Set up default translationRGB tables:
 	const palette_t* pal = V_GetDefaultPalette();
+	const palindex_t range_start = R_PlayerTranslationRangeStart();
+	const palindex_t range_stop = R_PlayerTranslationRangeStop();
 	for (int i = 0; i < MAXPLAYERS; ++i)
 	{
-		for (int j = 0x70; j < 0x80; ++j)
-			translationRGB[i][j - 0x70] = pal->basecolors[j];
+		for (int j = range_start; j <= range_stop; ++j)
+			translationRGB[i][j - range_start] = pal->basecolors[j];
 	}
 
 	for (int i = 1; i < MAXPLAYERS+3; i++)
 		memcpy (translationtables + i*256, translationtables, 256);
 
 	// create translation tables for dehacked patches that expect them
-	for (int i = 0x70; i < 0x80; i++) {
+	for (int i = range_start; i <= range_stop; i++) {
 		// map green ramp to gray, brown, red
-		translationtables[i+(MAXPLAYERS+0)*256] = 0x60 + (i&0xf);
-		translationtables[i+(MAXPLAYERS+1)*256] = 0x40 + (i&0xf);
-		translationtables[i+(MAXPLAYERS+2)*256] = 0x20 + (i&0xf);
+		const int range_index = i - range_start;
+		translationtables[i+(MAXPLAYERS+0)*256] = 0x60 + range_index;
+		translationtables[i+(MAXPLAYERS+1)*256] = 0x40 + range_index;
+		translationtables[i+(MAXPLAYERS+2)*256] = 0x20 + range_index;
 	}
 
 	// Create powerup tints by grabbing each players rgb translation table
@@ -487,6 +525,9 @@ void R_InitTranslationTables()
 	}
 
 	Ranges = translationtables + (MAXPLAYERS+3)*256;
+
+	for (int i = 0; i < 256; i++)
+		Ranges[i + CR_UNTRANSLATED * 256] = i;
 
 	R_BuildFontTranslation(CR_BRICK,	argb_t(0xFF, 0xB8, 0xB8), argb_t(0x47, 0x00, 0x00));
 	R_BuildFontTranslation(CR_TAN,		argb_t(0xFF, 0xEB, 0xDF), argb_t(0x33, 0x2B, 0x13));
@@ -520,38 +561,25 @@ void R_FreeTranslationTables (void)
 void R_BuildClassicPlayerTranslation (int player, int color)
 {
 	const palette_t* pal = V_GetDefaultPalette();
-
-	const auto buildtranslation = [&](int base)
+	const palindex_t range_start = R_PlayerTranslationRangeStart();
+	const palindex_t range_stop = R_PlayerTranslationRangeStop();
+	if (color < 0 || color >= static_cast<int>(gameinfo.playerTranslationRampBases.size()))
 	{
-		for (int i = 0x70; i < 0x80; i++)
-		{
-			translationtables[i + (player * 256)] = base + (i & 0xf);
-			translationRGB[player][i - 0x70] = pal->basecolors[translationtables[i + (player * 256)]];
-		}
-	};
+		return;
+	}
 
-	switch (color)
+	const int ramp_base = gameinfo.playerTranslationRampBases[color];
+	if (ramp_base < 0)
 	{
-		case COLOR_GREEN:
-			buildtranslation(0x70);
-			break;
-		case COLOR_INDIGO:
-			buildtranslation(0x60);
-			break;
-		case COLOR_BROWN:
-			buildtranslation(0x40);
-			break;
-		case COLOR_RED:
-			buildtranslation(0x20);
-			break;
-		case COLOR_BLUE:
-			buildtranslation(0xC0);
-			break;
-		case COLOR_ORANGE:
-			buildtranslation(0xD0);
-			break;
-		default:
-			break;
+		return;
+	}
+
+	for (int i = range_start; i <= range_stop; i++)
+	{
+		const int range_index = i - range_start;
+		translationtables[i + (player * 256)] = ramp_base + range_index;
+		translationRGB[player][range_index] =
+		    pal->basecolors[translationtables[i + (player * 256)]];
 	}
 }
 
@@ -563,9 +591,12 @@ void R_RebuildPlayerTintTables(int playerid)
 
 void R_CopyTranslationRGB (int fromplayer, int toplayer)
 {
-	for (int i = 0x70; i < 0x80; ++i)
+	const palindex_t range_start = R_PlayerTranslationRangeStart();
+	const palindex_t range_stop = R_PlayerTranslationRangeStop();
+
+	for (int i = range_start; i <= range_stop; ++i)
 	{
-		translationRGB[toplayer][i - 0x70] = translationRGB[fromplayer][i - 0x70];
+		translationRGB[toplayer][i - range_start] = translationRGB[fromplayer][i - range_start];
 		translationtables[i+(toplayer * 256)] = translationtables[i+(fromplayer * 256)];
 	}
 
@@ -601,46 +632,53 @@ void R_BuildPlayerTranslation(int player, argb_t dest_color, int colorpreset)
 	{
 		return R_BuildClassicPlayerTranslation(player, colorpreset);
 	}
-	else
+
+	if (gameinfo.enginetype != ENGINE_DOOM)
 	{
-		const palette_t* pal = V_GetDefaultPalette();
-		byte* table = &translationtables[player * 256];
+		R_BuildCustomPlayerTranslation(player, dest_color);
+		return;
+	}
 
-		const fahsv_t hsv_temp = V_RGBtoHSV(dest_color);
-		const float h = hsv_temp.geth();
-		float s = hsv_temp.gets(), v = hsv_temp.getv();
+	const palette_t* pal = V_GetDefaultPalette();
+	byte* table = &translationtables[player * 256];
+	const palindex_t range_start = R_PlayerTranslationRangeStart();
+	const palindex_t range_stop = R_PlayerTranslationRangeStop();
 
-		s -= 0.23f;
-		if (s < 0.0f)
-			s = 0.0f;
-		float sdelta = 0.014375f;
+	const fahsv_t hsv_temp = V_RGBtoHSV(dest_color);
+	const float h = hsv_temp.geth();
+	float s = hsv_temp.gets(), v = hsv_temp.getv();
 
-		v += 0.1f;
-		if (v > 1.0f)
-			v = 1.0f;
-		float vdelta = -0.05882f;
+	s -= 0.23f;
+	if (s < 0.0f)
+		s = 0.0f;
+	float sdelta = 0.014375f;
 
-		for (int i = 0x70; i < 0x80; i++)
+	v += 0.1f;
+	if (v > 1.0f)
+		v = 1.0f;
+	float vdelta = -0.05882f;
+
+	for (int i = range_start; i <= range_stop; i++)
+	{
+		const int range_index = i - range_start;
+		const argb_t color(V_HSVtoRGB(fahsv_t(h, s, v)));
+
+		// Set up RGB values for 32bpp translation:
+		translationRGB[player][range_index] = color;
+		table[i] = V_BestColor(pal->basecolors, color);
+
+		s += sdelta;
+		if (s > 1.0f)
 		{
-			const argb_t color(V_HSVtoRGB(fahsv_t(h, s, v)));
+			s = 1.0f;
+			sdelta = 0.0f;
+		}
 
-			// Set up RGB values for 32bpp translation:
-			translationRGB[player][i - 0x70] = color;
-			table[i] = V_BestColor(pal->basecolors, color);
-
-			s += sdelta;
-			if (s > 1.0f)
-			{
-				s = 1.0f;
-				sdelta = 0.0f;
-			}
-
-			v += vdelta;
-			if (v < 0.0f)
-			{
-				v = 0.0f;
-				vdelta = 0.0f;
-			}
+		v += vdelta;
+		if (v < 0.0f)
+		{
+			v = 0.0f;
+			vdelta = 0.0f;
 		}
 	}
 }

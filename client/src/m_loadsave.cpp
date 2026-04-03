@@ -25,6 +25,7 @@
 #include "odamex.h"
 
 #include <ctime>
+#include <string>
 
 #include "cl_responderkeys.h"
 #include "g_game.h"
@@ -79,7 +80,7 @@ struct saveloadlayout_t
 struct saveloadscreenstate_t
 {
 	const patch_t* titlePatch = nullptr;
-	const char* titleText = nullptr;
+	std::string titleText;
 	saveloadlayout_t layout;
 };
 
@@ -93,7 +94,7 @@ int SaveLoadBoxPixelWidth(int slotWidth)
 	return slotWidth * M_SmallFontLineHeight();
 }
 
-saveloadlayout_t SaveLoadLayout(const patch_t* titlePatch, const char* title, int slotWidth)
+saveloadlayout_t SaveLoadLayout(const patch_t* titlePatch, const std::string& title, int slotWidth)
 {
 	saveloadlayout_t layout;
 	layout.titleY = TitleY;
@@ -103,10 +104,10 @@ saveloadlayout_t SaveLoadLayout(const patch_t* titlePatch, const char* title, in
 		layout.titleX = ScreenCenterX - titlePatch->width() / 2;
 		layout.titleHeight = titlePatch->height();
 	}
-	else if (title != nullptr && title[0] != '\0')
+	else if (!title.empty())
 	{
 		const OFont* bigFont = OFonts.big();
-		layout.titleX = ScreenCenterX - V_StringWidth(bigFont, title) / 2;
+		layout.titleX = ScreenCenterX - V_StringWidth(bigFont, title.c_str()) / 2;
 		layout.titleHeight = M_BigFontLineHeight();
 	}
 
@@ -123,7 +124,10 @@ saveloadscreenstate_t BuildSaveLoadScreenState(saveloadmode mode)
 	const char* titleKey = saveMode ? "MNU_SAVEGAME" : "MNU_LOADGAME";
 
 	state.titlePatch = W_CheckNumForName(patchName) >= 0 ? W_CachePatch(patchName) : nullptr;
-	state.titleText = state.titlePatch == nullptr ? M_LocalizedMenuString(titleKey) : nullptr;
+	if (state.titlePatch == nullptr)
+	{
+		state.titleText = M_LocalizedMenuString(titleKey);
+	}
 	state.layout = SaveLoadLayout(state.titlePatch, state.titleText, SaveLoadSlotWidth);
 	return state;
 }
@@ -214,10 +218,10 @@ void M_LoadSaveDrawer(int currentItem)
 	{
 		screen->DrawPatchClean(screenState.titlePatch, layout.titleX, layout.titleY);
 	}
-	else if (screenState.titleText != nullptr && screenState.titleText[0] != '\0')
+	else if (!screenState.titleText.empty())
 	{
-		screen->DrawTextCleanMove(
-		    bigFont, CR_GRAY, layout.titleX, layout.titleY, screenState.titleText);
+		screen->DrawTextCleanMove(bigFont, M_MenuTextColor("title"), layout.titleX,
+		                          layout.titleY, screenState.titleText.c_str());
 	}
 
 	int listY = layout.listY;
@@ -230,7 +234,8 @@ void M_LoadSaveDrawer(int currentItem)
 	if (editingSaveName)
 	{
 		const int stringWidth = V_StringWidth(smallFont, saveStrings[editingSlot]);
-		screen->DrawTextCleanMove(smallFont, CR_RED, layout.listX + stringWidth,
+		screen->DrawTextCleanMove(smallFont, M_MenuTextColor("item"),
+		                          layout.listX + stringWidth,
 		                          layout.listY + M_BigFontLineHeight() * editingSlot, "_");
 	}
 }

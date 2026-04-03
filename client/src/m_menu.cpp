@@ -183,6 +183,11 @@ namespace
 	bool M_OpenMenuTargetImpl(const std::string& target);
 	bool M_OpenMenuEntrypointImpl(const std::string& name);
 
+	EColorRange MessageTextColor()
+	{
+		return gameinfo.enginetype == ENGINE_HERETIC ? CR_UNTRANSLATED : CR_RED;
+	}
+
 	bool GeneratedMenuIndicatorPosition(int& x, int& y)
 	{
 		if (CurrentGeneratedMenu == nullptr || !drawIndicator)
@@ -466,7 +471,9 @@ namespace
 					x += menu->header.x;
 				}
 
-				screen->DrawTextCleanMove(bigFont, CR_GRAY, x, menu->header.y, headerText);
+				screen->DrawTextCleanMove(bigFont,
+				                          M_MenuTextColor("title", generatedMenu.menuId),
+				                          x, menu->header.y, headerText);
 			}
 		}
 
@@ -1151,10 +1158,14 @@ void M_DrawGeneratedMenu()
 				const char* value = GeneratedDiscreteValueName(item);
 				const int smallY = y + (M_BigFontLineHeight() / 2 - M_SmallFontLineHeight() / 2) + 5;
 
-				screen->DrawTextCleanMove(smallFont, CR_RED, x, smallY, base);
+				screen->DrawTextCleanMove(
+				    smallFont,
+				    M_MenuTextColor("item", CurrentGeneratedMenu->menuId, &item.color),
+				    x, smallY, base);
 				if (value[0])
 				{
-					screen->DrawTextCleanMove(smallFont, CR_GREY,
+					screen->DrawTextCleanMove(smallFont,
+					                          M_MenuTextColor("value", CurrentGeneratedMenu->menuId, &item.color),
 					                          x + V_StringWidth(smallFont, base) +
 					                              M_SmallFontLineHeight(),
 					                          smallY, value);
@@ -1163,7 +1174,10 @@ void M_DrawGeneratedMenu()
 			else
 			{
 				const std::string text = GeneratedMenuItemText(item);
-				screen->DrawTextCleanMove(bigFont, CR_RED, x, y, text.c_str());
+				screen->DrawTextCleanMove(
+				    bigFont,
+				    M_MenuTextColor("item", CurrentGeneratedMenu->menuId, &item.color),
+				    x, y, text.c_str());
 			}
 		}
 
@@ -1611,7 +1625,9 @@ void M_Drawer()
 
 		for (int i = 0; lines[i].width != -1; i++)
 		{
-			screen->DrawTextCleanMove(smallFont, CR_RED, 160 - lines[i].width/2, y, lines[i].string);
+			screen->DrawTextCleanMove(smallFont, MessageTextColor(),
+			                          160 - lines[i].width / 2, y,
+			                          lines[i].string);
 			y += smallFont->lineHeight();
 		}
 
