@@ -173,6 +173,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	SetLabel(Version);
 
 	wxLogWarning("MYOur home directory is: %s", wxGetHomeDir());
+wxLogWarning("MYOur home directory is: %s", wxFileConfig::GetLocalFileName("odalaunch"));
 
 	// wxMAC: There is no file menu on OSX platforms
 	OdaMacRemoveFileMenu(this);
