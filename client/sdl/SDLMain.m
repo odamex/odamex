@@ -53,6 +53,50 @@ static char  **gArgv;
 static bool   gFinderLaunch;
 static bool   gCalledAppMainline = false;
 
+/* Append an argument to the SDL-style argv list. */
+static bool AppendArg(const char *arg)
+{
+    size_t arglen;
+    char *copy;
+    char **newargv;
+
+    if (arg == NULL)
+        return false;
+
+    arglen = SDL_strlen(arg) + 1;
+    copy = (char *) SDL_malloc(arglen);
+    if (copy == NULL)
+        return false;
+
+    newargv = (char **) realloc(gArgv, sizeof (char *) * (gArgc + 2));
+    if (newargv == NULL)
+    {
+        SDL_free(copy);
+        return false;
+    }
+    gArgv = newargv;
+
+    SDL_strlcpy(copy, arg, arglen);
+    gArgv[gArgc++] = copy;
+    gArgv[gArgc] = NULL;
+    return true;
+}
+
+/* Forward an odamex:// URL to argv for platform-agnostic parsing. */
+static bool AppendUrlArg(NSURL *url)
+{
+    const char *url_cstr;
+
+    if (url == nil)
+        return false;
+
+    url_cstr = [[url absoluteString] UTF8String];
+    if (url_cstr == NULL)
+        return false;
+
+    return AppendArg(url_cstr);
+}
+
 static NSString *getApplicationName(void)
 {
     NSDictionary *dict;
@@ -265,34 +309,31 @@ static void CustomApplicationMain (int argc, char **argv)
 - (bool)application:(NSApplication *)theApplication openFile:(NSString *)filename
 {
     const char *temparg;
-    size_t arglen;
-    char *arg;
-    char **newargv;
-
-    if (!gFinderLaunch)  /* MacOS is passing command line args. */
-        return false;
 
     if (gCalledAppMainline)  /* app has started, ignore this document. */
         return false;
 
     temparg = [filename UTF8String];
-    arglen = SDL_strlen(temparg) + 1;
-    arg = (char *) SDL_malloc(arglen);
-    if (arg == NULL)
+    return AppendArg(temparg);
+}
+
+/* Called by LaunchServices for odamex:// URLs. */
+- (void)application:(NSApplication *)theApplication openURLs:(NSArray<NSURL *> *)urls
+{
+    if (gCalledAppMainline)
+        return;
+
+    for (NSURL *url in urls)
+        AppendUrlArg(url);
+}
+
+/* Backward-compatible URL handler for older macOS versions. */
+- (bool)application:(NSApplication *)theApplication openURL:(NSURL *)url
+{
+    if (gCalledAppMainline)
         return false;
 
-    newargv = (char **) realloc(gArgv, sizeof (char *) * (gArgc + 2));
-    if (newargv == NULL)
-    {
-        SDL_free(arg);
-        return false;
-    }
-    gArgv = newargv;
-
-    SDL_strlcpy(arg, temparg, arglen);
-    gArgv[gArgc++] = arg;
-    gArgv[gArgc] = NULL;
-    return true;
+    return AppendUrlArg(url);
 }
 
 
@@ -393,4 +434,3 @@ int main (int argc, char **argv)
 #endif
     return 0;
 }
-

@@ -259,7 +259,7 @@ jobs:
     - name: Run build
       run: cmake --build build
     - name: Install bundle
-      run: cmake --install build
+      run: cmake --install build --prefix "${PWD}/install"
     - name: Bundle shared libraries
       shell: bash
       run: |

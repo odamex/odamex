@@ -21,6 +21,9 @@ add_definitions(-DCLIENT_APP)
 set(CLIENT_DIR sdl src)
 file(GLOB CLIENT_SOURCES src/*.cpp src/*.h)
 file(GLOB CLIENT_SDL_SOURCES sdl/*.cpp sdl/*.h)
+if(APPLE)
+  list(APPEND CLIENT_SDL_SOURCES sdl/SDLMain.m)
+endif()
 if(WIN32)
   configure_file(sdl/client.rc.in "${CMAKE_CURRENT_BINARY_DIR}/client.rc" @ONLY)
   list(APPEND CLIENT_SDL_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/client.rc")
@@ -124,8 +127,12 @@ if(APPLE)
   find_library(CARBON_LIBRARY Carbon)
   find_library(AUDIOTBOX_LIBRARY AudioToolbox)
   find_library(AUDIOUNIT_LIBRARY AudioUnit)
+  find_library(SCREENCAPTUREKIT_LIBRARY ScreenCaptureKit)
   set(APPLE_FRAMEWORKS ${APPKIT_LIBRARY} ${CARBON_LIBRARY} ${AUDIOTBOX_LIBRARY}
     ${AUDIOUNIT_LIBRARY})
+  if(SCREENCAPTUREKIT_LIBRARY)
+    list(APPEND APPLE_FRAMEWORKS ${SCREENCAPTUREKIT_LIBRARY})
+  endif()
 endif()
 
 # Client target
@@ -194,13 +201,13 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   target_link_libraries(odamex odamex-common odaproto tinylibs)
   if(TARGET SDL::SDL)
     target_link_libraries(odamex SDL::SDL)
-    if(TARGET SDL::SDLmain)
+    if(TARGET SDL::SDLmain AND NOT APPLE)
       target_link_libraries(odamex SDL::SDLmain)
     endif()
     target_link_libraries(odamex SDL::mixer)
   else()
     target_link_libraries(odamex SDL2::SDL2)
-    if(TARGET SDL2::SDL2main)
+    if(TARGET SDL2::SDL2main AND NOT APPLE)
       target_link_libraries(odamex SDL2::SDL2main)
     endif()
     target_link_libraries(odamex SDL2::mixer)
@@ -258,6 +265,53 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   set(MACOSX_BUNDLE_GUI_IDENTIFIER net.odamex.odamex)
 
   if(APPLE)
+    set(_odamex_info_plist "${CMAKE_CURRENT_BINARY_DIR}/odamex-Info.plist")
+    file(WRITE "${_odamex_info_plist}" "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+      "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n"
+      "<plist version=\"1.0\">\n"
+      "<dict>\n"
+      "\t<key>CFBundleDevelopmentRegion</key>\n"
+      "\t<string>English</string>\n"
+      "\t<key>CFBundleExecutable</key>\n"
+      "\t<string>odamex</string>\n"
+      "\t<key>CFBundleGetInfoString</key>\n"
+      "\t<string>${MACOSX_BUNDLE_INFO_STRING}</string>\n"
+      "\t<key>CFBundleIconFile</key>\n"
+      "\t<string>${MACOSX_BUNDLE_ICON_FILE}</string>\n"
+      "\t<key>CFBundleIdentifier</key>\n"
+      "\t<string>${MACOSX_BUNDLE_GUI_IDENTIFIER}</string>\n"
+      "\t<key>CFBundleInfoDictionaryVersion</key>\n"
+      "\t<string>6.0</string>\n"
+      "\t<key>CFBundleLongVersionString</key>\n"
+      "\t<string>${MACOSX_BUNDLE_LONG_VERSION_STRING}</string>\n"
+      "\t<key>CFBundleName</key>\n"
+      "\t<string>${MACOSX_BUNDLE_BUNDLE_NAME}</string>\n"
+      "\t<key>CFBundlePackageType</key>\n"
+      "\t<string>APPL</string>\n"
+      "\t<key>CFBundleShortVersionString</key>\n"
+      "\t<string>${MACOSX_BUNDLE_SHORT_VERSION_STRING}</string>\n"
+      "\t<key>CFBundleSignature</key>\n"
+      "\t<string>????</string>\n"
+      "\t<key>CFBundleVersion</key>\n"
+      "\t<string>${MACOSX_BUNDLE_BUNDLE_VERSION}</string>\n"
+      "\t<key>NSHumanReadableCopyright</key>\n"
+      "\t<string>Copyright © ${PROJECT_COPYRIGHT} The Odamex Team</string>\n"
+      "\t<key>CFBundleURLTypes</key>\n"
+      "\t<array>\n"
+      "\t\t<dict>\n"
+      "\t\t\t<key>CFBundleURLName</key>\n"
+      "\t\t\t<string>Odamex</string>\n"
+      "\t\t\t<key>CFBundleURLSchemes</key>\n"
+      "\t\t\t<array>\n"
+      "\t\t\t\t<string>odamex</string>\n"
+      "\t\t\t</array>\n"
+      "\t\t</dict>\n"
+      "\t</array>\n"
+      "</dict>\n"
+      "</plist>\n"
+    )
+    set_target_properties(odamex PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${_odamex_info_plist}")
+
     add_custom_command(
       TARGET odamex
       POST_BUILD

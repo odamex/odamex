@@ -136,17 +136,21 @@ jobs:
       env:
         name: "${{ github.ref_name }}"
       run: |
-        echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
+        safe_name="$(printf '%s' "${name}" | sed -E 's#[^A-Za-z0-9._-]+#-#g; s#^[.-]+##; s#[-.]+$##; s#-+#-#g')"
+        if [ -z "${safe_name}" ]; then
+          safe_name="branch"
+        fi
+        echo "MODIFIED_BRANCH_NAME=${safe_name}" >> $GITHUB_ENV
     - name: Set flatpak repo
       run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     - name: Run build
       run: |
         flatpak-builder --force-clean --user --install-deps-from=flathub \
         --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
-        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
+        --default-branch="${{ env.MODIFIED_BRANCH_NAME }}" -v
     - name: Pack flatpak
       run: |
-        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
+        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex "${{ env.MODIFIED_BRANCH_NAME }}" \
         --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
     - name: Upload artifact
       uses: actions/upload-artifact@v7
@@ -174,17 +178,21 @@ jobs:
       env:
         name: "${{ github.ref_name }}"
       run: |
-        echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
+        safe_name="$(printf '%s' "${name}" | sed -E 's#[^A-Za-z0-9._-]+#-#g; s#^[.-]+##; s#[-.]+$##; s#-+#-#g')"
+        if [ -z "${safe_name}" ]; then
+          safe_name="branch"
+        fi
+        echo "MODIFIED_BRANCH_NAME=${safe_name}" >> $GITHUB_ENV
     - name: Set flatpak repo
       run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     - name: Run build
       run: |
         flatpak-builder --force-clean --user --install-deps-from=flathub \
         --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
-        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
+        --default-branch="${{ env.MODIFIED_BRANCH_NAME }}" -v
     - name: Pack flatpak
       run: |
-        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} \
+        flatpak build-bundle repo odamex.flatpak net.odamex.Odamex "${{ env.MODIFIED_BRANCH_NAME }}" \
         --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
     - name: Upload artifact
       uses: actions/upload-artifact@v7
