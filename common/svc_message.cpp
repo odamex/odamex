@@ -130,6 +130,18 @@ odaproto::svc::PlayerInfo SVC_PlayerInfo(const player_t& player)
 	return msg;
 }
 
+odaproto::svc::PlayerInventory SVC_PlayerInventory(const uint32_t clientTic, const player_t& player)
+{
+	odaproto::svc::PlayerInventory msg;
+
+	msg.set_playerid    (player.id);
+	msg.set_client_tic  (clientTic);
+
+	FillInventory(*msg.mutable_inventory(), player);
+
+	return msg;
+}
+
 /**
  * @brief Change the location of a player.
  */

@@ -4248,6 +4248,11 @@ void SV_HandlePlayerInput(odaproto::clc::PlayerInput& msg, player_t &player)
 	}
 }
 
+void SV_SendPlayerInventory(uint32_t clientTic, player_t& player)
+{
+    MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerInventory(clientTic, player));
+}
+
 //
 // SV_ParseCommands
 //
@@ -4265,6 +4270,12 @@ parseError_e SV_ParseCommandSVC(const byte cmd, player_t& player)
         {
             case clc_playerinput:
                 SV_HandlePlayerInput(*static_cast<odaproto::clc::PlayerInput*>(msgPtrRaw), player);
+                break;
+            case clc_playerinventorycheck:
+                // We MUST send out the inventory response immediately - before we process any
+                // player inputs - because we're being asked about the result of the player's
+                // immediately-preceding actions.
+                SV_SendPlayerInventory(static_cast<odaproto::clc::PlayerInventoryCheck*>(msgPtrRaw)->tic(), player);
                 break;
             default:
                 // This case happens when a message was received, parsed, but not handled.

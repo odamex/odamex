@@ -2269,6 +2269,12 @@ void CL_SendCmd(void)
     // part of the request.  That way, the response aligns exactly and we close any potential
     // window for a tic or two where the inventory can locally change but not get corrected if
     // it's wrong.
+    //
+    // Furthermore, the latency is a good thing because from the client messaging perspective, it's
+    // as though we're saying:
+    // "hey server, here's what I want you to do RIGHT NOW with PlayerInput."
+    // "Also, tell me the result of that command from the last tic, now that you're done with it."
+
 	if (player.inventoryCheckIsRequestedForTic >= 0)
 	{
 		MSG_WriteSVC(messenger.ReliableBuf(), CLC_PlayerInventoryCheck(player.inventoryCheckIsRequestedForTic));
