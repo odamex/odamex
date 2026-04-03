@@ -183,7 +183,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	m_StatusBar = GetStatusBar();
 
 	#if defined(__linux__) && wxCHECK_VERSION(3, 3, 0)
-	const auto res = wxFileConfig::MigrateLocalFile(".odalaunch", wxCONFIG_USE_XDG);
+	const auto res = wxFileConfig::MigrateLocalFile("odalaunch", wxCONFIG_USE_XDG);
 	if(!res.oldPath.empty())
 	{
 		if(res.error.empty())
@@ -196,6 +196,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 			wxLogWarning("Migrating old config failed: %s.", res.error);
 		}
 	}
+	wxLogWarning("Migrating old config failed: oldpath was empty.");
 	wxStandardPaths::Get().SetFileLayout(wxStandardPaths::FileLayout_XDG);
 	#endif
 
