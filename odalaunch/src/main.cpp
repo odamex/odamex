@@ -47,7 +47,7 @@ bool Application::OnInit()
 		SetClassName("net.odamex.Odamex.Launcher");
 
 		#if wxCHECK_VERSION(3, 3, 0)
-			const auto res = wxFileConfig::MigrateLocalFile("odalaunch", wxCONFIG_USE_XDG);
+			const auto res = wxFileConfig::MigrateLocalFile(".odalaunch", wxCONFIG_USE_XDG);
 			if(!res.oldPath.empty())
 			{
 				if(res.error.empty())
