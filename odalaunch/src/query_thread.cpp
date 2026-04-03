@@ -75,7 +75,7 @@ void QueryThread::GracefulExit()
 	Post(QueryThread::Exit);
 
 	// Wait until the thread has closed completely
-	wxThread::Wait(wxTHREAD_WAIT_YIELD);
+	wxThread::Wait();
 }
 
 void QueryThread::Signal(odalpapi::Server* QueryServer, const std::string& Address, const wxUint16 Port, wxInt32 ServerIndex, wxUint32 ServerTimeout, wxInt8 Retries)
