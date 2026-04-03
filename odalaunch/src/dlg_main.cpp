@@ -61,6 +61,7 @@
 #include <wx/cmdline.h>
 #include <wx/sound.h>
 #include <wx/msgout.h>
+#include <wx/stdpaths.h>
 
 #include <wx/protocol/http.h>
 #include <wx/stream.h>

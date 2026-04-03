@@ -35,7 +35,6 @@
 #include <wx/xrc/xmlres.h>
 #include <wx/image.h>
 #include <wx/sysopt.h>
-#include <wx/stdpaths.h>
 
 using namespace odalpapi;
 
