@@ -189,7 +189,7 @@ wxLogWarning("your config file is: %s", wxFileConfig::GetLocalFileName("odalaunc
 wxLogWarning("your config file is: %s", wxFileConfig::GetLocalFileName("odalaunch", wxCONFIG_USE_HOME));
 wxLogWarning("your new config file is: %s", wxFileConfig::GetLocalFileName("odalaunch", wxCONFIG_USE_XDG));
 
-	const auto res = wxFileConfig::MigrateLocalFile("odalaunch", wxCONFIG_USE_XDG, wxCONFIG_USE_HOME);
+	const auto res = wxFileConfig::MigrateLocalFile("odalaunch", wxCONFIG_USE_XDG, wxCONFIG_USE_LOCAL_FILE);
 
 wxLogWarning("old: %s", res.oldPath);
 wxLogWarning("new: %s", res.newPath);
