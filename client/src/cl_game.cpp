@@ -1196,6 +1196,14 @@ void G_Ticker (void)
 			AM_Ticker ();
 
 			consoleplayer().inventoryCheckRequestsAreEnabled = false;
+
+			if (not netdemo.isPaused())
+			{
+				if (not rollerState.Record(gametic, consoleplayer()))
+				{
+					PrintFmt(PRINT_WARNING, "Failed to record player rollerstate on tic {}\n", gametic);
+				}
+			}
 		}
 		break;
 

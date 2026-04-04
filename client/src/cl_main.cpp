@@ -780,14 +780,6 @@ void CL_StepTics(unsigned int count)
 
 		G_Ticker ();
 
-		if (not netdemo.isPaused())
-		{
-			if (not rollerState.Record(gametic, consoleplayer()))
-			{
-				PrintFmt(PRINT_WARNING, "Failed to record player rollerstate on tic {}\n", gametic);
-			}
-		}
-
 		gametic++;
 		if (netdemo.isPlaying())
 			netdemo.ticker();

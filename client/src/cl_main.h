@@ -33,6 +33,7 @@
 #include "client.pb.h"
 
 #include "OdaMessenger.h"
+#include "PlayerStateRoller.h"
 
 extern netadr_t  serveraddr;
 extern bool      connected;
@@ -41,8 +42,9 @@ extern int       connecttimeout;
 extern bool      noservermsgs;
 extern int       last_received;
 
-extern NetDemo      netdemo;
-extern OdaMessenger messenger;
+extern NetDemo           netdemo;
+extern OdaMessenger      messenger;
+extern PlayerStateRoller rollerState;
 
 #define MAXSAVETICS 70
 extern odaproto::clc::PlayerInput localcmds[MAXSAVETICS];
