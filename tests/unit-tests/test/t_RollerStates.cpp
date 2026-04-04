@@ -30,7 +30,6 @@ struct LatencyFixture
         currentTic            (0),
         roundTripTimeInTics   (static_cast<int>(std::ceil(static_cast<double>(pingTimeInMsec) / TIME_STEP_MSEC)) + 1),  // +1 because of the server frame.
         messagesInFlight      (roundTripTimeInTics * 2),     // double bucket count for safety margin.
-        rollerState           (currentTic),
         correctionWasRequired (false)
     {
     }

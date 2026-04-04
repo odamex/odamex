@@ -128,7 +128,7 @@ extern NetGraph netgraph;
 OdaMessenger messenger;
 static std::unique_ptr<CanarySocketClient> s_canary;
 
-PlayerStateRoller rollerState {0};
+PlayerStateRoller rollerState{};
 
 // denis - unique session key provided by the server
 std::string digest;
@@ -573,7 +573,7 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 	messenger = OdaMessenger();
 	P_ClearAllNetIds();
 	s_canary.reset();
-	rollerState = PlayerStateRoller{gametic};
+	rollerState = PlayerStateRoller{};
 	gameaction = ga_fullconsole;
 }
 
@@ -1951,7 +1951,7 @@ bool CL_Connect()
 
 	messenger.SendAll(gametic, ::serveraddr);
 
-	rollerState = PlayerStateRoller {gametic};
+	rollerState = PlayerStateRoller{};
 
 	if (gameaction == ga_fullconsole) // Host_EndGame was called
 		return false;

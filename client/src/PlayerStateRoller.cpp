@@ -6,15 +6,21 @@
 #include "odamex.h"
 
 
-PlayerStateRoller::PlayerStateRoller(int currentTic) :
-    m_history       (TICRATE),           // 1 second of history.
-    m_mostRecentTic (currentTic - 1),   // Setup history to start recording at the given tic.
-    m_oldestTic     (currentTic)
+PlayerStateRoller::PlayerStateRoller() :
+    m_history       (TICRATE),      // 1 second of history.
+    m_mostRecentTic (-1),           // Setup history to start recording at the given tic.
+    m_oldestTic     (-1)
 {
 }
 
 bool PlayerStateRoller::Record(int currentTic, const player_t& player)
 {
+    if (m_mostRecentTic == -1)
+    {
+        m_mostRecentTic = currentTic - 1;
+        m_oldestTic     = currentTic;
+    }
+
     if (currentTic == m_mostRecentTic + 1)
     {
         m_mostRecentTic = currentTic;
