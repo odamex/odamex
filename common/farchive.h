@@ -24,6 +24,9 @@
 
 #pragma once
 
+#include <array>
+#include <cassert>
+
 #include "dobject.h"
 #include "doomtype.h"
 
@@ -161,14 +164,25 @@ public:
 	FArchive& operator<< (const char* str);
 	FArchive& operator<< (DObject* obj);
 
-	inline	FArchive& operator<< (char c) { return operator<< (static_cast<uint8_t>(c)); }
-	inline	FArchive& operator<< (int8_t c) { return operator<< (static_cast<uint8_t>(c)); }
-	inline	FArchive& operator<< (int16_t s) { return operator<< (static_cast<uint16_t>(s)); }
-	inline	FArchive& operator<< (int32_t i) { return operator<< (static_cast<uint32_t>(i)); }
-	inline	FArchive& operator<< (int64_t i) { return operator<< (static_cast<uint64_t>(i)); }
-	inline	FArchive& operator<< (const unsigned char* str) { return operator<< (reinterpret_cast<const char*>(str)); }
-	inline	FArchive& operator<< (const signed char* str) { return operator<< (reinterpret_cast<const char*>(str)); }
-	inline	FArchive& operator<< (bool b) { return operator<< (static_cast<uint8_t>(b)); }
+	FArchive& operator<< (char c) { return operator<< (static_cast<uint8_t>(c)); }
+	FArchive& operator<< (int8_t c) { return operator<< (static_cast<uint8_t>(c)); }
+	FArchive& operator<< (int16_t s) { return operator<< (static_cast<uint16_t>(s)); }
+	FArchive& operator<< (int32_t i) { return operator<< (static_cast<uint32_t>(i)); }
+	FArchive& operator<< (int64_t i) { return operator<< (static_cast<uint64_t>(i)); }
+	FArchive& operator<< (const unsigned char* str) { return operator<< (reinterpret_cast<const char*>(str)); }
+	FArchive& operator<< (const signed char* str) { return operator<< (reinterpret_cast<const char*>(str)); }
+	FArchive& operator<< (bool b) { return operator<< (static_cast<uint8_t>(b)); }
+
+	template <typename ElementType, size_t N>
+	FArchive& operator<< (const std::array<ElementType, N>& i_array)
+	{
+		*this << i_array.size();
+		for (const auto& element : i_array)
+		{
+			*this << element;
+		}
+		return *this;
+	}
 
 	FArchive& operator>> (uint8_t& c);
 	FArchive& operator>> (uint16_t& s);
@@ -180,15 +194,30 @@ public:
 	FArchive& operator>> (std::string& s);
 	FArchive& ReadObject(DObject *&obj, TypeInfo* wanttype);
 
-	inline	FArchive& operator>> (char& c) { uint8_t in; operator>> (in); c = static_cast<char>(in); return *this; }
-	inline	FArchive& operator>> (int8_t& c) { uint8_t in; operator>> (in); c = static_cast<int8_t>(in); return *this; }
-	inline	FArchive& operator>> (int16_t& s) { uint16_t in; operator>> (in); s = static_cast<int16_t>(in); return *this; }
-	inline	FArchive& operator>> (int32_t& i) { uint32_t in; operator>> (in); i = static_cast<int32_t>(in); return *this; }
-	inline	FArchive& operator>> (int64_t& i) { uint64_t in; operator>> (in); i = static_cast<int64_t>(in); return *this; }
-	//inline	FArchive& operator>> (unsigned char *&str) { return operator>> ((char *&)str); }
-	//inline	FArchive& operator>> (signed char *&str) { return operator>> ((char *&)str); }
-	inline	FArchive& operator>> (bool& b) { uint8_t in; operator>> (in); b = (in != 0); return *this; }
-	inline  FArchive& operator>> (DObject* &object) { return ReadObject (object, RUNTIME_CLASS(DObject)); }
+	FArchive& operator>> (char& c) { uint8_t in; operator>> (in); c = static_cast<char>(in); return *this; }
+	FArchive& operator>> (int8_t& c) { uint8_t in; operator>> (in); c = static_cast<int8_t>(in); return *this; }
+	FArchive& operator>> (int16_t& s) { uint16_t in; operator>> (in); s = static_cast<int16_t>(in); return *this; }
+	FArchive& operator>> (int32_t& i) { uint32_t in; operator>> (in); i = static_cast<int32_t>(in); return *this; }
+	FArchive& operator>> (int64_t& i) { uint64_t in; operator>> (in); i = static_cast<int64_t>(in); return *this; }
+	//FArchive& operator>> (unsigned char *&str) { return operator>> ((char *&)str); }
+	//FArchive& operator>> (signed char *&str) { return operator>> ((char *&)str); }
+	FArchive& operator>> (bool& b) { uint8_t in; operator>> (in); b = (in != 0); return *this; }
+	FArchive& operator>> (DObject* &object) { return ReadObject (object, RUNTIME_CLASS(DObject)); }
+
+	template <typename ElementType, size_t N>
+	FArchive& operator>> (std::array<ElementType, N>& o_array)
+	{
+		size_t arraySize{0};
+
+		*this >> arraySize;
+		assert(arraySize == o_array.size());
+
+		for (auto& element : o_array)
+		{
+			*this >> element;
+		}
+		return *this;
+	}
 
 protected:
 	enum { EObjectHashSize = 137 };
