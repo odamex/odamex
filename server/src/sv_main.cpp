@@ -3600,6 +3600,8 @@ void SV_ProcessPlayerCmd(player_t &player)
 	for (int i = 0; i < num_cmds && !player.cmdqueue.empty(); i++)
 	{
 		odaproto::clc::PlayerInput& netcmd = player.cmdqueue.front();
+		player.cmd = ticcmd_t();
+		player.tic = netcmd.tic();
 
 		// Set the latency amount for Unlagging
 		Unlag::getInstance().setRoundtripDelay(player.id, netcmd.world_index() & 0xFF);
