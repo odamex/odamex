@@ -123,9 +123,9 @@ void P_SetButtonTexture(line_t* line, short texture);
 /**
  * @brief Unpack a bitfield into an array of booleans.
  */
-static void UnpackBoolArray(std::span<bool> bools, size_t count, uint32_t in)
+static void UnpackBoolArray(std::span<bool> bools, uint32_t in)
 {
-	for (size_t i = 0; i < count; i++)
+	for (size_t i = 0; i < bools.size(); i++)
 	{
 		bools[i] = in & BIT(i);
 	}
@@ -214,7 +214,7 @@ static void CL_Disconnect(const odaproto::svc::Disconnect* msg)
 static void DirectUnpackInventory(const odaproto::InventoryState& inventory, player_t& player)
 {
 	const uint32_t weaponowned = inventory.weaponowned();
-	UnpackBoolArray(player.weaponowned, NUMWEAPONS, weaponowned);
+	UnpackBoolArray(player.weaponowned, weaponowned);
 
 	for (int i = 0; i < NUMAMMO; i++)
 	{
@@ -258,7 +258,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
     DirectUnpackInventory(msg->player().inventory(), p);
 
 	uint32_t cards = msg->player().cards();
-	UnpackBoolArray(p.cards, NUMCARDS, cards);
+	UnpackBoolArray(p.cards, cards);
 
 	p.backpack = msg->player().backpack();
 
@@ -1241,7 +1241,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	else if (sv_sharekeys)
 	{
 		const uint32_t cards = msg->cards();
-		UnpackBoolArray(p.cards, NUMCARDS, cards);
+		UnpackBoolArray(p.cards, cards);
 	}
 
 	if (p.id == consoleplayer_id)
@@ -3023,7 +3023,7 @@ static void CL_PlayerInventory(const odaproto::svc::PlayerInventory* msg)
               inventoryResponse.maxammo.begin());
 
 	const uint32_t weaponowned = msg->inventory().weaponowned();
-	UnpackBoolArray(inventoryResponse.weaponowned, NUMWEAPONS, weaponowned);
+	UnpackBoolArray(inventoryResponse.weaponowned, weaponowned);
 
     inventoryResponse.readyweapon   = static_cast<weapontype_t>(msg->inventory().readyweapon());
     inventoryResponse.pendingweapon = static_cast<weapontype_t>(msg->inventory().pendingweapon());
