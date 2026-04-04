@@ -12,6 +12,15 @@ void CLC_PackPlayerInputMessageFromPlayer(odaproto::clc::PlayerInput& msg, const
 		msg.set_tic(clientTic);
 		msg.set_world_index(clientWorldIndex);
 
+		// Special knowledge: On the client side, we save+send the command before we process it locally.
+		//                    Once processed, we locally tic forward.  During that time, we may detect
+		//                    conditions for which we set the Inventory Check Request, which means that
+		//                    we want to send the request on the following tic.
+		if (player.inventoryCheckIsRequestedForTic == clientTic - 1 and clientTic > 0)
+		{
+			msg.set_inventory_check_tic(player.inventoryCheckIsRequestedForTic);
+		}
+
 		if (player.cmd.buttons & BT_ATTACK)
 		{
 			msg.set_button_attack(true);

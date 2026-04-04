@@ -2279,11 +2279,6 @@ void CL_SendCmd(void)
 	// when sending svc_updatelocalplayer so the client knows which ticcmds
 	// need to be used for client's positional prediction and item data reconciliation.
 	currentNetcmd.set_tic(gametic);
-	if (player.inventoryCheckIsRequestedForTic >= 0)
-	{
-		currentNetcmd.set_inventory_check_tic(player.inventoryCheckIsRequestedForTic);
-		player.inventoryCheckIsRequestedForTic = -1;
-	}
 	MSG_WriteSVC(messenger.ReliableBuf(), currentNetcmd);
 
 	// NOTE: The decision was made to send the inventory check immediately after the PlayerInput
