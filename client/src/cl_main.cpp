@@ -737,10 +737,10 @@ void NetUpdate (void)
 
 void CL_ResolveInventory(int oldTic, const PlayerItemDataType& inventoryResponse)
 {
-    if (rollerState.Resolve(oldTic, inventoryResponse, consoleplayer()))
-    {
-        PrintFmt("Reconciled conflicting inventory that diverged on tic {}\n", oldTic);
-    }
+	if (rollerState.Resolve(oldTic, inventoryResponse, consoleplayer()))
+	{
+		PrintFmt("Reconciled conflicting inventory that diverged on tic {}\n", oldTic);
+	}
 }
 
 extern bool advancedemo;
@@ -780,13 +780,13 @@ void CL_StepTics(unsigned int count)
 
 		G_Ticker ();
 
-        if (not netdemo.isPaused())
-        {
-		if (not rollerState.Record(gametic, consoleplayer()))
+		if (not netdemo.isPaused())
 		{
-			PrintFmt(PRINT_WARNING, "Failed to record player rollerstate on tic {}\n", gametic);
+			if (not rollerState.Record(gametic, consoleplayer()))
+			{
+				PrintFmt(PRINT_WARNING, "Failed to record player rollerstate on tic {}\n", gametic);
+			}
 		}
-        }
 
 		gametic++;
 		if (netdemo.isPlaying())
@@ -2279,6 +2279,11 @@ void CL_SendCmd(void)
 	// when sending svc_updatelocalplayer so the client knows which ticcmds
 	// need to be used for client's positional prediction and item data reconciliation.
 	currentNetcmd.set_tic(gametic);
+	if (player.inventoryCheckIsRequestedForTic >= 0)
+	{
+		currentNetcmd.set_inventory_check_tic(player.inventoryCheckIsRequestedForTic);
+		player.inventoryCheckIsRequestedForTic = -1;
+	}
 	MSG_WriteSVC(messenger.ReliableBuf(), currentNetcmd);
 
 	// NOTE: The decision was made to send the inventory check immediately after the PlayerInput
@@ -2295,11 +2300,11 @@ void CL_SendCmd(void)
     // "hey server, here's what I want you to do RIGHT NOW with PlayerInput."
     // "Also, tell me the result of that command from the last tic, now that you're done with it."
 
-	if (player.inventoryCheckIsRequestedForTic >= 0)
-	{
-		MSG_WriteSVC(messenger.ReliableBuf(), CLC_PlayerInventoryCheck(player.inventoryCheckIsRequestedForTic));
-		player.inventoryCheckIsRequestedForTic = -1;
-	}
+//	if (player.inventoryCheckIsRequestedForTic >= 0)
+//	{
+//		MSG_WriteSVC(messenger.ReliableBuf(), CLC_PlayerInventoryCheck(player.inventoryCheckIsRequestedForTic));
+//		player.inventoryCheckIsRequestedForTic = -1;
+//	}
 
 	messenger.SendAll(gametic, serveraddr);
 

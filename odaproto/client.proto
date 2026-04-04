@@ -21,6 +21,7 @@ message PlayerInput
 	optional int32      move_up             = 14;
 	optional int32      delta_yaw           = 15;
 	optional int32      delta_pitch         = 16;
+	optional uint32     inventory_check_tic = 17;
 }
 
 // clc_playerinventorycheck
