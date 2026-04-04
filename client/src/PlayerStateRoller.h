@@ -26,6 +26,40 @@ class PlayerStateRoller
         /// is returned.
         bool Resolve(int i_oldTic, const PlayerItemDataType& i_itemData, player_t& io_player);
 
+        template <typename StreamType>
+        friend StreamType& operator<<(StreamType& io_stream, const PlayerStateRoller& i_thisRef)
+        {
+            io_stream << i_thisRef.m_history.size();
+            for (const auto& [tic, historyItem] : i_thisRef.m_history)
+            {
+                io_stream << tic << historyItem;
+            }
+            io_stream << i_thisRef.m_mostRecentTic;
+            io_stream << i_thisRef.m_oldestTic;
+
+            return io_stream;
+        }
+
+        template <typename StreamType>
+        friend StreamType& operator>>(StreamType& io_stream, PlayerStateRoller& o_thisRef)
+        {
+            o_thisRef.m_history.clear();
+
+            size_t historySize {0};
+            io_stream >> historySize;
+
+            for (size_t i = 0; i < historySize; ++i)
+            {
+                int tic {0};
+                io_stream >> tic;
+                io_stream >> o_thisRef.m_history[tic];
+            }
+            io_stream >> o_thisRef.m_mostRecentTic;
+            io_stream >> o_thisRef.m_oldestTic;
+
+            return io_stream;
+        }
+
     protected:
 
         template <typename Callable>

@@ -51,6 +51,37 @@ struct PlayerItemDataType
         player.weaponowned     = weaponowned;
         //player.cards           = cards;
         //player.backpack        = backpack;
+    }
 
+    template <typename StreamType>
+    friend StreamType& operator<<(StreamType& io_stream, const PlayerItemDataType& i_thisRef)
+    {
+        io_stream
+            << i_thisRef.ammo
+            << i_thisRef.maxammo
+            << static_cast<int>(i_thisRef.readyweapon)
+            << static_cast<int>(i_thisRef.pendingweapon)
+            << i_thisRef.weaponowned;
+
+        return io_stream;
+    }
+
+    template <typename StreamType>
+    friend StreamType& operator>>(StreamType& io_stream, PlayerItemDataType& o_thisRef)
+    {
+        int temp_readyweapon    {0};
+        int temp_pendingweapon  {0};
+
+        io_stream
+            >> o_thisRef.ammo
+            >> o_thisRef.maxammo
+            >> temp_readyweapon
+            >> temp_pendingweapon
+            >> o_thisRef.weaponowned;
+
+        o_thisRef.readyweapon   = static_cast<weapontype_t>(temp_readyweapon);
+        o_thisRef.pendingweapon = static_cast<weapontype_t>(temp_pendingweapon);
+
+        return io_stream;
     }
 };
