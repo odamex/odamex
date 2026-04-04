@@ -379,7 +379,7 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
 //
 // ISDL20Window::ISDL20Window (if windowed modes are supported)
 //
-// Constructs a new application window using SDL 1.2.
+// Constructs a new application window using SDL2.
 // A ISDL20WindowSurface object is instantiated for frame rendering.
 //
 ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync) :
