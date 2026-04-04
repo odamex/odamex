@@ -85,11 +85,10 @@ void CLC_PackPlayerInputMessageFromPlayer(odaproto::clc::PlayerInput& msg, const
 
 void CLC_UnpackPlayerInputMessageToPlayer(const odaproto::clc::PlayerInput& msg, player_t& player)
 {
-	player.cmd.clear();
-	player.tic = msg.tic();
-
 	if (player.mo)
 	{
+		player.cmd.clear();
+
 		if (msg.button_attack())
 		{
 			player.cmd.buttons |= BT_ATTACK;
