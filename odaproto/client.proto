@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "common.proto";
+
 package odaproto.clc;
 
 // clc_playerinput
@@ -28,4 +30,12 @@ message PlayerInput
 message PlayerInventoryCheck
 {
 	uint32 tic = 1;
+}
+
+// clc_netdemocap
+message NetdemoCap
+{
+	bytes  player_cmd   = 1;
+	Player player       = 2;
+	Actor  actor        = 3;
 }

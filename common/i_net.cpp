@@ -1063,7 +1063,6 @@ static void InitNetMessageFormats()
 	SVC_INFO(svc_executelinespecial);
 	SVC_INFO(svc_executeacsspecial);
 	SVC_INFO(svc_thinkerupdate);
-	SVC_INFO(svc_netdemocap);
 	SVC_INFO(svc_netdemostop);
 	SVC_INFO(svc_netdemoloadsnap);
 	SVC_INFO(svc_vote_update);
@@ -1102,6 +1101,7 @@ static void InitNetMessageFormats()
 	CLC_INFO(clc_spy);
 	CLC_INFO(clc_privmsg);
 	CLC_INFO(clc_max);
+	CLC_INFO(clc_netdemocap);
 }
 
 #undef SVC_INFO

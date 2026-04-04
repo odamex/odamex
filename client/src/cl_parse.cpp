@@ -3031,7 +3031,7 @@ static void CL_PlayerInventory(const odaproto::svc::PlayerInventory* msg)
     CL_ResolveInventory(msg->client_tic(), inventoryResponse);
 }
 
-static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
+static void CL_NetdemoCap(const odaproto::clc::NetdemoCap* msg)
 {
 	player_t* clientPlayer = &consoleplayer();
 	fixed_t x, y, z;
@@ -3044,8 +3044,12 @@ static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
 	// Note clientPlayer->viewz should not be set with the value from the demo here
 	// it is an aggregate value and will be set correctly later
 
-	clientPlayer->cmd.clear();
-	clientPlayer->cmd.unserialize(msg->player_cmd());
+	odaproto::clc::PlayerInput& currentInputMessage = localcmds[gametic % MAXSAVETICS];
+	currentInputMessage.ParseFromString(msg->player_cmd());
+
+	// We do not assign the tic here - that must come from the UpdateLocalPlayer message
+	// as part of the overall prediction algorithm.
+	CLC_UnpackPlayerInputMessageToPlayer(currentInputMessage, *clientPlayer);
 
 	waterlevel = msg->actor().waterlevel();
 	x = msg->actor().pos().x();
@@ -3256,7 +3260,7 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_spreebreaker, CL_SpreeBreaker, odaproto::svc::SpreeBreaker);
 		SV_MSG(svc_noisealert, CL_NoiseAlert, odaproto::svc::NoiseAlert);
 		SV_MSG(svc_playerinventory, CL_PlayerInventory, odaproto::svc::PlayerInventory);
-		SV_MSG(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
+		SV_MSG(clc_netdemocap, CL_NetdemoCap, odaproto::clc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
 		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);
 		/* clang-format on */

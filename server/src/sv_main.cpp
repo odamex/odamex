@@ -3622,6 +3622,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 		#endif
 
 		CLC_UnpackPlayerInputMessageToPlayer(netcmd, player);
+		player.tic = netcmd.tic();      // In addition to proper Inputs, record the client-side tic for bookkeeping.
 
 		// Please note that we have a safety check in SV_CalculateNumTiccmds to ensure that
 		// if we're processing more than one command in this loop, the inventory check will

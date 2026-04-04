@@ -285,7 +285,7 @@ enum svc_t
 	                        // during this transitory phase, can very easily work with both the
 	                        // new and the old enumerals and naive handling code can be correct.
 	clc_playerinventorycheck,
-	svc_netdemocap = 100,  // netdemos - NullPoint
+	clc_netdemocap = 100,  // netdemos - NullPoint
 	svc_netdemostop = 101, // netdemos - NullPoint
 	svc_netdemoloadsnap = 102, // netdemos - NullPoint
 };
