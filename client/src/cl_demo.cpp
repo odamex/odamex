@@ -1497,6 +1497,8 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 		}
 	}
 
+	arc << rollerState;
+
 	byte check = 0x1d;
 	arc << check;          // consistancy marker
 
@@ -1625,6 +1627,8 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 			ACS_GlobalArrays[i][k] = v;
 		}
 	}
+
+	arc >> rollerState;
 
 	multiplayer = true;
 
