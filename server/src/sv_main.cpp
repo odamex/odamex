@@ -3535,6 +3535,13 @@ int SV_CalculateNumTiccmds(player_t &player)
 		// Process all queued ticcmds.
 		return maximum_queue_size;
 	}
+	// Make sure that if we have an upcoming inventory check request, we do a complete
+	// tick using the preceding command so that we can respond with an accurate
+	// inventory on the next tic.
+	if (player.cmdqueue.size() > 1 && player.cmdqueue[1].has_inventory_check_tic())
+	{
+		return 1;
+	}
 	if (player.mo->momx == 0 && player.mo->momy == 0 && player.mo->momz == 0)
 	{
 		// Player is not moving
@@ -3616,6 +3623,9 @@ void SV_ProcessPlayerCmd(player_t &player)
 
 		CLC_UnpackPlayerInputMessageToPlayer(netcmd, player);
 
+		// Please note that we have a safety check in SV_CalculateNumTiccmds to ensure that
+		// if we're processing more than one command in this loop, the inventory check will
+		// be the first one.
 		if (netcmd.has_inventory_check_tic())
 		{
 			SV_SendPlayerInventory(netcmd.inventory_check_tic(), player);
@@ -3631,7 +3641,7 @@ void SV_ProcessPlayerCmd(player_t &player)
 			player.mo->RunThink();
 		}
 
-		player.cmdqueue.pop();		// remove this tic from the queue after being processed
+		player.cmdqueue.pop_front();        // remove this tic from the queue after being processed
 	}
 }
 
@@ -4253,7 +4263,7 @@ void SV_HandlePlayerInput(odaproto::clc::PlayerInput& msg, player_t &player)
 	{
 		if (!player.spectator)
 		{
-			player.cmdqueue.push(std::move(msg));
+			player.cmdqueue.push_back(std::move(msg));
 		}
 	}
 }
