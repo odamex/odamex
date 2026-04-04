@@ -1093,7 +1093,7 @@ void M_OptDrawer (void)
 			    ((item->a.selmode != -1 && (indicatorAnimCounter < 6 || WaitingForKey)) ||
 			     WaitingForAxis))
 			{
-				const patch_t* cursor = M_MenuCursorPatch();
+				const patch_t* cursor = M_MenuCursor();
 				screen->DrawPatchCleanWithPalette(cursor, item->a.selmode * 104 + 8,
 						y + M_MenuCursorOffsetY(), palette);
 			}
@@ -1176,28 +1176,33 @@ void M_OptDrawer (void)
 				break;
 
 			case slider:
-				M_DrawSlider (CurrentMenu->indent + 8, y, item->b.leftval, item->c.rightval, item->a.cvar->value(), item->d.step);
+				menu::slider::Draw(CurrentMenu->indent + 8, y, item->b.leftval,
+				                   item->c.rightval, item->a.cvar->value(),
+				                   item->d.step);
 				break;
 
 			case redslider:
 			{
 				const colorsliderstate_t state = MenuColorSliderState(*item);
-				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255,
-				                    static_cast<float>(state.value), state.tint);
+				menu::slider::Draw(CurrentMenu->indent + 8, y, 0, 255,
+				                   static_cast<float>(state.value), 0.0f,
+				                   {.color = state.tint, .showValue = false});
 			}
 			break;
 			case greenslider:
 			{
 				const colorsliderstate_t state = MenuColorSliderState(*item);
-				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255,
-				                    static_cast<float>(state.value), state.tint);
+				menu::slider::Draw(CurrentMenu->indent + 8, y, 0, 255,
+				                   static_cast<float>(state.value), 0.0f,
+				                   {.color = state.tint, .showValue = false});
 			}
 			break;
 			case blueslider:
 			{
 				const colorsliderstate_t state = MenuColorSliderState(*item);
-				M_DrawColoredSlider(CurrentMenu->indent + 8, y, 0, 255,
-				                    static_cast<float>(state.value), state.tint);
+				menu::slider::Draw(CurrentMenu->indent + 8, y, 0, 255,
+				                   static_cast<float>(state.value), 0.0f,
+				                   {.color = state.tint, .showValue = false});
 			}
 			break;
 
@@ -1279,7 +1284,7 @@ void M_OptDrawer (void)
 
 			if (i == CurrentItem && (indicatorAnimCounter < 6 || WaitingForKey || WaitingForAxis))
 			{
-				const patch_t* cursor = M_MenuCursorPatch();
+				const patch_t* cursor = M_MenuCursor();
 				screen->DrawPatchCleanWithPalette(cursor, CurrentMenu->indent + 3,
 					                                  y + M_MenuCursorOffsetY(), palette);
 			}
@@ -1544,12 +1549,8 @@ void M_OptResponder(const event_t& ev)
 		{
 		case slider:
 		{
-			float newval = item->a.cvar->value() - item->d.step;
-
-			if (item->b.leftval < item->c.rightval)
-				newval = MAX(newval, item->b.leftval);
-			else
-				newval = MIN(newval, item->b.leftval);
+			float newval = menu::slider::Respond(item->a.cvar->value(), item->b.leftval,
+			                                     item->c.rightval, item->d.step, -1);
 
 			if (item->e.cfunc)
 				item->e.cfunc(item->a.cvar, newval);
@@ -1612,12 +1613,8 @@ void M_OptResponder(const event_t& ev)
 		{
 		case slider:
 		{
-			float newval = item->a.cvar->value() + item->d.step;
-
-			if (item->b.leftval < item->c.rightval)
-				newval = MIN(newval, item->c.rightval);
-			else
-				newval = MAX(newval, item->c.rightval);
+			float newval = menu::slider::Respond(item->a.cvar->value(), item->b.leftval,
+			                                     item->c.rightval, item->d.step, 1);
 
 			if (item->e.cfunc)
 				item->e.cfunc(item->a.cvar, newval);

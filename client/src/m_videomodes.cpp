@@ -320,16 +320,9 @@ namespace
 	{
 		if (item.type == slider)
 		{
-			float newValue = item.a.cvar->value() + (direction > 0 ? item.d.step : -item.d.step);
-			if (item.b.leftval < item.c.rightval)
-			{
-			newValue = std::clamp(newValue, item.b.leftval, item.c.rightval);
-			}
-			else
-			{
-			newValue = std::clamp(newValue, item.c.rightval, item.b.leftval);
-			}
-			item.a.cvar->Set(newValue);
+			item.a.cvar->Set(menu::slider::Respond(item.a.cvar->value(), item.b.leftval,
+			                                       item.c.rightval, item.d.step,
+			                                       direction));
 			return;
 		}
 
@@ -449,7 +442,7 @@ void M_VideoModesDrawer(int currentItem)
 			if (i == currentItem &&
 			    (((item.a.selmode != -1) && indicatorAnimCounter < 6) || testingmode != 0))
 			{
-				const patch_t* cursor = M_MenuCursorPatch();
+				const patch_t* cursor = M_MenuCursor();
 				screen->DrawPatchCleanWithPalette(cursor, item.a.selmode * 104 + 8,
 				                                  y + M_MenuCursorOffsetY(), palette);
 			}
@@ -497,8 +490,8 @@ void M_VideoModesDrawer(int currentItem)
 			break;
 
 		case slider:
-			M_DrawSlider(videoModesMenu.indent + 8, y, item.b.leftval, item.c.rightval,
-			             item.a.cvar->value(), item.d.step);
+			menu::slider::Draw(videoModesMenu.indent + 8, y, item.b.leftval,
+			                   item.c.rightval, item.a.cvar->value(), item.d.step);
 			break;
 
 		default:
@@ -507,7 +500,7 @@ void M_VideoModesDrawer(int currentItem)
 
 		if (i == currentItem && indicatorAnimCounter < 6)
 		{
-			const patch_t* cursor = M_MenuCursorPatch();
+			const patch_t* cursor = M_MenuCursor();
 			screen->DrawPatchCleanWithPalette(cursor, videoModesMenu.indent + 3,
 												y + M_MenuCursorOffsetY(), palette);
 		}

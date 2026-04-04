@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <type_traits>
 
 #include "c_dispatch.h"
 #include "c_bind.h"
@@ -67,18 +68,10 @@ namespace
 	static constexpr int PLAYERSETUP_X = 48;
 	static constexpr int PLAYERSETUP_Y = 47;
 	static constexpr int PlayerSetupTitleY = 10;
-	static constexpr int PlayerSetupFallbackTitleX = 110;
+	static constexpr int PlayerSetupTitleX = 110;
 	static constexpr int PlayerNameInputOffsetX = 56;
 	static constexpr int PlayerNameInputOffsetY = -4;
 	static constexpr int PlayerSetupCursorGap = 3;
-	static constexpr int PlayerPreviewFireX = 200;
-	static constexpr int PlayerPreviewFireYOffset = -14;
-	static constexpr int PlayerPreviewBoxX = 236;
-	static constexpr int PlayerPreviewBoxYOffset = 22;
-	static constexpr int PlayerPreviewSpriteX = 236;
-	static constexpr int PlayerPreviewSpriteYOffset = 46;
-	static constexpr int fire_surface_width = 72;
-	static constexpr int fire_surface_height = 77;
 
 	enum psetup_t
 	{
@@ -93,11 +86,7 @@ namespace
 		psetup_end
 	};
 
-	static IWindowSurface* fire_surface = nullptr;
-	static byte FireRemap[256];
 	static int playerSetupLastOn = playername;
-	static state_t* PlayerState = nullptr;
-	static int PlayerTics = 0;
 	static bool editingName = false;
 	static size_t nameCharIndex = 0;
 	static char playerNameString[MAXPLAYERNAME + 1];
@@ -333,259 +322,337 @@ namespace
 		}
 	}
 
-	template<typename PIXEL_T>
-	static forceinline PIXEL_T FirePixel(const byte c);
-
-	template<>
-	forceinline byte FirePixel<byte>(const byte c)
+	namespace playerdisplay
 	{
-		return FireRemap[c];
-	}
+		static constexpr int FireSurfaceWidth = 72;
+		static constexpr int FireSurfaceHeight = 77;
+		static constexpr int PreviewFireX = 200;
+		static constexpr int PreviewFireYOffset = -14;
+		static constexpr int PreviewBoxX = 236;
+		static constexpr int PreviewBoxYOffset = 22;
+		static constexpr int PreviewSpriteX = 236;
+		static constexpr int PreviewSpriteYOffset = 46;
 
-	template<>
-	forceinline argb_t FirePixel<argb_t>(const byte c)
-	{
-		return V_GammaCorrect(argb_t(c, 0, 0));
-	}
-
-	template<int xscale, typename PIXEL_T>
-	static forceinline void RenderFire(int x, int y)
-	{
-		IWindowSurface* surface = I_GetPrimarySurface();
-		const int surfacePitch = surface->getPitchInPixels();
-
-		fire_surface->lock();
-
-		for (int b = 0; b < fire_surface_height; ++b)
+		class widget
 		{
-			PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + y * surfacePitch + x;
-			const palindex_t* from =
-				static_cast<palindex_t*>(fire_surface->getBuffer()) + b * fire_surface->getPitch();
-			y += CleanYfac;
-
-			for (int a = 0; a < fire_surface_width; ++a, to += xscale, ++from)
+		public:
+			~widget()
 			{
-				for (int c = CleanYfac; c; --c)
+				Shutdown();
+			}
+
+			void Init()
+			{
+				for (int i = 0; i < 256; ++i)
 				{
-					for (int i = 0; i < xscale; ++i)
-					{
-						*(to + surfacePitch * c + i) = FirePixel<PIXEL_T>(*from);
-					}
+					fireRemap[i] = V_BestColor(V_GetDefaultPalette()->basecolors, i, 0, 0);
 				}
 			}
-		}
 
-		fire_surface->unlock();
-	}
-
-	template<typename PIXEL_T>
-	static forceinline void RenderFire(int x, int y)
-	{
-		IWindowSurface* surface = I_GetPrimarySurface();
-		const int surfacePitch = surface->getPitchInPixels();
-
-		fire_surface->lock();
-
-		for (int b = 0; b < fire_surface_height; ++b)
-		{
-			PIXEL_T* to = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + y * surfacePitch + x;
-			const palindex_t* from =
-				static_cast<palindex_t*>(fire_surface->getBuffer()) + b * fire_surface->getPitch();
-			y += CleanYfac;
-
-			for (int a = 0; a < fire_surface_width; ++a, to += CleanXfac, ++from)
+			void Shutdown()
 			{
-				for (int c = CleanYfac; c; --c)
+				I_FreeSurface(fireSurface);
+				fireSurface = nullptr;
+				playerState = nullptr;
+				playerTics = 0;
+			}
+
+			void Open()
+			{
+				playerState = &states[mobjinfo[MT_PLAYER].seestate];
+				playerTics = playerState->tics;
+
+				if (fireSurface == nullptr)
 				{
-					for (int i = 0; i < CleanXfac; ++i)
-					{
-						*(to + surfacePitch * c + i) = FirePixel<PIXEL_T>(*from);
-					}
+					fireSurface = I_AllocateSurface(FireSurfaceWidth, FireSurfaceHeight, 8);
 				}
 			}
-		}
 
-		fire_surface->unlock();
-	}
+			void Ticker()
+			{
+				if (--playerTics > 0)
+				{
+					return;
+				}
 
-	struct playerpreviewlayout_t
-	{
-		int fireX = 0;
-		int fireY = 0;
-		int boxX = 0;
-		int boxY = 0;
-		int spriteX = 0;
-		int spriteY = 0;
-	};
+				if (playerState->tics == -1 || playerState->nextstate == S_NULL)
+				{
+					playerState = &states[mobjinfo[MT_PLAYER].seestate];
+				}
+				else
+				{
+					playerState = &states[playerState->nextstate];
+				}
 
-	static playerpreviewlayout_t PlayerPreviewLayout()
-	{
-		const int previewRowY = PLAYERSETUP_Y + M_BigFontLineHeight() * 3;
+				playerTics = playerState->tics;
+			}
 
-		return playerpreviewlayout_t{
-		    PlayerPreviewFireX,
-		    previewRowY + PlayerPreviewFireYOffset,
-		    PlayerPreviewBoxX,
-		    previewRowY + PlayerPreviewBoxYOffset,
-		    PlayerPreviewSpriteX,
-		    previewRowY + PlayerPreviewSpriteYOffset,
+			void Draw(const palette_t* palette, int colorpreset)
+			{
+				const layout preview = Layout();
+				DrawFire(preview);
+				DrawSprite(preview, palette, colorpreset);
+			}
+
+		private:
+			struct layout
+			{
+				int fireX = 0;
+				int fireY = 0;
+				int boxX = 0;
+				int boxY = 0;
+				int spriteX = 0;
+				int spriteY = 0;
+			};
+
+			template<typename PIXEL_T>
+			forceinline PIXEL_T FirePixel(const byte c) const
+			{
+				if constexpr (std::is_same_v<PIXEL_T, byte>)
+				{
+					return fireRemap[c];
+				}
+				else
+				{
+					return V_GammaCorrect(argb_t(c, 0, 0));
+				}
+			}
+
+			template<int xscale, typename PIXEL_T>
+			forceinline void RenderFire(int x, int y)
+			{
+				IWindowSurface* surface = I_GetPrimarySurface();
+				const int surfacePitch = surface->getPitchInPixels();
+
+				fireSurface->lock();
+
+				for (int b = 0; b < FireSurfaceHeight; ++b)
+				{
+					PIXEL_T* to =
+					    reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + y * surfacePitch + x;
+					const palindex_t* from =
+					    static_cast<palindex_t*>(fireSurface->getBuffer()) +
+					    b * fireSurface->getPitch();
+					y += CleanYfac;
+
+					for (int a = 0; a < FireSurfaceWidth; ++a, to += xscale, ++from)
+					{
+						for (int c = CleanYfac; c; --c)
+						{
+							for (int i = 0; i < xscale; ++i)
+							{
+								*(to + surfacePitch * c + i) = FirePixel<PIXEL_T>(*from);
+							}
+						}
+					}
+				}
+
+				fireSurface->unlock();
+			}
+
+			template<typename PIXEL_T>
+			forceinline void RenderFire(int x, int y)
+			{
+				IWindowSurface* surface = I_GetPrimarySurface();
+				const int surfacePitch = surface->getPitchInPixels();
+
+				fireSurface->lock();
+
+				for (int b = 0; b < FireSurfaceHeight; ++b)
+				{
+					PIXEL_T* to =
+					    reinterpret_cast<PIXEL_T*>(surface->getBuffer()) + y * surfacePitch + x;
+					const palindex_t* from =
+					    static_cast<palindex_t*>(fireSurface->getBuffer()) +
+					    b * fireSurface->getPitch();
+					y += CleanYfac;
+
+					for (int a = 0; a < FireSurfaceWidth; ++a, to += CleanXfac, ++from)
+					{
+						for (int c = CleanYfac; c; --c)
+						{
+							for (int i = 0; i < CleanXfac; ++i)
+							{
+								*(to + surfacePitch * c + i) = FirePixel<PIXEL_T>(*from);
+							}
+						}
+					}
+				}
+
+				fireSurface->unlock();
+			}
+
+			layout Layout() const
+			{
+				const int previewRowY = PLAYERSETUP_Y + M_BigFontLineHeight() * 3;
+
+				return layout{
+				    PreviewFireX,
+				    previewRowY + PreviewFireYOffset,
+				    PreviewBoxX,
+				    previewRowY + PreviewBoxYOffset,
+				    PreviewSpriteX,
+				    previewRowY + PreviewSpriteYOffset,
+				};
+			}
+
+			void SeedFireSurfaceBottomRows()
+			{
+				const int pitch = fireSurface->getPitch();
+				palindex_t* from = static_cast<palindex_t*>(fireSurface->getBuffer()) +
+				                   (FireSurfaceHeight - 3) * pitch;
+				for (int x = 0; x < FireSurfaceWidth; ++x, ++from)
+				{
+					*from = *(from + (pitch << 1)) = M_Random();
+				}
+			}
+
+			void StepFireSurface()
+			{
+				const int pitch = fireSurface->getPitch();
+				palindex_t* from = static_cast<palindex_t*>(fireSurface->getBuffer());
+
+				for (int y = 0; y < FireSurfaceHeight - 4; y += 2)
+				{
+					palindex_t* pixel = from;
+					palindex_t* p = pixel + (pitch << 1);
+
+					unsigned int top = *p + *(p + FireSurfaceWidth - 1) + *(p + 1);
+					unsigned int bottom = *(pixel + (pitch << 2));
+					unsigned int c1 = (top + bottom) >> 2;
+					if (c1 > 1)
+					{
+						--c1;
+					}
+					*pixel = c1;
+					*(pixel + pitch) = (c1 + bottom) >> 1;
+					++pixel;
+
+					for (int x = 1; x < FireSurfaceWidth - 1; ++x)
+					{
+						p = pixel + (pitch << 1);
+						top = *p + *(p - 1) + *(p + 1);
+						bottom = *(pixel + (pitch << 2));
+						c1 = (top + bottom) >> 2;
+						if (c1 > 1)
+						{
+							--c1;
+						}
+
+						*pixel = c1;
+						*(pixel + pitch) = (c1 + bottom) >> 1;
+						++pixel;
+					}
+
+					p = pixel + (pitch << 1);
+					top = *p + *(p - 1) + *(p - FireSurfaceWidth + 1);
+					bottom = *(pixel + (pitch << 2));
+					c1 = (top + bottom) >> 2;
+					if (c1 > 1)
+					{
+						--c1;
+					}
+					*pixel = c1;
+					*(pixel + pitch) = (c1 + bottom) >> 1;
+
+					from += pitch << 1;
+				}
+			}
+
+			void DrawFire(const layout& preview)
+			{
+				int drawX = (preview.fireX - 160) * CleanXfac + (I_GetSurfaceWidth() / 2);
+				int drawY = (preview.fireY - 100) * CleanYfac + (I_GetSurfaceHeight() / 2);
+
+				if (!fireSurface)
+				{
+					const argb_t color = V_GetDefaultPalette()->basecolors[34];
+					screen->Clear(drawX, drawY, drawX + FireSurfaceWidth * CleanXfac,
+					              drawY + FireSurfaceHeight * CleanYfac, color);
+					return;
+				}
+
+				fireSurface->lock();
+				SeedFireSurfaceBottomRows();
+				StepFireSurface();
+				fireSurface->unlock();
+
+				--drawY;
+				if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+				{
+					     if (CleanXfac == 1) RenderFire<1, palindex_t>(drawX, drawY);
+					else if (CleanXfac == 2) RenderFire<2, palindex_t>(drawX, drawY);
+					else if (CleanXfac == 3) RenderFire<3, palindex_t>(drawX, drawY);
+					else if (CleanXfac == 4) RenderFire<4, palindex_t>(drawX, drawY);
+					else if (CleanXfac == 5) RenderFire<5, palindex_t>(drawX, drawY);
+					else if (CleanXfac == 6) RenderFire<6, palindex_t>(drawX, drawY);
+					else if (CleanXfac == 7) RenderFire<7, palindex_t>(drawX, drawY);
+					else if (CleanXfac == 8) RenderFire<8, palindex_t>(drawX, drawY);
+					else if (CleanXfac == 9) RenderFire<9, palindex_t>(drawX, drawY);
+					else if (CleanXfac == 10) RenderFire<10, palindex_t>(drawX, drawY);
+					else if (CleanXfac == 11) RenderFire<11, palindex_t>(drawX, drawY);
+					else if (CleanXfac == 12) RenderFire<12, palindex_t>(drawX, drawY);
+					else if (CleanXfac == 13) RenderFire<13, palindex_t>(drawX, drawY);
+					else if (CleanXfac == 14) RenderFire<14, palindex_t>(drawX, drawY);
+					else RenderFire<palindex_t>(drawX, drawY);
+				}
+				else
+				{
+					     if (CleanXfac == 1) RenderFire<1, argb_t>(drawX, drawY);
+					else if (CleanXfac == 2) RenderFire<2, argb_t>(drawX, drawY);
+					else if (CleanXfac == 3) RenderFire<3, argb_t>(drawX, drawY);
+					else if (CleanXfac == 4) RenderFire<4, argb_t>(drawX, drawY);
+					else if (CleanXfac == 5) RenderFire<5, argb_t>(drawX, drawY);
+					else if (CleanXfac == 6) RenderFire<6, argb_t>(drawX, drawY);
+					else if (CleanXfac == 7) RenderFire<7, argb_t>(drawX, drawY);
+					else if (CleanXfac == 8) RenderFire<8, argb_t>(drawX, drawY);
+					else if (CleanXfac == 9) RenderFire<9, argb_t>(drawX, drawY);
+					else if (CleanXfac == 10) RenderFire<10, argb_t>(drawX, drawY);
+					else if (CleanXfac == 11) RenderFire<11, argb_t>(drawX, drawY);
+					else if (CleanXfac == 12) RenderFire<12, argb_t>(drawX, drawY);
+					else if (CleanXfac == 13) RenderFire<13, argb_t>(drawX, drawY);
+					else if (CleanXfac == 14) RenderFire<14, argb_t>(drawX, drawY);
+					else RenderFire<argb_t>(drawX, drawY);
+				}
+			}
+
+			void DrawSprite(const layout& preview, const palette_t* palette, int colorpreset)
+			{
+				const int32_t spritenum = states[mobjinfo[MT_PLAYER].spawnstate].sprite;
+				const spriteframe_t* sprframe =
+				    &sprites[spritenum].spriteframes[playerState->frame & FF_FRAMEMASK];
+				const argb_t playerColor = CL_GetPlayerColor(consoleplayer());
+				const translationref_t oldColorMap = V_ColorMap;
+
+				R_BuildPlayerTranslation(menuplayer_id, playerColor, colorpreset);
+				V_ColorMap = translationref_t(translationtables, menuplayer_id);
+
+				screen->DrawPatchCleanWithPalette(W_CachePatch("M_PBOX"), preview.boxX,
+				                                  preview.boxY, palette);
+				screen->DrawTranslatedPatchClean(W_CachePatch(sprframe->lump[0]),
+				                                 preview.spriteX, preview.spriteY);
+
+				V_ColorMap = oldColorMap;
+			}
+
+			IWindowSurface* fireSurface = nullptr;
+			byte fireRemap[256] = {};
+			state_t* playerState = nullptr;
+			int playerTics = 0;
 		};
 	}
 
-	static void SeedFireSurfaceBottomRows()
-	{
-		const int pitch = fire_surface->getPitch();
-		palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer()) +
-		                   (fire_surface_height - 3) * pitch;
-		for (int x = 0; x < fire_surface_width; ++x, ++from)
-		{
-			*from = *(from + (pitch << 1)) = M_Random();
-		}
-	}
-
-	static void StepFireSurface()
-	{
-		const int pitch = fire_surface->getPitch();
-		palindex_t* from = static_cast<palindex_t*>(fire_surface->getBuffer());
-
-		for (int y = 0; y < fire_surface_height - 4; y += 2)
-		{
-			palindex_t* pixel = from;
-			palindex_t* p = pixel + (pitch << 1);
-
-			unsigned int top = *p + *(p + fire_surface_width - 1) + *(p + 1);
-			unsigned int bottom = *(pixel + (pitch << 2));
-			unsigned int c1 = (top + bottom) >> 2;
-			if (c1 > 1)
-			{
-				--c1;
-			}
-			*pixel = c1;
-			*(pixel + pitch) = (c1 + bottom) >> 1;
-			++pixel;
-
-			for (int x = 1; x < fire_surface_width - 1; ++x)
-			{
-				p = pixel + (pitch << 1);
-				top = *p + *(p - 1) + *(p + 1);
-				bottom = *(pixel + (pitch << 2));
-				c1 = (top + bottom) >> 2;
-				if (c1 > 1)
-				{
-					--c1;
-				}
-
-				*pixel = c1;
-				*(pixel + pitch) = (c1 + bottom) >> 1;
-				++pixel;
-			}
-
-			p = pixel + (pitch << 1);
-			top = *p + *(p - 1) + *(p - fire_surface_width + 1);
-			bottom = *(pixel + (pitch << 2));
-			c1 = (top + bottom) >> 2;
-			if (c1 > 1)
-			{
-				--c1;
-			}
-			*pixel = c1;
-			*(pixel + pitch) = (c1 + bottom) >> 1;
-
-			from += pitch << 1;
-		}
-	}
-
-	static void DrawPlayerPreviewFire(const playerpreviewlayout_t& layout)
-	{
-		int drawX = (layout.fireX - 160) * CleanXfac + (I_GetSurfaceWidth() / 2);
-		int drawY = (layout.fireY - 100) * CleanYfac + (I_GetSurfaceHeight() / 2);
-
-		if (!fire_surface)
-		{
-			const argb_t color = V_GetDefaultPalette()->basecolors[34];
-			screen->Clear(drawX, drawY, drawX + fire_surface_width * CleanXfac,
-			              drawY + fire_surface_height * CleanYfac, color);
-			return;
-		}
-
-		fire_surface->lock();
-		SeedFireSurfaceBottomRows();
-		StepFireSurface();
-		fire_surface->unlock();
-
-		--drawY;
-		if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
-		{
-			     if (CleanXfac == 1) RenderFire<1, palindex_t>(drawX, drawY);
-			else if (CleanXfac == 2) RenderFire<2, palindex_t>(drawX, drawY);
-			else if (CleanXfac == 3) RenderFire<3, palindex_t>(drawX, drawY);
-			else if (CleanXfac == 4) RenderFire<4, palindex_t>(drawX, drawY);
-			else if (CleanXfac == 5) RenderFire<5, palindex_t>(drawX, drawY);
-			else if (CleanXfac == 6) RenderFire<6, palindex_t>(drawX, drawY);
-			else if (CleanXfac == 7) RenderFire<7, palindex_t>(drawX, drawY);
-			else if (CleanXfac == 8) RenderFire<8, palindex_t>(drawX, drawY);
-			else if (CleanXfac == 9) RenderFire<9, palindex_t>(drawX, drawY);
-			else if (CleanXfac == 10) RenderFire<10, palindex_t>(drawX, drawY);
-			else if (CleanXfac == 11) RenderFire<11, palindex_t>(drawX, drawY);
-			else if (CleanXfac == 12) RenderFire<12, palindex_t>(drawX, drawY);
-			else if (CleanXfac == 13) RenderFire<13, palindex_t>(drawX, drawY);
-			else if (CleanXfac == 14) RenderFire<14, palindex_t>(drawX, drawY);
-			else RenderFire<palindex_t>(drawX, drawY);
-		}
-		else
-		{
-			     if (CleanXfac == 1) RenderFire<1, argb_t>(drawX, drawY);
-			else if (CleanXfac == 2) RenderFire<2, argb_t>(drawX, drawY);
-			else if (CleanXfac == 3) RenderFire<3, argb_t>(drawX, drawY);
-			else if (CleanXfac == 4) RenderFire<4, argb_t>(drawX, drawY);
-			else if (CleanXfac == 5) RenderFire<5, argb_t>(drawX, drawY);
-			else if (CleanXfac == 6) RenderFire<6, argb_t>(drawX, drawY);
-			else if (CleanXfac == 7) RenderFire<7, argb_t>(drawX, drawY);
-			else if (CleanXfac == 8) RenderFire<8, argb_t>(drawX, drawY);
-			else if (CleanXfac == 9) RenderFire<9, argb_t>(drawX, drawY);
-			else if (CleanXfac == 10) RenderFire<10, argb_t>(drawX, drawY);
-			else if (CleanXfac == 11) RenderFire<11, argb_t>(drawX, drawY);
-			else if (CleanXfac == 12) RenderFire<12, argb_t>(drawX, drawY);
-			else if (CleanXfac == 13) RenderFire<13, argb_t>(drawX, drawY);
-			else if (CleanXfac == 14) RenderFire<14, argb_t>(drawX, drawY);
-			else RenderFire<argb_t>(drawX, drawY);
-		}
-	}
-
-	static void DrawPlayerPreviewSprite(const playerpreviewlayout_t& layout, const palette_t* palette,
-	                                    int colorpreset)
-	{
-		const int32_t spritenum = states[mobjinfo[MT_PLAYER].spawnstate].sprite;
-		const spriteframe_t* sprframe =
-		    &sprites[spritenum].spriteframes[PlayerState->frame & FF_FRAMEMASK];
-		const argb_t playerColor = CL_GetPlayerColor(consoleplayer());
-		const translationref_t oldColorMap = V_ColorMap;
-
-		R_BuildPlayerTranslation(menuplayer_id, playerColor, colorpreset);
-		V_ColorMap = translationref_t(translationtables, menuplayer_id);
-
-		screen->DrawPatchCleanWithPalette(W_CachePatch("M_PBOX"), layout.boxX, layout.boxY, palette);
-		screen->DrawTranslatedPatchClean(W_CachePatch(sprframe->lump[0]), layout.spriteX,
-		                                 layout.spriteY);
-
-		V_ColorMap = oldColorMap;
-	}
+	static playerdisplay::widget playerDisplay;
 } // namespace
 
 void M_PlayerSetupInit()
 {
-	for (int i = 0; i < 256; ++i)
-	{
-		FireRemap[i] = V_BestColor(V_GetDefaultPalette()->basecolors, i, 0, 0);
-	}
+	playerDisplay.Init();
 }
 
 void M_PlayerSetupShutdown()
 {
-	I_FreeSurface(fire_surface);
-	fire_surface = nullptr;
-	PlayerState = nullptr;
-	PlayerTics = 0;
+	playerDisplay.Shutdown();
 	editingName = false;
 	nameCharIndex = 0;
 }
@@ -596,13 +663,7 @@ void M_PlayerSetupOpen(int& currentItem)
 	M_StringCopy(playerNameString, cl_name.cstring(), MAXPLAYERNAME + 1);
 	editingName = false;
 	nameCharIndex = strlen(playerNameString);
-	PlayerState = &states[mobjinfo[MT_PLAYER].seestate];
-	PlayerTics = PlayerState->tics;
-
-	if (fire_surface == nullptr)
-	{
-		fire_surface = I_AllocateSurface(fire_surface_width, fire_surface_height, 8);
-	}
+	playerDisplay.Open();
 
 	const argb_t playerColor = CL_GetPlayerColor(consoleplayer());
 	const int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
@@ -612,21 +673,7 @@ void M_PlayerSetupOpen(int& currentItem)
 
 void M_PlayerSetupTicker()
 {
-	if (--PlayerTics > 0)
-	{
-		return;
-	}
-
-	if (PlayerState->tics == -1 || PlayerState->nextstate == S_NULL)
-	{
-		PlayerState = &states[mobjinfo[MT_PLAYER].seestate];
-	}
-	else
-	{
-		PlayerState = &states[PlayerState->nextstate];
-	}
-
-	PlayerTics = PlayerState->tics;
+	playerDisplay.Ticker();
 }
 
 void M_PlayerSetupDrawer(int currentItem)
@@ -634,10 +681,11 @@ void M_PlayerSetupDrawer(int currentItem)
 	const OFont* smallFont = OFonts.small();
 	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
 	const int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
-	const playerpreviewlayout_t preview = PlayerPreviewLayout();
 	const EColorRange titleColor = M_MenuTextColor("title");
 	const EColorRange itemColor = M_MenuTextColor("item");
 	const EColorRange valueColor = M_MenuTextColor("value");
+	const int itemPadding = 2;
+	const int lineHeight = M_BigFontLineHeight();
 
 	if (W_CheckNumForName("M_PSTTL") >= 0)
 	{
@@ -648,37 +696,43 @@ void M_PlayerSetupDrawer(int currentItem)
 	else
 	{
 		screen->DrawTextCleanMove(
-		    smallFont, titleColor, PlayerSetupFallbackTitleX, PlayerSetupTitleY,
+		    smallFont, titleColor, PlayerSetupTitleX, PlayerSetupTitleY,
 		    M_LocalizedMenuString("MNU_PLAYERSETUP"));
 	}
 
-	screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X, PLAYERSETUP_Y, "Name");
-	menu::inputbox::Draw(playerNameString, PLAYERSETUP_X + PlayerNameInputOffsetX,
-	                     PLAYERSETUP_Y + PlayerNameInputOffsetY, MAXPLAYERNAME + 1,
-	                     editingName);
+	// Player name
+	{
+		screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X, PLAYERSETUP_Y, "Name");
+		menu::inputbox::Draw(playerNameString, PLAYERSETUP_X + PlayerNameInputOffsetX,
+							PLAYERSETUP_Y + PlayerNameInputOffsetY, MAXPLAYERNAME + 1,
+							editingName);
+	}
 
-	DrawPlayerPreviewFire(preview);
-	DrawPlayerPreviewSprite(preview, palette, colorpreset);
+	// Player preview box
+	playerDisplay.Draw(palette, colorpreset);
 
+	// Preferred team
 	{
 		const team_t team = D_TeamByName(cl_team.cstring());
 		const int x = V_StringWidth(smallFont, "Preferred Team") + 8 + PLAYERSETUP_X;
 		screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X,
-		                          PLAYERSETUP_Y + M_BigFontLineHeight(), "Preferred Team");
+		                          PLAYERSETUP_Y + lineHeight, "Preferred Team");
 		screen->DrawTextCleanMove(
-		    smallFont, valueColor, x, PLAYERSETUP_Y + M_BigFontLineHeight(),
+		    smallFont, valueColor, x, PLAYERSETUP_Y + lineHeight,
 		    team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
 	}
 
+	// Gender
 	{
 		const gender_t gender = D_GenderByName(cl_gender.cstring());
 		const int x = V_StringWidth(smallFont, "Gender") + 8 + PLAYERSETUP_X;
 		screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X,
-		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 2, "Gender");
+		                          PLAYERSETUP_Y + lineHeight * 2, "Gender");
 		screen->DrawTextCleanMove(smallFont, valueColor, x,
-		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 2, genders[gender]);
+		                          PLAYERSETUP_Y + lineHeight * 2, genders[gender]);
 	}
 
+	// Autoaim
 	{
 		const int x = V_StringWidth(smallFont, "Autoaim") + 8 + PLAYERSETUP_X;
 		const float aim = cl_autoaim;
@@ -691,49 +745,54 @@ void M_PlayerSetupDrawer(int currentItem)
 		                                       "Always";
 
 		screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X,
-		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 3, "Autoaim");
+		                          PLAYERSETUP_Y + lineHeight * 3, "Autoaim");
 		screen->DrawTextCleanMove(smallFont, valueColor, x,
-		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 3, aimLabel);
+		                          PLAYERSETUP_Y + lineHeight * 3, aimLabel);
 	}
 
+	// Color preset
 	{
 		const int x = V_StringWidth(smallFont, "Color") + 8 + PLAYERSETUP_X;
 		screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X,
-		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 4, "Color");
+		                          PLAYERSETUP_Y + lineHeight * 4, "Color");
 		screen->DrawTextCleanMove(smallFont, valueColor, x,
-		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 4,
+		                          PLAYERSETUP_Y + lineHeight * 4,
 		                          colorpresets[colorpreset]);
 	}
 
 	if (colorpreset == COLOR_CUSTOM)
 	{
-		screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X,
-		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 5, "Red");
-		screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X,
-		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 6, "Green");
-		screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X,
-		                          PLAYERSETUP_Y + M_BigFontLineHeight() * 7, "Blue");
-
 		const int x = V_StringWidth(smallFont, "Green") + 8 + PLAYERSETUP_X;
 		const argb_t playercolor = V_GetColorFromString(cl_color);
-		M_DrawColoredSlider(x, PLAYERSETUP_Y + M_BigFontLineHeight() * 5, 0.0F, 255.0F,
-		                    playercolor.getr(), argb_t(playercolor.getr(), 0, 0));
-		M_DrawColoredSlider(x, PLAYERSETUP_Y + M_BigFontLineHeight() * 6, 0.0F, 255.0F,
-		                    playercolor.getg(), argb_t(0, playercolor.getg(), 0));
-		M_DrawColoredSlider(x, PLAYERSETUP_Y + M_BigFontLineHeight() * 7, 0.0F, 255.0F,
-		                    playercolor.getb(), argb_t(0, 0, playercolor.getb()));
+
+		screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X,
+		                          PLAYERSETUP_Y + lineHeight * 5, "Red");
+		menu::slider::Draw(x, PLAYERSETUP_Y + lineHeight * 5, 0.0F, 255.0F,
+		                   playercolor.getr(), 0.0F,
+		                   {.color = argb_t(playercolor.getr(), 0, 0), .showValue = false});
+
+		screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X,
+		                          PLAYERSETUP_Y + lineHeight * 6, "Green");
+		menu::slider::Draw(x, PLAYERSETUP_Y + lineHeight * 6, 0.0F, 255.0F,
+		                   playercolor.getg(), 0.0F,
+		                   {.color = argb_t(0, playercolor.getg(), 0), .showValue = false});
+
+		screen->DrawTextCleanMove(smallFont, itemColor, PLAYERSETUP_X,
+		                          PLAYERSETUP_Y + lineHeight * 7, "Blue");
+		menu::slider::Draw(x, PLAYERSETUP_Y + lineHeight * 7, 0.0F, 255.0F,
+		                   playercolor.getb(), 0.0F,
+		                   {.color = argb_t(0, 0, playercolor.getb()), .showValue = false});
 	}
 
 	ClampPlayerSetupItem(currentItem);
 
 	if (!editingName)
 	{
-		const patch_t* cursor = M_MenuCursorPatch();
+		const patch_t* cursor = M_MenuCursor();
 		screen->DrawPatchCleanWithPaletteFlipped(
 		    cursor, PLAYERSETUP_X - PlayerSetupCursorGap,
-		    PLAYERSETUP_Y + currentItem * M_BigFontLineHeight() + M_MenuCursorOffsetY(), palette);
+		    PLAYERSETUP_Y + currentItem * lineHeight + M_MenuCursorOffsetY(), palette);
 	}
-
 }
 
 void M_PlayerSetupResponder(int keyCode, int typedChar, bool numlock, int& currentItem)

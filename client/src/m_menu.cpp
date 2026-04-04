@@ -234,7 +234,7 @@ namespace
 		int y = 0;
 		bool havePosition = false;
 		const builtinscreendef_t* builtin = BuiltInScreenDef(CurrentBuiltinScreen);
-		const patch_t* indicator = M_MenuIndicatorPatch(whichIndicator);
+		const patch_t* indicator = M_MenuIndicator(whichIndicator);
 
 		if (CurrentGeneratedMenu != nullptr)
 		{
