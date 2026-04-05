@@ -10,5 +10,4 @@ Categories=Amusement;Game;ActionGame;AdventureGame;ArcadeGame;
 Icon=net.odamex.Odamex.Launcher
 Exec=odalaunch
 Terminal=false
-StartupNotify=true
 StartupWMClass=odalaunch
