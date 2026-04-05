@@ -120,6 +120,9 @@ jobs:
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      options: --privileged
     steps:
     - name: Checkout source
       uses: actions/checkout@v6
@@ -130,10 +133,6 @@ jobs:
       run: |
         DATE=$(date +'%Y-%m-%d')
         sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
-    - name: Install flatpak
-      run: sudo apt update && sudo apt install flatpak flatpak-builder
-    - name: Set flatpak repo
-      run: flatpak remote-add --if-not-exists --system flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     - name: Create escaped branch name
       env:
         name: "${{ github.ref_name }}"
@@ -150,6 +149,9 @@ jobs:
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-24.04-arm
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      options: --privileged
     steps:
     - name: Checkout source
       uses: actions/checkout@v6
@@ -160,10 +162,6 @@ jobs:
       run: |
         DATE=$(date +'%Y-%m-%d')
         sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
-    - name: Install flatpak
-      run: sudo apt update && sudo apt install flatpak flatpak-builder
-    - name: Set flatpak repo
-      run: flatpak remote-add --if-not-exists --system flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     - name: Create escaped branch name
       env:
         name: "${{ github.ref_name }}"
