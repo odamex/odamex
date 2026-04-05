@@ -102,5 +102,5 @@
     <color type="primary" scheme_preference="light">#a0a0a7</color>
     <color type="primary" scheme_preference="dark">#404042</color>
   </branding>
-  <releases type="eternal"/>
+  <releases type="external"/>
 </component>
