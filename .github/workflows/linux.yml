@@ -142,7 +142,7 @@ jobs:
       uses: flatpak/flatpak-github-actions/flatpak-builder@v6
       with:
         manifest-path: packaging/flatpak/net.odamex.Odamex.yml
-        bundle: odamex-x86_64.flatpak
+        bundle: odamex.flatpak
         branch: ${{ env.MODIFIED_BRANCH_NAME }}
   build-flatpak-arm:
     name: Build Flatpak (Ubuntu 24.04 ARM)
@@ -171,5 +171,5 @@ jobs:
       uses: flatpak/flatpak-github-actions/flatpak-builder@v6
       with:
         manifest-path: packaging/flatpak/net.odamex.Odamex.yml
-        bundle: odamex-arm64.flatpak
+        bundle: odamex.flatpak
         branch: ${{ env.MODIFIED_BRANCH_NAME }}
