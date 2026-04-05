@@ -191,33 +191,24 @@ jobs:
         sed -i "s/version=\"$MAJORVERSION\.$MINORVERSION\.$PATCHVERSION\"/version=\"$new_version-prerelease.$build_number\"/g" packaging/linux/net.odamex.Odamex.metainfo.xml
     - name: Checkout submodules
       run: git submodule update --init --recursive
-    - name: Install flatpak
-      run: sudo apt update && sudo apt install flatpak flatpak-builder
     - name: Create escaped branch name
       env:
         name: "${{ github.ref_name }}"
       run: |
         echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
-    - name: Set flatpak repo
-      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-    - name: Run build
-      run: |
-        flatpak-builder --force-clean --user --install-deps-from=flathub \
-        --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
-        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
-    - name: Pack flatpak
-      run: |
-        flatpak build-bundle repo odamex-linux-x86_64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak \
-        net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
-    - name: Upload artifact
-      uses: actions/upload-artifact@v7
+    - name: Build Flatpak
+      uses: flatpak/flatpak-github-actions/flatpak-builder@v6
       with:
-        name: Odamex-Flatpak-x86_64
-        path: odamex-linux-x86_64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak
+        manifest-path: packaging/flatpak/net.odamex.Odamex.yml
+        bundle: odamex-linux-x86_64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak
+        branch: ${{ env.MODIFIED_BRANCH_NAME }}
   build-flatpak-arm:
     name: Build Flatpak (Ubuntu 24.04 ARM)
     needs: pre_job
     runs-on: ubuntu-24.04-arm
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      options: --privileged
     env:
       build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
@@ -240,29 +231,18 @@ jobs:
         sed -i "s/version=\"$MAJORVERSION\.$MINORVERSION\.$PATCHVERSION\"/version=\"$new_version-prerelease.$build_number\"/g" packaging/linux/net.odamex.Odamex.metainfo.xml
     - name: Checkout submodules
       run: git submodule update --init --recursive
-    - name: Install flatpak
-      run: sudo apt update && sudo apt install flatpak flatpak-builder
     - name: Create escaped branch name
       env:
         name: "${{ github.ref_name }}"
       run: |
         echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
-    - name: Set flatpak repo
-      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-    - name: Run build
-      run: |
-        flatpak-builder --force-clean --user --install-deps-from=flathub \
-        --repo=repo --install flatpak packaging/flatpak/net.odamex.Odamex.yml \
-        --default-branch=${{ env.MODIFIED_BRANCH_NAME }} -v
-    - name: Pack flatpak
-      run: |
-        flatpak build-bundle repo odamex-linux-arm64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak \
-        net.odamex.Odamex ${{ env.MODIFIED_BRANCH_NAME }} --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
-    - name: Upload artifact
-      uses: actions/upload-artifact@v7
+    - name: Build Flatpak
+      uses: flatpak/flatpak-github-actions/flatpak-builder@v6
       with:
-        name: Odamex-Flatpak-ARM64
-        path: odamex-linux-arm64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak
+        manifest-path: packaging/flatpak/net.odamex.Odamex.yml
+        arch: aarch64
+        bundle: odamex-linux-arm64-${{env.new_version}}-prerelease.${{ env.build_number }}.flatpak
+        branch: ${{ env.MODIFIED_BRANCH_NAME }}
   package-and-upload:
     name: Package and Upload Artifacts
     runs-on: windows-latest
@@ -277,11 +257,11 @@ jobs:
     - name: Download x86_64 Flatpak
       uses: actions/download-artifact@v8
       with:
-        name: Odamex-Flatpak-x86_64
+        name: odamex-linux-x86_64-${{env.new_version}}-prerelease.${{ env.build_number }}-x86_64.flatpak
     - name: Download Arm Flatpak
       uses: actions/download-artifact@v8
       with:
-        name: Odamex-Flatpak-ARM64
+        name: odamex-linux-arm64-${{env.new_version}}-prerelease.${{ env.build_number }}-aarch64.flatpak
     - name: Create or update prerelease
       uses: ./.github/actions/update-prerelease
       env:
