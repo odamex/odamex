@@ -132,7 +132,7 @@ jobs:
       shell: bash
       run: |
         DATE=$(date +'%Y-%m-%d')
-        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
+        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.releases.xml
     - name: Create escaped branch name
       env:
         name: "${{ github.ref_name }}"
@@ -161,7 +161,7 @@ jobs:
       shell: bash
       run: |
         DATE=$(date +'%Y-%m-%d')
-        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
+        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.releases.xml
     - name: Create escaped branch name
       env:
         name: "${{ github.ref_name }}"
