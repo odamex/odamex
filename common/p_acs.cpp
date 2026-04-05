@@ -90,7 +90,8 @@ static void DoClearInv(player_t* player)
 		}
 	}
 
-	player->pendingweapon = NUMWEAPONS;
+	player->weaponowned[wp_none] = true;
+	player->pendingweapon = wp_none;
 
 	SERVER_ONLY(
 	    SV_ACSExecuteSpecial(DLevelScript::PCD_CLEARINVENTORY, player->mo, NULL, true));

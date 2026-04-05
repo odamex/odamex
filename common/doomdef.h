@@ -476,7 +476,6 @@ inline FArchive &operator>> (FArchive &arc, card_t &i)
 //	user has not changed weapon.
 enum weapontype_t
 {
-	wp_none = -1,
 	wp_fist,
 	wp_pistol,
 	wp_shotgun,
@@ -486,6 +485,7 @@ enum weapontype_t
 	wp_bfg,
 	wp_chainsaw,
 	wp_supershotgun,
+	wp_none,
 
 	NUMWEAPONS,
 

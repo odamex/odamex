@@ -240,7 +240,7 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 	p.usedown = p.attackdown = true;	// don't do anything immediately
 	p.playerstate = PST_LIVE;
 	p.doreborn = false;
-	p.weaponowned[NUMWEAPONS] = true;
+	p.weaponowned[wp_none] = true;
 
 	if (!p.spectator)
 		p.cheats = 0; // Reset cheat flags

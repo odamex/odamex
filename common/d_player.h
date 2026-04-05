@@ -186,7 +186,7 @@ public:
 	weapontype_t	pendingweapon;
 	weapontype_t	readyweapon;
 
-	std::array<bool, NUMWEAPONS+1> weaponowned;
+	std::array<bool, NUMWEAPONS> weaponowned;
 	std::array<int, NUMAMMO> ammo;
 	std::array<int, NUMAMMO> maxammo;
 

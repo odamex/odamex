@@ -48,7 +48,7 @@ struct weaponinfo_t
 	int internalflags;
 };
 
-extern	weaponinfo_t	weaponinfo[NUMWEAPONS+1];
+extern	weaponinfo_t	weaponinfo[NUMWEAPONS];
 
 // Weapon Flags (MBF21 SPECS)
 #define WPF_NOFLAG			0

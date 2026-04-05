@@ -13,7 +13,7 @@ struct PlayerItemDataType
     //std::array<int,  NUMPOWERS>     powers;
     weapontype_t                    readyweapon;
     weapontype_t                    pendingweapon;
-    std::array<bool, NUMWEAPONS+1>  weaponowned;
+    std::array<bool, NUMWEAPONS>    weaponowned;
     //std::array<bool, NUMCARDS>      cards;
     //bool                            backpack;
 

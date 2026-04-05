@@ -390,6 +390,7 @@ static void SetupDefaultInv()
 	::gDefaultInv.weaponowned.fill(false);
 	::gDefaultInv.weaponowned[wp_fist] = true;
 	::gDefaultInv.weaponowned[wp_pistol] = true;
+	::gDefaultInv.weaponowned[wp_none] = true;
 	::gDefaultInv.ammo.fill(0);
 	::gDefaultInv.ammo[am_clip] = deh.StartBullets; // [RH] Used to be 50
 	::gDefaultInv.berserk = false;

@@ -59,7 +59,7 @@ EXTERN_CVAR(co_fineautoaim)
 EXTERN_CVAR(co_zdoomammo)
 EXTERN_CVAR(cl_centerbobonfire)
 
-const char *weaponnames[] =
+const char *weaponnames[NUMWEAPONS] =
 {
 	"Fist",
 	"Pistol",
@@ -69,7 +69,8 @@ const char *weaponnames[] =
 	"Plasma Gun",
 	"BFG9000",
 	"Chainsaw",
-	"Super Shotgun"
+	"Super Shotgun",
+	"No weapon"
 };
 
 void A_WeaponReady(AActor* mo);
@@ -336,7 +337,7 @@ void P_SwitchWeapon(player_t& player)
 //
 weapontype_t P_GetNextWeapon(player_t *player, bool forward)
 {
-	if (player->readyweapon == NUMWEAPONS || player->pendingweapon == NUMWEAPONS)
+	if (player->readyweapon == wp_none || player->pendingweapon == wp_none)
 		return wp_nochange;
 
 	gitem_t *item;
@@ -397,14 +398,14 @@ bool P_CheckSwitchWeapon(const player_t& player, weapontype_t weapon)
 
 	// Never switch - player has to manually change themselves
 	// Having no weapons because of ClearInventory/TakeInventory overrides this
-	if (player.userinfo.switchweapon == WPSW_NEVER && player.readyweapon != NUMWEAPONS && player.pendingweapon != NUMWEAPONS)
+	if (player.userinfo.switchweapon == WPSW_NEVER && player.readyweapon != wp_none && player.pendingweapon != wp_none)
 		return false;
 
 	const weapontype_t currentweapon = (player.pendingweapon == wp_nochange)
 			? player.readyweapon
 			: player.pendingweapon;
 
-	if (currentweapon == NUMWEAPONS)
+	if (currentweapon == wp_none)
 		return true;
 
 	// Use player's weapon preferences
@@ -473,7 +474,7 @@ static void DecreaseAmmo(player_t& player, int amount = 1)
 void P_FireWeapon(player_t& player)
 {
 	// Prevent fire if you don't have any weapon, including fist. See DoClearInv - PCD_CLEARINVENTORY
-	if (!P_CheckAmmo(player) || player.readyweapon == NUMWEAPONS)
+	if (!P_CheckAmmo(player) || player.readyweapon == wp_none)
 		return;
 
 	// [tm512] Send the client the weapon they just fired so
@@ -614,8 +615,8 @@ void A_Lower(AActor* mo)
 		return;
 	}
 
-	// haleyjd 03/28/10: do not assume pendingweapon is valid - include NUMWEAPONS from ClearInventory
-	if (player.pendingweapon < NUMWEAPONS + 1)
+	// haleyjd 03/28/10: do not assume pendingweapon is valid
+	if (player.pendingweapon < NUMWEAPONS)
 		player.readyweapon = player.pendingweapon;
 
 	P_BringUpWeapon(player);

@@ -49,7 +49,7 @@
 // ammopershot
 // internal flags
 //
-weaponinfo_t weaponinfo[NUMWEAPONS+1] =
+weaponinfo_t weaponinfo[NUMWEAPONS] =
 {
 	{
 		// fist
@@ -187,7 +187,7 @@ weaponinfo_t weaponinfo[NUMWEAPONS+1] =
 		.internalflags = WIF_NOFLAG
 	},
 	{
-		//NUMWEAPONS (player has no weapon including fist, ClearInventory)
+		// wp_none (player has no weapon including fist, ClearInventory)
 		.ammotype      = am_noammo,
 		.upstate       = S_NOWEAPONUP,
 		.downstate     = S_NOWEAPONDOWN,
@@ -197,7 +197,7 @@ weaponinfo_t weaponinfo[NUMWEAPONS+1] =
 		.droptype      = MT_MISC26,
 		.ammouse       = 0,
 		.minammo       = 0,
-		.flags         = WPF_NOFLAG,
+		.flags         = WPF_NOAUTOSWITCHTO,    // Never autoswitch to wp_none!
 		.ammopershot   = 0,
 		.internalflags = WIF_NOFLAG
 	},
