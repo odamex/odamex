@@ -71,7 +71,7 @@ int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 		AssignImageList(ImageList, wxIMAGE_LIST_SMALL);
 
 		wxBitmap sort_up(16, 16), sort_down(16, 16);
-		#if wxABI_VERSION >= 30206
+		#if wxCHECK_VERSION(3, 2, 6)
 			wxColour Mask = wxSystemSettingsNative::SelectLightDark(wxColour(255, 255, 255), wxColour(0, 0, 0));
 		#else
 			wxColour Mask = wxColour(255, 255, 255);
