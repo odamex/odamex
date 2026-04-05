@@ -6,6 +6,14 @@
 
 class player_t;
 
+enum class RollerRecordResultEnum
+{
+    SUCCESS,            ///< All good.
+    CURRENT_REPLACED,   ///< Current tic already had an entry, but it was replaced with something.
+    INVALID_TIC_FUTURE, ///< The tic was NOT recorded because it was too far in the future.
+    INVALID_TIC_PAST,   ///< The tic was NOT recorded because it was in the past.
+};
+
 class PlayerStateRoller
 {
     public:
@@ -15,9 +23,9 @@ class PlayerStateRoller
 
         /// Add the current player state to history for the current gametic.  It is assumed and
         /// required that tic numbers given to this function only ever be incrementing by
-        /// 1 for each successive call.  If current state is added to history, then true is
-        /// returned.  Otherwise, false is returned.
-        bool Record(int currentTic, const player_t& player);
+        /// 1 for each successive call.  If current state is added to history, then SUCCESS is
+        /// returned.  Otherwise, an enumeral describing the error condition is returned.
+        RollerRecordResultEnum Record(int currentTic, const player_t& player);
 
         /// Resolve the canonical statement about player data at the given tic against recorded
         /// history.  If history is rewritten, then the resulting state is rolled forward, the
@@ -59,6 +67,8 @@ class PlayerStateRoller
 
             return io_stream;
         }
+
+        int ExpectedTic() const { return m_mostRecentTic + 1; }
 
     protected:
 

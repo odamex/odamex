@@ -13,7 +13,7 @@ PlayerStateRoller::PlayerStateRoller() :
 {
 }
 
-bool PlayerStateRoller::Record(int currentTic, const player_t& player)
+RollerRecordResultEnum PlayerStateRoller::Record(int currentTic, const player_t& player)
 {
     if (m_mostRecentTic == -1)
     {
@@ -21,7 +21,7 @@ bool PlayerStateRoller::Record(int currentTic, const player_t& player)
         m_oldestTic     = currentTic;
     }
 
-    if (currentTic == m_mostRecentTic + 1)
+    if (currentTic == ExpectedTic())
     {
         m_mostRecentTic = currentTic;
 
@@ -31,9 +31,28 @@ bool PlayerStateRoller::Record(int currentTic, const player_t& player)
             ++m_oldestTic;
         }
         m_history.emplace(currentTic, player);  // Construct ItemData from the player.
-        return true;
+        return RollerRecordResultEnum::SUCCESS;
     }
-    return false;
+    else if (currentTic == m_mostRecentTic)
+    {
+        // We have a special case here that we only see during netdemo setup and initial playback:
+        // We see two actual sim steps back-to-back with the same gametic.  In theory this is
+        // allowable, but it's borderline.  Therefore we allow the most recent, current-time
+        // sample to be replaced with another one from the same time, but we warn about it because
+        // it should NOT be seen anywhere except in special circumstances.
+
+        PlayerItemDataType& existingSample = m_history[currentTic];
+        PlayerItemDataType  newSample {player};
+
+        if (existingSample != newSample)
+        {
+            existingSample = newSample;
+            return RollerRecordResultEnum::CURRENT_REPLACED;
+        }
+        return RollerRecordResultEnum::SUCCESS;
+    }
+
+    return currentTic > m_mostRecentTic ? RollerRecordResultEnum::INVALID_TIC_FUTURE : RollerRecordResultEnum::INVALID_TIC_PAST;
 }
 
 namespace

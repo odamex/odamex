@@ -1199,9 +1199,20 @@ void G_Ticker (void)
 
 			if (not netdemo.isPaused())
 			{
-				if (not rollerState.Record(gametic, consoleplayer()))
+                const RollerRecordResultEnum recordResult = rollerState.Record(gametic, consoleplayer());
+				switch (recordResult)
 				{
-					PrintFmt(PRINT_WARNING, "Failed to record player rollerstate on tic {}\n", gametic);
+					case RollerRecordResultEnum::CURRENT_REPLACED:
+						PrintFmt(PRINT_WARNING, "Successive roller state update on tic {}\n", gametic);
+						break;
+					case RollerRecordResultEnum::INVALID_TIC_FUTURE:
+						PrintFmt(PRINT_WARNING, "Rejected roller state update on future tic {}, expected {}\n", gametic, rollerState.ExpectedTic());
+						break;
+					case RollerRecordResultEnum::INVALID_TIC_PAST:
+						PrintFmt(PRINT_WARNING, "Rejected roller state update on past tic {}, expected {}\n", gametic, rollerState.ExpectedTic());
+						break;
+					case RollerRecordResultEnum::SUCCESS:
+						break;
 				}
 			}
 		}

@@ -17,6 +17,8 @@ struct PlayerItemDataType
     //std::array<bool, NUMCARDS>      cards;
     //bool                            backpack;
 
+    bool operator==(const PlayerItemDataType&) const = default;
+
     PlayerItemDataType() :
         readyweapon     (wp_none),
         pendingweapon   (wp_none)
