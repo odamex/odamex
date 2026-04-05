@@ -23,7 +23,7 @@ modules:
     buildsystem: simple
     build-commands:
       - mkdir -p /app/etc/
-      - cp -r timidity.cfg /app/etc/sdl_timidity.cfg
+      - install timidity.cfg /app/etc/sdl_timidity.cfg
       - mkdir -p /app/share/timidity/
       - cp -r instruments /app/share/timidity/instruments
     sources:
@@ -77,7 +77,6 @@ modules:
       - -D BUILD_MASTER=0
       - -D BUILD_TESTS=0
       - -D USE_INTERNAL_LIBS=0
-      - -D USE_INTERNAL_WXWIDGETS=1
       - -D ODAMEX_INSTALL_BINDIR=/app/bin
       - -D ODAMEX_INSTALL_DATADIR=/run/host/usr/share
       - -D USE_EXTERNAL_LIBDWARF=1
