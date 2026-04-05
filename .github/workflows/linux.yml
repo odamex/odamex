@@ -123,15 +123,17 @@ jobs:
     steps:
     - name: Checkout source
       uses: actions/checkout@v6
+      with:
+        submodules: recursive
     - name: Update metainfo dates
       shell: bash
       run: |
         DATE=$(date +'%Y-%m-%d')
         sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
     - name: Install flatpak
       run: sudo apt update && sudo apt install flatpak flatpak-builder
+    - name: Set flatpak repo
+      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     - name: Create escaped branch name
       env:
         name: "${{ github.ref_name }}"
@@ -151,13 +153,17 @@ jobs:
     steps:
     - name: Checkout source
       uses: actions/checkout@v6
+      with:
+        submodules: recursive
     - name: Update metainfo dates
       shell: bash
       run: |
         DATE=$(date +'%Y-%m-%d')
         sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
+    - name: Install flatpak
+      run: sudo apt update && sudo apt install flatpak flatpak-builder
+    - name: Set flatpak repo
+      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     - name: Create escaped branch name
       env:
         name: "${{ github.ref_name }}"
