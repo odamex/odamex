@@ -1267,6 +1267,8 @@ BEGIN_COMMAND(netrew)
 {
 	if (netdemo.isPlaying())
 		netdemo.prevSnapshot();
+	else if (netdemo.isPaused());
+		netdemo.prevTic();
 }
 END_COMMAND(netrew)
 
