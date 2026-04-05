@@ -133,7 +133,7 @@ jobs:
     - name: Install flatpak
       run: sudo apt update && sudo apt install flatpak flatpak-builder
     - name: Set flatpak repo
-      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+      run: flatpak remote-add --if-not-exists --system flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     - name: Create escaped branch name
       env:
         name: "${{ github.ref_name }}"
@@ -163,7 +163,7 @@ jobs:
     - name: Install flatpak
       run: sudo apt update && sudo apt install flatpak flatpak-builder
     - name: Set flatpak repo
-      run: flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+      run: flatpak remote-add --if-not-exists --system flathub https://dl.flathub.org/repo/flathub.flatpakrepo
     - name: Create escaped branch name
       env:
         name: "${{ github.ref_name }}"
