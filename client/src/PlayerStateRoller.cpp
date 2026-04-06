@@ -7,192 +7,192 @@
 
 
 PlayerStateRoller::PlayerStateRoller() :
-    m_history       (TICRATE),      // 1 second of history.
-    m_mostRecentTic (-1),           // Setup history to start recording at the given tic.
-    m_oldestTic     (-1)
+	m_history       (TICRATE),      // 1 second of history.
+	m_mostRecentTic (-1),           // Setup history to start recording at the given tic.
+	m_oldestTic     (-1)
 {
 }
 
 RollerRecordResultEnum PlayerStateRoller::Record(int currentTic, const player_t& player)
 {
-    if (m_mostRecentTic == -1)
-    {
-        m_mostRecentTic = currentTic - 1;
-        m_oldestTic     = currentTic;
-    }
+	if (m_mostRecentTic == -1)
+	{
+		m_mostRecentTic = currentTic - 1;
+		m_oldestTic     = currentTic;
+	}
 
-    if (currentTic == ExpectedTic())
-    {
-        m_mostRecentTic = currentTic;
+	if (currentTic == ExpectedTic())
+	{
+		m_mostRecentTic = currentTic;
 
-        if (m_history.size() == m_history.bucket_count())
-        {
-            m_history.erase(m_oldestTic);
-            ++m_oldestTic;
-        }
-        m_history.emplace(currentTic, player);  // Construct ItemData from the player.
-        return RollerRecordResultEnum::SUCCESS;
-    }
-    else if (currentTic == m_mostRecentTic)
-    {
-        // We have a special case here that we only see during netdemo setup and initial playback:
-        // We see two actual sim steps back-to-back with the same gametic.  In theory this is
-        // allowable, but it's borderline.  Therefore we allow the most recent, current-time
-        // sample to be replaced with another one from the same time, but we warn about it because
-        // it should NOT be seen anywhere except in special circumstances.
+		if (m_history.size() == m_history.bucket_count())
+		{
+			m_history.erase(m_oldestTic);
+			++m_oldestTic;
+		}
+		m_history.emplace(currentTic, player);  // Construct ItemData from the player.
+		return RollerRecordResultEnum::SUCCESS;
+	}
+	else if (currentTic == m_mostRecentTic)
+	{
+		// We have a special case here that we only see during netdemo setup and initial playback:
+		// We see two actual sim steps back-to-back with the same gametic.  In theory this is
+		// allowable, but it's borderline.  Therefore we allow the most recent, current-time
+		// sample to be replaced with another one from the same time, but we warn about it because
+		// it should NOT be seen anywhere except in special circumstances.
 
-        PlayerItemDataType& existingSample = m_history[currentTic];
-        PlayerItemDataType  newSample {player};
+		PlayerItemDataType& existingSample = m_history[currentTic];
+		PlayerItemDataType  newSample {player};
 
-        if (existingSample != newSample)
-        {
-            existingSample = newSample;
-            return RollerRecordResultEnum::CURRENT_REPLACED;
-        }
-        return RollerRecordResultEnum::SUCCESS;
-    }
+		if (existingSample != newSample)
+		{
+			existingSample = newSample;
+			return RollerRecordResultEnum::CURRENT_REPLACED;
+		}
+		return RollerRecordResultEnum::SUCCESS;
+	}
 
-    return currentTic > m_mostRecentTic ? RollerRecordResultEnum::INVALID_TIC_FUTURE : RollerRecordResultEnum::INVALID_TIC_PAST;
+	return currentTic > m_mostRecentTic ? RollerRecordResultEnum::INVALID_TIC_FUTURE : RollerRecordResultEnum::INVALID_TIC_PAST;
 }
 
 namespace
 {
-    // ------------------------------------------------
-    // The following functions are so naive in their
-    // approach and use in order to let the compilers
-    // vectorize them easily.
-    // ------------------------------------------------
+	// ------------------------------------------------
+	// The following functions are so naive in their
+	// approach and use in order to let the compilers
+	// vectorize them easily.
+	// ------------------------------------------------
 
-    /// Returns true if any non-zero deltas were produced.
-    template <typename ElementType, size_t N>
-    void FillDeltaArray(std::array<ElementType, N>&         o_delta,
-                        const std::array<ElementType, N>&   i_lhs,
-                        const std::array<ElementType, N>&   i_rhs)
-    {
-        // Don't compile if the array can't store negative values!
-        static_assert(std::is_signed<ElementType>() == true);
+	/// Returns true if any non-zero deltas were produced.
+	template <typename ElementType, size_t N>
+	void FillDeltaArray(std::array<ElementType, N>&         o_delta,
+	                    const std::array<ElementType, N>&   i_lhs,
+	                    const std::array<ElementType, N>&   i_rhs)
+	{
+		// Don't compile if the array can't store negative values!
+		static_assert(std::is_signed<ElementType>() == true);
 
-        for (size_t i = 0; i < o_delta.size(); ++i)
-        {
-            o_delta[i] = i_lhs[i] - i_rhs[i];
-        }
-    }
+		for (size_t i = 0; i < o_delta.size(); ++i)
+		{
+			o_delta[i] = i_lhs[i] - i_rhs[i];
+		}
+	}
 
-    template <typename ElementType, size_t N>
-    void ApplyDeltaArray(std::array<ElementType, N>&         io_array,
-                         const std::array<ElementType, N>&   i_delta)
-    {
-        for (size_t i = 0; i < io_array.size(); ++i)
-        {
-            io_array[i] = std::max(i_delta[i] + io_array[i], 0);
-        }
-    }
+	template <typename ElementType, size_t N>
+	void ApplyDeltaArray(std::array<ElementType, N>&         io_array,
+	                     const std::array<ElementType, N>&   i_delta)
+	{
+		for (size_t i = 0; i < io_array.size(); ++i)
+		{
+			io_array[i] = std::max(i_delta[i] + io_array[i], 0);
+		}
+	}
 
-    template <typename ElementType, size_t N>
-    bool RequiresCorrection(const std::array<ElementType, N>& i_deltaArray)
-    {
-        for (size_t i = 0; i < i_deltaArray.size(); ++i)
-        {
-            if (i_deltaArray[i])
-            {
-                return true;
-            }
-        }
-        return false;
-    }
+	template <typename ElementType, size_t N>
+	bool RequiresCorrection(const std::array<ElementType, N>& i_deltaArray)
+	{
+		for (size_t i = 0; i < i_deltaArray.size(); ++i)
+		{
+			if (i_deltaArray[i])
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 }
 
 template <typename Callable>
 void PlayerStateRoller::Roll(int i_oldTic, Callable&& i_callable)
 {
-    for (int rollingTic = i_oldTic; rollingTic <= m_mostRecentTic; ++rollingTic)
-    {
-        auto rollingIter = m_history.find(rollingTic);
-        assert(rollingIter != m_history.end());
+	for (int rollingTic = i_oldTic; rollingTic <= m_mostRecentTic; ++rollingTic)
+	{
+		auto rollingIter = m_history.find(rollingTic);
+		assert(rollingIter != m_history.end());
 
-        i_callable(rollingIter);
-    }
+		i_callable(rollingIter);
+	}
 }
 
 
 bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemData, player_t& io_player)
 {
-    auto historyIter = m_history.find(i_oldTic);
-    if (historyIter != m_history.end())
-    {
-        PlayerItemDataType deltaItemData;
+	auto historyIter = m_history.find(i_oldTic);
+	if (historyIter != m_history.end())
+	{
+		PlayerItemDataType deltaItemData;
 
-        FillDeltaArray(deltaItemData.ammo,    i_itemData.ammo,    historyIter->second.ammo);
-        FillDeltaArray(deltaItemData.maxammo, i_itemData.maxammo, historyIter->second.maxammo);
+		FillDeltaArray(deltaItemData.ammo,    i_itemData.ammo,    historyIter->second.ammo);
+		FillDeltaArray(deltaItemData.maxammo, i_itemData.maxammo, historyIter->second.maxammo);
 
-        const bool ammoRequiresRoll    = RequiresCorrection(deltaItemData.ammo);
-        const bool maxammoRequiresRoll = RequiresCorrection(deltaItemData.maxammo);
+		const bool ammoRequiresRoll    = RequiresCorrection(deltaItemData.ammo);
+		const bool maxammoRequiresRoll = RequiresCorrection(deltaItemData.maxammo);
 
-        if (ammoRequiresRoll)
-        {
-            Roll(i_oldTic, [&deltaItemData](auto& rollingIter)
-                {
-                    ApplyDeltaArray(rollingIter->second.ammo, deltaItemData.ammo);
-                });
-        }
+		if (ammoRequiresRoll)
+		{
+			Roll(i_oldTic, [&deltaItemData](auto& rollingIter)
+				{
+				    ApplyDeltaArray(rollingIter->second.ammo, deltaItemData.ammo);
+				});
+		}
 
-        if (maxammoRequiresRoll)
-        {
-            Roll(i_oldTic, [&deltaItemData](auto& rollingIter)
-                {
-                    ApplyDeltaArray(rollingIter->second.maxammo, deltaItemData.maxammo);
-                });
-        }
+		if (maxammoRequiresRoll)
+		{
+			Roll(i_oldTic, [&deltaItemData](auto& rollingIter)
+				{
+				    ApplyDeltaArray(rollingIter->second.maxammo, deltaItemData.maxammo);
+				});
+		}
 
-        bool weaponOwnedRequiresRoll = false;
-        for (size_t i = 0; i < i_itemData.weaponowned.size(); ++i)
-        {
-            if (historyIter->second.weaponowned[i] != i_itemData.weaponowned[i])
-            {
-                weaponOwnedRequiresRoll = true;
-                Roll(i_oldTic, [&i_itemData](auto& rollingIter)
-                    {
-                        // Just copy the whole array and be done with it - this is nothing but bools.
-                        rollingIter->second.weaponowned = i_itemData.weaponowned;
-                    });
-                break;
-            }
-        }
+		bool weaponOwnedRequiresRoll = false;
+		for (size_t i = 0; i < i_itemData.weaponowned.size(); ++i)
+		{
+			if (historyIter->second.weaponowned[i] != i_itemData.weaponowned[i])
+			{
+				weaponOwnedRequiresRoll = true;
+				Roll(i_oldTic, [&i_itemData](auto& rollingIter)
+				    {
+				        // Just copy the whole array and be done with it - this is nothing but bools.
+				        rollingIter->second.weaponowned = i_itemData.weaponowned;
+				    });
+				break;
+			}
+		}
 
-        const bool readyweaponRequiresRoll = i_itemData.readyweapon != historyIter->second.readyweapon;
-        if (readyweaponRequiresRoll)
-        {
-            Roll(i_oldTic, [&i_itemData](auto& rollingIter)
-                {
-                    rollingIter->second.readyweapon = i_itemData.readyweapon;
-                });
-        }
+		const bool readyweaponRequiresRoll = i_itemData.readyweapon != historyIter->second.readyweapon;
+		if (readyweaponRequiresRoll)
+		{
+			Roll(i_oldTic, [&i_itemData](auto& rollingIter)
+				{
+				    rollingIter->second.readyweapon = i_itemData.readyweapon;
+				});
+		}
 
-        const bool pendingweaponRequiresRoll = i_itemData.pendingweapon != historyIter->second.pendingweapon;
-        if (pendingweaponRequiresRoll)
-        {
-            Roll(i_oldTic, [&i_itemData](auto& rollingIter)
-                {
-                    rollingIter->second.pendingweapon = i_itemData.pendingweapon;
-                });
-        }
+		const bool pendingweaponRequiresRoll = i_itemData.pendingweapon != historyIter->second.pendingweapon;
+		if (pendingweaponRequiresRoll)
+		{
+			Roll(i_oldTic, [&i_itemData](auto& rollingIter)
+				{
+				    rollingIter->second.pendingweapon = i_itemData.pendingweapon;
+				});
+		}
 
-        const bool playerObjectRequiresRefresh =    ammoRequiresRoll
-                                                 or maxammoRequiresRoll
-                                                 or weaponOwnedRequiresRoll
-                                                 or readyweaponRequiresRoll
-                                                 or pendingweaponRequiresRoll;
+		const bool playerObjectRequiresRefresh =    ammoRequiresRoll
+		                                         or maxammoRequiresRoll
+		                                         or weaponOwnedRequiresRoll
+		                                         or readyweaponRequiresRoll
+		                                         or pendingweaponRequiresRoll;
 
-        if (playerObjectRequiresRefresh)
-        {
-            auto mostRecentIter = m_history.find(m_mostRecentTic);
-            assert(mostRecentIter != m_history.end());
+		if (playerObjectRequiresRefresh)
+		{
+			auto mostRecentIter = m_history.find(m_mostRecentTic);
+			assert(mostRecentIter != m_history.end());
 
-            mostRecentIter->second.ToPlayer(io_player);
-        }
+			mostRecentIter->second.ToPlayer(io_player);
+		}
 
-        return playerObjectRequiresRefresh;
-    }
+		return playerObjectRequiresRefresh;
+	}
 
-    return false;
+	return false;
 }

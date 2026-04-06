@@ -8,81 +8,83 @@ class player_t;
 
 enum class RollerRecordResultEnum
 {
-    SUCCESS,            ///< All good.
-    CURRENT_REPLACED,   ///< Current tic already had an entry, but it was replaced with something.
-    INVALID_TIC_FUTURE, ///< The tic was NOT recorded because it was too far in the future.
-    INVALID_TIC_PAST,   ///< The tic was NOT recorded because it was in the past.
+	SUCCESS,            ///< All good.
+	CURRENT_REPLACED,   ///< Current tic already had an entry, but it was replaced with something.
+	INVALID_TIC_FUTURE, ///< The tic was NOT recorded because it was too far in the future.
+	INVALID_TIC_PAST,   ///< The tic was NOT recorded because it was in the past.
 };
 
 class PlayerStateRoller
 {
-    public:
+	public:
 
-        /// Constructor: Build a state roller with recorded history starting at the upcoming first recorded tic.
-        PlayerStateRoller();
+		/// Constructor: Build a state roller with recorded history starting at the upcoming first recorded tic.
+		PlayerStateRoller();
 
-        /// Add the current player state to history for the current gametic.  It is assumed and
-        /// required that tic numbers given to this function only ever be incrementing by
-        /// 1 for each successive call.  If current state is added to history, then SUCCESS is
-        /// returned.  Otherwise, an enumeral describing the error condition is returned.
-        RollerRecordResultEnum Record(int currentTic, const player_t& player);
+		/// Add the current player state to history for the current gametic.  It is assumed and
+		/// required that tic numbers given to this function only ever be incrementing by
+		/// 1 for each successive call.  If current state is added to history, then SUCCESS is
+		/// returned.  Otherwise, an enumeral describing the error condition is returned.
+		RollerRecordResultEnum Record(int currentTic, const player_t& player);
 
-        /// Resolve the canonical statement about player data at the given tic against recorded
-        /// history.  If history is rewritten, then the resulting state is rolled forward, the
-        /// ultimate resulting player data is written into the given player structure, and
-        /// true is returned.  Otherwise, history and the player state are unmodified and false
-        /// is returned.
-        bool Resolve(int i_oldTic, const PlayerItemDataType& i_itemData, player_t& io_player);
+		/// Resolve the canonical statement about player data at the given tic against recorded
+		/// history.  If history is rewritten, then the resulting state is rolled forward, the
+		/// ultimate resulting player data is written into the given player structure, and
+		/// true is returned.  Otherwise, history and the player state are unmodified and false
+		/// is returned.
+		bool Resolve(int i_oldTic, const PlayerItemDataType& i_itemData, player_t& io_player);
 
-        template <typename StreamType>
-        friend StreamType& operator<<(StreamType& io_stream, const PlayerStateRoller& i_thisRef)
-        {
-            io_stream << i_thisRef.m_history.size();
-            for (const auto& [tic, historyItem] : i_thisRef.m_history)
-            {
-                io_stream << tic << historyItem;
-            }
-            io_stream << i_thisRef.m_mostRecentTic;
-            io_stream << i_thisRef.m_oldestTic;
+		/// Generic stream-in operator.
+		template <typename StreamType>
+		friend StreamType& operator<<(StreamType& io_stream, const PlayerStateRoller& i_thisRef)
+		{
+			io_stream << i_thisRef.m_history.size();
+			for (const auto& [tic, historyItem] : i_thisRef.m_history)
+			{
+				io_stream << tic << historyItem;
+			}
+			io_stream << i_thisRef.m_mostRecentTic;
+			io_stream << i_thisRef.m_oldestTic;
 
-            return io_stream;
-        }
+			return io_stream;
+		}
 
-        template <typename StreamType>
-        friend StreamType& operator>>(StreamType& io_stream, PlayerStateRoller& o_thisRef)
-        {
-            o_thisRef.m_history.clear();
+		/// Generic stream-out operator.
+		template <typename StreamType>
+		friend StreamType& operator>>(StreamType& io_stream, PlayerStateRoller& o_thisRef)
+		{
+			o_thisRef.m_history.clear();
 
-            size_t historySize {0};
-            io_stream >> historySize;
+			size_t historySize {0};
+			io_stream >> historySize;
 
-            for (size_t i = 0; i < historySize; ++i)
-            {
-                int tic {0};
-                io_stream >> tic;
-                io_stream >> o_thisRef.m_history[tic];
-            }
-            io_stream >> o_thisRef.m_mostRecentTic;
-            io_stream >> o_thisRef.m_oldestTic;
+			for (size_t i = 0; i < historySize; ++i)
+			{
+				int tic {0};
+				io_stream >> tic;
+				io_stream >> o_thisRef.m_history[tic];
+			}
+			io_stream >> o_thisRef.m_mostRecentTic;
+			io_stream >> o_thisRef.m_oldestTic;
 
-            return io_stream;
-        }
+			return io_stream;
+		}
 
-        int ExpectedTic() const { return m_mostRecentTic + 1; }
+		int ExpectedTic() const { return m_mostRecentTic + 1; }
 
-    protected:
+	protected:
 
-        template <typename Callable>
-        void Roll(int i_oldTic, Callable&& i_callable);
+		template <typename Callable>
+		void Roll(int i_oldTic, Callable&& i_callable);
 
-        struct IdentityHasher
-        {
-            size_t operator()(int ticNumber) const { return static_cast<size_t>(ticNumber); }
-        };
+		struct IdentityHasher
+		{
+			size_t operator()(int ticNumber) const { return static_cast<size_t>(ticNumber); }
+		};
 
-        // One second worth of state history, keyed on *client* tic number.
-        std::unordered_map<int, PlayerItemDataType, IdentityHasher> m_history;
+		// One second worth of state history, keyed on *client* tic number.
+		std::unordered_map<int, PlayerItemDataType, IdentityHasher> m_history;
 
-        int m_mostRecentTic;
-        int m_oldestTic;
+		int m_mostRecentTic;
+		int m_oldestTic;
 };
