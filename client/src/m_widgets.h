@@ -65,5 +65,6 @@ const int M_SmallFontLineHeight();
 const patch_t* M_MenuConfConfiguredPatch(const std::string& name, const char* context);
 const menuconftheme_t& M_MenuConfTheme();
 void M_WarnMenuConf(const std::string& message);
+void M_WarnMenuConfOnce(const std::string& message);
 EColorRange M_MenuTextColor(std::string_view role, std::string_view menuId = {}, 
                             const std::string* overrideColor = nullptr);

@@ -1021,6 +1021,11 @@ void DCanvas::DrawPatchWithPalette(const patch_t* patch, int x, int y, const pal
 
 void DCanvas::DrawPatchCleanWithPalette(const patch_t* patch, int x, int y, const palette_t* palette) const
 {
+	if (patch == nullptr)
+	{
+		return;
+	}
+
 	if (palette == nullptr)
 	{
 		DrawPatchClean(patch, x, y);
@@ -1030,10 +1035,18 @@ void DCanvas::DrawPatchCleanWithPalette(const patch_t* patch, int x, int y, cons
 	if (mSurface->getBitsPerPixel() == 8)
 	{
 		palindex_t translation[256];
+		static const palette_t* cached_palette = nullptr;
+		static const argb_t* cached_dest_palette = nullptr;
 		const argb_t* dest_palette = mSurface->getPalette();
 
-		for (int i = 0; i < 256; i++)
-			translation[i] = V_BestColor(dest_palette, palette->colors[i]);
+		if (cached_palette != palette || cached_dest_palette != dest_palette)
+		{
+			cached_palette = palette;
+			cached_dest_palette = dest_palette;
+
+			for (int i = 0; i < 256; i++)
+				translation[i] = V_BestColor(dest_palette, palette->colors[i]);
+		}
 
 		const translationref_t old_colormap = V_ColorMap;
 		V_ColorMap = translationref_t(translation);

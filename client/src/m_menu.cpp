@@ -302,15 +302,6 @@ namespace
 		return it != M_MenuConf().menus.end() ? &it->second : nullptr;
 	}
 
-	void WarnMenuConfOnce(const std::string& message)
-	{
-		static std::unordered_set<std::string> warnedMessages;
-		if (warnedMessages.insert(message).second)
-		{
-			M_WarnMenuConf(message);
-		}
-	}
-
 	const std::string* MenuSoundForRole(std::string_view role,
 	                                    const std::string* overrideSound,
 	                                    std::string_view menuId)
@@ -394,7 +385,7 @@ namespace
 			const int baseLump = W_CheckNumForName(side.basePatch.c_str());
 			if (baseLump < 0)
 			{
-				WarnMenuConfOnce(fmt::sprintf("header decoration references missing patch \"%s\"",
+				M_WarnMenuConfOnce(fmt::sprintf("header decoration references missing patch \"%s\"",
 				                              side.basePatch.c_str()));
 				return;
 			}
