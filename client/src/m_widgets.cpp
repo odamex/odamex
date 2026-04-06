@@ -234,12 +234,9 @@ namespace menu::slider
 
 namespace menu::cursor
 {
-	namespace
+	int OffsetY()
 	{
-		int OffsetY()
-		{
-			return M_MenuConfTheme().cursorOffsetY;
-		}
+		return M_MenuConfTheme().cursorOffsetY;
 	}
 
 	const patch_t* Patch()
@@ -259,17 +256,13 @@ namespace menu::cursor
 
 namespace menu::indicator
 {
-	namespace
+	int OffsetX()
 	{
-		int OffsetX()
-		{
-			return M_MenuConfTheme().indicator.offsetX;
-		}
-
-		int OffsetY()
-		{
-			return M_MenuConfTheme().indicator.offsetY;
-		}
+		return M_MenuConfTheme().indicator.offsetX;
+	}
+	int OffsetY()
+	{
+		return M_MenuConfTheme().indicator.offsetY;
 	}
 
 	const patch_t* Patch(int which)
