@@ -169,21 +169,6 @@ void P_ClearPlayerScores(player_t& p, byte flags)
 	}
 }
 
-static bool cmpFrags(player_t* a, player_t* b)
-{
-	return a->fragcount < b->fragcount;
-}
-
-static bool cmpLives(player_t* a, player_t* b)
-{
-	return a->lives < b->lives;
-}
-
-static bool cmpWins(player_t* a, const player_t* b)
-{
-	return a->roundwins < b->roundwins;
-}
-
 /**
  * @brief Execute the query.
  *
@@ -236,69 +221,42 @@ PlayerResults PlayerQuery::execute()
 	case SORT_NONE:
 		break;
 	case SORT_FRAGS:
-		std::sort(results.players.rbegin(), results.players.rend(), cmpFrags);
+		std::sort(results.players.rbegin(), results.players.rend(),
+			[](const player_t* a, const player_t* b){ return a->fragcount < b->fragcount; });
 		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
 		{
 			// Since it's sorted, we know the top fragger is at the front.
 			int top = results.players.at(0)->fragcount;
-			for (PlayersView::iterator it = results.players.begin();
-			     it != results.players.end();)
-			{
-				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->fragcount != top
-				                                         : (*it)->fragcount == top;
-				if (cmp)
-				{
-					it = results.players.erase(it);
-				}
-				else
-				{
-					++it;
-				}
-			}
+			std::erase_if(results.players, [this, top](const player_t* player){
+				return (m_sortFilter == SFILTER_MAX) ? player->fragcount != top
+				                                     : player->fragcount == top;
+			});
 		}
 		break;
 	case SORT_LIVES:
-		std::sort(results.players.rbegin(), results.players.rend(), cmpLives);
+		std::sort(results.players.rbegin(), results.players.rend(),
+			[](const player_t* a, const player_t* b){ return a->lives < b->lives; });
 		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
 		{
-			// Since it's sorted, we know the top fragger is at the front.
+			// Since it's sorted, we know the player with top lives is at the front.
 			int top = results.players.at(0)->lives;
-			for (PlayersView::iterator it = results.players.begin();
-			     it != results.players.end();)
-			{
-				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->lives != top
-				                                         : (*it)->lives == top;
-				if (cmp)
-				{
-					it = results.players.erase(it);
-				}
-				else
-				{
-					++it;
-				}
-			}
+			std::erase_if(results.players, [this, top](const player_t* player){
+				return (m_sortFilter == SFILTER_MAX) ? player->lives != top
+				                                     : player->lives == top;
+			});
 		}
 		break;
 	case SORT_WINS:
-		std::sort(results.players.rbegin(), results.players.rend(), cmpWins);
+		std::sort(results.players.rbegin(), results.players.rend(),
+			[](const player_t* a, const player_t* b){ return a->roundwins < b->roundwins; });
 		if (m_sortFilter == SFILTER_MAX || m_sortFilter == SFILTER_NOT_MAX)
 		{
 			// Since it's sorted, we know the top winner is at the front.
 			int top = results.players.at(0)->roundwins;
-			for (PlayersView::iterator it = results.players.begin();
-			     it != results.players.end();)
-			{
-				bool cmp = (m_sortFilter == SFILTER_MAX) ? (*it)->roundwins != top
-				                                         : (*it)->roundwins == top;
-				if (cmp)
-				{
-					it = results.players.erase(it);
-				}
-				else
-				{
-					++it;
-				}
-			}
+			std::erase_if(results.players, [this, top](const player_t* player){
+				return (m_sortFilter == SFILTER_MAX) ? player->roundwins != top
+				                                     : player->roundwins == top;
+			});
 		}
 		break;
 	}

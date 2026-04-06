@@ -121,51 +121,7 @@ public:
 	{	return window_mode != WINDOW_Windowed;	}
 
 	[[nodiscard]]
-	bool operator==(const IVideoMode& other) const
-	{
-		return width == other.width && height == other.height &&
-			bpp == other.bpp &&
-			window_mode == other.window_mode &&
-			vsync == other.vsync &&
-			stretch_mode == other.stretch_mode;
-	}
-
-	bool operator!=(const IVideoMode& other) const
-	{
-		return !(operator==(other));
-	}
-
-	bool operator<(const IVideoMode& other) const
-	{
-		if (width != other.width)
-			return width < other.width;
-		if (height != other.height)
-			return height < other.height;
-		if (bpp != other.bpp)
-			return bpp < other.bpp;
-		if (window_mode != other.window_mode)
-			return static_cast<int>(window_mode) < static_cast<int>(other.window_mode);
-		if (vsync != other.vsync)
-			return static_cast<int>(vsync) < static_cast<int>(other.vsync);
-		if (stretch_mode != other.stretch_mode)
-			return stretch_mode < other.stretch_mode;
-		return false;
-	}
-
-	bool operator>(const IVideoMode& other) const
-	{
-		return !operator==(other) && !operator<(other);
-	}
-
-	bool operator<=(const IVideoMode& other) const
-	{
-		return operator<(other) || operator==(other);
-	}
-
-	bool operator>=(const IVideoMode& other) const
-	{
-		return operator>(other) || operator==(other);
-	}
+	auto operator<=>(const IVideoMode& other) const = default;
 
 	bool isValid() const
 	{

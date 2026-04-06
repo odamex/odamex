@@ -598,154 +598,33 @@ bool operator== (const char* lhs, const OString& rhs)
 	return rhs.compare(lhs) == 0;
 }
 
-
 // ------------------------------------------------------------------------
-// operator!=
-// ------------------------------------------------------------------------
-
-bool operator!= (const OString& lhs, const OString& rhs)
-{
-	return !(lhs.equals(rhs));
-}
-
-bool operator!= (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) != 0;
-}
-
-bool operator!= (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) != 0;
-}
-
-bool operator!= (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) != 0;
-}
-
-bool operator!= (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) != 0;
-}
-
-
-// ------------------------------------------------------------------------
-// operator<
+// operator<=>
 // ------------------------------------------------------------------------
 
-bool operator< (const OString& lhs, const OString& rhs)
+std::strong_ordering operator<=> (const OString& lhs, const OString& rhs)
 {
-	return lhs.compare(rhs) < 0;
+	return lhs.compare(rhs) <=> 0;
 }
 
-bool operator< (const OString& lhs, const std::string& rhs)
+std::strong_ordering operator<=> (const OString& lhs, const std::string& rhs)
 {
-	return lhs.compare(rhs) < 0;
+	return lhs.compare(rhs) <=> 0;
 }
 
-bool operator< (const std::string& lhs, const OString& rhs)
+std::strong_ordering operator<=> (const std::string& lhs, const OString& rhs)
 {
-	return rhs.compare(lhs) > 0;
+	return 0 <=> rhs.compare(lhs);
 }
 
-bool operator< (const OString& lhs, const char* rhs)
+std::strong_ordering operator<=> (const OString& lhs, const char* rhs)
 {
-	return lhs.compare(rhs) < 0;
+	return lhs.compare(rhs) <=> 0;
 }
 
-bool operator< (const char* lhs, const OString& rhs)
+std::strong_ordering operator<=> (const char* lhs, const OString& rhs)
 {
-	return rhs.compare(lhs) > 0;
-}
-
-
-// ------------------------------------------------------------------------
-// operator<=
-// ------------------------------------------------------------------------
-
-bool operator<= (const OString& lhs, const OString& rhs)
-{
-	return lhs.equals(rhs) || lhs.compare(rhs) < 0;
-}
-
-bool operator<= (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) < 0;
-}
-
-bool operator<= (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) > 0;
-}
-
-bool operator<= (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) < 0;
-}
-
-bool operator<= (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) > 0;
-}
-
-
-// ------------------------------------------------------------------------
-// operator>
-// ------------------------------------------------------------------------
-
-bool operator> (const OString& lhs, const OString& rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator> (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator> (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) < 0;
-}
-
-bool operator> (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator> (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) < 0;
-}
-
-
-// ------------------------------------------------------------------------
-// operator>=
-// ------------------------------------------------------------------------
-
-bool operator>= (const OString& lhs, const OString& rhs)
-{
-	return lhs.equals(rhs) || lhs.compare(rhs) > 0;
-}
-
-bool operator>= (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator>= (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) < 0;
-}
-
-bool operator>= (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator>= (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) < 0;
+	return 0 <=> rhs.compare(lhs);
 }
 
 // ------------------------------------------------------------------------
@@ -767,13 +646,13 @@ void swap(::OString& x, ::OString& y)
 struct UpperFunctor
 {
 	inline char operator()(const char c) const
-	{	return toupper(c);	}
+	{	return toupper(static_cast<unsigned char>(c));	}
 };
 
 struct LowerFunctor
 {
 	inline char operator()(const char c) const
-	{	return tolower(c);	}
+	{	return tolower(static_cast<unsigned char>(c));	}
 };
 
 template <typename FUNC>
@@ -805,10 +684,9 @@ static OString OStringConverter(const char* s, size_t length)
 	}
 }
 
-
-OString OStringToUpper(const char* s, size_t length)
+OString OStringToUpper(std::string_view s)
 {
-	return OStringConverter<UpperFunctor>(s, length);
+	return OStringConverter<UpperFunctor>(s.data(), s.length());
 }
 
 OString OStringToUpper(const OString& str)
@@ -816,9 +694,9 @@ OString OStringToUpper(const OString& str)
 	return OStringConverter<UpperFunctor>(str.c_str(), str.length());
 }
 
-OString OStringToLower(const char* s, size_t length)
+OString OStringToLower(std::string_view s)
 {
-	return OStringConverter<LowerFunctor>(s, length);
+	return OStringConverter<LowerFunctor>(s.data(), s.length());
 }
 
 OString OStringToLower(const OString& str)

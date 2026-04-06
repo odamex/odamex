@@ -1065,7 +1065,7 @@ bool SectorSnapshotManager::mValidSnapshot(int time) const
 //
 // Returns true if the container does not contain any valid snapshots
 //
-bool SectorSnapshotManager::empty()
+bool SectorSnapshotManager::empty() const
 {
 	return (!mValidSnapshot(mMostRecent));
 }
