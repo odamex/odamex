@@ -573,7 +573,6 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 	messenger = OdaMessenger();
 	P_ClearAllNetIds();
 	s_canary.reset();
-	rollerState = PlayerStateRoller{};
 	gameaction = ga_fullconsole;
 }
 
@@ -1950,8 +1949,6 @@ bool CL_Connect()
 	}
 
 	messenger.SendAll(gametic, ::serveraddr);
-
-	rollerState = PlayerStateRoller{};
 
 	if (gameaction == ga_fullconsole) // Host_EndGame was called
 		return false;
