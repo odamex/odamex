@@ -166,7 +166,7 @@ extern	struct wbstartstruct_s wminfo;
 
 // LUT of ammunition limits for each kind.
 // This doubles with BackPack powerup item.
-extern	int 			maxammo[NUMAMMO];
+extern std::array<int, NUMAMMO> maxammo;
 
 //-----------------------------------------
 // Internal parameters, used for engine.

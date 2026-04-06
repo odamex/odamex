@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <array>
+
 #include "info.h"
 
 class AActor;
@@ -48,7 +50,7 @@ struct weaponinfo_t
 	int internalflags;
 };
 
-extern	weaponinfo_t	weaponinfo[NUMWEAPONS];
+extern std::array<weaponinfo_t, NUMWEAPONS> weaponinfo;
 
 // Weapon Flags (MBF21 SPECS)
 #define WPF_NOFLAG			0

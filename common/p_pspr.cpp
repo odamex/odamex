@@ -299,7 +299,7 @@ bool P_EnoughAmmo(const player_t& player, weapontype_t weapon, bool switching = 
 //
 void P_SwitchWeapon(player_t& player)
 {
-	const byte *prefs;
+	const int8_t *prefs;
 
 	if ((multiplayer && !sv_allowpwo) || demoplayback)
 		prefs = UserInfo::weapon_prefs_default;
@@ -409,7 +409,7 @@ bool P_CheckSwitchWeapon(const player_t& player, weapontype_t weapon)
 		return true;
 
 	// Use player's weapon preferences
-	const byte *prefs = player.userinfo.weapon_prefs;
+	const int8_t *prefs = player.userinfo.weapon_prefs;
 	if (prefs[weapon] > prefs[currentweapon])
 	{
 		if (player.userinfo.switchweapon == WPSW_PWO_ALT &&

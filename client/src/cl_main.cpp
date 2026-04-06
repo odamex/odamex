@@ -1499,7 +1499,7 @@ void CL_SendUserInfo(buf_t& netBuf)
 	MSG_WriteByte	(&netBuf, static_cast<byte>(coninfo->switchweapon));
 	for (const auto& pref : coninfo->weapon_prefs)
 	{
-		MSG_WriteByte (&netBuf, pref);
+		MSG_WriteByte (&netBuf, static_cast<byte>(pref));
 	}
 
 	CL_RebuildAllPlayerTranslations();	// Refresh Player Translations AFTER sending the new status to the server.

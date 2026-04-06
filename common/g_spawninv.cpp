@@ -44,7 +44,7 @@ struct spawnInventory_t
 	int health = 100;
 	int armorpoints = 0;
 	int armortype = 0;
-	weapontype_t readyweapon = NUMWEAPONS;
+	weapontype_t readyweapon = wp_none;
 	std::array<bool, NUMWEAPONS> weaponowned{};
 	std::array<int, NUMAMMO> ammo{};
 	bool berserk = false;
@@ -99,7 +99,7 @@ static char WeaponTypeToChar(const weapontype_t type)
 		return 'a';
 	else if (type == wp_supershotgun)
 		return 'c';
-	else if (type == NUMWEAPONS)
+	else if (type == wp_none)
 		return 'x';
 
 	return '?';
@@ -117,7 +117,7 @@ static int WeaponTypeFromChar(const char ch)
 	else if (ch == 'C' || ch == 'c')
 		return wp_supershotgun;
 	else if (ch == 'X' || ch == 'x')
-		return NUMWEAPONS;
+		return wp_none;
 
 	return limits::MININT; // best chance of loud and obvious crash
 }
@@ -327,7 +327,7 @@ static std::string SpawnInvSerialize(const spawnInventory_t& inv)
 		params.push_back(buf);
 	}
 
-	if (inv.readyweapon != NUMWEAPONS)
+	if (inv.readyweapon != wp_none)
 	{
 		buf = fmt::sprintf("rweapon:%s", InvReadyWeaponStr(inv));
 		params.push_back(buf);
@@ -729,7 +729,7 @@ BEGIN_COMMAND(spawninv)
 		else if (::gSpawnInv.armortype == 2)
 			PrintFmt("Blue Armor: {}\n", ::gSpawnInv.armorpoints);
 
-		if (::gSpawnInv.readyweapon < 0 || ::gSpawnInv.readyweapon >= NUMWEAPONS)
+		if (::gSpawnInv.readyweapon < 0 || ::gSpawnInv.readyweapon == wp_none || ::gSpawnInv.readyweapon >= NUMWEAPONS)
 			PrintFmt("Ready Weapon: None\n");
 		else
 			PrintFmt("Ready Weapon: {}\n", ::weaponnames[::gSpawnInv.readyweapon]);

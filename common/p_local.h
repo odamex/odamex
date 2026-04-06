@@ -23,9 +23,10 @@
 
 #pragma once
 
-#include "r_local.h"
-
+#include <array>
 #include <set>
+
+#include "r_local.h"
 
 #define FLOATSPEED		(FRACUNIT*4)
 
@@ -339,8 +340,8 @@ extern std::set<short>	movable_sectors;
 //
 // P_INTER
 //
-extern int				maxammo[NUMAMMO];
-extern int				clipammo[NUMAMMO];
+extern std::array<int, NUMAMMO> maxammo;
+extern std::array<int, NUMAMMO> clipammo;
 
 void P_GiveSpecial(player_t& player, AActor& special);
 void P_TouchSpecialThing (AActor& special, AActor& toucher);

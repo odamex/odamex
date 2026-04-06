@@ -49,9 +49,9 @@
 // ammopershot
 // internal flags
 //
-weaponinfo_t weaponinfo[NUMWEAPONS] =
+std::array<weaponinfo_t, NUMWEAPONS> weaponinfo =
 {
-	{
+	weaponinfo_t{
 		// fist
 		.ammotype      = am_noammo,
 		.upstate       = S_PUNCHUP,

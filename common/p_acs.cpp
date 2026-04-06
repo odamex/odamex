@@ -142,12 +142,14 @@ static DoomEntity DoomAmmoNames[8] = {{"Clip", MT_CLIP},        {"Shell", MT_MIS
                                       {"ClipBox", MT_MISC17},   {"ShellBox", MT_MISC23},
                                       {"RocketBox", MT_MISC19}, {"CellPack", MT_MISC21}};
 
-static DoomEntity DoomWeaponNames[9] = {
+static DoomEntity DoomWeaponNames[NUMWEAPONS] = {
     {"Fist", MT_NULL}, // Default weapon, no entity
     {"Pistol", MT_NULL},          {"Shotgun", MT_SHOTGUN},
     {"Chaingun", MT_CHAINGUN},    {"RocketLauncher", MT_MISC27},
     {"PlasmaRifle", MT_MISC28},   {"BFG9000", MT_MISC25},
-    {"Chainsaw", MT_MISC26},      {"SuperShotgun", MT_SUPERSHOTGUN}};
+    {"Chainsaw", MT_MISC26},      {"SuperShotgun", MT_SUPERSHOTGUN},
+    {"OdaUnarmed", MT_NULL}    // Odamex-specific wp_none.
+    };
 
 static DoomEntity DoomKeyNames[6] = {{"BlueCard", MT_MISC4},
                                      {"YellowCard", MT_MISC6},
@@ -311,7 +313,7 @@ static void DoGiveInv(player_t& player, const char* type, int amount)
 			while (--amount > 0);
 
 			// Don't bring it up automatically
-			if (player.readyweapon != NUMWEAPONS && player.pendingweapon != NUMWEAPONS)
+			if (player.readyweapon != wp_none && player.pendingweapon != wp_none)
 				player.pendingweapon = savedpendingweap;
 			SERVER_ONLY(SV_SendPlayerInfo(player));
 			return;
@@ -403,7 +405,11 @@ static void TakeWeapon(player_t& player, int weapon)
 		}
 
 		if (!hasWeapon)
-			player.pendingweapon = NUMWEAPONS;
+		{
+			// Safety net - if we're COMPLETELY without weapons, we want to allow and switch to wp_none.
+			player.weaponowned[wp_none] = true;
+			player.pendingweapon = wp_none;
+		}
 	}
 	SERVER_ONLY(SV_SendPlayerInfo(player));
 }

@@ -137,7 +137,7 @@ colorpreset_t D_ColorPreset (const char *colorpreset)
 static cvar_t *weaponpref_cvar_map[NUMWEAPONS] = {
 	&cl_weaponpref_fst, &cl_weaponpref_pis, &cl_weaponpref_sg, &cl_weaponpref_cg,
 	&cl_weaponpref_rl, &cl_weaponpref_pls, &cl_weaponpref_bfg, &cl_weaponpref_csw,
-	&cl_weaponpref_ssg };
+	&cl_weaponpref_ssg, nullptr };
 
 //
 // D_PrepareWeaponPreferenceUserInfo
@@ -147,17 +147,25 @@ static cvar_t *weaponpref_cvar_map[NUMWEAPONS] = {
 //
 void D_PrepareWeaponPreferenceUserInfo()
 {
-	byte *prefs = consoleplayer().userinfo.weapon_prefs;
+	int8_t *prefs = consoleplayer().userinfo.weapon_prefs;
 
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
 		// sanitize the weapon preferences
-		if (weaponpref_cvar_map[i]->asInt() < 0)
-			weaponpref_cvar_map[i]->ForceSet(0.0f);
-		if (weaponpref_cvar_map[i]->asInt() >= NUMWEAPONS)
-			weaponpref_cvar_map[i]->ForceSet(float(NUMWEAPONS - 1));
+		if (weaponpref_cvar_map[i])
+		{
+			if (weaponpref_cvar_map[i]->asInt() < 0)
+				weaponpref_cvar_map[i]->ForceSet(0.0f);
+			if (weaponpref_cvar_map[i]->asInt() >= NUMWEAPONS)
+				weaponpref_cvar_map[i]->ForceSet(float(NUMWEAPONS - 1));
 
-		prefs[i] = weaponpref_cvar_map[i]->asInt();
+			prefs[i] = weaponpref_cvar_map[i]->asInt();
+		}
+		else
+		{
+			// Bottom priority - Lower than the lowest value that can be set via the UI.
+			prefs[i] = -1;
+		}
 	}
 }
 
