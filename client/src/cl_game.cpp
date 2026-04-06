@@ -1199,7 +1199,7 @@ void G_Ticker (void)
 
 			if (not netdemo.isPaused())
 			{
-                const RollerRecordResultEnum recordResult = rollerState.Record(gametic, consoleplayer());
+				const RollerRecordResultEnum recordResult = rollerState.Record(gametic, consoleplayer());
 				switch (recordResult)
 				{
 					case RollerRecordResultEnum::CURRENT_REPLACED:

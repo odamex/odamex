@@ -3513,7 +3513,7 @@ void SV_PlayerTriedToCheat(player_t &player)
 
 void SV_SendPlayerInventory(uint32_t clientTic, player_t& player)
 {
-    MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerInventory(clientTic, player));
+	MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerInventory(clientTic, player));
 }
 
 //

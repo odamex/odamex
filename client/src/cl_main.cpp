@@ -778,9 +778,8 @@ void CL_StepTics(unsigned int count)
 		OInterpolation::getInstance().ticGameInterpolation();
 
 		G_Ticker ();
-
 		gametic++;
-		if (netdemo.isPlaying())
+		if (netdemo.isPlaying() && !netdemo.isPaused())
 			netdemo.ticker();
 	}
 

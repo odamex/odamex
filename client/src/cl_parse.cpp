@@ -3010,25 +3010,25 @@ static void CL_NoiseAlert(const odaproto::svc::NoiseAlert* msg)
 
 static void CL_PlayerInventory(const odaproto::svc::PlayerInventory* msg)
 {
-    PlayerItemDataType inventoryResponse;
+	PlayerItemDataType inventoryResponse;
 
-    const size_t ammoElementCount = std::min(inventoryResponse.ammo.size(), static_cast<size_t>(msg->inventory().ammo_size()));
+	const size_t ammoElementCount = std::min(inventoryResponse.ammo.size(), static_cast<size_t>(msg->inventory().ammo_size()));
 
-    std::copy(msg->inventory().ammo().begin(),
-              msg->inventory().ammo().begin() + ammoElementCount,
-              inventoryResponse.ammo.begin());
+	std::copy(msg->inventory().ammo().begin(),
+	          msg->inventory().ammo().begin() + ammoElementCount,
+	          inventoryResponse.ammo.begin());
 
-    std::copy(msg->inventory().maxammo().begin(),
-              msg->inventory().maxammo().begin() + ammoElementCount,
-              inventoryResponse.maxammo.begin());
+	std::copy(msg->inventory().maxammo().begin(),
+	          msg->inventory().maxammo().begin() + ammoElementCount,
+	          inventoryResponse.maxammo.begin());
 
 	const uint32_t weaponowned = msg->inventory().weaponowned();
 	UnpackBoolArray(inventoryResponse.weaponowned, weaponowned);
 
-    inventoryResponse.readyweapon   = static_cast<weapontype_t>(msg->inventory().readyweapon());
-    inventoryResponse.pendingweapon = static_cast<weapontype_t>(msg->inventory().pendingweapon());
+	inventoryResponse.readyweapon   = static_cast<weapontype_t>(msg->inventory().readyweapon());
+	inventoryResponse.pendingweapon = static_cast<weapontype_t>(msg->inventory().pendingweapon());
 
-    CL_ResolveInventory(msg->client_tic(), inventoryResponse);
+	CL_ResolveInventory(msg->client_tic(), inventoryResponse);
 }
 
 static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)

@@ -18,7 +18,7 @@ class PlayerStateRoller
 {
     public:
 
-        /// Constructor: Build a state roller with recorded history starting at the first recorded tic.
+        /// Constructor: Build a state roller with recorded history starting at the upcoming first recorded tic.
         PlayerStateRoller();
 
         /// Add the current player state to history for the current gametic.  It is assumed and

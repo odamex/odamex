@@ -61,8 +61,8 @@ message InventoryState
 
 message Player
 {
-    // The following deleted fields are moved to Inventory.
-    reserved 13 to 17;
+	// The following deleted fields are moved to Inventory.
+	reserved 13 to 17;
 
 	message Psp
 	{

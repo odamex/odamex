@@ -360,15 +360,15 @@ ItemEquipVal P_GiveAmmo(player_t& player, ammotype_t ammotype, float num)
 	player.ammo[ammotype] += static_cast<int>(num);
 
 	if (player.ammo[ammotype] > player.maxammo[ammotype])
-    {
+	{
 		player.ammo[ammotype] = player.maxammo[ammotype];
-    }
+	}
 
-    // If we are not playing as the server, make sure we ask the real server to confirm our pickup.
-    if (not serverside)
-    {
-        player.RequestInventoryCheckFromServer(gametic);
-    }
+	// If we are not playing as the server, make sure we ask the real server to confirm our pickup.
+	if (not serverside)
+	{
+		player.RequestInventoryCheckFromServer(gametic);
+	}
 
 	// If non zero ammo,
 	// don't change up weapons,
