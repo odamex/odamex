@@ -284,7 +284,6 @@ enum svc_t
 	                        // the values for the clc_t enum so that parsing code on the server that,
 	                        // during this transitory phase, can very easily work with both the
 	                        // new and the old enumerals and naive handling code can be correct.
-	clc_playerinventorycheck,
 	svc_netdemocap = 100,  // netdemos - NullPoint
 	svc_netdemostop = 101, // netdemos - NullPoint
 	svc_netdemoloadsnap = 102, // netdemos - NullPoint

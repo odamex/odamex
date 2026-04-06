@@ -21,11 +21,5 @@ message PlayerInput
 	optional int32      move_up             = 14;
 	optional int32      delta_yaw           = 15;
 	optional int32      delta_pitch         = 16;
-	optional uint32     inventory_check_tic = 17;
-}
-
-// clc_playerinventorycheck
-message PlayerInventoryCheck
-{
-	uint32 tic = 1;
+	optional uint32     inventory_check_tic = 17;   // The value is the tic we want to verify - in practice, always the previous tic, but be explicit about it for analysis purposes.
 }

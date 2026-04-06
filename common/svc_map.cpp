@@ -120,8 +120,7 @@ static void InitMap()
 	MapProto(svc_netdemostop, odaproto::svc::NetDemoStop::descriptor());
 	MapProto(svc_netdemoloadsnap, odaproto::svc::NetDemoLoadSnap::descriptor());
 
-	MapProto(clc_playerinput,          odaproto::clc::PlayerInput::descriptor());
-	MapProto(clc_playerinventorycheck, odaproto::clc::PlayerInventoryCheck::descriptor());
+	MapProto(clc_playerinput, odaproto::clc::PlayerInput::descriptor());
 
 }
 

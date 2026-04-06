@@ -4288,12 +4288,6 @@ parseError_e SV_ParseCommandSVC(const byte cmd, player_t& player)
             case clc_playerinput:
                 SV_HandlePlayerInput(*static_cast<odaproto::clc::PlayerInput*>(msgPtrRaw), player);
                 break;
-//            case clc_playerinventorycheck:
-//                // We MUST send out the inventory response immediately - before we process any
-//                // player inputs - because we're being asked about the result of the player's
-//                // immediately-preceding actions.
-//                SV_SendPlayerInventory(static_cast<odaproto::clc::PlayerInventoryCheck*>(msgPtrRaw)->tic(), player);
-//                break;
             default:
                 // This case happens when a message was received, parsed, but not handled.
                 PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", cmd);
