@@ -788,10 +788,10 @@ void M_PlayerSetupDrawer(int currentItem)
 
 	if (!editingName)
 	{
-		const patch_t* cursor = M_MenuCursor();
+		const patch_t* cursor = menu::cursor::Patch();
 		screen->DrawPatchCleanWithPaletteFlipped(
 		    cursor, PLAYERSETUP_X - PlayerSetupCursorGap,
-		    PLAYERSETUP_Y + currentItem * lineHeight + M_MenuCursorOffsetY(), palette);
+		    PLAYERSETUP_Y + currentItem * lineHeight + menu::cursor::OffsetY(), palette);
 	}
 }
 

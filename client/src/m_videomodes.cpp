@@ -442,9 +442,9 @@ void M_VideoModesDrawer(int currentItem)
 			if (i == currentItem &&
 			    (((item.a.selmode != -1) && indicatorAnimCounter < 6) || testingmode != 0))
 			{
-				const patch_t* cursor = M_MenuCursor();
+				const patch_t* cursor = menu::cursor::Patch();
 				screen->DrawPatchCleanWithPalette(cursor, item.a.selmode * 104 + 8,
-				                                  y + M_MenuCursorOffsetY(), palette);
+				                                  y + menu::cursor::OffsetY(), palette);
 			}
 			continue;
 		}
@@ -500,9 +500,9 @@ void M_VideoModesDrawer(int currentItem)
 
 		if (i == currentItem && indicatorAnimCounter < 6)
 		{
-			const patch_t* cursor = M_MenuCursor();
+			const patch_t* cursor = menu::cursor::Patch();
 			screen->DrawPatchCleanWithPalette(cursor, videoModesMenu.indent + 3,
-												y + M_MenuCursorOffsetY(), palette);
+												y + menu::cursor::OffsetY(), palette);
 		}
 	}
 }

@@ -27,11 +27,6 @@
 
 namespace
 {
-	const menuconftheme_t& MenuConfTheme()
-	{
-		return M_MenuConf().theme;
-	}
-
 	void WarnMenuConfOnce(const std::string& message)
 	{
 		static std::unordered_set<std::string> warnedMessages;
@@ -109,9 +104,9 @@ namespace
 
 	const patch_t* MenuSliderGreenKnobPatch()
 	{
-		return CachedMenuPatch(MenuConfTheme().slider.greenKnobPatch, []()
+		return CachedMenuPatch(M_MenuConfTheme().slider.greenKnobPatch, []()
 		{
-			const patch_t* patch = M_MenuConfConfiguredPatch(MenuConfTheme().slider.greenKnobPatch,
+			const patch_t* patch = M_MenuConfConfiguredPatch(M_MenuConfTheme().slider.greenKnobPatch,
 			                                                 "theme.slider.greenKnobPatch");
 			return patch != nullptr ? patch : MenuConfPatch("GSLIDE");
 		});
@@ -119,9 +114,9 @@ namespace
 
 	const patch_t* MenuSliderOverlayPatch()
 	{
-		return CachedMenuPatch(MenuConfTheme().slider.overlayPatch, []()
+		return CachedMenuPatch(M_MenuConfTheme().slider.overlayPatch, []()
 		{
-			const patch_t* patch = M_MenuConfConfiguredPatch(MenuConfTheme().slider.overlayPatch,
+			const patch_t* patch = M_MenuConfConfiguredPatch(M_MenuConfTheme().slider.overlayPatch,
 			                                                 "theme.slider.overlayPatch");
 			return patch != nullptr ? patch : MenuConfPatch("OSLIDE");
 		});
@@ -129,25 +124,26 @@ namespace
 
 }
 
+
 namespace menu::inputbox
 {
 	namespace
 	{
 		const patch_t* FullPatch()
 			{
-				return M_MenuConfConfiguredPatch(MenuConfTheme().inputBox.fullPatch, "theme.inputBox.fullPatch");
+				return M_MenuConfConfiguredPatch(M_MenuConfTheme().inputBox.fullPatch, "theme.inputBox.fullPatch");
 			}
 		const patch_t* LeftPatch()
 			{
-				return M_MenuConfConfiguredPatch(MenuConfTheme().inputBox.leftPatch, "theme.inputBox.leftPatch");
+				return M_MenuConfConfiguredPatch(M_MenuConfTheme().inputBox.leftPatch, "theme.inputBox.leftPatch");
 			}
 		const patch_t* MiddlePatch()
 			{
-				return M_MenuConfConfiguredPatch(MenuConfTheme().inputBox.middlePatch, "theme.inputBox.middlePatch");
+				return M_MenuConfConfiguredPatch(M_MenuConfTheme().inputBox.middlePatch, "theme.inputBox.middlePatch");
 			}
 		const patch_t* RightPatch()
 			{
-				return M_MenuConfConfiguredPatch(MenuConfTheme().inputBox.rightPatch, "theme.inputBox.rightPatch");
+				return M_MenuConfConfiguredPatch(M_MenuConfTheme().inputBox.rightPatch, "theme.inputBox.rightPatch");
 			}
 		void DrawBox(int x, int y, int len)
 			{
@@ -177,7 +173,7 @@ namespace menu::inputbox
 		{
 			const OFont* smallFont = OFonts.small();
 			const int textY = y + (M_BigFontLineHeight() / 2 - M_SmallFontLineHeight() / 2);
-			const std::string textColor = MenuConfTheme().inputBox.textColor;
+			const std::string textColor = M_MenuConfTheme().inputBox.textColor;
 			const std::string displayText = fmt::sprintf("%s%s", text, isEditing ? "_" : "");
 
 			DrawBox(x, y, width);
@@ -251,37 +247,37 @@ namespace menu::slider
 			}
 		const patch_t* LeftPatch()
 			{
-				return CachedMenuPatch(MenuConfTheme().slider.leftPatch, []()
+				return CachedMenuPatch(M_MenuConfTheme().slider.leftPatch, []()
 				{
 					const patch_t* patch =
-						M_MenuConfConfiguredPatch(MenuConfTheme().slider.leftPatch, "theme.slider.leftPatch");
+						M_MenuConfConfiguredPatch(M_MenuConfTheme().slider.leftPatch, "theme.slider.leftPatch");
 					return patch != nullptr ? patch : MenuConfPatch("LSLIDE");
 				});
 			}
 		const patch_t* MiddlePatch()
 			{
-				return CachedMenuPatch(MenuConfTheme().slider.middlePatch, []()
+				return CachedMenuPatch(M_MenuConfTheme().slider.middlePatch, []()
 				{
-					const patch_t* patch = M_MenuConfConfiguredPatch(MenuConfTheme().slider.middlePatch,
+					const patch_t* patch = M_MenuConfConfiguredPatch(M_MenuConfTheme().slider.middlePatch,
 																	"theme.slider.middlePatch");
 					return patch != nullptr ? patch : MenuConfPatch("MSLIDE");
 				});
 			}
 		const patch_t* RightPatch()
 			{
-				return CachedMenuPatch(MenuConfTheme().slider.rightPatch, []()
+				return CachedMenuPatch(M_MenuConfTheme().slider.rightPatch, []()
 				{
 					const patch_t* patch =
-						M_MenuConfConfiguredPatch(MenuConfTheme().slider.rightPatch, "theme.slider.rightPatch");
+						M_MenuConfConfiguredPatch(M_MenuConfTheme().slider.rightPatch, "theme.slider.rightPatch");
 					return patch != nullptr ? patch : MenuConfPatch("RSLIDE");
 				});
 			}
 		const patch_t* KnobPatch()
 		{
-			return CachedMenuPatch(MenuConfTheme().slider.knobPatch, []()
+			return CachedMenuPatch(M_MenuConfTheme().slider.knobPatch, []()
 			{
 				const patch_t* patch =
-					M_MenuConfConfiguredPatch(MenuConfTheme().slider.knobPatch, "theme.slider.knobPatch");
+					M_MenuConfConfiguredPatch(M_MenuConfTheme().slider.knobPatch, "theme.slider.knobPatch");
 				return patch != nullptr ? patch : MenuConfPatch("CSLIDE");
 			});
 		}
@@ -291,7 +287,7 @@ namespace menu::slider
 		{
 			const OFont* smallFont = OFonts.small();
 			const palette_t* palette = MenuWidgetPalette();
-			const int drawY = y + M_MenuCursorOffsetY();
+			const int drawY = y + menu::cursor::OffsetY();
 
 			cur = leftval < rightval ? clamp(cur, leftval, rightval) : clamp(cur, rightval, leftval);
 			const float dist = (cur - leftval) / (rightval - leftval);
@@ -345,6 +341,47 @@ namespace menu::slider
 		}
 }
 
+namespace menu::cursor
+{
+	int OffsetY()
+	{
+		return M_MenuConfTheme().cursorOffsetY;
+	}
+
+	const patch_t* Patch()
+	{
+		return CachedMenuPatch(M_MenuConfTheme().cursorPatch, []()
+		{
+			return M_MenuConfConfiguredPatch(M_MenuConfTheme().cursorPatch, "theme.cursorPatch");
+		});
+	}
+}
+
+namespace menu::indicator
+{
+	int OffsetX()
+	{
+		return M_MenuConfTheme().indicator.offsetX;
+	}
+
+	int OffsetY()
+	{
+		return M_MenuConfTheme().indicator.offsetY;
+	}
+
+	const patch_t* Patch(int which)
+	{
+		const auto& patches = M_MenuConfTheme().indicator.patches;
+		if (patches.empty())
+		{
+			return nullptr;
+		}
+
+		const std::string& name = patches[which % patches.size()];
+		return M_MenuConfConfiguredPatch(name, "theme.indicator.patches");
+	}
+}
+
 
 const int M_BigFontLineHeight()
 {
@@ -374,24 +411,14 @@ const patch_t* M_MenuConfConfiguredPatch(const std::string& name, const char* co
 	return patch;
 }
 
+const menuconftheme_t& M_MenuConfTheme()
+{
+	return M_MenuConf().theme;
+}
+
 void M_WarnMenuConf(const std::string& message)
 {
 	PrintFmt(PRINT_WARNING, "MENUCONF: {}\n", message);
-}
-
-int M_MenuCursorOffsetY()
-{
-	return MenuConfTheme().cursorOffsetY;
-}
-
-int M_MenuIndicatorOffsetX()
-{
-	return MenuConfTheme().indicator.offsetX;
-}
-
-int M_MenuIndicatorOffsetY()
-{
-	return MenuConfTheme().indicator.offsetY;
 }
 
 EColorRange M_MenuTextColor(std::string_view role, std::string_view menuId,
@@ -416,31 +443,11 @@ EColorRange M_MenuTextColor(std::string_view role, std::string_view menuId,
 		}
 	}
 
-	const auto themeIt = MenuConfTheme().colors.find(roleKey);
-	if (themeIt != MenuConfTheme().colors.end() && !themeIt->second.empty())
+	const auto themeIt = M_MenuConfTheme().colors.find(roleKey);
+	if (themeIt != M_MenuConfTheme().colors.end() && !themeIt->second.empty())
 	{
 		return TextColorFromString(themeIt->second);
 	}
 
 	return CR_GRAY;
-}
-
-const patch_t* M_MenuCursor()
-{
-	return CachedMenuPatch(MenuConfTheme().cursorPatch, []()
-	{
-		return M_MenuConfConfiguredPatch(MenuConfTheme().cursorPatch, "theme.cursorPatch");
-	});
-}
-
-const patch_t* M_MenuIndicator(int which)
-{
-	const auto& patches = MenuConfTheme().indicator.patches;
-	if (patches.empty())
-	{
-		return nullptr;
-	}
-
-	const std::string& name = patches[which % patches.size()];
-	return M_MenuConfConfiguredPatch(name, "theme.indicator.patches");
 }

@@ -195,8 +195,8 @@ namespace
 			return false;
 		}
 
-		x = CurrentGeneratedMenu->x + M_MenuIndicatorOffsetX();
-		y = CurrentGeneratedMenu->y + M_MenuIndicatorOffsetY() +
+		x = CurrentGeneratedMenu->x + menu::indicator::OffsetX();
+		y = CurrentGeneratedMenu->y + menu::indicator::OffsetY() +
 		    CurrentGeneratedItem * M_BigFontLineHeight();
 		return true;
 	}
@@ -234,7 +234,7 @@ namespace
 		int y = 0;
 		bool havePosition = false;
 		const builtinscreendef_t* builtin = BuiltInScreenDef(CurrentBuiltinScreen);
-		const patch_t* indicator = M_MenuIndicator(whichIndicator);
+		const patch_t* indicator = menu::indicator::Patch(whichIndicator);
 
 		if (CurrentGeneratedMenu != nullptr)
 		{
@@ -296,11 +296,6 @@ namespace
 		return it != generatedMenus.end() ? &it->second : nullptr;
 	}
 
-	const menuconftheme_t& MenuConfTheme()
-	{
-		return M_MenuConf().theme;
-	}
-
 	const menuconfmenu_t* MenuConfMenu(const char* id)
 	{
 		const auto it = M_MenuConf().menus.find(id);
@@ -339,8 +334,8 @@ namespace
 			}
 		}
 
-		const auto themeIt = MenuConfTheme().sounds.find(roleKey);
-		if (themeIt != MenuConfTheme().sounds.end() && !themeIt->second.empty())
+		const auto themeIt = M_MenuConfTheme().sounds.find(roleKey);
+		if (themeIt != M_MenuConfTheme().sounds.end() && !themeIt->second.empty())
 		{
 			return &themeIt->second;
 		}

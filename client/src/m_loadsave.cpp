@@ -241,8 +241,8 @@ bool M_LoadSaveIndicatorPosition(int currentItem, int& x, int& y)
 
 	const saveloadlayout_t& layout = CurrentSaveLoadScreenState().layout;
 
-	x = layout.listX + M_MenuIndicatorOffsetX();
-	y = layout.listY + M_MenuIndicatorOffsetY() + currentItem * M_BigFontLineHeight();
+	x = layout.listX + menu::indicator::OffsetX();
+	y = layout.listY + menu::indicator::OffsetY() + currentItem * M_BigFontLineHeight();
 	return true;
 }
 

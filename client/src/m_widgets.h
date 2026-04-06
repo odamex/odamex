@@ -17,6 +17,7 @@
 #include <string_view>
 
 #include "odamex.h"
+#include "m_menuconf.h"
 #include "v_textcolors.h"
 
 namespace menu::inputbox
@@ -46,14 +47,23 @@ namespace menu::slider
 	float Respond(float cur, float leftval, float rightval, float step, int direction);
 }
 
-const patch_t* M_MenuConfConfiguredPatch(const std::string& name, const char* context);
-void M_WarnMenuConf(const std::string& message);
+namespace menu::cursor
+{
+	int OffsetY();
+	const patch_t* Patch();
+}
+
+namespace menu::indicator
+{
+	const patch_t* Patch(int which);
+	int OffsetX();
+	int OffsetY();
+}
+
 const int M_BigFontLineHeight();
 const int M_SmallFontLineHeight();
-int M_MenuCursorOffsetY();
-const patch_t* M_MenuCursor();
-const patch_t* M_MenuIndicator(int which);
-int M_MenuIndicatorOffsetX();
-int M_MenuIndicatorOffsetY();
+const patch_t* M_MenuConfConfiguredPatch(const std::string& name, const char* context);
+const menuconftheme_t& M_MenuConfTheme();
+void M_WarnMenuConf(const std::string& message);
 EColorRange M_MenuTextColor(std::string_view role, std::string_view menuId = {}, 
                             const std::string* overrideColor = nullptr);

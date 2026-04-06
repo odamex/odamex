@@ -1093,9 +1093,9 @@ void M_OptDrawer (void)
 			    ((item->a.selmode != -1 && (indicatorAnimCounter < 6 || WaitingForKey)) ||
 			     WaitingForAxis))
 			{
-				const patch_t* cursor = M_MenuCursor();
+				const patch_t* cursor = menu::cursor::Patch();
 				screen->DrawPatchCleanWithPalette(cursor, item->a.selmode * 104 + 8,
-						y + M_MenuCursorOffsetY(), palette);
+						y + menu::cursor::OffsetY(), palette);
 			}
 		}
 		else
@@ -1284,9 +1284,9 @@ void M_OptDrawer (void)
 
 			if (i == CurrentItem && (indicatorAnimCounter < 6 || WaitingForKey || WaitingForAxis))
 			{
-				const patch_t* cursor = M_MenuCursor();
+				const patch_t* cursor = menu::cursor::Patch();
 				screen->DrawPatchCleanWithPalette(cursor, CurrentMenu->indent + 3,
-					                                  y + M_MenuCursorOffsetY(), palette);
+					                                  y + menu::cursor::OffsetY(), palette);
 			}
 		}
 	}
