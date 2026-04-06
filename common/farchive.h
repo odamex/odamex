@@ -26,6 +26,7 @@
 
 #include <array>
 #include <cassert>
+#include <type_traits>
 
 #include "dobject.h"
 #include "doomtype.h"
@@ -154,24 +155,21 @@ public:
 	void WriteCount(uint32_t count);
 	uint32_t ReadCount();
 
-	FArchive& operator<< (uint8_t c);
-	FArchive& operator<< (uint16_t s);
-	FArchive& operator<< (uint32_t i);
-	FArchive& operator<< (uint64_t i);
-	FArchive& operator<< (float f);
-	FArchive& operator<< (double d);
-	FArchive& operator<< (argb_t color);
-	FArchive& operator<< (const char* str);
-	FArchive& operator<< (DObject* obj);
+	// ------------ Streaming-in operations ---------------
 
-	FArchive& operator<< (char c) { return operator<< (static_cast<uint8_t>(c)); }
-	FArchive& operator<< (int8_t c) { return operator<< (static_cast<uint8_t>(c)); }
-	FArchive& operator<< (int16_t s) { return operator<< (static_cast<uint16_t>(s)); }
-	FArchive& operator<< (int32_t i) { return operator<< (static_cast<uint32_t>(i)); }
-	FArchive& operator<< (int64_t i) { return operator<< (static_cast<uint64_t>(i)); }
-	FArchive& operator<< (const unsigned char* str) { return operator<< (reinterpret_cast<const char*>(str)); }
-	FArchive& operator<< (const signed char* str) { return operator<< (reinterpret_cast<const char*>(str)); }
-	FArchive& operator<< (bool b) { return operator<< (static_cast<uint8_t>(b)); }
+	// Integer operators
+	template <typename IntegerType>
+	requires std::is_integral_v<IntegerType>
+	FArchive& operator<< (IntegerType value)
+	{
+		value = BESWAP(value);
+		Write(&value, sizeof(value));
+		return *this;
+	}
+
+	// Specialize bool because its size is implementation defined.
+	template <>
+	FArchive& operator<< <bool> (bool b) { return operator<< (static_cast<uint8_t>(b)); }
 
 	template <typename ElementType, size_t N>
 	FArchive& operator<< (const std::array<ElementType, N>& i_array)
@@ -184,25 +182,36 @@ public:
 		return *this;
 	}
 
-	FArchive& operator>> (uint8_t& c);
-	FArchive& operator>> (uint16_t& s);
-	FArchive& operator>> (uint32_t& i);
-	FArchive& operator>> (uint64_t& i);
-	FArchive& operator>> (float& f);
-	FArchive& operator>> (double& d);
-	FArchive& operator>> (argb_t& color);
-	FArchive& operator>> (std::string& s);
-	FArchive& ReadObject(DObject *&obj, TypeInfo* wanttype);
+	FArchive& operator<< (float f);
+	FArchive& operator<< (double d);
+	FArchive& operator<< (argb_t color);
+	FArchive& operator<< (const char* str);
+	FArchive& operator<< (DObject* obj);
 
-	FArchive& operator>> (char& c) { uint8_t in; operator>> (in); c = static_cast<char>(in); return *this; }
-	FArchive& operator>> (int8_t& c) { uint8_t in; operator>> (in); c = static_cast<int8_t>(in); return *this; }
-	FArchive& operator>> (int16_t& s) { uint16_t in; operator>> (in); s = static_cast<int16_t>(in); return *this; }
-	FArchive& operator>> (int32_t& i) { uint32_t in; operator>> (in); i = static_cast<int32_t>(in); return *this; }
-	FArchive& operator>> (int64_t& i) { uint64_t in; operator>> (in); i = static_cast<int64_t>(in); return *this; }
-	//FArchive& operator>> (unsigned char *&str) { return operator>> ((char *&)str); }
-	//FArchive& operator>> (signed char *&str) { return operator>> ((char *&)str); }
-	FArchive& operator>> (bool& b) { uint8_t in; operator>> (in); b = (in != 0); return *this; }
-	FArchive& operator>> (DObject* &object) { return ReadObject (object, RUNTIME_CLASS(DObject)); }
+	FArchive& operator<< (const unsigned char* str) { return operator<< (reinterpret_cast<const char*>(str)); }
+	FArchive& operator<< (const signed char* str) { return operator<< (reinterpret_cast<const char*>(str)); }
+
+	// ------------ Streaming-out operations ---------------
+
+	// Integer operators
+	template <typename IntegerType>
+	requires std::is_integral_v<IntegerType>
+	FArchive& operator>> (IntegerType& value)
+	{
+		Read(&value, sizeof(value));
+		value = BESWAP(value);
+		return *this;
+	}
+
+	// Specialize bool because its size is implementation defined.
+	template <>
+	FArchive& operator>> <bool> (bool& b)
+	{
+		uint8_t value;
+		*this >> value;
+		b = static_cast<bool>(value);
+		return *this;
+	}
 
 	template <typename ElementType, size_t N>
 	FArchive& operator>> (std::array<ElementType, N>& o_array)
@@ -218,6 +227,16 @@ public:
 		}
 		return *this;
 	}
+
+	FArchive& operator>> (float& f);
+	FArchive& operator>> (double& d);
+	FArchive& operator>> (argb_t& color);
+	FArchive& operator>> (std::string& s);
+	FArchive& ReadObject(DObject *&obj, TypeInfo* wanttype);
+
+	//FArchive& operator>> (unsigned char *&str) { return operator>> ((char *&)str); }
+	//FArchive& operator>> (signed char *&str) { return operator>> ((char *&)str); }
+	FArchive& operator>> (DObject* &object) { return ReadObject (object, RUNTIME_CLASS(DObject)); }
 
 protected:
 	enum { EObjectHashSize = 137 };

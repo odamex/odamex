@@ -598,7 +598,7 @@ FArchive &FArchive::operator<< (const char *str)
 	}
 	else
 	{
-		uint32_t size = strlen (str) + 1;
+		uint32_t size = static_cast<uint32_t>(strlen (str) + 1);
 		WriteCount (size);
 		Write (str, size - 1);
 	}
@@ -619,60 +619,6 @@ FArchive &FArchive::operator>> (std::string &s)
 		s = cstr;
 		delete[] cstr;
 	}
-	return *this;
-}
-
-FArchive &FArchive::operator<< (byte c)
-{
-	Write (&c, sizeof(byte));
-	return *this;
-}
-
-FArchive &FArchive::operator>> (byte &c)
-{
-	Read (&c, sizeof(byte));
-	return *this;
-}
-
-FArchive &FArchive::operator<< (uint16_t w)
-{
-	SWAP_SHORT(w);
-	Write (&w, sizeof(uint16_t));
-	return *this;
-}
-
-FArchive &FArchive::operator>> (uint16_t &w)
-{
-	Read (&w, sizeof(uint16_t));
-	SWAP_SHORT(w);
-	return *this;
-}
-
-FArchive &FArchive::operator<< (uint32_t w)
-{
-	SWAP_INT(w);
-	Write (&w, sizeof(uint32_t));
-	return *this;
-}
-
-FArchive &FArchive::operator>> (uint32_t &w)
-{
-	Read (&w, sizeof(uint32_t));
-	SWAP_INT(w);
-	return *this;
-}
-
-FArchive &FArchive::operator<< (uint64_t w)
-{
-	SWAP_LONG(w);
-	Write (&w, sizeof(uint64_t));
-	return *this;
-}
-
-FArchive &FArchive::operator>> (uint64_t &w)
-{
-	Read (&w, sizeof(uint64_t));
-	SWAP_LONG(w);
 	return *this;
 }
 
@@ -990,12 +936,12 @@ uint32_t FArchive::FindObjectIndex (const DObject *obj) const
 {
 	if(!m_ObjectMap)
 		return ~0;
-	uint32_t index = m_ObjectHash[HashObject (obj)];
+	size_t index = m_ObjectHash[HashObject (obj)];
 	while (index != static_cast<unsigned>(~0) && m_ObjectMap[index].object != obj)
 	{
 		index = m_ObjectMap[index].hashNext;
 	}
-	return index;
+	return static_cast<uint32_t>(index);
 }
 
 FArchive &operator<< (FArchive &arc, player_t *p)
