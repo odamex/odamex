@@ -246,7 +246,6 @@ static void CL_PredictLocalPlayer(int predtic)
 	// that tic
 	odaproto::clc::PlayerInput& netcmd = localcmds[predtic % MAXSAVETICS];
 	CLC_UnpackPlayerInputMessageToPlayer(netcmd, player);
-    player.tic = netcmd.tic();
 
 	if (!predicting)
 		P_PlayerThink(player);

@@ -141,7 +141,7 @@ odaproto::clc::NetdemoCap CLC_NetdemoCap(const player_t& player, const odaproto:
 
 	const AActor* mo = player.mo;
 
-	inputMessage.SerializeToString(msg.mutable_player_cmd());
+	inputMessage.SerializeToString(msg.mutable_packed_player_input());
 
 	act->set_waterlevel(mo->waterlevel);
 	act->mutable_pos()->set_x(mo->x);

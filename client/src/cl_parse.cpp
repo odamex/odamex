@@ -3045,7 +3045,7 @@ static void CL_NetdemoCap(const odaproto::clc::NetdemoCap* msg)
 	// it is an aggregate value and will be set correctly later
 
 	odaproto::clc::PlayerInput& currentInputMessage = localcmds[gametic % MAXSAVETICS];
-	currentInputMessage.ParseFromString(msg->player_cmd());
+	currentInputMessage.ParseFromString(msg->packed_player_input());
 
 	// We do not assign the tic here - that must come from the UpdateLocalPlayer message
 	// as part of the overall prediction algorithm.

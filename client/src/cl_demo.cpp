@@ -915,8 +915,6 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 	{
 		last_received = gametic;
 		noservermsgs = false;
-
-        //const int prevTic = consoleplayer().tic;
 		// Since packets are captured after the header is read, we do not
 		// have to read the packet header
 		//
@@ -924,8 +922,6 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 		// the parse of CLC_NetdemoCap unpacks the PlayerInputs and fills
 		// out the player.cmd.
 		CL_ParseCommands();
-
-        //consoleplayer().tic = gametic;
 
 		if (gametic - last_received > 65)
 		{

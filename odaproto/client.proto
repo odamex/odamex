@@ -29,7 +29,10 @@ message PlayerInput
 // clc_netdemocap
 message NetdemoCap
 {
-	bytes  player_cmd   = 1;
-	Player player       = 2;
-	Actor  actor        = 3;
+	// Reserve deleted fields.
+	reserved 1;    // The byte-packed ticcmd.  Phased out for packed PlayerInput.
+
+	Player player              = 2;
+	Actor  actor               = 3;
+	bytes  packed_player_input = 4;
 }
