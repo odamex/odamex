@@ -719,14 +719,6 @@ message PlayerInventory
 	InventoryState inventory    = 3;
 }
 
-// svc_netdemocap
-message NetdemoCap
-{
-	bytes player_cmd = 1;
-	Player player = 2;
-	Actor actor = 3;
-}
-
 // svc_netdemostop
 message NetDemoStop
 {

@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "common.proto";
+
 package odaproto.clc;
 
 // clc_playerinput
@@ -22,4 +24,12 @@ message PlayerInput
 	optional int32      delta_yaw           = 15;
 	optional int32      delta_pitch         = 16;
 	optional uint32     inventory_check_tic = 17;   // The value is the tic we want to verify - in practice, always the previous tic, but be explicit about it for analysis purposes.
+}
+
+// clc_netdemocap
+message NetdemoCap
+{
+	bytes  player_cmd   = 1;
+	Player player       = 2;
+	Actor  actor        = 3;
 }

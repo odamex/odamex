@@ -726,11 +726,11 @@ bool NetDemo::stopPlaying()
 void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 {
 	// Record the local player's data
-	player_t *player = &consoleplayer();
-	if (!player->mo)
+	player_t& player = consoleplayer();
+	if (not player.mo)
 		return;
 
-	MSG_WriteSVCBuffer(netbuffer, SVC_NetdemoCap(player));
+	MSG_WriteSVCBuffer(netbuffer, CLC_NetdemoCap(player, localcmds[gametic % MAXSAVETICS]));
 }
 
 
@@ -915,10 +915,18 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 	{
 		last_received = gametic;
 		noservermsgs = false;
+
+        //const int prevTic = consoleplayer().tic;
 		// Since packets are captured after the header is read, we do not
 		// have to read the packet header
+		//
+		// Please note that we don't need to call CL_SaveCmd here because
+		// the parse of CLC_NetdemoCap unpacks the PlayerInputs and fills
+		// out the player.cmd.
 		CL_ParseCommands();
-		CL_SaveCmd();
+
+        //consoleplayer().tic = gametic;
+
 		if (gametic - last_received > 65)
 		{
 			noservermsgs = true;

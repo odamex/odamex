@@ -1679,35 +1679,4 @@ odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, cons
 	return msg;
 }
 
-odaproto::svc::NetdemoCap SVC_NetdemoCap(const player_t* player)
-{
-	odaproto::svc::NetdemoCap msg;
-
-	odaproto::Actor* act = msg.mutable_actor();
-	odaproto::Player* play = msg.mutable_player();
-
-	const AActor* mo = player->mo;
-
-	player->cmd.serialize(*msg.mutable_player_cmd());
-
-	act->set_waterlevel(mo->waterlevel);
-	act->mutable_pos()->set_x(mo->x);
-	act->mutable_pos()->set_y(mo->y);
-	act->mutable_pos()->set_z(mo->z);
-	act->mutable_mom()->set_x(mo->momx);
-	act->mutable_mom()->set_y(mo->momy);
-	act->mutable_mom()->set_z(mo->momz);
-	act->set_angle(mo->angle);
-	act->set_pitch(mo->pitch);
-	play->set_viewz(player->viewz);
-	play->set_viewheight(player->viewheight);
-	play->set_deltaviewheight(player->deltaviewheight);
-	play->set_jumptics(player->jumpTics);
-	act->set_reactiontime(mo->reactiontime);
-	play->mutable_inventory()->set_readyweapon(player->readyweapon);
-	play->mutable_inventory()->set_pendingweapon(player->pendingweapon);
-
-	return msg;
-}
-
 VERSION_CONTROL(svc_message, "$Id$")

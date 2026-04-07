@@ -85,6 +85,8 @@ void CLC_PackPlayerInputMessageFromPlayer(odaproto::clc::PlayerInput& msg, const
 
 void CLC_UnpackPlayerInputMessageToPlayer(const odaproto::clc::PlayerInput& msg, player_t& player)
 {
+	// We deliberately avoid unpacking the player tic here.  That should be done carefully at the
+	// callers' discretion for their particular use cases.
 	if (player.mo)
 	{
 		player.cmd.clear();
@@ -129,3 +131,37 @@ void CLC_UnpackPlayerInputMessageToPlayer(const odaproto::clc::PlayerInput& msg,
 		}
 	}
 }
+
+odaproto::clc::NetdemoCap CLC_NetdemoCap(const player_t& player, const odaproto::clc::PlayerInput& inputMessage)
+{
+	odaproto::clc::NetdemoCap msg;
+
+	odaproto::Actor* act = msg.mutable_actor();
+	odaproto::Player* play = msg.mutable_player();
+
+	const AActor* mo = player.mo;
+
+	inputMessage.SerializeToString(msg.mutable_player_cmd());
+
+	act->set_waterlevel(mo->waterlevel);
+	act->mutable_pos()->set_x(mo->x);
+	act->mutable_pos()->set_y(mo->y);
+	act->mutable_pos()->set_z(mo->z);
+	act->mutable_mom()->set_x(mo->momx);
+	act->mutable_mom()->set_y(mo->momy);
+	act->mutable_mom()->set_z(mo->momz);
+	act->set_angle(mo->angle);
+	act->set_pitch(mo->pitch);
+	act->set_reactiontime(mo->reactiontime);
+
+	play->set_viewz(player.viewz);
+	play->set_viewheight(player.viewheight);
+	play->set_deltaviewheight(player.deltaviewheight);
+	play->set_jumptics(player.jumpTics);
+
+	play->mutable_inventory()->set_readyweapon(player.readyweapon);
+	play->mutable_inventory()->set_pendingweapon(player.pendingweapon);
+
+	return msg;
+}
+

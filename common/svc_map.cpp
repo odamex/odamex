@@ -116,11 +116,11 @@ static void InitMap()
 	MapProto(svc_spreebreaker, odaproto::svc::SpreeBreaker::descriptor());
 	MapProto(svc_noisealert, odaproto::svc::NoiseAlert::descriptor());
 	MapProto(svc_playerinventory, odaproto::svc::PlayerInventory::descriptor());
-	MapProto(svc_netdemocap, odaproto::svc::NetdemoCap::descriptor());
 	MapProto(svc_netdemostop, odaproto::svc::NetDemoStop::descriptor());
 	MapProto(svc_netdemoloadsnap, odaproto::svc::NetDemoLoadSnap::descriptor());
 
 	MapProto(clc_playerinput, odaproto::clc::PlayerInput::descriptor());
+	MapProto(clc_netdemocap,  odaproto::clc::NetdemoCap::descriptor());
 
 }
 
