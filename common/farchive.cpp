@@ -936,12 +936,12 @@ uint32_t FArchive::FindObjectIndex (const DObject *obj) const
 {
 	if(!m_ObjectMap)
 		return ~0;
-	size_t index = m_ObjectHash[HashObject (obj)];
+	uint32_t index = static_cast<uint32_t>(m_ObjectHash[HashObject (obj)]);
 	while (index != static_cast<unsigned>(~0) && m_ObjectMap[index].object != obj)
 	{
 		index = m_ObjectMap[index].hashNext;
 	}
-	return static_cast<uint32_t>(index);
+	return index;
 }
 
 FArchive &operator<< (FArchive &arc, player_t *p)
