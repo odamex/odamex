@@ -146,7 +146,7 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
 		{
 			Roll(i_oldTic, [&deltaItemData](auto& rollingIter)
 				{
-				    ApplyDeltaArray(rollingIter->second.ammo, deltaItemData.ammo);
+					ApplyDeltaArray(rollingIter->second.ammo, deltaItemData.ammo);
 				});
 		}
 
@@ -154,7 +154,7 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
 		{
 			Roll(i_oldTic, [&deltaItemData](auto& rollingIter)
 				{
-				    ApplyDeltaArray(rollingIter->second.maxammo, deltaItemData.maxammo);
+					ApplyDeltaArray(rollingIter->second.maxammo, deltaItemData.maxammo);
 				});
 		}
 
@@ -165,10 +165,10 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
 			{
 				weaponOwnedRequiresRoll = true;
 				Roll(i_oldTic, [&i_itemData](auto& rollingIter)
-				    {
-				        // Just copy the whole array and be done with it - this is nothing but bools.
-				        rollingIter->second.weaponowned = i_itemData.weaponowned;
-				    });
+					{
+						// Just copy the whole array and be done with it - this is nothing but bools.
+						rollingIter->second.weaponowned = i_itemData.weaponowned;
+					});
 				break;
 			}
 		}
@@ -178,7 +178,7 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
 		{
 			Roll(i_oldTic, [&i_itemData](auto& rollingIter)
 				{
-				    rollingIter->second.readyweapon = i_itemData.readyweapon;
+					rollingIter->second.readyweapon = i_itemData.readyweapon;
 				});
 		}
 
@@ -187,7 +187,7 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
 		{
 			Roll(i_oldTic, [&i_itemData](auto& rollingIter)
 				{
-				    rollingIter->second.pendingweapon = i_itemData.pendingweapon;
+					rollingIter->second.pendingweapon = i_itemData.pendingweapon;
 				});
 		}
 
