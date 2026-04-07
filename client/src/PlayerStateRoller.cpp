@@ -7,7 +7,7 @@
 
 
 PlayerStateRoller::PlayerStateRoller() :
-	m_history       (TICRATE),      // 1 second of history.
+	m_history       (TICRATE),      // at least 1 second of history
 	m_mostRecentTic (-1),           // Setup history to start recording at the given tic.
 	m_oldestTic     (-1)
 {
@@ -25,6 +25,12 @@ RollerRecordResultEnum PlayerStateRoller::Record(int currentTic, const player_t&
 	{
 		m_mostRecentTic = currentTic;
 
+		// This check ensures that we're not going to grow the size of the hash table
+		// because we age-out elements at the moment where a new one would cause a
+		// reallocation and re-hash.  It's important to note that between this check
+		// and the super-simple key-identity "hasher", we've essentially turned the
+		// unordered_map into a fixed-size circular buffer.
+		//
 		if (m_history.size() == m_history.bucket_count())
 		{
 			m_history.erase(m_oldestTic);
@@ -120,8 +126,16 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
 	auto historyIter = m_history.find(i_oldTic);
 	if (historyIter != m_history.end())
 	{
-		PlayerItemDataType deltaItemData;
+		// Ammo and maxammo are up first.  Because it's very possible for ammo quantities to have
+		// continued changing in the time between now and the moment that we triggered the inventory
+		// check, we don't just simply set the ammo quantities.  We calculate the delta between the
+		// given inventory report and the inventory that we had at the time.  We then apply that
+		// delta forward to every history entry up to the present.  This ensures that any further
+		// ammo changes we made since the divergence in history is preserved.  i.e. if I fired 3
+		// shots since I had a desync, those shots remain fired and the ammo count ultimately
+		// still reflects those shots, just from a corrected starting point.
 
+		PlayerItemDataType deltaItemData;
 		FillDeltaArray(deltaItemData.ammo,    i_itemData.ammo,    historyIter->second.ammo);
 		FillDeltaArray(deltaItemData.maxammo, i_itemData.maxammo, historyIter->second.maxammo);
 
