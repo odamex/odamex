@@ -779,10 +779,10 @@ void drawProtos()
 		}
 	}
 
-	// Now draw the current reconstructed PlayerInput.
+	// Now draw the recorded PlayerInput.
 	y = top;
 	hud::DrawText(
-	        100, y,
+	        130, y,
 	        scale,
 	        hud::X_RIGHT,
 	        hud::Y_TOP,
@@ -794,7 +794,7 @@ void drawProtos()
 
 	y += V_StringHeight(::svc_info[clc_playerinput].getName());
 	hud::DrawText(
-	        100, y,
+	        130, y,
 	        scale,
 	        hud::X_RIGHT,
 	        hud::Y_TOP,
