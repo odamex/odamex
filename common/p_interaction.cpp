@@ -364,12 +364,6 @@ ItemEquipVal P_GiveAmmo(player_t& player, ammotype_t ammotype, float num)
 		player.ammo[ammotype] = player.maxammo[ammotype];
 	}
 
-	// If we are not playing as the server, make sure we ask the real server to confirm our pickup.
-	if (not serverside)
-	{
-		player.RequestInventoryCheckFromServer(gametic);
-	}
-
 	// If non zero ammo,
 	// don't change up weapons,
 	// player was lower on purpose.
@@ -460,6 +454,12 @@ ItemEquipVal P_GiveWeapon(player_t& player, weapontype_t weapon, bool dropped)
 		player.weaponowned[weapon] = true;
 		if (P_CheckSwitchWeapon(player, weapon))
 			player.pendingweapon = weapon;
+	}
+
+	// If we are not playing as the server, make sure we ask the real server to confirm our pickup.
+	if (not serverside)
+	{
+		player.RequestInventoryCheckFromServer(gametic);
 	}
 
 	if (gaveweapon || gaveammo)
