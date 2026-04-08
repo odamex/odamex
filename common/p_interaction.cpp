@@ -381,30 +381,20 @@ ItemEquipVal P_GiveAmmo(player_t& player, ammotype_t ammotype, float num)
 }
 
 //
-// P_GiveWeapon
-// The weapon name may have a MF_DROPPED flag ored in.
+// P_GiveWeapon and helpers.
 //
 
 /// Handles the case where the weapon being given to a player is the result of touching
-/// a non-dropped weaponstay weapon.  If this function handled the case, then the
-/// result out-parameter is set accordingly and true is returned.  Otherwise false is
-/// returned and the result out-parameter is left unmodified.
-static bool PickupMultiplayerWeaponStayWeapon(ItemEquipVal& o_result, player_t& player, weapontype_t weapon, bool wasDropped)
+/// a non-dropped weaponstay weapon.  If this function handled the case, then then result
+/// is returned.  Otherwise, nullopt is returned.
+static ItemEquipVal PickupMultiplayerWeaponStayWeapon(player_t& player, weapontype_t weapon)
 {
-	// [Toke - dmflags] old location of DF_WEAPONS_STAY
-	if (multiplayer and sv_weaponstay and not wasDropped)
+	if (not player.weaponowned[weapon])
 	{
-		// leave placed weapons forever on net games
-		if (player.weaponowned[weapon])
-		{
-			o_result = IEV_NotEquipped;
-			return true;
-		}
-
-		player.bonuscount = BONUSADD;
 		player.weaponowned[weapon] = true;
+		player.bonuscount = BONUSADD;
 
-		if (!G_IsCoopGame())
+		if (not G_IsCoopGame())
 		{
 			P_GiveAmmo(player, weaponinfo[weapon].ammotype, 5);
 		}
@@ -418,29 +408,28 @@ static bool PickupMultiplayerWeaponStayWeapon(ItemEquipVal& o_result, player_t& 
 
 		WeaponPickupMessage(player.mo, weapon);
 
-		o_result = IEV_EquipStay;
-		return true;
-	}
-	return false;
+		return IEV_EquipStay;   // leave placed weapons forever on net games
+    }
+	return IEV_NotEquipped;
 }
 
+
 /// Handles the case where a weapon is given to a player as standard weapon pickup.
-/// If this function handled the case, then the result out-parameter is set accordingly
-/// and true is returned.  Otherwise false is returned and the result out-parameter is
-/// left unmodified.
-static bool PickupStandardWeapon(ItemEquipVal& o_result, player_t& player, weapontype_t weapon, bool wasDropped)
+/// The return value indicates whether the weapon was not picked up, or if it was
+/// picked up, whether the item should stay where it is or be removed.
+static ItemEquipVal PickupStandardWeapon(player_t& player, weapontype_t weapon, bool wasDropped)
 {
-	bool gaveammo   = false;
-	bool gaveweapon = false;
+	ItemEquipVal result = IEV_NotEquipped;
 
 	if (weaponinfo[weapon].ammotype != am_noammo)
 	{
 		// give one clip with a dropped weapon,
 		// two clips with a found weapon
 		const float clipCount = wasDropped ? 1.0f : 2.0f;
-
-		gaveammo = ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, clipCount)) != 0);
-		o_result = IEV_EquipRemove;
+		if ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, clipCount)) != 0)
+		{
+			result = IEV_EquipRemove;
+		}
 	}
 
 	if (not player.weaponowned[weapon])
@@ -451,34 +440,37 @@ static bool PickupStandardWeapon(ItemEquipVal& o_result, player_t& player, weapo
 			player.pendingweapon = weapon;
 		}
 
-		gaveweapon = true;
-		o_result = IEV_EquipRemove;
+		result = IEV_EquipRemove;
 	}
 
-	return gaveammo or gaveweapon;
+	return result;
 }
 
 ItemEquipVal P_GiveWeapon(player_t& player, weapontype_t weapon, bool wasDropped)
 {
-	// [RH] Don't get the weapon if no graphics for it
-	// state_t* state = states + weaponinfo[weapon].readystate;
-	const state_t& state = states[weaponinfo[weapon].readystate];
-	if ((state.frame & FF_FRAMEMASK) >= sprites[state.sprite].numframes)
-	{
-		return IEV_NotEquipped;
-	}
-
 	ItemEquipVal result = IEV_NotEquipped;
 
-	if (not PickupMultiplayerWeaponStayWeapon(result, player, weapon, wasDropped))
-	{
-		PickupStandardWeapon(result, player, weapon, wasDropped);
-	}
+	// [RH] Don't get the weapon if no graphics for it
+	const state_t& state            = states[weaponinfo[weapon].readystate];
+	const bool     hasValidGraphics = (state.frame & FF_FRAMEMASK) < sprites[state.sprite].numframes;
 
-	// If we are not playing as the server, make sure we ask the real server to confirm our pickup.
-	if (not serverside and result != IEV_NotEquipped)
+	if (hasValidGraphics)
 	{
-		player.RequestInventoryCheckFromServer(gametic);
+		// [Toke - dmflags] old location of DF_WEAPONS_STAY
+		if (multiplayer and sv_weaponstay and not wasDropped)
+		{
+			result = PickupMultiplayerWeaponStayWeapon(player, weapon);
+		}
+		else
+		{
+			result = PickupStandardWeapon(player, weapon, wasDropped);
+		}
+
+		// If we are not playing as the server, make sure we ask the real server to confirm our pickup.
+		if (not serverside and result != IEV_NotEquipped)
+		{
+			player.RequestInventoryCheckFromServer(gametic);
+		}
 	}
 
 	return result;
