@@ -384,26 +384,21 @@ ItemEquipVal P_GiveAmmo(player_t& player, ammotype_t ammotype, float num)
 // P_GiveWeapon
 // The weapon name may have a MF_DROPPED flag ored in.
 //
-ItemEquipVal P_GiveWeapon(player_t& player, weapontype_t weapon, bool dropped)
+
+/// Handles the case where the weapon being given to a player is the result of touching
+/// a non-dropped weaponstay weapon.  If this function handled the case, then the
+/// result out-parameter is set accordingly and true is returned.  Otherwise false is
+/// returned and the result out-parameter is left unmodified.
+static bool PickupMultiplayerWeaponStayWeapon(ItemEquipVal& o_result, player_t& player, weapontype_t weapon, bool wasDropped)
 {
-	bool gaveammo;
-	bool gaveweapon;
-
-	// [RH] Don't get the weapon if no graphics for it
-	// state_t* state = states + weaponinfo[weapon].readystate;
-	const state_t& state = states[weaponinfo[weapon].readystate];
-	if ((state.frame & FF_FRAMEMASK) >= sprites[state.sprite].numframes)
-	{
-		return IEV_NotEquipped;
-	}
-
 	// [Toke - dmflags] old location of DF_WEAPONS_STAY
-	if (multiplayer && sv_weaponstay && !dropped)
+	if (multiplayer and sv_weaponstay and not wasDropped)
 	{
 		// leave placed weapons forever on net games
 		if (player.weaponowned[weapon])
 		{
-			return IEV_NotEquipped;
+			o_result = IEV_NotEquipped;
+			return true;
 		}
 
 		player.bonuscount = BONUSADD;
@@ -423,49 +418,70 @@ ItemEquipVal P_GiveWeapon(player_t& player, weapontype_t weapon, bool dropped)
 
 		WeaponPickupMessage(player.mo, weapon);
 
-		return IEV_EquipStay;
+		o_result = IEV_EquipStay;
+		return true;
 	}
+	return false;
+}
+
+/// Handles the case where a weapon is given to a player as standard weapon pickup.
+/// If this function handled the case, then the result out-parameter is set accordingly
+/// and true is returned.  Otherwise false is returned and the result out-parameter is
+/// left unmodified.
+static bool PickupStandardWeapon(ItemEquipVal& o_result, player_t& player, weapontype_t weapon, bool wasDropped)
+{
+	bool gaveammo   = false;
+	bool gaveweapon = false;
 
 	if (weaponinfo[weapon].ammotype != am_noammo)
 	{
 		// give one clip with a dropped weapon,
 		// two clips with a found weapon
-		if (dropped)
-		{
-			gaveammo = ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, 1)) != 0);
-		}
-		else
-		{
-			gaveammo = ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, 2)) != 0);
-		}
-	}
-	else
-	{
-		gaveammo = false;
+		const float clipCount = wasDropped ? 1.0f : 2.0f;
+
+		gaveammo = ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, clipCount)) != 0);
+		o_result = IEV_EquipRemove;
 	}
 
-	if (player.weaponowned[weapon])
+	if (not player.weaponowned[weapon])
 	{
-		gaveweapon = false;
-	}
-	else
-	{
-		gaveweapon = true;
 		player.weaponowned[weapon] = true;
 		if (P_CheckSwitchWeapon(player, weapon))
+		{
 			player.pendingweapon = weapon;
+		}
+
+		gaveweapon = true;
+		o_result = IEV_EquipRemove;
+	}
+
+	return gaveammo or gaveweapon;
+}
+
+ItemEquipVal P_GiveWeapon(player_t& player, weapontype_t weapon, bool wasDropped)
+{
+	// [RH] Don't get the weapon if no graphics for it
+	// state_t* state = states + weaponinfo[weapon].readystate;
+	const state_t& state = states[weaponinfo[weapon].readystate];
+	if ((state.frame & FF_FRAMEMASK) >= sprites[state.sprite].numframes)
+	{
+		return IEV_NotEquipped;
+	}
+
+	ItemEquipVal result = IEV_NotEquipped;
+
+	if (not PickupMultiplayerWeaponStayWeapon(result, player, weapon, wasDropped))
+	{
+		PickupStandardWeapon(result, player, weapon, wasDropped);
 	}
 
 	// If we are not playing as the server, make sure we ask the real server to confirm our pickup.
-	if (not serverside)
+	if (not serverside and result != IEV_NotEquipped)
 	{
 		player.RequestInventoryCheckFromServer(gametic);
 	}
 
-	if (gaveweapon || gaveammo)
-		return IEV_EquipRemove;
-
-	return IEV_NotEquipped;
+	return result;
 }
 
 //
