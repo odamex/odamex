@@ -4535,15 +4535,16 @@ void SV_TouchSpecial(AActor& special, player_t& player)
 	// before the client ever sees the SpawnMobj command.  This has been observed
 	// when the server is heavily loaded to the point where mobjs are actively
 	// spawning more rapidly than the throttle code allows (i.e. massive slaughter
-	// map battles).  Normally the server would normally send the spawn, touch,
-	// remove commands all in one packet, but the spawn throttle forces the spawn
-	// command to go out on a subsequent tic.
+	// map battles).  Normally the server would send the spawn, touch, remove
+	// commands all in one packet, but when the spawn throttle triggers, it can
+	// force the spawn command to go out on a subsequent tic.
 	//
 	// When the mobj is a dropped pickup weapon, the server records that the player
 	// picked up the weapon, but the client just doesn't see or hear anything.
 	// Eventually the rollback catches onto this and adjusts accordingly, but the
 	// better solution is to detect the condition and force the SpawnMobj to go
-	// out immediately ahead of the Touch and Remove commands.
+	// out immediately ahead of the Touch and Remove commands and avoid the need for
+	// a rollback.
 
 	if (not special.players_aware.get(player.id))
 	{
