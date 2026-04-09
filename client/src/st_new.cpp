@@ -788,11 +788,11 @@ void drawProtos()
 	        hud::Y_TOP,
 	        hud::X_LEFT,
 	        hud::Y_TOP,
-	        ::svc_info[clc_playerinput].getName(),
+	        ::msg_info[clc_playerinput].getName(),
 	        ProtoRowColor(clc_playerinput),
 	        true);
 
-	y += V_StringHeight(::svc_info[clc_playerinput].getName());
+	y += V_StringHeight(::msg_info[clc_playerinput].getName());
 	hud::DrawText(
 	        130, y,
 	        scale,
