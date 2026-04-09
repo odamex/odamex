@@ -103,10 +103,10 @@ int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 		#if wxCHECK_VERSION(3, 3, 0)
 			sort_up.SetMask(new wxMask(sort_up, Mask));
 			sort_down.SetMask(new wxMask(sort_down, Mask));
+			ImageList_SortArrowDown = m_Images.size();
+			m_Images.push_back(sort_down);
 			ImageList_SortArrowUp = m_Images.size();
 			m_Images.push_back(sort_up);
-			ImageList_SortArrowUp = m_Images.size();
-			m_Images.push_back(sort_down);
 			SetSmallImages(m_Images);
 		#else
 			ImageList_SortArrowDown = GetImageList(wxIMAGE_LIST_SMALL)->Add(sort_down, Mask);
@@ -133,7 +133,7 @@ void wxAdvancedListCtrl::ClearImageList()
 {
 	#if wxCHECK_VERSION(3, 3, 0)
 		if (!m_Images.empty())
-			m_Images.resize(2);
+			m_Images.resize(ImageList_SortArrowUp + 1);
 	#else
 		wxImageList* ImageList = GetImageList(wxIMAGE_LIST_SMALL);
 
