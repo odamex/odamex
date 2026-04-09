@@ -65,10 +65,15 @@ void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent& event)
 // Add any additional bitmaps/icons to the internal image list
 int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 {
+	#if wxCHECK_VERSION(3, 3, 0)
+	if (m_Images.empty())
+	{
+	#else
 	if(GetImageList(wxIMAGE_LIST_SMALL) == nullptr)
 	{
 		wxImageList* ImageList = new wxImageList(16, 16, true);
 		AssignImageList(ImageList, wxIMAGE_LIST_SMALL);
+	#endif
 
 		wxBitmap sort_up(16, 16), sort_down(16, 16);
 		#if wxCHECK_VERSION(3, 2, 6)
@@ -95,13 +100,28 @@ int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 		}
 
 		// Add our sort icons to the image list
-		ImageList_SortArrowDown = GetImageList(wxIMAGE_LIST_SMALL)->Add(sort_down, Mask);
-		ImageList_SortArrowUp = GetImageList(wxIMAGE_LIST_SMALL)->Add(sort_up, Mask);
+		#if wxCHECK_VERSION(3, 3, 0)
+			sort_up.SetMask(new wxMask(sort_up, Mask));
+			sort_down.SetMask(new wxMask(sort_down, Mask));
+			ImageList_SortArrowUp = m_Images.size();
+			m_Images.push_back(sort_up);
+			ImageList_SortArrowUp = m_Images.size();
+			m_Images.push_back(sort_down);
+			SetSmallImages(m_Images);
+		#else
+			ImageList_SortArrowDown = GetImageList(wxIMAGE_LIST_SMALL)->Add(sort_down, Mask);
+			ImageList_SortArrowUp = GetImageList(wxIMAGE_LIST_SMALL)->Add(sort_up, Mask);
+		#endif
 	}
 
 	if(Image.IsOk())
 	{
-		return GetImageList(wxIMAGE_LIST_SMALL)->Add(Image);
+		#if wxCHECK_VERSION(3, 3, 0)
+			m_Images.push_back(wxBitmapBundle(Image));
+			return m_Images.size() - 1;
+		#else
+			return GetImageList(wxIMAGE_LIST_SMALL)->Add(Image);
+		#endif
 	}
 
 	return -1;
@@ -111,15 +131,20 @@ int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 // created internally
 void wxAdvancedListCtrl::ClearImageList()
 {
-	wxImageList* ImageList = GetImageList(wxIMAGE_LIST_SMALL);
+	#if wxCHECK_VERSION(3, 3, 0)
+		if (!m_Images.empty())
+			m_Images.resize(2);
+	#else
+		wxImageList* ImageList = GetImageList(wxIMAGE_LIST_SMALL);
 
-	if(!ImageList)
-		return;
+		if(!ImageList)
+			return;
 
-	// Hack: The start of this classes non-added images begin after the sort
-	// arrow
-	for(int i = ImageList_SortArrowUp + 1; i < ImageList->GetImageCount(); ++i)
-		ImageList->Remove(i);
+		// Hack: The start of this classes non-added images begin after the sort
+		// arrows
+		for(int i = ImageList_SortArrowUp + 1; i < ImageList->GetImageCount(); ++i)
+			ImageList->Remove(i);
+	#endif
 }
 
 //  strnatcmp.c -- Perform 'natural order' comparisons of strings in C.

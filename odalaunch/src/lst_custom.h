@@ -108,6 +108,10 @@ private:
 
 	bool m_HeaderUsable;
 
+	#if wxCHECK_VERSION(3, 3, 0)
+	wxVector<wxBitmapBundle> m_Images;
+	#endif
+
 	std::vector<std::vector<wxListItem> > BackupItems;
 protected:
 	DECLARE_DYNAMIC_CLASS(wxAdvancedListCtrl)
