@@ -338,12 +338,6 @@ wxInt32 NaturalCompare(wxString aString, wxString bString, bool CaseSensitive = 
 	}
 }
 
-struct sortKey
-{
-	wxString text;
-	int image;
-};
-
 int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2,
                                  wxIntPtr sortData)
 {
@@ -351,13 +345,13 @@ int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2,
 	auto* ListCtrl = reinterpret_cast<wxAdvancedListCtrl*>(sortData);
 	ListCtrl->GetSortColumnAndOrder(SortCol, SortOrder);
 
-	auto* key1 = (sortKey*)item1;
-	auto* key2 = (sortKey*)item2;
+	const auto& key1 = ListCtrl->m_sortData[static_cast<size_t>(item1)];
+	const auto& key2 = ListCtrl->m_sortData[static_cast<size_t>(item2)];
 
 	if(SortCol == ListCtrl->GetSpecialSortColumn())
-		return SortOrder ? key2->image - key1->image : key1->image - key2->image;
+		return SortOrder ? key2.image - key1.image : key1.image - key2.image;
 	else
-		return SortOrder ? NaturalCompare(key1->text, key2->text) : NaturalCompare(key2->text, key1->text);
+		return SortOrder ? NaturalCompare(key1.text, key2.text) : NaturalCompare(key2.text, key1.text);
 }
 
 void wxAdvancedListCtrl::Sort()
@@ -377,19 +371,20 @@ void wxAdvancedListCtrl::Sort()
 	{
 		Item.SetId(itemid);
 		GetItem(Item);
-		// TODO: memory leak
-		auto* sortkey = new sortKey();
+		auto& sortkey = m_sortData.emplace_back();
 		if(SortCol == GetSpecialSortColumn())
-			sortkey->image = Item.GetImage();
+			sortkey.image = Item.GetImage();
 		else
-			sortkey->text = Item.GetText();
+			sortkey.text = Item.GetText();
 
-		SetItemData(itemid, reinterpret_cast<wxIntPtr>(sortkey));
+		SetItemData(itemid, static_cast<long>(m_sortData.size() - 1));
 
 		itemid = GetNextItem(itemid);
 	}
 
 	SortItems(wxCompareFunction, reinterpret_cast<wxIntPtr>(this));
+
+	m_sortData.clear();
 
 	ColourList();
 }

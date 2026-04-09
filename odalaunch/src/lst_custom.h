@@ -74,6 +74,12 @@ public:
 		return m_SpecialColumn;
 	}
 
+	struct sortKey
+	{
+		wxString text;
+		int image;
+	};
+
 	void Sort();
 
 	int AddImageSmall(wxImage Image);
@@ -114,11 +120,15 @@ private:
 
 	bool m_HeaderUsable;
 
+	std::vector<sortKey> m_sortData;
+
 	#if !ODALAUNCH_USE_IMAGELIST
 	wxVector<wxBitmapBundle> m_Images;
 	#endif
 
 	std::vector<std::vector<wxListItem> > BackupItems;
+
+	friend int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2, wxIntPtr sortData);
 protected:
 	DECLARE_DYNAMIC_CLASS(wxAdvancedListCtrl)
 	DECLARE_EVENT_TABLE()
