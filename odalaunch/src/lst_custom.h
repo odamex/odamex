@@ -122,7 +122,7 @@ private:
 
 	std::vector<sortKey> m_sortData;
 
-	#if !ODALAUNCH_USE_IMAGELIST
+	#if !ODALAUNCH_USE_LEGACY_IMAGELIST
 	wxVector<wxBitmapBundle> m_Images;
 	#endif
 
