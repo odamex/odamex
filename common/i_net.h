@@ -289,7 +289,7 @@ enum svc_t
 	svc_netdemoloadsnap = 102, // netdemos - NullPoint
 };
 
-inline constexpr size_t svc_max = 255;
+inline constexpr size_t msg_max = 255;
 
 enum ThinkerType
 {
@@ -303,7 +303,12 @@ enum ThinkerType
 	TT_Phased,
 };
 
-// network messages
+// Pre-protobuf network messages
+//
+// These are entirely client-to-server messages thus the clc_ prefix.
+//
+// TODO / IN PROGRESS:  Migrate these to protos.
+//
 enum clc_t
 {
 	clc_abort,          // UNUSED
@@ -341,7 +346,7 @@ inline auto format_as(clc_t clc)
 inline constexpr size_t clc_max = 255;
 
 extern msg_info_t clc_info[clc_max + 1];
-extern msg_info_t svc_info[svc_max + 1];
+extern msg_info_t msg_info[msg_max + 1];
 
 namespace google
 {
