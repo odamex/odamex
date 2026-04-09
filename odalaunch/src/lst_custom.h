@@ -33,6 +33,12 @@
 
 #include <vector>
 
+#if wxCHECK_VERSION(3, 3, 0)
+	#define ODALAUNCH_USE_LEGACY_IMAGELIST 0
+#else
+	#define ODALAUNCH_USE_LEGACY_IMAGELIST 1
+#endif
+
 class wxAdvancedListCtrl : public wxListView
 {
 public:
@@ -108,7 +114,7 @@ private:
 
 	bool m_HeaderUsable;
 
-	#if wxCHECK_VERSION(3, 3, 0)
+	#if !ODALAUNCH_USE_IMAGELIST
 	wxVector<wxBitmapBundle> m_Images;
 	#endif
 

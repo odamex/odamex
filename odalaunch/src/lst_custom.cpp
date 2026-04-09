@@ -65,7 +65,7 @@ void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent& event)
 // Add any additional bitmaps/icons to the internal image list
 int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 {
-	#if wxCHECK_VERSION(3, 3, 0)
+	#if !ODALAUNCH_USE_LEGACY_IMAGELIST
 	if (m_Images.empty())
 	{
 	#else
@@ -100,7 +100,7 @@ int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 		}
 
 		// Add our sort icons to the image list
-		#if wxCHECK_VERSION(3, 3, 0)
+		#if !ODALAUNCH_USE_LEGACY_IMAGELIST
 			sort_up.SetMask(new wxMask(sort_up, Mask));
 			sort_down.SetMask(new wxMask(sort_down, Mask));
 			ImageList_SortArrowDown = m_Images.size();
@@ -116,8 +116,9 @@ int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 
 	if(Image.IsOk())
 	{
-		#if wxCHECK_VERSION(3, 3, 0)
+		#if !ODALAUNCH_USE_LEGACY_IMAGELIST
 			m_Images.push_back(wxBitmapBundle(Image));
+			SetSmallImages(m_Images);
 			return m_Images.size() - 1;
 		#else
 			return GetImageList(wxIMAGE_LIST_SMALL)->Add(Image);
@@ -131,9 +132,13 @@ int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 // created internally
 void wxAdvancedListCtrl::ClearImageList()
 {
-	#if wxCHECK_VERSION(3, 3, 0)
+	#if !ODALAUNCH_USE_LEGACY_IMAGELIST
 		if (!m_Images.empty())
+		{
 			m_Images.resize(ImageList_SortArrowUp + 1);
+			SetSmallImages(m_Images);
+		}
+
 	#else
 		wxImageList* ImageList = GetImageList(wxIMAGE_LIST_SMALL);
 
