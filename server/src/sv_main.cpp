@@ -1208,11 +1208,11 @@ bool SV_SetupUserInfo(player_t &player)
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
 		// sanitize the weapon preference input
-		byte preflevel = MSG_ReadByte();
+		int8_t preflevel = static_cast<int8_t>(MSG_ReadByte());
 		if (preflevel >= NUMWEAPONS)
 			preflevel = NUMWEAPONS - 1;
 
-		weapon_prefs[i] = static_cast<int8_t>(preflevel);
+		weapon_prefs[i] = preflevel;
 	}
 
 	// ensure sane values for userinfo
