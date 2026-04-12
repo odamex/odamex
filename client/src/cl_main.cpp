@@ -742,6 +742,14 @@ void CL_ResolveInventory(int oldTic, const PlayerItemDataType& inventoryResponse
 	}
 }
 
+void CL_ResolveAmmoHistory(int oldTic, const ammotype_t ammoType, int ammoCount)
+{
+	if (rollerState.ResolveAmmo(oldTic, ammoType, ammoCount, consoleplayer()))
+	{
+		PrintFmt("Reconciled conflicting ammotype {} - should have been {} on tic {}\n", ammoType, ammoCount, oldTic);
+	}
+}
+
 extern bool advancedemo;
 uint64_t nextstep = 0;
 int canceltics = 0;

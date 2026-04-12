@@ -123,7 +123,7 @@ void PlayerStateRoller::Roll(int i_oldTic, Callable&& i_callable)
 bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const ammotype_t i_ammoType, int i_ammoCount, player_t& io_player)
 {
 	auto historyIter = m_history.find(i_oldTic);
-	if (historyIter != m_history.end())
+	if (historyIter != m_history.end() and i_ammoType < NUMAMMO)
 	{
 		const int ammoDelta = i_ammoCount - historyIter->second.ammo[i_ammoType];
 		if (ammoDelta)

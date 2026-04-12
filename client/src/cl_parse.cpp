@@ -1468,12 +1468,16 @@ static void CL_FireWeapon(const odaproto::svc::FireWeapon* msg)
 		PrintFmt("CL_FireWeapon: unknown weapon {}\n", firedweap);
 		return;
 	}
-	int servertic = msg->servertic();
+	int clientTicAtFireWeaponTime = msg->servertic();
+
+	CL_ResolveAmmoHistory(clientTicAtFireWeaponTime,
+	                      weaponinfo[firedweap].ammotype,
+	                      msg->ammo_pre_decrement());
 
 	if (firedweap != p->readyweapon)
 	{
 		DPrintFmt("CL_FireWeapon: weapon misprediction\n");
-		A_ForceWeaponFire(p->mo, firedweap, servertic);
+		A_ForceWeaponFire(p->mo, firedweap, clientTicAtFireWeaponTime);
 
 		// Request the player's ammo status from the server
 		MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_getplayerinfo);
