@@ -176,10 +176,14 @@ message RaiseMobj
 }
 
 // svc_fireweapon
+// This message goes out the moment that the server begins the state transition to a weapon fire
+// event.  Ammo has not yet been decremented.
 message FireWeapon
 {
-	int32 readyweapon = 1;
-	int32 servertic = 2;
+	int32        readyweapon        = 1;
+	int32        servertic          = 2;
+	int32        ammo_pre_decrement = 3;
+	PspriteState weapon_psprite     = 4;
 }
 
 // svc_updatesector

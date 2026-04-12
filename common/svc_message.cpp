@@ -86,6 +86,17 @@ static void FillInventory(odaproto::InventoryState& io_msg, const player_t& play
 	io_msg.mutable_maxammo()->Add(player.maxammo.begin(), player.maxammo.end());
 }
 
+static void FillPsprite(odaproto::PspriteState& io_msg, const pspdef_t& psprite)
+{
+	if (psprite.state)
+	{
+		io_msg.set_statenum(psprite.state->statenum);
+	}
+	io_msg.set_tics (psprite.tics);
+	io_msg.set_sx   (psprite.sx);
+	io_msg.set_sy   (psprite.sy);
+}
+
 static void FillPlayer(odaproto::Player& io_msg, const player_t& player)
 {
 	io_msg.set_playerid(player.id);
@@ -103,10 +114,7 @@ static void FillPlayer(odaproto::Player& io_msg, const player_t& player)
 
 	for (int i = 0; i < NUMPSPRITES; i++)
 	{
-		const pspdef_t* psp = &player.psprites[i];
-		const int32_t state = psp->state ? psp->state->statenum : 0;
-		odaproto::Player_Psp* plpsp = io_msg.add_psprites();
-		plpsp->set_statenum(state);
+		FillPsprite(*io_msg.add_psprites(), player.psprites[i]);
 	}
 
 	for (int i = 0; i < NUMPOWERS; i++)
@@ -718,8 +726,16 @@ odaproto::svc::FireWeapon SVC_FireWeapon(const player_t& player)
 {
 	odaproto::svc::FireWeapon msg;
 
-	msg.set_readyweapon(player.readyweapon);
-	msg.set_servertic(player.tic);
+	msg.set_readyweapon (player.readyweapon);
+	msg.set_servertic   (player.tic);
+
+	const ammotype_t ammotype = weaponinfo[player.readyweapon].ammotype;
+	if (ammotype != am_noammo)
+	{
+		msg.set_ammo_pre_decrement(player.ammo[ammotype]);
+	}
+
+	FillPsprite(*msg.mutable_weapon_psprite(), player.psprites[ps_weapon]);
 
 	return msg;
 }

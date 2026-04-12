@@ -59,18 +59,18 @@ message InventoryState
 	repeated int32 maxammo  = 5;
 }
 
+message PspriteState
+{
+	int32 statenum = 1;
+	int32 tics = 2;
+	sfixed32 sx = 3;
+	sfixed32 sy = 4;
+}
+
 message Player
 {
 	// The following deleted fields are moved to Inventory.
 	reserved 13 to 17;
-
-	message Psp
-	{
-		int32 statenum = 1;
-		int32 tics = 2;
-		sfixed32 sx = 3;
-		sfixed32 sy = 4;
-	}
 
 	uint32 playerid = 1;
 	sfixed32 viewz = 2;
@@ -84,7 +84,7 @@ message Player
 	bool backpack = 10;
 	int32 lives = 11;
 	uint32 cheats = 12;
-	repeated Psp psprites = 18;
+	repeated PspriteState psprites = 18;
 	int32 jumptics = 19;
 	InventoryState inventory = 20;
 }
