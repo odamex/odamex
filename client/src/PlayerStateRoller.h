@@ -34,6 +34,13 @@ class PlayerStateRoller
 		/// is returned.
 		bool Resolve(int i_oldTic, const PlayerItemDataType& i_itemData, player_t& io_player);
 
+		/// Resolve the canonical statement about player ammo at the given tic against recorded
+		/// history.  If history is rewritten, then the resulting state is rolled forward, the
+		/// ultimate resulting ammo count is written into the given player structure, and
+		/// true is returned.  Otherwise, history and the player state are unmodified and false
+		/// is returned.
+		bool ResolveAmmo(int i_oldTic, const ammotype_t i_ammoType, int i_ammoCount, player_t& io_player);
+
 		/// Generic stream-in operator.
 		template <typename StreamType>
 		friend StreamType& operator<<(StreamType& io_stream, const PlayerStateRoller& i_thisRef)
