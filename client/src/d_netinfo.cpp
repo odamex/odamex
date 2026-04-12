@@ -135,9 +135,17 @@ colorpreset_t D_ColorPreset (const char *colorpreset)
 
 
 static cvar_t *weaponpref_cvar_map[NUMWEAPONS] = {
-	&cl_weaponpref_fst, &cl_weaponpref_pis, &cl_weaponpref_sg, &cl_weaponpref_cg,
-	&cl_weaponpref_rl, &cl_weaponpref_pls, &cl_weaponpref_bfg, &cl_weaponpref_csw,
-	&cl_weaponpref_ssg, nullptr };
+	&cl_weaponpref_fst,
+	&cl_weaponpref_pis,
+	&cl_weaponpref_sg,
+	&cl_weaponpref_cg,
+	&cl_weaponpref_rl,
+	&cl_weaponpref_pls,
+	&cl_weaponpref_bfg,
+	&cl_weaponpref_csw,
+	&cl_weaponpref_ssg,
+	nullptr,            // wp_none
+};
 
 //
 // D_PrepareWeaponPreferenceUserInfo
