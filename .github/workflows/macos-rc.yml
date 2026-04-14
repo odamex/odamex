@@ -207,7 +207,6 @@ jobs:
         export LDFLAGS="-L${DEPS_PREFIX}/lib"
         ./configure \
           --prefix="${DEPS_PREFIX}" \
-          --enable-unicode \
           --with-cocoa \
           --without-libtiff \
           --enable-monolithic \
