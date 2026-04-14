@@ -143,7 +143,14 @@ if(NOT MSVC)
   set(USE_STATIC_STDLIB OFF CACHE BOOL
     "Statically link against the C and C++ Standard Library.")
   set(USE_SANITIZE_ADDRESS OFF CACHE BOOL
-    "Turn on Address Sanitizer in Debug builds, requires GCC >= 4.8 or Clang >= 3.1")
+    "Turn on Address Sanitizer in Debug builds.")
+  set(USE_SANITIZE_THREAD OFF CACHE BOOL
+    "Turn on Thread Sanitizer in Debug builds.")
+  if(USE_SANITIZE_ADDRESS AND USE_SANITIZE_THREAD)
+    message(FATAL_ERROR "USE_SANITIZE_ADDRESS and USE_SANITIZE_THREAD are mutually exclusive options.")
+  endif()
+  set(USE_SANITIZE_UNDEFINED OFF CACHE BOOL
+    "Turn on Undefined Behavior Sanitizer in Debug builds.")
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES SunOS )
@@ -178,9 +185,6 @@ string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
 # Libraries
 add_subdirectory(libraries)
 
-# WAD building
-add_subdirectory(wad)
-
 # Subdirectories for Odamex projects
 if(BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS)
   add_subdirectory(common)
@@ -206,6 +210,9 @@ endif()
 if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER AND NOT BUILD_LAUNCHER)
   message(FATAL_ERROR "No target chosen, doing nothing.")
 endif()
+
+# WAD building
+add_subdirectory(wad)
 
 # Disable the ag-odalaunch target completely: -DNO_AG-ODALAUNCH_TARGET
 # This is only really useful when setting up a universal build.
