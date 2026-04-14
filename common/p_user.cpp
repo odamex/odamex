@@ -542,13 +542,10 @@ void P_MovePlayer (player_t& player)
 	}
 
 	// Look left/right
-	if(clientside || step_mode)
-	{
-		mo->angle += player.cmd.yaw << 16;
+	mo->angle += player.cmd.yaw << 16;
 
-		// Look up/down stuff
-		P_PlayerLookUpDown(player);
-	}
+	// Look up/down stuff
+	P_PlayerLookUpDown(player);
 
 	// killough 10/98:
 	//
