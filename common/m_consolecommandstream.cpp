@@ -178,16 +178,21 @@ namespace {
 			void ThreadMain()
 			{
 				AcquireSRWLockExclusive(& m_srwLock);
-				while(m_streamRef.good())
+				while(true)
 				{
-					std::getline(m_streamRef, m_command);
-					while (m_streamRef and not m_command.empty())
+					std::unique_ptr<std::ifstream> filePtr { s_streamFilename.empty() ? nullptr : std::make_unique<std::ifstream>(s_streamFilename) };
+					std::istream&                  streamRef = filePtr ? *filePtr : std::cin;
+					while(streamRef.good())
 					{
-						SleepConditionVariableSRW(& m_commandIsReleasedCondition,
-						                          & m_srwLock,
-						                          INFINITE,
-						                          0);
-					}
+						std::getline(streamRef, m_command);
+						while (streamRef and not m_command.empty())
+						{
+							SleepConditionVariableSRW(& m_commandIsReleasedCondition,
+							                          & m_srwLock,
+							                          INFINITE,
+							                          0);
+						}
+				}
 				}
 				ReleaseSRWLockExclusive(& m_srwLock);
 			}
@@ -195,10 +200,10 @@ namespace {
 			void ThreadMain()
 			{
 				std::unique_lock lock(m_mutex);
-                while(true)
-                {
-                    std::unique_ptr<std::ifstream> filePtr { s_streamFilename.empty() ? nullptr : std::make_unique<std::ifstream>(s_streamFilename) };
-                    std::istream&                  streamRef = filePtr ? *filePtr : std::cin;
+				while(true)
+				{
+					std::unique_ptr<std::ifstream> filePtr { s_streamFilename.empty() ? nullptr : std::make_unique<std::ifstream>(s_streamFilename) };
+					std::istream&                  streamRef = filePtr ? *filePtr : std::cin;
 					while(streamRef.good())
 					{
 						std::getline(streamRef, m_command);
