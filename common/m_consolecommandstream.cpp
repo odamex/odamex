@@ -192,7 +192,7 @@ namespace {
 							                          INFINITE,
 							                          0);
 						}
-				}
+					}
 				}
 				ReleaseSRWLockExclusive(& m_srwLock);
 			}
