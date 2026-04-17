@@ -54,7 +54,8 @@ private:
 	typedef enum
 	{
 		msg_packet		= 0xAA,
-		msg_snapshot
+		msg_snapshot,
+		msg_map_change
 	} netdemo_message_t;
 
 	typedef struct
@@ -89,6 +90,8 @@ private:
 	bool readHeader();
 
 	bool atSnapshotInterval();
+
+	void populateMessageIndexes();
 
 	[[nodiscard]] int getCurrentSnapshotIndex() const;
 	[[nodiscard]] int getCurrentMapIndex() const;

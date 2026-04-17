@@ -265,6 +265,39 @@ bool NetDemo::readHeader()
 	return true;
 }
 
+//
+// pouplateMessageIndexes()
+//
+//   called from startPlaying, seeks through the demo and populates 
+//   map_index and snapshot_index vecs
+void NetDemo::populateMessageIndexes()
+{
+	fseek(demofp, NetDemo::HEADER_SIZE, SEEK_SET);
+
+	netdemo_message_t type;
+	uint32_t len = 0, tic = 0;
+
+	do
+	{
+		readMessageHeader(type, len, tic);
+
+		long file_position = ftell(demofp) - NetDemo::MESSAGE_HEADER_SIZE;
+
+		if (type == NetDemo::msg_snapshot)
+		{
+			netdemo_index_entry_t entry = {tic, file_position};
+			snapshot_index.push_back(entry);
+		}
+
+		if (type == NetDemo::msg_map_change)
+		{
+			netdemo_index_entry_t entry = {tic, file_position};
+			map_index.push_back(entry);
+			snapshot_index.push_back(entry);
+		}
+
+	} while (fseek(demofp, len, SEEK_CUR) == 0 && len != 0);
+}
 
 //
 // startRecording()
@@ -411,6 +444,7 @@ bool NetDemo::startPlaying(const std::string &filename)
 		return false;
 	}
 
+	populateMessageIndexes();
 
 	// get set up to read server cmds
 	fseek(demofp, NetDemo::HEADER_SIZE, SEEK_SET);
@@ -1196,7 +1230,7 @@ void NetDemo::writeMapChange()
 	if (connected && gamestate == GS_LEVEL)
 	{
 		writeSnapshotData(snapbuf);
-		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::msg_snapshot);
+		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::msg_map_change);
 	}
 }
 
