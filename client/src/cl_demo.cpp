@@ -175,8 +175,7 @@ void NetDemo::error(const std::string &message)
 void NetDemo::fatalError(const std::string &message)
 {
 	cleanUp();
-	gameaction = ga_nothing;
-	gamestate = GS_FULLCONSOLE;
+	stopPlaying();
 
 	PrintFmt(PRINT_HIGH, "{}\n", message);
 }
