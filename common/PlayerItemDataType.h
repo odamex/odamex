@@ -43,7 +43,7 @@ struct PlayerItemDataType
 	{
 	}
 
-	void ToPlayer(player_t& player)
+	void ToPlayer(player_t& player) const
 	{
 		player.ammo            = ammo;
 		player.maxammo         = maxammo;

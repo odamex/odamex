@@ -77,6 +77,16 @@ class PlayerStateRoller
 			return io_stream;
 		}
 
+        std::optional<std::reference_wrapper<const PlayerItemDataType>> GetStateAtTic(int i_oldTic) const
+        {
+            const auto iter = m_history.find(i_oldTic);
+            if (iter != m_history.end())
+            {
+                return std::cref(iter->second);
+            }
+            return {};
+        }
+
 		int ExpectedTic() const { return m_mostRecentTic + 1; }
 
 	protected:
