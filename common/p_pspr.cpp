@@ -1053,23 +1053,15 @@ void A_WeaponBulletAttack(AActor* mo)
 
 	Unlag::getInstance().reconcile(player->id);
 
-	bool refire = player->refire ? true : false;
-
-	angle = 0;
-
-	if (refire)
-		angle = P_RandomDiff(player->mo) << 18;
-
 	fixed_t bulletslope = P_BulletSlope(player->mo);
 
 	for (i = 0; i < numbullets; i++)
 	{
-		int bangle = angle;
 		damage = (P_Random(mo) % damagemod + 1) * damagebase;
-		bangle = angle + (int)player->mo->angle + P_RandomHitscanAngle(hspread);
+		angle = (int)player->mo->angle + P_RandomHitscanAngle(hspread);
 		slope = bulletslope + P_RandomHitscanSlope(vspread);
 
-		P_LineAttack(player->mo, bangle, MISSILERANGE, slope, damage);
+		P_LineAttack(player->mo, angle, MISSILERANGE, slope, damage);
 	}
 
 	Unlag::getInstance().restore(player->id);
