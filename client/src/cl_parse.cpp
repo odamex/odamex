@@ -1470,10 +1470,6 @@ static void CL_FireWeapon(const odaproto::svc::FireWeapon* msg)
 	}
 	int clientTicAtFireWeaponTime = msg->servertic();
 
-	CL_ResolveAmmoHistory(clientTicAtFireWeaponTime,
-	                      weaponinfo[firedweap].ammotype,
-	                      msg->ammo_pre_decrement());
-
 	if (firedweap != p->readyweapon)
 	{
 		DPrintFmt("CL_FireWeapon: weapon misprediction\n");
@@ -1854,7 +1850,8 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 	uint32_t id = msg->netid();
 	AActor* mo = P_FindThingById(id);
 
-	if (!consoleplayer().mo)
+    player_t& player = consoleplayer();
+	if (not player.mo)
 		return;
 
 	if (!mo)
@@ -1864,7 +1861,25 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 		return;
 	}
 
-	P_GiveSpecial(consoleplayer(), *mo);
+    const int oldTic = msg->player_tic();
+    auto optionalHistory = rollerState.GetStateAtTic(oldTic);
+	const PlayerItemDataType currentClientSideState {player};
+
+    if (optionalHistory)
+    {
+        optionalHistory->get().ToPlayer(player);
+    }
+
+	P_GiveSpecial(player, *mo);
+
+    if (optionalHistory)
+    {
+        const PlayerItemDataType modifiedHistory {player};
+
+        currentClientSideState.ToPlayer(player);
+
+        rollerState.Resolve(oldTic, modifiedHistory, player);
+    }
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -3037,6 +3052,9 @@ static void CL_PlayerInventory(const odaproto::svc::PlayerInventory* msg)
 
 static void CL_PlayerAmmo(const odaproto::svc::PlayerAmmo* msg)
 {
+    CL_ResolveAmmoHistory(msg->player_tic(),
+                          static_cast<ammotype_t>(msg->ammo_type()),
+                          msg->ammo_quantity());
 }
 
 static void CL_PlayerMaxAmmo(const odaproto::svc::PlayerMaxAmmo* msg)

@@ -359,6 +359,7 @@ message ExitLevel
 message TouchSpecial
 {
 	uint32 netid = 1;
+	int32  player_tic = 2;
 }
 
 // svc_missedpacket

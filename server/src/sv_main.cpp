@@ -4590,7 +4590,7 @@ void SV_TouchSpecial(AActor& special, player_t& player)
 		SV_AwarenessUpdate(player, &special, true);
 	}
 
-	MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_TouchSpecial(special));
+	MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_TouchSpecial(player, special));
 }
 
 void SV_PlayerTimes (void)
