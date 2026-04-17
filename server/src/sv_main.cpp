@@ -4526,11 +4526,6 @@ void SV_GameTics (void)
 
 void SV_TouchSpecial(AActor& special, player_t& player)
 {
-	client_t *cl = &player.client;
-
-	if (cl == nullptr)
-		return;
-
 	// It can sometimes happen where an item is spawned, touched, and removed all
 	// before the client ever sees the SpawnMobj command.  This has been observed
 	// when the server is heavily loaded to the point where mobjs are actively
@@ -4551,7 +4546,7 @@ void SV_TouchSpecial(AActor& special, player_t& player)
 		SV_AwarenessUpdate(player, &special, true);
 	}
 
-	MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_TouchSpecial(special));
+	MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_TouchSpecial(special));
 }
 
 void SV_PlayerTimes (void)
