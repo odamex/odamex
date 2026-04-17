@@ -776,7 +776,7 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 //   tic worth of network messages and one message per tic ensures the timing
 //   of playback matches the timing of the messages when they were recorded.
 //
-//   Snapshots are skipped as they are directly read elsewhere.
+//   Snapshots and map changes are skipped as they are directly read elsewhere.
 
 void NetDemo::readMessages(buf_t* netbuffer)
 {
@@ -791,7 +791,7 @@ void NetDemo::readMessages(buf_t* netbuffer)
 	// get the values for type, len and tic
 	readMessageHeader(type, len, tic);
 
-	while (type == NetDemo::msg_snapshot)
+	while (type == NetDemo::msg_snapshot || type == NetDemo::msg_map_change)
 	{
 		// skip over snapshots and read the next message instead
 		fseek(demofp, len, SEEK_CUR);
