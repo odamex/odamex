@@ -494,7 +494,7 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, int space)
 		if (oldlumps + newlumps > numlumps)
 			lumpinfo = (lumpinfo_t*) M_Realloc(lumpinfo, oldlumps + newlumps);
 
-		memcpy (lumpinfo + oldlumps, newlumpinfos.get(), sizeof(lumpinfo_t) * newlumps);
+		std::copy_n(newlumpinfos.get(), newlumps, lumpinfo + oldlumps);
 
 		numlumps = oldlumps + newlumps;
 
@@ -555,6 +555,13 @@ void W_InitMultipleFiles(const OResFiles& files)
 	W_MergeLumps ("S_START", "S_END", ns_sprites); // denis - fixme - security
 	W_MergeLumps ("F_START", "F_END", ns_flats);
 	W_MergeLumps ("C_START", "C_END", ns_colormaps);
+
+	// [EB] Fix for use-after-free when OZone tries to null the "user" pointers
+	if (lumpcache)
+	{
+		for (size_t i = 0; i < numlumps; i++)
+			Z_Free(lumpcache[i]);
+	}
 
     // set up caching
 	M_Free(lumpcache);
