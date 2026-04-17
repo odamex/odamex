@@ -3035,6 +3035,22 @@ static void CL_PlayerInventory(const odaproto::svc::PlayerInventory* msg)
 	CL_ResolveInventory(msg->client_tic(), inventoryResponse);
 }
 
+static void CL_PlayerAmmo(const odaproto::svc::PlayerAmmo* msg)
+{
+}
+
+static void CL_PlayerMaxAmmo(const odaproto::svc::PlayerMaxAmmo* msg)
+{
+}
+
+static void CL_PlayerWeaponOwned(const odaproto::svc::PlayerWeaponOwned* msg)
+{
+}
+
+static void CL_PlayerWeaponSelection(const odaproto::svc::PlayerWeaponSelection* msg)
+{
+}
+
 static void CL_NetdemoCap(const odaproto::clc::NetdemoCap* msg)
 {
 	player_t* clientPlayer = &consoleplayer();
@@ -3264,6 +3280,10 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_spreebreaker, CL_SpreeBreaker, odaproto::svc::SpreeBreaker);
 		SV_MSG(svc_noisealert, CL_NoiseAlert, odaproto::svc::NoiseAlert);
 		SV_MSG(svc_playerinventory, CL_PlayerInventory, odaproto::svc::PlayerInventory);
+		SV_MSG(svc_playerammo, CL_PlayerAmmo, odaproto::svc::PlayerAmmo);
+		SV_MSG(svc_playermaxammo, CL_PlayerMaxAmmo, odaproto::svc::PlayerMaxAmmo);
+		SV_MSG(svc_playerweaponowned, CL_PlayerWeaponOwned, odaproto::svc::PlayerWeaponOwned);
+		SV_MSG(svc_playerweaponselection, CL_PlayerWeaponSelection, odaproto::svc::PlayerWeaponSelection);
 		SV_MSG(clc_netdemocap, CL_NetdemoCap, odaproto::clc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
 		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);

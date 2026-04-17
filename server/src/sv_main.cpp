@@ -3416,6 +3416,37 @@ void SV_WriteCommandsForPlayer(player_t& player)
 		MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_MovePlayer(otherPlayer, player.tic));
 	}
 
+    const bool pendingWeaponWasChanged = player.pendingweaponMonitor.EvaluateAsChanged();
+    const bool readyWeaponWasChanged   = player.readyweaponMonitor.EvaluateAsChanged();
+	if (pendingWeaponWasChanged or readyWeaponWasChanged)
+    {
+        MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerWeaponSelection(player));
+    }
+
+    for (size_t i = 0; i < player.weaponowned.size(); ++i)
+    {
+        if (player.weaponOwnedMonitors.EvaluateAsChanged(i))
+        {
+            MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerWeaponOwned(player, i));
+        }
+    }
+
+    for (size_t i = 0; i < player.ammo.size(); ++i)
+    {
+        if (player.ammoMonitors.EvaluateAsChanged(i))
+        {
+            MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerAmmo(player, i));
+        }
+    }
+
+    for (size_t i = 0; i < player.ammo.size(); ++i)
+    {
+        if (player.maxAmmoMonitors.EvaluateAsChanged(i))
+        {
+            MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerMaxAmmo(player, i));
+        }
+    }
+
 	// [SL] Send client info about player he is spying on
 	player_t& target = idplayer(player.spying);
 	if (validplayer(target) && &player != &target && P_CanSpy(player, target))
@@ -4494,6 +4525,18 @@ static void IntermissionTimeCheck()
 	}
 }
 
+static void SV_ArmInventoryMonitors()
+{
+    for (auto& player : players)
+    {
+        player.pendingweaponMonitor.Arm();
+        player.readyweaponMonitor.Arm();
+        player.weaponOwnedMonitors.Arm();
+        player.ammoMonitors.Arm();
+        player.maxAmmoMonitors.Arm();
+    }
+}
+
 //
 // SV_GameTics
 //
@@ -4511,6 +4554,7 @@ void SV_GameTics (void)
 			::levelstate.tic();
 			TimeCheck();
 			Vote_Runtic();
+			SV_ArmInventoryMonitors();
 		break;
 		case GS_INTERMISSION:
 			IntermissionTimeCheck();

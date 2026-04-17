@@ -155,3 +155,8 @@ odaproto::svc::Spree SVC_Spree(const SpreeRecord_t& spree);
 odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, const int level, const SpreeBreakerType breakerType);
 odaproto::svc::NoiseAlert SVC_NoiseAlert(const sector_t& sector);
 odaproto::svc::PlayerInventory SVC_PlayerInventory(const uint32_t clientTic, const player_t& player);
+odaproto::svc::PlayerAmmo SVC_PlayerAmmo(const player_t& player, const size_t index);
+odaproto::svc::PlayerMaxAmmo SVC_PlayerMaxAmmo(const player_t& player, const size_t index);
+odaproto::svc::PlayerWeaponOwned SVC_PlayerWeaponOwned(const player_t& player, const size_t index);
+odaproto::svc::PlayerWeaponSelection SVC_PlayerWeaponSelection(const player_t& player);
+

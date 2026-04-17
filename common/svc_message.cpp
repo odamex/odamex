@@ -147,6 +147,50 @@ odaproto::svc::PlayerInventory SVC_PlayerInventory(const uint32_t clientTic, con
 	return msg;
 }
 
+odaproto::svc::PlayerAmmo SVC_PlayerAmmo(const player_t& player, const size_t index)
+{
+    odaproto::svc::PlayerAmmo msg;
+
+    msg.set_player_tic(player.tic);
+    msg.set_ammo_type(static_cast<uint32_t>(index));
+    msg.set_ammo_quantity(player.ammo[index]);
+
+    return msg;
+}
+
+odaproto::svc::PlayerMaxAmmo SVC_PlayerMaxAmmo(const player_t& player, const size_t index)
+{
+    odaproto::svc::PlayerMaxAmmo msg;
+
+    msg.set_player_tic(player.tic);
+    msg.set_ammo_type(static_cast<uint32_t>(index));
+    msg.set_ammo_max(player.maxammo[index]);
+
+    return msg;
+}
+
+odaproto::svc::PlayerWeaponOwned SVC_PlayerWeaponOwned(const player_t& player, const size_t index)
+{
+    odaproto::svc::PlayerWeaponOwned msg;
+
+    msg.set_player_tic(player.tic);
+    msg.set_weapon(static_cast<uint32_t>(index));
+    msg.set_is_owned(player.weaponowned[index]);
+
+    return msg;
+}
+
+odaproto::svc::PlayerWeaponSelection SVC_PlayerWeaponSelection(const player_t& player)
+{
+    odaproto::svc::PlayerWeaponSelection msg;
+
+    msg.set_player_tic(player.tic);
+    msg.set_readyweapon(player.readyweapon);
+    msg.set_pendingweapon(player.pendingweapon);
+
+    return msg;
+}
+
 /**
  * @brief Change the location of a player.
  */

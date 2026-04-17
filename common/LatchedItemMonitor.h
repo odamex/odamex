@@ -66,7 +66,9 @@ class LatchedItemArrayMonitor
         void Arm()
         {
             m_isArmed.fill(true);
-            m_latchedValues = m_refs;
+            std::copy(m_refs.begin(),
+                      m_refs.end(),
+                      m_latchedValues.begin());
         }
 
         bool EvaluateAsChanged(size_t index)
