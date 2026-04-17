@@ -191,21 +191,11 @@ public:
 	std::array<int, NUMAMMO> ammo;
 	std::array<int, NUMAMMO> maxammo;
 
-    LatchedItemArrayMonitor<int, NUMAMMO> ammoMonitors;
-
-    /*
-    LatchedItemMonitor<int> bulletMonitor;
-    LatchedItemMonitor<int> shellMonitor;
-    LatchedItemMonitor<int> rocketMonitor;
-    LatchedItemMonitor<int> cellMonitor;
-
-    LatchedItemMonitor<int> maxBulletMonitor;
-    LatchedItemMonitor<int> maxShellMonitor;
-    LatchedItemMonitor<int> maxRocketMonitor;
-    LatchedItemMonitor<int> maxCellMonitor;
-
-    LatchedItemMonitor<bool> ownMonitor;
-    */
+    LatchedItemMonitor<weapontype_t>            pendingweaponMonitor;
+    LatchedItemMonitor<weapontype_t>            readyweaponMonitor;
+    LatchedItemArrayMonitor<bool, NUMWEAPONS>   weaponOwnedMonitors;
+    LatchedItemArrayMonitor<int, NUMAMMO>       ammoMonitors;
+    LatchedItemArrayMonitor<int, NUMAMMO>       maxAmmoMonitors;
 
     // True if button down last tic.
 	int			attackdown, usedown;
