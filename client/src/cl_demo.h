@@ -55,7 +55,8 @@ private:
 	{
 		msg_packet		= 0xAA,
 		msg_snapshot,
-		msg_map_change
+		msg_map_change,
+		msg_eof
 	} netdemo_message_t;
 
 	typedef struct

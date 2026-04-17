@@ -274,10 +274,11 @@ void NetDemo::populateMessageIndexes()
 	fseek(demofp, NetDemo::HEADER_SIZE, SEEK_SET);
 
 	netdemo_message_t type;
-	uint32_t len = 0, tic = 0;
+	uint32_t len = 0, tic = 0, last_tic = 0;
 
 	do
 	{
+		last_tic = tic;
 		readMessageHeader(type, len, tic);
 
 		long file_position = ftell(demofp) - NetDemo::MESSAGE_HEADER_SIZE;
@@ -288,14 +289,25 @@ void NetDemo::populateMessageIndexes()
 			snapshot_index.push_back(entry);
 		}
 
-		if (type == NetDemo::msg_map_change)
+		else if (type == NetDemo::msg_map_change)
 		{
 			netdemo_index_entry_t entry = {tic, file_position};
 			map_index.push_back(entry);
 			snapshot_index.push_back(entry);
 		}
 
+		else if (type == NetDemo::msg_eof)
+		{
+			break;
+		}
+
 	} while (fseek(demofp, len, SEEK_CUR) == 0 && len != 0);
+
+	// fix for playing a demo that hard crashed and couldnt write ending_gametic
+	if (header.ending_gametic == 0)
+	{
+		header.ending_gametic = last_tic;
+	}
 }
 
 //
@@ -512,7 +524,7 @@ bool NetDemo::stopRecording()
 
 	// write the end-of-demo marker - header + size
 	byte stopdata[2] = {svc_netdemostop, 0};
-	writeChunk(&stopdata[0], sizeof(stopdata), NetDemo::msg_packet);
+	writeChunk(&stopdata[0], sizeof(stopdata), NetDemo::msg_eof);
 
 	// write the number of the last gametic in the recording
 	header.ending_gametic = gametic;
@@ -1092,7 +1104,7 @@ void NetDemo::nextSnapshot()
 //
 void NetDemo::prevSnapshot()
 {
-	if (snapshot_index.size())
+	if (snapshot_index.empty())
 		return;
 
 	int prevsnapindex = getCurrentSnapshotIndex() - 1;
