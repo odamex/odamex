@@ -131,4 +131,5 @@ private:
 	std::vector<byte>	snapbuf;
 	int					netdemotic;
 	int					pause_netdemotic;
+	int					last_map_tic;
 };

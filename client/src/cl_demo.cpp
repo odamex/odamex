@@ -72,7 +72,7 @@ int LatestDemoVersion(const int version)
 
 NetDemo::NetDemo()
     : state(st_stopped), oldstate(st_stopped), filename(""), demofp(NULL), netdemotic(0),
-      pause_netdemotic(0)
+      pause_netdemotic(0), last_map_tic(0)
 {
 	memset(&header, 0, sizeof(header));
 }
@@ -148,7 +148,7 @@ void NetDemo::cleanUp()
 	snapshot_index.clear();
 	map_index.clear();
 	state = oldstate = NetDemo::st_stopped;
-	netdemotic = pause_netdemotic = 0;
+	netdemotic = pause_netdemotic = last_map_tic = 0;
 }
 
 /**
@@ -612,10 +612,9 @@ void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
 //
 bool NetDemo::atSnapshotInterval()
 {
-	if (!connected || map_index.empty() || gamestate != GS_LEVEL)
+	if (!connected || last_map_tic == 0 || gamestate != GS_LEVEL)
 		return false;
 
-	int last_map_tic = map_index.back().ticnum;
 	if (gametic == last_map_tic)
 		return false;
 
@@ -1233,6 +1232,7 @@ void NetDemo::writeMapChange()
 	{
 		writeSnapshotData(snapbuf);
 		writeChunk(snapbuf.data(), snapbuf.size(), NetDemo::msg_map_change);
+		last_map_tic = gametic;
 	}
 }
 
