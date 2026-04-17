@@ -1166,7 +1166,7 @@ void G_Ticker (void)
 			//
 			// Make sure that the server gives us a canonical inventory statement about any pickups we
 			// believe we get as a result of this.
-			consoleplayer().inventoryCheckRequestsAreEnabled = isClientSideOnly and isActuallyConnected;
+			consoleplayer().inventoryCheckRequestsAreEnabled = false; //isClientSideOnly and isActuallyConnected;
 
 			if (isClientSideOnly)
 			{
