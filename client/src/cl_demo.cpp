@@ -335,6 +335,9 @@ bool NetDemo::startRecording(const std::string &filename)
 	}
 
 	memset(&header, 0, sizeof(header));
+	
+	header.starting_gametic = gametic;
+
 	// Note: The header is not finalized at this point.  Write it anyway to
 	// reserve space in the output file for it and overwrite it later.
 	if (!writeHeader())
@@ -344,7 +347,6 @@ bool NetDemo::startRecording(const std::string &filename)
 	}
 
 	state = NetDemo::st_recording;
-	header.starting_gametic = gametic;
 	PrintFmt(PRINT_HIGH, "Recording netdemo {}.\n", filename);
 
 	if (connected)
