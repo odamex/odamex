@@ -276,6 +276,10 @@ enum svc_t
 	svc_spreebreaker,
 	svc_noisealert,
 	svc_playerinventory,
+	svc_playerammo,
+	svc_playermaxammo,
+	svc_playerweaponowned,
+	svc_playerweaponselection,
 	clc_playerinput,        // SPECIAL KNOWLEDGE AND NOTE HERE: We're entering a transitory phase
 	                        // where client-originated messages are going to start transitioning
 	                        // to protobufs, and this svc enum is the basis for the unified message

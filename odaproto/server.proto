@@ -186,6 +186,34 @@ message FireWeapon
 	PspriteState weapon_psprite     = 4;
 }
 
+message PlayerAmmo
+{
+    int32  player_tic    = 1;
+    uint32 ammo_type     = 2;
+    int32  ammo_quantity = 3;
+}
+
+message PlayerMaxAmmo
+{
+    int32  player_tic = 1;
+    uint32 ammo_type  = 2;
+    int32  ammo_max   = 3;
+}
+
+message PlayerWeaponOwned
+{
+    int32  player_tic = 1;
+    uint32 weapon     = 2;
+    bool   is_owned   = 3;
+}
+
+message PlayerWeaponSelection
+{
+    int32  player_tic    = 1;
+    uint32 readyweapon   = 2;
+    uint32 pendingweapon = 3;
+}
+
 // svc_updatesector
 message UpdateSector
 {

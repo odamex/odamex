@@ -1073,6 +1073,10 @@ static void InitNetMessageFormats()
 	MSG_INFO(svc_hordeinfo);
 	MSG_INFO(svc_noisealert);
 	MSG_INFO(svc_playerinventory);
+	MSG_INFO(svc_playerammo);
+	MSG_INFO(svc_playermaxammo);
+	MSG_INFO(svc_playerweaponowned);
+	MSG_INFO(svc_playerweaponselection);
 	MSG_INFO(clc_playerinput);
 	MSG_INFO(clc_netdemocap);
 	MSG_INFO(msg_max);
