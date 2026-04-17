@@ -83,8 +83,6 @@ private:
 	void readSnapshotData(std::vector<byte>& buf);
 	void writeSnapshotData(std::vector<byte>& buf);
 
-	void writeSnapshotIndexEntry();
-	void writeMapIndexEntry();
 	void readSnapshot(const netdemo_index_entry_t *snap);
 	void writeChunk(const byte *data, size_t size, netdemo_message_t type);
 	bool writeHeader();
@@ -92,31 +90,22 @@ private:
 
 	bool atSnapshotInterval();
 
-	bool writeSnapshotIndex();
-	bool readSnapshotIndex();
-	bool writeMapIndex();
-	bool readMapIndex();
 	[[nodiscard]] int getCurrentSnapshotIndex() const;
 	[[nodiscard]] int getCurrentMapIndex() const;
 
 	void writeLocalCmd(buf_t *netbuffer) const;
 	bool readMessageHeader(netdemo_message_t &type, uint32_t &len, uint32_t &tic) const;
 	void readMessageBody(buf_t *netbuffer, uint32_t len);
-	void writeFullUpdate(int ticnum);
 
 	typedef struct
 	{
 		char		identifier[4];  		// "ODAD"
 		byte		version;
 		byte    	compression;    		// type of compression used
-		uint16_t	snapshot_index_size;	// number of snapshots in the index
-		uint32_t	snapshot_index_offset;	// offset from start of the file for the index
-		uint16_t	map_index_size;			// number of maps in the mapindex
-		uint32_t	map_index_offset;		// offset from start of the file for the mapindex
 		uint16_t	snapshot_spacing;		// number of gametics between indices
 		uint32_t	starting_gametic;		// the gametic the demo starts at
 		uint32_t	ending_gametic;			// the last gametic of the demo
-		byte		reserved[36];   		// for future use
+		byte		reserved[48];   		// for future use
 	} netdemo_header_t;
 
 	static constexpr size_t HEADER_SIZE = 64;
