@@ -52,6 +52,7 @@
 #include "clc_message.h"
 
 #include "OdaMessenger.h"
+#include "LatchedItemMonitor.h"
 
 //
 // Player states.
@@ -189,6 +190,8 @@ public:
 	std::array<bool, NUMWEAPONS> weaponowned;
 	std::array<int, NUMAMMO> ammo;
 	std::array<int, NUMAMMO> maxammo;
+
+    LatchedItemMonitor<int> bulletMonitor;
 
     // True if button down last tic.
 	int			attackdown, usedown;

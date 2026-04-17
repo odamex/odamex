@@ -1348,6 +1348,7 @@ player_t::player_t() :
 	secretcount(0),
 	pendingweapon(wp_fist),
 	readyweapon(wp_fist),
+    bulletMonitor(ammo[am_clip]),
 	attackdown(0),
 	usedown(0),
 	cheats(0),
