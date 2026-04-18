@@ -681,10 +681,6 @@ static void P_GiveCarePack(player_t& player)
 {
 	constexpr int ammomulti[NUMAMMO] = {2, 1, 1, 2};
 
-	// [AM] There is way too much going on in here to accurately predict.
-	if (!::serverside)
-		return;
-
 	// Which weapons will we need ammo for?
 	bool hasWeap[NUMAMMO] = {false, false, false, false};
 	for (size_t i = 0; i < NUMWEAPONS; i++)
@@ -848,26 +844,11 @@ static void P_GiveCarePack(player_t& player)
 	if (message.empty())
 		message = "Picked up a supply cache full of health and ammo!";
 
-	if (!::clientside)
+	PrintFmt(PRINT_PICKUP, "{}\n", message.c_str());
+	if (!midmessage.empty())
 	{
-		// [AM] FIXME: This gives players their inventory, with no
-		//             background flash.
-		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerInfo(player));
-		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_Print(PRINT_PICKUP, message + "\n"));
-		if (!midmessage.empty())
-		{
-			std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
-			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_MidPrint(buf, 0));
-		}
-	}
-	else
-	{
-		PrintFmt(PRINT_PICKUP, "{}\n", message.c_str());
-		if (!midmessage.empty())
-		{
-			std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
-			C_MidPrint(buf.c_str(), NULL, 0);
-		}
+		std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
+		C_MidPrint(buf.c_str(), NULL, 0);
 	}
 }
 
