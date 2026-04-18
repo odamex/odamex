@@ -182,6 +182,25 @@ bool PlayerStateRoller::ResolveWeaponOwned(int i_oldTic, const weapontype_t i_we
 	return false;
 }
 
+bool PlayerStateRoller::ResolveWeaponSelection(int i_oldTic, const weapontype_t i_readyWeapon, const weapontype_t i_pendingWeapon, player_t& io_player)
+{
+	auto historyIter = m_history.find(i_oldTic);
+	if (historyIter != m_history.end() and i_readyWeapon < NUMWEAPONS and i_pendingWeapon < NUMWEAPONS)
+	{
+		if (historyIter->second.readyweapon != i_readyWeapon or historyIter->second.pendingweapon != i_pendingWeapon)
+		{
+			Roll(i_oldTic, [i_readyWeapon, i_pendingWeapon](auto& rollingIter)
+				{
+					rollingIter->second.readyweapon   = i_readyWeapon;
+					rollingIter->second.pendingweapon = i_pendingWeapon;
+				});
+			io_player.readyweapon   = i_readyWeapon;
+			io_player.pendingweapon = i_pendingWeapon;
+			return true;
+		}
+	}
+	return false;
+}
 
 bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemData, player_t& io_player)
 {

@@ -3075,6 +3075,10 @@ static void CL_PlayerWeaponOwned(const odaproto::svc::PlayerWeaponOwned* msg)
 
 static void CL_PlayerWeaponSelection(const odaproto::svc::PlayerWeaponSelection* msg)
 {
+    rollerState.ResolveWeaponSelection(msg->player_tic(),
+                                       static_cast<weapontype_t>(msg->readyweapon()),
+                                       static_cast<weapontype_t>(msg->pendingweapon()),
+                                       consoleplayer());
 }
 
 static void CL_NetdemoCap(const odaproto::clc::NetdemoCap* msg)

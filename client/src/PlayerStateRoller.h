@@ -52,6 +52,8 @@ class PlayerStateRoller
 		/// Similar to ResolveAmmoMax: absolute adjustment of weapon ownership state.
 		bool ResolveWeaponOwned(int i_oldTic, const weapontype_t i_weaponType, bool i_isOwned, player_t& io_player);
 
+		bool ResolveWeaponSelection(int i_oldTic, const weapontype_t i_readyWeapon, const weapontype_t i_pendingWeapon, player_t& io_player);
+
 		/// Generic stream-in operator.
 		template <typename StreamType>
 		friend StreamType& operator<<(StreamType& io_stream, const PlayerStateRoller& i_thisRef)
