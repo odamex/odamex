@@ -144,6 +144,25 @@ bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const ammotype_t i_ammoType, i
 	return false;
 }
 
+bool PlayerStateRoller::ResolveMaxAmmo(int i_oldTic, const ammotype_t i_ammoType, int i_maxAmmoQuantity, player_t& io_player)
+{
+	auto historyIter = m_history.find(i_oldTic);
+	if (historyIter != m_history.end() and i_ammoType < NUMAMMO)
+	{
+		if (historyIter->second.maxammo[i_ammoType] != i_maxAmmoQuantity)
+		{
+			Roll(i_oldTic, [i_ammoType, i_maxAmmoQuantity](auto& rollingIter)
+				{
+					rollingIter->second.maxammo[i_ammoType] = i_maxAmmoQuantity;
+				});
+
+			io_player.maxammo[i_ammoType] = i_maxAmmoQuantity;
+			return true;
+		}
+	}
+	return false;
+}
+
 bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemData, player_t& io_player)
 {
 	auto historyIter = m_history.find(i_oldTic);
