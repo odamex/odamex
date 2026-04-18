@@ -163,6 +163,26 @@ bool PlayerStateRoller::ResolveMaxAmmo(int i_oldTic, const ammotype_t i_ammoType
 	return false;
 }
 
+bool PlayerStateRoller::ResolveWeaponOwned(int i_oldTic, const weapontype_t i_weaponType, bool i_isOwned, player_t& io_player)
+{
+	auto historyIter = m_history.find(i_oldTic);
+	if (historyIter != m_history.end() and i_weaponType < NUMWEAPONS)
+	{
+		if (historyIter->second.weaponowned[i_weaponType] != i_isOwned)
+		{
+			Roll(i_oldTic, [i_weaponType, i_isOwned](auto& rollingIter)
+				{
+					rollingIter->second.weaponowned[i_weaponType] = i_isOwned;
+				});
+
+			io_player.weaponowned[i_weaponType] = i_isOwned;
+			return true;
+		}
+	}
+	return false;
+}
+
+
 bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemData, player_t& io_player)
 {
 	auto historyIter = m_history.find(i_oldTic);

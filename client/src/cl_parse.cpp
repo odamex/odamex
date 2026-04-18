@@ -3063,11 +3063,14 @@ static void CL_PlayerMaxAmmo(const odaproto::svc::PlayerMaxAmmo* msg)
                                static_cast<ammotype_t>(msg->ammo_type()),
                                msg->ammo_max(),
                                consoleplayer());
-
 }
 
 static void CL_PlayerWeaponOwned(const odaproto::svc::PlayerWeaponOwned* msg)
 {
+    rollerState.ResolveWeaponOwned(msg->player_tic(),
+                                   static_cast<weapontype_t>(msg->weapon()),
+                                   msg->is_owned(),
+                                   consoleplayer());
 }
 
 static void CL_PlayerWeaponSelection(const odaproto::svc::PlayerWeaponSelection* msg)
