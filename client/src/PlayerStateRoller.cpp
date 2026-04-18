@@ -175,9 +175,13 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
 
 		if (maxammoRequiresRoll)
 		{
-			Roll(i_oldTic, [&deltaItemData](auto& rollingIter)
+			Roll(i_oldTic, [&i_itemData](auto& rollingIter)
 				{
-					ApplyDeltaArray(rollingIter->second.maxammo, deltaItemData.maxammo);
+					// Please note that we don't apply the delta across the history of maxammo.
+					// The reason for that is if we have, say, an off-by-one tic prediction of
+					// a pickup that affects maxammo, we don't want to wind up with a double-
+					// value maxammo.
+					rollingIter->second.maxammo = i_itemData.maxammo;
 				});
 		}
 
