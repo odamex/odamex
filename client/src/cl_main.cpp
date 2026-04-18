@@ -744,9 +744,27 @@ void CL_ResolveInventory(int oldTic, const PlayerItemDataType& inventoryResponse
 
 void CL_ResolveAmmoHistory(int oldTic, const ammotype_t ammoType, int ammoCount)
 {
-	if (rollerState.ResolveAmmo(oldTic, ammoType, ammoCount, consoleplayer()))
+	auto& player = consoleplayer();
+
+    const int originalAmmo = player.ammo[ammoType];
+	if (rollerState.ResolveAmmo(oldTic, ammoType, ammoCount, player))
 	{
-		PrintFmt("Reconciled conflicting ammotype {} - should have been {} on tic {}\n", ammoType, ammoCount, oldTic);
+		if (originalAmmo != player.ammo[ammoType])
+		{
+			PrintFmt("Reconciled ammotype {} from {} to {} - should have been {} on tic {}\n",
+			         ammoType,
+			         originalAmmo,
+			         player.ammo[ammoType],
+			         ammoCount,
+			         oldTic);
+		}
+		else
+		{
+			PrintFmt("Reconciled ammotype {} - NO CHANGE - quantity {} on tic {}\n",
+			         ammoType,
+			         ammoCount,
+			         oldTic);
+		}
 	}
 }
 
