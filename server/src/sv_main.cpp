@@ -89,7 +89,7 @@
 extern void G_DeferedInitNew (const OLumpName& mapname);
 extern level_locals_t level;
 
-constexpr int MAX_HIDDEN_MOBJ_UPDATES = 16;
+constexpr int MAX_HIDDEN_MOBJ_UPDATES = 160;
 
 
 // Unnatural Level Progression.  True if we've used 'map' or another command
