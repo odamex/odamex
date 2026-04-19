@@ -57,6 +57,7 @@ if(WIN32)
 endif()
 
 # X11 configuration
+# TODO: do we need to update this at all for wayland?
 if(UNIX AND NOT APPLE)
   find_package(X11)
   if(X11_FOUND)

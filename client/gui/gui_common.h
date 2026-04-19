@@ -28,7 +28,7 @@ class Fl_Window;
 
 void GUI_SetIcon(Fl_Window* win);
 
-struct GUIRes
+namespace GUIRes
 {
-	static Fl_Image* icon_odamex_128();
+	Fl_Image* icon_odamex_128();
 };

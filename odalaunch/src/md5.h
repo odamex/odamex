@@ -51,8 +51,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef md5_INCLUDED
-#define md5_INCLUDED
+#pragma once
 
 #include "odalaunch.h"
 
@@ -105,5 +104,3 @@ std::string MD5SUM(std::string in);
 #include <wx/string.h>
 
 wxString MD5SUM(const wxString&);
-
-#endif /* md5_INCLUDED */

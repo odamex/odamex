@@ -14,7 +14,7 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-project(Odamex VERSION 12.1.0)
+project(Odamex VERSION 12.2.0)
 
 include(CMakeDependentOption)
 
@@ -78,7 +78,7 @@ if(NOT APPLE AND NOT WIN32)
 endif()
 
 set(PROJECT_COPYRIGHT "2006-2026")
-set(PROJECT_RC_VERSION "12,1,0,0")
+set(PROJECT_RC_VERSION "12,2,0,0")
 set(PROJECT_COMPANY "The Odamex Team")
 
 # Include early required commands for specific systems
@@ -144,7 +144,14 @@ if(NOT MSVC)
   set(USE_STATIC_STDLIB OFF CACHE BOOL
     "Statically link against the C and C++ Standard Library.")
   set(USE_SANITIZE_ADDRESS OFF CACHE BOOL
-    "Turn on Address Sanitizer in Debug builds, requires GCC >= 4.8 or Clang >= 3.1")
+    "Turn on Address Sanitizer in Debug builds.")
+  set(USE_SANITIZE_THREAD OFF CACHE BOOL
+    "Turn on Thread Sanitizer in Debug builds.")
+  if(USE_SANITIZE_ADDRESS AND USE_SANITIZE_THREAD)
+    message(FATAL_ERROR "USE_SANITIZE_ADDRESS and USE_SANITIZE_THREAD are mutually exclusive options.")
+  endif()
+  set(USE_SANITIZE_UNDEFINED OFF CACHE BOOL
+    "Turn on Undefined Behavior Sanitizer in Debug builds.")
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES SunOS )

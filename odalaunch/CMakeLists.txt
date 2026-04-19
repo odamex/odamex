@@ -48,6 +48,7 @@ if(wxWidgets_FOUND)
   # Attempt to compile all of the XRC files with custom commands.
   add_custom_command(
     OUTPUT "${XRCRES_HEADER}"
+    DEPENDS "${XRCRES_DIR}/icons.xrc" "${XRCRES_DIR}/xrc_resource.xrc"
     COMMAND "${wxWidgets_wxrc_EXECUTABLE}" -c -o "${XRCRES_HEADER}"
     "${XRCRES_DIR}/icons.xrc" "${XRCRES_DIR}/xrc_resource.xrc"
     VERBATIM)

@@ -427,12 +427,6 @@ void I_SetTitleString (const char *title)
 		DoomStartupTitle[i] = title[i] | 0x80;
 }
 
-
-#ifdef X11
-	#include <X11/Xlib.h>
-	#include <X11/Xatom.h>
-#endif
-
 //
 // I_GetClipboardText
 //

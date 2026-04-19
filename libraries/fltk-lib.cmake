@@ -11,7 +11,10 @@ if(BUILD_CLIENT AND USE_INTERNAL_FLTK)
     "-DFLTK_GRAPHICS_CAIRO=OFF"
     "-DFLTK_OPTION_CAIRO_WINDOW=OFF"
     "-DFLTK_OPTION_CAIRO_EXT=OFF"
-    "-DFLTK_BUILD_TEST=OFF")
+    "-DFLTK_BUILD_TEST=OFF"
+    "-DFLTK_BUILD_FLUID=OFF"
+    "-DFLTK_BUILD_FORMS=OFF"
+    "-DFLTK_BUILD_FLTK_OPTIONS=OFF")
   if(UNIX)
     if(NOT USE_INTERNAL_PNG)
       list(APPEND _FLTK_BUILDGEN_PARAMS
@@ -46,7 +49,7 @@ if(BUILD_CLIENT AND USE_INTERNAL_FLTK)
   function(odamex_define_fltk_targets libdir incdir extra_libs)
     add_library(fltk::fltk INTERFACE IMPORTED GLOBAL)
     set(_fltk_core_libs
-      "${libdir}/${libprefix}fltk${libsuffix};${libdir}/${libprefix}fltk_forms${libsuffix}")
+      "${libdir}/${libprefix}fltk${libsuffix}")
     if(extra_libs)
       set(_fltk_core_libs "${_fltk_core_libs};${extra_libs}")
     endif()
