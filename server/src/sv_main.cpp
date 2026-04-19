@@ -1734,12 +1734,11 @@ void SV_SendMovingSectorUpdate(player_t &player, sector_t *sector)
 		return;
 
 	odaproto::svc::MovingSector msg = SVC_MovingSector(*sector);
-	if (!msg.movers())
+	if (msg.movers())
 	{
-		// No movers in the packet, don't send.
-		return;
+		// Only send if there are actually any movers.
+		MSG_WriteSVC(player.client.messenger.HighBuf(), msg);
 	}
-	MSG_WriteSVC(player.client.messenger.NetBuf(), msg);
 }
 
 //
@@ -1768,7 +1767,7 @@ void SV_SendGametic(client_t* cl)
 {
 	const byte tic = static_cast<byte>(gametic & 0xFF);
 
-	MSG_WriteSVC(cl->messenger.NetBuf(), SVC_ServerGametic(tic, cl->messenger.GetPendingAckCount()));
+	MSG_WriteSVC(cl->messenger.HighBuf(), SVC_ServerGametic(tic, cl->messenger.GetPendingAckCount()));
 }
 
 void SV_LineStateUpdate(client_t *cl)
@@ -3300,7 +3299,7 @@ void SV_SendPlayerStateUpdate(client_t *client, player_t *player)
 	if (!client || !player || !player->mo)
 		return;
 
-	MSG_WriteSVC(client->messenger.NetBuf(), SVC_PlayerState(*player));
+	MSG_WriteSVC(client->messenger.HighBuf(), SVC_PlayerState(*player));
 }
 
 void SV_SpyPlayer(player_t &viewer)
@@ -3364,8 +3363,8 @@ static void SV_SortMobjsForPlayer(player_t& player)
 	// nearby enemies behave like there's any packet loss.
 
 	// The following block is used for sorting on approximate, relative distance.
-	const int playerMostSignificantX = (playerViewPosition->x >> 16);
-	const int playerMostSignificantY = (playerViewPosition->y >> 16);
+	const int playerMostSignificantX = (playerViewPosition->x >> FRACBITS);
+	const int playerMostSignificantY = (playerViewPosition->y >> FRACBITS);
 
 	for (auto& mobjInfo : player.sortedMobjs)
 	{
@@ -3373,8 +3372,8 @@ static void SV_SortMobjsForPlayer(player_t& player)
 		// P_AproxDistance2 (~200 usec) when looking at 22k mobjs, and we don't need "real"
 		// distance - just comparable values that correlate with distance.
 
-		const int dx = playerMostSignificantX - (mobjInfo.actorPtr->x >> 16);
-		const int dy = playerMostSignificantY - (mobjInfo.actorPtr->y >> 16);
+		const int dx = playerMostSignificantX - (mobjInfo.actorPtr->x >> FRACBITS);
+		const int dy = playerMostSignificantY - (mobjInfo.actorPtr->y >> FRACBITS);
 		mobjInfo.distance = dx*dx + dy*dy;
 	}
 	auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1.distance < mo2.distance; };
@@ -3413,7 +3412,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 		if(not SV_IsPlayerAllowedToSee(player, otherPlayer.mo))
 			continue;
 
-		MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_MovePlayer(otherPlayer, player.tic));
+		MSG_WriteSVC(player.client.messenger.HighBuf(), SVC_MovePlayer(otherPlayer, player.tic));
 	}
 
     const bool pendingWeaponWasChanged = player.pendingweaponMonitor.EvaluateAsChanged();
@@ -3687,15 +3686,13 @@ void SV_UpdateConsolePlayer(player_t &player)
 		return;
 
 	// GhostlyDeath -- Spectators are on their own really
-	if (player.spectator)
+	if (not player.spectator)
 	{
-        SV_UpdateMovingSectors(player);
-		return;
+		// client player will update his position if packets were missed
+		MSG_WriteSVC(cl->messenger.HighBuf(), SVC_UpdateLocalPlayer(*mo, player.tic));
 	}
 
-	// client player will update his position if packets were missed
-	MSG_WriteSVC(cl->messenger.NetBuf(), SVC_UpdateLocalPlayer(*mo, player.tic));
-    SV_UpdateMovingSectors(player);
+	SV_UpdateMovingSectors(player);
 }
 
 //

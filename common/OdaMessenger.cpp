@@ -58,7 +58,7 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 		// Send an ACK to the server only if it contained reliable data.
 		if (not simulated_connection)
 		{
-			buf_t& ack = m_outgoingAckQueue.Obtain();
+			buf_t& ack = m_outgoingHighNonReliableQueue.Obtain();
 			ack.WriteByte(msg_ack);
 			ack.WriteLong(header.sequence);
 		}
@@ -133,9 +133,9 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 		return m_packet.AddUnreliableMessage(messageBuf);
 	};
 
-	auto addAckFunctor = [this](const buf_t& messageBuf)
+	auto addHighFunctor = [this](const buf_t& messageBuf)
 	{
-		return m_packet.AddAckMessage(messageBuf);
+		return m_highPacket.AddUnreliableMessage(messageBuf);
 	};
 
 	if (simulated_connection)
@@ -143,15 +143,24 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 		Clear();
 	}
 
-	// First phase - send reliables, padded out to MAX_UDP_SIZE-ish with Acks.
+    // First phase - send high-priority non-reliables (acks, servertic, player updates)
+	size_t bytesSentBestEffort = 0;
+    while (m_outgoingHighNonReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
+    {
+        m_outgoingHighNonReliableQueue.Pack(addHighFunctor );
+
+		const size_t sendSize = m_highPacket.Send(i_currentTic, m_sender, i_dest);
+		bytesSentBestEffort += sendSize;
+		m_byteBudget        -= static_cast<int>(sendSize);
+    }
+
+	// Second phase - send reliables, padded out to MAX_UDP_SIZE-ish with non-reliable best-effort messages.
 	size_t bytesSentWithReliability = 0;
 	while (m_outgoingReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
 	{
 		m_outgoingReliableQueue.Pack([this](const buf_t& messageBuf) { return m_packet.AddReliableMessage(messageBuf); });
 
-		m_outgoingAckQueue.Pack(addAckFunctor);
-
-		// Now cover the case where we have all our acks out and there's still leftover space enough for an unreliable portion.
+		// Now cover the case where we have leftover space enough for an unreliable portion.
 		m_outgoingNonReliableQueue.Pack(addUnreliableFunctor);
 
 		const size_t sendSize = m_packet.Send(i_currentTic, m_sender, i_dest);
@@ -159,24 +168,7 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 		m_byteBudget             -= static_cast<int>(sendSize);
 	}
 
-	// Now get any remaining Acks out.  This also covers the case where we just didn't have any reliable packets to send.
-	// For accounting purposes against target rate, we consider Acks to have the same priority as reliable traffic because
-	// it fundamentally is!
-	while(m_outgoingAckQueue.SizeInMessages() > 0 and m_byteBudget > 0)
-	{
-		m_outgoingAckQueue.Pack(addAckFunctor);
-
-		// Welp, we filled up the packet with all-acks?  Send it.
-		if (m_outgoingAckQueue.SizeInMessages() > 0)
-		{
-			const size_t sendSize = m_packet.Send(i_currentTic, m_sender, i_dest);
-			bytesSentWithReliability += sendSize;
-			m_byteBudget             -= static_cast<int>(sendSize);
-		}
-	}
-
-	size_t bytesSentBestEffort = 0;
-	// Okay, done with the "really important" stuff.  Now onto best-effort unreliable stuff.
+	// Okay, done with the "really important" stuff.  Now onto purely best-effort unreliable packets.
 	while (m_outgoingNonReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
 	{
 		if (static_cast<int>(m_packet.Size() + m_outgoingNonReliableQueue.Front().size()) > m_byteBudget)

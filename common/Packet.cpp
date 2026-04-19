@@ -58,11 +58,6 @@ size_t Packet::AddReliableMessage(const buf_t& i_dataBuffer)
 	return packedMessageSize;
 }
 
-size_t Packet::AddAckMessage(const buf_t& i_dataBuffer)
-{
-	return  AddToOutgoingBuffer(i_dataBuffer);
-}
-
 size_t Packet::AddUnreliableMessage(const buf_t& i_dataBuffer)
 {
 	return AddToOutgoingBuffer(i_dataBuffer);

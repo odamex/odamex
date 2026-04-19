@@ -106,13 +106,14 @@ class OdaMessenger
 		/// new outgoing data.
 		MessageQueue& ReliableBuf() { return m_outgoingReliableQueue; }
 		MessageQueue& NetBuf() { return m_outgoingNonReliableQueue; }
+		MessageQueue& HighBuf() { return m_outgoingHighNonReliableQueue; }
 
 		/// Discard all outgoing data that has yet to be sent.
 		void Clear()
 		{
 			m_outgoingReliableQueue.Clear();
 			m_outgoingNonReliableQueue.Clear();
-			m_outgoingAckQueue.Clear();
+			m_outgoingHighNonReliableQueue.Clear();
 		}
 
 		bool MustThrottleTransmission() const { return m_sender.GetMode() == SequenceSender::RECOVERY; }
@@ -144,11 +145,12 @@ class OdaMessenger
 		SequenceReceiver m_receiver;
 
 		Packet m_packet;
+		Packet m_highPacket;
 
 		// Send buffers
 		MessageQueue m_outgoingReliableQueue;
 		MessageQueue m_outgoingNonReliableQueue;
-		MessageQueue m_outgoingAckQueue;
+		MessageQueue m_outgoingHighNonReliableQueue;
 
 		buf_t* m_quickTurnaroundReceiveBuffer { nullptr };
 
