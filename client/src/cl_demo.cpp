@@ -281,17 +281,20 @@ void NetDemo::populateMessageIndexes()
 		last_tic = tic;
 		readMessageHeader(type, len, tic);
 
-		long file_position = ftell(demofp) - NetDemo::MESSAGE_HEADER_SIZE;
+		if (len == 0)
+			break;
+
+		long offset = ftell(demofp) - NetDemo::MESSAGE_HEADER_SIZE;
 
 		if (type == NetDemo::msg_snapshot)
 		{
-			netdemo_index_entry_t entry = {tic, file_position};
+			netdemo_index_entry_t entry = {tic, static_cast<uint32_t>(offset)};
 			snapshot_index.push_back(entry);
 		}
 
 		else if (type == NetDemo::msg_map_change)
 		{
-			netdemo_index_entry_t entry = {tic, file_position};
+			netdemo_index_entry_t entry = {tic, static_cast<uint32_t>(offset)};
 			map_index.push_back(entry);
 			snapshot_index.push_back(entry);
 		}
@@ -301,7 +304,7 @@ void NetDemo::populateMessageIndexes()
 			break;
 		}
 
-	} while (fseek(demofp, len, SEEK_CUR) == 0 && len != 0);
+	} while (fseek(demofp, len, SEEK_CUR) == 0);
 
 	// fix for playing a demo that hard crashed and couldnt write ending_gametic
 	if (header.ending_gametic == 0)
@@ -531,8 +534,7 @@ bool NetDemo::stopRecording()
 
 	fflush(demofp);
 
-	// rewrite the header since snapshot_index_offset and
-	// snapshot_index_size are now known
+	// rewrite the header for ending_gametic
 	if (!writeHeader())
 	{
 		error("Unable to write updated netdemo header.");
