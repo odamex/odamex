@@ -486,7 +486,7 @@ bool P_SmartMove(AActor* actor)
 	int dropoff = 0;
 
 	/* killough 9/12/98: Stay on a lift if target is on one */
-	bool on_lift = co_staylift && target && target->health > 0 &&
+	bool on_lift = co_staylift && target && target->health > 0 && target->subsector &&
 	               target->subsector->sector->tag == actor->subsector->sector->tag &&
 	               P_IsOnLift(actor);
 
