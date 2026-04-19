@@ -485,6 +485,11 @@ bool P_SmartMove(AActor* actor)
 	AActor* target = actor->target;
 	int dropoff = 0;
 
+	if (target && target->WasDestroyed())
+	{
+		return false;
+	}
+
 	/* killough 9/12/98: Stay on a lift if target is on one */
 	bool on_lift = co_staylift && target && target->health > 0 &&
 	               target->subsector->sector->tag == actor->subsector->sector->tag &&
