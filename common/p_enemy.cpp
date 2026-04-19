@@ -485,7 +485,7 @@ bool P_SmartMove(AActor* actor)
 	AActor* target = actor->target;
 	int dropoff = 0;
 
-	if (target->WasDestroyed())
+	if (target && target->WasDestroyed())
 	{
 		return false;
 	}
