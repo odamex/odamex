@@ -279,10 +279,10 @@ void NetDemo::populateMessageIndexes()
 	do
 	{
 		last_tic = tic;
-		readMessageHeader(type, len, tic);
-
-		if (len == 0)
+		if (!readMessageHeader(type, len, tic))
+		{
 			break;
+		}
 
 		long offset = ftell(demofp) - NetDemo::MESSAGE_HEADER_SIZE;
 
@@ -802,13 +802,21 @@ void NetDemo::readMessages(buf_t* netbuffer)
 	uint32_t len = 0, tic = 0;
 
 	// get the values for type, len and tic
-	readMessageHeader(type, len, tic);
+	if (!readMessageHeader(type, len, tic))
+	{
+		fatalError("Failed to read netdemo message header.");
+		return;
+	}
 
 	while (type == NetDemo::msg_snapshot || type == NetDemo::msg_map_change)
 	{
 		// skip over snapshots and read the next message instead
 		fseek(demofp, len, SEEK_CUR);
-		readMessageHeader(type, len, tic);
+		if (!readMessageHeader(type, len, tic))
+		{
+			fatalError("Failed to read netdemo message header.");
+			return;
+		}
 	}
 
 	// read from the input file and put the data into netbuffer
@@ -1174,7 +1182,11 @@ void NetDemo::readSnapshot(const netdemo_index_entry_t *snap)
 	// read the values for length, gametic, and message type
 	netdemo_message_t type;
 	uint32_t len = 0, tic = 0;
-	readMessageHeader(type, len, tic);
+	if (!readMessageHeader(type, len, tic))
+	{
+		fatalError("Failed to read netdemo message header.");
+		return;
+	}
 
 	// Clear the snapshot buffer and read into it.
 	snapbuf.clear();
