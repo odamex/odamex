@@ -3843,7 +3843,231 @@ void DLevelScript::RunScript ()
 				}
 			}
 			break;
-        */
+		*/
+		case PCD_ANDSCRIPTVAR:
+			locals[NEXTBYTE] &= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ANDMAPVAR:
+			level.vars[NEXTBYTE] &= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ANDWORLDVAR:
+			ACS_WorldVars[NEXTBYTE] &= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ANDGLOBALVAR:
+			ACS_GlobalVars[NEXTBYTE] &= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ANDMAPARRAY: {
+			int a = level.vars[NEXTBYTE];
+			int i = STACK(2);
+			level.behavior->SetArrayVal(a, i,
+			                            level.behavior->GetArrayVal(a, i) & STACK(1));
+			sp -= 2;
+		}
+		break;
+
+		case PCD_ANDWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] &= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_ANDGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] &= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_EORSCRIPTVAR:
+			locals[NEXTBYTE] ^= STACK(1);
+			sp--;
+			break;
+
+		case PCD_EORMAPVAR:
+			level.vars[NEXTBYTE] ^= STACK(1);
+			sp--;
+			break;
+
+		case PCD_EORWORLDVAR:
+			ACS_WorldVars[NEXTBYTE] ^= STACK(1);
+			sp--;
+			break;
+
+		case PCD_EORGLOBALVAR:
+			ACS_GlobalVars[NEXTBYTE] ^= STACK(1);
+			sp--;
+			break;
+
+		case PCD_EORMAPARRAY: {
+			int a = level.vars[NEXTBYTE];
+			int i = STACK(2);
+			level.behavior->SetArrayVal(a, i,
+			                            level.behavior->GetArrayVal(a, i) ^ STACK(1));
+			sp -= 2;
+		}
+		break;
+
+		case PCD_EORWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] ^= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_EORGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] ^= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_ORSCRIPTVAR:
+			locals[NEXTBYTE] |= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ORMAPVAR:
+			level.vars[NEXTBYTE] |= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ORWORLDVAR:
+			ACS_WorldVars[NEXTBYTE] |= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ORGLOBALVAR:
+			ACS_GlobalVars[NEXTBYTE] |= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ORMAPARRAY: {
+			int a = level.vars[NEXTBYTE];
+			int i = STACK(2);
+			level.behavior->SetArrayVal(a, i,
+			                            level.behavior->GetArrayVal(a, i) | STACK(1));
+			sp -= 2;
+		}
+		break;
+
+		case PCD_ORWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] |= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_ORGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] |= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_LSSCRIPTVAR:
+			locals[NEXTBYTE] <<= STACK(1);
+			sp--;
+			break;
+
+		case PCD_LSMAPVAR:
+			level.vars[NEXTBYTE] <<= STACK(1);
+			sp--;
+			break;
+
+		case PCD_LSWORLDVAR:
+			ACS_WorldVars[NEXTBYTE] <<= STACK(1);
+			sp--;
+			break;
+
+		case PCD_LSGLOBALVAR:
+			ACS_GlobalVars[NEXTBYTE] <<= STACK(1);
+			sp--;
+			break;
+
+		case PCD_LSMAPARRAY: {
+			int a = level.vars[NEXTBYTE];
+			int i = STACK(2);
+			level.behavior->SetArrayVal(a, i,
+			                            level.behavior->GetArrayVal(a, i) << STACK(1));
+			sp -= 2;
+		}
+		break;
+
+		case PCD_LSWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] <<= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_LSGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] <<= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_RSSCRIPTVAR:
+			locals[NEXTBYTE] >>= STACK(1);
+			sp--;
+			break;
+
+		case PCD_RSMAPVAR:
+			level.vars[NEXTBYTE] >>= STACK(1);
+			sp--;
+			break;
+
+		case PCD_RSWORLDVAR:
+			ACS_WorldVars[NEXTBYTE] >>= STACK(1);
+			sp--;
+			break;
+
+		case PCD_RSGLOBALVAR:
+			ACS_GlobalVars[NEXTBYTE] >>= STACK(1);
+			sp--;
+			break;
+
+		case PCD_RSMAPARRAY: {
+			int a = level.vars[NEXTBYTE];
+			int i = STACK(2);
+			level.behavior->SetArrayVal(a, i,
+			                            level.behavior->GetArrayVal(a, i) >> STACK(1));
+			sp -= 2;
+		}
+		break;
+
+		case PCD_RSWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] >>= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_RSGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] >>= STACK(1);
+				sp -= 2;
+			}
+			break;
 		}
 	}
 
