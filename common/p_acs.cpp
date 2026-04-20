@@ -2372,76 +2372,78 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_CALL:
-		case PCD_CALLDISCARD: {
-			int funcnum;
-			int i;
-			ScriptFunction* func;
+		case PCD_CALLDISCARD:
+			{
+				int funcnum;
+				int i;
+				ScriptFunction* func;
 
-			funcnum = NEXTBYTE;
-			func = level.behavior->GetFunction(funcnum);
-			if (func == NULL)
-			{
-				PrintFmt(PRINT_HIGH, "Function {} in script {} out of range\n", funcnum,
-				       script);
-				state = SCRIPT_PleaseRemove;
-				break;
+				funcnum = NEXTBYTE;
+				func = level.behavior->GetFunction(funcnum);
+				if (func == NULL)
+				{
+					PrintFmt(PRINT_HIGH, "Function {} in script {} out of range\n", funcnum,
+					       script);
+					state = SCRIPT_PleaseRemove;
+					break;
+				}
+				if (sp + func->LocalCount + 32 > STACK_SIZE)
+				{ // 32 is the margin for the function's working space
+					PrintFmt(PRINT_HIGH, "Out of stack space in script {}\n", script);
+					state = SCRIPT_PleaseRemove;
+					break;
+				}
+				// The function's first argument is also its first local variable.
+				locals = &Stack[sp - func->ArgCount];
+				// Make space on the stack for any other variables the function uses.
+				for (i = 0; i < func->LocalCount; ++i)
+				{
+					Stack[sp + i] = 0;
+				}
+				sp += i;
+				((CallReturn*)&Stack[sp])->ReturnAddress = level.behavior->PC2Ofs(pc);
+				((CallReturn*)&Stack[sp])->ReturnFunction = activeFunction;
+				((CallReturn*)&Stack[sp])->bDiscardResult = (pcd == PCD_CALLDISCARD);
+				sp += sizeof(CallReturn) / sizeof(int);
+				pc = level.behavior->Ofs2PC(func->Address);
+				activeFunction = func;
 			}
-			if (sp + func->LocalCount + 32 > STACK_SIZE)
-			{ // 32 is the margin for the function's working space
-				PrintFmt(PRINT_HIGH, "Out of stack space in script {}\n", script);
-				state = SCRIPT_PleaseRemove;
-				break;
-			}
-			// The function's first argument is also its first local variable.
-			locals = &Stack[sp - func->ArgCount];
-			// Make space on the stack for any other variables the function uses.
-			for (i = 0; i < func->LocalCount; ++i)
-			{
-				Stack[sp + i] = 0;
-			}
-			sp += i;
-			((CallReturn*)&Stack[sp])->ReturnAddress = level.behavior->PC2Ofs(pc);
-			((CallReturn*)&Stack[sp])->ReturnFunction = activeFunction;
-			((CallReturn*)&Stack[sp])->bDiscardResult = (pcd == PCD_CALLDISCARD);
-			sp += sizeof(CallReturn) / sizeof(int);
-			pc = level.behavior->Ofs2PC(func->Address);
-			activeFunction = func;
-		}
-		break;
+			break;
 
 		case PCD_RETURNVOID:
-		case PCD_RETURNVAL: {
-			int value;
-			CallReturn* retState;
+		case PCD_RETURNVAL:
+			{
+				int value;
+				CallReturn* retState;
 
-			if (pcd == PCD_RETURNVAL)
-			{
-				value = Stack[--sp];
+				if (pcd == PCD_RETURNVAL)
+				{
+					value = Stack[--sp];
+				}
+				else
+				{
+					value = 0;
+				}
+				sp -= sizeof(CallReturn) / sizeof(int);
+				retState = (CallReturn*)&Stack[sp];
+				pc = level.behavior->Ofs2PC(retState->ReturnAddress);
+				sp -= activeFunction->ArgCount + activeFunction->LocalCount;
+				activeFunction = retState->ReturnFunction;
+				if (activeFunction == NULL)
+				{
+					locals = localvars;
+				}
+				else
+				{
+					locals =
+					    &Stack[sp - activeFunction->ArgCount - activeFunction->LocalCount];
+				}
+				if (!retState->bDiscardResult)
+				{
+					Stack[sp++] = value;
+				}
 			}
-			else
-			{
-				value = 0;
-			}
-			sp -= sizeof(CallReturn) / sizeof(int);
-			retState = (CallReturn*)&Stack[sp];
-			pc = level.behavior->Ofs2PC(retState->ReturnAddress);
-			sp -= activeFunction->ArgCount + activeFunction->LocalCount;
-			activeFunction = retState->ReturnFunction;
-			if (activeFunction == NULL)
-			{
-				locals = localvars;
-			}
-			else
-			{
-				locals =
-				    &Stack[sp - activeFunction->ArgCount - activeFunction->LocalCount];
-			}
-			if (!retState->bDiscardResult)
-			{
-				Stack[sp++] = value;
-			}
-		}
-		break;
+			break;
 
 		case PCD_ADD:
 			STACK(2) = STACK(2) + STACK(1);
@@ -2595,14 +2597,15 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_ADDMAPARRAY: {
-			int a = level.vars[NEXTBYTE];
-			int i = STACK(2);
-			level.behavior->SetArrayVal(a, i,
-			                            level.behavior->GetArrayVal(a, i) + STACK(1));
-			sp -= 2;
-		}
-		break;
+		case PCD_ADDMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) + STACK(1));
+				sp -= 2;
+			}
+			break;
 
 		case PCD_ADDWORLDARRAY:
 			{
@@ -2640,14 +2643,15 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_SUBMAPARRAY: {
-			int a = level.vars[NEXTBYTE];
-			int i = STACK(2);
-			level.behavior->SetArrayVal(a, i,
-			                            level.behavior->GetArrayVal(a, i) - STACK(1));
-			sp -= 2;
-		}
-		break;
+		case PCD_SUBMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) - STACK(1));
+				sp -= 2;
+			}
+			break;
 
 		case PCD_SUBWORLDARRAY:
 			{
@@ -2685,14 +2689,15 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_MULMAPARRAY: {
-			int a = level.vars[NEXTBYTE];
-			int i = STACK(2);
-			level.behavior->SetArrayVal(a, i,
-			                            level.behavior->GetArrayVal(a, i) * STACK(1));
-			sp -= 2;
-		}
-		break;
+		case PCD_MULMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) * STACK(1));
+				sp -= 2;
+			}
+			break;
 
 		case PCD_MULWORLDARRAY:
 			{
@@ -3747,19 +3752,20 @@ void DLevelScript::RunScript ()
 				PushToStack(activator->tid);
 			break;
 
-		case PCD_GETCVAR: {
-			cvar_t *var, *prev;
-			var = cvar_t::FindCVar(level.behavior->LookupString(STACK(1)), &prev);
-			if (var == NULL)
+		case PCD_GETCVAR:
 			{
-				STACK(1) = 0;
+				cvar_t *var, *prev;
+				var = cvar_t::FindCVar(level.behavior->LookupString(STACK(1)), &prev);
+				if (var == NULL)
+				{
+					STACK(1) = 0;
+				}
+				else
+				{
+					STACK(1) = var->asInt();
+				}
 			}
-			else
-			{
-				STACK(1) = var->asInt();
-			}
-		}
-		break;
+			break;
 
 		case PCD_GETLEVELINFO:
 			switch (STACK(1))
@@ -3864,14 +3870,15 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_ANDMAPARRAY: {
-			int a = level.vars[NEXTBYTE];
-			int i = STACK(2);
-			level.behavior->SetArrayVal(a, i,
-			                            level.behavior->GetArrayVal(a, i) & STACK(1));
-			sp -= 2;
-		}
-		break;
+		case PCD_ANDMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) & STACK(1));
+				sp -= 2;
+			}
+			break;
 
 		case PCD_ANDWORLDARRAY:
 			{
@@ -3909,14 +3916,15 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_EORMAPARRAY: {
-			int a = level.vars[NEXTBYTE];
-			int i = STACK(2);
-			level.behavior->SetArrayVal(a, i,
-			                            level.behavior->GetArrayVal(a, i) ^ STACK(1));
-			sp -= 2;
-		}
-		break;
+		case PCD_EORMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) ^ STACK(1));
+				sp -= 2;
+			}
+			break;
 
 		case PCD_EORWORLDARRAY:
 			{
@@ -3954,14 +3962,15 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_ORMAPARRAY: {
-			int a = level.vars[NEXTBYTE];
-			int i = STACK(2);
-			level.behavior->SetArrayVal(a, i,
-			                            level.behavior->GetArrayVal(a, i) | STACK(1));
-			sp -= 2;
-		}
-		break;
+		case PCD_ORMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) | STACK(1));
+				sp -= 2;
+			}
+			break;
 
 		case PCD_ORWORLDARRAY:
 			{
@@ -3999,14 +4008,15 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_LSMAPARRAY: {
-			int a = level.vars[NEXTBYTE];
-			int i = STACK(2);
-			level.behavior->SetArrayVal(a, i,
-			                            level.behavior->GetArrayVal(a, i) << STACK(1));
-			sp -= 2;
-		}
-		break;
+		case PCD_LSMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) << STACK(1));
+				sp -= 2;
+			}
+			break;
 
 		case PCD_LSWORLDARRAY:
 			{
@@ -4044,14 +4054,15 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_RSMAPARRAY: {
-			int a = level.vars[NEXTBYTE];
-			int i = STACK(2);
-			level.behavior->SetArrayVal(a, i,
-			                            level.behavior->GetArrayVal(a, i) >> STACK(1));
-			sp -= 2;
-		}
-		break;
+		case PCD_RSMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) >> STACK(1));
+				sp -= 2;
+			}
+			break;
 
 		case PCD_RSWORLDARRAY:
 			{
