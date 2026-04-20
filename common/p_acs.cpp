@@ -123,6 +123,7 @@ struct DoomEntity{
 };
 #define NUMMONSTERS 22
 
+// TODO: should this instead use the stuff from infomap.cpp:
 static DoomEntity DoomMonsterNames[NUMMONSTERS] = {
     {"ZombieMan", MT_POSSESSED},  {"ShotgunGuy", MT_SHOTGUY},
     {"ChaingunGuy", MT_CHAINGUY}, {"DoomImp", MT_TROOP},
@@ -235,8 +236,7 @@ extern ItemEquipVal P_GivePower(player_t *player, int  power);
 
 mobjtype_t FindWeaponEntity(const char* type)
 {
-	int i;
-	for (i = 0; i < 9; i++)
+	for (int i = 0; i < 9; i++)
 	{
 		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
 		{
@@ -254,8 +254,7 @@ mobjtype_t FindWeaponEntity(const char* type)
 
 mobjtype_t FindDoomEntity(const char* type, DoomEntity list[], int size)
 {
-	int i;
-	for (i = 0; i < size; i++)
+	for (int i = 0; i < size; i++)
 	{
 		if (strcmp(list[i].Name, type) == 0)
 		{
@@ -564,8 +563,6 @@ EXTERN_CVAR (sv_gametype)
 
 FBehavior::FBehavior (byte* object, int len)
 {
-	int i;
-
 	NumScripts = 0;
 	NumFunctions = 0;
 	NumArrays = 0;
@@ -617,7 +614,7 @@ FBehavior::FBehavior (byte* object, int len)
 		else
 		{
 			Scripts += 4;
-			for (i = 0; i < NumScripts; ++i)
+			for (int i = 0; i < NumScripts; ++i)
 			{
 				ScriptPtr2 ptr1 = *(ScriptPtr2 *)(Scripts + 12*i);
 				ScriptPtr *ptr2 =  (ScriptPtr  *)(Scripts +  8*i);
@@ -639,7 +636,7 @@ FBehavior::FBehavior (byte* object, int len)
 		{
 			NumScripts = ((uint32_t *)Scripts)[1] / 12;
 			Scripts += 8;
-			for (i = 0; i < NumScripts; ++i)
+			for (int i = 0; i < NumScripts; ++i)
 			{
 				ScriptPtr1 ptr1 = *(ScriptPtr1 *)(Scripts + 12*i);
 				ScriptPtr *ptr2 =  (ScriptPtr  *)(Scripts +  8*i);
@@ -659,6 +656,7 @@ FBehavior::FBehavior (byte* object, int len)
 	// Sort scripts, so we can use a binary search to find them
 	if (NumScripts > 0)
 	{
+		// TODO: make it possible to replace with std::sort
 		qsort (Scripts, NumScripts, 8, SortScripts);
 	}
 
@@ -689,7 +687,7 @@ FBehavior::FBehavior (byte* object, int len)
 		{
 			int numvars = LELONG(chunk[1])/4;
 			int firstvar = LELONG(chunk[2]);
-			for (i = 0; i < numvars; ++i)
+			for (int i = 0; i < numvars; ++i)
 			{
 				level.vars[i+firstvar] = LELONG(chunk[3+i]);
 			}
@@ -701,7 +699,7 @@ FBehavior::FBehavior (byte* object, int len)
 			NumArrays = LELONG(chunk[1])/8;
 			Arrays = new ArrayInfo[NumArrays];
 			memset (Arrays, 0, sizeof(*Arrays)*NumArrays);
-			for (i = 0; i < NumArrays; ++i)
+			for (int i = 0; i < NumArrays; ++i)
 			{
 				level.vars[LELONG(chunk[2+i*2])] = i;
 				Arrays[i].ArraySize = LELONG(chunk[3+i*2]);
@@ -718,7 +716,7 @@ FBehavior::FBehavior (byte* object, int len)
 			{
 				int initsize = MIN<int> (Arrays[arraynum].ArraySize, (LELONG(chunk[1])-4)/4);
 				int32_t *elems = Arrays[arraynum].Elements;
-				for (i = 0; i < initsize; ++i)
+				for (int i = 0; i < initsize; ++i)
 				{
 					elems[i] = LELONG(chunk[3+i]);
 				}
@@ -968,9 +966,8 @@ uint32_t FBehavior::FindLanguage (uint32_t langid, bool ignoreregion) const
 {
 	byte *chunk;
 	uint32_t *list;
-	uint32_t langmask;
 
-	langmask = ignoreregion ? ~LANGREGIONMASK : ~0;
+	const uint32_t langmask = ignoreregion ? ~LANGREGIONMASK : ~0;
 
 	for (chunk = Chunks; chunk < Data + DataSize; chunk += ((uint32_t *)chunk)[1] + 8)
 	{
@@ -989,9 +986,8 @@ void FBehavior::StartTypedScripts (uint16_t type, AActor *activator, int arg0, i
 		return;
 
 	ScriptPtr *ptr;
-	int i;
 
-	for (i = 0; i < NumScripts; ++i)
+	for (int i = 0; i < NumScripts; ++i)
 	{
 		ptr = (ScriptPtr *)(Scripts + 8*i);
 		if (ptr->Type == type)
