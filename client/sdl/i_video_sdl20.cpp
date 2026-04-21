@@ -963,7 +963,7 @@ ISDL20VideoSubsystem::ISDL20VideoSubsystem() : IVideoSubsystem()
 	SDL_GetVersion(&linked);
 	SDL_VERSION(&compiled);
 
-	if (linked.major != compiled.major || linked.minor != compiled.minor)
+	if (linked.major != compiled.major || linked.minor < compiled.minor)
 	{
 		I_FatalError("SDL version conflict ({}.{}.{} vs {}.{}.{} dll)\n",
 			compiled.major, compiled.minor, compiled.patch,
@@ -971,9 +971,9 @@ ISDL20VideoSubsystem::ISDL20VideoSubsystem() : IVideoSubsystem()
 		return;
 	}
 
-	if (linked.patch != compiled.patch)
+	if (linked.minor != linked.patch || linked.patch != compiled.patch)
 	{
-		PrintFmt(PRINT_WARNING, "SDL version warning ({}.{}.{} vs {}.{}.{} dll)\n",
+		DPrintFmt("SDL version warning ({}.{}.{} vs {}.{}.{} dll)\n",
 			compiled.major, compiled.minor, compiled.patch,
 			linked.major, linked.minor, linked.patch);
 	}
