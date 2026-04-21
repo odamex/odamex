@@ -1001,8 +1001,7 @@ odaproto::svc::MovingSectorFloor SVC_MovingSectorFloor(const sector_t& sector, i
 	msg.set_floor_status        (Floor->m_Status);
 	msg.set_floor_crush         (Floor->m_Crush);
 	msg.set_floor_dir           (Floor->m_Direction);
-	//bug! msg.set_floor_speed     (Floor->m_NewSpecial);
-    msg.set_floor_new_special   (Floor->m_NewSpecial);
+	msg.set_floor_new_special   (Floor->m_NewSpecial);
 	msg.set_floor_tex           (Floor->m_Texture);
 	msg.set_floor_dest          (Floor->m_FloorDestHeight);
 	msg.set_floor_speed         (Floor->m_Speed);

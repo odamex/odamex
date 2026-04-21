@@ -1630,168 +1630,209 @@ static void CL_ActivateLine(const odaproto::svc::ActivateLine* msg)
 }
 
 //
-// CL_UpdateMovingSector
-// Updates floorheight and ceilingheight of a sector.
+// Sector movers
 //
-static void CL_MovingSector(const odaproto::svc::MovingSector* msg)
+
+static void CL_MovingSectorElevator(const odaproto::svc::MovingSectorElevator* msg)
 {
 	int sectornum = msg->sector();
 
-	fixed_t ceilingheight = msg->ceiling_height();
-	fixed_t floorheight = msg->floor_height();
+	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
+		return;
 
-	uint32_t movers = msg->movers();
-	movertype_t ceiling_mover = static_cast<movertype_t>(movers & BIT_MASK(0, 3));
-	movertype_t floor_mover = static_cast<movertype_t>((movers & BIT_MASK(4, 7)) >> 4);
+    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	SectorSnapshot snap(serverTic);
 
-	if (ceiling_mover == SEC_ELEVATOR)
-	{
-		floor_mover = SEC_INVALID;
-	}
-	if (ceiling_mover == SEC_PILLAR)
-	{
-		floor_mover = SEC_INVALID;
-	}
+	// Elevators
+	snap.setCeilingHeight       (msg->ceiling_height());
+	snap.setCeilingMoverType    (SEC_ELEVATOR);
+	snap.setCeilingType         (static_cast<DElevator::EElevator>(msg->ceil_type()));
+	snap.setCeilingStatus       (msg->ceil_status());
+	snap.setCeilingDirection    (msg->ceil_dir());
+	snap.setCeilingDestination  (msg->ceil_dest());
+	snap.setCeilingSpeed        (msg->ceil_speed());
 
-	SectorSnapshot snap(::last_svgametic);
+	snap.setFloorMoverType  (SEC_ELEVATOR);
+	snap.setFloorHeight     (msg->floor_height());
+	snap.setFloorDestination(msg->floor_dest());
 
-	snap.setCeilingHeight(ceilingheight);
-	snap.setFloorHeight(floorheight);
+	// The following floor attributes simply match the ceiling's.
+	snap.setFloorType       (snap.getCeilingType());
+	snap.setFloorStatus     (snap.getCeilingStatus());
+	snap.setFloorDirection  (snap.getCeilingDirection());
+	snap.setFloorSpeed      (snap.getCeilingSpeed());
 
-	if (floor_mover == SEC_FLOOR)
-	{
-		const odaproto::svc::MovingSector_Snapshot& floor = msg->floor_mover();
+	snap.setSector(&::sectors[sectornum]);
 
-		// Floors/Stairbuilders
-		snap.setFloorMoverType(SEC_FLOOR);
-		snap.setFloorType(static_cast<DFloor::EFloor>(floor.floor_type()));
-		snap.setFloorStatus(floor.floor_status());
-		snap.setFloorCrush(floor.floor_crush());
-		snap.setFloorDirection(floor.floor_dir());
-		snap.setFloorSpecial(floor.floor_speed());
-		snap.setFloorTexture(floor.floor_tex());
-		snap.setFloorDestination(floor.floor_dest());
-		snap.setFloorSpeed(floor.floor_speed());
-		snap.setResetCounter(floor.reset_counter());
-		snap.setOrgHeight(floor.orig_height());
-		snap.setDelay(floor.delay());
-		snap.setPauseTime(floor.pause_time());
-		snap.setStepTime(floor.step_time());
-		snap.setPerStepTime(floor.per_step_time());
-		snap.setFloorOffset(floor.floor_offset());
-		snap.setFloorChange(floor.floor_change());
+	sector_snaps[sectornum].addSnapshot(snap);
+}
 
-		int LineIndex = floor.floor_line();
-
-		if (!lines || LineIndex >= numlines || LineIndex < 0)
-			snap.setFloorLine(NULL);
-		else
-			snap.setFloorLine(&lines[LineIndex]);
-	}
-
-	if (floor_mover == SEC_PLAT)
-	{
-		const odaproto::svc::MovingSector_Snapshot& floor = msg->floor_mover();
-
-		// Platforms/Lifts
-		snap.setFloorMoverType(SEC_PLAT);
-		snap.setFloorSpeed(floor.floor_speed());
-		snap.setFloorLow(floor.floor_low());
-		snap.setFloorHigh(floor.floor_high());
-		snap.setFloorWait(floor.floor_wait());
-		snap.setFloorCounter(floor.floor_counter());
-		snap.setFloorStatus(floor.floor_status());
-		snap.setOldFloorStatus(floor.floor_old_status());
-		snap.setFloorCrush(floor.floor_crush());
-		snap.setFloorTag(floor.floor_tag());
-		snap.setFloorType(floor.floor_type());
-		snap.setFloorOffset(floor.floor_offset());
-		snap.setFloorLip(floor.floor_lip());
-	}
-
-	if (ceiling_mover == SEC_CEILING)
-	{
-		const odaproto::svc::MovingSector_Snapshot& ceil = msg->ceiling_mover();
-
-		// Ceilings / Crushers
-		snap.setCeilingMoverType(SEC_CEILING);
-		snap.setCeilingType(ceil.ceil_type());
-		snap.setCeilingLow(ceil.ceil_low());
-		snap.setCeilingHigh(ceil.ceil_high());
-		snap.setCeilingSpeed(ceil.ceil_speed());
-		snap.setCrusherSpeed1(ceil.crusher_speed_1());
-		snap.setCrusherSpeed2(ceil.crusher_speed_2());
-		snap.setCeilingCrush(ceil.ceil_crush());
-		snap.setSilent(ceil.silent());
-		snap.setCeilingDirection(ceil.ceil_dir());
-		snap.setCeilingTexture(ceil.ceil_tex());
-		snap.setCeilingSpecial(ceil.ceil_new_special());
-		snap.setCeilingTag(ceil.ceil_tag());
-		snap.setCeilingOldDirection(ceil.ceil_old_dir());
-	}
-
-	if (ceiling_mover == SEC_DOOR)
-	{
-		const odaproto::svc::MovingSector_Snapshot& ceil = msg->ceiling_mover();
-
-		// Doors
-		snap.setCeilingMoverType(SEC_DOOR);
-		snap.setCeilingType(static_cast<DDoor::EVlDoor>(ceil.ceil_type()));
-		snap.setCeilingHigh(ceil.ceil_height());
-		snap.setCeilingSpeed(ceil.ceil_speed());
-		snap.setCeilingWait(ceil.ceil_wait());
-		snap.setCeilingCounter(ceil.ceil_counter());
-		snap.setCeilingStatus(ceil.ceil_status());
-
-		int LineIndex = ceil.ceil_line();
-
-		// If the moving sector's line is -1, it is likely a type 666 door
-		if (!lines || LineIndex >= numlines || LineIndex < 0)
-			snap.setCeilingLine(NULL);
-		else
-			snap.setCeilingLine(&lines[LineIndex]);
-	}
-
-	if (ceiling_mover == SEC_ELEVATOR)
-	{
-		const odaproto::svc::MovingSector_Snapshot& ceil = msg->ceiling_mover();
-
-		// Elevators
-		snap.setCeilingMoverType(SEC_ELEVATOR);
-		snap.setFloorMoverType(SEC_ELEVATOR);
-		snap.setCeilingType(static_cast<DElevator::EElevator>(ceil.ceil_type()));
-		snap.setFloorType(snap.getCeilingType());
-		snap.setCeilingStatus(ceil.ceil_status());
-		snap.setFloorStatus(snap.getCeilingStatus());
-		snap.setCeilingDirection(ceil.ceil_dir());
-		snap.setFloorDirection(snap.getCeilingDirection());
-		snap.setFloorDestination(ceil.floor_dest());
-		snap.setCeilingDestination(ceil.ceil_dest());
-		snap.setCeilingSpeed(ceil.ceil_speed());
-		snap.setFloorSpeed(snap.getCeilingSpeed());
-	}
-
-	if (ceiling_mover == SEC_PILLAR)
-	{
-		const odaproto::svc::MovingSector_Snapshot& ceil = msg->ceiling_mover();
-
-		// Pillars
-		snap.setCeilingMoverType(SEC_PILLAR);
-		snap.setFloorMoverType(SEC_PILLAR);
-		snap.setCeilingType(static_cast<DPillar::EPillar>(ceil.ceil_type()));
-		snap.setFloorType(snap.getCeilingType());
-		snap.setCeilingStatus(ceil.ceil_status());
-		snap.setFloorStatus(snap.getCeilingStatus());
-		snap.setFloorSpeed(ceil.floor_speed());
-		snap.setCeilingSpeed(ceil.ceil_speed());
-		snap.setFloorDestination(ceil.floor_dest());
-		snap.setCeilingDestination(ceil.ceil_dest());
-		snap.setCeilingCrush(ceil.ceil_crush());
-		snap.setFloorCrush(snap.getCeilingCrush());
-	}
+static void CL_MovingSectorPillar(const odaproto::svc::MovingSectorPillar* msg)
+{
+	int sectornum = msg->sector();
 
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
+
+    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	SectorSnapshot snap(serverTic);
+
+		// Pillars
+	snap.setCeilingHeight       (msg->ceiling_height());
+	snap.setCeilingMoverType    (SEC_PILLAR);
+	snap.setCeilingType         (static_cast<DPillar::EPillar>(msg->ceil_type()));
+	snap.setCeilingStatus       (msg->ceil_status());
+	snap.setCeilingSpeed        (msg->ceil_speed());
+	snap.setCeilingDestination  (msg->ceil_dest());
+	snap.setCeilingCrush        (msg->ceil_crush());
+
+	snap.setFloorHeight     (msg->floor_height());
+	snap.setFloorMoverType  (SEC_PILLAR);
+	snap.setFloorSpeed      (msg->floor_speed());
+	snap.setFloorDestination(msg->floor_dest());
+
+	// The following floor attributes simply match the ceiling's.
+	snap.setFloorType   (snap.getCeilingType());
+	snap.setFloorStatus (snap.getCeilingStatus());
+	snap.setFloorCrush  (snap.getCeilingCrush());
+
+	snap.setSector(&::sectors[sectornum]);
+
+	sector_snaps[sectornum].addSnapshot(snap);
+}
+
+static void CL_MovingSectorCeiling(const odaproto::svc::MovingSectorCeiling* msg)
+{
+	int sectornum = msg->sector();
+
+	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
+		return;
+
+    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	SectorSnapshot snap(serverTic);
+
+	// Ceilings / Crushers
+	snap.setCeilingHeight       (msg->ceiling_height());
+	snap.setCeilingMoverType    (SEC_CEILING);
+	snap.setCeilingType         (msg->ceil_type());
+	snap.setCeilingLow          (msg->ceil_low());
+	snap.setCeilingHigh         (msg->ceil_high());
+	snap.setCeilingSpeed        (msg->ceil_speed());
+	snap.setCrusherSpeed1       (msg->crusher_speed_1());
+	snap.setCrusherSpeed2       (msg->crusher_speed_2());
+	snap.setCeilingCrush        (msg->ceil_crush());
+	snap.setSilent              (msg->silent());
+	snap.setCeilingDirection    (msg->ceil_dir());
+	snap.setCeilingTexture      (msg->ceil_tex());
+	snap.setCeilingSpecial      (msg->ceil_new_special());
+	snap.setCeilingTag          (msg->ceil_tag());
+	snap.setCeilingOldDirection (msg->ceil_old_dir());
+
+	snap.setSector(&::sectors[sectornum]);
+
+	sector_snaps[sectornum].addSnapshot(snap);
+}
+
+static void CL_MovingSectorDoor(const odaproto::svc::MovingSectorDoor* msg)
+{
+	int sectornum = msg->sector();
+
+	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
+		return;
+
+    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	SectorSnapshot snap(serverTic);
+
+	// Doors
+	snap.setCeilingHeight   (msg->ceiling_height());
+	snap.setCeilingMoverType(SEC_DOOR);
+	snap.setCeilingType     (static_cast<DDoor::EVlDoor>(msg->ceil_type()));
+	snap.setCeilingHigh     (msg->ceil_height());
+	snap.setCeilingSpeed    (msg->ceil_speed());
+	snap.setCeilingWait     (msg->ceil_wait());
+	snap.setCeilingCounter  (msg->ceil_counter());
+	snap.setCeilingStatus   (msg->ceil_status());
+
+	int LineIndex = msg->ceil_line();
+
+	// If the moving sector's line is -1, it is likely a type 666 door
+	if (!lines || LineIndex >= numlines || LineIndex < 0)
+		snap.setCeilingLine(NULL);
+	else
+		snap.setCeilingLine(&lines[LineIndex]);
+
+	snap.setSector(&::sectors[sectornum]);
+
+	sector_snaps[sectornum].addSnapshot(snap);
+}
+
+static void CL_MovingSectorFloor(const odaproto::svc::MovingSectorFloor* msg)
+{
+	int sectornum = msg->sector();
+
+	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
+		return;
+
+    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	SectorSnapshot snap(serverTic);
+
+	// Floors/Stairbuilders
+	snap.setFloorHeight     (msg->floor_height());
+	snap.setFloorMoverType  (SEC_FLOOR);
+	snap.setFloorType       (static_cast<DFloor::EFloor>(msg->floor_type()));
+	snap.setFloorStatus     (msg->floor_status());
+	snap.setFloorCrush      (msg->floor_crush());
+	snap.setFloorDirection  (msg->floor_dir());
+	snap.setFloorSpecial    (msg->floor_new_special());
+	snap.setFloorTexture    (msg->floor_tex());
+	snap.setFloorDestination(msg->floor_dest());
+	snap.setFloorSpeed      (msg->floor_speed());
+	snap.setResetCounter    (msg->reset_counter());
+	snap.setOrgHeight       (msg->orig_height());
+	snap.setDelay           (msg->delay());
+	snap.setPauseTime       (msg->pause_time());
+	snap.setStepTime        (msg->step_time());
+	snap.setPerStepTime     (msg->per_step_time());
+	snap.setFloorOffset     (msg->floor_offset());
+	snap.setFloorChange     (msg->floor_change());
+
+	int LineIndex = msg->floor_line();
+
+	if (!lines || LineIndex >= numlines || LineIndex < 0)
+		snap.setFloorLine(NULL);
+	else
+		snap.setFloorLine(&lines[LineIndex]);
+
+	snap.setSector(&::sectors[sectornum]);
+
+	sector_snaps[sectornum].addSnapshot(snap);
+}
+
+static void CL_MovingSectorPlat(const odaproto::svc::MovingSectorPlat* msg)
+{
+	int sectornum = msg->sector();
+
+	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
+		return;
+
+    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	SectorSnapshot snap(serverTic);
+
+	// Platforms/Lifts
+	snap.setFloorHeight     (msg->floor_height());
+	snap.setFloorMoverType  (SEC_PLAT);
+	snap.setFloorSpeed      (msg->floor_speed());
+	snap.setFloorLow        (msg->floor_low());
+	snap.setFloorHigh       (msg->floor_high());
+	snap.setFloorWait       (msg->floor_wait());
+	snap.setFloorCounter    (msg->floor_counter());
+	snap.setFloorStatus     (msg->floor_status());
+	snap.setOldFloorStatus  (msg->floor_old_status());
+	snap.setFloorCrush      (msg->floor_crush());
+	snap.setFloorTag        (msg->floor_tag());
+	snap.setFloorType       (msg->floor_type());
+	snap.setFloorOffset     (msg->floor_offset());
+	snap.setFloorLip        (msg->floor_lip());
 
 	snap.setSector(&::sectors[sectornum]);
 
@@ -3269,7 +3310,14 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_playermembers, CL_PlayerMembers, odaproto::svc::PlayerMembers);
 		SV_MSG(svc_teammembers, CL_TeamMembers, odaproto::svc::TeamMembers);
 		SV_MSG(svc_activateline, CL_ActivateLine, odaproto::svc::ActivateLine);
-		SV_MSG(svc_movingsector, CL_MovingSector, odaproto::svc::MovingSector);
+
+		SV_MSG(svc_movingsectorelevator, CL_MovingSectorElevator, odaproto::svc::MovingSectorElevator);
+		SV_MSG(svc_movingsectorpillar,   CL_MovingSectorPillar,   odaproto::svc::MovingSectorPillar);
+		SV_MSG(svc_movingsectorceiling,  CL_MovingSectorCeiling,  odaproto::svc::MovingSectorCeiling);
+		SV_MSG(svc_movingsectordoor,     CL_MovingSectorDoor,     odaproto::svc::MovingSectorDoor);
+		SV_MSG(svc_movingsectorfloor,    CL_MovingSectorFloor,    odaproto::svc::MovingSectorFloor);
+		SV_MSG(svc_movingsectorplat,     CL_MovingSectorPlat,     odaproto::svc::MovingSectorPlat);
+
 		SV_MSG(svc_playsound, CL_PlaySound, odaproto::svc::PlaySound);
 		SV_MSG(svc_reconnect, CL_Reconnect, odaproto::svc::Reconnect);
 		SV_MSG(svc_exitlevel, CL_ExitLevel, odaproto::svc::ExitLevel);
