@@ -70,7 +70,7 @@ namespace {
 			// with it.
 			static CommandStreamReader& Get()
 			{
-				static CommandStreamReader instance(s_filePtr ? *s_filePtr : std::cin);
+				static CommandStreamReader instance;
 				return instance;
 			}
 
@@ -125,25 +125,20 @@ namespace {
 
 			// Commit to using the given Input File for the CommandStream instead of stdin.  This
 			// must be done before the first attempt to access the CommandStream, and can only be
-			// completed successfully once.  If the file is successfully opened, then true is
+			// completed successfully once.  If the file is successfully set, then true is
 			// returned, and all subsequent calls to this function do nothing and return false.
-			static bool OpenInputFile(const char* filepath)
+			static bool SetInputFile(const char* filepath)
 			{
-				if (filepath and not s_filePtr)
+				if (filepath and s_streamFilename.empty())
 				{
-					s_filePtr = std::make_unique<std::ifstream>(filepath);
-					if (s_filePtr->good())
-					{
-						return true;
-					}
-					s_filePtr.reset();
+					s_streamFilename = filepath;
+					return true;
 				}
 				return false;
 			}
 
 		protected:
-			explicit CommandStreamReader(std::istream& i_streamRef):
-				m_streamRef(i_streamRef)
+			explicit CommandStreamReader()
 			{
 #ifdef _WIN32
 				InitializeSRWLock(& m_srwLock);
@@ -183,15 +178,20 @@ namespace {
 			void ThreadMain()
 			{
 				AcquireSRWLockExclusive(& m_srwLock);
-				while(m_streamRef.good())
+				while(true)
 				{
-					std::getline(m_streamRef, m_command);
-					while (m_streamRef and not m_command.empty())
+					std::unique_ptr<std::ifstream> filePtr { s_streamFilename.empty() ? nullptr : std::make_unique<std::ifstream>(s_streamFilename) };
+					std::istream&                  streamRef = filePtr ? *filePtr : std::cin;
+					while(streamRef.good())
 					{
-						SleepConditionVariableSRW(& m_commandIsReleasedCondition,
-						                          & m_srwLock,
-						                          INFINITE,
-						                          0);
+						std::getline(streamRef, m_command);
+						while (streamRef and not m_command.empty())
+						{
+							SleepConditionVariableSRW(& m_commandIsReleasedCondition,
+							                          & m_srwLock,
+							                          INFINITE,
+							                          0);
+						}
 					}
 				}
 				ReleaseSRWLockExclusive(& m_srwLock);
@@ -200,22 +200,24 @@ namespace {
 			void ThreadMain()
 			{
 				std::unique_lock lock(m_mutex);
-				while(m_streamRef.good())
+				while(true)
 				{
-					std::getline(m_streamRef, m_command);
-					while (m_streamRef and not m_command.empty())
+					std::unique_ptr<std::ifstream> filePtr { s_streamFilename.empty() ? nullptr : std::make_unique<std::ifstream>(s_streamFilename) };
+					std::istream&                  streamRef = filePtr ? *filePtr : std::cin;
+					while(streamRef.good())
 					{
-						m_commandIsReleasedCondition.wait(lock, [this]() { return m_command.empty(); });
+						std::getline(streamRef, m_command);
+						while (streamRef and not m_command.empty())
+						{
+							m_commandIsReleasedCondition.wait(lock, [this]() { return m_command.empty(); });
+						}
 					}
 				}
 			}
 #endif
 
-			static std::unique_ptr<std::ifstream>   s_filePtr;
-
-			// Please note that the member order is intentional for safe construction.
-			std::istream &  m_streamRef;
-			std::string     m_command;
+			static std::string  s_streamFilename;
+			std::string         m_command;
 
 #ifdef _WIN32
 			SRWLOCK                 m_srwLock;
@@ -227,13 +229,13 @@ namespace {
 			std::thread             m_thread;
 	};
 
-	std::unique_ptr<std::ifstream> CommandStreamReader::s_filePtr;
+	std::string CommandStreamReader::s_streamFilename;
 
 }
 
 void M_InitConsoleInputFile (const char* filepath)
 {
-	CommandStreamReader::OpenInputFile(filepath);
+	CommandStreamReader::SetInputFile(filepath);
 }
 
 std::string M_ConsoleInput (void)

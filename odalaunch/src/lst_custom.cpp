@@ -65,13 +65,22 @@ void wxAdvancedListCtrl::OnCreateControl(wxWindowCreateEvent& event)
 // Add any additional bitmaps/icons to the internal image list
 int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 {
-	if(GetImageList(wxIMAGE_LIST_SMALL) == NULL)
+	#if !ODALAUNCH_USE_LEGACY_IMAGELIST
+	if (m_Images.empty())
+	{
+	#else
+	if(GetImageList(wxIMAGE_LIST_SMALL) == nullptr)
 	{
 		wxImageList* ImageList = new wxImageList(16, 16, true);
 		AssignImageList(ImageList, wxIMAGE_LIST_SMALL);
+	#endif
 
 		wxBitmap sort_up(16, 16), sort_down(16, 16);
-		wxColour Mask = wxColour(255,255,255);
+		#if wxCHECK_VERSION(3, 2, 6)
+			wxColour Mask = wxSystemSettingsNative::SelectLightDark(wxColour(255, 255, 255), wxColour(0, 0, 0));
+		#else
+			wxColour Mask = wxColour(255, 255, 255);
+		#endif
 
 		// Draw sort arrows using the native renderer
 		{
@@ -91,13 +100,29 @@ int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 		}
 
 		// Add our sort icons to the image list
-		ImageList_SortArrowDown = GetImageList(wxIMAGE_LIST_SMALL)->Add(sort_down, Mask);
-		ImageList_SortArrowUp = GetImageList(wxIMAGE_LIST_SMALL)->Add(sort_up, Mask);
+		#if !ODALAUNCH_USE_LEGACY_IMAGELIST
+			sort_up.SetMask(new wxMask(sort_up, Mask));
+			sort_down.SetMask(new wxMask(sort_down, Mask));
+			ImageList_SortArrowDown = m_Images.size();
+			m_Images.push_back(sort_down);
+			ImageList_SortArrowUp = m_Images.size();
+			m_Images.push_back(sort_up);
+			SetSmallImages(m_Images);
+		#else
+			ImageList_SortArrowDown = GetImageList(wxIMAGE_LIST_SMALL)->Add(sort_down, Mask);
+			ImageList_SortArrowUp = GetImageList(wxIMAGE_LIST_SMALL)->Add(sort_up, Mask);
+		#endif
 	}
 
 	if(Image.IsOk())
 	{
-		return GetImageList(wxIMAGE_LIST_SMALL)->Add(Image);
+		#if !ODALAUNCH_USE_LEGACY_IMAGELIST
+			m_Images.push_back(wxBitmapBundle(Image));
+			SetSmallImages(m_Images);
+			return m_Images.size() - 1;
+		#else
+			return GetImageList(wxIMAGE_LIST_SMALL)->Add(Image);
+		#endif
 	}
 
 	return -1;
@@ -107,15 +132,24 @@ int wxAdvancedListCtrl::AddImageSmall(wxImage Image)
 // created internally
 void wxAdvancedListCtrl::ClearImageList()
 {
-	wxImageList* ImageList = GetImageList(wxIMAGE_LIST_SMALL);
+	#if !ODALAUNCH_USE_LEGACY_IMAGELIST
+		if (!m_Images.empty())
+		{
+			m_Images.resize(ImageList_SortArrowUp + 1);
+			SetSmallImages(m_Images);
+		}
 
-	if(!ImageList)
-		return;
+	#else
+		wxImageList* ImageList = GetImageList(wxIMAGE_LIST_SMALL);
 
-	// Hack: The start of this classes non-added images begin after the sort
-	// arrow
-	for(int i = ImageList_SortArrowUp + 1; i < ImageList->GetImageCount(); ++i)
-		ImageList->Remove(i);
+		if(!ImageList)
+			return;
+
+		// Hack: The start of this classes non-added images begin after the sort
+		// arrows
+		for(int i = ImageList_SortArrowUp + 1; i < ImageList->GetImageCount(); ++i)
+			ImageList->Remove(i);
+	#endif
 }
 
 //  strnatcmp.c -- Perform 'natural order' comparisons of strings in C.
@@ -148,10 +182,10 @@ static wxUniChar SafeAt(const wxString& string, size_t index)
 
 /**
  * @brief Unicode-aware isspace.
- * 
+ *
  * @detail This can't be complete in such a short space, so instead I borrowed
  *         Golang's definition of a space in the standard Latin-1 space.
- * 
+ *
  * @param ch Character to check.
  * @return If the passed character is a space.
 */
@@ -308,80 +342,51 @@ int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2,
                                  wxIntPtr sortData)
 {
 	wxInt32 SortCol, SortOrder;
-	wxListItem Item;
-	wxString Str1, Str2;
-	wxAdvancedListCtrl* ListCtrl;
-
-	ListCtrl = (wxAdvancedListCtrl*)sortData;
-
+	auto* ListCtrl = reinterpret_cast<wxAdvancedListCtrl*>(sortData);
 	ListCtrl->GetSortColumnAndOrder(SortCol, SortOrder);
 
-	Item.SetColumn(SortCol);
-	Item.SetMask(wxLIST_MASK_TEXT);
-
-	long id1 = ListCtrl->FindItem(-1, item1);
-	long id2 = ListCtrl->FindItem(-1, item2);
-
-	if (id1 == -1 || id2 == -1)
-	{
-		return 0;
-	}
+	const auto& key1 = ListCtrl->m_sortData[static_cast<size_t>(item1)];
+	const auto& key2 = ListCtrl->m_sortData[static_cast<size_t>(item2)];
 
 	if(SortCol == ListCtrl->GetSpecialSortColumn())
-	{
-		int Img1, Img2;
-
-		Item.SetMask(wxLIST_MASK_IMAGE);
-
-		Item.SetId(ListCtrl->FindItem(-1, item1));
-
-		ListCtrl->GetItem(Item);
-
-		Img1 = Item.GetImage();
-
-		Item.SetId(ListCtrl->FindItem(-1, item2));
-
-		ListCtrl->GetItem(Item);
-
-		Img2 = Item.GetImage();
-
-		return SortOrder ? Img2 - Img1 : Img1 - Img2;
-	}
-
-	Item.SetId(ListCtrl->FindItem(-1, item1));
-
-	ListCtrl->GetItem(Item);
-
-	Str1 = Item.GetText();
-
-	Item.SetId(ListCtrl->FindItem(-1, item2));
-
-	ListCtrl->GetItem(Item);
-
-	Str2 = Item.GetText();
-
-	return SortOrder ? NaturalCompare(Str1, Str2) : NaturalCompare(Str2, Str1);
+		return SortOrder ? key2.image - key1.image : key1.image - key2.image;
+	else
+		return SortOrder ? NaturalCompare(key1.text, key2.text) : NaturalCompare(key2.text, key1.text);
 }
 
 void wxAdvancedListCtrl::Sort()
 {
 	SetSortArrow(SortCol, SortOrder);
+	wxListItem Item;
+	Item.SetColumn(SortCol);
+	if(SortCol == GetSpecialSortColumn())
+		Item.SetMask(wxLIST_MASK_IMAGE);
+	else
+		Item.SetMask(wxLIST_MASK_TEXT);
 
 	long itemid = GetNextItem(-1);
 
 	// prime 'er up
 	while(itemid != -1)
 	{
-		SetItemData(itemid, itemid);
+		Item.SetId(itemid);
+		GetItem(Item);
+		auto& sortkey = m_sortData.emplace_back();
+		if(SortCol == GetSpecialSortColumn())
+			sortkey.image = Item.GetImage();
+		else
+			sortkey.text = Item.GetText();
+
+		SetItemData(itemid, static_cast<long>(m_sortData.size() - 1));
 
 		itemid = GetNextItem(itemid);
 	}
 
-	SortItems(wxCompareFunction, (wxIntPtr)this);
+	SortItems(wxCompareFunction, reinterpret_cast<wxIntPtr>(this));
+
+	m_sortData.clear();
 
 	ColourList();
-
-	return;
 }
 
 void wxAdvancedListCtrl::OnHeaderColumnButtonClick(wxListEvent& event)
@@ -529,7 +534,6 @@ void wxAdvancedListCtrl::DoRestoreRow(size_t row)
 wxString CreateFilter(wxString s)
 {
 	wxString Result;
-	size_t i;
 
 	if(s.IsEmpty())
 		return "";

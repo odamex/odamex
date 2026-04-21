@@ -38,7 +38,7 @@ BEGIN_EVENT_TABLE(LstOdaPlayerList, wxAdvancedListCtrl)
 	EVT_WINDOW_CREATE(LstOdaPlayerList::OnCreateControl)
 END_EVENT_TABLE()
 
-typedef enum
+enum playerlist_fields_t
 {
 	playerlist_field_attr
 	,playerlist_field_name
@@ -52,7 +52,7 @@ typedef enum
 	,playerlist_field_teamscore
 
 	,max_playerlist_fields
-} playerlist_fields_t;
+};
 
 static int ImageList_Spectator = -1;
 static int ImageList_RedBullet = -1;
@@ -201,8 +201,7 @@ LstOdaPlayerList::~LstOdaPlayerList()
 
 	// Team and Team Scores are shown dynamically, so handle the case of them
 	// not existing
-	if(!GetColumn((int)playerlist_field_team, li) ||
-	        !GetColumn((int)playerlist_field_teamscore, li))
+	if (GetColumnCount() <= playerlist_field_team)
 	{
 		return;
 	}

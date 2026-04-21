@@ -187,8 +187,8 @@ jobs:
       shell: bash
       run: |
         DATE=$(date +'%Y-%m-%d')
-        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
-        sed -i "s/version=\"$MAJORVERSION\.$MINORVERSION\.$PATCHVERSION\"/version=\"$new_version-prerelease.$build_number\"/g" packaging/linux/net.odamex.Odamex.metainfo.xml
+        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.releases.xml
+        sed -i "s/version=\"$MAJORVERSION\.$MINORVERSION\.$PATCHVERSION\"/version=\"$new_version-prerelease.$build_number\"/g" packaging/linux/net.odamex.Odamex.releases.xml
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Install flatpak
@@ -236,8 +236,8 @@ jobs:
       shell: bash
       run: |
         DATE=$(date +'%Y-%m-%d')
-        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
-        sed -i "s/version=\"$MAJORVERSION\.$MINORVERSION\.$PATCHVERSION\"/version=\"$new_version-prerelease.$build_number\"/g" packaging/linux/net.odamex.Odamex.metainfo.xml
+        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.releases.xml
+        sed -i "s/version=\"$MAJORVERSION\.$MINORVERSION\.$PATCHVERSION\"/version=\"$new_version-prerelease.$build_number\"/g" packaging/linux/net.odamex.Odamex.releases.xml
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Install flatpak

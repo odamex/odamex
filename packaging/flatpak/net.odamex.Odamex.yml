@@ -23,7 +23,7 @@ modules:
     buildsystem: simple
     build-commands:
       - mkdir -p /app/etc/
-      - cp -r timidity.cfg /app/etc/sdl_timidity.cfg
+      - install timidity.cfg /app/etc/sdl_timidity.cfg
       - mkdir -p /app/share/timidity/
       - cp -r instruments /app/share/timidity/instruments
     sources:
@@ -55,16 +55,32 @@ modules:
   - name: WxWidgets
     buildsystem: autotools
     config-opts:
-      - --enable-unicode
-      - --with-gtk3
+      # once cmake fixes are in, use cmake with these options
+      # - -D wxBUILD_SHARED=ON
+      # - -D wxBUILD_TESTS=OFF
+      # - -D wxBUILD_SAMPLES=OFF
+      # - -D wxBUILD_DEMOS=OFF
+      # - -D wxBUILD_TOOLKIT=gtk3
+      # - -D wxUSE_SYS_LIBS=sys
+      - --with-gtk=3
+      - --disable-tests
     cleanup:
       - "/lib/wx"
       - "/share/aclocal"
       - "/share/bakefile"
+      - "/lib/libwx_gtk3u_adv-3.3*"
+      - "/lib/libwx_gtk3u_aui-3.3*"
+      - "/lib/libwx_gtk3u_gl-3.3*"
+      - "/lib/libwx_gtk3u_media-3.3*"
+      - "/lib/libwx_gtk3u_propgrid-3.3*"
+      - "/lib/libwx_gtk3u_qa-3.3*"
+      - "/lib/libwx_gtk3u_ribbon-3.3*"
+      - "/lib/libwx_gtk3u_richtext-3.3*"
+      - "/lib/libwx_gtk3u_stc-3.3*"
     sources:
-      - type: archive
-        url: https://github.com/wxWidgets/wxWidgets/releases/download/v3.0.5/wxWidgets-3.0.5.tar.bz2
-        sha256: 8aacd56b462f42fb6e33b4d8f5d40be5abc3d3b41348ea968aa515cc8285d813
+      - type: git
+        url: https://github.com/wxWidgets/wxWidgets.git
+        tag: v3.3.2
   # Odamex (combined)
   - name: Odamex
     buildsystem: cmake-ninja
@@ -74,16 +90,16 @@ modules:
       - -D BUILD_CLIENT=1
       - -D BUILD_SERVER=1
       - -D BUILD_LAUNCHER=1
+      - -D BUILD_TESTS=0
       - -D BUILD_MASTER=0
+      - -D BUILD_TESTS=0
       - -D USE_INTERNAL_LIBS=0
-      - -D USE_INTERNAL_WXWIDGETS=1
       - -D ODAMEX_INSTALL_BINDIR=/app/bin
       - -D ODAMEX_INSTALL_DATADIR=/run/host/usr/share
       - -D USE_EXTERNAL_LIBDWARF=1
       - -D ODAMEX_NO_GITVER=0
     post-install:
-      - chmod +x ./flatpak-post-install.sh
-      - "./flatpak-post-install.sh"
+      - ./flatpak-post-install.sh
       # delete files that cleanup can't see
       - rm -rf /app/bin/wx*
       - rm -rf /app/lib/cmake

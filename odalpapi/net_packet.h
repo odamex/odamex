@@ -28,6 +28,7 @@
 #ifndef NET_PACKET_H
 #define NET_PACKET_H
 
+#include <stdint.h>
 #include <cstdlib>
 #include <string>
 #include <vector>
@@ -40,7 +41,6 @@
 #endif
 
 #include "net_io.h"
-#include "typedefs.h"
 #include "threads/mutex_factory.h"
 
 /**
@@ -66,7 +66,7 @@
 #define VERSIONMINOR(V) ((V % 256) / 10)
 #define VERSIONPATCH(V) ((V % 256) % 10)
 
-#define VERSION (MAKEVER(12, 1, 0))
+#define VERSION (MAKEVER(12, 2, 0))
 #define PROTOCOL_VERSION 8
 
 #define TAG_ID 0xAD0
