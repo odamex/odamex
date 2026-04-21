@@ -762,7 +762,7 @@ void G_InitLevelLocals()
 	G_AirControlChanged();
 
 	// clear all ACS variables
-	memset(level.vars, 0, sizeof(level.vars));
+	level.vars.fill(0);
 
 	// Get our canonical level data.
 	level_pwad_info_t& info = getLevelInfos().findByName(::level.mapname);
