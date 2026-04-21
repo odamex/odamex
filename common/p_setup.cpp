@@ -189,6 +189,9 @@ bool P_UseHorizonEffect(const seg_t& seg, bool segs_have_angles = false)
 	if (!segs_have_angles)
 		return false;
 
+	if (seg.length == 0)
+		return false;
+
 	const angle_t physical_angle = R_PointToAngle2(seg.v1->x, seg.v1->y, seg.v2->x, seg.v2->y);
 	angle_t diff = seg.angle - physical_angle;
 
