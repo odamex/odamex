@@ -109,7 +109,12 @@ odaproto::svc::PlayerMembers SVC_PlayerMembers(const player_t& player, byte flag
 odaproto::svc::TeamMembers SVC_TeamMembers(team_t team);
 odaproto::svc::ActivateLine SVC_ActivateLine(const line_t* line, const AActor* mo, int side,
                                              LineActivationType type);
-odaproto::svc::MovingSector SVC_MovingSector(const sector_t& sector);
+odaproto::svc::MovingSectorElevator SVC_MovingSectorElevator(const sector_t& sector, int serverTic);
+odaproto::svc::MovingSectorPillar   SVC_MovingSectorPillar(const sector_t& sector, int serverTic);
+odaproto::svc::MovingSectorCeiling  SVC_MovingSectorCeiling(const sector_t& sector, int serverTic);
+odaproto::svc::MovingSectorDoor     SVC_MovingSectorDoor(const sector_t& sector, int serverTic);
+odaproto::svc::MovingSectorFloor    SVC_MovingSectorFloor(const sector_t& sector, int serverTic);
+odaproto::svc::MovingSectorPlat     SVC_MovingSectorPlat(const sector_t& sector, int serverTic);
 odaproto::svc::PlaySound SVC_PlaySound(const PlaySoundType& type, int channel, int sfx_id,
                                        float volume, int attenuation);
 odaproto::svc::TouchSpecial SVC_TouchSpecial(const player_t& player, const AActor& mo);

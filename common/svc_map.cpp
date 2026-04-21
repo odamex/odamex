@@ -74,7 +74,12 @@ static void InitMap()
 	MapProto(svc_playermembers, odaproto::svc::PlayerMembers::descriptor());
 	MapProto(svc_teammembers, odaproto::svc::TeamMembers::descriptor());
 	MapProto(svc_activateline, odaproto::svc::ActivateLine::descriptor());
-	MapProto(svc_movingsector, odaproto::svc::MovingSector::descriptor());
+	MapProto(svc_movingsectorelevator, odaproto::svc::MovingSectorElevator::descriptor());
+	MapProto(svc_movingsectorpillar, odaproto::svc::MovingSectorPillar::descriptor());
+	MapProto(svc_movingsectorceiling, odaproto::svc::MovingSectorCeiling::descriptor());
+	MapProto(svc_movingsectordoor, odaproto::svc::MovingSectorDoor::descriptor());
+	MapProto(svc_movingsectorfloor, odaproto::svc::MovingSectorFloor::descriptor());
+	MapProto(svc_movingsectorplat, odaproto::svc::MovingSectorPlat::descriptor());
 	MapProto(svc_playsound, odaproto::svc::PlaySound::descriptor());
 	MapProto(svc_reconnect, odaproto::svc::Reconnect::descriptor());
 	MapProto(svc_exitlevel, odaproto::svc::ExitLevel::descriptor());

@@ -1031,7 +1031,12 @@ static void InitNetMessageFormats()
 	MSG_INFO(svc_playermembers);
 	MSG_INFO(svc_teammembers);
 	MSG_INFO(svc_activateline);
-	MSG_INFO(svc_movingsector);
+	MSG_INFO(svc_movingsectorelevator);
+	MSG_INFO(svc_movingsectorpillar);
+	MSG_INFO(svc_movingsectorceiling);
+	MSG_INFO(svc_movingsectordoor);
+	MSG_INFO(svc_movingsectorfloor);
+	MSG_INFO(svc_movingsectorplat);
 	MSG_INFO(svc_playsound);
 	MSG_INFO(svc_reconnect);
 	MSG_INFO(svc_exitlevel);
