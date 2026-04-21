@@ -64,7 +64,7 @@ jobs:
           echo "CommitDate: ${{ steps.gitversion.outputs.commitDate }}"
           echo "TotalCommits: ${{ steps.revlist.outputs.totalCommits }}"
   build-macos-universal:
-    name: Build (Universal)
+    name: Build
     needs: pre_job
     runs-on: macos-14
     env:
