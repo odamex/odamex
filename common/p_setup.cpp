@@ -471,10 +471,10 @@ void P_LoadNodes(int lump)
 		std::is_same_v<MapNodeType, mapnode_deepbsp_t> ? 8 : 0;
 
 	numnodes = (W_LumpLength(lump) - headerSize) / sizeof(MapNodeType);
-	nodes = (node_t*) Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL, 0);
-	byte* data = (byte*) W_CacheLumpNum(lump, PU_STATIC);
+	nodes = static_cast<node_t*>(Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL, 0));
+	MapNodeType* data = W_CacheLumpNum<MapNodeType>(lump, PU_STATIC);
 
-	const MapNodeType* mn = (MapNodeType *)(data + headerSize);
+	const MapNodeType* mn = data;
 	node_t* no = nodes;
 
 	for (int i = 0; i < numnodes; i++, no++, mn++)
