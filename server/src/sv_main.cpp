@@ -1734,86 +1734,86 @@ void SV_SendMovingSectorUpdate(player_t& player, sector_t* sector)
 		return;
 
 	movertype_t floorMover   = SEC_INVALID;
-    movertype_t ceilingMover = SEC_INVALID;
+	movertype_t ceilingMover = SEC_INVALID;
 
-    if (sector->floordata)
-    {
-        if (sector->floordata->IsA(RUNTIME_CLASS(DFloor)))
-        {
-            floorMover = SEC_FLOOR;
-        }
-        else if (sector->floordata->IsA(RUNTIME_CLASS(DPlat)))
-        {
-            floorMover = SEC_PLAT;
-        }
-    }
+	if (sector->floordata)
+	{
+		if (sector->floordata->IsA(RUNTIME_CLASS(DFloor)))
+		{
+			floorMover = SEC_FLOOR;
+		}
+		else if (sector->floordata->IsA(RUNTIME_CLASS(DPlat)))
+		{
+			floorMover = SEC_PLAT;
+		}
+	}
 
-    if (sector->ceilingdata)
-    {
-        if (sector->ceilingdata->IsA(RUNTIME_CLASS(DDoor)))
-        {
-            ceilingMover = SEC_DOOR;
-        }
-        else if (sector->ceilingdata->IsA(RUNTIME_CLASS(DCeiling)))
-        {
-            ceilingMover = SEC_CEILING;
-        }
-        else if (sector->ceilingdata->IsA(RUNTIME_CLASS(DElevator)))
-        {
-            ceilingMover = SEC_ELEVATOR;
-            floorMover   = SEC_INVALID;
-        }
-        else if (sector->ceilingdata->IsA(RUNTIME_CLASS(DPillar)))
-        {
-            ceilingMover = SEC_PILLAR;
-            floorMover   = SEC_INVALID;
-        }
-    }
+	if (sector->ceilingdata)
+	{
+		if (sector->ceilingdata->IsA(RUNTIME_CLASS(DDoor)))
+		{
+			ceilingMover = SEC_DOOR;
+		}
+		else if (sector->ceilingdata->IsA(RUNTIME_CLASS(DCeiling)))
+		{
+			ceilingMover = SEC_CEILING;
+		}
+		else if (sector->ceilingdata->IsA(RUNTIME_CLASS(DElevator)))
+		{
+			ceilingMover = SEC_ELEVATOR;
+			floorMover   = SEC_INVALID;
+		}
+		else if (sector->ceilingdata->IsA(RUNTIME_CLASS(DPillar)))
+		{
+			ceilingMover = SEC_PILLAR;
+			floorMover   = SEC_INVALID;
+		}
+	}
 
-    if (floorMover != SEC_INVALID)
-    {
-        const bool    floorIsCompleted     = P_MovingFloorCompleted  (sector);
-        const int     floorMoverMsgTic     = floorIsCompleted ? gametic : -1;
-        MessageQueue& outgoingMessageQueue = floorIsCompleted ? player.client.messenger.ReliableBuf() :
-                                                                player.client.messenger.HighBuf();
-        switch (floorMover)
-        {
-            case SEC_FLOOR:
-                MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorFloor(*sector, floorMoverMsgTic));
-                break;
-            case SEC_PLAT:
-                MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorPlat(*sector, floorMoverMsgTic));
-                break;
-            default:
-                break;
-        }
-    }
+	if (floorMover != SEC_INVALID)
+	{
+		const bool    floorIsCompleted     = P_MovingFloorCompleted  (sector);
+		const int     floorMoverMsgTic     = floorIsCompleted ? gametic : -1;
+		MessageQueue& outgoingMessageQueue = floorIsCompleted ? player.client.messenger.ReliableBuf() :
+		                                                        player.client.messenger.HighBuf();
+		switch (floorMover)
+		{
+			case SEC_FLOOR:
+				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorFloor(*sector, floorMoverMsgTic));
+				break;
+			case SEC_PLAT:
+				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorPlat(*sector, floorMoverMsgTic));
+				break;
+			default:
+				break;
+		}
+	}
 
-    if (ceilingMover != SEC_INVALID)
-    {
-        const bool    ceilingIsCompleted   = P_MovingCeilingCompleted(sector);
-        const int     ceilingMoverMsgTic   = ceilingIsCompleted ? gametic : -1;
-        MessageQueue& outgoingMessageQueue = ceilingIsCompleted ? player.client.messenger.ReliableBuf() :
-                                                                  player.client.messenger.HighBuf();
+	if (ceilingMover != SEC_INVALID)
+	{
+		const bool    ceilingIsCompleted   = P_MovingCeilingCompleted(sector);
+		const int     ceilingMoverMsgTic   = ceilingIsCompleted ? gametic : -1;
+		MessageQueue& outgoingMessageQueue = ceilingIsCompleted ? player.client.messenger.ReliableBuf() :
+		                                                          player.client.messenger.HighBuf();
 
-        switch (ceilingMover)
-        {
-            case SEC_DOOR:
-                MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorDoor(*sector, ceilingMoverMsgTic));
-                break;
-            case SEC_CEILING:
-                MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorCeiling(*sector, ceilingMoverMsgTic));
-                break;
-            case SEC_ELEVATOR:
-                MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorElevator(*sector, ceilingMoverMsgTic));
-                break;
-            case SEC_PILLAR:
-                MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorPillar(*sector, ceilingMoverMsgTic));
-                break;
-            default:
-                break;
-        }
-    }
+		switch (ceilingMover)
+		{
+			case SEC_DOOR:
+				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorDoor(*sector, ceilingMoverMsgTic));
+				break;
+			case SEC_CEILING:
+				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorCeiling(*sector, ceilingMoverMsgTic));
+				break;
+			case SEC_ELEVATOR:
+				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorElevator(*sector, ceilingMoverMsgTic));
+				break;
+			case SEC_PILLAR:
+				MSG_WriteSVC(outgoingMessageQueue, SVC_MovingSectorPillar(*sector, ceilingMoverMsgTic));
+				break;
+			default:
+				break;
+		}
+	}
 }
 
 //
@@ -1828,7 +1828,7 @@ void SV_UpdateMovingSectors(player_t &player)
 		sector_t *sector = itr->sector;
 
 		SV_SendMovingSectorUpdate(player, sector);
-    }
+	}
 }
 
 
