@@ -437,7 +437,6 @@ void I_SetTitleString (const char *title)
 std::string I_GetClipboardText()
 {
 #if defined(SDL20) || defined(SDL3)
-		ret = std::string((const char*)data, len);
 	char* textp = SDL_GetClipboardText();
 	auto textpExit = nonstd::make_scope_exit([&]() { SDL_free(textp); });
 

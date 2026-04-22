@@ -141,8 +141,10 @@ bool P_RecursiveSound (sector_t& sector, int soundblocks, AActor& soundtarget)
 	if (sector.validcount == validcount
 		&& sector.soundtraversed <= soundblocks+1)
 	{
-		return;         // already flooded
+		return false;         // already flooded
 	}
+
+	bool soundtargetWasChanged = sector.soundtarget != soundtarget.ptr();
 
 	sector.validcount     = validcount;
 	sector.soundtraversed = soundblocks + 1;
@@ -199,9 +201,6 @@ bool P_NoiseAlert (AActor& target, sector_t& sec)
 	if (target.player && (!multiplayer && (target.player->cheats & CF_NOTARGET)))
 		return false;
 
-	if (not emmiter->subsector)
-		return;
-
 	validcount++;
 	const bool soundtargetWasChanged = P_RecursiveSound (sec, 0, target);
 
@@ -218,7 +217,11 @@ bool P_NoiseAlert (AActor& target, sector_t& sec)
 
 bool P_NoiseAlert (AActor *target, AActor *emmiter)
 {
-	return P_NoiseAlert(*target, *emmiter->subsector->sector);
+	if (emmiter->subsector)
+	{
+		return P_NoiseAlert(*target, *emmiter->subsector->sector);
+	}
+	return false;
 }
 
 
