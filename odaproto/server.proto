@@ -846,12 +846,12 @@ message SpreeBreaker
 	int32 spree_breaker_type = 7;
 }
 
-// svc_netdemostop
+// clc_netdemostop
 message NetDemoStop
 {
 }
 
-// svc_netdemoloadsnap
+// clc_netdemoloadsnap
 message NetDemoLoadSnap
 {
 }

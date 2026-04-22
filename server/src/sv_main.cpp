@@ -4393,7 +4393,7 @@ void SV_HandlePlayerInput(odaproto::clc::PlayerInput& msg, player_t &player)
 // SV_ParseCommands
 //
 
-parseError_e SV_ParseCommandSVC(const byte cmd, player_t& player)
+parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 {
     google::protobuf::Message* msgPtrRaw = nullptr;
     const parseError_e result = SVC_ParseMessage(msgPtrRaw, cmd);
@@ -4409,7 +4409,7 @@ parseError_e SV_ParseCommandSVC(const byte cmd, player_t& player)
                 break;
             default:
                 // This case happens when a message was received, parsed, but not handled.
-                PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", cmd);
+                PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));
                 return PERR_BAD_DECODE;
         }
     }
@@ -4552,7 +4552,7 @@ void SV_ParseCommands(player_t &player)
 			default:
                 // It's important to allow the clc_ enum to have priority
                 // over svc_ if we have both types of messages.
-                switch (SV_ParseCommandSVC(cmdRaw, player))
+                switch (SV_ParseCommandSVC(static_cast<svc_t>(cmdRaw), player))
                 {
                     case PERR_OK:
                         continue;

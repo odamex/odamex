@@ -3279,7 +3279,7 @@ ParseResultType CL_ParseCommand()
 	ParseResultType result;
 
 	// What type of message we have.
-	result.cmd = MSG_ReadByte();
+	result.cmd = static_cast<svc_t>(MSG_ReadUnVarint());
 
 	if (result.cmd == msg_ack)
 	{
@@ -3406,8 +3406,8 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_playerpsprites, CL_PlayerPsprites, odaproto::svc::PlayerPsprites);
 		SV_MSG(svc_configureavatar, CL_ConfigureAvatar, odaproto::svc::ConfigureAvatar);
 		SV_MSG(clc_netdemocap, CL_NetdemoCap, odaproto::clc::NetdemoCap);
-		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
-		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);
+		SV_MSG(clc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
+		SV_MSG(clc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);
 		/* clang-format on */
 	default:
 		return PERR_UNKNOWN_HEADER;

@@ -204,11 +204,18 @@ struct msg_info_t
 };
 
 // network messages
+//
+// This enumeration is designed so that the most-stable messages belong at the top,
+// and avoid explicit numeric values if possible.
+//
 enum svc_t
 {
 	svc_noop,
-	svc_disconnect,
+	clc_netdemocap,         // netdemos - NullPoint
+	clc_netdemostop,        // netdemos - NullPoint
+	clc_netdemoloadsnap,    // netdemos - NullPoint
 	svc_playerinfo, // weapons, ammo, maxammo, raisedweapon for local player
+	svc_disconnect,
 	svc_moveplayer,
 	svc_updatelocalplayer,
 	svc_levellocals, // [AM] Persist one or more level locals
@@ -295,12 +302,9 @@ enum svc_t
 	                        // the values for the clc_t enum so that parsing code on the server that,
 	                        // during this transitory phase, can very easily work with both the
 	                        // new and the old enumerals and naive handling code can be correct.
-	clc_netdemocap = 100,  // netdemos - NullPoint
-	svc_netdemostop = 101, // netdemos - NullPoint
-	svc_netdemoloadsnap = 102, // netdemos - NullPoint
-};
 
-inline constexpr size_t msg_max = 255;
+	MSG_DEFINITION_COUNT    // For use as sizer.
+};
 
 enum ThinkerType
 {
@@ -330,11 +334,10 @@ enum clc_t
 	clc_userinfo,  // send userinfo
 	clc_pingreply, // [SL] 2011-05-11 - timestamp
 	clc_rate,
-	clc_ack_OLD_PLACEHOLDER,        // NOTE: Keep this for transitory compatibility with "non-unified" switch cases.
 	clc_rcon,
 	clc_rcon_password,
-	clc_changeteam, // [NightFang] - Change your team
-	                // [Toke - Teams] Made this actualy work
+	clc_changeteam, // [NightFang, Toke] - Change your team
+	clc_ack_OLD_PLACEHOLDER,        // NOTE: Keep this for transitory compatibility with "non-unified" switch cases.
 	clc_ctfcommand,
 	clc_spectate,       // denis
 	clc_wantwad,        // denis - name, hash
@@ -357,7 +360,7 @@ inline auto format_as(clc_t clc)
 inline constexpr size_t clc_max = 255;
 
 extern msg_info_t clc_info[clc_max + 1];
-extern msg_info_t msg_info[msg_max + 1];
+extern msg_info_t msg_info[MSG_DEFINITION_COUNT];
 
 namespace google
 {

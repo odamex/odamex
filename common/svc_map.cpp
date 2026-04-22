@@ -25,14 +25,24 @@
 
 #include "svc_map.h"
 
+#include <unordered_map>
+
 #include "client.pb.h"
 #include "server.pb.h"
 
-#include "hashtable.h"
 #include "i_net.h"
 
-typedef OHashTable<int, const google::protobuf::Descriptor*> SVCHeaderMap;
-typedef OHashTable<const void*, svc_t> SVCDescMap;
+namespace
+{
+	struct IdentityKey
+	{
+		size_t operator()(const svc_t& key) const { return static_cast<size_t>(key); }
+		size_t operator()(const void*  key) const { return reinterpret_cast<size_t>(key); }
+	};
+}
+
+typedef std::unordered_map<svc_t, const google::protobuf::Descriptor*, IdentityKey> SVCHeaderMap;
+typedef std::unordered_map<const void*, svc_t, IdentityKey> SVCDescMap;
 
 SVCHeaderMap g_SVCHeaderMap;
 SVCDescMap g_SVCDescMap;
@@ -130,11 +140,11 @@ static void InitMap()
 
 	MapProto(svc_configureavatar, odaproto::svc::ConfigureAvatar::descriptor());
 
-	MapProto(svc_netdemostop, odaproto::svc::NetDemoStop::descriptor());
-	MapProto(svc_netdemoloadsnap, odaproto::svc::NetDemoLoadSnap::descriptor());
-
 	MapProto(clc_playerinput, odaproto::clc::PlayerInput::descriptor());
-	MapProto(clc_netdemocap,  odaproto::clc::NetdemoCap::descriptor());
+
+	MapProto(clc_netdemocap,        odaproto::clc::NetdemoCap::descriptor());
+	MapProto(clc_netdemostop,       odaproto::svc::NetDemoStop::descriptor());
+	MapProto(clc_netdemoloadsnap,   odaproto::svc::NetDemoLoadSnap::descriptor());
 
 }
 
@@ -142,14 +152,14 @@ static void InitMap()
  * @brief Given a packet header, return the message Descriptor, or NULL if
  *        the header is invalid.
  */
-const google::protobuf::Descriptor* SVC_ResolveHeader(const byte header)
+const google::protobuf::Descriptor* SVC_ResolveHeader(const svc_t header)
 {
 	if (::g_SVCHeaderMap.empty())
 	{
 		InitMap();
 	}
 
-	SVCHeaderMap::iterator it = ::g_SVCHeaderMap.find(static_cast<svc_t>(header));
+	SVCHeaderMap::iterator it = ::g_SVCHeaderMap.find(header);
 	if (it == ::g_SVCHeaderMap.end())
 	{
 		return NULL;

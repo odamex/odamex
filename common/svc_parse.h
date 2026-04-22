@@ -26,4 +26,4 @@ namespace google
  * @param cmd Command to parse out.
  * @return Error condition, or OK (0) if successful.
  */
-parseError_e SVC_ParseMessage(google::protobuf::Message*& out, const byte cmd);
+parseError_e SVC_ParseMessage(google::protobuf::Message*& out, const svc_t cmd);

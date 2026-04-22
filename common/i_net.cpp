@@ -96,7 +96,7 @@ buf_t       net_message(MAX_UDP_PACKET);
 EXTERN_CVAR(port)
 
 msg_info_t clc_info[clc_max + 1];
-msg_info_t msg_info[msg_max + 1];
+msg_info_t msg_info[MSG_DEFINITION_COUNT];
 
 #ifdef ODA_HAVE_MINIUPNP
 EXTERN_CVAR(sv_upnp)
@@ -624,7 +624,7 @@ void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg)
 		msg.ShortDebugString());
 #endif
 
-	b->WriteByte(header);
+	b->WriteUnVarint(header);
 	b->WriteUnVarint(buffer.size());
 	b->WriteChunk(buffer.data(), buffer.size());
 }
@@ -662,7 +662,7 @@ void MSG_WriteSVC(MessageQueue& io_queue, const google::protobuf::Message& msg)
 
     buf_t& b = io_queue.Obtain();
 
-	b.WriteByte(header);
+	b.WriteUnVarint(header);
 	b.WriteUnVarint(buffer.size());
 	b.WriteChunk(buffer.data(), buffer.size());
 }
@@ -711,7 +711,7 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
 		// Select the correct buffer.
 		buf_t& b = buf == CLBUF_RELIABLE ? player.client.messenger.ReliableBuf().Obtain() : player.client.messenger.NetBuf().Obtain();
 
-		b.WriteByte(header);
+		b.WriteUnVarint(header);
 		b.WriteUnVarint(buffer.size());
 		b.WriteChunk(buffer.data(), buffer.size());
 	}
@@ -1068,8 +1068,6 @@ static void InitNetMessageFormats()
 	MSG_INFO(svc_executelinespecial);
 	MSG_INFO(svc_executeacsspecial);
 	MSG_INFO(svc_thinkerupdate);
-	MSG_INFO(svc_netdemostop);
-	MSG_INFO(svc_netdemoloadsnap);
 	MSG_INFO(svc_vote_update);
 	MSG_INFO(svc_maplist);
 	MSG_INFO(svc_maplist_update);
@@ -1088,7 +1086,8 @@ static void InitNetMessageFormats()
 	MSG_INFO(svc_configureavatar);
 	MSG_INFO(clc_playerinput);
 	MSG_INFO(clc_netdemocap);
-	MSG_INFO(msg_max);
+	MSG_INFO(clc_netdemostop);
+	MSG_INFO(clc_netdemoloadsnap);
 
 	// Client Messages.
 	CLC_INFO(clc_abort);
