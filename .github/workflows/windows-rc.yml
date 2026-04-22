@@ -19,7 +19,7 @@ jobs:
       minor: ${{ steps.gitversion.outputs.minor }}
       patch: ${{ steps.gitversion.outputs.patch }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
           fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
@@ -71,7 +71,7 @@ jobs:
       build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
     - name: Run Upversion
@@ -103,12 +103,12 @@ jobs:
         B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
         B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Archive x64 build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Win-x64
         path: Output/zip/*.zip
     - name: Archive x64 pdb artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Win-x64-pdb
         path: Output/pdb/*.zip
@@ -120,7 +120,7 @@ jobs:
       build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0 # Required due to the way Git works, without it this action won't be able to find any or the correct tags
     - name: Run Upversion
@@ -152,12 +152,12 @@ jobs:
         B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
         B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Archive x86 build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Win-x86
         path: Output/zip/*.zip
     - name: Archive x86 pdb artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Win-x86-pdb
         path: Output/pdb/*.zip
@@ -169,7 +169,7 @@ jobs:
       build_number: ${{ needs.pre_job.outputs.build_number }}
       new_version: ${{ needs.pre_job.outputs.new_version }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         fetch-tags: true
     - name: Run Upversion
@@ -184,11 +184,11 @@ jobs:
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Download x86 artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: Odamex-Win-x86
     - name: Download x64 artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: Odamex-Win-x64
     - name: Install setup compiler
@@ -202,16 +202,16 @@ jobs:
       run: |
         .\ci\stage-inno-setup-and-run.ps1
     - name: Upload setup installer to Github
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Installer
         path: 'Output/*.exe'
     - name: Download x86 pdb
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: Odamex-Win-x86-pdb
     - name: Download x64 pdb
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: Odamex-Win-x64-pdb
     - name: Create or update prerelease

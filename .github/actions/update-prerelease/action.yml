@@ -1,5 +1,7 @@
 name: Update Prerelease
 
+description: "Creates prerelease and uploads assets"
+
 inputs:
   files:
     description: "Files to upload to release artifacts"

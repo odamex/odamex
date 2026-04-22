@@ -170,6 +170,13 @@ struct visitor : Ts... { using Ts::operator()...; };
 template<class... Ts>
 visitor(Ts...) -> visitor<Ts...>;
 
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+// requires std::is_integral_v<T>
+constexpr auto to_unsigned(T x)
+{
+	return static_cast<std::make_unsigned_t<T>>(x);
+}
+
 // C++23 std::unreachable
 [[noreturn]] inline void unreachable()
 {

@@ -135,34 +135,31 @@ extern bool isFast;
 // sound blocking lines cut off traversal.
 //
 
-bool P_RecursiveSound (sector_t& sec, int soundblocks, AActor& soundtarget)
+bool P_RecursiveSound (sector_t& sector, int soundblocks, AActor& soundtarget)
 {
-	line_t* 	check;
-	sector_t*	other;
-
 	// wake up all monsters in this sector
-	if (sec.validcount == validcount
-		&& sec.soundtraversed <= soundblocks+1)
+	if (sector.validcount == validcount
+		&& sector.soundtraversed <= soundblocks+1)
 	{
-		return false;         // already flooded
+		return;         // already flooded
 	}
 
-	bool soundtargetWasChanged = sec.soundtarget != soundtarget.ptr();
+	sector.validcount     = validcount;
+	sector.soundtraversed = soundblocks + 1;
+	sector.soundtarget    = soundtarget.ptr();
 
-	sec.validcount = validcount;
-	sec.soundtraversed = soundblocks+1;
-	sec.soundtarget = soundtarget.ptr();
-
-	for (int i = 0; i < sec. linecount; i++)
+	for (int i = 0; i < sector.linecount; i++)
 	{
-		check = sec.lines[i];
+		const line_t* check = sector.lines[i];
 		if (! (check->flags & ML_TWOSIDED) )
 			continue;
 
-		if ( sides[ check->sidenum[0] ].sector == &sec)
-			other = sides[ check->sidenum[1] ] .sector;
-		else
-			other = sides[ check->sidenum[0] ].sector;
+		// It's tempting to rely on C++'s conversion of bool false/true to int 0 or 1.
+		// However, I'd much rather just explicitly state what I mean with exact index
+		// numbers and let the compiler micro-optimize it if it insists.
+
+		const size_t otherSidenumIndex =  sides[ check->sidenum[0] ].sector == &sector ? 1 : 0;
+		sector_t&    otherRef          = *sides[ check->sidenum[otherSidenumIndex] ].sector;
 
 		// [SL] 2012-02-08 - FIXME: Currently only checks for a line opening at
 		// midpoint of a sloped linedef.  P_RecursiveSound() in ZDoom 1.23 causes
@@ -171,19 +168,19 @@ bool P_RecursiveSound (sector_t& sec, int soundblocks, AActor& soundtarget)
 		                     (check->v1->y >> 1) + (check->v2->y >> 1));
 
 		if (openrange <= 0)
-			continue;	// closed door
+			continue;   // closed door
 
 		if (check->flags & ML_SOUNDBLOCK)
 		{
 			if (!soundblocks)
 			{
-				const bool propagatedSoundtargetWasChanged = P_RecursiveSound (*other, 1, soundtarget);
+				const bool propagatedSoundtargetWasChanged = P_RecursiveSound (otherRef, 1, soundtarget);
 				soundtargetWasChanged = soundtargetWasChanged or propagatedSoundtargetWasChanged;
 			}
 		}
 		else
 		{
-			const bool propagatedSoundtargetWasChanged = P_RecursiveSound (*other, soundblocks, soundtarget);
+			const bool propagatedSoundtargetWasChanged = P_RecursiveSound (otherRef, soundblocks, soundtarget);
 			soundtargetWasChanged = soundtargetWasChanged or propagatedSoundtargetWasChanged;
 		}
 	}
@@ -201,6 +198,9 @@ bool P_NoiseAlert (AActor& target, sector_t& sec)
 {
 	if (target.player && (!multiplayer && (target.player->cheats & CF_NOTARGET)))
 		return false;
+
+	if (not emmiter->subsector)
+		return;
 
 	validcount++;
 	const bool soundtargetWasChanged = P_RecursiveSound (sec, 0, target);
@@ -486,9 +486,12 @@ bool P_SmartMove(AActor* actor)
 	int dropoff = 0;
 
 	/* killough 9/12/98: Stay on a lift if target is on one */
-	bool on_lift = co_staylift && target && target->health > 0 &&
-	               target->subsector->sector->tag == actor->subsector->sector->tag &&
-	               P_IsOnLift(actor);
+	bool on_lift = co_staylift
+	            && target
+	            && target->health > 0
+	            && target->subsector
+	            && target->subsector->sector->tag == actor->subsector->sector->tag
+	            && P_IsOnLift(actor);
 
 	bool under_damage = co_avoidhazards && P_IsUnderDamage(actor); // e6y
 
@@ -554,6 +557,9 @@ bool P_TryWalk (AActor *actor)
 
 bool P_IsOnLift(const AActor* actor)
 {
+	if (not (actor && actor->subsector))
+		return false;
+
 	const sector_t* sec = actor->subsector->sector;
 	line_t line;
 	int l;
@@ -1518,7 +1524,7 @@ void A_Look (AActor *actor)
 	AActor *targ;
 	AActor *newgoal;
 
-	if(!actor->subsector)
+	if(not (actor && actor->subsector))
 		return;
 
 	// [RH] Set goal now if appropriate

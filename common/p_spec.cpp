@@ -3022,7 +3022,7 @@ void DPusher::RunThink ()
 	for ( ; node ; node = node->m_snext)
 	{
 		thing = node->m_thing;
-		if (!thing->player || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
+		if (!P_IsPlayerOrAvatar(*thing) || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
 			continue;
 		if (m_Type == p_wind)
 		{

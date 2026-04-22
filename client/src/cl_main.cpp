@@ -1595,7 +1595,10 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 		}
 		else
 		{
-			displayplayer_id = consoleplayer_id; // get out of spynext
+			if (!netdemo.isPlaying())
+			{
+				displayplayer_id = consoleplayer_id; // get out of spynext
+			}
 			player.cheats &= ~CF_FLY;	// remove flying ability
 		}
 

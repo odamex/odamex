@@ -189,6 +189,9 @@ bool P_UseHorizonEffect(const seg_t& seg, bool segs_have_angles = false)
 	if (!segs_have_angles)
 		return false;
 
+	if (seg.length == 0)
+		return false;
+
 	const angle_t physical_angle = R_PointToAngle2(seg.v1->x, seg.v1->y, seg.v2->x, seg.v2->y);
 	angle_t diff = seg.angle - physical_angle;
 
@@ -264,7 +267,7 @@ void P_LoadSegs(int lump)
 	{
 		seg_t* const li = segs + i;
 		const MapSegType& ml = data[i];
-		auto v = LESWAP(ml.v1);
+		auto v = OUtil::to_unsigned(LESWAP(ml.v1));
 
 		if(v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex {}", v);
@@ -302,8 +305,8 @@ void P_LoadSubsectors(int lump)
 
 	for (int i = 0; i < numsubsectors; i++)
 	{
-		subsectors[i].numlines = LESWAP<decltype(MapSubsectorType::numsegs)>(data[i].numsegs);
-		subsectors[i].firstline = LESWAP<decltype(MapSubsectorType::firstseg)>(data[i].firstseg);
+		subsectors[i].numlines = LESWAP(data[i].numsegs);
+		subsectors[i].firstline = LESWAP(data[i].firstseg);
 	}
 
 	Z_Free(data);
@@ -464,11 +467,14 @@ void P_LoadNodes(int lump)
 		    "P_LoadNodes: NODES lump is empty - levels without nodes are not supported.");
 	}
 
-	numnodes = W_LumpLength(lump) / sizeof(MapNodeType);
-	nodes = Z_Malloc<node_t>(numnodes, PU_LEVEL);
-	MapNodeType* data = W_CacheLumpNum<MapNodeType>(lump, PU_STATIC);
+	static constexpr size_t headerSize =
+		std::is_same_v<MapNodeType, mapnode_deepbsp_t> ? 8 : 0;
 
-	const MapNodeType* mn = data;
+	numnodes = (W_LumpLength(lump) - headerSize) / sizeof(MapNodeType);
+	nodes = (node_t*) Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL, 0);
+	byte* data = (byte*) W_CacheLumpNum(lump, PU_STATIC);
+
+	const MapNodeType* mn = (MapNodeType *)(data + headerSize);
 	node_t* no = nodes;
 
 	for (int i = 0; i < numnodes; i++, no++, mn++)
@@ -497,7 +503,7 @@ void P_LoadNodes(int lump)
 		}
 	}
 
-	Z_Free (data);
+	Z_Free(data);
 }
 
 byte* P_DecompressNodes(byte* data, size_t len) {
@@ -570,7 +576,7 @@ byte* P_LoadSegs_XNOD(byte* p) {
 			seg->backsector = sides[line->sidenum[side^1]].sector;
 		else
 		{
-			seg->backsector = NULL;
+			seg->backsector = nullptr;
 			line->flags &= ~ML_TWOSIDED;
 		}
 
