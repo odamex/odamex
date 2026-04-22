@@ -903,6 +903,10 @@ odaproto::svc::MovingSectorElevator SVC_MovingSectorElevator(const sector_t& sec
 {
     odaproto::svc::MovingSectorElevator msg;
 
+    if (serverTic >= 0)
+    {
+        msg.set_server_tic(serverTic);
+    }
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
 	msg.set_floor_height    (P_FloorHeight(&sector));
@@ -923,6 +927,10 @@ odaproto::svc::MovingSectorPillar SVC_MovingSectorPillar(const sector_t& sector,
 {
     odaproto::svc::MovingSectorPillar msg;
 
+    if (serverTic >= 0)
+    {
+        msg.set_server_tic(serverTic);
+    }
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
 	msg.set_floor_height    (P_FloorHeight(&sector));
@@ -944,6 +952,10 @@ odaproto::svc::MovingSectorCeiling SVC_MovingSectorCeiling(const sector_t& secto
 {
     odaproto::svc::MovingSectorCeiling msg;
 
+    if (serverTic >= 0)
+    {
+        msg.set_server_tic(serverTic);
+    }
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
 
@@ -970,6 +982,10 @@ odaproto::svc::MovingSectorDoor SVC_MovingSectorDoor(const sector_t& sector, int
 {
     odaproto::svc::MovingSectorDoor msg;
 
+    if (serverTic >= 0)
+    {
+        msg.set_server_tic(serverTic);
+    }
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
 
@@ -992,6 +1008,10 @@ odaproto::svc::MovingSectorFloor SVC_MovingSectorFloor(const sector_t& sector, i
 {
     odaproto::svc::MovingSectorFloor msg;
 
+    if (serverTic >= 0)
+    {
+        msg.set_server_tic(serverTic);
+    }
 	msg.set_sector      (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_floor_height(P_FloorHeight(&sector));
 
@@ -1021,6 +1041,11 @@ odaproto::svc::MovingSectorFloor SVC_MovingSectorFloor(const sector_t& sector, i
 odaproto::svc::MovingSectorPlat SVC_MovingSectorPlat(const sector_t& sector, int serverTic)
 {
     odaproto::svc::MovingSectorPlat msg;
+
+    if (serverTic >= 0)
+    {
+        msg.set_server_tic(serverTic);
+    }
 	msg.set_sector      (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_floor_height(P_FloorHeight(&sector));
 
@@ -1245,7 +1270,7 @@ odaproto::svc::MidPrint SVC_MidPrint(const std::string& message, const int time)
 	return msg;
 }
 
-odaproto::svc::ServerGametic SVC_ServerGametic(const byte tic, const int queueDepth)
+odaproto::svc::ServerGametic SVC_ServerGametic(const int tic, const int queueDepth)
 {
 	odaproto::svc::ServerGametic msg;
 

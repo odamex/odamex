@@ -1836,13 +1836,9 @@ void SV_UpdateMovingSectors(player_t &player)
 // SV_SendGametic
 // Sends gametic to synchronize with the client
 //
-// [SL] 2011-05-11 - Instead of sending the whole gametic (4 bytes),
-// send only the least significant byte to save bandwidth.
 void SV_SendGametic(client_t* cl)
 {
-	const byte tic = static_cast<byte>(gametic & 0xFF);
-
-	MSG_WriteSVC(cl->messenger.HighBuf(), SVC_ServerGametic(tic, cl->messenger.GetPendingAckCount()));
+	MSG_WriteSVC(cl->messenger.HighBuf(), SVC_ServerGametic(gametic, cl->messenger.GetPendingAckCount()));
 }
 
 void SV_LineStateUpdate(client_t *cl)

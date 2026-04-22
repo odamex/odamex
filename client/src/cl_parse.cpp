@@ -2283,14 +2283,7 @@ static void CL_MidPrint(const odaproto::svc::MidPrint* msg)
 // [SL] 2011-05-11
 static void CL_ServerGametic(const odaproto::svc::ServerGametic* msg)
 {
-	byte tic = msg->tic();
-
-	int newtic = (::last_svgametic & 0xFFFFFF00) + tic;
-
-	if (::last_svgametic > newtic + 127)
-		newtic += 256;
-
-	::last_svgametic = newtic;
+	::last_svgametic = msg->tic();
 
 	netgraph.setServerQueueDepth(msg->reliable_queue_depth());
 
