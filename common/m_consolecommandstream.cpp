@@ -23,6 +23,7 @@
 #include "m_consolecommandstream.h"
 
 #include <condition_variable>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -43,7 +44,6 @@
 
 #elif defined UNIX
 
-#include <filesystem>
 #include <signal.h>
 
 #endif
