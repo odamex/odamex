@@ -3152,14 +3152,14 @@ void SV_UpdateGametype(player_t& pl)
 {
 	if (G_IsHordeMode())
 	{
-		static hordeInfo_t lastInfo = {HS_STARTING, -1, -1, -1, 0, -1, -1, -1, -1, -1};
-		static int ticsent;
+		thread_local static hordeInfo_t lastInfo{};
+		thread_local static int         ticsent { -1 };
 
 		// If the hordeinfo has changed since last tic, save and send it.
 		if (ticsent != ::gametic)
 		{
 			const hordeInfo_t info = P_HordeInfo();
-			if (!info.equals(lastInfo))
+			if (info != lastInfo)
 			{
 				memcpy(&lastInfo, &info, sizeof(hordeInfo_t));
 				ticsent = ::gametic;
