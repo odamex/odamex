@@ -627,7 +627,7 @@ void CL_StepTics(unsigned int count)
 
 		G_Ticker ();
 		
-		if (!paused && !netdemo.isPaused())
+		if (!netdemo.isPaused())
 			gametic++;
 
 		if (netdemo.isPlaying() && !netdemo.isPaused())
