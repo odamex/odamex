@@ -207,7 +207,7 @@ void P_SetPspriteRef(player_t& player, pspdef_t& psp, int32_t stnum)
 			if (!player.spectator && player.mo != NULL)
 			{
 				// [CMB] calculate psprnum here using the present psp and length of psprites
-				player.psprnum = &psp - player.psprites;
+				player.psprnum = &psp - &player.psprites[0];
 				psp.state->action(player.mo);
 			}
 

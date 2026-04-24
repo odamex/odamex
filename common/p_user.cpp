@@ -1405,7 +1405,7 @@ player_t::player_t() :
 	attacker = AActor::AActorPtr();
 
 	pspdef_t zeropsp = { NULL, 0, 0, 0 };
-	ArrayInit(psprites, zeropsp);
+	psprites.fill(zeropsp);
 	ArrayInit(oldvelocity, 0);
 	ArrayInit(prefcolor, 0);
 

@@ -1423,14 +1423,14 @@ typedef long statearg_t;
 
 struct state_t
 {
-	int32_t statenum  = -1;
-	int32_t	sprite    = SPR_TNT1;
-	int	frame         = 0;
-	int	tics          = -1;
-	actionf_p1 action = nullptr;
-	int32_t	nextstate = -1;
-	int	misc1         = 0;
-	int misc2         = 0;
+	statenum_t statenum  = static_cast<statenum_t>(-1);
+	int32_t    sprite    = SPR_TNT1;
+	int        frame     = 0;
+	int        tics      = -1;
+	actionf_p1 action    = nullptr;
+	statenum_t nextstate = static_cast<statenum_t>(-1);
+	int        misc1     = 0;
+	int        misc2     = 0;
 
 	// MBF21
 	statearg_t args[MAXSTATEARGS] = { 0 }; // [XA] mbf21 args

@@ -1359,8 +1359,8 @@ static void PatchFrame(int frameNum, DehScanner& scanner)
 	if(states_it == states.end())
     {
 		info = &states.insert(state_t{}, frameNum);
-		info->statenum = frameNum;
-		info->nextstate = frameNum;
+		info->statenum  = static_cast<statenum_t>(frameNum);
+		info->nextstate = static_cast<statenum_t>(frameNum);
 	}
 	else
 	{

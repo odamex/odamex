@@ -149,8 +149,8 @@ public:
     // bounded/scaled total momentum.
 	fixed_t		bob;
 
-    // This is only used between levels,
-    // mo->health is used during levels.
+	// Player health is kept in sync with mo->health -
+	// health bonuses and damage are applied to both.
 	int			health;
 	int			armorpoints;
     // Armor type is 0-2.
@@ -220,8 +220,8 @@ public:
 
 	int			xviewshift;				// [RH] view shift (for earthquakes)
 
-	int         psprnum;
-	pspdef_t	psprites[NUMPSPRITES];	// Overlay view sprites (gun, etc).
+	int                               psprnum;
+	std::array<pspdef_t, NUMPSPRITES> psprites;     // Overlay view sprites (gun, etc).
 
 	int			jumpTics;				// delay the next jump for a moment
 

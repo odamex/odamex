@@ -709,26 +709,26 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 //
 // R_DrawPSprite
 //
-void R_DrawPSprite(pspdef_t* psp, unsigned flags)
+void R_DrawPSprite(const pspdef_t& psp, unsigned flags)
 {
 	vissprite_t 		avis;
 
 	// decide which patch to use
-	auto it = sprites.find(psp->state->sprite);
+	auto it = sprites.find(psp.state->sprite);
 #ifdef RANGECHECK
 	if (it == sprites.end()) {
-		DPrintFmt("R_DrawPSprite: invalid sprite number {}\n", psp->state->sprite);
+		DPrintFmt("R_DrawPSprite: invalid sprite number {}\n", psp.state->sprite);
 		return;
 	}
 #endif
 	const spritedef_t* sprdef = &it->second;
 #ifdef RANGECHECK
-	if ( (psp->state->frame & FF_FRAMEMASK) >= sprdef->numframes) {
-		DPrintFmt("R_DrawPSprite: invalid sprite frame {} : {}\n", psp->state->sprite, psp->state->frame);
+	if ( (psp.state->frame & FF_FRAMEMASK) >= sprdef->numframes) {
+		DPrintFmt("R_DrawPSprite: invalid sprite frame {} : {}\n", psp.state->sprite, psp.state->frame);
 		return;
 	}
 #endif
-	const spriteframe_t* sprframe = &sprdef->spriteframes[ psp->state->frame & FF_FRAMEMASK ];
+	const spriteframe_t* sprframe = &sprdef->spriteframes[ psp.state->frame & FF_FRAMEMASK ];
 
 	const int32_t lump = sprframe->lump[0];
 	const bool flip = sprframe->flip[0];
@@ -800,7 +800,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 		// fixed color
 		vis->colormap = fixedcolormap;
 	}
-	else if (psp->state->frame & FF_FULLBRIGHT)
+	else if (psp.state->frame & FF_FULLBRIGHT)
 	{
 		// full bright
 		vis->colormap = basecolormap;	// [RH] use basecolormap
@@ -878,19 +878,15 @@ void R_DrawPlayerSprites()
 	mceilingclip = negonearray;
 
 	{
-		int i;
-		pspdef_t* psp;
 		int centerhack = centery;
 
 		centery = (viewheight >> 1) + 1;	// Ch0wW : Fix for the weapon sprite's offset.
 		centeryfrac = centery << FRACBITS;
 
 		// add all active psprites
-		for (i=0, psp=camera->player->psprites;
-			 i<NUMPSPRITES;
-			 i++,psp++)
+		for (const auto& psp : camera->player->psprites)
 		{
-			if (psp->state)
+			if (psp.state)
 				R_DrawPSprite (psp, 0);
 		}
 
