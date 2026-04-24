@@ -99,11 +99,12 @@ static void FillPsprite(odaproto::PspriteState& io_msg, const pspdef_t& psprite)
 
 static void FillPlayer(odaproto::Player& io_msg, const player_t& player)
 {
-	io_msg.set_playerid(player.id);
-	io_msg.set_health(player.health);
-	io_msg.set_armortype(player.armortype);
-	io_msg.set_armorpoints(player.armorpoints);
-	io_msg.set_lives(player.lives);
+	io_msg.set_client_tic   (player.tic);
+	io_msg.set_playerid     (player.id);
+	io_msg.set_health       (player.health);
+	io_msg.set_armortype    (player.armortype);
+	io_msg.set_armorpoints  (player.armorpoints);
+	io_msg.set_lives        (player.lives);
 
 	FillInventory(*io_msg.mutable_inventory(), player);
 
