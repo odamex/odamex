@@ -199,9 +199,8 @@ odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player, const int tic)
 	odaproto::svc::MovePlayer msg;
 
 	odaproto::Actor* act = msg.mutable_actor();
-	odaproto::Player* pl = msg.mutable_player();
 
-	pl->set_playerid(player.id); // player number
+	msg.set_playerid(player.id); // player number
 
 	// [SL] 2011-09-14 - the most recently processed ticcmd from the
 	// client we're sending this message to.
@@ -231,13 +230,13 @@ odaproto::svc::MovePlayer SVC_MovePlayer(const player_t& player, const int tic)
 	mom->set_z(player.mo->momz);
 
 	// Send all available powers information to show the clients
-	pl->mutable_powers()->Resize(NUMPOWERS + 1, 0);
-	pl->set_powers(pw_invulnerability, player.powers[pw_invulnerability]);
-	pl->set_powers(pw_strength, player.powers[pw_strength] > 0 ? 1 : 0);
-	pl->set_powers(pw_invisibility, player.powers[pw_invisibility]);
-	pl->set_powers(pw_ironfeet, player.powers[pw_ironfeet]);
-	pl->set_powers(pw_allmap, player.powers[pw_allmap]);
-	pl->set_powers(pw_infrared, player.powers[pw_infrared]);
+	msg.mutable_powers()->Resize(NUMPOWERS + 1, 0);
+	msg.set_powers(pw_invulnerability,  player.powers[pw_invulnerability]);
+	msg.set_powers(pw_strength,         player.powers[pw_strength] > 0 ? 1 : 0);
+	msg.set_powers(pw_invisibility,     player.powers[pw_invisibility]);
+	msg.set_powers(pw_ironfeet,         player.powers[pw_ironfeet]);
+	msg.set_powers(pw_allmap,           player.powers[pw_allmap]);
+	msg.set_powers(pw_infrared,         player.powers[pw_infrared]);
 
 	return msg;
 }

@@ -28,10 +28,11 @@ message PlayerInfo
 // svc_moveplayer
 message MovePlayer
 {
-	int32 tic = 1;
-	int32 frame = 2;
-	Player player = 3;
-	Actor actor = 4;
+	int32           tic      = 1;
+	int32           frame    = 2;
+	uint32          playerid = 3;
+	repeated int32  powers   = 4;
+	Actor           actor    = 5;
 }
 
 // svc_updatelocalplayer

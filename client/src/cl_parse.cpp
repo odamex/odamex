@@ -320,7 +320,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
  */
 static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 {
-	byte who = msg->player().playerid();
+	byte who = msg->playerid();
 	player_t& p = idplayer(who);
 
 	fixed_t x = msg->actor().pos().x();
@@ -338,9 +338,9 @@ static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 	// Restore the players' powers
 	for (int i = 0; i < NUMPOWERS; i++)
 	{
-		if (i < msg->player().powers_size())
+		if (i < msg->powers_size())
 		{
-			p.powers[i] = msg->player().powers(i);
+			p.powers[i] = msg->powers(i);
 		}
 		else
 		{
