@@ -20,10 +20,21 @@ message Disconnect
 }
 
 // svc_playerinfo
+//
+// The server sends PlayerInfo directly to players to dictate their state.
 message PlayerInfo
 {
 	Player player = 1;
 }
+
+// svc_playerstate
+//
+// The server sends PlayerState to inform players about other players' state.
+message PlayerState
+{
+	Player player = 1;
+}
+
 
 // svc_moveplayer
 message MovePlayer
@@ -553,12 +564,6 @@ message RailTrail
 {
 	Vec3 start = 1;
 	Vec3 end = 2;
-}
-
-// svc_playerstate
-message PlayerState
-{
-	Player player = 1;
 }
 
 // svc_levelstate
