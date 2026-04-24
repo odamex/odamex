@@ -23,6 +23,7 @@
 #include "m_consolecommandstream.h"
 
 #include <condition_variable>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -40,6 +41,10 @@
 //  leaves the mutex in a locked state, leading to undefined behavior when
 //  destructed.  On Debug builds, this raises an Abort signal.  By switching to
 //  SRW Locks, which don't even have a destructor, we can destruct at any time.
+
+#elif defined UNIX
+
+#include <signal.h>
 
 #endif
 
@@ -143,6 +148,18 @@ namespace {
 #ifdef _WIN32
 				InitializeSRWLock(& m_srwLock);
 				InitializeConditionVariable(& m_commandIsReleasedCondition);
+#elif defined UNIX
+				// In the event that we get pushed into the background of a terminal, yet still
+				// try to read from std::cin / stdin, and someone actually supplies input, we
+				// get a SIGTTIN, which causes the process to suspend because STOP is the default
+				// action for that signal.
+				//
+				// If we do get launched in or pushed to the background, we want to avoid being
+				// suspended, so we tell the process to ignore the signal.
+				//
+				// Please note that it means that our read operation will error out, in which
+				// case we have to let the thread exit because we can't just simply re-open cin.
+				signal(SIGTTIN, SIG_IGN);
 #endif
 				m_thread = std::thread(&CommandStreamReader::ThreadMain, this);
 			}
@@ -178,7 +195,12 @@ namespace {
 			void ThreadMain()
 			{
 				AcquireSRWLockExclusive(& m_srwLock);
-				while(true)
+
+				// Please note that we only allow the file to be reopened if we've been
+				// directed to read a fifo / named pipe.  We don't want to reopen text files
+				// or any other kind of file, and certainly not std::cin if it went bad.
+				for (bool reopenIsAllowed = true; reopenIsAllowed; reopenIsAllowed = not s_streamFilename.empty()
+                                                                                     and std::filesystem::is_fifo(s_streamFilename))
 				{
 					std::unique_ptr<std::ifstream> filePtr { s_streamFilename.empty() ? nullptr : std::make_unique<std::ifstream>(s_streamFilename) };
 					std::istream&                  streamRef = filePtr ? *filePtr : std::cin;
@@ -200,7 +222,12 @@ namespace {
 			void ThreadMain()
 			{
 				std::unique_lock lock(m_mutex);
-				while(true)
+
+				// Please note that we only allow the file to be reopened if we've been
+				// directed to read a fifo / named pipe.  We don't want to reopen text files
+				// or any other kind of file, and certainly not std::cin if it went bad.
+				for (bool reopenIsAllowed = true; reopenIsAllowed; reopenIsAllowed = not s_streamFilename.empty()
+                                                                                     and std::filesystem::is_fifo(s_streamFilename))
 				{
 					std::unique_ptr<std::ifstream> filePtr { s_streamFilename.empty() ? nullptr : std::make_unique<std::ifstream>(s_streamFilename) };
 					std::istream&                  streamRef = filePtr ? *filePtr : std::cin;
