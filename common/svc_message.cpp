@@ -676,12 +676,12 @@ odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActo
 {
 	odaproto::svc::DamagePlayer msg;
 
-	msg.set_netid(player.mo->netid);
-	msg.set_inflictorid(inflictor ? inflictor->netid : 0);
-	msg.set_health_damage(health);
-	msg.set_armor_damage(armor);
-	msg.mutable_player()->set_health(player.health);
-	msg.mutable_player()->set_armorpoints(player.armorpoints);
+	msg.set_netid             (player.mo->netid);
+	msg.set_inflictorid       (inflictor ? inflictor->netid : 0);
+	msg.set_health_damage     (health);
+	msg.set_armor_damage      (armor);
+	msg.set_player_health     (player.health);
+	msg.set_player_armorpoints(player.armorpoints);
 
 	return msg;
 }
