@@ -136,31 +136,27 @@ odaproto::clc::NetdemoCap CLC_NetdemoCap(const player_t& player, const odaproto:
 {
 	odaproto::clc::NetdemoCap msg;
 
-	odaproto::Actor* act = msg.mutable_actor();
-	odaproto::Player* play = msg.mutable_player();
-
-	const AActor* mo = player.mo;
-
 	inputMessage.SerializeToString(msg.mutable_packed_player_input());
 
-	act->set_waterlevel(mo->waterlevel);
-	act->mutable_pos()->set_x(mo->x);
-	act->mutable_pos()->set_y(mo->y);
-	act->mutable_pos()->set_z(mo->z);
-	act->mutable_mom()->set_x(mo->momx);
-	act->mutable_mom()->set_y(mo->momy);
-	act->mutable_mom()->set_z(mo->momz);
-	act->set_angle(mo->angle);
-	act->set_pitch(mo->pitch);
-	act->set_reactiontime(mo->reactiontime);
+	odaproto::Actor* act = msg.mutable_actor();
 
-	play->set_viewz(player.viewz);
-	play->set_viewheight(player.viewheight);
-	play->set_deltaviewheight(player.deltaviewheight);
-	play->set_jumptics(player.jumpTics);
+	act->set_waterlevel         (player.mo->waterlevel);
+	act->mutable_pos()->set_x   (player.mo->x);
+	act->mutable_pos()->set_y   (player.mo->y);
+	act->mutable_pos()->set_z   (player.mo->z);
+	act->mutable_mom()->set_x   (player.mo->momx);
+	act->mutable_mom()->set_y   (player.mo->momy);
+	act->mutable_mom()->set_z   (player.mo->momz);
+	act->set_angle              (player.mo->angle);
+	act->set_pitch              (player.mo->pitch);
+	act->set_reactiontime       (player.mo->reactiontime);
 
-	play->mutable_inventory()->set_readyweapon(player.readyweapon);
-	play->mutable_inventory()->set_pendingweapon(player.pendingweapon);
+	msg.set_viewz           (player.viewz);
+	msg.set_viewheight      (player.viewheight);
+	msg.set_deltaviewheight (player.deltaviewheight);
+	msg.set_jumptics        (player.jumpTics);
+	msg.set_readyweapon     (player.readyweapon);
+	msg.set_pendingweapon   (player.pendingweapon);
 
 	return msg;
 }

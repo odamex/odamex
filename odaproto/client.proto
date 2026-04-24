@@ -29,10 +29,13 @@ message PlayerInput
 // clc_netdemocap
 message NetdemoCap
 {
-	// Reserve deleted fields.
-	reserved 1;    // The byte-packed ticcmd.  Phased out for packed PlayerInput.
+	bytes    packed_player_input = 1;
+	Actor    actor               = 2;
+	sfixed32 viewz               = 3;   // Here starts a subset of player fields - the only ones that
+	sfixed32 viewheight          = 4;   // are relevant for NetdemoCap, including a few unique ones that
+	sfixed32 deltaviewheight     = 5;   // only NetdemoCap cares about.
+	int32    jumptics            = 6;
+	int32    pendingweapon       = 7;
+	int32    readyweapon         = 8;
 
-	Player player              = 2;
-	Actor  actor               = 3;
-	bytes  packed_player_input = 4;
 }

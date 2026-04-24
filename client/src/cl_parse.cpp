@@ -3117,56 +3117,36 @@ static void CL_PlayerWeaponSelection(const odaproto::svc::PlayerWeaponSelection*
 
 static void CL_NetdemoCap(const odaproto::clc::NetdemoCap* msg)
 {
-	player_t* clientPlayer = &consoleplayer();
-	fixed_t x, y, z;
-	fixed_t momx, momy, momz;
-	fixed_t pitch, viewheight, deltaviewheight;
-	angle_t angle;
-	int jumpTics, reactiontime;
-	byte waterlevel;
+	odaproto::clc::PlayerInput& currentInputMessage = localcmds[gametic % MAXSAVETICS];
+	currentInputMessage.ParseFromString(msg->packed_player_input());
+
+	player_t& clientPlayer = consoleplayer();
 
 	// Note clientPlayer->viewz should not be set with the value from the demo here
 	// it is an aggregate value and will be set correctly later
 
-	odaproto::clc::PlayerInput& currentInputMessage = localcmds[gametic % MAXSAVETICS];
-	currentInputMessage.ParseFromString(msg->packed_player_input());
-
 	// We do not assign the tic here - that must come from the UpdateLocalPlayer message
 	// as part of the overall prediction algorithm.
-	CLC_UnpackPlayerInputMessageToPlayer(currentInputMessage, *clientPlayer);
+	CLC_UnpackPlayerInputMessageToPlayer(currentInputMessage, clientPlayer);
 
-	waterlevel = msg->actor().waterlevel();
-	x = msg->actor().pos().x();
-	y = msg->actor().pos().y();
-	z = msg->actor().pos().z();
-	momx = msg->actor().mom().x();
-	momy = msg->actor().mom().y();
-	momz = msg->actor().mom().z();
-	angle = msg->actor().angle();
-	pitch = msg->actor().pitch();
-	viewheight = msg->player().viewheight();
-	deltaviewheight = msg->player().deltaviewheight();
-	jumpTics = msg->player().jumptics();
-	reactiontime = msg->actor().reactiontime();
-	clientPlayer->readyweapon = static_cast<weapontype_t>(msg->player().inventory().readyweapon());
-	clientPlayer->pendingweapon =
-	    static_cast<weapontype_t>(msg->player().inventory().pendingweapon());
+	clientPlayer.readyweapon   = static_cast<weapontype_t>(msg->readyweapon());
+	clientPlayer.pendingweapon = static_cast<weapontype_t>(msg->pendingweapon());
 
-	if (clientPlayer->mo)
+	if (clientPlayer.mo)
 	{
-		clientPlayer->mo->x = x;
-		clientPlayer->mo->y = y;
-		clientPlayer->mo->z = z;
-		clientPlayer->mo->momx = momx;
-		clientPlayer->mo->momy = momy;
-		clientPlayer->mo->momz = momz;
-		clientPlayer->mo->angle = angle;
-		clientPlayer->mo->pitch = pitch;
-		clientPlayer->viewheight = viewheight;
-		clientPlayer->deltaviewheight = deltaviewheight;
-		clientPlayer->jumpTics = jumpTics;
-		clientPlayer->mo->reactiontime = reactiontime;
-		clientPlayer->mo->waterlevel = waterlevel;
+		clientPlayer.mo->x             = msg->actor().pos().x();
+		clientPlayer.mo->y             = msg->actor().pos().y();
+		clientPlayer.mo->z             = msg->actor().pos().z();
+		clientPlayer.mo->momx          = msg->actor().mom().x();
+		clientPlayer.mo->momy          = msg->actor().mom().y();
+		clientPlayer.mo->momz          = msg->actor().mom().z();
+		clientPlayer.mo->angle         = msg->actor().angle();
+		clientPlayer.mo->pitch         = msg->actor().pitch();
+		clientPlayer.viewheight        = msg->viewheight();
+		clientPlayer.deltaviewheight   = msg->deltaviewheight();
+		clientPlayer.jumpTics          = msg->jumptics();
+		clientPlayer.mo->reactiontime  = msg->actor().reactiontime();
+		clientPlayer.mo->waterlevel    = msg->actor().waterlevel();;
 	}
 }
 
