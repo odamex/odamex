@@ -3365,12 +3365,19 @@ void SV_SendPackets()
 	}
 }
 
-void SV_SendPlayerStateUpdate(client_t *client, player_t *player)
+void SV_SendPlayerStateUpdate(client_t* client, player_t* player)
 {
 	if (!client || !player || !player->mo)
 		return;
 
-	MSG_WriteSVC(client->messenger.HighBuf(), SVC_PlayerState(*player));
+	if (client != &player->client)
+	{
+		MSG_WriteSVC(client->messenger.HighBuf(), SVC_PlayerState(*player));
+	}
+	else
+	{
+		MSG_WriteSVC(client->messenger.ReliableBuf(), SVC_PlayerInfo(*player));
+	}
 }
 
 void SV_SpyPlayer(player_t &viewer)
