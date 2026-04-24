@@ -280,7 +280,6 @@ enum svc_t
 	svc_spree,
 	svc_spreebreaker,
 	svc_noisealert,
-	svc_playerinventory,
 	svc_playerammo,
 	svc_playermaxammo,
 	svc_playerweaponowned,

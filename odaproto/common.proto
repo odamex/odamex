@@ -50,15 +50,6 @@ message Actor
 	fixed32 flags2 = 19;
 }
 
-message InventoryState
-{
-	int32 pendingweapon     = 1;
-	int32 readyweapon       = 2;
-	uint32 weaponowned      = 3;
-	repeated int32 ammo     = 4;
-	repeated int32 maxammo  = 5;
-}
-
 message PspriteState
 {
 	int32 statenum = 1;
@@ -86,7 +77,6 @@ message Player
 	repeated int32  maxammo         = 15;
 
 	repeated PspriteState   psprites    = 16;
-	InventoryState          inventory   = 17;
 }
 
 message Sector

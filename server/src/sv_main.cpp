@@ -3365,14 +3365,14 @@ void SV_SendPackets()
 	}
 }
 
-void SV_SendPlayerStateUpdate(client_t* client, player_t* player)
+void SV_SendPlayerStateUpdate(client_t* client, player_t* player, int destinationClientTicOfValidity)
 {
 	if (!client || !player || !player->mo)
 		return;
 
 	if (client != &player->client)
 	{
-		MSG_WriteSVC(client->messenger.HighBuf(), SVC_PlayerState(*player));
+		MSG_WriteSVC(client->messenger.HighBuf(), SVC_PlayerState(*player, destinationClientTicOfValidity));
 	}
 	else
 	{
@@ -3389,7 +3389,7 @@ void SV_SpyPlayer(player_t &viewer)
 		return;
 
 	viewer.spying = id;
-	SV_SendPlayerStateUpdate(&viewer.client, &other);
+	SV_SendPlayerStateUpdate(&viewer.client, &other, viewer.tic);
 }
 
 static void SV_SortMobjsForPlayer(player_t& player)
@@ -3528,7 +3528,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	player_t& target = idplayer(player.spying);
 	if (validplayer(target) && &player != &target && P_CanSpy(player, target))
 	{
-		SV_SendPlayerStateUpdate(&(player.client), &target);
+		SV_SendPlayerStateUpdate(&(player.client), &target, player.tic);
 	}
 
 	SV_UpdateConsolePlayer(player);
@@ -3619,11 +3619,6 @@ void SV_PlayerTriedToCheat(player_t &player)
 	SV_DropClient(player);
 }
 
-void SV_SendPlayerInventory(uint32_t clientTic, player_t& player)
-{
-	MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerInventory(clientTic, player));
-}
-
 //
 // SV_CalculateNumTiccmds
 //
@@ -3708,6 +3703,18 @@ void SV_ProcessPlayerCmd(player_t &player)
 	for (int i = 0; i < num_cmds && !player.cmdqueue.empty(); i++)
 	{
 		odaproto::clc::PlayerInput& netcmd = player.cmdqueue.front();
+
+		// Please note that we have a safety check in SV_CalculateNumTiccmds to ensure that
+		// if we're processing more than one command in this loop, the inventory check will
+		// be the first one.
+		//
+		// It's very important that we send the inventory / rollback info before we do any
+		// of the player's thinking this tic.
+		if (netcmd.has_inventory_check_tic())
+		{
+			SV_SendPlayerInfo(player);
+		}
+
 		player.cmd = ticcmd_t();
 		player.tic = netcmd.tic();
 
@@ -3732,14 +3739,6 @@ void SV_ProcessPlayerCmd(player_t &player)
 		#endif
 
 		CLC_UnpackPlayerInputMessageToPlayer(netcmd, player);
-
-		// Please note that we have a safety check in SV_CalculateNumTiccmds to ensure that
-		// if we're processing more than one command in this loop, the inventory check will
-		// be the first one.
-		if (netcmd.has_inventory_check_tic())
-		{
-			SV_SendPlayerInventory(netcmd.inventory_check_tic(), player);
-		}
 
 		if (!sv_freelook)
 			player.mo->pitch = 0;
@@ -4290,7 +4289,7 @@ void SV_Cheat(player_t &player)
 			for (Players::iterator it = players.begin(); it != players.end(); ++it)
 			{
 				client_t* cl = &it->client;
-				SV_SendPlayerStateUpdate(cl, &player);
+				SV_SendPlayerStateUpdate(cl, &player, it->tic);
 			}
 		}
 
@@ -4307,7 +4306,7 @@ void SV_Cheat(player_t &player)
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
 			client_t* cl = &it->client;
-			SV_SendPlayerStateUpdate(cl, &player);
+			SV_SendPlayerStateUpdate(cl, &player, it->tic);
 		}
 
 	}
@@ -5139,10 +5138,9 @@ void SV_ExplodeMissile(const AActor *mo)
 //
 // Sends a player their current inventory
 //
-void SV_SendPlayerInfo(player_t &player)
+void SV_SendPlayerInfo(player_t& player)
 {
-	client_t *cl = &player.client;
-	MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_PlayerInfo(player));
+	MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerInfo(player));
 }
 
 //

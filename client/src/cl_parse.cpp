@@ -211,7 +211,7 @@ static void CL_Disconnect(const odaproto::svc::Disconnect* msg)
 	CL_QuitNetGame(NQ_SERVER_DROP);
 }
 
-static void DirectUnpackInventory(const odaproto::InventoryState& inventory, player_t& player)
+static void DirectUnpackInventory(const odaproto::Player& inventory, player_t& player)
 {
 	const uint32_t weaponowned = inventory.weaponowned();
 	UnpackBoolArray(player.weaponowned, weaponowned);
@@ -245,8 +245,30 @@ static void DirectUnpackInventory(const odaproto::InventoryState& inventory, pla
 	{
 		player.pendingweapon = wp_nochange;
 	}
-
 }
+
+#if 0
+	PlayerItemDataType inventoryResponse;
+
+	const size_t ammoElementCount = std::min(inventoryResponse.ammo.size(), static_cast<size_t>(msg->inventory().ammo_size()));
+
+	std::copy(msg->inventory().ammo().begin(),
+	          msg->inventory().ammo().begin() + ammoElementCount,
+	          inventoryResponse.ammo.begin());
+
+	std::copy(msg->inventory().maxammo().begin(),
+	          msg->inventory().maxammo().begin() + ammoElementCount,
+	          inventoryResponse.maxammo.begin());
+
+	const uint32_t weaponowned = msg->inventory().weaponowned();
+	UnpackBoolArray(inventoryResponse.weaponowned, weaponowned);
+
+	inventoryResponse.readyweapon   = static_cast<weapontype_t>(msg->inventory().readyweapon());
+	inventoryResponse.pendingweapon = static_cast<weapontype_t>(msg->inventory().pendingweapon());
+
+	CL_ResolveInventory(msg->client_tic(), inventoryResponse);
+}
+#endif
 
 /**
  * @brief svc_playerinfo - Your personal arsenal, as supplied by the server.
@@ -255,7 +277,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 {
 	player_t& p = consoleplayer();
 
-    DirectUnpackInventory(msg->player().inventory(), p);
+    DirectUnpackInventory(msg->player(), p);
 
 	uint32_t cards = msg->player().cards();
 	UnpackBoolArray(p.cards, cards);
@@ -2337,7 +2359,7 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	int armortype = msg->player().armortype();
 	int armorpoints = msg->player().armorpoints();
 	int lives = msg->player().lives();
-	weapontype_t weap = static_cast<weapontype_t>(msg->player().inventory().readyweapon());
+	weapontype_t weap = static_cast<weapontype_t>(msg->player().readyweapon());
 
 	byte cardByte = msg->player().cards();
 	std::bitset<6> cardBits(cardByte);
@@ -2345,9 +2367,9 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	int ammo[NUMAMMO];
 	for (int i = 0; i < NUMAMMO; i++)
 	{
-		if (i < msg->player().inventory().ammo_size())
+		if (i < msg->player().ammo_size())
 		{
-			ammo[i] = msg->player().inventory().ammo().Get(i);
+			ammo[i] = msg->player().ammo().Get(i);
 		}
 		else
 		{
@@ -3061,29 +3083,6 @@ static void CL_NoiseAlert(const odaproto::svc::NoiseAlert* msg)
 	}
 }
 
-static void CL_PlayerInventory(const odaproto::svc::PlayerInventory* msg)
-{
-	PlayerItemDataType inventoryResponse;
-
-	const size_t ammoElementCount = std::min(inventoryResponse.ammo.size(), static_cast<size_t>(msg->inventory().ammo_size()));
-
-	std::copy(msg->inventory().ammo().begin(),
-	          msg->inventory().ammo().begin() + ammoElementCount,
-	          inventoryResponse.ammo.begin());
-
-	std::copy(msg->inventory().maxammo().begin(),
-	          msg->inventory().maxammo().begin() + ammoElementCount,
-	          inventoryResponse.maxammo.begin());
-
-	const uint32_t weaponowned = msg->inventory().weaponowned();
-	UnpackBoolArray(inventoryResponse.weaponowned, weaponowned);
-
-	inventoryResponse.readyweapon   = static_cast<weapontype_t>(msg->inventory().readyweapon());
-	inventoryResponse.pendingweapon = static_cast<weapontype_t>(msg->inventory().pendingweapon());
-
-	CL_ResolveInventory(msg->client_tic(), inventoryResponse);
-}
-
 static void CL_PlayerAmmo(const odaproto::svc::PlayerAmmo* msg)
 {
     CL_ResolveAmmoHistory(msg->player_tic(),
@@ -3330,7 +3329,6 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_spree, CL_Spree, odaproto::svc::Spree);
 		SV_MSG(svc_spreebreaker, CL_SpreeBreaker, odaproto::svc::SpreeBreaker);
 		SV_MSG(svc_noisealert, CL_NoiseAlert, odaproto::svc::NoiseAlert);
-		SV_MSG(svc_playerinventory, CL_PlayerInventory, odaproto::svc::PlayerInventory);
 		SV_MSG(svc_playerammo, CL_PlayerAmmo, odaproto::svc::PlayerAmmo);
 		SV_MSG(svc_playermaxammo, CL_PlayerMaxAmmo, odaproto::svc::PlayerMaxAmmo);
 		SV_MSG(svc_playerweaponowned, CL_PlayerWeaponOwned, odaproto::svc::PlayerWeaponOwned);

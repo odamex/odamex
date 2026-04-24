@@ -118,7 +118,7 @@ odaproto::svc::MovingSectorPlat     SVC_MovingSectorPlat(const sector_t& sector,
 odaproto::svc::PlaySound SVC_PlaySound(const PlaySoundType& type, int channel, int sfx_id,
                                        float volume, int attenuation);
 odaproto::svc::TouchSpecial SVC_TouchSpecial(const player_t& player, const AActor& mo);
-odaproto::svc::PlayerState SVC_PlayerState(const player_t& player);
+odaproto::svc::PlayerState SVC_PlayerState(const player_t& player, int destinationClientTicOfValidity);
 odaproto::svc::LevelState SVC_LevelState(const SerializedLevelState& sls);
 odaproto::svc::PlayerQueuePos SVC_PlayerQueuePos(const player_t& source);
 odaproto::svc::ForceTeam SVC_ForceTeam(team_t team);
@@ -159,7 +159,6 @@ odaproto::svc::HordeInfo SVC_HordeInfo(const hordeInfo_t& horde);
 odaproto::svc::Spree SVC_Spree(const SpreeRecord_t& spree);
 odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, const int level, const SpreeBreakerType breakerType);
 odaproto::svc::NoiseAlert SVC_NoiseAlert(const sector_t& sector);
-odaproto::svc::PlayerInventory SVC_PlayerInventory(const uint32_t clientTic, const player_t& player);
 odaproto::svc::PlayerAmmo SVC_PlayerAmmo(const player_t& player, const size_t index);
 odaproto::svc::PlayerMaxAmmo SVC_PlayerMaxAmmo(const player_t& player, const size_t index);
 odaproto::svc::PlayerWeaponOwned SVC_PlayerWeaponOwned(const player_t& player, const size_t index);

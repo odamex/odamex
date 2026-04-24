@@ -120,7 +120,6 @@ static void InitMap()
 	MapProto(svc_spree, odaproto::svc::Spree::descriptor());
 	MapProto(svc_spreebreaker, odaproto::svc::SpreeBreaker::descriptor());
 	MapProto(svc_noisealert, odaproto::svc::NoiseAlert::descriptor());
-	MapProto(svc_playerinventory, odaproto::svc::PlayerInventory::descriptor());
 
 	MapProto(svc_playerammo,            odaproto::svc::PlayerAmmo::descriptor());
 	MapProto(svc_playermaxammo,         odaproto::svc::PlayerMaxAmmo::descriptor());
