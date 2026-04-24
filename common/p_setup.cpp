@@ -472,9 +472,9 @@ void P_LoadNodes(int lump)
 
 	numnodes = (W_LumpLength(lump) - headerSize) / sizeof(MapNodeType);
 	nodes = static_cast<node_t*>(Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL, 0));
-	MapNodeType* data = W_CacheLumpNum<MapNodeType>(lump, PU_STATIC);
+	byte* data = reinterpret_cast<byte*>(W_CacheLumpNum<MapNodeType>(lump, PU_STATIC));
 
-	const MapNodeType* mn = data;
+	const MapNodeType* mn = reinterpret_cast<const MapNodeType*>(data + headerSize);
 	node_t* no = nodes;
 
 	for (int i = 0; i < numnodes; i++, no++, mn++)
