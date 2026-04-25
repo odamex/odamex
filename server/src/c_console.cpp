@@ -56,8 +56,6 @@ struct History
 // CmdLine[259]= offset from beginning of cmdline to display
 //static byte CmdLine[260];
 
-static byte printxormask;
-
 static struct History *HistTail = NULL;
 
 #define PRINTLEVELS 5
