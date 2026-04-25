@@ -176,7 +176,7 @@ int __cdecl main(int argc, char *argv[])
 		{
 			// we might just be on a version of windows before support was added, try setting mode back
 			if (!SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), originalOutputMode))
-				throw CDoomError("SetConsoleMode (OUTPUT) failed!");
+				throw CDoomError("SetConsoleMode (output) failed!");
 		}
 
 		// Fixes icon not showing in titlebar and alt-tab menu under windows 7
