@@ -157,6 +157,7 @@ int __cdecl main(int argc, char *argv[])
 
 		consoleMode &= ~ENABLE_QUICK_EDIT_MODE;
 		consoleMode |= ENABLE_EXTENDED_FLAGS;
+		consoleMode |= ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 
 		if (!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), consoleMode))
 			throw CDoomError("SetConsoleMode failed!\n");
