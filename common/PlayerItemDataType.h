@@ -5,38 +5,42 @@
 #include "odamex.h"
 #include "d_player.h"
 
-    struct PspriteStateType
-    {
-        statenum_t  statenum{-1};
-        int         tics    {-1};
-        //fixed_t     sx      { 0};
-        //fixed_t     sy      { 0};
+struct PspriteStateType
+{
+	statenum_t  statenum{-1};
+	int         tics    {-1};
+	//fixed_t     sx      { 0};
+	//fixed_t     sy      { 0};
 
-        bool operator==(const PspriteStateType&) const = default;
+	bool operator==(const PspriteStateType&) const = default;
 
-        static PspriteStateType FromPsprite(const pspdef_t& pspdef)
-        {
-            PspriteStateType result;
+	PspriteStateType& operator=(const pspdef_t& pspdef)
+	{
+		statenum = pspdef.state ? pspdef.state->statenum : static_cast<statenum_t>(-1);
+		tics     = pspdef.tics;
+		return *this;
+	}
 
-            result.statenum = pspdef.state ? pspdef.state->statenum : static_cast<statenum_t>(-1);
-            result.tics     = pspdef.tics;
+	template <typename StreamType>
+	friend StreamType& operator<<(StreamType& io_stream, const PspriteStateType& i_thisRef)
+	{
+		io_stream
+		    << i_thisRef.statenum
+		    << i_thisRef.tics
+		    ;
+		return io_stream;
+	}
 
-            return result;
-        }
-
-        template <size_t N>
-        static std::array<PspriteStateType, N> FromPlayer(const std::array<pspdef_t, N> psprites)
-        {
-            std::array<PspriteStateType, N> results;
-
-            for (size_t i = 0; i < N; ++i)
-            {
-                results[i].statenum = psprites[i].state ? psprites[i].state->statenum : static_cast<statenum_t>(-1);
-                results[i].tics     = psprites[i].tics;
-            }
-            return results;
-        }
-    };
+	template <typename StreamType>
+	friend StreamType& operator>>(StreamType& io_stream, PspriteStateType& o_thisRef)
+	{
+		io_stream
+		    >> o_thisRef.statenum
+		    >> o_thisRef.tics
+		    ;
+		return io_stream;
+	}
+};
 
 /// This data type represents the states whose history we care to track and reconcile.
 struct PlayerItemDataType
@@ -55,7 +59,7 @@ struct PlayerItemDataType
 	bool                            backpack;
 	uint32_t                        cheats;
 
-    std::array<PspriteStateType, NUMPSPRITES> psprites;
+	std::array<PspriteStateType, NUMPSPRITES> psprites;
 
 	bool operator==(const PlayerItemDataType&) const = default;
 
@@ -89,21 +93,32 @@ struct PlayerItemDataType
 		weaponowned     (player.weaponowned),
 		cards           (player.cards),
 		backpack        (player.backpack),
-		cheats          (player.cheats),
-		psprites        (PspriteStateType::FromPlayer(player.psprites))
+		cheats          (player.cheats)
 	{
+		static_assert(std::tuple_size_v<decltype(psprites)> ==
+		              std::tuple_size_v<decltype(player.psprites)>);
+
+		for (size_t i = 0; i < psprites.size(); ++i)
+		{
+			psprites[i] = player.psprites[i];
+		}
 	}
 
 	void ToPlayer(player_t& player) const
 	{
 		player.ammo            = ammo;
 		player.maxammo         = maxammo;
-		//player.powers          = powers;        // TODO: Fix the clearing of MF_SHADOW in PlayerThink.  It should not happen only when a decrement to zero happens.  Just check for value == 0.
+		player.health          = health;
+		player.armorpoints     = armorpoints;
+		player.armortype       = armortype;
+		player.lives           = lives;
+		player.powers          = powers;        // TODO: Fix the clearing of MF_SHADOW in PlayerThink.  It should not happen only when a decrement to zero happens.  Just check for value == 0.
 		player.readyweapon     = readyweapon;
 		player.pendingweapon   = pendingweapon;
 		player.weaponowned     = weaponowned;
-		//player.cards           = cards;
-		//player.backpack        = backpack;
+		player.cards           = cards;
+		player.backpack        = backpack;
+		player.cheats          = cheats;
 	}
 
 	template <typename StreamType>
@@ -112,9 +127,19 @@ struct PlayerItemDataType
 		io_stream
 		    << i_thisRef.ammo
 		    << i_thisRef.maxammo
-		    << static_cast<int>(i_thisRef.readyweapon)
-		    << static_cast<int>(i_thisRef.pendingweapon)
-		    << i_thisRef.weaponowned;
+		    << i_thisRef.health
+		    << i_thisRef.armorpoints
+		    << i_thisRef.armortype
+		    << i_thisRef.lives
+		    << i_thisRef.powers
+		    << i_thisRef.readyweapon
+		    << i_thisRef.pendingweapon
+		    << i_thisRef.weaponowned
+		    << i_thisRef.cards
+		    << i_thisRef.backpack
+		    << i_thisRef.cheats
+		    << i_thisRef.psprites
+		    ;
 
 		return io_stream;
 	}
@@ -122,18 +147,22 @@ struct PlayerItemDataType
 	template <typename StreamType>
 	friend StreamType& operator>>(StreamType& io_stream, PlayerItemDataType& o_thisRef)
 	{
-		int temp_readyweapon    {0};
-		int temp_pendingweapon  {0};
-
 		io_stream
 		    >> o_thisRef.ammo
 		    >> o_thisRef.maxammo
-		    >> temp_readyweapon
-		    >> temp_pendingweapon
-		    >> o_thisRef.weaponowned;
-
-		o_thisRef.readyweapon   = static_cast<weapontype_t>(temp_readyweapon);
-		o_thisRef.pendingweapon = static_cast<weapontype_t>(temp_pendingweapon);
+		    >> o_thisRef.health
+		    >> o_thisRef.armorpoints
+		    >> o_thisRef.armortype
+		    >> o_thisRef.lives
+		    >> o_thisRef.powers
+		    >> o_thisRef.readyweapon
+		    >> o_thisRef.pendingweapon
+		    >> o_thisRef.weaponowned
+		    >> o_thisRef.cards
+		    >> o_thisRef.backpack
+		    >> o_thisRef.cheats
+		    >> o_thisRef.psprites
+		    ;
 
 		return io_stream;
 	}
