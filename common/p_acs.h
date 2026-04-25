@@ -474,7 +474,7 @@ public:
 		LEVELINFO_SUCK_TIME
 	};
 
-	enum EScriptState
+	enum EScriptState : uint8_t
 	{
 		SCRIPT_Running,
 		SCRIPT_Suspended,
@@ -549,15 +549,6 @@ private:
 
 	friend class DACSThinker;
 };
-
-inline FArchive &operator<< (FArchive &arc, DLevelScript::EScriptState state)
-{
-	return arc << static_cast<byte>(state);
-}
-inline FArchive &operator>> (FArchive &arc, DLevelScript::EScriptState &state)
-{
-	byte in; arc >> in; state = static_cast<DLevelScript::EScriptState>(in); return arc;
-}
 
 class DACSThinker : public DThinker
 {

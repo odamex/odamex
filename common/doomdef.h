@@ -425,7 +425,7 @@ enum skill_t
 //
 // Key cards.
 //
-enum card_t
+enum card_t : uint8_t
 {
 	it_bluecard,
 	it_yellowcard,
@@ -461,16 +461,6 @@ enum ItemEquipVal
 };
 
 
-inline FArchive &operator<< (FArchive &arc, card_t i)
-{
-	return arc << static_cast<byte>(i);
-}
-inline FArchive &operator>> (FArchive &arc, card_t &i)
-{
-	byte in; arc >> in; i = static_cast<card_t>(in); return arc;
-}
-
-
 // The defined weapons,
 //	including a marker indicating
 //	user has not changed weapon.
@@ -498,18 +488,8 @@ inline auto format_as(weapontype_t eWeaponType)
 	return fmt::underlying(eWeaponType);
 }
 
-inline FArchive &operator<< (FArchive &arc, weapontype_t i)
-{
-	return arc << static_cast<byte>(i);
-}
-inline FArchive &operator>> (FArchive &arc, weapontype_t &i)
-{
-	byte in; arc >> in; i = static_cast<weapontype_t>(in); return arc;
-}
-
-
 // Ammunition types defined.
-enum ammotype_t
+enum ammotype_t : int8_t
 {
 	am_clip,	// Pistol / chaingun ammo.
 	am_shell,	// Shotgun / double barreled shotgun.
@@ -525,18 +505,9 @@ inline auto format_as(ammotype_t eAmmoType)
 	return fmt::underlying(eAmmoType);
 }
 
-inline FArchive &operator<< (FArchive &arc, ammotype_t i)
-{
-	return arc << static_cast<byte>(i);
-}
-inline FArchive &operator>> (FArchive &arc, ammotype_t &i)
-{
-	byte in; arc >> in; i = static_cast<ammotype_t>(in); return arc;
-}
-
 
 // Power up artifacts.
-enum powertype_t
+enum powertype_t : int8_t
 {
 	pw_none = -1,
 	pw_invulnerability,
@@ -547,16 +518,6 @@ enum powertype_t
 	pw_infrared,
 	NUMPOWERS
 };
-
-inline FArchive &operator<< (FArchive &arc, powertype_t i)
-{
-	return arc << static_cast<byte>(i);
-}
-inline FArchive &operator>> (FArchive &arc, powertype_t &i)
-{
-	byte in; arc >> in; i = static_cast<powertype_t>(in); return arc;
-}
-
 
 //
 // Power up durations, how many tics till expiration.

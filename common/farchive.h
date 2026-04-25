@@ -167,6 +167,14 @@ public:
 		return *this;
 	}
 
+	template <typename EnumeratedType>
+	requires std::is_enum_v<EnumeratedType>
+	FArchive& operator<< (EnumeratedType value)
+	{
+		*this << static_cast<std::underlying_type_t<EnumeratedType> >(value);
+		return *this;
+	}
+
 	// Overload bool because its size is implementation-defined, and we want archived sizes to be exact.
 	FArchive& operator<< (bool b) { return operator<< (uint8_t(b)); }
 
@@ -199,6 +207,16 @@ public:
 	{
 		Read(&value, sizeof(value));
 		value = BESWAP(value);
+		return *this;
+	}
+
+	template <typename EnumeratedType>
+	requires std::is_enum_v<EnumeratedType>
+	FArchive& operator>> (EnumeratedType& value)
+	{
+		std::underlying_type_t<EnumeratedType> temp;
+		*this >> temp;
+		value = static_cast<EnumeratedType>(temp);
 		return *this;
 	}
 

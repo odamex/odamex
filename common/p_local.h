@@ -386,23 +386,14 @@ extern	int MeansOfDeath;
 //
 // PO_MAN
 //
-typedef enum
+enum podoortype_t : uint8_t
 {
 	PODOOR_NONE,
 	PODOOR_SLIDE,
 	PODOOR_SWING,
 
 	NUMTYPES
-} podoortype_t;
-
-inline FArchive &operator<< (FArchive &arc, podoortype_t type)
-{
-	return arc << static_cast<byte>(type);
-}
-inline FArchive &operator>> (FArchive &arc, podoortype_t &out)
-{
-	byte in; arc >> in; out = static_cast<podoortype_t>(in); return arc;
-}
+};
 
 class DPolyAction : public DThinker
 {

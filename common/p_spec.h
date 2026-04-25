@@ -207,13 +207,13 @@ class DScroller : public DThinker
 {
 	DECLARE_SERIAL (DScroller, DThinker)
 public:
-	enum EScrollType
+	enum EScrollType : uint8_t
 	{
 		sc_side,
 		sc_floor,
 		sc_ceiling,
 		sc_carry,
-		sc_carry_ceiling	// killough 4/11/98: carry objects hanging on ceilings
+		sc_carry_ceiling    // killough 4/11/98: carry objects hanging on ceilings
 
 	};
 
@@ -246,15 +246,6 @@ protected:
 private:
 	DScroller ();
 };
-
-inline FArchive &operator<< (FArchive &arc, DScroller::EScrollType type)
-{
-	return arc << static_cast<byte>(type);
-}
-inline FArchive &operator>> (FArchive &arc, DScroller::EScrollType &out)
-{
-	byte in; arc >> in; out = static_cast<DScroller::EScrollType>(in); return arc;
-}
 
 inline bool P_WallScrollType(DScroller::EScrollType type)
 {
@@ -292,7 +283,7 @@ class DPusher : public DThinker
 {
 	DECLARE_SERIAL (DPusher, DThinker)
 public:
-	enum EPusher
+	enum EPusher : uint8_t
 	{
 		p_push,
 		p_pull,
@@ -332,15 +323,6 @@ protected:
 
 	friend bool PIT_PushThing (AActor *thing);
 };
-
-inline FArchive &operator<< (FArchive &arc, DPusher::EPusher type)
-{
-	return arc << static_cast<byte>(type);
-}
-inline FArchive &operator>> (FArchive &arc, DPusher::EPusher &out)
-{
-	byte in; arc >> in; out = static_cast<DPusher::EPusher>(in); return arc;
-}
 
 bool P_CheckKeys (player_t *p, card_t lock, bool remote);
 
@@ -622,7 +604,7 @@ class DPlat : public DMovingFloor
 {
 	DECLARE_SERIAL (DPlat, DMovingFloor);
 public:
-	enum EPlatState
+	enum EPlatState : uint8_t
 	{
 		init = 0,
 		up,
@@ -636,7 +618,7 @@ public:
 		state_size
 	};
 
-	enum EPlatType
+	enum EPlatType : uint8_t
 	{
 		perpetualRaise,
 		downWaitUpStay,
@@ -702,23 +684,6 @@ private:
 	friend bool EV_DoGenLift(line_t* line);
 };
 
-inline FArchive &operator<< (FArchive &arc, DPlat::EPlatType type)
-{
-	return arc << static_cast<byte>(type);
-}
-inline FArchive &operator>> (FArchive &arc, DPlat::EPlatType &out)
-{
-	byte in; arc >> in; out = static_cast<DPlat::EPlatType>(in); return arc;
-}
-inline FArchive &operator<< (FArchive &arc, DPlat::EPlatState state)
-{
-	return arc << static_cast<byte>(state);
-}
-inline FArchive &operator>> (FArchive &arc, DPlat::EPlatState &out)
-{
-	byte in; arc >> in; out = static_cast<DPlat::EPlatState>(in); return arc;
-}
-
 //
 // [RH]
 // P_PILLAR
@@ -728,7 +693,7 @@ class DPillar : public DMover
 {
 	DECLARE_SERIAL (DPillar, DMover)
 public:
-	enum EPillarState
+	enum EPillarState : uint8_t
 	{
 		init = 0,
 		finished,
@@ -736,7 +701,7 @@ public:
 		state_size
 	};
 
-	enum EPillar
+	enum EPillar : uint8_t
 	{
 		pillarBuild,
 		pillarOpen
@@ -767,23 +732,6 @@ public:
 
 };
 
-inline FArchive &operator<< (FArchive &arc, DPillar::EPillar type)
-{
-	return arc << static_cast<byte>(type);
-}
-inline FArchive &operator>> (FArchive &arc, DPillar::EPillar &out)
-{
-	byte in; arc >> in; out = static_cast<DPillar::EPillar>(in); return arc;
-}
-inline FArchive &operator<< (FArchive &arc, DPillar::EPillarState state)
-{
-	return arc << static_cast<byte>(state);
-}
-inline FArchive &operator>> (FArchive &arc, DPillar::EPillarState &out)
-{
-	byte in; arc >> in; out = static_cast<DPillar::EPillarState>(in); return arc;
-}
-
 bool EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
 				  fixed_t height2, bool crush);
 void P_SpawnDoorCloseIn30 (sector_t *sec);
@@ -796,7 +744,7 @@ class DDoor : public DMovingCeiling
 {
 	DECLARE_SERIAL (DDoor, DMovingCeiling)
 public:
-	enum EVlDoor
+	enum EVlDoor : uint8_t
 	{
 		doorClose,
 		doorOpen,
@@ -821,7 +769,7 @@ public:
 		genBlazeCdO,
 	};
 
-	enum EDoorState
+	enum EDoorState : uint8_t
 	{
 		init = 0,
 		opening,
@@ -881,23 +829,6 @@ private:
 
 };
 
-inline FArchive &operator<< (FArchive &arc, DDoor::EVlDoor type)
-{
-	return arc << static_cast<byte>(type);
-}
-inline FArchive &operator>> (FArchive &arc, DDoor::EVlDoor &out)
-{
-	byte in; arc >> in; out = static_cast<DDoor::EVlDoor>(in); return arc;
-}
-inline FArchive &operator<< (FArchive &arc, DDoor::EDoorState state)
-{
-	return arc << static_cast<byte>(state);
-}
-inline FArchive &operator>> (FArchive &arc, DDoor::EDoorState &out)
-{
-	byte in; arc >> in; out = static_cast<DDoor::EDoorState>(in); return arc;
-}
-
 //
 // P_CEILNG
 //
@@ -907,7 +838,7 @@ class DCeiling : public DMovingCeiling
 {
 	DECLARE_SERIAL (DCeiling, DMovingCeiling)
 public:
-	enum ECeilingState
+	enum ECeilingState : uint8_t
 	{
 		init = 0,
 		up,
@@ -918,7 +849,7 @@ public:
 		state_size
 	};
 
-	enum ECeiling
+	enum ECeiling : uint8_t
 	{
 		lowerToFloor,
 		raiseToHighest,
@@ -1011,23 +942,6 @@ private:
 	friend bool EV_ZDoomCeilingCrushStop(int tag, bool remove);
 };
 
-inline FArchive &operator<< (FArchive &arc, DCeiling::ECeiling type)
-{
-	return arc << static_cast<byte>(type);
-}
-inline FArchive &operator>> (FArchive &arc, DCeiling::ECeiling &type)
-{
-	byte in; arc >> in; type = static_cast<DCeiling::ECeiling>(in); return arc;
-}
-inline FArchive &operator<< (FArchive &arc, DCeiling::ECeilingState state)
-{
-	return arc << static_cast<byte>(state);
-}
-inline FArchive &operator>> (FArchive &arc, DCeiling::ECeilingState &out)
-{
-	byte in; arc >> in; out = static_cast<DCeiling::ECeilingState>(in); return arc;
-}
-
 
 //
 // P_FLOOR
@@ -1037,7 +951,7 @@ class DFloor : public DMovingFloor
 {
 	DECLARE_SERIAL (DFloor, DMovingFloor)
 public:
-	enum EFloorState
+	enum EFloorState : uint8_t
 	{
 		init = 0,
 		up,
@@ -1048,7 +962,7 @@ public:
 		state_size
 	};
 
-	enum EFloor
+	enum EFloor : uint8_t
 	{
 		floorLowerToLowest,
 		floorLowerToNearest,
@@ -1156,28 +1070,12 @@ protected:
 	DFloor ();
 };
 
-inline FArchive &operator<< (FArchive &arc, DFloor::EFloor type)
-{
-	return arc << static_cast<byte>(type);
-}
-inline FArchive &operator>> (FArchive &arc, DFloor::EFloor &type)
-{
-	byte in; arc >> in; type = static_cast<DFloor::EFloor>(in); return arc;
-}
-inline FArchive &operator<< (FArchive &arc, DFloor::EFloorState state)
-{
-	return arc << static_cast<byte>(state);
-}
-inline FArchive &operator>> (FArchive &arc, DFloor::EFloorState &out)
-{
-	byte in; arc >> in; out = static_cast<DFloor::EFloorState>(in); return arc;
-}
 
 class DElevator : public DMover
 {
 	DECLARE_SERIAL (DElevator, DMover)
 public:
-	enum EElevatorState
+	enum EElevatorState : uint8_t
 	{
 		init = 0,
 		finished,
@@ -1185,7 +1083,7 @@ public:
 		state_size
 	};
 
-	enum EElevator
+	enum EElevator : uint8_t
 	{
 		elevateUp,
 		elevateDown,
@@ -1219,23 +1117,6 @@ protected:
 private:
 	DElevator ();
 };
-
-inline FArchive &operator<< (FArchive &arc, DElevator::EElevator type)
-{
-	return arc << static_cast<byte>(type);
-}
-inline FArchive &operator>> (FArchive &arc, DElevator::EElevator &out)
-{
-	byte in; arc >> in; out = static_cast<DElevator::EElevator>(in); return arc;
-}
-inline FArchive &operator<< (FArchive &arc, DElevator::EElevatorState state)
-{
-	return arc << static_cast<byte>(state);
-}
-inline FArchive &operator>> (FArchive &arc, DElevator::EElevatorState &out)
-{
-	byte in; arc >> in; out = static_cast<DElevator::EElevatorState>(in); return arc;
-}
 
 // Waggle
 /*
