@@ -474,7 +474,7 @@ inline FArchive &operator>> (FArchive &arc, card_t &i)
 // The defined weapons,
 //	including a marker indicating
 //	user has not changed weapon.
-enum weapontype_t
+enum weapontype_t : int8_t
 {
 	wp_fist,
 	wp_pistol,
