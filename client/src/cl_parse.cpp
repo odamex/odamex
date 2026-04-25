@@ -250,23 +250,7 @@ static void DirectUnpackInventory(const odaproto::Player& inventory, player_t& p
 #if 0
 	PlayerItemDataType inventoryResponse;
 
-	const size_t ammoElementCount = std::min(inventoryResponse.ammo.size(), static_cast<size_t>(msg->inventory().ammo_size()));
 
-	std::copy(msg->inventory().ammo().begin(),
-	          msg->inventory().ammo().begin() + ammoElementCount,
-	          inventoryResponse.ammo.begin());
-
-	std::copy(msg->inventory().maxammo().begin(),
-	          msg->inventory().maxammo().begin() + ammoElementCount,
-	          inventoryResponse.maxammo.begin());
-
-	const uint32_t weaponowned = msg->inventory().weaponowned();
-	UnpackBoolArray(inventoryResponse.weaponowned, weaponowned);
-
-	inventoryResponse.readyweapon   = static_cast<weapontype_t>(msg->inventory().readyweapon());
-	inventoryResponse.pendingweapon = static_cast<weapontype_t>(msg->inventory().pendingweapon());
-
-	CL_ResolveInventory(msg->client_tic(), inventoryResponse);
 }
 #endif
 
@@ -277,6 +261,64 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 {
 	player_t& p = consoleplayer();
 
+
+
+    PlayerItemDataType inventory;
+
+	const size_t ammoElementCount = std::min(inventory.ammo.size(), static_cast<size_t>(msg->ammo_size()));
+
+	std::copy(msg->ammo().begin(),
+	          msg->ammo().begin() + ammoElementCount,
+	          inventory.ammo.begin());
+
+	std::copy(msg->maxammo().begin(),
+	          msg->maxammo().begin() + ammoElementCount,
+	          inventory.maxammo.begin());
+
+    inventory.health        = msg->health();
+    inventory.armorpoints   = msg->armorpoints();
+    inventory.armortype     = msg->armortype();
+    inventory.lives         = msg->lives();
+
+	const size_t powersElementCount = std::min(inventory.powers.size(), static_cast<size_t>(msg->powers_size()));
+	std::copy(msg->powers().begin(),
+	          msg->powers().begin() + powersElementCount,
+	          inventory.powers.begin());
+
+	inventory.readyweapon   = static_cast<weapontype_t>(msg->readyweapon());
+	inventory.pendingweapon = static_cast<weapontype_t>(msg->pendingweapon());
+
+	UnpackBoolArray(inventory.weaponowned, msg->weaponowned());
+	UnpackBoolArray(inventory.cards,       msg->cards());
+
+    inventory.backpack = msg->backpack();
+    inventory.cheats   = msg->cheats();
+
+	const size_t pspriteElementCount = std::min(inventory.psprites.size(), static_cast<size_t>(msg->psprites_size()));
+
+    for (size_t i = 0; i < pspriteElementCount; ++i)
+    {
+        const int32_t state = msg->psprites(i).statenum();
+        if (states.contains(state))
+        {
+            inventory.psprites[i].statenum = static_cast<statenum_t>(state);
+            inventory.psprites[i].tics     = static_cast<statenum_t>(msg->psprites(i).tics());
+        }
+    }
+
+	if ((p.lives == 0 && msg->lives() > 0) && !netdemo.isplaying())
+	{
+		// stop spying so you know you're back from the dead.
+		::displayplayer_id = ::consoleplayer_id;
+	}
+
+
+	CL_ResolveInventory(msg->client_tic(), inventoryResponse);
+
+
+
+
+#if 0
     DirectUnpackInventory(msg->player(), p);
 
 	uint32_t cards = msg->player().cards();
@@ -288,11 +330,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	p.armorpoints = msg->player().armorpoints();
 	p.armortype = msg->player().armortype();
 
-	if ((p.lives == 0 && msg->player().lives() > 0) && !netdemo.isPlaying())
-	{
-		// Stop spying so you know you're back from the dead.
-		::displayplayer_id = ::consoleplayer_id;
-	}
+
 	p.lives = msg->player().lives();
 
 	statenum_t stnum[NUMPSPRITES] = {S_NULL, S_NULL};
@@ -308,6 +346,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 			stnum[i] = static_cast<statenum_t>(state);
 		}
 	}
+#endif
 	for (int i = 0; i < NUMPSPRITES; i++)
 		P_SetPsprite(p, i, stnum[i]);
 
