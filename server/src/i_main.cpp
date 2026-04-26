@@ -278,7 +278,7 @@ void daemon_init(void)
     fclose(fpid);
 }
 
-void set_window_title()
+static void set_window_title()
 {
 	if (!isatty(STDOUT_FILENO))
 		return;
