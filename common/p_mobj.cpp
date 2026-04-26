@@ -698,7 +698,7 @@ void AActor::RunThink ()
 	prevy = y;
 	prevz = z;
 
-	if (!player)
+	if (!player || player->mo != this)
 	{
 		prevangle = angle;
 		prevpitch = pitch;
