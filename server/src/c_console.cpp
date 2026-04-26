@@ -137,7 +137,7 @@ static size_t PrintString(int printlevel, std::string str)
 			break;
 	}
 
-	if (log_color)
+	if (log_color && I_ConsoleUseColor())
 		fmt::print(stdout, style, "{}", str);
 	else
 		fmt::print(stdout, "{}", str);

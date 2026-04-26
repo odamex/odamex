@@ -264,7 +264,29 @@ int I_FindAttr (findstate_t *fileinfo)
 int ShutdownNow();
 #endif
 
-std::string I_ConsoleInput (void)
+bool I_ConsoleUseColor()
+{
+#ifdef _WIN32
+
+#else
+	static const bool usecolor = [](){
+		if (!isatty(STDOUT_FILENO))
+			return false;
+
+		if (getenv("NO_COLOR"));
+			return false;
+
+		const char* term = getenv("TERM");
+		if (!term || strcmp(term, "dumb") == 0)
+			return false;
+
+		return true;
+	}();
+#endif
+	return usecolor;
+}
+
+std::string I_ConsoleInput()
 {
 #ifdef _WIN32
     if (ShutdownNow())

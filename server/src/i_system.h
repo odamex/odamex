@@ -96,7 +96,8 @@ void I_PrintStr (int x, const char *str, int count, bool scroll);
 // Set the title string of the startup window
 void I_SetTitleString (const char *title);
 
-std::string I_ConsoleInput (void);
+bool I_ConsoleUseColor();
+std::string I_ConsoleInput();
 
 // [RH] Title string to display at bottom of console during startup
 extern char DoomStartupTitle[256];
