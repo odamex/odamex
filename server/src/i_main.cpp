@@ -278,7 +278,19 @@ void daemon_init(void)
     fclose(fpid);
 }
 
-int main (int argc, char **argv)
+void set_window_title()
+{
+	if (!isatty(STDOUT_FILENO))
+		return;
+
+	const char* term = getenv("TERM");
+	if (!term || strcmp(term, "dumb") == 0)
+		return;
+
+	fmt::print("\033]2;Odamex Server {}\033\\", NiceVersion());
+}
+
+int main(int argc, char **argv)
 {
 	// [AM] Set crash callbacks, so we get something useful from crashes.
 #ifdef NDEBUG
@@ -315,6 +327,8 @@ int main (int argc, char **argv)
 		}
 
 		M_InitConsoleInputFile(Args.CheckValue("-confile"));
+
+		set_window_title();
 
 		/*
 		  killough 1/98:
