@@ -147,34 +147,21 @@ int __cdecl main(int argc, char *argv[])
 
 		// Disable QuickEdit mode as any text selection will cause all functions
 		// that use stdout (printf etc) to block
-
-		DWORD consoleMode = 0;
-
-		// TODO: don't just throw and exit if these fail,
-		// that prevents being able to pipe output
-		// and makes it so you can't start a server in github actions or vscode debugger
-		if (!GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &consoleMode))
-			throw CDoomError("GetConsoleMode (input) failed!\n");
-
-		consoleMode &= ~ENABLE_QUICK_EDIT_MODE;
-		consoleMode |= ENABLE_EXTENDED_FLAGS;
-
-		if (!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), consoleMode))
-			throw CDoomError("SetConsoleMode (input) failed!\n");
-
-		// enable ansi color escape processing
-
-		if (!GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &consoleMode))
-			throw CDoomError("GetConsoleMode (output) failed!");
-
-		const DWORD originalOutputMode = consoleMode;
-		consoleMode |= ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-
-		if (!SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), consoleMode))
+		// but only try to do so if stdin is actually a terminal
+		// otherwise this will prevent being able to pipe output
+		const auto hIn = GetStdHandle(STD_INPUT_HANDLE);
+		if (GetFileType(hIn) == FILE_TYPE_CHAR)
 		{
-			// we might just be on a version of windows before support was added, try setting mode back
-			if (!SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), originalOutputMode))
-				throw CDoomError("SetConsoleMode (output) failed!");
+			DWORD consoleMode = 0;
+
+			if (!GetConsoleMode(hIn, &consoleMode))
+				throw CDoomError("GetConsoleMode (input) failed!\n");
+
+			consoleMode &= ~ENABLE_QUICK_EDIT_MODE;
+			consoleMode |= ENABLE_EXTENDED_FLAGS;
+
+			if (!SetConsoleMode(hIn, consoleMode))
+				throw CDoomError("SetConsoleMode (input) failed!\n");
 		}
 
 		// Fixes icon not showing in titlebar and alt-tab menu under windows 7

@@ -267,9 +267,31 @@ int ShutdownNow();
 bool I_ConsoleUseColor()
 {
 #ifdef _WIN32
+	static const bool usecolor = []{
+		const auto hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+		if (GetFileType(hOut) != FILE_TYPE_CHAR)
+			return false;
 
+		bool out = true;
+		// enable ansi color escape processing
+		DWORD consoleMode = 0;
+		if (!GetConsoleMode(hOut, &consoleMode))
+			throw CDoomError("GetConsoleMode (output) failed!");
+
+		const DWORD originalOutputMode = consoleMode;
+		consoleMode |= ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+
+		if (!SetConsoleMode(hOut, consoleMode))
+		{
+			out = consoleMode & ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+			// we might just be on a version of windows before support was added, try setting mode back
+			if (!SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), originalOutputMode))
+				throw CDoomError("SetConsoleMode (output) failed!");
+		}
+		return out;
+	}();
 #else
-	static const bool usecolor = [](){
+	static const bool usecolor = []{
 		if (!isatty(STDOUT_FILENO))
 			return false;
 
