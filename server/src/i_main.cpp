@@ -49,8 +49,6 @@
 #include "m_fileio.h"
 #include "m_consolecommandstream.h"
 
-using namespace std;
-
 void AddCommandString(std::string cmd);
 
 #ifdef _WIN32
@@ -257,27 +255,25 @@ int __cdecl main(int argc, char *argv[])
 //
 void daemon_init(void)
 {
-    int     pid;
-    FILE   *fpid;
-    string  pidfile;
-
     PrintFmt(PRINT_HIGH, "Launched into the background\n");
 
+	int pid;
     if ((pid = fork()) != 0)
     {
     	call_terms();
     	exit(EXIT_SUCCESS);
     }
 
+    std::string pidfile;
 	const char *forkargs = Args.CheckValue("-fork");
 	if (forkargs)
-		pidfile = string(forkargs);
+		pidfile = std::string(forkargs);
 
     if(!pidfile.size() || pidfile[0] == '-')
     	pidfile = "doomsv.pid";
 
     pid = getpid();
-    fpid = fopen(pidfile.c_str(), "w");
+    FILE* fpid = fopen(pidfile.c_str(), "w");
     fmt::print(fpid, "{}\n", pid);
     fclose(fpid);
 }
