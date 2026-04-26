@@ -273,7 +273,7 @@ bool I_ConsoleUseColor()
 		if (!isatty(STDOUT_FILENO))
 			return false;
 
-		if (getenv("NO_COLOR"));
+		if (getenv("NO_COLOR"))
 			return false;
 
 		const char* term = getenv("TERM");
