@@ -13,7 +13,7 @@
           <accel></accel>
           <help>Manually connect to a server by specifying Address:Port</help>
         </object>
-        <object class="wxMenuItem" name="Id_MnuItmRunOffline1">
+        <object class="wxMenuItem" name="Id_MnuItmRunOffline">
           <label>Start Odamex (Single Player)</label>
           <accel></accel>
           <help>Runs the Odamex Client without connecting to a server</help>

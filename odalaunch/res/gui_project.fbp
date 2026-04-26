@@ -107,7 +107,7 @@
             <property name="id">wxID_ANY</property>
             <property name="kind">wxITEM_NORMAL</property>
             <property name="label">Start Odamex (Single Player)</property>
-            <property name="name">Id_MnuItmRunOffline1</property>
+            <property name="name">Id_MnuItmRunOffline</property>
             <property name="permission">none</property>
             <property name="shortcut"></property>
             <property name="unchecked_bitmap"></property>
