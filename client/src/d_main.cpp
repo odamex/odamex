@@ -376,6 +376,7 @@ void D_DoomLoop()
 			::players.clear();
 
 			::gameaction = ga_fullconsole;
+			::gamestate = GS_FULLCONSOLE;
 		}
 	}
 }
