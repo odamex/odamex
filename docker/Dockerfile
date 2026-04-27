@@ -4,6 +4,7 @@ FROM alpine:3.23 AS build
 WORKDIR /build
 RUN apk add --no-cache \
     python3 \
+    bash \
     git \
     gcc \
     g++ \
