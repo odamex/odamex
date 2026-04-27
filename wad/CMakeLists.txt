@@ -17,17 +17,15 @@ file(GLOB_RECURSE ODAWAD_SOURCES
 macro(odamex_copy_wad _target)
 
   add_custom_command(
-      OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/odamex_${_target}.wad.stamp"
+      OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/odawad_${_target}.stamp"
       COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:${_target}>
       COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_BINARY_DIR}/odamex.wad" $<TARGET_FILE_DIR:${_target}>
-      COMMAND ${CMAKE_COMMAND} -E touch "${CMAKE_CURRENT_BINARY_DIR}/odamex_${_target}.wad.stamp"
-      DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/odamex.wad"
+      COMMAND ${CMAKE_COMMAND} -E touch "${CMAKE_CURRENT_BINARY_DIR}/odawad_${_target}.stamp"
+      DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/odamex.wad" ${_target}
       VERBATIM
       )
-  add_custom_target(odawad_${_target}
-      DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/odamex_${_target}.wad.stamp")
-
-  add_dependencies(${_target} odawad_${_target})   # Make sure a focused build of the executable also pulls in the wad.
+  add_custom_target(odawad_${_target} ALL
+      DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/odawad_${_target}.stamp")
 
 endmacro()
 
