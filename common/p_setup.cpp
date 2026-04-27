@@ -2079,7 +2079,7 @@ void P_ValidateMap(const int lumpnum)
 {
 	// TODO: this will need to be updated for UDMF and/or an internal nodebuilder
 	// UDMF has a different set of lumps, and a nodebuilder could create some of the missing lumps
-	auto checkMapLump = [&](int offset, const char* name) {
+	auto checkMapLump = [lumpnum](int offset, const char* name) {
 		if (!W_CheckLumpName(lumpnum + offset, name))
 			I_Error("{} lump is missing for map {}\n", name, level.mapname);
 	};
