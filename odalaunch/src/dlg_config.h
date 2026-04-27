@@ -61,6 +61,11 @@ public:
 protected:
 	void OnOK(wxCommandEvent& event);
 
+	void OnChooseDir(wxFileDirPickerEvent& event);
+	void OnAddDir(wxCommandEvent& event);
+	void OnReplaceDir(wxCommandEvent& event);
+	void OnDeleteDir(wxCommandEvent& event);
+
 	void OnUpClick(wxCommandEvent& event);
 	void OnDownClick(wxCommandEvent& event);
 
@@ -87,6 +92,8 @@ protected:
 	wxCheckBox* m_ChkCtrlHighlightServerLines;
 	wxCheckBox* m_ChkCtrlHighlightCustomServers;
 	wxCheckBox* m_ChkCtrlkAutoServerRefresh;
+
+	wxListBox* m_LstCtrlWadDirectories;
 
 	wxDirPickerCtrl* m_DirCtrlChooseOdamexPath;
 	wxFilePickerCtrl* m_FilePickCtrlSoundFile;

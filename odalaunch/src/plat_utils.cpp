@@ -100,3 +100,17 @@ wxString OdaGetInstallDir()
 
 	return InstallDir;
 }
+
+wxString OdaGetDataDir()
+{
+	wxString DataDir;
+
+#if defined(ODAMEX_INSTALL_DATADIR)
+	const char* datadir_cstr = ODAMEX_INSTALL_DATADIR;
+	DataDir = wxString::FromAscii(datadir_cstr);
+#else
+	DataDir =  wxGetCwd();
+#endif
+
+	return DataDir;
+}
