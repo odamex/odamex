@@ -5,6 +5,7 @@ WORKDIR /build
 RUN apk add --no-cache \
     python3 \
     bash \
+    patch \
     git \
     gcc \
     g++ \
