@@ -1,4 +1,6 @@
-# CMake 3.13 needed for -S and -B params in library compilation.
+# CMake >= 3.13 needed for -S and -B params in library compilation.
+# CMake >= 3.19 needed for policy CMP0112: target-dependent generator expressions
+#               do not implicitly add target-level dependencies.
 #
 # Note that if you are running Linux, there are many ways to get newer
 # versions of CMake.
@@ -12,7 +14,7 @@
 # - If you have Python installed, you can install CMake through pip.
 #
 
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.19)
 
 project(Odamex VERSION 12.2.0)
 
