@@ -23,6 +23,7 @@ macro(odamex_copy_wad _target)
       COMMAND ${CMAKE_COMMAND} -E touch "${CMAKE_CURRENT_BINARY_DIR}/odawad_${_target}.stamp"
       DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/odamex.wad" ${_target}
       VERBATIM
+      COMMENT "Copying $<TARGET_NAME:${_target}> odamex.wad if necessary..."
       )
   add_custom_target(odawad_${_target} ALL
       DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/odawad_${_target}.stamp")
