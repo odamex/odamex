@@ -34,6 +34,7 @@
 #include <wx/wfstream.h>
 #include <wx/tokenzr.h>
 #include <wx/recguard.h>
+#include <wx/dirdlg.h>
 
 #include "main.h"
 
