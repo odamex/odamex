@@ -698,7 +698,7 @@ void AActor::RunThink ()
 	prevy = y;
 	prevz = z;
 
-	if (!player || player->mo != this)
+	if (!player || P_IsVoodooDoll(this))
 	{
 		prevangle = angle;
 		prevpitch = pitch;
