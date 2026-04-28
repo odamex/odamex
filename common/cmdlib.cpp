@@ -30,6 +30,7 @@
 #include <stdlib.h>
 
 #include <ctime>
+#include <cctype>
 #include <functional>
 #include <sstream>
 
