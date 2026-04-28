@@ -1,5 +1,9 @@
 ![Odamex](https://raw.githubusercontent.com/odamex/odamex/stable/media/logo_128.png?raw=true)
 
+[![GitHub Releases](https://img.shields.io/github/v/release/odamex/odamex?label=Download%20Latest)](https://github.com/odamex/odamex/releases)
+
+[![Download on Flathub](https://flathub.org/api/badge?locale=en&light)](https://flathub.org/apps/net.odamex.Odamex)
+
 | Windows Build Status | Mac Build Status | Linux Build Status | Join our Discord! |
 | -------------------- | ---------------- | ------------------ | ----------------- |
 | [![Windows](https://github.com/odamex/odamex/actions/workflows/windows.yml/badge.svg)](https://github.com/odamex/odamex/actions/workflows/windows.yml) | [![macOS](https://github.com/odamex/odamex/actions/workflows/macos.yml/badge.svg)](https://github.com/odamex/odamex/actions/workflows/macos.yml) | [![Linux](https://github.com/odamex/odamex/actions/workflows/linux.yml/badge.svg)](https://github.com/odamex/odamex/actions/workflows/linux.yml) | [![Join our discord](https://discordapp.com/api/guilds/236518337671200768/widget.png?style=shield)](https://discord.gg/aMUzcZE) |
