@@ -1470,7 +1470,8 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo, const std::optional<bool> 
 	else if(player.mo && mo->player && true)
 		ok = true;
 
-	bool previously_ok = mo->players_aware.get(player.id);
+	// Avatars are always spawned by the client during map load.
+	bool previously_ok = mo->players_aware.get(player.id) or mo->type == MT_AVATAR;
 
 	client_t *cl = &player.client;
 

@@ -2813,6 +2813,8 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	if (sv_allowshowspawns)
 		P_ShowSpawns(mthing);
 
+	const bool isPlayerSpawnPoint = (mthing.type >=    1 && mthing.type <=    4) ||
+	                                (mthing.type >= 4001 && mthing.type <= 4001 + MAXPLAYERSTARTS - 4);
 	const bool isTeleportDest = mthing.type == 14;
 	const bool isSecAct = (mthing.type >= 9982 && mthing.type <= 9983) ||
 	                      (mthing.type >= 9992 && mthing.type <= 9999);
@@ -2820,10 +2822,10 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	const bool isMusicChanger = (mthing.type >= 14100 && mthing.type <= 14165);
 
 	// only servers control spawning of items
-	// EXCEPT the client must spawn Type 14 (teleport exit).
-	// otherwise teleporters won't work well.
+	// EXCEPT the client must spawn Type 14 (teleport exit) and player spawn points for avatars.
+	// otherwise teleporters or avatars won't work well.
 	// Also spawn sector special things, fixes some other teleport issues.
-	if (!serverside && !(isTeleportDest || isSecAct || isSoundSource || isMusicChanger))
+	if (!serverside && !(isPlayerSpawnPoint || isTeleportDest || isSecAct || isSoundSource || isMusicChanger))
 	{
 		return;
 	}
@@ -2897,8 +2899,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	}
 
 	// check for players specially
-	if ((mthing.type <= 4 && mthing.type > 0)
-		|| (mthing.type >= 4001 && mthing.type <= 4001 + MAXPLAYERSTARTS - 4))
+	if (isPlayerSpawnPoint)
 	{
 		// [RH] Only spawn spots that match position.
 		if (mthing.args[0] != position)
@@ -3302,9 +3303,9 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
  */
 void P_SpawnAvatars()
 {
-	if (clientside || !G_IsCoopGame())
+	if ((clientside and serverside) or not G_IsCoopGame())
 	{
-		// Voodoo dolls are handled in local games.
+		// Use voodoo dolls proper in local games, not avatars.
 		return;
 	}
 
