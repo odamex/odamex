@@ -2602,12 +2602,13 @@ void DScroller::RunThink ()
 				if (!((thing = node->m_thing)->flags & MF_NOCLIP) &&
 					(!(thing->flags & MF_NOGRAVITY || thing->z > height) ||
 					 thing->z < waterheight))
-				  {
+					{
 					// Move objects only if on floor or underwater,
 					// non-floating, and clipped.
-					thing->momx += dx;
-					thing->momy += dy;
-				  }
+					thing->momx   += dx;
+					thing->momy   += dy;
+					thing->flags3 |= MFO_IS_ON_CONVEYOR;
+					}
 			break;
 		}
 

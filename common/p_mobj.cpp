@@ -338,7 +338,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 
 bool P_IsVoodooDoll(const AActor* mo)
 {
-	return mo->player && mo->player->mo != mo;
+	return mo->type == MT_AVATAR or (mo->player and mo->player->mo != mo);
 }
 
 //
@@ -539,6 +539,7 @@ void P_MoveActor(AActor *mo)
     BlockingMobj = NULL;
 
 	P_XYMovement(mo);
+	mo->flags3 &= ~MFO_IS_ON_CONVEYOR;      // Clear the flag - it will be set again if still on conveyor.
 
 	if (mo->ObjectFlags & OF_Destroyed)
 		return;		// actor was destroyed
@@ -1337,18 +1338,26 @@ static void P_ApplyXYFriction(AActor* mo)
 			return;
 	}
 
-	bool stationary_player = mo->player &&
-			(mo->player->cmd.forwardmove == 0 && mo->player->cmd.sidemove == 0);
+	const bool isPlayer                 = mo->player != nullptr;
+	const bool isVoodoo                 = P_IsVoodooDoll(mo);
+	const bool isRealPlayer             = isPlayer and not isVoodoo;
+	const bool isUserCommandingMotion   = mo->player and mo->player->cmd.forwardmove != 0 and
+	                                                     mo->player->cmd.sidemove != 0;
+    const bool isOnConveyor             = mo->flags3 & MFO_IS_ON_CONVEYOR;
 
-	// killough 11/98: Stop voodoo dolls that have come to rest,
+    const bool keepInMotion = isOnConveyor or
+                              (isRealPlayer and isUserCommandingMotion);
+
+    // killough 11/98: Stop voodoo dolls that have come to rest,
 	// despite any moving corresponding player:
-	if (abs(mo->momx) < STOPSPEED && abs(mo->momy) < STOPSPEED &&
-		(!mo->player || stationary_player || P_IsVoodooDoll(mo)))
+	if (abs(mo->momx) < STOPSPEED and abs(mo->momy) < STOPSPEED and not keepInMotion)
 	{
 		// if in a walking frame, stop moving
 		// killough 10/98: Don't affect main player when voodoo dolls stop:
-		if (mo->player && !P_IsVoodooDoll(mo) && static_cast<uint32_t>((mo->state->statenum) - S_PLAY_RUN1) < 4)
+		if (isRealPlayer and static_cast<uint32_t>((mo->state->statenum) - S_PLAY_RUN1) < 4)
+		{
 			P_SetMobjState(mo, S_PLAY);
+		}
 
 		mo->momx = mo->momy = 0;
 	}
