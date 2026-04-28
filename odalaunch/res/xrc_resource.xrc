@@ -890,6 +890,25 @@
                               </object>
                             </object>
                           </object>
+                          <object class="sizeritem">
+                            <flag>wxALL|wxEXPAND</flag>
+                            <border>5</border>
+                            <option>0</option>
+                            <object class="wxStaticBoxSizer" name="sbSizer25">
+                              <orient>wxVERTICAL</orient>
+                              <label>Odamex Updates</label>
+                              <object class="sizeritem">
+                                <flag>wxALL</flag>
+                                <border>5</border>
+                                <option>0</option>
+                                <object class="wxCheckBox" name="Id_ChkCtrlCheckForUpdates">
+                                  <tooltip>Automatically check for updates when the launcher starts</tooltip>
+                                  <label>Check for updates</label>
+                                  <checked>0</checked>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
                         </object>
                       </object>
                     </object>
