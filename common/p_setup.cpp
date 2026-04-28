@@ -144,9 +144,9 @@ byte*			rejectmatrix;
 bool			rejectempty;
 
 // Maintain single and multi player starting spots.
-std::vector<mapthing2_t> DeathMatchStarts;
-std::vector<mapthing2_t> playerstarts;
-std::vector<mapthing2_t> voodoostarts;
+std::vector<mapthing2_t>         DeathMatchStarts;
+std::vector<mapthing2_t>         playerstarts;
+std::vector<VoodooStartInfoType> voodoostarts;
 
 // Maintain list of helpers to spawn in a given map
 std::vector<HelperSpawns> helperspawns;

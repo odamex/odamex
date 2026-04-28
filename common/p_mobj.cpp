@@ -2919,7 +2919,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 			{
 				// consider playerstarts[i] to be a voodoo doll start
 				M_RemoveWDLPlayerSpawn(playerstarts[i]);
-				voodoostarts.push_back(playerstarts[i]);
+				voodoostarts.emplace_back(playerstarts[i]);
 				playerstarts.erase(playerstarts.begin() + i);
 				break;
 			}
@@ -3309,9 +3309,9 @@ void P_SpawnAvatars()
 		return;
 	}
 
-	for (const auto& thing : ::voodoostarts)
+	for (auto& voodoo : ::voodoostarts)
 	{
-		new AActor(thing.x << FRACBITS, thing.y << FRACBITS, ONFLOORZ, MT_AVATAR);
+		voodoo.mobj = (new AActor(voodoo.mapThing.x << FRACBITS, voodoo.mapThing.y << FRACBITS, ONFLOORZ, MT_AVATAR))->ptr();
 	}
 }
 

@@ -1749,4 +1749,13 @@ odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, cons
 	return msg;
 }
 
+odaproto::svc::ConfigureAvatar SVC_ConfigureAvatar(uint32_t index, uint32_t netid)
+{
+	odaproto::svc::ConfigureAvatar msg;
+
+	msg.set_avatar_index(index);
+	msg.set_netid       (netid);
+
+	return msg;
+}
 VERSION_CONTROL(svc_message, "$Id$")

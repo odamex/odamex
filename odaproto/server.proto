@@ -842,3 +842,10 @@ message NetDemoStop
 message NetDemoLoadSnap
 {
 }
+
+// svc_configureavatar
+message ConfigureAvatar
+{
+	uint32 avatar_index = 1;    // The avatar's serial number, based on the map-defined ordering of its corresponding voodoo doll.
+	uint32 netid        = 2;    // The server-defined netid it must use.
+}
