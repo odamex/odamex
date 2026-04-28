@@ -61,7 +61,7 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 	// Misc events
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlGetListOnStart"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlShowBlockedServers"), dlgConfig::OnCheckedBox)
-	//EVT_CHECKBOX(XRCID("Id_ChkCtrlCheckForUpdates"), dlgConfig::OnCheckedBox)
+	EVT_CHECKBOX(XRCID("Id_ChkCtrlCheckForUpdates"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkCtrlEnableBroadcasts"), dlgConfig::OnCheckedBox)
 	//EVT_CHECKBOX(XRCID("Id_ChkCtrlLoadChatOnStart"), dlgConfig::OnCheckedBox)
 	EVT_CHECKBOX(XRCID("Id_ChkFlashTaskbar"), dlgConfig::OnCheckedBox)
@@ -483,7 +483,7 @@ void dlgConfig::LoadSettings()
 	m_ChkCtrlEnableBroadcasts->SetValue(UseBroadcast);
 	m_ChkCtrlGetListOnStart->SetValue(GetListOnStart);
 	m_ChkCtrlShowBlockedServers->SetValue(ShowBlockedServers);
-	//m_ChkCtrlCheckForUpdates->SetValue(CheckForUpdates);
+	m_ChkCtrlCheckForUpdates->SetValue(CheckForUpdates);
 	//m_ChkCtrlLoadChatOnLS->SetValue(LoadChatOnLS);
 	m_ChkCtrlFlashTaskBar->SetValue(FlashTaskBar);
 	m_ChkCtrlPlaySystemBeep->SetValue(PlaySystemBell);
