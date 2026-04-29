@@ -5033,12 +5033,10 @@ void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
 {
 	for (auto& player : players)
 	{
-		if (!(player.ingame()))
+		if (player.mo == mo or not player.ingame())
 			continue;
 
-		client_t *cl = &(player.client);
-
-		MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_ActivateLine(line, mo, side, activationType));
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_ActivateLine(line, mo, side, activationType));
 	}
 }
 
