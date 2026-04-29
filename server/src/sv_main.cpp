@@ -5033,6 +5033,8 @@ void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
 {
 	for (auto& player : players)
 	{
+		// The client that activated a line has already locally activated it, so
+		// don't force a double activation.
 		if (player.mo == mo or not player.ingame())
 			continue;
 
@@ -5327,6 +5329,11 @@ void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* a
 {
 	for (auto& player : players)
 	{
+		// Unlike SV_OnActivateLine, the LineSpecial coming from an Execute is executed by
+		// the ACS code only on the server - the clients execute them upon receipt of this
+		// message, including the activator itself, so we don't check the activator against
+		// player.mo here.
+
 		if (!(player.ingame()))
 			continue;
 
