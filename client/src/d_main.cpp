@@ -617,6 +617,7 @@ EXTERN_CVAR(co_removesoullimit)
 EXTERN_CVAR(co_allowdropoff)
 EXTERN_CVAR(r_clipmaskedspecial)
 EXTERN_CVAR(r_thingsectorlight)
+EXTERN_CVAR(co_voodooscroller)
 
 void G_ReadCOMPLVL()
 {
@@ -653,6 +654,7 @@ void G_ReadCOMPLVL()
 		co_allowdropoff.Set(0.0f);
 		co_removesoullimit.Set(0.0f);
 		r_clipmaskedspecial.Set(0.0f);
+		co_voodooscroller.Set(0.0f);
 	}
 	else if (iequals("boom", complvl))
 	{
@@ -662,6 +664,7 @@ void G_ReadCOMPLVL()
 		co_allowdropoff.Set(1.0f);
 		co_removesoullimit.Set(1.0f);
 		r_clipmaskedspecial.Set(0.0f);
+		co_voodooscroller.Set(0.0f);
 	}
 	else if (iequals("mbf", complvl))
 	{
@@ -671,6 +674,7 @@ void G_ReadCOMPLVL()
 		co_allowdropoff.Set(1.0f);
 		co_removesoullimit.Set(1.0f);
 		r_clipmaskedspecial.Set(0.0f);
+		co_voodooscroller.Set(1.0f);
 	}
 	else if (iequals("mbf21", complvl))
 	{
@@ -680,6 +684,7 @@ void G_ReadCOMPLVL()
 		co_allowdropoff.Set(1.0f);
 		co_removesoullimit.Set(1.0f);
 		r_clipmaskedspecial.Set(1.0f);
+		co_voodooscroller.Set(0.0f);
 	}
 	else
 	{
