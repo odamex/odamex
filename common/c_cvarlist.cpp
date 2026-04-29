@@ -421,7 +421,12 @@ CVAR_RANGE(sv_countdown, "5",
 	CVAR(			co_mbfphys, "0", "Use MBF's movement code. Fixes mancubus fireball clipping and linedef skips.",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
+	// MBF21-defined compatibility changes
+	// -----------------------------------
 
+	CVAR(co_voodooscroller, "0",
+	     "Use MBF21's comp_voodooscroller behavior -- Enable voodoo dolls on slow scrollers to move too slowly.",
+	     CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	// ZDoom-compatibility changes
 	//------------------------------

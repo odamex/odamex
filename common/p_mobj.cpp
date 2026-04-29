@@ -91,6 +91,7 @@ EXTERN_CVAR(co_fineautoaim)
 EXTERN_CVAR(sv_allowshowspawns)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_thingfilter)
+EXTERN_CVAR(co_voodooscroller)
 
 NetIDHandler ServerNetID;
 
@@ -1344,8 +1345,10 @@ static void P_ApplyXYFriction(AActor* mo)
 	const bool isUserCommandingMotion   = mo->player and mo->player->cmd.forwardmove != 0 and
 	                                                     mo->player->cmd.sidemove != 0;
     const bool isOnConveyor             = mo->flags3 & MFO_IS_ON_CONVEYOR;
+    const bool isSuperSlowVoodoo        = isVoodoo and co_voodooscroller;
 
-    const bool keepInMotion = isOnConveyor or
+    const bool keepInMotion = (isOnConveyor and not isSuperSlowVoodoo)
+                               or
                               (isRealPlayer and isUserCommandingMotion);
 
     // killough 11/98: Stop voodoo dolls that have come to rest,
