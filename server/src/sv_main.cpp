@@ -5031,9 +5031,6 @@ void OnChangedSwitchTexture (line_t *line, int useAgain)
 void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
                         const LineActivationType activationType, const bool bossaction)
 {
-	if (P_LineSpecialMovesSector(line->special))
-		return;
-
 	for (auto& player : players)
 	{
 		if (!(player.ingame()))
@@ -5330,9 +5327,6 @@ void SV_ClearPlayerQueue()
 void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* activator, int arg0,
                                int arg1, int arg2, int arg3, int arg4)
 {
-	if (P_LineSpecialMovesSector(special))
-		return;
-
 	for (auto& player : players)
 	{
 		if (!(player.ingame()))
