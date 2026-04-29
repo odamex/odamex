@@ -39,6 +39,8 @@
 
 #include <stdlib.h>
 
+#include "fmt/color.h"
+
 #include "i_crash.h"
 #include "m_argv.h"
 #include "d_main.h"
@@ -69,6 +71,9 @@ void STACK_ARGS call_terms (void)
 	while (!TermFuncs.empty())
 		TermFuncs.top().first(), TermFuncs.pop();
 }
+
+EXTERN_CVAR(log_color)
+static constexpr auto ERROR_STYLE = fmt::emphasis::bold | fg(fmt::color::red);
 
 #ifdef _WIN32
 static HANDLE hEvent;
@@ -218,12 +223,32 @@ int __cdecl main(int argc, char *argv[])
 	}
 	catch (CDoomError& error)
 	{
+		// It's possible that the fatal error was encountered before
+		// loading the config file or setting cvars set from the command line
+		// so we should default to no color unless we know that we have already loaded that
 		if (LOG.is_open())
 		{
-			LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
+			if (DefaultsLoaded && log_color == 2)
+				LOG << fmt::format(ERROR_STYLE, "=== ERROR: {} ===\n\n", error.GetMsg());
+			else
+				LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
 		}
 
-		fmt::print(stderr, "=== ERROR: {} ===\n\n", error.GetMsg());
+		fmt::text_style style;
+		try
+		{
+			// I_ConsoleUseColor can throw on Windows
+			// but we've already gotten another fatal error,
+			// possibly even from another call to it
+			// so lets just ignore that exception since
+			// we're about to exit and log another one anyway
+			if (DefaultsLoaded && log_color && I_ConsoleUseColor())
+				style = ERROR_STYLE;
+		}
+		catch (CDoomError&)
+		{}
+
+		fmt::print(stderr, style, "=== ERROR: {} ===\n\n", error.GetMsg());
 
 		call_terms();
 		exit(EXIT_FAILURE);
@@ -349,12 +374,21 @@ int main(int argc, char **argv)
 	}
 	catch (CDoomError& error)
 	{
+		// It's possible that the fatal error was encountered before
+		// loading the config file or setting cvars set from the command line
+		// so we should default to no color unless we know that we have already loaded that
 		if (LOG.is_open())
 		{
-			LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
+			if (DefaultsLoaded && log_color == 2)
+				LOG << fmt::format(ERROR_STYLE, "=== ERROR: {} ===\n\n", error.GetMsg());
+			else
+				LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
 		}
 
-		fmt::print(stderr, "=== ERROR: {} ===\n\n", error.GetMsg());
+		if (DefaultsLoaded && log_color && I_ConsoleUseColor())
+			fmt::print(stderr, ERROR_STYLE, "=== ERROR: {} ===\n\n", error.GetMsg());
+		else
+			fmt::print(stderr, "=== ERROR: {} ===\n\n", error.GetMsg());
 
 		call_terms();
 		exit(EXIT_FAILURE);
