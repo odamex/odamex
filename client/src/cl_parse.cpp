@@ -261,59 +261,59 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 {
 	player_t& p = consoleplayer();
 
+    const odaproto::Player& playerInfo = msg->player();
 
+    PlayerItemDataType playerState;
 
-    PlayerItemDataType inventory;
+	const size_t ammoElementCount = std::min(playerState.ammo.size(), static_cast<size_t>(playerInfo.ammo_size()));
 
-	const size_t ammoElementCount = std::min(inventory.ammo.size(), static_cast<size_t>(msg->ammo_size()));
+	std::copy(playerInfo.ammo().begin(),
+	          playerInfo.ammo().begin() + ammoElementCount,
+	          playerState.ammo.begin());
 
-	std::copy(msg->ammo().begin(),
-	          msg->ammo().begin() + ammoElementCount,
-	          inventory.ammo.begin());
+	std::copy(playerInfo.maxammo().begin(),
+	          playerInfo.maxammo().begin() + ammoElementCount,
+	          playerState.maxammo.begin());
 
-	std::copy(msg->maxammo().begin(),
-	          msg->maxammo().begin() + ammoElementCount,
-	          inventory.maxammo.begin());
+    playerState.health        = playerInfo.health();
+    playerState.armorpoints   = playerInfo.armorpoints();
+    playerState.armortype     = playerInfo.armortype();
+    playerState.lives         = playerInfo.lives();
 
-    inventory.health        = msg->health();
-    inventory.armorpoints   = msg->armorpoints();
-    inventory.armortype     = msg->armortype();
-    inventory.lives         = msg->lives();
+	const size_t powersElementCount = std::min(playerState.powers.size(), static_cast<size_t>(playerInfo.powers_size()));
+	std::copy(playerInfo.powers().begin(),
+	          playerInfo.powers().begin() + powersElementCount,
+	          playerState.powers.begin());
 
-	const size_t powersElementCount = std::min(inventory.powers.size(), static_cast<size_t>(msg->powers_size()));
-	std::copy(msg->powers().begin(),
-	          msg->powers().begin() + powersElementCount,
-	          inventory.powers.begin());
+	playerState.readyweapon   = static_cast<weapontype_t>(playerInfo.readyweapon());
+	playerState.pendingweapon = static_cast<weapontype_t>(playerInfo.pendingweapon());
 
-	inventory.readyweapon   = static_cast<weapontype_t>(msg->readyweapon());
-	inventory.pendingweapon = static_cast<weapontype_t>(msg->pendingweapon());
+	UnpackBoolArray(playerState.weaponowned, playerInfo.weaponowned());
+	UnpackBoolArray(playerState.cards,       playerInfo.cards());
 
-	UnpackBoolArray(inventory.weaponowned, msg->weaponowned());
-	UnpackBoolArray(inventory.cards,       msg->cards());
+    playerState.backpack = playerInfo.backpack();
+    playerState.cheats   = playerInfo.cheats();
 
-    inventory.backpack = msg->backpack();
-    inventory.cheats   = msg->cheats();
-
-	const size_t pspriteElementCount = std::min(inventory.psprites.size(), static_cast<size_t>(msg->psprites_size()));
+	const size_t pspriteElementCount = std::min(playerState.psprites.size(), static_cast<size_t>(playerInfo.psprites_size()));
 
     for (size_t i = 0; i < pspriteElementCount; ++i)
     {
-        const int32_t state = msg->psprites(i).statenum();
+        const int32_t state = playerInfo.psprites(i).statenum();
         if (states.contains(state))
         {
-            inventory.psprites[i].statenum = static_cast<statenum_t>(state);
-            inventory.psprites[i].tics     = static_cast<statenum_t>(msg->psprites(i).tics());
+            playerState.psprites[i].statenum = static_cast<statenum_t>(state);
+            playerState.psprites[i].tics     = static_cast<statenum_t>(playerInfo.psprites(i).tics());
         }
     }
 
-	if ((p.lives == 0 && msg->lives() > 0) && !netdemo.isplaying())
+	if ((p.lives == 0 && playerInfo.lives() > 0) && !netdemo.isPlaying())
 	{
 		// stop spying so you know you're back from the dead.
 		::displayplayer_id = ::consoleplayer_id;
 	}
 
 
-	CL_ResolveInventory(msg->client_tic(), inventoryResponse);
+	CL_ResolveInventory(playerInfo.client_tic(), playerState);
 
 
 
@@ -347,7 +347,16 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 		}
 	}
 #endif
-	for (int i = 0; i < NUMPSPRITES; i++)
+
+
+    // ----------------------------------------------------------------
+    //  Everything commented out from here down is special and needs to
+    //  be replicated (or replaced with something else) in the rollback
+    //  stuff to make it apply correctly.
+    // ----------------------------------------------------------------
+    //
+#if 0
+    for (int i = 0; i < NUMPSPRITES; i++)
 		P_SetPsprite(p, i, stnum[i]);
 
 	for (int i = 0; i < NUMPOWERS; i++)
@@ -374,6 +383,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 
 	// If a full update was declared, don't try and correct any weapons.
 	ClientReplay::getInstance().reset();
+#endif
 }
 
 /**
