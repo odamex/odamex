@@ -50,7 +50,7 @@ class PlayerStateRoller
 		bool ResolveMaxAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_maxAmmo, player_t& io_player);
 
 		/// Similar to ResolveAmmoMax: absolute adjustment of weapon ownership state.
-		bool ResolveWeaponOwned(int i_oldTic, const weapontype_t i_weaponType, bool i_isOwned, player_t& io_player);
+		bool ResolveWeaponOwned(int i_oldTic, const std::array<bool, NUMWEAPONS>& i_weaponOwned, player_t& io_player);
 
 		/// Resolve the canonical statement about player weapon selection.
 		/// Returns true if the player's weapon selection changed as a result, false otherwise.
@@ -119,6 +119,7 @@ class PlayerStateRoller
 
         bool RollbackAmmo(HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>& i_ammo);
 		bool RollbackMaxAmmo(HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>& i_maxAmmo);
+		bool RollbackWeaponOwned(HistoryTableType::iterator i_historyIter, const std::array<bool, NUMWEAPONS>& i_weaponOwned);
 
 		template <typename Callable>
 		void Roll(int i_oldTic, Callable&& i_callable);

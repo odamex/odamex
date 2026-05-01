@@ -164,6 +164,19 @@ bool PlayerStateRoller::RollbackMaxAmmo(HistoryTableType::iterator i_historyIter
 	return false;
 }
 
+bool PlayerStateRoller::RollbackWeaponOwned(HistoryTableType::iterator i_historyIter, const std::array<bool, NUMWEAPONS>& i_weaponOwned)
+{
+    if (i_historyIter->second.weaponowned != i_weaponOwned)
+    {
+		Roll(i_historyIter->first, [&i_weaponOwned](auto& rollingIter)
+			{
+				rollingIter->second.weaponowned = i_weaponOwned;
+			});
+        return true;
+    }
+    return false;
+}
+
 
 bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo, player_t& io_player)
 {
@@ -187,21 +200,13 @@ bool PlayerStateRoller::ResolveMaxAmmo(int i_oldTic, const std::array<int, NUMAM
     return false;
 }
 
-bool PlayerStateRoller::ResolveWeaponOwned(int i_oldTic, const weapontype_t i_weaponType, bool i_isOwned, player_t& io_player)
+bool PlayerStateRoller::ResolveWeaponOwned(int i_oldTic, const std::array<bool, NUMWEAPONS>& i_weaponOwned, player_t& io_player)
 {
 	auto historyIter = m_history.find(i_oldTic);
-	if (historyIter != m_history.end() and i_weaponType < NUMWEAPONS)
+	if (historyIter != m_history.end() and RollbackWeaponOwned(historyIter, i_weaponOwned))
 	{
-		if (historyIter->second.weaponowned[i_weaponType] != i_isOwned)
-		{
-			Roll(i_oldTic, [i_weaponType, i_isOwned](auto& rollingIter)
-				{
-					rollingIter->second.weaponowned[i_weaponType] = i_isOwned;
-				});
-
-			io_player.weaponowned[i_weaponType] = i_isOwned;
-			return true;
-		}
+		ApplyMostRecentToPlayer(io_player);
+		return true;
 	}
 	return false;
 }
@@ -282,21 +287,7 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
 
         const bool ammoRequiresRoll = RollbackAmmo(historyIter, i_itemData.ammo);
 		const bool maxammoRequiresRoll = RollbackMaxAmmo(historyIter, i_itemData.maxammo);
-
-		bool weaponOwnedRequiresRoll = false;
-		for (size_t i = 0; i < i_itemData.weaponowned.size(); ++i)
-		{
-			if (historyIter->second.weaponowned[i] != i_itemData.weaponowned[i])
-			{
-				weaponOwnedRequiresRoll = true;
-				Roll(i_oldTic, [&i_itemData](auto& rollingIter)
-					{
-						// Just copy the whole array and be done with it - this is nothing but bools.
-						rollingIter->second.weaponowned = i_itemData.weaponowned;
-					});
-				break;
-			}
-		}
+		const bool weaponOwnedRequiresRoll = RollbackWeaponOwned(historyIter, i_itemData.weaponowned);
 
 		const bool readyweaponRequiresRoll = i_itemData.readyweapon != historyIter->second.readyweapon;
 		if (readyweaponRequiresRoll)
