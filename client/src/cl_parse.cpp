@@ -1539,7 +1539,7 @@ static void CL_FireWeapon(const odaproto::svc::FireWeapon* msg)
 		PrintFmt("CL_FireWeapon: unknown weapon {}\n", firedweap);
 		return;
 	}
-	int clientTicAtFireWeaponTime = msg->servertic();
+	int clientTicAtFireWeaponTime = msg->player_tic();
 
 	if (firedweap != p->readyweapon)
 	{

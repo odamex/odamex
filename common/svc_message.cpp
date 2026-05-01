@@ -754,7 +754,7 @@ odaproto::svc::FireWeapon SVC_FireWeapon(const player_t& player)
 	odaproto::svc::FireWeapon msg;
 
 	msg.set_readyweapon (player.readyweapon);
-	msg.set_servertic   (player.tic);
+	msg.set_player_tic  (player.tic);
 
 	const ammotype_t ammotype = weaponinfo[player.readyweapon].ammotype;
 	if (ammotype != am_noammo)
