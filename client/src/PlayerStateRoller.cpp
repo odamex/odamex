@@ -276,6 +276,19 @@ bool PlayerStateRoller::ResolvePsprites(int i_oldTic, const psprnum_t i_pspriteN
 	return false;
 }
 
+namespace
+{
+    template <typename DataType>
+    bool Update(DataType& io_obj, const DataType& i_value)
+    {
+        if (io_obj != i_value)
+        {
+            io_obj = i_value;
+            return true;
+        }
+        return false;
+    }
+}
 
 bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemData, player_t& io_player)
 {
@@ -296,17 +309,39 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
 		const bool weaponOwnedRequiredRoll      = RollbackWeaponOwned    (historyIter, i_itemData.weaponowned);
         const bool weaponSelectionRequiredRoll  = RollbackWeaponSelection(historyIter, i_itemData.readyweapon, i_itemData.pendingweapon);
 
-		const bool playerObjectRequiresRefresh =    ammoRequiredRoll
-		                                         or maxammoRequiredRoll
-		                                         or weaponOwnedRequiredRoll
-		                                         or weaponSelectionRequiredRoll;
+        // Now cover the fields that we don't actually rollback, just apply because the server dictates so.
+		auto mostRecentIter = m_history.find(m_mostRecentTic);
+		assert(mostRecentIter != m_history.end());
 
-		if (playerObjectRequiresRefresh)
+        const bool healthUpdated        = Update(mostRecentIter->second.health,     i_itemData.health);
+        const bool armorpointsUpdated   = Update(mostRecentIter->second.armorpoints,i_itemData.armorpoints);
+        const bool armortypeUpdated     = Update(mostRecentIter->second.armortype,  i_itemData.armortype);
+        const bool livesUpdated         = Update(mostRecentIter->second.lives,      i_itemData.lives);
+        const bool powersUpdated        = Update(mostRecentIter->second.powers,     i_itemData.powers);
+        const bool cardsUpdated         = Update(mostRecentIter->second.cards,      i_itemData.cards);
+        const bool backpackUpdated      = Update(mostRecentIter->second.backpack,   i_itemData.backpack);
+        const bool cheatsUpdated        = Update(mostRecentIter->second.cheats,     i_itemData.cheats);
+
+        const bool pspritesUpdated = false; // For now
+
+		if (ammoRequiredRoll
+            or maxammoRequiredRoll
+            or weaponOwnedRequiredRoll
+            or weaponSelectionRequiredRoll
+            or healthUpdated
+            or armorpointsUpdated
+            or armortypeUpdated
+            or livesUpdated
+            or powersUpdated
+            or cardsUpdated
+            or backpackUpdated
+            or cheatsUpdated
+            or pspritesUpdated
+            )
 		{
-			ApplyMostRecentToPlayer(io_player);
+            mostRecentIter->second.ToPlayer(io_player);
+            return true;
 		}
-
-		return playerObjectRequiresRefresh;
 	}
 
 	return false;
