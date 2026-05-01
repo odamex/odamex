@@ -149,6 +149,31 @@ bool PlayerStateRoller::RollbackAmmo(int i_oldTic, const std::array<int, NUMAMMO
 	return false;
 }
 
+bool PlayerStateRoller::RollbackMaxAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_maxAmmo)
+{
+	auto historyIter = m_history.find(i_oldTic);
+	if (historyIter != m_history.end())
+	{
+		std::array<int, NUMAMMO> deltaMaxAmmo;
+		FillDeltaArray(deltaMaxAmmo, i_maxAmmo, historyIter->second.maxammo);
+
+		if (RequiresCorrection(deltaMaxAmmo))
+		{
+			Roll(i_oldTic, [&i_maxAmmo] (auto& rollingIter)
+				{
+					// Please note that we don't apply the delta across the history of maxammo.
+					// The reason for that is if we have, say, an off-by-one tic prediction of
+					// a pickup that affects maxammo, we don't want to wind up with a double-
+					// value maxammo.
+					rollingIter->second.maxammo = i_maxAmmo;
+				});
+			return true;
+		}
+	}
+	return false;
+}
+
+
 bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo, player_t& io_player)
 {
     if (RollbackAmmo(i_oldTic, i_ammo))
@@ -159,23 +184,14 @@ bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>
     return false;
 }
 
-bool PlayerStateRoller::ResolveMaxAmmo(int i_oldTic, const ammotype_t i_ammoType, int i_maxAmmoQuantity, player_t& io_player)
+bool PlayerStateRoller::ResolveMaxAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_maxAmmo, player_t& io_player)
 {
-	auto historyIter = m_history.find(i_oldTic);
-	if (historyIter != m_history.end() and i_ammoType < NUMAMMO)
-	{
-		if (historyIter->second.maxammo[i_ammoType] != i_maxAmmoQuantity)
-		{
-			Roll(i_oldTic, [i_ammoType, i_maxAmmoQuantity](auto& rollingIter)
-				{
-					rollingIter->second.maxammo[i_ammoType] = i_maxAmmoQuantity;
-				});
-
-			io_player.maxammo[i_ammoType] = i_maxAmmoQuantity;
-			return true;
-		}
-	}
-	return false;
+    if (RollbackMaxAmmo(i_oldTic, i_maxAmmo))
+    {
+        ApplyMostRecentToPlayer(io_player);
+        return true;
+    }
+    return false;
 }
 
 bool PlayerStateRoller::ResolveWeaponOwned(int i_oldTic, const weapontype_t i_weaponType, bool i_isOwned, player_t& io_player)
@@ -271,32 +287,8 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
 		// shots since I had a desync, those shots remain fired and the ammo count ultimately
 		// still reflects those shots, just from a corrected starting point.
 
-		PlayerItemDataType deltaItemData;
-		FillDeltaArray(deltaItemData.ammo,    i_itemData.ammo,    historyIter->second.ammo);
-		FillDeltaArray(deltaItemData.maxammo, i_itemData.maxammo, historyIter->second.maxammo);
-
-		const bool ammoRequiresRoll    = RequiresCorrection(deltaItemData.ammo);
-		const bool maxammoRequiresRoll = RequiresCorrection(deltaItemData.maxammo);
-
-		if (ammoRequiresRoll)
-		{
-			Roll(i_oldTic, [&deltaItemData](auto& rollingIter)
-				{
-					ApplyDeltaArray(rollingIter->second.ammo, deltaItemData.ammo);
-				});
-		}
-
-		if (maxammoRequiresRoll)
-		{
-			Roll(i_oldTic, [&i_itemData](auto& rollingIter)
-				{
-					// Please note that we don't apply the delta across the history of maxammo.
-					// The reason for that is if we have, say, an off-by-one tic prediction of
-					// a pickup that affects maxammo, we don't want to wind up with a double-
-					// value maxammo.
-					rollingIter->second.maxammo = i_itemData.maxammo;
-				});
-		}
+        const bool ammoRequiresRoll = RollbackAmmo(i_oldTic, i_itemData.ammo);
+		const bool maxammoRequiresRoll = RollbackMaxAmmo(i_oldTic, i_itemData.maxammo);
 
 		bool weaponOwnedRequiresRoll = false;
 		for (size_t i = 0; i < i_itemData.weaponowned.size(); ++i)

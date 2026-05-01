@@ -47,7 +47,7 @@ class PlayerStateRoller
 
 		/// Similar to ResolveAmmo, except it works on maxammo and does not roll deltas - changes
 		/// to this value are treated as absolute, coarse adjustments.
-		bool ResolveMaxAmmo(int i_oldTic, const ammotype_t i_ammoType, int i_maxAmmoQuantity, player_t& io_player);
+		bool ResolveMaxAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_maxAmmo, player_t& io_player);
 
 		/// Similar to ResolveAmmoMax: absolute adjustment of weapon ownership state.
 		bool ResolveWeaponOwned(int i_oldTic, const weapontype_t i_weaponType, bool i_isOwned, player_t& io_player);
@@ -111,6 +111,7 @@ class PlayerStateRoller
         void ApplyMostRecentToPlayer(player_t& io_player);
 
         bool RollbackAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo);
+		bool RollbackMaxAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_maxAmmo);
 
 		template <typename Callable>
 		void Roll(int i_oldTic, Callable&& i_callable);
