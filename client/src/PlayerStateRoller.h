@@ -52,7 +52,11 @@ class PlayerStateRoller
 		/// Similar to ResolveAmmoMax: absolute adjustment of weapon ownership state.
 		bool ResolveWeaponOwned(int i_oldTic, const weapontype_t i_weaponType, bool i_isOwned, player_t& io_player);
 
+		/// Resolve the canonical statement about player weapon selection.
+		/// Returns true if the player's weapon selection changed as a result, false otherwise.
 		bool ResolveWeaponSelection(int i_oldTic, const weapontype_t i_readyWeapon, const weapontype_t i_pendingWeapon, player_t& io_player);
+
+        bool ResolvePsprites(int i_oldTic, const psprnum_t i_pspriteNum, const PspriteStateType& i_psprite, player_t& io_player);
 
 		/// Generic stream-in operator.
 		template <typename StreamType>

@@ -202,6 +202,46 @@ bool PlayerStateRoller::ResolveWeaponSelection(int i_oldTic, const weapontype_t 
 	return false;
 }
 
+namespace
+{
+    class PspriteRoller
+    {
+        public:
+            explicit PspriteRoller(const PspriteStateType& i_psprite,
+                                   psprnum_t               i_pspriteNum) :
+                m_rollingPsprite (i_psprite),
+                m_pspriteNum     (i_pspriteNum)
+            {
+            }
+
+            void operator()(std::unordered_map<int, PlayerItemDataType>::iterator& historyIter)
+            {
+                //if (
+            }
+
+        protected:
+            PspriteStateType m_rollingPsprite;
+            psprnum_t        m_pspriteNum;
+    };
+}
+
+bool PlayerStateRoller::ResolvePsprites(int i_oldTic, const psprnum_t i_pspriteNum, const PspriteStateType& i_psprite, player_t& io_player)
+{
+	auto historyIter = m_history.find(i_oldTic);
+	if (historyIter != m_history.end() and i_pspriteNum < NUMPSPRITES)
+	{
+        if (historyIter->second.psprites[i_pspriteNum] != i_psprite)
+        {
+            Roll(i_oldTic, PspriteRoller(i_psprite, i_pspriteNum));
+
+            //TODO: Apply the end result to the player.
+            return true;
+        }
+	}
+	return false;
+}
+
+
 bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemData, player_t& io_player)
 {
 	auto historyIter = m_history.find(i_oldTic);
