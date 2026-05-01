@@ -224,6 +224,12 @@ message PlayerWeaponSelection
     uint32 pendingweapon = 3;
 }
 
+message PlayerPowers
+{
+    int32           player_tic = 1;
+    repeated int32  powers     = 2;    // powers[power_type] = monotonic counter
+}
+
 // svc_updatesector
 message UpdateSector
 {

@@ -3528,6 +3528,11 @@ void SV_WriteCommandsForPlayer(player_t& player)
         MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerMaxAmmo(player));
     }
 
+    if (player.powerMonitors.EvaluateAsChanged())
+    {
+        MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerPowers(player));
+    }
+
 	// [SL] Send client info about player he is spying on
 	player_t& target = idplayer(player.spying);
 	if (validplayer(target) && &player != &target && P_CanSpy(player, target))
@@ -4612,6 +4617,7 @@ static void SV_ArmInventoryMonitors()
         player.weaponOwnedMonitors.Arm();
         player.ammoMonitors.Arm();
         player.maxAmmoMonitors.Arm();
+        player.powerMonitors.Arm();
     }
 }
 

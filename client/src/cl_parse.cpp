@@ -3161,6 +3161,18 @@ static void CL_PlayerWeaponSelection(const odaproto::svc::PlayerWeaponSelection*
                                        consoleplayer());
 }
 
+static void CL_PlayerPowers(const odaproto::svc::PlayerPowers* msg)
+{
+    std::array<int, NUMPOWERS> powers;
+    std::copy(msg->powers().begin(),
+              msg->powers().end(),
+              powers.begin());
+
+    rollerState.ResolvePowers(msg->player_tic(),
+                              powers,
+                              consoleplayer());
+}
+
 static void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
 {
 	const size_t   index = msg->avatar_index();
@@ -3407,6 +3419,7 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_playermaxammo, CL_PlayerMaxAmmo, odaproto::svc::PlayerMaxAmmo);
 		SV_MSG(svc_playerweaponowned, CL_PlayerWeaponOwned, odaproto::svc::PlayerWeaponOwned);
 		SV_MSG(svc_playerweaponselection, CL_PlayerWeaponSelection, odaproto::svc::PlayerWeaponSelection);
+		SV_MSG(svc_playerpowers, CL_PlayerPowers, odaproto::svc::PlayerPowers);
 		SV_MSG(svc_configureavatar, CL_ConfigureAvatar, odaproto::svc::ConfigureAvatar);
 		SV_MSG(clc_netdemocap, CL_NetdemoCap, odaproto::clc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);

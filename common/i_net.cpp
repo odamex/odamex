@@ -1081,6 +1081,7 @@ static void InitNetMessageFormats()
 	MSG_INFO(svc_playermaxammo);
 	MSG_INFO(svc_playerweaponowned);
 	MSG_INFO(svc_playerweaponselection);
+	MSG_INFO(svc_playerpowers);
 	MSG_INFO(svc_configureavatar);
 	MSG_INFO(clc_playerinput);
 	MSG_INFO(clc_netdemocap);

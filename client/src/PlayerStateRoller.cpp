@@ -255,6 +255,18 @@ bool PlayerStateRoller::ResolveWeaponSelection(int i_oldTic, const weapontype_t 
 		ApplyMostRecentToPlayer(io_player);
 		return true;
 	}
+    return false;
+}
+
+bool PlayerStateRoller::ResolvePowers(int i_oldTic, const std::array<int, NUMPOWERS>& i_powers, player_t& io_player)
+{
+	auto historyIter = m_history.find(i_oldTic);
+	if (historyIter != m_history.end() and RollbackPowers(historyIter, i_powers))
+	{
+		ApplyMostRecentToPlayer(io_player);
+		return true;
+	}
+    return false;
 }
 
 namespace

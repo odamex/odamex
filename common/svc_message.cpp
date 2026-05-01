@@ -175,6 +175,18 @@ odaproto::svc::PlayerWeaponSelection SVC_PlayerWeaponSelection(const player_t& p
     return msg;
 }
 
+odaproto::svc::PlayerPowers SVC_PlayerPowers(const player_t& player)
+{
+    odaproto::svc::PlayerPowers msg;
+
+    msg.set_player_tic(player.tic);
+    msg.mutable_powers()->Add(player.powers.begin(),
+                              player.powers.end());
+
+    return msg;
+}
+
+
 /**
  * @brief Change the location of a player.
  */

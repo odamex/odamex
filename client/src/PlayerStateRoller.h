@@ -56,6 +56,8 @@ class PlayerStateRoller
 		/// Returns true if the player's weapon selection changed as a result, false otherwise.
 		bool ResolveWeaponSelection(int i_oldTic, const weapontype_t i_readyWeapon, const weapontype_t i_pendingWeapon, player_t& io_player);
 
+        bool ResolvePowers(int i_oldTic, const std::array<int, NUMPOWERS>& i_powers, player_t& io_player);
+
         bool ResolvePsprites(int i_oldTic, const psprnum_t i_pspriteNum, const PspriteStateType& i_psprite, player_t& io_player);
 
 		/// Generic stream-in operator.

@@ -1358,7 +1358,7 @@ player_t::player_t() :
     weaponOwnedMonitors { weaponowned },
     ammoMonitors        { ammo },
     maxAmmoMonitors     { maxammo },
-    //bulletMonitor(ammo[am_clip]),
+    powerMonitors       { powers },
 	attackdown(0),
 	usedown(0),
 	cheats(0),

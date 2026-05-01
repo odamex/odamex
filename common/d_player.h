@@ -196,6 +196,7 @@ public:
     LatchedItemArrayMonitor<bool, NUMWEAPONS>   weaponOwnedMonitors;
     LatchedItemArrayMonitor<int, NUMAMMO>       ammoMonitors;
     LatchedItemArrayMonitor<int, NUMAMMO>       maxAmmoMonitors;
+    LatchedItemArrayMonitor<int, NUMPOWERS>     powerMonitors;
 
     // True if button down last tic.
 	int			attackdown, usedown;
