@@ -128,47 +128,38 @@ void PlayerStateRoller::ApplyMostRecentToPlayer(player_t& io_player)
 	mostRecentIter->second.ToPlayer(io_player);
 }
 
-bool PlayerStateRoller::RollbackAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo)
+bool PlayerStateRoller::RollbackAmmo(HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>& i_ammo)
 {
-	auto historyIter = m_history.find(i_oldTic);
-	if (historyIter != m_history.end())
+	std::array<int, NUMAMMO> ammoDelta;
+	FillDeltaArray(ammoDelta, i_ammo, i_historyIter->second.ammo);
+
+	if (RequiresCorrection(ammoDelta))
 	{
-		std::array<int, NUMAMMO> ammoDelta;
-
-		FillDeltaArray(ammoDelta, i_ammo, historyIter->second.ammo);
-
-		if (RequiresCorrection(ammoDelta))
-		{
-			Roll(i_oldTic, [&ammoDelta](auto& rollingIter)
-				{
-					ApplyDeltaArray(rollingIter->second.ammo, ammoDelta);
-				});
-			return true;
-		}
+		Roll(i_historyIter->first, [&ammoDelta](auto& rollingIter)
+			{
+				ApplyDeltaArray(rollingIter->second.ammo, ammoDelta);
+			});
+		return true;
 	}
 	return false;
 }
 
-bool PlayerStateRoller::RollbackMaxAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_maxAmmo)
+bool PlayerStateRoller::RollbackMaxAmmo(HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>& i_maxAmmo)
 {
-	auto historyIter = m_history.find(i_oldTic);
-	if (historyIter != m_history.end())
-	{
-		std::array<int, NUMAMMO> deltaMaxAmmo;
-		FillDeltaArray(deltaMaxAmmo, i_maxAmmo, historyIter->second.maxammo);
+	std::array<int, NUMAMMO> deltaMaxAmmo;
+	FillDeltaArray(deltaMaxAmmo, i_maxAmmo, i_historyIter->second.maxammo);
 
-		if (RequiresCorrection(deltaMaxAmmo))
-		{
-			Roll(i_oldTic, [&i_maxAmmo] (auto& rollingIter)
-				{
-					// Please note that we don't apply the delta across the history of maxammo.
-					// The reason for that is if we have, say, an off-by-one tic prediction of
-					// a pickup that affects maxammo, we don't want to wind up with a double-
-					// value maxammo.
-					rollingIter->second.maxammo = i_maxAmmo;
-				});
-			return true;
-		}
+	if (RequiresCorrection(deltaMaxAmmo))
+	{
+		Roll(i_historyIter->first, [&i_maxAmmo] (auto& rollingIter)
+			{
+				// Please note that we don't apply the delta across the history of maxammo.
+				// The reason for that is if we have, say, an off-by-one tic prediction of
+				// a pickup that affects maxammo, we don't want to wind up with a double-
+				// value maxammo.
+				rollingIter->second.maxammo = i_maxAmmo;
+			});
+		return true;
 	}
 	return false;
 }
@@ -176,7 +167,8 @@ bool PlayerStateRoller::RollbackMaxAmmo(int i_oldTic, const std::array<int, NUMA
 
 bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo, player_t& io_player)
 {
-    if (RollbackAmmo(i_oldTic, i_ammo))
+	auto historyIter = m_history.find(i_oldTic);
+	if (historyIter != m_history.end() and RollbackAmmo(historyIter, i_ammo))
     {
         ApplyMostRecentToPlayer(io_player);
         return true;
@@ -186,7 +178,8 @@ bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>
 
 bool PlayerStateRoller::ResolveMaxAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_maxAmmo, player_t& io_player)
 {
-    if (RollbackMaxAmmo(i_oldTic, i_maxAmmo))
+	auto historyIter = m_history.find(i_oldTic);
+	if (historyIter != m_history.end() and RollbackMaxAmmo(historyIter, i_maxAmmo))
     {
         ApplyMostRecentToPlayer(io_player);
         return true;
@@ -287,8 +280,8 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
 		// shots since I had a desync, those shots remain fired and the ammo count ultimately
 		// still reflects those shots, just from a corrected starting point.
 
-        const bool ammoRequiresRoll = RollbackAmmo(i_oldTic, i_itemData.ammo);
-		const bool maxammoRequiresRoll = RollbackMaxAmmo(i_oldTic, i_itemData.maxammo);
+        const bool ammoRequiresRoll = RollbackAmmo(historyIter, i_itemData.ammo);
+		const bool maxammoRequiresRoll = RollbackMaxAmmo(historyIter, i_itemData.maxammo);
 
 		bool weaponOwnedRequiresRoll = false;
 		for (size_t i = 0; i < i_itemData.weaponowned.size(); ++i)

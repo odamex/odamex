@@ -108,21 +108,23 @@ class PlayerStateRoller
 
 	protected:
 
-        void ApplyMostRecentToPlayer(player_t& io_player);
-
-        bool RollbackAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo);
-		bool RollbackMaxAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_maxAmmo);
-
-		template <typename Callable>
-		void Roll(int i_oldTic, Callable&& i_callable);
-
 		struct IdentityHasher
 		{
 			size_t operator()(int ticNumber) const { return static_cast<size_t>(ticNumber); }
 		};
 
+        using HistoryTableType = std::unordered_map<int, PlayerItemDataType, IdentityHasher>;
+
+        void ApplyMostRecentToPlayer(player_t& io_player);
+
+        bool RollbackAmmo(HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>& i_ammo);
+		bool RollbackMaxAmmo(HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>& i_maxAmmo);
+
+		template <typename Callable>
+		void Roll(int i_oldTic, Callable&& i_callable);
+
 		// One second worth of state history, keyed on *client* tic number.
-		std::unordered_map<int, PlayerItemDataType, IdentityHasher> m_history;
+		HistoryTableType m_history;
 
 		int m_mostRecentTic;
 		int m_oldestTic;
