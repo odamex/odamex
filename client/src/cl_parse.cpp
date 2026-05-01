@@ -1973,6 +1973,11 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 		return;
 	}
 
+    // Do a switcheroo of the new state for the historical state at the time of the pickup
+    // so that we can run the actual P_GiveSpecial function and let it produce the result
+    // of the pickup *at that old point in time*.  With that result in hand, we undo the
+    // switcheroo and resolve the potentially-modified history.
+
     const int oldTic = msg->player_tic();
     auto optionalHistory = rollerState.GetStateAtTic(oldTic);
 	const PlayerItemDataType currentClientSideState {player};
