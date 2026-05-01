@@ -177,6 +177,22 @@ bool PlayerStateRoller::RollbackWeaponOwned(HistoryTableType::iterator i_history
     return false;
 }
 
+bool PlayerStateRoller::RollbackWeaponSelection(HistoryTableType::iterator i_historyIter, const weapontype_t i_readyWeapon, const weapontype_t i_pendingWeapon)
+{
+	if (i_readyWeapon < NUMWEAPONS and i_pendingWeapon < NUMWEAPONS
+	    and (i_historyIter->second.readyweapon != i_readyWeapon
+	        or i_historyIter->second.pendingweapon != i_pendingWeapon))
+	{
+		Roll(i_historyIter->first, [i_readyWeapon, i_pendingWeapon](auto& rollingIter)
+			{
+				rollingIter->second.readyweapon   = i_readyWeapon;
+				rollingIter->second.pendingweapon = i_pendingWeapon;
+			});
+		return true;
+	}
+	return false;
+
+}
 
 bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo, player_t& io_player)
 {
@@ -214,21 +230,11 @@ bool PlayerStateRoller::ResolveWeaponOwned(int i_oldTic, const std::array<bool, 
 bool PlayerStateRoller::ResolveWeaponSelection(int i_oldTic, const weapontype_t i_readyWeapon, const weapontype_t i_pendingWeapon, player_t& io_player)
 {
 	auto historyIter = m_history.find(i_oldTic);
-	if (historyIter != m_history.end() and i_readyWeapon < NUMWEAPONS and i_pendingWeapon < NUMWEAPONS)
+	if (historyIter != m_history.end() and RollbackWeaponSelection(historyIter, i_readyWeapon, i_pendingWeapon))
 	{
-		if (historyIter->second.readyweapon != i_readyWeapon or historyIter->second.pendingweapon != i_pendingWeapon)
-		{
-			Roll(i_oldTic, [i_readyWeapon, i_pendingWeapon](auto& rollingIter)
-				{
-					rollingIter->second.readyweapon   = i_readyWeapon;
-					rollingIter->second.pendingweapon = i_pendingWeapon;
-				});
-			io_player.readyweapon   = i_readyWeapon;
-			io_player.pendingweapon = i_pendingWeapon;
-			return true;
-		}
+		ApplyMostRecentToPlayer(io_player);
+		return true;
 	}
-	return false;
 }
 
 namespace
@@ -285,33 +291,15 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
 		// shots since I had a desync, those shots remain fired and the ammo count ultimately
 		// still reflects those shots, just from a corrected starting point.
 
-        const bool ammoRequiresRoll = RollbackAmmo(historyIter, i_itemData.ammo);
-		const bool maxammoRequiresRoll = RollbackMaxAmmo(historyIter, i_itemData.maxammo);
-		const bool weaponOwnedRequiresRoll = RollbackWeaponOwned(historyIter, i_itemData.weaponowned);
+        const bool ammoRequiredRoll             = RollbackAmmo           (historyIter, i_itemData.ammo);
+		const bool maxammoRequiredRoll          = RollbackMaxAmmo        (historyIter, i_itemData.maxammo);
+		const bool weaponOwnedRequiredRoll      = RollbackWeaponOwned    (historyIter, i_itemData.weaponowned);
+        const bool weaponSelectionRequiredRoll  = RollbackWeaponSelection(historyIter, i_itemData.readyweapon, i_itemData.pendingweapon);
 
-		const bool readyweaponRequiresRoll = i_itemData.readyweapon != historyIter->second.readyweapon;
-		if (readyweaponRequiresRoll)
-		{
-			Roll(i_oldTic, [&i_itemData](auto& rollingIter)
-				{
-					rollingIter->second.readyweapon = i_itemData.readyweapon;
-				});
-		}
-
-		const bool pendingweaponRequiresRoll = i_itemData.pendingweapon != historyIter->second.pendingweapon;
-		if (pendingweaponRequiresRoll)
-		{
-			Roll(i_oldTic, [&i_itemData](auto& rollingIter)
-				{
-					rollingIter->second.pendingweapon = i_itemData.pendingweapon;
-				});
-		}
-
-		const bool playerObjectRequiresRefresh =    ammoRequiresRoll
-		                                         or maxammoRequiresRoll
-		                                         or weaponOwnedRequiresRoll
-		                                         or readyweaponRequiresRoll
-		                                         or pendingweaponRequiresRoll;
+		const bool playerObjectRequiresRefresh =    ammoRequiredRoll
+		                                         or maxammoRequiredRoll
+		                                         or weaponOwnedRequiredRoll
+		                                         or weaponSelectionRequiredRoll;
 
 		if (playerObjectRequiresRefresh)
 		{
