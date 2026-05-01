@@ -108,6 +108,10 @@ class PlayerStateRoller
 
 	protected:
 
+        void ApplyMostRecentToPlayer(player_t& io_player);
+
+        bool RollbackAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo);
+
 		template <typename Callable>
 		void Roll(int i_oldTic, Callable&& i_callable);
 
