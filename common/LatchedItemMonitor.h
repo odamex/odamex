@@ -65,18 +65,24 @@ class LatchedItemArrayMonitor
 
         void Arm()
         {
-            m_isArmed.fill(true);
+            m_isArmed = true;
             std::copy(m_refs.begin(),
                       m_refs.end(),
                       m_latchedValues.begin());
         }
 
-        bool EvaluateAsChanged(size_t index)
+        bool EvaluateAsChanged()
         {
-            if (m_isArmed[index])
+            if (m_isArmed)
             {
-                m_isArmed[index] = false;
-                return m_latchedValues[index] != m_refs[index];
+                m_isArmed = false;
+                for (size_t i = 0; i < m_latchedValues.size(); ++i)
+                {
+                    if (m_latchedValues[i] != m_refs[i])
+                    {
+                        return true;
+                    }
+                }
             }
             return false;
         }
@@ -92,6 +98,6 @@ class LatchedItemArrayMonitor
 
         std::array<std::reference_wrapper<ItemType>, N> m_refs;
         std::array<ItemType, N>                         m_latchedValues;
-        std::array<bool, N>                             m_isArmed;
+        bool                                            m_isArmed;
 
 };

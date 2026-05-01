@@ -3513,28 +3513,19 @@ void SV_WriteCommandsForPlayer(player_t& player)
         MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerWeaponSelection(player));
     }
 
-    for (size_t i = 0; i < player.weaponowned.size(); ++i)
+    if (player.weaponOwnedMonitors.EvaluateAsChanged())
     {
-        if (player.weaponOwnedMonitors.EvaluateAsChanged(i))
-        {
-            MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerWeaponOwned(player, i));
-        }
+        MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerWeaponOwned(player));
     }
 
-    for (size_t i = 0; i < player.ammo.size(); ++i)
+    if (player.ammoMonitors.EvaluateAsChanged())
     {
-        if (player.ammoMonitors.EvaluateAsChanged(i))
-        {
-            MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerAmmo(player, i));
-        }
+        MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerAmmo(player));
     }
 
-    for (size_t i = 0; i < player.ammo.size(); ++i)
+    if (player.maxAmmoMonitors.EvaluateAsChanged())
     {
-        if (player.maxAmmoMonitors.EvaluateAsChanged(i))
-        {
-            MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerMaxAmmo(player, i));
-        }
+        MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerMaxAmmo(player));
     }
 
 	// [SL] Send client info about player he is spying on

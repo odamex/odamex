@@ -201,23 +201,20 @@ message FireWeapon
 
 message PlayerAmmo
 {
-    int32  player_tic    = 1;
-    uint32 ammo_type     = 2;
-    int32  ammo_quantity = 3;
+    int32               player_tic  = 1;
+    map<uint32, int32>  ammo        = 2;    // ammo[ammo_type] = ammo_quantity
 }
 
 message PlayerMaxAmmo
 {
-    int32  player_tic = 1;
-    uint32 ammo_type  = 2;
-    int32  ammo_max   = 3;
+    int32               player_tic  = 1;
+    map<uint32, int32>  maxammo     = 2;    // ammo[ammo_type] = maxammo
 }
 
 message PlayerWeaponOwned
 {
-    int32  player_tic = 1;
-    uint32 weapon     = 2;
-    bool   is_owned   = 3;
+    int32           player_tic   = 1;
+    repeated uint32 owned_weapon = 2;
 }
 
 message PlayerWeaponSelection
