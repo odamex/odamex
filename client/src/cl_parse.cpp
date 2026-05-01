@@ -3139,12 +3139,16 @@ static void CL_NoiseAlert(const odaproto::svc::NoiseAlert* msg)
 
 static void CL_PlayerAmmo(const odaproto::svc::PlayerAmmo* msg)
 {
-    for (int ammoType = 0; ammoType < msg->ammo_size(); ++ammoType)
-    {
-        CL_ResolveAmmoHistory(msg->player_tic(),
-                              static_cast<ammotype_t>(ammoType),
-                              msg->ammo(ammoType));
-    }
+    std::array<int, NUMAMMO> ammo;
+    std::copy(msg->ammo().begin(),
+              msg->ammo().end(),
+              ammo.begin());
+
+	if (rollerState.ResolveAmmo(msg->player_tic(), ammo, consoleplayer()))
+	{
+		PrintFmt("Reconciled ammo on tic {}\n",
+		         msg->player_tic());
+	}
 }
 
 static void CL_PlayerMaxAmmo(const odaproto::svc::PlayerMaxAmmo* msg)

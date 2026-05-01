@@ -43,7 +43,7 @@ class PlayerStateRoller
 		/// The ammo roll is unique in that tic-to-tic deltas are preserved with the assumption
 		/// that the player can be locally firing the weapon, consuming ammo that should not
 		/// necessarily be replenished when a rollback happens.
-		bool ResolveAmmo(int i_oldTic, const ammotype_t i_ammoType, int i_ammoCount, player_t& io_player);
+		bool ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo, player_t& io_player);
 
 		/// Similar to ResolveAmmo, except it works on maxammo and does not roll deltas - changes
 		/// to this value are treated as absolute, coarse adjustments.

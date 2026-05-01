@@ -120,24 +120,27 @@ void PlayerStateRoller::Roll(int i_oldTic, Callable&& i_callable)
 	}
 }
 
-bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const ammotype_t i_ammoType, int i_ammoCount, player_t& io_player)
+//bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const ammotype_t i_ammoType, int i_ammoCount, player_t& io_player)
+bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo, player_t& io_player)
 {
 	auto historyIter = m_history.find(i_oldTic);
-	if (historyIter != m_history.end() and i_ammoType < NUMAMMO)
+	if (historyIter != m_history.end())
 	{
-		const int ammoDelta = i_ammoCount - historyIter->second.ammo[i_ammoType];
-		if (ammoDelta)
-		{
-			Roll(i_oldTic, [&ammoDelta, i_ammoType](auto& rollingIter)
+		std::array<int, NUMAMMO> ammoDelta;
+
+		FillDeltaArray(ammoDelta, i_ammo, historyIter->second.ammo);
+
+		if (RequiresCorrection(ammoDelta))
+        {
+			Roll(i_oldTic, [&ammoDelta](auto& rollingIter)
 				{
-					int& historicalAmmoRef = rollingIter->second.ammo[i_ammoType];
-					historicalAmmoRef = std::max(historicalAmmoRef + ammoDelta, 0);
+					ApplyDeltaArray(rollingIter->second.ammo, ammoDelta);
 				});
 
 			auto mostRecentIter = m_history.find(m_mostRecentTic);
 			assert(mostRecentIter != m_history.end());
 
-			io_player.ammo[i_ammoType] = mostRecentIter->second.ammo[i_ammoType];
+			io_player.ammo = mostRecentIter->second.ammo;
 			return true;
 		}
 	}

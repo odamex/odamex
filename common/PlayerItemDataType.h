@@ -119,6 +119,10 @@ struct PlayerItemDataType
 		player.cards           = cards;
 		player.backpack        = backpack;
 		player.cheats          = cheats;
+
+        // TODO: psprites.
+        //
+        // TODO: Special state update functions.
 	}
 
 	template <typename StreamType>
