@@ -1030,8 +1030,13 @@ void P_PlayerThink (player_t& player)
 		player.powers[pw_invulnerability]--;
 
 	if (player.powers[pw_invisibility])
-		if (! --player.powers[pw_invisibility] )
-			player.mo->flags &= ~MF_SHADOW;
+		player.powers[pw_invisibility]--;
+
+	// We don't do this check in the above if-block because a PlayerInfo message
+	// can potentially cause the power to get zeroed-out suddenly, leaving the
+	// SHADOW flag set.
+	if (player.powers[pw_invisibility] == 0)
+		player.mo->flags &= ~MF_SHADOW;
 
 	if (player.powers[pw_infrared])
 		player.powers[pw_infrared]--;

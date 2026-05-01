@@ -4,6 +4,7 @@
 
 #include "odamex.h"
 #include "d_player.h"
+#include "p_local.h"
 
 struct PspriteStateType
 {
@@ -118,11 +119,26 @@ struct PlayerItemDataType
 		player.weaponowned     = weaponowned;
 		player.cards           = cards;
 		player.backpack        = backpack;
-		player.cheats          = cheats;
+
+		if (not player.spectator)
+		{
+			player.cheats = cheats;
+		}
 
         // TODO: psprites.
         //
+
+	// Sync mo health with player health
+	// For crosshaircolor, etc.
+	if (player.mo)
+		player.mo->health = player.health;
+        // From PlayerInfo:
+//for (int i = 0; i < NUMPSPRITES; i++)
+//    P_SetPsprite(p, i, stnum[i]);
+
         // TODO: Special state update functions.
+        P_SetPlayerPowerupStatuses(player, player.powers);
+
 	}
 
 	template <typename StreamType>
