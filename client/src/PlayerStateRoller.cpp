@@ -191,8 +191,28 @@ bool PlayerStateRoller::RollbackWeaponSelection(HistoryTableType::iterator i_his
 		return true;
 	}
 	return false;
-
 }
+
+bool PlayerStateRoller::RollbackPowers(HistoryTableType::iterator i_historyIter, const std::array<int, NUMPOWERS> i_powers)
+{
+	std::array<int, NUMPOWERS> powersDelta;
+	FillDeltaArray(powersDelta, i_powers, i_historyIter->second.powers);
+
+	if (RequiresCorrection(powersDelta))
+    {
+		Roll(i_historyIter->first, [&powersDelta, &i_powers] (auto& rollingIter)
+			{
+                // Powers are a sequence of counters (except for pw_allmap), so a delta roll is appropriate, with
+                // a simple assignment of pw_allmap.
+                ApplyDeltaArray(rollingIter->second.powers, powersDelta);
+
+                rollingIter->second.powers[pw_allmap] = i_powers[pw_allmap];
+			});
+        return true;
+    }
+    return false;
+}
+
 
 bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo, player_t& io_player)
 {
@@ -308,6 +328,7 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
 		const bool maxammoRequiredRoll          = RollbackMaxAmmo        (historyIter, i_itemData.maxammo);
 		const bool weaponOwnedRequiredRoll      = RollbackWeaponOwned    (historyIter, i_itemData.weaponowned);
         const bool weaponSelectionRequiredRoll  = RollbackWeaponSelection(historyIter, i_itemData.readyweapon, i_itemData.pendingweapon);
+        const bool powersRequiredRoll           = RollbackPowers         (historyIter, i_itemData.powers);
 
         // Now cover the fields that we don't actually rollback, just apply because the server dictates so.
 		auto mostRecentIter = m_history.find(m_mostRecentTic);
@@ -317,7 +338,6 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
         const bool armorpointsUpdated   = Update(mostRecentIter->second.armorpoints,i_itemData.armorpoints);
         const bool armortypeUpdated     = Update(mostRecentIter->second.armortype,  i_itemData.armortype);
         const bool livesUpdated         = Update(mostRecentIter->second.lives,      i_itemData.lives);
-        const bool powersUpdated        = Update(mostRecentIter->second.powers,     i_itemData.powers);
         const bool cardsUpdated         = Update(mostRecentIter->second.cards,      i_itemData.cards);
         const bool backpackUpdated      = Update(mostRecentIter->second.backpack,   i_itemData.backpack);
         const bool cheatsUpdated        = Update(mostRecentIter->second.cheats,     i_itemData.cheats);
@@ -328,11 +348,11 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
             or maxammoRequiredRoll
             or weaponOwnedRequiredRoll
             or weaponSelectionRequiredRoll
+            or powersRequiredRoll
             or healthUpdated
             or armorpointsUpdated
             or armortypeUpdated
             or livesUpdated
-            or powersUpdated
             or cardsUpdated
             or backpackUpdated
             or cheatsUpdated

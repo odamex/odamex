@@ -359,31 +359,9 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
     for (int i = 0; i < NUMPSPRITES; i++)
 		P_SetPsprite(p, i, stnum[i]);
 
-	for (int i = 0; i < NUMPOWERS; i++)
-	{
-		if (i < msg->player().powers_size())
-		{
-			p.powers[i] = msg->player().powers(i);
-		}
-		else
-		{
-			p.powers[i] = 0;
-		}
-	}
-
-	P_SetPlayerPowerupStatuses(p, p.powers);
-
-	// Sync mo health with player health
-	// For crosshaircolor, etc.
-	if (p.mo)
-		p.mo->health = p.health;
-
-	if (!p.spectator)
-		p.cheats = msg->player().cheats();
-
+#endif
 	// If a full update was declared, don't try and correct any weapons.
 	ClientReplay::getInstance().reset();
-#endif
 }
 
 /**
