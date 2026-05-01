@@ -91,6 +91,7 @@ EXTERN_CVAR(co_fineautoaim)
 EXTERN_CVAR(sv_allowshowspawns)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_thingfilter)
+EXTERN_CVAR(co_voodooscroller)
 
 NetIDHandler ServerNetID;
 
@@ -338,7 +339,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 
 bool P_IsVoodooDoll(const AActor* mo)
 {
-	return mo->player && mo->player->mo != mo;
+	return mo->type == MT_AVATAR or (mo->player and mo->player->mo != mo);
 }
 
 //
@@ -539,6 +540,7 @@ void P_MoveActor(AActor *mo)
     BlockingMobj = NULL;
 
 	P_XYMovement(mo);
+	mo->flags3 &= ~MFO_IS_ON_CONVEYOR;      // Clear the flag - it will be set again if still on conveyor.
 
 	if (mo->ObjectFlags & OF_Destroyed)
 		return;		// actor was destroyed
@@ -1337,18 +1339,28 @@ static void P_ApplyXYFriction(AActor* mo)
 			return;
 	}
 
-	bool stationary_player = mo->player &&
-			(mo->player->cmd.forwardmove == 0 && mo->player->cmd.sidemove == 0);
+	const bool isPlayer                 = mo->player != nullptr;
+	const bool isVoodoo                 = P_IsVoodooDoll(mo);
+	const bool isRealPlayer             = isPlayer and not isVoodoo;
+	const bool isUserCommandingMotion   = mo->player and mo->player->cmd.forwardmove != 0 and
+	                                                     mo->player->cmd.sidemove != 0;
+    const bool isOnConveyor             = mo->flags3 & MFO_IS_ON_CONVEYOR;
+    const bool isSuperSlowVoodoo        = isVoodoo and co_voodooscroller;
 
-	// killough 11/98: Stop voodoo dolls that have come to rest,
+    const bool keepInMotion = (isOnConveyor and not isSuperSlowVoodoo)
+                               or
+                              (isRealPlayer and isUserCommandingMotion);
+
+    // killough 11/98: Stop voodoo dolls that have come to rest,
 	// despite any moving corresponding player:
-	if (abs(mo->momx) < STOPSPEED && abs(mo->momy) < STOPSPEED &&
-		(!mo->player || stationary_player || P_IsVoodooDoll(mo)))
+	if (abs(mo->momx) < STOPSPEED and abs(mo->momy) < STOPSPEED and not keepInMotion)
 	{
 		// if in a walking frame, stop moving
 		// killough 10/98: Don't affect main player when voodoo dolls stop:
-		if (mo->player && !P_IsVoodooDoll(mo) && static_cast<uint32_t>((mo->state->statenum) - S_PLAY_RUN1) < 4)
+		if (isRealPlayer and static_cast<uint32_t>((mo->state->statenum) - S_PLAY_RUN1) < 4)
+		{
 			P_SetMobjState(mo, S_PLAY);
+		}
 
 		mo->momx = mo->momy = 0;
 	}
@@ -2804,6 +2816,8 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	if (sv_allowshowspawns)
 		P_ShowSpawns(mthing);
 
+	const bool isPlayerSpawnPoint = (mthing.type >=    1 && mthing.type <=    4) ||
+	                                (mthing.type >= 4001 && mthing.type <= 4001 + MAXPLAYERSTARTS - 4);
 	const bool isTeleportDest = mthing.type == 14;
 	const bool isSecAct = (mthing.type >= 9982 && mthing.type <= 9983) ||
 	                      (mthing.type >= 9992 && mthing.type <= 9999);
@@ -2811,10 +2825,10 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	const bool isMusicChanger = (mthing.type >= 14100 && mthing.type <= 14165);
 
 	// only servers control spawning of items
-	// EXCEPT the client must spawn Type 14 (teleport exit).
-	// otherwise teleporters won't work well.
+	// EXCEPT the client must spawn Type 14 (teleport exit) and player spawn points for avatars.
+	// otherwise teleporters or avatars won't work well.
 	// Also spawn sector special things, fixes some other teleport issues.
-	if (!serverside && !(isTeleportDest || isSecAct || isSoundSource || isMusicChanger))
+	if (!serverside && !(isPlayerSpawnPoint || isTeleportDest || isSecAct || isSoundSource || isMusicChanger))
 	{
 		return;
 	}
@@ -2888,8 +2902,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	}
 
 	// check for players specially
-	if ((mthing.type <= 4 && mthing.type > 0)
-		|| (mthing.type >= 4001 && mthing.type <= 4001 + MAXPLAYERSTARTS - 4))
+	if (isPlayerSpawnPoint)
 	{
 		// [RH] Only spawn spots that match position.
 		if (mthing.args[0] != position)
@@ -2909,7 +2922,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 			{
 				// consider playerstarts[i] to be a voodoo doll start
 				M_RemoveWDLPlayerSpawn(playerstarts[i]);
-				voodoostarts.push_back(playerstarts[i]);
+				voodoostarts.emplace_back(playerstarts[i]);
 				playerstarts.erase(playerstarts.begin() + i);
 				break;
 			}
@@ -3293,15 +3306,15 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
  */
 void P_SpawnAvatars()
 {
-	if (clientside || !G_IsCoopGame())
+	if ((clientside and serverside) or not G_IsCoopGame())
 	{
-		// Voodoo dolls are handled in local games.
+		// Use voodoo dolls proper in local games, not avatars.
 		return;
 	}
 
-	for (const auto& thing : ::voodoostarts)
+	for (auto& voodoo : ::voodoostarts)
 	{
-		new AActor(thing.x << FRACBITS, thing.y << FRACBITS, ONFLOORZ, MT_AVATAR);
+		voodoo.mobj = (new AActor(voodoo.mapThing.x << FRACBITS, voodoo.mapThing.y << FRACBITS, ONFLOORZ, MT_AVATAR))->ptr();
 	}
 }
 

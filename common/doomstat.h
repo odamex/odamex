@@ -153,9 +153,20 @@ extern	int 			gametic;
 extern std::vector<mapthing2_t> DeathMatchStarts;
 
 // Player spawn spots.
+struct VoodooStartInfoType
+{
+	mapthing2_t         mapThing;
+	AActor::AActorPtr   mobj;       // Co-owning, map-lifetime pointer.
+
+	explicit VoodooStartInfoType(const mapthing2_t& i_mapThing) :
+		mapThing (i_mapThing)
+	{
+	}
+};
+
 #define MAXPLAYERSTARTS		64
-extern std::vector<mapthing2_t> playerstarts;
-extern std::vector<mapthing2_t> voodoostarts;
+extern std::vector<mapthing2_t>         playerstarts;
+extern std::vector<VoodooStartInfoType> voodoostarts;
 
 // ----------------------------------------------
 

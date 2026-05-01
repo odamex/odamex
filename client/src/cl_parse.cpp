@@ -3163,6 +3163,33 @@ static void CL_PlayerWeaponSelection(const odaproto::svc::PlayerWeaponSelection*
                                        consoleplayer());
 }
 
+static void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
+{
+	const size_t   index = msg->avatar_index();
+	const uint32_t netid = msg->netid();
+
+	if (index >= ::voodoostarts.size())
+	{
+		PrintFmt(PRINT_WARNING, "Invalid Avatar index {}: only {} known\n", index, ::voodoostarts.size());
+		return;
+	}
+
+	if (AActor* mo = P_FindThingById(msg->netid()))
+	{
+		if (mo != ::voodoostarts[index].mobj)
+		{
+			PrintFmt(PRINT_WARNING, "Netid {} cannot be assigned to avatar {}: already assigned to a mobj of type {}\n",
+			        netid,
+			        index,
+			        mo->type);
+		}
+	}
+	else
+	{
+		P_SetThingId(::voodoostarts[index].mobj, netid);
+	}
+}
+
 static void CL_NetdemoCap(const odaproto::clc::NetdemoCap* msg)
 {
 	odaproto::clc::PlayerInput& currentInputMessage = localcmds[gametic % MAXSAVETICS];
@@ -3382,6 +3409,7 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_playermaxammo, CL_PlayerMaxAmmo, odaproto::svc::PlayerMaxAmmo);
 		SV_MSG(svc_playerweaponowned, CL_PlayerWeaponOwned, odaproto::svc::PlayerWeaponOwned);
 		SV_MSG(svc_playerweaponselection, CL_PlayerWeaponSelection, odaproto::svc::PlayerWeaponSelection);
+		SV_MSG(svc_configureavatar, CL_ConfigureAvatar, odaproto::svc::ConfigureAvatar);
 		SV_MSG(clc_netdemocap, CL_NetdemoCap, odaproto::clc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
 		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);

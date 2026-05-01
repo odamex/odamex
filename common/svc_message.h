@@ -163,4 +163,4 @@ odaproto::svc::PlayerAmmo SVC_PlayerAmmo(const player_t& player, const size_t in
 odaproto::svc::PlayerMaxAmmo SVC_PlayerMaxAmmo(const player_t& player, const size_t index);
 odaproto::svc::PlayerWeaponOwned SVC_PlayerWeaponOwned(const player_t& player, const size_t index);
 odaproto::svc::PlayerWeaponSelection SVC_PlayerWeaponSelection(const player_t& player);
-
+odaproto::svc::ConfigureAvatar SVC_ConfigureAvatar(uint32_t index, uint32_t netid);
