@@ -3134,11 +3134,11 @@ static void CL_NoiseAlert(const odaproto::svc::NoiseAlert* msg)
 
 static void CL_PlayerAmmo(const odaproto::svc::PlayerAmmo* msg)
 {
-    for (const auto& [ammoType, ammoQuantity] : msg->ammo())
+    for (int ammoType = 0; ammoType < msg->ammo_size(); ++ammoType)
     {
         CL_ResolveAmmoHistory(msg->player_tic(),
                               static_cast<ammotype_t>(ammoType),
-                              ammoQuantity);
+                              msg->ammo(ammoType));
     }
 }
 
@@ -3146,11 +3146,11 @@ static void CL_PlayerMaxAmmo(const odaproto::svc::PlayerMaxAmmo* msg)
 {
     player_t& player = consoleplayer();
 
-    for (const auto& [ammoType, ammoMax] : msg->maxammo())
+    for (int ammoType = 0; ammoType < msg->maxammo_size(); ++ammoType)
     {
         rollerState.ResolveMaxAmmo(msg->player_tic(),
                                    static_cast<ammotype_t>(ammoType),
-                                   ammoMax,
+                                   msg->maxammo(ammoType),
                                    player);
     }
 }
@@ -3159,23 +3159,11 @@ static void CL_PlayerWeaponOwned(const odaproto::svc::PlayerWeaponOwned* msg)
 {
     player_t& player = consoleplayer();
 
-    std::array<bool, std::tuple_size_v<decltype(player.weaponowned)> > tempWeaponOwned;
-    tempWeaponOwned.fill(false);
-
-    for (int i = 0; i < msg->owned_weapon_size(); ++i)
-    {
-        const size_t weaponNumber = msg->owned_weapon(i);
-        if (weaponNumber < tempWeaponOwned.size())
-        {
-            tempWeaponOwned[weaponNumber] = true;
-        }
-    }
-
-    for (size_t weaponNumber = 0; weaponNumber < tempWeaponOwned.size(); ++weaponNumber)
+    for (int weaponNumber = 0; weaponNumber < msg->weaponowned_size(); ++weaponNumber)
     {
         rollerState.ResolveWeaponOwned(msg->player_tic(),
                                        static_cast<weapontype_t>(weaponNumber),
-                                       tempWeaponOwned[weaponNumber],
+                                       msg->weaponowned(weaponNumber),
                                        player);
     }
 }

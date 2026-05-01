@@ -136,12 +136,8 @@ odaproto::svc::PlayerAmmo SVC_PlayerAmmo(const player_t& player)
     odaproto::svc::PlayerAmmo msg;
 
     msg.set_player_tic(player.tic);
-
-    auto& ammoMap = * msg.mutable_ammo();
-    for (size_t i = 0; i < player.ammo.size(); ++i)
-    {
-        ammoMap[i] = player.ammo[i];
-    }
+    msg.mutable_ammo()->Add(player.ammo.begin(),
+                            player.ammo.end());
 
     return msg;
 }
@@ -151,12 +147,8 @@ odaproto::svc::PlayerMaxAmmo SVC_PlayerMaxAmmo(const player_t& player)
     odaproto::svc::PlayerMaxAmmo msg;
 
     msg.set_player_tic(player.tic);
-
-    auto& ammoMap = * msg.mutable_maxammo();
-    for (size_t i = 0; i < player.maxammo.size(); ++i)
-    {
-        ammoMap[i] = player.maxammo[i];
-    }
+    msg.mutable_maxammo()->Add(player.maxammo.begin(),
+                               player.maxammo.end());
 
     return msg;
 }
@@ -166,14 +158,8 @@ odaproto::svc::PlayerWeaponOwned SVC_PlayerWeaponOwned(const player_t& player)
     odaproto::svc::PlayerWeaponOwned msg;
 
     msg.set_player_tic(player.tic);
-
-    for (size_t i = 0; i < player.weaponowned.size(); ++i)
-    {
-        if (player.weaponowned[i])
-        {
-            msg.add_owned_weapon(static_cast<uint32_t>(i));
-        }
-    }
+    msg.mutable_weaponowned()->Add(player.weaponowned.begin(),
+                                   player.weaponowned.end());
 
     return msg;
 }
