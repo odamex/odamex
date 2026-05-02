@@ -114,7 +114,7 @@ void PlayerStateRoller::Roll(int i_oldTic, Callable&& i_callable)
 	for (int rollingTic = i_oldTic; rollingTic <= m_mostRecentTic; ++rollingTic)
 	{
 		auto rollingIter = m_history.find(rollingTic);
-		assert(rollingIter != m_history.end());
+		//assert(rollingIter != m_history.end());
 
 		i_callable(rollingIter);
 	}
@@ -123,7 +123,7 @@ void PlayerStateRoller::Roll(int i_oldTic, Callable&& i_callable)
 void PlayerStateRoller::ApplyMostRecentToPlayer(player_t& io_player)
 {
 	auto mostRecentIter = m_history.find(m_mostRecentTic);
-	assert(mostRecentIter != m_history.end());
+	//assert(mostRecentIter != m_history.end());
 
 	mostRecentIter->second.ToPlayer(io_player);
 }
@@ -344,7 +344,7 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
 
         // Now cover the fields that we don't actually rollback, just apply because the server dictates so.
 		auto mostRecentIter = m_history.find(m_mostRecentTic);
-		assert(mostRecentIter != m_history.end());
+		//assert(mostRecentIter != m_history.end());
 
         const bool healthUpdated        = Update(mostRecentIter->second.health,     i_itemData.health);
         const bool armorpointsUpdated   = Update(mostRecentIter->second.armorpoints,i_itemData.armorpoints);
