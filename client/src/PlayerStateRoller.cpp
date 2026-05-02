@@ -322,7 +322,7 @@ namespace
     }
 }
 
-bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemData, player_t& io_player)
+RollerResolveEnum PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemData, player_t& io_player)
 {
 	auto historyIter = m_history.find(i_oldTic);
 	if (historyIter != m_history.end())
@@ -342,6 +342,12 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
         const bool weaponSelectionRequiredRoll  = RollbackWeaponSelection(historyIter, i_itemData.readyweapon, i_itemData.pendingweapon);
         const bool powersRequiredRoll           = RollbackPowers         (historyIter, i_itemData.powers);
 
+        const bool historyWasChanged = ammoRequiredRoll or
+                                       maxammoRequiredRoll or
+                                       weaponOwnedRequiredRoll or
+                                       weaponSelectionRequiredRoll or
+                                       powersRequiredRoll;
+
         // Now cover the fields that we don't actually rollback, just apply because the server dictates so.
 		auto mostRecentIter = m_history.find(m_mostRecentTic);
 		//assert(mostRecentIter != m_history.end());
@@ -354,27 +360,31 @@ bool PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemDa
         const bool backpackUpdated      = Update(mostRecentIter->second.backpack,   i_itemData.backpack);
         const bool cheatsUpdated        = Update(mostRecentIter->second.cheats,     i_itemData.cheats);
 
+        const bool immediateStateWasUpdated = healthUpdated or
+                                              armorpointsUpdated or
+                                              armortypeUpdated or
+                                              livesUpdated or
+                                              cardsUpdated or
+                                              backpackUpdated or
+                                              cheatsUpdated;
+
         const bool pspritesUpdated = false; // For now
 
-		if (ammoRequiredRoll
-            or maxammoRequiredRoll
-            or weaponOwnedRequiredRoll
-            or weaponSelectionRequiredRoll
-            or powersRequiredRoll
-            or healthUpdated
-            or armorpointsUpdated
-            or armortypeUpdated
-            or livesUpdated
-            or cardsUpdated
-            or backpackUpdated
-            or cheatsUpdated
-            or pspritesUpdated
-            )
+		if (historyWasChanged or immediateStateWasUpdated)
 		{
             mostRecentIter->second.ToPlayer(io_player);
-            return true;
-		}
-	}
 
-	return false;
+            if (historyWasChanged)
+            {
+                if (immediateStateWasUpdated)
+                {
+                    return RollerResolveEnum::HISTORY_AND_CURRENT_STATE_CHANGED;
+                }
+                return RollerResolveEnum::HISTORY_CHANGED;
+            }
+            return RollerResolveEnum::CURRENT_STATE_CHANGED;
+		}
+        return RollerResolveEnum::NO_CHANGE;
+	}
+	return RollerResolveEnum::INVALID_TIC;
 }

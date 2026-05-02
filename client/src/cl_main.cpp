@@ -736,9 +736,22 @@ void NetUpdate (void)
 
 void CL_ResolveInventory(int oldTic, const PlayerItemDataType& inventoryResponse)
 {
-	if (rollerState.Resolve(oldTic, inventoryResponse, consoleplayer()))
+    const RollerResolveEnum result = rollerState.Resolve(oldTic, inventoryResponse, consoleplayer());
+	switch (result)
 	{
-		PrintFmt("Reconciled conflicting inventory that diverged on tic {}\n", oldTic);
+        case RollerResolveEnum::HISTORY_CHANGED:                   [[fallthrough]];
+        case RollerResolveEnum::HISTORY_AND_CURRENT_STATE_CHANGED:
+            PrintFmt("Reconciled conflicting inventory that diverged on tic {}\n", oldTic);
+            break;
+
+        case RollerResolveEnum::INVALID_TIC:
+            PrintFmt("Cannot reconcile inventory: tic {} is too far in the past!\n", oldTic);
+            break;
+
+        case RollerResolveEnum::CURRENT_STATE_CHANGED: [[fallthrough]];
+        case RollerResolveEnum::NO_CHANGE:             [[fallthrough]];
+        default:
+            break;
 	}
 }
 

@@ -14,6 +14,15 @@ enum class RollerRecordResultEnum
 	INVALID_TIC_PAST,   ///< The tic was NOT recorded because it was in the past.
 };
 
+enum class RollerResolveEnum
+{
+    NO_CHANGE,
+    CURRENT_STATE_CHANGED,
+    HISTORY_CHANGED,
+    HISTORY_AND_CURRENT_STATE_CHANGED,
+    INVALID_TIC,
+};
+
 class PlayerStateRoller
 {
 	public:
@@ -28,11 +37,10 @@ class PlayerStateRoller
 		RollerRecordResultEnum Record(int currentTic, const player_t& player);
 
 		/// Resolve the canonical statement about player data at the given tic against recorded
-		/// history.  If history is rewritten, then the resulting state is rolled forward, the
-		/// ultimate resulting player data is written into the given player structure, and
-		/// true is returned.  Otherwise, history and the player state are unmodified and false
-		/// is returned.
-		bool Resolve(int i_oldTic, const PlayerItemDataType& i_itemData, player_t& io_player);
+		/// history.  If history is rewritten, then the resulting state is rolled forward, and
+		/// the ultimate resulting player data is written into the given player structure.
+		/// The result is indicated by the returned enumeration.
+		RollerResolveEnum Resolve(int i_oldTic, const PlayerItemDataType& i_itemData, player_t& io_player);
 
 		/// Resolve the canonical statement about player ammo at the given tic against recorded
 		/// history.  If history is rewritten, then the resulting state is rolled forward, the
