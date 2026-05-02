@@ -745,7 +745,7 @@ void CL_ResolveInventory(int oldTic, const PlayerItemDataType& inventoryResponse
             break;
 
         case RollerResolveEnum::INVALID_TIC:
-            PrintFmt("Cannot reconcile inventory: tic {} is too far in the past!\n", oldTic);
+            PrintFmt(PRINT_WARNING, "Cannot reconcile inventory: tic {} is too far in the past!\n", oldTic);
             break;
 
         case RollerResolveEnum::CURRENT_STATE_CHANGED: [[fallthrough]];
