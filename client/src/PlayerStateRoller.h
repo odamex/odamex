@@ -137,7 +137,7 @@ class PlayerStateRoller
 		template <typename Callable>
 		void Roll(int i_oldTic, Callable&& i_callable);
 
-		// One second worth of state history, keyed on *client* tic number.
+		// History keyed on *client* tic number.
 		HistoryTableType m_history;
 
 		int m_mostRecentTic;

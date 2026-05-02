@@ -7,7 +7,7 @@
 
 
 PlayerStateRoller::PlayerStateRoller() :
-	m_history       (TICRATE),      // at least 1 second of history
+	m_history       (TICRATE * 2),  // at least 2 seconds of history
 	m_mostRecentTic (-1),           // Setup history to start recording at the given tic.
 	m_oldestTic     (-1)
 {
