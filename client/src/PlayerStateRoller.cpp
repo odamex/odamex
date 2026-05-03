@@ -283,7 +283,21 @@ namespace
 
             void operator()(std::unordered_map<int, PlayerItemDataType>::iterator& historyIter)
             {
-                //if (
+                PspriteStateType& historicalPsprite = historyIter->second.psprites[m_pspriteNum];
+                if (historicalPsprite.statenum == static_cast<statenum_t>(-1))
+                {
+                    historicalPsprite = m_rollingPsprite;
+
+                    Advance();
+                }
+            }
+
+            void Advance()
+            {
+                while (m_rollingPsprite.tics == 0)
+                {
+                    //if (
+                }
             }
 
         protected:
