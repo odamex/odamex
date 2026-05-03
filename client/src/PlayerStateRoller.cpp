@@ -338,6 +338,13 @@ namespace
 
 RollerResolveEnum PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataType& i_itemData, player_t& io_player)
 {
+    // No rollback - just set the current state NOW.
+    if (i_oldTic <= 0)
+    {
+        i_itemData.ToPlayer(io_player);
+        return RollerResolveEnum::CURRENT_STATE_CHANGED;
+    }
+
 	auto historyIter = m_history.find(i_oldTic);
 	if (historyIter != m_history.end())
 	{
