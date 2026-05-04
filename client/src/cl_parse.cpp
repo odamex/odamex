@@ -298,12 +298,8 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 
     for (size_t i = 0; i < pspriteElementCount; ++i)
     {
-        const int32_t state = playerInfo.psprites(i).statenum();
-        if (states.contains(state))
-        {
-            playerState.psprites[i].statenum = static_cast<statenum_t>(state);
-            playerState.psprites[i].tics     = static_cast<statenum_t>(playerInfo.psprites(i).tics());
-        }
+        playerState.psprites[i].statenum = static_cast<statenum_t>(playerInfo.psprites(i).statenum());
+        playerState.psprites[i].tics     = static_cast<statenum_t>(playerInfo.psprites(i).tics());
     }
 
 	if ((p.lives == 0 && playerInfo.lives() > 0) && !netdemo.isPlaying())

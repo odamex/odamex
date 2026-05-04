@@ -347,13 +347,55 @@ bool PlayerStateRoller::RollbackPsprites(HistoryTableType::iterator i_historyIte
 {
     bool result = false;
 
-    if (i_historyIter->second.psprites != i_psprites)
+    for (size_t pspriteNum = 0; pspriteNum < i_psprites.size(); ++pspriteNum)
     {
-        Roll(i_historyIter->first, PspriteRoller(i_psprites));
+        if (i_historyIter->second.psprites[pspriteNum] != i_psprites[pspriteNum])
+        {
+            // The following is based on the idea that if the server told us we actually had a different psprite
+            // state at some point in history, we want to allow that to roll forward as long as the history records
+            // a passive "slide" through the sprites as the client experienced them.
+            //
+            // So we march forward through history and the moment we see a recorded sprite state that disagrees with
+            // a passive "slide", we guesstimate that something happened on the client to get the psprites off the
+            // "happy path," which probably was intentional and gameplay-important.  So we stop rolling forward in
+            // that case and just let the current state be.  We really hope that the server sends another rollback
+            // statement that accounts for what happened.
+            //
+            // However if we find that history is just a passive "slide" through psprite states, then we replace that
+            // history with our passive rolling Psprite state rooted at whatever the server said it should be.
 
-        return true;
+            PspriteStateType rollingPsprite           {i_psprites[pspriteNum]};
+            PspriteStateType passiveHistoricalPsprite {i_historyIter->second.psprites[pspriteNum]};
+
+            int rollingTic = i_historyIter->first;
+            for (; rollingTic <= m_mostRecentTic; ++rollingTic)
+            {
+                auto historyIter = m_history.find(rollingTic);
+
+                if (historyIter->second.psprites[pspriteNum] != passiveHistoricalPsprite)
+                {
+                    // Something unexpected happened in history!  break now, the roll forward can't complete.
+                    break;
+                }
+                if (historyIter->second.psprites[pspriteNum] == rollingPsprite)
+                {
+                    // Did we somehow converge back up with history?  Stop rolling.
+                    break;
+                }
+                historyIter->second.psprites[pspriteNum]    = rollingPsprite;
+                passiveHistoricalPsprite                    = passiveHistoricalPsprite.Next();
+                rollingPsprite                              = rollingPsprite.Next();
+            }
+
+            // Got all the way to the end with a changed state!
+            // Essentially OR the success result.
+            if (rollingTic > m_mostRecentTic)
+            {
+                result = true;
+            }
+        }
     }
-	return false;
+	return result;
 }
 
 bool PlayerStateRoller::ResolvePsprites(int i_oldTic, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites, player_t& io_player)
