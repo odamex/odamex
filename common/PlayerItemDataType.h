@@ -131,7 +131,17 @@ struct PlayerItemDataType
 	// Sync mo health with player health
 	// For crosshaircolor, etc.
 	if (player.mo)
+    {
 		player.mo->health = player.health;
+    }
+
+	for (size_t i = 0; i < psprites.size(); ++i)
+    {
+        auto iter = ::states.find(psprites[i].statenum);
+        player.psprites[i].state = iter != ::states.end() ? &iter->second : nullptr;
+        player.psprites[i].tics = psprites[i].tics;
+    }
+
         // From PlayerInfo:
 //for (int i = 0; i < NUMPSPRITES; i++)
 //    P_SetPsprite(p, i, stnum[i]);

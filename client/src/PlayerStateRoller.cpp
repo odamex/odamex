@@ -291,19 +291,44 @@ namespace
             void operator()(std::unordered_map<int, PlayerItemDataType>::iterator& historyIter)
             {
                 PspriteStateType& historicalPsprite = historyIter->second.psprites[m_pspriteNum];
-                if (historicalPsprite.statenum == static_cast<statenum_t>(-1))
-                {
+                //if (historicalPsprite.statenum == static_cast<statenum_t>(-1))
+                //{
                     historicalPsprite = m_rollingPsprite;
 
                     Advance();
-                }
+                //}
             }
 
+            // This function advances our rollingPsprite to what it should be next tic.
             void Advance()
             {
-                while (m_rollingPsprite.tics == 0)
+                // First thing, make sure our own idea of the current state is valid.
+                // If it was null in the player, it's -1 here, which results in end().
+                auto currentRollingStateIter = ::states.find(m_rollingPsprite.statenum);
+                if (currentRollingStateIter == ::states.end())
                 {
-                    //if (
+                    return;
+                }
+
+                // The following logic matches P_MovePsprite.  The reason we don't use that function directly
+                // is that we don't want to trigger actions here.  We're just propagating what we believe
+                // history should reflect if a rollback changed it.
+                if (m_rollingPsprite.tics != -1)
+                {
+                    --m_rollingPsprite.tics;
+
+                    while (m_rollingPsprite.tics == 0)
+                    {
+                        auto nextRollingStateIter = ::states.find(currentRollingStateIter->second.nextstate);
+                        if (nextRollingStateIter == ::states.end())
+                        {
+                            return;
+                        }
+                        currentRollingStateIter = nextRollingStateIter;
+
+                        m_rollingPsprite.tics     = currentRollingStateIter->second.tics;
+                        m_rollingPsprite.statenum = currentRollingStateIter->second.statenum;
+                    }
                 }
             }
 
@@ -321,6 +346,7 @@ bool PlayerStateRoller::ResolvePsprites(int i_oldTic, const psprnum_t i_pspriteN
         if (historyIter->second.psprites[i_pspriteNum] != i_psprite)
         {
             Roll(i_oldTic, PspriteRoller(i_psprite, i_pspriteNum));
+		ApplyMostRecentToPlayer(io_player);
 
             //TODO: Apply the end result to the player.
             return true;
