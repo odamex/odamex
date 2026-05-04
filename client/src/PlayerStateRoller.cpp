@@ -281,30 +281,35 @@ namespace
     class PspriteRoller
     {
         public:
-            explicit PspriteRoller(const PspriteStateType& i_psprite,
-                                   psprnum_t               i_pspriteNum) :
-                m_rollingPsprite (i_psprite),
-                m_pspriteNum     (i_pspriteNum)
+            explicit PspriteRoller(const std::array<PspriteStateType, NUMPSPRITES>& i_psprites) :
+                m_rollingPsprites (i_psprites)
             {
             }
 
             void operator()(std::unordered_map<int, PlayerItemDataType>::iterator& historyIter)
             {
-                PspriteStateType& historicalPsprite = historyIter->second.psprites[m_pspriteNum];
-                //if (historicalPsprite.statenum == static_cast<statenum_t>(-1))
-                //{
-                    historicalPsprite = m_rollingPsprite;
+                for (size_t pspriteNum = 0; pspriteNum < m_rollingPsprites.size(); ++pspriteNum)
+                {
 
-                    Advance();
-                //}
+                    // We can allow the first iteration to change the psprite's statenum, but advancing
+                    // is only allowed to change the tic counts.
+                    // This is so that we don't blow away a correct future psprite change with a dead-
+                    // reckoned misprediction, but we still allow a canonical historical statement from
+                    // the server to change a psprite statenum that is definitely wrong.
+                    PspriteStateType& historicalPsprite = historyIter->second.psprites[pspriteNum];
+
+                    historicalPsprite = m_rollingPsprites[pspriteNum];
+
+                    Advance(m_rollingPsprites[pspriteNum]);
+                }
             }
 
             // This function advances our rollingPsprite to what it should be next tic.
-            void Advance()
+            void Advance(PspriteStateType& io_rollingPsprite)
             {
                 // First thing, make sure our own idea of the current state is valid.
                 // If it was null in the player, it's -1 here, which results in end().
-                auto currentRollingStateIter = ::states.find(m_rollingPsprite.statenum);
+                auto currentRollingStateIter = ::states.find(io_rollingPsprite.statenum);
                 if (currentRollingStateIter == ::states.end())
                 {
                     return;
@@ -313,44 +318,51 @@ namespace
                 // The following logic matches P_MovePsprite.  The reason we don't use that function directly
                 // is that we don't want to trigger actions here.  We're just propagating what we believe
                 // history should reflect if a rollback changed it.
-                if (m_rollingPsprite.tics != -1)
+                if (io_rollingPsprite.tics != -1)
                 {
-                    --m_rollingPsprite.tics;
+                    --io_rollingPsprite.tics;
 
-                    while (m_rollingPsprite.tics == 0)
+                    while (io_rollingPsprite.tics == 0)
                     {
                         auto nextRollingStateIter = ::states.find(currentRollingStateIter->second.nextstate);
                         if (nextRollingStateIter == ::states.end())
                         {
+                            io_rollingPsprite.tics     = -1;
+                            io_rollingPsprite.statenum = static_cast<statenum_t>(-1);
                             return;
                         }
                         currentRollingStateIter = nextRollingStateIter;
 
-                        m_rollingPsprite.tics     = currentRollingStateIter->second.tics;
-                        m_rollingPsprite.statenum = currentRollingStateIter->second.statenum;
+                        io_rollingPsprite.tics     = currentRollingStateIter->second.tics;
+                        io_rollingPsprite.statenum = currentRollingStateIter->second.statenum;
                     }
                 }
             }
 
         protected:
-            PspriteStateType m_rollingPsprite;
-            psprnum_t        m_pspriteNum;
+            std::array<PspriteStateType, NUMPSPRITES> m_rollingPsprites;
     };
 }
+bool PlayerStateRoller::RollbackPsprites(HistoryTableType::iterator i_historyIter, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites)
+{
+    bool result = false;
 
-bool PlayerStateRoller::ResolvePsprites(int i_oldTic, const psprnum_t i_pspriteNum, const PspriteStateType& i_psprite, player_t& io_player)
+    if (i_historyIter->second.psprites != i_psprites)
+    {
+        Roll(i_historyIter->first, PspriteRoller(i_psprites));
+
+        return true;
+    }
+	return false;
+}
+
+bool PlayerStateRoller::ResolvePsprites(int i_oldTic, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites, player_t& io_player)
 {
 	auto historyIter = m_history.find(i_oldTic);
-	if (historyIter != m_history.end() and i_pspriteNum < NUMPSPRITES)
+	if (historyIter != m_history.end() and RollbackPsprites(historyIter, i_psprites))
 	{
-        if (historyIter->second.psprites[i_pspriteNum] != i_psprite)
-        {
-            Roll(i_oldTic, PspriteRoller(i_psprite, i_pspriteNum));
 		ApplyMostRecentToPlayer(io_player);
-
-            //TODO: Apply the end result to the player.
-            return true;
-        }
+		return true;
 	}
 	return false;
 }
@@ -395,12 +407,14 @@ RollerResolveEnum PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataT
 		const bool weaponOwnedRequiredRoll      = RollbackWeaponOwned    (historyIter, i_itemData.weaponowned);
         const bool weaponSelectionRequiredRoll  = RollbackWeaponSelection(historyIter, i_itemData.readyweapon, i_itemData.pendingweapon);
         const bool powersRequiredRoll           = RollbackPowers         (historyIter, i_itemData.powers);
+        const bool pspritesRequiredRoll         = RollbackPsprites       (historyIter, i_itemData.psprites);
 
         const bool historyWasChanged = ammoRequiredRoll or
                                        maxammoRequiredRoll or
                                        weaponOwnedRequiredRoll or
                                        weaponSelectionRequiredRoll or
-                                       powersRequiredRoll;
+                                       powersRequiredRoll or
+                                       pspritesRequiredRoll;
 
         // Now cover the fields that we don't actually rollback, just apply because the server dictates so.
 		auto mostRecentIter = m_history.find(m_mostRecentTic);
@@ -421,8 +435,6 @@ RollerResolveEnum PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataT
                                               cardsUpdated or
                                               backpackUpdated or
                                               cheatsUpdated;
-
-        const bool pspritesUpdated = false; // For now
 
 		if (historyWasChanged or immediateStateWasUpdated)
 		{

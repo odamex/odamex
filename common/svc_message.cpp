@@ -76,13 +76,10 @@ odaproto::svc::Disconnect SVC_Disconnect(const char* message)
 
 static void FillPsprite(odaproto::PspriteState& io_msg, const pspdef_t& psprite)
 {
-	if (psprite.state)
-	{
-		io_msg.set_statenum(psprite.state->statenum);
-	}
-	io_msg.set_tics (psprite.tics);
-	io_msg.set_sx   (psprite.sx);
-	io_msg.set_sy   (psprite.sy);
+	io_msg.set_statenum (psprite.state ? psprite.state->statenum : -1);
+	io_msg.set_tics     (psprite.tics);
+	io_msg.set_sx       (psprite.sx);
+	io_msg.set_sy       (psprite.sy);
 }
 
 static void FillPlayer(odaproto::Player& io_msg, const player_t& player, int destinationClientTicOfValidity)
@@ -774,7 +771,10 @@ odaproto::svc::FireWeapon SVC_FireWeapon(const player_t& player)
 		msg.set_ammo_pre_decrement(player.ammo[ammotype]);
 	}
 
-	FillPsprite(*msg.mutable_weapon_psprite(), player.psprites[ps_weapon]);
+	for (int i = 0; i < NUMPSPRITES; i++)
+	{
+		FillPsprite(*msg.add_psprites(), player.psprites[i]);
+	}
 
 	return msg;
 }

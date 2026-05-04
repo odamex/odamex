@@ -69,7 +69,7 @@ class PlayerStateRoller
 
         bool ResolvePowers(int i_oldTic, const std::array<int, NUMPOWERS>& i_powers, player_t& io_player);
 
-        bool ResolvePsprites(int i_oldTic, const psprnum_t i_pspriteNum, const PspriteStateType& i_psprite, player_t& io_player);
+        bool ResolvePsprites(int i_oldTic, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites, player_t& io_player);
 
 		/// Generic stream-in operator.
 		template <typename StreamType>
@@ -136,6 +136,7 @@ class PlayerStateRoller
 		bool RollbackWeaponSelection(HistoryTableType::iterator i_historyIter, const weapontype_t i_readyWeapon, const weapontype_t i_pendingWeapon);
 
         bool RollbackPowers(HistoryTableType::iterator i_historyIter, const std::array<int, NUMPOWERS> i_powers);
+        bool RollbackPsprites(HistoryTableType::iterator i_historyIter, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites);
 
 		template <typename Callable>
 		void Roll(int i_oldTic, Callable&& i_callable);
