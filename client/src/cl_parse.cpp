@@ -1544,9 +1544,17 @@ static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 // and request that we get a full update of playerinfo - apr 14 2012
 static void CL_FireWeapon(const odaproto::svc::FireWeapon* msg)
 {
-	player_t* p = &consoleplayer();
+	player_t& player = consoleplayer();
 
 	weapontype_t firedweap = static_cast<weapontype_t>(msg->readyweapon());
+
+    std::array<PspriteStateType, NUMPSPRITES> psprites {
+        PspriteStateType{ static_cast<statenum_t>(msg->psprites(0).statenum()), msg->psprites(0).tics() },
+        PspriteStateType{ static_cast<statenum_t>(msg->psprites(1).statenum()), msg->psprites(1).tics() }
+    };
+
+    rollerState.ResolvePsprites(msg->player_tic(), psprites, player);
+
 	if (firedweap < 0 || firedweap > wp_nochange)
 	{
 		PrintFmt("CL_FireWeapon: unknown weapon {}\n", firedweap);
@@ -1554,10 +1562,10 @@ static void CL_FireWeapon(const odaproto::svc::FireWeapon* msg)
 	}
 	int clientTicAtFireWeaponTime = msg->player_tic();
 
-	if (firedweap != p->readyweapon)
+	if (firedweap != player.readyweapon)
 	{
 		DPrintFmt("CL_FireWeapon: weapon misprediction\n");
-		A_ForceWeaponFire(p->mo, firedweap, clientTicAtFireWeaponTime);
+		A_ForceWeaponFire(player.mo, firedweap, clientTicAtFireWeaponTime);
 
 		// Request the player's ammo status from the server
 		MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_getplayerinfo);
