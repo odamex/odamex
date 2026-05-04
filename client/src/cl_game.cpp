@@ -1203,7 +1203,7 @@ void G_Ticker (void)
 				switch (recordResult)
 				{
 					case RollerRecordResultEnum::CURRENT_REPLACED:
-						PrintFmt(PRINT_WARNING, "Successive roller state update on tic {}\n", gametic);
+						DPrintFmt("Successive roller state update on tic {}\n", gametic);
 						break;
 					case RollerRecordResultEnum::INVALID_TIC_FUTURE:
 						PrintFmt(PRINT_WARNING, "Rejected roller state update on future tic {}, expected {}\n", gametic, rollerState.ExpectedTic());
