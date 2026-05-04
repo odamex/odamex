@@ -1304,6 +1304,16 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 
 		// [SL] 2012-04-23 - Clear predicted sectors
 		movingsectors.clear();
+
+		// Rollback history from time-of-respawn to now is full of the dead state.
+		// Instead of doing complex rollbacks, just wipe history and start fresh.
+		// Any intervening updates to important state will come in subsequent
+		// reliable, well-ordered messages.
+		rollerState.Clear();
+		for (int32_t tic = msg->player_tic(); tic <= gametic; ++tic)
+		{
+			rollerState.Record(tic, p);
+		}
 	}
 
 	if (p.id == displayplayer().id)

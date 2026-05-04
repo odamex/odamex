@@ -153,9 +153,10 @@ message UpdateMobj
 // svc_spawnplayer
 message SpawnPlayer
 {
-	int32 pid = 1;
-	Actor actor = 2;
+	int32  pid = 1;
+	Actor  actor = 2;
 	uint32 cards = 3;
+	int32  player_tic = 4;
 }
 
 // svc_damageplayer

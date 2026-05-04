@@ -640,6 +640,7 @@ odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player)
 	odaproto::svc::SpawnPlayer msg;
 
 	msg.set_pid(player.id);
+	msg.set_player_tic(player.tic);
 
 	odaproto::Actor* act = msg.mutable_actor();
 	if (player.mo)
@@ -657,7 +658,6 @@ odaproto::svc::SpawnPlayer SVC_SpawnPlayer(const player_t& player)
 		// Just fake a position for now
 		act->set_netid(limits::MAXSHORT);
 	}
-
 
 	if (sv_sharekeys)
 	{

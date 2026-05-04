@@ -30,6 +30,9 @@ class PlayerStateRoller
 		/// Constructor: Build a state roller with recorded history starting at the upcoming first recorded tic.
 		PlayerStateRoller();
 
+		/// Remove history and start over.
+		void Clear();
+
 		/// Add the current player state to history for the current gametic.  It is assumed and
 		/// required that tic numbers given to this function only ever be incrementing by
 		/// 1 for each successive call.  If current state is added to history, then SUCCESS is

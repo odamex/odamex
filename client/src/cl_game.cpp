@@ -1300,7 +1300,6 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 		p.cheats = 0; // Reset cheat flags
 
 	p.death_time = 0;
-	p.tic = 0;
 }
 
 //

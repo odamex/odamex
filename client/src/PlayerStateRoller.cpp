@@ -13,6 +13,13 @@ PlayerStateRoller::PlayerStateRoller() :
 {
 }
 
+void PlayerStateRoller::Clear()
+{
+	m_history.clear();
+	m_mostRecentTic = -1;
+	m_oldestTic     = -1;
+}
+
 RollerRecordResultEnum PlayerStateRoller::Record(int currentTic, const player_t& player)
 {
 	if (m_mostRecentTic == -1)
