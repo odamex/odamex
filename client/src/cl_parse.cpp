@@ -98,7 +98,8 @@ extern std::string digest;
 extern bool forcenetdemosplit;
 extern int last_svgametic;
 extern int last_player_update;
-extern bool recv_full_update;
+extern bool hasReceivedFullUpdate;
+extern bool isReceivingFullUpdate;
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 extern std::set<byte> teleported_players;
 extern NetGraph netgraph;
@@ -259,7 +260,7 @@ static void DirectUnpackInventory(const odaproto::Player& inventory, player_t& p
  */
 static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 {
-	player_t& p = consoleplayer();
+	player_t& player = consoleplayer();
 
     const odaproto::Player& playerInfo = msg->player();
 
@@ -302,14 +303,42 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
         playerState.psprites[i].tics     = static_cast<statenum_t>(playerInfo.psprites(i).tics());
     }
 
-	if ((p.lives == 0 && playerInfo.lives() > 0) && !netdemo.isPlaying())
+	if ((player.lives == 0 && playerInfo.lives() > 0) && !netdemo.isPlaying())
 	{
 		// stop spying so you know you're back from the dead.
 		::displayplayer_id = ::consoleplayer_id;
 	}
 
+    // We only rollback after we complete the reception of a full update.
+    // Until then, we just flatly apply the PlayerInfo to the player.
+    if (::hasReceivedFullUpdate)
+    {
+        const int oldTic = playerInfo.client_tic();
 
-	CL_ResolveInventory(playerInfo.client_tic(), playerState);
+        const RollerResolveEnum result = rollerState.Resolve(oldTic, playerState, player);
+        switch (result)
+        {
+            case RollerResolveEnum::HISTORY_CHANGED:                   [[fallthrough]];
+            case RollerResolveEnum::HISTORY_AND_CURRENT_STATE_CHANGED:
+                PrintFmt("Reconciled conflicting inventory that diverged on tic {}\n", oldTic);
+                break;
+
+            case RollerResolveEnum::INVALID_TIC:
+                PrintFmt(PRINT_WARNING, "Cannot reconcile inventory: tic {} is too far in the past!\n", oldTic);
+                break;
+
+            case RollerResolveEnum::CURRENT_STATE_CHANGED: [[fallthrough]];
+            case RollerResolveEnum::NO_CHANGE:             [[fallthrough]];
+            default:
+                break;
+        }
+    }
+    else
+    {
+        rollerState.Clear();
+
+        playerState.ToPlayer(player);
+    }
 
 
 
@@ -2030,12 +2059,12 @@ static void CL_Switch(const odaproto::svc::Switch* msg)
 		else
 			repeat = P_IsSpecialBoomRepeatable(lines[l].special);
 
-		P_ChangeSwitchTexture(&lines[l], repeat, recv_full_update);
+		P_ChangeSwitchTexture(&lines[l], repeat, hasReceivedFullUpdate);
 	}
 
 	// Only accept texture change from server while receiving the full update
 	// - this is to fix warmup switch desyncs
-	if (!recv_full_update && texture)
+	if (!hasReceivedFullUpdate && texture)
 	{
 		P_SetButtonTexture(&lines[l], texture);
 	}
@@ -2369,7 +2398,8 @@ static void CL_IntTimeLeft(const odaproto::svc::IntTimeLeft* msg)
 //
 static void CL_FullUpdateDone(const odaproto::svc::FullUpdateDone* msg)
 {
-	::recv_full_update = true;
+	::hasReceivedFullUpdate = true;
+	::isReceivingFullUpdate = false;
 }
 
 //
@@ -2541,7 +2571,7 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 		P_ClearPlayerCards(consoleplayer());
 
 	// write the map index to the netdemo
-	if (netdemo.isRecording() && recv_full_update)
+	if (netdemo.isRecording() && hasReceivedFullUpdate)
 		netdemo.writeMapChange();
 }
 
@@ -2567,7 +2597,8 @@ static void CL_PlayerQueuePos(const odaproto::svc::PlayerQueuePos* msg)
 
 static void CL_FullUpdateStart(const odaproto::svc::FullUpdateStart* msg)
 {
-	::recv_full_update = false;
+	::hasReceivedFullUpdate = false;
+	::isReceivingFullUpdate = true;
 }
 
 static void CL_LineUpdate(const odaproto::svc::LineUpdate* msg)

@@ -77,8 +77,6 @@ void CL_SaveCmd(void);
 void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z);
 void CL_PredictWorld(void);
 void CL_SendUserInfo(buf_t& netBuf);
-void CL_ResolveInventory(int oldTic, const PlayerItemDataType& inventoryResponse);
-void CL_ResolveAmmoHistory(int oldTic, const ammotype_t ammoType, int ammoCount);
 bool CL_Connect();
 
 void CL_SendCheat(int cheats);

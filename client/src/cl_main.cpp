@@ -115,7 +115,8 @@ float     world_index_accum = 0.0f;
 int       last_svgametic = 0;
 int       last_player_update = 0;
 
-bool      recv_full_update = false;
+bool      hasReceivedFullUpdate = false;
+bool      isReceivingFullUpdate = false;
 
 std::string connectpasshash = "";
 
@@ -412,7 +413,7 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 		players.clear();
 	}
 
-	recv_full_update = false;
+	hasReceivedFullUpdate = false;
 
 	if (netdemo.isRecording())
 		netdemo.stopRecording();
@@ -578,7 +579,7 @@ void CL_CompleteDisconnect(netQuitReason_e reason)
 
 void CL_Reconnect(netQuitReason_e reason)
 {
-	recv_full_update = false;
+	hasReceivedFullUpdate = false;
 
 	if (netdemo.isRecording())
 		forcenetdemosplit = true;
@@ -732,27 +733,6 @@ void NetUpdate (void)
 	I_StartTic ();
 	D_ProcessEvents ();
 	G_BuildTiccmd (consoleplayer().netcmds[gametic % BACKUPTICS]);
-}
-
-void CL_ResolveInventory(int oldTic, const PlayerItemDataType& inventoryResponse)
-{
-    const RollerResolveEnum result = rollerState.Resolve(oldTic, inventoryResponse, consoleplayer());
-	switch (result)
-	{
-        case RollerResolveEnum::HISTORY_CHANGED:                   [[fallthrough]];
-        case RollerResolveEnum::HISTORY_AND_CURRENT_STATE_CHANGED:
-            PrintFmt("Reconciled conflicting inventory that diverged on tic {}\n", oldTic);
-            break;
-
-        case RollerResolveEnum::INVALID_TIC:
-            PrintFmt(PRINT_WARNING, "Cannot reconcile inventory: tic {} is too far in the past!\n", oldTic);
-            break;
-
-        case RollerResolveEnum::CURRENT_STATE_CHANGED: [[fallthrough]];
-        case RollerResolveEnum::NO_CHANGE:             [[fallthrough]];
-        default:
-            break;
-	}
 }
 
 extern bool advancedemo;
@@ -1909,7 +1889,7 @@ bool CL_PrepareConnect()
 		return false;
 	}
 
-	recv_full_update = false;
+	hasReceivedFullUpdate = false;
 
 	connecttimeout = 0;
 	CL_TryToConnect(server_token);
