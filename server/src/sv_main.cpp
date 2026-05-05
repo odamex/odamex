@@ -5040,17 +5040,14 @@ void OnChangedSwitchTexture (line_t *line, int useAgain)
 void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
                         const LineActivationType activationType, const bool bossaction)
 {
-	if (P_LineSpecialMovesSector(line->special))
-		return;
-
 	for (auto& player : players)
 	{
-		if (!(player.ingame()))
+		// The client that activated a line has already locally activated it, so
+		// don't force a double activation.
+		if (player.mo == mo or not player.ingame())
 			continue;
 
-		client_t *cl = &(player.client);
-
-		MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_ActivateLine(line, mo, side, activationType));
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_ActivateLine(line, mo, side, activationType));
 	}
 }
 
@@ -5338,11 +5335,13 @@ void SV_ClearPlayerQueue()
 void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* activator, int arg0,
                                int arg1, int arg2, int arg3, int arg4)
 {
-	if (P_LineSpecialMovesSector(special))
-		return;
-
 	for (auto& player : players)
 	{
+		// Unlike SV_OnActivateLine, the LineSpecial coming from an Execute is executed by
+		// the ACS code only on the server - the clients execute them upon receipt of this
+		// message, including the activator itself, so we don't check the activator against
+		// player.mo here.
+
 		if (!(player.ingame()))
 			continue;
 
