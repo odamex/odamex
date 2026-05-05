@@ -183,6 +183,18 @@ odaproto::svc::PlayerPowers SVC_PlayerPowers(const player_t& player)
     return msg;
 }
 
+odaproto::svc::PlayerPsprites SVC_PlayerPsprites(const player_t& player)
+{
+    odaproto::svc::PlayerPsprites msg;
+
+    msg.set_player_tic(player.tic);
+    for (const auto& psprite : player.psprites)
+    {
+        FillPsprite(*msg.add_psprites(), psprite);
+    }
+
+    return msg;
+}
 
 /**
  * @brief Change the location of a player.
