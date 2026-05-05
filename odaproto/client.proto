@@ -37,5 +37,14 @@ message NetdemoCap
 	int32    jumptics            = 6;
 	int32    pendingweapon       = 7;
 	int32    readyweapon         = 8;
+}
 
+// clc_netdemostop
+message NetDemoStop
+{
+}
+
+// clc_netdemoloadsnap
+message NetDemoLoadSnap
+{
 }

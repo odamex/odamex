@@ -36,6 +36,7 @@
 #include "r_main.h"
 #include "st_stuff.h"
 #include "p_mobj.h"
+#include "clc_message.h"
 #include "svc_message.h"
 #include "g_gametype.h"
 
@@ -479,7 +480,7 @@ bool NetDemo::startRecording(const std::string &filename)
 		writeMessages();
 
 		SZ_Clear(&tempbuf);
-		MSG_WriteSVCBuffer(&tempbuf, odaproto::svc::NetDemoLoadSnap());
+		MSG_WriteSVCBuffer(&tempbuf, odaproto::clc::NetDemoLoadSnap());
 		capture(&tempbuf);
 		writeMessages();
 

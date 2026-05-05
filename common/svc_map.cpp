@@ -143,8 +143,8 @@ static void InitMap()
 	MapProto(clc_playerinput, odaproto::clc::PlayerInput::descriptor());
 
 	MapProto(clc_netdemocap,        odaproto::clc::NetdemoCap::descriptor());
-	MapProto(clc_netdemostop,       odaproto::svc::NetDemoStop::descriptor());
-	MapProto(clc_netdemoloadsnap,   odaproto::svc::NetDemoLoadSnap::descriptor());
+	MapProto(clc_netdemostop,       odaproto::clc::NetDemoStop::descriptor());
+	MapProto(clc_netdemoloadsnap,   odaproto::clc::NetDemoLoadSnap::descriptor());
 
 }
 

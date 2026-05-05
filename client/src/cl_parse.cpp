@@ -3218,12 +3218,12 @@ static void CL_NetdemoCap(const odaproto::clc::NetdemoCap* msg)
 	}
 }
 
-static void CL_NetDemoStop(const odaproto::svc::NetDemoStop* msg)
+static void CL_NetDemoStop(const odaproto::clc::NetDemoStop* msg)
 {
 	::netdemo.stopPlaying();
 }
 
-static void CL_NetDemoLoadSnap(const odaproto::svc::NetDemoLoadSnap* msg)
+static void CL_NetDemoLoadSnap(const odaproto::clc::NetDemoLoadSnap* msg)
 {
 	AddCommandString("netprevmap");
 }
@@ -3406,8 +3406,8 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_playerpsprites, CL_PlayerPsprites, odaproto::svc::PlayerPsprites);
 		SV_MSG(svc_configureavatar, CL_ConfigureAvatar, odaproto::svc::ConfigureAvatar);
 		SV_MSG(clc_netdemocap, CL_NetdemoCap, odaproto::clc::NetdemoCap);
-		SV_MSG(clc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
-		SV_MSG(clc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);
+		SV_MSG(clc_netdemostop, CL_NetDemoStop, odaproto::clc::NetDemoStop);
+		SV_MSG(clc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::clc::NetDemoLoadSnap);
 		/* clang-format on */
 	default:
 		return PERR_UNKNOWN_HEADER;

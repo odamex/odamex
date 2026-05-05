@@ -846,16 +846,6 @@ message SpreeBreaker
 	int32 spree_breaker_type = 7;
 }
 
-// clc_netdemostop
-message NetDemoStop
-{
-}
-
-// clc_netdemoloadsnap
-message NetDemoLoadSnap
-{
-}
-
 // svc_configureavatar
 message ConfigureAvatar
 {
