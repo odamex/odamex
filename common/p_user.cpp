@@ -1379,7 +1379,7 @@ player_t::player_t() :
 	JoinTime(time_t()),
 	ping(0),
 	last_received(0),
-	tic(0),
+	tic(-1),
 	snapshots(PlayerSnapshotManager()),
 	spying(0),
 	spectator(false),
