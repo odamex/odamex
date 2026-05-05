@@ -231,6 +231,12 @@ message PlayerPowers
     repeated int32  powers     = 2;    // powers[power_type] = monotonic counter
 }
 
+message PlayerPsprites
+{
+    int32                 player_tic = 1;
+    repeated PspriteState psprites   = 2;   // psprite[psprite_type] = psprite
+}
+
 // svc_updatesector
 message UpdateSector
 {

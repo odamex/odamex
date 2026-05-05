@@ -126,6 +126,7 @@ static void InitMap()
 	MapProto(svc_playerweaponowned,     odaproto::svc::PlayerWeaponOwned::descriptor());
 	MapProto(svc_playerweaponselection, odaproto::svc::PlayerWeaponSelection::descriptor());
 	MapProto(svc_playerpowers,          odaproto::svc::PlayerPowers::descriptor());
+	MapProto(svc_playerpsprites,        odaproto::svc::PlayerPsprites::descriptor());
 
 	MapProto(svc_configureavatar, odaproto::svc::ConfigureAvatar::descriptor());
 

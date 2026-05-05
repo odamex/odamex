@@ -285,6 +285,7 @@ enum svc_t
 	svc_playerweaponowned,
 	svc_playerweaponselection,
 	svc_playerpowers,
+	svc_playerpsprites,
 	svc_configureavatar,
 	clc_playerinput,        // SPECIAL KNOWLEDGE AND NOTE HERE: We're entering a transitory phase
 	                        // where client-originated messages are going to start transitioning
