@@ -777,17 +777,6 @@ odaproto::svc::FireWeapon SVC_FireWeapon(const player_t& player)
 	msg.set_readyweapon (player.readyweapon);
 	msg.set_player_tic  (player.tic);
 
-	const ammotype_t ammotype = weaponinfo[player.readyweapon].ammotype;
-	if (ammotype != am_noammo)
-	{
-		msg.set_ammo_pre_decrement(player.ammo[ammotype]);
-	}
-
-	for (int i = 0; i < NUMPSPRITES; i++)
-	{
-		FillPsprite(*msg.add_psprites(), player.psprites[i]);
-	}
-
 	return msg;
 }
 

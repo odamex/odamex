@@ -196,8 +196,6 @@ message FireWeapon
 {
 	int32                 readyweapon        = 1;
 	int32                 player_tic         = 2;
-	int32                 ammo_pre_decrement = 3;
-	repeated PspriteState psprites           = 4;
 }
 
 // svc_playerammo
