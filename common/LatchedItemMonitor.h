@@ -49,7 +49,7 @@ class LatchedItemMonitor
         bool      m_isArmed;
 };
 
-template <typename ItemType, size_t N>
+template <typename ItemType, size_t N, typename LatchType = ItemType>
 class LatchedItemArrayMonitor
 {
     public:
@@ -97,7 +97,7 @@ class LatchedItemArrayMonitor
         }
 
         std::array<std::reference_wrapper<ItemType>, N> m_refs;
-        std::array<ItemType, N>                         m_latchedValues;
+        std::array<LatchType, N>                        m_latchedValues;
         bool                                            m_isArmed;
 
 };
