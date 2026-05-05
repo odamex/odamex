@@ -1548,13 +1548,6 @@ static void CL_FireWeapon(const odaproto::svc::FireWeapon* msg)
 
 	weapontype_t firedweap = static_cast<weapontype_t>(msg->readyweapon());
 
-    std::array<PspriteStateType, NUMPSPRITES> psprites {
-        PspriteStateType{ static_cast<statenum_t>(msg->psprites(0).statenum()), msg->psprites(0).tics() },
-        PspriteStateType{ static_cast<statenum_t>(msg->psprites(1).statenum()), msg->psprites(1).tics() }
-    };
-
-    rollerState.ResolvePsprites(msg->player_tic(), psprites, player);
-
 	if (firedweap < 0 || firedweap > wp_nochange)
 	{
 		PrintFmt("CL_FireWeapon: unknown weapon {}\n", firedweap);
@@ -3218,6 +3211,21 @@ static void CL_PlayerPowers(const odaproto::svc::PlayerPowers* msg)
                               consoleplayer());
 }
 
+static void CL_PlayerPsprites(const odaproto::svc::PlayerPsprites* msg)
+{
+    std::array<PspriteStateType, NUMPSPRITES> psprites;
+
+    for (size_t i = 0; i < psprites.size(); ++i)
+    {
+        psprites[i].statenum = static_cast<statenum_t>(msg->psprites(i).statenum());
+        psprites[i].tics     = msg->psprites(i).tics();
+    }
+
+    rollerState.ResolvePsprites(msg->player_tic(),
+                                psprites,
+                                consoleplayer());
+}
+
 static void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
 {
 	const size_t   index = msg->avatar_index();
@@ -3465,6 +3473,7 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_playerweaponowned, CL_PlayerWeaponOwned, odaproto::svc::PlayerWeaponOwned);
 		SV_MSG(svc_playerweaponselection, CL_PlayerWeaponSelection, odaproto::svc::PlayerWeaponSelection);
 		SV_MSG(svc_playerpowers, CL_PlayerPowers, odaproto::svc::PlayerPowers);
+		SV_MSG(svc_playerpsprites, CL_PlayerPsprites, odaproto::svc::PlayerPsprites);
 		SV_MSG(svc_configureavatar, CL_ConfigureAvatar, odaproto::svc::ConfigureAvatar);
 		SV_MSG(clc_netdemocap, CL_NetdemoCap, odaproto::clc::NetdemoCap);
 		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
