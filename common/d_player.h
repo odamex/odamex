@@ -194,6 +194,18 @@ public:
 	int                               psprnum;
 	std::array<pspdef_t, NUMPSPRITES> psprites;     // Overlay view sprites (gun, etc).
 
+    // This is the comparator for the psprite latch vs the real data value.
+    // We specifically ONLY compare the statenum and not the tics because we don't want to trigger
+    // the PlayerPsprite message unless the state number has changed - we're happy to just let the
+    // client always dead-reckon the tics.
+    struct PspriteEquals
+    {
+        bool operator()(const PspriteStateType& i_latch, const pspdef_t& i_psp) const
+        {
+            return i_latch.statenum == (i_psp.state ? i_psp.state->statenum : static_cast<statenum_t>(-1));
+        }
+    };
+
     LatchedItemMonitor<weapontype_t>            pendingweaponMonitor;
     LatchedItemMonitor<weapontype_t>            readyweaponMonitor;
     LatchedItemArrayMonitor<bool, NUMWEAPONS>   weaponOwnedMonitors;
@@ -202,7 +214,8 @@ public:
     LatchedItemArrayMonitor<int, NUMPOWERS>     powerMonitors;
     LatchedItemArrayMonitor<pspdef_t,
                             NUMPSPRITES,
-                            PspriteStateType>   pspriteMonitors;
+                            PspriteStateType,
+                            PspriteEquals>      pspriteMonitors;
 
     // True if button down last tic.
 	int			attackdown, usedown;

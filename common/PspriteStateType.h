@@ -20,22 +20,15 @@ struct PspriteStateType
         tics    {i_tics}
     {
     }
-    explicit PspriteStateType(const state_t& stateDef) :
-        statenum{stateDef.statenum},
-        tics    {stateDef.tics}
-    {
-    }
-
-    explicit PspriteStateType(const pspdef_t& pspdef) :
-        statenum(pspdef.state ? pspdef.state->statenum : static_cast<statenum_t>(-1)),
-        tics    (pspdef.tics)
-    {
-    }
 
     bool operator==(const PspriteStateType&) const = default;
 
-    bool operator==(const pspdef_t& pspdef) const       { return *this == PspriteStateType(pspdef); }
-    PspriteStateType& operator=(const pspdef_t& pspdef) { return *this = PspriteStateType(pspdef);  }
+    PspriteStateType& operator=(const pspdef_t& pspdef)
+    {
+        statenum = pspdef.state ? pspdef.state->statenum : static_cast<statenum_t>(-1);
+        tics     = pspdef.tics;
+        return *this;
+    }
 
 	template <typename StreamType>
 	friend StreamType& operator<<(StreamType& io_stream, const PspriteStateType& i_thisRef)

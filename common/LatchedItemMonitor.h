@@ -49,7 +49,7 @@ class LatchedItemMonitor
         bool      m_isArmed;
 };
 
-template <typename ItemType, size_t N, typename LatchType = ItemType>
+template <typename ItemType, size_t N, typename LatchType = ItemType, typename EqualsFunctor = std::equal_to<LatchType> >
 class LatchedItemArrayMonitor
 {
     public:
@@ -78,7 +78,8 @@ class LatchedItemArrayMonitor
                 m_isArmed = false;
                 for (size_t i = 0; i < m_latchedValues.size(); ++i)
                 {
-                    if (m_latchedValues[i] != m_refs[i])
+                    // With the default of std::equal_to, the below ultimately just becomes an operator==
+                    if (not m_equalsFunctor(m_latchedValues[i], m_refs[i]))
                     {
                         return true;
                     }
@@ -98,6 +99,7 @@ class LatchedItemArrayMonitor
 
         std::array<std::reference_wrapper<ItemType>, N> m_refs;
         std::array<LatchType, N>                        m_latchedValues;
+        EqualsFunctor                                   m_equalsFunctor;
         bool                                            m_isArmed;
 
 };
