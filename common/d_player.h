@@ -53,6 +53,7 @@
 
 #include "OdaMessenger.h"
 #include "LatchedItemMonitor.h"
+#include "PspriteStateType.h"
 
 //
 // Player states.
@@ -187,9 +188,11 @@ public:
 	weapontype_t	pendingweapon;
 	weapontype_t	readyweapon;
 
-	std::array<bool, NUMWEAPONS> weaponowned;
-	std::array<int, NUMAMMO> ammo;
-	std::array<int, NUMAMMO> maxammo;
+	std::array<bool, NUMWEAPONS>      weaponowned;
+	std::array<int, NUMAMMO>          ammo;
+	std::array<int, NUMAMMO>          maxammo;
+	int                               psprnum;
+	std::array<pspdef_t, NUMPSPRITES> psprites;     // Overlay view sprites (gun, etc).
 
     LatchedItemMonitor<weapontype_t>            pendingweaponMonitor;
     LatchedItemMonitor<weapontype_t>            readyweaponMonitor;
@@ -197,6 +200,9 @@ public:
     LatchedItemArrayMonitor<int, NUMAMMO>       ammoMonitors;
     LatchedItemArrayMonitor<int, NUMAMMO>       maxAmmoMonitors;
     LatchedItemArrayMonitor<int, NUMPOWERS>     powerMonitors;
+    LatchedItemArrayMonitor<pspdef_t,
+                            NUMPSPRITES,
+                            PspriteStateType>   pspriteMonitors;
 
     // True if button down last tic.
 	int			attackdown, usedown;
@@ -220,9 +226,6 @@ public:
 	int			fixedcolormap;			//  can be set to REDCOLORMAP for pain, etc.
 
 	int			xviewshift;				// [RH] view shift (for earthquakes)
-
-	int                               psprnum;
-	std::array<pspdef_t, NUMPSPRITES> psprites;     // Overlay view sprites (gun, etc).
 
 	int			jumpTics;				// delay the next jump for a moment
 
