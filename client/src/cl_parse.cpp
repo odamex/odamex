@@ -212,49 +212,6 @@ static void CL_Disconnect(const odaproto::svc::Disconnect* msg)
 	CL_QuitNetGame(NQ_SERVER_DROP);
 }
 
-static void DirectUnpackInventory(const odaproto::Player& inventory, player_t& player)
-{
-	const uint32_t weaponowned = inventory.weaponowned();
-	UnpackBoolArray(player.weaponowned, weaponowned);
-
-	for (int i = 0; i < NUMAMMO; i++)
-	{
-		if (i < inventory.ammo_size())
-			player.ammo[i] = inventory.ammo(i);
-		else
-			player.ammo[i] = 0;
-
-		if (i < inventory.maxammo_size())
-			player.maxammo[i] = inventory.maxammo(i);
-		else
-			player.maxammo[i] = 0;
-	}
-
-	const weapontype_t pending = static_cast<weapontype_t>(inventory.pendingweapon());
-	if (pending != wp_nochange && pending < NUMWEAPONS)
-	{
-		player.pendingweapon = pending;
-	}
-	const weapontype_t readyweapon = static_cast<weapontype_t>(inventory.readyweapon());
-	if (readyweapon != player.readyweapon && readyweapon < NUMWEAPONS)
-	{
-		player.pendingweapon = readyweapon;
-	}
-
-	// Tic was replayed? Don't try and use the replays's autoswitch at the same tic as weapon correction.
-	if (ClientReplay::getInstance().wasReplayed() && pending == wp_nochange)
-	{
-		player.pendingweapon = wp_nochange;
-	}
-}
-
-#if 0
-	PlayerItemDataType inventoryResponse;
-
-
-}
-#endif
-
 /**
  * @brief svc_playerinfo - Your personal arsenal, as supplied by the server.
  */
@@ -262,9 +219,9 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 {
 	player_t& player = consoleplayer();
 
-    const odaproto::Player& playerInfo = msg->player();
+	const odaproto::Player& playerInfo = msg->player();
 
-    PlayerItemDataType playerState;
+	PlayerItemDataType playerState;
 
 	const size_t ammoElementCount = std::min(playerState.ammo.size(), static_cast<size_t>(playerInfo.ammo_size()));
 
@@ -276,10 +233,10 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	          playerInfo.maxammo().begin() + ammoElementCount,
 	          playerState.maxammo.begin());
 
-    playerState.health        = playerInfo.health();
-    playerState.armorpoints   = playerInfo.armorpoints();
-    playerState.armortype     = playerInfo.armortype();
-    playerState.lives         = playerInfo.lives();
+	playerState.health        = playerInfo.health();
+	playerState.armorpoints   = playerInfo.armorpoints();
+	playerState.armortype     = playerInfo.armortype();
+	playerState.lives         = playerInfo.lives();
 
 	const size_t powersElementCount = std::min(playerState.powers.size(), static_cast<size_t>(playerInfo.powers_size()));
 	std::copy(playerInfo.powers().begin(),
@@ -292,16 +249,16 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	UnpackBoolArray(playerState.weaponowned, playerInfo.weaponowned());
 	UnpackBoolArray(playerState.cards,       playerInfo.cards());
 
-    playerState.backpack = playerInfo.backpack();
-    playerState.cheats   = playerInfo.cheats();
+	playerState.backpack = playerInfo.backpack();
+	playerState.cheats   = playerInfo.cheats();
 
 	const size_t pspriteElementCount = std::min(playerState.psprites.size(), static_cast<size_t>(playerInfo.psprites_size()));
 
-    for (size_t i = 0; i < pspriteElementCount; ++i)
-    {
-        playerState.psprites[i].statenum = static_cast<statenum_t>(playerInfo.psprites(i).statenum());
-        playerState.psprites[i].tics     = static_cast<statenum_t>(playerInfo.psprites(i).tics());
-    }
+	for (size_t i = 0; i < pspriteElementCount; ++i)
+	{
+		playerState.psprites[i].statenum = static_cast<statenum_t>(playerInfo.psprites(i).statenum());
+		playerState.psprites[i].tics     = static_cast<statenum_t>(playerInfo.psprites(i).tics());
+	}
 
 	if ((player.lives == 0 && playerInfo.lives() > 0) && !netdemo.isPlaying())
 	{
@@ -309,82 +266,37 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 		::displayplayer_id = ::consoleplayer_id;
 	}
 
-    // We only rollback after we complete the reception of a full update.
-    // Until then, we just flatly apply the PlayerInfo to the player.
-    if (::hasReceivedFullUpdate)
-    {
-        const int oldTic = playerInfo.client_tic();
-
-        const RollerResolveEnum result = rollerState.Resolve(oldTic, playerState, player);
-        switch (result)
-        {
-            case RollerResolveEnum::HISTORY_CHANGED:                   [[fallthrough]];
-            case RollerResolveEnum::HISTORY_AND_CURRENT_STATE_CHANGED:
-                PrintFmt("Reconciled conflicting inventory that diverged on tic {}\n", oldTic);
-                break;
-
-            case RollerResolveEnum::INVALID_TIC:
-                PrintFmt(PRINT_WARNING, "Cannot reconcile inventory: tic {} is too far in the past!\n", oldTic);
-                break;
-
-            case RollerResolveEnum::CURRENT_STATE_CHANGED: [[fallthrough]];
-            case RollerResolveEnum::NO_CHANGE:             [[fallthrough]];
-            default:
-                break;
-        }
-    }
-    else
-    {
-        rollerState.Clear();
-
-        playerState.ToPlayer(player);
-    }
-
-
-
-
-#if 0
-    DirectUnpackInventory(msg->player(), p);
-
-	uint32_t cards = msg->player().cards();
-	UnpackBoolArray(p.cards, cards);
-
-	p.backpack = msg->player().backpack();
-
-	p.health = msg->player().health();
-	p.armorpoints = msg->player().armorpoints();
-	p.armortype = msg->player().armortype();
-
-
-	p.lives = msg->player().lives();
-
-	statenum_t stnum[NUMPSPRITES] = {S_NULL, S_NULL};
-	for (int i = 0; i < NUMPSPRITES; i++)
+	// We only rollback after we complete the reception of a full update.
+	// Until then, we just flatly apply the PlayerInfo to the player.
+	if (::hasReceivedFullUpdate)
 	{
-		if (i < msg->player().psprites_size())
+		const int oldTic = playerInfo.client_tic();
+
+		const RollerResolveEnum result = rollerState.Resolve(oldTic, playerState, player);
+		switch (result)
 		{
-			const int32_t state = msg->player().psprites().Get(i).statenum();
-            if (!states.contains(state))
-			{
-				continue;
-			}
-			stnum[i] = static_cast<statenum_t>(state);
+			case RollerResolveEnum::HISTORY_CHANGED:                   [[fallthrough]];
+			case RollerResolveEnum::HISTORY_AND_CURRENT_STATE_CHANGED:
+				PrintFmt("Reconciled conflicting inventory that diverged on tic {}\n", oldTic);
+				break;
+
+			case RollerResolveEnum::INVALID_TIC:
+				PrintFmt(PRINT_WARNING, "Cannot reconcile inventory: tic {} is too far in the past!\n", oldTic);
+				break;
+
+			case RollerResolveEnum::CURRENT_STATE_CHANGED: [[fallthrough]];
+			case RollerResolveEnum::NO_CHANGE:             [[fallthrough]];
+			default:
+				break;
 		}
 	}
-#endif
+	else
+	{
+		rollerState.Clear();
 
+		playerState.ToPlayer(player);
+	}
 
-    // ----------------------------------------------------------------
-    //  Everything commented out from here down is special and needs to
-    //  be replicated (or replaced with something else) in the rollback
-    //  stuff to make it apply correctly.
-    // ----------------------------------------------------------------
-    //
-#if 0
-    for (int i = 0; i < NUMPSPRITES; i++)
-		P_SetPsprite(p, i, stnum[i]);
-
-#endif
 	// If a full update was declared, don't try and correct any weapons.
 	ClientReplay::getInstance().reset();
 }
