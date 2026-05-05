@@ -277,11 +277,11 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 		{
 			case RollerResolveEnum::HISTORY_CHANGED:                   [[fallthrough]];
 			case RollerResolveEnum::HISTORY_AND_CURRENT_STATE_CHANGED:
-				PrintFmt("Reconciled conflicting inventory that diverged on tic {}\n", oldTic);
+				DPrintFmt("Reconciled conflicting inventory that diverged on tic {}\n", oldTic);
 				break;
 
 			case RollerResolveEnum::INVALID_TIC:
-				PrintFmt(PRINT_WARNING, "Cannot reconcile inventory: tic {} is too far in the past!\n", oldTic);
+				DPrintFmt("Cannot reconcile inventory: tic {} is too far in the past!\n", oldTic);
 				break;
 
 			case RollerResolveEnum::CURRENT_STATE_CHANGED: [[fallthrough]];
@@ -1456,6 +1456,7 @@ static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 // and request that we get a full update of playerinfo - apr 14 2012
 static void CL_FireWeapon(const odaproto::svc::FireWeapon* msg)
 {
+#if 0
 	player_t& player = consoleplayer();
 
 	weapontype_t firedweap = static_cast<weapontype_t>(msg->readyweapon());
@@ -1475,6 +1476,7 @@ static void CL_FireWeapon(const odaproto::svc::FireWeapon* msg)
 		// Request the player's ammo status from the server
 		MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_getplayerinfo);
 	}
+#endif
 }
 
 //
