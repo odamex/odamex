@@ -1076,6 +1076,8 @@ static void InitNetMessageFormats()
 	MSG_INFO(svc_maplist_index);
 	MSG_INFO(svc_toast);
 	MSG_INFO(svc_hordeinfo);
+	MSG_INFO(svc_spree);
+	MSG_INFO(svc_spreebreaker);
 	MSG_INFO(svc_noisealert);
 	MSG_INFO(svc_playerammo);
 	MSG_INFO(svc_playermaxammo);
