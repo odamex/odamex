@@ -3162,8 +3162,8 @@ static void CL_PlayerAmmo(const odaproto::svc::PlayerAmmo* msg)
 
 	if (rollerState.ResolveAmmo(msg->player_tic(), ammo, consoleplayer()))
 	{
-		PrintFmt("Reconciled ammo on tic {}\n",
-		         msg->player_tic());
+		DPrintFmt("Reconciled ammo on tic {}\n",
+		          msg->player_tic());
 	}
 }
 
@@ -3174,9 +3174,13 @@ static void CL_PlayerMaxAmmo(const odaproto::svc::PlayerMaxAmmo* msg)
               msg->maxammo().end(),
               maxammo.begin());
 
-    rollerState.ResolveMaxAmmo(msg->player_tic(),
-                               maxammo,
-                               consoleplayer());
+    if (rollerState.ResolveMaxAmmo(msg->player_tic(),
+                                   maxammo,
+                                   consoleplayer()))
+    {
+        DPrintFmt("Reconciled maxammo on tic {}\n",
+                  msg->player_tic());
+    }
 }
 
 static void CL_PlayerWeaponOwned(const odaproto::svc::PlayerWeaponOwned* msg)
@@ -3186,17 +3190,25 @@ static void CL_PlayerWeaponOwned(const odaproto::svc::PlayerWeaponOwned* msg)
               msg->weaponowned().end(),
               weaponowned.begin());
 
-    rollerState.ResolveWeaponOwned(msg->player_tic(),
-                                   weaponowned,
-                                   consoleplayer());
+    if (rollerState.ResolveWeaponOwned(msg->player_tic(),
+                                       weaponowned,
+                                       consoleplayer()))
+    {
+        DPrintFmt("Reconciled weaponowned on tic {}\n",
+                  msg->player_tic());
+    }
 }
 
 static void CL_PlayerWeaponSelection(const odaproto::svc::PlayerWeaponSelection* msg)
 {
-    rollerState.ResolveWeaponSelection(msg->player_tic(),
-                                       static_cast<weapontype_t>(msg->readyweapon()),
-                                       static_cast<weapontype_t>(msg->pendingweapon()),
-                                       consoleplayer());
+    if (rollerState.ResolveWeaponSelection(msg->player_tic(),
+                                           static_cast<weapontype_t>(msg->readyweapon()),
+                                           static_cast<weapontype_t>(msg->pendingweapon()),
+                                           consoleplayer()))
+    {
+        DPrintFmt("Reconciled weapon selection on tic {}\n",
+                  msg->player_tic());
+    }
 }
 
 static void CL_PlayerPowers(const odaproto::svc::PlayerPowers* msg)
@@ -3206,9 +3218,14 @@ static void CL_PlayerPowers(const odaproto::svc::PlayerPowers* msg)
               msg->powers().end(),
               powers.begin());
 
-    rollerState.ResolvePowers(msg->player_tic(),
-                              powers,
-                              consoleplayer());
+    if (rollerState.ResolvePowers(msg->player_tic(),
+                                  powers,
+                                  consoleplayer()))
+    {
+        DPrintFmt("Reconciled powers on tic {}\n",
+                  msg->player_tic());
+    }
+
 }
 
 static void CL_PlayerPsprites(const odaproto::svc::PlayerPsprites* msg)
@@ -3221,9 +3238,13 @@ static void CL_PlayerPsprites(const odaproto::svc::PlayerPsprites* msg)
         psprites[i].tics     = msg->psprites(i).tics();
     }
 
-    rollerState.ResolvePsprites(msg->player_tic(),
-                                psprites,
-                                consoleplayer());
+    if (rollerState.ResolvePsprites(msg->player_tic(),
+                                    psprites,
+                                    consoleplayer()))
+    {
+        DPrintFmt("Reconciled psprites on tic {}\n",
+                  msg->player_tic());
+    }
 }
 
 static void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
