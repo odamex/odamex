@@ -1206,10 +1206,10 @@ void G_Ticker (void)
 						DPrintFmt("Successive roller state update on tic {}\n", gametic);
 						break;
 					case RollerRecordResultEnum::INVALID_TIC_FUTURE:
-						PrintFmt(PRINT_WARNING, "Rejected roller state update on future tic {}, expected {}\n", gametic, rollerState.ExpectedTic());
+						DPrintFmt("Rejected roller state update on future tic {}, expected {}\n", gametic, rollerState.ExpectedTic());
 						break;
 					case RollerRecordResultEnum::INVALID_TIC_PAST:
-						PrintFmt(PRINT_WARNING, "Rejected roller state update on past tic {}, expected {}\n", gametic, rollerState.ExpectedTic());
+						DPrintFmt("Rejected roller state update on past tic {}, expected {}\n", gametic, rollerState.ExpectedTic());
 						break;
 					case RollerRecordResultEnum::SUCCESS:
 						break;
