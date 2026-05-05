@@ -16,11 +16,11 @@ enum class RollerRecordResultEnum
 
 enum class RollerResolveEnum
 {
-    NO_CHANGE,
-    CURRENT_STATE_CHANGED,
-    HISTORY_CHANGED,
-    HISTORY_AND_CURRENT_STATE_CHANGED,
-    INVALID_TIC,
+	NO_CHANGE,
+	CURRENT_STATE_CHANGED,
+	HISTORY_CHANGED,
+	HISTORY_AND_CURRENT_STATE_CHANGED,
+	INVALID_TIC,
 };
 
 class PlayerStateRoller
@@ -67,9 +67,9 @@ class PlayerStateRoller
 		/// Returns true if the player's weapon selection changed as a result, false otherwise.
 		bool ResolveWeaponSelection(int i_oldTic, const weapontype_t i_readyWeapon, const weapontype_t i_pendingWeapon, player_t& io_player);
 
-        bool ResolvePowers(int i_oldTic, const std::array<int, NUMPOWERS>& i_powers, player_t& io_player);
+		bool ResolvePowers(int i_oldTic, const std::array<int, NUMPOWERS>& i_powers, player_t& io_player);
 
-        bool ResolvePsprites(int i_oldTic, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites, player_t& io_player);
+		bool ResolvePsprites(int i_oldTic, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites, player_t& io_player);
 
 		/// Generic stream-in operator.
 		template <typename StreamType>
@@ -107,15 +107,15 @@ class PlayerStateRoller
 			return io_stream;
 		}
 
-        std::optional<std::reference_wrapper<const PlayerItemDataType>> GetStateAtTic(int i_oldTic) const
-        {
-            const auto iter = m_history.find(i_oldTic);
-            if (iter != m_history.end())
-            {
-                return std::cref(iter->second);
-            }
-            return {};
-        }
+		std::optional<std::reference_wrapper<const PlayerItemDataType>> GetStateAtTic(int i_oldTic) const
+		{
+			const auto iter = m_history.find(i_oldTic);
+			if (iter != m_history.end())
+			{
+				return std::cref(iter->second);
+			}
+			return {};
+		}
 
 		int ExpectedTic() const { return m_mostRecentTic + 1; }
 
@@ -126,17 +126,17 @@ class PlayerStateRoller
 			size_t operator()(int ticNumber) const { return static_cast<size_t>(ticNumber); }
 		};
 
-        using HistoryTableType = std::unordered_map<int, PlayerItemDataType, IdentityHasher>;
+		using HistoryTableType = std::unordered_map<int, PlayerItemDataType, IdentityHasher>;
 
-        void ApplyMostRecentToPlayer(player_t& io_player);
+		void ApplyMostRecentToPlayer(player_t& io_player);
 
-        bool RollbackAmmo(HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>& i_ammo);
+		bool RollbackAmmo(HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>& i_ammo);
 		bool RollbackMaxAmmo(HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>& i_maxAmmo);
 		bool RollbackWeaponOwned(HistoryTableType::iterator i_historyIter, const std::array<bool, NUMWEAPONS>& i_weaponOwned);
 		bool RollbackWeaponSelection(HistoryTableType::iterator i_historyIter, const weapontype_t i_readyWeapon, const weapontype_t i_pendingWeapon);
 
-        bool RollbackPowers(HistoryTableType::iterator i_historyIter, const std::array<int, NUMPOWERS> i_powers);
-        bool RollbackPsprites(HistoryTableType::iterator i_historyIter, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites);
+		bool RollbackPowers(HistoryTableType::iterator i_historyIter, const std::array<int, NUMPOWERS> i_powers);
+		bool RollbackPsprites(HistoryTableType::iterator i_historyIter, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites);
 
 		template <typename Callable>
 		void Roll(int i_oldTic, Callable&& i_callable);
