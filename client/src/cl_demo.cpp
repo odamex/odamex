@@ -49,6 +49,8 @@ extern std::string server_host;
 extern std::string digest;
 extern OResFiles wadfiles;
 
+extern bool hasReceivedFullUpdate;
+
 /**
  * @brief Map demo versions to the latest Odamex version that can read them.
  *
@@ -1689,6 +1691,10 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	// Make sure the status bar is displayed correctly
 	R_ForceViewWindowResize();
 	ST_Start();
+
+	// Make sure the message handling understands that the player is fully up-to-date.
+	// Especially important for rollback replication.
+	::hasReceivedFullUpdate = true;
 }
 
 
