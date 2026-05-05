@@ -200,41 +200,47 @@ message FireWeapon
 	repeated PspriteState psprites           = 4;
 }
 
+// svc_playerammo
 message PlayerAmmo
 {
-    int32           player_tic  = 1;
-    repeated int32  ammo        = 2;    // ammo[ammo_type] = ammo_quantity
+	int32           player_tic  = 1;
+	repeated int32  ammo        = 2;    // ammo[ammo_type] = ammo_quantity
 }
 
+// svc_playermaxammo
 message PlayerMaxAmmo
 {
-    int32           player_tic  = 1;
-    repeated int32  maxammo     = 2;    // maxammo[ammo_type] = maximum allowed
+	int32           player_tic  = 1;
+	repeated int32  maxammo     = 2;    // maxammo[ammo_type] = maximum allowed
 }
 
+// svc_playerweaponowned
 message PlayerWeaponOwned
 {
-    int32         player_tic    = 1;
-    repeated bool weaponowned   = 2;     // weaponowned[weapon_type] = is_owned
+	int32         player_tic    = 1;
+	repeated bool weaponowned   = 2;     // weaponowned[weapon_type] = is_owned
 }
 
+// svc_playerweaponselection
 message PlayerWeaponSelection
 {
-    int32  player_tic    = 1;
-    uint32 readyweapon   = 2;
-    uint32 pendingweapon = 3;
+	int32  player_tic    = 1;
+	uint32 readyweapon   = 2;
+	uint32 pendingweapon = 3;
 }
 
+// svc_playerpowers
 message PlayerPowers
 {
-    int32           player_tic = 1;
-    repeated int32  powers     = 2;    // powers[power_type] = monotonic counter
+	int32           player_tic = 1;
+	repeated int32  powers     = 2;    // powers[power_type] = monotonic counter
 }
 
+// svc_playerpsprites
 message PlayerPsprites
 {
-    int32                 player_tic = 1;
-    repeated PspriteState psprites   = 2;   // psprite[psprite_type] = psprite
+	int32                 player_tic = 1;
+	repeated PspriteState psprites   = 2;   // psprite[psprite_type] = psprite
 }
 
 // svc_updatesector
