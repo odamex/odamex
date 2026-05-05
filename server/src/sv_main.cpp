@@ -3506,37 +3506,37 @@ void SV_WriteCommandsForPlayer(player_t& player)
 		MSG_WriteSVC(player.client.messenger.HighBuf(), SVC_MovePlayer(otherPlayer, player.tic));
 	}
 
-    const bool pendingWeaponWasChanged = player.pendingweaponMonitor.EvaluateAsChanged();
-    const bool readyWeaponWasChanged   = player.readyweaponMonitor.EvaluateAsChanged();
+	const bool pendingWeaponWasChanged = player.pendingweaponMonitor.EvaluateAsChanged();
+	const bool readyWeaponWasChanged   = player.readyweaponMonitor.EvaluateAsChanged();
 	if (pendingWeaponWasChanged or readyWeaponWasChanged)
-    {
-        MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerWeaponSelection(player));
-    }
+	{
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerWeaponSelection(player));
+	}
 
-    if (player.weaponOwnedMonitors.EvaluateAsChanged())
-    {
-        MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerWeaponOwned(player));
-    }
+	if (player.weaponOwnedMonitors.EvaluateAsChanged())
+	{
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerWeaponOwned(player));
+	}
 
-    if (player.ammoMonitors.EvaluateAsChanged())
-    {
-        MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerAmmo(player));
-    }
+	if (player.ammoMonitors.EvaluateAsChanged())
+	{
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerAmmo(player));
+	}
 
-    if (player.maxAmmoMonitors.EvaluateAsChanged())
-    {
-        MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerMaxAmmo(player));
-    }
+	if (player.maxAmmoMonitors.EvaluateAsChanged())
+	{
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerMaxAmmo(player));
+	}
 
-    if (player.powerMonitors.EvaluateAsChanged())
-    {
-        MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerPowers(player));
-    }
+	if (player.powerMonitors.EvaluateAsChanged())
+	{
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerPowers(player));
+	}
 
-    if (player.pspriteMonitors.EvaluateAsChanged())
-    {
-        MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerPsprites(player));
-    }
+	if (player.pspriteMonitors.EvaluateAsChanged())
+	{
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerPsprites(player));
+	}
 
 	// [SL] Send client info about player he is spying on
 	player_t& target = idplayer(player.spying);
@@ -4615,16 +4615,16 @@ static void IntermissionTimeCheck()
 
 static void SV_ArmInventoryMonitors()
 {
-    for (auto& player : players)
-    {
-        player.pendingweaponMonitor.Arm();
-        player.readyweaponMonitor.Arm();
-        player.weaponOwnedMonitors.Arm();
-        player.ammoMonitors.Arm();
-        player.maxAmmoMonitors.Arm();
-        player.powerMonitors.Arm();
-        player.pspriteMonitors.Arm();
-    }
+	for (auto& player : players)
+	{
+		player.pendingweaponMonitor.Arm();
+		player.readyweaponMonitor.Arm();
+		player.weaponOwnedMonitors.Arm();
+		player.ammoMonitors.Arm();
+		player.maxAmmoMonitors.Arm();
+		player.powerMonitors.Arm();
+		player.pspriteMonitors.Arm();
+	}
 }
 
 //
