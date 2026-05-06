@@ -186,9 +186,8 @@ bool PlayerStateRoller::RollbackWeaponOwned(HistoryTableType::iterator i_history
 
 bool PlayerStateRoller::RollbackWeaponSelection(HistoryTableType::iterator i_historyIter, const weapontype_t i_readyWeapon, const weapontype_t i_pendingWeapon)
 {
-	if (i_readyWeapon < NUMWEAPONS and i_pendingWeapon < NUMWEAPONS
-	    and (i_historyIter->second.readyweapon != i_readyWeapon
-	        or i_historyIter->second.pendingweapon != i_pendingWeapon))
+	if (   i_historyIter->second.readyweapon   != i_readyWeapon
+	    or i_historyIter->second.pendingweapon != i_pendingWeapon)
 	{
 		Roll(i_historyIter->first, [i_readyWeapon, i_pendingWeapon](auto& rollingIter)
 			{
