@@ -2187,7 +2187,7 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z)
 		// [SL] 2012-10-02 - Allow a client to predict their own bullet puffs
 		// so don't send the puffs to the client already predicting
 		if (shootthing && shootthing->player && shootthing->player->userinfo.predict_weapons)
-			puff->players_aware.set(shootthing->player->id);
+			puff->playersAware.Set(shootthing->player->id, AwarenessEnum::FULLY_AWARE);
 
 		SV_SpawnMobj(puff);
 	}

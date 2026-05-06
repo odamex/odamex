@@ -21,9 +21,19 @@ class ActorAwarenessState
         {
         }
 
+        bool IsAware(size_t playerId) const
+        {
+            return Get(playerId) != AwarenessEnum::NOT_AWARE;
+        }
+
         AwarenessEnum Get(size_t playerId) const
         {
-            return m_player[playerId];
+            auto iter = m_player.find(playerId);
+            if (iter != m_player.end())
+            {
+                return iter->second;
+            }
+            return AwarenessEnum::NOT_AWARE;
         }
 
         AwarenessEnum Set(size_t playerId, AwarenessEnum awareness)

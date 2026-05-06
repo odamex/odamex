@@ -45,6 +45,9 @@
 #include "szp.h"
 
 #include "teamdef.h"
+
+#include "ActorAwarenessState.h"
+
 //
 // NOTES: AActor
 //
@@ -531,9 +534,7 @@ public:
 
 	AActor			*inext, *iprev;	// Links to other mobjs in same bucket
 
-	// denis - playerids of players to whom this object has been sent
-	// [SL] changed to use a bitfield instead of a vector for O(1) lookups
-	PlayerBitField	players_aware;
+	ActorAwarenessState<MAXPLAYERS> playersAware;
 
 	AActorPtr		goal;			// Monster's goal if not chasing anything
 	translationref_t translation;	// Translation table (or NULL)

@@ -910,7 +910,7 @@ Players::iterator SV_RemoveDisconnectedPlayer(Players::iterator it)
 	AActor* mo;
 	TThinkerIterator<AActor> iterator;
 	while ((mo = iterator.Next()))
-		mo->players_aware.unset(it->id);
+		mo->playersAware.Set(it->id, AwarenessEnum::NOT_AWARE);
 
 	// remove this player's actor object
 	if (it->mo)
@@ -1470,13 +1470,13 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo, const std::optional<bool> 
 	else if(player.mo && mo->player && true)
 		ok = true;
 
-	bool previously_ok = mo->players_aware.get(player.id);
+	bool previously_ok = mo->playersAware.IsAware(player.id);
 
 	client_t *cl = &player.client;
 
 	if(!ok && previously_ok)
 	{
-		mo->players_aware.unset(player.id);
+		mo->playersAware.Set(player.id, AwarenessEnum::NOT_AWARE);
 
 		MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_RemoveMobj(*mo));
 
@@ -1484,7 +1484,7 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo, const std::optional<bool> 
 	}
 	else if(!previously_ok && ok)
 	{
-		mo->players_aware.set(player.id);
+		mo->playersAware.Set(player.id, AwarenessEnum::FULLY_AWARE);
 
 		if(!mo->player || mo->player->playerstate != PST_LIVE)
 		{
@@ -1581,7 +1581,7 @@ bool SV_IsPlayerAllowedToSee(const player_t &p, const AActor *mo)
 	if (mo->oflags & MFO_SPECTATOR)
 		return false; // GhostlyDeath -- always false, as usual!
 	else
-		return mo->players_aware.get(p.id);
+		return mo->playersAware.IsAware(p.id);
 }
 
 //
@@ -4662,7 +4662,7 @@ void SV_TouchSpecial(AActor& special, player_t& player)
 	// out immediately ahead of the Touch and Remove commands and avoid the need for
 	// a rollback.
 
-	if (not special.players_aware.get(player.id))
+	if (not special.playersAware.IsAware(player.id))
 	{
 		SV_AwarenessUpdate(player, &special, true);
 	}
@@ -5105,13 +5105,10 @@ void SV_SendDestroyActor(const AActor *mo)
 	{
 		for (auto& player : players)
 		{
-			if (mo->players_aware.get(player.id))
+			if (mo->playersAware.IsAware(player.id))
 			{
 				client_t *cl = &(player.client);
 
-				// denis - todo - need a queue for destroyed (lost awareness)
-				// objects, as a flood of destroyed things could easily overflow a
-				// buffer
 				MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_RemoveMobj(*mo));
 			}
 		}
