@@ -55,6 +55,8 @@
 #include "LatchedItemMonitor.h"
 #include "PspriteStateType.h"
 
+#include "p_horde.h"
+
 //
 // Player states.
 //
@@ -304,6 +306,8 @@ public:
 	int  inventoryCheckIsRequestedForTic;
 
 	void RequestInventoryCheckFromServer(int i_tic) { inventoryCheckIsRequestedForTic = inventoryCheckRequestsAreEnabled ? i_tic : -1; }
+
+	hordeInfo_t hordeInfo;
 
 	// denis - client structure is here now for a 1:1
 	struct client_t

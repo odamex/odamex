@@ -3161,28 +3161,15 @@ void SV_UpdateMonsters(player_t &pl, AActor *mo)
 	}
 }
 
-void SV_UpdateGametype(player_t& pl)
+void SV_UpdateGametype(player_t& player)
 {
 	if (G_IsHordeMode())
 	{
-		thread_local static hordeInfo_t lastInfo{};
-		thread_local static int         ticsent { -1 };
-
-		// If the hordeinfo has changed since last tic, save and send it.
-		if (ticsent != ::gametic)
+		const hordeInfo_t info = P_HordeInfo();
+		if (player.hordeInfo != info)
 		{
-			const hordeInfo_t info = P_HordeInfo();
-			if (info != lastInfo)
-			{
-				memcpy(&lastInfo, &info, sizeof(hordeInfo_t));
-				ticsent = ::gametic;
-			}
-		}
-
-		// Send it if we're on the tic it mutated on or to a fresh player.
-		if (ticsent == ::gametic || (pl.GameTime == 0 && pl.ingame()))
-		{
-			MSG_WriteSVC(pl.client.messenger.NetBuf(), SVC_HordeInfo(lastInfo));
+			player.hordeInfo = info;
+			MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_HordeInfo(info));
 		}
 	}
 }
