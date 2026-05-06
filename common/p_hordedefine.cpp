@@ -28,6 +28,7 @@
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"
+#include "d_player.h"
 #include "i_system.h"
 #include "infomap.h"
 #include "m_random.h"
