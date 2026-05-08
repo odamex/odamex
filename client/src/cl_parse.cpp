@@ -1334,13 +1334,12 @@ extern int MeansOfDeath;
 //
 static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 {
-	uint32_t srcid = msg->source_netid();
-	uint32_t tgtid = msg->target().netid();
-	uint32_t infid = msg->inflictor_netid();
-	int health = msg->health();
-	//::MeansOfDeath = msg->mod();
-	bool joinkill = msg->joinkill();
-	int lives = msg->lives();
+	const uint32_t srcid    = msg->source_netid();
+	const uint32_t tgtid    = msg->target_netid();
+	const uint32_t infid    = msg->inflictor_netid();
+	const int      health   = msg->health();
+	const bool     joinkill = msg->joinkill();
+	const int      lives    = msg->lives();
 
 	AActor* source = P_FindThingById(srcid);
 	AActor* target = P_FindThingById(tgtid);
@@ -1351,7 +1350,7 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 
 	// This used to be bundled with a svc_movemobj and svc_mobjspeedangle,
 	// so emulate them here.
-	target->rndindex = msg->target().rndindex();
+	target->rndindex = msg->target_rndindex();
 
 	if (target->player)
 	{
@@ -1360,25 +1359,25 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
 
-		newsnap.setX(msg->target().pos().x());
-		newsnap.setY(msg->target().pos().y());
-		newsnap.setZ(msg->target().pos().z());
-		newsnap.setAngle(msg->target().angle());
-		newsnap.setMomX(msg->target().mom().x());
-		newsnap.setMomY(msg->target().mom().y());
-		newsnap.setMomZ(msg->target().mom().z());
+		newsnap.setX(msg->target_pos().x());
+		newsnap.setY(msg->target_pos().y());
+		newsnap.setZ(msg->target_pos().z());
+		newsnap.setAngle(msg->target_angle());
+		newsnap.setMomX(msg->target_mom().x());
+		newsnap.setMomY(msg->target_mom().y());
+		newsnap.setMomZ(msg->target_mom().z());
 
 		target->player->snapshots.addSnapshot(newsnap);
 	}
 	else
 	{
-		target->x = msg->target().pos().x();
-		target->y = msg->target().pos().y();
-		target->z = msg->target().pos().z();
-		target->angle = msg->target().angle();
-		target->momx = msg->target().mom().x();
-		target->momy = msg->target().mom().y();
-		target->momz = msg->target().mom().z();
+		target->x = msg->target_pos().x();
+		target->y = msg->target_pos().y();
+		target->z = msg->target_pos().z();
+		target->angle = msg->target_angle();
+		target->momx = msg->target_mom().x();
+		target->momy = msg->target_mom().y();
+		target->momz = msg->target_mom().z();
 	}
 
 	target->health = health;

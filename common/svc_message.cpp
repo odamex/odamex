@@ -695,16 +695,13 @@ odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActo
  * @brief Kill a mobj.
  */
 odaproto::svc::KillMobj SVC_KillMobj(const AActor* source, const AActor* target, const AActor* inflictor,
-                                     int mod, bool joinkill)
+                                     int /* methodOfDeath */, bool joinkill)
 {
 	odaproto::svc::KillMobj msg;
-
-	odaproto::Actor* tgt = msg.mutable_target();
 
 	msg.set_source_netid(source ? source->netid : 0);
 	msg.set_inflictor_netid(inflictor ? inflictor->netid : 0);
 	msg.set_health(target->health);
-	msg.set_mod(mod);
 	msg.set_joinkill(joinkill);
 
 	// [AM] Confusingly, we send the lives _before_ we take it away, so
@@ -712,8 +709,8 @@ odaproto::svc::KillMobj SVC_KillMobj(const AActor* source, const AActor* target,
 	msg.set_lives(target->player ? target->player->lives : -1);
 
 	// send death location first
-	tgt->set_netid(target->netid);
-	tgt->set_rndindex(target->rndindex);
+	msg.set_target_netid(target->netid);
+	msg.set_target_rndindex(target->rndindex);
 
 	// [SL] 2012-12-26 - Get real position since this actor is at
 	// a reconciled position due to unlag
@@ -724,14 +721,14 @@ odaproto::svc::KillMobj SVC_KillMobj(const AActor* source, const AActor* target,
 		                                             zoffs);
 	}
 
-	odaproto::Vec3* tgtpos = tgt->mutable_pos();
+	odaproto::Vec3* tgtpos = msg.mutable_target_pos();
 	tgtpos->set_x(target->x + xoffs);
 	tgtpos->set_y(target->y + yoffs);
 	tgtpos->set_z(target->z + zoffs);
 
-	tgt->set_angle(target->angle);
+	msg.set_target_angle(target->angle);
 
-	odaproto::Vec3* tgtmom = tgt->mutable_mom();
+	odaproto::Vec3* tgtmom = msg.mutable_target_mom();
 	tgtmom->set_x(target->momx);
 	tgtmom->set_y(target->momy);
 	tgtmom->set_z(target->momz);
