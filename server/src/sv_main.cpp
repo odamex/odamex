@@ -1411,17 +1411,6 @@ team_t SV_GoodTeam (void)
 }
 
 //
-// SV_SendMobjToClient
-//
-void SV_SendMobjToClient(AActor *mo, client_t& cl)
-{
-	if (!mo)
-		return;
-
-	MSG_WriteSVC(cl.messenger.ReliableBuf(), SVC_SpawnMobj(mo));
-}
-
-//
 // SV_IsTeammate
 //
 bool SV_IsTeammate(player_t &a, player_t &b)
@@ -1485,7 +1474,7 @@ bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLeve
 				// The early return above means that if we have an AVATAR that was somehow created after
 				// map load, we get to this point and proceed to send the mobj per the call below.
 			}
-			SV_SendMobjToClient(mo, player.client);
+			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_SpawnMobj(mo));
 		}
 		else
 		{
@@ -4324,9 +4313,9 @@ void SV_Cheat(player_t &player)
 		if (actor == NULL)
 			return;
 
-		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		for (auto& player : players)
 		{
-			SV_SendMobjToClient(actor, it->client);
+			SV_AwarenessUpdate(player, actor, AwarenessEnum::FULLY_AWARE);
 		}
 	}
 	else if (cheatType == 3)
@@ -4341,9 +4330,9 @@ void SV_Cheat(player_t &player)
 		if (actor == NULL)
 			return;
 
-		for (Players::iterator it = players.begin(); it != players.end(); ++it)
+		for (auto& player : players)
 		{
-			SV_SendMobjToClient(actor, it->client);
+			SV_AwarenessUpdate(player, actor, AwarenessEnum::FULLY_AWARE);
 		}
 	}
 }
