@@ -3179,7 +3179,14 @@ static void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
 	}
 	else
 	{
-		P_SetThingId(::voodoostarts[index].mobj, netid);
+		// There was a bug that caused avatar mobjs to not get linked back to voodoostarts when
+		// unarchiving the mobj.  The avatar mobj still exists, but we can't get to it through
+		// the voodoostart structure.  We can dodge the crash that was caused by just checking
+		// for null.
+		if (::voodoostarts[index].mobj)
+		{
+			P_SetThingId(::voodoostarts[index].mobj, netid);
+		}
 	}
 }
 
