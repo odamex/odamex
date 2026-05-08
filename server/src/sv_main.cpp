@@ -1540,9 +1540,9 @@ static void SV_SpawnMobjPrepareForClients(AActor* mo, bool i_allowDirectSpawnQue
 
 	for (auto& player : players)
 	{
-		if (mo->player)
+		if (mo->player or mo->type == MT_AVATAR)
 		{
-			SV_AwarenessUpdate(player, mo);
+			mo->playersAware.Set(player.id, AwarenessEnum::ALWAYS_AWARE);
 		}
 		else
 		{
