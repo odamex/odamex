@@ -1440,7 +1440,6 @@ bool SV_IsTeammate(player_t &a, player_t &b)
 
 bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLevel)
 {
-
     const AwarenessEnum previousAwareness = mo->playersAware.Get(player.id);
     if (previousAwareness == awarenessLevel or
         previousAwareness == AwarenessEnum::ALWAYS_AWARE)
@@ -3382,7 +3381,13 @@ void SV_SpyPlayer(player_t &viewer)
 	SV_SendPlayerStateUpdate(&viewer.client, &other, viewer.tic);
 }
 
-static void SV_SortMobjsForPlayer(player_t& player)
+struct SortedMobjPartitionsType
+{
+    std::vector<player_t::ActorDistanceType>::iterator outerBoundary;
+    std::vector<player_t::ActorDistanceType>::iterator innerBoundary;
+};
+
+static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player)
 {
 	// Put in a static assert for assurance that the vector-of-pointers clear() will
 	// actually be constant-time.
@@ -3396,7 +3401,7 @@ static void SV_SortMobjsForPlayer(player_t& player)
 		if (not playerViewPosition)
 		{
 			// This operation only makes sense if the player has a position.
-			return;
+			return SortedMobjPartitionsType{ player.sortedMobjs.end(), player.sortedMobjs.end() };
 		}
 	}
 
@@ -3446,14 +3451,14 @@ static void SV_SortMobjsForPlayer(player_t& player)
 	}
 	auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1.distance < mo2.distance; };
 
-	std::nth_element(player.sortedMobjs.begin(),
-	                 player.sortedMobjs.begin() + player.sortedMobjs.size()/2,
-	                 player.sortedMobjs.end(),
-	                 distanceCompare);
-	std::nth_element(player.sortedMobjs.begin(),
-	                 player.sortedMobjs.begin() + player.sortedMobjs.size()/4,
-	                 player.sortedMobjs.begin() + player.sortedMobjs.size()/2,
-	                 distanceCompare);
+    SortedMobjPartitionsType partitions;
+    partitions.outerBoundary = player.sortedMobjs.begin() + player.sortedMobjs.size()/2;
+    partitions.innerBoundary = player.sortedMobjs.begin() + player.sortedMobjs.size()/4;
+
+	std::nth_element(player.sortedMobjs.begin(), partitions.outerBoundary, player.sortedMobjs.end(), distanceCompare);
+	std::nth_element(player.sortedMobjs.begin(), partitions.innerBoundary, partitions.outerBoundary, distanceCompare);
+
+    return partitions;
 }
 
 void SV_WriteCommandsForPlayer(player_t& player)
@@ -3525,7 +3530,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	SV_UpdateConsolePlayer(player);
 
 	const size_t previousSortedMobjCount = player.sortedMobjs.size();
-	SV_SortMobjsForPlayer(player);
+	const auto sortedMobjPartitions = SV_SortMobjsForPlayer(player);
 
 	// We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
 	// Combined with the high-priority to_spawn queue being directly limited in SV_UpdateHiddenMobj,
