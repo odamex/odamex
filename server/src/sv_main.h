@@ -137,8 +137,6 @@ void SV_UpdateFrags (const player_t &player);
 void SV_RemoveCorpses (void);
 void SV_DropClient(player_t& who);
 void SV_PlayerTriedToCheat(player_t &player);
-void SV_ActorTarget(const AActor *actor);
-void SV_ActorTracer(const AActor *actor);
 void SV_ForceSetTeam(player_t &who, team_t team);
 void SV_CheckTeam(player_t &player);
 void SV_SendUserInfo(const player_t &player, client_t* cl);
@@ -159,7 +157,7 @@ extern std::vector<std::string> wadnames;
 void SV_SendPlayerInfo(player_t& player);
 void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill);
 void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage);
-void SV_SendDamageMobj(const AActor *target, int pain);
+void SV_SendDamageMobj(AActor *target, int pain);
 // Tells clients to remove an actor from the world as it doesn't exist anymore
 void SV_SendDestroyActor(const AActor *mo);
 

@@ -3100,14 +3100,19 @@ void SV_UpdateMissiles(player_t &pl, AActor *mo)
 	if (((gametic+mo->netid) % 5) && (mo->type == MT_TRACER || mo->type == MT_FATSHOT || mo->flags2 & MF2_SEEKERMISSILE))
 		return;
 
-	if(SV_IsPlayerAllowedToSee(pl, mo))
+	switch (mo->playersAware.Get(pl.id))
 	{
-		MSG_WriteSVC(pl.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+		case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
+		case AwarenessEnum::BARELY_AWARE:
+			break;
+
+		default:
+			MSG_WriteSVC(pl.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
 	}
 }
 
 // Update the given actors data immediately.
-void SV_UpdateMobj(const AActor* mo)
+void SV_UpdateMobj(AActor* mo)
 {
 	// Don't use this function to update players.
 	if (mo->player)
@@ -3115,12 +3120,24 @@ void SV_UpdateMobj(const AActor* mo)
 
 	for (auto& player : players)
 	{
-		if (!(player.ingame()))
-			continue;
-
-		if (SV_IsPlayerAllowedToSee(player, mo))
+		if (player.ingame() and SV_IsPlayerAllowedToSee(player, mo))
 		{
-			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_UpdateMobj(*mo));
+			switch (mo->playersAware.Get(player.id))
+			{
+				case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
+				case AwarenessEnum::BARELY_AWARE:
+					break;
+
+				case AwarenessEnum::ALWAYS_AWARE:      [[ fallthrough ]];
+				case AwarenessEnum::FULLY_AWARE:
+					mo->updatedDuringTic = gametic;
+					MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_UpdateMobj(*mo));
+					break;
+
+				case AwarenessEnum::SEMI_AWARE:
+					mo->updatedDuringTic = gametic;
+					MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+			}
 		}
 	}
 }
@@ -3130,13 +3147,19 @@ void SV_UpdateMobjState(const AActor* mo)
 {
 	for (auto& player : players)
 	{
-		if (!(player.ingame()))
-			continue;
+		if (SV_IsPlayerAllowedToSee(player, mo) and player.ingame())
+        {
+            switch (mo->playersAware.Get(player.id))
+            {
+                case AwarenessEnum::NOT_AWARE:     [[ fallthrough ]];
+                case AwarenessEnum::BARELY_AWARE:
+                    break;
 
-		if (SV_IsPlayerAllowedToSee(player, mo))
-		{
-			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_MobjState(mo));
-		}
+                default:
+					MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_MobjState(mo));
+                    break;
+            }
+         }
 	}
 }
 
@@ -3155,10 +3178,23 @@ void SV_UpdateMonsters(player_t &pl, AActor *mo)
 	if ((gametic+mo->netid) % 7)
 		return;
 
-	if (SV_IsPlayerAllowedToSee(pl, mo) && mo->target)
-	{
-		MSG_WriteSVC(pl.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
-	}
+    //TODO:
+    //if (mo->updatedDuringTic == gametic)
+    //    return;
+
+    if (mo->target and SV_IsPlayerAllowedToSee(pl, mo))
+    {
+        switch (mo->playersAware.Get(pl.id))
+        {
+            case AwarenessEnum::NOT_AWARE:             [[ fallthrough ]];
+            case AwarenessEnum::BARELY_AWARE:
+                break;
+
+            default:
+				MSG_WriteSVC(pl.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+                break;
+        }
+    }
 }
 
 void SV_UpdateGametype(player_t& player)
@@ -3171,44 +3207,6 @@ void SV_UpdateGametype(player_t& player)
 			player.hordeInfo = info;
 			MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_HordeInfo(info));
 		}
-	}
-}
-
-//
-// SV_ActorTarget
-//
-void SV_ActorTarget(const AActor *actor)
-{
-	if (actor->player)
-		return;
-
-	for (auto& player : players)
-	{
-		if (!(player.ingame()))
-			continue;
-
-		client_t *cl = &(player.client);
-
-		if(!SV_IsPlayerAllowedToSee(player, actor))
-			continue;
-
-		MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_UpdateMobj(*actor));
-	}
-}
-
-//
-// SV_ActorTracer
-//
-void SV_ActorTracer(const AActor *actor)
-{
-	for (auto& player : players)
-	{
-		if (!(player.ingame()))
-			continue;
-
-		client_t *cl = &(player.client);
-
-		MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_UpdateMobj(*actor));
 	}
 }
 
@@ -5038,47 +5036,54 @@ void SV_OnActivatedLine(line_t* line, AActor* mo, const int side,
 	}
 }
 
-void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage)
+void SV_SendDamagePlayer(player_t* damagedPlayer, const AActor* inflictor, int healthDamage, int armorDamage)
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	// No check for awareness.  All players always stay informed about all players.
+	for (auto& destinationPlayer : players)
 	{
-		client_t *cl = &(it->client);
-
-		MSG_WriteSVC(cl->messenger.ReliableBuf(),
-		             SVC_DamagePlayer(*player, inflictor, healthDamage, armorDamage));
+		MSG_WriteSVC(destinationPlayer.client.messenger.ReliableBuf(),
+		             SVC_DamagePlayer(*damagedPlayer, inflictor, healthDamage, armorDamage));
 	}
 }
 
-void SV_SendDamageMobj(const AActor *target, int pain)
+void SV_SendDamageMobj(AActor *target, int pain)
 {
 	if (!target)
 		return;
 
 	for (auto& player : players)
 	{
-		client_t *cl = &(player.client);
+		if (SV_IsPlayerAllowedToSee(player, target))
+		{
+			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_DamageMobj(target, pain));
 
-		MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_DamageMobj(target, pain));
-		if (!target->player)
-			MSG_WriteSVC(cl->messenger.NetBuf(), SVC_UpdateMobj(*target));
+			// If we're letting the client gradually forget about this mobj, don't bother with
+			// a mobj update.  Also, don't bother if it's another player, because other players
+			// get updated with a special message.
+			if (target->playersAware.Get(player.id) != AwarenessEnum::BARELY_AWARE and not target->player)
+			{
+				target->updatedDuringTic = gametic;
+				MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*target));
+			}
+		}
 	}
 }
 
 void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor,
-				     bool joinkill)
+                     bool joinkill)
 {
 	if (!target)
 		return;
 
 	for (auto& player : players)
 	{
-		client_t *cl = &(player.client);
-
-		if (!SV_IsPlayerAllowedToSee(player, target))
-			continue;
-
-		MSG_WriteSVC(cl->messenger.ReliableBuf(),
-		             SVC_KillMobj(source, target, inflictor, ::MeansOfDeath, joinkill));
+		// We allow players to see mobjs go between corpse and alive state even if
+		// they're only barely aware of the mobj.
+		if (SV_IsPlayerAllowedToSee(player, target))
+		{
+			MSG_WriteSVC(player.client.messenger.ReliableBuf(),
+			             SVC_KillMobj(source, target, inflictor, ::MeansOfDeath, joinkill));
+		}
 	}
 }
 
@@ -5089,12 +5094,12 @@ void SV_SendRaiseMobj(const AActor* source, const AActor* corpse)
 
 	for (auto& player : players)
 	{
-		client_t* cl = &(player.client);
-
-		if (!SV_IsPlayerAllowedToSee(player, corpse))
-			continue;
-
-		MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_RaiseMobj(source, corpse));
+		// We allow players to see mobjs go between corpse and alive state even if
+		// they're only barely aware of the mobj.
+		if (SV_IsPlayerAllowedToSee(player, corpse))
+		{
+			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_RaiseMobj(source, corpse));
+		}
 	}
 }
 
@@ -5111,28 +5116,41 @@ void SV_SendDestroyActor(const AActor *mo)
 			// Therefore the RemoveMobj created here is effectively one of the
 			// highest-priority messages, which is great because it won't be able to
 			// generate any more traffic to fill up the pipes.
-			if (mo->playersAware.IsAware(player.id))
+			if (SV_IsPlayerAllowedToSee(player, mo))
 			{
-				client_t *cl = &(player.client);
-
-				MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_RemoveMobj(*mo));
+				MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_RemoveMobj(*mo));
 			}
 		}
 	}
 }
 
 // Missile exploded so tell clients about it
-void SV_ExplodeMissile(const AActor *mo)
+void SV_ExplodeMissile(AActor *mo)
 {
 	for (auto& player : players)
 	{
-		client_t *cl = &(player.client);
+        switch (mo->playersAware.Get(player.id))
+        {
+            case AwarenessEnum::NOT_AWARE:                             // See nothing.
+				break;
 
-		if (!SV_IsPlayerAllowedToSee(player, mo))
-			continue;
+            case AwarenessEnum::ALWAYS_AWARE:  [[ fallthrough ]];      // See everything.
+            case AwarenessEnum::FULLY_AWARE:
+				mo->updatedDuringTic = gametic;
+				MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_UpdateMobj(*mo));
+				MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_ExplodeMissile(*mo));
+				break;
 
-		MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_UpdateMobj(*mo));
-		MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_ExplodeMissile(*mo));
+            case AwarenessEnum::SEMI_AWARE:                            // See an explosion, maybe even in the correct position.
+				mo->updatedDuringTic = gametic;
+				MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+				MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_ExplodeMissile(*mo));
+				break;
+
+            case AwarenessEnum::BARELY_AWARE:                          // See an explosion, almost certainly in the wrong position.
+				MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_ExplodeMissile(*mo));
+				break;
+        }
 	}
 }
 

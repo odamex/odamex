@@ -579,6 +579,8 @@ public:
 	baseline_t		baseline;		// Baseline data for mobj sent to clients
 	bool			baseline_set;	// Have we set our baseline yet?
 
+	int updatedDuringTic;
+
 private:
 	static constexpr size_t TIDHashSize = 256;
 	static constexpr size_t TIDHashMask = TIDHashSize - 1;

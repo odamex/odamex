@@ -92,16 +92,15 @@ void SV_SocketTouch (player_t &player, team_t f) {}
 void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill) {}
 void SV_SendRaiseMobj(const AActor* source, const AActor* corpse) {}
 void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage) {}
-void SV_SendDamageMobj(const AActor *target, int pain) {}
+void SV_SendDamageMobj(AActor *target, int pain) {}
 void SV_CTFEvent(team_t f, flag_score_t event, player_t &who) {}
 void SV_UpdateFrags(player_t &player) {}
-void SV_ActorTarget(const AActor *actor) {}
 void SV_SendDestroyActor(const AActor *mo) {}
-void SV_ExplodeMissile(const AActor *mo) {}
+void SV_ExplodeMissile(AActor *mo) {}
 void SV_SendPlayerInfo(player_t &player) {}
 void SV_PreservePlayer(player_t &player) {}
 void SV_BroadcastSector(int sectornum) {}
-void SV_UpdateMobj(const AActor* mo) {}
+void SV_UpdateMobj(AActor* mo) {}
 void SV_UpdateMobjState(const AActor* mo) {}
 
 void CTF_RememberFlagPos(const mapthing2_t& mthing) {}

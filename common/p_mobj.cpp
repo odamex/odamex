@@ -54,7 +54,7 @@
 #endif
 #include <p_boomfspec.h>
 
-void SV_UpdateMobj(const AActor* mo);
+void SV_UpdateMobj(AActor* mo);
 void SV_UpdateMobjState(const AActor* mo);
 
 #define WATER_SINK_FACTOR		3
@@ -72,7 +72,7 @@ void P_ExplodeMissile(AActor* mo);
 void SV_SpawnHighPriorityMobj(AActor *mobj);
 void SV_SpawnMobj(AActor *mobj);
 void SV_SendDestroyActor(const AActor *);
-void SV_ExplodeMissile(const AActor *);
+void SV_ExplodeMissile(AActor *);
 void SV_UpdateMonsterRespawnCount();
 
 EXTERN_CVAR(sv_freelook)
@@ -135,7 +135,7 @@ AActor::AActor()
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), transientInt(0),
       rndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
-      netid(0), tid(0), baseline(), baseline_set(false), bmapnode(this)
+      netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), bmapnode(this)
 {
 	memset(args, 0, sizeof(args));
 	self.init(this);
@@ -164,7 +164,7 @@ AActor::AActor(const AActor& other)
       friend_teamid(other.friend_teamid), pursuecount(other.pursuecount),
       strafecount(other.strafecount),
       netid(other.netid), tid(other.tid),
-      baseline_set(false), bmapnode(other.bmapnode)
+      baseline_set(false), updatedDuringTic(other.updatedDuringTic), bmapnode(other.bmapnode)
 {
 	memcpy(args, other.args, sizeof(args));
 	memcpy(&baseline, &other.baseline, sizeof(baseline));
@@ -243,6 +243,8 @@ AActor &AActor::operator= (const AActor &other)
     memcpy(&baseline, &other.baseline, sizeof(baseline));
     baseline_set = other.baseline_set;
 
+    updatedDuringTic = other.updatedDuringTic;
+
     return *this;
 }
 
@@ -263,7 +265,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), transientInt(0),
       rndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
-      netid(0), tid(0), baseline(), baseline_set(false), bmapnode(this)
+      netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), bmapnode(this)
 {
 	// Fly!!! fix it in P_RespawnSpecial
 	const auto it = ::mobjinfo.find(itype);

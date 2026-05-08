@@ -113,7 +113,7 @@ void A_Fall (AActor *actor);
 
 void SV_UpdateMonsterRespawnCount();
 void SV_SendRaiseMobj(const AActor* source, const AActor* corpse);
-void SV_UpdateMobj(const AActor* mo);
+void SV_UpdateMobj(AActor* mo);
 void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation);
 void SV_SpawnMobj(AActor* mobj);
 void SV_BroadcastNoiseAlert(const sector_t& sector);
@@ -2667,7 +2667,7 @@ void A_SpawnObject(AActor* actor)
 
 	P_FriendlyEffects(mo);
 
-	SV_UpdateMobj(mo);
+	// TEST!  IS THIS EVEN NEEDED???  SV_UpdateMobj(mo);
 }
 
 //

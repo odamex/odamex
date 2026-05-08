@@ -88,9 +88,8 @@ ItemEquipVal SV_FlagTouch(player_t &player, team_t f, bool firstgrab);
 void SV_SocketTouch(player_t &player, team_t f);
 void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill);
 void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage);
-void SV_SendDamageMobj(const AActor *target, int pain);
-void SV_UpdateMobj(const AActor* mo);
-void SV_ActorTarget(const AActor *actor);
+void SV_SendDamageMobj(AActor *target, int pain);
+void SV_UpdateMobj(AActor* mo);
 void PickupMessage(const AActor *toucher, const char *message);
 void WeaponPickupMessage(const AActor *toucher, const weapontype_t &Weapon);
 
@@ -2520,7 +2519,7 @@ void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int d
             {
 				P_SetMobjState(target, target->info->seestate);
             }
-            SV_ActorTarget(target);
+            SV_UpdateMobj(target);
 		}
 	}
 	else
