@@ -5105,6 +5105,12 @@ void SV_SendDestroyActor(const AActor *mo)
 	{
 		for (auto& player : players)
 		{
+			// Important note:  This function is called during the main tic whenever
+			// an actor goes through Destroy().  It queues up the RemoveMobj message
+			// and then Destroy essentially removes the actor from thinker iteration.
+			// Therefore the RemoveMobj created here is effectively one of the
+			// highest-priority messages, which is great because it won't be able to
+			// generate any more traffic to fill up the pipes.
 			if (mo->playersAware.IsAware(player.id))
 			{
 				client_t *cl = &(player.client);
