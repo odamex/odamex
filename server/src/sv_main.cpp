@@ -1521,15 +1521,15 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo)
 //
 // SV_SpawnMobj functions
 // ----------------------
-// These exist because we can't expect the constructors to send network messages.
+// These functions perform the first stage of server prep for spawning the given
+// mobj on the clients.
 //
-// This function does the actual prep for sending the given actor to clients.
 // If i_allowDirectSpawnQueue is true, it goes on the higher-priority queue for
-// runtime-spawned actors (i.e. missiles and such).  We do this because on great
-// big slaughter maps, it's really helpful to see shots coming in from a distance
-// even if the monster that fired it isn't visible yet.  We also do this because a
-// map-load sends some non-monster entities that really must be sent in as-created
-// order and we can't just defer and let the player-distance algorithm do it later.
+// actor spawn.  This is typically reserved for map-defined objects that can affect
+// map behavior and must be spawned in map-defined order.
+//
+// This function also ensures that special objects that must have special,
+// permanaent awareness levels are assigned those levels immediately.
 
 static void SV_SpawnMobjPrepareForClients(AActor* mo, bool i_allowDirectSpawnQueue)
 {
