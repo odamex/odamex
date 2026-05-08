@@ -1413,12 +1413,12 @@ team_t SV_GoodTeam (void)
 //
 // SV_SendMobjToClient
 //
-void SV_SendMobjToClient(AActor *mo, client_t *cl)
+void SV_SendMobjToClient(AActor *mo, client_t& cl)
 {
 	if (!mo)
 		return;
 
-	MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_SpawnMobj(mo));
+	MSG_WriteSVC(cl.messenger.ReliableBuf(), SVC_SpawnMobj(mo));
 }
 
 //
@@ -1445,48 +1445,32 @@ bool SV_IsTeammate(player_t &a, player_t &b)
 	return false;
 }
 
+// Awareness stuff
+// ---------------
 //
-// [denis] SV_AwarenessUpdate
-//
-bool SV_AwarenessUpdate(player_t &player, AActor *mo, const std::optional<bool> forcedAwareness)
+
+bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLevel)
 {
-	bool ok = false;
 
-	if (!mo)
-		return false;
+    const AwarenessEnum previousAwareness = mo->playersAware.Get(player.id);
+    if (previousAwareness == awarenessLevel or
+        previousAwareness == AwarenessEnum::ALWAYS_AWARE)
+    {
+        return false;
+    }
 
-	if(player.mo == mo)
-		ok = true;
-    else if(forcedAwareness.has_value())    // else if because players are ALWAYS aware of themselves.
-        ok = forcedAwareness.value();
-	else if(!mo->player)
-		ok = true;
-	else if (mo->oflags & MFO_SPECTATOR)      // GhostlyDeath -- Spectating things
-		ok = false;
-	else if(player.mo && mo->player && mo->player->spectator)
-		ok = false;
-	else if(player.mo && mo->player && SV_IsTeammate(player, *mo->player))
-		ok = true;
-	else if(player.mo && mo->player && true)
-		ok = true;
+    mo->playersAware.Set(player.id, awarenessLevel);
 
-	bool previously_ok = mo->playersAware.IsAware(player.id);
+    if (awarenessLevel == AwarenessEnum::NOT_AWARE)
+    {
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_RemoveMobj(*mo));
+        return true;
+    }
 
-	client_t *cl = &player.client;
-
-	if(!ok && previously_ok)
-	{
-		mo->playersAware.Set(player.id, AwarenessEnum::NOT_AWARE);
-
-		MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_RemoveMobj(*mo));
-
-		return true;
-	}
-	else if(!previously_ok && ok)
-	{
-		mo->playersAware.Set(player.id, AwarenessEnum::FULLY_AWARE);
-
-		if(!mo->player || mo->player->playerstate != PST_LIVE)
+    if (previousAwareness == AwarenessEnum::NOT_AWARE and
+        awarenessLevel    != AwarenessEnum::BARELY_AWARE)
+    {
+		if(not mo->player or mo->player->playerstate != PST_LIVE)
 		{
 			if (mo->type == MT_AVATAR)
 			{
@@ -1494,28 +1478,45 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo, const std::optional<bool> 
 				{
 					if (mo == ::voodoostarts[i].mobj)
 					{
-						MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_ConfigureAvatar(static_cast<uint32_t>(i), mo->netid));
+						MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_ConfigureAvatar(static_cast<uint32_t>(i), mo->netid));
 						return false;   // does NOT count towards the spawn quota!
 					}
 				}
 				// The early return above means that if we have an AVATAR that was somehow created after
 				// map load, we get to this point and proceed to send the mobj per the call below.
 			}
-			SV_SendMobjToClient(mo, cl);
+			SV_SendMobjToClient(mo, player.client);
 		}
 		else
 		{
-			MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_SpawnPlayer(*mo->player));
+			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_SpawnPlayer(*mo->player));
 		}
-
-		return true;
-	}
-	return false;
+        return true;
+    }
+    return false;
 }
 
-bool SV_AwarenessUpdate(player_t &player, AActor *mo)
+bool SV_AwarenessUpdate(player_t& player, AActor* mo, AwarenessEnum requestedAwarenessLevel)
 {
-    return SV_AwarenessUpdate(player, mo, std::nullopt);
+	AwarenessEnum awarenessLevel = AwarenessEnum::NOT_AWARE;
+
+	if (!mo)
+		return false;
+
+	if(player.mo == mo)
+		awarenessLevel = requestedAwarenessLevel;
+	else if(!mo->player)
+		awarenessLevel = requestedAwarenessLevel;
+	else if (mo->oflags & MFO_SPECTATOR)      // GhostlyDeath -- Spectating things
+		awarenessLevel = AwarenessEnum::NOT_AWARE;
+	else if(player.mo && mo->player && mo->player->spectator)
+		awarenessLevel = AwarenessEnum::NOT_AWARE;
+	else if(player.mo && mo->player && SV_IsTeammate(player, *mo->player))
+		awarenessLevel = requestedAwarenessLevel;
+	else if(player.mo && mo->player)
+		awarenessLevel = requestedAwarenessLevel;
+
+    return SV_ApplyAwareness(player, mo, awarenessLevel);
 }
 
 //
@@ -1542,8 +1543,7 @@ static void SV_SpawnMobjPrepareForClients(AActor* mo, bool i_allowDirectSpawnQue
 	{
 		if (mo->player or mo->type == MT_AVATAR)
 		{
-			SV_AwarenessUpdate(player, mo);
-			mo->playersAware.Set(player.id, AwarenessEnum::ALWAYS_AWARE);
+			SV_AwarenessUpdate(player, mo, AwarenessEnum::ALWAYS_AWARE);
 		}
 		else
 		{
@@ -1594,7 +1594,7 @@ namespace
 	std::mutex s_spawnSzpMutex;
 }
 
-int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated)
+int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated, AwarenessEnum newAwarenessLevel)
 {
 	if (pl.mo)
 	{
@@ -1617,13 +1617,13 @@ int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated)
 				}
 
 				if (mo && !mo->WasDestroyed())
-					updated += SV_AwarenessUpdate(pl, mo);
+					updated += SV_AwarenessUpdate(pl, mo, AwarenessEnum::FULLY_AWARE);  // Start things off fully aware.  They will drop down as needed.
 
 				if (updated > MAX_HIDDEN_MOBJ_UPDATES)
 					break;
 			}
 		}
-		updated += SV_AwarenessUpdate(pl, mo);
+		updated += SV_AwarenessUpdate(pl, mo, newAwarenessLevel);
 	}
 	return updated;
 }
@@ -1958,7 +1958,7 @@ void SV_ClientFullUpdate(player_t &pl)
 	for (Players::iterator it = players.begin();it != players.end();++it)
 	{
 		if (it->mo)
-			SV_AwarenessUpdate(pl, it->mo);
+			SV_AwarenessUpdate(pl, it->mo, AwarenessEnum::ALWAYS_AWARE);
 
 		SV_SendUserInfo(*it, cl);
 	}
@@ -1983,7 +1983,7 @@ void SV_ClientFullUpdate(player_t &pl)
 
 	while ((mo = iterator.Next()))
 	{
-		hiddenUpdates = SV_UpdateHiddenMobj(pl, mo, hiddenUpdates);
+		hiddenUpdates = SV_UpdateHiddenMobj(pl, mo, hiddenUpdates, AwarenessEnum::FULLY_AWARE);
 		if (hiddenUpdates >= MAX_HIDDEN_MOBJ_UPDATES)
 		{
 			break;
@@ -3101,6 +3101,9 @@ void SV_UpdateMissiles(player_t &pl, AActor *mo)
 	if (((gametic+mo->netid) % 5) && (mo->type == MT_TRACER || mo->type == MT_FATSHOT || mo->flags2 & MF2_SEEKERMISSILE))
 		return;
 
+    if (mo->updatedDuringTic == gametic)
+        return;
+
 	switch (mo->playersAware.Get(pl.id))
 	{
 		case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
@@ -3179,9 +3182,8 @@ void SV_UpdateMonsters(player_t &pl, AActor *mo)
 	if ((gametic+mo->netid) % 7)
 		return;
 
-    //TODO:
-    //if (mo->updatedDuringTic == gametic)
-    //    return;
+    if (mo->updatedDuringTic == gametic)
+        return;
 
     if (mo->target and SV_IsPlayerAllowedToSee(pl, mo))
     {
@@ -3570,7 +3572,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 
 		if (hiddenUpdateCount <= maxForThisTic)
 		{
-			hiddenUpdateCount = SV_UpdateHiddenMobj(player, sortedMobj.actorPtr, hiddenUpdateCount);
+			hiddenUpdateCount = SV_UpdateHiddenMobj(player, sortedMobj.actorPtr, hiddenUpdateCount, AwarenessEnum::FULLY_AWARE); //TODO: adjust this.
 		}
 	}
 
@@ -4324,8 +4326,7 @@ void SV_Cheat(player_t &player)
 
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
-			client_t* cl = &it->client;
-			SV_SendMobjToClient(actor, cl);
+			SV_SendMobjToClient(actor, it->client);
 		}
 	}
 	else if (cheatType == 3)
@@ -4342,8 +4343,7 @@ void SV_Cheat(player_t &player)
 
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
-			client_t* cl = &it->client;
-			SV_SendMobjToClient(actor, cl);
+			SV_SendMobjToClient(actor, it->client);
 		}
 	}
 }
@@ -4663,7 +4663,7 @@ void SV_TouchSpecial(AActor& special, player_t& player)
 
 	if (not special.playersAware.IsAware(player.id))
 	{
-		SV_AwarenessUpdate(player, &special, true);
+		SV_AwarenessUpdate(player, &special, AwarenessEnum::FULLY_AWARE);
 	}
 
 	MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_TouchSpecial(player, special));

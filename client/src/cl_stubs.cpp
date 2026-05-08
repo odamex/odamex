@@ -60,7 +60,7 @@ void SV_UpdateMobjState(const AActor* mo) {}
 
 void CTF_RememberFlagPos(const mapthing2_t& mthing) {}
 void CTF_SpawnFlag(team_t f) {}
-bool SV_AwarenessUpdate(player_t &pl, AActor* mo) { return true; }
+bool SV_AwarenessUpdate(player_t &pl, AActor* mo, AwarenessEnum requestedAwarenessLevel) { return true; }
 void SV_SendPackets(void) {}
 void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* activator, int arg0,
                                int arg1, int arg2, int arg3, int arg4)

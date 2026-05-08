@@ -290,7 +290,7 @@ bool P_Thing_Projectile (int tid, int type, angle_t angle,
 			mobj->momz = vspeed;
 			mobj->flags |= MF_DROPPED;
 			if (mobj->flags & MF_MISSILE)
-				rtn = P_CheckMissileSpawn (mobj);
+				rtn = P_CheckMissileSpawn (mobj, spot);
 			else if (!P_TestMobjLocation (mobj))
 				mobj->Destroy ();
 		}

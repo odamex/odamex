@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <unordered_map>
+#include <utility>
 
 enum class AwarenessEnum
 {
@@ -39,6 +40,11 @@ class ActorAwarenessState
         void Set(size_t playerId, AwarenessEnum awareness)
         {
             m_player[playerId] = awareness;
+        }
+
+        AwarenessEnum Exchange(size_t playerId, AwarenessEnum awareness)
+        {
+            return std::exchange(m_player[playerId], awareness);
         }
 
     protected:

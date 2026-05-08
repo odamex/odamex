@@ -2264,13 +2264,13 @@ bool P_HitFloor (AActor *thing)
 }
 
 
-bool SV_AwarenessUpdate(player_t &pl, AActor* mo);
+bool SV_AwarenessUpdate(player_t& player, AActor* mo, AwarenessEnum requestedAwarenessLevel);
 //
 // P_CheckMissileSpawn
 // Moves the missile forward a bit
 //	and possibly explodes it right there.
 //
-bool P_CheckMissileSpawn (AActor* th)
+bool P_CheckMissileSpawn (AActor* th, AActor* parent)
 {
 	if (!th)
 		return false;
@@ -2295,7 +2295,7 @@ bool P_CheckMissileSpawn (AActor* th)
 	// instead of queueing it, then explode it.
 	for (auto& player : players)
 	{
-		SV_AwarenessUpdate(player, th);
+		SV_AwarenessUpdate(player, th, parent ? parent->playersAware.Get(player.id) : AwarenessEnum::FULLY_AWARE);
 	}
 
 	if (!P_TryMove (th, th->x, th->y, false))
@@ -2474,7 +2474,7 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 
     th->momz = (dest_z - source->z) / dist;
 
-    P_CheckMissileSpawn (th);
+    P_CheckMissileSpawn (th, source);
 
     return th;
 }
@@ -2545,7 +2545,7 @@ AActor* P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 		th->momz = FixedMul(th->info->speed, slope);
 	}
 
-	P_CheckMissileSpawn (th);
+	P_CheckMissileSpawn (th, source);
 
 	return th;
 }
@@ -2634,7 +2634,7 @@ void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle, f
 
 	SV_UpdateMobjState(th);
 
-	P_CheckMissileSpawn(th);
+	P_CheckMissileSpawn(th, source);
 }
 
 //
