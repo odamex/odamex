@@ -1542,6 +1542,7 @@ static void SV_SpawnMobjPrepareForClients(AActor* mo, bool i_allowDirectSpawnQue
 	{
 		if (mo->player or mo->type == MT_AVATAR)
 		{
+			SV_AwarenessUpdate(player, mo);
 			mo->playersAware.Set(player.id, AwarenessEnum::ALWAYS_AWARE);
 		}
 		else
@@ -5116,7 +5117,7 @@ void SV_SendDestroyActor(const AActor *mo)
 			// Therefore the RemoveMobj created here is effectively one of the
 			// highest-priority messages, which is great because it won't be able to
 			// generate any more traffic to fill up the pipes.
-			if (SV_IsPlayerAllowedToSee(player, mo))
+			if (mo->playersAware.IsAware(player.id))
 			{
 				MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_RemoveMobj(*mo));
 			}
