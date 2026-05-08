@@ -1555,7 +1555,7 @@ static void SV_SpawnMobjPrepareForClients(AActor* mo, bool i_allowDirectSpawnQue
 }
 
 // This function sends the Mobj to clients through an immediate runtime-spawned higher-priority queue.
-void SV_SpawnMobj(AActor *mo)
+void SV_SpawnHighPriorityMobj(AActor *mo)
 {
 	SV_SpawnMobjPrepareForClients(mo, true);
 }
@@ -1564,7 +1564,7 @@ void SV_SpawnMobj(AActor *mo)
 // Spawn Mobj message for the player-distance sort algorithm.  This allows us to send some mobjs
 // immediately during map load (i.e. things that have an important effect on the client state), but
 // defer lower-priority things like idle monsters.
-void SV_SpawnMapMobj(AActor *mo)
+void SV_SpawnMobj(AActor *mo)
 {
 	SV_SpawnMobjPrepareForClients(mo, false);
 }

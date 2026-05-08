@@ -69,7 +69,7 @@ extern AActor *shootthing;
 void P_SpawnPlayer(player_t &player, const mapthing2_t& mthing);
 void P_ShowSpawns(const mapthing2_t& mthing);
 void P_ExplodeMissile(AActor* mo);
-void SV_SpawnMapMobj(AActor *mobj);
+void SV_SpawnHighPriorityMobj(AActor *mobj);
 void SV_SpawnMobj(AActor *mobj);
 void SV_SendDestroyActor(const AActor *);
 void SV_ExplodeMissile(const AActor *);
@@ -3209,11 +3209,11 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	// through the higher-priority SV_SpawnMobj queue.
 	if (info->flags & MF_SOLID)
 	{
-		SV_SpawnMapMobj(mobj);
+		SV_SpawnMobj(mobj);
 	}
 	else
 	{
-		SV_SpawnMobj(mobj);
+		SV_SpawnHighPriorityMobj(mobj);
 	}
 
 	if (mobj->type == MT_SKYVIEWPOINT)
