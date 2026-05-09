@@ -119,6 +119,23 @@ static void FillPlayer(odaproto::Player& io_msg, const player_t& player, int des
 		io_msg.set_cheats(player.cheats);
 }
 
+static void FillMapThing(odaproto::MapThing& io_msg, const MapThing& i_mapthing)
+{
+    io_msg.set_thingid  (i_mapthing.thingid);
+    io_msg.set_x        (i_mapthing.x);
+    io_msg.set_y        (i_mapthing.y);
+    io_msg.set_z        (i_mapthing.z);
+    io_msg.set_angle    (i_mapthing.angle);
+    io_msg.set_type     (i_mapthing.type);
+    io_msg.set_flags    (i_mapthing.flags);
+    io_msg.set_special  (i_mapthing.special);
+
+    for (const auto& arg : i_mapthing.args)
+    {
+        io_msg.add_args(arg);
+    }
+}
+
 odaproto::svc::PlayerInfo SVC_PlayerInfo(const player_t& player)
 {
 	odaproto::svc::PlayerInfo msg;
@@ -1743,12 +1760,13 @@ odaproto::svc::SpreeBreaker SVC_SpreeBreaker(const SpreeBreaker_t& breaker, cons
 	return msg;
 }
 
-odaproto::svc::ConfigureAvatar SVC_ConfigureAvatar(uint32_t index, uint32_t netid)
+odaproto::svc::ConfigureAvatar SVC_ConfigureAvatar(const MapThing& mapthing, uint32_t netid)
 {
 	odaproto::svc::ConfigureAvatar msg;
 
-	msg.set_avatar_index(index);
-	msg.set_netid       (netid);
+	FillMapThing(*msg.mutable_avatar_mapthing(), mapthing);
+
+	msg.set_netid(netid);
 
 	return msg;
 }

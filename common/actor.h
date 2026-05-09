@@ -525,9 +525,9 @@ public:
     mapthing2_t		spawnpoint;
 
 	// Thing being chased/attacked for tracers.
-	AActorPtr		tracer;
-	byte			special;		// special
-	byte			args[5];		// special arguments
+	AActorPtr           tracer;
+	byte                special;    // special
+	std::array<byte, 5> args;       // special arguments
 
 	AActor			*inext, *iprev;	// Links to other mobjs in same bucket
 

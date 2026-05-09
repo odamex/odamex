@@ -1486,21 +1486,22 @@ bool SV_AwarenessUpdate(player_t &player, AActor *mo, const std::optional<bool> 
 	{
 		mo->players_aware.set(player.id);
 
-		if(!mo->player || mo->player->playerstate != PST_LIVE)
+		if (mo->type == MT_AVATAR)
 		{
-			if (mo->type == MT_AVATAR)
+			for (size_t i = 0; i < ::voodoostarts.size(); ++i)
 			{
-				for (size_t i = 0; i < ::voodoostarts.size(); ++i)
+				if (mo == ::voodoostarts[i].mobj)
 				{
-					if (mo == ::voodoostarts[i].mobj)
-					{
-						MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_ConfigureAvatar(static_cast<uint32_t>(i), mo->netid));
-						return false;   // does NOT count towards the spawn quota!
-					}
+					MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_ConfigureAvatar(::voodoostarts[i].mapThing, mo->netid));
+					return false;   // does NOT count towards the spawn quota!
 				}
-				// The early return above means that if we have an AVATAR that was somehow created after
-				// map load, we get to this point and proceed to send the mobj per the call below.
 			}
+			// The early return above means that if we have an AVATAR that was somehow created after
+			// map load, we get to this point and proceed to send the mobj per the call below.
+		}
+
+		if (not mo->player or mo->player->playerstate != PST_LIVE)
+		{
 			SV_SendMobjToClient(mo, cl);
 		}
 		else

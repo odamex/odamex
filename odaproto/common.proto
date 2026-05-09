@@ -106,3 +106,16 @@ message Sector
 	sfixed32 base_floor_angle = 17;
 	sfixed32 base_floor_yoffs = 18;
 }
+
+message MapThing
+{
+	uint32          thingid = 1;        // Hexen, Doom 64 things have ID numbers.  All other thing formats just use 0.
+	sint32          x       = 2;
+	sint32          y       = 3;
+	sint32          z       = 4;        // Hexen, Doom 64 things have thing z / height values.  All other formats are 0.
+	sint32          angle   = 5;
+	int32           type    = 6;
+	int32           flags   = 7;
+	uint32          special = 8;        // Hexen
+	repeated uint32 args    = 9;        // Hexen
+}
