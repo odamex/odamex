@@ -137,7 +137,7 @@ AActor::AActor()
       rndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
       netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), bmapnode(this)
 {
-	memset(args, 0, sizeof(args));
+	args.fill(0);
 	self.init(this);
 }
 
@@ -155,7 +155,7 @@ AActor::AActor(const AActor& other)
       special1(other.special1), special2(other.special2),
       health(other.health), movedir(other.movedir), movecount(other.movecount),
       visdir(other.visdir), reactiontime(other.reactiontime), threshold(other.threshold),
-      player(other.player), lastlook(other.lastlook), special(other.special),
+      player(other.player), lastlook(other.lastlook), special(other.special), args(other.args),
       inext(other.inext), iprev(other.iprev), translation(other.translation),
       translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
       onground(other.onground), touching_sectorlist(other.touching_sectorlist),
@@ -166,7 +166,6 @@ AActor::AActor(const AActor& other)
       netid(other.netid), tid(other.tid),
       baseline_set(false), updatedDuringTic(other.updatedDuringTic), bmapnode(other.bmapnode)
 {
-	memcpy(args, other.args, sizeof(args));
 	memcpy(&baseline, &other.baseline, sizeof(baseline));
 	self.init(this);
 }
@@ -237,8 +236,8 @@ AActor &AActor::operator= (const AActor &other)
     netid = other.netid;
     tid = other.tid;
     special = other.special;
+    args = other.args;
 
-    memcpy(args, other.args, sizeof(args));
     bmapnode = other.bmapnode;
     memcpy(&baseline, &other.baseline, sizeof(baseline));
     baseline_set = other.baseline_set;
@@ -335,7 +334,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 	}
 
 	spawnpoint.type = 0;
-	memset(args, 0, sizeof(args));
+	args.fill(0);
 }
 
 
@@ -1017,6 +1016,18 @@ void AActor::Serialize (FArchive &arc)
 			player = &idplayer(playerid);
 			player->mo = ptr();
 			player->camera = player->mo;
+		}
+
+		if (type == MT_AVATAR)
+		{
+			for (auto& voodoo : ::voodoostarts)
+			{
+				if (voodoo.mapThing == spawnpoint)
+				{
+					voodoo.mobj = ptr();
+					break;
+				}
+			}
 		}
 	}
 }
@@ -3167,7 +3178,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 
 	// [RH] Set the thing's special
 	mobj->special = mthing.special;
-	memcpy (mobj->args, mthing.args, sizeof(mobj->args));
+	mobj->args    = mthing.args;
 
 	// [RH] If it's an ambient sound, activate it
 	if (type == MT_AMBIENT)
@@ -3317,6 +3328,9 @@ void P_SpawnAvatars()
 	for (auto& voodoo : ::voodoostarts)
 	{
 		voodoo.mobj = (new AActor(voodoo.mapThing.x << FRACBITS, voodoo.mapThing.y << FRACBITS, ONFLOORZ, MT_AVATAR))->ptr();
+
+		// Assign spawnpoint so that it gets archived and can be matched back up with voodoostarts after deserialization.
+		voodoo.mobj->spawnpoint = voodoo.mapThing;
 	}
 }
 

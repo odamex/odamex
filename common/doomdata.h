@@ -25,6 +25,8 @@
 
 #pragma once
 
+#include <array>
+
 //
 // Map level types.
 // The following data structures define the persistent format
@@ -270,15 +272,17 @@ class FArchive;
 // [RH] Hexen-compatible MapThing.
 struct mapthing2_t
 {
-	uint16_t thingid = 0;
-	int16_t  x       = 0;
-	int16_t  y       = 0;
-	int16_t  z       = 0;
-	int16_t  angle   = 0;
-	int16_t  type    = 0;
-	int16_t  flags   = 0;
-	byte     special = 0;
-	byte     args[5] = { 0 };
+	uint16_t            thingid = 0;
+	int16_t             x       = 0;
+	int16_t             y       = 0;
+	int16_t             z       = 0;
+	int16_t             angle   = 0;
+	int16_t             type    = 0;
+	int16_t             flags   = 0;
+	byte                special = 0;
+	std::array<byte, 5> args    = { 0, 0, 0, 0, 0 };
+
+	bool operator==(const mapthing2_t& other) const = default;
 
 	void Serialize (FArchive &);
 };

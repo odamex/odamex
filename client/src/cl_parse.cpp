@@ -3157,28 +3157,66 @@ static void CL_PlayerPsprites(const odaproto::svc::PlayerPsprites* msg)
 
 static void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
 {
-	const size_t   index = msg->avatar_index();
+    MapThing avatarMapthing;
+
+    const odaproto::MapThing& mapthing = msg->avatar_mapthing();
+
+    avatarMapthing.thingid  = mapthing.thingid();
+    avatarMapthing.x        = mapthing.x();
+    avatarMapthing.y        = mapthing.y();
+    avatarMapthing.z        = mapthing.z();
+    avatarMapthing.angle    = mapthing.angle();
+    avatarMapthing.type     = mapthing.type();
+    avatarMapthing.flags    = mapthing.flags();
+    avatarMapthing.special  = mapthing.special();
+
+	const size_t argCount = std::min(avatarMapthing.args.size(), static_cast<size_t>(mapthing.args_size()));
+	std::copy(mapthing.args().begin(),
+	          mapthing.args().begin() + argCount,
+	          avatarMapthing.args.begin());
+
 	const uint32_t netid = msg->netid();
 
-	if (index >= ::voodoostarts.size())
+	const auto avatarIter = std::find_if(::voodoostarts.begin(),
+	                                     ::voodoostarts.end(),
+	                                     [&avatarMapthing](const auto& voodooStart)
+	                                     {
+	                                         return voodooStart.mapThing == avatarMapthing;
+	                                     });
+
+	if (avatarIter == ::voodoostarts.end())
 	{
-		PrintFmt(PRINT_WARNING, "Invalid Avatar index {}: only {} known\n", index, ::voodoostarts.size());
+		PrintFmt(PRINT_WARNING, "Cannot find Avatar at pos ({}, {}, {}), id {}, angle {}, type {}, flags {}, special {}\n",
+		        avatarMapthing.x,
+		        avatarMapthing.y,
+		        avatarMapthing.z,
+		        avatarMapthing.thingid,
+		        avatarMapthing.angle,
+		        avatarMapthing.type,
+		        avatarMapthing.flags,
+		        int(avatarMapthing.special));
 		return;
 	}
 
 	if (AActor* mo = P_FindThingById(msg->netid()))
 	{
-		if (mo != ::voodoostarts[index].mobj)
+		if (mo != avatarIter->mobj)
 		{
-			PrintFmt(PRINT_WARNING, "Netid {} cannot be assigned to avatar {}: already assigned to a mobj of type {}\n",
+			PrintFmt(PRINT_WARNING, "Netid {} cannot be assigned to avatar: already assigned to a mobj of type {}\n",
 			        netid,
-			        index,
 			        mo->type);
 		}
 	}
 	else
 	{
-		P_SetThingId(::voodoostarts[index].mobj, netid);
+		// There was a bug that caused avatar mobjs to not get linked back to voodoostarts when
+		// unarchiving the mobj.  The avatar mobj still exists, but we can't get to it through
+		// the voodoostart structure.  We can dodge the crash that was caused by just checking
+		// for null.
+		if (avatarIter->mobj)
+		{
+			P_SetThingId(avatarIter->mobj, netid);
+		}
 	}
 }
 
