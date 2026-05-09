@@ -280,7 +280,7 @@ struct mapthing2_t
 	int16_t             type    = 0;
 	int16_t             flags   = 0;
 	byte                special = 0;
-	std::array<byte, 5> args    = { 0 };
+	std::array<byte, 5> args    = { 0, 0, 0, 0, 0 };
 
 	bool operator==(const mapthing2_t& other) const = default;
 
