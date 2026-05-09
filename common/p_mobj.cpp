@@ -1015,6 +1015,18 @@ void AActor::Serialize (FArchive &arc)
 			player->mo = ptr();
 			player->camera = player->mo;
 		}
+
+		if (type == MT_AVATAR)
+		{
+			for (auto& voodoo : ::voodoostarts)
+			{
+				if (voodoo.mapThing == spawnpoint)
+				{
+					voodoo.mobj = ptr();
+					break;
+				}
+			}
+		}
 	}
 }
 
@@ -3314,6 +3326,8 @@ void P_SpawnAvatars()
 	for (auto& voodoo : ::voodoostarts)
 	{
 		voodoo.mobj = (new AActor(voodoo.mapThing.x << FRACBITS, voodoo.mapThing.y << FRACBITS, ONFLOORZ, MT_AVATAR))->ptr();
+
+		// Assign spawnpoint so that it gets archived and can be matched back up with voodoostarts after deserialization.
 		voodoo.mobj->spawnpoint = voodoo.mapThing;
 	}
 }
