@@ -219,6 +219,19 @@ bool PlayerStateRoller::RollbackPowers(HistoryTableType::iterator i_historyIter,
 	return false;
 }
 
+bool PlayerStateRoller::RollbackHealth(HistoryTableType::iterator i_historyIter, const int i_health)
+{
+    if (const int healthDelta = i_health - i_historyIter->second.health)
+    {
+        Roll(i_historyIter->first, [& healthDelta] (auto& rollingIter)
+        {
+            rollingIter->second.health += healthDelta;
+        });
+        return true;
+    }
+    return false;
+}
+
 
 bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo, player_t& io_player)
 {
@@ -382,19 +395,20 @@ RollerResolveEnum PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataT
 		const bool weaponSelectionRequiredRoll  = RollbackWeaponSelection(historyIter, i_itemData.readyweapon, i_itemData.pendingweapon);
 		const bool powersRequiredRoll           = RollbackPowers         (historyIter, i_itemData.powers);
 		const bool pspritesRequiredRoll         = RollbackPsprites       (historyIter, i_itemData.psprites);
+		const bool healthRequiredRoll           = RollbackHealth         (historyIter, i_itemData.health);
 
 		const bool historyWasChanged = ammoRequiredRoll or
 		                               maxammoRequiredRoll or
 		                               weaponOwnedRequiredRoll or
 		                               weaponSelectionRequiredRoll or
 		                               powersRequiredRoll or
-		                               pspritesRequiredRoll;
+		                               pspritesRequiredRoll or
+		                               healthRequiredRoll;
 
 		// Now cover the fields that we don't actually rollback, just apply because the server dictates so.
 		auto mostRecentIter = m_history.find(m_mostRecentTic);
 		//assert(mostRecentIter != m_history.end());
 
-		const bool healthUpdated        = Update(mostRecentIter->second.health,     i_itemData.health);
 		const bool armorpointsUpdated   = Update(mostRecentIter->second.armorpoints,i_itemData.armorpoints);
 		const bool armortypeUpdated     = Update(mostRecentIter->second.armortype,  i_itemData.armortype);
 		const bool livesUpdated         = Update(mostRecentIter->second.lives,      i_itemData.lives);
@@ -402,8 +416,7 @@ RollerResolveEnum PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataT
 		const bool backpackUpdated      = Update(mostRecentIter->second.backpack,   i_itemData.backpack);
 		const bool cheatsUpdated        = Update(mostRecentIter->second.cheats,     i_itemData.cheats);
 
-		const bool immediateStateWasUpdated = healthUpdated or
-		                                      armorpointsUpdated or
+		const bool immediateStateWasUpdated = armorpointsUpdated or
 		                                      armortypeUpdated or
 		                                      livesUpdated or
 		                                      cardsUpdated or
