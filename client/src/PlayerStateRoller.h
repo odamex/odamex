@@ -19,7 +19,6 @@ enum class RollerResolveEnum
 	NO_CHANGE,
 	CURRENT_STATE_CHANGED,
 	HISTORY_CHANGED,
-	HISTORY_AND_CURRENT_STATE_CHANGED,
 	INVALID_TIC,
 };
 
@@ -130,19 +129,21 @@ class PlayerStateRoller
 
 		void ApplyMostRecentToPlayer(player_t& io_player);
 
-		bool RollbackAmmo(HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>& i_ammo);
-		bool RollbackMaxAmmo(HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>& i_maxAmmo);
-		bool RollbackWeaponOwned(HistoryTableType::iterator i_historyIter, const std::array<bool, NUMWEAPONS>& i_weaponOwned);
+		bool RollbackAmmo           (HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>&                  i_ammo);
+		bool RollbackMaxAmmo        (HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>&                  i_maxAmmo);
+		bool RollbackWeaponOwned    (HistoryTableType::iterator i_historyIter, const std::array<bool, NUMWEAPONS>&              i_weaponOwned);
+		bool RollbackPowers         (HistoryTableType::iterator i_historyIter, const std::array<int, NUMPOWERS>                 i_powers);
+		bool RollbackPsprites       (HistoryTableType::iterator i_historyIter, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites);
+
 		bool RollbackWeaponSelection(HistoryTableType::iterator i_historyIter, const weapontype_t i_readyWeapon, const weapontype_t i_pendingWeapon);
 
-		bool RollbackPowers(HistoryTableType::iterator i_historyIter, const std::array<int, NUMPOWERS> i_powers);
-		bool RollbackPsprites(HistoryTableType::iterator i_historyIter, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites);
-
-		bool RollbackHealth     (HistoryTableType::iterator i_historyIter, const int  i_health);
-		bool RollbackArmorpoints(HistoryTableType::iterator i_historyIter, const int  i_armorpoints);
-		bool RollbackArmortype  (HistoryTableType::iterator i_historyIter, const int  i_armortype);
-		bool RollbackLives      (HistoryTableType::iterator i_historyIter, const int  i_lives);
-		bool RollbackBackpack   (HistoryTableType::iterator i_historyIter, const bool i_backpack);
+		bool RollbackHealth     (HistoryTableType::iterator i_historyIter, const int                         i_health);
+		bool RollbackArmorpoints(HistoryTableType::iterator i_historyIter, const int                         i_armorpoints);
+		bool RollbackArmortype  (HistoryTableType::iterator i_historyIter, const int                         i_armortype);
+		bool RollbackLives      (HistoryTableType::iterator i_historyIter, const int                         i_lives);
+		bool RollbackBackpack   (HistoryTableType::iterator i_historyIter, const bool                        i_backpack);
+		bool RollbackCards      (HistoryTableType::iterator i_historyIter, const std::array<bool, NUMCARDS>& i_cards);
+		bool RollbackCheats     (HistoryTableType::iterator i_historyIter, const uint32_t                    i_cheats);
 
 		template <typename Callable>
 		void Roll(int i_oldTic, Callable&& i_callable);

@@ -46,7 +46,7 @@ struct LatencyFixture
         if (serverResponseIter != messagesInFlight.end())
         {
             const RollerResolveEnum result = rollerState.Resolve(serverResponseIter->second.tic, serverResponseIter->second.msg, clientPlayer);
-            correctionWasRequired = (result == RollerResolveEnum::HISTORY_CHANGED or result == RollerResolveEnum::HISTORY_AND_CURRENT_STATE_CHANGED);
+            correctionWasRequired = (result == RollerResolveEnum::HISTORY_CHANGED);
             return true;
         }
         correctionWasRequired = false;

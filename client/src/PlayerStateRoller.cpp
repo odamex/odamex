@@ -77,17 +77,17 @@ namespace
 	// ------------------------------------------------
 
 	/// Returns true if any non-zero deltas were produced.
-	template <typename ElementType, size_t N>
-	void FillDeltaArray(std::array<ElementType, N>&         o_delta,
+	template <typename DeltaElementType, typename ElementType, size_t N>
+	void FillDeltaArray(std::array<DeltaElementType, N>&    o_delta,
 	                    const std::array<ElementType, N>&   i_lhs,
 	                    const std::array<ElementType, N>&   i_rhs)
 	{
 		// Don't compile if the array can't store negative values!
-		static_assert(std::is_signed<ElementType>() == true);
+		static_assert(std::is_signed<DeltaElementType>() == true);
 
 		for (size_t i = 0; i < o_delta.size(); ++i)
 		{
-			o_delta[i] = i_lhs[i] - i_rhs[i];
+			o_delta[i] = static_cast<DeltaElementType>(i_lhs[i]) - static_cast<DeltaElementType>(i_rhs[i]);
 		}
 	}
 
@@ -284,6 +284,57 @@ bool PlayerStateRoller::RollbackBackpack(HistoryTableType::iterator i_historyIte
     return false;
 }
 
+bool PlayerStateRoller::RollbackCards(HistoryTableType::iterator i_historyIter, const std::array<bool, NUMCARDS>& i_cards)
+{
+	std::array<int, NUMCARDS> cardsDelta;
+	FillDeltaArray(cardsDelta, i_cards, i_historyIter->second.cards);
+    if (RequiresCorrection(cardsDelta))
+    {
+        Roll(i_historyIter->first, [&cardsDelta](auto& rollingIter)
+        {
+            for (size_t i = 0; i < cardsDelta.size(); ++i)
+            {
+                rollingIter->second.cards[i] = bool(int(rollingIter->second.cards[i]) + cardsDelta[i]);
+            }
+        });
+        return true;
+    }
+    return false;
+}
+
+bool PlayerStateRoller::RollbackCheats(HistoryTableType::iterator i_historyIter, const uint32_t i_cheats)
+{
+    if (i_historyIter->second.cheats != i_cheats)
+    {
+        // Note - it's important that the delta be signed!  We may need to remove a value.
+        std::array<int, sizeof(i_cheats) * 8> deltaCheats;
+        for (size_t i = 0; i < deltaCheats.size(); ++i)
+        {
+            deltaCheats[i] = int((i_cheats >> i) & 0x1) - int((i_historyIter->second.cheats >> i) & 0x1);
+        }
+
+        Roll(i_historyIter->first, [& deltaCheats] (auto& rollingIter)
+        {
+            for (size_t i = 0; i < deltaCheats.size(); ++i)
+            {
+                const bool correctedCheatValue = bool(int((rollingIter->second.cheats >> i) & 0x1) + deltaCheats[i]);
+                if (correctedCheatValue)
+                {
+                    rollingIter->second.cheats |= (1 << i);
+                }
+                else
+                {
+                    rollingIter->second.cheats &= ~(1 << i);
+                }
+            }
+        });
+
+        return true;
+    }
+
+    return false;
+}
+
 bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo, player_t& io_player)
 {
 	auto historyIter = m_history.find(i_oldTic);
@@ -452,6 +503,8 @@ RollerResolveEnum PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataT
 		const bool armortypeRequiredRoll    = RollbackArmortype     (historyIter, i_itemData.armortype);
 		const bool livesRequiredRoll        = RollbackLives         (historyIter, i_itemData.lives);
 		const bool backpackRequiredRoll     = RollbackBackpack      (historyIter, i_itemData.backpack);
+		const bool cardsRequiredRoll        = RollbackCards         (historyIter, i_itemData.cards);
+		const bool cheatsRequiredRoll       = RollbackCheats        (historyIter, i_itemData.cheats);
 
 		const bool historyWasChanged = ammoRequiredRoll or
 		                               maxammoRequiredRoll or
@@ -463,28 +516,20 @@ RollerResolveEnum PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataT
 		                               armorpointsRequiredRoll or
 		                               armortypeRequiredRoll or
 		                               livesRequiredRoll or
-		                               backpackRequiredRoll;
+		                               backpackRequiredRoll or
+		                               cardsRequiredRoll or
+		                               cheatsRequiredRoll;
 
 		// Now cover the fields that we don't actually rollback, just apply because the server dictates so.
 		auto mostRecentIter = m_history.find(m_mostRecentTic);
 		//assert(mostRecentIter != m_history.end());
 
-		const bool cardsUpdated         = Update(mostRecentIter->second.cards,      i_itemData.cards);
-		const bool cheatsUpdated        = Update(mostRecentIter->second.cheats,     i_itemData.cheats);
-
-		const bool immediateStateWasUpdated = cardsUpdated or
-		                                      cheatsUpdated;
-
-		if (historyWasChanged or immediateStateWasUpdated)
+		if (historyWasChanged)
 		{
 			mostRecentIter->second.ToPlayer(io_player);
 
 			if (historyWasChanged)
 			{
-				if (immediateStateWasUpdated)
-				{
-					return RollerResolveEnum::HISTORY_AND_CURRENT_STATE_CHANGED;
-				}
 				return RollerResolveEnum::HISTORY_CHANGED;
 			}
 			return RollerResolveEnum::CURRENT_STATE_CHANGED;

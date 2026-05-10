@@ -271,7 +271,6 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 		switch (result)
 		{
 			case RollerResolveEnum::HISTORY_CHANGED:                   [[fallthrough]];
-			case RollerResolveEnum::HISTORY_AND_CURRENT_STATE_CHANGED:
 				DPrintFmt("Reconciled conflicting inventory that diverged on tic {}\n", oldTic);
 				break;
 
