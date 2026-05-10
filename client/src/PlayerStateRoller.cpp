@@ -232,6 +232,57 @@ bool PlayerStateRoller::RollbackHealth(HistoryTableType::iterator i_historyIter,
     return false;
 }
 
+bool PlayerStateRoller::RollbackArmorpoints(HistoryTableType::iterator i_historyIter, const int i_armorpoints)
+{
+    if (const int armorpointsDelta = i_armorpoints - i_historyIter->second.armorpoints)
+    {
+        Roll(i_historyIter->first, [& armorpointsDelta] (auto& rollingIter)
+        {
+            rollingIter->second.armorpoints += armorpointsDelta;
+        });
+        return true;
+    }
+    return false;
+}
+
+bool PlayerStateRoller::RollbackArmortype(HistoryTableType::iterator i_historyIter, const int i_armortype)
+{
+    if (const int armortypeDelta = i_armortype - i_historyIter->second.armortype)
+    {
+        Roll(i_historyIter->first, [& armortypeDelta] (auto& rollingIter)
+        {
+            rollingIter->second.armortype += armortypeDelta;
+        });
+        return true;
+    }
+    return false;
+}
+
+bool PlayerStateRoller::RollbackLives(HistoryTableType::iterator i_historyIter, const int i_lives)
+{
+    if (const int livesDelta = i_lives - i_historyIter->second.lives)
+    {
+        Roll(i_historyIter->first, [& livesDelta] (auto& rollingIter)
+        {
+            rollingIter->second.lives += livesDelta;
+        });
+        return true;
+    }
+    return false;
+}
+
+bool PlayerStateRoller::RollbackBackpack(HistoryTableType::iterator i_historyIter, const bool i_backpack)
+{
+    if (const int backpackDelta = int(i_backpack) - int(i_historyIter->second.backpack))
+    {
+        Roll(i_historyIter->first, [& backpackDelta] (auto& rollingIter)
+        {
+            rollingIter->second.backpack = bool(int(rollingIter->second.backpack) + backpackDelta);
+        });
+        return true;
+    }
+    return false;
+}
 
 bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo, player_t& io_player)
 {
@@ -395,7 +446,12 @@ RollerResolveEnum PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataT
 		const bool weaponSelectionRequiredRoll  = RollbackWeaponSelection(historyIter, i_itemData.readyweapon, i_itemData.pendingweapon);
 		const bool powersRequiredRoll           = RollbackPowers         (historyIter, i_itemData.powers);
 		const bool pspritesRequiredRoll         = RollbackPsprites       (historyIter, i_itemData.psprites);
-		const bool healthRequiredRoll           = RollbackHealth         (historyIter, i_itemData.health);
+
+		const bool healthRequiredRoll       = RollbackHealth        (historyIter, i_itemData.health);
+		const bool armorpointsRequiredRoll  = RollbackArmorpoints   (historyIter, i_itemData.armorpoints);
+		const bool armortypeRequiredRoll    = RollbackArmortype     (historyIter, i_itemData.armortype);
+		const bool livesRequiredRoll        = RollbackLives         (historyIter, i_itemData.lives);
+		const bool backpackRequiredRoll     = RollbackBackpack      (historyIter, i_itemData.backpack);
 
 		const bool historyWasChanged = ammoRequiredRoll or
 		                               maxammoRequiredRoll or
@@ -403,24 +459,20 @@ RollerResolveEnum PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataT
 		                               weaponSelectionRequiredRoll or
 		                               powersRequiredRoll or
 		                               pspritesRequiredRoll or
-		                               healthRequiredRoll;
+		                               healthRequiredRoll or
+		                               armorpointsRequiredRoll or
+		                               armortypeRequiredRoll or
+		                               livesRequiredRoll or
+		                               backpackRequiredRoll;
 
 		// Now cover the fields that we don't actually rollback, just apply because the server dictates so.
 		auto mostRecentIter = m_history.find(m_mostRecentTic);
 		//assert(mostRecentIter != m_history.end());
 
-		const bool armorpointsUpdated   = Update(mostRecentIter->second.armorpoints,i_itemData.armorpoints);
-		const bool armortypeUpdated     = Update(mostRecentIter->second.armortype,  i_itemData.armortype);
-		const bool livesUpdated         = Update(mostRecentIter->second.lives,      i_itemData.lives);
 		const bool cardsUpdated         = Update(mostRecentIter->second.cards,      i_itemData.cards);
-		const bool backpackUpdated      = Update(mostRecentIter->second.backpack,   i_itemData.backpack);
 		const bool cheatsUpdated        = Update(mostRecentIter->second.cheats,     i_itemData.cheats);
 
-		const bool immediateStateWasUpdated = armorpointsUpdated or
-		                                      armortypeUpdated or
-		                                      livesUpdated or
-		                                      cardsUpdated or
-		                                      backpackUpdated or
+		const bool immediateStateWasUpdated = cardsUpdated or
 		                                      cheatsUpdated;
 
 		if (historyWasChanged or immediateStateWasUpdated)

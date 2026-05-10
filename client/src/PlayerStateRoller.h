@@ -138,7 +138,11 @@ class PlayerStateRoller
 		bool RollbackPowers(HistoryTableType::iterator i_historyIter, const std::array<int, NUMPOWERS> i_powers);
 		bool RollbackPsprites(HistoryTableType::iterator i_historyIter, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites);
 
-		bool RollbackHealth(HistoryTableType::iterator i_historyIter, const int i_health);
+		bool RollbackHealth     (HistoryTableType::iterator i_historyIter, const int  i_health);
+		bool RollbackArmorpoints(HistoryTableType::iterator i_historyIter, const int  i_armorpoints);
+		bool RollbackArmortype  (HistoryTableType::iterator i_historyIter, const int  i_armortype);
+		bool RollbackLives      (HistoryTableType::iterator i_historyIter, const int  i_lives);
+		bool RollbackBackpack   (HistoryTableType::iterator i_historyIter, const bool i_backpack);
 
 		template <typename Callable>
 		void Roll(int i_oldTic, Callable&& i_callable);
