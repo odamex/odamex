@@ -89,7 +89,7 @@
 extern void G_DeferedInitNew (const OLumpName& mapname);
 extern level_locals_t level;
 
-constexpr int MAX_HIDDEN_MOBJ_UPDATES = 16;
+constexpr int MAX_HIDDEN_MOBJ_UPDATES = 160;
 
 
 // Unnatural Level Progression.  True if we've used 'map' or another command
@@ -1438,6 +1438,22 @@ bool SV_IsTeammate(player_t &a, player_t &b)
 // ---------------
 //
 
+namespace
+{
+    struct IdentityHash
+    {
+        size_t operator()(const AwarenessEnum& value) const { return static_cast<size_t>(value); }
+    };
+
+const std::unordered_map<AwarenessEnum, std::unordered_set<AwarenessEnum, IdentityHash>, IdentityHash> spawnIsAllowed {
+    // from
+    { AwarenessEnum::NOT_AWARE,    { AwarenessEnum::SEMI_AWARE, AwarenessEnum::FULLY_AWARE, AwarenessEnum::ALWAYS_AWARE } },
+    { AwarenessEnum::ALWAYS_AWARE, { } },
+    { AwarenessEnum::FULLY_AWARE,  { } },
+    { AwarenessEnum::SEMI_AWARE,   { } },
+    { AwarenessEnum::BARELY_AWARE, { AwarenessEnum::SEMI_AWARE, AwarenessEnum::FULLY_AWARE, AwarenessEnum::ALWAYS_AWARE } },
+    };
+
 bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLevel)
 {
     const AwarenessEnum previousAwareness = mo->playersAware.Get(player.id);
@@ -1455,8 +1471,7 @@ bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLeve
         return true;
     }
 
-    if (previousAwareness == AwarenessEnum::NOT_AWARE and
-        awarenessLevel    != AwarenessEnum::BARELY_AWARE)
+    if (spawnIsAllowed[previousAwareness][awarenessLevel])
     {
 		if (mo->type == MT_AVATAR)
 		{
@@ -3555,20 +3570,24 @@ void SV_WriteCommandsForPlayer(player_t& player)
 //			throttleCount = FIXED642INT(FixedMul64(mobjCountFixed, fractionFixed));
 //		}
 
-	for (auto& sortedMobj : player.sortedMobjs)
+	for (auto sortedMobjIter = player.sortedMobjs.begin(); sortedMobjIter != player.sortedMobjs.end(); ++sortedMobjIter)
 	{
 //            if (throttleCount-- > 0)
 //            {
 //                break;
 //            }
-		SV_UpdateMissiles(player, sortedMobj.actorPtr);
-
-		SV_UpdateMonsters(player, sortedMobj.actorPtr);
-
 		if (hiddenUpdateCount <= maxForThisTic)
 		{
-			hiddenUpdateCount = SV_UpdateHiddenMobj(player, sortedMobj.actorPtr, hiddenUpdateCount, AwarenessEnum::FULLY_AWARE); //TODO: adjust this.
+            const AwarenessEnum appropriateAwareness = sortedMobjIter < sortedMobjPartitions.innerBoundary ? AwarenessEnum::FULLY_AWARE :
+                                                       sortedMobjIter < sortedMobjPartitions.outerBoundary ? AwarenessEnum::SEMI_AWARE  :
+                                                                                                             AwarenessEnum::BARELY_AWARE;
+
+			hiddenUpdateCount = SV_UpdateHiddenMobj(player, sortedMobjIter->actorPtr, hiddenUpdateCount, appropriateAwareness);
 		}
+
+		SV_UpdateMissiles(player, sortedMobjIter->actorPtr);
+
+		SV_UpdateMonsters(player, sortedMobjIter->actorPtr);
 	}
 
 	SV_UpdateGametype(player);     // update gametype stuff

@@ -11,6 +11,8 @@ enum class AwarenessEnum
     FULLY_AWARE,        ///< All messages active, full fidelity.
     SEMI_AWARE,         ///< Reduced reliable traffic.
     BARELY_AWARE,       ///< On life support.
+
+    AWARENESS_LEVEL_COUNT
 };
 
 template <size_t MAX_PLAYER_COUNT>
