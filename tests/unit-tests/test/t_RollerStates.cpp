@@ -76,6 +76,31 @@ struct LatencyFixture
         futureMessage = PlayerItemDataType(clientPlayer);
     }
 
+    template <typename Callable>
+    bool DoPickupOnTic(int oldTic, Callable&& pickup)
+    {
+        auto optionalHistory = rollerState.GetStateAtTic(oldTic);
+        const PlayerItemDataType currentClientSideState {clientPlayer};
+
+        if (optionalHistory)
+        {
+            optionalHistory->get().ToPlayer(clientPlayer);
+        }
+
+        pickup(clientPlayer);
+
+        if (optionalHistory)
+        {
+            const PlayerItemDataType modifiedHistory {clientPlayer};
+
+            currentClientSideState.ToPlayer(clientPlayer);
+
+            rollerState.Resolve(oldTic, modifiedHistory, clientPlayer);
+            return true;
+        }
+        return false;
+    }
+
 };
 
 struct PistolStartLatencyFixture : LatencyFixture, testing::TestWithParam<int>
@@ -296,9 +321,36 @@ TEST_P(PistolStartRegressionFixture, HealthPickupDisappear)
 
     clientPlayer.health = 87;
 
-    rollerState.Record(currentTic, clientPlayer);
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+    Frame();
 
+    // Message came in from server that we picked up a stimpack 5 tics ago.
 
+    DoPickupOnTic(currentTic - 5, [](auto& player)
+    {
+        player.health += 10;
+    });
+
+    EXPECT_EQ(97, clientPlayer.health);
+
+    // 2 tics later, an ammo pickup.
+
+    Frame();
+    Frame();
+
+    DoPickupOnTic(currentTic - 5, [](auto& player)
+    {
+        player.ammo[am_clip] += 5;
+    });
+
+    // Verify that health did not change.
+    EXPECT_EQ(97, clientPlayer.health);
 }
 
 INSTANTIATE_TEST_SUITE_P(HealthPickup,
