@@ -129,6 +129,9 @@ class PlayerStateRoller
 
 		void ApplyMostRecentToPlayer(player_t& io_player);
 
+
+        std::optional<HistoryTableType::iterator> ObtainHistory(int i_oldTic, const player_t& i_player);
+
 		bool RollbackAmmo           (HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>&                  i_ammo);
 		bool RollbackMaxAmmo        (HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>&                  i_maxAmmo);
 		bool RollbackWeaponOwned    (HistoryTableType::iterator i_historyIter, const std::array<bool, NUMWEAPONS>&              i_weaponOwned);
@@ -150,6 +153,9 @@ class PlayerStateRoller
 
 		// History keyed on *client* tic number.
 		HistoryTableType m_history;
+
+		// The very first step of any rollback is to capture the current state as the final step of rolling.
+		PlayerItemDataType m_currentState;
 
 		int m_mostRecentTic;
 		int m_oldestTic;

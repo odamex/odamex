@@ -70,6 +70,28 @@ struct PlayerItemDataType
 		}
 	}
 
+	void FromPlayer(const player_t& player)
+	{
+		ammo            = player.ammo;
+		maxammo         = player.maxammo;
+		health          = player.health;
+		armorpoints     = player.armorpoints;
+		armortype       = player.armortype;
+		lives           = player.lives;
+		powers          = player.powers;        // TODO: Fix the clearing of MF_SHADOW in PlayerThink.  It should not happen only when a decrement to zero happens.  Just check for value == 0.
+		readyweapon     = player.readyweapon;
+		pendingweapon   = player.pendingweapon;
+		weaponowned     = player.weaponowned;
+		cards           = player.cards;
+		backpack        = player.backpack;
+		cheats          = player.cheats;
+
+		for (size_t i = 0; i < psprites.size(); ++i)
+		{
+			psprites[i] = player.psprites[i];
+		}
+	}
+
 	void ToPlayer(player_t& player) const
 	{
 		player.ammo            = ammo;
