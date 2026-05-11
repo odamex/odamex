@@ -353,6 +353,57 @@ TEST_P(PistolStartRegressionFixture, HealthPickupDisappear)
     EXPECT_EQ(97, clientPlayer.health);
 }
 
+TEST_P(PistolStartRegressionFixture, ArmorPickupDisappear)
+{
+    EXPECT_EQ(8, roundTripTimeInTics);      // 200 msec ping, lots of tics in the latency pipeline
+
+    clientPlayer.armorpoints = 0;
+
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+
+    // Message came in from server that we picked up armor 5 tics ago.
+
+    DoPickupOnTic(currentTic - 5, [](auto& player)
+    {
+        player.armorpoints  = 100;
+        player.armortype    = 1;
+    });
+
+    EXPECT_EQ(100, clientPlayer.armorpoints);
+    EXPECT_EQ(1,   clientPlayer.armortype);
+
+    // 1 tic later, a little more armor.
+    Frame();
+
+    DoPickupOnTic(currentTic - 5, [](auto& player)
+    {
+        player.armorpoints += 1;
+    });
+
+    // 2 tics later, an ammo pickup.
+
+    Frame();
+    Frame();
+
+    DoPickupOnTic(currentTic - 5, [](auto& player)
+    {
+        player.ammo[am_clip] += 5;
+    });
+
+    // Verify that armor did not change.
+    EXPECT_EQ(101, clientPlayer.armorpoints);
+    EXPECT_EQ(1,   clientPlayer.armortype);
+}
+
+
+
 INSTANTIATE_TEST_SUITE_P(HealthPickup,
                          PistolStartRegressionFixture,
                          testing::Values(200));
