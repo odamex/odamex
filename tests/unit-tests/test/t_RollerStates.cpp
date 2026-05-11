@@ -76,7 +76,7 @@ struct LatencyFixture
 struct PistolStartLatencyFixture : LatencyFixture, testing::TestWithParam<int>
 {
     PistolStartLatencyFixture() :
-        LatencyFixture(GetParam())  // Get fucked, google.
+        LatencyFixture(GetParam())
     {
         clientPlayer.weaponowned[wp_pistol] = true;
         clientPlayer.ammo       [am_clip]   =  50;
