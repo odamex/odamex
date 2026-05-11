@@ -17,7 +17,7 @@ enum class RollerRecordResultEnum
 enum class RollerResolveEnum
 {
 	NO_CHANGE,
-	CURRENT_STATE_CHANGED,
+	CURRENT_STATE_CHANGED,  ///< Indicates that an inventory was applied immediately without adjusting history.  Intended for initial tic edge case.
 	HISTORY_CHANGED,
 	INVALID_TIC,
 };

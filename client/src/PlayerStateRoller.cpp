@@ -528,11 +528,7 @@ RollerResolveEnum PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataT
 		{
 			mostRecentIter->second.ToPlayer(io_player);
 
-			if (historyWasChanged)
-			{
-				return RollerResolveEnum::HISTORY_CHANGED;
-			}
-			return RollerResolveEnum::CURRENT_STATE_CHANGED;
+			return RollerResolveEnum::HISTORY_CHANGED;
 		}
 		return RollerResolveEnum::NO_CHANGE;
 	}
