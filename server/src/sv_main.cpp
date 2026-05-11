@@ -3170,7 +3170,7 @@ void SV_UpdateGametype(player_t& player)
 		if (player.hordeInfo != info)
 		{
 			player.hordeInfo = info;
-			MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_HordeInfo(info));
+			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_HordeInfo(info));
 		}
 	}
 }
