@@ -440,6 +440,69 @@ TEST_P(PistolStartRegressionFixture, LivesVsPickup)
     EXPECT_EQ(1, clientPlayer.lives);
 }
 
+TEST_P(PistolStartRegressionFixture, PredictedWeaponPickup)
+{
+    EXPECT_EQ(8, roundTripTimeInTics);      // 200 msec ping, lots of tics in the latency pipeline
+
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+
+    // Predicted pickup
+    clientPlayer.weaponowned[wp_supershotgun] = true;
+
+    // But before an inventory check can come in, an ammo pickup.
+    Frame();
+    Frame();
+
+    DoPickupOnTic(currentTic - 5, [](auto& player)
+    {
+        player.ammo[am_clip] += 5;
+    });
+
+    // Verify that ssg did not change.
+    EXPECT_EQ(true, clientPlayer.weaponowned[wp_supershotgun]);
+}
+
+TEST_P(PistolStartRegressionFixture, HordeWeaponPickup)
+{
+    EXPECT_EQ(8, roundTripTimeInTics);      // 200 msec ping, lots of tics in the latency pipeline
+
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+    Frame();
+
+    // Big ol' horde pickup.
+    DoPickupOnTic(currentTic - 5, [](auto& player)
+    {
+        player.weaponowned[wp_supershotgun] = true;
+        player.ammo[am_clip]  += 50;
+        player.ammo[am_shell] += 16;
+    });
+
+    // But right behind it is a single clip.
+    Frame();
+    Frame();
+
+    DoPickupOnTic(currentTic - 5, [](auto& player)
+    {
+        player.ammo[am_clip] += 5;
+    });
+
+    // Verify that ssg did not change.
+    EXPECT_EQ(true, clientPlayer.weaponowned[wp_supershotgun]);
+    EXPECT_EQ(105,  clientPlayer.ammo[am_clip]);
+}
 
 INSTANTIATE_TEST_SUITE_P(PickupRollbackBug,
                          PistolStartRegressionFixture,
