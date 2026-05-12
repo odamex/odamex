@@ -121,7 +121,7 @@ protected:
 	};
 
 	void LaunchGame(const wxString& Address, const wxString& ODX_Path,
-	                const wxString& Password = "");
+	                const wxString& waddirs, const wxString& Password = "");
 
 	LstOdaServerList* m_LstCtrlServers;
 	LstOdaPlayerList* m_LstCtrlPlayers;

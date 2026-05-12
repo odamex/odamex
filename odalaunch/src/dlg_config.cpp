@@ -34,11 +34,21 @@
 #include <wx/wfstream.h>
 #include <wx/tokenzr.h>
 #include <wx/recguard.h>
+#include <wx/dirdlg.h>
 
 #include "main.h"
 
 // Event table for widgets
 BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
+
+	// Button events
+	EVT_BUTTON(XRCID("Id_BtnCtrlAddDir"), dlgConfig::OnAddDir)
+	EVT_BUTTON(XRCID("Id_BtnCtrlReplaceDir"), dlgConfig::OnReplaceDir)
+	EVT_BUTTON(XRCID("Id_BtnCtrlDeleteDir"), dlgConfig::OnDeleteDir)
+	EVT_BUTTON(XRCID("Id_BtnCtrlMoveDirUp"), dlgConfig::OnUpClick)
+	EVT_BUTTON(XRCID("Id_BtnCtrlMoveDirDown"), dlgConfig::OnDownClick)
+
+	EVT_BUTTON(XRCID("Id_BtnCtrlGetEnvironment"), dlgConfig::OnGetEnvClick)
 
 	EVT_BUTTON(wxID_OK, dlgConfig::OnOK)
 
@@ -77,6 +87,7 @@ BEGIN_EVENT_TABLE(dlgConfig,wxDialog)
 
 	EVT_SPINCTRL(XRCID("Id_SpnRefreshInterval"), dlgConfig::OnSpinValChange)
 
+	EVT_LISTBOX_DCLICK(XRCID("Id_LstCtrlWadDirectories"), dlgConfig::OnReplaceDir)
 END_EVENT_TABLE()
 
 // Window constructor
@@ -95,6 +106,8 @@ dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id) :
 	m_ChkCtrlHighlightServerLines = XRCCTRL(*this, "Id_ChkColorServerLine", wxCheckBox);
 	m_ChkCtrlHighlightCustomServers = XRCCTRL(*this, "Id_ChkColorCustomServers", wxCheckBox);
 	m_ChkCtrlkAutoServerRefresh = XRCCTRL(*this, "Id_ChkAutoRefresh", wxCheckBox);
+
+	m_LstCtrlWadDirectories = XRCCTRL(*this, "Id_LstCtrlWadDirectories", wxListBox);
 
 	m_DirCtrlChooseOdamexPath = XRCCTRL(*this, "Id_DirCtrlChooseOdamexPath", wxDirPickerCtrl);
 	m_FilePickCtrlSoundFile = XRCCTRL(*this, "Id_FilePickSoundFile", wxFilePickerCtrl);
@@ -224,6 +237,178 @@ void dlgConfig::OnTextChange(wxCommandEvent& event)
 	UserChangedSetting = true;
 }
 
+/*
+    WAD Directory stuff
+*/
+
+// Add a directory to the listbox
+void dlgConfig::OnAddDir(wxCommandEvent& event)
+{
+	wxString WadDirectory;
+
+	wxDirDialog ChooseWadDialog(this,
+	                            "Select a directory containing WAD files");
+
+	if(ChooseWadDialog.ShowModal() != wxID_OK)
+		return;
+
+	WadDirectory = ChooseWadDialog.GetPath();
+
+	// Check to see if the path exists on the system
+	if(wxDirExists(WadDirectory))
+	{
+		// Check if path already exists in box
+		if(m_LstCtrlWadDirectories->FindString(WadDirectory) == wxNOT_FOUND)
+		{
+			m_LstCtrlWadDirectories->Append(WadDirectory);
+
+			UserChangedSetting = true;
+		}
+	}
+	else
+		wxMessageBox(wxString::Format("Directory %s not found",
+		                              WadDirectory.c_str()));
+}
+
+// Replace a directory in the listbox
+void dlgConfig::OnReplaceDir(wxCommandEvent& event)
+{
+	wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
+
+	wxString WadDirectory;
+
+	if(i == wxNOT_FOUND)
+	{
+		wxMessageBox("Select a directory from the list to replace");
+
+		return;
+	}
+
+	WadDirectory = m_LstCtrlWadDirectories->GetStringSelection();
+
+	wxDirDialog ChooseWadDialog(this,
+	                            "Replace selected directory with..",
+	                            WadDirectory);
+
+	if(ChooseWadDialog.ShowModal() != wxID_OK)
+		return;
+
+	WadDirectory = ChooseWadDialog.GetPath();
+
+	// Check to see if the path exists on the system
+	if(wxDirExists(WadDirectory))
+	{
+		// Get the selected item and replace it
+		m_LstCtrlWadDirectories->SetString(i, WadDirectory);
+
+		UserChangedSetting = true;
+	}
+	else
+		wxMessageBox(wxString::Format("Directory %s not found",
+		                              WadDirectory.c_str()));
+}
+
+// Delete a directory from the listbox
+void dlgConfig::OnDeleteDir(wxCommandEvent& event)
+{
+	// Get the selected item and delete it, if
+	// it is selected.
+	wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
+
+	if(i != wxNOT_FOUND)
+	{
+		m_LstCtrlWadDirectories->Delete(i);
+
+		UserChangedSetting = true;
+	}
+	else
+		wxMessageBox("Select a directory from the list to delete");
+}
+
+// Move directory in list up 1 item
+void dlgConfig::OnUpClick(wxCommandEvent& event)
+{
+	// Get the selected item
+	wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
+
+	if((i != wxNOT_FOUND) && (i > 0))
+	{
+		wxString str = m_LstCtrlWadDirectories->GetString(i);
+
+		m_LstCtrlWadDirectories->Delete(i);
+
+		m_LstCtrlWadDirectories->Insert(str, i - 1);
+
+		m_LstCtrlWadDirectories->SetSelection(i - 1);
+
+		UserChangedSetting = true;
+	}
+}
+
+// Move directory in list down 1 item
+void dlgConfig::OnDownClick(wxCommandEvent& event)
+{
+	// Get the selected item
+	wxInt32 i = m_LstCtrlWadDirectories->GetSelection();
+
+	if((i != wxNOT_FOUND) && (i + 1 < m_LstCtrlWadDirectories->GetCount()))
+	{
+		wxString str = m_LstCtrlWadDirectories->GetString(i);
+
+		m_LstCtrlWadDirectories->Delete(i);
+
+		m_LstCtrlWadDirectories->Insert(str, i + 1);
+
+		m_LstCtrlWadDirectories->SetSelection(i + 1);
+
+		UserChangedSetting = true;
+	}
+}
+
+// Get the environment variables
+void dlgConfig::OnGetEnvClick(wxCommandEvent& event)
+{
+	wxString doomwaddir = "";
+	wxString env_paths[NUM_ENVVARS];
+	wxInt32 i = 0;
+
+	// create a small list of paths
+	for(i = 0; i < NUM_ENVVARS; i++)
+	{
+		// only add paths if the variable exists and path isn't blank
+		if(wxGetEnv(env_vars[i], &env_paths[i]))
+			if(!env_paths[i].IsEmpty())
+				doomwaddir += env_paths[i] + PATH_DELIMITER;
+	}
+
+	wxInt32 path_count = 0;
+
+	wxStringTokenizer wadlist(doomwaddir, PATH_DELIMITER);
+
+	while(wadlist.HasMoreTokens())
+	{
+		wxString path = wadlist.GetNextToken();
+
+		// make sure the path doesn't already exist in the list box
+		if(m_LstCtrlWadDirectories->FindString(path) == wxNOT_FOUND)
+		{
+			m_LstCtrlWadDirectories->Append(path);
+
+			path_count++;
+		}
+	}
+
+	if(path_count)
+	{
+		wxMessageBox("Environment variables import successful");
+
+		UserChangedSetting = true;
+	}
+	else
+		wxMessageBox("Environment variables contains paths that have been already imported.");
+
+}
+
 void dlgConfig::OnNotebookPageChanged(wxBookCtrlEvent& event)
 {
 	// This is a workaround for notebook layout issues on some platforms
@@ -261,7 +446,7 @@ void dlgConfig::LoadSettings()
 	bool AutoServerRefresh;
 	int ThreadMul, ThreadMax, MasterTimeout, ServerTimeout, RetryCount;
     int RefreshInterval;
-	wxString OdamexDirectory, ExtraCmdLineArgs;
+	wxString DelimWadPaths, OdamexDirectory, ExtraCmdLineArgs;
 	wxString SoundFile, HighlightColour, CustomServerColour;
 	wxInt32 PQGood, PQPlayable, PQLaggy;
 
@@ -271,6 +456,7 @@ void dlgConfig::LoadSettings()
 	                ODA_UISHOWBLOCKEDSERVERS);
     ConfigInfo.Read(CHECKFORUPDATES, &CheckForUpdates,
 	                ODA_UIAUTOCHECKFORUPDATES);
+	ConfigInfo.Read(DELIMWADPATHS, &DelimWadPaths, OdaGetDataDir());
 	ConfigInfo.Read(ODAMEX_DIRECTORY, &OdamexDirectory, OdaGetInstallDir());
 	ConfigInfo.Read(MASTERTIMEOUT, &MasterTimeout, ODA_QRYMASTERTIMEOUT);
 	ConfigInfo.Read(SERVERTIMEOUT, &ServerTimeout, ODA_QRYSERVERTIMEOUT);
@@ -309,7 +495,25 @@ void dlgConfig::LoadSettings()
 	m_DirCtrlChooseOdamexPath->SetPath(OdamexDirectory);
 	m_FilePickCtrlSoundFile->SetPath(SoundFile);
 	m_ClrPickServerLineHighlighter->SetColour(HighlightColour);
-    m_ClrPickCustomServerHighlight->SetColour(CustomServerColour);
+	m_ClrPickCustomServerHighlight->SetColour(CustomServerColour);
+
+	// Load wad path list
+	m_LstCtrlWadDirectories->Clear();
+
+	wxStringTokenizer wadlist(DelimWadPaths, PATH_DELIMITER);
+
+	while(wadlist.HasMoreTokens())
+	{
+		wxString path = wadlist.GetNextToken();
+
+#ifdef __WXMSW__
+		path.Replace("\\\\","\\", true);
+#else
+		path.Replace("////","//", true);
+#endif
+
+		m_LstCtrlWadDirectories->AppendString(path);
+	}
 
     m_SpnCtrlThreadMul->SetValue(ThreadMul);
     m_SpnCtrlThreadMax->SetValue(ThreadMax);
@@ -335,12 +539,18 @@ void dlgConfig::SaveSettings()
 	// Allow $ in directory names
 	ConfigInfo.SetExpandEnvVars(false);
 
+	wxString DelimWadPaths;
+
+	for(unsigned int i = 0; i < m_LstCtrlWadDirectories->GetCount(); i++)
+		DelimWadPaths.Append(m_LstCtrlWadDirectories->GetString(i) + PATH_DELIMITER);
+
 	ConfigInfo.Write(MASTERTIMEOUT, m_SpnCtrlMasterTimeout->GetValue());
 	ConfigInfo.Write(SERVERTIMEOUT, m_SpnCtrlServerTimeout->GetValue());
 	ConfigInfo.Write(RETRYCOUNT, m_SpnCtrlRetry->GetValue());
 	ConfigInfo.Write(EXTRACMDLINEARGS, m_TxtCtrlExtraCmdLineArgs->GetValue());
 	ConfigInfo.Write(GETLISTONSTART, m_ChkCtrlGetListOnStart->GetValue());
 	ConfigInfo.Write(SHOWBLOCKEDSERVERS, m_ChkCtrlShowBlockedServers->GetValue());
+	ConfigInfo.Write(DELIMWADPATHS, DelimWadPaths);
 	ConfigInfo.Write(ODAMEX_DIRECTORY, m_DirCtrlChooseOdamexPath->GetPath());
 	ConfigInfo.Write(ICONPINGQGOOD, m_SpnCtrlPQGood->GetValue());
 	ConfigInfo.Write(ICONPINGQPLAYABLE, m_SpnCtrlPQPlayable->GetValue());
