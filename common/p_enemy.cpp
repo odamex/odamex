@@ -1711,6 +1711,10 @@ void A_Chase (AActor *actor)
 
 		if (serverside)
 			P_SetMobjState (actor, actor->info->meleestate, true);
+
+		if (!actor->info->missilestate)
+			actor->flags |= MF_JUSTHIT;
+
 		return;
 	}
 
