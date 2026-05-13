@@ -109,7 +109,7 @@ void D_DoomLoop (void)
 		}
 		catch (CRecoverableError &error)
 		{
-			PrintFmt("ERROR: {}\n", error.GetMsg());
+			PrintFmt(PRINT_ERROR, "ERROR: {}\n", error.GetMsg());
 			PrintFmt("sleeping for 10 seconds before map reload...");
 
 			// denis - drop clients
