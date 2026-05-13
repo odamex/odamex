@@ -30,6 +30,7 @@
 #include <stdlib.h>
 
 #include <ctime>
+#include <cctype>
 #include <functional>
 #include <sstream>
 
@@ -498,23 +499,17 @@ void TicsToTime(OTimespan& span, int time, bool ceilsec)
 	span.csecs = (span.tics * 100) / TICRATE;
 }
 
-// [SL] Reimplement std::isspace
-static int _isspace(int c)
-{
-	return (c == ' ' || c == '\n' || c == '\t' || c == '\v' || c == '\f' || c == '\r');
-}
-
 // Trim whitespace from the start of a string
 std::string &TrimStringStart(std::string &s)
 {
-	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not_fn( _isspace )));
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char c) { return !std::isspace(c); }));
 	return s;
 }
 
 // Trim whitespace from the end of a string
 std::string &TrimStringEnd(std::string &s)
 {
-	s.erase(std::find_if(s.rbegin(), s.rend(), std::not_fn( _isspace )).base(), s.end());
+	s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char c) { return !std::isspace(c); }).base(), s.end());
 	return s;
 }
 
@@ -522,6 +517,34 @@ std::string &TrimStringEnd(std::string &s)
 std::string &TrimString(std::string &s)
 {
 	return TrimStringStart(TrimStringEnd(s));
+}
+
+// Trim whitespace from the start of a string_view
+std::string_view TrimStringViewStart(std::string_view str)
+{
+	const auto it = std::find_if(str.begin(), str.end(), [](unsigned char c){
+		return !std::isspace(c);
+	});
+
+    str.remove_prefix(std::distance(str.begin(), it));
+    return str;
+}
+
+// Trim whitespace from the end of a string_view
+std::string_view TrimStringViewEnd(std::string_view str)
+{
+	const auto it = std::find_if(str.rbegin(), str.rend(), [](unsigned char c){
+		return !std::isspace(c);
+	});
+
+    str.remove_suffix(std::distance(str.rbegin(), it));
+    return str;
+}
+
+// Trim whitespace from the start and end of a string
+std::string_view TrimStringView(std::string_view str)
+{
+	return TrimStringViewStart(TrimStringViewEnd(str));
 }
 
 // Ensure that a string only has valid viewable ASCII in it.
