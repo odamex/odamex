@@ -163,26 +163,6 @@ void I_BaseError(const std::string& errortext)
 	}
 }
 
-void I_SetTitleString (const char *title) { return; }
-
-void I_PrintStr (int xp, const char *cp, int count, bool scroll)
-{
-        char string[4096];
-
-        memcpy (string, cp, count);
-        if (scroll)
-                string[count++] = '\n';
-        string[count] = 0;
-
-        fputs (string, stdout);
-        fflush (stdout);
-}
-
-long I_FindFirst (char *filespec, findstate_t *fileinfo) { return 0; }
-int I_FindNext (long handle, findstate_t *fileinfo) { return 0; }
-int I_FindClose (long handle) { return 0; }
-int I_FindAttr (findstate_t *fileinfo) { return 0; }
-
 std::string I_ConsoleInput (void) { return ""; }
 
 VERSION_CONTROL (i_system_cpp, "$Id$")

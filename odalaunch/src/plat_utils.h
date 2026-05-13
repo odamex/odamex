@@ -37,6 +37,7 @@
 
 // All
 wxString OdaGetInstallDir();
+wxString OdaGetDataDir();
 
 // Windows
 void OdaMswFixTitlebarIcon(WXWidget Handle, wxIcon MainIcon);
