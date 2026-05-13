@@ -681,10 +681,17 @@ void dlgMain::OnManualConnect(wxCommandEvent& event)
 		}
 	}
 
-	wxString OdamexDirectory;
-	ConfigInfo.Read(ODAMEX_DIRECTORY, &OdamexDirectory, OdaGetInstallDir());
 
-	LaunchGame(ted_result, OdamexDirectory, ped_result);
+	wxString OdamexDirectory, DelimWadPaths;
+
+	{
+		ConfigInfo.Read(ODAMEX_DIRECTORY, &OdamexDirectory,
+		                OdaGetInstallDir());
+
+		ConfigInfo.Read(DELIMWADPATHS, &DelimWadPaths, OdaGetDataDir());
+	}
+
+	LaunchGame(ted_result, OdamexDirectory, DelimWadPaths, ped_result);
 }
 
 // Various timers
@@ -1245,15 +1252,17 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent& event)
 // Quick-Launch button click
 void dlgMain::OnQuickLaunch(wxCommandEvent& event)
 {
-	wxString OdamexDirectory;
+	wxString OdamexDirectory, DelimWadPaths;
 
 	{
 		wxFileConfig ConfigInfo;
 
-		ConfigInfo.Read(ODAMEX_DIRECTORY, &OdamexDirectory, OdaGetInstallDir());
+		ConfigInfo.Read(ODAMEX_DIRECTORY, &OdamexDirectory,
+		                OdaGetInstallDir());
+		ConfigInfo.Read(DELIMWADPATHS, &DelimWadPaths, OdaGetDataDir());
 	}
 
-	LaunchGame("", OdamexDirectory);
+	LaunchGame("", OdamexDirectory, DelimWadPaths);
 
 }
 
@@ -1318,17 +1327,18 @@ void dlgMain::OnLaunch(wxCommandEvent& event)
 		}
 	}
 
-	wxString OdamexDirectory;
+	wxString OdamexDirectory, DelimWadPaths;
 
 	{
 		wxFileConfig ConfigInfo;
 
 		ConfigInfo.Read(ODAMEX_DIRECTORY, &OdamexDirectory,
 		                OdaGetInstallDir());
+		ConfigInfo.Read(DELIMWADPATHS, &DelimWadPaths, OdaGetDataDir());
 	}
 
 	LaunchGame(stdstr_towxstr(QServer[i].GetAddress()), OdamexDirectory,
-	           Password);
+	           DelimWadPaths, Password);
 }
 
 // Update program state and get a new list of servers
@@ -1443,7 +1453,7 @@ void dlgMain::OnServerListClick(wxListEvent& event)
 }
 
 void dlgMain::LaunchGame(const wxString& Address, const wxString& ODX_Path,
-                         const wxString& Password)
+                         const wxString& waddirs, const wxString& Password)
 {
 	wxFileConfig ConfigInfo;
 
@@ -1484,6 +1494,13 @@ void dlgMain::LaunchGame(const wxString& Address, const wxString& ODX_Path,
 	{
 		CmdLine += " ";
 		CmdLine += Password;
+	}
+
+	if(!waddirs.IsEmpty())
+	{
+		CmdLine += " -waddir \"";
+		CmdLine += waddirs;
+		CmdLine += "\"";
 	}
 
 	// Check for any user command line arguments
