@@ -77,17 +77,17 @@ namespace
 	// ------------------------------------------------
 
 	/// Returns true if any non-zero deltas were produced.
-	template <typename ElementType, size_t N>
-	void FillDeltaArray(std::array<ElementType, N>&         o_delta,
+	template <typename DeltaElementType, typename ElementType, size_t N>
+	void FillDeltaArray(std::array<DeltaElementType, N>&    o_delta,
 	                    const std::array<ElementType, N>&   i_lhs,
 	                    const std::array<ElementType, N>&   i_rhs)
 	{
 		// Don't compile if the array can't store negative values!
-		static_assert(std::is_signed<ElementType>() == true);
+		static_assert(std::is_signed<DeltaElementType>() == true);
 
 		for (size_t i = 0; i < o_delta.size(); ++i)
 		{
-			o_delta[i] = i_lhs[i] - i_rhs[i];
+			o_delta[i] = static_cast<DeltaElementType>(i_lhs[i]) - static_cast<DeltaElementType>(i_rhs[i]);
 		}
 	}
 
@@ -123,17 +123,27 @@ void PlayerStateRoller::Roll(int i_oldTic, Callable&& i_callable)
 		auto rollingIter = m_history.find(rollingTic);
 		//assert(rollingIter != m_history.end());
 
-		i_callable(rollingIter);
+		i_callable(rollingIter->second);
 	}
+	i_callable(m_currentState);
 }
 
 void PlayerStateRoller::ApplyMostRecentToPlayer(player_t& io_player)
 {
-	auto mostRecentIter = m_history.find(m_mostRecentTic);
-	//assert(mostRecentIter != m_history.end());
-
-	mostRecentIter->second.ToPlayer(io_player);
+	m_currentState.ToPlayer(io_player);
 }
+
+std::optional<PlayerStateRoller::HistoryTableType::iterator> PlayerStateRoller::ObtainHistory(int i_oldTic, const player_t& i_player)
+{
+    auto historyIter = m_history.find(i_oldTic);
+    if (historyIter != m_history.end())
+    {
+        m_currentState.FromPlayer(i_player);
+        return historyIter;
+    }
+    return {};
+}
+
 
 bool PlayerStateRoller::RollbackAmmo(HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>& i_ammo)
 {
@@ -142,9 +152,9 @@ bool PlayerStateRoller::RollbackAmmo(HistoryTableType::iterator i_historyIter, c
 
 	if (RequiresCorrection(ammoDelta))
 	{
-		Roll(i_historyIter->first, [&ammoDelta](auto& rollingIter)
+		Roll(i_historyIter->first, [&ammoDelta](auto& rollingState)
 			{
-				ApplyDeltaArray(rollingIter->second.ammo, ammoDelta);
+				ApplyDeltaArray(rollingState.ammo, ammoDelta);
 			});
 		return true;
 	}
@@ -158,13 +168,13 @@ bool PlayerStateRoller::RollbackMaxAmmo(HistoryTableType::iterator i_historyIter
 
 	if (RequiresCorrection(deltaMaxAmmo))
 	{
-		Roll(i_historyIter->first, [&i_maxAmmo] (auto& rollingIter)
+		Roll(i_historyIter->first, [&i_maxAmmo] (auto& rollingState)
 			{
 				// Please note that we don't apply the delta across the history of maxammo.
 				// The reason for that is if we have, say, an off-by-one tic prediction of
 				// a pickup that affects maxammo, we don't want to wind up with a double-
 				// value maxammo.
-				rollingIter->second.maxammo = i_maxAmmo;
+				rollingState.maxammo = i_maxAmmo;
 			});
 		return true;
 	}
@@ -175,9 +185,9 @@ bool PlayerStateRoller::RollbackWeaponOwned(HistoryTableType::iterator i_history
 {
 	if (i_historyIter->second.weaponowned != i_weaponOwned)
 	{
-		Roll(i_historyIter->first, [&i_weaponOwned](auto& rollingIter)
+		Roll(i_historyIter->first, [&i_weaponOwned](auto& rollingState)
 			{
-				rollingIter->second.weaponowned = i_weaponOwned;
+				rollingState.weaponowned = i_weaponOwned;
 			});
 		return true;
 	}
@@ -189,10 +199,10 @@ bool PlayerStateRoller::RollbackWeaponSelection(HistoryTableType::iterator i_his
 	if (   i_historyIter->second.readyweapon   != i_readyWeapon
 	    or i_historyIter->second.pendingweapon != i_pendingWeapon)
 	{
-		Roll(i_historyIter->first, [i_readyWeapon, i_pendingWeapon](auto& rollingIter)
+		Roll(i_historyIter->first, [i_readyWeapon, i_pendingWeapon](auto& rollingState)
 			{
-				rollingIter->second.readyweapon   = i_readyWeapon;
-				rollingIter->second.pendingweapon = i_pendingWeapon;
+				rollingState.readyweapon   = i_readyWeapon;
+				rollingState.pendingweapon = i_pendingWeapon;
 			});
 		return true;
 	}
@@ -206,24 +216,139 @@ bool PlayerStateRoller::RollbackPowers(HistoryTableType::iterator i_historyIter,
 
 	if (RequiresCorrection(powersDelta))
 	{
-		Roll(i_historyIter->first, [&powersDelta, &i_powers] (auto& rollingIter)
+		Roll(i_historyIter->first, [&powersDelta, &i_powers] (auto& rollingState)
 			{
 			    // Powers are a sequence of counters (except for pw_allmap), so a delta roll is appropriate, with
 			    // a simple assignment of pw_allmap.
-			    ApplyDeltaArray(rollingIter->second.powers, powersDelta);
+			    ApplyDeltaArray(rollingState.powers, powersDelta);
 
-			    rollingIter->second.powers[pw_allmap] = i_powers[pw_allmap];
+			    rollingState.powers[pw_allmap] = i_powers[pw_allmap];
 			});
 		return true;
 	}
 	return false;
 }
 
+bool PlayerStateRoller::RollbackHealth(HistoryTableType::iterator i_historyIter, const int i_health)
+{
+    if (const int healthDelta = i_health - i_historyIter->second.health)
+    {
+        Roll(i_historyIter->first, [& healthDelta] (auto& rollingState)
+        {
+            rollingState.health += healthDelta;
+        });
+        return true;
+    }
+    return false;
+}
+
+bool PlayerStateRoller::RollbackArmorpoints(HistoryTableType::iterator i_historyIter, const int i_armorpoints)
+{
+    if (const int armorpointsDelta = i_armorpoints - i_historyIter->second.armorpoints)
+    {
+        Roll(i_historyIter->first, [& armorpointsDelta] (auto& rollingState)
+        {
+            rollingState.armorpoints += armorpointsDelta;
+        });
+        return true;
+    }
+    return false;
+}
+
+bool PlayerStateRoller::RollbackArmortype(HistoryTableType::iterator i_historyIter, const int i_armortype)
+{
+    if (const int armortypeDelta = i_armortype - i_historyIter->second.armortype)
+    {
+        Roll(i_historyIter->first, [& armortypeDelta] (auto& rollingState)
+        {
+            rollingState.armortype += armortypeDelta;
+        });
+        return true;
+    }
+    return false;
+}
+
+bool PlayerStateRoller::RollbackLives(HistoryTableType::iterator i_historyIter, const int i_lives)
+{
+    if (const int livesDelta = i_lives - i_historyIter->second.lives)
+    {
+        Roll(i_historyIter->first, [& livesDelta] (auto& rollingState)
+        {
+            rollingState.lives += livesDelta;
+        });
+        return true;
+    }
+    return false;
+}
+
+bool PlayerStateRoller::RollbackBackpack(HistoryTableType::iterator i_historyIter, const bool i_backpack)
+{
+    if (const int backpackDelta = int(i_backpack) - int(i_historyIter->second.backpack))
+    {
+        Roll(i_historyIter->first, [& backpackDelta] (auto& rollingState)
+        {
+            rollingState.backpack = bool(int(rollingState.backpack) + backpackDelta);
+        });
+        return true;
+    }
+    return false;
+}
+
+bool PlayerStateRoller::RollbackCards(HistoryTableType::iterator i_historyIter, const std::array<bool, NUMCARDS>& i_cards)
+{
+	std::array<int, NUMCARDS> cardsDelta;
+	FillDeltaArray(cardsDelta, i_cards, i_historyIter->second.cards);
+    if (RequiresCorrection(cardsDelta))
+    {
+        Roll(i_historyIter->first, [&cardsDelta](auto& rollingState)
+        {
+            for (size_t i = 0; i < cardsDelta.size(); ++i)
+            {
+                rollingState.cards[i] = bool(int(rollingState.cards[i]) + cardsDelta[i]);
+            }
+        });
+        return true;
+    }
+    return false;
+}
+
+bool PlayerStateRoller::RollbackCheats(HistoryTableType::iterator i_historyIter, const uint32_t i_cheats)
+{
+    if (i_historyIter->second.cheats != i_cheats)
+    {
+        // Note - it's important that the delta be signed!  We may need to remove a value.
+        std::array<int, sizeof(i_cheats) * 8> deltaCheats;
+        for (size_t i = 0; i < deltaCheats.size(); ++i)
+        {
+            deltaCheats[i] = int((i_cheats >> i) & 0x1) - int((i_historyIter->second.cheats >> i) & 0x1);
+        }
+
+        Roll(i_historyIter->first, [& deltaCheats] (auto& rollingState)
+        {
+            for (size_t i = 0; i < deltaCheats.size(); ++i)
+            {
+                const bool correctedCheatValue = bool(int((rollingState.cheats >> i) & 0x1) + deltaCheats[i]);
+                if (correctedCheatValue)
+                {
+                    rollingState.cheats |= (1 << i);
+                }
+                else
+                {
+                    rollingState.cheats &= ~(1 << i);
+                }
+            }
+        });
+
+        return true;
+    }
+
+    return false;
+}
 
 bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo, player_t& io_player)
 {
-	auto historyIter = m_history.find(i_oldTic);
-	if (historyIter != m_history.end() and RollbackAmmo(historyIter, i_ammo))
+	auto historyIter = ObtainHistory(i_oldTic, io_player);
+	if (historyIter and RollbackAmmo(*historyIter, i_ammo))
 	{
 		ApplyMostRecentToPlayer(io_player);
 		return true;
@@ -233,8 +358,8 @@ bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>
 
 bool PlayerStateRoller::ResolveMaxAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_maxAmmo, player_t& io_player)
 {
-	auto historyIter = m_history.find(i_oldTic);
-	if (historyIter != m_history.end() and RollbackMaxAmmo(historyIter, i_maxAmmo))
+	auto historyIter = ObtainHistory(i_oldTic, io_player);
+	if (historyIter and RollbackMaxAmmo(*historyIter, i_maxAmmo))
 	{
 		ApplyMostRecentToPlayer(io_player);
 		return true;
@@ -244,8 +369,8 @@ bool PlayerStateRoller::ResolveMaxAmmo(int i_oldTic, const std::array<int, NUMAM
 
 bool PlayerStateRoller::ResolveWeaponOwned(int i_oldTic, const std::array<bool, NUMWEAPONS>& i_weaponOwned, player_t& io_player)
 {
-	auto historyIter = m_history.find(i_oldTic);
-	if (historyIter != m_history.end() and RollbackWeaponOwned(historyIter, i_weaponOwned))
+	auto historyIter = ObtainHistory(i_oldTic, io_player);
+	if (historyIter and RollbackWeaponOwned(*historyIter, i_weaponOwned))
 	{
 		ApplyMostRecentToPlayer(io_player);
 		return true;
@@ -255,8 +380,8 @@ bool PlayerStateRoller::ResolveWeaponOwned(int i_oldTic, const std::array<bool, 
 
 bool PlayerStateRoller::ResolveWeaponSelection(int i_oldTic, const weapontype_t i_readyWeapon, const weapontype_t i_pendingWeapon, player_t& io_player)
 {
-	auto historyIter = m_history.find(i_oldTic);
-	if (historyIter != m_history.end() and RollbackWeaponSelection(historyIter, i_readyWeapon, i_pendingWeapon))
+	auto historyIter = ObtainHistory(i_oldTic, io_player);
+	if (historyIter and RollbackWeaponSelection(*historyIter, i_readyWeapon, i_pendingWeapon))
 	{
 		ApplyMostRecentToPlayer(io_player);
 		return true;
@@ -266,8 +391,8 @@ bool PlayerStateRoller::ResolveWeaponSelection(int i_oldTic, const weapontype_t 
 
 bool PlayerStateRoller::ResolvePowers(int i_oldTic, const std::array<int, NUMPOWERS>& i_powers, player_t& io_player)
 {
-	auto historyIter = m_history.find(i_oldTic);
-	if (historyIter != m_history.end() and RollbackPowers(historyIter, i_powers))
+	auto historyIter = ObtainHistory(i_oldTic, io_player);
+	if (historyIter and RollbackPowers(*historyIter, i_powers))
 	{
 		ApplyMostRecentToPlayer(io_player);
 		return true;
@@ -299,31 +424,39 @@ bool PlayerStateRoller::RollbackPsprites(HistoryTableType::iterator i_historyIte
 			PspriteStateType rollingPsprite           {i_psprites[pspriteNum]};
 			PspriteStateType passiveHistoricalPsprite {i_historyIter->second.psprites[pspriteNum]};
 
+			auto roller = [pspriteNum, &rollingPsprite, &passiveHistoricalPsprite] (PlayerItemDataType& rollingState) -> bool
+			{
+				if (rollingState.psprites[pspriteNum] != passiveHistoricalPsprite)
+				{
+					// Something unexpected happened in history!  break now, the roll forward can't complete.
+					return false;
+				}
+				if (rollingState.psprites[pspriteNum] == rollingPsprite)
+				{
+					// Did we somehow converge back up with history?  Stop rolling.
+					return false;
+				}
+				rollingState.psprites[pspriteNum] = rollingPsprite;
+				passiveHistoricalPsprite          = passiveHistoricalPsprite.Next();
+				rollingPsprite                    = rollingPsprite.Next();
+				return true;
+			};
+
 			int rollingTic = i_historyIter->first;
 			for (; rollingTic <= m_mostRecentTic; ++rollingTic)
 			{
 				auto historyIter = m_history.find(rollingTic);
-
-				if (historyIter->second.psprites[pspriteNum] != passiveHistoricalPsprite)
+                if (not roller(historyIter->second))
 				{
-					// Something unexpected happened in history!  break now, the roll forward can't complete.
 					break;
 				}
-				if (historyIter->second.psprites[pspriteNum] == rollingPsprite)
-				{
-					// Did we somehow converge back up with history?  Stop rolling.
-					break;
-				}
-				historyIter->second.psprites[pspriteNum]    = rollingPsprite;
-				passiveHistoricalPsprite                    = passiveHistoricalPsprite.Next();
-				rollingPsprite                              = rollingPsprite.Next();
 			}
 
-			// Got all the way to the end with a changed state!
-			// Essentially OR the success result.
+			// Got all the way to the end of history with a changed state!
+			// Roll over the current state and essentially OR the success result.
 			if (rollingTic > m_mostRecentTic)
 			{
-				result = true;
+				result = roller(m_currentState);
 			}
 		}
 	}
@@ -332,8 +465,8 @@ bool PlayerStateRoller::RollbackPsprites(HistoryTableType::iterator i_historyIte
 
 bool PlayerStateRoller::ResolvePsprites(int i_oldTic, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites, player_t& io_player)
 {
-	auto historyIter = m_history.find(i_oldTic);
-	if (historyIter != m_history.end() and RollbackPsprites(historyIter, i_psprites))
+	auto historyIter = ObtainHistory(i_oldTic, io_player);
+	if (historyIter and RollbackPsprites(*historyIter, i_psprites))
 	{
 		ApplyMostRecentToPlayer(io_player);
 		return true;
@@ -364,8 +497,8 @@ RollerResolveEnum PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataT
 		return RollerResolveEnum::CURRENT_STATE_CHANGED;
 	}
 
-	auto historyIter = m_history.find(i_oldTic);
-	if (historyIter != m_history.end())
+	auto historyIter = ObtainHistory(i_oldTic, io_player);
+	if (historyIter)
 	{
 		// Ammo and maxammo are up first.  Because it's very possible for ammo quantities to have
 		// continued changing in the time between now and the moment that we triggered the inventory
@@ -376,53 +509,40 @@ RollerResolveEnum PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataT
 		// shots since I had a desync, those shots remain fired and the ammo count ultimately
 		// still reflects those shots, just from a corrected starting point.
 
-		const bool ammoRequiredRoll             = RollbackAmmo           (historyIter, i_itemData.ammo);
-		const bool maxammoRequiredRoll          = RollbackMaxAmmo        (historyIter, i_itemData.maxammo);
-		const bool weaponOwnedRequiredRoll      = RollbackWeaponOwned    (historyIter, i_itemData.weaponowned);
-		const bool weaponSelectionRequiredRoll  = RollbackWeaponSelection(historyIter, i_itemData.readyweapon, i_itemData.pendingweapon);
-		const bool powersRequiredRoll           = RollbackPowers         (historyIter, i_itemData.powers);
-		const bool pspritesRequiredRoll         = RollbackPsprites       (historyIter, i_itemData.psprites);
+		const bool ammoRequiredRoll             = RollbackAmmo           (*historyIter, i_itemData.ammo);
+		const bool maxammoRequiredRoll          = RollbackMaxAmmo        (*historyIter, i_itemData.maxammo);
+		const bool weaponOwnedRequiredRoll      = RollbackWeaponOwned    (*historyIter, i_itemData.weaponowned);
+		const bool weaponSelectionRequiredRoll  = RollbackWeaponSelection(*historyIter, i_itemData.readyweapon, i_itemData.pendingweapon);
+		const bool powersRequiredRoll           = RollbackPowers         (*historyIter, i_itemData.powers);
+		const bool pspritesRequiredRoll         = RollbackPsprites       (*historyIter, i_itemData.psprites);
+
+		const bool healthRequiredRoll       = RollbackHealth        (*historyIter, i_itemData.health);
+		const bool armorpointsRequiredRoll  = RollbackArmorpoints   (*historyIter, i_itemData.armorpoints);
+		const bool armortypeRequiredRoll    = RollbackArmortype     (*historyIter, i_itemData.armortype);
+		const bool livesRequiredRoll        = RollbackLives         (*historyIter, i_itemData.lives);
+		const bool backpackRequiredRoll     = RollbackBackpack      (*historyIter, i_itemData.backpack);
+		const bool cardsRequiredRoll        = RollbackCards         (*historyIter, i_itemData.cards);
+		const bool cheatsRequiredRoll       = RollbackCheats        (*historyIter, i_itemData.cheats);
 
 		const bool historyWasChanged = ammoRequiredRoll or
 		                               maxammoRequiredRoll or
 		                               weaponOwnedRequiredRoll or
 		                               weaponSelectionRequiredRoll or
 		                               powersRequiredRoll or
-		                               pspritesRequiredRoll;
+		                               pspritesRequiredRoll or
+		                               healthRequiredRoll or
+		                               armorpointsRequiredRoll or
+		                               armortypeRequiredRoll or
+		                               livesRequiredRoll or
+		                               backpackRequiredRoll or
+		                               cardsRequiredRoll or
+		                               cheatsRequiredRoll;
 
-		// Now cover the fields that we don't actually rollback, just apply because the server dictates so.
-		auto mostRecentIter = m_history.find(m_mostRecentTic);
-		//assert(mostRecentIter != m_history.end());
-
-		const bool healthUpdated        = Update(mostRecentIter->second.health,     i_itemData.health);
-		const bool armorpointsUpdated   = Update(mostRecentIter->second.armorpoints,i_itemData.armorpoints);
-		const bool armortypeUpdated     = Update(mostRecentIter->second.armortype,  i_itemData.armortype);
-		const bool livesUpdated         = Update(mostRecentIter->second.lives,      i_itemData.lives);
-		const bool cardsUpdated         = Update(mostRecentIter->second.cards,      i_itemData.cards);
-		const bool backpackUpdated      = Update(mostRecentIter->second.backpack,   i_itemData.backpack);
-		const bool cheatsUpdated        = Update(mostRecentIter->second.cheats,     i_itemData.cheats);
-
-		const bool immediateStateWasUpdated = healthUpdated or
-		                                      armorpointsUpdated or
-		                                      armortypeUpdated or
-		                                      livesUpdated or
-		                                      cardsUpdated or
-		                                      backpackUpdated or
-		                                      cheatsUpdated;
-
-		if (historyWasChanged or immediateStateWasUpdated)
+		if (historyWasChanged)
 		{
-			mostRecentIter->second.ToPlayer(io_player);
+			m_currentState.ToPlayer(io_player);
 
-			if (historyWasChanged)
-			{
-				if (immediateStateWasUpdated)
-				{
-					return RollerResolveEnum::HISTORY_AND_CURRENT_STATE_CHANGED;
-				}
-				return RollerResolveEnum::HISTORY_CHANGED;
-			}
-			return RollerResolveEnum::CURRENT_STATE_CHANGED;
+			return RollerResolveEnum::HISTORY_CHANGED;
 		}
 		return RollerResolveEnum::NO_CHANGE;
 	}
