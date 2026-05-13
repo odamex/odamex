@@ -3274,10 +3274,10 @@ static void RecordProto(const svc_t header, google::protobuf::Message* msg)
 {
 	static int protostic;
 
-	if (protostic != ::level.time)
+	if (protostic != last_received)
 	{
 		::protos.clear();
-		protostic = ::level.time;
+		protostic = last_received;
 	}
 
 	Proto proto;
