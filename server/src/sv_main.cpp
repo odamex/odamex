@@ -1438,51 +1438,6 @@ bool SV_IsTeammate(player_t &a, player_t &b)
 // ---------------
 //
 
-namespace
-{
-    struct IdentityHash
-    {
-        size_t operator()(const AwarenessEnum& value) const { return static_cast<size_t>(value); }
-    };
-
-#if 0
-    // Awareness-based spawns are allowed only when transitioning out of NOT_AWARE into anything greater than BARELY_AWARE.
-    bool spawnIsAllowed [int(AwarenessEnum::AWARENESS_LEVEL_COUNT)][int(AwarenessEnum::AWARENESS_LEVEL_COUNT)] = {
-        // From NOT_AWARE to:   NOT_AWARE       ALWAYS_AWARE    FULLY_AWARE     SEMI_AWARE      BARELY_AWARE
-        {                       false,          true,           true,           true,           false,          },
-        // From ALWAYS_AWARE to:NOT_AWARE       ALWAYS_AWARE    FULLY_AWARE     SEMI_AWARE      BARELY_AWARE
-        {                       false,          false,          false,          false,          false,          },
-        // From ALWAYS_AWARE to:NOT_AWARE       ALWAYS_AWARE    FULLY_AWARE     SEMI_AWARE      BARELY_AWARE
-        {                       false,          false,          false,          false,          false,          },
-        // From ALWAYS_AWARE to:NOT_AWARE       ALWAYS_AWARE    FULLY_AWARE     SEMI_AWARE      BARELY_AWARE
-        {                       false,          false,          false,          false,          false,          },
-        // From ALWAYS_AWARE to:NOT_AWARE       ALWAYS_AWARE    FULLY_AWARE     SEMI_AWARE      BARELY_AWARE
-        {                       false,          false,          false,          false,          false,          },
-    };
-#endif
-
-#if 1
-
-std::unordered_map<AwarenessEnum, std::unordered_set<AwarenessEnum, IdentityHash>, IdentityHash> transitionIsAllowed {
-    // from
-    { AwarenessEnum::NOT_AWARE,    {                           AwarenessEnum::ALWAYS_AWARE, AwarenessEnum::FULLY_AWARE, AwarenessEnum::SEMI_AWARE,                            } },
-    { AwarenessEnum::ALWAYS_AWARE, { } },
-    { AwarenessEnum::FULLY_AWARE,  { AwarenessEnum::NOT_AWARE, AwarenessEnum::ALWAYS_AWARE,                             AwarenessEnum::SEMI_AWARE, AwarenessEnum::BARELY_AWARE} },
-    { AwarenessEnum::SEMI_AWARE,   { AwarenessEnum::NOT_AWARE, AwarenessEnum::ALWAYS_AWARE, AwarenessEnum::FULLY_AWARE,                            AwarenessEnum::BARELY_AWARE} },
-    { AwarenessEnum::BARELY_AWARE, { AwarenessEnum::NOT_AWARE, AwarenessEnum::ALWAYS_AWARE, AwarenessEnum::FULLY_AWARE, AwarenessEnum::SEMI_AWARE,                            } },
-};
-
-std::unordered_map<AwarenessEnum, std::unordered_set<AwarenessEnum, IdentityHash>, IdentityHash> spawnIsAllowed {
-    // from
-    { AwarenessEnum::NOT_AWARE,    { AwarenessEnum::SEMI_AWARE, AwarenessEnum::FULLY_AWARE, AwarenessEnum::ALWAYS_AWARE } },
-    { AwarenessEnum::ALWAYS_AWARE, { } },
-    { AwarenessEnum::FULLY_AWARE,  { } },
-    { AwarenessEnum::SEMI_AWARE,   { } },
-    { AwarenessEnum::BARELY_AWARE, { } },
-    };
-}
-#endif
-
 bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLevel)
 {
     const AwarenessEnum previousAwareness = mo->playersAware.Get(player.id);
@@ -1502,10 +1457,6 @@ bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLeve
     }
 
     if (previousAwareness == AwarenessEnum::NOT_AWARE)
-    //if (spawnIsAllowed[previousAwareness].contains(awarenessLevel))
-//    if (spawnIsAllowed[previousAwareness][awarenessLevel])
-//    if (previousAwareness == AwarenessEnum::NOT_AWARE and
-//        awarenessLevel    != AwarenessEnum::BARELY_AWARE)
     {
 		if (mo->type == MT_AVATAR)
 		{
