@@ -2200,7 +2200,7 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z)
 		// [SL] 2012-10-02 - Allow a client to predict their own bullet puffs
 		// so don't send the puffs to the client already predicting
 		if (shootthing && shootthing->player && shootthing->player->userinfo.predict_weapons)
-			puff->playersAware.Set(shootthing->player->id, AwarenessEnum::FULLY_AWARE);
+			puff->playersAware.Set(shootthing->player->id, AwarenessEnum::FULLY_AWARE); // Short-circuit the spawn message.
 
 		SV_SpawnMobj(puff);
 	}
@@ -2306,7 +2306,14 @@ bool P_CheckMissileSpawn (AActor* th, AActor* parent)
 	// instead of queueing it, then explode it.
 	for (auto& player : players)
 	{
-		SV_AwarenessUpdate(player, th, parent ? parent->playersAware.Get(player.id) : AwarenessEnum::FULLY_AWARE);
+		// Inherit the parent's base awareness level, unless the client is only barely aware of the parent.
+		// In that case, we just let it default to NOT_AWARE and let the throttling algorithm update the
+		// player's awareness naturally.
+		const AwarenessEnum baseAwareness = parent ? parent->playersAware.Get(player.id) : AwarenessEnum::FULLY_AWARE;
+		if (baseAwareness != AwarenessEnum::BARELY_AWARE)
+		{
+			SV_AwarenessUpdate(player, th, baseAwareness);
+		}
 	}
 
 	if (!P_TryMove (th, th->x, th->y, false))

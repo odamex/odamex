@@ -1445,15 +1445,33 @@ namespace
         size_t operator()(const AwarenessEnum& value) const { return static_cast<size_t>(value); }
     };
 
+#if 0
+    // Awareness-based spawns are allowed only when transitioning out of NOT_AWARE into anything greater than BARELY_AWARE.
+    bool spawnIsAllowed [int(AwarenessEnum::AWARENESS_LEVEL_COUNT)][int(AwarenessEnum::AWARENESS_LEVEL_COUNT)] = {
+        // From NOT_AWARE to:   NOT_AWARE       ALWAYS_AWARE    FULLY_AWARE     SEMI_AWARE      BARELY_AWARE
+        {                       false,          true,           true,           true,           false,          },
+        // From ALWAYS_AWARE to:NOT_AWARE       ALWAYS_AWARE    FULLY_AWARE     SEMI_AWARE      BARELY_AWARE
+        {                       false,          false,          false,          false,          false,          },
+        // From ALWAYS_AWARE to:NOT_AWARE       ALWAYS_AWARE    FULLY_AWARE     SEMI_AWARE      BARELY_AWARE
+        {                       false,          false,          false,          false,          false,          },
+        // From ALWAYS_AWARE to:NOT_AWARE       ALWAYS_AWARE    FULLY_AWARE     SEMI_AWARE      BARELY_AWARE
+        {                       false,          false,          false,          false,          false,          },
+        // From ALWAYS_AWARE to:NOT_AWARE       ALWAYS_AWARE    FULLY_AWARE     SEMI_AWARE      BARELY_AWARE
+        {                       false,          false,          false,          false,          false,          },
+    };
+#endif
+
+#if 1
 std::unordered_map<AwarenessEnum, std::unordered_set<AwarenessEnum, IdentityHash>, IdentityHash> spawnIsAllowed {
     // from
     { AwarenessEnum::NOT_AWARE,    { AwarenessEnum::SEMI_AWARE, AwarenessEnum::FULLY_AWARE, AwarenessEnum::ALWAYS_AWARE } },
     { AwarenessEnum::ALWAYS_AWARE, { } },
     { AwarenessEnum::FULLY_AWARE,  { } },
     { AwarenessEnum::SEMI_AWARE,   { } },
-    { AwarenessEnum::BARELY_AWARE, { AwarenessEnum::SEMI_AWARE, AwarenessEnum::FULLY_AWARE, AwarenessEnum::ALWAYS_AWARE } },
+    { AwarenessEnum::BARELY_AWARE, { } },
     };
 }
+#endif
 
 bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLevel)
 {
@@ -1473,6 +1491,9 @@ bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLeve
     }
 
     if (spawnIsAllowed[previousAwareness].contains(awarenessLevel))
+//    if (spawnIsAllowed[previousAwareness][awarenessLevel])
+//    if (previousAwareness == AwarenessEnum::NOT_AWARE and
+//        awarenessLevel    != AwarenessEnum::BARELY_AWARE)
     {
 		if (mo->type == MT_AVATAR)
 		{
@@ -3404,7 +3425,7 @@ struct SortedMobjPartitionsType
     std::vector<player_t::ActorDistanceType>::iterator innerBoundary;
 };
 
-static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player)
+static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player, int partitionPOTFactor)
 {
 	// Put in a static assert for assurance that the vector-of-pointers clear() will
 	// actually be constant-time.
@@ -3468,9 +3489,14 @@ static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player)
 	}
 	auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1.distance < mo2.distance; };
 
+    // Do the division of size using shifts for now...  We can go back to real division if we need
+    // the precision.
+    const int outerShiftAmount = std::max(1, partitionPOTFactor);
+    const int innerShiftAmount = outerShiftAmount + 1;
+
     SortedMobjPartitionsType partitions;
-    partitions.outerBoundary = player.sortedMobjs.begin() + player.sortedMobjs.size()/2;
-    partitions.innerBoundary = player.sortedMobjs.begin() + player.sortedMobjs.size()/4;
+    partitions.outerBoundary = player.sortedMobjs.begin() + (player.sortedMobjs.size() >> outerShiftAmount);
+    partitions.innerBoundary = player.sortedMobjs.begin() + (player.sortedMobjs.size() >> innerShiftAmount);
 
 	std::nth_element(player.sortedMobjs.begin(), partitions.outerBoundary, player.sortedMobjs.end(), distanceCompare);
 	std::nth_element(player.sortedMobjs.begin(), partitions.innerBoundary, partitions.outerBoundary, distanceCompare);
@@ -3546,8 +3572,10 @@ void SV_WriteCommandsForPlayer(player_t& player)
 
 	SV_UpdateConsolePlayer(player);
 
+	const bool throttleIsActive = player.client.messenger.GetReliableOverloadCount() > 1;
+
 	const size_t previousSortedMobjCount = player.sortedMobjs.size();
-	const auto sortedMobjPartitions = SV_SortMobjsForPlayer(player);
+	const auto sortedMobjPartitions = SV_SortMobjsForPlayer(player, player.client.messenger.GetReliableOverloadCount());
 
 	// We ultimately temporarily allow up to an additional MAX while tic-to-tic new Mobjs exceed MAX.
 	// Combined with the high-priority to_spawn queue being directly limited in SV_UpdateHiddenMobj,
@@ -3559,6 +3587,9 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	const int maxForThisTic = MAX_HIDDEN_MOBJ_UPDATES + temporaryGrowthBonus;
 
 	int hiddenUpdateCount = 0;
+
+	//SV_PlayerPrintFmt(PRINT_HIGH, player.id, "pct reliable: {}\n", double(player.client.messenger.GetLastReliableSendSize()) / double(player.client.messenger.GetTicBudget()) * 100.0);
+	SV_PlayerPrintFmt(PRINT_HIGH, player.id, "reliable overload count: {}\n", player.client.messenger.GetReliableOverloadCount());
 
 	// The following code is commented out pending the implementation of a real Mobj throttle.
 
@@ -3579,9 +3610,10 @@ void SV_WriteCommandsForPlayer(player_t& player)
 //            }
 		if (hiddenUpdateCount <= maxForThisTic)
 		{
-            const AwarenessEnum appropriateAwareness = sortedMobjIter < sortedMobjPartitions.innerBoundary ? AwarenessEnum::FULLY_AWARE :
-                                                       sortedMobjIter < sortedMobjPartitions.outerBoundary ? AwarenessEnum::SEMI_AWARE  :
-                                                                                                             AwarenessEnum::BARELY_AWARE;
+            const AwarenessEnum appropriateAwareness = throttleIsActive ? sortedMobjIter < sortedMobjPartitions.innerBoundary ? AwarenessEnum::FULLY_AWARE :
+                                                                          sortedMobjIter < sortedMobjPartitions.outerBoundary ? AwarenessEnum::SEMI_AWARE  :
+                                                                                                                                AwarenessEnum::BARELY_AWARE :
+                                                                          AwarenessEnum::FULLY_AWARE;
 
 			hiddenUpdateCount = SV_UpdateHiddenMobj(player, sortedMobjIter->actorPtr, hiddenUpdateCount, appropriateAwareness);
 		}
