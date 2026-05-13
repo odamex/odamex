@@ -2827,7 +2827,7 @@ void A_HealChase(AActor* actor)
 {
 	int state, sound;
 
-	if (!actor || !serverside)
+	if (!actor)
 		return;
 
 	state = actor->state->args[0];
