@@ -1445,7 +1445,7 @@ namespace
         size_t operator()(const AwarenessEnum& value) const { return static_cast<size_t>(value); }
     };
 
-const std::unordered_map<AwarenessEnum, std::unordered_set<AwarenessEnum, IdentityHash>, IdentityHash> spawnIsAllowed {
+std::unordered_map<AwarenessEnum, std::unordered_set<AwarenessEnum, IdentityHash>, IdentityHash> spawnIsAllowed {
     // from
     { AwarenessEnum::NOT_AWARE,    { AwarenessEnum::SEMI_AWARE, AwarenessEnum::FULLY_AWARE, AwarenessEnum::ALWAYS_AWARE } },
     { AwarenessEnum::ALWAYS_AWARE, { } },
@@ -1453,6 +1453,7 @@ const std::unordered_map<AwarenessEnum, std::unordered_set<AwarenessEnum, Identi
     { AwarenessEnum::SEMI_AWARE,   { } },
     { AwarenessEnum::BARELY_AWARE, { AwarenessEnum::SEMI_AWARE, AwarenessEnum::FULLY_AWARE, AwarenessEnum::ALWAYS_AWARE } },
     };
+}
 
 bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLevel)
 {
@@ -1471,7 +1472,7 @@ bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLeve
         return true;
     }
 
-    if (spawnIsAllowed[previousAwareness][awarenessLevel])
+    if (spawnIsAllowed[previousAwareness].contains(awarenessLevel))
     {
 		if (mo->type == MT_AVATAR)
 		{
