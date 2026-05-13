@@ -113,39 +113,6 @@
 //
 
 //
-// [SL] 2012-04-30 - A bit field to store a bool value for every player.
-//
-class PlayerBitField
-{
-public:
-	PlayerBitField() { clear(); }
-
-	void clear()
-	{
-		memset(bitfield, 0, sizeof(bitfield));
-	}
-
-	void set(byte id)
-	{
-		bitfield[id] = 1;
-	}
-
-	void unset(byte id)
-	{
-		bitfield[id] = 0;
-	}
-
-	[[nodiscard]] bool get(byte id) const
-	{
-        return bitfield[id];
-	}
-
-private:
-
-	byte	bitfield[MAXPLAYERS];
-};
-
-//
 // Misc. mobj flags
 //
 enum mobjflag_t

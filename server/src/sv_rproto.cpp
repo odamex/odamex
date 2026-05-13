@@ -96,11 +96,6 @@ void SV_SendPacketDelayed(buf_t& packet, player_t& pl)
 }
 #endif
 
-bool SV_MustThrottleTransmissionsForClient(client_t& client)
-{
-    return client.messenger.MustThrottleTransmission();
-}
-
 void SV_HandleReliableRetransmissions()
 {
 	for (auto& player : players)

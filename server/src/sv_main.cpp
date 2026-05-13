@@ -3551,26 +3551,11 @@ void SV_WriteCommandsForPlayer(player_t& player)
 
 	int hiddenUpdateCount = 0;
 
-	//SV_PlayerPrintFmt(PRINT_HIGH, player.id, "pct reliable: {}\n", double(player.client.messenger.GetLastReliableSendSize()) / double(player.client.messenger.GetTicBudget()) * 100.0);
-	SV_PlayerPrintFmt(PRINT_HIGH, player.id, "reliable overload count: {}\n", player.client.messenger.GetReliableOverloadCount());
-
-	// The following code is commented out pending the implementation of a real Mobj throttle.
-
-//		int throttleCount = std::numeric_limits<int>::max();
-
-//		if (SV_MustThrottleTransmissionsForClient(player.client))
-//		{
-//			const auto mobjCountFixed = INT2FIXED64  (player.sortedMobjs.size());
-//			const auto fractionFixed  = FIXED2FIXED64(player.client.messenger.ThrottleFraction());
-//			throttleCount = FIXED642INT(FixedMul64(mobjCountFixed, fractionFixed));
-//		}
+	// TODO: Add the following data as a metric for netgraph
+	//SV_PlayerPrintFmt(PRINT_HIGH, player.id, "reliable overload count: {}\n", player.client.messenger.GetReliableOverloadCount());
 
 	for (auto sortedMobjIter = player.sortedMobjs.begin(); sortedMobjIter != player.sortedMobjs.end(); ++sortedMobjIter)
 	{
-//            if (throttleCount-- > 0)
-//            {
-//                break;
-//            }
 		if (hiddenUpdateCount <= maxForThisTic)
 		{
             const AwarenessEnum appropriateAwareness = throttleIsActive ? sortedMobjIter < sortedMobjPartitions.innerBoundary ? AwarenessEnum::FULLY_AWARE :
