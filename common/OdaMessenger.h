@@ -127,11 +127,18 @@ class OdaMessenger
 			m_maxRate      = i_maxRate;
 			m_perTicBudget = (m_maxRate * 1000) / TICRATE;
 			m_byteBudget   = m_perTicBudget;
+
+			// Track when reliable exceeds a certain percentage of the budget.  This could be configurable...
+			m_reliableOverloadThreshold = 9 * (m_perTicBudget / 10);
 		}
 
 		int GetLastSendSize() const { return m_lastSendSize; }
+		int GetLastReliableSendSize() const { return static_cast<int>(m_bytesSentWithReliability); }
+		int GetTicBudget() const { return m_perTicBudget; }
 		int GetPendingAckCount() const { return m_sender.GetPendingAckCount(); }
 		int GetNonContiguousRetransmitPackets() const { return m_noncontiguousRetransmitCount; }
+
+		int GetReliableOverloadCount() const { return m_reliableOverloadCount; }
 
 	protected:
 
@@ -162,10 +169,14 @@ class OdaMessenger
 		int m_perTicBudget{  0 };       ///< The value used to reset the budget every tic.
 		int m_latchedTic  { -1 };       ///< Used for detecting new tics and resetting the budget.
 
+		int m_reliableOverloadThreshold { 0 };
+		int m_reliableOverloadCount { 0 };
+
 		// Metrics
-		int m_lastSendSize                 {  0 };
-		int m_noncontiguousRetransmitCount {  0 };
-		int m_previousUnackedCount         {  0 };
-		int m_unackedGrowth                {  0 };
-		int m_unackedGrowthThreshold       { 10 };
+		size_t  m_bytesSentWithReliability      {  0 };
+		int     m_lastSendSize                  {  0 };
+		int     m_noncontiguousRetransmitCount  {  0 };
+		int     m_previousUnackedCount          {  0 };
+		int     m_unackedGrowth                 {  0 };
+		int     m_unackedGrowthThreshold        { 10 };
 };

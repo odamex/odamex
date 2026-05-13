@@ -155,7 +155,7 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
     }
 
 	// Second phase - send reliables, padded out to MAX_UDP_SIZE-ish with non-reliable best-effort messages.
-	size_t bytesSentWithReliability = 0;
+	m_bytesSentWithReliability = 0;
 	while (m_outgoingReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
 	{
 		m_outgoingReliableQueue.Pack([this](const buf_t& messageBuf) { return m_packet.AddReliableMessage(messageBuf); });
@@ -164,8 +164,8 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 		m_outgoingNonReliableQueue.Pack(addUnreliableFunctor);
 
 		const size_t sendSize = m_packet.Send(i_currentTic, m_sender, i_dest);
-		bytesSentWithReliability += sendSize;
-		m_byteBudget             -= static_cast<int>(sendSize);
+		m_bytesSentWithReliability += sendSize;
+		m_byteBudget               -= static_cast<int>(sendSize);
 	}
 
 	// Okay, done with the "really important" stuff.  Now onto purely best-effort unreliable packets.
@@ -191,8 +191,8 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 			else
 			{
 				const size_t reliableBytes = m_packet.Send(i_currentTic, m_sender, i_dest);
-				bytesSentWithReliability  += reliableBytes;
-				m_byteBudget              -= static_cast<int>(reliableBytes);
+				m_bytesSentWithReliability  += reliableBytes;
+				m_byteBudget                -= static_cast<int>(reliableBytes);
 			}
 		}
 	}
@@ -211,7 +211,7 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 
 	if (lastReliableBytesSent)
 	{
-		bytesSentWithReliability += lastTotalSent;
+		m_bytesSentWithReliability += lastTotalSent;
 	}
 	else
 	{
@@ -219,6 +219,10 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 	}
 
 	m_lastSendSize = std::max(0, startBudget - m_byteBudget);
+
+	const int reliableOverloadAdjustment = m_bytesSentWithReliability > m_reliableOverloadThreshold ? 1 : -1;
+
+	m_reliableOverloadCount = std::max(0, std::min(m_reliableOverloadCount + reliableOverloadAdjustment, 10));
 
 	return m_byteBudget > 0 ? MessageResultEnum::ACCEPT : MessageResultEnum::DEFER;
 }
