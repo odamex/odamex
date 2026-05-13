@@ -1462,6 +1462,16 @@ namespace
 #endif
 
 #if 1
+
+std::unordered_map<AwarenessEnum, std::unordered_set<AwarenessEnum, IdentityHash>, IdentityHash> transitionIsAllowed {
+    // from
+    { AwarenessEnum::NOT_AWARE,    {                           AwarenessEnum::ALWAYS_AWARE, AwarenessEnum::FULLY_AWARE, AwarenessEnum::SEMI_AWARE,                            } },
+    { AwarenessEnum::ALWAYS_AWARE, { } },
+    { AwarenessEnum::FULLY_AWARE,  { AwarenessEnum::NOT_AWARE, AwarenessEnum::ALWAYS_AWARE,                             AwarenessEnum::SEMI_AWARE, AwarenessEnum::BARELY_AWARE} },
+    { AwarenessEnum::SEMI_AWARE,   { AwarenessEnum::NOT_AWARE, AwarenessEnum::ALWAYS_AWARE, AwarenessEnum::FULLY_AWARE,                            AwarenessEnum::BARELY_AWARE} },
+    { AwarenessEnum::BARELY_AWARE, { AwarenessEnum::NOT_AWARE, AwarenessEnum::ALWAYS_AWARE, AwarenessEnum::FULLY_AWARE, AwarenessEnum::SEMI_AWARE,                            } },
+};
+
 std::unordered_map<AwarenessEnum, std::unordered_set<AwarenessEnum, IdentityHash>, IdentityHash> spawnIsAllowed {
     // from
     { AwarenessEnum::NOT_AWARE,    { AwarenessEnum::SEMI_AWARE, AwarenessEnum::FULLY_AWARE, AwarenessEnum::ALWAYS_AWARE } },
@@ -1477,7 +1487,8 @@ bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLeve
 {
     const AwarenessEnum previousAwareness = mo->playersAware.Get(player.id);
     if (previousAwareness == awarenessLevel or
-        previousAwareness == AwarenessEnum::ALWAYS_AWARE)
+        previousAwareness == AwarenessEnum::ALWAYS_AWARE or
+        (previousAwareness == AwarenessEnum::NOT_AWARE and awarenessLevel == AwarenessEnum::BARELY_AWARE))
     {
         return false;
     }
@@ -1490,7 +1501,8 @@ bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLeve
         return true;
     }
 
-    if (spawnIsAllowed[previousAwareness].contains(awarenessLevel))
+    if (previousAwareness == AwarenessEnum::NOT_AWARE)
+    //if (spawnIsAllowed[previousAwareness].contains(awarenessLevel))
 //    if (spawnIsAllowed[previousAwareness][awarenessLevel])
 //    if (previousAwareness == AwarenessEnum::NOT_AWARE and
 //        awarenessLevel    != AwarenessEnum::BARELY_AWARE)
