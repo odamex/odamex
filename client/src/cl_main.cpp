@@ -2245,28 +2245,31 @@ void CL_SendCmd(void)
 	if (netdemo.isPlaying())	// we're not really connected to a server
 		return;
 
-	if (not player.mo or gametic < 1 )
+	if (gametic < 1 )
 		return;
 
-	// GhostlyDeath -- If we are spectating, tell the server of our new position
-	if (player.spectator)
+	if (player.mo)
 	{
-		buf_t& netBuf = messenger.NetBuf().Obtain();
+		// GhostlyDeath -- If we are spectating, tell the server of our new position
+		if (player.spectator)
+		{
+			buf_t& netBuf = messenger.NetBuf().Obtain();
 
-		MSG_WriteMarker(&netBuf, clc_spectate);
-		MSG_WriteByte(&netBuf, 5);
-		MSG_WriteLong(&netBuf, player.mo->x);
-		MSG_WriteLong(&netBuf, player.mo->y);
-		MSG_WriteLong(&netBuf, player.mo->z);
+			MSG_WriteMarker(&netBuf, clc_spectate);
+			MSG_WriteByte(&netBuf, 5);
+			MSG_WriteLong(&netBuf, player.mo->x);
+			MSG_WriteLong(&netBuf, player.mo->y);
+			MSG_WriteLong(&netBuf, player.mo->z);
+		}
+
+		odaproto::clc::PlayerInput& currentNetcmd = localcmds[gametic % MAXSAVETICS];
+
+		// Write current client-tic.  Server later sends this back to client
+		// when sending svc_updatelocalplayer so the client knows which ticcmds
+		// need to be used for client's positional prediction and item data reconciliation.
+		currentNetcmd.set_tic(gametic);
+		MSG_WriteSVC(messenger.ReliableBuf(), currentNetcmd);
 	}
-
-	odaproto::clc::PlayerInput& currentNetcmd = localcmds[gametic % MAXSAVETICS];
-
-	// Write current client-tic.  Server later sends this back to client
-	// when sending svc_updatelocalplayer so the client knows which ticcmds
-	// need to be used for client's positional prediction and item data reconciliation.
-	currentNetcmd.set_tic(gametic);
-	MSG_WriteSVC(messenger.ReliableBuf(), currentNetcmd);
 
 	messenger.SendAll(gametic, serveraddr);
 
