@@ -1,8 +1,6 @@
 #pragma once
 
-#include <functional>
-#include <unordered_map>
-#include <utility>
+#include <array>
 
 enum class AwarenessEnum
 {
@@ -19,9 +17,9 @@ template <size_t MAX_PLAYER_COUNT>
 class ActorAwarenessState
 {
     public:
-        ActorAwarenessState() :
-            m_player(MAX_PLAYER_COUNT)
+        ActorAwarenessState()
         {
+            m_player.fill(AwarenessEnum::NOT_AWARE);
         }
 
         bool IsAware(size_t playerId) const
@@ -31,12 +29,7 @@ class ActorAwarenessState
 
         AwarenessEnum Get(size_t playerId) const
         {
-            auto iter = m_player.find(playerId);
-            if (iter != m_player.end())
-            {
-                return iter->second;
-            }
-            return AwarenessEnum::NOT_AWARE;
+            return m_player[playerId];
         }
 
         void Set(size_t playerId, AwarenessEnum awareness)
@@ -44,15 +37,7 @@ class ActorAwarenessState
             m_player[playerId] = awareness;
         }
 
-        AwarenessEnum Exchange(size_t playerId, AwarenessEnum awareness)
-        {
-            return std::exchange(m_player[playerId], awareness);
-        }
-
     protected:
 
-        // We use an unordered_map configured to be a table so that, if by some crazy
-        // error, we get fed player IDs > 255, this continues to just work and be
-        // constant-time access.
-        std::unordered_map<size_t, AwarenessEnum, std::identity> m_player;
+        std::array<AwarenessEnum, MAX_PLAYER_COUNT> m_player;
 };
