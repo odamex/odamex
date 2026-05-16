@@ -294,6 +294,7 @@ enum svc_t
 	svc_playerpowers,
 	svc_playerpsprites,
 	svc_configureavatar,
+
 	clc_playerinput,        // SPECIAL KNOWLEDGE AND NOTE HERE: We're entering a transitory phase
 	                        // where client-originated messages are going to start transitioning
 	                        // to protobufs, and this svc enum is the basis for the unified message
@@ -302,6 +303,7 @@ enum svc_t
 	                        // the values for the clc_t enum so that parsing code on the server that,
 	                        // during this transitory phase, can very easily work with both the
 	                        // new and the old enumerals and naive handling code can be correct.
+	clc_disconnectme,
 
 	MSG_DEFINITION_COUNT    // For use as sizer.
 };
@@ -326,9 +328,9 @@ enum ThinkerType
 //
 enum clc_t
 {
-	clc_abort,          // UNUSED
-	clc_reserved1,      // UNUSED
-	clc_disconnect,
+	clc_abort,                  // UNUSED
+	clc_reserved1,              // UNUSED
+	clc_disconnect_MIGRATED,    // Keep me until the entire enumeration is ready for removal.
 	clc_say,
 	clc_move_OLD_PLACEHOLDER,       // NOTE: Keep this for transitory compatibility with "non-unified" switch cases.
 	clc_userinfo,  // send userinfo

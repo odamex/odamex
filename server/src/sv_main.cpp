@@ -4388,6 +4388,10 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
             case clc_playerinput:
                 SV_HandlePlayerInput(*static_cast<odaproto::clc::PlayerInput*>(msgPtrRaw), player);
                 break;
+            case clc_disconnectme:
+                SV_DisconnectClient(player);
+                break;
+
             default:
                 // This case happens when a message was received, parsed, but not handled.
                 PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));
@@ -4416,10 +4420,6 @@ void SV_ParseCommands(player_t &player)
 
 			switch(cmd)
 			{
-			case clc_disconnect:
-				SV_DisconnectClient(player);
-				return;
-
 			case clc_userinfo:
 				if (!SV_SetupUserInfo(player))
 					return;

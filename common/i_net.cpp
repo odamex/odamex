@@ -1084,15 +1084,16 @@ static void InitNetMessageFormats()
 	MSG_INFO(svc_playerpowers);
 	MSG_INFO(svc_playerpsprites);
 	MSG_INFO(svc_configureavatar);
+
 	MSG_INFO(clc_playerinput);
 	MSG_INFO(clc_netdemocap);
 	MSG_INFO(clc_netdemostop);
 	MSG_INFO(clc_netdemoloadsnap);
+	MSG_INFO(clc_disconnectme);
 
 	// Client Messages.
 	CLC_INFO(clc_abort);
 	CLC_INFO(clc_reserved1);
-	CLC_INFO(clc_disconnect);
 	CLC_INFO(clc_say);
 	CLC_INFO(clc_userinfo);
 	CLC_INFO(clc_pingreply);

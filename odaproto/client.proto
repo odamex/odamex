@@ -48,3 +48,8 @@ message NetDemoStop
 message NetDemoLoadSnap
 {
 }
+
+// clc_disconnectme
+message DisconnectMe
+{
+}

@@ -477,7 +477,7 @@ static void CL_GracefulClientInitiatedDisconnect()
 	// Again, make sure that we allow for immediate retransmits.
 	messenger.SetRetransmitDelay(0);
 
-	MSG_WriteMarker(&messenger.ReliableBuf().Obtain(), clc_disconnect);
+	MSG_WriteSVC(messenger.ReliableBuf(), odaproto::clc::DisconnectMe{});
 	messenger.SendAll(gametic, serveraddr);
 
 	const dtime_t disconnectStartTime   = I_GetTime();
