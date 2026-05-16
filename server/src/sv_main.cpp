@@ -4389,6 +4389,20 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 				SV_CalcPing(player, static_cast<odaproto::clc::PingReply*>(msgPtrRaw)->ms_time());
 				break;
 
+			case clc_rcon:
+				{
+					std::string str = static_cast<odaproto::clc::Rcon*>(msgPtrRaw)->command();
+					StripColorCodes(str);
+
+					if (player.client.allow_rcon)
+					{
+						PrintFmt(PRINT_HIGH, "RCON command from {} - {} -> {}",
+								player.userinfo.netname, NET_AdrToString(net_from), str);
+						AddCommandString(str);
+					}
+				}
+				break;
+
             default:
                 // This case happens when a message was received, parsed, but not handled.
                 PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));
@@ -4428,20 +4442,6 @@ void SV_ParseCommands(player_t &player)
 
 			case msg_ack:
 				SV_AcknowledgePacket(player);
-				break;
-
-			case clc_rcon:
-				{
-					std::string str(MSG_ReadString());
-					StripColorCodes(str);
-
-					if (player.client.allow_rcon)
-					{
-						PrintFmt(PRINT_HIGH, "RCON command from {} - {} -> {}",
-								player.userinfo.netname, NET_AdrToString(net_from), str);
-						AddCommandString(str);
-					}
-				}
 				break;
 
 			case clc_rcon_password:

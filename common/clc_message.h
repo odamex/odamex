@@ -14,3 +14,4 @@ odaproto::clc::DisconnectMe CLC_DisconnectMe();
 odaproto::clc::Say          CLC_Say         (const std::string_view& text, uint32_t visibility);
 odaproto::clc::UserInfo     CLC_UserInfo    (const UserInfo& userInfo);
 odaproto::clc::PingReply    CLC_PingReply   (uint64_t msec);
+odaproto::clc::Rcon         CLC_Rcon        (const std::string_view& text);

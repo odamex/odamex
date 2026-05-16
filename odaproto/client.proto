@@ -80,3 +80,9 @@ message PingReply
 {
 	uint64 ms_time = 1;
 }
+
+// clc_rcon
+message Rcon
+{
+	string command = 1;
+}

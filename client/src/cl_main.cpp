@@ -1045,14 +1045,9 @@ BEGIN_COMMAND (rcon)
 {
 	if (connected && argc > 1)
 	{
-		char  command[256];
+		const std::string_view commandString {args, std::min(size_t(256), strlen(args)) };
 
-		strncpy(command, args, ARRAY_LENGTH(command) - 1);
-		command[255] = '\0';
-
-		buf_t& netBuf = messenger.NetBuf().Obtain();
-		MSG_WriteMarker(&netBuf, clc_rcon);
-		MSG_WriteString(&netBuf, command);
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_Rcon(commandString));
 	}
 }
 END_COMMAND (rcon)
