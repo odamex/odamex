@@ -53,3 +53,10 @@ message NetDemoLoadSnap
 message DisconnectMe
 {
 }
+
+// clc_say
+message Say
+{
+    uint32 visibility = 1;
+    string text       = 2;
+}

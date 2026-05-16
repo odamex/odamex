@@ -161,3 +161,17 @@ odaproto::clc::NetdemoCap CLC_NetdemoCap(const player_t& player, const odaproto:
 	return msg;
 }
 
+odaproto::clc::DisconnectMe CLC_DisconnectMe()
+{
+    return odaproto::clc::DisconnectMe{};
+}
+
+odaproto::clc::Say CLC_Say(const std::string_view& text, uint32_t visibility)
+{
+    odaproto::clc::Say msg;
+
+    msg.set_visibility  (visibility);
+    msg.set_text        (text.data(), text.size());
+
+    return msg;
+}

@@ -1090,11 +1090,11 @@ static void InitNetMessageFormats()
 	MSG_INFO(clc_netdemostop);
 	MSG_INFO(clc_netdemoloadsnap);
 	MSG_INFO(clc_disconnectme);
+	MSG_INFO(clc_say);
 
 	// Client Messages.
 	CLC_INFO(clc_abort);
 	CLC_INFO(clc_reserved1);
-	CLC_INFO(clc_say);
 	CLC_INFO(clc_userinfo);
 	CLC_INFO(clc_pingreply);
 	CLC_INFO(clc_rate);
