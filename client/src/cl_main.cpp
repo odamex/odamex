@@ -1482,31 +1482,6 @@ void CL_SendUserInfo(buf_t& netBuf)
 
 	// Refresh Player Translations AFTER sending the new status to the server.
 	CL_RebuildAllPlayerTranslations();
-
-/*
-	const UserInfo& coninfo = ;
-
-	MSG_WriteMarker	(&netBuf, clc_userinfo);
-	MSG_WriteString	(&netBuf, coninfo->netname.c_str());
-	MSG_WriteByte	(&netBuf, coninfo->team); // [Toke]
-	MSG_WriteLong	(&netBuf, coninfo->gender);
-	MSG_WriteLong	(&netBuf, coninfo->colorpreset);
-
-	for (int i = 3; i >= 0; i--)
-		MSG_WriteByte(&netBuf, coninfo->color[i]);
-
-	// [SL] place holder for deprecated skins
-	MSG_WriteString	(&netBuf, "");
-
-	MSG_WriteLong	(&netBuf, coninfo->aimdist);
-	MSG_WriteBool	(&netBuf, true);	// [SL] deprecated "cl_unlag" CVAR
-	MSG_WriteBool	(&netBuf, coninfo->predict_weapons);
-	MSG_WriteByte	(&netBuf, static_cast<byte>(coninfo->switchweapon));
-	for (const auto& pref : coninfo->weapon_prefs)
-	{
-		MSG_WriteByte (&netBuf, static_cast<byte>(pref));
-	}
-*/
 }
 
 //
