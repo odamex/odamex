@@ -4407,6 +4407,15 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 				SV_RConLogout(player);
 				break;
 
+			// The following message appears to be unused as of 12.2, as nothing in the codebase sends clc_changeteam,
+			// yet there's clearly a mature-looking SV_ChangeTeam being called...
+			//
+			// TODO: Determine if we should add clc_changeteam back in, or remove SV_ChangeTeam.
+			//
+//			case clc_changeteam:
+//				SV_ChangeTeam(player);
+//				break;
+
             default:
                 // This case happens when a message was received, parsed, but not handled.
                 PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));
@@ -4446,10 +4455,6 @@ void SV_ParseCommands(player_t &player)
 
 			case msg_ack:
 				SV_AcknowledgePacket(player);
-				break;
-
-			case clc_changeteam:
-				SV_ChangeTeam(player);
 				break;
 
 			case clc_spectate:

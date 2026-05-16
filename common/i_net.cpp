@@ -1098,7 +1098,6 @@ static void InitNetMessageFormats()
 	MSG_INFO(clc_rcon_logout);
 
 	// Client Messages.
-	CLC_INFO(clc_changeteam);
 	CLC_INFO(clc_ctfcommand);
 	CLC_INFO(clc_spectate);
 	CLC_INFO(clc_wantwad);

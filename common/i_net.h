@@ -344,7 +344,7 @@ enum clc_t
 	clc_rate_UNUSED,
 	clc_rcon_MIGRATED,
 	clc_rcon_password_MIGRATED,
-	clc_changeteam, // [NightFang, Toke] - Change your team
+	clc_changeteam_UNUSED, // [NightFang, Toke] - Change your team
 	clc_ack_OLD_PLACEHOLDER,        // NOTE: Keep this for transitory compatibility with "non-unified" switch cases.
 	clc_ctfcommand,
 	clc_spectate,       // denis
