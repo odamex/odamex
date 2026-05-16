@@ -204,3 +204,12 @@ odaproto::clc::UserInfo CLC_UserInfo(const UserInfo& userInfo)
 
     return msg;
 }
+
+odaproto::clc::PingReply CLC_PingReply(uint64_t msec)
+{
+    odaproto::clc::PingReply msg;
+
+    msg.set_ms_time(msec);
+
+    return msg;
+}

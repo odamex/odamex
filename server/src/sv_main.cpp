@@ -3251,9 +3251,9 @@ void SV_UpdateMonsterRespawnCount()
 
 // calculates ping using gametic which was sent by SV_SendGametic and
 // current gametic
-void SV_CalcPing(player_t &player)
+void SV_CalcPing(player_t &player, uint64_t msec)
 {
-	unsigned int ping = I_MSTime() - MSG_ReadLong();
+	unsigned int ping = I_MSTime() - msec;
 
 	if(ping > MAX_PING)
 		ping = MAX_PING;
@@ -4385,6 +4385,10 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
                     SV_BroadcastUserInfo(player);
                 }
                 break;
+			case clc_pingreply:
+				SV_CalcPing(player, static_cast<odaproto::clc::PingReply*>(msgPtrRaw)->ms_time());
+				break;
+
             default:
                 // This case happens when a message was received, parsed, but not handled.
                 PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));
@@ -4420,10 +4424,6 @@ void SV_ParseCommands(player_t &player)
 			case clc_privmsg:
 				if (!SV_PrivMsg(player))
 					return;
-				break;
-
-			case clc_pingreply:  // [SL] 2011-05-11 - Changed to clc_pingreply
-				SV_CalcPing(player);
 				break;
 
 			case clc_rate:

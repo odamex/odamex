@@ -144,6 +144,7 @@ static void InitMap()
 	MapProto(clc_disconnectme, odaproto::clc::DisconnectMe::descriptor());
 	MapProto(clc_say,          odaproto::clc::Say::descriptor());
 	MapProto(clc_userinfo,     odaproto::clc::UserInfo::descriptor());
+	MapProto(clc_pingreply,    odaproto::clc::PingReply::descriptor());
 
 	MapProto(clc_netdemocap,        odaproto::clc::NetdemoCap::descriptor());
 	MapProto(clc_netdemostop,       odaproto::clc::NetDemoStop::descriptor());

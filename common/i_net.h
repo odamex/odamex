@@ -306,6 +306,7 @@ enum svc_t
 	clc_disconnectme,
 	clc_say,
 	clc_userinfo,
+	clc_pingreply,
 
 	MSG_DEFINITION_COUNT    // For use as sizer.
 };
@@ -336,7 +337,7 @@ enum clc_t
 	clc_say_MIGRATED,
 	clc_move_OLD_PLACEHOLDER,       // NOTE: Keep this for transitory compatibility with "non-unified" switch cases.
 	clc_userinfo_MIGRATED,  // send userinfo
-	clc_pingreply, // [SL] 2011-05-11 - timestamp
+	clc_pingreply_MIGRATED, // [SL] 2011-05-11 - timestamp
 	clc_rate,
 	clc_rcon,
 	clc_rcon_password,

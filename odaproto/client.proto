@@ -74,3 +74,9 @@ message UserInfo
     uint32      switchweapon    = 8;
     repeated int32 weapon_prefs = 9;
 }
+
+// clc_pingreply
+message PingReply
+{
+	uint64 ms_time = 1;
+}

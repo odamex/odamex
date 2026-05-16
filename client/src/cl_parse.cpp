@@ -463,9 +463,7 @@ static void CL_LevelLocals(const odaproto::svc::LevelLocals* msg)
 //
 static void CL_PingRequest(const odaproto::svc::PingRequest* msg)
 {
-    auto& netBuf = messenger.NetBuf().Obtain();
-	MSG_WriteMarker(&netBuf, clc_pingreply);
-	MSG_WriteLong(&netBuf, msg->ms_time());
+	MSG_WriteSVC(messenger.NetBuf(), CLC_PingReply(msg->ms_time()));
 }
 
 //
