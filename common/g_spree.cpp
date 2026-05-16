@@ -272,7 +272,7 @@ void SpreeManager::setSpreeBreaker(const AActor* source, const player_t* target)
 	                         ::gametic};
 
 	#ifdef SERVER_APP
-	if (!sv_showsprees)
+	if (sv_showsprees)
 	{
 		// Broadcast to all clients
 		MSG_BroadcastSVC(CLBUF_NET, SVC_SpreeBreaker(breaker, level, type), -1);
@@ -410,7 +410,7 @@ bool SpreeManager::checkForSpreeUpdates(const int playerId, const std::string pl
 			// Apply sexmessage to the broadcast text
 			setSpreeRecordLanguage(record, playerId);
 #ifdef SERVER_APP
-			if (!sv_showsprees)
+			if (sv_showsprees)
 			{
 				// Broadcast to all clients
 				MSG_BroadcastSVC(CLBUF_NET, SVC_Spree(record), -1);
