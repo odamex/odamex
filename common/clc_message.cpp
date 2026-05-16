@@ -222,3 +222,18 @@ odaproto::clc::Rcon CLC_Rcon(const std::string_view& text)
 
     return msg;
 }
+
+odaproto::clc::RconPassword CLC_RconPassword(const std::string_view& text)
+{
+    odaproto::clc::RconPassword msg;
+
+    msg.set_challenge(text.data(), text.size());
+
+    return msg;
+}
+
+odaproto::clc::RconLogout CLC_RconLogout()
+{
+    return odaproto::clc::RconLogout{};
+}
+

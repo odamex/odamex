@@ -1057,14 +1057,7 @@ BEGIN_COMMAND (rcon_password)
 {
 	if (connected && argc > 1)
 	{
-		bool login = true;
-
-		buf_t& netBuf = messenger.NetBuf().Obtain();
-		MSG_WriteMarker(&netBuf, clc_rcon_password);
-		MSG_WriteByte(&netBuf, login);
-
-		std::string password = argv[1];
-		MSG_WriteString(&netBuf, MD5SUM(password + digest).c_str());
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_RconPassword(MD5SUM(std::string(argv[1]) + digest)));
 	}
 }
 END_COMMAND (rcon_password)
@@ -1073,12 +1066,7 @@ BEGIN_COMMAND (rcon_logout)
 {
 	if (connected)
 	{
-		bool login = false;
-
-		buf_t& netBuf = messenger.NetBuf().Obtain();
-		MSG_WriteMarker(&netBuf, clc_rcon_password);
-		MSG_WriteByte(&netBuf, login);
-		MSG_WriteString(&netBuf, "");
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_RconLogout());
 	}
 }
 END_COMMAND (rcon_logout)

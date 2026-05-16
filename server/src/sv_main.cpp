@@ -4193,9 +4193,6 @@ void SV_RConLogout (player_t &player)
 {
 	client_t *cl = &player.client;
 
-	// read and ignore the password field since rcon_logout doesn't use a password
-	MSG_ReadString();
-
 	if (cl->allow_rcon)
 	{
 		PrintFmt("RCON logout from {} - {}", player.userinfo.netname, NET_AdrToString(cl->address));
@@ -4208,12 +4205,11 @@ void SV_RConLogout (player_t &player)
 // SV_RConPassword
 // denis
 //
-void SV_RConPassword (player_t &player)
+void SV_RConPassword (player_t& player, const std::string& challenge)
 {
 	client_t *cl = &player.client;
 
-	std::string challenge = MSG_ReadString();
-	std::string password = rcon_password.cstring();
+	const std::string password = rcon_password.cstring();
 
 	// Don't display login messages again if the client is already logged in
 	if (cl->allow_rcon)
@@ -4403,6 +4399,14 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 				}
 				break;
 
+			case clc_rcon_password:
+				SV_RConPassword(player, static_cast<odaproto::clc::RconPassword*>(msgPtrRaw)->challenge());
+				break;
+
+			case clc_rcon_logout:
+				SV_RConLogout(player);
+				break;
+
             default:
                 // This case happens when a message was received, parsed, but not handled.
                 PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));
@@ -4443,18 +4447,6 @@ void SV_ParseCommands(player_t &player)
 			case msg_ack:
 				SV_AcknowledgePacket(player);
 				break;
-
-			case clc_rcon_password:
-				{
-					bool login = MSG_ReadByte();
-
-					if (login)
-						SV_RConPassword(player);
-					else
-						SV_RConLogout(player);
-
-					break;
-				}
 
 			case clc_changeteam:
 				SV_ChangeTeam(player);

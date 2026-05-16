@@ -1094,9 +1094,10 @@ static void InitNetMessageFormats()
 	MSG_INFO(clc_userinfo);
 	MSG_INFO(clc_pingreply);
 	MSG_INFO(clc_rcon);
+	MSG_INFO(clc_rcon_password);
+	MSG_INFO(clc_rcon_logout);
 
 	// Client Messages.
-	CLC_INFO(clc_rcon_password);
 	CLC_INFO(clc_changeteam);
 	CLC_INFO(clc_ctfcommand);
 	CLC_INFO(clc_spectate);

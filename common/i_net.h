@@ -308,6 +308,8 @@ enum svc_t
 	clc_userinfo,
 	clc_pingreply,
 	clc_rcon,
+	clc_rcon_password,
+	clc_rcon_logout,
 
 	MSG_DEFINITION_COUNT    // For use as sizer.
 };
@@ -340,8 +342,8 @@ enum clc_t
 	clc_userinfo_MIGRATED,  // send userinfo
 	clc_pingreply_MIGRATED, // [SL] 2011-05-11 - timestamp
 	clc_rate_UNUSED,
-	clc_rcon_UNUSED,
-	clc_rcon_password,
+	clc_rcon_MIGRATED,
+	clc_rcon_password_MIGRATED,
 	clc_changeteam, // [NightFang, Toke] - Change your team
 	clc_ack_OLD_PLACEHOLDER,        // NOTE: Keep this for transitory compatibility with "non-unified" switch cases.
 	clc_ctfcommand,

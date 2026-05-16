@@ -86,3 +86,14 @@ message Rcon
 {
 	string command = 1;
 }
+
+// clc_rcon_password
+message RconPassword
+{
+	string challenge = 1;
+}
+
+// clc_rcon_logout
+message RconLogout
+{
+}
