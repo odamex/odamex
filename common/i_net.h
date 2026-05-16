@@ -331,14 +331,14 @@ enum ThinkerType
 //
 enum clc_t
 {
-	clc_abort,                  // UNUSED
-	clc_reserved1,              // UNUSED
+	clc_abort_UNUSED,           // UNUSED
+	clc_reserved1_UNUSED,       // UNUSED
 	clc_disconnect_MIGRATED,    // Keep me until the entire enumeration is ready for removal.
 	clc_say_MIGRATED,
 	clc_move_OLD_PLACEHOLDER,       // NOTE: Keep this for transitory compatibility with "non-unified" switch cases.
 	clc_userinfo_MIGRATED,  // send userinfo
 	clc_pingreply_MIGRATED, // [SL] 2011-05-11 - timestamp
-	clc_rate,
+	clc_rate_UNUSED,
 	clc_rcon,
 	clc_rcon_password,
 	clc_changeteam, // [NightFang, Toke] - Change your team
