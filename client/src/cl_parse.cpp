@@ -2931,6 +2931,7 @@ static void CL_Spree(const odaproto::svc::Spree* msg)
 
 	bool update = SpreeManager::getInstance().setRawSpree(playerId, spreeLevel);
 
+	// No need to check cl_showofflinesprees here since this will only fire online or during a netdemo.
 	if (cl_showsprees && displayplayer_id == playerId && update)
 	{
 		// Play the sound for the new multi kill
