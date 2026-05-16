@@ -590,7 +590,7 @@ uint32_t FArchive::ReadCount()
 	return count;
 }
 
-FArchive &FArchive::operator<< (const char *str)
+FArchive& FArchive::operator<< (const char *str)
 {
 	if (str == NULL)
 	{
@@ -602,6 +602,12 @@ FArchive &FArchive::operator<< (const char *str)
 		WriteCount (size);
 		Write (str, size - 1);
 	}
+	return *this;
+}
+
+FArchive& FArchive::operator<< (const std::string& str)
+{
+	*this << str.c_str();
 	return *this;
 }
 

@@ -1154,6 +1154,12 @@ void SV_BroadcastUserInfo(const player_t &player)
 		SV_SendUserInfo(player, &(it->client));
 }
 
+template <typename AttributeType, typename MinType, typename EndType>
+static AttributeType ValidateAndAssign(const AttributeType& i_data, const MinType& i_min, const EndType& i_end, const AttributeType& i_default)
+{
+    return (static_cast<AttributeType>(i_min) < i_data and i_data < static_cast<AttributeType>(i_end)) ? i_data : i_default;
+}
+
 /**
  * Stores a players userinfo.
  *
@@ -1161,11 +1167,11 @@ void SV_BroadcastUserInfo(const player_t &player)
  * @return False if the client was kicked because of something seriously
  *         screwy going on with their info.
  */
-bool SV_SetupUserInfo(player_t &player)
+bool SV_SetupUserInfo(player_t &player, const odaproto::clc::UserInfo& msg)
 {
 	// read in userinfo from packet
-	std::string old_netname(player.userinfo.netname);
-	std::string new_netname(MSG_ReadString());
+	const std::string old_netname = player.userinfo.netname;
+	std::string       new_netname = msg.netname();
 	StripColorCodes(new_netname);
 
 	if (new_netname.length() > MAXPLAYERNAME)
@@ -1177,8 +1183,8 @@ bool SV_SetupUserInfo(player_t &player)
 		return false;
 	}
 
-	team_t old_team = static_cast<team_t>(player.userinfo.team);
-	team_t new_team = static_cast<team_t>(MSG_ReadByte());
+	const team_t old_team = static_cast<team_t>(player.userinfo.team);
+	team_t       new_team = static_cast<team_t>(msg.team());
 
 	if (new_team >= NUMTEAMS || new_team < 0)
 	{
@@ -1188,58 +1194,27 @@ bool SV_SetupUserInfo(player_t &player)
 	if (new_team == TEAM_NONE || (new_team == TEAM_GREEN && sv_teamsinplay < NUMTEAMS))
 		new_team = TEAM_BLUE; // Set the default team to the player.
 
-	gender_t gender = static_cast<gender_t>(MSG_ReadLong());
+    player.userinfo.team        = new_team;
+    player.userinfo.gender      = ValidateAndAssign(static_cast<gender_t>     (msg.gender()),       0, NUMGENDER,   GENDER_OTHER);
+    player.userinfo.colorpreset = ValidateAndAssign(static_cast<colorpreset_t>(msg.colorpreset()),  0, NUMCOLOR,    COLOR_CUSTOM);
 
-	colorpreset_t colorpreset = static_cast<colorpreset_t>(MSG_ReadLong());
+	player.userinfo.color.seta(msg.color().a());
+	player.userinfo.color.setr(msg.color().r());
+	player.userinfo.color.setg(msg.color().g());
+	player.userinfo.color.setb(msg.color().b());
 
-	byte color[4];
-	for (int i = 3; i >= 0; i--)
-		color[i] = MSG_ReadByte();
+	player.prefcolor = player.userinfo.color;
 
-	MSG_ReadString();	// [SL] place holder for deprecated skins
+	player.userinfo.aimdist         = clamp(msg.aimdist(), 0, 5000 * 16384);
+	player.userinfo.predict_weapons = msg.predict_weapons();
+    player.userinfo.switchweapon    = ValidateAndAssign(static_cast<weaponswitch_t>(msg.switchweapon()), 0, WPSW_NUMTYPES, WPSW_ALWAYS);
 
-	fixed_t aimdist = MSG_ReadLong();
-	MSG_ReadBool();		// [SL] Read and ignore deprecated cl_unlag setting
-	bool predict_weapons = MSG_ReadBool();
+    const size_t prefsCount = std::min(static_cast<size_t>(msg.weapon_prefs_size()),
+                                       player.userinfo.weapon_prefs.size());
 
-	weaponswitch_t switchweapon = static_cast<weaponswitch_t>(MSG_ReadByte());
-
-	int8_t weapon_prefs[NUMWEAPONS];
-	for (size_t i = 0; i < NUMWEAPONS; i++)
-	{
-		// sanitize the weapon preference input
-		int8_t preflevel = static_cast<int8_t>(MSG_ReadByte());
-		if (preflevel >= NUMWEAPONS)
-			preflevel = NUMWEAPONS - 1;
-
-		weapon_prefs[i] = preflevel;
-	}
-
-	// ensure sane values for userinfo
-	if (gender < 0 || gender >= NUMGENDER)
-		gender = GENDER_OTHER;
-
-	if (colorpreset < 0 || colorpreset >= NUMCOLOR)
-		colorpreset = COLOR_CUSTOM;
-
-	aimdist = clamp(aimdist, 0, 5000 * 16384);
-
-	if (switchweapon >= WPSW_NUMTYPES || switchweapon < 0)
-		switchweapon = WPSW_ALWAYS;
-
-	// [SL] 2011-12-02 - Players can update these parameters whenever they like
-	player.userinfo.predict_weapons	= predict_weapons;
-	player.userinfo.aimdist			= aimdist;
-	player.userinfo.switchweapon	= switchweapon;
-	memcpy(player.userinfo.weapon_prefs, weapon_prefs, sizeof(weapon_prefs));
-
-	player.userinfo.gender			= gender;
-	player.userinfo.team			= new_team;
-
-	player.userinfo.colorpreset		= colorpreset;
-
-	memcpy(player.userinfo.color, color, 4);
-	memcpy(player.prefcolor, color, 4);
+    std::copy(msg.weapon_prefs().begin(),
+              msg.weapon_prefs().begin() + prefsCount,
+              player.userinfo.weapon_prefs.begin());
 
 	// sanitize the client's name
 	new_netname = TrimString(new_netname);
@@ -1307,7 +1282,7 @@ bool SV_SetupUserInfo(player_t &player)
 	if (!old_netname.empty() && !iequals(new_netname, old_netname))
 	{
 		std::string	gendermessage;
-		switch (gender) {
+		switch (player.userinfo.gender) {
 			case GENDER_MALE:	gendermessage = "his";  break;
 			case GENDER_FEMALE:	gendermessage = "her";  break;
 			case GENDER_CYBORG:	gendermessage = "its";  break;
@@ -2297,11 +2272,21 @@ void SV_ConnectClient()
 		return;
 	}
 
-	if (!SV_SetupUserInfo(*player))
-		return;
+    // We don't call SV_ParseCommandSVC here because the UserInfo handler there also broadcasts info to
+    // the other players, which we do not want to do here!
+    {
+        google::protobuf::Message* userInfoMsg = nullptr;
 
-	// [SL] Read and ignore deprecated client rate. Clients now always use sv_maxrate.
-	MSG_ReadLong();
+        if (SVC_ParseMessage(userInfoMsg, clc_userinfo) != PERR_OK)
+            return;
+
+        std::unique_ptr<google::protobuf::Message> msgPtr(userInfoMsg);
+
+        if (!SV_SetupUserInfo(*player, *static_cast<odaproto::clc::UserInfo*>(userInfoMsg)))
+            return;
+    }
+
+	// [SL] Ignore deprecated client rate. Clients now always use sv_maxrate.
 	cl->messenger.SetMaxRate(int(sv_maxrate));
 
 	// Check if the IP is banned from our list or not.
@@ -4394,6 +4379,12 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 			case clc_say:
 				SV_Say(player, *static_cast<odaproto::clc::Say*>(msgPtrRaw));
 				break;
+            case clc_userinfo:
+                if (SV_SetupUserInfo(player, *static_cast<odaproto::clc::UserInfo*>(msgPtrRaw)))
+                {
+                    SV_BroadcastUserInfo(player);
+                }
+                break;
             default:
                 // This case happens when a message was received, parsed, but not handled.
                 PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));
@@ -4422,12 +4413,6 @@ void SV_ParseCommands(player_t &player)
 
 			switch(cmd)
 			{
-			case clc_userinfo:
-				if (!SV_SetupUserInfo(player))
-					return;
-				SV_BroadcastUserInfo(player);
-				break;
-
 			case clc_getplayerinfo:
 				SV_SendPlayerInfo (player);
 				break;
@@ -4868,7 +4853,9 @@ BEGIN_COMMAND (playerinfo)
 			player->client.address.ip[2], player->client.address.ip[3]);
 
 	const std::string color = fmt::format("#{:02X}{:02X}{:02X}",
-			player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
+			player->userinfo.color.getr(),
+			player->userinfo.color.getg(),
+			player->userinfo.color.getb());
 
 	const std::string& team = GetTeamInfo(player->userinfo.team)->ColorStringUpper;
 

@@ -582,9 +582,9 @@ odaproto::svc::UserInfo SVC_UserInfo(const player_t& player, int64_t time)
 
 	// [AM] Alpha is always 255.
 	odaproto::Color* color = msg.mutable_color();
-	color->set_r(player.userinfo.color[1]);
-	color->set_g(player.userinfo.color[2]);
-	color->set_b(player.userinfo.color[3]);
+	color->set_r(player.userinfo.color.getr());
+	color->set_g(player.userinfo.color.getg());
+	color->set_b(player.userinfo.color.getb());
 
 	msg.set_join_time(time);
 

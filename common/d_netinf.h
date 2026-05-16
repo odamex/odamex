@@ -86,14 +86,15 @@ struct UserInfo
 	fixed_t         aimdist;
 	bool            predict_weapons;
 	colorpreset_t   colorpreset;
-	byte            color[4];
+	argb_t          color;
 	gender_t        gender;
 	weaponswitch_t  switchweapon;
-	int8_t          weapon_prefs[NUMWEAPONS];
+
+	std::array<int8_t, NUMWEAPONS> weapon_prefs;
 
 	// The default preference ordering when the player runs out of one type of ammo.
 	// Vanilla Doom compatible.
-	static constexpr int8_t weapon_prefs_default[NUMWEAPONS] = {
+	static constexpr std::array<int8_t, NUMWEAPONS> weapon_prefs_default {
 		0, // wp_fist
 		4, // wp_pistol
 		5, // wp_shotgun
@@ -106,13 +107,15 @@ struct UserInfo
 		-1 // wp_none       -  Lower than the lowest value that can be set via the UI.
 	};
 
-	UserInfo() : team(TEAM_NONE), aimdist(0),
+	UserInfo() : team           (TEAM_NONE),
+	             aimdist        (0),
 	             predict_weapons(true),
-	             gender(GENDER_MALE), switchweapon(WPSW_ALWAYS)
+	             colorpreset    (COLOR_GREEN),
+	             color          (0),
+	             gender         (GENDER_MALE),
+	             switchweapon   (WPSW_ALWAYS),
+	             weapon_prefs   (weapon_prefs_default)
 	{
-		// default doom weapon ordering when player runs out of ammo
-		memcpy(weapon_prefs, UserInfo::weapon_prefs_default, sizeof(weapon_prefs));
-		memset(color, 0, 4);
 	}
 };
 

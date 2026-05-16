@@ -200,7 +200,9 @@ argb_t CL_ShadePlayerColor(argb_t base_color, argb_t shade_color)
 //
 argb_t CL_GetPlayerColor(const player_t& player)
 {
-	argb_t base_color(255, player.userinfo.color[1], player.userinfo.color[2], player.userinfo.color[3]);
+	argb_t base_color(255, player.userinfo.color.getr(),
+	                       player.userinfo.color.getg(),
+	                       player.userinfo.color.getb());
 	argb_t shade_color = base_color;
 
 	bool teammate = false;
@@ -959,7 +961,9 @@ BEGIN_COMMAND (playerinfo)
 	}
 
 	const std::string color = fmt::format("#{:02X}{:02X}{:02X}",
-		player->userinfo.color[1], player->userinfo.color[2], player->userinfo.color[3]);
+	    player->userinfo.color.getr(),
+	    player->userinfo.color.getg(),
+	    player->userinfo.color.getb());
 
 	PrintFmt(PRINT_HIGH, "---------------[player info]----------- \n");
 	PrintFmt(PRINT_HIGH, " userinfo.netname     - {:s} \n",		player->userinfo.netname);
@@ -1472,8 +1476,15 @@ void CL_MoveThing(AActor *mobj, fixed_t x, fixed_t y, fixed_t z)
 //
 void CL_SendUserInfo(buf_t& netBuf)
 {
-	UserInfo* coninfo = &consoleplayer().userinfo;
 	D_SetupUserInfo();
+
+	MSG_WriteSVCBuffer(&netBuf, CLC_UserInfo(consoleplayer().userinfo));
+
+	// Refresh Player Translations AFTER sending the new status to the server.
+	CL_RebuildAllPlayerTranslations();
+
+/*
+	const UserInfo& coninfo = ;
 
 	MSG_WriteMarker	(&netBuf, clc_userinfo);
 	MSG_WriteString	(&netBuf, coninfo->netname.c_str());
@@ -1495,8 +1506,7 @@ void CL_SendUserInfo(buf_t& netBuf)
 	{
 		MSG_WriteByte (&netBuf, static_cast<byte>(pref));
 	}
-
-	CL_RebuildAllPlayerTranslations();	// Refresh Player Translations AFTER sending the new status to the server.
+*/
 }
 
 //

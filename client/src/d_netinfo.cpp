@@ -155,7 +155,7 @@ static cvar_t *weaponpref_cvar_map[NUMWEAPONS] = {
 //
 void D_PrepareWeaponPreferenceUserInfo()
 {
-	int8_t *prefs = consoleplayer().userinfo.weapon_prefs;
+	auto& prefs = consoleplayer().userinfo.weapon_prefs;
 
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
@@ -211,15 +211,11 @@ void D_SetupUserInfo(void)
 	coninfo->colorpreset = D_ColorPreset (cl_colorpreset.cstring());
 
 	// set the color in a pixel-format neutral way
-	argb_t color = V_GetColorFromString(cl_color);
-	coninfo->color[0] = color.geta();
-	coninfo->color[1] = color.getr();
-	coninfo->color[2] = color.getg();
-	coninfo->color[3] = color.getb();
+	coninfo->color = V_GetColorFromString(cl_color);
 
 	// update color translation
 	if (!demoplayback && !connected)
-		R_BuildPlayerTranslation(consoleplayer_id, color, coninfo->colorpreset);
+		R_BuildPlayerTranslation(consoleplayer_id, coninfo->color, coninfo->colorpreset);
 }
 
 void D_UserInfoChanged (cvar_t *cvar)
@@ -233,61 +229,30 @@ void D_UserInfoChanged (cvar_t *cvar)
 
 FArchive &operator<< (FArchive &arc, UserInfo &info)
 {
-	char netname[MAXPLAYERNAME + 1];
-	memset(netname, 0, MAXPLAYERNAME + 1);
-	strncpy(netname, info.netname.c_str(), MAXPLAYERNAME);
-	arc.Write(netname, MAXPLAYERNAME + 1);
-
-	arc.Write(&info.team, sizeof(info.team));  // [Toke - Teams]
-	arc.Write(&info.gender, sizeof(info.gender));
-
+	arc << info.netname;
+	arc << info.team;
 	arc << info.aimdist;
-	arc << info.color[0] << info.color[1] << info.color[2] << info.color[3];
-
-	// [SL] use place-holders for deprecated client options
-	// so old save games and netdemos continue to function
-	unsigned int skin = 0;
-	bool unlag = true;
-	byte update_rate = 0;
-	arc << skin;
-	arc << unlag;
-	arc << update_rate;
-
-	arc.Write(&info.switchweapon, sizeof(info.switchweapon));
-	arc.Write(info.weapon_prefs, sizeof(info.weapon_prefs));
-
-	int terminator = 0;
- 	arc << terminator;
+	arc << info.predict_weapons;
+	arc << info.colorpreset;
+	arc << info.color;
+	arc << info.gender;
+	arc << info.switchweapon;
+	arc << info.weapon_prefs;
 
 	return arc;
 }
 
 FArchive &operator>> (FArchive &arc, UserInfo &info)
 {
-	char netname[MAXPLAYERNAME + 1];
-	arc.Read(netname, MAXPLAYERNAME + 1);
-	info.netname = netname;
-
-	arc.Read(&info.team, sizeof(info.team));  // [Toke - Teams]
-	arc.Read(&info.gender, sizeof(info.gender));
-
+	arc >> info.netname;
+	arc >> info.team;
 	arc >> info.aimdist;
-	arc >> info.color[0] >> info.color[1] >> info.color[2] >> info.color[3];
-
-	// [SL] use place-holders for deprecated client options
-	// so old save games and netdemos continue to function.
-	unsigned int skin;
-	bool unlag;
-	byte update_rate;
-	arc >> skin;
-	arc >> unlag;
-	arc >> update_rate;
-
-	arc.Read(&info.switchweapon, sizeof(info.switchweapon));
-	arc.Read(info.weapon_prefs, sizeof(info.weapon_prefs));
-
-	int terminator;
-	arc >> terminator;	// 0
+	arc >> info.predict_weapons;
+	arc >> info.colorpreset;
+	arc >> info.color;
+	arc >> info.gender;
+	arc >> info.switchweapon;
+	arc >> info.weapon_prefs;
 
 	return arc;
 }

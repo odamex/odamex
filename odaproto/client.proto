@@ -60,3 +60,17 @@ message Say
     uint32 visibility = 1;
     string text       = 2;
 }
+
+// clc_userinfo
+message UserInfo
+{
+    string      netname         = 1;
+    uint32      team            = 2;
+    int32       gender          = 3;
+    int32       colorpreset     = 4;
+    Color       color           = 5;
+    sfixed32    aimdist         = 6;
+    bool        predict_weapons = 7;
+    uint32      switchweapon    = 8;
+    repeated int32 weapon_prefs = 9;
+}

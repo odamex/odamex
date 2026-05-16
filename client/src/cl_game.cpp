@@ -2074,11 +2074,7 @@ void G_DoPlayDemo(bool justStreamInput)
 			R_BuildClassicPlayerTranslation(player.id, player.id - 1);
 			argb_t color(translationRGB[player.id][0]);
 
-			player.userinfo.color[0] = color.geta();
-			player.userinfo.color[1] = color.getr();
-			player.userinfo.color[2] = color.getg();
-			player.userinfo.color[3] = color.getb();
-
+			player.userinfo.color   = color;
 			player.userinfo.netname = fmt::format("Players {}", player.id);
 		}
 

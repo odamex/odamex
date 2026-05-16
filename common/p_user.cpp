@@ -1388,6 +1388,7 @@ player_t::player_t() :
 	timeout_vote(0),
 	ready(false),
 	timeout_ready(0),
+	prefcolor(argb_t(0, 0, 0, 0)),
 	blend_color(argb_t(0, 0, 0, 0)),
 	doreborn(false),
 	QueuePosition(0),
@@ -1413,7 +1414,6 @@ player_t::player_t() :
 	pspdef_t zeropsp = { NULL, 0, 0, 0 };
 	psprites.fill(zeropsp);
 	ArrayInit(oldvelocity, 0);
-	ArrayInit(prefcolor, 0);
 
 	LastMessage.Time = 0;
 	LastMessage.Message = "";

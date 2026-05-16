@@ -299,12 +299,8 @@ bool P_EnoughAmmo(const player_t& player, weapontype_t weapon, bool switching = 
 //
 void P_SwitchWeapon(player_t& player)
 {
-	const int8_t *prefs;
-
-	if ((multiplayer && !sv_allowpwo) || demoplayback)
-		prefs = UserInfo::weapon_prefs_default;
-	else
-		prefs = player.userinfo.weapon_prefs;
+	const auto& prefs = ((multiplayer and not sv_allowpwo) or demoplayback) ? UserInfo::weapon_prefs_default :
+	                                                                          player.userinfo.weapon_prefs;
 
 	// find which weapon has the highest preference among availible weapons
 	size_t best_weapon_num = 0;
@@ -409,7 +405,7 @@ bool P_CheckSwitchWeapon(const player_t& player, weapontype_t weapon)
 		return true;
 
 	// Use player's weapon preferences
-	const int8_t *prefs = player.userinfo.weapon_prefs;
+	const auto& prefs = player.userinfo.weapon_prefs;
 	if (prefs[weapon] > prefs[currentweapon])
 	{
 		if (player.userinfo.switchweapon == WPSW_PWO_ALT &&

@@ -305,6 +305,7 @@ enum svc_t
 	                        // new and the old enumerals and naive handling code can be correct.
 	clc_disconnectme,
 	clc_say,
+	clc_userinfo,
 
 	MSG_DEFINITION_COUNT    // For use as sizer.
 };
@@ -334,7 +335,7 @@ enum clc_t
 	clc_disconnect_MIGRATED,    // Keep me until the entire enumeration is ready for removal.
 	clc_say_MIGRATED,
 	clc_move_OLD_PLACEHOLDER,       // NOTE: Keep this for transitory compatibility with "non-unified" switch cases.
-	clc_userinfo,  // send userinfo
+	clc_userinfo_MIGRATED,  // send userinfo
 	clc_pingreply, // [SL] 2011-05-11 - timestamp
 	clc_rate,
 	clc_rcon,

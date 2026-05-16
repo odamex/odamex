@@ -192,6 +192,7 @@ public:
 	FArchive& operator<< (float f);
 	FArchive& operator<< (double d);
 	FArchive& operator<< (argb_t color);
+	FArchive& operator<< (const std::string& str);
 	FArchive& operator<< (const char* str);
 	FArchive& operator<< (DObject* obj);
 

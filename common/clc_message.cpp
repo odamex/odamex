@@ -4,6 +4,14 @@
 
 #include "d_player.h"
 
+static void FillColor(odaproto::Color& io_msg, const argb_t& color)
+{
+    io_msg.set_a(color.geta());
+    io_msg.set_r(color.getr());
+    io_msg.set_g(color.getg());
+    io_msg.set_b(color.getb());
+}
+
 void CLC_PackPlayerInputMessageFromPlayer(odaproto::clc::PlayerInput& msg, const player_t& player, int clientTic, int clientWorldIndex)
 {
 	if (player.mo)
@@ -172,6 +180,27 @@ odaproto::clc::Say CLC_Say(const std::string_view& text, uint32_t visibility)
 
     msg.set_visibility  (visibility);
     msg.set_text        (text.data(), text.size());
+
+    return msg;
+}
+
+odaproto::clc::UserInfo CLC_UserInfo(const UserInfo& userInfo)
+{
+    odaproto::clc::UserInfo msg;
+
+    msg.set_netname (userInfo.netname);
+    msg.set_team    (userInfo.team);
+    msg.set_gender  (userInfo.gender);
+    msg.set_colorpreset (userInfo.colorpreset);
+    FillColor           (*msg.mutable_color(), userInfo.color);
+    msg.set_aimdist     (userInfo.aimdist);
+    msg.set_predict_weapons (userInfo.predict_weapons);
+    msg.set_switchweapon    (userInfo.switchweapon);
+
+    for (const auto& pref : userInfo.weapon_prefs)
+    {
+        msg.add_weapon_prefs(pref);
+    }
 
     return msg;
 }

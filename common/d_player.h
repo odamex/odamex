@@ -271,7 +271,7 @@ public:
 	bool		ready;					// [AM] Player is ready.
 	int			timeout_ready;          // [AM] Tic when a player last toggled his ready state.
 
-    byte		prefcolor[4];			// Nes - Preferred color. Server only.
+	argb_t		prefcolor;			// Nes - Preferred color. Server only.
 
 	argb_t		blend_color;			// blend color for the sector the player is in
 	bool		doreborn;

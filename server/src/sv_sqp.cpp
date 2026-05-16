@@ -230,8 +230,10 @@ next:
 	{
 		MSG_WriteString(&ml_message, player.userinfo.netname.c_str());
 
-		for (int i = 3; i >= 0; i--)
-			MSG_WriteByte(&ml_message, player.userinfo.color[i]);
+		MSG_WriteByte(&ml_message, player.userinfo.color.geta());
+		MSG_WriteByte(&ml_message, player.userinfo.color.getr());
+		MSG_WriteByte(&ml_message, player.userinfo.color.getg());
+		MSG_WriteByte(&ml_message, player.userinfo.color.getb());
 
 		if(G_IsTeamGame())
 			MSG_WriteByte(&ml_message, player.userinfo.team);
