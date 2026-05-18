@@ -2267,7 +2267,7 @@ void SV_ConnectClient()
 	}
 
 	// Get the userinfo from the client.
-	clc_t userinfo = static_cast<clc_t>(MSG_ReadByte());
+	clc_t userinfo = static_cast<clc_t>(MSG_ReadUnVarint());
 	if (userinfo != clc_userinfo)
 	{
 		SV_InvalidateClient(*player, "Client didn't send any userinfo");
