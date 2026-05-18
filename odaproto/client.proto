@@ -81,6 +81,11 @@ message PingReply
 	uint64 ms_time = 1;
 }
 
+// clc_kill
+message Kill
+{
+}
+
 // clc_rcon
 message Rcon
 {

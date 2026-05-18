@@ -214,6 +214,11 @@ odaproto::clc::PingReply CLC_PingReply(uint64_t msec)
     return msg;
 }
 
+odaproto::clc::Kill CLC_Kill()
+{
+    return {};
+}
+
 odaproto::clc::Rcon CLC_Rcon(const std::string_view& text)
 {
     odaproto::clc::Rcon msg;
@@ -262,3 +267,4 @@ odaproto::clc::SpectateUpdate CLC_SpectateUpdate(const player_t& player)
 
     return msg;
 }
+

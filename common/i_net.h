@@ -313,6 +313,7 @@ enum svc_t
 	clc_spectate_begin,
 	clc_spectate_update,
 	clc_spectate_end,
+	clc_kill,
 
 	MSG_DEFINITION_COUNT    // For use as sizer.
 };
@@ -352,7 +353,7 @@ enum clc_t
 	clc_ctfcommand_UNUSED,
 	clc_spectate_MIGRATED,       // denis
 	clc_wantwad_UNUSED,        // denis - name, hash
-	clc_kill,           // denis - suicide
+	clc_kill_MIGRATED,           // denis - suicide
 	clc_cheat,          // denis - handle cheat codes.
 	clc_callvote,       // [AM] - Calling a vote
 	clc_maplist,        // [AM] - Maplist status request.

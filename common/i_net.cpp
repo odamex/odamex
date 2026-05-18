@@ -1099,9 +1099,9 @@ static void InitNetMessageFormats()
 	MSG_INFO(clc_spectate_begin);
 	MSG_INFO(clc_spectate_update);
 	MSG_INFO(clc_spectate_end);
+	MSG_INFO(clc_kill);
 
 	// Client Messages.
-	CLC_INFO(clc_kill);
 	CLC_INFO(clc_cheat);
 	CLC_INFO(clc_callvote);
 	CLC_INFO(clc_maplist);

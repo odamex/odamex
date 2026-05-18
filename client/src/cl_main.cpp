@@ -987,7 +987,7 @@ END_COMMAND (playerinfo)
 BEGIN_COMMAND (kill)
 {
     if (sv_allowcheats || G_IsCoopGame())
-        MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_kill);
+        MSG_WriteSVC(messenger.ReliableBuf(), CLC_Kill());
     else
         PrintFmt("You must run the server with '+set sv_allowcheats 1' or disable sv_keepkeys to enable this command.\n");
 }

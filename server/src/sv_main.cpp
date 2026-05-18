@@ -4206,17 +4206,15 @@ void SV_RConPassword (player_t& player, const std::string& challenge)
 //
 void SV_Suicide(player_t &player)
 {
-	if (!player.mo)
-		return;
+	if (player.mo
+        and player.suicidedelay == 0
+        and gamestate == GS_LEVEL
+        and (sv_allowcheats or G_IsCoopGame()))
 
-	// WHY do you want to commit suicide in the intermission screen ?!?!
-	if (gamestate != GS_LEVEL)
-		return;
-
-	// merry suicide!
-	P_DamageMobj (player.mo, NULL, NULL, 10000, MOD_SUICIDE);
-	//player.mo->player = NULL;
-	//player.mo = NULL;
+    {
+	    // merry suicide!
+	    P_DamageMobj (player.mo, NULL, NULL, 10000, MOD_SUICIDE);
+    }
 }
 
 //
@@ -4377,6 +4375,10 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
                 SV_Spectate(player, *static_cast<odaproto::clc::SpectateUpdate*>(msgPtrRaw));
                 break;
 
+            case clc_kill:
+                SV_Suicide(player);
+                break;
+
             default:
                 // This case happens when a message was received, parsed, but not handled.
                 PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));
@@ -4420,14 +4422,6 @@ void SV_ParseCommands(player_t &player)
 
 			case clc_netcmd:
 				SV_NetCmd(player);
-				break;
-
-			case clc_kill:
-				if(player.mo && player.suicidedelay == 0 && gamestate == GS_LEVEL &&
-               (sv_allowcheats || G_IsCoopGame()))
-            {
-					SV_Suicide (player);
-            }
 				break;
 
 			case clc_cheat:
