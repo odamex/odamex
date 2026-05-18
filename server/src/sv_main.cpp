@@ -1319,6 +1319,11 @@ bool SV_SetupUserInfo(player_t &player, const odaproto::clc::UserInfo& msg)
 			                     player.userinfo.netname,
 			                     V_GetTeamColor(player.userinfo.team));
 		}
+
+		// TODO: Determine if we want to carry the following over from the old SV_ChangeTeam.
+		//
+		// Team changes can result with not enough players on a team.
+		//G_AssertValidPlayerCount();
 	}
 
 	return true;
@@ -3778,41 +3783,6 @@ void SV_UpdateConsolePlayer(player_t &player)
 }
 
 //
-//	SV_ChangeTeam
-//																							[Toke - CTF]
-//	Allows players to change teams properly in teamplay and CTF
-//
-void SV_ChangeTeam (player_t &player)  // [Toke - Teams]
-{
-	team_t team = static_cast<team_t>(MSG_ReadByte());
-
-	if (team >= TEAM_NONE || team < 0)
-		return;
-
-	if (team >= sv_teamsinplay)
-		return;
-
-	team_t old_team = player.userinfo.team;
-	player.userinfo.team = team;
-
-	if (G_IsTeamGame() && player.mo && player.userinfo.team != old_team &&
-	    !G_IsLevelState(LevelState::WARMUP))
-	{
-		P_DamageMobj(player.mo, 0, 0, 1000, 0);
-
-		M_LogWDLEvent(WDL_EVENT_DISCONNECT, &player, NULL, old_team,
-		              M_GetPlayerId(player, old_team), 0, 0);
-		M_LogWDLEvent(WDL_EVENT_JOINGAME, &player, NULL, team, M_GetPlayerId(player, team), 0,
-		              0);
-	}
-	SV_BroadcastPrintFmt("{} has joined the {} team.\n", player.userinfo.netname,
-	                   V_GetTeamColor(team));
-
-	// Team changes can result with not enough players on a team.
-	G_AssertValidPlayerCount();
-}
-
-//
 // SV_Spectate
 //
 void SV_Spectate(player_t &player)
@@ -4429,15 +4399,6 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 			case clc_rcon_logout:
 				SV_RConLogout(player);
 				break;
-
-			// The following message appears to be unused as of 12.2, as nothing in the codebase sends clc_changeteam,
-			// yet there's clearly a mature-looking SV_ChangeTeam being called...
-			//
-			// TODO: Determine if we should add clc_changeteam back in, or remove SV_ChangeTeam.
-			//
-//			case clc_changeteam:
-//				SV_ChangeTeam(player);
-//				break;
 
             default:
                 // This case happens when a message was received, parsed, but not handled.
