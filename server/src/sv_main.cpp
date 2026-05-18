@@ -3076,34 +3076,56 @@ bool SV_PrivMsg(player_t &player)
 // SV_UpdateMissiles
 // Updates missiles position sometimes.
 //
-void SV_UpdateMissiles(player_t &pl, AActor *mo)
+void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistanceType>::iterator& sortedMobjIter)
 {
+    const AActor* mo = sortedMobjIter->actorPtr;
+
 	if (!(mo->flags & MF_MISSILE) || mo->flags & MF_SKULLFLY)
 		return;
 
-	if (mo->type == MT_PLASMA)
-		return;
-
-	// update missile position every 30 tics
-	if (((gametic+mo->netid) % 30) && (mo->type != MT_TRACER) && (mo->type != MT_FATSHOT) && !(mo->flags2 & MF2_SEEKERMISSILE))
-		return;
-
-	// Revenant tracers and Mancubus fireballs need to be updated more often (and custom tracers)
-	if (((gametic+mo->netid) % 5) && (mo->type == MT_TRACER || mo->type == MT_FATSHOT || mo->flags2 & MF2_SEEKERMISSILE))
-		return;
-
+    // Avoid sending more than one Update Mobj per tic for any missile.
+    // Here we check to see if an update went out during the "meat" of the tic, which is complete at this point.
     if (mo->updatedDuringTic == gametic)
         return;
 
-	switch (mo->playersAware.Get(pl.id))
-	{
-		case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
-		case AwarenessEnum::BARELY_AWARE:
-			break;
+    // According to https://doomwiki.org/wiki/Map_unit,
+    // 200 units is about the width of a small room.  That's about the distance where we want high priority projectiles
+    // to provide very frequent updates.
+    constexpr int HYPER_AWARENESS_CUTOFF_SQUARED = 200 * 200;
 
-		default:
-			MSG_WriteSVC(pl.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
-	}
+    const AwarenessEnum awarenessLevel = mo->playersAware.Get(player.id);
+    const bool          isHyperAware   = awarenessLevel == AwarenessEnum::ALWAYS_AWARE and
+                                         sortedMobjIter->distanceSquared < HYPER_AWARENESS_CUTOFF_SQUARED;
+    if (isHyperAware)
+    {
+        MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+    }
+    else
+    {
+        // We don't send any updates for Plasma unless we've gone hyper-aware with it.
+        if (mo->type == MT_PLASMA)
+            return;
+
+        // Revenant tracers and Mancubus fireballs need to be updated more often (and custom tracers)
+        const bool needsMoreFrequentUpdates = (mo->type == MT_TRACER || mo->type == MT_FATSHOT || mo->flags2 & MF2_SEEKERMISSILE);
+
+        const int  divisor = needsMoreFrequentUpdates ? 5 : 30;
+        const int  phase   = (gametic + mo->netid) % divisor;
+
+        // Does this mobj have a scheduled update now?
+        if (phase == 0)
+        {
+            switch (awarenessLevel)
+            {
+                case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
+                case AwarenessEnum::BARELY_AWARE:
+                    break;
+
+                default:
+                    MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+            }
+        }
+    }
 }
 
 // Update the given actors data immediately.
@@ -3173,6 +3195,8 @@ void SV_UpdateMonsters(player_t &pl, AActor *mo)
 	if ((gametic+mo->netid) % 7)
 		return;
 
+    // Avoid sending more than one Update Mobj per tic for any missile.
+    // Here we check to see if an update went out during the "meat" of the tic, which is complete at this point.
     if (mo->updatedDuringTic == gametic)
         return;
 
@@ -3450,9 +3474,9 @@ static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player, int part
 
 		const int dx = playerMostSignificantX - (mobjInfo.actorPtr->x >> FRACBITS);
 		const int dy = playerMostSignificantY - (mobjInfo.actorPtr->y >> FRACBITS);
-		mobjInfo.distance = dx*dx + dy*dy;
+		mobjInfo.distanceSquared = dx*dx + dy*dy;
 	}
-	auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1.distance < mo2.distance; };
+	auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1.distanceSquared < mo2.distanceSquared; };
 
     // Do the division of size using shifts for now...  We can go back to real division if we need
     // the precision.
@@ -3565,7 +3589,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 			hiddenUpdateCount = SV_UpdateHiddenMobj(player, sortedMobjIter->actorPtr, hiddenUpdateCount, appropriateAwareness);
 		}
 
-		SV_UpdateMissiles(player, sortedMobjIter->actorPtr);
+		SV_UpdateMissiles(player, sortedMobjIter);
 
 		SV_UpdateMonsters(player, sortedMobjIter->actorPtr);
 	}
