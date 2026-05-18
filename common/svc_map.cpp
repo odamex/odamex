@@ -149,6 +149,10 @@ static void InitMap()
 	MapProto(clc_rcon_password, odaproto::clc::RconPassword::descriptor());
 	MapProto(clc_rcon_logout,   odaproto::clc::RconLogout::descriptor());
 
+	MapProto(clc_spectate_begin,    odaproto::clc::SpectateBegin::descriptor());
+	MapProto(clc_spectate_update,   odaproto::clc::SpectateUpdate::descriptor());
+	MapProto(clc_spectate_end,      odaproto::clc::SpectateEnd::descriptor());
+
 	MapProto(clc_netdemocap,        odaproto::clc::NetdemoCap::descriptor());
 	MapProto(clc_netdemostop,       odaproto::clc::NetDemoStop::descriptor());
 	MapProto(clc_netdemoloadsnap,   odaproto::clc::NetDemoLoadSnap::descriptor());

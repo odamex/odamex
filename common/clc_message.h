@@ -14,7 +14,11 @@ odaproto::clc::DisconnectMe CLC_DisconnectMe();
 odaproto::clc::Say          CLC_Say         (const std::string_view& text, uint32_t visibility);
 odaproto::clc::UserInfo     CLC_UserInfo    (const UserInfo& userInfo);
 odaproto::clc::PingReply    CLC_PingReply   (uint64_t msec);
+
 odaproto::clc::Rcon         CLC_Rcon        (const std::string_view& text);
 odaproto::clc::RconPassword CLC_RconPassword(const std::string_view& text);
 odaproto::clc::RconLogout   CLC_RconLogout  ();
 
+odaproto::clc::SpectateBegin  CLC_SpectateBegin();
+odaproto::clc::SpectateEnd    CLC_SpectateEnd();
+odaproto::clc::SpectateUpdate CLC_SpectateUpdate(const player_t& player);

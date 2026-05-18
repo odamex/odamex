@@ -310,6 +310,9 @@ enum svc_t
 	clc_rcon,
 	clc_rcon_password,
 	clc_rcon_logout,
+	clc_spectate_begin,
+	clc_spectate_update,
+	clc_spectate_end,
 
 	MSG_DEFINITION_COUNT    // For use as sizer.
 };
@@ -346,8 +349,8 @@ enum clc_t
 	clc_rcon_password_MIGRATED,
 	clc_changeteam_UNUSED, // [NightFang, Toke] - Change your team
 	clc_ack_OLD_PLACEHOLDER,        // NOTE: Keep this for transitory compatibility with "non-unified" switch cases.
-	clc_ctfcommand,
-	clc_spectate,       // denis
+	clc_ctfcommand_UNUSED,
+	clc_spectate_MIGRATED,       // denis
 	clc_wantwad,        // denis - name, hash
 	clc_kill,           // denis - suicide
 	clc_cheat,          // denis - handle cheat codes.

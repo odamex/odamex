@@ -237,3 +237,28 @@ odaproto::clc::RconLogout CLC_RconLogout()
     return odaproto::clc::RconLogout{};
 }
 
+odaproto::clc::SpectateBegin CLC_SpectateBegin()
+{
+    return odaproto::clc::SpectateBegin();
+}
+
+odaproto::clc::SpectateEnd CLC_SpectateEnd()
+{
+    return {};
+}
+
+odaproto::clc::SpectateUpdate CLC_SpectateUpdate(const player_t& player)
+{
+    odaproto::clc::SpectateUpdate msg;
+
+    if (player.mo)
+    {
+        odaproto::Vec3* position = msg.mutable_pos();
+
+        position->set_x(player.mo->x);
+        position->set_y(player.mo->y);
+        position->set_z(player.mo->z);
+    }
+
+    return msg;
+}

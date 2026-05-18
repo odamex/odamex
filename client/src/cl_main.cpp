@@ -1103,9 +1103,7 @@ BEGIN_COMMAND (spectate)
 	// Only send message if currently not a spectator, or to remove from play queue
 	if (!spectator || consoleplayer().QueuePosition > 0)
 	{
-		buf_t& netBuf = messenger.NetBuf().Obtain();
-		MSG_WriteMarker(&netBuf, clc_spectate);
-		MSG_WriteByte(&netBuf, true);
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_SpectateBegin());
 	}
 }
 END_COMMAND (spectate)
@@ -1165,9 +1163,7 @@ BEGIN_COMMAND (join)
 	//	return;
 	//}
 
-	buf_t& netBuf = messenger.NetBuf().Obtain();
-	MSG_WriteMarker(&netBuf, clc_spectate);
-	MSG_WriteByte(&netBuf, false);
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_SpectateEnd());
 }
 END_COMMAND (join)
 
@@ -2221,13 +2217,7 @@ void CL_SendCmd(void)
 		// GhostlyDeath -- If we are spectating, tell the server of our new position
 		if (player.spectator)
 		{
-			buf_t& netBuf = messenger.NetBuf().Obtain();
-
-			MSG_WriteMarker(&netBuf, clc_spectate);
-			MSG_WriteByte(&netBuf, 5);
-			MSG_WriteLong(&netBuf, player.mo->x);
-			MSG_WriteLong(&netBuf, player.mo->y);
-			MSG_WriteLong(&netBuf, player.mo->z);
+			MSG_WriteSVC(messenger.NetBuf(), CLC_SpectateUpdate(player));
 		}
 
 		odaproto::clc::PlayerInput& currentNetcmd = localcmds[gametic % MAXSAVETICS];

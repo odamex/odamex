@@ -3785,35 +3785,16 @@ void SV_UpdateConsolePlayer(player_t &player)
 //
 // SV_Spectate
 //
-void SV_Spectate(player_t &player)
+void SV_Spectate(player_t &player, const odaproto::clc::SpectateUpdate& msg)
 {
-	// [AM] Code has three possible values; true, false and 5.  True specs the
-	//      player, false unspecs him and 5 updates the server with the spec's
-	//      new position.
-	byte Code = MSG_ReadByte();
-
-	if (!player.ingame())
-		return;
-
-	if (Code == 5)
+	// GhostlyDeath -- Prevent Cheaters
+	if (player.spectator and player.mo)
 	{
-		// GhostlyDeath -- Prevent Cheaters
-		if (!player.spectator || !player.mo)
-		{
-			for (int i = 0; i < 3; i++)
-				MSG_ReadLong();
-			return;
-		}
-
-		// GhostlyDeath -- Code 5! Anyway, this just updates the player for "antiwallhack" fun
-		player.mo->x = MSG_ReadLong();
-		player.mo->y = MSG_ReadLong();
-		player.mo->z = MSG_ReadLong();
-	}
-	else
-	{
-		SV_SetPlayerSpec(player, Code);
-	}
+    	// GhostlyDeath -- Code 5! Anyway, this just updates the player for "antiwallhack" fun
+	    player.mo->x = msg.pos().x();
+    	player.mo->y = msg.pos().y();
+    	player.mo->z = msg.pos().z();
+    }
 }
 
 // Change a player into a spectator or vice-versa.  Pass 'true' for silent
@@ -4400,6 +4381,18 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 				SV_RConLogout(player);
 				break;
 
+            case clc_spectate_begin:
+                SV_SetPlayerSpec(player, true);
+                break;
+
+            case clc_spectate_end:
+                SV_SetPlayerSpec(player, false);
+                break;
+
+            case clc_spectate_update:
+                SV_Spectate(player, *static_cast<odaproto::clc::SpectateUpdate*>(msgPtrRaw));
+                break;
+
             default:
                 // This case happens when a message was received, parsed, but not handled.
                 PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));
@@ -4439,12 +4432,6 @@ void SV_ParseCommands(player_t &player)
 
 			case msg_ack:
 				SV_AcknowledgePacket(player);
-				break;
-
-			case clc_spectate:
-            {
-                SV_Spectate (player);
-            }
 				break;
 
 			case clc_netcmd:

@@ -97,3 +97,19 @@ message RconPassword
 message RconLogout
 {
 }
+
+// clc_spectate_begin
+message SpectateBegin
+{
+}
+
+// clc_spectate_update
+message SpectateUpdate
+{
+	Vec3 pos = 1;
+}
+
+// clc_spectate_end
+message SpectateEnd
+{
+}
