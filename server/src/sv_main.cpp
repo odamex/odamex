@@ -1839,9 +1839,11 @@ void SV_UpdateMovingSectors(player_t &player)
 // SV_SendGametic
 // Sends gametic to synchronize with the client
 //
-void SV_SendGametic(client_t* cl)
+void SV_SendGametic(client_t& client)
 {
-	MSG_WriteSVC(cl->messenger.HighBuf(), SVC_ServerGametic(gametic, cl->messenger.GetPendingAckCount()));
+	MSG_WriteSVC(client.messenger.HighBuf(), SVC_ServerGametic(gametic,
+	                                                           client.messenger.GetPendingAckCount(),
+	                                                           client.messenger.GetReliableOverloadCount()));
 }
 
 void SV_LineStateUpdate(client_t *cl)
@@ -3266,7 +3268,7 @@ void SV_UpdateMonsterRespawnCount()
 
 // calculates ping using gametic which was sent by SV_SendGametic and
 // current gametic
-void SV_CalcPing(player_t &player)
+void SV_CalcPing(player_t& player)
 {
 	unsigned int ping = I_MSTime() - MSG_ReadLong();
 
@@ -3473,7 +3475,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	// this gametic is returned to the server with the client's
 	// next cmd
 	if (player.ingame())
-		SV_SendGametic(&player.client);
+		SV_SendGametic(player.client);
 
 	for (player_t& otherPlayer : players)
 	{

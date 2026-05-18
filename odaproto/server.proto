@@ -560,11 +560,14 @@ message MidPrint
 	int32 time = 2;
 }
 
-// svc_svgametic
+// svc_servergametic
+//
+// The message's name says "gametic" but really it's an infrastructural sampling of real-time status.
 message ServerGametic
 {
-	int32 tic = 1;
-	int32 reliable_queue_depth = 2;
+	int32  tic                         = 1;
+	uint32 reliable_messages_in_flight = 2;
+	uint32 throttle                    = 3;
 }
 
 // svc_inttimeleft

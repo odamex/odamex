@@ -325,7 +325,7 @@ void NetGraph::draw()
     {
         serverQueueNumber = std::to_string(mServerQueueDepth[nowIndex]);
     }
-    screen->DrawText(textcolor, mX + 290, mY, ("Server-side Queue: " + serverQueueNumber).c_str());
+    screen->DrawText(textcolor, mX + 290, mY, ("Server-side PIF: " + serverQueueNumber).c_str());
     drawServerQueueDepth(mX + 290, mY + fontheight);
 
 	drawTrafficIn(mX, mY + 128 + fontheight);
