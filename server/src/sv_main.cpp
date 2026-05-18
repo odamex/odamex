@@ -1814,9 +1814,11 @@ void SV_UpdateMovingSectors(player_t &player)
 // SV_SendGametic
 // Sends gametic to synchronize with the client
 //
-void SV_SendGametic(client_t* cl)
+void SV_SendGametic(client_t& client)
 {
-	MSG_WriteSVC(cl->messenger.HighBuf(), SVC_ServerGametic(gametic, cl->messenger.GetPendingAckCount()));
+	MSG_WriteSVC(client.messenger.HighBuf(), SVC_ServerGametic(gametic,
+	                                                           client.messenger.GetPendingAckCount(),
+	                                                           client.messenger.GetReliableOverloadCount()));
 }
 
 void SV_LineStateUpdate(client_t *cl)
@@ -3059,34 +3061,56 @@ bool SV_PrivMsg(player_t &player)
 // SV_UpdateMissiles
 // Updates missiles position sometimes.
 //
-void SV_UpdateMissiles(player_t &pl, AActor *mo)
+void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistanceType>::iterator& sortedMobjIter)
 {
+    const AActor* mo = sortedMobjIter->actorPtr;
+
 	if (!(mo->flags & MF_MISSILE) || mo->flags & MF_SKULLFLY)
 		return;
 
-	if (mo->type == MT_PLASMA)
-		return;
-
-	// update missile position every 30 tics
-	if (((gametic+mo->netid) % 30) && (mo->type != MT_TRACER) && (mo->type != MT_FATSHOT) && !(mo->flags2 & MF2_SEEKERMISSILE))
-		return;
-
-	// Revenant tracers and Mancubus fireballs need to be updated more often (and custom tracers)
-	if (((gametic+mo->netid) % 5) && (mo->type == MT_TRACER || mo->type == MT_FATSHOT || mo->flags2 & MF2_SEEKERMISSILE))
-		return;
-
+    // Avoid sending more than one Update Mobj per tic for any missile.
+    // Here we check to see if an update went out during the "meat" of the tic, which is complete at this point.
     if (mo->updatedDuringTic == gametic)
         return;
 
-	switch (mo->playersAware.Get(pl.id))
-	{
-		case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
-		case AwarenessEnum::BARELY_AWARE:
-			break;
+    // 64 units feels about right to prevent barely-dodged missiles from floating in front of the player's face
+    // when in a high-lag ~200 msec ping situation.
+    constexpr int HYPER_AWARENESS_CUTOFF_SQUARED = 64 * 64;
 
-		default:
-			MSG_WriteSVC(pl.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
-	}
+    const AwarenessEnum awarenessLevel = mo->playersAware.Get(player.id);
+    const bool          isHyperAware   = mo->target != player.mo and        // Players are not hyperaware of their own missiles.
+                                         awarenessLevel == AwarenessEnum::ALWAYS_AWARE and
+                                         sortedMobjIter->distanceSquared < HYPER_AWARENESS_CUTOFF_SQUARED;
+    if (isHyperAware)
+    {
+        MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+    }
+    else
+    {
+        // We don't send any updates for Plasma unless we've gone hyper-aware with it.
+        if (mo->type == MT_PLASMA)
+            return;
+
+        // Revenant tracers and Mancubus fireballs need to be updated more often (and custom tracers)
+        const bool needsMoreFrequentUpdates = (mo->type == MT_TRACER || mo->type == MT_FATSHOT || mo->flags2 & MF2_SEEKERMISSILE);
+
+        const int  divisor = needsMoreFrequentUpdates ? 5 : 30;
+        const int  phase   = (gametic + mo->netid) % divisor;
+
+        // Does this mobj have a scheduled update now?
+        if (phase == 0)
+        {
+            switch (awarenessLevel)
+            {
+                case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
+                case AwarenessEnum::BARELY_AWARE:
+                    break;
+
+                default:
+                    MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+            }
+        }
+    }
 }
 
 // Update the given actors data immediately.
@@ -3156,6 +3180,8 @@ void SV_UpdateMonsters(player_t &pl, AActor *mo)
 	if ((gametic+mo->netid) % 7)
 		return;
 
+    // Avoid sending more than one Update Mobj per tic for any missile.
+    // Here we check to see if an update went out during the "meat" of the tic, which is complete at this point.
     if (mo->updatedDuringTic == gametic)
         return;
 
@@ -3251,7 +3277,7 @@ void SV_UpdateMonsterRespawnCount()
 
 // calculates ping using gametic which was sent by SV_SendGametic and
 // current gametic
-void SV_CalcPing(player_t &player, uint64_t msec)
+void SV_CalcPing(player_t& player, uint64_t msec)
 {
 	unsigned int ping = I_MSTime() - msec;
 
@@ -3433,9 +3459,9 @@ static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player, int part
 
 		const int dx = playerMostSignificantX - (mobjInfo.actorPtr->x >> FRACBITS);
 		const int dy = playerMostSignificantY - (mobjInfo.actorPtr->y >> FRACBITS);
-		mobjInfo.distance = dx*dx + dy*dy;
+		mobjInfo.distanceSquared = dx*dx + dy*dy;
 	}
-	auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1.distance < mo2.distance; };
+	auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1.distanceSquared < mo2.distanceSquared; };
 
     // Do the division of size using shifts for now...  We can go back to real division if we need
     // the precision.
@@ -3458,7 +3484,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	// this gametic is returned to the server with the client's
 	// next cmd
 	if (player.ingame())
-		SV_SendGametic(&player.client);
+		SV_SendGametic(player.client);
 
 	for (player_t& otherPlayer : players)
 	{
@@ -3536,9 +3562,6 @@ void SV_WriteCommandsForPlayer(player_t& player)
 
 	int hiddenUpdateCount = 0;
 
-	// TODO: Add the following data as a metric for netgraph
-	//SV_PlayerPrintFmt(PRINT_HIGH, player.id, "reliable overload count: {}\n", player.client.messenger.GetReliableOverloadCount());
-
 	for (auto sortedMobjIter = player.sortedMobjs.begin(); sortedMobjIter != player.sortedMobjs.end(); ++sortedMobjIter)
 	{
 		if (hiddenUpdateCount <= maxForThisTic)
@@ -3551,7 +3574,7 @@ void SV_WriteCommandsForPlayer(player_t& player)
 			hiddenUpdateCount = SV_UpdateHiddenMobj(player, sortedMobjIter->actorPtr, hiddenUpdateCount, appropriateAwareness);
 		}
 
-		SV_UpdateMissiles(player, sortedMobjIter->actorPtr);
+		SV_UpdateMissiles(player, sortedMobjIter);
 
 		SV_UpdateMonsters(player, sortedMobjIter->actorPtr);
 	}

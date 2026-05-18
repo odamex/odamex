@@ -45,9 +45,11 @@ NetGraph::NetGraph(int x, int y) :
 	mTrafficIn.fill(0);
 	mTrafficOut.fill(0);
 	mPacketsIn.fill(0);
-	mReliableSendDepth.fill(0);
 	mServerQueueDepth.fill(0);
-	mServerQueueDepthLastUpdate.fill(0);
+	mServerMetricsLastUpdate.fill(0);
+	mReliableSendDepth.fill(0);
+	mReliableNonContiguousRetransmits.fill(0);
+	mThrottle.fill(0);
 }
 
 template <typename ElementType, size_t N>
@@ -76,10 +78,12 @@ void NetGraph::setReliableNonContiguousRetransmits(int val)
     SetClamped(mReliableNonContiguousRetransmits, val, 0, static_cast<int>(DEFAULT_RELIABILITY_QUEUE_SIZE));
 }
 
-void NetGraph::setServerQueueDepth(int val)
+void NetGraph::addServerSideMetrics(int reliablePacketsInFlightCount, int throttle)
 {
-    SetClamped(mServerQueueDepth, val, 0, static_cast<int>(DEFAULT_RELIABILITY_QUEUE_SIZE));
-    mServerQueueDepthLastUpdate[gametic % MAX_HISTORY_TICS] = gametic;
+    mServerMetricsLastUpdate[gametic % MAX_HISTORY_TICS] = gametic;
+
+    SetClamped(mServerQueueDepth, reliablePacketsInFlightCount, 0, static_cast<int>(DEFAULT_RELIABILITY_QUEUE_SIZE));
+    SetClamped(mThrottle,         throttle,                     0, 100);     // Simply made up.  We don't really have a limit here other than visual.
 }
 
 void NetGraph::addTrafficIn(int val)
@@ -208,14 +212,25 @@ void NetGraph::drawReliableSendDepth(int x, int y)
     drawQueueDepth(x, y, mReliableNonContiguousRetransmits, 0xB0); // red
 }
 
-void NetGraph::drawServerQueueDepth(int x, int y)
+void NetGraph::InvalidateLatestSampleIfMissedPacket(std::array<int, NetGraph::MAX_HISTORY_TICS>& data)
 {
     const int index = (gametic - 1) % MAX_HISTORY_TICS;
-    if (mServerQueueDepthLastUpdate[index] != gametic - 1)
+    if (mServerMetricsLastUpdate[index] != gametic - 1)
     {
-        mServerQueueDepth[index] = -1;
+        data[index] = -1;
     }
+}
+
+void NetGraph::drawServerQueueDepth(int x, int y)
+{
+    InvalidateLatestSampleIfMissedPacket(mServerQueueDepth);
     drawQueueDepth(x, y, mServerQueueDepth, 0x10);   // Pinkish
+}
+
+void NetGraph::drawServerThrottle(int x, int y)
+{
+    InvalidateLatestSampleIfMissedPacket(mThrottle);
+    drawQueueDepth(x, y, mThrottle, 0x10);   // Pinkish
 }
 
 void NetGraph::drawMispredictions(int x, int y)
@@ -304,6 +319,15 @@ void NetGraph::drawPackets(int x, int y)
 	screen->DrawText(textcolor, x, y, buf.str().c_str());
 }
 
+std::string NetGraph::BlankIfNegative(int value)
+{
+    if (value >= 0)
+    {
+        return std::to_string(value);
+    }
+    return {};
+}
+
 void NetGraph::draw()
 {
 	static constexpr int textcolor = CR_GREY;
@@ -320,17 +344,16 @@ void NetGraph::draw()
     screen->DrawText(textcolor, mX + 128, mY, ("Reliable Send Queue: " + std::to_string(mReliableSendDepth[nowIndex])).c_str());
     drawReliableSendDepth(mX + 128, mY + fontheight);
 
-    std::string serverQueueNumber;
-    if (mServerQueueDepth[nowIndex] >= 0)
-    {
-        serverQueueNumber = std::to_string(mServerQueueDepth[nowIndex]);
-    }
-    screen->DrawText(textcolor, mX + 290, mY, ("Server-side Queue: " + serverQueueNumber).c_str());
+    screen->DrawText(textcolor, mX + 290, mY, ("Server Reliable PIF: " + BlankIfNegative(mServerQueueDepth[nowIndex])).c_str());
     drawServerQueueDepth(mX + 290, mY + fontheight);
 
-	drawTrafficIn(mX, mY + 128 + fontheight);
-	drawTrafficOut(mX, mY + 128 + fontheight * 3);
-	drawPackets(mX, mY + 128 + fontheight * 6);
+	drawTrafficIn       (mX, mY + 128 + fontheight);
+	drawTrafficOut      (mX, mY + 128 + fontheight * 3);
+	drawPackets         (mX, mY + 128 + fontheight * 6);
+    drawServerThrottle  (mX, mY + 128 + fontheight * 20);
+
+    screen->DrawText(textcolor, mX, mY + 128 + fontheight * 19, ("Server Throttle: " + BlankIfNegative(mThrottle[nowIndex])).c_str());
+
 }
 
 VERSION_CONTROL (cl_netgraph_cpp, "$Id$")

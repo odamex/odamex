@@ -1278,12 +1278,13 @@ odaproto::svc::MidPrint SVC_MidPrint(const std::string& message, const int time)
 	return msg;
 }
 
-odaproto::svc::ServerGametic SVC_ServerGametic(const int tic, const int queueDepth)
+odaproto::svc::ServerGametic SVC_ServerGametic(const int tic, const int unackedCount, const int throttle)
 {
 	odaproto::svc::ServerGametic msg;
 
 	msg.set_tic(tic);
-	msg.set_reliable_queue_depth(queueDepth);
+	msg.set_reliable_messages_in_flight(unackedCount);
+	msg.set_throttle(throttle);
 
 	return msg;
 }
