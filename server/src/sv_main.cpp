@@ -3553,9 +3553,6 @@ void SV_WriteCommandsForPlayer(player_t& player)
 
 	int hiddenUpdateCount = 0;
 
-	// TODO: Add the following data as a metric for netgraph
-	//SV_PlayerPrintFmt(PRINT_HIGH, player.id, "reliable overload count: {}\n", player.client.messenger.GetReliableOverloadCount());
-
 	for (auto sortedMobjIter = player.sortedMobjs.begin(); sortedMobjIter != player.sortedMobjs.end(); ++sortedMobjIter)
 	{
 		if (hiddenUpdateCount <= maxForThisTic)

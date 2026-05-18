@@ -39,7 +39,7 @@ public:
 	void addPacketIn();
 	void setReliableSendDepth(int val);
 	void setReliableNonContiguousRetransmits(int val);
-	void setServerQueueDepth(int val);
+	void addServerSideMetrics(int reliablePacketsInFlightCount, int throttle);
 	void draw();
 
 private:
@@ -62,6 +62,10 @@ private:
 	void drawQueueDepth(int x, int y, const std::array<int, NetGraph::MAX_HISTORY_TICS>& data, int color);
 	void drawReliableSendDepth(int x, int y);
 	void drawServerQueueDepth(int x, int y);
+	void drawServerThrottle(int x, int y);
+
+	void InvalidateLatestSampleIfMissedPacket(std::array<int, NetGraph::MAX_HISTORY_TICS>& data);
+	std::string BlankIfNegative(int value);
 
 	int		mX;
 	int		mY;
@@ -72,8 +76,10 @@ private:
 	std::array<int, NetGraph::MAX_HISTORY_TICS> mTrafficOut;
 	std::array<int, NetGraph::MAX_HISTORY_TICS> mPacketsIn;
 	std::array<int, NetGraph::MAX_HISTORY_TICS> mServerQueueDepth;
-	std::array<int, NetGraph::MAX_HISTORY_TICS> mServerQueueDepthLastUpdate;
+	std::array<int, NetGraph::MAX_HISTORY_TICS> mServerMetricsLastUpdate;
 	std::array<int, NetGraph::MAX_HISTORY_TICS> mReliableSendDepth;
 	std::array<int, NetGraph::MAX_HISTORY_TICS> mReliableNonContiguousRetransmits;
-	int     mInterpolation;
+	std::array<int, NetGraph::MAX_HISTORY_TICS> mThrottle;
+
+	int mInterpolation;
 };

@@ -2282,7 +2282,7 @@ static void CL_ServerGametic(const odaproto::svc::ServerGametic* msg)
 {
 	::last_svgametic = msg->tic();
 
-	netgraph.setServerQueueDepth(msg->reliable_messages_in_flight());
+	netgraph.addServerSideMetrics(msg->reliable_messages_in_flight(), msg->throttle());
 
 #ifdef _WORLD_INDEX_DEBUG_
 	PrintFmt(PRINT_HIGH, "Gametic {}, received world index {}\n", gametic, last_svgametic);
