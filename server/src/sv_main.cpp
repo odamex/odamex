@@ -4298,22 +4298,6 @@ void SV_Cheat(player_t &player)
 	}
 }
 
-void SV_WantWad(player_t &player)
-{
-	client_t *cl = &player.client;
-
-	// read and ignore the rest of the wad request
-	MSG_ReadString();
-	MSG_ReadString();
-	MSG_ReadLong();
-
-	MSG_WriteSVC(cl->messenger.ReliableBuf(),
-		            SVC_Print(PRINT_HIGH, "Server: Downloading is disabled\n"));
-
-	SV_DropClient(player);
-	return;
-}
-
 void SV_HandlePlayerInput(odaproto::clc::PlayerInput& msg, player_t &player)
 {
 	if (gamestate == GS_LEVEL)
@@ -4444,10 +4428,6 @@ void SV_ParseCommands(player_t &player)
             {
 					SV_Suicide (player);
             }
-				break;
-
-			case clc_wantwad:
-				SV_WantWad(player);
 				break;
 
 			case clc_cheat:

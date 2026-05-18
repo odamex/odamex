@@ -351,7 +351,7 @@ enum clc_t
 	clc_ack_OLD_PLACEHOLDER,        // NOTE: Keep this for transitory compatibility with "non-unified" switch cases.
 	clc_ctfcommand_UNUSED,
 	clc_spectate_MIGRATED,       // denis
-	clc_wantwad,        // denis - name, hash
+	clc_wantwad_UNUSED,        // denis - name, hash
 	clc_kill,           // denis - suicide
 	clc_cheat,          // denis - handle cheat codes.
 	clc_callvote,       // [AM] - Calling a vote
