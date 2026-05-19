@@ -59,13 +59,6 @@ bool SV_IsPlayerAllowedToSee(const player_t &pl, const AActor *mobj);
 
 void SV_BasePrint(client_t* cl, const int printlevel, const std::string& str);
 
-// Print directly to a specific client.
-template <typename... ARGS>
-void SV_ClientPrintFmt(client_t *cl, int level, fmt::format_string<ARGS...> format, ARGS&&... args)
-{
-	SV_BasePrint(cl, level, fmt::format(format, std::forward<ARGS>(args)...));
-}
-
 // Print directly to a specific player.
 template <typename... ARGS>
 void SV_PlayerPrintFmt(int level, int player_id, fmt::format_string<ARGS...> format, ARGS&&... args)

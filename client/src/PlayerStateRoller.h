@@ -70,6 +70,9 @@ class PlayerStateRoller
 
 		bool ResolvePsprites(int i_oldTic, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites, player_t& io_player);
 
+		bool ResolveHealth(int i_oldTic, int i_health, player_t& io_player);
+		bool ResolveArmorpoints(int i_oldTic, int i_armorpoints, player_t& io_player);
+
 		/// Generic stream-in operator.
 		template <typename StreamType>
 		friend StreamType& operator<<(StreamType& io_stream, const PlayerStateRoller& i_thisRef)

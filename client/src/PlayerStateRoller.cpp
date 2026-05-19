@@ -474,6 +474,28 @@ bool PlayerStateRoller::ResolvePsprites(int i_oldTic, const std::array<PspriteSt
 	return false;
 }
 
+bool PlayerStateRoller::ResolveHealth(int i_oldTic, int i_health, player_t& io_player)
+{
+	auto historyIter = ObtainHistory(i_oldTic, io_player);
+	if (historyIter and RollbackHealth(*historyIter, i_health))
+	{
+		ApplyMostRecentToPlayer(io_player);
+		return true;
+	}
+	return false;
+}
+
+bool PlayerStateRoller::ResolveArmorpoints(int i_oldTic, int i_armorpoints, player_t& io_player)
+{
+	auto historyIter = ObtainHistory(i_oldTic, io_player);
+	if (historyIter and RollbackArmorpoints(*historyIter, i_armorpoints))
+	{
+		ApplyMostRecentToPlayer(io_player);
+		return true;
+	}
+	return false;
+}
+
 namespace
 {
 	template <typename DataType>
