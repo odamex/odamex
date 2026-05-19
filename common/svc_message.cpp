@@ -704,6 +704,7 @@ odaproto::svc::DamagePlayer SVC_DamagePlayer(const player_t& player, const AActo
 	msg.set_armor_damage      (armor);
 	msg.set_player_health     (player.health);
 	msg.set_player_armorpoints(player.armorpoints);
+	msg.set_player_tic        (player.tic);
 
 	return msg;
 }

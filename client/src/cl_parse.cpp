@@ -1276,12 +1276,13 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 //
 static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 {
-	uint32_t netid = msg->netid();
-	uint32_t attackerid = msg->inflictorid();
-	int healthDamage = msg->health_damage();
-	//int armorDamage = msg->armor_damage(); // unused for now...
-	int health = msg->player_health();
-	int armorpoints = msg->player_armorpoints();
+	const uint32_t  netid        = msg->netid();
+	const uint32_t  attackerid   = msg->inflictorid();
+	const int       healthDamage = msg->health_damage();
+	//const int armorDamage = msg->armor_damage(); // unused for now...
+	const int       health       = msg->player_health();
+	const int       armorpoints  = msg->player_armorpoints();
+	const int       oldTic       = msg->player_tic();
 
 	AActor* actor = P_FindThingById(netid);
 	AActor* attacker = P_FindThingById(attackerid);
@@ -1289,40 +1290,49 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	if (!actor || !actor->player)
 		return;
 
-	player_t* p = actor->player;
-	p->health = MIN(p->health, health);
-	p->armorpoints = MIN(p->armorpoints, armorpoints);
-	p->mo->health = p->health;
+	player_t& player = *actor->player;
 
 	if (attacker != NULL)
-		p->attacker = attacker->ptr();
+		player.attacker = attacker->ptr();
 
-	if (p->health < 0)
+	if (player.id == consoleplayer_id)
 	{
-		if (p->cheats & CF_BUDDHA)
+		rollerState.ResolveHealth      (oldTic, health,      player);
+		rollerState.ResolveArmorpoints (oldTic, armorpoints, player);
+	}
+	else
+	{
+		player.health = MIN(player.health, health);
+		player.armorpoints = MIN(player.armorpoints, armorpoints);
+		player.mo->health = player.health;
+
+		if (player.health < 0)
 		{
-			p->health = 1;
-			p->mo->health = 1;
+			if (player.cheats & CF_BUDDHA)
+			{
+				player.health = 1;
+				player.mo->health = 1;
+			}
+			else
+				player.health = 0;
 		}
-		else
-			p->health = 0;
+
+		if (player.armorpoints < 0)
+			player.armorpoints = 0;
 	}
 
-	if (p->armorpoints < 0)
-		p->armorpoints = 0;
-
-	if (p->armorpoints == 0)
-		p->armortype = 0;
+	if (player.armorpoints == 0)
+		player.armortype = 0;
 
 	if (healthDamage > 0)
 	{
-		p->damagecount += healthDamage;
+		player.damagecount += healthDamage;
 
-		if (p->damagecount > 100)
-			p->damagecount = 100;
+		if (player.damagecount > 100)
+			player.damagecount = 100;
 
-		if (p->mo->info->painstate)
-			P_SetMobjState(p->mo, p->mo->info->painstate);
+		if (player.mo->info->painstate)
+			P_SetMobjState(player.mo, player.mo->info->painstate);
 	}
 }
 
