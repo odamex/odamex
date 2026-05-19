@@ -361,3 +361,11 @@ odaproto::clc::Netcmd CLC_Netcmd(const std::string& arg)
     msg.add_argv(arg);
     return msg;
 }
+
+odaproto::clc::Spy CLC_Spy(uint32_t playerId)
+{
+    odaproto::clc::Spy msg;
+    msg.set_player_id(playerId);
+    return msg;
+}
+

@@ -3386,9 +3386,9 @@ void SV_SendPlayerStateUpdate(client_t* client, player_t* player, int destinatio
 	}
 }
 
-void SV_SpyPlayer(player_t &viewer)
+void SV_SpyPlayer(player_t& viewer, const odaproto::clc::Spy& msg)
 {
-	byte id = MSG_ReadByte();
+	byte id = static_cast<byte>(msg.player_id());
 
 	player_t &other = idplayer(id);
 	if (!validplayer(other) || !P_CanSpy(viewer, other))
@@ -4391,7 +4391,11 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 				SV_NetCmd(player, *static_cast<odaproto::clc::Netcmd*>(msgPtrRaw));
 				break;
 
-            default:
+   			case clc_spy:
+				SV_SpyPlayer(player, *static_cast<odaproto::clc::Spy*>(msgPtrRaw));
+				break;
+
+         default:
                 // This case happens when a message was received, parsed, but not handled.
                 PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));
                 return PERR_BAD_DECODE;
@@ -4426,10 +4430,6 @@ void SV_ParseCommands(player_t &player)
 
 			case msg_ack:
 				SV_AcknowledgePacket(player);
-				break;
-
-			case clc_spy:
-				SV_SpyPlayer(player);
 				break;
 
 			default:

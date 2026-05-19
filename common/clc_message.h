@@ -16,6 +16,7 @@ odaproto::clc::UserInfo      CLC_UserInfo       (const UserInfo& userInfo);
 odaproto::clc::PingReply     CLC_PingReply      (uint64_t msec);
 odaproto::clc::Kill          CLC_Kill           ();
 odaproto::clc::GetPlayerInfo CLC_GetPlayerInfo  ();
+odaproto::clc::Spy           CLC_Spy            (uint32_t playerId);
 
 template <typename IteratorType>
 odaproto::clc::Netcmd CLC_Netcmd(IteratorType begin, IteratorType end)

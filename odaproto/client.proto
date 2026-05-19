@@ -171,3 +171,9 @@ message Netcmd
 {
     repeated string argv = 1;
 }
+
+// clc_spy
+message Spy
+{
+    uint32 player_id = 1;
+}

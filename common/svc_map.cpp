@@ -148,6 +148,7 @@ static void InitMap()
 	MapProto(clc_callvote,      odaproto::clc::CallVote::descriptor());
 	MapProto(clc_getplayerinfo, odaproto::clc::GetPlayerInfo::descriptor());
 	MapProto(clc_netcmd,        odaproto::clc::Netcmd::descriptor());
+	MapProto(clc_spy,           odaproto::clc::Spy::descriptor());
 
 	MapProto(clc_rcon,          odaproto::clc::Rcon::descriptor());
 	MapProto(clc_rcon_password, odaproto::clc::RconPassword::descriptor());

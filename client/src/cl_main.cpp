@@ -640,9 +640,7 @@ void CL_CheckDisplayPlayer(void)
 	{
 		// Request information about this player from the server
 		// (weapons, ammo, health, etc)
-		buf_t& netBuf = messenger.NetBuf().Obtain();
-		MSG_WriteMarker(&netBuf, clc_spy);
-		MSG_WriteByte(&netBuf, newid);
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_Spy(newid));
 		displayplayer_id = newid;
 
 		// Changing display player can sometimes affect status bar visibility
