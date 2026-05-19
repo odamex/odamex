@@ -294,7 +294,7 @@ void DoCheat(player_t& player, int cheat, bool silentmsg)
 {
 	std::string msg;
 
-	if (player.health <= 0)
+	if (player.health <= 0 or not serverside)
 		return;
 
 	switch (cheat)
@@ -457,15 +457,12 @@ void DoCheat(player_t& player, int cheat, bool silentmsg)
 		if (!G_IsCoopGame())
 			return;
 
-		if (serverside)
-		{
-			P_LineAttack(player.mo, player.mo->angle, 8192 * FRACUNIT,
-			             P_AimLineAttack(player.mo, player.mo->angle, 8192 * FRACUNIT),
-			             10000);
+		P_LineAttack(player.mo, player.mo->angle, 8192 * FRACUNIT,
+		             P_AimLineAttack(player.mo, player.mo->angle, 8192 * FRACUNIT),
+		             10000);
 
-			if (multiplayer)
-				msg = "MDK";
-		}
+		if (multiplayer)
+			msg = "MDK";
 	}
 	break;
 	case CHT_BUDDHA: {
@@ -508,7 +505,7 @@ AActor* Summon(player_t& player, const std::string& sum, bool friendly)
 	AActor* entity = AActor::AActorPtr();
 	AActor* source = player.mo;
 
-	if (player.spectator || source == nullptr)
+	if (player.spectator or source == nullptr or not serverside)
 		return entity;
 
 	if (serverside)
@@ -562,6 +559,9 @@ AActor* Summon(player_t& player, const std::string& sum, bool friendly)
 
 void GiveTo(player_t& player, const char* name)
 {
+	if (not serverside)
+		return;
+
 	bool giveall;
 
 	if (&player != &consoleplayer())
