@@ -1397,7 +1397,7 @@ player_t::player_t() :
 	to_spawn(std::queue<AActor::AActorPtr>()),
 	inventoryCheckRequestsAreEnabled(false),
 	inventoryCheckIsRequestedForTic(-1),
-	client(client_t())
+	client{}
 {
 	cmd.clear();
 	powers.fill(0);

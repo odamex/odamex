@@ -59,66 +59,29 @@
 
 struct client_t
 {
-	netadr_t    address = {};
+	OdaMessenger messenger  { };
+	netadr_t     address    { };
 
-	// protocol version supported by the client
-	short		version = 0;
-	int			packedversion = 0;
-
-	OdaMessenger messenger;
-
-	int			last_received = 0;	// for timeouts
-
-	int			lastclientcmdtic = 0;
-
-	std::string	digest = "";			// randomly generated string that the client must use for any hashes it sends back
-	bool        allow_rcon = false;     // allow remote admin
-	bool		displaydisconnect = true; // display disconnect message when disconnecting
+	short       version           { 0 };    // protocol version supported by the client
+	int         packedversion     { 0 };
+	int         last_received     { 0 };    // for timeouts
+	int         lastclientcmdtic  { 0 };
+	std::string digest            { };          // randomly generated string that the client must use for any hashes it sends back
+	bool        allow_rcon        { false };    // allow remote admin
+	bool        displaydisconnect { true  };    // display disconnect message when disconnecting
 
 	struct download_t
 	{
-		std::string name = "";
-		std::string md5  = "";
-		unsigned int next_offset = 0;
+		std::string name         { };
+		std::string md5          { };
+		unsigned int next_offset { 0 };
 	} download;
 
-	client_t() :
-	    messenger()
-	{
-	}
+	client_t() = default;
 
-	client_t(const client_t &other)
-		: address(other.address),
-		version(other.version),
-		packedversion(other.packedversion),
-		messenger(other.messenger),
-		last_received(other.last_received),
-		lastclientcmdtic(other.lastclientcmdtic),
-		digest(other.digest),
-		allow_rcon(false),
-		displaydisconnect(true),
-		download(other.download)
-	{
-	}
-
-	client_t& operator=(const client_t& other)
-	{
-		if (this == &other)
-			return *this;
-
-		address = other.address;
-		messenger = other.messenger;
-		version = other.version;
-		packedversion = other.packedversion;
-		last_received = other.last_received;
-		lastclientcmdtic = other.lastclientcmdtic;
-		digest = other.digest;
-		allow_rcon = false;
-		displaydisconnect = true;
-		download = other.download;
-
-		return *this;
-	}
+	// Clients are not copyable.  They can be moved, but not copied.
+	client_t(const client_t &other)            = delete;
+	client_t& operator=(const client_t& other) = delete;
 };
 
 //
