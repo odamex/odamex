@@ -4220,18 +4220,13 @@ void SV_Suicide(player_t &player)
 //
 // SV_Cheat
 //
-void SV_Cheat(player_t &player)
+void SV_Cheat(player_t &player, const odaproto::clc::Cheat& msg)
 {
-	byte cheatType = MSG_ReadByte();
+    if (cheat::AreCheatsEnabled())
+    {
+		const int       oldCheats = player.cheats;
+        const uint32_t  cheat     = msg.value();
 
-	if (cheatType == 0)
-	{
-		unsigned int cheat = MSG_ReadShort();
-
-		if (!cheat::AreCheatsEnabled())
-			return;
-
-		int oldCheats = player.cheats;
 		cheat::DoCheat(player, cheat);
 
 		if (player.cheats != oldCheats)
@@ -4242,16 +4237,14 @@ void SV_Cheat(player_t &player)
 				SV_SendPlayerStateUpdate(cl, &player, it->tic);
 			}
 		}
+    }
+}
 
-	}
-	else if (cheatType == 1)
+void SV_CheatGive(player_t &player, const odaproto::clc::CheatGive& msg)
+{
+    if (cheat::AreCheatsEnabled())
 	{
-		const char* wantcmd = MSG_ReadString();
-
-		if (!cheat::AreCheatsEnabled())
-			return;
-
-		cheat::GiveTo(player, wantcmd);
+		cheat::GiveTo(player, msg.item().c_str());
 
 		for (Players::iterator it = players.begin(); it != players.end(); ++it)
 		{
@@ -4260,14 +4253,13 @@ void SV_Cheat(player_t &player)
 		}
 
 	}
-	else if (cheatType == 2)
+}
+
+static void SummonGeneral(player_t& cheater, const std::string& summon, bool isFriend)
+{
+    if (cheat::AreCheatsEnabled())
 	{
-		const char* wantsummon = MSG_ReadString();
-
-		if (!cheat::AreCheatsEnabled())
-			return;
-
-		AActor* actor = cheat::Summon(player, wantsummon, false);
+		AActor* actor = cheat::Summon(cheater, summon, isFriend);
 
 		if (actor == NULL)
 			return;
@@ -4277,23 +4269,16 @@ void SV_Cheat(player_t &player)
 			SV_AwarenessUpdate(player, actor, AwarenessEnum::FULLY_AWARE);
 		}
 	}
-	else if (cheatType == 3)
-	{
-		const char* wantsummon = MSG_ReadString();
+}
 
-		if (!cheat::AreCheatsEnabled())
-			return;
+void SV_CheatSummon(player_t& player, const odaproto::clc::CheatSummon& msg)
+{
+    SummonGeneral(player, msg.monster(), false);
+}
 
-		AActor* actor = cheat::Summon(player, wantsummon, true);
-
-		if (actor == NULL)
-			return;
-
-		for (auto& player : players)
-		{
-			SV_AwarenessUpdate(player, actor, AwarenessEnum::FULLY_AWARE);
-		}
-	}
+void SV_CheatSummonFriend(player_t &player, const odaproto::clc::CheatSummonFriend& msg)
+{
+    SummonGeneral(player, msg.monster(), true);
 }
 
 void SV_HandlePlayerInput(odaproto::clc::PlayerInput& msg, player_t &player)
@@ -4379,6 +4364,22 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
                 SV_Suicide(player);
                 break;
 
+            case clc_cheat:
+                SV_Cheat(player, *static_cast<odaproto::clc::Cheat*>(msgPtrRaw));
+                break;
+
+            case clc_cheat_give:
+                SV_CheatGive(player, *static_cast<odaproto::clc::CheatGive*>(msgPtrRaw));
+                break;
+
+            case clc_cheat_summon:
+                SV_CheatSummon(player, *static_cast<odaproto::clc::CheatSummon*>(msgPtrRaw));
+                break;
+
+            case clc_cheat_summon_friend:
+                SV_CheatSummonFriend(player, *static_cast<odaproto::clc::CheatSummonFriend*>(msgPtrRaw));
+                break;
+
             default:
                 // This case happens when a message was received, parsed, but not handled.
                 PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));
@@ -4422,10 +4423,6 @@ void SV_ParseCommands(player_t &player)
 
 			case clc_netcmd:
 				SV_NetCmd(player);
-				break;
-
-			case clc_cheat:
-				SV_Cheat(player);
 				break;
 
 			case clc_spy:

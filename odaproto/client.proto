@@ -118,3 +118,27 @@ message SpectateUpdate
 message SpectateEnd
 {
 }
+
+// clc_cheat
+message Cheat
+{
+    uint32 value = 1;
+}
+
+// clc_cheat_give
+message CheatGive
+{
+    string item = 1;
+}
+
+// clc_cheat_summon
+message CheatSummon
+{
+    string monster = 1;
+}
+
+// clc_cheat_summon_friend
+message CheatSummonFriend
+{
+    string monster = 1;
+}

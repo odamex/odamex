@@ -23,3 +23,8 @@ odaproto::clc::RconLogout   CLC_RconLogout  ();
 odaproto::clc::SpectateBegin  CLC_SpectateBegin();
 odaproto::clc::SpectateEnd    CLC_SpectateEnd();
 odaproto::clc::SpectateUpdate CLC_SpectateUpdate(const player_t& player);
+
+odaproto::clc::Cheat             CLC_Cheat(uint32_t cheatValue);
+odaproto::clc::CheatGive         CLC_CheatGive(const std::string& item);
+odaproto::clc::CheatSummon       CLC_CheatSummon(const std::string& monster);
+odaproto::clc::CheatSummonFriend CLC_CheatSummonFriend(const std::string& monster);

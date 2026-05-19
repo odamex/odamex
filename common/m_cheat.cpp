@@ -134,8 +134,8 @@ bool SetGeneric(cheatseq_t* cheat)
 			return true;
 	}
 
-	DoCheat(consoleplayer(), static_cast<ECheatFlags>(cheat->Args[0]));
-	CL_SendCheat(static_cast<ECheatFlags>(cheat->Args[0]));
+	DoCheat(consoleplayer(), static_cast<CheatEnum>(cheat->Args[0]));
+	CL_SendCheat(static_cast<CheatEnum>(cheat->Args[0]));
 
 	return true;
 }

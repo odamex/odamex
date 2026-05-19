@@ -159,6 +159,10 @@ static void InitMap()
 	MapProto(clc_netdemostop,       odaproto::clc::NetDemoStop::descriptor());
 	MapProto(clc_netdemoloadsnap,   odaproto::clc::NetDemoLoadSnap::descriptor());
 
+	MapProto(clc_cheat,                 odaproto::clc::Cheat::descriptor());
+	MapProto(clc_cheat_give,            odaproto::clc::CheatGive::descriptor());
+	MapProto(clc_cheat_summon,          odaproto::clc::CheatSummon::descriptor());
+	MapProto(clc_cheat_summon_friend,   odaproto::clc::CheatSummonFriend::descriptor());
 }
 
 /**

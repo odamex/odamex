@@ -2259,21 +2259,15 @@ void CL_PlayerTimes()
 //
 void CL_SendCheat(int cheats)
 {
-	buf_t& netBuf = messenger.NetBuf().Obtain();
-	MSG_WriteMarker(&netBuf, clc_cheat);
-	MSG_WriteByte(&netBuf, 0);
-	MSG_WriteShort(&netBuf, cheats);
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Cheat(cheats));
 }
 
 //
-// CL_SendCheat
+// CL_SendGiveCheat
 //
 void CL_SendGiveCheat(const char* item)
 {
-	buf_t& netBuf = messenger.NetBuf().Obtain();
-	MSG_WriteMarker(&netBuf, clc_cheat);
-	MSG_WriteByte(&netBuf, 1);
-	MSG_WriteString(&netBuf, item);
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_CheatGive(item));
 }
 
 //
@@ -2281,10 +2275,7 @@ void CL_SendGiveCheat(const char* item)
 //
 void CL_SendSummonCheat(const char* summon)
 {
-	buf_t& netBuf = messenger.NetBuf().Obtain();
-	MSG_WriteMarker(&netBuf, clc_cheat);
-	MSG_WriteByte(&netBuf, 2);
-	MSG_WriteString(&netBuf, summon);
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_CheatSummon(summon));
 }
 
 //
@@ -2292,10 +2283,7 @@ void CL_SendSummonCheat(const char* summon)
 //
 void CL_SendSummonFriendCheat(const char* summon)
 {
-	buf_t& netBuf = messenger.NetBuf().Obtain();
-	MSG_WriteMarker(&netBuf, clc_cheat);
-	MSG_WriteByte(&netBuf, 3);
-	MSG_WriteString(&netBuf, summon);
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_CheatSummonFriend(summon));
 }
 
 
