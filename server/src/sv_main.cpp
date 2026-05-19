@@ -4127,18 +4127,9 @@ void MOTDCmd(player_t& player)
  *
  * @param player Player who sent the netcmd.
  */
-void SV_NetCmd(player_t& player)
+void SV_NetCmd(player_t& player, const odaproto::clc::Netcmd& msg)
 {
-	std::vector<std::string> netargs;
-
-	// Parse arguments into a vector.
-	netargs.push_back(MSG_ReadString());
-	size_t netargc = MSG_ReadByte();
-
-	for (size_t i = 0; i < netargc; i++)
-	{
-		netargs.push_back(MSG_ReadString());
-	}
+	std::vector<std::string> netargs {msg.argv().begin(), msg.argv().end()};
 
 	if (netargs.at(0) == "help")
 	{
@@ -4396,6 +4387,10 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 				SV_SendPlayerInfo(player);
 				break;
 
+			case clc_netcmd:
+				SV_NetCmd(player, *static_cast<odaproto::clc::Netcmd*>(msgPtrRaw));
+				break;
+
             default:
                 // This case happens when a message was received, parsed, but not handled.
                 PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));
@@ -4431,10 +4426,6 @@ void SV_ParseCommands(player_t &player)
 
 			case msg_ack:
 				SV_AcknowledgePacket(player);
-				break;
-
-			case clc_netcmd:
-				SV_NetCmd(player);
 				break;
 
 			case clc_spy:

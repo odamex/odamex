@@ -354,3 +354,10 @@ odaproto::clc::GetPlayerInfo CLC_GetPlayerInfo()
 {
     return {};
 }
+
+odaproto::clc::Netcmd CLC_Netcmd(const std::string& arg)
+{
+    odaproto::clc::Netcmd msg;
+    msg.add_argv(arg);
+    return msg;
+}

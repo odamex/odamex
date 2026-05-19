@@ -276,11 +276,8 @@ BEGIN_COMMAND(vote_yes)
 		return;
 	}
 
-    auto& netBuf = messenger.NetBuf().Obtain();
-	MSG_WriteMarker(&netBuf, clc_netcmd);
-	MSG_WriteString(&netBuf, "vote");
-	MSG_WriteByte(&netBuf, 1);
-	MSG_WriteString(&netBuf, "yes");
+	std::array cmd { "vote", "yes" };
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Netcmd(cmd.begin(), cmd.end()));
 
 	if (snd_votesfx)
 		S_Sound(CHAN_INTERFACE, "ui/vote/yes", 1.0f, ATTN_NONE);
@@ -298,11 +295,8 @@ BEGIN_COMMAND(vote_no)
 		return;
 	}
 
-    auto& netBuf = messenger.NetBuf().Obtain();
-	MSG_WriteMarker(&netBuf, clc_netcmd);
-	MSG_WriteString(&netBuf, "vote");
-	MSG_WriteByte(&netBuf, 1);
-	MSG_WriteString(&netBuf, "no");
+	std::array cmd { "vote", "no" };
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Netcmd(cmd.begin(), cmd.end()));
 
 	if (snd_votesfx)
 		S_Sound(CHAN_INTERFACE, "ui/vote/no", 1.0f, ATTN_NONE);

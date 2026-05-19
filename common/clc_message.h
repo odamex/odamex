@@ -17,6 +17,19 @@ odaproto::clc::PingReply     CLC_PingReply      (uint64_t msec);
 odaproto::clc::Kill          CLC_Kill           ();
 odaproto::clc::GetPlayerInfo CLC_GetPlayerInfo  ();
 
+template <typename IteratorType>
+odaproto::clc::Netcmd CLC_Netcmd(IteratorType begin, IteratorType end)
+{
+    odaproto::clc::Netcmd msg;
+    while (begin != end)
+    {
+        PrintFmt("{}\n", *begin);
+        msg.add_argv(*begin++);
+    }
+    return msg;
+}
+odaproto::clc::Netcmd CLC_Netcmd(const std::string& arg);
+
 odaproto::clc::Rcon         CLC_Rcon        (const std::string_view& text);
 odaproto::clc::RconPassword CLC_RconPassword(const std::string_view& text);
 odaproto::clc::RconLogout   CLC_RconLogout  ();

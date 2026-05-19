@@ -77,6 +77,7 @@
 #include "PlayerStateRoller.h"
 
 #include <bitset>
+#include <ranges>
 #include <set>
 #include <sstream>
 
@@ -1110,10 +1111,7 @@ END_COMMAND (spectate)
 
 BEGIN_COMMAND(ready)
 {
-	buf_t& netBuf = messenger.NetBuf().Obtain();
-	MSG_WriteMarker(&netBuf, clc_netcmd);
-	MSG_WriteString(&netBuf, "ready");
-	MSG_WriteByte(&netBuf, 0);
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Netcmd("ready"));
 }
 END_COMMAND(ready)
 
@@ -1140,18 +1138,7 @@ BEGIN_COMMAND(netcmd)
 		return;
 	}
 
-	buf_t& netBuf = messenger.NetBuf().Obtain();
-	MSG_WriteMarker(&netBuf, clc_netcmd);
-	MSG_WriteString(&netBuf, argv[1]);
-
-	// Pass additional arguments as separate strings.  Avoids argument
-	// parsing at the opposite end.
-	byte netargc = MIN<size_t>(argc - 2, 0xFF);
-	MSG_WriteByte(&netBuf, netargc);
-	for (size_t i = 0; i < netargc; i++)
-	{
-		MSG_WriteString(&netBuf, argv[i + 2]);
-	}
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Netcmd(argv+1, argv + argc));
 }
 END_COMMAND(netcmd)
 

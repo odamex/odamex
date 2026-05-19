@@ -1107,9 +1107,9 @@ static void InitNetMessageFormats()
 	MSG_INFO(clc_maplist);
 	MSG_INFO(clc_maplist_update);
 	MSG_INFO(clc_getplayerinfo);
+	MSG_INFO(clc_netcmd);
 
 	// Client Messages.
-	CLC_INFO(clc_netcmd);
 	CLC_INFO(clc_spy);
 	CLC_INFO(clc_privmsg);
 	CLC_INFO(clc_max);

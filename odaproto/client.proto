@@ -165,3 +165,9 @@ message MaplistUpdate
 message GetPlayerInfo
 {
 }
+
+// clc_netcmd
+message Netcmd
+{
+    repeated string argv = 1;
+}
