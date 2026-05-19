@@ -233,7 +233,6 @@ enum svc_t
 	svc_spawnplayer,
 	svc_damageplayer,
 	svc_killmobj,
-	svc_fireweapon,
 	svc_updatesector,
 	svc_print,
 	svc_playermembers,

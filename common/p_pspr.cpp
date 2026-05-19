@@ -477,15 +477,6 @@ void P_FireWeapon(player_t& player)
 	statenum_t newstatenum = weaponinfo[player.readyweapon].atkstate;
 	P_SetPsprite(player, ps_weapon, newstatenum);
 
-	// [tm512] Send the client the weapon they just fired so
-	// that they can fix any weapon desyncs that they get - apr 14 2012
-#if defined(SERVER_APP)
-	if (serverside && !clientside)
-	{
-		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_FireWeapon(player));
-	}
-#endif
-
 	if (!(weaponinfo[player.readyweapon].flags & WPF_SILENT)) // MBF21
 		P_NoiseAlert(player.mo, player.mo);
 }

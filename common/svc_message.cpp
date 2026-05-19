@@ -785,16 +785,6 @@ odaproto::svc::RaiseMobj SVC_RaiseMobj(const AActor* source, const AActor* corps
 	return msg;
 }
 
-odaproto::svc::FireWeapon SVC_FireWeapon(const player_t& player)
-{
-	odaproto::svc::FireWeapon msg;
-
-	msg.set_readyweapon (player.readyweapon);
-	msg.set_player_tic  (player.tic);
-
-	return msg;
-}
-
 odaproto::svc::UpdateSector SVC_UpdateSector(const sector_t& sector)
 {
 	odaproto::svc::UpdateSector msg;

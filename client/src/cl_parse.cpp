@@ -1447,39 +1447,6 @@ static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 	corpsehit->target = AActor::AActorPtr();
 }
 
-///////////////////////////////////////////////////////////
-///// CL_Fire* called when someone uses a weapon  /////////
-///////////////////////////////////////////////////////////
-
-// [tm512] attempt at squashing weapon desyncs.
-// The server will send us what weapon we fired, and if that
-// doesn't match the weapon we have up at the moment, fix it
-// and request that we get a full update of playerinfo - apr 14 2012
-static void CL_FireWeapon(const odaproto::svc::FireWeapon* msg)
-{
-#if 0
-	player_t& player = consoleplayer();
-
-	weapontype_t firedweap = static_cast<weapontype_t>(msg->readyweapon());
-
-	if (firedweap < 0 || firedweap > wp_nochange)
-	{
-		PrintFmt("CL_FireWeapon: unknown weapon {}\n", firedweap);
-		return;
-	}
-	int clientTicAtFireWeaponTime = msg->player_tic();
-
-	if (firedweap != player.readyweapon)
-	{
-		DPrintFmt("CL_FireWeapon: weapon misprediction\n");
-		A_ForceWeaponFire(player.mo, firedweap, clientTicAtFireWeaponTime);
-
-		// Request the player's ammo status from the server
-		MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_getplayerinfo);
-	}
-#endif
-}
-
 //
 // CL_UpdateSector
 // Updates floorheight and ceilingheight of a sector.
@@ -3389,7 +3356,6 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_damageplayer, CL_DamagePlayer, odaproto::svc::DamagePlayer);
 		SV_MSG(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
 		SV_MSG(svc_raisemobj, CL_RaiseMobj, odaproto::svc::RaiseMobj);
-		SV_MSG(svc_fireweapon, CL_FireWeapon, odaproto::svc::FireWeapon);
 		SV_MSG(svc_updatesector, CL_UpdateSector, odaproto::svc::UpdateSector);
 		SV_MSG(svc_print, CL_Print, odaproto::svc::Print);
 		SV_MSG(svc_playermembers, CL_PlayerMembers, odaproto::svc::PlayerMembers);
