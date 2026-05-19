@@ -146,6 +146,7 @@ static void InitMap()
 	MapProto(clc_userinfo,      odaproto::clc::UserInfo::descriptor());
 	MapProto(clc_pingreply,     odaproto::clc::PingReply::descriptor());
 	MapProto(clc_kill,          odaproto::clc::Kill::descriptor());
+	MapProto(clc_callvote,      odaproto::clc::CallVote::descriptor());
 
 	MapProto(clc_rcon,          odaproto::clc::Rcon::descriptor());
 	MapProto(clc_rcon_password, odaproto::clc::RconPassword::descriptor());

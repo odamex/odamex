@@ -303,3 +303,36 @@ odaproto::clc::CheatSummonFriend CLC_CheatSummonFriend(const std::string& monste
 
     return msg;
 }
+
+odaproto::clc::CallVote CLC_CallVote(uint32_t voteType)
+{
+    odaproto::clc::CallVote msg;
+
+    msg.set_vote_type(voteType);
+
+    return msg;
+}
+
+odaproto::clc::CallVote CLC_CallVote(uint32_t voteType, const std::string& arg)
+{
+    odaproto::clc::CallVote msg;
+
+    msg.set_vote_type(voteType);
+    msg.add_arg(arg);
+
+    return msg;
+}
+
+odaproto::clc::CallVote CLC_CallVote(uint32_t voteType, const std::vector<std::string>& args)
+{
+    odaproto::clc::CallVote msg;
+
+    msg.set_vote_type(voteType);
+    for (const auto& arg : args)
+    {
+        msg.add_arg(arg);
+    }
+
+    return msg;
+}
+

@@ -142,3 +142,10 @@ message CheatSummonFriend
 {
     string monster = 1;
 }
+
+// clc_callvote
+message CallVote
+{
+    uint32          vote_type   = 1;   // enumerated in c_vote.h
+    repeated string arg         = 2;
+}

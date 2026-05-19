@@ -28,3 +28,8 @@ odaproto::clc::Cheat             CLC_Cheat(uint32_t cheatValue);
 odaproto::clc::CheatGive         CLC_CheatGive(const std::string& item);
 odaproto::clc::CheatSummon       CLC_CheatSummon(const std::string& monster);
 odaproto::clc::CheatSummonFriend CLC_CheatSummonFriend(const std::string& monster);
+
+odaproto::clc::CallVote CLC_CallVote(uint32_t voteType);
+odaproto::clc::CallVote CLC_CallVote(uint32_t voteType, const std::string& arg);
+odaproto::clc::CallVote CLC_CallVote(uint32_t voteType, const std::vector<std::string>& args);
+

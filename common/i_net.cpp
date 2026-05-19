@@ -1104,9 +1104,9 @@ static void InitNetMessageFormats()
 	MSG_INFO(clc_cheat_give);
 	MSG_INFO(clc_cheat_summon);
 	MSG_INFO(clc_cheat_summon_friend);
+	MSG_INFO(clc_callvote);
 
 	// Client Messages.
-	CLC_INFO(clc_callvote);
 	CLC_INFO(clc_maplist);
 	CLC_INFO(clc_maplist_update);
 	CLC_INFO(clc_getplayerinfo);

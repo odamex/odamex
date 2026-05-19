@@ -4380,6 +4380,10 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
                 SV_CheatSummonFriend(player, *static_cast<odaproto::clc::CheatSummonFriend*>(msgPtrRaw));
                 break;
 
+			case clc_callvote:
+				SV_Callvote(player, *static_cast<odaproto::clc::CallVote*>(msgPtrRaw));
+				break;
+
             default:
                 // This case happens when a message was received, parsed, but not handled.
                 PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));
@@ -4427,11 +4431,6 @@ void SV_ParseCommands(player_t &player)
 
 			case clc_spy:
 				SV_SpyPlayer(player);
-				break;
-
-			// [AM] Vote
-			case clc_callvote:
-				SV_Callvote(player);
 				break;
 
 			// [AM] Maplist
