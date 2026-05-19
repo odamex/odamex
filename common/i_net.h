@@ -294,14 +294,11 @@ enum svc_t
 	svc_playerpsprites,
 	svc_configureavatar,
 
-	clc_playerinput,        // SPECIAL KNOWLEDGE AND NOTE HERE: We're entering a transitory phase
-	                        // where client-originated messages are going to start transitioning
-	                        // to protobufs, and this svc enum is the basis for the unified message
-	                        // enumeration.  This enumeration delineates where client-originated
-	                        // messages begin, and it _MUST_ numerically evaluate greater than
-	                        // the values for the clc_t enum so that parsing code on the server that,
-	                        // during this transitory phase, can very easily work with both the
-	                        // new and the old enumerals and naive handling code can be correct.
+	// Client-originated messages
+	//
+	// The clc prefix denotes that they are generated and sent only by clients.
+
+	clc_playerinput,
 	clc_disconnectme,
 	clc_say,
 	clc_userinfo,
@@ -328,6 +325,11 @@ enum svc_t
 	MSG_DEFINITION_COUNT    // For use as sizer.
 };
 
+inline auto format_as(svc_t msg)
+{
+	return fmt::underlying(msg);
+}
+
 enum ThinkerType
 {
 	TT_Scroller,
@@ -340,48 +342,6 @@ enum ThinkerType
 	TT_Phased,
 };
 
-// Pre-protobuf network messages
-//
-// These are entirely client-to-server messages thus the clc_ prefix.
-//
-// TODO / IN PROGRESS:  Migrate these to protos.
-//
-enum clc_t
-{
-	clc_abort_UNUSED,           // UNUSED
-	clc_reserved1_UNUSED,       // UNUSED
-	clc_disconnect_MIGRATED,    // Keep me until the entire enumeration is ready for removal.
-	clc_say_MIGRATED,
-	clc_move_OLD_PLACEHOLDER,       // NOTE: Keep this for transitory compatibility with "non-unified" switch cases.
-	clc_userinfo_MIGRATED,  // send userinfo
-	clc_pingreply_MIGRATED, // [SL] 2011-05-11 - timestamp
-	clc_rate_UNUSED,
-	clc_rcon_MIGRATED,
-	clc_rcon_password_MIGRATED,
-	clc_changeteam_UNUSED, // [NightFang, Toke] - Change your team
-	clc_ack_OLD_PLACEHOLDER,        // NOTE: Keep this for transitory compatibility with "non-unified" switch cases.
-	clc_ctfcommand_UNUSED,
-	clc_spectate_MIGRATED,       // denis
-	clc_wantwad_UNUSED,        // denis - name, hash
-	clc_kill_MIGRATED,           // denis - suicide
-	clc_cheat_MIGRATED,          // denis - handle cheat codes.
-	clc_callvote_MIGRATED,       // [AM] - Calling a vote
-	clc_maplist_MIGRATED,        // [AM] - Maplist status request.
-	clc_maplist_update_MIGRATED, // [AM] - Request the entire maplist from the server.
-	clc_getplayerinfo_MIGRATED,
-	clc_netcmd_MIGRATED,  // [AM] Send a string command to the server.
-	clc_spy_MIGRATED,     // [SL] Tell server to send info about this player
-	clc_privmsg_MIGRATED, // [AM] Targeted chat to a specific player.
-};
-
-inline auto format_as(clc_t clc)
-{
-	return fmt::underlying(clc);
-}
-
-inline constexpr size_t clc_max = 255;
-
-extern msg_info_t clc_info[clc_max + 1];
 extern msg_info_t msg_info[MSG_DEFINITION_COUNT];
 
 namespace google
@@ -887,7 +847,6 @@ void SZ_Write (buf_t *b, const byte *data, size_t startpos, size_t length);
 
 void MSG_WriteByte (buf_t *b, byte c);
 void MSG_WriteMarker (buf_t *b, svc_t c);
-void MSG_WriteMarker (buf_t *b, clc_t c);
 void MSG_WriteShort (buf_t *b, short c);
 void MSG_WriteLong (buf_t *b, int c);
 void MSG_WriteUnVarint(buf_t* b, unsigned int uv);

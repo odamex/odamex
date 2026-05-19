@@ -95,7 +95,6 @@ buf_t       net_message(MAX_UDP_PACKET);
 
 EXTERN_CVAR(port)
 
-msg_info_t clc_info[clc_max + 1];
 msg_info_t msg_info[MSG_DEFINITION_COUNT];
 
 #ifdef ODA_HAVE_MINIUPNP
@@ -568,15 +567,6 @@ void SV_SendPackets(void);
 //
 // MSG_WriteMarker
 //
-// denis - use this function to mark the start of your client message
-// as it allows for better debugging and optimization of network code
-//
-void MSG_WriteMarker (buf_t *b, clc_t c)
-{
-	if (simulated_connection)
-		return;
-	b->WriteByte(static_cast<byte>(c));
-}
 
 void MSG_WriteByte (buf_t *b, byte c)
 {
@@ -986,19 +976,6 @@ float MSG_ReadFloat(void)
 		::msg_info[n].msgFormat = "x"; \
 	} while (false)
 
-/**
- * @brief Initialize a clc_info member.
- *
- * @detail do-while is used to force a semicolon afterwards.
- */
-#define CLC_INFO(n)                    \
-	do                                 \
-	{                                  \
-		::clc_info[n].id = n;          \
-		::clc_info[n].msgName = #n;    \
-		::clc_info[n].msgFormat = "x"; \
-	} while (false)
-
 //
 // InitNetMessageFormats
 //
@@ -1110,13 +1087,9 @@ static void InitNetMessageFormats()
 	MSG_INFO(clc_netcmd);
 	MSG_INFO(clc_spy);
 	MSG_INFO(clc_privmsg);
-
-	// Client Messages.
-	CLC_INFO(clc_max);
 }
 
 #undef MSG_INFO
-#undef CLC_INFO
 
 static void SetSocketBufSize(int socketFd, const char* name, int optname, int desiredSize)
 {

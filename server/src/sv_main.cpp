@@ -2272,7 +2272,7 @@ void SV_ConnectClient()
 	}
 
 	// Get the userinfo from the client.
-	clc_t userinfo = static_cast<clc_t>(MSG_ReadUnVarint());
+	svc_t userinfo = static_cast<svc_t>(MSG_ReadUnVarint());
 	if (userinfo != clc_userinfo)
 	{
 		SV_InvalidateClient(*player, "Client didn't send any userinfo");
@@ -4417,48 +4417,48 @@ void SV_ParseCommands(player_t &player)
 		}
 		while (::net_message.BytesLeftToRead() > 0)
 		{
-            const byte cmdRaw = MSG_ReadByte();
-
-			clc_t cmd = static_cast<clc_t>(cmdRaw);
-
-			if(cmd == static_cast<clc_t>(-1))
-				continue;
+        	const svc_t cmd = static_cast<svc_t>(MSG_ReadUnVarint());
 
 			switch(cmd)
 			{
-			case msg_ack:
-				SV_AcknowledgePacket(player);
-				break;
+                case static_cast<svc_t>(-1):
+                    continue;
 
-			default:
-                // It's important to allow the clc_ enum to have priority
-                // over svc_ if we have both types of messages.
-                switch (SV_ParseCommandSVC(static_cast<svc_t>(cmdRaw), player))
-                {
-                    case PERR_OK:
-                        continue;
-                    case PERR_UNKNOWN_HEADER:   // Data still readable from buffer
-                        PrintFmt(PRINT_WARNING, "SV_ParseCommands: Unmappable command {}\n", cmdRaw);
-                        break;
-                    case PERR_UNKNOWN_MESSAGE:  // Data still readable from buffer
-                        PrintFmt(PRINT_WARNING, "SV_ParseCommands: Command {} unknown to protobuf\n", cmdRaw);
-                        break;
-                    case PERR_BAD_DECODE:       // Data no longer in buffer.  Welp.
-                        PrintFmt(PRINT_WARNING, "SV_ParseCommands: Bad protobuf decode for {}\n", cmdRaw);
-                        break;
-                    default:
-                        break;
-                }
-				PrintFmt("SV_ParseCommands: Unknown client message {}.\n", cmd);
-				SV_DropClient(player);
-				return;
+                // Ack is a special case that's intentionally lower level and must be serviced before anything
+                // at the higher-level protocol layer.
+		    	case msg_ack:
+			    	SV_AcknowledgePacket(player);
+				    break;
+
+    			default:
+                    // It's important to allow the clc_ enum to have priority
+                    // over svc_ if we have both types of messages.
+                    switch (SV_ParseCommandSVC(cmd, player))
+                    {
+                        case PERR_OK:
+                            continue;
+                        case PERR_UNKNOWN_HEADER:   // Data still readable from buffer
+                            PrintFmt(PRINT_WARNING, "SV_ParseCommands: Unmappable command {}\n", cmd);
+                            break;
+                        case PERR_UNKNOWN_MESSAGE:  // Data still readable from buffer
+                            PrintFmt(PRINT_WARNING, "SV_ParseCommands: Command {} unknown to protobuf\n", cmd);
+                            break;
+                        case PERR_BAD_DECODE:       // Data no longer in buffer.  Welp.
+                            PrintFmt(PRINT_WARNING, "SV_ParseCommands: Bad protobuf decode for {}\n", cmd);
+                            break;
+                        default:
+                            break;
+                    }
+    				PrintFmt("SV_ParseCommands: Unknown client message {}.\n", cmd);
+	    			SV_DropClient(player);
+		    		return;
 			}
 
 			if (net_message.overflowed)
 			{
 				PrintFmt("SV_ReadClientMessage: badread {}({})\n",
 						    cmd,
-						    clc_info[cmd].getName());
+						    msg_info[cmd].getName());
 				SV_DropClient(player);
 				return;
 			}
