@@ -344,3 +344,8 @@ odaproto::clc::Maplist CLC_Maplist(uint32_t status)
 
     return msg;
 }
+
+odaproto::clc::MaplistUpdate CLC_MaplistUpdate()
+{
+    return {};
+}

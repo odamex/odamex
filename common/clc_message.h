@@ -33,4 +33,5 @@ odaproto::clc::CallVote CLC_CallVote(uint32_t voteType);
 odaproto::clc::CallVote CLC_CallVote(uint32_t voteType, const std::string& arg);
 odaproto::clc::CallVote CLC_CallVote(uint32_t voteType, const std::vector<std::string>& args);
 
-odaproto::clc::Maplist CLC_Maplist(uint32_t status);
+odaproto::clc::Maplist       CLC_Maplist      (uint32_t status);
+odaproto::clc::MaplistUpdate CLC_MaplistUpdate();

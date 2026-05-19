@@ -155,3 +155,8 @@ message Maplist
 {
     uint32 status = 1;
 }
+
+// clc_maplist_update
+message MaplistUpdate
+{
+}

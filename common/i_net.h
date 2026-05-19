@@ -320,6 +320,7 @@ enum svc_t
 	clc_cheat_summon_friend,
 	clc_callvote,
 	clc_maplist,
+	clc_maplist_update,
 
 	MSG_DEFINITION_COUNT    // For use as sizer.
 };
@@ -363,7 +364,7 @@ enum clc_t
 	clc_cheat_MIGRATED,          // denis - handle cheat codes.
 	clc_callvote_MIGRATED,       // [AM] - Calling a vote
 	clc_maplist_MIGRATED,        // [AM] - Maplist status request.
-	clc_maplist_update, // [AM] - Request the entire maplist from the server.
+	clc_maplist_update_MIGRATED, // [AM] - Request the entire maplist from the server.
 	clc_getplayerinfo,
 	clc_netcmd,  // [AM] Send a string command to the server.
 	clc_spy,     // [SL] Tell server to send info about this player

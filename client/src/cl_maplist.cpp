@@ -270,7 +270,8 @@ void MaplistCache::status_handler(maplist_status_t status) {
 	case MAPLIST_OUTDATED:
 		// If our cache is out-of-date and we are able to request
 		// an updated maplist, request one.
-		MSG_WriteMarker(&messenger.NetBuf().Obtain(), clc_maplist_update);
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_MaplistUpdate());
+
 		[[fallthrough]];
 	case MAPLIST_EMPTY:
 	case MAPLIST_THROTTLED:
