@@ -30,6 +30,10 @@
 #include "v_textcolors.h"
 
 #ifdef SERVER_APP
+
+struct client_t;
+
+void SV_BasePrint(client_t* cl, const int printlevel, const std::string& str);
 void SV_BasePrintAllPlayers(const int printlevel, const std::string& str);
 void SV_BasePrintButPlayer(const int printlevel, const int player_id, const std::string& str);
 #endif
@@ -119,6 +123,14 @@ void SV_BroadcastPrintFmtButPlayer(int printlevel, int player_id, fmt::format_st
 
 	SV_BasePrintButPlayer(printlevel, player_id, string);
 }
+
+// Print directly to a specific client.
+template <typename... ARGS>
+void SV_ClientPrintFmt(client_t *cl, int level, fmt::format_string<ARGS...> format, ARGS&&... args)
+{
+	SV_BasePrint(cl, level, fmt::format(format, std::forward<ARGS>(args)...));
+}
+
 #endif
 
 namespace OUtil

@@ -481,6 +481,7 @@ void DoCheat(player_t& player, int cheat, bool silentmsg)
 		}
 
 #ifdef SERVER_APP
+		SV_ClientPrintFmt(&player.client, PRINT_HIGH, "{}\n", msg);
 		SV_BroadcastPrintFmtButPlayer(PRINT_HIGH, player.id, "{} is a cheater: {}\n",
 		                            player.userinfo.netname, msg);
 #endif
