@@ -4392,6 +4392,10 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 				SV_MaplistUpdate(player);
 				break;
 
+			case clc_getplayerinfo:
+				SV_SendPlayerInfo(player);
+				break;
+
             default:
                 // This case happens when a message was received, parsed, but not handled.
                 PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));
@@ -4420,10 +4424,6 @@ void SV_ParseCommands(player_t &player)
 
 			switch(cmd)
 			{
-			case clc_getplayerinfo:
-				SV_SendPlayerInfo (player);
-				break;
-
 			case clc_privmsg:
 				if (!SV_PrivMsg(player))
 					return;

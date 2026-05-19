@@ -320,6 +320,7 @@ enum svc_t
 	clc_callvote,
 	clc_maplist,
 	clc_maplist_update,
+	clc_getplayerinfo,
 
 	MSG_DEFINITION_COUNT    // For use as sizer.
 };
@@ -364,7 +365,7 @@ enum clc_t
 	clc_callvote_MIGRATED,       // [AM] - Calling a vote
 	clc_maplist_MIGRATED,        // [AM] - Maplist status request.
 	clc_maplist_update_MIGRATED, // [AM] - Request the entire maplist from the server.
-	clc_getplayerinfo,
+	clc_getplayerinfo_MIGRATED,
 	clc_netcmd,  // [AM] Send a string command to the server.
 	clc_spy,     // [SL] Tell server to send info about this player
 	clc_privmsg, // [AM] Targeted chat to a specific player.

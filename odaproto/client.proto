@@ -160,3 +160,8 @@ message Maplist
 message MaplistUpdate
 {
 }
+
+//clc_getplayerinfo
+message GetPlayerInfo
+{
+}

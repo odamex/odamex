@@ -349,3 +349,8 @@ odaproto::clc::MaplistUpdate CLC_MaplistUpdate()
 {
     return {};
 }
+
+odaproto::clc::GetPlayerInfo CLC_GetPlayerInfo()
+{
+    return {};
+}

@@ -10,11 +10,12 @@ void CLC_UnpackPlayerInputMessageToPlayer(const odaproto::clc::PlayerInput& msg,
 
 odaproto::clc::NetdemoCap CLC_NetdemoCap(const player_t& player, const odaproto::clc::PlayerInput& inputMessage);
 
-odaproto::clc::DisconnectMe CLC_DisconnectMe();
-odaproto::clc::Say          CLC_Say         (const std::string_view& text, uint32_t visibility);
-odaproto::clc::UserInfo     CLC_UserInfo    (const UserInfo& userInfo);
-odaproto::clc::PingReply    CLC_PingReply   (uint64_t msec);
-odaproto::clc::Kill         CLC_Kill        ();
+odaproto::clc::DisconnectMe  CLC_DisconnectMe   ();
+odaproto::clc::Say           CLC_Say            (const std::string_view& text, uint32_t visibility);
+odaproto::clc::UserInfo      CLC_UserInfo       (const UserInfo& userInfo);
+odaproto::clc::PingReply     CLC_PingReply      (uint64_t msec);
+odaproto::clc::Kill          CLC_Kill           ();
+odaproto::clc::GetPlayerInfo CLC_GetPlayerInfo  ();
 
 odaproto::clc::Rcon         CLC_Rcon        (const std::string_view& text);
 odaproto::clc::RconPassword CLC_RconPassword(const std::string_view& text);
