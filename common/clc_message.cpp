@@ -369,3 +369,12 @@ odaproto::clc::Spy CLC_Spy(uint32_t playerId)
     return msg;
 }
 
+odaproto::clc::PrivMsg CLC_PrivMsg(uint32_t playerId, const std::string_view& text)
+{
+    odaproto::clc::PrivMsg msg;
+
+    msg.set_player_id   (playerId);
+    msg.set_text        (text.data(), text.size());
+
+    return msg;
+}

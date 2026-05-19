@@ -323,6 +323,7 @@ enum svc_t
 	clc_getplayerinfo,
 	clc_netcmd,
 	clc_spy,
+	clc_privmsg,
 
 	MSG_DEFINITION_COUNT    // For use as sizer.
 };
@@ -370,7 +371,7 @@ enum clc_t
 	clc_getplayerinfo_MIGRATED,
 	clc_netcmd_MIGRATED,  // [AM] Send a string command to the server.
 	clc_spy_MIGRATED,     // [SL] Tell server to send info about this player
-	clc_privmsg, // [AM] Targeted chat to a specific player.
+	clc_privmsg_MIGRATED, // [AM] Targeted chat to a specific player.
 };
 
 inline auto format_as(clc_t clc)

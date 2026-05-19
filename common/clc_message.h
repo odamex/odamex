@@ -17,6 +17,7 @@ odaproto::clc::PingReply     CLC_PingReply      (uint64_t msec);
 odaproto::clc::Kill          CLC_Kill           ();
 odaproto::clc::GetPlayerInfo CLC_GetPlayerInfo  ();
 odaproto::clc::Spy           CLC_Spy            (uint32_t playerId);
+odaproto::clc::PrivMsg       CLC_PrivMsg        (uint32_t playerId, const std::string_view& text);
 
 template <typename IteratorType>
 odaproto::clc::Netcmd CLC_Netcmd(IteratorType begin, IteratorType end)

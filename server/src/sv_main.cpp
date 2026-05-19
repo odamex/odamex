@@ -3016,11 +3016,11 @@ bool SV_Say(player_t &player, const odaproto::clc::Say& msg)
 // SV_PrivMsg
 // Show a chat string and show it to a single other client.
 //
-bool SV_PrivMsg(player_t &player)
+bool SV_PrivMsg(player_t &player, const odaproto::clc::PrivMsg& msg)
 {
-	player_t& dplayer = idplayer(MSG_ReadByte());
+	player_t& dplayer = idplayer(static_cast<byte>(msg.player_id()));
 
-	std::string str(MSG_ReadString());
+	std::string str(msg.text());
 	StripColorCodes(str);
 
 	if (!ValidString(str))
@@ -4395,6 +4395,9 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 				SV_SpyPlayer(player, *static_cast<odaproto::clc::Spy*>(msgPtrRaw));
 				break;
 
+			case clc_privmsg:
+				SV_PrivMsg(player, *static_cast<odaproto::clc::PrivMsg*>(msgPtrRaw));
+				break;
          default:
                 // This case happens when a message was received, parsed, but not handled.
                 PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));
@@ -4423,11 +4426,6 @@ void SV_ParseCommands(player_t &player)
 
 			switch(cmd)
 			{
-			case clc_privmsg:
-				if (!SV_PrivMsg(player))
-					return;
-				break;
-
 			case msg_ack:
 				SV_AcknowledgePacket(player);
 				break;

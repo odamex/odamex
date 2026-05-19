@@ -177,3 +177,10 @@ message Spy
 {
     uint32 player_id = 1;
 }
+
+// clc_privmsg
+message PrivMsg
+{
+    uint32 player_id = 1;
+    string text      = 2;
+}
