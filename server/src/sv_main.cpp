@@ -4384,6 +4384,10 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 				SV_Callvote(player, *static_cast<odaproto::clc::CallVote*>(msgPtrRaw));
 				break;
 
+			case clc_maplist:
+				SV_Maplist(player, *static_cast<odaproto::clc::Maplist*>(msgPtrRaw));
+				break;
+
             default:
                 // This case happens when a message was received, parsed, but not handled.
                 PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));
@@ -4434,9 +4438,6 @@ void SV_ParseCommands(player_t &player)
 				break;
 
 			// [AM] Maplist
-			case clc_maplist:
-				SV_Maplist(player);
-				break;
 			case clc_maplist_update:
 				SV_MaplistUpdate(player);
 				break;

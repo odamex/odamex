@@ -149,3 +149,9 @@ message CallVote
     uint32          vote_type   = 1;   // enumerated in c_vote.h
     repeated string arg         = 2;
 }
+
+// clc_maplist
+message Maplist
+{
+    uint32 status = 1;
+}

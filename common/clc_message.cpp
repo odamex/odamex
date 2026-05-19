@@ -336,3 +336,11 @@ odaproto::clc::CallVote CLC_CallVote(uint32_t voteType, const std::vector<std::s
     return msg;
 }
 
+odaproto::clc::Maplist CLC_Maplist(uint32_t status)
+{
+    odaproto::clc::Maplist msg;
+
+    msg.set_status(status);
+
+    return msg;
+}

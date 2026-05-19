@@ -251,9 +251,8 @@ void MaplistCache::defer_query(const std::vector<std::string> &query,
 	if (this->deferred_queries.empty()) {
 		// Only send out a maplist status packet if we don't already have a
 		// deferred query in progress.
-        buf_t& netBuf = messenger.NetBuf().Obtain();
-		MSG_WriteMarker(&netBuf, clc_maplist);
-		MSG_WriteByte(&netBuf, this->status);
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_Maplist(this->status));
+
 		this->status = MAPLIST_WAIT;
 		this->timeout = I_MSTime() + (1000 * 3);
 	}
