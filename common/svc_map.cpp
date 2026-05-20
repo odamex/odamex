@@ -139,17 +139,18 @@ static void InitMap()
 
 	MapProto(svc_configureavatar, odaproto::svc::ConfigureAvatar::descriptor());
 
-	MapProto(clc_playerinput,   odaproto::clc::PlayerInput::descriptor());
-	MapProto(clc_disconnectme,  odaproto::clc::DisconnectMe::descriptor());
-	MapProto(clc_say,           odaproto::clc::Say::descriptor());
-	MapProto(clc_userinfo,      odaproto::clc::UserInfo::descriptor());
-	MapProto(clc_pingreply,     odaproto::clc::PingReply::descriptor());
-	MapProto(clc_kill,          odaproto::clc::Kill::descriptor());
-	MapProto(clc_callvote,      odaproto::clc::CallVote::descriptor());
-	MapProto(clc_getplayerinfo, odaproto::clc::GetPlayerInfo::descriptor());
-	MapProto(clc_netcmd,        odaproto::clc::Netcmd::descriptor());
-	MapProto(clc_spy,           odaproto::clc::Spy::descriptor());
-	MapProto(clc_privmsg,       odaproto::clc::PrivMsg::descriptor());
+	MapProto(clc_playerinput,    odaproto::clc::PlayerInput::descriptor());
+	MapProto(clc_disconnectme,   odaproto::clc::DisconnectMe::descriptor());
+	MapProto(clc_say,            odaproto::clc::Say::descriptor());
+	MapProto(clc_userinfo,       odaproto::clc::UserInfo::descriptor());
+	MapProto(clc_pingreply,      odaproto::clc::PingReply::descriptor());
+	MapProto(clc_kill,           odaproto::clc::Kill::descriptor());
+	MapProto(clc_callvote,       odaproto::clc::CallVote::descriptor());
+	MapProto(clc_getplayerinfo,  odaproto::clc::GetPlayerInfo::descriptor());
+	MapProto(clc_netcmd,         odaproto::clc::Netcmd::descriptor());
+	MapProto(clc_spy,            odaproto::clc::Spy::descriptor());
+	MapProto(clc_privmsg,        odaproto::clc::PrivMsg::descriptor());
+	MapProto(clc_sendmobjupdate, odaproto::clc::SendMobjUpdate::descriptor());
 
 	MapProto(clc_rcon,          odaproto::clc::Rcon::descriptor());
 	MapProto(clc_rcon_password, odaproto::clc::RconPassword::descriptor());

@@ -378,3 +378,10 @@ odaproto::clc::PrivMsg CLC_PrivMsg(uint32_t playerId, const std::string_view& te
 
     return msg;
 }
+
+odaproto::clc::SendMobjUpdate CLC_SendMobjUpdate(uint32_t netId)
+{
+    odaproto::clc::SendMobjUpdate msg;
+    msg.set_netid(netId);
+    return msg;
+}

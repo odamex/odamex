@@ -332,6 +332,7 @@ enum class CredibilityEnum
     ALWAYS_CREDIBLE,
     FULLY_CREDIBLE,
     SEMI_CREDIBLE,
+    CHALLENGED_CREDIBILITY,
 
     CREDIBILITY_LEVEL_COUNT
 };
@@ -349,6 +350,11 @@ class CredibilityState
 
         void Update(const AActor& mobj);
 
+        void Challenge()
+        {
+            m_credibility = CredibilityEnum::CHALLENGED_CREDIBILITY;
+        }
+
     protected:
 
         // Start off fully-credible so that triggers and other things can fire immediately if needed on the client
@@ -356,6 +362,7 @@ class CredibilityState
         //
         CredibilityEnum m_credibility { CredibilityEnum::FULLY_CREDIBLE };
         v3fixed_t       m_crediblePosition { 0, 0, 0 };
+        int             m_predictedMotionTicCount { 0 };
 };
 
 // Map Object definition.

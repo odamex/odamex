@@ -1087,6 +1087,7 @@ static void InitNetMessageFormats()
 	MSG_INFO(clc_netcmd);
 	MSG_INFO(clc_spy);
 	MSG_INFO(clc_privmsg);
+	MSG_INFO(clc_sendmobjupdate);
 }
 
 #undef MSG_INFO

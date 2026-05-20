@@ -2184,6 +2184,9 @@ void CL_SaveCmd(void)
 
 extern int outrate;
 
+// TODO:  we have to stop doing this willy-nilly extern madness..
+extern vissprite_t* closestNonCredibleVisSprite;
+
 //
 // CL_SendCmd
 //
@@ -2203,6 +2206,14 @@ void CL_SendCmd(void)
 		if (player.spectator)
 		{
 			MSG_WriteSVC(messenger.NetBuf(), CLC_SpectateUpdate(player));
+		}
+
+		if (closestNonCredibleVisSprite)
+		{
+			closestNonCredibleVisSprite->mo->credibility.Challenge();
+
+			MSG_WriteSVC(messenger.ReliableBuf(), CLC_SendMobjUpdate(closestNonCredibleVisSprite->mo->netid));
+            closestNonCredibleVisSprite = nullptr;
 		}
 
 		odaproto::clc::PlayerInput& currentNetcmd = localcmds[gametic % MAXSAVETICS];

@@ -321,6 +321,7 @@ enum svc_t
 	clc_netcmd,
 	clc_spy,
 	clc_privmsg,
+	clc_sendmobjupdate,
 
 	MSG_DEFINITION_COUNT    // For use as sizer.
 };

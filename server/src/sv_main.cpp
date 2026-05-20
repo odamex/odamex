@@ -3595,6 +3595,12 @@ void SV_WriteCommandsForPlayer(player_t& player)
 		SV_UpdateMissiles(player, sortedMobjIter);
 
 		SV_UpdateMonsters(player, sortedMobjIter->actorPtr);
+
+        if (player.requestedNetIdUpdate == sortedMobjIter->actorPtr->netid)
+        {
+            MSG_WriteSVC(player.client.messenger.HighBuf(), SVC_UpdateMobj(*sortedMobjIter->actorPtr));
+            player.requestedNetIdUpdate = 0;
+        }
 	}
 }
 
@@ -4290,6 +4296,12 @@ void SV_HandlePlayerInput(odaproto::clc::PlayerInput& msg, player_t &player)
 	}
 }
 
+void SV_SendRequestedMobjUpdate(player_t& player, const odaproto::clc::SendMobjUpdate& msg)
+{
+    player.requestedNetIdUpdate = msg.netid();
+//    PrintFmt("Challenge for {}\n", player.requestedNetIdUpdate);
+}
+
 //
 // SV_ParseCommands
 //
@@ -4405,6 +4417,11 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 			case clc_privmsg:
 				SV_PrivMsg(player, *static_cast<odaproto::clc::PrivMsg*>(msgPtrRaw));
 				break;
+
+            case clc_sendmobjupdate:
+                SV_SendRequestedMobjUpdate(player, *static_cast<odaproto::clc::SendMobjUpdate*>(msgPtrRaw));
+                break;
+
          default:
                 // This case happens when a message was received, parsed, but not handled.
                 PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));

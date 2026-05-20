@@ -142,10 +142,11 @@ inline void CredibilityState::Update(const AActor& mobj)
                 m_crediblePosition.y = mobj.y;
                 m_crediblePosition.z = mobj.z;
 
-                m_credibility = CredibilityEnum::FULLY_CREDIBLE;
+                m_credibility             = CredibilityEnum::FULLY_CREDIBLE;
+                m_predictedMotionTicCount = 0;
             }
             // In sv_main, we nominally update mobjs every 7 tics.
-            // Allow up to 10 before we stop believing it, to allow for jitter plus
+            // Allow up to 10 before we stop fully believing it, to allow for jitter plus
             // some "real world slop" margin.
             else if (ticsSinceAuthoritativeUpdate < 10)
             {
@@ -153,12 +154,20 @@ inline void CredibilityState::Update(const AActor& mobj)
             }
             else
             {
+                if (m_predictedMotionTicCount > 0 or
+                       not (m_crediblePosition.x == mobj.x and
+                            m_crediblePosition.y == mobj.y and
+                            m_crediblePosition.z == mobj.z))
+                {
+                    ++m_predictedMotionTicCount;
+                }
+
                 // Possible weakness to this algorithm:  Suppose the client predicts that
                 // the mobj is dead-still but the server says it's in motion yet it's SEMI_AWARE
                 // or just a lower-priority SEMI_AWARE?  We just have to hope that the server
                 // decides to naturally send an UpdateMobj for it at some point.
 
-                if (ticsSinceAuthoritativeUpdate < 10 * TICRATE)       // wild-ass guess.  10 seconds okay?
+                if (m_predictedMotionTicCount < 10 * TICRATE)       // wild-ass guess.  10 seconds okay?
                 {
                     // In this mode, the client is letting the mobj wander about via dead reckoning.
                     // We guess that the mobj hasn't wandered TOO far from where the server says it
@@ -167,16 +176,7 @@ inline void CredibilityState::Update(const AActor& mobj)
                 }
                 else
                 {
-                    // Once we get beyond 10 seconds, if we predicted ANY motion on the client side,
-                    // we're pretty certain that we're desynched on this mobj.  Tag it as non-credible,
-                    // and we'll request an on-demand update.
-                    if (m_crediblePosition.x == mobj.x and
-                        m_crediblePosition.y == mobj.y and
-                        m_crediblePosition.z == mobj.z)
-                    {
-                        m_credibility = CredibilityEnum::SEMI_CREDIBLE;
-                    }
-                    else
+                    if (m_credibility != CredibilityEnum::CHALLENGED_CREDIBILITY)
                     {
                         m_credibility = CredibilityEnum::NOT_CREDIBLE;
                     }

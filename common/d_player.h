@@ -305,6 +305,8 @@ public:
 
 	byte        QueuePosition;            //Queue position to join game. 0 means not in queue
 
+	uint32_t    requestedNetIdUpdate;   // ID of a mobj for which this player is requesting an update.
+
 	// zdoom
 	int hazardcount;
 	byte hazardinterval;

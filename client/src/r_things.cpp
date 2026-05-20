@@ -523,7 +523,7 @@ void R_DrawHitBox(const AActor* thing)
 // R_ProjectSprite
 // Generates a vissprite for a thing if it might be visible.
 //
-void R_ProjectSprite(const AActor *thing, int fakeside)
+void R_ProjectSprite(AActor *thing, int fakeside)
 {
 	int 				lump;
 	unsigned int		rot;
@@ -692,6 +692,9 @@ void R_ProjectSprite(const AActor *thing, int fakeside)
         case CredibilityEnum::SEMI_CREDIBLE:
             particle.color = 228;           // Weathering yellow-beige.
             break;
+        case CredibilityEnum::CHALLENGED_CREDIBILITY:
+            particle.color = 0;             // Brutalist grey.
+            break;
     }
     R_ProjectParticle(&particle, sector, fakeside);
 }
@@ -724,7 +727,7 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 		spritelights = scalelight[lightnum];
 
 	// Handle all things in sector.
-	for (const AActor* thing = sec->thinglist; thing; thing = thing->snext)
+	for (AActor* thing = sec->thinglist; thing; thing = thing->snext)
 	{
 		R_ProjectSprite (thing, fakeside);
 	}
@@ -1093,7 +1096,7 @@ void R_DrawSprite (vissprite_t *spr)
 }
 
 
-
+vissprite_t* closestNonCredibleVisSprite;
 
 //
 // R_DrawMasked
@@ -1104,9 +1107,16 @@ void R_DrawMasked (void)
 
 	R_SortVisSprites ();
 
-	for (auto vis : OUtil::reverse(spritesorter))
+	closestNonCredibleVisSprite = nullptr;
+
+	for (auto& vis : OUtil::reverse(spritesorter))
 	{
 		R_DrawSprite(vis);
+
+        if (vis->mo and vis->mo->credibility.Get() == CredibilityEnum::NOT_CREDIBLE and (vis->mo->flags & MF_CORPSE) == 0)
+        {
+            closestNonCredibleVisSprite = vis;
+        }
 	}
 
 	// render any remaining masked mid textures
