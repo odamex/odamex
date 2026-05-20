@@ -4940,7 +4940,7 @@ void SV_SendDamagePlayer(player_t* damagedPlayer, const AActor* inflictor, int h
 	for (auto& destinationPlayer : players)
 	{
 		MSG_WriteSVC(destinationPlayer.client.messenger.ReliableBuf(),
-		             SVC_DamagePlayer(*damagedPlayer, inflictor, healthDamage, armorDamage));
+		             SVC_DamagePlayer(*damagedPlayer, inflictor, healthDamage, armorDamage, destinationPlayer.tic));
 	}
 }
 

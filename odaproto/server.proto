@@ -168,7 +168,7 @@ message DamagePlayer
 	int32   inflictorid         = 4;
 	int32   player_health       = 5;
 	int32   player_armorpoints  = 6;
-	int32   player_tic          = 7;
+	int32   client_tic          = 7;    // The tic-of-validity for the client receiving the message.  Not strictly the player taking damage.
 }
 
 // svc_killmobj
