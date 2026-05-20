@@ -3551,6 +3551,19 @@ void SV_WriteCommandsForPlayer(player_t& player)
 
 	SV_UpdateConsolePlayer(player);
 
+	SV_UpdateGametype(player);     // update gametype stuff
+
+    // It's important that we service pings before the mobjs.  The ping is an input to the
+    // retransmit delay, so we want to make sure it basically always goes out.  If it doesn't,
+    // we risk a massive growth in the reliable queue and an eventual retransmit storm.
+
+	SV_SendPingRequest(& player.client);     // request ping reply
+
+	SV_UpdatePing(& player.client);          // send the ping value of all cients to this client
+
+    // Now that we've gotten through the basic "keep the game cycling" stuff, go through the
+    // additional mobj messages that can really blow out the bandwidth if we let them.
+
 	const bool throttleIsActive = player.client.messenger.GetReliableOverloadCount() > 1;
 
 	const size_t previousSortedMobjCount = player.sortedMobjs.size();
@@ -3583,12 +3596,6 @@ void SV_WriteCommandsForPlayer(player_t& player)
 
 		SV_UpdateMonsters(player, sortedMobjIter->actorPtr);
 	}
-
-	SV_UpdateGametype(player);     // update gametype stuff
-
-	SV_SendPingRequest(& player.client);     // request ping reply
-
-	SV_UpdatePing(& player.client);          // send the ping value of all cients to this client
 }
 
 //
