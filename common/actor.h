@@ -309,6 +309,8 @@ struct baseline_t
 	{
 	}
 
+	bool operator==(const baseline_t& rhs) const = default;
+
 	void Serialize(FArchive& arc)
 	{
 		if (arc.IsStoring())
@@ -322,6 +324,38 @@ struct baseline_t
 			    targetid >> tracerid >> movecount >> movedir >> rndindex;
 		}
 	}
+};
+
+enum class CredibilityEnum
+{
+    NOT_CREDIBLE = 0,
+    ALWAYS_CREDIBLE,
+    FULLY_CREDIBLE,
+    SEMI_CREDIBLE,
+
+    CREDIBILITY_LEVEL_COUNT
+};
+
+class AActor;
+
+class CredibilityState
+{
+    public:
+
+        CredibilityEnum Get() const
+        {
+            return m_credibility;
+        }
+
+        void Update(const AActor& mobj);
+
+    protected:
+
+        // Start off fully-credible so that triggers and other things can fire immediately if needed on the client
+        // and so that the server doesn't have to do anything with this - everything on the server is credible.
+        //
+        CredibilityEnum m_credibility { CredibilityEnum::FULLY_CREDIBLE };
+        v3fixed_t       m_crediblePosition { 0, 0, 0 };
 };
 
 // Map Object definition.
@@ -546,7 +580,11 @@ public:
 	baseline_t		baseline;		// Baseline data for mobj sent to clients
 	bool			baseline_set;	// Have we set our baseline yet?
 
+	// Server: The tic on which this mobj was sent an UpdateMobj.
+	// Client: the tic on which this mobj received an UpdateMobj.
 	int updatedDuringTic;
+
+	CredibilityState credibility;
 
 private:
 	static constexpr size_t TIDHashSize = 256;
@@ -557,6 +595,7 @@ private:
 	friend class FActorIterator;
 
 public:
+
 	void LinkToWorld ();
 	void UnlinkFromWorld ();
 

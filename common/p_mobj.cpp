@@ -124,6 +124,69 @@ void MapThing::Serialize (FArchive &arc)
 	}
 }
 
+inline void CredibilityState::Update(const AActor& mobj)
+{
+    // On the server, just leave the FULLY_CREDIBLE default in place forever and make this
+    // an empty function so that the compiler has the opportunity to no-op any calls to it.
+    //
+#ifdef CLIENT_APP
+    if (not serverside)     // But we still need to check in case we're in single-player.
+    {
+        if (mobj.updatedDuringTic >= 0)
+        {
+            const int ticsSinceAuthoritativeUpdate = gametic - mobj.updatedDuringTic;
+
+            if (ticsSinceAuthoritativeUpdate == 0)
+            {
+                m_crediblePosition.x = mobj.x;
+                m_crediblePosition.y = mobj.y;
+                m_crediblePosition.z = mobj.z;
+
+                m_credibility = CredibilityEnum::FULLY_CREDIBLE;
+            }
+            // In sv_main, we nominally update mobjs every 7 tics.
+            // Allow up to 10 before we stop believing it, to allow for jitter plus
+            // some "real world slop" margin.
+            else if (ticsSinceAuthoritativeUpdate < 10)
+            {
+                m_credibility = CredibilityEnum::FULLY_CREDIBLE;
+            }
+            else
+            {
+                // Possible weakness to this algorithm:  Suppose the client predicts that
+                // the mobj is dead-still but the server says it's in motion yet it's SEMI_AWARE
+                // or just a lower-priority SEMI_AWARE?  We just have to hope that the server
+                // decides to naturally send an UpdateMobj for it at some point.
+
+                if (ticsSinceAuthoritativeUpdate < 10 * TICRATE)       // wild-ass guess.  10 seconds okay?
+                {
+                    // In this mode, the client is letting the mobj wander about via dead reckoning.
+                    // We guess that the mobj hasn't wandered TOO far from where the server says it
+                    // should be.
+                    m_credibility = CredibilityEnum::SEMI_CREDIBLE;
+                }
+                else
+                {
+                    // Once we get beyond 10 seconds, if we predicted ANY motion on the client side,
+                    // we're pretty certain that we're desynched on this mobj.  Tag it as non-credible,
+                    // and we'll request an on-demand update.
+                    if (m_crediblePosition.x == mobj.x and
+                        m_crediblePosition.y == mobj.y and
+                        m_crediblePosition.z == mobj.z)
+                    {
+                        m_credibility = CredibilityEnum::SEMI_CREDIBLE;
+                    }
+                    else
+                    {
+                        m_credibility = CredibilityEnum::NOT_CREDIBLE;
+                    }
+                }
+            }
+        }
+    }
+#endif
+}
+
 AActor::AActor()
     : x(0), y(0), z(0), prevx(0), prevy(0), prevz(0), snext(NULL), sprev(NULL), angle(0),
       prevangle(0), sprite(SPR_UNKN), frame(0), pitch(0), prevpitch(0), effects(0),
@@ -164,7 +227,7 @@ AActor::AActor(const AActor& other)
       friend_teamid(other.friend_teamid), pursuecount(other.pursuecount),
       strafecount(other.strafecount),
       netid(other.netid), tid(other.tid),
-      baseline_set(false), updatedDuringTic(other.updatedDuringTic), bmapnode(other.bmapnode)
+      baseline_set(false), updatedDuringTic(other.updatedDuringTic), credibility {other.credibility}, bmapnode(other.bmapnode)
 {
 	memcpy(&baseline, &other.baseline, sizeof(baseline));
 	self.init(this);
@@ -243,6 +306,7 @@ AActor &AActor::operator= (const AActor &other)
     baseline_set = other.baseline_set;
 
     updatedDuringTic = other.updatedDuringTic;
+    credibility      = other.credibility;
 
     return *this;
 }
@@ -768,6 +832,7 @@ void AActor::RunThink ()
 	else
 #endif
 	{
+		credibility.Update(*this);
 		P_MoveActor(this);
 	}
 

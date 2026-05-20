@@ -333,6 +333,7 @@ static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 
 	// Mark the gametic this update arrived in for prediction code
 	p.tic = gametic;
+	p.mo->updatedDuringTic = gametic;
 
 	// GhostlyDeath -- Servers will never send updates on spectators
 	if (p.spectator && (&p != &consoleplayer()))
@@ -519,6 +520,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	AActor* mo = new AActor(base.pos.x, base.pos.y, base.pos.z, type);
 	mo->baseline = base;
+	mo->updatedDuringTic = gametic;
 
 	P_SetThingId(mo, netid);
 
@@ -1053,6 +1055,8 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 	if (!mo)
 		return;
 
+	mo->updatedDuringTic = gametic;
+
 	uint32_t flags = msg->flags();
 
 	baseline_t update = mo->baseline;
@@ -1177,6 +1181,8 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	AActor* mobj = new AActor(x, y, z, MT_PLAYER);
 
 	mobj->momx = mobj->momy = mobj->momz = 0;
+
+	mobj->updatedDuringTic = gametic;
 
 	// set color translations for player sprites
 	mobj->translation = translationref_t(translationtables + 256 * playernum, playernum);
@@ -1385,6 +1391,8 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 		target->momx = msg->target_mom().x();
 		target->momy = msg->target_mom().y();
 		target->momz = msg->target_mom().z();
+
+		target->updatedDuringTic = gametic;
 	}
 
 	target->health = health;
@@ -1426,6 +1434,8 @@ static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 	corpsehit->momx = msg->corpse().mom().x();
 	corpsehit->momy = msg->corpse().mom().y();
 	corpsehit->momz = msg->corpse().mom().z();
+
+	corpsehit->updatedDuringTic = gametic;
 
 	mobjinfo_t* info = corpsehit->info;
 
