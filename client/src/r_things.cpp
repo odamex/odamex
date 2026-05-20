@@ -669,6 +669,31 @@ void R_ProjectSprite(const AActor *thing, int fakeside)
 
 		vis->colormap = basecolormap.with(spritelights[index]);	// [RH] Use basecolormap
 	}
+
+    particle_t particle;
+    particle.x = vis->gx;
+    particle.y = vis->gy;
+    particle.z = vis->gzt;
+
+    particle.size = 16;
+    particle.sprite = NO_PARTICLE;
+    particle.trans  = 0xFF;
+    switch (vis->mo->credibility.Get())
+    {
+        case CredibilityEnum::NOT_CREDIBLE:
+            particle.color = 175;           // Eye-blazing red.
+            break;
+        case CredibilityEnum::ALWAYS_CREDIBLE:
+            particle.color = 251;           // Nuclear hot magenta.
+            break;
+        case CredibilityEnum::FULLY_CREDIBLE:
+            particle.color = 195;           // Sky blue.
+            break;
+        case CredibilityEnum::SEMI_CREDIBLE:
+            particle.color = 228;           // Weathering yellow-beige.
+            break;
+    }
+    R_ProjectParticle(&particle, sector, fakeside);
 }
 
 
