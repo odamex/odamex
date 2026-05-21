@@ -309,8 +309,6 @@ struct baseline_t
 	{
 	}
 
-	bool operator==(const baseline_t& rhs) const = default;
-
 	void Serialize(FArchive& arc)
 	{
 		if (arc.IsStoring())
