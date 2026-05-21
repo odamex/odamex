@@ -379,7 +379,7 @@ void ISDL20TextureWindowSurfaceManager::finishRefresh()
 //
 // ISDL20Window::ISDL20Window (if windowed modes are supported)
 //
-// Constructs a new application window using SDL 1.2.
+// Constructs a new application window using SDL2.
 // A ISDL20WindowSurface object is instantiated for frame rendering.
 //
 ISDL20Window::ISDL20Window(uint16_t width, uint16_t height, uint8_t bpp, EWindowMode window_mode, bool vsync) :
@@ -963,7 +963,7 @@ ISDL20VideoSubsystem::ISDL20VideoSubsystem() : IVideoSubsystem()
 	SDL_GetVersion(&linked);
 	SDL_VERSION(&compiled);
 
-	if (linked.major != compiled.major || linked.minor != compiled.minor)
+	if (linked.major != compiled.major || linked.minor < compiled.minor)
 	{
 		I_FatalError("SDL version conflict ({}.{}.{} vs {}.{}.{} dll)\n",
 			compiled.major, compiled.minor, compiled.patch,
@@ -971,9 +971,9 @@ ISDL20VideoSubsystem::ISDL20VideoSubsystem() : IVideoSubsystem()
 		return;
 	}
 
-	if (linked.patch != compiled.patch)
+	if (linked.minor != linked.patch || linked.patch != compiled.patch)
 	{
-		PrintFmt(PRINT_WARNING, "SDL version warning ({}.{}.{} vs {}.{}.{} dll)\n",
+		DPrintFmt("SDL version warning ({}.{}.{} vs {}.{}.{} dll)\n",
 			compiled.major, compiled.minor, compiled.patch,
 			linked.major, linked.minor, linked.patch);
 	}

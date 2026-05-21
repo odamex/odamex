@@ -633,6 +633,10 @@ scannedWADs_t GUI_BootWindow()
 	// deforms the window.
 	Fl::keyboard_screen_scaling(0);
 
+	#ifdef __linux__
+	Fl_Window::default_xclass("net.odamex.Odamex.Client");
+	#endif
+
 	// find arguments for fltk
 	DArgs fltkargs = DArgs();
 	fltkargs.AppendArg(::Args.GetArg(0));
@@ -648,8 +652,10 @@ scannedWADs_t GUI_BootWindow()
 	win->position((Fl::w() - win->w()) / 2, (Fl::h() - win->h()) / 2);
 	win->show(fltkargs.NumArgs(), (char**)fltkargs.GetArgv().data());
 
+
 	// Blocks until the boot window has been closed.
 	Fl::run();
+	Fl::check();
 
 	// Return the full IWAD path.
 	return g_SelectedWADs;

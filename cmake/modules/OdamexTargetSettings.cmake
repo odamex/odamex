@@ -61,6 +61,20 @@ function(odamex_target_settings _TARGET)
         -fsanitize=address -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls)
       target_link_options("${_TARGET}" PRIVATE -fsanitize=address)
     endif()
+
+    if(USE_SANITIZE_THREAD)
+      target_compile_options("${_TARGET}" PRIVATE
+        -fsanitize=thread -O1 -fno-omit-frame-pointer -fno-optimize-sibling-calls)
+      target_link_options("${_TARGET}" PRIVATE -fsanitize=thread)
+    endif()
+
+    if(USE_SANITIZE_UNDEFINED)
+      # doom is full of left shifts of negative values, which is UB
+      # but since there's so many, it drowns out the rest of the UB warnings
+      target_compile_options("${_TARGET}" PRIVATE
+        -fsanitize=undefined -fno-sanitize=shift -O1)
+      target_link_options("${_TARGET}" PRIVATE -fsanitize=undefined -fno-sanitize=shift)
+    endif()
   endif()
 
   # Add checked compile options - mostly taken from:
@@ -79,6 +93,7 @@ function(odamex_target_settings _TARGET)
     checked_add_compile_flag(CHECKED_OPTIONS -Wuseless-cast W_USELESS_CAST)
     checked_add_compile_flag(CHECKED_OPTIONS -Wformat=2 W_FORMAT_2)
     checked_add_compile_flag(CHECKED_OPTIONS -Wno-unused-parameter W_NO_UNUSED_PARAMETER)
+    checked_add_compile_flag(CHECKED_OPTIONS -Wstrict-aliasing W_STRICT_ALIASING)
   endif()
   target_compile_options("${_TARGET}" PRIVATE ${CHECKED_OPTIONS})
   target_compile_options("${_TARGET}" PRIVATE $<$<NOT:$<CONFIG:Debug>>:${CHECKED_RELEASE_OPTIONS}>)

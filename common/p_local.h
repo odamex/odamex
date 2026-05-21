@@ -23,9 +23,7 @@
 
 #pragma once
 
-#ifndef __R_LOCAL__
 #include "r_local.h"
-#endif
 
 #include <set>
 
@@ -331,6 +329,7 @@ extern int				bmapheight; 	// in mapblocks
 extern fixed_t			bmaporgx;
 extern fixed_t			bmaporgy;		// origin of block map
 extern AActor** 		blocklinks; 	// for thing chains
+inline bool skipblstart; // should the first element of blocklists be skipped
 
 extern std::set<short>	movable_sectors;
 

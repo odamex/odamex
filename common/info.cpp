@@ -7176,7 +7176,7 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 
 void D_BuildSpawnMap() {
 	spawn_map.clear();
-	for (auto& [_, mobj] : mobjinfo)
+	for (auto&& [_, mobj] : mobjinfo)
 	{
 		if (mobj.doomednum != -1)
 			spawn_map.insert(&mobj, mobj.type == MT_CAREPACK ? mobj.type : mobj.doomednum);

@@ -691,7 +691,7 @@ bool P_BlockLinesIterator (int x, int y, bool(*func)(line_t*))
 	// referencing linedef 0). Using this first entry (as vanilla Doom does) can
 	// cause hitscan weapons to erroneously hit the first linedef entry regardless
 	// of where that linedef is located in relation to the block.
-	if (co_blockmapfix)
+	if (!demoplayback && skipblstart)
 		++list;
 
 	for (; *list != -1; list++)

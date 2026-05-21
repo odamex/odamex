@@ -96,6 +96,9 @@ std::string StdStringToUpper(const char*, size_t n = std::string::npos);
 std::string &TrimString(std::string &s);
 std::string &TrimStringStart(std::string &s);
 std::string &TrimStringEnd(std::string &s);
+std::string_view TrimStringView(std::string_view s);
+std::string_view TrimStringViewStart(std::string_view s);
+std::string_view TrimStringViewEnd(std::string_view s);
 
 bool ValidString(const std::string&);
 bool IsHexString(const std::string& str, const size_t len);

@@ -1088,9 +1088,10 @@ void MIType_MapKey(OScanner& os, bool newStyleMapInfo, void* data, unsigned int 
 	}
 }
 
+template <typename DataType>
 void MIType_SetInt(OScanner& os, bool newStyleMapInfo, void* data, uint32_t flags, uint32_t flags2)
 {
-	*static_cast<int32_t*>(data) = flags;
+	*static_cast<DataType*>(data) = static_cast<DataType>(flags);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1168,7 +1169,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "e4m6special", &MIType_Special<MT_NULL, MF3_E4M6BOSS>, &ref.bossactions },
 			{ "e4m8special", &MIType_Special<MT_NULL, MF3_E4M8BOSS>, &ref.bossactions },
 			{ "specialaction_exitlevel", &MIType_SpecialAction<11>, &ref.bossactions },
-			{ "specialaction_opendoor", &MIType_SpecialAction<29, 666>, &ref.bossactions },
+			{ "specialaction_opendoor", &MIType_SpecialAction<109, 666>, &ref.bossactions },
 			{ "specialaction_lowerfloor", &MIType_SpecialAction<23, 666>, &ref.bossactions },
 			{ "specialaction_killmonsters", &MIType_SpecialAction<280>, &ref.bossactions },
 			{ "lightning" },
@@ -1218,7 +1219,8 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "author", &MIType_String, &ref.author },
 			{ "normalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NORMALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
 			{ "noinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_NOINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
-			{ "totalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_TOTALINFIGHTING, ~LEVEL2_INFIGHTINGMASK }
+			{ "totalinfighting", &MIType_SCFlags, &ref.flags2, LEVEL2_TOTALINFIGHTING, ~LEVEL2_INFIGHTINGMASK },
+			{ "smoothlighting" } // TODO: not implemented
 		};
 	}
 };
@@ -1571,7 +1573,7 @@ struct MapInfoDataSetter<SkillInfo>
 			{ "noinfighting", &MIType_SCFlags, &ref.flags, SKILL_NOINFIGHTING, ~SKILL_TOTALINFIGHTING },
 			{ "totalinfighting", &MIType_SCFlags, &ref.flags, SKILL_TOTALINFIGHTING, ~SKILL_NOINFIGHTING },
 			{ "playerrespawn", &MIType_Bool, &ref.player_respawn, true },
-			{ "defaultskill", &MIType_SetInt, &defaultskillmenu, skillnum }
+			{ "defaultskill", &MIType_SetInt<decltype(defaultskillmenu)>, &defaultskillmenu, skillnum }
 		};
 	}
 };

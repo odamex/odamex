@@ -1,6 +1,6 @@
 ### fmtlib ###
 
-if(BUILD_CLIENT OR BUILD_SERVER)
+if(BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS)
   message(STATUS "Compiling {fmt}...")
 
   lib_buildgen(

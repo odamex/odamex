@@ -815,7 +815,11 @@ bool P_AreTeammates(const player_t &a, const player_t &b)
 
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 {
-	// Viewers can always spy themselves.
+	// skip if out of lives in survival
+	if (G_IsLivesGame() && other.lives < 1)
+		return false;
+
+	// otherwise viewers can always spy themselves.
 	if (viewer.id == other.id)
 		return true;
 
@@ -856,10 +860,6 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 
 	if (isTeammate || viewer.spectator)
 	{
-		// If a player has no more lives, don't show him.
-		if (::g_lives && other.lives < 1)
-			return false;
-
 		return true;
 	}
 

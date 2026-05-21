@@ -34,6 +34,7 @@
 #include <wx/wfstream.h>
 #include <wx/tokenzr.h>
 #include <wx/recguard.h>
+#include <wx/dirdlg.h>
 
 #include "main.h"
 
@@ -91,16 +92,14 @@ END_EVENT_TABLE()
 
 // Window constructor
 dlgConfig::dlgConfig(wxWindow* parent, wxWindowID id) :
-	m_Notebook(NULL)
+	m_Notebook(nullptr)
 {
 	// Set up the dialog and its widgets
 	wxXmlResource::Get()->LoadDialog(this, parent, "dlgConfig");
 
 	m_ChkCtrlGetListOnStart = XRCCTRL(*this, "Id_ChkCtrlGetListOnStart", wxCheckBox);
 	m_ChkCtrlShowBlockedServers = XRCCTRL(*this, "Id_ChkCtrlShowBlockedServers", wxCheckBox);
-	//m_ChkCtrlCheckForUpdates = XRCCTRL(*this, "Id_ChkCtrlCheckForUpdates", wxCheckBox);
 	m_ChkCtrlEnableBroadcasts = XRCCTRL(*this, "Id_ChkCtrlEnableBroadcasts", wxCheckBox);
-	//m_ChkCtrlLoadChatOnLS = XRCCTRL(*this, "Id_ChkCtrlLoadChatOnStart", wxCheckBox);
 	m_ChkCtrlFlashTaskBar = XRCCTRL(*this, "Id_ChkFlashTaskbar", wxCheckBox);
 	m_ChkCtrlPlaySystemBeep = XRCCTRL(*this, "Id_ChkSystemBeep", wxCheckBox);
 	m_ChkCtrlPlaySoundFile = XRCCTRL(*this, "Id_ChkPlaySound", wxCheckBox);
@@ -413,15 +412,15 @@ void dlgConfig::OnGetEnvClick(wxCommandEvent& event)
 void dlgConfig::OnNotebookPageChanged(wxBookCtrlEvent& event)
 {
 	// This is a workaround for notebook layout issues on some platforms
-	if(NULL != m_Notebook)
+	if(nullptr != m_Notebook)
 	{
 		wxWindowList pages = m_Notebook->GetChildren();
 
-		if(pages.size() > event.GetSelection())
+		if(static_cast<int>(pages.size()) > event.GetSelection())
 		{
 			wxPanel* page = dynamic_cast<wxPanel*>(pages[event.GetSelection()]);
 
-			if(NULL != page)
+			if(nullptr != page)
 			{
 				page->Layout();
 			}
@@ -496,7 +495,7 @@ void dlgConfig::LoadSettings()
 	m_DirCtrlChooseOdamexPath->SetPath(OdamexDirectory);
 	m_FilePickCtrlSoundFile->SetPath(SoundFile);
 	m_ClrPickServerLineHighlighter->SetColour(HighlightColour);
-    m_ClrPickCustomServerHighlight->SetColour(CustomServerColour);
+	m_ClrPickCustomServerHighlight->SetColour(CustomServerColour);
 
 	// Load wad path list
 	m_LstCtrlWadDirectories->Clear();
@@ -551,14 +550,12 @@ void dlgConfig::SaveSettings()
 	ConfigInfo.Write(EXTRACMDLINEARGS, m_TxtCtrlExtraCmdLineArgs->GetValue());
 	ConfigInfo.Write(GETLISTONSTART, m_ChkCtrlGetListOnStart->GetValue());
 	ConfigInfo.Write(SHOWBLOCKEDSERVERS, m_ChkCtrlShowBlockedServers->GetValue());
-    //ConfigInfo.Write(CHECKFORUPDATES, m_ChkCtrlCheckForUpdates->GetValue());
 	ConfigInfo.Write(DELIMWADPATHS, DelimWadPaths);
 	ConfigInfo.Write(ODAMEX_DIRECTORY, m_DirCtrlChooseOdamexPath->GetPath());
 	ConfigInfo.Write(ICONPINGQGOOD, m_SpnCtrlPQGood->GetValue());
 	ConfigInfo.Write(ICONPINGQPLAYABLE, m_SpnCtrlPQPlayable->GetValue());
 	ConfigInfo.Write(ICONPINGQLAGGY, m_SpnCtrlPQLaggy->GetValue());
 	ConfigInfo.Write(USEBROADCAST, m_ChkCtrlEnableBroadcasts->GetValue());
-	//ConfigInfo.Write(LOADCHATONLS, m_ChkCtrlLoadChatOnLS->GetValue());
 	ConfigInfo.Write(POLFLASHTBAR, m_ChkCtrlFlashTaskBar->GetValue());
 	ConfigInfo.Write(POLPLAYSYSTEMBELL, m_ChkCtrlPlaySystemBeep->GetValue());
 	ConfigInfo.Write(POLPLAYSOUND, m_ChkCtrlPlaySoundFile->GetValue());

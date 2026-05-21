@@ -626,7 +626,10 @@ void CL_StepTics(unsigned int count)
 		OInterpolation::getInstance().ticGameInterpolation();
 
 		G_Ticker ();
-		gametic++;
+
+		if (!netdemo.isPaused())
+			gametic++;
+
 		if (netdemo.isPlaying() && !netdemo.isPaused())
 			netdemo.ticker();
 	}
@@ -668,7 +671,7 @@ void CL_RunTics()
 				PrintFmt("level.time {}, prndindex {}, {} {} {}\n",
 				         level.time, prndindex, players.begin()->mo->x, players.begin()->mo->y, players.begin()->mo->z);
 			else
- 				PrintFmt("level.time %d, prndindex %d\n", level.time, prndindex);
+ 				PrintFmt("level.time {}, prndindex {}\n", level.time, prndindex);
 		}
 	}
 	else
@@ -1408,7 +1411,10 @@ void CL_SpectatePlayer(player_t& player, bool spectate)
 		}
 		else
 		{
-			displayplayer_id = consoleplayer_id; // get out of spynext
+			if (!netdemo.isPlaying())
+			{
+				displayplayer_id = consoleplayer_id; // get out of spynext
+			}
 			player.cheats &= ~CF_FLY;	// remove flying ability
 		}
 
