@@ -3553,16 +3553,16 @@ void SV_WriteCommandsForPlayer(player_t& player)
 
 	SV_UpdateGametype(player);     // update gametype stuff
 
-    // It's important that we service pings before the mobjs.  The ping is an input to the
-    // retransmit delay, so we want to make sure it basically always goes out.  If it doesn't,
-    // we risk a massive growth in the reliable queue and an eventual retransmit storm.
+	// It's important that we service pings before the mobjs.  The ping is an input to the
+	// retransmit delay, so we want to make sure it basically always goes out.  If it doesn't,
+	// we risk a massive growth in the reliable queue and an eventual retransmit storm.
 
 	SV_SendPingRequest(& player.client);     // request ping reply
 
 	SV_UpdatePing(& player.client);          // send the ping value of all cients to this client
 
-    // Now that we've gotten through the basic "keep the game cycling" stuff, go through the
-    // additional mobj messages that can really blow out the bandwidth if we let them.
+	// Now that we've gotten through the basic "keep the game cycling" stuff, go through the
+	// additional mobj messages that can really blow out the bandwidth if we let them.
 
 	const bool throttleIsActive = player.client.messenger.GetReliableOverloadCount() > 1;
 
@@ -3597,28 +3597,28 @@ void SV_WriteCommandsForPlayer(player_t& player)
 			SV_UpdateMissiles(player, sortedMobjIter);
 
 			SV_UpdateMonsters(player, sortedMobjIter->actorPtr);
-        }
-        else
-        {
-            // We're overbudget.  We don't even update awareness beyond this point so as to not load things on the queue
-            // that will be out-of-date by next tic anyway.
-            //
-            // The only thing we consider doing at this point is putting a specific mobj's update in the high-priority
-            // data on client demand, if there is such a demand.  Otherwise, we're done for this go-around.
-            if (player.requestedNetIdUpdate == 0)
-            {
-                break;
-            }
-        }
+		}
+		else
+		{
+			// We're overbudget.  We don't even update awareness beyond this point so as to not load things on the queue
+			// that will be out-of-date by next tic anyway.
+			//
+			// The only thing we consider doing at this point is putting a specific mobj's update in the high-priority
+			// data on client demand, if there is such a demand.  Otherwise, we're done for this go-around.
+			if (player.requestedNetIdUpdate == 0)
+			{
+				break;
+			}
+		}
 
-        if (player.requestedNetIdUpdate == sortedMobjIter->actorPtr->netid)
-        {
+		if (player.requestedNetIdUpdate == sortedMobjIter->actorPtr->netid)
+		{
 			// Now in this case we're okay with *potentially* going overbudget or behind-by-one tic,
 			// because the player has a mobj that's multiple seconds out of date.  Being a even little
 			// late is better than that.
 			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_UpdateMobj(*sortedMobjIter->actorPtr));
 			player.requestedNetIdUpdate = 0;
-        }
+		}
 	}
 }
 
