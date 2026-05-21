@@ -358,6 +358,28 @@ class CredibilityState
             m_credibility = CredibilityEnum::ALWAYS_CREDIBLE;
         }
 
+        template <typename StreamType>
+        friend StreamType& operator<<(StreamType& io_stream, const CredibilityState& i_thisRef)
+        {
+            io_stream
+                << i_thisRef.m_credibility
+                << i_thisRef.m_crediblePosition
+                << i_thisRef.m_predictedMotionTicCount
+                ;
+            return io_stream;
+        }
+
+        template <typename StreamType>
+        friend StreamType& operator>>(StreamType& io_stream, CredibilityState& o_thisRef)
+        {
+            io_stream
+                >> o_thisRef.m_credibility
+                >> o_thisRef.m_crediblePosition
+                >> o_thisRef.m_predictedMotionTicCount
+                ;
+            return io_stream;
+        }
+
     protected:
 
         // Start off fully-credible so that triggers and other things can fire immediately if needed on the client
