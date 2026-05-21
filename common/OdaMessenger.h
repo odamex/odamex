@@ -119,9 +119,6 @@ class OdaMessenger
 		bool MustThrottleTransmission() const { return m_sender.GetMode() == SequenceSender::RECOVERY; }
 		fixed_t ThrottleFraction() const { return FixedDiv( m_unackedGrowth << FRACBITS, m_unackedGrowthThreshold << FRACBITS); }
 
-		void SetRetransmitDelay(int i_delayInTics) { m_retransmitDelayInTics = i_delayInTics; }
-		void SetPacketsPerRetransmit(int i_maxPackets) { m_maxPacketsPerRetransmission = i_maxPackets; }
-		int  GetMaxPacketsPerRetransmission() const { return m_maxPacketsPerRetransmission; }
 		void SetMaxRate(int i_maxRate)
 		{
 			m_maxRate      = i_maxRate;
@@ -131,14 +128,19 @@ class OdaMessenger
 			// Track when reliable exceeds a certain percentage of the budget.  This could be configurable...
 			m_reliableOverloadThreshold = 9 * (m_perTicBudget / 10);
 		}
+		void SetPacketsPerRetransmit(int i_maxPackets)  { m_maxPacketsPerRetransmission = i_maxPackets; }
+		void SetRetransmitDelay     (int i_delayInTics) { m_retransmitDelayInTics = i_delayInTics; }
 
-		int GetLastSendSize() const { return m_lastSendSize; }
-		int GetLastReliableSendSize() const { return static_cast<int>(m_bytesSentWithReliability); }
-		int GetTicBudget() const { return m_perTicBudget; }
-		int GetPendingAckCount() const { return m_sender.GetPendingAckCount(); }
+		int GetLastReliableSendSize() const           { return static_cast<int>(m_bytesSentWithReliability); }
+		int GetLastSendSize() const                   { return m_lastSendSize; }
+		int GetMaxPacketsPerRetransmission() const    { return m_maxPacketsPerRetransmission; }
 		int GetNonContiguousRetransmitPackets() const { return m_noncontiguousRetransmitCount; }
-
+		size_t GetOutgoingSizeInBytes() const         { return m_outgoingReliableQueue.SizeInBytes()
+		                                                     + m_outgoingNonReliableQueue.SizeInBytes()
+		                                                     + m_outgoingHighNonReliableQueue.SizeInBytes(); }
+		int GetPendingAckCount() const       { return m_sender.GetPendingAckCount(); }
 		int GetReliableOverloadCount() const { return m_reliableOverloadCount; }
+		int GetTicBudget() const             { return m_perTicBudget; }
 
 	protected:
 
