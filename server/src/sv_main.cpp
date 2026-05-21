@@ -3582,24 +3582,39 @@ void SV_WriteCommandsForPlayer(player_t& player)
 
 	for (auto sortedMobjIter = player.sortedMobjs.begin(); sortedMobjIter != player.sortedMobjs.end(); ++sortedMobjIter)
 	{
-		if (hiddenUpdateCount <= maxForThisTic)
+		const bool isWithinBudget = player.client.messenger.GetOutgoingSizeInBytes() < player.client.messenger.GetTicBudget();
+		if (isWithinBudget)
 		{
-            const AwarenessEnum appropriateAwareness = throttleIsActive ? sortedMobjIter < sortedMobjPartitions.innerBoundary ? AwarenessEnum::FULLY_AWARE :
-                                                                          sortedMobjIter < sortedMobjPartitions.outerBoundary ? AwarenessEnum::SEMI_AWARE  :
-                                                                                                                                AwarenessEnum::BARELY_AWARE :
-                                                                          AwarenessEnum::FULLY_AWARE;
+			if (hiddenUpdateCount <= maxForThisTic)
+			{
+				const AwarenessEnum appropriateAwareness = throttleIsActive ? sortedMobjIter < sortedMobjPartitions.innerBoundary ? AwarenessEnum::FULLY_AWARE :
+				                                                              sortedMobjIter < sortedMobjPartitions.outerBoundary ? AwarenessEnum::SEMI_AWARE  :
+				                                                                                                                    AwarenessEnum::BARELY_AWARE :
+				                                                              AwarenessEnum::FULLY_AWARE;
+				hiddenUpdateCount = SV_UpdateHiddenMobj(player, sortedMobjIter->actorPtr, hiddenUpdateCount, appropriateAwareness);
+			}
 
-			hiddenUpdateCount = SV_UpdateHiddenMobj(player, sortedMobjIter->actorPtr, hiddenUpdateCount, appropriateAwareness);
-		}
+			SV_UpdateMissiles(player, sortedMobjIter);
 
-		SV_UpdateMissiles(player, sortedMobjIter);
-
-		SV_UpdateMonsters(player, sortedMobjIter->actorPtr);
+			SV_UpdateMonsters(player, sortedMobjIter->actorPtr);
+        }
+        else
+        {
+            // We're overbudget.  We don't even update awareness beyond this point so as to not load things on the queue
+            // that will be out-of-date by next tic anyway.
+            //
+            // The only thing we consider doing at this point is putting a specific mobj's update in the high-priority
+            // data on client demand, if there is such a demand.  Otherwise, we're done for this go-around.
+            if (player.requestedNetIdUpdate == 0)
+            {
+                break;
+            }
+        }
 
         if (player.requestedNetIdUpdate == sortedMobjIter->actorPtr->netid)
         {
-            MSG_WriteSVC(player.client.messenger.HighBuf(), SVC_UpdateMobj(*sortedMobjIter->actorPtr));
-            player.requestedNetIdUpdate = 0;
+			MSG_WriteSVC(player.client.messenger.HighBuf(), SVC_UpdateMobj(*sortedMobjIter->actorPtr));
+			player.requestedNetIdUpdate = 0;
         }
 	}
 }
@@ -4299,7 +4314,6 @@ void SV_HandlePlayerInput(odaproto::clc::PlayerInput& msg, player_t &player)
 void SV_SendRequestedMobjUpdate(player_t& player, const odaproto::clc::SendMobjUpdate& msg)
 {
     player.requestedNetIdUpdate = msg.netid();
-//    PrintFmt("Challenge for {}\n", player.requestedNetIdUpdate);
 }
 
 //
