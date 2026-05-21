@@ -4462,7 +4462,7 @@ void SV_ParseCommands(player_t &player)
 
 			switch(cmd)
 			{
-                case static_cast<svc_t>(-1):
+                case -1:
                     continue;
 
                 // Ack is a special case that's intentionally lower level and must be serviced before anything
