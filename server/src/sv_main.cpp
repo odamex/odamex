@@ -3613,7 +3613,10 @@ void SV_WriteCommandsForPlayer(player_t& player)
 
         if (player.requestedNetIdUpdate == sortedMobjIter->actorPtr->netid)
         {
-			MSG_WriteSVC(player.client.messenger.HighBuf(), SVC_UpdateMobj(*sortedMobjIter->actorPtr));
+			// Now in this case we're okay with *potentially* going overbudget or behind-by-one tic,
+			// because the player has a mobj that's multiple seconds out of date.  Being a even little
+			// late is better than that.
+			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_UpdateMobj(*sortedMobjIter->actorPtr));
 			player.requestedNetIdUpdate = 0;
         }
 	}
