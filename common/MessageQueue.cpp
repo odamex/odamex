@@ -24,6 +24,16 @@
 
 buf_t& MessageQueue::Obtain()
 {
+	if (m_queue.size() > 0)
+	{
+		m_totalEnqueuedBytesSansMostRecent += m_queue.back().size();
+	}
+	else
+	{
+		// Shouldn't need to do this, but let's do it anyway just to be on the safe side.
+		m_totalEnqueuedBytesSansMostRecent = 0;
+	}
+
 	if (not m_freeStack.empty())
 	{
 		m_queue.emplace_back(std::move(m_freeStack.back()));
@@ -47,6 +57,14 @@ void MessageQueue::Emplace(buf_t& io_str)
 
 void MessageQueue::PopFromQueueToFreeStack()
 {
+	// The total byte size does not include the back() element, and we're popping from
+	// the front, so we can just count on the queue's number of elements for knowing
+	// whether the element is accounted for in the byte size.
+
+	if (m_queue.size() > 1)
+	{
+		m_totalEnqueuedBytesSansMostRecent -= m_queue.front().size();
+	}
 	m_freeStack.emplace_back(std::move(m_queue.front()));
 	m_queue.pop_front();
 }
@@ -67,4 +85,7 @@ void MessageQueue::Clear()
 	{
 		PopFromQueueToFreeStack();
 	}
+
+	// Shouldn't need to do this, but let's do it anyway just to be on the safe side.
+	m_totalEnqueuedBytesSansMostRecent = 0;
 }

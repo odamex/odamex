@@ -33,6 +33,7 @@ class MessageQueue
 {
 	public:
 
+		size_t SizeInBytes()    const { return not m_queue.empty() ? m_totalEnqueuedBytesSansMostRecent + m_queue.back().size() : m_totalEnqueuedBytesSansMostRecent; }
 		size_t SizeInMessages() const { return m_queue.size(); }
 
 		// Pushing messages
@@ -78,4 +79,10 @@ class MessageQueue
 		std::deque<buf_t>  m_queue;
 		std::vector<buf_t> m_freeStack;
 		std::string        m_serializationBuffer;
+
+		// Tracking total byte size is slightly tricky because the buffer's slot in the queue
+		// is created before the buffer is filled.  We don't consider a buffer's size to be
+		// "finalized" until the next slot is created.
+		//
+		size_t m_totalEnqueuedBytesSansMostRecent { 0 };
 };
