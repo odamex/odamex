@@ -73,6 +73,7 @@ fixed_t boby;
 EXTERN_CVAR (r_drawplayersprites)
 EXTERN_CVAR (r_softinvulneffect)
 EXTERN_CVAR (r_particles)
+EXTERN_CVAR (r_drawnetcredibility)
 
 //
 // INITIALIZATION FUNCTIONS
@@ -670,33 +671,38 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		vis->colormap = basecolormap.with(spritelights[index]);	// [RH] Use basecolormap
 	}
 
-    particle_t particle;
-    particle.x = vis->gx;
-    particle.y = vis->gy;
-    particle.z = vis->gzt;
+	if (r_drawnetcredibility)
+	{
+		particle_t particle;
+		particle.x = vis->gx;
+		particle.y = vis->gy;
+		particle.z = vis->gzt;
 
-    particle.size = 16;
-    particle.sprite = NO_PARTICLE;
-    particle.trans  = 0xFF;
-    switch (vis->mo->credibility.Get())
-    {
-        case CredibilityEnum::NOT_CREDIBLE:
-            particle.color = 175;           // Eye-blazing red.
-            break;
-        case CredibilityEnum::ALWAYS_CREDIBLE:
-            particle.color = 251;           // Nuclear hot magenta.
-            break;
-        case CredibilityEnum::FULLY_CREDIBLE:
-            particle.color = 195;           // Sky blue.
-            break;
-        case CredibilityEnum::SEMI_CREDIBLE:
-            particle.color = 228;           // Weathering yellow-beige.
-            break;
-        case CredibilityEnum::CHALLENGED_CREDIBILITY:
-            particle.color = 0;             // Brutalist grey.
-            break;
-    }
-    R_ProjectParticle(&particle, sector, fakeside);
+		particle.size   = 16;
+		particle.sprite = NO_PARTICLE;
+		particle.trans  = 0xFF;
+
+		// Color numbers sourced from https://doomwiki.org/wiki/PLAYPAL
+		switch (vis->mo->credibility.Get())
+		{
+			case CredibilityEnum::NOT_CREDIBLE:
+				particle.color = 175;           // Eye-blazing red.
+				break;
+			case CredibilityEnum::ALWAYS_CREDIBLE:
+				particle.color = 251;           // Nuclear hot magenta.
+				break;
+			case CredibilityEnum::FULLY_CREDIBLE:
+				particle.color = 195;           // Sky blue.
+				break;
+			case CredibilityEnum::SEMI_CREDIBLE:
+				particle.color = 228;           // Weathering yellow-beige.
+				break;
+			case CredibilityEnum::CHALLENGED_CREDIBILITY:
+				particle.color = 0;             // Pitch.
+				break;
+		}
+		R_ProjectParticle(&particle, sector, fakeside);
+	}
 }
 
 

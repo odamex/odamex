@@ -771,6 +771,9 @@ CVAR(			r_clipmaskedspecial, "1", "Vertically clip masked midtextures when surro
 CVAR(			r_thingsectorlight, "0", "Things are lit according to the average of the transfered light levels (mimics MBF behavior)",
 				CVARTYPE_BOOL, CVAR_NULL)
 
+CVAR(           r_drawnetcredibility, "0", "Add a particle to each actor indicating how credible the client considers the actor's position",
+                CVARTYPE_BOOL, CVAR_NULL)
+
 #if 0
 CVAR(			r_drawhitboxes, "0", "Draws a box outlining every actor's hitboxes",
 				CVARTYPE_BOOL, CVAR_NULL)
