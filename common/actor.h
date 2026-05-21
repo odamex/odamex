@@ -353,6 +353,11 @@ class CredibilityState
             m_credibility = CredibilityEnum::CHALLENGED_CREDIBILITY;
         }
 
+        void Lionize()
+        {
+            m_credibility = CredibilityEnum::ALWAYS_CREDIBLE;
+        }
+
     protected:
 
         // Start off fully-credible so that triggers and other things can fire immediately if needed on the client

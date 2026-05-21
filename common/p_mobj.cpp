@@ -132,7 +132,7 @@ inline void CredibilityState::Update(const AActor& mobj)
 #ifdef CLIENT_APP
     if (not serverside)     // But we still need to check in case we're in single-player.
     {
-        if (mobj.updatedDuringTic >= 0)
+        if (mobj.updatedDuringTic >= 0 and m_credibility != CredibilityEnum::ALWAYS_CREDIBLE)
         {
             const int ticsSinceAuthoritativeUpdate = gametic - mobj.updatedDuringTic;
 
@@ -3403,6 +3403,7 @@ void P_SpawnAvatars()
 
 		// Assign spawnpoint so that it gets archived and can be matched back up with voodoostarts after deserialization.
 		voodoo.mobj->spawnpoint = voodoo.mapThing;
+		voodoo.mobj->credibility.Lionize();
 	}
 }
 
