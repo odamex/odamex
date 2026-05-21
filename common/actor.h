@@ -346,6 +346,12 @@ class CredibilityState
             return m_credibility;
         }
 
+        bool IsCredible() const
+        {
+            return m_credibility == CredibilityEnum::FULLY_CREDIBLE
+                or m_credibility == CredibilityEnum::ALWAYS_CREDIBLE;
+        }
+
         void Update(const AActor& mobj);
 
         void Challenge()

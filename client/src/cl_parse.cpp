@@ -1183,6 +1183,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 	mobj->momx = mobj->momy = mobj->momz = 0;
 
 	mobj->updatedDuringTic = gametic;
+	mobj->credibility.Lionize();
 
 	// set color translations for player sprites
 	mobj->translation = translationref_t(translationtables + 256 * playernum, playernum);
