@@ -3212,7 +3212,7 @@ void SV_UpdateAvatars(player_t& player)
 		if (voodooInfo.mobj and ((voodooInfo.mobj->netid + gametic) % 7) == 0)
 		{
 			voodooInfo.mobj->updatedDuringTic = gametic;    // Avoid a potential duplicate send.
-			MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*voodooInfo.mobj));
+			MSG_WriteSVC(player.client.messenger.HighBuf(), SVC_UpdateMobj(*voodooInfo.mobj));
 		}
 	}
 }
