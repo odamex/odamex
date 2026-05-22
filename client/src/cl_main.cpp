@@ -2529,6 +2529,8 @@ void CL_SimulatePlayers()
 					snap.setX(snap.getX() - offset.x);
 					snap.setY(snap.getY() - offset.y);
 					snap.setZ(snap.getZ() - offset.z);
+
+					snap.setExtrapolated(true);
 				}
 			}
 
