@@ -2530,6 +2530,11 @@ void CL_SimulatePlayers()
 					snap.setY(snap.getY() - offset.y);
 					snap.setZ(snap.getZ() - offset.z);
 
+					// We calculated a new position based on what we assumed is an extrapolation.
+					// We treat the new position as also extrapolated, so mark it as such.
+					// This ensures that it goes through a proper movement check before it's
+					// applied to the player, which prevents things like the player being "popped"
+					// through ceilings and floors on instant lifts.
 					snap.setExtrapolated(true);
 				}
 			}
