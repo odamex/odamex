@@ -3205,6 +3205,18 @@ void SV_UpdateMonsters(player_t &pl, AActor *mo)
     }
 }
 
+void SV_UpdateAvatars(player_t& player)
+{
+	for (auto& voodooInfo : voodoostarts)
+	{
+		if (voodooInfo.mobj and ((voodooInfo.mobj->netid + gametic) % 7) == 0)
+		{
+			voodooInfo.mobj->updatedDuringTic = gametic;    // Avoid a potential duplicate send.
+			MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*voodooInfo.mobj));
+		}
+	}
+}
+
 void SV_UpdateGametype(player_t& player)
 {
 	if (G_IsHordeMode())
@@ -3557,9 +3569,10 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	// retransmit delay, so we want to make sure it basically always goes out.  If it doesn't,
 	// we risk a massive growth in the reliable queue and an eventual retransmit storm.
 
-	SV_SendPingRequest(& player.client);     // request ping reply
+	SV_SendPingRequest(& player.client);    // request ping reply
+	SV_UpdatePing(& player.client);         // send the ping value of all clients to this client
 
-	SV_UpdatePing(& player.client);          // send the ping value of all cients to this client
+	SV_UpdateAvatars(player);       // Focused, avatar-only update - critical for map automation.
 
 	// Now that we've gotten through the basic "keep the game cycling" stuff, go through the
 	// additional mobj messages that can really blow out the bandwidth if we let them.

@@ -156,7 +156,7 @@ extern std::vector<mapthing2_t> DeathMatchStarts;
 struct VoodooStartInfoType
 {
 	mapthing2_t         mapThing;
-	AActor::AActorPtr   mobj;       // Co-owning, map-lifetime pointer.
+	AActor::AActorPtr   mobj;       // Map-lifetime pointer.
 
 	explicit VoodooStartInfoType(const mapthing2_t& i_mapThing) :
 		mapThing (i_mapThing)
