@@ -2511,16 +2511,16 @@ void CL_SimulatePlayers()
 
 				v3fixed_t offset;
 				M_SetVec3Fixed(&offset, prevsnap.getX() - player.mo->x,
-										prevsnap.getY() - player.mo->y,
-										prevsnap.getZ() - player.mo->z);
+				                        prevsnap.getY() - player.mo->y,
+				                        prevsnap.getZ() - player.mo->z);
 
 				fixed_t dist = M_LengthVec3Fixed(&offset);
 				if (dist > 2 * FRACUNIT)
 				{
 					#ifdef _SNAPSHOT_DEBUG_
 					PrintFmt(PRINT_HIGH, "Snapshot {}, Correcting extrapolation error of {}\n",
-							 world_index, dist >> FRACBITS);
-					#endif	// _SNAPSHOT_DEBUG_
+					         world_index, dist >> FRACBITS);
+					#endif  // _SNAPSHOT_DEBUG_
 
 					static constexpr fixed_t correction_amount = FRACUNIT * 0.80f;
 					M_ScaleVec3Fixed(&offset, &offset, correction_amount);
