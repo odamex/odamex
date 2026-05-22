@@ -1031,7 +1031,7 @@ bool P_CheckPosition (AActor *thing, fixed_t x, fixed_t y)
 
 	if (P_AllowPassover() && !spectator)
 	{
-		if (thing->player)	// [RH] Fake taller height to catch stepping up into things.
+		if (P_IsPlayerOrAvatar(*thing))      // [RH] Fake taller height to catch stepping up into things.
 			thing->height += 24*FRACUNIT;
 
 		for (int bx = xl; bx <= xh; bx++)
