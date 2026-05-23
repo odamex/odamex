@@ -635,6 +635,17 @@ void P_ProcessSpreeKill(const AActor* source, const player_t* target)
 	if (!source || !source->player)
 		return;
 
+	// Don't count if the player killed themselves, or if the player killed a teammate.
+	if (target && target->id == source->player->id)
+		return;
+
+	if (target && G_IsTeamGame() && source->player &&
+	    source->player->userinfo.team == target->userinfo.team)
+		return;
+
+	if (target && G_IsCoopGame())
+		return;
+
 	if (clientside && network_game)
 		return;
 

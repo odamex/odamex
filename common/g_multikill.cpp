@@ -25,6 +25,8 @@
 
 #include "odamex.h"
 
+#include "g_gametype.h"
+
 #include "p_mobj.h"
 #include "p_local.h"
 #include "s_sound.h"
@@ -209,6 +211,16 @@ void P_ProcessMultiKills(const AActor* source, const player_t* target)
 	}
 
 	if (!source || !source->player)
+		return;
+
+	// Don't count if the player killed themselves, or if the player killed a teammate.
+	if (target && target->id == source->player->id)
+		return;
+
+	if (target && G_IsTeamGame() && source->player && source->player->userinfo.team == target->userinfo.team)
+		return;
+
+	if (target && G_IsCoopGame())
 		return;
 
 	manager.addKill(source->player->id);
