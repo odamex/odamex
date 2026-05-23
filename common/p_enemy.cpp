@@ -66,6 +66,7 @@ EXTERN_CVAR(co_friend_ledgejumping)
 EXTERN_CVAR(co_removesoullimit)
 EXTERN_CVAR(co_friend_helpertype)
 EXTERN_CVAR(co_friend_playerhelpers)
+EXTERN_CVAR(co_archvilefirefix)
 
 #ifdef CLIENT_APP
 EXTERN_CVAR(cl_showfriends)
@@ -2366,7 +2367,8 @@ void A_VileTarget (AActor *actor)
 	if (serverside)
 	{
 		fog = new AActor (actor->target->x,
-		                  actor->target->x,
+		                  co_archvilefirefix ? actor->target->y :
+		                                       actor->target->x,
 		                  actor->target->z, MT_FIRE);
 
 		actor->tracer = fog->ptr();

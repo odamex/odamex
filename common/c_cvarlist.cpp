@@ -351,6 +351,8 @@ CVAR_RANGE(sv_countdown, "5",
 	CVAR(			co_novileghosts, "0", "Disables vanilla's ghost monster quirk that lets Arch-viles resurrect crushed monsters as unshootable ghosts",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+	CVAR(           co_archvilefirefix, "0", "Fix the vanilla bug where Arch-vile fire is spawned in the wrong location, causing motion and interpolation column-of-fire-type visual glitches",
+	                CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	// Boom-compatibility changes
 	//------------------------------

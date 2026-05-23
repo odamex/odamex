@@ -134,6 +134,7 @@ EXTERN_CVAR(co_mbfphys)
 EXTERN_CVAR(co_zdoomammo)
 EXTERN_CVAR(co_allowdropoff)
 EXTERN_CVAR(co_voodooscroller)
+EXTERN_CVAR(co_archvilefirefix)
 
 void G_ReadCOMPLVL()
 {
@@ -151,6 +152,7 @@ void G_ReadCOMPLVL()
 			co_mbfphys.Set(0.0f);
 			co_allowdropoff.Set(0.0f);
 			co_voodooscroller.Set(0.0f);
+			co_archvilefirefix.Set(0.0f);
 		}
 		else if (iequals("boom", complvl))
 		{
@@ -158,6 +160,7 @@ void G_ReadCOMPLVL()
 			co_mbfphys.Set(0.0f);
 			co_allowdropoff.Set(1.0f);
 			co_voodooscroller.Set(0.0f);
+			co_archvilefirefix.Set(0.0f);
 		}
 		else if (iequals("mbf", complvl))
 		{
@@ -165,6 +168,7 @@ void G_ReadCOMPLVL()
 			co_mbfphys.Set(1.0f);
 			co_allowdropoff.Set(1.0f);
 			co_voodooscroller.Set(1.0f);
+			co_archvilefirefix.Set(1.0f);
 		}
 		else if (iequals("mbf21", complvl))
 		{
@@ -172,6 +176,7 @@ void G_ReadCOMPLVL()
 			co_mbfphys.Set(1.0f);
 			co_allowdropoff.Set(1.0f);
 			co_voodooscroller.Set(0.0f);
+			co_archvilefirefix.Set(1.0f);
 		}
 		else
 		{
