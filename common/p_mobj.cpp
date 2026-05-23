@@ -1422,8 +1422,8 @@ static void P_ApplyXYFriction(AActor* mo)
 	const bool isPlayer                 = mo->player != nullptr;
 	const bool isVoodoo                 = P_IsVoodooDoll(mo);
 	const bool isRealPlayer             = isPlayer and not isVoodoo;
-	const bool isUserCommandingMotion   = mo->player and mo->player->cmd.forwardmove != 0 and
-	                                                     mo->player->cmd.sidemove != 0;
+	const bool isUserCommandingMotion   = mo->player and (mo->player->cmd.forwardmove != 0 or
+	                                                      mo->player->cmd.sidemove != 0);
     const bool isOnConveyor             = mo->oflags & MFO_IS_ON_CONVEYOR;
     const bool isSuperSlowVoodoo        = isVoodoo and co_voodooscroller;
 
