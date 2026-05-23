@@ -2330,8 +2330,8 @@ void A_FireCrackle (AActor *actor)
 
 void A_Fire (AActor *actor)
 {
-	AActor* 	dest;
-	unsigned	an;
+	AActor*     dest;
+	unsigned    an;
 
 	dest = actor->tracer;
 	if (!dest)
@@ -2344,8 +2344,8 @@ void A_Fire (AActor *actor)
 	an = dest->angle >> ANGLETOFINESHIFT;
 
 	actor->SetOrigin (dest->x + FixedMul (24*FRACUNIT, finecosine[an]),
-					  dest->y + FixedMul (24*FRACUNIT, finesine[an]),
-					  dest->z);
+	                  dest->y + FixedMul (24*FRACUNIT, finesine[an]),
+	                  dest->z);
 }
 
 
@@ -2363,14 +2363,17 @@ void A_VileTarget (AActor *actor)
 
 	A_FaceTarget (actor);
 
-	fog = new AActor (actor->target->x,
-					  actor->target->x,
-					  actor->target->z, MT_FIRE);
+	if (serverside)
+	{
+		fog = new AActor (actor->target->x,
+		                  actor->target->x,
+		                  actor->target->z, MT_FIRE);
 
-	actor->tracer = fog->ptr();
-	fog->target = actor->ptr();
-	fog->tracer = actor->target;
-	A_Fire (fog);
+		actor->tracer = fog->ptr();
+		fog->target = actor->ptr();
+		fog->tracer = actor->target;
+		A_Fire (fog);
+	}
 }
 
 
