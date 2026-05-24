@@ -139,7 +139,7 @@ target_include_directories(tinylibs INTERFACE . "tinylibs/include")
 
 ### minilzo ###
 
-if(BUILD_CLIENT OR BUILD_SERVER)
+if(BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS)
   message(STATUS "Compiling minilzo...")
   add_library(minilzo STATIC
       "minilzo/lzoconf.h" "minilzo/lzodefs.h" "minilzo/minilzo.c" "minilzo/minilzo.h")

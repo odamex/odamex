@@ -580,9 +580,9 @@ struct tallpost_t
 // OTHER TYPES
 //
 
-struct drawseg_s
+struct drawseg_t
 {
-	seg_t*			curline;
+	const seg_t*	curline;
 
     int				x1;
     int				x2;
@@ -602,7 +602,6 @@ struct drawseg_s
     int*			sprbottomclip;
 	tallpost_t**	midposts;
 };
-typedef drawseg_s drawseg_t;
 
 
 // Patches.

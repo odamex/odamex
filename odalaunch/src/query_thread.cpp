@@ -26,7 +26,7 @@
 #include <wx/msgdlg.h>
 #include <wx/app.h>
 #include <wx/fileconf.h>
-#include <wx/log.h> 
+#include <wx/log.h>
 
 #include "plat_utils.h"
 #include "oda_defs.h"
@@ -57,11 +57,11 @@ void QueryThread::Receive(QueryThread::Message &Msg)
 void QueryThread::SetStatus(const QueryThread::Status &Sts)
 {
     wxMutexLocker ML(m_StatusMutex);
-    
-    m_StatusMessage = Sts;   
+
+    m_StatusMessage = Sts;
 }
 
-QueryThread::Status QueryThread::GetStatus()
+QueryThread::Status QueryThread::GetStatus() const
 {
     wxMutexLocker ML(m_StatusMutex);
 
@@ -100,7 +100,7 @@ void* QueryThread::Entry()
 	odalpapi::BufferedSocket Socket;
     int Index;
     QueryThread::Message Msg;
-	
+
 	// Keeps the thread alive, it will wait for commands instead of the
 	// killing itself/creating itself overhead
 	while(1)
@@ -108,14 +108,14 @@ void* QueryThread::Entry()
         // Wait for work to be posted
         SetStatus(QueryThread::Waiting);
         Receive(Msg);
-        
+
         // Translate the posted command to a status update
         switch (Msg)
         {
             case QueryThread::Exit:
             {
                 SetStatus(QueryThread::Exiting);
-                return NULL;
+                return nullptr;
             }
             break;
 
@@ -126,7 +126,7 @@ void* QueryThread::Entry()
             break;
 
             default:
-                return NULL;
+                return nullptr;
         }
 
         // Set the required data so we can query the server
@@ -144,7 +144,7 @@ void* QueryThread::Entry()
 		wxPostEvent(m_EventHandler, newEvent);
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 int QueryThread::GetIdealThreadCount()

@@ -1,4 +1,3 @@
-include(OdamexCopyWad)
 include(OdamexTargetSettings)
 
 # use unquoted #defines
@@ -83,8 +82,6 @@ endif()
 if(UNIX AND NOT APPLE)
   target_link_libraries(odasrv rt)
 endif()
-
-odamex_copy_wad(odasrv)
 
 if(APPLE)
 elseif(WIN32)

@@ -653,7 +653,14 @@ BEGIN_COMMAND (set)
 
 		var = cvar_t::FindCVar (argv[1], &prev);
 		if (!var)
-			var = new cvar_t(argv[1], NULL, "", CVARTYPE_NONE,  CVAR_AUTO | CVAR_UNSETTABLE | cvar_defflags);
+		{
+			const std::string description = "Unsupported in Odamex v" + std::string(NiceVersion());
+			var = new cvar_t(argv[1], argv[2], description.c_str(), CVARTYPE_NONE,
+			                 CVAR_NOENABLEDISABLE |         // If we got here due to LoadDefaults, make sure we save the value back out as-is.
+			                 CVAR_AUTO |
+			                 CVAR_UNSETTABLE |
+			                 cvar_defflags);
+		}
 
 		if (var->flags() & CVAR_NOSET)
 		{
