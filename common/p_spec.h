@@ -1026,31 +1026,31 @@ public:
 	void RunThink () override;
 	void PlayFloorSound();
 
-	EFloor	 	m_Type;
-	EFloorState	m_Status;
-	int 		m_Crush;
-	bool		m_HexenCrush;
-	int 		m_Direction;
-	short		m_NewSpecial;
-	uint32_t	m_NewFlags;
-	short		m_NewDamageRate;
-	byte		m_NewLeakRate;
-	byte		m_NewDmgInterval;
-	short		m_Texture;
-	fixed_t 	m_FloorDestHeight;
-	fixed_t 	m_Speed;
+	EFloor	 	m_Type           { 0xFF };     // Something invalid, so that if left defaulted, errors out, rather than silently fail.
+	EFloorState	m_Status         { init };
+	int 		m_Crush          { 0 };
+	bool		m_HexenCrush     { false };
+	int 		m_Direction      { 0 };
+	short		m_NewSpecial     { 0 };
+	uint32_t	m_NewFlags       { 0 };
+	short		m_NewDamageRate  { 0 };
+	byte		m_NewLeakRate    { 0 };
+	byte		m_NewDmgInterval { 0 };
+	short		m_Texture        { 0 };
+	fixed_t 	m_FloorDestHeight{ 0 };
+	fixed_t 	m_Speed          { 0 };;
 
 	// [RH] New parameters used to reset and delay stairs
-	int			m_ResetCount;
-	int			m_OrgHeight;
-	int			m_Delay;
-	int			m_PauseTime;
-	int			m_StepTime;
-	int			m_PerStepTime;
+	int			m_ResetCount    { 0 };
+	int			m_OrgHeight     { 0 };
+	int			m_Delay         { 0 };
+	int			m_PauseTime     { 0 };
+	int			m_StepTime      { 0 };
+	int			m_PerStepTime   { 0 };
 
-	fixed_t		m_Height;
-	line_t		*m_Line;
-	int			m_Change;
+	fixed_t		m_Height    { 0 };
+	line_t		*m_Line     { nullptr };
+	int			m_Change    { 0 };
 
 protected:
 	friend bool EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
@@ -1067,7 +1067,7 @@ protected:
 	                            bool hexencrush, bool hereticlower);
 
   private:
-	DFloor ();
+	DFloor () = default;
 };
 
 
