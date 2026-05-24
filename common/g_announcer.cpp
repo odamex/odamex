@@ -170,83 +170,83 @@ void AnnouncerManager::loadAnnouncerDefaults()
 
 	// Fill in default sounds
 	// Possessive CTF Announcements
-	defaultAnnouncer.soundDict[ANN_YOURFLAGTAKEN] = "officialvox/your/flag/take";
-	defaultAnnouncer.soundDict[ANN_ENEMYFLAGTAKEN] = "officialvox/enemy/flag/take";
-	defaultAnnouncer.soundDict[ANN_YOURFLAGDROPPED] = "officialvox/your/flag/drop";
-	defaultAnnouncer.soundDict[ANN_ENEMYFLAGDROPPED] = "officialvox/enemy/flag/drop";
-	defaultAnnouncer.soundDict[ANN_YOURFLAGISBEINGRETURNED] = "officialvox/your/flag/manualreturn";
-	defaultAnnouncer.soundDict[ANN_ENEMYFLAGISBEINGRETURNED] = "officialvox/enemy/flag/manualreturn";
-	defaultAnnouncer.soundDict[ANN_YOURFLAGRETURNED] = "officialvox/your/flag/return";
-	defaultAnnouncer.soundDict[ANN_ENEMYFLAGRETURNED] = "officialvox/enemy/flag/return";
-	defaultAnnouncer.soundDict[ANN_YOURTEAMSCORES] = "officialvox/your/score";
-	defaultAnnouncer.soundDict[ANN_ENEMYTEAMSCORES] = "officialvox/enemy/score";
+	defaultAnnouncer.soundDict[ANN_YOURFLAGTAKEN] = "vox/your/flag/take";
+	defaultAnnouncer.soundDict[ANN_ENEMYFLAGTAKEN] = "vox/enemy/flag/take";
+	defaultAnnouncer.soundDict[ANN_YOURFLAGDROPPED] = "vox/your/flag/drop";
+	defaultAnnouncer.soundDict[ANN_ENEMYFLAGDROPPED] = "vox/enemy/flag/drop";
+	defaultAnnouncer.soundDict[ANN_YOURFLAGISBEINGRETURNED] = "vox/your/flag/manualreturn";
+	defaultAnnouncer.soundDict[ANN_ENEMYFLAGISBEINGRETURNED] = "vox/enemy/flag/manualreturn";
+	defaultAnnouncer.soundDict[ANN_YOURFLAGRETURNED] = "vox/your/flag/return";
+	defaultAnnouncer.soundDict[ANN_ENEMYFLAGRETURNED] = "vox/enemy/flag/return";
+	defaultAnnouncer.soundDict[ANN_YOURTEAMSCORES] = "vox/your/score";
+	defaultAnnouncer.soundDict[ANN_ENEMYTEAMSCORES] = "vox/enemy/score";
 
 	// Team Based CTF Announcements
-	defaultAnnouncer.soundDict[ANN_REDFLAGTAKEN] = "officialvox/red/flag/take";
-	defaultAnnouncer.soundDict[ANN_BLUEFLAGTAKEN] = "officialvox/blue/flag/take";
-	defaultAnnouncer.soundDict[ANN_GREENFLAGTAKEN] = "officialvox/green/flag/take";
-	defaultAnnouncer.soundDict[ANN_REDFLAGDROPPED] = "officialvox/red/flag/drop";
-	defaultAnnouncer.soundDict[ANN_BLUEFLAGDROPPED] = "officialvox/blue/flag/drop";
-	defaultAnnouncer.soundDict[ANN_GREENFLAGDROPPED] = "officialvox/green/flag/drop";
-	defaultAnnouncer.soundDict[ANN_REDFLAGISBEINGRETURNED] = "officialvox/red/flag/manualreturn";
-	defaultAnnouncer.soundDict[ANN_BLUEFLAGISBEINGRETURNED] = "officialvox/blue/flag/manualreturn";
-	defaultAnnouncer.soundDict[ANN_GREENFLAGISBEINGRETURNED] = "officialvox/green/flag/manualreturn";
-	defaultAnnouncer.soundDict[ANN_REDFLAGRETURNED] = "officialvox/red/flag/return";
-	defaultAnnouncer.soundDict[ANN_BLUEFLAGRETURNED] = "officialvox/blue/flag/return";
-	defaultAnnouncer.soundDict[ANN_GREENFLAGRETURNED] = "officialvox/green/flag/return";
-	defaultAnnouncer.soundDict[ANN_REDTEAMSCORES] = "officialvox/red/score";
-	defaultAnnouncer.soundDict[ANN_BLUETEAMSCORES] = "officialvox/blue/score";
-	defaultAnnouncer.soundDict[ANN_GREENTEAMSCORES] = "officialvox/green/score";
+	defaultAnnouncer.soundDict[ANN_REDFLAGTAKEN] = "vox/red/flag/take";
+	defaultAnnouncer.soundDict[ANN_BLUEFLAGTAKEN] = "vox/blue/flag/take";
+	defaultAnnouncer.soundDict[ANN_GREENFLAGTAKEN] = "vox/green/flag/take";
+	defaultAnnouncer.soundDict[ANN_REDFLAGDROPPED] = "vox/red/flag/drop";
+	defaultAnnouncer.soundDict[ANN_BLUEFLAGDROPPED] = "vox/blue/flag/drop";
+	defaultAnnouncer.soundDict[ANN_GREENFLAGDROPPED] = "vox/green/flag/drop";
+	defaultAnnouncer.soundDict[ANN_REDFLAGISBEINGRETURNED] = "vox/red/flag/manualreturn";
+	defaultAnnouncer.soundDict[ANN_BLUEFLAGISBEINGRETURNED] = "vox/blue/flag/manualreturn";
+	defaultAnnouncer.soundDict[ANN_GREENFLAGISBEINGRETURNED] = "vox/green/flag/manualreturn";
+	defaultAnnouncer.soundDict[ANN_REDFLAGRETURNED] = "vox/red/flag/return";
+	defaultAnnouncer.soundDict[ANN_BLUEFLAGRETURNED] = "vox/blue/flag/return";
+	defaultAnnouncer.soundDict[ANN_GREENFLAGRETURNED] = "vox/green/flag/return";
+	defaultAnnouncer.soundDict[ANN_REDTEAMSCORES] = "vox/red/score";
+	defaultAnnouncer.soundDict[ANN_BLUETEAMSCORES] = "vox/blue/score";
+	defaultAnnouncer.soundDict[ANN_GREENTEAMSCORES] = "vox/green/score";
 
 	// Horde Mode Announcements
-	defaultAnnouncer.soundDict[ANN_HORDEBOSSSPAWN] = "officialvox/horde/bossspawn";
-	defaultAnnouncer.soundDict[ANN_LASTPLAYERALIVE] = "officialvox/lastplayeralive";
-	defaultAnnouncer.soundDict[ANN_REVIVEDPLAYER] = "officialvox/horde/revivedplayer";
+	defaultAnnouncer.soundDict[ANN_HORDEBOSSSPAWN] = "vox/horde/bossspawn";
+	defaultAnnouncer.soundDict[ANN_LASTPLAYERALIVE] = "vox/lastplayeralive";
+	defaultAnnouncer.soundDict[ANN_REVIVEDPLAYER] = "vox/horde/revivedplayer";
 
 	// General Announcements
-	defaultAnnouncer.soundDict[ANN_FIVEMINUTEWARNING] = "officialvox/fiveminutewarning";
-	defaultAnnouncer.soundDict[ANN_ONEMINUTEWARNING] = "officialvox/oneminutewarning";
-	defaultAnnouncer.soundDict[ANN_THREEFRAGSLEFT] = "officialvox/threefragsleft";
-	defaultAnnouncer.soundDict[ANN_TWOFRAGSLEFT] = "officialvox/twofragsleft";
-	defaultAnnouncer.soundDict[ANN_ONEFRAGLEFT] = "officialvox/onefragleft";
-	defaultAnnouncer.soundDict[ANN_FIVE] = "officialvox/five";
-	defaultAnnouncer.soundDict[ANN_FOUR] = "officialvox/four";
-	defaultAnnouncer.soundDict[ANN_THREE] = "officialvox/three";
-	defaultAnnouncer.soundDict[ANN_TWO] = "officialvox/two";
-	defaultAnnouncer.soundDict[ANN_ONE] = "officialvox/one";
-	defaultAnnouncer.soundDict[ANN_FIGHT] = "officialvox/fight";
-	defaultAnnouncer.soundDict[ANN_PLAYERELIMINATED] = "officialvox/playereliminated";
-	defaultAnnouncer.soundDict[ANN_FIRSTBLOOD] = "officialvox/firstblood";
+	defaultAnnouncer.soundDict[ANN_FIVEMINUTEWARNING] = "vox/fiveminutewarning";
+	defaultAnnouncer.soundDict[ANN_ONEMINUTEWARNING] = "vox/oneminutewarning";
+	defaultAnnouncer.soundDict[ANN_THREEFRAGSLEFT] = "vox/threefragsleft";
+	defaultAnnouncer.soundDict[ANN_TWOFRAGSLEFT] = "vox/twofragsleft";
+	defaultAnnouncer.soundDict[ANN_ONEFRAGLEFT] = "vox/onefragleft";
+	defaultAnnouncer.soundDict[ANN_FIVE] = "vox/five";
+	defaultAnnouncer.soundDict[ANN_FOUR] = "vox/four";
+	defaultAnnouncer.soundDict[ANN_THREE] = "vox/three";
+	defaultAnnouncer.soundDict[ANN_TWO] = "vox/two";
+	defaultAnnouncer.soundDict[ANN_ONE] = "vox/one";
+	defaultAnnouncer.soundDict[ANN_FIGHT] = "vox/fight";
+	defaultAnnouncer.soundDict[ANN_PLAYERELIMINATED] = "vox/playereliminated";
+	defaultAnnouncer.soundDict[ANN_FIRSTBLOOD] = "vox/firstblood";
 
 	// Lead Change Announcements
-	defaultAnnouncer.soundDict[ANN_YOUHAVETHELEAD] = "officialvox/youhavethelead";
-	defaultAnnouncer.soundDict[ANN_YOULOSTTHELEAD] = "officialvox/youlostthelead";
-	defaultAnnouncer.soundDict[ANN_YOUTIEDFORTHELEAD] = "officialvox/youtiedforthelead";
+	defaultAnnouncer.soundDict[ANN_YOUHAVETHELEAD] = "vox/youhavethelead";
+	defaultAnnouncer.soundDict[ANN_YOULOSTTHELEAD] = "vox/youlostthelead";
+	defaultAnnouncer.soundDict[ANN_YOUTIEDFORTHELEAD] = "vox/youtiedforthelead";
 
 	// Match Result Announcements
-	defaultAnnouncer.soundDict[ANN_YOUWIN] = "officialvox/youwin";
-	defaultAnnouncer.soundDict[ANN_YOULOSE] = "officialvox/youlose";
-	defaultAnnouncer.soundDict[ANN_YOUTIED] = "officialvox/youtied";
+	defaultAnnouncer.soundDict[ANN_YOUWIN] = "vox/youwin";
+	defaultAnnouncer.soundDict[ANN_YOULOSE] = "vox/youlose";
+	defaultAnnouncer.soundDict[ANN_YOUTIED] = "vox/youtied";
 
 	// Multi Kill Announcements
-	defaultAnnouncer.soundDict["multi 2"] = "officialvox/multi/doublekill";
-	defaultAnnouncer.soundDict["multi 3"] = "officialvox/multi/triplekill";
-	defaultAnnouncer.soundDict["multi 4"] = "officialvox/multi/multikill";
-	defaultAnnouncer.soundDict["multi 5"] = "officialvox/multi/ultrakill";
-	defaultAnnouncer.soundDict["multi 6"] = "officialvox/multi/overkill";
-	defaultAnnouncer.soundDict["multi 7"] = "officialvox/multi/megakill";
-	defaultAnnouncer.soundDict["multi 8"] = "officialvox/multi/monsterkill";
-	defaultAnnouncer.soundDict["multi 9"] = "officialvox/multi/mythickill";
-	defaultAnnouncer.soundDict["multi 10"] = "officialvox/multi/killionaire";
-	defaultAnnouncer.soundDict["multi 11"] = "officialvox/multi/terminator";
+	defaultAnnouncer.soundDict["multi 2"] = "vox/multi/doublekill";
+	defaultAnnouncer.soundDict["multi 3"] = "vox/multi/triplekill";
+	defaultAnnouncer.soundDict["multi 4"] = "vox/multi/multikill";
+	defaultAnnouncer.soundDict["multi 5"] = "vox/multi/ultrakill";
+	defaultAnnouncer.soundDict["multi 6"] = "vox/multi/overkill";
+	defaultAnnouncer.soundDict["multi 7"] = "vox/multi/megakill";
+	defaultAnnouncer.soundDict["multi 8"] = "vox/multi/monsterkill";
+	defaultAnnouncer.soundDict["multi 9"] = "vox/multi/mythickill";
+	defaultAnnouncer.soundDict["multi 10"] = "vox/multi/killionaire";
+	defaultAnnouncer.soundDict["multi 11"] = "vox/multi/terminator";
 
 	// Spree Announcements
-	defaultAnnouncer.soundDict["spree 1"] = "officialvox/spree/killingspree";
-	defaultAnnouncer.soundDict["spree 2"] = "officialvox/spree/rampage";
-	defaultAnnouncer.soundDict["spree 3"] = "officialvox/spree/dominating";
-	defaultAnnouncer.soundDict["spree 4"] = "officialvox/spree/unstoppable";
-	defaultAnnouncer.soundDict["spree 5"] = "officialvox/spree/untouchable";
-	defaultAnnouncer.soundDict["spree 6"] = "officialvox/spree/legendary";
+	defaultAnnouncer.soundDict["spree 1"] = "vox/spree/killingspree";
+	defaultAnnouncer.soundDict["spree 2"] = "vox/spree/rampage";
+	defaultAnnouncer.soundDict["spree 3"] = "vox/spree/dominating";
+	defaultAnnouncer.soundDict["spree 4"] = "vox/spree/unstoppable";
+	defaultAnnouncer.soundDict["spree 5"] = "vox/spree/untouchable";
+	defaultAnnouncer.soundDict["spree 6"] = "vox/spree/legendary";
 
 	defaultAnnouncer.metadata = metadata;
 
