@@ -1631,6 +1631,10 @@ void A_Chase (AActor *actor)
 	int delta;
 	AActor *ngoal;
 
+	// If this thing ever waddles about like a monster, we want the netcode to keep it
+	// up to date like any monster.
+	actor->oflags |= MFO_MOVES_LIKE_A_MONSTER;
+
 	// GhostlyDeath -- Don't chase spectators at all
 	if (actor->target && actor->target->player && actor->target->player->spectator)
 	{

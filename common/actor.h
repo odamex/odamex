@@ -249,6 +249,8 @@ enum mobjflag_t
 	MFO_LINEDONE 		= BIT(12),  // [INTERNAL] for A_LineEffect, line special already done
 	// MFO_STEALTH			= BIT(13),	// Andy Baker's stealth monsters
 	MFO_IS_ON_CONVEYOR  = BIT(14),  // Mobj is in motion due to being carried by a sector
+
+	MFO_MOVES_LIKE_A_MONSTER = BIT(15),
 };
 
 //

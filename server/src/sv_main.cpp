@@ -3171,38 +3171,43 @@ void SV_UpdateMobjState(const AActor* mo)
 }
 
 // Keep tabs on monster positions and angles.
-void SV_UpdateMonsters(player_t &pl, AActor *mo)
+void SV_UpdateMonsters(player_t& player, AActor *mo)
 {
 	// Ignore corpses.
 	if (mo->flags & MF_CORPSE)
 		return;
 
+
+	const bool isAMonster = mo->oflags & MFO_MOVES_LIKE_A_MONSTER
+	                        or mo->flags & MF_COUNTKILL
+	                        or mo->type == MT_SKULL;
+
 	// We don't handle updating non-monsters here.
-	if (!(mo->flags & MF_COUNTKILL || mo->type == MT_SKULL))
+	if (not isAMonster)
 		return;
 
 	// update monster position every 7 tics
 	if ((gametic+mo->netid) % 7)
 		return;
 
-    // Avoid sending more than one Update Mobj per tic for any missile.
-    // Here we check to see if an update went out during the "meat" of the tic, which is complete at this point.
-    if (mo->updatedDuringTic == gametic)
-        return;
+	// Avoid sending more than one Update Mobj per tic for any missile.
+	// Here we check to see if an update went out during the "meat" of the tic, which is complete at this point.
+	if (mo->updatedDuringTic == gametic)
+		return;
 
-    if (mo->target and SV_IsPlayerAllowedToSee(pl, mo))
-    {
-        switch (mo->playersAware.Get(pl.id))
-        {
-            case AwarenessEnum::NOT_AWARE:             [[ fallthrough ]];
-            case AwarenessEnum::BARELY_AWARE:
-                break;
+	if (mo->target and SV_IsPlayerAllowedToSee(player, mo))
+	{
+		switch (mo->playersAware.Get(player.id))
+		{
+			case AwarenessEnum::NOT_AWARE:             [[ fallthrough ]];
+			case AwarenessEnum::BARELY_AWARE:
+				break;
 
-            default:
-				MSG_WriteSVC(pl.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
-                break;
-        }
-    }
+			default:
+				MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+				break;
+		}
+	}
 }
 
 void SV_UpdateAvatars(player_t& player)
