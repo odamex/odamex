@@ -950,6 +950,7 @@ void AActor::Serialize (FArchive &arc)
 			<< translucency
 			<< waterlevel
 			<< gear
+			<< updatedDuringTic
 			<< credibility;
 
 		// NOTE(jsd): This is pretty awful right here:
@@ -1034,6 +1035,7 @@ void AActor::Serialize (FArchive &arc)
 			>> translucency
 			>> waterlevel
 			>> gear
+			>> updatedDuringTic
 			>> credibility;
 
 		tracer.init(tmptracer);
