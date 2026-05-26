@@ -3353,6 +3353,10 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 	{
 		if (serverside)
 		{
+			// The ActivateLine must go out first because P_ChangeSwitchTexture clears
+			// the special, resulting in a 0 special on both the Switch and ActivateLine messages.
+			SV_OnActivatedLine(line, thing, side, LineUse, bossaction);
+
 			P_ChangeSwitchTexture(line, reuse, true);
 			OnChangedSwitchTexture(line, reuse);
 		}
