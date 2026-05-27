@@ -3478,7 +3478,7 @@ void P_PutSecnode (msecnode_t *node)
 msecnode_t *P_AddSecnode (sector_t *s, AActor *thing, msecnode_t *nextnode)
 {
 	if (!s)
-		return NULL;
+		return nextnode;
 
 	msecnode_t *node;
 
