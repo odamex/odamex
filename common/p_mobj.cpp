@@ -924,7 +924,7 @@ void AActor::Serialize (FArchive &arc)
 			<< flags2
 			<< flags3
 			<< oflags
-		  << statusflags
+			<< statusflags
 			<< special1
 			<< special2
 			<< health
@@ -939,7 +939,7 @@ void AActor::Serialize (FArchive &arc)
 			<< lastlook
 			<< tracer
 			<< tid
-            << special
+			<< special
 			<< args[0]
 			<< args[1]
 			<< args[2]
