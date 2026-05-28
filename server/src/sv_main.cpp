@@ -1077,8 +1077,8 @@ void UV_SoundAvoidPlayer (const AActor *mo, byte channel, const char *name, byte
 }
 
 //
-//	SV_SoundTeam
-//	Sends a sound to players on the specified teams
+//  SV_SoundTeam
+//  Sends a sound to players on the specified teams
 //
 void SV_SoundTeam (byte channel, const char* name, byte attenuation, int team)
 {
@@ -1157,7 +1157,7 @@ void SV_BroadcastUserInfo(const player_t &player)
 template <typename AttributeType, typename MinType, typename EndType>
 static AttributeType ValidateAndAssign(const AttributeType& i_data, const MinType& i_min, const EndType& i_end, const AttributeType& i_default)
 {
-    return (static_cast<AttributeType>(i_min) < i_data and i_data < static_cast<AttributeType>(i_end)) ? i_data : i_default;
+	return (static_cast<AttributeType>(i_min) < i_data and i_data < static_cast<AttributeType>(i_end)) ? i_data : i_default;
 }
 
 /**
@@ -1194,9 +1194,9 @@ bool SV_SetupUserInfo(player_t &player, const odaproto::clc::UserInfo& msg)
 	if (new_team == TEAM_NONE || (new_team == TEAM_GREEN && sv_teamsinplay < NUMTEAMS))
 		new_team = TEAM_BLUE; // Set the default team to the player.
 
-    player.userinfo.team        = new_team;
-    player.userinfo.gender      = ValidateAndAssign(static_cast<gender_t>     (msg.gender()),       0, NUMGENDER,   GENDER_OTHER);
-    player.userinfo.colorpreset = ValidateAndAssign(static_cast<colorpreset_t>(msg.colorpreset()),  0, NUMCOLOR,    COLOR_CUSTOM);
+	player.userinfo.team        = new_team;
+	player.userinfo.gender      = ValidateAndAssign(static_cast<gender_t>     (msg.gender()),       0, NUMGENDER,   GENDER_OTHER);
+	player.userinfo.colorpreset = ValidateAndAssign(static_cast<colorpreset_t>(msg.colorpreset()),  0, NUMCOLOR,    COLOR_CUSTOM);
 
 	player.userinfo.color.seta(msg.color().a());
 	player.userinfo.color.setr(msg.color().r());
@@ -1207,14 +1207,14 @@ bool SV_SetupUserInfo(player_t &player, const odaproto::clc::UserInfo& msg)
 
 	player.userinfo.aimdist         = clamp(msg.aimdist(), 0, 5000 * 16384);
 	player.userinfo.predict_weapons = msg.predict_weapons();
-    player.userinfo.switchweapon    = ValidateAndAssign(static_cast<weaponswitch_t>(msg.switchweapon()), 0, WPSW_NUMTYPES, WPSW_ALWAYS);
+	player.userinfo.switchweapon    = ValidateAndAssign(static_cast<weaponswitch_t>(msg.switchweapon()), 0, WPSW_NUMTYPES, WPSW_ALWAYS);
 
-    const size_t prefsCount = std::min(static_cast<size_t>(msg.weapon_prefs_size()),
-                                       player.userinfo.weapon_prefs.size());
+	const size_t prefsCount = std::min(static_cast<size_t>(msg.weapon_prefs_size()),
+	                                   player.userinfo.weapon_prefs.size());
 
-    std::copy(msg.weapon_prefs().begin(),
-              msg.weapon_prefs().begin() + prefsCount,
-              player.userinfo.weapon_prefs.begin());
+	std::copy(msg.weapon_prefs().begin(),
+	          msg.weapon_prefs().begin() + prefsCount,
+	          player.userinfo.weapon_prefs.begin());
 
 	// sanitize the client's name
 	new_netname = TrimString(new_netname);
@@ -1420,24 +1420,24 @@ bool SV_IsTeammate(player_t &a, player_t &b)
 
 bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLevel)
 {
-    const AwarenessEnum previousAwareness = mo->playersAware.Get(player.id);
-    if (previousAwareness == awarenessLevel or
-        previousAwareness == AwarenessEnum::ALWAYS_AWARE or
-        (previousAwareness == AwarenessEnum::NOT_AWARE and awarenessLevel == AwarenessEnum::BARELY_AWARE))
-    {
-        return false;
-    }
+	const AwarenessEnum previousAwareness = mo->playersAware.Get(player.id);
+	if (previousAwareness == awarenessLevel or
+	    previousAwareness == AwarenessEnum::ALWAYS_AWARE or
+	    (previousAwareness == AwarenessEnum::NOT_AWARE and awarenessLevel == AwarenessEnum::BARELY_AWARE))
+	{
+		return false;
+	}
 
-    mo->playersAware.Set(player.id, awarenessLevel);
+	mo->playersAware.Set(player.id, awarenessLevel);
 
-    if (awarenessLevel == AwarenessEnum::NOT_AWARE)
-    {
+	if (awarenessLevel == AwarenessEnum::NOT_AWARE)
+	{
 		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_RemoveMobj(*mo));
-        return true;
-    }
+		return true;
+	}
 
-    if (previousAwareness == AwarenessEnum::NOT_AWARE)
-    {
+	if (previousAwareness == AwarenessEnum::NOT_AWARE)
+	{
 		if (mo->type == MT_AVATAR)
 		{
 			for (size_t i = 0; i < ::voodoostarts.size(); ++i)
@@ -1460,9 +1460,9 @@ bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLeve
 		{
 			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_SpawnPlayer(*mo->player));
 		}
-        return true;
-    }
-    return false;
+		return true;
+	}
+	return false;
 }
 
 bool SV_AwarenessUpdate(player_t& player, AActor* mo, AwarenessEnum requestedAwarenessLevel)
@@ -2006,9 +2006,9 @@ void SV_UpdateSecret(sector_t& sector, player_t &player)
 }
 
 //
-//	SendServerSettings
+//  SendServerSettings
 //
-//	Sends server setting info
+//  Sends server setting info
 //
 
 void SV_SendPackets(void);
@@ -2035,9 +2035,9 @@ static void SendServerSettings(player_t& pl)
 }
 
 //
-//	SV_ServerSettingChange
+//  SV_ServerSettingChange
 //
-//	Sends server settings to clients when changed
+//  Sends server settings to clients when changed
 //
 void SV_ServerSettingChange()
 {
@@ -2228,8 +2228,8 @@ void SV_ConnectClient()
 		static buf_t smallbuf(1024);
 		if (smallbuf.size() == 0)
 		{
-            PacketHeaderType header(0);
-            header.Pack(smallbuf);
+			PacketHeaderType header(0);
+			header.Pack(smallbuf);
 			MSG_WriteSVCBuffer(&smallbuf, SVC_Disconnect("Server is full\n"));
 		}
 
@@ -2279,19 +2279,19 @@ void SV_ConnectClient()
 		return;
 	}
 
-    // We don't call SV_ParseCommandSVC here because the UserInfo handler there also broadcasts info to
-    // the other players, which we do not want to do here!
-    {
-        google::protobuf::Message* userInfoMsg = nullptr;
+	// We don't call SV_ParseCommandSVC here because the UserInfo handler there also broadcasts info to
+	// the other players, which we do not want to do here!
+	{
+		google::protobuf::Message* userInfoMsg = nullptr;
 
-        if (SVC_ParseMessage(userInfoMsg, clc_userinfo) != PERR_OK)
-            return;
+		if (SVC_ParseMessage(userInfoMsg, clc_userinfo) != PERR_OK)
+			return;
 
-        std::unique_ptr<google::protobuf::Message> msgPtr(userInfoMsg);
+		std::unique_ptr<google::protobuf::Message> msgPtr(userInfoMsg);
 
-        if (!SV_SetupUserInfo(*player, *static_cast<odaproto::clc::UserInfo*>(userInfoMsg)))
-            return;
-    }
+		if (!SV_SetupUserInfo(*player, *static_cast<odaproto::clc::UserInfo*>(userInfoMsg)))
+			return;
+	}
 
 	// [SL] Ignore deprecated client rate. Clients now always use sv_maxrate.
 	cl->messenger.SetMaxRate(int(sv_maxrate));
@@ -3068,54 +3068,54 @@ bool SV_PrivMsg(player_t &player, const odaproto::clc::PrivMsg& msg)
 //
 void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistanceType>::iterator& sortedMobjIter)
 {
-    const AActor* mo = sortedMobjIter->actorPtr;
+	const AActor* mo = sortedMobjIter->actorPtr;
 
 	if (!(mo->flags & MF_MISSILE) || mo->flags & MF_SKULLFLY)
 		return;
 
-    // Avoid sending more than one Update Mobj per tic for any missile.
-    // Here we check to see if an update went out during the "meat" of the tic, which is complete at this point.
-    if (mo->updatedDuringTic == gametic)
-        return;
+	// Avoid sending more than one Update Mobj per tic for any missile.
+	// Here we check to see if an update went out during the "meat" of the tic, which is complete at this point.
+	if (mo->updatedDuringTic == gametic)
+		return;
 
-    // 64 units feels about right to prevent barely-dodged missiles from floating in front of the player's face
-    // when in a high-lag ~200 msec ping situation.
-    constexpr int HYPER_AWARENESS_CUTOFF_SQUARED = 64 * 64;
+	// 64 units feels about right to prevent barely-dodged missiles from floating in front of the player's face
+	// when in a high-lag ~200 msec ping situation.
+	constexpr int HYPER_AWARENESS_CUTOFF_SQUARED = 64 * 64;
 
-    const AwarenessEnum awarenessLevel = mo->playersAware.Get(player.id);
-    const bool          isHyperAware   = mo->target != player.mo and        // Players are not hyperaware of their own missiles.
-                                         awarenessLevel == AwarenessEnum::ALWAYS_AWARE and
-                                         sortedMobjIter->distanceSquared < HYPER_AWARENESS_CUTOFF_SQUARED;
-    if (isHyperAware)
-    {
-        MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
-    }
-    else
-    {
-        // We don't send any updates for Plasma unless we've gone hyper-aware with it.
-        if (mo->type == MT_PLASMA)
-            return;
+	const AwarenessEnum awarenessLevel = mo->playersAware.Get(player.id);
+	const bool          isHyperAware   = mo->target != player.mo and        // Players are not hyperaware of their own missiles.
+	                                     awarenessLevel == AwarenessEnum::ALWAYS_AWARE and
+	                                     sortedMobjIter->distanceSquared < HYPER_AWARENESS_CUTOFF_SQUARED;
+	if (isHyperAware)
+	{
+		MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+	}
+	else
+	{
+		// We don't send any updates for Plasma unless we've gone hyper-aware with it.
+		if (mo->type == MT_PLASMA)
+			return;
 
-        // Revenant tracers and Mancubus fireballs need to be updated more often (and custom tracers)
-        const bool needsMoreFrequentUpdates = (mo->type == MT_TRACER || mo->type == MT_FATSHOT || mo->flags2 & MF2_SEEKERMISSILE);
+		// Revenant tracers and Mancubus fireballs need to be updated more often (and custom tracers)
+		const bool needsMoreFrequentUpdates = (mo->type == MT_TRACER || mo->type == MT_FATSHOT || mo->flags2 & MF2_SEEKERMISSILE);
 
-        const int  divisor = needsMoreFrequentUpdates ? 5 : 30;
-        const int  phase   = (gametic + mo->netid) % divisor;
+		const int  divisor = needsMoreFrequentUpdates ? 5 : 30;
+		const int  phase   = (gametic + mo->netid) % divisor;
 
-        // Does this mobj have a scheduled update now?
-        if (phase == 0)
-        {
-            switch (awarenessLevel)
-            {
-                case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
-                case AwarenessEnum::BARELY_AWARE:
-                    break;
+		// Does this mobj have a scheduled update now?
+		if (phase == 0)
+		{
+			switch (awarenessLevel)
+			{
+				case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
+				case AwarenessEnum::BARELY_AWARE:
+					break;
 
-                default:
-                    MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
-            }
-        }
-    }
+				default:
+					MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+			}
+		}
+	}
 }
 
 // Update the given actors data immediately.
@@ -3155,18 +3155,18 @@ void SV_UpdateMobjState(const AActor* mo)
 	for (auto& player : players)
 	{
 		if (SV_IsPlayerAllowedToSee(player, mo) and player.ingame())
-        {
-            switch (mo->playersAware.Get(player.id))
-            {
-                case AwarenessEnum::NOT_AWARE:     [[ fallthrough ]];
-                case AwarenessEnum::BARELY_AWARE:
-                    break;
+		{
+			switch (mo->playersAware.Get(player.id))
+			{
+				case AwarenessEnum::NOT_AWARE:     [[ fallthrough ]];
+				case AwarenessEnum::BARELY_AWARE:
+					break;
 
-                default:
+				default:
 					MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_MobjState(mo));
-                    break;
-            }
-         }
+					break;
+			}
+		}
 	}
 }
 
@@ -3329,43 +3329,12 @@ void SV_UpdatePing(client_t* cl)
 
 
 //
-// SV_UpdateDeadPlayers
-// Update player's frame while he's dying.
-//
-void SV_UpdateDeadPlayers()
-{
- /*   AActor *mo;
-
-    TThinkerIterator<AActor> iterator;
-    while ( (mo = iterator.Next() ) )
-    {
-        if (mo->type != MT_PLAYER || mo->player)
-			continue;
-
-		if (mo->oldframe != mo->frame)
-			for (size_t i = 0; i < players.size(); i++)
-			{
-				client_t *cl = &clients[i];
-
-				MSG_WriteMarker (&cl->messenger.ReliableBuf(), svc_mobjframe);
-				MSG_WriteUnVarint (&cl->messenger.ReliableBuf(), mo->netid);
-				MSG_WriteByte (&cl->messenger.ReliableBuf(), mo->frame);
-			}
-
-		mo->oldframe = mo->frame;
-    }
-*/
-}
-
-
-//
 // SV_SendPackets
 //
 void SV_SendPackets()
 {
 	if (players.empty())
 		return;
-
 
 	std::vector<std::future<void>> futures;
 
@@ -3415,10 +3384,13 @@ void SV_SpyPlayer(player_t& viewer, const odaproto::clc::Spy& msg)
 	SV_SendPlayerStateUpdate(&viewer.client, &other, viewer.tic);
 }
 
+// When we break up the mobjs into 3 groups based on relative distance, there are two boundaries:
+// the outerBoundary, beyond which are the "distant" mobjs, there's the innerBoundary, up
+// to which we have the "nearby" mobjs, and between the two are the "middle" group.
 struct SortedMobjPartitionsType
 {
-    std::vector<player_t::ActorDistanceType>::iterator outerBoundary;
-    std::vector<player_t::ActorDistanceType>::iterator innerBoundary;
+	std::vector<player_t::ActorDistanceType>::iterator outerBoundary;
+	std::vector<player_t::ActorDistanceType>::iterator innerBoundary;
 };
 
 static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player, int partitionPOTFactor)
@@ -3485,19 +3457,19 @@ static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player, int part
 	}
 	auto distanceCompare = [](const auto& mo1, const auto& mo2) { return mo1.distanceSquared < mo2.distanceSquared; };
 
-    // Do the division of size using shifts for now...  We can go back to real division if we need
-    // the precision.
-    const int outerShiftAmount = std::max(1, partitionPOTFactor);
-    const int innerShiftAmount = outerShiftAmount + 1;
+	// Do the division of size using shifts for now...  We can go back to real division if we need
+	// the precision.
+	const int outerShiftAmount = std::max(1, partitionPOTFactor);
+	const int innerShiftAmount = outerShiftAmount + 1;
 
-    SortedMobjPartitionsType partitions;
-    partitions.outerBoundary = player.sortedMobjs.begin() + (player.sortedMobjs.size() >> outerShiftAmount);
-    partitions.innerBoundary = player.sortedMobjs.begin() + (player.sortedMobjs.size() >> innerShiftAmount);
+	SortedMobjPartitionsType partitions;
+	partitions.outerBoundary = player.sortedMobjs.begin() + (player.sortedMobjs.size() >> outerShiftAmount);
+	partitions.innerBoundary = player.sortedMobjs.begin() + (player.sortedMobjs.size() >> innerShiftAmount);
 
 	std::nth_element(player.sortedMobjs.begin(), partitions.outerBoundary, player.sortedMobjs.end(), distanceCompare);
 	std::nth_element(player.sortedMobjs.begin(), partitions.innerBoundary, partitions.outerBoundary, distanceCompare);
 
-    return partitions;
+	return partitions;
 }
 
 void SV_WriteCommandsForPlayer(player_t& player)
@@ -3667,8 +3639,6 @@ void SV_WriteCommands(void)
 	{
 		future.wait();
 	}
-
-	SV_UpdateDeadPlayers(); // Update dying players.
 }
 
 
@@ -3839,11 +3809,11 @@ void SV_Spectate(player_t &player, const odaproto::clc::SpectateUpdate& msg)
 	// GhostlyDeath -- Prevent Cheaters
 	if (player.spectator and player.mo)
 	{
-    	// GhostlyDeath -- Code 5! Anyway, this just updates the player for "antiwallhack" fun
-	    player.mo->x = msg.pos().x();
-    	player.mo->y = msg.pos().y();
-    	player.mo->z = msg.pos().z();
-    }
+		// GhostlyDeath -- Code 5! Anyway, this just updates the player for "antiwallhack" fun
+		player.mo->x = msg.pos().x();
+		player.mo->y = msg.pos().y();
+		player.mo->z = msg.pos().z();
+	}
 }
 
 // Change a player into a spectator or vice-versa.  Pass 'true' for silent
@@ -4247,14 +4217,14 @@ void SV_RConPassword (player_t& player, const std::string& challenge)
 void SV_Suicide(player_t &player)
 {
 	if (player.mo
-        and player.suicidedelay == 0
-        and gamestate == GS_LEVEL
-        and (sv_allowcheats or G_IsCoopGame()))
+	    and player.suicidedelay == 0
+	    and gamestate == GS_LEVEL
+	    and (sv_allowcheats or G_IsCoopGame()))
 
-    {
-	    // merry suicide!
-	    P_DamageMobj (player.mo, NULL, NULL, 10000, MOD_SUICIDE);
-    }
+	{
+		// merry suicide!
+		P_DamageMobj (player.mo, NULL, NULL, 10000, MOD_SUICIDE);
+	}
 }
 
 //
@@ -4262,10 +4232,10 @@ void SV_Suicide(player_t &player)
 //
 void SV_Cheat(player_t &player, const odaproto::clc::Cheat& msg)
 {
-    if (cheat::AreCheatsEnabled())
-    {
+	if (cheat::AreCheatsEnabled())
+	{
 		const int       oldCheats = player.cheats;
-        const uint32_t  cheat     = msg.value();
+		const uint32_t  cheat     = msg.value();
 
 		cheat::DoCheat(player, cheat);
 
@@ -4277,12 +4247,12 @@ void SV_Cheat(player_t &player, const odaproto::clc::Cheat& msg)
 				SV_SendPlayerStateUpdate(cl, &player, it->tic);
 			}
 		}
-    }
+	}
 }
 
 void SV_CheatGive(player_t &player, const odaproto::clc::CheatGive& msg)
 {
-    if (cheat::AreCheatsEnabled())
+	if (cheat::AreCheatsEnabled())
 	{
 		cheat::GiveTo(player, msg.item().c_str());
 
@@ -4297,7 +4267,7 @@ void SV_CheatGive(player_t &player, const odaproto::clc::CheatGive& msg)
 
 static void SummonGeneral(player_t& cheater, const std::string& summon, bool isFriend)
 {
-    if (cheat::AreCheatsEnabled())
+	if (cheat::AreCheatsEnabled())
 	{
 		AActor* actor = cheat::Summon(cheater, summon, isFriend);
 
@@ -4313,12 +4283,12 @@ static void SummonGeneral(player_t& cheater, const std::string& summon, bool isF
 
 void SV_CheatSummon(player_t& player, const odaproto::clc::CheatSummon& msg)
 {
-    SummonGeneral(player, msg.monster(), false);
+	SummonGeneral(player, msg.monster(), false);
 }
 
 void SV_CheatSummonFriend(player_t &player, const odaproto::clc::CheatSummonFriend& msg)
 {
-    SummonGeneral(player, msg.monster(), true);
+	SummonGeneral(player, msg.monster(), true);
 }
 
 void SV_HandlePlayerInput(odaproto::clc::PlayerInput& msg, player_t &player)
@@ -4343,30 +4313,34 @@ void SV_SendRequestedMobjUpdate(player_t& player, const odaproto::clc::SendMobjU
 
 parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 {
-    google::protobuf::Message* msgPtrRaw = nullptr;
-    const parseError_e result = SVC_ParseMessage(msgPtrRaw, cmd);
+	google::protobuf::Message* msgPtrRaw = nullptr;
+	const parseError_e result = SVC_ParseMessage(msgPtrRaw, cmd);
 
-    std::unique_ptr<google::protobuf::Message> msgPtr(msgPtrRaw);
+	std::unique_ptr<google::protobuf::Message> msgPtr(msgPtrRaw);
 
-    if (result == PERR_OK)
-    {
-        switch (cmd)
-        {
-            case clc_playerinput:
-                SV_HandlePlayerInput(*static_cast<odaproto::clc::PlayerInput*>(msgPtrRaw), player);
-                break;
-            case clc_disconnectme:
-                SV_DisconnectClient(player);
-                break;
+	if (result == PERR_OK)
+	{
+		switch (cmd)
+		{
+			case clc_playerinput:
+				SV_HandlePlayerInput(*static_cast<odaproto::clc::PlayerInput*>(msgPtrRaw), player);
+				break;
+
+			case clc_disconnectme:
+				SV_DisconnectClient(player);
+				break;
+
 			case clc_say:
 				SV_Say(player, *static_cast<odaproto::clc::Say*>(msgPtrRaw));
 				break;
-            case clc_userinfo:
-                if (SV_SetupUserInfo(player, *static_cast<odaproto::clc::UserInfo*>(msgPtrRaw)))
-                {
-                    SV_BroadcastUserInfo(player);
-                }
-                break;
+
+			case clc_userinfo:
+				if (SV_SetupUserInfo(player, *static_cast<odaproto::clc::UserInfo*>(msgPtrRaw)))
+				{
+					SV_BroadcastUserInfo(player);
+				}
+				break;
+
 			case clc_pingreply:
 				SV_CalcPing(player, static_cast<odaproto::clc::PingReply*>(msgPtrRaw)->ms_time());
 				break;
@@ -4379,7 +4353,9 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 					if (player.client.allow_rcon)
 					{
 						PrintFmt(PRINT_HIGH, "RCON command from {} - {} -> {}",
-								player.userinfo.netname, NET_AdrToString(net_from), str);
+						         player.userinfo.netname,
+						         NET_AdrToString(net_from),
+						         str);
 						AddCommandString(str);
 					}
 				}
@@ -4393,37 +4369,37 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 				SV_RConLogout(player);
 				break;
 
-            case clc_spectate_begin:
-                SV_SetPlayerSpec(player, true);
-                break;
+			case clc_spectate_begin:
+				SV_SetPlayerSpec(player, true);
+				break;
 
-            case clc_spectate_end:
-                SV_SetPlayerSpec(player, false);
-                break;
+			case clc_spectate_end:
+				SV_SetPlayerSpec(player, false);
+				break;
 
-            case clc_spectate_update:
-                SV_Spectate(player, *static_cast<odaproto::clc::SpectateUpdate*>(msgPtrRaw));
-                break;
+			case clc_spectate_update:
+				SV_Spectate(player, *static_cast<odaproto::clc::SpectateUpdate*>(msgPtrRaw));
+				break;
 
-            case clc_kill:
-                SV_Suicide(player);
-                break;
+			case clc_kill:
+				SV_Suicide(player);
+				break;
 
-            case clc_cheat:
-                SV_Cheat(player, *static_cast<odaproto::clc::Cheat*>(msgPtrRaw));
-                break;
+			case clc_cheat:
+				SV_Cheat(player, *static_cast<odaproto::clc::Cheat*>(msgPtrRaw));
+				break;
 
-            case clc_cheat_give:
-                SV_CheatGive(player, *static_cast<odaproto::clc::CheatGive*>(msgPtrRaw));
-                break;
+			case clc_cheat_give:
+				SV_CheatGive(player, *static_cast<odaproto::clc::CheatGive*>(msgPtrRaw));
+				break;
 
-            case clc_cheat_summon:
-                SV_CheatSummon(player, *static_cast<odaproto::clc::CheatSummon*>(msgPtrRaw));
-                break;
+			case clc_cheat_summon:
+				SV_CheatSummon(player, *static_cast<odaproto::clc::CheatSummon*>(msgPtrRaw));
+				break;
 
-            case clc_cheat_summon_friend:
-                SV_CheatSummonFriend(player, *static_cast<odaproto::clc::CheatSummonFriend*>(msgPtrRaw));
-                break;
+			case clc_cheat_summon_friend:
+				SV_CheatSummonFriend(player, *static_cast<odaproto::clc::CheatSummonFriend*>(msgPtrRaw));
+				break;
 
 			case clc_callvote:
 				SV_Callvote(player, *static_cast<odaproto::clc::CallVote*>(msgPtrRaw));
@@ -4445,7 +4421,7 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 				SV_NetCmd(player, *static_cast<odaproto::clc::Netcmd*>(msgPtrRaw));
 				break;
 
-   			case clc_spy:
+			case clc_spy:
 				SV_SpyPlayer(player, *static_cast<odaproto::clc::Spy*>(msgPtrRaw));
 				break;
 
@@ -4453,17 +4429,17 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 				SV_PrivMsg(player, *static_cast<odaproto::clc::PrivMsg*>(msgPtrRaw));
 				break;
 
-            case clc_sendmobjupdate:
-                SV_SendRequestedMobjUpdate(player, *static_cast<odaproto::clc::SendMobjUpdate*>(msgPtrRaw));
-                break;
+			case clc_sendmobjupdate:
+				SV_SendRequestedMobjUpdate(player, *static_cast<odaproto::clc::SendMobjUpdate*>(msgPtrRaw));
+				break;
 
-         default:
-                // This case happens when a message was received, parsed, but not handled.
-                PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));
-                return PERR_BAD_DECODE;
-        }
-    }
-    return result;
+		 default:
+				// This case happens when a message was received, parsed, but not handled.
+				PrintFmt(PRINT_WARNING, "SV_ParseCommandSVC: Did not handle decoded message {}\n", static_cast<uint32_t>(cmd));
+				return PERR_BAD_DECODE;
+		}
+	}
+	return result;
 }
 
 void SV_ParseCommands(player_t &player)
@@ -4476,48 +4452,48 @@ void SV_ParseCommands(player_t &player)
 		}
 		while (::net_message.BytesLeftToRead() > 0)
 		{
-        	const svc_t cmd = static_cast<svc_t>(MSG_ReadUnVarint());
+			const svc_t cmd = static_cast<svc_t>(MSG_ReadUnVarint());
 
 			switch(cmd)
 			{
-                case -1:
-                    continue;
+				case -1:
+					continue;
 
-                // Ack is a special case that's intentionally lower level and must be serviced before anything
-                // at the higher-level protocol layer.
-		    	case msg_ack:
-			    	SV_AcknowledgePacket(player);
-				    break;
+				// Ack is a special case that's intentionally lower level and must be serviced before anything
+				// at the higher-level protocol layer.
+				case msg_ack:
+					SV_AcknowledgePacket(player);
+					break;
 
-    			default:
-                    // It's important to allow the clc_ enum to have priority
-                    // over svc_ if we have both types of messages.
-                    switch (SV_ParseCommandSVC(cmd, player))
-                    {
-                        case PERR_OK:
-                            continue;
-                        case PERR_UNKNOWN_HEADER:   // Data still readable from buffer
-                            PrintFmt(PRINT_WARNING, "SV_ParseCommands: Unmappable command {}\n", cmd);
-                            break;
-                        case PERR_UNKNOWN_MESSAGE:  // Data still readable from buffer
-                            PrintFmt(PRINT_WARNING, "SV_ParseCommands: Command {} unknown to protobuf\n", cmd);
-                            break;
-                        case PERR_BAD_DECODE:       // Data no longer in buffer.  Welp.
-                            PrintFmt(PRINT_WARNING, "SV_ParseCommands: Bad protobuf decode for {}\n", cmd);
-                            break;
-                        default:
-                            break;
-                    }
-    				PrintFmt("SV_ParseCommands: Unknown client message {}.\n", cmd);
-	    			SV_DropClient(player);
-		    		return;
+				default:
+					// It's important to allow the clc_ enum to have priority
+					// over svc_ if we have both types of messages.
+					switch (SV_ParseCommandSVC(cmd, player))
+					{
+						case PERR_OK:
+							continue;
+						case PERR_UNKNOWN_HEADER:   // Data still readable from buffer
+							PrintFmt(PRINT_WARNING, "SV_ParseCommands: Unmappable command {}\n", cmd);
+							break;
+						case PERR_UNKNOWN_MESSAGE:  // Data still readable from buffer
+							PrintFmt(PRINT_WARNING, "SV_ParseCommands: Command {} unknown to protobuf\n", cmd);
+							break;
+						case PERR_BAD_DECODE:       // Data no longer in buffer.  Welp.
+							PrintFmt(PRINT_WARNING, "SV_ParseCommands: Bad protobuf decode for {}\n", cmd);
+							break;
+						default:
+							break;
+					}
+					PrintFmt("SV_ParseCommands: Unknown client message {}.\n", cmd);
+					SV_DropClient(player);
+					return;
 			}
 
 			if (net_message.overflowed)
 			{
 				PrintFmt("SV_ReadClientMessage: badread {}({})\n",
-						    cmd,
-						    msg_info[cmd].getName());
+				         cmd,
+				         msg_info[cmd].getName());
 				SV_DropClient(player);
 				return;
 			}

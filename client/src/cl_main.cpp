@@ -2194,7 +2194,7 @@ void CL_SendCmd(void)
 {
 	player_t& player = consoleplayer();
 
-	if (netdemo.isPlaying())	// we're not really connected to a server
+	if (netdemo.isPlaying())    // we're not really connected to a server
 		return;
 
 	if (gametic < 1 )
