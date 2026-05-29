@@ -27,6 +27,9 @@ message PlayerInput
 }
 
 // clc_netdemocap
+//
+// NetdemoCap represents a demarcation point.  Everything received leaing up to it and the data contained in it
+// are all the inputs for a client tic, both from the client itself and the server.
 message NetdemoCap
 {
 	bytes    packed_player_input = 1;   // Truth information about the player's state.
@@ -37,9 +40,15 @@ message NetdemoCap
 	int32    jumptics            = 6;
 	int32    pendingweapon       = 7;
 	int32    readyweapon         = 8;
+}
 
-	uint32   awaiting_ack_count   =  9; // Client-side metric for debugging purposes
-	bytes    packed_outgoing_msgs = 10; // Please note that this is a record of what actually went out into
+// clc_messengeroutputs
+//
+// This message represents the results of the tic that we're looking at.
+message MessengerOutputs
+{
+	uint32 awaiting_ack_count   = 1;    // Client-side metric for debugging purposes
+	bytes  packed_outgoing_msgs = 2;    // Please note that this is a record of what actually went out into
 	                                    // the outgoing packets, not just truth about the input message.
 }
 
