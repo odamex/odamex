@@ -2225,6 +2225,21 @@ void CL_SendCmd(void)
 		MSG_WriteSVC(messenger.ReliableBuf(), currentNetcmd);
 	}
 
+	if (netdemo.isRecording())
+    {
+        if (not messenger.RecordingIsEnabled())
+        {
+            messenger.EnableRecording();
+        }
+    }
+    else
+    {
+        if (messenger.RecordingIsEnabled())
+        {
+            messenger.DisableRecording();
+        }
+    }
+
 	messenger.SendAll(gametic, serveraddr);
 
 	const int retransmittedByteCount = messenger.HandleRetransmissions(gametic, serveraddr);
@@ -2236,6 +2251,7 @@ void CL_SendCmd(void)
 	netgraph.setReliableSendDepth(messenger.GetPendingAckCount());
 	netgraph.addTrafficOut(totalSentByteCount);
 	outrate += totalSentByteCount;
+
 }
 
 //

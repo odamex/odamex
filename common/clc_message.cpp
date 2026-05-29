@@ -140,7 +140,9 @@ void CLC_UnpackPlayerInputMessageToPlayer(const odaproto::clc::PlayerInput& msg,
 	}
 }
 
-odaproto::clc::NetdemoCap CLC_NetdemoCap(const player_t& player, const odaproto::clc::PlayerInput& inputMessage)
+odaproto::clc::NetdemoCap CLC_NetdemoCap(const player_t&                   player,
+                                         const odaproto::clc::PlayerInput& inputMessage,
+                                         const OdaMessenger&               playerMessenger)
 {
 	odaproto::clc::NetdemoCap msg;
 
@@ -166,6 +168,11 @@ odaproto::clc::NetdemoCap CLC_NetdemoCap(const player_t& player, const odaproto:
 	msg.set_readyweapon     (player.readyweapon);
 	msg.set_pendingweapon   (player.pendingweapon);
 
+	msg.set_awaiting_ack_count(playerMessenger.GetPendingAckCount());
+
+    const auto& buffer { playerMessenger.GetRecordingBufferRef() };
+
+	msg.set_packed_outgoing_msgs(buffer.data(), buffer.size());
 	return msg;
 }
 

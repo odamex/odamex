@@ -120,6 +120,8 @@ class OdaMessenger
 		void EnableRecording()  { m_recordingIsEnabled = true;  }
 		void DisableRecording() { m_recordingIsEnabled = false; m_recordingBuffer.clear(); }
 
+		const std::basic_string<byte>& GetRecordingBufferRef() const { return m_recordingBuffer; }
+
 		bool MustThrottleTransmission() const { return m_sender.GetMode() == SequenceSender::RECOVERY; }
 		fixed_t ThrottleFraction() const { return FixedDiv( m_unackedGrowth << FRACBITS, m_unackedGrowthThreshold << FRACBITS); }
 
@@ -184,7 +186,7 @@ class OdaMessenger
 		int m_reliableOverloadCount { 0 };
 
 		std::basic_string<byte> m_recordingBuffer;
-		bool        m_recordingIsEnabled { false };
+		bool                    m_recordingIsEnabled { false };
 
 		// Metrics
 		size_t  m_bytesSentWithReliability      {  0 };

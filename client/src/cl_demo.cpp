@@ -733,7 +733,7 @@ void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 	if (not player.mo)
 		return;
 
-	MSG_WriteSVCBuffer(netbuffer, CLC_NetdemoCap(player, localcmds[gametic % MAXSAVETICS]));
+	MSG_WriteSVCBuffer(netbuffer, CLC_NetdemoCap(player, localcmds[gametic % MAXSAVETICS], ::messenger));
 }
 
 
