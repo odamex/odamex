@@ -112,6 +112,29 @@ void OdaMessenger::ManageBudget(int i_currentTic)
 	}
 }
 
+void OdaMessenger::Record(const buf_t& messageBuf)
+{
+	m_recordingBuffer += std::string_view(reinterpret_cast<const char*>(messageBuf.ptr()), messageBuf.size());
+}
+
+size_t OdaMessenger::PackAsReliable(Packet& io_packet, const buf_t& messageBuf)
+{
+    if (m_recordingIsEnabled)
+    {
+        Record(messageBuf);
+    }
+    return io_packet.AddReliableMessage(messageBuf);
+}
+
+size_t OdaMessenger::PackAsUnreliable(Packet& io_packet, const buf_t& messageBuf)
+{
+    if (m_recordingIsEnabled)
+    {
+        Record(messageBuf);
+    }
+    return io_packet.AddUnreliableMessage(messageBuf);
+}
+
 MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest)
 {
 	const int ticPhase = i_currentTic % TICRATE;
@@ -127,26 +150,21 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 
 	m_lastSendSize = 0;
 
-	auto addUnreliableFunctor = [this](const buf_t& messageBuf)
-	{
-		return m_packet.AddUnreliableMessage(messageBuf);
-	};
-
-	auto addHighFunctor = [this](const buf_t& messageBuf)
-	{
-		return m_highPacket.AddUnreliableMessage(messageBuf);
-	};
-
 	if (simulated_connection)
 	{
 		Clear();
 	}
 
+    if (m_recordingIsEnabled)
+    {
+        m_recordingBuffer.clear();
+    }
+
 	// First phase - send high-priority non-reliables (acks, servertic, player updates)
 	size_t bytesSentBestEffort = 0;
 	while (m_outgoingHighNonReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
 	{
-		m_outgoingHighNonReliableQueue.Pack(addHighFunctor );
+        m_outgoingHighNonReliableQueue.Pack([this](const buf_t& buf) { return PackAsUnreliable(m_highPacket, buf); });
 
 		const size_t sendSize = m_highPacket.Send(i_currentTic, m_sender, i_dest);
 		bytesSentBestEffort += sendSize;
@@ -157,10 +175,10 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 	m_bytesSentWithReliability = 0;
 	while (m_outgoingReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
 	{
-		m_outgoingReliableQueue.Pack([this](const buf_t& messageBuf) { return m_packet.AddReliableMessage(messageBuf); });
+		m_outgoingReliableQueue.Pack([this](const buf_t& messageBuf) { return PackAsReliable(m_packet, messageBuf); });
 
 		// Now cover the case where we have leftover space enough for an unreliable portion.
-		m_outgoingNonReliableQueue.Pack(addUnreliableFunctor);
+		m_outgoingNonReliableQueue.Pack([this](const buf_t& messageBuf) { return PackAsUnreliable(m_packet, messageBuf); });
 
 		const size_t sendSize = m_packet.Send(i_currentTic, m_sender, i_dest);
 		m_bytesSentWithReliability += sendSize;
@@ -174,6 +192,11 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 		{
 			break;
 		}
+
+        if (m_recordingIsEnabled)
+        {
+            Record(m_outgoingNonReliableQueue.Front());
+        }
 
 		if (m_packet.AddUnreliableMessage(m_outgoingNonReliableQueue.Front()))
 		{

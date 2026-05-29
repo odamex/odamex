@@ -116,6 +116,10 @@ class OdaMessenger
 			m_outgoingHighNonReliableQueue.Clear();
 		}
 
+		bool RecordingIsEnabled() const { return m_recordingIsEnabled; }
+		void EnableRecording()  { m_recordingIsEnabled = true;  }
+		void DisableRecording() { m_recordingIsEnabled = false; m_recordingBuffer.clear(); }
+
 		bool MustThrottleTransmission() const { return m_sender.GetMode() == SequenceSender::RECOVERY; }
 		fixed_t ThrottleFraction() const { return FixedDiv( m_unackedGrowth << FRACBITS, m_unackedGrowthThreshold << FRACBITS); }
 
@@ -143,6 +147,11 @@ class OdaMessenger
 		int GetTicBudget() const             { return m_perTicBudget; }
 
 	protected:
+
+        size_t PackAsReliable  (Packet& io_packet, const buf_t& messageBuf);
+        size_t PackAsUnreliable(Packet& io_packet, const buf_t& messageBuf);
+
+        void Record(const buf_t& messageBuf);
 
 		static void CompressPacket(buf_t& send, const size_t reserved);
 
@@ -173,6 +182,9 @@ class OdaMessenger
 
 		int m_reliableOverloadThreshold { 0 };
 		int m_reliableOverloadCount { 0 };
+
+		std::string m_recordingBuffer;
+		bool        m_recordingIsEnabled { false };
 
 		// Metrics
 		size_t  m_bytesSentWithReliability      {  0 };
