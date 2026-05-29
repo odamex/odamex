@@ -4442,6 +4442,21 @@ parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 	return result;
 }
 
+void SV_AcknowledgePacket(player_t &player)
+{
+	int sequence = MSG_ReadLong();
+
+	const bool isFresh = player.client.messenger.Acknowledge(sequence);
+
+	//DPrintFmt("player {} tic {} ACKed seq {}\n", int(player.id), gametic, sequence);
+
+	if (isFresh and sequence == 0)
+	{
+		// [AM] Finish our connection sequence.
+		SV_ConnectClient2(player);
+	}
+}
+
 void SV_ParseCommands(player_t &player)
 {
 	while(validplayer(player))
@@ -4498,6 +4513,37 @@ void SV_ParseCommands(player_t &player)
 				return;
 			}
 		}
+	}
+}
+
+void SV_HandleReliableRetransmissions()
+{
+	for (auto& player : players)
+	{
+		// Players that are on their way out get their retries serviced elsewhere.
+		if (player.playerstate == PST_DISCONNECT)
+		{
+			continue;
+		}
+
+		// Total hack:  We check for the player being in the first second of their connection because there's something
+		// in the connection protocol that requires us to do immediate retransmits of the first few reliable messages.
+		if (player.GameTime > 0)
+		{
+			// The following results in fractional tics rounding up.
+			const int pingInTics = (player.ping * TICRATE + 999) / 1000;
+
+			// Adjust upwards because in the real world, tic boundaries don't align and can drift.
+			const int retransmitDelayInTics = pingInTics + 1;
+
+			player.client.messenger.SetRetransmitDelay(retransmitDelayInTics);
+		}
+		else
+		{
+			player.client.messenger.SetRetransmitDelay(0);
+		}
+
+		player.client.messenger.HandleRetransmissions(gametic, player.client.address);
 	}
 }
 
