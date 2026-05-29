@@ -378,9 +378,11 @@ void NetadrToSockadr (const netadr_t *a, struct sockaddr_in *s);
 class buf_t
 {
 public:
-    std::vector<byte> data;
-	size_t	cursize, readpos, writepos;
-	bool	overflowed;  // set to true if the buffer size failed
+	std::vector<byte> data      {};
+	size_t            cursize   { 0 };
+	size_t            readpos   { 0 };
+	size_t            writepos  { 0 };
+	bool              overflowed{ false };  // set to true if the buffer size failed
 
     // Buffer seeking flags
     typedef enum
@@ -390,7 +392,44 @@ public:
         ,BT_END     // From end
     } seek_loc_t;
 
-public:
+
+	explicit buf_t(size_t len) :
+	    data(len)
+	{
+	}
+
+    explicit buf_t(const std::basic_string<byte>& byteString) :
+        data(byteString.begin(), byteString.end())
+    {
+    }
+
+	buf_t()                   = default;
+	buf_t(const buf_t& other) = default;
+	buf_t(buf_t&& other)      = default;
+
+	buf_t& operator=(const buf_t& other) = default;
+	buf_t& operator=(buf_t&& other)      = default;
+
+	void swap(buf_t& other)
+	{
+		using std::swap;
+
+		if (&other == this)
+		{
+			return;
+		}
+		data.swap(other.data);
+
+		swap(cursize,    other.cursize);
+		swap(readpos,    other.readpos);
+		swap(writepos,   other.writepos);
+		swap(overflowed, other.overflowed);
+	}
+
+	friend void swap(buf_t& lhs, buf_t& rhs)
+	{
+		lhs.swap(rhs);
+	}
 
 	void WriteByte(byte b)
 	{
@@ -762,68 +801,6 @@ public:
         }
 
 		return ret;
-	}
-
-	buf_t &operator =(const buf_t &other)
-	{
-	    // Avoid self-assignment
-		if (this == &other)
-            return *this;
-
-        data = other.data;
-		cursize = other.cursize;
-		overflowed = other.overflowed;
-		readpos = other.readpos;
-        writepos = other.writepos;
-
-		return *this;
-	}
-
-	void swap(buf_t& other)
-	{
-		using std::swap;
-
-        if (&other == this)
-        {
-            return;
-        }
-		data.swap(other.data);
-		swap(cursize,    other.cursize);
-		swap(readpos,    other.readpos);
-        swap(writepos,   other.writepos);
-		swap(overflowed, other.overflowed);
-	}
-
-	friend void swap(buf_t& lhs, buf_t& rhs)
-	{
-		lhs.swap(rhs);
-	}
-
-    buf_t& operator=(buf_t&& other)
-    {
-        swap(other);
-        return *this;
-    }
-
-	buf_t()
-		: data(), cursize(0), readpos(0), writepos(0), overflowed(false)
-	{
-	}
-	buf_t(size_t len)
-		: data(len), cursize(0), readpos(0), writepos(0), overflowed(false)
-	{
-	}
-	buf_t(const buf_t &other)
-		: data(other.data), cursize(other.cursize), readpos(other.readpos), writepos(other.writepos), overflowed(other.overflowed)
-	{
-	}
-    buf_t(buf_t&& other) :
-        buf_t()
-    {
-        swap(other);
-    }
-	~buf_t()
-	{
 	}
 };
 
