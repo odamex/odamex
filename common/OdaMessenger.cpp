@@ -23,7 +23,6 @@
 
 #include "i_net.h"
 
-dtime_t I_MSTime (void);
 EXTERN_CVAR (log_packetdebug)
 
 //  -------------- Receiving functions --------------
@@ -143,16 +142,16 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 		Clear();
 	}
 
-    // First phase - send high-priority non-reliables (acks, servertic, player updates)
+	// First phase - send high-priority non-reliables (acks, servertic, player updates)
 	size_t bytesSentBestEffort = 0;
-    while (m_outgoingHighNonReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
-    {
-        m_outgoingHighNonReliableQueue.Pack(addHighFunctor );
+	while (m_outgoingHighNonReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
+	{
+		m_outgoingHighNonReliableQueue.Pack(addHighFunctor );
 
 		const size_t sendSize = m_highPacket.Send(i_currentTic, m_sender, i_dest);
 		bytesSentBestEffort += sendSize;
 		m_byteBudget        -= static_cast<int>(sendSize);
-    }
+	}
 
 	// Second phase - send reliables, padded out to MAX_UDP_SIZE-ish with non-reliable best-effort messages.
 	m_bytesSentWithReliability = 0;
