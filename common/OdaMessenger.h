@@ -183,7 +183,7 @@ class OdaMessenger
 		int m_reliableOverloadThreshold { 0 };
 		int m_reliableOverloadCount { 0 };
 
-		std::string m_recordingBuffer;
+		std::basic_string<byte> m_recordingBuffer;
 		bool        m_recordingIsEnabled { false };
 
 		// Metrics

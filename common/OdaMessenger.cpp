@@ -114,7 +114,7 @@ void OdaMessenger::ManageBudget(int i_currentTic)
 
 void OdaMessenger::Record(const buf_t& messageBuf)
 {
-	m_recordingBuffer += std::string_view(reinterpret_cast<const char*>(messageBuf.ptr()), messageBuf.size());
+	m_recordingBuffer += std::basic_string_view<byte>(messageBuf.ptr(), messageBuf.size());
 }
 
 size_t OdaMessenger::PackAsReliable(Packet& io_packet, const buf_t& messageBuf)
