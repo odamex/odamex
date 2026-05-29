@@ -1,7 +1,7 @@
 #pragma once
 
 #include "i_net.h"
-#include <list>
+#include <deque>
 
 class NetDemo
 {
@@ -130,7 +130,7 @@ private:
 	std::string			filename;
 	FILE*				demofp;
 
-	std::list<buf_t>	captured;
+	std::deque<buf_t>   captured;
 
 	netdemo_header_t	header;
 	std::vector<netdemo_index_entry_t> snapshot_index;
