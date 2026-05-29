@@ -54,11 +54,11 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 			io_rawBuf.SeekRead(header.reliableSize, buf_t::BT_CURRENT);
 		}
 
-		// Send an ACK to the server only if it contained reliable data.
+		// Send an ACK to the originating messenger.
 		if (not simulated_connection)
 		{
 			buf_t& ack = m_outgoingHighNonReliableQueue.Obtain();
-			ack.WriteByte(msg_ack);
+			ack.WriteUnVarint(msg_ack);
 			ack.WriteLong(header.sequence);
 		}
 	}
@@ -86,22 +86,22 @@ void OdaMessenger::HandleAcks(buf_t& io_rawBuf)
 {
 	while (io_rawBuf.BytesLeftToRead() > 0)
 	{
-		const int messageId = io_rawBuf.PeekByte();
-		if (messageId == msg_ack)
+		const size_t startPosition = io_rawBuf.TellRead();
+		const svc_t  messageId     = static_cast<svc_t>(io_rawBuf.ReadUnVarint());
+		if (messageId != msg_ack)
 		{
-			io_rawBuf.ReadByte();                       // Discard, we already peeked!
-			const int sequence = io_rawBuf.ReadLong();
-			Acknowledge(sequence);
-		}
-		else
-		{
+			io_rawBuf.SeekRead(startPosition, buf_t::BT_START);
 			break;
 		}
+		const int sequence = io_rawBuf.ReadLong();
+		Acknowledge(sequence);
 	}
 }
 
 
 //  -------------- Sending functions --------------
+
+// TODO:  Re-implement SIMULATE_LATENCY through outgoing queue management.
 
 void OdaMessenger::ManageBudget(int i_currentTic)
 {
