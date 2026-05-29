@@ -29,7 +29,7 @@ message PlayerInput
 // clc_netdemocap
 message NetdemoCap
 {
-	bytes    packed_player_input = 1;
+	bytes    packed_player_input = 1;   // Truth information about the player's state.
 	Actor    actor               = 2;
 	sfixed32 viewz               = 3;   // Here starts a subset of player fields - the only ones that
 	sfixed32 viewheight          = 4;   // are relevant for NetdemoCap, including a few unique ones that
@@ -37,6 +37,10 @@ message NetdemoCap
 	int32    jumptics            = 6;
 	int32    pendingweapon       = 7;
 	int32    readyweapon         = 8;
+
+	uint32   awaiting_ack_count   =  9; // Client-side metric for debugging purposes
+	bytes    packed_outgoing_msgs = 10; // Please note that this is a record of what actually went out into
+	                                    // the outgoing packets, not just truth about the input message.
 }
 
 // clc_netdemostop
