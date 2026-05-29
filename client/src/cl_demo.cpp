@@ -984,7 +984,18 @@ void NetDemo::capture(const buf_t* inputbuffer)
 
 	if (inputbuffer->size() > 0)
 	{
-		captured.push_back(*inputbuffer);
+		captured.emplace_back(*inputbuffer);
+	}
+}
+
+void NetDemo::capture(const std::basic_string<byte>& buffer)
+{
+	if (isRecording())
+	{
+		if (buffer.size() > 0)
+		{
+			captured.emplace_back(buffer);
+		}
 	}
 }
 
