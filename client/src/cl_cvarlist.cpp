@@ -448,6 +448,10 @@ CVAR(cl_showsprees, "1", "Show killing sprees for the display player.", CVARTYPE
 
 CVAR(cl_showmultikills, "1", "Show multi kills for the display player.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(cl_showofflinesprees, "0", "Show killing sprees during single player games and vanilla demo playback. Netdemos are unaffected. Does not supercede cl_showsprees.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(cl_showofflinemultikills, "0", "Show multi kills during single player games and vanilla demo playback. Netdemos are unaffected. Does not supercede cl_showmultikills", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 // Netdemo Preferences
 // --------------------
 
