@@ -417,16 +417,6 @@ void I_BaseError(const std::string& errortext)
 	abort();
 }
 
-char DoomStartupTitle[256] = { 0 };
-
-void I_SetTitleString (const char *title)
-{
-	int i;
-
-	for (i = 0; title[i]; i++)
-		DoomStartupTitle[i] = title[i] | 0x80;
-}
-
 //
 // I_GetClipboardText
 //
@@ -455,39 +445,6 @@ std::string I_GetClipboardText()
 
 	return "";
 }
-
-void I_PrintStr (int xp, const char *cp, int count, bool scroll)
-{
-	// used in the DOS version
-}
-
-#ifdef _WIN32 // denis - fixme - make this work on POSIX
-
-long I_FindFirst (char *filespec, findstate_t *fileinfo)
-{
-	//return _findfirst (filespec, fileinfo);
-	return 0;
-}
-
-int I_FindNext (long handle, findstate_t *fileinfo)
-{
-	//return _findnext (handle, fileinfo);
-	return 0;
-}
-
-int I_FindClose (long handle)
-{
-	//return _findclose (handle);
-	return 0;
-}
-
-#else
-
-long I_FindFirst (char *filespec, findstate_t *fileinfo) {return 0;}
-int I_FindNext (long handle, findstate_t *fileinfo) {return 0;}
-int I_FindClose (long handle) {return 0;}
-
-#endif
 
 //
 // I_IsHeadless
