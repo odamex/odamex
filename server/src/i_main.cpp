@@ -39,6 +39,8 @@
 
 #include <stdlib.h>
 
+#include "fmt/color.h"
+
 #include "i_crash.h"
 #include "m_argv.h"
 #include "d_main.h"
@@ -48,8 +50,6 @@
 #include "i_net.h"
 #include "m_fileio.h"
 #include "m_consolecommandstream.h"
-
-using namespace std;
 
 void AddCommandString(std::string cmd);
 
@@ -71,6 +71,9 @@ void STACK_ARGS call_terms (void)
 	while (!TermFuncs.empty())
 		TermFuncs.top().first(), TermFuncs.pop();
 }
+
+EXTERN_CVAR(log_color)
+static constexpr auto ERROR_STYLE = fmt::emphasis::bold | fg(fmt::color::red);
 
 #ifdef _WIN32
 static HANDLE hEvent;
@@ -149,17 +152,22 @@ int __cdecl main(int argc, char *argv[])
 
 		// Disable QuickEdit mode as any text selection will cause all functions
 		// that use stdout (printf etc) to block
+		// but only try to do so if stdin is actually a terminal
+		// otherwise this will prevent being able to pipe output
+		const auto hIn = GetStdHandle(STD_INPUT_HANDLE);
+		if (GetFileType(hIn) == FILE_TYPE_CHAR)
+		{
+			DWORD consoleMode = 0;
 
-		DWORD consoleMode = 0;
+			if (!GetConsoleMode(hIn, &consoleMode))
+				throw CDoomError("GetConsoleMode (input) failed!\n");
 
-		if (!GetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), &consoleMode))
-			throw CDoomError("GetConsoleMode failed!\n");
+			consoleMode &= ~ENABLE_QUICK_EDIT_MODE;
+			consoleMode |= ENABLE_EXTENDED_FLAGS;
 
-		consoleMode &= ~ENABLE_QUICK_EDIT_MODE;
-		consoleMode |= ENABLE_EXTENDED_FLAGS;
-
-		if (!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), consoleMode))
-			throw CDoomError("SetConsoleMode failed!\n");
+			if (!SetConsoleMode(hIn, consoleMode))
+				throw CDoomError("SetConsoleMode (input) failed!\n");
+		}
 
 		// Fixes icon not showing in titlebar and alt-tab menu under windows 7
 		HANDLE hIcon;
@@ -215,12 +223,32 @@ int __cdecl main(int argc, char *argv[])
 	}
 	catch (CDoomError& error)
 	{
+		// It's possible that the fatal error was encountered before
+		// loading the config file or setting cvars set from the command line
+		// so we should default to no color unless we know that we have already loaded that
 		if (LOG.is_open())
 		{
-			LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
+			if (DefaultsLoaded && log_color == 2)
+				LOG << fmt::format(ERROR_STYLE, "=== ERROR: {} ===\n\n", error.GetMsg());
+			else
+				LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
 		}
 
-		fmt::print(stderr, "=== ERROR: {} ===\n\n", error.GetMsg());
+		fmt::text_style style;
+		try
+		{
+			// I_ConsoleUseColor can throw on Windows
+			// but we've already gotten another fatal error,
+			// possibly even from another call to it
+			// so lets just ignore that exception since
+			// we're about to exit and log another one anyway
+			if (DefaultsLoaded && log_color && I_ConsoleUseColor())
+				style = ERROR_STYLE;
+		}
+		catch (CDoomError&)
+		{}
+
+		fmt::print(stderr, style, "=== ERROR: {} ===\n\n", error.GetMsg());
 
 		call_terms();
 		exit(EXIT_FAILURE);
@@ -239,32 +267,42 @@ int __cdecl main(int argc, char *argv[])
 //
 void daemon_init(void)
 {
-    int     pid;
-    FILE   *fpid;
-    string  pidfile;
-
     PrintFmt(PRINT_HIGH, "Launched into the background\n");
 
+	int pid;
     if ((pid = fork()) != 0)
     {
     	call_terms();
     	exit(EXIT_SUCCESS);
     }
 
+    std::string pidfile;
 	const char *forkargs = Args.CheckValue("-fork");
 	if (forkargs)
-		pidfile = string(forkargs);
+		pidfile = std::string(forkargs);
 
     if(!pidfile.size() || pidfile[0] == '-')
     	pidfile = "doomsv.pid";
 
     pid = getpid();
-    fpid = fopen(pidfile.c_str(), "w");
+    FILE* fpid = fopen(pidfile.c_str(), "w");
     fmt::print(fpid, "{}\n", pid);
     fclose(fpid);
 }
 
-int main (int argc, char **argv)
+static void set_window_title()
+{
+	if (!isatty(STDOUT_FILENO))
+		return;
+
+	const char* term = getenv("TERM");
+	if (!term || strcmp(term, "dumb") == 0)
+		return;
+
+	fmt::print("\033]2;Odamex Server {}\033\\", NiceVersion());
+}
+
+int main(int argc, char **argv)
 {
 	// [AM] Set crash callbacks, so we get something useful from crashes.
 #ifdef NDEBUG
@@ -302,6 +340,8 @@ int main (int argc, char **argv)
 
 		M_InitConsoleInputFile(Args.CheckValue("-confile"));
 
+		set_window_title();
+
 		/*
 		  killough 1/98:
 
@@ -334,12 +374,21 @@ int main (int argc, char **argv)
 	}
 	catch (CDoomError& error)
 	{
+		// It's possible that the fatal error was encountered before
+		// loading the config file or setting cvars set from the command line
+		// so we should default to no color unless we know that we have already loaded that
 		if (LOG.is_open())
 		{
-			LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
+			if (DefaultsLoaded && log_color == 2)
+				LOG << fmt::format(ERROR_STYLE, "=== ERROR: {} ===\n\n", error.GetMsg());
+			else
+				LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
 		}
 
-		fmt::print(stderr, "=== ERROR: {} ===\n\n", error.GetMsg());
+		if (DefaultsLoaded && log_color && I_ConsoleUseColor())
+			fmt::print(stderr, ERROR_STYLE, "=== ERROR: {} ===\n\n", error.GetMsg());
+		else
+			fmt::print(stderr, "=== ERROR: {} ===\n\n", error.GetMsg());
 
 		call_terms();
 		exit(EXIT_FAILURE);

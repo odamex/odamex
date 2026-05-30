@@ -626,7 +626,7 @@ void CL_StepTics(unsigned int count)
 		OInterpolation::getInstance().ticGameInterpolation();
 
 		G_Ticker ();
-		
+
 		if (!netdemo.isPaused())
 			gametic++;
 
@@ -671,7 +671,7 @@ void CL_RunTics()
 				PrintFmt("level.time {}, prndindex {}, {} {} {}\n",
 				         level.time, prndindex, players.begin()->mo->x, players.begin()->mo->y, players.begin()->mo->z);
 			else
- 				PrintFmt("level.time %d, prndindex %d\n", level.time, prndindex);
+ 				PrintFmt("level.time {}, prndindex {}\n", level.time, prndindex);
 		}
 	}
 	else

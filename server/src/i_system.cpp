@@ -214,57 +214,55 @@ void I_BaseError(const std::string& errortext)
 	}
 }
 
-char DoomStartupTitle[256] = { 0 };
-
-void I_SetTitleString (const char *title)
-{
-    int i;
-
-    for (i = 0; title[i]; i++)
-                DoomStartupTitle[i] = title[i] | 0x80;
-}
-
-void I_PrintStr (int xp, const char *cp, int count, bool scroll)
-{
-        char string[4096];
-
-        memcpy (string, cp, count);
-        if (scroll)
-                string[count++] = '\n';
-        string[count] = 0;
-
-        fputs (string, stdout);
-        fflush (stdout);
-}
-
-//static const char *pattern; // [DL] todo - remove
-//static findstate_t *findstates[8]; // [DL] todo - remove
-
-long I_FindFirst (char *filespec, findstate_t *fileinfo)
-{
-    return 0;
-}
-
-int I_FindNext (long handle, findstate_t *fileinfo)
-{
-    return 0;
-}
-
-int I_FindClose (long handle)
-{
-    return 0;
-}
-
-int I_FindAttr (findstate_t *fileinfo)
-{
-    return 0;
-}
-
 #ifdef _WIN32
 int ShutdownNow();
 #endif
 
-std::string I_ConsoleInput (void)
+bool I_ConsoleUseColor()
+{
+#ifdef _WIN32
+	static const bool usecolor = []{
+		const auto hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+		if (GetFileType(hOut) != FILE_TYPE_CHAR)
+			return false;
+
+		bool out = true;
+		// enable ansi color escape processing
+		DWORD consoleMode = 0;
+		if (!GetConsoleMode(hOut, &consoleMode))
+			throw CDoomError("GetConsoleMode (output) failed!");
+
+		const DWORD originalOutputMode = consoleMode;
+		consoleMode |= ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+
+		if (!SetConsoleMode(hOut, consoleMode))
+		{
+			out = consoleMode & ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+			// we might just be on a version of windows before support was added, try setting mode back
+			if (!SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), originalOutputMode))
+				throw CDoomError("SetConsoleMode (output) failed!");
+		}
+		return out;
+	}();
+#else
+	static const bool usecolor = []{
+		if (!isatty(STDOUT_FILENO))
+			return false;
+
+		if (getenv("NO_COLOR"))
+			return false;
+
+		const char* term = getenv("TERM");
+		if (!term || strcmp(term, "dumb") == 0)
+			return false;
+
+		return true;
+	}();
+#endif
+	return usecolor;
+}
+
+std::string I_ConsoleInput()
 {
 #ifdef _WIN32
     if (ShutdownNow())

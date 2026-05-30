@@ -90,6 +90,7 @@ EXTERN_CVAR(show_messages)
 EXTERN_CVAR(co_novileghosts)
 EXTERN_CVAR(sv_sharekeys)
 EXTERN_CVAR(cl_showsprees)
+EXTERN_CVAR(sv_showsprees)
 
 extern std::string digest;
 extern bool forcenetdemosplit;
@@ -2931,7 +2932,8 @@ static void CL_Spree(const odaproto::svc::Spree* msg)
 
 	bool update = SpreeManager::getInstance().setRawSpree(playerId, spreeLevel);
 
-	if (cl_showsprees && displayplayer_id == playerId && update)
+	// No need to check cl_showofflinesprees here since this will only fire online or during a netdemo.
+	if (cl_showsprees && sv_showsprees && displayplayer_id == playerId && update)
 	{
 		// Play the sound for the new multi kill
 		// S_Sound(CHAN_ANNOUNCER, '', 1, ATTN_NONE);

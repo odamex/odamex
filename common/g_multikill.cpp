@@ -197,7 +197,10 @@ void MultiKillManager::clearMultiTics()
 
 #ifdef CLIENT_APP
 EXTERN_CVAR(cl_showmultikills)
+EXTERN_CVAR(cl_showofflinemultikills)
 #endif
+
+EXTERN_CVAR(sv_showmultikills)
 
 void P_ProcessMultiKills(const AActor* source, const player_t* target)
 {
@@ -219,7 +222,7 @@ void P_ProcessMultiKills(const AActor* source, const player_t* target)
 
 	#ifdef CLIENT_APP
 	// Don't announce multi kills if the client has showing them disabled
-	if (!cl_showmultikills)
+	if (!cl_showmultikills || (!cl_showofflinemultikills && !network_game) || (!sv_showmultikills && network_game))
 		return;
 	#endif
 

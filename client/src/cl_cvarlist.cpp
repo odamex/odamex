@@ -448,6 +448,10 @@ CVAR(cl_showsprees, "1", "Show killing sprees for the display player.", CVARTYPE
 
 CVAR(cl_showmultikills, "1", "Show multi kills for the display player.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(cl_showofflinesprees, "0", "Show killing sprees during single player games and vanilla demo playback. Netdemos are unaffected. Does not supercede cl_showsprees.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(cl_showofflinemultikills, "0", "Show multi kills during single player games and vanilla demo playback. Netdemos are unaffected. Does not supercede cl_showmultikills", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 // Netdemo Preferences
 // --------------------
 
@@ -765,7 +769,7 @@ CVAR(			r_flashhom, "0", "Draws flashing colors where there is HOM",
 CVAR(			r_drawflat, "0", "Disables all texturing of walls, floors and ceilings",
 				CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR(			r_clipmaskedspecial, "1", "Vertically clip masked midtextures when surrounding sectors have differing specials (mimics Hexen and DSDA-Doom behavior)",
+CVAR(			r_clipmaskedspecial, "0", "Vertically clip masked midtextures when surrounding sectors have differing specials (mimics Hexen and DSDA-Doom behavior)",
 				CVARTYPE_BOOL, CVAR_NULL)
 
 CVAR(			r_thingsectorlight, "0", "Things are lit according to the average of the transfered light levels (mimics MBF behavior)",
