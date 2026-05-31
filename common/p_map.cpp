@@ -3477,13 +3477,10 @@ void P_PutSecnode (msecnode_t *node)
 
 msecnode_t *P_AddSecnode (sector_t *s, AActor *thing, msecnode_t *nextnode)
 {
-	if (!s)
+	if (s == nullptr)
 		return nextnode;
 
 	msecnode_t *node;
-
-	if (s == NULL)
-		I_FatalError("AddSecnode of 0 for {}\n", thing->_StaticType.Name);
 
 	node = nextnode;
 	while (node)
