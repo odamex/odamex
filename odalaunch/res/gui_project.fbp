@@ -4044,7 +4044,7 @@
                                 <property name="id">wxID_ANY</property>
                                 <property name="label">Odamex Updates</property>
                                 <property name="minimum_size"></property>
-                                <property name="name">sbSizer25</property>
+                                <property name="name">Id_StBxSizerUpdates</property>
                                 <property name="orient">wxVERTICAL</property>
                                 <property name="parent">1</property>
                                 <property name="permission">none</property>

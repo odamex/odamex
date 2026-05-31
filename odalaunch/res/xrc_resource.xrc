@@ -894,7 +894,7 @@
                             <flag>wxALL|wxEXPAND</flag>
                             <border>5</border>
                             <option>0</option>
-                            <object class="wxStaticBoxSizer" name="sbSizer25">
+                            <object class="wxStaticBoxSizer" name="Id_StBxSizerUpdates">
                               <orient>wxVERTICAL</orient>
                               <label>Odamex Updates</label>
                               <object class="sizeritem">
