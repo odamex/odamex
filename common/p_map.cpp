@@ -3480,9 +3480,7 @@ msecnode_t *P_AddSecnode (sector_t *s, AActor *thing, msecnode_t *nextnode)
 	if (s == nullptr)
 		return nextnode;
 
-	msecnode_t *node;
-
-	node = nextnode;
+	msecnode_t *node = nextnode;
 	while (node)
 	{
 		if (node->m_sector == s)	// Already have a node for this sector?
