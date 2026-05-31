@@ -2556,17 +2556,23 @@ void P_PlayerLeavesGame(player_s* player)
 				}
 			}
 		}
-	}
 
-	if (targethasflag)
-	{
-		M_LogWDLEvent(WDL_EVENT_CARRIERKILL, player, player, f, 0, MOD_EXIT, 0);
+		// We need to check if the player already exists here
+		// Because some clients can disconnect before they fully join the game, and we
+		// don't want to log disconnects for players that never fully joined.
+		if (M_CheckIfPlayerInLogs(player->id))
+		{
+			if (targethasflag)
+			{
+				M_LogWDLEvent(WDL_EVENT_CARRIERKILL, player, player, f, 0, MOD_EXIT, 0);
+			}
+			else
+			{
+				M_LogWDLEvent(WDL_EVENT_KILL, player, player, 0, 0, MOD_EXIT, 0);
+			}
+			M_LogWDLEvent(WDL_EVENT_DISCONNECT, player, NULL, current, 0, 0, 0);
+		}
 	}
-	else
-	{
-		M_LogWDLEvent(WDL_EVENT_KILL, player, player, 0, 0, MOD_EXIT, 0);
-	}
-	M_LogWDLEvent(WDL_EVENT_DISCONNECT, player, NULL, current, 0, 0, 0);
 
 	// Playercount changes can cause end-of-game conditions.
 	G_AssertValidPlayerCount();
