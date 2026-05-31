@@ -132,6 +132,7 @@ void M_LogActorWDLEvent(
 	int arg0, int arg1, int arg2, int arg3
 );
 int M_GetPlayerId(const player_t& player, team_t team);
+bool M_CheckIfPlayerInLogs(const int playerid);
 void M_LogWDLPlayerSpawn(const mapthing2_t& mthing);
 void M_RemoveWDLPlayerSpawn(const mapthing2_t& mthing);
 void M_LogWDLItemRespawnEvent(AActor* activator);
