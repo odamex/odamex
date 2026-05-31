@@ -117,7 +117,11 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
 
 	EVT_MENU(wxID_PREFERENCES, dlgMain::OnOpenSettingsDialog)
 
+	#ifdef ODALAUNCH_USE_WEB_REQUEST
 	EVT_MENU(XRCID("Id_MnuItmCheckVersion"), dlgMain::OnCheckVersion)
+	#else
+	EVT_MENU(XRCID("Id_MnuItmCheckVersion"), dlgMain::OnOpenWebsite)
+	#endif
 	EVT_MENU(XRCID("Id_MnuItmVisitWebsite"), dlgMain::OnOpenWebsite)
 	EVT_MENU(XRCID("Id_MnuItmVisitForum"), dlgMain::OnOpenForum)
 	EVT_MENU(XRCID("Id_MnuItmVisitWiki"), dlgMain::OnOpenWiki)
@@ -285,6 +289,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	}
 	*/
 
+	#if ODALAUNCH_USE_WEB_REQUEST
 	// Check for a new version
 	// [ML] 1/21/2019: Disabled for now.  This doesn't work over https.
 	// [EB] 4/27/2026: Re-enabled now, using github releases
@@ -295,6 +300,7 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 		m_UpdateCheckWasAutomatic = true;
 		SendCheckVersionRequest();
 	}
+	#endif
 
 	// Enable the auto refresh timer
 	if(m_UseRefreshTimer)
@@ -418,6 +424,7 @@ void dlgMain::OnCheckVersion(wxCommandEvent &event)
 
 void dlgMain::SendCheckVersionRequest()
 {
+	#if ODALAUNCH_USE_WEB_REQUEST
 	wxWebRequest request = wxWebSession::GetDefault().CreateRequest(
 		this,
 		"https://api.github.com/repos/odamex/odamex/releases/latest"
@@ -425,8 +432,10 @@ void dlgMain::SendCheckVersionRequest()
 
 	request.SetHeader("User-Agent", "Odamex-Update-Checker");
 	request.Start();
+	#endif
 }
 
+#if ODALAUNCH_USE_WEB_REQUEST
 void dlgMain::OnCheckVersionResponse(wxWebRequestEvent& evt)
 {
     if (evt.GetState() == wxWebRequest::State_Completed)
@@ -479,6 +488,7 @@ void dlgMain::OnCheckVersionResponse(wxWebRequestEvent& evt)
         InfoBar->ShowMessage("Unable to check for updates.");
     }
 }
+#endif
 
 // Master server setup
 static const wxCmdLineEntryDesc cmdLineDesc[] =

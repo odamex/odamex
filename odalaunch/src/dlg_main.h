@@ -46,13 +46,19 @@
 #include <wx/process.h>
 #include <wx/srchctrl.h>
 #include <wx/url.h>
-#include <wx/webrequest.h>
 
 #include <vector>
 #include <memory>
 
 #include "query_thread.h"
 #include "net_packet.h"
+
+#if wxCHECK_VERSION(3, 1, 5)
+	#include <wx/webrequest.h>
+	#define ODALAUNCH_USE_WEB_REQUEST 1
+#else
+	#define ODALAUNCH_USE_WEB_REQUEST 0
+#endif
 
 // custom event declarations
 wxDECLARE_EVENT(wxEVT_THREAD_MONITOR_SIGNAL, wxCommandEvent);
@@ -97,7 +103,9 @@ protected:
 
 	void OnCheckVersion(wxCommandEvent &event);
 	void SendCheckVersionRequest();
+	#if ODALAUNCH_USE_WEB_REQUEST
 	void OnCheckVersionResponse(wxWebRequestEvent& evt);
+	#endif
 
 	void OnShow(wxShowEvent& event);
 	void OnClose(wxCloseEvent& event);
