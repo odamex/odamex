@@ -2417,6 +2417,8 @@ static void CL_LevelState(const odaproto::svc::LevelState* msg)
 	::levelstate.unserialize(sls);
 }
 
+void P_SpawnAvatars();
+
 static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 {
 	ClientReplay::getInstance().reset();
@@ -2463,6 +2465,12 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 	// You don't get to keep cards.  This isn't communicated anywhere else.
 	if (sv_gametype == GM_COOP)
 		P_ClearPlayerCards(consoleplayer());
+
+	// Now before we write the netdemo map change, spawn fresh avatars so that
+	// the "new map" snapshot has them in the correct position right from the
+	// get-go. This is key for ensuring that maps that rely on tic-1 avatar
+	// actions behave correctly.
+	P_SpawnAvatars();
 
 	// write the map index to the netdemo
 	if (netdemo.isRecording() && hasReceivedFullUpdate)

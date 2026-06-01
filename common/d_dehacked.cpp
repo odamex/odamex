@@ -678,7 +678,6 @@ static void HandleMode(std::string_view header, DehScanner& scanner)
 
 	// Handle unknown or unimplemented data
 	DPrintFmt("Unknown chunk {} encountered. Skipping.\n", header);
-	scanner.skipLine();
 	while (scanner.getNextKeyValue());
 }
 
