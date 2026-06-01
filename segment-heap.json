@@ -1,6 +1,6 @@
 {
-  "demos_passed": 0,
-  "updated_at": "2026-05-31T21:47:47Z",
+  "demos_passed": 99,
+  "commit": "365bb3509f47b0d2b9f2e8a882c350d0184cf9a2",
   "demos_run": 109,
-  "commit": "8dd3d88da6a6145229d6207f471cd75c7b8be9e3"
+  "updated_at": "2026-06-01T10:58:23Z"
 }
