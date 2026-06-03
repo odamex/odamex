@@ -2226,19 +2226,19 @@ void CL_SendCmd(void)
 	}
 
 	if (netdemo.isRecording())
-    {
-        if (not messenger.RecordingIsEnabled())
-        {
-            messenger.EnableRecording();
-        }
-    }
-    else
-    {
-        if (messenger.RecordingIsEnabled())
-        {
-            messenger.DisableRecording();
-        }
-    }
+	{
+		if (not messenger.RecordingIsEnabled())
+		{
+			messenger.EnableRecording();
+		}
+	}
+	else
+	{
+		if (messenger.RecordingIsEnabled())
+		{
+			messenger.DisableRecording();
+		}
+	}
 
 	messenger.SendAll(gametic, serveraddr);
 

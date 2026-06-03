@@ -150,10 +150,10 @@ class OdaMessenger
 
 	protected:
 
-        size_t PackAsReliable  (Packet& io_packet, const buf_t& messageBuf);
-        size_t PackAsUnreliable(Packet& io_packet, const buf_t& messageBuf);
+		size_t PackAsReliable  (Packet& io_packet, const buf_t& messageBuf);
+		size_t PackAsUnreliable(Packet& io_packet, const buf_t& messageBuf);
 
-        void Record(const buf_t& messageBuf);
+		void Record(const buf_t& messageBuf);
 
 		static void CompressPacket(buf_t& send, const size_t reserved);
 

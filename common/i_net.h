@@ -398,10 +398,10 @@ public:
 	{
 	}
 
-    explicit buf_t(const std::basic_string<byte>& byteString) :
-        data(byteString.begin(), byteString.end())
-    {
-    }
+	explicit buf_t(const std::basic_string<byte>& byteString) :
+	    data(byteString.begin(), byteString.end())
+	{
+	}
 
 	buf_t()                   = default;
 	buf_t(const buf_t& other) = default;

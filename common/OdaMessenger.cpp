@@ -119,20 +119,20 @@ void OdaMessenger::Record(const buf_t& messageBuf)
 
 size_t OdaMessenger::PackAsReliable(Packet& io_packet, const buf_t& messageBuf)
 {
-    if (m_recordingIsEnabled)
-    {
-        Record(messageBuf);
-    }
-    return io_packet.AddReliableMessage(messageBuf);
+	if (m_recordingIsEnabled)
+	{
+		Record(messageBuf);
+	}
+	return io_packet.AddReliableMessage(messageBuf);
 }
 
 size_t OdaMessenger::PackAsUnreliable(Packet& io_packet, const buf_t& messageBuf)
 {
-    if (m_recordingIsEnabled)
-    {
-        Record(messageBuf);
-    }
-    return io_packet.AddUnreliableMessage(messageBuf);
+	if (m_recordingIsEnabled)
+	{
+		Record(messageBuf);
+	}
+	return io_packet.AddUnreliableMessage(messageBuf);
 }
 
 MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest)
@@ -155,16 +155,16 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 		Clear();
 	}
 
-    if (m_recordingIsEnabled)
-    {
-        m_recordingBuffer.clear();
-    }
+	if (m_recordingIsEnabled)
+	{
+		m_recordingBuffer.clear();
+	}
 
 	// First phase - send high-priority non-reliables (acks, servertic, player updates)
 	size_t bytesSentBestEffort = 0;
 	while (m_outgoingHighNonReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
 	{
-        m_outgoingHighNonReliableQueue.Pack([this](const buf_t& buf) { return PackAsUnreliable(m_highPacket, buf); });
+		m_outgoingHighNonReliableQueue.Pack([this](const buf_t& buf) { return PackAsUnreliable(m_highPacket, buf); });
 
 		const size_t sendSize = m_highPacket.Send(i_currentTic, m_sender, i_dest);
 		bytesSentBestEffort += sendSize;
@@ -193,10 +193,10 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 			break;
 		}
 
-        if (m_recordingIsEnabled)
-        {
-            Record(m_outgoingNonReliableQueue.Front());
-        }
+		if (m_recordingIsEnabled)
+		{
+			Record(m_outgoingNonReliableQueue.Front());
+		}
 
 		if (m_packet.AddUnreliableMessage(m_outgoingNonReliableQueue.Front()))
 		{

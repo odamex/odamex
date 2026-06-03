@@ -170,7 +170,7 @@ odaproto::clc::NetdemoCap CLC_NetdemoCap(const player_t&                   playe
 
 	msg.set_awaiting_ack_count(playerMessenger.GetPendingAckCount());
 
-    const auto& buffer { playerMessenger.GetRecordingBufferRef() };
+	const auto& buffer { playerMessenger.GetRecordingBufferRef() };
 
 	msg.set_packed_outgoing_msgs(buffer.data(), buffer.size());
 	return msg;
