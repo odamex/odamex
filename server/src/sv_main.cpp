@@ -1916,6 +1916,17 @@ void SV_ThinkerUpdate(client_t* cl)
 	}
 }
 
+static void SV_ArmInventoryMonitors(player_t& player)
+{
+	player.pendingweaponMonitor.Arm();
+	player.readyweaponMonitor.Arm();
+	player.weaponOwnedMonitors.Arm();
+	player.ammoMonitors.Arm();
+	player.maxAmmoMonitors.Arm();
+	player.powerMonitors.Arm();
+	player.pspriteMonitors.Arm();
+}
+
 //
 // SV_ClientFullUpdate
 //
@@ -1979,6 +1990,8 @@ void SV_ClientFullUpdate(player_t &pl)
 	SV_SendPlayerInfo(pl);
 
 	MSG_WriteSVC(cl->messenger.ReliableBuf(), odaproto::svc::FullUpdateDone());
+
+	SV_ArmInventoryMonitors(pl);
 
 	SV_SendPacket(pl);
 }
@@ -3475,33 +3488,8 @@ static SortedMobjPartitionsType SV_SortMobjsForPlayer(player_t& player, int part
 	return partitions;
 }
 
-void SV_WriteCommandsForPlayer(player_t& player)
+static void SV_SendMonitoredInventoryChanges(player_t& player)
 {
-	// [SL] 2011-05-11 - Send the client the server's gametic
-	// this gametic is returned to the server with the client's
-	// next cmd
-	if (player.ingame())
-		SV_SendGametic(player.client);
-
-	for (player_t& otherPlayer : players)
-	{
-		if (!(otherPlayer.ingame()) || !(otherPlayer.mo))
-			continue;
-
-		// a player is updated about their own position elsewhere
-		if (&player == &otherPlayer)
-			continue;
-
-		// GhostlyDeath -- Screw spectators
-		if (otherPlayer.spectator)
-			continue;
-
-		if(not SV_IsPlayerAllowedToSee(player, otherPlayer.mo))
-			continue;
-
-		MSG_WriteSVC(player.client.messenger.HighBuf(), SVC_MovePlayer(otherPlayer, player.tic));
-	}
-
 	const bool pendingWeaponWasChanged = player.pendingweaponMonitor.EvaluateAsChanged();
 	const bool readyWeaponWasChanged   = player.readyweaponMonitor.EvaluateAsChanged();
 	if (pendingWeaponWasChanged or readyWeaponWasChanged)
@@ -3533,6 +3521,37 @@ void SV_WriteCommandsForPlayer(player_t& player)
 	{
 		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerPsprites(player));
 	}
+}
+
+void SV_WriteCommandsForPlayer(player_t& player)
+{
+	// [SL] 2011-05-11 - Send the client the server's gametic
+	// this gametic is returned to the server with the client's
+	// next cmd
+	if (player.ingame())
+		SV_SendGametic(player.client);
+
+	for (player_t& otherPlayer : players)
+	{
+		if (!(otherPlayer.ingame()) || !(otherPlayer.mo))
+			continue;
+
+		// a player is updated about their own position elsewhere
+		if (&player == &otherPlayer)
+			continue;
+
+		// GhostlyDeath -- Screw spectators
+		if (otherPlayer.spectator)
+			continue;
+
+		if(not SV_IsPlayerAllowedToSee(player, otherPlayer.mo))
+			continue;
+
+		MSG_WriteSVC(player.client.messenger.HighBuf(), SVC_MovePlayer(otherPlayer, player.tic));
+	}
+
+	SV_SendMonitoredInventoryChanges(player);
+	SV_ArmInventoryMonitors(player);
 
 	// [SL] Send client info about player he is spying on
 	player_t& target = idplayer(player.spying);
@@ -4578,20 +4597,6 @@ static void IntermissionTimeCheck()
 	}
 }
 
-static void SV_ArmInventoryMonitors()
-{
-	for (auto& player : players)
-	{
-		player.pendingweaponMonitor.Arm();
-		player.readyweaponMonitor.Arm();
-		player.weaponOwnedMonitors.Arm();
-		player.ammoMonitors.Arm();
-		player.maxAmmoMonitors.Arm();
-		player.powerMonitors.Arm();
-		player.pspriteMonitors.Arm();
-	}
-}
-
 //
 // SV_GameTics
 //
@@ -4609,7 +4614,6 @@ void SV_GameTics (void)
 			::levelstate.tic();
 			TimeCheck();
 			Vote_Runtic();
-			SV_ArmInventoryMonitors();
 		break;
 		case GS_INTERMISSION:
 			IntermissionTimeCheck();
