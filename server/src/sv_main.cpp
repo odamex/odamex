@@ -1154,10 +1154,11 @@ void SV_BroadcastUserInfo(const player_t &player)
 		SV_SendUserInfo(player, &(it->client));
 }
 
-template <typename AttributeType, typename MinType, typename EndType>
-static AttributeType ValidateAndAssign(const AttributeType& i_data, const MinType& i_min, const EndType& i_end, const AttributeType& i_default)
+template <typename AttributeType, typename DataType, typename MinType>
+static void ValidateAndAssign(AttributeType& o_variable, const DataType& i_data, const MinType& i_min, const AttributeType& i_end, const AttributeType& i_default)
 {
-	return (static_cast<AttributeType>(i_min) < i_data and i_data < static_cast<AttributeType>(i_end)) ? i_data : i_default;
+	const AttributeType data = static_cast<AttributeType>(i_data);
+	o_variable = (static_cast<AttributeType>(i_min) <= data and data < i_end) ? data : i_default;
 }
 
 /**
@@ -1194,9 +1195,10 @@ bool SV_SetupUserInfo(player_t &player, const odaproto::clc::UserInfo& msg)
 	if (new_team == TEAM_NONE || (new_team == TEAM_GREEN && sv_teamsinplay < NUMTEAMS))
 		new_team = TEAM_BLUE; // Set the default team to the player.
 
-	player.userinfo.team        = new_team;
-	player.userinfo.gender      = ValidateAndAssign(static_cast<gender_t>     (msg.gender()),       0, NUMGENDER,   GENDER_OTHER);
-	player.userinfo.colorpreset = ValidateAndAssign(static_cast<colorpreset_t>(msg.colorpreset()),  0, NUMCOLOR,    COLOR_CUSTOM);
+	player.userinfo.team = new_team;
+
+	ValidateAndAssign(player.userinfo.gender,      msg.gender(),      0, NUMGENDER, GENDER_OTHER);
+	ValidateAndAssign(player.userinfo.colorpreset, msg.colorpreset(), 0, NUMCOLOR,  COLOR_CUSTOM);
 
 	player.userinfo.color.seta(msg.color().a());
 	player.userinfo.color.setr(msg.color().r());
@@ -1207,7 +1209,8 @@ bool SV_SetupUserInfo(player_t &player, const odaproto::clc::UserInfo& msg)
 
 	player.userinfo.aimdist         = clamp(msg.aimdist(), 0, 5000 * 16384);
 	player.userinfo.predict_weapons = msg.predict_weapons();
-	player.userinfo.switchweapon    = ValidateAndAssign(static_cast<weaponswitch_t>(msg.switchweapon()), 0, WPSW_NUMTYPES, WPSW_ALWAYS);
+
+	ValidateAndAssign(player.userinfo.switchweapon, msg.switchweapon(), 0, WPSW_NUMTYPES, WPSW_ALWAYS);
 
 	const size_t prefsCount = std::min(static_cast<size_t>(msg.weapon_prefs_size()),
 	                                   player.userinfo.weapon_prefs.size());
