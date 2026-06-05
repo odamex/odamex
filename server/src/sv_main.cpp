@@ -3649,12 +3649,16 @@ void SV_WriteCommands(void)
 
 	for (player_t& player : players)
 	{
-		std::packaged_task<void ()> task { [&player]()
-			{
-				SV_WriteCommandsForPlayer(player);
-			} };
-		futures.emplace_back(task.get_future());
-		s_workers.MoveCommand(std::move(task));
+		// Players that are on their way out are serviced elsewhere.
+		if (player.playerstate != PST_DISCONNECT)
+		{
+			std::packaged_task<void ()> task { [&player]()
+				{
+					SV_WriteCommandsForPlayer(player);
+				} };
+			futures.emplace_back(task.get_future());
+			s_workers.MoveCommand(std::move(task));
+		}
 	}
 
 	for (auto& future : futures)
