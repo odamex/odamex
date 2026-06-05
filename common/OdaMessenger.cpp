@@ -285,12 +285,13 @@ int OdaMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& i_dest
 
 	for (; sendQueueEntry != nullptr; sendQueueEntry = iter.Next())
 	{
-		if (i_currentTic >= (std::min(m_retransmitDelayInTics, 5) + sendQueueEntry->originatingTic) or sendQueueEntry->lastRetransmitTic != -1)
+		// m_retransmitDelayInTics used to be constrained here via std::min(m_retransmitDelayInTics, 5).
+		// I wish I had documented exactly why it was not allowed to be more than 5 for quite a while
+		// during development.
+		//
+		// In any case, natural scaling works well now, probably because we have a working throttle.
+		if (i_currentTic >= (m_retransmitDelayInTics + sendQueueEntry->originatingTic) or sendQueueEntry->lastRetransmitTic != -1)
 		{
-			// TODO: Working Throttle!
-			//       With 800 KB rate at the nuts.wad wakeup with +50 msec lag (on incoming and outgoing), 10% packet loss
-			//       causes a 900KB - 1000KB spike that causes retransmissions to fail, unless retransmissions are set to
-			//       max 25 per tic.  For now we just live with that.
 			if (++retransmissionsSent > m_maxPacketsPerRetransmission or m_byteBudget <= 0)
 			{
 				break;
