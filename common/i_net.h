@@ -873,8 +873,8 @@ class MiniLzo
         bool Compress(buf_t &buf, size_t start_offset, size_t write_gap);
 
     protected:
-        buf_t       m_compressionBuffer;
-        buf_t       m_decompressionBuffer;
+        buf_t       m_compressionBuffer   { MAX_UDP_PACKET };
+        buf_t       m_decompressionBuffer { MAX_UDP_PACKET };
 		BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
         lzo_byte    m_wrkmem[LZO1X_1_MEM_COMPRESS];
 		END_DISABLE_WARNING_GNU
