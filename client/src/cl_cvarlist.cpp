@@ -576,8 +576,8 @@ CVAR(			hud_scale, "1", "HUD scaling",
 CVAR(			hud_scalescoreboard, "0", "Scoreboard scaling",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_RANGE(		hud_scaletext, "2", "Scaling multiplier for chat and midprint",
-                CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 4.0f)
+CVAR_RANGE(		hud_scaletext, "2", "Scaling multiplier for chat and midprint (0 = auto).",
+                CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
 
 CVAR_RANGE(		hud_targetcount, "2", "Number of players to reveal",
                 CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 32.0f)
