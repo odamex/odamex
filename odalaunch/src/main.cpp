@@ -56,6 +56,8 @@ bool Application::OnInit()
 	// load resources
 	InitXmlResource();
 
+	wxApp::SetAppearance(Appearance::System);
+
 	// create main window, get size dimensions and show it
 	MAIN_DIALOG = new dlgMain(nullptr);
 
