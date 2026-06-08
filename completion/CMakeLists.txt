@@ -18,17 +18,21 @@ if(INSTALL_BASH_COMPLETION)
         message(WARNING "Bash completion uses associative arrays (Bash 4+ required). macOS system Bash is 3.2.")
     endif()
 
-    install(FILES
-      "${CMAKE_CURRENT_SOURCE_DIR}/odamex.bash"
-      DESTINATION "${CMAKE_INSTALL_DATADIR}/bash-completion/completions"
-      COMPONENT client
-    )
+    if(BUILD_CLIENT)
+        install(FILES
+          "${CMAKE_CURRENT_SOURCE_DIR}/odamex.bash"
+          DESTINATION "${CMAKE_INSTALL_DATADIR}/bash-completion/completions"
+          COMPONENT client
+        )
+    endif()
 
-    install(FILES
-      "${CMAKE_CURRENT_SOURCE_DIR}/odamex.bash"
-      DESTINATION "${CMAKE_INSTALL_DATADIR}/bash-completion/completions"
-      RENAME "odasrv.bash"
-      COMPONENT server
-    )
+    if(BUILD_SERVER)
+        install(FILES
+          "${CMAKE_CURRENT_SOURCE_DIR}/odamex.bash"
+          DESTINATION "${CMAKE_INSTALL_DATADIR}/bash-completion/completions"
+          RENAME "odasrv.bash"
+          COMPONENT server
+        )
+    endif()
 
 endif()
