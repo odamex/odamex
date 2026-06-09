@@ -3099,7 +3099,8 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 	constexpr int HYPER_AWARENESS_CUTOFF_SQUARED = 64 * 64;
 
 	const AwarenessEnum awarenessLevel = mo->playersAware.Get(player.id);
-	const bool          isHyperAware   = mo->target != player.mo and        // Players are not hyperaware of their own missiles.
+	const bool          isHyperAware   = not (mo->flags & MF_NOBLOCKMAP) and
+	                                     mo->target != player.mo and        // Players are not hyperaware of their own missiles.
 	                                     awarenessLevel == AwarenessEnum::ALWAYS_AWARE and
 	                                     sortedMobjIter->distanceSquared < HYPER_AWARENESS_CUTOFF_SQUARED;
 	if (isHyperAware)
