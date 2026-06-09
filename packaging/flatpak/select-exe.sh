@@ -37,7 +37,7 @@ odamex_shell-integration() {
 
 EOF
             cat /app/share/odamex/shell/posix_aliases.sh \
-                <(sed '1d' /app/share/bash-completion/completions/odamex.bash)
+                /app/share/bash-completion/completions/odamex.bash
             ;;
         posix|sh)
             cat /app/share/odamex/shell/posix_aliases.sh

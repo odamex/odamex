@@ -1,5 +1,3 @@
-# shellcheck shell=bash
-
 function __odamex {
   local IFS=$'\n'
   local cur="${COMP_WORDS[COMP_CWORD]}"
