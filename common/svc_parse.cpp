@@ -24,7 +24,7 @@
 
 #include <google/protobuf/message.h>
 
-#include "svc_map.h"
+#include "msg_map.h"
 
 parseError_e SVC_ParseMessage(google::protobuf::Message*& out, const svc_t cmd)
 {

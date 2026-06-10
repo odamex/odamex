@@ -23,7 +23,7 @@
 
 #include "odamex.h"
 
-#include "svc_map.h"
+#include "msg_map.h"
 
 #include <unordered_map>
 

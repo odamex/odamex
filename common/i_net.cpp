@@ -71,7 +71,7 @@ typedef int SOCKET;
 
 #include "i_system.h"
 #include "i_net.h"
-#include "svc_map.h"
+#include "msg_map.h"
 #include "d_player.h"
 #include "m_alloc.h"
 

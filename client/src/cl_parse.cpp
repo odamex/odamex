@@ -58,7 +58,6 @@
 #include "r_state.h"
 #include "s_sound.h"
 #include "st_stuff.h"
-#include "svc_map.h"
 #include "v_textcolors.h"
 #include "p_mapformat.h"
 #include "infomap.h"
