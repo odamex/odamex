@@ -1,3 +1,25 @@
+// Emacs style mode select   -*- C++ -*-
+//-----------------------------------------------------------------------------
+//
+// $Id$
+//
+// Copyright (C) 2026 by Jim Thoenen.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//  CLC Message packers.
+//
+//-----------------------------------------------------------------------------
+
 #include "clc_message.h"
 
 #include "odamex.h"
@@ -6,10 +28,10 @@
 
 static void FillColor(odaproto::Color& io_msg, const argb_t& color)
 {
-    io_msg.set_a(color.geta());
-    io_msg.set_r(color.getr());
-    io_msg.set_g(color.getg());
-    io_msg.set_b(color.getb());
+	io_msg.set_a(color.geta());
+	io_msg.set_r(color.getr());
+	io_msg.set_g(color.getg());
+	io_msg.set_b(color.getb());
 }
 
 void CLC_PackPlayerInputMessageFromPlayer(odaproto::clc::PlayerInput& msg, const player_t& player, int clientTic, int clientWorldIndex)
@@ -178,217 +200,217 @@ odaproto::clc::NetdemoCap CLC_NetdemoCap(const player_t&                   playe
 
 odaproto::clc::DisconnectMe CLC_DisconnectMe()
 {
-    return odaproto::clc::DisconnectMe{};
+	return odaproto::clc::DisconnectMe{};
 }
 
 odaproto::clc::Say CLC_Say(const std::string_view& text, uint32_t visibility)
 {
-    odaproto::clc::Say msg;
+	odaproto::clc::Say msg;
 
-    msg.set_visibility  (visibility);
-    msg.set_text        (text.data(), text.size());
+	msg.set_visibility  (visibility);
+	msg.set_text        (text.data(), text.size());
 
-    return msg;
+	return msg;
 }
 
 odaproto::clc::UserInfo CLC_UserInfo(const UserInfo& userInfo)
 {
-    odaproto::clc::UserInfo msg;
+	odaproto::clc::UserInfo msg;
 
-    msg.set_netname (userInfo.netname);
-    msg.set_team    (userInfo.team);
-    msg.set_gender  (userInfo.gender);
-    msg.set_colorpreset (userInfo.colorpreset);
-    FillColor           (*msg.mutable_color(), userInfo.color);
-    msg.set_aimdist     (userInfo.aimdist);
-    msg.set_predict_weapons (userInfo.predict_weapons);
-    msg.set_switchweapon    (userInfo.switchweapon);
+	msg.set_netname (userInfo.netname);
+	msg.set_team    (userInfo.team);
+	msg.set_gender  (userInfo.gender);
+	msg.set_colorpreset (userInfo.colorpreset);
+	FillColor           (*msg.mutable_color(), userInfo.color);
+	msg.set_aimdist     (userInfo.aimdist);
+	msg.set_predict_weapons (userInfo.predict_weapons);
+	msg.set_switchweapon    (userInfo.switchweapon);
 
-    for (const auto& pref : userInfo.weapon_prefs)
-    {
-        msg.add_weapon_prefs(pref);
-    }
+	for (const auto& pref : userInfo.weapon_prefs)
+	{
+		msg.add_weapon_prefs(pref);
+	}
 
-    return msg;
+	return msg;
 }
 
 odaproto::clc::PingReply CLC_PingReply(uint64_t msec)
 {
-    odaproto::clc::PingReply msg;
+	odaproto::clc::PingReply msg;
 
-    msg.set_ms_time(msec);
+	msg.set_ms_time(msec);
 
-    return msg;
+	return msg;
 }
 
 odaproto::clc::Kill CLC_Kill()
 {
-    return {};
+	return {};
 }
 
 odaproto::clc::Rcon CLC_Rcon(const std::string_view& text)
 {
-    odaproto::clc::Rcon msg;
+	odaproto::clc::Rcon msg;
 
-    msg.set_command(text.data(), text.size());
+	msg.set_command(text.data(), text.size());
 
-    return msg;
+	return msg;
 }
 
 odaproto::clc::RconPassword CLC_RconPassword(const std::string_view& text)
 {
-    odaproto::clc::RconPassword msg;
+	odaproto::clc::RconPassword msg;
 
-    msg.set_challenge(text.data(), text.size());
+	msg.set_challenge(text.data(), text.size());
 
-    return msg;
+	return msg;
 }
 
 odaproto::clc::RconLogout CLC_RconLogout()
 {
-    return odaproto::clc::RconLogout{};
+	return odaproto::clc::RconLogout{};
 }
 
 odaproto::clc::SpectateBegin CLC_SpectateBegin()
 {
-    return odaproto::clc::SpectateBegin();
+	return odaproto::clc::SpectateBegin();
 }
 
 odaproto::clc::SpectateEnd CLC_SpectateEnd()
 {
-    return {};
+	return {};
 }
 
 odaproto::clc::SpectateUpdate CLC_SpectateUpdate(const player_t& player)
 {
-    odaproto::clc::SpectateUpdate msg;
+	odaproto::clc::SpectateUpdate msg;
 
-    if (player.mo)
-    {
-        odaproto::Vec3* position = msg.mutable_pos();
+	if (player.mo)
+	{
+		odaproto::Vec3* position = msg.mutable_pos();
 
-        position->set_x(player.mo->x);
-        position->set_y(player.mo->y);
-        position->set_z(player.mo->z);
-    }
+		position->set_x(player.mo->x);
+		position->set_y(player.mo->y);
+		position->set_z(player.mo->z);
+	}
 
-    return msg;
+	return msg;
 }
 
 odaproto::clc::Cheat CLC_Cheat(uint32_t cheatValue)
 {
-    odaproto::clc::Cheat msg;
+	odaproto::clc::Cheat msg;
 
-    msg.set_value(cheatValue);
+	msg.set_value(cheatValue);
 
-    return msg;
+	return msg;
 }
 
 odaproto::clc::CheatGive CLC_CheatGive(const std::string& item)
 {
-    odaproto::clc::CheatGive msg;
+	odaproto::clc::CheatGive msg;
 
-    msg.set_item(item);
+	msg.set_item(item);
 
-    return msg;
+	return msg;
 }
 
 odaproto::clc::CheatSummon CLC_CheatSummon(const std::string& monster)
 {
-    odaproto::clc::CheatSummon msg;
+	odaproto::clc::CheatSummon msg;
 
-    msg.set_monster(monster);
+	msg.set_monster(monster);
 
-    return msg;
+	return msg;
 }
 
 odaproto::clc::CheatSummonFriend CLC_CheatSummonFriend(const std::string& monster)
 {
-    odaproto::clc::CheatSummonFriend msg;
+	odaproto::clc::CheatSummonFriend msg;
 
-    msg.set_monster(monster);
+	msg.set_monster(monster);
 
-    return msg;
+	return msg;
 }
 
 odaproto::clc::CallVote CLC_CallVote(uint32_t voteType)
 {
-    odaproto::clc::CallVote msg;
+	odaproto::clc::CallVote msg;
 
-    msg.set_vote_type(voteType);
+	msg.set_vote_type(voteType);
 
-    return msg;
+	return msg;
 }
 
 odaproto::clc::CallVote CLC_CallVote(uint32_t voteType, const std::string& arg)
 {
-    odaproto::clc::CallVote msg;
+	odaproto::clc::CallVote msg;
 
-    msg.set_vote_type(voteType);
-    msg.add_arg(arg);
+	msg.set_vote_type(voteType);
+	msg.add_arg(arg);
 
-    return msg;
+	return msg;
 }
 
 odaproto::clc::CallVote CLC_CallVote(uint32_t voteType, const std::vector<std::string>& args)
 {
-    odaproto::clc::CallVote msg;
+	odaproto::clc::CallVote msg;
 
-    msg.set_vote_type(voteType);
-    for (const auto& arg : args)
-    {
-        msg.add_arg(arg);
-    }
+	msg.set_vote_type(voteType);
+	for (const auto& arg : args)
+	{
+		msg.add_arg(arg);
+	}
 
-    return msg;
+	return msg;
 }
 
 odaproto::clc::Maplist CLC_Maplist(uint32_t status)
 {
-    odaproto::clc::Maplist msg;
+	odaproto::clc::Maplist msg;
 
-    msg.set_status(status);
+	msg.set_status(status);
 
-    return msg;
+	return msg;
 }
 
 odaproto::clc::MaplistUpdate CLC_MaplistUpdate()
 {
-    return {};
+	return {};
 }
 
 odaproto::clc::GetPlayerInfo CLC_GetPlayerInfo()
 {
-    return {};
+	return {};
 }
 
 odaproto::clc::Netcmd CLC_Netcmd(const std::string& arg)
 {
-    odaproto::clc::Netcmd msg;
-    msg.add_argv(arg);
-    return msg;
+	odaproto::clc::Netcmd msg;
+	msg.add_argv(arg);
+	return msg;
 }
 
 odaproto::clc::Spy CLC_Spy(uint32_t playerId)
 {
-    odaproto::clc::Spy msg;
-    msg.set_player_id(playerId);
-    return msg;
+	odaproto::clc::Spy msg;
+	msg.set_player_id(playerId);
+	return msg;
 }
 
 odaproto::clc::PrivMsg CLC_PrivMsg(uint32_t playerId, const std::string_view& text)
 {
-    odaproto::clc::PrivMsg msg;
+	odaproto::clc::PrivMsg msg;
 
-    msg.set_player_id   (playerId);
-    msg.set_text        (text.data(), text.size());
+	msg.set_player_id   (playerId);
+	msg.set_text        (text.data(), text.size());
 
-    return msg;
+	return msg;
 }
 
 odaproto::clc::SendMobjUpdate CLC_SendMobjUpdate(uint32_t netId)
 {
-    odaproto::clc::SendMobjUpdate msg;
-    msg.set_netid(netId);
-    return msg;
+	odaproto::clc::SendMobjUpdate msg;
+	msg.set_netid(netId);
+	return msg;
 }

@@ -1,3 +1,25 @@
+// Emacs style mode select   -*- C++ -*-
+//-----------------------------------------------------------------------------
+//
+// $Id$
+//
+// Copyright (C) 2026 by Jim Thoenen.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//  Client rollback manager for player states
+//
+//-----------------------------------------------------------------------------
+
 #include "PlayerStateRoller.h"
 
 #include <cassert>
@@ -135,13 +157,13 @@ void PlayerStateRoller::ApplyMostRecentToPlayer(player_t& io_player)
 
 std::optional<PlayerStateRoller::HistoryTableType::iterator> PlayerStateRoller::ObtainHistory(int i_oldTic, const player_t& i_player)
 {
-    auto historyIter = m_history.find(i_oldTic);
-    if (historyIter != m_history.end())
-    {
-        m_currentState.FromPlayer(i_player);
-        return historyIter;
-    }
-    return {};
+	auto historyIter = m_history.find(i_oldTic);
+	if (historyIter != m_history.end())
+	{
+		m_currentState.FromPlayer(i_player);
+		return historyIter;
+	}
+	return {};
 }
 
 
@@ -218,11 +240,11 @@ bool PlayerStateRoller::RollbackPowers(HistoryTableType::iterator i_historyIter,
 	{
 		Roll(i_historyIter->first, [&powersDelta, &i_powers] (auto& rollingState)
 			{
-			    // Powers are a sequence of counters (except for pw_allmap), so a delta roll is appropriate, with
-			    // a simple assignment of pw_allmap.
-			    ApplyDeltaArray(rollingState.powers, powersDelta);
+				// Powers are a sequence of counters (except for pw_allmap), so a delta roll is appropriate, with
+				// a simple assignment of pw_allmap.
+				ApplyDeltaArray(rollingState.powers, powersDelta);
 
-			    rollingState.powers[pw_allmap] = i_powers[pw_allmap];
+				rollingState.powers[pw_allmap] = i_powers[pw_allmap];
 			});
 		return true;
 	}
@@ -231,118 +253,118 @@ bool PlayerStateRoller::RollbackPowers(HistoryTableType::iterator i_historyIter,
 
 bool PlayerStateRoller::RollbackHealth(HistoryTableType::iterator i_historyIter, const int i_health)
 {
-    if (const int healthDelta = i_health - i_historyIter->second.health)
-    {
-        Roll(i_historyIter->first, [& healthDelta] (auto& rollingState)
-        {
-            rollingState.health += healthDelta;
-        });
-        return true;
-    }
-    return false;
+	if (const int healthDelta = i_health - i_historyIter->second.health)
+	{
+		Roll(i_historyIter->first, [& healthDelta] (auto& rollingState)
+		{
+			rollingState.health += healthDelta;
+		});
+		return true;
+	}
+	return false;
 }
 
 bool PlayerStateRoller::RollbackArmorpoints(HistoryTableType::iterator i_historyIter, const int i_armorpoints)
 {
-    if (const int armorpointsDelta = i_armorpoints - i_historyIter->second.armorpoints)
-    {
-        Roll(i_historyIter->first, [& armorpointsDelta] (auto& rollingState)
-        {
-            rollingState.armorpoints += armorpointsDelta;
-        });
-        return true;
-    }
-    return false;
+	if (const int armorpointsDelta = i_armorpoints - i_historyIter->second.armorpoints)
+	{
+		Roll(i_historyIter->first, [& armorpointsDelta] (auto& rollingState)
+		{
+			rollingState.armorpoints += armorpointsDelta;
+		});
+		return true;
+	}
+	return false;
 }
 
 bool PlayerStateRoller::RollbackArmortype(HistoryTableType::iterator i_historyIter, const int i_armortype)
 {
-    if (const int armortypeDelta = i_armortype - i_historyIter->second.armortype)
-    {
-        Roll(i_historyIter->first, [& armortypeDelta] (auto& rollingState)
-        {
-            rollingState.armortype += armortypeDelta;
-        });
-        return true;
-    }
-    return false;
+	if (const int armortypeDelta = i_armortype - i_historyIter->second.armortype)
+	{
+		Roll(i_historyIter->first, [& armortypeDelta] (auto& rollingState)
+		{
+			rollingState.armortype += armortypeDelta;
+		});
+		return true;
+	}
+	return false;
 }
 
 bool PlayerStateRoller::RollbackLives(HistoryTableType::iterator i_historyIter, const int i_lives)
 {
-    if (const int livesDelta = i_lives - i_historyIter->second.lives)
-    {
-        Roll(i_historyIter->first, [& livesDelta] (auto& rollingState)
-        {
-            rollingState.lives += livesDelta;
-        });
-        return true;
-    }
-    return false;
+	if (const int livesDelta = i_lives - i_historyIter->second.lives)
+	{
+		Roll(i_historyIter->first, [& livesDelta] (auto& rollingState)
+		{
+			rollingState.lives += livesDelta;
+		});
+		return true;
+	}
+	return false;
 }
 
 bool PlayerStateRoller::RollbackBackpack(HistoryTableType::iterator i_historyIter, const bool i_backpack)
 {
-    if (const int backpackDelta = int(i_backpack) - int(i_historyIter->second.backpack))
-    {
-        Roll(i_historyIter->first, [& backpackDelta] (auto& rollingState)
-        {
-            rollingState.backpack = bool(int(rollingState.backpack) + backpackDelta);
-        });
-        return true;
-    }
-    return false;
+	if (const int backpackDelta = int(i_backpack) - int(i_historyIter->second.backpack))
+	{
+		Roll(i_historyIter->first, [& backpackDelta] (auto& rollingState)
+		{
+			rollingState.backpack = bool(int(rollingState.backpack) + backpackDelta);
+		});
+		return true;
+	}
+	return false;
 }
 
 bool PlayerStateRoller::RollbackCards(HistoryTableType::iterator i_historyIter, const std::array<bool, NUMCARDS>& i_cards)
 {
 	std::array<int, NUMCARDS> cardsDelta;
 	FillDeltaArray(cardsDelta, i_cards, i_historyIter->second.cards);
-    if (RequiresCorrection(cardsDelta))
-    {
-        Roll(i_historyIter->first, [&cardsDelta](auto& rollingState)
-        {
-            for (size_t i = 0; i < cardsDelta.size(); ++i)
-            {
-                rollingState.cards[i] = bool(int(rollingState.cards[i]) + cardsDelta[i]);
-            }
-        });
-        return true;
-    }
-    return false;
+	if (RequiresCorrection(cardsDelta))
+	{
+		Roll(i_historyIter->first, [&cardsDelta](auto& rollingState)
+		{
+			for (size_t i = 0; i < cardsDelta.size(); ++i)
+			{
+				rollingState.cards[i] = bool(int(rollingState.cards[i]) + cardsDelta[i]);
+			}
+		});
+		return true;
+	}
+	return false;
 }
 
 bool PlayerStateRoller::RollbackCheats(HistoryTableType::iterator i_historyIter, const uint32_t i_cheats)
 {
-    if (i_historyIter->second.cheats != i_cheats)
-    {
-        // Note - it's important that the delta be signed!  We may need to remove a value.
-        std::array<int, sizeof(i_cheats) * 8> deltaCheats;
-        for (size_t i = 0; i < deltaCheats.size(); ++i)
-        {
-            deltaCheats[i] = int((i_cheats >> i) & 0x1) - int((i_historyIter->second.cheats >> i) & 0x1);
-        }
+	if (i_historyIter->second.cheats != i_cheats)
+	{
+		// Note - it's important that the delta be signed!  We may need to remove a value.
+		std::array<int, sizeof(i_cheats) * 8> deltaCheats;
+		for (size_t i = 0; i < deltaCheats.size(); ++i)
+		{
+			deltaCheats[i] = int((i_cheats >> i) & 0x1) - int((i_historyIter->second.cheats >> i) & 0x1);
+		}
 
-        Roll(i_historyIter->first, [& deltaCheats] (auto& rollingState)
-        {
-            for (size_t i = 0; i < deltaCheats.size(); ++i)
-            {
-                const bool correctedCheatValue = bool(int((rollingState.cheats >> i) & 0x1) + deltaCheats[i]);
-                if (correctedCheatValue)
-                {
-                    rollingState.cheats |= (1 << i);
-                }
-                else
-                {
-                    rollingState.cheats &= ~(1 << i);
-                }
-            }
-        });
+		Roll(i_historyIter->first, [& deltaCheats] (auto& rollingState)
+		{
+			for (size_t i = 0; i < deltaCheats.size(); ++i)
+			{
+				const bool correctedCheatValue = bool(int((rollingState.cheats >> i) & 0x1) + deltaCheats[i]);
+				if (correctedCheatValue)
+				{
+					rollingState.cheats |= (1 << i);
+				}
+				else
+				{
+					rollingState.cheats &= ~(1 << i);
+				}
+			}
+		});
 
-        return true;
-    }
+		return true;
+	}
 
-    return false;
+	return false;
 }
 
 bool PlayerStateRoller::ResolveAmmo(int i_oldTic, const std::array<int, NUMAMMO>& i_ammo, player_t& io_player)
@@ -446,7 +468,7 @@ bool PlayerStateRoller::RollbackPsprites(HistoryTableType::iterator i_historyIte
 			for (; rollingTic <= m_mostRecentTic; ++rollingTic)
 			{
 				auto historyIter = m_history.find(rollingTic);
-                if (not roller(historyIter->second))
+				if (not roller(historyIter->second))
 				{
 					break;
 				}

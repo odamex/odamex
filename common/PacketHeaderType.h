@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2026 by The Odamex Team.
+// Copyright (C) 2026 by Jim Thoenen.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -18,7 +18,7 @@
 // DESCRIPTION:
 //  The canonical packet header type
 //
-//-----------------------------------------------------------------------------sx
+//-----------------------------------------------------------------------------
 #pragma once
 
 #include <cstdint>

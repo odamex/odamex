@@ -1,3 +1,25 @@
+// Emacs style mode select   -*- C++ -*-
+//-----------------------------------------------------------------------------
+//
+// $Id$
+//
+// Copyright (C) 2026 by Jim Thoenen.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//  Client rollback manager for player states
+//
+//-----------------------------------------------------------------------------
+
 #pragma once
 
 #include <unordered_map>
@@ -62,15 +84,21 @@ class PlayerStateRoller
 		/// Similar to ResolveAmmoMax: absolute adjustment of weapon ownership state.
 		bool ResolveWeaponOwned(int i_oldTic, const std::array<bool, NUMWEAPONS>& i_weaponOwned, player_t& io_player);
 
-		/// Resolve the canonical statement about player weapon selection.
-		/// Returns true if the player's weapon selection changed as a result, false otherwise.
+		/// Similar to ResolveWeaponOwned: absolute adjustment of weapon selection state.
 		bool ResolveWeaponSelection(int i_oldTic, const weapontype_t i_readyWeapon, const weapontype_t i_pendingWeapon, player_t& io_player);
 
+		/// Similar to ResolveAmmo:  delta adjustment of power counters, with the exception of pw_allmap,
+		/// which is a boolean thus absolute.
 		bool ResolvePowers(int i_oldTic, const std::array<int, NUMPOWERS>& i_powers, player_t& io_player);
 
+		/// Unique resolver for Psprite states.  Please see comments in the function body for description of
+		/// the algorithm.
 		bool ResolvePsprites(int i_oldTic, const std::array<PspriteStateType, NUMPSPRITES>& i_psprites, player_t& io_player);
 
+		/// Similar to ResolveAmmo:  delta adjustment of health quantity
 		bool ResolveHealth(int i_oldTic, int i_health, player_t& io_player);
+
+		/// Similar to ResolveAmmo:  delta adjustment of armorpoints
 		bool ResolveArmorpoints(int i_oldTic, int i_armorpoints, player_t& io_player);
 
 		/// Generic stream-in operator.
@@ -132,8 +160,7 @@ class PlayerStateRoller
 
 		void ApplyMostRecentToPlayer(player_t& io_player);
 
-
-        std::optional<HistoryTableType::iterator> ObtainHistory(int i_oldTic, const player_t& i_player);
+		std::optional<HistoryTableType::iterator> ObtainHistory(int i_oldTic, const player_t& i_player);
 
 		bool RollbackAmmo           (HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>&                  i_ammo);
 		bool RollbackMaxAmmo        (HistoryTableType::iterator i_historyIter, const std::array<int, NUMAMMO>&                  i_maxAmmo);
