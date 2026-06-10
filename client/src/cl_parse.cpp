@@ -3328,7 +3328,7 @@ ParseResultType CL_ParseCommand()
 
 	// Turn the message into a protobuf.
 	google::protobuf::Message* msg = nullptr;
-	result.code = SVC_ParseMessage(msg, result.cmd);
+	result.code = MSG_ParseMessage(msg, result.cmd);
 	result.msg.reset(msg);                      // This does the right thing even if nullptr.
 
 	// Because the result type contains a unique_ptr, which is uncopyable,

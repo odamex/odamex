@@ -2300,7 +2300,7 @@ void SV_ConnectClient()
 	{
 		google::protobuf::Message* userInfoMsg = nullptr;
 
-		if (SVC_ParseMessage(userInfoMsg, clc_userinfo) != PERR_OK)
+		if (MSG_ParseMessage(userInfoMsg, clc_userinfo) != PERR_OK)
 			return;
 
 		std::unique_ptr<google::protobuf::Message> msgPtr(userInfoMsg);
@@ -4341,7 +4341,7 @@ void SV_SendRequestedMobjUpdate(player_t& player, const odaproto::clc::SendMobjU
 parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
 {
 	google::protobuf::Message* msgPtrRaw = nullptr;
-	const parseError_e result = SVC_ParseMessage(msgPtrRaw, cmd);
+	const parseError_e result = MSG_ParseMessage(msgPtrRaw, cmd);
 
 	std::unique_ptr<google::protobuf::Message> msgPtr(msgPtrRaw);
 

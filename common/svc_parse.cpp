@@ -26,7 +26,7 @@
 
 #include "msg_map.h"
 
-parseError_e SVC_ParseMessage(google::protobuf::Message*& out, const svc_t cmd)
+parseError_e MSG_ParseMessage(google::protobuf::Message*& out, const svc_t cmd)
 {
 	// A message factory + Descriptor gives us the proper message.
 	google::protobuf::MessageFactory* factory =
