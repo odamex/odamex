@@ -44,7 +44,7 @@ namespace
 }
 
 NetGraph::NetGraph(int x, int y) :
-	mX(x), mY(y), mInterpolation(0)
+	mX(x), mY(y), mNow(0), mInterpolation(0)
 {
 	mMisprediction.fill(false);
 	mWorldIndexSync.fill(0);
@@ -56,6 +56,7 @@ NetGraph::NetGraph(int x, int y) :
 	mReliableSendDepth.fill(0);
 	mReliableNonContiguousRetransmits.fill(0);
 	mThrottle.fill(0);
+	mTimeAtTic.fill(0);
 }
 
 template <typename ElementType, size_t N>
@@ -266,7 +267,7 @@ int NetGraph::accumulateSamplesOverDuration(const std::array<int, NetGraph::MAX_
 	const dtime_t lowerBoundTime = mNow - duration;
 
 	int totalTraffic = 0;
-	for (int i = 0;i < TICRATE;i++)
+	for (int i = 1; i <= TICRATE; ++i)
 	{
 		const int backtic = gametic - i;
 		if (backtic < 0)
@@ -341,9 +342,18 @@ std::string NetGraph::BlankIfNegative(int value)
 	return {};
 }
 
-void NetGraph::setNow(dtime_t now)
+void NetGraph::start(dtime_t now)
 {
-	mTimeAtTic[gametic % NetGraph::MAX_HISTORY_TICS] = mNow = now;
+	const int nowIndex  = gametic % NetGraph::MAX_HISTORY_TICS;
+
+	mNow                 = now;
+	mTimeAtTic[nowIndex] = now;
+
+	// Fields that are incrementally built over the course of a tic need to be defaulted
+	// so that we don't accidentally integrate old stale samples.
+	mTrafficIn[nowIndex]  = 0;
+	mTrafficOut[nowIndex] = 0;
+	mPacketsIn[nowIndex]  = 0;
 }
 
 void NetGraph::draw()

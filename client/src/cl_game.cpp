@@ -999,6 +999,8 @@ void G_Ticker (void)
 		netdemo.readMessages(&net_message);
 	}
 
+	netgraph.start(I_GetTime());
+
 	if (connected && !simulated_connection)
 	{
 		while ((packet_size = NET_GetPacket()) )

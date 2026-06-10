@@ -43,7 +43,7 @@ public:
 	void setReliableNonContiguousRetransmits(int val);
 	void addServerSideMetrics(int reliablePacketsInFlightCount, int throttle);
 
-	void setNow(dtime_t now);
+	void start(dtime_t now);
 	void draw();
 
 private:
