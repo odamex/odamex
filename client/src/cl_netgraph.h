@@ -26,6 +26,8 @@
 
 #include <array>
 
+#include "doomtype.h"
+
 class NetGraph
 {
 public:
@@ -40,6 +42,8 @@ public:
 	void setReliableSendDepth(int val);
 	void setReliableNonContiguousRetransmits(int val);
 	void addServerSideMetrics(int reliablePacketsInFlightCount, int throttle);
+
+	void setNow(dtime_t now);
 	void draw();
 
 private:
@@ -64,22 +68,26 @@ private:
 	void drawServerQueueDepth(int x, int y);
 	void drawServerThrottle(int x, int y);
 
+	int accumulateSamplesOverDuration(const std::array<int, NetGraph::MAX_HISTORY_TICS>& data, dtime_t duration);
+
 	void InvalidateLatestSampleIfMissedPacket(std::array<int, NetGraph::MAX_HISTORY_TICS>& data);
 	std::string BlankIfNegative(int value);
 
 	int		mX;
 	int		mY;
 
-	std::array<bool, NetGraph::MAX_HISTORY_TICS> mMisprediction;
-	std::array<int, NetGraph::MAX_HISTORY_TICS> mWorldIndexSync;
-	std::array<int, NetGraph::MAX_HISTORY_TICS> mTrafficIn;
-	std::array<int, NetGraph::MAX_HISTORY_TICS> mTrafficOut;
-	std::array<int, NetGraph::MAX_HISTORY_TICS> mPacketsIn;
-	std::array<int, NetGraph::MAX_HISTORY_TICS> mServerQueueDepth;
-	std::array<int, NetGraph::MAX_HISTORY_TICS> mServerMetricsLastUpdate;
-	std::array<int, NetGraph::MAX_HISTORY_TICS> mReliableSendDepth;
-	std::array<int, NetGraph::MAX_HISTORY_TICS> mReliableNonContiguousRetransmits;
-	std::array<int, NetGraph::MAX_HISTORY_TICS> mThrottle;
+	std::array<bool,    NetGraph::MAX_HISTORY_TICS> mMisprediction;
+	std::array<int,     NetGraph::MAX_HISTORY_TICS> mWorldIndexSync;
+	std::array<int,     NetGraph::MAX_HISTORY_TICS> mTrafficIn;
+	std::array<int,     NetGraph::MAX_HISTORY_TICS> mTrafficOut;
+	std::array<int,     NetGraph::MAX_HISTORY_TICS> mPacketsIn;
+	std::array<int,     NetGraph::MAX_HISTORY_TICS> mServerQueueDepth;
+	std::array<int,     NetGraph::MAX_HISTORY_TICS> mServerMetricsLastUpdate;
+	std::array<int,     NetGraph::MAX_HISTORY_TICS> mReliableSendDepth;
+	std::array<int,     NetGraph::MAX_HISTORY_TICS> mReliableNonContiguousRetransmits;
+	std::array<int,     NetGraph::MAX_HISTORY_TICS> mThrottle;
+	std::array<dtime_t, NetGraph::MAX_HISTORY_TICS> mTimeAtTic;
 
-	int mInterpolation;
+	dtime_t mNow;
+	int     mInterpolation;
 };

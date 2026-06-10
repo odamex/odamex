@@ -45,6 +45,7 @@
 #include "cl_netgraph.h"
 #include "hu_mousegraph.h"
 #include "am_map.h"
+#include "i_time.h"
 
 #include "hu_drawers.h"
 #include "hu_elements.h"
@@ -555,6 +556,7 @@ void HU_Drawer()
 	if (noservermsgs && (gamestate == GS_INTERMISSION || gamestate == GS_LEVEL))
 		screen->DrawPatchCleanNoMove(W_CachePatch("NET"), 50 * CleanXfac, 1 * CleanYfac);
 
+	netgraph.setNow(I_GetTime());
 	if (cl_netgraph)
 		netgraph.draw();
 
