@@ -20,7 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#include "svc_parse.h"
+#include "msg_parse.h"
 
 #include <google/protobuf/message.h>
 

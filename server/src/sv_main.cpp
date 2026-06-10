@@ -84,7 +84,7 @@
 
 #include "clc_message.h"
 #include "svc_message.h"
-#include "svc_parse.h"
+#include "msg_parse.h"
 
 extern void G_DeferedInitNew (const OLumpName& mapname);
 extern level_locals_t level;
