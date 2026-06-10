@@ -47,7 +47,7 @@ function BuildX64 {
     New-Item  -Force -ItemType "directory" -Path "${CurrentDir}\BuildX64"
     Set-Location -Path "${CurrentDir}\BuildX64"
 
-    cmake.exe -G "Visual Studio 17 2022" -A "x64" "${CurrentDir}" `
+    cmake.exe -G "Visual Studio 18 2026" -A "x64" "${CurrentDir}" `
         -DBUILD_OR_FAIL=1 `
         -DBUILD_CLIENT=1 -DBUILD_SERVER=1 `
         -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
