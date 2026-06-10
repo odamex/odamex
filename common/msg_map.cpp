@@ -36,18 +36,18 @@ namespace
 {
 	struct IdentityKey
 	{
-		size_t operator()(const svc_t& key) const { return static_cast<size_t>(key); }
+		size_t operator()(const msg_t& key) const { return static_cast<size_t>(key); }
 		size_t operator()(const void*  key) const { return reinterpret_cast<size_t>(key); }
 	};
 }
 
-typedef std::unordered_map<svc_t, const google::protobuf::Descriptor*, IdentityKey> MSGHeaderMap;
-typedef std::unordered_map<const void*, svc_t, IdentityKey> MSGDescMap;
+typedef std::unordered_map<msg_t, const google::protobuf::Descriptor*, IdentityKey> MSGHeaderMap;
+typedef std::unordered_map<const void*, msg_t, IdentityKey> MSGDescMap;
 
 MSGHeaderMap g_MSGHeaderMap;
 MSGDescMap g_MSGDescMap;
 
-static void MapProto(const svc_t header, const google::protobuf::Descriptor* desc)
+static void MapProto(const msg_t header, const google::protobuf::Descriptor* desc)
 {
 	::g_MSGHeaderMap.emplace(header, desc);
 	::g_MSGDescMap.emplace(desc, header);
@@ -58,7 +58,8 @@ static void MapProto(const svc_t header, const google::protobuf::Descriptor* des
  */
 static void InitMap()
 {
-	MapProto(svc_noop, odaproto::svc::Noop::descriptor());
+	MapProto(msg_noop, odaproto::Noop::descriptor());
+
 	MapProto(svc_disconnect, odaproto::svc::Disconnect::descriptor());
 	MapProto(svc_playerinfo, odaproto::svc::PlayerInfo::descriptor());
 	MapProto(svc_moveplayer, odaproto::svc::MovePlayer::descriptor());
@@ -177,7 +178,7 @@ static void InitMap()
  * @brief Given a packet header, return the message Descriptor, or NULL if
  *        the header is invalid.
  */
-const google::protobuf::Descriptor* MSG_ResolveHeader(const svc_t header)
+const google::protobuf::Descriptor* MSG_ResolveHeader(const msg_t header)
 {
 	if (::g_MSGHeaderMap.empty())
 	{
@@ -193,10 +194,10 @@ const google::protobuf::Descriptor* MSG_ResolveHeader(const svc_t header)
 }
 
 /**
- * @brief Given a message Descriptor, return the packet header, or svc_noop
+ * @brief Given a message Descriptor, return the packet header, or msg_noop
  *        if the descriptor is invalid.
  */
-svc_t MSG_ResolveDescriptor(const google::protobuf::Descriptor* desc)
+msg_t MSG_ResolveDescriptor(const google::protobuf::Descriptor* desc)
 {
 	if (::g_MSGDescMap.empty())
 	{
@@ -206,7 +207,7 @@ svc_t MSG_ResolveDescriptor(const google::protobuf::Descriptor* desc)
 	MSGDescMap::iterator it = ::g_MSGDescMap.find(desc);
 	if (it == ::g_MSGDescMap.end())
 	{
-		return svc_noop;
+		return msg_noop;
 	}
 	return it->second;
 }

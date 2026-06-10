@@ -31,7 +31,7 @@
 
 struct Proto
 {
-	svc_t header;
+	msg_t header;
 	std::string name;
 	size_t size;
 	std::string data;
@@ -41,7 +41,7 @@ struct ParseResultType
 {
 	std::unique_ptr<google::protobuf::Message> msg;
 	parseError_e                               code = PERR_OK;
-	svc_t                                      cmd  = svc_noop;
+	msg_t                                      cmd  = msg_noop;
 };
 
 typedef std::vector<Proto> Protos;

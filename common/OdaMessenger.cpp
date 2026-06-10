@@ -87,7 +87,7 @@ void OdaMessenger::HandleAcks(buf_t& io_rawBuf)
 	while (io_rawBuf.BytesLeftToRead() > 0)
 	{
 		const size_t startPosition = io_rawBuf.TellRead();
-		const svc_t  messageId     = static_cast<svc_t>(io_rawBuf.ReadUnVarint());
+		const msg_t  messageId     = static_cast<msg_t>(io_rawBuf.ReadUnVarint());
 		if (messageId != msg_ack)
 		{
 			io_rawBuf.SeekRead(startPosition, buf_t::BT_START);

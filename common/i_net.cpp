@@ -598,8 +598,8 @@ void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg)
 		return;
 	}
 
-	svc_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
-	if (header == svc_noop)
+	msg_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
+	if (header == msg_noop)
 	{
 		PrintFmt(PRINT_WARNING,
 		         "WARNING: Could not find svc header for message \"{}\".  This is most "
@@ -634,8 +634,8 @@ void MSG_WriteSVC(MessageQueue& io_queue, const google::protobuf::Message& msg)
 		return;
 	}
 
-	svc_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
-	if (header == svc_noop)
+	msg_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
+	if (header == msg_noop)
 	{
 		PrintFmt(PRINT_WARNING,
 		         "WARNING: Could not find svc header for message \"{}\".  This is most "
@@ -680,8 +680,8 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
 		return;
 	}
 
-	svc_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
-	if (header == svc_noop)
+	msg_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
+	if (header == msg_noop)
 	{
 		PrintFmt(PRINT_WARNING,
 		         "WARNING: Could not find svc header for message \"{}\".  This is most "
@@ -982,7 +982,8 @@ float MSG_ReadFloat(void)
 static void InitNetMessageFormats()
 {
 	// Server Messages.
-	MSG_INFO(svc_noop);
+	MSG_INFO(msg_noop);
+
 	MSG_INFO(svc_disconnect);
 	MSG_INFO(svc_playerinfo);
 	MSG_INFO(svc_moveplayer);
@@ -1026,7 +1027,7 @@ static void InitNetMessageFormats()
 	MSG_INFO(svc_ctfevent);
 	MSG_INFO(svc_serversettings);
 	MSG_INFO(svc_connectclient);
-    MSG_INFO(svc_midprint);
+	MSG_INFO(svc_midprint);
 	MSG_INFO(svc_servergametic);
 	MSG_INFO(svc_inttimeleft);
 	MSG_INFO(svc_fullupdatedone);

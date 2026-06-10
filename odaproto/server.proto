@@ -8,11 +8,6 @@ import "common.proto";
 
 package odaproto.svc;
 
-// svc_noop
-message Noop
-{
-}
-
 // svc_disconnect
 message Disconnect
 {

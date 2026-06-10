@@ -6,6 +6,11 @@ syntax="proto3";
 
 package odaproto;
 
+// msg_noop
+message Noop
+{
+}
+
 message Color
 {
 	int32 r = 1;

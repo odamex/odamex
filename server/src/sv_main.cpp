@@ -2288,7 +2288,7 @@ void SV_ConnectClient()
 	}
 
 	// Get the userinfo from the client.
-	svc_t userinfo = static_cast<svc_t>(MSG_ReadUnVarint());
+	msg_t userinfo = static_cast<msg_t>(MSG_ReadUnVarint());
 	if (userinfo != clc_userinfo)
 	{
 		SV_InvalidateClient(*player, "Client didn't send any userinfo");
@@ -4338,7 +4338,7 @@ void SV_SendRequestedMobjUpdate(player_t& player, const odaproto::clc::SendMobjU
 // SV_ParseCommands
 //
 
-parseError_e SV_ParseCommandSVC(const svc_t cmd, player_t& player)
+parseError_e SV_ParseCommandSVC(const msg_t cmd, player_t& player)
 {
 	google::protobuf::Message* msgPtrRaw = nullptr;
 	const parseError_e result = MSG_ParseMessage(msgPtrRaw, cmd);
@@ -4494,7 +4494,7 @@ void SV_ParseCommands(player_t &player)
 		}
 		while (::net_message.BytesLeftToRead() > 0)
 		{
-			const svc_t cmd = static_cast<svc_t>(MSG_ReadUnVarint());
+			const msg_t cmd = static_cast<msg_t>(MSG_ReadUnVarint());
 
 			switch(cmd)
 			{

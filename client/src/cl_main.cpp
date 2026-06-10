@@ -2089,7 +2089,7 @@ void CL_Clear()
 	MSG_ReadChunk(left);
 }
 
-static std::string SVCName(svc_t header)
+static std::string SVCName(msg_t header)
 {
 	std::string svc = ::msg_info[header].getName();
 	if (svc.empty())

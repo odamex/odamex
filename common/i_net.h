@@ -208,9 +208,11 @@ struct msg_info_t
 // This enumeration is designed so that the most-stable messages belong at the top,
 // and avoid explicit numeric values if possible.
 //
-enum svc_t
+enum msg_t
 {
-	svc_noop,
+	msg_noop,
+	msg_ack,
+
 	clc_netdemocap,         // netdemos - NullPoint
 	clc_netdemostop,        // netdemos - NullPoint
 	clc_netdemoloadsnap,    // netdemos - NullPoint
@@ -221,7 +223,6 @@ enum svc_t
 	svc_levellocals, // [AM] Persist one or more level locals
 	svc_pingrequest, // [SL] 2011-05-11 timestamp
 	svc_updateping,
-	msg_ack,
 	svc_spawnmobj,
 	svc_disconnectclient,
 	svc_loadmap,
@@ -326,7 +327,7 @@ enum svc_t
 	MSG_DEFINITION_COUNT    // For use as sizer.
 };
 
-inline auto format_as(svc_t msg)
+inline auto format_as(msg_t msg)
 {
 	return fmt::underlying(msg);
 }
@@ -824,7 +825,7 @@ void SZ_Write (buf_t *b, const void *data, size_t length);
 void SZ_Write (buf_t *b, const byte *data, size_t startpos, size_t length);
 
 void MSG_WriteByte (buf_t *b, byte c);
-void MSG_WriteMarker (buf_t *b, svc_t c);
+void MSG_WriteMarker (buf_t *b, msg_t c);
 void MSG_WriteShort (buf_t *b, short c);
 void MSG_WriteLong (buf_t *b, int c);
 void MSG_WriteUnVarint(buf_t* b, unsigned int uv);

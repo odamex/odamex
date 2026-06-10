@@ -183,9 +183,9 @@ static void ActivateLine(AActor* mo, line_s* line, byte side,
 }
 
 /**
- * @brief svc_noop - Nothing to see here. Move along.
+ * @brief msg_noop - Nothing to see here. Move along.
  */
-static void CL_Noop(const odaproto::svc::Noop* msg)
+static void CL_Noop(const odaproto::Noop* msg)
 {
 }
 
@@ -3263,7 +3263,7 @@ static void CL_NetDemoLoadSnap(const odaproto::clc::NetDemoLoadSnap* msg)
 
 Protos protos;
 
-static void RecordProto(const svc_t header, google::protobuf::Message* msg)
+static void RecordProto(const msg_t header, google::protobuf::Message* msg)
 {
 	static int protostic;
 
@@ -3308,7 +3308,7 @@ ParseResultType CL_ParseCommand()
 	ParseResultType result;
 
 	// What type of message we have.
-	result.cmd = static_cast<svc_t>(MSG_ReadUnVarint());
+	result.cmd = static_cast<msg_t>(MSG_ReadUnVarint());
 
 	if (result.cmd == msg_ack)
 	{
@@ -3354,7 +3354,7 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 			return PERR_OK;
 
 		/* clang-format off */
-		SV_MSG(svc_noop, CL_Noop, odaproto::svc::Noop);
+		SV_MSG(msg_noop, CL_Noop, odaproto::Noop);
 		SV_MSG(svc_disconnect, CL_Disconnect, odaproto::svc::Disconnect);
 		SV_MSG(svc_playerinfo, CL_PlayerInfo, odaproto::svc::PlayerInfo);
 		SV_MSG(svc_moveplayer, CL_MovePlayer, odaproto::svc::MovePlayer);
@@ -3441,7 +3441,7 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		return PERR_UNKNOWN_HEADER;
 	}
 
-	RecordProto(static_cast<svc_t>(parsedCommand.cmd), parsedCommand.msg.get());
+	RecordProto(static_cast<msg_t>(parsedCommand.cmd), parsedCommand.msg.get());
 	return PERR_OK;
 }
 

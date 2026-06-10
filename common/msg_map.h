@@ -32,5 +32,5 @@ class Descriptor;
 }
 } // namespace google
 
-const google::protobuf::Descriptor* MSG_ResolveHeader(const svc_t header);
-svc_t MSG_ResolveDescriptor(const google::protobuf::Descriptor* desc);
+const google::protobuf::Descriptor* MSG_ResolveHeader(const msg_t header);
+msg_t MSG_ResolveDescriptor(const google::protobuf::Descriptor* desc);
