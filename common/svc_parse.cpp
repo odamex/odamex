@@ -31,7 +31,7 @@ parseError_e SVC_ParseMessage(google::protobuf::Message*& out, const svc_t cmd)
 	// A message factory + Descriptor gives us the proper message.
 	google::protobuf::MessageFactory* factory =
 	    google::protobuf::MessageFactory::generated_factory();
-	const google::protobuf::Descriptor* desc = SVC_ResolveHeader(cmd);
+	const google::protobuf::Descriptor* desc = MSG_ResolveHeader(cmd);
 	if (desc == NULL)
 	{
 		return PERR_UNKNOWN_HEADER;

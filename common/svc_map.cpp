@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2021 by Alex Mayfield.
+// Copyright (C) 2021, 2026 by Alex Mayfield and et al.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Server message map.
+//   Message map.
 //
 //-----------------------------------------------------------------------------
 
@@ -41,20 +41,20 @@ namespace
 	};
 }
 
-typedef std::unordered_map<svc_t, const google::protobuf::Descriptor*, IdentityKey> SVCHeaderMap;
-typedef std::unordered_map<const void*, svc_t, IdentityKey> SVCDescMap;
+typedef std::unordered_map<svc_t, const google::protobuf::Descriptor*, IdentityKey> MSGHeaderMap;
+typedef std::unordered_map<const void*, svc_t, IdentityKey> MSGDescMap;
 
-SVCHeaderMap g_SVCHeaderMap;
-SVCDescMap g_SVCDescMap;
+MSGHeaderMap g_MSGHeaderMap;
+MSGDescMap g_MSGDescMap;
 
 static void MapProto(const svc_t header, const google::protobuf::Descriptor* desc)
 {
-	::g_SVCHeaderMap.emplace(header, desc);
-	::g_SVCDescMap.emplace(desc, header);
+	::g_MSGHeaderMap.emplace(header, desc);
+	::g_MSGDescMap.emplace(desc, header);
 }
 
 /**
- * @brief Initialize the SVC protocol descriptor map.
+ * @brief Initialize the protocol descriptor map.
  */
 static void InitMap()
 {
@@ -177,15 +177,15 @@ static void InitMap()
  * @brief Given a packet header, return the message Descriptor, or NULL if
  *        the header is invalid.
  */
-const google::protobuf::Descriptor* SVC_ResolveHeader(const svc_t header)
+const google::protobuf::Descriptor* MSG_ResolveHeader(const svc_t header)
 {
-	if (::g_SVCHeaderMap.empty())
+	if (::g_MSGHeaderMap.empty())
 	{
 		InitMap();
 	}
 
-	SVCHeaderMap::iterator it = ::g_SVCHeaderMap.find(header);
-	if (it == ::g_SVCHeaderMap.end())
+	MSGHeaderMap::iterator it = ::g_MSGHeaderMap.find(header);
+	if (it == ::g_MSGHeaderMap.end())
 	{
 		return NULL;
 	}
@@ -196,15 +196,15 @@ const google::protobuf::Descriptor* SVC_ResolveHeader(const svc_t header)
  * @brief Given a message Descriptor, return the packet header, or svc_noop
  *        if the descriptor is invalid.
  */
-svc_t SVC_ResolveDescriptor(const google::protobuf::Descriptor* desc)
+svc_t MSG_ResolveDescriptor(const google::protobuf::Descriptor* desc)
 {
-	if (::g_SVCDescMap.empty())
+	if (::g_MSGDescMap.empty())
 	{
 		InitMap();
 	}
 
-	SVCDescMap::iterator it = ::g_SVCDescMap.find(desc);
-	if (it == ::g_SVCDescMap.end())
+	MSGDescMap::iterator it = ::g_MSGDescMap.find(desc);
+	if (it == ::g_MSGDescMap.end())
 	{
 		return svc_noop;
 	}

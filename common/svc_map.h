@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2021 by Alex Mayfield.
+// Copyright (C) 2021, 2026 by Alex Mayfield and et al.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Server message map.
+//   Message map.
 //
 //-----------------------------------------------------------------------------
 
@@ -32,5 +32,5 @@ class Descriptor;
 }
 } // namespace google
 
-const google::protobuf::Descriptor* SVC_ResolveHeader(const svc_t header);
-svc_t SVC_ResolveDescriptor(const google::protobuf::Descriptor* desc);
+const google::protobuf::Descriptor* MSG_ResolveHeader(const svc_t header);
+svc_t MSG_ResolveDescriptor(const google::protobuf::Descriptor* desc);

@@ -598,7 +598,7 @@ void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg)
 		return;
 	}
 
-	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
+	svc_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
 	if (header == svc_noop)
 	{
 		PrintFmt(PRINT_WARNING,
@@ -634,7 +634,7 @@ void MSG_WriteSVC(MessageQueue& io_queue, const google::protobuf::Message& msg)
 		return;
 	}
 
-	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
+	svc_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
 	if (header == svc_noop)
 	{
 		PrintFmt(PRINT_WARNING,
@@ -680,7 +680,7 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
 		return;
 	}
 
-	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
+	svc_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
 	if (header == svc_noop)
 	{
 		PrintFmt(PRINT_WARNING,
