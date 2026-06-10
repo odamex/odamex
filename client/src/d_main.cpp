@@ -391,6 +391,7 @@ void D_DoomLoop()
 			::players.clear();
 
 			::gameaction = ga_fullconsole;
+			::gamestate = GS_FULLCONSOLE;
 		}
 	}
 }
@@ -629,7 +630,8 @@ void G_ReadCOMPLVL()
 	char* complvl = W_CacheLumpNum<char>(lumpnum, PU_STATIC);
 	auto guard = nonstd::make_scope_exit([&]{ Z_Free(complvl); });
 
-	if (!serverside)
+	// don't use !serverside here, it doesn't get set early enough
+	if (multiplayer)
 	{
 		if (iequals("mbf", complvl))
 			r_thingsectorlight.Set(1.0f);

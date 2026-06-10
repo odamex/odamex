@@ -890,6 +890,25 @@
                               </object>
                             </object>
                           </object>
+                          <object class="sizeritem">
+                            <flag>wxALL|wxEXPAND</flag>
+                            <border>5</border>
+                            <option>0</option>
+                            <object class="wxStaticBoxSizer" name="Id_StBxSizerUpdates">
+                              <orient>wxVERTICAL</orient>
+                              <label>Odamex Updates</label>
+                              <object class="sizeritem">
+                                <flag>wxALL</flag>
+                                <border>5</border>
+                                <option>0</option>
+                                <object class="wxCheckBox" name="Id_ChkCtrlCheckForUpdates">
+                                  <tooltip>Automatically check for updates when the launcher starts</tooltip>
+                                  <label>Check for updates</label>
+                                  <checked>0</checked>
+                                </object>
+                              </object>
+                            </object>
+                          </object>
                         </object>
                       </object>
                     </object>
@@ -922,6 +941,154 @@
                               <style>wxDIRP_DEFAULT_STYLE</style>
                               <value></value>
                               <message>Select your Odamex folder</message>
+                            </object>
+                          </object>
+                        </object>
+                      </object>
+                      <object class="sizeritem">
+                        <flag>wxALL|wxEXPAND</flag>
+                        <border>5</border>
+                        <option>1</option>
+                        <object class="wxStaticBoxSizer" name="11">
+                          <orient>wxVERTICAL</orient>
+                          <label>WAD Directories (Only used if launching Odamex from within Odalaunch)</label>
+                          <object class="sizeritem">
+                            <flag>wxEXPAND</flag>
+                            <border>0</border>
+                            <option>1</option>
+                            <object class="wxFlexGridSizer" name="fgSizer6">
+                              <vgap>0</vgap>
+                              <hgap>0</hgap>
+                              <growablerows>0</growablerows>
+                              <growablecols>0</growablecols>
+                              <rows>5</rows>
+                              <cols>3</cols>
+                              <object class="sizeritem">
+                                <flag>wxEXPAND</flag>
+                                <border>5</border>
+                                <option>1</option>
+                                <object class="wxBoxSizer" name="bSizer31">
+                                  <orient>wxVERTICAL</orient>
+                                  <object class="sizeritem">
+                                    <flag>wxALL|wxEXPAND</flag>
+                                    <border>5</border>
+                                    <option>1</option>
+                                    <object class="wxListBox" name="Id_LstCtrlWadDirectories">
+                                      <pos>0,190</pos>
+                                      <style>wxLB_SINGLE</style>
+                                      <content/>
+                                    </object>
+                                  </object>
+                                </object>
+                              </object>
+                              <object class="sizeritem">
+                                <flag>wxALIGN_CENTER</flag>
+                                <border>5</border>
+                                <option>0</option>
+                                <object class="wxBoxSizer" name="bSizer331">
+                                  <orient>wxVERTICAL</orient>
+                                  <object class="sizeritem">
+                                    <flag>wxALL</flag>
+                                    <border>5</border>
+                                    <option>0</option>
+                                    <object class="wxBitmapButton" name="Id_BtnCtrlGetEnvironment">
+                                      <tooltip>Import environment variables containing paths to Doom wad files (DOOMWADPATH and DOOMWADDIR)</tooltip>
+                                      <default>0</default>
+                                      <auth_needed>0</auth_needed>
+                                      <bitmap stock_id="wxART_HELP_SIDE_PANEL" stock_client="wxART_BUTTON">undefined.png</bitmap>
+                                    </object>
+                                  </object>
+                                  <object class="sizeritem">
+                                    <flag>wxEXPAND | wxALL</flag>
+                                    <border>5</border>
+                                    <option>0</option>
+                                    <object class="wxStaticLine" name="161">
+                                      <style>wxLI_VERTICAL</style>
+                                    </object>
+                                  </object>
+                                  <object class="sizeritem">
+                                    <flag>wxALL</flag>
+                                    <border>5</border>
+                                    <option>0</option>
+                                    <object class="wxBitmapButton" name="Id_BtnCtrlAddDir">
+                                      <tooltip>Add path to list</tooltip>
+                                      <default>0</default>
+                                      <auth_needed>0</auth_needed>
+                                      <bitmap stock_id="wxART_NEW" stock_client="wxART_BUTTON">undefined.png</bitmap>
+                                    </object>
+                                  </object>
+                                  <object class="sizeritem">
+                                    <flag>wxALL</flag>
+                                    <border>5</border>
+                                    <option>0</option>
+                                    <object class="wxBitmapButton" name="Id_BtnCtrlReplaceDir">
+                                      <tooltip>Replace selected path in list</tooltip>
+                                      <default>0</default>
+                                      <auth_needed>0</auth_needed>
+                                      <bitmap stock_id="wxART_EDIT" stock_client="wxART_BUTTON">undefined.png</bitmap>
+                                    </object>
+                                  </object>
+                                  <object class="sizeritem">
+                                    <flag>wxALL</flag>
+                                    <border>5</border>
+                                    <option>0</option>
+                                    <object class="wxBitmapButton" name="Id_BtnCtrlDeleteDir">
+                                      <tooltip>Delete path from list</tooltip>
+                                      <font>
+                                        <style>normal</style>
+                                        <weight>normal</weight>
+                                        <family>default</family>
+                                        <underlined>0</underlined>
+                                      </font>
+                                      <default>0</default>
+                                      <auth_needed>0</auth_needed>
+                                      <bitmap stock_id="wxART_DELETE" stock_client="wxART_BUTTON">undefined.png</bitmap>
+                                    </object>
+                                  </object>
+                                  <object class="sizeritem">
+                                    <flag>wxEXPAND | wxALL</flag>
+                                    <border>5</border>
+                                    <option>0</option>
+                                    <object class="wxStaticLine" name="16">
+                                      <style>wxLI_VERTICAL</style>
+                                    </object>
+                                  </object>
+                                  <object class="sizeritem">
+                                    <flag>wxALL</flag>
+                                    <border>5</border>
+                                    <option>0</option>
+                                    <object class="wxBitmapButton" name="Id_BtnCtrlMoveDirUp">
+                                      <tooltip>Move path up</tooltip>
+                                      <font>
+                                        <style>normal</style>
+                                        <weight>normal</weight>
+                                        <family>default</family>
+                                        <underlined>0</underlined>
+                                      </font>
+                                      <default>0</default>
+                                      <auth_needed>0</auth_needed>
+                                      <bitmap stock_id="wxART_GO_UP" stock_client="wxART_BUTTON">undefined.png</bitmap>
+                                    </object>
+                                  </object>
+                                  <object class="sizeritem">
+                                    <flag>wxALL</flag>
+                                    <border>5</border>
+                                    <option>0</option>
+                                    <object class="wxBitmapButton" name="Id_BtnCtrlMoveDirDown">
+                                      <tooltip>Move path down</tooltip>
+                                      <font>
+                                        <style>normal</style>
+                                        <weight>normal</weight>
+                                        <family>default</family>
+                                        <underlined>0</underlined>
+                                      </font>
+                                      <default>0</default>
+                                      <auth_needed>0</auth_needed>
+                                      <bitmap stock_id="wxART_GO_DOWN" stock_client="wxART_BUTTON">undefined.png</bitmap>
+                                    </object>
+                                  </object>
+                                </object>
+                              </object>
                             </object>
                           </object>
                         </object>

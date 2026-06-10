@@ -817,7 +817,7 @@ void CL_RunTics()
 				PrintFmt("level.time {}, prndindex {}, {} {} {}\n",
 				         level.time, prndindex, players.begin()->mo->x, players.begin()->mo->y, players.begin()->mo->z);
 			else
- 				PrintFmt("level.time %d, prndindex %d\n", level.time, prndindex);
+ 				PrintFmt("level.time {}, prndindex {}\n", level.time, prndindex);
 		}
 	}
 	else

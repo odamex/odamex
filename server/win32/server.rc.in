@@ -1,5 +1,7 @@
 // This file is encoded as Windows 1252 to ensure the copyright symbol appears
 
+#include <winuser.h>
+
 #define VFT_APP 0x00000001L
 #define VOS_NT  0x00040000L
 #define VS_FF_DEBUG 0x00000001L
@@ -10,6 +12,8 @@
 #define ODASRV_NAME "Odamex Server"
 
 1 ICON "@CMAKE_SOURCE_DIR@/server/win32/odaserv.ico"
+
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "@CMAKE_SOURCE_DIR@/server/win32/manifest.xml"
 
 1 VERSIONINFO
 FILEVERSION @PROJECT_RC_VERSION@
@@ -33,7 +37,7 @@ FILESUBTYPE 0
       VALUE "FileDescription", ODASRV_DESC
       VALUE "FileVersion", "@PROJECT_VERSION@"
       VALUE "InternalName", ODASRV_INTERNAL
-      VALUE "LegalCopyright", "ODAMEX and its likeness are Copyright © @PROJECT_COPYRIGHT@ by @PROJECT_COMPANY@."
+      VALUE "LegalCopyright", "ODAMEX and its likeness are Copyright ï¿½ @PROJECT_COPYRIGHT@ by @PROJECT_COMPANY@."
       VALUE "OriginalFilename", ODASRV_EXE
       VALUE "ProductName", ODASRV_NAME
       VALUE "ProductVersion", "@PROJECT_VERSION@"

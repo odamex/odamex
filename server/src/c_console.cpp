@@ -28,6 +28,8 @@
 
 #include <stdarg.h>
 
+#include "fmt/color.h"
+
 #include "m_fileio.h"
 #include "m_memio.h"
 #include "c_console.h"
@@ -53,8 +55,6 @@ struct History
 // CmdLine[2+] = command line (max 255 chars + NULL)
 // CmdLine[259]= offset from beginning of cmdline to display
 //static byte CmdLine[260];
-
-static byte printxormask;
 
 static struct History *HistTail = NULL;
 
@@ -99,16 +99,56 @@ char *TimeStamp()
 	return stamp;
 }
 
+EXTERN_CVAR(log_color)
+
 static size_t PrintString(int printlevel, std::string str)
 {
 	StripColorCodes(str);
 
-	fwrite(str.data(), 1, str.length(), stdout);
+	fmt::text_style style;
+	switch (printlevel)
+	{
+		case PRINT_CHAT:
+		case PRINT_FILTERCHAT:
+			style = fg(fmt::color::light_green);
+			break;
+		case PRINT_TEAMCHAT:
+			style = fg(fmt::color::orange);
+			break;
+		case PRINT_SERVERCHAT:
+			style = fg(fmt::color::dark_orange);
+			break;
+		case PRINT_WARNING:
+			style = fmt::emphasis::bold | fg(fmt::color::yellow);
+			break;
+		case PRINT_ERROR:
+			style = fmt::emphasis::bold | fg(fmt::color::red);
+			break;
+		case PRINT_PICKUP:
+			// do these even ever get printed serverside?
+			style = fg(fmt::color::red);
+			break;
+		case PRINT_OBITUARY:
+			style = fg(fmt::color::yellow);
+			break;
+		case PRINT_HIGH:
+		case PRINT_FILTERHIGH:
+		case PRINT_NORCON:
+			break;
+	}
+
+	if (log_color && I_ConsoleUseColor())
+		fmt::print(stdout, style, "{}", str);
+	else
+		fmt::print(stdout, "{}", str);
 	fflush(stdout);
 
 	if (LOG.is_open())
 	{
-		LOG << str;
+		if (log_color == 2)
+			LOG << fmt::format(style, "{}", str);
+		else
+			LOG << str;
 		LOG.flush();
 	}
 
