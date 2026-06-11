@@ -76,6 +76,7 @@ function __odamex {
     [+map]=1
     [-map]=1
     [-warp]=1
+    [-fltk]=1
   )
 
   # groups of options that don't make sense to use together
