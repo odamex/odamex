@@ -282,14 +282,15 @@ enum statusflag_t
 
 struct baseline_t
 {
-	v3fixed_t pos;
-	v3fixed_t mom;
-	angle_t angle;
-	uint32_t targetid;
-	uint32_t tracerid;
-	int movecount;
-	byte movedir;
-	byte rndindex;
+	v3fixed_t pos       { 0, 0, 0 };
+	v3fixed_t mom       { 0, 0, 0 };
+	angle_t angle       { 0 };
+	uint32_t targetid   { 0 };
+	uint32_t tracerid   { 0 };
+	int movecount       { 0 };
+	byte movedir        { 0 };
+	byte rndindex       { 0 };
+	int tic             { 0 };
 
 	// Flags are a varint, so order from most to least likely.
 	static constexpr uint32_t POSX = BIT(0);
@@ -305,23 +306,17 @@ struct baseline_t
 	static constexpr uint32_t MOMY = BIT(10);
 	static constexpr uint32_t MOMZ = BIT(11);
 
-	baseline_t()
-	    : pos(0, 0, 0), mom(0, 0, 0),
-	      angle(0), targetid(0), tracerid(0), movecount(0), movedir(0), rndindex(0)
-	{
-	}
-
 	void Serialize(FArchive& arc)
 	{
 		if (arc.IsStoring())
 		{
 			arc << pos.x << pos.y << pos.z << mom.x << mom.y << mom.z << angle << targetid
-			    << tracerid << movecount << movedir << rndindex;
+			    << tracerid << movecount << movedir << rndindex << tic;
 		}
 		else
 		{
 			arc >> pos.x >> pos.y >> pos.z >> mom.x >> mom.y >> mom.z >> angle >>
-			    targetid >> tracerid >> movecount >> movedir >> rndindex;
+			    targetid >> tracerid >> movecount >> movedir >> rndindex >> tic;
 		}
 	}
 };

@@ -3469,6 +3469,7 @@ void P_SetMobjBaseline(AActor& mo)
 	mo.baseline.movecount = mo.movecount;
 	mo.baseline.movedir = mo.movedir;
 	mo.baseline.rndindex = mo.rndindex;
+	mo.baseline.tic      = gametic;
 
 	mo.baseline_set = true;
 }
