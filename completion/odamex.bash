@@ -131,7 +131,8 @@ function __odamex {
     else
       compopt -o plusdirs
       readarray -t COMPREPLY < <(
-        compgen -f -X "!*@(${ext@L}|${ext@U})" -- "$cur"
+        shopt -s extglob
+        compgen -f -X "!*@(${ext@U}|${ext@L})" -- "$cur"
       )
     fi
 
