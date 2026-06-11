@@ -1,7 +1,7 @@
 function __odamex {
-  local IFS=$'\n'
-  local cur="$2"
-  local prev="$3"
+  local -r IFS=$'\n'
+  local -r cur="$2"
+  local -r prev="$3"
 
   # options present on both client and server
   local -ar opts=(
