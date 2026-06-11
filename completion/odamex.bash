@@ -97,8 +97,7 @@ function __odamex {
   local -A used
   local -A used_groups
   local word
-  for word in "${COMP_WORDS[@]}"; do
-    [[ $word == "$cmd" ]] && continue
+  for word in "${COMP_WORDS[@]:1}"; do
     [[ $word == "$cur" ]] && break
     [[ -v exclusiveopts[$word] ]] && exclusive_seen=true
     if [[ $word == [-+]* ]]; then
