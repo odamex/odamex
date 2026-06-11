@@ -1,7 +1,7 @@
 function __odamex {
   local IFS=$'\n'
-  local cur="${COMP_WORDS[COMP_CWORD]}"
-  local prev="${COMP_WORDS[COMP_CWORD-1]}"
+  local cur="$2"
+  local prev="$3"
 
   # options present on both client and server
   local -ar opts=(
@@ -92,7 +92,7 @@ function __odamex {
     [+map]=map
   )
 
-  local -r cmd="${COMP_WORDS[0]}"
+  local -r cmd="$1"
   local exclusive_seen=false
   local -A used
   local -A used_groups
