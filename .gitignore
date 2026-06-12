@@ -2,9 +2,8 @@
 /build*
 /.cache
 .vscode/*
-!.vscode/launch.json
-!.vscode/tasks.json
-!.vscode/extensions.json
+!.vscode/launch.json.template
+!.vscode/tasks.json.template
 *.zed
 *.pyc
 
