@@ -450,6 +450,25 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	// denis - sending state fixes monster ghosts appearing under doors
 	cur->set_statenum(mo->state->statenum);
 
+	// Special case:  Did we get spawned in earlier on this tic?  If so, there are some instances
+	// where a mobj spawns in via dehacked SpawnObject, but its frames / state sequencing is such
+	// that multiple states and special actions take effect in the very first RunThink operation.
+	// For such cases, we want to make sure that the first client-side RunThink produces the same
+	// result, and not do the client-side SpawnMobj directly into that post-action state. This is
+	// how we avoid missing sounds and other minor on-spawn desyncs.
+	//
+	if (mo->spawnTic == gametic)
+	{
+		if (mo->state->statenum != mo->info->spawnstate)
+		{
+			cur->set_statenum(mo->info->spawnstate);
+		}
+		if (mo->rndindex != mo->spawnRndindex)
+		{
+			cur->set_rndindex(mo->spawnRndindex);
+		}
+	}
+
 	if (mo->type == MT_FOUNTAIN)
 	{
 		msg.add_args(mo->args[0]);

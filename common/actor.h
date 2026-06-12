@@ -290,7 +290,6 @@ struct baseline_t
 	int movecount       { 0 };
 	byte movedir        { 0 };
 	byte rndindex       { 0 };
-	int tic             { 0 };
 
 	// Flags are a varint, so order from most to least likely.
 	static constexpr uint32_t POSX = BIT(0);
@@ -311,12 +310,12 @@ struct baseline_t
 		if (arc.IsStoring())
 		{
 			arc << pos.x << pos.y << pos.z << mom.x << mom.y << mom.z << angle << targetid
-			    << tracerid << movecount << movedir << rndindex << tic;
+			    << tracerid << movecount << movedir << rndindex;
 		}
 		else
 		{
 			arc >> pos.x >> pos.y >> pos.z >> mom.x >> mom.y >> mom.z >> angle >>
-			    targetid >> tracerid >> movecount >> movedir >> rndindex >> tic;
+			    targetid >> tracerid >> movecount >> movedir >> rndindex;
 		}
 	}
 };
@@ -584,12 +583,9 @@ public:
 	struct msecnode_s	*touching_sectorlist;				// phares 3/14/98
 
 	short           deadtic;        // tics after player's death
-	int             transientInt;   // transient variable for use by algorithms that need a
-	                                // very short-lived, per-actor data value that could be
-	                                // thought of as "throwaway."  For example, a key for a
-	                                // bespoke, immediate sorting operation.
 
-	unsigned char	rndindex;		// denis - because everything should have a random number generator, for prediction
+	unsigned char   rndindex;       // denis - because everything should have a random number generator, for prediction
+	unsigned char   spawnRndindex;
 
 	byte friend_playerid; // playerid of the player who spawned this actor
 
@@ -618,6 +614,8 @@ public:
 	// Server: The tic on which this mobj was sent an UpdateMobj.
 	// Client: the tic on which this mobj received an UpdateMobj.
 	int updatedDuringTic;
+
+	int spawnTic;
 
 	CredibilityState credibility;
 

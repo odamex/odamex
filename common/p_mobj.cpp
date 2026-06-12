@@ -196,9 +196,9 @@ AActor::AActor()
       flags3(0), oflags(0), statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
-      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), transientInt(0),
-      rndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
-      netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), bmapnode(this)
+      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), rndindex(0),
+      spawnRndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
+      netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), spawnTic(gametic), bmapnode(this)
 {
 	args.fill(0);
 	self.init(this);
@@ -222,12 +222,11 @@ AActor::AActor(const AActor& other)
       inext(other.inext), iprev(other.iprev), translation(other.translation),
       translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
       onground(other.onground), touching_sectorlist(other.touching_sectorlist),
-      deadtic(other.deadtic), transientInt(other.transientInt), rndindex(other.rndindex),
-      friend_playerid(other.friend_playerid),
-      friend_teamid(other.friend_teamid), pursuecount(other.pursuecount),
-      strafecount(other.strafecount),
-      netid(other.netid), tid(other.tid),
-      baseline_set(false), updatedDuringTic(other.updatedDuringTic), credibility {other.credibility}, bmapnode(other.bmapnode)
+      deadtic(other.deadtic), rndindex(other.rndindex), spawnRndindex(other.spawnRndindex),
+      friend_playerid(other.friend_playerid), friend_teamid(other.friend_teamid),
+      pursuecount(other.pursuecount), strafecount(other.strafecount), netid(other.netid), tid(other.tid),
+      baseline_set(false), updatedDuringTic(other.updatedDuringTic), spawnTic(other.spawnTic),
+      credibility {other.credibility}, bmapnode(other.bmapnode)
 {
 	memcpy(&baseline, &other.baseline, sizeof(baseline));
 	self.init(this);
@@ -290,8 +289,8 @@ AActor &AActor::operator= (const AActor &other)
     onground = other.onground;
     touching_sectorlist = other.touching_sectorlist;
     deadtic = other.deadtic;
-    transientInt = other.transientInt;
     rndindex = other.rndindex;
+    spawnRndindex = other.spawnRndindex;
     friend_playerid = other.friend_playerid;
     friend_teamid = other.friend_teamid;
     pursuecount = other.pursuecount;
@@ -306,6 +305,7 @@ AActor &AActor::operator= (const AActor &other)
     baseline_set = other.baseline_set;
 
     updatedDuringTic = other.updatedDuringTic;
+    spawnTic         = other.spawnTic;
     credibility      = other.credibility;
 
     return *this;
@@ -326,9 +326,10 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
       statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
-      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), transientInt(0),
-      rndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
-      netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), bmapnode(this)
+      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), rndindex(0),
+      spawnRndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
+      netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), spawnTic(gametic),
+      bmapnode(this)
 {
 	// Fly!!! fix it in P_RespawnSpecial
 	const auto it = ::mobjinfo.find(itype);
@@ -348,6 +349,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 	health = info->spawnhealth;
 	translucency = info->translucency;
 	rndindex = M_Random();
+	spawnRndindex = rndindex;
 
 	if (multiplayer && serverside)
 		netid = ::ServerNetID.obtainNetID();
@@ -950,7 +952,10 @@ void AActor::Serialize (FArchive &arc)
 			<< translucency
 			<< waterlevel
 			<< gear
+			<< rndindex
+			<< spawnRndindex
 			<< updatedDuringTic
+			<< spawnTic
 			<< credibility;
 
 		// NOTE(jsd): This is pretty awful right here:
@@ -1035,7 +1040,10 @@ void AActor::Serialize (FArchive &arc)
 			>> translucency
 			>> waterlevel
 			>> gear
+			>> rndindex
+			>> spawnRndindex
 			>> updatedDuringTic
+			>> spawnTic
 			>> credibility;
 
 		tracer.init(tmptracer);
@@ -3469,7 +3477,6 @@ void P_SetMobjBaseline(AActor& mo)
 	mo.baseline.movecount = mo.movecount;
 	mo.baseline.movedir = mo.movedir;
 	mo.baseline.rndindex = mo.rndindex;
-	mo.baseline.tic      = gametic;
 
 	mo.baseline_set = true;
 }
