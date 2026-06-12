@@ -284,6 +284,8 @@ bool P_IsSpecialBoomRepeatable(const short special)
 	case 98:
 	case 99:
 	case 105:
+		return gamemission != heretic;
+		break;
 	case 106:
 	case 107:
 	case 114:
@@ -385,6 +387,10 @@ bool P_IsExitLine(const short special)
 	if (map_format.getZDoom())
 		return special == 74 || special == 75 || special == 244 || special == 243;
 
+	if (gamemission == heretic)
+		return special == 51 || special == 52 || special == 105 || 
+				(2069 <= special && special <= 2074);
+
 	return special == 11 || special == 52 || special == 197 || special == 51 ||
 	       special == 124 || special == 198 || (2069 <= special && special <= 2074);
 }
@@ -393,6 +399,9 @@ bool P_IsTeleportLine(const short special)
 {
 	if (map_format.getZDoom())
 		return special == 70 || special == 71 || special == 154 || special == 215;
+
+	if (gamemission == heretic)
+		return special == 39 || special == 97;
 
 	return special == 39 || special == 97 || special == 125 || special == 126 ||
 	       special == 174 || special == 195 || special == 207 || special == 208 ||
@@ -405,6 +414,9 @@ bool P_IsThingTeleportLine(const short special)
 	if (map_format.getZDoom())
 		return false;
 
+	if (gamemission == heretic)
+		return special == 39 || special == 97;
+
 	return special == 39 || special == 97 || special == 125 || special == 126 ||
 	       special == 174 || special == 195 || special == 207 || special == 208 ||
 	       special == 209 || special == 210 || special == 268 || special == 269;
@@ -412,7 +424,7 @@ bool P_IsThingTeleportLine(const short special)
 
 bool P_IsThingNoFogTeleportLine(const short special)
 {
-	if (map_format.getZDoom())
+	if (map_format.getZDoom() || gamemission == heretic)
 		return false;
 
 	return special == 207 || special == 208 || special == 209 || special == 210 ||

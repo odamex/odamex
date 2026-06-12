@@ -77,7 +77,7 @@ const size_t HANDLE_GEN_BITS = 3;
 
 void**			lumpcache;
 
-static unsigned	stdisk_lumpnum;
+static int	stdisk_lumpnum = -1;
 
 //
 // W_LumpNameHash
@@ -570,7 +570,7 @@ void W_InitMultipleFiles(const OResFiles& files)
 	// killough 1/31/98: initialize lump hash table
 	W_HashLumps();
 
-	stdisk_lumpnum = W_GetNumForName("STDISK");
+	stdisk_lumpnum = W_CheckNumForName("STDISK");
 }
 
 /**

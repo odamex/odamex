@@ -30,6 +30,7 @@
 #include "gstrings.h"
 #include "c_console.h"
 #include "c_dispatch.h"
+#include "d_pages.h"
 #include "d_main.h"
 #include "i_music.h"
 #include "i_time.h"
@@ -44,6 +45,7 @@
 #include "m_random.h"
 #include "s_sound.h"
 #include "m_menu.h"
+#include "v_palette.h"
 #include "v_text.h"
 #include "st_stuff.h"
 #include "p_ctf.h"
@@ -78,6 +80,7 @@ int 				messageLastMenuActive;
 bool				messageNeedsInput;
 
 void	(*messageRoutine)(int response);
+
 void	CL_SendUserInfo();
 void	M_ChangeTeam (int choice);
 team_t D_TeamByName (const char *team);
@@ -85,6 +88,8 @@ gender_t D_GenderByName (const char *gender);
 colorpreset_t D_ColorPreset (const char *colorpreset);
 
 #define SAVESTRINGSIZE	24
+
+static page_image_t help_page;
 
 enum class oldmenustring_t
 {
@@ -111,16 +116,15 @@ char				savegamestrings[10][SAVESTRINGSIZE];
 menustack_t			MenuStack[16];
 int					MenuStackDepth;
 
-short				itemOn; 			// menu item skull is on
-short				skullAnimCounter;	// skull animation counter
-short				whichSkull; 		// which skull to draw
-bool				drawSkull;			// [RH] don't always draw skull
+short				itemOn; 			// menu item indicator is on
+static int			SkullBaseLump;		// lump number of first large skull in animation
+static int			MenuTime;			// Ticker for Heretic skulls
+short				indicatorAnimCounter;	// indicator animation counter
+short				whichIndicator; 		// which indicator to draw
+bool				drawIndicator;			// [RH] don't always draw indicator
 
 // hack for PlayerSetup
 int					PSetupDepth;
-
-// graphic name of skulls
-char				skullName[2][9] = {"M_SKULL1", "M_SKULL2"};
 
 // current menudef
 oldmenu_t *currentMenu;
@@ -130,6 +134,7 @@ oldmenu_t *currentMenu;
 //
 void M_NewGame(int choice);
 void M_Episode(int choice);
+void M_GameFiles(int choice);
 void M_Expansion(int choice);
 void M_ChooseSkill(int choice);
 void M_LoadGame(int choice);
@@ -139,7 +144,7 @@ void M_EndGame(int choice);
 void M_ReadThis(int choice);
 void M_ReadThis2(int choice);
 void M_ReadThis3(int choice);
-void M_QuitDOOM(int choice);
+void M_QuitGame(int choice);
 
 void M_ChangeDetail(int choice);
 void M_StartGame(int choice);
@@ -157,6 +162,7 @@ void M_DrawReadThis1();
 void M_DrawReadThis2();
 void M_DrawReadThis3();
 void M_DrawNewGame();
+void M_DrawGameFiles();
 void M_DrawEpisode();
 void M_DrawOptions();
 void M_DrawSound();
@@ -167,7 +173,6 @@ void M_DrawSaveLoadBorder(int x,int y, int len);
 void M_SetupNextMenu(oldmenu_t *menudef);
 void M_DrawEmptyCell(oldmenu_t *menu,int item);
 void M_DrawSelCell(oldmenu_t *menu,int item);
-int  M_StringHeight(char *string);
 void M_StartControlPanel();
 void M_StartMessage(const char *string,void (*routine)(int),bool input);
 void M_StopMessage();
@@ -177,8 +182,6 @@ void M_ClearMenus();
 static void M_PlayerSetupTicker();
 static void M_PlayerSetupDrawer();
 static void M_EditPlayerName (int choice);
-//static void M_EditPlayerTeam (int choice);
-//static void M_PlayerTeamChanged (int choice);
 static void M_PlayerNameChanged (int choice);
 static void M_ChangeGender (int choice);
 static void M_ChangeAutoAim (int choice);
@@ -192,6 +195,16 @@ bool M_DemoNoPlay;
 static IWindowSurface* fire_surface;
 static constexpr int fire_surface_width = 72;
 static constexpr int fire_surface_height = 77;
+
+static int M_BigFontLineHeight()
+{
+	return V_GetFontLineHeight("BIGFONT");
+}
+
+static int M_SmallFontLineHeight()
+{
+	return V_GetFontLineHeight("SMALLFONT");
+}
 
 static void M_PauseSound(void)
 {
@@ -236,7 +249,7 @@ oldmenuitem_t DoomMainMenu[]=
     {1,"M_LOADG","",M_LoadGame,'L'},
     {1,"M_SAVEG","",M_SaveGame,'S'},
     {1,"M_RDTHIS","",M_ReadThis,'R'},
-	{1,"M_QUITG","",M_QuitDOOM,'Q'}
+	{1,"M_QUITG","",M_QuitGame,'Q'}
 };
 
 //
@@ -259,9 +272,36 @@ oldmenuitem_t Doom2MainMenu[]=
 	{1,"M_OPTION","",M_Options,'O'},	// [RH] Moved
     {1,"M_LOADG","",M_LoadGame,'L'},
     {1,"M_SAVEG","",M_SaveGame,'S'},
-	{1,"M_QUITG","",M_QuitDOOM,'Q'}
+	{1,"M_QUITG","",M_QuitGame,'Q'}
 };
 
+//
+// HERETIC MENU
+//
+enum htc_main_t
+{
+	htc_newgame = 0,
+	htc_options,	
+	htc_gamefiles,				// [RH] Moved
+	htc_info,
+	htc_quitgame,
+	htc_main_end
+} htc_main_e;
+
+oldmenuitem_t HereticMainMenu[]=
+{
+	{1,"","MNU_NEWGAME",M_NewGame,'N'},
+	{1,"","MNU_OPTIONS",M_Options,'O'},	// [RH] Moved
+    {1,"","MNU_GAMEFILES",M_GameFiles,'G'},
+    {1,"","MNU_INFO",M_ReadThis,'I'},
+	{1,"","MNU_QUITGAME",M_QuitGame,'Q'}
+};
+
+oldmenuitem_t GameFilesMenu[]=
+{
+	{1,"","MNU_LOADGAME",M_LoadGame,'l'},
+	{1,"","MNU_SAVEGAME",M_SaveGame,'2'}
+};
 
 // Default used is the Doom Menu
 oldmenu_t MainDef =
@@ -270,6 +310,16 @@ oldmenu_t MainDef =
 	DoomMainMenu,
 	M_DrawMainMenu,
 	97,64,
+	0
+};
+
+// Heretic Main Menu Definition
+oldmenu_t HereticMainDef =
+{
+	htc_main_end,
+	HereticMainMenu,
+	M_DrawMainMenu,
+	110,56,
 	0
 };
 
@@ -399,7 +449,6 @@ oldmenu_t PSetupDef = {
 //
 bool OptionsActive;
 
-
 //
 // Read This!
 //
@@ -465,6 +514,25 @@ oldmenu_t ReadDef3 =
 };
 
 //
+// GAME FILES MENU
+//
+enum gamefiles_t
+{
+	gamefiles_load,
+	gamefiles_save,
+	gamefiles_end
+} gamefiles_e;
+
+oldmenu_t GameFilesDef =
+{
+	gamefiles_end,
+	GameFilesMenu,
+	M_DrawGameFiles,
+	110,60,
+	0
+};
+
+//
 // LOAD GAME MENU
 //
 enum load_t
@@ -497,7 +565,16 @@ oldmenu_t LoadDef =
 	load_end,
 	LoadSavegameMenu,
 	M_DrawLoad,
-	80,54,
+	76,54,
+	0
+};
+
+oldmenu_t HticLoadDef =
+{
+	load_end,
+	LoadSavegameMenu,
+	M_DrawLoad,
+	62,20,
 	0
 };
 
@@ -521,7 +598,15 @@ oldmenu_t SaveDef =
 	load_end,
 	SaveMenu,
 	M_DrawSave,
-	80,54,
+	76,54,
+	0
+};
+oldmenu_t HticSaveDef =
+{
+	load_end,
+	SaveMenu,
+	M_DrawSave,
+	62,20,
 	0
 };
 
@@ -598,7 +683,7 @@ END_COMMAND (quickload)
 BEGIN_COMMAND (menu_quit)
 {	// F10
 	M_StartControlPanel ();
-	M_QuitDOOM(0);
+	M_QuitGame(0);
 }
 END_COMMAND (menu_quit)
 
@@ -610,19 +695,30 @@ BEGIN_COMMAND (menu_player)
 }
 END_COMMAND (menu_player)
 
-/*
-void M_LoadSaveResponse(int choice)
+static const char* LocalizedString(const char* key)
 {
-    // dummy
+	if (GStrings.hasString(key))
+	{
+		const char* s = GStrings(key);
+		if (s && s[0])
+			return s;
+	}
+	return key;
 }
 
-
-void M_LoadGame (int choice)
+//
+//	M_GameFiles & Cie.
+//	[ML] Provides intermediary game files menu option for load/save
+//
+void M_GameFiles(int choice)
 {
-    M_StartMessage("Loading/saving is not supported\n\n(Press any key to "
-                   "continue)\n", M_LoadSaveResponse, false);
+	M_SetupNextMenu(&GameFilesDef);
 }
-*/
+
+void M_DrawGameFiles()
+{
+	// Unused
+}
 
 //
 // M_ReadSaveStrings
@@ -659,13 +755,38 @@ void M_ReadSaveStrings()
 //
 // M_LoadGame & Cie.
 //
+void M_DrawInputBox (int slot, char *name, int x, int y, int width) 
+{
+	const int text_y =  y+(M_BigFontLineHeight()/2 - M_SmallFontLineHeight()/2);
+
+	M_DrawSaveLoadBorder(x, y, width);
+	screen->DrawTextCleanMove (CR_RED, x+(M_SmallFontLineHeight()/2),text_y, name);
+}
+
 void M_DrawLoad ()
 {
-	screen->DrawPatchClean(W_CachePatch("M_LOADG"), 72, 28);
-	for (int i = 0; i < load_end; i++)
+	int i, list_y;
+	const int slot_width = 24;
+	const int slot_padding = 2;
+	const int slot_height = M_BigFontLineHeight() - slot_padding;
+
+	if (W_CheckNumForName("M_LOADG") >= 0)
 	{
-		M_DrawSaveLoadBorder (LoadDef.x, LoadDef.y+LINEHEIGHT*i, 24);
-		screen->DrawTextCleanMove (CR_RED, LoadDef.x, LoadDef.y+LINEHEIGHT*i, savegamestrings[i]);
+		screen->DrawPatchClean(W_CachePatch("M_LOADG"), 72, 28);
+	}
+	else
+	{
+		const char* title = LocalizedString("MNU_LOADGAME");
+		V_SetFont("BIGFONT");
+		screen->DrawTextCleanMove(CR_GRAY, 160-V_StringWidth(title)/2, 0, title);
+		V_SetFont("SMALLFONT");
+	}
+
+	list_y = LoadDef.y;
+	for (i = 0; i < load_end; i++)
+	{
+		M_DrawInputBox(i, savegamestrings[i], LoadDef.x, list_y, slot_width);
+		list_y += slot_height + slot_padding;
 	}
 }
 
@@ -704,19 +825,34 @@ void M_LoadGame (int choice)
 //
 void M_DrawSave()
 {
-	int i;
+	int i, list_y;
+	const int slot_width = 24;
+	const int slot_padding = 2;
+	const int slot_height = M_BigFontLineHeight() - slot_padding;
 
-	screen->DrawPatchClean(W_CachePatch("M_SAVEG"), 72, 28);
+	if (W_CheckNumForName("M_SAVEG") >= 0)
+	{
+		screen->DrawPatchClean (W_CachePatch("M_SAVEG"), 72, 28);
+	}
+	else
+	{
+		const char* title = LocalizedString("MNU_SAVEGAME");
+		V_SetFont("BIGFONT");
+		screen->DrawTextCleanMove (CR_GRAY, 160-V_StringWidth(title)/2, 0, title);
+		V_SetFont("SMALLFONT");
+	}
+
+	list_y = SaveDef.y;
 	for (i = 0; i < load_end; i++)
 	{
-		M_DrawSaveLoadBorder(LoadDef.x,LoadDef.y+LINEHEIGHT*i,24);
-		screen->DrawTextCleanMove (CR_RED, LoadDef.x, LoadDef.y+LINEHEIGHT*i, savegamestrings[i]);
+		M_DrawInputBox(i, savegamestrings[i], SaveDef.x, list_y, slot_width);
+		list_y += slot_height + slot_padding;
 	}
 
 	if (genStringEnter != oldmenustring_t::NONE)
 	{
-		i = V_StringWidth(savegamestrings[saveSlot]);
-		screen->DrawTextCleanMove (CR_RED, LoadDef.x + i, LoadDef.y+LINEHEIGHT*saveSlot, "_");
+		const int string_width = V_StringWidth(savegamestrings[saveSlot]);
+		screen->DrawTextCleanMove(CR_RED, SaveDef.x + string_width, SaveDef.y+M_BigFontLineHeight()*saveSlot, "_");
 	}
 }
 
@@ -796,8 +932,8 @@ void M_SaveGame (int choice)
 
 
 //
-//		M_QuickSave
-// [ML] 7 Sept 08: Bringing game saving/loading in from
+//	M_QuickSave
+//	[ML] 7 Sept 08: Bringing game saving/loading in from
 //                 zdoom 1.22 source, see MAINTAINERS
 //
 char	tempstring[80];
@@ -877,29 +1013,38 @@ void M_QuickLoad()
 //
 void M_ReadThis(int)
 {
-	drawSkull = false;
+	drawIndicator = false;
+	D_LoadPageImage(help_page, gameinfo.infoPage[0]);
 	M_SetupNextMenu(&ReadDef1);
 }
 
 void M_ReadThis2(int)
 {
-	drawSkull = false;
+	drawIndicator = false;
+	D_LoadPageImage(help_page, gameinfo.infoPage[1]);
 	M_SetupNextMenu(&ReadDef2);
 }
 
 void M_ReadThis3(int)
 {
     if (gameinfo.flags & GI_SHAREWARE) {
-        drawSkull = false;
+        drawIndicator = false;
+        D_LoadPageImage(help_page, gameinfo.infoPage[2]);
         M_SetupNextMenu(&ReadDef3);
     } else {
         M_FinishReadThis(0);
     }
 }
 
+static void M_DrawHelpPage()
+{
+	D_DrawPageImage(help_page, I_GetPrimarySurface(), true);
+}
+
 void M_FinishReadThis(int)
 {
-	drawSkull = true;
+	drawIndicator = true;
+	D_FreePageImage(help_page);
 	MenuStackDepth = 0;
 	M_SetupNextMenu(&MainDef);
 }
@@ -910,15 +1055,27 @@ void M_FinishReadThis(int)
 //
 void M_DrawSaveLoadBorder (int x, int y, int len)
 {
-	screen->DrawPatchClean (W_CachePatch ("M_LSLEFT"), x-8, y+7);
+	patch_t* full_slot = W_CheckNumForName("M_FSLOT") >= 0 ? W_CachePatch("M_FSLOT") : nullptr;
+	patch_t* left_slot = W_CheckNumForName("M_LSLEFT") >= 0 ? W_CachePatch("M_LSLEFT") : nullptr;
+	patch_t* center_slot = W_CheckNumForName("M_LSCNTR") >= 0 ? W_CachePatch("M_LSCNTR") : nullptr;
+	patch_t* right_slot = W_CheckNumForName("M_LSRGHT") >= 0 ? W_CachePatch("M_LSRGHT") : nullptr;
 
-	for (int i = 0; i < len; i++)
+	if (full_slot != nullptr)
 	{
-		screen->DrawPatchClean (W_CachePatch ("M_LSCNTR"), x, y+7);
-		x += 8;
+		screen->DrawPatchClean (full_slot, x, y);
 	}
+	else
+	{
+		screen->DrawPatchCleanNoOffsets (left_slot, x, y);
 
-	screen->DrawPatchClean (W_CachePatch ("M_LSRGHT"), x, y+7);
+		for (int i = 0; i < len; i++)
+		{
+			x += M_SmallFontLineHeight();
+			screen->DrawPatchCleanNoOffsets (center_slot, x, y);
+		}
+
+		screen->DrawPatchCleanNoOffsets (right_slot, x, y);
+	}
 }
 
 //
@@ -926,18 +1083,38 @@ void M_DrawSaveLoadBorder (int x, int y, int len)
 //
 void M_DrawMainMenu()
 {
-	screen->DrawPatchClean(W_CachePatch("M_DOOM"), 94, 2);
+	const patch_t* menu_title = W_CheckNumForName(gameinfo.menuTitle) ?
+		W_CachePatch(gameinfo.menuTitle) : nullptr;
+
+	if (menu_title != nullptr)
+	{
+		const int menu_title_x = gameinfo.menuTitleOffsetX > 0 ?
+			gameinfo.menuTitleOffsetX : (320 - menu_title->width()) / 2;
+		const int menu_title_y = 1;
+		screen->DrawPatchClean(menu_title, menu_title_x, menu_title_y);
+	}
+	if (SkullBaseLump >= 0)
+	{
+		const int frame = (MenuTime / 3) % 18;
+		screen->DrawPatchClean(W_CachePatch(SkullBaseLump + (17 - frame), PU_CACHE), 40, 10);
+		screen->DrawPatchClean(W_CachePatch(SkullBaseLump + frame, PU_CACHE), 232, 10);
+	}
 }
 
 void M_DrawNewGame()
 {
-	screen->DrawPatchClean(W_CachePatch("M_NEWG"), 96, 14);
-	screen->DrawPatchClean(W_CachePatch("M_SKILL"), 54, 38);
+	if (W_CheckNumForName("M_NEWG") >= 0)
+	{
+		screen->DrawPatchClean(W_CachePatch("M_NEWG"), 96, 14);
+	}
 
-	static constexpr int SMALLFONT_OFFSET = 8; // Line up with the skull
+	if (W_CheckNumForName("M_SKILL") >= 0)
+	{
+		screen->DrawPatchClean(W_CachePatch("M_SKILL"), 54, 38);
+	}
 
 	const char* pslabel = "Pistol Start Each Level ";
-	const int psy = NewDef.y + (LINEHEIGHT * skillnum) + SMALLFONT_OFFSET;
+	const int psy = NewDef.y + (M_BigFontLineHeight() * skillnum) + M_SmallFontLineHeight();
 
 	screen->DrawTextCleanMove(CR_RED, NewDef.x, psy, pslabel);
 	screen->DrawTextCleanMove(CR_GREY, NewDef.x + V_StringWidth(pslabel), psy,
@@ -964,27 +1141,36 @@ namespace
 	}
 
 	void SetupSkillList()
-	{
-	    NewDef.lastOn = defaultskillmenu;
+  	{
+  	    NewDef.lastOn = defaultskillmenu;
 
-	    int i = 0;
-	    for (; i < skillnum; ++i)
-	    {
-		    if (SkillInfos[i].pic_name.empty())
-		    {
-			    strncpy(NewGameMenu[i].textname, SkillInfos[i].menu_name.c_str(), 30);
-		    }
-		    else
-		    {
-			    NewGameMenu[i].name = SkillInfos[i].pic_name;
-		    }
+		for (int i = 0; i < MAX_SKILLS + 1; ++i)
+		{
+			NewGameMenu[i].name.clear();
+			NewGameMenu[i].textname[0] = '\0';
+			NewGameMenu[i].alphaKey = 0;
+		}
+  
+  	    int i = 0;
+  	    for (; i < skillnum; ++i)
+  	    {
+   		    if (SkillInfos[i].pic_name.empty())
+   		    {
+				M_StringCopy(NewGameMenu[i].textname, SkillInfos[i].menu_name.c_str(),
+				             sizeof(NewGameMenu[i].textname));
+   		    }
+   		    else
+   		    {
+  			    NewGameMenu[i].name = SkillInfos[i].pic_name;
+   		    }
 
 			NewGameMenu[i].alphaKey = SkillInfos[i].shortcut;
 	    }
-
-		NewGameMenu[i].name.clear();
-	    NewGameMenu[i].alphaKey = 'p';
-	}
+  
+ 		NewGameMenu[i].name.clear();
+		NewGameMenu[i].textname[0] = '\0';
+  	    NewGameMenu[i].alphaKey = 'p';
+  	}
 }
 
 void M_NewGame(int choice)
@@ -1005,7 +1191,7 @@ void M_NewGame(int choice)
 
 		if (episodenum > 4)
 		{
-			EpiDef.y -= LINEHEIGHT * (episodenum / 4);
+			EpiDef.y -= M_BigFontLineHeight() * (episodenum / 4);
 		}
 
 		epi = 0;
@@ -1034,10 +1220,13 @@ void M_DrawEpisode()
 
 	if (episodenum > 4)
 	{
-		y -= LINEHEIGHT * (episodenum / 4);
+		y -= M_BigFontLineHeight() * (episodenum / 4);
 	}
 
-	screen->DrawPatchClean(W_CachePatch("M_EPISOD"), 54, y);
+	if (W_CheckNumForName("M_EPISOD") >= 0)
+	{
+		screen->DrawPatchClean(W_CachePatch("M_EPISOD"), 54, y);
+	}
 }
 
 static int skillchoice = 0;
@@ -1149,8 +1338,7 @@ void M_Expansion(int choice)
 //
 void M_DrawReadThis1()
 {
-	const patch_t *p = W_CachePatch(gameinfo.infoPage[0]);
-	screen->DrawPatchFullScreen(p, false);
+	M_DrawHelpPage();
 }
 
 //
@@ -1158,8 +1346,7 @@ void M_DrawReadThis1()
 //
 void M_DrawReadThis2()
 {
-	const patch_t *p = W_CachePatch(gameinfo.infoPage[1]);
-	screen->DrawPatchFullScreen(p, false);
+	M_DrawHelpPage();
 }
 
 //
@@ -1167,8 +1354,7 @@ void M_DrawReadThis2()
 //
 void M_DrawReadThis3()
 {
-	const patch_t *p = W_CachePatch(gameinfo.infoPage[2]);
-	screen->DrawPatchFullScreen(p, false);
+	M_DrawHelpPage();
 }
 
 //
@@ -1176,7 +1362,17 @@ void M_DrawReadThis3()
 //
 void M_DrawOptions()
 {
-	screen->DrawPatchClean (W_CachePatch("M_OPTTTL"), 108, 15);
+	if (W_CheckNumForName("M_OPTTTL") >= 0)
+	{
+		screen->DrawPatchClean(W_CachePatch("M_OPTTTL"), 108, 15);
+	}
+	else
+	{
+		V_SetFont("BIGFONT");
+		screen->DrawTextCleanMove(CR_GRAY, 108, 15,
+		                         LocalizedString("MNU_OPTIONS"));
+		V_SetFont("SMALLFONT");
+	}
 }
 
 void M_Options(int choice)
@@ -1211,11 +1407,14 @@ void M_EndGame(int)
 		return;
 	}
 
-	M_StartMessage(GStrings(multiplayer ? NETEND : ENDGAME), M_EndGameResponse, true);
+	const OString endgame_message = multiplayer ? NETEND : 
+		(gameinfo.enginetype == ENGINE_HERETIC ? RAVENENDGAME : ENDGAME);
+
+	M_StartMessage(GStrings(endgame_message), M_EndGameResponse, true);
 }
 
 //
-// M_QuitDOOM
+// M_QuitGame
 //
 
 void STACK_ARGS call_terms();
@@ -1247,16 +1446,24 @@ void M_QuitResponse(int ch)
 	exit(EXIT_SUCCESS);
 }
 
-void M_QuitDOOM(int choice)
+static const std::string M_QuitMessage()
 {
-	// We pick index 0 which is language sensitive,
-	//  or one at random, between 1 and maximum number.
-	static std::string endstring;
-	endstring =
-		fmt::sprintf("%s\n\n%s",
-		             GStrings.getIndex(GStrings.toIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)),
-		             GStrings(DOSY));
+	switch (gameinfo.enginetype)
+	{
+		case ENGINE_HERETIC:
+			return fmt::sprintf("%s\n", GStrings(RAVENQUITMSG));
+		default:
+			// We pick index 0 which is language sensitive,
+			//  or one at random, between 1 and maximum number.
+			return fmt::sprintf("%s\n\n%s",
+			                     GStrings.getIndex(GStrings.toIndex(QUITMSG) + (gametic % NUM_QUITMESSAGES)),
+			                     GStrings(DOSY));
+	}
+}
 
+void M_QuitGame(int choice)
+{
+	static std::string endstring = M_QuitMessage();
 	M_StartMessage(endstring.c_str(), M_QuitResponse, true);
 }
 
@@ -1382,21 +1589,21 @@ static forceinline void R_RenderFire(int x, int y)
 
 static void M_PlayerSetupDrawer()
 {
-	const int x1 = (I_GetSurfaceWidth() / 2) - (160 * CleanXfac);
-	const int y1 = (I_GetSurfaceHeight() / 2) - (100 * CleanYfac);
-
-	const int x2 = (I_GetSurfaceWidth() / 2) + (160 * CleanXfac);
-	const int y2 = (I_GetSurfaceHeight() / 2) + (100 * CleanYfac);
-
+	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
 	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
-
-	// Background effect
-	OdamexEffect(x1,y1,x2,y2);
 
 	// Draw title
 	{
-		const patch_t *patch = W_CachePatch ("M_PSTTL");
-        screen->DrawPatchClean (patch, 160-patch->width()/2, 10);
+		if (W_CheckNumForName("M_PSTTL") >= 0)
+		{
+			const patch_t* patch = W_CachePatch("M_PSTTL");
+			screen->DrawPatchCleanWithPalette(patch, 160 - patch->width() / 2, 10, palette);
+		}
+		else
+		{
+			screen->DrawTextCleanMove(CR_GRAY, 110, 10,
+			                         LocalizedString("MNU_PLAYERSETUP"));
+		}
 
 		/*screen->DrawPatchClean (patch,
 			160 - (patch->width() >> 1),
@@ -1411,11 +1618,11 @@ static void M_PlayerSetupDrawer()
 	// Draw cursor for either of the above
 	if (genStringEnter != oldmenustring_t::NONE)
 		screen->DrawTextCleanMove(CR_RED, PSetupDef.x + V_StringWidth(savegamestrings[saveSlot]) + 56,
-							PSetupDef.y + ((saveSlot == 0) ? 0 : LINEHEIGHT), "_");
+							PSetupDef.y + ((saveSlot == 0) ? 0 : M_BigFontLineHeight()), "_");
 
 	// Draw player character
 	{
-		int x = 320 - 88 - 32, y = PSetupDef.y + LINEHEIGHT*3 - 14;
+		int x = 320 - 88 - 32, y = PSetupDef.y + M_BigFontLineHeight()*3 - 14;
 
 		x = (x-160)*CleanXfac+(I_GetSurfaceWidth() / 2);
 		y = (y-100)*CleanYfac+(I_GetSurfaceHeight() / 2);
@@ -1541,27 +1748,27 @@ static void M_PlayerSetupDrawer()
 		V_ColorMap = translationref_t(translationtables, menuplayer_id);
 
 		// Draw box surrounding fire and player:
-		screen->DrawPatchClean(W_CachePatch("M_PBOX"), 320 - 88 - 32 + 36,
-			PSetupDef.y + LINEHEIGHT * 3 + 22);
+		screen->DrawPatchCleanWithPalette(W_CachePatch("M_PBOX"), 320 - 88 - 32 + 36,
+			PSetupDef.y + M_BigFontLineHeight() * 3 + 22, palette);
 
 		screen->DrawTranslatedPatchClean (W_CachePatch (sprframe->lump[0]),
-			320 - 52 - 32, PSetupDef.y + LINEHEIGHT*3 + 46);
+			320 - 52 - 32, PSetupDef.y + M_BigFontLineHeight()*3 + 46);
 	}
 
 	// Draw team setting
 	{
 		const team_t team = D_TeamByName(cl_team.cstring());
 		const int x = V_StringWidth ("Preferred Team") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Preferred Team");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT, team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight(), "Preferred Team");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + M_BigFontLineHeight(), team == TEAM_NONE ? "NONE" : GetTeamInfo(team)->ColorStringUpper.c_str());
 	}
 
 	// Draw gender setting
 	{
 		const gender_t gender = D_GenderByName(cl_gender.cstring());
 		const int x = V_StringWidth ("Gender") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*2, "Gender");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*2, genders[gender]);
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*2, "Gender");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + M_BigFontLineHeight()*2, genders[gender]);
 	}
 
 	// Draw autoaim setting
@@ -1569,8 +1776,8 @@ static void M_PlayerSetupDrawer()
 		const int x = V_StringWidth ("Autoaim") + 8 + PSetupDef.x;
 		const float aim = cl_autoaim;
 
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*3, "Autoaim");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*3,
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*3, "Autoaim");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + M_BigFontLineHeight()*3,
 			aim == 0 ? "Never" :
 			aim <= 0.25 ? "Very Low" :
 			aim <= 0.5 ? "Low" :
@@ -1582,32 +1789,32 @@ static void M_PlayerSetupDrawer()
 	// Draw color setting
 	{
 		const int x = V_StringWidth ("Color") + 8 + PSetupDef.x;
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*4, "Color");
-		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + LINEHEIGHT*4, colorpresets[colorpreset]);
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*4, "Color");
+		screen->DrawTextCleanMove (CR_GREY, x, PSetupDef.y + M_BigFontLineHeight()*4, colorpresets[colorpreset]);
 	}
 
-	int PSetupSize = sizeof(PlayerSetupMenu) / sizeof(PlayerSetupMenu[0]);
+	int PSetupSize = static_cast<int>(ARRAY_LENGTH(PlayerSetupMenu));
 	if (colorpreset == COLOR_CUSTOM && PSetupDef.numitems < PSetupSize)
 		PSetupDef.numitems = PSetupDef.numitems + 3;
 	else if (colorpreset != COLOR_CUSTOM && PSetupDef.numitems > PSetupSize - 3)
 		PSetupDef.numitems = PSetupDef.numitems - 3;
 
 	// Draw player color sliders
-	//V_DrawTextCleanMove (CR_GREY, PSetupDef.x, PSetupDef.y + LINEHEIGHT, "Color");
+	//V_DrawTextCleanMove (CR_GREY, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight(), "Color");
 
 	if (colorpreset == COLOR_CUSTOM)
 	{
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*5, "Red");
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*6, "Green");
-		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + LINEHEIGHT*7, "Blue");
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*5, "Red");
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*6, "Green");
+		screen->DrawTextCleanMove (CR_RED, PSetupDef.x, PSetupDef.y + M_BigFontLineHeight()*7, "Blue");
 
 		{
 			const int x = V_StringWidth("Green") + 8 + PSetupDef.x;
 			const argb_t playercolor = V_GetColorFromString(cl_color);
 
-			M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*5, 0.0f, 255.0f, playercolor.getr(), 0.0f);
-			M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*6, 0.0f, 255.0f, playercolor.getg(), 0.0f);
-			M_DrawSlider(x, PSetupDef.y + LINEHEIGHT*7, 0.0f, 255.0f, playercolor.getb(), 0.0f);
+			M_DrawSlider(x, PSetupDef.y + M_BigFontLineHeight()*5, 0.0f, 255.0f, playercolor.getr(), 0.0f);
+			M_DrawSlider(x, PSetupDef.y + M_BigFontLineHeight()*6, 0.0f, 255.0f, playercolor.getg(), 0.0f);
+			M_DrawSlider(x, PSetupDef.y + M_BigFontLineHeight()*7, 0.0f, 255.0f, playercolor.getb(), 0.0f);
 		}
 	}
 }
@@ -1634,7 +1841,7 @@ void M_ChangeTeam (int choice) // [Toke - Teams]
 
 static void M_ChangeGender (int choice)
 {
-	static constexpr int MAX_GENDER = ARRAY_LENGTH(genders) - 1;
+	static constexpr int MAX_GENDER = static_cast<int>(ARRAY_LENGTH(genders)) - 1;
 	int gender = D_GenderByName(cl_gender.cstring());
 
 	if (!choice)
@@ -1675,7 +1882,7 @@ static void M_ChangeAutoAim (int choice)
 
 static void M_ChangeColorPreset (int choice)
 {
-	static constexpr int MAX_PRESET = ARRAY_LENGTH(colorpresets) - 1;
+	static constexpr int MAX_PRESET = static_cast<int>(ARRAY_LENGTH(colorpresets)) - 1;
 	int colorpreset = D_ColorPreset(cl_colorpreset.cstring());
 	argb_t customcolor = V_GetColorFromString(cl_customcolor);
 
@@ -1735,15 +1942,6 @@ static void M_PlayerNameChanged (int choice)
 {
 	AddCommandString (fmt::format("cl_name \"{}\"", savegamestrings[0]));
 }
-/*
-static void M_PlayerTeamChanged (int choice)
-{
-	char command[SAVESTRINGSIZE+8];
-
-	sprintf (command, "cl_team \"%s\"", savegamestrings[1]);
-	AddCommandString (command);
-}
-*/
 
 static void SendNewColor(int red, int green, int blue)
 {
@@ -1813,13 +2011,13 @@ static void M_SlidePlayerBlue (int choice)
 void M_DrawEmptyCell (oldmenu_t *menu, int item)
 {
 	screen->DrawPatchClean (W_CachePatch("M_CELL1"),
-		menu->x - 10, menu->y+item*LINEHEIGHT - 1);
+		menu->x - 10, menu->y+item*M_BigFontLineHeight() - 1);
 }
 
 void M_DrawSelCell (oldmenu_t *menu, int item)
 {
 	screen->DrawPatchClean (W_CachePatch("M_CELL2"),
-		menu->x - 10, menu->y+item*LINEHEIGHT - 1);
+		menu->x - 10, menu->y+item*M_BigFontLineHeight() - 1);
 }
 
 
@@ -1833,34 +2031,11 @@ void M_StartMessage (const char *string, void (*routine)(int), bool input)
 	menuactive = true;
 }
 
-
-
 void M_StopMessage()
 {
 	menuactive = messageLastMenuActive;
 	messageToPrint = 0;
 }
-
-
-//
-//		Find string height from hu_font chars
-//
-int M_StringHeight(char* string)
-{
-	// Default height without a working font is 8.
-	if (::hu_font[0].empty())
-		return 8;
-
-	const int height = W_ResolvePatchHandle(hu_font[0])->height();
-
-	int h = height;
-	while (*string)
-		if ((*string++) == '\n')
-			h += height;
-
-	return h;
-}
-
 
 
 //
@@ -2138,9 +2313,10 @@ void M_StartControlPanel()
 	if (menuactive)
 		return;
 
-	drawSkull = true;
+	drawIndicator = true;
 	MenuStackDepth = 0;
 	menuactive = 1;
+	MenuTime = 0;
 	currentMenu = &MainDef;
 	itemOn = currentMenu->lastOn;
 	OptionsActive = false;			// [RH] Make sure none of the options menus appear.
@@ -2148,6 +2324,20 @@ void M_StartControlPanel()
 	S_Sound(CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 }
 
+
+//
+// [Toke] M_DimBackground
+// Draws the 50% reduction in brightness effect
+//
+void M_DimBackground ()
+{
+	const int dim_width = screen->getSurface()->getWidth();
+	const int dim_height = screen->getSurface()->getHeight();
+	const int srcx = 0;
+	const int srcy = 0;
+
+	screen->Dim(srcx, srcy, dim_width, dim_height);
+}
 
 //
 // M_Drawer
@@ -2177,6 +2367,9 @@ void M_Drawer()
 	}
 	else if (menuactive)
 	{
+		// Background effect
+		M_DimBackground();
+
 		if (OptionsActive)
 		{
 			M_OptDrawer();
@@ -2193,24 +2386,29 @@ void M_Drawer()
 			V_SetFont("BIGFONT");
 			for (int i = 0; i < max; i++)
 			{
-				if (currentMenu->menuitems[i].name[0])
+				if (currentMenu->menuitems[i].name[0] &&
+					W_CheckNumForName(currentMenu->menuitems[i].name) >= 0)
 				{
 					screen->DrawPatchClean(W_CachePatch(currentMenu->menuitems[i].name), x, y);
 				}
 				else if (currentMenu->menuitems[i].textname[0])
 				{
-					screen->DrawTextCleanMove(CR_RED, x, y, currentMenu->menuitems[i].textname);
+					screen->DrawTextCleanMove(CR_RED, x, y, LocalizedString(currentMenu->menuitems[i].textname));
 				}
-				y += LINEHEIGHT;
+
+				y += M_BigFontLineHeight();
 			}
 			V_SetFont("SMALLFONT");
 
 
 			// DRAW SKULL
-			if (drawSkull)
+			if (drawIndicator)
 			{
-				screen->DrawPatchClean(W_CachePatch(skullName[whichSkull]),
-					x + SKULLXOFF, currentMenu->y - 5 + itemOn*LINEHEIGHT);
+				const patch_t* indicator = W_CachePatch(gameinfo.menuIndicatorLumps[whichIndicator]);
+				const int draw_x = x + gameinfo.menuIndicatorOffsetX;
+				const int draw_y = currentMenu->y + gameinfo.menuIndicatorOffsetY + itemOn*M_BigFontLineHeight();
+
+				screen->DrawPatchClean (indicator, draw_x, draw_y);
 			}
 		}
 	}
@@ -2218,7 +2416,9 @@ void M_Drawer()
 	// [SL] force the status bar to be redrawn in case the menu
 	// draws over a portion of the status bar background
 	if (R_StatusBarVisible() && (menuactive || messageToPrint))
+	{
 		ST_ForceRefresh();
+	}
 }
 
 
@@ -2228,9 +2428,10 @@ void M_Drawer()
 void M_ClearMenus()
 {
 	I_FreeSurface(fire_surface);
+	D_FreePageImage(help_page);
 	MenuStackDepth = 0;
 	menuactive = false;
-	drawSkull = true;
+	drawIndicator = true;
 	M_DemoNoPlay = false;
     M_ResumeSound();
 }
@@ -2245,7 +2446,7 @@ void M_SetupNextMenu (oldmenu_t *menudef)
 {
 	MenuStack[MenuStackDepth].menu.old = menudef;
 	MenuStack[MenuStackDepth].isNewStyle = false;
-	MenuStack[MenuStackDepth].drawSkull = drawSkull;
+	MenuStack[MenuStackDepth].drawIndicator = drawIndicator;
 	MenuStackDepth++;
 
 	currentMenu = menudef;
@@ -2267,7 +2468,7 @@ void M_PopMenuStack()
 			currentMenu = MenuStack[MenuStackDepth].menu.old;
 			itemOn = currentMenu->lastOn;
 		}
-		drawSkull = MenuStack[MenuStackDepth].drawSkull;
+		drawIndicator = MenuStack[MenuStackDepth].drawIndicator;
 		MenuStackDepth++;
 		S_Sound (CHAN_INTERFACE, "switches/normbutn", 1, ATTN_NONE);
 	} else {
@@ -2290,14 +2491,18 @@ void M_PopMenuStack()
 //
 void M_Ticker()
 {
-	if (--skullAnimCounter <= 0)
+	if (--indicatorAnimCounter <= 0)
 	{
-		whichSkull ^= 1;
-		skullAnimCounter = 8;
+		whichIndicator ^= 1;
+		indicatorAnimCounter = 8;
 	}
 
 	if (currentMenu == &PSetupDef)
+	{
 		M_PlayerSetupTicker ();
+	}
+	
+	MenuTime++;
 }
 
 
@@ -2322,10 +2527,12 @@ void M_Init()
 	currentMenu = &MainDef;
 	OptionsActive = false;
 	menuactive = 0;
+	MenuTime = 0;
+	SkullBaseLump = W_CheckNumForName ("M_SKL00");
 	itemOn = currentMenu->lastOn;
-	whichSkull = 0;
-	skullAnimCounter = 10;
-	drawSkull = true;
+	whichIndicator = 0;
+	indicatorAnimCounter = 10;
+	drawIndicator = true;
 	screenSize = screenblocks.asInt() - 3;
 	messageToPrint = 0;
 	messageString = NULL;
@@ -2338,6 +2545,16 @@ void M_Init()
         MainDef.menuitems = Doom2MainMenu;
 
         MainDef.y += 8;
+    }
+    else if (gameinfo.enginetype == ENGINE_HERETIC)
+    {
+    	// Heretic changes stuff
+		MainDef.numitems = htc_main_end;
+        MainDef.menuitems = HereticMainMenu;
+        MainDef.x = 110;
+        MainDef.y = 56;
+		LoadDef = HticLoadDef;
+		SaveDef = HticSaveDef;
     }
 
 	M_OptInit ();

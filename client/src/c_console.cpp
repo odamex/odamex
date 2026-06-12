@@ -70,7 +70,7 @@ static IWindowSurface* background_surface;
 
 extern int		gametic;
 
-static unsigned int		ConRows, ConCols, ConCharSize, ConScale;
+static int				ConRows, ConCols, ConCharSize, ConScale;
 
 static bool				cursoron = false;
 static int				ConBottom = 0;
@@ -293,7 +293,7 @@ public:
 
 	std::string		text;
 	size_t			cursor_position;
-	int			scrolled_columns;
+	size_t			scrolled_columns;
 
 private:
 	void doScrolling();
@@ -314,22 +314,20 @@ private:
 //
 void ConsoleCommandLine::doScrolling()
 {
-	int n = scrolled_columns;
+	size_t n = scrolled_columns;
+	const size_t visible_columns = ConCols > 2 ? static_cast<size_t>(ConCols - 2) : 0;
 
 	// Start of visible line is beyond end of line
 	if (scrolled_columns >= text.length())
-		n = cursor_position - ConCols + 2;
+		n = cursor_position > visible_columns ? cursor_position - visible_columns : 0;
 
 	// The cursor_position is beyond the visible part of the line
-	if ((static_cast<int>(cursor_position) - static_cast<int>(scrolled_columns)) >= static_cast<int>(ConCols - 2))
-		n = cursor_position - ConCols + 2;
+	if (cursor_position >= scrolled_columns + visible_columns)
+		n = cursor_position > visible_columns ? cursor_position - visible_columns : 0;
 
 	// The cursor_positionor is in front of the visible part of the line
 	if (scrolled_columns > cursor_position)
 		n = cursor_position;
-
-	if (n < 0)
-		n = 0;
 
 	scrolled_columns = n;
 }
@@ -1038,10 +1036,14 @@ void C_ClearCommand()
 void C_InitConsoleBackground()
 {
 	const patch_t* bg_patch = W_CachePatch(W_GetNumForName("CONBACK"));
+	const palette_t* palette = V_GetPaletteFromLump("ODAPAL");
+	const int bpp = I_GetPrimarySurface()->getBitsPerPixel();
 
-	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), 8);
+	I_FreeSurface(background_surface);
+	background_surface = I_AllocateSurface(bg_patch->width(), bg_patch->height(), bpp);
 	background_surface->lock();
-	background_surface->getDefaultCanvas()->DrawPatch(bg_patch, 0, 0);
+	background_surface->getDefaultCanvas()->DrawPatchWithPalette(bg_patch, 0, 0, palette);
+
 	background_surface->unlock();
 }
 
@@ -1054,6 +1056,7 @@ void C_InitConsoleBackground()
 void STACK_ARGS C_ShutdownConsoleBackground()
 {
 	I_FreeSurface(background_surface);
+	background_surface = NULL;
 }
 
 
@@ -1517,7 +1520,7 @@ static bool C_UseFullConsole()
 //
 void C_AdjustBottom()
 {
-	const unsigned int surface_height = I_GetSurfaceHeight();
+	const int surface_height = I_GetSurfaceHeight();
 
 	if (ConsoleState == c_up)
 		ConBottom = 0;
@@ -1552,6 +1555,9 @@ void C_NewModeAdjust()
 	C_FlushDisplay();
 
 	C_AdjustBottom();
+
+	if (I_VideoInitialized())
+		C_InitConsoleBackground();
 }
 
 
@@ -1652,7 +1658,7 @@ void C_ToggleConsole()
 //
 void C_DisplayTicker()
 {
-	unsigned int surface_height = I_GetSurfaceHeight();
+	const int surface_height = I_GetSurfaceHeight();
 
 	// Attaching ConBottom to gametic will still cause falling/rising to
 	// be pinned to the gametic i.e. 35fps.
@@ -1931,7 +1937,7 @@ void C_DrawConsole()
 
 		// find the ConsoleLine that will be printed to bottom of the console
 		ConsoleLineList::reverse_iterator current_line_it = Lines.rbegin();
-		for (unsigned i = 0; i < RowAdjust && current_line_it != Lines.rend(); i++)
+		for (int i = 0; i < RowAdjust && current_line_it != Lines.rend(); i++)
 			++current_line_it;
 
 		// print as many ConsoleLines as will fit in the screen, starting at the bottom

@@ -28,6 +28,8 @@
 
 #include <sstream>
 #include <algorithm>
+#include <filesystem>
+#include <fstream>
 
 #include "win32inc.h"
 #ifndef _WIN32
@@ -51,6 +53,7 @@
 #include "i_system.h"
 #include "i_time.h"
 #include "g_game.h"
+#include "g_episode.h"
 #include "g_spawninv.h"
 #include "r_main.h"
 #include "d_main.h"
@@ -72,6 +75,95 @@ extern bool step_mode;
 
 bool capfps = true;
 float maxfps = 35.0f;
+
+// Subdirs of a Steam library where IWADs are found.
+static const char* steam_install_subdirs[] =
+{
+	"steamapps/common/Doom 2/base",
+	"steamapps/common/Doom 2/masterbase/master/wads",
+	"steamapps/common/Final Doom/base",
+	"steamapps/common/Doom 2/finaldoombase",
+	"steamapps/common/Ultimate Doom/base",
+	"steamapps/common/DOOM 3 BFG Edition/base/wads",
+	"steamapps/common/Master Levels of Doom/master/wads", // Let Odamex find the Master Levels pwads too
+	"steamapps/common/Ultimate Doom/base/doom2", // 2024 Steam re-release additions here and below
+	"steamapps/common/Ultimate Doom/base/master/wads",
+	"steamapps/common/Ultimate Doom/base/plutonia",
+	"steamapps/common/Ultimate Doom/base/tnt",
+	"steamapps/common/Ultimate Doom/rerelease",
+	"steamapps/common/Heretic + Hexen",
+};
+
+static void D_AddUniquePath(std::vector<std::string>& paths, const std::string& path)
+{
+	std::string cleanPath = M_CleanPath(path);
+	if (std::find(paths.begin(), paths.end(), cleanPath) == paths.end())
+		paths.push_back(cleanPath);
+}
+
+static bool D_IsExistingDir(const std::string& path)
+{
+	std::error_code ec;
+	return std::filesystem::is_directory(std::filesystem::path(path), ec);
+}
+
+static std::vector<std::string> GetSteamLibraryPaths(const std::string& install_path)
+{
+	std::vector<std::string> paths;
+
+	if (install_path.empty())
+		return paths;
+
+	D_AddUniquePath(paths, install_path);
+
+	const std::filesystem::path vdfpath =
+		std::filesystem::path(install_path) / "steamapps" / "libraryfolders.vdf";
+	std::ifstream file(vdfpath);
+	if (!file.is_open())
+		return paths;
+
+	std::string line;
+	while (std::getline(file, line))
+	{
+		if (line.find("\"path\"") == std::string::npos)
+			continue;
+
+		const size_t value_start = line.find('"', line.find("\"path\"") + 6);
+		if (value_start == std::string::npos)
+			continue;
+		const size_t value_end = line.find('"', value_start + 1);
+		if (value_end == std::string::npos)
+			continue;
+
+		std::string path = line.substr(value_start + 1, value_end - value_start - 1);
+		size_t pos = 0;
+		while ((pos = path.find("\\\\", pos)) != std::string::npos)
+		{
+			path.replace(pos, 2, "\\");
+			pos += 1;
+		}
+
+		D_AddUniquePath(paths, path);
+	}
+
+	return paths;
+}
+
+static void D_AddSteamSearchDirs(std::vector<std::string>& dirs,
+                                 const std::vector<std::string>& steam_library_paths,
+                                 const char separator)
+{
+	for (const auto& library : steam_library_paths)
+	{
+		for (const auto& dir : steam_install_subdirs)
+		{
+			const std::string subpath =
+				(std::filesystem::path(library) / std::filesystem::path(dir)).string();
+
+			D_AddSearchDir(dirs, subpath.c_str(), separator, missing_dir_policy::silent);
+		}
+	}
+}
 
 #if defined(_WIN32)
 
@@ -158,23 +250,6 @@ static registry_value_t steam_install_location =
 	"InstallPath",
 };
 
-// Subdirs of the steam install directory where IWADs are found
-static const char* steam_install_subdirs[] =
-{
-	"steamapps\\common\\doom 2\\base",
-	"steamapps\\common\\Doom 2\\masterbase",
-	"steamapps\\common\\final doom\\base",
-	"steamapps\\common\\Doom 2\\finaldoombase",
-	"steamapps\\common\\ultimate doom\\base",
-	"steamapps\\common\\DOOM 3 BFG Edition\\base\\wads",
-	"steamapps\\common\\master levels of doom\\master\\wads", //Let Odamex find the Master Levels pwads too
-	"steamapps\\common\\ultimate doom\\base\\doom2", //2024 Steam re-release additions here and below
-	"steamapps\\common\\ultimate doom\\base\\master\\wads",
-	"steamapps\\common\\ultimate doom\\base\\plutonia",
-	"steamapps\\common\\ultimate doom\\base\\tnt",
-	"steamapps\\common\\ultimate doom\\rerelease",
-};
-
 static registry_value_t gog_doom_plus_doom2 =
 {
 	HKEY_LOCAL_MACHINE,
@@ -200,6 +275,13 @@ static registry_value_t gog_final_doom =
 {
 	HKEY_LOCAL_MACHINE,
 	SOFTWARE_KEY "\\GOG.com\\Games\\1435848742",
+	"path",
+};
+
+static registry_value_t gog_heretic_hexen =
+{
+	HKEY_LOCAL_MACHINE,
+	SOFTWARE_KEY "\\GOG.com\\Games\\1776058590",
 	"path",
 };
 
@@ -287,7 +369,8 @@ void D_InitializeDoomObjectTables()
 // D_AddSearchDir
 // denis - Split a new directory string using the separator and append results to the output
 //
-void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator)
+void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator,
+                    const missing_dir_policy policy)
 {
 	if(!dir)
 		return;
@@ -305,8 +388,15 @@ void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char 
 
 		M_ExpandHomeDir(segment);
 		segment = M_CleanPath(segment);
-
-		dirs.push_back(segment);
+		if (D_IsExistingDir(segment))
+		{
+			dirs.push_back(segment);
+		}
+		else if (policy == missing_dir_policy::warn ||
+		         (policy == missing_dir_policy::developer_warn && (::developer || ::devparm)))
+		{
+			PrintFmt(PRINT_HIGH, "{}: search dir not found: {}\n", __FUNCTION__, segment);
+		}
 	}
 }
 
@@ -327,12 +417,12 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 			val = GetRegistryString(&uninstallval);
 
-			if (val == NULL)
+			if (val == nullptr)
 				continue;
 
 			unstr = strstr(val, uninstaller_string);
 
-			if (unstr == NULL)
+			if (unstr == nullptr)
 			{
 				M_Free(val);
 			}
@@ -341,7 +431,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 				path = unstr + strlen(uninstaller_string);
 
 				const char* cpath = path;
-				D_AddSearchDir(dirs, cpath, separator);
+				D_AddSearchDir(dirs, cpath, separator, missing_dir_policy::silent);
 			}
 		}
 	}
@@ -350,13 +440,13 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 	{
 		char* install_path = GetRegistryString(&collectors_edition_value);
 
-		if (install_path != NULL)
+		if (install_path != nullptr)
 		{
 			for (const auto& dir : collectors_edition_subdirs)
 			{
 				const std::string subpath = fmt::format("{}\\{}", install_path, dir);
 
-				D_AddSearchDir(dirs, subpath.c_str(), separator);
+				D_AddSearchDir(dirs, subpath.c_str(), separator, missing_dir_policy::silent);
 			}
 
 			M_Free(install_path);
@@ -367,14 +457,10 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 	{
 		char* install_path = GetRegistryString(&steam_install_location);
 
-		if (install_path != NULL)
+		if (install_path != nullptr)
 		{
-			for (const auto& dir : steam_install_subdirs)
-			{
-				const std::string subpath = fmt::format("{}\\{}", install_path, dir);
-
-				D_AddSearchDir(dirs, subpath.c_str(), separator);
-			}
+			const auto steam_library_paths = GetSteamLibraryPaths(install_path);
+			D_AddSteamSearchDirs(dirs, steam_library_paths, separator);
 
 			M_Free(install_path);
 		}
@@ -386,7 +472,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 		if (doom_plus_doom2_path != nullptr)
 		{
-			D_AddSearchDir(dirs, doom_plus_doom2_path, separator);
+			D_AddSearchDir(dirs, doom_plus_doom2_path, separator, missing_dir_policy::silent);
 			M_Free(doom_plus_doom2_path);
 		}
 
@@ -394,7 +480,7 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 
 		if (doom_path != nullptr)
 		{
-			D_AddSearchDir(dirs, doom_path, separator);
+			D_AddSearchDir(dirs, doom_path, separator, missing_dir_policy::silent);
 			M_Free(doom_path);
 		}
 
@@ -404,55 +490,85 @@ void D_AddPlatformSearchDirs(std::vector<std::string> &dirs)
 		{
 			const std::string full_doom2_path = fmt::format("{}\\{}", doom2_path, "doom2");
 			const std::string master_levels_path = fmt::format("{}\\{}", doom2_path, "master\\wads");
-			D_AddSearchDir(dirs, full_doom2_path.c_str(), separator);
-			D_AddSearchDir(dirs, master_levels_path.c_str(), separator);
+			D_AddSearchDir(dirs, full_doom2_path.c_str(), separator, missing_dir_policy::silent);
+			D_AddSearchDir(dirs, master_levels_path.c_str(), separator, missing_dir_policy::silent);
 			M_Free(doom2_path);
 		}
 
 		char* final_doom_path = GetRegistryString(&gog_final_doom);
 
-		if (final_doom_path != NULL)
+		if (final_doom_path != nullptr)
 		{
 			const std::string plutonia_path = fmt::format("{}\\{}", final_doom_path, "Plutonia");
 			const std::string tnt_path = fmt::format("{}\\{}", final_doom_path, "TNT");
-			D_AddSearchDir(dirs, plutonia_path.c_str(), separator);
-			D_AddSearchDir(dirs, tnt_path.c_str(), separator);
+			D_AddSearchDir(dirs, plutonia_path.c_str(), separator, missing_dir_policy::silent);
+			D_AddSearchDir(dirs, tnt_path.c_str(), separator, missing_dir_policy::silent);
 			M_Free(final_doom_path);
+		}
+
+		char* heretic_plus_hexen_path = GetRegistryString(&gog_heretic_hexen);
+
+		if (heretic_plus_hexen_path != nullptr)
+		{
+			D_AddSearchDir(dirs, heretic_plus_hexen_path, separator, missing_dir_policy::silent);
+			M_Free(heretic_plus_hexen_path);
 		}
 	}
 
 	// DOS Doom via DEICE
-	D_AddSearchDir(dirs, "\\doom2", separator);    // Doom II
-	D_AddSearchDir(dirs, "\\plutonia", separator); // Final Doom
-	D_AddSearchDir(dirs, "\\tnt", separator);
-	D_AddSearchDir(dirs, "\\doom_se", separator);  // Ultimate Doom
-	D_AddSearchDir(dirs, "\\doom", separator);     // Shareware / Registered Doom
-	D_AddSearchDir(dirs, "\\dooms", separator);    // Shareware versions
-	D_AddSearchDir(dirs, "\\doomsw", separator);
+	D_AddSearchDir(dirs, "\\doom2", separator, missing_dir_policy::developer_warn);    // Doom II
+	D_AddSearchDir(dirs, "\\plutonia", separator, missing_dir_policy::developer_warn); // Final Doom
+	D_AddSearchDir(dirs, "\\tnt", separator, missing_dir_policy::developer_warn);
+	D_AddSearchDir(dirs, "\\doom_se", separator, missing_dir_policy::developer_warn);  // Ultimate Doom
+	D_AddSearchDir(dirs, "\\doom", separator, missing_dir_policy::developer_warn);     // Shareware / Registered Doom
+	D_AddSearchDir(dirs, "\\dooms", separator, missing_dir_policy::developer_warn);    // Shareware versions
+	D_AddSearchDir(dirs, "\\doomsw", separator, missing_dir_policy::developer_warn);
 
 	#elif defined(UNIX)
 
 	const char separator = ':';
 
+	// Doom on Steam
+	{
+		std::vector<std::string> steam_install_paths;
+
+	#if defined(__APPLE__)
+		steam_install_paths.emplace_back("~/Library/Application Support/Steam");
+	#else
+		if (const char* xdg_data_home = std::getenv("XDG_DATA_HOME"))
+			steam_install_paths.emplace_back(std::string(xdg_data_home) + PATHSEP + "Steam");
+		steam_install_paths.emplace_back("~/.steam/steam");
+		steam_install_paths.emplace_back("~/.local/share/Steam");
+		steam_install_paths.emplace_back("~/.var/app/com.valvesoftware.Steam/.local/share/Steam");
+	#endif
+
+		for (auto& install_path : steam_install_paths)
+		{
+			M_ExpandHomeDir(install_path);
+			const auto steam_library_paths = GetSteamLibraryPaths(install_path);
+			D_AddSteamSearchDirs(dirs, steam_library_paths, separator);
+		}
+	}
+
 	#if defined(INSTALL_PREFIX) && defined(INSTALL_DATADIR)
-	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/odamex", separator);
-	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex", separator);
+	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/odamex", separator, missing_dir_policy::developer_warn);
+	D_AddSearchDir(dirs, INSTALL_PREFIX "/" INSTALL_DATADIR "/games/odamex", separator, missing_dir_policy::developer_warn);
 	#endif
 	// Search the maintainer-directed data directory for WADs
 	#if defined(ODAMEX_INSTALL_DATADIR)
-	D_AddSearchDir(dirs, ODAMEX_INSTALL_DATADIR, separator);
+	D_AddSearchDir(dirs, ODAMEX_INSTALL_DATADIR, separator, missing_dir_policy::developer_warn);
 	#endif
 
-	D_AddSearchDir(dirs, "/usr/share/doom", separator);
-	D_AddSearchDir(dirs, "/usr/share/games/doom", separator);
-	D_AddSearchDir(dirs, "/usr/local/share/games/doom", separator);
-	D_AddSearchDir(dirs, "/usr/local/share/doom", separator);
+	D_AddSearchDir(dirs, "/usr/share/doom", separator, missing_dir_policy::developer_warn);
+	D_AddSearchDir(dirs, "/usr/share/games/doom", separator, missing_dir_policy::developer_warn);
+	D_AddSearchDir(dirs, "/usr/local/share/games/doom", separator, missing_dir_policy::developer_warn);
+	D_AddSearchDir(dirs, "/usr/local/share/doom", separator, missing_dir_policy::developer_warn);
 	// Flatpak sandbox default directories
 	// (Since you need to pass envvars to a Flatpak)
-	D_AddSearchDir(dirs, "/run/host/usr/share/doom", separator);
-	D_AddSearchDir(dirs, "/run/host/usr/share/games/doom", separator);
-	D_AddSearchDir(dirs, "/run/host/usr/local/share/games/doom", separator);
-	D_AddSearchDir(dirs, "/run/host/usr/local/share/doom", separator);
+	D_AddSearchDir(dirs, "/run/host/usr/share/doom", separator, missing_dir_policy::developer_warn);
+	D_AddSearchDir(dirs, "/run/host/usr/share/games/doom", separator, missing_dir_policy::developer_warn);
+	D_AddSearchDir(dirs, "/run/host/usr/local/share/games/doom", separator, missing_dir_policy::developer_warn);
+	D_AddSearchDir(dirs, "/run/host/usr/local/share/doom", separator, missing_dir_policy::developer_warn);
 
 	#endif
 }
@@ -913,10 +1029,10 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 	{
 		D_LoadResourceFiles(newwadfiles, newpatchfiles);
 
-		// get skill / episode / map from parms
-		startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
-
 		D_Init();
+
+		// get skill / episode / map from parms
+		startmap = EpisodeMaps[0];
 	}
 	catch (CRecoverableError& error)
 	{
@@ -938,10 +1054,10 @@ bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfi
 		{
 			LoadResolvedFiles(oldwadfiles, oldpatchfiles);
 
-			// get skill / episode / map from parms
-			startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
-
 			D_Init();
+
+			// get skill / episode / map from parms
+			startmap = EpisodeMaps[0];
 		}
 		catch (CRecoverableError& error)
 		{

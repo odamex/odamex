@@ -44,6 +44,7 @@ struct finale_options_t
 	OLumpName flat;
 	std::string text;
 	OLumpName pic;
+	OLumpName palette;
 };
 
 void F_StartFinale(finale_options_t& options);

@@ -60,7 +60,15 @@ void D_DisplayTicker(void);
 // [RH] Set this to something to draw an icon during the next screen refresh.
 extern const char *D_DrawIcon;
 
-void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator);
+enum class missing_dir_policy
+{
+	silent,
+	warn,
+	developer_warn,
+};
+
+void D_AddSearchDir(std::vector<std::string> &dirs, const char *dir, const char separator,
+                    missing_dir_policy policy = missing_dir_policy::silent);
 void D_AddPlatformSearchDirs(std::vector<std::string>& dirs);
 void D_LoadResolvedPatches(bool reloadStrings = false);
 std::string D_CleanseFileName(const std::string &filename, const std::string &ext = "");

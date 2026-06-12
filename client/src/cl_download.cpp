@@ -314,17 +314,17 @@ static StringTokens GetDownloadDirs()
 	StringTokens dirs;
 
 	// Add all of the sources.
-	D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, cl_waddownloaddir.cstring(), PATHLISTSEPCHAR, missing_dir_policy::warn);
 	dirs.push_back(M_GetDownloadDir());
 
 	// These folders should only work on PC versions
 #ifndef GCONSOLE
-	D_AddSearchDir(dirs, Args.CheckValue("-waddir"), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, Args.CheckValue("-waddir"), PATHLISTSEPCHAR, missing_dir_policy::warn);
+	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), PATHLISTSEPCHAR, missing_dir_policy::warn);
+	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR, missing_dir_policy::warn);
 #endif
 
-	D_AddSearchDir(dirs, waddirs.cstring(), PATHLISTSEPCHAR);
+	D_AddSearchDir(dirs, waddirs.cstring(), PATHLISTSEPCHAR, missing_dir_policy::warn);
 
 #ifdef __SWITCH__
 	dirs.push_back("./wads");

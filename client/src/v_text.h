@@ -63,6 +63,7 @@ extern OGlobalFont hu_font;
 void V_TextInit();
 void V_TextShutdown();
 void V_SetFont(const char* fontname);
+int V_GetFontLineHeight(const char* fontname);
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
 

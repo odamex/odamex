@@ -232,13 +232,15 @@ std::vector<std::string> M_FileSearchDirs()
 	std::vector<std::string> dirs;
 
 	// [cSc] Add cl_waddownloaddir as default path
-	D_AddSearchDir(dirs, ::cl_waddownloaddir.cstring(), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, ::Args.CheckValue("-waddir"), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR);
-	D_AddSearchDir(dirs, ::waddirs.cstring(), PATHLISTSEPCHAR);
-	dirs.push_back(M_CleanPath(M_GetUserDir() + PATHSEP "downloads"));
-	dirs.push_back(M_CleanPath(M_GetBinaryDir() + PATHSEP "downloads"));
+	D_AddSearchDir(dirs, ::cl_waddownloaddir.cstring(), PATHLISTSEPCHAR, missing_dir_policy::warn);
+	D_AddSearchDir(dirs, ::Args.CheckValue("-waddir"), PATHLISTSEPCHAR, missing_dir_policy::warn);
+	D_AddSearchDir(dirs, getenv("DOOMWADDIR"), PATHLISTSEPCHAR, missing_dir_policy::warn);
+	D_AddSearchDir(dirs, getenv("DOOMWADPATH"), PATHLISTSEPCHAR, missing_dir_policy::warn);
+	D_AddSearchDir(dirs, ::waddirs.cstring(), PATHLISTSEPCHAR, missing_dir_policy::warn);
+	const std::string user_downloads = M_CleanPath(M_GetUserDir() + PATHSEP "downloads");
+	const std::string binary_downloads = M_CleanPath(M_GetBinaryDir() + PATHSEP "downloads");
+	D_AddSearchDir(dirs, user_downloads.c_str(), PATHLISTSEPCHAR, missing_dir_policy::developer_warn);
+	D_AddSearchDir(dirs, binary_downloads.c_str(), PATHLISTSEPCHAR, missing_dir_policy::developer_warn);
 	dirs.push_back(M_GetUserDir());
 	dirs.push_back(M_GetCWD());
 	dirs.push_back(M_GetBinaryDir());

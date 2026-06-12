@@ -85,6 +85,7 @@ void I_SetPalette(const argb_t* palette);
 
 void I_BeginUpdate();
 void I_FinishUpdate();
+void I_AbortUpdate();
 
 void I_SetWindowCaption(const std::string& caption = "");
 void I_SetWindowIcon();

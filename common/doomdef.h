@@ -145,6 +145,8 @@ enum GameMode_t
   commercial,			// DOOM 2 retail, E1 M34
 						// DOOM 2 german edition not handled
   retail,				// DOOM 1 retail, E4, M36
+  shareware_heretic,	// Heretic shareware
+  registered_heretic,	// Heretic registered/retail
   retail_chex,			// Chex Quest
   retail_bfg,			// Doom 1 BFG Edition
   commercial_bfg,		// Doom 2 BFG Edition
@@ -166,6 +168,7 @@ enum GameMission_t
   retail_freedoom,
   commercial_freedoom,	// FreeDoom
   commercial_hacx,		// HACX
+  heretic,				// Heretic
   none
 };
 

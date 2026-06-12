@@ -56,8 +56,6 @@ void HU_SetTeamChatMode();
 void HU_UnsetChatMode();
 void HU_ReleaseKeyStates();
 
-void OdamexEffect (int xa, int ya, int xb, int yb);
-
 // [RH] Draw deathmatch scores
 
 class player_t;

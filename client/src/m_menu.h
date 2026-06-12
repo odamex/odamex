@@ -26,10 +26,6 @@
 
 #include "d_event.h"
 
-// Some defines...
-#define LINEHEIGHT	16
-#define SKULLXOFF	-32
-
 //
 // MENUS
 //
@@ -195,7 +191,7 @@ typedef struct
 		oldmenu_t *old;
 	} menu;
 	bool isNewStyle;
-	bool drawSkull;
+	bool drawIndicator;
 } menustack_t;
 
 extern value_t YesNo[2];

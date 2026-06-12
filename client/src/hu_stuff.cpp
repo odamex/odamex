@@ -38,6 +38,7 @@
 #include "c_dispatch.h"
 #include "v_text.h"
 #include "g_gametype.h"
+#include "gi.h"
 
 #include "cl_main.h"
 #include "p_ctf.h"
@@ -534,6 +535,8 @@ void HU_Drawer()
 			{
 				if (spechud)
 					hud::SpectatorHUD();
+				else if (gameinfo.enginetype == ENGINE_HERETIC)
+					hud::HereticHUD();
 				else
 					hud::OdamexHUD();
 			}
@@ -1845,19 +1848,6 @@ void HU_DrawScores(player_t *player)
 	else
 		hud::LowScoreboard(player);
 }
-
-//
-// [Toke] OdamexEffect
-// Draws the 50% reduction in brightness effect
-//
-void OdamexEffect (int xa, int ya, int xb, int yb)
-{
-	if (xa < 0 || ya < 0 || xb > I_GetSurfaceWidth() || yb > I_GetSurfaceHeight())
-		return;
-
-	screen->Dim(xa, ya, xb - xa, yb - ya);
-}
-
 
 //
 // Comparison functors for sorting vectors of players

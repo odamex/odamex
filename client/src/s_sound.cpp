@@ -1195,9 +1195,9 @@ void S_SetSfxVolume(float volume)
 //
 // Starts some music with the music id found in sounds.h.
 //
-void S_StartMusic(const char *m_id)
+void S_StartMusic(std::string musicname)
 {
-	S_ChangeMusic (m_id, false);
+	S_ChangeMusic (musicname, false);
 }
 
 // [RH] S_ChangeMusic() now accepts the name of the music lump.

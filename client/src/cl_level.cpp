@@ -142,7 +142,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	S_StopMusic();
 	currentmusic = gameinfo.titleMusic.c_str();
 
-	S_StartMusic(currentmusic.c_str());
+	S_StartMusic(currentmusic);
 }
 END_COMMAND (wad)
 
@@ -741,7 +741,7 @@ void G_WorldDone()
 	cluster_info_t& thiscluster = clusters.findByCluster(level.cluster);
 
 	// Sort out default options to pass to F_StartFinale
-	finale_options_t options = { "", "", "", "" };
+	finale_options_t options = { "", "", "", "", "" };
 	options.music = !level.intermusic.empty() ? level.intermusic : thiscluster.messagemusic;
 
 	if (!level.interbackdrop.empty())
@@ -751,6 +751,7 @@ void G_WorldDone()
 	else if (!thiscluster.finalepic.empty())
 	{
 		options.pic = thiscluster.finalepic;
+		options.palette = thiscluster.finalepalette;
 	}
 	else
 	{
@@ -792,10 +793,12 @@ void G_WorldDone()
 				if (!nextcluster.finalepic.empty())
 				{
 					options.pic = nextcluster.finalepic;
+					options.palette = nextcluster.finalepalette;
 				}
 				else
 				{
 					options.flat = nextcluster.finaleflat;
+					options.palette.clear();
 				}
 				options.text = nextcluster.entertext;
 
