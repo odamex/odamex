@@ -1,0 +1,69 @@
+{
+  // ODAMEX LAUNCH.JSON TEMPLATE
+  // Copy this template to your real launch.json file to use
+
+  // You should install all dependencies and compile first if you havent yet
+  // https://github.com/odamex/odamex/wiki/Compiling-Odamex
+  // These require the CodeLLDB extension
+
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Odamex Debug",
+      "program": "${workspaceFolder}/build/client/odamex",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "build:client",
+      "terminal": "integrated",
+      "windows": {
+        "program": "${workspaceFolder}/build/client/odamex.exe"
+      },
+      "osx": {
+        "program": "${workspaceFolder}/build/client/odamex.app",
+      }
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Odasrv Debug",
+      "program": "${workspaceFolder}/build/server/odasrv",
+      "args": [
+        "-config",
+        "/path/to/odasrv.cfg",  // add your odasrv config!
+        "-waddir",
+        "/path/to/wads"         // add your path to wads!
+      ],
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "build:server", 
+      "terminal": "external",
+      "osx": {
+        "terminal": "integrated"
+      },
+      "windows": {
+        "program": "${workspaceFolder}/build/server/odasrv.exe"
+      },
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Odalaunch Debug",
+      "program": "${workspaceFolder}/build/odalaunch/odalaunch",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "build:launcher",
+      "terminal": "integrated",
+      "windows": {
+        "program": "${workspaceFolder}/build/odalaunch/odalaunch.exe"
+      },
+      "osx": {
+        "program": "${workspaceFolder}/build/odalaunch/odalaunch.app"
+      }
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Client & Server Debug",
+      "configurations": ["Odasrv Debug", "Odamex Debug"]
+    }
+  ]
+}

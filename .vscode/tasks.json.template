@@ -1,0 +1,78 @@
+{
+  // ODAMEX TASKS.JSON TEMPLATE
+  // Copy this template to your real tasks.json file to use
+
+  // You should install all dependencies and compile first if you havent yet
+  // https://github.com/odamex/odamex/wiki/Compiling-Odamex
+
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "build:client",
+      "command": "cmake --build . --target odamex",
+      "options": { "cwd": "${workspaceFolder}/build" },
+      "problemMatcher": ["$gcc"],
+      "group": "build",
+      "osx": {
+        "command": "cmake --build . --target odamex && dsymutil client/odamex.app/Contents/MacOS/odamex -o client/odamex.app.dSYM"
+      },
+      "windows": {
+        "problemMatcher": ["$msCompile"]
+      }
+    },
+    {
+      "type": "shell",
+      "label": "build:server",
+      "command": "cmake --build . --target odasrv",
+      "options": { "cwd": "${workspaceFolder}/build" },
+      "problemMatcher": ["$gcc"],
+      "group": "build",
+      "osx": {
+        "command": "cmake --build . --target odasrv && dsymutil server/odasrv -o server/odasrv.dSYM"
+      },
+      "windows": {
+        "problemMatcher": ["$msCompile"]
+      }
+    },
+    {
+      "type": "shell",
+      "label": "build:launcher",
+      "command": "cmake --build . --target odalaunch",
+      "options": { "cwd": "${workspaceFolder}/build" },
+      "problemMatcher": ["$gcc"],
+      "group": "build",
+      "osx": {
+        "command": "cmake --build . --target odalaunch && dsymutil odalaunch/odalaunch.app/Contents/MacOS/odalaunch -o odalaunch/odalaunch.app.dSYM"
+      },
+      "windows": {
+        "problemMatcher": ["$msCompile"]
+      }
+    },
+    {
+      "type": "shell",
+      "label": "build:all",
+      "command": "cmake --build . --target all",
+      "options": { "cwd": "${workspaceFolder}/build"},
+      "problemMatcher": ["$gcc"],
+      "group": "build",
+      "windows": {
+        "problemMatcher": ["$msCompile"]
+      }
+    },
+    {
+      "type": "shell",
+      "label": "clean:rebuild:all (longrunning)",
+      "command": "rm -rf build && mkdir build && cd build && cmake .. -DCMAKE_BUILD_TYPE=Debug && cmake --build .",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": ["$gcc"],
+      "group": "build",
+      "osx": {
+        "command": "rm -rf build && mkdir build && cd build && cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Debug -DUSE_LTO=0 && cmake --build ."
+      },
+      "windows": {
+        "problemMatcher": ["$msCompile"]
+      }
+    },
+  ]
+}
