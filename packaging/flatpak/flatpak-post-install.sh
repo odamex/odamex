@@ -50,3 +50,6 @@ oda_install Launcher odalaunch
 
 # Install helper script
 install -Dm755 packaging/flatpak/select-exe.sh /app/bin/select-exe
+
+# Install shell integration
+install -Dm644 packaging/flatpak/posix_aliases.sh /app/share/odamex/shell/posix_aliases.sh
