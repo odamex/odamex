@@ -102,6 +102,7 @@ EXTERN_CVAR(snd_announceleadtracking)
 EXTERN_CVAR(snd_announceresulttracking)
 EXTERN_CVAR(snd_announcesprees)
 EXTERN_CVAR(snd_announcemultikills)
+EXTERN_CVAR(sv_showsprees)
 
 
 extern std::string digest;
@@ -2962,7 +2963,8 @@ static void CL_Spree(const odaproto::svc::Spree* msg)
 
 	bool update = SpreeManager::getInstance().setRawSpree(playerId, spreeLevel);
 
-	if (cl_showsprees && displayplayer_id == playerId && update)
+	// No need to check cl_showofflinesprees here since this will only fire online or during a netdemo.
+	if (cl_showsprees && sv_showsprees && displayplayer_id == playerId && update)
 	{
 		// Play the sound for the new spree
 		const SpreeRecord_t& record = SpreeManager::getInstance().getSpreeRecord(playerId);
