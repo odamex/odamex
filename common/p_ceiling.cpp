@@ -58,10 +58,6 @@ void P_SetCeilingDestroy(DCeiling *ceiling)
 
 IMPLEMENT_SERIAL (DCeiling, DMovingCeiling)
 
-DCeiling::DCeiling ()
-{
-}
-
 void DCeiling::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
@@ -128,6 +124,11 @@ void DCeiling::RunThink ()
 {
 	EResult res;
 
+	if (m_Status == destroy)
+	{
+		return;
+	}
+
 	switch (m_Direction)
 	{
 	case 0:
@@ -149,7 +150,7 @@ void DCeiling::RunThink ()
 			{
 			case ceilRaiseToHighest:
 			case genCeiling:
-				Destroy();
+				P_SetCeilingDestroy(this);
 				break;
 			// movers with texture change, change the texture then get removed
 			case genCeilingChgT:
@@ -162,7 +163,7 @@ void DCeiling::RunThink ()
 				[[fallthrough]];
 			case genCeilingChg:
 				m_Sector->ceilingpic = m_Texture;
-				Destroy();
+				P_SetCeilingDestroy(this);
 				break;
 			case silentCrushAndRaise:
 			case genSilentCrusher:
@@ -177,7 +178,7 @@ void DCeiling::RunThink ()
 				PlayCeilingSound();
 				break;
 			default:
-				Destroy ();
+				P_SetCeilingDestroy(this);
 				break;
 			}
 
@@ -232,14 +233,14 @@ void DCeiling::RunThink ()
 				[[fallthrough]];
 			case genCeilingChg:
 				m_Sector->ceilingpic = m_Texture;
-				Destroy();
+				P_SetCeilingDestroy(this);
 				break;
 			case lowerAndCrush:
 			case lowerToFloor:
 			case lowerToLowest:
 			case lowerToMaxFloor:
 			case genCeiling:
-				Destroy();
+				P_SetCeilingDestroy(this);
 				break;
 
 			case ceilCrushAndRaise:
@@ -250,7 +251,7 @@ void DCeiling::RunThink ()
 					PlayCeilingSound();
 				break;
 			default:
-					Destroy ();
+					P_SetCeilingDestroy(this);
 				break;
 			}
 		}

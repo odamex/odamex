@@ -65,7 +65,7 @@ static AActor* SelectTeleDest(int tid, int tag)
 			if (searcher->tid != tid)
 				continue;
 
-			if (tag == 0 || searcher->subsector->sector->tag == tag)
+			if (tag == 0 || (searcher->subsector && searcher->subsector->sector->tag == tag))
 				count++;
 		}
 
@@ -109,7 +109,7 @@ static AActor* SelectTeleDest(int tid, int tag)
 					continue;
 				if (searcher->tid != tid)
 					continue;
-				if (tag == 0 || searcher->subsector->sector->tag == tag)
+				if (tag == 0 || (searcher->subsector && searcher->subsector->sector->tag == tag))
 					count--;
 			}
 		}
@@ -135,7 +135,7 @@ static AActor* SelectTeleDest(int tid, int tag)
 				if (!(searcher->type == MT_TELEPORTMAN || searcher->type == MT_TELEPORTMAN2))
 					continue;
 
-				if (searcher->subsector->sector == sectors + secnum)
+				if (searcher->subsector && searcher->subsector->sector == sectors + secnum)
 					return searcher;
 			}
 		}
@@ -270,6 +270,9 @@ bool EV_LineTeleport (line_t *line, int side, AActor *thing)
 			{
 				// not a teleportman
 				if (m->type != MT_TELEPORTMAN)
+					continue;
+
+				if (not m->subsector)
 					continue;
 
 				sector_t* sector = m->subsector->sector;

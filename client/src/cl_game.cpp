@@ -359,13 +359,12 @@ extern constate_e ConsoleState;
 // or reads it from the demo buffer.
 // If recording a demo, write it out
 //
-void G_BuildTiccmd(ticcmd_t *cmd)
+void G_BuildTiccmd(ticcmd_t& cmd)
 {
 	::localview.skipangle = false;
 	::localview.skippitch = false;
 
-	ticcmd_t* base = I_BaseTiccmd();	// empty or external driver
-	memcpy(cmd, base, sizeof(*cmd));
+	cmd = *I_BaseTiccmd();       // empty or external driver
 
 	int strafe = Actions[ACTION_STRAFE];
 	int speed = Actions[ACTION_SPEED];
@@ -413,7 +412,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		{
 			if (::angleturn[tspeed] != 0)
 			{
-				cmd->yaw -= ::angleturn[tspeed];
+				cmd.yaw -= ::angleturn[tspeed];
 				::localview.skipangle = true;
 			}
 		}
@@ -421,7 +420,7 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		{
 			if (::angleturn[tspeed] != 0)
 			{
-				cmd->yaw += ::angleturn[tspeed];
+				cmd.yaw += ::angleturn[tspeed];
 				::localview.skipangle = true;
 			}
 		}
@@ -495,26 +494,26 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	// buttons
 	// john - only add attack when console up
 	if (Actions[ACTION_ATTACK] && ConsoleState == c_up && HU_ChatMode() == CHAT_INACTIVE)
-		cmd->buttons |= BT_ATTACK;
+		cmd.buttons |= BT_ATTACK;
 
 	if (Actions[ACTION_USE])
-		cmd->buttons |= BT_USE;
+		cmd.buttons |= BT_USE;
 
 	// Ch0wW : Forbid writing ACTION_JUMP to the demofile if recording a vanilla-compatible demo.
 	if (Actions[ACTION_JUMP])
-		cmd->buttons |= BT_JUMP;
+		cmd.buttons |= BT_JUMP;
 
 	// [RH] Handle impulses. If they are between 1 and 7,
 	//		they get sent as weapon change events.
 	// FIXME : "weapnext/weapprev" doesn't handle this properly, desyncing the demos.
 	if (Impulse >= 1 && Impulse <= 8)
 	{
-		cmd->buttons |= BT_CHANGE;
-		cmd->buttons |= (Impulse - 1) << BT_WEAPONSHIFT;
+		cmd.buttons |= BT_CHANGE;
+		cmd.buttons |= (Impulse - 1) << BT_WEAPONSHIFT;
 	}
 	else
 	{
-		cmd->impulse = Impulse;
+		cmd.impulse = Impulse;
 	}
 	Impulse = 0;
 
@@ -522,9 +521,9 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	// weapon change due to a weapon pickup
 	if (!serverside && cl_predictpickup)
 	{
-		if (!cmd->impulse && !(cmd->buttons & BT_CHANGE) &&
+		if (!cmd.impulse && !(cmd.buttons & BT_CHANGE) &&
 			consoleplayer().pendingweapon != wp_nochange)
-			cmd->impulse = 50 + static_cast<int>(consoleplayer().pendingweapon);
+			cmd.impulse = 50 + static_cast<int>(consoleplayer().pendingweapon);
 	}
 
 	if (::joyturn)
@@ -536,9 +535,9 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 		else
 		{
 			if (Actions[ACTION_FASTTURN])
-				cmd->yaw -= joy_to_int(joyturn, angleturn[1] * (joy_fastsensitivity / 10));
+				cmd.yaw -= joy_to_int(joyturn, angleturn[1] * (joy_fastsensitivity / 10));
 			else
-				cmd->yaw -= joy_to_int(joyturn, angleturn[1] * (joy_sensitivity / 10));
+				cmd.yaw -= joy_to_int(joyturn, angleturn[1] * (joy_sensitivity / 10));
 		}
 		::localview.skipangle = true;
 	}
@@ -576,31 +575,31 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	else if (side < -MAXPLMOVE)
 		side = -MAXPLMOVE;
 
-	cmd->forwardmove += forward;
-	cmd->sidemove += side;
-	cmd->upmove = fly;
+	cmd.forwardmove += forward;
+	cmd.sidemove += side;
+	cmd.upmove = fly;
 
 	// special buttons
 	if (sendpause)
 	{
 		sendpause = false;
-		cmd->buttons = BT_SPECIAL | BTS_PAUSE;
+		cmd.buttons = BT_SPECIAL | BTS_PAUSE;
 	}
 
 	if (sendsave)
 	{
 		sendsave = false;
-		cmd->buttons = BT_SPECIAL | BTS_SAVEGAME | (savegameslot << BTS_SAVESHIFT);
+		cmd.buttons = BT_SPECIAL | BTS_SAVEGAME | (savegameslot << BTS_SAVESHIFT);
 	}
 
-	cmd->forwardmove <<= 8;
-	cmd->sidemove <<= 8;
+	cmd.forwardmove <<= 8;
+	cmd.sidemove <<= 8;
 
 	//// [RH] 180-degree turn overrides all other yaws
 	if (turntick)
 	{
 		turntick--;
-		cmd->yaw = (ANG180 / TURN180_TICKS) >> 16;
+		cmd.yaw = (ANG180 / TURN180_TICKS) >> 16;
 		::localview.skipangle = true;
 	}
 
@@ -608,23 +607,23 @@ void G_BuildTiccmd(ticcmd_t *cmd)
 	{
 		sendcenterview = false;
 		const short CENTERVIEW = -32768;
-		cmd->pitch = CENTERVIEW;
+		cmd.pitch = CENTERVIEW;
 	}
 	else
 	{
 		// [AM] LocalViewPitch is an offset on look.
-		cmd->pitch = look + (::localview.pitch >> 16);
+		cmd.pitch = look + (::localview.pitch >> 16);
 	}
 
 	if (::localview.setangle)
 	{
 		// [AM] LocalViewAngle is a global angle, only pave over the existing
 		//      yaw if we have local yaw.
-		cmd->yaw = ::localview.angle >> 16;
+		cmd.yaw = ::localview.angle >> 16;
 	}
 
 	if (!longtics)
-		cmd->yaw = (cmd->yaw + 128) & 0xFF00;
+		cmd.yaw = (cmd.yaw + 128) & 0xFF00;
 
 	::localview.angle = 0;
 	::localview.setangle = false;
@@ -1000,6 +999,8 @@ void G_Ticker (void)
 		netdemo.readMessages(&net_message);
 	}
 
+	netgraph.start(I_GetTime());
+
 	if (connected && !simulated_connection)
 	{
 		while ((packet_size = NET_GetPacket()) )
@@ -1159,32 +1160,64 @@ void G_Ticker (void)
 	switch (gamestate)
 	{
 	case GS_LEVEL:
-		if(clientside && !serverside)
 		{
-			if (!consoleplayer().mo)
+			const bool isClientSideOnly    = clientside and not serverside;
+			const bool isActuallyConnected = connected  and not simulated_connection;
+
+			// We're about to locally tick the client-side sim - aka predict.
+			//
+			// Make sure that the server gives us a canonical inventory statement about any pickups we
+			// believe we get as a result of this.
+			consoleplayer().inventoryCheckRequestsAreEnabled = isClientSideOnly and isActuallyConnected;
+
+			if (isClientSideOnly)
 			{
-				// [SL] 2011-12-14 - Spawn message from server has not arrived
-				// yet.  Fake it and hope it arrives soon.
-				AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
-				mobj->flags &= ~MF_SOLID;
-				mobj->flags2 |= MF2_DONTDRAW;
-				consoleplayer().mo = consoleplayer().camera = mobj->ptr();
-				consoleplayer().mo->player = &consoleplayer();
-				G_PlayerReborn(consoleplayer());
-				DPrintFmt("Did not receive spawn for consoleplayer.\n");
+				if (!consoleplayer().mo)
+				{
+					// [SL] 2011-12-14 - Spawn message from server has not arrived
+					// yet.  Fake it and hope it arrives soon.
+					AActor *mobj = new AActor (0, 0, 0, MT_PLAYER);
+					mobj->flags &= ~MF_SOLID;
+					mobj->flags2 |= MF2_DONTDRAW;
+					consoleplayer().mo = consoleplayer().camera = mobj->ptr();
+					consoleplayer().mo->player = &consoleplayer();
+					G_PlayerReborn(consoleplayer());
+					DPrintFmt("Did not receive spawn for consoleplayer.\n");
+				}
+
+				CL_SimulateWorld();
+				CL_PredictWorld();
+
+				// Replay item pickups if the items arrived now.
+				ClientReplay::getInstance().itemReplay();
 			}
+			P_CheckInterpPause();
+			P_Ticker ();
+			P_BobTicker();
+			ST_Ticker ();
+			AM_Ticker ();
 
-			CL_SimulateWorld();
-			CL_PredictWorld();
+			consoleplayer().inventoryCheckRequestsAreEnabled = false;
 
-			// Replay item pickups if the items arrived now.
-			ClientReplay::getInstance().itemReplay();
+			if (not netdemo.isPaused())
+			{
+				const RollerRecordResultEnum recordResult = rollerState.Record(gametic, consoleplayer());
+				switch (recordResult)
+				{
+					case RollerRecordResultEnum::CURRENT_REPLACED:
+						DPrintFmt("Successive roller state update on tic {}\n", gametic);
+						break;
+					case RollerRecordResultEnum::INVALID_TIC_FUTURE:
+						DPrintFmt("Rejected roller state update on future tic {}, expected {}\n", gametic, rollerState.ExpectedTic());
+						break;
+					case RollerRecordResultEnum::INVALID_TIC_PAST:
+						DPrintFmt("Rejected roller state update on past tic {}, expected {}\n", gametic, rollerState.ExpectedTic());
+						break;
+					case RollerRecordResultEnum::SUCCESS:
+						break;
+				}
+			}
 		}
-		P_CheckInterpPause();
-		P_Ticker ();
-		P_BobTicker();
-		ST_Ticker ();
-		AM_Ticker ();
 		break;
 
 	case GS_INTERMISSION:
@@ -1263,13 +1296,12 @@ void G_PlayerReborn (player_t &p) // [Toke - todo] clean this function
 
 	p.usedown = p.attackdown = true;	// don't do anything immediately
 	p.playerstate = PST_LIVE;
-	p.weaponowned[NUMWEAPONS] = true;
+	p.weaponowned[wp_none] = true;
 
 	if (!p.spectator)
 		p.cheats = 0; // Reset cheat flags
 
 	p.death_time = 0;
-	p.tic = 0;
 }
 
 //
@@ -2044,11 +2076,7 @@ void G_DoPlayDemo(bool justStreamInput)
 			R_BuildClassicPlayerTranslation(player.id, player.id - 1);
 			argb_t color(translationRGB[player.id][0]);
 
-			player.userinfo.color[0] = color.geta();
-			player.userinfo.color[1] = color.getr();
-			player.userinfo.color[2] = color.getg();
-			player.userinfo.color[3] = color.getb();
-
+			player.userinfo.color   = color;
 			player.userinfo.netname = fmt::format("Players {}", player.id);
 		}
 

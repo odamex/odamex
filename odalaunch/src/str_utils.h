@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __STR_UTILS_H__
-#define __STR_UTILS_H__
+#pragma once
 
 #include "odalaunch.h"
 
@@ -32,5 +31,3 @@
 std::string stdstr_toupper(const std::string&);
 std::string wxstr_tostdstr(const wxString& s);
 wxString stdstr_towxstr(const std::string&);
-
-#endif // __STR_UTILS_H__

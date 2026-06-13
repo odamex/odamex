@@ -78,7 +78,6 @@ int 				messageLastMenuActive;
 bool				messageNeedsInput;
 
 void	(*messageRoutine)(int response);
-void	CL_SendUserInfo();
 void	M_ChangeTeam (int choice);
 team_t D_TeamByName (const char *team);
 gender_t D_GenderByName (const char *gender);
@@ -948,6 +947,9 @@ namespace
 {
 	void SetupEpisodeList()
 	{
+		if (EpiDef.lastOn >= episodenum)
+			EpiDef.lastOn = episodenum - 1;
+
 		for (int i = 0; i < episodenum; ++i)
 		{
 			if (EpisodeInfos[i].fulltext)

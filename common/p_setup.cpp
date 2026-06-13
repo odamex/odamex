@@ -144,9 +144,9 @@ byte*			rejectmatrix;
 bool			rejectempty;
 
 // Maintain single and multi player starting spots.
-std::vector<mapthing2_t> DeathMatchStarts;
-std::vector<mapthing2_t> playerstarts;
-std::vector<mapthing2_t> voodoostarts;
+std::vector<mapthing2_t>         DeathMatchStarts;
+std::vector<mapthing2_t>         playerstarts;
+std::vector<VoodooStartInfoType> voodoostarts;
 
 // Maintain list of helpers to spawn in a given map
 std::vector<HelperSpawns> helperspawns;
@@ -187,6 +187,9 @@ bool P_UseHorizonEffect(const seg_t& seg, bool segs_have_angles = false)
 		return true;
 
 	if (!segs_have_angles)
+		return false;
+
+	if (seg.length == 0)
 		return false;
 
 	const angle_t physical_angle = R_PointToAngle2(seg.v1->x, seg.v1->y, seg.v2->x, seg.v2->y);
@@ -264,7 +267,7 @@ void P_LoadSegs(int lump)
 	{
 		seg_t* const li = segs + i;
 		const MapSegType& ml = data[i];
-		auto v = LESWAP(ml.v1);
+		auto v = OUtil::to_unsigned(LESWAP(ml.v1));
 
 		if(v >= numvertexes)
 			I_Error("P_LoadSegs: invalid vertex {}", v);
@@ -302,8 +305,8 @@ void P_LoadSubsectors(int lump)
 
 	for (int i = 0; i < numsubsectors; i++)
 	{
-		subsectors[i].numlines = LESWAP<decltype(MapSubsectorType::numsegs)>(data[i].numsegs);
-		subsectors[i].firstline = LESWAP<decltype(MapSubsectorType::firstseg)>(data[i].firstseg);
+		subsectors[i].numlines = LESWAP(data[i].numsegs);
+		subsectors[i].firstline = LESWAP(data[i].firstseg);
 	}
 
 	Z_Free(data);
@@ -464,11 +467,14 @@ void P_LoadNodes(int lump)
 		    "P_LoadNodes: NODES lump is empty - levels without nodes are not supported.");
 	}
 
-	numnodes = W_LumpLength(lump) / sizeof(MapNodeType);
-	nodes = Z_Malloc<node_t>(numnodes, PU_LEVEL);
-	MapNodeType* data = W_CacheLumpNum<MapNodeType>(lump, PU_STATIC);
+	static constexpr size_t headerSize =
+		std::is_same_v<MapNodeType, mapnode_deepbsp_t> ? 8 : 0;
 
-	const MapNodeType* mn = data;
+	numnodes = (W_LumpLength(lump) - headerSize) / sizeof(MapNodeType);
+	nodes = static_cast<node_t*>(Z_Malloc(numnodes * sizeof(node_t), PU_LEVEL, 0));
+	byte* data = reinterpret_cast<byte*>(W_CacheLumpNum<MapNodeType>(lump, PU_STATIC));
+
+	const MapNodeType* mn = reinterpret_cast<const MapNodeType*>(data + headerSize);
 	node_t* no = nodes;
 
 	for (int i = 0; i < numnodes; i++, no++, mn++)
@@ -497,7 +503,7 @@ void P_LoadNodes(int lump)
 		}
 	}
 
-	Z_Free (data);
+	Z_Free(data);
 }
 
 byte* P_DecompressNodes(byte* data, size_t len) {
@@ -570,7 +576,7 @@ byte* P_LoadSegs_XNOD(byte* p) {
 			seg->backsector = sides[line->sidenum[side^1]].sector;
 		else
 		{
-			seg->backsector = NULL;
+			seg->backsector = nullptr;
 			line->flags &= ~ML_TWOSIDED;
 		}
 
@@ -2050,6 +2056,27 @@ void P_LoadReject(int lumpnum, int totallines)
 	}
 }
 
+void P_ValidateMap(const int lumpnum)
+{
+	// TODO: this will need to be updated for UDMF and/or an internal nodebuilder
+	// UDMF has a different set of lumps, and a nodebuilder could create some of the missing lumps
+	auto checkMapLump = [lumpnum](int offset, const char* name) {
+		if (!W_CheckLumpName(lumpnum + offset, name))
+			I_Error("{} lump is missing for map {}\n", name, level.mapname);
+	};
+
+	checkMapLump(ML_THINGS,   "THINGS"  );
+	checkMapLump(ML_LINEDEFS, "LINEDEFS");
+	checkMapLump(ML_SIDEDEFS, "SIDEDEFS");
+	checkMapLump(ML_VERTEXES, "VERTEXES");
+	checkMapLump(ML_SEGS,     "SEGS"    );
+	checkMapLump(ML_SSECTORS, "SSECTORS");
+	checkMapLump(ML_NODES,    "NODES"   );
+	checkMapLump(ML_SECTORS,  "SECTORS" );
+	checkMapLump(ML_REJECT,   "REJECT"  );
+	checkMapLump(ML_BLOCKMAP, "BLOCKMAP");
+}
+
 } // namespace
 
 //
@@ -2126,6 +2153,10 @@ void P_SetupLevel (const char *lumpname, int position)
 
 	// [Blair] Create map fingerprint
 	P_GenerateUniqueMapFingerPrint(lumpnum);
+
+	// [EB] check that all lumps are present and in the correct order
+	// so we can give useful error messages
+	P_ValidateMap(lumpnum);
 
 	if (HasBehavior)
 	{

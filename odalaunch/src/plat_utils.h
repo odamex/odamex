@@ -21,8 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __PLAT_UTILS__
-#define __PLAT_UTILS__
+#pragma once
 
 #include "odalaunch.h"
 
@@ -60,5 +59,3 @@ forceinline T clamp(const T in, const T min, const T max)
 {
 	return in <= min ? min : in >= max ? max : in;
 }
-
-#endif // __PLAT_UTILS__

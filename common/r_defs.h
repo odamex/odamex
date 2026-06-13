@@ -695,7 +695,7 @@ struct vissprite_t
 	fixed_t			translucency;
 	byte			FakeFlat;		// [RH] which side of fake/floor ceiling sprite is on
 
-	const AActor*			mo;
+	AActor*			mo;
 };
 
 //

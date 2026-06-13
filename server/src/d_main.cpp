@@ -111,7 +111,7 @@ void D_DoomLoop (void)
 		}
 		catch (CRecoverableError &error)
 		{
-			PrintFmt("ERROR: {}\n", error.GetMsg());
+			PrintFmt(PRINT_ERROR, "ERROR: {}\n", error.GetMsg());
 			PrintFmt("sleeping for 10 seconds before map reload...");
 
 			// denis - drop clients
@@ -133,6 +133,8 @@ EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(co_mbfphys)
 EXTERN_CVAR(co_zdoomammo)
 EXTERN_CVAR(co_allowdropoff)
+EXTERN_CVAR(co_voodooscroller)
+EXTERN_CVAR(co_archvilefirefix)
 
 void G_ReadCOMPLVL()
 {
@@ -149,24 +151,32 @@ void G_ReadCOMPLVL()
 			co_boomphys.Set(0.0f);
 			co_mbfphys.Set(0.0f);
 			co_allowdropoff.Set(0.0f);
+			co_voodooscroller.Set(0.0f);
+			co_archvilefirefix.Set(0.0f);
 		}
 		else if (iequals("boom", complvl))
 		{
 			co_boomphys.Set(1.0f);
 			co_mbfphys.Set(0.0f);
 			co_allowdropoff.Set(1.0f);
+			co_voodooscroller.Set(0.0f);
+			co_archvilefirefix.Set(0.0f);
 		}
 		else if (iequals("mbf", complvl))
 		{
 			co_boomphys.Set(1.0f);
 			co_mbfphys.Set(1.0f);
 			co_allowdropoff.Set(1.0f);
+			co_voodooscroller.Set(1.0f);
+			co_archvilefirefix.Set(1.0f);
 		}
 		else if (iequals("mbf21", complvl))
 		{
 			co_boomphys.Set(1.0f);
 			co_mbfphys.Set(1.0f);
 			co_allowdropoff.Set(1.0f);
+			co_voodooscroller.Set(0.0f);
+			co_archvilefirefix.Set(1.0f);
 		}
 		else
 		{

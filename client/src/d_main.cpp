@@ -166,6 +166,21 @@ void D_SetPlatform(void)
 #endif
 }
 
+bool step_mode = false;
+
+//
+// D_CheckNetGame
+// Works out player numbers among the net participants
+//
+void D_CheckNetGame (void)
+{
+    CL_InitNetwork ();
+
+    D_SetupUserInfo();
+
+    step_mode = ((Args.CheckParm ("-stepmode")) != 0);
+}
+
 //
 // D_ProcessEvents
 // Send all the events of the given timestamp down the responder chain
@@ -376,6 +391,7 @@ void D_DoomLoop()
 			::players.clear();
 
 			::gameaction = ga_fullconsole;
+			::gamestate = GS_FULLCONSOLE;
 		}
 	}
 }
@@ -602,6 +618,8 @@ EXTERN_CVAR(co_removesoullimit)
 EXTERN_CVAR(co_allowdropoff)
 EXTERN_CVAR(r_clipmaskedspecial)
 EXTERN_CVAR(r_thingsectorlight)
+EXTERN_CVAR(co_voodooscroller)
+EXTERN_CVAR(co_archvilefirefix)
 
 void G_ReadCOMPLVL()
 {
@@ -612,7 +630,8 @@ void G_ReadCOMPLVL()
 	char* complvl = W_CacheLumpNum<char>(lumpnum, PU_STATIC);
 	auto guard = nonstd::make_scope_exit([&]{ Z_Free(complvl); });
 
-	if (!serverside)
+	// don't use !serverside here, it doesn't get set early enough
+	if (multiplayer)
 	{
 		if (iequals("mbf", complvl))
 			r_thingsectorlight.Set(1.0f);
@@ -638,6 +657,8 @@ void G_ReadCOMPLVL()
 		co_allowdropoff.Set(0.0f);
 		co_removesoullimit.Set(0.0f);
 		r_clipmaskedspecial.Set(0.0f);
+		co_voodooscroller.Set(0.0f);
+		co_archvilefirefix.Set(0.0f);
 	}
 	else if (iequals("boom", complvl))
 	{
@@ -647,6 +668,8 @@ void G_ReadCOMPLVL()
 		co_allowdropoff.Set(1.0f);
 		co_removesoullimit.Set(1.0f);
 		r_clipmaskedspecial.Set(0.0f);
+		co_voodooscroller.Set(0.0f);
+		co_archvilefirefix.Set(0.0f);
 	}
 	else if (iequals("mbf", complvl))
 	{
@@ -656,6 +679,8 @@ void G_ReadCOMPLVL()
 		co_allowdropoff.Set(1.0f);
 		co_removesoullimit.Set(1.0f);
 		r_clipmaskedspecial.Set(0.0f);
+		co_voodooscroller.Set(1.0f);
+		co_archvilefirefix.Set(1.0f);
 	}
 	else if (iequals("mbf21", complvl))
 	{
@@ -665,6 +690,8 @@ void G_ReadCOMPLVL()
 		co_allowdropoff.Set(1.0f);
 		co_removesoullimit.Set(1.0f);
 		r_clipmaskedspecial.Set(1.0f);
+		co_voodooscroller.Set(0.0f);
+		co_archvilefirefix.Set(1.0f);
 	}
 	else
 	{

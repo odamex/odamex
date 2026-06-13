@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2026 by The Odamex Team.
+// Copyright (C) 2021, 2026 by Alex Mayfield and et al.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,34 +16,21 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Type Definitions
-//
-// AUTHORS:
-//   Michael Wood (mwoodj at huntsvegas dot org)
+//   Message map.
 //
 //-----------------------------------------------------------------------------
 
-#ifndef _TYPEDEFS_H
-#define _TYPEDEFS_H
+#pragma once
 
-// [AM] Do not namespace type definitions that shadow real ones, unless
-//      new, unique names are invented for them.
+#include "i_net.h"
 
-#ifdef _MSC_VER
-typedef signed   __int8   int8_t;
-typedef signed   __int16  int16_t;
-typedef signed   __int32  int32_t;
-typedef unsigned __int8   uint8_t;
-typedef unsigned __int16  uint16_t;
-typedef unsigned __int32  uint32_t;
-typedef signed   __int64  int64_t;
-typedef unsigned __int64  uint64_t;
-#else
-#include <stdint.h>
+namespace google
+{
+namespace protobuf
+{
+class Descriptor;
+}
+} // namespace google
 
-#ifndef _WIN32
-typedef unsigned int DWORD;
-#endif
-#endif
-
-#endif
+const google::protobuf::Descriptor* MSG_ResolveHeader(const msg_t header);
+msg_t MSG_ResolveDescriptor(const google::protobuf::Descriptor* desc);

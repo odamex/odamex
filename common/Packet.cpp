@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2026 by The Odamex Team.
+// Copyright (C) 2026 by Jim Thoenen.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -18,7 +18,7 @@
 // DESCRIPTION:
 //  The Packet assembler and sender class
 //
-//-----------------------------------------------------------------------------sx
+//-----------------------------------------------------------------------------
 #include "Packet.h"
 
 #include "SequenceSender.h"
@@ -56,11 +56,6 @@ size_t Packet::AddReliableMessage(const buf_t& i_dataBuffer)
 		m_header.reliableSize += static_cast<uint16_t>(i_dataBuffer.size());
 	}
 	return packedMessageSize;
-}
-
-size_t Packet::AddAckMessage(const buf_t& i_dataBuffer)
-{
-	return  AddToOutgoingBuffer(i_dataBuffer);
 }
 
 size_t Packet::AddUnreliableMessage(const buf_t& i_dataBuffer)

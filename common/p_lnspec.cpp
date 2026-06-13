@@ -404,6 +404,12 @@ bool P_CanActivateSpecials(AActor* mo, line_t* line)
 	if (serverside)
 		return true;
 
+	// Prevent specials from being activated by actors subject to less-than-credible prediction.
+	if (mo and not mo->credibility.IsCredible())
+	{
+		return false;
+	}
+
 	if (cl_predictsectors)
 	{
 		// Always predict sectors if set to 1, only predict sectors activated

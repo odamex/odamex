@@ -80,26 +80,6 @@ void CTF_CheckFlags (player_t &player)
 }
 
 //
-//	CTF_TossFlag
-//																					[Toke - CTF - Toss]
-//	Player tosses the flag
-/* [ML] 04/4/06: Remove flagtossing, too buggy
-void CTF_TossFlag (void)
-{
-	MSG_WriteMarker (&messenger.NetBuf(), clc_ctfcommand);
-
-	if (CTFdata.BlueScreen)	CTFdata.BlueScreen	= false;
-	if (CTFdata.RedScreen)	CTFdata.RedScreen	= false;
-}
-
-BEGIN_COMMAND	(flagtoss)
-{
-	CTF_TossFlag ();
-}
-END_COMMAND		(flagtoss)
-*/
-
-//
 //	[Toke - CTF] CTF_CarryFlag
 //	Spawns a flag on a players location and links the flag to the player
 //

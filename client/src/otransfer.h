@@ -35,19 +35,16 @@ struct OTransferProgress
 
 struct OTransferInfo
 {
-	int code;
-	curl_off_t speed;
+	int code         = 0;
+	curl_off_t speed = 0;
 	std::string url;
 	std::string contentType;
 
-	OTransferInfo() : code(0), speed(0), url(""), contentType("")
-	{
-	}
 	bool hydrate(CURL* curl);
 };
 
-typedef void (*OTransferDoneProc)(const OTransferInfo& info);
-typedef void (*OTransferErrorProc)(const char* msg);
+using OTransferDoneProc  = void (*)(const OTransferInfo& info);
+using OTransferErrorProc = void (*)(const char* msg);
 
 /**
  * @brief Encapsulates an HTTP check to see if a specific remote file exists.

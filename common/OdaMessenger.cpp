@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2026 by The Odamex Team.
+// Copyright (C) 2026 by Jim Thoenen.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,7 +23,6 @@
 
 #include "i_net.h"
 
-dtime_t I_MSTime (void);
 EXTERN_CVAR (log_packetdebug)
 
 //  -------------- Receiving functions --------------
@@ -55,11 +54,11 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 			io_rawBuf.SeekRead(header.reliableSize, buf_t::BT_CURRENT);
 		}
 
-		// Send an ACK to the server only if it contained reliable data.
+		// Send an ACK to the originating messenger.
 		if (not simulated_connection)
 		{
-			buf_t& ack = m_outgoingAckQueue.Obtain();
-			ack.WriteByte(msg_ack);
+			buf_t& ack = m_outgoingHighNonReliableQueue.Obtain();
+			ack.WriteUnVarint(msg_ack);
 			ack.WriteLong(header.sequence);
 		}
 	}
@@ -87,22 +86,22 @@ void OdaMessenger::HandleAcks(buf_t& io_rawBuf)
 {
 	while (io_rawBuf.BytesLeftToRead() > 0)
 	{
-		const int messageId = io_rawBuf.PeekByte();
-		if (messageId == msg_ack)
+		const size_t startPosition = io_rawBuf.TellRead();
+		const msg_t  messageId     = static_cast<msg_t>(io_rawBuf.ReadUnVarint());
+		if (messageId != msg_ack)
 		{
-			io_rawBuf.ReadByte();                       // Discard, we already peeked!
-			const int sequence = io_rawBuf.ReadLong();
-			Acknowledge(sequence);
-		}
-		else
-		{
+			io_rawBuf.SeekRead(startPosition, buf_t::BT_START);
 			break;
 		}
+		const int sequence = io_rawBuf.ReadLong();
+		Acknowledge(sequence);
 	}
 }
 
 
 //  -------------- Sending functions --------------
+
+// TODO:  Re-implement SIMULATE_LATENCY through outgoing queue management.
 
 void OdaMessenger::ManageBudget(int i_currentTic)
 {
@@ -111,6 +110,29 @@ void OdaMessenger::ManageBudget(int i_currentTic)
 		m_latchedTic = i_currentTic;
 		m_byteBudget = std::min(m_perTicBudget, m_byteBudget + m_perTicBudget);
 	}
+}
+
+void OdaMessenger::Record(const buf_t& messageBuf)
+{
+	m_recordingBuffer += std::basic_string_view<byte>(messageBuf.ptr(), messageBuf.size());
+}
+
+size_t OdaMessenger::PackAsReliable(Packet& io_packet, const buf_t& messageBuf)
+{
+	if (m_recordingIsEnabled)
+	{
+		Record(messageBuf);
+	}
+	return io_packet.AddReliableMessage(messageBuf);
+}
+
+size_t OdaMessenger::PackAsUnreliable(Packet& io_packet, const buf_t& messageBuf)
+{
+	if (m_recordingIsEnabled)
+	{
+		Record(messageBuf);
+	}
+	return io_packet.AddUnreliableMessage(messageBuf);
 }
 
 MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest)
@@ -128,60 +150,52 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 
 	m_lastSendSize = 0;
 
-	auto addUnreliableFunctor = [this](const buf_t& messageBuf)
-	{
-		return m_packet.AddUnreliableMessage(messageBuf);
-	};
-
-	auto addAckFunctor = [this](const buf_t& messageBuf)
-	{
-		return m_packet.AddAckMessage(messageBuf);
-	};
-
 	if (simulated_connection)
 	{
 		Clear();
 	}
 
-	// First phase - send reliables, padded out to MAX_UDP_SIZE-ish with Acks.
-	size_t bytesSentWithReliability = 0;
+	if (m_recordingIsEnabled)
+	{
+		m_recordingBuffer.clear();
+	}
+
+	// First phase - send high-priority non-reliables (acks, servertic, player updates)
+	size_t bytesSentBestEffort = 0;
+	while (m_outgoingHighNonReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
+	{
+		m_outgoingHighNonReliableQueue.Pack([this](const buf_t& buf) { return PackAsUnreliable(m_highPacket, buf); });
+
+		const size_t sendSize = m_highPacket.Send(i_currentTic, m_sender, i_dest);
+		bytesSentBestEffort += sendSize;
+		m_byteBudget        -= static_cast<int>(sendSize);
+	}
+
+	// Second phase - send reliables, padded out to MAX_UDP_SIZE-ish with non-reliable best-effort messages.
+	m_bytesSentWithReliability = 0;
 	while (m_outgoingReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
 	{
-		m_outgoingReliableQueue.Pack([this](const buf_t& messageBuf) { return m_packet.AddReliableMessage(messageBuf); });
+		m_outgoingReliableQueue.Pack([this](const buf_t& messageBuf) { return PackAsReliable(m_packet, messageBuf); });
 
-		m_outgoingAckQueue.Pack(addAckFunctor);
-
-		// Now cover the case where we have all our acks out and there's still leftover space enough for an unreliable portion.
-		m_outgoingNonReliableQueue.Pack(addUnreliableFunctor);
+		// Now cover the case where we have leftover space enough for an unreliable portion.
+		m_outgoingNonReliableQueue.Pack([this](const buf_t& messageBuf) { return PackAsUnreliable(m_packet, messageBuf); });
 
 		const size_t sendSize = m_packet.Send(i_currentTic, m_sender, i_dest);
-		bytesSentWithReliability += sendSize;
-		m_byteBudget             -= static_cast<int>(sendSize);
+		m_bytesSentWithReliability += sendSize;
+		m_byteBudget               -= static_cast<int>(sendSize);
 	}
 
-	// Now get any remaining Acks out.  This also covers the case where we just didn't have any reliable packets to send.
-	// For accounting purposes against target rate, we consider Acks to have the same priority as reliable traffic because
-	// it fundamentally is!
-	while(m_outgoingAckQueue.SizeInMessages() > 0 and m_byteBudget > 0)
-	{
-		m_outgoingAckQueue.Pack(addAckFunctor);
-
-		// Welp, we filled up the packet with all-acks?  Send it.
-		if (m_outgoingAckQueue.SizeInMessages() > 0)
-		{
-			const size_t sendSize = m_packet.Send(i_currentTic, m_sender, i_dest);
-			bytesSentWithReliability += sendSize;
-			m_byteBudget             -= static_cast<int>(sendSize);
-		}
-	}
-
-	size_t bytesSentBestEffort = 0;
-	// Okay, done with the "really important" stuff.  Now onto best-effort unreliable stuff.
+	// Okay, done with the "really important" stuff.  Now onto purely best-effort unreliable packets.
 	while (m_outgoingNonReliableQueue.SizeInMessages() > 0 and m_byteBudget > 0)
 	{
 		if (static_cast<int>(m_packet.Size() + m_outgoingNonReliableQueue.Front().size()) > m_byteBudget)
 		{
 			break;
+		}
+
+		if (m_recordingIsEnabled)
+		{
+			Record(m_outgoingNonReliableQueue.Front());
 		}
 
 		if (m_packet.AddUnreliableMessage(m_outgoingNonReliableQueue.Front()))
@@ -199,8 +213,8 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 			else
 			{
 				const size_t reliableBytes = m_packet.Send(i_currentTic, m_sender, i_dest);
-				bytesSentWithReliability  += reliableBytes;
-				m_byteBudget              -= static_cast<int>(reliableBytes);
+				m_bytesSentWithReliability  += reliableBytes;
+				m_byteBudget                -= static_cast<int>(reliableBytes);
 			}
 		}
 	}
@@ -219,7 +233,7 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 
 	if (lastReliableBytesSent)
 	{
-		bytesSentWithReliability += lastTotalSent;
+		m_bytesSentWithReliability += lastTotalSent;
 	}
 	else
 	{
@@ -227,6 +241,10 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 	}
 
 	m_lastSendSize = std::max(0, startBudget - m_byteBudget);
+
+	const int reliableOverloadAdjustment = m_bytesSentWithReliability > m_reliableOverloadThreshold ? 1 : -1;
+
+	m_reliableOverloadCount = std::max(0, std::min(m_reliableOverloadCount + reliableOverloadAdjustment, 10));
 
 	return m_byteBudget > 0 ? MessageResultEnum::ACCEPT : MessageResultEnum::DEFER;
 }
@@ -267,12 +285,13 @@ int OdaMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& i_dest
 
 	for (; sendQueueEntry != nullptr; sendQueueEntry = iter.Next())
 	{
-		if (i_currentTic >= (std::min(m_retransmitDelayInTics, 5) + sendQueueEntry->originatingTic) or sendQueueEntry->lastRetransmitTic != -1)
+		// m_retransmitDelayInTics used to be constrained here via std::min(m_retransmitDelayInTics, 5).
+		// I wish I had documented exactly why it was not allowed to be more than 5 for quite a while
+		// during development.
+		//
+		// In any case, natural scaling works well now, probably because we have a working throttle.
+		if (i_currentTic >= (m_retransmitDelayInTics + sendQueueEntry->originatingTic) or sendQueueEntry->lastRetransmitTic != -1)
 		{
-			// TODO: Working Throttle!
-			//       With 800 KB rate at the nuts.wad wakeup with +50 msec lag (on incoming and outgoing), 10% packet loss
-			//       causes a 900KB - 1000KB spike that causes retransmissions to fail, unless retransmissions are set to
-			//       max 25 per tic.  For now we just live with that.
 			if (++retransmissionsSent > m_maxPacketsPerRetransmission or m_byteBudget <= 0)
 			{
 				break;

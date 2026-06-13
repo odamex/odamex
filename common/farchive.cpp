@@ -186,13 +186,13 @@ FFile& FLZOFile::Write(const void* mem, unsigned int len)
 		return *this;
 	}
 
-	if (m_Pos + len > m_BufferSize)
+	if (m_Pos + len > m_MaxBufferSize)
 	{
 		do {
-			m_BufferSize = m_MaxBufferSize = m_BufferSize ? m_BufferSize * 2 : 16384;
-		} while (m_Pos + len > m_BufferSize);
+			m_MaxBufferSize = m_MaxBufferSize ? m_MaxBufferSize * 2 : 16384;
+		} while (m_Pos + len > m_MaxBufferSize);
 
-		m_Buffer = static_cast<byte*>(M_Realloc(m_Buffer, m_BufferSize));
+		m_Buffer = static_cast<byte*>(M_Realloc(m_Buffer, m_MaxBufferSize));
 	}
 
 	if (len == 1)
@@ -590,7 +590,7 @@ uint32_t FArchive::ReadCount()
 	return count;
 }
 
-FArchive &FArchive::operator<< (const char *str)
+FArchive& FArchive::operator<< (const char *str)
 {
 	if (str == NULL)
 	{
@@ -598,10 +598,16 @@ FArchive &FArchive::operator<< (const char *str)
 	}
 	else
 	{
-		uint32_t size = strlen (str) + 1;
+		uint32_t size = static_cast<uint32_t>(strlen (str) + 1);
 		WriteCount (size);
 		Write (str, size - 1);
 	}
+	return *this;
+}
+
+FArchive& FArchive::operator<< (const std::string& str)
+{
+	*this << str.c_str();
 	return *this;
 }
 
@@ -619,60 +625,6 @@ FArchive &FArchive::operator>> (std::string &s)
 		s = cstr;
 		delete[] cstr;
 	}
-	return *this;
-}
-
-FArchive &FArchive::operator<< (byte c)
-{
-	Write (&c, sizeof(byte));
-	return *this;
-}
-
-FArchive &FArchive::operator>> (byte &c)
-{
-	Read (&c, sizeof(byte));
-	return *this;
-}
-
-FArchive &FArchive::operator<< (uint16_t w)
-{
-	SWAP_SHORT(w);
-	Write (&w, sizeof(uint16_t));
-	return *this;
-}
-
-FArchive &FArchive::operator>> (uint16_t &w)
-{
-	Read (&w, sizeof(uint16_t));
-	SWAP_SHORT(w);
-	return *this;
-}
-
-FArchive &FArchive::operator<< (uint32_t w)
-{
-	SWAP_INT(w);
-	Write (&w, sizeof(uint32_t));
-	return *this;
-}
-
-FArchive &FArchive::operator>> (uint32_t &w)
-{
-	Read (&w, sizeof(uint32_t));
-	SWAP_INT(w);
-	return *this;
-}
-
-FArchive &FArchive::operator<< (uint64_t w)
-{
-	SWAP_LONG(w);
-	Write (&w, sizeof(uint64_t));
-	return *this;
-}
-
-FArchive &FArchive::operator>> (uint64_t &w)
-{
-	Read (&w, sizeof(uint64_t));
-	SWAP_LONG(w);
 	return *this;
 }
 
@@ -990,7 +942,7 @@ uint32_t FArchive::FindObjectIndex (const DObject *obj) const
 {
 	if(!m_ObjectMap)
 		return ~0;
-	uint32_t index = m_ObjectHash[HashObject (obj)];
+	uint32_t index = static_cast<uint32_t>(m_ObjectHash[HashObject (obj)]);
 	while (index != static_cast<unsigned>(~0) && m_ObjectMap[index].object != obj)
 	{
 		index = m_ObjectMap[index].hashNext;

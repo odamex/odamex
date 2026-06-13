@@ -193,6 +193,12 @@ CVAR(				sv_hostname, "Untitled Odamex Server", "Server name to appear on master
 CVAR(				sv_showplayerpowerups, "0", "Show which powerup each player has. (1 = Show all powerups to clients. 0 = Only show Invisibility (vanilla)",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+CVAR(				sv_showsprees, "0", "Enable killing spree announcements. When disabled, clients will not display or announce sprees.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR(				sv_showmultikills, "0", "Enable multi kill announcements. When disabled, clients will not display or announce multi kills.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
 CVAR(sv_downloadsites, "",
      "A list of websites to download WAD files from, separated by spaces",
      CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE)
@@ -351,6 +357,8 @@ CVAR_RANGE(sv_countdown, "5",
 	CVAR(			co_novileghosts, "0", "Disables vanilla's ghost monster quirk that lets Arch-viles resurrect crushed monsters as unshootable ghosts",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+	CVAR(           co_archvilefirefix, "0", "Fix the vanilla bug where Arch-vile fire is spawned in the wrong location, causing motion and interpolation column-of-fire-type visual glitches",
+	                CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	// Boom-compatibility changes
 	//------------------------------
@@ -421,7 +429,12 @@ CVAR_RANGE(sv_countdown, "5",
 	CVAR(			co_mbfphys, "0", "Use MBF's movement code. Fixes mancubus fireball clipping and linedef skips.",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
+	// MBF21-defined compatibility changes
+	// -----------------------------------
 
+	CVAR(co_voodooscroller, "0",
+	     "Use MBF21's comp_voodooscroller behavior -- Enable voodoo dolls on slow scrollers to move too slowly.",
+	     CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	// ZDoom-compatibility changes
 	//------------------------------

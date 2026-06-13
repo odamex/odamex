@@ -8,11 +8,6 @@ import "common.proto";
 
 package odaproto.svc;
 
-// svc_noop
-message Noop
-{
-}
-
 // svc_disconnect
 message Disconnect
 {
@@ -20,18 +15,30 @@ message Disconnect
 }
 
 // svc_playerinfo
+//
+// The server sends PlayerInfo directly to players to dictate their state.
 message PlayerInfo
 {
 	Player player = 1;
 }
 
+// svc_playerstate
+//
+// The server sends PlayerState to inform players about other players' state.
+message PlayerState
+{
+	Player player = 1;
+}
+
+
 // svc_moveplayer
 message MovePlayer
 {
-	int32 tic = 1;
-	int32 frame = 2;
-	Player player = 3;
-	Actor actor = 4;
+	int32           tic      = 1;
+	int32           frame    = 2;
+	uint32          playerid = 3;
+	repeated int32  powers   = 4;
+	Actor           actor    = 5;
 }
 
 // svc_updatelocalplayer
@@ -141,31 +148,39 @@ message UpdateMobj
 // svc_spawnplayer
 message SpawnPlayer
 {
-	int32 pid = 1;
-	Actor actor = 2;
+	int32  pid = 1;
+	Actor  actor = 2;
 	uint32 cards = 3;
+	int32  player_tic = 4;
 }
 
 // svc_damageplayer
 message DamagePlayer
 {
-	uint32 netid = 1;
-	int32 health_damage = 2;
-	int32 armor_damage = 3;
-	int32 inflictorid = 4;
-	Player player = 5;
+	uint32  netid               = 1;
+	int32   health_damage       = 2;
+	int32   armor_damage        = 3;
+	int32   inflictorid         = 4;
+	int32   player_health       = 5;
+	int32   player_armorpoints  = 6;
+	int32   client_tic          = 7;    // The tic-of-validity for the client receiving the message.  Not strictly the player taking damage.
 }
 
 // svc_killmobj
 message KillMobj
 {
-	uint32 source_netid = 1;
-	Actor target = 2;
-	uint32 inflictor_netid = 3;
-	int32 health = 4;
-	int32 mod = 5;
-	bool joinkill = 6;
-	sint32 lives = 7; // Default is -1.
+	uint32 source_netid     = 1;
+
+	uint32  target_netid    = 2;
+	uint32  target_rndindex = 3;
+	Vec3    target_pos      = 4;
+	Vec3    target_mom      = 5;
+	fixed32 target_angle    = 6;
+
+	uint32  inflictor_netid = 7;
+	int32   health          = 8;
+	bool    joinkill        = 9;
+	sint32  lives           = 10; // Default is -1.
 }
 
 // svc_raisemobj
@@ -175,11 +190,47 @@ message RaiseMobj
 	Actor corpse = 2;
 }
 
-// svc_fireweapon
-message FireWeapon
+// svc_playerammo
+message PlayerAmmo
 {
-	int32 readyweapon = 1;
-	int32 servertic = 2;
+	int32           player_tic  = 1;
+	repeated int32  ammo        = 2;    // ammo[ammo_type] = ammo_quantity
+}
+
+// svc_playermaxammo
+message PlayerMaxAmmo
+{
+	int32           player_tic  = 1;
+	repeated int32  maxammo     = 2;    // maxammo[ammo_type] = maximum allowed
+}
+
+// svc_playerweaponowned
+message PlayerWeaponOwned
+{
+	int32         player_tic    = 1;
+	repeated bool weaponowned   = 2;     // weaponowned[weapon_type] = is_owned
+}
+
+// svc_playerweaponselection
+message PlayerWeaponSelection
+{
+	int32  player_tic    = 1;
+	uint32 readyweapon   = 2;
+	uint32 pendingweapon = 3;
+}
+
+// svc_playerpowers
+message PlayerPowers
+{
+	int32           player_tic = 1;
+	repeated int32  powers     = 2;    // powers[power_type] = monotonic counter
+}
+
+// svc_playerpsprites
+message PlayerPsprites
+{
+	int32                 player_tic = 1;
+	repeated PspriteState psprites   = 2;   // psprite[psprite_type] = psprite
 }
 
 // svc_updatesector
@@ -238,65 +289,146 @@ message ActivateLine
 	bool bossaction = 5;
 }
 
-// svc_movingsector
-message MovingSector
-{
-	message Snapshot
-	{
-		int32 ceil_type = 1;
-		int32 floor_type = 2;
-		int32 ceil_tag = 3;
-		int32 floor_tag = 4;
-		sint32 ceil_line = 5; // Default is -1
-		sint32 floor_line = 6; // Default is -1
-		sfixed32 ceil_height = 7;
-		sfixed32 floor_height = 8;
-		int32 ceil_speed = 9; // Speed might be fixed_t, but it's also centered on 0.
-		int32 floor_speed = 10; // Speed might be fixed_t, but it's also centered on 0.
-		sfixed32 ceil_dest = 11;
-		sfixed32 floor_dest = 12;
-		sint32 ceil_dir = 13; // Direction is 1 or -1.
-		sint32 floor_dir = 14; // Direction is 1 or -1.
-		sint32 ceil_old_dir = 15; // Direction is 1 or -1.
-		sint32 floor_old_dir = 16; // Direction is 1 or -1.
-		int32 ceil_tex = 17;
-		int32 floor_tex = 18;
-		int32 ceil_new_special = 19;
-		int32 floor_new_special = 20;
-		sfixed32 ceil_low = 21;
-		sfixed32 ceil_high = 22;
-		sfixed32 floor_low = 23;
-		sfixed32 floor_high = 24;
-		bool ceil_crush = 25;
-		bool floor_crush = 26;
-		bool silent = 27;
-		int32 ceil_wait = 28;
-		int32 floor_wait = 29;
-		int32 ceil_counter = 30;
-		int32 floor_counter = 31;
-		int32 reset_counter = 32;
-		int32 ceil_status = 33;
-		int32 floor_status = 34;
-		int32 floor_old_status = 35;
-		int32 crusher_speed_1 = 36; // Speed might be fixed_t, but it's also centered on 0.
-		int32 crusher_speed_2 = 37; // Speed might be fixed_t, but it's also centered on 0.
-		int32 step_time = 38;
-		int32 per_step_time = 39;
-		int32 pause_time = 40;
-		sfixed32 orig_height = 41; // Type is int, but is actually a fixed_t.
-		int32 delay = 42;
-		sfixed32 floor_lip = 43;
-		sfixed32 floor_offset = 44;
-		int32 ceil_change = 45;
-		int32 floor_change = 46;
-	}
+// ------------------- Moving sector messages ------------------------
+//
+// These have optional server_tic fields because the *final* state of
+// a moving sector is sent Reliably, meaning that it can be retransmitted
+// if necessary.  If that happens, we can't rely on the "last received
+// server gametic," because it would have moved onto a subsequent tic.
+// However, all updates up to that point are sent as "High best effort"
+// which is also where the server gametic is transported, so we can
+// naturally use that.
 
-	int32 sector = 1;
-	sfixed32 ceiling_height = 2;
-	sfixed32 floor_height = 3;
-	uint32 movers = 4;
-	Snapshot ceiling_mover = 5;
-	Snapshot floor_mover = 6;
+//		sint32 floor_old_dir = 16; // Direction is 1 or -1.
+//		int32 ceil_change = 45;
+
+// svc_movingsectorelevator
+//
+// Elevators move both floor and ceiling.
+message MovingSectorElevator
+{
+    int32 sector                = 1;
+    sfixed32 ceiling_height     = 2;
+    sfixed32 floor_height       = 3;
+
+	int32 ceil_type             = 4;
+	int32 ceil_status           = 5;
+	sint32 ceil_dir             = 6; // Direction is 1 or -1.
+	sfixed32 ceil_dest          = 7;
+	sfixed32 floor_dest         = 8;
+	int32 ceil_speed            = 9; // Speed might be fixed_t, but it's also centered on 0.
+
+    optional int32 server_tic   = 10;
+}
+
+// svc_movingsectorpillar
+//
+// Pillars move both floor and ceiling.
+message MovingSectorPillar
+{
+    int32 sector                = 1;
+    sfixed32 ceiling_height     = 2;
+    sfixed32 floor_height       = 3;
+
+	int32 ceil_type             = 4;
+	int32 ceil_status           = 5;
+	int32 floor_speed           = 6; // Speed might be fixed_t, but it's also centered on 0.
+	int32 ceil_speed            = 7; // Speed might be fixed_t, but it's also centered on 0.
+	sfixed32 floor_dest         = 8;
+	sfixed32 ceil_dest          = 9;
+	bool ceil_crush             = 10;
+
+    optional int32 server_tic   = 11;
+}
+
+// svc_movingsectorceiling
+message MovingSectorCeiling
+{
+    int32 sector                = 1;
+    sfixed32 ceiling_height     = 2;
+
+	int32 ceil_type             = 3;
+	sfixed32 ceil_low           = 4;
+	sfixed32 ceil_high          = 5;
+	int32 ceil_speed            = 6; // Speed might be fixed_t, but it's also centered on 0.
+	int32 crusher_speed_1       = 7; // Speed might be fixed_t, but it's also centered on 0.
+	int32 crusher_speed_2       = 8; // Speed might be fixed_t, but it's also centered on 0.
+	bool ceil_crush             = 9;
+	bool silent                 = 10;
+	sint32 ceil_dir             = 11; // Direction is 1 or -1.
+	int32 ceil_tex              = 12;
+	int32 ceil_new_special      = 13;
+	int32 ceil_tag              = 14;
+	sint32 ceil_old_dir         = 15; // Direction is 1 or -1.
+
+    optional int32 server_tic   = 16;
+}
+
+
+// svc_movingsectordoor
+message MovingSectorDoor
+{
+    int32 sector                = 1;
+    sfixed32 ceiling_height     = 2;
+
+	int32 ceil_type             = 3;
+	sfixed32 ceil_height        = 4;
+	int32 ceil_speed            = 5; // Speed might be fixed_t, but it's also centered on 0.
+	int32 ceil_wait             = 6;
+	int32 ceil_counter          = 7;
+	int32 ceil_status           = 8;
+	sint32 ceil_line            = 9; // Default is -1
+
+    optional int32 server_tic   = 10;
+}
+
+// svc_movingsectorfloor
+message MovingSectorFloor
+{
+    int32 sector                = 1;
+    sfixed32 floor_height       = 2;
+
+	int32 floor_type            = 3;
+	int32 floor_status          = 4;
+	bool floor_crush            = 5;
+	sint32 floor_dir            = 6; // Direction is 1 or -1.
+	int32 floor_speed           = 7; // Speed might be fixed_t, but it's also centered on 0.
+	int32 floor_tex             = 8;
+	sfixed32 floor_dest         = 9;
+	int32 reset_counter         = 10;
+	sfixed32 orig_height        = 11; // Type is int, but is actually a fixed_t.
+	int32 delay                 = 12;
+	int32 step_time             = 13;
+	int32 per_step_time         = 14;
+	int32 pause_time            = 15;
+	sfixed32 floor_offset       = 16;
+	int32 floor_change          = 17;
+	sint32 floor_line           = 18; // Default is -1
+	int32 floor_new_special     = 19;
+
+    optional int32 server_tic   = 20;
+}
+
+// svc_movingsectorplat
+message MovingSectorPlat
+{
+    int32 sector                = 1;
+    sfixed32 floor_height       = 2;
+
+	int32 floor_type            = 3;
+	int32 floor_speed           = 4; // Speed might be fixed_t, but it's also centered on 0.
+	sfixed32 floor_low          = 5;
+	sfixed32 floor_high         = 6;
+	int32 floor_wait            = 7;
+	int32 floor_counter         = 8;
+	int32 floor_status          = 9;
+	int32 floor_old_status      = 10;
+	bool floor_crush            = 11;
+	int32 floor_tag             = 12;
+	sfixed32 floor_lip          = 13;
+	sfixed32 floor_offset       = 14;
+
+    optional int32 server_tic   = 15;
 }
 
 // svc_playsound
@@ -327,6 +459,7 @@ message ExitLevel
 message TouchSpecial
 {
 	uint32 netid = 1;
+	int32  player_tic = 2;
 }
 
 // svc_missedpacket
@@ -414,11 +547,14 @@ message MidPrint
 	int32 time = 2;
 }
 
-// svc_svgametic
+// svc_servergametic
+//
+// The message's name says "gametic" but really it's an infrastructural sampling of real-time status.
 message ServerGametic
 {
-	int32 tic = 1;
-	int32 reliable_queue_depth = 2;
+	int32  tic                         = 1;
+	uint32 reliable_messages_in_flight = 2;
+	uint32 throttle                    = 3;
 }
 
 // svc_inttimeleft
@@ -437,12 +573,6 @@ message RailTrail
 {
 	Vec3 start = 1;
 	Vec3 end = 2;
-}
-
-// svc_playerstate
-message PlayerState
-{
-	Player player = 1;
 }
 
 // svc_levelstate
@@ -711,20 +841,9 @@ message SpreeBreaker
 	int32 spree_breaker_type = 7;
 }
 
-// svc_netdemocap
-message NetdemoCap
+// svc_configureavatar
+message ConfigureAvatar
 {
-	bytes player_cmd = 1;
-	Player player = 2;
-	Actor actor = 3;
-}
-
-// svc_netdemostop
-message NetDemoStop
-{
-}
-
-// svc_netdemoloadsnap
-message NetDemoLoadSnap
-{
+	MapThing avatar_mapthing = 1; // The avatar's map-defined originating mapthing.
+	uint32   netid           = 2; // The server-defined netid it must use.
 }
