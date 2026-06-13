@@ -452,8 +452,8 @@ static void HU_DrawChatPrompt()
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
 	// Set up text scaling
-	int scaledxfac = hud_scaletext ? V_TextScaleXAmount() : CleanXfac;
-	int scaledyfac = hud_scaletext ? V_TextScaleYAmount() : CleanYfac;
+	int scaledxfac = V_TextScaleXAmount();
+	int scaledyfac = V_TextScaleYAmount();
 
 	// Determine what Y height to display the chat prompt at.
 	// * I_GetSurfaceHeight() is the "actual" screen height.

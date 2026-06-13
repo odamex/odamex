@@ -632,7 +632,10 @@ void CL_StepTics(unsigned int count)
 		OInterpolation::getInstance().ticGameInterpolation();
 
 		G_Ticker ();
-		gametic++;
+
+		if (!netdemo.isPaused())
+			gametic++;
+
 		if (netdemo.isPlaying() && !netdemo.isPaused())
 			netdemo.ticker();
 	}
@@ -674,7 +677,7 @@ void CL_RunTics()
 				PrintFmt("level.time {}, prndindex {}, {} {} {}\n",
 				         level.time, prndindex, players.begin()->mo->x, players.begin()->mo->y, players.begin()->mo->z);
 			else
- 				PrintFmt("level.time %d, prndindex %d\n", level.time, prndindex);
+ 				PrintFmt("level.time {}, prndindex {}\n", level.time, prndindex);
 		}
 	}
 	else
@@ -1273,6 +1276,8 @@ BEGIN_COMMAND(netrew)
 {
 	if (netdemo.isPlaying())
 		netdemo.prevSnapshot();
+	else if (netdemo.isPaused());
+		netdemo.prevTic();
 }
 END_COMMAND(netrew)
 

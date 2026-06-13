@@ -171,7 +171,7 @@ jobs:
       shell: bash
       run: |
         DATE=$(date +'%Y-%m-%d')
-        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
+        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.releases.xml
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Install flatpak
@@ -213,7 +213,7 @@ jobs:
       shell: bash
       run: |
         DATE=$(date +'%Y-%m-%d')
-        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.metainfo.xml
+        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.releases.xml
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Install flatpak
@@ -253,7 +253,7 @@ jobs:
       sdl2_version: "2.32.8"
       sdl2_mixer_version: "2.8.1"
       pcre2_version: "10.47"
-      wxwidgets_version: "3.2.5"
+      wxwidgets_version: "3.3.2"
       zlib_version: "1.2.11"
       libpng_version: "1.6.40"
       zstd_version: "1.5.7"
@@ -377,7 +377,6 @@ jobs:
         export LDFLAGS="-L${DEPS_PREFIX}/lib"
         ./configure \
           --prefix="${DEPS_PREFIX}" \
-          --enable-unicode \
           --with-cocoa \
           --without-libtiff \
           --enable-monolithic \
@@ -415,7 +414,7 @@ jobs:
         cmake -S . -B build -GNinja \
           -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
-          -DBUILD_MASTER=0 -DBUILD_LAUNCHER=1 \
+          -DBUILD_MASTER=0 -DBUILD_LAUNCHER=1 -DBUILD_TESTS=0 \
           -DCMAKE_PREFIX_PATH="${PWD}/deps/universal" \
           -DSDL2_DIR="${PWD}/deps/universal/lib/cmake/SDL2" \
           -DSDL2_MIXER_DIR="${PWD}/deps/universal/lib/cmake/SDL2_mixer" \

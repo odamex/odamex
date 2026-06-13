@@ -102,12 +102,12 @@ function BuildOutX86 {
         "${UnzippedX86}\SDL2_mixer.dll", `
         "${UnzippedX86}\SDL2.dll", `
         "${UnzippedX86}\odalaunch.exe", `
-        "${UnzippedX86}\wxbase315u_net_vc14x.dll", `
-        "${UnzippedX86}\wxbase315u_vc14x.dll", `
-        "${UnzippedX86}\wxbase315u_xml_vc14x.dll", `
-        "${UnzippedX86}\wxmsw315u_core_vc14x.dll", `
-        "${UnzippedX86}\wxmsw315u_html_vc14x.dll", `
-        "${UnzippedX86}\wxmsw315u_xrc_vc14x.dll", `
+        "${UnzippedX86}\wxbase32u_net_vc14x.dll", `
+        "${UnzippedX86}\wxbase32u_vc14x.dll", `
+        "${UnzippedX86}\wxbase32u_xml_vc14x.dll", `
+        "${UnzippedX86}\wxmsw32u_core_vc14x.dll", `
+        "${UnzippedX86}\wxmsw32u_html_vc14x.dll", `
+        "${UnzippedX86}\wxmsw32u_xrc_vc14x.dll", `
         "${UnzippedX86}\odasrv.exe" `
         -Destination "${OutX86}\"
 
@@ -136,12 +136,12 @@ function BuildOutX64 {
         "${UnzippedX64}\SDL2_mixer.dll", `
         "${UnzippedX64}\SDL2.dll", `
         "${UnzippedX64}\odalaunch.exe", `
-        "${UnzippedX64}\wxbase315u_net_vc14x_x64.dll", `
-        "${UnzippedX64}\wxbase315u_vc14x_x64.dll", `
-        "${UnzippedX64}\wxbase315u_xml_vc14x_x64.dll", `
-        "${UnzippedX64}\wxmsw315u_core_vc14x_x64.dll", `
-        "${UnzippedX64}\wxmsw315u_html_vc14x_x64.dll", `
-        "${UnzippedX64}\wxmsw315u_xrc_vc14x_x64.dll", `
+        "${UnzippedX64}\wxbase332u_net_vc14x_x64.dll", `
+        "${UnzippedX64}\wxbase332u_vc14x_x64.dll", `
+        "${UnzippedX64}\wxbase332u_xml_vc14x_x64.dll", `
+        "${UnzippedX64}\wxmsw332u_core_vc14x_x64.dll", `
+        "${UnzippedX64}\wxmsw332u_html_vc14x_x64.dll", `
+        "${UnzippedX64}\wxmsw332u_xrc_vc14x_x64.dll", `
         "${UnzippedX64}\odasrv.exe" `
         -Destination "${OutX64}\"
 

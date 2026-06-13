@@ -1,5 +1,7 @@
 name: OdaTests Notifier
 
+description: "Notifies discord of any changes to OdaTests results"
+
 inputs:
   demos-run:
     description: "Number of demo tests that were run"

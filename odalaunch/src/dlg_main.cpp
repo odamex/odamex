@@ -61,6 +61,7 @@
 #include <wx/cmdline.h>
 #include <wx/sound.h>
 #include <wx/msgout.h>
+#include <wx/stdpaths.h>
 
 #include <wx/protocol/http.h>
 #include <wx/stream.h>
@@ -83,6 +84,7 @@ extern int NUM_THREADS;
 
 static wxInt32 Id_MnuItmLaunch = XRCID("Id_MnuItmLaunch");
 static wxInt32 Id_MnuItmGetList = XRCID("Id_MnuItmGetList");
+static wxInt32 Id_MnuItmCheckVersion = XRCID("Id_MnuItmCheckVersion");
 
 // Timer id definitions
 #define TIMER_ID_REFRESH 1
@@ -113,11 +115,13 @@ BEGIN_EVENT_TABLE(dlgMain, wxFrame)
 	EVT_MENU(XRCID("Id_MnuItmRefreshServer"), dlgMain::OnRefreshServer)
 	EVT_MENU(XRCID("Id_MnuItmRefreshAll"), dlgMain::OnRefreshAll)
 
-	//EVT_MENU(XRCID("Id_MnuItmDownloadWad"), dlgMain::OnOpenOdaGet)
-
 	EVT_MENU(wxID_PREFERENCES, dlgMain::OnOpenSettingsDialog)
 
+	#ifdef ODALAUNCH_USE_WEB_REQUEST
+	EVT_MENU(XRCID("Id_MnuItmCheckVersion"), dlgMain::OnCheckVersion)
+	#else
 	EVT_MENU(XRCID("Id_MnuItmCheckVersion"), dlgMain::OnOpenWebsite)
+	#endif
 	EVT_MENU(XRCID("Id_MnuItmVisitWebsite"), dlgMain::OnOpenWebsite)
 	EVT_MENU(XRCID("Id_MnuItmVisitForum"), dlgMain::OnOpenForum)
 	EVT_MENU(XRCID("Id_MnuItmVisitWiki"), dlgMain::OnOpenWiki)
@@ -183,6 +187,23 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	m_SrchCtrlGlobal = XRCCTRL(*this, "Id_SrchCtrlGlobal", wxSearchCtrl);
 	m_StatusBar = GetStatusBar();
 
+	#if defined(__linux__) && wxCHECK_VERSION(3, 3, 0)
+	const auto res = wxFileConfig::MigrateLocalFile("odalaunch", wxCONFIG_USE_XDG, wxCONFIG_USE_LOCAL_FILE);
+	if(!res.oldPath.empty())
+	{
+		if(res.error.empty())
+		{
+			wxLogMessage("Config file was migrated from \"%s\" to \"%s\"",
+			             res.oldPath, res.newPath);
+		}
+		else
+		{
+			wxLogWarning("Migrating old config failed: %s.", res.error);
+		}
+	}
+	wxStandardPaths::Get().SetFileLayout(wxStandardPaths::FileLayout_XDG);
+	#endif
+
 	/* Init sub dialogs and load settings */
 	config_dlg = new dlgConfig(this);
 	server_dlg = new dlgServers(&MServer, this);
@@ -194,22 +215,15 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 
 	LoadMasterServers();
 
-	/* Get the first directory for wad downloading */
-	/*
-	wxInt32 Pos = launchercfg_s.wad_paths.Find(PATH_DELIMITER), false);
-	wxString FirstDirectory = launchercfg_s.wad_paths.Mid(0, Pos);
-
-	OdaGet = new frmOdaGet(this, -1, FirstDirectory);*/
-
     InfoBar = new OdaInfoBar(this);
 
-	QServer = NULL;
+	QServer.reset();
 
 	NUM_THREADS = QueryThread::GetIdealThreadCount();
 
 	for(size_t i = 0; i < NUM_THREADS; ++i)
 	{
-		threadVector.push_back(new QueryThread(this));
+		threadVector.emplace_back(new QueryThread(this));
 	}
 
 	{
@@ -275,19 +289,18 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	}
 	*/
 
+	#if ODALAUNCH_USE_WEB_REQUEST
 	// Check for a new version
 	// [ML] 1/21/2019: Disabled for now.  This doesn't work over https.
-	/*
-    if(CheckForUpdates)
+	// [EB] 4/27/2026: Re-enabled now, using github releases
+	Bind(wxEVT_WEBREQUEST_STATE, &dlgMain::OnCheckVersionResponse, this);
+	if(CheckForUpdates)
 	{
-        wxCommandEvent event(wxEVT_COMMAND_TOOL_CLICKED, Id_MnuItmCheckVersion);
-
-        // Tell command handler that this is an automatic check
-        event.SetClientData((void *)0x1);
-
-        wxPostEvent(this, event);
+		// Tell command handler that this is an automatic check
+		m_UpdateCheckWasAutomatic = true;
+		SendCheckVersionRequest();
 	}
-	*/
+	#endif
 
 	// Enable the auto refresh timer
 	if(m_UseRefreshTimer)
@@ -300,9 +313,6 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 // Window Destructor
 dlgMain::~dlgMain()
 {
-	delete[] QServer;
-
-	QServer = NULL;
 }
 
 void dlgMain::OnWindowCreate(wxWindowCreateEvent& event)
@@ -346,9 +356,9 @@ void dlgMain::OnClose(wxCloseEvent& event)
 {
     // Stop any running timers and free their memory
     delete m_TimerNewList;
-    m_TimerNewList = NULL;
+    m_TimerNewList = nullptr;
     delete m_TimerRefresh;
-    m_TimerRefresh = NULL;
+    m_TimerRefresh = nullptr;
 
     /* Threading system shutdown */
     // Wait for the monitor thread to finish
@@ -358,15 +368,11 @@ void dlgMain::OnClose(wxCloseEvent& event)
 	// Gracefully terminate any running worker threads and then deallocate
 	// their memory
 	{
-        std::vector<QueryThread*>::reverse_iterator it;
-
-        for(it = threadVector.rbegin(); it != threadVector.rend(); it++)
+        for(auto it = threadVector.rbegin(); it != threadVector.rend(); it++)
         {
             if((*it)->IsRunning())
             {
                 (*it)->GracefulExit();
-                delete *it;
-                *it = NULL;
             }
         }
 
@@ -387,12 +393,12 @@ void dlgMain::OnClose(wxCloseEvent& event)
 	ConfigInfo.Flush();
 
 	delete InfoBar;
-	InfoBar = NULL;
+	InfoBar = nullptr;
 
-    if(config_dlg != NULL)
+    if(config_dlg != nullptr)
 		config_dlg->Destroy();
 
-	if(server_dlg != NULL)
+	if(server_dlg != nullptr)
 		server_dlg->Destroy();
 
 	Destroy();
@@ -412,41 +418,77 @@ void dlgMain::OnExit(wxCommandEvent& event)
 
 void dlgMain::OnCheckVersion(wxCommandEvent &event)
 {
-    wxString SiteSrc, VerMsg;
+	m_UpdateCheckWasAutomatic = false;
+	SendCheckVersionRequest();
+}
 
-    GetWebsitePageSource(SiteSrc);
-    //GetVersionInfoFromWesbite(SiteSrc, VerStr);
+void dlgMain::SendCheckVersionRequest()
+{
+	#if ODALAUNCH_USE_WEB_REQUEST
+	wxWebRequest request = wxWebSession::GetDefault().CreateRequest(
+		this,
+		"https://api.github.com/repos/odamex/odamex/releases/latest"
+	);
 
-    if (SiteSrc.IsEmpty())
+	request.SetHeader("User-Agent", "Odamex-Update-Checker");
+	request.Start();
+	#endif
+}
+
+#if ODALAUNCH_USE_WEB_REQUEST
+void dlgMain::OnCheckVersionResponse(wxWebRequestEvent& evt)
+{
+    if (evt.GetState() == wxWebRequest::State_Completed)
     {
-    	// [ML] 1/21/19: Disable this for now since this doesn't work over https
-        // InfoBar->ShowMessage("Unable to check for updates.");
-        return;
-    }
-
-    VerMsg = wxString::Format("New! Odamex version %s is available", SiteSrc);
-
-    // Remove version separators
-    SiteSrc.erase(std::remove(SiteSrc.begin(), SiteSrc.end(), '.'), SiteSrc.end());
-
-    // Same or older version
-    if (wxAtoi(SiteSrc) <= VERSION)
-    {
-        // Automatic check?
-        if (event.GetClientData())
+        wxInputStream* stream = evt.GetResponse().GetStream();
+        if (!stream)
             return;
 
-        // User generated event
-        VerMsg = "No new version available.";
+        wxString json;
+        wxStringOutputStream out(&json);
+        stream->Read(out);
 
-        InfoBar->ShowMessage(VerMsg);
+        // Hacky extraction of the tag_name without properly
+		// parsing the json to avoid needing extra libraries
+        const wxString key = "\"tag_name\":\"";
+        int start = json.Find(key);
+        if (start == wxNOT_FOUND)
+            return;
 
-        return;
+        start += key.Length();
+        int end = json.find('"', start);
+        if (end == wxNOT_FOUND)
+            return;
+
+		const wxString tag = json.SubString(start, end - 1);
+
+    	if (tag.IsEmpty())
+    	{
+    	    InfoBar->ShowMessage("Unable to check for updates.");
+    	    return;
+    	}
+
+    	const wxString VerMsg = wxString::Format("New! Odamex version %s is available", tag);
+
+		wxArrayString v = wxSplit(tag, '.');
+    	if (MAKEVER(wxAtoi(v[0]), wxAtoi(v[1]), wxAtoi(v[2])) <= VERSION)
+    	{
+    	    if (m_UpdateCheckWasAutomatic)
+    	        return;
+
+    	    InfoBar->ShowMessage("No new version available.");
+    	    return;
+    	}
+
+    	InfoBar->ShowMessage(VerMsg, XRCID("Id_VisitReleases"),
+    	    wxCommandEventHandler(dlgMain::OnOpenReleases), "Download Release");
     }
-
-    InfoBar->ShowMessage(VerMsg, XRCID("Id_MnuItmVisitWebsite"),
-        wxCommandEventHandler(dlgMain::OnOpenWebsite), "Visit Website");
+    else if (evt.GetState() == wxWebRequest::State_Failed)
+    {
+        InfoBar->ShowMessage("Unable to check for updates.");
+    }
 }
+#endif
 
 // Master server setup
 static const wxCmdLineEntryDesc cmdLineDesc[] =
@@ -457,7 +499,7 @@ static const wxCmdLineEntryDesc cmdLineDesc[] =
 		wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_OPTIONAL | wxCMD_LINE_NEEDS_SEPARATOR
 	},
 
-	{ wxCMD_LINE_NONE }
+	{ wxCMD_LINE_NONE, nullptr, nullptr, nullptr, wxCMD_LINE_VAL_NONE, 0 }
 };
 
 void dlgMain::LoadMasterServers()
@@ -482,7 +524,7 @@ void dlgMain::LoadMasterServers()
 	}
 
 	// Add default master servers
-	while(def_masterlist[i] != NULL)
+	while(def_masterlist[i] != nullptr)
 	{
 		MServer.AddMaster(def_masterlist[i]);
 		++i;
@@ -508,49 +550,6 @@ void dlgMain::OnShowServerFilter(wxCommandEvent& event)
 	m_PnlServerFilter->Show(event.IsChecked());
 
 	Layout();
-}
-
-// Gets the Odamex websites page source for version number extraction,
-// This could have other uses, what those are? we do not know yet..
-void dlgMain::GetWebsitePageSource(wxString &SiteSrc)
-{
-    wxURL Https("https://odamex.net/api/app-version");
-    wxInputStream *inStream;
-
-    // Get the websites source
-    inStream = Https.GetInputStream();
-
-    if (inStream)
-    {
-        wxStringOutputStream out_stream(&SiteSrc);
-        inStream->Read(out_stream);
-    }
-}
-
-// Parses the Odamex websites page source to find the version number, here is
-// hoping that the sites layout doesn't change too much!
-void dlgMain::GetVersionInfoFromWebsite(const wxString &SiteSrc, wxString &ver)
-{
-    wxString VerStr = "Latest version: ";
-    int Ch;
-
-    // Extract version number from website source
-    size_t Pos = SiteSrc.find(VerStr);
-
-    if (Pos == wxNOT_FOUND)
-        return;
-
-    // Skip past the search string
-    Pos += VerStr.Length();
-
-    // Find the end of the data we need
-    size_t EndPos = SiteSrc.find("<", Pos);
-
-    if (EndPos == wxNOT_FOUND)
-        return;
-
-    // Copy only the version number back out
-    ver = SiteSrc.Mid(Pos, EndPos - Pos);
 }
 
 // manually connect to a server
@@ -677,6 +676,7 @@ void dlgMain::OnManualConnect(wxCommandEvent& event)
 		}
 	}
 
+
 	wxString OdamexDirectory, DelimWadPaths;
 
 	{
@@ -798,11 +798,10 @@ bool dlgMain::MonThrGetMasterList()
 
 	// Free the server list array (if it exists) and reallocate a new sized
 	// array of server objects
-	delete[] QServer;
-	QServer = NULL;
+	QServer.reset();
 
 	if(ServerCount > 0)
-		QServer = new Server [ServerCount];
+		QServer = std::make_unique<Server[]>(ServerCount);
 
 	// Post the result to our main thread and exit
 	MonThrPostEvent(wxEVT_THREAD_MONITOR_SIGNAL, -1, Signal, -1, -1);
@@ -836,8 +835,7 @@ void dlgMain::MonThrGetServerList()
 	ConfigInfo.Read(SERVERTIMEOUT, &ServerTimeout, ODA_QRYSERVERTIMEOUT);
 	ConfigInfo.Read(RETRYCOUNT, &RetryCount, ODA_QRYGSRETRYCOUNT);
 
-	delete[] QServer;
-	QServer = new Server [ServerCount];
+	QServer = std::make_unique<Server[]>(ServerCount);
 
 	size_t thrvec_size = threadVector.size();
 
@@ -845,7 +843,7 @@ void dlgMain::MonThrGetServerList()
 	{
 		for(size_t i = 0; i < thrvec_size; ++i)
 		{
-			QueryThread* OdaQT = threadVector[i];
+			QueryThread* OdaQT = threadVector[i].get();
 			QueryThread::Status Status = OdaQT->GetStatus();
 
 			// Check if the user wants us to exit
@@ -883,7 +881,7 @@ void dlgMain::MonThrGetServerList()
 	// Wait until all threads have finished before posting an event
 	for(size_t i = 0; i < thrvec_size; ++i)
 	{
-		QueryThread* OdaQT = threadVector[i];
+		const QueryThread* OdaQT = threadVector[i].get();
 
 		while(OdaQT->GetStatus() == QueryThread::Running)
 			OdaTH->Sleep(15);
@@ -935,6 +933,7 @@ void* dlgMain::Entry()
 	{
 		if(MonThrGetMasterList() == false)
 			break;
+		[[fallthrough]];
 	}
 
 	// Query the current list of servers that are available to us
@@ -958,13 +957,12 @@ void* dlgMain::Entry()
 	// Reset the signal and then exit out
 	mtcs_Request.Signal = mtcs_none;
 
-	return NULL;
+	return nullptr;
 }
 
 void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 {
-	mtrs_struct_t* Result = (mtrs_struct_t*)event.GetClientData();
-	wxInt32 i;
+	const mtrs_struct_t* Result = static_cast<mtrs_struct_t*>(event.GetClientData());
 
 	switch(Result->Signal)
 	{
@@ -1013,9 +1011,9 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 	{
 		bool ShowBlockedServers;
 		Server &ThisServer = QServer[Result->Index];
-        std::string Address = ThisServer.GetAddress();
+        const std::string Address = ThisServer.GetAddress();
 
-		i = m_LstCtrlServers->FindServer(stdstr_towxstr(Address));
+		const wxInt32 i = m_LstCtrlServers->FindServer(stdstr_towxstr(Address));
 
 		m_LstOdaSrvDetails->LoadDetailsFromServer(NullServer);
 
@@ -1044,7 +1042,7 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 	{
 		Server &ThisServer = QServer[Result->Index];
 
-		bool cs = MServer.IsCustomServer(ThisServer.GetAddress());
+		const bool cs = MServer.IsCustomServer(ThisServer.GetAddress());
 
 		m_LstCtrlServers->AddServerToList(ThisServer, Result->ServerListIndex,
                                     false, cs);
@@ -1125,18 +1123,16 @@ void dlgMain::OnMonitorSignal(wxCommandEvent& event)
 // worker threads post to this callback
 void dlgMain::OnWorkerSignal(wxCommandEvent& event)
 {
-	wxInt32 i;
-
 	switch(event.GetId())
 	{
 	case 0: // server query timed out
 	{
 		bool ShowBlockedServers;
-        int ServerIndex = event.GetInt();
+        const int ServerIndex = event.GetInt();
 		Server &ThisServer = QServer[ServerIndex];
-        std::string Address = ThisServer.GetAddress();
+        const std::string Address = ThisServer.GetAddress();
 
-		i = m_LstCtrlServers->FindServer(stdstr_towxstr(Address));
+		const wxInt32 i = m_LstCtrlServers->FindServer(stdstr_towxstr(Address));
 
 		m_LstCtrlPlayers->DeleteAllItems();
 
@@ -1152,7 +1148,7 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
 		if(ShowBlockedServers == false)
 			break;
 
-        bool cs = MServer.IsCustomServer(Address);
+        const bool cs = MServer.IsCustomServer(Address);
 
 		if(i == -1)
 			m_LstCtrlServers->AddServerToList(ThisServer, ServerIndex, true, cs);
@@ -1164,10 +1160,10 @@ void dlgMain::OnWorkerSignal(wxCommandEvent& event)
 
 	case 1: // server queried successfully
 	{
-        int ServerIndex = event.GetInt();
+        const int ServerIndex = event.GetInt();
 		Server &ThisServer = QServer[ServerIndex];
 
-		bool cs = MServer.IsCustomServer(ThisServer.GetAddress());
+		const bool cs = MServer.IsCustomServer(ThisServer.GetAddress());
 
 		m_LstCtrlServers->AddServerToList(ThisServer, ServerIndex, true, cs);
 
@@ -1244,12 +1240,6 @@ void dlgMain::OnOpenSettingsDialog(wxCommandEvent& event)
 		m_TimerNewList->Start(m_NewListInterval);
 		m_TimerRefresh->Start(m_RefreshInterval);
 	}
-}
-
-void dlgMain::OnOpenOdaGet(wxCommandEvent& event)
-{
-	//    if (OdaGet)
-	//      OdaGet->Show();
 }
 
 // Quick-Launch button click
@@ -1575,6 +1565,11 @@ void dlgMain::OnAbout(wxCommandEvent& event)
 void dlgMain::OnOpenWebsite(wxCommandEvent& event)
 {
 	wxLaunchDefaultBrowser("https://odamex.net");
+}
+
+void dlgMain::OnOpenReleases(wxCommandEvent& event)
+{
+	wxLaunchDefaultBrowser("https://github.com/odamex/odamex/releases/latest");
 }
 
 void dlgMain::OnOpenForum(wxCommandEvent& event)

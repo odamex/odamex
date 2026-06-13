@@ -38,6 +38,12 @@ CVAR(			log_fulltimestamps, "0", "Extended timestamp info (dd/mm/yyyy hh:mm:ss)"
 CVAR(			log_packetdebug, "0", "Print debugging messages for each packet sent",
 				CVARTYPE_BOOL, CVAR_SERVERARCHIVE)
 
+CVAR_RANGE(		log_color, "1", "Print colored messages\n// " \
+				"0 - Disabled\n// " \
+				"1 - Enabled (terminal output only) \n//" \
+				"2 - Enabled (terminal and log files)",
+				CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE, 0.f, 2.f)
+
 // Server administrative settings
 // ------------------------------
 

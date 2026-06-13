@@ -1169,7 +1169,7 @@ struct MapInfoDataSetter<level_pwad_info_t>
 			{ "e4m6special", &MIType_Special<MT_NULL, MF3_E4M6BOSS>, &ref.bossactions },
 			{ "e4m8special", &MIType_Special<MT_NULL, MF3_E4M8BOSS>, &ref.bossactions },
 			{ "specialaction_exitlevel", &MIType_SpecialAction<11>, &ref.bossactions },
-			{ "specialaction_opendoor", &MIType_SpecialAction<29, 666>, &ref.bossactions },
+			{ "specialaction_opendoor", &MIType_SpecialAction<109, 666>, &ref.bossactions },
 			{ "specialaction_lowerfloor", &MIType_SpecialAction<23, 666>, &ref.bossactions },
 			{ "specialaction_killmonsters", &MIType_SpecialAction<280>, &ref.bossactions },
 			{ "lightning" },
