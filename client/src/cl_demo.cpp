@@ -620,6 +620,7 @@ bool NetDemo::resume()
 {
 	if (isPaused())
 	{
+		pause_netdemotic = 0;
 		state = oldstate;
 		return true;
 	}
@@ -781,7 +782,7 @@ void NetDemo::ticker()
 	netdemotic++;
 	if (netdemotic == pause_netdemotic)
 	{
-		pause_netdemotic = netdemotic - 1;
+		pause_netdemotic = 0;
 		pause();
 		::paused = true;
 	}
@@ -1224,7 +1225,24 @@ void NetDemo::nextTic()
 		return;
 
 	pause_netdemotic = netdemotic + 1;
-	resume();
+	state = oldstate;
+	::paused = false;
+}
+
+//
+// prevTic()
+//
+//		Rewind to the previous gametic.
+//		It has to rewind to the last snapshot
+//		and replay from there.
+//
+void NetDemo::prevTic()
+{
+	if (!isPaused())
+		return;
+
+	pause_netdemotic = netdemotic - 1;
+	state = oldstate;
 	::paused = false;
 }
 

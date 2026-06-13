@@ -136,6 +136,8 @@ EXTERN_CVAR(g_roundlimit)
 EXTERN_CVAR(hud_hordeinfo_debug)
 EXTERN_CVAR(g_preroundreset)
 EXTERN_CVAR(cl_showsprees)
+EXTERN_CVAR(cl_showofflinesprees)
+EXTERN_CVAR(sv_showsprees)
 
 void ST_unloadNew()
 {
@@ -1167,7 +1169,7 @@ void DrawToasts()
 		x += icon->width() + 1;
 
 			// Draw spree point badge if any
-		if (toast.active_spree && cl_showsprees)
+		if (toast.active_spree && cl_showsprees && ((network_game && sv_showsprees) || (!network_game && cl_showofflinesprees)))
 		{
 			// Draw the arrow
 			const patch_t* arrow = W_ResolvePatchHandle(ToastSpreeArrow);
@@ -1578,7 +1580,7 @@ void DisplaySmallSpree(const SpreeRecord_t& record)
 
 void SpreeHud()
 {
-	if (!validplayer(displayplayer()) || !cl_showsprees)
+	if (!validplayer(displayplayer()) || !cl_showsprees || (!cl_showofflinesprees && !network_game) || (!sv_showsprees && network_game))
 		return;
 
 	static SpreeManager& manager = SpreeManager::getInstance();
