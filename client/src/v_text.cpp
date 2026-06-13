@@ -163,12 +163,22 @@ void V_SetFont(const char* fontname)
 
 int V_TextScaleXAmount()
 {
-	return hud_scaletext.asInt();
+	int ret = hud_scaletext.asInt();
+
+	if (!ret)
+		return CleanXfac;
+
+	return ret;
 }
 
 int V_TextScaleYAmount()
 {
-	return hud_scaletext.asInt();
+	int ret = hud_scaletext.asInt();
+
+	if (!ret)
+		return CleanYfac;
+
+	return ret;
 }
 
 
