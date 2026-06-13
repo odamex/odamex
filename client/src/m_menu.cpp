@@ -952,6 +952,9 @@ namespace
 {
 	void SetupEpisodeList()
 	{
+		if (EpiDef.lastOn >= episodenum)
+			EpiDef.lastOn = episodenum - 1;
+
 		for (int i = 0; i < episodenum; ++i)
 		{
 			if (EpisodeInfos[i].fulltext)

@@ -3477,15 +3477,10 @@ void P_PutSecnode (msecnode_t *node)
 
 msecnode_t *P_AddSecnode (sector_t *s, AActor *thing, msecnode_t *nextnode)
 {
-	if (!s)
-		return NULL;
+	if (s == nullptr)
+		return nextnode;
 
-	msecnode_t *node;
-
-	if (s == NULL)
-		I_FatalError("AddSecnode of 0 for {}\n", thing->_StaticType.Name);
-
-	node = nextnode;
+	msecnode_t *node = nextnode;
 	while (node)
 	{
 		if (node->m_sector == s)	// Already have a node for this sector?

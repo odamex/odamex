@@ -90,6 +90,7 @@ EXTERN_CVAR(show_messages)
 EXTERN_CVAR(co_novileghosts)
 EXTERN_CVAR(sv_sharekeys)
 EXTERN_CVAR(cl_showsprees)
+EXTERN_CVAR(sv_showsprees)
 
 extern std::string digest;
 extern bool forcenetdemosplit;
@@ -240,7 +241,7 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 	p.armorpoints = msg->player().armorpoints();
 	p.armortype = msg->player().armortype();
 
-	if (p.lives == 0 && msg->player().lives() > 0)
+	if ((p.lives == 0 && msg->player().lives() > 0) && !netdemo.isPlaying())
 	{
 		// Stop spying so you know you're back from the dead.
 		::displayplayer_id = ::consoleplayer_id;
@@ -2931,7 +2932,8 @@ static void CL_Spree(const odaproto::svc::Spree* msg)
 
 	bool update = SpreeManager::getInstance().setRawSpree(playerId, spreeLevel);
 
-	if (cl_showsprees && displayplayer_id == playerId && update)
+	// No need to check cl_showofflinesprees here since this will only fire online or during a netdemo.
+	if (cl_showsprees && sv_showsprees && displayplayer_id == playerId && update)
 	{
 		// Play the sound for the new multi kill
 		// S_Sound(CHAN_ANNOUNCER, '', 1, ATTN_NONE);

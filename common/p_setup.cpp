@@ -189,6 +189,9 @@ bool P_UseHorizonEffect(const seg_t& seg, bool segs_have_angles = false)
 	if (!segs_have_angles)
 		return false;
 
+	if (seg.length == 0)
+		return false;
+
 	const angle_t physical_angle = R_PointToAngle2(seg.v1->x, seg.v1->y, seg.v2->x, seg.v2->y);
 	angle_t diff = seg.angle - physical_angle;
 
@@ -2072,6 +2075,27 @@ void P_LoadReject(int lumpnum, int totallines)
 	}
 }
 
+void P_ValidateMap(const int lumpnum)
+{
+	// TODO: this will need to be updated for UDMF and/or an internal nodebuilder
+	// UDMF has a different set of lumps, and a nodebuilder could create some of the missing lumps
+	auto checkMapLump = [lumpnum](int offset, const char* name) {
+		if (!W_CheckLumpName(lumpnum + offset, name))
+			I_Error("{} lump is missing for map {}\n", name, level.mapname);
+	};
+
+	checkMapLump(ML_THINGS,   "THINGS"  );
+	checkMapLump(ML_LINEDEFS, "LINEDEFS");
+	checkMapLump(ML_SIDEDEFS, "SIDEDEFS");
+	checkMapLump(ML_VERTEXES, "VERTEXES");
+	checkMapLump(ML_SEGS,     "SEGS"    );
+	checkMapLump(ML_SSECTORS, "SSECTORS");
+	checkMapLump(ML_NODES,    "NODES"   );
+	checkMapLump(ML_SECTORS,  "SECTORS" );
+	checkMapLump(ML_REJECT,   "REJECT"  );
+	checkMapLump(ML_BLOCKMAP, "BLOCKMAP");
+}
+
 } // namespace
 
 //
@@ -2148,6 +2172,10 @@ void P_SetupLevel (const char *lumpname, int position)
 
 	// [Blair] Create map fingerprint
 	P_GenerateUniqueMapFingerPrint(lumpnum);
+
+	// [EB] check that all lumps are present and in the correct order
+	// so we can give useful error messages
+	P_ValidateMap(lumpnum);
 
 	if (HasBehavior)
 	{

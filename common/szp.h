@@ -123,7 +123,7 @@ public:
 	inline szp &operator =(szp other)
 	{
 		// itself?
-		if(&other == this)
+		if(&other == this || other.naive == naive)
 			return *this;
 
 		unlink();
