@@ -30,6 +30,10 @@
 #include "v_textcolors.h"
 
 #ifdef SERVER_APP
+
+struct client_t;
+
+void SV_BasePrint(client_t* cl, const int printlevel, const std::string& str);
 void SV_BasePrintAllPlayers(const int printlevel, const std::string& str);
 void SV_BasePrintButPlayer(const int printlevel, const int player_id, const std::string& str);
 #endif
@@ -119,6 +123,14 @@ void SV_BroadcastPrintFmtButPlayer(int printlevel, int player_id, fmt::format_st
 
 	SV_BasePrintButPlayer(printlevel, player_id, string);
 }
+
+// Print directly to a specific client.
+template <typename... ARGS>
+void SV_ClientPrintFmt(client_t *cl, int level, fmt::format_string<ARGS...> format, ARGS&&... args)
+{
+	SV_BasePrint(cl, level, fmt::format(format, std::forward<ARGS>(args)...));
+}
+
 #endif
 
 namespace OUtil
@@ -169,6 +181,13 @@ struct visitor : Ts... { using Ts::operator()...; };
 // This shouldn't be needed in C++20, but for some reason macOS builds fail without it
 template<class... Ts>
 visitor(Ts...) -> visitor<Ts...>;
+
+template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+// requires std::is_integral_v<T>
+constexpr auto to_unsigned(T x)
+{
+	return static_cast<std::make_unsigned_t<T>>(x);
+}
 
 // C++23 std::unreachable
 [[noreturn]] inline void unreachable()

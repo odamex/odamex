@@ -989,15 +989,10 @@ fixed_t P_FindLowestFloorSurrounding (sector_t* sec)
 		if (!other)
 			continue;
 
-		fixed_t v1height =
-			P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-		fixed_t v2height =
-			P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v1height = P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v2height = P_FloorHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
 
-		if (v1height < height)
-			height = v1height;
-		if (v2height < height)
-			height = v2height;
+		height = std::min({ height, v1height, v2height });
 	}
 	return height;
 }
@@ -1023,15 +1018,10 @@ fixed_t P_FindHighestFloorSurrounding (sector_t *sec)
 		if (!other)
 			continue;
 
-		fixed_t v1height =
-			P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-		fixed_t v2height =
-			P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v1height = P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v2height = P_FloorHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
 
-		if (v1height > height)
-			height = v1height;
-		if (v2height > height)
-			height = v2height;
+		height = std::max({ height, v1height, v2height });
 	}
 	return height;
 }
@@ -1223,15 +1213,10 @@ fixed_t P_FindLowestCeilingSurrounding (sector_t *sec)
 		if (!other)
 			continue;
 
-		fixed_t v1height =
-			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-		fixed_t v2height =
-			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v1height = P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v2height = P_CeilingHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
 
-		if (v1height < height)
-			height = v1height;
-		if (v2height < height)
-			height = v2height;
+		height = std::min({ height, v1height, v2height });
 	}
 	return height;
 }
@@ -1255,15 +1240,10 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 		if (!other)
 			continue;
 
-		fixed_t v1height =
-			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-		fixed_t v2height =
-			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v1height = P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v2height = P_CeilingHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
 
-		if (v1height > height)
-			height = v1height;
-		if (v2height > height)
-			height = v2height;
+		height = std::max({ height, v1height, v2height });
 	}
 	return height;
 }
@@ -2602,12 +2582,13 @@ void DScroller::RunThink ()
 				if (!((thing = node->m_thing)->flags & MF_NOCLIP) &&
 					(!(thing->flags & MF_NOGRAVITY || thing->z > height) ||
 					 thing->z < waterheight))
-				  {
+					{
 					// Move objects only if on floor or underwater,
 					// non-floating, and clipped.
-					thing->momx += dx;
-					thing->momy += dy;
-				  }
+					thing->momx   += dx;
+					thing->momy   += dy;
+					thing->oflags |= MFO_IS_ON_CONVEYOR;
+					}
 			break;
 		}
 
@@ -3022,7 +3003,7 @@ void DPusher::RunThink ()
 	for ( ; node ; node = node->m_snext)
 	{
 		thing = node->m_thing;
-		if (!thing->player || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
+		if (!P_IsPlayerOrAvatar(*thing) || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
 			continue;
 		if (m_Type == p_wind)
 		{

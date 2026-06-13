@@ -45,7 +45,7 @@ class DActiveButton : public DThinker
 {
 	DECLARE_SERIAL (DActiveButton, DThinker);
 public:
-	enum EWhere
+	enum EWhere : uint8_t
 	{
 		BUTTON_Top,
 		BUTTON_Middle,
@@ -63,15 +63,6 @@ public:
 	int16_t	m_Texture;
 	int32_t	m_Timer;
 	fixed_t	m_X, m_Y;	// Location of timer sound
-
-	friend FArchive &operator<< (FArchive &arc, EWhere where)
-	{
-		return arc << static_cast<byte>(where);
-	}
-	friend FArchive &operator>> (FArchive &arc, EWhere &out)
-	{
-		byte in; arc >> in; out = static_cast<EWhere>(in); return arc;
-	}
 };
 
 static int *switchlist;

@@ -1,4 +1,3 @@
-include(OdamexCopyWad)
 include(OdamexTargetSettings)
 
 # use unquoted #defines
@@ -50,6 +49,9 @@ if(WIN32)
   # but the API itself doesn't exist until Windows 8.  Here we set the minimum
   # Windows version to 8.  (Windows Server 2012, BTW)
   target_compile_definitions(odasrv PRIVATE _WIN32_WINNT=0x0602)
+
+  # We supply our own manifest, don't use the default one.
+  set_target_properties(odasrv PROPERTIES LINK_FLAGS "/MANIFEST:NO")
 endif()
 
 target_link_libraries(odasrv fmt::fmt tinylibs ZLIB::ZLIB odamex-common odaproto minilzo cpptrace::cpptrace)
@@ -84,8 +86,6 @@ endif()
 if(UNIX AND NOT APPLE)
   target_link_libraries(odasrv rt)
 endif()
-
-odamex_copy_wad(odasrv)
 
 if(APPLE)
 elseif(WIN32)

@@ -62,7 +62,7 @@ bool SetGeneric(cheatseq_t* cheat);
 //
 // CHEAT TYPES
 //
-enum ECheatFlags
+enum CheatEnum
 {
 	CHT_GOD = 0,
 	CHT_NOCLIP,

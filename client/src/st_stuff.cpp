@@ -349,7 +349,7 @@ static int st_fragscount;
 static int st_oldhealth = -1;
 
 // used for evil grin
-static bool oldweaponsowned[NUMWEAPONS + 1];
+static bool oldweaponsowned[NUMWEAPONS];
 
 // count until face changes
 static int st_facecount = 0;
@@ -917,7 +917,7 @@ void ST_updateWidgets()
 	for (int i = 0; i < 6; i++)
 	{
 		// denis - longwinded so compiler optimization doesn't skip it (fault in my gcc?)
-		if (plyr->weaponowned[i+1])
+		if (plyr->weaponowned[i+1])     // plus 1 because we skip the fist as a statusbar indicator.
 			st_weaponowned[i] = 1;
 		else
 			st_weaponowned[i] = 0;

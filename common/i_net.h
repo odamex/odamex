@@ -204,17 +204,25 @@ struct msg_info_t
 };
 
 // network messages
-enum svc_t
+//
+// This enumeration is designed so that the most-stable messages belong at the top,
+// and avoid explicit numeric values if possible.
+//
+enum msg_t
 {
-	svc_noop,
-	svc_disconnect,
+	msg_noop,
+	msg_ack,
+
+	clc_netdemocap,         // netdemos - NullPoint
+	clc_netdemostop,        // netdemos - NullPoint
+	clc_netdemoloadsnap,    // netdemos - NullPoint
 	svc_playerinfo, // weapons, ammo, maxammo, raisedweapon for local player
+	svc_disconnect,
 	svc_moveplayer,
 	svc_updatelocalplayer,
 	svc_levellocals, // [AM] Persist one or more level locals
 	svc_pingrequest, // [SL] 2011-05-11 timestamp
 	svc_updateping,
-	msg_ack,
 	svc_spawnmobj,
 	svc_disconnectclient,
 	svc_loadmap,
@@ -226,13 +234,17 @@ enum svc_t
 	svc_spawnplayer,
 	svc_damageplayer,
 	svc_killmobj,
-	svc_fireweapon,
 	svc_updatesector,
 	svc_print,
 	svc_playermembers,
 	svc_teammembers,
 	svc_activateline,
-	svc_movingsector,
+	svc_movingsectorelevator,
+	svc_movingsectorpillar,
+	svc_movingsectorceiling,
+	svc_movingsectordoor,
+	svc_movingsectorfloor,
+	svc_movingsectorplat,
 	svc_playsound,
 	svc_reconnect,
 	svc_exitlevel,
@@ -275,21 +287,50 @@ enum svc_t
 	svc_spree,
 	svc_spreebreaker,
 	svc_noisealert,
-	clc_playerinput,        // SPECIAL KNOWLEDGE AND NOTE HERE: We're entering a transitory phase
-	                        // where client-originated messages are going to start transitioning
-	                        // to protobufs, and this svc enum is the basis for the unified message
-	                        // enumeration.  This enumeration delineates where client-originated
-	                        // messages begin, and it _MUST_ numerically evaluate greater than
-	                        // the values for the clc_t enum so that parsing code on the server that,
-	                        // during this transitory phase, can very easily work with both the
-	                        // new and the old enumerals and naive handling code can be correct.
+	svc_playerammo,
+	svc_playermaxammo,
+	svc_playerweaponowned,
+	svc_playerweaponselection,
+	svc_playerpowers,
+	svc_playerpsprites,
+	svc_configureavatar,
 
-	svc_netdemocap = 100,  // netdemos - NullPoint
-	svc_netdemostop = 101, // netdemos - NullPoint
-	svc_netdemoloadsnap = 102, // netdemos - NullPoint
+	// Client-originated messages
+	//
+	// The clc prefix denotes that they are generated and sent only by clients.
+
+	clc_playerinput,
+	clc_disconnectme,
+	clc_say,
+	clc_userinfo,
+	clc_pingreply,
+	clc_rcon,
+	clc_rcon_password,
+	clc_rcon_logout,
+	clc_spectate_begin,
+	clc_spectate_update,
+	clc_spectate_end,
+	clc_kill,
+	clc_cheat,
+	clc_cheat_give,
+	clc_cheat_summon,
+	clc_cheat_summon_friend,
+	clc_callvote,
+	clc_maplist,
+	clc_maplist_update,
+	clc_getplayerinfo,
+	clc_netcmd,
+	clc_spy,
+	clc_privmsg,
+	clc_sendmobjupdate,
+
+	MSG_DEFINITION_COUNT    // For use as sizer.
 };
 
-inline constexpr size_t svc_max = 255;
+inline auto format_as(msg_t msg)
+{
+	return fmt::underlying(msg);
+}
 
 enum ThinkerType
 {
@@ -303,45 +344,7 @@ enum ThinkerType
 	TT_Phased,
 };
 
-// network messages
-enum clc_t
-{
-	clc_abort,          // UNUSED
-	clc_reserved1,      // UNUSED
-	clc_disconnect,
-	clc_say,
-	clc_move_OLD_PLACEHOLDER,       // NOTE: Keep this for transitory compatibility with "non-unified" switch cases.
-	clc_userinfo,  // send userinfo
-	clc_pingreply, // [SL] 2011-05-11 - timestamp
-	clc_rate,
-	clc_ack_OLD_PLACEHOLDER,        // NOTE: Keep this for transitory compatibility with "non-unified" switch cases.
-	clc_rcon,
-	clc_rcon_password,
-	clc_changeteam, // [NightFang] - Change your team
-	                // [Toke - Teams] Made this actualy work
-	clc_ctfcommand,
-	clc_spectate,       // denis
-	clc_wantwad,        // denis - name, hash
-	clc_kill,           // denis - suicide
-	clc_cheat,          // denis - handle cheat codes.
-	clc_callvote,       // [AM] - Calling a vote
-	clc_maplist,        // [AM] - Maplist status request.
-	clc_maplist_update, // [AM] - Request the entire maplist from the server.
-	clc_getplayerinfo,
-	clc_netcmd,  // [AM] Send a string command to the server.
-	clc_spy,     // [SL] Tell server to send info about this player
-	clc_privmsg, // [AM] Targeted chat to a specific player.
-};
-
-inline auto format_as(clc_t clc)
-{
-	return fmt::underlying(clc);
-}
-
-inline constexpr size_t clc_max = 255;
-
-extern msg_info_t clc_info[clc_max + 1];
-extern msg_info_t svc_info[svc_max + 1];
+extern msg_info_t msg_info[MSG_DEFINITION_COUNT];
 
 namespace google
 {
@@ -376,9 +379,11 @@ void NetadrToSockadr (const netadr_t *a, struct sockaddr_in *s);
 class buf_t
 {
 public:
-    std::vector<byte> data;
-	size_t	cursize, readpos, writepos;
-	bool	overflowed;  // set to true if the buffer size failed
+	std::vector<byte> data      {};
+	size_t            cursize   { 0 };
+	size_t            readpos   { 0 };
+	size_t            writepos  { 0 };
+	bool              overflowed{ false };  // set to true if the buffer size failed
 
     // Buffer seeking flags
     typedef enum
@@ -388,7 +393,44 @@ public:
         ,BT_END     // From end
     } seek_loc_t;
 
-public:
+
+	explicit buf_t(size_t len) :
+	    data(len)
+	{
+	}
+
+	explicit buf_t(const std::basic_string<byte>& byteString) :
+	    data(byteString.begin(), byteString.end())
+	{
+	}
+
+	buf_t()                   = default;
+	buf_t(const buf_t& other) = default;
+	buf_t(buf_t&& other)      = default;
+
+	buf_t& operator=(const buf_t& other) = default;
+	buf_t& operator=(buf_t&& other)      = default;
+
+	void swap(buf_t& other)
+	{
+		using std::swap;
+
+		if (&other == this)
+		{
+			return;
+		}
+		data.swap(other.data);
+
+		swap(cursize,    other.cursize);
+		swap(readpos,    other.readpos);
+		swap(writepos,   other.writepos);
+		swap(overflowed, other.overflowed);
+	}
+
+	friend void swap(buf_t& lhs, buf_t& rhs)
+	{
+		lhs.swap(rhs);
+	}
 
 	void WriteByte(byte b)
 	{
@@ -761,68 +803,6 @@ public:
 
 		return ret;
 	}
-
-	buf_t &operator =(const buf_t &other)
-	{
-	    // Avoid self-assignment
-		if (this == &other)
-            return *this;
-
-        data = other.data;
-		cursize = other.cursize;
-		overflowed = other.overflowed;
-		readpos = other.readpos;
-        writepos = other.writepos;
-
-		return *this;
-	}
-
-	void swap(buf_t& other)
-	{
-		using std::swap;
-
-        if (&other == this)
-        {
-            return;
-        }
-		data.swap(other.data);
-		swap(cursize,    other.cursize);
-		swap(readpos,    other.readpos);
-        swap(writepos,   other.writepos);
-		swap(overflowed, other.overflowed);
-	}
-
-	friend void swap(buf_t& lhs, buf_t& rhs)
-	{
-		lhs.swap(rhs);
-	}
-
-    buf_t& operator=(buf_t&& other)
-    {
-        swap(other);
-        return *this;
-    }
-
-	buf_t()
-		: data(), cursize(0), readpos(0), writepos(0), overflowed(false)
-	{
-	}
-	buf_t(size_t len)
-		: data(len), cursize(0), readpos(0), writepos(0), overflowed(false)
-	{
-	}
-	buf_t(const buf_t &other)
-		: data(other.data), cursize(other.cursize), readpos(other.readpos), writepos(other.writepos), overflowed(other.overflowed)
-	{
-	}
-    buf_t(buf_t&& other) :
-        buf_t()
-    {
-        swap(other);
-    }
-	~buf_t()
-	{
-	}
 };
 
 extern buf_t net_message;
@@ -845,8 +825,7 @@ void SZ_Write (buf_t *b, const void *data, size_t length);
 void SZ_Write (buf_t *b, const byte *data, size_t startpos, size_t length);
 
 void MSG_WriteByte (buf_t *b, byte c);
-void MSG_WriteMarker (buf_t *b, svc_t c);
-void MSG_WriteMarker (buf_t *b, clc_t c);
+void MSG_WriteMarker (buf_t *b, msg_t c);
 void MSG_WriteShort (buf_t *b, short c);
 void MSG_WriteLong (buf_t *b, int c);
 void MSG_WriteUnVarint(buf_t* b, unsigned int uv);
@@ -895,8 +874,8 @@ class MiniLzo
         bool Compress(buf_t &buf, size_t start_offset, size_t write_gap);
 
     protected:
-        buf_t       m_compressionBuffer;
-        buf_t       m_decompressionBuffer;
+        buf_t       m_compressionBuffer   { MAX_UDP_PACKET };
+        buf_t       m_decompressionBuffer { MAX_UDP_PACKET };
 		BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
         lzo_byte    m_wrkmem[LZO1X_1_MEM_COMPRESS];
 		END_DISABLE_WARNING_GNU

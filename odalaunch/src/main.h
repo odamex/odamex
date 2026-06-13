@@ -26,8 +26,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef __MAIN_H__
-#define __MAIN_H__
+#pragma once
 
 #include "odalaunch.h"
 
@@ -49,5 +48,3 @@ public:
 
 	dlgMain* MAIN_DIALOG;
 };
-
-#endif

@@ -18,7 +18,6 @@
 #include "d_event.h"
 #include "d_items.h"
 #include "d_main.h"
-#include "d_net.h"
 #include "d_netinf.h"
 #include "d_player.h"
 #include "d_ticcmd.h"

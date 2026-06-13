@@ -542,13 +542,10 @@ void P_MovePlayer (player_t& player)
 	}
 
 	// Look left/right
-	if(clientside || step_mode)
-	{
-		mo->angle += player.cmd.yaw << 16;
+	mo->angle += player.cmd.yaw << 16;
 
-		// Look up/down stuff
-		P_PlayerLookUpDown(player);
-	}
+	// Look up/down stuff
+	P_PlayerLookUpDown(player);
 
 	// killough 10/98:
 	//
@@ -828,8 +825,6 @@ bool P_CanSpy(player_t &viewer, player_t &other, bool demo)
 	return false;
 }
 
-void SV_SendPlayerInfo(player_t &);
-
 void P_SetPlayerInvulnBleed(player_t& player, std::span<const int, NUMPOWERS> powers)
 {
 	if (sv_showplayerpowerups)
@@ -1035,8 +1030,13 @@ void P_PlayerThink (player_t& player)
 		player.powers[pw_invulnerability]--;
 
 	if (player.powers[pw_invisibility])
-		if (! --player.powers[pw_invisibility] )
-			player.mo->flags &= ~MF_SHADOW;
+		player.powers[pw_invisibility]--;
+
+	// We don't do this check in the above if-block because a PlayerInfo message
+	// can potentially cause the power to get zeroed-out suddenly, leaving the
+	// SHADOW flag set.
+	if (player.powers[pw_invisibility] == 0)
+		player.mo->flags &= ~MF_SHADOW;
 
 	if (player.powers[pw_infrared])
 		player.powers[pw_infrared]--;
@@ -1353,6 +1353,14 @@ player_t::player_t() :
 	secretcount(0),
 	pendingweapon(wp_fist),
 	readyweapon(wp_fist),
+	psprnum(0),
+	pendingweaponMonitor{ pendingweapon },
+	readyweaponMonitor  { readyweapon },
+	weaponOwnedMonitors { weaponowned },
+	ammoMonitors        { ammo },
+	maxAmmoMonitors     { maxammo },
+	powerMonitors       { powers },
+	pspriteMonitors     { psprites },
 	attackdown(0),
 	usedown(0),
 	cheats(0),
@@ -1362,7 +1370,6 @@ player_t::player_t() :
 	extralight(0),
 	fixedcolormap(0),
 	xviewshift(0),
-	psprnum(0),
 	jumpTics(0),
 	death_time(0),
 	suicidedelay(0),
@@ -1372,7 +1379,7 @@ player_t::player_t() :
 	JoinTime(time_t()),
 	ping(0),
 	last_received(0),
-	tic(0),
+	tic(-1),
 	snapshots(PlayerSnapshotManager()),
 	spying(0),
 	spectator(false),
@@ -1381,14 +1388,18 @@ player_t::player_t() :
 	timeout_vote(0),
 	ready(false),
 	timeout_ready(0),
+	prefcolor(argb_t(0, 0, 0, 0)),
 	blend_color(argb_t(0, 0, 0, 0)),
 	doreborn(false),
 	QueuePosition(0),
+	requestedNetIdUpdate(0),
 	hazardcount(0),
 	hazardinterval(0),
 	LastMessage(LastMessage_s()),
 	to_spawn(std::queue<AActor::AActorPtr>()),
-	client(player_t::client_t())
+	inventoryCheckRequestsAreEnabled(false),
+	inventoryCheckIsRequestedForTic(-1),
+	client{}
 {
 	cmd.clear();
 	powers.fill(0);
@@ -1402,128 +1413,13 @@ player_t::player_t() :
 	attacker = AActor::AActorPtr();
 
 	pspdef_t zeropsp = { NULL, 0, 0, 0 };
-	ArrayInit(psprites, zeropsp);
+	psprites.fill(zeropsp);
 	ArrayInit(oldvelocity, 0);
-	ArrayInit(prefcolor, 0);
 
 	LastMessage.Time = 0;
 	LastMessage.Message = "";
 
 	ArrayInit(netcmds, ticcmd_t());
-}
-
-player_t &player_t::operator =(const player_t &other)
-{
-	if (this == &other)
-		return *this;
-
-	id = other.id;
-	playerstate = other.playerstate;
-	mo = other.mo;
-	cmd = other.cmd;
-	cmdqueue = other.cmdqueue;
-	userinfo = other.userinfo;
-	fov = other.fov;
-	viewz = other.viewz;
-	viewheight = other.viewheight;
-	deltaviewheight = other.deltaviewheight;
-	bob = other.bob;
-
-	health = other.health;
-	armorpoints = other.armorpoints;
-	armortype = other.armortype;
-
-	powers = other.powers;
-	cards = other.cards;
-
-	lives = other.lives;
-	roundwins = other.roundwins;
-
-	flags = other.flags;
-
-	points = other.points;
-	backpack = other.backpack;
-
-	fragcount = other.fragcount;
-	deathcount = other.deathcount;
-	monsterdmgcount = other.monsterdmgcount;
-	killcount = other.killcount;
-	totalpoints = other.totalpoints;
-	totaldeaths = other.totaldeaths;
-
-	pendingweapon = other.pendingweapon;
-	readyweapon = other.readyweapon;
-
-	weaponowned = other.weaponowned;
-	ammo = other.ammo;
-	maxammo = other.maxammo;
-
-	attackdown = other.attackdown;
-	usedown = other.usedown;
-
-	cheats = other.cheats;
-
-	refire = other.refire;
-
-	damagecount = other.damagecount;
-	bonuscount = other.bonuscount;
-
-	attacker = other.attacker;
-
-	extralight = other.extralight;
-	fixedcolormap = other.fixedcolormap;
-
-	xviewshift = other.xviewshift;
-
-	ArrayCopy(psprites, other.psprites);
-
-    jumpTics = other.jumpTics;
-
-	death_time = other.death_time;
-
-	ArrayCopy(oldvelocity, other.oldvelocity);
-
-	camera = other.camera;
-	air_finished = other.air_finished;
-
-	GameTime = other.GameTime;
-	JoinTime = other.JoinTime;
-	ping = other.ping;
-
-	last_received = other.last_received;
-
-	tic = other.tic;
-	spying = other.spying;
-	spectator = other.spectator;
-//	deadspectator = other.deadspectator;
-	joindelay = other.joindelay;
-	timeout_callvote = other.timeout_callvote;
-	timeout_vote = other.timeout_vote;
-
-	ready = other.ready;
-	timeout_ready = other.timeout_ready;
-
-	ArrayCopy(prefcolor, other.prefcolor);
-	ArrayCopy(netcmds, other.netcmds);
-
-    LastMessage.Time = other.LastMessage.Time;
-	LastMessage.Message = other.LastMessage.Message;
-
-	blend_color = other.blend_color;
-
-	client = other.client;
-
-	snapshots = other.snapshots;
-
-	to_spawn = other.to_spawn;
-
-	doreborn = other.doreborn;
-	QueuePosition = other.QueuePosition;
-
-	hazardcount = other.hazardcount;
-	hazardinterval = other.hazardinterval;
-
-	return *this;
 }
 
 player_t::~player_t()

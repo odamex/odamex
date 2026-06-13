@@ -144,7 +144,7 @@ void P_NightmareRespawn(AActor *mo);
 void P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z);
 void P_SpawnTracerPuff(fixed_t x, fixed_t y, fixed_t z);
 void P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage);
-bool P_CheckMissileSpawn(AActor* th);
+bool P_CheckMissileSpawn(AActor* th, AActor* parent);
 AActor* P_SpawnMissile(AActor *source, AActor *dest, mobjtype_t type);
 AActor* P_SpawnPlayerMissile(AActor* source, mobjtype_t type);
 size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing);

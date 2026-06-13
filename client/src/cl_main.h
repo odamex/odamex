@@ -33,6 +33,7 @@
 #include "client.pb.h"
 
 #include "OdaMessenger.h"
+#include "PlayerStateRoller.h"
 
 extern netadr_t  serveraddr;
 extern bool      connected;
@@ -41,8 +42,9 @@ extern int       connecttimeout;
 extern bool      noservermsgs;
 extern int       last_received;
 
-extern NetDemo      netdemo;
-extern OdaMessenger messenger;
+extern NetDemo           netdemo;
+extern OdaMessenger      messenger;
+extern PlayerStateRoller rollerState;
 
 #define MAXSAVETICS 70
 extern odaproto::clc::PlayerInput localcmds[MAXSAVETICS];
@@ -57,6 +59,8 @@ enum netQuitReason_e
 	NQ_PROTO,           // Encountered something unexpected in the protocol
 	NQ_SERVER_DROP,     // Server dropped us on the floor, so just ack and drop our side of the connection.
 };
+
+struct PlayerItemDataType;
 
 void CL_QuitNetGame(const netQuitReason_e reason);
 void CL_CompleteDisconnect(netQuitReason_e reason);

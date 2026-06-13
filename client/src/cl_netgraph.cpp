@@ -34,26 +34,35 @@
 #include "v_text.h"
 #include "cl_netgraph.h"
 #include "r_draw.h"
+#include "i_time.h"
 
 #include "SequenceQueueEntryType.h"
 
+namespace
+{
+    const dtime_t ONE_SECOND = I_ConvertTimeFromMs(1000);
+}
+
 NetGraph::NetGraph(int x, int y) :
-	mX(x), mY(y), mInterpolation(0)
+	mX(x), mY(y), mNow(0), mInterpolation(0)
 {
 	mMisprediction.fill(false);
 	mWorldIndexSync.fill(0);
 	mTrafficIn.fill(0);
 	mTrafficOut.fill(0);
 	mPacketsIn.fill(0);
-	mReliableSendDepth.fill(0);
 	mServerQueueDepth.fill(0);
-	mServerQueueDepthLastUpdate.fill(0);
+	mServerMetricsLastUpdate.fill(0);
+	mReliableSendDepth.fill(0);
+	mReliableNonContiguousRetransmits.fill(0);
+	mThrottle.fill(0);
+	mTimeAtTic.fill(0);
 }
 
 template <typename ElementType, size_t N>
 static void SetClamped(std::array<ElementType, N>& io_array, const ElementType& i_value, const ElementType& i_min, const ElementType& i_max)
 {
-    io_array[gametic % N] = std::max(i_min, std::min(i_value, i_max));
+	io_array[gametic % N] = std::max(i_min, std::min(i_value, i_max));
 }
 
 void NetGraph::setMisprediction(bool val)
@@ -63,23 +72,25 @@ void NetGraph::setMisprediction(bool val)
 
 void NetGraph::setWorldIndexSync(int val)
 {
-    SetClamped(mWorldIndexSync, val, NetGraph::MIN_WORLD_INDEX, NetGraph::MAX_WORLD_INDEX);
+	SetClamped(mWorldIndexSync, val, NetGraph::MIN_WORLD_INDEX, NetGraph::MAX_WORLD_INDEX);
 }
 
 void NetGraph::setReliableSendDepth(int val)
 {
-    SetClamped(mReliableSendDepth, val, 0, static_cast<int>(DEFAULT_RELIABILITY_QUEUE_SIZE));
+	SetClamped(mReliableSendDepth, val, 0, static_cast<int>(DEFAULT_RELIABILITY_QUEUE_SIZE));
 }
 
 void NetGraph::setReliableNonContiguousRetransmits(int val)
 {
-    SetClamped(mReliableNonContiguousRetransmits, val, 0, static_cast<int>(DEFAULT_RELIABILITY_QUEUE_SIZE));
+	SetClamped(mReliableNonContiguousRetransmits, val, 0, static_cast<int>(DEFAULT_RELIABILITY_QUEUE_SIZE));
 }
 
-void NetGraph::setServerQueueDepth(int val)
+void NetGraph::addServerSideMetrics(int reliablePacketsInFlightCount, int throttle)
 {
-    SetClamped(mServerQueueDepth, val, 0, static_cast<int>(DEFAULT_RELIABILITY_QUEUE_SIZE));
-    mServerQueueDepthLastUpdate[gametic % MAX_HISTORY_TICS] = gametic;
+	mServerMetricsLastUpdate[gametic % MAX_HISTORY_TICS] = gametic;
+
+	SetClamped(mServerQueueDepth, reliablePacketsInFlightCount, 0, static_cast<int>(DEFAULT_RELIABILITY_QUEUE_SIZE));
+	SetClamped(mThrottle,         throttle,                     0, 100);     // Simply made up.  We don't really have a limit here other than visual.
 }
 
 void NetGraph::addTrafficIn(int val)
@@ -208,14 +219,25 @@ void NetGraph::drawReliableSendDepth(int x, int y)
     drawQueueDepth(x, y, mReliableNonContiguousRetransmits, 0xB0); // red
 }
 
-void NetGraph::drawServerQueueDepth(int x, int y)
+void NetGraph::InvalidateLatestSampleIfMissedPacket(std::array<int, NetGraph::MAX_HISTORY_TICS>& data)
 {
     const int index = (gametic - 1) % MAX_HISTORY_TICS;
-    if (mServerQueueDepthLastUpdate[index] != gametic - 1)
+    if (mServerMetricsLastUpdate[index] != gametic - 1)
     {
-        mServerQueueDepth[index] = -1;
+        data[index] = -1;
     }
+}
+
+void NetGraph::drawServerQueueDepth(int x, int y)
+{
+    InvalidateLatestSampleIfMissedPacket(mServerQueueDepth);
     drawQueueDepth(x, y, mServerQueueDepth, 0x10);   // Pinkish
+}
+
+void NetGraph::drawServerThrottle(int x, int y)
+{
+    InvalidateLatestSampleIfMissedPacket(mThrottle);
+    drawQueueDepth(x, y, mThrottle, 0x10);   // Pinkish
 }
 
 void NetGraph::drawMispredictions(int x, int y)
@@ -240,23 +262,38 @@ void NetGraph::drawMispredictions(int x, int y)
 	}
 }
 
+int NetGraph::accumulateSamplesOverDuration(const std::array<int, NetGraph::MAX_HISTORY_TICS>& data, dtime_t duration)
+{
+	const dtime_t lowerBoundTime = mNow - duration;
+
+	int totalTraffic = 0;
+	for (int i = 1; i <= TICRATE; ++i)
+	{
+		const int backtic = gametic - i;
+		if (backtic < 0)
+		{
+			break;
+		}
+
+		const int backIndex = backtic % NetGraph::MAX_HISTORY_TICS;
+		if (mTimeAtTic[backIndex] <= lowerBoundTime)
+		{
+			break;
+		}
+		totalTraffic += data[backIndex];
+	}
+	return totalTraffic;
+}
+
 void NetGraph::drawTrafficIn(int x, int y)
 {
 	static constexpr int textcolor = CR_GREY;
 
-	int totalTraffic = 0;
-	for (int i = 0;i < TICRATE;i++)
-	{
-		const int backtic = gametic - i;
-		if (backtic < 0) {
-			break;
-		}
-		totalTraffic += mTrafficIn[backtic % NetGraph::MAX_HISTORY_TICS];
-	}
+	const int totalTraffic = accumulateSamplesOverDuration(mTrafficIn, ONE_SECOND);
 
 	std::ostringstream buf;
 	buf.precision(2);
-	buf << "Traffic In: " << std::fixed << totalTraffic / 1024.0 << " kb/s";
+	buf << "Traffic In: " << std::fixed << totalTraffic / 1024.0 << " KB/sec";
 	screen->DrawText(textcolor, x, y, buf.str().c_str());
 }
 
@@ -264,19 +301,11 @@ void NetGraph::drawTrafficOut(int x, int y)
 {
 	static constexpr int textcolor = CR_GREY;
 
-	int totalTraffic = 0;
-	for (int i = 0;i < TICRATE;i++)
-	{
-		const int backtic = gametic - i;
-		if (backtic < 0) {
-			break;
-		}
-		totalTraffic += mTrafficOut[backtic % NetGraph::MAX_HISTORY_TICS];
-	}
+	const int totalTraffic = accumulateSamplesOverDuration(mTrafficOut, ONE_SECOND);
 
 	std::ostringstream buf;
 	buf.precision(2);
-	buf << "Traffic Out: " << std::fixed << totalTraffic / 1024.0 << " kb/s";
+	buf << "Traffic Out: " << std::fixed << totalTraffic / 1024.0 << " KB/s";
 	screen->DrawText(textcolor, x, y, buf.str().c_str());
 }
 
@@ -304,33 +333,55 @@ void NetGraph::drawPackets(int x, int y)
 	screen->DrawText(textcolor, x, y, buf.str().c_str());
 }
 
+std::string NetGraph::BlankIfNegative(int value)
+{
+	if (value >= 0)
+	{
+		return std::to_string(value);
+	}
+	return {};
+}
+
+void NetGraph::start(dtime_t now)
+{
+	const int nowIndex  = gametic % NetGraph::MAX_HISTORY_TICS;
+
+	mNow                 = now;
+	mTimeAtTic[nowIndex] = now;
+
+	// Fields that are incrementally built over the course of a tic need to be defaulted
+	// so that we don't accidentally integrate old stale samples.
+	mTrafficIn[nowIndex]  = 0;
+	mTrafficOut[nowIndex] = 0;
+	mPacketsIn[nowIndex]  = 0;
+}
+
 void NetGraph::draw()
 {
 	static constexpr int textcolor = CR_GREY;
 	static constexpr int fontheight = 8;
 
-    screen->DrawText(textcolor, mX, mY, "World Index Sync");
+	screen->DrawText(textcolor, mX, mY, "World Index Sync");
 	drawWorldIndexSync(mX, mY + fontheight);
 
-    screen->DrawText(textcolor, mX, mY + 64, "Mispredictions");
+	screen->DrawText(textcolor, mX, mY + 64, "Mispredictions");
 	drawMispredictions(mX, mY + 64 + fontheight);
 
-    const int nowIndex = (gametic - 1) % MAX_HISTORY_TICS;
+	const int nowIndex = (gametic - 1) % MAX_HISTORY_TICS;
 
-    screen->DrawText(textcolor, mX + 128, mY, ("Reliable Send Queue: " + std::to_string(mReliableSendDepth[nowIndex])).c_str());
-    drawReliableSendDepth(mX + 128, mY + fontheight);
+	screen->DrawText(textcolor, mX + 128, mY, ("Reliable Send PIF: " + std::to_string(mReliableSendDepth[nowIndex])).c_str());
+	drawReliableSendDepth(mX + 128, mY + fontheight);
 
-    std::string serverQueueNumber;
-    if (mServerQueueDepth[nowIndex] >= 0)
-    {
-        serverQueueNumber = std::to_string(mServerQueueDepth[nowIndex]);
-    }
-    screen->DrawText(textcolor, mX + 290, mY, ("Server-side Queue: " + serverQueueNumber).c_str());
-    drawServerQueueDepth(mX + 290, mY + fontheight);
+	screen->DrawText(textcolor, mX + 290, mY, ("Server Reliable PIF: " + BlankIfNegative(mServerQueueDepth[nowIndex])).c_str());
+	drawServerQueueDepth(mX + 290, mY + fontheight);
 
-	drawTrafficIn(mX, mY + 128 + fontheight);
-	drawTrafficOut(mX, mY + 128 + fontheight * 3);
-	drawPackets(mX, mY + 128 + fontheight * 6);
+	drawTrafficIn       (mX, mY + 128 + fontheight);
+	drawTrafficOut      (mX, mY + 128 + fontheight * 3);
+	drawPackets         (mX, mY + 128 + fontheight * 6);
+	drawServerThrottle  (mX, mY + 128 + fontheight * 20);
+
+	screen->DrawText(textcolor, mX, mY + 128 + fontheight * 19, ("Server Throttle: " + BlankIfNegative(mThrottle[nowIndex])).c_str());
+
 }
 
 VERSION_CONTROL (cl_netgraph_cpp, "$Id$")

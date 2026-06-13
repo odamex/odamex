@@ -66,6 +66,7 @@ EXTERN_CVAR(co_friend_ledgejumping)
 EXTERN_CVAR(co_removesoullimit)
 EXTERN_CVAR(co_friend_helpertype)
 EXTERN_CVAR(co_friend_playerhelpers)
+EXTERN_CVAR(co_archvilefirefix)
 
 #ifdef CLIENT_APP
 EXTERN_CVAR(cl_showfriends)
@@ -113,7 +114,7 @@ void A_Fall (AActor *actor);
 
 void SV_UpdateMonsterRespawnCount();
 void SV_SendRaiseMobj(const AActor* source, const AActor* corpse);
-void SV_UpdateMobj(const AActor* mo);
+void SV_UpdateMobj(AActor* mo);
 void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation);
 void SV_SpawnMobj(AActor* mobj);
 void SV_BroadcastNoiseAlert(const sector_t& sector);
@@ -135,34 +136,33 @@ extern bool isFast;
 // sound blocking lines cut off traversal.
 //
 
-bool P_RecursiveSound (sector_t& sec, int soundblocks, AActor& soundtarget)
+bool P_RecursiveSound (sector_t& sector, int soundblocks, AActor& soundtarget)
 {
-	line_t* 	check;
-	sector_t*	other;
-
 	// wake up all monsters in this sector
-	if (sec.validcount == validcount
-		&& sec.soundtraversed <= soundblocks+1)
+	if (sector.validcount == validcount
+		&& sector.soundtraversed <= soundblocks+1)
 	{
 		return false;         // already flooded
 	}
 
-	bool soundtargetWasChanged = sec.soundtarget != soundtarget.ptr();
+	bool soundtargetWasChanged = sector.soundtarget != soundtarget.ptr();
 
-	sec.validcount = validcount;
-	sec.soundtraversed = soundblocks+1;
-	sec.soundtarget = soundtarget.ptr();
+	sector.validcount     = validcount;
+	sector.soundtraversed = soundblocks + 1;
+	sector.soundtarget    = soundtarget.ptr();
 
-	for (int i = 0; i < sec. linecount; i++)
+	for (int i = 0; i < sector.linecount; i++)
 	{
-		check = sec.lines[i];
+		const line_t* check = sector.lines[i];
 		if (! (check->flags & ML_TWOSIDED) )
 			continue;
 
-		if ( sides[ check->sidenum[0] ].sector == &sec)
-			other = sides[ check->sidenum[1] ] .sector;
-		else
-			other = sides[ check->sidenum[0] ].sector;
+		// It's tempting to rely on C++'s conversion of bool false/true to int 0 or 1.
+		// However, I'd much rather just explicitly state what I mean with exact index
+		// numbers and let the compiler micro-optimize it if it insists.
+
+		const size_t otherSidenumIndex =  sides[ check->sidenum[0] ].sector == &sector ? 1 : 0;
+		sector_t&    otherRef          = *sides[ check->sidenum[otherSidenumIndex] ].sector;
 
 		// [SL] 2012-02-08 - FIXME: Currently only checks for a line opening at
 		// midpoint of a sloped linedef.  P_RecursiveSound() in ZDoom 1.23 causes
@@ -171,19 +171,19 @@ bool P_RecursiveSound (sector_t& sec, int soundblocks, AActor& soundtarget)
 		                     (check->v1->y >> 1) + (check->v2->y >> 1));
 
 		if (openrange <= 0)
-			continue;	// closed door
+			continue;   // closed door
 
 		if (check->flags & ML_SOUNDBLOCK)
 		{
 			if (!soundblocks)
 			{
-				const bool propagatedSoundtargetWasChanged = P_RecursiveSound (*other, 1, soundtarget);
+				const bool propagatedSoundtargetWasChanged = P_RecursiveSound (otherRef, 1, soundtarget);
 				soundtargetWasChanged = soundtargetWasChanged or propagatedSoundtargetWasChanged;
 			}
 		}
 		else
 		{
-			const bool propagatedSoundtargetWasChanged = P_RecursiveSound (*other, soundblocks, soundtarget);
+			const bool propagatedSoundtargetWasChanged = P_RecursiveSound (otherRef, soundblocks, soundtarget);
 			soundtargetWasChanged = soundtargetWasChanged or propagatedSoundtargetWasChanged;
 		}
 	}
@@ -218,7 +218,11 @@ bool P_NoiseAlert (AActor& target, sector_t& sec)
 
 bool P_NoiseAlert (AActor *target, AActor *emmiter)
 {
-	return P_NoiseAlert(*target, *emmiter->subsector->sector);
+	if (emmiter->subsector)
+	{
+		return P_NoiseAlert(*target, *emmiter->subsector->sector);
+	}
+	return false;
 }
 
 
@@ -491,9 +495,12 @@ bool P_SmartMove(AActor* actor)
 	}
 
 	/* killough 9/12/98: Stay on a lift if target is on one */
-	bool on_lift = co_staylift && target && target->health > 0 &&
-	               target->subsector->sector->tag == actor->subsector->sector->tag &&
-	               P_IsOnLift(actor);
+	bool on_lift = co_staylift
+	            && target
+	            && target->health > 0
+	            && target->subsector
+	            && target->subsector->sector->tag == actor->subsector->sector->tag
+	            && P_IsOnLift(actor);
 
 	bool under_damage = co_avoidhazards && P_IsUnderDamage(actor); // e6y
 
@@ -559,6 +566,9 @@ bool P_TryWalk (AActor *actor)
 
 bool P_IsOnLift(const AActor* actor)
 {
+	if (not (actor && actor->subsector))
+		return false;
+
 	const sector_t* sec = actor->subsector->sector;
 	line_t line;
 	int l;
@@ -1523,7 +1533,7 @@ void A_Look (AActor *actor)
 	AActor *targ;
 	AActor *newgoal;
 
-	if(!actor->subsector)
+	if(not (actor && actor->subsector))
 		return;
 
 	// [RH] Set goal now if appropriate
@@ -1620,6 +1630,10 @@ void A_Chase (AActor *actor)
 {
 	int delta;
 	AActor *ngoal;
+
+	// If this thing ever waddles about like a monster, we want the netcode to keep it
+	// up to date like any monster.
+	actor->oflags |= MFO_MOVES_LIKE_A_MONSTER;
 
 	// GhostlyDeath -- Don't chase spectators at all
 	if (actor->target && actor->target->player && actor->target->player->spectator)
@@ -1728,6 +1742,10 @@ void A_Chase (AActor *actor)
 
 		if (serverside)
 			P_SetMobjState (actor, actor->info->meleestate, true);
+
+		if (!actor->info->missilestate)
+			actor->flags |= MF_JUSTHIT;
+
 		return;
 	}
 
@@ -2321,8 +2339,8 @@ void A_FireCrackle (AActor *actor)
 
 void A_Fire (AActor *actor)
 {
-	AActor* 	dest;
-	unsigned	an;
+	AActor*     dest;
+	unsigned    an;
 
 	dest = actor->tracer;
 	if (!dest)
@@ -2335,8 +2353,8 @@ void A_Fire (AActor *actor)
 	an = dest->angle >> ANGLETOFINESHIFT;
 
 	actor->SetOrigin (dest->x + FixedMul (24*FRACUNIT, finecosine[an]),
-					  dest->y + FixedMul (24*FRACUNIT, finesine[an]),
-					  dest->z);
+	                  dest->y + FixedMul (24*FRACUNIT, finesine[an]),
+	                  dest->z);
 }
 
 
@@ -2354,14 +2372,18 @@ void A_VileTarget (AActor *actor)
 
 	A_FaceTarget (actor);
 
-	fog = new AActor (actor->target->x,
-					  actor->target->x,
-					  actor->target->z, MT_FIRE);
+	if (serverside)
+	{
+		fog = new AActor (actor->target->x,
+		                  co_archvilefirefix ? actor->target->y :
+		                                       actor->target->x,
+		                  actor->target->z, MT_FIRE);
 
-	actor->tracer = fog->ptr();
-	fog->target = actor->ptr();
-	fog->tracer = actor->target;
-	A_Fire (fog);
+		actor->tracer = fog->ptr();
+		fog->target = actor->ptr();
+		fog->tracer = actor->target;
+		A_Fire (fog);
+	}
 }
 
 
@@ -2658,7 +2680,7 @@ void A_SpawnObject(AActor* actor)
 
 	P_FriendlyEffects(mo);
 
-	SV_UpdateMobj(mo);
+	// TEST!  IS THIS EVEN NEEDED???  SV_UpdateMobj(mo);
 }
 
 //
@@ -2818,7 +2840,7 @@ void A_HealChase(AActor* actor)
 {
 	int state, sound;
 
-	if (!actor || !serverside)
+	if (!actor)
 		return;
 
 	state = actor->state->args[0];

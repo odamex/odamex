@@ -136,6 +136,8 @@ EXTERN_CVAR(g_roundlimit)
 EXTERN_CVAR(hud_hordeinfo_debug)
 EXTERN_CVAR(g_preroundreset)
 EXTERN_CVAR(cl_showsprees)
+EXTERN_CVAR(cl_showofflinesprees)
+EXTERN_CVAR(sv_showsprees)
 
 void ST_unloadNew()
 {
@@ -779,22 +781,22 @@ void drawProtos()
 		}
 	}
 
-	// Now draw the current reconstructed PlayerInput.
+	// Now draw the recorded PlayerInput.
 	y = top;
 	hud::DrawText(
-	        100, y,
+	        130, y,
 	        scale,
 	        hud::X_RIGHT,
 	        hud::Y_TOP,
 	        hud::X_LEFT,
 	        hud::Y_TOP,
-	        ::svc_info[clc_playerinput].getName(),
+	        ::msg_info[clc_playerinput].getName(),
 	        ProtoRowColor(clc_playerinput),
 	        true);
 
-	y += V_StringHeight(::svc_info[clc_playerinput].getName());
+	y += V_StringHeight(::msg_info[clc_playerinput].getName());
 	hud::DrawText(
-	        100, y,
+	        130, y,
 	        scale,
 	        hud::X_RIGHT,
 	        hud::Y_TOP,
@@ -1203,7 +1205,7 @@ void DrawToasts()
 		x += icon->width() + 1;
 
 			// Draw spree point badge if any
-		if (toast.active_spree && cl_showsprees)
+		if (toast.active_spree && cl_showsprees && ((network_game && sv_showsprees) || (!network_game && cl_showofflinesprees)))
 		{
 			// Draw the arrow
 			const patch_t* arrow = W_ResolvePatchHandle(ToastSpreeArrow);
@@ -1600,7 +1602,7 @@ void DisplaySmallSpree(const SpreeRecord_t& record)
 
 void SpreeHud()
 {
-	if (!validplayer(displayplayer()) || !cl_showsprees)
+	if (!validplayer(displayplayer()) || !cl_showsprees || (!cl_showofflinesprees && !network_game) || (!sv_showsprees && network_game))
 		return;
 
 	static SpreeManager& manager = SpreeManager::getInstance();

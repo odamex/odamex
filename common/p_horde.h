@@ -38,45 +38,23 @@ enum hordeState_e
 
 struct hordeInfo_t
 {
-	hordeState_e state;
-	int wave;
-	int waveTime;
-	int bossTime;
-	uint64_t defineID;
-	int spawnedHealth;
-	int killedHealth;
-	int bossHealth;
-	int bossDamage;
-	int waveStartHealth;
+	hordeState_e state          { HS_STARTING };
+	int          wave           { -1 };
+	int          waveTime       { -1 };
+	int          bossTime       { -1 };
+	uint64_t     defineID       {  0 };
+	int          spawnedHealth  { -1 };
+	int          killedHealth   { -1 };
+	int          bossHealth     { -1 };
+	int          bossDamage     { -1 };
+	int          waveStartHealth{ -1 };
+
+	bool operator==(const hordeInfo_t&) const = default;
 
 	int alive() const { return spawnedHealth - killedHealth; }
 	int killed() const { return killedHealth - waveStartHealth; }
 	bool hasBoss() const { return waveTime != bossTime; }
 	int bossTic() const { return ::level.time - bossTime; }
-	bool equals(const hordeInfo_t& info) const
-	{
-		if (state != info.state)
-			return false;
-		if (wave != info.wave)
-			return false;
-		if (waveTime != info.waveTime)
-			return false;
-		if (bossTime != info.bossTime)
-			return false;
-		if (defineID != info.defineID)
-			return false;
-		if (spawnedHealth != info.spawnedHealth)
-			return false;
-		if (killedHealth != info.killedHealth)
-			return false;
-		if (bossHealth != info.bossHealth)
-			return false;
-		if (bossDamage != info.bossDamage)
-			return false;
-		if (waveStartHealth != info.waveStartHealth)
-			return false;
-		return true;
-	}
 };
 
 void P_InitHorde();
