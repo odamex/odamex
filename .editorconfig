@@ -2,13 +2,13 @@ root=true
 
 [*]
 trim_trailing_whitespace = true
+insert_final_newline = true
 
 [*.{h,c,hpp,cpp}]
 indent_style = tab
 indent_size = tab
 curly_bracket_next_line = true
 spaces_around_operators = true
-# spaces_around_brackets =
 indent_brace_style = Allman
 
 [*.py]
