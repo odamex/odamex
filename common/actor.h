@@ -234,23 +234,23 @@ enum mobjflag_t
 
 	// --- mobj.oflags ---
 	// Odamex-specific flags
-	MFO_NOSNAPZ			= BIT(0),	// ignore snapshot z this tic
-	MFO_HEALTHPOOL		= BIT(1),	// global health pool that tracks killed HP
-	MFO_INFIGHTINVUL	= BIT(2),	// invulnerable to infighting
-	MFO_UNFLINCHING		= BIT(3),	// monster flinching reduced to 1 in 256
-	MFO_ARMOR			= BIT(4),	// damage taken by monster is reduced
-	MFO_QUICK			= BIT(5),	// speed of monster is increased
-	MFO_NORAISE			= BIT(6),	// vile can't raise corpse
-	MFO_BOSSPOOL		= BIT(7),	// boss health pool that tracks damage
-	MFO_FULLBRIGHT		= BIT(8),	// monster is fullbright
-	MFO_SPECTATOR		= BIT(9),	// GhostlyDeath -- thing is/was a spectator and can't be seen!
-	MFO_FALLING			= BIT(10),	// [INTERNAL] for falling
-	MFO_ARMED			= BIT(11),	// [INTERNAL] for TOUCHY (object is armed)
-	MFO_LINEDONE 		= BIT(12),  // [INTERNAL] for A_LineEffect, line special already done
-	// MFO_STEALTH			= BIT(13),	// Andy Baker's stealth monsters
-	MFO_IS_ON_CONVEYOR  = BIT(14),  // Mobj is in motion due to being carried by a sector
+	MFO_NOSNAPZ         = BIT(0),   // [clientside only] ignore snapshot z this tic
+	MFO_HEALTHPOOL      = BIT(1),   // global health pool that tracks killed HP
+	MFO_INFIGHTINVUL    = BIT(2),   // invulnerable to infighting
+	MFO_UNFLINCHING     = BIT(3),   // monster flinching reduced to 1 in 256
+	MFO_ARMOR           = BIT(4),   // damage taken by monster is reduced
+	MFO_QUICK           = BIT(5),   // speed of monster is increased
+	MFO_NORAISE         = BIT(6),   // vile can't raise corpse
+	MFO_ISHORDEBOSS     = BIT(7),   // Is a horde boss?  Implies that damage subtracts from boss health pool
+	MFO_FULLBRIGHT      = BIT(8),   // monster is fullbright
+	MFO_SPECTATOR       = BIT(9),   // GhostlyDeath -- thing is/was a spectator and can't be seen!
+	MFO_FALLING         = BIT(10),  // [INTERNAL] for falling
+	MFO_ARMED           = BIT(11),  // [INTERNAL] for TOUCHY (object is armed)
+	MFO_LINEDONE        = BIT(12),  // [INTERNAL] for A_LineEffect, line special already done
+	// MFO_STEALTH          = BIT(13),  // Andy Baker's stealth monsters
+	MFO_ISONCONVEYOR    = BIT(14),  // Mobj is in motion due to being carried by a sector
 
-	MFO_MOVES_LIKE_A_MONSTER = BIT(15),
+	MFO_MOVESLIKEAMONSTER = BIT(15),    // Mobj has been updated through monster movement routines
 };
 
 //
@@ -322,74 +322,74 @@ struct baseline_t
 
 enum class CredibilityEnum
 {
-    NOT_CREDIBLE = 0,
-    ALWAYS_CREDIBLE,
-    FULLY_CREDIBLE,
-    SEMI_CREDIBLE,
-    CHALLENGED_CREDIBILITY,
+	NOT_CREDIBLE = 0,
+	ALWAYS_CREDIBLE,
+	FULLY_CREDIBLE,
+	SEMI_CREDIBLE,
+	CHALLENGED_CREDIBILITY,
 
-    CREDIBILITY_LEVEL_COUNT
+	CREDIBILITY_LEVEL_COUNT
 };
 
 class AActor;
 
 class CredibilityState
 {
-    public:
+	public:
 
-        CredibilityEnum Get() const
-        {
-            return m_credibility;
-        }
+		CredibilityEnum Get() const
+		{
+			return m_credibility;
+		}
 
-        bool IsCredible() const
-        {
-            return m_credibility == CredibilityEnum::FULLY_CREDIBLE
-                or m_credibility == CredibilityEnum::ALWAYS_CREDIBLE;
-        }
+		bool IsCredible() const
+		{
+			return m_credibility == CredibilityEnum::FULLY_CREDIBLE
+			    or m_credibility == CredibilityEnum::ALWAYS_CREDIBLE;
+		}
 
-        void Update(const AActor& mobj);
+		void Update(const AActor& mobj);
 
-        void Challenge()
-        {
-            m_credibility = CredibilityEnum::CHALLENGED_CREDIBILITY;
-        }
+		void Challenge()
+		{
+			m_credibility = CredibilityEnum::CHALLENGED_CREDIBILITY;
+		}
 
-        void Lionize()
-        {
-            m_credibility = CredibilityEnum::ALWAYS_CREDIBLE;
-        }
+		void Lionize()
+		{
+			m_credibility = CredibilityEnum::ALWAYS_CREDIBLE;
+		}
 
-        template <typename StreamType>
-        friend StreamType& operator<<(StreamType& io_stream, const CredibilityState& i_thisRef)
-        {
-            io_stream
-                << i_thisRef.m_credibility
-                << i_thisRef.m_crediblePosition
-                << i_thisRef.m_predictedMotionTicCount
-                ;
-            return io_stream;
-        }
+		template <typename StreamType>
+		friend StreamType& operator<<(StreamType& io_stream, const CredibilityState& i_thisRef)
+		{
+			io_stream
+			    << i_thisRef.m_credibility
+			    << i_thisRef.m_crediblePosition
+			    << i_thisRef.m_predictedMotionTicCount
+			    ;
+			return io_stream;
+		}
 
-        template <typename StreamType>
-        friend StreamType& operator>>(StreamType& io_stream, CredibilityState& o_thisRef)
-        {
-            io_stream
-                >> o_thisRef.m_credibility
-                >> o_thisRef.m_crediblePosition
-                >> o_thisRef.m_predictedMotionTicCount
-                ;
-            return io_stream;
-        }
+		template <typename StreamType>
+		friend StreamType& operator>>(StreamType& io_stream, CredibilityState& o_thisRef)
+		{
+			io_stream
+			    >> o_thisRef.m_credibility
+			    >> o_thisRef.m_crediblePosition
+			    >> o_thisRef.m_predictedMotionTicCount
+			    ;
+			return io_stream;
+		}
 
-    protected:
+	protected:
 
-        // Start off fully-credible so that triggers and other things can fire immediately if needed on the client
-        // and so that the server doesn't have to do anything with this - everything on the server is credible.
-        //
-        CredibilityEnum m_credibility { CredibilityEnum::FULLY_CREDIBLE };
-        v3fixed_t       m_crediblePosition { 0, 0, 0 };
-        int             m_predictedMotionTicCount { 0 };
+		// Start off fully-credible so that triggers and other things can fire immediately if needed on the client
+		// and so that the server doesn't have to do anything with this - everything on the server is credible.
+		//
+		CredibilityEnum m_credibility { CredibilityEnum::FULLY_CREDIBLE };
+		v3fixed_t       m_crediblePosition { 0, 0, 0 };
+		int             m_predictedMotionTicCount { 0 };
 };
 
 // Map Object definition.

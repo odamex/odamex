@@ -1815,7 +1815,7 @@ void AM_drawHordeBoss(const AActor* t)
 {
 	OInterpolation& oi = OInterpolation::getInstance();
 
-	if (t->oflags & MFO_BOSSPOOL && t->health > 0)
+	if (t->oflags & MFO_ISHORDEBOSS && t->health > 0)
 	{
 		fixed_t thingx;
 		fixed_t thingy;

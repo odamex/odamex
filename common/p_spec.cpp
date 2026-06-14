@@ -2587,7 +2587,7 @@ void DScroller::RunThink ()
 					// non-floating, and clipped.
 					thing->momx   += dx;
 					thing->momy   += dy;
-					thing->oflags |= MFO_IS_ON_CONVEYOR;
+					thing->oflags |= MFO_ISONCONVEYOR;
 					}
 			break;
 		}
