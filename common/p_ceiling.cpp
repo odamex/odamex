@@ -599,59 +599,21 @@ bool EV_DoZDoomCeiling(DCeiling::ECeiling type, line_t* line, byte tag, fixed_t 
 bool P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t speed,
                   fixed_t speed2, fixed_t height, int crush, int silent, int change, crushmode_e crushmode)
 {
-	int secnum;
-	bool rtn;
-	sector_t* sec;
-	DCeiling* ceiling;
-	bool manual = false;
 	fixed_t targheight = 0;
 
 	height *= FRACUNIT;
 
-	rtn = false;
-
-	// check if a manual trigger, if so do just the sector on the backside
-	//
-	if (co_boomphys && tag == 0)
+	const auto helper = [&](sector_t* sec) -> bool
 	{
-		if (!line || !(sec = line->backsector))
-			return rtn;
-		secnum = sec - sectors;
-		manual = true;
-		// [RH] Hack to let manual crushers be retriggerable, too
-		tag ^= secnum | 0x1000000;
-		rtn |= P_ActivateInStasisCeiling(tag);
-		goto manual_ceiling;
-	}
-
-	//	Reactivate in-stasis ceilings...for certain types.
-	// This restarts a crusher after it has been stopped
-	if (type == DCeiling::ceilCrushAndRaise)
-	{
-		rtn |= P_ActivateInStasisCeiling(tag);
-	}
-
-	secnum = -1;
-	// affects all sectors with the same tag as the linedef
-	while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
-	{
-		sec = &sectors[secnum];
-	manual_ceiling:
 		// if ceiling already moving, don't start a second function on it
 		if (P_CeilingActive(sec))
-		{
-			if (co_boomphys && manual)
-				return false;
-			else
-				continue;
-		}
+			return false;
 
-		fixed_t ceilingheight = P_CeilingHeight(sec);
-		fixed_t floorheight = P_FloorHeight(sec);
+		const fixed_t ceilingheight = P_CeilingHeight(sec);
+		const fixed_t floorheight = P_FloorHeight(sec);
 
 		// new door thinker
-		rtn = true;
-		ceiling = new DCeiling(sec, speed, speed2, silent);
+		DCeiling* ceiling = new DCeiling(sec, speed, speed2, silent);
 		ceiling->m_Texture = NO_TEXTURE;
 		P_AddMovingCeiling(sec);
 
@@ -847,8 +809,38 @@ bool P_SpawnZDoomCeiling(DCeiling::ECeiling type, line_t* line, int tag, fixed_t
 		ceiling->PlayCeilingSound();
 		P_AddMovingCeiling(sec);
 
-		if (manual)
-			return rtn;
+		return true;
+	};
+
+	int secnum = -1;
+	bool rtn = false;
+
+	// check if a manual trigger, if so do just the sector on the backside
+	//
+	if (co_boomphys && tag == 0)
+	{
+		sector_t* sec;
+		if (!line || !(sec = line->backsector))
+			return false;
+
+		secnum = sec - sectors;
+		// [RH] Hack to let manual crushers be retriggerable, too
+		tag ^= secnum | 0x1000000;
+		rtn |= P_ActivateInStasisCeiling(tag);
+		return helper(sec) || rtn;
+	}
+
+	//	Reactivate in-stasis ceilings...for certain types.
+	// This restarts a crusher after it has been stopped
+	if (type == DCeiling::ceilCrushAndRaise)
+	{
+		rtn |= P_ActivateInStasisCeiling(tag);
+	}
+
+	// affects all sectors with the same tag as the linedef
+	while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
+	{
+		rtn |= helper(&sectors[secnum]);
 	}
 	return rtn;
 }
@@ -1067,8 +1059,8 @@ bool EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 	//
 	if (co_boomphys && tag == 0)
 	{
-		sector_t* sec = line->backsector;
-		if (!line || !sec)
+		sector_t* sec;
+		if (!line || !(sec = line->backsector))
 			return false;
 
 		secnum = sec - sectors;
