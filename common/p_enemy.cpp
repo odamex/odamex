@@ -3233,6 +3233,33 @@ void A_Stop(AActor* actor)
 	actor->momx = actor->momy = actor->momz = 0;
 }
 
+#ifdef CLIENT_APP
+static void ApplyFriendlyEffects(AActor* mobj)
+{
+	if (mobj->health <= 0)
+	{
+		mobj->effects &= ~FX_FRIENDHEARTS;
+		return;
+	}
+
+	if (mobj->player || !(mobj->flags & MF_FRIEND) ||
+	    (mobj->oflags & MFO_ISHORDEBOSS))
+		return;
+
+	if (validplayer(displayplayer()) && displayplayer().mo &&
+	    P_IsFriendlyThing(displayplayer().mo, mobj) && sentient(mobj))
+	{
+		mobj->effects |= FX_FRIENDHEARTS;
+		mobj->translation = translationref_t(&friendtable[0]);
+	}
+	else
+	{
+		mobj->effects &= ~FX_FRIENDHEARTS;
+		mobj->translation = nullptr;
+	}
+}
+#endif
+
 // P_FriendlyEffects
 void P_FriendlyEffects()
 {
@@ -3245,27 +3272,7 @@ CLIENT_ONLY(
 
 	while ((other = iterator.Next()))
 	{
-		if (other->health <= 0)
-		{
-			other->effects &= ~FX_FRIENDHEARTS;
-			continue;
-		}
-
-		if (other->player || !(other->flags & MF_FRIEND) ||
-		    (other->oflags & MFO_ISHORDEBOSS))
-			continue;
-
-		if (validplayer(displayplayer()) && displayplayer().mo &&
-		    P_IsFriendlyThing(displayplayer().mo, other) && sentient(other))
-		{
-			other->effects |= FX_FRIENDHEARTS;
-			other->translation = translationref_t(&friendtable[0]);
-		}
-		else
-		{
-			other->effects &= ~FX_FRIENDHEARTS;
-			other->translation = nullptr;
-		}
+		ApplyFriendlyEffects(other);
 	}
 )
 }
@@ -3276,26 +3283,9 @@ CLIENT_ONLY(
 	if (!cl_showfriends)
 		return;
 
-	if (mo->health <= 0)
+	if (mo)
 	{
-		mo->effects &= ~FX_FRIENDHEARTS;
-		return;
-	}
-
-	if (mo->player || !(mo->flags & MF_FRIEND) ||
-	    (mo->oflags & MFO_ISHORDEBOSS))
-		return;
-
-	if (validplayer(displayplayer()) && displayplayer().mo &&
-	    P_IsFriendlyThing(displayplayer().mo, mo) && sentient(mo))
-	{
-		mo->effects |= FX_FRIENDHEARTS;
-		mo->translation = translationref_t(&friendtable[0]);
-	}
-	else
-	{
-		mo->effects &= ~FX_FRIENDHEARTS;
-		mo->translation = nullptr;
+		ApplyFriendlyEffects(mo);
 	}
 )
 }
