@@ -866,7 +866,7 @@ bool EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 		const fixed_t floorheight = P_FloorHeight(sec);
 
 		// new door thinker
-		DCeiling* ceiling = new DCeiling (sec, speed, speed2, silent);
+		DCeiling* ceiling = new DCeiling(sec, speed, speed2, silent);
 		P_AddMovingCeiling(sec);
 
 		switch (type)
@@ -884,7 +884,7 @@ bool EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 			break;
 
 		case DCeiling::ceilRaiseToHighest:
-			targheight = ceiling->m_TopHeight = P_FindHighestCeilingSurrounding (sec);
+			targheight = ceiling->m_TopHeight = P_FindHighestCeilingSurrounding(sec);
 			ceiling->m_Direction = 1;
 			break;
 
@@ -913,12 +913,12 @@ bool EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 			break;
 
 		case DCeiling::ceilLowerToHighestFloor:
-			targheight = ceiling->m_BottomHeight = P_FindHighestFloorSurrounding (sec);
+			targheight = ceiling->m_BottomHeight = P_FindHighestFloorSurrounding(sec);
 			ceiling->m_Direction = -1;
 			break;
 
 		case DCeiling::ceilRaiseToHighestFloor:
-			targheight = ceiling->m_TopHeight = P_FindHighestFloorSurrounding (sec);
+			targheight = ceiling->m_TopHeight = P_FindHighestFloorSurrounding(sec);
 			ceiling->m_Direction = 1;
 			break;
 
@@ -945,12 +945,12 @@ bool EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 			break;
 
 		case DCeiling::ceilLowerToLowest:
-			targheight = ceiling->m_BottomHeight = P_FindLowestCeilingSurrounding (sec);
+			targheight = ceiling->m_BottomHeight = P_FindLowestCeilingSurrounding(sec);
 			ceiling->m_Direction = -1;
 			break;
 
 		case DCeiling::ceilRaiseToLowest:
-			targheight = ceiling->m_TopHeight = P_FindLowestCeilingSurrounding (sec);
+			targheight = ceiling->m_TopHeight = P_FindLowestCeilingSurrounding(sec);
 			ceiling->m_Direction = -1;
 			break;
 
@@ -965,19 +965,19 @@ bool EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 			break;
 
 		case DCeiling::ceilLowerToHighest:
-			targheight = ceiling->m_BottomHeight = P_FindHighestCeilingSurrounding (sec);
+			targheight = ceiling->m_BottomHeight = P_FindHighestCeilingSurrounding(sec);
 			ceiling->m_Direction = -1;
 			break;
 
 		case DCeiling::ceilLowerByTexture:
 			targheight = ceiling->m_BottomHeight =
-				ceilingheight - P_FindShortestUpperAround (sec);
+				ceilingheight - P_FindShortestUpperAround(sec);
 			ceiling->m_Direction = -1;
 			break;
 
 		case DCeiling::ceilRaiseByTexture:
 			targheight = ceiling->m_TopHeight =
-				ceilingheight + P_FindShortestUpperAround (sec);
+				ceilingheight + P_FindShortestUpperAround(sec);
 			ceiling->m_Direction = 1;
 			break;
 
@@ -1047,7 +1047,7 @@ bool EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 			}
 		}
 
-		ceiling->PlayCeilingSound ();
+		ceiling->PlayCeilingSound();
 
 		return true;
 	};
@@ -1074,11 +1074,11 @@ bool EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 	// This restarts a crusher after it has been stopped
 	if (type == DCeiling::crushAndRaise)
 	{
-		rtn |= P_ActivateInStasisCeiling (tag);
+		rtn |= P_ActivateInStasisCeiling(tag);
 	}
 
 	// affects all sectors with the same tag as the linedef
-	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
+	while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
 	{
 		rtn |= helper(&sectors[secnum]);
 	}
