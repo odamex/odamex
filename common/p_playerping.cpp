@@ -1312,11 +1312,11 @@ bool P_ResolvePingPosition(const playerPing_s& ping, v3fixed_t& outPos)
 void R_AddPingSprites()
 {
 #ifdef CLIENT_APP
-	if (!sv_pingsystem || !cl_showpings)
-		return;
-
+	const bool allowPingMarkers = sv_pingsystem && cl_showpings;
 	const bool allowTeammateMarkers = sv_marker_teammates && hud_marker_teammates;
 	const bool allowHordeBossMarkers = sv_marker_hordeboss && hud_marker_hordeboss;
+	if (!allowPingMarkers && !allowTeammateMarkers && !allowHordeBossMarkers)
+		return;
 
 	static constexpr fixed_t StrictHeadOffset = 12 * FRACUNIT;
 	static constexpr fixed_t BossHeadOffset = 24 * FRACUNIT;
@@ -1459,86 +1459,89 @@ void R_AddPingSprites()
 		return (std::max)(ageAlpha, distAlpha);
 	};
 
-	for (auto &pl : players)
+	if (allowPingMarkers)
 	{
-		if (!pl.player_ping)
-			continue;
-
-		if (G_IsTeamGame() && pl.id != consoleplayer().id &&
-		    pl.userinfo.team != consoleplayer().userinfo.team)
-			continue;
-
-		auto& ping = *pl.player_ping;
-		if (P_IsPingExpired(ping))
-			continue;
-		if (consoleplayer().mo && ping.target_netid == consoleplayer().mo->netid)
-			continue;
-		if (ping.type == PING_TEAMMATE && !allowTeammateMarkers)
-			continue;
-		if (ping.type == PING_BOSS && !allowHordeBossMarkers)
-			continue;
-
-		v3fixed_t pos{};
-		if (!P_ResolvePingPosition(ping, pos))
-			continue;
-
-		if (ping.follow_target && ping.target_netid != 0)
+		for (auto &pl : players)
 		{
-			AActor* target = P_FindThingById(ping.target_netid);
-			AActor* view = consoleplayer().camera ? consoleplayer().camera : consoleplayer().mo;
-			if (target && view)
+			if (!pl.player_ping)
+				continue;
+
+			if (G_IsTeamGame() && pl.id != consoleplayer().id &&
+			    pl.userinfo.team != consoleplayer().userinfo.team)
+				continue;
+
+			auto& ping = *pl.player_ping;
+			if (P_IsPingExpired(ping))
+				continue;
+			if (consoleplayer().mo && ping.target_netid == consoleplayer().mo->netid)
+				continue;
+			if (ping.type == PING_TEAMMATE && !allowTeammateMarkers)
+				continue;
+			if (ping.type == PING_BOSS && !allowHordeBossMarkers)
+				continue;
+
+			v3fixed_t pos{};
+			if (!P_ResolvePingPosition(ping, pos))
+				continue;
+
+			if (ping.follow_target && ping.target_netid != 0)
 			{
-				if (ping.type == PING_MONSTER || ping.type == PING_BOSS)
+				AActor* target = P_FindThingById(ping.target_netid);
+				AActor* view = consoleplayer().camera ? consoleplayer().camera : consoleplayer().mo;
+				if (target && view)
 				{
-					pos.x = target->prevx + FixedMul(render_lerp_amount, target->x - target->prevx);
-					pos.y = target->prevy + FixedMul(render_lerp_amount, target->y - target->prevy);
-					const fixed_t tzt =
-					    target->prevz + FixedMul(render_lerp_amount, target->z - target->prevz);
-					const fixed_t headOffset =
-					    ping.type == PING_BOSS ? BossHeadOffset : StrictHeadOffset;
-					pos.z = tzt + target->height + headOffset;
+					if (ping.type == PING_MONSTER || ping.type == PING_BOSS)
+					{
+						pos.x = target->prevx + FixedMul(render_lerp_amount, target->x - target->prevx);
+						pos.y = target->prevy + FixedMul(render_lerp_amount, target->y - target->prevy);
+						const fixed_t tzt =
+						    target->prevz + FixedMul(render_lerp_amount, target->z - target->prevz);
+						const fixed_t headOffset =
+						    ping.type == PING_BOSS ? BossHeadOffset : StrictHeadOffset;
+						pos.z = tzt + target->height + headOffset;
+					}
+					else
+					{
+						P_PingFollowTargetPos(target, view, pos);
+					}
 				}
-				else
+
+				if (pl.id < MAXPLAYERS)
 				{
-					P_PingFollowTargetPos(target, view, pos);
+					if (!followSmoothValid[pl.id])
+					{
+						followSmoothPos[pl.id] = pos;
+						followSmoothValid[pl.id] = true;
+					}
+					else
+					{
+						followSmoothPos[pl.id].x = smoothFixed(followSmoothPos[pl.id].x, pos.x);
+						followSmoothPos[pl.id].y = smoothFixed(followSmoothPos[pl.id].y, pos.y);
+						followSmoothPos[pl.id].z = smoothFixed(followSmoothPos[pl.id].z, pos.z);
+					}
+
+					pos = followSmoothPos[pl.id];
 				}
 			}
 
-			if (pl.id < MAXPLAYERS)
-			{
-				if (!followSmoothValid[pl.id])
-				{
-					followSmoothPos[pl.id] = pos;
-					followSmoothValid[pl.id] = true;
-				}
-				else
-				{
-					followSmoothPos[pl.id].x = smoothFixed(followSmoothPos[pl.id].x, pos.x);
-					followSmoothPos[pl.id].y = smoothFixed(followSmoothPos[pl.id].y, pos.y);
-					followSmoothPos[pl.id].z = smoothFixed(followSmoothPos[pl.id].z, pos.z);
-				}
+			translationref_t translation = ping.translation;
+			if (ping.type == PING_ITEM)
+				translation = {};
+			else if (ping.type == PING_GENERAL || ping.type == PING_WARNING || ping.type == PING_DROP)
+				translation = P_PingReadablePlayerTranslation(pl);
+			else if (!translation && pl.mo)
+				translation = pl.mo->translation;
+			if (ping.type == PING_FLAG && ping.flag_team != TEAM_NONE)
+				translation = P_PingTeamTranslationInternal(ping.flag_team);
 
-				pos = followSmoothPos[pl.id];
-			}
+			const int pingPx = ping.type == PING_BOSS ? resolutionScaledPx(FixedBossScreenPx)
+			                                          : scaledPingPx(ping.type, pos);
+			const float alpha = pingWorldAlpha(ping, pos);
+			R_Add3DHUDSprite(ping.lump, pos, translation, alpha, pingPx, pingPx, false);
 		}
-
-		translationref_t translation = ping.translation;
-		if (ping.type == PING_ITEM)
-			translation = {};
-		else if (ping.type == PING_GENERAL || ping.type == PING_WARNING || ping.type == PING_DROP)
-			translation = P_PingReadablePlayerTranslation(pl);
-		else if (!translation && pl.mo)
-			translation = pl.mo->translation;
-		if (ping.type == PING_FLAG && ping.flag_team != TEAM_NONE)
-			translation = P_PingTeamTranslationInternal(ping.flag_team);
-
-		const int pingPx =
-		    ping.type == PING_BOSS ? resolutionScaledPx(FixedBossScreenPx) : scaledPingPx(ping.type, pos);
-		const float alpha = pingWorldAlpha(ping, pos);
-		R_Add3DHUDSprite(ping.lump, pos, translation, alpha, pingPx, pingPx, false);
 	}
 
-	if (G_IsHordeMode() && allowHordeBossMarkers)
+	if (allowHordeBossMarkers)
 	{
 		AActor* view = consoleplayer().camera ? consoleplayer().camera : consoleplayer().mo;
 		const int bossLump = P_PingLumpForType(PING_BOSS);

@@ -51,7 +51,6 @@ odaproto::clc::Netcmd CLC_Netcmd(IteratorType begin, IteratorType end)
     odaproto::clc::Netcmd msg;
     while (begin != end)
     {
-        PrintFmt("{}\n", *begin);
         msg.add_argv(*begin++);
     }
     return msg;
