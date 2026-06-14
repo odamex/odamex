@@ -834,64 +834,51 @@ bool EV_DoZDoomDoor(DDoor::EVlDoor type, line_t* line, AActor* mo, byte tag,
 //
 bool EV_DoGenDoor(line_t& line)
 {
-	int secnum;
-	bool rtn;
-	sector_t* sec;
-	bool manual;
-	unsigned value = (unsigned)line.special - GenDoorBase;
+	const uint32_t value = static_cast<uint32_t>(line.special) - GenDoorBase;
 
 	// parse the bit fields in the line's special type
 
-	int Dely = (value & DoorDelay) >> DoorDelayShift;
-	int Kind = (value & DoorKind) >> DoorKindShift;
-	int Sped = (value & DoorSpeed) >> DoorSpeedShift;
-	int Trig = (value & TriggerType) >> TriggerTypeShift;
+	const int Dely = (value & DoorDelay) >> DoorDelayShift;
+	const int Kind = (value & DoorKind) >> DoorKindShift;
+	const int Sped = (value & DoorSpeed) >> DoorSpeedShift;
+	const int Trig = (value & TriggerType) >> TriggerTypeShift;
 
-	rtn = 0;
+	const auto helper = [&](sector_t* sec) -> bool
+	{
+		// Do not start another function if ceiling already moving
+		if (sec->ceilingdata) // jff 2/22/98
+			return false;
+
+		// new door thinker
+		new DDoor(sec, &line, Dely, Kind, Trig, Sped);
+		P_AddMovingCeiling(sec);
+		return true;
+	};
 
 	if (line.id == 0)
 	{
-		if (!(sec = line.backsector))
+		if (!line.backsector)
 			return true;
-		secnum = sec - sectors;
-		manual = true;
-		goto manual_gendoor;
+
+		return helper(line.backsector);
 	}; // e6y
+
 	// check if a manual trigger, if so do just the sector on the backside
-	manual = false;
 	if (Trig == PushOnce || Trig == PushMany)
 	{
-		if (!(sec = line.backsector))
-			return rtn;
-		secnum = sec - sectors;
-		manual = true;
-		goto manual_gendoor;
+		if (!line.backsector)
+			return false;
+
+		return helper(line.backsector);
 	}
 
-	secnum = -1;
-	rtn = false;
+	int secnum = -1;
+	bool rtn = false;
 
 	// if not manual do all sectors tagged the same as the line
 	while ((secnum = P_FindSectorFromTagOrLine(line.id, &line, secnum)) >= 0)
 	{
-		sec = &sectors[secnum];
-manual_gendoor:
-		// Do not start another function if ceiling already moving
-		if (sec->ceilingdata) // jff 2/22/98
-		{
-			if (!manual)
-				continue;
-			else
-				return rtn;
-		}
-
-		// new door thinker
-		new DDoor(sec, &line, Dely, Kind, Trig, Sped);
-		rtn = true;
-		P_AddMovingCeiling(sec);
-
-		if (manual)
-			return rtn;
+		rtn |= helper(&sectors[secnum]);
 	}
 	return rtn;
 }
@@ -906,63 +893,52 @@ manual_gendoor:
 //
 bool EV_DoGenLockedDoor(line_t& line)
 {
-	int secnum;
-	bool rtn;
-	sector_t* sec;
-	bool manual;
-	unsigned value = (unsigned)line.special - GenLockedBase;
+	const uint32_t value = static_cast<uint32_t>(line.special) - GenLockedBase;
 
 	// parse the bit fields in the line's special type
 
-	int Kind = (value & LockedKind) >> LockedKindShift;
-	int Sped = (value & LockedSpeed) >> LockedSpeedShift;
-	int Trig = (value & TriggerType) >> TriggerTypeShift;
+	const int Kind = (value & LockedKind) >> LockedKindShift;
+	const int Sped = (value & LockedSpeed) >> LockedSpeedShift;
+	const int Trig = (value & TriggerType) >> TriggerTypeShift;
 
-	rtn = 0;
+	const auto helper = [&](sector_t* sec) -> bool
+	{
+		// Do not start another function if ceiling already moving
+		if (P_CeilingActive(sec)) // jff 2/22/98
+			return false;
+
+		// new door thinker
+		new DDoor(sec, &line, Kind, Trig, Sped);
+		P_AddMovingCeiling(sec);
+
+		return true;
+	};
+
 
 	if (line.id == 0)
 	{
-		if (!(sec = line.backsector))
+		if (!line.backsector)
 			return true;
-		secnum = sec - sectors;
-		manual = true;
-		goto manual_genlocked;
+
+		return helper(line.backsector);
 	}; // e6y
+
 	// check if a manual trigger, if so do just the sector on the backside
-	manual = false;
 	if (Trig == PushOnce || Trig == PushMany)
 	{
-		if (!(sec = line.backsector))
-			return rtn;
-		secnum = sec - sectors;
-		manual = true;
-		goto manual_genlocked;
+		if (!line.backsector)
+			return false;
+
+		return helper(line.backsector);
 	}
 
-	secnum = -1;
-	rtn = false;
+	int secnum = -1;
+	bool rtn = false;
 
 	// if not manual do all sectors tagged the same as the line
 	while ((secnum = P_FindSectorFromLineTag(&line, secnum)) >= 0)
 	{
-		sec = &sectors[secnum];
-manual_genlocked:
-		// Do not start another function if ceiling already moving
-		if (P_CeilingActive(sec)) // jff 2/22/98
-		{
-			if (!manual)
-				continue;
-			else
-				return rtn;
-		}
-
-		// new door thinker
-		new DDoor(sec, &line, Kind, Trig, Sped);
-		rtn = true;
-		P_AddMovingCeiling(sec);
-
-		if (manual)
-			return rtn;
+		rtn |= helper(&sectors[secnum]);
 	}
 	return rtn;
 }
