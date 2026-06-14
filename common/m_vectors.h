@@ -63,32 +63,40 @@ struct v2fixed64_t
 	fixed64_t x, y;
 };
 
-struct v3fixed_t
+template <typename ElementType>
+struct vector3_t
 {
-	v3fixed_t() {}
+	vector3_t() = default;
+	vector3_t(ElementType i_x, ElementType i_y, ElementType i_z) : x(i_x), y(i_y), z(i_z) { }
 
-	v3fixed_t(fixed_t _x, fixed_t _y, fixed_t _z) : x(_x), y(_y), z(_z) { }
+	ElementType x {0};
+	ElementType y {0};
+	ElementType z {0};
 
-	fixed_t x, y, z;
+	template <typename StreamType>
+	friend StreamType& operator<< (StreamType& io_stream, const vector3_t& i_obj)
+	{
+		io_stream
+		    << i_obj.x
+		    << i_obj.y
+		    << i_obj.z;
+		return io_stream;
+	}
+
+	template <typename StreamType>
+	friend StreamType& operator>> (StreamType& io_stream, vector3_t& o_obj)
+	{
+		io_stream
+		    >> o_obj.x
+		    >> o_obj.y
+		    >> o_obj.z;
+		return io_stream;
+	}
 };
 
-struct v3float_t
-{
-	v3float_t() {}
-
-	v3float_t(float _x, float _y, float _z) : x(_x), y(_y), z(_z) { }
-
-	float x, y, z;
-};
-
-struct v3double_t
-{
-	v3double_t() {}
-
-	v3double_t(double _x, double _y, double _z) : x(_x), y(_y), z(_z) { }
-
-	double x, y, z;
-};
+using v3fixed_t  = vector3_t<fixed_t>;
+using v3float_t  = vector3_t<float>;
+using v3double_t = vector3_t<double>;
 
 struct rectInt_t
 {

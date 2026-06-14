@@ -389,16 +389,11 @@ bool Maplist::query(const std::vector<std::string> &query,
 			}
 		} else {
 			// Discard any map that doesn't match
-			std::vector<std::pair<size_t, maplist_entry_t*> >::iterator itr;
-			for (itr = result.begin();itr != result.end();) {
-				bool f_map = CheckWildcards(pattern.c_str(), this->maplist[itr->first].map.c_str());
-				bool f_wad = CheckWildcards(pattern.c_str(), JoinStrings(this->maplist[itr->first].wads).c_str());
-				if (f_map || f_wad) {
-					++itr;
-				} else {
-					itr = result.erase(itr);
-				}
-			}
+			std::erase_if(result, [this, &pattern](const auto& pair){
+				bool f_map = CheckWildcards(pattern.c_str(), this->maplist[pair.first].map.c_str());
+				bool f_wad = CheckWildcards(pattern.c_str(), JoinStrings(this->maplist[pair.first].wads).c_str());
+				return !(f_map || f_wad);
+			});
 		}
 
 		if (result.empty()){
@@ -572,8 +567,9 @@ void SV_MaplistUpdate(player_t &player, maplist_status_t status) {
 //////// CLIENT COMMANDS ////////
 
 // Client wants to know the status of the maplist.
-void SV_Maplist(player_t &player) {
-	maplist_status_t status = static_cast<maplist_status_t>(MSG_ReadByte());
+void SV_Maplist(player_t &player, const odaproto::clc::Maplist& msg)
+{
+	maplist_status_t status = static_cast<maplist_status_t>(msg.status());
 
 	// If the maplist is empty, say so
 	if (Maplist::instance().empty()) {

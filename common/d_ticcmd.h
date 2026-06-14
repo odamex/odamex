@@ -98,8 +98,6 @@ struct ticcmd_t
 		readByte(in.begin() + 11, impulse);
 	}
 
-	int		tic;	// the client's tic when this cmd was sent
-
 	byte	buttons;
 	short	pitch;			// up/down. currently just a y-sheering amount
 	short	yaw;			// left/right

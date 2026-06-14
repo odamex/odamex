@@ -59,13 +59,6 @@ bool SV_IsPlayerAllowedToSee(const player_t &pl, const AActor *mobj);
 
 void SV_BasePrint(client_t* cl, const int printlevel, const std::string& str);
 
-// Print directly to a specific client.
-template <typename... ARGS>
-void SV_ClientPrintFmt(client_t *cl, int level, fmt::format_string<ARGS...> format, ARGS&&... args)
-{
-	SV_BasePrint(cl, level, fmt::format(format, std::forward<ARGS>(args)...));
-}
-
 // Print directly to a specific player.
 template <typename... ARGS>
 void SV_PlayerPrintFmt(int level, int player_id, fmt::format_string<ARGS...> format, ARGS&&... args)
@@ -126,25 +119,21 @@ void SV_CheckTimeouts (void);
 void SV_ConnectClient(void);
 void SV_ConnectClient2(player_t& player);
 void SV_WriteCommands(void);
-bool SV_MustThrottleTransmissionsForClient(client_t& client);
 bool SV_SendPacket(player_t &pl);
-void SV_AcknowledgePacket(player_t &player);
 void SV_DisplayTics();
 void SV_RunTics();
 void SV_ParseCommands(player_t &player);
-void SV_HandleReliableRetransmissions();
 void SV_UpdateFrags (const player_t &player);
 void SV_RemoveCorpses (void);
 void SV_DropClient(player_t& who);
 void SV_PlayerTriedToCheat(player_t &player);
-void SV_ActorTarget(const AActor *actor);
-void SV_ActorTracer(const AActor *actor);
 void SV_ForceSetTeam(player_t &who, team_t team);
 void SV_CheckTeam(player_t &player);
 void SV_SendUserInfo(const player_t &player, client_t* cl);
 void SV_Suicide(player_t &player);
 void SV_SpawnMobj(AActor *mo);
-void SV_TouchSpecial(const AActor& special, player_t& player);
+void SV_SpawnHighPriorityMobj(AActor *mo);
+void SV_TouchSpecial(AActor& special, player_t& player);
 
 void SV_Sound (const AActor *mo, byte channel, const char *name, byte attenuation);
 void SV_Sound(player_t& pl, const AActor* mo, const byte channel, const char* name, const byte attenuation);
@@ -158,7 +147,7 @@ extern std::vector<std::string> wadnames;
 void SV_SendPlayerInfo(player_t& player);
 void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill);
 void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage);
-void SV_SendDamageMobj(const AActor *target, int pain);
+void SV_SendDamageMobj(AActor *target, int pain);
 // Tells clients to remove an actor from the world as it doesn't exist anymore
 void SV_SendDestroyActor(const AActor *mo);
 

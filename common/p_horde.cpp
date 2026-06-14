@@ -449,7 +449,7 @@ class HordeState
 		m_bosses.clear();
 		while ((mo = iterator.Next()))
 		{
-			if (mo->oflags & MFO_BOSSPOOL)
+			if (mo->oflags & MFO_ISHORDEBOSS)
 			{
 				m_bosses.push_back(mo->ptr());
 			}
@@ -466,7 +466,7 @@ class HordeState
 	 */
 	void recountMonstersHelper(mobjCounts_t& monsterCounts, int32_t type)
 	{
-		if (monsterCounts.count(type))
+		if (monsterCounts.contains(type))
 		{
 			monsterCounts[type] += 1;
 		}
@@ -492,7 +492,7 @@ class HordeState
 		{
 			if (mo->health > 0)
 			{
-				if (mo->oflags & MFO_BOSSPOOL)
+				if (mo->oflags & MFO_ISHORDEBOSS)
 				{
 					recountMonstersHelper(m_bossCounts, mo->type);
 				}
@@ -516,16 +516,16 @@ class HordeState
 
 	void decrementCount(AActor* mo)
 	{
-		if (mo->oflags & MFO_BOSSPOOL)
+		if (mo->oflags & MFO_ISHORDEBOSS)
 		{
-			if (m_bossCounts.count(mo->type))
+			if (m_bossCounts.contains(mo->type))
 			{
 				m_bossCounts[mo->type] -= 1;
 			}
 		}
 		else
 		{
-			if (m_monsterCounts.count(mo->type))
+			if (m_monsterCounts.contains(mo->type))
 			{
 				m_monsterCounts[mo->type] -= 1;
 			}
@@ -845,7 +845,7 @@ void P_AddHealthPool(AActor* mo)
 	::g_HordeDirector.addSpawnHealth(::mobjinfo[mo->type].spawnhealth);
 
 	// Bosses also have health added to a separate pool for display purposes.
-	if (mo->oflags & MFO_BOSSPOOL)
+	if (mo->oflags & MFO_ISHORDEBOSS)
 	{
 		::g_HordeDirector.addBossHealth(::mobjinfo[mo->type].spawnhealth);
 	}
@@ -868,11 +868,11 @@ void P_RemoveHealthPool(AActor* mo)
 void P_AddDamagePool(AActor* mo, const int damage)
 {
 	// Not a part of the pool
-	if (!(mo->oflags & MFO_BOSSPOOL))
+	if (not (mo->oflags & MFO_ISHORDEBOSS))
 		return;
 
 	// Counts as a monster?
-	if (!(mo->flags & MF_COUNTKILL || mo->type == MT_SKULL))
+	if (not (mo->flags & MF_COUNTKILL or mo->type == MT_SKULL))
 		return;
 
 	::g_HordeDirector.addBossDamage(damage);

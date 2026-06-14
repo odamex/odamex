@@ -1,6 +1,6 @@
 ### zlib ###
 
-if(BUILD_CLIENT OR BUILD_SERVER)
+if(BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS)
   if(USE_INTERNAL_ZLIB)
     message(STATUS "Compiling internal ZLIB...")
 

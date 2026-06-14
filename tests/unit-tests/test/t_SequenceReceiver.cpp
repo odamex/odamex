@@ -8,7 +8,7 @@
 
 struct ReliableSequenceReceiverData
 {
-    SequenceQueueEntryType packet;
+    SequenceQueueEntryType packet {16}; // The 16 byte packet buffer is an arbitrary size.  Just as long as it's > 0.
 };
 
 struct ReliableSequenceReceiver : ReliableSequenceReceiverData, testing::Test

@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2021 by Alex Mayfield.
+// Copyright (C) 2021, 2026 by Alex Mayfield and et al.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,39 +16,50 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Server message map.
+//   Message map.
 //
 //-----------------------------------------------------------------------------
 
 
 #include "odamex.h"
 
-#include "svc_map.h"
+#include "msg_map.h"
+
+#include <unordered_map>
 
 #include "client.pb.h"
 #include "server.pb.h"
 
-#include "hashtable.h"
 #include "i_net.h"
 
-typedef OHashTable<int, const google::protobuf::Descriptor*> SVCHeaderMap;
-typedef OHashTable<const void*, svc_t> SVCDescMap;
-
-SVCHeaderMap g_SVCHeaderMap;
-SVCDescMap g_SVCDescMap;
-
-static void MapProto(const svc_t header, const google::protobuf::Descriptor* desc)
+namespace
 {
-	::g_SVCHeaderMap.emplace(header, desc);
-	::g_SVCDescMap.emplace(desc, header);
+	struct IdentityKey
+	{
+		size_t operator()(const msg_t& key) const { return static_cast<size_t>(key); }
+		size_t operator()(const void*  key) const { return reinterpret_cast<size_t>(key); }
+	};
+}
+
+typedef std::unordered_map<msg_t, const google::protobuf::Descriptor*, IdentityKey> MSGHeaderMap;
+typedef std::unordered_map<const void*, msg_t, IdentityKey> MSGDescMap;
+
+MSGHeaderMap g_MSGHeaderMap;
+MSGDescMap g_MSGDescMap;
+
+static void MapProto(const msg_t header, const google::protobuf::Descriptor* desc)
+{
+	::g_MSGHeaderMap.emplace(header, desc);
+	::g_MSGDescMap.emplace(desc, header);
 }
 
 /**
- * @brief Initialize the SVC protocol descriptor map.
+ * @brief Initialize the protocol descriptor map.
  */
 static void InitMap()
 {
-	MapProto(svc_noop, odaproto::svc::Noop::descriptor());
+	MapProto(msg_noop, odaproto::Noop::descriptor());
+
 	MapProto(svc_disconnect, odaproto::svc::Disconnect::descriptor());
 	MapProto(svc_playerinfo, odaproto::svc::PlayerInfo::descriptor());
 	MapProto(svc_moveplayer, odaproto::svc::MovePlayer::descriptor());
@@ -69,13 +80,17 @@ static void InitMap()
 	MapProto(svc_damageplayer, odaproto::svc::DamagePlayer::descriptor());
 	MapProto(svc_killmobj, odaproto::svc::KillMobj::descriptor());
 	MapProto(svc_raisemobj, odaproto::svc::RaiseMobj::descriptor());
-	MapProto(svc_fireweapon, odaproto::svc::FireWeapon::descriptor());
 	MapProto(svc_updatesector, odaproto::svc::UpdateSector::descriptor());
 	MapProto(svc_print, odaproto::svc::Print::descriptor());
 	MapProto(svc_playermembers, odaproto::svc::PlayerMembers::descriptor());
 	MapProto(svc_teammembers, odaproto::svc::TeamMembers::descriptor());
 	MapProto(svc_activateline, odaproto::svc::ActivateLine::descriptor());
-	MapProto(svc_movingsector, odaproto::svc::MovingSector::descriptor());
+	MapProto(svc_movingsectorelevator, odaproto::svc::MovingSectorElevator::descriptor());
+	MapProto(svc_movingsectorpillar, odaproto::svc::MovingSectorPillar::descriptor());
+	MapProto(svc_movingsectorceiling, odaproto::svc::MovingSectorCeiling::descriptor());
+	MapProto(svc_movingsectordoor, odaproto::svc::MovingSectorDoor::descriptor());
+	MapProto(svc_movingsectorfloor, odaproto::svc::MovingSectorFloor::descriptor());
+	MapProto(svc_movingsectorplat, odaproto::svc::MovingSectorPlat::descriptor());
 	MapProto(svc_playsound, odaproto::svc::PlaySound::descriptor());
 	MapProto(svc_reconnect, odaproto::svc::Reconnect::descriptor());
 	MapProto(svc_exitlevel, odaproto::svc::ExitLevel::descriptor());
@@ -115,27 +130,64 @@ static void InitMap()
 	MapProto(svc_raisemobj, odaproto::svc::RaiseMobj::descriptor());
 	MapProto(svc_spree, odaproto::svc::Spree::descriptor());
 	MapProto(svc_spreebreaker, odaproto::svc::SpreeBreaker::descriptor());
-	MapProto(svc_netdemocap, odaproto::svc::NetdemoCap::descriptor());
-	MapProto(svc_netdemostop, odaproto::svc::NetDemoStop::descriptor());
-	MapProto(svc_netdemoloadsnap, odaproto::svc::NetDemoLoadSnap::descriptor());
+	MapProto(svc_noisealert, odaproto::svc::NoiseAlert::descriptor());
 
-	MapProto(clc_playerinput, odaproto::clc::PlayerInput::descriptor());
+	MapProto(svc_playerammo,            odaproto::svc::PlayerAmmo::descriptor());
+	MapProto(svc_playermaxammo,         odaproto::svc::PlayerMaxAmmo::descriptor());
+	MapProto(svc_playerweaponowned,     odaproto::svc::PlayerWeaponOwned::descriptor());
+	MapProto(svc_playerweaponselection, odaproto::svc::PlayerWeaponSelection::descriptor());
+	MapProto(svc_playerpowers,          odaproto::svc::PlayerPowers::descriptor());
+	MapProto(svc_playerpsprites,        odaproto::svc::PlayerPsprites::descriptor());
 
+	MapProto(svc_configureavatar, odaproto::svc::ConfigureAvatar::descriptor());
+
+	MapProto(clc_playerinput,    odaproto::clc::PlayerInput::descriptor());
+	MapProto(clc_disconnectme,   odaproto::clc::DisconnectMe::descriptor());
+	MapProto(clc_say,            odaproto::clc::Say::descriptor());
+	MapProto(clc_userinfo,       odaproto::clc::UserInfo::descriptor());
+	MapProto(clc_pingreply,      odaproto::clc::PingReply::descriptor());
+	MapProto(clc_kill,           odaproto::clc::Kill::descriptor());
+	MapProto(clc_callvote,       odaproto::clc::CallVote::descriptor());
+	MapProto(clc_getplayerinfo,  odaproto::clc::GetPlayerInfo::descriptor());
+	MapProto(clc_netcmd,         odaproto::clc::Netcmd::descriptor());
+	MapProto(clc_spy,            odaproto::clc::Spy::descriptor());
+	MapProto(clc_privmsg,        odaproto::clc::PrivMsg::descriptor());
+	MapProto(clc_sendmobjupdate, odaproto::clc::SendMobjUpdate::descriptor());
+
+	MapProto(clc_rcon,          odaproto::clc::Rcon::descriptor());
+	MapProto(clc_rcon_password, odaproto::clc::RconPassword::descriptor());
+	MapProto(clc_rcon_logout,   odaproto::clc::RconLogout::descriptor());
+
+	MapProto(clc_spectate_begin,    odaproto::clc::SpectateBegin::descriptor());
+	MapProto(clc_spectate_update,   odaproto::clc::SpectateUpdate::descriptor());
+	MapProto(clc_spectate_end,      odaproto::clc::SpectateEnd::descriptor());
+
+	MapProto(clc_netdemocap,        odaproto::clc::NetdemoCap::descriptor());
+	MapProto(clc_netdemostop,       odaproto::clc::NetDemoStop::descriptor());
+	MapProto(clc_netdemoloadsnap,   odaproto::clc::NetDemoLoadSnap::descriptor());
+
+	MapProto(clc_cheat,                 odaproto::clc::Cheat::descriptor());
+	MapProto(clc_cheat_give,            odaproto::clc::CheatGive::descriptor());
+	MapProto(clc_cheat_summon,          odaproto::clc::CheatSummon::descriptor());
+	MapProto(clc_cheat_summon_friend,   odaproto::clc::CheatSummonFriend::descriptor());
+
+	MapProto(clc_maplist,           odaproto::clc::Maplist::descriptor());
+	MapProto(clc_maplist_update,    odaproto::clc::MaplistUpdate::descriptor());
 }
 
 /**
  * @brief Given a packet header, return the message Descriptor, or NULL if
  *        the header is invalid.
  */
-const google::protobuf::Descriptor* SVC_ResolveHeader(const byte header)
+const google::protobuf::Descriptor* MSG_ResolveHeader(const msg_t header)
 {
-	if (::g_SVCHeaderMap.empty())
+	if (::g_MSGHeaderMap.empty())
 	{
 		InitMap();
 	}
 
-	SVCHeaderMap::iterator it = ::g_SVCHeaderMap.find(static_cast<svc_t>(header));
-	if (it == ::g_SVCHeaderMap.end())
+	MSGHeaderMap::iterator it = ::g_MSGHeaderMap.find(header);
+	if (it == ::g_MSGHeaderMap.end())
 	{
 		return NULL;
 	}
@@ -143,20 +195,20 @@ const google::protobuf::Descriptor* SVC_ResolveHeader(const byte header)
 }
 
 /**
- * @brief Given a message Descriptor, return the packet header, or svc_noop
+ * @brief Given a message Descriptor, return the packet header, or msg_noop
  *        if the descriptor is invalid.
  */
-svc_t SVC_ResolveDescriptor(const google::protobuf::Descriptor* desc)
+msg_t MSG_ResolveDescriptor(const google::protobuf::Descriptor* desc)
 {
-	if (::g_SVCDescMap.empty())
+	if (::g_MSGDescMap.empty())
 	{
 		InitMap();
 	}
 
-	SVCDescMap::iterator it = ::g_SVCDescMap.find(desc);
-	if (it == ::g_SVCDescMap.end())
+	MSGDescMap::iterator it = ::g_MSGDescMap.find(desc);
+	if (it == ::g_MSGDescMap.end())
 	{
-		return svc_noop;
+		return msg_noop;
 	}
 	return it->second;
 }

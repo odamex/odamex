@@ -255,7 +255,12 @@ bool OTransferCheck::tick()
 	}
 
 	// Make sure we didn't find an HTML file - those are only okay on redirects.
-	if (stricmp(info.contentType.c_str(), "text/html") == 0)
+	std::string_view contentType = info.contentType;
+	const auto semiPos = contentType.find(';');
+	if (semiPos != std::string_view::npos)
+		contentType = contentType.substr(0, semiPos);
+	contentType = TrimStringView(contentType);
+	if (iequals(contentType, "text/html"))
 	{
 		m_errorProc("Only found an HTML file");
 		return false;

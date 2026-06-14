@@ -73,7 +73,7 @@ BEGIN_COMMAND(stringinfo)
 
 	if (stricmp(argv[1], "name") == 0)
 	{
-		PrintFmt(PRINT_HIGH, "{} = \"{}\"\n", argv[2], GStrings(argv[2]));
+		PrintFmt(PRINT_HIGH, "{} = \"{}\"\n", argv[2], GStrings(OString(argv[2])));
 		return;
 	}
 	else if (stricmp(argv[1], "index") == 0)

@@ -36,6 +36,7 @@
 #include "r_main.h"
 #include "st_stuff.h"
 #include "p_mobj.h"
+#include "clc_message.h"
 #include "svc_message.h"
 #include "g_gametype.h"
 
@@ -47,6 +48,8 @@ EXTERN_CVAR(sv_maxplayers)
 extern std::string server_host;
 extern std::string digest;
 extern OResFiles wadfiles;
+
+extern bool hasReceivedFullUpdate;
 
 /**
  * @brief Map demo versions to the latest Odamex version that can read them.
@@ -479,7 +482,7 @@ bool NetDemo::startRecording(const std::string &filename)
 		writeMessages();
 
 		SZ_Clear(&tempbuf);
-		MSG_WriteSVCBuffer(&tempbuf, odaproto::svc::NetDemoLoadSnap());
+		MSG_WriteSVCBuffer(&tempbuf, odaproto::clc::NetDemoLoadSnap());
 		capture(&tempbuf);
 		writeMessages();
 
@@ -647,7 +650,7 @@ bool NetDemo::stopRecording()
 	writeMessages();
 
 	// write the end-of-demo marker - header + size
-	byte stopdata[2] = {svc_netdemostop, 0};
+	byte stopdata[2] = {clc_netdemostop, 0};
 	writeChunk(&stopdata[0], sizeof(stopdata), NetDemo::msg_packet);
 
 	// write the number of the last gametic in the recording
@@ -726,11 +729,11 @@ bool NetDemo::stopPlaying()
 void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 {
 	// Record the local player's data
-	player_t *player = &consoleplayer();
-	if (!player->mo)
+	player_t& player = consoleplayer();
+	if (not player.mo)
 		return;
 
-	MSG_WriteSVCBuffer(netbuffer, SVC_NetdemoCap(player));
+	MSG_WriteSVCBuffer(netbuffer, CLC_NetdemoCap(player, localcmds[gametic % MAXSAVETICS], ::messenger));
 }
 
 
@@ -917,8 +920,12 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 		noservermsgs = false;
 		// Since packets are captured after the header is read, we do not
 		// have to read the packet header
+		//
+		// Please note that we don't need to call CL_SaveCmd here because
+		// the parse of CLC_NetdemoCap unpacks the PlayerInputs and fills
+		// out the player.cmd.
 		CL_ParseCommands();
-		CL_SaveCmd();
+
 		if (gametic - last_received > 65)
 		{
 			noservermsgs = true;
@@ -977,7 +984,18 @@ void NetDemo::capture(const buf_t* inputbuffer)
 
 	if (inputbuffer->size() > 0)
 	{
-		captured.push_back(*inputbuffer);
+		captured.emplace_back(*inputbuffer);
+	}
+}
+
+void NetDemo::capture(const std::basic_string<byte>& buffer)
+{
+	if (isRecording())
+	{
+		if (buffer.size() > 0)
+		{
+			captured.emplace_back(buffer);
+		}
 	}
 }
 
@@ -1497,6 +1515,8 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 		}
 	}
 
+	arc << rollerState;
+
 	byte check = 0x1d;
 	arc << check;          // consistancy marker
 
@@ -1626,6 +1646,8 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 		}
 	}
 
+	arc >> rollerState;
+
 	multiplayer = true;
 
 	// load a base level
@@ -1680,6 +1702,10 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 	// Make sure the status bar is displayed correctly
 	R_ForceViewWindowResize();
 	ST_Start();
+
+	// Make sure the message handling understands that the player is fully up-to-date.
+	// Especially important for rollback replication.
+	::hasReceivedFullUpdate = true;
 }
 
 

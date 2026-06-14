@@ -99,24 +99,26 @@ subsector_t* P_PointInSubsector(fixed_t x, fixed_t y)
 
 
 AActor::ActorBlockMapListNode::ActorBlockMapListNode(AActor *mo) :
-	actor(mo)
+	m_actor (mo),
+	m_next  (1, nullptr), // Always at least 1 element so that an index calculation of 0 results in valid access.
+	m_prev  (1, nullptr)  // Always at least 1 element so that an index calculation of 0 results in valid access.
 {
 	clear();
 }
 
 void AActor::ActorBlockMapListNode::Link()
 {
-	int left    = (actor->x - actor->radius - bmaporgx) >> MAPBLOCKSHIFT;
-	int right   = (actor->x + actor->radius - bmaporgx) >> MAPBLOCKSHIFT;
-	int top     = (actor->y - actor->radius - bmaporgy) >> MAPBLOCKSHIFT;
-	int bottom  = (actor->y + actor->radius - bmaporgy) >> MAPBLOCKSHIFT;
+	int left    = (m_actor->x - m_actor->radius - bmaporgx) >> MAPBLOCKSHIFT;
+	int right   = (m_actor->x + m_actor->radius - bmaporgx) >> MAPBLOCKSHIFT;
+	int top     = (m_actor->y - m_actor->radius - bmaporgy) >> MAPBLOCKSHIFT;
+	int bottom  = (m_actor->y + m_actor->radius - bmaporgy) >> MAPBLOCKSHIFT;
 
 	if (!co_blockmapfix)
 	{
 		// originally Doom only used the block containing the center point
 		// of the actor even if the actor overlapped into other blocks
-		top = bottom = (actor->y - bmaporgy) >> MAPBLOCKSHIFT;
-		left = right = (actor->x - bmaporgx) >> MAPBLOCKSHIFT;
+		top = bottom = (m_actor->y - bmaporgy) >> MAPBLOCKSHIFT;
+		left = right = (m_actor->x - bmaporgx) >> MAPBLOCKSHIFT;
 	}
 
 	// do not ignore actors only *partially* outside blockmap
@@ -130,10 +132,13 @@ void AActor::ActorBlockMapListNode::Link()
 		if (top < 0) top = 0;
 		if (bottom >= bmapheight) bottom = bmapheight - 1;
 
-		originx = left;
-		originy = top;
-		blockcntx = right - left + 1;
-		blockcnty = bottom - top + 1;
+		m_originx = left;
+		m_originy = top;
+		m_blockcntx = right - left + 1;
+		m_blockcnty = bottom - top + 1;
+
+		m_next.resize(m_blockcntx * m_blockcnty);
+		m_prev.resize(m_blockcntx * m_blockcnty);
 
 		// [SL] 2012-05-15 - Add the actor to the blocklinks list for all of the
 		// blockmaps it overlaps, not just the blockmap for the actor's center point.
@@ -144,19 +149,19 @@ void AActor::ActorBlockMapListNode::Link()
 				// killough 8/11/98: simpler scheme using pointer-to-pointer prev
 				// pointers, allows head nodes to be treated like everything else
 
-				AActor **headptr = &blocklinks[bmy * bmapwidth + bmx];
-				AActor *headactor = *headptr;
+				AActor** headptr   = &blocklinks[bmy * bmapwidth + bmx];
+				AActor*  headactor = *headptr;
 
 				size_t thisidx = getIndex(bmx, bmy);
 
-		        if ((next[thisidx] = headactor))
-		        {
-		        	size_t nextidx = headactor->bmapnode.getIndex(bmx, bmy);
-					headactor->bmapnode.prev[nextidx] = &next[thisidx];
+				if ((m_next[thisidx] = headactor))
+				{
+					size_t nextidx = headactor->bmapnode.getIndex(bmx, bmy);
+					headactor->bmapnode.m_prev[nextidx] = & m_next[thisidx];
 				}
 
-		        prev[thisidx] = headptr;
-		        *headptr = actor;
+				m_prev[thisidx] = headptr;
+				*headptr = m_actor;
 			}
 		}
 	}
@@ -168,9 +173,9 @@ void AActor::ActorBlockMapListNode::Link()
 
 void AActor::ActorBlockMapListNode::Unlink()
 {
-	for (int bmy = originy; bmy < originy + blockcnty; bmy++)
+	for (int bmy = m_originy; bmy < m_originy + m_blockcnty; bmy++)
 	{
-		for (int bmx = originx; bmx < originx + blockcntx; bmx++)
+		for (int bmx = m_originx; bmx < m_originx + m_blockcntx; bmx++)
 		{
 			// killough 8/11/98: simpler scheme using pointers-to-pointers for prev
 			// pointers, allows head node pointers to be treated like everything else
@@ -182,13 +187,13 @@ void AActor::ActorBlockMapListNode::Unlink()
 
 			size_t thisidx = getIndex(bmx, bmy);
 
-			AActor *nextactor = next[thisidx];
-			AActor **prevactor = prev[thisidx];
+			AActor*  nextactor = m_next[thisidx];
+			AActor** prevactor = m_prev[thisidx];
 
 			if (prevactor && (*prevactor = nextactor))
 			{
 				size_t nextidx = nextactor->bmapnode.getIndex(bmx, bmy);
-				nextactor->bmapnode.prev[nextidx] = prevactor;
+				nextactor->bmapnode.m_prev[nextidx] = prevactor;
 			}
 		}
 	}
@@ -197,17 +202,19 @@ void AActor::ActorBlockMapListNode::Unlink()
 AActor* AActor::ActorBlockMapListNode::Next(int bmx, int bmy)
 {
 	if (bmx < 0 || bmx >= bmapwidth || bmy < 0 || bmy >= bmapheight)
-		return NULL;
+		return nullptr;
 
-	return next[getIndex(bmx, bmy)];
+	return m_next[getIndex(bmx, bmy)];
 }
 
 void AActor::ActorBlockMapListNode::clear()
 {
-	originx = originy = 0;
-	blockcntx = blockcnty = 0;
-	memset(prev, 0, sizeof(prev));
-	memset(next, 0, sizeof(next));
+	m_originx = 0;
+	m_originy = 0;
+	m_blockcntx = 0;
+	m_blockcnty = 0;
+	std::fill(m_next.begin(), m_next.end(), nullptr);
+	std::fill(m_prev.begin(), m_prev.end(), nullptr);
 }
 
 size_t AActor::ActorBlockMapListNode::getIndex(int bmx, int bmy)
@@ -216,11 +223,11 @@ size_t AActor::ActorBlockMapListNode::getIndex(int bmx, int bmy)
 		return 0;
 
 	// range check
-	if (bmx < originx || bmx > originx + blockcntx - 1 ||
-		bmy < originy || bmy > originy + blockcnty - 1)
+	if (bmx < m_originx || bmx > m_originx + m_blockcntx - 1 ||
+		bmy < m_originy || bmy > m_originy + m_blockcnty - 1)
 		return 0;
 
-	return (bmy - originy) * BLOCKSX + bmx - originx;
+	return (bmy - m_originy) * m_blockcntx + bmx - m_originx;
 }
 
 

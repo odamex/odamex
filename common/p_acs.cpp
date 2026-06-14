@@ -90,7 +90,8 @@ static void DoClearInv(player_t* player)
 		}
 	}
 
-	player->pendingweapon = NUMWEAPONS;
+	player->weaponowned[wp_none] = true;
+	player->pendingweapon = wp_none;
 
 	SERVER_ONLY(
 	    SV_ACSExecuteSpecial(DLevelScript::PCD_CLEARINVENTORY, player->mo, NULL, true));
@@ -123,6 +124,7 @@ struct DoomEntity{
 };
 #define NUMMONSTERS 22
 
+// TODO: should this instead use the stuff from infomap.cpp:
 static DoomEntity DoomMonsterNames[NUMMONSTERS] = {
     {"ZombieMan", MT_POSSESSED},  {"ShotgunGuy", MT_SHOTGUY},
     {"ChaingunGuy", MT_CHAINGUY}, {"DoomImp", MT_TROOP},
@@ -141,12 +143,14 @@ static DoomEntity DoomAmmoNames[8] = {{"Clip", MT_CLIP},        {"Shell", MT_MIS
                                       {"ClipBox", MT_MISC17},   {"ShellBox", MT_MISC23},
                                       {"RocketBox", MT_MISC19}, {"CellPack", MT_MISC21}};
 
-static DoomEntity DoomWeaponNames[9] = {
+static DoomEntity DoomWeaponNames[NUMWEAPONS] = {
     {"Fist", MT_NULL}, // Default weapon, no entity
     {"Pistol", MT_NULL},          {"Shotgun", MT_SHOTGUN},
     {"Chaingun", MT_CHAINGUN},    {"RocketLauncher", MT_MISC27},
     {"PlasmaRifle", MT_MISC28},   {"BFG9000", MT_MISC25},
-    {"Chainsaw", MT_MISC26},      {"SuperShotgun", MT_SUPERSHOTGUN}};
+    {"Chainsaw", MT_MISC26},      {"SuperShotgun", MT_SUPERSHOTGUN},
+    {"OdaUnarmed", MT_NULL}    // Odamex-specific wp_none.
+    };
 
 static DoomEntity DoomKeyNames[6] = {{"BlueCard", MT_MISC4},
                                      {"YellowCard", MT_MISC6},
@@ -235,8 +239,7 @@ extern ItemEquipVal P_GivePower(player_t *player, int  power);
 
 mobjtype_t FindWeaponEntity(const char* type)
 {
-	int i;
-	for (i = 0; i < 9; i++)
+	for (int i = 0; i < 9; i++)
 	{
 		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
 		{
@@ -254,8 +257,7 @@ mobjtype_t FindWeaponEntity(const char* type)
 
 mobjtype_t FindDoomEntity(const char* type, DoomEntity list[], int size)
 {
-	int i;
-	for (i = 0; i < size; i++)
+	for (int i = 0; i < size; i++)
 	{
 		if (strcmp(list[i].Name, type) == 0)
 		{
@@ -310,7 +312,7 @@ static void DoGiveInv(player_t& player, const char* type, int amount)
 			while (--amount > 0);
 
 			// Don't bring it up automatically
-			if (player.readyweapon != NUMWEAPONS && player.pendingweapon != NUMWEAPONS)
+			if (player.readyweapon != wp_none && player.pendingweapon != wp_none)
 				player.pendingweapon = savedpendingweap;
 			SERVER_ONLY(SV_SendPlayerInfo(player));
 			return;
@@ -402,7 +404,11 @@ static void TakeWeapon(player_t& player, int weapon)
 		}
 
 		if (!hasWeapon)
-			player.pendingweapon = NUMWEAPONS;
+		{
+			// Safety net - if we're COMPLETELY without weapons, we want to allow and switch to wp_none.
+			player.weaponowned[wp_none] = true;
+			player.pendingweapon = wp_none;
+		}
 	}
 	SERVER_ONLY(SV_SendPlayerInfo(player));
 }
@@ -564,8 +570,6 @@ EXTERN_CVAR (sv_gametype)
 
 FBehavior::FBehavior (byte* object, int len)
 {
-	int i;
-
 	NumScripts = 0;
 	NumFunctions = 0;
 	NumArrays = 0;
@@ -617,7 +621,7 @@ FBehavior::FBehavior (byte* object, int len)
 		else
 		{
 			Scripts += 4;
-			for (i = 0; i < NumScripts; ++i)
+			for (int i = 0; i < NumScripts; ++i)
 			{
 				ScriptPtr2 ptr1 = *reinterpret_cast<ScriptPtr2*>(Scripts + 12*i);
 				ScriptPtr *ptr2 =  reinterpret_cast<ScriptPtr*> (Scripts +  8*i);
@@ -639,7 +643,7 @@ FBehavior::FBehavior (byte* object, int len)
 		{
 			NumScripts = (reinterpret_cast<uint32_t*>(Scripts))[1] / 12;
 			Scripts += 8;
-			for (i = 0; i < NumScripts; ++i)
+			for (int i = 0; i < NumScripts; ++i)
 			{
 				ScriptPtr1 ptr1 = *reinterpret_cast<ScriptPtr1*>(Scripts + 12*i);
 				ScriptPtr *ptr2 =  reinterpret_cast<ScriptPtr *>(Scripts +  8*i);
@@ -659,6 +663,7 @@ FBehavior::FBehavior (byte* object, int len)
 	// Sort scripts, so we can use a binary search to find them
 	if (NumScripts > 0)
 	{
+		// TODO: make it possible to replace with std::sort
 		qsort (Scripts, NumScripts, 8, SortScripts);
 	}
 
@@ -689,7 +694,7 @@ FBehavior::FBehavior (byte* object, int len)
 		{
 			int numvars = LELONG(chunk[1])/4;
 			int firstvar = LELONG(chunk[2]);
-			for (i = 0; i < numvars; ++i)
+			for (int i = 0; i < numvars; ++i)
 			{
 				level.vars[i+firstvar] = LELONG(chunk[3+i]);
 			}
@@ -701,7 +706,7 @@ FBehavior::FBehavior (byte* object, int len)
 			NumArrays = LELONG(chunk[1])/8;
 			Arrays = new ArrayInfo[NumArrays];
 			memset (Arrays, 0, sizeof(*Arrays)*NumArrays);
-			for (i = 0; i < NumArrays; ++i)
+			for (int i = 0; i < NumArrays; ++i)
 			{
 				level.vars[LELONG(chunk[2+i*2])] = i;
 				Arrays[i].ArraySize = LELONG(chunk[3+i*2]);
@@ -718,7 +723,7 @@ FBehavior::FBehavior (byte* object, int len)
 			{
 				int initsize = MIN<int> (Arrays[arraynum].ArraySize, (LELONG(chunk[1])-4)/4);
 				int32_t *elems = Arrays[arraynum].Elements;
-				for (i = 0; i < initsize; ++i)
+				for (int i = 0; i < initsize; ++i)
 				{
 					elems[i] = LELONG(chunk[3+i]);
 				}
@@ -968,9 +973,8 @@ uint32_t FBehavior::FindLanguage (uint32_t langid, bool ignoreregion) const
 {
 	byte *chunk;
 	uint32_t *list;
-	uint32_t langmask;
 
-	langmask = ignoreregion ? ~LANGREGIONMASK : ~0;
+	const uint32_t langmask = ignoreregion ? ~LANGREGIONMASK : ~0;
 
 	for (chunk = Chunks; chunk < Data + DataSize; chunk += (reinterpret_cast<uint32_t*>(chunk))[1] + 8)
 	{
@@ -2379,76 +2383,78 @@ void DLevelScript::RunScript ()
 		}
 
 		case PCD_CALL:
-		case PCD_CALLDISCARD: {
-			int funcnum;
-			int i;
-			ScriptFunction* func;
+		case PCD_CALLDISCARD:
+			{
+				int funcnum;
+				int i;
+				ScriptFunction* func;
 
-			funcnum = NEXTBYTE;
-			func = level.behavior->GetFunction(funcnum);
-			if (func == NULL)
-			{
-				PrintFmt(PRINT_HIGH, "Function {} in script {} out of range\n", funcnum,
-				       script);
-				state = SCRIPT_PleaseRemove;
-				break;
+				funcnum = NEXTBYTE;
+				func = level.behavior->GetFunction(funcnum);
+				if (func == NULL)
+				{
+					PrintFmt(PRINT_HIGH, "Function {} in script {} out of range\n", funcnum,
+					       script);
+					state = SCRIPT_PleaseRemove;
+					break;
+				}
+				if (sp + func->LocalCount + 32 > STACK_SIZE)
+				{ // 32 is the margin for the function's working space
+					PrintFmt(PRINT_HIGH, "Out of stack space in script {}\n", script);
+					state = SCRIPT_PleaseRemove;
+					break;
+				}
+				// The function's first argument is also its first local variable.
+				locals = &Stack[sp - func->ArgCount];
+				// Make space on the stack for any other variables the function uses.
+				for (i = 0; i < func->LocalCount; ++i)
+				{
+					Stack[sp + i] = 0;
+				}
+				sp += i;
+				(reinterpret_cast<CallReturn*>(&Stack[sp]))->ReturnAddress = level.behavior->PC2Ofs(pc);
+				(reinterpret_cast<CallReturn*>(&Stack[sp]))->ReturnFunction = activeFunction;
+				(reinterpret_cast<CallReturn*>(&Stack[sp]))->bDiscardResult = (pcd == PCD_CALLDISCARD);
+				sp += sizeof(CallReturn) / sizeof(int);
+				pc = level.behavior->Ofs2PC(func->Address);
+				activeFunction = func;
 			}
-			if (sp + func->LocalCount + 32 > STACK_SIZE)
-			{ // 32 is the margin for the function's working space
-				PrintFmt(PRINT_HIGH, "Out of stack space in script {}\n", script);
-				state = SCRIPT_PleaseRemove;
-				break;
-			}
-			// The function's first argument is also its first local variable.
-			locals = &Stack[sp - func->ArgCount];
-			// Make space on the stack for any other variables the function uses.
-			for (i = 0; i < func->LocalCount; ++i)
-			{
-				Stack[sp + i] = 0;
-			}
-			sp += i;
-			(reinterpret_cast<CallReturn*>(&Stack[sp]))->ReturnAddress = level.behavior->PC2Ofs(pc);
-			(reinterpret_cast<CallReturn*>(&Stack[sp]))->ReturnFunction = activeFunction;
-			(reinterpret_cast<CallReturn*>(&Stack[sp]))->bDiscardResult = (pcd == PCD_CALLDISCARD);
-			sp += sizeof(CallReturn) / sizeof(int);
-			pc = level.behavior->Ofs2PC(func->Address);
-			activeFunction = func;
-		}
-		break;
+			break;
 
 		case PCD_RETURNVOID:
-		case PCD_RETURNVAL: {
-			int value;
-			CallReturn* retState;
+		case PCD_RETURNVAL:
+			{
+				int value;
+				CallReturn* retState;
 
-			if (pcd == PCD_RETURNVAL)
-			{
-				value = Stack[--sp];
+				if (pcd == PCD_RETURNVAL)
+				{
+					value = Stack[--sp];
+				}
+				else
+				{
+					value = 0;
+				}
+				sp -= sizeof(CallReturn) / sizeof(int);
+				retState = reinterpret_cast<CallReturn*>(&Stack[sp]);
+				pc = level.behavior->Ofs2PC(retState->ReturnAddress);
+				sp -= activeFunction->ArgCount + activeFunction->LocalCount;
+				activeFunction = retState->ReturnFunction;
+				if (activeFunction == NULL)
+				{
+					locals = localvars;
+				}
+				else
+				{
+					locals =
+					    &Stack[sp - activeFunction->ArgCount - activeFunction->LocalCount];
+				}
+				if (!retState->bDiscardResult)
+				{
+					Stack[sp++] = value;
+				}
 			}
-			else
-			{
-				value = 0;
-			}
-			sp -= sizeof(CallReturn) / sizeof(int);
-			retState = reinterpret_cast<CallReturn*>(&Stack[sp]);
-			pc = level.behavior->Ofs2PC(retState->ReturnAddress);
-			sp -= activeFunction->ArgCount + activeFunction->LocalCount;
-			activeFunction = retState->ReturnFunction;
-			if (activeFunction == NULL)
-			{
-				locals = localvars;
-			}
-			else
-			{
-				locals =
-				    &Stack[sp - activeFunction->ArgCount - activeFunction->LocalCount];
-			}
-			if (!retState->bDiscardResult)
-			{
-				Stack[sp++] = value;
-			}
-		}
-		break;
+			break;
 
 		case PCD_ADD:
 			STACK(2) = STACK(2) + STACK(1);
@@ -2602,14 +2608,15 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_ADDMAPARRAY: {
-			int a = level.vars[NEXTBYTE];
-			int i = STACK(2);
-			level.behavior->SetArrayVal(a, i,
-			                            level.behavior->GetArrayVal(a, i) + STACK(1));
-			sp -= 2;
-		}
-		break;
+		case PCD_ADDMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) + STACK(1));
+				sp -= 2;
+			}
+			break;
 
 		case PCD_ADDWORLDARRAY:
 			{
@@ -2647,14 +2654,15 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_SUBMAPARRAY: {
-			int a = level.vars[NEXTBYTE];
-			int i = STACK(2);
-			level.behavior->SetArrayVal(a, i,
-			                            level.behavior->GetArrayVal(a, i) - STACK(1));
-			sp -= 2;
-		}
-		break;
+		case PCD_SUBMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) - STACK(1));
+				sp -= 2;
+			}
+			break;
 
 		case PCD_SUBWORLDARRAY:
 			{
@@ -2692,14 +2700,15 @@ void DLevelScript::RunScript ()
 			sp--;
 			break;
 
-		case PCD_MULMAPARRAY: {
-			int a = level.vars[NEXTBYTE];
-			int i = STACK(2);
-			level.behavior->SetArrayVal(a, i,
-			                            level.behavior->GetArrayVal(a, i) * STACK(1));
-			sp -= 2;
-		}
-		break;
+		case PCD_MULMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) * STACK(1));
+				sp -= 2;
+			}
+			break;
 
 		case PCD_MULWORLDARRAY:
 			{
@@ -3754,19 +3763,20 @@ void DLevelScript::RunScript ()
 				PushToStack(activator->tid);
 			break;
 
-		case PCD_GETCVAR: {
-			cvar_t *var, *prev;
-			var = cvar_t::FindCVar(level.behavior->LookupString(STACK(1)), &prev);
-			if (var == NULL)
+		case PCD_GETCVAR:
 			{
-				STACK(1) = 0;
+				cvar_t *var, *prev;
+				var = cvar_t::FindCVar(level.behavior->LookupString(STACK(1)), &prev);
+				if (var == NULL)
+				{
+					STACK(1) = 0;
+				}
+				else
+				{
+					STACK(1) = var->asInt();
+				}
 			}
-			else
-			{
-				STACK(1) = var->asInt();
-			}
-		}
-		break;
+			break;
 
 		case PCD_GETLEVELINFO:
 			switch (STACK(1))
@@ -3850,7 +3860,236 @@ void DLevelScript::RunScript ()
 				}
 			}
 			break;
-        */
+		*/
+		case PCD_ANDSCRIPTVAR:
+			locals[NEXTBYTE] &= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ANDMAPVAR:
+			level.vars[NEXTBYTE] &= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ANDWORLDVAR:
+			ACS_WorldVars[NEXTBYTE] &= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ANDGLOBALVAR:
+			ACS_GlobalVars[NEXTBYTE] &= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ANDMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) & STACK(1));
+				sp -= 2;
+			}
+			break;
+
+		case PCD_ANDWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] &= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_ANDGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] &= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_EORSCRIPTVAR:
+			locals[NEXTBYTE] ^= STACK(1);
+			sp--;
+			break;
+
+		case PCD_EORMAPVAR:
+			level.vars[NEXTBYTE] ^= STACK(1);
+			sp--;
+			break;
+
+		case PCD_EORWORLDVAR:
+			ACS_WorldVars[NEXTBYTE] ^= STACK(1);
+			sp--;
+			break;
+
+		case PCD_EORGLOBALVAR:
+			ACS_GlobalVars[NEXTBYTE] ^= STACK(1);
+			sp--;
+			break;
+
+		case PCD_EORMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) ^ STACK(1));
+				sp -= 2;
+			}
+			break;
+
+		case PCD_EORWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] ^= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_EORGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] ^= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_ORSCRIPTVAR:
+			locals[NEXTBYTE] |= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ORMAPVAR:
+			level.vars[NEXTBYTE] |= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ORWORLDVAR:
+			ACS_WorldVars[NEXTBYTE] |= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ORGLOBALVAR:
+			ACS_GlobalVars[NEXTBYTE] |= STACK(1);
+			sp--;
+			break;
+
+		case PCD_ORMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) | STACK(1));
+				sp -= 2;
+			}
+			break;
+
+		case PCD_ORWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] |= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_ORGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] |= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_LSSCRIPTVAR:
+			locals[NEXTBYTE] <<= STACK(1);
+			sp--;
+			break;
+
+		case PCD_LSMAPVAR:
+			level.vars[NEXTBYTE] <<= STACK(1);
+			sp--;
+			break;
+
+		case PCD_LSWORLDVAR:
+			ACS_WorldVars[NEXTBYTE] <<= STACK(1);
+			sp--;
+			break;
+
+		case PCD_LSGLOBALVAR:
+			ACS_GlobalVars[NEXTBYTE] <<= STACK(1);
+			sp--;
+			break;
+
+		case PCD_LSMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) << STACK(1));
+				sp -= 2;
+			}
+			break;
+
+		case PCD_LSWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] <<= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_LSGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] <<= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_RSSCRIPTVAR:
+			locals[NEXTBYTE] >>= STACK(1);
+			sp--;
+			break;
+
+		case PCD_RSMAPVAR:
+			level.vars[NEXTBYTE] >>= STACK(1);
+			sp--;
+			break;
+
+		case PCD_RSWORLDVAR:
+			ACS_WorldVars[NEXTBYTE] >>= STACK(1);
+			sp--;
+			break;
+
+		case PCD_RSGLOBALVAR:
+			ACS_GlobalVars[NEXTBYTE] >>= STACK(1);
+			sp--;
+			break;
+
+		case PCD_RSMAPARRAY:
+			{
+				int a = level.vars[NEXTBYTE];
+				int i = STACK(2);
+				level.behavior->SetArrayVal(a, i,
+				                            level.behavior->GetArrayVal(a, i) >> STACK(1));
+				sp -= 2;
+			}
+			break;
+
+		case PCD_RSWORLDARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_WorldArrays[a][STACK(2)] >>= STACK(1);
+				sp -= 2;
+			}
+			break;
+
+		case PCD_RSGLOBALARRAY:
+			{
+				int a = NEXTBYTE;
+				ACS_GlobalArrays[a][STACK(2)] >>= STACK(1);
+				sp -= 2;
+			}
+			break;
 		}
 	}
 

@@ -71,7 +71,7 @@ typedef int SOCKET;
 
 #include "i_system.h"
 #include "i_net.h"
-#include "svc_map.h"
+#include "msg_map.h"
 #include "d_player.h"
 #include "m_alloc.h"
 
@@ -95,8 +95,7 @@ buf_t       net_message(MAX_UDP_PACKET);
 
 EXTERN_CVAR(port)
 
-msg_info_t clc_info[clc_max + 1];
-msg_info_t svc_info[svc_max + 1];
+msg_info_t msg_info[MSG_DEFINITION_COUNT];
 
 #ifdef ODA_HAVE_MINIUPNP
 EXTERN_CVAR(sv_upnp)
@@ -568,15 +567,6 @@ void SV_SendPackets(void);
 //
 // MSG_WriteMarker
 //
-// denis - use this function to mark the start of your client message
-// as it allows for better debugging and optimization of network code
-//
-void MSG_WriteMarker (buf_t *b, clc_t c)
-{
-	if (simulated_connection)
-		return;
-	b->WriteByte(static_cast<byte>(c));
-}
 
 void MSG_WriteByte (buf_t *b, byte c)
 {
@@ -608,8 +598,8 @@ void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg)
 		return;
 	}
 
-	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
-	if (header == svc_noop)
+	msg_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
+	if (header == msg_noop)
 	{
 		PrintFmt(PRINT_WARNING,
 		         "WARNING: Could not find svc header for message \"{}\".  This is most "
@@ -620,11 +610,11 @@ void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg)
 
 #if 0
 	PrintFmt("{} ({})\n, {}\n",
-		::svc_info[header].getName(), msg.ByteSize(),
+		::msg_info[header].getName(), msg.ByteSize(),
 		msg.ShortDebugString());
 #endif
 
-	b->WriteByte(header);
+	b->WriteUnVarint(header);
 	b->WriteUnVarint(buffer.size());
 	b->WriteChunk(buffer.data(), buffer.size());
 }
@@ -644,8 +634,8 @@ void MSG_WriteSVC(MessageQueue& io_queue, const google::protobuf::Message& msg)
 		return;
 	}
 
-	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
-	if (header == svc_noop)
+	msg_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
+	if (header == msg_noop)
 	{
 		PrintFmt(PRINT_WARNING,
 		         "WARNING: Could not find svc header for message \"{}\".  This is most "
@@ -656,13 +646,13 @@ void MSG_WriteSVC(MessageQueue& io_queue, const google::protobuf::Message& msg)
 
 #if 0
 	PrintFmt("{} ({})\n, {}\n",
-		::svc_info[header].getName(), msg.ByteSize(),
+		::msg_info[header].getName(), msg.ByteSize(),
 		msg.ShortDebugString());
 #endif
 
     buf_t& b = io_queue.Obtain();
 
-	b.WriteByte(header);
+	b.WriteUnVarint(header);
 	b.WriteUnVarint(buffer.size());
 	b.WriteChunk(buffer.data(), buffer.size());
 }
@@ -690,8 +680,8 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
 		return;
 	}
 
-	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
-	if (header == svc_noop)
+	msg_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
+	if (header == msg_noop)
 	{
 		PrintFmt(PRINT_WARNING,
 		         "WARNING: Could not find svc header for message \"{}\".  This is most "
@@ -711,7 +701,7 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
 		// Select the correct buffer.
 		buf_t& b = buf == CLBUF_RELIABLE ? player.client.messenger.ReliableBuf().Obtain() : player.client.messenger.NetBuf().Obtain();
 
-		b.WriteByte(header);
+		b.WriteUnVarint(header);
 		b.WriteUnVarint(buffer.size());
 		b.WriteChunk(buffer.data(), buffer.size());
 	}
@@ -974,29 +964,16 @@ float MSG_ReadFloat(void)
 }
 
 /**
- * @brief Initialize a svc_info member.
+ * @brief Initialize a msg_info member.
  *
  * @detail do-while is used to force a semicolon afterwards.
  */
-#define SVC_INFO(n)                    \
+#define MSG_INFO(n)                    \
 	do                                 \
 	{                                  \
-		::svc_info[n].id = n;          \
-		::svc_info[n].msgName = #n;    \
-		::svc_info[n].msgFormat = "x"; \
-	} while (false)
-
-/**
- * @brief Initialize a clc_info member.
- *
- * @detail do-while is used to force a semicolon afterwards.
- */
-#define CLC_INFO(n)                    \
-	do                                 \
-	{                                  \
-		::clc_info[n].id = n;          \
-		::clc_info[n].msgName = #n;    \
-		::clc_info[n].msgFormat = "x"; \
+		::msg_info[n].id = n;          \
+		::msg_info[n].msgName = #n;    \
+		::msg_info[n].msgFormat = "x"; \
 	} while (false)
 
 //
@@ -1005,105 +982,117 @@ float MSG_ReadFloat(void)
 static void InitNetMessageFormats()
 {
 	// Server Messages.
-	SVC_INFO(svc_noop);
-	SVC_INFO(svc_disconnect);
-	SVC_INFO(svc_playerinfo);
-	SVC_INFO(svc_moveplayer);
-	SVC_INFO(svc_updatelocalplayer);
-	SVC_INFO(svc_levellocals);
-	SVC_INFO(svc_pingrequest);
-	SVC_INFO(svc_updateping);
-	SVC_INFO(svc_playerping);
-	SVC_INFO(svc_spawnmobj);
-	SVC_INFO(svc_disconnectclient);
-	SVC_INFO(svc_loadmap);
-	SVC_INFO(svc_consoleplayer);
-	SVC_INFO(svc_explodemissile);
-	SVC_INFO(svc_removemobj);
-	SVC_INFO(svc_userinfo);
-	SVC_INFO(svc_updatemobj);
-	SVC_INFO(svc_spawnplayer);
-	SVC_INFO(svc_damageplayer);
-	SVC_INFO(svc_killmobj);
-	SVC_INFO(svc_raisemobj);
-	SVC_INFO(svc_fireweapon);
-	SVC_INFO(svc_updatesector);
-	SVC_INFO(svc_print);
-	SVC_INFO(svc_playermembers);
-	SVC_INFO(svc_teammembers);
-	SVC_INFO(svc_activateline);
-	SVC_INFO(svc_movingsector);
-	SVC_INFO(svc_playsound);
-	SVC_INFO(svc_reconnect);
-	SVC_INFO(svc_exitlevel);
-	SVC_INFO(svc_touchspecial);
-	SVC_INFO(svc_forceteam);
-	SVC_INFO(svc_switch);
-	SVC_INFO(svc_say);
-	SVC_INFO(svc_spawnhiddenplayer);
-	SVC_INFO(svc_updatedeaths);
-	SVC_INFO(svc_ctfrefresh);
-	SVC_INFO(svc_ctfevent);
-	SVC_INFO(svc_serversettings);
-	SVC_INFO(svc_connectclient);
-    SVC_INFO(svc_midprint);
-	SVC_INFO(svc_servergametic);
-	SVC_INFO(svc_inttimeleft);
-	SVC_INFO(svc_fullupdatedone);
-	SVC_INFO(svc_railtrail);
-	SVC_INFO(svc_playerstate);
-	SVC_INFO(svc_levelstate);
-	SVC_INFO(svc_resetmap);
-	SVC_INFO(svc_playerqueuepos);
-	SVC_INFO(svc_fullupdatestart);
-	SVC_INFO(svc_lineupdate);
-	SVC_INFO(svc_sectorproperties);
-	SVC_INFO(svc_linesideupdate);
-	SVC_INFO(svc_mobjstate);
-	SVC_INFO(svc_damagemobj);
-	SVC_INFO(svc_executelinespecial);
-	SVC_INFO(svc_executeacsspecial);
-	SVC_INFO(svc_thinkerupdate);
-	SVC_INFO(svc_netdemocap);
-	SVC_INFO(svc_netdemostop);
-	SVC_INFO(svc_netdemoloadsnap);
-	SVC_INFO(svc_vote_update);
-	SVC_INFO(svc_maplist);
-	SVC_INFO(svc_maplist_update);
-	SVC_INFO(svc_maplist_index);
-	SVC_INFO(svc_toast);
-	SVC_INFO(svc_hordeinfo);
-	SVC_INFO(clc_playerinput);
-	SVC_INFO(svc_max);
+	MSG_INFO(msg_noop);
 
-	// Client Messages.
-	CLC_INFO(clc_abort);
-	CLC_INFO(clc_reserved1);
-	CLC_INFO(clc_disconnect);
-	CLC_INFO(clc_say);
-	CLC_INFO(clc_userinfo);
-	CLC_INFO(clc_pingreply);
-	CLC_INFO(clc_rate);
-	CLC_INFO(clc_rcon);
-	CLC_INFO(clc_rcon_password);
-	CLC_INFO(clc_changeteam);
-	CLC_INFO(clc_ctfcommand);
-	CLC_INFO(clc_spectate);
-	CLC_INFO(clc_wantwad);
-	CLC_INFO(clc_kill);
-	CLC_INFO(clc_cheat);
-	CLC_INFO(clc_callvote);
-	CLC_INFO(clc_maplist);
-	CLC_INFO(clc_maplist_update);
-	CLC_INFO(clc_getplayerinfo);
-	CLC_INFO(clc_netcmd);
-	CLC_INFO(clc_spy);
-	CLC_INFO(clc_privmsg);
-	CLC_INFO(clc_max);
+	MSG_INFO(svc_disconnect);
+	MSG_INFO(svc_playerinfo);
+	MSG_INFO(svc_moveplayer);
+	MSG_INFO(svc_updatelocalplayer);
+	MSG_INFO(svc_levellocals);
+	MSG_INFO(svc_pingrequest);
+	MSG_INFO(svc_updateping);
+	MSG_INFO(svc_playerping);
+	MSG_INFO(svc_spawnmobj);
+	MSG_INFO(svc_disconnectclient);
+	MSG_INFO(svc_loadmap);
+	MSG_INFO(svc_consoleplayer);
+	MSG_INFO(svc_explodemissile);
+	MSG_INFO(svc_removemobj);
+	MSG_INFO(svc_userinfo);
+	MSG_INFO(svc_updatemobj);
+	MSG_INFO(svc_spawnplayer);
+	MSG_INFO(svc_damageplayer);
+	MSG_INFO(svc_killmobj);
+	MSG_INFO(svc_raisemobj);
+	MSG_INFO(svc_updatesector);
+	MSG_INFO(svc_print);
+	MSG_INFO(svc_playermembers);
+	MSG_INFO(svc_teammembers);
+	MSG_INFO(svc_activateline);
+	MSG_INFO(svc_movingsectorelevator);
+	MSG_INFO(svc_movingsectorpillar);
+	MSG_INFO(svc_movingsectorceiling);
+	MSG_INFO(svc_movingsectordoor);
+	MSG_INFO(svc_movingsectorfloor);
+	MSG_INFO(svc_movingsectorplat);
+	MSG_INFO(svc_playsound);
+	MSG_INFO(svc_reconnect);
+	MSG_INFO(svc_exitlevel);
+	MSG_INFO(svc_touchspecial);
+	MSG_INFO(svc_forceteam);
+	MSG_INFO(svc_switch);
+	MSG_INFO(svc_say);
+	MSG_INFO(svc_spawnhiddenplayer);
+	MSG_INFO(svc_updatedeaths);
+	MSG_INFO(svc_ctfrefresh);
+	MSG_INFO(svc_ctfevent);
+	MSG_INFO(svc_serversettings);
+	MSG_INFO(svc_connectclient);
+	MSG_INFO(svc_midprint);
+	MSG_INFO(svc_servergametic);
+	MSG_INFO(svc_inttimeleft);
+	MSG_INFO(svc_fullupdatedone);
+	MSG_INFO(svc_railtrail);
+	MSG_INFO(svc_playerstate);
+	MSG_INFO(svc_levelstate);
+	MSG_INFO(svc_resetmap);
+	MSG_INFO(svc_playerqueuepos);
+	MSG_INFO(svc_fullupdatestart);
+	MSG_INFO(svc_lineupdate);
+	MSG_INFO(svc_sectorproperties);
+	MSG_INFO(svc_linesideupdate);
+	MSG_INFO(svc_mobjstate);
+	MSG_INFO(svc_damagemobj);
+	MSG_INFO(svc_executelinespecial);
+	MSG_INFO(svc_executeacsspecial);
+	MSG_INFO(svc_thinkerupdate);
+	MSG_INFO(svc_vote_update);
+	MSG_INFO(svc_maplist);
+	MSG_INFO(svc_maplist_update);
+	MSG_INFO(svc_maplist_index);
+	MSG_INFO(svc_toast);
+	MSG_INFO(svc_hordeinfo);
+	MSG_INFO(svc_spree);
+	MSG_INFO(svc_spreebreaker);
+	MSG_INFO(svc_noisealert);
+	MSG_INFO(svc_playerammo);
+	MSG_INFO(svc_playermaxammo);
+	MSG_INFO(svc_playerweaponowned);
+	MSG_INFO(svc_playerweaponselection);
+	MSG_INFO(svc_playerpowers);
+	MSG_INFO(svc_playerpsprites);
+	MSG_INFO(svc_configureavatar);
+
+	MSG_INFO(clc_playerinput);
+	MSG_INFO(clc_netdemocap);
+	MSG_INFO(clc_netdemostop);
+	MSG_INFO(clc_netdemoloadsnap);
+	MSG_INFO(clc_disconnectme);
+	MSG_INFO(clc_say);
+	MSG_INFO(clc_userinfo);
+	MSG_INFO(clc_pingreply);
+	MSG_INFO(clc_rcon);
+	MSG_INFO(clc_rcon_password);
+	MSG_INFO(clc_rcon_logout);
+	MSG_INFO(clc_spectate_begin);
+	MSG_INFO(clc_spectate_update);
+	MSG_INFO(clc_spectate_end);
+	MSG_INFO(clc_kill);
+	MSG_INFO(clc_cheat);
+	MSG_INFO(clc_cheat_give);
+	MSG_INFO(clc_cheat_summon);
+	MSG_INFO(clc_cheat_summon_friend);
+	MSG_INFO(clc_callvote);
+	MSG_INFO(clc_maplist);
+	MSG_INFO(clc_maplist_update);
+	MSG_INFO(clc_getplayerinfo);
+	MSG_INFO(clc_netcmd);
+	MSG_INFO(clc_spy);
+	MSG_INFO(clc_privmsg);
+	MSG_INFO(clc_sendmobjupdate);
 }
 
-#undef SVC_INFO
-#undef CLC_INFO
+#undef MSG_INFO
 
 static void SetSocketBufSize(int socketFd, const char* name, int optname, int desiredSize)
 {

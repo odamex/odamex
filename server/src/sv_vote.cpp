@@ -37,6 +37,7 @@
 #include "sv_maplist.h"
 #include "sv_pickup.h"
 #include "d_main.h"
+
 #include "svc_message.h"
 
 EXTERN_CVAR(sv_gametype)
@@ -843,7 +844,7 @@ vote_state_t Vote::serialize() const
 void Vote::ev_disconnect(player_t &player)
 {
 	// If the player had an entry in the tally, delete it.
-	if (this->tally.count(player.id) > 0)
+	if (this->tally.contains(player.id))
 	{
 		this->tally.erase(player.id);
 	}
@@ -1068,18 +1069,17 @@ static void SV_GlobalVoteUpdate()
 //////// COMMANDS FROM CLIENT ////////
 
 // Handle callvote commands from the client.
-void SV_Callvote(player_t &player)
+void SV_Callvote(player_t& player, const odaproto::clc::CallVote& msg)
 {
-	vote_type_t votecmd = static_cast<vote_type_t>(MSG_ReadByte());
-	byte argc = static_cast<byte>(MSG_ReadByte());
+	const vote_type_t   votecmd = static_cast<vote_type_t>(msg.vote_type());
+	const size_t        argc    = msg.arg_size();
 
 	DPrintFmt("SV_Callvote: Got votecmd {} from player {}, {} additional arguments.\n",
 	        vote_type_cmd[votecmd], player.id, argc);
 
-	std::vector<std::string> arguments(argc);
-	for (int i = 0; i < argc; i++)
+	std::vector<std::string> arguments(msg.arg().begin(), msg.arg().end());
+	for (size_t i = 0; i < argc; i++)
 	{
-		arguments[i] = std::string(MSG_ReadString());
 		DPrintFmt("SV_Callvote: arguments[{}] = \"{}\"\n", i, arguments[i]);
 	}
 

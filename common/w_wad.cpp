@@ -522,6 +522,13 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, int space)
 //
 void W_InitMultipleFiles(const OResFiles& files)
 {
+	// [EB] Fix for use-after-free when OZone tries to null the "user" pointers
+	if (lumpcache)
+	{
+		for (size_t i = 0; i < numlumps; i++)
+			Z_Free(lumpcache[i]);
+	}
+
 	// open all the files, load headers, and count lumps
 	// will be realloced as lumps are added
 	::numlumps = 0;

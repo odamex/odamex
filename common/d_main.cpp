@@ -601,9 +601,6 @@ static void LoadResolvedFiles(const OResFiles& newwadfiles,
 	// print info about the IWAD to the console
 	D_PrintIWADIdentity();
 
-	// set the window title based on which IWAD we're using
-	I_SetTitleString(D_GetTitleString().c_str());
-
 	::modifiedgame = (::wadfiles.size() > 2) ||
 	                 !::patchfiles.empty(); // more than odamex.wad and IWAD?
 

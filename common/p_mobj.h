@@ -127,10 +127,6 @@ inline static fixed_t DegToSlope(fixed_t a)
 
 extern NetIDHandler ServerNetID;
 
-// All oflag mods that are sent to horde bosses.
-inline constexpr uint32_t hordeBossModMask = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR |
-                                             MFO_QUICK | MFO_NORAISE | MFO_FULLBRIGHT;
-
 void P_ClearAllNetIds();
 AActor* P_FindThingById(uint32_t id);
 void P_SetThingId(AActor* mo, uint32_t newnetid);
@@ -144,7 +140,7 @@ void P_NightmareRespawn(AActor *mo);
 void P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z);
 void P_SpawnTracerPuff(fixed_t x, fixed_t y, fixed_t z);
 void P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage);
-bool P_CheckMissileSpawn(AActor* th);
+bool P_CheckMissileSpawn(AActor* th, AActor* parent);
 AActor* P_SpawnMissile(AActor *source, AActor *dest, mobjtype_t type);
 AActor* P_SpawnPlayerMissile(AActor* source, mobjtype_t type);
 size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing);

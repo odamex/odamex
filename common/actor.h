@@ -45,6 +45,9 @@
 #include "szp.h"
 
 #include "teamdef.h"
+
+#include "ActorAwarenessState.h"
+
 //
 // NOTES: AActor
 //
@@ -108,39 +111,6 @@
 //
 // Any questions?
 //
-
-//
-// [SL] 2012-04-30 - A bit field to store a bool value for every player.
-//
-class PlayerBitField
-{
-public:
-	PlayerBitField() { clear(); }
-
-	void clear()
-	{
-		memset(bitfield, 0, sizeof(bitfield));
-	}
-
-	void set(byte id)
-	{
-		bitfield[id] = 1;
-	}
-
-	void unset(byte id)
-	{
-		bitfield[id] = 0;
-	}
-
-	[[nodiscard]] bool get(byte id) const
-	{
-        return bitfield[id];
-	}
-
-private:
-
-	byte	bitfield[MAXPLAYERS];
-};
 
 //
 // Misc. mobj flags
@@ -264,20 +234,23 @@ enum mobjflag_t
 
 	// --- mobj.oflags ---
 	// Odamex-specific flags
-	MFO_NOSNAPZ			= BIT(0),	// ignore snapshot z this tic
-	MFO_HEALTHPOOL		= BIT(1),	// global health pool that tracks killed HP
-	MFO_INFIGHTINVUL	= BIT(2),	// invulnerable to infighting
-	MFO_UNFLINCHING		= BIT(3),	// monster flinching reduced to 1 in 256
-	MFO_ARMOR			= BIT(4),	// damage taken by monster is reduced
-	MFO_QUICK			= BIT(5),	// speed of monster is increased
-	MFO_NORAISE			= BIT(6),	// vile can't raise corpse
-	MFO_BOSSPOOL		= BIT(7),	// boss health pool that tracks damage
-	MFO_FULLBRIGHT		= BIT(8),	// monster is fullbright
-	MFO_SPECTATOR		= BIT(9),	// GhostlyDeath -- thing is/was a spectator and can't be seen!
-	MFO_FALLING			= BIT(10),	// [INTERNAL] for falling
-	MFO_ARMED			= BIT(11),	// [INTERNAL] for TOUCHY (object is armed)
-	MFO_LINEDONE 		= BIT(12),  // [INTERNAL] for A_LineEffect, line special already done
-	// MFO_STEALTH			= BIT(13),	// Andy Baker's stealth monsters
+	MFO_NOSNAPZ         = BIT(0),   // [clientside only] ignore snapshot z this tic
+	MFO_HEALTHPOOL      = BIT(1),   // global health pool that tracks killed HP
+	MFO_INFIGHTINVUL    = BIT(2),   // invulnerable to infighting
+	MFO_UNFLINCHING     = BIT(3),   // monster flinching reduced to 1 in 256
+	MFO_ARMOR           = BIT(4),   // damage taken by monster is reduced
+	MFO_QUICK           = BIT(5),   // speed of monster is increased
+	MFO_NORAISE         = BIT(6),   // vile can't raise corpse
+	MFO_ISHORDEBOSS     = BIT(7),   // Is a horde boss?  Implies that damage subtracts from boss health pool
+	MFO_FULLBRIGHT      = BIT(8),   // monster is fullbright
+	MFO_SPECTATOR       = BIT(9),   // GhostlyDeath -- thing is/was a spectator and can't be seen!
+	MFO_FALLING         = BIT(10),  // [INTERNAL] for falling
+	MFO_ARMED           = BIT(11),  // [INTERNAL] for TOUCHY (object is armed)
+	MFO_LINEDONE        = BIT(12),  // [INTERNAL] for A_LineEffect, line special already done
+	// MFO_STEALTH          = BIT(13),  // Andy Baker's stealth monsters
+	MFO_ISONCONVEYOR    = BIT(14),  // Mobj is in motion due to being carried by a sector
+
+	MFO_MOVESLIKEAMONSTER = BIT(15),    // Mobj has been updated through monster movement routines
 };
 
 //
@@ -351,6 +324,78 @@ struct baseline_t
 			    targetid >> tracerid >> movecount >> movedir >> rndindex;
 		}
 	}
+};
+
+enum class CredibilityEnum
+{
+	NOT_CREDIBLE = 0,
+	ALWAYS_CREDIBLE,
+	FULLY_CREDIBLE,
+	SEMI_CREDIBLE,
+	CHALLENGED_CREDIBILITY,
+
+	CREDIBILITY_LEVEL_COUNT
+};
+
+class AActor;
+
+class CredibilityState
+{
+	public:
+
+		CredibilityEnum Get() const
+		{
+			return m_credibility;
+		}
+
+		bool IsCredible() const
+		{
+			return m_credibility == CredibilityEnum::FULLY_CREDIBLE
+			    or m_credibility == CredibilityEnum::ALWAYS_CREDIBLE;
+		}
+
+		void Update(const AActor& mobj);
+
+		void Challenge()
+		{
+			m_credibility = CredibilityEnum::CHALLENGED_CREDIBILITY;
+		}
+
+		void Lionize()
+		{
+			m_credibility = CredibilityEnum::ALWAYS_CREDIBLE;
+		}
+
+		template <typename StreamType>
+		friend StreamType& operator<<(StreamType& io_stream, const CredibilityState& i_thisRef)
+		{
+			io_stream
+			    << i_thisRef.m_credibility
+			    << i_thisRef.m_crediblePosition
+			    << i_thisRef.m_predictedMotionTicCount
+			    ;
+			return io_stream;
+		}
+
+		template <typename StreamType>
+		friend StreamType& operator>>(StreamType& io_stream, CredibilityState& o_thisRef)
+		{
+			io_stream
+			    >> o_thisRef.m_credibility
+			    >> o_thisRef.m_crediblePosition
+			    >> o_thisRef.m_predictedMotionTicCount
+			    ;
+			return io_stream;
+		}
+
+	protected:
+
+		// Start off fully-credible so that triggers and other things can fire immediately if needed on the client
+		// and so that the server doesn't have to do anything with this - everything on the server is credible.
+		//
+		CredibilityEnum m_credibility { CredibilityEnum::FULLY_CREDIBLE };
+		v3fixed_t       m_crediblePosition { 0, 0, 0 };
+		int             m_predictedMotionTicCount { 0 };
 };
 
 // Map Object definition.
@@ -524,15 +569,13 @@ public:
     mapthing2_t		spawnpoint;
 
 	// Thing being chased/attacked for tracers.
-	AActorPtr		tracer;
-	byte			special;		// special
-	byte			args[5];		// special arguments
+	AActorPtr           tracer;
+	byte                special;    // special
+	std::array<byte, 5> args;       // special arguments
 
 	AActor			*inext, *iprev;	// Links to other mobjs in same bucket
 
-	// denis - playerids of players to whom this object has been sent
-	// [SL] changed to use a bitfield instead of a vector for O(1) lookups
-	PlayerBitField	players_aware;
+	ActorAwarenessState<MAXPLAYERS> playersAware;
 
 	AActorPtr		goal;			// Monster's goal if not chasing anything
 	translationref_t translation;	// Translation table (or NULL)
@@ -577,6 +620,12 @@ public:
 	baseline_t		baseline;		// Baseline data for mobj sent to clients
 	bool			baseline_set;	// Have we set our baseline yet?
 
+	// Server: The tic on which this mobj was sent an UpdateMobj.
+	// Client: the tic on which this mobj received an UpdateMobj.
+	int updatedDuringTic;
+
+	CredibilityState credibility;
+
 private:
 	static constexpr size_t TIDHashSize = 256;
 	static constexpr size_t TIDHashMask = TIDHashSize - 1;
@@ -586,6 +635,7 @@ private:
 	friend class FActorIterator;
 
 public:
+
 	void LinkToWorld ();
 	void UnlinkFromWorld ();
 
@@ -604,7 +654,7 @@ public:
 	class ActorBlockMapListNode
 	{
 	public:
-		ActorBlockMapListNode(AActor *mo);
+		explicit ActorBlockMapListNode(AActor* mo);
 		void Link();
 		void Unlink();
 		AActor* Next(int bmx, int bmy);
@@ -613,26 +663,23 @@ public:
 		void clear();
 		size_t getIndex(int bmx, int bmy);
 
-		static constexpr size_t BLOCKSX = 3;
-		static constexpr size_t BLOCKSY = 3;
-
-		AActor		*actor;
+		AActor* m_actor;
 
 		// the top-left blockmap the actor is in
-		int			originx;
-		int			originy;
+		int m_originx;
+		int m_originy;
 		// the number of blocks the actor occupies
-		int			blockcntx;
-		int			blockcnty;
+		int m_blockcntx;
+		int m_blockcnty;
 
 		// the next and previous actors in each of the possible blockmaps
 		// this actor can inhabit
-		AActor		*next[BLOCKSX * BLOCKSY];
-		AActor		**prev[BLOCKSX * BLOCKSY];
+		std::vector<AActor*>  m_next;
+		std::vector<AActor**> m_prev;
 	};
 
 	// Interaction info, by BLOCKMAP.
-    // Links in blocks (if needed).
+	// Links in blocks (if needed).
 	ActorBlockMapListNode bmapnode;
 };
 

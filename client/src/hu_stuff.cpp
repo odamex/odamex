@@ -138,7 +138,7 @@ void HU_TeamScores2 (player_t *player);
 
 extern inline int V_StringWidth(const char *str);
 size_t P_NumPlayersInGame();
-static void ShoveChatStr(std::string str, byte who);
+static void ShoveChatStr(const std::string& str, byte who);
 
 static std::string input_text;
 static chatmode_t chatmode;
@@ -979,8 +979,8 @@ static void HU_DrawChatPrompt()
 	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
 	// Set up text scaling
-	int scaledxfac = hud_scaletext ? V_TextScaleXAmount() : CleanXfac;
-	int scaledyfac = hud_scaletext ? V_TextScaleYAmount() : CleanYfac;
+	int scaledxfac = V_TextScaleXAmount();
+	int scaledyfac = V_TextScaleYAmount();
 
 	// Determine what Y height to display the chat prompt at.
 	// * I_GetSurfaceHeight() is the "actual" screen height.
@@ -1123,34 +1123,26 @@ void HU_Drawer()
 		HU_DrawChatPrompt();
 }
 
-static void ShoveChatStr (std::string str, byte who)
+static void ShoveChatStr (const std::string& str, byte visibility)
 {
 	// Do not send this chat message if the chat string is empty
 	if (str.length() == 0)
 		return;
 
-	if(str.length() > MAX_CHATSTR_LEN)
-		str.resize(MAX_CHATSTR_LEN);
+    const std::string_view visiblePortion {str.begin(), str.begin() + std::min(str.length(), size_t(MAX_CHATSTR_LEN))};
 
-    auto& netBuf = messenger.NetBuf().Obtain();
-	MSG_WriteMarker (&netBuf, clc_say);
-	MSG_WriteByte (&netBuf, who);
-	MSG_WriteString (&netBuf, str.c_str());
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_Say(visiblePortion, visibility));
 }
 
-static void ShovePrivMsg(byte pid, std::string str)
+static void ShovePrivMsg(byte pid, const std::string& str)
 {
 	// Do not send this chat message if the chat string is empty
 	if (str.length() == 0)
 		return;
 
-	if (str.length() > MAX_CHATSTR_LEN)
-		str.resize(MAX_CHATSTR_LEN);
+	const std::string_view visiblePortion {str.begin(), str.begin() + std::min(str.length(), size_t(MAX_CHATSTR_LEN))};
 
-    auto& netBuf = messenger.NetBuf().Obtain();
-	MSG_WriteMarker(&netBuf, clc_privmsg);
-	MSG_WriteByte(&netBuf, pid);
-	MSG_WriteString(&netBuf, str.c_str());
+	MSG_WriteSVC(messenger.ReliableBuf(), CLC_PrivMsg(pid, visiblePortion));
 }
 
 BEGIN_COMMAND (messagemode)

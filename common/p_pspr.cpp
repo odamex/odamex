@@ -59,7 +59,7 @@ EXTERN_CVAR(co_fineautoaim)
 EXTERN_CVAR(co_zdoomammo)
 EXTERN_CVAR(cl_centerbobonfire)
 
-const char *weaponnames[] =
+const char *weaponnames[NUMWEAPONS] =
 {
 	"Fist",
 	"Pistol",
@@ -69,7 +69,8 @@ const char *weaponnames[] =
 	"Plasma Gun",
 	"BFG9000",
 	"Chainsaw",
-	"Super Shotgun"
+	"Super Shotgun",
+	"No weapon"
 };
 
 void A_WeaponReady(AActor* mo);
@@ -206,7 +207,7 @@ void P_SetPspriteRef(player_t& player, pspdef_t& psp, int32_t stnum)
 			if (!player.spectator && player.mo != NULL)
 			{
 				// [CMB] calculate psprnum here using the present psp and length of psprites
-				player.psprnum = &psp - player.psprites;
+				player.psprnum = &psp - &player.psprites[0];
 				psp.state->action(player.mo);
 			}
 
@@ -298,12 +299,8 @@ bool P_EnoughAmmo(const player_t& player, weapontype_t weapon, bool switching = 
 //
 void P_SwitchWeapon(player_t& player)
 {
-	const byte *prefs;
-
-	if ((multiplayer && !sv_allowpwo) || demoplayback)
-		prefs = UserInfo::weapon_prefs_default;
-	else
-		prefs = player.userinfo.weapon_prefs;
+	const auto& prefs = ((multiplayer and not sv_allowpwo) or demoplayback) ? UserInfo::weapon_prefs_default :
+	                                                                          player.userinfo.weapon_prefs;
 
 	// find which weapon has the highest preference among availible weapons
 	size_t best_weapon_num = 0;
@@ -336,7 +333,7 @@ void P_SwitchWeapon(player_t& player)
 //
 weapontype_t P_GetNextWeapon(player_t *player, bool forward)
 {
-	if (player->readyweapon == NUMWEAPONS || player->pendingweapon == NUMWEAPONS)
+	if (player->readyweapon == wp_none || player->pendingweapon == wp_none)
 		return wp_nochange;
 
 	gitem_t *item;
@@ -397,18 +394,18 @@ bool P_CheckSwitchWeapon(const player_t& player, weapontype_t weapon)
 
 	// Never switch - player has to manually change themselves
 	// Having no weapons because of ClearInventory/TakeInventory overrides this
-	if (player.userinfo.switchweapon == WPSW_NEVER && player.readyweapon != NUMWEAPONS && player.pendingweapon != NUMWEAPONS)
+	if (player.userinfo.switchweapon == WPSW_NEVER && player.readyweapon != wp_none && player.pendingweapon != wp_none)
 		return false;
 
 	const weapontype_t currentweapon = (player.pendingweapon == wp_nochange)
 			? player.readyweapon
 			: player.pendingweapon;
 
-	if (currentweapon == NUMWEAPONS)
+	if (currentweapon == wp_none)
 		return true;
 
 	// Use player's weapon preferences
-	const byte *prefs = player.userinfo.weapon_prefs;
+	const auto& prefs = player.userinfo.weapon_prefs;
 	if (prefs[weapon] > prefs[currentweapon])
 	{
 		if (player.userinfo.switchweapon == WPSW_PWO_ALT &&
@@ -473,17 +470,8 @@ static void DecreaseAmmo(player_t& player, int amount = 1)
 void P_FireWeapon(player_t& player)
 {
 	// Prevent fire if you don't have any weapon, including fist. See DoClearInv - PCD_CLEARINVENTORY
-	if (!P_CheckAmmo(player) || player.readyweapon == NUMWEAPONS)
+	if (!P_CheckAmmo(player) || player.readyweapon == wp_none)
 		return;
-
-	// [tm512] Send the client the weapon they just fired so
-	// that they can fix any weapon desyncs that they get - apr 14 2012
-#if defined(SERVER_APP)
-	if (serverside && !clientside)
-	{
-		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_FireWeapon(player));
-	}
-#endif
 
 	P_SetMobjState(player.mo, S_PLAY_ATK1);
 	statenum_t newstatenum = weaponinfo[player.readyweapon].atkstate;
@@ -614,8 +602,8 @@ void A_Lower(AActor* mo)
 		return;
 	}
 
-	// haleyjd 03/28/10: do not assume pendingweapon is valid - include NUMWEAPONS from ClearInventory
-	if (player.pendingweapon < NUMWEAPONS + 1)
+	// haleyjd 03/28/10: do not assume pendingweapon is valid
+	if (player.pendingweapon < NUMWEAPONS)
 		player.readyweapon = player.pendingweapon;
 
 	P_BringUpWeapon(player);

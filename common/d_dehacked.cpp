@@ -23,6 +23,7 @@
 
 #include "odamex.h"
 
+#include <array>
 #include <stdlib.h>
 #include <sstream>
 #include <variant>
@@ -677,7 +678,6 @@ static void HandleMode(std::string_view header, DehScanner& scanner)
 
 	// Handle unknown or unimplemented data
 	DPrintFmt("Unknown chunk {} encountered. Skipping.\n", header);
-	scanner.skipLine();
 	while (scanner.getNextKeyValue());
 }
 
@@ -709,20 +709,13 @@ struct DoomBackup_t
 	DoomObjectContainer<mobjinfo_t, int32_t> backupMobjInfo; // doom_mobjinfo
 	DoomObjectContainer<std::string, int32_t> backupSprnames; // doom_sprnames
 	DoomObjectContainer<std::string, int32_t> backupSoundMap; // doom_SoundMap
-	weaponinfo_t backupWeaponInfo[NUMWEAPONS + 1];
-	int backupMaxAmmo[NUMAMMO];
-	int backupClipAmmo[NUMAMMO];
+
+	std::array<weaponinfo_t, NUMWEAPONS> backupWeaponInfo;
+	std::array<int,          NUMAMMO>    backupMaxAmmo;
+	std::array<int,          NUMAMMO>    backupClipAmmo;
+
 	DehInfo backupDeh;
 
-	DoomBackup_t()
-	    : backupStates(),
-	      backupMobjInfo(),
-	      backupSprnames(),
-	      backupSoundMap(),
-		  backupWeaponInfo(),
-	      backupMaxAmmo(),
-	      backupDeh()
-	{}
 } doomBackup;
 
 // [CMB] useful typedefs for iteration over global doom object containers
@@ -755,9 +748,10 @@ static void BackupData(void)
 	doomBackup.backupSprnames = sprnames;
 	doomBackup.backupSoundMap = SoundMap;
 
-	std::copy(weaponinfo, weaponinfo + ::NUMWEAPONS + 1, doomBackup.backupWeaponInfo);
-	std::copy(clipammo, clipammo + ::NUMAMMO, doomBackup.backupClipAmmo);
-	std::copy(maxammo, maxammo + ::NUMAMMO, doomBackup.backupMaxAmmo);
+	doomBackup.backupWeaponInfo = weaponinfo;
+	doomBackup.backupClipAmmo   = clipammo;
+	doomBackup.backupMaxAmmo    = maxammo;
+
 	doomBackup.backupDeh = deh;
 
 	BackedUpData = true;
@@ -780,10 +774,9 @@ void D_UndoDehPatch()
 	extern bool isFast;
 	isFast = false;
 
-	std::copy(doomBackup.backupWeaponInfo, doomBackup.backupWeaponInfo + ::NUMWEAPONS,
-	          weaponinfo);
-	std::copy(doomBackup.backupClipAmmo, doomBackup.backupClipAmmo + ::NUMAMMO, clipammo);
-	std::copy(doomBackup.backupMaxAmmo, doomBackup.backupMaxAmmo + ::NUMAMMO, maxammo);
+	weaponinfo = doomBackup.backupWeaponInfo;
+	clipammo   = doomBackup.backupClipAmmo;
+	maxammo    = doomBackup.backupMaxAmmo;
 
 	deh = doomBackup.backupDeh;
 
@@ -1365,8 +1358,8 @@ static void PatchFrame(int frameNum, DehScanner& scanner)
 	if(states_it == states.end())
     {
 		info = &states.insert(state_t{}, frameNum);
-		info->statenum = frameNum;
-		info->nextstate = frameNum;
+		info->statenum  = static_cast<statenum_t>(frameNum);
+		info->nextstate = static_cast<statenum_t>(frameNum);
 	}
 	else
 	{
@@ -1575,8 +1568,6 @@ static void PatchSounds(int dummy, DehScanner& scanner)
 
 static void PatchAmmo(int ammoNum, DehScanner& scanner)
 {
-	extern int clipammo[NUMAMMO];
-
 	int* max;
 	int* per;
 	int dummy;
@@ -1995,10 +1986,10 @@ static void PatchMusic(int dummy, DehScanner& scanner)
 		const auto& [key, value] = *line;
 		const std::string_view newname = value;
 
-		OString keystring = fmt::format("MUSIC_{}", key);
+		OString keystring(fmt::format("MUSIC_{}", key));
 		if (GStrings.hasString(keystring))
 		{
-			GStrings.setString(keystring, newname);
+			GStrings.setString(keystring, OString(newname));
 			DPrintFmt("Music {} set to:\n{}\n", keystring, newname);
 		}
 	}
@@ -2102,10 +2093,10 @@ static void PatchText(int sizes, DehScanner& scanner)
 	}
 
 	// Search through most other texts
-	const OString& name = ENGStrings.matchString(*oldStr);
+	const OString& name = ENGStrings.matchString(OString(*oldStr));
 	if (!name.empty())
 	{
-		GStrings.setString(name, *newStr);
+		GStrings.setString(name, OString(*newStr));
 		return;
 	}
 
@@ -2133,14 +2124,17 @@ static void PatchStrings(int dummy, DehScanner& scanner)
 		}
 		string += nextpart;
 
-		int i = GStrings.toIndex(key);
+		const OString okey(key);
+		const OString ostring(string);
+
+		int i = GStrings.toIndex(okey);
 		if (iequals("DEHTHING_", key.substr(0, 9)))
 		{
 			if (auto type = ParseNum<int32_t>(string))
 			{
 				(*type)--;
 				P_MapDehThing(static_cast<mobjtype_t>(*type), std::string(key)); // TODO: rework so no casting needed
-				GStrings.setString(key, string);
+				GStrings.setString(okey, ostring);
 				DPrintFmt("{} set to:\n{}\n", key, string);
 			}
 			else
@@ -2153,7 +2147,7 @@ static void PatchStrings(int dummy, DehScanner& scanner)
 			if (iequals("USER_", key.substr(0, 5)))
 			{
 				ReplaceSpecialChars(string);
-				GStrings.setString(key, string);
+				GStrings.setString(okey, ostring);
 				DPrintFmt("{} set to:\n{}\n", key, string);
 			}
 			else
@@ -2181,7 +2175,7 @@ static void PatchStrings(int dummy, DehScanner& scanner)
 				}
 			}
 			// [CMB] TODO: Language string table change // [EB] what is this comment about??
-			GStrings.setString(key, string);
+			GStrings.setString(okey, ostring);
 			DPrintFmt("{} set to:\n{}\n", key, string);
 		}
 	}

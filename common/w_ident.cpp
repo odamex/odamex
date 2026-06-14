@@ -1190,7 +1190,7 @@ public:
 
 	bool isCommercialFilename(const std::string& filename) const
 	{
-		OString upper = StdStringToUpper(filename);
+		OString upper = OStringToUpper(filename);
 		for (const auto& id : mIdentifiers)
 		{
 			if (id.mIsCommercial && id.mFilename == upper)
@@ -1201,7 +1201,7 @@ public:
 
 	bool isKnownIWADFilename(const std::string& filename) const
 	{
-		OString upper = StdStringToUpper(filename);
+		OString upper = OStringToUpper(filename);
 		for (const auto& id : mIdentifiers)
 		{
 			if (id.mIsIWAD && id.mFilename == upper)
@@ -1301,7 +1301,7 @@ public:
 		// [ML] Check for HACX 1.2
 		if (lumpsfound[11])
 		{
-			return "HACX UNKNOWN";
+			return "HACX UNKNOWN"_os;
 		}
 
 		// [SL] Check for FreeDoom / Freedoom: Phase 1
@@ -1310,7 +1310,7 @@ public:
 			if (lumpsfound[0])
 				return OStringToUpper(OString(FREEDOOM1_PREFIX " Unknown"));
 			else
-				return "FREEDOOM UNKNOWN";
+				return "FREEDOOM UNKNOWN"_os;
 		}
 
 		// Check for Doom II: Hell on Earth or TNT / Plutonia
@@ -1337,28 +1337,28 @@ public:
 					// iwad.  It's ultimate doom with their stuff replacing most things.
 					if (iequals(file.getBasename(), "chex.wad"))
 					{
-						return "CHEX QUEST UNKNOWN";
+						return "CHEX QUEST UNKNOWN"_os;
 					}
 					else
 					{
 						if (lumpsfound[9])
-							return UDOOM_PREFIX " BFG UNKNOWN";
+							return UDOOM_PREFIX " BFG UNKNOWN"_os;
 						else
-							return UDOOM_PREFIX " UNKNOWN";
+							return UDOOM_PREFIX " UNKNOWN"_os;
 					}
 				}
 				else
 				{
-					return DOOM_PREFIX " UNKNOWN";
+					return DOOM_PREFIX " UNKNOWN"_os;
 				}
 			}
 			else
 			{
-				return DOOMSW_PREFIX " UNKNOWN";
+				return DOOMSW_PREFIX " UNKNOWN"_os;
 			}
 		}
 
-		return "UNKNOWN";
+		return "UNKNOWN"_os;
 	}
 
 	void dump() const
@@ -1415,8 +1415,8 @@ void W_SetupFileIdentifiers()
 {
 	for (const auto& data : ::identdata)
 	{
-		::identtab.addFile(data.idName, data.filename, data.crc32Sum, data.md5Sum,
-		                   data.groupName, data.flags & IDENT_COMMERCIAL,
+		::identtab.addFile(OString(data.idName), OString(data.filename), OString(data.crc32Sum), OString(data.md5Sum),
+		                   OString(data.groupName), data.flags & IDENT_COMMERCIAL,
 		                   data.flags & IDENT_IWAD, data.flags & IDENT_DEPRECATED,
 		                   data.weight);
 	}

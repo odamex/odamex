@@ -40,6 +40,7 @@
 #include <cmath>
 
 #include "../client/src/cl_main.h"
+#include "clc_message.h"
 #include "r_main.h"
 #include "v_text.h"
 #include "v_video.h"
@@ -150,10 +151,8 @@ bool P_IsHordeBossForPing(const AActor* actor)
 {
 	if (!actor || actor->health <= 0)
 		return false;
-	if (actor->flags & MF_MISSILE)
-		return false;
 
-	return (actor->oflags & MFO_BOSSPOOL) != 0 || (actor->effects & FX_YELLOWFOUNTAIN) != 0;
+	return (actor->oflags & MFO_ISHORDEBOSS) != 0;
 }
 
 team_t P_PingFlagTeamForActor(const AActor* actor)
@@ -862,9 +861,9 @@ translationref_t P_PingReadablePlayerTranslation(const player_t& pl)
 		// 1) convert user color to linear RGB
 		// 2) enforce a minimum luminance by uniform scaling (keeps hue/chroma)
 		// 3) apply ramp intensity in linear space using the original 0x70..0x7F shape
-		float uR = srgbToLinear(static_cast<float>(pl.userinfo.color[1]));
-		float uG = srgbToLinear(static_cast<float>(pl.userinfo.color[2]));
-		float uB = srgbToLinear(static_cast<float>(pl.userinfo.color[3]));
+		float uR = srgbToLinear(static_cast<float>(pl.userinfo.color.getr()));
+		float uG = srgbToLinear(static_cast<float>(pl.userinfo.color.getg()));
+		float uB = srgbToLinear(static_cast<float>(pl.userinfo.color.getb()));
 		const float userY = 0.2126f * uR + 0.7152f * uG + 0.0722f * uB;
 		// Interpret bias in display-space (sRGB), then convert to linear luminance.
 		const float floorUserY = srgbToLinear(std::clamp(bias, 0.0f, 255.0f));
@@ -1663,14 +1662,14 @@ BEGIN_COMMAND(player_ping)
 	// other clients receive the replicated ping message.
 	if (connected)
 	{
-		buf_t& netBuf = messenger.NetBuf().Obtain();
-		MSG_WriteMarker(&netBuf, clc_netcmd);
-		MSG_WriteString(&netBuf, "player_ping");
-		MSG_WriteByte(&netBuf, 4);
-		MSG_WriteString(&netBuf, filter.pickups ? "1" : "0");
-		MSG_WriteString(&netBuf, filter.monsters ? "1" : "0");
-		MSG_WriteString(&netBuf, filter.flags ? "1" : "0");
-		MSG_WriteString(&netBuf, filter.mouselook ? "1" : "0");
+		const std::array<std::string, 5> args {
+		    "player_ping",
+		    filter.pickups ? "1" : "0",
+		    filter.monsters ? "1" : "0",
+		    filter.flags ? "1" : "0",
+		    filter.mouselook ? "1" : "0",
+		};
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_Netcmd(args.begin(), args.end()));
 		return;
 	}
 #else
@@ -1707,15 +1706,15 @@ BEGIN_COMMAND(player_ping_self)
 
 	if (connected)
 	{
-		buf_t& netBuf = messenger.NetBuf().Obtain();
-		MSG_WriteMarker(&netBuf, clc_netcmd);
-		MSG_WriteString(&netBuf, "player_ping");
-		MSG_WriteByte(&netBuf, 5);
-		MSG_WriteString(&netBuf, filter.pickups ? "1" : "0");
-		MSG_WriteString(&netBuf, filter.monsters ? "1" : "0");
-		MSG_WriteString(&netBuf, filter.flags ? "1" : "0");
-		MSG_WriteString(&netBuf, filter.mouselook ? "1" : "0");
-		MSG_WriteString(&netBuf, "1");
+		const std::array<std::string, 6> args {
+		    "player_ping",
+		    filter.pickups ? "1" : "0",
+		    filter.monsters ? "1" : "0",
+		    filter.flags ? "1" : "0",
+		    filter.mouselook ? "1" : "0",
+		    "1",
+		};
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_Netcmd(args.begin(), args.end()));
 		return;
 	}
 #else

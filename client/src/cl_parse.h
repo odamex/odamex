@@ -27,11 +27,11 @@
 #include <string>
 #include <vector>
 
-#include "svc_parse.h"
+#include "msg_parse.h"
 
 struct Proto
 {
-	byte header;
+	msg_t header;
 	std::string name;
 	size_t size;
 	std::string data;
@@ -41,7 +41,7 @@ struct ParseResultType
 {
 	std::unique_ptr<google::protobuf::Message> msg;
 	parseError_e                               code = PERR_OK;
-	byte                                       cmd  = svc_noop;
+	msg_t                                      cmd  = msg_noop;
 };
 
 typedef std::vector<Proto> Protos;

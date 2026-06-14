@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2026 by The Odamex Team.
+// Copyright (C) 2026 by Jim Thoenen.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -106,33 +106,54 @@ class OdaMessenger
 		/// new outgoing data.
 		MessageQueue& ReliableBuf() { return m_outgoingReliableQueue; }
 		MessageQueue& NetBuf() { return m_outgoingNonReliableQueue; }
+		MessageQueue& HighBuf() { return m_outgoingHighNonReliableQueue; }
 
 		/// Discard all outgoing data that has yet to be sent.
 		void Clear()
 		{
 			m_outgoingReliableQueue.Clear();
 			m_outgoingNonReliableQueue.Clear();
-			m_outgoingAckQueue.Clear();
+			m_outgoingHighNonReliableQueue.Clear();
 		}
+
+		bool RecordingIsEnabled() const { return m_recordingIsEnabled; }
+		void EnableRecording()  { m_recordingIsEnabled = true;  }
+		void DisableRecording() { m_recordingIsEnabled = false; m_recordingBuffer.clear(); }
+
+		const std::basic_string<byte>& GetRecordingBufferRef() const { return m_recordingBuffer; }
 
 		bool MustThrottleTransmission() const { return m_sender.GetMode() == SequenceSender::RECOVERY; }
 		fixed_t ThrottleFraction() const { return FixedDiv( m_unackedGrowth << FRACBITS, m_unackedGrowthThreshold << FRACBITS); }
 
-		void SetRetransmitDelay(int i_delayInTics) { m_retransmitDelayInTics = i_delayInTics; }
-		void SetPacketsPerRetransmit(int i_maxPackets) { m_maxPacketsPerRetransmission = i_maxPackets; }
-		int  GetMaxPacketsPerRetransmission() const { return m_maxPacketsPerRetransmission; }
 		void SetMaxRate(int i_maxRate)
 		{
 			m_maxRate      = i_maxRate;
 			m_perTicBudget = (m_maxRate * 1000) / TICRATE;
 			m_byteBudget   = m_perTicBudget;
-		}
 
-		int GetLastSendSize() const { return m_lastSendSize; }
-		int GetPendingAckCount() const { return m_sender.GetPendingAckCount(); }
+			// Track when reliable exceeds a certain percentage of the budget.  This could be configurable...
+			m_reliableOverloadThreshold = 9 * (m_perTicBudget / 10);
+		}
+		void SetPacketsPerRetransmit(int i_maxPackets)  { m_maxPacketsPerRetransmission = i_maxPackets; }
+		void SetRetransmitDelay     (int i_delayInTics) { m_retransmitDelayInTics = i_delayInTics; }
+
+		int GetLastReliableSendSize() const           { return static_cast<int>(m_bytesSentWithReliability); }
+		int GetLastSendSize() const                   { return m_lastSendSize; }
+		int GetMaxPacketsPerRetransmission() const    { return m_maxPacketsPerRetransmission; }
 		int GetNonContiguousRetransmitPackets() const { return m_noncontiguousRetransmitCount; }
+		size_t GetOutgoingSizeInBytes() const         { return m_outgoingReliableQueue.SizeInBytes()
+		                                                     + m_outgoingNonReliableQueue.SizeInBytes()
+		                                                     + m_outgoingHighNonReliableQueue.SizeInBytes(); }
+		int GetPendingAckCount() const       { return m_sender.GetPendingAckCount(); }
+		int GetReliableOverloadCount() const { return m_reliableOverloadCount; }
+		int GetTicBudget() const             { return m_perTicBudget; }
 
 	protected:
+
+		size_t PackAsReliable  (Packet& io_packet, const buf_t& messageBuf);
+		size_t PackAsUnreliable(Packet& io_packet, const buf_t& messageBuf);
+
+		void Record(const buf_t& messageBuf);
 
 		static void CompressPacket(buf_t& send, const size_t reserved);
 
@@ -144,11 +165,12 @@ class OdaMessenger
 		SequenceReceiver m_receiver;
 
 		Packet m_packet;
+		Packet m_highPacket;
 
 		// Send buffers
 		MessageQueue m_outgoingReliableQueue;
 		MessageQueue m_outgoingNonReliableQueue;
-		MessageQueue m_outgoingAckQueue;
+		MessageQueue m_outgoingHighNonReliableQueue;
 
 		buf_t* m_quickTurnaroundReceiveBuffer { nullptr };
 
@@ -160,10 +182,17 @@ class OdaMessenger
 		int m_perTicBudget{  0 };       ///< The value used to reset the budget every tic.
 		int m_latchedTic  { -1 };       ///< Used for detecting new tics and resetting the budget.
 
+		int m_reliableOverloadThreshold { 0 };
+		int m_reliableOverloadCount { 0 };
+
+		std::basic_string<byte> m_recordingBuffer;
+		bool                    m_recordingIsEnabled { false };
+
 		// Metrics
-		int m_lastSendSize                 {  0 };
-		int m_noncontiguousRetransmitCount {  0 };
-		int m_previousUnackedCount         {  0 };
-		int m_unackedGrowth                {  0 };
-		int m_unackedGrowthThreshold       { 10 };
+		size_t  m_bytesSentWithReliability      {  0 };
+		int     m_lastSendSize                  {  0 };
+		int     m_noncontiguousRetransmitCount  {  0 };
+		int     m_previousUnackedCount          {  0 };
+		int     m_unackedGrowth                 {  0 };
+		int     m_unackedGrowthThreshold        { 10 };
 };

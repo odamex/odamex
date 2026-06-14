@@ -574,6 +574,9 @@ void G_DoLoadLevel (int position)
 
 	gamestate = GS_LEVEL;
 
+	// We're entering the level state - reset the rollback history.
+	rollerState = PlayerStateRoller {};
+
 	// [SL] Hide the console unless this is just part of the demo loop
 	// It's annoying to have the console close every time a new demo starts...
 	if (!demoscreen)

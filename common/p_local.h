@@ -23,9 +23,11 @@
 
 #pragma once
 
-#include "r_local.h"
-
+#include <array>
 #include <set>
+
+#include "r_local.h"
+#include "m_vectors.h"
 
 #define FLOATSPEED		(FRACUNIT*4)
 
@@ -145,7 +147,9 @@ bool	P_DeactivateMobj (AActor *mobj);
 //
 // P_ENEMY
 //
-void	P_NoiseAlert (AActor* target, AActor* emmiter);
+bool P_NoiseAlert (AActor* target, AActor* emmiter);
+bool P_NoiseAlert (AActor& target, sector_t& sec);
+
 void	P_SpawnBrainTargets(void);	// killough 3/26/98: spawn icon landings
 
 extern struct brain_s {				// killough 3/26/98: global state of boss brain
@@ -287,7 +291,6 @@ bool P_PointOnPlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z);
 bool P_PointAbovePlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z);
 bool P_PointBelowPlane(const plane_t *plane, fixed_t x, fixed_t y, fixed_t z);
 
-struct v3fixed_t;
 v3fixed_t P_LinePlaneIntersection(const plane_t *plane, const v3fixed_t &lineorg, const v3fixed_t &linedir);
 
 
@@ -337,8 +340,8 @@ extern std::set<short>	movable_sectors;
 //
 // P_INTER
 //
-extern int				maxammo[NUMAMMO];
-extern int				clipammo[NUMAMMO];
+extern std::array<int, NUMAMMO> maxammo;
+extern std::array<int, NUMAMMO> clipammo;
 
 void P_GiveSpecial(player_t& player, AActor& special);
 void P_TouchSpecialThing (AActor& special, AActor& toucher);
@@ -383,23 +386,14 @@ extern	int MeansOfDeath;
 //
 // PO_MAN
 //
-typedef enum
+enum podoortype_t : uint8_t
 {
 	PODOOR_NONE,
 	PODOOR_SLIDE,
 	PODOOR_SWING,
 
 	NUMTYPES
-} podoortype_t;
-
-inline FArchive &operator<< (FArchive &arc, podoortype_t type)
-{
-	return arc << static_cast<byte>(type);
-}
-inline FArchive &operator>> (FArchive &arc, podoortype_t &out)
-{
-	byte in; arc >> in; out = static_cast<podoortype_t>(in); return arc;
-}
+};
 
 class DPolyAction : public DThinker
 {

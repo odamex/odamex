@@ -12,4 +12,4 @@ Icon=net.odamex.Odamex.Client
 Exec=odamex %u
 MimeType=x-scheme-handler/odamex;application/odamex-demo;application/x-doom-wad
 Terminal=false
-StartupWMClass=odamex
+StartupWMClass=net.odamex.Odamex.Client

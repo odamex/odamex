@@ -207,13 +207,13 @@ class DScroller : public DThinker
 {
 	DECLARE_SERIAL (DScroller, DThinker)
 public:
-	enum EScrollType
+	enum EScrollType : uint8_t
 	{
 		sc_side,
 		sc_floor,
 		sc_ceiling,
 		sc_carry,
-		sc_carry_ceiling	// killough 4/11/98: carry objects hanging on ceilings
+		sc_carry_ceiling    // killough 4/11/98: carry objects hanging on ceilings
 
 	};
 
@@ -246,15 +246,6 @@ protected:
 private:
 	DScroller ();
 };
-
-inline FArchive &operator<< (FArchive &arc, DScroller::EScrollType type)
-{
-	return arc << static_cast<byte>(type);
-}
-inline FArchive &operator>> (FArchive &arc, DScroller::EScrollType &out)
-{
-	byte in; arc >> in; out = static_cast<DScroller::EScrollType>(in); return arc;
-}
 
 inline bool P_WallScrollType(DScroller::EScrollType type)
 {
@@ -292,7 +283,7 @@ class DPusher : public DThinker
 {
 	DECLARE_SERIAL (DPusher, DThinker)
 public:
-	enum EPusher
+	enum EPusher : uint8_t
 	{
 		p_push,
 		p_pull,
@@ -332,15 +323,6 @@ protected:
 
 	friend bool PIT_PushThing (AActor *thing);
 };
-
-inline FArchive &operator<< (FArchive &arc, DPusher::EPusher type)
-{
-	return arc << static_cast<byte>(type);
-}
-inline FArchive &operator>> (FArchive &arc, DPusher::EPusher &out)
-{
-	byte in; arc >> in; out = static_cast<DPusher::EPusher>(in); return arc;
-}
 
 bool P_CheckKeys (player_t *p, card_t lock, bool remote);
 
@@ -622,7 +604,7 @@ class DPlat : public DMovingFloor
 {
 	DECLARE_SERIAL (DPlat, DMovingFloor);
 public:
-	enum EPlatState
+	enum EPlatState : uint8_t
 	{
 		init = 0,
 		up,
@@ -636,7 +618,7 @@ public:
 		state_size
 	};
 
-	enum EPlatType
+	enum EPlatType : uint8_t
 	{
 		perpetualRaise,
 		downWaitUpStay,
@@ -674,18 +656,18 @@ public:
 
 	void PlayPlatSound ();
 
-	fixed_t 	m_Speed;
-	fixed_t 	m_Low;
-	fixed_t 	m_High;
-	int 		m_Wait;
-	int 		m_Count;
-	EPlatState	m_Status;
-	EPlatState	m_OldStatus;
-	bool 		m_Crush;
-	int 		m_Tag;
-	EPlatType	m_Type;
-	fixed_t		m_Height;
-	fixed_t		m_Lip;
+	fixed_t     m_Speed     { 0 };
+	fixed_t     m_Low       { 0 };
+	fixed_t     m_High      { 0 };
+	int         m_Wait      { 0 };
+	int         m_Count     { 0 };
+	EPlatState  m_Status    { init };
+	EPlatState  m_OldStatus { init };
+	bool        m_Crush     { false };
+	int         m_Tag       { 0 };
+	EPlatType   m_Type      { 0xFF };
+	fixed_t     m_Height    { 0 };
+	fixed_t     m_Lip       { 0 };
 
 protected:
 
@@ -693,31 +675,14 @@ protected:
 	void Stop ();
 
 private:
-	DPlat ();
+	DPlat () = default;
 
-	friend bool	EV_DoPlat (int tag, line_t *line, EPlatType type,
-						   fixed_t height, int speed, int delay, fixed_t lip, int change);
+	friend bool EV_DoPlat (int tag, line_t *line, EPlatType type,
+                           fixed_t height, int speed, int delay, fixed_t lip, int change);
 	friend void EV_StopPlat (int tag);
 	friend void P_ActivateInStasis (int tag);
 	friend bool EV_DoGenLift(line_t* line);
 };
-
-inline FArchive &operator<< (FArchive &arc, DPlat::EPlatType type)
-{
-	return arc << static_cast<byte>(type);
-}
-inline FArchive &operator>> (FArchive &arc, DPlat::EPlatType &out)
-{
-	byte in; arc >> in; out = static_cast<DPlat::EPlatType>(in); return arc;
-}
-inline FArchive &operator<< (FArchive &arc, DPlat::EPlatState state)
-{
-	return arc << static_cast<byte>(state);
-}
-inline FArchive &operator>> (FArchive &arc, DPlat::EPlatState &out)
-{
-	byte in; arc >> in; out = static_cast<DPlat::EPlatState>(in); return arc;
-}
 
 //
 // [RH]
@@ -728,7 +693,7 @@ class DPillar : public DMover
 {
 	DECLARE_SERIAL (DPillar, DMover)
 public:
-	enum EPillarState
+	enum EPillarState : uint8_t
 	{
 		init = 0,
 		finished,
@@ -736,14 +701,14 @@ public:
 		state_size
 	};
 
-	enum EPillar
+	enum EPillar : uint8_t
 	{
 		pillarBuild,
 		pillarOpen
 
 	};
 
-	DPillar ();
+	DPillar () = default;
 	DPillar(sector_t* sector, EPillar type, fixed_t speed, fixed_t height,
 	        fixed_t height2, int crush, bool hexencrush);
 	[[nodiscard]] DPillar* Clone(sector_t* sec) const override;
@@ -755,34 +720,17 @@ public:
 	void RunThink () override;
 	void PlayPillarSound();
 
-	EPillar		m_Type;
-	fixed_t		m_FloorSpeed;
-	fixed_t		m_CeilingSpeed;
-	fixed_t		m_FloorTarget;
-	fixed_t		m_CeilingTarget;
-	int			m_Crush;
-	bool		m_HexenCrush;
+	EPillar m_Type          { 0xFF };
+	fixed_t m_FloorSpeed    { 0 };
+	fixed_t m_CeilingSpeed  { 0 };
+	fixed_t m_FloorTarget   { 0 };
+	fixed_t m_CeilingTarget { 0 };
+	int     m_Crush         { 0 };
+	bool    m_HexenCrush    { 0 };
 
-	EPillarState m_Status;
+	EPillarState m_Status   { init };
 
 };
-
-inline FArchive &operator<< (FArchive &arc, DPillar::EPillar type)
-{
-	return arc << static_cast<byte>(type);
-}
-inline FArchive &operator>> (FArchive &arc, DPillar::EPillar &out)
-{
-	byte in; arc >> in; out = static_cast<DPillar::EPillar>(in); return arc;
-}
-inline FArchive &operator<< (FArchive &arc, DPillar::EPillarState state)
-{
-	return arc << static_cast<byte>(state);
-}
-inline FArchive &operator>> (FArchive &arc, DPillar::EPillarState &out)
-{
-	byte in; arc >> in; out = static_cast<DPillar::EPillarState>(in); return arc;
-}
 
 bool EV_DoPillar (DPillar::EPillar type, int tag, fixed_t speed, fixed_t height,
 				  fixed_t height2, bool crush);
@@ -796,7 +744,7 @@ class DDoor : public DMovingCeiling
 {
 	DECLARE_SERIAL (DDoor, DMovingCeiling)
 public:
-	enum EVlDoor
+	enum EVlDoor : uint8_t
 	{
 		doorClose,
 		doorOpen,
@@ -821,7 +769,7 @@ public:
 		genBlazeCdO,
 	};
 
-	enum EDoorState
+	enum EDoorState : uint8_t
 	{
 		init = 0,
 		opening,
@@ -835,15 +783,14 @@ public:
 
 	DDoor (sector_t *sector);
 	// Boom Generic Door
-	DDoor(sector_t* sec, line_t* ln, int delay, int time, int trigger,
-	      int speed);
+	DDoor(sector_t* sec, line_t* ln, int delay, int time, int trigger, int speed);
 	// Boom Generic Locked Door
 	DDoor(sector_t* sec, line_t* ln, int kind, int trigger, int speed);
 	// Boom Compatible DDoor
-    DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay);
+	DDoor (sector_t *sec, line_t *ln, EVlDoor type, fixed_t speed, int delay);
 	// ZDoom Compatible DDoor
-	DDoor(sector_t* sec, line_t* ln, EVlDoor type, fixed_t speed, int topwait,
-	      byte lighttag, int topcountdown);
+	DDoor(sector_t* sec, line_t* ln, EVlDoor type, fixed_t speed, int topwait, byte lighttag, int topcountdown);
+
 	[[nodiscard]] DDoor* Clone(sector_t* sec) const override;
 
 	friend void P_SetDoorDestroy(DDoor *door);
@@ -851,21 +798,19 @@ public:
 	void RunThink () override;
 	void PlayDoorSound();
 
-	EVlDoor		m_Type;
-	fixed_t 	m_TopHeight;
-	fixed_t 	m_Speed;
+	EVlDoor m_Type      { 0xFF };
+	fixed_t m_TopHeight { 0 };
+	fixed_t m_Speed     { 0 };
 
-	// tics to wait at the top
-	int 		m_TopWait;
+	int m_TopWait   { 0 };  // tics to wait at the top
+
 	// (keep in case a door going down is reset)
 	// when it reaches 0, start going down
-	int 		m_TopCountdown;
+	int m_TopCountdown  { 0 };
 
-	EDoorState	m_Status;
-
-    line_t      *m_Line;
-
-	int			m_LightTag; // ZDoom compat
+	EDoorState  m_Status    { init };
+	line_t*     m_Line      { nullptr };
+	int         m_LightTag  { 0 }; // ZDoom compat
 
 protected:
 	friend bool	EV_DoDoor (DDoor::EVlDoor type, line_t *line, const AActor *thing,
@@ -877,26 +822,9 @@ protected:
 	friend void P_SpawnDoorRaiseIn5Mins (sector_t *sec);
 
 private:
-	DDoor ();
+	DDoor () = default;
 
 };
-
-inline FArchive &operator<< (FArchive &arc, DDoor::EVlDoor type)
-{
-	return arc << static_cast<byte>(type);
-}
-inline FArchive &operator>> (FArchive &arc, DDoor::EVlDoor &out)
-{
-	byte in; arc >> in; out = static_cast<DDoor::EVlDoor>(in); return arc;
-}
-inline FArchive &operator<< (FArchive &arc, DDoor::EDoorState state)
-{
-	return arc << static_cast<byte>(state);
-}
-inline FArchive &operator>> (FArchive &arc, DDoor::EDoorState &out)
-{
-	byte in; arc >> in; out = static_cast<DDoor::EDoorState>(in); return arc;
-}
 
 //
 // P_CEILNG
@@ -907,7 +835,7 @@ class DCeiling : public DMovingCeiling
 {
 	DECLARE_SERIAL (DCeiling, DMovingCeiling)
 public:
-	enum ECeilingState
+	enum ECeilingState : uint8_t
 	{
 		init = 0,
 		up,
@@ -918,7 +846,7 @@ public:
 		state_size
 	};
 
-	enum ECeiling
+	enum ECeiling : uint8_t
 	{
 		lowerToFloor,
 		raiseToHighest,
@@ -972,36 +900,36 @@ public:
 	void RunThink () override;
 	void PlayCeilingSound();
 
-	ECeiling	m_Type;
-	crushmode_e m_CrushMode;
-	fixed_t 	m_BottomHeight;
-	fixed_t 	m_TopHeight;
-	fixed_t 	m_Speed;
-	fixed_t		m_Speed1;		// [RH] dnspeed of crushers
-	fixed_t		m_Speed2;		// [RH] upspeed of crushers
-	int 		m_Crush;
-	int			m_Silent;
-	int 		m_Direction;	// 1 = up, 0 = waiting, -1 = down
+	ECeiling	m_Type          { 0xFF };
+	crushmode_e m_CrushMode     { crushDoom };
+	fixed_t 	m_BottomHeight  { 0 };
+	fixed_t 	m_TopHeight     { 0 };
+	fixed_t 	m_Speed         { 0 };
+	fixed_t		m_Speed1        { 0 };  // [RH] dnspeed of crushers
+	fixed_t		m_Speed2        { 0 };  // [RH] upspeed of crushers
+	int 		m_Crush         { 0 };
+	int			m_Silent        { 0 };
+	int 		m_Direction     { 0 };  // 1 = up, 0 = waiting, -1 = down
 
 	// [RH] Need these for BOOM-ish transferring ceilings
-	int			m_Texture;
-	short		m_NewSpecial;
-	uint32_t	m_NewFlags;
-	short		m_NewDamageRate;
-	byte		m_NewLeakRate;
-	byte		m_NewDmgInterval;
+	int			m_Texture       { 0 };
+	short		m_NewSpecial    { 0 };
+	uint32_t	m_NewFlags      { 0 };
+	short		m_NewDamageRate { 0 };
+	byte		m_NewLeakRate   { 0 };
+	byte		m_NewDmgInterval{ 0 };
 
 	// ID
-	int 		m_Tag;
-	int 		m_OldDirection;
+	int 		m_Tag           { 0 };
+	int 		m_OldDirection  { 0 };
 
-	ECeilingState m_Status;
+	ECeilingState m_Status { init };
 
 protected:
 
 
 private:
-	DCeiling ();
+	DCeiling () = default;
 
 	friend bool EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 		int tag, fixed_t speed, fixed_t speed2, fixed_t height,
@@ -1010,23 +938,6 @@ private:
 	friend bool P_ActivateInStasisCeiling (int tag);
 	friend bool EV_ZDoomCeilingCrushStop(int tag, bool remove);
 };
-
-inline FArchive &operator<< (FArchive &arc, DCeiling::ECeiling type)
-{
-	return arc << static_cast<byte>(type);
-}
-inline FArchive &operator>> (FArchive &arc, DCeiling::ECeiling &type)
-{
-	byte in; arc >> in; type = static_cast<DCeiling::ECeiling>(in); return arc;
-}
-inline FArchive &operator<< (FArchive &arc, DCeiling::ECeilingState state)
-{
-	return arc << static_cast<byte>(state);
-}
-inline FArchive &operator>> (FArchive &arc, DCeiling::ECeilingState &out)
-{
-	byte in; arc >> in; out = static_cast<DCeiling::ECeilingState>(in); return arc;
-}
 
 
 //
@@ -1037,7 +948,7 @@ class DFloor : public DMovingFloor
 {
 	DECLARE_SERIAL (DFloor, DMovingFloor)
 public:
-	enum EFloorState
+	enum EFloorState : uint8_t
 	{
 		init = 0,
 		up,
@@ -1048,7 +959,7 @@ public:
 		state_size
 	};
 
-	enum EFloor
+	enum EFloor : uint8_t
 	{
 		floorLowerToLowest,
 		floorLowerToNearest,
@@ -1112,31 +1023,31 @@ public:
 	void RunThink () override;
 	void PlayFloorSound();
 
-	EFloor	 	m_Type;
-	EFloorState	m_Status;
-	int 		m_Crush;
-	bool		m_HexenCrush;
-	int 		m_Direction;
-	short		m_NewSpecial;
-	uint32_t	m_NewFlags;
-	short		m_NewDamageRate;
-	byte		m_NewLeakRate;
-	byte		m_NewDmgInterval;
-	short		m_Texture;
-	fixed_t 	m_FloorDestHeight;
-	fixed_t 	m_Speed;
+	EFloor	 	m_Type           { 0xFF };     // Something invalid, so that if left defaulted, errors out, rather than silently fail.
+	EFloorState	m_Status         { init };
+	int 		m_Crush          { 0 };
+	bool		m_HexenCrush     { false };
+	int 		m_Direction      { 0 };
+	short		m_NewSpecial     { 0 };
+	uint32_t	m_NewFlags       { 0 };
+	short		m_NewDamageRate  { 0 };
+	byte		m_NewLeakRate    { 0 };
+	byte		m_NewDmgInterval { 0 };
+	short		m_Texture        { 0 };
+	fixed_t 	m_FloorDestHeight{ 0 };
+	fixed_t 	m_Speed          { 0 };;
 
 	// [RH] New parameters used to reset and delay stairs
-	int			m_ResetCount;
-	int			m_OrgHeight;
-	int			m_Delay;
-	int			m_PauseTime;
-	int			m_StepTime;
-	int			m_PerStepTime;
+	int			m_ResetCount    { 0 };
+	int			m_OrgHeight     { 0 };
+	int			m_Delay         { 0 };
+	int			m_PauseTime     { 0 };
+	int			m_StepTime      { 0 };
+	int			m_PerStepTime   { 0 };
 
-	fixed_t		m_Height;
-	line_t		*m_Line;
-	int			m_Change;
+	fixed_t		m_Height    { 0 };
+	line_t		*m_Line     { nullptr };
+	int			m_Change    { 0 };
 
 protected:
 	friend bool EV_BuildStairs (int tag, DFloor::EStair type, line_t *line,
@@ -1153,31 +1064,15 @@ protected:
 	                            bool hexencrush, bool hereticlower);
 
   private:
-	DFloor ();
+	DFloor () = default;
 };
 
-inline FArchive &operator<< (FArchive &arc, DFloor::EFloor type)
-{
-	return arc << static_cast<byte>(type);
-}
-inline FArchive &operator>> (FArchive &arc, DFloor::EFloor &type)
-{
-	byte in; arc >> in; type = static_cast<DFloor::EFloor>(in); return arc;
-}
-inline FArchive &operator<< (FArchive &arc, DFloor::EFloorState state)
-{
-	return arc << static_cast<byte>(state);
-}
-inline FArchive &operator>> (FArchive &arc, DFloor::EFloorState &out)
-{
-	byte in; arc >> in; out = static_cast<DFloor::EFloorState>(in); return arc;
-}
 
 class DElevator : public DMover
 {
 	DECLARE_SERIAL (DElevator, DMover)
 public:
-	enum EElevatorState
+	enum EElevatorState : uint8_t
 	{
 		init = 0,
 		finished,
@@ -1185,7 +1080,7 @@ public:
 		state_size
 	};
 
-	enum EElevator
+	enum EElevator : uint8_t
 	{
 		elevateUp,
 		elevateDown,
@@ -1202,13 +1097,13 @@ public:
 	void RunThink () override;
 	void PlayElevatorSound();
 
-	EElevator	m_Type;
-	int			m_Direction;
-	fixed_t		m_FloorDestHeight;
-	fixed_t		m_CeilingDestHeight;
-	fixed_t		m_Speed;
+	EElevator	m_Type              { 0xFF };
+	int			m_Direction         { 0 };
+	fixed_t		m_FloorDestHeight   { 0 };
+	fixed_t		m_CeilingDestHeight { 0 };
+	fixed_t		m_Speed             { 0 };
 
-	EElevatorState m_Status;
+	EElevatorState m_Status         { init };
 
 protected:
 	friend bool EV_DoElevator (line_t *line, DElevator::EElevator type, fixed_t speed,
@@ -1217,25 +1112,8 @@ protected:
 	                        fixed_t height, int tag);
 
 private:
-	DElevator ();
+	DElevator () = default;
 };
-
-inline FArchive &operator<< (FArchive &arc, DElevator::EElevator type)
-{
-	return arc << static_cast<byte>(type);
-}
-inline FArchive &operator>> (FArchive &arc, DElevator::EElevator &out)
-{
-	byte in; arc >> in; out = static_cast<DElevator::EElevator>(in); return arc;
-}
-inline FArchive &operator<< (FArchive &arc, DElevator::EElevatorState state)
-{
-	return arc << static_cast<byte>(state);
-}
-inline FArchive &operator>> (FArchive &arc, DElevator::EElevatorState &out)
-{
-	byte in; arc >> in; out = static_cast<DElevator::EElevatorState>(in); return arc;
-}
 
 // Waggle
 /*

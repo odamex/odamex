@@ -78,7 +78,6 @@ int 				messageLastMenuActive;
 bool				messageNeedsInput;
 
 void	(*messageRoutine)(int response);
-void	CL_SendUserInfo();
 void	M_ChangeTeam (int choice);
 team_t D_TeamByName (const char *team);
 gender_t D_GenderByName (const char *gender);
@@ -948,6 +947,9 @@ namespace
 {
 	void SetupEpisodeList()
 	{
+		if (EpiDef.lastOn >= episodenum)
+			EpiDef.lastOn = episodenum - 1;
+
 		for (int i = 0; i < episodenum; ++i)
 		{
 			if (EpisodeInfos[i].fulltext)
@@ -1102,7 +1104,7 @@ void M_ChooseSkill(int choice)
 		const char* must_confirm_text = SkillInfos[choice].must_confirm_text.c_str();
 
 		if (must_confirm_text[0] == '$')
-			M_StartMessage(GStrings(StdStringToUpper(must_confirm_text + 1)),
+			M_StartMessage(GStrings(OStringToUpper(must_confirm_text + 1)),
 		               M_VerifyNightmare, true);
 		else
 			M_StartMessage(must_confirm_text, M_VerifyNightmare, true);

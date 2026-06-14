@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2021 by Alex Mayfield.
+// Copyright (C) 2026 by Jim Thoenen.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//   Server message map.
+//  Utility for parsing messages out of the network buffer.
 //
 //-----------------------------------------------------------------------------
 
@@ -24,13 +24,28 @@
 
 #include "i_net.h"
 
+enum parseError_e
+{
+	PERR_OK,
+	PERR_UNKNOWN_HEADER,
+	PERR_UNKNOWN_MESSAGE,
+	PERR_BAD_DECODE
+};
+
 namespace google
 {
-namespace protobuf
-{
-class Descriptor;
+	namespace protobuf
+	{
+		class Message;
+	}
 }
-} // namespace google
 
-const google::protobuf::Descriptor* SVC_ResolveHeader(const byte header);
-svc_t SVC_ResolveDescriptor(const google::protobuf::Descriptor* desc);
+/**
+ * @brief Given a message type, read a message from the MSG_ socket and
+ *        return a decoded message in "out".
+ *
+ * @param out Output message - will not be modified unless successful.
+ * @param cmd Command to parse out.
+ * @return Error condition, or OK (0) if successful.
+ */
+parseError_e MSG_ParseMessage(google::protobuf::Message*& out, const msg_t cmd);

@@ -73,6 +73,7 @@ fixed_t boby;
 EXTERN_CVAR (r_drawplayersprites)
 EXTERN_CVAR (r_softinvulneffect)
 EXTERN_CVAR (r_particles)
+EXTERN_CVAR (r_drawnetcredibility)
 
 //
 // INITIALIZATION FUNCTIONS
@@ -557,7 +558,7 @@ void R_DrawHitBox(const AActor* thing)
 // R_ProjectSprite
 // Generates a vissprite for a thing if it might be visible.
 //
-void R_ProjectSprite(const AActor *thing, int fakeside)
+void R_ProjectSprite(AActor *thing, int fakeside)
 {
 	int 				lump;
 	unsigned int		rot;
@@ -703,6 +704,39 @@ void R_ProjectSprite(const AActor *thing, int fakeside)
 
 		vis->colormap = basecolormap.with(spritelights[index]);	// [RH] Use basecolormap
 	}
+
+	if (r_drawnetcredibility)
+	{
+		particle_t particle;
+		particle.x = vis->gx;
+		particle.y = vis->gy;
+		particle.z = vis->gzt;
+
+		particle.size   = 16;
+		particle.sprite = NO_PARTICLE;
+		particle.trans  = 0xFF;
+
+		// Color numbers sourced from https://doomwiki.org/wiki/PLAYPAL
+		switch (vis->mo->credibility.Get())
+		{
+			case CredibilityEnum::NOT_CREDIBLE:
+				particle.color = 175;           // Eye-blazing red.
+				break;
+			case CredibilityEnum::ALWAYS_CREDIBLE:
+				particle.color = 251;           // Nuclear hot magenta.
+				break;
+			case CredibilityEnum::FULLY_CREDIBLE:
+				particle.color = 195;           // Sky blue.
+				break;
+			case CredibilityEnum::SEMI_CREDIBLE:
+				particle.color = 228;           // Weathering yellow-beige.
+				break;
+			case CredibilityEnum::CHALLENGED_CREDIBILITY:
+				particle.color = 0;             // Pitch.
+				break;
+		}
+		R_ProjectParticle(&particle, sector, fakeside);
+	}
 }
 
 
@@ -733,7 +767,7 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 		spritelights = scalelight[lightnum];
 
 	// Handle all things in sector.
-	for (const AActor* thing = sec->thinglist; thing; thing = thing->snext)
+	for (AActor* thing = sec->thinglist; thing; thing = thing->snext)
 	{
 		R_ProjectSprite (thing, fakeside);
 	}
@@ -928,26 +962,26 @@ void R_Add3DHUDSprite(int lump, v3fixed_t pos, translationref_t translation, flo
 //
 // R_DrawPSprite
 //
-void R_DrawPSprite(pspdef_t* psp, unsigned flags)
+void R_DrawPSprite(const pspdef_t& psp, unsigned flags)
 {
 	vissprite_t 		avis;
 
 	// decide which patch to use
-	auto it = sprites.find(psp->state->sprite);
+	auto it = sprites.find(psp.state->sprite);
 #ifdef RANGECHECK
 	if (it == sprites.end()) {
-		DPrintFmt("R_DrawPSprite: invalid sprite number {}\n", psp->state->sprite);
+		DPrintFmt("R_DrawPSprite: invalid sprite number {}\n", psp.state->sprite);
 		return;
 	}
 #endif
 	const spritedef_t* sprdef = &it->second;
 #ifdef RANGECHECK
-	if ( (psp->state->frame & FF_FRAMEMASK) >= sprdef->numframes) {
-		DPrintFmt("R_DrawPSprite: invalid sprite frame {} : {}\n", psp->state->sprite, psp->state->frame);
+	if ( (psp.state->frame & FF_FRAMEMASK) >= sprdef->numframes) {
+		DPrintFmt("R_DrawPSprite: invalid sprite frame {} : {}\n", psp.state->sprite, psp.state->frame);
 		return;
 	}
 #endif
-	const spriteframe_t* sprframe = &sprdef->spriteframes[ psp->state->frame & FF_FRAMEMASK ];
+	const spriteframe_t* sprframe = &sprdef->spriteframes[ psp.state->frame & FF_FRAMEMASK ];
 
 	const int32_t lump = sprframe->lump[0];
 	const bool flip = sprframe->flip[0];
@@ -1019,7 +1053,7 @@ void R_DrawPSprite(pspdef_t* psp, unsigned flags)
 		// fixed color
 		vis->colormap = fixedcolormap;
 	}
-	else if (psp->state->frame & FF_FULLBRIGHT)
+	else if (psp.state->frame & FF_FULLBRIGHT)
 	{
 		// full bright
 		vis->colormap = basecolormap;	// [RH] use basecolormap
@@ -1096,19 +1130,15 @@ void R_DrawPlayerSprites()
 	mceilingclip = negonearray;
 
 	{
-		int i;
-		pspdef_t* psp;
 		int centerhack = centery;
 
 		centery = (viewheight >> 1) + 1;	// Ch0wW : Fix for the weapon sprite's offset.
 		centeryfrac = centery << FRACBITS;
 
 		// add all active psprites
-		for (i=0, psp=camera->player->psprites;
-			 i<NUMPSPRITES;
-			 i++,psp++)
+		for (const auto& psp : camera->player->psprites)
 		{
-			if (psp->state)
+			if (psp.state)
 				R_DrawPSprite (psp, 0);
 		}
 
@@ -1293,7 +1323,7 @@ void R_DrawSprite (vissprite_t *spr)
 }
 
 
-
+vissprite_t* closestNonCredibleVisSprite;
 
 //
 // R_DrawMasked
@@ -1304,11 +1334,18 @@ void R_DrawMasked (void)
 	
 	R_SortVisSprites ();
 
-	for (auto vis : OUtil::reverse(spritesorter))
+	closestNonCredibleVisSprite = nullptr;
+
+	for (auto& vis : OUtil::reverse(spritesorter))
 	{
 		if (BITFLAG_TEST(vis->visflags, VSF_FOREGROUND))
 			continue;
 		R_DrawSprite(vis);
+
+        if (vis->mo and vis->mo->credibility.Get() == CredibilityEnum::NOT_CREDIBLE and (vis->mo->flags & MF_CORPSE) == 0)
+        {
+            closestNonCredibleVisSprite = vis;
+        }
 	}
 
 	// render any remaining masked mid textures

@@ -448,6 +448,10 @@ CVAR(cl_showsprees, "1", "Show killing sprees for the display player.", CVARTYPE
 
 CVAR(cl_showmultikills, "1", "Show multi kills for the display player.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(cl_showofflinesprees, "0", "Show killing sprees during single player games and vanilla demo playback. Netdemos are unaffected. Does not supercede cl_showsprees.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(cl_showofflinemultikills, "0", "Show multi kills during single player games and vanilla demo playback. Netdemos are unaffected. Does not supercede cl_showmultikills", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 // Netdemo Preferences
 // --------------------
 
@@ -572,8 +576,8 @@ CVAR(			hud_scale, "1", "HUD scaling",
 CVAR(			hud_scalescoreboard, "0", "Scoreboard scaling",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_RANGE(		hud_scaletext, "2", "Scaling multiplier for chat and midprint",
-                CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 4.0f)
+CVAR_RANGE(		hud_scaletext, "2", "Scaling multiplier for chat and midprint (0 = auto).",
+                CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
 
 CVAR_RANGE(		hud_targetcount, "2", "Number of players to reveal",
                 CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 32.0f)
@@ -792,11 +796,14 @@ CVAR(			r_flashhom, "0", "Draws flashing colors where there is HOM",
 CVAR(			r_drawflat, "0", "Disables all texturing of walls, floors and ceilings",
 				CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR(			r_clipmaskedspecial, "1", "Vertically clip masked midtextures when surrounding sectors have differing specials (mimics Hexen and DSDA-Doom behavior)",
+CVAR(			r_clipmaskedspecial, "0", "Vertically clip masked midtextures when surrounding sectors have differing specials (mimics Hexen and DSDA-Doom behavior)",
 				CVARTYPE_BOOL, CVAR_NULL)
 
 CVAR(			r_thingsectorlight, "0", "Things are lit according to the average of the transfered light levels (mimics MBF behavior)",
 				CVARTYPE_BOOL, CVAR_NULL)
+
+CVAR(           r_drawnetcredibility, "0", "Add a particle to each actor indicating how credible the client considers the actor's position",
+                CVARTYPE_BOOL, CVAR_NULL)
 
 #if 0
 CVAR(			r_drawhitboxes, "0", "Draws a box outlining every actor's hitboxes",

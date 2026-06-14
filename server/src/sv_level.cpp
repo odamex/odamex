@@ -420,7 +420,7 @@ void G_DoNewGame()
 		if (G_IsTeamGame())
 			SV_CheckTeam(player);
 		else
-			memcpy(player.userinfo.color, player.prefcolor, 4);
+			player.userinfo.color = player.prefcolor;
 
 		SV_ClientFullUpdate(player);
 	}

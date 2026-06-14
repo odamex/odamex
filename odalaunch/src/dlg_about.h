@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __DLG_ABOUT_H__
-#define __DLG_ABOUT_H__
+#pragma once
 
 #include "odalaunch.h"
 
@@ -48,5 +47,3 @@ private:
 
 	DECLARE_EVENT_TABLE()
 };
-
-#endif // __DLG_ABOUT_H__

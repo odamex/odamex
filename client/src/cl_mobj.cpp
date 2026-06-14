@@ -81,6 +81,8 @@ void P_SpawnPlayer(player_t& player, const mapthing2_t& mthing)
 //		mobj = new AActor(mthing->x << FRACBITS, mthing->y << FRACBITS, ONFLOORZ, MT_PLAYER);
 	mobj = new AActor(mthing.x << FRACBITS, mthing.y << FRACBITS, ONFLOORZ, MT_PLAYER);
 
+	mobj->credibility.Lionize();
+
 	// set color translations for player sprites
 	// [RH] Different now: MF_TRANSLATION is not used.
 	mobj->translation = translationref_t(translationtables + 256 * player.id, player.id);
