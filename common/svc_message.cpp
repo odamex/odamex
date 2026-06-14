@@ -478,11 +478,10 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 		cur->set_flags2(mo->flags2);
 	}
 
-	// odamex flags - only monster flags for now
-	if (mo->oflags & hordeBossModMask)
+	if (mo->oflags)
 	{
 		spawnFlags |= SVC_SM_OFLAGS;
-		cur->set_oflags(mo->oflags & hordeBossModMask);
+		cur->set_oflags(mo->oflags);
 	}
 
 	// animating corpses

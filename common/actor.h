@@ -234,7 +234,7 @@ enum mobjflag_t
 
 	// --- mobj.oflags ---
 	// Odamex-specific flags
-	MFO_NOSNAPZ			= BIT(0),	// ignore snapshot z this tic
+	MFO_NOSNAPZ			= BIT(0),	// [clientside only] ignore snapshot z this tic
 	MFO_HEALTHPOOL		= BIT(1),	// global health pool that tracks killed HP
 	MFO_INFIGHTINVUL	= BIT(2),	// invulnerable to infighting
 	MFO_UNFLINCHING		= BIT(3),	// monster flinching reduced to 1 in 256
@@ -250,7 +250,8 @@ enum mobjflag_t
 	// MFO_STEALTH			= BIT(13),	// Andy Baker's stealth monsters
 	MFO_ISONCONVEYOR    = BIT(14),  // Mobj is in motion due to being carried by a sector
 
-	MFO_MOVESLIKEAMONSTER = BIT(15),
+	MFO_MOVESLIKEAMONSTER = BIT(15),    // Mobj has been updated through monster movement routines
+	MFO_ISHORDEBOSS       = BIT(16),    // Mobj is a horde boss
 };
 
 //
