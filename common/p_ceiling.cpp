@@ -862,57 +862,19 @@ bool EV_DoCeiling (DCeiling::ECeiling type, line_t *line,
 				   int tag, fixed_t speed, fixed_t speed2, fixed_t height,
 				   bool crush, int silent, int change)
 {
-	int 		secnum;
-	bool 		rtn;
-	sector_t*	sec;
-	DCeiling*	ceiling;
-	bool		manual = false;
-	fixed_t		targheight = 0;
+	fixed_t	targheight = 0;
 
-	rtn = false;
-
-	// check if a manual trigger, if so do just the sector on the backside
-	//
-	if (co_boomphys && tag == 0)
+	const auto helper = [&](sector_t* sec) -> bool
 	{
-		if (!line || !(sec = line->backsector))
-			return rtn;
-		secnum = sec-sectors;
-		manual = true;
-		// [RH] Hack to let manual crushers be retriggerable, too
-		tag ^= secnum | 0x1000000;
-		rtn |= P_ActivateInStasisCeiling (tag);
-		goto manual_ceiling;
-	}
-
-	//	Reactivate in-stasis ceilings...for certain types.
-	// This restarts a crusher after it has been stopped
-	if (type == DCeiling::crushAndRaise)
-	{
-		rtn |= P_ActivateInStasisCeiling (tag);
-	}
-
-	secnum = -1;
-	// affects all sectors with the same tag as the linedef
-	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
-	{
-		sec = &sectors[secnum];
-manual_ceiling:
 		// if ceiling already moving, don't start a second function on it
 		if (sec->ceilingdata)
-		{
-			if (co_boomphys && manual)
-				return false;
-			else
-				continue;
-		}
+			return false;
 
-		fixed_t ceilingheight = P_CeilingHeight(sec);
-		fixed_t floorheight = P_FloorHeight(sec);
+		const fixed_t ceilingheight = P_CeilingHeight(sec);
+		const fixed_t floorheight = P_FloorHeight(sec);
 
 		// new door thinker
-		rtn = 1;
-		ceiling = new DCeiling (sec, speed, speed2, silent);
+		DCeiling* ceiling = new DCeiling (sec, speed, speed2, silent);
 		P_AddMovingCeiling(sec);
 
 		switch (type)
@@ -1095,8 +1057,38 @@ manual_ceiling:
 
 		ceiling->PlayCeilingSound ();
 
-		if (manual)
-			return rtn;
+		return true;
+	};
+
+	bool rtn = false;
+	int	secnum = -1;
+
+	// check if a manual trigger, if so do just the sector on the backside
+	//
+	if (co_boomphys && tag == 0)
+	{
+		sector_t* sec = line->backsector;
+		if (!line || !sec)
+			return false;
+
+		secnum = sec - sectors;
+		// [RH] Hack to let manual crushers be retriggerable, too
+		tag ^= secnum | 0x1000000;
+		rtn = P_ActivateInStasisCeiling(tag);
+		return helper(sec) || rtn;
+	}
+
+	//	Reactivate in-stasis ceilings...for certain types.
+	// This restarts a crusher after it has been stopped
+	if (type == DCeiling::crushAndRaise)
+	{
+		rtn |= P_ActivateInStasisCeiling (tag);
+	}
+
+	// affects all sectors with the same tag as the linedef
+	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
+	{
+		rtn |= helper(&sectors[secnum]);
 	}
 	return rtn;
 }
@@ -1114,57 +1106,45 @@ manual_ceiling:
 //
 bool EV_DoGenCeiling(line_t& line)
 {
-	int secnum;
-	bool rtn;
-	bool manual;
-	sector_t* sec;
-	unsigned value = (unsigned)line.special - GenCeilingBase;
+	const uint32_t value = static_cast<uint32_t>(line.special) - GenCeilingBase;
 
 	// parse the bit fields in the line's special type
 
-	int Crsh = (value & CeilingCrush) >> CeilingCrushShift;
-	int ChgT = (value & CeilingChange) >> CeilingChangeShift;
-	int Targ = (value & CeilingTarget) >> CeilingTargetShift;
-	int Dirn = (value & CeilingDirection) >> CeilingDirectionShift;
-	int ChgM = (value & CeilingModel) >> CeilingModelShift;
-	int Sped = (value & CeilingSpeed) >> CeilingSpeedShift;
-	int Trig = (value & TriggerType) >> TriggerTypeShift;
+	const int Crsh = (value & CeilingCrush) >> CeilingCrushShift;
+	const int ChgT = (value & CeilingChange) >> CeilingChangeShift;
+	const int Targ = (value & CeilingTarget) >> CeilingTargetShift;
+	const int Dirn = (value & CeilingDirection) >> CeilingDirectionShift;
+	const int ChgM = (value & CeilingModel) >> CeilingModelShift;
+	const int Sped = (value & CeilingSpeed) >> CeilingSpeedShift;
+	const int Trig = (value & TriggerType) >> TriggerTypeShift;
 
-	rtn = false;
+	const auto helper = [&](sector_t* sec) -> bool
+	{
+		// Do not start another function if ceiling already moving
+		if (sec->ceilingdata) // jff 2/22/98
+			return false;
+
+		// new ceiling thinker
+		new DCeiling(sec, &line, Sped, Targ, Crsh, ChgT, Dirn, ChgM);
+		P_AddMovingCeiling(sec); // add this ceiling to the active list
+		return true;
+	};
 
 	// check if a manual trigger, if so do just the sector on the backside
-	manual = false;
 	if (Trig == PushOnce || Trig == PushMany)
 	{
-		if (!(sec = line.backsector))
-			return rtn;
-		secnum = sec - sectors;
-		manual = true;
-		goto manual_genceiling;
+		if (!line.backsector)
+			return false;
+
+		return helper(line.backsector);
 	}
 
-	secnum = -1;
+	bool rtn = false;
+	int secnum = -1;
 	// if not manual do all sectors tagged the same as the line
 	while ((secnum = P_FindSectorFromLineTag(&line, secnum)) >= 0)
 	{
-	manual_genceiling:
-		sec = &sectors[secnum];
-		// Do not start another function if ceiling already moving
-		if (sec->ceilingdata) // jff 2/22/98
-		{
-			if (!manual)
-				continue;
-			else
-				return rtn;
-		}
-
-		// new ceiling thinker
-		rtn = true;
-
-		new DCeiling(sec, &line, Sped, Targ, Crsh, ChgT, Dirn, ChgM);
-		P_AddMovingCeiling(sec); // add this ceiling to the active list
-		if (manual)
-			return rtn;
+		rtn |= helper(&sectors[secnum]);
 	}
 	return rtn;
 }
@@ -1182,55 +1162,43 @@ bool EV_DoGenCeiling(line_t& line)
 //
 bool EV_DoGenCrusher(line_t& line)
 {
-	int secnum;
-	bool rtn;
-	bool manual;
-	sector_t* sec;
-	unsigned value = (unsigned)line.special - GenCrusherBase;
+	const uint32_t value = static_cast<unsigned>(line.special) - GenCrusherBase;
 
 	// parse the bit fields in the line's special type
 
-	int Slnt = (value & CrusherSilent) >> CrusherSilentShift;
-	int Sped = (value & CrusherSpeed) >> CrusherSpeedShift;
-	int Trig = (value & TriggerType) >> TriggerTypeShift;
+	const int Slnt = (value & CrusherSilent) >> CrusherSilentShift;
+	const int Sped = (value & CrusherSpeed) >> CrusherSpeedShift;
+	const int Trig = (value & TriggerType) >> TriggerTypeShift;
 
-	rtn = false;
+	const auto helper = [&](sector_t* sec) -> bool
+	{
+		// Do not start another function if ceiling already moving
+		if (sec->ceilingdata) // jff 2/22/98
+			return false;
+
+		// new ceiling thinker
+		new DCeiling(sec, &line, Slnt, Sped);
+		P_AddMovingCeiling(sec); // add this ceiling to the active list
+		return true;
+	};
 
 	P_ActivateInStasisCeiling(line.id);
 
 	// check if a manual trigger, if so do just the sector on the backside
-	manual = false;
 	if (Trig == PushOnce || Trig == PushMany)
 	{
-		if (!(sec = line.backsector))
-			return rtn;
-		secnum = sec - sectors;
-		manual = true;
-		goto manual_gencrusher;
+		if (!line.backsector)
+			return false;
+
+		return helper(line.backsector);
 	}
 
-	secnum = -1;
+	bool rtn = false;
+	int secnum = -1;
 	// if not manual do all sectors tagged the same as the line
 	while ((secnum = P_FindSectorFromLineTag(&line, secnum)) >= 0)
 	{
-	manual_gencrusher:
-		sec = &sectors[secnum];
-		// Do not start another function if ceiling already moving
-		if (sec->ceilingdata) // jff 2/22/98
-		{
-			if (!manual)
-				continue;
-			else
-				return rtn;
-		}
-
-		// new ceiling thinker
-		rtn = true;
-
-		new DCeiling(sec, &line, Slnt, Sped);
-		P_AddMovingCeiling(sec); // add this ceiling to the active list
-		if (manual)
-			return rtn;
+		rtn |= helper(&sectors[secnum]);
 	}
 	return rtn;
 }
