@@ -1633,7 +1633,7 @@ void A_Chase (AActor *actor)
 
 	// If this thing ever waddles about like a monster, we want the netcode to keep it
 	// up to date like any monster.
-	actor->oflags |= MFO_MOVES_LIKE_A_MONSTER;
+	actor->oflags |= MFO_MOVESLIKEAMONSTER;
 
 	// GhostlyDeath -- Don't chase spectators at all
 	if (actor->target && actor->target->player && actor->target->player->spectator)

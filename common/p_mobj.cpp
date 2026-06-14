@@ -605,7 +605,7 @@ void P_MoveActor(AActor *mo)
     BlockingMobj = NULL;
 
 	P_XYMovement(mo);
-	mo->oflags &= ~MFO_IS_ON_CONVEYOR;      // Clear the flag - it will be set again if still on conveyor.
+	mo->oflags &= ~MFO_ISONCONVEYOR;      // Clear the flag - it will be set again if still on conveyor.
 
 	if (mo->ObjectFlags & OF_Destroyed)
 		return;		// actor was destroyed
@@ -1426,7 +1426,7 @@ static void P_ApplyXYFriction(AActor* mo)
 	const bool isRealPlayer             = isPlayer and not isVoodoo;
 	const bool isUserCommandingMotion   = mo->player and (mo->player->cmd.forwardmove != 0 or
 	                                                      mo->player->cmd.sidemove != 0);
-    const bool isOnConveyor             = mo->oflags & MFO_IS_ON_CONVEYOR;
+    const bool isOnConveyor             = mo->oflags & MFO_ISONCONVEYOR;
     const bool isSuperSlowVoodoo        = isVoodoo and co_voodooscroller;
 
     const bool keepInMotion = (isOnConveyor and not isSuperSlowVoodoo)
