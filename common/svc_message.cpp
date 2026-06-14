@@ -459,14 +459,10 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	//
 	if (mo->spawnTic == gametic)
 	{
-		if (mo->state->statenum != mo->info->spawnstate)
-		{
-			cur->set_statenum(mo->info->spawnstate);
-		}
-		if (mo->rndindex != mo->spawnRndindex)
-		{
-			cur->set_rndindex(mo->spawnRndindex);
-		}
+		// The following could and, in most cases, usually do just set the same value again.  It's
+		// those cases where they AREN'T the same value that we're really after here.
+		cur->set_statenum(mo->info->spawnstate);
+		cur->set_rndindex(mo->spawnRndindex);
 	}
 
 	if (mo->type == MT_FOUNTAIN)
