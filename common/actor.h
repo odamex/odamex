@@ -234,24 +234,23 @@ enum mobjflag_t
 
 	// --- mobj.oflags ---
 	// Odamex-specific flags
-	MFO_NOSNAPZ			= BIT(0),	// [clientside only] ignore snapshot z this tic
-	MFO_HEALTHPOOL		= BIT(1),	// global health pool that tracks killed HP
-	MFO_INFIGHTINVUL	= BIT(2),	// invulnerable to infighting
-	MFO_UNFLINCHING		= BIT(3),	// monster flinching reduced to 1 in 256
-	MFO_ARMOR			= BIT(4),	// damage taken by monster is reduced
-	MFO_QUICK			= BIT(5),	// speed of monster is increased
-	MFO_NORAISE			= BIT(6),	// vile can't raise corpse
-	MFO_BOSSPOOL		= BIT(7),	// boss health pool that tracks damage
-	MFO_FULLBRIGHT		= BIT(8),	// monster is fullbright
-	MFO_SPECTATOR		= BIT(9),	// GhostlyDeath -- thing is/was a spectator and can't be seen!
-	MFO_FALLING			= BIT(10),	// [INTERNAL] for falling
-	MFO_ARMED			= BIT(11),	// [INTERNAL] for TOUCHY (object is armed)
-	MFO_LINEDONE 		= BIT(12),  // [INTERNAL] for A_LineEffect, line special already done
-	// MFO_STEALTH			= BIT(13),	// Andy Baker's stealth monsters
+	MFO_NOSNAPZ         = BIT(0),   // [clientside only] ignore snapshot z this tic
+	MFO_HEALTHPOOL      = BIT(1),   // global health pool that tracks killed HP
+	MFO_INFIGHTINVUL    = BIT(2),   // invulnerable to infighting
+	MFO_UNFLINCHING     = BIT(3),   // monster flinching reduced to 1 in 256
+	MFO_ARMOR           = BIT(4),   // damage taken by monster is reduced
+	MFO_QUICK           = BIT(5),   // speed of monster is increased
+	MFO_NORAISE         = BIT(6),   // vile can't raise corpse
+	MFO_ISHORDEBOSS     = BIT(7),   // Is a horde boss?  Implies that damage subtracts from boss health pool
+	MFO_FULLBRIGHT      = BIT(8),   // monster is fullbright
+	MFO_SPECTATOR       = BIT(9),   // GhostlyDeath -- thing is/was a spectator and can't be seen!
+	MFO_FALLING         = BIT(10),  // [INTERNAL] for falling
+	MFO_ARMED           = BIT(11),  // [INTERNAL] for TOUCHY (object is armed)
+	MFO_LINEDONE        = BIT(12),  // [INTERNAL] for A_LineEffect, line special already done
+	// MFO_STEALTH          = BIT(13),  // Andy Baker's stealth monsters
 	MFO_ISONCONVEYOR    = BIT(14),  // Mobj is in motion due to being carried by a sector
 
 	MFO_MOVESLIKEAMONSTER = BIT(15),    // Mobj has been updated through monster movement routines
-	MFO_ISHORDEBOSS       = BIT(16),    // Mobj is a horde boss
 };
 
 //

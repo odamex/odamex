@@ -3252,7 +3252,7 @@ CLIENT_ONLY(
 		}
 
 		if (other->player || !(other->flags & MF_FRIEND) ||
-		    (other->oflags & MFO_BOSSPOOL))
+		    (other->oflags & MFO_ISHORDEBOSS))
 			continue;
 
 		if (validplayer(displayplayer()) && displayplayer().mo &&
@@ -3283,7 +3283,7 @@ CLIENT_ONLY(
 	}
 
 	if (mo->player || !(mo->flags & MF_FRIEND) ||
-	    (mo->oflags & MFO_BOSSPOOL))
+	    (mo->oflags & MFO_ISHORDEBOSS))
 		return;
 
 	if (validplayer(displayplayer()) && displayplayer().mo &&

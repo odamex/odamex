@@ -2538,7 +2538,7 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
     an = P_PointToAngle (source->x, source->y, dest_x, dest_y);
 
 	// Horde boss? Make their projectiles look bossy
-	if (source->oflags & MFO_BOSSPOOL)
+	if (source->oflags & MFO_ISHORDEBOSS)
 	{
 		th->oflags |= MFO_FULLBRIGHT;
 		th->effects |= FX_YELLOWFOUNTAIN;
