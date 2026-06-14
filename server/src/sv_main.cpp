@@ -3195,7 +3195,7 @@ void SV_UpdateMonsters(player_t& player, AActor *mo)
 		return;
 
 
-	const bool isAMonster = mo->oflags & MFO_MOVES_LIKE_A_MONSTER
+	const bool isAMonster = mo->oflags & MFO_MOVESLIKEAMONSTER
 	                        or mo->flags & MF_COUNTKILL
 	                        or mo->type == MT_SKULL;
 

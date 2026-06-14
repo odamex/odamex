@@ -589,9 +589,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	}
 
 	// Light up the projectile if it came from a horde boss
-	// This is a hack because oflags are a hack.
-	if (mo->flags & MF_MISSILE && mo->target && mo->target->oflags &&
-	    (mo->target->oflags & hordeBossModMask))
+	if (mo->flags & MF_MISSILE && mo->target && (mo->target->oflags & MFO_ISHORDEBOSS))
 	{
 		mo->oflags |= MFO_FULLBRIGHT;
 		mo->effects |= FX_YELLOWFOUNTAIN;
@@ -741,8 +739,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	{
 		mo->oflags = msg->current().oflags();
 
-		// [AM] HACK! Assume that any monster with a flag is a boss.
-		if (mo->oflags & hordeBossModMask)
+		if (mo->oflags & MFO_ISHORDEBOSS)
 		{
 			mo->effects = FX_YELLOWFOUNTAIN;
 			mo->translation = translationref_t(&::bosstable[0]);
@@ -772,7 +769,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->flags |= MF_CORPSE | MF_DROPOFF;
 		mo->height >>= 2;
 		mo->flags &= ~MF_SOLID;
-		if (mo->oflags & hordeBossModMask)
+		if (mo->oflags & MFO_ISHORDEBOSS)
 		{
 			mo->effects = 0; // Remove sparkles from boss corpses
 		}
