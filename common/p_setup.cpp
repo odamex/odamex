@@ -989,6 +989,7 @@ void P_AdjustLine (line_t *ld)
 		ld->bbox[BOXTOP] = v1->y;
 	}
 
+	// TODO: should this all get moved into map_format.post_process_linedef_special?
 	if (map_format.getZDoom())
 	{
 		// [RH] Set line id (as appropriate) here
@@ -1098,8 +1099,16 @@ void P_FinishLoadingLineDefs (void)
 
 	for (int i = numlines, linenum = 0; i--; ld++, linenum++)
 	{
-		ld->frontsector = ld->sidenum[0]!=R_NOSIDE ? sides[ld->sidenum[0]].sector : 0;
-		ld->backsector  = ld->sidenum[1]!=R_NOSIDE ? sides[ld->sidenum[1]].sector : 0;
+		// Substitute sidedef 0 if the front is missing
+		if (ld->sidenum[0] == R_NOSIDE)
+			ld->sidenum[0] = 0;
+
+		// Clear 2s flag for missing back side
+		if (ld->sidenum[1] == R_NOSIDE && !demoplayback)
+			ld->flags &= ~ML_TWOSIDED;
+
+		ld->frontsector = sides[ld->sidenum[0]].sector;
+		ld->backsector  = ld->sidenum[1]!=R_NOSIDE ? sides[ld->sidenum[1]].sector : nullptr;
 		if (ld->sidenum[0] != R_NOSIDE)
 			sides[ld->sidenum[0]].linenum = linenum;
 		if (ld->sidenum[1] != R_NOSIDE)
