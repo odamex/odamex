@@ -987,6 +987,7 @@ bool EV_DoGenFloor(line_t& line)
 	const int Sped = (value & FloorSpeed) >> FloorSpeedShift;
 	const int Trig = (value & TriggerType) >> TriggerTypeShift;
 
+	// TODO EB-MOVE: i think this one accidentally remove a co_boomphys thing
 	const auto helper = [&](sector_t* sec) -> bool
 	{
 		// ALREADY MOVING?	IF SO, KEEP GOING...

@@ -491,54 +491,13 @@ DPlat* DPlat::Clone(sector_t* sec) const
 bool EV_DoPlat (int tag, line_t *line, DPlat::EPlatType type, fixed_t height,
 				int speed, int delay, fixed_t lip, int change)
 {
-	DPlat *plat;
-	int secnum;
-	sector_t *sec;
-	int rtn = false;
-	bool manual = false;
-
-	// [RH] If tag is zero, use the sector on the back side
-	//		of the activating line (if any).
-	if (co_boomphys && tag == 0)
+	const auto helper = [&](sector_t* sec, int secnum) -> bool
 	{
-		if (!line || !(sec = line->backsector))
-			return false;
-		secnum = sec - sectors;
-		manual = true;
-		goto manual_plat;
-	}
-
-	//	Activate all <type> plats that are in_stasis
-	switch (type)
-	{
-	case DPlat::platToggle:
-		rtn = true;
-		[[fallthrough]];
-	case DPlat::platPerpetualRaise:
-		P_ActivateInStasis (tag);
-		break;
-
-	default:
-		break;
-	}
-
-	secnum = -1;
-	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
-	{
-		sec = &sectors[secnum];
-
-manual_plat:
 		if (sec->floordata)
-		{
-			if (co_boomphys && manual)
-				return false;
-			else
-				continue;
-		}
+			return false;
 
 		// Find lowest & highest floors around sector
-		rtn = true;
-		plat = new DPlat(sec,type, height, speed, delay, lip);
+		DPlat* plat = new DPlat(sec,type, height, speed, delay, lip);
 		P_AddMovingFloor(sec);
 
 		plat->m_Tag = tag;
@@ -553,63 +512,86 @@ manual_plat:
 				SV_BroadcastSector(secnum);
 		}
 
-		if (manual)
-			return rtn;
+		return true;
+	};
+
+	// [RH] If tag is zero, use the sector on the back side
+	//		of the activating line (if any).
+	if (co_boomphys && tag == 0)
+	{
+		sector_t* sec;
+		if (!line || !(sec = line->backsector))
+			return false;
+
+		return helper(sec, sec - sectors);
+	}
+
+	bool rtn = false;
+
+	//	Activate all <type> plats that are in_stasis
+	switch (type)
+	{
+	case DPlat::platToggle:
+		rtn = true;
+		[[fallthrough]];
+	case DPlat::platPerpetualRaise:
+		P_ActivateInStasis(tag);
+		break;
+
+	default:
+		break;
+	}
+
+	int secnum = -1;
+	while ((secnum = P_FindSectorFromTag(tag, secnum)) >= 0)
+	{
+		rtn |= helper(&sectors[secnum], secnum);
 	}
 	return rtn;
 }
 
 bool EV_DoGenLift(line_t& line)
 {
-	DPlat* plat;
-	int secnum;
-	sector_t* sec;
-	bool rtn = false;
-	bool manual = false;
-	unsigned value = (unsigned)line.special - GenLiftBase;
+	const uint32_t value = static_cast<uint32_t>(line.special) - GenLiftBase;
 
-    int Targ = (value & LiftTarget) >> LiftTargetShift;
-	int Dely = (value & LiftDelay) >> LiftDelayShift;
-	int Sped = (value & LiftSpeed) >> LiftSpeedShift;
-	int Trig = (value & TriggerType) >> TriggerTypeShift;
+    const int Targ = (value & LiftTarget) >> LiftTargetShift;
+	const int Dely = (value & LiftDelay) >> LiftDelayShift;
+	const int Sped = (value & LiftSpeed) >> LiftSpeedShift;
+	const int Trig = (value & TriggerType) >> TriggerTypeShift;
 
-	 // Activate all <type> plats that are in_stasis
-
-	if (Targ == LnF2HnF)
-		P_ActivateInStasis(line.id);
-
-	if (Trig == PushOnce || Trig == PushMany)
+	// TODO EB-MOVE: i think this one accidentally remove a co_boomphys thing
+	const auto helper = [&](sector_t* sec) -> bool
 	{
-		if (!(sec = line.backsector))
-			return false;
-		secnum = sec - sectors;
-		manual = true;
-		goto manual_genplat;
-	}
-
-	secnum = -1;
-	while ((secnum = P_FindSectorFromTagOrLine(line.id, &line, secnum)) >= 0)
-	{
-	manual_genplat:
-		sec = &sectors[secnum];
 		if (sec->floordata)
-		{
-			if (co_boomphys && manual)
-				return false;
-			else
-				continue;
-		}
+			return false;
 
 		// Find lowest & highest floors around sector
-		rtn = true;
-		plat = new DPlat(sec, Targ, Dely, Sped, Trig);
+		DPlat* plat = new DPlat(sec, Targ, Dely, Sped, Trig);
 
 		plat->m_Tag = line.id;
 
 		P_AddMovingFloor(sec);
 
-		if (manual)
-			return rtn;
+		return true;
+	};
+
+	// Activate all <type> plats that are in_stasis
+	if (Targ == LnF2HnF)
+		P_ActivateInStasis(line.id);
+
+	if (Trig == PushOnce || Trig == PushMany)
+	{
+		if (!line.backsector)
+			return false;
+
+		return helper(line.backsector);
+	}
+
+	bool rtn = false;
+	int secnum = -1;
+	while ((secnum = P_FindSectorFromTagOrLine(line.id, &line, secnum)) >= 0)
+	{
+		rtn |= helper(&sectors[secnum]);
 	}
 	return rtn;
 }
