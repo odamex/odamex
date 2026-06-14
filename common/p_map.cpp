@@ -208,6 +208,8 @@ bool P_TeleportMove (AActor *thing, fixed_t x, fixed_t y, fixed_t z, bool telefr
 	tmy = y;
 	tmz = z;
 
+	// Because voodoo dolls have legit pointers to players, we want to make sure that
+	// we don't accidentally mess up real players' cameras when one teleports.
 	if (!P_IsVoodooDoll(thing))
 	{
 		player_t* player = thing->player;

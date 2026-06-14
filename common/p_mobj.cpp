@@ -404,7 +404,12 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 
 bool P_IsVoodooDoll(const AActor* mo)
 {
-	return mo->type == MT_AVATAR or (mo->player and mo->player->mo != mo);
+	return mo->player and mo->player->mo != mo;
+}
+
+static bool P_IsVoodooDollOrAvatar(const AActor* mo)
+{
+	return mo->type == MT_AVATAR or P_IsVoodooDoll(mo);
 }
 
 //
@@ -773,8 +778,8 @@ void AActor::RunThink ()
 	prevy = y;
 	prevz = z;
 
-	if (!player || P_IsVoodooDoll(this))
-	{
+	if (!player || P_IsVoodooDoll(this))    // True voodoo dolls have non-null player pointers, but we still want
+	{                                       // to update the dolls' previous angles, so check for that.
 		prevangle = angle;
 		prevpitch = pitch;
 	}
@@ -1422,18 +1427,18 @@ static void P_ApplyXYFriction(AActor* mo)
 	}
 
 	const bool isPlayer                 = mo->player != nullptr;
-	const bool isVoodoo                 = P_IsVoodooDoll(mo);
-	const bool isRealPlayer             = isPlayer and not isVoodoo;
+	const bool isVoodooOrAvatar         = P_IsVoodooDollOrAvatar(mo);
+	const bool isRealPlayer             = isPlayer and not isVoodooOrAvatar;
 	const bool isUserCommandingMotion   = mo->player and (mo->player->cmd.forwardmove != 0 or
 	                                                      mo->player->cmd.sidemove != 0);
-    const bool isOnConveyor             = mo->oflags & MFO_ISONCONVEYOR;
-    const bool isSuperSlowVoodoo        = isVoodoo and co_voodooscroller;
+	const bool isOnConveyor             = mo->oflags & MFO_ISONCONVEYOR;
+	const bool isSuperSlowVoodoo        = isVoodooOrAvatar and co_voodooscroller;
 
-    const bool keepInMotion = (isOnConveyor and not isSuperSlowVoodoo)
-                               or
-                              (isRealPlayer and isUserCommandingMotion);
+	const bool keepInMotion = (isOnConveyor and not isSuperSlowVoodoo)
+	                           or
+	                          (isRealPlayer and isUserCommandingMotion);
 
-    // killough 11/98: Stop voodoo dolls that have come to rest,
+	// killough 11/98: Stop voodoo dolls that have come to rest,
 	// despite any moving corresponding player:
 	if (abs(mo->momx) < STOPSPEED and abs(mo->momy) < STOPSPEED and not keepInMotion)
 	{
