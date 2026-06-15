@@ -773,8 +773,9 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 	}
 }
 
-static bool R_Clamp3DHUDSpriteSize(vissprite_t* vis, const patch_t* patch, int min_screen_px,
-                                   int max_screen_px, int anchor_x, int anchor_y)
+// Size projected sprites used primarily by the ping and marker system.
+static bool R_Set3DHUDSpriteSize(vissprite_t* vis, const patch_t* patch, int min_screen_px,
+                                 int max_screen_px, int anchor_x, int anchor_y)
 {
 	if ((min_screen_px <= 0 && max_screen_px <= 0) || !vis || !patch)
 		return true;
@@ -855,51 +856,7 @@ static bool R_Clamp3DHUDSpriteSize(vissprite_t* vis, const patch_t* patch, int m
 	return true;
 }
 
-static bool R_Set3DHUDSpriteFixedSize(vissprite_t* vis, const patch_t* patch, int fixed_screen_px,
-                                      int anchor_x, int anchor_y)
-{
-	if (!vis || !patch || fixed_screen_px <= 0)
-		return true;
-
-	const int patch_w = std::max(1, static_cast<int>(patch->width()));
-	const int patch_h = std::max(1, static_cast<int>(patch->height()));
-	const int target_w = std::max(1, fixed_screen_px);
-	const int target_h = std::max(1, (patch_h * target_w) / patch_w);
-
-	const int raw_x1 = anchor_x - target_w / 2;
-	const int raw_x2 = raw_x1 + target_w - 1;
-	const int raw_y1 = anchor_y - target_h / 2;
-	const int raw_y2 = raw_y1 + target_h - 1;
-
-	vis->x1 = std::clamp(raw_x1, 0, viewwidth - 1);
-	vis->x2 = std::clamp(raw_x2, 0, viewwidth - 1);
-	vis->y1 = std::clamp(raw_y1, 0, viewheight - 1);
-	vis->y2 = std::clamp(raw_y2, 0, viewheight - 1);
-
-	if (vis->x2 < vis->x1 || vis->y2 < vis->y1)
-		return false;
-
-	vis->xscale = FixedDiv(target_w << FRACBITS, patch_w << FRACBITS);
-	vis->yscale = FixedDiv(target_h << FRACBITS, patch_h << FRACBITS);
-
-	const fixed_t top_screen = raw_y1 << FRACBITS;
-	if (vis->yscale != 0)
-		vis->texturemid = FixedDiv(centeryfrac - top_screen, vis->yscale);
-
-	fixed_t xiscale = FixedDiv(patch_w << FRACBITS, target_w << FRACBITS);
-	if (vis->xiscale < 0)
-		xiscale = -xiscale;
-	vis->xiscale = xiscale;
-
-	const int visible_left = vis->x1 - raw_x1;
-	if (vis->xiscale < 0)
-		vis->startfrac = (patch_w << FRACBITS) - 1 - visible_left * (-vis->xiscale);
-	else
-		vis->startfrac = visible_left * vis->xiscale;
-
-	return true;
-}
-
+// Project a world position into a foreground HUD sprite used by ping and player markers.
 void R_Add3DHUDSprite(int lump, v3fixed_t pos, translationref_t translation, float translucency,
                       int min_screen_px, int max_screen_px, bool ignore_view_bob)
 {
@@ -948,12 +905,8 @@ void R_Add3DHUDSprite(int lump, v3fixed_t pos, translationref_t translation, flo
 	const int anchor_x = R_ProjectPointX(tx, ty);
 	const int anchor_y = R_ProjectPointY(pos.z - viewz, ty);
 
-	const bool fixed_size_mode =
-	    (min_screen_px > 0 && max_screen_px > 0 && min_screen_px == max_screen_px);
 	const bool size_ok =
-	    fixed_size_mode
-	        ? R_Set3DHUDSpriteFixedSize(vis, patch, min_screen_px, anchor_x, anchor_y)
-	        : R_Clamp3DHUDSpriteSize(vis, patch, min_screen_px, max_screen_px, anchor_x, anchor_y);
+	    R_Set3DHUDSpriteSize(vis, patch, min_screen_px, max_screen_px, anchor_x, anchor_y);
 
 	if (!size_ok)
 		vis->x2 = vis->x1 - 1;
