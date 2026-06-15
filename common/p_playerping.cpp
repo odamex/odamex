@@ -36,31 +36,23 @@
 #include "teaminfo.h"
 #include "w_wad.h"
 #ifdef CLIENT_APP
-#include <unordered_map>
 #include <cmath>
 
 #include "../client/src/cl_main.h"
 #include "clc_message.h"
-#include "r_main.h"
-#include "v_text.h"
 #include "v_video.h"
-extern byte* Ranges;
 EXTERN_CVAR(cl_showpings)
 EXTERN_CVAR(cl_ping_pickups)
 EXTERN_CVAR(cl_ping_monsters)
 EXTERN_CVAR(cl_ping_flags)
 EXTERN_CVAR(cl_mouselook)
 EXTERN_CVAR(sv_freelook)
-EXTERN_CVAR(hud_marker_teammates)
-EXTERN_CVAR(hud_marker_hordeboss)
 #endif
 
 EXTERN_CVAR(sv_ping_spam_enabled)
 EXTERN_CVAR(sv_ping_spam_max_tokens)
 EXTERN_CVAR(sv_ping_spam_window)
 EXTERN_CVAR(sv_pingsystem)
-EXTERN_CVAR(sv_marker_teammates)
-EXTERN_CVAR(sv_marker_hordeboss)
 
 //------------------------------------------------------------------------------
 
@@ -145,14 +137,6 @@ int P_PingLumpForType(const ping_type_t type)
 	default:
 		return W_GetNumForName("OPNG_GEN");
 	}
-}
-
-bool P_IsHordeBossForPing(const AActor* actor)
-{
-	if (!actor || actor->health <= 0)
-		return false;
-
-	return (actor->oflags & MFO_ISHORDEBOSS) != 0;
 }
 
 team_t P_PingFlagTeamForActor(const AActor* actor)
@@ -278,37 +262,6 @@ fixed_t P_PingItemTopOffset(const AActor* actor)
 		return actor->height;
 
 	return (std::max)(actor->height, topoff);
-}
-
-void P_PingFollowTargetPos(const AActor* target, const AActor* view, v3fixed_t& pos)
-{
-	static constexpr fixed_t FollowPingHeadOffset = 4 * FRACUNIT;
-	static constexpr fixed_t FollowPingNearDist = 512 * FRACUNIT;
-	static constexpr fixed_t FollowPingFarDist = 4096 * FRACUNIT;
-
-	if (!target || !view)
-		return;
-
-	fixed_t targetx = target->x;
-	fixed_t targety = target->y;
-	fixed_t targetz = target->z;
-#ifdef CLIENT_APP
-	targetx = target->prevx + FixedMul(render_lerp_amount, target->x - target->prevx);
-	targety = target->prevy + FixedMul(render_lerp_amount, target->y - target->prevy);
-	targetz = target->prevz + FixedMul(render_lerp_amount, target->z - target->prevz);
-#endif
-
-	const fixed_t dist = P_AproxDistance(view->x - targetx, view->y - targety);
-	const fixed_t clamped_dist = std::clamp(dist, FollowPingNearDist, FollowPingFarDist);
-	const fixed_t t =
-	    FixedDiv(clamped_dist - FollowPingNearDist, FollowPingFarDist - FollowPingNearDist);
-
-	const fixed_t near_z = targetz + target->height + FollowPingHeadOffset;
-	const fixed_t far_z = targetz + (target->height >> 1);
-
-	pos.x = targetx;
-	pos.y = targety;
-	pos.z = near_z - FixedMul(near_z - far_z, t);
 }
 
 struct pingTrace_t
@@ -862,6 +815,16 @@ void P_SetWorldPing(playerPing_s& ping, const player_t& player)
 
 //------------------------------------------------------------------------------
 
+bool P_IsHordeBossForPing(const AActor* actor)
+{
+	if (!actor || actor->health <= 0)
+		return false;
+
+	return (actor->oflags & MFO_ISHORDEBOSS) != 0;
+}
+
+//------------------------------------------------------------------------------
+
 #ifdef CLIENT_APP
 translationref_t P_PingReadablePlayerTranslation(const player_t& pl)
 {
@@ -1292,326 +1255,6 @@ bool P_ResolvePingPosition(const playerPing_s& ping, v3fixed_t& outPos)
 
 	outPos = ping.pos;
 	return true;
-}
-
-//------------------------------------------------------------------------------
-
-void R_AddPingSprites()
-{
-#ifdef CLIENT_APP
-	const bool allowPingMarkers = sv_pingsystem && cl_showpings;
-	const bool allowTeammateMarkers = sv_marker_teammates && hud_marker_teammates;
-	const bool allowHordeBossMarkers = sv_marker_hordeboss && hud_marker_hordeboss;
-	if (!allowPingMarkers && !allowTeammateMarkers && !allowHordeBossMarkers)
-		return;
-
-	static constexpr fixed_t StrictHeadOffset = 12 * FRACUNIT;
-	static constexpr fixed_t BossHeadOffset = 24 * FRACUNIT;
-	static constexpr fixed_t FollowPingSmoothing = FRACUNIT / 3;
-	static constexpr float PingReferenceHeight = 1080.0f;
-	static constexpr float PingMinResScale = 0.40f;
-	static constexpr int FixedPingScreenPx = 56;
-	static constexpr int FixedBossScreenPx = 84;
-	static constexpr fixed_t PingScaleNearDist = 512 * FRACUNIT;
-	static constexpr fixed_t DropScaleFarDist = 1024 * FRACUNIT;
-	static constexpr fixed_t ItemScaleNearDist = 128 * FRACUNIT;
-	static constexpr fixed_t ItemScaleFarDist = 768 * FRACUNIT;
-	static constexpr fixed_t FlagScaleNearDist = 256 * FRACUNIT;
-	static constexpr fixed_t FlagScaleFarDist = 768 * FRACUNIT;
-	static constexpr fixed_t MonsterScaleNearDist = 1024 * FRACUNIT;
-	static constexpr fixed_t PingScaleFarDist = 2048 * FRACUNIT;
-	static constexpr float PingMinAlpha = 0.45f;
-	static constexpr int PingSolidTics = TICRATE;     // 1.0s
-	static constexpr int PingFadeTics = TICRATE / 2; // 0.5s (ends at 1.5s)
-	static constexpr fixed_t PingAlphaNearDist = 192 * FRACUNIT;
-	static constexpr fixed_t PingAlphaFarDist = 512 * FRACUNIT;
-	static std::array<v3fixed_t, MAXPLAYERS> followSmoothPos{};
-	static std::array<bool, MAXPLAYERS> followSmoothValid{};
-	static std::unordered_map<uint32_t, v3fixed_t> actorSmoothPos{};
-
-	auto smoothFixed = [](fixed_t from, fixed_t to) -> fixed_t
-	{
-		return from + FixedMul(FollowPingSmoothing, to - from);
-	};
-
-	auto smoothActorPos = [&](uint32_t netid, const v3fixed_t& targetPos) -> v3fixed_t
-	{
-		if (netid == 0)
-			return targetPos;
-
-		auto it = actorSmoothPos.find(netid);
-		if (it == actorSmoothPos.end())
-		{
-			actorSmoothPos.emplace(netid, targetPos);
-			return targetPos;
-		}
-
-		v3fixed_t& cur = it->second;
-		cur.x = smoothFixed(cur.x, targetPos.x);
-		cur.y = smoothFixed(cur.y, targetPos.y);
-		cur.z = smoothFixed(cur.z, targetPos.z);
-		return cur;
-	};
-
-	auto resolutionScaledPx = [&](const int basePx) -> int
-	{
-		const int currentViewH = (std::max)(1, viewheight);
-		const float scale = std::clamp(static_cast<float>(currentViewH) / PingReferenceHeight,
-		                               PingMinResScale, 1.0f);
-		return (std::max)(1, static_cast<int>(std::lround(static_cast<float>(basePx) * scale)));
-	};
-
-	auto scaledPingPx = [&](const ping_type_t type, const v3fixed_t& pos) -> int
-	{
-		// Only scale item/monster/flag/general/warning pings.
-		if (type != PING_ITEM && type != PING_MONSTER && type != PING_FLAG &&
-		    type != PING_GENERAL && type != PING_WARNING && type != PING_DROP)
-			return resolutionScaledPx(FixedPingScreenPx);
-
-		AActor* view = consoleplayer().camera ? consoleplayer().camera : consoleplayer().mo;
-		if (!view)
-			return resolutionScaledPx(FixedPingScreenPx);
-
-		const fixed_t dist = P_AproxDistance(view->x - pos.x, view->y - pos.y);
-		const int nearPx = resolutionScaledPx(FixedPingScreenPx);
-		int farPx = nearPx / 2;
-
-		fixed_t nearDist = PingScaleNearDist;
-		fixed_t farDist = PingScaleFarDist;
-		if (type == PING_ITEM)
-		{
-			nearDist = ItemScaleNearDist;
-			farDist = ItemScaleFarDist;
-			farPx = static_cast<int>(std::lround(static_cast<float>(nearPx) * 0.4f)); // 40%
-		}
-		else if (type == PING_DROP)
-		{
-			farDist = DropScaleFarDist;
-			farPx = nearPx / 2; // 50%
-		}
-		else if (type == PING_FLAG)
-		{
-			nearDist = FlagScaleNearDist;
-			farDist = FlagScaleFarDist;
-			farPx = nearPx / 2; // 50%
-		}
-		else if (type == PING_MONSTER)
-		{
-			nearDist = MonsterScaleNearDist;
-		}
-
-		if (dist <= nearDist)
-			return nearPx;
-		if (dist >= farDist)
-			return farPx;
-
-		const fixed_t t = FixedDiv(dist - nearDist, farDist - nearDist);
-		const int deltaPx = nearPx - farPx;
-		return nearPx - ((deltaPx * t) >> FRACBITS);
-	};
-
-	auto pingWorldAlpha = [&](const playerPing_s& ping, const v3fixed_t& pos) -> float
-	{
-		// Teammate/boss markers are separate features and stay fully opaque.
-		if (ping.type == PING_BOSS || ping.type == PING_TEAMMATE)
-			return 1.0f;
-
-		const int age = (std::max)(0, ::gametic - ping.pingtic);
-		float ageAlpha = 1.0f;
-		if (age > PingSolidTics)
-		{
-			const float t = (std::min)(
-			    1.0f, static_cast<float>(age - PingSolidTics) / static_cast<float>((std::max)(1, PingFadeTics)));
-			ageAlpha = 1.0f + (PingMinAlpha - 1.0f) * t;
-		}
-
-		fixed_t dist = 0;
-		if (consoleplayer().camera)
-			dist = P_AproxDistance(consoleplayer().camera->x - pos.x, consoleplayer().camera->y - pos.y);
-		else if (consoleplayer().mo)
-			dist = P_AproxDistance(consoleplayer().mo->x - pos.x, consoleplayer().mo->y - pos.y);
-
-		float distAlpha = PingMinAlpha;
-		if (dist <= PingAlphaNearDist)
-		{
-			distAlpha = 1.0f;
-		}
-		else if (dist < PingAlphaFarDist)
-		{
-			const float t = static_cast<float>(dist - PingAlphaNearDist) /
-			                static_cast<float>(PingAlphaFarDist - PingAlphaNearDist);
-			distAlpha = 1.0f + (PingMinAlpha - 1.0f) * t;
-		}
-
-		return (std::max)(ageAlpha, distAlpha);
-	};
-
-	if (allowPingMarkers)
-	{
-		for (auto &pl : players)
-		{
-			if (!pl.player_ping)
-				continue;
-
-			if (G_IsTeamGame() && pl.id != consoleplayer().id &&
-			    pl.userinfo.team != consoleplayer().userinfo.team)
-				continue;
-
-			auto& ping = *pl.player_ping;
-			if (P_IsPingExpired(ping))
-				continue;
-			if (consoleplayer().mo && ping.target_netid == consoleplayer().mo->netid)
-				continue;
-			if (ping.type == PING_TEAMMATE && !allowTeammateMarkers)
-				continue;
-			if (ping.type == PING_BOSS && !allowHordeBossMarkers)
-				continue;
-
-			v3fixed_t pos{};
-			if (!P_ResolvePingPosition(ping, pos))
-				continue;
-
-			if (ping.follow_target && ping.target_netid != 0)
-			{
-				AActor* target = P_FindThingById(ping.target_netid);
-				AActor* view = consoleplayer().camera ? consoleplayer().camera : consoleplayer().mo;
-				if (target && view)
-				{
-					if (ping.type == PING_MONSTER || ping.type == PING_BOSS)
-					{
-						pos.x = target->prevx + FixedMul(render_lerp_amount, target->x - target->prevx);
-						pos.y = target->prevy + FixedMul(render_lerp_amount, target->y - target->prevy);
-						const fixed_t tzt =
-						    target->prevz + FixedMul(render_lerp_amount, target->z - target->prevz);
-						const fixed_t headOffset =
-						    ping.type == PING_BOSS ? BossHeadOffset : StrictHeadOffset;
-						pos.z = tzt + target->height + headOffset;
-					}
-					else
-					{
-						P_PingFollowTargetPos(target, view, pos);
-					}
-				}
-
-				if (pl.id < MAXPLAYERS)
-				{
-					if (!followSmoothValid[pl.id])
-					{
-						followSmoothPos[pl.id] = pos;
-						followSmoothValid[pl.id] = true;
-					}
-					else
-					{
-						followSmoothPos[pl.id].x = smoothFixed(followSmoothPos[pl.id].x, pos.x);
-						followSmoothPos[pl.id].y = smoothFixed(followSmoothPos[pl.id].y, pos.y);
-						followSmoothPos[pl.id].z = smoothFixed(followSmoothPos[pl.id].z, pos.z);
-					}
-
-					pos = followSmoothPos[pl.id];
-				}
-			}
-
-			translationref_t translation = ping.translation;
-			if (ping.type == PING_ITEM)
-				translation = {};
-			else if (ping.type == PING_GENERAL || ping.type == PING_WARNING || ping.type == PING_DROP)
-				translation = P_PingReadablePlayerTranslation(pl);
-			else if (!translation && pl.mo)
-				translation = pl.mo->translation;
-			if (ping.type == PING_FLAG && ping.flag_team != TEAM_NONE)
-				translation = P_PingTeamTranslationInternal(ping.flag_team);
-
-			const int pingPx = ping.type == PING_BOSS ? resolutionScaledPx(FixedBossScreenPx)
-			                                          : scaledPingPx(ping.type, pos);
-			const float alpha = pingWorldAlpha(ping, pos);
-			R_Add3DHUDSprite(ping.lump, pos, translation, alpha, pingPx, pingPx, false);
-		}
-	}
-
-	if (allowHordeBossMarkers)
-	{
-		AActor* view = consoleplayer().camera ? consoleplayer().camera : consoleplayer().mo;
-		const int bossLump = P_PingLumpForType(PING_BOSS);
-		if (view && bossLump != -1)
-		{
-			TThinkerIterator<AActor> iterator;
-			while (AActor* actor = iterator.Next())
-			{
-				if (!P_IsHordeBossForPing(actor))
-					continue;
-
-				const fixed_t ax = actor->prevx + FixedMul(render_lerp_amount, actor->x - actor->prevx);
-				const fixed_t ay = actor->prevy + FixedMul(render_lerp_amount, actor->y - actor->prevy);
-				const fixed_t az = actor->prevz + FixedMul(render_lerp_amount, actor->z - actor->prevz);
-				v3fixed_t pos{ax, ay, az + actor->height + BossHeadOffset};
-				pos = smoothActorPos(actor->netid, pos);
-				const int bossPx = resolutionScaledPx(FixedBossScreenPx);
-				R_Add3DHUDSprite(bossLump, pos, {}, 1.0f, bossPx, bossPx, false);
-			}
-		}
-	}
-
-	if ((G_IsCoopGame() || G_IsTeamGame()) && allowTeammateMarkers)
-	{
-		const int teammateLump = P_PingLumpForType(PING_TEAMMATE);
-		if (teammateLump != -1)
-		{
-			static constexpr int TeammateNearPx = 56;
-			static constexpr int TeammateFarPx = 22;
-			static constexpr fixed_t TeammateNearDist = 512 * FRACUNIT;
-			static constexpr fixed_t TeammateFarDist = 4096 * FRACUNIT;
-			AActor* view = consoleplayer().camera ? consoleplayer().camera : consoleplayer().mo;
-
-			for (const player_t& pl : players)
-			{
-				if (pl.id == consoleplayer().id || !pl.ingame() || pl.spectator || !pl.mo)
-					continue;
-				if (pl.playerstate != PST_LIVE)
-					continue;
-				if (G_IsTeamGame() && pl.userinfo.team != consoleplayer().userinfo.team)
-					continue;
-
-				const fixed_t px = pl.mo->prevx + FixedMul(render_lerp_amount, pl.mo->x - pl.mo->prevx);
-				const fixed_t py = pl.mo->prevy + FixedMul(render_lerp_amount, pl.mo->y - pl.mo->prevy);
-				const fixed_t pz = pl.mo->prevz + FixedMul(render_lerp_amount, pl.mo->z - pl.mo->prevz);
-				v3fixed_t pos{px, py, pz + pl.mo->height + StrictHeadOffset};
-				pos = smoothActorPos(pl.mo->netid, pos);
-
-				const int teammateNearPx = resolutionScaledPx(TeammateNearPx);
-				const int teammateFarPx = resolutionScaledPx(TeammateFarPx);
-				int teammatePx = teammateNearPx;
-				if (view)
-				{
-					const fixed_t dist = P_AproxDistance(view->x - px, view->y - py);
-					const fixed_t clamped =
-					    std::clamp(dist, TeammateNearDist, TeammateFarDist);
-					const fixed_t t = FixedDiv(clamped - TeammateNearDist,
-					                           TeammateFarDist - TeammateNearDist);
-					teammatePx = teammateNearPx -
-					             ((teammateNearPx - teammateFarPx) * t >> FRACBITS);
-
-					// Keep teammate icon from exceeding the projected sprite width.
-					// This adapts automatically to modded player radii/sprite scales.
-					fixed_t projTx = 0, projTy = 0;
-					R_RotatePoint(px - viewx, py - viewy, ANG90 - viewangle, projTx, projTy);
-					if (projTy > FRACUNIT)
-					{
-						const int left = R_ProjectPointX(projTx - pl.mo->radius, projTy);
-						const int right = R_ProjectPointX(projTx + pl.mo->radius, projTy);
-						const int projectedWidth = right >= left ? (right - left) : (left - right);
-						if (projectedWidth > 0)
-							teammatePx = (std::min)(teammatePx, projectedWidth);
-					}
-				}
-				teammatePx = (std::max)(resolutionScaledPx(24), teammatePx);
-
-				translationref_t trans = P_PingReadablePlayerTranslation(pl);
-				R_Add3DHUDSprite(teammateLump, pos, trans, 1.0f, teammatePx,
-				                 teammatePx, false);
-			}
-		}
-	}
-#endif
 }
 
 //------------------------------------------------------------------------------

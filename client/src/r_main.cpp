@@ -42,7 +42,7 @@
 #include "m_vectors.h"
 #include "am_map.h"
 #include "cl_demo.h"
-#include "p_playerping.h"
+#include "r_playerping.h"
 
 extern NetDemo netdemo;
 

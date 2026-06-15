@@ -50,11 +50,6 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter 
                                   bool dropAtSelf = false);
 
 /**
- * @brief Add ping sprites to be rendered.
- */
-void R_AddPingSprites();
-
-/**
  * @brief Clear all active player pings.
  *
  * Used for graceful cleanup during disconnect and level transitions.
@@ -78,6 +73,11 @@ bool P_ResolvePingPosition(const playerPing_s& ping, v3fixed_t& outPos);
  * @brief Returns true if the ping has expired.
  */
 bool P_IsPingExpired(const playerPing_s& ping);
+
+/**
+ * @brief Return true when an actor is a live horde boss.
+ */
+bool P_IsHordeBossForPing(const AActor* actor);
 
 #ifdef CLIENT_APP
 /**
