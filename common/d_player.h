@@ -25,6 +25,7 @@
 
 #include <deque>
 #include <list>
+#include <optional>
 #include <queue>
 
 #include <time.h>
@@ -331,7 +332,9 @@ public:
 	bool		doreborn;
 
 	byte        QueuePosition;            //Queue position to join game. 0 means not in queue
-	std::unique_ptr<playerPing_s> player_ping;
+
+	// Present while this player has an active ping or marker.
+	std::optional<playerPing_s> player_ping;
 
 	uint32_t    requestedNetIdUpdate;   // ID of a mobj for which this player is requesting an update.
 

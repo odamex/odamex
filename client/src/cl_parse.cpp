@@ -539,7 +539,7 @@ static void CL_PlayerPing(const odaproto::svc::PlayerPing* msg)
 	ping.target_netid = msg->target_netid();
 	ping.follow_target = msg->follow_target();
 	ping.translation = translationref_t(translationtables + 256 * p.id, p.id);
-	p.player_ping = std::make_unique<playerPing_s>(std::move(ping));
+	p.player_ping.emplace(std::move(ping));
 
 	if (cl_ping_sound && isLocalPing &&
 	    !(p.player_ping->type == PING_WARNING && localHadActiveGeneralPing))

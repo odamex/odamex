@@ -1230,7 +1230,7 @@ ping_submit_result_t P_PlayerPing(player_t& player, const ping_filter_t& filter,
 		return PING_SUBMIT_NONE;
 	ping.lump = lump;
 
-	player.player_ping = std::make_unique<playerPing_s>(std::move(ping));
+	player.player_ping.emplace(std::move(ping));
 	return retapWarning ? PING_SUBMIT_PLACED_RETAP_WARNING : PING_SUBMIT_PLACED;
 }
 
