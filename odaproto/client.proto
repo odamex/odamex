@@ -179,6 +179,16 @@ message Netcmd
     repeated string argv = 1;
 }
 
+// clc_playerping
+message PlayerPing
+{
+	bool pickups     = 1;
+	bool monsters    = 2;
+	bool flags       = 3;
+	bool mouselook   = 4;
+	bool drop_at_self = 5;
+}
+
 // clc_spy
 message Spy
 {

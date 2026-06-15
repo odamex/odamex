@@ -1090,6 +1090,7 @@ static void InitNetMessageFormats()
 	MSG_INFO(clc_spy);
 	MSG_INFO(clc_privmsg);
 	MSG_INFO(clc_sendmobjupdate);
+	MSG_INFO(clc_playerping);
 }
 
 #undef MSG_INFO

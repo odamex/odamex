@@ -4189,6 +4189,34 @@ void MOTDCmd(player_t& player)
 }
 
 /**
+ * @brief Handle a typed player ping request from a client.
+ */
+void SV_PlayerPingCmd(player_t& player, const odaproto::clc::PlayerPing& msg)
+{
+	if (player.spectator)
+		return;
+
+	ping_filter_t filter{};
+	filter.pickups = msg.pickups();
+	filter.monsters = msg.monsters();
+	filter.flags = msg.flags();
+	filter.mouselook = msg.mouselook();
+
+	switch (P_PlayerPing(player, filter, msg.drop_at_self()))
+	{
+	case PING_SUBMIT_RATE_LIMITED:
+		SV_PlayerPrintFmt(PRINT_HIGH, player.id, "Ping cooling down. Please wait.\n");
+		break;
+	case PING_SUBMIT_PLACED:
+	case PING_SUBMIT_PLACED_RETAP_WARNING:
+		SV_BroadcastPlayerPing(player);
+		break;
+	default:
+		break;
+	}
+}
+
+/**
  * @brief Interpret a "netcmd" string from a client.
  *
  * @param player Player who sent the netcmd.
@@ -4213,37 +4241,6 @@ void SV_NetCmd(player_t& player, const odaproto::clc::Netcmd& msg)
 		break;
 	case CONST_HASH("vote"):
 		SV_VoteCmd(player, netargs);
-		break;
-	case CONST_HASH("player_ping"):
-		if (player.spectator)
-			break;
-		{
-			ping_filter_t filter{};
-			bool dropAtSelf = false;
-			if (netargs.size() >= 4)
-			{
-				filter.pickups = netargs[1] != "0";
-				filter.monsters = netargs[2] != "0";
-				filter.flags = netargs[3] != "0";
-				if (netargs.size() >= 5)
-					filter.mouselook = netargs[4] != "0";
-				if (netargs.size() >= 6)
-					dropAtSelf = netargs[5] != "0";
-			}
-
-			switch (P_PlayerPing(player, filter, dropAtSelf))
-			{
-			case PING_SUBMIT_RATE_LIMITED:
-				SV_PlayerPrintFmt(PRINT_HIGH, player.id, "Ping cooling down. Please wait.\n");
-				break;
-			case PING_SUBMIT_PLACED:
-			case PING_SUBMIT_PLACED_RETAP_WARNING:
-				SV_BroadcastPlayerPing(player);
-				break;
-			default:
-				break;
-			}
-		}
 		break;
 	default: break;
 	}
@@ -4512,6 +4509,10 @@ parseError_e SV_ParseCommandSVC(const msg_t cmd, player_t& player)
 
 			case clc_sendmobjupdate:
 				SV_SendRequestedMobjUpdate(player, *static_cast<odaproto::clc::SendMobjUpdate*>(msgPtrRaw));
+				break;
+
+			case clc_playerping:
+				SV_PlayerPingCmd(player, *static_cast<odaproto::clc::PlayerPing*>(msgPtrRaw));
 				break;
 
 		 default:

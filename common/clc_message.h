@@ -25,6 +25,7 @@
 #include "client.pb.h"
 
 class player_t;
+struct ping_filter_t;
 struct UserInfo;
 class OdaMessenger;
 
@@ -44,6 +45,7 @@ odaproto::clc::GetPlayerInfo  CLC_GetPlayerInfo  ();
 odaproto::clc::Spy            CLC_Spy            (uint32_t playerId);
 odaproto::clc::PrivMsg        CLC_PrivMsg        (uint32_t playerId, const std::string_view& text);
 odaproto::clc::SendMobjUpdate CLC_SendMobjUpdate (uint32_t netId);
+odaproto::clc::PlayerPing     CLC_PlayerPing     (const ping_filter_t& filter, bool dropAtSelf);
 
 template <typename IteratorType>
 odaproto::clc::Netcmd CLC_Netcmd(IteratorType begin, IteratorType end)

@@ -25,6 +25,7 @@
 #include "odamex.h"
 
 #include "d_player.h"
+#include "p_playerping.h"
 
 static void FillColor(odaproto::Color& io_msg, const argb_t& color)
 {
@@ -412,5 +413,16 @@ odaproto::clc::SendMobjUpdate CLC_SendMobjUpdate(uint32_t netId)
 {
 	odaproto::clc::SendMobjUpdate msg;
 	msg.set_netid(netId);
+	return msg;
+}
+
+odaproto::clc::PlayerPing CLC_PlayerPing(const ping_filter_t& filter, bool dropAtSelf)
+{
+	odaproto::clc::PlayerPing msg;
+	msg.set_pickups(filter.pickups);
+	msg.set_monsters(filter.monsters);
+	msg.set_flags(filter.flags);
+	msg.set_mouselook(filter.mouselook);
+	msg.set_drop_at_self(dropAtSelf);
 	return msg;
 }

@@ -1295,14 +1295,7 @@ BEGIN_COMMAND(player_ping)
 	// other clients receive the replicated ping message.
 	if (connected)
 	{
-		const std::array<std::string, 5> args {
-		    "player_ping",
-		    filter.pickups ? "1" : "0",
-		    filter.monsters ? "1" : "0",
-		    filter.flags ? "1" : "0",
-		    filter.mouselook ? "1" : "0",
-		};
-		MSG_WriteSVC(messenger.ReliableBuf(), CLC_Netcmd(args.begin(), args.end()));
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_PlayerPing(filter, false));
 		return;
 	}
 #else
@@ -1339,15 +1332,7 @@ BEGIN_COMMAND(player_ping_self)
 
 	if (connected)
 	{
-		const std::array<std::string, 6> args {
-		    "player_ping",
-		    filter.pickups ? "1" : "0",
-		    filter.monsters ? "1" : "0",
-		    filter.flags ? "1" : "0",
-		    filter.mouselook ? "1" : "0",
-		    "1",
-		};
-		MSG_WriteSVC(messenger.ReliableBuf(), CLC_Netcmd(args.begin(), args.end()));
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_PlayerPing(filter, true));
 		return;
 	}
 #else

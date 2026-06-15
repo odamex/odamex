@@ -324,6 +324,7 @@ enum msg_t
 	clc_spy,
 	clc_privmsg,
 	clc_sendmobjupdate,
+	clc_playerping,
 
 	MSG_DEFINITION_COUNT    // For use as sizer.
 };
