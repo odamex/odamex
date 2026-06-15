@@ -74,7 +74,7 @@ if(BUILD_CLIENT AND USE_INTERNAL_FLTK)
   endfunction()
 
   lib_buildgen(LIBRARY fltk PARAMS ${_FLTK_BUILDGEN_PARAMS})
-  lib_build(LIBRARY fltk)
+  lib_build(LIBRARY fltk NOPARALLEL)
 
   set(_FLTK_LOCAL_LIBDIR "${CMAKE_CURRENT_BINARY_DIR}/local/lib")
   set(_FLTK_LOCAL_INCDIR "${CMAKE_CURRENT_BINARY_DIR}/local/include")

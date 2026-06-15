@@ -331,7 +331,7 @@ public:
 	bool		doreborn;
 
 	byte        QueuePosition;            //Queue position to join game. 0 means not in queue
-	std::unique_ptr<playerPing_s> player_ping; // [LM] Player ping.
+	std::unique_ptr<playerPing_s> player_ping;
 
 	uint32_t    requestedNetIdUpdate;   // ID of a mobj for which this player is requesting an update.
 

@@ -770,6 +770,94 @@ AActor* P_FindMouselookPickupTarget(const player_t& player, const fixed_t shootz
 
 	return best;
 }
+
+void P_SetDropPing(playerPing_s& ping, const player_t& player)
+{
+	ping.pos.x = player.mo->x;
+	ping.pos.y = player.mo->y;
+	ping.pos.z = player.mo->z + 8 * FRACUNIT;
+	ping.target_netid = 0;
+	ping.follow_target = false;
+	ping.type = PING_DROP;
+	ping.flag_team = TEAM_NONE;
+}
+
+void P_SetTargetPing(playerPing_s& ping, AActor* target)
+{
+	const team_t flagTeam = P_PingFlagTeamForActor(target);
+
+	ping.pos = {target->x, target->y, target->z};
+	ping.target_netid = target->netid;
+	ping.flag_team = flagTeam;
+
+	// Flags and pickups retain their actor identity so the client can update or
+	// expire the marker, but their marker position is resolved independently.
+	if (flagTeam != TEAM_NONE)
+	{
+		ping.type = PING_FLAG;
+		ping.follow_target = false;
+		ping.pos.z = target->z + P_PingItemTopOffset(target) + 8 * FRACUNIT;
+		return;
+	}
+
+	// Player targets are snapshots. Permanent teammate markers are handled by
+	// the marker system rather than by converting a player ping into one.
+	if (target->player)
+	{
+		ping.type = PING_GENERAL;
+		ping.follow_target = false;
+		ping.target_netid = 0;
+		return;
+	}
+
+	if ((target->flags & MF_SPECIAL) != 0)
+	{
+		ping.type = PING_ITEM;
+		ping.follow_target = false;
+		ping.pos.z = target->z + P_PingItemTopOffset(target) + 8 * FRACUNIT;
+		return;
+	}
+
+	if (G_IsHordeMode() && P_IsHordeBossForPing(target))
+		ping.type = PING_BOSS;
+	else if ((target->flags & MF_SHOOTABLE) != 0)
+		ping.type = PING_MONSTER;
+	else
+		ping.type = PING_GENERAL;
+
+	ping.follow_target = ping.target_netid != 0;
+}
+
+void P_SetWorldPing(playerPing_s& ping, const player_t& player)
+{
+	ping.target_netid = 0;
+	ping.follow_target = false;
+	ping.type = PING_GENERAL;
+	ping.flag_team = TEAM_NONE;
+
+	// A quick repeat near the previous world ping upgrades that existing
+	// location to a warning instead of consuming another rate-limit token.
+	static constexpr int WarningRetapWindow = TICRATE / 2;
+	static constexpr fixed_t WarningRetapRadius = 96 * FRACUNIT;
+	if (!player.player_ping)
+		return;
+
+	const playerPing_s& previous = *player.player_ping;
+	if (P_IsPingExpired(previous) ||
+	    (previous.type != PING_GENERAL && previous.type != PING_WARNING) ||
+	    (::gametic - previous.pingtic) > WarningRetapWindow)
+	{
+		return;
+	}
+
+	const fixed_t distance =
+	    P_AproxDistance(ping.pos.x - previous.pos.x, ping.pos.y - previous.pos.y);
+	if (distance <= WarningRetapRadius)
+	{
+		ping.type = PING_WARNING;
+		ping.pos = previous.pos;
+	}
+}
 } // namespace
 
 //------------------------------------------------------------------------------
@@ -917,7 +1005,7 @@ translationref_t P_PingTeamTranslation(team_t team)
 
 //------------------------------------------------------------------------------
 
-ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter, bool dropAtSelf)
+ping_submit_result_t P_PlayerPing(player_t& player, const ping_filter_t& filter, bool dropAtSelf)
 {
 	if (!sv_pingsystem)
 		return PING_SUBMIT_NONE;
@@ -1111,118 +1199,17 @@ ping_submit_result_t P_PlayerPing(player_t &player, const ping_filter_t& filter,
 		}
 	}
 
+	// Classification is deliberately separate from target acquisition. The
+	// tracing and assist passes above decide what was selected; this section
+	// only determines marker semantics and lifetime behavior.
 	if (dropAtSelf)
-	{
-		pingTarget = nullptr;
-		pingHit = true;
-		ping.pos.x = player.mo->x;
-		ping.pos.y = player.mo->y;
-		ping.pos.z = player.mo->z + 8 * FRACUNIT;
-		ping.target_netid = 0;
-		ping.follow_target = false;
-		ping.type = PING_DROP;
-		ping.flag_team = TEAM_NONE;
-	}
-
-	if (pingTarget)
-	{
-		team_t flagTeam = P_PingFlagTeamForActor(pingTarget);
-		ping.flag_team = flagTeam;
-
-		ping.pos.x = pingTarget->x;
-		ping.pos.y = pingTarget->y;
-		ping.pos.z = pingTarget->z;
-		ping.target_netid = pingTarget->netid;
-
-		if (flagTeam != TEAM_NONE)
-		{
-			ping.type = PING_FLAG;
-			ping.follow_target = false;
-			ping.target_netid = pingTarget->netid;
-			const fixed_t flagTop = P_PingItemTopOffset(pingTarget);
-			ping.pos.z = pingTarget->z + flagTop + 8 * FRACUNIT;
-		}
-	else if (pingTarget->player && pingTarget->player != &player &&
-	         (G_IsCoopGame() ||
-	          (G_IsTeamGame() && pingTarget->player->userinfo.team == player.userinfo.team)))
-	{
-		// Teammate markers are now always-on; player ping stays a location ping.
-		ping.type = PING_GENERAL;
-		ping.follow_target = false;
-		ping.target_netid = 0;
-	}
-		else if (pingTarget->player)
-		{
-			// Enemy player pings are location snapshots, not follow-target.
-			ping.type = PING_GENERAL;
-			ping.follow_target = false;
-			ping.target_netid = 0;
-		}
-		else if ((pingTarget->flags & MF_SPECIAL) != 0)
-		{
-			ping.type = PING_ITEM;
-			ping.follow_target = false;
-			const fixed_t itemTop = P_PingItemTopOffset(pingTarget);
-			ping.pos.x = pingTarget->x;
-			ping.pos.y = pingTarget->y;
-			ping.pos.z = pingTarget->z + itemTop + 8 * FRACUNIT;
-		}
-		else if (G_IsHordeMode() && P_IsHordeBossForPing(pingTarget))
-		{
-			ping.type = PING_BOSS;
-			ping.follow_target = ping.target_netid != 0;
-		}
-		else if (!pingTarget->player && (pingTarget->flags & MF_SHOOTABLE))
-		{
-			ping.type = PING_MONSTER;
-			ping.follow_target = ping.target_netid != 0;
-		}
-		else
-		{
-			ping.type = PING_GENERAL;
-			ping.follow_target = ping.target_netid != 0;
-		}
-
-	}
+		P_SetDropPing(ping, player);
+	else if (pingTarget)
+		P_SetTargetPing(ping, pingTarget);
+	else if (pingHit)
+		P_SetWorldPing(ping, player);
 	else
-	{
-		if (!pingHit)
-			return PING_SUBMIT_NONE;
-
-		if (dropAtSelf)
-		{
-			// Hold-to-drop is always a dedicated self marker, never upgraded.
-		}
-		else
-		{
-		ping.target_netid = 0;
-		ping.follow_target = false;
-		ping.type = PING_GENERAL;
-		ping.flag_team = TEAM_NONE;
-
-		// Double-tap world ping: upgrade to warning if quickly repeated nearby.
-		static constexpr int WarningRetapWindow = TICRATE / 2;
-		static constexpr fixed_t WarningRetapRadius = 96 * FRACUNIT;
-		if (player.player_ping)
-		{
-			const playerPing_s& prev = *player.player_ping;
-			if (!P_IsPingExpired(prev) &&
-			    (prev.type == PING_GENERAL || prev.type == PING_WARNING) &&
-			    (::gametic - prev.pingtic) <= WarningRetapWindow)
-			{
-				const fixed_t dist =
-				    P_AproxDistance(ping.pos.x - prev.pos.x, ping.pos.y - prev.pos.y);
-				if (dist <= WarningRetapRadius)
-				{
-					ping.type = PING_WARNING;
-					// Keep warning anchored at the original world ping location.
-					ping.pos = prev.pos;
-				}
-			}
-		}
-		}
-
-	}
+		return PING_SUBMIT_NONE;
 
 	const bool retapWarning = ping.type == PING_WARNING;
 	if (!retapWarning && !P_ConsumePingToken(player))

@@ -424,7 +424,7 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	// killough 3/27/98: exclude things totally separated
 	// from the viewer, by either water or fake ceilings
 	// killough 4/11/98: improve sprite clipping for underwater/fake ceilings
-	// [LM] Allow for passing NULL sectors for global sprites.
+	// Global sprites are not associated with a sector.
 	sector_t* heightsec = sector ? sector->heightsec : nullptr;
 
 	if (heightsec && heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC)
@@ -1267,7 +1267,7 @@ void R_DrawSprite (vissprite_t *spr)
 	// Modified by Lee Killough:
 	// (pointer check was originally nonportable
 	// and buggy, by going past LEFT end of array):
-	if (!BITFLAG_TEST(spr->visflags, VSF_NOCLIP)) // [LM] Skip clipping if noclip.
+	if (!BITFLAG_TEST(spr->visflags, VSF_NOCLIP))
 	{
 		for (ds = ds_p; ds-- > firstdrawseg;) // new -- killough
 		{

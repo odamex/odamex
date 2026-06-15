@@ -42,7 +42,7 @@
 #include "m_vectors.h"
 #include "am_map.h"
 #include "cl_demo.h"
-#include "p_playerping.h" // [LM]
+#include "p_playerping.h"
 
 extern NetDemo netdemo;
 
@@ -1041,7 +1041,7 @@ void R_RenderPlayerView(player_t* player)
 	else
 		R_RenderBSPNode(numnodes - 1);	// The head node is the last node output.
 
-	R_AddGlobalSprites(); // [LM]
+	R_AddGlobalSprites();
 	R_DrawPlanes();
 	R_DrawSkyBoxes();
 	R_DrawMasked();

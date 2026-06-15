@@ -95,8 +95,6 @@ fixed_t P_CalculateWeaponBobY(player_t& player, float scale_amount);
  * @brief Add a 3D HUD sprite to the world.  This sprite is noclipped and
  *        not scaled with distance.
  *
- * @author Lexi Mayfield
- *
  * @param lump Lump to add to the vissprite list.
  * @param pos World XYZ coordinate.
  * @param translucency Translucency value from 0.0 to 1.0

@@ -656,7 +656,7 @@ enum vsflags_e : unsigned int
 {
 	VSF_NONE = 0,
 	VSF_SPECTATOR = BIT(0),		// [Blair] Mark if this visprite belongs to a spectator.
-	VSF_NOCLIP = BIT(1),		// [LM] Do no sprite clipping (see through walls)
+	VSF_NOCLIP = BIT(1),		// Do not clip the sprite against world geometry.
 	VSF_FOREGROUND = BIT(2),	// Draw after masked world sprites/textures.
 };
 
@@ -696,7 +696,7 @@ struct vissprite_t
 
 	int 			mobjflags;
 	int				statusflags;	// Status of player to show (powers, etc)
-	unsigned int	visflags;		// [LM] Odamex-specific vissprite flags. 
+	unsigned int	visflags;		// Odamex-specific vissprite flags.
 
 	translationref_t translation;	// [RH] for translation;
 	sector_t*		heightsec;		// killough 3/27/98: height sector for underwater/fake ceiling

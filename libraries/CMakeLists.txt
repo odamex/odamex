@@ -96,7 +96,15 @@ function(lib_buildgen)
 endfunction()
 
 function(lib_build)
-  cmake_parse_arguments("" "" "LIBRARY" "" ${ARGN})
+  cmake_parse_arguments("" "NOPARALLEL" "LIBRARY" "" ${ARGN})
+
+  set(_PARALLEL_ARGS)
+  if(WIN32)
+    set(_NOPARALLEL TRUE)
+  endif()
+  if(NOT _NOPARALLEL)
+    set(_PARALLEL_ARGS --parallel ${PARALLEL_PROC_COUNT})
+  endif()
 
   # Compile the library.
   get_property(_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
@@ -106,7 +114,7 @@ function(lib_build)
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
       --config Debug --target install
-      --parallel ${PARALLEL_PROC_COUNT} RESULT_VARIABLE _RESVAL)
+      ${_PARALLEL_ARGS} RESULT_VARIABLE _RESVAL)
     if(_RESVAL GREATER 0)
       message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly as Debug.")
     endif()
@@ -115,7 +123,7 @@ function(lib_build)
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
       --config RelWithDebInfo --target install
-      --parallel ${PARALLEL_PROC_COUNT} RESULT_VARIABLE _RESVAL)
+      ${_PARALLEL_ARGS} RESULT_VARIABLE _RESVAL)
     if(_RESVAL GREATER 0)
       message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly as Release.")
     endif()
@@ -125,7 +133,7 @@ function(lib_build)
     execute_process(COMMAND "${CMAKE_COMMAND}"
       --build "${CMAKE_CURRENT_BINARY_DIR}/${_LIBRARY}-build"
       --config ${CMAKE_BUILD_TYPE} --target install
-      --parallel ${PARALLEL_PROC_COUNT} RESULT_VARIABLE _RESVAL)
+      ${_PARALLEL_ARGS} RESULT_VARIABLE _RESVAL)
     if(_RESVAL GREATER 0)
       message(FATAL_ERROR "Library ${_LIBRARY} did not build correctly.")
     endif()
