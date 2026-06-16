@@ -174,6 +174,9 @@ namespace {
 #ifdef _WIN32
 				// Windows makes us ruthlessly kill the thread.
 				if (TerminateThread(m_thread.native_handle(), 0))
+#elif defined(__APPLE__)
+				// join() deadlocks on mac, someone else can figure out why
+				m_thread.detach();
 #else
 				// Pthreads lets us do a Cancel operation, which defaults to ending the
 				// thread when control is in a "cancelation point" function.  Fortunately
@@ -181,7 +184,6 @@ namespace {
 				// std::getline and std::condition_variable for the vast majority of its
 				// lifetime, so it cancels basically right away.
 				if (pthread_cancel(m_thread.native_handle()) == 0)
-#endif
 				{
 					m_thread.join();
 				}
@@ -189,6 +191,7 @@ namespace {
 				{
 					m_thread.detach();
 				}
+#endif
 			}
 
 #ifdef _WIN32
