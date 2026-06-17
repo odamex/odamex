@@ -444,6 +444,9 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 	case NQ_PROTO:
 		PrintFmt("Disconnected from server: Unrecoverable protocol error\n");
 		break;
+	case NQ_SERVER_DROP:
+		PrintFmt("Dropped by server\n");
+		break;
 	}
 
 	if (::debug_disconnect)
@@ -2213,7 +2216,7 @@ void CL_SendCmd(void)
 			closestNonCredibleVisSprite->mo->credibility.Challenge();
 
 			MSG_WriteSVC(messenger.ReliableBuf(), CLC_SendMobjUpdate(closestNonCredibleVisSprite->mo->netid));
-            closestNonCredibleVisSprite = nullptr;
+			closestNonCredibleVisSprite = nullptr;
 		}
 
 		odaproto::clc::PlayerInput& currentNetcmd = localcmds[gametic % MAXSAVETICS];
