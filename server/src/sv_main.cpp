@@ -1600,9 +1600,9 @@ int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated, AwarenessEnum new
 	return updated;
 }
 
-bool SV_SendPacket(player_t &pl)
+MessageResultEnum SV_SendPacket(player_t &pl)
 {
-	return pl.client.messenger.SendAll(gametic, pl.client.address) != MessageResultEnum::ABORT;
+	return pl.client.messenger.SendAll(gametic, pl.client.address);
 }
 
 void SV_BroadcastNoiseAlert(const sector_t& sector)
@@ -3353,16 +3353,22 @@ void SV_SendPackets()
 	if (players.empty())
 		return;
 
-	std::vector<std::future<void>> futures;
+	struct SendResultType
+	{
+		std::reference_wrapper<player_t> playerRef;
+		std::future<MessageResultEnum>   sendResult;
+	};
+
+	std::vector<SendResultType> futures;
 
 	for (auto& player : players)
 	{
 		// Disconnecting players' messengers send their packets via the dead-end messenger collection.
 		if (player.playerstate != PST_DISCONNECT)
 		{
-			std::packaged_task<void ()> task { [&player] () { SV_SendPacket(player); } };
+			std::packaged_task<MessageResultEnum ()> task { [&player] () { return SV_SendPacket(player); } };
 
-			futures.emplace_back(task.get_future());
+			futures.emplace_back( std::ref(player), task.get_future() );
 
 			s_workers.MoveCommand(std::move(task));
 		}
@@ -3370,7 +3376,13 @@ void SV_SendPackets()
 
 	for (auto& future : futures)
 	{
-		future.wait();
+		const MessageResultEnum result = future.sendResult.get();
+		if (result == MessageResultEnum::ABORT)
+		{
+			player_t& player = future.playerRef.get();
+			PrintFmt(PRINT_WARNING, "Client at {} exceeded critical max send size\n", NET_AdrToString(player.client.address));
+			SV_DropClientUngracefully(player, "timed out");
+		}
 	}
 }
 

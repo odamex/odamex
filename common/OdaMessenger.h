@@ -134,8 +134,9 @@ class OdaMessenger
 			// Track when reliable exceeds a certain percentage of the budget.  This could be configurable...
 			m_reliableOverloadThreshold = 9 * (m_perTicBudget / 10);
 		}
-		void SetPacketsPerRetransmit(int i_maxPackets)  { m_maxPacketsPerRetransmission = i_maxPackets; }
-		void SetRetransmitDelay     (int i_delayInTics) { m_retransmitDelayInTics = i_delayInTics; }
+		void SetPacketsPerRetransmit    (int i_maxPackets)   { m_maxPacketsPerRetransmission = i_maxPackets; }
+		void SetRetransmitDelay         (int i_delayInTics)  { m_retransmitDelayInTics = i_delayInTics; }
+		void SetCriticalSequenceTimeout (int i_timeoutInTics){ m_criticalSequenceTimeoutInTics = i_timeoutInTics; }
 
 		int GetLastReliableSendSize() const           { return static_cast<int>(m_bytesSentWithReliability); }
 		int GetLastSendSize() const                   { return m_lastSendSize; }
@@ -174,9 +175,12 @@ class OdaMessenger
 
 		buf_t* m_quickTurnaroundReceiveBuffer { nullptr };
 
-		int m_maxPacketsPerRetransmission { DEFAULT_RETRANSMISSIONS_PER_TIC };
-		int m_retransmitDelayInTics       { 0 };
-		int m_maxRate                     { 0 };
+		int m_maxPacketsPerRetransmission   { DEFAULT_RETRANSMISSIONS_PER_TIC };
+		int m_retransmitDelayInTics         { 0 };
+		int m_maxRate                       { 0 };
+		int m_criticalSequenceTimeoutInTics { 5 * TICRATE };    // With theoretical default:
+		                                                        //  800 KBps * 5 sec = 4000 KB backed-up retransmits max
+		                                                        //  4000 KB * 256 players = 1024000 KB total ~= 1.05 GB
 
 		int m_byteBudget  {  0 };       ///< The live budget.  Signed so that it can also represent debt.
 		int m_perTicBudget{  0 };       ///< The value used to reset the budget every tic.

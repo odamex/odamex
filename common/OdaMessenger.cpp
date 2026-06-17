@@ -31,6 +31,11 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 {
 	const PacketHeaderType header {io_rawBuf};
 
+	if (m_sender.GetMode() == SequenceSender::CRITICAL_FAILURE)
+	{
+		return MessageResultEnum::ABORT;
+	}
+
 	if (header.flags & SVF_UNUSED_MASK)
 	{
 		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood", header.flags);
@@ -73,6 +78,11 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 
 bool OdaMessenger::NextReceivedPacket(buf_t& io_rawBuf)
 {
+	if (m_sender.GetMode() == SequenceSender::CRITICAL_FAILURE)
+	{
+		return false;
+	}
+
 	if (m_quickTurnaroundReceiveBuffer)
 	{
 		io_rawBuf.swap(*m_quickTurnaroundReceiveBuffer);
@@ -137,6 +147,7 @@ size_t OdaMessenger::PackAsUnreliable(Packet& io_packet, const buf_t& messageBuf
 
 MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest)
 {
+	// Once a second, recalculate the budget to incorporate any changes made to maxRate.
 	const int ticPhase = i_currentTic % TICRATE;
 	if (ticPhase == 0)
 	{
@@ -150,14 +161,25 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 
 	m_lastSendSize = 0;
 
+	if (m_recordingIsEnabled)
+	{
+		m_recordingBuffer.clear();
+	}
+
 	if (simulated_connection)
 	{
 		Clear();
 	}
 
-	if (m_recordingIsEnabled)
+	// Phase zero:  Detect if the client has become dangerously non-responsive,
+	//              and abort if so.
+	if (SequenceQueueEntryType* oldestOutgoingUnackedEntry = m_sender.IterateUnackedPackets().Next())
 	{
-		m_recordingBuffer.clear();
+		if (i_currentTic > oldestOutgoingUnackedEntry->originatingTic + m_criticalSequenceTimeoutInTics)
+		{
+			m_sender.SetMode(SequenceSender::CRITICAL_FAILURE);
+			return MessageResultEnum::ABORT;
+		}
 	}
 
 	// First phase - send high-priority non-reliables (acks, servertic, player updates)
@@ -265,7 +287,7 @@ int OdaMessenger::HandleRetransmissions(int i_currentTic, const netadr_t& i_dest
 	{
 		m_sender.SetMode(SequenceSender::RECOVERY);
 	}
-	else if (m_unackedGrowth == 0)
+	else if (m_unackedGrowth == 0 and m_sender.GetMode() == SequenceSender::RECOVERY)
 	{
 		m_sender.SetMode(SequenceSender::NORMAL);
 	}
