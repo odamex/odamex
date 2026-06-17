@@ -965,9 +965,12 @@ void SV_GetPackets()
 		}
 		else
 		{
-			player.client.messenger.Receive(::net_message);
-			player.client.last_received = gametic;
-			SV_ParseCommands(player);
+			const MessageResultEnum receiveResult = player.client.messenger.Receive(::net_message);
+			if (receiveResult != MessageResultEnum::ABORT)
+			{
+				player.client.last_received = gametic;
+				SV_ParseCommands(player);
+			}
 		}
 	}
 }

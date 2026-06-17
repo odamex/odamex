@@ -2243,18 +2243,24 @@ void CL_SendCmd(void)
 		}
 	}
 
-	messenger.SendAll(gametic, serveraddr);
+	const MessageResultEnum sendResult = messenger.SendAll(gametic, serveraddr);
 
-	const int retransmittedByteCount = messenger.HandleRetransmissions(gametic, serveraddr);
+	if (sendResult == MessageResultEnum::ABORT)
+	{
+		CL_QuitNetGame(NQ_SERVER_DROP);
+	}
+	else
+	{
+		const int retransmittedByteCount = messenger.HandleRetransmissions(gametic, serveraddr);
 
-	const int currentSendSize    = messenger.GetLastSendSize();
-	const int totalSentByteCount = currentSendSize + retransmittedByteCount;
+		const int currentSendSize    = messenger.GetLastSendSize();
+		const int totalSentByteCount = currentSendSize + retransmittedByteCount;
 
-	netgraph.setReliableNonContiguousRetransmits(messenger.GetNonContiguousRetransmitPackets());
-	netgraph.setReliableSendDepth(messenger.GetPendingAckCount());
-	netgraph.addTrafficOut(totalSentByteCount);
-	outrate += totalSentByteCount;
-
+		netgraph.setReliableNonContiguousRetransmits(messenger.GetNonContiguousRetransmitPackets());
+		netgraph.setReliableSendDepth(messenger.GetPendingAckCount());
+		netgraph.addTrafficOut(totalSentByteCount);
+		outrate += totalSentByteCount;
+	}
 }
 
 //

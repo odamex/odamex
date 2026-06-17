@@ -36,6 +36,12 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 		return MessageResultEnum::ABORT;
 	}
 
+	// If somehow we've overflowed on header decode, just shrug, discard, and move on.
+	if (io_rawBuf.overflowed)
+	{
+		return MessageResultEnum::ABORT;
+	}
+
 	if (header.flags & SVF_UNUSED_MASK)
 	{
 		PrintFmt(PRINT_WARNING, "Protocol flag bits ({}) were not understood", header.flags);
@@ -48,8 +54,17 @@ MessageResultEnum OdaMessenger::Receive(buf_t& io_rawBuf)
 
 	const size_t fullSize               = io_rawBuf.size();
 	const size_t startOfReliableData    = io_rawBuf.TellRead();
-	const size_t startOfNonReliableData = startOfReliableData + header.reliableSize;
-	const size_t sizeOfNonReliableData  = fullSize - startOfNonReliableData;
+
+	// Do some sanity checking.
+	//
+	// No need to check startOfReliableData because that and fullSize are direct results of packet reception
+	// and header read.  Once we start looking at the values in the header, then we take a closer look.
+	//
+	// Can't look beyond the end of the message.  Discard and move on if it's that bad.
+	if (fullSize < startOfReliableData + header.reliableSize)   // note: reliableSize is unsigned
+	{
+		return MessageResultEnum::ABORT;
+	}
 
 	if (header.reliableSize)
 	{

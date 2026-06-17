@@ -87,6 +87,7 @@ class OdaMessenger
 		/// Return values:
 		///  ACCEPT - Normal result: Packet(s) were sent as needed without hitting a cap.
 		///  DEFER  - Packet(s) may have been sent, but a cap has been enountered.
+		///  ABORT  - Critical error sending: Time to drop the connection.
 		MessageResultEnum SendAll(int i_currentTic, const netadr_t& i_dest);
 
 		/// Retransmit the oldest reliable packets that were previously sent and are older than RetransmitDelay
