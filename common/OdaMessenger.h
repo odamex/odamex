@@ -39,6 +39,11 @@ class OdaMessenger
 
 	public:
 
+		// With theoretical defaults:
+		//      800 KBps * 5 sec = 4000 KB backed-up retransmits max
+		//      4000 KB * 256 players = 1024000 KB total ~= 1.05 GB in memory at absolute worst
+		constexpr static int DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS =  5 * TICRATE;
+
 		//  -------------- Receiving functions --------------
 
 		/// Receive and enqueue a packet for processing.  Every packet received with this function must be subsequently fetched via
@@ -178,9 +183,7 @@ class OdaMessenger
 		int m_maxPacketsPerRetransmission   { DEFAULT_RETRANSMISSIONS_PER_TIC };
 		int m_retransmitDelayInTics         { 0 };
 		int m_maxRate                       { 0 };
-		int m_criticalSequenceTimeoutInTics { 5 * TICRATE };    // With theoretical default:
-		                                                        //  800 KBps * 5 sec = 4000 KB backed-up retransmits max
-		                                                        //  4000 KB * 256 players = 1024000 KB total ~= 1.05 GB
+		int m_criticalSequenceTimeoutInTics { DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS };
 
 		int m_byteBudget  {  0 };       ///< The live budget.  Signed so that it can also represent debt.
 		int m_perTicBudget{  0 };       ///< The value used to reset the budget every tic.

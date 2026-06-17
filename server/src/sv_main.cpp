@@ -3361,11 +3361,18 @@ void SV_SendPackets()
 
 	std::vector<SendResultType> futures;
 
+	// Allow a developer to sit with a client in a debugger for at least a minute.
+	const int criticalTimeoutInTics = (not ::developer.asBool()) ?
+	                                    OdaMessenger::DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS :
+	                                    65 * TICRATE;
+
 	for (auto& player : players)
 	{
 		// Disconnecting players' messengers send their packets via the dead-end messenger collection.
 		if (player.playerstate != PST_DISCONNECT)
 		{
+			player.client.messenger.SetCriticalSequenceTimeout(criticalTimeoutInTics);
+
 			std::packaged_task<MessageResultEnum ()> task { [&player] () { return SV_SendPacket(player); } };
 
 			futures.emplace_back( std::ref(player), task.get_future() );

@@ -173,12 +173,15 @@ MessageResultEnum OdaMessenger::SendAll(int i_currentTic, const netadr_t& i_dest
 
 	// Phase zero:  Detect if the client has become dangerously non-responsive,
 	//              and abort if so.
-	if (SequenceQueueEntryType* oldestOutgoingUnackedEntry = m_sender.IterateUnackedPackets().Next())
+	if (m_criticalSequenceTimeoutInTics > 0)
 	{
-		if (i_currentTic > oldestOutgoingUnackedEntry->originatingTic + m_criticalSequenceTimeoutInTics)
+		if (SequenceQueueEntryType* oldestOutgoingUnackedEntry = m_sender.IterateUnackedPackets().Next())
 		{
-			m_sender.SetMode(SequenceSender::CRITICAL_FAILURE);
-			return MessageResultEnum::ABORT;
+			if (i_currentTic > oldestOutgoingUnackedEntry->originatingTic + m_criticalSequenceTimeoutInTics)
+			{
+				m_sender.SetMode(SequenceSender::CRITICAL_FAILURE);
+				return MessageResultEnum::ABORT;
+			}
 		}
 	}
 
