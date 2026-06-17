@@ -26,7 +26,7 @@
 
 #include "odamex.h"
 
-#include <unordered_set>
+#include <vector>
 
 #include <math.h>
 #include "m_random.h"
@@ -123,7 +123,7 @@ void SV_BroadcastNoiseAlert(const sector_t& sector);
 
 extern bool isFast;
 
-static std::unordered_set<AActor::AActorPtr> s_friendlies;
+static std::vector<AActor::AActorPtr> s_friendlies;
 
 //
 // ENEMY THINKING
@@ -1010,6 +1010,10 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 		actor->lastenemy = AActor::AActorPtr();
 	}
 
+	// If there are no friendlies at all, don't bother doing a potentially expensive search for them.
+	if (s_friendlies.empty())
+		return false;
+
 	// This is NOT MBF behavior
 	// But we want a smarter monster check for friendlies and hostiles attacking friendlies.
 	AActor* enemy = P_RoughTargetSearch(actor, FixedToAngle(INT2FIXED(180)), 7, RoughMonsterCheck);
@@ -1120,25 +1124,17 @@ void P_SetupHelpers()
 
 void P_RunHelperTics()
 {
-    // 
-    auto friendlyIter = s_friendlies.begin();
-    while (friendlyIter != s_friendlies.end())
-    {
-        if (*friendlyIter == nullptr)   // Make use of szp's "self-zeroizing" feature to drop elements as friends disappear.
-        {
-            friendlyIter = s_friendlies.erase(friendlyIter);
-        }
-        else
-        {
-            ++friendlyIter;
-        }
-    }
+	std::erase_if(s_friendlies,
+	              [] (const AActor::AActorPtr& friendly)
+	              {
+	                  return friendly == nullptr;       // Make use of szp's "self-zeroizing" feature to drop elements as friends disappear.
+	              });
 
-    // Only the server continues on to spawn management.
-    if (not serverside)
-    {
-        return;
-    }
+	// Only the server continues on to spawn management.
+	if (not serverside)
+	{
+		return;
+	}
 
 	std::vector<HelperSpawns>::const_iterator i = ::helperspawns.begin();
 
@@ -2087,7 +2083,7 @@ void A_CyberAttack (AActor *actor)
 
 void P_GiveFriendlyOwnerInfo(AActor* friendly, const AActor* origin)
 {
-	s_friendlies.insert(friendly->ptr());
+	s_friendlies.push_back(friendly->ptr());
 
 	if (origin)
 	{
