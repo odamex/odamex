@@ -2700,7 +2700,7 @@ void A_SpawnObject(AActor* actor)
 
 	P_FriendlyEffects(mo);
 
-	// TEST!  IS THIS EVEN NEEDED???  SV_UpdateMobj(mo);
+	SV_SpawnMobj(mo);
 }
 
 //
