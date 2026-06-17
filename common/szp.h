@@ -148,8 +148,14 @@ public:
 	{
 		unlink();
 
-		// first link
+		// Please note that by using a naive call to `new`, and the fact that we're
+		// in C++17 and up, __STDCPP_DEFAULT_NEW_ALIGNMENT__ applies and can be relied
+		// on to know how many least-significant bits of our address will be zero.
+		// This will be important for our specialization of std::hash.
+		//
 		naive = new T*(target);
+
+		// first link
 		prev = next = this;
 	}
 
@@ -180,4 +186,80 @@ public:
 	{
 		unlink();
 	}
+
+	friend std::hash<szp<T>>;
+
 };
+
+namespace std
+{
+    template <typename U>
+    constexpr bool IS_8_BIT_ALIGNED = __STDCPP_DEFAULT_NEW_ALIGNMENT__ == 1;
+
+    template <typename U>
+    constexpr bool IS_16_BIT_ALIGNED = __STDCPP_DEFAULT_NEW_ALIGNMENT__ == 2;
+
+    template <typename U>
+    constexpr bool IS_32_BIT_ALIGNED = __STDCPP_DEFAULT_NEW_ALIGNMENT__ == 4;
+
+    template <typename U>
+    constexpr bool IS_64_BIT_ALIGNED = __STDCPP_DEFAULT_NEW_ALIGNMENT__ == 8;
+
+    template <typename U>
+    constexpr bool IS_128_BIT_ALIGNED = __STDCPP_DEFAULT_NEW_ALIGNMENT__ == 16;
+
+    template <typename T>
+        requires IS_8_BIT_ALIGNED<T>
+    struct hash<szp<T>>
+    {
+        size_t operator()(const szp<T>& objPtr) const noexcept
+        {
+            return reinterpret_cast<size_t>(objPtr.naive);
+        }
+    };
+
+    template <typename T>
+        requires IS_16_BIT_ALIGNED<T>
+    struct hash<szp<T>>
+    {
+        size_t operator()(const szp<T>& objPtr) const noexcept
+        {
+            return reinterpret_cast<size_t>(objPtr.naive) >> 1;
+        }
+    };
+
+    template <typename T>
+        requires IS_32_BIT_ALIGNED<T>
+    struct hash<szp<T>>
+    {
+        size_t operator()(const szp<T>& objPtr) const noexcept
+        {
+            return reinterpret_cast<size_t>(objPtr.naive) >> 2;
+        }
+    };
+
+    template <typename T>
+        requires IS_64_BIT_ALIGNED<T>
+    struct hash<szp<T>>
+    {
+        size_t operator()(const szp<T>& objPtr) const noexcept
+        {
+            return reinterpret_cast<size_t>(objPtr.naive) >> 3;
+        }
+    };
+
+    template <typename T>
+        requires IS_128_BIT_ALIGNED<T>
+    struct hash<szp<T>>
+    {
+        size_t operator()(const szp<T>& objPtr) const noexcept
+        {
+            // Uncomment the following to prove that this overload of std::hash
+            // is actually being used in the code automatically.
+            //
+            //static_assert(alignof(T) == 2);
+            return reinterpret_cast<size_t>(objPtr.naive) >> 4;
+        }
+    };
+}
+

@@ -3290,7 +3290,10 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		mobj->flags |= MF_AMBUSH;
 
 	if (mthing.flags & MTF_FRIENDLY)
+	{
 		mobj->flags |= MF_FRIEND;
+		P_GiveFriendlyOwnerInfo(mobj, nullptr);     // Friendly, but no owner.
+	}
 
 	// [RH] Add ThingID to mobj and link it in with the others
 	mobj->tid = mthing.thingid;

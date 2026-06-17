@@ -26,6 +26,8 @@
 
 #include "odamex.h"
 
+#include <unordered_set>
+
 #include <math.h>
 #include "m_random.h"
 #include "m_alloc.h"
@@ -120,6 +122,8 @@ void SV_SpawnMobj(AActor* mobj);
 void SV_BroadcastNoiseAlert(const sector_t& sector);
 
 extern bool isFast;
+
+static std::unordered_set<AActor::AActorPtr> s_friendlies;
 
 //
 // ENEMY THINKING
@@ -1083,6 +1087,7 @@ AActor::AActorPtr SpawnHelper(const MapThing SpawnPoint, mobjtype_t SpawnType, c
 void P_ClearHelpers()
 {
 	helperspawns.clear();
+	s_friendlies.clear();
 }
 
 void P_SetupHelpers()
@@ -1115,11 +1120,25 @@ void P_SetupHelpers()
 
 void P_RunHelperTics()
 {
-	if (::helperspawns.empty())
-	{
-		// nothing to do
-		return;
-	}
+    // 
+    auto friendlyIter = s_friendlies.begin();
+    while (friendlyIter != s_friendlies.end())
+    {
+        if (*friendlyIter == nullptr)   // Make use of szp's "self-zeroizing" feature to drop elements as friends disappear.
+        {
+            friendlyIter = s_friendlies.erase(friendlyIter);
+        }
+        else
+        {
+            ++friendlyIter;
+        }
+    }
+
+    // Only the server continues on to spawn management.
+    if (not serverside)
+    {
+        return;
+    }
 
 	std::vector<HelperSpawns>::const_iterator i = ::helperspawns.begin();
 
@@ -2068,15 +2087,20 @@ void A_CyberAttack (AActor *actor)
 
 void P_GiveFriendlyOwnerInfo(AActor* friendly, const AActor* origin)
 {
-	if (origin->player && friendly->flags & MF_FRIEND)
+	s_friendlies.insert(friendly->ptr());
+
+	if (origin)
 	{
-		friendly->friend_playerid = origin->player->id;
-		friendly->friend_teamid = origin->player->userinfo.team;
-	}
-	else if (origin->flags & MF_FRIEND)
-	{
-		friendly->friend_playerid = origin->friend_playerid;
-		friendly->friend_teamid = origin->friend_teamid;
+		if (origin->player && friendly->flags & MF_FRIEND)
+		{
+			friendly->friend_playerid = origin->player->id;
+			friendly->friend_teamid = origin->player->userinfo.team;
+		}
+		else if (origin->flags & MF_FRIEND)
+		{
+			friendly->friend_playerid = origin->friend_playerid;
+			friendly->friend_teamid = origin->friend_teamid;
+		}
 	}
 }
 
