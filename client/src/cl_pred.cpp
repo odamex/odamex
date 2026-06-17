@@ -264,6 +264,12 @@ void CL_PredictWorld(void)
 	if (gamestate != GS_LEVEL)
 		return;
 
+	if (netdemo.isPaused() && displayplayer().isFreecam)
+	{
+		CL_PredictSpying();
+		return;
+	}
+
 	player_t& p = consoleplayer();
 
 	if (!validplayer(p) || !p.mo || noservermsgs || netdemo.isPaused())

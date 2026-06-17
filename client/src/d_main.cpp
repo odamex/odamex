@@ -201,7 +201,7 @@ void D_ProcessEvents (void)
 void D_PostEvent (const event_t* ev)
 {
 	if (ev->type == ev_mouse && !menuactive && gamestate == GS_LEVEL &&
-		!paused && ConsoleState != c_down && ConsoleState != c_falling)
+		(!paused || displayplayer().isFreecam) && ConsoleState != c_down && ConsoleState != c_falling)
 	{
 		G_Responder((event_t*)ev);
 		return;
