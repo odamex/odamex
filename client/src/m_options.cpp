@@ -569,7 +569,7 @@ static value_t MidiReset[] = {
 
 static value_t OplCore[] = {
 	{ 0.0,			"Fast (Dosbox)"},
-	{ 1.0,			"Balanced (Nuked 1.74)"},
+	{ 1.0,			"Balanced (Nuked-Fast 1.8)"},
 	{ 2.0,			"Accurate (Nuked 1.8)"}
 };
 
