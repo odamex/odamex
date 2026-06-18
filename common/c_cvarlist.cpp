@@ -150,7 +150,7 @@ CVAR(				sv_keepkeys, "0", "Keep keys on death",
 CVAR_FUNC_DECL(		sv_sharekeys, "0", "Share keys found to every player.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
-CVAR_RANGE(			sv_maxunlagtime, "1.0", "Cap the maxiumum time allowed for player reconciliation (in seconds)",
+CVAR_RANGE(			sv_maxunlagtime, "1.0", "Cap the maximum time allowed for player reconciliation (in seconds)",
 					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
 CVAR(				sv_allowmovebob, "1", "Allow weapon & view bob changing",
@@ -484,7 +484,7 @@ CVAR(               cl_waddownloaddir, "", "Set custom WAD download directory",
 					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR				(r_softinvulneffect, "1",
-					"Change invuln to enable light googles and invert the pallete on the weapon sprite only.",
+					"Change invuln to enable light goggles and invert the palette on the weapon sprite only.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 // Misc stuff

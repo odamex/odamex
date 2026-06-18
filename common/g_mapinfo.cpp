@@ -1410,13 +1410,13 @@ void ParseEpisodeInfo(OScanner& os)
 		if (os.compareToken("{"))
 		{
 			// Detected new-style MAPINFO
-			os.error("Detected incorrectly placed curly brace in MAPINFO episode definiton");
+			os.error("Detected incorrectly placed curly brace in MAPINFO episode definition");
 		}
 		else if (os.compareToken("}"))
 		{
 			if (new_mapinfo == false)
 				os.error("Detected incorrectly placed curly brace in MAPINFO episode "
-				        "definiton");
+				        "definition");
 			else
 				break;
 		}
