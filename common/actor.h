@@ -627,12 +627,19 @@ private:
 
 	friend class FActorIterator;
 
+	void ClearFriendly();
+
+	static std::vector<AActorPtr> s_friendlies;
 public:
 
 	void LinkToWorld ();
 	void UnlinkFromWorld ();
 
 	void SetOrigin (fixed_t x, fixed_t y, fixed_t z);
+
+	bool IsFriendly() const { return flags & MF_FRIEND; }
+	void SetFriendly (bool isFriendly, const AActor* owner);
+	static std::reference_wrapper<std::vector<AActorPtr>> GetFriendlies() { return s_friendlies; }
 
 	AActorPtr ptr(){ return self; }
 

@@ -99,6 +99,8 @@ NetIDHandler ServerNetID;
 typedef std::map<uint32_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
 
+std::vector<AActor::AActorPtr> AActor::s_friendlies;
+
 IMPLEMENT_SERIAL(AActor, DThinker)
 
 AActor::~AActor ()
@@ -403,6 +405,53 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 	args.fill(0);
 }
 
+void AActor::ClearFriendly()
+{
+    if (IsFriendly())
+    {
+        this->flags &= ~MF_FRIEND;
+        std::erase_if(s_friendlies, [this] (const AActor::AActorPtr& friendly)
+                                    {
+                                        return friendly == this;
+                                    });
+    }
+}
+
+
+void AActor::SetFriendly (bool i_isFriendly, const AActor* owner)
+{
+    const bool isAlreadyFriendly = IsFriendly();
+
+    if (i_isFriendly != isAlreadyFriendly)
+    {
+        if (i_isFriendly)
+        {
+            this->flags |= MF_FRIEND;
+            s_friendlies.push_back(ptr());
+
+            P_FriendlyEffects(this);
+        }
+        else
+        {
+            ClearFriendly();
+        }
+    }
+
+    if (owner)
+    {
+		if (owner->player and i_isFriendly)
+		{
+			this->friend_playerid = owner->player->id;
+			this->friend_teamid   = owner->player->userinfo.team;
+		}
+		else if (owner->IsFriendly())
+		{
+			this->friend_playerid = owner->friend_playerid;
+			this->friend_teamid   = owner->friend_teamid;
+		}
+    }
+}
+
 
 bool P_IsVoodooDoll(const AActor* mo)
 {
@@ -499,6 +548,7 @@ void AActor::Destroy ()
 	SV_SendDestroyActor(this);
 
 	actor_by_netid.erase(netid);
+	ClearFriendly();
 
 	// Remove from health pool.
 	if (!::savegamerestore)
@@ -3299,8 +3349,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 
 	if (mthing.flags & MTF_FRIENDLY)
 	{
-		mobj->flags |= MF_FRIEND;
-		P_GiveFriendlyOwnerInfo(mobj, nullptr);     // Friendly, but no owner.
+		mobj->SetFriendly(true, nullptr);       // Friendly, but no owner.
 	}
 
 	// [RH] Add ThingID to mobj and link it in with the others
