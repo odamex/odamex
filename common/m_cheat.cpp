@@ -543,10 +543,8 @@ AActor* Summon(player_t& player, const std::string& sum, bool friendly)
 
 	if (friendly)
 	{
-		entity->flags |= MF_FRIEND;
+		entity->SetFriendly(true, player.mo);
 		cheatname = "summonfriend";
-		P_GiveFriendlyOwnerInfo(entity, player.mo);
-		P_FriendlyEffects(entity);
 	}
 
 	if (multiplayer)

@@ -26,6 +26,8 @@
 
 #include "odamex.h"
 
+#include <vector>
+
 #include <math.h>
 #include "m_random.h"
 #include "m_alloc.h"
@@ -1006,6 +1008,10 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 		actor->lastenemy = AActor::AActorPtr();
 	}
 
+	// If there are no friendlies at all, don't bother doing a potentially expensive search for them.
+	if (AActor::GetFriendlies().get().empty())
+		return false;
+
 	// This is NOT MBF behavior
 	// But we want a smarter monster check for friendlies and hostiles attacking friendlies.
 	AActor* enemy = P_RoughTargetSearch(actor, FixedToAngle(INT2FIXED(180)), 7, RoughMonsterCheck);
@@ -1047,13 +1053,9 @@ AActor::AActorPtr SpawnHelper(const MapThing SpawnPoint, mobjtype_t SpawnType, c
 	{
 		if (P_TestMobjLocation(mo))
 		{
-			mo->flags |= MF_FRIEND;
+			mo->SetFriendly(true, origin);
 
 			mo->angle = ANG45 * (SpawnPoint.angle / 45);
-
-			P_GiveFriendlyOwnerInfo(mo, origin);
-
-			P_FriendlyEffects(mo);
 
 			SV_SpawnMobj(mo);
 
@@ -1115,9 +1117,10 @@ void P_SetupHelpers()
 
 void P_RunHelperTics()
 {
-	if (::helperspawns.empty())
+
+	// Only the server continues on to spawn management.
+	if (not serverside)
 	{
-		// nothing to do
 		return;
 	}
 
@@ -2066,20 +2069,6 @@ void A_CyberAttack (AActor *actor)
 	}
 }
 
-void P_GiveFriendlyOwnerInfo(AActor* friendly, const AActor* origin)
-{
-	if (origin->player && friendly->flags & MF_FRIEND)
-	{
-		friendly->friend_playerid = origin->player->id;
-		friendly->friend_teamid = origin->player->userinfo.team;
-	}
-	else if (origin->flags & MF_FRIEND)
-	{
-		friendly->friend_playerid = origin->friend_playerid;
-		friendly->friend_teamid = origin->friend_teamid;
-	}
-}
-
 void A_BruisAttack (AActor *actor)
 {
 	if (!actor->target)
@@ -2674,11 +2663,7 @@ void A_SpawnObject(AActor* actor)
 		}
 	}
 
-	mo->flags = (mo->flags & ~MF_FRIEND) | (actor->flags & MF_FRIEND);
-
-	P_GiveFriendlyOwnerInfo(mo, actor);
-
-	P_FriendlyEffects(mo);
+	mo->SetFriendly(actor->IsFriendly(), actor);
 
 	SV_SpawnMobj(mo);
 }
@@ -2905,10 +2890,7 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 
 					info = corpsehit->info;
 
-					corpsehit->flags =
-					    (info->flags & ~MF_FRIEND) | (actor->flags & MF_FRIEND);
-
-					P_GiveFriendlyOwnerInfo(corpsehit, actor);
+					corpsehit->SetFriendly(actor->IsFriendly(), actor);
 
 					if (serverside)
 					{
@@ -3395,9 +3377,7 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 	 */
 
 	/* killough 7/20/98: PEs shoot lost souls with the same friendliness */
-	other->flags = (other->flags & ~MF_FRIEND) | (actor->flags & MF_FRIEND);
-
-	P_GiveFriendlyOwnerInfo(other, actor);
+    other->SetFriendly(actor->IsFriendly(), actor);
 
 	// Check for movements.
 	if (!P_TryMove(other, x, y, false))
@@ -3800,10 +3780,9 @@ void A_BrainSpit (AActor *mo)
 		newmobj->target = targ->ptr();
 		newmobj->reactiontime =
 			((targ->y - mo->y)/newmobj->momy) / newmobj->state->tics;
-		// killough 7/18/98: brain friendliness is transferred
-		newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
 
-		P_GiveFriendlyOwnerInfo(newmobj, mo);
+		// killough 7/18/98: brain friendliness is transferred
+		newmobj->SetFriendly(mo->IsFriendly(), mo);
 	}
 
 	S_Sound (mo, CHAN_WEAPON, "brain/spit", 1, ATTN_NONE);
@@ -3876,9 +3855,7 @@ void A_SpawnFly (AActor *mo)
 	newmobj = new AActor (targ->x, targ->y, targ->z, type);
 
 	/* killough 7/18/98: brain friendliness is transferred */
-	newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
-
-	P_GiveFriendlyOwnerInfo(newmobj, mo);
+	newmobj->SetFriendly(mo->IsFriendly(), mo);
 
 	if (P_LookForTargets (newmobj, true))
 		P_SetMobjState (newmobj, newmobj->info->seestate, true);
@@ -3958,10 +3935,7 @@ void A_Spawn(AActor* mo)
 		newmobj = new AActor(mo->x, mo->y, (mo->state->misc2 << FRACBITS) + mo->z,
 			                    static_cast<mobjtype_t>(mo->state->misc1 - 1));
 
-		newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
-
-		P_GiveFriendlyOwnerInfo(newmobj, mo);
-		P_FriendlyEffects(newmobj);
+		newmobj->SetFriendly(mo->IsFriendly(), mo);
 	}
 }
 
