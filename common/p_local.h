@@ -496,7 +496,6 @@ bool P_IsFriendlyThing(const AActor* actor, const AActor* friendshiptest);
 bool P_IsVoodooDoll(const AActor* mo);
 void P_FriendlyEffects();
 void P_FriendlyEffects(AActor* mo);
-void P_GiveFriendlyOwnerInfo(AActor* friendly, const AActor* origin);
 bool P_ProjectileImmune(AActor* target, AActor* source);
 void P_SetupHelpers();
 void P_ClearHelpers();

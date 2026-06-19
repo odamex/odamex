@@ -123,8 +123,6 @@ void SV_BroadcastNoiseAlert(const sector_t& sector);
 
 extern bool isFast;
 
-static std::vector<AActor::AActorPtr> s_friendlies;
-
 //
 // ENEMY THINKING
 // Enemies are always spawned
@@ -1011,7 +1009,7 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 	}
 
 	// If there are no friendlies at all, don't bother doing a potentially expensive search for them.
-	if (s_friendlies.empty())
+	if (AActor::GetFriendlies().get().empty())
 		return false;
 
 	// This is NOT MBF behavior
@@ -1055,13 +1053,9 @@ AActor::AActorPtr SpawnHelper(const MapThing SpawnPoint, mobjtype_t SpawnType, c
 	{
 		if (P_TestMobjLocation(mo))
 		{
-			mo->flags |= MF_FRIEND;
+			mo->SetFriendly(true, origin);
 
 			mo->angle = ANG45 * (SpawnPoint.angle / 45);
-
-			P_GiveFriendlyOwnerInfo(mo, origin);
-
-			P_FriendlyEffects(mo);
 
 			SV_SpawnMobj(mo);
 
@@ -1091,7 +1085,6 @@ AActor::AActorPtr SpawnHelper(const MapThing SpawnPoint, mobjtype_t SpawnType, c
 void P_ClearHelpers()
 {
 	helperspawns.clear();
-	s_friendlies.clear();
 }
 
 void P_SetupHelpers()
@@ -1124,15 +1117,9 @@ void P_SetupHelpers()
 
 void P_RunHelperTics()
 {
-	std::erase_if(s_friendlies,
-	              [] (const AActor::AActorPtr& friendly)
-	              {
-	                  return friendly == nullptr;       // Make use of szp's "self-zeroizing" feature to drop elements as friends disappear.
-	              });
-
-	// Only the server continues on to spawn management.
-	if (not serverside)
+	if (::helperspawns.empty())
 	{
+		// nothing to do
 		return;
 	}
 
@@ -2081,25 +2068,6 @@ void A_CyberAttack (AActor *actor)
 	}
 }
 
-void P_GiveFriendlyOwnerInfo(AActor* friendly, const AActor* origin)
-{
-	s_friendlies.push_back(friendly->ptr());
-
-	if (origin)
-	{
-		if (origin->player && friendly->flags & MF_FRIEND)
-		{
-			friendly->friend_playerid = origin->player->id;
-			friendly->friend_teamid = origin->player->userinfo.team;
-		}
-		else if (origin->flags & MF_FRIEND)
-		{
-			friendly->friend_playerid = origin->friend_playerid;
-			friendly->friend_teamid = origin->friend_teamid;
-		}
-	}
-}
-
 void A_BruisAttack (AActor *actor)
 {
 	if (!actor->target)
@@ -2694,11 +2662,7 @@ void A_SpawnObject(AActor* actor)
 		}
 	}
 
-	mo->flags = (mo->flags & ~MF_FRIEND) | (actor->flags & MF_FRIEND);
-
-	P_GiveFriendlyOwnerInfo(mo, actor);
-
-	P_FriendlyEffects(mo);
+	mo->SetFriendly(actor->IsFriendly(), actor);
 
 	SV_SpawnMobj(mo);
 }
@@ -2925,10 +2889,8 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 
 					info = corpsehit->info;
 
-					corpsehit->flags =
-					    (info->flags & ~MF_FRIEND) | (actor->flags & MF_FRIEND);
-
-					P_GiveFriendlyOwnerInfo(corpsehit, actor);
+					corpsehit->ResetFlagsToDefault();
+					corpsehit->SetFriendly(actor->IsFriendly(), actor);
 
 					if (serverside)
 					{
@@ -3415,9 +3377,7 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 	 */
 
 	/* killough 7/20/98: PEs shoot lost souls with the same friendliness */
-	other->flags = (other->flags & ~MF_FRIEND) | (actor->flags & MF_FRIEND);
-
-	P_GiveFriendlyOwnerInfo(other, actor);
+    other->SetFriendly(actor->IsFriendly(), actor);
 
 	// Check for movements.
 	if (!P_TryMove(other, x, y, false))
@@ -3820,10 +3780,9 @@ void A_BrainSpit (AActor *mo)
 		newmobj->target = targ->ptr();
 		newmobj->reactiontime =
 			((targ->y - mo->y)/newmobj->momy) / newmobj->state->tics;
-		// killough 7/18/98: brain friendliness is transferred
-		newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
 
-		P_GiveFriendlyOwnerInfo(newmobj, mo);
+		// killough 7/18/98: brain friendliness is transferred
+		newmobj->SetFriendly(mo->IsFriendly(), mo);
 	}
 
 	S_Sound (mo, CHAN_WEAPON, "brain/spit", 1, ATTN_NONE);
@@ -3896,9 +3855,7 @@ void A_SpawnFly (AActor *mo)
 	newmobj = new AActor (targ->x, targ->y, targ->z, type);
 
 	/* killough 7/18/98: brain friendliness is transferred */
-	newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
-
-	P_GiveFriendlyOwnerInfo(newmobj, mo);
+	newmobj->SetFriendly(mo->IsFriendly(), mo);
 
 	if (P_LookForTargets (newmobj, true))
 		P_SetMobjState (newmobj, newmobj->info->seestate, true);
@@ -3978,10 +3935,7 @@ void A_Spawn(AActor* mo)
 		newmobj = new AActor(mo->x, mo->y, (mo->state->misc2 << FRACBITS) + mo->z,
 			                    static_cast<mobjtype_t>(mo->state->misc1 - 1));
 
-		newmobj->flags = (newmobj->flags & ~MF_FRIEND) | (mo->flags & MF_FRIEND);
-
-		P_GiveFriendlyOwnerInfo(newmobj, mo);
-		P_FriendlyEffects(newmobj);
+		newmobj->SetFriendly(mo->IsFriendly(), mo);
 	}
 }
 
