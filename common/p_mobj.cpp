@@ -405,40 +405,50 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 	args.fill(0);
 }
 
-void AActor::ClearFriendly()
+void AActor::ResetFlagsToDefault()
 {
-    if (IsFriendly())
-    {
-        this->flags &= ~MF_FRIEND;
-        std::erase_if(s_friendlies, [this] (const AActor::AActorPtr& friendly)
-                                    {
-                                        return friendly == this;
-                                    });
-    }
+	// First, manage any special states that are strictly tied to any of the flags
+	// which may or may not have changed since construction.
+
+	SetFriendly(this->info->flags & MF_FRIEND, nullptr);
+
+	// Then assign the flags.
+	this->flags = info->flags;
 }
 
+void AActor::ClearFriendly()
+{
+	if (IsFriendly())
+	{
+		this->flags &= ~MF_FRIEND;
+		std::erase_if(s_friendlies, [this] (const AActor::AActorPtr& friendly)
+		                            {
+		                                return friendly == this;
+		                            });
+	}
+}
 
 void AActor::SetFriendly (bool i_isFriendly, const AActor* owner)
 {
-    const bool isAlreadyFriendly = IsFriendly();
+	const bool isAlreadyFriendly = IsFriendly();
 
-    if (i_isFriendly != isAlreadyFriendly)
-    {
-        if (i_isFriendly)
-        {
-            this->flags |= MF_FRIEND;
-            s_friendlies.push_back(ptr());
+	if (i_isFriendly != isAlreadyFriendly)
+	{
+		if (i_isFriendly)
+		{
+			this->flags |= MF_FRIEND;
+			s_friendlies.push_back(ptr());
 
-            P_FriendlyEffects(this);
-        }
-        else
-        {
-            ClearFriendly();
-        }
-    }
+			P_FriendlyEffects(this);
+		}
+		else
+		{
+			ClearFriendly();
+		}
+	}
 
-    if (owner)
-    {
+	if (owner)
+	{
 		if (owner->player and i_isFriendly)
 		{
 			this->friend_playerid = owner->player->id;
@@ -449,9 +459,8 @@ void AActor::SetFriendly (bool i_isFriendly, const AActor* owner)
 			this->friend_playerid = owner->friend_playerid;
 			this->friend_teamid   = owner->friend_teamid;
 		}
-    }
+	}
 }
-
 
 bool P_IsVoodooDoll(const AActor* mo)
 {

@@ -2889,6 +2889,7 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 
 					info = corpsehit->info;
 
+					corpsehit->ResetFlagsToDefault();
 					corpsehit->SetFriendly(actor->IsFriendly(), actor);
 
 					if (serverside)

@@ -636,6 +636,7 @@ public:
 	void UnlinkFromWorld ();
 
 	void SetOrigin (fixed_t x, fixed_t y, fixed_t z);
+	void ResetFlagsToDefault();
 
 	bool IsFriendly() const { return flags & MF_FRIEND; }
 	void SetFriendly (bool isFriendly, const AActor* owner);
