@@ -3378,7 +3378,7 @@ void SV_SendPackets()
 
 			std::packaged_task<MessageResultEnum ()> task { [&player] () { return SV_SendPacket(player); } };
 
-			futures.emplace_back( std::ref(player), task.get_future() );
+			futures.emplace_back( SendResultType{std::ref(player), task.get_future()} );
 
 			s_workers.MoveCommand(std::move(task));
 		}
