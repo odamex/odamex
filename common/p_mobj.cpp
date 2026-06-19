@@ -77,6 +77,7 @@ void SV_UpdateMonsterRespawnCount();
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_itemsrespawn)
 EXTERN_CVAR(sv_respawnsuper)
+EXTERN_CVAR(sv_respawnbarrels)
 EXTERN_CVAR(sv_itemrespawntime)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(co_mbfphys)
@@ -424,7 +425,9 @@ void AActor::Destroy ()
 		P_RemoveHealthPool(this);
 
     // Add special to item respawn queue if it is destined to be respawned
-	if ((flags & MF_SPECIAL) && !(flags & MF_DROPPED) && spawnpoint.type > 0)
+	// also add barrels
+	if (((flags & MF_SPECIAL) && !(flags & MF_DROPPED) && spawnpoint.type > 0) ||
+		info->type == MT_BARREL)
 	{
 		itemrespawnque.emplace(spawnpoint, level.time);
 
@@ -2645,7 +2648,9 @@ void P_RespawnSpecials (void)
 	auto it = spawn_map.find(mthing.type);
 	if (it == spawn_map.end() ||
 		// Allow or not Partial Invisibility & Invulnerability from respawning
-	    (!sv_respawnsuper && (mthing.type == 2022 || mthing.type == 2024)))
+	    (!sv_respawnsuper && (mthing.type == 2022 || mthing.type == 2024)) ||
+		// pop barrels as well if needed
+		(!sv_respawnbarrels && mthing.type == 2035))
 	{
 		// pull it from the queue
 		itemrespawnque.pop();
