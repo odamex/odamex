@@ -658,6 +658,9 @@ void R_InitTextures()
 		numtextures += tx_numtextures;
 	}
 
+	const int first_pname_tex = numtextures;
+	numtextures += nummappatches;
+
 	textures = new texture_t *[numtextures];
 	texturecolumnofs = new unsigned int *[numtextures];
 	texturecomposite = new byte *[numtextures];
@@ -674,29 +677,48 @@ void R_InitTextures()
 	texnum = R_LoadTextureLump(texture2, patchlookup.get(), texnum, texturehash, errors);
 	texturehash.insert(texturehash2.begin(), texturehash2.end());
 
+	const auto createTexture = [&](int textureIndex,
+	                               int sourceLump,
+	                               int patchLump,
+	                               bool overwriteHash)
+	{
+	    const patch_t* patch = W_CachePatch(sourceLump, PU_CACHE);
+
+		texture_t* texture =
+			textures[textureIndex] =
+				static_cast<texture_t*>(Z_Malloc(sizeof(texture_t), PU_STATIC, nullptr));
+
+		texture->name = lumpinfo[sourceLump].name;
+		texture->width = patch->width();
+		texture->height = patch->height();
+		texture->patchcount = 1;
+
+		texture->patches->patch = patchLump;
+		texture->patches->originx = 0;
+		texture->patches->originy = 0;
+
+		RegisterTexture(texture, textureIndex);
+
+		if (overwriteHash)
+			texturehash[texture->name] = textureIndex;
+		else
+			texturehash.try_emplace(texture->name, textureIndex);
+	};
+
 	// TX_ marker (texture namespace) parsed here
 	if (tx_numtextures > 0)
 	{
 		for (int i = texnum, j = 0;
-			i < numtextures;
+			i < first_pname_tex;
 			i++, j++)
 		{
-			const patch_t* tx_patch = W_CachePatch(first_tx + j, PU_CACHE);
-
-			texture_t* texture = textures[i] = static_cast<texture_t*>(Z_Malloc(sizeof(texture_t), PU_STATIC, nullptr));
-
-			texture->name = lumpinfo[first_tx + j].name;
-			texture->width = tx_patch->width();
-			texture->height = tx_patch->height();
-			texture->patchcount = 1;
-
-			texture->patches->patch = patchlookup[nummappatches + j];
-			texture->patches->originx = 0;
-			texture->patches->originy = 0;
-
-			RegisterTexture(texture, i);
-			texturehash[texture->name] = i;
+			createTexture(i, first_tx + j, patchlookup[nummappatches + j], true);
 		}
+	}
+
+	for (int i = first_pname_tex, j = 0; i < numtextures; i++, j++)
+	{
+		createTexture(i, patchlookup[j], patchlookup[j], false);
 	}
 
 	if (errors)
@@ -1058,7 +1080,10 @@ int R_TextureNumForName (const OLumpName& name)
 	{
 		//I_Error ("R_TextureNumForName: %s not found", namet);
 		// [RH] Return empty texture if it wasn't found.
-		PrintFmt(PRINT_WARNING, "Texture {} not found\n", name);
+		if (name == "")
+			PrintFmt(PRINT_WARNING, "Unnamed texture not found\n");
+		else
+			PrintFmt(PRINT_WARNING, "Texture {} not found\n", name);
 		return 0;
 	}
 
