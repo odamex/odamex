@@ -678,9 +678,9 @@ void R_InitTextures()
 	texturehash.insert(texturehash2.begin(), texturehash2.end());
 
 	const auto createTexture = [&](int textureIndex,
-	                                               int sourceLump,
-	                                               int patchLump,
-	                                               bool overwriteHash)
+	                               int sourceLump,
+	                               int patchLump,
+	                               bool overwriteHash)
 	{
 	    const patch_t* patch = W_CachePatch(sourceLump, PU_CACHE);
 
