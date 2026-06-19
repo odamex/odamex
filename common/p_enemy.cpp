@@ -1117,10 +1117,9 @@ void P_SetupHelpers()
 
 void P_RunHelperTics()
 {
-
-	// Only the server continues on to spawn management.
-	if (not serverside)
+	if (::helperspawns.empty())
 	{
+		// nothing to do
 		return;
 	}
 
