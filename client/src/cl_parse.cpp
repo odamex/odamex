@@ -725,6 +725,8 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->Destroy();
 	}
 
+	mo->UpdateActorLists();
+
 	if (msg->spawn_flags() & SVC_SM_FLAGS)
 	{
 		mo->flags = msg->current().flags();
@@ -1453,6 +1455,7 @@ static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 	corpsehit->flags = info->flags;
 	corpsehit->health = info->spawnhealth;
 	corpsehit->target = AActor::AActorPtr();
+	corpsehit->UpdateActorLists();
 }
 
 //

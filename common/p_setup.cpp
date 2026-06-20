@@ -2113,6 +2113,7 @@ void P_SetupLevel (const char *lumpname, int position)
 
 	// [RH] Clear all ThingID hash chains.
 	AActor::ClearTIDHashes ();
+	AActor::ClearActorLists();
 
 	// [RH] clear out the mid-screen message
 	C_MidPrint (NULL);

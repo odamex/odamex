@@ -628,8 +628,13 @@ private:
 	friend class FActorIterator;
 
 	void ClearFriendly();
+	void RemoveFromActorList(std::vector<AActorPtr>& queue);
 
+	// Actor lists to make friendly/unfriendly targeting
+	// a little less taxing...
 	static std::vector<AActorPtr> s_friendlies;
+	static std::vector<AActorPtr> s_hostiles;
+
 public:
 
 	void LinkToWorld ();
@@ -639,7 +644,10 @@ public:
 
 	bool IsFriendly() const { return flags & MF_FRIEND; }
 	void SetFriendly (bool isFriendly, const AActor* owner);
+	void UpdateActorLists();
+	static void ClearActorLists();
 	static std::reference_wrapper<std::vector<AActorPtr>> GetFriendlies() { return s_friendlies; }
+	static std::reference_wrapper<std::vector<AActorPtr>> GetHostiles() { return s_hostiles; }
 
 	AActorPtr ptr(){ return self; }
 

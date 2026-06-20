@@ -100,6 +100,7 @@ typedef std::map<uint32_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
 
 std::vector<AActor::AActorPtr> AActor::s_friendlies;
+std::vector<AActor::AActorPtr> AActor::s_hostiles;
 
 IMPLEMENT_SERIAL(AActor, DThinker)
 
@@ -407,49 +408,69 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 
 void AActor::ClearFriendly()
 {
-    if (IsFriendly())
-    {
-        this->flags &= ~MF_FRIEND;
-        std::erase_if(s_friendlies, [this] (const AActor::AActorPtr& friendly)
-                                    {
-                                        return friendly == this;
-                                    });
-    }
+	if (IsFriendly())
+	{
+		this->flags &= ~MF_FRIEND;
+	}
 }
 
 
-void AActor::SetFriendly (bool i_isFriendly, const AActor* owner)
+void AActor::SetFriendly(bool i_isFriendly, const AActor* owner)
 {
-    const bool isAlreadyFriendly = IsFriendly();
+	if (i_isFriendly)
+	{
+		this->flags |= MF_FRIEND;
 
-    if (i_isFriendly != isAlreadyFriendly)
-    {
-        if (i_isFriendly)
-        {
-            this->flags |= MF_FRIEND;
-            s_friendlies.push_back(ptr());
+		P_FriendlyEffects(this);
+	}
+	else
+	{
+		ClearFriendly();
+	}
 
-            P_FriendlyEffects(this);
-        }
-        else
-        {
-            ClearFriendly();
-        }
-    }
-
-    if (owner)
-    {
+	if (owner)
+	{
 		if (owner->player and i_isFriendly)
 		{
 			this->friend_playerid = owner->player->id;
-			this->friend_teamid   = owner->player->userinfo.team;
+			this->friend_teamid = owner->player->userinfo.team;
 		}
 		else if (owner->IsFriendly())
 		{
 			this->friend_playerid = owner->friend_playerid;
-			this->friend_teamid   = owner->friend_teamid;
+			this->friend_teamid = owner->friend_teamid;
 		}
-    }
+	}
+}
+
+void AActor::UpdateActorLists()
+{
+	// First remove the actor from any current list.
+	RemoveFromActorList(s_friendlies);
+	RemoveFromActorList(s_hostiles);
+
+	// Now, find what list we belong to, and add it.
+	// But if we don't have any health don't add us to any lists.
+	if (health <= 0)
+		return;
+
+	// MBF Rules
+	if (flags & MF_COUNTKILL || type == MT_SKULL)
+		if (IsFriendly())
+			s_friendlies.push_back(ptr());
+		else
+			s_hostiles.push_back(ptr());
+}
+
+void AActor::RemoveFromActorList(std::vector<AActorPtr>& queue)
+{
+	std::erase_if(queue, [this](const AActor::AActorPtr& ptr) { return ptr == this; });
+}
+
+void AActor::ClearActorLists()
+{
+	s_friendlies.clear();
+	s_hostiles.clear();
 }
 
 
@@ -569,6 +590,8 @@ void AActor::Destroy ()
 
 	// unlink from sector and block lists
 	UnlinkFromWorld ();
+
+	//UpdateActorLists();
 
 	// Delete all nodes on the current sector_list			phares 3/16/98
 	if (sector_list)
@@ -3351,6 +3374,8 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	{
 		mobj->SetFriendly(true, nullptr);       // Friendly, but no owner.
 	}
+
+	mobj->UpdateActorLists();
 
 	// [RH] Add ThingID to mobj and link it in with the others
 	mobj->tid = mthing.thingid;
