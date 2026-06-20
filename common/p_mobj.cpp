@@ -99,6 +99,8 @@ NetIDHandler ServerNetID;
 typedef std::map<uint32_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
 
+std::vector<AActor::AActorPtr> AActor::s_friendlies;
+
 IMPLEMENT_SERIAL(AActor, DThinker)
 
 AActor::~AActor ()
@@ -196,9 +198,9 @@ AActor::AActor()
       flags3(0), oflags(0), statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
-      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), transientInt(0),
-      rndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
-      netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), bmapnode(this)
+      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), rndindex(0),
+      spawnRndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
+      netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), spawnTic(gametic), bmapnode(this)
 {
 	args.fill(0);
 	self.init(this);
@@ -222,12 +224,11 @@ AActor::AActor(const AActor& other)
       inext(other.inext), iprev(other.iprev), translation(other.translation),
       translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
       onground(other.onground), touching_sectorlist(other.touching_sectorlist),
-      deadtic(other.deadtic), transientInt(other.transientInt), rndindex(other.rndindex),
-      friend_playerid(other.friend_playerid),
-      friend_teamid(other.friend_teamid), pursuecount(other.pursuecount),
-      strafecount(other.strafecount),
-      netid(other.netid), tid(other.tid),
-      baseline_set(false), updatedDuringTic(other.updatedDuringTic), credibility {other.credibility}, bmapnode(other.bmapnode)
+      deadtic(other.deadtic), rndindex(other.rndindex), spawnRndindex(other.spawnRndindex),
+      friend_playerid(other.friend_playerid), friend_teamid(other.friend_teamid),
+      pursuecount(other.pursuecount), strafecount(other.strafecount), netid(other.netid), tid(other.tid),
+      baseline_set(false), updatedDuringTic(other.updatedDuringTic), spawnTic(other.spawnTic),
+      credibility {other.credibility}, bmapnode(other.bmapnode)
 {
 	memcpy(&baseline, &other.baseline, sizeof(baseline));
 	self.init(this);
@@ -290,8 +291,8 @@ AActor &AActor::operator= (const AActor &other)
     onground = other.onground;
     touching_sectorlist = other.touching_sectorlist;
     deadtic = other.deadtic;
-    transientInt = other.transientInt;
     rndindex = other.rndindex;
+    spawnRndindex = other.spawnRndindex;
     friend_playerid = other.friend_playerid;
     friend_teamid = other.friend_teamid;
     pursuecount = other.pursuecount;
@@ -306,6 +307,7 @@ AActor &AActor::operator= (const AActor &other)
     baseline_set = other.baseline_set;
 
     updatedDuringTic = other.updatedDuringTic;
+    spawnTic         = other.spawnTic;
     credibility      = other.credibility;
 
     return *this;
@@ -326,9 +328,10 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
       statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
-      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), transientInt(0),
-      rndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
-      netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), bmapnode(this)
+      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), rndindex(0),
+      spawnRndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
+      netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), spawnTic(gametic),
+      bmapnode(this)
 {
 	// Fly!!! fix it in P_RespawnSpecial
 	const auto it = ::mobjinfo.find(itype);
@@ -348,6 +351,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 	health = info->spawnhealth;
 	translucency = info->translucency;
 	rndindex = M_Random();
+	spawnRndindex = rndindex;
 
 	if (multiplayer && serverside)
 		netid = ::ServerNetID.obtainNetID();
@@ -401,6 +405,62 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 	args.fill(0);
 }
 
+void AActor::ResetFlagsToDefault()
+{
+	// First, manage any special states that are strictly tied to any of the flags
+	// which may or may not have changed since construction.
+
+	SetFriendly(this->info->flags & MF_FRIEND, nullptr);
+
+	// Then assign the flags.
+	this->flags = info->flags;
+}
+
+void AActor::ClearFriendly()
+{
+	if (IsFriendly())
+	{
+		this->flags &= ~MF_FRIEND;
+		std::erase_if(s_friendlies, [this] (const AActor::AActorPtr& friendly)
+		                            {
+		                                return friendly == this;
+		                            });
+	}
+}
+
+void AActor::SetFriendly (bool i_isFriendly, const AActor* owner)
+{
+	const bool isAlreadyFriendly = IsFriendly();
+
+	if (i_isFriendly != isAlreadyFriendly)
+	{
+		if (i_isFriendly)
+		{
+			this->flags |= MF_FRIEND;
+			s_friendlies.push_back(ptr());
+
+			P_FriendlyEffects(this);
+		}
+		else
+		{
+			ClearFriendly();
+		}
+	}
+
+	if (owner)
+	{
+		if (owner->player and i_isFriendly)
+		{
+			this->friend_playerid = owner->player->id;
+			this->friend_teamid   = owner->player->userinfo.team;
+		}
+		else if (owner->IsFriendly())
+		{
+			this->friend_playerid = owner->friend_playerid;
+			this->friend_teamid   = owner->friend_teamid;
+		}
+	}
+}
 
 bool P_IsVoodooDoll(const AActor* mo)
 {
@@ -497,6 +557,7 @@ void AActor::Destroy ()
 	SV_SendDestroyActor(this);
 
 	actor_by_netid.erase(netid);
+	ClearFriendly();
 
 	// Remove from health pool.
 	if (!::savegamerestore)
@@ -955,7 +1016,10 @@ void AActor::Serialize (FArchive &arc)
 			<< translucency
 			<< waterlevel
 			<< gear
+			<< rndindex
+			<< spawnRndindex
 			<< updatedDuringTic
+			<< spawnTic
 			<< credibility;
 
 		// NOTE(jsd): This is pretty awful right here:
@@ -1040,7 +1104,10 @@ void AActor::Serialize (FArchive &arc)
 			>> translucency
 			>> waterlevel
 			>> gear
+			>> rndindex
+			>> spawnRndindex
 			>> updatedDuringTic
+			>> spawnTic
 			>> credibility;
 
 		tracer.init(tmptracer);
@@ -3290,7 +3357,9 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 		mobj->flags |= MF_AMBUSH;
 
 	if (mthing.flags & MTF_FRIENDLY)
-		mobj->flags |= MF_FRIEND;
+	{
+		mobj->SetFriendly(true, nullptr);       // Friendly, but no owner.
+	}
 
 	// [RH] Add ThingID to mobj and link it in with the others
 	mobj->tid = mthing.thingid;

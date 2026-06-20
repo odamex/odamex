@@ -282,14 +282,14 @@ enum statusflag_t
 
 struct baseline_t
 {
-	v3fixed_t pos;
-	v3fixed_t mom;
-	angle_t angle;
-	uint32_t targetid;
-	uint32_t tracerid;
-	int movecount;
-	byte movedir;
-	byte rndindex;
+	v3fixed_t pos       { 0, 0, 0 };
+	v3fixed_t mom       { 0, 0, 0 };
+	angle_t angle       { 0 };
+	uint32_t targetid   { 0 };
+	uint32_t tracerid   { 0 };
+	int movecount       { 0 };
+	byte movedir        { 0 };
+	byte rndindex       { 0 };
 
 	// Flags are a varint, so order from most to least likely.
 	static constexpr uint32_t POSX = BIT(0);
@@ -304,12 +304,6 @@ struct baseline_t
 	static constexpr uint32_t MOMX = BIT(9);
 	static constexpr uint32_t MOMY = BIT(10);
 	static constexpr uint32_t MOMZ = BIT(11);
-
-	baseline_t()
-	    : pos(0, 0, 0), mom(0, 0, 0),
-	      angle(0), targetid(0), tracerid(0), movecount(0), movedir(0), rndindex(0)
-	{
-	}
 
 	void Serialize(FArchive& arc)
 	{
@@ -589,12 +583,9 @@ public:
 	struct msecnode_s	*touching_sectorlist;				// phares 3/14/98
 
 	short           deadtic;        // tics after player's death
-	int             transientInt;   // transient variable for use by algorithms that need a
-	                                // very short-lived, per-actor data value that could be
-	                                // thought of as "throwaway."  For example, a key for a
-	                                // bespoke, immediate sorting operation.
 
-	unsigned char	rndindex;		// denis - because everything should have a random number generator, for prediction
+	unsigned char   rndindex;       // denis - because everything should have a random number generator, for prediction
+	unsigned char   spawnRndindex;
 
 	byte friend_playerid; // playerid of the player who spawned this actor
 
@@ -624,6 +615,8 @@ public:
 	// Client: the tic on which this mobj received an UpdateMobj.
 	int updatedDuringTic;
 
+	int spawnTic;
+
 	CredibilityState credibility;
 
 private:
@@ -634,12 +627,20 @@ private:
 
 	friend class FActorIterator;
 
+	void ClearFriendly();
+
+	static std::vector<AActorPtr> s_friendlies;
 public:
 
 	void LinkToWorld ();
 	void UnlinkFromWorld ();
 
 	void SetOrigin (fixed_t x, fixed_t y, fixed_t z);
+	void ResetFlagsToDefault();
+
+	bool IsFriendly() const { return flags & MF_FRIEND; }
+	void SetFriendly (bool isFriendly, const AActor* owner);
+	static std::reference_wrapper<std::vector<AActorPtr>> GetFriendlies() { return s_friendlies; }
 
 	AActorPtr ptr(){ return self; }
 
