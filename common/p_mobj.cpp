@@ -406,6 +406,12 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 	args.fill(0);
 }
 
+void AActor::ResetFlagsToDefault()
+{
+	// Then assign the flags.
+	this->flags = info->flags;
+}
+
 void AActor::ClearFriendly()
 {
 	if (IsFriendly())
@@ -472,7 +478,6 @@ void AActor::ClearActorLists()
 	s_friendlies.clear();
 	s_hostiles.clear();
 }
-
 
 bool P_IsVoodooDoll(const AActor* mo)
 {

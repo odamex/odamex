@@ -1223,10 +1223,9 @@ void P_SetupHelpers()
 
 void P_RunHelperTics()
 {
-
-	// Only the server continues on to spawn management.
-	if (not serverside)
+	if (::helperspawns.empty())
 	{
+		// nothing to do
 		return;
 	}
 
@@ -2999,8 +2998,7 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 
 					info = corpsehit->info;
 
-					corpsehit->flags = info->flags;
-
+					corpsehit->ResetFlagsToDefault();
 					corpsehit->SetFriendly(actor->IsFriendly(), actor);
 					corpsehit->UpdateActorLists();
 
