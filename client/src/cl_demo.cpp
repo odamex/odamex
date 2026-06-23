@@ -73,51 +73,10 @@ int LatestDemoVersion(const int version)
 	}
 }
 
-NetDemo::NetDemo()
-    : state(st_stopped), oldstate(st_stopped), filename(""), demofp(NULL), netdemotic(0),
-      pause_netdemotic(0), last_map_tic(0)
-{
-	memset(&header, 0, sizeof(header));
-}
-
 NetDemo::~NetDemo()
 {
 	cleanUp();
 }
-
-
-//
-// copy
-//
-//   Copies the data from one NetDemo object to another
-
-void NetDemo::copy(NetDemo &to, const NetDemo &from)
-{
-	// free any memory used by structures and close open files
-	cleanUp();
-
-	to.state 			= from.state;
-	to.oldstate			= from.oldstate;
-	to.filename			= from.filename;
-	to.demofp			= from.demofp;
-	to.captured			= from.captured;
-	to.snapshot_index	= from.snapshot_index;
-	to.map_index		= from.map_index;
-	memcpy(&to.header, &from.header, sizeof(header));
-}
-
-
-NetDemo::NetDemo(const NetDemo &rhs)
-{
-	copy(*this, rhs);
-}
-
-NetDemo& NetDemo::operator=(const NetDemo &rhs)
-{
-	copy(*this, rhs);
-	return *this;
-}
-
 
 void NetDemo::reset()
 {
@@ -142,11 +101,7 @@ void NetDemo::cleanUp()
 	}
 
 	// close all files
-	if (demofp)
-	{
-		fclose(demofp);
-		demofp = NULL;
-	}
+	demofp.close();
 
 	snapshot_index.clear();
 	map_index.clear();
@@ -197,35 +152,21 @@ bool NetDemo::writeHeader()
 	header.compression = 0;
 	header.snapshot_spacing = NetDemo::SNAPSHOT_SPACING;
 
-	netdemo_header_t tmpheader;
-	memcpy(&tmpheader, &header, sizeof(header));
+	netdemo_header_t tmpheader {header};
 
-	// convert from native byte ordering to little-endian
-	tmpheader.snapshot_spacing		= LESHORT(tmpheader.snapshot_spacing);
-	tmpheader.starting_gametic		= LELONG(tmpheader.starting_gametic);
-	tmpheader.ending_gametic		= LELONG(tmpheader.ending_gametic);
+	demofp.seekp(0, std::ios::beg);
+    const auto startingPosition = demofp.tellp();
 
-	fseek(demofp, 0, SEEK_SET);
-	size_t cnt = 0;
-	cnt += sizeof(tmpheader.identifier) *
-		fwrite(&tmpheader.identifier, sizeof(tmpheader.identifier), 1, demofp);
-	cnt += sizeof(tmpheader.version) *
-		fwrite(&tmpheader.version, sizeof(tmpheader.version), 1, demofp);
-	cnt += sizeof(tmpheader.compression) *
-		fwrite(&tmpheader.compression, sizeof(tmpheader.compression), 1, demofp);
-	cnt += sizeof(tmpheader.snapshot_spacing) *
-		fwrite(&tmpheader.snapshot_spacing, sizeof(tmpheader.snapshot_spacing), 1, demofp);
-	cnt += sizeof(tmpheader.starting_gametic) *
-		fwrite(&tmpheader.starting_gametic, sizeof(tmpheader.starting_gametic), 1, demofp);
-	cnt += sizeof(tmpheader.ending_gametic) *
-		fwrite(&tmpheader.ending_gametic, sizeof(tmpheader.ending_gametic), 1, demofp);
-	cnt += sizeof(tmpheader.reserved) *
-		fwrite(&tmpheader.reserved, sizeof(tmpheader.reserved), 1, demofp);
-
-	if (cnt < NetDemo::HEADER_SIZE)
-		return false;
-
-	return true;
+    const bool result = startingPosition >= 0
+                        and M_WriteLE(demofp, header.identifier)
+                        and M_WriteLE(demofp, header.version)
+                        and M_WriteLE(demofp, header.compression)
+                        and M_WriteLE(demofp, header.snapshot_spacing)
+                        and M_WriteLE(demofp, header.starting_gametic)
+                        and M_WriteLE(demofp, header.ending_gametic)
+                        and M_WriteLE(demofp, header.reserved)
+                        and demofp.tellp() - startingPosition == HEADER_SIZE;
+    return result;
 }
 
 
@@ -238,33 +179,19 @@ bool NetDemo::writeHeader()
 
 bool NetDemo::readHeader()
 {
-	fseek(demofp, 0, SEEK_SET);
+    demofp.seekg(0, std::ios::beg);
+    const auto startingPosition = demofp.tellg();
 
-	size_t cnt = 0;
-	cnt += sizeof(header.identifier) *
-		fread(&header.identifier, sizeof(header.identifier), 1, demofp);
-	cnt += sizeof(header.version) *
-		fread(&header.version, sizeof(header.version), 1, demofp);
-	cnt += sizeof(header.compression) *
-		fread(&header.compression, sizeof(header.compression), 1, demofp);
-	cnt += sizeof(header.snapshot_spacing) *
-		fread(&header.snapshot_spacing, sizeof(header.snapshot_spacing), 1, demofp);
-	cnt += sizeof(header.starting_gametic) *
-		fread(&header.starting_gametic, sizeof(header.starting_gametic), 1, demofp);
-	cnt += sizeof(header.ending_gametic) *
-		fread(&header.ending_gametic, sizeof(header.ending_gametic), 1, demofp);
-	cnt += sizeof(header.reserved) *
-		fread(&header.reserved, sizeof(header.reserved), 1, demofp);
-
-	if (cnt < NetDemo::HEADER_SIZE)
-		return false;
-
-	// convert from little-endian to native byte ordering
-	header.snapshot_spacing 		= LESHORT(header.snapshot_spacing);
-	header.starting_gametic 		= LELONG(header.starting_gametic);
-	header.ending_gametic			= LELONG(header.ending_gametic);
-
-	return true;
+    const bool result = startingPosition >= 0
+                        and M_ReadLE(demofp, header.identifier)
+                        and M_ReadLE(demofp, header.version)
+                        and M_ReadLE(demofp, header.compression)
+                        and M_ReadLE(demofp, header.snapshot_spacing)
+                        and M_ReadLE(demofp, header.starting_gametic)
+                        and M_ReadLE(demofp, header.ending_gametic)
+                        and M_ReadLE(demofp, header.reserved)
+                        and demofp.tellg() - startingPosition == HEADER_SIZE;
+    return result;
 }
 
 //
@@ -274,7 +201,7 @@ bool NetDemo::readHeader()
 //   map_index and snapshot_index vecs
 void NetDemo::populateMessageIndexes()
 {
-	fseek(demofp, NetDemo::HEADER_SIZE, SEEK_SET);
+	demofp.seekg(NetDemo::HEADER_SIZE, std::ios::beg);
 
 	netdemo_message_t type;
 	uint32_t len = 0, tic = 0, last_tic = 0;
@@ -287,17 +214,17 @@ void NetDemo::populateMessageIndexes()
 			break;
 		}
 
-		long offset = ftell(demofp) - NetDemo::MESSAGE_HEADER_SIZE;
+		const std::streampos offset = demofp.tellg() - NetDemo::MESSAGE_HEADER_SIZE;
 
 		if (type == NetDemo::msg_snapshot)
 		{
-			netdemo_index_entry_t entry = {tic, static_cast<uint32_t>(offset)};
+			netdemo_index_entry_t entry = {tic, offset};
 			snapshot_index.push_back(entry);
 		}
 
 		else if (type == NetDemo::msg_map_change)
 		{
-			netdemo_index_entry_t entry = {tic, static_cast<uint32_t>(offset)};
+			netdemo_index_entry_t entry = {tic, offset};
 			map_index.push_back(entry);
 			snapshot_index.push_back(entry);
 		}
@@ -307,7 +234,8 @@ void NetDemo::populateMessageIndexes()
 			break;
 		}
 
-	} while (fseek(demofp, len, SEEK_CUR) == 0);
+		demofp.seekg(len, std::ios::cur);
+	} while (demofp.good());
 
 	// fix for playing a demo that hard crashed and couldnt write ending_gametic
 	if (header.ending_gametic == 0)
@@ -337,22 +265,20 @@ bool NetDemo::startRecording(const std::string &filename)
 	if (isRecording())
 		return true;
 
-	if (demofp != NULL)		// file is already open for some reason
-	{
-		fclose(demofp);
-		demofp = NULL;
-	}
+	demofp.close();
 
-	demofp = fopen(filename.c_str(), "wb");
-	if (!demofp)
+	demofp = std::fstream(filename,
+	                      std::ios::out |
+	                      std::ios::binary |
+	                      std::ios::trunc);
+	if (not demofp.good())
 	{
 		//error("Unable to create netdemo file " + filename + ".");
 		I_Warning("Unable to create netdemo file {}", filename);
 		return false;
 	}
 
-	memset(&header, 0, sizeof(header));
-	
+	header = netdemo_header_t{};
 	header.starting_gametic = gametic;
 
 	// Note: The header is not finalized at this point.  Write it anyway to
@@ -427,7 +353,10 @@ bool NetDemo::startPlaying(const std::string &filename)
 		return false;
 	}
 
-	if (!(demofp = fopen(filename.c_str(), "rb")))
+	demofp = std::fstream(filename,
+	                      std::ios::in |
+	                      std::ios::binary);
+	if (not demofp.good())
 	{
 		error("Unable to open netdemo file.");
 		return false;
@@ -466,7 +395,7 @@ bool NetDemo::startPlaying(const std::string &filename)
 	populateMessageIndexes();
 
 	// get set up to read server cmds
-	fseek(demofp, NetDemo::HEADER_SIZE, SEEK_SET);
+	demofp.seekg(NetDemo::HEADER_SIZE, std::ios::beg);
 	state = NetDemo::st_playing;
 
 	PrintFmt(PRINT_HIGH, "Playing netdemo {}.\n", filename);
@@ -535,7 +464,7 @@ bool NetDemo::stopRecording()
 	// write the number of the last gametic in the recording
 	header.ending_gametic = gametic;
 
-	fflush(demofp);
+	demofp.flush();
 
 	// rewrite the header for ending_gametic
 	if (!writeHeader())
@@ -544,8 +473,7 @@ bool NetDemo::stopRecording()
 		return false;
 	}
 
-	fclose(demofp);
-	demofp = NULL;
+	demofp.close();
 
 	PrintFmt(PRINT_HIGH, "Demo recording has stopped.\n");
 	reset();
@@ -565,11 +493,7 @@ bool NetDemo::stopPlaying()
 	SZ_Clear(&net_message);
 	CL_QuitNetGame(NQ_SILENT);
 
-	if (demofp)
-	{
-		fclose(demofp);
-		demofp = NULL;
-	}
+	demofp.close();
 
 	PrintFmt(PRINT_HIGH, "Demo has ended.\n");
 	reset();
@@ -598,26 +522,27 @@ void NetDemo::writeLocalCmd(buf_t *netbuffer) const
 void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
 {
 	message_header_t msgheader;
-	memset(&msgheader, 0, sizeof(msgheader));
 
-	msgheader.type = static_cast<byte>(type);
-	msgheader.length = LELONG(static_cast<uint32_t>(size));
-	msgheader.gametic = LELONG(gametic);
+	msgheader.type      = static_cast<byte>(type);
+	msgheader.length    = size;
+	msgheader.gametic   = gametic;
 
-	size_t cnt = 0;
-	cnt += sizeof(msgheader.type) *
-		fwrite(&msgheader.type, sizeof(msgheader.type), 1, demofp);
-	cnt += sizeof(msgheader.length) *
-		fwrite(&msgheader.length, sizeof(msgheader.length), 1, demofp);
-	cnt += sizeof(msgheader.gametic) *
-		fwrite(&msgheader.gametic, sizeof(msgheader.gametic), 1, demofp);
+    const auto startingPosition = demofp.tellp();
+    const bool headerResult = startingPosition >= 0
+                                and M_WriteLE(demofp, msgheader.type)
+                                and M_WriteLE(demofp, msgheader.length)
+                                and M_WriteLE(demofp, msgheader.gametic)
+                                and demofp.tellp() - startingPosition == HEADER_SIZE;
 
-	cnt += fwrite(data, 1, size, demofp);
-	if (cnt < size + NetDemo::MESSAGE_HEADER_SIZE)
-	{
-		error("Unable to write netdemo message chunk\n");
-		return;
-	}
+    if (headerResult)
+    {
+        const auto dataStartPosition = demofp.tellp();
+        demofp.write(reinterpret_cast<const char*>(data), size);
+        if (demofp.tellp() - dataStartPosition != size)
+        {
+            error("Unable to write netdemo message chunk\n");
+        }
+    }
 }
 
 
@@ -703,28 +628,23 @@ void NetDemo::writeMessages()
 //   len and tic parameters.
 //   Returns false upon file read error.
 
-bool NetDemo::readMessageHeader(netdemo_message_t &type, uint32_t &len, uint32_t &tic) const
+bool NetDemo::readMessageHeader(netdemo_message_t &type, uint32_t &len, uint32_t &tic)
 {
 	len = tic = 0;
 
 	message_header_t msgheader;
 
-	size_t cnt = 0;
-	cnt += sizeof(msgheader.type) *
-		fread(&msgheader.type, sizeof(msgheader.type), 1, demofp);
-	cnt += sizeof(msgheader.length) *
-		fread(&msgheader.length, sizeof(msgheader.length), 1, demofp);
-	cnt += sizeof(msgheader.gametic) *
-		fread(&msgheader.gametic, sizeof(msgheader.gametic), 1, demofp);
-
-	if (cnt < NetDemo::MESSAGE_HEADER_SIZE)
+    const bool headerIsGood =   M_ReadLE(demofp, msgheader.type)
+                            and M_ReadLE(demofp, msgheader.length)
+                            and M_ReadLE(demofp, msgheader.gametic);
+	if (not headerIsGood)
 	{
 		return false;
 	}
 
 	// convert the values to native byte order
-	len = LELONG(msgheader.length);
-	tic = LELONG(msgheader.gametic);
+	len = msgheader.length;
+	tic = msgheader.gametic;
 	type = static_cast<netdemo_message_t>(msgheader.type);
 
 	return true;
@@ -742,8 +662,8 @@ void NetDemo::readMessageBody(buf_t *netbuffer, uint32_t len)
 {
 	auto msgdata = std::make_unique<char[]>(len);
 
-	size_t cnt = fread(msgdata.get(), 1, len, demofp);
-	if (cnt < len)
+	demofp.read(msgdata.get(), len);
+	if (demofp.gcount() < len)
 	{
 		fatalError("Can not read netdemo message.");
 		return;
@@ -818,7 +738,7 @@ void NetDemo::readMessages(buf_t* netbuffer)
 	while (type == NetDemo::msg_snapshot || type == NetDemo::msg_map_change)
 	{
 		// skip over snapshots and read the next message instead
-		fseek(demofp, len, SEEK_CUR);
+		demofp.seekg(len, std::ios::cur);
 		if (!readMessageHeader(type, len, tic))
 		{
 			fatalError("Failed to read netdemo message header.");
@@ -1195,7 +1115,7 @@ void NetDemo::readSnapshot(const netdemo_index_entry_t *snap)
 
 	gametic = snap->ticnum;
 	int file_offset = snap->offset;
-	fseek(demofp, file_offset, SEEK_SET);
+	demofp.seekg(file_offset, std::ios::beg);
 
 	// read the values for length, gametic, and message type
 	netdemo_message_t type;
@@ -1210,8 +1130,8 @@ void NetDemo::readSnapshot(const netdemo_index_entry_t *snap)
 	snapbuf.clear();
 	snapbuf.resize(len);
 
-	size_t cnt = fread(snapbuf.data(), 1, len, demofp);
-	if (cnt < len)
+	demofp.read(reinterpret_cast<char*>(snapbuf.data()), len);
+	if (demofp.gcount() < len)
 	{
 		fatalError("Unable to read snapshot from data file");
 		return;

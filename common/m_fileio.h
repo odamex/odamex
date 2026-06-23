@@ -64,6 +64,31 @@ bool M_ReadLE(std::istream& io_stream, ElementType (&o_dataArray)[N])
     return true;
 }
 
+template <typename ElementType>
+bool M_WriteLE(std::ostream& io_stream, const ElementType& i_data)
+{
+    if (io_stream.good())
+    {
+        ElementType temp = nonstd::bit::as_little_endian(i_data);
+        io_stream.write(reinterpret_cast<char*>(&temp), sizeof(temp));
+        return true;
+    }
+    return false;
+}
+
+template <typename ElementType, size_t N>
+bool M_WriteLE(std::ostream& io_stream, const ElementType (&i_dataArray)[N])
+{
+    for (size_t i = 0; i < N; ++i)
+    {
+        if (not M_WriteLE(io_stream, i_dataArray[i]))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 uintmax_t M_FileLength (std::istream& f);
 bool M_FileExists(const std::string& filename);
 bool M_FileExistsExt(const std::string& filename, const char* ext);

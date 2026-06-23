@@ -1,15 +1,21 @@
 #pragma once
 
-#include "i_net.h"
 #include <deque>
+#include <fstream>
+
+#include "i_net.h"
 
 class NetDemo
 {
 public:
-	NetDemo();
+	NetDemo() = default;
 	~NetDemo();
-	NetDemo(const NetDemo &rhs);
-	NetDemo& operator=(const NetDemo &rhs);
+	NetDemo(const NetDemo &rhs)             = delete;
+	NetDemo& operator=(const NetDemo &rhs)  = delete;
+
+    NetDemo(NetDemo&&) = default;
+    NetDemo& operator=(NetDemo&&) = default;
+
 
 	bool startPlaying(const std::string &filename);
 	bool startRecording(const std::string &filename);
@@ -44,37 +50,36 @@ public:
 	[[nodiscard]] const std::string &getFileName() const { return filename; }
 
 private:
-	typedef enum
+	enum netdemo_state_t
 	{
 		st_stopped,
 		st_recording,
 		st_playing,
 		st_paused
-	} netdemo_state_t;
+	};
 
-	typedef enum
+	enum netdemo_message_t
 	{
-		msg_packet		= 0xAA,
+		msg_packet      = 0xAA,
 		msg_snapshot,
 		msg_map_change,
 		msg_eof
-	} netdemo_message_t;
+	};
 
-	typedef struct
+	struct message_header_t
 	{
-		byte		type;
-		uint32_t	length;
-		uint32_t	gametic;
-	} message_header_t;
+		byte        type    { 0 };
+		uint32_t    length  { 0 };
+		uint32_t    gametic { 0 };
+	};
 
-	typedef struct
+	struct netdemo_index_entry_t
 	{
-		uint32_t	ticnum;
-		uint32_t	offset;			// offset in the demo file
-	} netdemo_index_entry_t;
+		uint32_t        ticnum  { 0 };
+		std::streampos  offset  { 0 };  // offset in the demo file
+	};
 
 	void cleanUp();
-	void copy(NetDemo &to, const NetDemo &from);
 	void error(const std::string &message);
 	void fatalError(const std::string &message);
 	void reset();
@@ -99,39 +104,39 @@ private:
 	[[nodiscard]] int getCurrentMapIndex() const;
 
 	void writeLocalCmd(buf_t *netbuffer) const;
-	bool readMessageHeader(netdemo_message_t &type, uint32_t &len, uint32_t &tic) const;
+	bool readMessageHeader(netdemo_message_t &type, uint32_t &len, uint32_t &tic);
 	void readMessageBody(buf_t *netbuffer, uint32_t len);
 
-	typedef struct
-	{
-		char		identifier[4];  		// "ODAD"
-		byte		version;
-		byte    	compression;    		// type of compression used
-		uint16_t	snapshot_spacing;		// number of gametics between indices
-		uint32_t	starting_gametic;		// the gametic the demo starts at
-		uint32_t	ending_gametic;			// the last gametic of the demo
-		byte		reserved[48];   		// for future use
-	} netdemo_header_t;
-
-	static constexpr size_t HEADER_SIZE = 64;
-	static constexpr size_t MESSAGE_HEADER_SIZE = 9;
-	static constexpr size_t INDEX_ENTRY_SIZE = 8;
+	static constexpr size_t         HEADER_SIZE = 64;
+	static constexpr std::streamoff MESSAGE_HEADER_SIZE = 9;
+	static constexpr size_t         INDEX_ENTRY_SIZE = 8;
 
 	static constexpr uint16_t SNAPSHOT_SPACING = 20 * TICRATE;
 
-	netdemo_state_t		state;
-	netdemo_state_t		oldstate;	// used when unpausing
-	std::string			filename;
-	FILE*				demofp;
+	struct netdemo_header_t
+	{
+		char        identifier[4]   { 0, 0, 0, 0};  // "ODAD"
+		byte        version         { 0 };
+		byte        compression     { 0 };          // type of compression used
+		uint16_t    snapshot_spacing{ 0 };          // number of gametics between indices
+		uint32_t    starting_gametic{ 0 };          // the gametic the demo starts at
+		uint32_t    ending_gametic  { 0 };          // the last gametic of the demo
+		byte        reserved[48]    { 0 };          // for future use
+	};
 
-	std::deque<buf_t>   captured;
+	netdemo_state_t state   { st_stopped };
+	netdemo_state_t oldstate{ st_stopped };   // used when unpausing
+	std::string     filename{ };
+	std::fstream    demofp  { };
 
-	netdemo_header_t	header;
-	std::vector<netdemo_index_entry_t> snapshot_index;
-	std::vector<netdemo_index_entry_t> map_index;
+	std::deque<buf_t>   captured {};
 
-	std::vector<byte>	snapbuf;
-	int					netdemotic;
-	int					pause_netdemotic;
-	int					last_map_tic;
+	netdemo_header_t                   header        {};
+	std::vector<netdemo_index_entry_t> snapshot_index{};
+	std::vector<netdemo_index_entry_t> map_index     {};
+
+	std::vector<byte>   snapbuf         { };
+	int                 netdemotic      { 0 };
+	int                 pause_netdemotic{ 0 };
+	int                 last_map_tic    { 0 };
 };
