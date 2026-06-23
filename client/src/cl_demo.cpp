@@ -532,7 +532,7 @@ void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
                                 and M_WriteLE(demofp, msgheader.type)
                                 and M_WriteLE(demofp, msgheader.length)
                                 and M_WriteLE(demofp, msgheader.gametic)
-                                and demofp.tellp() - startingPosition == HEADER_SIZE;
+                                and demofp.tellp() - startingPosition == MESSAGE_HEADER_SIZE;
 
     if (headerResult)
     {
