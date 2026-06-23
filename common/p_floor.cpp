@@ -1560,11 +1560,6 @@ void P_SetElevatorDestroy(DElevator *elevator)
 
 IMPLEMENT_SERIAL (DElevator, DMover)
 
-DElevator::DElevator () :
-	m_Status(init)
-{
-}
-
 void DElevator::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);

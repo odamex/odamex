@@ -55,11 +55,6 @@ void P_SetDoorDestroy(DDoor *door)
 
 IMPLEMENT_SERIAL (DDoor, DMovingCeiling)
 
-DDoor::DDoor () :
-	m_Status(init),	m_Line(NULL)
-{
-}
-
 void DDoor::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);

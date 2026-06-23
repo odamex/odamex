@@ -53,11 +53,6 @@ void P_SetPlatDestroy(DPlat *plat)
 
 IMPLEMENT_SERIAL (DPlat, DMovingFloor)
 
-DPlat::DPlat () :
-	m_Status(init)
-{
-}
-
 void DPlat::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);

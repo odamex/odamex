@@ -58,10 +58,6 @@ void P_SetCeilingDestroy(DCeiling *ceiling)
 
 IMPLEMENT_SERIAL (DCeiling, DMovingCeiling)
 
-DCeiling::DCeiling ()
-{
-}
-
 void DCeiling::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
