@@ -63,8 +63,7 @@
 //
 
 // Location of each lump on disk.
-lumpinfo_t*		lumpinfo;
-size_t			numlumps;
+std::vector<lumpinfo_t> lumpinfo;
 
 // Generation of handle.
 // Takes up the first three bits of the handle id.  Starts at 1, increments
@@ -78,6 +77,20 @@ const size_t HANDLE_GEN_BITS = 3;
 void**			lumpcache;
 
 static unsigned	stdisk_lumpnum;
+
+bool wadinfo_t::Read(std::istream& io_stream)
+{
+    return M_ReadLE(io_stream, identification) and
+           M_ReadLE(io_stream, numlumps) and
+           M_ReadLE(io_stream, infotableofs);
+}
+
+bool filelump_t::Read(std::istream& io_stream)
+{
+    return M_ReadLE(io_stream, filepos) and
+           M_ReadLE(io_stream, size) and
+           M_ReadLE(io_stream, name);
+}
 
 //
 // W_LumpNameHash
@@ -112,16 +125,16 @@ unsigned int W_LumpNameHash(const char *s)
 //
 void W_HashLumps(void)
 {
-	for (unsigned int i = 0; i < numlumps; i++)
-		lumpinfo[i].index = -1;			// mark slots empty
+	for (auto& lump : lumpinfo)
+		lump.index = -1;                // mark slots empty
 
 	// Insert nodes to the beginning of each chain, in first-to-last
 	// lump order, so that the last lump of a given name appears first
 	// in any chain, observing pwad ordering rules. killough
 
-	for (unsigned int i = 0; i < numlumps; i++)
+	for (unsigned int i = 0; i < lumpinfo.size(); i++)
 	{
-		unsigned int j = W_LumpNameHash(lumpinfo[i].name.c_str()) % static_cast<unsigned int>(numlumps);
+		unsigned int j = W_LumpNameHash(lumpinfo[i].name.c_str()) % static_cast<unsigned int>(lumpinfo.size());
 		lumpinfo[i].next = lumpinfo[j].index;     // Prepend to list
 		lumpinfo[j].index = i;
 	}
@@ -255,27 +268,23 @@ fhfprint_t W_FarmHash128(const byte* lumpdata, int length)
 //
 // W_AddLumps
 //
-// Adds lumps from the array of filelump_t. If clientonly is true,
-// only certain lumps will be added.
+// Adds lumps from the array of filelump_t.
 //
-void W_AddLumps(const std::shared_ptr<std::istream>& handle, const filelump_t* fileinfo, size_t newlumps, bool clientonly)
+void W_AddLumps(const std::shared_ptr<std::istream>& handle, const filelump_t* fileinfo, size_t newlumps)
 {
-	lumpinfo = static_cast<lumpinfo_t*>(M_Realloc(lumpinfo, (numlumps + newlumps) * sizeof(lumpinfo_t)));
-	if (!lumpinfo)
-		I_Error("Couldn't realloc lumpinfo");
+	const size_t oldOnePastEndIndex = lumpinfo.size();
+	lumpinfo.resize(lumpinfo.size() + newlumps);
 
-	lumpinfo_t* lump = &lumpinfo[numlumps];
 	const filelump_t* info = &fileinfo[0];
 
-	for (size_t i = 0; i < newlumps; i++, info++)
+	for (auto iter  = lumpinfo.begin() + oldOnePastEndIndex;
+	          iter != lumpinfo.end();
+	          iter++, info++)
 	{
-		lump->handle = handle;
-		lump->position = info->filepos;
-		lump->size = info->size;
-		lump->name = info->name;
-
-		lump++;
-		numlumps++;
+		iter->handle    = handle;
+		iter->position  = info->filepos;
+		iter->size      = info->size;
+		iter->name      = info->name;
 	}
 }
 
@@ -359,7 +368,7 @@ void AddFile(const OResFile& file)
 		PrintFmt(PRINT_HIGH, " ({} lumps)\n", header.numlumps);
 	}
 
-	W_AddLumps(handle, fileinfo.data(), newlumps, false);
+	W_AddLumps(handle, fileinfo.data(), newlumps);
 }
 
 
@@ -371,10 +380,10 @@ void AddFile(const OResFile& file)
 //
 //
 
-static bool IsMarker (const lumpinfo_t *lump, const char *marker)
+static bool IsMarker (const lumpinfo_t& lump, const char *marker)
 {
-	return (lump->namespc == ns_global) && (!strncmp (lump->name.c_str(), marker, 8) ||
-			(*(lump->name.c_str()) == *marker && !strncmp (lump->name.c_str() + 1, marker, 7)));
+	return (lump.namespc == ns_global) && (!strncmp (lump.name.c_str(), marker, 8) ||
+			(*(lump.name.c_str()) == *marker && !strncmp (lump.name.c_str() + 1, marker, 7)));
 }
 
 //
@@ -394,10 +403,10 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, int space)
 		int fudge = 0;
 		unsigned istart = 0;
 
-		for (size_t i = 0; i < numlumps; i++) {
-			if (IsMarker (lumpinfo + i, start.c_str()))
+		for (size_t i = 0; i < lumpinfo.size(); i++) {
+			if (IsMarker (lumpinfo[i], start.c_str()))
 				fudge++, istart = i;
-			else if (IsMarker (lumpinfo + i, end.c_str()))
+			else if (IsMarker (lumpinfo[i], end.c_str()))
 				fudge--, flatHack = i;
 		}
 		if (istart > flatHack)
@@ -406,18 +415,18 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, int space)
 			flatHack = 0;
 	}
 
-	auto newlumpinfos = std::make_unique<lumpinfo_t[]>(numlumps);
+	auto newlumpinfos = std::make_unique<lumpinfo_t[]>(lumpinfo.size());
 
 	size_t newlumps = 0;
 	size_t oldlumps = 0;
 	bool insideBlock = false;
 
-	for (size_t i = 0; i < numlumps; i++)
+	for (size_t i = 0; i < lumpinfo.size(); i++)
 	{
 		if (!insideBlock)
 		{
 			// Check if this is the start of a block
-			if (IsMarker (lumpinfo + i, start.c_str()))
+			if (IsMarker (lumpinfo[i], start.c_str()))
 			{
 				insideBlock = true;
 
@@ -467,7 +476,7 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, int space)
 				insideBlock = false;
 				lumpinfo[oldlumps++] = lumpinfo[i];
 			}
-			else if (IsMarker (lumpinfo + i, end.c_str()))
+			else if (IsMarker (lumpinfo[i], end.c_str()))
 			{
 				// It is. We'll add the end marker once
 				// we've processed everything.
@@ -486,19 +495,16 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, int space)
 
 	if (newlumps)
 	{
-		if (oldlumps + newlumps > numlumps)
-			lumpinfo = static_cast<lumpinfo_t*>(M_Realloc(lumpinfo, oldlumps + newlumps));
+		if (oldlumps + newlumps + 1 > lumpinfo.size())
+			lumpinfo.resize(oldlumps + newlumps + 1);
 
-		std::copy_n(newlumpinfos.get(), newlumps, lumpinfo + oldlumps);
+		std::copy_n(newlumpinfos.get(), newlumps, lumpinfo.begin() + oldlumps);
 
-		numlumps = oldlumps + newlumps;
-
-		lumpinfo[numlumps].handle.reset();
-		lumpinfo[numlumps].name     = end;
-		lumpinfo[numlumps].position = 0;
-		lumpinfo[numlumps].size     = 0;
-		lumpinfo[numlumps].namespc  = ns_global;
-		numlumps++;
+		lumpinfo.back().handle.reset();
+		lumpinfo.back().name     = end;
+		lumpinfo.back().position = 0;
+		lumpinfo.back().size     = 0;
+		lumpinfo.back().namespc  = ns_global;
 	}
 }
 
@@ -520,16 +526,13 @@ void W_InitMultipleFiles(const OResFiles& files)
 	// [EB] Fix for use-after-free when OZone tries to null the "user" pointers
 	if (lumpcache)
 	{
-		for (size_t i = 0; i < numlumps; i++)
+		for (size_t i = 0; i < lumpinfo.size(); i++)
 			Z_Free(lumpcache[i]);
 	}
 
 	// open all the files, load headers, and count lumps
 	// will be realloced as lumps are added
-	::numlumps = 0;
-
-	M_Free(::lumpinfo);
-	::lumpinfo = NULL;
+	lumpinfo.clear();
 
 	// open each file once, load headers, and count lumps
 	std::vector<OMD5Hash> loaded;
@@ -543,12 +546,12 @@ void W_InitMultipleFiles(const OResFiles& files)
 		}
 	}
 
-	if (!numlumps)
+	if (!lumpinfo.size())
 		I_Error("W_InitFiles: no files found");
 
 	// [RH] Set namespace markers to global for everything
-	for (size_t i = 0; i < numlumps; i++)
-		lumpinfo[i].namespc = ns_global;
+	for (auto& lump : lumpinfo)
+		lump.namespc = ns_global;
 
 	// [RH] Merge sprite and flat groups.
 	//		(We don't need to bother with patches, since
@@ -561,7 +564,7 @@ void W_InitMultipleFiles(const OResFiles& files)
     // set up caching
 	M_Free(lumpcache);
 
-	size_t size = numlumps * sizeof(*lumpcache);
+	size_t size = lumpinfo.size() * sizeof(*lumpcache);
 	lumpcache = static_cast<void**>(M_Malloc(size));
 
 	if (!lumpcache)
@@ -597,7 +600,7 @@ int W_HandleToLump(const lumpHandle_t handle)
 		return -1;
 	}
 	const unsigned lump = handle.id >> HANDLE_GEN_BITS;
-	if (lump >= ::numlumps)
+	if (lump >= ::lumpinfo.size())
 	{
 		return -1;
 	}
@@ -627,7 +630,7 @@ int W_CheckNumForName(const char *name, int namespc)
 	// It has been tuned so that the average chain length never exceeds 2.
 
 	// proff 2001/09/07 - check numlumps==0, this happens when called before WAD loaded
-	int i = (numlumps == 0 || name == nullptr)?(-1):(lumpinfo[W_LumpNameHash(name) % numlumps].index);
+	int i = (lumpinfo.size() == 0 || name == nullptr)?(-1):(lumpinfo[W_LumpNameHash(name) % lumpinfo.size()].index);
 
 	// We search along the chain until end, looking for case-insensitive
 	// matches which also match a namespace tag. Separate hash tables are
@@ -668,7 +671,7 @@ int W_GetNumForName(const char* name, int namespc)
  */
 OLumpName W_LumpName(unsigned lump)
 {
-	if (lump >= ::numlumps)
+	if (lump >= ::lumpinfo.size())
 		I_Error("{}: {} >= numlumps", __FUNCTION__, lump);
 
 	return ::lumpinfo[lump].name;
@@ -680,7 +683,7 @@ OLumpName W_LumpName(unsigned lump)
 //
 unsigned W_LumpLength (unsigned lump)
 {
-	if (lump >= numlumps)
+	if (lump >= lumpinfo.size())
 		I_Error("W_LumpLength: {} >= numlumps", lump);
 
 	return lumpinfo[lump].size;
@@ -695,10 +698,10 @@ unsigned W_LumpLength (unsigned lump)
 //
 void W_ReadLump(unsigned int lump, void* dest)
 {
-	if (lump >= numlumps)
+	if (lump >= lumpinfo.size())
 		I_Error("W_ReadLump: {} >= numlumps", lump);
 
-	lumpinfo_t* l = lumpinfo + lump;
+	auto l = lumpinfo.begin() + lump;
 
 	if (lump != stdisk_lumpnum)
     	I_BeginRead();
@@ -746,7 +749,7 @@ unsigned W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest,
 //
 bool W_CheckLumpName (unsigned lump, const char *name)
 {
-	if (lump >= numlumps)
+	if (lump >= lumpinfo.size())
 		return false;
 
 	return !strnicmp (lumpinfo[lump].name.c_str(), name, 8);
@@ -757,7 +760,7 @@ bool W_CheckLumpName (unsigned lump, const char *name)
 //
 void W_GetLumpName(char *to, unsigned lump)
 {
-	if (lump >= numlumps)
+	if (lump >= lumpinfo.size())
 		*to = 0;
 	else
 	{
@@ -772,7 +775,7 @@ void W_GetLumpName(char *to, unsigned lump)
 //
 void W_GetOLumpName(OLumpName& to, unsigned lump)
 {
-	if (lump >= numlumps)
+	if (lump >= lumpinfo.size())
 		to.clear();
 	else
 		to = lumpinfo[lump].name;
@@ -791,7 +794,7 @@ OLumpName W_GetOLumpName(unsigned lump)
 //
 void* W_CacheLumpNum(unsigned int lump, const zoneTag_e tag)
 {
-	if (lump >= numlumps)
+	if (lump >= lumpinfo.size())
 		I_Error("W_CacheLumpNum: {} >= numlumps",lump);
 
 	if (!lumpcache[lump])
@@ -829,7 +832,7 @@ void R_ConvertPatch(patch_t* rawpatch, patch_t* newpatch, const unsigned int lum
 //
 patch_t* W_CachePatch(unsigned lumpnum, const zoneTag_e tag)
 {
-	if (lumpnum >= numlumps)
+	if (lumpnum >= lumpinfo.size())
 		I_Error("W_CachePatch: {} >= numlumps", lumpnum);
 
 	if (!lumpcache[lumpnum])
@@ -937,7 +940,7 @@ int W_FindLump (const char *name, int lastlump)
 	if (lastlump < -1)
 		lastlump = -1;
 
-	for (size_t i = lastlump + 1; i < numlumps; i++)
+	for (size_t i = lastlump + 1; i < lumpinfo.size(); i++)
 	{
 		if (strnicmp(lumpinfo[i].name.c_str(), name, 8) == 0)
 			return i;
@@ -954,11 +957,9 @@ int W_FindLump (const char *name, int lastlump)
 
 void W_Close ()
 {
-	for (lumpinfo_t * lump_p = lumpinfo;
-	                  lump_p < lumpinfo + numlumps;
-	                  lump_p++)
+	for (auto& lump : lumpinfo)
 	{
-		lump_p->handle.reset();
+		lump.handle.reset();
 	}
 
 	::handleGen = (::handleGen + 1) & HANDLE_GEN_MASK;

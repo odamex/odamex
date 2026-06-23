@@ -64,7 +64,7 @@ bool M_ReadLE(std::istream& io_stream, ElementType (&o_dataArray)[N])
     return true;
 }
 
-uintmax_t M_FileLength (std::ifstream& f);
+uintmax_t M_FileLength (std::istream& f);
 bool M_FileExists(const std::string& filename);
 bool M_FileExistsExt(const std::string& filename, const char* ext);
 

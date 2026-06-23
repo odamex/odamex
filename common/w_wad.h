@@ -49,12 +49,7 @@ struct wadinfo_t
 	int         numlumps;
 	int         infotableofs;
 
-    bool Read(std::istream& io_stream)
-    {
-        return M_ReadLE(io_stream, identification) and
-               M_ReadLE(io_stream, numlumps) and
-               M_ReadLE(io_stream, infotableofs);
-    }
+	bool Read(std::istream& io_stream);
 };
 
 struct filelump_t
@@ -65,12 +60,7 @@ struct filelump_t
 	int     size;
 	char    name[8]; // denis - todo - string
 
-    bool Read(std::istream& io_stream)
-    {
-        return M_ReadLE(io_stream, filepos) and
-               M_ReadLE(io_stream, size) and
-               M_ReadLE(io_stream, name);
-    }
+	bool Read(std::istream& io_stream);
 };
 
 //
@@ -121,8 +111,8 @@ struct lumpHandle_t
 };
 
 extern	void**		lumpcache;
-extern	lumpinfo_t*	lumpinfo;
-extern	size_t	numlumps;
+extern std::vector<lumpinfo_t> lumpinfo;
+inline size_t W_NumLumps() { return lumpinfo.size(); }
 
 OCRC32Sum W_CRC32(const std::string& filename);
 OMD5Hash W_MD5(const std::string& filename);
