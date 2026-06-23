@@ -310,6 +310,7 @@ public:
 		p_current
 	};
 
+	DPusher() = default;
 	DPusher(EPusher type, line_t *l, int magnitude, int angle, AActor *source, int affectee);
 	int CheckForSectorMatch (EPusher type, int tag)
 	{
@@ -752,6 +753,7 @@ public:
 
 	};
 
+	DPillar() = default;
 	DPillar(sector_t* sector, EPillar type, fixed_t speed, fixed_t height,
 	        fixed_t height2, int crush, bool hexencrush);
 	[[nodiscard]] DPillar* Clone(sector_t* sec) const override;
