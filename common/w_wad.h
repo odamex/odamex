@@ -42,41 +42,53 @@ extern bool missingCommercialIWAD;
 //
 // TYPES
 //
-typedef struct
+struct wadinfo_t
 {
 	// Should be "IWAD" or "PWAD".
-	unsigned	identification;
-	int			numlumps;
-	int			infotableofs;
+	unsigned    identification;
+	int         numlumps;
+	int         infotableofs;
 
-} wadinfo_t;
+    bool Read(std::istream& io_stream)
+    {
+        return M_ReadLE(io_stream, identification) and
+               M_ReadLE(io_stream, numlumps) and
+               M_ReadLE(io_stream, infotableofs);
+    }
+};
 
-#pragma pack(push, 1)
 struct filelump_t
 {
-	int			filepos;
-	int			size;
-	char		name[8]; // denis - todo - string
+	constexpr static size_t SIZE_IN_BYTES = 16;
 
+	int     filepos;
+	int     size;
+	char    name[8]; // denis - todo - string
+
+    bool Read(std::istream& io_stream)
+    {
+        return M_ReadLE(io_stream, filepos) and
+               M_ReadLE(io_stream, size) and
+               M_ReadLE(io_stream, name);
+    }
 };
-#pragma pack(pop)
 
 //
 // WADFILE I/O related stuff.
 //
-typedef struct lumpinfo_s
+struct lumpinfo_t
 {
-	OLumpName	name;
-	FILE		*handle; // TODO: uqFile
-	int			position;
-	int			size;
+	OLumpName                     name;
+	std::shared_ptr<std::istream> handle;
+	int                           position;
+	int                           size;
 
 	// [RH] Hashing stuff
-	int			next;
-	int			index;
+	int next;
+	int index;
 
-	int			namespc;
-} lumpinfo_t;
+	int namespc;
+};
 
 // [RH] Namespaces from BOOM.
 typedef enum {

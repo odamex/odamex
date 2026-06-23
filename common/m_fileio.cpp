@@ -145,19 +145,16 @@ std::string M_GetCWD()
 // M_FileLength
 //
 // Returns the length of a file using an open descriptor
-int64_t M_FileLength (FILE *f)
+uintmax_t M_FileLength (std::istream& f)
 {
-	int64_t FileSize = -1;
+	uintmax_t fileSize = -1;
 
-	if (f != nullptr)
-	{
-		const auto CurrentPosition = ftell(f);
-		fseek (f, 0, SEEK_END);
-		FileSize = ftell (f);
-		fseek (f, CurrentPosition, SEEK_SET);
-	}
+	const auto currentPosition = f.tellg();
+	f.seekg(0, std::ios::end);
+	fileSize = f.tellg();
+	f.seekg(currentPosition, std::ios::beg);
 
-	return FileSize;
+	return fileSize;
 }
 
 
@@ -226,21 +223,23 @@ bool M_WriteFile(std::string filename, void *source, size_t length)
 //
 // Reads a file, it will allocate storage via Z_Malloc for it and return
 // the buffer and the size.
-size_t M_ReadFile(std::string filename, byte **buffer)
+size_t M_ReadFile(const std::string& filename, byte **buffer)
 {
-    FILE* handle = fopen(filename.c_str(), "rb");
+    std::ifstream handle(filename,
+                         std::ios::in |
+                         std::ios::binary);
 
-	if (handle == NULL)
+	if (not handle.good())
 	{
 		PrintFmt(PRINT_HIGH, "Could not open file {} for reading\n", filename);
 		return false;
 	}
 
-    size_t length = M_FileLength(handle);
+    const uintmax_t length = M_FileLength(handle);
 
     byte* buf = Z_Malloc<byte>(length, PU_STATIC);
-    size_t count = fread(buf, 1, length, handle);
-    fclose (handle);
+    handle.read(reinterpret_cast<char*>(buf), length);
+    const uintmax_t count = handle.gcount();
 
     if (count != length)
 	{

@@ -36,12 +36,40 @@ std::string M_FindUserFileName(const std::string& file, const char* ext);
 void M_FixPathSep(std::string& path);
 std::string M_GetCWD();
 
-int64_t M_FileLength (FILE *f);
+template <typename ElementType>
+bool M_ReadLE(std::istream& io_stream, ElementType& o_data)
+{
+    if (io_stream.good())
+    {
+        io_stream.read(reinterpret_cast<char*>(&o_data), sizeof(o_data));
+        if (io_stream.gcount() == sizeof(o_data))
+        {
+            o_data = nonstd::bit::to_native_endian(o_data, /* from */ nonstd::bit::little_endian_type());
+            return true;
+        }
+    }
+    return false;
+}
+
+template <typename ElementType, size_t N>
+bool M_ReadLE(std::istream& io_stream, ElementType (&o_dataArray)[N])
+{
+    for (size_t i = 0; i < N; ++i)
+    {
+        if (not M_ReadLE(io_stream, o_dataArray[i]))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+uintmax_t M_FileLength (std::ifstream& f);
 bool M_FileExists(const std::string& filename);
 bool M_FileExistsExt(const std::string& filename, const char* ext);
 
 bool M_WriteFile(std::string filename, void *source, size_t length);
-size_t M_ReadFile(std::string filename, byte **buffer);
+size_t M_ReadFile(const std::string& filename, byte **buffer);
 
 bool M_AppendExtension (std::string &filename, std::string extension, bool if_needed = true);
 void M_ExtractFilePath(const std::string& filename, std::string &dest);

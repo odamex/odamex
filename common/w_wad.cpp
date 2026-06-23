@@ -258,7 +258,7 @@ fhfprint_t W_FarmHash128(const byte* lumpdata, int length)
 // Adds lumps from the array of filelump_t. If clientonly is true,
 // only certain lumps will be added.
 //
-void W_AddLumps(FILE* handle, const filelump_t* fileinfo, size_t newlumps, bool clientonly)
+void W_AddLumps(const std::shared_ptr<std::istream>& handle, const filelump_t* fileinfo, size_t newlumps, bool clientonly)
 {
 	lumpinfo = static_cast<lumpinfo_t*>(M_Realloc(lumpinfo, (numlumps + newlumps) * sizeof(lumpinfo_t)));
 	if (!lumpinfo)
@@ -293,12 +293,15 @@ void W_AddLumps(FILE* handle, const filelump_t* fileinfo, size_t newlumps, bool 
 //
 void AddFile(const OResFile& file)
 {
-	uqFile handle;
-	std::unique_ptr<filelump_t[]> fileinfo{};
+	std::vector<filelump_t> fileinfo;
 
 	const std::string filename = file.getFullpath();
 
-	if ( (handle = uqFile(fopen(filename.c_str(), "rb"))) == nullptr)
+	auto handle = std::make_shared<std::ifstream>(filename,
+	                                              std::ios::in |
+	                                              std::ios::binary);
+
+	if (not handle->good())
 	{
 		PrintFmt(PRINT_WARNING, "couldn't open {}\n", filename);
 		return;
@@ -307,13 +310,12 @@ void AddFile(const OResFile& file)
 	PrintFmt(PRINT_HIGH, "adding {}", filename);
 
 	wadinfo_t header;
-	size_t readlen = fread(&header, sizeof(header), 1, handle.get());
-	if (readlen < 1)
+
+	if (not header.Read(*handle))
 	{
 		PrintFmt(PRINT_HIGH, "failed to read {}.\n", filename);
 		return;
 	}
-	header.identification = LELONG(header.identification);
 
 	size_t newlumps;
 	if (header.identification != IWAD_ID && header.identification != PWAD_ID)
@@ -322,10 +324,10 @@ void AddFile(const OResFile& file)
 		std::string lumpname;
 		M_ExtractFileBase(filename, lumpname);
 
-		fileinfo = std::make_unique<filelump_t[]>(1);
-		fileinfo[0].filepos = 0;
-		fileinfo[0].size = M_FileLength(handle.get());
-		std::transform(lumpname.c_str(), lumpname.c_str() + 8, fileinfo[0].name, toupper);
+		fileinfo.push_back(filelump_t{});
+		fileinfo.back().filepos = 0;
+		fileinfo.back().size = static_cast<int>(M_FileLength(*handle));
+		std::transform(lumpname.c_str(), lumpname.c_str() + 8, fileinfo.back().name, toupper);
 
 		newlumps = 1;
 		PrintFmt(PRINT_HIGH, " (single lump)\n");
@@ -333,38 +335,31 @@ void AddFile(const OResFile& file)
 	else
 	{
 		// WAD file
-		header.numlumps = LELONG(header.numlumps);
-		header.infotableofs = LELONG(header.infotableofs);
-		size_t length = header.numlumps * sizeof(filelump_t);
+		uintmax_t length = header.numlumps * filelump_t::SIZE_IN_BYTES;
 
-		if (length > M_FileLength(handle.get()))
+		if (length > M_FileLength(*handle))
 		{
 			PrintFmt(PRINT_WARNING, "\nbad number of lumps for {}\n", filename);
 			return;
 		}
 
-		fileinfo = std::make_unique<filelump_t[]>(header.numlumps);
-		fseek(handle.get(), header.infotableofs, SEEK_SET);
-		readlen = fread(fileinfo.get(), length, 1, handle.get());
-		if (readlen < 1)
-		{
-			PrintFmt(PRINT_HIGH, "failed to read file info in {}\n", filename);
-			return;
-		}
+        fileinfo.resize(header.numlumps);
 
-		// convert from little-endian to target arch and capitalize lump name
-		for (int i = 0; i < header.numlumps; i++)
-		{
-			fileinfo[i].filepos = LELONG(fileinfo[i].filepos);
-			fileinfo[i].size = LELONG(fileinfo[i].size);
-			std::transform(fileinfo[i].name, fileinfo[i].name + 8, fileinfo[i].name, toupper);
-		}
-
+        handle->seekg(header.infotableofs, std::ios::beg);
+		for (size_t i = 0; i < fileinfo.size(); i++)
+        {
+            if (not fileinfo[i].Read(*handle))
+            {
+                PrintFmt(PRINT_HIGH, "failed to read file info in {}\n", filename);
+                return;
+            }
+            std::transform(fileinfo[i].name, fileinfo[i].name + 8, fileinfo[i].name, toupper);
+        }
 		newlumps = header.numlumps;
 		PrintFmt(PRINT_HIGH, " ({} lumps)\n", header.numlumps);
 	}
 
-	W_AddLumps(handle.release(), fileinfo.get(), newlumps, false);
+	W_AddLumps(handle, fileinfo.data(), newlumps, false);
 }
 
 
@@ -430,11 +425,11 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, int space)
 				if (!newlumps)
 				{
 					newlumps++;
-					newlumpinfos[0].name = start;
-					newlumpinfos[0].handle = NULL;
-					newlumpinfos[0].position =
-						newlumpinfos[0].size = 0;
-					newlumpinfos[0].namespc = ns_global;
+					newlumpinfos[0].handle.reset();
+					newlumpinfos[0].name     = start;
+					newlumpinfos[0].position = 0;
+					newlumpinfos[0].size     = 0;
+					newlumpinfos[0].namespc  = ns_global;
 				}
 			}
 			else
@@ -498,11 +493,11 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, int space)
 
 		numlumps = oldlumps + newlumps;
 
-		lumpinfo[numlumps].name = end;
-		lumpinfo[numlumps].handle = NULL;
-		lumpinfo[numlumps].position =
-			lumpinfo[numlumps].size = 0;
-		lumpinfo[numlumps].namespc = ns_global;
+		lumpinfo[numlumps].handle.reset();
+		lumpinfo[numlumps].name     = end;
+		lumpinfo[numlumps].position = 0;
+		lumpinfo[numlumps].size     = 0;
+		lumpinfo[numlumps].namespc  = ns_global;
 		numlumps++;
 	}
 }
@@ -708,11 +703,11 @@ void W_ReadLump(unsigned int lump, void* dest)
 	if (lump != stdisk_lumpnum)
     	I_BeginRead();
 
-	fseek (l->handle, l->position, SEEK_SET);
-	int c = fread (dest, l->size, 1, l->handle);
+	l->handle->seekg(l->position, std::ios::beg);
+	l->handle->read(reinterpret_cast<char*>(dest), l->size);
 
-	if (feof(l->handle))
-		I_Error("W_ReadLump: only read {} of {} on lump {}", c, l->size, lump);
+	if (not l->handle->good())
+		I_Error("W_ReadLump: only read {} of {} on lump {}", l->handle->gcount(), l->size, lump);
 
 	if (lump != stdisk_lumpnum)
     	I_EndRead();
@@ -725,15 +720,19 @@ void W_ReadLump(unsigned int lump, void* dest)
 //
 unsigned W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest, unsigned &filelen)
 {
-	auto fp = uqFile(fopen(file, "rb"));
+    std::ifstream fp(file,
+                     std::ios::in |
+                     std::ios::binary);
+
 	unsigned read = 0;
 
-	if(fp)
+	if (fp.good())
 	{
-		filelen = M_FileLength(fp.get());
+		filelen = static_cast<unsigned>(M_FileLength(fp));
 
-		fseek(fp.get(), offs, SEEK_SET);
-		read = fread(dest, 1, len, fp.get());
+		fp.seekg(offs, std::ios::beg);
+		fp.read(reinterpret_cast<char*>(dest), len);
+		read = fp.gcount();
 	}
 	else
 		filelen = 0;
@@ -955,21 +954,11 @@ int W_FindLump (const char *name, int lastlump)
 
 void W_Close ()
 {
-	// store closed handles, so that fclose isn't called multiple times
-	// for the same handle
-	std::vector<FILE *> handles;
-
-	lumpinfo_t * lump_p = lumpinfo;
-	while (lump_p < lumpinfo + numlumps)
+	for (lumpinfo_t * lump_p = lumpinfo;
+	                  lump_p < lumpinfo + numlumps;
+	                  lump_p++)
 	{
-		// if file not previously closed, close it now
-		if(lump_p->handle &&
-		   std::find(handles.begin(), handles.end(), lump_p->handle) == handles.end())
-		{
-			fclose(lump_p->handle);
-			handles.push_back(lump_p->handle);
-		}
-		lump_p++;
+		lump_p->handle.reset();
 	}
 
 	::handleGen = (::handleGen + 1) & HANDLE_GEN_MASK;
