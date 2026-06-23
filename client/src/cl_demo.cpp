@@ -83,7 +83,7 @@ void NetDemo::reset()
 	cleanUp();
 
 	filename = "";
-	memset(&header, 0, sizeof(header));
+	header = netdemo_header_t{};
 	captured.clear();
 }
 
