@@ -415,7 +415,8 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, namespace_t spa
 			flatHack = 0;
 	}
 
-	auto newlumpinfos = std::make_unique<lumpinfo_t[]>(lumpinfo.size());
+    std::vector<lumpinfo_t> newlumpinfos;
+    newlumpinfos.reserve(lumpinfo.size());
 
 	size_t newlumps = 0;
 	size_t oldlumps = 0;
@@ -431,14 +432,9 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, namespace_t spa
 				insideBlock = true;
 
 				// Create start marker if we haven't already
-				if (!newlumps)
+				if (newlumpinfos.empty())
 				{
-					newlumps++;
-					newlumpinfos[0].handle.reset();
-					newlumpinfos[0].name     = start;
-					newlumpinfos[0].position = 0;
-					newlumpinfos[0].size     = 0;
-					newlumpinfos[0].namespc  = ns_global;
+                    newlumpinfos.emplace_back(start);
 				}
 			}
 			else
@@ -465,8 +461,8 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, namespace_t spa
 					}
 					else
 					{
-						newlumpinfos[newlumps] = lumpinfo[i];
-						newlumpinfos[newlumps++].namespc = space;
+                        newlumpinfos.push_back(lumpinfo[i]);
+                        newlumpinfos.back().namespc = space;
 					}
 				}
 			}
@@ -484,8 +480,8 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, namespace_t spa
 			}
 			else
 			{
-				newlumpinfos[newlumps] = lumpinfo[i];
-				newlumpinfos[newlumps++].namespc = space;
+                newlumpinfos.push_back(lumpinfo[i]);
+                newlumpinfos.back().namespc = space;
 			}
 		}
 	}
@@ -493,22 +489,15 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, namespace_t spa
 	// Now copy the merged lumps to the end of the old list
 	// and create the end marker entry.
 
-	if (newlumps)
+	if (newlumpinfos.size())
 	{
 		// Because the above algorithm only ever causes the lump count to shrink or stay the same,
 		// we just do the resize unconditionally.
-		lumpinfo.resize(oldlumps + newlumps);
+		lumpinfo.resize(oldlumps + newlumpinfos.size());
 
-		std::copy_n(newlumpinfos.get(), newlumps, lumpinfo.begin() + oldlumps);
+		std::copy(newlumpinfos.begin(), newlumpinfos.end(), lumpinfo.begin() + oldlumps);
 
-		lumpinfo_t marker;
-		marker.handle.reset();
-		marker.name     = end;
-		marker.position = 0;
-		marker.size     = 0;
-		marker.namespc  = ns_global;
-
-		lumpinfo.emplace_back(std::move(marker));
+		lumpinfo.emplace_back(end);
 	}
 }
 

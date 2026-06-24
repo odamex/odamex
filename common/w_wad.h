@@ -88,6 +88,12 @@ struct lumpinfo_t
 	int index   { -1 };
 
 	namespace_t namespc { ns_global };
+
+    lumpinfo_t() = default;
+    explicit lumpinfo_t(const OLumpName& i_name) :
+        name(i_name)
+    {
+    }
 };
 
 struct lumpHandle_t
