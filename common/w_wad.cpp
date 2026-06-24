@@ -359,7 +359,7 @@ void AddFile(const OResFile& file)
         {
             if (not fileinfo[i].Read(*handle))
             {
-                PrintFmt(PRINT_HIGH, "failed to read file info in {}\n", filename);
+                PrintFmt(PRINT_HIGH, "failed to read file info for lump number {} in {}\n", i, filename);
                 return;
             }
             std::transform(fileinfo[i].name, fileinfo[i].name + 8, fileinfo[i].name, toupper);
@@ -495,16 +495,19 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, int space)
 
 	if (newlumps)
 	{
-		if (oldlumps + newlumps + 1 > lumpinfo.size())
-			lumpinfo.resize(oldlumps + newlumps + 1);
+		if (oldlumps + newlumps > lumpinfo.size())
+			lumpinfo.resize(oldlumps + newlumps);
 
 		std::copy_n(newlumpinfos.get(), newlumps, lumpinfo.begin() + oldlumps);
 
-		lumpinfo.back().handle.reset();
-		lumpinfo.back().name     = end;
-		lumpinfo.back().position = 0;
-		lumpinfo.back().size     = 0;
-		lumpinfo.back().namespc  = ns_global;
+		lumpinfo_t marker;
+		marker.handle.reset();
+		marker.name     = end;
+		marker.position = 0;
+		marker.size     = 0;
+		marker.namespc  = ns_global;
+
+		lumpinfo[oldlumps+newlumps] = marker;
 	}
 }
 

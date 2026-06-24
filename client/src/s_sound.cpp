@@ -1245,7 +1245,7 @@ void S_ChangeMusic(std::string musicname, bool looping, int order)
 		f.read(reinterpret_cast<char*>(data), length);
 
 		const size_t result = f.gcount();
-		if (result == 1)
+		if (result == length)
 		{
 			I_PlaySong({data, length}, looping, order);
 		}
