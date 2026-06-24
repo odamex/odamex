@@ -349,10 +349,10 @@ void CL_PredictWorld(void)
 
 void CL_ResetWorldPrediction()
 {
-    for (auto& savedPlayerSnapshot : cl_savedsnaps)
-    {
-        savedPlayerSnapshot = PlayerSnapshot{};
-    }
+	for (auto& savedPlayerSnapshot : cl_savedsnaps)
+	{
+		savedPlayerSnapshot = PlayerSnapshot{};
+	}
 }
 
 VERSION_CONTROL (cl_pred_cpp, "$Id$")
