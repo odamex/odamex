@@ -495,8 +495,9 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, int space)
 
 	if (newlumps)
 	{
-		if (oldlumps + newlumps > lumpinfo.size())
-			lumpinfo.resize(oldlumps + newlumps);
+		// Because the above algorithm only ever causes the lump count to shrink or stay the same,
+		// we just do the resize unconditionally.
+		lumpinfo.resize(oldlumps + newlumps);
 
 		std::copy_n(newlumpinfos.get(), newlumps, lumpinfo.begin() + oldlumps);
 
@@ -507,7 +508,7 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, int space)
 		marker.size     = 0;
 		marker.namespc  = ns_global;
 
-		lumpinfo[oldlumps+newlumps] = marker;
+		lumpinfo.emplace_back(std::move(marker));
 	}
 }
 
