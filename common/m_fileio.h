@@ -44,7 +44,9 @@ bool M_ReadLE(std::istream& io_stream, ElementType& o_data)
 		io_stream.read(reinterpret_cast<char*>(&o_data), sizeof(o_data));
 		if (io_stream.gcount() == sizeof(o_data))
 		{
-			o_data = nonstd::bit::to_native_endian(o_data, /* from */ nonstd::bit::little_endian_type());
+			using namespace nonstd::bit;
+			o_data = to_native_endian(o_data,
+			                          little_endian_type());    // from
 			return true;
 		}
 	}
