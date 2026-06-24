@@ -74,22 +74,22 @@ size_t handleGen = 1;
 const size_t HANDLE_GEN_MASK = BIT_MASK(0, 2);
 const size_t HANDLE_GEN_BITS = 3;
 
-void**			lumpcache;
+void**  lumpcache;
 
-static unsigned	stdisk_lumpnum;
+static unsigned stdisk_lumpnum;
 
 bool wadinfo_t::Read(std::istream& io_stream)
 {
-    return M_ReadLE(io_stream, identification) and
-           M_ReadLE(io_stream, numlumps) and
-           M_ReadLE(io_stream, infotableofs);
+	return M_ReadLE(io_stream, identification) and
+	       M_ReadLE(io_stream, numlumps) and
+	       M_ReadLE(io_stream, infotableofs);
 }
 
 bool filelump_t::Read(std::istream& io_stream)
 {
-    return M_ReadLE(io_stream, filepos) and
-           M_ReadLE(io_stream, size) and
-           M_ReadLE(io_stream, name);
+	return M_ReadLE(io_stream, filepos) and
+	       M_ReadLE(io_stream, size) and
+	       M_ReadLE(io_stream, name);
 }
 
 //
@@ -352,18 +352,18 @@ void AddFile(const OResFile& file)
 			return;
 		}
 
-        fileinfo.resize(header.numlumps);
+		fileinfo.resize(header.numlumps);
 
-        handle->seekg(header.infotableofs, std::ios::beg);
+		handle->seekg(header.infotableofs, std::ios::beg);
 		for (size_t i = 0; i < fileinfo.size(); i++)
-        {
-            if (not fileinfo[i].Read(*handle))
-            {
-                PrintFmt(PRINT_HIGH, "failed to read file info for lump number {} in {}\n", i, filename);
-                return;
-            }
-            std::transform(fileinfo[i].name, fileinfo[i].name + 8, fileinfo[i].name, toupper);
-        }
+		{
+			if (not fileinfo[i].Read(*handle))
+			{
+				PrintFmt(PRINT_HIGH, "failed to read file info for lump number {} in {}\n", i, filename);
+				return;
+			}
+			std::transform(fileinfo[i].name, fileinfo[i].name + 8, fileinfo[i].name, toupper);
+		}
 		newlumps = header.numlumps;
 		PrintFmt(PRINT_HIGH, " ({} lumps)\n", header.numlumps);
 	}
@@ -415,8 +415,8 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, namespace_t spa
 			flatHack = 0;
 	}
 
-    std::vector<lumpinfo_t> newlumpinfos;
-    newlumpinfos.reserve(lumpinfo.size());
+	std::vector<lumpinfo_t> newlumpinfos;
+	newlumpinfos.reserve(lumpinfo.size());
 
 	size_t newlumps = 0;
 	size_t oldlumps = 0;
@@ -434,7 +434,7 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, namespace_t spa
 				// Create start marker if we haven't already
 				if (newlumpinfos.empty())
 				{
-                    newlumpinfos.emplace_back(start);
+					newlumpinfos.emplace_back(start);
 				}
 			}
 			else
@@ -461,8 +461,8 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, namespace_t spa
 					}
 					else
 					{
-                        newlumpinfos.push_back(lumpinfo[i]);
-                        newlumpinfos.back().namespc = space;
+						newlumpinfos.push_back(lumpinfo[i]);
+						newlumpinfos.back().namespc = space;
 					}
 				}
 			}
@@ -480,8 +480,8 @@ void W_MergeLumps (const OLumpName& start, const OLumpName& end, namespace_t spa
 			}
 			else
 			{
-                newlumpinfos.push_back(lumpinfo[i]);
-                newlumpinfos.back().namespc = space;
+				newlumpinfos.push_back(lumpinfo[i]);
+				newlumpinfos.back().namespc = space;
 			}
 		}
 	}
@@ -547,14 +547,14 @@ void W_InitMultipleFiles(const OResFiles& files)
 		lump.namespc = ns_global;
 
 	// [RH] Merge sprite and flat groups.
-	//		(We don't need to bother with patches, since
-	//		Doom doesn't use markers to identify them.)
+	//      (We don't need to bother with patches, since
+	//      Doom doesn't use markers to identify them.)
 	W_MergeLumps ("TX_START", "TX_END", ns_textures);
 	W_MergeLumps ("S_START", "S_END", ns_sprites); // denis - fixme - security
 	W_MergeLumps ("F_START", "F_END", ns_flats);
 	W_MergeLumps ("C_START", "C_END", ns_colormaps);
 
-    // set up caching
+	// set up caching
 	M_Free(lumpcache);
 
 	size_t size = lumpinfo.size() * sizeof(*lumpcache);
@@ -697,7 +697,7 @@ void W_ReadLump(unsigned int lump, void* dest)
 	auto l = lumpinfo.begin() + lump;
 
 	if (lump != stdisk_lumpnum)
-    	I_BeginRead();
+		I_BeginRead();
 
 	l->handle->seekg(l->position, std::ios::beg);
 	l->handle->read(reinterpret_cast<char*>(dest), l->size);
@@ -706,7 +706,7 @@ void W_ReadLump(unsigned int lump, void* dest)
 		I_Error("W_ReadLump: only read {} of {} on lump {}", l->handle->gcount(), l->size, lump);
 
 	if (lump != stdisk_lumpnum)
-    	I_EndRead();
+		I_EndRead();
 }
 
 //
@@ -716,9 +716,9 @@ void W_ReadLump(unsigned int lump, void* dest)
 //
 unsigned W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest, unsigned &filelen)
 {
-    std::ifstream fp(file,
-                     std::ios::in |
-                     std::ios::binary);
+	std::ifstream fp(file,
+	                 std::ios::in |
+	                 std::ios::binary);
 
 	unsigned read = 0;
 

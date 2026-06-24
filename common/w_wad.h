@@ -89,11 +89,12 @@ struct lumpinfo_t
 
 	namespace_t namespc { ns_global };
 
-    lumpinfo_t() = default;
-    explicit lumpinfo_t(const OLumpName& i_name) :
-        name(i_name)
-    {
-    }
+	lumpinfo_t() = default;     // Needed because the following ctor implicitly deletes the default ctor.
+
+	explicit lumpinfo_t(const OLumpName& i_name) :
+		name(i_name)
+	{
+	}
 };
 
 struct lumpHandle_t
