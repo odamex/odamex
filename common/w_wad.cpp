@@ -393,7 +393,7 @@ static bool IsMarker (const lumpinfo_t& lump, const char *marker)
 // Basically from BOOM, too, although I tried to write it independently.
 //
 
-void W_MergeLumps (const OLumpName& start, const OLumpName& end, int space)
+void W_MergeLumps (const OLumpName& start, const OLumpName& end, namespace_t space)
 {
 	// Some pwads use an icky hack to get flats with regular Doom.
 	// This tries to detect them.
@@ -628,7 +628,7 @@ int W_HandleToLump(const lumpHandle_t handle)
 //
 // [SL] taken from prboom-plus
 //
-int W_CheckNumForName(const char *name, int namespc)
+int W_CheckNumForName(const char *name, namespace_t namespc)
 {
 	// Hash function maps the name to one of possibly numlump chains.
 	// It has been tuned so that the average chain length never exceeds 2.
@@ -654,7 +654,7 @@ int W_CheckNumForName(const char *name, int namespc)
 // W_GetNumForName
 // Calls W_CheckNumForName, but bombs out if not found.
 //
-int W_GetNumForName(const char* name, int namespc)
+int W_GetNumForName(const char* name, namespace_t namespc)
 {
 	int i = W_CheckNumForName(name, namespc);
 
@@ -900,7 +900,7 @@ lumpHandle_t W_CachePatchHandle(const int lumpNum, const zoneTag_e tag)
 /**
  * @brief Cache a patch by name and namespace and return a handle to it.
  */
-lumpHandle_t W_CachePatchHandle(const char* name, const zoneTag_e tag, const int ns)
+lumpHandle_t W_CachePatchHandle(const char* name, const zoneTag_e tag, const namespace_t ns)
 {
 	return W_CachePatchHandle(W_GetNumForName(name, ns), tag);
 }
@@ -908,7 +908,7 @@ lumpHandle_t W_CachePatchHandle(const char* name, const zoneTag_e tag, const int
 /**
  * @brief Cache a patch by name and namespace and return a handle to it.
  */
-lumpHandle_t W_CachePatchHandle(const OLumpName& name, const zoneTag_e tag, const int ns)
+lumpHandle_t W_CachePatchHandle(const OLumpName& name, const zoneTag_e tag, const namespace_t ns)
 {
 	return W_CachePatchHandle(W_GetNumForName(name, ns), tag);
 }
