@@ -1461,7 +1461,7 @@ bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLeve
 		}
 		else
 		{
-			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_SpawnPlayer(*mo->player));
+			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_SpawnPlayer(*mo->player, gametic));
 		}
 		return true;
 	}
