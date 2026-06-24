@@ -13,8 +13,8 @@ public:
 	NetDemo(const NetDemo &rhs)             = delete;
 	NetDemo& operator=(const NetDemo &rhs)  = delete;
 
-    NetDemo(NetDemo&&) = default;
-    NetDemo& operator=(NetDemo&&) = default;
+	NetDemo(NetDemo&&) = default;
+	NetDemo& operator=(NetDemo&&) = default;
 
 
 	bool startPlaying(const std::string &filename);

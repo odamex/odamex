@@ -39,54 +39,54 @@ std::string M_GetCWD();
 template <typename ElementType>
 bool M_ReadLE(std::istream& io_stream, ElementType& o_data)
 {
-    if (io_stream.good())
-    {
-        io_stream.read(reinterpret_cast<char*>(&o_data), sizeof(o_data));
-        if (io_stream.gcount() == sizeof(o_data))
-        {
-            o_data = nonstd::bit::to_native_endian(o_data, /* from */ nonstd::bit::little_endian_type());
-            return true;
-        }
-    }
-    return false;
+	if (io_stream.good())
+	{
+		io_stream.read(reinterpret_cast<char*>(&o_data), sizeof(o_data));
+		if (io_stream.gcount() == sizeof(o_data))
+		{
+			o_data = nonstd::bit::to_native_endian(o_data, /* from */ nonstd::bit::little_endian_type());
+			return true;
+		}
+	}
+	return false;
 }
 
 template <typename ElementType, size_t N>
 bool M_ReadLE(std::istream& io_stream, ElementType (&o_dataArray)[N])
 {
-    for (size_t i = 0; i < N; ++i)
-    {
-        if (not M_ReadLE(io_stream, o_dataArray[i]))
-        {
-            return false;
-        }
-    }
-    return true;
+	for (size_t i = 0; i < N; ++i)
+	{
+		if (not M_ReadLE(io_stream, o_dataArray[i]))
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 template <typename ElementType>
 bool M_WriteLE(std::ostream& io_stream, const ElementType& i_data)
 {
-    if (io_stream.good())
-    {
-        ElementType temp = nonstd::bit::as_little_endian(i_data);
-        io_stream.write(reinterpret_cast<char*>(&temp), sizeof(temp));
-        return true;
-    }
-    return false;
+	if (io_stream.good())
+	{
+		ElementType temp = nonstd::bit::as_little_endian(i_data);
+		io_stream.write(reinterpret_cast<char*>(&temp), sizeof(temp));
+		return true;
+	}
+	return false;
 }
 
 template <typename ElementType, size_t N>
 bool M_WriteLE(std::ostream& io_stream, const ElementType (&i_dataArray)[N])
 {
-    for (size_t i = 0; i < N; ++i)
-    {
-        if (not M_WriteLE(io_stream, i_dataArray[i]))
-        {
-            return false;
-        }
-    }
-    return true;
+	for (size_t i = 0; i < N; ++i)
+	{
+		if (not M_WriteLE(io_stream, i_dataArray[i]))
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 uintmax_t M_FileLength (std::istream& f);

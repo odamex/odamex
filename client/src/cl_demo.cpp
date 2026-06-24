@@ -155,18 +155,18 @@ bool NetDemo::writeHeader()
 	netdemo_header_t tmpheader {header};
 
 	demofp.seekp(0, std::ios::beg);
-    const auto startingPosition = demofp.tellp();
+	const auto startingPosition = demofp.tellp();
 
-    const bool result = startingPosition >= 0
-                        and M_WriteLE(demofp, header.identifier)
-                        and M_WriteLE(demofp, header.version)
-                        and M_WriteLE(demofp, header.compression)
-                        and M_WriteLE(demofp, header.snapshot_spacing)
-                        and M_WriteLE(demofp, header.starting_gametic)
-                        and M_WriteLE(demofp, header.ending_gametic)
-                        and M_WriteLE(demofp, header.reserved)
-                        and demofp.tellp() - startingPosition == HEADER_SIZE;
-    return result;
+	const bool result = startingPosition >= 0
+	                    and M_WriteLE(demofp, header.identifier)
+	                    and M_WriteLE(demofp, header.version)
+	                    and M_WriteLE(demofp, header.compression)
+	                    and M_WriteLE(demofp, header.snapshot_spacing)
+	                    and M_WriteLE(demofp, header.starting_gametic)
+	                    and M_WriteLE(demofp, header.ending_gametic)
+	                    and M_WriteLE(demofp, header.reserved)
+	                    and demofp.tellp() - startingPosition == HEADER_SIZE;
+	return result;
 }
 
 
@@ -179,19 +179,19 @@ bool NetDemo::writeHeader()
 
 bool NetDemo::readHeader()
 {
-    demofp.seekg(0, std::ios::beg);
-    const auto startingPosition = demofp.tellg();
+	demofp.seekg(0, std::ios::beg);
+	const auto startingPosition = demofp.tellg();
 
-    const bool result = startingPosition >= 0
-                        and M_ReadLE(demofp, header.identifier)
-                        and M_ReadLE(demofp, header.version)
-                        and M_ReadLE(demofp, header.compression)
-                        and M_ReadLE(demofp, header.snapshot_spacing)
-                        and M_ReadLE(demofp, header.starting_gametic)
-                        and M_ReadLE(demofp, header.ending_gametic)
-                        and M_ReadLE(demofp, header.reserved)
-                        and demofp.tellg() - startingPosition == HEADER_SIZE;
-    return result;
+	const bool result = startingPosition >= 0
+	                    and M_ReadLE(demofp, header.identifier)
+	                    and M_ReadLE(demofp, header.version)
+	                    and M_ReadLE(demofp, header.compression)
+	                    and M_ReadLE(demofp, header.snapshot_spacing)
+	                    and M_ReadLE(demofp, header.starting_gametic)
+	                    and M_ReadLE(demofp, header.ending_gametic)
+	                    and M_ReadLE(demofp, header.reserved)
+	                    and demofp.tellg() - startingPosition == HEADER_SIZE;
+	return result;
 }
 
 //
@@ -497,8 +497,8 @@ bool NetDemo::stopPlaying()
 
 	PrintFmt(PRINT_HIGH, "Demo has ended.\n");
 	reset();
-    gameaction = ga_fullconsole;
-    gamestate = GS_FULLCONSOLE;
+	gameaction = ga_fullconsole;
+	gamestate = GS_FULLCONSOLE;
 
 	return true;
 }
@@ -527,22 +527,22 @@ void NetDemo::writeChunk(const byte *data, size_t size, netdemo_message_t type)
 	msgheader.length    = size;
 	msgheader.gametic   = gametic;
 
-    const auto startingPosition = demofp.tellp();
-    const bool headerResult = startingPosition >= 0
-                                and M_WriteLE(demofp, msgheader.type)
-                                and M_WriteLE(demofp, msgheader.length)
-                                and M_WriteLE(demofp, msgheader.gametic)
-                                and demofp.tellp() - startingPosition == MESSAGE_HEADER_SIZE;
+	const auto startingPosition = demofp.tellp();
+	const bool headerResult = startingPosition >= 0
+	                            and M_WriteLE(demofp, msgheader.type)
+	                            and M_WriteLE(demofp, msgheader.length)
+	                            and M_WriteLE(demofp, msgheader.gametic)
+	                            and demofp.tellp() - startingPosition == MESSAGE_HEADER_SIZE;
 
-    if (headerResult)
-    {
-        const auto dataStartPosition = demofp.tellp();
-        demofp.write(reinterpret_cast<const char*>(data), size);
-        if (demofp.tellp() - dataStartPosition != size)
-        {
-            error("Unable to write netdemo message chunk\n");
-        }
-    }
+	if (headerResult)
+	{
+		const auto dataStartPosition = demofp.tellp();
+		demofp.write(reinterpret_cast<const char*>(data), size);
+		if (demofp.tellp() - dataStartPosition != size)
+		{
+			error("Unable to write netdemo message chunk\n");
+		}
+	}
 }
 
 
@@ -634,9 +634,9 @@ bool NetDemo::readMessageHeader(netdemo_message_t &type, uint32_t &len, uint32_t
 
 	message_header_t msgheader;
 
-    const bool headerIsGood =   M_ReadLE(demofp, msgheader.type)
-                            and M_ReadLE(demofp, msgheader.length)
-                            and M_ReadLE(demofp, msgheader.gametic);
+	const bool headerIsGood =   M_ReadLE(demofp, msgheader.type)
+	                        and M_ReadLE(demofp, msgheader.length)
+	                        and M_ReadLE(demofp, msgheader.gametic);
 	if (not headerIsGood)
 	{
 		return false;
@@ -796,22 +796,22 @@ void NetDemo::capture(const std::basic_string<byte>& buffer)
 void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 {
 	// Server sends launcher info
-	MSG_WriteLong	(netbuffer, PROTO_CHALLENGE);
-	MSG_WriteLong	(netbuffer, 0);		// server_token
+	MSG_WriteLong   (netbuffer, PROTO_CHALLENGE);
+	MSG_WriteLong   (netbuffer, 0);     // server_token
 
 	// get sv_hostname and write it
 	MSG_WriteString (netbuffer, server_host.c_str());
 
 	int playersingame = std::count_if(players.cbegin(), players.cend(), [](const auto& player){ return player.ingame(); });
-	MSG_WriteByte	(netbuffer, playersingame);
-	MSG_WriteByte	(netbuffer, 0);				// sv_maxclients
-	MSG_WriteString	(netbuffer, level.mapname.c_str());
+	MSG_WriteByte   (netbuffer, playersingame);
+	MSG_WriteByte   (netbuffer, 0);             // sv_maxclients
+	MSG_WriteString (netbuffer, level.mapname.c_str());
 
 	// names of all the wadfiles on the server
 	size_t numwads = wadfiles.size();
 	if (numwads > 0xff)
-		numwads = 0xff;
-	MSG_WriteByte	(netbuffer, numwads - 1);
+	    numwads = 0xff;
+	MSG_WriteByte   (netbuffer, numwads - 1);
 
 	for (size_t n = 1; n < numwads; n++)
 	{
@@ -819,10 +819,10 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 		MSG_WriteString(netbuffer, ::wadfiles[n].getBasename().c_str());
 	}
 
-	MSG_WriteBool	(netbuffer, 0);		// deathmatch?
-	MSG_WriteByte	(netbuffer, 0);		// sv_skill
-	MSG_WriteBool	(netbuffer, (sv_gametype == GM_TEAMDM));
-	MSG_WriteBool	(netbuffer, (sv_gametype == GM_CTF));
+	MSG_WriteBool   (netbuffer, 0);     // deathmatch?
+	MSG_WriteByte   (netbuffer, 0);     // sv_skill
+	MSG_WriteBool   (netbuffer, (sv_gametype == GM_TEAMDM));
+	MSG_WriteBool   (netbuffer, (sv_gametype == GM_CTF));
 
 	for (const auto& player : players)
 	{
@@ -840,41 +840,41 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 	for (size_t n = 1; n < numwads; n++)
 		MSG_WriteString(netbuffer, ::wadfiles[n].getMD5().getHexCStr());
 
-	MSG_WriteString	(netbuffer, "");	// sv_website.cstring()
+	MSG_WriteString (netbuffer, "");    // sv_website.cstring()
 
 	if (G_IsTeamGame())
 	{
-		MSG_WriteLong	(netbuffer, 0);		// sv_scorelimit
+		MSG_WriteLong   (netbuffer, 0);     // sv_scorelimit
 		for (size_t n = 0; n < NUMTEAMS; n++)
 		{
-			MSG_WriteBool	(netbuffer, false);
+			MSG_WriteBool   (netbuffer, false);
 		}
 	}
 
-    MSG_WriteShort	(netbuffer, VERSION);
+	MSG_WriteShort  (netbuffer, VERSION);
 
-  	// Note: these are ignored by clients when the client connects anyway
-  	// so they don't need real data
-	MSG_WriteString	(netbuffer, "");	// sv_email.cstring()
+	// Note: these are ignored by clients when the client connects anyway
+	// so they don't need real data
+	MSG_WriteString (netbuffer, "");    // sv_email.cstring()
 
-	MSG_WriteShort	(netbuffer, 0);		// sv_timelimit
-	MSG_WriteShort	(netbuffer, 0);		// timeleft before end of level
-	MSG_WriteShort	(netbuffer, 0);		// sv_fraglimit
+	MSG_WriteShort  (netbuffer, 0);     // sv_timelimit
+	MSG_WriteShort  (netbuffer, 0);     // timeleft before end of level
+	MSG_WriteShort  (netbuffer, 0);     // sv_fraglimit
 
-	MSG_WriteBool	(netbuffer, false);	// sv_itemrespawn
-	MSG_WriteBool	(netbuffer, false);	// sv_weaponstay
-	MSG_WriteBool	(netbuffer, false);	// sv_friendlyfire
-	MSG_WriteBool	(netbuffer, false);	// sv_allowexit
-	MSG_WriteBool	(netbuffer, false);	// sv_infiniteammo
-	MSG_WriteBool	(netbuffer, false);	// sv_nomonsters
-	MSG_WriteBool	(netbuffer, false);	// sv_monstersrespawn
-	MSG_WriteBool	(netbuffer, false);	// sv_fastmonsters
-	MSG_WriteBool	(netbuffer, false);	// sv_allowjump
-	MSG_WriteBool	(netbuffer, false);	// sv_freelook
-	MSG_WriteBool	(netbuffer, false);	// sv_waddownload -- removed
-	MSG_WriteBool	(netbuffer, false);	// sv_emptyreset
-	MSG_WriteBool	(netbuffer, false);	// sv_cleanmaps -- removed
-	MSG_WriteBool	(netbuffer, false);	// sv_fragexitswitch
+	MSG_WriteBool   (netbuffer, false); // sv_itemrespawn
+	MSG_WriteBool   (netbuffer, false); // sv_weaponstay
+	MSG_WriteBool   (netbuffer, false); // sv_friendlyfire
+	MSG_WriteBool   (netbuffer, false); // sv_allowexit
+	MSG_WriteBool   (netbuffer, false); // sv_infiniteammo
+	MSG_WriteBool   (netbuffer, false); // sv_nomonsters
+	MSG_WriteBool   (netbuffer, false); // sv_monstersrespawn
+	MSG_WriteBool   (netbuffer, false); // sv_fastmonsters
+	MSG_WriteBool   (netbuffer, false); // sv_allowjump
+	MSG_WriteBool   (netbuffer, false); // sv_freelook
+	MSG_WriteBool   (netbuffer, false); // sv_waddownload -- removed
+	MSG_WriteBool   (netbuffer, false); // sv_emptyreset
+	MSG_WriteBool   (netbuffer, false); // sv_cleanmaps -- removed
+	MSG_WriteBool   (netbuffer, false); // sv_fragexitswitch
 
 	for (const auto& player : players)
 	{
@@ -899,17 +899,17 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 			MSG_WriteBool(netbuffer, player.spectator);
 	}
 
-	MSG_WriteLong	(netbuffer, static_cast<uint32_t>(0x01020305));
-	MSG_WriteShort	(netbuffer, 0);	// join_passowrd
+	MSG_WriteLong   (netbuffer, static_cast<uint32_t>(0x01020305));
+	MSG_WriteShort  (netbuffer, 0); // join_passowrd
 
-	MSG_WriteLong	(netbuffer, GAMEVER);
+	MSG_WriteLong   (netbuffer, GAMEVER);
 
-    // TODO: handle patch files
-	MSG_WriteByte	(netbuffer, 0);  // patchfiles.size()
-//	MSG_WriteByte	(netbuffer, patchfiles.size());
+	// TODO: handle patch files
+	MSG_WriteByte   (netbuffer, 0);  // patchfiles.size()
+//  MSG_WriteByte   (netbuffer, patchfiles.size());
 
-//	for (size_t n = 0; n < patchfiles.size(); n++)
-//		MSG_WriteString(netbuffer, patchfiles[n].c_str());
+//  for (size_t n = 0; n < patchfiles.size(); n++)
+//      MSG_WriteString(netbuffer, patchfiles[n].c_str());
 }
 
 //
@@ -921,9 +921,9 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 
 void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 {
-    PacketHeaderType header {0};
+	PacketHeaderType header {0};
 
-    header.Pack(*netbuffer);
+	header.Pack(*netbuffer);
 
 	// Server sends our player id and digest
 	MSG_WriteSVCBuffer(netbuffer, SVC_ConsolePlayer(consoleplayer(), digest));
@@ -956,8 +956,8 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 //
 // snapshotLookup()
 //
-//		Returns the snapshot that preceeds the ticnum parameter or returns
-//		NULL if the ticnum is out of bounds.
+//      Returns the snapshot that preceeds the ticnum parameter or returns
+//      NULL if the ticnum is out of bounds.
 //
 const NetDemo::netdemo_index_entry_t *NetDemo::snapshotLookup(int ticnum) const
 {
@@ -976,8 +976,8 @@ const NetDemo::netdemo_index_entry_t *NetDemo::snapshotLookup(int ticnum) const
 //
 // getCurrentSnapshotIndex()
 //
-//		Returns the index into the snapshot_index vector that immediately
-//		preceeds the current gametic.
+//      Returns the index into the snapshot_index vector that immediately
+//      preceeds the current gametic.
 //
 int NetDemo::getCurrentSnapshotIndex() const
 {
@@ -994,8 +994,8 @@ int NetDemo::getCurrentSnapshotIndex() const
 //
 // getCurrentMapIndex()
 //
-//		Returns the index into the map_index vector for the map that the
-//		is currently being played.
+//      Returns the index into the map_index vector for the map that the
+//      is currently being played.
 //
 int NetDemo::getCurrentMapIndex() const
 {
@@ -1011,7 +1011,7 @@ int NetDemo::getCurrentMapIndex() const
 //
 // nextTic()
 //
-//		Advance to the next gametic.
+//      Advance to the next gametic.
 //
 void NetDemo::nextTic()
 {
@@ -1026,8 +1026,8 @@ void NetDemo::nextTic()
 //
 // nextSnapshot()
 //
-//		Reads the snapshot that follows the current gametic and
-//		restores the world state to the snapshot
+//      Reads the snapshot that follows the current gametic and
+//      restores the world state to the snapshot
 //
 void NetDemo::nextSnapshot()
 {
@@ -1047,8 +1047,8 @@ void NetDemo::nextSnapshot()
 //
 // prevSnapshot()
 //
-//		Reads the snapshot that preceeds the current gametic and
-//		restores the world state to the snapshot
+//      Reads the snapshot that preceeds the current gametic and
+//      restores the world state to the snapshot
 //
 void NetDemo::prevSnapshot()
 {
@@ -1066,8 +1066,8 @@ void NetDemo::prevSnapshot()
 //
 // nextMap()
 //
-//		Reads the snapshot at the begining of the next map and
-//		restores the world state to the snapshot
+//      Reads the snapshot at the begining of the next map and
+//      restores the world state to the snapshot
 //
 void NetDemo::nextMap()
 {
@@ -1086,8 +1086,8 @@ void NetDemo::nextMap()
 //
 // prevMap()
 //
-//		Reads the snapshot at the begining of the previous map and
-//		restores the world state to the snapshot
+//      Reads the snapshot at the begining of the previous map and
+//      restores the world state to the snapshot
 //
 void NetDemo::prevMap()
 {
@@ -1221,7 +1221,7 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	G_SnapshotLevel();
 
 	FLZOMemFile memfile;
-	memfile.Open();			// open for writing
+	memfile.Open();         // open for writing
 
 	FArchive arc(memfile);
 
@@ -1305,11 +1305,11 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	buf.resize(memfile.Length());
 	memfile.WriteToBuffer(buf.data(), buf.size());
 
-    if (level.info->snapshot != NULL)
-    {
-        delete level.info->snapshot;
-        level.info->snapshot = NULL;
-    }
+	if (level.info->snapshot != NULL)
+	{
+		delete level.info->snapshot;
+		level.info->snapshot = NULL;
+	}
 }
 
 
