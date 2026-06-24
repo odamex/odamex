@@ -266,30 +266,6 @@ fhfprint_t W_FarmHash128(const byte* lumpdata, int length)
 //
 
 //
-// W_AddLumps
-//
-// Adds lumps from the array of filelump_t.
-//
-void W_AddLumps(const std::shared_ptr<std::istream>& handle, const filelump_t* fileinfo, size_t newlumps)
-{
-	const size_t oldOnePastEndIndex = lumpinfo.size();
-	lumpinfo.resize(lumpinfo.size() + newlumps);
-
-	const filelump_t* info = &fileinfo[0];
-
-	for (auto iter  = lumpinfo.begin() + oldOnePastEndIndex;
-	          iter != lumpinfo.end();
-	          iter++, info++)
-	{
-		iter->handle    = handle;
-		iter->position  = info->filepos;
-		iter->size      = info->size;
-		iter->name      = info->name;
-	}
-}
-
-
-//
 // W_AddFile
 //
 // All files are optional, but at least one file must be found
@@ -302,10 +278,7 @@ void W_AddLumps(const std::shared_ptr<std::istream>& handle, const filelump_t* f
 //
 void AddFile(const OResFile& file)
 {
-	std::vector<filelump_t> fileinfo;
-
 	const std::string filename = file.getFullpath();
-
 	auto handle = std::make_shared<std::ifstream>(filename,
 	                                              std::ios::in |
 	                                              std::ios::binary);
@@ -326,19 +299,15 @@ void AddFile(const OResFile& file)
 		return;
 	}
 
-	size_t newlumps;
 	if (header.identification != IWAD_ID && header.identification != PWAD_ID)
 	{
 		// raw lump file
 		std::string lumpname;
 		M_ExtractFileBase(filename, lumpname);
 
-		fileinfo.push_back(filelump_t{});
-		fileinfo.back().filepos = 0;
-		fileinfo.back().size = static_cast<int>(M_FileLength(*handle));
-		std::transform(lumpname.c_str(), lumpname.c_str() + 8, fileinfo.back().name, toupper);
+		lumpinfo.emplace_back(lumpname);    // FYI - OLumpName's constructor does the toupper.
+		lumpinfo.back().size = static_cast<int>(M_FileLength(*handle));
 
-		newlumps = 1;
 		PrintFmt(PRINT_HIGH, " (single lump)\n");
 	}
 	else
@@ -352,23 +321,21 @@ void AddFile(const OResFile& file)
 			return;
 		}
 
-		fileinfo.resize(header.numlumps);
+		filelump_t lump;
+		lumpinfo.reserve(lumpinfo.size() + static_cast<size_t>(header.numlumps));
 
 		handle->seekg(header.infotableofs, std::ios::beg);
-		for (size_t i = 0; i < fileinfo.size(); i++)
+		for (int i = 0; i < header.numlumps; i++)
 		{
-			if (not fileinfo[i].Read(*handle))
+			if (not lump.Read(*handle))
 			{
 				PrintFmt(PRINT_HIGH, "failed to read file info for lump number {} in {}\n", i, filename);
 				return;
 			}
-			std::transform(fileinfo[i].name, fileinfo[i].name + 8, fileinfo[i].name, toupper);
+			lumpinfo.emplace_back(handle, lump);
 		}
-		newlumps = header.numlumps;
 		PrintFmt(PRINT_HIGH, " ({} lumps)\n", header.numlumps);
 	}
-
-	W_AddLumps(handle, fileinfo.data(), newlumps);
 }
 
 

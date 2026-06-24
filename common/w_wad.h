@@ -89,10 +89,18 @@ struct lumpinfo_t
 
 	namespace_t namespc { ns_global };
 
-	lumpinfo_t() = default;     // Needed because the following ctor implicitly deletes the default ctor.
+	lumpinfo_t() = default;     // Needed because the following ctors implicitly delete the default ctor.
 
 	explicit lumpinfo_t(const OLumpName& i_name) :
 		name(i_name)
+	{
+	}
+
+	lumpinfo_t(const std::shared_ptr<std::istream>& i_stream, const filelump_t& i_fileinfo) :
+		name    (i_fileinfo.name),
+		handle  (i_stream),
+		position(i_fileinfo.filepos),
+		size    (i_fileinfo.size)
 	{
 	}
 };
