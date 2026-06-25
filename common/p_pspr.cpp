@@ -56,6 +56,7 @@ EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allowpwo)
 EXTERN_CVAR(sv_unblockplayers)
+EXTERN_CVAR(sv_unblockfriendly)
 EXTERN_CVAR(co_fineautoaim)
 EXTERN_CVAR(co_zdoomammo)
 EXTERN_CVAR(cl_centerbobonfire)
@@ -1530,7 +1531,7 @@ void A_BFGSpray(AActor* mo)
 		if (!linetarget)
 			continue;
 
-		if (sv_unblockplayers && linetarget->player && P_IsFriendlyThing(mo->target, linetarget))
+		if ((sv_unblockplayers || sv_unblockfriendly) && linetarget->player && P_IsFriendlyThing(mo->target, linetarget))
 			continue;
 
 		new AActor (linetarget->x,
