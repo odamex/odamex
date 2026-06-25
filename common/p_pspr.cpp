@@ -56,8 +56,6 @@ void M_LogWDLEvent(int mod);
 EXTERN_CVAR(sv_infiniteammo)
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_allowpwo)
-EXTERN_CVAR(sv_unblockplayers)
-EXTERN_CVAR(sv_unblockfriendly)
 EXTERN_CVAR(co_fineautoaim)
 EXTERN_CVAR(co_zdoomammo)
 EXTERN_CVAR(cl_centerbobonfire)
