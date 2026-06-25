@@ -43,6 +43,7 @@
 
 #include "p_unlag.h"
 #include "m_wdlstats.h"
+#include "p_map.h"
 
 #define LOWERSPEED				FRACUNIT*6
 #define RAISESPEED				FRACUNIT*6
@@ -1531,7 +1532,9 @@ void A_BFGSpray(AActor* mo)
 		if (!linetarget)
 			continue;
 
-		if ((sv_unblockplayers || sv_unblockfriendly) && linetarget->player && P_IsFriendlyThing(mo->target, linetarget))
+		// if the ball didnt clip, dont hit with tracer
+		if (!P_ShouldClipPlayer(mo, linetarget) ||
+			!P_ShouldClipFriendly(mo, linetarget))
 			continue;
 
 		new AActor (linetarget->x,
