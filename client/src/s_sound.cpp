@@ -698,7 +698,7 @@ static void S_StartSound(sound_origin_t origin, int channel,
 	}
 
   	// check for bogus sound lump
-	if (sfxinfo->lumpnum < 0 || sfxinfo->lumpnum > static_cast<int>(numlumps))
+	if (sfxinfo->lumpnum < 0 || sfxinfo->lumpnum > static_cast<int>(W_NumLumps()))
 	{
 		DPrintFmt("Bad sfx lump #: {}\n", sfxinfo->lumpnum);
 		return;
@@ -1220,9 +1220,12 @@ void S_ChangeMusic(std::string musicname, bool looping, int order)
 
 	byte* data = nullptr;
 	size_t length = 0;
-	FILE *f;
 
-	if (!(f = fopen (musicname.c_str(), "rb")))
+	std::ifstream f(musicname,
+	                std::ios::in |
+	                std::ios::binary);
+
+	if (not f.good())
 	{
 		int lumpnum;
 		if ((lumpnum = W_CheckNumForName (musicname.c_str())) == -1)
@@ -1234,15 +1237,15 @@ void S_ChangeMusic(std::string musicname, bool looping, int order)
 		data = W_CacheLumpNum<byte>(lumpnum, PU_CACHE);
 		length = W_LumpLength(lumpnum);
 		I_PlaySong({data, length}, looping, order);
-    }
-    else
+	}
+	else
 	{
 		length = M_FileLength(f);
 		data = static_cast<byte*>(M_Malloc(length));
-		const size_t result = fread(data, length, 1, f);
-		fclose(f);
+		f.read(reinterpret_cast<char*>(data), length);
 
-		if (result == 1)
+		const size_t result = f.gcount();
+		if (result == length)
 		{
 			I_PlaySong({data, length}, looping, order);
 		}

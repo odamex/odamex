@@ -2260,8 +2260,10 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump, bool textonly, bool
 	else if (patchfile)
 	{
 		// Try to use patchfile as a patch.
-		FILE* fh = fopen(patchfile->getFullpath().c_str(), "rb+");
-		if (fh == NULL)
+		std::ifstream fh(patchfile->getFullpath(),
+                         std::ios::in |
+                         std::ios::binary);
+		if (not fh.good())
 		{
 			PrintFmt(PRINT_WARNING, "Could not open DeHackEd patch \"{}\"\n",
 			         patchfile->getBasename());
@@ -2271,7 +2273,9 @@ bool D_DoDehPatch(const OResFile* patchfile, const int lump, bool textonly, bool
 		const auto filelen = M_FileLength(fh);
 		buffer.resize(filelen);
 
-		size_t read = fread(buffer.data(), 1, filelen, fh);
+		fh.read(buffer.data(), filelen);
+		const size_t read = fh.gcount();
+
 		if (read < filelen)
 		{
 			DPrintFmt("Could not read file\n");
