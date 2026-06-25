@@ -1026,7 +1026,7 @@ void TextureManager::freeTexture(texhandle_t texhandle)
 //
 texhandle_t TextureManager::getPatchHandle(unsigned int lumpnum)
 {
-	if (lumpnum >= numlumps)
+	if (lumpnum >= W_NumLumps())
 		return NOT_FOUND_TEXTURE_HANDLE;
 
 	if (W_LumpLength(lumpnum) == 0)
@@ -1089,7 +1089,7 @@ void TextureManager::cachePatch(texhandle_t handle)
 //
 texhandle_t TextureManager::getSpriteHandle(unsigned int lumpnum)
 {
-	if (lumpnum >= numlumps)
+	if (lumpnum >= W_NumLumps())
 		return NOT_FOUND_TEXTURE_HANDLE;
 
 	if (W_LumpLength(lumpnum) == 0)
@@ -1269,7 +1269,7 @@ void TextureManager::cacheWallTexture(texhandle_t handle)
 //
 texhandle_t TextureManager::getRawTextureHandle(unsigned int lumpnum)
 {
-	if (lumpnum >= numlumps)
+	if (lumpnum >= W_NumLumps())
 		return NOT_FOUND_TEXTURE_HANDLE;
 
 	if (W_LumpLength(lumpnum) == 0)
@@ -1322,7 +1322,7 @@ void TextureManager::cacheRawTexture(texhandle_t handle)
 //
 texhandle_t TextureManager::getPNGTextureHandle(unsigned int lumpnum)
 {
-	if (lumpnum >= numlumps)
+	if (lumpnum >= W_NumLumps())
 		return NOT_FOUND_TEXTURE_HANDLE;
 
 	if (W_LumpLength(lumpnum) == 0)

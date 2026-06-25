@@ -145,19 +145,16 @@ std::string M_GetCWD()
 // M_FileLength
 //
 // Returns the length of a file using an open descriptor
-int64_t M_FileLength (FILE *f)
+uintmax_t M_FileLength (std::istream& f)
 {
-	int64_t FileSize = -1;
+	uintmax_t fileSize = -1;
 
-	if (f != nullptr)
-	{
-		const auto CurrentPosition = ftell(f);
-		fseek (f, 0, SEEK_END);
-		FileSize = ftell (f);
-		fseek (f, CurrentPosition, SEEK_SET);
-	}
+	const auto currentPosition = f.tellg();
+	f.seekg(0, std::ios::end);
+	fileSize = f.tellg();
+	f.seekg(currentPosition, std::ios::beg);
 
-	return FileSize;
+	return fileSize;
 }
 
 
@@ -217,7 +214,7 @@ bool M_WriteFile(std::string filename, void *source, size_t length)
 		return false;
 	}
 
-    return true;
+	return true;
 }
 
 
@@ -226,30 +223,32 @@ bool M_WriteFile(std::string filename, void *source, size_t length)
 //
 // Reads a file, it will allocate storage via Z_Malloc for it and return
 // the buffer and the size.
-size_t M_ReadFile(std::string filename, byte **buffer)
+size_t M_ReadFile(const std::string& filename, byte **buffer)
 {
-    FILE* handle = fopen(filename.c_str(), "rb");
+	std::ifstream handle(filename,
+	                     std::ios::in |
+	                     std::ios::binary);
 
-	if (handle == NULL)
+	if (not handle.good())
 	{
 		PrintFmt(PRINT_HIGH, "Could not open file {} for reading\n", filename);
 		return false;
 	}
 
-    size_t length = M_FileLength(handle);
+	const uintmax_t length = M_FileLength(handle);
 
-    byte* buf = Z_Malloc<byte>(length, PU_STATIC);
-    size_t count = fread(buf, 1, length, handle);
-    fclose (handle);
+	byte* buf = Z_Malloc<byte>(length, PU_STATIC);
+	handle.read(reinterpret_cast<char*>(buf), length);
+	const uintmax_t count = handle.gcount();
 
-    if (count != length)
+	if (count != length)
 	{
 		PrintFmt(PRINT_HIGH, "Failed while reading from file {}\n", filename);
 		return false;
 	}
 
-    *buffer = buf;
-    return length;
+	*buffer = buf;
+	return length;
 }
 
 //
@@ -261,7 +260,7 @@ size_t M_ReadFile(std::string filename, byte **buffer)
 // The extension must contain a . at the beginning
 bool M_AppendExtension (std::string &filename, std::string extension, bool if_needed)
 {
-    M_FixPathSep(filename);
+	M_FixPathSep(filename);
 
 	fs::path path(filename);
 
@@ -276,9 +275,9 @@ bool M_AppendExtension (std::string &filename, std::string extension, bool if_ne
 		return true;
 	}
 
-    filename.append(extension);
+	filename.append(extension);
 
-    return true;
+	return true;
 }
 
 //
@@ -330,7 +329,7 @@ bool M_ExtractFileExtension(const std::string& filename, std::string &dest)
 // .'s won't be removed
 void M_ExtractFileBase (std::string filename, std::string &dest)
 {
-    M_FixPathSep(filename);
+	M_FixPathSep(filename);
 
 	dest = fs::path(filename).stem().string();
 }
@@ -341,7 +340,7 @@ void M_ExtractFileBase (std::string filename, std::string &dest)
 // Extract the name of a file from a path (name = filename with extension)
 void M_ExtractFileName (std::string filename, std::string &dest)
 {
-    M_FixPathSep(filename);
+	M_FixPathSep(filename);
 
 	dest = fs::path(filename).filename().string();
 }
@@ -603,7 +602,7 @@ std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString
 			// Find the file.
 			std::string filename = entry.path().filename().string();
 			std::vector<OString>::iterator it =
-		    	std::find(files.begin(), files.end(), OStringToUpper(filename));
+			std::find(files.begin(), files.end(), OStringToUpper(filename));
 
 			if (it == files.end())
 				continue;
