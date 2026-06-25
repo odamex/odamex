@@ -113,15 +113,54 @@ private:
 
 	static constexpr uint16_t SNAPSHOT_SPACING = 20 * TICRATE;
 
-	struct netdemo_header_t
+	struct netdemo_header_id_t
 	{
 		char        identifier[4]   { 0, 0, 0, 0};  // "ODAD"
-		byte        version         { 0 };
+		byte        version         { 0 };          // 4, 3, etc...
+
+		bool Read(std::fstream& io_stream);
+	};
+
+	// The following exists only for a remote chance of compatibility with old netdemos.
+	// At the very least, we want to be able to make sense of the headers, but there's
+	// zero guarantee of it working.  In fact, it's likely to not work because the message
+	// content is almost certainly different enough to be non-functional with current
+	// message body formats.
+	struct netdemo_header3_t
+	{
+		netdemo_header_id_t id              {};     // version 3
+		byte        compression             { 0 };  // type of compression used
+		uint16_t    snapshot_index_size     { 0 };  // number of snapshots in the index
+		uint32_t    snapshot_index_offset   { 0 };  // offset from start of the file for the index
+		uint16_t    map_index_size          { 0 };  // number of maps in the mapindex
+		uint32_t    map_index_offset        { 0 };  // offset from start of the file for the mapindex
+		uint16_t    snapshot_spacing        { 0 };  // number of gametics between indices
+		uint32_t    starting_gametic        { 0 };  // the gametic the demo starts at
+		uint32_t    ending_gametic          { 0 };  // the last gametic of the demo
+		byte        reserved[36]            { 0 };  // for future use
+
+		bool Read(std::fstream& io_stream);
+	};
+
+    // Now for the current netdemo version.
+	struct netdemo_header4_t
+	{
+		netdemo_header_id_t id      {};             // version 4
 		byte        compression     { 0 };          // type of compression used
 		uint16_t    snapshot_spacing{ 0 };          // number of gametics between indices
 		uint32_t    starting_gametic{ 0 };          // the gametic the demo starts at
 		uint32_t    ending_gametic  { 0 };          // the last gametic of the demo
 		byte        reserved[48]    { 0 };          // for future use
+
+		bool Read(std::fstream& io_stream);
+		void Import(const netdemo_header3_t& oldHeader)
+		{
+			// we deliberately skip 'id' and 'reserved'.
+			compression      = oldHeader.compression;
+			snapshot_spacing = oldHeader.snapshot_spacing;
+			starting_gametic = oldHeader.starting_gametic;
+			ending_gametic   = oldHeader.ending_gametic;
+		}
 	};
 
 	netdemo_state_t state   { st_stopped };
@@ -131,7 +170,7 @@ private:
 
 	std::deque<buf_t>   captured {};
 
-	netdemo_header_t                   header        {};
+	netdemo_header4_t                  header        {};
 	std::vector<netdemo_index_entry_t> snapshot_index{};
 	std::vector<netdemo_index_entry_t> map_index     {};
 
