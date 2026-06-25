@@ -45,6 +45,9 @@
 EXTERN_CVAR(sv_maxclients)
 EXTERN_CVAR(sv_maxplayers)
 
+// Want to press your luck loading previous-versioned netdemos?  Press this button!  Don't get a whammy!
+constexpr bool TRY_LOADING_OLD_NETDEMOS = false;
+
 extern std::string server_host;
 extern std::string digest;
 extern OResFiles wadfiles;
@@ -83,7 +86,7 @@ void NetDemo::reset()
 	cleanUp();
 
 	filename = "";
-	header = netdemo_header_t{};
+	header = netdemo_header4_t{};
 	captured.clear();
 }
 
@@ -147,19 +150,17 @@ void NetDemo::fatalError(const std::string &message)
 
 bool NetDemo::writeHeader()
 {
-	memcpy(header.identifier, "ODAD", 4);
-	header.version = NETDEMOVER;
+	memcpy(header.id.identifier, "ODAD", 4);
+	header.id.version = NETDEMOVER;
 	header.compression = 0;
 	header.snapshot_spacing = NetDemo::SNAPSHOT_SPACING;
-
-	netdemo_header_t tmpheader {header};
 
 	demofp.seekp(0, std::ios::beg);
 	const auto startingPosition = demofp.tellp();
 
 	const bool result = startingPosition >= 0
-	                    and M_WriteLE(demofp, header.identifier)
-	                    and M_WriteLE(demofp, header.version)
+	                    and M_WriteLE(demofp, header.id.identifier)
+	                    and M_WriteLE(demofp, header.id.version)
 	                    and M_WriteLE(demofp, header.compression)
 	                    and M_WriteLE(demofp, header.snapshot_spacing)
 	                    and M_WriteLE(demofp, header.starting_gametic)
@@ -169,6 +170,48 @@ bool NetDemo::writeHeader()
 	return result;
 }
 
+
+bool NetDemo::netdemo_header_id_t::Read(std::fstream& io_stream)
+{
+    if (io_stream.good())
+    {
+        return  M_ReadLE(io_stream, identifier)
+            and M_ReadLE(io_stream, version);
+    }
+    return false;
+}
+
+bool NetDemo::netdemo_header3_t::Read(std::fstream& io_stream)
+{
+    if (io_stream.good())
+    {
+        return  id.Read(io_stream)
+            and M_ReadLE(io_stream, compression)
+            and M_ReadLE(io_stream, snapshot_index_size)
+            and M_ReadLE(io_stream, snapshot_index_offset)
+            and M_ReadLE(io_stream, map_index_size)
+            and M_ReadLE(io_stream, map_index_offset)
+            and M_ReadLE(io_stream, snapshot_spacing)
+            and M_ReadLE(io_stream, starting_gametic)
+            and M_ReadLE(io_stream, ending_gametic)
+            and M_ReadLE(io_stream, reserved);
+    }
+    return false;
+}
+
+bool NetDemo::netdemo_header4_t::Read(std::fstream& io_stream)
+{
+    if (io_stream.good())
+    {
+        return  id.Read(io_stream)
+            and M_ReadLE(io_stream, compression)
+            and M_ReadLE(io_stream, snapshot_spacing)
+            and M_ReadLE(io_stream, starting_gametic)
+            and M_ReadLE(io_stream, ending_gametic)
+            and M_ReadLE(io_stream, reserved);
+    }
+    return false;
+}
 
 //
 // readHeader()
@@ -182,16 +225,43 @@ bool NetDemo::readHeader()
 	demofp.seekg(0, std::ios::beg);
 	const auto startingPosition = demofp.tellg();
 
-	const bool result = startingPosition >= 0
-	                    and M_ReadLE(demofp, header.identifier)
-	                    and M_ReadLE(demofp, header.version)
-	                    and M_ReadLE(demofp, header.compression)
-	                    and M_ReadLE(demofp, header.snapshot_spacing)
-	                    and M_ReadLE(demofp, header.starting_gametic)
-	                    and M_ReadLE(demofp, header.ending_gametic)
-	                    and M_ReadLE(demofp, header.reserved)
-	                    and demofp.tellg() - startingPosition == HEADER_SIZE;
-	return result;
+    netdemo_header_id_t headerId;
+    const bool headerIDOk = headerId.Read(demofp);
+
+    if (not (headerIDOk
+             and headerId.identifier[0] == 'O'
+             and headerId.identifier[1] == 'D'
+             and headerId.identifier[2] == 'A'
+             and headerId.identifier[3] == 'D'))
+    {
+        return false;
+    }
+
+    header.id = headerId;
+
+    if (header.id.version == NETDEMOVER)
+    {
+        demofp.seekg(startingPosition, std::ios::beg);
+
+        return header.Read(demofp)
+                and demofp.tellg() - startingPosition == HEADER_SIZE;
+    }
+
+    if (header.id.version == 3)
+    {
+        demofp.seekg(startingPosition, std::ios::beg);
+
+        netdemo_header3_t header3;
+
+        if (header3.Read(demofp)
+                and demofp.tellg() - startingPosition == HEADER_SIZE)
+        {
+            // Translate from 3 to NETDEMOVER
+            header.Import(header3);
+            return true;
+        }
+    }
+	return false;
 }
 
 //
@@ -278,7 +348,7 @@ bool NetDemo::startRecording(const std::string &filename)
 		return false;
 	}
 
-	header = netdemo_header_t{};
+	header = netdemo_header4_t{};
 	header.starting_gametic = gametic;
 
 	// Note: The header is not finalized at this point.  Write it anyway to
@@ -368,10 +438,14 @@ bool NetDemo::startPlaying(const std::string &filename)
 		return false;
 	}
 
-	if (header.version != NETDEMOVER)
+    if constexpr (TRY_LOADING_OLD_NETDEMOS)
+    {
+        PrintFmt(PRINT_WARNING, "Attempting to load a version {} netdemo...\n", header.id.version);
+    }
+    else if (header.id.version != NETDEMOVER)
 	{
 		std::string buffer;
-		const int latestVersion = LatestDemoVersion(header.version);
+		const int latestVersion = LatestDemoVersion(header.id.version);
 		if (latestVersion)
 		{
 			int maj, min, patch;

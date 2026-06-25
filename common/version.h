@@ -96,7 +96,7 @@
 // upversion.py will update thie field deterministically and unambiguously.
 #define SAVESIG "ODAMEXSAVE013000"
 
-#define NETDEMOVER 3
+#define NETDEMOVER 4
 
 int VersionCompat(const int server, const int client);
 std::string VersionMessage(const int server, const int client, const char* email);
