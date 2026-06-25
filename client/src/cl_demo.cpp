@@ -65,8 +65,10 @@ int LatestDemoVersion(const int version)
 {
 	switch (version)
 	{
-	case 3:
+	case 4:
 		return GAMEVER;
+	case 3:
+		return MAKEVER(12, 2, 1);
 	case 2:
 		return MAKEVER(0, 6, 0);
 	case 1:
