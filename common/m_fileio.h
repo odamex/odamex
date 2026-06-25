@@ -49,6 +49,21 @@ bool M_ReadLE(std::istream& io_stream, ElementType& o_data)
 			                          little_endian_type());    // from
 			return true;
 		}
+        else
+        {
+            // We enter this condition if everything was good(), but we tried to read past the
+            // end-of-file.  In that case, both the eofbit and the failbit are set, either of
+            // which invalidate the .good() check.
+            //
+            // We want to be able to seek back from the EOF, and the seekg function clears
+            // the eofbit but not the failbit, preventing further reads from working.  Therefore
+            // we want to clear just the failbit here.  We're still safeguarded from past-EOF
+            // reads by the eofbit, so we're okay to do this.
+            //
+            // The end result is that the stream is left in the state as though the last read
+            // was successful (even though it really wasn't) and left us right at the EOF.
+            io_stream.clear(std::ios_base::eofbit);
+        }
 	}
 	return false;
 }
