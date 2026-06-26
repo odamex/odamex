@@ -2438,6 +2438,20 @@ void CL_SimulateSectors()
 	}
 }
 
+static PlayerSnapshot GetHistoricalSnapshot(const player_t& player, int ticsAgo)
+{
+	return player.snapshots.getSnapshot(world_index - ticsAgo);
+}
+
+static v3fixed_t CurrentDeltaFromSnapshot(const player_t& player, const PlayerSnapshot& prevsnap)
+{
+	v3fixed_t offset;
+	M_SetVec3Fixed(&offset, prevsnap.getX() - player.mo->x,
+	                        prevsnap.getY() - player.mo->y,
+	                        prevsnap.getZ() - player.mo->z);
+	return offset;
+}
+
 //
 // CL_SimulatePlayers()
 //
@@ -2474,15 +2488,34 @@ void CL_SimulatePlayers()
 				player.mo->prevangle = player.mo->angle;
 				player.mo->prevpitch = player.mo->pitch;
 
-				PlayerSnapshot prevsnap = player.snapshots.getSnapshot(world_index - 1);
+				v3fixed_t offset = CurrentDeltaFromSnapshot(player, GetHistoricalSnapshot(player, 1));
 
-				v3fixed_t offset;
-				M_SetVec3Fixed(&offset, prevsnap.getX() - player.mo->x,
-				                        prevsnap.getY() - player.mo->y,
-				                        prevsnap.getZ() - player.mo->z);
+				constexpr fixed_t EXCESSIVE_DISTANCE = 128 * FRACUNIT;
+				constexpr int     EXCESSIVE_TIME     = 10;
 
-				fixed_t dist = M_LengthVec3Fixed(&offset);
-				if (dist > 2 * FRACUNIT)
+				if (offset.MagnitudeIsGreaterThan(EXCESSIVE_DISTANCE))
+				{
+					int ticsAgo = 2;
+					while (ticsAgo <= EXCESSIVE_TIME)
+					{
+						const PlayerSnapshot historicalSnap = GetHistoricalSnapshot(player, ticsAgo);
+
+							if (not (    historicalSnap.isValid()
+							     and historicalSnap.isContinuous()
+							     and CurrentDeltaFromSnapshot(player, historicalSnap).MagnitudeIsGreaterThan(EXCESSIVE_DISTANCE)))
+						{
+							break;
+						}
+						++ticsAgo;
+					}
+
+					if (ticsAgo > EXCESSIVE_TIME)
+					{
+						snap.setContinuous(false);
+					}
+				}
+
+				if (snap.isContinuous() and offset.MagnitudeIsGreaterThan(2 * FRACUNIT))
 				{
 					#ifdef _SNAPSHOT_DEBUG_
 					PrintFmt(PRINT_HIGH, "Snapshot {}, Correcting extrapolation error of {}\n",
