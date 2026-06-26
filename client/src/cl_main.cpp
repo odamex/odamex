@@ -2429,11 +2429,6 @@ void CL_SimulateSectors()
 	}
 }
 
-static PlayerSnapshot GetHistoricalSnapshot(const player_t& player, int ticsAgo)
-{
-	return player.snapshots.getSnapshot(world_index - ticsAgo);
-}
-
 static v3fixed_t CurrentDeltaFromSnapshot(const player_t& player, const PlayerSnapshot& prevsnap)
 {
 	v3fixed_t offset;
@@ -2479,7 +2474,29 @@ void CL_SimulatePlayers()
 				player.mo->prevangle = player.mo->angle;
 				player.mo->prevpitch = player.mo->pitch;
 
-				v3fixed_t offset = CurrentDeltaFromSnapshot(player, GetHistoricalSnapshot(player, 1));
+				v3fixed_t offset = CurrentDeltaFromSnapshot(player,
+				                                            player.snapshots.getSnapshot(world_index - 1));
+
+				// The following block is there to "jailbreak" a remote player whose predicted mobj
+				// movement resulted in a substantial disagreement with the server for a relatively
+				// excessive period of time.  In practice, this has been seen in rare conditions where
+				// a remote player is sandwiched by one or more moving sectors where the combined
+				// predictions result in a wildly different outcome than the server - i.e. did the
+				// player escape from the sandwich, and in what direction?  It can be a matter of just
+				// a few tics where there's an opportunity to escape, but the observer's latency and
+				// predicted sector motion causes the simulated player to miss its chance.
+				//
+				// When this happens, the remote player mobj can become trapped in a location where
+				// the movement prediction logic blocks motion, but the server MovePlayer messages
+				// yield snapshots that specify positions that are excessively distant from the mobj.
+				//
+				// This can happen naturally and in a benign manner *very* briefly for things like
+				// instant-mover lift sectors, which resolve naturally via extrapolation handling,
+				// so we need to check to see if this excessive distance persists for multiple tics.
+				//
+				// When this condition holds for a relatively long amount of time, we set the current
+				// snapshot to discontinuous so that the remote player's mobj makes an instantaneous
+				// jump to the official position.  From that point forward, normal prediction resumes.
 
 				constexpr fixed_t EXCESSIVE_DISTANCE = 128 * FRACUNIT;
 				constexpr int     EXCESSIVE_TIME     = 10;
@@ -2489,7 +2506,7 @@ void CL_SimulatePlayers()
 					int ticsAgo = 2;
 					while (ticsAgo <= EXCESSIVE_TIME)
 					{
-						const PlayerSnapshot historicalSnap = GetHistoricalSnapshot(player, ticsAgo);
+						const PlayerSnapshot historicalSnap = player.snapshots.getSnapshot(world_index - ticsAgo);
 
 							if (not (    historicalSnap.isValid()
 							     and historicalSnap.isContinuous()
