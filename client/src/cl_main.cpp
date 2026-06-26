@@ -2431,7 +2431,7 @@ void CL_SimulateSectors()
 
 static PlayerSnapshot GetHistoricalSnapshot(const player_t& player, int ticsAgo)
 {
-    return player.snapshots.getSnapshot(world_index - ticsAgo);
+	return player.snapshots.getSnapshot(world_index - ticsAgo);
 }
 
 static v3fixed_t CurrentDeltaFromSnapshot(const player_t& player, const PlayerSnapshot& prevsnap)
@@ -2481,7 +2481,7 @@ void CL_SimulatePlayers()
 
 				v3fixed_t offset = CurrentDeltaFromSnapshot(player, GetHistoricalSnapshot(player, 1));
 
-				constexpr fixed_t EXCESSIVE_DISTANCE = 500 * FRACUNIT;
+				constexpr fixed_t EXCESSIVE_DISTANCE = 128 * FRACUNIT;
 				constexpr int     EXCESSIVE_TIME     = 10;
 
 				if (offset.MagnitudeIsGreaterThan(EXCESSIVE_DISTANCE))
