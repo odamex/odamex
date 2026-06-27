@@ -264,6 +264,7 @@ struct sector_t
 
 	int linecount = 0;
 	line_s **lines = nullptr;		// [linecount] size
+	nonstd::span<line_s*> getLines() { return nonstd::span(lines, linecount); }
 
 	float gravity = 0.0f;		// [RH] Sector gravity (1.0 is normal)
 	int damageamount = 0;
@@ -283,7 +284,7 @@ struct sector_t
 	// [AM] Use the ZDoom 1.22 AActor system instead.
 	AActor::AActorPtr SecActTarget{};
 
-	AActor::AActorPtr Skybox;
+	AActor::AActorPtr Skybox{};
 
 	// [SL] 2012-01-16 - planes for sloping ceilings/floors
 	plane_t floorplane{}, ceilingplane{};

@@ -85,8 +85,6 @@ byte**			warpedflats;
 int*			flatwarpedwhen;
 int*			flattranslation;
 
-int*			texturetranslation;
-
 using texhash_t = std::unordered_map<OLumpName, int32_t>;
 texhash_t texturehash;
 
@@ -528,7 +526,7 @@ struct texlump_t
 	}
 };
 
-static int32_t R_LoadTextureLump(const texlump_t& texlump, const int* patchlookup, int texnum, texhash_t& texhash, int& errors)
+static int32_t R_LoadTextureLump(const texlump_t& texlump, const nonstd::span<const int> patchlookup, int texnum, texhash_t& texhash, int& errors)
 {
 	int32_t* directory = texlump.directory;
 	int i;
@@ -577,7 +575,7 @@ static int32_t R_LoadTextureLump(const texlump_t& texlump, const int* patchlooku
 
 void R_InitTextures()
 {
-	std::unique_ptr<int[]> patchlookup;
+	std::vector<int> patchlookup;
 
 	int					nummappatches;
 	int					tx_numtextures;
@@ -601,15 +599,16 @@ void R_InitTextures()
 		{
 			numpatches += tx_numtextures;
 		}
-		patchlookup = std::make_unique<int[]>(numpatches);
+
+		patchlookup.resize(nummappatches);
 
 		for (int i = 0; i < nummappatches; i++)
 		{
-			patchlookup[i] = W_CheckNumForName (name_p + i*8);
+			patchlookup[i] = W_CheckNumForName(name_p + i*8);
 
 			// [EB] some wads use the texture namespace but then still use those in pnames
 			if (patchlookup[i] == -1)
-				patchlookup[i] = W_CheckNumForName (name_p + i*8, ns_textures);
+				patchlookup[i] = W_CheckNumForName(name_p + i*8, ns_textures);
 
 			if (patchlookup[i] == -1)
 			{
@@ -621,7 +620,7 @@ void R_InitTextures()
 				// appear first in a wad. This is a kludgy solution to the wad
 				// lump namespace problem.
 
-				patchlookup[i] = W_CheckNumForName (name_p + i*8, ns_sprites);
+				patchlookup[i] = W_CheckNumForName(name_p + i*8, ns_sprites);
 			}
 		}
 		Z_Free (names);
@@ -658,6 +657,10 @@ void R_InitTextures()
 		numtextures += tx_numtextures;
 	}
 
+	const int first_pname_tex = numtextures;
+	const int numpnamestextures = std::count_if(patchlookup.begin(), patchlookup.end(), [](const int patch){ return patch != -1; });
+	numtextures += numpnamestextures;
+
 	textures = new texture_t *[numtextures];
 	texturecolumnofs = new unsigned int *[numtextures];
 	texturecomposite = new byte *[numtextures];
@@ -670,53 +673,74 @@ void R_InitTextures()
 	texhash_t texturehash2;
 	// [EB] texture1 goes to texturehash2 because .insert only inserts for keys that don't already exist
 	//      and we need texture2 to override texture1
-	int texnum = R_LoadTextureLump(texture1, patchlookup.get(), 0, texturehash2, errors);
-	texnum = R_LoadTextureLump(texture2, patchlookup.get(), texnum, texturehash, errors);
+	int texnum = R_LoadTextureLump(texture1, patchlookup, 0, texturehash2, errors);
+	texnum = R_LoadTextureLump(texture2, patchlookup, texnum, texturehash, errors);
 	texturehash.insert(texturehash2.begin(), texturehash2.end());
+
+	const auto createTexture = [&](int textureIndex,
+	                               int sourceLump,
+	                               int patchLump,
+	                               bool overwriteHash)
+	{
+	    const patch_t* patch = W_CachePatch(sourceLump, PU_CACHE);
+
+		texture_t* texture =
+			textures[textureIndex] =
+				static_cast<texture_t*>(Z_Malloc(sizeof(texture_t), PU_STATIC, nullptr));
+
+		texture->name = lumpinfo[sourceLump].name;
+		texture->width = patch->width();
+		texture->height = patch->height();
+		texture->patchcount = 1;
+
+		texture->patches->patch = patchLump;
+		texture->patches->originx = 0;
+		texture->patches->originy = 0;
+
+		RegisterTexture(texture, textureIndex);
+
+		if (overwriteHash)
+			texturehash[texture->name] = textureIndex;
+		else
+			texturehash.try_emplace(texture->name, textureIndex);
+	};
 
 	// TX_ marker (texture namespace) parsed here
 	if (tx_numtextures > 0)
 	{
 		for (int i = texnum, j = 0;
-			i < numtextures;
+			i < first_pname_tex;
 			i++, j++)
 		{
-			const patch_t* tx_patch = W_CachePatch(first_tx + j, PU_CACHE);
+			createTexture(i, first_tx + j, patchlookup[nummappatches + j], true);
+		}
+	}
 
-			texture_t* texture = textures[i] = static_cast<texture_t*>(Z_Malloc(sizeof(texture_t), PU_STATIC, nullptr));
-
-			texture->name = lumpinfo[first_tx + j].name;
-			texture->width = tx_patch->width();
-			texture->height = tx_patch->height();
-			texture->patchcount = 1;
-
-			texture->patches->patch = patchlookup[nummappatches + j];
-			texture->patches->originx = 0;
-			texture->patches->originy = 0;
-
-			RegisterTexture(texture, i);
-			texturehash[texture->name] = i;
+	for (int i = first_pname_tex, j = 0; j < nummappatches; j++)
+	{
+		if (patchlookup[j] != -1)
+		{
+			createTexture(i, patchlookup[j], patchlookup[j], false);
+			i++;
 		}
 	}
 
 	if (errors)
-		I_FatalError ("{} errors in R_InitTextures.", errors);
+		I_FatalError("{} errors in R_InitTextures.", errors);
 
 	if (clientside)		// server doesn't need to load patches ever
 	{
 		// Precalculate whatever possible.
 		for (int i = 0; i < numtextures; i++)
-			R_GenerateLookup (i, &errors);
+			R_GenerateLookup(i, &errors);
 	}
 
-//	if (errors)
-//		I_FatalError ("%d errors encountered during texture generation.", errors);
+	if (errors)
+		PrintFmt(PRINT_WARNING, "{} errors encountered during texture generation.", errors);
 
 	// Create translation table for global animation.
 
-	delete[] texturetranslation;
-
-	texturetranslation = new int[numtextures+1];
+	texturetranslation = std::make_unique<int[]>(numtextures+1);
 
 	for (int i = 0; i < numtextures; i++)
 		texturetranslation[i] = i;
@@ -1058,7 +1082,10 @@ int R_TextureNumForName (const OLumpName& name)
 	{
 		//I_Error ("R_TextureNumForName: %s not found", namet);
 		// [RH] Return empty texture if it wasn't found.
-		PrintFmt(PRINT_WARNING, "Texture {} not found\n", name);
+		if (name == "")
+			PrintFmt(PRINT_WARNING, "Unnamed texture not found\n");
+		else
+			PrintFmt(PRINT_WARNING, "Texture {} not found\n", name);
 		return 0;
 	}
 

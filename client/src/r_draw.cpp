@@ -1838,7 +1838,7 @@ CVAR_FUNC_IMPL(r_optimize)
 		optimize_kind = optimizations_available.back();
 	else
 	{
-		PrintFmt(PRINT_HIGH, "Invalid value for r_optimize. Availible options are \"{}, detect\"\n",
+		PrintFmt(PRINT_HIGH, "Invalid value for r_optimize. Available options are \"{}, detect\"\n",
 		         get_optimization_name_list(true));
 
 		// Restore the original setting:
