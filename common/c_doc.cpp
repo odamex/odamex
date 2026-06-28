@@ -230,32 +230,16 @@ static CvarView GetSortedCvarView()
 }
 
 /**
- * @brief Serialize a single JSON value to a compact, one-line string with no
- *        trailing newline, for embedding in hand-ordered output.
- */
-static std::string JSONScalar(const Json::Value& value)
-{
-	Json::FastWriter writer;
-	writer.omitEndingLineFeed();
-	return writer.write(value);
-}
-
-/**
- * @brief Render cvar information as a JSON object string.
+ * @brief Render cvar information as a JSON object.
  *
- * This is because jsoncpp serializes objects in alphabetical order,
- * so to get a custom order, we must do it by hand.
- *
- * @param cvar Cvar to read.
- * 
- * @param indent Indentation string for the object's braces. Fields are
- * indented one further level (3 spaces).
- * 
- * @return The serialized object, or an empty string for cvars that have no
+ * @param out Output value to write to. Set to null for cvars that have no
  * representable type.
+ * @param cvar Cvar to read.
  */
-static std::string JSONCvarObject(const cvar_t& cvar, const std::string& indent)
+static void JSONCvarObject(Json::Value& out, const cvar_t& cvar)
 {
+	out = Json::Value(Json::objectValue);
+
 	// Type string and whether the cvar carries a numeric range.
 	const char* typestr = NULL;
 	bool numeric = false;
@@ -278,29 +262,53 @@ static std::string JSONCvarObject(const cvar_t& cvar, const std::string& indent)
 		typestr = "string";
 		break;
 	default:
-		return "";
+		out = Json::Value(Json::nullValue);
+		return;
 	}
 
+	out["name"] = cvar.name();
+	out["type"] = typestr;
+	out["helptext"] = cvar.helptext();
+
 	// Default value, typed to match the cvar.
-	Json::Value defval;
 	switch (cvar.type())
 	{
 	case CVARTYPE_BOOL:
-		defval = atoi(cvar.getDefault().c_str()) != 0;
+		out["default"] = atoi(cvar.getDefault().c_str()) != 0;
 		break;
 	case CVARTYPE_BYTE:
 	case CVARTYPE_WORD:
 	case CVARTYPE_INT:
-		defval = atoi(cvar.getDefault().c_str());
+		out["default"] = atoi(cvar.getDefault().c_str());
 		break;
 	case CVARTYPE_FLOAT:
-		defval = atof(cvar.getDefault().c_str());
+		out["default"] = atof(cvar.getDefault().c_str());
 		break;
 	case CVARTYPE_STRING:
-		defval = cvar.getDefault();
+		out["default"] = cvar.getDefault();
 		break;
 	default:
 		break;
+	}
+
+	// Min/max only for numeric cvars, and only when a bound is actually set.
+	if (numeric)
+	{
+		if (cvar.getMinValue() != -FLT_MAX)
+		{
+			if (cvar.type() == CVARTYPE_FLOAT)
+				out["min"] = cvar.getMinValue();
+			else
+				out["min"] = static_cast<int>(cvar.getMinValue());
+		}
+
+		if (cvar.getMaxValue() != FLT_MAX)
+		{
+			if (cvar.type() == CVARTYPE_FLOAT)
+				out["max"] = cvar.getMaxValue();
+			else
+				out["max"] = static_cast<int>(cvar.getMaxValue());
+		}
 	}
 
 	// Flags as an array of string names.
@@ -321,36 +329,7 @@ static std::string JSONCvarObject(const cvar_t& cvar, const std::string& indent)
 		flags.append("SERVERARCHIVE");
 	if (cvar.flags() & CVAR_CLIENTARCHIVE)
 		flags.append("CLIENTARCHIVE");
-
-	// Emit fields in a fixed order: name, type, helptext, min, max, default,
-	// flags. min/max are only present for numeric cvars with a bound set.
-	const std::string field = indent + "   ";
-	std::string out;
-	out += indent + "{\n";
-	out += field + "\"name\" : " + JSONScalar(Json::Value(cvar.name())) + ",\n";
-	out += field + "\"type\" : " + JSONScalar(Json::Value(typestr)) + ",\n";
-	out += field + "\"helptext\" : " + JSONScalar(Json::Value(cvar.helptext())) + ",\n";
-
-	if (numeric && cvar.getMinValue() != -FLT_MAX)
-	{
-		Json::Value minv = (cvar.type() == CVARTYPE_FLOAT)
-		                       ? Json::Value(static_cast<double>(cvar.getMinValue()))
-		                       : Json::Value(static_cast<int>(cvar.getMinValue()));
-		out += field + "\"min\" : " + JSONScalar(minv) + ",\n";
-	}
-
-	if (numeric && cvar.getMaxValue() != FLT_MAX)
-	{
-		Json::Value maxv = (cvar.type() == CVARTYPE_FLOAT)
-		                       ? Json::Value(static_cast<double>(cvar.getMaxValue()))
-		                       : Json::Value(static_cast<int>(cvar.getMaxValue()));
-		out += field + "\"max\" : " + JSONScalar(maxv) + ",\n";
-	}
-
-	out += field + "\"default\" : " + JSONScalar(defval) + ",\n";
-	out += field + "\"flags\" : " + JSONScalar(flags) + "\n";
-	out += indent + "}";
-	return out;
+	out["flags"] = flags;
 }
 
 BEGIN_COMMAND(cvardoc)
@@ -449,39 +428,28 @@ BEGIN_COMMAND(cvardocjson)
 		return;
 	}
 
-	// Build the cvar objects, each hand-ordered (array elements indent two
-	// levels under the document root).
-	std::vector<std::string> entries;
+	// Build the final json document.
+	Json::Value root(Json::objectValue);
+	root["schema_version"] = 1;
+	root["odamex_version"] = DOTVERSIONSTR;
+	root["odamex_commithash"] = GitHash();
+	root["odamex_branchname"] = GitBranch();
+
+	Json::Value cvars(Json::arrayValue);
 	CvarView view = GetSortedCvarView();
 	for (const auto& cvar : view)
 	{
-		std::string obj = JSONCvarObject(*cvar, "      ");
-		if (obj.empty())
+		Json::Value obj;
+		JSONCvarObject(obj, *cvar);
+		if (obj.isNull())
 			continue;
-		entries.push_back(obj);
+		cvars.append(obj);
 	}
+	root["cvars"] = cvars;
 
-	// jsoncpp serializes object keys alphabetically, so we assemble the whole
-	// document by hand to keep the metadata first and the cvars array last.
-	std::string buffer;
-	buffer += "{\n";
-	buffer += fmt::sprintf("   \"schema_version\" : %d,\n", 1);
-	buffer += fmt::sprintf("   \"odamex_version\" : %s,\n",
-	                       Json::valueToQuotedString(DOTVERSIONSTR));
-	buffer += fmt::sprintf("   \"odamex_commithash\" : %s,\n",
-	                       Json::valueToQuotedString(GitHash()));
-	buffer += fmt::sprintf("   \"odamex_branchname\" : %s,\n",
-	                       Json::valueToQuotedString(GitBranch()));
-	buffer += "   \"cvars\" :\n";
-	buffer += "   [\n";
-	for (size_t i = 0; i < entries.size(); i++)
-	{
-		buffer += entries[i];
-		buffer += (i + 1 < entries.size()) ? ",\n" : "\n";
-	}
-	buffer += "   ]\n";
-	buffer += "}\n";
 
+	Json::StyledWriter writer;
+	std::string buffer = writer.write(root);
 	fwrite(buffer.data(), sizeof(char), buffer.size(), fh);
 
 	long bytes = ftell(fh);
