@@ -2773,14 +2773,14 @@ void DLevelScript::RunScript ()
 				{
 					state = SCRIPT_DivideBy0;
 				}
-			    else
-			    {
-				    int a = level.vars[NEXTBYTE];
-				    int i = STACK(2);
-				    level.behavior->SetArrayVal(
-				        a, i, level.behavior->GetArrayVal(a, i) / STACK(1));
-				    sp -= 2;
-			    }
+				else
+				{
+					int a = level.vars[NEXTBYTE];
+					int i = STACK(2);
+					level.behavior->SetArrayVal(
+						a, i, level.behavior->GetArrayVal(a, i) / STACK(1));
+					sp -= 2;
+				}
 			}
 			break;
 
@@ -3228,24 +3228,24 @@ void DLevelScript::RunScript ()
 				}
 				else
 				{
-				    workwhere += snprintf(workwhere, 4096, "Player %d\n",
+					workwhere += snprintf(workwhere, 4096, "Player %d\n",
 						STACK(1));
 					sp--;
 					break;
 				}
 				if (player)
 				{
-				    workwhere += snprintf(workwhere, 4096, "%s",
+					workwhere += snprintf(workwhere, 4096, "%s",
 						activator->player->userinfo.netname.c_str());
 				}
 				else if (activator)
 				{
-				    workwhere += snprintf(workwhere, 4096, "%s",
+					workwhere += snprintf(workwhere, 4096, "%s",
 						RUNTIME_TYPE(activator)->Name+1);
 				}
 				else
 				{
-				    workwhere += snprintf(workwhere, 4096, " ");
+					workwhere += snprintf(workwhere, 4096, " ");
 				}
 				sp--;
 			}
@@ -3328,10 +3328,10 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_GAMETYPE:
-		    if (sv_gametype == 3)
-                PushToStack (GAME_NET_CTF);
-            else if (sv_gametype == 2)
-                PushToStack (GAME_NET_TEAMDEATHMATCH);
+			if (sv_gametype == 3)
+				PushToStack (GAME_NET_CTF);
+			else if (sv_gametype == 2)
+				PushToStack (GAME_NET_TEAMDEATHMATCH);
 			else if (sv_gametype == 1)
 				PushToStack (GAME_NET_DEATHMATCH);
 			else if (multiplayer)
