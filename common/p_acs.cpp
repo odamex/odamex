@@ -1003,6 +1003,7 @@ void FBehavior::StartTypedScripts (uint16_t type, AActor *activator, int arg0, i
 
 
 #define NEXTWORD	(LELONG(*pc++))
+#define NEXTSHORT	(fmt==ACS_LittleEnhanced?getshort(pc):NEXTWORD)
 #define NEXTBYTE	(fmt==ACS_LittleEnhanced?getbyte(pc):NEXTWORD)
 #define STACK(a)	(Stack[sp - (a)])
 #define PushToStack(a)	(Stack[sp++] = (a))
@@ -2094,6 +2095,13 @@ inline int getbyte (int *&pc)
 {
 	int res = *(byte *)pc;
 	pc = (int *)((byte *)pc+1);
+	return res;
+}
+
+inline int getshort (int *&pc)
+{
+	int res = LESHORT(*(uint16_t *)pc);
+	pc = (int *)((byte *)pc+2);
 	return res;
 }
 
@@ -4073,6 +4081,17 @@ void DLevelScript::RunScript ()
 				int a = NEXTBYTE;
 				ACS_GlobalArrays[a][STACK(2)] >>= STACK(1);
 				sp -= 2;
+			}
+			break;
+
+		case PCD_CALLFUNC:
+			{
+				// TODO: full CALLFUNC support, likely just by switching to ACSVM
+				const int nargs = NEXTBYTE;
+				const int function = NEXTSHORT;
+				DPrintFmt("ACS functions are not yet supported. Tried to call function {} in script {}\n", function, script);
+				sp -= (nargs - 1);
+				STACK(1) = 0;
 			}
 			break;
 		}
