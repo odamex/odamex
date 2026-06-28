@@ -246,16 +246,16 @@ static void JSONCvarObject(Json::Value& out, const cvar_t& cvar)
 	switch (cvar.type())
 	{
 	case CVARTYPE_BOOL:
-		typestr = "bool";
+		typestr = "boolean";
 		break;
 	case CVARTYPE_BYTE:
 	case CVARTYPE_WORD:
 	case CVARTYPE_INT:
-		typestr = "number";
+		typestr = "integer";
 		numeric = true;
 		break;
 	case CVARTYPE_FLOAT:
-		typestr = "float";
+		typestr = "number";
 		numeric = true;
 		break;
 	case CVARTYPE_STRING:
