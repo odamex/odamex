@@ -577,7 +577,7 @@ void R_InitTextures()
 {
 	std::vector<int> patchlookup;
 
-	int					nummappatches;
+	int					numpatches;
 	int					tx_numtextures;
 
 	int					errors = 0;
@@ -590,19 +590,14 @@ void R_InitTextures()
 		char *names = (char *)W_CacheLumpName ("PNAMES", PU_STATIC);
 		char *name_p = names+4;
 
-		nummappatches = LELONG ( *((int *)names) );
-		int numpatches = nummappatches;
+		numpatches = LELONG ( *((int *)names) );
 		first_tx = W_CheckNumForName("TX_START") + 1;
 		const int last_tx  = W_CheckNumForName("TX_END") - 1;
 		tx_numtextures = last_tx - first_tx + 1;
-		if (tx_numtextures > 0)
-		{
-			numpatches += tx_numtextures;
-		}
 
-		patchlookup.resize(nummappatches);
+		patchlookup.resize(numpatches);
 
-		for (int i = 0; i < nummappatches; i++)
+		for (int i = 0; i < numpatches; i++)
 		{
 			patchlookup[i] = W_CheckNumForName(name_p + i*8);
 
@@ -646,16 +641,7 @@ void R_InitTextures()
 	delete[] texturescalex;
 	delete[] texturescaley;
 
-	numtextures = texture1.numtextures + texture2.numtextures;
-
-	if (tx_numtextures > 0)
-	{
-		for (int p = 0; p < tx_numtextures ; p++)
-		{
-			patchlookup[nummappatches + p] = first_tx + p;
-		}
-		numtextures += tx_numtextures;
-	}
+	numtextures = texture1.numtextures + texture2.numtextures + tx_numtextures;
 
 	const int first_pname_tex = numtextures;
 	const int numpnamestextures = std::count_if(patchlookup.begin(), patchlookup.end(), [](const int patch){ return patch != -1; });
@@ -678,17 +664,16 @@ void R_InitTextures()
 	texturehash.insert(texturehash2.begin(), texturehash2.end());
 
 	const auto createTexture = [&](int textureIndex,
-	                               int sourceLump,
 	                               int patchLump,
 	                               bool overwriteHash)
 	{
-	    const patch_t* patch = W_CachePatch(sourceLump, PU_CACHE);
+	    const patch_t* patch = W_CachePatch(patchLump, PU_CACHE);
 
 		texture_t* texture =
 			textures[textureIndex] =
 				static_cast<texture_t*>(Z_Malloc(sizeof(texture_t), PU_STATIC, nullptr));
 
-		texture->name = lumpinfo[sourceLump].name;
+		texture->name = lumpinfo[patchLump].name;
 		texture->width = patch->width();
 		texture->height = patch->height();
 		texture->patchcount = 1;
@@ -706,21 +691,16 @@ void R_InitTextures()
 	};
 
 	// TX_ marker (texture namespace) parsed here
-	if (tx_numtextures > 0)
+	for (int i = texnum, j = 0; j < tx_numtextures; i++, j++)
 	{
-		for (int i = texnum, j = 0;
-			i < first_pname_tex;
-			i++, j++)
-		{
-			createTexture(i, first_tx + j, patchlookup[nummappatches + j], true);
-		}
+		createTexture(i, first_tx + j, true);
 	}
 
-	for (int i = first_pname_tex, j = 0; j < nummappatches; j++)
+	for (int i = first_pname_tex, j = 0; j < numpatches; j++)
 	{
 		if (patchlookup[j] != -1)
 		{
-			createTexture(i, patchlookup[j], patchlookup[j], false);
+			createTexture(i, patchlookup[j], false);
 			i++;
 		}
 	}
