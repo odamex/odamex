@@ -1388,8 +1388,12 @@ void P_TouchSpecialThing(AActor& special, AActor& toucher)
 	if (delta > toucher.height || delta < lowerbound)
 		return;
 
-	// Only allow clients to predict touching weapons, not health, armor, etc
-	if (!serverside && (!cl_predictpickup || !P_SpecialIsWeapon(special)))
+	// Only allow clients to predict touching weapons, not health, armor, etc.
+	// Furthermore, they can only predict for themselves, no one else.
+	if (not serverside && not  (cl_predictpickup
+	                            and P_SpecialIsWeapon(special)
+	                            and toucher.player
+	                            and toucher.player->id == consoleplayer_id))
 		return;
 
 	// [Blair] Execute ZDoom thing specials on items that are picked up.
