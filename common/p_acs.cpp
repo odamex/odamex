@@ -3506,7 +3506,7 @@ void DLevelScript::RunScript ()
 
 		case PCD_SPAWNSPOTFACING:
 			STACK(3) = DoSpawnSpot(STACK(3), STACK(2), STACK(1), std::nullopt, false);
-			sp -= 3;
+			sp -= 2;
 			break;
 
 		case PCD_CLEARINVENTORY:
