@@ -995,6 +995,8 @@ void NetDemo::writeLauncherSequence(buf_t *netbuffer)
 //   the packet with sequence number 0 and writes them to netbuffer.
 //
 
+extern int last_svgametic;
+
 void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 {
 	PacketHeaderType header {0};
@@ -1025,7 +1027,7 @@ void NetDemo::writeConnectionSequence(buf_t *netbuffer)
 	MSG_WriteSVCBuffer(netbuffer, SVC_LoadMap(wadfiles, patchfiles, level.mapname.c_str(), level.time));
 
 	// Server spawns the player
-	MSG_WriteSVCBuffer(netbuffer, SVC_SpawnPlayer(consoleplayer()));
+	MSG_WriteSVCBuffer(netbuffer, SVC_SpawnPlayer(consoleplayer(), last_svgametic));
 }
 
 
@@ -1398,6 +1400,8 @@ void NetDemo::readSnapshotData(std::vector<byte>& buf)
 
 	// Remove all players
 	players.clear();
+
+	CL_ResetWorldPrediction();
 
 	// Remove all actors
 	TThinkerIterator<AActor> iterator;
