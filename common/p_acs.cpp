@@ -239,7 +239,7 @@ mobjtype_t FindWeaponEntity(const char* type)
 {
 	for (int i = 0; i < 9; i++)
 	{
-		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
+		if (stricmp(DoomWeaponNames[i].Name, type) == 0)
 		{
 			if (DoomWeaponNames[i].Type == MT_NULL)
 			{
@@ -257,7 +257,7 @@ mobjtype_t FindDoomEntity(const char* type, DoomEntity list[], int size)
 {
 	for (int i = 0; i < size; i++)
 	{
-		if (strcmp(list[i].Name, type) == 0)
+		if (stricmp(list[i].Name, type) == 0)
 		{
 			return list[i].Type;
 		}
@@ -290,7 +290,7 @@ static void DoGiveInv(player_t& player, const char* type, int amount)
 	// Give ammo
 	for (int i = 0; i < NUMAMMO; i++)
 	{
-		if (strcmp(DoomAmmoNames[i].Name, type) == 0)
+		if (stricmp(DoomAmmoNames[i].Name, type) == 0)
 		{
 			player.ammo[i] = MIN(player.ammo[i]+amount, player.maxammo[i]);
 			SERVER_ONLY(SV_SendPlayerInfo(player));
@@ -301,7 +301,7 @@ static void DoGiveInv(player_t& player, const char* type, int amount)
 	// Give weapon
 	for (int i = 0; i < NUMWEAPONS; i++)
 	{
-		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
+		if (stricmp(DoomWeaponNames[i].Name, type) == 0)
 		{
 			do
 			{
@@ -320,7 +320,7 @@ static void DoGiveInv(player_t& player, const char* type, int amount)
 	// Give keycard
 	for (int i = 0; i < NUMCARDS; i++)
 	{
-		if (strcmp(DoomKeyNames[i].Name, type) == 0)
+		if (stricmp(DoomKeyNames[i].Name, type) == 0)
 		{
 			do
 			{
@@ -335,7 +335,7 @@ static void DoGiveInv(player_t& player, const char* type, int amount)
 	// Give power
 	for (int i = 0; i < NUMPOWERS; i++)
 	{
-		if (strcmp(DoomPowerNames[i].Name, type) == 0)
+		if (stricmp(DoomPowerNames[i].Name, type) == 0)
 		{
 			do
 			{
@@ -348,7 +348,7 @@ static void DoGiveInv(player_t& player, const char* type, int amount)
 	}
 
 	// Give backpack
-	if (strcmp("Backpack", type) == 0)
+	if (stricmp("Backpack", type) == 0)
 	{
 		do
 		{
@@ -479,7 +479,7 @@ static void DoTakeInv(player_t& player, const char* type, int amount)
 {
 	for (int i = 0; i < NUMAMMO; ++i)
 	{
-		if (strcmp(DoomAmmoNames[i].Name, type) == 0)
+		if (stricmp(DoomAmmoNames[i].Name, type) == 0)
 		{
 			TakeAmmo(player, i, amount);
 			return;
@@ -487,7 +487,7 @@ static void DoTakeInv(player_t& player, const char* type, int amount)
 	}
 	for (int i = 0; i < NUMWEAPONS; ++i)
 	{
-		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
+		if (stricmp(DoomWeaponNames[i].Name, type) == 0)
 		{
 			TakeWeapon(player, i);
 			return;
@@ -495,12 +495,12 @@ static void DoTakeInv(player_t& player, const char* type, int amount)
 	}
 	for (int i = 0; i < NUMCARDS; ++i)
 	{
-		if (strcmp(DoomKeyNames[i].Name, type) == 0)
+		if (stricmp(DoomKeyNames[i].Name, type) == 0)
 		{
 			player.cards[i] = 0;
 		}
 	}
-	if (strcmp("Backpack", type) == 0)
+	if (stricmp("Backpack", type) == 0)
 	{
 		TakeBackpack(player);
 	}
@@ -531,26 +531,26 @@ static int CheckInventory(AActor* activator, const char* type)
 
 	for (int i = 0; i < NUMAMMO; ++i)
 	{
-		if (strcmp(DoomAmmoNames[i].Name, type) == 0)
+		if (stricmp(DoomAmmoNames[i].Name, type) == 0)
 		{
 			return player->ammo[i];
 		}
 	}
 	for (int i = 0; i < NUMWEAPONS; ++i)
 	{
-		if (strcmp(DoomWeaponNames[i].Name, type) == 0)
+		if (stricmp(DoomWeaponNames[i].Name, type) == 0)
 		{
 			return player->weaponowned[i] ? 1 : 0;
 		}
 	}
 	for (int i = 0; i < NUMCARDS; ++i)
 	{
-		if (strcmp(DoomKeyNames[i].Name, type) == 0)
+		if (stricmp(DoomKeyNames[i].Name, type) == 0)
 		{
 			return player->cards[i] ? 1 : 0;
 		}
 	}
-	if (strcmp("Backpack", type) == 0)
+	if (stricmp("Backpack", type) == 0)
 	{
 		return player->backpack ? 1 : 0;
 	}
