@@ -250,10 +250,12 @@ END_COMMAND(mdk)
 
 #endif
 
-#if SERVER_APP
+#ifdef SERVER_APP
 BEGIN_COMMAND(tntem)
+{
 	const int kills = P_Massacre();
 	PrintFmt("Killed {} enemies.\n", kills);
+}
 END_COMMAND(tntem)
 #endif
 
