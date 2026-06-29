@@ -36,6 +36,8 @@ Checks: |
   readability-*,
   # Our style guide says no braces for single line ifs is okay
   -readability-braces-around-statements
+  # the idea is cool, but its not really all that helpful
+  -readability-function-cognitive-complexity
   # another one that is lots of warnings right now
   -readability-identifier-length,
   -readability-identifier-naming,
@@ -52,6 +54,8 @@ CheckOptions:
     value: true
   # Allow `if (integer)`
   - key: readability-implicit-bool-conversion.AllowIntegerConditions
+    value: true
+  - key: readability-implicit-bool-conversion.AllowLogicalOperatorConversions
     value: true
   - key: cppcoreguidelines-rvalue-reference-param-not-moved.AllowPartialMove
     value: true
