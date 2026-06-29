@@ -39,6 +39,11 @@ class OdaMessenger
 
 	public:
 
+		// With theoretical defaults:
+		//      800 KBps * 5 sec = 4000 KB backed-up retransmits max
+		//      4000 KB * 256 players = 1024000 KB total ~= 1.05 GB in memory at absolute worst
+		constexpr static int DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS =  5 * TICRATE;
+
 		//  -------------- Receiving functions --------------
 
 		/// Receive and enqueue a packet for processing.  Every packet received with this function must be subsequently fetched via
@@ -82,6 +87,7 @@ class OdaMessenger
 		/// Return values:
 		///  ACCEPT - Normal result: Packet(s) were sent as needed without hitting a cap.
 		///  DEFER  - Packet(s) may have been sent, but a cap has been enountered.
+		///  ABORT  - Critical error sending: Time to drop the connection.
 		MessageResultEnum SendAll(int i_currentTic, const netadr_t& i_dest);
 
 		/// Retransmit the oldest reliable packets that were previously sent and are older than RetransmitDelay
@@ -134,8 +140,9 @@ class OdaMessenger
 			// Track when reliable exceeds a certain percentage of the budget.  This could be configurable...
 			m_reliableOverloadThreshold = 9 * (m_perTicBudget / 10);
 		}
-		void SetPacketsPerRetransmit(int i_maxPackets)  { m_maxPacketsPerRetransmission = i_maxPackets; }
-		void SetRetransmitDelay     (int i_delayInTics) { m_retransmitDelayInTics = i_delayInTics; }
+		void SetPacketsPerRetransmit    (int i_maxPackets)   { m_maxPacketsPerRetransmission = i_maxPackets; }
+		void SetRetransmitDelay         (int i_delayInTics)  { m_retransmitDelayInTics = i_delayInTics; }
+		void SetCriticalSequenceTimeout (int i_timeoutInTics){ m_criticalSequenceTimeoutInTics = i_timeoutInTics; }
 
 		int GetLastReliableSendSize() const           { return static_cast<int>(m_bytesSentWithReliability); }
 		int GetLastSendSize() const                   { return m_lastSendSize; }
@@ -174,9 +181,10 @@ class OdaMessenger
 
 		buf_t* m_quickTurnaroundReceiveBuffer { nullptr };
 
-		int m_maxPacketsPerRetransmission { DEFAULT_RETRANSMISSIONS_PER_TIC };
-		int m_retransmitDelayInTics       { 0 };
-		int m_maxRate                     { 0 };
+		int m_maxPacketsPerRetransmission   { DEFAULT_RETRANSMISSIONS_PER_TIC };
+		int m_retransmitDelayInTics         { 0 };
+		int m_maxRate                       { 0 };
+		int m_criticalSequenceTimeoutInTics { DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS };
 
 		int m_byteBudget  {  0 };       ///< The live budget.  Signed so that it can also represent debt.
 		int m_perTicBudget{  0 };       ///< The value used to reset the budget every tic.
