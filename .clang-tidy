@@ -17,7 +17,11 @@ Checks: |
   misc-*,
   # again, so many of these that it's not worth it
   -misc-non-private-member-variables-in-classes,
+  # some annoying warnings about reasonable uses of recursion
   -misc-no-recursion,
+  # too many false positives
+  -misc-use-internal-linkage,
+  # cppcoreguidelines are a little too opinionated so lets whitelist instead of blacklist
   cppcoreguidelines-macro-usage,
   cppcoreguidelines-missing-std-forward,
   cppcoreguidelines-prefer-member-initializer,
@@ -32,6 +36,7 @@ Checks: |
   readability-*,
   # Our style guide says no braces for single line ifs is okay
   -readability-braces-around-statements
+  # another one that is lots of warnings right now
   -readability-identifier-length,
   -readability-identifier-naming,
   -readability-qualified-auto,
@@ -39,6 +44,8 @@ Checks: |
   -readability-avoid-const-params-in-decls,
   # another one thats just noisy right now
   -readability-named-parameter,
+  # we mostly use lowercase
+  readability-uppercase-literal-suffix,
 CheckOptions:
   # Allow `if (pointer)`
   - key: readability-implicit-bool-conversion.AllowPointerConditions
