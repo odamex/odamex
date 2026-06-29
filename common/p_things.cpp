@@ -38,7 +38,7 @@ EXTERN_CVAR(sv_nomonsters)
 
 // List of spawnable things for the Thing_Spawn and Thing_Projectile specials.
 
-std::array<int, 151> SpawnableThings = {
+std::array<int, 155> SpawnableThings = {
 	0,
 	MT_SHOTGUY,
 	MT_CHAINGUY,
@@ -189,7 +189,11 @@ std::array<int, 151> SpawnableThings = {
 	MT_MISC84,	// Pool o' blood 1
 	MT_MISC85,	// Pool o' blood 2
 	MT_MISC77,	// Flaming barrel
-	MT_MISC86	// Brains
+	MT_MISC86,	// Brains
+	0,
+	MT_MISC2,		// Health bonus
+	MT_FATSHOT,	// Mancubus fireball
+	MT_BRUISERSHOT,// Baron projectile
 };
 
 bool P_Thing_Spawn (int tid, int type, std::optional<angle_t> angle, bool fog, std::optional<int> newtid)

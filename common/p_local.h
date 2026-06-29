@@ -133,7 +133,7 @@ bool	P_HitFloor (AActor *thing);
 //
 // [RH] P_THINGS
 //
-extern std::array<int, 151> SpawnableThings;
+extern std::array<int, 155> SpawnableThings;
 
 bool	P_Thing_Spawn (int tid, int type, std::optional<angle_t> angle, bool fog, std::optional<int> newtid = std::nullopt);
 bool	P_Thing_Projectile (int tid, int type, angle_t angle,

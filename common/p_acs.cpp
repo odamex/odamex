@@ -1544,7 +1544,7 @@ void DLevelScript::ChangeFlat (int tag, int name, bool floorOrCeiling)
 	}
 }
 
-extern size_t P_NumPlayersInGame();
+size_t P_NumPlayersInGame();
 
 int DLevelScript::CountPlayers()
 {
