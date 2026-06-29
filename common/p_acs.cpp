@@ -229,10 +229,10 @@ static DoomEntity DoomDecorationNames[60] = {{"BurningBarrel", MT_MISC77},
                                              {"Column", MT_MISC31},
                                              {"ExplosiveBarrel", MT_BARREL}};
 
-extern ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammo, float num);
-extern ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, bool dropped);
-extern ItemEquipVal P_GiveCard(player_t *player, card_t card);
-extern ItemEquipVal P_GivePower(player_t *player, int  power);
+ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammo, float num);
+ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, bool dropped);
+ItemEquipVal P_GiveCard(player_t *player, card_t card);
+ItemEquipVal P_GivePower(player_t *player, int  power);
 
 mobjtype_t FindWeaponEntity(const char* type)
 {
