@@ -262,6 +262,8 @@ bool	P_CheckSight (const AActor* t1, const AActor* t2);
 void	P_UseLines (player_t& player);
 void	P_ApplyTorque(AActor *mo);
 void	P_CopySector(sector_t *dest, sector_t *src);
+bool 	P_ShouldClipPlayer(AActor* projectile, AActor* player);
+bool 	P_ShouldClipFriendly(AActor* projectile, AActor* monster);
 
 fixed_t P_PlaneZ(fixed_t x, fixed_t y, const plane_t *plane);
 double P_PlaneZ(double x, double y, const plane_t *plane);
