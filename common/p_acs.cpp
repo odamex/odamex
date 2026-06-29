@@ -2013,7 +2013,7 @@ int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, in
 
 int DLevelScript::DoSpawnSpot(int type, int spot, int tid, std::optional<int> angle, bool force)
 {
-	FActorIterator iterator(tid);
+	FActorIterator iterator(spot);
 	AActor* aspot;
 	int spawned = 0;
 
