@@ -22,6 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
+#include "doomtype.h"
 #include "odamex.h"
 
 #include "z_zone.h"
@@ -2202,8 +2203,8 @@ void DLevelScript::RunScript ()
 		{
 		default:
 			DPrintFmt("Unknown P-Code {} in script {}\n", pcd, script);
-			continue;
-			// fall through
+			PrintFmt(PRINT_WARNING, "Encountered a problem while executing ACS script #{}. Terminating script...", script);
+			[[fallthrough]];
 		case PCD_TERMINATE:
 			state = SCRIPT_PleaseRemove;
 			break;
