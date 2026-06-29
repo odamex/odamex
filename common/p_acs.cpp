@@ -22,7 +22,6 @@
 //-----------------------------------------------------------------------------
 
 
-#include "doomtype.h"
 #include "odamex.h"
 
 #include "z_zone.h"
@@ -1952,10 +1951,10 @@ void DLevelScript::StartSoundSequence(sector_t* sec, int index)
 	}
 }
 
-int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle)
+int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle, bool force)
 {
 	const char* typestr = level.behavior->LookupString(type);
-	if (typestr == NULL)
+	if (typestr == nullptr)
 		return 0;
 	char name[64];
 	name[0] = 'A';
@@ -1966,6 +1965,7 @@ int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, in
 	mobjtype_t info;
 
 	{
+		// TODO: use infomap instead
 		// Find an entity through cycles
 		info = FindDoomEntity(typestr, DoomMonsterNames, NUMMONSTERS);
 
@@ -1983,7 +1983,8 @@ int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, in
 			info = FindDoomEntity(typestr, DoomDecorationNames, 60); // Ch0wW
 	}
 
-	AActor* actor = NULL;
+	AActor* actor = nullptr;
+	int spawncount = 0;
 
 	if (info != MT_NULL)
 	{
@@ -1991,32 +1992,33 @@ int DLevelScript::DoSpawn(int type, fixed_t x, fixed_t y, fixed_t z, int tid, in
 
 		if (actor != NULL)
 		{
-			if (P_TestMobjLocation(actor))
+			if (force || P_TestMobjLocation(actor))
 			{
 				actor->angle = angle << 24;
 				actor->tid = tid;
 				actor->AddToHash();
 				actor->flags |= MF_DROPPED;  // Don't respawn
+				spawncount++;
 			}
 			else
 			{
 				actor->Destroy();
-				actor = NULL;
+				actor = nullptr;
 			}
 		}
 	}
 
-	return (int)reinterpret_cast<uintptr_t>(actor);
+	return spawncount;
 }
 
-int DLevelScript::DoSpawnSpot(int type, int spot, int tid, int angle)
+int DLevelScript::DoSpawnSpot(int type, int spot, int tid, std::optional<int> angle, bool force)
 {
 	FActorIterator iterator(tid);
 	AActor* aspot;
 	int spawned = 0;
 
 	while ((aspot = iterator.Next())) {
-		spawned = DoSpawn(type, aspot->x, aspot->y, aspot->z, tid, angle);
+		spawned += DoSpawn(type, aspot->x, aspot->y, aspot->z, tid, angle.value_or(aspot->angle), force);
 	}
 	return spawned;
 }
@@ -3483,23 +3485,28 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_SPAWN:
-			STACK(6) = DoSpawn (STACK(6), STACK(5), STACK(4), STACK(3), STACK(2), STACK(1));
+			STACK(6) = DoSpawn (STACK(6), STACK(5), STACK(4), STACK(3), STACK(2), STACK(1), false);
 			sp -= 5;
 			break;
 
 		case PCD_SPAWNDIRECT:
-			PushToStack (DoSpawn (pc[0], pc[1], pc[2], pc[3], pc[4], pc[5]));
+			PushToStack (DoSpawn (pc[0], pc[1], pc[2], pc[3], pc[4], pc[5], false));
 			pc += 6;
 			break;
 
 		case PCD_SPAWNSPOT:
-			STACK(4) = DoSpawnSpot (STACK(4), STACK(3), STACK(2), STACK(1));
+			STACK(4) = DoSpawnSpot (STACK(4), STACK(3), STACK(2), STACK(1), false);
 			sp -= 3;
 			break;
 
 		case PCD_SPAWNSPOTDIRECT:
-			PushToStack (DoSpawnSpot (pc[0], pc[1], pc[2], pc[3]));
+			PushToStack (DoSpawnSpot (pc[0], pc[1], pc[2], pc[3], false));
 			pc += 4;
+			break;
+
+		case PCD_SPAWNSPOTFACING:
+			STACK(3) = DoSpawnSpot(STACK(3), STACK(2), STACK(1), std::nullopt, false);
+			sp -= 3;
 			break;
 
 		case PCD_CLEARINVENTORY:
@@ -4160,12 +4167,13 @@ DLevelScript::DLevelScript (AActor *who, line_t *where, int num, int *code, int 
 	activator = who;
 	activationline = where;
 	lineSide = lineside;
-	if (delay) {
+	// [EB] 29 June 2026 - Silence duplicated branch warning by re-adding the original branch
+	// but adding demoplayback condition, in case we add hexen demo support
+	if (delay && demoplayback) {
 		// From Hexen: Give the world some time to set itself up before
 		// running open scripts.
-		//script->state = SCRIPT_Delayed;
-		//script->statedata = TICRATE;
-		state = SCRIPT_Running;
+		state = SCRIPT_Delayed;
+		statedata = TICRATE;
 	} else {
 		state = SCRIPT_Running;
 	}

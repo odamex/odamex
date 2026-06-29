@@ -366,6 +366,8 @@ public:
 		PCD_GETCVAR = 255,
 /*260*/	PCD_GETACTORANGLE = 260,
 		PCD_GETLEVELINFO = 265,
+/*280*/	PCD_SPAWNPROJECTILE = 280,
+		PCD_SPAWNSPOTFACING = 289,
 /*290*/
 		PCD_ANDSCRIPTVAR = 291,
 		PCD_ANDMAPVAR,
@@ -527,8 +529,8 @@ protected:
 	static int CountPlayers ();
 	static void SetLineTexture (int lineid, int side, int position, int name);
 
-	static int DoSpawn (int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle);
-	static int DoSpawnSpot (int type, int spot, int tid, int angle);
+	static int DoSpawn (int type, fixed_t x, fixed_t y, fixed_t z, int tid, int angle, bool force);
+	static int DoSpawnSpot (int type, int spot, int tid, std::optional<int> angle, bool force);
 
 	static void SetLineBlocking(int lineid, int flags);
 	static void SetLineMonsterBlocking(int lineid, int toggle);
