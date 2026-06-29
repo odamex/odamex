@@ -1529,6 +1529,10 @@ void A_BFGSpray(AActor* mo)
 		if (!linetarget)
 			continue;
 
+		// if the ball didnt clip, dont hit with tracer
+		if (not P_ShouldClipPlayer(mo, linetarget) || not P_ShouldClipFriendly(mo, linetarget))
+			continue;
+
 		new AActor (linetarget->x,
 					linetarget->y,
 					linetarget->z + (linetarget->height>>2),

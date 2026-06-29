@@ -230,7 +230,7 @@ class OZone
 
 		if (tag >= PU_PURGELEVEL && it->second.user == NULL)
 		{
-			I_Error("{}: Found purgable block without an owner at {}:{}, "
+			I_Error("{}: Found purgeable block without an owner at {}:{}, "
 			        "allocated at {}:{}.\n{}",
 			        __FUNCTION__, info.shortFile(), info.line,
 			        it->second.fileLine.shortFile(), it->second.fileLine.line, M_GetStacktrace());
