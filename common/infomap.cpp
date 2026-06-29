@@ -357,7 +357,7 @@ mobjtype_t P_INameToMobj(const std::string& name)
 		P_InitMobjNameMap();
 	}
 
-	const auto it = ::g_MonsterMapNoCase.find(name);
+	const auto it = ::g_MonsterMapNoCase.find(StdStringToLower(name));
 
 	if (it == ::g_MonsterMapNoCase.end() || mobjinfo.find(it->second) == mobjinfo.end())
 	{
