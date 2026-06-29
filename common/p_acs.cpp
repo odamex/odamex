@@ -1470,7 +1470,7 @@ int DLevelScript::ThingCount (int type, int tid)
 	AActor *mobj = NULL;
 	int count = 0;
 
-	if (type >= NumSpawnableThings)
+	if (static_cast<size_t>(type) >= SpawnableThings.size())
 	{
 		return 0;
 	}

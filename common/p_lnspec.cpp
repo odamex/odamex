@@ -2637,7 +2637,7 @@ FUNC(LS_TranslucentLine)
 }
 
 // ZDoom line specials
-lnSpecFunc LineSpecials[283] =
+std::array<lnSpecFunc, 283> LineSpecials =
 {
 	LS_NOP,
 	LS_NOP,		// Polyobj_StartLine,

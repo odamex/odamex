@@ -38,7 +38,7 @@ EXTERN_CVAR(sv_nomonsters)
 
 // List of spawnable things for the Thing_Spawn and Thing_Projectile specials.
 
-int SpawnableThings[] = {
+std::array<int, 151> SpawnableThings = {
 	0,
 	MT_SHOTGUY,
 	MT_CHAINGUY,
@@ -192,9 +192,7 @@ int SpawnableThings[] = {
 	MT_MISC86	// Brains
 };
 
-const int NumSpawnableThings = sizeof(SpawnableThings)/sizeof(*SpawnableThings);
-
-bool P_Thing_Spawn (int tid, int type, angle_t angle, bool fog)
+bool P_Thing_Spawn (int tid, int type, std::optional<angle_t> angle, bool fog)
 {
 	fixed_t z;
 	int rtn = 0;
@@ -204,7 +202,7 @@ bool P_Thing_Spawn (int tid, int type, angle_t angle, bool fog)
 	// type is doomednum
 	// kind is the mobjtype
 
-	if (type >= NumSpawnableThings)
+	if (static_cast<size_t>(type) >= SpawnableThings.size())
 		return false;
 
 	if ((kind = SpawnableThings[type]) == 0)
@@ -227,7 +225,7 @@ bool P_Thing_Spawn (int tid, int type, angle_t angle, bool fog)
 			if (P_TestMobjLocation (mobj))
 			{
 				rtn++;
-				mobj->angle = angle;
+				mobj->angle = angle.value_or(spot->angle);
 				if (fog)
 					S_Sound (new AActor (spot->x, spot->y, spot->z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG),
 							 CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
@@ -255,7 +253,7 @@ bool P_Thing_Projectile (int tid, int type, angle_t angle,
 	int kind;
 	AActor *spot = NULL, *mobj;
 
-	if (type >= NumSpawnableThings)
+	if (static_cast<size_t>(type) >= SpawnableThings.size())
 		return false;
 
 	if ( (kind = SpawnableThings[type]) == 0)
