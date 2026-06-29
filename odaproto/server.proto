@@ -152,6 +152,7 @@ message SpawnPlayer
 	Actor  actor = 2;
 	uint32 cards = 3;
 	int32  player_tic = 4;
+	int32  server_tic = 5;
 }
 
 // svc_damageplayer
