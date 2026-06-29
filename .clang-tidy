@@ -35,9 +35,11 @@ Checks: |
   google-runtime-int,
   readability-*,
   # Our style guide says no braces for single line ifs is okay
-  -readability-braces-around-statements
+  -readability-braces-around-statements,
+  # we have reasons to have sparsely initialized enums in a number of places
+  -readability-enum-initial-value,
   # the idea is cool, but its not really all that helpful
-  -readability-function-cognitive-complexity
+  -readability-function-cognitive-complexity,
   # another one that is lots of warnings right now
   -readability-identifier-length,
   -readability-identifier-naming,
