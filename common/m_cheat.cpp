@@ -36,6 +36,7 @@
 #include "p_local.h"
 #include "infomap.h"
 #include "c_effect.h"
+#include "c_dispatch.h"
 
 extern bool simulated_connection;
 EXTERN_CVAR(sv_allowcheats)
@@ -43,7 +44,6 @@ EXTERN_CVAR(sv_allowcheats)
 #ifdef CLIENT_APP
 #include "am_map.h"
 #include "cl_main.h"
-#include "c_dispatch.h"
 extern bool automapactive;
 #endif
 
