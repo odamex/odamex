@@ -1866,7 +1866,7 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 	uint32_t id = msg->netid();
 	AActor* mo = P_FindThingById(id);
 
-    player_t& player = consoleplayer();
+	player_t& player = consoleplayer();
 	if (not player.mo)
 		return;
 
@@ -1877,30 +1877,34 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 		return;
 	}
 
-    // Do a switcheroo of the new state for the historical state at the time of the pickup
-    // so that we can run the actual P_GiveSpecial function and let it produce the result
-    // of the pickup *at that old point in time*.  With that result in hand, we undo the
-    // switcheroo and resolve the potentially-modified history.
+	// Do a switcheroo of the new state for the historical state at the time of the pickup
+	// so that we can run the actual P_GiveSpecial function and let it produce the result
+	// of the pickup *at that old point in time*.  With that result in hand, we undo the
+	// switcheroo and resolve the potentially-modified history.
 
-    const int oldTic = msg->player_tic();
-    auto optionalHistory = rollerState.GetStateAtTic(oldTic);
+	const int oldTic = msg->player_tic();
+	auto optionalHistory = rollerState.GetStateAtTic(oldTic);
 	const PlayerItemDataType currentClientSideState {player};
 
-    if (optionalHistory)
-    {
-        optionalHistory->get().ToPlayer(player);
-    }
+	if (optionalHistory)
+	{
+		optionalHistory->get().ToPlayer(player);
+	}
 
-	P_GiveSpecial(player, *mo);
+	const ItemEquipVal giveResult = P_GiveSpecial(player, *mo);
+	if (giveResult == IEV_EquipRemove)
+	{
+		mo->Destroy();
+	}
 
-    if (optionalHistory)
-    {
-        const PlayerItemDataType modifiedHistory {player};
+	if (optionalHistory)
+	{
+		const PlayerItemDataType modifiedHistory {player};
 
-        currentClientSideState.ToPlayer(player);
+		currentClientSideState.ToPlayer(player);
 
-        rollerState.Resolve(oldTic, modifiedHistory, player);
-    }
+		rollerState.Resolve(oldTic, modifiedHistory, player);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------
