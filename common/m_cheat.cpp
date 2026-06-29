@@ -23,7 +23,6 @@
 
 #include "odamex.h"
 
-#include <stdlib.h>
 #include <math.h>
 
 #include "g_gametype.h"
@@ -146,7 +145,7 @@ bool SetGeneric(cheatseq_t* cheat)
 
 bool AddKey(cheatseq_t* cheat, unsigned char key, bool* eat)
 {
-	if (cheat->Pos == NULL)
+	if (cheat->Pos == nullptr)
 	{
 		cheat->Pos = cheat->Sequence;
 		cheat->CurrentArg = 0;
@@ -440,7 +439,7 @@ void DoCheat(player_t& player, int cheat, bool silentmsg)
 				if (actor->health > 0)
 				{
 					killcount++;
-					P_DamageMobj(actor, NULL, NULL, 10000, MOD_UNKNOWN);
+					P_DamageMobj(actor, nullptr, nullptr, 10000, MOD_UNKNOWN);
 				}
 				if (actor->type == MT_PAIN)
 				{
@@ -586,7 +585,7 @@ void GiveTo(player_t& player, const char* name)
 	{
 		int h;
 
-		if (0 < (h = atoi(name + 6)))
+		if (0 < (h = ParseNum<int>(name + 6).value_or(0)))
 		{
 			if (player.mo)
 			{
