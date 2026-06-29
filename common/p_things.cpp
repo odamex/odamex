@@ -192,7 +192,7 @@ std::array<int, 151> SpawnableThings = {
 	MT_MISC86	// Brains
 };
 
-bool P_Thing_Spawn (int tid, int type, std::optional<angle_t> angle, bool fog)
+bool P_Thing_Spawn (int tid, int type, std::optional<angle_t> angle, bool fog, std::optional<int> newtid)
 {
 	fixed_t z;
 	int rtn = 0;
@@ -234,6 +234,7 @@ bool P_Thing_Spawn (int tid, int type, std::optional<angle_t> angle, bool fog)
 				{
 					mobj->special1 = mobj->z - mobj->floorz;
 				}
+				mobj->tid = newtid.value_or(0);
 			}
 			else
 			{
