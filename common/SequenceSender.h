@@ -51,7 +51,8 @@ class SequenceSender
 		enum SenderModeEnum
 		{
 			NORMAL,
-			RECOVERY
+			RECOVERY,
+			CRITICAL_FAILURE,
 		};
 
 		struct QueueEntryResultType
@@ -60,9 +61,9 @@ class SequenceSender
 			int    sequence {-1};
 		};
 
-		explicit SequenceSender(size_t i_initialSize);
-
 	public:  // Functions.
+
+		explicit SequenceSender(size_t i_initialSize);
 
 		SequenceSender() :
 			SequenceSender(DEFAULT_RELIABILITY_QUEUE_SIZE)
