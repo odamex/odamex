@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://odamex.net/schemas/cvardoc.schema-v1.json",
+  "title": "Odamex CVAR Documentation",
+  "description": "Schema for the JSON produced by the 'cvardocjson' console command, which dumps every registered console variable.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "odamex_version",
+    "odamex_commithash",
+    "odamex_branchname",
+    "cvars"
+  ],
+  "properties": {
+    "schema_version": {
+      "description": "Version of this document format.",
+      "type": "integer",
+      "const": 1
+    },
+    "odamex_version": {
+      "description": "Odamex version in major.minor.patch form.",
+      "type": "string"
+    },
+    "odamex_commithash": {
+      "description": "Git commit hash of the build, or an empty string.",
+      "type": "string"
+    },
+    "odamex_branchname": {
+      "description": "Git branch name of the build, or an empty string.",
+      "type": "string"
+    },
+    "cvars": {
+      "description": "All registered console variables, sorted by name.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/cvar" }
+    }
+  },
+  "$defs": {
+    "cvar": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type", "helptext", "default", "flags"],
+      "properties": {
+        "name": {
+          "description": "Name of the console variable.",
+          "type": "string"
+        },
+        "type": {
+          "description": "Value type of the cvar.",
+          "type": "string",
+          "enum": ["boolean", "integer", "number", "string"]
+        },
+        "helptext": {
+          "description": "Human-readable description of the cvar.",
+          "type": "string"
+        },
+        "default": {
+          "description": "Default value, typed according to the cvar's type.",
+          "type": ["boolean", "integer", "number", "string"]
+        },
+        "min": {
+          "description": "Minimum value; present only for 'integer' and 'number' cvars that have a lower bound.",
+          "type": "number"
+        },
+        "max": {
+          "description": "Maximum value; present only for 'integer' and 'number' cvars that have an upper bound.",
+          "type": "number"
+        },
+        "flags": {
+          "description": "Behavioral flags set on the cvar.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "USERINFO",
+              "SERVERINFO",
+              "NOSET",
+              "LATCH",
+              "UNSETTABLE",
+              "NOENABLEDISABLE",
+              "SERVERARCHIVE",
+              "CLIENTARCHIVE"
+            ]
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "boolean" } } },
+          "then": {
+            "properties": { "default": { "type": "boolean" } },
+            "not": { "anyOf": [{ "required": ["min"] }, { "required": ["max"] }] }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "string" } } },
+          "then": {
+            "properties": { "default": { "type": "string" } },
+            "not": { "anyOf": [{ "required": ["min"] }, { "required": ["max"] }] }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "integer" } } },
+          "then": {
+            "properties": { "default": { "type": "integer" } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "number" } } },
+          "then": {
+            "properties": { "default": { "type": "number" } }
+          }
+        }
+      ]
+    }
+  }
+}

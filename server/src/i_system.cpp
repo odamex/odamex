@@ -184,7 +184,7 @@ bool gameisdead;
 
 void STACK_ARGS call_terms (void);
 
-void I_BaseError(const std::string& errortext)
+[[noreturn]] void I_BaseError(const std::string& errortext)
 {
 	throw CRecoverableError(errortext);
 }
