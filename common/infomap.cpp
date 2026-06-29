@@ -28,7 +28,10 @@
 
 #include "c_dispatch.h"
 
-typedef OHashTable<std::string, mobjtype_t> MobjMap;
+#include "cmdlib.h"
+
+typedef OHashTable<std::string, mobjtype_t> MobjNameToTypeMap;
+typedef OHashTable<mobjtype_t, std::string> MobjTypeToNameMap;
 
 /**
  * "Class" of mobj, used to determine how to "give" them to players.
@@ -43,11 +46,15 @@ enum mobjclass_e
 	MC_BACKPACK,
 };
 
-static MobjMap g_MonsterMap;
+static MobjNameToTypeMap g_MonsterMap;
+static MobjNameToTypeMap g_MonsterMapNoCase;
+static MobjTypeToNameMap g_InverseMonsterMap;
 
 static void MapMobj(const mobjtype_t type, const std::string& name, const uint32_t flags)
 {
 	::g_MonsterMap.emplace(name, type);
+	::g_MonsterMapNoCase.emplace(StdStringToLower(name), type);
+	::g_InverseMonsterMap.emplace(type, name);
 }
 
 void P_InitMobjNameMap()
@@ -329,12 +336,13 @@ mobjtype_t P_NameToMobj(const std::string& name)
 		P_InitMobjNameMap();
 	}
 
-	MobjMap::iterator it = ::g_MonsterMap.find(name);
+	const auto it = ::g_MonsterMap.find(name);
 
 	if (it == ::g_MonsterMap.end() || mobjinfo.find(it->second) == mobjinfo.end())
 	{
 		return MT_NULL;
 	}
+
 	return it->second;
 }
 
@@ -349,14 +357,14 @@ mobjtype_t P_INameToMobj(const std::string& name)
 		P_InitMobjNameMap();
 	}
 
-	for (const auto& [mapname, type] : ::g_MonsterMap)
+	const auto it = ::g_MonsterMapNoCase.find(name);
+
+	if (it == ::g_MonsterMapNoCase.end() || mobjinfo.find(it->second) == mobjinfo.end())
 	{
-		if (iequals(mapname, name) && mobjinfo.find(type) != mobjinfo.end())
-		{
-			return type;
-		}
+		return MT_NULL;
 	}
-	return MT_NULL;
+
+	return it->second;
 }
 
 std::string P_MobjToName(const mobjtype_t type)
@@ -366,15 +374,14 @@ std::string P_MobjToName(const mobjtype_t type)
 		P_InitMobjNameMap();
 	}
 
-	for (const auto& [name, maptype] : ::g_MonsterMap)
+	const auto it = ::g_InverseMonsterMap.find(type);
+
+	if (it == ::g_InverseMonsterMap.end())
 	{
-		if (type == maptype)
-		{
-			return name;
-		}
+		return "";
 	}
 
-	return "";
+	return it->second;
 }
 
 weapontype_t P_NameToWeapon(const std::string& name)
@@ -424,6 +431,8 @@ typedef std::pair<std::string, mobjtype_t> MobjPair;
 // Hashtables don't work with std::sort
 // This is a half measure to sort it without
 // Messing with the internals of hashtable.
+// I wonder if we just want std::map instead of OHashTable?
+// We don't need the speed too much
 std::vector<MobjPair> OrderedMobjMap()
 {
 	std::vector<MobjPair> orderedVector;
