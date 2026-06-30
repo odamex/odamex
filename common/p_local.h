@@ -343,7 +343,9 @@ extern std::set<short>	movable_sectors;
 extern std::array<int, NUMAMMO> maxammo;
 extern std::array<int, NUMAMMO> clipammo;
 
-void P_GiveSpecial(player_t& player, AActor& special);
+[[ nodiscard("Please check for whether the mobj must be destroyed!!") ]]
+ItemEquipVal P_GiveSpecial(player_t& player, AActor& special);
+
 void P_TouchSpecialThing (AActor& special, AActor& toucher);
 
 void P_DamageMobj (AActor *target, const AActor *inflictor, AActor *source, int damage, int mod=0, int flags=0);

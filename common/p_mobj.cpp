@@ -554,6 +554,9 @@ void P_ClearId(uint32_t id)
 //
 void AActor::Destroy ()
 {
+	if (WasDestroyed())
+		return;
+
 	SV_SendDestroyActor(this);
 
 	actor_by_netid.erase(netid);
