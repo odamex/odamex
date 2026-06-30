@@ -1,0 +1,966 @@
+// Emacs style mode select   -*- C++ -*-
+//-----------------------------------------------------------------------------
+//
+// Copyright (C) 2006-2026 by The Odamex Team.
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU General Public License
+// as published by the Free Software Foundation; either version 2
+// of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// DESCRIPTION:
+//  Modal single-server details dialog.
+//
+//-----------------------------------------------------------------------------
+
+#include "dlg_serverdetails.h"
+
+#include <algorithm>
+#include <map>
+#include <set>
+#include <utility>
+#include <vector>
+
+#include <wx/sizer.h>
+#include <wx/stattext.h>
+#include <wx/statbmp.h>
+#include <wx/textctrl.h>
+#include <wx/scrolwin.h>
+#include <wx/gauge.h>
+#include <wx/button.h>
+#include <wx/tglbtn.h>
+#include <wx/hyperlink.h>
+#include <wx/gbsizer.h>
+#include <wx/collpane.h>
+#include <wx/settings.h>
+#include <wx/fileconf.h>
+#include <wx/arrstr.h>
+#include <wx/cursor.h>
+#include <wx/app.h>
+#include <wx/xrc/xmlres.h>
+
+#include "dlg_main.h"
+#include "lst_players.h"
+#include "srv_utils.h"
+#include "str_utils.h"
+#include "cvardoc_db.h"
+#include "net_io.h"
+#include "oda_defs.h"
+
+using namespace odalpapi;
+
+// Refresh cadence: a tick every 250ms, auto-refreshing after this many ticks
+// (40 * 250ms = 10 seconds).
+static const int REFRESH_TICK_MS = 250;
+static const int REFRESH_TICKS = 40;
+
+wxBEGIN_EVENT_TABLE(dlgServerDetails, wxDialog)
+	EVT_TOGGLEBUTTON(XRCID("Id_BtnRefresh"), dlgServerDetails::OnRefresh)
+	EVT_BUTTON(XRCID("Id_BtnJoin"), dlgServerDetails::OnJoin)
+	EVT_TIMER(wxID_ANY, dlgServerDetails::OnTimer)
+	EVT_CLOSE(dlgServerDetails::OnClose)
+wxEND_EVENT_TABLE()
+
+// Category -> cvar-name groups for the "Server Variables" accordion, in the
+// order they should appear.
+typedef std::vector<std::pair<wxString, std::vector<std::string> > > CvarCategories;
+
+static const CvarCategories& GetCvarCategories()
+{
+	static CvarCategories Categories;
+
+	if(!Categories.empty())
+		return Categories;
+
+	auto Add = [](const wxString& Name, std::vector<std::string> Cvars)
+	{
+		Categories.push_back(std::make_pair(Name, std::move(Cvars)));
+	};
+
+	Add("Gameplay Options",
+	    {"sv_gametype", "sv_teamsinplay", "sv_teamspawns", "sv_maxcorpses"});
+	Add("Gameplay Modifiers",
+	    {"sv_aircontrol", "sv_doubleammo", "sv_fastmonsters", "sv_forcerespawn",
+	     "sv_forcerespawntime", "sv_forcewater", "sv_friendlyfire",
+	     "sv_friendlymonsterfire", "sv_gravity", "sv_infiniteammo",
+	     "sv_itemrespawntime", "sv_itemsrespawn", "sv_keepkeys",
+	     "sv_monsterdamage", "sv_monstershealth", "sv_monstersrespawn",
+	     "sv_nomonsters", "sv_showplayerpowerups", "sv_skill",
+	     "sv_spawndelaytime", "sv_splashfactor", "sv_weapondamage",
+	     "sv_weapondrop", "sv_weaponstay", "sv_dmfarspawn", "g_spawninv",
+	     "g_thingfilter"});
+	Add("Optional Gameplay Functionality",
+	    {"sv_allowcheats", "sv_allowjump", "sv_allowfov", "sv_allowmovebob",
+	     "sv_allowpwo", "sv_allowredscreen", "sv_allowshowspawns",
+	     "sv_allowtargetnames", "sv_allowwidescreen", "sv_freelook",
+	     "sv_maxunlagtime", "sv_playerbeacons", "sv_respawnbarrels",
+	     "sv_respawnsuper", "sv_sharekeys", "sv_unblockfriendly",
+	     "sv_unblockplayers"});
+	Add("Game Flow",
+	    {"sv_countdown", "sv_intermissionlimit", "sv_warmup",
+	     "sv_warmup_autostart", "sv_emptyfreeze", "sv_emptyreset"});
+	Add("Win Conditions",
+	    {"sv_allowexit", "sv_fragexitswitch", "sv_fraglimit", "sv_scorelimit",
+	     "sv_timelimit"});
+	Add("WAD Downloads", {"sv_downloadsites"});
+	Add("Metadata", {"sv_hostname", "sv_email", "sv_motd", "g_gametypename"});
+	Add("Players", {"sv_maxclients", "sv_maxplayers", "sv_maxplayersperteam"});
+	Add("Sprees", {"sv_showsprees"});
+	Add("Multi Kills", {"sv_showmultikills"});
+	Add("Voting",
+	    {"sv_callvote_coinflip", "sv_callvote_forcespec", "sv_callvote_forcestart",
+	     "sv_callvote_fraglimit", "sv_callvote_kick", "sv_callvote_lives",
+	     "sv_callvote_map", "sv_callvote_nextmap", "sv_callvote_randcaps",
+	     "sv_callvote_randmap", "sv_callvote_randpickup", "sv_callvote_restart",
+	     "sv_callvote_scorelimit", "sv_callvote_timelimit", "sv_vote_countabs",
+	     "sv_vote_majority", "sv_vote_speccall", "sv_vote_specvote",
+	     "sv_vote_timelimit", "sv_vote_timeout"});
+	Add("Security", {"join_password", "rcon_password", "sv_flooddelay"});
+	Add("Bans", {"sv_banfile", "sv_banfile_reload"});
+	Add("Script Variables",
+	    {"sv_clientcount", "sv_curmap", "sv_curpwad", "sv_endmapscript",
+	     "sv_nextmap", "sv_startmapscript", "sv_startwadscript"});
+	Add("Networking",
+	    {"sv_maxrate", "sv_natport", "sv_ticbuffer", "sv_upnp",
+	     "sv_upnp_description", "sv_upnp_discovertimeout", "sv_upnp_externalip",
+	     "sv_upnp_internalip", "sv_usemasters", "net_rcvbuf", "net_sndbuf",
+	     "port"});
+	Add("Console Log", {"log_color", "log_fulltimestamps", "log_packetdebug"});
+	Add("Chat", {"sv_globalspectatorchat"});
+	Add("Maplist", {"sv_shufflemaplist"});
+	Add("Diagnostics", {"configver", "developer"});
+	Add("Compatibility Options",
+	    {"co_allowdropoff", "co_avoidhazards", "co_blockmapfix", "co_boomphys",
+	     "co_fineautoaim", "co_fixweaponimpacts", "co_friend_distance",
+	     "co_friend_helpertype", "co_friend_ledgejumping",
+	     "co_friend_playerhelpers", "co_globalsound", "co_helpfriends",
+	     "co_mbfphys", "co_monsterbacking", "co_monsterfriction",
+	     "co_monstersclimbsteep", "co_nosilentspawns", "co_novileghosts",
+	     "co_pursuit", "co_realactorheight", "co_removesoullimit", "co_staylift",
+	     "co_zdoomammo", "co_zdoomphys", "co_zdoomsound"});
+	Add("CTF", {"g_ctf_notouchreturn", "ctf_flagtimeout", "ctf_flagathometoscore", "ctf_manualreturn"});
+	Add("Horde",
+	    {"g_horde_extralife", "g_horde_goalhp", "g_horde_maxtotalhp",
+	     "g_horde_mintotalhp", "g_horde_resurrect", "g_horde_spawnempty_max",
+	     "g_horde_spawnempty_min", "g_horde_spawnfull_max",
+	     "g_horde_spawnfull_min", "g_horde_waves"});
+	Add("Survival", {"g_lives", "g_lives_jointimer"});
+	Add("Rounds",
+	    {"g_rounds", "g_preroundtime", "g_postroundtime", "g_preroundreset",
+	     "g_roundlimit", "g_winlimit"});
+	Add("Progression", {"g_resetinvonexit", "g_winnerstays"});
+	Add("Game Modes", {"g_sides"});
+
+	return Categories;
+}
+
+dlgServerDetails::dlgServerDetails(dlgMain* parent)
+	: m_Parent(parent), m_Timer(this), m_GaugeTicks(0)
+{
+	wxXmlResource::Get()->LoadDialog(this, parent, "dlgServerDetails");
+
+	m_TxtMotd = XRCCTRL(*this, "Id_TxtMotd", wxTextCtrl);
+	m_PnlMetadata = XRCCTRL(*this, "Id_PnlMetadata", wxPanel);
+	m_PnlServerVars = XRCCTRL(*this, "Id_PnlServerVars", wxScrolledWindow);
+	m_PnlGameplayVars = XRCCTRL(*this, "Id_PnlGameplayVars", wxPanel);
+	m_PnlPlayerList = XRCCTRL(*this, "Id_PnlPlayerList", wxPanel);
+	m_Gauge = XRCCTRL(*this, "Id_GaugeRefresh", wxGauge);
+	m_BtnRefresh = XRCCTRL(*this, "Id_BtnRefresh", wxToggleButton);
+	m_BtnJoin = XRCCTRL(*this, "Id_BtnJoin", wxButton);
+	m_BtnJoinWhenFree = XRCCTRL(*this, "Id_BtnJoinWhenFree", wxToggleButton);
+
+	m_Gauge->SetRange(REFRESH_TICKS);
+	m_Gauge->SetValue(0);
+
+	// Show the MOTD in a bold, monospace font.
+	// Also centered but that's in the actual XRC file.
+	wxFont MotdFont(wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_TELETYPE,
+	                wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
+	m_TxtMotd->SetFont(MotdFont);
+
+	// How can we make this look disabled without actually being disabled?
+	m_TxtMotd->SetBackgroundColour(
+	    wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE));
+	m_TxtMotd->SetForegroundColour(*wxBLACK);
+	// Show the normal arrow cursor instead of the I-beam edit cursor.
+	m_TxtMotd->SetCursor(wxCursor(wxCURSOR_ARROW));
+	m_TxtMotd->Bind(wxEVT_SET_FOCUS, [this](wxFocusEvent& evt)
+	{
+		// Bounce focus to the Refresh button so the MOTD never shows a caret
+		// or holds a selection.
+		if(m_BtnRefresh)
+			m_BtnRefresh->SetFocus();
+	});
+
+	// Remember the MOTD's static-box sizer so the whole section can be hidden
+	// when the server reports no MOTD.
+	m_MotdSizer = m_TxtMotd->GetContainingSizer();
+
+	BuildMetadataGrid();
+	BuildGameplayGrid();
+
+	// Player list lives inside its placeholder panel.
+	m_PlayerList = new LstOdaPlayerList();
+	m_PlayerList->Create(m_PnlPlayerList, wxID_ANY, wxDefaultPosition,
+	                     wxDefaultSize, wxLC_REPORT | wxLC_SINGLE_SEL);
+
+	wxBoxSizer* PlayerSizer = new wxBoxSizer(wxVERTICAL);
+	PlayerSizer->Add(m_PlayerList, 1, wxEXPAND);
+	m_PnlPlayerList->SetSizer(PlayerSizer);
+
+	// Server variables get a vertical sizer of collapsible panes.
+	m_PnlServerVars->SetSizer(new wxBoxSizer(wxVERTICAL));
+
+	// This needs double buffering to avoid flicker when the panes expand/collapse and the
+	// scrolled area reflows.
+	m_PnlServerVars->SetDoubleBuffered(true);
+
+	// Reflow the scrolled area whenever a category pane expands/collapses, and
+	// remember the expansion state so a refresh can restore it.
+	Bind(wxEVT_COLLAPSIBLEPANE_CHANGED,
+	     [this](wxCollapsiblePaneEvent& evt)
+	     {
+		     wxCollapsiblePane* Pane =
+		         wxDynamicCast(evt.GetEventObject(), wxCollapsiblePane);
+
+		     Freeze();
+
+		     if(Pane)
+		     {
+			     if(evt.GetCollapsed())
+			     {
+				     m_ExpandedCategories.erase(Pane->GetLabel());
+			     }
+			     else
+			     {
+				     // Build the pane's rows the first time it opens.
+				     BuildPaneContent(Pane);
+				     m_ExpandedCategories.insert(Pane->GetLabel());
+			     }
+		     }
+
+		     m_PnlServerVars->FitInside();
+		     m_PnlServerVars->Layout();
+		     Thaw();
+	     });
+
+	// On idle, build the panes one at a time so the dialog stays snappy and responsive.
+	Bind(wxEVT_IDLE, [this](wxIdleEvent& evt)
+	{
+		for(std::map<wxCollapsiblePane*,
+		             std::vector<std::pair<std::string, wxString> > >::iterator
+		        it = m_PaneRows.begin(); it != m_PaneRows.end(); ++it)
+		{
+			if(!m_BuiltPanes.count(it->first))
+			{
+				BuildPaneContent(it->first);
+				evt.RequestMore(); // more panes may remain; keep idling
+				return;
+			}
+		}
+	});
+
+	SetMinSize(wxSize(960, 680));
+	SetSize(wxSize(1120, 820));
+}
+
+int dlgServerDetails::ShowForServer(const Server& Source)
+{
+	// Seed our working copy from the already-queried list entry so the dialog
+	// opens instantly.
+	std::string Host;
+	uint16_t Port = 0;
+	Source.GetAddress(Host, Port);
+	m_Server.SetAddress(Host, Port);
+	m_Server.Info = Source.Info;
+	m_Server.SetPing(Source.GetPing());
+	m_Server.SetValidResponse(Source.GotResponse());
+
+	// Start each showing with auto-refresh off and the gauge reset.
+	m_Timer.Stop();
+	m_GaugeTicks = 0;
+	m_BtnRefresh->SetValue(false);
+	m_Gauge->SetValue(0);
+
+	Populate();
+	CentreOnParent();
+
+	// Kick off the background pane building (see the wxEVT_IDLE handler).
+	wxWakeUpIdle();
+
+	return ShowModal();
+}
+
+dlgServerDetails::~dlgServerDetails()
+{
+	m_Timer.Stop();
+}
+
+wxStaticText* dlgServerDetails::AddRow(wxWindow* Parent, wxFlexGridSizer* Grid,
+                                       const wxString& Label,
+                                       wxStaticText** LabelOut)
+{
+	const wxFont LabelFont =
+	    wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).Bold();
+
+	wxStaticText* LabelCtrl = new wxStaticText(Parent, wxID_ANY, Label);
+	LabelCtrl->SetFont(LabelFont);
+
+	wxStaticText* Value = new wxStaticText(Parent, wxID_ANY, "");
+
+	Grid->Add(LabelCtrl, 0, wxALIGN_CENTER_VERTICAL);
+	Grid->Add(Value, 0, wxALIGN_CENTER_VERTICAL);
+
+	if(LabelOut)
+		*LabelOut = LabelCtrl;
+
+	return Value;
+}
+
+void dlgServerDetails::SetOptionalRow(wxFlexGridSizer* Grid,
+                                      wxStaticText* Label, wxStaticText* Value,
+                                      const wxString& Text)
+{
+	const bool Show = !Text.IsEmpty();
+
+	if(Show)
+		Value->SetLabel(Text);
+
+	Grid->Show(Label, Show);
+	Grid->Show(Value, Show);
+}
+
+void dlgServerDetails::BuildMetadataGrid()
+{
+	const wxFont LabelFont =
+	    wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).Bold();
+
+	m_MetaGrid = new wxFlexGridSizer(0, 2, 4, 12);
+
+	m_MdName = AddRow(m_PnlMetadata, m_MetaGrid, "Server Name:");
+	m_MdVersion = AddRow(m_PnlMetadata, m_MetaGrid, "Version:");
+	m_MdAddress = AddRow(m_PnlMetadata, m_MetaGrid, "Address:");
+
+	// Ping row: coloured bullet + number.
+	wxStaticText* PingLabel = new wxStaticText(m_PnlMetadata, wxID_ANY, "Ping:");
+	PingLabel->SetFont(LabelFont);
+
+	wxBoxSizer* PingSizer = new wxBoxSizer(wxHORIZONTAL);
+	m_PingIcon = new wxStaticBitmap(m_PnlMetadata, wxID_ANY, wxNullBitmap);
+	m_MdPing = new wxStaticText(m_PnlMetadata, wxID_ANY, "");
+	PingSizer->Add(m_PingIcon, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 4);
+	PingSizer->Add(m_MdPing, 0, wxALIGN_CENTER_VERTICAL);
+
+	m_MetaGrid->Add(PingLabel, 0, wxALIGN_CENTER_VERTICAL);
+	m_MetaGrid->Add(PingSizer, 0, wxALIGN_CENTER_VERTICAL);
+
+	m_MdSkill = AddRow(m_PnlMetadata, m_MetaGrid, "Skill:");
+	m_MdGravity = AddRow(m_PnlMetadata, m_MetaGrid, "Gravity:", &m_MdGravityLabel);
+	m_MdAirControl =
+	    AddRow(m_PnlMetadata, m_MetaGrid, "Air Control:", &m_MdAirControlLabel);
+	m_MdMap = AddRow(m_PnlMetadata, m_MetaGrid, "Map:");
+	m_MdIwad = AddRow(m_PnlMetadata, m_MetaGrid, "IWAD:");
+	m_MdPwad = AddRow(m_PnlMetadata, m_MetaGrid, "PWAD:", &m_MdPwadLabel);
+	// Wad Download URI: bold label + a vertical list of hyperlinks (one per
+	// site), filled in on populate.
+	m_MdDownloadURILabel =
+	    new wxStaticText(m_PnlMetadata, wxID_ANY, "Wad Download URI:");
+	m_MdDownloadURILabel->SetFont(LabelFont);
+	m_MdDownloadSizer = new wxBoxSizer(wxVERTICAL);
+	m_MetaGrid->Add(m_MdDownloadURILabel, 0, wxALIGN_TOP);
+	m_MetaGrid->Add(m_MdDownloadSizer, 0, wxALIGN_TOP);
+
+	m_MdAdminEmailLabel =
+	    new wxStaticText(m_PnlMetadata, wxID_ANY, "Admin Email:");
+	m_MdAdminEmailLabel->SetFont(LabelFont);
+	m_MdAdminEmail = new wxHyperlinkCtrl(m_PnlMetadata, wxID_ANY,
+	                                     wxEmptyString, wxEmptyString);
+	m_MetaGrid->Add(m_MdAdminEmailLabel, 0, wxALIGN_CENTER_VERTICAL);
+	m_MetaGrid->Add(m_MdAdminEmail, 0, wxALIGN_CENTER_VERTICAL);
+
+	m_MdPassword = AddRow(m_PnlMetadata, m_MetaGrid, "Password:");
+
+	wxBoxSizer* Border = new wxBoxSizer(wxVERTICAL);
+	Border->Add(m_MetaGrid, 1, wxEXPAND | wxALL, 4);
+	m_PnlMetadata->SetSizer(Border);
+}
+
+void dlgServerDetails::BuildGameplayGrid()
+{
+	m_GpGrid = new wxFlexGridSizer(0, 2, 4, 12);
+
+	m_GpGameType = AddRow(m_PnlGameplayVars, m_GpGrid, "Game Type:");
+	m_GpTimeLeft =
+	    AddRow(m_PnlGameplayVars, m_GpGrid, "Time Left:", &m_GpTimeLeftLabel);
+	m_GpFriendlyFire = AddRow(m_PnlGameplayVars, m_GpGrid, "Friendly Fire:",
+	                          &m_GpFriendlyFireLabel);
+	m_GpPlayerDmg =
+	    AddRow(m_PnlGameplayVars, m_GpGrid, "Player Dmg:", &m_GpPlayerDmgLabel);
+	m_GpMonsterDmg =
+	    AddRow(m_PnlGameplayVars, m_GpGrid, "Monster Dmg:", &m_GpMonsterDmgLabel);
+	m_GpMonsterHealth = AddRow(m_PnlGameplayVars, m_GpGrid, "Monster Health:",
+	                           &m_GpMonsterHealthLabel);
+	m_GpWaves = AddRow(m_PnlGameplayVars, m_GpGrid, "Waves:", &m_GpWavesLabel);
+	m_GpPlayers = AddRow(m_PnlGameplayVars, m_GpGrid, "Players:");
+	m_GpScore = AddRow(m_PnlGameplayVars, m_GpGrid, "Score:", &m_GpScoreLabel);
+	m_GpRounds = AddRow(m_PnlGameplayVars, m_GpGrid, "Rounds:", &m_GpRoundsLabel);
+	m_GpLives = AddRow(m_PnlGameplayVars, m_GpGrid, "Lives:", &m_GpLivesLabel);
+
+	wxBoxSizer* Border = new wxBoxSizer(wxVERTICAL);
+	Border->Add(m_GpGrid, 1, wxEXPAND | wxALL, 4);
+	m_PnlGameplayVars->SetSizer(Border);
+}
+
+void dlgServerDetails::DoQuery()
+{
+	wxFileConfig ConfigInfo;
+	wxInt32 ServerTimeout, RetryCount;
+
+	ConfigInfo.Read(SERVERTIMEOUT, &ServerTimeout, ODA_QRYSERVERTIMEOUT);
+	ConfigInfo.Read(RETRYCOUNT, &RetryCount, ODA_QRYGSRETRYCOUNT);
+
+	BufferedSocket Socket;
+	m_Server.SetSocket(&Socket);
+	m_Server.SetRetries(RetryCount);
+	m_Server.Query(ServerTimeout);
+
+	Populate();
+}
+
+void dlgServerDetails::Populate()
+{
+	SetTitle(wxString::Format("Server Details - %s",
+	                          stdstr_towxstr(m_Server.Info.Name)));
+
+	Freeze();
+
+	PopulateMetadata();
+	PopulateGameplay();
+	PopulateServerVars();
+	PopulatePlayerList();
+
+	m_PnlMetadata->Layout();
+	m_PnlGameplayVars->Layout();
+	Layout();
+
+	Thaw();
+
+	// Refresh the Join controls last; if an armed "join when slot free" wait is
+	// now satisfied, act on it (which closes the dialog).
+	if(UpdateJoinControls())
+		DoJoin();
+}
+
+void dlgServerDetails::PopulateMetadata()
+{
+	const Server& s = m_Server;
+
+	// MOTD: literal "\n" sequences become real newlines.
+	wxString Motd;
+	OdaGetCvarValue(s, "sv_motd", Motd);
+	Motd.Replace("\\n", "\n");
+	m_TxtMotd->SetValue(Motd);
+
+	// Hide the whole "Motto of the day" section when there's no MOTD.
+	if(m_MotdSizer)
+		GetSizer()->Show(m_MotdSizer, !Motd.IsEmpty(), true);
+
+	wxString Revision;
+	if(!s.Info.VersionRevStr.empty())
+		Revision = wxString::Format(" (%s)", s.Info.VersionRevStr);
+	else if(s.Info.VersionRevision != 0)
+		Revision = wxString::Format(" (r%u)", s.Info.VersionRevision);
+
+	m_MdName->SetLabel(stdstr_towxstr(s.Info.Name));
+	m_MdVersion->SetLabel(wxString::Format("%u.%u.%u%s", s.Info.VersionMajor,
+	                                        s.Info.VersionMinor,
+	                                        s.Info.VersionPatch, Revision));
+	m_MdAddress->SetLabel(stdstr_towxstr(s.GetAddress()));
+	m_MdSkill->SetLabel(OdaGetSkillString(s));
+
+	// Ping number + coloured bullet, using the same thresholds as the list.
+	const wxUint64 Ping = s.GetPing();
+	m_MdPing->SetLabel(wxString::Format("%llu", Ping));
+
+	wxFileConfig ConfigInfo;
+	wxInt32 PQGood, PQPlayable, PQLaggy;
+	ConfigInfo.Read(ICONPINGQGOOD, &PQGood, ODA_UIPINGQUALITYGOOD);
+	ConfigInfo.Read(ICONPINGQPLAYABLE, &PQPlayable, ODA_UIPINGQUALITYPLAYABLE);
+	ConfigInfo.Read(ICONPINGQLAGGY, &PQLaggy, ODA_UIPINGQUALITYLAGGY);
+
+	const char* Bullet = "bullet_gray";
+	if(Ping < (wxUint64)PQGood)
+		Bullet = "bullet_green";
+	else if(Ping < (wxUint64)PQPlayable)
+		Bullet = "bullet_orange";
+	else if(Ping < (wxUint64)PQLaggy)
+		Bullet = "bullet_red";
+
+	m_PingIcon->SetBitmap(wxXmlResource::Get()->LoadBitmap(Bullet));
+
+	// Gravity (shown if transmitted).
+	wxString Gravity;
+	OdaGetCvarValue(s, "sv_gravity", Gravity);
+	SetOptionalRow(m_MetaGrid, m_MdGravityLabel, m_MdGravity, Gravity);
+
+	// Air control, hidden when at its neutral 1.0 (same rule as the dmg vars).
+	wxString AirControl, AirRaw;
+	double AirFactor = 1.0;
+	if(OdaGetCvarValue(s, "sv_aircontrol", AirRaw) && AirRaw.ToDouble(&AirFactor)
+	        && AirFactor != 1.0)
+		AirControl = AirRaw;
+	SetOptionalRow(m_MetaGrid, m_MdAirControlLabel, m_MdAirControl, AirControl);
+
+	m_MdMap->SetLabel(stdstr_towxstr(s.Info.CurrentMap).Upper());
+
+	// IWAD is Wads[1]; PWADs are Wads[2..].
+	const size_t WadCount = s.Info.Wads.size();
+	wxString Iwad;
+	if(WadCount > 1)
+	{
+		const std::string& Name = s.Info.Wads[1].Name;
+		Iwad = stdstr_towxstr(Name.substr(0, Name.find('.')));
+	}
+	m_MdIwad->SetLabel(Iwad);
+
+	wxString Pwads;
+	for(size_t i = 2; i < WadCount; ++i)
+	{
+		const std::string& Name = s.Info.Wads[i].Name;
+		if(!Pwads.IsEmpty())
+			Pwads += "\n";
+		Pwads += stdstr_towxstr(Name.substr(0, Name.find('.')));
+	}
+	SetOptionalRow(m_MetaGrid, m_MdPwadLabel, m_MdPwad, Pwads);
+
+	// Download sites: a space-separated list, shown as one hyperlink per URL.
+	wxString DownloadSites;
+	OdaGetCvarValue(s, "sv_downloadsites", DownloadSites);
+	DownloadSites.Trim(true).Trim(false);
+
+	m_MdDownloadSizer->Clear(true); // destroy the previous link controls
+	wxArrayString Sites = wxSplit(DownloadSites, ' ');
+	for(size_t i = 0; i < Sites.GetCount(); ++i)
+	{
+		if(Sites[i].IsEmpty())
+			continue;
+
+		wxHyperlinkCtrl* Link = new wxHyperlinkCtrl(
+		    m_PnlMetadata, wxID_ANY, Sites[i], Sites[i]);
+		m_MdDownloadSizer->Add(Link, 0);
+	}
+
+	const bool ShowDownloads = m_MdDownloadSizer->GetItemCount() > 0;
+	m_MetaGrid->Show(m_MdDownloadURILabel, ShowDownloads);
+	m_MetaGrid->Show(m_MdDownloadSizer, ShowDownloads, true);
+
+	wxString AdminEmail;
+	OdaGetCvarValue(s, "sv_email", AdminEmail);
+	const bool ShowEmail = !AdminEmail.IsEmpty();
+	if(ShowEmail)
+	{
+		m_MdAdminEmail->SetLabel(AdminEmail);
+		m_MdAdminEmail->SetURL("mailto:" + AdminEmail);
+	}
+	m_MetaGrid->Show(m_MdAdminEmailLabel, ShowEmail);
+	m_MetaGrid->Show(m_MdAdminEmail, ShowEmail);
+
+	m_MdPassword->SetLabel(s.Info.PasswordHash.empty() ? "No" : "Yes");
+}
+
+void dlgServerDetails::PopulateGameplay()
+{
+	const Server& s = m_Server;
+
+	const int Clients = (int)s.Info.Players.size();
+	const int PlayerCount = (int)std::count_if(
+	    s.Info.Players.begin(), s.Info.Players.end(),
+	    [](const Player_t& p) { return !p.Spectator; });
+	const int CanJoin = s.Info.MaxPlayers > 0
+	                        ? (int)s.Info.MaxPlayers - PlayerCount
+	                        : (int)s.Info.MaxClients - PlayerCount;
+
+	m_GpPlayers->SetLabel(wxString::Format("%d / %d clients, %d player%s can join",
+	                                        Clients, (int)s.Info.MaxClients,
+	                                        CanJoin, CanJoin == 1 ? "" : "s"));
+	m_GpGameType->SetLabel(OdaGetGameTypeString(s));
+
+	// Friendly fire (team/coop/horde modes only).
+	wxString FriendlyFire, FFRaw;
+	if(OdaGetCvarValue(s, "sv_friendlyfire", FFRaw) &&
+	   (s.Info.GameType == GT_TeamDeathmatch ||
+	    s.Info.GameType == GT_CaptureTheFlag || s.Info.GameType == GT_Horde ||
+	    s.Info.GameType == GT_Cooperative))
+		FriendlyFire = "Yes";
+	SetOptionalRow(m_GpGrid, m_GpFriendlyFireLabel, m_GpFriendlyFire,
+	               FriendlyFire);
+
+	auto DamagePercent = [&s](const char* Cvar) -> wxString
+	{
+		wxString Value;
+		double Factor = 1.0;
+		if(OdaGetCvarValue(s, Cvar, Value) && Value.ToDouble(&Factor) &&
+		        Factor != 1.0)
+			return wxString::Format("%g%%", Factor * 100.0);
+		return wxEmptyString;
+	};
+
+	SetOptionalRow(m_GpGrid, m_GpPlayerDmgLabel, m_GpPlayerDmg,
+	               DamagePercent("sv_weapondamage"));
+
+	wxString MonsterDmg;
+	if(s.Info.GameType == GT_Horde || s.Info.GameType == GT_Cooperative)
+		MonsterDmg = DamagePercent("sv_monsterdamage");
+	SetOptionalRow(m_GpGrid, m_GpMonsterDmgLabel, m_GpMonsterDmg, MonsterDmg);
+
+	SetOptionalRow(m_GpGrid, m_GpMonsterHealthLabel, m_GpMonsterHealth,
+	               DamagePercent("sv_monstershealth"));
+
+	wxString Waves;
+	if(s.Info.GameType == GT_Horde)
+		OdaGetCvarValue(s, "g_horde_waves", Waves);
+	SetOptionalRow(m_GpGrid, m_GpWavesLabel, m_GpWaves, Waves);
+
+	wxString Lives;
+	OdaGetCvarValue(s, "g_lives", Lives);
+	SetOptionalRow(m_GpGrid, m_GpLivesLabel, m_GpLives, Lives);
+
+	// Rounds.
+	wxString Rounds, RoundsEnabled;
+	if(OdaGetCvarValue(s, "g_rounds", RoundsEnabled))
+	{
+		const int RoundLimit = OdaGetCvarInt(s, "g_roundlimit", 0);
+		const int WinLimit = OdaGetCvarInt(s, "g_winlimit", 0);
+
+		if(RoundLimit == 0 && WinLimit == 0)
+			Rounds = "Unlimited";
+		else if(RoundLimit > 0)
+		{
+			Rounds = wxString::Format("%d round limit", RoundLimit);
+			if(WinLimit > 0 && RoundLimit > WinLimit)
+				Rounds += wxString::Format(", first to %d win%s", WinLimit,
+				                           WinLimit == 1 ? "" : "s");
+		}
+	}
+	SetOptionalRow(m_GpGrid, m_GpRoundsLabel, m_GpRounds, Rounds);
+
+	// Time left (timed games only).
+	wxString TimeLeft;
+	if(s.Info.TimeLimit)
+		TimeLeft = OdaGetTimeString(s.Info.TimeLeft * 60);
+	SetOptionalRow(m_GpGrid, m_GpTimeLeftLabel, m_GpTimeLeft, TimeLeft);
+
+	// Score / frag limit.
+	wxString ScoreLimit;
+	int HighestScore = 0;
+	if(s.Info.GameType == GT_TeamDeathmatch ||
+	   s.Info.GameType == GT_CaptureTheFlag)
+	{
+		if(s.Info.ScoreLimit)
+		{
+			auto WinningTeam = std::max_element(
+			    s.Info.Teams.begin(), s.Info.Teams.end(),
+			    [](const Team_t& a, const Team_t& b) { return a.Score < b.Score; });
+			if(WinningTeam != s.Info.Teams.end())
+				HighestScore = WinningTeam->Score;
+			ScoreLimit = wxString::Format("%d / %u", HighestScore,
+			                              s.Info.ScoreLimit);
+		}
+	}
+	else if(s.Info.GameType == GT_Deathmatch)
+	{
+		if(s.Info.FragLimit)
+		{
+			auto WinningPlayer = std::max_element(
+			    s.Info.Players.begin(), s.Info.Players.end(),
+			    [](const Player_t& a, const Player_t& b) { return a.Frags < b.Frags; });
+			if(WinningPlayer != s.Info.Players.end())
+				HighestScore = WinningPlayer->Frags;
+			ScoreLimit = wxString::Format("%d / %u", HighestScore,
+			                              s.Info.FragLimit);
+		}
+	}
+	SetOptionalRow(m_GpGrid, m_GpScoreLabel, m_GpScore, ScoreLimit);
+}
+
+void dlgServerDetails::PopulateServerVars()
+{
+	const Server& s = m_Server;
+
+	m_PnlServerVars->Hide();
+
+	wxSizer* Outer = m_PnlServerVars->GetSizer();
+	Outer->Clear(true); // destroys the previous panes (and their rows)
+	m_PaneRows.clear();
+	m_BuiltPanes.clear();
+
+	// Cvar tracker (so we can tell which ones are uncategorized)
+	std::set<std::string> Shown;
+
+	// Resolves a cvar name to its display value. Returns false when the server
+	// didn't transmit the cvar.
+	// IsBool won't show a value (it's existance is enough)
+	auto ResolveVar = [&](const std::string& Name, wxString& Value,
+	                      bool& IsBool) -> bool
+	{
+		const Cvar_t* Cvar = OdaFindCvar(s, Name);
+		if(!Cvar)
+			return false;
+
+		IsBool = (Cvar->Type == CVARTYPE_BOOL);
+		Value.Clear();
+		if(!IsBool)
+			OdaGetCvarValue(s, Name, Value);
+
+		return true;
+	};
+
+	// Creates a collapsible pane for the named cvars the server exposes, but
+	// defers building the actual row controls until the pane is first expanded
+	// (see BuildPaneContent) so the dialog opens quickly. Returns false (and
+	// adds nothing) if none are present.
+	auto AddPane = [&](const wxString& Title,
+	                   const std::vector<std::string>& Names) -> bool
+	{
+		std::vector<std::pair<std::string, wxString> > Rows;
+
+		for(size_t i = 0; i < Names.size(); ++i)
+		{
+			if(Shown.count(Names[i]))
+				continue;
+
+			wxString Value;
+			bool IsBool = false;
+			if(ResolveVar(Names[i], Value, IsBool))
+			{
+				Rows.push_back(std::make_pair(Names[i], Value));
+				Shown.insert(Names[i]);
+			}
+		}
+
+		if(Rows.empty())
+			return false;
+
+		// Show the cvars within the pane in alphabetical order.
+		std::sort(Rows.begin(), Rows.end(),
+		          [](const std::pair<std::string, wxString>& A,
+		             const std::pair<std::string, wxString>& B)
+		          {
+		              return A.first < B.first;
+		          });
+
+		wxCollapsiblePane* Pane =
+		    new wxCollapsiblePane(m_PnlServerVars, wxID_ANY, Title,
+		                          wxDefaultPosition, wxDefaultSize,
+		                          wxCP_NO_TLW_RESIZE);
+
+		m_PaneRows[Pane] = Rows;
+		Outer->Add(Pane, 0, wxGROW | wxALL, 2);
+
+		// Restore (and eagerly build) panes the user had expanded before.
+		if(m_ExpandedCategories.count(Title))
+		{
+			BuildPaneContent(Pane);
+			Pane->Expand();
+		}
+
+		return true;
+	};
+
+	// Display the categories alphabetically ("Uncategorized" is appended last,
+	// after this loop, so it always sorts to the bottom regardless).
+	CvarCategories Categories = GetCvarCategories();
+	std::sort(Categories.begin(), Categories.end(),
+	          [](const CvarCategories::value_type& A,
+	             const CvarCategories::value_type& B)
+	          {
+	              return A.first < B.first;
+	          });
+
+	for(size_t i = 0; i < Categories.size(); ++i)
+	{
+		const wxString& Name = Categories[i].first;
+
+		// Mode-specific categories only make sense for their game mode.
+		if(Name == "Horde" && s.Info.GameType != GT_Horde)
+			continue;
+		if(Name == "CTF" && s.Info.GameType != GT_CaptureTheFlag)
+			continue;
+
+		AddPane(Name, Categories[i].second);
+	}
+
+	// Anything the server sent that belongs to no category at all. We test
+	// against every category's cvar list (not just the panes we actually
+	// showed) so cvars whose category was hidden by the mode gate above don't
+	// wrongly fall through to "Uncategorized".
+	std::set<std::string> Categorized;
+	for(size_t i = 0; i < Categories.size(); ++i)
+		Categorized.insert(Categories[i].second.begin(),
+		                   Categories[i].second.end());
+
+	std::vector<std::string> Leftover;
+	for(size_t i = 0; i < s.Info.Cvars.size(); ++i)
+	{
+		const std::string& Name = s.Info.Cvars[i].Name;
+		if(!Categorized.count(Name))
+			Leftover.push_back(Name);
+	}
+	AddPane("Uncategorized", Leftover);
+
+	m_PnlServerVars->Show();
+	m_PnlServerVars->FitInside();
+	m_PnlServerVars->Layout();
+}
+
+void dlgServerDetails::BuildPaneContent(wxCollapsiblePane* Pane)
+{
+	if(!Pane || m_BuiltPanes.count(Pane))
+		return;
+
+	m_BuiltPanes.insert(Pane);
+
+	std::map<wxCollapsiblePane*,
+	         std::vector<std::pair<std::string, wxString> > >::const_iterator it =
+	    m_PaneRows.find(Pane);
+	if(it == m_PaneRows.end())
+		return;
+
+	wxFont DocFont = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
+	DocFont.SetUnderlined(true);
+
+	// Constructed once and reused for every documented row.
+	static const wxCursor HelpCursor(wxCURSOR_QUESTION_ARROW);
+
+	CvarDocDb& Docs = GetCvarDb();
+	wxWindow* PaneWin = Pane->GetPane();
+
+	wxFlexGridSizer* Grid = new wxFlexGridSizer(0, 2, 2, 12);
+	const std::vector<std::pair<std::string, wxString> >& Rows = it->second;
+
+	for(size_t i = 0; i < Rows.size(); ++i)
+	{
+		const std::string& Name = Rows[i].first;
+
+		wxStaticText* NameCtrl =
+		    new wxStaticText(PaneWin, wxID_ANY, stdstr_towxstr(Name));
+
+		const CvarDoc_t* Doc = Docs.Find(Name);
+		if(Doc)
+		{
+			NameCtrl->SetFont(DocFont);
+			NameCtrl->SetToolTip(wxString::FromUTF8(Doc->HelpText.c_str()));
+			// A help cursor signals that hovering reveals documentation.
+			NameCtrl->SetCursor(HelpCursor);
+		}
+
+		wxStaticText* ValueCtrl =
+		    new wxStaticText(PaneWin, wxID_ANY, Rows[i].second);
+
+		Grid->Add(NameCtrl, 0, wxALIGN_CENTER_VERTICAL);
+		Grid->Add(ValueCtrl, 0, wxALIGN_CENTER_VERTICAL);
+	}
+
+	wxBoxSizer* PaneSizer = new wxBoxSizer(wxVERTICAL);
+	PaneSizer->Add(Grid, 0, wxALL, 4);
+	PaneWin->SetSizer(PaneSizer);
+}
+
+void dlgServerDetails::PopulatePlayerList()
+{
+	m_PlayerList->AddPlayersAndSlotsToList(m_Server);
+}
+
+void dlgServerDetails::OnRefresh(wxCommandEvent& WXUNUSED(event))
+{
+	m_GaugeTicks = 0;
+	m_Gauge->SetValue(0);
+
+	if(m_BtnRefresh->GetValue())
+	{
+		// Toggled on: refresh immediately, then run the auto-refresh cycle.
+		DoQuery();
+		m_Timer.Start(REFRESH_TICK_MS);
+	}
+	else
+	{
+		// Toggled off: stop the cycle and revert the Join controls.
+		m_Timer.Stop();
+		UpdateJoinControls();
+	}
+}
+
+void dlgServerDetails::OnJoin(wxCommandEvent& WXUNUSED(event))
+{
+	DoJoin();
+}
+
+void dlgServerDetails::DoJoin()
+{
+	m_Timer.Stop();
+	m_Parent->ConnectToServer(m_Server, this);
+	Close();
+}
+
+bool dlgServerDetails::UpdateJoinControls()
+{
+	const bool Responded = m_Server.GotResponse();
+	const bool Full = (int)m_Server.Info.Players.size() >=
+	                  (int)m_Server.Info.MaxClients;
+	const bool Refreshing = m_BtnRefresh->GetValue();
+
+	bool AutoJoin = false;
+	bool ShowWaitToggle = false;
+
+	if(Responded && !Full)
+	{
+		// A slot is open: honour an armed wait, otherwise offer a normal Join.
+		if(m_BtnJoinWhenFree->IsShown() && m_BtnJoinWhenFree->GetValue())
+			AutoJoin = true;
+	}
+	else if(Responded && Full && Refreshing)
+	{
+		// Full but actively refreshing: let the user arm a wait-for-slot join.
+		ShowWaitToggle = true;
+	}
+
+	m_BtnJoin->Show(!ShowWaitToggle);
+	m_BtnJoin->Enable(Responded && !Full);
+
+	m_BtnJoinWhenFree->Show(ShowWaitToggle);
+	if(!ShowWaitToggle)
+		m_BtnJoinWhenFree->SetValue(false);
+
+	Layout();
+
+	return AutoJoin;
+}
+
+void dlgServerDetails::OnTimer(wxTimerEvent& WXUNUSED(event))
+{
+	if(++m_GaugeTicks >= REFRESH_TICKS)
+	{
+		m_GaugeTicks = 0;
+		m_Gauge->SetValue(0);
+		DoQuery();
+		return;
+	}
+
+	m_Gauge->SetValue(m_GaugeTicks);
+}
+
+void dlgServerDetails::OnClose(wxCloseEvent& event)
+{
+	m_Timer.Stop();
+
+	// Forget which panes were expanded so the next open starts fully collapsed
+	// (an open pane would otherwise be eagerly rebuilt, slowing the reopen).
+	m_ExpandedCategories.clear();
+
+	event.Skip();
+}

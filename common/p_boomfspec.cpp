@@ -93,7 +93,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	{
 		// pointer to line function is NULL by default, set non-null if
 		// line special is walkover generalized linedef type
-		bool (*linefunc)(line_t * line) = NULL;
+		bool (*linefunc)(line_t& line) = nullptr;
 
 		// check each range of generalized linedefs
 		if ((unsigned)line->special >= GenEnd)
@@ -180,12 +180,13 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			switch ((line->special & TriggerType) >> TriggerTypeShift)
 			{
 			case WalkOnce:
-				if (linefunc(line))
+				if (linefunc(*line))
 				{
 					return true;
 				}
+			// FIXME: is this fallthrough intended?
 			case WalkMany:
-				linefunc(line);
+				linefunc(*line);
 				return true;
 			default: // if not a walk type, do nothing here
 				return false;
@@ -1933,7 +1934,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	// pointer to line function is NULL by default, set non-null if
 	// line special is push or switch generalized linedef type
-	bool (*linefunc)(line_t * line) = nullptr;
+	bool (*linefunc)(line_t& line) = nullptr;
 
 	// check each range of generalized linedefs
 	if ((unsigned)line->special >= GenEnd)
@@ -2024,7 +2025,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case PushOnce:
 			if (!side)
 			{
-				if (linefunc(line))
+				if (linefunc(*line))
 				{
 					reuse = false;
 					trigger = true;
@@ -2034,20 +2035,20 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case PushMany:
 			if (!side)
 			{
-				linefunc(line);
+				linefunc(*line);
 				reuse = true;
 				trigger = true;
 			}
 			break;
 		case SwitchOnce:
-			if (linefunc(line))
+			if (linefunc(*line))
 			{
 				reuse = false;
 				trigger = true;
 			}
 			break;
 		case SwitchMany:
-			if (linefunc(line))
+			if (linefunc(*line))
 			{
 				reuse = true;
 				trigger = true;
@@ -3394,7 +3395,7 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 
 	// pointer to line function is NULL by default, set non-null if
 	// line special is gun triggered generalized linedef type
-	bool (*linefunc)(line_t * line) = nullptr;
+	bool (*linefunc)(line_t& line) = nullptr;
 
 	// check each range of generalized linedefs
 	if ((unsigned)line->special >= GenEnd)
@@ -3478,13 +3479,13 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		switch ((line->special & TriggerType) >> TriggerTypeShift)
 		{
 		case GunOnce:
-			if (linefunc(line))
+			if (linefunc(*line))
 			{
 				return true;
 			}
 			return false;
 		case GunMany:
-			if (linefunc(line))
+			if (linefunc(*line))
 			{
 				return true;
 			}

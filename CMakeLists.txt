@@ -16,7 +16,7 @@
 
 cmake_minimum_required(VERSION 3.19)
 
-project(Odamex VERSION 12.2.0)
+project(Odamex VERSION 12.2.1)
 
 include(CMakeDependentOption)
 
@@ -59,7 +59,7 @@ cmake_dependent_option( USE_INTERNAL_ZLIB "Use internal zlib" ${USE_INTERNAL_LIB
 cmake_dependent_option( USE_INTERNAL_ZSTD "Use internal zstd" ${USE_INTERNAL_LIBS} "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS" 0 )
 cmake_dependent_option( USE_INTERNAL_PNG "Use internal libpng" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_CURL "Use internal libcurl" ${USE_INTERNAL_LIBS} "BUILD_CLIENT OR BUILD_TESTS" 0 )
-cmake_dependent_option( USE_INTERNAL_JSONCPP "Use internal JsonCpp" 1 "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS" 0 )
+cmake_dependent_option( USE_INTERNAL_JSONCPP "Use internal JsonCpp" 1 "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS OR BUILD_LAUNCHER" 0 )
 cmake_dependent_option( USE_INTERNAL_CPPTRACE "Use internal cpptrace" 1 "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS" 0 )
 cmake_dependent_option( USE_INTERNAL_FLTK "Use internal FLTK" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_WXWIDGETS "Use internal wxWidgets" ${USE_INTERNAL_LIBS} BUILD_LAUNCHER 0 )
@@ -80,7 +80,7 @@ if(NOT APPLE AND NOT WIN32)
 endif()
 
 set(PROJECT_COPYRIGHT "2006-2026")
-set(PROJECT_RC_VERSION "12,2,0,0")
+set(PROJECT_RC_VERSION "12,2,1,0")
 set(PROJECT_COMPANY "The Odamex Team")
 
 # Include early required commands for specific systems

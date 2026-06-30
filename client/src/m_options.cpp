@@ -569,7 +569,7 @@ static value_t MidiReset[] = {
 
 static value_t OplCore[] = {
 	{ 0.0,			"Fast (Dosbox)"},
-	{ 1.0,			"Balanced (Nuked 1.74)"},
+	{ 1.0,			"Balanced (Nuked-Fast 1.8)"},
 	{ 2.0,			"Accurate (Nuked 1.8)"}
 };
 
@@ -920,8 +920,8 @@ static menuitem_t VideoItems[] = {
 	{ discrete, "Center weapon when firing",{&cl_centerbobonfire},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Show Killing Sprees",		{&cl_showsprees},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ discrete, "Show Multi Kills",		{&cl_showmultikills},	{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Show Sprees in Offline Games",	{&cl_showofflinesprees},{2.0}, {0.0},	{0.0},	{OnOff} },
-	{ discrete, "Show Multi Kills in Offline Games",	{&cl_showofflinemultikills},{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Show Sprees Offline",	{&cl_showofflinesprees},{2.0}, {0.0},	{0.0},	{OnOff} },
+	{ discrete, "Show Multi Kills Offline",	{&cl_showofflinemultikills},{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redtext,	" ",					    {NULL},				    {0.0}, {0.0},	{0.0},  {NULL} },
 	{ discrete, "Force Team Color",			{&r_forceteamcolor},	{2.0}, {0.0},	{0.0},	{OnOff} },
 	{ redslider,   "Team Color Red",        {&r_teamcolor},  {0.0}, {0.0},   {0.0},  {NULL} },
