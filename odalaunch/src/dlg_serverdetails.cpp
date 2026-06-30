@@ -44,7 +44,14 @@
 #include <wx/app.h>
 #include <wx/xrc/xmlres.h>
 
+#ifdef UNIX
+#undef UNIX
 #include "dlg_main.h"
+#define UNIX
+#else
+#include "dlg_main.h"
+#endif
+
 #include "lst_players.h"
 #include "srv_utils.h"
 #include "str_utils.h"
