@@ -1077,8 +1077,7 @@ void P_PlayerThink (player_t& player)
 		player.powers[pw_invulnerability]--;
 
 	if (player.powers[pw_invisibility])
-		if (! --player.powers[pw_invisibility] )
-			player.mo->flags &= ~MF_SHADOW;
+		player.powers[pw_invisibility]--;
 
 	if (player.powers[pw_infrared])
 		player.powers[pw_infrared]--;
@@ -1096,12 +1095,13 @@ void P_PlayerThink (player_t& player)
 		player.bonuscount--;
 
 	if (player.hazardcount)
-	{
 		player.hazardcount--;
-		if (!(::level.time % player.hazardinterval) &&
-		    player.hazardcount > 16 * TICRATE)
-			P_DamageMobj(player.mo, NULL, NULL, 5);
-	}
+
+	if (not player.powers[pw_invisibility] )
+		player.mo->flags &= ~MF_SHADOW;
+
+	if (player.hazardcount && not (::level.time % player.hazardinterval) && player.hazardcount > 16 * TICRATE)
+		P_DamageMobj(player.mo, NULL, NULL, 5);
 
 	// Handling colormaps.
 	if (displayplayer().powers[pw_invulnerability])
