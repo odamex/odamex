@@ -22,6 +22,8 @@
 
 #if wxUSE_POPUPWIN
 
+#include <algorithm>
+
 #include <wx/sizer.h>
 #include <wx/wrapsizer.h>
 #include <wx/settings.h>

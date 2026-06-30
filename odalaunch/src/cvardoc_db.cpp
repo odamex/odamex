@@ -144,9 +144,9 @@ bool CvarDocDb::ParseDocument(const wxString& Path)
 	if (!m_Loaded)
 	{
 		m_SchemaVersion = SchemaVersion;
-		m_OdamexVersion = wxString::FromUTF8(root.get("odamex_version", "").asString());
-		m_CommitHash = wxString::FromUTF8(root.get("odamex_commithash", "").asString());
-		m_BranchName = wxString::FromUTF8(root.get("odamex_branchname", "").asString());
+		m_OdamexVersion = wxString::FromUTF8(root.get("odamex_version", "").asString().c_str());
+		m_CommitHash = wxString::FromUTF8(root.get("odamex_commithash", "").asString().c_str());
+		m_BranchName = wxString::FromUTF8(root.get("odamex_branchname", "").asString().c_str());
 	}
 
 	const Json::Value& cvars = root["cvars"];
