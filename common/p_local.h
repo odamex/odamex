@@ -104,6 +104,7 @@ void P_PlayerThink (player_t& player);
 void P_SetPlayerPowerupStatuses(player_t& player, nonstd::span<const int, NUMPOWERS> powers);
 bool P_AreTeammates(const player_t& a, const player_t& b);
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo = false);
+void P_BumpPlayerCounters(player_t& player);
 
 //
 // P_MOBJ
