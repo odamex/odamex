@@ -3327,23 +3327,14 @@ bool P_RemoveSoulLimit()
 //
 void A_PainShootSkull (AActor *actor, angle_t angle)
 {
-	fixed_t 	x;
-	fixed_t 	y;
-	fixed_t 	z;
-
-	AActor* 	other;
-	angle_t 	an;
-	int 		prestep;
-	int 		count;
-
 	if(!serverside)
 		return;
 
 	// count total number of skull currently on the level
-	count = 0;
+	int count = 0;
 
 	TThinkerIterator<AActor> iterator;
-
+	AActor* 	other;
 	while ( (other = iterator.Next ()) )
 	{
 		if (other->type == MT_SKULL)
@@ -3359,13 +3350,13 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 	if (multiplayer && count > 128)
 		return;
 	// okay, there's room for another one
-	an = angle >> ANGLETOFINESHIFT;
+	const angle_t an = angle >> ANGLETOFINESHIFT;
 
-	prestep = 4*FRACUNIT + 3*(actor->info->radius + mobjinfo[MT_SKULL].radius)/2;
+	const int prestep = 4*FRACUNIT + 3*(actor->info->radius + mobjinfo[MT_SKULL].radius)/2;
 
-	x = actor->x + FixedMul (prestep, finecosine[an]);
-	y = actor->y + FixedMul (prestep, finesine[an]);
-	z = actor->z + 8*FRACUNIT;
+	const fixed_t x = actor->x + FixedMul (prestep, finecosine[an]);
+	const fixed_t y = actor->y + FixedMul (prestep, finesine[an]);
+	const fixed_t z = actor->z + 8*FRACUNIT;
 
 	// Check whether the Lost Soul is being fired through a 1-sided	// phares
 	// wall or an impassible line, or a "monsters can't cross" line.//   |
@@ -3530,9 +3521,9 @@ void A_Explode (AActor *thing)
 {
 	// [RH] figure out means of death;
 	int mod;
-	int damage = 128;
-	int distance = 128;
-	bool hurtSource = true;
+	static constexpr int damage = 128;
+	static constexpr int distance = 128;
+	static constexpr bool hurtSource = true;
 
 	switch (thing->type) {
 		case MT_BARREL:
