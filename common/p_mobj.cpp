@@ -988,11 +988,11 @@ void AActor::Serialize (FArchive &arc)
 		}
 		spawnpoint.Serialize (arc);
 		baseline.Serialize(arc);
-		if (mobjinfo.find(type) == mobjinfo.end())
+		if (!mobjinfo.contains(type))
 		{
 			I_Error("AActor::Serialize: Unknown object type ({}) in saved game", type);
 		}
-		if (sprnames.find(sprite) == sprnames.end())
+		if (!sprnames.contains(sprite))
 		{
 			I_Error("AActor::Serialize: Unknown sprite ({}) in saved game", sprite);
 		}
@@ -1044,7 +1044,7 @@ bool P_SetMobjState(AActor *mobj, int32_t state, bool cl_update)
 
 	do
 	{
-		if (states.find(state) == states.end())
+		if (!states.contains(state))
 		{
 			I_Error("P_SetMobjState: State {} does not exist in state table.", state);
 		}
