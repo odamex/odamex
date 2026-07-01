@@ -62,6 +62,7 @@ EXTERN_CVAR(sv_friendlymonsterfire)
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_forcerespawn)
 EXTERN_CVAR(sv_forcerespawntime)
+EXTERN_CVAR(sv_allowpwo)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(cl_predictpickup)
 EXTERN_CVAR(co_zdoomsound)
@@ -305,6 +306,15 @@ static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammo, int 
 			 (weaponinfo[currentweapon].ammotype == am_noammo ||
 				weaponinfo[currentweapon].ammotype != ammo))
 	{
+		// respect the WPSW_PWO_ALT setting if player is shooting
+		if (player.userinfo.switchweapon == WPSW_PWO_ALT &&
+			sv_allowpwo &&
+            player.cmd.buttons & BT_ATTACK &&
+            player.ammo[ammo] > 0)
+        {
+            return IEV_EquipRemove;
+        }
+
 		for (int i = NUMWEAPONS - 1; i > currentweapon; --i)
 		{
 			if (player.weaponowned[i] &&
