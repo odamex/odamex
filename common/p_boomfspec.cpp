@@ -1330,12 +1330,11 @@ void P_PlayerInCompatibleSector(player_t& player)
 				{
 					if (sv_allowexit)
 					{
-						for (Players::iterator it = ::players.begin();
-						     it != ::players.end(); ++it)
+						for (auto& pl : ::players)
 						{
-							if (player.ingame() && player.health > 0 && !(player.cheats & CF_GODMODE))
+							if (pl.ingame() && pl.health > 0 && !(pl.cheats & CF_GODMODE))
 							{
-								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
+								P_DamageMobj(pl.mo, NULL, NULL, 10000, MOD_EXIT);
 							}
 						}
 						G_ExitLevel(0, 1);
@@ -1355,12 +1354,11 @@ void P_PlayerInCompatibleSector(player_t& player)
 				{
 					if (sv_allowexit)
 					{
-						for (Players::iterator it = ::players.begin();
-						     it != ::players.end(); ++it)
+						for (auto& pl : ::players)
 						{
-							if (player.ingame() && player.health > 0 && !(player.cheats & CF_GODMODE))
+							if (pl.ingame() && pl.health > 0 && !(pl.cheats & CF_GODMODE))
 							{
-								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
+								P_DamageMobj(pl.mo, NULL, NULL, 10000, MOD_EXIT);
 							}
 						}
 						G_SecretExitLevel(0, 1);
