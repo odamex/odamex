@@ -96,6 +96,7 @@ private:
 	wxStaticText* m_MonsterDmg;
 	wxStaticText* m_MonsterHealth;
 	wxStaticText* m_Waves;
+	wxStaticText* m_CtfRules;
 	wxStaticText* m_Lives;
 	wxStaticText* m_Rounds;
 	wxStaticText* m_TimeLeft;
@@ -107,6 +108,7 @@ private:
 	wxSizer* m_MonsterDmgItem;
 	wxSizer* m_MonsterHealthItem;
 	wxSizer* m_WavesItem;
+	wxSizer* m_CtfRulesItem;
 	wxSizer* m_LivesItem;
 	wxSizer* m_RoundsItem;
 	wxSizer* m_TimeLeftItem;

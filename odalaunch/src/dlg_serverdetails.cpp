@@ -90,7 +90,7 @@ static const CvarCategories& GetCvarCategories()
 	};
 
 	Add("Gameplay Options",
-	    {"sv_gametype", "sv_teamsinplay", "sv_teamspawns", "sv_maxcorpses"});
+	    {"sv_gametype", "sv_teamsinplay", "sv_teamspawns", "sv_maxcorpses", "g_sides"});
 	Add("Gameplay Modifiers",
 	    {"sv_aircontrol", "sv_doubleammo", "sv_fastmonsters", "sv_forcerespawn",
 	     "sv_forcerespawntime", "sv_forcewater", "sv_friendlyfire",
@@ -161,7 +161,6 @@ static const CvarCategories& GetCvarCategories()
 	    {"g_rounds", "g_preroundtime", "g_postroundtime", "g_preroundreset",
 	     "g_roundlimit", "g_winlimit"});
 	Add("Progression", {"g_resetinvonexit", "g_winnerstays"});
-	Add("Game Modes", {"g_sides"});
 
 	return Categories;
 }
@@ -414,6 +413,8 @@ void dlgServerDetails::BuildGameplayGrid()
 	m_GpMonsterHealth = AddRow(m_PnlGameplayVars, m_GpGrid, "Monster Health:",
 	                           &m_GpMonsterHealthLabel);
 	m_GpWaves = AddRow(m_PnlGameplayVars, m_GpGrid, "Waves:", &m_GpWavesLabel);
+	m_GpCtfRules =
+	    AddRow(m_PnlGameplayVars, m_GpGrid, "CTF Rules:", &m_GpCtfRulesLabel);
 	m_GpPlayers = AddRow(m_PnlGameplayVars, m_GpGrid, "Players:");
 	m_GpScore = AddRow(m_PnlGameplayVars, m_GpGrid, "Score:", &m_GpScoreLabel);
 	m_GpRounds = AddRow(m_PnlGameplayVars, m_GpGrid, "Rounds:", &m_GpRoundsLabel);
@@ -605,6 +606,9 @@ void dlgServerDetails::PopulateGameplay()
 	if(s.Info.GameType == GT_Horde)
 		OdaGetCvarValue(s, "g_horde_waves", Waves);
 	SetOptionalRow(m_GpGrid, m_GpWavesLabel, m_GpWaves, Waves);
+
+	SetOptionalRow(m_GpGrid, m_GpCtfRulesLabel, m_GpCtfRules,
+	               OdaGetCtfRulesString(s));
 
 	wxString Lives;
 	OdaGetCvarValue(s, "g_lives", Lives);

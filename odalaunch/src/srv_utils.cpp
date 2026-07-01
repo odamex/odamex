@@ -21,6 +21,7 @@
 #include "srv_utils.h"
 
 #include <algorithm>
+#include <vector>
 
 #include <wx/settings.h>
 #include <wx/sizer.h>
@@ -300,6 +301,41 @@ wxString OdaGetScoreString(const Server& s)
 	}
 
 	return wxEmptyString;
+}
+
+wxString OdaGetCtfRulesString(const Server& s)
+{
+	if(s.Info.GameType != GT_CaptureTheFlag)
+		return wxEmptyString;
+
+	std::vector<wxString> Rules;
+
+	const bool NoTouchReturn = (OdaGetCvarInt(s, "g_ctf_notouchreturn", 0) == 1);
+
+	if(!OdaFindCvar(s, "ctf_flagathometoscore"))
+		Rules.push_back("flag always scores");
+
+	if(!NoTouchReturn && OdaFindCvar(s, "ctf_manualreturn"))
+		Rules.push_back("manual return");
+
+	if(NoTouchReturn)
+		Rules.push_back("flag timeout returns only");
+
+	if(Rules.empty())
+		return wxEmptyString;
+
+	wxString Result;
+
+	for(size_t i = 0; i < Rules.size(); ++i)
+	{
+		if(i > 0)
+			Result += ", ";
+
+		Result += Rules[i];
+	}
+
+	// Capitalize only the first letter
+	return Result.Left(1).Upper() + Result.Mid(1);
 }
 
 bool OdaBuildTeamScoreBoxes(wxWindow* Parent, wxSizer* Target, const Server& s)

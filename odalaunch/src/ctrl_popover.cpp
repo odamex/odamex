@@ -228,6 +228,9 @@ PlayerListPopover::PlayerListPopover(wxWindow* parent)
 	m_WavesItem = MakeItem("Waves:", &m_Waves);
 	LeftCol->Add(m_WavesItem, 0, wxBOTTOM, RowGap);
 
+	m_CtfRulesItem = MakeItem("CTF Rules:", &m_CtfRules);
+	LeftCol->Add(m_CtfRulesItem, 0, wxBOTTOM, RowGap);
+
 	// Right column, top to bottom
 	RightCol->Add(MakeItem("Players:", &m_ClientPlayerCount), 0, wxBOTTOM, RowGap);
 
@@ -304,6 +307,8 @@ void PlayerListPopover::Populate(const Server& s)
 		OdaGetCvarValue(s, "g_horde_waves", Waves);
 
 	SetOptionalItem(m_WavesItem, m_Waves, Waves);
+
+	SetOptionalItem(m_CtfRulesItem, m_CtfRules, OdaGetCtfRulesString(s));
 
 	// Lives (shown for all game modes)
 	wxString Lives;

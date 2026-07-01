@@ -169,6 +169,8 @@ private:
 	wxStaticText* m_GpMonsterHealthLabel;
 	wxStaticText* m_GpWaves;
 	wxStaticText* m_GpWavesLabel;
+	wxStaticText* m_GpCtfRules;
+	wxStaticText* m_GpCtfRulesLabel;
 	wxStaticText* m_GpPlayers;
 	wxStaticText* m_GpScore;
 	wxStaticText* m_GpScoreLabel;

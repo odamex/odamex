@@ -92,6 +92,12 @@ wxString OdaGetTimeLeftString(const odalpapi::Server& s);
 // score for team modes, frags for deathmatch), or empty when none applies.
 wxString OdaGetScoreString(const odalpapi::Server& s);
 
+// Returns a comma-separated summary of the non-default CTF rules in effect
+// ("Flag always scores", "manual return", "flag timeout returns only"), with
+// only the first word capitalised, or an empty string when none apply / the
+// server isn't running CTF.
+wxString OdaGetCtfRulesString(const odalpapi::Server& s);
+
 // Fills Target with a coloured "Name: Score" box per team (white text on the
 // team colour, separated by " - "), clearing it first. Only team modes with
 // teams produce boxes; returns true when any were added.
