@@ -83,6 +83,8 @@ public:
 	void ConnectToServer(const odalpapi::Server& s,
 	                     wxWindow* DialogParent = NULL);
 
+	void ApplyServerRefresh(const odalpapi::Server& Refreshed);
+
 protected:
 	void OnMenuServers(wxCommandEvent& event);
 	void OnManualConnect(wxCommandEvent& event);

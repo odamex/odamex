@@ -442,6 +442,9 @@ void dlgServerDetails::DoQuery()
 	m_Server.Query(ServerTimeout);
 
 	Populate();
+
+	if(m_Server.GotResponse())
+		m_Parent->ApplyServerRefresh(m_Server);
 }
 
 void dlgServerDetails::Populate()

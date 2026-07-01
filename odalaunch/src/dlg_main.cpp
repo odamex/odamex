@@ -1377,6 +1377,38 @@ void dlgMain::ConnectToServer(const odalpapi::Server& s, wxWindow* DialogParent)
 	           Password);
 }
 
+void dlgMain::ApplyServerRefresh(const odalpapi::Server& Refreshed)
+{
+	const wxString Address = stdstr_towxstr(Refreshed.GetAddress());
+
+	const wxInt32 ai = FindServer(Address);
+
+	if(ai == -1)
+		return;
+
+	// Keep the running player tally in sync with the new player count.
+	TotalPlayers -= QServer[ai].Info.Players.size();
+
+	QServer[ai].Info = Refreshed.Info;
+	QServer[ai].SetPing(Refreshed.GetPing());
+	QServer[ai].SetValidResponse(Refreshed.GotResponse());
+
+	TotalPlayers += QServer[ai].Info.Players.size();
+
+	// Repaint the status bar's player total so it reflects the new count.
+	m_StatusBar->SetStatusText(
+	    wxString::Format("Total Players: %d", (wxInt32)TotalPlayers), 3);
+
+	// Update the visible list row in place (it may be filtered out of view).
+	const wxInt32 li = m_LstCtrlServers->FindServer(Address);
+
+	if(li != -1)
+	{
+		const bool cs = MServer.IsCustomServer(QServer[ai].GetAddress());
+		m_LstCtrlServers->AddServerToList(QServer[ai], li, false, cs);
+	}
+}
+
 // Launch button click
 void dlgMain::OnLaunch(wxCommandEvent& event)
 {
