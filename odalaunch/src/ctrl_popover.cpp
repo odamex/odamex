@@ -112,19 +112,8 @@ ServerInfoPopover::ServerInfoPopover(wxWindow* parent)
 
 void ServerInfoPopover::Populate(const Server& s)
 {
-	wxString Revision;
-
-	if(!s.Info.VersionRevStr.empty())
-		Revision = wxString::Format(" (%s)", s.Info.VersionRevStr);
-	else if(s.Info.VersionRevision != 0)
-		Revision = wxString::Format(" (r%u)", s.Info.VersionRevision);
-
 	m_Name->SetLabel(stdstr_towxstr(s.Info.Name));
-	m_Version->SetLabel(wxString::Format("%u.%u.%u%s",
-	                                     s.Info.VersionMajor,
-	                                     s.Info.VersionMinor,
-	                                     s.Info.VersionPatch,
-	                                     Revision));
+	m_Version->SetLabel(OdaGetVersionString(s));
 	m_Address->SetLabel(stdstr_towxstr(s.GetAddress()));
 	m_Skill->SetLabel(OdaGetSkillString(s));
 
@@ -289,56 +278,24 @@ void PlayerListPopover::Populate(const Server& s)
 {
 	const int Clients = (int)s.Info.Players.size();
 
-	const int PlayerCount = (int)std::count_if(std::begin(s.Info.Players), std::end(s.Info.Players),
-                           [] (const Player_t& obj) { return obj.Spectator == false; });
-
-	const int NumPlayersCanJoin = (int)s.Info.MaxPlayers > 0 ?
-		(int)s.Info.MaxPlayers - PlayerCount :
-		(int)s.Info.MaxClients - PlayerCount;
-
-	m_ClientPlayerCount->SetLabel(wxString::Format("%d / %d clients, %d player%s can join", Clients,
-	                                                (int)s.Info.MaxClients, NumPlayersCanJoin,
-	                                                NumPlayersCanJoin == 1 ? "" : "s"));
+	m_ClientPlayerCount->SetLabel(OdaGetPlayerCountString(s));
 	m_GameType->SetLabel(OdaGetGameTypeString(s));
 
-	wxString FriendlyFire;
-	wxString FriendlyFireEnabled;
+	SetOptionalItem(m_FriendlyFireItem, m_FriendlyFire,
+	                OdaGetFriendlyFireString(s));
 
-	if (OdaGetCvarValue(s, "sv_friendlyfire", FriendlyFireEnabled) &&
-	    (s.Info.GameType == GT_TeamDeathmatch ||
-	     s.Info.GameType == GT_CaptureTheFlag ||
-	     s.Info.GameType == GT_Horde ||
-	     s.Info.GameType == GT_Cooperative))
-	{
-		FriendlyFire = OdaGetCvarValue(s, "sv_friendlyfire", FriendlyFireEnabled)
-		               ? "Yes" : "No";
-	}
-	
-	SetOptionalItem(m_FriendlyFireItem, m_FriendlyFire, FriendlyFire);
-
-	auto DamagePercent = [&s](const char* Cvar) -> wxString
-	{
-		wxString Value;
-		double Factor = 1.0;
-
-		if(OdaGetCvarValue(s, Cvar, Value) && Value.ToDouble(&Factor) &&
-		        Factor != 1.0)
-			return wxString::Format("%g%%", Factor * 100.0);
-
-		return wxEmptyString;
-	};
-
-	SetOptionalItem(m_PlayerDmgItem, m_PlayerDmg, DamagePercent("sv_weapondamage"));
+	SetOptionalItem(m_PlayerDmgItem, m_PlayerDmg,
+	                OdaGetDamagePercentString(s, "sv_weapondamage"));
 
 	wxString MonsterDmg;
 
 	if(s.Info.GameType == GT_Horde || s.Info.GameType == GT_Cooperative)
-		MonsterDmg = DamagePercent("sv_monsterdamage");
+		MonsterDmg = OdaGetDamagePercentString(s, "sv_monsterdamage");
 
 	SetOptionalItem(m_MonsterDmgItem, m_MonsterDmg, MonsterDmg);
 
 	SetOptionalItem(m_MonsterHealthItem, m_MonsterHealth,
-	                DamagePercent("sv_monstershealth"));
+	                OdaGetDamagePercentString(s, "sv_monstershealth"));
 
 	// Waves (g_horde_waves) - Horde mode only
 	wxString Waves;
@@ -355,116 +312,11 @@ void PlayerListPopover::Populate(const Server& s)
 
 	SetOptionalItem(m_LivesItem, m_Lives, Lives);
 
-	// Rounds (shown for all game modes)
-	wxString Rounds;
-	wxString RoundsEnabled;
+	SetOptionalItem(m_RoundsItem, m_Rounds, OdaGetRoundsString(s));
+	SetOptionalItem(m_TimeLeftItem, m_TimeLeft, OdaGetTimeLeftString(s));
+	SetOptionalItem(m_ScoreLimitItem, m_ScoreLimit, OdaGetScoreString(s));
 
-	if(OdaGetCvarValue(s, "g_rounds", RoundsEnabled))
-	{
-		const int RoundLimit = OdaGetCvarInt(s, "g_roundlimit", 0);
-		const int WinLimit = OdaGetCvarInt(s, "g_winlimit", 0);
-
-		if(RoundLimit == 0 && WinLimit == 0)
-		{
-			Rounds = "Unlimited";
-		}
-		else
-		{
-			if(RoundLimit > 0)
-			{
-				Rounds = wxString::Format("%d round limit", RoundLimit);
-
-				if (WinLimit > 0 && RoundLimit > WinLimit)
-					Rounds += wxString::Format(", first to %d win%s", WinLimit,
-					                          WinLimit == 1 ? "" : "s");
-			}
-		}
-	}
-
-	SetOptionalItem(m_RoundsItem, m_Rounds, Rounds);
-
-	// Time left only applies to timed games. Info.TimeLeft is in minutes; the
-	// item collapses once no time remains (intermission) or the game has no timelimit.
-	wxString TimeLeft;
-
-	if(s.Info.TimeLimit)
-		TimeLeft = OdaGetTimeString(s.Info.TimeLeft * 60);
-
-	SetOptionalItem(m_TimeLeftItem, m_TimeLeft, TimeLeft);
-
-	// Frag/point limit, shown only when the mode enforces one
-	wxString ScoreLimit;
-
-	int HighestScore = 0;
-
-	if (s.Info.GameType == GT_TeamDeathmatch || s.Info.GameType == GT_CaptureTheFlag)
-	{
-		if (s.Info.ScoreLimit)
-		{
-			auto winningTeam = std::max_element(
-			    s.Info.Teams.begin(), s.Info.Teams.end(),
-			    [](const Team_t& a, const Team_t& b) { return a.Score < b.Score; });
-
-			if (winningTeam != s.Info.Teams.end())
-				HighestScore = winningTeam->Score;
-
-			ScoreLimit = wxString::Format("%d / %u", HighestScore, s.Info.ScoreLimit);
-		}
-	}
-	else if (s.Info.GameType == GT_Deathmatch)
-	{
-		if (s.Info.FragLimit)
-		{
-			auto winningPlayer = std::max_element(
-			    s.Info.Players.begin(), s.Info.Players.end(),
-			    [](const Player_t& a, const Player_t& b) { return a.Frags < b.Frags; });
-
-			if (winningPlayer != s.Info.Players.end())
-				HighestScore = winningPlayer->Frags;
-
-			ScoreLimit = wxString::Format("%d / %u", HighestScore, s.Info.FragLimit);
-		}
-	}
-
-	SetOptionalItem(m_ScoreLimitItem, m_ScoreLimit, ScoreLimit);
-
-	// Team score boxes - a centered row of "Name: Score" boxes (white text on
-	// the team colour), separated by " - ". Team modes only.
-	m_TeamSizer->Clear(true);
-
-	if((s.Info.GameType == GT_TeamDeathmatch ||
-	        s.Info.GameType == GT_CaptureTheFlag) &&
-	        !s.Info.Teams.empty())
-	{
-		const wxFont TeamFont =
-		    wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).Bold();
-
-		for(size_t i = 0; i < s.Info.Teams.size(); ++i)
-		{
-			const Team_t& Team = s.Info.Teams[i];
-
-			// " - " separator between teams
-			if(i > 0)
-				m_TeamSizer->Add(
-				    new wxStaticText(m_ContentPanel, wxID_ANY, " - "), 0,
-				    wxALIGN_CENTER_VERTICAL);
-
-			const wxColour TeamColour((Team.Colour >> 16) & 0xFF,
-			                          (Team.Colour >> 8) & 0xFF,
-			                          Team.Colour & 0xFF);
-
-			wxStaticText* Box = new wxStaticText(
-			    m_ContentPanel, wxID_ANY,
-			    wxString::Format(" %s: %d ", stdstr_towxstr(Team.Name),
-			                     (int)Team.Score));
-
-			Box->SetForegroundColour(*wxWHITE);
-			Box->SetBackgroundColour(TeamColour);
-			Box->SetFont(TeamFont);
-
-			m_TeamSizer->Add(Box, 0, wxALIGN_CENTER_VERTICAL);
-		}
-	}
+	OdaBuildTeamScoreBoxes(m_ContentPanel, m_TeamSizer, s);
 
 	m_PlayerList->DeleteAllItems();
 	m_PlayerList->AddPlayersToList(s);

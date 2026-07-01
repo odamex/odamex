@@ -28,6 +28,9 @@
 
 #include "net_packet.h"
 
+class wxWindow;
+class wxSizer;
+
 // Returns an easy-to-read game type label for a server (e.g. "Cooperative",
 // "Duel", "Capture The Flag"), taking game modifiers (lives, sides, player
 // limits) into account.
@@ -60,3 +63,37 @@ wxString OdaGetSkillString(const odalpapi::Server& s);
 // "1 hour, 5 minutes, 30 seconds". Zero-valued components are omitted, and a
 // non-positive duration returns an empty string.
 wxString OdaGetTimeString(int Seconds);
+
+// Returns the server's "major.minor.patch" version, with a revision suffix
+// (" (rN)" or " (revstr)") when the server reports one.
+wxString OdaGetVersionString(const odalpapi::Server& s);
+
+// Returns the "X / Y clients, Z player(s) can join" summary line.
+wxString OdaGetPlayerCountString(const odalpapi::Server& s);
+
+// Returns "Yes" when friendly fire applies (a team/coop/horde mode with
+// sv_friendlyfire transmitted), otherwise an empty string.
+wxString OdaGetFriendlyFireString(const odalpapi::Server& s);
+
+// Returns a damage/health modifier cvar as a percentage (e.g. "150%"), or an
+// empty string when the cvar is absent or at its neutral 1.0.
+wxString OdaGetDamagePercentString(const odalpapi::Server& s,
+                                   const std::string& Cvar);
+
+// Returns the rounds summary ("Unlimited", "N round limit[, first to M wins]"),
+// or an empty string when g_rounds is not in play.
+wxString OdaGetRoundsString(const odalpapi::Server& s);
+
+// Returns the remaining time (via OdaGetTimeString), or an empty string when
+// the game is not timed.
+wxString OdaGetTimeLeftString(const odalpapi::Server& s);
+
+// Returns the "leader / limit" score line for the mode's win condition (team
+// score for team modes, frags for deathmatch), or empty when none applies.
+wxString OdaGetScoreString(const odalpapi::Server& s);
+
+// Fills Target with a coloured "Name: Score" box per team (white text on the
+// team colour, separated by " - "), clearing it first. Only team modes with
+// teams produce boxes; returns true when any were added.
+bool OdaBuildTeamScoreBoxes(wxWindow* Parent, wxSizer* Target,
+                            const odalpapi::Server& s);

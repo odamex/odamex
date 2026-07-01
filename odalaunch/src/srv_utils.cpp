@@ -20,6 +20,12 @@
 
 #include "srv_utils.h"
 
+#include <algorithm>
+
+#include <wx/settings.h>
+#include <wx/sizer.h>
+#include <wx/stattext.h>
+
 #include "str_utils.h"
 
 using namespace odalpapi;
@@ -169,4 +175,171 @@ wxString OdaGetTimeString(int Seconds)
 	Append(Secs, "second");
 
 	return Result;
+}
+
+wxString OdaGetVersionString(const Server& s)
+{
+	wxString Revision;
+
+	if(!s.Info.VersionRevStr.empty())
+		Revision = wxString::Format(" (%s)", s.Info.VersionRevStr);
+	else if(s.Info.VersionRevision != 0)
+		Revision = wxString::Format(" (r%u)", s.Info.VersionRevision);
+
+	return wxString::Format("%u.%u.%u%s", s.Info.VersionMajor,
+	                        s.Info.VersionMinor, s.Info.VersionPatch, Revision);
+}
+
+wxString OdaGetPlayerCountString(const Server& s)
+{
+	const int Clients = (int)s.Info.Players.size();
+	const int PlayerCount = (int)std::count_if(
+	    s.Info.Players.begin(), s.Info.Players.end(),
+	    [](const Player_t& p) { return !p.Spectator; });
+	const int CanJoin = s.Info.MaxPlayers > 0
+	                        ? (int)s.Info.MaxPlayers - PlayerCount
+	                        : (int)s.Info.MaxClients - PlayerCount;
+
+	return wxString::Format("%d / %d clients, %d player%s can join", Clients,
+	                        (int)s.Info.MaxClients, CanJoin,
+	                        CanJoin == 1 ? "" : "s");
+}
+
+wxString OdaGetFriendlyFireString(const Server& s)
+{
+	wxString Raw;
+
+	if(OdaGetCvarValue(s, "sv_friendlyfire", Raw) &&
+	   (s.Info.GameType == GT_TeamDeathmatch ||
+	    s.Info.GameType == GT_CaptureTheFlag ||
+	    s.Info.GameType == GT_Horde || s.Info.GameType == GT_Cooperative))
+		return "Yes";
+
+	return wxEmptyString;
+}
+
+wxString OdaGetDamagePercentString(const Server& s, const std::string& Cvar)
+{
+	wxString Value;
+	double Factor = 1.0;
+
+	if(OdaGetCvarValue(s, Cvar, Value) && Value.ToDouble(&Factor) &&
+	   Factor != 1.0)
+		return wxString::Format("%g%%", Factor * 100.0);
+
+	return wxEmptyString;
+}
+
+wxString OdaGetRoundsString(const Server& s)
+{
+	wxString Enabled;
+
+	if(!OdaGetCvarValue(s, "g_rounds", Enabled))
+		return wxEmptyString;
+
+	const int RoundLimit = OdaGetCvarInt(s, "g_roundlimit", 0);
+	const int WinLimit = OdaGetCvarInt(s, "g_winlimit", 0);
+
+	if(RoundLimit == 0 && WinLimit == 0)
+		return "Unlimited";
+
+	wxString Rounds;
+
+	if(RoundLimit > 0)
+	{
+		Rounds = wxString::Format("%d round limit", RoundLimit);
+
+		if(WinLimit > 0 && RoundLimit > WinLimit)
+			Rounds += wxString::Format(", first to %d win%s", WinLimit,
+			                           WinLimit == 1 ? "" : "s");
+	}
+
+	return Rounds;
+}
+
+wxString OdaGetTimeLeftString(const Server& s)
+{
+	if(s.Info.TimeLimit)
+		return OdaGetTimeString(s.Info.TimeLeft * 60);
+
+	return wxEmptyString;
+}
+
+wxString OdaGetScoreString(const Server& s)
+{
+	int HighestScore = 0;
+
+	if(s.Info.GameType == GT_TeamDeathmatch ||
+	   s.Info.GameType == GT_CaptureTheFlag)
+	{
+		if(!s.Info.ScoreLimit)
+			return wxEmptyString;
+
+		auto WinningTeam = std::max_element(
+		    s.Info.Teams.begin(), s.Info.Teams.end(),
+		    [](const Team_t& a, const Team_t& b) { return a.Score < b.Score; });
+
+		if(WinningTeam != s.Info.Teams.end())
+			HighestScore = WinningTeam->Score;
+
+		return wxString::Format("%d / %u", HighestScore, s.Info.ScoreLimit);
+	}
+	else if(s.Info.GameType == GT_Deathmatch)
+	{
+		if(!s.Info.FragLimit)
+			return wxEmptyString;
+
+		auto WinningPlayer = std::max_element(
+		    s.Info.Players.begin(), s.Info.Players.end(),
+		    [](const Player_t& a, const Player_t& b) { return a.Frags < b.Frags; });
+
+		if(WinningPlayer != s.Info.Players.end())
+			HighestScore = WinningPlayer->Frags;
+
+		return wxString::Format("%d / %u", HighestScore, s.Info.FragLimit);
+	}
+
+	return wxEmptyString;
+}
+
+bool OdaBuildTeamScoreBoxes(wxWindow* Parent, wxSizer* Target, const Server& s)
+{
+	Target->Clear(true);
+
+	const bool ShowTeams =
+	    (s.Info.GameType == GT_TeamDeathmatch ||
+	     s.Info.GameType == GT_CaptureTheFlag) && !s.Info.Teams.empty();
+
+	if(!ShowTeams)
+		return false;
+
+	const wxFont TeamFont =
+	    wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).Bold();
+
+	for(size_t i = 0; i < s.Info.Teams.size(); ++i)
+	{
+		const Team_t& Team = s.Info.Teams[i];
+
+		// " - " separator between teams
+		if(i > 0)
+			Target->Add(new wxStaticText(Parent, wxID_ANY, " - "), 0,
+			            wxALIGN_CENTER_VERTICAL);
+
+		const wxColour TeamColour((Team.Colour >> 16) & 0xFF,
+		                          (Team.Colour >> 8) & 0xFF,
+		                          Team.Colour & 0xFF);
+
+		wxStaticText* Box = new wxStaticText(
+		    Parent, wxID_ANY,
+		    wxString::Format(" %s: %d ", stdstr_towxstr(Team.Name),
+		                     (int)Team.Score));
+
+		Box->SetForegroundColour(*wxWHITE);
+		Box->SetBackgroundColour(TeamColour);
+		Box->SetFont(TeamFont);
+
+		Target->Add(Box, 0, wxALIGN_CENTER_VERTICAL);
+	}
+
+	return true;
 }
