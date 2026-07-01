@@ -172,6 +172,7 @@ private:
 	wxStaticText* m_GpPlayers;
 	wxStaticText* m_GpScore;
 	wxStaticText* m_GpScoreLabel;
+	wxBoxSizer*   m_GpTeamsSizer;
 	wxStaticText* m_GpRounds;
 	wxStaticText* m_GpRoundsLabel;
 	wxStaticText* m_GpLives;

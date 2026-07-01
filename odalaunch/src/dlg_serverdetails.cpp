@@ -418,8 +418,12 @@ void dlgServerDetails::BuildGameplayGrid()
 	m_GpRounds = AddRow(m_PnlGameplayVars, m_GpGrid, "Rounds:", &m_GpRoundsLabel);
 	m_GpLives = AddRow(m_PnlGameplayVars, m_GpGrid, "Lives:", &m_GpLivesLabel);
 
+	m_GpTeamsSizer = new wxBoxSizer(wxHORIZONTAL);
+
 	wxBoxSizer* Border = new wxBoxSizer(wxVERTICAL);
-	Border->Add(m_GpGrid, 1, wxEXPAND | wxALL, 4);
+	Border->Add(m_GpGrid, 0, wxEXPAND | wxALL, 4);
+	Border->Add(m_GpTeamsSizer, 0,
+	            wxALIGN_CENTER_HORIZONTAL | wxLEFT | wxRIGHT | wxBOTTOM, 4);
 	m_PnlGameplayVars->SetSizer(Border);
 }
 
@@ -693,6 +697,45 @@ void dlgServerDetails::PopulateGameplay()
 		}
 	}
 	SetOptionalRow(m_GpGrid, m_GpScoreLabel, m_GpScore, ScoreLimit);
+
+	m_GpTeamsSizer->Clear(true);
+
+	const bool ShowTeams =
+	    (s.Info.GameType == GT_TeamDeathmatch ||
+	     s.Info.GameType == GT_CaptureTheFlag) && !s.Info.Teams.empty();
+
+	if(ShowTeams)
+	{
+		const wxFont TeamFont =
+		    wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).Bold();
+
+		for(size_t i = 0; i < s.Info.Teams.size(); ++i)
+		{
+			const Team_t& Team = s.Info.Teams[i];
+
+			if(i > 0)
+				m_GpTeamsSizer->Add(
+				    new wxStaticText(m_PnlGameplayVars, wxID_ANY, " - "), 0,
+				    wxALIGN_CENTER_VERTICAL);
+
+			const wxColour TeamColour((Team.Colour >> 16) & 0xFF,
+			                          (Team.Colour >> 8) & 0xFF,
+			                          Team.Colour & 0xFF);
+
+			wxStaticText* Box = new wxStaticText(
+			    m_PnlGameplayVars, wxID_ANY,
+			    wxString::Format(" %s: %d ", stdstr_towxstr(Team.Name),
+			                     (int)Team.Score));
+
+			Box->SetForegroundColour(*wxWHITE);
+			Box->SetBackgroundColour(TeamColour);
+			Box->SetFont(TeamFont);
+
+			m_GpTeamsSizer->Add(Box, 0, wxALIGN_CENTER_VERTICAL);
+		}
+	}
+
+	m_PnlGameplayVars->GetSizer()->Show(m_GpTeamsSizer, ShowTeams, true);
 }
 
 void dlgServerDetails::PopulateServerVars()
