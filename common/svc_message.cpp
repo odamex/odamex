@@ -450,6 +450,15 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	// denis - sending state fixes monster ghosts appearing under doors
 	cur->set_statenum(mo->state->statenum);
 
+    // Tics can never be left at 0, because 0 means to proceed to the next state
+    // immediately before returning control back out of the state-advance code.
+    // Therefore we co-opt the zero / default state to mean -1, which is the
+    // "do not animate" value.
+    if (mo->tics > 0)
+    {
+		cur->set_tics(mo->tics);
+    }
+
 	// Special case:  Did we get spawned in earlier on this tic?  If so, there are some instances
 	// where a mobj spawns in via dehacked SpawnObject, but its frames / state sequencing is such
 	// that multiple states and special actions take effect in the very first RunThink operation.
@@ -463,6 +472,7 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 		// those cases where they AREN'T the same value that we're really after here.
 		cur->set_statenum(mo->info->spawnstate);
 		cur->set_rndindex(mo->spawnRndindex);
+		cur->set_tics    (states[mo->info->spawnstate].tics);
 	}
 
 	if (mo->type == MT_FOUNTAIN)
