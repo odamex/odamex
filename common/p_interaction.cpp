@@ -300,7 +300,7 @@ static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammo, int 
 	{
 		if (weaponinfo[player.readyweapon].flags & WPF_AUTOSWITCHFROM &&
 			(weaponinfo[player.readyweapon].ammotype == am_noammo ||
-		     player.ammo[weaponinfo[player.readyweapon].ammotype] != ammo))
+		     weaponinfo[player.readyweapon].ammotype != ammo))
 		{
 			for (int i = NUMWEAPONS - 1; i > player.readyweapon; --i)
 			{
