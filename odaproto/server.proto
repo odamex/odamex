@@ -75,7 +75,7 @@ message UpdatePing
 	int32 ping = 2;
 }
 
-// svc_spawnmobj, svc_mobjinfo, svc_corpse
+// svc_spawnmobj
 message SpawnMobj
 {
 	Actor baseline = 1;
