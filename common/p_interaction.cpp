@@ -306,7 +306,7 @@ static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammo, int 
 			 (weaponinfo[currentweapon].ammotype == am_noammo ||
 				weaponinfo[currentweapon].ammotype != ammo))
 	{
-		// respect the WPSW_PWO_ALT setting if player is shooting
+		// respect the "attack cancels PWO" setting if player is attacking
 		if (player.userinfo.switchweapon == WPSW_PWO_ALT &&
 			sv_allowpwo &&
             player.cmd.buttons & BT_ATTACK &&
