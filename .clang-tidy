@@ -49,7 +49,7 @@ Checks: |
   # another one thats just noisy right now
   -readability-named-parameter,
   # we mostly use lowercase
-  readability-uppercase-literal-suffix,
+  -readability-uppercase-literal-suffix,
 CheckOptions:
   # Allow `if (pointer)`
   - key: readability-implicit-bool-conversion.AllowPointerConditions
