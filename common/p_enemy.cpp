@@ -2124,19 +2124,29 @@ void A_Tracer (AActor *actor)
 
 	// denis - demogametic must be 0-based, but from start of entire demo,
 	// not just this level!
+
 	extern int demostartgametic;
-	int demogametic = gametic - demostartgametic;
+	int demogametic = actor->mobjtic - demostartgametic;
 	if (demogametic & 3)
 		return;
 
-	// spawn a puff of smoke behind the rocket
-	if(serverside)
+	// Because of how tricky it can be to keep the client-side predicted Tracer turns in
+	// a good-looking sync with the server, we opt to NOT predict the turns.  We still
+	// predict the linear motion, though.  The server will tell us when the missile is
+	// supposed to turn and also update position accordingly.
+//	if (not serverside)
+//	{
+//		return;
+//	}
+
+	if (serverside)
 	{
+		// spawn a puff of smoke behind the rocket
 		P_SpawnTracerPuff(actor->x, actor->y, actor->z);
 
 		AActor* th = new AActor (actor->x - actor->momx,
-						 actor->y - actor->momy,
-						 actor->z, MT_SMOKE);
+		                         actor->y - actor->momy,
+		                         actor->z, MT_SMOKE);
 
 		th->momz = FRACUNIT;
 		th->tics -= P_Random (th)&3;
@@ -2152,9 +2162,9 @@ void A_Tracer (AActor *actor)
 
 	// change angle
 	angle_t exact = P_PointToAngle (actor->x,
-							 actor->y,
-							 dest->x,
-							 dest->y);
+	                                actor->y,
+	                                dest->x,
+	                                dest->y);
 
 	if (exact != actor->angle)
 	{
@@ -2179,7 +2189,7 @@ void A_Tracer (AActor *actor)
 
 	// change slope
 	fixed_t dist = P_AproxDistance (dest->x - actor->x,
-							dest->y - actor->y);
+	                                dest->y - actor->y);
 
 	dist = dist / actor->info->speed;
 

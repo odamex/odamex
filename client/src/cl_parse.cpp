@@ -519,8 +519,9 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	P_ClearId(netid);
 
 	AActor* mo = new AActor(base.pos.x, base.pos.y, base.pos.z, type);
-	mo->baseline = base;
+	mo->baseline         = base;
 	mo->updatedDuringTic = gametic;
+	mo->mobjtic          = msg->lifetime_tic();
 
 	P_SetThingId(mo, netid);
 

@@ -3119,8 +3119,9 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 		// Revenant tracers and Mancubus fireballs need to be updated more often (and custom tracers)
 		const bool needsMoreFrequentUpdates = (mo->type == MT_TRACER || mo->type == MT_FATSHOT || mo->flags2 & MF2_SEEKERMISSILE);
 
-		const int  divisor = needsMoreFrequentUpdates ? 5 : 30;
-		const int  phase   = (gametic + mo->netid) % divisor;
+		const int divisor   = needsMoreFrequentUpdates ? 4 : 30;
+		const int updateTic = mo->type == MT_TRACER ? mo->mobjtic - 1 : gametic + mo->netid;
+		const int phase     = updateTic % divisor;
 
 		// Does this mobj have a scheduled update now?
 		if (phase == 0)
@@ -3133,6 +3134,7 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 
 				default:
 					MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+					break;
 			}
 		}
 	}

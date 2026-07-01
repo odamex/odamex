@@ -499,6 +499,11 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 		cur->set_oflags(mo->oflags);
 	}
 
+	// Please note that we send the current gametic as the client's mobj-lifetime side timer tic value.
+	// this ensures that any timed events for this mobj from this point forward are using the same
+	// timebase as the server.
+	msg.set_lifetime_tic(gametic);
+
 	// animating corpses
 	if ((mo->flags & MF_CORPSE) && mo->state->statenum != S_GIBS)
 	{

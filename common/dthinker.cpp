@@ -267,7 +267,10 @@ void DThinker::RunThinkers ()
 	while (currentthinker)
 	{
 		if (!IndependentThinker(currentthinker))
+		{
 			currentthinker->RunThink();
+			currentthinker->PostThink();
+		}
 		currentthinker = currentthinker->m_Next;
 	}
 	END_STAT (ThinkCycles);
