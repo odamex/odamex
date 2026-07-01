@@ -259,6 +259,10 @@ int P_GetDeathCount(const player_t& player)
 // mbf21: take into account new weapon autoswitch flags
 static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammo, int oldammo)
 {
+	const weapontype_t currentweapon = (player.pendingweapon == wp_nochange)
+            ? player.readyweapon
+            : player.pendingweapon;
+
 	// Keep the original behaviour while playbacking demos only.
 	if (demoplayback)
 	{
@@ -297,14 +301,14 @@ static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammo, int 
 		}
 	}
 	else if (player.userinfo.switchweapon != WPSW_NEVER &&
-			 weaponinfo[player.readyweapon].flags & WPF_AUTOSWITCHFROM &&
-			 (weaponinfo[player.readyweapon].ammotype == am_noammo ||
-				weaponinfo[player.readyweapon].ammotype != ammo))
+			 weaponinfo[currentweapon].flags & WPF_AUTOSWITCHFROM &&
+			 (weaponinfo[currentweapon].ammotype == am_noammo ||
+				weaponinfo[currentweapon].ammotype != ammo))
 	{
-		for (int i = NUMWEAPONS - 1; i > player.readyweapon; --i)
+		for (int i = NUMWEAPONS - 1; i > currentweapon; --i)
 		{
 			if (player.weaponowned[i] &&
-				!(weaponinfo[i].flags & WPF_NOAUTOSWITCHTO) &&
+				not (weaponinfo[i].flags & WPF_NOAUTOSWITCHTO) &&
 				weaponinfo[i].ammotype == ammo &&
 				weaponinfo[i].ammopershot > oldammo &&
 				weaponinfo[i].ammopershot <= player.ammo[ammo])
