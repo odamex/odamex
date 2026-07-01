@@ -296,23 +296,21 @@ static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammo, int 
 			break;
 		}
 	}
-	else if (player.userinfo.switchweapon != WPSW_NEVER)
+	else if (player.userinfo.switchweapon != WPSW_NEVER &&
+			 weaponinfo[player.readyweapon].flags & WPF_AUTOSWITCHFROM &&
+			 (weaponinfo[player.readyweapon].ammotype == am_noammo ||
+				weaponinfo[player.readyweapon].ammotype != ammo))
 	{
-		if (weaponinfo[player.readyweapon].flags & WPF_AUTOSWITCHFROM &&
-			(weaponinfo[player.readyweapon].ammotype == am_noammo ||
-		     weaponinfo[player.readyweapon].ammotype != ammo))
+		for (int i = NUMWEAPONS - 1; i > player.readyweapon; --i)
 		{
-			for (int i = NUMWEAPONS - 1; i > player.readyweapon; --i)
+			if (player.weaponowned[i] &&
+				!(weaponinfo[i].flags & WPF_NOAUTOSWITCHTO) &&
+				weaponinfo[i].ammotype == ammo &&
+				weaponinfo[i].ammopershot > oldammo &&
+				weaponinfo[i].ammopershot <= player.ammo[ammo])
 			{
-				if (player.weaponowned[i] &&
-				    !(weaponinfo[i].flags & WPF_NOAUTOSWITCHTO) &&
-				    weaponinfo[i].ammotype == ammo &&
-				    weaponinfo[i].ammopershot > oldammo &&
-				    weaponinfo[i].ammopershot <= player.ammo[ammo])
-				{
-					player.pendingweapon = (weapontype_t)i;
-					break;
-				}
+				player.pendingweapon = (weapontype_t)i;
+				break;
 			}
 		}
 	}
