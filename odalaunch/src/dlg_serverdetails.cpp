@@ -193,7 +193,8 @@ dlgServerDetails::dlgServerDetails(dlgMain* parent)
 	// How can we make this look disabled without actually being disabled?
 	m_TxtMotd->SetBackgroundColour(
 	    wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE));
-	m_TxtMotd->SetForegroundColour(*wxBLACK);
+	m_TxtMotd->SetForegroundColour(
+	    wxSystemSettings::GetColour(wxSYS_COLOUR_BTNTEXT));
 	// Show the normal arrow cursor instead of the I-beam edit cursor.
 	m_TxtMotd->SetCursor(wxCursor(wxCURSOR_ARROW));
 	m_TxtMotd->Bind(wxEVT_SET_FOCUS, [this](wxFocusEvent& evt)
