@@ -3608,7 +3608,9 @@ void A_BossDeath(AActor *actor)
 					continue;
 				}
 
-				line_t ld;
+				// De-facto UMAPINFO standard interpretation: activate the bossaction linespecial
+				// as though it's associated with line 0.
+				line_t ld = lines[0];
 
 				if (map_format.getZDoom())
 				{
