@@ -3128,6 +3128,11 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 		// a rate divisor of 4 and the frame count being the mobjtic value that it had on this tic.
 		// In other words, we subtract 1 because the mobjtic was incremented after RunThink.
 
+		// On top of all that, we have to make this check anyway because if something's an MT_TRACER,
+		// but has been specially dehacked to use a thinker routine other than A_Tracer, we want to
+		// ensure that it still gets an appropriately-scheduled, elevated update cycle.  Please note
+		// that there's a counter-part check in A_Tracer that covers the opposite case.
+
 		const int updateTic = mo->type == MT_TRACER ? mo->mobjtic - 1       // rev shot?  update right away.
 		                                            : gametic + mo->netid;  // Anything else?  Be fair with the bandwidth.
 		const int divisor   = needsMoreFrequentUpdates ? 4 : 30;
@@ -3149,18 +3154,19 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 	}
 }
 
-// Update the given actors data immediately.
-void SV_UpdateMobj(AActor* mo)
+static void ImmediateUpdateMobj(AActor& mobj, bool reliableIsAllowed)
 {
 	// Don't use this function to update players.
-	if (mo->player)
+	if (mobj.player)
 		return;
+
+	auto message = SVC_UpdateMobj(mobj);
 
 	for (auto& player : players)
 	{
-		if (player.ingame() and SV_IsPlayerAllowedToSee(player, mo))
+		if (player.ingame() and SV_IsPlayerAllowedToSee(player, &mobj))
 		{
-			switch (mo->playersAware.Get(player.id))
+			switch (mobj.playersAware.Get(player.id))
 			{
 				case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
 				case AwarenessEnum::BARELY_AWARE:
@@ -3168,16 +3174,30 @@ void SV_UpdateMobj(AActor* mo)
 
 				case AwarenessEnum::ALWAYS_AWARE:      [[ fallthrough ]];
 				case AwarenessEnum::FULLY_AWARE:
-					mo->updatedDuringTic = gametic;
-					MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_UpdateMobj(*mo));
+					mobj.updatedDuringTic = gametic;
+					MSG_WriteSVC(reliableIsAllowed ? player.client.messenger.ReliableBuf()
+					                               : player.client.messenger.NetBuf(),
+					             message);
 					break;
 
 				case AwarenessEnum::SEMI_AWARE:
-					mo->updatedDuringTic = gametic;
-					MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+					mobj.updatedDuringTic = gametic;
+					MSG_WriteSVC(player.client.messenger.NetBuf(), message);
 			}
 		}
 	}
+}
+
+// Update the given actors data immediately, using standard Reliable and Best-effort transports as appropriate.
+void SV_UpdateMobj(AActor* mo)
+{
+	ImmediateUpdateMobj(*mo, true);
+}
+
+// Update the given actors data immediately, ONLY using Best-effort transport.
+void SV_UpdateMobjBestEffort(AActor* mo)
+{
+	ImmediateUpdateMobj(*mo, false);
 }
 
 // Update the given actors state immediately.

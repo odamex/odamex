@@ -117,6 +117,7 @@ void A_Fall (AActor *actor);
 void SV_UpdateMonsterRespawnCount();
 void SV_SendRaiseMobj(const AActor* source, const AActor* corpse);
 void SV_UpdateMobj(AActor* mo);
+void SV_UpdateMobjBestEffort(AActor* mo);
 void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation);
 void SV_SpawnMobj(AActor* mobj);
 void SV_BroadcastNoiseAlert(const sector_t& sector);
@@ -2130,15 +2131,6 @@ void A_Tracer (AActor *actor)
 	if (demogametic & 3)
 		return;
 
-	// Because of how tricky it can be to keep the client-side predicted Tracer turns in
-	// a good-looking sync with the server, we opt to NOT predict the turns.  We still
-	// predict the linear motion, though.  The server will tell us when the missile is
-	// supposed to turn and also update position accordingly.
-//	if (not serverside)
-//	{
-//		return;
-//	}
-
 	if (serverside)
 	{
 		// spawn a puff of smoke behind the rocket
@@ -2201,6 +2193,21 @@ void A_Tracer (AActor *actor)
 		actor->momz -= FRACUNIT/8;
 	else
 		actor->momz += FRACUNIT/8;
+
+	if (serverside)
+	{
+		// Please note that it's very intentional that we do the best effort update here
+		// and still do the MT_TRACER check in the standard UpdateMobj missile checks on
+		// the server.  TLDR:  Just because something's an MT_TRACER doesn't necessarily
+		// mean it's going to run A_Tracer and vice versa.  We want to make sure that in
+		// all events, we send an appropriately-scheduled update, and in the worst case,
+		// we coincide this update with the check, which effectively skips the duplicate
+		// update.  One might think its a duplicated capability, but it's not really.
+		//
+		// This specific call is required to make sure we get elevated-rate updates for
+		// non-MT_TRACER mobjs that use A_Tracer.
+		SV_UpdateMobjBestEffort(actor);
+	}
 }
 
 
