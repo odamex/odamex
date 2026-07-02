@@ -520,7 +520,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	AActor* mo = new AActor(base.pos.x, base.pos.y, base.pos.z, type);
 	mo->baseline         = base;
 	mo->updatedDuringTic = gametic;
-	mo->mobjtic          = msg->lifetime_tic();
+	mo->mobjtic          = msg->timebase_tic();
 
 	P_SetThingId(mo, netid);
 
@@ -639,13 +639,13 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	statenum_t statenum = static_cast<statenum_t>(msg->current().statenum());
 
-    if(statenum >= S_NULL && states.contains(statenum))
+	if (statenum >= S_NULL && states.contains(statenum))
 	{
 		P_SetMobjState(mo, statenum);
 
+		// Set animation tic to ensure that the initial state is consistent with the server.
 		const int32_t tics = msg->current().tics();
 		mo->tics = tics ? tics : -1;
-
 	}
 
 	if (serverside && mo->flags & MF_COUNTKILL)
