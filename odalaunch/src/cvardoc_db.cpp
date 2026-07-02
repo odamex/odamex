@@ -116,15 +116,13 @@ bool CvarDocDb::ParseDocument(const wxString& Path)
 		return false;
 
 	const wxScopedCharBuffer utf8 = contents.utf8_str();
-	const char* begin = utf8.data();
-	const char* end = begin + utf8.length();
 
 	Json::CharReaderBuilder builder;
-	std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+	const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
 
 	Json::Value root;
 	std::string errors;
-	if (!reader->parse(begin, end, &root, &errors))
+	if (!reader->parse(utf8.data(), utf8.data() + utf8.length(), &root, &errors))
 	{
 		wxLogDebug("cvardoc: JSON parse error: %s", errors.c_str());
 		return false;
