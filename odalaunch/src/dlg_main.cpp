@@ -66,6 +66,8 @@
 #include <wx/stream.h>
 #include <wx/sstream.h>
 
+#include <json/json.h>
+
 #include "net_utils.h"
 #include "oda_defs.h"
 #include "plat_utils.h"
@@ -485,44 +487,55 @@ void dlgMain::OnCheckVersionResponse(wxWebRequestEvent& evt)
         wxStringOutputStream out(&json);
         stream->Read(out);
 
-        // Hacky extraction of the tag_name without properly
-		// parsing the json to avoid needing extra libraries
-        const wxString key = "\"tag_name\":\"";
-        int start = json.Find(key);
-        if (start == wxNOT_FOUND)
+        // Pull the release tag out of the GitHub API response.
+        const wxScopedCharBuffer utf8 = json.utf8_str();
+
+        Json::CharReaderBuilder builder;
+        const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+
+        Json::Value root;
+        std::string errors;
+        if (!reader->parse(utf8.data(), utf8.data() + utf8.length(), &root, &errors) ||
+            !root.isObject())
+        {
+            InfoBar->ShowMessage("Unable to check for updates.");
+            wxLogWarning(
+                "Odalaunch tried to parse malformed JSON when checking for updates.");
             return;
+        }
 
-        start += key.Length();
-        int end = json.find('"', start);
-        if (end == wxNOT_FOUND)
+        const wxString tag = wxString::FromUTF8(
+            root.get("tag_name", "").asString().c_str());
+
+        if (tag.IsEmpty())
+        {
+            InfoBar->ShowMessage("Unable to check for updates.");
+            wxLogWarning(
+                "Odalaunch couldn't find a new version to compare against when checking for updates.");
             return;
+        }
 
-		const wxString tag = json.SubString(start, end - 1);
+        const wxString VerMsg = wxString::Format("New! Odamex version %s is available", tag);
 
-    	if (tag.IsEmpty())
-    	{
-    	    InfoBar->ShowMessage("Unable to check for updates.");
-    	    return;
-    	}
+        wxArrayString v = wxSplit(tag, '.');
+        if (MAKEVER(wxAtoi(v[0]), wxAtoi(v[1]), wxAtoi(v[2])) <= VERSION)
+        {
+            if (m_UpdateCheckWasAutomatic)
+                return;
 
-    	const wxString VerMsg = wxString::Format("New! Odamex version %s is available", tag);
+            InfoBar->ShowMessage("No new version available.");
+            return;
+        }
 
-		wxArrayString v = wxSplit(tag, '.');
-    	if (MAKEVER(wxAtoi(v[0]), wxAtoi(v[1]), wxAtoi(v[2])) <= VERSION)
-    	{
-    	    if (m_UpdateCheckWasAutomatic)
-    	        return;
-
-    	    InfoBar->ShowMessage("No new version available.");
-    	    return;
-    	}
-
-    	InfoBar->ShowMessage(VerMsg, XRCID("Id_VisitReleases"),
-    	    wxCommandEventHandler(dlgMain::OnOpenReleases), "Download Release");
+        InfoBar->ShowMessage(VerMsg, XRCID("Id_VisitReleases"),
+            wxCommandEventHandler(dlgMain::OnOpenReleases), "Download Release");
     }
     else if (evt.GetState() == wxWebRequest::State_Failed)
     {
         InfoBar->ShowMessage("Unable to check for updates.");
+        wxLogWarning(
+            "Odalaunch could not connect to %s to check for updates.",
+            evt.GetResponse().GetURL().c_str());
     }
 }
 #endif
