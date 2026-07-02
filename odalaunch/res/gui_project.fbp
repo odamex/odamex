@@ -6980,7 +6980,7 @@
           <property name="proportion">0</property>
           <object class="wxStaticBoxSizer" expanded="false">
             <property name="id">wxID_ANY</property>
-            <property name="label">Motto of the day</property>
+            <property name="label">Message of the day</property>
             <property name="minimum_size"></property>
             <property name="name">sbSizerMotd</property>
             <property name="orient">wxVERTICAL</property>

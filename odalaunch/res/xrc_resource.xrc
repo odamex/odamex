@@ -1698,7 +1698,7 @@
         <option>0</option>
         <object class="wxStaticBoxSizer">
           <orient>wxVERTICAL</orient>
-          <label>Motto of the day</label>
+          <label>Message of the day</label>
           <object class="sizeritem">
             <flag>wxEXPAND|wxALL</flag>
             <border>3</border>

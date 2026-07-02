@@ -105,7 +105,7 @@ private:
 
 	// Top-level controls (from XRC)
 	wxTextCtrl* m_TxtMotd;
-	// The "Motto of the day" static-box sizer, hidden when the MOTD is empty.
+	// The "Message of the day" static-box sizer, hidden when the MOTD is empty.
 	wxSizer* m_MotdSizer;
 	wxWindow* m_PnlMetadata;
 	wxScrolledWindow* m_PnlServerVars;

@@ -482,7 +482,7 @@ void dlgServerDetails::PopulateMetadata()
 	Motd.Replace("\\n", "\n");
 	m_TxtMotd->SetValue(Motd);
 
-	// Hide the whole "Motto of the day" section when there's no MOTD.
+	// Hide the whole "Message of the day" section when there's no MOTD.
 	if(m_MotdSizer)
 		GetSizer()->Show(m_MotdSizer, !Motd.IsEmpty(), true);
 
