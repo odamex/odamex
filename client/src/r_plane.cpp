@@ -792,7 +792,7 @@ void R_DrawSkyBoxes()
 			else
 			{
 				ceilingclip[i] = pl->top[i];
-				floorclip[i] = pl->bottom[i];
+				floorclip[i] = pl->bottom[i] + 1;
 			}
 		}
 
