@@ -63,6 +63,7 @@ public:
 	void Destroy () override;
 	~DThinker () override;
 	virtual void RunThink () {}
+	virtual void PostThink () {}
 
 	void *operator new (size_t size);
 	void operator delete (void *block);

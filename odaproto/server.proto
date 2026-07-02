@@ -78,12 +78,13 @@ message UpdatePing
 // svc_spawnmobj
 message SpawnMobj
 {
-	Actor baseline = 1;
-	uint32 baseline_flags = 2;
-	Actor current = 3;
-	uint32 spawn_flags = 4;
-	uint32 target_netid = 5;
-	repeated int32 args = 6;
+	Actor           baseline        = 1;
+	uint32          baseline_flags  = 2;
+	Actor           current         = 3;
+	uint32          spawn_flags     = 4;
+	uint32          target_netid    = 5;
+	repeated int32  args            = 6;
+	uint32          timebase_tic    = 7;
 }
 
 // svc_disconnectclient

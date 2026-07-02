@@ -444,20 +444,27 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 		amom->set_z(mo->momz);
 	}
 
-	cur->set_type(mo->type);
-	cur->set_netid(mo->netid);
+	// Now set the basic current info.
 
-	// denis - sending state fixes monster ghosts appearing under doors
+	cur->set_type    (mo->type);
+	cur->set_netid   (mo->netid);
 	cur->set_statenum(mo->state->statenum);
 
-    // Tics can never be left at 0, because 0 means to proceed to the next state
-    // immediately before returning control back out of the state-advance code.
-    // Therefore we co-opt the zero / default state to mean -1, which is the
-    // "do not animate" value.
-    if (mo->tics > 0)
-    {
+	// Please note that we send the current gametic as the client's initial timebase for mobj-
+	// internal timing.  This ensures that any timed events for this mobj from this point
+	// forward are using the same timebase as the server.  Example:  whether or not A_Tracer
+	// does any actual tracing logic.
+	//
+	msg.set_timebase_tic(gametic);
+
+	// Animation state rics can never be left at 0, because 0 means to proceed to the next state
+	// immediately before returning control back out of the state-advance code.  Therefore we
+	// co-opt the zero / default state to mean -1, which is the "do not animate" value.
+	//
+	if (mo->tics > 0)
+	{
 		cur->set_tics(mo->tics);
-    }
+	}
 
 	// Special case:  Did we get spawned in earlier on this tic?  If so, there are some instances
 	// where a mobj spawns in via dehacked SpawnObject, but its frames / state sequencing is such

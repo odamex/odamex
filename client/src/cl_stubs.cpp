@@ -56,6 +56,7 @@ void SV_ExplodeMissile(AActor *mo) {}
 void SV_PreservePlayer(player_t &player) {}
 void SV_BroadcastSector(int sectornum) {}
 void SV_UpdateMobj(AActor* mo) {}
+void SV_UpdateMobjBestEffort(AActor* mo) {}
 void SV_UpdateMobjState(const AActor* mo) {}
 
 void CTF_RememberFlagPos(const mapthing2_t& mthing) {}

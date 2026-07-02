@@ -478,6 +478,7 @@ public:
 	~AActor () override;
 
 	void RunThink () override;
+	void PostThink() override;
 
     // Info for drawing: position.
     fixed_t		x;
@@ -618,6 +619,11 @@ public:
 	// Server:  The tic on which this mobj was actually spawned. Used to for determining correct initial
 	//          state and rnd index to send to clients.  *Not communicated to the client.*
 	int spawnTic;
+
+	//
+	// Client:  The monotonic "gametic" for this mobj - use this to perform mobj-internal timed operations
+	//          so that the predictions occur with the same order and delay that they do on the server.
+	int mobjtic;
 
 	CredibilityState credibility;
 
