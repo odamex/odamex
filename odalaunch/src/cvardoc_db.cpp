@@ -120,7 +120,7 @@ bool CvarDocDb::ParseDocument(const wxString& Path)
 	const char* end = begin + utf8.length();
 
 	Json::CharReaderBuilder builder;
-	const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+	std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
 
 	Json::Value root;
 	std::string errors;
