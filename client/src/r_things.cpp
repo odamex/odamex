@@ -588,6 +588,16 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		thingz = thing->z;
 	}
 
+	// Clip sprites that are definitely out of view.
+	fixed_t camx, camy;
+	R_RotatePoint(thingx - viewx, thingy - viewy, ANG90 - viewangle, camx, camy);
+
+	if (camy < NEARCLIP)
+		return;
+
+	if (abs(camx) > (camy << 2) + 512 * FRACUNIT)
+		return;
+
 	// Cache the last sprite def lookup - crowds of identical monsters hit
 	// this constantly.
 	if (thing->sprite != projspritenum || projsprdef == NULL)
@@ -660,7 +670,7 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	fixed_t height = sprframe->height[rot];
 	fixed_t width = sprframe->width[rot];
 
-	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, thingx, thingy, thingz, height, width, topoffs, sideoffs, flip);
+	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, thingx, thingy, thingz, camx, camy, height, width, topoffs, sideoffs, flip);
 
 	if (vis == NULL)
 		return;
@@ -1250,7 +1260,11 @@ void R_ProjectParticle (particle_t *particle, const sector_t *sector, int fakesi
 		sideoffs = patch->leftoffset();
 	}
 
-	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, x, y, z, height, width, topoffs, sideoffs, false);
+	// translate the particle's position into camera space
+	fixed_t tx, ty;
+	R_RotatePoint(x - viewx, y - viewy, ANG90 - viewangle, tx, ty);
+
+	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, x, y, z, tx, ty, height, width, topoffs, sideoffs, false);
 
 	if (vis == NULL)
 		return;
