@@ -3310,6 +3310,8 @@ void A_AddFlags(AActor* actor)
 
 	if (update_blockmap)
 		actor->LinkToWorld();
+
+	actor->UpdateActorLists();
 }
 
 //
