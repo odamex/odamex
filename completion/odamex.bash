@@ -62,7 +62,6 @@ function __odamex {
     [-file]=1
     [-deh]=1
     [-bex]=1
-    [-waddir]=1
   )
 
   # options where we can't provide reasonable completion
