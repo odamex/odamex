@@ -1,6 +1,6 @@
 ### libcurl ###
 
-if(BUILD_CLIENT)
+if(BUILD_CLIENT OR BUILD_TESTS)
   if(USE_INTERNAL_CURL)
     # [AM] Don't put an early return in this block, otherwise you run the risk
     #      of changes in the build cache not percolating down to the library.

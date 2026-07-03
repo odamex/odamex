@@ -110,7 +110,7 @@ struct fhfprint_t
 	[[nodiscard]]
 	bool operator==(std::string_view other) const
 	{
-		return other == this->toString();
+		return other == std::string_view(this->toString());
 	}
 
 	void clear()
@@ -330,7 +330,7 @@ struct level_locals_t
 
 	// The following are all used for ACS scripting
 	std::unique_ptr<FBehavior> behavior;
-	int32_t			vars[NUM_MAPVARS];
+	std::array<int32_t, NUM_MAPVARS> vars;
 
 	// The following are used for UMAPINFO
 	OLumpName		exitpic;

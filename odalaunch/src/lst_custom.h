@@ -21,9 +21,7 @@
 //
 //-----------------------------------------------------------------------------
 
-
-#ifndef LST_CUSTOM_H
-#define LST_CUSTOM_H
+#pragma once
 
 #include "odalaunch.h"
 
@@ -34,6 +32,12 @@
 #include <wx/imaglist.h>
 
 #include <vector>
+
+#if wxCHECK_VERSION(3, 3, 0)
+	#define ODALAUNCH_USE_LEGACY_IMAGELIST 0
+#else
+	#define ODALAUNCH_USE_LEGACY_IMAGELIST 1
+#endif
 
 class wxAdvancedListCtrl : public wxListView
 {
@@ -69,6 +73,12 @@ public:
 	{
 		return m_SpecialColumn;
 	}
+
+	struct sortKey
+	{
+		wxString text;
+		int image;
+	};
 
 	void Sort();
 
@@ -110,10 +120,16 @@ private:
 
 	bool m_HeaderUsable;
 
+	std::vector<sortKey> m_sortData;
+
+	#if !ODALAUNCH_USE_LEGACY_IMAGELIST
+	wxVector<wxBitmapBundle> m_Images;
+	#endif
+
 	std::vector<std::vector<wxListItem> > BackupItems;
+
+	friend int wxCALLBACK wxCompareFunction(wxIntPtr item1, wxIntPtr item2, wxIntPtr sortData);
 protected:
 	DECLARE_DYNAMIC_CLASS(wxAdvancedListCtrl)
 	DECLARE_EVENT_TABLE()
 };
-
-#endif

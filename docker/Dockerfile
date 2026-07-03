@@ -1,20 +1,22 @@
 # build stage for compiling odamex
-FROM ubuntu:20.04 AS build
+FROM alpine:3.23 AS build
+
 WORKDIR /build
-ENV DEBIAN_FRONTEND=noninteractive
-RUN true \
-    && apt-get update -qq \
-    && apt-get install -y --no-install-recommends tzdata\
-    && apt-get install -y -qq --no-install-recommends \
-        ca-certificates \
-        git \
-        gcc g++ \
-        cmake \
-        make \
-        zlib1g-dev \
-        libzstd1 libzstd-dev \
-        patch \
-        > /dev/null
+RUN apk add --no-cache \
+    python3 \
+    bash \
+    patch \
+    git \
+    gcc \
+    g++ \
+    musl-dev \
+    cmake \
+    ninja \
+    zlib-dev \
+    zstd-dev \
+    ca-certificates \
+    linux-headers \
+    tzdata
 
 # So we can use bash arrays (default /bin/sh doesn't support this)
 SHELL ["/bin/bash","-c"]
@@ -34,7 +36,7 @@ RUN mkdir /patches
 COPY docker-files/patches /patches
 RUN true \
     && shopt -s nullglob \
-    && for p in /patches/*.patch; do patch -p1 < $p; done
+    && for p in /patches/*.patch; do patch -p1 < "$p"; done
 
 # Update submodules
 RUN true \
@@ -49,14 +51,19 @@ RUN true \
 WORKDIR /build/odamex/build
 RUN true \
     && cmake -W no-dev \
+        -G Ninja \
         -D CMAKE_BUILD_TYPE=Release \
         -D CMAKE_CXX_COMPILER=g++ \
         -D CMAKE_C_COMPILER=gcc \
-        -D BUILD_CLIENT=0 -D BUILD_LAUNCHER=0 \
+        -D BUILD_CLIENT=0 \
+        -D BUILD_LAUNCHER=0 \
+        -D BUILD_TESTS=0 \
+        -D BUILD_MASTER=0 \
+        -D BUILD_SERVER=1 \
         -D CMAKE_C_FLAGS="-w" \
         -D CMAKE_CXX_FLAGS="-w" \
         .. \
-    && cmake --build . --parallel 4 --target odasrv
+    && cmake --build . --parallel 4
 
 # Install Odamex
 ENV INSTALL_DIR=/usr/local/games/odamex
@@ -74,15 +81,12 @@ RUN true \
 
 # Final stage for running the odamex server
 # Copies over everything /usr/local
-FROM ubuntu:20.04
+FROM alpine:3.23
 COPY --from=build /usr/local /usr/local/
-RUN true \
-    && apt-get update -qq \
-    && apt-get install -qq --no-install-recommends \
-        tini \
-        gosu \
-        > /dev/null \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache \
+    bash \
+    tini \
+    gosu
 
 # Environment variables used to map host UID/GID to internal
 # user used to launch odamex-server

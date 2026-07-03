@@ -760,8 +760,6 @@ SectorSnapshot::SectorSnapshot(int time, sector_t *sector) :
 			mDelay				= floor->m_Delay;
 			mOrgHeight			= floor->m_OrgHeight;
 			mFloorLine			= floor->m_Line;
-			mFloorOffset		= floor->m_Height;
-			mFloorChange		= floor->m_Change;
 		}
 		else if (sector->floordata->IsA(RUNTIME_CLASS(DPlat)))
 		{
@@ -983,8 +981,6 @@ void SectorSnapshot::toSector(sector_t *sector) const
 		floor->m_StepTime			= mStepTime;
 		floor->m_PerStepTime		= mPerStepTime;
 		floor->m_Line				= mFloorLine;
-		floor->m_Height				= mFloorOffset;
-		floor->m_Change				= mFloorChange;
 		floor->m_Texture			= mFloorTexture;
 	}
 

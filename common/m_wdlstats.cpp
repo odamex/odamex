@@ -926,6 +926,17 @@ int M_GetPlayerId(const player_t& player, team_t team)
 	return 0;
 }
 
+bool M_CheckIfPlayerInLogs(const int playerid)
+{
+	if (!::wdlstate.recording)
+		return false;
+
+	auto it = std::find_if(::wdlplayers.begin(), ::wdlplayers.end(),
+	                       [playerid](const auto& wp) { return wp.id == playerid; });
+
+	return it != ::wdlplayers.end();
+}
+
 void M_CommitWDLLog()
 {
 	if (!::wdlstate.recording || wdlevents.empty() ||

@@ -25,7 +25,7 @@
 
 extern const fixed_t NEARCLIP;
 
-extern seg_t*		curline;
+extern const seg_t*		curline;
 extern side_t*		sidedef;
 extern line_t*		linedef;
 extern sector_t*	frontsector;

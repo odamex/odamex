@@ -502,7 +502,7 @@ void ISDL20MouseInputDevice::gatherEvents()
 			{
 				ev.type = ev_keydown;
 				int direction = 1;
-				#if (SDL_VERSION >= SDL_VERSIONNUM(2, 0, 4))
+				#if SDL_VERSION_ATLEAST(2, 0, 4)
 				if (sdl_ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
 					direction = -1;
 				#endif
@@ -511,6 +511,10 @@ void ISDL20MouseInputDevice::gatherEvents()
 					ev.data1 = OKEY_MWHEELUP;
 				else if (direction * sdl_ev.wheel.y < 0)
 					ev.data1 = OKEY_MWHEELDOWN;
+				else if (direction * sdl_ev.wheel.x > 0)
+					ev.data1 = OKEY_MWHEELRIGHT;
+				else if (direction * sdl_ev.wheel.x < 0)
+					ev.data1 = OKEY_MWHEELLEFT;
 			}
 			else if (sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTONUP)
 			{
@@ -891,7 +895,7 @@ void ISDL20InputSubsystem::initKeyboard(int id)
 			device_name = device.mDeviceName;
 	}
 
-	PrintFmt(PRINT_HIGH, "I_InitInput: intializing {:s}\n", device_name);
+	PrintFmt(PRINT_HIGH, "I_InitInput: initializing {:s}\n", device_name);
 
 	setKeyboardInputDevice(new ISDL20KeyboardInputDevice(id));
 	registerInputDevice(getKeyboardInputDevice());
@@ -945,7 +949,7 @@ void ISDL20InputSubsystem::initMouse(int id)
 			device_name = device.mDeviceName;
 	}
 
-	PrintFmt(PRINT_HIGH, "I_InitInput: intializing {:s}\n", device_name);
+	PrintFmt(PRINT_HIGH, "I_InitInput: initializing {:s}\n", device_name);
 
 	setMouseInputDevice(new ISDL20MouseInputDevice(id));
 	assert(getMouseInputDevice() != NULL);
@@ -1004,7 +1008,7 @@ void ISDL20InputSubsystem::initJoystick(int id)
 			device_name = device.mDeviceName;
 	}
 
-	PrintFmt(PRINT_HIGH, "I_InitInput: intializing {:s}\n", device_name);
+	PrintFmt(PRINT_HIGH, "I_InitInput: initializing {:s}\n", device_name);
 
 	setJoystickInputDevice(new ISDL20JoystickInputDevice(id));
 	registerInputDevice(getJoystickInputDevice());

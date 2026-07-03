@@ -47,7 +47,7 @@ function BuildX86 {
     New-Item  -Force -ItemType "directory" -Path "${CurrentDir}\BuildX86"
     Set-Location -Path "${CurrentDir}\BuildX86"
 
-    cmake.exe -G "Visual Studio 17 2022" -A "Win32" "${CurrentDir}" `
+    cmake.exe -G "Visual Studio 18 2026" -A "Win32" "${CurrentDir}" `
         -DBUILD_OR_FAIL=1 `
         -DBUILD_CLIENT=1 -DBUILD_SERVER=1 `
         -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
@@ -130,17 +130,17 @@ function CopyFilesX86 {
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\SDL2_mixer.dll", `
         "${CurrentDir}\BuildX86\client\RelWithDebInfo\SDL2.dll", `
         "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\odalaunch.exe", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxbase315u_net_vc14x.dll", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxbase315u_vc14x.dll", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxbase315u_xml_vc14x.dll", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxmsw315u_core_vc14x.dll", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxmsw315u_html_vc14x.dll", `
-        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxmsw315u_xrc_vc14x.dll", `
+        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxbase32u_net_vc14x.dll", `
+        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxbase32u_vc14x.dll", `
+        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxbase32u_xml_vc14x.dll", `
+        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxmsw32u_core_vc14x.dll", `
+        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxmsw32u_html_vc14x.dll", `
+        "${CurrentDir}\BuildX86\odalaunch\RelWithDebInfo\wxmsw32u_xrc_vc14x.dll", `
         "${CurrentDir}\BuildX86\server\RelWithDebInfo\odasrv.exe" `
         -Destination "${X86Dir}\"
 
     # Get VC++ Redist
-    Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x86.exe" -OutFile "${X86Dir}\redist\vc_redist.x86.exe"
+    Invoke-WebRequest -Uri "https://aka.ms/vc14/vc_redist.x86.exe" -OutFile "${X86Dir}\redist\vc_redist.x86.exe"
 }
 
 function OutputsX86 {

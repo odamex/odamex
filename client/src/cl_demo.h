@@ -31,6 +31,7 @@ public:
 	[[nodiscard]] int getSpacing() const { return header.snapshot_spacing; }
 
 	void nextTic();
+	void prevTic();
 	void nextSnapshot();
 	void prevSnapshot();
 	void nextMap();

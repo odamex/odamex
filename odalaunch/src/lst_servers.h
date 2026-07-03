@@ -20,15 +20,14 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __LST_SERVERS_H__
-#define __LST_SERVERS_H__
+#pragma once
 
 #include "odalaunch.h"
 
 #include "net_packet.h"
 #include "lst_custom.h"
 
-typedef enum
+enum serverlist_fields_t
 {
 	serverlist_field_attr
 	,serverlist_field_name
@@ -41,7 +40,7 @@ typedef enum
 	,serverlist_field_address
 
 	,max_serverlist_fields
-} serverlist_fields_t;
+};
 
 class LstOdaServerList : public wxAdvancedListCtrl
 {
@@ -49,9 +48,9 @@ public:
 	LstOdaServerList();
 	virtual ~LstOdaServerList();
 
-	void AddServerToList(const odalpapi::Server& s, 
-                      wxInt32 index, 
-                      bool insert = true, 
+	void AddServerToList(const odalpapi::Server& s,
+                      wxInt32 index,
+                      bool insert = true,
                       bool IsCustomServer = false);
 
 	wxInt32 FindServer(wxString Address);
@@ -79,5 +78,3 @@ private:
 
 	DECLARE_EVENT_TABLE()
 };
-
-#endif // __LST_SERVERS_H__

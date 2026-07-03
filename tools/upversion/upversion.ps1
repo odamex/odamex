@@ -7,6 +7,7 @@ $majminpatchCommaRegex = "(\d+)[, ]+(\d+)[, ]+(\d+)"
 $majminpatchbuildCommaRegex = "(\d+)[,](\d+)[,](\d+)[,](\d+)"
 $configverRegex = "(\d{6})"
 $yearRegex = "2006-(\d{4})"
+$metainfoReleaseRegex = '(?m)^(\s*<release version=")\d+\.\d+\.\d+(" date="YYYY-MM-DD"\s*/>)'
 
 $maj = "$env:MAJORVERSION"
 $min = "$env:MINORVERSION"
@@ -48,8 +49,7 @@ $majminpatchFiles = @(
 '.\common\version.h',
 '.\odalaunch\res\Info.plist',
 '.\switch.cmake',
-'.\tools\upversion\upversion.ini',
-'.\packaging\linux\net.odamex.Odamex.metainfo.xml'
+'.\tools\upversion\upversion.ini'
 )
 
 $majminpatchCfgs = Get-ChildItem '.\config-samples' -Filter "*.cfg"
@@ -67,6 +67,10 @@ $majminpatchCommaSpaceFiles = @(
 
 $configverFiles = @(
 '.\common\version.h'
+)
+
+$metainfoReleaseFiles = @(
+'.\packaging\linux\net.odamex.Odamex.releases.xml'
 )
 
 # Update simple versions in individual files (e.g. 10.4.0)
@@ -113,7 +117,7 @@ foreach ($file in $majminpatchCommaFiles) {
    }
 }
 
-# Update min.maj.patch.build versions with commas (e.g. 10, 4, 0, 0)
+# Update maj.min.patch.build versions with commas (e.g. 10, 4, 0, 0)
 foreach ($file in $majminpatchCommaSpaceFiles) {
    $content = Get-Content -Raw $file
 
@@ -150,5 +154,18 @@ foreach ($file in $yearFiles) {
         $newcontent = $content -replace $yearRegex, $year
         Set-Content -Path $filename -Value $newcontent -NoNewline
         Write-Output "Replaced Year in $filename"
+   }
+}
+
+# Update the latest release in metainfo files
+foreach ($file in $metainfoReleaseFiles) {
+   $content = Get-Content -Raw $file
+
+   if ($content -match $metainfoReleaseRegex) {
+        Write-Output "Metainfo Release Version Match found in $file"
+
+        $newcontent = $content -replace $metainfoReleaseRegex, ("`${1}$majminpatch`${2}")
+        Set-Content -Path $file -Value $newcontent -NoNewline
+        Write-Output "Replaced Metainfo Release Version in $file"
    }
 }

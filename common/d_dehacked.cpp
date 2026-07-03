@@ -677,7 +677,6 @@ static void HandleMode(std::string_view header, DehScanner& scanner)
 
 	// Handle unknown or unimplemented data
 	DPrintFmt("Unknown chunk {} encountered. Skipping.\n", header);
-	scanner.skipLine();
 	while (scanner.getNextKeyValue());
 }
 
@@ -2080,7 +2079,7 @@ static void PatchText(int sizes, DehScanner& scanner)
 	DPrintFmt("Searching for text:\n{}\n", *oldStr);
 
 	// Search through sprite names
-	for (auto& [_, sprname] : sprnames)
+	for (auto&& [_, sprname] : sprnames)
 	{
 		if (sprname == *oldStr)
 		{
@@ -2448,7 +2447,7 @@ static void D_PostProcessDeh(const DehScanner::ParsedState& dp)
 		}
 	}
 
-	for (auto& [_, state] : states)
+	for (auto&& [_, state] : states)
 	{
 		const CodePtr* bexptr_match = &null_bexptr;
 

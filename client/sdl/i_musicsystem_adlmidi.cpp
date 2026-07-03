@@ -60,7 +60,7 @@ CVAR_FUNC_IMPL (snd_oplbank)
 		static_cast<AdlMidiMusicSystem *>(musicsystem)->applyCVars();
 }
 
-static int oplCoreMap[] = {ADLMIDI_EMU_DOSBOX, ADLMIDI_EMU_NUKED_174, ADLMIDI_EMU_NUKED};
+static int oplCoreMap[] = {ADLMIDI_EMU_DOSBOX, ADLMIDI_EMU_NUKED_FAST, ADLMIDI_EMU_NUKED};
 static int oplBankMap[] = {16, 14, 72};
 
 

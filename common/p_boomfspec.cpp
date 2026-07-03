@@ -93,7 +93,7 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 	{
 		// pointer to line function is NULL by default, set non-null if
 		// line special is walkover generalized linedef type
-		bool (*linefunc)(line_t * line) = NULL;
+		bool (*linefunc)(line_t& line) = nullptr;
 
 		// check each range of generalized linedefs
 		if ((unsigned)line->special >= GenEnd)
@@ -105,14 +105,17 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (!P_IsPlayerOrAvatar(*thing) && !bossaction)
 				if ((line->special & FloorChange) || !(line->special & FloorModel))
 					return false; // FloorModel is "Allow Monsters" if FloorChange is 0
+			if (!line->id) //jff 2/27/98 all walk generalized types require tag
+				return false;
 			linefunc = EV_DoGenFloor;
 		}
 		else if ((unsigned)line->special >= GenCeilingBase)
 		{
 			if (!P_IsPlayerOrAvatar(*thing) && !bossaction)
 				if ((line->special & CeilingChange) || !(line->special & CeilingModel))
-					return false; // CeilingModel is "Allow Monsters" if CeilingChange is
-					               // 0
+					return false; // CeilingModel is "Allow Monsters" if CeilingChange is 0
+			if (!line->id) //jff 2/27/98 all walk generalized types require tag
+				return false;
 			linefunc = EV_DoGenCeiling;
 		}
 		else if ((unsigned)line->special >= GenDoorBase)
@@ -124,6 +127,8 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 				if (line->flags & ML_SECRET) // they can't open secret doors either
 					return false;
 			}
+			if (!line->id) //3/2/98 move outside the monster check
+				return false;
 			linefunc = EV_DoGenDoor;
 		}
 		else if ((unsigned)line->special >= GenLockedBase)
@@ -146,6 +151,8 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (!P_IsPlayerOrAvatar(*thing) && !bossaction)
 				if (!(line->special & LiftMonster))
 					return false; // monsters disallowed
+			if (!line->id) //jff 2/27/98 all walk generalized types require tag
+				return false;
 			linefunc = EV_DoGenLift;
 		}
 		else if ((unsigned)line->special >= GenStairsBase)
@@ -153,6 +160,8 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (!P_IsPlayerOrAvatar(*thing) && !bossaction)
 				if (!(line->special & StairMonster))
 					return false; // monsters disallowed
+			if (!line->id) //jff 2/27/98 all walk generalized types require tag
+				return false;
 			linefunc = EV_DoGenStairs;
 		}
 		else if ((unsigned)line->special >= GenCrusherBase)
@@ -162,6 +171,8 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			if (!P_IsPlayerOrAvatar(*thing) && !bossaction)
 				if (!(line->special & StairMonster))
 					return false; // monsters disallowed
+			if (!line->id) //jff 2/27/98 all walk generalized types require tag
+				return false;
 			linefunc = EV_DoGenCrusher;
 		}
 
@@ -169,12 +180,13 @@ bool P_CrossCompatibleSpecialLine(line_t* line, int side, AActor* thing,
 			switch ((line->special & TriggerType) >> TriggerTypeShift)
 			{
 			case WalkOnce:
-				if (linefunc(line))
+				if (linefunc(*line))
 				{
 					return true;
 				}
+			// FIXME: is this fallthrough intended?
 			case WalkMany:
-				linefunc(line);
+				linefunc(*line);
 				return true;
 			default: // if not a walk type, do nothing here
 				return false;
@@ -1245,6 +1257,10 @@ void P_PlayerInCompatibleSector(player_t& player)
 	if (player.spectator)
 		return;
 
+	// Being destroyed / unlinked from the map?
+	if (not (player.mo && player.mo->subsector))
+		return;
+
 	// Falling, not all the way down yet?
 	if (player.mo->z != P_FloorHeight(player.mo) && !player.mo->waterlevel)
 		return;
@@ -1314,12 +1330,11 @@ void P_PlayerInCompatibleSector(player_t& player)
 				{
 					if (sv_allowexit)
 					{
-						for (Players::iterator it = ::players.begin();
-						     it != ::players.end(); ++it)
+						for (auto& pl : ::players)
 						{
-							if (player.ingame() && player.health > 0 && !(player.cheats & CF_GODMODE))
+							if (pl.ingame() && pl.health > 0 && !(pl.cheats & CF_GODMODE))
 							{
-								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
+								P_DamageMobj(pl.mo, NULL, NULL, 10000, MOD_EXIT);
 							}
 						}
 						G_ExitLevel(0, 1);
@@ -1339,12 +1354,11 @@ void P_PlayerInCompatibleSector(player_t& player)
 				{
 					if (sv_allowexit)
 					{
-						for (Players::iterator it = ::players.begin();
-						     it != ::players.end(); ++it)
+						for (auto& pl : ::players)
 						{
-							if (player.ingame() && player.health > 0 && !(player.cheats & CF_GODMODE))
+							if (pl.ingame() && pl.health > 0 && !(pl.cheats & CF_GODMODE))
 							{
-								P_DamageMobj((*it).mo, NULL, NULL, 10000, MOD_EXIT);
+								P_DamageMobj(pl.mo, NULL, NULL, 10000, MOD_EXIT);
 							}
 						}
 						G_SecretExitLevel(0, 1);
@@ -1379,12 +1393,12 @@ void P_PlayerInCompatibleSector(player_t& player)
 //
 bool P_ActorInCompatibleSector(AActor* actor)
 {
-	if (!actor)
+	if (not (actor && actor->subsector))
 		return false;
 
-	sector_t* sector = actor->subsector->sector;
+	const bool sectorHasKillMonstersAction = actor->subsector->sector->special & KILL_MONSTERS_MASK;
 
-	if (sector && sector->special & KILL_MONSTERS_MASK && actor->z == actor->floorz &&
+	if (sectorHasKillMonstersAction && actor->z == actor->floorz &&
 	    !P_IsPlayerOrAvatar(*actor) && actor->flags & MF_SHOOTABLE && !(actor->flags & MF_FLOAT))
 	{
 		P_DamageMobj(actor, NULL, NULL, 10000);
@@ -1918,7 +1932,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 
 	// pointer to line function is NULL by default, set non-null if
 	// line special is push or switch generalized linedef type
-	bool (*linefunc)(line_t * line) = nullptr;
+	bool (*linefunc)(line_t& line) = nullptr;
 
 	// check each range of generalized linedefs
 	if ((unsigned)line->special >= GenEnd)
@@ -2009,7 +2023,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case PushOnce:
 			if (!side)
 			{
-				if (linefunc(line))
+				if (linefunc(*line))
 				{
 					reuse = false;
 					trigger = true;
@@ -2019,20 +2033,20 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 		case PushMany:
 			if (!side)
 			{
-				linefunc(line);
+				linefunc(*line);
 				reuse = true;
 				trigger = true;
 			}
 			break;
 		case SwitchOnce:
-			if (linefunc(line))
+			if (linefunc(*line))
 			{
 				reuse = false;
 				trigger = true;
 			}
 			break;
 		case SwitchMany:
-			if (linefunc(line))
+			if (linefunc(*line))
 			{
 				reuse = true;
 				trigger = true;
@@ -3379,7 +3393,7 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 
 	// pointer to line function is NULL by default, set non-null if
 	// line special is gun triggered generalized linedef type
-	bool (*linefunc)(line_t * line) = nullptr;
+	bool (*linefunc)(line_t& line) = nullptr;
 
 	// check each range of generalized linedefs
 	if ((unsigned)line->special >= GenEnd)
@@ -3391,6 +3405,8 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		if (!P_IsPlayerOrAvatar(*thing))
 			if ((line->special & FloorChange) || !(line->special & FloorModel))
 				return false; // FloorModel is "Allow Monsters" if FloorChange is 0
+		if (!line->id) //jff 2/27/98 all gun generalized types require tag
+			return false;
 		linefunc = EV_DoGenFloor;
 	}
 	else if ((unsigned)line->special >= GenCeilingBase)
@@ -3398,6 +3414,8 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		if (!P_IsPlayerOrAvatar(*thing))
 			if ((line->special & CeilingChange) || !(line->special & CeilingModel))
 				return false; // CeilingModel is "Allow Monsters" if CeilingChange is 0
+		if (!line->id) //jff 2/27/98 all gun generalized types require tag
+			return false;
 		linefunc = EV_DoGenCeiling;
 	}
 	else if ((unsigned)line->special >= GenDoorBase)
@@ -3409,6 +3427,8 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 			if (line->flags & ML_SECRET) // they can't open secret doors either
 				return false;
 		}
+		if (!line->id) //jff 2/27/98 all gun generalized types require tag
+			return false;
 		linefunc = EV_DoGenDoor;
 	}
 	else if ((unsigned)line->special >= GenLockedBase)
@@ -3422,6 +3442,8 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 				return false;
 		}
 		else
+			return false;
+		if (!line->id) //jff 2/27/98 all gun generalized types require tag
 			return false;
 		linefunc = EV_DoGenLockedDoor;
 	}
@@ -3437,6 +3459,8 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		if (!P_IsPlayerOrAvatar(*thing))
 			if (!(line->special & StairMonster))
 				return false; // monsters disallowed
+		if (!line->id) //jff 2/27/98 all gun generalized types require tag
+			return false;
 		linefunc = EV_DoGenStairs;
 	}
 	else if ((unsigned)line->special >= GenCrusherBase)
@@ -3444,6 +3468,8 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		if (!P_IsPlayerOrAvatar(*thing))
 			if (!(line->special & StairMonster))
 				return false; // monsters disallowed
+		if (!line->id) //jff 2/27/98 all gun generalized types require tag
+			return false;
 		linefunc = EV_DoGenCrusher;
 	}
 
@@ -3451,13 +3477,13 @@ bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line)
 		switch ((line->special & TriggerType) >> TriggerTypeShift)
 		{
 		case GunOnce:
-			if (linefunc(line))
+			if (linefunc(*line))
 			{
 				return true;
 			}
 			return false;
 		case GunMany:
-			if (linefunc(line))
+			if (linefunc(*line))
 			{
 				return true;
 			}

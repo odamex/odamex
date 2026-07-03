@@ -93,5 +93,5 @@ void OdaInfoBar::ShowMessage(const wxString& Message, wxWindowID BtnId,
 
 void OdaInfoBar::ShowMessage(const wxString& Message)
 {
-	ShowMessage(Message, wxID_ANY, NULL, "");
+	ShowMessage(Message, wxID_ANY, nullptr, "");
 }
