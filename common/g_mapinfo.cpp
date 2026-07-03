@@ -1411,13 +1411,13 @@ void ParseEpisodeInfo(OScanner& os)
 		if (os.compareToken("{"))
 		{
 			// Detected new-style MAPINFO
-			os.error("Detected incorrectly placed curly brace in MAPINFO episode definiton");
+			os.error("Detected incorrectly placed curly brace in MAPINFO episode definition");
 		}
 		else if (os.compareToken("}"))
 		{
 			if (new_mapinfo == false)
 				os.error("Detected incorrectly placed curly brace in MAPINFO episode "
-				        "definiton");
+				        "definition");
 			else
 				break;
 		}
@@ -1664,7 +1664,15 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 
 	level_pwad_info_t defaultinfo{};
 
-	const char* buffer = W_CacheLumpNum<char>(lump, PU_STATIC);
+	// if no sky is defined, it will show texture 0 (aastinky/aashitty)
+	// so instead, lets just try to give it the first defined sky in the level set.
+	if (levels.size() > 0 && defaultinfo.skypic == "")
+	{
+		level_pwad_info_t& def = levels.at(0);
+		defaultinfo.skypic = def.skypic;
+	}
+
+	const char* buffer = static_cast<char*>(W_CacheLumpNum(lump, PU_STATIC));
 
 	const OScannerConfig config = {
 	    lumpname, // lumpName
@@ -1678,6 +1686,14 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 		if (os.compareTokenNoCase("defaultmap"))
 		{
 			defaultinfo = level_pwad_info_t();
+
+			// if no sky is defined, it will show texture 0 (aastinky/aashitty)
+			// so instead, lets just try to give it the first defined sky in the level set.
+			if (levels.size() > 0 && defaultinfo.skypic == "")
+			{
+				level_pwad_info_t& def = levels.at(0);
+				defaultinfo.skypic = def.skypic;
+			}
 
 			MapInfoDataSetter<level_pwad_info_t> defaultsetter(defaultinfo);
 			ParseMapInfoLower<level_pwad_info_t>(os, defaultsetter);
@@ -1705,25 +1721,14 @@ void ParseMapInfoLump(int lump, const OLumpName& lumpname)
 				    LEVEL_NOINTERMISSION | LEVEL_EVENLIGHTING | LEVEL_SNDSEQTOTALCTRL;
 			}
 
-			// Build upon already defined levels, that way we don't miss any defaults
-			bool levelExists = levels.findByName(map_name).exists();
-
 			// Find the level.
-			level_pwad_info_t& info = levelExists
+			level_pwad_info_t& info = levels.findByName(map_name).exists()
 				? levels.findByName(map_name)
 				: levels.create();
 
-			if (!levelExists)
-				info = defaultinfo;
-
-			// for maps above 32, if no sky is defined, it will show texture 0 (aastinky)
-			// so instead, lets just try to give it the first defined sky in the level set.
-			if (levels.size() > 0 && defaultinfo.skypic == "")
-			{
-				level_pwad_info_t& def = levels.at(0);
-				info.skypic = def.skypic;
-			}
-
+			// Hexen/ZDoom mapinfo always loads from the default defining a new map
+			// Changing this to be conditional will break most wads that use defaultmap
+			info = defaultinfo;
 			info.mapname = map_name;
 
 			// Map name.

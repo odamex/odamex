@@ -855,6 +855,36 @@ void P_SwitchSpyOnNoLives(const player_t& player)
 	}
 }
 
+void P_BumpPlayerCounters(player_t& player)
+{
+	// Counters, time dependent power ups.
+
+	// Strength counts up to diminish fade.
+	if (player.powers[pw_strength])
+		player.powers[pw_strength]++;
+
+	if (player.powers[pw_invulnerability])
+		player.powers[pw_invulnerability]--;
+
+	if (player.powers[pw_invisibility])
+		player.powers[pw_invisibility]--;
+
+	if (player.powers[pw_infrared])
+		player.powers[pw_infrared]--;
+
+	if (player.powers[pw_ironfeet])
+		player.powers[pw_ironfeet]--;
+
+	if (player.damagecount)
+		player.damagecount--;
+
+	if (player.bonuscount)
+		player.bonuscount--;
+
+	if (player.hazardcount)
+		player.hazardcount--;
+}
+
 void P_SetPlayerPowerupStatuses(player_t& player, std::span<const int, NUMPOWERS> powers)
 {
 	if (!player.mo)
@@ -1020,46 +1050,16 @@ void P_PlayerThink (player_t& player)
 	// cycle psprites
 	P_MovePsprites (player);
 
-	// Counters, time dependent power ups.
+	P_BumpPlayerCounters(player);
 
-	// Strength counts up to diminish fade.
-	if (player.powers[pw_strength])
-		player.powers[pw_strength]++;
-
-	if (player.powers[pw_invulnerability])
-		player.powers[pw_invulnerability]--;
-
-	if (player.powers[pw_invisibility])
-		player.powers[pw_invisibility]--;
-
-	// We don't do this check in the above if-block because a PlayerInfo message
-	// can potentially cause the power to get zeroed-out suddenly, leaving the
-	// SHADOW flag set.
-	if (player.powers[pw_invisibility] == 0)
+	if (not player.powers[pw_invisibility])
 		player.mo->flags &= ~MF_SHADOW;
-
-	if (player.powers[pw_infrared])
-		player.powers[pw_infrared]--;
-
-	if (player.powers[pw_ironfeet])
-		player.powers[pw_ironfeet]--;
 
 	// For offline/chase cam
 	P_SetPlayerPowerupStatuses(player, player.powers);
 
-	if (player.damagecount)
-		player.damagecount--;
-
-	if (player.bonuscount)
-		player.bonuscount--;
-
-	if (player.hazardcount)
-	{
-		player.hazardcount--;
-		if (!(::level.time % player.hazardinterval) &&
-		    player.hazardcount > 16 * TICRATE)
-			P_DamageMobj(player.mo, NULL, NULL, 5);
-	}
+	if (player.hazardcount && not (::level.time % player.hazardinterval) && player.hazardcount > 16 * TICRATE)
+		P_DamageMobj(player.mo, NULL, NULL, 5);
 
 	// Handling colormaps.
 	if (displayplayer().powers[pw_invulnerability])
