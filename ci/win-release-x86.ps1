@@ -140,7 +140,7 @@ function CopyFilesX86 {
         -Destination "${X86Dir}\"
 
     # Get VC++ Redist
-    Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vc_redist.x86.exe" -OutFile "${X86Dir}\redist\vc_redist.x86.exe"
+    Invoke-WebRequest -Uri "https://aka.ms/vc14/vc_redist.x86.exe" -OutFile "${X86Dir}\redist\vc_redist.x86.exe"
 }
 
 function OutputsX86 {

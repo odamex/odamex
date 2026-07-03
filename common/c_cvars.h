@@ -146,6 +146,8 @@ public:
 	[[nodiscard]] int asInt() const { return static_cast<int>(std::round(m_Value)); }
 	[[nodiscard]] bool asBool() const { return m_Value != 0; }
 
+	[[nodiscard]] explicit operator bool () const { return asBool(); }
+
 	inline void Callback (){ if (m_Callback) m_Callback (*this); }
 
 	void SetDefault (const char *value);
