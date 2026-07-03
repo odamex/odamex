@@ -99,6 +99,73 @@ NetIDHandler ServerNetID;
 typedef std::map<uint32_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
 
+//
+// AActor slab pool
+//
+// Actors are carved out of large contiguous slabs of memory instead of ad-hoc heap
+// allocations. Dead actors are threaded onto a freelist and reused, so after
+// the initial ramp-up allocation is a couple of pointer swaps, and actors
+// that are alive at the same time tend to sit near each other in memory.
+// 
+// Probably not thread safe, needs a revamp if the renderer goes multi-threaded.
+//
+namespace
+{
+
+constexpr size_t ACTORS_PER_SLAB = 256;
+
+struct FreeActorSlot
+{
+	FreeActorSlot* next;
+};
+
+std::vector<void*> actorSlabs;
+FreeActorSlot* freeActorSlots;
+
+}
+
+void* AActor::operator new(size_t size)
+{
+	// not one of ours? (a hypothetical derived class) - use the heap
+	if (size != sizeof(AActor))
+		return ::operator new(size);
+
+	if (!freeActorSlots)
+	{
+		char* slab = static_cast<char*>(::operator new(sizeof(AActor) * ACTORS_PER_SLAB));
+		actorSlabs.push_back(slab);
+
+		// thread the fresh slab onto the freelist back-to-front, so slots
+		// are handed out in ascending address order
+		for (size_t i = ACTORS_PER_SLAB; i-- > 0; )
+		{
+			FreeActorSlot* slot = reinterpret_cast<FreeActorSlot*>(slab + i * sizeof(AActor));
+			slot->next = freeActorSlots;
+			freeActorSlots = slot;
+		}
+	}
+
+	FreeActorSlot* slot = freeActorSlots;
+	freeActorSlots = slot->next;
+	return slot;
+}
+
+void AActor::operator delete(void* ptr, size_t size)
+{
+	if (ptr == nullptr)
+		return;
+
+	if (size != sizeof(AActor))
+	{
+		::operator delete(ptr);
+		return;
+	}
+
+	FreeActorSlot* slot = static_cast<FreeActorSlot*>(ptr);
+	slot->next = freeActorSlots;
+	freeActorSlots = slot;
+}
+
 AActor::ActorClassList AActor::s_friendlies;
 AActor::ActorClassList AActor::s_hostiles;
 

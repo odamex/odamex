@@ -481,6 +481,9 @@ public:
 	void Destroy () override;
 	~AActor () override;
 
+	void* operator new(size_t size);
+	void operator delete(void* ptr, size_t size);
+
 	void RunThink () override;
 	void PostThink() override;
 
