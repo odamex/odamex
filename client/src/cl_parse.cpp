@@ -517,7 +517,16 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	P_ClearId(netid);
 
-	AActor* mo = new AActor(base.pos.x, base.pos.y, base.pos.z, type);
+	const bool floatbob = (mobjinfo[type].flags2 & MF2_FLOATBOB);
+	// Spawn on the floor first so special1 can store the bob center offset.
+	AActor* mo = new AActor(base.pos.x, base.pos.y, floatbob ? ONFLOORZ : base.pos.z, type);
+	if (floatbob)
+	{
+		mo->UnlinkFromWorld();
+		mo->z = base.pos.z;
+		mo->special1 = mo->z - mo->floorz;
+		mo->LinkToWorld();
+	}
 	mo->baseline         = base;
 	mo->updatedDuringTic = gametic;
 	mo->mobjtic          = msg->timebase_tic();
@@ -550,6 +559,8 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			mo->ceilingz = P_CeilingHeight(mo);
 			mo->dropoffz = mo->floorz;
 			mo->floorsector = mo->subsector->sector;
+			if (floatbob)
+				mo->special1 = mo->z - mo->floorz;
 		}
 	}
 
@@ -1133,6 +1144,8 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 	else
 	{
 		CL_MoveThing(mo, update.pos.x, update.pos.y, update.pos.z);
+		if ((flags & baseline_t::POSZ) && (mo->flags2 & MF2_FLOATBOB))
+			mo->special1 = mo->z - mo->floorz;
 		mo->angle = update.angle;
 		mo->momx = update.mom.x;
 		mo->momy = update.mom.y;

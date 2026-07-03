@@ -405,7 +405,8 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	}
 	if (bflags & baseline_t::POSZ)
 	{
-		apos->set_z(mo->z);
+		// Send the bob center, not the per-tic visual offset.
+		apos->set_z((mo->flags2 & MF2_FLOATBOB) ? mo->floorz + mo->special1 : mo->z);
 	}
 	if (bflags & baseline_t::ANGLE)
 	{
@@ -648,7 +649,8 @@ odaproto::svc::UpdateMobj SVC_UpdateMobj(const AActor& mobj)
 	}
 	if (flags & baseline_t::POSZ)
 	{
-		pos->set_z(mobj.z);
+		// Send the bob center, not the per-tic visual offset.
+		pos->set_z((mobj.flags2 & MF2_FLOATBOB) ? mobj.floorz + mobj.special1 : mobj.z);
 	}
 	if (flags & baseline_t::ANGLE)
 	{
