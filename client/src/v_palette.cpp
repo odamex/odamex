@@ -1007,7 +1007,7 @@ static void BuildColoredLights(shademap_t* maps, const int lr, const int lg, con
 	for (unsigned int l = 0; l < NUMCOLORMAPS; l++)
 	{
 		// Build the colormap and shademap:
-		palindex_t* colormap = build_colormap ? maps->colormap + 256 * l : NULL;
+		palindex_t* colormap = build_colormap ? maps->colormap + 256 * l : nullptr;
 		argb_t* shademap = maps->shademap + 256 * l;
 		for (unsigned int c = 0; c < 256; c++)
 		{
