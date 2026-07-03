@@ -1079,61 +1079,46 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 			current_actor = actor;
 			current_allaround = allaround;
 
-			if (list.Count() * 4 <= ownCount && list.Count() <= 64)
+			int x = (actor->x - bmaporgx) >> MAPBLOCKSHIFT;
+			int y = (actor->y - bmaporgy) >> MAPBLOCKSHIFT;
+
+			// First we check the exact blockmap for the monster.
+			if (!P_BlockThingsIterator(x, y, PIT_FindTarget))
+				return true;
+
+			int d = 0;
+			// Then we worm around a lil bit
+			for (d = 1; d < 5; d++)
 			{
-				// If there's only a few monsters, search them all.
-				// This is faster than searching the blockmap.
-				//
-				// 25% of the list with a cap of 64 monsters.
-				for (AActor* mo = list.Head(); mo; mo = mo->tlnext)
-				{
-					if (!PIT_FindTarget(mo))
+				int i = 1 - d;
+				do
+					if (!P_BlockThingsIterator(x + i, y - d, PIT_FindTarget) ||
+					    !P_BlockThingsIterator(x + i, y + d, PIT_FindTarget))
 						return true;
-				}
+				while (++i < d);
+
+				do
+					if (!P_BlockThingsIterator(x - d, y + i, PIT_FindTarget) ||
+					    !P_BlockThingsIterator(x + d, y + i, PIT_FindTarget))
+						return true;
+				while (--i + d >= 0);
 			}
-			else
+
+			// Random number of monsters, to prevent patterns from forming
+			int n = (P_Random() & 31) + 15;
+
+			for (AActor* mo = list.Head(); mo; mo = mo->tlnext)
 			{
-				int x = (actor->x - bmaporgx) >> MAPBLOCKSHIFT;
-				int y = (actor->y - bmaporgy) >> MAPBLOCKSHIFT;
+				if (--n < 0)
+				{
+					// Only a subset of the monsters were searched. Move all of
+					// the ones which were searched so far, to the end of the list.
 
-				// First we check the exact blockmap for the monster.
-				if (!P_BlockThingsIterator(x, y, PIT_FindTarget))
+					list.MoveFrontToEnd(mo);
+					break;
+				}
+				else if (!PIT_FindTarget(mo))
 					return true;
-
-				int d = 0;
-				// Then we worm around a lil bit
-				for (d = 1; d < 5; d++)
-				{
-					int i = 1 - d;
-					do
-						if (!P_BlockThingsIterator(x + i, y - d, PIT_FindTarget) ||
-						    !P_BlockThingsIterator(x + i, y + d, PIT_FindTarget))
-							return true;
-					while (++i < d);
-
-					do
-						if (!P_BlockThingsIterator(x - d, y + i, PIT_FindTarget) ||
-						    !P_BlockThingsIterator(x + d, y + i, PIT_FindTarget))
-							return true;
-					while (--i + d >= 0);
-				}
-
-				// Random number of monsters, to prevent patterns from forming
-				int n = (P_Random() & 31) + 15;
-
-				for (AActor* mo = list.Head(); mo; mo = mo->tlnext)
-				{
-					if (--n < 0)
-					{
-						// Only a subset of the monsters were searched. Move all of
-						// the ones which were searched so far, to the end of the list.
-
-						list.MoveFrontToEnd(mo);
-						break;
-					}
-					else if (!PIT_FindTarget(mo))
-						return true;
-				}
 			}
 		}
 	}
