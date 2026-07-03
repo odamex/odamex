@@ -659,6 +659,11 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	//              with the same state, anim tics, and mobjtic as the server would on the next
 	//              frame following the SpawnMobj command.
 	//
+	//                  Remember, there are functions like P_CheckMissileSpawn, which may have
+	//                  critically modified animation tics before even running through the first
+	//                  mobj's first think + action calls, and all of that precedes the creation
+	//                  of the SpawnMobj message.
+	//
 	//          2.  If the mobj truly spawned on the server in the same tic as the SpawnMobj,
 	//              any complete state transitions that took place on the mobj must take place
 	//              in this function as well.  That is, any spawn-time action functions due to

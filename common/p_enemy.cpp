@@ -2136,6 +2136,18 @@ void A_Tracer (AActor *actor)
 	//        may be a very-difficult-to-predict player mobj.  A precondition for this is
 	//        the gametic timestamping refactor, and it MAY require a more generic physical
 	//        rollback reconciliation approach and/or a fancy Kalman-style filter.
+	//
+	//        The main test case:  No Time 2 Freeze (NT2F.wad), map22.
+	//
+	//        The revenants spawn custom missile mobjs that are _not_ MT_TRACER, but still
+	//        go through A_Tracer as their main action function once every 2 tics, and
+	//        before the first RunThink.  Yet, as they are not MT_TRACER, they also get
+	//        less-frequent UpdateMobj messages if they randomly happen to not actually do
+	//        any tracing on the server, owing to ye olde revenant scheduling issue above.
+	//        In that case, if the client incorrectly predicts a turn, then the predicted
+	//        missile is allowed to stray pretty far afield before being corrected by
+	//        UpdateMobj.  When that happens, it is exceptionally jarring for any player
+	//        that sees it.  Whatever solution we arrive on must NOT be subject to that bug.
 	if (not serverside)
 		return;
 
