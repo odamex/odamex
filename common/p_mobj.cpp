@@ -1402,6 +1402,10 @@ void AActor::Serialize (FArchive &arc)
 		if (effects)
 			LinkEffectsList();
 
+		// Re-register with the friendly/hostile targeting lists -- flags,
+		// health and type have all been read by this point.
+		UpdateActorLists();
+
 		LinkToWorld ();
 		floorsector = subsector ? subsector->sector : nullptr;
 
