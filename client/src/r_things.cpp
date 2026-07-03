@@ -151,16 +151,16 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 	while (!post->end())
 	{
 		// calculate unclipped screen coordinates for post
-		int topscreen = sprtopscreen + spryscale * post->topdelta + 1;
+		const int topscreen = sprtopscreen + spryscale * post->topdelta;
 
-		dcol.yl = (topscreen + FRACUNIT) >> FRACBITS;
+		dcol.yl = topscreen >> FRACBITS;
 		dcol.yh = (topscreen + spryscale * post->length) >> FRACBITS;
 
-		dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
+		dcol.yl = MAX(dcol.yl, MAX(mceilingclip[dcol.x], 0));
 		dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
 
 		dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS)
-			+ (dcol.yl * dcol.iscale) - FixedMul(centeryfrac - FRACUNIT, dcol.iscale);
+			+ (dcol.yl * dcol.iscale) - FixedMul((centery << FRACBITS) - FRACUNIT, dcol.iscale);
 
 		if (dcol.texturefrac < 0)
 		{
@@ -313,7 +313,7 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 	dcol.iscale = 0xffffffffu / (unsigned)vis->yscale;
 	dcol.texturemid = vis->texturemid;
 	spryscale = vis->yscale;
-	sprtopscreen = centeryfrac - FixedMul(dcol.texturemid, spryscale);
+	sprtopscreen = (centery << FRACBITS) - FixedMul(dcol.texturemid, spryscale);
 
 	// [SL] set up the array that indicates which patch column to use for each screen column
 	fixed_t colfrac = vis->startfrac;
@@ -1234,7 +1234,7 @@ void R_DrawParticle(vissprite_t* vis)
 {
 	// Don't bother clipping each individual column
 	int x1 = vis->x1, x2 = vis->x2;
-	int y1 = MAX(vis->y1, MAX(mceilingclip[x1] + 1, mceilingclip[x2] + 1));
+	int y1 = MAX(vis->y1, MAX(mceilingclip[x1], mceilingclip[x2]));
 	int y2 = MIN(vis->y2, MIN(mfloorclip[x1] - 1, mfloorclip[x2] - 1));
 
 	dspan.x1 = vis->x1;
