@@ -598,10 +598,15 @@ struct drawseg_t
     int				silhouette;
 
     // Pointers to lists for sprite clipping,
-    //  all three adjusted so [x1] is first value.
+    //  all adjusted so [x1] is first value.
     int*			sprtopclip;
     int*			sprbottomclip;
 	tallpost_t**	midposts;
+
+	// per-column scales for the masked midtexture, in texture y-scale
+	// space; saved from wallscalex so the masked pass draws with the same
+	// scales R_PrepWall gave the wall tiers
+	fixed_t*		midscales;
 };
 
 

@@ -45,6 +45,7 @@
 // a pool of bytes allocated for sprite clipping arrays
 Pool<tallpost_t*> masked_midposts_pool(4096);
 Pool<int> sprclip_pool(4096);
+Pool<fixed_t> midscales_pool(4096);
 
 // OPTIMIZE: closed two sided lines as single sided
 
@@ -96,10 +97,7 @@ extern fixed_t FocalLengthY;
 extern float yfoc;
 
 static tallpost_t** masked_midposts;
-
-// scale at the masked seg's endpoint columns, for per-column interpolation
-static fixed_t sprinvyscale1, sprinvyscale2;
-static int sprscalex1, sprscalex2;
+static const fixed_t* masked_midscales;
 
 EXTERN_CVAR(r_clipmaskedspecial)
 
@@ -200,13 +198,8 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 	// can be off enough that by accumulation, it draws a row with no data.
 	// Your midtex gap! :)
 	//
-	// Instead of using the scalestep, we calculate spryscale
-	// via interpolation of the two endpoint scales.
-	if (sprscalex2 > sprscalex1)
-		spryscale = sprinvyscale1 + fixed_t(int64_t(dcol.x - sprscalex1) *
-			(sprinvyscale2 - sprinvyscale1) / (sprscalex2 - sprscalex1));
-	else
-		spryscale = sprinvyscale1;
+	// Instead we get spryscale from a value precalculated in R_StoreWallRange.
+	spryscale = masked_midscales[dcol.x];
 
 	if (post != NULL && spryscale > 0)
 	{
@@ -689,11 +682,7 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 		lightnum <  0 ? scalelight[0] : scalelight[lightnum];
 
 	masked_midposts = ds->midposts;
-
-	sprscalex1 = ds->x1;
-	sprscalex2 = ds->x2;
-	sprinvyscale1 = R_TexInvScaleY(ds->scale1, texnum);
-	sprinvyscale2 = R_TexInvScaleY(ds->scale2, texnum);
+	masked_midscales = ds->midscales;
 
 	rw_lightstep = ds->lightstep;
 	rw_light = ds->light + (x1 - ds->x1) * rw_lightstep;
@@ -883,6 +872,7 @@ void R_StoreWallRange(int start, int stop)
 	//	and decide if floor / ceiling marks are needed
 	midtexture = toptexture = bottomtexture = maskedtexture = 0;
 	ds_p->midposts = NULL;
+	ds_p->midscales = NULL;
 
 	if (!backsector)
 	{
@@ -1053,6 +1043,20 @@ void R_StoreWallRange(int start, int stop)
 			// masked midtexture
 			maskedtexture = texturetranslation[sidedef->midtexture];
 			ds_p->midposts = masked_midposts = masked_midposts_pool.alloc(count) - start;
+
+			// save the per-column scales, pre-scaled into the
+			// midtexture's y-scale space, for the masked pass
+			fixed_t* midscales = midscales_pool.alloc(count) - start;
+			if (texturescaley[maskedtexture] == FRACUNIT)
+			{
+				memcpy(midscales + start, wallscalex + start, count * sizeof(*midscales));
+			}
+			else
+			{
+				for (int x = start; x <= stop; x++)
+					midscales[x] = R_TexInvScaleY(wallscalex[x], maskedtexture);
+			}
+			ds_p->midscales = midscales;
 		}
 
 		// [SL] additional fix for sky hack
@@ -1150,6 +1154,7 @@ void R_ClearOpenings()
 {
 	masked_midposts_pool.clear();
 	sprclip_pool.clear();
+	midscales_pool.clear();
 }
 
 VERSION_CONTROL (r_segs_cpp, "$Id$")
