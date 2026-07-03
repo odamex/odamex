@@ -862,6 +862,43 @@ fixed_t P_CalculateMinMom(const AActor *mo)
 }
 
 //
+// Floating item bobbing
+//
+// [RV] +FLOATBOB actors use the common ZDoom offset table.  
+// special1 stores the center offset from the floor.
+// The table supplies the visual bob.
+//
+static constexpr fixed_t FloatBobOffsets[64] =
+{
+	0, 51389, 102283, 152192,
+	200636, 247147, 291278, 332604,
+	370727, 405280, 435929, 462380,
+	484378, 501712, 514213, 521763,
+	524287, 521763, 514213, 501712,
+	484378, 462380, 435929, 405280,
+	370727, 332604, 291278, 247147,
+	200636, 152192, 102283, 51389,
+	-1, -51390, -102284, -152193,
+	-200637, -247148, -291279, -332605,
+	-370728, -405281, -435930, -462381,
+	-484380, -501713, -514215, -521764,
+	-524288, -521764, -514214, -501713,
+	-484379, -462381, -435930, -405280,
+	-370728, -332605, -291279, -247148,
+	-200637, -152193, -102284, -51389
+};
+
+static fixed_t P_FloatBobOffset(const AActor* mo)
+{
+	return FloatBobOffsets[(mo->rndindex + level.time) & 63];
+}
+
+static fixed_t P_FloatBobCenterZ(const AActor* mo)
+{
+	return mo->floorz + mo->special1;
+}
+
+//
 // P_MoveActor
 //
 // Tries to move an actor based on its momentum while performing
@@ -920,13 +957,15 @@ void P_MoveActor(AActor *mo)
 		return;		// actor was destroyed
 
 	if (mo->flags2 & MF2_FLOATBOB)
-	{ // Floating item bobbing motion (special1 is height)
-		mo->z = mo->floorz + mo->special1;
+	{
+		mo->z = P_FloatBobCenterZ(mo) + P_FloatBobOffset(mo);
 	}
-	if ((mo->z != mo->floorz) || mo->momz || BlockingMobj)
+	if (mo->momz || BlockingMobj ||
+	    (mo->z != mo->floorz &&
+	     (!(mo->flags2 & MF2_FLOATBOB) || P_FloatBobCenterZ(mo) != mo->floorz)))
 	{
 		// Handle Z momentum and gravity
-		if (P_AllowPassover() && (mo->flags2 & MF2_PASSMOBJ))
+		if (P_AllowPassover() && ((mo->flags2 & MF2_PASSMOBJ) || (mo->flags & MF_SPECIAL)))
 		{
 			if (!(onmo = P_CheckOnmobj(mo)))
 			{
@@ -953,7 +992,15 @@ void P_MoveActor(AActor *mo)
 						mo->player->deltaviewheight =
 						    (VIEWHEIGHT - mo->player->viewheight) >> 3;
 					}
-					mo->z = onmo->z + onmo->height;
+					if (mo->flags2 & MF2_FLOATBOB)
+					{
+						mo->special1 = onmo->z + onmo->height - mo->floorz;
+						mo->z = P_FloatBobCenterZ(mo) + P_FloatBobOffset(mo);
+					}
+					else
+					{
+						mo->z = onmo->z + onmo->height;
+					}
 				}
 
 				mo->flags2 |= MF2_ONMOBJ;
@@ -976,7 +1023,8 @@ void P_MoveActor(AActor *mo)
 		// killough 9/12/98: objects fall off ledges if they are hanging off
 		// slightly push off of ledge if hanging more than halfway off
 		// [RH] Be more restrictive to avoid pushing monsters/players down steps
-		if (!(mo->flags & MF_NOGRAVITY) && (mo->z > mo->dropoffz) && P_AllowDropOff())
+		if (!(mo->flags & MF_NOGRAVITY) && !(mo->flags2 & MF2_FLOATBOB) &&
+			(mo->z > mo->dropoffz) && P_AllowDropOff())
 		{
 			P_ApplyTorque(mo); // Apply torque
 		}
@@ -3110,8 +3158,7 @@ void P_RespawnSpecials (void)
 		mo->z -= mthing.z << FRACBITS;
 
 	if (mo->flags2 & MF2_FLOATBOB)
-	{ // Seed random starting index for bobbing motion
-		mo->health = M_Random();
+	{
 		mo->special1 = mthing.z << FRACBITS;
 	}
 
@@ -3577,8 +3624,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	mobj->spawnpoint = mthing;
 
 	if (mobj->flags2 & MF2_FLOATBOB)
-	{ // Seed random starting index for bobbing motion
-		mobj->health = M_Random();
+	{
 		mobj->special1 = mthing.z << FRACBITS;
 	}
 
@@ -3793,7 +3839,7 @@ void P_SetMobjBaseline(AActor& mo)
 
 	mo.baseline.pos.x = mo.x;
 	mo.baseline.pos.y = mo.y;
-	mo.baseline.pos.z = mo.z;
+	mo.baseline.pos.z = (mo.flags2 & MF2_FLOATBOB) ? P_FloatBobCenterZ(&mo) : mo.z;
 	mo.baseline.mom.x = mo.momx;
 	mo.baseline.mom.y = mo.momy;
 	mo.baseline.mom.z = mo.momz;
@@ -3822,7 +3868,8 @@ uint32_t P_GetMobjBaselineFlags(const AActor& mo)
 	{
 		flags |= baseline_t::POSY;
 	}
-	if (mo.baseline.pos.z != mo.z)
+	const fixed_t z = (mo.flags2 & MF2_FLOATBOB) ? P_FloatBobCenterZ(&mo) : mo.z;
+	if (mo.baseline.pos.z != z)
 	{
 		flags |= baseline_t::POSZ;
 	}
