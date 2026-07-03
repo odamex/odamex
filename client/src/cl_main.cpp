@@ -359,7 +359,7 @@ void Host_EndGame(const char *msg)
 
 void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int line)
 {
-	if(connected)
+	if(connected && !simulated_connection)
 	{
 		SZ_Clear(&net_buffer);
 		MSG_WriteMarker(&net_buffer, clc_disconnect);
@@ -411,7 +411,7 @@ void CL_QuitNetGame2(const netQuitReason_e reason, const char* file, const int l
 	if (netdemo.isRecording())
 		netdemo.stopRecording();
 
-	if (netdemo.isPlaying())
+	if (netdemo.isPlaying() || netdemo.isPaused())
 		netdemo.stopPlaying();
 
 	demoplayback = false;

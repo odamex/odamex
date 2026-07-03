@@ -48,11 +48,6 @@ void P_SetPillarDestroy(DPillar *pillar)
 
 IMPLEMENT_SERIAL (DPillar, DMover)
 
-DPillar::DPillar () :
-	m_Status(init)
-{
-}
-
 void DPillar::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);

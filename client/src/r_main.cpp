@@ -828,7 +828,7 @@ void R_SetupFrame (player_t *player)
 		memset (scalelightfixed, 0, MAXLIGHTSCALE*sizeof(*scalelightfixed));
 	}
 
-	if (use_localview && !::localview.skippitch)
+	if ((use_localview && !::localview.skippitch) || netdemo.isPaused())
 	{
 		R_ViewShear(clamp(camera->pitch - ::localview.pitch, -ANG(32), ANG(56)));
 	}

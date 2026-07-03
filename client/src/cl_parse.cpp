@@ -1239,6 +1239,11 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 
 		// [SL] 2012-04-23 - Clear predicted sectors
 		movingsectors.clear();
+
+		if (!netdemo.isPlaying())
+		{
+			::displayplayer_id = ::consoleplayer_id;
+		}
 	}
 
 	if (p.id == displayplayer().id)

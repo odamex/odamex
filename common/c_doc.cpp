@@ -26,10 +26,13 @@
 
 #include <algorithm>
 
+#include <json/json.h>
+
 #include "c_dispatch.h"
 #include "cmdlib.h"
 #include "i_system.h"
 #include "m_fileio.h"
+#include "version.h"
 
 #ifdef CLIENT_APP
 #define CS_STRING "Odamex Client"
@@ -226,6 +229,109 @@ static CvarView GetSortedCvarView()
 	return view;
 }
 
+/**
+ * @brief Render cvar information as a JSON object.
+ *
+ * @param out Output value to write to. Set to null for cvars that have no
+ * representable type.
+ * @param cvar Cvar to read.
+ */
+static void JSONCvarObject(Json::Value& out, const cvar_t& cvar)
+{
+	out = Json::Value(Json::objectValue);
+
+	// Type string and whether the cvar carries a numeric range.
+	const char* typestr = NULL;
+	bool numeric = false;
+	switch (cvar.type())
+	{
+	case CVARTYPE_BOOL:
+		typestr = "boolean";
+		break;
+	case CVARTYPE_BYTE:
+	case CVARTYPE_WORD:
+	case CVARTYPE_INT:
+		typestr = "integer";
+		numeric = true;
+		break;
+	case CVARTYPE_FLOAT:
+		typestr = "number";
+		numeric = true;
+		break;
+	case CVARTYPE_STRING:
+		typestr = "string";
+		break;
+	default:
+		out = Json::Value(Json::nullValue);
+		return;
+	}
+
+	out["name"] = cvar.name();
+	out["type"] = typestr;
+	out["helptext"] = cvar.helptext();
+
+	// Default value, typed to match the cvar.
+	switch (cvar.type())
+	{
+	case CVARTYPE_BOOL:
+		out["default"] = atoi(cvar.getDefault().c_str()) != 0;
+		break;
+	case CVARTYPE_BYTE:
+	case CVARTYPE_WORD:
+	case CVARTYPE_INT:
+		out["default"] = atoi(cvar.getDefault().c_str());
+		break;
+	case CVARTYPE_FLOAT:
+		out["default"] = atof(cvar.getDefault().c_str());
+		break;
+	case CVARTYPE_STRING:
+		out["default"] = cvar.getDefault();
+		break;
+	default:
+		break;
+	}
+
+	// Min/max only for numeric cvars, and only when a bound is actually set.
+	if (numeric)
+	{
+		if (cvar.getMinValue() != -FLT_MAX)
+		{
+			if (cvar.type() == CVARTYPE_FLOAT)
+				out["min"] = cvar.getMinValue();
+			else
+				out["min"] = static_cast<int>(cvar.getMinValue());
+		}
+
+		if (cvar.getMaxValue() != FLT_MAX)
+		{
+			if (cvar.type() == CVARTYPE_FLOAT)
+				out["max"] = cvar.getMaxValue();
+			else
+				out["max"] = static_cast<int>(cvar.getMaxValue());
+		}
+	}
+
+	// Flags as an array of string names.
+	Json::Value flags(Json::arrayValue);
+	if (cvar.flags() & CVAR_USERINFO)
+		flags.append("USERINFO");
+	if (cvar.flags() & CVAR_SERVERINFO)
+		flags.append("SERVERINFO");
+	if (cvar.flags() & CVAR_NOSET)
+		flags.append("NOSET");
+	if (cvar.flags() & CVAR_LATCH)
+		flags.append("LATCH");
+	if (cvar.flags() & CVAR_UNSETTABLE)
+		flags.append("UNSETTABLE");
+	if (cvar.flags() & CVAR_NOENABLEDISABLE)
+		flags.append("NOENABLEDISABLE");
+	if (cvar.flags() & CVAR_SERVERARCHIVE)
+		flags.append("SERVERARCHIVE");
+	if (cvar.flags() & CVAR_CLIENTARCHIVE)
+		flags.append("CLIENTARCHIVE");
+	out["flags"] = flags;
+}
+
 BEGIN_COMMAND(cvardoc)
 {
 	std::string buffer;
@@ -297,3 +403,59 @@ BEGIN_COMMAND(cvardoc)
 	PrintFmt("Wrote {} bytes to \"{}\"\n", bytes, path);
 }
 END_COMMAND(cvardoc)
+
+BEGIN_COMMAND(cvardocjson)
+{
+	std::string path = M_GetWriteDir();
+	if (!M_IsPathSep(path.back()))
+	{
+		path += PATHSEP;
+	}
+
+#ifdef CLIENT_APP
+	path += "odamex_cvardoc.json";
+#elif defined(SERVER_APP)
+	path += "odasrv_cvardoc.json";
+#elif defined(TEST_APP)
+	path += "odagtest_cvardoc.json";
+#endif
+
+	// Try and open a file in our write directory.
+	FILE* fh = fopen(path.c_str(), "wt+");
+	if (fh == NULL)
+	{
+		PrintFmt("error: Could not open \"{}\" for writing.\n", path);
+		return;
+	}
+
+	// Build the final json document.
+	Json::Value root(Json::objectValue);
+	root["schema_version"] = 1;
+	root["odamex_version"] = DOTVERSIONSTR;
+	root["odamex_commithash"] = GitHash();
+	root["odamex_branchname"] = GitBranch();
+
+	Json::Value cvars(Json::arrayValue);
+	CvarView view = GetSortedCvarView();
+	for (const auto& cvar : view)
+	{
+		Json::Value obj;
+		JSONCvarObject(obj, *cvar);
+		if (obj.isNull())
+			continue;
+		cvars.append(obj);
+	}
+	root["cvars"] = cvars;
+
+
+	Json::StyledWriter writer;
+	std::string buffer = writer.write(root);
+	fwrite(buffer.data(), sizeof(char), buffer.size(), fh);
+
+	long bytes = ftell(fh);
+	fclose(fh);
+
+	// Success!
+	PrintFmt("Wrote {} bytes to \"{}\"\n", bytes, path);
+}
+END_COMMAND(cvardocjson)
