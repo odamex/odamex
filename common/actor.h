@@ -636,12 +636,42 @@ private:
 	friend class FActorIterator;
 
 	void ClearFriendly();
-	void RemoveFromActorList(std::vector<AActorPtr>& queue);
+	void RemoveFromActorList();
+
+public:
+	//
+	// ActorClassList
+	//
+	// Intrusive doubly-linked list of friendly/hostile monsters, equivalent
+	// to MBF's thinkerclasscap[th_friends/th_enemies] chains.
+	//
+	class ActorClassList
+	{
+	public:
+		AActor* Head() const { return m_head; }
+		bool empty() const { return m_head == NULL; }
+		void Append(AActor* mo);
+		void Remove(AActor* mo);
+		void MoveFrontToEnd(AActor* upto);
+		void Clear();
+
+	private:
+		AActor* m_head = nullptr;
+		AActor* m_tail = nullptr;
+	};
+
+	// next/previous actor in s_friendlies/s_hostiles; managed by ActorClassList
+	AActor* tlnext = nullptr;
+	AActor* tlprev = nullptr;
+
+private:
+	// the class list this actor is currently linked into, if any
+	ActorClassList* tlist = nullptr;
 
 	// Actor lists to make friendly/unfriendly targeting
 	// a little less taxing...
-	static std::vector<AActorPtr> s_friendlies;
-	static std::vector<AActorPtr> s_hostiles;
+	static ActorClassList s_friendlies;
+	static ActorClassList s_hostiles;
 
 public:
 
@@ -655,8 +685,8 @@ public:
 	void SetFriendly (bool isFriendly, const AActor* owner);
 	void UpdateActorLists();
 	static void ClearActorLists();
-	static std::reference_wrapper<std::vector<AActorPtr>> GetFriendlies() { return s_friendlies; }
-	static std::reference_wrapper<std::vector<AActorPtr>> GetHostiles() { return s_hostiles; }
+	static ActorClassList& GetFriendlies() { return s_friendlies; }
+	static ActorClassList& GetHostiles() { return s_hostiles; }
 
 	AActorPtr ptr(){ return self; }
 

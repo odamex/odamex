@@ -29,7 +29,6 @@
 #include <vector>
 
 #include <math.h>
-#include <algorithm>
 #include "m_random.h"
 #include "m_alloc.h"
 #include "m_bbox.h"
@@ -403,12 +402,7 @@ static bool PIT_FindTarget(AActor* mo)
 	// Move the selected monster to the end of its associated
 	// list, so that it gets searched last next time.
 
-	auto& list =
-	    mo->IsFriendly() ? AActor::GetFriendlies().get() : AActor::GetHostiles().get();
-
-	std::erase_if(list, [mo](const AActor::AActorPtr& ptr) { return ptr == mo; });
-
-	list.push_back(mo->ptr());
+	mo->UpdateActorLists();
 
 	return false;
 }
@@ -1053,7 +1047,7 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 	}
 
 	// If there are no friendlies at all, don't bother doing a potentially expensive search for them.
-	if (AActor::GetFriendlies().get().empty())
+	if (AActor::GetFriendlies().empty())
 		return false;
 
 	if (actor->IsFriendly() && co_zdoomfriendtargeting)
@@ -1073,8 +1067,8 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 		// containers rather than an array of linked lists.
 
 		// First, find the list of opposing monsters
-		auto& list = actor->IsFriendly() ? AActor::GetHostiles().get()
-		                                 : AActor::GetFriendlies().get();
+		auto& list = actor->IsFriendly() ? AActor::GetHostiles()
+		                                 : AActor::GetFriendlies();
 
 		// Bug out early if the list is empty
 		if (!list.empty())
@@ -1110,17 +1104,17 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 			// Random number of monsters, to prevent patterns from forming
 			int n = (P_Random() & 31) + 15;
 
-			for (size_t i = 0; i < list.size(); i++)
+			for (AActor* mo = list.Head(); mo; mo = mo->tlnext)
 			{
 				if (--n < 0)
 				{
 					// Only a subset of the monsters were searched. Move all of
 					// the ones which were searched so far, to the end of the list.
 
-					std::rotate(list.begin(), list.begin() + i, list.end());
+					list.MoveFrontToEnd(mo);
 					break;
 				}
-				else if (!PIT_FindTarget(list[i]))
+				else if (!PIT_FindTarget(mo))
 					return true;
 			}
 		}
