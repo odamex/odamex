@@ -91,6 +91,7 @@ function __odamex {
     [-timedemo]=demo
     [-map]=map
     [+map]=map
+    [-warp]=map
   )
 
   local -r cmd="$1"
