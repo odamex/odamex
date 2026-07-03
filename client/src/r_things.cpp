@@ -625,9 +625,8 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	fixed_t topoffs = sprframe->topoffset[rot];
 	fixed_t sideoffs = sprframe->offset[rot];
 
-	patch_t* patch = W_CachePatch(lump);
-	fixed_t height = patch->height() << FRACBITS;
-	fixed_t width = patch->width() << FRACBITS;
+	fixed_t height = sprframe->height[rot];
+	fixed_t width = sprframe->width[rot];
 
 	vissprite_t* vis = R_GenerateVisSprite(sector, fakeside, thingx, thingy, thingz, height, width, topoffs, sideoffs, flip);
 

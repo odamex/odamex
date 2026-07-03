@@ -729,6 +729,7 @@ struct spriteframe_t
 	// [RH] Move some data out of spritewidth, spriteoffset,
 	//		and spritetopoffset arrays.
 	fixed_t		width[16];
+	fixed_t		height[16];
 	fixed_t		topoffset[16];
 	fixed_t		offset[16];
 };
