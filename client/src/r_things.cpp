@@ -116,9 +116,22 @@ int 			newvissprite;
 // R_ClearSprites
 // Called at frame start.
 //
+
+// last sprite def looked up by R_ProjectSprite
+static int32_t projspritenum;
+static const spritedef_t* projsprdef;
+
+// frame-constant interpolation flag, so R_ProjectSprite doesn't make a
+// singleton call per sprite
+static bool projlerp;
+
 void R_ClearSprites()
 {
 	vissprite_p = firstvissprite;
+
+	projspritenum = -1;
+	projsprdef = NULL;
+	projlerp = OInterpolation::getInstance().enabled();
 }
 
 
@@ -557,8 +570,8 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	// [SL] interpolate the position of thing
 	fixed_t thingx, thingy, thingz;
 
-	if (P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT &&
-		OInterpolation::getInstance().enabled())
+	if (projlerp &&
+		P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT)
 	{
 		// the actor probably did not teleport
 		// interpolate between previous and current position
@@ -575,6 +588,10 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 		thingz = thing->z;
 	}
 
+	// Cache the last sprite def lookup - crowds of identical monsters hit
+	// this constantly.
+	if (thing->sprite != projspritenum || projsprdef == NULL)
+	{
 	auto it = sprites.find(thing->sprite);
 
 #ifdef RANGECHECK
@@ -585,7 +602,11 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	}
 #endif
 
-	const spritedef_t* sprdef = &it->second;
+		projsprdef = &it->second;
+		projspritenum = thing->sprite;
+	}
+
+	const spritedef_t* sprdef = projsprdef;
 
 #ifdef RANGECHECK
 	if ( (thing->frame & FF_FRAMEMASK) >= sprdef->numframes )
