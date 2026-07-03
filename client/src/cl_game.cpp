@@ -705,7 +705,7 @@ void G_AddViewPitch(int pitch)
 bool G_ShouldIgnoreMouseInput()
 {
 	if ((consoleplayer().id != displayplayer().id || consoleplayer().playerstate == PST_DEAD) &&
-		!displayplayer().isFreecam)
+		not displayplayer().isFreecam)
 		return true;
 
 	return false;

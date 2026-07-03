@@ -373,7 +373,7 @@ static bool I_CanGrab()
 		return true;
 
 	// If paused, in the menu or in the console, don't grab
-	if (menuactive || ConsoleState == c_down || (paused && !displayplayer().isFreecam))
+	if (menuactive || ConsoleState == c_down || (paused && not displayplayer().isFreecam))
 		return false;
 
 	// If playing the game, always grab

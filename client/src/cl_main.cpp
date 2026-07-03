@@ -501,7 +501,7 @@ void CL_CheckDisplayPlayer(void)
 	if (!P_CanSpy(consoleplayer(), displayplayer(), demoplayback || netdemo.isPlaying() || netdemo.isPaused()))
 		newid = consoleplayer_id;
 
-	if (displayplayer().spectator && !displayplayer().isFreecam)
+	if (displayplayer().spectator && not displayplayer().isFreecam)
 		newid = consoleplayer_id;
 
 	if (newid)
@@ -509,7 +509,7 @@ void CL_CheckDisplayPlayer(void)
 		// Request information about this player from the server
 		// (weapons, ammo, health, etc)
 		// server doesnt know about clientside freecam, dont tell it
-		if (!displayplayer().isFreecam && newid != freecamplayer_id)
+		if (not displayplayer().isFreecam && newid != freecamplayer_id)
 		{
 			MSG_WriteMarker(&net_buffer, clc_spy);
 			MSG_WriteByte(&net_buffer, newid);
