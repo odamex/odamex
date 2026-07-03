@@ -978,16 +978,15 @@ void P_NewChaseDir (AActor *actor)
 
 static bool P_HelpFriend(AActor* actor)
 {
-	int killcount = 0;
-	AActor* it;
-	TThinkerIterator<AActor> iterator;
-
 	// If less than 33% health, self-preservation rules
 	if (actor->health * 3 < actor->info->spawnhealth)
 		return false;
 
+	// Search the monster's own class list for friends in danger, like MBF's
+	// thinkerclasscap search, rather than every thinker in the level.
+	auto& list = actor->IsFriendly() ? AActor::GetFriendlies() : AActor::GetHostiles();
 
-	while ((it = iterator.Next()))
+	for (AActor* it = list.Head(); it; it = it->tlnext)
 	{
 		if (P_IsFriendlyThing(actor, it))
 		{
@@ -1070,53 +1069,71 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 		auto& list = actor->IsFriendly() ? AActor::GetHostiles()
 		                                 : AActor::GetFriendlies();
 
-		                                 : AActor::GetFriendlies();
+		// The monster's own class list, for sizing the shortcut below.
+		auto ownCount = actor->IsFriendly() ? AActor::GetFriendlies().Count()
+		                                    : AActor::GetHostiles().Count();
+
 		// Bug out early if the list is empty
 		if (!list.empty())
 		{
-			int x = (actor->x - bmaporgx) >> MAPBLOCKSHIFT;
-			int y = (actor->y - bmaporgy) >> MAPBLOCKSHIFT;
-
 			current_actor = actor;
 			current_allaround = allaround;
 
-			// First we check the exact blockmap for the monster.
-			if (!P_BlockThingsIterator(x, y, PIT_FindTarget))
-				return true;
-
-			int d = 0;
-			// Then we worm around a lil bit
-			for (d = 1; d < 5; d++)
+			if (list.Count() * 4 <= ownCount && list.Count() <= 64)
 			{
-				int i = 1 - d;
-				do
-					if (!P_BlockThingsIterator(x + i, y - d, PIT_FindTarget) ||
-					    !P_BlockThingsIterator(x + i, y + d, PIT_FindTarget))
-						return true;
-				while (++i < d);
-
-				do
-					if (!P_BlockThingsIterator(x - d, y + i, PIT_FindTarget) ||
-					    !P_BlockThingsIterator(x + d, y + i, PIT_FindTarget))
-						return true;
-				while (--i + d >= 0);
-			}
-
-			// Random number of monsters, to prevent patterns from forming
-			int n = (P_Random() & 31) + 15;
-
-			for (AActor* mo = list.Head(); mo; mo = mo->tlnext)
-			{
-				if (--n < 0)
+				// If there's only a few monsters, search them all.
+				// This is faster than searching the blockmap.
+				//
+				// 25% of the list with a cap of 64 monsters.
+				for (AActor* mo = list.Head(); mo; mo = mo->tlnext)
 				{
-					// Only a subset of the monsters were searched. Move all of
-					// the ones which were searched so far, to the end of the list.
-
-					list.MoveFrontToEnd(mo);
-					break;
+					if (!PIT_FindTarget(mo))
+						return true;
 				}
-				else if (!PIT_FindTarget(mo))
+			}
+			else
+			{
+				int x = (actor->x - bmaporgx) >> MAPBLOCKSHIFT;
+				int y = (actor->y - bmaporgy) >> MAPBLOCKSHIFT;
+
+				// First we check the exact blockmap for the monster.
+				if (!P_BlockThingsIterator(x, y, PIT_FindTarget))
 					return true;
+
+				int d = 0;
+				// Then we worm around a lil bit
+				for (d = 1; d < 5; d++)
+				{
+					int i = 1 - d;
+					do
+						if (!P_BlockThingsIterator(x + i, y - d, PIT_FindTarget) ||
+						    !P_BlockThingsIterator(x + i, y + d, PIT_FindTarget))
+							return true;
+					while (++i < d);
+
+					do
+						if (!P_BlockThingsIterator(x - d, y + i, PIT_FindTarget) ||
+						    !P_BlockThingsIterator(x + d, y + i, PIT_FindTarget))
+							return true;
+					while (--i + d >= 0);
+				}
+
+				// Random number of monsters, to prevent patterns from forming
+				int n = (P_Random() & 31) + 15;
+
+				for (AActor* mo = list.Head(); mo; mo = mo->tlnext)
+				{
+					if (--n < 0)
+					{
+						// Only a subset of the monsters were searched. Move all of
+						// the ones which were searched so far, to the end of the list.
+
+						list.MoveFrontToEnd(mo);
+						break;
+					}
+					else if (!PIT_FindTarget(mo))
+						return true;
+				}
 			}
 		}
 	}
@@ -3342,7 +3359,7 @@ static void ApplyFriendlyEffects(AActor* mobj)
 {
 	if (mobj->health <= 0)
 	{
-		mobj->effects &= ~FX_FRIENDHEARTS;
+		mobj->SetEffects(mobj->effects & ~FX_FRIENDHEARTS);
 		return;
 	}
 
@@ -3353,12 +3370,12 @@ static void ApplyFriendlyEffects(AActor* mobj)
 	if (validplayer(displayplayer()) && displayplayer().mo &&
 	    P_IsFriendlyThing(displayplayer().mo, mobj) && sentient(mobj))
 	{
-		mobj->effects |= FX_FRIENDHEARTS;
+		mobj->SetEffects(mobj->effects | FX_FRIENDHEARTS);
 		mobj->translation = translationref_t(&friendtable[0]);
 	}
 	else
 	{
-		mobj->effects &= ~FX_FRIENDHEARTS;
+		mobj->SetEffects(mobj->effects & ~FX_FRIENDHEARTS);
 		mobj->translation = nullptr;
 	}
 }
@@ -3411,7 +3428,7 @@ CVAR_FUNC_IMPL(cl_showfriends)
 		{
 			if (other->flags & MF_FRIEND)
 			{
-				other->effects &= ~FX_FRIENDHEARTS;
+				other->SetEffects(other->effects & ~FX_FRIENDHEARTS);
 				other->translation = nullptr;
 			}
 		}
@@ -3601,7 +3618,7 @@ void A_Fall (AActor *actor)
 	// Remove any sort of boss effect on kill
 	if (actor->type != MT_PLAYER && actor->effects)
 	{
-		actor->effects = 0;
+		actor->SetEffects(0);
 	}
 }
 
