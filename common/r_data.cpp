@@ -526,7 +526,7 @@ struct texlump_t
 	}
 };
 
-static int32_t R_LoadTextureLump(const texlump_t& texlump, const nonstd::span<const int> patchlookup, int texnum, texhash_t& texhash, int& errors)
+static int32_t R_LoadTextureLump(const texlump_t& texlump, const std::span<const int> patchlookup, int texnum, texhash_t& texhash, int& errors)
 {
 	int32_t* directory = texlump.directory;
 	int i;

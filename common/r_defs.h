@@ -262,7 +262,7 @@ struct sector_t
 
 	int linecount = 0;
 	line_s **lines = nullptr;		// [linecount] size
-	nonstd::span<line_s*> getLines() { return nonstd::span(lines, linecount); }
+	std::span<line_s*> getLines() { return std::span(lines, linecount); }
 
 	float gravity = 0.0f;		// [RH] Sector gravity (1.0 is normal)
 	int damageamount = 0;
