@@ -1070,6 +1070,7 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 		auto& list = actor->IsFriendly() ? AActor::GetHostiles()
 		                                 : AActor::GetFriendlies();
 
+		                                 : AActor::GetFriendlies();
 		// Bug out early if the list is empty
 		if (!list.empty())
 		{

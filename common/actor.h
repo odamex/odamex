@@ -654,6 +654,7 @@ public:
 	public:
 		AActor* Head() const { return m_head; }
 		bool empty() const { return m_head == NULL; }
+		size_t Count() const { return m_count; }
 		void Append(AActor* mo);
 		void Remove(AActor* mo);
 		void MoveFrontToEnd(AActor* upto);
@@ -662,13 +663,36 @@ public:
 	private:
 		AActor* m_head = nullptr;
 		AActor* m_tail = nullptr;
+		size_t m_count = 0;
 	};
 
 	// next/previous actor in s_friendlies/s_hostiles; managed by ActorClassList
 	AActor* tlnext = nullptr;
 	AActor* tlprev = nullptr;
 
+	// next/previous actor in the list of all actors; linked on construction,
+	// unlinked on destruction.  Iterating this instead of the thinker list
+	// skips the runtime type check on every thinker.
+	AActor* anext = nullptr;
+	AActor* aprev = nullptr;
+
+	static AActor* FirstActor() { return s_allhead; }
+
+	// next/previous actor in the list of actors with nonzero effects, so
+	// P_RunEffects only visits actors that actually have effects.  Always
+	// assign effects through SetEffects to keep the list in sync.
+	AActor* enext = nullptr;
+	AActor* eprev = nullptr;
+
+	void SetEffects(uint32_t neweffects);
+	static AActor* FirstEffectsActor() { return s_effectshead; }
+
 private:
+	static AActor* s_effectshead;
+
+	void LinkEffectsList();
+	void UnlinkEffectsList();
+
 	// the class list this actor is currently linked into, if any
 	ActorClassList* tlist = nullptr;
 
@@ -676,6 +700,13 @@ private:
 	// a little less taxing...
 	static ActorClassList s_friendlies;
 	static ActorClassList s_hostiles;
+
+	// intrusive list of every AActor in existence
+	static AActor* s_allhead;
+	static AActor* s_alltail;
+
+	void LinkAllActorsList();
+	void UnlinkAllActorsList();
 
 public:
 

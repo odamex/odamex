@@ -3319,7 +3319,7 @@ bool PIT_ChangeSector (AActor *thing)
 	if (thing->health <= 0)
 	{
 		P_SetMobjState (thing, S_GIBS);
-		thing->effects = 0;
+		thing->SetEffects(0);
 
 		// [Nes] - Classic demo compatability: Ghost monster bug.
 		if ((demoplayback)) {
