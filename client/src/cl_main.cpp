@@ -444,6 +444,9 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 	case NQ_PROTO:
 		PrintFmt("Disconnected from server: Unrecoverable protocol error\n");
 		break;
+	case NQ_SERVER_DROP:
+		PrintFmt("Dropped by server\n");
+		break;
 	}
 
 	if (::debug_disconnect)
@@ -1875,10 +1878,10 @@ bool CL_Connect()
 	messenger = OdaMessenger();
 	messenger.SetMaxRate(20);               // FIXME: total guess.
 	messenger.SetPacketsPerRetransmit(10);  // To align with the size of the traditional cmd buffer.
-    messenger.SetRetransmitDelay(0);        // This causes an immediate retransmit to relieve the risk of
-                                            // packet loss on commands from the client.  Reliability comes
-                                            // at the cost of _potential_ additionald latency, and the
-                                            // slight increase in packets/tic is worth latency mitigation...
+	messenger.SetRetransmitDelay(0);        // This causes an immediate retransmit to relieve the risk of
+	                                        // packet loss on commands from the client.  Reliability comes
+	                                        // at the cost of _potential_ additionald latency, and the
+	                                        // slight increase in packets/tic is worth latency mitigation...
 	// Rewind!
 	// CL_Connect is only called after we already know that the sequence is 0, so we can just let
 	// the messenger do its thing.
@@ -2213,7 +2216,7 @@ void CL_SendCmd(void)
 			closestNonCredibleVisSprite->mo->credibility.Challenge();
 
 			MSG_WriteSVC(messenger.ReliableBuf(), CLC_SendMobjUpdate(closestNonCredibleVisSprite->mo->netid));
-            closestNonCredibleVisSprite = nullptr;
+			closestNonCredibleVisSprite = nullptr;
 		}
 
 		odaproto::clc::PlayerInput& currentNetcmd = localcmds[gametic % MAXSAVETICS];
@@ -2240,18 +2243,24 @@ void CL_SendCmd(void)
 		}
 	}
 
-	messenger.SendAll(gametic, serveraddr);
+	const MessageResultEnum sendResult = messenger.SendAll(gametic, serveraddr);
 
-	const int retransmittedByteCount = messenger.HandleRetransmissions(gametic, serveraddr);
+	if (sendResult == MessageResultEnum::ABORT)
+	{
+		CL_QuitNetGame(NQ_SERVER_DROP);
+	}
+	else
+	{
+		const int retransmittedByteCount = messenger.HandleRetransmissions(gametic, serveraddr);
 
-	const int currentSendSize    = messenger.GetLastSendSize();
-	const int totalSentByteCount = currentSendSize + retransmittedByteCount;
+		const int currentSendSize    = messenger.GetLastSendSize();
+		const int totalSentByteCount = currentSendSize + retransmittedByteCount;
 
-	netgraph.setReliableNonContiguousRetransmits(messenger.GetNonContiguousRetransmitPackets());
-	netgraph.setReliableSendDepth(messenger.GetPendingAckCount());
-	netgraph.addTrafficOut(totalSentByteCount);
-	outrate += totalSentByteCount;
-
+		netgraph.setReliableNonContiguousRetransmits(messenger.GetNonContiguousRetransmitPackets());
+		netgraph.setReliableSendDepth(messenger.GetPendingAckCount());
+		netgraph.addTrafficOut(totalSentByteCount);
+		outrate += totalSentByteCount;
+	}
 }
 
 //
@@ -2429,6 +2438,15 @@ void CL_SimulateSectors()
 	}
 }
 
+static v3fixed_t CurrentDeltaFromSnapshot(const player_t& player, const PlayerSnapshot& prevsnap)
+{
+	v3fixed_t offset;
+	M_SetVec3Fixed(&offset, prevsnap.getX() - player.mo->x,
+	                        prevsnap.getY() - player.mo->y,
+	                        prevsnap.getZ() - player.mo->z);
+	return offset;
+}
+
 //
 // CL_SimulatePlayers()
 //
@@ -2465,15 +2483,56 @@ void CL_SimulatePlayers()
 				player.mo->prevangle = player.mo->angle;
 				player.mo->prevpitch = player.mo->pitch;
 
-				PlayerSnapshot prevsnap = player.snapshots.getSnapshot(world_index - 1);
+				v3fixed_t offset = CurrentDeltaFromSnapshot(player,
+				                                            player.snapshots.getSnapshot(world_index - 1));
 
-				v3fixed_t offset;
-				M_SetVec3Fixed(&offset, prevsnap.getX() - player.mo->x,
-				                        prevsnap.getY() - player.mo->y,
-				                        prevsnap.getZ() - player.mo->z);
+				// The following block is there to "jailbreak" a remote player whose predicted mobj
+				// movement resulted in a substantial disagreement with the server for a relatively
+				// excessive period of time.  In practice, this has been seen in rare conditions where
+				// a remote player is sandwiched by one or more moving sectors where the combined
+				// predictions result in a wildly different outcome than the server - i.e. did the
+				// player escape from the sandwich, and in what direction?  It can be a matter of just
+				// a few tics where there's an opportunity to escape, but the observer's latency and
+				// predicted sector motion causes the simulated player to miss its chance.
+				//
+				// When this happens, the remote player mobj can become trapped in a location where
+				// the movement prediction logic blocks motion, but the server MovePlayer messages
+				// yield snapshots that specify positions that are excessively distant from the mobj.
+				//
+				// This can happen naturally and in a benign manner *very* briefly for things like
+				// instant-mover lift sectors, which resolve naturally via extrapolation handling,
+				// so we need to check to see if this excessive distance persists for multiple tics.
+				//
+				// When this condition holds for a relatively long amount of time, we set the current
+				// snapshot to discontinuous so that the remote player's mobj makes an instantaneous
+				// jump to the official position.  From that point forward, normal prediction resumes.
 
-				fixed_t dist = M_LengthVec3Fixed(&offset);
-				if (dist > 2 * FRACUNIT)
+				constexpr fixed_t EXCESSIVE_DISTANCE = 128 * FRACUNIT;
+				constexpr int     EXCESSIVE_TIME     = 10;
+
+				if (offset.MagnitudeIsGreaterThan(EXCESSIVE_DISTANCE))
+				{
+					int ticsAgo = 2;
+					while (ticsAgo <= EXCESSIVE_TIME)
+					{
+						const PlayerSnapshot historicalSnap = player.snapshots.getSnapshot(world_index - ticsAgo);
+
+							if (not (    historicalSnap.isValid()
+							     and historicalSnap.isContinuous()
+							     and CurrentDeltaFromSnapshot(player, historicalSnap).MagnitudeIsGreaterThan(EXCESSIVE_DISTANCE)))
+						{
+							break;
+						}
+						++ticsAgo;
+					}
+
+					if (ticsAgo > EXCESSIVE_TIME)
+					{
+						snap.setContinuous(false);
+					}
+				}
+
+				if (snap.isContinuous() and offset.MagnitudeIsGreaterThan(2 * FRACUNIT))
 				{
 					#ifdef _SNAPSHOT_DEBUG_
 					PrintFmt(PRINT_HIGH, "Snapshot {}, Correcting extrapolation error of {}\n",

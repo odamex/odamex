@@ -509,9 +509,8 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	// Read other fields
 
-	uint32_t netid = msg->current().netid();
+	uint32_t netid  = msg->current().netid();
 	mobjtype_t type = static_cast<mobjtype_t>(msg->current().type());
-	statenum_t state = static_cast<statenum_t>(msg->current().statenum());
 
 	if (!mobjinfo.contains(type))
 		return;
@@ -519,8 +518,9 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	P_ClearId(netid);
 
 	AActor* mo = new AActor(base.pos.x, base.pos.y, base.pos.z, type);
-	mo->baseline = base;
+	mo->baseline         = base;
 	mo->updatedDuringTic = gametic;
+	mo->mobjtic          = msg->timebase_tic();
 
 	P_SetThingId(mo, netid);
 
@@ -637,9 +637,15 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			mo->tics = 1;
 	}
 
-    if(state >= S_NULL && states.contains(state))
+	statenum_t statenum = static_cast<statenum_t>(msg->current().statenum());
+
+	if (statenum >= S_NULL && states.contains(statenum))
 	{
-		P_SetMobjState(mo, state);
+		P_SetMobjState(mo, statenum);
+
+		// Set animation tic to ensure that the initial state is consistent with the server.
+		const int32_t tics = msg->current().tics();
+		mo->tics = tics ? tics : -1;
 	}
 
 	if (serverside && mo->flags & MF_COUNTKILL)
@@ -1267,7 +1273,7 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 			::level.behavior->StartTypedScripts(SCRIPT_Enter, p.mo);
 	}
 
-	const int snaptime = last_svgametic;
+	const int snaptime = msg->server_tic();
 	PlayerSnapshot newsnap(snaptime, p);
 	newsnap.setAuthoritative(true);
 	newsnap.setContinuous(false);
@@ -1869,7 +1875,7 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 	uint32_t id = msg->netid();
 	AActor* mo = P_FindThingById(id);
 
-    player_t& player = consoleplayer();
+	player_t& player = consoleplayer();
 	if (not player.mo)
 		return;
 
@@ -1880,30 +1886,34 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 		return;
 	}
 
-    // Do a switcheroo of the new state for the historical state at the time of the pickup
-    // so that we can run the actual P_GiveSpecial function and let it produce the result
-    // of the pickup *at that old point in time*.  With that result in hand, we undo the
-    // switcheroo and resolve the potentially-modified history.
+	// Do a switcheroo of the new state for the historical state at the time of the pickup
+	// so that we can run the actual P_GiveSpecial function and let it produce the result
+	// of the pickup *at that old point in time*.  With that result in hand, we undo the
+	// switcheroo and resolve the potentially-modified history.
 
-    const int oldTic = msg->player_tic();
-    auto optionalHistory = rollerState.GetStateAtTic(oldTic);
+	const int oldTic = msg->player_tic();
+	auto optionalHistory = rollerState.GetStateAtTic(oldTic);
 	const PlayerItemDataType currentClientSideState {player};
 
-    if (optionalHistory)
-    {
-        optionalHistory->get().ToPlayer(player);
-    }
+	if (optionalHistory)
+	{
+		optionalHistory->get().ToPlayer(player);
+	}
 
-	P_GiveSpecial(player, *mo);
+	const ItemEquipVal giveResult = P_GiveSpecial(player, *mo);
+	if (giveResult == IEV_EquipRemove)
+	{
+		mo->Destroy();
+	}
 
-    if (optionalHistory)
-    {
-        const PlayerItemDataType modifiedHistory {player};
+	if (optionalHistory)
+	{
+		const PlayerItemDataType modifiedHistory {player};
 
-        currentClientSideState.ToPlayer(player);
+		currentClientSideState.ToPlayer(player);
 
-        rollerState.Resolve(oldTic, modifiedHistory, player);
-    }
+		rollerState.Resolve(oldTic, modifiedHistory, player);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------

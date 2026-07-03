@@ -75,15 +75,16 @@ message UpdatePing
 	int32 ping = 2;
 }
 
-// svc_spawnmobj, svc_mobjinfo, svc_corpse
+// svc_spawnmobj
 message SpawnMobj
 {
-	Actor baseline = 1;
-	uint32 baseline_flags = 2;
-	Actor current = 3;
-	uint32 spawn_flags = 4;
-	uint32 target_netid = 5;
-	repeated int32 args = 6;
+	Actor           baseline        = 1;
+	uint32          baseline_flags  = 2;
+	Actor           current         = 3;
+	uint32          spawn_flags     = 4;
+	uint32          target_netid    = 5;
+	repeated int32  args            = 6;
+	uint32          timebase_tic    = 7;
 }
 
 // svc_disconnectclient
@@ -152,6 +153,7 @@ message SpawnPlayer
 	Actor  actor = 2;
 	uint32 cards = 3;
 	int32  player_tic = 4;
+	int32  server_tic = 5;
 }
 
 // svc_damageplayer

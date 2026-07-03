@@ -201,7 +201,8 @@ AActor::AActor()
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), rndindex(0),
       spawnRndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
-      netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), spawnTic(gametic), bmapnode(this)
+      netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), spawnTic(gametic),
+      mobjtic(gametic), bmapnode(this)
 {
 	args.fill(0);
 	self.init(this);
@@ -229,7 +230,7 @@ AActor::AActor(const AActor& other)
       friend_playerid(other.friend_playerid), friend_teamid(other.friend_teamid),
       pursuecount(other.pursuecount), strafecount(other.strafecount), netid(other.netid), tid(other.tid),
       baseline_set(false), updatedDuringTic(other.updatedDuringTic), spawnTic(other.spawnTic),
-      credibility {other.credibility}, bmapnode(other.bmapnode)
+      mobjtic(other.mobjtic), credibility {other.credibility}, bmapnode(other.bmapnode)
 {
 	memcpy(&baseline, &other.baseline, sizeof(baseline));
 	self.init(this);
@@ -309,6 +310,7 @@ AActor &AActor::operator= (const AActor &other)
 
     updatedDuringTic = other.updatedDuringTic;
     spawnTic         = other.spawnTic;
+    mobjtic          = other.mobjtic;
     credibility      = other.credibility;
 
     return *this;
@@ -332,7 +334,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), rndindex(0),
       spawnRndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
       netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), spawnTic(gametic),
-      bmapnode(this)
+      mobjtic(gametic), bmapnode(this)
 {
 	// Fly!!! fix it in P_RespawnSpecial
 	const auto it = ::mobjinfo.find(itype);
@@ -571,6 +573,9 @@ void P_ClearId(uint32_t id)
 //
 void AActor::Destroy ()
 {
+	if (WasDestroyed())
+		return;
+
 	SV_SendDestroyActor(this);
 
 	actor_by_netid.erase(netid);
@@ -832,6 +837,11 @@ void P_TestActorMovement(AActor *mo, fixed_t tryx, fixed_t tryy, fixed_t tryz,
 	backup.toActor(mo);
 }
 
+void AActor::PostThink()
+{
+	++mobjtic;
+}
+
 //
 // P_MobjThinker
 //
@@ -1039,6 +1049,7 @@ void AActor::Serialize (FArchive &arc)
 			<< spawnRndindex
 			<< updatedDuringTic
 			<< spawnTic
+			<< mobjtic
 			<< credibility;
 
 		// NOTE(jsd): This is pretty awful right here:
@@ -1127,6 +1138,7 @@ void AActor::Serialize (FArchive &arc)
 			>> spawnRndindex
 			>> updatedDuringTic
 			>> spawnTic
+			>> mobjtic
 			>> credibility;
 
 		tracer.init(tmptracer);

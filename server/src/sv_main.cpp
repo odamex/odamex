@@ -965,9 +965,12 @@ void SV_GetPackets()
 		}
 		else
 		{
-			player.client.messenger.Receive(::net_message);
-			player.client.last_received = gametic;
-			SV_ParseCommands(player);
+			const MessageResultEnum receiveResult = player.client.messenger.Receive(::net_message);
+			if (receiveResult != MessageResultEnum::ABORT)
+			{
+				player.client.last_received = gametic;
+				SV_ParseCommands(player);
+			}
 		}
 	}
 }
@@ -1461,7 +1464,7 @@ bool SV_ApplyAwareness(player_t& player, AActor* mo, AwarenessEnum awarenessLeve
 		}
 		else
 		{
-			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_SpawnPlayer(*mo->player));
+			MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_SpawnPlayer(*mo->player, gametic));
 		}
 		return true;
 	}
@@ -1600,9 +1603,9 @@ int SV_UpdateHiddenMobj(player_t& pl, AActor *mo, int updated, AwarenessEnum new
 	return updated;
 }
 
-bool SV_SendPacket(player_t &pl)
+MessageResultEnum SV_SendPacket(player_t &pl)
 {
-	return pl.client.messenger.SendAll(gametic, pl.client.address) != MessageResultEnum::ABORT;
+	return pl.client.messenger.SendAll(gametic, pl.client.address);
 }
 
 void SV_BroadcastNoiseAlert(const sector_t& sector)
@@ -3113,13 +3116,28 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 		if (mo->type == MT_PLASMA)
 			return;
 
-		// Revenant tracers and Mancubus fireballs need to be updated more often (and custom tracers)
-		const bool needsMoreFrequentUpdates = (mo->type == MT_TRACER || mo->type == MT_FATSHOT || mo->flags2 & MF2_SEEKERMISSILE);
+		// Revenant tracers, seekers, and Mancubus fireballs need to be updated more often.
+		const bool needsMoreFrequentUpdates = (mo->type  == MT_TRACER
+		                                    or mo->type  == MT_FATSHOT
+		                                    or mo->flags2 & MF2_SEEKERMISSILE);
 
-		const int  divisor = needsMoreFrequentUpdates ? 5 : 30;
-		const int  phase   = (gametic + mo->netid) % divisor;
+		// There's special knowledge about Revenant tracers here.  We try hard to keep their
+		// server->client updates such that client-visible behavior is as vanilla-like as possible.
+		// Specifically we send out their updates immediately after the A_Tracer logic should have
+		// run and applied (if it's going to apply - see the funky timing logic there).  This means
+		// a rate divisor of 4 and the frame count being the mobjtic value that it had on this tic.
+		// In other words, we subtract 1 because the mobjtic was incremented after RunThink.
 
-		// Does this mobj have a scheduled update now?
+		// On top of all that, we have to make this check anyway because if something's an MT_TRACER,
+		// but has been specially dehacked to use a thinker routine other than A_Tracer, we want to
+		// ensure that it still gets an appropriately-scheduled, elevated update cycle.  Please note
+		// that there's a counter-part check in A_Tracer that covers the opposite case.
+
+		const int updateTic = mo->type == MT_TRACER ? mo->mobjtic - 1       // rev shot?  update right away.
+		                                            : gametic + mo->netid;  // Anything else?  Be fair with the bandwidth.
+		const int divisor   = needsMoreFrequentUpdates ? 4 : 30;
+		const int phase     = updateTic % divisor;
+
 		if (phase == 0)
 		{
 			switch (awarenessLevel)
@@ -3130,23 +3148,25 @@ void SV_UpdateMissiles(player_t& player, const std::vector<player_t::ActorDistan
 
 				default:
 					MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+					break;
 			}
 		}
 	}
 }
 
-// Update the given actors data immediately.
-void SV_UpdateMobj(AActor* mo)
+static void ImmediateUpdateMobj(AActor& mobj, bool reliableIsAllowed)
 {
 	// Don't use this function to update players.
-	if (mo->player)
+	if (mobj.player)
 		return;
+
+	auto message = SVC_UpdateMobj(mobj);
 
 	for (auto& player : players)
 	{
-		if (player.ingame() and SV_IsPlayerAllowedToSee(player, mo))
+		if (player.ingame() and SV_IsPlayerAllowedToSee(player, &mobj))
 		{
-			switch (mo->playersAware.Get(player.id))
+			switch (mobj.playersAware.Get(player.id))
 			{
 				case AwarenessEnum::NOT_AWARE:         [[ fallthrough ]];
 				case AwarenessEnum::BARELY_AWARE:
@@ -3154,16 +3174,30 @@ void SV_UpdateMobj(AActor* mo)
 
 				case AwarenessEnum::ALWAYS_AWARE:      [[ fallthrough ]];
 				case AwarenessEnum::FULLY_AWARE:
-					mo->updatedDuringTic = gametic;
-					MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_UpdateMobj(*mo));
+					mobj.updatedDuringTic = gametic;
+					MSG_WriteSVC(reliableIsAllowed ? player.client.messenger.ReliableBuf()
+					                               : player.client.messenger.NetBuf(),
+					             message);
 					break;
 
 				case AwarenessEnum::SEMI_AWARE:
-					mo->updatedDuringTic = gametic;
-					MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
+					mobj.updatedDuringTic = gametic;
+					MSG_WriteSVC(player.client.messenger.NetBuf(), message);
 			}
 		}
 	}
+}
+
+// Update the given actors data immediately, using standard Reliable and Best-effort transports as appropriate.
+void SV_UpdateMobj(AActor* mo)
+{
+	ImmediateUpdateMobj(*mo, true);
+}
+
+// Update the given actors data immediately, ONLY using Best-effort transport.
+void SV_UpdateMobjBestEffort(AActor* mo)
+{
+	ImmediateUpdateMobj(*mo, false);
 }
 
 // Update the given actors state immediately.
@@ -3353,16 +3387,29 @@ void SV_SendPackets()
 	if (players.empty())
 		return;
 
-	std::vector<std::future<void>> futures;
+	struct SendResultType
+	{
+		std::reference_wrapper<player_t> playerRef;
+		std::future<MessageResultEnum>   sendResult;
+	};
+
+	std::vector<SendResultType> futures;
+
+	// Allow a developer to sit with a client in a debugger for at least a minute.
+	const int criticalTimeoutInTics = (not ::developer.asBool()) ?
+	                                    OdaMessenger::DEFAULT_CRITICAL_SEQUENCE_TIMEOUT_IN_TICS :
+	                                    65 * TICRATE;
 
 	for (auto& player : players)
 	{
 		// Disconnecting players' messengers send their packets via the dead-end messenger collection.
 		if (player.playerstate != PST_DISCONNECT)
 		{
-			std::packaged_task<void ()> task { [&player] () { SV_SendPacket(player); } };
+			player.client.messenger.SetCriticalSequenceTimeout(criticalTimeoutInTics);
 
-			futures.emplace_back(task.get_future());
+			std::packaged_task<MessageResultEnum ()> task { [&player] () { return SV_SendPacket(player); } };
+
+			futures.emplace_back( SendResultType{std::ref(player), task.get_future()} );
 
 			s_workers.MoveCommand(std::move(task));
 		}
@@ -3370,7 +3417,13 @@ void SV_SendPackets()
 
 	for (auto& future : futures)
 	{
-		future.wait();
+		const MessageResultEnum result = future.sendResult.get();
+		if (result == MessageResultEnum::ABORT)
+		{
+			player_t& player = future.playerRef.get();
+			PrintFmt(PRINT_WARNING, "Client at {} exceeded critical max send size\n", NET_AdrToString(player.client.address));
+			SV_DropClientUngracefully(player, "timed out");
+		}
 	}
 }
 
@@ -5120,28 +5173,28 @@ void SV_ExplodeMissile(AActor *mo)
 {
 	for (auto& player : players)
 	{
-        switch (mo->playersAware.Get(player.id))
-        {
-            case AwarenessEnum::NOT_AWARE:                             // See nothing.
+		switch (mo->playersAware.Get(player.id))
+		{
+			case AwarenessEnum::NOT_AWARE:                             // See nothing.
 				break;
 
-            case AwarenessEnum::ALWAYS_AWARE:  [[ fallthrough ]];      // See everything.
-            case AwarenessEnum::FULLY_AWARE:
+			case AwarenessEnum::ALWAYS_AWARE:  [[ fallthrough ]];      // See everything.
+			case AwarenessEnum::FULLY_AWARE:
 				mo->updatedDuringTic = gametic;
 				MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_UpdateMobj(*mo));
 				MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_ExplodeMissile(*mo));
 				break;
 
-            case AwarenessEnum::SEMI_AWARE:                            // See an explosion, maybe even in the correct position.
+			case AwarenessEnum::SEMI_AWARE:                            // See an explosion, maybe even in the correct position.
 				mo->updatedDuringTic = gametic;
 				MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_UpdateMobj(*mo));
 				MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_ExplodeMissile(*mo));
 				break;
 
-            case AwarenessEnum::BARELY_AWARE:                          // See an explosion, almost certainly in the wrong position.
+			case AwarenessEnum::BARELY_AWARE:                          // See an explosion, almost certainly in the wrong position.
 				MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_ExplodeMissile(*mo));
 				break;
-        }
+		}
 	}
 }
 

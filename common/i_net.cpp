@@ -549,24 +549,6 @@ void SZ_Write (buf_t *b, const byte *data, size_t startpos, size_t length)
 	b->WriteChunk(reinterpret_cast<const char*>(data), length, startpos);
 }
 
-//
-// MSG_WriteMarker
-//
-// denis - use this function to mark the start of your server message
-// as it allows for better debugging and optimization of network code
-//
-// [ML] 8/4/10: Moved to sv_main and slightly modified to provide an adequate
-//      but temporary fix for bug 594 until netcode_bringup2 is complete.
-//      Thanks to spleen for providing good brainpower!
-//
-// [SL] 2011-07-17 - Moved back to i_net.cpp so that it can be used by
-// both client & server code.  Client has a stub function for SV_SendPackets.
-//
-void SV_SendPackets(void);
-
-//
-// MSG_WriteMarker
-//
 
 void MSG_WriteByte (buf_t *b, byte c)
 {

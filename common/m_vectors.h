@@ -92,6 +92,16 @@ struct vector3_t
 		    >> o_obj.z;
 		return io_stream;
 	}
+
+	bool MagnitudeIsGreaterThan(const ElementType& length) const requires std::is_integral_v<ElementType>
+	{
+		const int64_t x64 { x };
+		const int64_t y64 { y };
+		const int64_t z64 { z };
+		const int64_t length64 { length };
+
+		return (x64 * x64) + (y64 * y64) + (z64 * z64) > (length64 * length64);
+	}
 };
 
 using v3fixed_t  = vector3_t<fixed_t>;
