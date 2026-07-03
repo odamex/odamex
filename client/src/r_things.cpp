@@ -372,13 +372,13 @@ void R_DrawVisSprite (vissprite_t *vis, int x1, int x2)
 // clipped off the screen.
 //
 static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
-		fixed_t x, fixed_t y, fixed_t z, fixed_t height, fixed_t width,
+		fixed_t x, fixed_t y, fixed_t z, fixed_t tx, fixed_t ty,
+		fixed_t height, fixed_t width,
 		fixed_t topoffs, fixed_t sideoffs, bool flip)
 {
-	// translate the sprite edges from world-space to camera-space
-	// and store in t1 & t2
-	fixed_t tx, ty, t1xold;
-	R_RotatePoint(x - viewx, y - viewy, ANG90 - viewangle, tx, ty);
+	// x / y are in world-space, tx / ty are the same point already
+	// translated into camera-space by the caller
+	fixed_t t1xold;
 
 	v2fixed_t t1, t2;
 	if (flip)
@@ -400,15 +400,20 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	fixed_t gzt = z + topoffs;
 	fixed_t gzb = z;
 
+	// Run a less taxing calculation to get the x/y scale of the sprite.
+	fixed_t xscale = FixedDiv(FocalLengthX, ty);
+
 	// project the sprite edges to determine which columns the sprite occupies
-	int x1 = R_ProjectPointX(t1.x, ty);
-	int x2 = R_ProjectPointX(t2.x, ty) - 1;
+	int x1 = FIXED2INT(centerxfrac + FixedMul(t1.x, xscale));
+	int x2 = FIXED2INT(centerxfrac + FixedMul(t2.x, xscale)) - 1;
 	if (!R_CheckProjectionX(x1, x2))
 		return NULL;
 
+	fixed_t yscale = FixedDiv(FocalLengthY, ty);
+
 	// Entirely above the top of the screen or below the bottom?
-	int y1 = R_ProjectPointY(gzt - viewz, ty);
-	int y2 = R_ProjectPointY(gzb - viewz, ty) - 1;
+	int y1 = FIXED2INT(centeryfrac - FixedMul(gzt - viewz, yscale));
+	int y2 = FIXED2INT(centeryfrac - FixedMul(gzb - viewz, yscale)) - 1;
 	if (!R_CheckProjectionY(y1, y2))
 		return NULL;
 
@@ -447,8 +452,8 @@ static vissprite_t* R_GenerateVisSprite(const sector_t* sector, int fakeside,
 	// killough 3/27/98: save sector for special clipping later
 	vis->heightsec = heightsec;
 
-	vis->xscale = FixedDiv(FocalLengthX, ty);
-	vis->yscale = FixedDiv(FocalLengthY, ty);
+	vis->xscale = xscale;
+	vis->yscale = yscale;
 	vis->gx = x;
 	vis->gy = y;
 	vis->gzb = gzb;
@@ -602,14 +607,14 @@ void R_ProjectSprite(AActor *thing, int fakeside)
 	// this constantly.
 	if (thing->sprite != projspritenum || projsprdef == NULL)
 	{
-	auto it = sprites.find(thing->sprite);
+		auto it = sprites.find(thing->sprite);
 
 #ifdef RANGECHECK
-	if (it == sprites.end())
-	{
-		DPrintFmt("R_ProjectSprite: thing ({}: {}): invalid sprite number {}\n on ", thing->type, thing->info->name, thing->sprite);
-		return;
-	}
+		if (it == sprites.end())
+		{
+			DPrintFmt("R_ProjectSprite: thing ({}: {}): invalid sprite number {}\n on ", thing->type, thing->info->name, thing->sprite);
+			return;
+		}
 #endif
 
 		projsprdef = &it->second;
