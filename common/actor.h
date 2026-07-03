@@ -507,6 +507,24 @@ public:
 
 	struct subsector_s		*subsector;
 
+	// Keep these values together because they're hit by R_ProjectSprite,
+	// PIT_FindTarget, and PIT_CheckThing, which are heavy hitters on maps
+	// with a ton of monsters. This way, the cache can more easily hit
+	// due to locality.
+	int				flags;
+	int				flags2;	// Heretic flags
+	int				flags3;	// MBF21 flags
+	int				oflags;			// Odamex flags
+	int				statusflags; // Flags indicating a players status to other players
+	int 			health;
+	int32_t			type;
+	fixed_t			translucency;	// 65536=fully opaque, 0=fully invisible
+	translationref_t translation;	// Translation table (or NULL)
+
+	// Additional info record for player avatars only.
+	// Only valid if type == MT_PLAYER
+	player_t*	player;
+
     // The closest interval over all contacted Sectors.
     fixed_t		floorz;
     fixed_t		ceilingz;
@@ -525,19 +543,12 @@ public:
     // If == validcount, already checked.
     int			validcount;
 
-	int32_t			type;
     mobjinfo_t*		info;	// &mobjinfo[mobj->type]
     int				tics;	// state tic counter
 	state_t			*state;
 	int				damage;			// For missiles
-	int				flags;
-	int				flags2;	// Heretic flags
-	int				flags3;	// MBF21 flags
-	int				oflags;			// Odamex flags
-	int				statusflags; // Flags indicating a players status to other players
 	int				special1;		// Special info
 	int				special2;		// Special info
-	int 			health;
 
     // Movement direction, movement generation (zig-zagging).
     byte			movedir;	// 0-7
@@ -557,10 +568,6 @@ public:
     // no matter what (even if shot)
     int			threshold;
 
-    // Additional info record for player avatars only.
-    // Only valid if type == MT_PLAYER
-	player_t*	player;
-
     // Player number last looked for.
     unsigned int	lastlook;
 
@@ -577,8 +584,6 @@ public:
 	ActorAwarenessState<MAXPLAYERS> playersAware;
 
 	AActorPtr		goal;			// Monster's goal if not chasing anything
-	translationref_t translation;	// Translation table (or NULL)
-	fixed_t			translucency;	// 65536=fully opaque, 0=fully invisible
 	byte			waterlevel;		// 0=none, 1=feet, 2=waist, 3=eyes
 	int16_t			gear;			// killough 11/98: used in torque simulation
 
