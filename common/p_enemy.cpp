@@ -2131,6 +2131,14 @@ void A_Tracer (AActor *actor)
 	if (demogametic & 3)
 		return;
 
+	// FIXME: Remove the following once we REALLY understand the feasibility of a client-
+	//        side prediction of a tracer whose state depends on its target, which itself
+	//        may be a very-difficult-to-predict player mobj.  A precondition for this is
+	//        the gametic timestamping refactor, and it MAY require a more generic physical
+	//        rollback reconciliation approach and/or a fancy Kalman-style filter.
+	if (not serverside)
+		return;
+
 	if (serverside)
 	{
 		// spawn a puff of smoke behind the rocket
