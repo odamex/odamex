@@ -792,7 +792,7 @@ void R_DrawSkyBoxes()
 			else
 			{
 				ceilingclip[i] = pl->top[i];
-				floorclip[i] = pl->bottom[i];
+				floorclip[i] = pl->bottom[i] + 1;
 			}
 		}
 
@@ -802,6 +802,7 @@ void R_DrawSkyBoxes()
 		ds_p->x2 = viewwidth - 1;
 		ds_p->silhouette = SIL_BOTH;
 		ds_p->midposts = NULL;
+		ds_p->midscales = NULL;
 		ds_p->curline = NULL;
 
 		// [RK] Allocate full width clip arrays.

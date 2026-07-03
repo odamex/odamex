@@ -2229,6 +2229,26 @@ void A_Tracer (AActor *actor)
 	if (demogametic & 3)
 		return;
 
+	// FIXME: Remove the following once we REALLY understand the feasibility of a client-
+	//        side prediction of a tracer whose state depends on its target, which itself
+	//        may be a very-difficult-to-predict player mobj.  A precondition for this is
+	//        the gametic timestamping refactor, and it MAY require a more generic physical
+	//        rollback reconciliation approach and/or a fancy Kalman-style filter.
+	//
+	//        The main test case:  No Time 2 Freeze (NT2F.wad), map22.
+	//
+	//        The revenants spawn custom missile mobjs that are _not_ MT_TRACER, but still
+	//        go through A_Tracer as their main action function once every 2 tics, and
+	//        before the first RunThink.  Yet, as they are not MT_TRACER, they also get
+	//        less-frequent UpdateMobj messages if they randomly happen to not actually do
+	//        any tracing on the server, owing to ye olde revenant scheduling issue above.
+	//        In that case, if the client incorrectly predicts a turn, then the predicted
+	//        missile is allowed to stray pretty far afield before being corrected by
+	//        UpdateMobj.  When that happens, it is exceptionally jarring for any player
+	//        that sees it.  Whatever solution we arrive on must NOT be subject to that bug.
+	if (not serverside)
+		return;
+
 	if (serverside)
 	{
 		// spawn a puff of smoke behind the rocket
@@ -3433,23 +3453,14 @@ bool P_RemoveSoulLimit()
 //
 void A_PainShootSkull (AActor *actor, angle_t angle)
 {
-	fixed_t 	x;
-	fixed_t 	y;
-	fixed_t 	z;
-
-	AActor* 	other;
-	angle_t 	an;
-	int 		prestep;
-	int 		count;
-
 	if(!serverside)
 		return;
 
 	// count total number of skull currently on the level
-	count = 0;
+	int count = 0;
 
 	TThinkerIterator<AActor> iterator;
-
+	AActor* 	other;
 	while ( (other = iterator.Next ()) )
 	{
 		if (other->type == MT_SKULL)
@@ -3465,13 +3476,13 @@ void A_PainShootSkull (AActor *actor, angle_t angle)
 	if (multiplayer && count > 128)
 		return;
 	// okay, there's room for another one
-	an = angle >> ANGLETOFINESHIFT;
+	const angle_t an = angle >> ANGLETOFINESHIFT;
 
-	prestep = 4*FRACUNIT + 3*(actor->info->radius + mobjinfo[MT_SKULL].radius)/2;
+	const int prestep = 4*FRACUNIT + 3*(actor->info->radius + mobjinfo[MT_SKULL].radius)/2;
 
-	x = actor->x + FixedMul (prestep, finecosine[an]);
-	y = actor->y + FixedMul (prestep, finesine[an]);
-	z = actor->z + 8*FRACUNIT;
+	const fixed_t x = actor->x + FixedMul (prestep, finecosine[an]);
+	const fixed_t y = actor->y + FixedMul (prestep, finesine[an]);
+	const fixed_t z = actor->z + 8*FRACUNIT;
 
 	// Check whether the Lost Soul is being fired through a 1-sided	// phares
 	// wall or an impassible line, or a "monsters can't cross" line.//   |
@@ -3633,9 +3644,9 @@ void A_Explode (AActor *thing)
 {
 	// [RH] figure out means of death;
 	int mod;
-	int damage = 128;
-	int distance = 128;
-	bool hurtSource = true;
+	static constexpr int damage = 128;
+	static constexpr int distance = 128;
+	static constexpr bool hurtSource = true;
 
 	switch (thing->type) {
 		case MT_BARREL:
@@ -3730,7 +3741,9 @@ void A_BossDeath(AActor *actor)
 					continue;
 				}
 
-				line_t ld;
+				// De-facto UMAPINFO standard interpretation: activate the bossaction linespecial
+				// as though it's associated with line 0.
+				line_t ld = lines[0];
 
 				if (map_format.getZDoom())
 				{

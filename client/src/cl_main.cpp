@@ -370,7 +370,7 @@ void Host_EndGame(const char *msg)
 
 void CL_QuitNetGame(const netQuitReason_e reason)
 {
-	if (connected)
+	if(connected && !simulated_connection)
 	{
 		CL_CompleteDisconnect(reason);
 
@@ -421,7 +421,7 @@ void CL_QuitNetGame(const netQuitReason_e reason)
 	if (netdemo.isRecording())
 		netdemo.stopRecording();
 
-	if (netdemo.isPlaying())
+	if (netdemo.isPlaying() || netdemo.isPaused())
 		netdemo.stopPlaying();
 
 	demoplayback = false;
@@ -1394,6 +1394,8 @@ BEGIN_COMMAND(netrew)
 {
 	if (netdemo.isPlaying())
 		netdemo.prevSnapshot();
+	else if (netdemo.isPaused());
+		netdemo.prevTic();
 }
 END_COMMAND(netrew)
 

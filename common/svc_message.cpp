@@ -942,6 +942,7 @@ odaproto::svc::MovingSectorElevator SVC_MovingSectorElevator(const sector_t& sec
 	{
 		msg.set_server_tic(serverTic);
 	}
+
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
 	msg.set_floor_height    (P_FloorHeight(&sector));
@@ -966,6 +967,7 @@ odaproto::svc::MovingSectorPillar SVC_MovingSectorPillar(const sector_t& sector,
 	{
 		msg.set_server_tic(serverTic);
 	}
+
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
 	msg.set_floor_height    (P_FloorHeight(&sector));
@@ -991,6 +993,7 @@ odaproto::svc::MovingSectorCeiling SVC_MovingSectorCeiling(const sector_t& secto
 	{
 		msg.set_server_tic(serverTic);
 	}
+
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
 
@@ -1021,6 +1024,7 @@ odaproto::svc::MovingSectorDoor SVC_MovingSectorDoor(const sector_t& sector, int
 	{
 		msg.set_server_tic(serverTic);
 	}
+
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
 
@@ -1047,6 +1051,7 @@ odaproto::svc::MovingSectorFloor SVC_MovingSectorFloor(const sector_t& sector, i
 	{
 		msg.set_server_tic(serverTic);
 	}
+
 	msg.set_sector      (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_floor_height(P_FloorHeight(&sector));
 
@@ -1066,8 +1071,6 @@ odaproto::svc::MovingSectorFloor SVC_MovingSectorFloor(const sector_t& sector, i
 	msg.set_pause_time          (Floor->m_PauseTime);
 	msg.set_step_time           (Floor->m_StepTime);
 	msg.set_per_step_time       (Floor->m_PerStepTime);
-	msg.set_floor_offset        (Floor->m_Height);
-	msg.set_floor_change        (Floor->m_Change);
 	msg.set_floor_line          (Floor->m_Line ? (Floor->m_Line - lines) : -1);
 
 	return msg;
@@ -1079,8 +1082,9 @@ odaproto::svc::MovingSectorPlat SVC_MovingSectorPlat(const sector_t& sector, int
 
 	if (serverTic >= 0)
 	{
-		msg.set_server_tic(serverTic);
+			msg.set_server_tic(serverTic);
 	}
+
 	msg.set_sector      (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_floor_height(P_FloorHeight(&sector));
 

@@ -497,9 +497,9 @@ void ParseUMapInfoLump(int lump, const OLumpName& lumpname)
 			? levels.findByName(mapname)
 			: levels.create();
 
-		// for maps above 32, if no sky is defined, it will show texture 0 (aastinky)
+		// if no sky is defined, it will show texture 0 (aastinky/aashitty)
 		// so instead, lets just try to give it the first defined sky in the level set.
-		if (levels.size() > 0)
+		if (levels.size() > 0 && info.skypic.empty())
 		{
 			level_pwad_info_t& def = levels.at(0);
 			info.skypic = def.skypic;
