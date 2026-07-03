@@ -100,10 +100,78 @@ subsector_t* P_PointInSubsector(fixed_t x, fixed_t y)
 
 AActor::ActorBlockMapListNode::ActorBlockMapListNode(AActor *mo) :
 	m_actor (mo),
-	m_next  (1, nullptr), // Always at least 1 element so that an index calculation of 0 results in valid access.
-	m_prev  (1, nullptr)  // Always at least 1 element so that an index calculation of 0 results in valid access.
+	m_capacity (INLINE_BLOCKS),
+	m_next (m_inlinenext),
+	m_prev (m_inlineprev)
 {
 	clear();
+}
+
+AActor::ActorBlockMapListNode::ActorBlockMapListNode(const ActorBlockMapListNode& other) :
+	m_actor (other.m_actor),
+	m_capacity (INLINE_BLOCKS),
+	m_next (m_inlinenext),
+	m_prev (m_inlineprev)
+{
+	copyFrom(other);
+}
+
+AActor::ActorBlockMapListNode& AActor::ActorBlockMapListNode::operator=(const ActorBlockMapListNode& other)
+{
+	if (this != &other)
+	{
+		m_actor = other.m_actor;
+		copyFrom(other);
+	}
+	return *this;
+}
+
+AActor::ActorBlockMapListNode::~ActorBlockMapListNode()
+{
+	if (m_next != m_inlinenext)
+	{
+		delete[] m_next;
+		delete[] m_prev;
+	}
+}
+
+// Grows the link storage to hold at least blockcnt entries.  Only legal
+// while the node is unlinked, since other actors' m_prev entries can point
+// into this node's m_next array while it is linked.
+void AActor::ActorBlockMapListNode::ensureCapacity(int blockcnt)
+{
+	if (blockcnt <= m_capacity)
+		return;
+
+	if (m_next != m_inlinenext)
+	{
+		delete[] m_next;
+		delete[] m_prev;
+	}
+
+	m_next = new AActor*[blockcnt];
+	m_prev = new AActor**[blockcnt];
+	m_capacity = blockcnt;
+}
+
+void AActor::ActorBlockMapListNode::copyFrom(const ActorBlockMapListNode& other)
+{
+	m_originx   = other.m_originx;
+	m_originy   = other.m_originy;
+	m_blockcntx = other.m_blockcntx;
+	m_blockcnty = other.m_blockcnty;
+
+	int blockcnt = m_blockcntx * m_blockcnty;
+	if (blockcnt < 1)
+		blockcnt = 1; // index 0 must always be a valid slot
+
+	ensureCapacity(blockcnt);
+
+	for (int i = 0; i < blockcnt; i++)
+	{
+		m_next[i] = other.m_next[i];
+		m_prev[i] = other.m_prev[i];
+	}
 }
 
 void AActor::ActorBlockMapListNode::Link()
@@ -137,8 +205,7 @@ void AActor::ActorBlockMapListNode::Link()
 		m_blockcntx = right - left + 1;
 		m_blockcnty = bottom - top + 1;
 
-		m_next.resize(m_blockcntx * m_blockcnty);
-		m_prev.resize(m_blockcntx * m_blockcnty);
+		ensureCapacity(m_blockcntx * m_blockcnty);
 
 		// [SL] 2012-05-15 - Add the actor to the blocklinks list for all of the
 		// blockmaps it overlaps, not just the blockmap for the actor's center point.
@@ -199,35 +266,14 @@ void AActor::ActorBlockMapListNode::Unlink()
 	}
 }
 
-AActor* AActor::ActorBlockMapListNode::Next(int bmx, int bmy)
-{
-	if (bmx < 0 || bmx >= bmapwidth || bmy < 0 || bmy >= bmapheight)
-		return nullptr;
-
-	return m_next[getIndex(bmx, bmy)];
-}
-
 void AActor::ActorBlockMapListNode::clear()
 {
 	m_originx = 0;
 	m_originy = 0;
 	m_blockcntx = 0;
 	m_blockcnty = 0;
-	std::fill(m_next.begin(), m_next.end(), nullptr);
-	std::fill(m_prev.begin(), m_prev.end(), nullptr);
-}
-
-size_t AActor::ActorBlockMapListNode::getIndex(int bmx, int bmy)
-{
-	if (!co_blockmapfix)
-		return 0;
-
-	// range check
-	if (bmx < m_originx || bmx > m_originx + m_blockcntx - 1 ||
-		bmy < m_originy || bmy > m_originy + m_blockcnty - 1)
-		return 0;
-
-	return (bmy - m_originy) * m_blockcntx + bmx - m_originx;
+	std::fill(m_next, m_next + m_capacity, nullptr);
+	std::fill(m_prev, m_prev + m_capacity, nullptr);
 }
 
 

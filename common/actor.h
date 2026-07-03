@@ -392,6 +392,10 @@ class CredibilityState
 		int             m_predictedMotionTicCount { 0 };
 };
 
+// Blockmap dimensions, needed by the inline ActorBlockMapListNode::Next.
+extern int bmapwidth;
+extern int bmapheight;
+
 // Map Object definition.
 class AActor : public DThinker
 {
@@ -698,17 +702,51 @@ public:
 	// be in the mapblock where its center was located, even if it was
 	// overlapping other blocks.
 	//
+	// The per-block next/prev links live in a fixed-size array inside the
+	// actor itself; nearly every actor spans at most a 3x3 block area
+	// (radius up to 128 covers the spider mastermind), so walking a blockmap
+	// chain never chases a separate heap allocation per actor. Larger
+	// custom actors fall back to a heap array.
+	//
 	class ActorBlockMapListNode
 	{
 	public:
 		explicit ActorBlockMapListNode(AActor* mo);
+		ActorBlockMapListNode(const ActorBlockMapListNode& other);
+		ActorBlockMapListNode& operator=(const ActorBlockMapListNode& other);
+		~ActorBlockMapListNode();
+
 		void Link();
 		void Unlink();
-		AActor* Next(int bmx, int bmy);
+
+		AActor* Next(int bmx, int bmy) const
+		{
+			if (bmx < 0 || bmx >= bmapwidth || bmy < 0 || bmy >= bmapheight)
+				return nullptr;
+
+			return m_next[getIndex(bmx, bmy)];
+		}
 
 	private:
 		void clear();
-		size_t getIndex(int bmx, int bmy);
+		void ensureCapacity(int blockcnt);
+		void copyFrom(const ActorBlockMapListNode& other);
+
+		size_t getIndex(int bmx, int bmy) const
+		{
+			// Out-of-range queries (including the cleared state and the
+			// vanilla single-block case) fall back to index 0, which is
+			// always a valid slot.
+			if (bmx < m_originx || bmx > m_originx + m_blockcntx - 1 ||
+				bmy < m_originy || bmy > m_originy + m_blockcnty - 1)
+				return 0;
+
+			return (bmy - m_originy) * m_blockcntx + bmx - m_originx;
+		}
+
+		// the number of block links stored inline before falling back to
+		// the heap - covers actors up to radius 128 (a 3x3 block area)
+		static const int INLINE_BLOCKS = 9;
 
 		AActor* m_actor;
 
@@ -720,9 +758,13 @@ public:
 		int m_blockcnty;
 
 		// the next and previous actors in each of the possible blockmaps
-		// this actor can inhabit
-		std::vector<AActor*>  m_next;
-		std::vector<AActor**> m_prev;
+		// this actor can inhabit - point at the inline arrays unless the
+		// actor spans more than INLINE_BLOCKS blocks
+		int m_capacity;
+		AActor**  m_next;
+		AActor*** m_prev;
+		AActor*   m_inlinenext[INLINE_BLOCKS];
+		AActor**  m_inlineprev[INLINE_BLOCKS];
 	};
 
 	// Interaction info, by BLOCKMAP.
