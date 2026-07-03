@@ -592,6 +592,8 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
 	frame = st.frame;
 	touching_sectorlist = NULL;	// NULL head of sector list // phares 3/13/98
 
+	UpdateActorLists();
+
 	// set subsector and/or block links
 	LinkToWorld ();
 
