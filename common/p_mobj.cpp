@@ -107,7 +107,7 @@ netid_map_t actor_by_netid;
 // the initial ramp-up allocation is a couple of pointer swaps, and actors
 // that are alive at the same time tend to sit near each other in memory.
 // 
-// Probably not thread safe, needs a revamp if the renderer goes multi-threaded.
+// Probably not thread safe.
 //
 namespace
 {
@@ -271,7 +271,7 @@ void AActor::ActorClassList::Remove(AActor* mo)
 	m_count--;
 }
 
-// Moves the already-searched actors [Head(), upto) to the end of the list so
+// Moves the already-searched actors (from m_head to upto) to the end of the list so
 // that they get searched last next time, as MBF's P_LookForMonsters does.
 void AActor::ActorClassList::MoveFrontToEnd(AActor* upto)
 {

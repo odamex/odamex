@@ -687,7 +687,7 @@ public:
 	static AActor* FirstActor() { return s_allhead; }
 
 	// next/previous actor in the list of actors with nonzero effects, so
-	// P_RunEffects only visits actors that actually have effects.  Always
+	// P_RunEffects only visits actors that actually have effects. Always
 	// assign effects through SetEffects to keep the list in sync.
 	AActor* enext = nullptr;
 	AActor* eprev = nullptr;

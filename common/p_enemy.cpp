@@ -1062,16 +1062,11 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 	else if (!co_zdoomfriendtargeting)
 	{
 		// Let's have a less-taxing check for monsters/friendlies targeting each other.
-		// Emulates MBF's linked mobj lists, but not QUITE the same, since it uses STL
-		// containers rather than an array of linked lists.
+		// Emulates MBF's linked mobj lists for friendlies and hostiles.
 
 		// First, find the list of opposing monsters
 		auto& list = actor->IsFriendly() ? AActor::GetHostiles()
 		                                 : AActor::GetFriendlies();
-
-		// The monster's own class list, for sizing the shortcut below.
-		auto ownCount = actor->IsFriendly() ? AActor::GetFriendlies().Count()
-		                                    : AActor::GetHostiles().Count();
 
 		// Bug out early if the list is empty
 		if (!list.empty())

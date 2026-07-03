@@ -634,7 +634,6 @@ static bool PIT_CheckThing (AActor *thing)
 
 	// Reject things that are too far away before the pricier player/friendly
 	// checks below.
-	// TODO: Check if this breaks vanilla.
 	fixed_t blockdist = thing->radius + tmthing->radius;
 	if (abs(thing->x - tmx) >= blockdist || abs(thing->y - tmy) >= blockdist)
 	{
