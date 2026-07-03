@@ -29,6 +29,7 @@
 #include <vector>
 
 #include <math.h>
+#include <algorithm>
 #include "m_random.h"
 #include "m_alloc.h"
 #include "m_bbox.h"
@@ -403,10 +404,9 @@ static bool PIT_FindTarget(AActor* mo)
 	// list, so that it gets searched last next time.
 
 	auto& list =
-	    mo->IsFriendly() ? AActor::GetHostiles().get() : AActor::GetFriendlies().get();
+	    mo->IsFriendly() ? AActor::GetFriendlies().get() : AActor::GetHostiles().get();
 
-	
-	std::erase_if(list, [mo](AActor::AActorPtr& ptr) { return mo->ptr() == ptr; });
+	std::erase_if(list, [mo](const AActor::AActorPtr& ptr) { return ptr == mo; });
 
 	list.push_back(mo->ptr());
 
@@ -1110,19 +1110,17 @@ bool P_LookForMonsters(AActor* actor, bool allaround)
 			// Random number of monsters, to prevent patterns from forming
 			int n = (P_Random() & 31) + 15;
 
-			for (auto& mo : list)
+			for (size_t i = 0; i < list.size(); i++)
 			{
 				if (--n < 0)
 				{
 					// Only a subset of the monsters were searched. Move all of
 					// the ones which were searched so far, to the end of the list.
 
-					std::erase_if(list, [&mo](AActor::AActorPtr& ptr) { return mo == ptr; });
-
-					list.push_back(current_actor->ptr());
+					std::rotate(list.begin(), list.begin() + i, list.end());
 					break;
 				}
-				else if (!PIT_FindTarget(mo))
+				else if (!PIT_FindTarget(list[i]))
 					return true;
 			}
 		}
