@@ -97,6 +97,10 @@ extern float yfoc;
 
 static tallpost_t** masked_midposts;
 
+// scale at the masked seg's endpoint columns, for per-column interpolation
+static fixed_t sprinvyscale1, sprinvyscale2;
+static int sprscalex1, sprscalex2;
+
 EXTERN_CVAR(r_clipmaskedspecial)
 
 //
@@ -190,24 +194,41 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 {
 	tallpost_t* post = dcol.post;
 
+	// R_PrepWall uses floats to calculate scale1 and scale2, which left
+	// the scalestep values vulnerable to floating-point rounding errors.
+	// If a wall is tall enough and a resolution big enough, the scalestep
+	// can be off enough that by accumulation, it draws a row with no data.
+	// Your midtex gap! :)
+	//
+	// Instead of using the scalestep, we calculate spryscale
+	// via interpolation of the two endpoint scales.
+	if (sprscalex2 > sprscalex1)
+		spryscale = sprinvyscale1 + fixed_t(int64_t(dcol.x - sprscalex1) *
+			(sprinvyscale2 - sprinvyscale1) / (sprscalex2 - sprscalex1));
+	else
+		spryscale = sprinvyscale1;
+
 	if (post != NULL && spryscale > 0)
 	{
-		sprtopscreen = centeryfrac - FixedMul(dcol.texturemid, spryscale);
+		// R_FillWallHeightArray uses centery and so should we.
+		// Otherwise we can have textures drawing at different
+		// heights when mouselook is on.
+		sprtopscreen = (centery << FRACBITS) - FixedMul(dcol.texturemid, spryscale);
 		dcol.iscale = 0xffffffffu / (unsigned)spryscale;
 
 		while (!post->end())
 		{
 			// calculate unclipped screen coordinates for post
-			const int topscreen = sprtopscreen + spryscale * post->topdelta + 1;
+			const int topscreen = sprtopscreen + spryscale * post->topdelta;
 
-			dcol.yl = (topscreen + FRACUNIT) >> FRACBITS;
+			dcol.yl = topscreen >> FRACBITS;
 			dcol.yh = (topscreen + spryscale * post->length) >> FRACBITS;
 
-			dcol.yl = MAX(dcol.yl, mceilingclip[dcol.x] + 1);
+			dcol.yl = MAX(dcol.yl, MAX(mceilingclip[dcol.x], 0));
 			dcol.yh = MIN(dcol.yh, mfloorclip[dcol.x] - 1);
 
 			dcol.texturefrac = dcol.texturemid - (post->topdelta << FRACBITS)
-				+ (dcol.yl * dcol.iscale) - FixedMul(centeryfrac - FRACUNIT, dcol.iscale);
+				+ (dcol.yl * dcol.iscale) - FixedMul((centery << FRACBITS) - FRACUNIT, dcol.iscale);
 
 			if (dcol.texturefrac < 0)
 			{
@@ -235,8 +256,6 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 
 		masked_midposts[dcol.x] = NULL;
 	}
-
-	spryscale += rw_scalestep;
 }
 
 //
@@ -671,8 +690,10 @@ void R_RenderMaskedSegRange(drawseg_t* ds, int x1, int x2)
 
 	masked_midposts = ds->midposts;
 
-	rw_scalestep = R_TexInvScaleY(ds->scalestep, texnum);
-	spryscale = R_TexInvScaleY(ds->scale1, texnum) + (x1 - ds->x1) * rw_scalestep;
+	sprscalex1 = ds->x1;
+	sprscalex2 = ds->x2;
+	sprinvyscale1 = R_TexInvScaleY(ds->scale1, texnum);
+	sprinvyscale2 = R_TexInvScaleY(ds->scale2, texnum);
 
 	rw_lightstep = ds->lightstep;
 	rw_light = ds->light + (x1 - ds->x1) * rw_lightstep;
