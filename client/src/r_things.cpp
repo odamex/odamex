@@ -48,6 +48,17 @@
 
 extern fixed_t FocalLengthX, FocalLengthY;
 
+// prefetch hint, used to soften the pointer chase over a sector's
+// thing list
+#if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
+	#include <xmmintrin.h>
+	#define R_PREFETCH(p) _mm_prefetch(reinterpret_cast<const char*>(p), _MM_HINT_T0)
+#elif defined(__GNUC__) || defined(__clang__)
+	#define R_PREFETCH(p) __builtin_prefetch(p)
+#else
+	#define R_PREFETCH(p) ((void)0)
+#endif
+
 #define MINZ							(FRACUNIT*4)
 #define BASEYCENTER 					(100)
 
@@ -734,6 +745,13 @@ void R_AddSprites (sector_t *sec, int lightlevel, int fakeside)
 	// Handle all things in sector.
 	for (AActor* thing = sec->thinglist; thing; thing = thing->snext)
 	{
+		// start pulling the next actor into cache while this one projects
+		if (AActor* next = thing->snext)
+		{
+			R_PREFETCH(reinterpret_cast<const char*>(next));
+			R_PREFETCH(reinterpret_cast<const char*>(next) + 64);
+		}
+
 		R_ProjectSprite (thing, fakeside);
 	}
 }
