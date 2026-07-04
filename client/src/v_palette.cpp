@@ -1035,7 +1035,7 @@ static void V_RefreshSpecialLights()
 	for (dyncolormap_t* colormap = NormalLight.next; colormap; colormap = colormap->next)
 	{
 		// Gamma changes only affect the 32-bit shademap.
-		BuildColoredLights((shademap_t*)colormap->maps.map(),
+		BuildColoredLights(const_cast<shademap_t*>(colormap->maps.map()),
 				colormap->color.getr(), colormap->color.getg(), colormap->color.getb(),
 				colormap->fade.getr(), colormap->fade.getg(), colormap->fade.getb(),
 				false);
