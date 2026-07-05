@@ -225,7 +225,7 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 
 			if (dcol.texturefrac < 0)
 			{
-				const int cnt = (FixedDiv(-dcol.texturefrac, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
+				const int cnt = R_PixelCeil(-dcol.texturefrac, dcol.iscale);
 				dcol.yl += cnt;
 				dcol.texturefrac += cnt * dcol.iscale;
 			}
@@ -235,7 +235,7 @@ static inline void R_BlastMaskedSegColumn(void (*drawfunc)())
 
 			if (endfrac >= maxfrac)
 			{
-				const int cnt = (FixedDiv(endfrac - maxfrac - 1, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
+				const int cnt = R_PixelCeil(endfrac - maxfrac + 1, dcol.iscale);
 				dcol.yh -= cnt;
 			}
 
