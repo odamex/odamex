@@ -2681,6 +2681,54 @@ static void CL_LineSideUpdate(const odaproto::svc::LineSideUpdate* msg)
 	}
 }
 
+static void CL_WakeupMobj(const odaproto::svc::WakeupMobj* msg)
+{
+	AActor* mo = P_FindThingById(msg->netid());
+
+    // It is tempting to try to verify that the current state is somewhere in the set of
+    // truly "idle", passively-spawnstate states, but that can get tricky if we have any
+    // monsters that have any complexity to those states.
+    if (mo == nullptr or mo->state == nullptr)
+    {
+        return;
+    }
+
+	if (AActor* target = P_FindThingById(msg->targetid()))
+    {
+		mo->target = target->ptr();
+    }
+    else
+    {
+		mo->target = AActor::AActorPtr();
+    }
+
+	if (AActor* goal = P_FindThingById(msg->goalid()))
+    {
+		mo->goal = goal->ptr();
+    }
+    else
+    {
+		mo->goal = AActor::AActorPtr();
+    }
+
+    mo->angle = msg->angle();
+    mo->lastlook = msg->lastlook();
+    mo->movecount = msg->movecount();
+    mo->movedir = msg->movedir();
+    mo->pursuecount = msg->pursuecount();
+    mo->reactiontime = msg->reactiontime();
+    mo->special      = msg->special();
+    mo->strafecount  = msg->strafecount();
+    mo->threshold    = msg->threshold();
+
+    if (msg->seesound())
+    {
+        P_PlayWakeupSound(mo);
+    }
+
+    P_SetMobjState(mo, mo->info->seestate);
+}
+
 //
 // CL_SetMobjState
 //
@@ -3462,6 +3510,7 @@ parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
 		SV_MSG(svc_lineupdate, CL_LineUpdate, odaproto::svc::LineUpdate);
 		SV_MSG(svc_sectorproperties, CL_SectorProperties, odaproto::svc::SectorProperties);
 		SV_MSG(svc_linesideupdate, CL_LineSideUpdate, odaproto::svc::LineSideUpdate);
+		SV_MSG(svc_wakeupmobj, CL_WakeupMobj, odaproto::svc::WakeupMobj);
 		SV_MSG(svc_mobjstate, CL_SetMobjState, odaproto::svc::MobjState);
 		SV_MSG(svc_damagemobj, CL_DamageMobj, odaproto::svc::DamageMobj);
 		SV_MSG(svc_executelinespecial, CL_ExecuteLineSpecial, odaproto::svc::ExecuteLineSpecial);

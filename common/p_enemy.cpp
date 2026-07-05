@@ -114,13 +114,14 @@ void A_Mushroom (AActor *actor);
 void A_Fall (AActor *actor);
 
 
-void SV_UpdateMonsterRespawnCount();
+void SV_BroadcastNoiseAlert(const sector_t& sector);
 void SV_SendRaiseMobj(const AActor* source, const AActor* corpse);
-void SV_UpdateMobj(AActor* mo);
-void SV_UpdateMobjBestEffort(AActor* mo);
 void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation);
 void SV_SpawnMobj(AActor* mobj);
-void SV_BroadcastNoiseAlert(const sector_t& sector);
+void SV_UpdateMobj(AActor* mo);
+void SV_UpdateMobjBestEffort(AActor* mo);
+void SV_UpdateMonsterRespawnCount();
+void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound);
 
 extern bool isFast;
 
@@ -1526,6 +1527,32 @@ void A_RandomWalk(AActor* actor)
 	}
 }
 
+
+bool P_PlayWakeupSound(AActor* actor)
+{
+	if (actor->info->seesound)
+	{
+		char sound[MAX_SNDNAME];
+
+		M_StringCopy(sound, actor->info->seesound, MAX_SNDNAME);
+
+		if (sound[strlen(sound) - 1] == '1')
+		{
+			sound[strlen(sound) - 1] = P_Random(actor)%3 + '1';
+			if (S_FindSound (sound) == -1)
+				sound[strlen(sound) - 1] = '1';
+		}
+
+		if (!co_zdoomsound && (actor->flags2 & MF2_BOSS || actor->flags3 & MF3_FULLVOLSOUNDS))
+			S_Sound(CHAN_VOICE, sound, 1, ATTN_NORM);
+		else
+			S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
+
+		return true;
+	}
+	return false;
+}
+
 //
 // A_Look
 // Stay in state until a player is sighted.
@@ -1536,8 +1563,14 @@ void A_Look (AActor *actor)
 	AActor *targ;
 	AActor *newgoal;
 
-	if(not (actor && actor->subsector))
+	if(not (serverside && actor && actor->subsector))
 		return;
+
+    // IMPORTANT NOTE:  Because we no longer predict this function on the client side,
+    //
+    //  ****    ANY actor variable that we set directly or indirectly       ****
+    //  ****    as a result of this function MUST be sent to the clients    ****
+    //  ****    in the MobjWakeup message to keep prediction accurate!      ****
 
 	// [RH] Set goal now if appropriate
 	if (actor->special == Thing_SetGoal && actor->args[0] == 0)
@@ -1574,11 +1607,11 @@ void A_Look (AActor *actor)
 
 		if (actor->flags & MF_AMBUSH)
 		{
-		if (P_CheckSight(actor, actor->target))
+			if (P_CheckSight(actor, actor->target))
 				goto seeyou;
 		}
 		else
-		goto seeyou;
+			goto seeyou;
 	}
 
 
@@ -1586,13 +1619,15 @@ void A_Look (AActor *actor)
 		return;
 
 	// go into chase state
-  seeyou:
+	seeyou:
 
-  	// GhostlyDeath -- Can't see spectators
-  	if (actor->target->player && actor->target->player->spectator)
+	bool mustPlaySeeSound = false;
+
+	// GhostlyDeath -- Can't see spectators
+	if (actor->target->player && actor->target->player->spectator)
 	{
 		actor->target = AActor::AActorPtr();
-  		//return;
+		//return;
 	}
 	// [RH] Don't start chasing after a goal if it isn't time yet.
 	if (actor->target == actor->goal)
@@ -1600,27 +1635,21 @@ void A_Look (AActor *actor)
 		if (actor->reactiontime > level.time)
 			actor->target = AActor::AActorPtr();
 	}
-	else if (actor->info->seesound)
+	else
 	{
-		char sound[MAX_SNDNAME];
-
-		M_StringCopy(sound, actor->info->seesound, MAX_SNDNAME);
-
-		if (sound[strlen(sound) - 1] == '1')
-		{
-			sound[strlen(sound) - 1] = P_Random(actor)%3 + '1';
-			if (S_FindSound (sound) == -1)
-				sound[strlen(sound) - 1] = '1';
-		}
-
-		if (!co_zdoomsound && (actor->flags2 & MF2_BOSS || actor->flags3 & MF3_FULLVOLSOUNDS))
-			S_Sound(CHAN_VOICE, sound, 1, ATTN_NORM);
-		else
-			S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
+		mustPlaySeeSound = P_PlayWakeupSound(actor);
 	}
 
 	if (actor->target)
-		P_SetMobjState (actor, actor->info->seestate, true);
+	{
+		SV_WakeupMobj(actor, mustPlaySeeSound);
+
+		// Explicitly disable the client update logic in P_SetMobjState because we the above special
+		// purpose message for this state transition.  However, we still want to send the UpdateMobj
+		// for consistency.
+		P_SetMobjState(actor, actor->info->seestate, false);
+		SV_UpdateMobj(actor);
+	}
 }
 #include "m_vectors.h"
 
