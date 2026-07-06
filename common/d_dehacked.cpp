@@ -1091,7 +1091,7 @@ static void PatchThing(int thingNum, std::string_view thingName, DehScanner& sca
 
 	info->deh_name = thingName;
 
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("Thing {} found.\n", thingNum);
 #endif
 
@@ -1524,7 +1524,7 @@ static void PatchFrame(int frameNum, DehScanner& scanner)
 			}
 		}
 	}
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	SpriteNamesIterator sprnames_it = sprnames.find(info->sprite);
 	// TODO: sprname might appear as <No Sprite> when it's just not be defined yet
 	std::string_view sprname = (sprnames_it == sprnames.end()) ? "<No Sprite>"sv : sprnames_it->second;
@@ -1540,7 +1540,7 @@ static void PatchSprite(int sprNum, DehScanner& scanner)
 
 	if (sprNum >= 0 && sprNum < ::NUMSPRITES)
 	{
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 		DPrintFmt("Sprite {}\n", sprNum);
 #endif
 	}
@@ -1588,7 +1588,7 @@ static void PatchSprite(int sprNum, DehScanner& scanner)
 static void PatchSprites(DehScanner& scanner)
 {
 	static constexpr size_t maxsprlen = 4;
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[SPRITES]\n");
 #endif
 
@@ -1625,7 +1625,7 @@ static void PatchSprites(DehScanner& scanner)
 			DPrintFmt("Invalid sprite index {}.\n", key);
 			continue; // TODO: should this be an error instead?
 		}
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 		SpriteNamesIterator sprnames_it = sprnames.find(sprIdx);
 		const char* prevSprName =
 		    sprnames_it != sprnames.end() ? sprnames_it->second.c_str() : "No Sprite";
@@ -1638,7 +1638,7 @@ static void PatchSprites(DehScanner& scanner)
 
 static void PatchSounds(DehScanner& scanner)
 {
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[Sounds]\n");
 #endif
 	while (const auto line = scanner.getNextKeyValue())
@@ -1681,7 +1681,7 @@ static void PatchAmmo(int ammoNum, DehScanner& scanner)
 
 	if (ammoNum >= 0 && ammoNum < NUMAMMO)
 	{
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 		DPrintFmt("Ammo {}.\n", ammoNum);
 #endif
 		max = &maxammo[ammoNum];
@@ -1731,7 +1731,7 @@ static void PatchWeapon(int weapNum, DehScanner& scanner)
 	if (weapNum >= 0 && weapNum < NUMWEAPONS)
 	{
 		info = &weaponinfo[weapNum];
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 		DPrintFmt("Weapon {}\n", weapNum);
 #endif
 	}
@@ -1848,7 +1848,7 @@ static int ParsePointerHeader(std::string_view header, size_t) {
 	const int ptr = *ptrNum;
 	const int frame = *frameNum;
 
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("Pointer {}\n", ptr);
 #endif
 
@@ -1921,7 +1921,7 @@ static void PatchMisc(DehScanner& scanner)
 	    {"BFG Cells/Shot", offsetof(DehInfo, BFGCells)},
 	    {"Monsters Infight", offsetof(DehInfo, Infight)}};
 	gitem_t* item;
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("Misc\n");
 #endif
 	while (const auto line = scanner.getNextKeyValue())
@@ -1959,7 +1959,7 @@ static void PatchMisc(DehScanner& scanner)
 
 static void PatchPars(DehScanner& scanner)
 {
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[Pars]\n");
 #endif
 	while (const auto line = scanner.getNextLine())
@@ -2031,7 +2031,7 @@ static void PatchPars(DehScanner& scanner)
 		}
 
 		info.partime = time;
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 		DPrintFmt("Par for {} changed to {}\n", mapname, time);
 #endif
 	}
@@ -2039,7 +2039,7 @@ static void PatchPars(DehScanner& scanner)
 
 static void PatchCodePtrs(DehScanner& scanner)
 {
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[CodePtr]\n");
 #endif
 	while (const auto line = scanner.getNextKeyValue())
@@ -2084,7 +2084,7 @@ static void PatchCodePtrs(DehScanner& scanner)
 
 static void PatchMusic(DehScanner& scanner)
 {
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[Music]\n");
 #endif
 	while (const auto line = scanner.getNextKeyValue())
@@ -2103,7 +2103,7 @@ static void PatchMusic(DehScanner& scanner)
 
 static void PatchHelper(DehScanner& scanner)
 {
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[Helper]\n");
 #endif
 	while (const auto line = scanner.getNextKeyValue())
@@ -2209,7 +2209,7 @@ static void PatchText(const int oldSize, const int newSize, DehScanner& scanner)
 
 static void PatchStrings(DehScanner& scanner)
 {
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("[Strings]\n");
 #endif
 	while (const auto line = scanner.getNextKeyValue())
@@ -2314,7 +2314,7 @@ static int DoInclude(std::string_view include, size_t)
 
 	std::string filename = *token;
 
-#if defined _DEBUG
+#if defined ODAMEX_DEBUG
 	DPrintFmt("Including {}\n", filename);
 #endif
 
