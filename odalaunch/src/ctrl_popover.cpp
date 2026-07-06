@@ -240,6 +240,9 @@ PlayerListPopover::PlayerListPopover(wxWindow* parent)
 	m_RoundsItem = MakeItem("Rounds:", &m_Rounds);
 	RightCol->Add(m_RoundsItem, 0, wxBOTTOM, RowGap);
 
+	m_FastMonstersItem = MakeItem("Fast Monsters:", &m_FastMonsters);
+	RightCol->Add(m_FastMonstersItem, 0, wxBOTTOM, RowGap);
+
 	// Remaining items flow in a wrapping row at the bottom of the right column.
 	wxWrapSizer* RestRow = new wxWrapSizer(wxHORIZONTAL);
 
@@ -318,6 +321,8 @@ void PlayerListPopover::Populate(const Server& s)
 	SetOptionalItem(m_LivesItem, m_Lives, Lives);
 
 	SetOptionalItem(m_RoundsItem, m_Rounds, OdaGetRoundsString(s));
+	SetOptionalItem(m_FastMonstersItem, m_FastMonsters,
+	                OdaGetFastMonstersString(s));
 	SetOptionalItem(m_TimeLeftItem, m_TimeLeft, OdaGetTimeLeftString(s));
 	SetOptionalItem(m_ScoreLimitItem, m_ScoreLimit, OdaGetScoreString(s));
 

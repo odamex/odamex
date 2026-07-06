@@ -179,6 +179,8 @@ private:
 	wxStaticText* m_GpRoundsLabel;
 	wxStaticText* m_GpLives;
 	wxStaticText* m_GpLivesLabel;
+	wxStaticText* m_GpFastMonsters;
+	wxStaticText* m_GpFastMonstersLabel;
 
 	wxDECLARE_EVENT_TABLE();
 };

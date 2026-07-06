@@ -303,6 +303,19 @@ wxString OdaGetScoreString(const Server& s)
 	return wxEmptyString;
 }
 
+wxString OdaGetFastMonstersString(const Server& s)
+{
+	// Nightmare (skill 5) always runs fast monsters, so don't bother showing it.
+	if(OdaGetCvarInt(s, "sv_skill", 0) >= 5)
+		return wxEmptyString;
+
+	// sv_fastmonsters is transmitted only when enabled.
+	if(OdaFindCvar(s, "sv_fastmonsters"))
+		return "Yes";
+
+	return wxEmptyString;
+}
+
 wxString OdaGetCtfRulesString(const Server& s)
 {
 	if(s.Info.GameType != GT_CaptureTheFlag)

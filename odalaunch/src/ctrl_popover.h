@@ -99,6 +99,7 @@ private:
 	wxStaticText* m_CtfRules;
 	wxStaticText* m_Lives;
 	wxStaticText* m_Rounds;
+	wxStaticText* m_FastMonsters;
 	wxStaticText* m_TimeLeft;
 	wxStaticText* m_ScoreLimit;
 
@@ -111,6 +112,7 @@ private:
 	wxSizer* m_CtfRulesItem;
 	wxSizer* m_LivesItem;
 	wxSizer* m_RoundsItem;
+	wxSizer* m_FastMonstersItem;
 	wxSizer* m_TimeLeftItem;
 	wxSizer* m_ScoreLimitItem;
 

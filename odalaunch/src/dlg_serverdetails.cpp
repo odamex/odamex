@@ -419,6 +419,8 @@ void dlgServerDetails::BuildGameplayGrid()
 	m_GpScore = AddRow(m_PnlGameplayVars, m_GpGrid, "Score:", &m_GpScoreLabel);
 	m_GpRounds = AddRow(m_PnlGameplayVars, m_GpGrid, "Rounds:", &m_GpRoundsLabel);
 	m_GpLives = AddRow(m_PnlGameplayVars, m_GpGrid, "Lives:", &m_GpLivesLabel);
+	m_GpFastMonsters = AddRow(m_PnlGameplayVars, m_GpGrid, "Fast Monsters:",
+	                          &m_GpFastMonstersLabel);
 
 	m_GpTeamsSizer = new wxBoxSizer(wxHORIZONTAL);
 
@@ -613,6 +615,9 @@ void dlgServerDetails::PopulateGameplay()
 	wxString Lives;
 	OdaGetCvarValue(s, "g_lives", Lives);
 	SetOptionalRow(m_GpGrid, m_GpLivesLabel, m_GpLives, Lives);
+
+	SetOptionalRow(m_GpGrid, m_GpFastMonstersLabel, m_GpFastMonsters,
+	               OdaGetFastMonstersString(s));
 
 	SetOptionalRow(m_GpGrid, m_GpRoundsLabel, m_GpRounds, OdaGetRoundsString(s));
 	SetOptionalRow(m_GpGrid, m_GpTimeLeftLabel, m_GpTimeLeft,
