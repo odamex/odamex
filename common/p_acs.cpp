@@ -41,6 +41,7 @@
 #include "gi.h"
 #include "g_skill.h"
 #include "infomap.h"
+#include "p_mobj.h"
 
 #if defined(SERVER_APP)
 #include "sv_main.h"
