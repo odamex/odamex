@@ -72,6 +72,7 @@ EXTERN_CVAR(g_lives)
 // sapientlion - experimental
 EXTERN_CVAR(sv_weapondrop)
 
+// TODO: does this need to be global?
 int MeansOfDeath;
 
 // a weapon is found with two clip loads,

@@ -402,91 +402,60 @@ std::string P_MobjToName(const mobjtype_t type)
 	return it->second;
 }
 
-// TODO: grab CONST_HASH from one of the branches that has it
-// and implement a version of it that lowercases the string first too
-// for P_INameToWeapon
 weapontype_t P_NameToWeapon(std::string_view name)
 {
-	if (name == "Fist")
+	using OUtil::CONST_HASH;
+	switch (CONST_HASH(name))
 	{
-		return wp_fist;
+		case CONST_HASH("Fist"):
+			return wp_fist;
+		case CONST_HASH("Pistol"):
+			return wp_pistol;
+		case CONST_HASH("Shotgun"):
+			return wp_shotgun;
+		case CONST_HASH("Chaingun"):
+			return wp_chaingun;
+		case CONST_HASH("RocketLauncher"):
+			return wp_missile;
+		case CONST_HASH("PlasmaRifle"):
+			return wp_plasma;
+		case CONST_HASH("BFG9000"):
+			return wp_bfg;
+		case CONST_HASH("Chainsaw"):
+			return wp_chainsaw;
+		case CONST_HASH("SuperShotgun"):
+			return wp_supershotgun;
+		default:
+			return wp_none;
 	}
-	else if (name == "Pistol")
-	{
-		return wp_pistol;
-	}
-	else if (name == "Shotgun")
-	{
-		return wp_shotgun;
-	}
-	else if (name == "Chaingun")
-	{
-		return wp_chaingun;
-	}
-	else if (name == "RocketLauncher")
-	{
-		return wp_missile;
-	}
-	else if (name == "PlasmaRifle")
-	{
-		return wp_plasma;
-	}
-	else if (name == "BFG9000")
-	{
-		return wp_bfg;
-	}
-	else if (name == "Chainsaw")
-	{
-		return wp_chainsaw;
-	}
-	else if (name == "SuperShotgun")
-	{
-		return wp_supershotgun;
-	}
-
-	return wp_none;
 }
 
 weapontype_t P_INameToWeapon(std::string_view name)
 {
-	if (iequals(name, "Fist"))
+	using OUtil::CONST_HASH_NO_CASE;
+	switch (CONST_HASH_NO_CASE(name))
 	{
-		return wp_fist;
+		case CONST_HASH_NO_CASE("Fist"):
+			return wp_fist;
+		case CONST_HASH_NO_CASE("Pistol"):
+			return wp_pistol;
+		case CONST_HASH_NO_CASE("Shotgun"):
+			return wp_shotgun;
+		case CONST_HASH_NO_CASE("Chaingun"):
+			return wp_chaingun;
+		case CONST_HASH_NO_CASE("RocketLauncher"):
+			return wp_missile;
+		case CONST_HASH_NO_CASE("PlasmaRifle"):
+			return wp_plasma;
+		case CONST_HASH_NO_CASE("BFG9000"):
+			return wp_bfg;
+		case CONST_HASH_NO_CASE("Chainsaw"):
+			return wp_chainsaw;
+		case CONST_HASH_NO_CASE("SuperShotgun"):
+			return wp_supershotgun;
+		default:
+			return wp_none;
 	}
-	else if (iequals(name, "Pistol"))
-	{
-		return wp_pistol;
-	}
-	else if (iequals(name, "Shotgun"))
-	{
-		return wp_shotgun;
-	}
-	else if (iequals(name, "Chaingun"))
-	{
-		return wp_chaingun;
-	}
-	else if (iequals(name, "RocketLauncher"))
-	{
-		return wp_missile;
-	}
-	else if (iequals(name, "PlasmaRifle"))
-	{
-		return wp_plasma;
-	}
-	else if (iequals(name, "BFG9000"))
-	{
-		return wp_bfg;
-	}
-	else if (iequals(name, "Chainsaw"))
-	{
-		return wp_chainsaw;
-	}
-	else if (iequals(name, "SuperShotgun"))
-	{
-		return wp_supershotgun;
-	}
-
-	return wp_none;
 }
 
 namespace

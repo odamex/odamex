@@ -365,6 +365,7 @@ public:
 		PCD_ACTIVATORTID,
 /*250*/
 		PCD_THING_PROJECTILE2 = 252,
+		PCD_STRLEN,
 		PCD_GETCVAR = 255,
 /*260*/	PCD_GETACTORANGLE = 260,
 		PCD_GETLEVELINFO = 265,
@@ -424,13 +425,16 @@ public:
 		CF_SPAWNFORCED = 36,
 		CF_SQRT = 48,
 		CF_FIXEDSQRT,
-		CF_VECTOR_LENGTH,
+		CF_VECTORLENGTH,
 		CF_STRCMP = 63,
 		CF_STRICMP,
 		CF_STRLEFT,
 		CF_STRRIGHT,
 		CF_STRMID,
 		CF_SETSECTORDAMAGE = 94,
+		CF_FLOOR = 207,
+		CF_ROUND,
+		CF_CEIL,
 	};
 
 	static void ACS_SetLineTexture(const int* args, byte argCount);
@@ -577,7 +581,7 @@ protected:
 		int num_required_args;
 	};
 
-	static auto CallFunction(const int scriptnum, const int func, const nonstd::span<const int> args)
+	auto CallFunction(const int scriptnum, const int func, const nonstd::span<const int> args)
 		-> nonstd::expected<int, callfunc_args_error_t>;
 private:
 	DLevelScript ();

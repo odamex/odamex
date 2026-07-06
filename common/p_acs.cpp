@@ -42,6 +42,7 @@
 #include "g_skill.h"
 #include "infomap.h"
 #include "p_mobj.h"
+#include "r_sky.h"
 
 #if defined(SERVER_APP)
 #include "sv_main.h"
@@ -405,6 +406,45 @@ static int CheckInventory(AActor* activator, const char* type)
 			return 0;
 		}
 	}, *givetype);
+}
+
+static int16_t StrToMOD(const char* str)
+{
+	// TODO: find out whether this is supposed to be case sensitive
+	using OUtil::CONST_HASH_NO_CASE;
+	switch (CONST_HASH_NO_CASE(str))
+	{
+		default:
+		case CONST_HASH_NO_CASE("Ice"):
+		case CONST_HASH_NO_CASE("Disintegrate"):
+		case CONST_HASH_NO_CASE("Poison"):
+		case CONST_HASH_NO_CASE("Electric"):
+		case CONST_HASH_NO_CASE("Massacre"):
+		case CONST_HASH_NO_CASE("None"):
+			return MOD_UNKNOWN;
+		case CONST_HASH_NO_CASE("BFGSplash"):
+			return MOD_BFG_SPLASH;
+		case CONST_HASH_NO_CASE("Drowning"):
+			return MOD_WATER;
+		case CONST_HASH_NO_CASE("Slime"):
+			return MOD_SLIME;
+		case CONST_HASH_NO_CASE("Fire"):
+			return MOD_LAVA;
+		case CONST_HASH_NO_CASE("Crush"):
+			return MOD_CRUSH;
+		case CONST_HASH_NO_CASE("Telefrag"):
+			return MOD_TELEFRAG;
+		case CONST_HASH_NO_CASE("Falling"):
+			return MOD_FALLING;
+		case CONST_HASH_NO_CASE("Suicide"):
+			return MOD_SUICIDE;
+		case CONST_HASH_NO_CASE("Exit"):
+			return MOD_EXIT;
+		case CONST_HASH_NO_CASE("Melee"):
+			return MOD_HIT;
+		case CONST_HASH_NO_CASE("Railgun"):
+			return MOD_RAILGUN;
+	}
 }
 
 EXTERN_CVAR (sv_skill)
@@ -3096,6 +3136,7 @@ void DLevelScript::RunScript ()
 				}
 				else if (activator)
 				{
+					// TODO: print activator->info->tag instead
 					workwhere += snprintf(workwhere, 4096, "%s",
 						RUNTIME_TYPE(activator)->Name+1);
 				}
@@ -3629,16 +3670,9 @@ void DLevelScript::RunScript ()
 
 		case PCD_GETCVAR:
 			{
-				cvar_t *var, *prev;
-				var = cvar_t::FindCVar(level.behavior->LookupString(STACK(1)), &prev);
-				if (var == NULL)
-				{
-					STACK(1) = 0;
-				}
-				else
-				{
-					STACK(1) = var->asInt();
-				}
+				cvar_t *prev;
+				const auto var = cvar_t::FindCVar(level.behavior->LookupString(STACK(1)), &prev);
+				STACK(1) = var == nullptr ? 0 : var->asInt();
 			}
 			break;
 
@@ -3955,6 +3989,13 @@ void DLevelScript::RunScript ()
 			}
 			break;
 
+		case PCD_STRLEN:
+			{
+				const char* str = level.behavior->LookupString(STACK(1));
+				STACK(1) = str ? static_cast<int32_t>(strlen(str)) : 0;
+			}
+			break;
+
 		case PCD_CALLFUNC:
 			{
 				const int nargs = NEXTBYTE;
@@ -3999,6 +4040,8 @@ void DLevelScript::RunScript ()
 	}
 }
 
+fixed_t P_BulletSlope(AActor* mo);
+
 auto DLevelScript::CallFunction(const int scriptnum, const int func, const nonstd::span<const int> args)
 	-> nonstd::expected<int, callfunc_args_error_t>
 {
@@ -4012,57 +4055,109 @@ auto DLevelScript::CallFunction(const int scriptnum, const int func, const nonst
 	switch (func) {
 		case CF_SETACTIVATOR:
 			CHECK_MIN_ARGS(1);
-			return 0; // TODO
+			activator = AActor::FindByTID(nullptr, args[0]);
+			return activator != nullptr;
 
 		case CF_SETACTIVATORTOTARGET:
 			CHECK_MIN_ARGS(1);
-			return 0; // TODO
+			{
+				auto actor = SingleActorFromTID(STACK(1), activator);
+				if (actor == nullptr)
+					return 0;
+
+				auto player = actor->player;
+				if (player != nullptr && player->mo != nullptr && player->playerstate == PST_LIVE)
+				{
+					P_BulletSlope(actor->player->mo);
+					actor = linetarget;
+				}
+				else
+				{
+					actor = actor->target;
+				}
+
+				if (actor != nullptr)
+				{
+					activator = actor;
+					return 1;
+				}
+
+				return 0;
+			}
 
 		case CF_SETSKYSCROLLSPEED:
 			CHECK_MIN_ARGS(2);
-			return 0; // TODO
+			CLIENT_ONLY(R_SetSkyScrollSpeed(args[0], args[1]));
+			return 1;
 
 		case CF_SPAWNSPOTFORCED:
 			CHECK_MIN_ARGS(4);
-			return 0; // TODO
+			return DoSpawnSpot(args[0], args[1], args[2], args[3], true);
 
 		case CF_SPAWNSPOTFACINGFORCED:
 			CHECK_MIN_ARGS(3);
-			return 0; // TODO
+			return DoSpawnSpot(args[0], args[1], args[2], std::nullopt, true);
 
 		case CF_SPAWNFORCED:
 			CHECK_MIN_ARGS(4);
-			return 0; // TODO
+			return DoSpawn(args[0], args[1], args[2], args[3], args.size() > 4 ? args[4] : 0, args.size() > 5 ? args[5] : 0, true);
 
 		case CF_SQRT:
 			CHECK_MIN_ARGS(1);
-			return 0; // TODO
+			return static_cast<int>(std::floor(std::sqrt(static_cast<double>(args[0]))));
 
 		case CF_FIXEDSQRT:
 			CHECK_MIN_ARGS(1);
-			return 0; // TODO
+			return DOUBLE2FIXED(std::sqrt(FIXED2DOUBLE(args[0])));
 
-		case CF_VECTOR_LENGTH:
+		case CF_VECTORLENGTH:
 			CHECK_MIN_ARGS(2);
-			return 0; // TODO
+			return M_LengthVec2Fixed(v2fixed_t(args[0], args[1]));
 
 		case CF_STRCMP:
 		case CF_STRICMP:
 			CHECK_MIN_ARGS(2);
-			return 0; // TODO
+			{
+				// same string
+				if (args[0] == args[1])
+					return 0;
 
-		case CF_STRLEFT:
-		case CF_STRRIGHT:
-			CHECK_MIN_ARGS(2);
-			return 0; // TODO
+				const char* str1 = level.behavior->LookupString(args[0]);
+				const char* str2 = level.behavior->LookupString(args[1]);
 
-		case CF_STRMID:
-			CHECK_MIN_ARGS(3);
-			return 0; // TODO
+				if (args.size() > 2)
+					return (func == CF_STRCMP) ? strncmp(str1, str2, args[2]) : strnicmp(str1, str2, args[2]);
+
+				return (func == CF_STRCMP) ? strcmp(str1, str2) : stricmp(str1, str2);
+			}
 
 		case CF_SETSECTORDAMAGE:
 			CHECK_MIN_ARGS(2);
-			return 0; // TODO
+			{
+				int secnum = -1;
+				while ((secnum = P_FindSectorFromTag (args[0], secnum)) >= 0)
+				{
+					auto& sec = sectors[secnum];
+					sec.damageamount = args[1];
+					sec.mod = args.size() > 2 ? StrToMOD(level.behavior->LookupString(args[2])) : MOD_UNKNOWN;
+					sec.damageinterval = args.size() > 3 ? clamp(args[3], 1, limits::MAXINT) : 32;
+					sec.leakrate = args.size() > 4 ? args[4] : 0;
+				}
+				return 0;
+			}
+
+		// TODO: maybe make functions in m_fixed.h?
+		case CF_FLOOR:
+			CHECK_MIN_ARGS(1);
+			return args[0] & ~0xffff;
+
+		case CF_CEIL:
+			CHECK_MIN_ARGS(1);
+			return (args[0] & ~0xffff) + INT2FIXED(1);
+
+		case CF_ROUND:
+			CHECK_MIN_ARGS(1);
+			return (args[0] + DOUBLE2FIXED(0.5)) & ~0xFFFF;
 
 		default:
 			// TODO: similar to the first big switch in RunScript, validate these ahead of time
