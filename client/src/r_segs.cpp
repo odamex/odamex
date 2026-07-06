@@ -261,7 +261,6 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 
 	if (dcol.post->length != dcol.textureheight >> FRACBITS)
 	{
-		int count = dcol.textureheight >> FRACBITS;
 		tallpost_t* srcpost = dcol.post;
 
 		int destpostlen = 0;
@@ -284,8 +283,11 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 
 			if (srcpost->topdelta == destpostlen)
 			{
-				memcpy(destpost->data() + destpostlen, srcpost->data(), srcpost->length);
-					   destpostlen += srcpost->length;
+				// clamp to remaining to ensure malformed post lengths
+				// don't crash
+				const int copylen = MIN<int>(srcpost->length, remaining);
+				memcpy(destpost->data() + destpostlen, srcpost->data(), copylen);
+				destpostlen += copylen;
 			}
 			else
 			{
