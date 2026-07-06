@@ -3168,8 +3168,7 @@ void DLevelScript::RunScript ()
 				}
 				else if (activator)
 				{
-					// TODO: print activator->info->tag instead
-					work += RUNTIME_TYPE(activator)->Name+1;
+					work += activator->info->getDisplayName();
 				}
 				else
 				{

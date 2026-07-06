@@ -31,6 +31,7 @@
 #include "m_fixed.h"
 #include "info.h"
 #include "actor.h"
+#include "gstrings.h"
 
 const char* doom_sprnames[::NUMSPRITES] = {
 	"TROO","SHTG","PUNG","PISG","PISF","SHTF","SHT2","CHGG","CHGF","MISG",
@@ -1248,6 +1249,19 @@ state_t	boomstates[S_MUSHROOM + 1] = {
 	{ S_MUSHROOM, SPR_MISL,32769,8,A_Mushroom,S_EXPLODE2,0,0, {0, 0, 0, 0, 0, 0, 0, 0}, STATEF_NONE},  // S_MUSHROOM
 };
 
+std::string mobjinfo_t::getDisplayName() const
+{
+	if (!deh_name.empty() && !display_name_set)
+		return deh_name;
+	if (!display_name.empty())
+	{
+		if (display_name[0] == '$')
+			return GStrings(StdStringToUpper(display_name).c_str() + 1);
+		return display_name;
+	}
+	return P_MobjToName(static_cast<mobjtype_t>(this->type));
+}
+
 // [Blair] Since Odamex has more out-of-the-box states,
 // the new DEHExtra state spec starts at 1100, while we have around
 // 1130.
@@ -1332,7 +1346,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_CLIP		// droppeditem
+	MT_CLIP,		// droppeditem
+	"$FN_ZOMBIE",
   },
 
 	{		// MT_SHOTGUY
@@ -1372,7 +1387,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_SHOTGUN		// droppeditem
+	MT_SHOTGUN,		// droppeditem
+	"$FN_SHOTGUN"
   },
 
 	{		// MT_VILE
@@ -1412,7 +1428,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	MF3_SHORTMRANGE | MF3_DMGIGNORED | MF3_NOTHRESHOLD,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$FN_ARCH",
 	},
 
 	{		// MT_FIRE
@@ -1492,7 +1509,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	MF3_LONGMELEE | MF3_RANGEHALF,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$FN_REVEN",
 	},
 
 	{		// MT_TRACER
@@ -1612,7 +1630,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	MF3_MAP07BOSS1,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$FN_MANCU",
 	},
 
 	{		// MT_FATSHOT
@@ -1692,7 +1711,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_CHAINGUN		// droppeditem
+	MT_CHAINGUN,		// droppeditem
+	"$FN_HEAVY"
 	},
 
 	{		// MT_TROOP
