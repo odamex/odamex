@@ -966,7 +966,11 @@ static std::tuple<int, std::string_view> ParseThingHeader(std::string_view heade
 		return { -1, "" };
 	}
 
-	std::string_view thingName = textNum.substr(textNum.find_first_not_of("0123456789"));
+	const auto idxPastNum = textNum.find_first_not_of("0123456789");
+	if (idxPastNum == std::string_view::npos)
+		return { thingNum, "" };
+
+	std::string_view thingName = textNum.substr(idxPastNum);
 
 	thingName = TrimStringView(thingName);
 
