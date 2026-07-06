@@ -405,7 +405,8 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 	}
 	if (bflags & baseline_t::POSZ)
 	{
-		apos->set_z(mo->z);
+		// Send the bob center, not the per-tic visual offset.
+		apos->set_z((mo->flags2 & MF2_FLOATBOB) ? mo->floorz + mo->special1 : mo->z);
 	}
 	if (bflags & baseline_t::ANGLE)
 	{
@@ -444,11 +445,27 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 		amom->set_z(mo->momz);
 	}
 
-	cur->set_type(mo->type);
-	cur->set_netid(mo->netid);
+	// Now set the basic current info.
 
-	// denis - sending state fixes monster ghosts appearing under doors
+	cur->set_type    (mo->type);
+	cur->set_netid   (mo->netid);
 	cur->set_statenum(mo->state->statenum);
+
+	// Please note that we send the current gametic as the client's initial timebase for mobj-
+	// internal timing.  This ensures that any timed events for this mobj from this point
+	// forward are using the same timebase as the server.  Example:  whether or not A_Tracer
+	// does any actual tracing logic.
+	//
+	msg.set_timebase_tic(gametic);
+
+	// Animation state rics can never be left at 0, because 0 means to proceed to the next state
+	// immediately before returning control back out of the state-advance code.  Therefore we
+	// co-opt the zero / default state to mean -1, which is the "do not animate" value.
+	//
+	if (mo->tics > 0)
+	{
+		cur->set_tics(mo->tics);
+	}
 
 	// Special case:  Did we get spawned in earlier on this tic?  If so, there are some instances
 	// where a mobj spawns in via dehacked SpawnObject, but its frames / state sequencing is such
@@ -463,6 +480,7 @@ odaproto::svc::SpawnMobj SVC_SpawnMobj(const AActor* mo)
 		// those cases where they AREN'T the same value that we're really after here.
 		cur->set_statenum(mo->info->spawnstate);
 		cur->set_rndindex(mo->spawnRndindex);
+		cur->set_tics    (states[mo->info->spawnstate].tics);
 	}
 
 	if (mo->type == MT_FOUNTAIN)
@@ -631,7 +649,8 @@ odaproto::svc::UpdateMobj SVC_UpdateMobj(const AActor& mobj)
 	}
 	if (flags & baseline_t::POSZ)
 	{
-		pos->set_z(mobj.z);
+		// Send the bob center, not the per-tic visual offset.
+		pos->set_z((mobj.flags2 & MF2_FLOATBOB) ? mobj.floorz + mobj.special1 : mobj.z);
 	}
 	if (flags & baseline_t::ANGLE)
 	{
@@ -923,6 +942,7 @@ odaproto::svc::MovingSectorElevator SVC_MovingSectorElevator(const sector_t& sec
 	{
 		msg.set_server_tic(serverTic);
 	}
+
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
 	msg.set_floor_height    (P_FloorHeight(&sector));
@@ -947,6 +967,7 @@ odaproto::svc::MovingSectorPillar SVC_MovingSectorPillar(const sector_t& sector,
 	{
 		msg.set_server_tic(serverTic);
 	}
+
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
 	msg.set_floor_height    (P_FloorHeight(&sector));
@@ -972,6 +993,7 @@ odaproto::svc::MovingSectorCeiling SVC_MovingSectorCeiling(const sector_t& secto
 	{
 		msg.set_server_tic(serverTic);
 	}
+
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
 
@@ -1002,6 +1024,7 @@ odaproto::svc::MovingSectorDoor SVC_MovingSectorDoor(const sector_t& sector, int
 	{
 		msg.set_server_tic(serverTic);
 	}
+
 	msg.set_sector          (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_ceiling_height  (P_CeilingHeight(&sector));
 
@@ -1028,6 +1051,7 @@ odaproto::svc::MovingSectorFloor SVC_MovingSectorFloor(const sector_t& sector, i
 	{
 		msg.set_server_tic(serverTic);
 	}
+
 	msg.set_sector      (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_floor_height(P_FloorHeight(&sector));
 
@@ -1047,8 +1071,6 @@ odaproto::svc::MovingSectorFloor SVC_MovingSectorFloor(const sector_t& sector, i
 	msg.set_pause_time          (Floor->m_PauseTime);
 	msg.set_step_time           (Floor->m_StepTime);
 	msg.set_per_step_time       (Floor->m_PerStepTime);
-	msg.set_floor_offset        (Floor->m_Height);
-	msg.set_floor_change        (Floor->m_Change);
 	msg.set_floor_line          (Floor->m_Line ? (Floor->m_Line - lines) : -1);
 
 	return msg;
@@ -1060,8 +1082,9 @@ odaproto::svc::MovingSectorPlat SVC_MovingSectorPlat(const sector_t& sector, int
 
 	if (serverTic >= 0)
 	{
-		msg.set_server_tic(serverTic);
+			msg.set_server_tic(serverTic);
 	}
+
 	msg.set_sector      (static_cast<ptrdiff_t>(&sector - ::sectors));
 	msg.set_floor_height(P_FloorHeight(&sector));
 

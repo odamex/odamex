@@ -445,10 +445,6 @@ EXTERN_CVAR (sv_allowexit)
 IMPLEMENT_SERIAL (DScroller, DThinker)
 IMPLEMENT_SERIAL (DPusher, DThinker)
 
-DScroller::DScroller ()
-{
-}
-
 void DScroller::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
@@ -472,11 +468,6 @@ void DScroller::Serialize (FArchive &arc)
 			>> m_vdx >> m_vdy
 			>> m_Accel;
 	}
-}
-
-DPusher::DPusher () : m_Type(p_push), m_Xmag(0), m_Ymag(0), m_Magnitude(0),
-    m_Radius(0), m_X(0), m_Y(0), m_Affectee(0)
-{
 }
 
 void DPusher::Serialize (FArchive &arc)

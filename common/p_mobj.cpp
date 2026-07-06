@@ -78,6 +78,7 @@ void SV_UpdateMonsterRespawnCount();
 EXTERN_CVAR(sv_freelook)
 EXTERN_CVAR(sv_itemsrespawn)
 EXTERN_CVAR(sv_respawnsuper)
+EXTERN_CVAR(sv_respawnbarrels)
 EXTERN_CVAR(sv_itemrespawntime)
 EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(co_mbfphys)
@@ -200,7 +201,8 @@ AActor::AActor()
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), rndindex(0),
       spawnRndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
-      netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), spawnTic(gametic), bmapnode(this)
+      netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), spawnTic(gametic),
+      mobjtic(gametic), bmapnode(this)
 {
 	args.fill(0);
 	self.init(this);
@@ -228,7 +230,7 @@ AActor::AActor(const AActor& other)
       friend_playerid(other.friend_playerid), friend_teamid(other.friend_teamid),
       pursuecount(other.pursuecount), strafecount(other.strafecount), netid(other.netid), tid(other.tid),
       baseline_set(false), updatedDuringTic(other.updatedDuringTic), spawnTic(other.spawnTic),
-      credibility {other.credibility}, bmapnode(other.bmapnode)
+      mobjtic(other.mobjtic), credibility {other.credibility}, bmapnode(other.bmapnode)
 {
 	memcpy(&baseline, &other.baseline, sizeof(baseline));
 	self.init(this);
@@ -308,6 +310,7 @@ AActor &AActor::operator= (const AActor &other)
 
     updatedDuringTic = other.updatedDuringTic;
     spawnTic         = other.spawnTic;
+    mobjtic          = other.mobjtic;
     credibility      = other.credibility;
 
     return *this;
@@ -331,7 +334,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), rndindex(0),
       spawnRndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
       netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), spawnTic(gametic),
-      bmapnode(this)
+      mobjtic(gametic), bmapnode(this)
 {
 	// Fly!!! fix it in P_RespawnSpecial
 	const auto it = ::mobjinfo.find(itype);
@@ -554,6 +557,9 @@ void P_ClearId(uint32_t id)
 //
 void AActor::Destroy ()
 {
+	if (WasDestroyed())
+		return;
+
 	SV_SendDestroyActor(this);
 
 	actor_by_netid.erase(netid);
@@ -564,7 +570,9 @@ void AActor::Destroy ()
 		P_RemoveHealthPool(this);
 
     // Add special to item respawn queue if it is destined to be respawned
-	if ((flags & MF_SPECIAL) && !(flags & MF_DROPPED) && spawnpoint.type > 0)
+	// also add barrels
+	if (((flags & MF_SPECIAL) && !(flags & MF_DROPPED) && spawnpoint.type > 0) ||
+		info->type == MT_BARREL)
 	{
 		itemrespawnque.emplace(spawnpoint, level.time);
 
@@ -616,6 +624,43 @@ fixed_t P_CalculateMinMom(const AActor *mo)
 	const fixed_t levelgravity       = co_zdoomphys ? FixedDiv(FLOAT2FIXED(level.gravity), 100 << FRACBITS) : GRAVITY * 8;
 
 	return -FixedMul(levelgravity, sectorgravity);
+}
+
+//
+// Floating item bobbing
+//
+// [RV] +FLOATBOB actors use the common ZDoom offset table.  
+// special1 stores the center offset from the floor.
+// The table supplies the visual bob.
+//
+static constexpr fixed_t FloatBobOffsets[64] =
+{
+	0, 51389, 102283, 152192,
+	200636, 247147, 291278, 332604,
+	370727, 405280, 435929, 462380,
+	484378, 501712, 514213, 521763,
+	524287, 521763, 514213, 501712,
+	484378, 462380, 435929, 405280,
+	370727, 332604, 291278, 247147,
+	200636, 152192, 102283, 51389,
+	-1, -51390, -102284, -152193,
+	-200637, -247148, -291279, -332605,
+	-370728, -405281, -435930, -462381,
+	-484380, -501713, -514215, -521764,
+	-524288, -521764, -514214, -501713,
+	-484379, -462381, -435930, -405280,
+	-370728, -332605, -291279, -247148,
+	-200637, -152193, -102284, -51389
+};
+
+static fixed_t P_FloatBobOffset(const AActor* mo)
+{
+	return FloatBobOffsets[(mo->rndindex + level.time) & 63];
+}
+
+static fixed_t P_FloatBobCenterZ(const AActor* mo)
+{
+	return mo->floorz + mo->special1;
 }
 
 //
@@ -677,13 +722,15 @@ void P_MoveActor(AActor *mo)
 		return;		// actor was destroyed
 
 	if (mo->flags2 & MF2_FLOATBOB)
-	{ // Floating item bobbing motion (special1 is height)
-		mo->z = mo->floorz + mo->special1;
+	{
+		mo->z = P_FloatBobCenterZ(mo) + P_FloatBobOffset(mo);
 	}
-	if ((mo->z != mo->floorz) || mo->momz || BlockingMobj)
+	if (mo->momz || BlockingMobj ||
+	    (mo->z != mo->floorz &&
+	     (!(mo->flags2 & MF2_FLOATBOB) || P_FloatBobCenterZ(mo) != mo->floorz)))
 	{
 		// Handle Z momentum and gravity
-		if (P_AllowPassover() && (mo->flags2 & MF2_PASSMOBJ))
+		if (P_AllowPassover() && ((mo->flags2 & MF2_PASSMOBJ) || (mo->flags & MF_SPECIAL)))
 		{
 			if (!(onmo = P_CheckOnmobj(mo)))
 			{
@@ -710,7 +757,15 @@ void P_MoveActor(AActor *mo)
 						mo->player->deltaviewheight =
 						    (VIEWHEIGHT - mo->player->viewheight) >> 3;
 					}
-					mo->z = onmo->z + onmo->height;
+					if (mo->flags2 & MF2_FLOATBOB)
+					{
+						mo->special1 = onmo->z + onmo->height - mo->floorz;
+						mo->z = P_FloatBobCenterZ(mo) + P_FloatBobOffset(mo);
+					}
+					else
+					{
+						mo->z = onmo->z + onmo->height;
+					}
 				}
 
 				mo->flags2 |= MF2_ONMOBJ;
@@ -733,7 +788,8 @@ void P_MoveActor(AActor *mo)
 		// killough 9/12/98: objects fall off ledges if they are hanging off
 		// slightly push off of ledge if hanging more than halfway off
 		// [RH] Be more restrictive to avoid pushing monsters/players down steps
-		if (!(mo->flags & MF_NOGRAVITY) && (mo->z > mo->dropoffz) && P_AllowDropOff())
+		if (!(mo->flags & MF_NOGRAVITY) && !(mo->flags2 & MF2_FLOATBOB) &&
+			(mo->z > mo->dropoffz) && P_AllowDropOff())
 		{
 			P_ApplyTorque(mo); // Apply torque
 		}
@@ -811,6 +867,11 @@ void P_TestActorMovement(AActor *mo, fixed_t tryx, fixed_t tryy, fixed_t tryz,
 
 	// restore the actor's position/state
 	backup.toActor(mo);
+}
+
+void AActor::PostThink()
+{
+	++mobjtic;
 }
 
 //
@@ -1020,6 +1081,7 @@ void AActor::Serialize (FArchive &arc)
 			<< spawnRndindex
 			<< updatedDuringTic
 			<< spawnTic
+			<< mobjtic
 			<< credibility;
 
 		// NOTE(jsd): This is pretty awful right here:
@@ -1108,6 +1170,7 @@ void AActor::Serialize (FArchive &arc)
 			>> spawnRndindex
 			>> updatedDuringTic
 			>> spawnTic
+			>> mobjtic
 			>> credibility;
 
 		tracer.init(tmptracer);
@@ -1137,11 +1200,11 @@ void AActor::Serialize (FArchive &arc)
 		}
 		spawnpoint.Serialize (arc);
 		baseline.Serialize(arc);
-		if (mobjinfo.find(type) == mobjinfo.end())
+		if (!mobjinfo.contains(type))
 		{
 			I_Error("AActor::Serialize: Unknown object type ({}) in saved game", type);
 		}
-		if (sprnames.find(sprite) == sprnames.end())
+		if (!sprnames.contains(sprite))
 		{
 			I_Error("AActor::Serialize: Unknown sprite ({}) in saved game", sprite);
 		}
@@ -1205,7 +1268,7 @@ bool P_SetMobjState(AActor *mobj, int32_t state, bool cl_update)
 
 	do
 	{
-		if (states.find(state) == states.end())
+		if (!states.contains(state))
 		{
 			I_Error("P_SetMobjState: State {} does not exist in state table.", state);
 		}
@@ -2826,7 +2889,9 @@ void P_RespawnSpecials (void)
 	auto it = spawn_map.find(mthing.type);
 	if (it == spawn_map.end() ||
 		// Allow or not Partial Invisibility & Invulnerability from respawning
-	    (!sv_respawnsuper && (mthing.type == 2022 || mthing.type == 2024)))
+	    (!sv_respawnsuper && (mthing.type == 2022 || mthing.type == 2024)) ||
+		// pop barrels as well if needed
+		(!sv_respawnbarrels && mthing.type == 2035))
 	{
 		// pull it from the queue
 		itemrespawnque.pop();
@@ -2852,8 +2917,7 @@ void P_RespawnSpecials (void)
 		mo->z -= mthing.z << FRACBITS;
 
 	if (mo->flags2 & MF2_FLOATBOB)
-	{ // Seed random starting index for bobbing motion
-		mo->health = M_Random();
+	{
 		mo->special1 = mthing.z << FRACBITS;
 	}
 
@@ -3319,8 +3383,7 @@ void P_SpawnMapThing (mapthing2_t& mthing, int position)
 	mobj->spawnpoint = mthing;
 
 	if (mobj->flags2 & MF2_FLOATBOB)
-	{ // Seed random starting index for bobbing motion
-		mobj->health = M_Random();
+	{
 		mobj->special1 = mthing.z << FRACBITS;
 	}
 
@@ -3533,7 +3596,7 @@ void P_SetMobjBaseline(AActor& mo)
 
 	mo.baseline.pos.x = mo.x;
 	mo.baseline.pos.y = mo.y;
-	mo.baseline.pos.z = mo.z;
+	mo.baseline.pos.z = (mo.flags2 & MF2_FLOATBOB) ? P_FloatBobCenterZ(&mo) : mo.z;
 	mo.baseline.mom.x = mo.momx;
 	mo.baseline.mom.y = mo.momy;
 	mo.baseline.mom.z = mo.momz;
@@ -3562,7 +3625,8 @@ uint32_t P_GetMobjBaselineFlags(const AActor& mo)
 	{
 		flags |= baseline_t::POSY;
 	}
-	if (mo.baseline.pos.z != mo.z)
+	const fixed_t z = (mo.flags2 & MF2_FLOATBOB) ? P_FloatBobCenterZ(&mo) : mo.z;
+	if (mo.baseline.pos.z != z)
 	{
 		flags |= baseline_t::POSZ;
 	}

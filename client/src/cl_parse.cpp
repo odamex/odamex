@@ -509,18 +509,27 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	// Read other fields
 
-	uint32_t netid = msg->current().netid();
+	uint32_t netid  = msg->current().netid();
 	mobjtype_t type = static_cast<mobjtype_t>(msg->current().type());
-	statenum_t state = static_cast<statenum_t>(msg->current().statenum());
 
 	if (!mobjinfo.contains(type))
 		return;
 
 	P_ClearId(netid);
 
-	AActor* mo = new AActor(base.pos.x, base.pos.y, base.pos.z, type);
-	mo->baseline = base;
+	const bool floatbob = (mobjinfo[type].flags2 & MF2_FLOATBOB);
+	// Spawn on the floor first so special1 can store the bob center offset.
+	AActor* mo = new AActor(base.pos.x, base.pos.y, floatbob ? ONFLOORZ : base.pos.z, type);
+	if (floatbob)
+	{
+		mo->UnlinkFromWorld();
+		mo->z = base.pos.z;
+		mo->special1 = mo->z - mo->floorz;
+		mo->LinkToWorld();
+	}
+	mo->baseline         = base;
 	mo->updatedDuringTic = gametic;
+	mo->mobjtic          = msg->timebase_tic();
 
 	P_SetThingId(mo, netid);
 
@@ -550,6 +559,8 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			mo->ceilingz = P_CeilingHeight(mo);
 			mo->dropoffz = mo->floorz;
 			mo->floorsector = mo->subsector->sector;
+			if (floatbob)
+				mo->special1 = mo->z - mo->floorz;
 		}
 	}
 
@@ -637,9 +648,38 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			mo->tics = 1;
 	}
 
-    if(state >= S_NULL && states.contains(state))
+	// FIXME: Rework the following block once we get the tic timestamping refactored and develop
+	//        a clear, easy-to-understand method of reconstructing the mobjs' post-spawned,
+	//        pre-tic state, including any "random tic adjustments" that P_CheckMissileSpawn
+	//        and other spawn-time functions may have applied.
+	//
+	//        Key, top-level requirements:
+	//
+	//          1.  When CL_SpawnMobj is complete, the mobj must proceed into the rest of the tic
+	//              with the same state, anim tics, and mobjtic as the server would on the next
+	//              frame following the SpawnMobj command.
+	//
+	//                  Remember, there are functions like P_CheckMissileSpawn, which may have
+	//                  critically modified animation tics before even running through the first
+	//                  mobj's first think + action calls, and all of that precedes the creation
+	//                  of the SpawnMobj message.
+	//
+	//          2.  If the mobj truly spawned on the server in the same tic as the SpawnMobj,
+	//              any complete state transitions that took place on the mobj must take place
+	//              in this function as well.  That is, any spawn-time action functions due to
+	//              having a spawnstate tics duration of 1 or 0 must also run before we return
+	//              from CL_SpawnMobj.  This allows things like immediate sound effects and
+	//              secondary mobjs to work (think a noisy, instant gib spawner).
+
+	statenum_t statenum = static_cast<statenum_t>(msg->current().statenum());
+
+	if (statenum >= S_NULL && states.contains(statenum))
 	{
-		P_SetMobjState(mo, state);
+		P_SetMobjState(mo, statenum);
+
+		// Set animation tic to ensure that the initial state is consistent with the server.
+		const int32_t tics = msg->current().tics();
+		mo->tics = tics ? tics : -1;
 	}
 
 	if (serverside && mo->flags & MF_COUNTKILL)
@@ -1127,6 +1167,8 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 	else
 	{
 		CL_MoveThing(mo, update.pos.x, update.pos.y, update.pos.z);
+		if ((flags & baseline_t::POSZ) && (mo->flags2 & MF2_FLOATBOB))
+			mo->special1 = mo->z - mo->floorz;
 		mo->angle = update.angle;
 		mo->momx = update.mom.x;
 		mo->momy = update.mom.y;
@@ -1246,6 +1288,11 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 		for (int32_t tic = msg->player_tic(); tic <= gametic; ++tic)
 		{
 			rollerState.Record(tic, p);
+		}
+
+		if (!netdemo.isPlaying())
+		{
+				::displayplayer_id = ::consoleplayer_id;
 		}
 	}
 
@@ -1866,7 +1913,7 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 	uint32_t id = msg->netid();
 	AActor* mo = P_FindThingById(id);
 
-    player_t& player = consoleplayer();
+	player_t& player = consoleplayer();
 	if (not player.mo)
 		return;
 
@@ -1877,30 +1924,34 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 		return;
 	}
 
-    // Do a switcheroo of the new state for the historical state at the time of the pickup
-    // so that we can run the actual P_GiveSpecial function and let it produce the result
-    // of the pickup *at that old point in time*.  With that result in hand, we undo the
-    // switcheroo and resolve the potentially-modified history.
+	// Do a switcheroo of the new state for the historical state at the time of the pickup
+	// so that we can run the actual P_GiveSpecial function and let it produce the result
+	// of the pickup *at that old point in time*.  With that result in hand, we undo the
+	// switcheroo and resolve the potentially-modified history.
 
-    const int oldTic = msg->player_tic();
-    auto optionalHistory = rollerState.GetStateAtTic(oldTic);
+	const int oldTic = msg->player_tic();
+	auto optionalHistory = rollerState.GetStateAtTic(oldTic);
 	const PlayerItemDataType currentClientSideState {player};
 
-    if (optionalHistory)
-    {
-        optionalHistory->get().ToPlayer(player);
-    }
+	if (optionalHistory)
+	{
+		optionalHistory->get().ToPlayer(player);
+	}
 
-	P_GiveSpecial(player, *mo);
+	const ItemEquipVal giveResult = P_GiveSpecial(player, *mo);
+	if (giveResult == IEV_EquipRemove)
+	{
+		mo->Destroy();
+	}
 
-    if (optionalHistory)
-    {
-        const PlayerItemDataType modifiedHistory {player};
+	if (optionalHistory)
+	{
+		const PlayerItemDataType modifiedHistory {player};
 
-        currentClientSideState.ToPlayer(player);
+		currentClientSideState.ToPlayer(player);
 
-        rollerState.Resolve(oldTic, modifiedHistory, player);
-    }
+		rollerState.Resolve(oldTic, modifiedHistory, player);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------

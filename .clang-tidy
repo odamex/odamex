@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://www.schemastore.org/clang-tidy.json
+---
+Checks: |
+  clang-diagnostic-*,
+  clang-analyzer-*,
+  modernize-*,
+  # this is really just style
+  -modernize-use-trailing-return-type,
+  # sometimes there are issues with the c++ versions of c headers
+  -modernize-deprecated-headers,
+  bugprone-*,
+  # we have too many of these that this will just end up noise
+  -bugprone-easily-swappable-parameters,
+  performance-*,
+  # this is just a little silly
+  -performance-enum-size
+  misc-*,
+  # again, so many of these that it's not worth it
+  -misc-non-private-member-variables-in-classes,
+  # some annoying warnings about reasonable uses of recursion
+  -misc-no-recursion,
+  # too many false positives
+  -misc-use-internal-linkage,
+  # cppcoreguidelines are a little too opinionated so lets whitelist instead of blacklist
+  cppcoreguidelines-macro-usage,
+  cppcoreguidelines-missing-std-forward,
+  cppcoreguidelines-prefer-member-initializer,
+  cppcoreguidelines-pro-type-const-cast,
+  cppcoreguidelines-pro-type-cstyle-cast,
+  cppcoreguidelines-pro-type-member-init,
+  cppcoreguidelines-pro-type-reinterpret-cast,
+  cppcoreguidelines-rvalue-reference-param-not-moved,
+  cppcoreguidelines-virtual-class-destructor,
+  google-default-arguments,
+  google-runtime-int,
+  readability-*,
+  # Our style guide says no braces for single line ifs is okay
+  -readability-braces-around-statements,
+  # we have reasons to have sparsely initialized enums in a number of places
+  -readability-enum-initial-value,
+  # the idea is cool, but its not really all that helpful
+  -readability-function-cognitive-complexity,
+  # another one that is lots of warnings right now
+  -readability-identifier-length,
+  -readability-identifier-naming,
+  -readability-qualified-auto,
+  # who cares
+  -readability-avoid-const-params-in-decls,
+  # another one thats just noisy right now
+  -readability-named-parameter,
+  # we mostly use lowercase
+  -readability-uppercase-literal-suffix,
+CheckOptions:
+  # Allow `if (pointer)`
+  - key: readability-implicit-bool-conversion.AllowPointerConditions
+    value: true
+  # Allow `if (integer)`
+  - key: readability-implicit-bool-conversion.AllowIntegerConditions
+    value: true
+  - key: readability-implicit-bool-conversion.AllowLogicalOperatorConversions
+    value: true
+  - key: cppcoreguidelines-rvalue-reference-param-not-moved.AllowPartialMove
+    value: true

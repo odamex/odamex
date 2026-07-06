@@ -870,10 +870,10 @@ void P_PickupSound(const AActor *ent, int channel, const char *name)
 		S_Sound(ent, channel, name, 1, ATTN_NONE);
 }
 
-void P_GiveSpecial(player_t& player, AActor& special)
+ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 {
 	if (!player.mo)
-		return;
+		return IEV_NotEquipped;
 
 	AActor *toucher = player.mo;
 	enum class SpecialSound
@@ -1308,14 +1308,14 @@ void P_GiveSpecial(player_t& player, AActor& special)
 				if (teamInfo->FlagSocketSprite == special.sprite)
 				{
 					SV_SocketTouch(player, teamInfo->Team);
-					return;
+					return val;
 				}
 			}
 
 			if (!teamItemSuccess)
 			{
 				PrintFmt(PRINT_HIGH, "P_SpecialThing: Unknown gettable thing {}: {}\n", special.sprite, special.info->name);
-				return;
+				return val;
 			}
 		}
 	}
@@ -1327,7 +1327,7 @@ void P_GiveSpecial(player_t& player, AActor& special)
 	}
 
 	if (val == IEV_NotEquipped)
-		return;
+		return val;
 
 	//the player equipped/picked up an item
 	player.bonuscount = BONUSADD;
@@ -1335,9 +1335,6 @@ void P_GiveSpecial(player_t& player, AActor& special)
 
 	if (msg != NULL)
 		PickupMessage(toucher, GStrings(*msg));
-
-	if (val == IEV_EquipRemove)
-		special.Destroy();
 
 	const AActor *ent = player.mo;
 	switch (sound)
@@ -1356,6 +1353,7 @@ void P_GiveSpecial(player_t& player, AActor& special)
 	default:
 		OUtil::unreachable();
 	}
+	return val;
 }
 
 
@@ -1388,8 +1386,12 @@ void P_TouchSpecialThing(AActor& special, AActor& toucher)
 	if (delta > toucher.height || delta < lowerbound)
 		return;
 
-	// Only allow clients to predict touching weapons, not health, armor, etc
-	if (!serverside && (!cl_predictpickup || !P_SpecialIsWeapon(special)))
+	// Only allow clients to predict touching weapons, not health, armor, etc.
+	// Furthermore, they can only predict for themselves, no one else.
+	if (not serverside && not  (cl_predictpickup
+	                            and P_SpecialIsWeapon(special)
+	                            and toucher.player
+	                            and toucher.player->id == consoleplayer_id))
 		return;
 
 	// [Blair] Execute ZDoom thing specials on items that are picked up.
@@ -1404,15 +1406,25 @@ void P_TouchSpecialThing(AActor& special, AActor& toucher)
 
 	if (toucher.type == MT_AVATAR)
 	{
+		bool mustBeDestroyed = false;
 		PlayersView pr = PlayerQuery().execute().players;
 		for (const auto& player : pr)
 		{
-			P_GiveSpecial(*player, special);
+			const ItemEquipVal giveResult = P_GiveSpecial(*player, special);
+			mustBeDestroyed = mustBeDestroyed or giveResult == IEV_EquipRemove;
+		}
+		if (mustBeDestroyed)
+		{
+			special.Destroy();
 		}
 	}
 	else if (toucher.player)
 	{
-		P_GiveSpecial(*toucher.player, special);
+		const ItemEquipVal giveResult = P_GiveSpecial(*toucher.player, special);
+		if (giveResult == IEV_EquipRemove)
+		{
+			special.Destroy();
+		}
 	}
 }
 

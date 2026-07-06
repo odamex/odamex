@@ -52,7 +52,7 @@ extern byte**			warpedflats;
 extern int*				flatwarpedwhen;
 extern int*				flattranslation;
 
-extern int* 			texturetranslation;
+inline std::unique_ptr<int[]> texturetranslation;
 
 // Sprite....
 extern int				firstspritelump;

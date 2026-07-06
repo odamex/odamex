@@ -109,7 +109,7 @@ public:
 	}
 
 	// copy a pointer and add self to the "i have this pointer" list
-	szp &operator =(const szp& other)
+	inline szp &operator =(const szp& other)
 	{
 		// itself?
 		if(&other == this || other.naive == naive)

@@ -106,6 +106,7 @@ void P_PlayerThink (player_t& player);
 void P_SetPlayerPowerupStatuses(player_t& player, std::span<const int, NUMPOWERS> powers);
 bool P_AreTeammates(const player_t& a, const player_t& b);
 bool P_CanSpy(player_t &viewer, player_t &other, bool demo = false);
+void P_BumpPlayerCounters(player_t& player);
 
 //
 // P_MOBJ
@@ -149,6 +150,7 @@ bool	P_DeactivateMobj (AActor *mobj);
 //
 bool P_NoiseAlert (AActor* target, AActor* emmiter);
 bool P_NoiseAlert (AActor& target, sector_t& sec);
+int  P_Massacre();
 
 void	P_SpawnBrainTargets(void);	// killough 3/26/98: spawn icon landings
 
@@ -266,6 +268,8 @@ bool	P_CheckSight (const AActor* t1, const AActor* t2);
 void	P_UseLines (player_t& player);
 void	P_ApplyTorque(AActor *mo);
 void	P_CopySector(sector_t *dest, sector_t *src);
+bool 	P_ShouldClipPlayer(AActor* projectile, AActor* player);
+bool 	P_ShouldClipFriendly(AActor* projectile, AActor* monster);
 
 fixed_t P_PlaneZ(fixed_t x, fixed_t y, const plane_t *plane);
 double P_PlaneZ(double x, double y, const plane_t *plane);
@@ -343,7 +347,9 @@ extern std::set<short>	movable_sectors;
 extern std::array<int, NUMAMMO> maxammo;
 extern std::array<int, NUMAMMO> clipammo;
 
-void P_GiveSpecial(player_t& player, AActor& special);
+[[ nodiscard("Please check for whether the mobj must be destroyed!!") ]]
+ItemEquipVal P_GiveSpecial(player_t& player, AActor& special);
+
 void P_TouchSpecialThing (AActor& special, AActor& toucher);
 
 void P_DamageMobj (AActor *target, const AActor *inflictor, AActor *source, int damage, int mod=0, int flags=0);

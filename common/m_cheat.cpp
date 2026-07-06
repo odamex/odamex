@@ -23,7 +23,6 @@
 
 #include "odamex.h"
 
-#include <stdlib.h>
 #include <math.h>
 
 #include "g_gametype.h"
@@ -36,6 +35,7 @@
 #include "p_local.h"
 #include "infomap.h"
 #include "c_effect.h"
+#include "c_dispatch.h"
 
 extern bool simulated_connection;
 EXTERN_CVAR(sv_allowcheats)
@@ -43,7 +43,6 @@ EXTERN_CVAR(sv_allowcheats)
 #ifdef CLIENT_APP
 #include "am_map.h"
 #include "cl_main.h"
-#include "c_dispatch.h"
 extern bool automapactive;
 #endif
 
@@ -146,7 +145,7 @@ bool SetGeneric(cheatseq_t* cheat)
 
 bool AddKey(cheatseq_t* cheat, unsigned char key, bool* eat)
 {
-	if (cheat->Pos == NULL)
+	if (cheat->Pos == nullptr)
 	{
 		cheat->Pos = cheat->Sequence;
 		cheat->CurrentArg = 0;
@@ -248,6 +247,15 @@ BEGIN_COMMAND(mdk)
 }
 END_COMMAND(mdk)
 
+#endif
+
+#ifdef SERVER_APP
+BEGIN_COMMAND(tntem)
+{
+	const int kills = P_Massacre();
+	PrintFmt("Killed {} enemies.\n", kills);
+}
+END_COMMAND(tntem)
 #endif
 
 void A_PainDie(AActor*);
@@ -431,7 +439,7 @@ void DoCheat(player_t& player, int cheat, bool silentmsg)
 				if (actor->health > 0)
 				{
 					killcount++;
-					P_DamageMobj(actor, NULL, NULL, 10000, MOD_UNKNOWN);
+					P_DamageMobj(actor, nullptr, nullptr, 10000, MOD_UNKNOWN);
 				}
 				if (actor->type == MT_PAIN)
 				{
@@ -576,7 +584,7 @@ void GiveTo(player_t& player, const char* name)
 	{
 		int h;
 
-		if (0 < (h = atoi(name + 6)))
+		if (0 < (h = ParseNum<int>(name + 6).value_or(0)))
 		{
 			if (player.mo)
 			{

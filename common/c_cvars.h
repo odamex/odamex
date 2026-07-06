@@ -165,6 +165,8 @@ public:
 		return static_cast<E>(asInt()) == e;
 	}
 
+	[[nodiscard]] explicit operator bool () const { return asBool(); }
+
 	inline void Callback (){ if (m_Callback) m_Callback (*this); }
 
 	void SetDefault (const char *value);

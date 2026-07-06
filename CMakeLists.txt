@@ -52,8 +52,6 @@ option(BUILD_TESTS "Build unit test target" 1)
 option(BUILD_MASTER "Build master server target" 0)
 option(BUILD_OR_FAIL "Must build the BUILD_* targets or else generation will fail" 0)
 option(USE_LTO "Build Release builds with Link Time Optimization" 1)
-option(ODAMEX_INSTALL_BINDIR "Smart default for bin dir location" "/usr/local/bin")
-option(ODAMEX_INSTALL_DATADIR "Smart default for data dir location" "/usr/local/share")
 option(USE_EXTERNAL_LIBDWARF "Use external libdwarf for cpptrace" 0)
 cmake_dependent_option( USE_INTERNAL_ZLIB "Use internal zlib" ${USE_INTERNAL_LIBS} "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS" 0 )
 cmake_dependent_option( USE_INTERNAL_ZSTD "Use internal zstd" ${USE_INTERNAL_LIBS} "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS" 0 )
@@ -69,10 +67,8 @@ cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 
 cmake_dependent_option( USE_INTERNAL_MINIUPNP "Use internal MiniUPnP" 1 USE_MINIUPNP 0 )
 cmake_dependent_option( USE_INTERNAL_LIBADLMIDI "Use internal libADLMIDI" 1 BUILD_CLIENT 0 )
 
-if(NOT APPLE AND NOT WIN32)
-  add_definitions(-DODAMEX_INSTALL_BINDIR="${ODAMEX_INSTALL_BINDIR}")
-  add_definitions(-DODAMEX_INSTALL_DATADIR="${ODAMEX_INSTALL_DATADIR}")
-endif()
+set(ODAMEX_INSTALL_BINDIR "/usr/local/bin" CACHE PATH "Smart default for bin dir location")
+set(ODAMEX_INSTALL_DATADIR "/usr/local/share" CACHE PATH "Smart default for data dir location")
 
 if(NOT APPLE AND NOT WIN32)
   add_definitions(-DODAMEX_INSTALL_BINDIR="${ODAMEX_INSTALL_BINDIR}")
@@ -221,6 +217,9 @@ endif()
 
 # WAD building
 add_subdirectory(wad)
+
+# Bash completion
+add_subdirectory(completion)
 
 # Disable the ag-odalaunch target completely: -DNO_AG-ODALAUNCH_TARGET
 # This is only really useful when setting up a universal build.

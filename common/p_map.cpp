@@ -843,6 +843,18 @@ static bool PIT_CheckThing (AActor *thing)
 		         (tmthing->flags & MF_SOLID || (demoplayback || !co_boomphys)));
 }
 
+// Odamex does not have ZDoom's later "acts like a bridge" flag.  Keep this
+// local to the +FLOATBOB bridge check so other special things are not affected.
+static bool P_IsBridgeMobj(const AActor* thing)
+{
+	return thing &&
+	       (thing->type == MT_BRIDGE ||
+	        thing->type == MT_BRIDGE32 ||
+	        thing->type == MT_BRIDGE16 ||
+	        thing->type == MT_BRIDGE8 ||
+	        thing->type == MT_ZDOOMBRIDGE);
+}
+
 // This routine checks for Lost Souls trying to be spawned		// phares
 // across 1-sided lines, impassible lines, or "monsters can't	//   |
 // cross" lines. Draw an imaginary line between the PE			//   V
@@ -901,6 +913,9 @@ bool PIT_CheckOnmobjZ (AActor *thing)
 
 	// [RH] Corpses and specials don't block moves
 	if (thing->flags & (MF_CORPSE|MF_SPECIAL))
+		return true;
+
+	if ((tmthing->flags & MF_SPECIAL) && !P_IsBridgeMobj(thing))
 		return true;
 
 	// Don't clip against self
@@ -1138,6 +1153,8 @@ AActor *P_CheckOnmobj (AActor *thing)
 	bool good;
 
 	oldz = thing->z;
+	if (thing->flags2 & MF2_FLOATBOB)
+		thing->z = thing->floorz + thing->special1; // test from the bob center
 	P_FakeZMovement (thing);
 	good = P_TestMobjZ (thing);
 	thing->z = oldz;
@@ -1153,7 +1170,8 @@ bool P_TestMobjZ (AActor *actor)
 	if (actor->flags & MF_NOCLIP)
 		return true;
 
-	if (!(actor->flags & MF_SOLID))
+	if (!(actor->flags & MF_SOLID) &&
+	    !((actor->flags & MF_SPECIAL) && (actor->flags2 & MF2_FLOATBOB)))
 		return true;
 
 	tmx = x = actor->x;
