@@ -1190,6 +1190,40 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 		mo->tracer = tracer->ptr();
 	else
 		mo->tracer = AActor::AActorPtr();
+
+    const MobjModeEnum mode = static_cast<MobjModeEnum>(msg->mode());
+    if (mode != mo->mode)
+    {
+        switch (mode)
+        {
+            case MobjModeEnum::SPAWN:
+                P_SetMobjState(mo, mo->info->spawnstate);
+                break;
+            case MobjModeEnum::SEE:
+                P_SetMobjState(mo, mo->info->seestate);
+                break;
+            case MobjModeEnum::PAIN:
+                P_SetMobjState(mo, mo->info->painstate);
+                break;
+            case MobjModeEnum::MELEE:
+                P_SetMobjState(mo, mo->info->meleestate);
+                break;
+            case MobjModeEnum::MISSILE:
+                P_SetMobjState(mo, mo->info->missilestate);
+                break;
+            case MobjModeEnum::DEATH:
+                P_SetMobjState(mo, mo->info->deathstate);
+                break;
+            case MobjModeEnum::XDEATH:
+                P_SetMobjState(mo, mo->info->xdeathstate);
+                break;
+            case MobjModeEnum::RAISE:
+                P_SetMobjState(mo, mo->info->raisestate);
+                break;
+            default:
+                break;
+        }
+    }
 }
 
 //
@@ -2726,7 +2760,7 @@ static void CL_WakeupMobj(const odaproto::svc::WakeupMobj* msg)
         P_PlayWakeupSound(mo);
     }
 
-    P_SetMobjState(mo, mo->info->seestate);
+    //P_SetMobjState(mo, mo->info->seestate);
 }
 
 //

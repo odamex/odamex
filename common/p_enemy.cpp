@@ -1560,11 +1560,12 @@ bool P_PlayWakeupSound(AActor* actor)
 //
 void A_Look (AActor *actor)
 {
-	AActor *targ;
-	AActor *newgoal;
-
-	if(not (serverside && actor && actor->subsector))
-		return;
+    // A_Chase has logic in it that can allow a client to go back to spawnstate.  If that
+    // happens, it first clears mobj->target.  If we're clientside-only, and find ourselves
+    // here with a target, then it's because we locally cleared target, then got an
+    // UpdateMobj that set it back to whatever it's supposed to be.
+    //
+    // When that happens, it's time to go back to seestate and act as though we woke back up.
 
     // IMPORTANT NOTE:  Because we no longer predict this function on the client side,
     //
@@ -1572,17 +1573,20 @@ void A_Look (AActor *actor)
     //  ****    as a result of this function MUST be sent to the clients    ****
     //  ****    in the MobjWakeup message to keep prediction accurate!      ****
 
+	if (not (serverside and actor and actor->subsector))
+		return;
+
 	// [RH] Set goal now if appropriate
 	if (actor->special == Thing_SetGoal && actor->args[0] == 0)
 	{
 		actor->special = 0;
-		newgoal = AActor::FindGoal (NULL, actor->args[1], MT_PATHNODE);
+		AActor* newgoal = AActor::FindGoal (NULL, actor->args[1], MT_PATHNODE);
 		actor->goal = newgoal->ptr();
 		actor->reactiontime = actor->args[2] * TICRATE + level.time;
 	}
 
 	actor->threshold = 0;		// any shot will wake up
-	targ = actor->subsector->sector->soundtarget;
+	AActor* targ = actor->subsector->sector->soundtarget;
 
 	if (targ && targ->player && (targ->player->cheats & CF_NOTARGET))
 		return;
@@ -1644,10 +1648,7 @@ void A_Look (AActor *actor)
 	{
 		SV_WakeupMobj(actor, mustPlaySeeSound);
 
-		// Explicitly disable the client update logic in P_SetMobjState because we the above special
-		// purpose message for this state transition.  However, we still want to send the UpdateMobj
-		// for consistency.
-		P_SetMobjState(actor, actor->info->seestate, false);
+		P_SetMobjState(actor, actor->info->seestate);
 		SV_UpdateMobj(actor);
 	}
 }

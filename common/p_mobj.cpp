@@ -201,7 +201,7 @@ AActor::AActor()
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), rndindex(0),
       spawnRndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
-      netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), spawnTic(gametic),
+      netid(0), tid(0), baseline(), baseline_set(false), mode(MobjModeEnum::SPAWN), updatedDuringTic(-1), spawnTic(gametic),
       mobjtic(gametic), bmapnode(this)
 {
 	args.fill(0);
@@ -229,7 +229,7 @@ AActor::AActor(const AActor& other)
       deadtic(other.deadtic), rndindex(other.rndindex), spawnRndindex(other.spawnRndindex),
       friend_playerid(other.friend_playerid), friend_teamid(other.friend_teamid),
       pursuecount(other.pursuecount), strafecount(other.strafecount), netid(other.netid), tid(other.tid),
-      baseline_set(false), updatedDuringTic(other.updatedDuringTic), spawnTic(other.spawnTic),
+      baseline_set(false), mode(other.mode), updatedDuringTic(other.updatedDuringTic), spawnTic(other.spawnTic),
       mobjtic(other.mobjtic), credibility {other.credibility}, bmapnode(other.bmapnode)
 {
 	memcpy(&baseline, &other.baseline, sizeof(baseline));
@@ -308,6 +308,7 @@ AActor &AActor::operator= (const AActor &other)
     memcpy(&baseline, &other.baseline, sizeof(baseline));
     baseline_set = other.baseline_set;
 
+    mode             = other.mode;
     updatedDuringTic = other.updatedDuringTic;
     spawnTic         = other.spawnTic;
     mobjtic          = other.mobjtic;
@@ -333,8 +334,8 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
       gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), rndindex(0),
       spawnRndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
-      netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), spawnTic(gametic),
-      mobjtic(gametic), bmapnode(this)
+      netid(0), tid(0), baseline(), baseline_set(false), mode(MobjModeEnum::SPAWN), updatedDuringTic(-1),
+      spawnTic(gametic), mobjtic(gametic), bmapnode(this)
 {
 	// Fly!!! fix it in P_RespawnSpecial
 	const auto it = ::mobjinfo.find(itype);
@@ -1079,6 +1080,7 @@ void AActor::Serialize (FArchive &arc)
 			<< gear
 			<< rndindex
 			<< spawnRndindex
+			<< mode
 			<< updatedDuringTic
 			<< spawnTic
 			<< mobjtic
@@ -1168,6 +1170,7 @@ void AActor::Serialize (FArchive &arc)
 			>> gear
 			>> rndindex
 			>> spawnRndindex
+			>> mode
 			>> updatedDuringTic
 			>> spawnTic
 			>> mobjtic
@@ -1258,6 +1261,22 @@ int P_ThingInfoHeight(mobjinfo_t *mi)
 
 #define MOBJ_CYCLE_LIMIT 512
 
+void A_Look (AActor *actor);
+
+static std::optional<MobjModeEnum> IdentifyMode(const AActor& mobj, int32_t state)
+{
+    if (state == mobj.info->spawnstate)     return MobjModeEnum::SPAWN;
+    if (state == mobj.info->seestate)       return MobjModeEnum::SEE;
+    if (state == mobj.info->painstate)      return MobjModeEnum::PAIN;
+    if (state == mobj.info->meleestate)     return MobjModeEnum::MELEE;
+    if (state == mobj.info->missilestate)   return MobjModeEnum::MISSILE;
+    if (state == mobj.info->deathstate)     return MobjModeEnum::DEATH;
+    if (state == mobj.info->xdeathstate)    return MobjModeEnum::XDEATH;
+    if (state == mobj.info->raisestate)     return MobjModeEnum::RAISE;
+
+    return std::nullopt;
+}
+
 // P_SetMobjState
 //
 // Returns true if the mobj is still present.
@@ -1282,6 +1301,18 @@ bool P_SetMobjState(AActor *mobj, int32_t state, bool cl_update)
 		}
 
 		st = &states[state];
+
+        if (const auto newMode = IdentifyMode(*mobj, state))
+        {
+            if (mobj->mode != newMode.value())
+            {
+                mobj->mode = newMode.value();
+                cl_update = true;
+            }
+        }
+        // When going from non-look to look, the server must force the clients to follow along.
+        //const bool isEnteringLook = st->action == A_Look and mobj->state->action != A_Look;
+        //cl_update = cl_update or isEnteringLook;
 
 		mobj->state = st;
 		mobj->tics = st->tics;

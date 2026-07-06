@@ -1739,6 +1739,18 @@ enum splash_group_t
 	SG_END
 };
 
+enum class MobjModeEnum
+{
+    SPAWN,
+    SEE,
+    PAIN,
+    MELEE,
+    MISSILE,
+    DEATH,
+    XDEATH,
+    RAISE,
+};
+
 struct mobjinfo_t
 {
 	int32_t type            = MT_NULL;

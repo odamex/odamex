@@ -689,6 +689,8 @@ odaproto::svc::UpdateMobj SVC_UpdateMobj(const AActor& mobj)
 		mom->set_z(mobj.momz);
 	}
 
+	msg.set_mode(static_cast<odaproto::svc::MobjModeEnum>(mobj.mode));
+
 	return msg;
 }
 
