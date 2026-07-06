@@ -1752,7 +1752,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$FN_IMP",
 	},
 
 	{		// MT_SERGEANT
@@ -1792,7 +1793,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$FN_DEMON",
 	},
 
 	{		// MT_SHADOWS
@@ -1832,7 +1834,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$FN_SPECTRE",
 	},
 
 	{		// MT_HEAD
@@ -1872,7 +1875,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$FN_CACO",
 	},
 
 	{		// MT_BRUISER
@@ -1912,7 +1916,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	MF3_E1M8BOSS,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$FN_BARON",
 	},
 
 	{		// MT_BRUISERSHOT
@@ -1992,7 +1997,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$FN_HELL",
 	},
 
 	{		// MT_SKULL
@@ -2032,7 +2038,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	MF3_RANGEHALF,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$FN_LOST"
 	},
 
 	{		// MT_SPIDER
@@ -2072,7 +2079,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	MF3_NORADIUSDMG | MF3_RANGEHALF | MF3_FULLVOLSOUNDS | MF3_E3M8BOSS | MF3_E4M8BOSS,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$FN_SPIDER",
 	},
 
 	{		// MT_BABY
@@ -2112,7 +2120,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	MF3_MAP07BOSS2,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$FN_ARACH",
 	},
 
 	{		// MT_CYBORG
@@ -2152,7 +2161,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	MF3_NORADIUSDMG | MF3_HIGHERMPROB | MF3_RANGEHALF | MF3_FULLVOLSOUNDS | MF3_E2M8BOSS | MF3_E4M6BOSS,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$FN_CYBER"
 	},
 
 	{		// MT_PAIN
@@ -2192,7 +2202,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$FN_PAIN",
 	},
 
 	{		// MT_WOLFSS
@@ -2232,7 +2243,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_CLIP		// droppeditem
+	MT_CLIP,		// droppeditem
+	"$FN_WOLFSS",
 	},
 
 	{		// MT_KEEN
@@ -3032,7 +3044,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_GREENARMOR",
 	},
 
 	{		// MT_MISC1
@@ -3072,7 +3085,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_BLUEARMOR",
 	},
 
 	{		// MT_MISC2
@@ -3112,7 +3126,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_HEALTHBONUS",
 	},
 
 	{		// MT_MISC3
@@ -3152,7 +3167,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_ARMORBONUS",
 	},
 
 	{		// MT_MISC4
@@ -3192,7 +3208,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_BLUECARD",
 	},
 
 	{		// MT_MISC5
@@ -3232,7 +3249,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_REDCARD",
 	},
 
 	{		// MT_MISC6
@@ -3272,7 +3290,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_YELLOWCARD",
 	},
 
 	{		// MT_MISC7
@@ -3312,7 +3331,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_YELLOWSKULL",
 	},
 
 	{		// MT_MISC8
@@ -3352,7 +3372,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_REDSKULL",
 	},
 
 	{		// MT_MISC9
@@ -3392,7 +3413,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_BLUESKULL",
 	},
 
 	{		// MT_MISC10
@@ -3432,7 +3454,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_STIMPACK",
 	},
 
 	{		// MT_MISC11
@@ -3472,7 +3495,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_MEDIKIT",
 	},
 
 	{		// MT_MISC12
@@ -3512,7 +3536,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_SOULSPHERE",
 	},
 
 	{		// MT_INV
@@ -3552,7 +3577,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_INVULSPHERE",
 	},
 
 	{		// MT_MISC13
@@ -3592,7 +3618,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_BERSERK",
 	},
 
 	{		// MT_INS
@@ -3632,7 +3659,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_INVISSPHERE",
 	},
 
 	{		// MT_MISC14
@@ -3672,7 +3700,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_RADSUIT",
 	},
 
 	{		// MT_MISC15
@@ -3712,7 +3741,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_ALLMAP",
 	},
 
 	{		// MT_MISC16
@@ -3752,7 +3782,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_VISOR",
 	},
 
 	{		// MT_MEGA
@@ -3792,7 +3823,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_MEGASPHERE",
 	},
 
 	{		// MT_CLIP
@@ -3832,7 +3864,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$AMMO_CLIP",
 	},
 
 	{		// MT_MISC17
@@ -3872,7 +3905,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$AMMO_CLIP",
 	},
 
 	{		// MT_MISC18
@@ -3912,7 +3946,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_AMMOROCKETS",
 	},
 
 	{		// MT_MISC19
@@ -3952,7 +3987,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_AMMOROCKETS",
 	},
 
 	{		// MT_MISC20
@@ -3992,7 +4028,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_AMMOCELLS",
 	},
 
 	{		// MT_MISC21
@@ -4032,7 +4069,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_AMMOCELLS",
 	},
 
 	{		// MT_MISC22
@@ -4072,7 +4110,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$AMMO_SHELLS",
 	},
 
 	{		// MT_MISC23
@@ -4112,7 +4151,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$AMMO_SHELLS",
 	},
 
 	{		// MT_MISC24
@@ -4152,7 +4192,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_BACKPACK",
 	},
 
 	{		// MT_MISC25
@@ -4192,7 +4233,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_BFG9000",
 	},
 
 	{		// MT_CHAINGUN
@@ -4232,7 +4274,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_CHAINGUN",
 	},
 
 	{		// MT_MISC26
@@ -4272,7 +4315,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_CHAINSAW",
 	},
 
 	{		// MT_MISC27
@@ -4312,7 +4356,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_ROCKETLAUNCHER",
 	},
 
 	{		// MT_MISC28
@@ -4352,7 +4397,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_PLASMARIFLE",
 	},
 
 	{		// MT_SHOTGUN
@@ -4392,7 +4438,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_SHOTGUN",
 	},
 
 	{		// MT_SUPERSHOTGUN
@@ -4432,7 +4479,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$TAG_SUPERSHOTGUN",
 	},
 
 	{		// MT_MISC29
@@ -6875,7 +6923,8 @@ mobjinfo_t doom_mobjinfo[::NUMMOBJTYPES] = {
 	SG_DEFAULT,		// splash group
 	0,		// flags3
 	NULL, // ripsound
-	MT_NULL		// droppeditem
+	MT_NULL,		// droppeditem
+	"$FN_DOG",
 	},
 
 	// killough 7/11/98: this is the first of two plasma fireballs in the beta
