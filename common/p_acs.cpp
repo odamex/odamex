@@ -1377,13 +1377,11 @@ void DLevelScript::ChangeFlat (int tag, int name, bool floorOrCeiling)
 		sectors[secnum].SectorChanges |= SPC_FlatPic;
 	}
 
-	if (serverside)
-	{
+	SERVER_ONLY(
 		const std::array args = {tag, name};
-		SERVER_ONLY(
-		    SV_ACSExecuteSpecial(floorOrCeiling ? PCD_CHANGECEILING : PCD_CHANGEFLOOR,
-		                         NULL, NULL, false, args));
-	}
+		SV_ACSExecuteSpecial(floorOrCeiling ? PCD_CHANGECEILING : PCD_CHANGEFLOOR,
+		                     NULL, NULL, false, args);
+	)
 }
 
 size_t P_NumPlayersInGame();
@@ -1529,11 +1527,10 @@ void DLevelScript::SetLineTexture(int lineid, int side, int position, int name)
 	if (texname.empty())
 		return;
 
-	if (serverside)
-	{
+	SERVER_ONLY(
 		const std::array args = {lineid, side, position, name};
-		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SETLINETEXTURE, NULL, NULL, false, args));
-	}
+		SV_ACSExecuteSpecial(PCD_SETLINETEXTURE, NULL, NULL, false, args);
+	)
 
 	side = (side) ? 1 : 0;
 
@@ -1594,11 +1591,10 @@ void DLevelScript::SetLineBlocking(int lineid, int flags)
 		}
 	}
 
-	if (serverside)
-	{
+	SERVER_ONLY(
 		const std::array args  = {lineid, flags};
-		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SETLINEBLOCKING, NULL, NULL, false, args));
-	}
+		SV_ACSExecuteSpecial(PCD_SETLINEBLOCKING, NULL, NULL, false, args);
+	)
 }
 
 void DLevelScript::SetLineMonsterBlocking(int lineid, int toggle)
@@ -1617,11 +1613,10 @@ void DLevelScript::SetLineMonsterBlocking(int lineid, int toggle)
 		}
 	}
 
-	if (serverside)
-	{
+	SERVER_ONLY(
 		const std::array args = {lineid, toggle};
-		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SETLINEMONSTERBLOCKING, NULL, NULL, false, args));
-	}
+		SV_ACSExecuteSpecial(PCD_SETLINEMONSTERBLOCKING, NULL, NULL, false, args);
+	)
 }
 
 void DLevelScript::SetLineSpecial(int lineid, int special, int arg1, int arg2, int arg3, int arg4, int arg5)
@@ -1640,11 +1635,10 @@ void DLevelScript::SetLineSpecial(int lineid, int special, int arg1, int arg2, i
 		line->args[4] = arg5;
 	}
 
-	if (serverside)
-	{
+	SERVER_ONLY(
 		const std::array args = {lineid, special, arg1, arg2, arg3, arg4, arg5};
-		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SETLINESPECIAL, NULL, NULL, false, args));
-	}
+		SV_ACSExecuteSpecial(PCD_SETLINESPECIAL, NULL, NULL, false, args);
+	)
 }
 
 void DLevelScript::ActivateLineSpecial(byte special, line_t* line, AActor* activator,
@@ -1672,11 +1666,10 @@ void DLevelScript::ChangeMusic(byte pcd, const AActor* activator, int index, int
 			S_ChangeMusic(lookup, loop);
 	}
 
-	if (serverside)
-	{
+	SERVER_ONLY(
 		const std::array args = {index, loop};
-		SERVER_ONLY(SV_ACSExecuteSpecial(pcd, activator, NULL, local, args));
-	}
+		SV_ACSExecuteSpecial(pcd, activator, NULL, local, args);
+	)
 }
 
 
@@ -1694,11 +1687,10 @@ void DLevelScript::StartSound(byte pcd, const AActor* activator, int channel, in
 			S_Sound(channel, lookup, (float)volume / 127.0F, attenuation);
 	}
 
-	if (serverside)
-	{
+	SERVER_ONLY(
 		const std::array args = {channel, index, volume, attenuation};
-		SERVER_ONLY(SV_ACSExecuteSpecial(pcd, activator, NULL, local, args));
-	}
+		SV_ACSExecuteSpecial(pcd, activator, NULL, local, args);
+	)
 }
 
 void DLevelScript::StartSectorSound(byte pcd, const sector_t* sector, int channel, int index, int volume, int attenuation)
@@ -1710,12 +1702,11 @@ void DLevelScript::StartSectorSound(byte pcd, const sector_t* sector, int channe
 			S_Sound(sector->soundorg, channel, lookup, (float)volume / 127.0F, attenuation);
 	}
 
-	if (serverside)
-	{
+	SERVER_ONLY(
 		int sectorNum = sector ? sector - sectors : 0;
 		const std::array args = {sectorNum, channel, index, volume, attenuation};
-		SERVER_ONLY(SV_ACSExecuteSpecial(pcd, NULL, NULL, false, args));
-	}
+		SV_ACSExecuteSpecial(pcd, NULL, NULL, false, args);
+	)
 }
 
 void DLevelScript::StartThingSound(byte pcd, const AActor* actor, int channel, int index, int volume, int attenuation)
@@ -1727,11 +1718,10 @@ void DLevelScript::StartThingSound(byte pcd, const AActor* actor, int channel, i
 			S_Sound(actor, channel, lookup, (float)volume / 127.0F, attenuation);
 	}
 
-	if (serverside)
-	{
+	SERVER_ONLY(
 		const std::array args = {channel, index, volume, attenuation};
-		SERVER_ONLY(SV_ACSExecuteSpecial(pcd, actor, NULL, false, args));
-	}
+		SV_ACSExecuteSpecial(pcd, actor, NULL, false, args);
+	)
 }
 
 void DLevelScript::SetThingSpecial(AActor* actor, int special, int arg1, int arg2, int arg3, int arg4, int arg5)
@@ -1743,11 +1733,10 @@ void DLevelScript::SetThingSpecial(AActor* actor, int special, int arg1, int arg
 	actor->args[3] = arg4;
 	actor->args[4] = arg5;
 
-	if (serverside)
-	{
+	SERVER_ONLY(
 		const std::array args = {static_cast<int>(actor->netid), special, arg1, arg2, arg3, arg4, arg5};
-		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SETTHINGSPECIAL, actor, NULL, false, args));
-	}
+		SV_ACSExecuteSpecial(PCD_SETTHINGSPECIAL, actor, NULL, false, args);
+	)
 }
 
 void DLevelScript::CancelFade(AActor* actor)
@@ -1776,11 +1765,10 @@ void DLevelScript::StartSoundSequence(sector_t* sec, int index)
 			SN_StartSequence(sec, lookup);
 	}
 
-	if (serverside)
-	{
+	SERVER_ONLY(
 		const std::array args = {static_cast<int>(sec - sectors), index};
-		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_SOUNDSEQUENCE, NULL, NULL, false, args));
-	}
+		SV_ACSExecuteSpecial(PCD_SOUNDSEQUENCE, NULL, NULL, false, args);
+	)
 }
 
 EXTERN_CVAR(sv_nomonsters)
@@ -1949,11 +1937,10 @@ void DLevelScript::DoFadeRange(AActor* who, int r1, int g1, int b1, int a1,
 		DoActualFadeRange(who->player, ftime, fadingFrom, fr1, fg1, fb1, fa1, fr2, fg2, fb2, fa2);
 	}
 
-	if (serverside)
-	{
+	SERVER_ONLY(
 		const std::array args = {r1, g1, b1, a1, r2, g2, b2, a2, time};
-		SERVER_ONLY(SV_ACSExecuteSpecial(PCD_FADERANGE, who, NULL, true, args));
-	}
+		SV_ACSExecuteSpecial(PCD_FADERANGE, who, NULL, true, args);
+	)
 }
 
 inline int getbyte (int *&pc)
