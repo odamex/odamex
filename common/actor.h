@@ -23,6 +23,8 @@
 
 #pragma once
 
+#include <array>
+
 // Basics.
 #include "doomdef.h"
 
@@ -802,8 +804,8 @@ public:
 		int m_capacity;
 		AActor**  m_next;
 		AActor*** m_prev;
-		AActor*   m_inlinenext[INLINE_BLOCKS];
-		AActor**  m_inlineprev[INLINE_BLOCKS];
+		std::array<AActor*,  INLINE_BLOCKS> m_inlinenext;
+		std::array<AActor**, INLINE_BLOCKS> m_inlineprev;
 	};
 
 	// Interaction info, by BLOCKMAP.

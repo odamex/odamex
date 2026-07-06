@@ -101,8 +101,8 @@ subsector_t* P_PointInSubsector(fixed_t x, fixed_t y)
 AActor::ActorBlockMapListNode::ActorBlockMapListNode(AActor *mo) :
 	m_actor (mo),
 	m_capacity (INLINE_BLOCKS),
-	m_next (m_inlinenext),
-	m_prev (m_inlineprev)
+	m_next (m_inlinenext.data()),
+	m_prev (m_inlineprev.data())
 {
 	clear();
 }
@@ -110,8 +110,8 @@ AActor::ActorBlockMapListNode::ActorBlockMapListNode(AActor *mo) :
 AActor::ActorBlockMapListNode::ActorBlockMapListNode(const ActorBlockMapListNode& other) :
 	m_actor (other.m_actor),
 	m_capacity (INLINE_BLOCKS),
-	m_next (m_inlinenext),
-	m_prev (m_inlineprev)
+	m_next (m_inlinenext.data()),
+	m_prev (m_inlineprev.data())
 {
 	copyFrom(other);
 }
@@ -128,7 +128,7 @@ AActor::ActorBlockMapListNode& AActor::ActorBlockMapListNode::operator=(const Ac
 
 AActor::ActorBlockMapListNode::~ActorBlockMapListNode()
 {
-	if (m_next != m_inlinenext)
+	if (m_next != m_inlinenext.data())
 	{
 		delete[] m_next;
 		delete[] m_prev;
@@ -143,7 +143,7 @@ void AActor::ActorBlockMapListNode::ensureCapacity(int blockcnt)
 	if (blockcnt <= m_capacity)
 		return;
 
-	if (m_next != m_inlinenext)
+	if (m_next != m_inlinenext.data())
 	{
 		delete[] m_next;
 		delete[] m_prev;
