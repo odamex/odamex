@@ -269,6 +269,13 @@ static inline void R_BlastSolidSegColumn(void (*drawfunc)())
 		static byte* destpostraw[512];
 		tallpost_t* destpost = (tallpost_t*) destpostraw;
 
+		// a 512 pixel tall post can overflow destpostraw
+		// because of the 4 byte header and 4 byte footer.
+		// so rather than increase it to 513 and imply that we
+		// handle 513px at a time, clamp it instead.
+		const int maxcount = static_cast<int>(sizeof(destpostraw)) - 8;
+		int count = MIN(dcol.textureheight >> FRACBITS, maxcount);
+
 		destpost->topdelta = 0;
 
 		while (destpostlen < count)
