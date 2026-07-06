@@ -138,10 +138,6 @@ private:
 	wxStaticText* m_MdAddress;
 	wxStaticText* m_MdPing;
 	wxStaticText* m_MdSkill;
-	wxStaticText* m_MdGravity;
-	wxStaticText* m_MdGravityLabel;
-	wxStaticText* m_MdAirControl;
-	wxStaticText* m_MdAirControlLabel;
 	wxStaticText* m_MdMap;
 	wxStaticText* m_MdIwad;
 	wxStaticText* m_MdPwad;
@@ -167,6 +163,10 @@ private:
 	wxStaticText* m_GpMonsterDmgLabel;
 	wxStaticText* m_GpMonsterHealth;
 	wxStaticText* m_GpMonsterHealthLabel;
+	wxStaticText* m_GpGravity;
+	wxStaticText* m_GpGravityLabel;
+	wxStaticText* m_GpAirControl;
+	wxStaticText* m_GpAirControlLabel;
 	wxStaticText* m_GpWaves;
 	wxStaticText* m_GpWavesLabel;
 	wxStaticText* m_GpCtfRules;

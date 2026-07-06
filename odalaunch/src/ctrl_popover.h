@@ -95,6 +95,8 @@ private:
 	wxStaticText* m_PlayerDmg;
 	wxStaticText* m_MonsterDmg;
 	wxStaticText* m_MonsterHealth;
+	wxStaticText* m_Gravity;
+	wxStaticText* m_AirControl;
 	wxStaticText* m_Waves;
 	wxStaticText* m_CtfRules;
 	wxStaticText* m_Lives;
@@ -108,6 +110,8 @@ private:
 	wxSizer* m_PlayerDmgItem;
 	wxSizer* m_MonsterDmgItem;
 	wxSizer* m_MonsterHealthItem;
+	wxSizer* m_GravityItem;
+	wxSizer* m_AirControlItem;
 	wxSizer* m_WavesItem;
 	wxSizer* m_CtfRulesItem;
 	wxSizer* m_LivesItem;

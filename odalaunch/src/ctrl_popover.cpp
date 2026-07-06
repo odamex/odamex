@@ -225,6 +225,12 @@ PlayerListPopover::PlayerListPopover(wxWindow* parent)
 	m_MonsterHealthItem = MakeItem("Monster Health:", &m_MonsterHealth);
 	LeftCol->Add(m_MonsterHealthItem, 0, wxBOTTOM, RowGap);
 
+	m_GravityItem = MakeItem("Gravity:", &m_Gravity);
+	LeftCol->Add(m_GravityItem, 0, wxBOTTOM, RowGap);
+
+	m_AirControlItem = MakeItem("Air Control:", &m_AirControl);
+	LeftCol->Add(m_AirControlItem, 0, wxBOTTOM, RowGap);
+
 	m_WavesItem = MakeItem("Waves:", &m_Waves);
 	LeftCol->Add(m_WavesItem, 0, wxBOTTOM, RowGap);
 
@@ -302,6 +308,9 @@ void PlayerListPopover::Populate(const Server& s)
 
 	SetOptionalItem(m_MonsterHealthItem, m_MonsterHealth,
 	                OdaGetDamagePercentString(s, "sv_monstershealth"));
+
+	SetOptionalItem(m_GravityItem, m_Gravity, OdaGetGravityString(s));
+	SetOptionalItem(m_AirControlItem, m_AirControl, OdaGetAirControlString(s));
 
 	// Waves (g_horde_waves) - Horde mode only
 	wxString Waves;

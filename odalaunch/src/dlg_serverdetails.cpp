@@ -367,9 +367,6 @@ void dlgServerDetails::BuildMetadataGrid()
 	m_MetaGrid->Add(PingSizer, 0, wxALIGN_CENTER_VERTICAL);
 
 	m_MdSkill = AddRow(m_PnlMetadata, m_MetaGrid, "Skill:");
-	m_MdGravity = AddRow(m_PnlMetadata, m_MetaGrid, "Gravity:", &m_MdGravityLabel);
-	m_MdAirControl =
-	    AddRow(m_PnlMetadata, m_MetaGrid, "Air Control:", &m_MdAirControlLabel);
 	m_MdMap = AddRow(m_PnlMetadata, m_MetaGrid, "Map:");
 	m_MdIwad = AddRow(m_PnlMetadata, m_MetaGrid, "IWAD:");
 	m_MdPwad = AddRow(m_PnlMetadata, m_MetaGrid, "PWAD:", &m_MdPwadLabel);
@@ -412,6 +409,10 @@ void dlgServerDetails::BuildGameplayGrid()
 	    AddRow(m_PnlGameplayVars, m_GpGrid, "Monster Dmg:", &m_GpMonsterDmgLabel);
 	m_GpMonsterHealth = AddRow(m_PnlGameplayVars, m_GpGrid, "Monster Health:",
 	                           &m_GpMonsterHealthLabel);
+	m_GpGravity =
+	    AddRow(m_PnlGameplayVars, m_GpGrid, "Gravity:", &m_GpGravityLabel);
+	m_GpAirControl =
+	    AddRow(m_PnlGameplayVars, m_GpGrid, "Air Control:", &m_GpAirControlLabel);
 	m_GpWaves = AddRow(m_PnlGameplayVars, m_GpGrid, "Waves:", &m_GpWavesLabel);
 	m_GpCtfRules =
 	    AddRow(m_PnlGameplayVars, m_GpGrid, "CTF Rules:", &m_GpCtfRulesLabel);
@@ -513,19 +514,6 @@ void dlgServerDetails::PopulateMetadata()
 
 	m_PingIcon->SetBitmap(wxXmlResource::Get()->LoadBitmap(Bullet));
 
-	// Gravity (shown if transmitted).
-	wxString Gravity;
-	OdaGetCvarValue(s, "sv_gravity", Gravity);
-	SetOptionalRow(m_MetaGrid, m_MdGravityLabel, m_MdGravity, Gravity);
-
-	// Air control, hidden when at its neutral 1.0 (same rule as the dmg vars).
-	wxString AirControl, AirRaw;
-	double AirFactor = 1.0;
-	if(OdaGetCvarValue(s, "sv_aircontrol", AirRaw) && AirRaw.ToDouble(&AirFactor)
-	        && AirFactor != 1.0)
-		AirControl = AirRaw;
-	SetOptionalRow(m_MetaGrid, m_MdAirControlLabel, m_MdAirControl, AirControl);
-
 	m_MdMap->SetLabel(stdstr_towxstr(s.Info.CurrentMap).Upper());
 
 	// IWAD is Wads[1]; PWADs are Wads[2..].
@@ -603,6 +591,11 @@ void dlgServerDetails::PopulateGameplay()
 
 	SetOptionalRow(m_GpGrid, m_GpMonsterHealthLabel, m_GpMonsterHealth,
 	               OdaGetDamagePercentString(s, "sv_monstershealth"));
+
+	SetOptionalRow(m_GpGrid, m_GpGravityLabel, m_GpGravity,
+	               OdaGetGravityString(s));
+	SetOptionalRow(m_GpGrid, m_GpAirControlLabel, m_GpAirControl,
+	               OdaGetAirControlString(s));
 
 	wxString Waves;
 	if(s.Info.GameType == GT_Horde)

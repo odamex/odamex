@@ -21,6 +21,7 @@
 #include "srv_utils.h"
 
 #include <algorithm>
+#include <cmath>
 #include <vector>
 
 #include <wx/settings.h>
@@ -301,6 +302,36 @@ wxString OdaGetScoreString(const Server& s)
 	}
 
 	return wxEmptyString;
+}
+
+wxString OdaGetGravityString(const Server& s)
+{
+	wxString Value;
+
+	if(!OdaGetCvarValue(s, "sv_gravity", Value))
+		return wxEmptyString;
+
+	// Default gravity (800) isn't worth showing.
+	long Gravity = 0;
+	if(Value.ToLong(&Gravity) && Gravity == 800)
+		return wxEmptyString;
+
+	return Value;
+}
+
+wxString OdaGetAirControlString(const Server& s)
+{
+	wxString Value;
+
+	if(!OdaGetCvarValue(s, "sv_aircontrol", Value))
+		return wxEmptyString;
+
+	// Default air control (0.00390625) isn't worth showing.
+	double Air = 0.0;
+	if(Value.ToDouble(&Air) && Air == 0.00390625)
+		return wxEmptyString;
+
+	return Value;
 }
 
 wxString OdaGetFastMonstersString(const Server& s)

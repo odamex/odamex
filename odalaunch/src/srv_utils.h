@@ -92,6 +92,14 @@ wxString OdaGetTimeLeftString(const odalpapi::Server& s);
 // score for team modes, frags for deathmatch), or empty when none applies.
 wxString OdaGetScoreString(const odalpapi::Server& s);
 
+// Returns the sv_gravity value, or an empty string when absent or at its
+// default (800).
+wxString OdaGetGravityString(const odalpapi::Server& s);
+
+// Returns the sv_aircontrol value, or an empty string when absent or at its
+// default (0.00390625).
+wxString OdaGetAirControlString(const odalpapi::Server& s);
+
 // Returns "Yes" when fast monsters are enabled (sv_fastmonsters) below
 // Nightmare skill, or an empty string otherwise.
 wxString OdaGetFastMonstersString(const odalpapi::Server& s);
