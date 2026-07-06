@@ -37,7 +37,7 @@
 EXTERN_CVAR(sv_nomonsters)
 
 // List of spawnable things for the Thing_Spawn and Thing_Projectile specials.
-
+// TODO: support SpawnNums mapinfo blocks for modifying this array
 std::array<int, 155> SpawnableThings = {
 	0,
 	MT_SHOTGUY,
@@ -198,31 +198,30 @@ std::array<int, 155> SpawnableThings = {
 
 bool P_Thing_Spawn (int tid, int type, std::optional<angle_t> angle, bool fog, std::optional<int> newtid)
 {
-	fixed_t z;
-	int rtn = 0;
-	int kind;
-	AActor *spot = NULL;
-
 	// type is doomednum
 	// kind is the mobjtype
 
 	if (static_cast<size_t>(type) >= SpawnableThings.size())
 		return false;
 
-	if ((kind = SpawnableThings[type]) == 0)
+	const int kind = SpawnableThings[type];
+	if (kind == 0)
 		return false;
 
 	if ((mobjinfo[kind].flags & MF_COUNTKILL) && sv_nomonsters == 1)
 		return false;
 
+	AActor* spot = nullptr;
+	int rtn = 0;
 	while ( (spot = AActor::FindByTID (spot, tid)) )
 	{
+		fixed_t z;
 		if (mobjinfo[kind].flags2 & MF2_FLOATBOB)
 			z = spot->z - spot->floorz;
 		else
 			z = spot->z;
 
-		AActor* mobj = new AActor(spot->x, spot->y, z, (mobjtype_t)kind);
+		auto mobj = new AActor(spot->x, spot->y, z, (mobjtype_t)kind);
 
 		if (mobj)
 		{
@@ -243,7 +242,7 @@ bool P_Thing_Spawn (int tid, int type, std::optional<angle_t> angle, bool fog, s
 			else
 			{
 				mobj->Destroy ();
-				rtn = false;
+				rtn = 0;
 			}
 		}
 	}
@@ -252,27 +251,26 @@ bool P_Thing_Spawn (int tid, int type, std::optional<angle_t> angle, bool fog, s
 }
 
 bool P_Thing_Projectile (int tid, int type, angle_t angle,
-						 fixed_t speed, fixed_t vspeed, bool gravity)
+						 fixed_t speed, fixed_t vspeed, bool gravity, std::optional<int> newtid)
 {
-	int rtn = 0;
-	int kind;
-	AActor *spot = NULL, *mobj;
-
 	if (static_cast<size_t>(type) >= SpawnableThings.size())
 		return false;
 
-	if ( (kind = SpawnableThings[type]) == 0)
+	const int kind = SpawnableThings[type];
+	if (kind == 0)
 		return false;
 
 	if ((mobjinfo[kind].flags & MF_COUNTKILL) && sv_nomonsters)
 		return false;
 
+	bool rtn = false;
+	AActor* spot = nullptr;
 	while ( (spot = AActor::FindByTID (spot, tid)) )
 	{
 		if (spot->type != MT_MAPSPOT && spot->type != MT_MAPSPOTGRAVITY)
 			continue;
 
-		mobj = new AActor (spot->x, spot->y, spot->z, (mobjtype_t)kind);
+		auto mobj = new AActor (spot->x, spot->y, spot->z, (mobjtype_t)kind);
 
 		if (mobj)
 		{
@@ -292,6 +290,7 @@ bool P_Thing_Projectile (int tid, int type, angle_t angle,
 			mobj->momy = FixedMul (speed, finesine[angle>>ANGLETOFINESHIFT]);
 			mobj->momz = vspeed;
 			mobj->flags |= MF_DROPPED;
+			mobj->tid = newtid.value_or(0);
 			if (mobj->flags & MF_MISSILE)
 				rtn = P_CheckMissileSpawn (mobj);
 			else if (!P_TestMobjLocation (mobj))

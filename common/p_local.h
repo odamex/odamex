@@ -138,7 +138,7 @@ extern std::array<int, 155> SpawnableThings;
 
 bool	P_Thing_Spawn (int tid, int type, std::optional<angle_t> angle, bool fog, std::optional<int> newtid = std::nullopt);
 bool	P_Thing_Projectile (int tid, int type, angle_t angle,
-							fixed_t speed, fixed_t vspeed, bool gravity);
+							fixed_t speed, fixed_t vspeed, bool gravity, std::optional<int> newtid = std::nullopt);
 bool	P_ActivateMobj (AActor *mobj, AActor *activator);
 bool	P_DeactivateMobj (AActor *mobj);
 
