@@ -2068,7 +2068,7 @@ void DLevelScript::RunScript ()
 	const ACSFormat fmt = level.behavior->GetFormat();
 	int runaway = 0;	// used to prevent infinite loops
 	int pcd;
-	char work[4096], *workwhere = work;
+	std::string work;
 	const char *lookup;
 //	int optstart = -1;
 	int temp;
@@ -3076,8 +3076,7 @@ void DLevelScript::RunScript ()
 			break;
 
 		case PCD_BEGINPRINT:
-			workwhere = work;
-			work[0] = 0;
+			work.clear();
 			break;
 
 		case PCD_PRINTSTRING:
@@ -3085,27 +3084,35 @@ void DLevelScript::RunScript ()
 			lookup = (pcd == PCD_PRINTSTRING ?
 				level.behavior->LookupString (STACK(1)) :
 				level.behavior->LocalizeString (STACK(1)));
-			if (lookup != NULL)
+			if (lookup != nullptr)
 			{
-				workwhere += snprintf(workwhere, 4096, "%s", lookup);
+				work += lookup;
 			}
 			--sp;
 			break;
 
 		case PCD_PRINTNUMBER:
-			workwhere += snprintf(workwhere, 4096, "%d", STACK(1));
+			work += fmt::format("{:d}", STACK(1));
 			--sp;
 			break;
 
 		case PCD_PRINTCHARACTER:
-			workwhere[0] = STACK(1);
-			workwhere[1] = 0;
-			workwhere++;
+			work += static_cast<char>(STACK(1));
 			--sp;
 			break;
 
 		case PCD_PRINTFIXED:
-			workwhere += snprintf(workwhere, 4096, "%g", FIXED2FLOAT(STACK(1)));
+			work += fmt::format("{:g}", FIXED2FLOAT(STACK(1)));
+			--sp;
+			break;
+
+		case PCD_PRINTBINARY:
+			work += fmt::format("{:B}", STACK(1));
+			--sp;
+			break;
+
+		case PCD_PRINTHEX:
+			work += fmt::format("{:X}", STACK(1));
 			--sp;
 			break;
 
@@ -3113,40 +3120,60 @@ void DLevelScript::RunScript ()
 		// [RH] Fancied up a bit
 		case PCD_PRINTNAME:
 			{
-				player_t *player = NULL;
+				player_t *player = nullptr;
 
-				if (STACK(1) == 0 || (unsigned)STACK(1) > MAXPLAYERS)
+				if (STACK(1) < 0)
+				{
+					switch (STACK(1))
+					{
+						case PRINTNAME_LEVELNAME:
+							work += level.level_name;
+							break;
+						case PRINTNAME_LEVEL:
+							work += level.mapname;
+							break;
+						case PRINTNAME_NEXTLEVEL:
+							work += level.nextmap;
+							break;
+						case PRINTNAME_NEXTSECRET:
+							work += level.secretmap;
+							break;
+						case PRINTNAME_SKILL:
+							work += G_GetCurrentSkill().name;
+							break;
+						default:
+							work += ' ';
+					}
+				}
+				else if (STACK(1) == 0 || (unsigned)STACK(1) > MAXPLAYERS)
 				{
 					if (activator)
 					{
 						player = activator->player;
 					}
 				}
-				else if (idplayer(STACK(1)).ingame())
+				else if (idplayer(STACK(1) - 1).ingame())
 				{
-					player = &idplayer(STACK(1));
+					player = &idplayer(STACK(1) - 1);
 				}
 				else
 				{
-					workwhere += snprintf(workwhere, 4096, "Player %d\n",
-						STACK(1));
+					work += fmt::format("Player {:d}\n", STACK(1));
 					sp--;
 					break;
 				}
 				if (player)
 				{
-					workwhere += snprintf(workwhere, 4096, "%s",
-						activator->player->userinfo.netname.c_str());
+					work += activator->player->userinfo.netname;
 				}
 				else if (activator)
 				{
 					// TODO: print activator->info->tag instead
-					workwhere += snprintf(workwhere, 4096, "%s",
-						RUNTIME_TYPE(activator)->Name+1);
+					work += RUNTIME_TYPE(activator)->Name+1;
 				}
 				else
 				{
-					workwhere += snprintf(workwhere, 4096, " ");
+					work += ' ';
 				}
 				sp--;
 			}
@@ -3155,10 +3182,10 @@ void DLevelScript::RunScript ()
 		case PCD_ENDPRINT:
 		case PCD_ENDPRINTBOLD:
 		//case PCD_MOREHUDMESSAGE:
-			strbin (work);
+			strbin (work.data());
 			if (pcd != PCD_MOREHUDMESSAGE)
 			{
-				ACS_Print(pcd, activator, work);
+				ACS_Print(pcd, activator, work.c_str());
 			}
 			else
 			{
