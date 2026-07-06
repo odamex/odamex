@@ -159,9 +159,6 @@ dlgMain::dlgMain(wxWindow* parent, wxWindowID id)
 	wxIcon MainIcon;
 	bool GetListOnStart, LoadChatOnLS, CheckForUpdates;
 
-	// Allows us to auto-refresh the list due to the client not being run
-	m_ClientIsRunning = false;
-
 	// Loads the frame from the xml resource file
 	wxXmlResource::Get()->LoadFrame(this, parent, "dlgMain");
 
@@ -772,9 +769,13 @@ void dlgMain::OnTimer(wxTimerEvent& event)
 // Called when the odamex client process terminates
 void dlgMain::OnProcessTerminate(wxProcessEvent& event)
 {
-	m_ClientIsRunning = false;
+	const int pid = event.GetPid();
 
-	delete m_Process;
+    auto it = m_Processes.find(pid);
+    if (it != m_Processes.end())
+	{
+		m_Processes.erase(it);
+	}
 }
 
 // Posts a message from the main thread to the monitor thread
@@ -1811,12 +1812,17 @@ void dlgMain::LaunchGame(const wxString& Address, const wxString& ODX_Path,
 	}
 
 	// Redirect I/O of child process under non-windows platforms
-	m_Process = new wxProcess(this, wxPROCESS_REDIRECT);
-
-	m_ClientIsRunning = true;
-
-	if(wxExecute(CmdLine, wxEXEC_ASYNC, m_Process) <= 0)
-		wxMessageBox(wxString::Format(MsgStr, BinName.c_str()));
+	auto proc = std::make_unique<wxProcess>(this, wxPROCESS_REDIRECT);
+	const auto pid = wxExecute(CmdLine, wxEXEC_ASYNC, proc.get());
+	if(pid <= 0)
+	{
+		wxMessageBox(wxString::Format(MsgStr, BinName));
+	}
+	else
+	{
+		// for some reason exExecute returns a long but wxProcessEvent::GetPid returns an int
+		m_Processes.emplace(static_cast<int>(pid), std::move(proc));
+	}
 }
 
 

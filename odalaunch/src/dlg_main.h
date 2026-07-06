@@ -50,6 +50,7 @@
 
 #include <vector>
 #include <memory>
+#include <unordered_map>
 
 #include "query_thread.h"
 #include "net_packet.h"
@@ -142,9 +143,9 @@ protected:
 	wxInt32 FindServer(wxString);
 	wxInt32 GetSelectedServerArrayIndex();
 
-	bool ClientIsRunning()
+	bool ClientIsRunning() const
 	{
-		return m_ClientIsRunning;
+		return !m_Processes.empty();
 	};
 
 	void LaunchGame(const wxString& Address, const wxString& ODX_Path,
@@ -178,10 +179,9 @@ protected:
 	wxSearchCtrl* m_SrchCtrlGlobal;
 
 	wxStatusBar* m_StatusBar;
-	wxProcess* m_Process;
+	std::unordered_map<int, std::unique_ptr<wxProcess>> m_Processes;
 
 	bool m_UpdateCheckWasAutomatic = false;
-	bool m_ClientIsRunning;
 
 	OdaInfoBar *InfoBar;
 
