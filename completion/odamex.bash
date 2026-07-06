@@ -62,7 +62,6 @@ function __odamex {
     [-file]=1
     [-deh]=1
     [-bex]=1
-    [-waddir]=1
   )
 
   # options where we can't provide reasonable completion
@@ -91,6 +90,7 @@ function __odamex {
     [-timedemo]=demo
     [-map]=map
     [+map]=map
+    [-warp]=map
   )
 
   local -r cmd="$1"

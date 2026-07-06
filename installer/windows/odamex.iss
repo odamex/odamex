@@ -31,7 +31,9 @@ Compression=lzma2
 SolidCompression=true
 AlwaysShowDirOnReadyPage=true
 ChangesEnvironment=true
-AppID={{2E517BBB-916F-4AB6-80E0-D4A292513F7A}}
+; This looks strange but is actually correct. A literal { in innosetup is written as {{
+; but no special escaping is needed for the }
+AppID={{2E517BBB-916F-4AB6-80E0-D4A292513F7A}
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 ShowLanguageDialog=auto
