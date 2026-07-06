@@ -433,7 +433,8 @@ CVAR_RANGE(sv_countdown, "5",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	CVAR(			co_zdoomfriendtargeting, "0",
-					"Use ZDoom's smarter monster targeting when it comes to friendlies.",
+					"Use ZDoom's monster targeting when it comes to friendlies. This is much less taxing than MBF friendly targeting, "
+					"so enable if your system is struggling on slaughter maps with friendlies.",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	// MBF21-defined compatibility changes
