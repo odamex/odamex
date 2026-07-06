@@ -361,7 +361,7 @@ void M_ScaleVec3fToLength(v3float_t* dest, const v3float_t* v, float a)
 	if (M_IsZeroVec3f(v))
 		M_ZeroVec3f(dest);
 	else
-		M_ScaleVec3f(dest, v, a / M_LengthVec3f(v));
+		M_ScaleVec3f(dest, v, a / M_LengthVec3f(*v));
 }
 
 void M_ScaleVec3ToLength(v3double_t* dest, const v3double_t* v, double a)
@@ -369,7 +369,7 @@ void M_ScaleVec3ToLength(v3double_t* dest, const v3double_t* v, double a)
 	if (M_IsZeroVec3(v))
 		M_ZeroVec3(dest);
 	else
-		M_ScaleVec3(dest, v, a / M_LengthVec3(v));
+		M_ScaleVec3(dest, v, a / M_LengthVec3(*v));
 }
 
 void M_ScaleVec2FixedToLength(v2fixed_t* dest, const v2fixed_t* v, fixed_t a)
@@ -377,7 +377,7 @@ void M_ScaleVec2FixedToLength(v2fixed_t* dest, const v2fixed_t* v, fixed_t a)
 	if (M_IsZeroVec2Fixed(v))
 		M_ZeroVec2Fixed(dest);
 	else
-		M_ScaleVec2Fixed(dest, v, FixedDiv(a, M_LengthVec2Fixed(v)));
+		M_ScaleVec2Fixed(dest, v, FixedDiv(a, M_LengthVec2Fixed(*v)));
 }
 
 void M_ScaleVec3FixedToLength(v3fixed_t* dest, const v3fixed_t* v, fixed_t a)
@@ -385,7 +385,7 @@ void M_ScaleVec3FixedToLength(v3fixed_t* dest, const v3fixed_t* v, fixed_t a)
 	if (M_IsZeroVec3Fixed(v))
 		M_ZeroVec3Fixed(dest);
 	else
-		M_ScaleVec3Fixed(dest, v, FixedDiv(a, M_LengthVec3Fixed(v)));
+		M_ScaleVec3Fixed(dest, v, FixedDiv(a, M_LengthVec3Fixed(*v)));
 }
 
 

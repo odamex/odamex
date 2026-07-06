@@ -105,6 +105,7 @@ struct rectInt_t
 };
 
 // TODO: use reference instead of pointer parameters so that these can all take temporaries as arguments
+// might make sense to make these members and to make some of all this templated to reduce duplication
 
 //
 // M_SetVec3f

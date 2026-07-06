@@ -59,19 +59,30 @@ struct CallReturn
 	byte Pad[3];
 };
 
-static std::array<int, STACK_SIZE> Stack;
-
-static bool P_GetScriptGoing (AActor *who, line_t *where, int num, int *code,
-	int lineSide, int arg0, int arg1, int arg2, int always, bool delay);
-AActor* P_FindThingById(uint32_t id);
-
 struct FBehavior::ArrayInfo
 {
 	int ArraySize;
 	int32_t *Elements;
 };
 
-static void DoClearInv(player_t* player)
+ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammo, float num);
+ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, bool dropped);
+ItemEquipVal P_GiveCard(player_t *player, card_t card);
+ItemEquipVal P_GivePower(player_t *player, int  power);
+
+AActor* P_FindThingById(uint32_t id);
+void P_SwitchWeapon(player_t& player);
+bool P_CheckAmmo (player_t& player);
+
+namespace
+{
+
+std::array<int, STACK_SIZE> Stack;
+
+bool P_GetScriptGoing (AActor *who, line_t *where, int num, int *code,
+	int lineSide, int arg0, int arg1, int arg2, int always, bool delay);
+
+void DoClearInv(player_t* player)
 {
 	player->weaponowned.fill(false);
 	player->powers.fill(0);
@@ -93,7 +104,7 @@ static void DoClearInv(player_t* player)
 	    SV_ACSExecuteSpecial(DLevelScript::PCD_CLEARINVENTORY, player->mo, NULL, true));
 }
 
-static void ClearInventory(AActor* activator)
+void ClearInventory(AActor* activator)
 {
 	if (activator == NULL)
 	{
@@ -113,12 +124,7 @@ static void ClearInventory(AActor* activator)
 	}
 }
 
-ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammo, float num);
-ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, bool dropped);
-ItemEquipVal P_GiveCard(player_t *player, card_t card);
-ItemEquipVal P_GivePower(player_t *player, int  power);
-
-static void GiveBackpack(player_t& player)
+void GiveBackpack(player_t& player)
 {
 	if (!player.backpack)
 	{
@@ -135,7 +141,7 @@ static void GiveBackpack(player_t& player)
 	SERVER_ONLY(SV_SendPlayerInfo(player));
 }
 
-static void DoGiveInv(player_t& player, const char* type, int amount)
+void DoGiveInv(player_t& player, const char* type, int amount)
 {
 	const weapontype_t savedpendingweap = player.pendingweapon;
 
@@ -200,7 +206,7 @@ static void DoGiveInv(player_t& player, const char* type, int amount)
 	}, *givetype);
 }
 
-static void GiveInventory(AActor* activator, const char* type, int amount)
+void GiveInventory(AActor* activator, const char* type, int amount)
 {
 	if (activator == NULL)
 	{
@@ -219,9 +225,7 @@ static void GiveInventory(AActor* activator, const char* type, int amount)
 	}
 }
 
-void P_SwitchWeapon(player_t& player);
-
-static void TakeWeapon(player_t& player, int weapon)
+void TakeWeapon(player_t& player, int weapon)
 {
 	player.weaponowned[weapon] = false;
 	if (player.readyweapon == weapon || player.pendingweapon == weapon)
@@ -244,9 +248,7 @@ static void TakeWeapon(player_t& player, int weapon)
 	SERVER_ONLY(SV_SendPlayerInfo(player));
 }
 
-bool P_CheckAmmo (player_t& player);
-
-static void TakeAmmo(player_t& player, int ammo, int amount)
+void TakeAmmo(player_t& player, int ammo, int amount)
 {
 	if (amount == 0)
 	{
@@ -282,7 +284,7 @@ static void TakeAmmo(player_t& player, int ammo, int amount)
 	SERVER_ONLY(SV_SendPlayerInfo(player));
 }
 
-static AActor* SingleActorFromTID(int tid, AActor* defactor)
+AActor* SingleActorFromTID(int tid, AActor* defactor)
 {
 	if (tid == 0)
 	{
@@ -295,7 +297,7 @@ static AActor* SingleActorFromTID(int tid, AActor* defactor)
 	}
 }
 
-static void TakeBackpack(player_t& player)
+void TakeBackpack(player_t& player)
 {
 	if (!player.backpack)
 		return;
@@ -309,7 +311,7 @@ static void TakeBackpack(player_t& player)
 	SERVER_ONLY(SV_SendPlayerInfo(player));
 }
 
-static void DoTakeInv(player_t& player, const char* type, int amount)
+void DoTakeInv(player_t& player, const char* type, int amount)
 {
 	const weapontype_t weapon = P_INameToWeapon(type);
 	if (weapon != wp_none)
@@ -350,7 +352,7 @@ static void DoTakeInv(player_t& player, const char* type, int amount)
 	// TODO: Eternity allows taking health, check if this applies to ZDoom too
 }
 
-static void TakeInventory(AActor* activator, const char* type, int amount)
+void TakeInventory(AActor* activator, const char* type, int amount)
 {
 	if (activator == nullptr)
 	{
@@ -366,7 +368,7 @@ static void TakeInventory(AActor* activator, const char* type, int amount)
 	}
 }
 
-static int CheckInventory(AActor* activator, const char* type)
+int CheckInventory(AActor* activator, const char* type)
 {
 	if (activator == nullptr || activator->player == nullptr)
 		return 0;
@@ -408,7 +410,7 @@ static int CheckInventory(AActor* activator, const char* type)
 	}, *givetype);
 }
 
-static int16_t StrToMOD(const char* str)
+int16_t StrToMOD(const char* str)
 {
 	// TODO: find out whether this is supposed to be case sensitive
 	using OUtil::CONST_HASH_NO_CASE;
@@ -446,6 +448,8 @@ static int16_t StrToMOD(const char* str)
 			return MOD_RAILGUN;
 	}
 }
+
+} // namespace
 
 EXTERN_CVAR (sv_skill)
 EXTERN_CVAR (sv_gametype)
@@ -4170,7 +4174,9 @@ auto DLevelScript::CallFunction(const int scriptnum, const int func, const nonst
 	#undef CHECK_MIN_ARGS
 }
 
-static bool P_GetScriptGoing (AActor *who, line_t *where, int num, int *code,
+namespace {
+
+bool P_GetScriptGoing (AActor *who, line_t *where, int num, int *code,
 	int lineSide, int arg0, int arg1, int arg2, int always, bool delay)
 {
 	DACSThinker *controller = DACSThinker::ActiveThinker;
@@ -4189,6 +4195,8 @@ static bool P_GetScriptGoing (AActor *who, line_t *where, int num, int *code,
 
 	return true;
 }
+
+} // namespace
 
 DLevelScript::DLevelScript (AActor *who, line_t *where, int num, int *code, int lineside,
 							int arg0, int arg1, int arg2, int always, bool delay)
