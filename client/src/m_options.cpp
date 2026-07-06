@@ -151,6 +151,7 @@ EXTERN_CVAR (co_removesoullimit)
 EXTERN_CVAR (co_blockmapfix)
 EXTERN_CVAR (co_globalsound)
 EXTERN_CVAR (co_novileghosts)
+EXTERN_CVAR (co_zdoomfriendtargeting)
 
 // [Toke - Menu] New Menu Stuff.
 void MouseSetup (void);
@@ -711,6 +712,7 @@ static menuitem_t CompatItems[] ={
 	{svdiscrete, "MBF movement and collision",  {&co_mbfphys},			 {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "ZDOOM 1.23 physics",             {&co_zdoomphys},         {2.0}, {0.0}, {0.0}, {OnOff}},
   {svdiscrete, "ZDOOM 1.23 ammo checks",         {&co_zdoomammo},         {2.0}, {0.0}, {0.0}, {OnOff}},
+	{svdiscrete, "ZDOOM Friendly Targeting",       {&co_zdoomfriendtargeting},   {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "MBF Monster target selection",{&co_pursuit},      {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "Monsters help friends (MBF)",{&co_helpfriends},      {2.0}, {0.0}, {0.0}, {OnOff}},
 	{svdiscrete, "Monsters strafe (MBF)",{&co_monsterbacking},      {2.0}, {0.0}, {0.0}, {OnOff}},
