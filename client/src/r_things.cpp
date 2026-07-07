@@ -543,10 +543,12 @@ void R_ProjectSprite(const AActor *thing, int fakeside)
 		return;
 
 	// [SL] interpolate the position of thing
+  // except if paused and using freecam
 	fixed_t thingx, thingy, thingz;
 
 	if (P_AproxDistance2(thing, thing->prevx, thing->prevy) < 128*FRACUNIT &&
-		OInterpolation::getInstance().enabled())
+		  OInterpolation::getInstance().enabled() && 
+      not (paused && displayplayer().isFreecam))
 	{
 		// the actor probably did not teleport
 		// interpolate between previous and current position

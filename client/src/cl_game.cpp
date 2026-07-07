@@ -850,7 +850,7 @@ void P_CheckInterpPause()
 {
 	// Game pauses when in the menu and not online/demo
 	OInterpolation &oi = OInterpolation::getInstance();
-	if (paused || (!multiplayer && !demoplayback &&
+	if ((paused && not displayplayer().isFreecam) || (!multiplayer && !demoplayback &&
 		(menuactive || ConsoleState == c_down || ConsoleState == c_falling)))
 	{
 		if (oi.enabled())
