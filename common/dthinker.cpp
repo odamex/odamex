@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,12 +31,14 @@
 #include "z_zone.h"
 #include "stats.h"
 #include "p_local.h"
+#include "g_musinfo.h"
 
 IMPLEMENT_SERIAL (DThinker, DObject)
 
 DThinker *DThinker::FirstThinker = NULL;
 DThinker *DThinker::LastThinker = NULL;
 
+std::vector<DThinker *> DThinker::s_thinkers;
 std::vector<DThinker *> LingerDestroy;
 
 void DThinker::Serialize (FArchive &arc)
@@ -57,12 +59,12 @@ void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 		{
 			if (!(arc.IsReset() && P_ThinkerIsPlayerType(thinker)))
 			{
-				arc << (BYTE)1;
+				arc << 1_u8;
 				arc << thinker;
 			}
 			thinker = thinker->m_Next;
 		}
-		arc << (BYTE)0;
+		arc << 0_u8;
 	}
 	else
 	{
@@ -71,7 +73,7 @@ void DThinker::SerializeAll (FArchive &arc, bool hubLoad)
 		else
 			DestroyAllThinkers ();
 
-		BYTE more;
+		byte more;
 		arc >> more;
 		while (more)
 		{
@@ -97,6 +99,9 @@ DThinker::DThinker ()
 	LastThinker = this;
 	refCount = 0;
 	destroyed = false;
+
+	s_thinkers.push_back(this);
+	m_optionalVectorIndex = s_thinkers.size() - 1;
 }
 
 DThinker::~DThinker ()
@@ -108,6 +113,7 @@ DThinker::~DThinker ()
 // all over the thinker list.
 void DThinker::Orphan()
 {
+	m_optionalVectorIndex.reset();
 	m_Next = NULL;
 	m_Prev = NULL;
 	refCount = 0;
@@ -127,9 +133,20 @@ void DThinker::Destroy ()
 		m_Next->m_Prev = m_Prev;
 	if (m_Prev)
 		m_Prev->m_Next = m_Next;
-	
+
+	if (m_optionalVectorIndex.has_value())
+	{
+		if (s_thinkers.size() > 0)
+		{
+			s_thinkers.back()->m_optionalVectorIndex = m_optionalVectorIndex;
+			std::swap(s_thinkers.back(), s_thinkers[* m_optionalVectorIndex]);
+			s_thinkers.pop_back();
+		}
+		m_optionalVectorIndex.reset();
+	}
+
 	destroyed = true;
-		
+
 	if(refCount)
 	{
 		LingerDestroy.push_back(this); // something is still finding this pointer useful
@@ -137,7 +154,7 @@ void DThinker::Destroy ()
 	else
 		Super::Destroy ();
 
-	size_t l = LingerDestroy.size();	
+	size_t l = LingerDestroy.size();
 	for(size_t i = 0; i < l; i++)
 	{
 		DThinker *obj = LingerDestroy[i];
@@ -167,11 +184,9 @@ void DThinker::DestroyAllThinkers ()
 		currentthinker = next;
 	}
 	DObject::EndFrame ();
-	
-	size_t l = LingerDestroy.size();	
-	for(size_t i = 0; i < l; i++)
+
+	for (DThinker *obj : LingerDestroy)
 	{
-		DThinker *obj = LingerDestroy[i];
 //		if(!obj->refCount)
 		{
 			obj->ObjectFlags |= OF_Cleanup;
@@ -226,7 +241,7 @@ bool IndependentThinker(DThinker *thinker)
 		if (serverside)
 			return true;
 	}
-	
+
 	if (thinker->IsA(RUNTIME_CLASS (DPillar)) ||
 		thinker->IsA(RUNTIME_CLASS (DElevator)) ||
 		thinker->IsA(RUNTIME_CLASS (DFloor)) ||
@@ -252,22 +267,26 @@ void DThinker::RunThinkers ()
 	while (currentthinker)
 	{
 		if (!IndependentThinker(currentthinker))
+		{
 			currentthinker->RunThink();
+			currentthinker->PostThink();
+		}
 		currentthinker = currentthinker->m_Next;
 	}
 	END_STAT (ThinkCycles);
+	P_CheckMusicChange();
 }
 
 void *DThinker::operator new (size_t size)
 {
-	return Z_Malloc (size, PU_LEVSPEC, 0);
+	return Z_Malloc<void>(size, PU_LEVSPEC, nullptr);
 }
 
 // Deallocation is lazy -- it will not actually be freed
 // until its thinking turn comes up.
 void DThinker::operator delete (void *mem)
 {
-	Z_Free (mem);
+	Z_Free(mem);
 }
 
 bool P_ThinkerIsPlayerType(DThinker* thinker)
@@ -280,3 +299,4 @@ bool P_ThinkerIsPlayerType(DThinker* thinker)
 }
 
 VERSION_CONTROL (dthinker_cpp, "$Id$")
+

@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,7 +16,7 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
-// DESCRIPTION:  
+// DESCRIPTION:
 //	Head up display
 //
 //-----------------------------------------------------------------------------
@@ -34,7 +34,7 @@
 #define HU_FONTEND		'_' 	// the last font characters
 
 // Calculate # of glyphs in font.
-#define HU_FONTSIZE 	(HU_FONTEND - HU_FONTSTART + 1) 
+#define HU_FONTSIZE 	(HU_FONTEND - HU_FONTSTART + 1)
 
 class Texture;
 
@@ -42,8 +42,8 @@ void HU_Init();
 void STACK_ARGS HU_Shutdown();
 
 void HU_Ticker();
-BOOL HU_Responder (event_t* ev);
-void HU_Drawer (void);
+bool HU_Responder(const event_t& ev);
+void HU_Drawer();
 
 enum chatmode_t
 {
@@ -62,6 +62,6 @@ void OdamexEffect (int xa, int ya, int xb, int yb);
 
 // [RH] Draw deathmatch scores
 
-class player_s;
-void HU_DrawScores (player_s *me);
+class player_t;
+void HU_DrawScores (player_t *me);
 void HU_DisplayTimer (int x, int y, bool scale = true);

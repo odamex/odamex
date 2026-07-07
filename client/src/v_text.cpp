@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -79,7 +79,7 @@ void V_TextInit()
 	sub = 0;
 	for (int i = 0; i < HU_FONTSIZE; i++)
 	{
-		StrFormat(buffer, bigfont, j++ - sub);
+		buffer = fmt::sprintf(bigfont, j++ - sub);
 
 		// Some letters of this font are missing.
 		int num = Res_GetTextureResourceId(buffer.c_str(), PATCH);
@@ -115,11 +115,11 @@ void V_TextInit()
 	{
 		if ((j >= '0' && j <= '9') || (j >= 'A' && j <= 'Z'))
 		{
-			StrFormat(buffer, digfont_literal, j++);
+			buffer = fmt::sprintf(digfont_literal, j++);
 		}
 		else
 		{
-			StrFormat(buffer, digfont, j++);
+			buffer = fmt::sprintf(digfont, j++);
 		}
 
 		// Some letters of this font might be missing.
@@ -182,7 +182,7 @@ void V_TextShutdown()
 
 /**
  * @brief Set the current font.
- * 
+ *
  * @param fontname Font name, can be one of "BIGFONT" or "SMALLFONT".
  */
 void V_SetFont(const char* fontname)
@@ -203,12 +203,22 @@ void V_SetFont(const char* fontname)
 
 int V_TextScaleXAmount()
 {
-	return hud_scaletext.asInt();
+	int ret = hud_scaletext.asInt();
+
+	if (!ret)
+		return CleanXfac;
+
+	return ret;
 }
 
 int V_TextScaleYAmount()
 {
-	return hud_scaletext.asInt();
+	int ret = hud_scaletext.asInt();
+
+	if (!ret)
+		return CleanYfac;
+
+	return ret;
 }
 
 
@@ -219,54 +229,57 @@ int V_TextScaleYAmount()
 // color translation to use. This assumes that str is at least three characters
 // in length.
 //
-int V_GetTextColor(const char* str)
+int V_GetTextColor(std::string_view str)
 {
-	static int table[128];
-	static bool initialized = false;
+	static constexpr std::array<int, 128> table = []{
+        std::array<int, 128> t{};
+        t.fill(-1);
 
-	if (!initialized)
-	{
-		for (int i = 0; i < 128; i++)
-			table[i] = -1;
+        auto set = [&](char ch, char ch2, int color){
+            t[static_cast<unsigned char>(ch)] = color;
+            t[static_cast<unsigned char>(ch2)] = color;
+        };
 
-		table['A'] = table['a'] = CR_BRICK;
-		table['B'] = table['b'] = CR_TAN;
-		table['C'] = table['c'] = CR_GRAY;
-		table['D'] = table['d'] = CR_GREEN;
-		table['E'] = table['e'] = CR_BROWN;
-		table['F'] = table['f'] = CR_GOLD;
-		table['G'] = table['g'] = CR_RED;
-		table['H'] = table['h'] = CR_BLUE;
-		table['I'] = table['i'] = CR_ORANGE;
-		table['J'] = table['j'] = CR_WHITE;
-		table['K'] = table['k'] = CR_YELLOW;
-		table['M'] = table['m'] = CR_BLACK;
-		table['N'] = table['n'] = CR_LIGHTBLUE;
-		table['O'] = table['o'] = CR_CREAM;
-		table['P'] = table['p'] = CR_OLIVE;
-		table['Q'] = table['q'] = CR_DARKGREEN;
-		table['R'] = table['r'] = CR_DARKRED;
-		table['S'] = table['s'] = CR_DARKBROWN;
-		table['T'] = table['t'] = CR_PURPLE;
-		table['U'] = table['u'] = CR_DARKGRAY;
-		table['V'] = table['v'] = CR_CYAN;
+        set('A', 'a', CR_BRICK);
+        set('B', 'b', CR_TAN);
+        set('C', 'c', CR_GRAY);
+        set('D', 'd', CR_GREEN);
+        set('E', 'e', CR_BROWN);
+        set('F', 'f', CR_GOLD);
+        set('G', 'e', CR_RED);
+        set('H', 'h', CR_BLUE);
+        set('I', 'i', CR_ORANGE);
+        set('J', 'j', CR_WHITE);
+        set('K', 'k', CR_YELLOW);
+        set('M', 'm', CR_BLACK);
+        set('N', 'n', CR_LIGHTBLUE);
+        set('O', 'o', CR_CREAM);
+        set('P', 'p', CR_OLIVE);
+        set('Q', 'q', CR_DARKGREEN);
+        set('R', 'r', CR_DARKRED);
+        set('S', 's', CR_DARKBROWN);
+        set('T', 't', CR_PURPLE);
+        set('U', 'u', CR_DARKGRAY);
+        set('V', 'v', CR_CYAN);
 
-		initialized = true;
-	}
+        return t;
+    }();
 
 	if (str[0] == TEXTCOLOR_ESCAPE && str[1] < 128)
 	{
-		int c = str[1];
-		if (c == '-')
-			return msg2color;		// use print color
-		if (c == '+')
-			return CR_GREEN;		// use print bold color
-		if (c == '*')
-			return msg3color;		// use chat color
-		if (c == '!')
-			return msg4color;		// use team chat color
-
-		return table[c];
+		switch (int c = str[1])
+		{
+			case '-':
+				return msg2color; // use print color
+			case '+':
+				return CR_GREEN;  // use print bold color
+			case '*':
+				return msg3color; // use chat color
+			case '!':
+				return msg4color; // use team chat color
+			default:
+				return table[c];
+		}
 	}
 	return -1;
 }
@@ -275,11 +288,13 @@ int V_GetTextColor(const char* str)
 // V_PrintStr
 // Print a line of text using the console font
 //
-void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool use_color_codes) const
+void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool use_color_codes, int scale) const
 {
 	// Don't try and print a string without conchars loaded.
 	if (::ConChars == NULL)
 		return;
+
+	const int char_size = 8 * scale;
 
 	if (default_color < 0)
 		default_color = CR_GRAY;
@@ -289,29 +304,29 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 	int surface_pitch = mSurface->getPitch();
 
-	if (y > (surface_height - 8) || y < 0)
+	if (y > (surface_height - char_size) || y < 0)
 		return;
 
 	if (x < 0)
 	{
-		int skip = -(x - 7) / 8;
-		x += skip * 8;
-		if ((int)strlen(str) <= skip)
+		int skip = -(x - (char_size - 1)) / char_size;
+		x += skip * char_size;
+		if (static_cast<int>(strlen(str)) <= skip)
 			return;
 
 		str += skip;
 	}
 
-	x &= ~3;
+	x = x / char_size * char_size;
 	byte* destline = mSurface->getBuffer() + y * mSurface->getPitch();
 
-	while (*str && x <= (surface_width - 8))
+	while (*str && x <= (surface_width - char_size))
 	{
 	    // john - tab 4 spaces
 	    if (*str == '\t')
 	    {
 	        str++;
-	        x += 8 * 4;
+	        x += char_size * 4;
 	        continue;
 	    }
 
@@ -320,7 +335,7 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 		{
 			int new_color = V_GetTextColor(str);
 			if (new_color == -1)
-				new_color = default_color; 
+				new_color = default_color;
 
 			trans = translationref_t(Ranges + new_color * 256);
 
@@ -328,47 +343,58 @@ void DCanvas::PrintStr(int x, int y, const char* str, int default_color, bool us
 			continue;
 		}
 
-		int c = *(byte*)str;
+		int c = static_cast<byte>(*str);
 
 		if (mSurface->getBitsPerPixel() == 8)
 		{
-			const byte* source = (byte*)&ConChars[c * 128];
-			palindex_t* dest = (palindex_t*)destline + x;
+			const byte* source = &ConChars[c * 128];
+			palindex_t* dest = static_cast<palindex_t*>(destline) + x;
 			for (int z = 0; z < 8; z++)
 			{
-				for (int a = 0; a < 8; a++)
+				// repeat each scanline based on scale
+				for (int sy = 0; sy < scale; ++sy)
 				{
-					const palindex_t mask = source[a+8];
-					palindex_t color = trans.tlate(source[a]);
-					dest[a] = (dest[a] & mask) ^ color;
-				}
+					for (int a = 0; a < 8; a++)
+					{
+						const palindex_t mask = source[a+8];
+						palindex_t color = trans.tlate(source[a]);
 
-				dest += surface_pitch; 
+						// repeat each pixel based on scale
+						for (int sx = 0; sx < scale; ++sx)
+							dest[a*scale + sx] = (dest[a*scale + sx] & mask) ^ color;
+					}
+					dest += surface_pitch;
+				}
 				source += 16;
 			}
 		}
 		else
 		{
-			byte* source = (byte*)&ConChars[c * 128];
-			argb_t* dest = (argb_t*)destline + x;
+			byte* source = &ConChars[c * 128];
+			argb_t* dest = reinterpret_cast<argb_t*>(destline) + x;
 			for (int z = 0; z < 8; z++)
 			{
-				for (int a = 0; a < 8; a++)
+				// repeat each scanline based on scale
+				for (int sy = 0; sy < scale; ++sy)
 				{
-					const argb_t mask = (source[a+8] << 24) | (source[a+8] << 16)
-										| (source[a+8] << 8) | source[a+8];
+					for (int a = 0; a < 8; a++)
+					{
+						const argb_t mask = (source[a+8] << 24) | (source[a+8] << 16)
+											| (source[a+8] << 8) | source[a+8];
 
-					argb_t color = V_Palette.shade(trans.tlate(source[a])) & ~mask;
-					dest[a] = (dest[a] & mask) ^ color; 
+						argb_t color = V_Palette.shade(trans.tlate(source[a])) & ~mask;
+						// repeat each pixel based on scale
+						for (int sx = 0; sx < scale; ++sx)
+							dest[a*scale + sx] = (dest[a*scale + sx] & mask) ^ color;
+					}
+					dest += surface_pitch >> 2;
 				}
-
-				dest += surface_pitch >> 2; 
 				source += 16;
 			}
 		}
 
 		str++;
-		x += 8;
+		x += char_size;
 	}
 }
 
@@ -388,7 +414,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
 	TextSWrapper(drawer, normalcolor, x, y, string, CleanXfac, CleanYfac);
 }
 
-void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, 
+void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 							const byte *string, int scalex, int scaley) const
 {
 	if (!::hu_font[0])
@@ -402,7 +428,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 	int cx = x;
 	int cy = y;
 
-	const char*	str = (const char*)string;
+	const char*	str = reinterpret_cast<const char*>(string);
 
 	while (1)
 	{
@@ -413,7 +439,7 @@ void DCanvas::TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y,
 		{
 			int new_color = V_GetTextColor(str);
 			V_ColorMap = translationref_t(Ranges + new_color * 256);
-			str += 2;	
+			str += 2;
 			continue;
 		}
 
@@ -455,7 +481,7 @@ int V_StringWidth(const byte* str)
 		return 8;
 
 	int width = 0;
-	
+
 	while (*str)
 	{
 		// skip over color markup escape codes
@@ -515,14 +541,14 @@ static void breakit(brokenlines_t* line, const byte* start, const byte* string, 
 	while (string > start && isspace(*(string - 1)))
 		string--;
 
-	int prefix_len = prefix ? strlen(prefix) : 0;
+	size_t prefix_len = prefix ? strlen(prefix) : 0;
 
 	line->string = new char[string - start + 1 + prefix_len];
 
 	if (prefix_len)
 		strncpy(line->string + 0, prefix, prefix_len);
 
-	strncpy(line->string + prefix_len, (char*)start, string - start);
+	strncpy(line->string + prefix_len, reinterpret_cast<const char*>(start), string - start);
 	line->string[string - start + prefix_len] = 0;
 	line->width = V_StringWidth(line->string);
 }
@@ -552,7 +578,7 @@ brokenlines_t* V_BreakLines(int maxwidth, const byte* str)
 	{
 		if (str[0] == TEXTCOLOR_ESCAPE && str[1] != '\0')
 		{
-			sprintf(color_code_str, "\034%c", str[1]);
+			snprintf(color_code_str, 4, "\034%c", str[1]);
 			str += 2;
 			continue;
 		}

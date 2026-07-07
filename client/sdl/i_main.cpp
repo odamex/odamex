@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,17 +25,6 @@
 
 #include "odamex.h"
 
-// denis - todo - remove
-#include "win32inc.h"
-#ifdef _WIN32
-    #ifndef _XBOX
-        #undef GetMessage
-        typedef BOOL (WINAPI *SetAffinityFunc)(HANDLE hProcess, DWORD mask);
-    #endif // !_XBOX
-#else
-    #include <sched.h>
-#endif // WIN32
-
 #ifdef UNIX
 // for getuid and geteuid
 #include <unistd.h>
@@ -49,7 +38,7 @@
 #include <stack>
 #include <iostream>
 
-#include "i_sdl.h" 
+#include "i_sdl.h"
 #include "i_crash.h"
 // [Russell] - Don't need SDLmain library
 #ifdef _WIN32
@@ -58,15 +47,12 @@
 
 
 #include "m_argv.h"
+#include "m_consolecommandstream.h"
 #include "m_fileio.h"
 #include "d_main.h"
 #include "i_system.h"
 #include "c_console.h"
 #include "z_zone.h"
-
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
 
 // Use main() on windows for msvc
 #if defined(_MSC_VER) && !defined(GCONSOLE)
@@ -74,8 +60,6 @@
 #endif
 
 EXTERN_CVAR (r_centerwindow)
-
-DArgs Args;
 
 // functions to be called at shutdown are stored in this stack
 typedef void (STACK_ARGS *term_func_t)(void);
@@ -107,7 +91,7 @@ void STACK_ARGS nx_early_deinit (void)
 #endif
 
 
-#if defined GCONSOLE && !defined __SWITCH__ 
+#if defined GCONSOLE && !defined __SWITCH__
 int I_Main(int argc, char *argv[])
 #else
 int main(int argc, char *argv[])
@@ -147,7 +131,7 @@ int main(int argc, char *argv[])
 
 			fclose(fh);
 #else
-			printf("Odamex %s\n", NiceVersion());
+			fmt::print("Odamex {}\n", NiceVersion());
 #endif
 			exit(EXIT_SUCCESS);
 		}
@@ -163,100 +147,31 @@ int main(int argc, char *argv[])
 			I_SetCrashDir(writedir.c_str());
 		}
 
-		const char* CON_FILE = ::Args.CheckValue("-confile");
-		if (CON_FILE)
-		{
-			CON.open(CON_FILE, std::ios::in);
-		}
+		M_InitConsoleInputFile(::Args.CheckValue("-confile"));
 
 		// denis - if argv[1] starts with "odamex://"
 		if(argc == 2 && argv && argv[1])
 		{
-			const char *protocol = "odamex://";
-			const char *uri = argv[1];
+			static constexpr std::string_view protocol = "odamex://";
+			std::string_view uri = argv[1];
 
-			if(strncmp(uri, protocol, strlen(protocol)) == 0)
+			if(uri.substr(0, protocol.length()) == protocol)
 			{
-				std::string location = uri + strlen(protocol);
+				std::string_view location = uri.substr(protocol.length());
 				size_t term = location.find_first_of('/');
 
 				if(term == std::string::npos)
 					term = location.length();
 
 				Args.AppendArg("-connect");
-				Args.AppendArg(location.substr(0, term).c_str());
+				Args.AppendArg(std::string(location.substr(0, term)).c_str());
 			}
 		}
 
-#if defined(SDL12)
-        // [Russell] - No more double-tapping of capslock to enable autorun
-        SDL_putenv((char*)"SDL_DISABLE_LOCK_KEYS=1");
-
-		// Set SDL video centering
-		SDL_putenv((char*)"SDL_VIDEO_WINDOW_POS=center");
-		SDL_putenv((char*)"SDL_VIDEO_CENTERED=1");
+#if defined(__linux__) && defined(SDL20)
+		// despite the name, this also sets wayland app id
+		SDL_setenv("SDL_VIDEO_X11_WMCLASS", "net.odamex.Odamex.Client", false);
 #endif
-
-#if defined _WIN32 && !defined _XBOX
-
-	#if defined(SDL12)
-    	// From the SDL 1.2.10 release notes:
-    	//
-    	// > The "windib" video driver is the default now, to prevent
-    	// > problems with certain laptops, 64-bit Windows, and Windows
-    	// > Vista.
-    	//
-    	// The hell with that.
-
-   		// SoM: the gdi interface is much faster for windowed modes which are more
-   		// commonly used. Thus, GDI is default.
-		//
-		// GDI mouse issues fill many users with great sadness. We are going back
-		// to directx as defulat for now and the people will rejoice. --Hyper_Eye
-     	if (Args.CheckParm ("-gdi"))
-        	putenv((char*)"SDL_VIDEODRIVER=windib");
-    	else
-        	putenv((char*)"SDL_VIDEODRIVER=directx");
-	#endif	// SDL12
-
-	
-	#if defined(SDL20)
-        // FIXME: Remove this when SDL gets it shit together, see 
-        // https://bugzilla.libsdl.org/show_bug.cgi?id=2089
-        // ...
-        // Disable thread naming on windows, with SDL 2.0.5 and GDB > 7.8.1
-        // RaiseException will be thrown and will crash under the debugger with symbols
-        // loaded or not
-        SDL_SetHint(SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING, "1");
-	#endif // SDL20
-
-        // Set the process affinity mask to 1 on Windows, so that all threads
-        // run on the same processor.  This is a workaround for a bug in
-        // SDL_mixer that causes occasional crashes.  Thanks to entryway and fraggle for this.
-        //
-        // [ML] 8/6/10: Updated to match prboom+'s I_SetAffinityMask.  We don't do everything
-        // you might find in there but we do enough for now.
-        HMODULE kernel32_dll = LoadLibrary("kernel32.dll");
-
-        if (kernel32_dll)
-        {
-            SetAffinityFunc SetAffinity = (SetAffinityFunc)GetProcAddress(kernel32_dll, "SetProcessAffinityMask");
-
-            if (SetAffinity)
-            {
-                if (!SetAffinity(GetCurrentProcess(), 1))
-                    LOG << "Failed to set process affinity mask: " << GetLastError() << std::endl;
-            }
-        }
-#endif	// _WIN32 && !_XBOX
-
-#ifdef X11
-	#if defined(SDL12)
-		// [SL] 2011-12-21 - Ensure we're getting raw DGA mouse input from X11,
-		// bypassing X11's mouse acceleration
-		putenv((char*)"SDL_VIDEO_X11_DGAMOUSE=1");
-	#endif	// SDL12
-#endif	// X11
 
 		unsigned int sdl_flags = SDL_INIT_TIMER;
 
@@ -267,7 +182,7 @@ int main(int argc, char *argv[])
 #endif
 
 		if (SDL_Init(sdl_flags) == -1)
-			I_FatalError("Could not initialize SDL:\n%s\n", SDL_GetError());
+			I_FatalError("Could not initialize SDL:\n{}\n", SDL_GetError());
 
 		atterm (SDL_Quit);
 

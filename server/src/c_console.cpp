@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,6 +28,9 @@
 
 #include <stdarg.h>
 
+#include "fmt/color.h"
+
+#include "m_fileio.h"
 #include "m_memio.h"
 #include "c_console.h"
 #include "c_dispatch.h"
@@ -53,8 +56,6 @@ struct History
 // CmdLine[259]= offset from beginning of cmdline to display
 //static byte CmdLine[260];
 
-static byte printxormask;
-
 static struct History *HistTail = NULL;
 
 #define PRINTLEVELS 5
@@ -72,7 +73,8 @@ char *TimeStamp()
 	{
 		if (log_fulltimestamps)
 		{
-            sprintf (stamp,
+            snprintf (stamp,
+                     38,
                      "[%.2d/%.2d/%.2d %.2d:%.2d:%.2d]",
                      lt->tm_mday,
                      lt->tm_mon + 1,	// localtime returns 0-based month
@@ -83,7 +85,8 @@ char *TimeStamp()
 		}
 		else
 		{
-            sprintf (stamp,
+            snprintf (stamp,
+                     38,
                      "[%.2d:%.2d:%.2d]",
                      lt->tm_hour,
                      lt->tm_min,
@@ -96,104 +99,96 @@ char *TimeStamp()
 	return stamp;
 }
 
-/* Provide our own Printf() that is sensitive of the
- * console status (in or out of game)
- */
-extern int PrintString (int printlevel, const char *outline);
+EXTERN_CVAR(log_color)
 
-extern BOOL gameisdead;
-
-int VPrintf(int printlevel, const char* format, va_list parms)
+static size_t PrintString(int printlevel, std::string str)
 {
-	char outline[MAX_LINE_LENGTH];
+	StripColorCodes(str);
 
+	fmt::text_style style;
+	switch (printlevel)
+	{
+		case PRINT_CHAT:
+		case PRINT_FILTERCHAT:
+			style = fg(fmt::color::light_green);
+			break;
+		case PRINT_TEAMCHAT:
+			style = fg(fmt::color::orange);
+			break;
+		case PRINT_SERVERCHAT:
+			style = fg(fmt::color::dark_orange);
+			break;
+		case PRINT_WARNING:
+			style = fmt::emphasis::bold | fg(fmt::color::yellow);
+			break;
+		case PRINT_ERROR:
+			style = fmt::emphasis::bold | fg(fmt::color::red);
+			break;
+		case PRINT_PICKUP:
+			// do these even ever get printed serverside?
+			style = fg(fmt::color::red);
+			break;
+		case PRINT_OBITUARY:
+			style = fg(fmt::color::yellow);
+			break;
+		case PRINT_HIGH:
+		case PRINT_FILTERHIGH:
+		case PRINT_NORCON:
+			break;
+	}
+
+	if (log_color && I_ConsoleUseColor())
+		fmt::print(stdout, style, "{}", str);
+	else
+		fmt::print(stdout, "{}", str);
+	fflush(stdout);
+
+	if (LOG.is_open())
+	{
+		if (log_color == 2)
+			LOG << fmt::format(style, "{}", str);
+		else
+			LOG << str;
+		LOG.flush();
+	}
+
+	return str.length();
+}
+
+extern bool gameisdead;
+
+size_t C_BasePrint(const int printlevel, const char* color_code, const std::string& str)
+{
+	(void)color_code;
 	if (gameisdead)
 		return 0;
 
-	vsnprintf(outline, ARRAY_LENGTH(outline), format, parms);
+	std::string newStr = str;
 
 	// denis - 0x07 is a system beep, which can DoS the console (lol)
-	size_t len = strlen(outline);
-	for(size_t i = 0; i < len; i++)
-		if (outline[i] == 0x07)
-			outline[i] = '.';
+	for (auto& c : newStr)
+		if (c == 0x07)
+			c = '.';
 
-	std::string str(TimeStamp());
-	str.append(" ");
-	str.append(outline);
+	newStr = std::string(TimeStamp()) + " " + newStr;
 
-	if (str[str.length() - 1] != '\n')
-		str += '\n';
+	if (newStr[newStr.length() - 1] != '\n')
+		newStr += '\n';
 
 	// Only allow sending internal messages to RCON players that are PRINT_HIGH
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& player : players)
 	{
-		client_t* cl = &(it->client);
+		client_t* cl = &(player.client);
 
 		// Only allow RCON messages that are PRINT_HIGH
 		if (cl->allow_rcon && (printlevel == PRINT_HIGH || printlevel == PRINT_WARNING ||
 		                       printlevel == PRINT_ERROR))
 		{
-			MSG_WriteSVC(&cl->reliablebuf, SVC_Print(PRINT_WARNING, str));
+			MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_Print(PRINT_WARNING, newStr));
 		}
 	}
 
-	return PrintString(printlevel, str.c_str());
-}
-
-FORMAT_PRINTF(1, 2) int STACK_ARGS Printf(const char* format, ...)
-{
-	va_list argptr;
-	int count;
-
-	va_start(argptr, format);
-	count = VPrintf(PRINT_HIGH, format, argptr);
-	va_end(argptr);
-
-	return count;
-}
-
-FORMAT_PRINTF(2, 3) int STACK_ARGS Printf(int printlevel, const char* format, ...)
-{
-	va_list argptr;
-	int count;
-
-	va_start (argptr, format);
-	count = VPrintf (printlevel, format, argptr);
-	va_end (argptr);
-
-	return count;
-}
-
-FORMAT_PRINTF(1, 2) int STACK_ARGS Printf_Bold(const char* format, ...)
-{
-	va_list argptr;
-	int count;
-
-	printxormask = 0x80;
-	va_start (argptr, format);
-	count = VPrintf (PRINT_NORCON, format, argptr);
-	va_end (argptr);
-
-	return count;
-}
-
-FORMAT_PRINTF(1, 2) int STACK_ARGS DPrintf(const char* format, ...)
-{
-	va_list argptr;
-	int count;
-
-	if (developer || devparm)
-	{
-		va_start (argptr, format);
-		count = VPrintf (PRINT_WARNING, format, argptr);
-		va_end (argptr);
-		return count;
-	}
-	else
-	{
-		return 0;
-	}
+	return PrintString(printlevel, newStr);
 }
 
 BEGIN_COMMAND (history)
@@ -202,7 +197,7 @@ BEGIN_COMMAND (history)
 
 	while (hist)
 	{
-		Printf (PRINT_HIGH, "   %s\n", hist->String);
+		PrintFmt(PRINT_HIGH, "   {}\n", hist->String);
 		hist = hist->Newer;
 	}
 }
@@ -212,8 +207,8 @@ BEGIN_COMMAND (echo)
 {
 	if (argc > 1)
 	{
-		std::string text = C_ArgCombine(argc - 1, (const char **)(argv + 1));
-		Printf(PRINT_HIGH, "%s\n", text.c_str());
+		std::string text = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
+		PrintFmt(PRINT_HIGH, "{}\n", text);
 	}
 }
 END_COMMAND (echo)

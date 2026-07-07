@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,47 +31,39 @@
 /* Follow #ifdef __WIN32__ marks */
 
 #include <stdlib.h>
-
 #include <sstream>
 
 /* [Petteri] Use Winsock for Win32: */
 #include "win32inc.h"
 #ifdef _WIN32
-    #ifndef _XBOX
-    	#include <winsock2.h>
-        #include <ws2tcpip.h>
-    #endif // !_XBOX
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
 #else
-#ifdef GEKKO // Wii/GC
-#	include <network.h>
-#else
-#	include <sys/socket.h>
-#	include <netinet/in.h>
-#	include <arpa/inet.h>
-#	include <netdb.h>
-#	include <sys/ioctl.h>
-#endif // GEKKO
-#	include <sys/types.h>
-#	include <errno.h>
-#	include <unistd.h>
-#	include <sys/time.h>
+	#include <sys/socket.h>
+	#include <netinet/in.h>
+	#include <arpa/inet.h>
+	#include <netdb.h>
+	#include <sys/ioctl.h>
+	#include <sys/types.h>
+	#include <errno.h>
+	#include <unistd.h>
+	#include <sys/time.h>
 #endif // WIN32
 
 #ifndef _WIN32
 typedef int SOCKET;
-#ifndef GEKKO
 #define SOCKET_ERROR -1
 #define INVALID_SOCKET -1
-#endif
 #define closesocket close
 #define ioctlsocket ioctl
-#define Sleep(x)	usleep (x * 1000)
 #endif
 
 #ifdef _WIN32
-#define SETSOCKOPTCAST(x) ((const char *)(x))
+#define SETSOCKOPTCAST(x) (reinterpret_cast<const char*>(x))
+#define GETSOCKOPTCAST(x) (reinterpret_cast<char*>(x))
 #else
-#define SETSOCKOPTCAST(x) ((const void *)(x))
+#define SETSOCKOPTCAST(x) (static_cast<const void*>(x))
+#define GETSOCKOPTCAST(x) (static_cast<void*>(x))
 #endif
 
 #include <google/protobuf/message.h>
@@ -79,19 +71,14 @@ typedef int SOCKET;
 
 #include "i_system.h"
 #include "i_net.h"
-#include "svc_map.h"
+#include "msg_map.h"
 #include "d_player.h"
 #include "resources/res_main.h"
+#include "m_alloc.h"
 
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
-
-#ifdef GEKKO
-#include "i_wii.h"
-#endif
-
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 
 #ifdef ODA_HAVE_MINIUPNP
 #include "miniupnpc/miniwget.h"
@@ -103,19 +90,13 @@ unsigned int	inet_socket;
 int         	localport;
 netadr_t    	net_from;   // address of who sent the packet
 
-buf_t       net_message(MAX_UDP_PACKET);
-extern bool	simulated_connection;
+bool simulated_connection;  // .bss initialized to false.
 
-// buffer for compression/decompression
-// can't be static to a function because some
-// of the functions
-buf_t compressed, decompressed;
-lzo_byte wrkmem[LZO1X_1_MEM_COMPRESS];
+buf_t       net_message(MAX_UDP_PACKET);
 
 EXTERN_CVAR(port)
 
-msg_info_t clc_info[clc_max + 1];
-msg_info_t svc_info[svc_max + 1];
+msg_info_t msg_info[MSG_DEFINITION_COUNT];
 
 #ifdef ODA_HAVE_MINIUPNP
 EXTERN_CVAR(sv_upnp)
@@ -146,7 +127,7 @@ void init_upnp (void)
 	memset(&urls, 0, sizeof(struct UPNPUrls));
 	memset(&data, 0, sizeof(struct IGDdatas));
 
-	Printf(PRINT_HIGH, "UPnP: Discovering router (max 1 unit supported)\n");
+	PrintFmt(PRINT_HIGH, "UPnP: Discovering router (max 1 unit supported)\n");
 
 #if MINIUPNPC_API_VERSION < 14
 	devlist = upnpDiscover(sv_upnp_discovertimeout.asInt(), NULL, NULL, 0, 0, &res);
@@ -157,7 +138,7 @@ void init_upnp (void)
 
 	if (!devlist || res != UPNPDISCOVER_SUCCESS)
     {
-		Printf(PRINT_WARNING, "UPnP: Router not found or timed out, error %d\n",
+		PrintFmt(PRINT_WARNING, "UPnP: Router not found or timed out, error {}\n",
             res);
 
 		is_upnp_ok = false;
@@ -182,16 +163,15 @@ void init_upnp (void)
 		//	dev->descURL, dev->st);
 
 #if MINIUPNPC_API_VERSION < 16
-	descXML = (char *)miniwget(dev->descURL, &descXMLsize, 0);
+	descXML = static_cast<char*>(miniwget(dev->descURL, &descXMLsize, 0));
 #else
-	descXML = (char *)miniwget(dev->descURL, &descXMLsize, 0, &res);
+	descXML = static_cast<char*>(miniwget(dev->descURL, &descXMLsize, 0, &res));
 #endif
 
 	if (descXML)
 	{
 		parserootdesc (descXML, descXMLsize, &data);
-		free (descXML);
-		descXML = NULL;
+		M_Free(descXML);
 		GetUPNPUrls (&urls, &data, dev->descURL, 0);
 	}
 
@@ -202,14 +182,14 @@ void init_upnp (void)
 
 	if (r != 0)
 	{
-		Printf(PRINT_HIGH,
+		PrintFmt(PRINT_HIGH,
 			"UPnP: Router found but unable to get external IP address\n");
 
 		is_upnp_ok = false;
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "UPnP: Router found, external IP address is: %s\n",
+		PrintFmt(PRINT_HIGH, "UPnP: Router found, external IP address is: {}\n",
 			IPAddress);
 
 		// Store ip address just in case admin wants it
@@ -219,18 +199,15 @@ void init_upnp (void)
 	}
 }
 
-void upnp_add_redir (const char * addr, int port)
+void upnp_add_redir (const char * addr, int port, const char* protocol)
 {
-	char port_str[16];
-	int r;
-
 	if (!sv_upnp || !is_upnp_ok)
 		return;
 
 	if (urls.controlURL == NULL)
 		return;
 
-	sprintf(port_str, "%d", port);
+	const std::string port_str = fmt::format("{}", port);
 
 	// Set a description if none exists
 	if (!sv_upnp_description.cstring()[0])
@@ -242,42 +219,39 @@ void upnp_add_redir (const char * addr, int port)
 		sv_upnp_description.Set(desc.str().c_str());
 	}
 
-	r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
-			port_str, port_str, addr, sv_upnp_description.cstring(), "UDP", NULL, 0);
+	const int r = UPNP_AddPortMapping(urls.controlURL, data.first.servicetype,
+		port_str.c_str(), port_str.c_str(), addr, sv_upnp_description.cstring(), protocol, NULL, 0);
 
 	if (r != 0)
 	{
-		Printf(PRINT_HIGH, "UPnP: AddPortMapping failed: %d\n", r);
+		PrintFmt(PRINT_HIGH, "UPnP: AddPortMapping failed: {}\n", r);
 
 		is_upnp_ok = false;
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "UPnP: Port mapping added to router: %s",
-			sv_upnp_description.cstring());
+		PrintFmt(PRINT_HIGH, "UPnP: Port mapping added to router: {}",
+			sv_upnp_description.str());
 
 		is_upnp_ok = true;
 	}
 }
 
-void upnp_rem_redir (int port)
+void upnp_rem_redir (int port, const char* protocol)
 {
-	char port_str[16];
-	int r;
-
 	if (!is_upnp_ok)
 		return;
 
 	if(urls.controlURL == NULL)
 		return;
 
-	sprintf(port_str, "%d", port);
-	r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype,
-		port_str, "UDP", 0);
+	const std::string port_str = fmt::format("{}", port);
+	const int r = UPNP_DeletePortMapping(urls.controlURL, data.first.servicetype,
+		port_str.c_str(), protocol, 0);
 
 	if (r != 0)
 	{
-		Printf(PRINT_HIGH, "UPnP: DeletePortMapping failed: %d\n", r);
+		PrintFmt(PRINT_HIGH, "UPnP: DeletePortMapping failed: {}\n", r);
 		is_upnp_ok = false;
 	}
 	else
@@ -318,7 +292,7 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 	{
 		address.sin_port = htons(next++);
 
-		v = bind (s, (sockaddr *)&address, sizeof(address));
+		v = bind (s, reinterpret_cast<sockaddr*>(&address), sizeof(address));
 
 		if(next > wanted + 32)
 		{
@@ -328,7 +302,7 @@ void BindToLocalPort (SOCKET s, u_short wanted)
 	}while (v == SOCKET_ERROR);
 
 	char tmp[32] = "";
-	sprintf(tmp, "%d", next - 1);
+	snprintf(tmp, 32, "%d", next - 1);
 	port.ForceSet(tmp);
 
 #ifdef ODA_HAVE_MINIUPNP
@@ -338,27 +312,29 @@ void BindToLocalPort (SOCKET s, u_short wanted)
     {
         sv_upnp_internalip.Set(ip.c_str());
 
-        Printf(PRINT_HIGH, "UPnP: Internal IP address is: %s\n", ip.c_str());
+        PrintFmt(PRINT_HIGH, "UPnP: Internal IP address is: {}\n", ip);
 
-        upnp_add_redir(ip.c_str(), next - 1);
+        upnp_add_redir(ip.c_str(), next - 1, "UDP");
+        upnp_add_redir(ip.c_str(), next - 1, "TCP");
     }
     else
     {
-        Printf(PRINT_HIGH, "UPnP: Could not get first internal IP address, "
+        PrintFmt(PRINT_HIGH, "UPnP: Could not get first internal IP address, "
             "UPnP will not function\n");
 
         is_upnp_ok = false;
     }
 #endif
 
-	Printf(PRINT_HIGH, "Bound to local port %d\n", next - 1);
+	PrintFmt(PRINT_HIGH, "Bound to local port {}\n", next - 1);
 }
 
 
 void CloseNetwork (void)
 {
 #ifdef ODA_HAVE_MINIUPNP
-    upnp_rem_redir (port);
+    upnp_rem_redir (port, "UDP");
+    upnp_rem_redir (port, "TCP");
 #endif
 
 	closesocket (inet_socket);
@@ -376,7 +352,7 @@ void SockadrToNetadr (struct sockaddr_in *s, netadr_t *a)
      a->port = s->sin_port;
 }
 
-void NetadrToSockadr (netadr_t *a, struct sockaddr_in *s)
+void NetadrToSockadr (const netadr_t *a, struct sockaddr_in *s)
 {
      memset (s, 0, sizeof(*s));
      s->sin_family = AF_INET;
@@ -389,7 +365,7 @@ char *NET_AdrToString (netadr_t a)
 {
      static  char    s[64];
 
-     sprintf (s, "%i.%i.%i.%i:%i", a.ip[0], a.ip[1], a.ip[2], a.ip[3], ntohs(a.port));
+     snprintf (s, 64, "%i.%i.%i.%i:%i", a.ip[0], a.ip[1], a.ip[2], a.ip[3], ntohs(a.port));
 
      return s;
 }
@@ -421,14 +397,14 @@ bool NET_StringToAdr (const char *s, netadr_t *a)
 	if (! (h = gethostbyname(copy)) )
 		return 0;
 
-	*(int *)&sadr.sin_addr = *(int *)h->h_addr_list[0];
+	*reinterpret_cast<int*>(&sadr.sin_addr) = *reinterpret_cast<int*>(h->h_addr_list[0]);
 
 	SockadrToNetadr (&sadr, a);
 
 	return true;
 }
 
-bool NET_CompareAdr (netadr_t a, netadr_t b)
+bool NET_CompareAdr (const netadr_t& a, const netadr_t& b)
 {
 	if (a.ip[0] == b.ip[0] && a.ip[1] == b.ip[1] && a.ip[2] == b.ip[2] && a.ip[3] == b.ip[3] && a.port == b.port)
 		return true;
@@ -448,7 +424,7 @@ int NET_GetPacket (void)
 
 	fromlen = sizeof(from);
 	net_message.clear();
-	ret = recvfrom (inet_socket, (char *)net_message.ptr(), net_message.maxsize(), 0, (struct sockaddr *)&from, &fromlen);
+	ret = recvfrom (inet_socket, reinterpret_cast<char*>(net_message.ptr()), net_message.maxsize(), 0, reinterpret_cast<sockaddr*>(&from), &fromlen);
 
 	if (ret == -1)
 	{
@@ -463,12 +439,12 @@ int NET_GetPacket (void)
 
 		if (errno == WSAEMSGSIZE)
 		{
-			 Printf (PRINT_HIGH, "Warning:  Oversize packet from %s\n",
+			 PrintFmt(PRINT_HIGH, "Warning:  Oversize packet from {}\n",
 							 NET_AdrToString (net_from));
 			 return false;
 		}
 
-		Printf (PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
+		PrintFmt(PRINT_HIGH, "NET_GetPacket: {}\n", strerror(errno));
 		return false;
 #else
 		if (errno == EWOULDBLOCK)
@@ -476,7 +452,7 @@ int NET_GetPacket (void)
 		if (errno == ECONNREFUSED)
 			return false;
 
-		Printf (PRINT_HIGH, "NET_GetPacket: %s\n", strerror(errno));
+		PrintFmt(PRINT_HIGH, "NET_GetPacket: {}\n", strerror(errno));
 		return false;
 #endif
 	}
@@ -486,7 +462,7 @@ int NET_GetPacket (void)
 	return ret;
 }
 
-int NET_SendPacket (buf_t &buf, netadr_t &to)
+int NET_SendPacket (buf_t& buf, const netadr_t& to)
 {
 	int				   ret;
 	struct sockaddr_in	addr;
@@ -501,11 +477,7 @@ int NET_SendPacket (buf_t &buf, netadr_t &to)
 
 	NetadrToSockadr (&to, &addr);
 
-#ifdef GEKKO
-	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, 8);	// 8 is important for online
-#else
-	ret = sendto(inet_socket, (const char *)buf.ptr(), buf.size(), 0, (struct sockaddr *)&addr, sizeof(addr));
-#endif
+	ret = sendto(inet_socket, reinterpret_cast<const char*>(buf.ptr()), buf.size(), 0, reinterpret_cast<sockaddr*>(&addr), sizeof(addr));
 
 	buf.clear();
 
@@ -517,12 +489,13 @@ int NET_SendPacket (buf_t &buf, netadr_t &to)
 		  // wouldblock is silent
 		  if (err == WSAEWOULDBLOCK)
 			  return 0;
+          PrintFmt(PRINT_HIGH, "NET_SendPacket: {}\n", err);
 #else
 		  if (errno == EWOULDBLOCK)
 			  return 0;
 		  if (errno == ECONNREFUSED)
 			  return 0;
-		  Printf (PRINT_HIGH, "NET_SendPacket: %s\n", strerror(errno));
+		  PrintFmt(PRINT_HIGH, "NET_SendPacket: {}\n", strerror(errno));
 #endif
 	}
 
@@ -548,15 +521,15 @@ std::string NET_GetLocalAddress (void)
     // Return the first, IPv4 address
     if (ent && ent->h_addrtype == AF_INET && ent->h_addr_list[0] != NULL)
     {
-        addr.s_addr = *(u_long *)ent->h_addr_list[0];
+        addr.s_addr = *reinterpret_cast<u_long*>(ent->h_addr_list[0]);
 
 		std::string ipstr = inet_ntoa(addr);
-		Printf(PRINT_HIGH, "Bound to IP: %s\n", ipstr.c_str());
+		PrintFmt(PRINT_HIGH, "Bound to IP: {}\n", ipstr);
 		return ipstr;
     }
 	else
 	{
-		Printf(PRINT_HIGH, "Could not look up host IP address from hostname\n");
+		PrintFmt(PRINT_HIGH, "Could not look up host IP address from hostname\n");
 		return "";
 	}
 }
@@ -567,60 +540,33 @@ void SZ_Clear (buf_t *buf)
 	buf->clear();
 }
 
-void SZ_Write (buf_t *b, const void *data, int length)
+void SZ_Write (buf_t *b, const void *data, size_t length)
 {
-	b->WriteChunk((const char *)data, length);
+	b->WriteChunk(data, length);
 }
 
-void SZ_Write (buf_t *b, const byte *data, int startpos, int length)
+void SZ_Write (buf_t *b, const byte *data, size_t startpos, size_t length)
 {
-	b->WriteChunk((const char *)data, length, startpos);
+	b->WriteChunk(reinterpret_cast<const char*>(data), length, startpos);
 }
 
-//
-// MSG_WriteMarker
-//
-// denis - use this function to mark the start of your server message
-// as it allows for better debugging and optimization of network code
-//
-// [ML] 8/4/10: Moved to sv_main and slightly modified to provide an adequate
-//      but temporary fix for bug 594 until netcode_bringup2 is complete.
-//      Thanks to spleen for providing good brainpower!
-//
-// [SL] 2011-07-17 - Moved back to i_net.cpp so that it can be used by
-// both client & server code.  Client has a stub function for SV_SendPackets.
-//
-void SV_SendPackets(void);
-
-//
-// MSG_WriteMarker
-//
-// denis - use this function to mark the start of your client message
-// as it allows for better debugging and optimization of network code
-//
-void MSG_WriteMarker (buf_t *b, clc_t c)
-{
-	if (simulated_connection)
-		return;
-	b->WriteByte((byte)c);
-}
 
 void MSG_WriteByte (buf_t *b, byte c)
 {
 	if (simulated_connection)
 		return;
-	b->WriteByte((byte)c);
+	b->WriteByte(static_cast<byte>(c));
 }
 
 
-void MSG_WriteChunk (buf_t *b, const void *p, unsigned l)
+void MSG_WriteChunk (buf_t *b, const void *p, size_t l)
 {
 	if (simulated_connection)
 		return;
-	b->WriteChunk((const char *)p, l);
+	b->WriteChunk(static_cast<const char*>(p), l);
 }
 
-void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
+void MSG_WriteSVCBuffer(buf_t* b, const google::protobuf::Message& msg)
 {
 	if (simulated_connection)
 		return;
@@ -628,42 +574,75 @@ void MSG_WriteSVC(buf_t* b, const google::protobuf::Message& msg)
 	static std::string buffer;
 	if (!msg.SerializeToString(&buffer))
 	{
-		Printf(
+		PrintFmt(
 		    PRINT_WARNING,
-		    "WARNING: Could not serialize message \"%s\".  This is most likely a bug.\n",
-		    msg.GetDescriptor()->full_name().c_str());
+		    "WARNING: Could not serialize message \"{}\".  This is most likely a bug.\n",
+		    msg.GetDescriptor()->full_name());
 		return;
 	}
 
-	// Do we actaully have room for this upcoming message?
-	const size_t MAX_HEADER_SIZE = 4; // header + 3 bytes for varint size.
-	if (b->cursize + MAX_HEADER_SIZE + msg.ByteSize() >= MAX_UDP_SIZE)
-		SV_SendPackets();
-
-	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
-	if (header == svc_noop)
+	msg_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
+	if (header == msg_noop)
 	{
-		Printf(PRINT_WARNING,
-		       "WARNING: Could not find svc header for message \"%s\".  This is most "
-		       "likely a bug.\n",
-		       msg.GetDescriptor()->full_name().c_str());
+		PrintFmt(PRINT_WARNING,
+		         "WARNING: Could not find svc header for message \"{}\".  This is most "
+		         "likely a bug.\n",
+		         msg.GetDescriptor()->full_name());
 		return;
 	}
 
 #if 0
-	Printf("%s (%d)\n, %s\n",
-		::svc_info[header].getName(), msg.ByteSize(),
-		msg.ShortDebugString().c_str());
+	PrintFmt("{} ({})\n, {}\n",
+		::msg_info[header].getName(), msg.ByteSize(),
+		msg.ShortDebugString());
 #endif
 
-	b->WriteByte(header);
+	b->WriteUnVarint(header);
 	b->WriteUnVarint(buffer.size());
 	b->WriteChunk(buffer.data(), buffer.size());
 }
 
+void MSG_WriteSVC(MessageQueue& io_queue, const google::protobuf::Message& msg)
+{
+	if (simulated_connection)
+		return;
+
+	std::string& buffer = io_queue.GetSerializationBufferRef();
+	if (!msg.SerializeToString(&buffer))
+	{
+		PrintFmt(
+		    PRINT_WARNING,
+		    "WARNING: Could not serialize message \"{}\".  This is most likely a bug.\n",
+		    msg.GetDescriptor()->full_name());
+		return;
+	}
+
+	msg_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
+	if (header == msg_noop)
+	{
+		PrintFmt(PRINT_WARNING,
+		         "WARNING: Could not find svc header for message \"{}\".  This is most "
+		         "likely a bug.\n",
+		         msg.GetDescriptor()->full_name());
+		return;
+	}
+
+#if 0
+	PrintFmt("{} ({})\n, {}\n",
+		::msg_info[header].getName(), msg.ByteSize(),
+		msg.ShortDebugString());
+#endif
+
+    buf_t& b = io_queue.Obtain();
+
+	b.WriteUnVarint(header);
+	b.WriteUnVarint(buffer.size());
+	b.WriteChunk(buffer.data(), buffer.size());
+}
+
 /**
  * @brief Broadcast message to all players.
- * 
+ *
  * @param buf Type of buffer to broadcast in, per player.
  * @param msg Message to broadcast to all players.
  * @param skip If passed, skip this player id.
@@ -677,42 +656,37 @@ void MSG_BroadcastSVC(const clientBuf_e buf, const google::protobuf::Message& ms
 	static std::string buffer;
 	if (!msg.SerializeToString(&buffer))
 	{
-		Printf(
+		PrintFmt(
 		    PRINT_WARNING,
-		    "WARNING: Could not serialize message \"%s\".  This is most likely a bug.\n",
-		    msg.GetDescriptor()->full_name().c_str());
+		    "WARNING: Could not serialize message \"{}\".  This is most likely a bug.\n",
+		    msg.GetDescriptor()->full_name());
 		return;
 	}
 
-	svc_t header = SVC_ResolveDescriptor(msg.GetDescriptor());
-	if (header == svc_noop)
+	msg_t header = MSG_ResolveDescriptor(msg.GetDescriptor());
+	if (header == msg_noop)
 	{
-		Printf(PRINT_WARNING,
-		       "WARNING: Could not find svc header for message \"%s\".  This is most "
-		       "likely a bug.\n",
-		       msg.GetDescriptor()->full_name().c_str());
+		PrintFmt(PRINT_WARNING,
+		         "WARNING: Could not find svc header for message \"{}\".  This is most "
+		         "likely a bug.\n",
+		         msg.GetDescriptor()->full_name());
 		return;
 	}
 
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	for (auto& player : players)
 	{
-		if (!it->ingame())
+		if (!player.ingame())
 			continue;
 
-		if (static_cast<int>(it->id) == skipPlayer)
+		if (static_cast<int>(player.id) == skipPlayer)
 			continue;
 
 		// Select the correct buffer.
-		buf_t* b = buf == CLBUF_RELIABLE ? &it->client.reliablebuf : &it->client.netbuf;
+		buf_t& b = buf == CLBUF_RELIABLE ? player.client.messenger.ReliableBuf().Obtain() : player.client.messenger.NetBuf().Obtain();
 
-		// Do we actaully have room for this upcoming message?
-		const size_t MAX_HEADER_SIZE = 4; // header + 3 bytes for varint size.
-		if (b->cursize + MAX_HEADER_SIZE + msg.ByteSize() >= MAX_UDP_SIZE)
-			SV_SendPackets();
-
-		b->WriteByte(header);
-		b->WriteUnVarint(buffer.size());
-		b->WriteChunk(buffer.data(), buffer.size());
+		b.WriteUnVarint(header);
+		b.WriteUnVarint(buffer.size());
+		b.WriteChunk(buffer.data(), buffer.size());
 	}
 }
 
@@ -780,7 +754,7 @@ void MSG_WriteFloat(buf_t *b, float Float)
 
     StringStream << Float;
 
-	MSG_WriteString(b, (char *)StringStream.str().c_str());
+	MSG_WriteString(b, StringStream.str().c_str());
 }
 
 //
@@ -821,16 +795,16 @@ void MSG_WriteHexString(buf_t *b, const char *s)
 
     if (numdigits > ARRAY_LENGTH(output))
     {
-        Printf (PRINT_HIGH, "MSG_WriteHexString: too many digits\n");
+        PrintFmt(PRINT_HIGH, "MSG_WriteHexString: too many digits\n");
         return;
     }
 
     for (size_t i = 0; i < numdigits; ++i)
     {
-        output[i] = (char)(16 * toInt(s[2*i]) + toInt(s[2*i+1]));
+        output[i] = static_cast<char>(16 * toInt(s[2*i]) + toInt(s[2*i+1]));
     }
 
-    MSG_WriteByte(b, (byte)numdigits);
+    MSG_WriteByte(b, static_cast<byte>(numdigits));
 
     MSG_WriteChunk(b, output, numdigits);
 }
@@ -845,19 +819,14 @@ int MSG_ReadByte (void)
     return net_message.ReadByte();
 }
 
-int MSG_NextByte (void)
+int MSG_PeekByte (void)
 {
-	return net_message.NextByte();
+	return net_message.PeekByte();
 }
 
 void *MSG_ReadChunk (const size_t &size)
 {
 	return net_message.ReadChunk(size);
-}
-
-size_t MSG_SetOffset (const size_t &offset, const buf_t::seek_loc_t &loc)
-{
-    return net_message.SetOffset(offset, loc);
 }
 
 // Output buffer size for LZO compression, extra space in case uncompressable
@@ -866,39 +835,35 @@ size_t MSG_SetOffset (const size_t &offset, const buf_t::seek_loc_t &loc)
 // size above which packets get compressed (empirical), does not apply to adaptive compression
 #define MINILZO_COMPRESS_MINPACKETSIZE	0xFF
 
-//
-// MSG_DecompressMinilzo
-//
-bool MSG_DecompressMinilzo ()
+bool MiniLzo::Decompress(buf_t& io_buf)
 {
 	// decompress back onto the receive buffer
-	size_t left = MSG_BytesLeft();
+	size_t left = io_buf.BytesLeftToRead();
 
-	if(decompressed.maxsize() < net_message.maxsize())
-		decompressed.resize(net_message.maxsize());
+	if(m_decompressionBuffer.maxsize() < io_buf.maxsize())
+    {
+		m_decompressionBuffer.resize(io_buf.maxsize());
+    }
 
-	lzo_uint newlen = net_message.maxsize();
+	lzo_uint newlen = io_buf.maxsize();
 
-	unsigned int r = lzo1x_decompress_safe (net_message.ptr() + net_message.BytesRead(), left, decompressed.ptr(), &newlen, NULL);
+	unsigned int r = lzo1x_decompress_safe (io_buf.ptr() + io_buf.BytesRead(), left, m_decompressionBuffer.ptr(), &newlen, NULL);
 
 	if(r != LZO_E_OK)
 	{
-		Printf(PRINT_HIGH, "Error: minilzo packet decompression failed with error %X\n", r);
+		PrintFmt(PRINT_HIGH, "Error: minilzo packet decompression failed with error {:X}\n", r);
 		return false;
 	}
 
-	net_message.clear();
-	memcpy(net_message.ptr(), decompressed.ptr(), newlen);
+	io_buf.clear();
+	memcpy(io_buf.ptr(), m_decompressionBuffer.ptr(), newlen);
 
-	net_message.cursize = newlen;
+	io_buf.cursize = newlen;
 
 	return true;
 }
 
-//
-// MSG_CompressMinilzo
-//
-bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap)
+bool MiniLzo::Compress(buf_t &buf, size_t start_offset, size_t write_gap)
 {
 	if(buf.size() < MINILZO_COMPRESS_MINPACKETSIZE)
 		return false;
@@ -906,77 +871,25 @@ bool MSG_CompressMinilzo (buf_t &buf, size_t start_offset, size_t write_gap)
 	lzo_uint outlen = OUT_LEN(buf.maxsize() - start_offset - write_gap);
 	size_t total_len = outlen + start_offset + write_gap;
 
-	if(compressed.maxsize() < total_len)
-		compressed.resize(total_len);
+	if(m_compressionBuffer.maxsize() < total_len)
+    {
+		m_compressionBuffer.resize(total_len);
+    }
 
 	int r = lzo1x_1_compress (buf.ptr() + start_offset,
 							  buf.size() - start_offset,
-							  compressed.ptr() + start_offset + write_gap,
+							  m_compressionBuffer.ptr() + start_offset + write_gap,
 							  &outlen,
-							  wrkmem);
+							  m_wrkmem);
 
 	// worth the effort?
 	if(r != LZO_E_OK || outlen >= (buf.size() - start_offset - write_gap))
 		return false;
 
-	memcpy(compressed.ptr(), buf.ptr(), start_offset);
+	memcpy(m_compressionBuffer.ptr(), buf.ptr(), start_offset);
 
 	SZ_Clear(&buf);
-	MSG_WriteChunk(&buf, compressed.ptr(), outlen + start_offset + write_gap);
-
-	return true;
-}
-
-//
-// MSG_DecompressAdaptive
-//
-bool MSG_DecompressAdaptive (huffman &huff)
-{
-	// decompress back onto the receive buffer
-	size_t left = MSG_BytesLeft();
-
-	if(decompressed.maxsize() < net_message.maxsize())
-		decompressed.resize(net_message.maxsize());
-
-	size_t newlen = net_message.maxsize();
-
-	bool r = huff.decompress (net_message.ptr() + net_message.BytesRead(), left, decompressed.ptr(), newlen);
-
-	if(!r)
-		return false;
-
-	net_message.clear();
-	memcpy(net_message.ptr(), decompressed.ptr(), newlen);
-
-	net_message.cursize = newlen;
-
-	return true;
-}
-
-//
-// MSG_CompressAdaptive
-//
-bool MSG_CompressAdaptive (huffman &huff, buf_t &buf, size_t start_offset, size_t write_gap)
-{
-	size_t outlen = OUT_LEN(buf.maxsize() - start_offset - write_gap);
-	size_t total_len = outlen + start_offset + write_gap;
-
-	if(compressed.maxsize() < total_len)
-		compressed.resize(total_len);
-
-	bool r = huff.compress (buf.ptr() + start_offset,
-							  buf.size() - start_offset,
-							  compressed.ptr() + start_offset + write_gap,
-							  outlen);
-
-	// worth the effort?
-	if(!r || outlen >= (buf.size() - start_offset - write_gap))
-		return false;
-
-	memcpy(compressed.ptr(), buf.ptr(), start_offset);
-
-	SZ_Clear(&buf);
-	MSG_WriteChunk(&buf, compressed.ptr(), outlen + start_offset + write_gap);
+	MSG_WriteChunk(&buf, m_compressionBuffer.ptr(), outlen + start_offset + write_gap);
 
 	return true;
 }
@@ -1019,7 +932,7 @@ bool MSG_ReadBool(void)
 
     if (Value < 0 || Value > 1)
     {
-        DPrintf("MSG_ReadBool: Value is not 0 or 1, possibly corrupted packet");
+        DPrintFmt("MSG_ReadBool: Value is not 0 or 1, possibly corrupted packet");
 
         return (Value ? true : false);
     }
@@ -1053,29 +966,16 @@ float MSG_ReadFloat(void)
 }
 
 /**
- * @brief Initialize a svc_info member.
- * 
- * @detail do-while is used to force a semicolon afterwards.
- */
-#define SVC_INFO(n)                    \
-	do                                 \
-	{                                  \
-		::svc_info[n].id = n;          \
-		::svc_info[n].msgName = #n;    \
-		::svc_info[n].msgFormat = "x"; \
-	} while (false)
-
-/**
- * @brief Initialize a clc_info member.
+ * @brief Initialize a msg_info member.
  *
  * @detail do-while is used to force a semicolon afterwards.
  */
-#define CLC_INFO(n)                    \
+#define MSG_INFO(n)                    \
 	do                                 \
 	{                                  \
-		::clc_info[n].id = n;          \
-		::clc_info[n].msgName = #n;    \
-		::clc_info[n].msgFormat = "x"; \
+		::msg_info[n].id = n;          \
+		::msg_info[n].msgName = #n;    \
+		::msg_info[n].msgFormat = "x"; \
 	} while (false)
 
 //
@@ -1084,125 +984,132 @@ float MSG_ReadFloat(void)
 static void InitNetMessageFormats()
 {
 	// Server Messages.
-	SVC_INFO(svc_noop);
-	SVC_INFO(svc_disconnect);
-	SVC_INFO(svc_playerinfo);
-	SVC_INFO(svc_moveplayer);
-	SVC_INFO(svc_updatelocalplayer);
-	SVC_INFO(svc_levellocals);
-	SVC_INFO(svc_pingrequest);
-	SVC_INFO(svc_updateping);
-	SVC_INFO(svc_spawnmobj);
-	SVC_INFO(svc_disconnectclient);
-	SVC_INFO(svc_loadmap);
-	SVC_INFO(svc_consoleplayer);
-	SVC_INFO(svc_explodemissile);
-	SVC_INFO(svc_removemobj);
-	SVC_INFO(svc_userinfo);
-	SVC_INFO(svc_updatemobj);
-	SVC_INFO(svc_spawnplayer);
-	SVC_INFO(svc_damageplayer);
-	SVC_INFO(svc_killmobj);
-	SVC_INFO(svc_fireweapon);
-	SVC_INFO(svc_updatesector);
-	SVC_INFO(svc_print);
-	SVC_INFO(svc_playermembers);
-	SVC_INFO(svc_teammembers);
-	SVC_INFO(svc_activateline);
-	SVC_INFO(svc_movingsector);
-	SVC_INFO(svc_playsound);
-	SVC_INFO(svc_reconnect);
-	SVC_INFO(svc_exitlevel);
-	SVC_INFO(svc_touchspecial);
-	SVC_INFO(svc_forceteam);
-	SVC_INFO(svc_switch);
-	SVC_INFO(svc_say);
-	SVC_INFO(svc_spawnhiddenplayer);
-	SVC_INFO(svc_updatedeaths);
-	SVC_INFO(svc_ctfrefresh);
-	SVC_INFO(svc_ctfevent);
-	SVC_INFO(svc_serversettings);
-	SVC_INFO(svc_connectclient);
-    SVC_INFO(svc_midprint);
-	SVC_INFO(svc_servergametic);
-	SVC_INFO(svc_inttimeleft);
-	SVC_INFO(svc_fullupdatedone);
-	SVC_INFO(svc_railtrail);
-	SVC_INFO(svc_playerstate);
-	SVC_INFO(svc_levelstate);
-	SVC_INFO(svc_resetmap);
-	SVC_INFO(svc_playerqueuepos);
-	SVC_INFO(svc_fullupdatestart);
-	SVC_INFO(svc_lineupdate);
-	SVC_INFO(svc_sectorproperties);
-	SVC_INFO(svc_linesideupdate);
-	SVC_INFO(svc_mobjstate);
-	SVC_INFO(svc_damagemobj);
-	SVC_INFO(svc_executelinespecial);
-	SVC_INFO(svc_executeacsspecial);
-	SVC_INFO(svc_thinkerupdate);
-	SVC_INFO(svc_netdemocap);
-	SVC_INFO(svc_netdemostop);
-	SVC_INFO(svc_netdemoloadsnap);
-	SVC_INFO(svc_vote_update);
-	SVC_INFO(svc_maplist);
-	SVC_INFO(svc_maplist_update);
-	SVC_INFO(svc_maplist_index);
-	SVC_INFO(svc_toast);
-	SVC_INFO(svc_hordeinfo);
-	SVC_INFO(svc_max);
+	MSG_INFO(msg_noop);
 
-	// Client Messages.
-	CLC_INFO(clc_abort);
-	CLC_INFO(clc_reserved1);
-	CLC_INFO(clc_disconnect);
-	CLC_INFO(clc_say);
-	CLC_INFO(clc_move);
-	CLC_INFO(clc_userinfo);
-	CLC_INFO(clc_pingreply);
-	CLC_INFO(clc_rate);
-	CLC_INFO(clc_ack);
-	CLC_INFO(clc_rcon);
-	CLC_INFO(clc_rcon_password);
-	CLC_INFO(clc_changeteam);
-	CLC_INFO(clc_ctfcommand);
-	CLC_INFO(clc_spectate);
-	CLC_INFO(clc_wantwad);
-	CLC_INFO(clc_kill);
-	CLC_INFO(clc_cheat);
-	CLC_INFO(clc_callvote);
-	CLC_INFO(clc_maplist);
-	CLC_INFO(clc_maplist_update);
-	CLC_INFO(clc_getplayerinfo);
-	CLC_INFO(clc_netcmd);
-	CLC_INFO(clc_spy);
-	CLC_INFO(clc_privmsg);
-	CLC_INFO(clc_max);
+	MSG_INFO(svc_disconnect);
+	MSG_INFO(svc_playerinfo);
+	MSG_INFO(svc_moveplayer);
+	MSG_INFO(svc_updatelocalplayer);
+	MSG_INFO(svc_levellocals);
+	MSG_INFO(svc_pingrequest);
+	MSG_INFO(svc_updateping);
+	MSG_INFO(svc_spawnmobj);
+	MSG_INFO(svc_disconnectclient);
+	MSG_INFO(svc_loadmap);
+	MSG_INFO(svc_consoleplayer);
+	MSG_INFO(svc_explodemissile);
+	MSG_INFO(svc_removemobj);
+	MSG_INFO(svc_userinfo);
+	MSG_INFO(svc_updatemobj);
+	MSG_INFO(svc_spawnplayer);
+	MSG_INFO(svc_damageplayer);
+	MSG_INFO(svc_killmobj);
+	MSG_INFO(svc_raisemobj);
+	MSG_INFO(svc_updatesector);
+	MSG_INFO(svc_print);
+	MSG_INFO(svc_playermembers);
+	MSG_INFO(svc_teammembers);
+	MSG_INFO(svc_activateline);
+	MSG_INFO(svc_movingsectorelevator);
+	MSG_INFO(svc_movingsectorpillar);
+	MSG_INFO(svc_movingsectorceiling);
+	MSG_INFO(svc_movingsectordoor);
+	MSG_INFO(svc_movingsectorfloor);
+	MSG_INFO(svc_movingsectorplat);
+	MSG_INFO(svc_playsound);
+	MSG_INFO(svc_reconnect);
+	MSG_INFO(svc_exitlevel);
+	MSG_INFO(svc_touchspecial);
+	MSG_INFO(svc_forceteam);
+	MSG_INFO(svc_switch);
+	MSG_INFO(svc_say);
+	MSG_INFO(svc_spawnhiddenplayer);
+	MSG_INFO(svc_updatedeaths);
+	MSG_INFO(svc_ctfrefresh);
+	MSG_INFO(svc_ctfevent);
+	MSG_INFO(svc_serversettings);
+	MSG_INFO(svc_connectclient);
+	MSG_INFO(svc_midprint);
+	MSG_INFO(svc_servergametic);
+	MSG_INFO(svc_inttimeleft);
+	MSG_INFO(svc_fullupdatedone);
+	MSG_INFO(svc_railtrail);
+	MSG_INFO(svc_playerstate);
+	MSG_INFO(svc_levelstate);
+	MSG_INFO(svc_resetmap);
+	MSG_INFO(svc_playerqueuepos);
+	MSG_INFO(svc_fullupdatestart);
+	MSG_INFO(svc_lineupdate);
+	MSG_INFO(svc_sectorproperties);
+	MSG_INFO(svc_linesideupdate);
+	MSG_INFO(svc_mobjstate);
+	MSG_INFO(svc_damagemobj);
+	MSG_INFO(svc_executelinespecial);
+	MSG_INFO(svc_executeacsspecial);
+	MSG_INFO(svc_thinkerupdate);
+	MSG_INFO(svc_vote_update);
+	MSG_INFO(svc_maplist);
+	MSG_INFO(svc_maplist_update);
+	MSG_INFO(svc_maplist_index);
+	MSG_INFO(svc_toast);
+	MSG_INFO(svc_hordeinfo);
+	MSG_INFO(svc_spree);
+	MSG_INFO(svc_spreebreaker);
+	MSG_INFO(svc_noisealert);
+	MSG_INFO(svc_playerammo);
+	MSG_INFO(svc_playermaxammo);
+	MSG_INFO(svc_playerweaponowned);
+	MSG_INFO(svc_playerweaponselection);
+	MSG_INFO(svc_playerpowers);
+	MSG_INFO(svc_playerpsprites);
+	MSG_INFO(svc_configureavatar);
+
+	MSG_INFO(clc_playerinput);
+	MSG_INFO(clc_netdemocap);
+	MSG_INFO(clc_netdemostop);
+	MSG_INFO(clc_netdemoloadsnap);
+	MSG_INFO(clc_disconnectme);
+	MSG_INFO(clc_say);
+	MSG_INFO(clc_userinfo);
+	MSG_INFO(clc_pingreply);
+	MSG_INFO(clc_rcon);
+	MSG_INFO(clc_rcon_password);
+	MSG_INFO(clc_rcon_logout);
+	MSG_INFO(clc_spectate_begin);
+	MSG_INFO(clc_spectate_update);
+	MSG_INFO(clc_spectate_end);
+	MSG_INFO(clc_kill);
+	MSG_INFO(clc_cheat);
+	MSG_INFO(clc_cheat_give);
+	MSG_INFO(clc_cheat_summon);
+	MSG_INFO(clc_cheat_summon_friend);
+	MSG_INFO(clc_callvote);
+	MSG_INFO(clc_maplist);
+	MSG_INFO(clc_maplist_update);
+	MSG_INFO(clc_getplayerinfo);
+	MSG_INFO(clc_netcmd);
+	MSG_INFO(clc_spy);
+	MSG_INFO(clc_privmsg);
+	MSG_INFO(clc_sendmobjupdate);
 }
 
-#undef SVC_INFO
-#undef CLC_INFO
+#undef MSG_INFO
 
-CVAR_FUNC_IMPL(net_rcvbuf)
+static void SetSocketBufSize(int socketFd, const char* name, int optname, int desiredSize)
 {
-	int n = var.asInt();
-	if (setsockopt(inet_socket, SOL_SOCKET, SO_RCVBUF, SETSOCKOPTCAST(&n), (int) sizeof(n)) == -1) {
-		Printf(PRINT_HIGH, "setsockopt SO_RCVBUF: %s", strerror(errno));
-	} else {
-		Printf(PRINT_HIGH, "net_rcvbuf set to %d\n", n);
+	int currentBufSize = -1;
+	socklen_t currentBufSizeSize = static_cast<socklen_t>(sizeof(currentBufSize));
+	if (getsockopt(socketFd, SOL_SOCKET, optname, GETSOCKOPTCAST(&currentBufSize), &currentBufSizeSize) == 0)
+	{
+		if (desiredSize != currentBufSize)
+		{
+			if (setsockopt(socketFd, SOL_SOCKET, optname, SETSOCKOPTCAST(&desiredSize), static_cast<socklen_t>(sizeof(desiredSize))) == -1)
+			{
+				PrintFmt(PRINT_HIGH, "ERROR setting {} buffer size: {}\n", name, strerror(errno));
+			}
+		}
 	}
 }
-
-CVAR_FUNC_IMPL(net_sndbuf)
-{
-	int n = var.asInt();
-	if (setsockopt(inet_socket, SOL_SOCKET, SO_SNDBUF, SETSOCKOPTCAST(&n), (int) sizeof(n)) == -1) {
-		Printf (PRINT_HIGH, "setsockopt SO_SNDBUF: %s", strerror(errno));
-	} else {
-		Printf(PRINT_HIGH, "net_sndbuf set to %d\n", n);
-	}
-}
-
 
 //
 // InitNetCommon
@@ -1224,13 +1131,24 @@ void InitNetCommon(void)
 
    BindToLocalPort (inet_socket, localport);
    if (ioctlsocket(inet_socket, FIONBIO, &_true) == -1)
-       I_FatalError ("UDPsocket: ioctl FIONBIO: %s", strerror(errno));
+       I_FatalError ("UDPsocket: ioctl FIONBIO: {}", strerror(errno));
+
+   SetSocketBufSize(inet_socket, "SO_RCVBUF", SO_RCVBUF, 128 * 1024);
+   SetSocketBufSize(inet_socket, "SO_SNDBUF", SO_SNDBUF, 128 * 1024);
 
 	// enter message information into message info structs
 	InitNetMessageFormats();
 
    SZ_Clear(&net_message);
 }
+
+bool NET_GetSockaddr(sockaddr_in& io_sockaddr)
+{
+    socklen_t addrLen = sizeof(io_sockaddr);
+
+    return (getsockname(inet_socket, reinterpret_cast<sockaddr*>(&io_sockaddr), &addrLen) == 0);
+}
+
 
 //
 // NetWaitOrTimeout
@@ -1253,11 +1171,11 @@ bool NetWaitOrTimeout(size_t ms)
 	#ifdef _WIN32
 		// handle SOCKET_ERROR
 		if(ret == SOCKET_ERROR)
-			Printf(PRINT_HIGH, "select returned SOCKET_ERROR: %d\n", WSAGetLastError());
+			PrintFmt(PRINT_HIGH, "select returned SOCKET_ERROR: {}\n", WSAGetLastError());
 	#else
 		// handle -1
 		if(ret == -1 && ret != EINTR)
-			Printf(PRINT_HIGH, "select returned -1: %s\n", strerror(errno));
+			PrintFmt(PRINT_HIGH, "select returned -1: {}\n", strerror(errno));
 	#endif
 
 	return false;

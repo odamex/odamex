@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2021 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,25 +23,29 @@
 
 #pragma once
 
-extern std::string missing_resource_filename, missing_resource_filehash;
+#include <memory>
+#include <string>
+#include <vector>
 
-enum parseError_e
-{
-	PERR_OK,
-	PERR_UNKNOWN_HEADER,
-	PERR_UNKNOWN_MESSAGE,
-	PERR_BAD_DECODE
-};
+#include "msg_parse.h"
 
 struct Proto
 {
-	byte header;
+	msg_t header;
 	std::string name;
 	size_t size;
 	std::string data;
 };
 
+struct ParseResultType
+{
+	std::unique_ptr<google::protobuf::Message> msg;
+	parseError_e                               code = PERR_OK;
+	msg_t                                      cmd  = msg_noop;
+};
+
 typedef std::vector<Proto> Protos;
 
 const Protos& CL_GetTicProtos();
-parseError_e CL_ParseCommand();
+ParseResultType CL_ParseCommand();
+parseError_e    CL_ProcessCommand(const ParseResultType& parsedCommand);

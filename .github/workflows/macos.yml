@@ -1,6 +1,20 @@
 name: macOS
 
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore:
+    - 'release/[0-9]+.[0-9]+.[0-9]+'
+    paths-ignore:
+    - "**/*.md"
+    - README
+    - LICENSE
+    - MAINTAINERS
+    - CHANGELOG
+    - 3RD-PARTY-LICENSES
+    - config-samples/*
+    - documentation/**
+    - tools/**
+  pull_request:
 
 jobs:
   pre_job:
@@ -10,7 +24,7 @@ jobs:
       should_skip: ${{ steps.check_skip.outputs.should_skip }}
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
@@ -18,13 +32,15 @@ jobs:
     name: Build
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build
       run: bash ci/macos-buildgen.sh
     - name: Run build
       run: cmake --build ./build/
+    - name: Run unit tests
+      run: ./build/tests/unit-tests/odagtest --gtest_color=yes

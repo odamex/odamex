@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2021 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,15 +26,20 @@
 
 #include <algorithm>
 
+#include <json/json.h>
+
 #include "c_dispatch.h"
 #include "cmdlib.h"
 #include "i_system.h"
 #include "m_fileio.h"
+#include "version.h"
 
 #ifdef CLIENT_APP
 #define CS_STRING "Odamex Client"
-#else
+#elif defined(SERVER_APP)
 #define CS_STRING "Odamex Server"
+#elif defined(TEST_APP)
+#define CS_STRING "Odamex Unit Tests"
 #endif
 
 // A view to a list of Cvars.
@@ -46,7 +51,7 @@ typedef std::vector<cvar_t*> CvarView;
  * @param out Output buffer to write to.
  * @param title Title to put in the title tag.
  */
-static void HTMLHeader(std::string& out, const char* title)
+static void HTMLHeader(std::string& out, const std::string& title)
 {
 	std::string buf;
 	const char* HEADER =
@@ -67,7 +72,7 @@ static void HTMLHeader(std::string& out, const char* title)
 	    "</style>"
 	    "</head>"
 	    "<body>";
-	StrFormat(out, HEADER, title);
+	out = fmt::sprintf(HEADER, title);
 }
 
 /**
@@ -100,6 +105,9 @@ static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 	case CVARTYPE_STRING:
 		info.push_back("String");
 		break;
+	default:
+		out = "";
+		return;
 	}
 
 	// Default and range
@@ -115,18 +123,18 @@ static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 	case CVARTYPE_INT: {
 		std::string buffer;
 		int val = atoi(cvar.getDefault().c_str());
-		StrFormat(buffer, "Default: %d", val);
+		buffer = fmt::sprintf("Default: %d", val);
 		info.push_back(buffer);
 
 		if (cvar.getMinValue() != -FLT_MAX)
 		{
-			StrFormat(buffer, "Min: %d", static_cast<int>(cvar.getMinValue()));
+			buffer = fmt::sprintf("Min: %d", static_cast<int>(cvar.getMinValue()));
 			info.push_back(buffer);
 		}
 
 		if (cvar.getMaxValue() != FLT_MAX)
 		{
-			StrFormat(buffer, "Max: %d", static_cast<int>(cvar.getMaxValue()));
+			buffer = fmt::sprintf("Max: %d", static_cast<int>(cvar.getMaxValue()));
 			info.push_back(buffer);
 		}
 
@@ -135,18 +143,18 @@ static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 	case CVARTYPE_FLOAT: {
 		std::string buffer;
 		float val = atof(cvar.getDefault().c_str());
-		StrFormat(buffer, "Default: %f", val);
+		buffer = fmt::sprintf("Default: %f", val);
 		info.push_back(buffer);
 
 		if (cvar.getMinValue() != -FLT_MAX)
 		{
-			StrFormat(buffer, "Min: %f", cvar.getMinValue());
+			buffer = fmt::sprintf("Min: %f", cvar.getMinValue());
 			info.push_back(buffer);
 		}
 
 		if (cvar.getMaxValue() != FLT_MAX)
 		{
-			StrFormat(buffer, "Max: %f", cvar.getMaxValue());
+			buffer = fmt::sprintf("Max: %f", cvar.getMaxValue());
 			info.push_back(buffer);
 		}
 
@@ -156,10 +164,13 @@ static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 		if (!cvar.getDefault().empty())
 		{
 			std::string buf;
-			StrFormat(buf, "Default: \"%s\"", cvar.getDefault().c_str());
+			buf = fmt::sprintf("Default: \"%s\"", cvar.getDefault());
 			info.push_back(buf);
 		}
 		break;
+	default:
+		out = "";
+		return;
 	}
 
 	if (cvar.flags() & CVAR_USERINFO)
@@ -186,7 +197,7 @@ static void HTMLCvarRow(std::string& out, const cvar_t& cvar)
 	                  "<p><small><em>%s</em></small></p>"
 	                  "<p>%s</p>"
 	                  "</dd>";
-	StrFormat(out, ROW, cvar.name(), flagstr.c_str(), cvar.helptext());
+	out = fmt::sprintf(ROW, cvar.name(), flagstr, cvar.helptext());
 }
 
 /**
@@ -198,11 +209,6 @@ static void HTMLFooter(std::string& out)
 {
 	out = "</body>"
 	      "</html>";
-}
-
-static bool CvarCmp(const cvar_t* a, const cvar_t* b)
-{
-	return strcmp(a->name(), b->name()) < 0;
 }
 
 /**
@@ -219,37 +225,142 @@ static CvarView GetSortedCvarView()
 		var = var->GetNext();
 	}
 
-	std::sort(view.begin(), view.end(), CvarCmp);
+	std::sort(view.begin(), view.end(), [](const cvar_t* a, const cvar_t* b){ return a->name().compare(b->name()) < 0; });
 	return view;
+}
+
+/**
+ * @brief Render cvar information as a JSON object.
+ *
+ * @param out Output value to write to. Set to null for cvars that have no
+ * representable type.
+ * @param cvar Cvar to read.
+ */
+static void JSONCvarObject(Json::Value& out, const cvar_t& cvar)
+{
+	out = Json::Value(Json::objectValue);
+
+	// Type string and whether the cvar carries a numeric range.
+	const char* typestr = NULL;
+	bool numeric = false;
+	switch (cvar.type())
+	{
+	case CVARTYPE_BOOL:
+		typestr = "boolean";
+		break;
+	case CVARTYPE_BYTE:
+	case CVARTYPE_WORD:
+	case CVARTYPE_INT:
+		typestr = "integer";
+		numeric = true;
+		break;
+	case CVARTYPE_FLOAT:
+		typestr = "number";
+		numeric = true;
+		break;
+	case CVARTYPE_STRING:
+		typestr = "string";
+		break;
+	default:
+		out = Json::Value(Json::nullValue);
+		return;
+	}
+
+	out["name"] = cvar.name();
+	out["type"] = typestr;
+	out["helptext"] = cvar.helptext();
+
+	// Default value, typed to match the cvar.
+	switch (cvar.type())
+	{
+	case CVARTYPE_BOOL:
+		out["default"] = atoi(cvar.getDefault().c_str()) != 0;
+		break;
+	case CVARTYPE_BYTE:
+	case CVARTYPE_WORD:
+	case CVARTYPE_INT:
+		out["default"] = atoi(cvar.getDefault().c_str());
+		break;
+	case CVARTYPE_FLOAT:
+		out["default"] = atof(cvar.getDefault().c_str());
+		break;
+	case CVARTYPE_STRING:
+		out["default"] = cvar.getDefault();
+		break;
+	default:
+		break;
+	}
+
+	// Min/max only for numeric cvars, and only when a bound is actually set.
+	if (numeric)
+	{
+		if (cvar.getMinValue() != -FLT_MAX)
+		{
+			if (cvar.type() == CVARTYPE_FLOAT)
+				out["min"] = cvar.getMinValue();
+			else
+				out["min"] = static_cast<int>(cvar.getMinValue());
+		}
+
+		if (cvar.getMaxValue() != FLT_MAX)
+		{
+			if (cvar.type() == CVARTYPE_FLOAT)
+				out["max"] = cvar.getMaxValue();
+			else
+				out["max"] = static_cast<int>(cvar.getMaxValue());
+		}
+	}
+
+	// Flags as an array of string names.
+	Json::Value flags(Json::arrayValue);
+	if (cvar.flags() & CVAR_USERINFO)
+		flags.append("USERINFO");
+	if (cvar.flags() & CVAR_SERVERINFO)
+		flags.append("SERVERINFO");
+	if (cvar.flags() & CVAR_NOSET)
+		flags.append("NOSET");
+	if (cvar.flags() & CVAR_LATCH)
+		flags.append("LATCH");
+	if (cvar.flags() & CVAR_UNSETTABLE)
+		flags.append("UNSETTABLE");
+	if (cvar.flags() & CVAR_NOENABLEDISABLE)
+		flags.append("NOENABLEDISABLE");
+	if (cvar.flags() & CVAR_SERVERARCHIVE)
+		flags.append("SERVERARCHIVE");
+	if (cvar.flags() & CVAR_CLIENTARCHIVE)
+		flags.append("CLIENTARCHIVE");
+	out["flags"] = flags;
 }
 
 BEGIN_COMMAND(cvardoc)
 {
 	std::string buffer;
 	std::string path = M_GetWriteDir();
-	if (!M_IsPathSep(*(path.end() - 1)))
+	if (!M_IsPathSep(path.back()))
 	{
 		path += PATHSEP;
 	}
 
 #ifdef CLIENT_APP
 	path += "odamex_cvardoc.html";
-#else
+#elif defined(SERVER_APP)
 	path += "odasrv_cvardoc.html";
+#elif defined(TEST_APP)
+	path += "odagtest_cvardoc.html";
 #endif
 
 	// Try and open a file in our write directory.
 	FILE* fh = fopen(path.c_str(), "wt+");
 	if (fh == NULL)
 	{
-		Printf("error: Could not open \"%s\" for writing.\n", path.c_str());
+		PrintFmt("error: Could not open \"{}\" for writing.\n", path);
 		return;
 	}
 
 	// First the header.
 	std::string title;
-	StrFormat(title, "%s %s Console Variables", CS_STRING, DOTVERSIONSTR);
-	HTMLHeader(buffer, title.c_str());
+	title = fmt::sprintf("%s %s Console Variables", CS_STRING, DOTVERSIONSTR);
+	HTMLHeader(buffer, title);
 	fwrite(buffer.data(), sizeof(char), buffer.size(), fh);
 
 	// Then the title and initial paragraph.
@@ -264,7 +375,7 @@ BEGIN_COMMAND(cvardoc)
 	    "number with a decimal point in it, like 3.14."
 	    "</p>";
 
-	StrFormat(buffer, PREAMBLE, title.c_str(), NiceVersion());
+	buffer = fmt::sprintf(PREAMBLE, title, NiceVersion());
 	fwrite(buffer.data(), sizeof(char), buffer.size(), fh);
 
 	// Initial tag for cvars.
@@ -272,9 +383,9 @@ BEGIN_COMMAND(cvardoc)
 
 	// Stamp out our CVars
 	CvarView view = GetSortedCvarView();
-	for (CvarView::const_iterator it = view.begin(); it != view.end(); ++it)
+	for (const auto& cvar : view)
 	{
-		HTMLCvarRow(buffer, **it);
+		HTMLCvarRow(buffer, *cvar);
 		fwrite(buffer.data(), sizeof(char), buffer.size(), fh);
 	}
 
@@ -289,6 +400,62 @@ BEGIN_COMMAND(cvardoc)
 	fclose(fh);
 
 	// Success!
-	Printf("Wrote %ld bytes to \"%s\"\n", bytes, path.c_str());
+	PrintFmt("Wrote {} bytes to \"{}\"\n", bytes, path);
 }
 END_COMMAND(cvardoc)
+
+BEGIN_COMMAND(cvardocjson)
+{
+	std::string path = M_GetWriteDir();
+	if (!M_IsPathSep(path.back()))
+	{
+		path += PATHSEP;
+	}
+
+#ifdef CLIENT_APP
+	path += "odamex_cvardoc.json";
+#elif defined(SERVER_APP)
+	path += "odasrv_cvardoc.json";
+#elif defined(TEST_APP)
+	path += "odagtest_cvardoc.json";
+#endif
+
+	// Try and open a file in our write directory.
+	FILE* fh = fopen(path.c_str(), "wt+");
+	if (fh == NULL)
+	{
+		PrintFmt("error: Could not open \"{}\" for writing.\n", path);
+		return;
+	}
+
+	// Build the final json document.
+	Json::Value root(Json::objectValue);
+	root["schema_version"] = 1;
+	root["odamex_version"] = DOTVERSIONSTR;
+	root["odamex_commithash"] = GitHash();
+	root["odamex_branchname"] = GitBranch();
+
+	Json::Value cvars(Json::arrayValue);
+	CvarView view = GetSortedCvarView();
+	for (const auto& cvar : view)
+	{
+		Json::Value obj;
+		JSONCvarObject(obj, *cvar);
+		if (obj.isNull())
+			continue;
+		cvars.append(obj);
+	}
+	root["cvars"] = cvars;
+
+
+	Json::StyledWriter writer;
+	std::string buffer = writer.write(root);
+	fwrite(buffer.data(), sizeof(char), buffer.size(), fh);
+
+	long bytes = ftell(fh);
+	fclose(fh);
+
+	// Success!
+	PrintFmt("Wrote {} bytes to \"{}\"\n", bytes, path);
+}
+END_COMMAND(cvardocjson)

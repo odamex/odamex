@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -97,19 +97,19 @@ AuMusicSystem::AuMusicSystem() : m_isInitialized(false)
 
 	if (AUGraphConnectNodeInput(m_graph, m_synth, 0, m_output, 0) != noErr)
 	{
-		Printf(PRINT_HIGH, "I_InitMusic: AUGraphConnectNodeInput failed\n");
+		PrintFmt(PRINT_HIGH, "I_InitMusic: AUGraphConnectNodeInput failed\n");
 		return;
 	}
 
 	if (AUGraphOpen(m_graph) != noErr)
 	{
-		Printf(PRINT_HIGH, "I_InitMusic: AUGraphOpen failed\n");
+		PrintFmt(PRINT_HIGH, "I_InitMusic: AUGraphOpen failed\n");
 		return;
 	}
 
 	if (AUGraphInitialize(m_graph) != noErr)
 	{
-		Printf(PRINT_HIGH, "I_InitMusic: AUGraphInitialize failed\n");
+		PrintFmt(PRINT_HIGH, "I_InitMusic: AUGraphInitialize failed\n");
 		return;
 	}
 
@@ -120,18 +120,18 @@ AuMusicSystem::AuMusicSystem() : m_isInitialized(false)
 	if (AUGraphNodeInfo(m_graph, m_output, NULL, &m_unit) != noErr)
 #endif
 	{
-		Printf(PRINT_HIGH, "I_InitMusic: AUGraphGetNodeInfo failed\n");
+		PrintFmt(PRINT_HIGH, "I_InitMusic: AUGraphGetNodeInfo failed\n");
 		return;
 	}
 
 	if (NewMusicPlayer(&m_player) != noErr)
 	{
-		Printf(PRINT_HIGH,
+		PrintFmt(PRINT_HIGH,
 		       "I_InitMusic: Music player creation failed using AudioToolbox\n");
 		return;
 	}
 
-	Printf(PRINT_HIGH, "I_InitMusic: Music playback enabled using AudioToolbox\n");
+	PrintFmt(PRINT_FILTERHIGH, "I_InitMusic: Music playback enabled using AudioToolbox\n");
 	m_isInitialized = true;
 	return;
 }
@@ -145,7 +145,7 @@ AuMusicSystem::~AuMusicSystem()
 	AUGraphClose(m_graph);
 }
 
-void AuMusicSystem::startSong(byte* data, size_t length, bool loop)
+void AuMusicSystem::startSong(byte* data, size_t length, bool loop, int order)
 {
 	if (!isInitialized())
 		return;
@@ -159,26 +159,26 @@ void AuMusicSystem::startSong(byte* data, size_t length, bool loop)
 
 	if (MusicSequenceSetAUGraph(m_sequence, m_graph) != noErr)
 	{
-		Printf(PRINT_HIGH, "I_PlaySong: MusicSequenceSetAUGraph failed\n");
+		PrintFmt(PRINT_HIGH, "I_PlaySong: MusicSequenceSetAUGraph failed\n");
 		return;
 	}
 
 	if (MusicPlayerSetSequence(m_player, m_sequence) != noErr)
 	{
-		Printf(PRINT_HIGH, "I_PlaySong: MusicPlayerSetSequence failed\n");
+		PrintFmt(PRINT_HIGH, "I_PlaySong: MusicPlayerSetSequence failed\n");
 		return;
 	}
 
 	if (MusicPlayerPreroll(m_player) != noErr)
 	{
-		Printf(PRINT_HIGH, "I_PlaySong: MusicPlayerPreroll failed\n");
+		PrintFmt(PRINT_HIGH, "I_PlaySong: MusicPlayerPreroll failed\n");
 		return;
 	}
 
 	UInt32 outNumberOfTracks = 0;
 	if (MusicSequenceGetTrackCount(m_sequence, &outNumberOfTracks) != noErr)
 	{
-		Printf(PRINT_HIGH, "I_PlaySong: MusicSequenceGetTrackCount failed\n");
+		PrintFmt(PRINT_HIGH, "I_PlaySong: MusicSequenceGetTrackCount failed\n");
 		return;
 	}
 
@@ -191,14 +191,14 @@ void AuMusicSystem::startSong(byte* data, size_t length, bool loop)
 
 		if (MusicSequenceGetIndTrack(m_sequence, i, &track) != noErr)
 		{
-			Printf(PRINT_HIGH, "I_PlaySong: MusicSequenceGetIndTrack failed\n");
+			PrintFmt(PRINT_HIGH, "I_PlaySong: MusicSequenceGetIndTrack failed\n");
 			return;
 		}
 
 		if (MusicTrackGetProperty(track, kSequenceTrackProperty_TrackLength, &time,
 		                          &size) != noErr)
 		{
-			Printf(PRINT_HIGH, "I_PlaySong: MusicTrackGetProperty failed\n");
+			PrintFmt(PRINT_HIGH, "I_PlaySong: MusicTrackGetProperty failed\n");
 			return;
 		}
 
@@ -222,7 +222,7 @@ void AuMusicSystem::startSong(byte* data, size_t length, bool loop)
 
 		if (MusicSequenceGetIndTrack(m_sequence, i, &track) != noErr)
 		{
-			Printf(PRINT_HIGH, "I_PlaySong: MusicSequenceGetIndTrack failed\n");
+			PrintFmt(PRINT_HIGH, "I_PlaySong: MusicSequenceGetIndTrack failed\n");
 			return;
 		}
 
@@ -232,18 +232,18 @@ void AuMusicSystem::startSong(byte* data, size_t length, bool loop)
 		if (MusicTrackSetProperty(track, kSequenceTrackProperty_LoopInfo, &LoopInfo,
 		                          sizeof(LoopInfo)) != noErr)
 		{
-			Printf(PRINT_HIGH, "I_PlaySong: MusicTrackSetProperty failed\n");
+			PrintFmt(PRINT_HIGH, "I_PlaySong: MusicTrackSetProperty failed\n");
 			return;
 		}
 	}
 
 	if (MusicPlayerStart(m_player) != noErr)
 	{
-		Printf(PRINT_HIGH, "I_PlaySong: MusicPlayerStart failed\n");
+		PrintFmt(PRINT_HIGH, "I_PlaySong: MusicPlayerStart failed\n");
 		return;
 	}
 
-	MusicSystem::startSong(data, length, loop);
+	MusicSystem::startSong(data, length, loop, order);
 }
 
 //
@@ -296,7 +296,7 @@ void AuMusicSystem::setVolume(float volume)
 	if (AudioUnitSetParameter(m_unit, kAudioUnitParameterUnit_LinearGain,
 	                          kAudioUnitScope_Output, 0, getVolume(), 0) != noErr)
 	{
-		Printf(PRINT_HIGH, "I_InitMusic: AudioUnitSetParameter failed\n");
+		PrintFmt(PRINT_HIGH, "I_InitMusic: AudioUnitSetParameter failed\n");
 		return;
 	}
 }
@@ -331,32 +331,31 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
 		mus = mem_fopen_read(data, length);
 		midi = mem_fopen_write();
 
-		int result = mus2mid(mus, midi);
-		if (result == 0)
+		if (!mus2mid(mus, midi))
 		{
-			regdata = (byte*)mem_fgetbuf(midi);
+			regdata = reinterpret_cast<byte*>(mem_fgetbuf(midi));
 			reglength = mem_fsize(midi);
 		}
 		else
 		{
-			Printf(PRINT_HIGH, "MUS is not valid\n");
+			PrintFmt(PRINT_HIGH, "MUS is not valid\n");
 			regdata = NULL;
 			reglength = 0;
 		}
 	}
 	else if (!Res_MusicIsMidi(data, length))
 	{
-		Printf(PRINT_HIGH, "I_PlaySong: AudioUnit does not support this music format\n");
+		PrintFmt(PRINT_HIGH, "I_PlaySong: AudioUnit does not support this music format\n");
 		return;
 	}
 
 	if (NewMusicSequence(&m_sequence) != noErr)
 	{
-		Printf(PRINT_HIGH, "I_PlaySong: Unable to create AudioUnit sequence\n");
+		PrintFmt(PRINT_HIGH, "I_PlaySong: Unable to create AudioUnit sequence\n");
 		return;
 	}
 
-	m_cfd = CFDataCreate(NULL, (const Uint8*)regdata, reglength);
+	m_cfd = CFDataCreate(NULL, reinterpret_cast<const Uint8*>(regdata), reglength);
 
 	if (!m_cfd)
 	{
@@ -371,12 +370,12 @@ void AuMusicSystem::_RegisterSong(byte* data, size_t length)
  * So, we use MusicSequenceLoadSMFData() for powerpc versions
  * but the *WithFlags() on intel which require 10.4 anyway. */
 #if defined(__ppc__) || defined(__POWERPC__)
-	if (MusicSequenceLoadSMFData(m_sequence, (CFDataRef)m_cfd) != noErr)
+	if (MusicSequenceLoadSMFData(m_sequence, m_cfd) != noErr)
 #else
-	if (MusicSequenceLoadSMFDataWithFlags(m_sequence, (CFDataRef)m_cfd, 0) != noErr)
+	if (MusicSequenceLoadSMFDataWithFlags(m_sequence, m_cfd, 0) != noErr)
 #endif
 #else /* MusicSequenceFileLoadData() requires 10.5 or later. */
-	if (MusicSequenceFileLoadData(m_sequence, (CFDataRef)m_cfd, 0, 0) != noErr)
+	if (MusicSequenceFileLoadData(m_sequence, m_cfd, static_cast<MusicSequenceFileTypeID>(0), 0) != noErr)
 #endif
 	{
 		DisposeMusicSequence(m_sequence);

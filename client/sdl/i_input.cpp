@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -40,17 +40,14 @@
 #include "c_bind.h"
 #include "c_console.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "hu_stuff.h"
 
-#ifdef _XBOX
-	#include "i_xbox.h"
-#elif __SWITCH__
+#ifdef __SWITCH__
 	#include "nx_io.h"
 #endif
 
-#if defined(SDL12)
-#include "i_input_sdl12.h"
-#elif defined(SDL20)
+#if defined(SDL20)
 #include "i_input_sdl20.h"
 #endif
 
@@ -205,6 +202,8 @@ static void I_InitializeKeyNameTable()
 	key_names[OKEY_MOUSE5] = "mouse5";
 	key_names[OKEY_MWHEELDOWN] = "mwheeldown";
 	key_names[OKEY_MWHEELUP] = "mwheelup";
+	key_names[OKEY_MWHEELLEFT] = "mwheelleft";
+	key_names[OKEY_MWHEELRIGHT] = "mwheelright";
 	key_names[OKEY_JOY1] = "joy1";
 	key_names[OKEY_JOY2] = "joy2";
 	key_names[OKEY_JOY3] = "joy3";
@@ -268,10 +267,10 @@ int I_GetKeyFromName(const std::string& name)
 		return atoi(name.c_str() + 1);
 
 	// Otherwise, we scan the KeyNames[] array for a matching name
-	for (KeyNameTable::const_iterator it = key_names.begin(); it != key_names.end(); ++it)
+	for (const auto& [key, key_name] : key_names)
 	{
-		if (iequals(name, it->second))
-			return it->first;
+		if (iequals(name, key_name))
+			return key;
 	}
 	return 0;
 }
@@ -291,9 +290,7 @@ std::string I_GetKeyName(int key)
 	if (it != key_names.end() && !it->second.empty())
 		return it->second;
 
-	static char name[11];
-	sprintf(name, "#%d", key);
-	return std::string(name);
+	return fmt::format("#{}", key);
 }
 
 
@@ -434,7 +431,7 @@ static void I_UpdateGrab()
 	// force I_ResumeMouse or I_PauseMouse if toggling between fullscreen/windowed
 	bool fullscreen = I_GetWindow()->isFullScreen();
 	static bool prev_fullscreen = fullscreen;
-	if (fullscreen != prev_fullscreen) 
+	if (fullscreen != prev_fullscreen)
 		I_ForceUpdateGrab();
 	prev_fullscreen = fullscreen;
 
@@ -469,16 +466,16 @@ CVAR_FUNC_IMPL(use_joystick)
 CVAR_FUNC_IMPL(joy_active)
 {
 	const std::vector<IInputDeviceInfo> devices = input_subsystem->getJoystickDevices();
-	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
+	for (const auto& device : devices)
 	{
-		if (it->mId == (int)var)
+		if (device.mId == var.asInt())
 		{
 			I_OpenJoystick();
 			return;
 		}
 	}
 
-#ifdef GCONSOLE	
+#ifdef GCONSOLE
 	// Don't let console users choose an invalid joystick because
 	// they won't have any way to reenable through the menu.
 	if (!devices.empty())
@@ -490,7 +487,7 @@ CVAR_FUNC_IMPL(joy_active)
 //
 // I_GetJoystickCount
 //
-int I_GetJoystickCount()
+size_t I_GetJoystickCount()
 {
 	const std::vector<IInputDeviceInfo> devices = input_subsystem->getJoystickDevices();
 	return devices.size();
@@ -502,10 +499,10 @@ int I_GetJoystickCount()
 std::string I_GetJoystickNameFromIndex(int index)
 {
 	const std::vector<IInputDeviceInfo> devices = input_subsystem->getJoystickDevices();
-	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
+	for (const auto& device : devices)
 	{
-		if (it->mId == index)
-			return it->mDeviceName;
+		if (device.mId == index)
+			return device.mDeviceName;
 	}
 	return "";
 }
@@ -517,17 +514,17 @@ std::string I_GetJoystickNameFromIndex(int index)
 bool I_OpenJoystick()
 {
 	I_CloseJoystick();		// just in case it was left open...
-	
+
 	if (use_joystick != 0)
 	{
 		// Verify that the joystick ID indicated by the joy_active CVAR
 		// is valid and if so, initialize that joystick
 		const std::vector<IInputDeviceInfo> devices = input_subsystem->getJoystickDevices();
-		for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
+		for (const auto& device : devices)
 		{
-			if (it->mId == joy_active.asInt())
+			if (device.mId == joy_active.asInt())
 			{
-				input_subsystem->initJoystick(it->mId);
+				input_subsystem->initJoystick(device.mId);
 				return true;
 			}
 		}
@@ -543,10 +540,10 @@ void I_CloseJoystick()
 	// Verify that the joystick ID indicated by the joy_active CVAR
 	// is valid and if so, shutdown that joystick
 	const std::vector<IInputDeviceInfo> devices = input_subsystem->getJoystickDevices();
-	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
+	for (const auto& device : devices)
 	{
-		if (it->mId == joy_active.asInt())
-			input_subsystem->shutdownJoystick(it->mId);
+		if (device.mId == joy_active.asInt())
+			input_subsystem->shutdownJoystick(device.mId);
 	}
 
 	// Reset joy position values. Wouldn't want to get stuck in a turn or something. -- Hyper_Eye
@@ -596,9 +593,7 @@ bool I_InitInput()
 
 	atterm(I_ShutdownInput);
 
-	#if defined(SDL12)
-	input_subsystem = new ISDL12InputSubsystem();
-	#elif defined(SDL20)
+	#ifdef SDL20
 	input_subsystem = new ISDL20InputSubsystem();
 	#endif
 
@@ -666,7 +661,7 @@ void I_GetEvents(bool mouseOnly)
 	while (input_subsystem->hasEvent())
 	{
 		input_subsystem->getEvent(&ev);
-		D_PostEvent(&ev);
+		D_PostEvent(ev);
 	}
 }
 
@@ -794,7 +789,7 @@ void IInputSubsystem::disableTextEntry()
 // Joystick hat events also repeat but each directional trigger repeats
 // concurrently as long as they are held down. Thus a unique value is returned
 // for each of them.
-// 
+//
 static int I_GetEventRepeaterKey(const event_t* ev)
 {
 	if (ev->type != ev_keydown && ev->type != ev_keyup)
@@ -821,7 +816,7 @@ static int I_GetEventRepeaterKey(const event_t* ev)
 void IInputSubsystem::addToEventRepeaters(event_t& ev)
 {
 	// Check if the event needs to be added/removed from the list of repeatable events
-	int key = I_GetEventRepeaterKey(&ev);
+	const int key = I_GetEventRepeaterKey(&ev);
 	if (ev.type == ev_keydown && key)
 	{
 		// If there is an existing repeater event for "key",
@@ -835,7 +830,7 @@ void IInputSubsystem::addToEventRepeaters(event_t& ev)
 		repeater.event = ev;
 		repeater.repeating = false;		// start off waiting for mRepeatDelay before repeating
 		repeater.last_time = I_GetTime();
-		mEventRepeaters.insert(std::make_pair(key, repeater));
+		mEventRepeaters.emplace(key, repeater);
 	}
 	else if (ev.type == ev_keyup && key)
 	{
@@ -854,9 +849,8 @@ void IInputSubsystem::addToEventRepeaters(event_t& ev)
 //
 void IInputSubsystem::repeatEvents()
 {
-	for (EventRepeaterTable::iterator it = mEventRepeaters.begin(); it != mEventRepeaters.end(); ++it)
+	for (auto& [_, repeater] : mEventRepeaters)
 	{
-		EventRepeater& repeater = it->second;
 		uint64_t current_time = I_GetTime();
 
 		if (!repeater.repeating && current_time - repeater.last_time >= mRepeatDelay)
@@ -881,9 +875,8 @@ void IInputSubsystem::repeatEvents()
 void IInputSubsystem::gatherEvents()
 {
 	event_t ev;
-	for (InputDeviceList::iterator it = mInputDevices.begin(); it != mInputDevices.end(); ++it)
+	for (const auto& device : mInputDevices)
 	{
-		IInputDevice* device = *it;
 		device->gatherEvents();
 		while (device->hasEvent())
 		{
@@ -904,13 +897,15 @@ void IInputSubsystem::gatherEvents()
 void IInputSubsystem::gatherMouseEvents()
 {
 	event_t mouseEvent;
-	if (mMouseInputDevice != NULL)
+	if (mMouseInputDevice != nullptr)
+	{
 		mMouseInputDevice->gatherEvents();
 
-	while (mMouseInputDevice->hasEvent())
-	{
-		mMouseInputDevice->getEvent(&mouseEvent);
-		mEvents.push(mouseEvent);
+		while (mMouseInputDevice->hasEvent())
+		{
+			mMouseInputDevice->getEvent(&mouseEvent);
+			mEvents.push(mouseEvent);
+		}
 	}
 }
 

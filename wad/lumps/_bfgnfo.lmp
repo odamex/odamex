@@ -1,5 +1,10 @@
 // MAPINFO for Doom 2: BFG Edition
 
+gameinfo
+{
+	titlepage = "DMENUPIC"
+}
+
 clearepisodes
 episode map01
 {

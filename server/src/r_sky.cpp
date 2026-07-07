@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,35 +17,28 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Sky rendering. The DOOM sky is a texture map like any
-//  wall, wrapping around. A 1024 columns equal 360 degrees.
-//  The default sky map is 256 columns and repeats 4 times
-//  on a 320 screen?
-//  
+//	Sky rendering (serverside stub).  Tracks which flats represent skies,
+//	including ID24 SKYDEFS flat mappings, for gameplay logic.
+//
 //-----------------------------------------------------------------------------
 
-
 #include "odamex.h"
+
 #include "g_level.h"
 #include "i_system.h"
-#include "resources/res_resourceid.h"
-#include "resources/res_main.h"
-#include "resources/res_texture.h"
+#include "m_jsonlump.h"
 #include "r_data.h"
 #include "g_mapinfo.h"
 
-// [ML] 5/11/06 - Remove sky2
-<<<<<<< HEAD
-fixed_t		sky1pos=0,		sky1speed=0;
-=======
-int 		skyflatnum;
-int 		sky1texture, sky2texture;
+#include "resources/res_resourceid.h"
+#include "resources/res_main.h"
+#include "resources/res_texture.h"
 
-fixed_t		sky1scrolldelta,	sky2scrolldelta;
-fixed_t		sky1columnoffset,	sky2columnoffset;
->>>>>>> stable
+#include <unordered_set>
 
 static ResourceId sky_flat_resource_id = ResourceId::INVALID_ID;
+
+static std::unordered_set<uint32_t> skyflatlookup;
 
 //
 // R_ResourceIdIsSkyFlat
@@ -54,7 +47,45 @@ static ResourceId sky_flat_resource_id = ResourceId::INVALID_ID;
 //
 bool R_ResourceIdIsSkyFlat(const ResourceId res_id)
 {
-	return res_id == sky_flat_resource_id;
+	if (res_id == sky_flat_resource_id)
+		return true;
+	return skyflatlookup.contains(static_cast<uint32_t>(res_id));
+}
+
+
+void R_InitSkyDefs()
+{
+	auto ParseSkydef = [](const Json::Value& elem, const JSONLumpVersion& version) -> jsonlumpresult_t
+	{
+		const Json::Value& skyarray = elem["skies"];
+		const Json::Value& flatmappings = elem["flatmapping"];
+
+		if (!(skyarray.isArray() || skyarray.isNull())) return jsonlumpresult_t::PARSEERROR;
+		if (!(flatmappings.isArray() || flatmappings.isNull())) return jsonlumpresult_t::PARSEERROR;
+
+		for (const Json::Value& flatentry : flatmappings)
+		{
+			const Json::Value& flatelem = flatentry["flat"];
+
+			OLumpName flatname = flatelem.asString();
+			const ResourceId flat_res_id =
+			    Res_GetTextureResourceId(OStringToUpper(flatname.c_str()), FLOOR);
+			if (!Res_CheckResource(flat_res_id)) return jsonlumpresult_t::PARSEERROR;
+
+			skyflatlookup.insert(static_cast<uint32_t>(flat_res_id));
+		}
+
+		return jsonlumpresult_t::SUCCESS;
+	};
+
+	jsonlumpresult_t result =  M_ParseJSONLump("SKYDEFS", "skydefs", { 1, 0, 0 }, ParseSkydef);
+	if (result != jsonlumpresult_t::SUCCESS && result != jsonlumpresult_t::NOTFOUND)
+		I_Error("R_InitSkyDefs: SKYDEFS JSON error: {}", M_JSONLumpResultToString(result));
+}
+
+void R_ClearSkyDefs()
+{
+	skyflatlookup.clear();
 }
 
 
@@ -79,7 +110,7 @@ void R_SetSkyTextures(const char* sky1_name, const char* sky2_name)
 
 	const ResourceId res_id = Res_GetTextureResourceId(OStringToUpper(sky1_name, 8), WALL);
 	if (!Res_CheckResource(res_id))
-		I_Error("Invalid sky1 texture \"%s\"", OStringToUpper(sky1_name, 8).c_str());
+		I_Error("Invalid sky1 texture \"{}\"", OStringToUpper(sky1_name, 8));
 
 	if (HexenHack)
 		sky_flat_resource_id = Res_GetTextureResourceId("F_SKY", FLOOR);

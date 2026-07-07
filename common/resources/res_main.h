@@ -302,7 +302,7 @@ private:
 //
 static inline const OString& Res_GetEngineResourceFileName()
 {
-	static const OString filename("ODAMEX.PK3");
+	static const OString filename("ODAMEX.WAD");
 	return filename;
 }
 

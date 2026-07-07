@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,11 +37,13 @@
 #include "sv_maplist.h"
 #include "sv_pickup.h"
 #include "d_main.h"
+
 #include "svc_message.h"
 #include "resources/res_filelib.h"
 
 EXTERN_CVAR(sv_gametype)
 
+EXTERN_CVAR(g_lives)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_scorelimit)
 EXTERN_CVAR(sv_timelimit)
@@ -55,6 +57,7 @@ EXTERN_CVAR(sv_vote_timelimit)
 EXTERN_CVAR(sv_vote_timeout)
 
 EXTERN_CVAR(sv_callvote_coinflip)
+EXTERN_CVAR(sv_callvote_lives)
 EXTERN_CVAR(sv_callvote_forcespec)
 EXTERN_CVAR(sv_callvote_forcestart)
 EXTERN_CVAR(sv_callvote_kick)
@@ -78,9 +81,7 @@ bool Vote::setup_check_cvar()
 {
 	if (!*(this->cvar))
 	{
-		std::ostringstream buffer;
-		buffer << this->name << " vote has been disabled by the server.";
-		this->error = buffer.str();
+		this->error = fmt::format("{} vote has been disabled by the server.", this->name);
 		return false;
 	}
 	return true;
@@ -92,7 +93,7 @@ class CoinflipVote : public Vote
 {
 public:
 	CoinflipVote() : Vote("coinflip", &sv_callvote_coinflip) { };
-	bool setup(const std::vector<std::string> &args, const player_t &player)
+	bool setup(const std::vector<std::string> &args, const player_t &player) override
 	{
 		if (!Vote::setup_check_cvar())
 			return false;
@@ -100,11 +101,58 @@ public:
 		this->votestring = "coinflip";
 		return true;
 	}
-	bool exec()
+	bool exec() override
 	{
 		std::string result;
 		CMD_CoinFlip(result);
-		SV_BroadcastPrintf("%s\n", result.c_str());
+		SV_BroadcastPrintFmt("{}\n", result);
+		return true;
+	}
+};
+
+class LivesVote : public Vote
+{
+private:
+	unsigned int lives;
+public:
+	LivesVote() : Vote("lives", &sv_callvote_lives) { };
+	bool setup(const std::vector<std::string> &args, const player_t &player) override
+	{
+		unsigned int lives;
+
+		if (!Vote::setup_check_cvar())
+			return false;
+
+		// Do we have at least one argument?
+		if (args.size() < 1)
+		{
+			this->error = "lives needs a second argument.";
+			return false;
+		}
+
+		// Are the lives a numeric value?
+		std::istringstream buffer(args[0].c_str());
+		buffer >> lives;
+		if (!buffer)
+		{
+			this->error = "lives must be a number.";
+			return false;
+		}
+
+		// Are the lives positive?
+		if (args[0].length() > 0 && args[0][0] == '-')
+		{
+			this->error = "lives must be 0 or a positive number.";
+			return false;
+		}
+
+		this->lives = lives;
+		this->votestring = fmt::format("lives {}", lives);
+		return true;
+	}
+	bool exec() override
+	{
+		g_lives.Set(this->lives);
 		return true;
 	}
 };
@@ -116,7 +164,7 @@ private:
 	std::string netname;
 public:
 	ForcespecVote() : Vote("forcespec", &sv_callvote_forcespec) { };
-	bool setup(const std::vector<std::string> &args, const player_t &player)
+	bool setup(const std::vector<std::string> &args, const player_t &player) override
 	{
 		if (!Vote::setup_check_cvar())
 			return false;
@@ -140,31 +188,25 @@ public:
 		this->netname = idplayer(pid).userinfo.netname;
 
 		// Create votestring
-		std::ostringstream buffer;
-		buffer << "forcespec " << this->netname << " (id:" << pid << ")";
-		this->votestring = buffer.str();
+		this->votestring = fmt::format("forcespec {} (id:{:d})", this->netname, pid);
 
 		return true;
 	}
-	bool tic()
+	bool tic() override
 	{
 		if (!validplayer(idplayer(this->id)))
 		{
-			std::ostringstream buffer;
-			buffer << this->netname << " left the server.";
-			this->error = buffer.str();
+			this->error = fmt::format("{} left the server", this->netname);
 			return false;
 		}
 		if (idplayer(this->id).spectator)
 		{
-			std::ostringstream buffer;
-			buffer << this->netname << " became a spectator on his own.";
-			this->error = buffer.str();
+			this->error = fmt::format("{} became a spectator on their own.", this->netname);
 			return false;
 		}
 		return true;
 	}
-	bool exec()
+	bool exec() override
 	{
 		SV_SetPlayerSpec(idplayer(this->id), true);
 		return true;
@@ -175,7 +217,7 @@ class ForcestartVote : public Vote
 {
 public:
 	ForcestartVote() : Vote("forcestart", &sv_callvote_forcestart) { };
-	bool setup(const std::vector<std::string> &args, const player_t &player)
+	bool setup(const std::vector<std::string> &args, const player_t &player) override
 	{
 		if (!Vote::setup_check_cvar())
 			return false;
@@ -189,7 +231,7 @@ public:
 		this->votestring = "forcestart";
 		return true;
 	}
-	bool tic()
+	bool tic() override
 	{
 		if (::levelstate.getState() != LevelState::WARMUP)
 		{
@@ -199,7 +241,7 @@ public:
 
 		return true;
 	}
-	bool exec()
+	bool exec() override
 	{
 		AddCommandString("forcestart");
 		return true;
@@ -213,7 +255,7 @@ private:
 	unsigned int fraglimit;
 public:
 	FraglimitVote() : Vote("fraglimit", &sv_callvote_fraglimit) { };
-	bool setup(const std::vector<std::string> &args, const player_t &player)
+	bool setup(const std::vector<std::string> &args, const player_t &player) override
 	{
 		unsigned int fraglimit;
 
@@ -243,14 +285,11 @@ public:
 			return false;
 		}
 
-		std::ostringstream vote_string;
-		vote_string << "fraglimit " << fraglimit;
-
 		this->fraglimit = fraglimit;
-		this->votestring = vote_string.str();
+		this->votestring = fmt::format("fraglimit {}", fraglimit);;
 		return true;
 	}
-	bool exec()
+	bool exec() override
 	{
 		sv_fraglimit.Set(this->fraglimit);
 		return true;
@@ -266,7 +305,7 @@ private:
 	std::string reason;
 public:
 	KickVote() : Vote("kick", &sv_callvote_kick) { };
-	bool setup(const std::vector<std::string> &args, const player_t &player)
+	bool setup(const std::vector<std::string> &args, const player_t &player) override
 	{
 		if (!Vote::setup_check_cvar())
 			return false;
@@ -291,39 +330,36 @@ public:
 		this->netname = idplayer(pid).userinfo.netname;
 
 		// Create votestring
-		std::ostringstream buffer;
-		buffer << "kick " << this->netname << " (id:" << (int)this->id << ")";
+		std::string reason;
 		if (!this->reason.empty())
 		{
-			buffer << " \"" << this->reason << "\"";
+			reason = fmt::format(" \"{}\"", this->reason);
 		}
-		this->votestring = buffer.str();
+		this->votestring = fmt::format("kick {} (id: {:d}){}", this->netname, this->id, reason);
 
 		return true;
 	}
-	bool tic()
+	bool tic() override
 	{
 		if (!validplayer(idplayer(this->id)))
 		{
-			std::ostringstream buffer;
-			buffer << this->netname << " left the server.";
-			this->error = buffer.str();
+			this->error = fmt::format("{} left the server", this->netname);
 			return false;
 		}
 		return true;
 	}
-	bool exec()
+	bool exec() override
 	{
-		std::ostringstream buffer;
+		std::string buffer;
 		if (this->reason.empty())
 		{
-			buffer << "Votekick called by " << this->caller << " passed.";
+			buffer = fmt::format("Votekick called by {} passed.", this->caller);
 		}
 		else
 		{
-			buffer << "Votekick called by " << this->caller << " passed: \""<< this->reason << "\".";
+			buffer = fmt::format("Votekick called by {} passed: \"{}\".", this->caller, this->reason);
 		}
-		SV_KickPlayer(idplayer(this->id), buffer.str());
+		SV_KickPlayer(idplayer(this->id), buffer);
 		return true;
 	}
 };
@@ -335,7 +371,7 @@ private:
 	byte version;
 public:
 	MapVote() : Vote("map", &sv_callvote_map) { };
-	bool setup(const std::vector<std::string> &args, const player_t &player)
+	bool setup(const std::vector<std::string> &args, const player_t &player) override
 	{
 		size_t index;
 
@@ -374,15 +410,14 @@ public:
 		std::ostringstream vsbuffer;
 		vsbuffer << "map ";
 
-		for (std::vector<std::string>::const_iterator it = maplist_entry.wads.begin();
-			it!= maplist_entry.wads.end(); ++it)
-			vsbuffer << Res_CleanseFilename(*it) << " ";
+		for (const auto& wad : maplist_entry.wads)
+			vsbuffer << D_CleanseFileName(wad) << " ";
 
 		vsbuffer << maplist_entry.map;
 		this->votestring = vsbuffer.str();
 		return true;
 	}
-	bool tic()
+	bool tic() override
 	{
 		if (this->version != Maplist::instance().get_version())
 		{
@@ -391,7 +426,7 @@ public:
 		}
 		return true;
 	}
-	bool exec()
+	bool exec() override
 	{
 		G_ChangeMap(this->index);
 		return true;
@@ -402,7 +437,7 @@ class NextmapVote : public Vote
 {
 public:
 	NextmapVote() : Vote("nextmap", &sv_callvote_nextmap) { };
-	bool setup(const std::vector<std::string> &args, const player_t &player)
+	bool setup(const std::vector<std::string> &args, const player_t &player) override
 	{
 		if (!Vote::setup_check_cvar())
 			return false;
@@ -412,7 +447,7 @@ public:
 		this->votestring = "nextmap";
 		return true;
 	}
-	bool exec()
+	bool exec() override
 	{
 		G_ChangeMap();
 		return true;
@@ -423,7 +458,7 @@ class RandcapsVote : public Vote
 {
 public:
 	RandcapsVote() : Vote("randcaps", &sv_callvote_randcaps) { };
-	bool setup(const std::vector<std::string> &args, const player_t &player)
+	bool setup(const std::vector<std::string> &args, const player_t &player) override
 	{
 		if (!Vote::setup_check_cvar())
 			return false;
@@ -432,7 +467,7 @@ public:
 		this->votestring = "randcaps";
 		return true;
 	}
-	bool exec()
+	bool exec() override
 	{
 		return Pickup_DistributePlayers(sv_teamsinplay, this->error);
 	}
@@ -442,7 +477,7 @@ class RandmapVote : public Vote
 {
 public:
 	RandmapVote() : Vote("randmap", &sv_callvote_randmap) { };
-	bool setup(const std::vector<std::string> &args, const player_t &player)
+	bool setup(const std::vector<std::string> &args, const player_t &player) override
 	{
 		if (!Vote::setup_check_cvar())
 			return false;
@@ -459,7 +494,7 @@ public:
 		this->votestring = "randmap";
 		return true;
 	}
-	bool tic()
+	bool tic() override
 	{
 		if (Maplist::instance().empty())
 		{
@@ -468,7 +503,7 @@ public:
 		}
 		return true;
 	}
-	bool exec()
+	bool exec() override
 	{
 		return CMD_Randmap(this->error);
 	}
@@ -480,7 +515,7 @@ private:
 	size_t num_players;
 public:
 	RandpickupVote() : Vote("randpickup", &sv_callvote_randpickup) { };
-	bool setup(const std::vector<std::string> &args, const player_t &player)
+	bool setup(const std::vector<std::string> &args, const player_t &player) override
 	{
 		if (!Vote::setup_check_cvar())
 			return false;
@@ -505,12 +540,10 @@ public:
 		}
 
 		// Construct argstring...turn it into a nice '#v#'.
-		std::ostringstream buffer;
-		buffer << "randpickup " << (this->num_players / 2) << "v" << (this->num_players / 2);
-		this->votestring = buffer.str();
+		this->votestring = fmt::format("randpickup {0}v{0}", (this->num_players / 2));
 		return true;
 	}
-	bool exec()
+	bool exec() override
 	{
 		return Pickup_DistributePlayers(this->num_players, this->error);
 	}
@@ -520,7 +553,7 @@ class RestartVote : public Vote
 {
 public:
 	RestartVote() : Vote("restart", &sv_callvote_restart) { };
-	bool setup(const std::vector<std::string> &args, const player_t &player)
+	bool setup(const std::vector<std::string> &args, const player_t &player) override
 	{
 		if (!Vote::setup_check_cvar())
 			return false;
@@ -530,7 +563,7 @@ public:
 		this->votestring = "restart";
 		return true;
 	}
-	bool exec()
+	bool exec() override
 	{
 		// When in warmup mode, we would rather not catch players off guard.
 		::levelstate.reset();
@@ -548,7 +581,7 @@ private:
 	unsigned int scorelimit;
 public:
 	ScorelimitVote() : Vote("scorelimit", &sv_callvote_scorelimit) { };
-	bool setup(const std::vector<std::string> &args, const player_t &player)
+	bool setup(const std::vector<std::string> &args, const player_t &player) override
 	{
 		unsigned int scorelimit;
 
@@ -585,14 +618,11 @@ public:
 			return false;
 		}
 
-		std::ostringstream vote_string;
-		vote_string << "scorelimit " << scorelimit;
-
 		this->scorelimit = scorelimit;
-		this->votestring = vote_string.str();
+		this->votestring = fmt::format("scorelimit {}", scorelimit);
 		return true;
 	}
-	bool exec()
+	bool exec() override
 	{
 		sv_scorelimit.Set(this->scorelimit);
 		return true;
@@ -605,7 +635,7 @@ private:
 	float timelimit;
 public:
 	TimelimitVote() : Vote("timelimit", &sv_callvote_timelimit) { };
-	bool setup(const std::vector<std::string> &args, const player_t &player)
+	bool setup(const std::vector<std::string> &args, const player_t &player) override
 	{
 		float timelimit;
 
@@ -642,14 +672,11 @@ public:
 			return false;
 		}
 
-		std::ostringstream vote_string;
-		vote_string << "timelimit " << timelimit;
-
 		this->timelimit = timelimit;
-		this->votestring = vote_string.str();
+		this->votestring = fmt::format("timelimit {}", timelimit);
 		return true;
 	}
-	bool exec()
+	bool exec() override
 	{
 		sv_timelimit.Set(this->timelimit);
 		return true;
@@ -721,12 +748,11 @@ size_t Vote::count_yes() const
 	}
 
 	int count = 0;
-	std::map<int, vote_result_t>::const_iterator it;
 
 	// Count the for votes.
-	for (it = this->tally.begin(); it != this->tally.end(); ++it)
+	for (const auto [_, vote_result] : this->tally)
 	{
-		if ((*it).second == VOTE_YES)
+		if (vote_result == VOTE_YES)
 		{
 			count++;
 		}
@@ -751,12 +777,12 @@ size_t Vote::calc_yes(const bool noabs) const
 	}
 
 	float f_calc = size * sv_vote_majority;
-	size_t i_calc = (int)floor(f_calc + 0.5f);
+	size_t i_calc = static_cast<size_t>(std::round(f_calc));
 	if (f_calc > i_calc - MPEPSILON && f_calc < i_calc + MPEPSILON)
 	{
 		return i_calc + 1;
 	}
-	return (int)ceil(f_calc);
+	return static_cast<size_t>(ceil(f_calc));
 }
 
 // Tally up the number of players who are voting against the current callvote.
@@ -769,12 +795,11 @@ size_t Vote::count_no() const
 	}
 
 	int count = 0;
-	std::map<int, vote_result_t>::const_iterator it;
 
 	// Count the against votes.
-	for (it = this->tally.begin(); it != this->tally.end(); ++it)
+	for (const auto [_, vote_result] : this->tally)
 	{
-		if ((*it).second == VOTE_NO)
+		if (vote_result == VOTE_NO)
 		{
 			count++;
 		}
@@ -787,12 +812,12 @@ size_t Vote::count_no() const
 size_t Vote::calc_no() const
 {
 	float f_calc = this->tally.size() * (1.0f - sv_vote_majority);
-	size_t i_calc = (int)floor(f_calc + 0.5f);
+	size_t i_calc = static_cast<size_t>(std::round(f_calc));
 	if (f_calc > i_calc - MPEPSILON && f_calc < i_calc + MPEPSILON)
 	{
 		return i_calc;
 	}
-	return (int)ceil(f_calc);
+	return static_cast<size_t>(ceil(f_calc));
 }
 
 size_t Vote::count_abs() const
@@ -820,7 +845,7 @@ vote_state_t Vote::serialize() const
 void Vote::ev_disconnect(player_t &player)
 {
 	// If the player had an entry in the tally, delete it.
-	if (this->tally.count(player.id) > 0)
+	if (this->tally.contains(player.id))
 	{
 		this->tally.erase(player.id);
 	}
@@ -890,7 +915,7 @@ bool Vote::init(const std::vector<std::string> &args, const player_t &player)
 			this->tally[it->id] = VOTE_UNDEC;
 	}
 
-	SV_BroadcastPrintf("%s has called a vote for %s.\n", player.userinfo.netname.c_str(), this->get_votestring().c_str());
+	SV_BroadcastPrintFmt("{} has called a vote for {}.\n", player.userinfo.netname, this->get_votestring());
 	return true;
 }
 
@@ -902,13 +927,13 @@ void Vote::parse(vote_result_t vote_result)
 	// Make sure the clients have the final state of the vote
 	// before we do anything else.
 	SV_GlobalVoteUpdate();
-	for (Players::iterator it = players.begin();it != players.end();++it)
-		if (validplayer(*it))
-			SV_SendPacket(*it);
+	for (auto& player : players)
+		if (validplayer(player))
+			SV_SendPacket(player);
 
 	if (this->tally.empty() || vote_result == VOTE_ABANDON)
 	{
-		SV_BroadcastPrintf("Vote %s abandoned!\n", this->votestring.c_str());
+		SV_BroadcastPrintFmt("Vote {} abandoned!\n", this->votestring);
 		return;
 	}
 
@@ -918,16 +943,16 @@ void Vote::parse(vote_result_t vote_result)
 
 	if (vote_result == VOTE_INTERRUPT)
 	{
-		SV_BroadcastPrintf("Vote %s interrupted! (Yes: %d, No: %d, Abs: %d)\n", this->votestring.c_str(), yes, no, abs);
+		SV_BroadcastPrintFmt("Vote {} interrupted! (Yes: {}, No: {}, Abs: {})\n", this->votestring, yes, no, abs);
 		return;
 	}
 
 	if (vote_result != VOTE_YES)
 	{
-		SV_BroadcastPrintf("Vote %s failed! (Yes: %d, No: %d, Abs: %d)\n", this->votestring.c_str(), yes, no, abs);
+		SV_BroadcastPrintFmt("Vote {} failed! (Yes: {}, No: {}, Abs: {})\n", this->votestring, yes, no, abs);
 
 		// Only set the timeout tic if the vote failed.
-		player_t caller = idplayer(this->caller_id);
+		player_t& caller = idplayer(this->caller_id);
 		if (validplayer(caller))
 		{
 			caller.timeout_callvote = level.time;
@@ -936,7 +961,7 @@ void Vote::parse(vote_result_t vote_result)
 		return;
 	}
 
-	SV_BroadcastPrintf("Vote %s passed! (Yes: %d, No: %d, Abs: %d)\n", this->votestring.c_str(), yes, no, abs);
+	SV_BroadcastPrintFmt("Vote {} passed! (Yes: {}, No: {}, Abs: {})\n", this->votestring, yes, no, abs);
 
 	// NOTE: This can return false if there is an error, but we're already
 	//       catching errors in Vote_Runtic by seeing if the error is
@@ -982,11 +1007,11 @@ bool Vote::vote(player_t &player, bool ballot)
 	{
 		if (!sv_vote_specvote && player.spectator)
 		{
-			SV_PlayerPrintf(PRINT_HIGH, player.id, "Spectators can't vote on this server.\n");
+			SV_PlayerPrintFmt(PRINT_HIGH, player.id, "Spectators can't vote on this server.\n");
 		}
 		else
 		{
-			SV_PlayerPrintf(PRINT_HIGH, player.id, "You can't vote on something that was called before you joined the server.\n");
+			SV_PlayerPrintFmt(PRINT_HIGH, player.id, "You can't vote on something that was called before you joined the server.\n");
 		}
 		return false;
 	}
@@ -1008,8 +1033,8 @@ bool Vote::vote(player_t &player, bool ballot)
 
 		if (timeout < timeout_check)
 		{
-			SV_PlayerPrintf(PRINT_HIGH, player.id, "Please wait another %d second%s to change your vote.\n",
-			                timeout_waitsec, timeout_waitsec != 1 ? "s" : "");
+			SV_PlayerPrintFmt(PRINT_HIGH, player.id, "Please wait another {} second{} to change your vote.\n",
+			                  timeout_waitsec, timeout_waitsec != 1 ? "s" : "");
 			return false;
 		}
 	}
@@ -1032,32 +1057,31 @@ static void SV_VoteUpdate(player_t &player)
 
 	client_t* cl = &player.client;
 
-	MSG_WriteSVC(&cl->netbuf, SVC_VoteUpdate(::vote->serialize()));
+	MSG_WriteSVC(cl->messenger.NetBuf(), SVC_VoteUpdate(::vote->serialize()));
 }
 
 // Send a full vote update to everybody
 static void SV_GlobalVoteUpdate()
 {
-	for (Players::iterator it = players.begin();it != players.end();++it)
-		SV_VoteUpdate(*it);
+	for (auto& player : players)
+		SV_VoteUpdate(player);
 }
 
 //////// COMMANDS FROM CLIENT ////////
 
 // Handle callvote commands from the client.
-void SV_Callvote(player_t &player)
+void SV_Callvote(player_t& player, const odaproto::clc::CallVote& msg)
 {
-	vote_type_t votecmd = (vote_type_t)MSG_ReadByte();
-	byte argc = (byte)MSG_ReadByte();
+	const vote_type_t   votecmd = static_cast<vote_type_t>(msg.vote_type());
+	const size_t        argc    = msg.arg_size();
 
-	DPrintf("SV_Callvote: Got votecmd %s from player %d, %d additional arguments.\n",
+	DPrintFmt("SV_Callvote: Got votecmd {} from player {}, {} additional arguments.\n",
 	        vote_type_cmd[votecmd], player.id, argc);
 
-	std::vector<std::string> arguments(argc);
-	for (int i = 0; i < argc; i++)
+	std::vector<std::string> arguments(msg.arg().begin(), msg.arg().end());
+	for (size_t i = 0; i < argc; i++)
 	{
-		arguments[i] = std::string(MSG_ReadString());
-		DPrintf("SV_Callvote: arguments[%d] = \"%s\"\n", i, arguments[i].c_str());
+		DPrintFmt("SV_Callvote: arguments[{}] = \"{}\"\n", i, arguments[i]);
 	}
 
 	if (!(votecmd > VOTE_NONE && votecmd < VOTE_MAX))
@@ -1074,28 +1098,28 @@ void SV_Callvote(player_t &player)
 				buffer << ", ";
 			}
 		}
-		SV_PlayerPrintf(PRINT_HIGH, player.id, "%s\n", buffer.str().c_str());
+		SV_PlayerPrintFmt(PRINT_HIGH, player.id, "{}\n", buffer.str());
 		return;
 	}
 
 	// Is the player ingame?
 	if (!player.ingame())
 	{
-		SV_PlayerPrintf(PRINT_HIGH, player.id, "You can't callvote until you're in the game.\n");
+		SV_PlayerPrintFmt(PRINT_HIGH, player.id, "You can't callvote until you're in the game.\n");
 		return;
 	}
 
 	// Is the server in intermission?
 	if (gamestate == GS_INTERMISSION)
 	{
-		SV_PlayerPrintf(PRINT_HIGH, player.id, "You can't callvote while the server is in intermission.\n");
+		SV_PlayerPrintFmt(PRINT_HIGH, player.id, "You can't callvote while the server is in intermission.\n");
 		return;
 	}
 
 	// Is another vote already in progress?
 	if (vote != 0)
 	{
-		SV_PlayerPrintf(PRINT_HIGH, player.id, "Another vote is already in progress.\n");
+		SV_PlayerPrintFmt(PRINT_HIGH, player.id, "Another vote is already in progress.\n");
 		return;
 	}
 
@@ -1141,6 +1165,9 @@ void SV_Callvote(player_t &player)
 	case VOTE_COINFLIP:
 		vote = new CoinflipVote;
 		break;
+	case VOTE_LIVES:
+		vote = new LivesVote;
+		break;
 	default:
 		return;
 	}
@@ -1152,7 +1179,7 @@ void SV_Callvote(player_t &player)
 	// abort the vote and print a message to the player.
 	if (!valid)
 	{
-		SV_PlayerPrintf(PRINT_HIGH, player.id, "%s\n", vote->get_error().c_str());
+		SV_PlayerPrintFmt(PRINT_HIGH, player.id, "{}\n", vote->get_error());
 		delete vote;
 		vote = 0;
 		return;
@@ -1167,8 +1194,8 @@ void SV_VoteCmd(player_t& player, const std::vector<std::string>& args)
 {
 	if (args.size() < 2)
 	{
-		SV_PlayerPrintf(PRINT_HIGH, player.id,
-		                "Invalid vote, must be \"yes\" or \"no\".\n");
+		SV_PlayerPrintFmt(PRINT_HIGH, player.id,
+		                  "Invalid vote, must be \"yes\" or \"no\".\n");
 		return;
 	}
 
@@ -1183,7 +1210,7 @@ void SV_VoteCmd(player_t& player, const std::vector<std::string>& args)
 	}
 	else
 	{
-		SV_PlayerPrintf(PRINT_HIGH, player.id,
+		SV_PlayerPrintFmt(PRINT_HIGH, player.id,
 		                "Invalid vote, must be \"yes\" or \"no\".\n");
 		return;
 	}
@@ -1191,15 +1218,15 @@ void SV_VoteCmd(player_t& player, const std::vector<std::string>& args)
 	// Is there even a vote going on?
 	if (vote == 0)
 	{
-		SV_PlayerPrintf(PRINT_HIGH, player.id, "Invalid vote, no vote in progress.\n");
+		SV_PlayerPrintFmt(PRINT_HIGH, player.id, "Invalid vote, no vote in progress.\n");
 		return;
 	}
 
 	// Did the player actually change his vote?
 	if (vote->vote(player, ballot))
 	{
-		SV_BroadcastPrintf("%s voted %s.\n", player.userinfo.netname.c_str(),
-		                   ballot == true ? "Yes" : "No");
+		SV_BroadcastPrintFmt("{} voted {}.\n", player.userinfo.netname,
+		                     ballot == true ? "Yes" : "No");
 		SV_GlobalVoteUpdate();
 	}
 }
@@ -1225,15 +1252,15 @@ void Vote_Runtic()
 	if (level.time == 1)
 	{
 		// Every player has a clean slate in terms of timeouts.
-		for (Players::iterator it = players.begin();it != players.end();++it)
+		for (auto& player : players)
 		{
-			if (!validplayer(*it))
+			if (!validplayer(player))
 			{
 				continue;
 			}
 
-			it->timeout_callvote = 0;
-			it->timeout_vote = 0;
+			player.timeout_callvote = 0;
+			player.timeout_vote = 0;
 		}
 	}
 
@@ -1253,7 +1280,7 @@ void Vote_Runtic()
 		// If there is an error message, display it.
 		if (!vote->get_error().empty())
 		{
-			SV_BroadcastPrintf("%s\n", vote->get_error().c_str());
+			SV_BroadcastPrintFmt("{}\n", vote->get_error());
 		}
 
 		delete vote;
@@ -1263,7 +1290,7 @@ void Vote_Runtic()
 
 	// Sync the countdown every few seconds.
 	if (vote->get_countdown() % (TICRATE * 5) == 0 &&
-	        vote->get_countdown() != ((unsigned int)sv_vote_timelimit.asInt() * TICRATE))
+	        vote->get_countdown() != (static_cast<unsigned int>(sv_vote_timelimit.asInt()) * TICRATE))
 	{
 		SV_GlobalVoteUpdate();
 	}

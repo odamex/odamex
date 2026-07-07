@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,7 +26,12 @@
 
 #include "dobject.h"
 #include "resources/res_resourceid.h"
+#include <array>
+#include <cassert>
+#include <type_traits>
 
+#include "dobject.h"
+#include "doomtype.h"
 
 #define FA_RESET (1 << 0)
 
@@ -63,7 +68,7 @@ public:
 
 	virtual	unsigned int Tell() const = 0;
 	virtual	FFile& Seek(int, ESeekPos) = 0;
-	inline	FFile& Seek(unsigned int i, ESeekPos p) { return Seek((int)i, p); }
+	inline	FFile& Seek(unsigned int i, ESeekPos p) { return Seek(static_cast<int>(i), p); }
 };
 
 class FLZOFile : public FFile
@@ -72,19 +77,19 @@ public:
 	FLZOFile();
 	FLZOFile(const char* name, EOpenMode mode, bool dontcompress = false);
 	FLZOFile(FILE* file, EOpenMode mode, bool dontcompress = false);
-	virtual ~FLZOFile();
+	~FLZOFile();
 
-	virtual bool Open(const char* name, EOpenMode mode);
-	virtual void Close();
-	virtual void Flush();
-	virtual EOpenMode Mode() const;
-	virtual bool IsPersistent() const { return true; }
-	virtual bool IsOpen() const;
+	bool Open(const char* name, EOpenMode mode) override;
+	void Close() override;
+	void Flush() override;
+	EOpenMode Mode() const override;
+	bool IsPersistent() const override { return true; }
+	bool IsOpen() const override;
 
-	virtual FFile& Write(const void*, unsigned int);
-	virtual FFile& Read(void*, unsigned int);
-	virtual unsigned int Tell() const;
-	virtual FFile& Seek(int, ESeekPos);
+	FFile& Write(const void*, unsigned int) override;
+	FFile& Read(void*, unsigned int) override;
+	unsigned int Tell() const override;
+	FFile& Seek(int, ESeekPos) override;
 
 protected:
 	unsigned int m_Pos;
@@ -109,14 +114,14 @@ class FLZOMemFile : public FLZOFile
 public:
 	FLZOMemFile();
 
-	virtual ~FLZOMemFile();
+	~FLZOMemFile() override;
 
-	virtual bool Open(const char* name, EOpenMode mode);	// Works for reading only
+	bool Open(const char* name, EOpenMode mode) override;	// Works for reading only
 	virtual bool Open(void* memblock);	// Open for reading only
 	virtual bool Open();	// Open for writing only
 	virtual bool Reopen();	// Re-opens imploded file for reading only
-	virtual void Close();
-	virtual bool IsOpen() const;
+	void Close() override;
+	bool IsOpen() const override;
 
 	void Serialize(FArchive &arc);
 
@@ -124,7 +129,7 @@ public:
 	void WriteToBuffer(void* buf, size_t length) const;
 
 protected:
-	virtual bool FreeOnExplode() { return !m_SourceFromMem; }
+	bool FreeOnExplode() override { return !m_SourceFromMem; }
 
 private:
 	bool m_SourceFromMem;
@@ -149,70 +154,123 @@ public:
 	virtual	void Write(const void* mem, unsigned int len);
 	virtual void Read(void* mem, unsigned int len);
 
-	void WriteCount(DWORD count);
-	DWORD ReadCount();
+	void WriteCount(uint32_t count);
+	uint32_t ReadCount();
 
-	FArchive& operator<< (BYTE c);
-	FArchive& operator<< (WORD s);
-	FArchive& operator<< (DWORD i);
-	FArchive& operator<< (QWORD i);
+	// ------------ Streaming-in operations ---------------
+
+	// Integer operators
+	template <typename IntegerType>
+	requires std::is_integral_v<IntegerType>
+	FArchive& operator<< (IntegerType value)
+	{
+		value = BESWAP(value);
+		Write(&value, sizeof(value));
+		return *this;
+	}
+
+	template <typename EnumeratedType>
+	requires std::is_enum_v<EnumeratedType>
+	FArchive& operator<< (EnumeratedType value)
+	{
+		*this << static_cast<std::underlying_type_t<EnumeratedType> >(value);
+		return *this;
+	}
+
+	// Overload bool because its size is implementation-defined, and we want archived sizes to be exact.
+	FArchive& operator<< (bool b) { return operator<< (uint8_t(b)); }
+
+	template <typename ElementType, size_t N>
+	FArchive& operator<< (const std::array<ElementType, N>& i_array)
+	{
+		*this << i_array.size();
+		for (const auto& element : i_array)
+		{
+			*this << element;
+		}
+		return *this;
+	}
+
 	FArchive& operator<< (float f);
 	FArchive& operator<< (double d);
 	FArchive& operator<< (argb_t color);
+	FArchive& operator<< (const std::string& str);
 	FArchive& operator<< (const char* str);
 	FArchive& operator<< (DObject* obj);
 
-	inline	FArchive& operator<< (char c) { return operator<< ((BYTE)c); }
-	inline	FArchive& operator<< (SBYTE c) { return operator<< ((BYTE)c); }
-	inline	FArchive& operator<< (SWORD s) { return operator<< ((WORD)s); }
-	inline	FArchive& operator<< (SDWORD i) { return operator<< ((DWORD)i); }
-	inline	FArchive& operator<< (SQWORD i) { return operator<< ((QWORD)i); }
-	inline	FArchive& operator<< (const unsigned char* str) { return operator<< ((const char* )str); }
-	inline	FArchive& operator<< (const signed char* str) { return operator<< ((const char* )str); }
-	inline	FArchive& operator<< (bool b) { return operator<< ((BYTE)b); }
-	inline	FArchive& operator<< (ResourceId res_id) { return operator<< ((DWORD)res_id); }
+	FArchive& operator<< (const unsigned char* str) { return operator<< (reinterpret_cast<const char*>(str)); }
+	FArchive& operator<< (const signed char* str) { return operator<< (reinterpret_cast<const char*>(str)); }
 
-	#ifdef _WIN32
-	inline	FArchive& operator<< (int i) { return operator<< ((SDWORD)i); }
-	inline	FArchive& operator<< (unsigned int i) { return operator<< ((DWORD)i); }
-	#endif
+	// ResourceId is a class type, so the integral template above does not cover it.
+	FArchive& operator<< (const ResourceId& res_id) { return operator<< (static_cast<uint32_t>(res_id)); }
 
-	FArchive& operator>> (BYTE& c);
-	FArchive& operator>> (WORD& s);
-	FArchive& operator>> (DWORD& i);
-	FArchive& operator>> (QWORD& i);
+	// ------------ Streaming-out operations ---------------
+
+	// Integer operators
+	template <typename IntegerType>
+	requires std::is_integral_v<IntegerType>
+	FArchive& operator>> (IntegerType& value)
+	{
+		Read(&value, sizeof(value));
+		value = BESWAP(value);
+		return *this;
+	}
+
+	template <typename EnumeratedType>
+	requires std::is_enum_v<EnumeratedType>
+	FArchive& operator>> (EnumeratedType& value)
+	{
+		std::underlying_type_t<EnumeratedType> temp;
+		*this >> temp;
+		value = static_cast<EnumeratedType>(temp);
+		return *this;
+	}
+
+	// Overload bool because its size is implementation-defined, and we want archived sizes to be exact.
+	FArchive& operator>>(bool& b)
+	{
+		uint8_t value;
+		*this >> value;
+		b = static_cast<bool>(value);
+		return *this;
+	}
+
+	template <typename ElementType, size_t N>
+	FArchive& operator>> (std::array<ElementType, N>& o_array)
+	{
+		size_t arraySize{0};
+
+		*this >> arraySize;
+		assert(arraySize == o_array.size());
+
+		for (auto& element : o_array)
+		{
+			*this >> element;
+		}
+		return *this;
+	}
+
 	FArchive& operator>> (float& f);
 	FArchive& operator>> (double& d);
 	FArchive& operator>> (argb_t& color);
 	FArchive& operator>> (std::string& s);
 	FArchive& ReadObject(DObject *&obj, TypeInfo* wanttype);
 
-	inline	FArchive& operator>> (char& c) { BYTE in; operator>> (in); c = (char)in; return *this; }
-	inline	FArchive& operator>> (SBYTE& c) { BYTE in; operator>> (in); c = (SBYTE)in; return *this; }
-	inline	FArchive& operator>> (SWORD& s) { WORD in; operator>> (in); s = (SWORD)in; return *this; }
-	inline	FArchive& operator>> (SDWORD& i) { DWORD in; operator>> (in); i = (SDWORD)in; return *this; }
-	inline	FArchive& operator>> (SQWORD& i) { QWORD in; operator>> (in); i = (SQWORD)in; return *this; }
-	//inline	FArchive& operator>> (unsigned char *&str) { return operator>> ((char *&)str); }
-	//inline	FArchive& operator>> (signed char *&str) { return operator>> ((char *&)str); }
-	inline	FArchive& operator>> (bool& b) { BYTE in; operator>> (in); b = (in != 0); return *this; }
-	inline  FArchive& operator>> (DObject* &object) { return ReadObject (object, RUNTIME_CLASS(DObject)); }
-	inline  FArchive& operator>> (ResourceId res_id) { DWORD in; operator>> (in); res_id = (ResourceId)in; return *this; }
-
-	#ifdef _WIN32
-	inline	FArchive& operator>> (int& i) { DWORD in; operator>> (in); i = (int)in; return *this; }
-	inline	FArchive& operator>> (unsigned int& i) { DWORD in; operator>> (in); i = (unsigned int)in; return *this; }
-	#endif
+	//FArchive& operator>> (unsigned char *&str) { return operator>> ((char *&)str); }
+	//FArchive& operator>> (signed char *&str) { return operator>> ((char *&)str); }
+	FArchive& operator>> (DObject* &object) { return ReadObject (object, RUNTIME_CLASS(DObject)); }
+	FArchive& operator>> (ResourceId& res_id) { uint32_t in; *this >> in; res_id = ResourceId(in); return *this; }
 
 protected:
 	enum { EObjectHashSize = 137 };
 
-	DWORD FindObjectIndex(const DObject* obj) const;
-	DWORD MapObject(const DObject* obj);
-	DWORD WriteClass(const TypeInfo* info);
+	uint32_t FindObjectIndex(const DObject* obj) const;
+	uint32_t MapObject(const DObject* obj);
+	uint32_t WriteClass(const TypeInfo* info);
 	const TypeInfo* ReadClass();
 	const TypeInfo* ReadClass(const TypeInfo* wanttype);
 	const TypeInfo* ReadStoredClass(const TypeInfo* wanttype);
-	DWORD HashObject(const DObject* obj) const;
+	uint32_t HashObject(const DObject* obj) const;
 
 	bool m_Persistent;		// meant for persistent storage (disk)?
 	bool m_Loading;			// extracting objects?
@@ -220,16 +278,16 @@ protected:
 	bool m_HubTravel;		// travelling inside a hub?
 	bool m_Reset;			// reset state?
 	FFile* m_File;			// unerlying file object
-	DWORD m_ObjectCount;	// # of objects currently serialized
-	DWORD m_MaxObjectCount;
-	DWORD m_ClassCount;		// # of unique classes currently serialized
+	uint32_t m_ObjectCount;	// # of objects currently serialized
+	uint32_t m_MaxObjectCount;
+	uint32_t m_ClassCount;		// # of unique classes currently serialized
 
 	struct TypeMap
 	{
 		const TypeInfo* toCurrent;	// maps archive type index to execution type index
-		DWORD toArchive;		// maps execution type index to archive type index
+		uint32_t toArchive;		// maps execution type index to archive type index
 
-		enum { NO_INDEX = 0xffffffff };
+//		enum { NO_INDEX = 0xffffffff };
 	} *m_TypeMap;
 
 	struct ObjectMap
@@ -244,7 +302,7 @@ private:
 	void operator= (const FArchive &src) {}
 };
 
-class player_s;
+class player_t;
 
-FArchive &operator<< (FArchive& arc, player_s* p);
-FArchive &operator>> (FArchive& arc, player_s* &p);
+FArchive &operator<< (FArchive& arc, player_t* p);
+FArchive &operator>> (FArchive& arc, player_t* &p);

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -38,7 +38,7 @@
 // Even when the menu is not displayed,
 // this can resize the view and change game parameters.
 // Does all the real work of the menu interaction.
-bool M_Responder (event_t *ev);
+bool M_Responder(const event_t& ev);
 
 // Called by main loop,
 // only used for menu (skull cursor) animation.
@@ -60,7 +60,7 @@ void M_StartControlPanel (void);
 bool M_StartOptionsMenu (void);
 
 // [RH] Handle keys for options menu
-void M_OptResponder (event_t *ev);
+void M_OptResponder(const event_t& ev);
 
 // [RH] Draw options menu
 void M_OptDrawer (void);
@@ -109,7 +109,15 @@ typedef void (*cvarfunc)(cvar_t *cvar, float newval);
 typedef void (*voidfunc)(void);
 typedef void (*intfunc)(int);
 
-typedef struct menuitem_s {
+struct value_t {
+	float		value;
+	const char	*name;
+};
+
+// TODO: this is barely functional in c++
+// almost the entire menu is undefined behavior
+// replace with std::variant maybe?
+struct menuitem_t {
 	itemtype		  type;
 	const char			 *label;
 	union {
@@ -132,38 +140,34 @@ typedef struct menuitem_s {
 		char			 *res3;
 	} d;
 	union {
-		struct value_s		*values;
-		const char		*command;
-        	cvarfunc		cfunc;
-	        voidfunc		mfunc;
-        	intfunc			lfunc;
-		int			highlight;
-		int			*flagint;
+		value_t*    values;
+		const char* command;
+		cvarfunc    cfunc;
+		voidfunc    mfunc;
+		intfunc     lfunc;
+		int         highlight;
+		int*        flagint;
 	} e;
-} menuitem_t;
+};
 
 typedef struct menu_s {
-	char			title[9];
+	OLumpName		title;
 	int				lastOn;
 	int				numitems;
 	int				indent;
 	menuitem_t	   *items;
 	int				scrolltop;
-	int				scrollpos;	
+	int				scrollpos;
 	void			(*refreshfunc)();	// Callback func for M_OptResponder
 } menu_t;
-
-typedef struct value_s {
-	float		value;
-	const char	*name;
-} value_t;
 
 typedef struct
 {
 	// -1 = no cursor here, 1 = ok, 2 = arrows ok
 	short		status;
 
-	char		name[10];
+	OLumpName	name;
+	char		textname[32];
 
 	// choice = menu item #.
 	// if status = 2,
@@ -210,9 +214,3 @@ extern short	 itemOn;
 extern oldmenu_t *currentMenu;
 
 size_t M_FindCvarInMenu(cvar_t &cvar, menuitem_t *menu, size_t length);
-
-#define MAX_EPISODES	8
-
-extern oldmenuitem_t EpisodeMenu[MAX_EPISODES];
-extern OLumpName EpisodeMaps[MAX_EPISODES];
-extern oldmenu_t EpiDef;

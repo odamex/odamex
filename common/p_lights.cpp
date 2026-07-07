@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -38,10 +38,6 @@
 
 IMPLEMENT_SERIAL (DLighting, DSectorEffect)
 
-DLighting::DLighting ()
-{
-}
-
 void DLighting::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
@@ -57,10 +53,6 @@ DLighting::DLighting (sector_t *sector)
 //
 
 IMPLEMENT_SERIAL (DFireFlicker, DLighting)
-
-DFireFlicker::DFireFlicker ()
-{
-}
 
 void DFireFlicker::Serialize (FArchive &arc)
 {
@@ -78,11 +70,11 @@ void DFireFlicker::Serialize (FArchive &arc)
 void DFireFlicker::RunThink ()
 {
 	int amount;
-		
+
 	if (--m_Count == 0)
 	{
 		amount = (P_Random () & 3) << 4;
-		
+
 		if (m_Sector->lightlevel - amount < m_MinLight)
 			m_Sector->lightlevel = m_MinLight;
 		else
@@ -116,10 +108,6 @@ DFireFlicker::DFireFlicker (sector_t *sector, int upper, int lower)
 //
 IMPLEMENT_SERIAL (DFlicker, DLighting)
 
-DFlicker::DFlicker ()
-{
-}
-
 void DFlicker::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
@@ -134,7 +122,7 @@ void DFlicker::RunThink ()
 {
 	if (m_Count)
 	{
-		m_Count--;	
+		m_Count--;
 	}
 	else if (m_Sector->lightlevel == m_MaxLight)
 	{
@@ -163,7 +151,7 @@ void EV_StartLightFlickering (int tag, int upper, int lower)
 		return;
 
 	int secnum;
-		
+
 	secnum = -1;
 	while ((secnum = P_FindSectorFromTag (tag,secnum)) >= 0)
 	{
@@ -177,10 +165,6 @@ void EV_StartLightFlickering (int tag, int upper, int lower)
 //
 
 IMPLEMENT_SERIAL (DLightFlash, DLighting)
-
-DLightFlash::DLightFlash ()
-{
-}
 
 void DLightFlash::Serialize (FArchive &arc)
 {
@@ -225,7 +209,7 @@ DLightFlash::DLightFlash (sector_t *sector)
 	m_MinTime = 7;
 	m_Count = (P_Random () & m_MaxTime) + 1;
 }
-	
+
 DLightFlash::DLightFlash (sector_t *sector, int min, int max)
 	: DLighting (sector)
 {
@@ -243,10 +227,6 @@ DLightFlash::DLightFlash (sector_t *sector, int min, int max)
 //
 
 IMPLEMENT_SERIAL (DStrobe, DLighting)
-
-DStrobe::DStrobe ()
-{
-}
 
 void DStrobe::Serialize (FArchive &arc)
 {
@@ -320,14 +300,14 @@ void EV_StartLightStrobing (int tag, int upper, int lower, int utics, int ltics)
 		return;
 
 	int secnum;
-		
+
 	secnum = -1;
 	while ((secnum = P_FindSectorFromTag (tag,secnum)) >= 0)
 	{
 		sector_t *sec = &sectors[secnum];
 		if (sec->lightingdata)
 			continue;
-		
+
 		new DStrobe (sec, upper, lower, utics, ltics);
 	}
 }
@@ -338,14 +318,14 @@ void EV_StartLightStrobing (int tag, int utics, int ltics)
 		return;
 
 	int secnum;
-		
+
 	secnum = -1;
 	while ((secnum = P_FindSectorFromTag (tag,secnum)) >= 0)
 	{
 		sector_t *sec = &sectors[secnum];
 		if (sec->lightingdata)
 			continue;
-		
+
 		new DStrobe (sec, utics, ltics, false);
 	}
 }
@@ -361,7 +341,7 @@ void EV_TurnTagLightsOff (int tag)
 	int secnum;
 
 	// [RH] Don't do a linear search
-	for (secnum = -1; (secnum = P_FindSectorFromTag (tag, secnum)) >= 0; ) 
+	for (secnum = -1; (secnum = P_FindSectorFromTag (tag, secnum)) >= 0; )
 	{
 		sector_t *sector = sectors + secnum;
 		int min = sector->lightlevel;
@@ -389,7 +369,7 @@ void EV_LightTurnOn (int tag, int bright)
 	int secnum = -1;
 
 	// [RH] Don't do a linear search
-	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0) 
+	while ((secnum = P_FindSectorFromTag (tag, secnum)) >= 0)
 	{
 		sector_t *sector = sectors + secnum;
 
@@ -534,15 +514,11 @@ void EV_LightSetMaxNeighbor(int tag)
 	}
 }
 
-	
+
 //
 // Spawn glowing light
 //
 IMPLEMENT_SERIAL (DGlow, DLighting)
-
-DGlow::DGlow ()
-{
-}
 
 void DGlow::Serialize (FArchive &arc)
 {
@@ -566,7 +542,7 @@ void DGlow::RunThink ()
 			m_Direction = 1;
 		}
 		break;
-		
+
 	case 1:
 		// UP
 		m_Sector->lightlevel += GLOWSPEED;
@@ -593,10 +569,6 @@ DGlow::DGlow (sector_t *sector)
 //
 
 IMPLEMENT_SERIAL (DGlow2, DLighting)
-
-DGlow2::DGlow2 ()
-{
-}
 
 void DGlow2::Serialize (FArchive &arc)
 {
@@ -668,7 +640,7 @@ void EV_StartLightFading (int tag, int value, int tics)
 		return;
 
 	int secnum;
-		
+
 	secnum = -1;
 	while ((secnum = P_FindSectorFromTag (tag,secnum)) >= 0)
 	{
@@ -689,10 +661,6 @@ void EV_StartLightFading (int tag, int value, int tics)
 
 IMPLEMENT_SERIAL (DPhased, DLighting)
 
-DPhased::DPhased ()
-{
-}
-
 void DPhased::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
@@ -704,7 +672,7 @@ void DPhased::Serialize (FArchive &arc)
 
 void DPhased::RunThink ()
 {
-	const int steps = 12;
+	static constexpr int steps = 12;
 
 	if (m_Phase < steps)
 		m_Sector->lightlevel = ((255 - m_BaseLevel) * m_Phase) / steps + m_BaseLevel;

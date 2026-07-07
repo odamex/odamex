@@ -23,7 +23,6 @@
 
 #include "odamex.h"
 
-#include <map>
 #include <sstream>
 
 #include "c_maplist.h"
@@ -33,6 +32,7 @@
 #include "c_dispatch.h"
 #include "i_net.h"
 #include "i_system.h"
+#include "i_time.h"
 
 //////// MAPLIST CACHE METHODS (Private) ////////
 
@@ -65,7 +65,7 @@ bool MaplistCache::query(maplist_qrows_t &result) {
 	// Return everything
 	result.reserve(this->maplist.size());
 	for (size_t i = 0;i < maplist.size();i++) {
-		result.push_back(std::pair<size_t, maplist_entry_t*>(i, &(this->maplist[i])));
+		result.emplace_back(i, &(this->maplist[i]));
 	}
 	return true;
 }
@@ -103,7 +103,7 @@ bool MaplistCache::query(const std::vector<std::string> &query,
 			}
 			index -= 1;
 
-			result.push_back(std::pair<size_t, maplist_entry_t*>(index, &(this->maplist[index])));
+			result.emplace_back(index, &(this->maplist[index]));
 			return true;
 		}
 	}
@@ -116,21 +116,16 @@ bool MaplistCache::query(const std::vector<std::string> &query,
 				bool f_map = CheckWildcards(pattern.c_str(), this->maplist[i].map.c_str());
 				bool f_wad = CheckWildcards(pattern.c_str(), JoinStrings(this->maplist[i].wads).c_str());
 				if (f_map || f_wad) {
-					result.push_back(std::pair<size_t, maplist_entry_t*>(i, &(this->maplist[i])));
+					result.emplace_back(i, &(this->maplist[i]));
 				}
 			}
 		} else {
 			// Discard any map that doesn't match
-			std::vector<std::pair<size_t, maplist_entry_t*> >::iterator itr;
-			for (itr = result.begin();itr != result.end();) {
-				bool f_map = CheckWildcards(pattern.c_str(), this->maplist[itr->first].map.c_str());
-				bool f_wad = CheckWildcards(pattern.c_str(), JoinStrings(this->maplist[itr->first].wads).c_str());
-				if (f_map || f_wad) {
-					++itr;
-				} else {
-					itr = result.erase(itr);
-				}
-			}
+			std::erase_if(result, [this, &pattern](const auto& pair){
+				bool f_map = CheckWildcards(pattern.c_str(), this->maplist[pair.first].map.c_str());
+				bool f_wad = CheckWildcards(pattern.c_str(), JoinStrings(this->maplist[pair.first].wads).c_str());
+				return !(f_map || f_wad);
+			});
 		}
 
 		if (result.empty()){
@@ -165,9 +160,8 @@ void MaplistCache::ev_tic() {
 
 		// Our deferred queries are similarly useless.
 		this->error = "You are not connected to a server.";
-		for (std::vector<deferred_query_t>::iterator it = this->deferred_queries.begin();
-			 it != this->deferred_queries.end();++it) {
-			it->errback(this->error);
+		for (const auto& query : deferred_queries) {
+			query.errback(this->error);
 		}
 		this->deferred_queries.clear();
 		return;
@@ -182,11 +176,10 @@ void MaplistCache::ev_tic() {
 	case MAPLIST_OK:
 		// If we have an "OK" maplist status, we ought to run
 		// our callbacks and get things over with.
-		for (std::vector<deferred_query_t>::iterator it = this->deferred_queries.begin();
-			 it != this->deferred_queries.end();++it) {
+		for (const auto& query : deferred_queries) {
 			maplist_qrows_t query_result;
-			this->query(it->query, query_result);
-			it->callback(query_result);
+			this->query(query.query, query_result);
+			query.callback(query_result);
 		}
 		this->deferred_queries.clear();
 		return;
@@ -195,10 +188,10 @@ void MaplistCache::ev_tic() {
 		break;
 	case MAPLIST_TIMEOUT:
 		this->error = "Maplist update timed out.";
-		DPrintf("MaplistCache::ev_tic: Maplist Cache Update Timeout.\n");
-		DPrintf("- Successfully Cached Maps: %d\n", this->maplist.size());
-		DPrintf("- Destionation Maplist Size: %d\n", this->size);
-		DPrintf("- Valid Indexes: %d\n", this->valid_indexes);
+		DPrintFmt("MaplistCache::ev_tic: Maplist Cache Update Timeout.\n");
+		DPrintFmt("- Successfully Cached Maps: {}\n", this->maplist.size());
+		DPrintFmt("- Destination Maplist Size: {}\n", this->size);
+		DPrintFmt("- Valid Indexes: {}\n", this->valid_indexes);
 		break;
 	case MAPLIST_THROTTLED:
 		this->error = "Server refused to send the maplist.";
@@ -210,9 +203,8 @@ void MaplistCache::ev_tic() {
 	}
 
 	// Handle our error conditions by running our errbacks.
-	for (std::vector<deferred_query_t>::iterator it = this->deferred_queries.begin();
-		 it != this->deferred_queries.end();++it) {
-		it->errback(this->error);
+	for (const auto& query : deferred_queries) {
+		query.errback(this->error);
 	}
 	this->deferred_queries.clear();
 }
@@ -259,8 +251,8 @@ void MaplistCache::defer_query(const std::vector<std::string> &query,
 	if (this->deferred_queries.empty()) {
 		// Only send out a maplist status packet if we don't already have a
 		// deferred query in progress.
-		MSG_WriteMarker(&net_buffer, clc_maplist);
-		MSG_WriteByte(&net_buffer, this->status);
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_Maplist(this->status));
+
 		this->status = MAPLIST_WAIT;
 		this->timeout = I_MSTime() + (1000 * 3);
 	}
@@ -278,18 +270,21 @@ void MaplistCache::status_handler(maplist_status_t status) {
 	case MAPLIST_OUTDATED:
 		// If our cache is out-of-date and we are able to request
 		// an updated maplist, request one.
-		MSG_WriteMarker(&net_buffer, clc_maplist_update);
+		MSG_WriteSVC(messenger.ReliableBuf(), CLC_MaplistUpdate());
+
+		[[fallthrough]];
 	case MAPLIST_EMPTY:
 	case MAPLIST_THROTTLED:
 		// If our cache is out-of-date or the maplist on the other end
 		// is empty, invalidate the local cache.
 		this->invalidate();
+		[[fallthrough]];
 	case MAPLIST_OK:
 		// No matter what, we ought to set the correct status.
 		this->status = status;
 		break;
 	default:
-		DPrintf("MaplistCache::status_handler: Unknown status %d from server.\n", status);
+		DPrintFmt("MaplistCache::status_handler: Unknown status {} from server.\n", status);
 		return;
 	}
 }
@@ -307,7 +302,7 @@ bool MaplistCache::update_status_handler(maplist_status_t status) {
 	case MAPLIST_OUTDATED:
 		return true;
 	default:
-		DPrintf("MaplistCache::status_handler: Unknown status %d from server.\n", status);
+		DPrintFmt("MaplistCache::status_handler: Unknown status {} from server.\n", status);
 		return true;
 	}
 }
@@ -381,22 +376,23 @@ void CMD_MaplistCallback(const maplist_qrows_t &result) {
 	size_t this_index = 0, next_index = 0;
 	bool show_this_map = MaplistCache::instance().get_this_index(this_index);
 	MaplistCache::instance().get_next_index(next_index);
-	for (maplist_qrows_t::const_iterator it = result.begin();it != result.end();++it) {
+	for (const auto& [index, entry] : result) {
+		const auto& [map, lastmap, _, wads] = *entry;
 		char flag = ' ';
-		if (show_this_map && it->first == this_index) {
-			flag = '*';
-		} else if (it->first == next_index) {
+		if (show_this_map && index == this_index) {
+			flag = '>';
+		} else if (index == next_index) {
 			flag = '+';
 		}
-		Printf(PRINT_HIGH, "%c%d. %s %s\n", flag, it->first + 1,
-			   JoinStrings(it->second->wads, " ").c_str(),
-			   it->second->map.c_str());
+		PrintFmt(PRINT_HIGH, " {}{}. {} {}{}\n", flag, index + 1,
+			   JoinStrings(wads, " "), map,
+			   lastmap.empty() ? "" : fmt::format(" lastmap={}", lastmap));
 	}
 }
 
 // Clientside maplist query errback.
 void CMD_MaplistErrback(const std::string &error) {
-	Printf(PRINT_HIGH, "%s\n", error.c_str());
+	PrintFmt(PRINT_HIGH, "{}\n", error);
 }
 
 // Clientside maplist query.

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -57,6 +57,7 @@ enum st_stateenum_t
 static bool st_needrefresh = true;
 
 EXTERN_CVAR(sv_allowredscreen)
+EXTERN_CVAR(sv_allowfov)
 EXTERN_CVAR(st_scale)
 EXTERN_CVAR(screenblocks)
 EXTERN_CVAR(g_lives)
@@ -68,8 +69,6 @@ IWindowSurface* stnum_surface;
 // functions in st_new.c
 void ST_initNew();
 void ST_unloadNew();
-
-extern bool simulated_connection;
 
 //
 // STATUS BAR DATA
@@ -128,6 +127,9 @@ extern bool simulated_connection;
 //		 Problem is, is the stuff rendered
 //		 into a buffer,
 //		 or into the frame buffer?
+// ---
+// Also, this stuff is for a 320x32 sbar size,
+// and is useless on any other size.
 
 // AMMO number pos.
 #define ST_AMMOWIDTH			3
@@ -273,6 +275,8 @@ static bool st_cursoron;
 // main bar left
 static const Texture*	sbar;
 
+static short sbar_width = 0;
+
 // 0-9, tall numbers
 // [RH] no longer static
 const Texture*			tallnum[10];
@@ -345,7 +349,7 @@ static int st_fragscount;
 static int st_oldhealth = -1;
 
 // used for evil grin
-static bool oldweaponsowned[NUMWEAPONS + 1];
+static bool oldweaponsowned[NUMWEAPONS];
 
 // count until face changes
 static int st_facecount = 0;
@@ -399,23 +403,23 @@ static byte CheatPowerup[7][10] = {{'i', 'd', 'b', 'e', 'h', 'o', 'l', 'd', 'v',
                                    {'i', 'd', 'b', 'e', 'h', 'o', 'l', 'd', 255}};
 
 cheatseq_t DoomCheats[] = {
-    {CheatMus, 0, 1, 0, {0, 0}, CHEAT_ChangeMusic},
-    {CheatPowerup[6], 0, 1, 0, {0, 0}, CHEAT_BeholdMenu},
-    {CheatMypos, 0, 1, 0, {0, 0}, CHEAT_IdMyPos},
-    {CheatAmap, 0, 0, 0, {0, 0}, CHEAT_AutoMap},
-    {CheatGod, 0, 0, 0, {CHT_IDDQD, 0}, CHEAT_SetGeneric},
-    {CheatAmmo, 0, 0, 0, {CHT_IDKFA, 0}, CHEAT_SetGeneric},
-    {CheatAmmoNoKey, 0, 0, 0, {CHT_IDFA, 0}, CHEAT_SetGeneric},
-    {CheatNoclip, 0, 0, 0, {CHT_NOCLIP, 0}, CHEAT_SetGeneric},  // Special check given !
-    {CheatNoclip2, 0, 0, 0, {CHT_NOCLIP, 1}, CHEAT_SetGeneric}, // Special Check given !
-    {CheatPowerup[0], 0, 0, 0, {CHT_BEHOLDV, 0}, CHEAT_SetGeneric},
-    {CheatPowerup[1], 0, 0, 0, {CHT_BEHOLDS, 0}, CHEAT_SetGeneric},
-    {CheatPowerup[2], 0, 0, 0, {CHT_BEHOLDI, 0}, CHEAT_SetGeneric},
-    {CheatPowerup[3], 0, 0, 0, {CHT_BEHOLDR, 0}, CHEAT_SetGeneric},
-    {CheatPowerup[4], 0, 0, 0, {CHT_BEHOLDA, 0}, CHEAT_SetGeneric},
-    {CheatPowerup[5], 0, 0, 0, {CHT_BEHOLDL, 0}, CHEAT_SetGeneric},
-    {CheatChoppers, 0, 0, 0, {CHT_CHAINSAW, 0}, CHEAT_SetGeneric},
-    {CheatClev, 0, 0, 0, {0, 0}, CHEAT_ChangeLevel}};
+    {CheatMus, 0, 1, 0, {0, 0}, cheat::ChangeMusic},
+    {CheatPowerup[6], 0, 1, 0, {0, 0}, cheat::BeholdMenu},
+    {CheatMypos, 0, 1, 0, {0, 0}, cheat::IdMyPos},
+    {CheatAmap, 0, 0, 0, {0, 0}, cheat::AutoMap},
+    {CheatGod, 0, 0, 0, {CHT_IDDQD, 0}, cheat::SetGeneric},
+    {CheatAmmo, 0, 0, 0, {CHT_IDKFA, 0}, cheat::SetGeneric},
+    {CheatAmmoNoKey, 0, 0, 0, {CHT_IDFA, 0}, cheat::SetGeneric},
+    {CheatNoclip, 0, 0, 0, {CHT_NOCLIP, 0}, cheat::SetGeneric},  // Special check given !
+    {CheatNoclip2, 0, 0, 0, {CHT_NOCLIP, 1}, cheat::SetGeneric}, // Special Check given !
+    {CheatPowerup[0], 0, 0, 0, {CHT_BEHOLDV, 0}, cheat::SetGeneric},
+    {CheatPowerup[1], 0, 0, 0, {CHT_BEHOLDS, 0}, cheat::SetGeneric},
+    {CheatPowerup[2], 0, 0, 0, {CHT_BEHOLDI, 0}, cheat::SetGeneric},
+    {CheatPowerup[3], 0, 0, 0, {CHT_BEHOLDR, 0}, cheat::SetGeneric},
+    {CheatPowerup[4], 0, 0, 0, {CHT_BEHOLDA, 0}, cheat::SetGeneric},
+    {CheatPowerup[5], 0, 0, 0, {CHT_BEHOLDL, 0}, cheat::SetGeneric},
+    {CheatChoppers, 0, 0, 0, {CHT_CHAINSAW, 0}, cheat::SetGeneric},
+    {CheatClev, 0, 0, 0, {0, 0}, cheat::ChangeLevel}};
 
 //
 // STATUS BAR CODE
@@ -428,26 +432,48 @@ int ST_StatusBarHeight(int surface_width, int surface_height)
 		return 0;
 
 	if (st_scale)
+	{
 		return 32 * surface_height / 200;
+	}
 	else
+	{
 		return 32;
+	}
 }
 
-int ST_StatusBarWidth(int surface_width, int surface_height)
+short ST_StatusBarWidth(int surface_width, int surface_height)
 {
 	if (!R_StatusBarVisible())
+	{
 		return 0;
+	}
 
-	if (!st_scale)
-		return 320;
 
 	// [AM] Scale status bar width according to height, unless there isn't
 	//      enough room for it.  Fixes widescreen status bar scaling.
 	// [ML] A couple of minor changes for true 4:3 correctness...
 	if (I_IsProtectedResolution(surface_width, surface_height))
-		return 10 * ST_StatusBarHeight(surface_width, surface_height);
+	{
+		int height = ST_StatusBarHeight(surface_width, surface_height);
+
+		if (sbar_width > 320)
+		{
+			return (height / 32) * sbar_width;
+		}
+		else
+		{
+			return 10 * height;
+		}
+	}
+
+	if (st_scale)
+	{
+		return (sbar_width / 80) * surface_height / 3;
+	}
 	else
-		return 4 * surface_height / 3;
+	{
+		return sbar_width;
+	}
 }
 
 int ST_StatusBarX(int surface_width, int surface_height)
@@ -485,7 +511,7 @@ void ST_ForceRefresh()
 
 CVAR_FUNC_IMPL (st_scale)
 {
-	R_SetViewSize((int)screenblocks);
+	R_SetViewSize(screenblocks.asInt());
 	ST_ForceRefresh();
 }
 
@@ -494,14 +520,14 @@ EXTERN_CVAR (sv_allowcheats)
 
 // Respond to keyboard input events, intercept cheats.
 // [RH] Cheats eatkey the last keypress used to trigger them
-bool ST_Responder (event_t *ev)
+bool ST_Responder(const event_t& ev)
 {
 	bool eat = false;
 
 	// Filter automap on/off.
-	if (ev->type == ev_keyup && ((ev->data1 & 0xffff0000) == AM_MSGHEADER))
+	if (ev.type == ev_keyup && ((ev.data1 & 0xffff0000) == AM_MSGHEADER))
 	{
-		switch (ev->data1)
+		switch (ev.data1)
 		{
 		case AM_MSGENTERED:
 			st_gamestate = AutomapState;
@@ -515,16 +541,15 @@ bool ST_Responder (event_t *ev)
 	}
 
 	// if a user keypress...
-	else if (ev->type == ev_keydown && ev->data3)
+	else if (ev.type == ev_keydown && ev.data3)
 	{
-		cheatseq_t* cheats = DoomCheats;
-		for (int i = 0; i < COUNT_CHEATS(DoomCheats); i++, cheats++)
+		for (auto& cheat : DoomCheats)
 		{
-			if (CHEAT_AddKey(cheats, (byte)ev->data1, &eat))
+			if (cheat::AddKey(&cheat, static_cast<byte>(ev.data1), &eat))
 			{
-				if (cheats->DontCheck || CHEAT_AreCheatsEnabled())
+				if (cheat.DontCheck || cheat::AreCheatsEnabled())
 				{
-					eat |= cheats->Handler(cheats);
+					eat |= cheat.Handler(&cheat);
 				}
 			}
 		}
@@ -536,30 +561,30 @@ bool ST_Responder (event_t *ev)
 // Console cheats
 BEGIN_COMMAND (god)
 {
-	if (!CHEAT_AreCheatsEnabled())
+	if (!cheat::AreCheatsEnabled())
 		return;
 
-	CHEAT_DoCheat(&consoleplayer(), CHT_GOD);
+	cheat::DoCheat(consoleplayer(), CHT_GOD);
 	CL_SendCheat(CHT_GOD);
 }
 END_COMMAND (god)
 
 BEGIN_COMMAND (notarget)
 {
-	if (!CHEAT_AreCheatsEnabled())
+	if (!cheat::AreCheatsEnabled())
 		return;
 
-	CHEAT_DoCheat(&consoleplayer(), CHT_NOTARGET);
+	cheat::DoCheat(consoleplayer(), CHT_NOTARGET);
 	CL_SendCheat(CHT_NOTARGET);
 }
 END_COMMAND (notarget)
 
 BEGIN_COMMAND (fly)
 {
-	if (!consoleplayer().spectator && !CHEAT_AreCheatsEnabled())
+	if (!consoleplayer().spectator && !cheat::AreCheatsEnabled())
 		return;
 
-	CHEAT_DoCheat(&consoleplayer(), CHT_FLY);
+	cheat::DoCheat(consoleplayer(), CHT_FLY);
 
 	if (!consoleplayer().spectator)
 	{
@@ -570,10 +595,10 @@ END_COMMAND (fly)
 
 BEGIN_COMMAND (noclip)
 {
-	if (!CHEAT_AreCheatsEnabled())
+	if (!cheat::AreCheatsEnabled())
 		return;
 
-	CHEAT_DoCheat(&consoleplayer(), CHT_NOCLIP);
+	cheat::DoCheat(consoleplayer(), CHT_NOCLIP);
 	CL_SendCheat(CHT_NOCLIP);
 }
 END_COMMAND (noclip)
@@ -587,23 +612,23 @@ BEGIN_COMMAND (chase)
 		if (chasedemo)
 		{
 			chasedemo.Set (0.0f);
-			for (Players::iterator it = players.begin(); it != players.end(); ++it)
-				it->cheats &= ~CF_CHASECAM;
+			for (auto& player : players)
+				player.cheats &= ~CF_CHASECAM;
 		}
 		else
 		{
 			chasedemo.Set (1.0f);
-			for (Players::iterator it = players.begin(); it != players.end(); ++it)
-				it->cheats |= CF_CHASECAM;
+			for (auto& player : players)
+				player.cheats |= CF_CHASECAM;
 		}
 	}
 	else
 	{
-		if (!CHEAT_AreCheatsEnabled())
+		if (!cheat::AreCheatsEnabled())
 			return;
 
-		CHEAT_DoCheat(&consoleplayer(), CHT_CHASECAM);
-		
+		cheat::DoCheat(consoleplayer(), CHT_CHASECAM);
+
 	}
 }
 END_COMMAND (chase)
@@ -612,7 +637,7 @@ BEGIN_COMMAND (idmus)
 {
 	if (argc > 1)
 	{
-		char *map;
+		OLumpName map;
 		if (gameinfo.flags & GI_MAPxx)
 		{
 			const int l = atoi(argv[1]);
@@ -620,7 +645,7 @@ BEGIN_COMMAND (idmus)
 				map = CalcMapName(0, l);
 			else
 			{
-				Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
+				PrintFmt(PRINT_HIGH, "{}\n", GStrings(STSTR_NOMUS));
 				return;
 			}
 		}
@@ -635,12 +660,12 @@ BEGIN_COMMAND (idmus)
 			if (info.music[0])
 			{
 				S_ChangeMusic(std::string(info.music.c_str(), 8), 1);
-				Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_MUS));
+				PrintFmt(PRINT_HIGH, "{}\n", GStrings(STSTR_MUS));
 			}
 		}
 		else
 		{
-			Printf(PRINT_HIGH, "%s\n", GStrings(STSTR_NOMUS));
+			PrintFmt(PRINT_HIGH, "{}\n", GStrings(STSTR_NOMUS));
 		}
 	}
 }
@@ -648,16 +673,16 @@ END_COMMAND (idmus)
 
 BEGIN_COMMAND (give)
 {
-	if (!CHEAT_AreCheatsEnabled())
+	if (!cheat::AreCheatsEnabled())
 		return;
 
 	if (argc < 2)
 		return;
 
-	const std::string name = C_ArgCombine(argc - 1, (const char**)(argv + 1));
+	const std::string name = C_ArgCombine(argc - 1, const_cast<const char**>(argv + 1));
 	if (name.length())
 	{
-		CHEAT_GiveTo(&consoleplayer(), name.c_str());
+		cheat::GiveTo(consoleplayer(), name.c_str());
 		CL_SendGiveCheat(name.c_str());
 	}
 }
@@ -665,14 +690,14 @@ END_COMMAND (give)
 
 BEGIN_COMMAND (fov)
 {
-	if (!CHEAT_AreCheatsEnabled() || !m_Instigator)
+	if (multiplayer && !sv_allowfov && (!cheat::AreCheatsEnabled() || !m_Instigator))
 		return;
 
 	if (argc != 2)
-		Printf(PRINT_HIGH, "FOV is %g\n", m_Instigator->player->fov);
+		PrintFmt(PRINT_HIGH, "FOV is {:g}\n", m_Instigator->player->fov);
 	else
 	{
-		m_Instigator->player->fov = clamp((float)atof(argv[1]), 45.0f, 135.0f);
+		m_Instigator->player->fov = clamp(static_cast<float>(atof(argv[1])), 45.0f, 135.0f);
 		R_ForceViewWindowResize();
 	}
 }
@@ -680,10 +705,10 @@ END_COMMAND (fov)
 
 BEGIN_COMMAND(buddha)
 {
-	if (!CHEAT_AreCheatsEnabled())
+	if (!cheat::AreCheatsEnabled())
 		return;
 
-	CHEAT_DoCheat(&consoleplayer(), CHT_BUDDHA);
+	cheat::DoCheat(consoleplayer(), CHT_BUDDHA);
 	CL_SendCheat(CHT_BUDDHA);
 }
 END_COMMAND(buddha)
@@ -892,7 +917,7 @@ void ST_updateWidgets()
 	for (int i = 0; i < 6; i++)
 	{
 		// denis - longwinded so compiler optimization doesn't skip it (fault in my gcc?)
-		if (plyr->weaponowned[i+1])
+		if (plyr->weaponowned[i+1])     // plus 1 because we skip the fist as a statusbar indicator.
 			st_weaponowned[i] = 1;
 		else
 			st_weaponowned[i] = 0;
@@ -927,15 +952,34 @@ void ST_updateWidgets()
 		st_chat = st_oldchat;
 }
 
+void ST_UpdateSurfaceBpp()
+{
+	int currentbpp = screen->getSurface()->getBitsPerPixel();
+	int stnumbpp = stnum_surface->getBitsPerPixel();
+	int stbarbpp = stbar_surface->getBitsPerPixel();
+
+	if (stbar_surface && stbarbpp != currentbpp)
+	{
+		delete stbar_surface;
+		stbar_surface = I_AllocateSurface(sbar_width, 32, currentbpp);
+	}
+
+	if (stnum_surface && stnumbpp != currentbpp)
+	{
+		delete stnum_surface;
+		stnum_surface = I_AllocateSurface(sbar_width, 32, currentbpp);
+	}
+}
+
 void ST_Ticker()
 {
+	ST_UpdateSurfaceBpp();
 	if (!multiplayer && !demoplayback && (ConsoleState == c_down || ConsoleState == c_falling))
 		return;
 	st_randomnumber = M_Random();
 	ST_updateWidgets();
 	st_oldhealth = displayplayer().health;
 }
-
 
 void ST_drawWidgets(bool force_refresh)
 {
@@ -961,17 +1005,14 @@ void ST_drawWidgets(bool force_refresh)
 	w_faces.update(force_refresh);
 
 	for (int i = 0; i < 3; i++)
-	{
 		w_keyboxes[i].update(force_refresh);
-	}
 
 	if (!G_IsCoopGame())
-	{
 		w_frags.update(force_refresh);
-	}
 
-	w_lives.update(true, G_IsLivesGame()); // Force refreshing to avoid tens
-	                                       // to be hidden by Doomguy's face
+	if (G_IsLivesGame())
+		w_lives.update(true); // Force refreshing to avoid tens
+		                      // to be hidden by Doomguy's face
 }
 
 
@@ -984,6 +1025,8 @@ static void ST_refreshBackground()
 {
 	const IWindowSurface* surface = R_GetRenderingSurface();
 	const int surface_width = surface->getWidth(), surface_height = surface->getHeight();
+
+	int scaled_x = (sbar_width - 320) / 2;
 
 	// [RH] If screen is wider than the status bar, draw stuff around status bar.
 	if (surface_width > ST_WIDTH)
@@ -999,11 +1042,11 @@ static void ST_refreshBackground()
 
 	if (sv_gametype == GM_CTF)
 	{
-		stbar_canvas->DrawTexture(flagsbg, ST_FLAGSBGX, ST_FLAGSBGY);
+		stbar_canvas->DrawPatch(W_ResolvePatchHandle(flagsbg), ST_FLAGSBGX + scaled_x, ST_FLAGSBGY);
 	}
 	else if (G_IsCoopGame())
 	{
-		stbar_canvas->DrawTexture(armsbg, ST_ARMSBGX, ST_ARMSBGY);
+		stbar_canvas->DrawPatch(W_ResolvePatchHandle(armsbg), ST_ARMSBGX + scaled_x, ST_ARMSBGY);
 	}
 
 	if (multiplayer)
@@ -1013,11 +1056,13 @@ static void ST_refreshBackground()
 			// [RH] Always draw faceback with the player's color
 			//		using a translation rather than a different patch.
 			V_ColorMap = translationref_t(translationtables + displayplayer_id * 256, displayplayer_id);
-			stbar_canvas->DrawTranslatedTexture(faceback, ST_FX, ST_FY);
+			stbar_canvas->DrawTranslatedPatch(W_ResolvePatchHandle(faceback), ST_FX + scaled_x,
+			                                  ST_FY);
 		}
 		else
 		{
-			stbar_canvas->DrawTexture(faceclassic[displayplayer_id - 1], ST_FX, ST_FY);
+			stbar_canvas->DrawPatch(
+			    W_ResolvePatchHandle(faceclassic[displayplayer_id - 1]), ST_FX + scaled_x, ST_FY);
 		}
 	}
 
@@ -1034,10 +1079,10 @@ static void ST_refreshBackground()
 // on top of it.
 //
 // If st_scale is enabled, the status bar is drawn to an unscaled 320x32 pixel
-// off-screen surface stnum_surface. First stbar_surface (the status bar
-// background) is blitted to stnum_surface, then the widgets are then drawn
-// on top of it. Finally, stnum_surface is blitted onto the rendering surface
-// using scaling to match the size in 320x200 resolution.
+// off-screen surface stnum_surface. (or whatever its dimensions are in widescreen.)
+// First stbar_surface (the status bar background) is blitted to stnum_surface,
+// then the widgets are then drawn on top of it. Finally, stnum_surface is blitted
+// onto the rendering surface using scaling to match the size in 320x200 resolution.
 //
 // Now ST_Drawer recalculates the ST_WIDTH, ST_HEIGHT, ST_X, and ST_Y globals.
 //
@@ -1066,19 +1111,19 @@ void ST_Drawer()
 			ST_refreshBackground();
 
 			if (st_scale)
-				stnum_surface->blit(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
+				stnum_surface->blitcrop(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
 						0, 0, stnum_surface->getWidth(), stnum_surface->getHeight());
 			else
-				surface->blit(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
+				surface->blitcrop(stbar_surface, 0, 0, stbar_surface->getWidth(), stbar_surface->getHeight(),
 						ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
 		}
-		
+
 		// refresh all widgets
 		ST_drawWidgets(st_needrefresh);
 
 		if (st_scale)
-			surface->blit(stnum_surface, 0, 0, stnum_surface->getWidth(), stnum_surface->getHeight(),
-					ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);	
+			surface->blitcrop(stnum_surface, 0, 0, stnum_surface->getWidth(), stnum_surface->getHeight(),
+					ST_X, ST_Y, ST_WIDTH, ST_HEIGHT);
 
 		stbar_surface->unlock();
 		stnum_surface->unlock();
@@ -1088,32 +1133,24 @@ void ST_Drawer()
 }
 
 
-static const Texture* LoadFaceGraphic(const char* name)
+static lumpHandle_t LoadFaceGraphic(const OLumpName& name)
 {
-	const ResourceId res_id = Res_GetTextureResourceId(name, SPRITE);
-	if (Res_CheckResource(res_id))
-		return Res_CacheTexture(res_id, PU_STATIC);
-
-	char othername[9];
-	strcpy(othername, name);
-	othername[0] = 'S'; othername[1] = 'T'; othername[2] = 'F';
-	return Res_CacheTexture(othername, SPRITE, PU_STATIC);
+	int lump = W_GetNumForName(name, ns_global);
+	return W_CachePatchHandle(lump, PU_STATIC);
 }
 
 static void ST_loadGraphics()
 {
-	int i, j;
-	char namebuf[9];
-	namebuf[8] = 0;
+	OLumpName namebuf;
 
 	// Load the numbers, tall and short
 	for (int i = 0; i < 10; i++)
 	{
-		sprintf(namebuf, "STTNUM%d", i);
-		tallnum[i] = Res_CacheTexture(namebuf, SPRITE, PU_STATIC);
+		namebuf = fmt::format("STTNUM{}", i);
+		tallnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 
-		sprintf(namebuf, "STYSNUM%d", i);
-		shortnum[i] = Res_CacheTexture(namebuf, SPRITE, PU_STATIC);
+		namebuf = fmt::format("STYSNUM{}", i);
+		shortnum[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 	}
 
 	// Load percent key.
@@ -1125,8 +1162,8 @@ static void ST_loadGraphics()
 	// key cards
 	for (int i = 0; i < NUMCARDS + NUMCARDS / 2; i++)
 	{
-		sprintf(namebuf, "STKEYS%d", i);
-		keys[i] = Res_CacheTexture(namebuf, SPRITE, PU_STATIC);
+		namebuf = fmt::format("STKEYS{}", i);
+		keys[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 	}
 
 	// arms background
@@ -1138,7 +1175,7 @@ static void ST_loadGraphics()
 	// arms ownership widgets
 	for (int i = 0; i < 6; i++)
 	{
-		sprintf(namebuf, "STGNUM%d", i+2);
+		namebuf = fmt::format("STGNUM{}", i+2);
 
 		// gray #
 		arms[i][0] = Res_CacheTexture(namebuf, SPRITE, PU_STATIC);
@@ -1155,40 +1192,41 @@ static void ST_loadGraphics()
 	// [Nes] Classic vanilla lifebars.
 	for (int i = 0; i < 4; i++)
 	{
-		sprintf(namebuf, "STFB%d", i);
-		faceclassic[i] = Res_CacheTexture(namebuf, SPRITE, PU_STATIC);
+		namebuf = fmt::format("STFB{}", i);
+		faceclassic[i] = W_CachePatchHandle(namebuf, PU_STATIC);
 	}
 
 	// status bar background bits
-	sbar = Res_CacheTexture("STBAR", SPRITE, PU_STATIC);
+	sbar = W_CachePatchHandle("STBAR", PU_STATIC);
+	// in tyool 2024, we have widescreen status bars
+	// and they're not always 320x32
+	sbar_width = W_ResolvePatchHandle(sbar)->width();
 
 	// face states
 	int facenum = 0;
-
-	namebuf[0] = 'S'; namebuf[1] = 'T'; namebuf[2] = 'F';
 
 	for (int i = 0; i < ST_NUMPAINFACES; i++)
 	{
 		for (int j = 0; j < ST_NUMSTRAIGHTFACES; j++)
 		{
-			sprintf(namebuf+3, "ST%d%d", i, j);
+			namebuf = fmt::format("STFST{}{}", i, j);
 			faces[facenum++] = LoadFaceGraphic(namebuf);
 		}
-		sprintf(namebuf+3, "TR%d0", i);		// turn right
+		namebuf = fmt::format("STFTR{}0", i); // turn right
 		faces[facenum++] = LoadFaceGraphic(namebuf);
-		sprintf(namebuf+3, "TL%d0", i);		// turn left
+		namebuf = fmt::format("STFTL{}0", i); // turn left
 		faces[facenum++] = LoadFaceGraphic(namebuf);
-		sprintf(namebuf+3, "OUCH%d", i);		// ouch!
+		namebuf = fmt::format("STFOUCH{}", i); // ouch!
 		faces[facenum++] = LoadFaceGraphic(namebuf);
-		sprintf(namebuf+3, "EVL%d", i);		// evil grin ;)
+		namebuf = fmt::format("STFEVL{}", i); // evil grin ;)
 		faces[facenum++] = LoadFaceGraphic(namebuf);
-		sprintf(namebuf+3, "KILL%d", i);		// pissed off
+		namebuf = fmt::format("STFKILL{}", i); // pissed off
 		faces[facenum++] = LoadFaceGraphic(namebuf);
 	}
-	strcpy (namebuf+3, "GOD0");
+	namebuf = "STFGOD0";
 	faces[facenum++] = LoadFaceGraphic(namebuf);
-	strcpy (namebuf+3, "DEAD0");
-	faces[facenum++] = LoadFaceGraphic(namebuf);
+	namebuf = "STFDEAD0";
+	faces[facenum] = LoadFaceGraphic(namebuf);
 }
 
 static void ST_loadData()
@@ -1246,52 +1284,55 @@ static void ST_unloadData()
 
 void ST_createWidgets()
 {
+	int scaled_x = (sbar_width - 320) / 2;
 	// ready weapon ammo
-	w_ready.init(ST_AMMOX, ST_AMMOY, tallnum, &st_current_ammo, ST_AMMOWIDTH);
+	w_ready.init(ST_AMMOX + scaled_x, ST_AMMOY, tallnum, &st_current_ammo,
+	             ST_AMMOWIDTH);
 
 	// health percentage
-	w_health.init(ST_HEALTHX, ST_HEALTHY, tallnum, &st_health, tallpercent);
+	w_health.init(ST_HEALTHX + scaled_x, ST_HEALTHY, tallnum, &st_health,
+	              tallpercent);
 
 	// weapons owned
 	for (int i = 0; i < 6; i++)
 	{
-		w_arms[i].init(ST_ARMSX + (i % 3) * ST_ARMSXSPACE,
+		w_arms[i].init(ST_ARMSX + (i % 3) * ST_ARMSXSPACE + scaled_x,
 		               ST_ARMSY + (i / 3) * ST_ARMSYSPACE, arms[i], &st_weaponowned[i]);
 	}
 
 	// frags sum
-	w_frags.init(ST_FRAGSX, ST_FRAGSY, tallnum, &st_fragscount,
+	w_frags.init(ST_FRAGSX + scaled_x, ST_FRAGSY, tallnum, &st_fragscount,
 	             ST_FRAGSWIDTH);
 
 	// faces
-	w_faces.init(ST_FACESX, ST_FACESY, faces, &st_faceindex);
+	w_faces.init(ST_FACESX + scaled_x, ST_FACESY, faces, &st_faceindex);
 
 	// armor percentage - should be colored later
-	w_armor.init(ST_ARMORX, ST_ARMORY, tallnum, &st_armor, tallpercent);
+	w_armor.init(ST_ARMORX + scaled_x, ST_ARMORY, tallnum, &st_armor, tallpercent);
 
 	// keyboxes 0-2
-	w_keyboxes[0].init(ST_KEY0X, ST_KEY0Y, keys, &keyboxes[0]);
-	w_keyboxes[1].init(ST_KEY1X, ST_KEY1Y, keys, &keyboxes[1]);
-	w_keyboxes[2].init(ST_KEY2X, ST_KEY2Y, keys, &keyboxes[2]);
+	w_keyboxes[0].init(ST_KEY0X + scaled_x, ST_KEY0Y, keys, &keyboxes[0]);
+	w_keyboxes[1].init(ST_KEY1X + scaled_x, ST_KEY1Y, keys, &keyboxes[1]);
+	w_keyboxes[2].init(ST_KEY2X + scaled_x, ST_KEY2Y, keys, &keyboxes[2]);
 
 	// ammo count (all four kinds)
-	w_ammo[0].init(ST_AMMO0X, ST_AMMO0Y, shortnum, &st_ammo[0], ST_AMMO0WIDTH);
-	w_ammo[1].init(ST_AMMO1X, ST_AMMO1Y, shortnum, &st_ammo[1], ST_AMMO1WIDTH);
-	w_ammo[2].init(ST_AMMO2X, ST_AMMO2Y, shortnum, &st_ammo[2], ST_AMMO2WIDTH);
-	w_ammo[3].init(ST_AMMO3X, ST_AMMO3Y, shortnum, &st_ammo[3], ST_AMMO3WIDTH);
+	w_ammo[0].init(ST_AMMO0X + scaled_x, ST_AMMO0Y, shortnum, &st_ammo[0], ST_AMMO0WIDTH);
+	w_ammo[1].init(ST_AMMO1X + scaled_x, ST_AMMO1Y, shortnum, &st_ammo[1], ST_AMMO1WIDTH);
+	w_ammo[2].init(ST_AMMO2X + scaled_x, ST_AMMO2Y, shortnum, &st_ammo[2], ST_AMMO2WIDTH);
+	w_ammo[3].init(ST_AMMO3X + scaled_x, ST_AMMO3Y, shortnum, &st_ammo[3], ST_AMMO3WIDTH);
 
 	// max ammo count (all four kinds)
-	w_maxammo[0].init(ST_MAXAMMO0X, ST_MAXAMMO0Y, shortnum, &st_maxammo[0],
+	w_maxammo[0].init(ST_MAXAMMO0X + scaled_x, ST_MAXAMMO0Y, shortnum, &st_maxammo[0],
 	                  ST_MAXAMMO0WIDTH);
-	w_maxammo[1].init(ST_MAXAMMO1X, ST_MAXAMMO1Y, shortnum, &st_maxammo[1],
+	w_maxammo[1].init(ST_MAXAMMO1X + scaled_x, ST_MAXAMMO1Y, shortnum, &st_maxammo[1],
 	                  ST_MAXAMMO1WIDTH);
-	w_maxammo[2].init(ST_MAXAMMO2X, ST_MAXAMMO2Y, shortnum, &st_maxammo[2],
+	w_maxammo[2].init(ST_MAXAMMO2X + scaled_x, ST_MAXAMMO2Y, shortnum, &st_maxammo[2],
 	                  ST_MAXAMMO2WIDTH);
-	w_maxammo[3].init(ST_MAXAMMO3X, ST_MAXAMMO3Y, shortnum, &st_maxammo[3],
+	w_maxammo[3].init(ST_MAXAMMO3X + scaled_x, ST_MAXAMMO3Y, shortnum, &st_maxammo[3],
 	                  ST_MAXAMMO3WIDTH);
 
 	// Number of lives (not always rendered)
-	w_lives.init(ST_FX + 34, ST_FY + 25, shortnum, &st_lives, 2);
+	w_lives.init(ST_FX + 34 + scaled_x, ST_FY + 25, shortnum, &st_lives, 2);
 }
 
 void ST_Start()
@@ -1313,7 +1354,7 @@ void ST_Start()
 
 	for (int i = 0; i < 3; i++)
 		keyboxes[i] = -1;
-	
+
 	ST_initNew();
 
 	ST_createWidgets();
@@ -1321,12 +1362,22 @@ void ST_Start()
 
 void ST_Init()
 {
-	if (stbar_surface == NULL)
-		stbar_surface = I_AllocateSurface(320, 32, 8);
-	if (stnum_surface == NULL)
-		stnum_surface = I_AllocateSurface(320, 32, 8);
-
 	ST_loadData();
+
+	if (stbar_surface == NULL)
+	{
+		if (I_GetVideoBitDepth() == 32)
+			stbar_surface = I_AllocateSurface(sbar_width, 32, 32);
+		else
+			stbar_surface = I_AllocateSurface(sbar_width, 32, 8);
+	}
+	if (stnum_surface == NULL)
+	{
+		if (I_GetVideoBitDepth() == 32)
+			stnum_surface = I_AllocateSurface(sbar_width, 32, 32);
+		else
+			stnum_surface = I_AllocateSurface(sbar_width, 32, 8);
+	}
 }
 
 void STACK_ARGS ST_Shutdown()
@@ -1335,6 +1386,8 @@ void STACK_ARGS ST_Shutdown()
 
 	I_FreeSurface(stbar_surface);
 	I_FreeSurface(stnum_surface);
+
+	sbar_width = 0;
 }
 
 

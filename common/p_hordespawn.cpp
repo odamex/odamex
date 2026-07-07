@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2021 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,6 +29,7 @@
 
 #include "actor.h"
 #include "c_effect.h"
+#include "gi.h"
 #include "m_random.h"
 #include "p_hordedefine.h"
 #include "p_local.h"
@@ -70,14 +71,18 @@ static bool CmpDist(const SpawnPointWeight& a, const SpawnPointWeight& b)
  * @return Actor pointer we just spawned, or NULL if the spawn failed.
  */
 static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
-                                      const v2fixed_t offset)
+                                      const v2fixed_t offset, mobjCounts_t& monsterCounts)
 {
+	int count = monsterCounts[recipe.type];
 	AActor* mo = new AActor(spawn.mo->x + offset.x, spawn.mo->y + offset.y, spawn.mo->z,
 	                        recipe.type);
 	if (mo)
 	{
 		if (P_TestMobjLocation(mo))
 		{
+			// update current count
+			monsterCounts[recipe.type] = count + 1;
+
 			if (recipe.isBoss)
 			{
 				// Heavy is the head that wears the crown.
@@ -86,7 +91,7 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 
 				// Set flags as a boss.
 				mo->oflags = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR | MFO_QUICK |
-				             MFO_NORAISE | MFO_BOSSPOOL | MFO_FULLBRIGHT;
+				             MFO_NORAISE | MFO_ISHORDEBOSS | MFO_FULLBRIGHT;
 
 				mo->flags3 = MF3_FULLVOLSOUNDS | MF3_DMGIGNORED | MF3_NORADIUSDMG;
 			}
@@ -95,7 +100,7 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
 			// Spawn a teleport fog if it's not an ambush.
 			if ((spawn.mo->flags & MF_AMBUSH) == 0)
 			{
-				AActor* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z, MT_TFOG);
+				AActor* tele = new AActor(spawn.mo->x, spawn.mo->y, spawn.mo->z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
 				SV_SpawnMobj(tele);
 				S_NetSound(tele, CHAN_VOICE, "misc/teleport", ATTN_NORM);
 			}
@@ -120,59 +125,60 @@ static AActor::AActorPtr SpawnMonster(hordeSpawn_t& spawn, const hordeRecipe_t& 
  * @return Actors spawned by this function.  Can be discarded.
  */
 static AActors SpawnMonsterGroup(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
-                                 const int count)
+                                 const int count, mobjCounts_t& monsterCounts)
 {
 	AActors ok;
 
-	const fixed_t rad = ::mobjinfo[recipe.type].radius;
-	const char* name = ::mobjinfo[recipe.type].name;
+	const mobjinfo_t& mobj = ::mobjinfo[recipe.type];
+	const fixed_t rad = mobj.radius;
+	const char* name = mobj.name;
 
 	if (count == 4)
 	{
 		// A big square.
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad)));
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad)));
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, rad)));
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, rad)));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad), monsterCounts));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad), monsterCounts));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, rad), monsterCounts));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, rad), monsterCounts));
 	}
 	else if (count == 3)
 	{
 		// A wedge.
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad)));
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad)));
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, rad)));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, -rad), monsterCounts));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, -rad), monsterCounts));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, rad), monsterCounts));
 	}
 	else if (count == 2)
 	{
 		// Next to each other.
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, 0)));
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, 0)));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(-rad, 0), monsterCounts));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(rad, 0), monsterCounts));
 	}
 	else if (count == 1)
 	{
 		// All by themselves :(
-		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, 0)));
+		ok.push_back(SpawnMonster(spawn, recipe, v2fixed_t(0, 0), monsterCounts));
 	}
 	else
 	{
-		Printf(PRINT_WARNING, "Invalid spawn count %d of %s.\n", count, name);
+		PrintFmt(PRINT_WARNING, "Invalid spawn count {} of {}.\n", count, name);
 	}
 
 	// Remove unspawned actors - probably spawnblocked.
 	AActors ret;
-	for (AActors::iterator it = ok.begin(); it != ok.end(); ++it)
+	for (auto& mo : ok)
 	{
-		if ((*it) != NULL)
+		if (mo != nullptr)
 		{
-			ret.push_back(*it);
+			ret.push_back(mo);
 		}
 	}
 
-	if (ret.size() < count)
+	if (static_cast<int>(ret.size()) < count)
 	{
-		DPrintf("Partial spawn %" PRIuSIZE "/%d of type %s at a %s spawn (%f, %f).\n",
-		        ret.size(), count, name, HordeThingStr(spawn.type),
-		        FIXED2FLOAT(spawn.mo->x), FIXED2FLOAT(spawn.mo->y));
+		DPrintFmt("Partial spawn {}/{} of type {} at a {} spawn ({}, {}).\n",
+		          ret.size(), count, name, HordeThingStr(spawn.type),
+		          FIXED2FLOAT(spawn.mo->x), FIXED2FLOAT(spawn.mo->y));
 	}
 
 	return ret;
@@ -217,6 +223,25 @@ bool P_HordeHasSpawns()
 }
 
 /**
+ * @brief Return true if there is both at least one large boss spawner and one large monster spawner in the map.
+ */
+bool P_HordeHasRequiredMonsterSpawns()
+{
+	bool bossspawnfound = false;
+	bool monsterspawnfound = false;
+
+	for (const auto& spawn : monsterSpawns)
+	{
+		if (spawn.type == TTYPE_HORDE_BOSS)
+			bossspawnfound = true;
+		if (spawn.type == TTYPE_HORDE_MONSTER)
+			monsterspawnfound = true;
+	}
+
+	return bossspawnfound && monsterspawnfound;
+}
+
+/**
  * @brief Clear all tracked spawn points.
  */
 void P_HordeClearSpawns()
@@ -228,7 +253,7 @@ void P_HordeClearSpawns()
 
 /**
  * @brief True if passed radius and height fits in the passed mobjinfo.
- * 
+ *
  * @param info Info to check against.
  * @param rad Radius to check in whole units (not fixed).
  * @param height Height to check in whole units (not fixed).
@@ -246,14 +271,13 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 	float totalScore = 0.0f;
 
 	SpawnPointWeights weights;
-	for (hordeSpawns_t::iterator sit = monsterSpawns.begin(); sit != monsterSpawns.end();
-	     ++sit)
+	for (auto& spawn : monsterSpawns)
 	{
-		mobjinfo_t& info = ::mobjinfo[recipe.type];
+		const mobjinfo_t& info = ::mobjinfo[recipe.type];
 		const bool isFlying = info.flags & (MF_NOGRAVITY | MF_FLOAT);
 
-		if (recipe.isBoss && sit->type != TTYPE_HORDE_BOSS &&
-		    sit->type != TTYPE_HORDE_SMALLBOSS)
+		if (recipe.isBoss && spawn.type != TTYPE_HORDE_BOSS &&
+		    spawn.type != TTYPE_HORDE_SMALLBOSS)
 		{
 			// Bosses cannot spawn at non-boss spawns.
 			continue;
@@ -271,7 +295,7 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 		const bool fitsNormal = FitRadHeight(info, 64, 128);
 		const bool fitsSmall = FitRadHeight(info, 32, 64);
 
-		switch (sit->type)
+		switch (spawn.type)
 		{
 		case TTYPE_HORDE_MONSTER:
 			// Normal spawns can't spawn monsters that are too big.
@@ -317,20 +341,20 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
 		}
 
 		SpawnPointWeight weight;
-		weight.spawn = &*sit;
+		weight.spawn = &spawn;
 
 		// [AM] During development we used to have a complicated spawn system
 		//      that spawned near players, but this resulted in it being
 		//      easy to exploit.
 
 		float score = 1.0f;
-		if (sit->type == TTYPE_HORDE_FLYING)
+		if (spawn.type == TTYPE_HORDE_FLYING)
 		{
 			// Preferring flying spawns frees up ground-level spawns for
 			// ground-level monsters.
 			score = 1.25f;
 		}
-		else if (sit->type == TTYPE_HORDE_SMALLSNIPER || sit->type == TTYPE_HORDE_SNIPER)
+		else if (spawn.type == TTYPE_HORDE_SMALLSNIPER || spawn.type == TTYPE_HORDE_SNIPER)
 		{
 			// Sniper spawns can be annoying to clear, allow a breather.
 			score = 0.75f;
@@ -379,7 +403,8 @@ hordeSpawn_t* P_HordeSpawnPoint(const hordeRecipe_t& recipe)
  * @param recipe Recipe of a monster to spawn.
  * @return Actors spawned by this function.  Can be discarded.
  */
-AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe)
+AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe,
+                     mobjCounts_t& monsterCounts)
 {
 	AActors ok;
 
@@ -390,7 +415,7 @@ AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe)
 		if (it->type != spawn.type)
 			continue;
 
-		SpawnPointWeight spw = {0};
+		SpawnPointWeight spw = {0, 0.0f, 0, false};
 		spw.spawn = &*it;
 		spw.dist = P_AproxDistance2(it->mo, spawn.mo);
 		weights.push_back(spw);
@@ -414,18 +439,18 @@ AActors P_HordeSpawn(hordeSpawn_t& spawn, const hordeRecipe_t& recipe)
 	// Printf("Spawning %d of type %s\n", recipe.count, ::mobjinfo[recipe.type].name);
 
 	// Place monsters in spawn points in order of approx distance.
-	for (SpawnPointWeights::iterator it = weights.begin(); it != weights.end(); ++it)
+	for (const auto& weight : weights)
 	{
 		const int left = recipe.count - ok.size();
 		if (left < 1)
 			break;
 
-		if (it->dist > (1024 * FRACUNIT))
+		if (weight.dist > (1024 * FRACUNIT))
 			continue;
 
 		int groupIter = clamp(left, 1, maxGroupSize);
 
-		AActors okIter = SpawnMonsterGroup(*it->spawn, recipe, groupIter);
+		AActors okIter = SpawnMonsterGroup(*weight.spawn, recipe, groupIter, monsterCounts);
 		ok.insert(ok.end(), okIter.begin(), okIter.end());
 	}
 
@@ -439,12 +464,11 @@ void P_HordeSpawnItem()
 {
 	// Find all empty points.
 	hordeSpawns_t emptys;
-	for (hordeSpawns_t::iterator it = ::itemSpawns.begin(); it != ::itemSpawns.end();
-	     ++it)
+	for (auto& spawn : ::itemSpawns)
 	{
-		if (it->mo->target == NULL)
+		if (spawn.mo->target == NULL)
 		{
-			emptys.push_back(*it);
+			emptys.push_back(spawn);
 		}
 	}
 
@@ -481,12 +505,11 @@ void P_HordeSpawnPowerup(const mobjtype_t pw)
 {
 	// Find all empty points.
 	hordeSpawns_t emptys;
-	for (hordeSpawns_t::iterator it = ::powerupSpawns.begin();
-	     it != ::powerupSpawns.end(); ++it)
+	for (auto& spawn : ::powerupSpawns)
 	{
-		if (it->mo->target == NULL)
+		if (spawn.mo->target == NULL)
 		{
-			emptys.push_back(*it);
+			emptys.push_back(spawn);
 		}
 	}
 

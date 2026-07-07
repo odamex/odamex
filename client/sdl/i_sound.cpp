@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,9 +26,10 @@
 
 #include "odamex.h"
 
-#include "i_sdl.h" 
+#include "i_sdl.h"
 #include <SDL_mixer.h>
 #include <stdlib.h>
+#include <nonstd/scope.hpp>
 
 #include "z_zone.h"
 
@@ -37,10 +38,6 @@
 #include "i_music.h"
 #include "m_argv.h"
 #include "m_misc.h"
-
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
 
 #define NUM_CHANNELS 32
 
@@ -66,13 +63,13 @@ CVAR_FUNC_IMPL(snd_samplerate)
 
 /**
  * @brief Write out a WAV file containing sound data.
- * 
+ *
  * @detail This is an internal debugging function that should be ifdef'ed out
  *         when not in use.
- * 
+ *
  * @param filename Output filename.
  * @param data Data to write.
- * @param length Total length of data to write. 
+ * @param length Total length of data to write.
  * @param samplerate Samplerate to put in the header.
  */
 static void WriteWAV(char* filename, byte* data, uint32_t length, int samplerate)
@@ -120,35 +117,36 @@ static void WriteWAV(char* filename, byte* data, uint32_t length, int samplerate
 
 #endif
 
-// [Russell] - Chocolate Doom's sound converter code, how awesome!
-static bool ConvertibleRatio(int freq1, int freq2)
-{
-    int ratio;
-
-    if (freq1 > freq2)
-    {
-        return ConvertibleRatio(freq2, freq1);
-    }
-    else if ((freq2 % freq1) != 0)
-    {
-        // Not in a direct ratio
-
-        return false;
-    }
-    else
-    {
-        // Check the ratio is a power of 2
-
-        ratio = freq2 / freq1;
-
-        while ((ratio & 1) == 0)
-        {
-            ratio = ratio >> 1;
-        }
-
-        return ratio == 1;
-    }
-}
+//// [Russell] - Chocolate Doom's sound converter code, how awesome!
+//// unused for now
+//static bool ConvertibleRatio(int freq1, int freq2)
+//{
+//    int ratio;
+//
+//    if (freq1 > freq2)
+//    {
+//        return ConvertibleRatio(freq2, freq1);
+//    }
+//    else if ((freq2 % freq1) != 0)
+//    {
+//        // Not in a direct ratio
+//
+//        return false;
+//    }
+//    else
+//    {
+//        // Check the ratio is a power of 2
+//
+//        ratio = freq2 / freq1;
+//
+//        while ((ratio & 1) == 0)
+//        {
+//            ratio = ratio >> 1;
+//        }
+//
+//        return ratio == 1;
+//    }
+//}
 
 // Generic sound expansion function for any sample rate
 
@@ -173,9 +171,8 @@ static void ExpandSoundData(byte* data, int samplerate, int bits, int length,
 	for (size_t i = 0; i < expanded_length; ++i)
 	{
 		Sint16 sample;
-		int src;
 
-		src = (i * expand_ratio) >> 8;
+		const size_t src = (i * expand_ratio) >> 8;
 
 		// [crispy] Handle 16 bit audio data
 		if (bits == 16)
@@ -213,7 +210,7 @@ static void ExpandSoundData(byte* data, int samplerate, int bits, int length,
 
 	for (size_t i = 2; i < expanded_length * 2; ++i)
 	{
-		expanded[i] = (Sint16)(alpha * expanded[i] + (1 - alpha) * expanded[i - 2]);
+		expanded[i] = static_cast<Sint16>(alpha * expanded[i] + (1 - alpha) * expanded[i - 2]);
 	}
 }
 
@@ -228,8 +225,8 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
 
     if (!mem_op)
     {
-        Printf(PRINT_HIGH,
-                "perform_sdlmix_conv - SDL_RWFromMem: %s\n", SDL_GetError());
+        PrintFmt(PRINT_HIGH,
+                 "perform_sdlmix_conv - SDL_RWFromMem: {}\n", SDL_GetError());
 
         return NULL;
     }
@@ -238,8 +235,8 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
 
     if (!chunk)
     {
-        Printf(PRINT_HIGH,
-                "perform_sdlmix_conv - Mix_LoadWAV_RW: %s\n", Mix_GetError());
+        PrintFmt(PRINT_HIGH,
+                 "perform_sdlmix_conv - Mix_LoadWAV_RW: {}\n", Mix_GetError());
 
         return NULL;
     }
@@ -248,7 +245,7 @@ static Uint8 *perform_sdlmix_conv(Uint8 *data, Uint32 size, Uint32 *newsize)
     *newsize = chunk->alen;
 
     // allocate some space in the zone heap
-    ret_data = (Uint8 *)Z_Malloc(chunk->alen, PU_STATIC, NULL);
+    ret_data = static_cast<Uint8*>(Z_Malloc(chunk->alen, PU_STATIC));
 
     // copy the converted data to the return buffer
     memcpy(ret_data, chunk->abuf, chunk->alen);
@@ -265,7 +262,12 @@ static void getsfx(sfxinfo_struct *sfx)
 	Uint32 new_size = 0;
 	Mix_Chunk *chunk;
 
+	if (!Res_CheckResource(sfx->res_id))
+		return;
+
 	Uint8* data = (Uint8*)Res_LoadResource(sfx->res_id, PU_STATIC);
+	auto guard = nonstd::make_scope_exit([&]{ Z_ChangeTag(data, PU_CACHE); });
+
     // [Russell] - ICKY QUICKY HACKY SPACKY *I HATE THIS SOUND MANAGEMENT SYSTEM!*
     // get the lump size, shouldn't this be filled in elsewhere?
 	sfx->length = Res_GetResourceSize(sfx->res_id);
@@ -273,7 +275,7 @@ static void getsfx(sfxinfo_struct *sfx)
     // [Russell] is it not a doom sound lump?
     if (((data[1] << 8) | data[0]) != 3)
     {
-        chunk = (Mix_Chunk *)Z_Malloc(sizeof(Mix_Chunk), PU_STATIC, NULL);
+        chunk = Z_Malloc<Mix_Chunk>(PU_STATIC);
         chunk->allocated = 1;
         if (sfx->length < 8) // too short to be anything of interest
         {
@@ -302,22 +304,23 @@ static void getsfx(sfxinfo_struct *sfx)
     // if the lump is longer than the value, fixes exec.wad's ssg
     length = (sfx->length - 8 > length) ? sfx->length - 8 : length;
 
-    Uint32 expanded_length = (uint32_t)((((uint64_t)length) * mixer_freq) / samplerate);
+	if (length <= 0)
+		return;
+
+    Uint32 expanded_length = static_cast<uint32_t>(((static_cast<uint64_t>(length)) * mixer_freq) / samplerate);
 
     // Double up twice: 8 -> 16 bit and mono -> stereo
 
     expanded_length *= 4;
-	
-	chunk = (Mix_Chunk *)Z_Malloc(sizeof(Mix_Chunk), PU_STATIC, NULL);
+
+	chunk = Z_Malloc<Mix_Chunk>(PU_STATIC);
     chunk->allocated = 1;
     chunk->alen = expanded_length;
-	chunk->abuf = (Uint8*)Z_Malloc(expanded_length, PU_STATIC, NULL);
+	chunk->abuf = static_cast<Uint8*>(Z_Malloc(expanded_length, PU_STATIC));
     chunk->volume = MIX_MAX_VOLUME;
 
-    ExpandSoundData((byte*)data + 8, samplerate, 8, length, chunk);
+    ExpandSoundData(static_cast<byte*>(data) + 8, samplerate, 8, length, chunk);
     sfx->data = chunk;
-    
-    Z_ChangeTag(data, PU_CACHE);
 }
 
 //
@@ -349,22 +352,22 @@ int I_StartSound(int id, float vol, int sep, int pitch, bool loop)
 	if (!sound_initialized)
 		return -1;
 
-	Mix_Chunk *chunk = (Mix_Chunk *)S_sfx[id].data;
-	
+	Mix_Chunk *chunk = static_cast<Mix_Chunk*>(S_sfx[id].data);
+
 	// find a free channel, starting from the first after
 	// the last channel we used
 	int channel = nextchannel;
 
-	do
+	while (channel_in_use[channel])
 	{
 		channel = (channel + 1) % NUM_CHANNELS;
 
 		if (channel == nextchannel)
 		{
-			fprintf(stderr, "No free sound channels left.\n");
+			fmt::print(stderr, "No free sound channels left.\n");
 			return -1;
 		}
-	} while (channel_in_use[channel]);
+	}
 
 	nextchannel = channel;
 
@@ -390,6 +393,41 @@ void I_StopSound (int handle)
 	Mix_HaltChannel(handle);
 }
 
+void I_PauseSound(int handle)
+{
+	if (!sound_initialized)
+	{
+		return;
+	}
+
+	if (channel_in_use[handle])
+	{
+		Mix_Pause(handle);
+	}
+}
+
+void I_ResumeSound(int handle)
+{
+	if (!sound_initialized)
+	{
+		return;
+	}
+
+	if (channel_in_use[handle])
+	{
+		Mix_Resume(handle);
+	}
+}
+
+int I_SoundIsPaused(int handle)
+{
+	if (!sound_initialized)
+	{
+		return 0;
+	}
+
+	return Mix_Paused(handle);
+}
 
 
 int I_SoundIsPlaying (int handle)
@@ -412,7 +450,7 @@ void I_UpdateSoundParams (int handle, float vol, int sep, int pitch)
 	if(!snd_crossover)
 		sep = 255 - sep;
 
-	int volume = (int)((float)MIX_MAX_VOLUME * basevolume * vol);
+	int volume = static_cast<int>(static_cast<float>(MIX_MAX_VOLUME * basevolume * vol));
 
 	if(volume < 0)
 		volume = 0;
@@ -427,7 +465,7 @@ void I_LoadSound (sfxinfo_struct *sfx)
 {
 	if (!sound_initialized)
 		return;
-	
+
 	if (!sfx->data)
 	{
 		DPrintf ("loading sound \"%s\" (0x%X)\n", sfx->name, (uint32_t)sfx->res_id);
@@ -439,37 +477,30 @@ void I_InitSound()
 {
 	if (I_IsHeadless() || Args.CheckParm("-nosound"))
 		return;
-		
-    #if defined(SDL12)
-    const char *driver = getenv("SDL_AUDIODRIVER");
 
-	if(!driver)
-		driver = "default";
-		
-    Printf(PRINT_HIGH, "I_InitSound: Initializing SDL's sound subsystem (%s)\n", driver);
-    #elif defined(SDL20)
-    Printf("I_InitSound: Initializing SDL's sound subsystem\n");
+    #if defined(SDL20)
+    PrintFmt("I_InitSound: Initializing SDL's sound subsystem\n");
     #endif
 
 	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
 	{
-		Printf(PRINT_ERROR,
-               "I_InitSound: Unable to set up sound: %s\n", 
-               SDL_GetError());
-               
+		PrintFmt(PRINT_ERROR,
+                 "I_InitSound: Unable to set up sound: {}\n",
+                 SDL_GetError());
+
 		return;
 	}
 
     #if defined(SDL20)
-	Printf("I_InitSound: Using SDL's audio driver (%s)\n", SDL_GetCurrentAudioDriver());
+	PrintFmt("I_InitSound: Using SDL's audio driver ({})\n", SDL_GetCurrentAudioDriver());
 	#endif
-	
+
 	const SDL_version *ver = Mix_Linked_Version();
 
 	if(ver->major != MIX_MAJOR_VERSION
 		|| ver->minor != MIX_MINOR_VERSION)
 	{
-		Printf(PRINT_ERROR, "I_InitSound: SDL_mixer version conflict (%d.%d.%d vs %d.%d.%d dll)\n",
+		PrintFmt(PRINT_ERROR, "I_InitSound: SDL_mixer version conflict ({}.{}.{} vs {}.{}.{} dll)\n",
 			MIX_MAJOR_VERSION, MIX_MINOR_VERSION, MIX_PATCHLEVEL,
 			ver->major, ver->minor, ver->patch);
 		return;
@@ -477,42 +508,38 @@ void I_InitSound()
 
 	if(ver->patch != MIX_PATCHLEVEL)
 	{
-		Printf(PRINT_WARNING, "I_InitSound: SDL_mixer version warning (%d.%d.%d vs %d.%d.%d dll)\n",
+		PrintFmt(PRINT_WARNING, "I_InitSound: SDL_mixer version warning ({}.{}.{} vs {}.{}.{} dll)\n",
 			MIX_MAJOR_VERSION, MIX_MINOR_VERSION, MIX_PATCHLEVEL,
 			ver->major, ver->minor, ver->patch);
 	}
 
-	Printf(PRINT_HIGH, "I_InitSound: Initializing SDL_mixer\n");
+	PrintFmt(PRINT_HIGH, "I_InitSound: Initializing SDL_mixer\n");
 
-#ifdef SDL20
     // Apparently, when Mix_OpenAudio requests a certain number of channels
     // and the device claims to not support that number of channels, instead
     // of handling it automatically behind the scenes, Mixer might initialize
     // with a broken audio buffer instead.  Using this function instead works
     // around the problem.
-	if (Mix_OpenAudioDevice((int)snd_samplerate, AUDIO_S16SYS, 2, 1024, NULL,
+	if (Mix_OpenAudioDevice(snd_samplerate.asInt(), AUDIO_S16SYS, 2, 1024, NULL,
 	                        SDL_AUDIO_ALLOW_FREQUENCY_CHANGE) < 0)
-#else
-	if (Mix_OpenAudio((int)snd_samplerate, AUDIO_S16SYS, 2, 1024) < 0)
-#endif
 	{
-		Printf(PRINT_ERROR,
-               "I_InitSound: Error initializing SDL_mixer: %s\n", 
-               Mix_GetError());
+		PrintFmt(PRINT_ERROR,
+                 "I_InitSound: Error initializing SDL_mixer: {}\n",
+                 Mix_GetError());
 		return;
 	}
 
     if(!Mix_QuerySpec(&mixer_freq, &mixer_format, &mixer_channels))
 	{
-		Printf(PRINT_ERROR,
-               "I_InitSound: Error initializing SDL_mixer: %s\n", 
-               Mix_GetError());
+		PrintFmt(PRINT_ERROR,
+                 "I_InitSound: Error initializing SDL_mixer: {}\n",
+                 Mix_GetError());
 		return;
 	}
-	
-	Printf("I_InitSound: Using %d channels (freq:%d, fmt:%d, chan:%d)\n",
-           Mix_AllocateChannels(NUM_CHANNELS),
-		   mixer_freq, mixer_format, mixer_channels);
+
+	PrintFmt("I_InitSound: Using {} channels (freq:{}, fmt:{}, chan:{})\n",
+             Mix_AllocateChannels(NUM_CHANNELS),
+		     mixer_freq, mixer_format, mixer_channels);
 
 	atterm(I_ShutdownSound);
 
@@ -520,7 +547,7 @@ void I_InitSound()
 
 	SDL_PauseAudio(0);
 
-	Printf("I_InitSound: sound module ready\n");
+	PrintFmt("I_InitSound: sound module ready\n");
 
 	I_InitMusic();
 

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -59,8 +59,8 @@ DCanvas::vdrawsfunc DCanvas::Psfuncs[6] =
 	DCanvas::DrawLucentPatchSP,
 	DCanvas::DrawTranslatedPatchSP,
 	DCanvas::DrawTlatedLucentPatchSP,
-	(vdrawsfunc)DCanvas::DrawColoredPatchP,
-	(vdrawsfunc)DCanvas::DrawColorLucentPatchP
+	DCanvas::DrawColoredPatchSP,
+	DCanvas::DrawColorLucentPatchSP
 };
 
 // Direct (true-color) versions of the column drawers
@@ -79,8 +79,8 @@ DCanvas::vdrawsfunc DCanvas::Dsfuncs[6] =
 	DCanvas::DrawLucentPatchSD,
 	DCanvas::DrawTranslatedPatchSD,
 	DCanvas::DrawTlatedLucentPatchSD,
-	(vdrawsfunc)DCanvas::DrawColoredPatchD,
-	(vdrawsfunc)DCanvas::DrawColorLucentPatchD
+	DCanvas::DrawColoredPatchSD,
+	DCanvas::DrawColorLucentPatchSD
 };
 
 translationref_t V_ColorMap;
@@ -148,7 +148,7 @@ void DCanvas::DrawLucentPatchP (const byte *source, byte *dest, int count, int p
 	{
 		fixed_t fglevel, bglevel, translevel;
 
-		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		translevel = static_cast<fixed_t>(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -187,7 +187,7 @@ void DCanvas::DrawLucentPatchSP (const byte *source, byte *dest, int count, int 
 	{
 		fixed_t fglevel, bglevel, translevel;
 
-		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		translevel = static_cast<fixed_t>(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -265,7 +265,7 @@ void DCanvas::DrawTlatedLucentPatchP (const byte *source, byte *dest, int count,
 	{
 		fixed_t fglevel, bglevel, translevel;
 
-		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		translevel = static_cast<fixed_t>(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -304,7 +304,7 @@ void DCanvas::DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count
 	{
 		fixed_t fglevel, bglevel, translevel;
 
-		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		translevel = static_cast<fixed_t>(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		fg2rgb = Col2RGB8[fglevel>>10];
@@ -339,13 +339,19 @@ void DCanvas::DrawColoredPatchP (const byte *source, byte *dest, int count, int 
 	if (count <= 0)
 		return;
 
-	byte fill = (byte)V_ColorFill;
+	byte fill = static_cast<byte>(V_ColorFill);
 
 	do
 	{
 		*dest = fill;
 		dest += pitch;
 	} while (--count);
+}
+
+// Even though its the same, we need a wrapper because casting a function pointer is undefined behavior
+void DCanvas::DrawColoredPatchSP(const byte *source, byte *dest, int count, int pitch, int)
+{
+	DCanvas::DrawColoredPatchP(source, dest, count, pitch);
 }
 
 
@@ -366,7 +372,7 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 	{
 		fixed_t fglevel, bglevel, translevel;
 
-		translevel = (fixed_t)(0xFFFF * hud_transparency);
+		translevel = static_cast<fixed_t>(0xFFFF * hud_transparency);
 		fglevel = translevel & ~0x3ff;
 		bglevel = FRACUNIT-fglevel;
 		bg2rgb = Col2RGB8[bglevel>>10];
@@ -381,7 +387,11 @@ void DCanvas::DrawColorLucentPatchP (const byte *source, byte *dest, int count, 
 	} while (--count);
 }
 
-
+// Even though its the same, we need a wrapper because casting a function pointer is undefined behavior
+void DCanvas::DrawColorLucentPatchSP(const byte *source, byte *dest, int count, int pitch, int)
+{
+	DCanvas::DrawColorLucentPatchP(source, dest, count, pitch);
+}
 
 /**************************/
 /*						  */
@@ -436,7 +446,7 @@ void DCanvas::DrawLucentPatchD (const byte *source, byte *dest, int count, int p
 	if (::hud_transparency >= 1.0)
 		return DrawPatchD(source, dest, count, pitch);
 
-	int alpha = (int)(hud_transparency * 255);
+	int alpha = static_cast<int>(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
 
 	do
@@ -461,7 +471,7 @@ void DCanvas::DrawLucentPatchSD (const byte *source, byte *dest, int count, int 
 	if (::hud_transparency >= 1.0)
 		return DrawPatchSD(source, dest, count, pitch, yinc);
 
-	int alpha = (int)(hud_transparency * 255);
+	int alpha = static_cast<int>(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
 
 	int c = 0;
@@ -528,7 +538,7 @@ void DCanvas::DrawTlatedLucentPatchD (const byte *source, byte *dest, int count,
 	if (::hud_transparency >= 1.0)
 		return DrawTranslatedPatchD(source, dest, count, pitch);
 
-	int alpha = (int)(hud_transparency * 255);
+	int alpha = static_cast<int>(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
 
 	do
@@ -553,7 +563,7 @@ void DCanvas::DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count
 	if (::hud_transparency >= 1.0)
 		return DrawTranslatedPatchSD(source, dest, count, pitch, yinc);
 
-	int alpha = (int)(hud_transparency * 255);
+	int alpha = static_cast<int>(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
 
 	int c = 0;
@@ -585,9 +595,15 @@ void DCanvas::DrawColoredPatchD (const byte *source, byte *dest, int count, int 
 	argb_t color = V_Palette.shade(V_ColorFill);
 	do
 	{
-		*((argb_t *)dest) = color;
+		*(reinterpret_cast<argb_t*>(dest)) = color;
 		dest += pitch;
 	} while (--count);
+}
+
+// Even though its the same, we need a wrapper because casting a function pointer is undefined behavior
+void DCanvas::DrawColoredPatchSD(const byte *source, byte *dest, int count, int pitch, int)
+{
+	DCanvas::DrawColoredPatchD(source, dest, count, pitch);
 }
 
 
@@ -603,20 +619,24 @@ void DCanvas::DrawColorLucentPatchD (const byte *source, byte *dest, int count, 
 	if (::hud_transparency >= 1.0)
 		return DrawColoredPatchD(source, dest, count, pitch);
 
-	int alpha = (int)(hud_transparency * 255);
+	int alpha = static_cast<int>(hud_transparency * 255);
 	int invAlpha = 255 - alpha;
 
 	argb_t fg = V_Palette.shade(V_ColorFill);
 
 	do
 	{
-		argb_t bg = *((argb_t *)dest);
-		*((argb_t *)dest) = alphablend2a(bg, invAlpha, fg, alpha);
+		argb_t bg = *(reinterpret_cast<argb_t*>(dest));
+		*(reinterpret_cast<argb_t*>(dest)) = alphablend2a(bg, invAlpha, fg, alpha);
 		dest += pitch;
 	} while (--count);
 }
 
-
+// Even though its the same, we need a wrapper because casting a function pointer is undefined behavior
+void DCanvas::DrawColorLucentPatchSD(const byte *source, byte *dest, int count, int pitch, int)
+{
+	DCanvas::DrawColorLucentPatchD(source, dest, count, pitch);
+}
 
 /******************************/
 /*							  */
@@ -641,6 +661,11 @@ void DCanvas::DrawWrapper(EWrapperCode drawer, const Texture* texture, int x, in
 
 	y -= texture->mOffsetY;
 	x -= texture->mOffsetX;
+
+	// [FG] automatically center wide patches without horizontal offset
+	// (taken from dsda but inverted since we center above this)
+	if (patch->width() > 320 && patch->leftoffset() != 0)
+		x += (patch->width() - 320) / 2;
 
 #ifdef RANGECHECK
 	if (x < 0 ||x + texture->mWidth > surface_width || y < 0 || y + texture->mHeight > surface_height)
@@ -719,7 +744,7 @@ void DCanvas::DrawSWrapper(EWrapperCode drawer, const Texture* texture, int x0, 
 #ifdef RANGECHECK
 	if (x0 < 0 || x0 + destwidth > surface_width || y0 < 0 || y0 + destheight > surface_height)
 	{
-		DPrintf("DCanvas::DrawSWrapper: bad patch (ignored)\n");
+		DPrintFmt("DCanvas::DrawSWrapper: bad patch dimensions ({} x {}) (ignored)\n", patch->width(), patch->height());
 		return;
 	}
 #endif
@@ -799,13 +824,6 @@ void DCanvas::DrawCNMWrapper(EWrapperCode drawer, const Texture* texture, int x0
 
 
 //
-// V_DrawPatchFlipped
-// Masks a column based masked pic to the screen.
-// Flips horizontally, e.g. to mirror face.
-//
-// Like V_DrawIWrapper except it only uses one drawing function and draws
-// the patch flipped horizontally.
-//
 void DCanvas::DrawTextureFlipped(const Texture* texture, int x0, int y0) const
 {
 	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
@@ -829,13 +847,14 @@ void DCanvas::DrawTextureFlipped(const Texture* texture, int x0, int y0) const
 	int ymul = (destheight << 16) / texture->mHeight;
 
 	y0 -= (texture->mOffsetY * ymul) >> 16;
-	x0 -= (texture->mOffsetX * xmul) >> 16;
+	// [EB] flipped drawing measures the x offset from the right-hand edge
+	x0 -= ((texture->mWidth - texture->mOffsetX) * xmul) >> 16;
 
 #ifdef RANGECHECK
 	if (x0 < 0 || x0 + destwidth > surface_width || y0 < 0 || y0 + destheight > surface_height)
 	{
 		//Printf ("Patch at %d,%d exceeds LFB\n", x0,y0 );
-		DPrintf ("DCanvas::DrawPatchFlipped: bad patch (ignored)\n");
+		DPrintFmt("DCanvas::DrawPatchFlipped: bad patch (ignored)\n");
 		return;
 	}
 #endif
@@ -926,8 +945,8 @@ template<typename PIXEL_T>
 static inline void V_GetTransposedBlockGeneric(byte* destbuffer, const byte* sourcebuffer,
 			int x, int y, int width, int height, int sourcepitchpixels)
 {
-	const PIXEL_T* source = (PIXEL_T*)sourcebuffer + y * sourcepitchpixels + x;
-	PIXEL_T* dest = (PIXEL_T*)destbuffer;
+	const PIXEL_T* source = reinterpret_cast<const PIXEL_T*>(sourcebuffer) + y * sourcepitchpixels + x;
+	PIXEL_T* dest = reinterpret_cast<PIXEL_T*>(destbuffer);
 
 	for (int col = x; col < x + width; col++)
 	{

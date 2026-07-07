@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This source is available for distribution and/or modification
 // only under the terms of the DOOM Source Code License as
@@ -34,18 +34,14 @@
     #endif  // NOMINMAX;
 
     #define WIN32_LEAN_AND_MEAN
-    #ifndef _XBOX
-        // need to make winxp compat for raw mouse input
-        #if (_WIN32_WINNT < 0x0501)
-            #undef _WIN32_WINNT
-            #define _WIN32_WINNT 0x0501
-        #endif
+    // need to make winxp compat for raw mouse input
+    // need at least vista for SHGetKnownFolderPath
+    #if (_WIN32_WINNT < _WIN32_WINNT_VISTA)
+        #undef _WIN32_WINNT
+        #define _WIN32_WINNT _WIN32_WINNT_VISTA
+    #endif
 
-        #include <windows.h>
-    #else
-        #define _WIN32_WINNT 0x0400 // win2000 compat
-        #include <xtl.h>
-    #endif // !_XBOX
+    #include <windows.h>
 
 	// avoid a conflict with the winuser.h macro DrawText
 	#ifdef DrawText
@@ -64,22 +60,5 @@
 
     #if (defined _MSC_VER)
         #define strncasecmp _strnicmp
-    #endif
-
-    // C99 functions
-    //
-    // Missing from MSVC++ older than 2015, implementation in
-    // common/sprintf.cpp.
-    //
-    // We must use this implementation because _snprintf and
-    // _vsnprintf do not have the same behavior as their C99
-    // counterparts, and are thus unsafe to substitute.
-    #if defined(_MSC_VER) && _MSC_VER < 1900
-        int snprintf(char *s, size_t n, const char *fmt, ...);
-        int vsnprintf(char *s, size_t n, const char *fmt, va_list ap);
-    #endif
-
-    #if defined(_MSC_VER) && _MSC_VER < 1800
-        #define va_copy(d,s)((d) = (s))
     #endif
 #endif // WIN32

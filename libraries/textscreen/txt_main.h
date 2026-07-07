@@ -15,8 +15,7 @@
 // Base interface that abstracts the text mode screen.
 //
 
-#ifndef TXT_MAIN_H
-#define TXT_MAIN_H
+#pragma once
 
 // For the moment, txt_sdl.c is the only implementation of the base 
 // text mode screen API:
@@ -129,7 +128,7 @@ void TXT_GetMousePosition(int *x, int *y);
 
 // Sleep until an event is received or the screen needs updating
 // Optional timeout in ms (timeout == 0 : sleep forever)
-void TXT_Sleep(int timeout);
+void TXT_Sleep(Uint32 timeout);
 
 // Controls whether keys are returned from TXT_GetChar based on keyboard
 // mapping, or raw key code.
@@ -148,7 +147,4 @@ void TXT_StringConcat(char *dest, const char *src, size_t dest_len);
 int TXT_vsnprintf(char *buf, size_t buf_len, const char *s, va_list args);
 
 // Safe version of snprintf().
-int TXT_snprintf(char *buf, size_t buf_len, const char *s, ...);
-
-#endif /* #ifndef TXT_MAIN_H */
-
+size_t TXT_snprintf(char* buf, size_t buf_len, const char* s, ...);

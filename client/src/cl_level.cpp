@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -40,7 +40,10 @@
 #include "g_skill.h"
 #include "i_system.h"
 #include "i_music.h"
+#include "i_time.h"
+BEGIN_DISABLE_WARNING_GNU("-Wold-style-cast")
 #include "minilzo.h"
+END_DISABLE_WARNING_GNU
 #include "m_random.h"
 #include "p_acs.h"
 #include "p_local.h"
@@ -48,6 +51,7 @@
 #include "p_setup.h"
 #include "r_data.h"
 #include "r_sky.h"
+#include "r_interp.h"
 #include "s_sound.h"
 #include "s_sndseq.h"
 #include "st_stuff.h"
@@ -56,15 +60,15 @@
 #include "z_zone.h"
 #include "m_wdlstats.h"
 #include "resources/res_filelib.h"
+#include "g_spree.h"
 
 
 #define lioffset(x)		offsetof(level_pwad_info_t,x)
 #define cioffset(x)		offsetof(cluster_info_t,x)
 
 void CL_ClearSectorSnapshots();
-bool G_CheckSpot (player_t &player, mapthing2_t *mthing);
-void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
-void R_ResetInterpolation();
+bool G_CheckSpot (player_t &player, const mapthing2_t& mthing);
+void P_SpawnPlayer (player_t &player, const mapthing2_t& mthing);
 
 EXTERN_CVAR(sv_fastmonsters)
 EXTERN_CVAR(sv_monstersrespawn)
@@ -75,20 +79,13 @@ EXTERN_CVAR(g_resetinvonexit)
 // Start time for timing demos
 dtime_t starttime;
 
-// ACS variables with world scope
-int ACS_WorldVars[NUM_WORLDVARS];
-
-// ACS variables with global scope
-int ACS_GlobalVars[NUM_GLOBALVARS];
-
 // [AM] Stores the reset snapshot
 FLZOMemFile	*reset_snapshot = NULL;
 
 extern bool r_underwater;
-BOOL savegamerestore;
 
 extern int mousex, mousey, joyforward, joystrafe, joyturn, joylook, Impulse;
-extern BOOL sendpause, sendsave, sendcenterview;
+extern bool sendpause, sendsave, sendcenterview;
 
 
 bool isFast = false;
@@ -100,8 +97,9 @@ static std::string d_mapname;
 // Can be called by the startup code or the menu task,
 // consoleplayer, displayplayer, should be set.
 //
+static OLumpName d_mapname;
 
-void G_DeferedInitNew(const std::string& mapname)
+void G_DeferedInitNew (const OLumpName& mapname)
 {
 	G_CleanupDemo();
 	d_mapname = mapname;
@@ -121,11 +119,11 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	// [Russell] print out some useful info
 	if (argc == 1)
 	{
-	    Printf(PRINT_HIGH, "Usage: wad pwad [...] [deh/bex [...]]\n");
-	    Printf(PRINT_HIGH, "       wad iwad [pwad [...]] [deh/bex [...]]\n");
-	    Printf(PRINT_HIGH, "\n");
-	    Printf(PRINT_HIGH, "Load a wad file on the fly, pwads/dehs/bexs require extension\n");
-	    Printf(PRINT_HIGH, "eg: wad doom\n");
+	    PrintFmt(PRINT_HIGH, "Usage: wad pwad [...] [deh/bex [...]]\n");
+	    PrintFmt(PRINT_HIGH, "       wad iwad [pwad [...]] [deh/bex [...]]\n");
+	    PrintFmt(PRINT_HIGH, "\n");
+	    PrintFmt(PRINT_HIGH, "Load a wad file on the fly, pwads/dehs/bexs require extension\n");
+	    PrintFmt(PRINT_HIGH, "eg: wad doom\n");
 
 	    return;
 	}
@@ -133,13 +131,14 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	if (paused)
 	{
 		paused = false;
-		S_ResumeSound();
+		S_ResumeMusic();
 	}
 
 	C_HideConsole();
 	CL_QuitNetGame(NQ_SILENT);
 
-	std::string str = JoinStrings(VectorArgs(argc, argv), " ");
+	std::string wadstr = C_EscapeWadList(VectorArgs(argc, argv));
+	G_LoadWadString(wadstr);
 
 	std::vector<std::string> resource_filenames = Res_GatherResourceFilesFromString(JoinStrings(VectorArgs(argc, argv), " "));
 	D_ReloadResourceFiles(resource_filenames);
@@ -149,7 +148,7 @@ BEGIN_COMMAND (wad) // denis - changes wads
 	CL_QuitNetGame(NQ_SILENT);
 	S_StopMusic();
 	currentmusic = gameinfo.titleMusic.c_str();
-	
+
 	S_StartMusic(currentmusic.c_str());
 }
 END_COMMAND (wad)
@@ -162,7 +161,7 @@ EXTERN_CVAR(sv_allowjump)
 
 //
 // G_DoNewGame
-// Is called whenever a new Singleplayer game will be started. 
+// Is called whenever a new Singleplayer game will be started.
 //
 void G_DoNewGame (void)
 {
@@ -181,11 +180,11 @@ void G_DoNewGame (void)
 	serverside = true;
 
 	players.clear();
-	players.push_back(player_t());
+	players.emplace_back();
 	players.front().doreborn = true;
 	consoleplayer_id = displayplayer_id = players.back().id = 1;
 
-	G_InitNew (d_mapname);
+	G_InitNew(d_mapname);
 	gameaction = ga_nothing;
 }
 
@@ -194,11 +193,11 @@ void G_InitNew(const std::string& mapname)
 	// [RH] Remove all particles
 	R_ClearParticles();
 
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& player : players)
 	{
-		it->mo = AActor::AActorPtr();
-		it->camera = AActor::AActorPtr();
-		it->attacker = AActor::AActorPtr();
+		player.mo = AActor::AActorPtr();
+		player.camera = AActor::AActorPtr();
+		player.attacker = AActor::AActorPtr();
 	}
 
 	if (!savegamerestore)
@@ -217,10 +216,12 @@ void G_InitNew(const std::string& mapname)
 
 	cvar_t::UnlatchCVars ();
 
+	SpreeManager::getInstance().clearSprees();
+
 	if (paused)
 	{
 		paused = false;
-		S_ResumeSound ();
+		S_ResumeMusic();
 	}
 
 	// If were in chasecam mode, clear out // [Toke - fix]
@@ -236,38 +237,38 @@ void G_InitNew(const std::string& mapname)
 	{
 		if (wantFast)
 		{
-			for (size_t i = 0; i < NUMSTATES; i++)
+			for (auto&& [_, state] : states)
 			{
-				if (states[i].flags & STATEF_SKILL5FAST &&
-				    (states[i].tics != 1 || demoplayback))
-					states[i].tics >>= 1; // don't change 1->0 since it causes cycles
+				if (state.flags & STATEF_SKILL5FAST &&
+				    (state.tics != 1 || demoplayback))
+					state.tics >>= 1; // don't change 1->0 since it causes cycles
 			}
 
-			for (size_t i = 0; i < NUMMOBJTYPES; ++i)
+			for (auto&& [_, minfo] : mobjinfo)
 			{
-				if (mobjinfo[i].altspeed != NO_ALTSPEED)
+				if (minfo.altspeed != NO_ALTSPEED)
 				{
-					int swap = mobjinfo[i].speed;
-					mobjinfo[i].speed = mobjinfo[i].altspeed;
-					mobjinfo[i].altspeed = swap;
+					int swap = minfo.speed;
+					minfo.speed = minfo.altspeed;
+					minfo.altspeed = swap;
 				}
 			}
 		}
 		else
 		{
-			for (size_t i = 0; i < NUMSTATES; i++)
+			for (auto&& [_, state] : states)
 			{
-				if (states[i].flags & STATEF_SKILL5FAST)
-					states[i].tics <<= 1; // don't change 1->0 since it causes cycles
+				if (state.flags & STATEF_SKILL5FAST)
+					state.tics <<= 1; // don't change 1->0 since it causes cycles
 			}
 
-			for (size_t i = 0; i < NUMMOBJTYPES; ++i)
+			for (auto&& [_, minfo] : mobjinfo)
 			{
-				if (mobjinfo[i].altspeed != NO_ALTSPEED)
+				if (minfo.altspeed != NO_ALTSPEED)
 				{
-					int swap = mobjinfo[i].altspeed;
-					mobjinfo[i].altspeed = mobjinfo[i].speed;
-					mobjinfo[i].speed = swap;
+					int swap = minfo.altspeed;
+					minfo.altspeed = minfo.speed;
+					minfo.speed = swap;
 				}
 			}
 		}
@@ -277,8 +278,12 @@ void G_InitNew(const std::string& mapname)
 	if (!savegamerestore)
 	{
 		M_ClearRandom ();
-		memset(ACS_WorldVars, 0, sizeof(ACS_WorldVars));
-		memset(ACS_GlobalVars, 0, sizeof(ACS_GlobalVars));
+		ACS_WorldVars.fill(0);
+		ACS_GlobalVars.fill(0);
+		for (auto& globalarr : ACS_GlobalArrays)
+			globalarr.clear();
+		for (auto& worldarr : ACS_WorldArrays)
+			worldarr.clear();
 		level.time = 0;
 		level.inttimeleft = 0;
 	}
@@ -290,7 +295,7 @@ void G_InitNew(const std::string& mapname)
 	viewactive = true;
 
 	D_SetupUserInfo();
-	
+
 	level.mapname = mapname;
 
 	// [AM}] WDL stats (for testing purposes)
@@ -302,9 +307,9 @@ void G_InitNew(const std::string& mapname)
 //
 // G_DoCompleted
 //
-BOOL 			secretexit;
+bool 			secretexit;
 static int		startpos;	// [RH] Support for multiple starts per level
-extern BOOL		NoWipe;		// [RH] Don't wipe when travelling in hubs
+extern int		NoWipe;		// [RH] Don't wipe when travelling in hubs
 
 // [RH] The position parameter to these next three functions should
 //		match the first parameter of the single player start spots
@@ -329,8 +334,19 @@ static void goOn(int position)
 	}
 }
 
-void G_ExitLevel (int position, int drawscores)
+void G_ExitLevel (int position, int drawscores, bool resetinv)
 {
+	if (resetinv)
+	{
+		for (auto& player : players)
+		{
+			if (player.ingame())
+			{
+				player.doreborn = true;
+			}
+		}
+	}
+
 	secretexit = false;
 
 	goOn (position);
@@ -339,8 +355,19 @@ void G_ExitLevel (int position, int drawscores)
 }
 
 // Here's for the german edition.
-void G_SecretExitLevel (int position, int drawscores)
+void G_SecretExitLevel (int position, int drawscores, bool resetinv)
 {
+	if (resetinv)
+	{
+		for (auto& player : players)
+		{
+			if (player.ingame())
+			{
+				player.doreborn = true;
+			}
+		}
+	}
+
 	// IF NO WOLF3D LEVELS, NO SECRET EXIT!
 	std::string secretmapname = "MAP31";
 	if ((gameinfo.flags & GI_MAPxx) && !Res_CheckMap(secretmapname))
@@ -356,9 +383,9 @@ void G_DoCompleted (void)
 {
 	gameaction = ga_nothing;
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
-		if (it->ingame())
-			G_PlayerFinishLevel(*it);
+	for (auto& player : players)
+		if (player.ingame())
+			G_PlayerFinishLevel(player);
 
 	V_RestoreScreenPalette();
 	R_ExitLevel();
@@ -367,22 +394,45 @@ void G_DoCompleted (void)
 	if (!(level.flags & LEVEL_CHANGEMAPCHEAT))
 	{
 		getLevelInfos().findByName(level.mapname).flags |= LEVEL_VISITED;
+		if(level.flags & LEVEL_SECRET)
+		{
+			for (auto& player : players)
+				player.didsecret = true;
+		}
+	}
+
+	SpreeManager::getInstance().clearSprees();
+
+	const WinInfo& win = levelstate.getWinInfo();
+	switch (win.type)
+	{
+		case WinInfo::WIN_EVERYBODY:
+			wminfo.winner = true;
+			break;
+		case WinInfo::WIN_TEAM:
+			wminfo.winner = consoleplayer().userinfo.team == win.id;
+			break;
+		case WinInfo::WIN_PLAYER:
+			wminfo.winner = consoleplayer_id == win.id;
+			break;
+		default:
+			wminfo.winner = false;
 	}
 
 	AM_Stop();
 
 	wminfo.epsd = level.cluster - 1;		// Only used for DOOM I.
-	strncpy (wminfo.lname0, level.info->pname.c_str(), 8);
-	strncpy (wminfo.current, level.mapname.c_str(), 8);
+	wminfo.lname0 = level.info->pname;
+	wminfo.current = level.mapname;
 
 	if (sv_gametype != GM_COOP && !(level.flags & LEVEL_CHANGEMAPCHEAT))
 	{
-		strncpy (wminfo.next, level.mapname.c_str(), 8);
-		strncpy (wminfo.lname1, level.info->pname.c_str(), 8);
+		wminfo.next = level.mapname;
+		wminfo.lname1 = level.info->pname;
 	}
 	else
 	{
-		wminfo.next[0] = 0;
+		wminfo.next.clear();
 
 		if (!level.endpic.empty() && level.flags & LEVEL_NOINTERMISSION)
 		{
@@ -394,18 +444,18 @@ void G_DoCompleted (void)
 			OString o(StdStringToUpper(level.secretmap.c_str()));
 			if (Res_CheckMap(o))
 			{
-				strncpy(wminfo.next, level.secretmap.c_str(), 8);
-				strncpy(wminfo.lname1, getLevelInfos().findByName(level.secretmap).pname.c_str(), 8);
+				wminfo.next = level.secretmap;
+				wminfo.lname1 = getLevelInfos().findByName(level.secretmap).pname;
 			}
 			else
 			{
 				secretexit = false;
 			}
 		}
-		if (!wminfo.next[0])
+		if (wminfo.next.empty())
 		{
-			strncpy(wminfo.next, level.nextmap.c_str(), 8);
-			strncpy(wminfo.lname1, getLevelInfos().findByName(level.nextmap).pname.c_str(), 8);
+			wminfo.next = level.nextmap;
+			wminfo.lname1 = getLevelInfos().findByName(level.nextmap).pname;
 		}
 	}
 
@@ -417,21 +467,24 @@ void G_DoCompleted (void)
 
 	wminfo.plyr.resize(players.size());
 
-	size_t i = 0;
-	for (Players::iterator it = players.begin();it != players.end();++it,++i)
+	unsigned int i = 0;
+	for (const auto& player : players)
 	{
-		wminfo.plyr[i].in = it->ingame();
-		wminfo.plyr[i].skills = it->killcount;
-		wminfo.plyr[i].sitems = it->itemcount;
-		wminfo.plyr[i].ssecret = it->secretcount;
+		wminfo.plyr[i].in = player.ingame();
+		wminfo.plyr[i].skills = player.killcount;
+		wminfo.plyr[i].sitems = player.itemcount;
+		wminfo.plyr[i].ssecret = player.secretcount;
 		wminfo.plyr[i].stime = level.time;
 		//memcpy (wminfo.plyr[i].frags, players[i].frags
 		//		, sizeof(wminfo.plyr[i].frags));
-		wminfo.plyr[i].fragcount = it->fragcount;
+		wminfo.plyr[i].fragcount = player.fragcount;
 
-		if(&*it == &consoleplayer())
+		if(&player == &consoleplayer())
 			wminfo.pnum = i;
+		i++;
 	}
+
+	wminfo.didsecret = consoleplayer().didsecret;
 
 	// [RH] If we're in a hub and staying within that hub, take a snapshot
 	//		of the level. If we're traveling to a new hub, take stuff from
@@ -446,12 +499,14 @@ void G_DoCompleted (void)
 
 		if (&thiscluster != &nextcluster || sv_gametype == GM_DM || !(thiscluster.flags & CLUSTER_HUB))
 		{
-			for (Players::iterator it = players.begin();it != players.end();++it)
-				if (it->ingame())
-					G_PlayerFinishLevel(*it); // take away cards and stuff
+			for (auto& player : players)
+				if (player.ingame())
+					G_PlayerFinishLevel(player); // take away cards and stuff
 
 			if (nextcluster.flags & CLUSTER_HUB) {
-				memset (ACS_WorldVars, 0, sizeof(ACS_WorldVars));
+				ACS_WorldVars.fill(0);
+				for (auto& worldarr : ACS_WorldArrays)
+					worldarr.clear();
 				P_RemoveDefereds ();
 				G_ClearSnapshots ();
 			}
@@ -502,7 +557,6 @@ extern gamestate_t 	wipegamestate;
 void G_DoLoadLevel (int position)
 {
 	static int lastposition = 0;
-	size_t i;
 
 	if (position == -1)
 		position = lastposition;
@@ -513,9 +567,9 @@ void G_DoLoadLevel (int position)
 
 	G_InitLevelLocals ();
 
-    Printf_Bold ("\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
+    PrintFmt_Bold ("\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
                  "\36\36\36\36\36\36\36\36\36\36\36\36\37\n"
-                 "%s: \"%s\"\n\n", level.mapname.c_str(), level.level_name);
+                 "{}: \"{}\"\n\n", level.mapname, level.level_name);
 
 	if (wipegamestate == GS_LEVEL)
 		wipegamestate = GS_FORCEWIPE;
@@ -524,13 +578,23 @@ void G_DoLoadLevel (int position)
 
 	gamestate = GS_LEVEL;
 
+	// We're entering the level state - reset the rollback history.
+	rollerState = PlayerStateRoller {};
+
 	// [SL] Hide the console unless this is just part of the demo loop
 	// It's annoying to have the console close every time a new demo starts...
 	if (!demoscreen)
 		C_HideConsole();
 
 	// [SL] clear the saved sector data from the last level
-	R_ResetInterpolation();
+	OInterpolation::getInstance().resetGameInterpolation();
+
+	SpreeManager::getInstance().clearSprees();
+
+	// Set the sky map.
+	R_SetDefaultSky(level.skypic);
+
+	R_InitSkiesForLevel();
 
 	// DOOM determines the sky texture to be used
 	// depending on the current episode, and the game version.
@@ -540,22 +604,22 @@ void G_DoLoadLevel (int position)
 	// [RH] Set up details about sky rendering
 	R_SetSkyTextures(level.skypic.c_str(), level.skypic2.c_str());
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		if (it->ingame())
+		if (player.ingame())
 		{
-			if (::g_resetinvonexit || it->playerstate == PST_DEAD ||
-			    it->playerstate == PST_REBORN)
+			if (::g_resetinvonexit || player.playerstate == PST_DEAD ||
+			    player.playerstate == PST_REBORN)
 			{
-				it->doreborn = true;
+				player.doreborn = true;
 			}
-			it->playerstate = PST_ENTER;
+			player.playerstate = PST_ENTER;
 		}
 
 		// Properly reset Cards, Powerups, and scores.
-		P_ClearPlayerCards(*it);
-		P_ClearPlayerPowerups(*it);
-		P_ClearPlayerScores(*it, SCORES_CLEAR_ALL);
+		P_ClearPlayerCards(player);
+		P_ClearPlayerPowerups(player);
+		P_ClearPlayerScores(player, SCORES_CLEAR_ALL);
 	}
 
 	// initialize the msecnode_t freelist.					phares 3/25/98
@@ -590,24 +654,24 @@ void G_DoLoadLevel (int position)
 		// Check for a co-op start point
 		for (size_t n = 0; n < playerstarts.size() && !consoleplayer().mo; n++)
 		{
-			if (G_CheckSpot(consoleplayer(), &playerstarts[n]))
-				P_SpawnPlayer(consoleplayer(), &playerstarts[n]);
+			if (G_CheckSpot(consoleplayer(), playerstarts[n]))
+				P_SpawnPlayer(consoleplayer(), playerstarts[n]);
 		}
 
 		// Check for a free deathmatch start point
 		for (size_t n = 0; n < DeathMatchStarts.size() && !consoleplayer().mo; n++)
 		{
-			if (G_CheckSpot(consoleplayer(), &DeathMatchStarts[n]))
-				P_SpawnPlayer(consoleplayer(), &DeathMatchStarts[n]);
+			if (G_CheckSpot(consoleplayer(), DeathMatchStarts[n]))
+				P_SpawnPlayer(consoleplayer(), DeathMatchStarts[n]);
 		}
 
 		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		{
-			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
-			for (size_t n = 0; n < teamInfo->Starts.size(); n++)
+			TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(iTeam));
+			for (auto& teamstart : teamInfo->Starts)
 			{
-				if (G_CheckSpot(consoleplayer(), &teamInfo->Starts[n]))
-					P_SpawnPlayer(consoleplayer(), &teamInfo->Starts[n]);
+				if (G_CheckSpot(consoleplayer(), teamstart))
+					P_SpawnPlayer(consoleplayer(), teamstart);
 			}
 		}
 	}
@@ -618,7 +682,7 @@ void G_DoLoadLevel (int position)
 
 	// clear cmd building stuff // denis - todo - could we get rid of this?
 	Impulse = 0;
-	for (i = 0; i < NUM_ACTIONS; i++)
+	for (size_t i = 0; i < NUM_ACTIONS; i++)
 		if (i != ACTION_MLOOK && i != ACTION_KLOOK)
 			Actions[i] = 0;
 	joyforward = joystrafe = joyturn = joylook = 0;
@@ -627,7 +691,7 @@ void G_DoLoadLevel (int position)
 
 	if (timingdemo)
 	{
-		static BOOL firstTime = true;
+		static bool firstTime = true;
 
 		if (firstTime)
 		{
@@ -663,29 +727,29 @@ void G_WorldDone()
 	cluster_info_t& thiscluster = clusters.findByCluster(level.cluster);
 
 	// Sort out default options to pass to F_StartFinale
-	finale_options_t options = { 0 };
-	options.music = !level.intermusic.empty() ? level.intermusic.c_str() : thiscluster.messagemusic.c_str();
-	
+	finale_options_t options = { "", "", "", "" };
+	options.music = !level.intermusic.empty() ? level.intermusic : thiscluster.messagemusic;
+
 	if (!level.interbackdrop.empty())
 	{
-		options.flat = level.interbackdrop.c_str();
+		options.flat = level.interbackdrop;
 	}
 	else if (!thiscluster.finalepic.empty())
 	{
-		options.pic = &thiscluster.finalepic[0];
+		options.pic = thiscluster.finalepic;
 	}
 	else
 	{
-		options.flat = &thiscluster.finaleflat[0];
+		options.flat = thiscluster.finaleflat;
 	}
-	
+
 	if (secretexit)
 	{
-		options.text = (!level.intertextsecret.empty()) ? level.intertextsecret.c_str() : thiscluster.exittext;
+		options.text = (!level.intertextsecret.empty()) ? level.intertextsecret : thiscluster.exittext;
 	}
 	else
 	{
-		options.text = (!level.intertext.empty()) ? level.intertext.c_str() : thiscluster.exittext;
+		options.text = (!level.intertext.empty()) ? level.intertext : thiscluster.exittext;
 	}
 
 	if (!strnicmp(level.nextmap.c_str(), "EndGame", 7))
@@ -693,8 +757,8 @@ void G_WorldDone()
 		AM_Stop();
 		if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 		{
-			ResourceId res = Res_GetResourceId(thiscluster.exittext, NS_GLOBAL);
-			options.text = static_cast<const char*>(Res_LoadResource(thiscluster.exittext, PU_STATIC));
+			options.text = static_cast<const char*>(Res_LoadResource(
+			    OStringToUpper(thiscluster.exittext.c_str()), PU_STATIC));
 		}
 		F_StartFinale(options);
 	}
@@ -705,33 +769,33 @@ void G_WorldDone()
 			clusters.findByCluster(levels.findByName(::level.secretmap).cluster) :
 			clusters.findByCluster(levels.findByName(::level.nextmap).cluster);
 
-		if (nextcluster.cluster != level.cluster && sv_gametype == GM_COOP) {
+		if (nextcluster.cluster != level.cluster && sv_gametype == GM_COOP && options.text != "-") {
 			// Only start the finale if the next level's cluster is different
 			// than the current one and we're not in deathmatch.
-			if (nextcluster.entertext)
+			if (!nextcluster.entertext.empty())
 			{
 				// All of our options need to be from the next cluster.
-				options.music = nextcluster.messagemusic.c_str();
+				options.music = nextcluster.messagemusic;
 				if (!nextcluster.finalepic.empty())
 				{
-					options.pic = &nextcluster.finalepic[0];
+					options.pic = nextcluster.finalepic;
 				}
 				else
 				{
-					options.flat = &nextcluster.finaleflat[0];
+					options.flat = nextcluster.finaleflat;
 				}
 				options.text = nextcluster.entertext;
 
 				AM_Stop();
 				F_StartFinale(options);
 			}
-			else if (thiscluster.exittext)
+			else if (!thiscluster.exittext.empty())
 			{
 				AM_Stop();
 				if (thiscluster.flags & CLUSTER_EXITTEXTISLUMP)
 				{
-					ResourceId res = Res_GetResourceId(thiscluster.exittext, NS_GLOBAL);
-					options.text = static_cast<const char*>(Res_LoadResource(thiscluster.exittext, PU_STATIC));
+					options.text = static_cast<const char*>(Res_LoadResource(
+					    OStringToUpper(thiscluster.exittext.c_str()), PU_STATIC));
 				}
 				F_StartFinale(options);
 			}

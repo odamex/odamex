@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//    
+//
 // Drop-in replacement for std::string featuring string interning.
 // When an OString is compared for equality with another OString, an integer
 // hash of the string is used for extremely quick comparison rather than
@@ -30,12 +30,6 @@
 #include "m_ostring.h"
 
 
-// initialize static member variables
-bool OString::mInitialized = false;
-OString::StringTable* OString::mStrings = NULL;
-OString::StringLookupTable* OString::mStringLookup = NULL;
-std::string* OString::mEmptyString = NULL;
-
 // ------------------------------------------------------------------------
 // startup / shutdown
 // ------------------------------------------------------------------------
@@ -44,9 +38,8 @@ void OString::startup()
 {
 	if (!mInitialized)
 	{
-		mStrings = new StringTable(OString::MAX_STRINGS);
-		mStringLookup = new StringLookupTable(OString::MAX_STRINGS);
-		mEmptyString = new std::string("");
+		mStrings = std::make_unique<StringTable>(OString::MAX_STRINGS);
+		mStringLookup = std::make_unique<StringLookupTable>(OString::MAX_STRINGS);
 		mInitialized = true;
 	}
 }
@@ -54,12 +47,8 @@ void OString::startup()
 
 void OString::shutdown()
 {
-	delete mStrings;
-	mStrings = NULL;
-	delete mStringLookup;
-	mStringLookup = NULL;
-	delete mEmptyString;
-	mEmptyString = NULL;
+	mStrings.reset();
+	mStringLookup.reset();
 	mInitialized = false;
 }
 
@@ -70,17 +59,17 @@ void OString::shutdown()
 
 void OString::printStringTable()
 {
-	printf("OString Table\n");
-	printf("=============\n");
-	for (StringTable::const_iterator it = mStrings->begin(); it != mStrings->end(); ++it)
-		printf("id 0x%08x hash 0x%08x (%u): %s\n", mStrings->getId(*it), hash(it->mString.c_str()),
-					it->mRefCount, it->mString.c_str());
-	printf("\n");
+	fmt::print("OString Table\n");
+	fmt::print("=============\n");
+	for (const auto& string : *mStrings)
+		fmt::print("id 0x{:08} hash 0x{:08} ({}): {}\n", mStrings->getId(string), hash(string.mString.c_str()),
+					string.mRefCount, string.mString);
+	fmt::print("\n");
 }
 
 
 // ------------------------------------------------------------------------
-// OString Constructors 
+// OString Constructors
 // ------------------------------------------------------------------------
 
 OString::OString() :
@@ -104,6 +93,13 @@ OString::OString(const std::string& str) :
 	assign(str);
 }
 
+OString::OString(std::string_view str) :
+	mId(mEmptyStringId)
+{
+	startup();
+	assign(str.data(), str.length());
+}
+
 OString::OString(const OString& other, size_t pos, size_t len) :
 	mId(mEmptyStringId)
 {
@@ -116,6 +112,14 @@ OString::OString(const std::string& str, size_t pos, size_t len) :
 {
 	startup();
 	assign(std::string(str, pos, len));
+}
+
+OString::OString(std::string_view str, size_t pos, size_t len) :
+	mId(mEmptyStringId)
+{
+	startup();
+	str = str.substr(pos, len);
+	assign(str.data(), str.length());
 }
 
 OString::OString(const char* s, size_t n) :
@@ -291,7 +295,7 @@ const char& OString::operator[] (size_t pos) const
 
 
 // ------------------------------------------------------------------------
-// OString::at 
+// OString::at
 // ------------------------------------------------------------------------
 
 const char& OString::at(size_t pos) const
@@ -594,158 +598,37 @@ bool operator== (const char* lhs, const OString& rhs)
 	return rhs.compare(lhs) == 0;
 }
 
-
 // ------------------------------------------------------------------------
-// operator!=
-// ------------------------------------------------------------------------
-
-bool operator!= (const OString& lhs, const OString& rhs)
-{
-	return !(lhs.equals(rhs));
-}
-
-bool operator!= (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) != 0;
-}
-
-bool operator!= (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) != 0;
-}
-
-bool operator!= (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) != 0;
-}
-
-bool operator!= (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) != 0;
-}
-
-
-// ------------------------------------------------------------------------
-// operator<
+// operator<=>
 // ------------------------------------------------------------------------
 
-bool operator< (const OString& lhs, const OString& rhs)
+std::strong_ordering operator<=> (const OString& lhs, const OString& rhs)
 {
-	return lhs.compare(rhs) < 0;
+	return lhs.compare(rhs) <=> 0;
 }
 
-bool operator< (const OString& lhs, const std::string& rhs)
+std::strong_ordering operator<=> (const OString& lhs, const std::string& rhs)
 {
-	return lhs.compare(rhs) < 0;
+	return lhs.compare(rhs) <=> 0;
 }
 
-bool operator< (const std::string& lhs, const OString& rhs)
+std::strong_ordering operator<=> (const std::string& lhs, const OString& rhs)
 {
-	return rhs.compare(lhs) > 0;
+	return 0 <=> rhs.compare(lhs);
 }
 
-bool operator< (const OString& lhs, const char* rhs)
+std::strong_ordering operator<=> (const OString& lhs, const char* rhs)
 {
-	return lhs.compare(rhs) < 0;
+	return lhs.compare(rhs) <=> 0;
 }
 
-bool operator< (const char* lhs, const OString& rhs)
+std::strong_ordering operator<=> (const char* lhs, const OString& rhs)
 {
-	return rhs.compare(lhs) > 0;
-}
-
-
-// ------------------------------------------------------------------------
-// operator<=
-// ------------------------------------------------------------------------
-
-bool operator<= (const OString& lhs, const OString& rhs)
-{
-	return lhs.equals(rhs) || lhs.compare(rhs) < 0;
-}
-
-bool operator<= (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) < 0;
-}
-
-bool operator<= (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) > 0;
-}
-
-bool operator<= (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) < 0;
-}
-
-bool operator<= (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) > 0;
-}
-
-
-// ------------------------------------------------------------------------
-// operator>
-// ------------------------------------------------------------------------
-
-bool operator> (const OString& lhs, const OString& rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator> (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator> (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) < 0;
-}
-
-bool operator> (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator> (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) < 0;
-}
-
-
-// ------------------------------------------------------------------------
-// operator>=
-// ------------------------------------------------------------------------
-
-bool operator>= (const OString& lhs, const OString& rhs)
-{
-	return lhs.equals(rhs) || lhs.compare(rhs) > 0;
-}
-
-bool operator>= (const OString& lhs, const std::string& rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator>= (const std::string& lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) < 0;
-}
-
-bool operator>= (const OString& lhs, const char* rhs)
-{
-	return lhs.compare(rhs) > 0;
-}
-
-bool operator>= (const char* lhs, const OString& rhs)
-{
-	return rhs.compare(lhs) < 0;
+	return 0 <=> rhs.compare(lhs);
 }
 
 // ------------------------------------------------------------------------
-// swap 
+// swap
 // ------------------------------------------------------------------------
 
 namespace std {
@@ -763,13 +646,13 @@ void swap(::OString& x, ::OString& y)
 struct UpperFunctor
 {
 	inline char operator()(const char c) const
-	{	return toupper(c);	}
+	{	return toupper(static_cast<unsigned char>(c));	}
 };
 
 struct LowerFunctor
 {
 	inline char operator()(const char c) const
-	{	return tolower(c);	}
+	{	return tolower(static_cast<unsigned char>(c));	}
 };
 
 template <typename FUNC>
@@ -786,7 +669,7 @@ static OString OStringConverter(const char* s, size_t length)
 		out = fixed_buf;
 	else
 		out = dyn_buf = new char[length + 1];
-	
+
 	for (size_t i = 0; i < length && *in != '\0'; i++)
 		*out++	= func(*in++);
 	*out = '\0';
@@ -803,10 +686,9 @@ static OString OStringConverter(const char* s, size_t length)
 	}
 }
 
-
-OString OStringToUpper(const char* s, size_t length)
+OString OStringToUpper(std::string_view s)
 {
-	return OStringConverter<UpperFunctor>(s, length);
+	return OStringConverter<UpperFunctor>(s.data(), s.length());
 }
 
 OString OStringToUpper(const OString& str)
@@ -814,9 +696,9 @@ OString OStringToUpper(const OString& str)
 	return OStringConverter<UpperFunctor>(str.c_str(), str.length());
 }
 
-OString OStringToLower(const char* s, size_t length)
+OString OStringToLower(std::string_view s)
 {
-	return OStringConverter<LowerFunctor>(s, length);
+	return OStringConverter<LowerFunctor>(s.data(), s.length());
 }
 
 OString OStringToLower(const OString& str)

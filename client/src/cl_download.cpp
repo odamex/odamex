@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -25,8 +25,14 @@
 
 #include "cl_download.h"
 
+#ifndef CURL_STATICLIB
 #define CURL_STATICLIB
+#endif
 #include "curl/curl.h"
+
+#ifdef min
+#   undef min
+#endif
 
 #include "c_dispatch.h"
 #include "cl_main.h"
@@ -35,6 +41,7 @@
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "w_ident.h"
+#include "m_random.h"
 #include "resources/res_filelib.h"
 
 EXTERN_CVAR(cl_waddownloaddir)
@@ -50,34 +57,28 @@ enum States
 
 static struct DownloadState
 {
-  private:
-	DownloadState(const DownloadState&);
-
   public:
-	States state;
-	OTransferCheck* check;
-	OTransfer* transfer;
+	States state = STATE_SHUTDOWN;
+	std::unique_ptr<OTransferCheck> check;
+	std::unique_ptr<OTransfer> transfer;
 	std::string url;
 	std::string filename;
-	OMD5Hash hash;
-	unsigned flags;
-	Websites checkurls;
-	size_t checkurlidx;
-	std::string checkfilename;
-	int checkfails;
-	DownloadState()
-	    : state(STATE_SHUTDOWN), check(NULL), transfer(NULL), url(""), filename(""),
-	      hash(), flags(0), checkurls(), checkurlidx(0), checkfilename(""),
-	      checkfails(0)
-	{
-	}
+	OMD5Hash hash{};
+	uint32_t flags = 0;
+	Websites checkurls{};
+	size_t checkurlidx = 0;
+	std::string checkfilename{};
+	int checkfails = 0;
+	DownloadState(const DownloadState&) = delete;
+	DownloadState& operator=(const DownloadState&) = delete;
+	DownloadState(DownloadState&&) = delete;
+	DownloadState& operator=(DownloadState&&) = delete;
+	DownloadState() = default;
 	void Ready()
 	{
 		this->state = STATE_READY;
-		delete this->check;
-		this->check = NULL;
-		delete this->transfer;
-		this->transfer = NULL;
+		this->check.reset();
+		this->transfer.reset();
 		this->url = "";
 		this->filename = "";
 		this->hash = OMD5Hash();
@@ -94,8 +95,8 @@ static struct DownloadState
  */
 void CL_DownloadInit()
 {
-	Printf("CL_DownloadInit: Init HTTP subsystem (libcurl %d.%d.%d)\n",
-	       LIBCURL_VERSION_MAJOR, LIBCURL_VERSION_MINOR, LIBCURL_VERSION_PATCH);
+	PrintFmt("CL_DownloadInit: Init HTTP subsystem (libcurl {}.{}.{})\n",
+	         LIBCURL_VERSION_MAJOR, LIBCURL_VERSION_MINOR, LIBCURL_VERSION_PATCH);
 
 	curl_global_init(CURL_GLOBAL_ALL);
 
@@ -110,10 +111,8 @@ void CL_DownloadShutdown()
 	if (::dlstate.state == STATE_SHUTDOWN)
 		return;
 
-	delete ::dlstate.check;
-	::dlstate.check = NULL;
-	delete ::dlstate.transfer;
-	::dlstate.transfer = NULL;
+	::dlstate.check.reset();
+	::dlstate.transfer.reset();
 
 	curl_global_cleanup();
 	::dlstate.state = STATE_SHUTDOWN;
@@ -140,7 +139,7 @@ bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned 
 {
 	if (::dlstate.state != STATE_READY)
 	{
-		Printf(PRINT_WARNING, "Can't start download when download state is not ready.\n");
+		PrintFmt(PRINT_WARNING, "Can't start download when download state is not ready.\n");
 		return false;
 	}
 
@@ -168,19 +167,24 @@ bool CL_StartDownload(const Websites& urls, const OWantFile& filename, unsigned 
 
 	if (checkurls.empty())
 	{
-		Printf(PRINT_WARNING, "No sites were provided for download.\n");
+		PrintFmt(PRINT_WARNING, "No sites were provided for download.\n");
 		return false;
 	}
 
-	if (W_IsFilenameCommercialIWAD(filename.getBasename()))
+	if (W_IsFilenameCommercialWAD(filename.getBasename()))
 	{
-		Printf(PRINT_WARNING, "Refusing to download commercial IWAD file.\n");
+		PrintFmt(PRINT_WARNING, "{} is a commercial WAD file and cannot be downloaded by Odamex.\n"
+		                        "A copy can be obtained through purchasing DOOM + DOOM II from Steam or GOG.\n",
+		                        filename.getBasename());
 		return false;
 	}
 
-	if (W_IsFilehashCommercialIWAD(filename.getWantedMD5()))
+	if (W_IsFilehashCommercialWAD(filename.getWantedMD5()))
 	{
-		Printf(PRINT_WARNING, "Refusing to download renamed commercial IWAD file.\n");
+		const fileIdentifier_t* id = W_GameInfo(filename.getWantedMD5());
+		PrintFmt(PRINT_WARNING, "{} is a renamed commercial wad file containing {}.\n"
+		                        "A copy of {} can be obtained through purchasing DOOM + DOOM II from Steam or GOG.\n",
+		                        filename.getBasename(), id->mNiceName, id->mFilename);
 		return false;
 	}
 
@@ -222,7 +226,7 @@ static void CheckDone(const OTransferInfo& info)
 	::dlstate.state = STATE_DOWNLOADING;
 	::dlstate.url = info.url;
 
-	Printf("Found file at %s.\n", info.url.c_str());
+	PrintFmt("Found file at {}.\n", info.url);
 }
 
 /**
@@ -235,15 +239,14 @@ static void CheckError(const char* msg)
 	// That's a strike.
 	::dlstate.checkfails += 1;
 
-	delete ::dlstate.check;
-	::dlstate.check = NULL;
+	::dlstate.check.reset();
 
 	// Three strikes and you're out.
 	if (::dlstate.checkfails >= 3)
 	{
-		Printf(PRINT_WARNING, "Could not find %s at %s (%s)...\n",
-		       ::dlstate.checkfilename.c_str(),
-		       ::dlstate.checkurls.at(::dlstate.checkurlidx).c_str(), msg);
+		PrintFmt(PRINT_WARNING, "Could not find {} at {} ({})...\n",
+		         ::dlstate.checkfilename,
+		         ::dlstate.checkurls.at(::dlstate.checkurlidx), msg);
 
 		// Check the next base URL.
 		::dlstate.checkfails = 0;
@@ -251,8 +254,8 @@ static void CheckError(const char* msg)
 		if (::dlstate.checkurlidx >= ::dlstate.checkurls.size())
 		{
 			// No more base URL's to check - our luck has run out.
-			Printf(PRINT_WARNING, "Download failed, no sites have %s for download.\n",
-			       ::dlstate.checkfilename.c_str());
+			PrintFmt(PRINT_WARNING, "Download failed, no sites have {} for download.\n",
+			         ::dlstate.checkfilename);
 			::dlstate.Ready();
 		}
 	}
@@ -279,15 +282,15 @@ static void TickCheck()
 		}
 
 		// Create the check transfer.
-		::dlstate.check = new OTransferCheck(CheckDone, CheckError);
+		::dlstate.check = std::make_unique<OTransferCheck>(CheckDone, CheckError);
 
 		std::string safeFileName =
-		    ::dlstate.check->escapeFileName(::dlstate.checkfilename.c_str());
+		    ::dlstate.check->escapeFileName(::dlstate.checkfilename);
 
 		// Now we have the full URL.
 		fullurl += safeFileName;
 
-		::dlstate.check->setURL(fullurl.c_str());
+		::dlstate.check->setURL(fullurl);
 		if (!::dlstate.check->start())
 		{
 			// Failed to start, bail out.
@@ -296,7 +299,7 @@ static void TickCheck()
 		}
 
 		::dlstate.state = STATE_CHECKING;
-		Printf("Checking for file at %s...\n", fullurl.c_str());
+		PrintFmt("Checking for file at {}...\n", fullurl);
 	}
 
 	// Tick the checker - the done/error callbacks mutate the state appropriately,
@@ -311,15 +314,19 @@ static StringTokens GetDownloadDirs()
 {
 	StringTokens dirs;
 
+	// Add all of the sources.
+	Res_AddSearchDir(dirs, cl_waddownloaddir.cstring(), SEARCHPATHSEPCHAR);
+	dirs.push_back(M_GetDownloadDir());
+
+
 	// These folders should only work on PC versions
 #ifndef GCONSOLE
 	Res_AddSearchDir(dirs, Args.CheckValue("-waddir"), SEARCHPATHSEPCHAR);
 	Res_AddSearchDir(dirs, getenv("DOOMWADDIR"), SEARCHPATHSEPCHAR);
 	Res_AddSearchDir(dirs, getenv("DOOMWADPATH"), SEARCHPATHSEPCHAR);
 #endif
-	Res_AddSearchDir(dirs, cl_waddownloaddir.cstring(), SEARCHPATHSEPCHAR);
+
 	Res_AddSearchDir(dirs, waddirs.cstring(), SEARCHPATHSEPCHAR);
-	dirs.push_back(M_GetUserDir());
 
 #ifdef __SWITCH__
 	dirs.push_back("./wads");
@@ -328,9 +335,8 @@ static StringTokens GetDownloadDirs()
 	dirs.push_back(M_GetCWD());
 
 	// Clean up all of the directories before deduping them.
-	StringTokens::iterator it = dirs.begin();
-	for (; it != dirs.end(); ++it)
-		*it = M_CleanPath(*it);
+	for (auto& dir : dirs)
+		dir = M_CleanPath(dir);
 
 	// Dedupe directories.
 	dirs.erase(std::unique(dirs.begin(), dirs.end()), dirs.end());
@@ -341,15 +347,15 @@ static void TransferDone(const OTransferInfo& info)
 {
 	std::string bytes;
 	StrFormatBytes(bytes, info.speed);
-	Printf("Download completed at %s/s.\n", bytes.c_str());
+	PrintFmt("Download completed at {}/s.\n", bytes);
 
 	if (::dlstate.flags & DL_RECONNECT)
-		CL_Reconnect();
+		CL_Reconnect(NQ_SILENT);
 }
 
 static void TransferError(const char* msg)
 {
-	Printf(PRINT_WARNING, "Download error (%s).\n", msg);
+	PrintFmt(PRINT_WARNING, "Download error ({}).\n", msg);
 }
 
 static void TickDownload()
@@ -357,18 +363,18 @@ static void TickDownload()
 	if (::dlstate.transfer == NULL)
 	{
 		// Create the transfer.
-		::dlstate.transfer = new OTransfer(TransferDone, TransferError);
-		::dlstate.transfer->setURL(::dlstate.url.c_str());
+		::dlstate.transfer = std::make_unique<OTransfer>(TransferDone, TransferError);
+		::dlstate.transfer->setURL(::dlstate.url);
 
 		// Figure out where our destination should be.
 		std::string dest;
 		StringTokens dirs = GetDownloadDirs();
-		for (StringTokens::iterator it = dirs.begin(); it != dirs.end(); ++it)
+		for (const auto& dir : dirs)
 		{
 			// Ensure no path-traversal shenanegins are going on.
-			dest = *it + PATHSEP + ::dlstate.filename;
-			M_CleanPath(dest);
-			if (dest.find(*it) != 0)
+			dest = dir + PATHSEP + ::dlstate.filename;
+			dest = M_CleanPath(dest);
+			if (dest.find(dir) != 0)
 			{
 				// Something about the filename is trying to escape the
 				// download directory.  This is almost certainly malicious.
@@ -378,13 +384,12 @@ static void TickDownload()
 			}
 
 			// If the output file was set successfully, escape the loop.
-			int err = ::dlstate.transfer->setOutputFile(dest.c_str());
+			int err = ::dlstate.transfer->setOutputFile(dest);
 			if (err == 0)
 				break;
 
 			// Otherwise, set the destination to the empty string and try again.
-			Printf(PRINT_WARNING, "Could not save to %s (%s)\n", dest.c_str(),
-			       strerror(err));
+			PrintFmt(PRINT_WARNING, "Could not save to {} ({})\n", dest, strerror(err));
 			dest = "";
 		}
 
@@ -407,7 +412,7 @@ static void TickDownload()
 		}
 
 		::dlstate.state = STATE_DOWNLOADING;
-		Printf("Downloading %s...\n", ::dlstate.url.c_str());
+		PrintFmt("Downloading {}...\n", ::dlstate.url);
 	}
 
 	if (!::dlstate.transfer->tick())
@@ -421,8 +426,8 @@ static void TickDownload()
 			if (::dlstate.checkurlidx >= ::dlstate.checkurls.size())
 			{
 				// No more base URL's to check - our luck has run out.
-				Printf(PRINT_WARNING, "Download failed, no sites have %s for download.\n",
-				       ::dlstate.checkfilename.c_str());
+				PrintFmt(PRINT_WARNING, "Download failed, no sites have {} for download.\n",
+				         ::dlstate.checkfilename);
 				::dlstate.Ready();
 			}
 		}
@@ -443,20 +448,16 @@ void CL_DownloadTick()
 	switch (::dlstate.state)
 	{
 	case STATE_CHECKING:
-		delete ::dlstate.transfer;
-		::dlstate.transfer = NULL;
+		::dlstate.transfer.reset();
 		TickCheck();
 		break;
 	case STATE_DOWNLOADING:
-		delete ::dlstate.check;
-		::dlstate.check = NULL;
+		::dlstate.check.reset();
 		TickDownload();
 		break;
 	default:
-		delete ::dlstate.check;
-		::dlstate.check = NULL;
-		delete ::dlstate.transfer;
-		::dlstate.check = NULL;
+		::dlstate.check.reset();
+		::dlstate.transfer.reset();
 		return;
 	}
 }
@@ -497,12 +498,12 @@ EXTERN_CVAR(cl_downloadsites)
 
 static void DownloadHelp()
 {
-	Printf("download - Downloads a WAD file\n\n"
-	       "Usage:\n"
-	       "  ] download get <FILENAME>\n"
-	       "  Downloads the file FILENAME from your configured download sites.\n"
-	       "  ] download stop\n"
-	       "  Stop an in-progress download.");
+	PrintFmt("download - Downloads a WAD file\n\n"
+	         "Usage:\n"
+	         "  ] download get <FILENAME>\n"
+	         "  Downloads the file FILENAME from your configured download sites.\n"
+	         "  ] download stop\n"
+	         "  Stop an in-progress download.");
 }
 
 BEGIN_COMMAND(download)
@@ -518,7 +519,7 @@ BEGIN_COMMAND(download)
 		Websites clientsites = TokenizeString(cl_downloadsites.str(), " ");
 
 		// Shuffle the sites so we evenly distribute our requests.
-		std::random_shuffle(clientsites.begin(), clientsites.end());
+		std::shuffle(clientsites.begin(), clientsites.end(), rng);
 
 		// Attach the website to the file and download it.
 		OWantFile file;
@@ -530,7 +531,7 @@ BEGIN_COMMAND(download)
 	if (stricmp(argv[1], "stop") == 0)
 	{
 		if (CL_StopDownload())
-			Printf(PRINT_WARNING, "Download cancelled.\n");
+			PrintFmt(PRINT_WARNING, "Download cancelled.\n");
 
 		return;
 	}

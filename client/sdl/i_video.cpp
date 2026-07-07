@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,11 +33,9 @@
 #include "i_video.h"
 #include "v_video.h"
 
-#if defined(SDL12)
-#include "i_video_sdl12.h"
-#elif defined(SDL20)
+#if defined(SDL20)
 #include "i_video_sdl20.h"
-#else 
+#else
 #error "no video subsystem selected"
 #endif
 
@@ -53,14 +51,11 @@
 
 // [Russell] - Just for windows, display the icon in the system menu and
 // alt-tab display
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
 	#include "win32inc.h"
     #include "SDL_syswm.h"
     #include "resource.h"
 #endif	// _WIN32
-
-// Declared in doomtype.h as part of argb_t
-uint8_t argb_t::a_num, argb_t::r_num, argb_t::g_num, argb_t::b_num;
 
 // Global IVideoSubsystem instance for video startup and shutdown
 static IVideoSubsystem* video_subsystem = NULL;
@@ -84,6 +79,8 @@ extern int NewWidth, NewHeight, NewBits, DisplayBits;
 
 static int loading_icon_expire = -1;
 static IWindowSurface* loading_icon_background_surface = NULL;
+
+extern IWindowSurface* scaled_screenblocks_surface;
 
 EXTERN_CVAR(vid_32bpp)
 EXTERN_CVAR(vid_fullscreen)
@@ -121,11 +118,11 @@ EXTERN_CVAR(sv_allowwidescreen)
 IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelFormat* format,
 								void* buffer, uint16_t pitch) :
 	mCanvas(NULL),
-	mSurfaceBuffer((uint8_t*)buffer), mOwnsSurfaceBuffer(buffer == NULL),
+	mSurfaceBuffer(static_cast<uint8_t*>(buffer)), mOwnsSurfaceBuffer(buffer == NULL),
 	mPalette(V_GetDefaultPalette()->colors), mPixelFormat(*format),
 	mWidth(width), mHeight(height), mPitch(pitch), mLocks(0)
 {
-	const uintptr_t alignment = 16;
+	static constexpr uintptr_t alignment = 16;
 
 	// Not given a pitch? Just base pitch on the given width
 	if (pitch == 0)
@@ -144,7 +141,7 @@ IWindowSurface::IWindowSurface(uint16_t width, uint16_t height, const PixelForma
 		uint8_t* buffer = new uint8_t[mPitch * mHeight + alignment];
 
 		// calculate the offset from buffer to the next aligned memory address
-		uintptr_t offset = ((uintptr_t)(buffer + alignment) & ~(alignment - 1)) - (uintptr_t)buffer;
+		uintptr_t offset = (reinterpret_cast<uintptr_t>(buffer + alignment) & ~(alignment - 1)) - reinterpret_cast<uintptr_t>(buffer);
 
 		mSurfaceBuffer = buffer + offset;
 
@@ -180,7 +177,7 @@ IWindowSurface::IWindowSurface(IWindowSurface* base_surface, uint16_t width, uin
 	uint16_t x = (base_surface->getWidth() - mWidth) / 2;
 	uint16_t y = (base_surface->getHeight() - mHeight) / 2;
 
-	mSurfaceBuffer = (uint8_t*)base_surface->getBuffer(x, y);
+	mSurfaceBuffer = static_cast<uint8_t*>(base_surface->getBuffer(x, y));
 
 	mPalette = base_surface->mPalette;
 }
@@ -194,8 +191,8 @@ IWindowSurface::IWindowSurface(IWindowSurface* base_surface, uint16_t width, uin
 IWindowSurface::~IWindowSurface()
 {
 	// free all DCanvas objects allocated by this surface
-	for (DCanvasCollection::iterator it = mCanvasStore.begin(); it != mCanvasStore.end(); ++it)
-		delete *it;
+	for (auto& canvas : mCanvasStore)
+		delete canvas;
 
 	// calculate the buffer's original address when freeing mSurfaceBuffer
 	if (mOwnsSurfaceBuffer)
@@ -259,6 +256,210 @@ static void BlitLoop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
 	}
 }
 
+template <typename SOURCE_PIXEL_T, typename DEST_PIXEL_T>
+static void BlitLoopCrop(DEST_PIXEL_T* dest, const SOURCE_PIXEL_T* source,
+					int destpitchpixels, int srcpitchpixels,
+					int destw, int desth,
+					int off_top, int off_bottom, int off_left, int off_right,
+					fixed_t xstep, fixed_t ystep, const argb_t* palette)
+{
+	fixed_t yfrac = 0;
+
+	int pixelcur = 0;
+	for (int y = 0; y < desth; y++)
+	{
+		// Find if we're off the top or bottom of page
+		if (y - off_top >= 0 && y < desth - off_bottom)
+		{
+			if (sizeof(DEST_PIXEL_T) == sizeof(SOURCE_PIXEL_T) && xstep == FRACUNIT)
+			{
+				for (int x = 0; x < destw; x++)
+				{
+					// Find if we're off the left or right of page
+					if (x - off_left >= 0 && x < destw - off_right)
+					{
+						dest[pixelcur] = source[x];
+						pixelcur++;
+					}
+				}
+				pixelcur = 0;
+			}
+			else
+			{
+				fixed_t xfrac = 0;
+				for (int x = 0; x < destw; x++)
+				{
+					// Find if we're off the left or right of page
+					if (x - off_left >= 0 && x < destw - off_right)
+					{
+						dest[pixelcur] = ConvertPixel<SOURCE_PIXEL_T, DEST_PIXEL_T>(source[xfrac >> FRACBITS], palette);
+						pixelcur++;
+					}
+
+					xfrac += xstep;
+				}
+				pixelcur = 0;
+			}
+		}
+
+		dest += destpitchpixels;
+		yfrac += ystep;
+
+		source += srcpitchpixels * (yfrac >> FRACBITS);
+		yfrac &= (FRACUNIT - 1);
+	}
+}
+
+
+//
+// IWindowSurface::blitcrop
+//
+// Blits a surface into this surface, automatically scaling the source image
+// to fit the destination dimensions. However, instead of scaling the image to fit
+// the surface dimensions, it scales the image to destination dimensions and then
+// crops it to the screen if it's off the side of the surface in any direction.
+//
+void IWindowSurface::blitcrop(const IWindowSurface* source_surface, int srcx, int srcy,
+			int srcw, int srch, int destx, int desty, int destw, int desth)
+{
+	int off_left = 0;
+	int off_right = 0;
+	int off_top = 0;
+	int off_bottom = 0;
+
+	int bufferx = 0;
+	int buffery = 0;
+
+	// clamp to source surface edges
+	if (srcx < 0)
+	{
+		srcw += srcx;
+		srcx = 0;
+	}
+
+	if (srcy < 0)
+	{
+		srch += srcy;
+		srcy = 0;
+	}
+
+	if (srcx + srcw > source_surface->getWidth())
+		srcw = source_surface->getWidth() - srcx;
+	if (srcy + srch > source_surface->getHeight())
+		srch = source_surface->getHeight() - srcy;
+
+	if (srcw == 0 || srch == 0)
+		return;
+
+	// clamp buffer to source edges, but keep destx and desty
+	// for clipping purposes
+
+	if (destx < 0)
+	{
+		off_left -= destx;
+		bufferx = 0;
+	}
+	else
+	{
+		bufferx = destx;
+	}
+
+	if (desty < 0)
+	{
+		off_top -= desty;
+		buffery = 0;
+	}
+	else
+	{
+		buffery = desty;
+	}
+
+	if (destx + destw > getWidth())
+	{
+		off_right = destw + destx - getWidth();
+	}
+	if (desty + desth > getHeight())
+	{
+		off_bottom = desth + desty - getHeight();
+	}
+
+	if (destw == 0 || desth == 0)
+		return;
+
+	// Our starting position is off the screen
+	// And we will never recover from this
+	// Someone messed their x/y or desth/w calc up!
+	// We're done here!
+
+	// Too far right to draw anything
+	if (destx > getWidth())
+		return;
+
+	// Too far down to draw anything
+	if (desty > getHeight())
+		return;
+
+	// Box at the top will never be drawn
+	if (desty + desth < 0)
+		return;
+
+	// Box at the left will never be drawn
+	if (destx + destw < 0)
+		return;
+
+	fixed_t xstep = FixedDiv(srcw << FRACBITS, destw << FRACBITS);
+	fixed_t ystep = FixedDiv(srch << FRACBITS, desth << FRACBITS);
+
+	int srcbits = source_surface->getBitsPerPixel();
+	int destbits = getBitsPerPixel();
+	int srcpitchpixels = source_surface->getPitchInPixels();
+	int destpitchpixels = getPitchInPixels();
+
+	const argb_t* palette = source_surface->getPalette();
+
+	if (srcbits == 8 && destbits == 8)
+	{
+		const palindex_t* source =
+		    static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
+		palindex_t* dest = static_cast<palindex_t*>(getBuffer()) + buffery * destpitchpixels + bufferx;
+
+		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels,
+			destw, desth,
+			off_top, off_bottom, off_left, off_right,
+			xstep, ystep, palette);
+	}
+	else if (srcbits == 8 && destbits == 32)
+	{
+		if (palette == NULL)
+			return;
+
+		const palindex_t* source =
+		    static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + buffery * destpitchpixels + bufferx;
+
+		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels,
+				destw, desth,
+				off_top, off_bottom, off_left, off_right,
+				xstep, ystep, palette);
+	}
+	else if (srcbits == 32 && destbits == 8)
+	{
+		// we can't quickly convert from 32bpp source to 8bpp dest so don't bother
+		return;
+	}
+	else if (srcbits == 32 && destbits == 32)
+	{
+		const argb_t* source =
+		    reinterpret_cast<const argb_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + buffery * destpitchpixels + bufferx;
+
+		BlitLoopCrop(dest, source, destpitchpixels, srcpitchpixels,
+			destw, desth,
+			off_top, off_bottom, off_left, off_right,
+			xstep, ystep, palette);
+	}
+}
+
 
 //
 // IWindowSurface::blit
@@ -318,13 +519,13 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	int destbits = getBitsPerPixel();
 	int srcpitchpixels = source_surface->getPitchInPixels();
 	int destpitchpixels = getPitchInPixels();
-	
+
 	const argb_t* palette = source_surface->getPalette();
 
 	if (srcbits == 8 && destbits == 8)
 	{
-		const palindex_t* source = (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
-		palindex_t* dest = (palindex_t*)getBuffer() + desty * destpitchpixels + destx;
+		const palindex_t* source = static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
+		palindex_t* dest = static_cast<palindex_t*>(getBuffer()) + desty * destpitchpixels + destx;
 
 		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
 	}
@@ -333,8 +534,8 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 		if (palette == NULL)
 			return;
 
-		const palindex_t* source = (palindex_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
-		argb_t* dest = (argb_t*)getBuffer() + desty * destpitchpixels + destx;
+		const palindex_t* source = static_cast<const palindex_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + desty * destpitchpixels + destx;
 
 		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
 	}
@@ -345,8 +546,8 @@ void IWindowSurface::blit(const IWindowSurface* source_surface, int srcx, int sr
 	}
 	else if (srcbits == 32 && destbits == 32)
 	{
-		const argb_t* source = (argb_t*)source_surface->getBuffer() + srcy * srcpitchpixels + srcx;
-		argb_t* dest = (argb_t*)getBuffer() + desty * destpitchpixels + destx;
+		const argb_t* source = reinterpret_cast<const argb_t*>(source_surface->getBuffer()) + srcy * srcpitchpixels + srcx;
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer()) + desty * destpitchpixels + destx;
 
 		BlitLoop(dest, source, destpitchpixels, srcpitchpixels, destw, desth, xstep, ystep, palette);
 	}
@@ -368,7 +569,7 @@ void IWindowSurface::clear()
 	{
 		const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
 		palindex_t color_index = V_BestColor(palette_colors, color);
-		palindex_t* dest = (palindex_t*)getBuffer();
+		palindex_t* dest = static_cast<palindex_t*>(getBuffer());
 
 		for (int y = 0; y < getHeight(); y++)
 		{
@@ -378,7 +579,7 @@ void IWindowSurface::clear()
 	}
 	else
 	{
-		argb_t* dest = (argb_t*)getBuffer();
+		argb_t* dest = reinterpret_cast<argb_t*>(getBuffer());
 
 		for (int y = 0; y < getHeight(); y++)
 		{
@@ -462,9 +663,7 @@ std::string I_GetVideoModeString(const IVideoMode& mode)
 		"full screen window"
 	};
 
-	std::string str;
-	StrFormat(str, "%dx%d %dbpp (%s)", mode.width, mode.height, mode.bpp, window_strs[I_GetWindow()->getWindowMode()]);
-	return str;
+	return fmt::sprintf("%dx%d %dbpp (%s)", mode.width, mode.height, mode.bpp, window_strs[I_GetWindow()->getWindowMode()]);
 }
 
 
@@ -477,12 +676,7 @@ std::string I_GetVideoModeString(const IVideoMode& mode)
 static bool I_IsModeSupported(uint8_t bpp, EWindowMode window_mode)
 {
 	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
-
-	for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
-		if (it->bpp == bpp && it->window_mode == window_mode)
-			return true;
-
-	return false;
+	return std::any_of(modelist->cbegin(), modelist->cend(), [bpp, window_mode](const auto& mode){ return mode.bpp == bpp && mode.window_mode == window_mode; });
 }
 
 
@@ -516,7 +710,7 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode& mode)
 	// check if the given bit-depth is supported
 	if (!I_IsModeSupported(desired_mode.bpp, desired_mode.window_mode))
 	{
-		// mode is not supported -- check a different bit depth 
+		// mode is not supported -- check a different bit depth
 		desired_mode.bpp = desired_mode.bpp ^ (32 | 8);
 		if (!I_IsModeSupported(desired_mode.bpp, desired_mode.window_mode))
 			return invalid_mode;
@@ -525,26 +719,26 @@ static IVideoMode I_ValidateVideoMode(const IVideoMode& mode)
 	unsigned int closest_dist = UINT_MAX;
 	const IVideoMode* closest_mode = NULL;
 
-	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
+	const IVideoModeList& modelist = *I_GetVideoCapabilities()->getSupportedVideoModes();
 	for (int iteration = 0; iteration < 2; iteration++)
 	{
-		for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
+		for (const auto& mode : modelist)
 		{
-			if (*it == desired_mode)		// perfect match?
-				return *it;
+			if (mode == desired_mode)		// perfect match?
+				return mode;
 
-			if (it->bpp == desired_mode.bpp && it->window_mode == desired_mode.window_mode)
+			if (mode.bpp == desired_mode.bpp && mode.window_mode == desired_mode.window_mode)
 			{
-				if (iteration == 0 && (it->width < desired_mode.width || it->height < desired_mode.height))
+				if (iteration == 0 && (mode.width < desired_mode.width || mode.height < desired_mode.height))
 					continue;
 
-				unsigned int dist = (it->width - desired_mode.width) * (it->width - desired_mode.width)
-						+ (it->height - desired_mode.height) * (it->height - desired_mode.height);
+				unsigned int dist = (mode.width - desired_mode.width) * (mode.width - desired_mode.width)
+						+ (mode.height - desired_mode.height) * (mode.height - desired_mode.height);
 
 				if (dist < closest_dist)
 				{
 					closest_dist = dist;
-					closest_mode = &(*it);
+					closest_mode = &mode;
 				}
 			}
 		}
@@ -577,7 +771,7 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 
 	// [SL] 2011-11-30 - Prevent the player's view angle from moving
 	I_FlushInput();
-		
+
 	// Set up the primary and emulated surfaces
 	primary_surface = window->getPrimarySurface();
 	int surface_width = primary_surface->getWidth(), surface_height = primary_surface->getHeight();
@@ -585,6 +779,7 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 	I_FreeSurface(converted_surface);
 	I_FreeSurface(matted_surface);
 	I_FreeSurface(emulated_surface);
+	I_FreeSurface(scaled_screenblocks_surface);
 
 	// Handle a requested 8bpp surface when the video capabilities only support 32bpp
 	if (requested_mode.bpp != validated_mode.bpp)
@@ -655,7 +850,7 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 	// Ensure matted surface dimensions are sane and sanitized.
 	surface_width = clamp<uint16_t>(surface_width, 320, MAXWIDTH);
 	surface_height = clamp<uint16_t>(surface_height, 200, MAXHEIGHT);
-	
+
 	// Is matting being used? Create matted_surface based on the primary_surface.
 	if (surface_width != primary_surface->getWidth() ||
 		surface_height != primary_surface->getHeight())
@@ -681,12 +876,12 @@ void I_SetVideoMode(const IVideoMode& requested_mode)
 	assert(I_VideoInitialized());
 
 	if (window->getVideoMode() != requested_mode)
-		DPrintf("I_SetVideoMode: could not set video mode to %s. Using %s instead.\n",
-						I_GetVideoModeString(requested_mode).c_str(),
-						I_GetVideoModeString(window->getVideoMode()).c_str());
+		DPrintFmt("I_SetVideoMode: could not set video mode to {}. Using {} instead.\n",
+						I_GetVideoModeString(requested_mode),
+						I_GetVideoModeString(window->getVideoMode()));
 	else
-		DPrintf("I_SetVideoMode: set video mode to %s\n",
-					I_GetVideoModeString(window->getVideoMode()).c_str());
+		DPrintFmt("I_SetVideoMode: set video mode to {}\n",
+					I_GetVideoModeString(window->getVideoMode()));
 
 	const argb_t* palette = V_GetGamePalette()->colors;
 	if (matted_surface)
@@ -736,15 +931,13 @@ void I_InitHardware()
 	}
 	else
 	{
-		#if defined(SDL12)
-		video_subsystem = new ISDL12VideoSubsystem();
-		#elif defined(SDL20)
+		#if defined(SDL20)
 		video_subsystem = new ISDL20VideoSubsystem();
 		#endif
 		assert(video_subsystem != NULL);
 
 		const IVideoMode& native_mode = I_GetVideoCapabilities()->getNativeMode();
-		Printf(PRINT_HIGH, "I_InitHardware: native resolution: %s\n", I_GetVideoModeString(native_mode).c_str());
+		PrintFmt(PRINT_HIGH, "I_InitHardware: native resolution: {:s}\n", I_GetVideoModeString(native_mode));
 	}
 }
 
@@ -1225,6 +1418,12 @@ const PixelFormat* I_Get32bppPixelFormat()
 	#endif
 
 	return &format;
+}
+
+int I_GetAspectCorrectWidth(int surface_height, int asset_height, int asset_width)
+{
+	float aspect_scale_ratio = static_cast<float>(surface_height) / static_cast<float>(asset_height);
+	return aspect_scale_ratio * asset_width;
 }
 
 VERSION_CONTROL (i_video_cpp, "$Id$")

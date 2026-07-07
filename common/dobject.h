@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,7 +24,6 @@
 #pragma once
 
 #include <stdlib.h>
-#include "tarray.h"
 
 class FArchive;
 
@@ -88,7 +87,7 @@ struct TypeInfo
 	void RegisterType ();
 
 	// Returns true if this type is an ansector of (or same as) the passed type.
-	bool IsAncestorOf (const TypeInfo *ti) const
+	[[nodiscard]] bool IsAncestorOf (const TypeInfo *ti) const
 	{
 		while (ti)
 		{
@@ -98,7 +97,7 @@ struct TypeInfo
 		}
 		return false;
 	}
-	inline bool IsDescendantOf (const TypeInfo *ti) const
+	[[nodiscard]] inline bool IsDescendantOf (const TypeInfo *ti) const
 	{
 		return ti->IsAncestorOf (this);
 	}
@@ -118,7 +117,7 @@ struct ClassInit
 #define RUNTIME_CLASS(cls)		(&cls::_StaticType)
 
 #define _DECLARE_CLASS(cls,parent) \
-	virtual TypeInfo *StaticType() const { return RUNTIME_CLASS(cls); } \
+	[[nodiscard]] TypeInfo *StaticType() const override { return RUNTIME_CLASS(cls); } \
 private: \
 	typedef parent Super; \
 	typedef cls ThisClass; \
@@ -133,10 +132,10 @@ public: \
 	static DObject *CreateObject (); \
 public: \
 	bool CanSerialize() { return true; } \
-	void Serialize (FArchive &); \
+	void Serialize(FArchive &) override; \
 	inline friend FArchive &operator>> (FArchive &arc, cls* &object) \
 	{ \
-		return arc.ReadObject ((DObject* &)object, RUNTIME_CLASS(cls)); \
+		return arc.ReadObject (reinterpret_cast<DObject*&>(object), RUNTIME_CLASS(cls)); \
 	}
 
 #define DECLARE_SERIAL(cls,parent) \
@@ -159,28 +158,28 @@ public: \
 
 enum EObjectFlags
 {
-	OF_MassDestruction	= 0x00000001,	// Object is queued for deletion
-	OF_Cleanup			= 0x00000002	// Object is being deconstructed as a result of a queued deletion
+	OF_Destroyed = 0x00000001, // Object has been destroyed but not yet deleted
+	OF_Cleanup   = 0x00000002  // Object is being deconstructed as a result of a queued deletion
 };
 
 class DObject
 {
 public: \
 	static TypeInfo _StaticType; \
-	virtual TypeInfo *StaticType() const { return &_StaticType; } \
+	[[nodiscard]] virtual TypeInfo *StaticType() const { return &_StaticType; } \
 private: \
 	typedef DObject ThisClass;
 
 public:
-	DObject ();
-	virtual ~DObject ();
+	DObject () {};
+	virtual ~DObject () = 0;
 
-	inline bool IsKindOf (const TypeInfo *base) const
+	[[nodiscard]] inline bool IsKindOf (const TypeInfo *base) const
 	{
 		return base->IsAncestorOf (StaticType ());
 	}
 
-	inline bool IsA (const TypeInfo *type) const
+	[[nodiscard]] inline bool IsA (const TypeInfo *type) const
 	{
 		return (type == StaticType());
 	}
@@ -191,19 +190,14 @@ public:
 	static void BeginFrame ();
 	static void EndFrame ();
 
-	DWORD ObjectFlags;
+	uint32_t ObjectFlags = 0;
 
 	static void STACK_ARGS StaticShutdown ();
 
 private:
-	static TArray<DObject *> Objects;
-	static TArray<size_t> FreeIndices;
-	static TArray<DObject *> ToDestroy;
+	static inline std::vector<DObject *> ToDestroy{};
 
-	void RemoveFromArray ();
-
-	static bool Inactive;
-	size_t Index;
+	static inline bool Inactive;
 };
 
 #include "farchive.h"

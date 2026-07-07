@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,7 +29,7 @@
 
 // Sound equivalences. When a patch tries to change a sound,
 // use these sound names.
-static const char* SoundMap[] = { NULL,
+static const char* doom_SoundMap[] = {nullptr,
                             "weapons/pistol",
                             "weapons/shotgf",
                             "weapons/shotgr",
@@ -140,10 +140,10 @@ static const char* SoundMap[] = { NULL,
                             "misc/chat",
 
                             // MBF SOUNDS
-                            "dog/sight", 
-                            "dog/attack", 
-                            "dog/active", 
-                            "dog/death", 
+                            "dog/sight",
+                            "dog/attack",
+                            "dog/active",
+                            "dog/death",
                             "dog/pain",
 
                             // Padding -- DEHEXTRA's new sound range
@@ -168,7 +168,7 @@ static const char* SoundMap[] = { NULL,
                             "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
                             "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
                             "", "", "", "", "", "", "", "",
-                            
+
                             // Crispy/Retro (DEHEXTRA)
                             "dehextra/sound000", "dehextra/sound001", "dehextra/sound002", "dehextra/sound003",
                             "dehextra/sound004", "dehextra/sound005", "dehextra/sound006", "dehextra/sound007",
@@ -220,11 +220,17 @@ static const char* SoundMap[] = { NULL,
                             "dehextra/sound188", "dehextra/sound189", "dehextra/sound190", "dehextra/sound191",
                             "dehextra/sound192", "dehextra/sound193", "dehextra/sound194", "dehextra/sound195",
                             "dehextra/sound196", "dehextra/sound197", "dehextra/sound198", "dehextra/sound199",
+                            };
 
-                            // ZDOOM-Specific sounds
-                            "misc/teamchat"};
+static const char* odamex_SoundMap[] =
+{
+    // Odamex/ZDoom sounds
+    "misc/teamchat"
+};
+
+inline DoomObjectContainer<std::string> SoundMap(ARRAY_LENGTH(doom_SoundMap) + ARRAY_LENGTH(odamex_SoundMap));
 
 void D_UndoDehPatch();
 void D_PostProcessDeh();
-bool D_LoadDehLump(const ResourceId res_id);
-static int EndInclude();
+bool D_DoDehPatch(const OResFile* patchfile, const ResourceId res_id, bool textonly, bool notext = false);
+bool CheckIfDehActorDefined(const mobjtype_t mobjtype);

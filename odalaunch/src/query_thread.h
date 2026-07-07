@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,29 +37,29 @@ wxDECLARE_EVENT(wxEVT_THREAD_WORKER_SIGNAL, wxCommandEvent);
 class QueryThread : public wxThread
 {
 public:
-    typedef enum
+    enum Message
     {
         Message_MIN = 0
         ,Run
         ,Exit
         ,Message_MAX
-    } Message;
+    };
 
-    typedef enum
+    enum Status
     {
          Status_MIN = 0
-        ,Running  
+        ,Running
         ,Waiting
         ,Exiting
         ,Status_MAX
-    } Status;
+    };
 
 	QueryThread(wxEvtHandler* EventHandler);
 	~QueryThread()
 	{
 	}
 
-	QueryThread::Status GetStatus();
+	QueryThread::Status GetStatus() const;
 
 	void Signal(odalpapi::Server* QueryServer,
 	            const std::string& Address,
@@ -90,7 +90,7 @@ private:
 
     wxMessageQueue<QueryThread::Message> m_Message;
 
-    wxMutex m_StatusMutex;
+    mutable wxMutex m_StatusMutex;
     QueryThread::Status m_StatusMessage;
 };
 

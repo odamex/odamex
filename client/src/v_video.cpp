@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,8 +26,10 @@
 #include "odamex.h"
 
 #include <assert.h>
+#include <cmath>
 
 #include "i_system.h"
+#include "i_time.h"
 #include "i_video.h"
 #include "r_local.h"
 #include "r_draw.h"
@@ -121,6 +123,8 @@ EXTERN_CVAR(sv_allowwidescreen)
 EXTERN_CVAR(vid_vsync)
 EXTERN_CVAR(vid_pillarbox)
 EXTERN_CVAR(vid_displayfps)
+EXTERN_CVAR(vid_640x400)
+EXTERN_CVAR(vid_320x200)
 
 static int vid_pillarbox_old = -1;
 static int vid_widescreen_old = -1;
@@ -128,10 +132,10 @@ static int vid_widescreen_old = -1;
 
 static IVideoMode V_GetRequestedVideoMode()
 {
-	int surface_bpp = vid_32bpp ? 32 : 8;
-	EWindowMode window_mode = (EWindowMode)vid_fullscreen.asInt();
-	bool vsync = (vid_vsync != 0.0f);
-	const std::string stretch_mode(vid_filter);
+	const int surface_bpp = vid_32bpp ? 32 : 8;
+	const EWindowMode window_mode = vid_fullscreen.asEnum<EWindowMode>();
+	const bool vsync = (vid_vsync != 0.0f);
+	const std::string& stretch_mode(vid_filter);
 
 	return IVideoMode(vid_defwidth.asInt(), vid_defheight.asInt(), surface_bpp, window_mode, vsync, stretch_mode);
 }
@@ -146,8 +150,8 @@ bool V_CheckModeAdjustment()
 	if (V_GetRequestedVideoMode() != window->getVideoMode())
 		return true;
 
-	bool using_widescreen = I_IsWideResolution();
-	if (vid_widescreen.asInt() > 0 && sv_allowwidescreen != using_widescreen)
+	const bool allow_widescreen = sv_allowwidescreen != 0.0f;
+	if (vid_widescreen.asInt() > 0 && allow_widescreen != I_IsWideResolution())
 		return true;
 
 	if (vid_widescreen.asInt() != vid_widescreen_old)
@@ -170,7 +174,7 @@ CVAR_FUNC_IMPL(vid_defwidth)
 {
 	if (var < 320 || var > MAXWIDTH)
 		var.RestoreDefault();
-	
+
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
 		V_ForceVideoModeAdjustment();
 }
@@ -180,7 +184,7 @@ CVAR_FUNC_IMPL(vid_defheight)
 {
 	if (var < 200 || var > MAXHEIGHT)
 		var.RestoreDefault();
-	
+
 	if (gamestate != GS_STARTUP && V_CheckModeAdjustment())
 		V_ForceVideoModeAdjustment();
 }
@@ -220,9 +224,11 @@ CVAR_FUNC_IMPL(vid_overscan)
 		V_ForceVideoModeAdjustment();
 }
 
-
 CVAR_FUNC_IMPL(vid_320x200)
 {
+	// vid_320x200 and vid_640x400 cannot both be enabled
+	if (var == 1)
+		vid_640x400.Set(0.0);
 	if (gamestate != GS_STARTUP)
 		V_ForceVideoModeAdjustment();
 }
@@ -230,6 +236,9 @@ CVAR_FUNC_IMPL(vid_320x200)
 
 CVAR_FUNC_IMPL(vid_640x400)
 {
+	// vid_320x200 and vid_640x400 cannot both be enabled
+	if (var == 1)
+		vid_320x200.Set(0.0);
 	if (gamestate != GS_STARTUP)
 		V_ForceVideoModeAdjustment();
 }
@@ -259,11 +268,12 @@ CVAR_FUNC_IMPL(vid_pillarbox)
 //
 static bool CheckWideModeAdjustment()
 {
-	bool using_widescreen = I_IsWideResolution();
-	if (vid_widescreen.asInt() > 0 && sv_allowwidescreen != using_widescreen)
+	const bool using_widescreen = I_IsWideResolution();
+	const bool allow_widescreen = sv_allowwidescreen != 0.0f;
+	if (vid_widescreen.asInt() > 0 && allow_widescreen != using_widescreen)
 		return true;
 
-	if (vid_widescreen.asInt() > 0 != using_widescreen)
+	if ((vid_widescreen.asInt() > 0) != using_widescreen)
 		return true;
 
 	return false;
@@ -309,14 +319,12 @@ CVAR_FUNC_IMPL(vid_maxfps)
 //
 BEGIN_COMMAND(vid_listmodes)
 {
-	const IVideoModeList* modelist = I_GetVideoCapabilities()->getSupportedVideoModes();
-
-	for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
+	for (const auto& mode : *I_GetVideoCapabilities()->getSupportedVideoModes())
 	{
-		if (*it == I_GetWindow()->getVideoMode())
-			Printf_Bold("%s\n", I_GetVideoModeString(*it).c_str());
+		if (mode == I_GetWindow()->getVideoMode())
+			PrintFmt_Bold("{}\n", I_GetVideoModeString(mode));
 		else
-			Printf(PRINT_HIGH, "%s\n", I_GetVideoModeString(*it).c_str());
+			PrintFmt(PRINT_HIGH, "{}\n", I_GetVideoModeString(mode));
 	}
 }
 END_COMMAND(vid_listmodes)
@@ -339,8 +347,8 @@ BEGIN_COMMAND(vid_currentmode)
 	else
 	{
 		char temp_str[9] = { 0 };
-		argb_t* d1 = (argb_t*)temp_str;
-		argb_t* d2 = (argb_t*)temp_str + 1;
+		argb_t* d1 = reinterpret_cast<argb_t*>(temp_str);
+		argb_t* d2 = reinterpret_cast<argb_t*>(temp_str + 1);
 
 		d1->seta('A'); d1->setr('R'); d1->setg('G'); d1->setb('B');
 		d2->seta('0' + format->getABits()); d2->setr('0' + format->getRBits());
@@ -350,15 +358,15 @@ BEGIN_COMMAND(vid_currentmode)
 	}
 
 	const IVideoMode& mode = I_GetWindow()->getVideoMode();
-	Printf(PRINT_HIGH, "%s %s surface\n",
-			I_GetVideoModeString(mode).c_str(), pixel_string.c_str());
+	PrintFmt(PRINT_HIGH, "{} {} surface\n",
+			I_GetVideoModeString(mode), pixel_string);
 }
 END_COMMAND(vid_currentmode)
 
 
 BEGIN_COMMAND(checkres)
 {
-	Printf(PRINT_HIGH, "%dx%d\n", I_GetVideoWidth(), I_GetVideoHeight());
+	PrintFmt(PRINT_HIGH, "{}x{}\n", I_GetVideoWidth(), I_GetVideoHeight());
 }
 END_COMMAND(checkres)
 
@@ -376,7 +384,7 @@ BEGIN_COMMAND(vid_setmode)
 	// No arguments
 	if (argc == 1)
 	{
-		Printf(PRINT_HIGH, "Usage: vid_setmode <width> <height>\n");
+		PrintFmt(PRINT_HIGH, "Usage: vid_setmode <width> <height>\n");
 		return;
 	}
 
@@ -392,13 +400,13 @@ BEGIN_COMMAND(vid_setmode)
 
 	if (width < 320 || height < 200)
 	{
-		Printf(PRINT_WARNING, "%dx%d is too small.  Minimum resolution is 320x200.\n", width, height);
+		PrintFmt(PRINT_WARNING, "{}x{} is too small.  Minimum resolution is 320x200.\n", width, height);
 		return;
 	}
 
 	if (width > MAXWIDTH || height > MAXHEIGHT)
 	{
-		Printf(PRINT_WARNING, "%dx%d is too large.  Maximum resolution is %dx%d.\n", width, height, MAXWIDTH, MAXHEIGHT);
+		PrintFmt(PRINT_WARNING, "{}x{} is too large.  Maximum resolution is {}x{}.\n", width, height, MAXWIDTH, MAXHEIGHT);
 		return;
 	}
 
@@ -413,7 +421,7 @@ END_COMMAND (vid_setmode)
 //
 bool V_UseWidescreen()
 {
-	int width = I_GetVideoWidth(), height = I_GetVideoHeight();
+	const int width = I_GetVideoWidth(), height = I_GetVideoHeight();
 
 	if (width == 0 || height == 0)
 		return false;
@@ -475,7 +483,7 @@ void V_Init()
 			vid_defwidth.RestoreDefault();
 			vid_defheight.RestoreDefault();
 		}
-		
+
 		if (video_width == 0 && video_height == 0)
 		{
 			video_width = vid_defwidth.asInt();
@@ -499,7 +507,7 @@ void V_Init()
 
 		V_DoSetResolution();
 
-		Printf(PRINT_HIGH, "V_Init: using %s video driver.\n", I_GetVideoDriverName().c_str());
+		PrintFmt(PRINT_HIGH, "V_Init: using {} video driver.\n", I_GetVideoDriverName());
 	}
 
 	if (!I_VideoInitialized())
@@ -514,7 +522,7 @@ void V_Init()
 
 	R_InitColormaps();
 
-	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 
 	// This uses the smaller of the two results. It's still not ideal but at least
 	// this allows hud_scaletext to have some purpose...
@@ -544,10 +552,10 @@ void V_MarkRect(int x, int y, int width, int height)
 	dirtybox.AddToBox(x + width - 1, y + height - 1);
 }
 
-const int GRAPH_WIDTH = 140;
-const int GRAPH_HEIGHT = 80;
-const double GRAPH_BASELINE = 1000 / 60.0;
-const double GRAPH_CAPPED_BASELINE = 1000 / 35.0;
+constexpr int GRAPH_WIDTH = 140;
+constexpr int GRAPH_HEIGHT = 80;
+constexpr double GRAPH_BASELINE = 1000 / 60.0;
+constexpr double GRAPH_CAPPED_BASELINE = 1000 / 35.0;
 
 struct frametimeGraph_t
 {
@@ -619,13 +627,13 @@ struct frametimeGraph_t
 		tail = (tail + 1) & 0xFF;
 	}
 
-	double getTail(const size_t i)
+	double getTail(const size_t i) const
 	{
-		size_t idx = (tail - 1 - i) & 0xFF;
+		const size_t idx = (tail - 1 - i) & 0xFF;
 		return data[idx];
 	}
 
-	double normalize(const double n)
+	double normalize(const double n) const
 	{
 		return (n - minimum) / (maximum - minimum);
 	}
@@ -642,8 +650,8 @@ void V_DrawFPSWidget()
 	static dtime_t time_accum = 0;
 	static unsigned int frame_count = 0;
 
-	dtime_t current_time = I_GetTime();
-	dtime_t delta_time = current_time - last_time;
+	const dtime_t current_time = I_GetTime();
+	const dtime_t delta_time = current_time - last_time;
 	last_time = current_time;
 	frame_count++;
 
@@ -665,7 +673,7 @@ void V_DrawFPSWidget()
 		                         v2int_t(::GRAPH_WIDTH, ::GRAPH_HEIGHT));
 
 		// Data
-		for (size_t count = 1; count < ::GRAPH_WIDTH - 2; count++)
+		for (int count = 1; count < ::GRAPH_WIDTH - 2; count++)
 		{
 			const double start = ::g_GraphData.getTail(count - 1);
 			const double end = ::g_GraphData.getTail(count);
@@ -711,15 +719,15 @@ void V_DrawFPSWidget()
 		             argb_t(0x13, 0x13, 0x13));
 
 		// Min
-		StrFormat(buffer, "%4.1f", ::g_GraphData.minimum);
+		buffer = fmt::sprintf("%4.1f", ::g_GraphData.minimum);
 		screen->PrintStr(graphBox.max.x, graphBox.max.y - 3, buffer.c_str());
 
 		// Max
-		StrFormat(buffer, "%4.1f", ::g_GraphData.maximum);
+		buffer = fmt::sprintf("%4.1f", ::g_GraphData.maximum);
 		screen->PrintStr(graphBox.max.x, graphBox.min.y - 3, buffer.c_str());
 
 		// Actual
-		StrFormat(buffer, "%4.1f", delta_time_ms);
+		buffer = fmt::sprintf("%4.1f", delta_time_ms);
 		screen->PrintStr(graphBox.max.x, graphBox.min.y + (::GRAPH_HEIGHT / 2) - 3,
 		                 buffer.c_str());
 
@@ -740,14 +748,14 @@ void V_DrawFPSWidget()
 		}
 
 		// FPS counter
-		StrFormat(buffer, "FPS %5.1f", last_fps);
+		buffer = fmt::sprintf("FPS %5.1f", last_fps);
 		screen->PrintStr(graphBox.min.x, graphBox.max.y + 1, buffer.c_str());
 	}
 	else if (vid_displayfps.asInt() == FPS_COUNTER)
 	{
 		static double last_fps = 0.0;
-		v2int_t topleft(8, I_GetSurfaceHeight() / 2 + 16);
-		v2int_t botleft(topleft.x, topleft.y + ::GRAPH_HEIGHT);
+		const v2int_t topleft(8, I_GetSurfaceHeight() / 2 + 16);
+		const v2int_t botleft(topleft.x, topleft.y + ::GRAPH_HEIGHT);
 
 		time_accum += delta_time;
 
@@ -761,7 +769,7 @@ void V_DrawFPSWidget()
 
 		// FPS counter
 		std::string buffer;
-		StrFormat(buffer, "FPS %5.1f", last_fps);
+		buffer = fmt::sprintf("FPS %5.1f", last_fps);
 		screen->PrintStr(botleft.x, botleft.y + 1, buffer.c_str());
 	}
 }
@@ -780,9 +788,9 @@ static void V_DrawTickerDot(IWindowSurface* surface, int n, PIXEL_T color)
 	const int dot_width = CleanXfac, dot_height = CleanYfac;
 	const int pitch_in_pixels = surface->getPitchInPixels();
 
-	PIXEL_T* dest = (PIXEL_T*)surface->getBuffer() +
+	PIXEL_T* dest = reinterpret_cast<PIXEL_T*>(surface->getBuffer()) +
 			(surface->getHeight() - 1 - dot_height) * pitch_in_pixels +
-			2 * n * dot_width; 
+			2 * n * dot_width;
 
 	for (int y = 0; y < dot_height; y++)
 	{
@@ -798,16 +806,16 @@ static void V_DrawTickerDot(IWindowSurface* surface, int n, PIXEL_T color)
 //
 void V_DrawFPSTicker()
 {
-	int current_tic = int(I_GetTime() * TICRATE / I_ConvertTimeFromMs(1000));
+	const int current_tic = int(I_GetTime() * TICRATE / I_ConvertTimeFromMs(1000));
 	static int last_tic = current_tic;
-	
-	int tics = clamp(current_tic - last_tic, 0, 20);
+
+	const int tics = clamp(current_tic - last_tic, 0, 20);
 	last_tic = current_tic;
 
 	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
 	{
-		const palindex_t oncolor = 255;
-		const palindex_t offcolor = 0;
+		static constexpr palindex_t oncolor = 255;
+		static constexpr palindex_t offcolor = 0;
 
 		int n = 0;
 		for (n = 0; n < tics; n++)
@@ -892,12 +900,11 @@ void DCanvas::FlatFill(const Texture* texture, int left, int top, int right, int
 
 	if (mSurface->getBitsPerPixel() == 8)
 	{
-		palindex_t* dest = (palindex_t*)mSurface->getBuffer() + top * mSurface->getPitchInPixels() + left;
+		palindex_t* dest = static_cast<palindex_t*>(mSurface->getBuffer()) + top * mSurface->getPitchInPixels() + left;
 
 		for (int y = top; y < bottom; y++)
 		{
-			int x = left;
-			while (x < right)
+			for (int x = left; x < right; x++)
 			{
 				int amount = std::min(tex_width - (x & tex_width_mask), right - x);
 				memcpy(dest, source + ((y & tex_height_mask) << tex_height_bits) + (x & tex_width_mask), amount);
@@ -910,7 +917,7 @@ void DCanvas::FlatFill(const Texture* texture, int left, int top, int right, int
 	}
 	else
 	{
-		argb_t* dest = (argb_t*)mSurface->getBuffer() + top * mSurface->getPitchInPixels() + left;
+		argb_t* dest = reinterpret_cast<argb_t*>(mSurface->getBuffer()) + top * mSurface->getPitchInPixels() + left;
 
 		for (int y = top; y < bottom; y++)
 		{
@@ -926,18 +933,19 @@ void DCanvas::FlatFill(const Texture* texture, int left, int top, int right, int
 
 // [SL] Stretches a patch to fill the full-screen while maintaining a 4:3
 // aspect ratio. Pillarboxing is used in widescreen resolutions.
-void DCanvas::DrawTextureFullScreen(const Texture* texture) const
+void DCanvas::DrawTextureFullScreen(const Texture* texture, bool clear) const
 {
-	mSurface->clear();
+	if (clear)
+		mSurface->clear();
 
-	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	const int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
 
 	int destw, desth;
 
 	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
 	{
-		destw = surface_width; 
-		desth = surface_height; 
+		destw = surface_width;
+		desth = surface_height;
 	}
 	else if (surface_width * 3 >= surface_height * 4)
 	{
@@ -950,8 +958,16 @@ void DCanvas::DrawTextureFullScreen(const Texture* texture) const
 		desth = surface_width * 3 / 4;
 	}
 
-	int x = (surface_width - destw) / 2;
-	int y = (surface_height - desth) / 2;
+	const int width = texture->mWidth;
+
+	if (width > 320)
+		destw = surface_width;
+
+	const int x = (surface_width - destw) / 2;
+	const int y = (surface_height - desth) / 2;
+
+	// Dim everything before drawing the patch.
+	mSurface->getDefaultCanvas()->Dim(0, 0, I_GetVideoWidth(), I_GetVideoHeight());
 
 	DrawTextureStretched(texture, x, y, destw, desth);
 }
@@ -960,14 +976,14 @@ void DCanvas::DrawTextureFullScreen(const Texture* texture) const
 // [RH] Set an area to a specified color
 void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) const
 {
-	int surface_pitch_pixels = mSurface->getPitchInPixels();
+	const int surface_pitch_pixels = mSurface->getPitchInPixels();
 
 	if (mSurface->getBitsPerPixel() == 8)
 	{
-		palindex_t color_index = V_BestColor(V_GetDefaultPalette()->basecolors, color);
-		palindex_t* dest = (palindex_t*)mSurface->getBuffer() + top * surface_pitch_pixels + left;
+		const palindex_t color_index = V_BestColor(V_GetDefaultPalette()->basecolors, color);
+		palindex_t* dest = static_cast<palindex_t*>(mSurface->getBuffer()) + top * surface_pitch_pixels + left;
 
-		int line_length = (right - left) * sizeof(palindex_t);
+		const int line_length = (right - left) * sizeof(palindex_t);
 		for (int y = top; y < bottom; y++)
 		{
 			memset(dest, color_index, line_length);
@@ -977,7 +993,7 @@ void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) cons
 	else
 	{
 		color = V_GammaCorrect(color);
-		argb_t* dest = (argb_t*)mSurface->getBuffer() + top * surface_pitch_pixels + left;
+		argb_t* dest = reinterpret_cast<argb_t*>(mSurface->getBuffer()) + top * surface_pitch_pixels + left;
 
 		for (int y = top; y < bottom; y++)
 		{
@@ -992,7 +1008,7 @@ void DCanvas::Clear(int left, int top, int right, int bottom, argb_t color) cons
  * @brief Draw a line between two points.
  *
  * @detail Yet another implementation of Bresenham.
- * 
+ *
  * @param src Source point.
  * @param dst Destination point.
  * @param color Color to paint the line.
@@ -1002,8 +1018,8 @@ void DCanvas::Line(const v2int_t src, const v2int_t dst, argb_t color) const
 	const palindex_t pal_color = V_BestColor(V_GetDefaultPalette()->basecolors, color);
 	const argb_t full_color = V_GammaCorrect(color);
 
-	int dx = abs(dst.x - src.x), sx = src.x < dst.x ? 1 : -1;
-	int dy = -abs(dst.y - src.y), sy = src.y < dst.y ? 1 : -1;
+	const int dx = abs(dst.x - src.x), sx = src.x < dst.x ? 1 : -1;
+	const int dy = -abs(dst.y - src.y), sy = src.y < dst.y ? 1 : -1;
 
 	int err = dx + dy;
 
@@ -1013,12 +1029,12 @@ void DCanvas::Line(const v2int_t src, const v2int_t dst, argb_t color) const
 	{
 		if (mSurface->getBitsPerPixel() == 8)
 		{
-			palindex_t* dest = (palindex_t*)mSurface->getBuffer(cur.x, cur.y);
+			palindex_t* dest = static_cast<palindex_t*>(mSurface->getBuffer(cur.x, cur.y));
 			*dest = pal_color;
 		}
 		else
 		{
-			argb_t* dest = (argb_t*)mSurface->getBuffer(cur.x, cur.y);
+			argb_t* dest = reinterpret_cast<argb_t*>(mSurface->getBuffer(cur.x, cur.y));
 			*dest = full_color;
 		}
 
@@ -1042,7 +1058,7 @@ void DCanvas::Line(const v2int_t src, const v2int_t dst, argb_t color) const
 
 /**
  * @brief Draw an empty box according to a rectangle.
- * 
+ *
  * @param bounds Boundary of the rectangle, inclusive.
  * @param color Color of the rectangle.
  */
@@ -1061,8 +1077,8 @@ EXTERN_CVAR (ui_dimcolor)
 
 void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float famount) const
 {
-	int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
-	int surface_pitch_pixels = mSurface->getPitchInPixels();
+	const int surface_width = mSurface->getWidth(), surface_height = mSurface->getHeight();
+	const int surface_pitch_pixels = mSurface->getPitchInPixels();
 
 	if (x1 < 0 || x1 + w > surface_width || y1 < 0 || y1 + h > surface_height)
 		return;
@@ -1077,18 +1093,18 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 		int bg;
 		int x, y;
 
-		int amount = (int)(famount * 64.0f);
-		argb_t *fg2rgb = Col2RGB8[amount];
-		argb_t *bg2rgb = Col2RGB8[64-amount];
+		const int amount = static_cast<int>(famount * 64.0f);
+		const argb_t *fg2rgb = Col2RGB8[amount];
+		const argb_t *bg2rgb = Col2RGB8[64-amount];
 
-		argb_t color = V_GetColorFromString(color_str);
-		unsigned int fg = fg2rgb[V_BestColor(V_GetDefaultPalette()->basecolors, color)];
+		const argb_t color = V_GetColorFromString(color_str);
+		const unsigned int fg = fg2rgb[V_BestColor(V_GetDefaultPalette()->basecolors, color)];
 
-		palindex_t* dest = (palindex_t*)mSurface->getBuffer() + y1 * surface_pitch_pixels + x1;
-		int advance = surface_pitch_pixels - w;
+		palindex_t* dest = static_cast<palindex_t*>(mSurface->getBuffer()) + y1 * surface_pitch_pixels + x1;
+		const int advance = surface_pitch_pixels - w;
 
-		int xcount = w / 4;
-		int xcount_remainder = w % 4;
+		const int xcount = w / 4;
+		const int xcount_remainder = w % 4;
 
 		for (y = h; y > 0; y--)
 		{
@@ -1123,9 +1139,9 @@ void DCanvas::Dim(int x1, int y1, int w, int h, const char* color_str, float fam
 	}
 	else
 	{
-		argb_t color = V_GammaCorrect(V_GetColorFromString(color_str));
+		const argb_t color = V_GammaCorrect(V_GetColorFromString(color_str));
 
-		r_dimpatchD(mSurface, color, (int)(famount * 256.0f), x1, y1, w, h);
+		r_dimpatchD(mSurface, color, static_cast<int>(famount * 256.0f), x1, y1, w, h);
 	}
 }
 

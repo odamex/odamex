@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -44,10 +44,12 @@
 #include "m_alloc.h"
 #include "gstrings.h"
 #include "z_zone.h"
+#include "w_wad.h"
 #include "m_argv.h"
 #include "m_fileio.h"
 #include "c_console.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "g_game.h"
 #include "g_spawninv.h"
 #include "r_main.h"
@@ -57,19 +59,13 @@
 #include "gi.h"
 #include "w_ident.h"
 #include "m_resfile.h"
-
-#ifdef GEKKO
-#include "i_wii.h"
-#endif
-
-#ifdef _XBOX
-#include "i_xbox.h"
-#endif
-
 #include "resources/res_main.h"
 #include "resources/res_filelib.h"
-EXTERN_CVAR (waddirs)
-EXTERN_CVAR (cl_waddownloaddir)
+#include "odainfo.h"
+#include "infomap.h"
+
+OResFiles wadfiles;
+OResFiles patchfiles;
 OWantFiles missingfiles;
 bool missingCommercialIWAD = false;
 
@@ -79,8 +75,44 @@ extern bool step_mode;
 bool capfps = true;
 float maxfps = 35.0f;
 
-extern bool step_mode;
+//
+// D_InitializeDoomObjectTables()
+// [CMB] Initialize all the doom objects: MobjInfo, SprNames, SoundMap, etc.
+//
+void D_InitializeDoomObjectTables()
+{
+	// [RH] Initialize items. Still only used for the give command. :-(
+	InitItems();
+	// Initialize states
+	states.clear();
+	states.insert({boomstates, ::NUMSTATES}, S_NULL);
+	states.insert(getOdaStates(), S_GIB0);
+	// Initialize mobjinfo
+	mobjinfo.clear();
+	mobjinfo.insert({doom_mobjinfo, ::NUMMOBJTYPES}, MT_PLAYER);
+	mobjinfo.insert(getOdaMobjinfo(), MT_GIB0);
+	// Initialize sprnames
+	sprnames.clear();
+	sprnames.insert({doom_sprnames, ::NUMSPRITES}, SPR_TROO);
+	sprnames.insert(getOdaSprNames(), SPR_GIB0);
+	// Initialize soundmap
+	SoundMap.clear();
+	SoundMap.insert({doom_SoundMap, ARRAY_LENGTH(doom_SoundMap)}, 0);
+	SoundMap.insert({odamex_SoundMap, ARRAY_LENGTH(odamex_SoundMap)}, 0x80000000);
+	// Initialize spawn map
+	D_BuildSpawnMap();
 
+	states.rebuildMap(
+		[](const state_t& lhs, const state_t& rhs){ return lhs.statenum < rhs.statenum; },
+		[](const state_t& s){ return s.statenum; }
+	);
+	mobjinfo.rebuildMap(
+		[](const mobjinfo_t& lhs, const mobjinfo_t& rhs){
+			return lhs.type < rhs.type || (lhs.type == rhs.type && lhs.doomednum < rhs.doomednum);
+		},
+		[](const mobjinfo_t& m){ return m.type; }
+	);
+}
 
 //
 // D_GetTitleString
@@ -89,19 +121,6 @@ extern bool step_mode;
 //
 std::string D_GetTitleString()
 {
-	if (gamemission == pack_tnt)
-		return "DOOM 2: TNT - Evilution";
-	if (gamemission == pack_plut)
-		return "DOOM 2: Plutonia Experiment";
-	if (gamemission == chex)
-		return "Chex Quest";
-	if (gamemission == retail_freedoom)
-		return "Ultimate FreeDoom";
-	if (gamemission == commercial_freedoom)
-		return "FreeDoom";
-	if (gamemission == commercial_hacx)
-		return "HACX";
-
 	return gameinfo.titleString;
 }
 
@@ -113,93 +132,164 @@ static void D_PrintIWADIdentity()
 {
 	if (clientside)
 	{
-		Printf(PRINT_HIGH, "\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
-    	                   "\36\36\36\36\36\36\36\36\36\36\36\36\37\n");
+		PrintFmt(PRINT_HIGH, "\n\35\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36\36"
+    	                     "\36\36\36\36\36\36\36\36\36\36\36\36\37\n");
 
 		if (gamemode == undetermined)
-			Printf_Bold("Game mode indeterminate, no standard WAD found.\n\n");
+			PrintFmt_Bold("Game mode indeterminate, no standard wad found.\n\n");
 		else
-			Printf_Bold("%s\n\n", D_GetTitleString().c_str());
+			PrintFmt_Bold("{}\n\n", D_GetTitleString());
 	}
 	else
 	{
 		if (gamemode == undetermined)
-			Printf(PRINT_HIGH, "Game mode indeterminate, no standard WAD found.\n");
-		else 
-			Printf(PRINT_HIGH, "%s\n", D_GetTitleString().c_str()); 
+			PrintFmt(PRINT_HIGH, "Game mode indeterminate, no standard wad found.\n");
+		else
+			PrintFmt(PRINT_HIGH, "{}\n", D_GetTitleString());
 	}
 }
 
 
-//
-// D_LoadResourceFiles
-//
-// Loads the given set of resource file names.
-//
-void D_LoadResourceFiles(const std::vector<std::string>& resource_filenames)
+/**
+ * @brief Load all found DEH patches, as well as all found DEHACKED lumps.
+ */
+void D_LoadResolvedPatches(bool reloadStrings)
 {
-	std::vector<std::string> new_resource_filenames = resource_filenames;
-	std::vector<std::string> missing_resource_filenames;
+	// Load internal chex.deh if necessary
+	if (::gamemode == retail_chex)
+	{
+		D_DoDehPatch(nullptr, Res_GetResourceId("_CHXHACK", global_directory_name),
+		             reloadStrings);
+	}
 
-	// Ensure the list of resource filenames include ODAMEX.PK3, an IWAD, and
-	// the full path for every file.
-	Res_ValidateResourceFiles(new_resource_filenames, missing_resource_filenames);
+	// Load external patch files first.
+	for (const auto& file : ::patchfiles)
+	{
+		D_DoDehPatch(&file, ResourceId::INVALID_ID, reloadStrings);
+	}
 
-	// If the given files are already loaded, bail out early.
-	if (new_resource_filenames == Res_GetResourceFileNames())
-		return;
+	// Check resource files for DEHACKED lumps, in load order.
+	const ResourceIdList dehacked_res_ids =
+	    Res_GetAllResourceIds(ResourcePath("/GLOBAL/DEHACKED"));
+	for (const ResourceId res_id : dehacked_res_ids)
+	{
+		D_DoDehPatch(nullptr, res_id, reloadStrings);
+	}
 
-	assert(new_resource_filenames.size() >= 2);	// Require ODAMEX.PK3 and an IWAD
+	// Re-apply spawninv settings with our new DEH settings.
+	G_SetupSpawnInventory();
+}
 
-	// Now scan the contents of the IWAD to determine which one it is.
-	const std::string& iwad_filename = new_resource_filenames[1];
-	W_ConfigureGameInfo(iwad_filename);
 
-	// Print info about the IWAD to the console.
+//
+// D_CleanseFileName
+//
+// Strips a file name of path information and transforms it into uppercase
+//
+std::string D_CleanseFileName(const std::string &filename, const std::string &ext)
+{
+	std::string newname(filename);
+
+	M_FixPathSep(newname);
+	if (ext.length())
+		newname = M_AppendExtension(newname, "." + ext);
+
+	size_t slash = newname.find_last_of(PATHSEPCHAR);
+
+	if (slash != std::string::npos)
+		newname = newname.substr(slash + 1, newname.length() - slash);
+
+	std::transform(newname.begin(), newname.end(), newname.begin(), toupper);
+
+	return newname;
+}
+
+
+//
+// D_FindIWAD
+//
+// Tries to find an IWAD from a set of known IWAD file names.
+//
+static bool FindIWAD(OResFile& out)
+{
+	// Search for a pre-defined IWAD from the list above
+	std::vector<OString> filenames = W_GetIWADFilenames();
+	for (const auto& filename : filenames)
+	{
+		// Construct a file.
+		OWantFile wantfile;
+		if (!OWantFile::make(wantfile, filename, OFILE_WAD))
+		{
+			continue;
+		}
+
+		// Resolve the file.
+		if (!M_ResolveWantedFile(out, wantfile))
+		{
+			continue;
+		}
+
+		return W_IsIWAD(out);
+	}
+
+	return false;
+}
+
+/**
+ * @brief Load files that are assumed to be resolved, in the correct order,
+ *        and complete.
+ *
+ * @param newwadfiles New set of WAD files.
+ * @param newpatchfiles New set of patch files.
+*/
+static void LoadResolvedFiles(const OResFiles& newwadfiles,
+                              const OResFiles& newpatchfiles)
+{
+	if (newwadfiles.size() < 2)
+	{
+		I_FatalError("Tried to load resources without an ODAMEX.WAD or an IWAD.");
+	}
+
+	::wadfiles = newwadfiles;
+	::patchfiles = newpatchfiles;
+
+	// Now scan the contents of the IWAD to determine which one it is
+	W_ConfigureGameInfo(::wadfiles.at(1).getFullpath());
+
+	// print info about the IWAD to the console
 	D_PrintIWADIdentity();
 
-	// Set the window title based on which IWAD we're using.
-	I_SetTitleString(D_GetTitleString().c_str());
-	
-	if (W_IsIWADDeprecated(iwad_filename))
-		Printf_Bold("WARNING: IWAD %s is outdated. Please update it to the latest version.\n", iwad_filename.c_str());
+	::modifiedgame = (::wadfiles.size() > 2) ||
+	                 !::patchfiles.empty(); // more than odamex.wad and IWAD?
 
-	// Load the resource files
-	Res_OpenResourceFiles(new_resource_filenames);
+	if (::modifiedgame && (::gameinfo.flags & GI_SHAREWARE))
+	{
+		I_FatalError(
+		    "\nYou cannot load additional WADs with the shareware version. Register!");
+	}
+
+	// Load the resource files through the resource manager.
+	std::vector<std::string> resource_filenames;
+	resource_filenames.reserve(::wadfiles.size());
+	for (const auto& file : ::wadfiles)
+		resource_filenames.push_back(file.getFullpath());
+	Res_OpenResourceFiles(resource_filenames);
 
 	// [RH] Initialize localizable strings.
 	// [SL] It is necessary to load the strings here since a dehacked patch
 	// might change the strings
-
 	::GStrings.loadStrings(false);
 
-	// Load all DeHackEd files
-	/*
-	const ResourceIdList dehacked_res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/DEHACKED"));
-	for (size_t i = 0; i < dehacked_res_ids.size(); i++)
-		D_LoadDehLump(dehacked_res_ids[i]);
-	*/
+	P_InitMobjNameMap();
 
-	// check for ChexQuest
-	if (gamemode == retail_chex)
-	{
-		bool chex_deh_loaded = false;
-		for (size_t i = 0; i < new_resource_filenames.size(); i++)
-			if (iequals(Res_CleanseFilename(new_resource_filenames[i]), "CHEX.DEH"))
-				chex_deh_loaded = true;
-	
-		if (!chex_deh_loaded)
-			Printf(PRINT_HIGH, "Warning: CHEX.DEH not loaded, experience may differ from the original!\n");
-	}
-
-	// get skill / episode / map from parms
-	strcpy(startmap, (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1");
+	// Apply DEH patches.
+	D_LoadResolvedPatches();
 }
 
 /**
  * @brief Print a warning that occurrs when the user has an IWAD that's a
  *        different version than the one we want.
- * 
+ *
  * @param wanted The IWAD that we wanted.
  * @return True if we emitted an commercial IWAD warning.
  */
@@ -212,7 +302,7 @@ static bool CommercialIWADWarning(const OWantFile& wanted)
 		return false;
 	}
 
-	const FileIdentifier* info = W_GameInfo(wanted.getWantedMD5());
+	const fileIdentifier_t* info = W_GameInfo(wanted.getWantedMD5());
 	if (!info)
 	{
 		// No GameInfo means that we're not dealing with a WAD we recognize.
@@ -226,7 +316,7 @@ static bool CommercialIWADWarning(const OWantFile& wanted)
 		return false;
 	}
 
-	Printf("Odamex attempted to load\n> %s.\n\n", info->mIdName.c_str());
+	PrintFmt("Odamex attempted to load\n> {}.\n\n", info->mIdName);
 
 	// Try to find an IWAD file with a matching name in the user's directories.
 	OWantFile sameNameWant;
@@ -235,77 +325,303 @@ static bool CommercialIWADWarning(const OWantFile& wanted)
 	const bool resolved = M_ResolveWantedFile(sameNameRes, sameNameWant);
 	if (!resolved)
 	{
-		Printf(
+		PrintFmt(
 		    "Odamex could not find the data file for this game in any of the locations "
-		    "it searches for WAD files.  If you know you have %s on your hard drive, you "
+		    "it searches for WAD files.  If you know you have {} on your hard drive, you "
 		    "can add that path to the 'waddirs' cvar so Odamex can find it.\n\n",
-		    wanted.getBasename().c_str());
+		    wanted.getBasename());
 	}
 	else
 	{
-		const FileIdentifier* curInfo = W_GameInfo(sameNameRes.getMD5());
+		const fileIdentifier_t* curInfo = W_GameInfo(sameNameRes.getMD5());
 		if (curInfo)
 		{
 			// Found a file, but it's the wrong version.
-			Printf("Odamex found a possible data file, but it's the wrong version.\n> "
-			       "%s\n> %s\n\n",
-			       curInfo->mIdName.c_str(), sameNameRes.getFullpath().c_str());
+			PrintFmt("Odamex found a possible data file, but it's the wrong version.\n> "
+			         "{}\n> {}\n\n",
+			         curInfo->mIdName, sameNameRes.getFullpath());
 		}
 		else
 		{
 			// Found a file, but it's not recognized at all.
-			Printf("Odamex found a possible data file, but Odamex does not recognize "
-			       "it.\n> %s\n\n",
-			       sameNameRes.getFullpath().c_str());
+			PrintFmt("Odamex found a possible data file, but Odamex does not recognize "
+			         "it.\n> {}\n\n",
+			         sameNameRes.getFullpath());
 		}
 
 #ifdef _WIN32
-		Printf("You can use a tool such as Omniscient "
-		       "<https://drinkybird.net/doom/omniscient> to patch your way to the "
-		       "correct version of the data file.\n");
+		PrintFmt(PRINT_ERROR, "You can use a tool such as Omniscient "
+		         "<https://drinkybird.net/doom/omniscient> to patch your wad to the "
+		         "correct version of the data file.\n");
 #else
-		Printf("You can use a tool such as xdelta3 <http://xdelta.org/> paried with IWAD "
-		       "patches located on Github <https://github.com/Doom-Utils/iwad-patches> "
-		       "to patch your way to the correct version of the data file.\n");
+		PrintFmt(PRINT_ERROR, "You can use a tool such as xdelta3 <http://xdelta.org/> paried with IWAD "
+		         "patches located on Github <https://github.com/Doom-Utils/iwad-patches> "
+		         "to patch your wad to the correct version of the data file.\n");
 #endif
 	}
 
-	Printf("If you do not own this game, consider purchasing it on Steam, GOG, or other "
-	       "digital storefront.\n\n");
+	PrintFmt("If you do not own this game, consider purchasing it on Steam, GOG, or other "
+	         "digital storefront.\n\n");
 	return true;
 }
 
 //
-// D_ReloadResourceFiles
+// D_LoadResourceFiles
 //
-// Loads a new set of resource files if they are not currently loaded.
+// Performs the grunt work of loading WAD and DEH/BEX files.
+// The global wadfiles and patchfiles vectors are filled with the list
+// of loaded filenames and the missingfiles vector is also filled if
+// applicable.
 //
-void D_ReloadResourceFiles(const std::vector<std::string>& new_resource_filenames)
+void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles)
 {
-	const std::vector<std::string>& resource_filenames = Res_GetResourceFileNames();
-	bool reload = false;
+	OResFile odamex_wad;
+	OResFile next_iwad;
 
-	if (new_resource_filenames.size() != resource_filenames.size())
+	::missingfiles.clear();
+	::missingCommercialIWAD = false;
+
+	// Resolve wanted wads.
+	OResFiles resolved_wads;
+	resolved_wads.reserve(newwadfiles.size());
+	for (const auto& wantfile : newwadfiles)
 	{
-		reload = true;
+		OResFile file;
+		if (!M_ResolveWantedFile(file, wantfile))
+		{
+			// Give more useful information when trying to load an IWAD.
+			const bool isCommercial = CommercialIWADWarning(wantfile);
+			if (isCommercial && !::missingCommercialIWAD)
+			{
+				::missingCommercialIWAD = true;
+			}
+
+			::missingfiles.push_back(wantfile);
+			PrintFmt(PRINT_WARNING, "Could not resolve resource file \"{}\".",
+			         wantfile.getWantedPath());
+			continue;
+		}
+		resolved_wads.push_back(file);
+	}
+
+	// Resolve wanted patches.
+	OResFiles resolved_patches;
+	resolved_patches.reserve(newpatchfiles.size());
+	for (const auto& wantfile : newpatchfiles)
+	{
+		OResFile file;
+		if (!M_ResolveWantedFile(file, wantfile))
+		{
+			::missingfiles.push_back(wantfile);
+			PrintFmt(PRINT_WARNING, "Could not resolve patch file \"{}\".",
+			         wantfile.getWantedPath());
+			continue;
+		}
+		resolved_patches.push_back(file);
+	}
+
+	// ODAMEX.WAD //
+
+	if (::wadfiles.empty())
+	{
+		// If we don't have odamex.wad, resolve it now.
+		OWantFile want_odamex;
+		OWantFile::make(want_odamex, "odamex.wad", OFILE_WAD);
+		if (!M_ResolveWantedFile(odamex_wad, want_odamex))
+		{
+			I_FatalError("Could not resolve \"{}\".  Please ensure this file is "
+			             "someplace where Odamex can find it.\n",
+			             want_odamex.getBasename());
+		}
 	}
 	else
 	{
-		for (size_t i = 0; i < new_resource_filenames.size(); i++)
+		// We already have odamex.wad, just make a copy of it.
+		odamex_wad = ::wadfiles.at(0);
+	}
+
+	// IWAD //
+
+	bool got_next_iwad = false;
+	if (resolved_wads.size() >= 1)
+	{
+		// See if the first WAD we passed was an IWAD.
+		const OResFile& possible_iwad = resolved_wads.at(0);
+		if (W_IsIWAD(possible_iwad))
 		{
-			if (!iequals(Res_CleanseFilename(new_resource_filenames[i]), Res_CleanseFilename(resource_filenames[i])))
+			next_iwad = possible_iwad;
+			got_next_iwad = true;
+			resolved_wads.erase(resolved_wads.begin());
+			if (W_IsIWADDeprecated(next_iwad))
 			{
-				reload = true;
-				break;
+				PrintFmt_Bold("WARNING: IWAD {} is outdated. Please update it to the "
+				              "latest version.\n",
+				              next_iwad.getBasename());
 			}
 		}
 	}
 
-	if (reload)
+	if (!got_next_iwad && ::wadfiles.size() >= 2)
 	{
-		D_Shutdown();
-		D_Init(new_resource_filenames);
+		// Reuse the old IWAD.  As an optimization, assume that the location
+		// of the IWAD has not changed on disk.
+		next_iwad = ::wadfiles.at(1);
+		got_next_iwad = true;
 	}
+
+	if (!got_next_iwad)
+	{
+		// Not provided an IWAD filename and an IWAD is not currently loaded?
+		// Try to find *any* IWAD using FindIWAD.
+		got_next_iwad = FindIWAD(next_iwad);
+	}
+
+	if (!got_next_iwad)
+	{
+		I_FatalError("Could not resolve an IWAD file.  Please ensure at least "
+		             "one IWAD is someplace where Odamex can find it.\n");
+	}
+
+	resolved_wads.insert(resolved_wads.begin(), odamex_wad);
+	resolved_wads.insert(resolved_wads.begin() + 1, next_iwad);
+	LoadResolvedFiles(resolved_wads, resolved_patches);
+}
+
+/**
+ * @brief Check to see if the list of WAD files and patches matches the
+ *        currently loaded files.
+ *
+ * @detail Note that this relies on the hashes being equal, so if you want
+ *         resources to not be reloaded, ensure the hashes are equal by the
+ *         time they reach this spot.
+ *
+ * @param newwadfiles WAD files to check.
+ * @param newpatchfiles Patch files to check.
+ * @return True if everything checks out.
+ */
+static bool CheckWantedMatchesLoaded(const OWantFiles& newwadfiles,
+                                     const OWantFiles& newpatchfiles)
+{
+	// Cheking sizes is a good first approximation.
+
+	if (newwadfiles.size() + 1 != ::wadfiles.size())
+	{
+		return false;
+	}
+
+	if (newpatchfiles.size() != ::patchfiles.size())
+	{
+		return false;
+	}
+
+	// Check WAD hashes - with an offset because you can't replace odamex.wad.
+	for (OWantFiles::const_iterator it = newwadfiles.begin(); it != newwadfiles.end();
+	     ++it)
+	{
+		size_t idx = it - newwadfiles.begin();
+		if (it->getWantedMD5() != ::wadfiles.at(idx + 1).getMD5())
+		{
+			return false;
+		}
+	}
+
+	// Check patch hashes.
+	for (OWantFiles::const_iterator it = newpatchfiles.begin(); it != newpatchfiles.end();
+	     ++it)
+	{
+		size_t idx = it - newpatchfiles.begin();
+		if (it->getWantedMD5() != ::patchfiles.at(idx).getMD5())
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+//
+// D_DoomWadReboot
+// [denis] change wads at runtime
+// Returns false if there are missing files and fills the missingfiles
+// vector
+//
+// [SL] passing an IWAD as newwadfiles[0] is now optional
+// TODO: hash checking for patchfiles
+//
+bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles)
+{
+	// already loaded these?
+	if (::lastWadRebootSuccess && CheckWantedMatchesLoaded(newwadfiles, newpatchfiles))
+	{
+		// fast track if files have not been changed
+		PrintFmt("Currently loaded resources match server checksums.\n\n");
+		return true;
+	}
+
+	::lastWadRebootSuccess = false;
+
+	D_Shutdown();
+
+	gamestate_t oldgamestate = ::gamestate;
+	::gamestate = GS_STARTUP; // prevent console from trying to use nonexistant font
+
+	// Load all the WAD and DEH/BEX files
+	OResFiles oldwadfiles = ::wadfiles;
+	OResFiles oldpatchfiles = ::patchfiles;
+	std::string failmsg;
+	try
+	{
+		D_LoadResourceFiles(newwadfiles, newpatchfiles);
+
+		// get skill / episode / map from parms
+		startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
+
+		D_Init();
+	}
+	catch (CRecoverableError& error)
+	{
+		failmsg = error.GetMsg();
+	}
+
+	if (!failmsg.empty())
+	{
+		// Uh oh, loading the new resource set failed for some reason.
+		PrintFmt(PRINT_WARNING,
+		         "Could not load new resource files.\n{}\nReloading previous resource "
+		         "set...\n",
+		         failmsg);
+
+		D_Shutdown();
+
+		std::string fatalmsg;
+		try
+		{
+			LoadResolvedFiles(oldwadfiles, oldpatchfiles);
+
+			// get skill / episode / map from parms
+			startmap = (gameinfo.flags & GI_MAPxx) ? "MAP01" : "E1M1";
+
+			D_Init();
+		}
+		catch (CRecoverableError& error)
+		{
+			// Something is seriously wrong.
+			fatalmsg = error.GetMsg();
+		}
+		if (!fatalmsg.empty())
+		{
+			I_FatalError("Failed to load new resource files, then ran into error when "
+			             "loading original resource files:\n{}\n",
+			             fatalmsg);
+		}
+	}
+
+	// preserve state
+	::lastWadRebootSuccess = ::missingfiles.empty();
+
+	::gamestate = oldgamestate; // GS_STARTUP would prevent netcode connecting properly
+
+	return ::missingfiles.empty() && failmsg.empty();
 }
 
 
@@ -315,6 +631,51 @@ void D_ReloadResourceFiles(const std::vector<std::string>& new_resource_filename
 void D_UnloadResourceFiles()
 {
 	Res_CloseAllResourceFiles();
+}
+
+
+//
+// AddCommandLineOptionFiles
+//
+// Adds the full path of all the file names following the given command line
+// option parameter (eg, "-file") matching the specified extension to the
+// filenames vector.
+//
+static void AddCommandLineOptionFiles(OWantFiles& out, const std::string& option,
+                                      ofile_t type)
+{
+	DArgs files = Args.GatherFiles(option.c_str());
+	for (size_t i = 0; i < files.NumArgs(); i++)
+	{
+		OWantFile file;
+		if (OWantFile::make(file, files.GetArg(i), type))
+			out.push_back(file);
+	}
+
+	files.FlushArgs();
+}
+
+//
+// D_AddWadCommandLineFiles
+//
+// Add the WAD files specified with -file.
+// Call this from D_DoomMain
+//
+void D_AddWadCommandLineFiles(OWantFiles& out)
+{
+	AddCommandLineOptionFiles(out, "-file", OFILE_WAD);
+}
+
+//
+// D_AddDehCommandLineFiles
+//
+// Adds the DEH/BEX files specified with -bex or -deh.
+// Call this from D_DoomMain
+//
+void D_AddDehCommandLineFiles(OWantFiles& out)
+{
+	AddCommandLineOptionFiles(out, "-bex", OFILE_DEH);
+	AddCommandLineOptionFiles(out, "-deh", OFILE_DEH);
 }
 
 
@@ -346,19 +707,19 @@ public:
 		mTask(task)
 	{ }
 
-	virtual ~UncappedTaskScheduler() { }
+	~UncappedTaskScheduler() override { }
 
-	virtual void run()
+	void run() override
 	{
 		mTask();
 	}
 
-	virtual dtime_t getNextTime() const
+	dtime_t getNextTime() const override
 	{
 		return I_GetTime();
 	}
 
-	virtual float getRemainder() const
+	float getRemainder() const override
 	{
 		return 0.0f;
 	}
@@ -378,9 +739,9 @@ public:
 	{
 	}
 
-	virtual ~CappedTaskScheduler() { }
+	~CappedTaskScheduler() override { }
 
-	virtual void run()
+	void run() override
 	{
 		mFrameStartTime = I_GetTime();
 		mAccumulator += mFrameStartTime - mPreviousFrameStartTime;
@@ -395,17 +756,17 @@ public:
 		}
 	}
 
-	virtual dtime_t getNextTime() const
+	dtime_t getNextTime() const override
 	{
 		return mFrameStartTime + mFrameDuration - mAccumulator;
 	}
 
-	virtual float getRemainder() const
+	float getRemainder() const override
 	{
 		// mAccumulator can be greater than mFrameDuration so only get the
 		// time remaining until the next frame
 		dtime_t remaining_time = mAccumulator % mFrameDuration;
-		return (float)(double(remaining_time) / mFrameDuration);
+		return static_cast<float>(static_cast<double>(remaining_time) / mFrameDuration);
 	}
 
 private:
@@ -417,8 +778,8 @@ private:
 	dtime_t				mPreviousFrameStartTime;
 };
 
-static TaskScheduler* simulation_scheduler;
-static TaskScheduler* display_scheduler;
+static std::unique_ptr<TaskScheduler> simulation_scheduler;
+static std::unique_ptr<TaskScheduler> display_scheduler;
 
 //
 // D_InitTaskSchedulers
@@ -439,12 +800,10 @@ static void D_InitTaskSchedulers(void (*sim_func)(), void(*display_func)())
 	{
 		previous_capped_simulation = capped_simulation;
 
-		delete simulation_scheduler;
-
 		if (capped_simulation)
-			simulation_scheduler = new CappedTaskScheduler(sim_func, TICRATE, 4);
+			simulation_scheduler = std::make_unique<CappedTaskScheduler>(sim_func, TICRATE, 4);
 		else
-			simulation_scheduler = new UncappedTaskScheduler(sim_func);
+			simulation_scheduler = std::make_unique<UncappedTaskScheduler>(sim_func);
 	}
 
 	if (capped_display != previous_capped_display || maxfps != previous_maxfps)
@@ -452,21 +811,17 @@ static void D_InitTaskSchedulers(void (*sim_func)(), void(*display_func)())
 		previous_capped_display = capped_display;
 		previous_maxfps = maxfps;
 
-		delete display_scheduler;
-
 		if (capped_display)
-			display_scheduler = new CappedTaskScheduler(display_func, maxfps, 1);
+			display_scheduler = std::make_unique<CappedTaskScheduler>(display_func, maxfps, 1);
 		else
-			display_scheduler = new UncappedTaskScheduler(display_func);
+			display_scheduler = std::make_unique<UncappedTaskScheduler>(display_func);
 	}
 }
 
 void STACK_ARGS D_ClearTaskSchedulers()
 {
-	delete simulation_scheduler;
-	delete display_scheduler;
-	simulation_scheduler = NULL;
-	display_scheduler = NULL;
+	simulation_scheduler.reset();
+	display_scheduler.reset();
 }
 
 //
@@ -490,11 +845,10 @@ void D_RunTics(void (*sim_func)(), void(*display_func)())
 #ifdef CLIENT_APP
 	// Use linear interpolation for rendering entities if the display
 	// framerate is not synced with the simulation frequency.
-	// Ch0wW : if you experience a spinning effect while trying to pause the frame, 
+	// Ch0wW : if you experience a spinning effect while trying to pause the frame,
 	// don't forget to add your condition here.
 	if ((maxfps == TICRATE && capfps)
-		|| timingdemo || paused || step_mode
-		|| ((menuactive || ConsoleState == c_down || ConsoleState == c_falling) && !network_game && !demoplayback))
+		|| timingdemo || step_mode)
 		render_lerp_amount = FRACUNIT;
 	else
 		render_lerp_amount = simulation_scheduler->getRemainder() * FRACUNIT;
@@ -506,16 +860,16 @@ void D_RunTics(void (*sim_func)(), void(*display_func)())
 		return;
 
 	// Sleep until the next scheduled task.
-	dtime_t simulation_wake_time = simulation_scheduler->getNextTime();
-	dtime_t display_wake_time = display_scheduler->getNextTime();
-	dtime_t wake_time = std::min<dtime_t>(simulation_wake_time, display_wake_time);
+	const dtime_t simulation_wake_time = simulation_scheduler->getNextTime();
+	const dtime_t display_wake_time = display_scheduler->getNextTime();
+	const dtime_t wake_time = std::min<dtime_t>(simulation_wake_time, display_wake_time);
 
-	const dtime_t max_sleep_amount = 1000LL * 1000LL;	// 1ms
+	constexpr dtime_t max_sleep_amount = 1000LL * 1000LL;	// 1ms
 
 	// Sleep in 1ms increments until the next scheduled task
 	for (dtime_t now = I_GetTime(); wake_time > now; now = I_GetTime())
 	{
-		dtime_t sleep_amount = std::min<dtime_t>(max_sleep_amount, wake_time - now);
+		const dtime_t sleep_amount = std::min<dtime_t>(max_sleep_amount, wake_time - now);
 		I_Sleep(sleep_amount);
 	}
 }

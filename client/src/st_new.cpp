@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -40,6 +40,7 @@
 #include "v_text.h"
 #include "z_zone.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "st_stuff.h"
 #include "hu_drawers.h"
 #include "hu_elements.h"
@@ -52,19 +53,10 @@
 #include "p_horde.h"
 #include "c_dispatch.h"
 #include "hu_speedometer.h"
-#include "resources/res_main.h"
-#include "resources/res_texture.h"
+#include "am_map.h"
+#include "g_multikill.h"
+#include "g_spree.h"
 
-static int		widestnum, numheight;
-Texture* flagiconteam;
-Texture* line_leftempty;
-Texture* line_leftfull;
-Texture* line_centerempty;
-Texture* line_centerleft;
-Texture* line_centerright;
-Texture* line_centerfull;
-Texture* line_rightempty;
-Texture* line_rightfull;
 static const char* medipatches[] = {"MEDIA0", "PSTRA0"};
 static const char* armorpatches[] = {"ARM1A0", "ARM2A0"};
 static const char* ammopatches[] = {"CLIPA0", "SHELA0", "CELLA0", "ROCKA0"};
@@ -76,20 +68,31 @@ static const char* flagdroppatches[NUMTEAMS] = {"FLAGIC5B", "FLAGIC5R", "FLAGIC5
 static const char* livespatches[NUMTEAMS] = {"ODALIVEB", "ODALIVER", "ODALIVEG"};
 
 static int widest_num, num_height;
-static Texture* medi[ARRAY_LENGTH(::medipatches)];
-static Texture* armors[ARRAY_LENGTH(::armorpatches)];
-static Texture* ammos[ARRAY_LENGTH(::ammopatches)];
-static Texture* bigammos[ARRAY_LENGTH(::bigammopatches)];
-static Texture* flagiconteamoffense;
-static Texture* flagiconteamdefense;
-static Texture* FlagIconHome[NUMTEAMS];
-static Texture* FlagIconReturn[NUMTEAMS];
-static Texture* FlagIconTaken[NUMTEAMS];
-static Texture* FlagIconDropped[NUMTEAMS];
-static Texture* LivesIcon[NUMTEAMS];
-static Texture* ToastIcon[NUMMODS];
-
-static int		NameUp = -1;
+static lumpHandle_t medi[ARRAY_LENGTH(::medipatches)];
+static lumpHandle_t armors[ARRAY_LENGTH(::armorpatches)];
+static lumpHandle_t ammos[ARRAY_LENGTH(::ammopatches)];
+static lumpHandle_t bigammos[ARRAY_LENGTH(::bigammopatches)];
+static lumpHandle_t flagiconteam;
+static lumpHandle_t flagiconteamoffense;
+static lumpHandle_t flagiconteamdefense;
+lumpHandle_t line_leftempty;
+lumpHandle_t line_leftfull;
+lumpHandle_t line_centerempty;
+lumpHandle_t line_centerleft;
+lumpHandle_t line_centerright;
+lumpHandle_t line_centerfull;
+lumpHandle_t line_rightempty;
+lumpHandle_t line_rightfull;
+static lumpHandle_t FlagIconHome[NUMTEAMS];
+static lumpHandle_t FlagIconReturn[NUMTEAMS];
+static lumpHandle_t FlagIconTaken[NUMTEAMS];
+static lumpHandle_t FlagIconDropped[NUMTEAMS];
+static lumpHandle_t LivesIcon[NUMTEAMS];
+static lumpHandle_t ToastIcon[NUMMODS];
+static lumpHandle_t ToastSpreeR;
+static lumpHandle_t ToastSpreeM;
+static lumpHandle_t ToastSpreeL;
+static lumpHandle_t ToastSpreeArrow;
 
 extern const Texture*	tallnum[10];
 extern const Texture*	faces[];
@@ -102,7 +105,7 @@ extern NetDemo netdemo;
 typedef std::vector<const Texture**> PathFreeList;
 
 /**
- * @brief Stores pointers to status bar objects that should be freed on shutdown. 
+ * @brief Stores pointers to status bar objects that should be freed on shutdown.
  */
 PathFreeList freelist;
 
@@ -118,6 +121,7 @@ EXTERN_CVAR(hud_targetcount)
 EXTERN_CVAR(hud_transparency)
 EXTERN_CVAR(hud_anchoring)
 EXTERN_CVAR(hud_demobar)
+EXTERN_CVAR(hud_extendedinfo)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_lives)
@@ -129,6 +133,9 @@ EXTERN_CVAR(g_horde_waves)
 EXTERN_CVAR(g_roundlimit)
 EXTERN_CVAR(hud_hordeinfo_debug)
 EXTERN_CVAR(g_preroundreset)
+EXTERN_CVAR(cl_showsprees)
+EXTERN_CVAR(cl_showofflinesprees)
+EXTERN_CVAR(sv_showsprees)
 
 void ST_unloadNew()
 {
@@ -145,13 +152,9 @@ void ST_initNew()
 
 	for (size_t i = 0; i < ARRAY_LENGTH(::tallnum); i++)
 	{
-		std::string namebuf;
-		StrFormat(namebuf, "STTNUM%d", i);
-
-		::tallnum[i] = Res_CacheTexture(namebuf, SPRITE, PU_STATIC);
-
-		if (::tallnum[i]->mWidth > widest)
-			widest = ::tallnum[i]->mWidth;
+		const Texture* talli = W_ResolvePatchHandle(::tallnum[i]);
+		if (talli->width() > widest)
+			widest = talli->width();
 	}
 
 	for (size_t i = 0; i < ARRAY_LENGTH(::medipatches); i++)
@@ -178,13 +181,9 @@ void ST_initNew()
 	::widest_num = widest;
 	::num_height = ::tallnum[0]->mHeight;
 
-	// [AM] FIXME: What does this do, exactly?
-	if (multiplayer && (sv_gametype == GM_COOP || demoplayback) && level.time)
-		NameUp = level.time + 2 * TICRATE;
-
-	::flagiconteam = (Texture*)Res_CacheTexture("FLAGIT", GRAPHICS, PU_STATIC);
-	::flagiconteamoffense = (Texture*)Res_CacheTexture("FLAGITO", GRAPHICS, PU_STATIC);
-	::flagiconteamdefense = (Texture*)Res_CacheTexture("FLAGITD", GRAPHICS, PU_STATIC);
+	::flagiconteam = W_CachePatchHandle("FLAGIT", PU_STATIC);
+	::flagiconteamoffense = W_CachePatchHandle("FLAGITO", PU_STATIC);
+	::flagiconteamdefense = W_CachePatchHandle("FLAGITD", PU_STATIC);
 
 	::line_leftempty = (Texture*)Res_CacheTexture("ODABARLE", GRAPHICS, PU_STATIC);
 	::line_leftfull = (Texture*)Res_CacheTexture("ODABARLF", GRAPHICS, PU_STATIC);
@@ -195,17 +194,22 @@ void ST_initNew()
 	::line_rightempty = (Texture*)Res_CacheTexture("ODABARRE", GRAPHICS, PU_STATIC);
 	::line_rightfull = (Texture*)Res_CacheTexture("ODABARRF", GRAPHICS, PU_STATIC);
 
-	std::string buffer;
 	for (size_t i = 0; i < NUMMODS; i++)
 	{
-		StrFormat(buffer, "ODAMOD%d", i);
-		::ToastIcon[i] = (Texture*)Res_CacheTexture(buffer.c_str(), GRAPHICS, PU_STATIC);
+		::ToastIcon[i] = W_CachePatchHandle(fmt::sprintf("ODAMOD%lu", i), PU_STATIC);
 	}
+
+	::ToastSpreeR = W_CachePatchHandle("DIGSPRER", PU_STATIC);
+	::ToastSpreeM = W_CachePatchHandle("DIGSPREM", PU_STATIC);
+	::ToastSpreeL = W_CachePatchHandle("DIGSPREL", PU_STATIC);
+
+	::ToastSpreeArrow = W_CachePatchHandle("DIG62", PU_STATIC);
 }
 
 void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 {
 	char digits[11], *d;
+	const Texture* minus = W_ResolvePatchHandle(negminus);
 
 	if (num < 0)
 	{
@@ -222,13 +226,14 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 		num = -num;
 	}
 
-	sprintf (digits, "%d", num);
+	snprintf (digits, 11, "%d", num);
 
 	d = digits;
 	while (*d)
 	{
 		if (*d >= '0' && *d <= '9')
 		{
+			const Texture* numpatch = W_ResolvePatchHandle(tallnum[*d - '0']);
 			if (hud_scale)
 			{
 				scrn->DrawLucentTextureCleanNoMove(tallnum[*d - '0'], x, y);
@@ -247,7 +252,7 @@ void ST_DrawNum (int x, int y, DCanvas *scrn, int num)
 void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
 {
 	int d = abs(num);
-	int xscale = hud_scale ? CleanXfac : 1;
+	const int xscale = hud_scale ? CleanXfac : 1;
 
 	do {
 		x -= tallnum[d%10]->mWidth * xscale;
@@ -275,7 +280,7 @@ void ST_DrawNumRight (int x, int y, DCanvas *scrn, int num)
 void ST_DrawBar (int normalcolor, unsigned int value, unsigned int total,
 				 int x, int y, int width, bool reverse = false,
 				 bool cutleft = false, bool cutright = false) {
-	int xscale = hud_scale ? CleanXfac : 1;
+	const int xscale = hud_scale ? CleanXfac : 1;
 
 	if (normalcolor > NUM_TEXT_COLORS || normalcolor == CR_GREY) {
 		normalcolor = CR_RED;
@@ -286,7 +291,7 @@ void ST_DrawBar (int normalcolor, unsigned int value, unsigned int total,
 	}
 	width -= (width % (2 * xscale));
 
-	int bar_width = width / (2 * xscale);
+	const int bar_width = width / (2 * xscale);
 
 	int bar_filled;
 	if (value == 0) {
@@ -355,7 +360,7 @@ void ST_DrawBar (int normalcolor, unsigned int value, unsigned int total,
 			}
 		}
 
-		int xi = x + (i * xscale * 2);
+		const int xi = x + (i * xscale * 2);
 		if (hud_scale) {
 			screen->DrawTranslatedTextureCleanNoMove(texture, xi, y);
 		} else {
@@ -409,7 +414,7 @@ void ST_voteDraw (int y) {
 		return;
 	}
 
-	size_t x1, x2;
+	int x1, x2;
 	x1 = (I_GetSurfaceWidth() - V_StringWidth(result_string.c_str()) * xscale) >> 1;
 	if (hud_scale) {
 		screen->DrawTextClean(result_color, x1, y, result_string.c_str());
@@ -447,6 +452,33 @@ void ST_voteDraw (int y) {
 			   true, false, true);
 	ST_DrawBar(CR_GREEN, vote_state.yes, vote_state.yes_needed,
 			   (I_GetSurfaceWidth() >> 1), y, xscale * 40, false, true);
+
+	// [RV] Show bound keys for YES/NO while vote is undecided
+	if (vote_state.result == VOTE_UNDEC)
+	{
+		// Use the same binding helper as the warmup code
+		const std::string yesKey = ::Bindings.GetKeynameFromCommand("vote_yes");
+		const std::string noKey = ::Bindings.GetKeynameFromCommand("vote_no");
+
+		// Fallbacks if nothing bound
+		const char* yesStr = yesKey.empty() ? "Y" : yesKey.c_str();
+		const char* noStr = noKey.empty() ? "N" : noKey.c_str();
+
+		// Match the warmup style (fmt::sprintf + TEXTCOLOR_* tags)
+		const std::string hint = fmt::sprintf(
+		    "Press %s%s%s for %sYES%s, %s%s%s for %sNO%s", TEXTCOLOR_GOLD, yesStr,
+		    TEXTCOLOR_NORMAL, TEXTCOLOR_GREEN, TEXTCOLOR_NORMAL, TEXTCOLOR_GOLD, noStr,
+		    TEXTCOLOR_NORMAL, TEXTCOLOR_RED, TEXTCOLOR_NORMAL);
+
+		int hint_w = V_StringWidth(hint.c_str()) * xscale;
+		int hx = (I_GetSurfaceWidth() - hint_w) >> 1;
+
+		y += yscale * 8; // place one line below the votestring lines
+		if (hud_scale)
+			screen->DrawTextClean(CR_GRAY, hx, y, hint.c_str());
+		else
+			screen->DrawText(CR_GRAY, hx, y, hint.c_str());
+	}
 }
 
 namespace hud {
@@ -496,19 +528,18 @@ static bool TeamHUDShowsRoundWins()
  */
 static void drawTeamGametype()
 {
-	const int SCREEN_BORDER = 4;
-	const int FLAG_ICON_HEIGHT = 18;
-	const int LIVES_HEIGHT = 12;
+	static constexpr int SCREEN_BORDER = 4;
+	static constexpr int FLAG_ICON_HEIGHT = 18;
+	static constexpr int LIVES_HEIGHT = 12;
 
-	std::string buffer;
-	player_t* plyr = &consoleplayer();
-	int xscale = hud_scale ? CleanXfac : 1;
-	int yscale = hud_scale ? CleanYfac : 1;
+	const player_t* plyr = &consoleplayer();
+	const int xscale = hud_scale ? CleanXfac : 1;
+	const int yscale = hud_scale ? CleanYfac : 1;
 
 	int patchPosY = ::hud_bigfont ? 53 : 43;
 
-	bool shouldShowScores = G_IsTeamGame();
-	bool shouldShowLives = G_IsLivesGame();
+	const bool shouldShowScores = G_IsTeamGame();
+	const bool shouldShowLives = G_IsLivesGame();
 
 	if (shouldShowScores)
 	{
@@ -521,7 +552,7 @@ static void drawTeamGametype()
 
 	for (int i = 0; i < sv_teamsinplay; i++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 		if (shouldShowScores)
 		{
 			patchPosY -= FLAG_ICON_HEIGHT;
@@ -591,8 +622,8 @@ static void drawTeamGametype()
 			               hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM,
 			               ::LivesIcon[i]);
 
-			StrFormat(buffer, "%d", teamInfo->LivesPool());
-			int color = (i % 2) ? CR_GOLD : CR_GREY;
+			std::string buffer = fmt::sprintf("%d", teamInfo->LivesPool());
+			const int color = (i % 2) ? CR_GOLD : CR_GREY;
 			hud::DrawText(SCREEN_BORDER + 12, patchPosY + 3, hud_scale, hud::X_RIGHT,
 			              hud::Y_BOTTOM, hud::X_RIGHT, hud::Y_BOTTOM, buffer.c_str(),
 			              color);
@@ -602,10 +633,10 @@ static void drawTeamGametype()
 
 static void drawHordeGametype()
 {
-	const int SCREEN_BORDER = 4;
-	const int ABOVE_AMMO = 24;
+	static constexpr int SCREEN_BORDER = 4;
+	static constexpr int ABOVE_AMMO = 24;
 	const int LINE_SPACING = V_LineHeight() + 1;
-	const int BAR_BORDER = 5;
+	static constexpr int BAR_BORDER = 5;
 
 	const hordeInfo_t& info = P_HordeInfo();
 	const hordeDefine_t& define = G_HordeDefine(info.defineID);
@@ -613,11 +644,11 @@ static void drawHordeGametype()
 	std::string waverow, killrow;
 	if (::g_horde_waves.asInt() != 0)
 	{
-		StrFormat(waverow, "WAVE:%d/%d", info.wave, ::g_horde_waves.asInt());
+		waverow = fmt::sprintf("WAVE:%d/%d", info.wave, ::g_horde_waves.asInt());
 	}
 	else
 	{
-		StrFormat(waverow, "WAVE:%d", info.wave);
+		waverow = fmt::sprintf("WAVE:%d", info.wave);
 	}
 
 	float killPct = 0.0f;
@@ -658,11 +689,11 @@ static void drawHordeGametype()
 		}
 		else
 		{
-			StrFormat(buf2, "%d-%d sec", min, max);
+			buf2 = fmt::sprintf("%d-%d sec", min, max);
 		}
-		StrFormat(buf, "Min HP: %d\nAlive HP: %d\nMax HP: %d\nSpawn: %s",
-		          define.minTotalHealth(), info.alive(), define.maxTotalHealth(),
-		          buf2.c_str());
+		buf = fmt::sprintf("Min HP: %d\nAlive HP: %d\nMax HP: %d\nSpawn: %s",
+		                   define.minTotalHealth(), info.alive(), define.maxTotalHealth(),
+		                   buf2);
 		hud::DrawText(SCREEN_BORDER, 64, ::hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
 		              hud::X_LEFT, hud::Y_BOTTOM, buf.c_str(), CR_GREY);
 
@@ -686,6 +717,21 @@ static void drawGametype()
 
 size_t proto_selected;
 
+static int ProtoRowColor(int cmd)
+{
+	// Give each protocol header its own unique color.
+	int rowColor = cmd % (NUM_TEXT_COLORS - 2);
+	if (rowColor >= CR_WHITE)
+	{
+		rowColor++;
+	}
+	if (rowColor >= CR_UNTRANSLATED)
+	{
+		rowColor++;
+	}
+	return rowColor;
+}
+
 /**
  * @brief Draw protocol buffer packets
  */
@@ -697,17 +743,18 @@ void drawProtos()
 
 	V_SetFont("DIGFONT");
 
-	proto_selected = clamp(proto_selected, (size_t)0, protos.size() - 1);
+	proto_selected = clamp<size_t>(proto_selected, 0, protos.size() - 1);
 
 	// Starting y is five rows from the top.
-	int y = 7 * 5;
+	const int top = 7 * 5;
+	const float scale = 0.75f;
+	int y = top;
 
-	const double scale = 0.75;
 	const int indent = V_StringWidth(" >");
 
 	for (Protos::const_iterator it = protos.begin(); it != protos.end(); ++it)
 	{
-		bool selected = proto_selected == (it - protos.begin());
+		const bool selected = proto_selected == (it - protos.begin());
 
 		if (selected)
 		{
@@ -716,12 +763,7 @@ void drawProtos()
 			              " >", CR_GOLD, true);
 		}
 
-		// Give each protocol header its own unique color.
-		int rowColor = it->header % (NUM_TEXT_COLORS - 2);
-		if (rowColor >= CR_WHITE)
-			rowColor++;
-		if (rowColor >= CR_UNTRANSLATED)
-			rowColor++;
+		const int rowColor = ProtoRowColor(it->header);
 
 		// Draw name
 		hud::DrawText(indent, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT, hud::Y_TOP,
@@ -731,11 +773,36 @@ void drawProtos()
 		if (selected)
 		{
 			// Draw data
-			hud::DrawText(indent, y, 0.75, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT,
+			hud::DrawText(indent, y, scale, hud::X_LEFT, hud::Y_TOP, hud::X_LEFT,
 			              hud::Y_TOP, it->data.c_str(), CR_WHITE, true);
 			y += V_StringHeight(it->data.c_str());
 		}
 	}
+
+	// Now draw the recorded PlayerInput.
+	y = top;
+	hud::DrawText(
+	        130, y,
+	        scale,
+	        hud::X_RIGHT,
+	        hud::Y_TOP,
+	        hud::X_LEFT,
+	        hud::Y_TOP,
+	        ::msg_info[clc_playerinput].getName(),
+	        ProtoRowColor(clc_playerinput),
+	        true);
+
+	y += V_StringHeight(::msg_info[clc_playerinput].getName());
+	hud::DrawText(
+	        130, y,
+	        scale,
+	        hud::X_RIGHT,
+	        hud::Y_TOP,
+	        hud::X_LEFT,
+	        hud::Y_TOP,
+	        ::localcmds[::last_received % MAXSAVETICS].DebugString().c_str(),
+	        ProtoRowColor(clc_playerinput),
+	        true);
 
 	V_SetFont("SMALLFONT");
 }
@@ -750,8 +817,8 @@ void drawNetdemo() {
 	if (!hud_demobar || R_DemoBarInvisible())
 		return;
 
-	int xscale = hud_scale ? CleanXfac : 1;
-	int yscale = hud_scale ? CleanYfac : 1;
+	const int xscale = hud_scale ? CleanXfac : 1;
+	const int yscale = hud_scale ? CleanYfac : 1;
 
 	V_SetFont("DIGFONT");
 
@@ -792,10 +859,103 @@ void drawNetdemo() {
 	}
 }
 
+static void drawLevelStats()
+{
+	if (!G_IsCoopGame())
+		return;
+
+	if (AM_ClassicAutomapVisible() || AM_OverlayAutomapVisible())
+		return;
+
+	if (R_StatusBarVisible() && HU_ChatMode() != CHAT_INACTIVE)
+		return;
+
+	unsigned int xscale = hud_scale ? CleanXfac : 1;
+	int num_ax = 0, text_ax = 0;
+	if (hud_anchoring.value() < 1.0f)
+	{
+		num_ax = ((static_cast<float>(I_GetSurfaceWidth()) - static_cast<float>(I_GetSurfaceHeight()) * 4.0f / 3.0f) / 2.0f) * (1.0f - hud_anchoring.value());
+		num_ax = MAX(0, num_ax);
+		text_ax = num_ax / xscale;
+	}
+
+	std::string line;
+	const int LINE_SPACING = V_LineHeight() + 1;
+	int font_offset = 0;
+	unsigned int x = R_StatusBarVisible() ? (text_ax + 2) : (text_ax + 10), y = R_StatusBarVisible() ? statusBarY() + 1 : 44;
+
+	if (hud_extendedinfo == 1 || hud_extendedinfo == 3)
+	{
+		V_SetFont("DIGFONT");
+		font_offset = 1;
+	}
+
+	if (G_IsHordeMode())
+	{
+		line = fmt::sprintf(TEXTCOLOR_RED "K" TEXTCOLOR_NORMAL " %d",
+	                        level.killed_monsters);
+
+		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
+	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, line.c_str(), CR_GREY);
+	}
+	else if (hud_extendedinfo >= 3 || !R_StatusBarVisible())
+	{
+		std::string killrow;
+		std::string itemrow;
+		std::string secretrow;
+
+		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
+		              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "S", CR_GREY);
+		hud::DrawText(x + font_offset, y + LINE_SPACING, ::hud_scale, hud::X_LEFT,
+	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "I", CR_GREY);
+		hud::DrawText(x, y + LINE_SPACING * 2, ::hud_scale, hud::X_LEFT,
+	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, TEXTCOLOR_RED "K", CR_GREY);
+
+		killrow = fmt::sprintf("%s %d/%d",
+		                       (level.killed_monsters >= (level.total_monsters + level.respawned_monsters) ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		   	                   level.killed_monsters,
+		   	                   (level.total_monsters + level.respawned_monsters));
+		itemrow = fmt::sprintf("%s %d/%d",
+		                       (level.found_items >= level.total_items ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		                       level.found_items, level.total_items);
+		secretrow = fmt::sprintf("%s %d/%d",
+		                         (level.found_secrets >= level.total_secrets ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		                         level.found_secrets, level.total_secrets);
+
+		x += 9 - font_offset * 4;
+
+		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
+		              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, secretrow.c_str(), CR_GREY);
+		hud::DrawText(x, y + LINE_SPACING, ::hud_scale, hud::X_LEFT,
+	                  hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, itemrow.c_str(), CR_GREY);
+		hud::DrawText(x, y + LINE_SPACING * 2, ::hud_scale, hud::X_LEFT,
+		              hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, killrow.c_str(), CR_GREY);
+
+	}
+	else
+	{
+		line = fmt::sprintf(TEXTCOLOR_RED "K" "%s %d/%d "
+					        TEXTCOLOR_RED "I" "%s %d/%d "
+					        TEXTCOLOR_RED "S" "%s %d/%d",
+		                    (level.killed_monsters >= (level.total_monsters + level.respawned_monsters) ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		                    level.killed_monsters,
+		                    (level.total_monsters + level.respawned_monsters),
+		                    (level.found_items >= level.total_items ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		                    level.found_items, level.total_items,
+		                    (level.found_secrets >= level.total_secrets ? TEXTCOLOR_YELLOW : TEXTCOLOR_NORMAL),
+		                    level.found_secrets, level.total_secrets);
+
+		hud::DrawText(x, y, ::hud_scale, hud::X_LEFT,
+		    hud::Y_BOTTOM, hud::X_LEFT, hud::Y_BOTTOM, line.c_str(), CR_GREY);
+	}
+
+	V_SetFont("SMALLFONT");
+}
+
 // [ML] 9/29/2011: New fullscreen HUD, based on Ralphis's work
 void OdamexHUD() {
 	std::string buf;
-	player_t *plyr = &displayplayer();
+	const player_t *plyr = &displayplayer();
 
 	// TODO: I can probably get rid of these invocations once I put a
 	//       copy of ST_DrawNumRight into the hud namespace. -AM
@@ -808,7 +968,7 @@ void OdamexHUD() {
 	int num_ax = 0, text_ax = 0, patch_ax = 0;
 	if (hud_anchoring.value() < 1.0f)
 	{
-		num_ax = (((float)I_GetSurfaceWidth() - (float)I_GetSurfaceHeight() * 4.0f / 3.0f) / 2.0f) * (1.0f - hud_anchoring.value());
+		num_ax = ((static_cast<float>(I_GetSurfaceWidth()) - static_cast<float>(I_GetSurfaceHeight()) * 4.0f / 3.0f) / 2.0f) * (1.0f - hud_anchoring.value());
 		num_ax = MAX(0, num_ax);
 		text_ax = num_ax / xscale;
 		patch_ax = num_ax / xscale;
@@ -846,13 +1006,13 @@ void OdamexHUD() {
 		if (plyr->lives <= 0)
 			lives_color = CR_DARKGREY;
 
-		StrFormat(buf, "x%d", plyr->lives);
+		buf = fmt::sprintf("x%d", plyr->lives);
 		hud::DrawText(text_ax + 48 + 2 + 20 + 2, 10 + 2, hud_scale, hud::X_LEFT, hud::Y_BOTTOM,
 		              hud::X_LEFT, hud::Y_MIDDLE, buf.c_str(), lives_color, false);
 	}
 
 	// Draw Ammo
-	ammotype_t ammotype = weaponinfo[plyr->readyweapon].ammotype;
+	const ammotype_t ammotype = weaponinfo[plyr->readyweapon].ammotype;
 	if (ammotype < NUMAMMO) {
 		const Texture* ammopatch;
 		// Use big ammo if the player has a backpack.
@@ -881,7 +1041,6 @@ void OdamexHUD() {
 		ST_DrawNumRight(I_GetSurfaceWidth() - num_ax - 24 * xscale, y, screen, plyr->ammo[ammotype]);
 	}
 
-	int color;
 	std::string str;
 	int iy = 4;
 
@@ -903,7 +1062,7 @@ void OdamexHUD() {
 		if (::hud_bigfont)
 			V_SetFont("BIGFONT");
 
-		StrFormat(buf, "%d" TEXTCOLOR_DARKGREY "ups",
+		buf = fmt::sprintf("%d" TEXTCOLOR_DARKGREY "ups",
 		          static_cast<int>(HU_GetPlayerSpeed()));
 		hud::DrawText(0, iy, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, buf.c_str(), CR_GREY);
@@ -927,7 +1086,7 @@ void OdamexHUD() {
 	// number on the other side of the screen.
 	if (::hud_bigfont)
 		V_SetFont("BIGFONT");
-	
+
 	// Special 3 line formatting for match duel
 	int spreadheight, scoreheight, placeheight;
 
@@ -973,6 +1132,10 @@ void OdamexHUD() {
 
 	// Draw gametype scoreboard
 	hud::drawGametype();
+
+	// Draw level stats
+	if (hud_extendedinfo)
+		hud::drawLevelStats();
 }
 
 struct drawToast_t
@@ -980,7 +1143,10 @@ struct drawToast_t
 	int tic;
 	int pid_highlight;
 	std::string left;
-	Texture* icon;
+	bool active_spree;
+	int points;
+	EColorRange spree_color;
+	lumpHandle_t icon;
 	std::string right;
 };
 
@@ -1003,10 +1169,10 @@ void DrawToasts()
 	int y = 0;
 
 	const float oldtrans = ::hud_transparency;
-	for (drawToasts_t::const_iterator it = g_Toasts.begin(); it != g_Toasts.end(); ++it)
+	for (const auto& toast : g_Toasts)
 	{
 		// Fade the toast out.
-		int tics = ::gametic - it->tic;
+		int tics = ::gametic - toast.tic;
 		if (tics < fadeOutTics)
 		{
 			::hud_transparency.ForceSet(1.0);
@@ -1025,10 +1191,11 @@ void DrawToasts()
 
 		// Right-hand side.
 		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
-		              hud::Y_TOP, it->right.c_str(), CR_GREY);
-		x += V_StringWidth(it->right.c_str()) + 1;
+		              hud::Y_TOP, toast.right.c_str(), CR_GREY);
+		x += V_StringWidth(toast.right.c_str()) + 1;
 
 		// Icon
+		const Texture* icon = W_ResolvePatchHandle(toast.icon);
 		const double yoff =
 		    (static_cast<double>(TOAST_HEIGHT) - static_cast<double>(it->icon->mHeight)) /
 		    2.0;
@@ -1037,9 +1204,63 @@ void DrawToasts()
 		               hud::X_RIGHT, hud::Y_TOP, it->icon, false, true);
 		x += it->icon->mWidth + 1;
 
+			// Draw spree point badge if any
+		if (toast.active_spree && cl_showsprees && ((network_game && sv_showsprees) || (!network_game && cl_showofflinesprees)))
+		{
+			// Draw the arrow
+			const Texture* arrow = W_ResolvePatchHandle(ToastSpreeArrow);
+			const double ayoff = (static_cast<double>(TOAST_HEIGHT) -
+			                      static_cast<double>(arrow->height())) /
+			                     2.0;
+			hud::DrawTranslatedPatch(x, y + ceil(ayoff), hud_scale, hud::X_RIGHT,
+			                         hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP, arrow,
+			                         Ranges + toast.spree_color * 256, false, true);
+
+			x += arrow->width();
+
+			// Right
+			const Texture* rpatch = W_ResolvePatchHandle(ToastSpreeR);
+			const double syoff = (static_cast<double>(TOAST_HEIGHT) -
+			                      static_cast<double>(rpatch->height())) /
+			                     2.0;
+			hud::DrawTranslatedPatch(x, y + ceil(syoff), hud_scale, hud::X_RIGHT,
+			                         hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP, rpatch,
+			                         Ranges + toast.spree_color * 256, false, true);
+
+			x += rpatch->width();
+			int pointStartX = x - 1;
+
+			// Draw as many middle segments as needed (based on the string width)
+			// We subtract 2 pixels because we want the text to bleed into the left and
+			// right gfx
+			int points_width =
+			    V_StringWidth(fmt::sprintf("%d", toast.points).c_str()) - 1;
+			const Texture* mpatch = W_ResolvePatchHandle(ToastSpreeM);
+			for (int i = 0; i < points_width; i++)
+			{
+				hud::DrawTranslatedPatch(x, y + ceil(syoff), hud_scale, hud::X_RIGHT,
+				                         hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP, mpatch,
+				                         Ranges + toast.spree_color * 256, false, true);
+				x += mpatch->width();
+			}
+
+			// Left
+			const Texture* lpatch = W_ResolvePatchHandle(ToastSpreeL);
+			hud::DrawTranslatedPatch(x, y + ceil(syoff), hud_scale, hud::X_RIGHT,
+			                         hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP, lpatch,
+			                         Ranges + toast.spree_color * 256, false, true);
+
+			x += lpatch->width() + 1;
+
+			// Now draw the number of points
+			hud::DrawText(pointStartX, y + ceil(syoff), hud_scale, hud::X_RIGHT,
+			              hud::Y_TOP, hud::X_RIGHT, hud::Y_TOP,
+			              fmt::sprintf("%d", toast.points).c_str(), CR_GRAY);
+		}
+
 		// Left-hand side.
 		hud::DrawText(x, y + 1, hud_scale, hud::X_RIGHT, hud::Y_TOP, hud::X_RIGHT,
-		              hud::Y_TOP, it->left.c_str(), CR_GREY);
+		              hud::Y_TOP, toast.left.c_str(), CR_GREY);
 
 		y += TOAST_HEIGHT;
 	}
@@ -1053,20 +1274,12 @@ void ToastTicker()
 	const int fadeDoneTics = (hud_feedtime * float(TICRATE));
 
 	// Remove stale toasts in a loop.
-	drawToasts_t::iterator it = g_Toasts.begin();
-	while (it != g_Toasts.end())
-	{
-		int tics = ::gametic - it->tic;
-
-		if (tics >= fadeDoneTics)
-		{
-			it = g_Toasts.erase(it);
-		}
-		else
-		{
-			++it;
-		}
-	}
+	std::erase_if(g_Toasts, [fadeDoneTics](const drawToast_t& toast){
+		// The gametic may move backwards in case of netdemo rewinding
+		// If this happens, we need to remove the toast as it hasn't happened yet.
+		const int tics = ::gametic - toast.tic;
+		return tics >= fadeDoneTics || toast.tic > ::gametic;
+	});
 }
 
 void PushToast(const toast_t& toast)
@@ -1132,6 +1345,19 @@ void PushToast(const toast_t& toast)
 		buffer += toast.right;
 	}
 
+	if (toast.flags & toast_t::SPREE)
+	{
+		drawToast.active_spree = true;
+		drawToast.points = toast.points;
+		drawToast.spree_color = static_cast<EColorRange>(toast.spree_color);
+	}
+	else
+	{
+		drawToast.active_spree = false;
+		drawToast.points = 0;
+		drawToast.spree_color = CR_GRAY;
+	}
+
 	if (!buffer.empty())
 	{
 		drawToast.right = buffer;
@@ -1148,58 +1374,77 @@ static std::string WinToColorString(const WinInfo& win)
 		const player_t& pl = idplayer(win.id);
 		if (pl.userinfo.netname.empty())
 		{
-			StrFormat(buf, TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
+			buf = fmt::sprintf(TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
 		}
 		else
 		{
-			StrFormat(buf, TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL,
-			          pl.userinfo.netname.c_str());
+			buf = fmt::sprintf(TEXTCOLOR_GREEN "%s" TEXTCOLOR_NORMAL,
+			                   pl.userinfo.netname);
 		}
 		return buf;
 	}
 	else if (win.type == WinInfo::WIN_TEAM)
 	{
-		const TeamInfo& tm = *GetTeamInfo((team_t)win.id);
+		const TeamInfo& tm = *GetTeamInfo(static_cast<team_t>(win.id));
 		if (tm.Team == TEAM_NONE)
 		{
-			StrFormat(buf, TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
+			buf = fmt::sprintf(TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
 		}
 		else
 		{
-			StrFormat(buf, "%s%s" TEXTCOLOR_NORMAL, tm.TextColor.c_str(),
-			          tm.ColorString.c_str());
+			buf = fmt::sprintf("%s%s" TEXTCOLOR_NORMAL, tm.TextColor,
+			                   tm.ColorString);
 		}
 		return buf;
 	}
 
-	StrFormat(buf, TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
+	buf = fmt::sprintf(TEXTCOLOR_GREEN "???" TEXTCOLOR_NORMAL);
 	return buf;
 }
 
 struct levelStateLines_t
 {
 	std::string title;
-	std::string subtitle[4];
-	float lucent;
-	levelStateLines_t() : lucent(1.0f) { }
-
-	void lucentFade(int tics, const int start, const int end)
-	{
-		if (tics < start)
-		{
-			lucent = 1.0f;
-		}
-		else if (tics < end)
-		{
-			tics %= TICRATE;
-			lucent = static_cast<float>(TICRATE - tics) / TICRATE;
-		}
-		else
-		{
-			lucent = 0.0f;
-		}
-	}
+	std::array<std::string, 4> subtitle;
+	float lucent = 1.0f;
 };
+
+struct multiKillLines_t
+{
+	std::string multiKillText;
+	EColorRange color = CR_GRAY;
+	float lucent = 1.0f;
+};
+
+struct bigSpreeLine_t
+{
+	std::string spreeText;
+	EColorRange color = CR_GRAY;
+	float lucent = 1.0f;
+};
+
+struct smallSpreeLine_t
+{
+	std::string spreeText;
+	float lucent = 1.0f;
+};
+
+static float lucentFade(int tics, const int start, const int end)
+{
+	if (tics < start)
+	{
+		return 1.0f;
+	}
+	else if (tics < end)
+	{
+		tics %= TICRATE;
+		return static_cast<float>(TICRATE - tics) / TICRATE;
+	}
+	else
+	{
+		return 0.0f;
+	}
+}
 
 static void LevelStateHorde(levelStateLines_t& lines)
 {
@@ -1225,20 +1470,20 @@ static void LevelStateHorde(levelStateLines_t& lines)
 	{
 		if (::g_horde_waves.asInt() != 0)
 		{
-			StrFormat(lines.title,
+			lines.title = fmt::sprintf(
 			          "Wave " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "of " TEXTCOLOR_YELLOW
 			          "%d",
 			          info.wave, ::g_horde_waves.asInt());
 		}
 		else
 		{
-			StrFormat(lines.title, "Wave " TEXTCOLOR_YELLOW "%d", info.wave);
+			lines.title = fmt::sprintf("Wave " TEXTCOLOR_YELLOW "%d", info.wave);
 		}
 
-		StrFormat(lines.subtitle[0], "\"" TEXTCOLOR_YELLOW "%s" TEXTCOLOR_GREY "\"",
-		          define.name.c_str());
+		lines.subtitle[0] = fmt::sprintf("\"" TEXTCOLOR_YELLOW "%s" TEXTCOLOR_GREY "\"",
+		                                 define.name);
 
-		StrFormat(lines.subtitle[1], "Difficulty: %s", define.difficulty(true));
+		lines.subtitle[1] = fmt::sprintf("Difficulty: %s", define.difficulty(true));
 
 		// Detect when there are new weapons to pick up.
 		StringTokens weapList;
@@ -1254,15 +1499,251 @@ static void LevelStateHorde(levelStateLines_t& lines)
 
 		if (!weapList.empty())
 		{
-			StrFormat(lines.subtitle[3], TEXTCOLOR_GREY "Weapons: " TEXTCOLOR_GREEN "%s",
-			          JoinStrings(weapList, " ").c_str());
+			lines.subtitle[3] = fmt::sprintf(TEXTCOLOR_GREY "Weapons: " TEXTCOLOR_GREEN "%s",
+			          JoinStrings(weapList, " "));
 		}
 
 		tics = ::level.time - info.waveTime;
 	}
 
 	// Only render the wave message if it's less than 3 seconds in.
-	lines.lucentFade(tics, TICRATE * 3, TICRATE * 4);
+	lines.lucent = lucentFade(tics, TICRATE * 3, TICRATE * 4);
+}
+
+void DisplaySmallSpreeBreaker(const SpreeBreaker_t& breaker)
+{
+	smallSpreeLine_t line;
+
+	line.spreeText = breaker.spreeEndedBroadcastText;
+
+	V_SetFont("SMALLFONT");
+
+	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
+	int h = 8 * CleanYfac;
+
+	line.lucent = lucentFade(::gametic - breaker.spreeEndedTic, TICRATE * 3, TICRATE * 4);
+
+	const float oldtrans = ::hud_transparency;
+	::hud_transparency = line.lucent;
+
+	if (::hud_transparency > 0.0f)
+	{
+		int y = (surface_height / 4) - h / 2;
+		::screen->DrawTextStretchedLuc(CR_GRAY,
+		                               surface_width / 2 - w / 2, y - (12 * ::CleanYfac),
+		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
+	}
+
+	::hud_transparency.ForceSet(oldtrans);
+}
+
+void DisplayPlayerNormalSpree(const SpreeRecord_t& record)
+{
+	// We handle "still dominating" sprees elsewhere.
+	if (record.stillDominating)
+		return;
+
+	bigSpreeLine_t line;
+
+	line.spreeText = record.spree.spreeText;
+	line.color = record.spree.color;
+
+	V_SetFont("BIGFONT");
+
+	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
+	int h = 12 * CleanYfac;
+
+	line.lucent = lucentFade(::gametic - record.spreeStartTic, TICRATE * 3, TICRATE * 4);
+
+	const float oldtrans = ::hud_transparency;
+	::hud_transparency = line.lucent;
+
+	if (::hud_transparency > 0.0f)
+	{
+		int y = (surface_height / 4) - h / 2;
+		::screen->DrawTextStretchedLuc(line.color, surface_width / 2 - w / 2, y,
+		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
+	}
+
+	::hud_transparency.ForceSet(oldtrans);
+
+	V_SetFont("SMALLFONT");
+}
+
+void DisplaySmallSpree(const SpreeRecord_t& record)
+{
+	smallSpreeLine_t line;
+
+	line.spreeText = record.spree.spreeBroadcastText;
+
+	V_SetFont("SMALLFONT");
+
+	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	int w = V_StringWidth(line.spreeText.c_str()) * CleanYfac;
+	int h = 8 * CleanYfac;
+
+	line.lucent = lucentFade(::gametic - record.spreeStartTic, TICRATE * 3, TICRATE * 4);
+
+	const float oldtrans = ::hud_transparency;
+	::hud_transparency = line.lucent;
+
+	if (::hud_transparency > 0.0f)
+	{
+		int y = (surface_height / 4) - h / 2;
+		::screen->DrawTextStretchedLuc(CR_GRAY,
+		                               surface_width / 2 - w / 2, y - (12 * ::CleanYfac),
+		                               line.spreeText.c_str(), ::CleanYfac, ::CleanYfac);
+	}
+
+	::hud_transparency.ForceSet(oldtrans);
+}
+
+void SpreeHud()
+{
+	if (!validplayer(displayplayer()) || !cl_showsprees || (!cl_showofflinesprees && !network_game) || (!sv_showsprees && network_game))
+		return;
+
+	static SpreeManager& manager = SpreeManager::getInstance();
+
+	// Display the current display player's spree if within time
+	// As big text
+	const player_t& p = displayplayer();
+
+	const SpreeRecord_t& spree_r = manager.getSpreeRecord(p.id);
+
+	// Main spree text
+	if (spree_r.playerId != -1 && !spree_r.stillDominating)
+	{
+		DisplayPlayerNormalSpree(spree_r);
+	}
+
+	// If we're not still dominating, check if someone else has a spree.
+	// We'll get the spree breaker as well, to compare and see which one to display.
+	const SpreeRecord_t& other_spree_r = manager.getLatestSpreeRecord(p.id);
+	const SpreeBreaker_t& global_spree_breaker = manager.getSpreeBreaker();
+
+	bool otherPlayerValid = false;
+	bool spreeBreakerValid = false;
+	bool playerStillDominatingValid = false;
+
+	if (spree_r.playerId == -1 && other_spree_r.playerId == -1 && global_spree_breaker.spreeEndedPlayerId == -1)
+	{
+		// All are invalid, bomb out here.
+		return;
+	}
+
+	// Still dominating text only shows up as small text.
+	if (spree_r.playerId != -1 && spree_r.stillDominating)
+	{
+		playerStillDominatingValid = true;
+	}
+
+	if (other_spree_r.playerId != -1)
+	{
+		otherPlayerValid = true;
+	}
+
+	if (global_spree_breaker.spreeEndedPlayerId != -1)
+	{
+		spreeBreakerValid = true;
+	}
+
+	if (!otherPlayerValid && !spreeBreakerValid && !playerStillDominatingValid)
+	{
+		return;
+	}
+	else if (otherPlayerValid && !spreeBreakerValid && !playerStillDominatingValid)
+	{
+		// Just display the other player's spree
+		DisplaySmallSpree(other_spree_r);
+	}
+	else if (!otherPlayerValid && spreeBreakerValid && !playerStillDominatingValid)
+	{
+		// Just display the spree breaker
+		DisplaySmallSpreeBreaker(global_spree_breaker);
+	}
+	else if (!otherPlayerValid && !spreeBreakerValid && playerStillDominatingValid)
+	{
+		// Just display the still dominating text.
+		DisplaySmallSpree(spree_r);
+	}
+	else
+	{
+		// All 3 are valid, compare times
+		if (other_spree_r.spreeStartTic > global_spree_breaker.spreeEndedTic)
+		{
+
+			if (other_spree_r.spreeStartTic > spree_r.spreeStartTic)
+			{
+				// Display other player's spree
+				DisplaySmallSpree(other_spree_r);
+			}
+			else
+			{
+				// Display still dominating
+				DisplaySmallSpree(spree_r);
+			}
+		}
+		else
+		{
+			if (global_spree_breaker.spreeEndedTic > spree_r.spreeStartTic)
+			{
+				// Display spree breaker
+				DisplaySmallSpreeBreaker(global_spree_breaker);
+			}
+			else
+			{
+				// Display still dominating
+				DisplaySmallSpree(spree_r);
+			}
+		}
+	}
+}
+
+void MultiKillHud()
+{
+	if (!validplayer(displayplayer()))
+		return;
+
+	const player_t& p = displayplayer();
+	const MultiKillTics_s& tics = MultiKillManager::getInstance().getMultiKills(p.id);
+
+	// Display the current display player's multi kills
+	if (tics.multiKills > 1 && ::gametic - tics.lastKillTime < 4 * TICRATE)
+	{
+		const MultiKillLevel_s& multi =
+		    MultiKillManager::getInstance().getMultiKillLevel(tics.multiKills);
+		multiKillLines_t line;
+
+		line.multiKillText = multi.multikilltext;
+		line.color = multi.color;
+
+		V_SetFont("BIGFONT");
+
+		const int surface_width = I_GetSurfaceWidth(),
+			      surface_height = I_GetSurfaceHeight();
+		int w = V_StringWidth(line.multiKillText.c_str()) * CleanYfac;
+		int h = 12 * CleanYfac;
+
+		line.lucent = lucentFade(::gametic - tics.lastKillTime,
+			                      TICRATE * 3, TICRATE * 4);
+
+		const float oldtrans = ::hud_transparency;
+		::hud_transparency = line.lucent;
+
+		if (::hud_transparency > 0.0f)
+		{
+			int y = surface_height - (surface_height / 4) - h / 2;
+			::screen->DrawTextStretchedLuc(line.color, surface_width / 2 - w / 2, y,
+				line.multiKillText.c_str(), ::CleanYfac, ::CleanYfac);
+		}
+
+		::hud_transparency.ForceSet(oldtrans);
+
+		V_SetFont("SMALLFONT");
+	}
 }
 
 void LevelStateHUD()
@@ -1292,10 +1773,10 @@ void LevelStateHUD()
 			}
 			else
 			{
-				StrFormat(lines.subtitle[0],
+				lines.subtitle[0] = fmt::sprintf(
 				          "Press " TEXTCOLOR_GOLD "%s" TEXTCOLOR_NORMAL
 				          " when ready to play",
-				          ::Bindings.GetKeynameFromCommand("ready").c_str());
+				          ::Bindings.GetKeynameFromCommand("ready"));
 			}
 		}
 		else
@@ -1307,22 +1788,22 @@ void LevelStateHUD()
 	}
 	case LevelState::WARMUP_COUNTDOWN:
 	case LevelState::WARMUP_FORCED_COUNTDOWN: {
-		StrFormat(lines.title, "%s", G_GametypeName().c_str());
-		StrFormat(lines.subtitle[0], "Match begins in " TEXTCOLOR_GREEN "%d",
-		          ::levelstate.getCountdown());
+		lines.title = fmt::sprintf("%s", G_GametypeName());
+		lines.subtitle[0] = fmt::sprintf("Match begins in " TEXTCOLOR_GREEN "%d",
+		                                 ::levelstate.getCountdown());
 		break;
 	}
 	case LevelState::PREROUND_COUNTDOWN: {
-		StrFormat(lines.title, "Round " TEXTCOLOR_YELLOW " %d", ::levelstate.getRound());
+		lines.title = fmt::sprintf("Round " TEXTCOLOR_YELLOW " %d", ::levelstate.getRound());
 		if (g_preroundreset)
 		{
-			StrFormat(lines.subtitle[0], "Round begins in " TEXTCOLOR_GREEN "%d",
-			          ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Round begins in " TEXTCOLOR_GREEN "%d",
+			                                 ::levelstate.getCountdown());
 		}
 		else
 		{
-			StrFormat(lines.subtitle[0], "Weapons unlocked in " TEXTCOLOR_GREEN "%d",
-			          ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Weapons unlocked in " TEXTCOLOR_GREEN "%d",
+			                                 ::levelstate.getCountdown());
 		}
 		break;
 	}
@@ -1347,7 +1828,7 @@ void LevelStateHUD()
 				}
 
 				// Only render the message if it's less than 2 seconds in.
-				lines.lucentFade(::level.time - ::levelstate.getIngameStartTime(),
+				lines.lucent = lucentFade(::level.time - ::levelstate.getIngameStartTime(),
 				                 TICRATE * 2, TICRATE * 3);
 			}
 			else if (G_IsCoopGame())
@@ -1355,7 +1836,7 @@ void LevelStateHUD()
 				lines.title = "GO!\n";
 				if (G_IsRoundsGame() && g_roundlimit)
 				{
-					StrFormat(lines.subtitle[0],
+					lines.subtitle[0] = fmt::sprintf(
 					          TEXTCOLOR_GREEN "%d" TEXTCOLOR_GREY " attempts left",
 					          g_roundlimit.asInt() - ::levelstate.getRound() + 1);
 				}
@@ -1366,60 +1847,60 @@ void LevelStateHUD()
 			}
 
 			// Only render the "FIGHT" message if it's less than 2 seconds in.
-			lines.lucentFade(::level.time - ::levelstate.getIngameStartTime(),
+			lines.lucent = lucentFade(::level.time - ::levelstate.getIngameStartTime(),
 			                 TICRATE * 2, TICRATE * 3);
 		}
 		break;
 	}
 	case LevelState::ENDROUND_COUNTDOWN: {
 		if (G_IsCoopGame() || G_IsHordeMode())
-			StrFormat(lines.title,
+			lines.title = fmt::sprintf(
 				"Attempt " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
 				::levelstate.getRound());
 		else
-			StrFormat(lines.title,
+			lines.title = fmt::sprintf(
 				"Round " TEXTCOLOR_YELLOW "%d " TEXTCOLOR_GREY "complete\n",
 				::levelstate.getRound());
 
-		WinInfo win = ::levelstate.getWinInfo();
+		const WinInfo win = ::levelstate.getWinInfo();
 		if (win.type == WinInfo::WIN_DRAW)
-			StrFormat(lines.subtitle[0], "Tied at the end of the round");
+			lines.subtitle[0] = fmt::sprintf("Tied at the end of the round");
 		else if (win.type == WinInfo::WIN_PLAYER)
-			StrFormat(lines.subtitle[0], "%s wins the round",
-			          WinToColorString(win).c_str());
+			lines.subtitle[0] = fmt::sprintf("%s wins the round",
+			                                 WinToColorString(win));
 		else if (win.type == WinInfo::WIN_TEAM)
-			StrFormat(lines.subtitle[0], "%s team wins the round",
-			          WinToColorString(win).c_str());
+			lines.subtitle[0] = fmt::sprintf("%s team wins the round",
+			                                 WinToColorString(win));
 		else if (G_IsCoopGame() || G_IsHordeMode())
-			StrFormat(lines.subtitle[0], "Next attempt in " TEXTCOLOR_GREEN "%d",
-			          ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Next attempt in " TEXTCOLOR_GREEN "%d",
+			                                 ::levelstate.getCountdown());
 		else
-			StrFormat(lines.subtitle[0], "Next round in " TEXTCOLOR_GREEN "%d",
-			          ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Next round in " TEXTCOLOR_GREEN "%d",
+			                                 ::levelstate.getCountdown());
 		break;
 	}
 	case LevelState::ENDGAME_COUNTDOWN: {
 		WinInfo win = ::levelstate.getWinInfo();
 		//Upper Text
-		if 
+		if
 			(win.type == WinInfo::WIN_EVERYBODY)
-			StrFormat(lines.title, TEXTCOLOR_YELLOW "Mission Success!");
-		else if 
+			lines.title = fmt::sprintf(TEXTCOLOR_YELLOW "Mission Success!");
+		else if
 			(win.type == WinInfo::WIN_NOBODY)
-			StrFormat(lines.title, TEXTCOLOR_RED "Mission Failed!");
+			lines.title = fmt::sprintf(TEXTCOLOR_RED "Mission Failed!");
 		else
-			StrFormat(lines.title, "Match complete");
+			lines.title = fmt::sprintf("Match complete");
 
 		// Lower Text
 		if (win.type == WinInfo::WIN_DRAW)
-			StrFormat(lines.subtitle[0], "The game ends in a tie");
+			lines.subtitle[0] = fmt::sprintf("The game ends in a tie");
 		else if (win.type == WinInfo::WIN_PLAYER)
-			StrFormat(lines.subtitle[0], "%s wins!", WinToColorString(win).c_str());
+			lines.subtitle[0] = fmt::sprintf("%s wins!", WinToColorString(win));
 		else if (win.type == WinInfo::WIN_TEAM)
-			StrFormat(lines.subtitle[0], "%s team wins!", WinToColorString(win).c_str());
+			lines.subtitle[0] = fmt::sprintf("%s team wins!", WinToColorString(win));
 		else
-			StrFormat(lines.subtitle[0], "Intermission in " TEXTCOLOR_GREEN "%d",
-			          ::levelstate.getCountdown());
+			lines.subtitle[0] = fmt::sprintf("Intermission in " TEXTCOLOR_GREEN "%d",
+			                                 ::levelstate.getCountdown());
 		break;
 	}
 	default:
@@ -1428,7 +1909,7 @@ void LevelStateHUD()
 
 	V_SetFont("BIGFONT");
 
-	int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
+	const int surface_width = I_GetSurfaceWidth(), surface_height = I_GetSurfaceHeight();
 	int w = V_StringWidth(lines.title.c_str()) * CleanYfac;
 	int h = 12 * CleanYfac;
 
@@ -1443,9 +1924,9 @@ void LevelStateHUD()
 	}
 
 	V_SetFont("SMALLFONT");
-	int height = V_StringHeight("M") + 1;
+	const int height = V_StringHeight("M") + 1;
 
-	for (size_t i = 0; i < ARRAY_LENGTH(lines.subtitle); i++)
+	for (size_t i = 0; i < lines.subtitle.size(); i++)
 	{
 		w = V_StringWidth(lines.subtitle[i].c_str()) * ::CleanYfac;
 		h = 8 * ::CleanYfac;
@@ -1465,7 +1946,6 @@ void LevelStateHUD()
 // [AM] Spectator HUD.
 void SpectatorHUD()
 {
-	int color;
 	int iy = 4;
 
 	const Texture* curr_powerup = medi[0];
@@ -1517,8 +1997,8 @@ void DoomHUD()
 	if (::hud_speedometer && ::consoleplayer_id == ::displayplayer_id)
 	{
 		std::string buf;
-		StrFormat(buf, "%d" TEXTCOLOR_DARKGREY "ups",
-		          static_cast<int>(HU_GetPlayerSpeed()));
+		buf = fmt::sprintf("%d" TEXTCOLOR_DARKGREY "ups",
+		                   static_cast<int>(HU_GetPlayerSpeed()));
 		hud::DrawText(0, st_y, hud_scale, hud::X_CENTER, hud::Y_BOTTOM, hud::X_CENTER,
 		              hud::Y_BOTTOM, buf.c_str(), CR_GREY);
 		st_y += V_LineHeight() + 1;
@@ -1536,6 +2016,10 @@ void DoomHUD()
 
 	// Draw gametype scoreboard
 	hud::drawGametype();
+
+	// Draw level stats
+	if (hud_extendedinfo)
+		hud::drawLevelStats();
 }
 
 }

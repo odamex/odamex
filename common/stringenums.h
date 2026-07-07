@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2011 by Randy Heit (ZDoom 1.23).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,668 +26,1379 @@
 
 #include "m_ostring.h"
 
-extern const OString D_DEVSTR;
-extern const OString D_CDROM;
-extern const OString PRESSKEY;
-extern const OString PRESSYN;
-extern const OString QUITMSG;
-extern const OString QUITMSG1;
-extern const OString QUITMSG2;
-extern const OString QUITMSG3;
-extern const OString QUITMSG4;
-extern const OString QUITMSG5;
-extern const OString QUITMSG6;
-extern const OString QUITMSG7;
-extern const OString QUITMSG8;
-extern const OString QUITMSG9;
-extern const OString QUITMSG10;
-extern const OString QUITMSG11;
-extern const OString QUITMSG12;
-extern const OString QUITMSG13;
-extern const OString QUITMSG14;
-extern const OString LOADNET;
-extern const OString QLOADNET;
-extern const OString QSAVESPOT;
-extern const OString SAVEDEAD;
-extern const OString QSPROMPT;
-extern const OString QLPROMPT;
-extern const OString NEWGAME;
-extern const OString NIGHTMARE;
-extern const OString SWSTRING;
-extern const OString MSGOFF;
-extern const OString MSGON;
-extern const OString NETEND;
-extern const OString ENDGAME;
-extern const OString DOSY;
-extern const OString EMPTYSTRING;
-extern const OString GOTARMOR;
-extern const OString GOTMEGA;
-extern const OString GOTHTHBONUS;
-extern const OString GOTARMBONUS;
-extern const OString GOTSTIM;
-extern const OString GOTMEDINEED;
-extern const OString GOTMEDIKIT;
-extern const OString GOTSUPER;
-extern const OString GOTBLUECARD;
-extern const OString GOTYELWCARD;
-extern const OString GOTREDCARD;
-extern const OString GOTBLUESKUL;
-extern const OString GOTYELWSKUL;
-extern const OString GOTREDSKUL;
-extern const OString GOTINVUL;
-extern const OString GOTBERSERK;
-extern const OString GOTINVIS;
-extern const OString GOTSUIT;
-extern const OString GOTMAP;
-extern const OString GOTVISOR;
-extern const OString GOTMSPHERE;
-extern const OString GOTCLIP;
-extern const OString GOTCLIPBOX;
-extern const OString GOTROCKET;
-extern const OString GOTROCKBOX;
-extern const OString GOTCELL;
-extern const OString GOTCELLBOX;
-extern const OString GOTSHELLS;
-extern const OString GOTSHELLBOX;
-extern const OString GOTBACKPACK;
-extern const OString GOTBFG9000;
-extern const OString GOTCHAINGUN;
-extern const OString GOTCHAINSAW;
-extern const OString GOTLAUNCHER;
-extern const OString GOTPLASMA;
-extern const OString GOTSHOTGUN;
-extern const OString GOTSHOTGUN2;
-extern const OString PD_BLUEO;
-extern const OString PD_REDO;
-extern const OString PD_YELLOWO;
-extern const OString PD_BLUEK;
-extern const OString PD_REDK;
-extern const OString PD_YELLOWK;
-extern const OString GGSAVED;
-extern const OString HUSTR_MSGU;
-extern const OString HUSTR_E1M1;
-extern const OString HUSTR_E1M2;
-extern const OString HUSTR_E1M3;
-extern const OString HUSTR_E1M4;
-extern const OString HUSTR_E1M5;
-extern const OString HUSTR_E1M6;
-extern const OString HUSTR_E1M7;
-extern const OString HUSTR_E1M8;
-extern const OString HUSTR_E1M9;
-extern const OString HUSTR_E2M1;
-extern const OString HUSTR_E2M2;
-extern const OString HUSTR_E2M3;
-extern const OString HUSTR_E2M4;
-extern const OString HUSTR_E2M5;
-extern const OString HUSTR_E2M6;
-extern const OString HUSTR_E2M7;
-extern const OString HUSTR_E2M8;
-extern const OString HUSTR_E2M9;
-extern const OString HUSTR_E3M1;
-extern const OString HUSTR_E3M2;
-extern const OString HUSTR_E3M3;
-extern const OString HUSTR_E3M4;
-extern const OString HUSTR_E3M5;
-extern const OString HUSTR_E3M6;
-extern const OString HUSTR_E3M7;
-extern const OString HUSTR_E3M8;
-extern const OString HUSTR_E3M9;
-extern const OString HUSTR_E4M1;
-extern const OString HUSTR_E4M2;
-extern const OString HUSTR_E4M3;
-extern const OString HUSTR_E4M4;
-extern const OString HUSTR_E4M5;
-extern const OString HUSTR_E4M6;
-extern const OString HUSTR_E4M7;
-extern const OString HUSTR_E4M8;
-extern const OString HUSTR_E4M9;
-extern const OString HUSTR_1;
-extern const OString HUSTR_2;
-extern const OString HUSTR_3;
-extern const OString HUSTR_4;
-extern const OString HUSTR_5;
-extern const OString HUSTR_6;
-extern const OString HUSTR_7;
-extern const OString HUSTR_8;
-extern const OString HUSTR_9;
-extern const OString HUSTR_10;
-extern const OString HUSTR_11;
-extern const OString HUSTR_12;
-extern const OString HUSTR_13;
-extern const OString HUSTR_14;
-extern const OString HUSTR_15;
-extern const OString HUSTR_16;
-extern const OString HUSTR_17;
-extern const OString HUSTR_18;
-extern const OString HUSTR_19;
-extern const OString HUSTR_20;
-extern const OString HUSTR_21;
-extern const OString HUSTR_22;
-extern const OString HUSTR_23;
-extern const OString HUSTR_24;
-extern const OString HUSTR_25;
-extern const OString HUSTR_26;
-extern const OString HUSTR_27;
-extern const OString HUSTR_28;
-extern const OString HUSTR_29;
-extern const OString HUSTR_30;
-extern const OString HUSTR_31;
-extern const OString HUSTR_32;
-extern const OString PHUSTR_1;
-extern const OString PHUSTR_2;
-extern const OString PHUSTR_3;
-extern const OString PHUSTR_4;
-extern const OString PHUSTR_5;
-extern const OString PHUSTR_6;
-extern const OString PHUSTR_7;
-extern const OString PHUSTR_8;
-extern const OString PHUSTR_9;
-extern const OString PHUSTR_10;
-extern const OString PHUSTR_11;
-extern const OString PHUSTR_12;
-extern const OString PHUSTR_13;
-extern const OString PHUSTR_14;
-extern const OString PHUSTR_15;
-extern const OString PHUSTR_16;
-extern const OString PHUSTR_17;
-extern const OString PHUSTR_18;
-extern const OString PHUSTR_19;
-extern const OString PHUSTR_20;
-extern const OString PHUSTR_21;
-extern const OString PHUSTR_22;
-extern const OString PHUSTR_23;
-extern const OString PHUSTR_24;
-extern const OString PHUSTR_25;
-extern const OString PHUSTR_26;
-extern const OString PHUSTR_27;
-extern const OString PHUSTR_28;
-extern const OString PHUSTR_29;
-extern const OString PHUSTR_30;
-extern const OString PHUSTR_31;
-extern const OString PHUSTR_32;
-extern const OString THUSTR_1;
-extern const OString THUSTR_2;
-extern const OString THUSTR_3;
-extern const OString THUSTR_4;
-extern const OString THUSTR_5;
-extern const OString THUSTR_6;
-extern const OString THUSTR_7;
-extern const OString THUSTR_8;
-extern const OString THUSTR_9;
-extern const OString THUSTR_10;
-extern const OString THUSTR_11;
-extern const OString THUSTR_12;
-extern const OString THUSTR_13;
-extern const OString THUSTR_14;
-extern const OString THUSTR_15;
-extern const OString THUSTR_16;
-extern const OString THUSTR_17;
-extern const OString THUSTR_18;
-extern const OString THUSTR_19;
-extern const OString THUSTR_20;
-extern const OString THUSTR_21;
-extern const OString THUSTR_22;
-extern const OString THUSTR_23;
-extern const OString THUSTR_24;
-extern const OString THUSTR_25;
-extern const OString THUSTR_26;
-extern const OString THUSTR_27;
-extern const OString THUSTR_28;
-extern const OString THUSTR_29;
-extern const OString THUSTR_30;
-extern const OString THUSTR_31;
-extern const OString THUSTR_32;
-extern const OString HUSTR_TALKTOSELF1;
-extern const OString HUSTR_TALKTOSELF2;
-extern const OString HUSTR_TALKTOSELF3;
-extern const OString HUSTR_TALKTOSELF4;
-extern const OString HUSTR_TALKTOSELF5;
-extern const OString HUSTR_MESSAGESENT;
-extern const OString AMSTR_FOLLOWON;
-extern const OString AMSTR_FOLLOWOFF;
-extern const OString AMSTR_GRIDON;
-extern const OString AMSTR_GRIDOFF;
-extern const OString AMSTR_MARKEDSPOT;
-extern const OString AMSTR_MARKSCLEARED;
-extern const OString STSTR_MUS;
-extern const OString STSTR_NOMUS;
-extern const OString STSTR_DQDON;
-extern const OString STSTR_DQDOFF;
-extern const OString STSTR_KFAADDED;
-extern const OString STSTR_FAADDED;
-extern const OString STSTR_NCON;
-extern const OString STSTR_NCOFF;
-extern const OString STSTR_BEHOLD;
-extern const OString STSTR_BEHOLDX;
-extern const OString STSTR_CHOPPERS;
-extern const OString STSTR_CLEV;
-extern const OString E1TEXT;
-extern const OString E2TEXT;
-extern const OString E3TEXT;
-extern const OString E4TEXT;
-extern const OString C1TEXT;
-extern const OString C2TEXT;
-extern const OString C3TEXT;
-extern const OString C4TEXT;
-extern const OString C5TEXT;
-extern const OString C6TEXT;
-extern const OString P1TEXT;
-extern const OString P2TEXT;
-extern const OString P3TEXT;
-extern const OString P4TEXT;
-extern const OString P5TEXT;
-extern const OString P6TEXT;
-extern const OString T1TEXT;
-extern const OString T2TEXT;
-extern const OString T3TEXT;
-extern const OString T4TEXT;
-extern const OString T5TEXT;
-extern const OString T6TEXT;
-extern const OString CC_ZOMBIE;
-extern const OString CC_SHOTGUN;
-extern const OString CC_HEAVY;
-extern const OString CC_IMP;
-extern const OString CC_DEMON;
-extern const OString CC_LOST;
-extern const OString CC_CACO;
-extern const OString CC_HELL;
-extern const OString CC_BARON;
-extern const OString CC_ARACH;
-extern const OString CC_PAIN;
-extern const OString CC_REVEN;
-extern const OString CC_MANCU;
-extern const OString CC_ARCH;
-extern const OString CC_SPIDER;
-extern const OString CC_CYBER;
-extern const OString CC_HERO;
-extern const OString PD_BLUEC;
-extern const OString PD_REDC;
-extern const OString PD_YELLOWC;
-extern const OString PD_BLUES;
-extern const OString PD_REDS;
-extern const OString PD_YELLOWS;
-extern const OString PD_ANY;
-extern const OString PD_ALL3;
-extern const OString PD_ALL6;
-extern const OString BGFLATE1;
-extern const OString BGFLATE2;
-extern const OString BGFLATE3;
-extern const OString BGFLATE4;
-extern const OString BGFLAT06;
-extern const OString BGFLAT11;
-extern const OString BGFLAT20;
-extern const OString BGFLAT30;
-extern const OString BGFLAT15;
-extern const OString BGFLAT31;
-extern const OString BGCASTCALL;
-extern const OString TXT_FRAGLIMIT;
-extern const OString TXT_TIMELIMIT;
-extern const OString SPREEKILLSELF;
-extern const OString SPREEOVER;
-extern const OString SPREE5;
-extern const OString SPREE10;
-extern const OString SPREE15;
-extern const OString SPREE20;
-extern const OString SPREE25;
-extern const OString MULTI2;
-extern const OString MULTI3;
-extern const OString MULTI4;
-extern const OString MULTI5;
-extern const OString OB_SUICIDE;
-extern const OString OB_FALLING;
-extern const OString OB_CRUSH;
-extern const OString OB_EXIT;
-extern const OString OB_WATER;
-extern const OString OB_SLIME;
-extern const OString OB_LAVA;
-extern const OString OB_BARREL;
-extern const OString OB_SPLASH;
-extern const OString OB_R_SPLASH;
-extern const OString OB_ROCKET;
-extern const OString OB_KILLEDSELF;
-extern const OString OB_STEALTHBABY;
-extern const OString OB_STEALTHVILE;
-extern const OString OB_STEALTHBARON;
-extern const OString OB_STEALTHCACO;
-extern const OString OB_STEALTHCHAINGUY;
-extern const OString OB_STEALTHDEMON;
-extern const OString OB_STEALTHKNIGHT;
-extern const OString OB_STEALTHIMP;
-extern const OString OB_STEALTHFATSO;
-extern const OString OB_STEALTHUNDEAD;
-extern const OString OB_STEALTHSHOTGUY;
-extern const OString OB_STEALTHZOMBIE;
-extern const OString OB_UNDEADHIT;
-extern const OString OB_IMPHIT;
-extern const OString OB_CACOHIT;
-extern const OString OB_DEMONHIT;
-extern const OString OB_SPECTREHIT;
-extern const OString OB_BARONHIT;
-extern const OString OB_KNIGHTHIT;
-extern const OString OB_ZOMBIE;
-extern const OString OB_SHOTGUY;
-extern const OString OB_VILE;
-extern const OString OB_UNDEAD;
-extern const OString OB_FATSO;
-extern const OString OB_CHAINGUY;
-extern const OString OB_SKULL;
-extern const OString OB_IMP;
-extern const OString OB_CACO;
-extern const OString OB_BARON;
-extern const OString OB_KNIGHT;
-extern const OString OB_SPIDER;
-extern const OString OB_BABY;
-extern const OString OB_CYBORG;
-extern const OString OB_WOLFSS;
-extern const OString OB_CHICKEN;
-extern const OString OB_BEAST;
-extern const OString OB_CLINK;
-extern const OString OB_DSPARIL1;
-extern const OString OB_DSPARIL1HIT;
-extern const OString OB_DSPARIL2;
-extern const OString OB_DSPARIL2HIT;
-extern const OString OB_HERETICIMP;
-extern const OString OB_HERETICIMPHIT;
-extern const OString OB_IRONLICH;
-extern const OString OB_IRONLICHHIT;
-extern const OString OB_BONEKNIGHT;
-extern const OString OB_BONEKNIGHTHIT;
-extern const OString OB_MUMMY;
-extern const OString OB_MUMMYLEADER;
-extern const OString OB_SNAKE;
-extern const OString OB_WIZARD;
-extern const OString OB_WIZARDHIT;
-extern const OString OB_GENMONPROJ;
-extern const OString OB_GENMONPEW;
-extern const OString OB_GENMONHIT;
-extern const OString OB_GENMONBOOM;
-extern const OString OB_MPFIST;
-extern const OString OB_MPCHAINSAW;
-extern const OString OB_MPPISTOL;
-extern const OString OB_MPSHOTGUN;
-extern const OString OB_MPSSHOTGUN;
-extern const OString OB_MPCHAINGUN;
-extern const OString OB_MPROCKET;
-extern const OString OB_MPR_SPLASH;
-extern const OString OB_MPPLASMARIFLE;
-extern const OString OB_MPBFG_BOOM;
-extern const OString OB_MPBFG_SPLASH;
-extern const OString OB_MPTELEFRAG;
-extern const OString OB_RAILGUN;
-extern const OString OB_KILLED;
-extern const OString OB_DEFAULT;
-extern const OString OB_FRIENDLY1;
-extern const OString OB_FRIENDLY2;
-extern const OString OB_FRIENDLY3;
-extern const OString OB_FRIENDLY4;
-extern const OString SAVEGAMENAME;
-extern const OString STARTUP1;
-extern const OString STARTUP2;
-extern const OString STARTUP3;
-extern const OString STARTUP4;
-extern const OString STARTUP5;
-extern const OString HE1TEXT;
-extern const OString HE2TEXT;
-extern const OString HE3TEXT;
-extern const OString HE4TEXT;
-extern const OString HE5TEXT;
-extern const OString HHUSTR_E1M1;
-extern const OString HHUSTR_E1M2;
-extern const OString HHUSTR_E1M3;
-extern const OString HHUSTR_E1M4;
-extern const OString HHUSTR_E1M5;
-extern const OString HHUSTR_E1M6;
-extern const OString HHUSTR_E1M7;
-extern const OString HHUSTR_E1M8;
-extern const OString HHUSTR_E1M9;
-extern const OString HHUSTR_E2M1;
-extern const OString HHUSTR_E2M2;
-extern const OString HHUSTR_E2M3;
-extern const OString HHUSTR_E2M4;
-extern const OString HHUSTR_E2M5;
-extern const OString HHUSTR_E2M6;
-extern const OString HHUSTR_E2M7;
-extern const OString HHUSTR_E2M8;
-extern const OString HHUSTR_E2M9;
-extern const OString HHUSTR_E3M1;
-extern const OString HHUSTR_E3M2;
-extern const OString HHUSTR_E3M3;
-extern const OString HHUSTR_E3M4;
-extern const OString HHUSTR_E3M5;
-extern const OString HHUSTR_E3M6;
-extern const OString HHUSTR_E3M7;
-extern const OString HHUSTR_E3M8;
-extern const OString HHUSTR_E3M9;
-extern const OString HHUSTR_E4M1;
-extern const OString HHUSTR_E4M2;
-extern const OString HHUSTR_E4M3;
-extern const OString HHUSTR_E4M4;
-extern const OString HHUSTR_E4M5;
-extern const OString HHUSTR_E4M6;
-extern const OString HHUSTR_E4M7;
-extern const OString HHUSTR_E4M8;
-extern const OString HHUSTR_E4M9;
-extern const OString HHUSTR_E5M1;
-extern const OString HHUSTR_E5M2;
-extern const OString HHUSTR_E5M3;
-extern const OString HHUSTR_E5M4;
-extern const OString HHUSTR_E5M5;
-extern const OString HHUSTR_E5M6;
-extern const OString HHUSTR_E5M7;
-extern const OString HHUSTR_E5M8;
-extern const OString HHUSTR_E5M9;
-extern const OString TXT_GOTBLUEKEY;
-extern const OString TXT_GOTYELLOWKEY;
-extern const OString TXT_GOTGREENKEY;
-extern const OString TXT_ARTIHEALTH;
-extern const OString TXT_ARTIFLY;
-extern const OString TXT_ARTIINVULNERABILITY;
-extern const OString TXT_ARTITOMEOFPOWER;
-extern const OString TXT_ARTIINVISIBILITY;
-extern const OString TXT_ARTIEGG;
-extern const OString TXT_ARTISUPERHEALTH;
-extern const OString TXT_ARTITORCH;
-extern const OString TXT_ARTIFIREBOMB;
-extern const OString TXT_ARTITELEPORT;
-extern const OString TXT_ITEMHEALTH;
-extern const OString TXT_ITEMBAGOFHOLDING;
-extern const OString TXT_ITEMSHIELD1;
-extern const OString TXT_ITEMSHIELD2;
-extern const OString TXT_ITEMSUPERMAP;
-extern const OString TXT_AMMOGOLDWAND1;
-extern const OString TXT_AMMOGOLDWAND2;
-extern const OString TXT_AMMOMACE1;
-extern const OString TXT_AMMOMACE2;
-extern const OString TXT_AMMOCROSSBOW1;
-extern const OString TXT_AMMOCROSSBOW2;
-extern const OString TXT_AMMOBLASTER1;
-extern const OString TXT_AMMOBLASTER2;
-extern const OString TXT_AMMOSKULLROD1;
-extern const OString TXT_AMMOSKULLROD2;
-extern const OString TXT_AMMOPHOENIXROD1;
-extern const OString TXT_AMMOPHOENIXROD2;
-extern const OString TXT_WPNMACE;
-extern const OString TXT_WPNCROSSBOW;
-extern const OString TXT_WPNBLASTER;
-extern const OString TXT_WPNSKULLROD;
-extern const OString TXT_WPNPHOENIXROD;
-extern const OString TXT_WPNGAUNTLETS;
-extern const OString TXT_NEEDBLUEKEY;
-extern const OString TXT_NEEDGREENKEY;
-extern const OString TXT_NEEDYELLOWKEY;
-extern const OString TXT_CHEATHEALTH;
-extern const OString TXT_CHEATKEYS;
-extern const OString TXT_CHEATSOUNDON;
-extern const OString TXT_CHEATSOUNDOFF;
-extern const OString TXT_CHEATIDDQD;
-extern const OString TXT_CHEATIDKFA;
-extern const OString TXT_CHEATTICKERON;
-extern const OString TXT_CHEATTICKEROFF;
-extern const OString TXT_CHEATARTIFACTS3;
-extern const OString RAVENQUITMSG;
-extern const OString TXT_MANA_1;
-extern const OString TXT_MANA_2;
-extern const OString TXT_MANA_BOTH;
-extern const OString TXT_KEY_STEEL;
-extern const OString TXT_KEY_CAVE;
-extern const OString TXT_KEY_AXE;
-extern const OString TXT_KEY_FIRE;
-extern const OString TXT_KEY_EMERALD;
-extern const OString TXT_KEY_DUNGEON;
-extern const OString TXT_KEY_SILVER;
-extern const OString TXT_KEY_RUSTED;
-extern const OString TXT_KEY_HORN;
-extern const OString TXT_KEY_SWAMP;
-extern const OString TXT_KEY_CASTLE;
-extern const OString TXT_ARTIINVULNERABILITY2;
-extern const OString TXT_ARTISUMMON;
-extern const OString TXT_ARTIEGG2;
-extern const OString TXT_ARTIPOISONBAG;
-extern const OString TXT_ARTITELEPORTOTHER;
-extern const OString TXT_ARTISPEED;
-extern const OString TXT_ARTIBOOSTMANA;
-extern const OString TXT_ARTIBOOSTARMOR;
-extern const OString TXT_ARTIBLASTRADIUS;
-extern const OString TXT_ARTIHEALINGRADIUS;
-extern const OString TXT_ARTIPUZZSKULL;
-extern const OString TXT_ARTIPUZZGEMBIG;
-extern const OString TXT_ARTIPUZZGEMRED;
-extern const OString TXT_ARTIPUZZGEMGREEN1;
-extern const OString TXT_ARTIPUZZGEMGREEN2;
-extern const OString TXT_ARTIPUZZGEMBLUE1;
-extern const OString TXT_ARTIPUZZGEMBLUE2;
-extern const OString TXT_ARTIPUZZBOOK1;
-extern const OString TXT_ARTIPUZZBOOK2;
-extern const OString TXT_ARTIPUZZSKULL2;
-extern const OString TXT_ARTIPUZZFWEAPON;
-extern const OString TXT_ARTIPUZZCWEAPON;
-extern const OString TXT_ARTIPUZZMWEAPON;
-extern const OString TXT_ARTIPUZZGEAR;
-extern const OString TXT_USEPUZZLEFAILED;
-extern const OString TXT_ARMOR1;
-extern const OString TXT_ARMOR2;
-extern const OString TXT_ARMOR3;
-extern const OString TXT_ARMOR4;
-extern const OString TXT_WEAPON_F2;
-extern const OString TXT_WEAPON_F3;
-extern const OString TXT_WEAPON_F4;
-extern const OString TXT_WEAPON_C2;
-extern const OString TXT_WEAPON_C3;
-extern const OString TXT_WEAPON_C4;
-extern const OString TXT_WEAPON_M2;
-extern const OString TXT_WEAPON_M3;
-extern const OString TXT_WEAPON_M4;
-extern const OString TXT_QUIETUS_PIECE;
-extern const OString TXT_WRAITHVERGE_PIECE;
-extern const OString TXT_BLOODSCOURGE_PIECE;
-extern const OString BBA_BONED;
-extern const OString BBA_CASTRA;
-extern const OString BBA_CREAMED;
-extern const OString BBA_DECIMAT;
-extern const OString BBA_DESTRO;
-extern const OString BBA_DICED;
-extern const OString BBA_DISEMBO;
-extern const OString BBA_FLATTE;
-extern const OString BBA_JUSTICE;
-extern const OString BBA_MADNESS;
-extern const OString BBA_KILLED;
-extern const OString BBA_MINCMEAT;
-extern const OString BBA_MASSACR;
-extern const OString BBA_MUTILA;
-extern const OString BBA_REAMED;
-extern const OString BBA_RIPPED;
-extern const OString BBA_SLAUGHT;
-extern const OString BBA_SMASHED;
-extern const OString BBA_SODOMIZ;
-extern const OString BBA_SPLATT;
-extern const OString BBA_SQUASH;
-extern const OString BBA_THROTTL;
-extern const OString BBA_WASTED;
-extern const OString BBA_BODYBAG;
-extern const OString BBA_HELL;
-extern const OString BBA_TOAST;
-extern const OString BBA_SNUFF;
-extern const OString BBA_HOSED;
-extern const OString BBA_SPRAYED;
-extern const OString BBA_DOGMEAT;
-extern const OString BBA_BEATEN;
-extern const OString BBA_EXCREMENT;
-extern const OString BBA_HAMBURGER;
-extern const OString BBA_SCROTUM;
-extern const OString BBA_POPULATION;
-extern const OString BBA_SUICIDE;
-extern const OString BBA_DARWIN;
-extern const OString MUSIC_E1M1;
-extern const OString MUSIC_E1M2;
-extern const OString MUSIC_E1M3;
-extern const OString MUSIC_E1M4;
-extern const OString MUSIC_E1M5;
-extern const OString MUSIC_E1M6;
-extern const OString MUSIC_E1M7;
-extern const OString MUSIC_E1M8;
-extern const OString MUSIC_E1M9;
-extern const OString MUSIC_E2M1;
-extern const OString MUSIC_E2M2;
-extern const OString MUSIC_E2M3;
-extern const OString MUSIC_E2M4;
-extern const OString MUSIC_E2M5;
-extern const OString MUSIC_E2M6;
-extern const OString MUSIC_E2M7;
-extern const OString MUSIC_E2M8;
-extern const OString MUSIC_E2M9;
-extern const OString MUSIC_E3M1;
-extern const OString MUSIC_E3M2;
-extern const OString MUSIC_E3M3;
-extern const OString MUSIC_E3M4;
-extern const OString MUSIC_E3M5;
-extern const OString MUSIC_E3M6;
-extern const OString MUSIC_E3M7;
-extern const OString MUSIC_E3M8;
-extern const OString MUSIC_E3M9;
-extern const OString MUSIC_INTER;
-extern const OString MUSIC_INTRO;
-extern const OString MUSIC_BUNNY;
-extern const OString MUSIC_VICTOR;
-extern const OString MUSIC_INTROA;
-extern const OString MUSIC_RUNNIN;
-extern const OString MUSIC_STALKS;
-extern const OString MUSIC_COUNTD;
-extern const OString MUSIC_BETWEE;
-extern const OString MUSIC_DOOM;
-extern const OString MUSIC_THE_DA;
-extern const OString MUSIC_SHAWN;
-extern const OString MUSIC_DDTBLU;
-extern const OString MUSIC_IN_CIT;
-extern const OString MUSIC_DEAD;
-extern const OString MUSIC_STLKS2;
-extern const OString MUSIC_THEDA2;
-extern const OString MUSIC_DOOM2;
-extern const OString MUSIC_DDTBL2;
-extern const OString MUSIC_RUNNI2;
-extern const OString MUSIC_DEAD2;
-extern const OString MUSIC_STLKS3;
-extern const OString MUSIC_ROMERO;
-extern const OString MUSIC_SHAWN2;
-extern const OString MUSIC_MESSAG;
-extern const OString MUSIC_COUNT2;
-extern const OString MUSIC_DDTBL3;
-extern const OString MUSIC_AMPIE;
-extern const OString MUSIC_THEDA3;
-extern const OString MUSIC_ADRIAN;
-extern const OString MUSIC_MESSG2;
-extern const OString MUSIC_ROMER2;
-extern const OString MUSIC_TENSE;
-extern const OString MUSIC_SHAWN3;
-extern const OString MUSIC_OPENIN;
-extern const OString MUSIC_EVIL;
-extern const OString MUSIC_ULTIMA;
-extern const OString MUSIC_READ_M;
-extern const OString MUSIC_DM2TTL;
-extern const OString MUSIC_DM2INT;
-extern const OString TXT_BUDDHAON;
-extern const OString TXT_BUDDHAOFF;
+inline const OString D_DEVSTR = "D_DEVSTR"_os;
+inline const OString D_CDROM = "D_CDROM"_os;
+inline const OString PRESSKEY = "PRESSKEY"_os;
+inline const OString PRESSYN = "PRESSYN"_os;
+inline const OString QUITMSG = "QUITMSG"_os;
+inline const OString QUITMSG1 = "QUITMSG1"_os;
+inline const OString QUITMSG2 = "QUITMSG2"_os;
+inline const OString QUITMSG3 = "QUITMSG3"_os;
+inline const OString QUITMSG4 = "QUITMSG4"_os;
+inline const OString QUITMSG5 = "QUITMSG5"_os;
+inline const OString QUITMSG6 = "QUITMSG6"_os;
+inline const OString QUITMSG7 = "QUITMSG7"_os;
+inline const OString QUITMSG8 = "QUITMSG8"_os;
+inline const OString QUITMSG9 = "QUITMSG9"_os;
+inline const OString QUITMSG10 = "QUITMSG10"_os;
+inline const OString QUITMSG11 = "QUITMSG11"_os;
+inline const OString QUITMSG12 = "QUITMSG12"_os;
+inline const OString QUITMSG13 = "QUITMSG13"_os;
+inline const OString QUITMSG14 = "QUITMSG14"_os;
+inline const OString LOADNET = "LOADNET"_os;
+inline const OString QLOADNET = "QLOADNET"_os;
+inline const OString QSAVESPOT = "QSAVESPOT"_os;
+inline const OString SAVEDEAD = "SAVEDEAD"_os;
+inline const OString QSPROMPT = "QSPROMPT"_os;
+inline const OString QLPROMPT = "QLPROMPT"_os;
+inline const OString NEWGAME = "NEWGAME"_os;
+inline const OString NIGHTMARE = "NIGHTMARE"_os;
+inline const OString SWSTRING = "SWSTRING"_os;
+inline const OString MSGOFF = "MSGOFF"_os;
+inline const OString MSGON = "MSGON"_os;
+inline const OString NETEND = "NETEND"_os;
+inline const OString ENDGAME = "ENDGAME"_os;
+inline const OString DOSY = "DOSY"_os;
+inline const OString EMPTYSTRING = "EMPTYSTRING"_os;
+inline const OString GOTARMOR = "GOTARMOR"_os;
+inline const OString GOTMEGA = "GOTMEGA"_os;
+inline const OString GOTHTHBONUS = "GOTHTHBONUS"_os;
+inline const OString GOTARMBONUS = "GOTARMBONUS"_os;
+inline const OString GOTSTIM = "GOTSTIM"_os;
+inline const OString GOTMEDINEED = "GOTMEDINEED"_os;
+inline const OString GOTMEDIKIT = "GOTMEDIKIT"_os;
+inline const OString GOTSUPER = "GOTSUPER"_os;
+inline const OString GOTBLUECARD = "GOTBLUECARD"_os;
+inline const OString GOTYELWCARD = "GOTYELWCARD"_os;
+inline const OString GOTREDCARD = "GOTREDCARD"_os;
+inline const OString GOTBLUESKUL = "GOTBLUESKUL"_os;
+inline const OString GOTYELWSKUL = "GOTYELWSKUL"_os;
+inline const OString GOTREDSKUL = "GOTREDSKUL"_os;
+inline const OString GOTINVUL = "GOTINVUL"_os;
+inline const OString GOTBERSERK = "GOTBERSERK"_os;
+inline const OString GOTINVIS = "GOTINVIS"_os;
+inline const OString GOTSUIT = "GOTSUIT"_os;
+inline const OString GOTMAP = "GOTMAP"_os;
+inline const OString GOTVISOR = "GOTVISOR"_os;
+inline const OString GOTMSPHERE = "GOTMSPHERE"_os;
+inline const OString GOTCLIP = "GOTCLIP"_os;
+inline const OString GOTCLIPBOX = "GOTCLIPBOX"_os;
+inline const OString GOTROCKET = "GOTROCKET"_os;
+inline const OString GOTROCKBOX = "GOTROCKBOX"_os;
+inline const OString GOTCELL = "GOTCELL"_os;
+inline const OString GOTCELLBOX = "GOTCELLBOX"_os;
+inline const OString GOTSHELLS = "GOTSHELLS"_os;
+inline const OString GOTSHELLBOX = "GOTSHELLBOX"_os;
+inline const OString GOTBACKPACK = "GOTBACKPACK"_os;
+inline const OString GOTBFG9000 = "GOTBFG9000"_os;
+inline const OString GOTCHAINGUN = "GOTCHAINGUN"_os;
+inline const OString GOTCHAINSAW = "GOTCHAINSAW"_os;
+inline const OString GOTLAUNCHER = "GOTLAUNCHER"_os;
+inline const OString GOTPLASMA = "GOTPLASMA"_os;
+inline const OString GOTSHOTGUN = "GOTSHOTGUN"_os;
+inline const OString GOTSHOTGUN2 = "GOTSHOTGUN2"_os;
+inline const OString PD_BLUEO = "PD_BLUEO"_os;
+inline const OString PD_REDO = "PD_REDO"_os;
+inline const OString PD_YELLOWO = "PD_YELLOWO"_os;
+inline const OString PD_BLUEK = "PD_BLUEK"_os;
+inline const OString PD_REDK = "PD_REDK"_os;
+inline const OString PD_YELLOWK = "PD_YELLOWK"_os;
+inline const OString GGSAVED = "GGSAVED"_os;
+inline const OString HUSTR_MSGU = "HUSTR_MSGU"_os;
+inline const OString HUSTR_E1M1 = "HUSTR_E1M1"_os;
+inline const OString HUSTR_E1M2 = "HUSTR_E1M2"_os;
+inline const OString HUSTR_E1M3 = "HUSTR_E1M3"_os;
+inline const OString HUSTR_E1M4 = "HUSTR_E1M4"_os;
+inline const OString HUSTR_E1M5 = "HUSTR_E1M5"_os;
+inline const OString HUSTR_E1M6 = "HUSTR_E1M6"_os;
+inline const OString HUSTR_E1M7 = "HUSTR_E1M7"_os;
+inline const OString HUSTR_E1M8 = "HUSTR_E1M8"_os;
+inline const OString HUSTR_E1M9 = "HUSTR_E1M9"_os;
+inline const OString HUSTR_E2M1 = "HUSTR_E2M1"_os;
+inline const OString HUSTR_E2M2 = "HUSTR_E2M2"_os;
+inline const OString HUSTR_E2M3 = "HUSTR_E2M3"_os;
+inline const OString HUSTR_E2M4 = "HUSTR_E2M4"_os;
+inline const OString HUSTR_E2M5 = "HUSTR_E2M5"_os;
+inline const OString HUSTR_E2M6 = "HUSTR_E2M6"_os;
+inline const OString HUSTR_E2M7 = "HUSTR_E2M7"_os;
+inline const OString HUSTR_E2M8 = "HUSTR_E2M8"_os;
+inline const OString HUSTR_E2M9 = "HUSTR_E2M9"_os;
+inline const OString HUSTR_E3M1 = "HUSTR_E3M1"_os;
+inline const OString HUSTR_E3M2 = "HUSTR_E3M2"_os;
+inline const OString HUSTR_E3M3 = "HUSTR_E3M3"_os;
+inline const OString HUSTR_E3M4 = "HUSTR_E3M4"_os;
+inline const OString HUSTR_E3M5 = "HUSTR_E3M5"_os;
+inline const OString HUSTR_E3M6 = "HUSTR_E3M6"_os;
+inline const OString HUSTR_E3M7 = "HUSTR_E3M7"_os;
+inline const OString HUSTR_E3M8 = "HUSTR_E3M8"_os;
+inline const OString HUSTR_E3M9 = "HUSTR_E3M9"_os;
+inline const OString HUSTR_E4M1 = "HUSTR_E4M1"_os;
+inline const OString HUSTR_E4M2 = "HUSTR_E4M2"_os;
+inline const OString HUSTR_E4M3 = "HUSTR_E4M3"_os;
+inline const OString HUSTR_E4M4 = "HUSTR_E4M4"_os;
+inline const OString HUSTR_E4M5 = "HUSTR_E4M5"_os;
+inline const OString HUSTR_E4M6 = "HUSTR_E4M6"_os;
+inline const OString HUSTR_E4M7 = "HUSTR_E4M7"_os;
+inline const OString HUSTR_E4M8 = "HUSTR_E4M8"_os;
+inline const OString HUSTR_E4M9 = "HUSTR_E4M9"_os;
+inline const OString HUSTR_1 = "HUSTR_1"_os;
+inline const OString HUSTR_2 = "HUSTR_2"_os;
+inline const OString HUSTR_3 = "HUSTR_3"_os;
+inline const OString HUSTR_4 = "HUSTR_4"_os;
+inline const OString HUSTR_5 = "HUSTR_5"_os;
+inline const OString HUSTR_6 = "HUSTR_6"_os;
+inline const OString HUSTR_7 = "HUSTR_7"_os;
+inline const OString HUSTR_8 = "HUSTR_8"_os;
+inline const OString HUSTR_9 = "HUSTR_9"_os;
+inline const OString HUSTR_10 = "HUSTR_10"_os;
+inline const OString HUSTR_11 = "HUSTR_11"_os;
+inline const OString HUSTR_12 = "HUSTR_12"_os;
+inline const OString HUSTR_13 = "HUSTR_13"_os;
+inline const OString HUSTR_14 = "HUSTR_14"_os;
+inline const OString HUSTR_15 = "HUSTR_15"_os;
+inline const OString HUSTR_16 = "HUSTR_16"_os;
+inline const OString HUSTR_17 = "HUSTR_17"_os;
+inline const OString HUSTR_18 = "HUSTR_18"_os;
+inline const OString HUSTR_19 = "HUSTR_19"_os;
+inline const OString HUSTR_20 = "HUSTR_20"_os;
+inline const OString HUSTR_21 = "HUSTR_21"_os;
+inline const OString HUSTR_22 = "HUSTR_22"_os;
+inline const OString HUSTR_23 = "HUSTR_23"_os;
+inline const OString HUSTR_24 = "HUSTR_24"_os;
+inline const OString HUSTR_25 = "HUSTR_25"_os;
+inline const OString HUSTR_26 = "HUSTR_26"_os;
+inline const OString HUSTR_27 = "HUSTR_27"_os;
+inline const OString HUSTR_28 = "HUSTR_28"_os;
+inline const OString HUSTR_29 = "HUSTR_29"_os;
+inline const OString HUSTR_30 = "HUSTR_30"_os;
+inline const OString HUSTR_31 = "HUSTR_31"_os;
+inline const OString HUSTR_32 = "HUSTR_32"_os;
+inline const OString PHUSTR_1 = "PHUSTR_1"_os;
+inline const OString PHUSTR_2 = "PHUSTR_2"_os;
+inline const OString PHUSTR_3 = "PHUSTR_3"_os;
+inline const OString PHUSTR_4 = "PHUSTR_4"_os;
+inline const OString PHUSTR_5 = "PHUSTR_5"_os;
+inline const OString PHUSTR_6 = "PHUSTR_6"_os;
+inline const OString PHUSTR_7 = "PHUSTR_7"_os;
+inline const OString PHUSTR_8 = "PHUSTR_8"_os;
+inline const OString PHUSTR_9 = "PHUSTR_9"_os;
+inline const OString PHUSTR_10 = "PHUSTR_10"_os;
+inline const OString PHUSTR_11 = "PHUSTR_11"_os;
+inline const OString PHUSTR_12 = "PHUSTR_12"_os;
+inline const OString PHUSTR_13 = "PHUSTR_13"_os;
+inline const OString PHUSTR_14 = "PHUSTR_14"_os;
+inline const OString PHUSTR_15 = "PHUSTR_15"_os;
+inline const OString PHUSTR_16 = "PHUSTR_16"_os;
+inline const OString PHUSTR_17 = "PHUSTR_17"_os;
+inline const OString PHUSTR_18 = "PHUSTR_18"_os;
+inline const OString PHUSTR_19 = "PHUSTR_19"_os;
+inline const OString PHUSTR_20 = "PHUSTR_20"_os;
+inline const OString PHUSTR_21 = "PHUSTR_21"_os;
+inline const OString PHUSTR_22 = "PHUSTR_22"_os;
+inline const OString PHUSTR_23 = "PHUSTR_23"_os;
+inline const OString PHUSTR_24 = "PHUSTR_24"_os;
+inline const OString PHUSTR_25 = "PHUSTR_25"_os;
+inline const OString PHUSTR_26 = "PHUSTR_26"_os;
+inline const OString PHUSTR_27 = "PHUSTR_27"_os;
+inline const OString PHUSTR_28 = "PHUSTR_28"_os;
+inline const OString PHUSTR_29 = "PHUSTR_29"_os;
+inline const OString PHUSTR_30 = "PHUSTR_30"_os;
+inline const OString PHUSTR_31 = "PHUSTR_31"_os;
+inline const OString PHUSTR_32 = "PHUSTR_32"_os;
+inline const OString THUSTR_1 = "THUSTR_1"_os;
+inline const OString THUSTR_2 = "THUSTR_2"_os;
+inline const OString THUSTR_3 = "THUSTR_3"_os;
+inline const OString THUSTR_4 = "THUSTR_4"_os;
+inline const OString THUSTR_5 = "THUSTR_5"_os;
+inline const OString THUSTR_6 = "THUSTR_6"_os;
+inline const OString THUSTR_7 = "THUSTR_7"_os;
+inline const OString THUSTR_8 = "THUSTR_8"_os;
+inline const OString THUSTR_9 = "THUSTR_9"_os;
+inline const OString THUSTR_10 = "THUSTR_10"_os;
+inline const OString THUSTR_11 = "THUSTR_11"_os;
+inline const OString THUSTR_12 = "THUSTR_12"_os;
+inline const OString THUSTR_13 = "THUSTR_13"_os;
+inline const OString THUSTR_14 = "THUSTR_14"_os;
+inline const OString THUSTR_15 = "THUSTR_15"_os;
+inline const OString THUSTR_16 = "THUSTR_16"_os;
+inline const OString THUSTR_17 = "THUSTR_17"_os;
+inline const OString THUSTR_18 = "THUSTR_18"_os;
+inline const OString THUSTR_19 = "THUSTR_19"_os;
+inline const OString THUSTR_20 = "THUSTR_20"_os;
+inline const OString THUSTR_21 = "THUSTR_21"_os;
+inline const OString THUSTR_22 = "THUSTR_22"_os;
+inline const OString THUSTR_23 = "THUSTR_23"_os;
+inline const OString THUSTR_24 = "THUSTR_24"_os;
+inline const OString THUSTR_25 = "THUSTR_25"_os;
+inline const OString THUSTR_26 = "THUSTR_26"_os;
+inline const OString THUSTR_27 = "THUSTR_27"_os;
+inline const OString THUSTR_28 = "THUSTR_28"_os;
+inline const OString THUSTR_29 = "THUSTR_29"_os;
+inline const OString THUSTR_30 = "THUSTR_30"_os;
+inline const OString THUSTR_31 = "THUSTR_31"_os;
+inline const OString THUSTR_32 = "THUSTR_32"_os;
+inline const OString HUSTR_TALKTOSELF1 = "HUSTR_TALKTOSELF1"_os;
+inline const OString HUSTR_TALKTOSELF2 = "HUSTR_TALKTOSELF2"_os;
+inline const OString HUSTR_TALKTOSELF3 = "HUSTR_TALKTOSELF3"_os;
+inline const OString HUSTR_TALKTOSELF4 = "HUSTR_TALKTOSELF4"_os;
+inline const OString HUSTR_TALKTOSELF5 = "HUSTR_TALKTOSELF5"_os;
+inline const OString HUSTR_MESSAGESENT = "HUSTR_MESSAGESENT"_os;
+inline const OString AMSTR_FOLLOWON = "AMSTR_FOLLOWON"_os;
+inline const OString AMSTR_FOLLOWOFF = "AMSTR_FOLLOWOFF"_os;
+inline const OString AMSTR_GRIDON = "AMSTR_GRIDON"_os;
+inline const OString AMSTR_GRIDOFF = "AMSTR_GRIDOFF"_os;
+inline const OString AMSTR_MARKEDSPOT = "AMSTR_MARKEDSPOT"_os;
+inline const OString AMSTR_MARKSCLEARED = "AMSTR_MARKSCLEARED"_os;
+inline const OString STSTR_MUS = "STSTR_MUS"_os;
+inline const OString STSTR_NOMUS = "STSTR_NOMUS"_os;
+inline const OString STSTR_DQDON = "STSTR_DQDON"_os;
+inline const OString STSTR_DQDOFF = "STSTR_DQDOFF"_os;
+inline const OString STSTR_KFAADDED = "STSTR_KFAADDED"_os;
+inline const OString STSTR_FAADDED = "STSTR_FAADDED"_os;
+inline const OString STSTR_NCON = "STSTR_NCON"_os;
+inline const OString STSTR_NCOFF = "STSTR_NCOFF"_os;
+inline const OString STSTR_BEHOLD = "STSTR_BEHOLD"_os;
+inline const OString STSTR_BEHOLDX = "STSTR_BEHOLDX"_os;
+inline const OString STSTR_CHOPPERS = "STSTR_CHOPPERS"_os;
+inline const OString STSTR_CLEV = "STSTR_CLEV"_os;
+inline const OString E1TEXT = "E1TEXT"_os;
+inline const OString E2TEXT = "E2TEXT"_os;
+inline const OString E3TEXT = "E3TEXT"_os;
+inline const OString E4TEXT = "E4TEXT"_os;
+inline const OString C1TEXT = "C1TEXT"_os;
+inline const OString C2TEXT = "C2TEXT"_os;
+inline const OString C3TEXT = "C3TEXT"_os;
+inline const OString C4TEXT = "C4TEXT"_os;
+inline const OString C5TEXT = "C5TEXT"_os;
+inline const OString C6TEXT = "C6TEXT"_os;
+inline const OString P1TEXT = "P1TEXT"_os;
+inline const OString P2TEXT = "P2TEXT"_os;
+inline const OString P3TEXT = "P3TEXT"_os;
+inline const OString P4TEXT = "P4TEXT"_os;
+inline const OString P5TEXT = "P5TEXT"_os;
+inline const OString P6TEXT = "P6TEXT"_os;
+inline const OString T1TEXT = "T1TEXT"_os;
+inline const OString T2TEXT = "T2TEXT"_os;
+inline const OString T3TEXT = "T3TEXT"_os;
+inline const OString T4TEXT = "T4TEXT"_os;
+inline const OString T5TEXT = "T5TEXT"_os;
+inline const OString T6TEXT = "T6TEXT"_os;
+inline const OString CC_ZOMBIE = "CC_ZOMBIE"_os;
+inline const OString CC_SHOTGUN = "CC_SHOTGUN"_os;
+inline const OString CC_HEAVY = "CC_HEAVY"_os;
+inline const OString CC_IMP = "CC_IMP"_os;
+inline const OString CC_DEMON = "CC_DEMON"_os;
+inline const OString CC_LOST = "CC_LOST"_os;
+inline const OString CC_CACO = "CC_CACO"_os;
+inline const OString CC_HELL = "CC_HELL"_os;
+inline const OString CC_BARON = "CC_BARON"_os;
+inline const OString CC_ARACH = "CC_ARACH"_os;
+inline const OString CC_PAIN = "CC_PAIN"_os;
+inline const OString CC_REVEN = "CC_REVEN"_os;
+inline const OString CC_MANCU = "CC_MANCU"_os;
+inline const OString CC_ARCH = "CC_ARCH"_os;
+inline const OString CC_SPIDER = "CC_SPIDER"_os;
+inline const OString CC_CYBER = "CC_CYBER"_os;
+inline const OString CC_HERO = "CC_HERO"_os;
+inline const OString PD_BLUEC = "PD_BLUEC"_os;
+inline const OString PD_REDC = "PD_REDC"_os;
+inline const OString PD_YELLOWC = "PD_YELLOWC"_os;
+inline const OString PD_BLUES = "PD_BLUES"_os;
+inline const OString PD_REDS = "PD_REDS"_os;
+inline const OString PD_YELLOWS = "PD_YELLOWS"_os;
+inline const OString PD_ANY = "PD_ANY"_os;
+inline const OString PD_ALL3 = "PD_ALL3"_os;
+inline const OString PD_ALL6 = "PD_ALL6"_os;
+inline const OString BGFLATE1 = "BGFLATE1"_os;
+inline const OString BGFLATE2 = "BGFLATE2"_os;
+inline const OString BGFLATE3 = "BGFLATE3"_os;
+inline const OString BGFLATE4 = "BGFLATE4"_os;
+inline const OString BGFLAT06 = "BGFLAT06"_os;
+inline const OString BGFLAT11 = "BGFLAT11"_os;
+inline const OString BGFLAT20 = "BGFLAT20"_os;
+inline const OString BGFLAT30 = "BGFLAT30"_os;
+inline const OString BGFLAT15 = "BGFLAT15"_os;
+inline const OString BGFLAT31 = "BGFLAT31"_os;
+inline const OString BGCASTCALL = "BGCASTCALL"_os;
+inline const OString TXT_FRAGLIMIT = "TXT_FRAGLIMIT"_os;
+inline const OString TXT_TIMELIMIT = "TXT_TIMELIMIT"_os;
+inline const OString SPREEKILLSELF = "SPREEKILLSELF"_os;
+inline const OString SPREEOVER = "SPREEOVER"_os;
+inline const OString SPREE5 = "SPREE5"_os;
+inline const OString SPREE10 = "SPREE10"_os;
+inline const OString SPREE15 = "SPREE15"_os;
+inline const OString SPREE20 = "SPREE20"_os;
+inline const OString SPREE25 = "SPREE25"_os;
+inline const OString MULTI2 = "MULTI2"_os;
+inline const OString MULTI3 = "MULTI3"_os;
+inline const OString MULTI4 = "MULTI4"_os;
+inline const OString MULTI5 = "MULTI5"_os;
+inline const OString OB_SUICIDE = "OB_SUICIDE"_os;
+inline const OString OB_FALLING = "OB_FALLING"_os;
+inline const OString OB_CRUSH = "OB_CRUSH"_os;
+inline const OString OB_EXIT = "OB_EXIT"_os;
+inline const OString OB_WATER = "OB_WATER"_os;
+inline const OString OB_SLIME = "OB_SLIME"_os;
+inline const OString OB_LAVA = "OB_LAVA"_os;
+inline const OString OB_BARREL = "OB_BARREL"_os;
+inline const OString OB_SPLASH = "OB_SPLASH"_os;
+inline const OString OB_R_SPLASH = "OB_R_SPLASH"_os;
+inline const OString OB_ROCKET = "OB_ROCKET"_os;
+inline const OString OB_KILLEDSELF = "OB_KILLEDSELF"_os;
+inline const OString OB_STEALTHBABY = "OB_STEALTHBABY"_os;
+inline const OString OB_STEALTHVILE = "OB_STEALTHVILE"_os;
+inline const OString OB_STEALTHBARON = "OB_STEALTHBARON"_os;
+inline const OString OB_STEALTHCACO = "OB_STEALTHCACO"_os;
+inline const OString OB_STEALTHCHAINGUY = "OB_STEALTHCHAINGUY"_os;
+inline const OString OB_STEALTHDEMON = "OB_STEALTHDEMON"_os;
+inline const OString OB_STEALTHKNIGHT = "OB_STEALTHKNIGHT"_os;
+inline const OString OB_STEALTHIMP = "OB_STEALTHIMP"_os;
+inline const OString OB_STEALTHFATSO = "OB_STEALTHFATSO"_os;
+inline const OString OB_STEALTHUNDEAD = "OB_STEALTHUNDEAD"_os;
+inline const OString OB_STEALTHSHOTGUY = "OB_STEALTHSHOTGUY"_os;
+inline const OString OB_STEALTHZOMBIE = "OB_STEALTHZOMBIE"_os;
+inline const OString OB_UNDEADHIT = "OB_UNDEADHIT"_os;
+inline const OString OB_IMPHIT = "OB_IMPHIT"_os;
+inline const OString OB_CACOHIT = "OB_CACOHIT"_os;
+inline const OString OB_DEMONHIT = "OB_DEMONHIT"_os;
+inline const OString OB_SPECTREHIT = "OB_SPECTREHIT"_os;
+inline const OString OB_BARONHIT = "OB_BARONHIT"_os;
+inline const OString OB_KNIGHTHIT = "OB_KNIGHTHIT"_os;
+inline const OString OB_ZOMBIE = "OB_ZOMBIE"_os;
+inline const OString OB_SHOTGUY = "OB_SHOTGUY"_os;
+inline const OString OB_VILE = "OB_VILE"_os;
+inline const OString OB_UNDEAD = "OB_UNDEAD"_os;
+inline const OString OB_FATSO = "OB_FATSO"_os;
+inline const OString OB_CHAINGUY = "OB_CHAINGUY"_os;
+inline const OString OB_SKULL = "OB_SKULL"_os;
+inline const OString OB_IMP = "OB_IMP"_os;
+inline const OString OB_CACO = "OB_CACO"_os;
+inline const OString OB_BARON = "OB_BARON"_os;
+inline const OString OB_KNIGHT = "OB_KNIGHT"_os;
+inline const OString OB_SPIDER = "OB_SPIDER"_os;
+inline const OString OB_BABY = "OB_BABY"_os;
+inline const OString OB_CYBORG = "OB_CYBORG"_os;
+inline const OString OB_WOLFSS = "OB_WOLFSS"_os;
+inline const OString OB_CHICKEN = "OB_CHICKEN"_os;
+inline const OString OB_BEAST = "OB_BEAST"_os;
+inline const OString OB_CLINK = "OB_CLINK"_os;
+inline const OString OB_DSPARIL1 = "OB_DSPARIL1"_os;
+inline const OString OB_DSPARIL1HIT = "OB_DSPARIL1HIT"_os;
+inline const OString OB_DSPARIL2 = "OB_DSPARIL2"_os;
+inline const OString OB_DSPARIL2HIT = "OB_DSPARIL2HIT"_os;
+inline const OString OB_HERETICIMP = "OB_HERETICIMP"_os;
+inline const OString OB_HERETICIMPHIT = "OB_HERETICIMPHIT"_os;
+inline const OString OB_IRONLICH = "OB_IRONLICH"_os;
+inline const OString OB_IRONLICHHIT = "OB_IRONLICHHIT"_os;
+inline const OString OB_BONEKNIGHT = "OB_BONEKNIGHT"_os;
+inline const OString OB_BONEKNIGHTHIT = "OB_BONEKNIGHTHIT"_os;
+inline const OString OB_MUMMY = "OB_MUMMY"_os;
+inline const OString OB_MUMMYLEADER = "OB_MUMMYLEADER"_os;
+inline const OString OB_SNAKE = "OB_SNAKE"_os;
+inline const OString OB_WIZARD = "OB_WIZARD"_os;
+inline const OString OB_WIZARDHIT = "OB_WIZARDHIT"_os;
+inline const OString OB_GENMONPROJ = "OB_GENMONPROJ"_os;
+inline const OString OB_GENMONPEW = "OB_GENMONPEW"_os;
+inline const OString OB_GENMONHIT = "OB_GENMONHIT"_os;
+inline const OString OB_GENMONBOOM = "OB_GENMONBOOM"_os;
+inline const OString OB_MPFIST = "OB_MPFIST"_os;
+inline const OString OB_MPCHAINSAW = "OB_MPCHAINSAW"_os;
+inline const OString OB_MPPISTOL = "OB_MPPISTOL"_os;
+inline const OString OB_MPSHOTGUN = "OB_MPSHOTGUN"_os;
+inline const OString OB_MPSSHOTGUN = "OB_MPSSHOTGUN"_os;
+inline const OString OB_MPCHAINGUN = "OB_MPCHAINGUN"_os;
+inline const OString OB_MPROCKET = "OB_MPROCKET"_os;
+inline const OString OB_MPR_SPLASH = "OB_MPR_SPLASH"_os;
+inline const OString OB_MPPLASMARIFLE = "OB_MPPLASMARIFLE"_os;
+inline const OString OB_MPBFG_BOOM = "OB_MPBFG_BOOM"_os;
+inline const OString OB_MPBFG_SPLASH = "OB_MPBFG_SPLASH"_os;
+inline const OString OB_MPTELEFRAG = "OB_MPTELEFRAG"_os;
+inline const OString OB_RAILGUN = "OB_RAILGUN"_os;
+inline const OString OB_KILLED = "OB_KILLED"_os;
+inline const OString OB_DEFAULT = "OB_DEFAULT"_os;
+inline const OString OB_FRIENDLY1 = "OB_FRIENDLY1"_os;
+inline const OString OB_FRIENDLY2 = "OB_FRIENDLY2"_os;
+inline const OString OB_FRIENDLY3 = "OB_FRIENDLY3"_os;
+inline const OString OB_FRIENDLY4 = "OB_FRIENDLY4"_os;
+inline const OString SAVEGAMENAME = "SAVEGAMENAME"_os;
+inline const OString STARTUP1 = "STARTUP1"_os;
+inline const OString STARTUP2 = "STARTUP2"_os;
+inline const OString STARTUP3 = "STARTUP3"_os;
+inline const OString STARTUP4 = "STARTUP4"_os;
+inline const OString STARTUP5 = "STARTUP5"_os;
+inline const OString HE1TEXT = "HE1TEXT"_os;
+inline const OString HE2TEXT = "HE2TEXT"_os;
+inline const OString HE3TEXT = "HE3TEXT"_os;
+inline const OString HE4TEXT = "HE4TEXT"_os;
+inline const OString HE5TEXT = "HE5TEXT"_os;
+inline const OString HHUSTR_E1M1 = "HHUSTR_E1M1"_os;
+inline const OString HHUSTR_E1M2 = "HHUSTR_E1M2"_os;
+inline const OString HHUSTR_E1M3 = "HHUSTR_E1M3"_os;
+inline const OString HHUSTR_E1M4 = "HHUSTR_E1M4"_os;
+inline const OString HHUSTR_E1M5 = "HHUSTR_E1M5"_os;
+inline const OString HHUSTR_E1M6 = "HHUSTR_E1M6"_os;
+inline const OString HHUSTR_E1M7 = "HHUSTR_E1M7"_os;
+inline const OString HHUSTR_E1M8 = "HHUSTR_E1M8"_os;
+inline const OString HHUSTR_E1M9 = "HHUSTR_E1M9"_os;
+inline const OString HHUSTR_E2M1 = "HHUSTR_E2M1"_os;
+inline const OString HHUSTR_E2M2 = "HHUSTR_E2M2"_os;
+inline const OString HHUSTR_E2M3 = "HHUSTR_E2M3"_os;
+inline const OString HHUSTR_E2M4 = "HHUSTR_E2M4"_os;
+inline const OString HHUSTR_E2M5 = "HHUSTR_E2M5"_os;
+inline const OString HHUSTR_E2M6 = "HHUSTR_E2M6"_os;
+inline const OString HHUSTR_E2M7 = "HHUSTR_E2M7"_os;
+inline const OString HHUSTR_E2M8 = "HHUSTR_E2M8"_os;
+inline const OString HHUSTR_E2M9 = "HHUSTR_E2M9"_os;
+inline const OString HHUSTR_E3M1 = "HHUSTR_E3M1"_os;
+inline const OString HHUSTR_E3M2 = "HHUSTR_E3M2"_os;
+inline const OString HHUSTR_E3M3 = "HHUSTR_E3M3"_os;
+inline const OString HHUSTR_E3M4 = "HHUSTR_E3M4"_os;
+inline const OString HHUSTR_E3M5 = "HHUSTR_E3M5"_os;
+inline const OString HHUSTR_E3M6 = "HHUSTR_E3M6"_os;
+inline const OString HHUSTR_E3M7 = "HHUSTR_E3M7"_os;
+inline const OString HHUSTR_E3M8 = "HHUSTR_E3M8"_os;
+inline const OString HHUSTR_E3M9 = "HHUSTR_E3M9"_os;
+inline const OString HHUSTR_E4M1 = "HHUSTR_E4M1"_os;
+inline const OString HHUSTR_E4M2 = "HHUSTR_E4M2"_os;
+inline const OString HHUSTR_E4M3 = "HHUSTR_E4M3"_os;
+inline const OString HHUSTR_E4M4 = "HHUSTR_E4M4"_os;
+inline const OString HHUSTR_E4M5 = "HHUSTR_E4M5"_os;
+inline const OString HHUSTR_E4M6 = "HHUSTR_E4M6"_os;
+inline const OString HHUSTR_E4M7 = "HHUSTR_E4M7"_os;
+inline const OString HHUSTR_E4M8 = "HHUSTR_E4M8"_os;
+inline const OString HHUSTR_E4M9 = "HHUSTR_E4M9"_os;
+inline const OString HHUSTR_E5M1 = "HHUSTR_E5M1"_os;
+inline const OString HHUSTR_E5M2 = "HHUSTR_E5M2"_os;
+inline const OString HHUSTR_E5M3 = "HHUSTR_E5M3"_os;
+inline const OString HHUSTR_E5M4 = "HHUSTR_E5M4"_os;
+inline const OString HHUSTR_E5M5 = "HHUSTR_E5M5"_os;
+inline const OString HHUSTR_E5M6 = "HHUSTR_E5M6"_os;
+inline const OString HHUSTR_E5M7 = "HHUSTR_E5M7"_os;
+inline const OString HHUSTR_E5M8 = "HHUSTR_E5M8"_os;
+inline const OString HHUSTR_E5M9 = "HHUSTR_E5M9"_os;
+inline const OString TXT_GOTBLUEKEY = "TXT_GOTBLUEKEY"_os;
+inline const OString TXT_GOTYELLOWKEY = "TXT_GOTYELLOWKEY"_os;
+inline const OString TXT_GOTGREENKEY = "TXT_GOTGREENKEY"_os;
+inline const OString TXT_ARTIHEALTH = "TXT_ARTIHEALTH"_os;
+inline const OString TXT_ARTIFLY = "TXT_ARTIFLY"_os;
+inline const OString TXT_ARTIINVULNERABILITY = "TXT_ARTIINVULNERABILITY"_os;
+inline const OString TXT_ARTITOMEOFPOWER = "TXT_ARTITOMEOFPOWER"_os;
+inline const OString TXT_ARTIINVISIBILITY = "TXT_ARTIINVISIBILITY"_os;
+inline const OString TXT_ARTIEGG = "TXT_ARTIEGG"_os;
+inline const OString TXT_ARTISUPERHEALTH = "TXT_ARTISUPERHEALTH"_os;
+inline const OString TXT_ARTITORCH = "TXT_ARTITORCH"_os;
+inline const OString TXT_ARTIFIREBOMB = "TXT_ARTIFIREBOMB"_os;
+inline const OString TXT_ARTITELEPORT = "TXT_ARTITELEPORT"_os;
+inline const OString TXT_ITEMHEALTH = "TXT_ITEMHEALTH"_os;
+inline const OString TXT_ITEMBAGOFHOLDING = "TXT_ITEMBAGOFHOLDING"_os;
+inline const OString TXT_ITEMSHIELD1 = "TXT_ITEMSHIELD1"_os;
+inline const OString TXT_ITEMSHIELD2 = "TXT_ITEMSHIELD2"_os;
+inline const OString TXT_ITEMSUPERMAP = "TXT_ITEMSUPERMAP"_os;
+inline const OString TXT_AMMOGOLDWAND1 = "TXT_AMMOGOLDWAND1"_os;
+inline const OString TXT_AMMOGOLDWAND2 = "TXT_AMMOGOLDWAND2"_os;
+inline const OString TXT_AMMOMACE1 = "TXT_AMMOMACE1"_os;
+inline const OString TXT_AMMOMACE2 = "TXT_AMMOMACE2"_os;
+inline const OString TXT_AMMOCROSSBOW1 = "TXT_AMMOCROSSBOW1"_os;
+inline const OString TXT_AMMOCROSSBOW2 = "TXT_AMMOCROSSBOW2"_os;
+inline const OString TXT_AMMOBLASTER1 = "TXT_AMMOBLASTER1"_os;
+inline const OString TXT_AMMOBLASTER2 = "TXT_AMMOBLASTER2"_os;
+inline const OString TXT_AMMOSKULLROD1 = "TXT_AMMOSKULLROD1"_os;
+inline const OString TXT_AMMOSKULLROD2 = "TXT_AMMOSKULLROD2"_os;
+inline const OString TXT_AMMOPHOENIXROD1 = "TXT_AMMOPHOENIXROD1"_os;
+inline const OString TXT_AMMOPHOENIXROD2 = "TXT_AMMOPHOENIXROD2"_os;
+inline const OString TXT_WPNMACE = "TXT_WPNMACE"_os;
+inline const OString TXT_WPNCROSSBOW = "TXT_WPNCROSSBOW"_os;
+inline const OString TXT_WPNBLASTER = "TXT_WPNBLASTER"_os;
+inline const OString TXT_WPNSKULLROD = "TXT_WPNSKULLROD"_os;
+inline const OString TXT_WPNPHOENIXROD = "TXT_WPNPHOENIXROD"_os;
+inline const OString TXT_WPNGAUNTLETS = "TXT_WPNGAUNTLETS"_os;
+inline const OString TXT_NEEDBLUEKEY = "TXT_NEEDBLUEKEY"_os;
+inline const OString TXT_NEEDGREENKEY = "TXT_NEEDGREENKEY"_os;
+inline const OString TXT_NEEDYELLOWKEY = "TXT_NEEDYELLOWKEY"_os;
+inline const OString TXT_CHEATHEALTH = "TXT_CHEATHEALTH"_os;
+inline const OString TXT_CHEATKEYS = "TXT_CHEATKEYS"_os;
+inline const OString TXT_CHEATSOUNDON = "TXT_CHEATSOUNDON"_os;
+inline const OString TXT_CHEATSOUNDOFF = "TXT_CHEATSOUNDOFF"_os;
+inline const OString TXT_CHEATIDDQD = "TXT_CHEATIDDQD"_os;
+inline const OString TXT_CHEATIDKFA = "TXT_CHEATIDKFA"_os;
+inline const OString TXT_CHEATTICKERON = "TXT_CHEATTICKERON"_os;
+inline const OString TXT_CHEATTICKEROFF = "TXT_CHEATTICKEROFF"_os;
+inline const OString TXT_CHEATARTIFACTS3 = "TXT_CHEATARTIFACTS3"_os;
+inline const OString RAVENQUITMSG = "RAVENQUITMSG"_os;
+inline const OString TXT_MANA_1 = "TXT_MANA_1"_os;
+inline const OString TXT_MANA_2 = "TXT_MANA_2"_os;
+inline const OString TXT_MANA_BOTH = "TXT_MANA_BOTH"_os;
+inline const OString TXT_KEY_STEEL = "TXT_KEY_STEEL"_os;
+inline const OString TXT_KEY_CAVE = "TXT_KEY_CAVE"_os;
+inline const OString TXT_KEY_AXE = "TXT_KEY_AXE"_os;
+inline const OString TXT_KEY_FIRE = "TXT_KEY_FIRE"_os;
+inline const OString TXT_KEY_EMERALD = "TXT_KEY_EMERALD"_os;
+inline const OString TXT_KEY_DUNGEON = "TXT_KEY_DUNGEON"_os;
+inline const OString TXT_KEY_SILVER = "TXT_KEY_SILVER"_os;
+inline const OString TXT_KEY_RUSTED = "TXT_KEY_RUSTED"_os;
+inline const OString TXT_KEY_HORN = "TXT_KEY_HORN"_os;
+inline const OString TXT_KEY_SWAMP = "TXT_KEY_SWAMP"_os;
+inline const OString TXT_KEY_CASTLE = "TXT_KEY_CASTLE"_os;
+inline const OString TXT_ARTIINVULNERABILITY2 = "TXT_ARTIINVULNERABILITY2"_os;
+inline const OString TXT_ARTISUMMON = "TXT_ARTISUMMON"_os;
+inline const OString TXT_ARTIEGG2 = "TXT_ARTIEGG2"_os;
+inline const OString TXT_ARTIPOISONBAG = "TXT_ARTIPOISONBAG"_os;
+inline const OString TXT_ARTITELEPORTOTHER = "TXT_ARTITELEPORTOTHER"_os;
+inline const OString TXT_ARTISPEED = "TXT_ARTISPEED"_os;
+inline const OString TXT_ARTIBOOSTMANA = "TXT_ARTIBOOSTMANA"_os;
+inline const OString TXT_ARTIBOOSTARMOR = "TXT_ARTIBOOSTARMOR"_os;
+inline const OString TXT_ARTIBLASTRADIUS = "TXT_ARTIBLASTRADIUS"_os;
+inline const OString TXT_ARTIHEALINGRADIUS = "TXT_ARTIHEALINGRADIUS"_os;
+inline const OString TXT_ARTIPUZZSKULL = "TXT_ARTIPUZZSKULL"_os;
+inline const OString TXT_ARTIPUZZGEMBIG = "TXT_ARTIPUZZGEMBIG"_os;
+inline const OString TXT_ARTIPUZZGEMRED = "TXT_ARTIPUZZGEMRED"_os;
+inline const OString TXT_ARTIPUZZGEMGREEN1 = "TXT_ARTIPUZZGEMGREEN1"_os;
+inline const OString TXT_ARTIPUZZGEMGREEN2 = "TXT_ARTIPUZZGEMGREEN2"_os;
+inline const OString TXT_ARTIPUZZGEMBLUE1 = "TXT_ARTIPUZZGEMBLUE1"_os;
+inline const OString TXT_ARTIPUZZGEMBLUE2 = "TXT_ARTIPUZZGEMBLUE2"_os;
+inline const OString TXT_ARTIPUZZBOOK1 = "TXT_ARTIPUZZBOOK1"_os;
+inline const OString TXT_ARTIPUZZBOOK2 = "TXT_ARTIPUZZBOOK2"_os;
+inline const OString TXT_ARTIPUZZSKULL2 = "TXT_ARTIPUZZSKULL2"_os;
+inline const OString TXT_ARTIPUZZFWEAPON = "TXT_ARTIPUZZFWEAPON"_os;
+inline const OString TXT_ARTIPUZZCWEAPON = "TXT_ARTIPUZZCWEAPON"_os;
+inline const OString TXT_ARTIPUZZMWEAPON = "TXT_ARTIPUZZMWEAPON"_os;
+inline const OString TXT_ARTIPUZZGEAR = "TXT_ARTIPUZZGEAR"_os;
+inline const OString TXT_USEPUZZLEFAILED = "TXT_USEPUZZLEFAILED"_os;
+inline const OString TXT_ARMOR1 = "TXT_ARMOR1"_os;
+inline const OString TXT_ARMOR2 = "TXT_ARMOR2"_os;
+inline const OString TXT_ARMOR3 = "TXT_ARMOR3"_os;
+inline const OString TXT_ARMOR4 = "TXT_ARMOR4"_os;
+inline const OString TXT_WEAPON_F2 = "TXT_WEAPON_F2"_os;
+inline const OString TXT_WEAPON_F3 = "TXT_WEAPON_F3"_os;
+inline const OString TXT_WEAPON_F4 = "TXT_WEAPON_F4"_os;
+inline const OString TXT_WEAPON_C2 = "TXT_WEAPON_C2"_os;
+inline const OString TXT_WEAPON_C3 = "TXT_WEAPON_C3"_os;
+inline const OString TXT_WEAPON_C4 = "TXT_WEAPON_C4"_os;
+inline const OString TXT_WEAPON_M2 = "TXT_WEAPON_M2"_os;
+inline const OString TXT_WEAPON_M3 = "TXT_WEAPON_M3"_os;
+inline const OString TXT_WEAPON_M4 = "TXT_WEAPON_M4"_os;
+inline const OString TXT_QUIETUS_PIECE = "TXT_QUIETUS_PIECE"_os;
+inline const OString TXT_WRAITHVERGE_PIECE = "TXT_WRAITHVERGE_PIECE"_os;
+inline const OString TXT_BLOODSCOURGE_PIECE = "TXT_BLOODSCOURGE_PIECE"_os;
+inline const OString BBA_BONED = "BBA_BONED"_os;
+inline const OString BBA_CASTRA = "BBA_CASTRA"_os;
+inline const OString BBA_CREAMED = "BBA_CREAMED"_os;
+inline const OString BBA_DECIMAT = "BBA_DECIMAT"_os;
+inline const OString BBA_DESTRO = "BBA_DESTRO"_os;
+inline const OString BBA_DICED = "BBA_DICED"_os;
+inline const OString BBA_DISEMBO = "BBA_DISEMBO"_os;
+inline const OString BBA_FLATTE = "BBA_FLATTE"_os;
+inline const OString BBA_JUSTICE = "BBA_JUSTICE"_os;
+inline const OString BBA_MADNESS = "BBA_MADNESS"_os;
+inline const OString BBA_KILLED = "BBA_KILLED"_os;
+inline const OString BBA_MINCMEAT = "BBA_MINCMEAT"_os;
+inline const OString BBA_MASSACR = "BBA_MASSACR"_os;
+inline const OString BBA_MUTILA = "BBA_MUTILA"_os;
+inline const OString BBA_REAMED = "BBA_REAMED"_os;
+inline const OString BBA_RIPPED = "BBA_RIPPED"_os;
+inline const OString BBA_SLAUGHT = "BBA_SLAUGHT"_os;
+inline const OString BBA_SMASHED = "BBA_SMASHED"_os;
+inline const OString BBA_SODOMIZ = "BBA_SODOMIZ"_os;
+inline const OString BBA_SPLATT = "BBA_SPLATT"_os;
+inline const OString BBA_SQUASH = "BBA_SQUASH"_os;
+inline const OString BBA_THROTTL = "BBA_THROTTL"_os;
+inline const OString BBA_WASTED = "BBA_WASTED"_os;
+inline const OString BBA_BODYBAG = "BBA_BODYBAG"_os;
+inline const OString BBA_HELL = "BBA_HELL"_os;
+inline const OString BBA_TOAST = "BBA_TOAST"_os;
+inline const OString BBA_SNUFF = "BBA_SNUFF"_os;
+inline const OString BBA_HOSED = "BBA_HOSED"_os;
+inline const OString BBA_SPRAYED = "BBA_SPRAYED"_os;
+inline const OString BBA_DOGMEAT = "BBA_DOGMEAT"_os;
+inline const OString BBA_BEATEN = "BBA_BEATEN"_os;
+inline const OString BBA_EXCREMENT = "BBA_EXCREMENT"_os;
+inline const OString BBA_HAMBURGER = "BBA_HAMBURGER"_os;
+inline const OString BBA_SCROTUM = "BBA_SCROTUM"_os;
+inline const OString BBA_POPULATION = "BBA_POPULATION"_os;
+inline const OString BBA_SUICIDE = "BBA_SUICIDE"_os;
+inline const OString BBA_DARWIN = "BBA_DARWIN"_os;
+inline const OString MUSIC_E1M1 = "MUSIC_E1M1"_os;
+inline const OString MUSIC_E1M2 = "MUSIC_E1M2"_os;
+inline const OString MUSIC_E1M3 = "MUSIC_E1M3"_os;
+inline const OString MUSIC_E1M4 = "MUSIC_E1M4"_os;
+inline const OString MUSIC_E1M5 = "MUSIC_E1M5"_os;
+inline const OString MUSIC_E1M6 = "MUSIC_E1M6"_os;
+inline const OString MUSIC_E1M7 = "MUSIC_E1M7"_os;
+inline const OString MUSIC_E1M8 = "MUSIC_E1M8"_os;
+inline const OString MUSIC_E1M9 = "MUSIC_E1M9"_os;
+inline const OString MUSIC_E2M1 = "MUSIC_E2M1"_os;
+inline const OString MUSIC_E2M2 = "MUSIC_E2M2"_os;
+inline const OString MUSIC_E2M3 = "MUSIC_E2M3"_os;
+inline const OString MUSIC_E2M4 = "MUSIC_E2M4"_os;
+inline const OString MUSIC_E2M5 = "MUSIC_E2M5"_os;
+inline const OString MUSIC_E2M6 = "MUSIC_E2M6"_os;
+inline const OString MUSIC_E2M7 = "MUSIC_E2M7"_os;
+inline const OString MUSIC_E2M8 = "MUSIC_E2M8"_os;
+inline const OString MUSIC_E2M9 = "MUSIC_E2M9"_os;
+inline const OString MUSIC_E3M1 = "MUSIC_E3M1"_os;
+inline const OString MUSIC_E3M2 = "MUSIC_E3M2"_os;
+inline const OString MUSIC_E3M3 = "MUSIC_E3M3"_os;
+inline const OString MUSIC_E3M4 = "MUSIC_E3M4"_os;
+inline const OString MUSIC_E3M5 = "MUSIC_E3M5"_os;
+inline const OString MUSIC_E3M6 = "MUSIC_E3M6"_os;
+inline const OString MUSIC_E3M7 = "MUSIC_E3M7"_os;
+inline const OString MUSIC_E3M8 = "MUSIC_E3M8"_os;
+inline const OString MUSIC_E3M9 = "MUSIC_E3M9"_os;
+inline const OString MUSIC_INTER = "MUSIC_INTER"_os;
+inline const OString MUSIC_INTRO = "MUSIC_INTRO"_os;
+inline const OString MUSIC_BUNNY = "MUSIC_BUNNY"_os;
+inline const OString MUSIC_VICTOR = "MUSIC_VICTOR"_os;
+inline const OString MUSIC_INTROA = "MUSIC_INTROA"_os;
+inline const OString MUSIC_RUNNIN = "MUSIC_RUNNIN"_os;
+inline const OString MUSIC_STALKS = "MUSIC_STALKS"_os;
+inline const OString MUSIC_COUNTD = "MUSIC_COUNTD"_os;
+inline const OString MUSIC_BETWEE = "MUSIC_BETWEE"_os;
+inline const OString MUSIC_DOOM = "MUSIC_DOOM"_os;
+inline const OString MUSIC_THE_DA = "MUSIC_THE_DA"_os;
+inline const OString MUSIC_SHAWN = "MUSIC_SHAWN"_os;
+inline const OString MUSIC_DDTBLU = "MUSIC_DDTBLU"_os;
+inline const OString MUSIC_IN_CIT = "MUSIC_IN_CIT"_os;
+inline const OString MUSIC_DEAD = "MUSIC_DEAD"_os;
+inline const OString MUSIC_STLKS2 = "MUSIC_STLKS2"_os;
+inline const OString MUSIC_THEDA2 = "MUSIC_THEDA2"_os;
+inline const OString MUSIC_DOOM2 = "MUSIC_DOOM2"_os;
+inline const OString MUSIC_DDTBL2 = "MUSIC_DDTBL2"_os;
+inline const OString MUSIC_RUNNI2 = "MUSIC_RUNNI2"_os;
+inline const OString MUSIC_DEAD2 = "MUSIC_DEAD2"_os;
+inline const OString MUSIC_STLKS3 = "MUSIC_STLKS3"_os;
+inline const OString MUSIC_ROMERO = "MUSIC_ROMERO"_os;
+inline const OString MUSIC_SHAWN2 = "MUSIC_SHAWN2"_os;
+inline const OString MUSIC_MESSAG = "MUSIC_MESSAG"_os;
+inline const OString MUSIC_COUNT2 = "MUSIC_COUNT2"_os;
+inline const OString MUSIC_DDTBL3 = "MUSIC_DDTBL3"_os;
+inline const OString MUSIC_AMPIE = "MUSIC_AMPIE"_os;
+inline const OString MUSIC_THEDA3 = "MUSIC_THEDA3"_os;
+inline const OString MUSIC_ADRIAN = "MUSIC_ADRIAN"_os;
+inline const OString MUSIC_MESSG2 = "MUSIC_MESSG2"_os;
+inline const OString MUSIC_ROMER2 = "MUSIC_ROMER2"_os;
+inline const OString MUSIC_TENSE = "MUSIC_TENSE"_os;
+inline const OString MUSIC_SHAWN3 = "MUSIC_SHAWN3"_os;
+inline const OString MUSIC_OPENIN = "MUSIC_OPENIN"_os;
+inline const OString MUSIC_EVIL = "MUSIC_EVIL"_os;
+inline const OString MUSIC_ULTIMA = "MUSIC_ULTIMA"_os;
+inline const OString MUSIC_READ_M = "MUSIC_READ_M"_os;
+inline const OString MUSIC_DM2TTL = "MUSIC_DM2TTL"_os;
+inline const OString MUSIC_DM2INT = "MUSIC_DM2INT"_os;
+inline const OString TXT_BUDDHAON = "TXT_BUDDHAON"_os;
+inline const OString TXT_BUDDHAOFF = "TXT_BUDDHAOFF"_os;
+inline const OString OSPREEENDP = "OSPREEENDP"_os;
+inline const OString OSPREEENDS = "OSPREEENDS"_os;
+inline const OString OSPREEENDM = "OSPREEENDM"_os;
+inline const OString OSPREEREP = "OSPREEREP"_os;
+inline const OString OSPREE1 = "OSPREE1"_os;
+inline const OString OSPREE2 = "OSPREE2"_os;
+inline const OString OSPREE3 = "OSPREE3"_os;
+inline const OString OSPREE4 = "OSPREE4"_os;
+inline const OString OSPREE5 = "OSPREE5"_os;
+inline const OString OSPREE6 = "OSPREE6"_os;
+inline const OString OBSPREE1 = "OBSPREE1"_os;
+inline const OString OBSPREE2 = "OBSPREE2"_os;
+inline const OString OBSPREE3 = "OBSPREE3"_os;
+inline const OString OBSPREE4 = "OBSPREE4"_os;
+inline const OString OBSPREE5 = "OBSPREE5"_os;
+inline const OString OBSPREE6 = "OBSPREE6"_os;
+inline const OString OMULTI2 = "OMULTI2"_os;
+inline const OString OMULTI3 = "OMULTI3"_os;
+inline const OString OMULTI4 = "OMULTI4"_os;
+inline const OString OMULTI5 = "OMULTI5"_os;
+inline const OString OMULTI6 = "OMULTI6"_os;
+inline const OString OMULTI7 = "OMULTI7"_os;
+inline const OString OMULTI8 = "OMULTI8"_os;
+inline const OString OMULTI9 = "OMULTI9"_os;
+inline const OString OMULTI10 = "OMULTI10"_os;
+inline const OString OMULTI11 = "OMULTI11"_os;
 
-
-#define STRING_INDEXES_LENGTH 660
-
-extern const OString* const stringIndexes[STRING_INDEXES_LENGTH];
+// Contains every original string in its proper order.
+inline const OString* const stringIndexes[] = {
+    &D_DEVSTR,
+    &D_CDROM,
+    &PRESSKEY,
+    &PRESSYN,
+    &QUITMSG,
+    &QUITMSG1,
+    &QUITMSG2,
+    &QUITMSG3,
+    &QUITMSG4,
+    &QUITMSG5,
+    &QUITMSG6,
+    &QUITMSG7,
+    &QUITMSG8,
+    &QUITMSG9,
+    &QUITMSG10,
+    &QUITMSG11,
+    &QUITMSG12,
+    &QUITMSG13,
+    &QUITMSG14,
+    &LOADNET,
+    &QLOADNET,
+    &QSAVESPOT,
+    &SAVEDEAD,
+    &QSPROMPT,
+    &QLPROMPT,
+    &NEWGAME,
+    &NIGHTMARE,
+    &SWSTRING,
+    &MSGOFF,
+    &MSGON,
+    &NETEND,
+    &ENDGAME,
+    &DOSY,
+    &EMPTYSTRING,
+    &GOTARMOR,
+    &GOTMEGA,
+    &GOTHTHBONUS,
+    &GOTARMBONUS,
+    &GOTSTIM,
+    &GOTMEDINEED,
+    &GOTMEDIKIT,
+    &GOTSUPER,
+    &GOTBLUECARD,
+    &GOTYELWCARD,
+    &GOTREDCARD,
+    &GOTBLUESKUL,
+    &GOTYELWSKUL,
+    &GOTREDSKUL,
+    &GOTINVUL,
+    &GOTBERSERK,
+    &GOTINVIS,
+    &GOTSUIT,
+    &GOTMAP,
+    &GOTVISOR,
+    &GOTMSPHERE,
+    &GOTCLIP,
+    &GOTCLIPBOX,
+    &GOTROCKET,
+    &GOTROCKBOX,
+    &GOTCELL,
+    &GOTCELLBOX,
+    &GOTSHELLS,
+    &GOTSHELLBOX,
+    &GOTBACKPACK,
+    &GOTBFG9000,
+    &GOTCHAINGUN,
+    &GOTCHAINSAW,
+    &GOTLAUNCHER,
+    &GOTPLASMA,
+    &GOTSHOTGUN,
+    &GOTSHOTGUN2,
+    &PD_BLUEO,
+    &PD_REDO,
+    &PD_YELLOWO,
+    &PD_BLUEK,
+    &PD_REDK,
+    &PD_YELLOWK,
+    &GGSAVED,
+    &HUSTR_MSGU,
+    &HUSTR_E1M1,
+    &HUSTR_E1M2,
+    &HUSTR_E1M3,
+    &HUSTR_E1M4,
+    &HUSTR_E1M5,
+    &HUSTR_E1M6,
+    &HUSTR_E1M7,
+    &HUSTR_E1M8,
+    &HUSTR_E1M9,
+    &HUSTR_E2M1,
+    &HUSTR_E2M2,
+    &HUSTR_E2M3,
+    &HUSTR_E2M4,
+    &HUSTR_E2M5,
+    &HUSTR_E2M6,
+    &HUSTR_E2M7,
+    &HUSTR_E2M8,
+    &HUSTR_E2M9,
+    &HUSTR_E3M1,
+    &HUSTR_E3M2,
+    &HUSTR_E3M3,
+    &HUSTR_E3M4,
+    &HUSTR_E3M5,
+    &HUSTR_E3M6,
+    &HUSTR_E3M7,
+    &HUSTR_E3M8,
+    &HUSTR_E3M9,
+    &HUSTR_E4M1,
+    &HUSTR_E4M2,
+    &HUSTR_E4M3,
+    &HUSTR_E4M4,
+    &HUSTR_E4M5,
+    &HUSTR_E4M6,
+    &HUSTR_E4M7,
+    &HUSTR_E4M8,
+    &HUSTR_E4M9,
+    &HUSTR_1,
+    &HUSTR_2,
+    &HUSTR_3,
+    &HUSTR_4,
+    &HUSTR_5,
+    &HUSTR_6,
+    &HUSTR_7,
+    &HUSTR_8,
+    &HUSTR_9,
+    &HUSTR_10,
+    &HUSTR_11,
+    &HUSTR_12,
+    &HUSTR_13,
+    &HUSTR_14,
+    &HUSTR_15,
+    &HUSTR_16,
+    &HUSTR_17,
+    &HUSTR_18,
+    &HUSTR_19,
+    &HUSTR_20,
+    &HUSTR_21,
+    &HUSTR_22,
+    &HUSTR_23,
+    &HUSTR_24,
+    &HUSTR_25,
+    &HUSTR_26,
+    &HUSTR_27,
+    &HUSTR_28,
+    &HUSTR_29,
+    &HUSTR_30,
+    &HUSTR_31,
+    &HUSTR_32,
+    &PHUSTR_1,
+    &PHUSTR_2,
+    &PHUSTR_3,
+    &PHUSTR_4,
+    &PHUSTR_5,
+    &PHUSTR_6,
+    &PHUSTR_7,
+    &PHUSTR_8,
+    &PHUSTR_9,
+    &PHUSTR_10,
+    &PHUSTR_11,
+    &PHUSTR_12,
+    &PHUSTR_13,
+    &PHUSTR_14,
+    &PHUSTR_15,
+    &PHUSTR_16,
+    &PHUSTR_17,
+    &PHUSTR_18,
+    &PHUSTR_19,
+    &PHUSTR_20,
+    &PHUSTR_21,
+    &PHUSTR_22,
+    &PHUSTR_23,
+    &PHUSTR_24,
+    &PHUSTR_25,
+    &PHUSTR_26,
+    &PHUSTR_27,
+    &PHUSTR_28,
+    &PHUSTR_29,
+    &PHUSTR_30,
+    &PHUSTR_31,
+    &PHUSTR_32,
+    &THUSTR_1,
+    &THUSTR_2,
+    &THUSTR_3,
+    &THUSTR_4,
+    &THUSTR_5,
+    &THUSTR_6,
+    &THUSTR_7,
+    &THUSTR_8,
+    &THUSTR_9,
+    &THUSTR_10,
+    &THUSTR_11,
+    &THUSTR_12,
+    &THUSTR_13,
+    &THUSTR_14,
+    &THUSTR_15,
+    &THUSTR_16,
+    &THUSTR_17,
+    &THUSTR_18,
+    &THUSTR_19,
+    &THUSTR_20,
+    &THUSTR_21,
+    &THUSTR_22,
+    &THUSTR_23,
+    &THUSTR_24,
+    &THUSTR_25,
+    &THUSTR_26,
+    &THUSTR_27,
+    &THUSTR_28,
+    &THUSTR_29,
+    &THUSTR_30,
+    &THUSTR_31,
+    &THUSTR_32,
+    &HUSTR_TALKTOSELF1,
+    &HUSTR_TALKTOSELF2,
+    &HUSTR_TALKTOSELF3,
+    &HUSTR_TALKTOSELF4,
+    &HUSTR_TALKTOSELF5,
+    &HUSTR_MESSAGESENT,
+    &AMSTR_FOLLOWON,
+    &AMSTR_FOLLOWOFF,
+    &AMSTR_GRIDON,
+    &AMSTR_GRIDOFF,
+    &AMSTR_MARKEDSPOT,
+    &AMSTR_MARKSCLEARED,
+    &STSTR_MUS,
+    &STSTR_NOMUS,
+    &STSTR_DQDON,
+    &STSTR_DQDOFF,
+    &STSTR_KFAADDED,
+    &STSTR_FAADDED,
+    &STSTR_NCON,
+    &STSTR_NCOFF,
+    &STSTR_BEHOLD,
+    &STSTR_BEHOLDX,
+    &STSTR_CHOPPERS,
+    &STSTR_CLEV,
+    &E1TEXT,
+    &E2TEXT,
+    &E3TEXT,
+    &E4TEXT,
+    &C1TEXT,
+    &C2TEXT,
+    &C3TEXT,
+    &C4TEXT,
+    &C5TEXT,
+    &C6TEXT,
+    &P1TEXT,
+    &P2TEXT,
+    &P3TEXT,
+    &P4TEXT,
+    &P5TEXT,
+    &P6TEXT,
+    &T1TEXT,
+    &T2TEXT,
+    &T3TEXT,
+    &T4TEXT,
+    &T5TEXT,
+    &T6TEXT,
+    &CC_ZOMBIE,
+    &CC_SHOTGUN,
+    &CC_HEAVY,
+    &CC_IMP,
+    &CC_DEMON,
+    &CC_LOST,
+    &CC_CACO,
+    &CC_HELL,
+    &CC_BARON,
+    &CC_ARACH,
+    &CC_PAIN,
+    &CC_REVEN,
+    &CC_MANCU,
+    &CC_ARCH,
+    &CC_SPIDER,
+    &CC_CYBER,
+    &CC_HERO,
+    &PD_BLUEC,
+    &PD_REDC,
+    &PD_YELLOWC,
+    &PD_BLUES,
+    &PD_REDS,
+    &PD_YELLOWS,
+    &PD_ANY,
+    &PD_ALL3,
+    &PD_ALL6,
+    &BGFLATE1,
+    &BGFLATE2,
+    &BGFLATE3,
+    &BGFLATE4,
+    &BGFLAT06,
+    &BGFLAT11,
+    &BGFLAT20,
+    &BGFLAT30,
+    &BGFLAT15,
+    &BGFLAT31,
+    &BGCASTCALL,
+    &TXT_FRAGLIMIT,
+    &TXT_TIMELIMIT,
+    &SPREEKILLSELF,
+    &SPREEOVER,
+    &SPREE5,
+    &SPREE10,
+    &SPREE15,
+    &SPREE20,
+    &SPREE25,
+    &MULTI2,
+    &MULTI3,
+    &MULTI4,
+    &MULTI5,
+    &OB_SUICIDE,
+    &OB_FALLING,
+    &OB_CRUSH,
+    &OB_EXIT,
+    &OB_WATER,
+    &OB_SLIME,
+    &OB_LAVA,
+    &OB_BARREL,
+    &OB_SPLASH,
+    &OB_R_SPLASH,
+    &OB_ROCKET,
+    &OB_KILLEDSELF,
+    &OB_STEALTHBABY,
+    &OB_STEALTHVILE,
+    &OB_STEALTHBARON,
+    &OB_STEALTHCACO,
+    &OB_STEALTHCHAINGUY,
+    &OB_STEALTHDEMON,
+    &OB_STEALTHKNIGHT,
+    &OB_STEALTHIMP,
+    &OB_STEALTHFATSO,
+    &OB_STEALTHUNDEAD,
+    &OB_STEALTHSHOTGUY,
+    &OB_STEALTHZOMBIE,
+    &OB_UNDEADHIT,
+    &OB_IMPHIT,
+    &OB_CACOHIT,
+    &OB_DEMONHIT,
+    &OB_SPECTREHIT,
+    &OB_BARONHIT,
+    &OB_KNIGHTHIT,
+    &OB_ZOMBIE,
+    &OB_SHOTGUY,
+    &OB_VILE,
+    &OB_UNDEAD,
+    &OB_FATSO,
+    &OB_CHAINGUY,
+    &OB_SKULL,
+    &OB_IMP,
+    &OB_CACO,
+    &OB_BARON,
+    &OB_KNIGHT,
+    &OB_SPIDER,
+    &OB_BABY,
+    &OB_CYBORG,
+    &OB_WOLFSS,
+    &OB_CHICKEN,
+    &OB_BEAST,
+    &OB_CLINK,
+    &OB_DSPARIL1,
+    &OB_DSPARIL1HIT,
+    &OB_DSPARIL2,
+    &OB_DSPARIL2HIT,
+    &OB_HERETICIMP,
+    &OB_HERETICIMPHIT,
+    &OB_IRONLICH,
+    &OB_IRONLICHHIT,
+    &OB_BONEKNIGHT,
+    &OB_BONEKNIGHTHIT,
+    &OB_MUMMY,
+    &OB_MUMMYLEADER,
+    &OB_SNAKE,
+    &OB_WIZARD,
+    &OB_WIZARDHIT,
+    &OB_GENMONPROJ,
+    &OB_GENMONPEW,
+    &OB_GENMONHIT,
+    &OB_GENMONBOOM,
+    &OB_MPFIST,
+    &OB_MPCHAINSAW,
+    &OB_MPPISTOL,
+    &OB_MPSHOTGUN,
+    &OB_MPSSHOTGUN,
+    &OB_MPCHAINGUN,
+    &OB_MPROCKET,
+    &OB_MPR_SPLASH,
+    &OB_MPPLASMARIFLE,
+    &OB_MPBFG_BOOM,
+    &OB_MPBFG_SPLASH,
+    &OB_MPTELEFRAG,
+    &OB_RAILGUN,
+    &OB_KILLED,
+    &OB_DEFAULT,
+    &OB_FRIENDLY1,
+    &OB_FRIENDLY2,
+    &OB_FRIENDLY3,
+    &OB_FRIENDLY4,
+    &SAVEGAMENAME,
+    &STARTUP1,
+    &STARTUP2,
+    &STARTUP3,
+    &STARTUP4,
+    &STARTUP5,
+    &HE1TEXT,
+    &HE2TEXT,
+    &HE3TEXT,
+    &HE4TEXT,
+    &HE5TEXT,
+    &HHUSTR_E1M1,
+    &HHUSTR_E1M2,
+    &HHUSTR_E1M3,
+    &HHUSTR_E1M4,
+    &HHUSTR_E1M5,
+    &HHUSTR_E1M6,
+    &HHUSTR_E1M7,
+    &HHUSTR_E1M8,
+    &HHUSTR_E1M9,
+    &HHUSTR_E2M1,
+    &HHUSTR_E2M2,
+    &HHUSTR_E2M3,
+    &HHUSTR_E2M4,
+    &HHUSTR_E2M5,
+    &HHUSTR_E2M6,
+    &HHUSTR_E2M7,
+    &HHUSTR_E2M8,
+    &HHUSTR_E2M9,
+    &HHUSTR_E3M1,
+    &HHUSTR_E3M2,
+    &HHUSTR_E3M3,
+    &HHUSTR_E3M4,
+    &HHUSTR_E3M5,
+    &HHUSTR_E3M6,
+    &HHUSTR_E3M7,
+    &HHUSTR_E3M8,
+    &HHUSTR_E3M9,
+    &HHUSTR_E4M1,
+    &HHUSTR_E4M2,
+    &HHUSTR_E4M3,
+    &HHUSTR_E4M4,
+    &HHUSTR_E4M5,
+    &HHUSTR_E4M6,
+    &HHUSTR_E4M7,
+    &HHUSTR_E4M8,
+    &HHUSTR_E4M9,
+    &HHUSTR_E5M1,
+    &HHUSTR_E5M2,
+    &HHUSTR_E5M3,
+    &HHUSTR_E5M4,
+    &HHUSTR_E5M5,
+    &HHUSTR_E5M6,
+    &HHUSTR_E5M7,
+    &HHUSTR_E5M8,
+    &HHUSTR_E5M9,
+    &TXT_GOTBLUEKEY,
+    &TXT_GOTYELLOWKEY,
+    &TXT_GOTGREENKEY,
+    &TXT_ARTIHEALTH,
+    &TXT_ARTIFLY,
+    &TXT_ARTIINVULNERABILITY,
+    &TXT_ARTITOMEOFPOWER,
+    &TXT_ARTIINVISIBILITY,
+    &TXT_ARTIEGG,
+    &TXT_ARTISUPERHEALTH,
+    &TXT_ARTITORCH,
+    &TXT_ARTIFIREBOMB,
+    &TXT_ARTITELEPORT,
+    &TXT_ITEMHEALTH,
+    &TXT_ITEMBAGOFHOLDING,
+    &TXT_ITEMSHIELD1,
+    &TXT_ITEMSHIELD2,
+    &TXT_ITEMSUPERMAP,
+    &TXT_AMMOGOLDWAND1,
+    &TXT_AMMOGOLDWAND2,
+    &TXT_AMMOMACE1,
+    &TXT_AMMOMACE2,
+    &TXT_AMMOCROSSBOW1,
+    &TXT_AMMOCROSSBOW2,
+    &TXT_AMMOBLASTER1,
+    &TXT_AMMOBLASTER2,
+    &TXT_AMMOSKULLROD1,
+    &TXT_AMMOSKULLROD2,
+    &TXT_AMMOPHOENIXROD1,
+    &TXT_AMMOPHOENIXROD2,
+    &TXT_WPNMACE,
+    &TXT_WPNCROSSBOW,
+    &TXT_WPNBLASTER,
+    &TXT_WPNSKULLROD,
+    &TXT_WPNPHOENIXROD,
+    &TXT_WPNGAUNTLETS,
+    &TXT_NEEDBLUEKEY,
+    &TXT_NEEDGREENKEY,
+    &TXT_NEEDYELLOWKEY,
+    &TXT_CHEATHEALTH,
+    &TXT_CHEATKEYS,
+    &TXT_CHEATSOUNDON,
+    &TXT_CHEATSOUNDOFF,
+    &TXT_CHEATIDDQD,
+    &TXT_CHEATIDKFA,
+    &TXT_CHEATTICKERON,
+    &TXT_CHEATTICKEROFF,
+    &TXT_CHEATARTIFACTS3,
+    &RAVENQUITMSG,
+    &TXT_MANA_1,
+    &TXT_MANA_2,
+    &TXT_MANA_BOTH,
+    &TXT_KEY_STEEL,
+    &TXT_KEY_CAVE,
+    &TXT_KEY_AXE,
+    &TXT_KEY_FIRE,
+    &TXT_KEY_EMERALD,
+    &TXT_KEY_DUNGEON,
+    &TXT_KEY_SILVER,
+    &TXT_KEY_RUSTED,
+    &TXT_KEY_HORN,
+    &TXT_KEY_SWAMP,
+    &TXT_KEY_CASTLE,
+    &TXT_ARTIINVULNERABILITY2,
+    &TXT_ARTISUMMON,
+    &TXT_ARTIEGG2,
+    &TXT_ARTIPOISONBAG,
+    &TXT_ARTITELEPORTOTHER,
+    &TXT_ARTISPEED,
+    &TXT_ARTIBOOSTMANA,
+    &TXT_ARTIBOOSTARMOR,
+    &TXT_ARTIBLASTRADIUS,
+    &TXT_ARTIHEALINGRADIUS,
+    &TXT_ARTIPUZZSKULL,
+    &TXT_ARTIPUZZGEMBIG,
+    &TXT_ARTIPUZZGEMRED,
+    &TXT_ARTIPUZZGEMGREEN1,
+    &TXT_ARTIPUZZGEMGREEN2,
+    &TXT_ARTIPUZZGEMBLUE1,
+    &TXT_ARTIPUZZGEMBLUE2,
+    &TXT_ARTIPUZZBOOK1,
+    &TXT_ARTIPUZZBOOK2,
+    &TXT_ARTIPUZZSKULL2,
+    &TXT_ARTIPUZZFWEAPON,
+    &TXT_ARTIPUZZCWEAPON,
+    &TXT_ARTIPUZZMWEAPON,
+    &TXT_ARTIPUZZGEAR,
+    &TXT_USEPUZZLEFAILED,
+    &TXT_ARMOR1,
+    &TXT_ARMOR2,
+    &TXT_ARMOR3,
+    &TXT_ARMOR4,
+    &TXT_WEAPON_F2,
+    &TXT_WEAPON_F3,
+    &TXT_WEAPON_F4,
+    &TXT_WEAPON_C2,
+    &TXT_WEAPON_C3,
+    &TXT_WEAPON_C4,
+    &TXT_WEAPON_M2,
+    &TXT_WEAPON_M3,
+    &TXT_WEAPON_M4,
+    &TXT_QUIETUS_PIECE,
+    &TXT_WRAITHVERGE_PIECE,
+    &TXT_BLOODSCOURGE_PIECE,
+    &BBA_BONED,
+    &BBA_CASTRA,
+    &BBA_CREAMED,
+    &BBA_DECIMAT,
+    &BBA_DESTRO,
+    &BBA_DICED,
+    &BBA_DISEMBO,
+    &BBA_FLATTE,
+    &BBA_JUSTICE,
+    &BBA_MADNESS,
+    &BBA_KILLED,
+    &BBA_MINCMEAT,
+    &BBA_MASSACR,
+    &BBA_MUTILA,
+    &BBA_REAMED,
+    &BBA_RIPPED,
+    &BBA_SLAUGHT,
+    &BBA_SMASHED,
+    &BBA_SODOMIZ,
+    &BBA_SPLATT,
+    &BBA_SQUASH,
+    &BBA_THROTTL,
+    &BBA_WASTED,
+    &BBA_BODYBAG,
+    &BBA_HELL,
+    &BBA_TOAST,
+    &BBA_SNUFF,
+    &BBA_HOSED,
+    &BBA_SPRAYED,
+    &BBA_DOGMEAT,
+    &BBA_BEATEN,
+    &BBA_EXCREMENT,
+    &BBA_HAMBURGER,
+    &BBA_SCROTUM,
+    &BBA_POPULATION,
+    &BBA_SUICIDE,
+    &BBA_DARWIN,
+    &MUSIC_E1M1,
+    &MUSIC_E1M2,
+    &MUSIC_E1M3,
+    &MUSIC_E1M4,
+    &MUSIC_E1M5,
+    &MUSIC_E1M6,
+    &MUSIC_E1M7,
+    &MUSIC_E1M8,
+    &MUSIC_E1M9,
+    &MUSIC_E2M1,
+    &MUSIC_E2M2,
+    &MUSIC_E2M3,
+    &MUSIC_E2M4,
+    &MUSIC_E2M5,
+    &MUSIC_E2M6,
+    &MUSIC_E2M7,
+    &MUSIC_E2M8,
+    &MUSIC_E2M9,
+    &MUSIC_E3M1,
+    &MUSIC_E3M2,
+    &MUSIC_E3M3,
+    &MUSIC_E3M4,
+    &MUSIC_E3M5,
+    &MUSIC_E3M6,
+    &MUSIC_E3M7,
+    &MUSIC_E3M8,
+    &MUSIC_E3M9,
+    &MUSIC_INTER,
+    &MUSIC_INTRO,
+    &MUSIC_BUNNY,
+    &MUSIC_VICTOR,
+    &MUSIC_INTROA,
+    &MUSIC_RUNNIN,
+    &MUSIC_STALKS,
+    &MUSIC_COUNTD,
+    &MUSIC_BETWEE,
+    &MUSIC_DOOM,
+    &MUSIC_THE_DA,
+    &MUSIC_SHAWN,
+    &MUSIC_DDTBLU,
+    &MUSIC_IN_CIT,
+    &MUSIC_DEAD,
+    &MUSIC_STLKS2,
+    &MUSIC_THEDA2,
+    &MUSIC_DOOM2,
+    &MUSIC_DDTBL2,
+    &MUSIC_RUNNI2,
+    &MUSIC_DEAD2,
+    &MUSIC_STLKS3,
+    &MUSIC_ROMERO,
+    &MUSIC_SHAWN2,
+    &MUSIC_MESSAG,
+    &MUSIC_COUNT2,
+    &MUSIC_DDTBL3,
+    &MUSIC_AMPIE,
+    &MUSIC_THEDA3,
+    &MUSIC_ADRIAN,
+    &MUSIC_MESSG2,
+    &MUSIC_ROMER2,
+    &MUSIC_TENSE,
+    &MUSIC_SHAWN3,
+    &MUSIC_OPENIN,
+    &MUSIC_EVIL,
+    &MUSIC_ULTIMA,
+    &MUSIC_READ_M,
+    &MUSIC_DM2TTL,
+    &MUSIC_DM2INT,
+    &TXT_BUDDHAON,
+    &TXT_BUDDHAOFF,
+    &OSPREEENDP,
+    &OSPREEENDS,
+    &OSPREEENDM,
+    &OSPREEREP,
+    &OSPREE1,
+    &OSPREE2,
+    &OSPREE3,
+    &OSPREE4,
+    &OSPREE5,
+    &OSPREE6,
+    &OBSPREE1,
+    &OBSPREE2,
+    &OBSPREE3,
+    &OBSPREE4,
+    &OBSPREE5,
+    &OBSPREE6,
+    &OMULTI2,
+    &OMULTI3,
+    &OMULTI4,
+    &OMULTI5,
+    &OMULTI6,
+    &OMULTI7,
+    &OMULTI8,
+    &OMULTI9,
+    &OMULTI10,
+    &OMULTI11,
+};

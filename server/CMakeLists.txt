@@ -1,4 +1,3 @@
-include(OdamexCopyWad)
 include(OdamexTargetSettings)
 
 # use unquoted #defines
@@ -40,21 +39,25 @@ endif()
 add_executable(odasrv
   ${COMMON_SOURCES} ${SERVER_SOURCES} ${SERVER_WIN32_SOURCES})
 odamex_target_settings(odasrv)
-
-if(USE_INTERNAL_JSONCPP)
-  set_property(TARGET odasrv PROPERTY CXX_STANDARD 98)
-else()
-  set_property(TARGET odasrv PROPERTY CXX_STANDARD 11)
-endif()
+odamex_target_errors(odasrv)
 
 target_include_directories(odasrv PRIVATE src)
 if(WIN32)
   target_include_directories(odasrv PRIVATE win32)
+
+  # We need to call SetProcessInformation to disable power throttling,
+  # but the API itself doesn't exist until Windows 8.  Here we set the minimum
+  # Windows version to 8.  (Windows Server 2012, BTW)
+  target_compile_definitions(odasrv PRIVATE _WIN32_WINNT=0x0602)
+
+  # We supply our own manifest, don't use the default one.
+  set_target_properties(odasrv PROPERTIES LINK_FLAGS "/MANIFEST:NO")
 endif()
-target_link_libraries(odasrv ZLIB::ZLIB odamex-common odaproto)
+
+target_link_libraries(odasrv fmt::fmt tinylibs ZLIB::ZLIB odamex-common odaproto minilzo cpptrace::cpptrace)
 
 if(USE_INTERNAL_JSONCPP)
-  target_link_libraries(odasrv jsoncpp_lib_static)
+  target_link_libraries(odasrv jsoncpp_static)
 else()
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(JSONCPP jsoncpp REQUIRED IMPORTED_TARGET)
@@ -83,8 +86,6 @@ endif()
 if(UNIX AND NOT APPLE)
   target_link_libraries(odasrv rt)
 endif()
-
-odamex_copy_wad(odasrv)
 
 if(APPLE)
 elseif(WIN32)

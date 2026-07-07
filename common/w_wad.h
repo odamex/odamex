@@ -25,5 +25,5 @@
 #pragma once
 
 unsigned	W_ReadChunk (const char *file, unsigned offs, unsigned len, void *dest, unsigned &filelen);
-fhfprint_s  W_FarmHash128(const byte* lumpdata, int length);
+fhfprint_t  W_FarmHash128(const byte* lumpdata, int length);
 OMD5Hash W_MD5(const std::string& filename);

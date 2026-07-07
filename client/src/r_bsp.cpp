@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,6 +32,7 @@
 #include "r_plane.h"
 #include "r_draw.h"
 #include "r_things.h"
+#include "r_sky.h"
 #include "p_local.h"
 #include "r_sky.h"
 #include "m_vectors.h"
@@ -42,7 +43,7 @@
 
 EXTERN_CVAR (r_particles)
 
-seg_t*			curline;
+const seg_t*	curline;
 side_t* 		sidedef;
 line_t* 		linedef;
 sector_t*		frontsector;
@@ -62,12 +63,13 @@ fixed_t			rw_frontfz1, rw_frontfz2;
 
 int rw_start, rw_stop;
 
-static BYTE		FakeSide;
+static byte		FakeSide;
 
 const fixed_t NEARCLIP = 2*FRACUNIT;
 
 drawseg_t*		ds_p;
 drawseg_t*		drawsegs;
+drawseg_t*		firstdrawseg;
 unsigned		maxdrawsegs;
 
 // CPhipps -
@@ -93,11 +95,13 @@ void R_ReallocDrawSegs(void)
 	if (ds_p == drawsegs+maxdrawsegs)		// killough 1/98 -- fix 2s line HOM
 	{
 		unsigned pos = ds_p - drawsegs;	// jff 8/9/98 fix from ZDOOM1.14a
+		unsigned firstofs = firstdrawseg - drawsegs;
 		unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128; // killough
-		drawsegs = (drawseg_t*)Realloc(drawsegs, newmax*sizeof(*drawsegs));
+		drawsegs = static_cast<drawseg_t*>(M_Realloc(drawsegs, newmax*sizeof(*drawsegs)));
+		firstdrawseg = drawsegs + firstofs;
 		ds_p = drawsegs + pos;				// jff 8/9/98 fix from ZDOOM1.14a
 		maxdrawsegs = newmax;
-		DPrintf("MaxDrawSegs increased to %d\n", maxdrawsegs);
+		DPrintFmt("MaxDrawSegs increased to {}\n", maxdrawsegs);
 	}
 }
 
@@ -106,6 +110,11 @@ void R_ReallocDrawSegs(void)
 //
 void R_ClearDrawSegs(void)
 {
+	if (drawsegs == NULL)
+	{
+		maxdrawsegs = 256;
+		firstdrawseg = drawsegs = static_cast<drawseg_t*>(M_Malloc(maxdrawsegs * sizeof(drawseg_t)));
+	}
 	ds_p = drawsegs;
 }
 
@@ -127,9 +136,9 @@ static void R_ClipWallSegment(int first, int last, bool makesolid)
 		{
 			// find the first remaining non-solid column
 			// if all columns remaining are solid, we're done
-			byte* p = (byte*)memchr(solidcol + first, 0, last - first + 1);
+			byte* p = static_cast<byte*>(memchr(solidcol + first, 0, last - first + 1));
 			if (p == NULL)
-				return; 
+				return;
 
 			first = p - solidcol;
 		}
@@ -137,7 +146,7 @@ static void R_ClipWallSegment(int first, int last, bool makesolid)
 		{
 			int to;
 			// find where the span of non-solid columns ends
-			byte* p = (byte*)memchr(solidcol + first, 1, last - first + 1);
+			byte* p = static_cast<byte*>(memchr(solidcol + first, 1, last - first + 1));
 			if (p == NULL)
 				to = last;
 			else
@@ -223,7 +232,8 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 		return sec;
 
 	const sector_t* s = sec->heightsec;
-	sector_t *heightsec = camera->subsector->sector->heightsec;
+
+	sector_t* heightsec = viewsector->heightsec;
 
 	bool underwater = r_fakingunderwater ||
 		(heightsec && viewz <= P_FloorHeight(viewx, viewy, heightsec));
@@ -304,7 +314,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 			// will any columns of this window be visible or will they be blocked
 			// by 1s lines and closed doors?
 			if (memchr(solidcol + rw_start, 0, rw_stop - rw_start + 1) != NULL)
-			{	
+			{
 				doorunderwater = true;
 				r_fakingunderwater = true;
 			}
@@ -439,7 +449,7 @@ sector_t *R_FakeFlat(sector_t *sec, sector_t *tempsec,
 // Clips the given segment
 // and adds any visible pieces to the line list.
 //
-void R_AddLine (seg_t *line)
+void R_AddLine (const seg_t *line)
 {
 	curline = line;
 
@@ -495,11 +505,11 @@ void R_AddLine (seg_t *line)
 
 		// if door is closed because back is shut:
 		((rw_backcz1 <= rw_backfz1 && rw_backcz2 <= rw_backfz2) &&
-		
+
 		// preserve a kind of transparent door/lift special effect:
 		((rw_backcz1 >= rw_frontcz1 && rw_backcz2 >= rw_frontcz2) ||
 		 line->sidedef->toptexture) &&
-		
+
 		((rw_backfz1 <= rw_frontfz1 && rw_backfz2 <= rw_frontfz2) ||
 		 line->sidedef->bottomtexture) &&
 
@@ -554,7 +564,7 @@ void R_AddLine (seg_t *line)
 }
 
 
-static const int checkcoord[12][4] = // killough -- static const
+static constexpr int checkcoord[12][4] = // killough -- static const
 {
 	{3,0,2,1},
 	{3,0,2,0},
@@ -619,7 +629,7 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 	{
 		v2fixed_t p1 = box_pts[i][0];
 		v2fixed_t p2 = box_pts[i][1];
-		
+
 		if (R_PointOnLine(0, 0, p1.x, p1.y, p2.x, p2.y))
 			return true;
 
@@ -631,7 +641,7 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 			int x2 = R_ProjectPointX(p2.x, p2.y) - 1;
 			if (R_CheckProjectionX(x1, x2))
 			{
-				if (memchr(solidcol + x1, 0, x2 - x1 + 1) != NULL)	
+				if (memchr(solidcol + x1, 0, x2 - x1 + 1) != NULL)
 					return true;
 			}
 		}
@@ -639,6 +649,8 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 
 	return false;
 }
+
+EXTERN_CVAR(r_thingsectorlight)
 
 //
 // R_Subsector
@@ -648,24 +660,21 @@ static bool R_CheckBBox(const fixed_t *bspcoord)
 //
 void R_Subsector (int num)
 {
-	int 		 count;
-	seg_t*		 line;
-	subsector_t *sub;
 	sector_t     tempsec;				// killough 3/7/98: deep water hack
 	int          floorlightlevel;		// killough 3/16/98: set floor lightlevel
 	int          ceilinglightlevel;		// killough 4/11/98
 
 #ifdef RANGECHECK
     if (num>=numsubsectors)
-		I_Error ("R_Subsector: ss %i with numss = %i",
-				 num,
-				 numsubsectors);
+		I_Error("R_Subsector: ss {} with numss = {}",
+				num,
+				numsubsectors);
 #endif
 
-	sub = &subsectors[num];
-	frontsector = sub->sector;
-	count = sub->numlines;
-	line = &segs[sub->firstline];
+	const subsector_t& sub = subsectors[num];
+	frontsector = sub.sector;
+	int count = sub.numlines;
+	const seg_t* line = &segs[sub.firstline];
 
 	// killough 3/8/98, 4/4/98: Deep water / fake ceiling effect
 	frontsector = R_FakeFlat(frontsector, &tempsec, &floorlightlevel,
@@ -673,40 +682,42 @@ void R_Subsector (int num)
 
 	basecolormap = frontsector->colormap->maps;
 
-
-	ceilingplane = P_CeilingHeight(camera) > viewz ||
-		R_ResourceIdIsSkyFlat(frontsector->ceiling_res_id) || 
-		(frontsector->heightsec && 
-		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) && 
+	ceilingplane = P_CeilingHeight(viewx, viewy, frontsector) > viewz ||
+		R_ResourceIdIsSkyFlat(frontsector->ceiling_res_id) ||
+		(frontsector->heightsec &&
+		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 		R_ResourceIdIsSkyFlat(frontsector->heightsec->floor_res_id)) ?
 		R_FindPlane(frontsector->ceilingplane,		// killough 3/8/98
 					frontsector->ceiling_res_id,
-					frontsector->sky,
+					R_ResourceIdIsSkyFlat(frontsector->ceiling_res_id) &&  // killough 10/98
+						(frontsector->sky & PL_SKYFLAT) ? frontsector->sky : 0,
 					ceilinglightlevel,				// killough 4/11/98
 					frontsector->ceiling_xoffs,		// killough 3/7/98
 					frontsector->ceiling_yoffs + frontsector->base_ceiling_yoffs,
 					frontsector->ceiling_xscale,
 					frontsector->ceiling_yscale,
-					frontsector->ceiling_angle + frontsector->base_ceiling_angle
+					frontsector->ceiling_angle + frontsector->base_ceiling_angle,
+					frontsector->Skybox
 					) : NULL;
 
 	// killough 3/7/98: Add (x,y) offsets to flats, add deep water check
 	// killough 3/16/98: add floorlightlevel
 	// killough 10/98: add support for skies transferred from sidedefs
-
-	floorplane = P_FloorHeight(camera) < viewz || // killough 3/7/98
+	floorplane = P_FloorHeight(viewx, viewy, frontsector) < viewz || // killough 3/7/98
 		(frontsector->heightsec &&
 		!(frontsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
 		R_ResourceIdIsSkyFlat(frontsector->heightsec->ceiling_res_id)) ?
 		R_FindPlane(frontsector->floorplane,
 					frontsector->floor_res_id,
-					frontsector->sky,
+					R_ResourceIdIsSkyFlat(frontsector->floor_res_id) &&  // killough 10/98
+						(frontsector->sky & PL_SKYFLAT) ? frontsector->sky : 0,
 					floorlightlevel,				// killough 3/16/98
 					frontsector->floor_xoffs,		// killough 3/7/98
 					frontsector->floor_yoffs + frontsector->base_floor_yoffs,
 					frontsector->floor_xscale,
 					frontsector->floor_yscale,
-					frontsector->floor_angle + frontsector->base_floor_angle
+					frontsector->floor_angle + frontsector->base_floor_angle,
+					frontsector->Skybox
 					) : NULL;
 
 	// [RH] set foggy flag
@@ -717,25 +728,27 @@ void R_Subsector (int num)
 	// killough 9/18/98: Fix underwater slowdown, by passing real sector
 	// instead of fake one. Improve sprite lighting by basing sprite
 	// lightlevels on floor & ceiling lightlevels in the surrounding area.
-	R_AddSprites (sub->sector, (floorlightlevel + ceilinglightlevel) / 2, FakeSide);
+	const int lightlevel = r_thingsectorlight ?
+		(floorlightlevel + ceilinglightlevel) / 2 : frontsector->lightlevel;
+	R_AddSprites(sub.sector, lightlevel, FakeSide);
 
 	// [RH] Add particles
 	if (r_particles)
 	{
-		for (WORD i = ParticlesInSubsec[num]; i != NO_PARTICLE; i = Particles[i].nextinsubsector)
+		for (uint16_t i = ParticlesInSubsec[num]; i != NO_PARTICLE; i = Particles[i].nextinsubsector)
 			R_ProjectParticle(Particles + i, subsectors[num].sector, FakeSide);
-	}		
+	}
 
-	if (sub->poly)
+	if (sub.poly)
 	{ // Render the polyobj in the subsector first
-		int polyCount = sub->poly->numsegs;
-		seg_t **polySeg = sub->poly->segs;
+		int polyCount = sub.poly->numsegs;
+		seg_t **polySeg = sub.poly->segs;
 		while (polyCount--)
 			R_AddLine (*polySeg++);
 	}
-	
+
 	while (count--)
-		R_AddLine (line++);
+		R_AddLine(line++);
 }
 
 

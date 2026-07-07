@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@
 #include "odamex.h"
 
 #include "win32inc.h"
-#if defined(_WIN32) && !defined(_XBOX)
+#if defined(_WIN32)
 #include <mmsystem.h>
 #endif
 
@@ -41,15 +41,17 @@
 #include "i_musicsystem_portmidi.h"
 #endif
 #include "i_musicsystem_sdl.h"
+#include "i_musicsystem_adlmidi.h"
 
 MusicSystem* musicsystem = NULL;
 MusicSystemType current_musicsystem_type = MS_NONE;
 
 void S_StopMusic();
-void S_ChangeMusic (std::string musicname, int looping);
+void S_ChangeMusic (std::string musicname, bool looping, int order = 0);
 
 EXTERN_CVAR (snd_musicvolume)
 EXTERN_CVAR (snd_musicsystem)
+EXTERN_CVAR (snd_nomusic)
 
 
 std::string currentmusic;
@@ -66,7 +68,7 @@ std::string currentmusic;
 //
 void I_ResetMidiVolume()
 {
-	#if defined(_WIN32) && !defined(_XBOX)
+	#if defined(_WIN32)
 	SDL_LockAudio();
 
 	for (UINT device = MIDI_MAPPER; device != midiOutGetNumDevs(); device++)
@@ -76,7 +78,7 @@ void I_ResetMidiVolume()
 		MMRESULT result = midiOutGetDevCaps(device, &caps, sizeof(caps));
 
 		// Set the midi device's volume
-		static const DWORD volume = 0xFFFFFFFF;		// maximum volume
+		static constexpr DWORD volume = 0xFFFFFFFF;		// maximum volume
 		if (result == MMSYSERR_NOERROR && (caps.dwSupport & MIDICAPS_VOLUME))
 			midiOutSetVolume((HMIDIOUT)device, volume);
 	}
@@ -108,7 +110,7 @@ void I_InitMusic(MusicSystemType musicsystem_type)
 	I_ShutdownMusic();
 	I_ResetMidiVolume();
 
-	if (I_IsHeadless() || Args.CheckParm("-nosound") || Args.CheckParm("-nomusic") || snd_musicsystem == MS_NONE)
+	if (I_IsHeadless() || Args.CheckParm("-nosound") || Args.CheckParm("-nomusic") || snd_musicsystem == MS_NONE || snd_nomusic)
 	{
 		// User has chosen to disable music
 		musicsystem = new SilentMusicSystem();
@@ -116,7 +118,7 @@ void I_InitMusic(MusicSystemType musicsystem_type)
 		return;
 	}
 
-	switch ((int)musicsystem_type)
+	switch (musicsystem_type)
 	{
 		#ifdef OSX
 		case MS_AUDIOUNIT:
@@ -129,6 +131,10 @@ void I_InitMusic(MusicSystemType musicsystem_type)
 			musicsystem = new PortMidiMusicSystem();
 			break;
 		#endif	// PORTMIDI
+
+		case MS_LIBADLMIDI:
+			musicsystem = new AdlMidiMusicSystem();
+			break;
 
 		case MS_SDLMIXER:	// fall through
 		default:
@@ -150,7 +156,7 @@ void STACK_ARGS I_ShutdownMusic(void)
 
 CVAR_FUNC_IMPL (snd_musicsystem)
 {
-	if ((int)current_musicsystem_type == snd_musicsystem.asInt())
+	if (current_musicsystem_type == snd_musicsystem)
 		return;
 
 	if (musicsystem)
@@ -159,9 +165,29 @@ CVAR_FUNC_IMPL (snd_musicsystem)
 		S_StopMusic();
 	}
 	I_InitMusic();
-	
+
 	if (level.music.empty())
-		S_ChangeMusic(currentmusic.c_str(), true);	
+		S_ChangeMusic(currentmusic, true);
+	else
+		S_ChangeMusic(std::string(level.music.c_str(), 8), true);
+}
+
+CVAR_FUNC_IMPL (snd_nomusic)
+{
+	if (musicsystem)
+	{
+		I_ShutdownMusic();
+		S_StopMusic();
+	}
+	I_InitMusic();
+
+	// if we're disabling music,
+	// this will print the music disabled message twice without the early return
+	if (var)
+		return;
+
+	if (level.music.empty())
+		S_ChangeMusic(currentmusic, true);
 	else
 		S_ChangeMusic(std::string(level.music.c_str(), 8), true);
 }
@@ -182,18 +208,18 @@ static MusicSystemType I_SelectMusicSystem(byte *data, size_t length)
 	bool ismidi = (Res_MusicIsMus(data, length) || Res_MusicIsMidi(data, length));
 
 	if (ismidi)
-		return static_cast<MusicSystemType>(snd_musicsystem.asInt());
+		return snd_musicsystem.asEnum<MusicSystemType>();
 
 	// Non-midi music always uses SDL_Mixer (for now at least)
 	return MS_SDLMIXER;
 }
 
-void I_PlaySong(byte* data, size_t length, bool loop)
+void I_PlaySong(const OByteSpan data, const bool loop, const int order)
 {
 	if (!musicsystem)
 		return;
 
-	MusicSystemType newtype = I_SelectMusicSystem(data, length);
+	MusicSystemType newtype = I_SelectMusicSystem(data.data(), data.size());
 	if (newtype != current_musicsystem_type)
 	{
 		if (musicsystem)
@@ -204,7 +230,7 @@ void I_PlaySong(byte* data, size_t length, bool loop)
 		I_InitMusic(newtype);
 	}
 
-	musicsystem->startSong(data, length, loop);
+	musicsystem->startSong(data.data(), data.size(), loop, order);
 
 	// Hack for problems with Windows Vista/7 & SDL_Mixer
 	// See comment for I_ResetMidiVolume().

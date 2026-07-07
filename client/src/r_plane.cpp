@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -37,11 +37,13 @@
 #include <math.h>
 
 #include "z_zone.h"
-
+#include "w_wad.h"
+#include "m_mempool.h"
 
 #include "p_local.h"
 #include "r_local.h"
 #include "r_sky.h"
+#include "p_mapformat.h"
 
 #include "m_alloc.h"
 #include "i_video.h"
@@ -57,12 +59,14 @@ planefunction_t 		ceilingfunc;
 // Here comes the obnoxious "visplane".
 #define MAXVISPLANES 128    /* must be a power of 2 */
 
-static const float flatwidth = 64.0f;
-static const float flatheight = 64.0f;
+static constexpr float flatwidth = 64.0f;
+static constexpr float flatheight = 64.0f;
 
-static visplane_t		*visplanes[MAXVISPLANES];	// killough
+static visplane_t		*visplanes[MAXVISPLANES + 1];	// killough
 static visplane_t		*freetail;					// killough
 static visplane_t		**freehead = &freetail;		// killough
+
+static bool r_InSkyBox;
 
 visplane_t 				*floorplane;
 visplane_t 				*ceilingplane;
@@ -72,23 +76,23 @@ visplane_t				*skyplane;
 // Empirically verified to be fairly uniform:
 
 #define visplane_hash(picnum,lightlevel,secplane) \
-  ((unsigned)((picnum)*3+(lightlevel)+(secplane.d)*7) & (MAXVISPLANES-1))
+  (static_cast<unsigned>((picnum)*3+(lightlevel)+(secplane.d)*7) & (MAXVISPLANES-1))
 
 //
 // Clip values are the solid pixel bounding the range.
 //	floorclip starts out SCREENHEIGHT-1
 //	ceilingclip starts out 0
 //
-int     				*floorclip;
-int 					*ceilingclip;
-int						*floorclipinitial;
-int						*ceilingclipinitial;
+std::unique_ptr<int[]> floorclip;
+std::unique_ptr<int[]> ceilingclip;
+std::unique_ptr<int[]> floorclipinitial;
+std::unique_ptr<int[]> ceilingclipinitial;
 
 //
 // spanstart holds the start of a plane span
 // initialized to 0 at start
 //
-int 					*spanstart;
+std::unique_ptr<int[]> spanstart;
 
 //
 // texture mapping
@@ -96,11 +100,12 @@ int 					*spanstart;
 extern fixed_t FocalLengthX, FocalLengthY;
 extern float xfoc, yfoc;
 extern float focratio, ifocratio;
+extern Pool<int> sprclip_pool;
 
 int*					planezlight;
 float					plight, shade;
 
-fixed_t 				*yslope;
+std::unique_ptr<fixed_t[]> yslope;
 static fixed_t			planeheight;
 
 static fixed_t			pl_xscale, pl_yscale;
@@ -139,12 +144,12 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 	v3float_t s;
 	s.x = x1 - centerx;
 	s.y = y - centery + 1.0f;
-	s.z = xfoc; 
+	s.z = xfoc;
 
 	dspan.iu = M_DotProductVec3f(&s, &a) * flatwidth;
 	dspan.iv = M_DotProductVec3f(&s, &b) * flatheight;
 	dspan.id = M_DotProductVec3f(&s, &c);
-	
+
 	dspan.iustep = a.x * flatwidth;
 	dspan.ivstep = b.x * flatheight;
 	dspan.idstep = c.x;
@@ -175,16 +180,16 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 
 		for (int i = 0; i < len; i++)
 		{
-			int index = (int)(map >> FRACBITS) + 1;
+			int index = static_cast<int>(map >> FRACBITS) + 1;
 			index -= (foggy ? 0 : extralight << 2);
-			
+
 			if (index < 0)
 				dspan.slopelighting[i] = basecolormap;
 			else if (index >= NUMCOLORMAPS)
 				dspan.slopelighting[i] = basecolormap.with((NUMCOLORMAPS - 1));
 			else
 				dspan.slopelighting[i] = basecolormap.with(index);
-			
+
 			map += step;
 		}
 	}
@@ -216,7 +221,7 @@ void R_MapSlopedPlane(int y, int x1, int x2)
 void R_MapLevelPlane(int y, int x1, int x2)
 {
 	fixed_t distance = FixedMul(planeheight, yslope[y]);
-	fixed_t slope = (fixed_t)(focratio * FixedDiv(planeheight, abs(centery - y) << FRACBITS));
+	fixed_t slope = static_cast<fixed_t>(focratio * FixedDiv(planeheight, abs(centery - y) << FRACBITS));
 
 	dspan.ustep = FixedMul(pl_xstepscale, slope);
 	dspan.vstep = FixedMul(pl_ystepscale, slope);
@@ -254,15 +259,18 @@ void R_MapLevelPlane(int y, int x1, int x2)
 // R_ClearPlanes
 // At begining of frame.
 //
-void R_ClearPlanes (void)
+void R_ClearPlanes(bool fullclear)
 {
-	// opening / clipping determination
-	memcpy(floorclip, floorclipinitial, viewwidth * sizeof(*floorclip));
-	memcpy(ceilingclip, ceilingclipinitial, viewwidth * sizeof(*ceilingclip));
-
 	for (int i = 0; i < MAXVISPLANES; i++)	// new code -- killough
 		for (*freehead = visplanes[i], visplanes[i] = NULL; *freehead; )
 			freehead = &(*freehead)->next;
+
+	if (fullclear)
+	{
+		// opening / clipping determination
+		memcpy(floorclip.get(), floorclipinitial.get(), viewwidth * sizeof(floorclip[0]));
+		memcpy(ceilingclip.get(), ceilingclipinitial.get(), viewwidth * sizeof(ceilingclip[0]));
+	}
 }
 
 //
@@ -276,7 +284,7 @@ static visplane_t *new_visplane(unsigned hash)
 
 	if (!check)
 	{
-		check = (visplane_t *)Calloc(1, sizeof(*check) + sizeof(*check->top)*2*I_GetSurfaceWidth());
+		check = static_cast<visplane_t*>(M_Calloc(1, sizeof(*check) + sizeof(*check->top)*2*I_GetSurfaceWidth()));
 		check->bottom = &check->top[I_GetSurfaceWidth() + 2];
 	}
 	else
@@ -294,28 +302,43 @@ static visplane_t *new_visplane(unsigned hash)
 // killough 2/28/98: Add offsets
 //
 visplane_t* R_FindPlane(
-		plane_t secplane,
+		const plane_t& secplane,
 		ResourceId res_id,
 		uint32_t sky_transfer,
 		int lightlevel,
 		fixed_t xoffs, fixed_t yoffs,
 		fixed_t xscale, fixed_t yscale,
-		angle_t angle)
+		angle_t angle,
+		AActor::AActorPtr skybox)
 {
 	visplane_t *check;
 	unsigned hash;						// killough
+	bool isskybox;
 
 
-	if (R_ResourceIdIsSkyFlat(res_id))
+	if (R_ResourceIdIsSkyFlat(res_id) || (sky_transfer & PL_SKYFLAT))  // killough 10/98
 	{
 		lightlevel = 0;		// most skies map together
+		isskybox = R_ResourceIdIsSkyFlat(res_id) && (skybox != NULL) && !r_InSkyBox;
+	}
+	else
+	{
+		isskybox = false;
 	}
 
 	// New visplane algorithm uses hash table -- killough
-	hash = visplane_hash(res_id, lightlevel, secplane);
+	hash = isskybox ? MAXVISPLANES : visplane_hash(res_id, lightlevel, secplane);
 
-	for (check = visplanes[hash]; check; check = check->next)	// killough
-		if (P_IdenticalPlanes(&secplane, &check->secplane) &&
+	for (check = visplanes[hash]; check; check = check->next) // killough
+	{
+		if (isskybox)
+		{
+			if (skybox == check->skybox)
+			{
+				return check;
+			}
+		}
+		else if (P_IdenticalPlanes(&secplane, &check->secplane) &&
 			res_id == check->res_id &&
 			sky_transfer == check->sky_transfer &&
 			lightlevel == check->lightlevel &&
@@ -326,7 +349,10 @@ visplane_t* R_FindPlane(
 			yscale == check->yscale &&
 			angle == check->angle
 			)
-		  return check;
+		{
+			return check;
+		}
+	}
 
 	check = new_visplane (hash);		// killough
 
@@ -340,6 +366,7 @@ visplane_t* R_FindPlane(
 	check->yscale = yscale;
 	check->angle = angle;
 	check->colormap = basecolormap;		// [RH] Save colormap
+	check->skybox = skybox;
 	check->minx = viewwidth;			// Was SCREENWIDTH -- killough 11/98
 	check->maxx = -1;
 
@@ -381,7 +408,7 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 		intrh = stop;
 	}
 
-	for (x = intrl ; x <= intrh && pl->top[x] == (unsigned int)viewheight; x++)
+	for (x = intrl ; x <= intrh && pl->top[x] == static_cast<unsigned int>(viewheight); x++)
 		;
 
 	if (x > intrh)
@@ -393,8 +420,17 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 	else
 	{
 		// make a new visplane
-		unsigned hash = visplane_hash(pl->res_id, pl->lightlevel, pl->secplane);
-		visplane_t *new_pl = new_visplane(hash);
+		unsigned hash;
+
+		if (R_ResourceIdIsSkyFlat(pl->res_id) && pl->skybox != NULL && !r_InSkyBox)
+		{
+			hash = MAXVISPLANES;
+		}
+		else
+		{
+			hash = visplane_hash(pl->res_id, pl->lightlevel, pl->secplane);
+		}
+		visplane_t *new_pl = new_visplane (hash);
 
 		new_pl->secplane = pl->secplane;
 		new_pl->res_id = pl->res_id;
@@ -406,6 +442,7 @@ visplane_t* R_CheckPlane(visplane_t* pl, int start, int stop)
 		new_pl->yscale = pl->yscale;
 		new_pl->angle = pl->angle;
 		new_pl->colormap = pl->colormap;	// [RH] Copy colormap
+		new_pl->skybox = pl->skybox;
 		pl = new_pl;
 		pl->minx = start;
 		pl->maxx = stop;
@@ -425,7 +462,7 @@ void R_MakeSpans(visplane_t *pl, void(*spanfunc)(int, int, int))
 		unsigned int b1 = pl->bottom[x-1];
 		unsigned int t2 = pl->top[x];
 		unsigned int b2 = pl->bottom[x];
-		
+
 		for (; t1 < t2 && t1 <= b1; t1++)
 			spanfunc(t1, spanstart[t1], x-1);
 		for (; b1 > b2 && b1 >= t1; b1--)
@@ -504,15 +541,15 @@ void R_DrawSlopedPlane(visplane_t *pl)
 
 	// Translate the points to their position relative to viewx, viewy and
 	// rotate them based on viewangle
-	angle_t rotation = (angle_t)(-(int)viewangle + ANG90);
+	angle_t rotation = static_cast<angle_t>(-static_cast<int>(viewangle) + ANG90);
 	M_TranslateVec3f(&p, &viewpos, rotation);
 	M_TranslateVec3f(&t, &viewpos, rotation);
 	M_TranslateVec3f(&s, &viewpos, rotation);
-	
+
 	// Subtract p from t and s, making t and s into direction vectors
 	M_SubVec3f(&t, &t, &p);
 	M_SubVec3f(&s, &s, &p);
-	
+
 	M_CrossProductVec3f(&a, &p, &s);
 	M_CrossProductVec3f(&b, &t, &p);
 	M_CrossProductVec3f(&c, &t, &s);
@@ -523,9 +560,9 @@ void R_DrawSlopedPlane(visplane_t *pl)
 
 	a.y *= ifocratio;
 	b.y *= ifocratio;
-	c.y *= ifocratio;		
-	
-	// (SoM) More help from randy. I was totally lost on this... 
+	c.y *= ifocratio;
+
+	// (SoM) More help from randy. I was totally lost on this...
 	float scalenumer = FIXED2FLOAT(finetangent[FINEANGLES/4+CorrectFieldOfView/2]);
 	float ixscale = scalenumer / flatwidth;
 	float iyscale = scalenumer / flatheight;
@@ -535,12 +572,12 @@ void R_DrawSlopedPlane(visplane_t *pl)
 	angle_t fovang = ANG(consoleplayer().fov / 2.0f);
 	float slopetan = FIXED2FLOAT(finetangent[fovang >> ANGLETOFINESHIFT]);
 	float slopevis = 8.0 * slopetan * 16.0 * 320.0 / float(I_GetSurfaceWidth());
-	
+
 	plight = (slopevis * ixscale * iyscale) / (zat - viewpos.z);
 	shade = 256.0 * 2.0 - (pl->lightlevel + 16.0) * 256.0 / 128.0;
 
 	basecolormap = pl->colormap;	// [RH] set basecolormap
-   
+
 	R_MakeSpans(pl, R_MapSlopedPlane);
 }
 
@@ -566,16 +603,24 @@ void R_DrawLevelPlane(visplane_t *pl)
 	// values for angle 0. This helps the texture to line up correctly.
 	if (pl->angle == 0)
 	{
-		pl_viewx = viewx;
-		pl_viewy = -viewy;
+		pl_viewx = pl->xoffs + viewx;
+		pl_viewy = pl->yoffs - viewy;
 	}
 	else
 	{
 		const fixed_t pl_cos = finecosine[pl->angle >> ANGLETOFINESHIFT];
 		const fixed_t pl_sin = finesine[pl->angle >> ANGLETOFINESHIFT];
-		
-		pl_viewx = FixedMul(viewx, pl_cos) - FixedMul(viewy, pl_sin);
-		pl_viewy = -(FixedMul(viewx, pl_sin) + FixedMul(viewy, pl_cos));
+
+		if (map_format.getZDoom())
+		{
+			pl_viewx = pl->xoffs + FixedMul(viewx, pl_cos) - FixedMul(viewy, pl_sin);
+			pl_viewy = pl->yoffs - (FixedMul(viewx, pl_sin) + FixedMul(viewy, pl_cos));
+		}
+		else
+		{
+			pl_viewx = FixedMul(viewx + pl->xoffs, pl_cos) - FixedMul(viewy - pl->yoffs, pl_sin);
+			pl_viewy = -(FixedMul(viewx + pl->xoffs, pl_sin) + FixedMul(viewy - pl->yoffs, pl_cos));
+		}
 	}
 
 	// cache a calculation used by R_MapLevelPlane
@@ -617,7 +662,7 @@ void R_DrawPlanes()
 				continue;
 
 			const ResourceId res_id = Res_GetAnimatedTextureResourceId(pl->res_id);
-			if (R_ResourceIdIsSkyFlat(res_id))
+			if (R_ResourceIdIsSkyFlat(res_id) || (pl->sky_transfer & PL_SKYFLAT))
 			{
 				R_RenderSkyRange(pl);
 			}
@@ -652,7 +697,7 @@ void R_DrawPlanes()
 					else
 					{
 						if (!warpedflats[useflatnum])
-							warpedflats[useflatnum] = (byte*)Z_Malloc(64*64, PU_STATIC, &warpedflats[useflatnum]);
+							warpedflats[useflatnum] = Z_Malloc<byte>(64*64, PU_STATIC, &warpedflats[useflatnum]);
 
 						static byte buffer[64];
 						int timebase = level.time*23;
@@ -698,6 +743,125 @@ void R_DrawPlanes()
 	}
 }
 
+//==========================================================================
+//
+// R_DrawSkyBoxes
+//
+// Draws any recorded sky boxes and then frees them.
+//
+// The process:
+//   1. Move the camera to coincide with the SkyViewpoint.
+//   2. Clear out the old planes. (They have already been drawn.)
+//   3. Clear a window out of the ClipSegs just large enough for the plane.
+//   4. Pretend the existing vissprites and drawsegs aren't there.
+//   5. Create a drawseg at 0 distance to clip sprites to the visplane. It
+//      doesn't need to be associated with a line in the map, since there
+//      will never be any sprites in front of it.
+//   6. Render the BSP, then planes, then masked stuff.
+//   7. Restore the previous vissprites and drawsegs.
+//   8. Repeat for any other sky boxes.
+//   9. Put the camera back where it was to begin with.
+//
+//==========================================================================
+
+void R_DrawSkyBoxes()
+{
+	if (visplanes[MAXVISPLANES] == NULL)
+		return;
+
+	int savedextralight = extralight;
+	fixed_t savedx = viewx;
+	fixed_t savedy = viewy;
+	fixed_t savedz = viewz;
+	angle_t savedangle = viewangle;
+	ptrdiff_t savedvissprite_p = vissprite_p - vissprites;
+	ptrdiff_t savedds_p = ds_p - drawsegs;
+	AActor* savedcamera = camera;
+
+	int i;
+	visplane_t* pl;
+
+	// Don't draw sky boxes inside sky boxes.
+	r_InSkyBox = true;
+
+	// Don't let gun flashes brighten the sky box
+	extralight = 0;
+
+	for (pl = visplanes[MAXVISPLANES]; pl != NULL; pl = pl->next)
+	{
+		if (pl->maxx < pl->minx)
+			continue;
+
+		AActor* sky = pl->skybox;
+
+		viewx = sky->x;
+		viewy = sky->y;
+		viewz = sky->z;
+		camera = sky;
+		R_SetViewAngle(savedangle + sky->angle);
+		validcount++; // Make sure we see all sprites
+
+		R_ClearPlanes(false);
+		R_ClearClipSegs();
+
+		// Set up ceiling/floor clip arrays for this visplane.
+		for (i = pl->minx; i <= pl->maxx; i++)
+		{
+			if (pl->top[i] == static_cast<unsigned int>(viewheight))
+			{
+				ceilingclip[i] = viewheight;
+				floorclip[i] = -1;
+			}
+			else
+			{
+				ceilingclip[i] = pl->top[i];
+				floorclip[i] = pl->bottom[i] + 1;
+			}
+		}
+
+		// Create a drawseg to clip sprites to the sky plane.
+		R_ReallocDrawSegs();
+		ds_p->x1 = 0;
+		ds_p->x2 = viewwidth - 1;
+		ds_p->silhouette = SIL_BOTH;
+		ds_p->midposts = NULL;
+		ds_p->midscales = NULL;
+		ds_p->curline = NULL;
+
+		// [RK] Allocate full width clip arrays.
+		ds_p->sprbottomclip = sprclip_pool.alloc(viewwidth);
+		ds_p->sprtopclip = sprclip_pool.alloc(viewwidth);
+
+		// [RK] Copy visplane clip values into the arrays.
+		memcpy(ds_p->sprbottomclip, floorclip.get(), viewwidth * sizeof(*ds_p->sprbottomclip));
+		memcpy(ds_p->sprtopclip, ceilingclip.get(), viewwidth * sizeof(*ds_p->sprtopclip));
+
+		firstvissprite = vissprite_p;
+		firstdrawseg = ds_p++;
+
+		R_RenderBSPNode(numnodes - 1);
+		R_DrawPlanes();
+		R_DrawMasked();
+
+		firstvissprite = vissprites;
+		vissprite_p = vissprites + savedvissprite_p;
+		firstdrawseg = drawsegs;
+		ds_p = drawsegs + savedds_p;
+	}
+
+	camera = savedcamera;
+	viewx = savedx;
+	viewy = savedy;
+	viewz = savedz;
+	extralight = savedextralight;
+	R_SetViewAngle(savedangle);
+
+	r_InSkyBox = false;
+
+	for (*freehead = visplanes[MAXVISPLANES], visplanes[MAXVISPLANES] = NULL; *freehead;)
+		freehead = &(*freehead)->next;
+}
+
 //
 // R_PlaneInitData
 //
@@ -706,17 +870,10 @@ bool R_PlaneInitData(IWindowSurface* surface)
 	int surface_width = surface->getWidth();
 	int surface_height = surface->getHeight();
 
-	delete[] floorclip;
-	delete[] ceilingclip;
-	delete[] floorclipinitial;
-	delete[] ceilingclipinitial;
-	delete[] spanstart;
-	delete[] yslope;
-
-	floorclip = new int[surface_width];
-	ceilingclip = new int[surface_width];
-	floorclipinitial = new int[surface_width];
-	ceilingclipinitial = new int[surface_width];
+	floorclip = std::make_unique<int[]>(surface_width);
+	ceilingclip = std::make_unique<int[]>(surface_width);
+	floorclipinitial = std::make_unique<int[]>(surface_width);
+	ceilingclipinitial = std::make_unique<int[]>(surface_width);
 
 	for (int i = 0; i < surface_width; i++)
 	{
@@ -724,8 +881,8 @@ bool R_PlaneInitData(IWindowSurface* surface)
 		floorclipinitial[i] = viewheight;
 	}
 
-	spanstart = new int[surface_height];
-	yslope = new fixed_t[surface_height];
+	spanstart = std::make_unique<int[]>(surface_height);
+	yslope = std::make_unique<fixed_t[]>(surface_height);
 
 	// Free all visplanes and let them be re-allocated as needed.
 	visplane_t* pl = freetail;
@@ -749,47 +906,6 @@ bool R_PlaneInitData(IWindowSurface* surface)
 			M_Free(pl);
 			pl = next;
 		}
-	}
-
-	return true;
-}
-
-//
-// R_AlignFlat
-//
-BOOL R_AlignFlat (int linenum, int side, int fc)
-{
-	line_t *line = lines + linenum;
-	sector_t *sec = side ? line->backsector : line->frontsector;
-
-	if (!sec)
-		return false;
-
-	fixed_t x = line->v1->x;
-	fixed_t y = line->v1->y;
-
-	angle_t angle = R_PointToAngle2 (x, y, line->v2->x, line->v2->y);
-	angle_t norm = (angle-ANG90) >> ANGLETOFINESHIFT;
-
-	fixed_t dist = -FixedMul (finecosine[norm], x) - FixedMul (finesine[norm], y);
-
-	if (side)
-	{
-		angle = angle + ANG180;
-		dist = -dist;
-	}
-
-	if (fc)
-	{
-		sec->base_ceiling_angle = 0-angle;
-		sec->base_ceiling_yoffs = dist & ((1<<(FRACBITS+8))-1);
-		sec->SectorChanges |= SPC_AlignBase;
-	}
-	else
-	{
-		sec->base_floor_angle = 0-angle;
-		sec->base_floor_yoffs = dist & ((1<<(FRACBITS+8))-1);
-		sec->SectorChanges |= SPC_AlignBase;
 	}
 
 	return true;

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2011 by Randy Heit (ZDoom 1.23).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -67,7 +67,6 @@ class StringTable
 	                  size_t lumpLen);
 	void loadStringsLump(const uint32_t language_res_id, const bool engOnly);
 	void prepareIndexes();
-	void replaceEscapes(std::string& str);
 
   public:
 	StringTable() : _stringHash() { }
@@ -75,6 +74,7 @@ class StringTable
 	//
 	// Obtain a string by name.
 	//
+	[[nodiscard]]
 	const char* operator()(const OString& name) const
 	{
 		StringHash::const_iterator it = _stringHash.find(name);
@@ -92,6 +92,7 @@ class StringTable
 	//
 	// Obtain a string by index.
 	//
+	[[nodiscard]]
 	const char* getIndex(int index) const
 	{
 		if (index >= 0 && static_cast<size_t>(index) < ARRAY_LENGTH(::stringIndexes))
@@ -113,6 +114,7 @@ class StringTable
 	//
 	// Obtain an index by name.
 	//
+	[[nodiscard]]
 	int toIndex(const OString& name) const
 	{
 		StringHash::const_iterator it = _stringHash.find(name);
@@ -127,10 +129,11 @@ class StringTable
 	}
 
 	void dumpStrings();
-	bool hasString(const OString& name) const;
+	[[nodiscard]] bool hasString(const OString& name) const;
 	void loadStrings(const bool engOnly);
-	const OString& matchString(const OString& string) const;
+	[[nodiscard]] const OString& matchString(const OString& string) const;
 	void setString(const OString& name, const OString& string);
 	void setPassString(int pass, const OString& name, const OString& string);
-	size_t size() const;
+	[[nodiscard]] size_t size() const;
+	static void replaceEscapes(std::string& str);
 };

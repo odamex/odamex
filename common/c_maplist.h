@@ -20,9 +20,9 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __C_MAPLIST__
-#define __C_MAPLIST__
+#pragma once
 
+#include <nonstd/expected.hpp>
 
 // Maplist statuses
 enum maplist_status_t
@@ -44,14 +44,51 @@ enum maplist_status_t
 };
 #define NUM_MAPLIST_STATUS (MAPLIST_THROTTLED + 1)
 
+inline auto format_as(maplist_status_t eStatus)
+{
+	return fmt::underlying(eStatus);
+}
+
+struct maplist_lastmaps_t {
+	std::vector<std::pair<std::string, std::string>> entries;
+
+	bool empty() const {
+		return entries.empty();
+	}
+
+	static nonstd::expected<maplist_lastmaps_t, std::string> parse(const std::string& lastmaps);
+};
+
 // Map list entry structure
-typedef struct {
+struct maplist_entry_t {
 	std::string map;
+	// FIXME: there's some lastmap duplication here because of this being in common
+	// and requiring compatibility with 11.x
+	// rework this for 12.0.0
+	std::string lastmap;
+	maplist_lastmaps_t lastmaps;
 	std::vector<std::string> wads;
-} maplist_entry_t;
+};
+
+inline auto format_as(const maplist_lastmaps_t& lastmaps)
+{
+	std::string out;
+	bool first = true;
+	for (const auto& [from, to] : lastmaps.entries)
+	{
+		if (!first)
+			out += ",";
+
+		if (!to.empty())
+			out += fmt::format("{}->{}", from, to);
+		else
+			out += from.c_str();
+
+		first = false;
+	}
+	return out;
+}
 
 // Query result
 typedef std::pair<size_t, maplist_entry_t*> maplist_qrow_t;
 typedef std::vector<maplist_qrow_t> maplist_qrows_t;
-
-#endif

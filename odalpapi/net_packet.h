@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,6 +28,7 @@
 #ifndef NET_PACKET_H
 #define NET_PACKET_H
 
+#include <stdint.h>
 #include <cstdlib>
 #include <string>
 #include <vector>
@@ -40,7 +41,6 @@
 #endif
 
 #include "net_io.h"
-#include "typedefs.h"
 #include "threads/mutex_factory.h"
 
 /**
@@ -66,7 +66,7 @@
 #define VERSIONMINOR(V) ((V % 256) / 10)
 #define VERSIONPATCH(V) ((V % 256) % 10)
 
-#define VERSION (MAKEVER(10, 5, 0))
+#define VERSION (MAKEVER(13, 0, 0))
 #define PROTOCOL_VERSION 8
 
 #define TAG_ID 0xAD0
@@ -307,7 +307,7 @@ private:
 
 		Out.port = atoi(In.substr(colon + 1).c_str());
 		Out.ip = In.substr(0, colon);
-		
+
 		return true;
 	}
 public:
@@ -351,12 +351,12 @@ public:
 	bool AddMaster(std::string Address)
 	{
         addr_t Master;
-		
+
 		if (!StrAddrToAddrT(Address, Master))
             return false;
-		
+
 		Master.custom = true;
-		
+
 		AddMaster(Master);
 
 		return true;
@@ -392,10 +392,10 @@ public:
 		{
 		    return addresses[Index].custom;
 		}
-		
+
 		return false;
 	}
-	
+
 	bool IsCustomServer(const std::string &Address)
 	{
 	    std::vector<addr_t>::const_iterator i;
@@ -406,17 +406,17 @@ public:
 
         for (i = addresses.begin(); i != addresses.end(); ++i)
         {
-            if (i->ip == ServerAddr.ip && 
+            if (i->ip == ServerAddr.ip &&
                 i->port == ServerAddr.port)
             {
                 if (i->custom)
                     return true;
             }
         }
-        
+
         return false;
 	}
-	
+
 	void AddServer(const std::string& Address, const uint16_t& Port,
 	               const bool& Custom = false)
 	{

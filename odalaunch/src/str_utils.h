@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __STR_UTILS_H__
-#define __STR_UTILS_H__
+#pragma once
 
 #include "odalaunch.h"
 
@@ -32,5 +31,3 @@
 std::string stdstr_toupper(const std::string&);
 std::string wxstr_tostdstr(const wxString& s);
 wxString stdstr_towxstr(const std::string&);
-
-#endif // __STR_UTILS_H__

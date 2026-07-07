@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -82,11 +82,12 @@ bool M_FindFreeName(std::string &filename, const std::string &extension);
 
 EXTERN_CVAR(gammalevel)
 EXTERN_CVAR(vid_gammatype)
+EXTERN_CVAR(cl_screenshotdir)
 
 CVAR_FUNC_IMPL(cl_screenshotname)
 {
 	// No empty format strings allowed.
-	if (strlen(var.cstring()) == 0)
+	if (var.str().empty())
 		var.RestoreDefault();
 }
 
@@ -111,7 +112,7 @@ static void V_SetPNGPalette(png_struct* png_ptr, png_info* info_ptr, const argb_
 {
 	if (png_get_color_type(png_ptr, info_ptr) != 3)
 	{
-		Printf(PRINT_WARNING, "I_SetPNGPalette: Cannot create PNG PLTE chunk in 32-bit mode\n");
+		PrintFmt(PRINT_WARNING, "I_SetPNGPalette: Cannot create PNG PLTE chunk in 32-bit mode\n");
 		return;
 	}
 
@@ -119,9 +120,9 @@ static void V_SetPNGPalette(png_struct* png_ptr, png_info* info_ptr, const argb_
 
 	for (int i = 0; i < 256; i++)
 	{
-		pngpalette[i].red   = (png_byte)(palette_colors[i].getr());
-		pngpalette[i].green = (png_byte)(palette_colors[i].getg());
-		pngpalette[i].blue  = (png_byte)(palette_colors[i].getb());
+		pngpalette[i].red   = palette_colors[i].getr();
+		pngpalette[i].green = palette_colors[i].getg();
+		pngpalette[i].blue  = palette_colors[i].getb();
 	}
 
 	png_set_PLTE(png_ptr, info_ptr, pngpalette, 256);
@@ -143,12 +144,11 @@ static void SetPNGComments(PNGStrings& out, png_struct* png_ptr, png_info* info_
                            time_t* now)
 {
 #ifndef PNG_TEXT_SUPPORTED
-	Printf(PRINT_HIGH, "SetPNGComments: Skipping PNG tEXt chunk\n");
+	PrintFmt(PRINT_HIGH, "SetPNGComments: Skipping PNG tEXt chunk\n");
 	return;
 #endif
 
-	std::string strbuf;
-	const int PNG_TEXT_LINES = 6;
+	static constexpr int PNG_TEXT_LINES = 6;
 	png_text pngtext[PNG_TEXT_LINES];
 	int text_line = 0;
 
@@ -160,38 +160,36 @@ static void SetPNGComments(PNGStrings& out, png_struct* png_ptr, png_info* info_
 	for (int i = 0; i < PNG_TEXT_LINES; i++)
 		pngtext[i].compression = PNG_TEXT_COMPRESSION_NONE;
 
-	pngtext[text_line].key = (png_charp) "Description";
-	pngtext[text_line].text = (png_charp)("Odamex " DOTVERSIONSTR " Screenshot");
+	pngtext[text_line].key = const_cast<png_charp>("Description");
+	pngtext[text_line].text = const_cast<png_charp>("Odamex " DOTVERSIONSTR " Screenshot");
 	text_line++;
 
 	char datebuf[80];
-	const char* dateformat = "%A, %B %d, %Y, %I:%M:%S %p GMT";
-	strftime(datebuf, ARRAY_LENGTH(datebuf), dateformat, gmtime(now));
+	strftime(datebuf, ARRAY_LENGTH(datebuf), "%A, %B %d, %Y, %I:%M:%S %p GMT", gmtime(now));
 	out.at(text_line) = datebuf;
-	pngtext[text_line].key = (png_charp) "Created Time";
-	pngtext[text_line].text = (png_charp)out.at(text_line).c_str();
+	pngtext[text_line].key = const_cast<png_charp>("Created Time");
+	pngtext[text_line].text = out.at(text_line).data();
 	text_line++;
 
 	out.at(text_line) = M_ExpandTokens("%g");
-	pngtext[text_line].key = (png_charp) "Game Mode";
-	pngtext[text_line].text = (png_charp)out.at(text_line).c_str();
+	pngtext[text_line].key = const_cast<png_charp>("Game Mode");
+	pngtext[text_line].text = out.at(text_line).data();
 	text_line++;
 
-	pngtext[text_line].key = (png_charp) "In-Game Video Mode";
+	pngtext[text_line].key = const_cast<png_charp>("In-Game Video Mode");
 	pngtext[text_line].text = (I_GetPrimarySurface()->getBitsPerPixel() == 8)
-	                              ? (png_charp) "8bpp"
-	                              : (png_charp) "32bpp";
+	                              ? const_cast<png_charp>("8bpp")
+	                              : const_cast<png_charp>("32bpp");
 	text_line++;
 
-	StrFormat(strbuf, "%#.3f", gammalevel.value());
-	out.at(text_line) = strbuf;
-	pngtext[text_line].key = (png_charp) "In-game Gamma Correction Level";
-	pngtext[text_line].text = (png_charp)out.at(text_line).c_str();
+	out.at(text_line) = fmt::sprintf("%#.3f", gammalevel.value());
+	pngtext[text_line].key = const_cast<png_charp>("In-game Gamma Correction Level");
+	pngtext[text_line].text = out.at(text_line).data();
 	text_line++;
 
-	pngtext[text_line].key = (png_charp) "In-Game Gamma Correction Type";
+	pngtext[text_line].key = const_cast<png_charp>("In-Game Gamma Correction Type");
 	pngtext[text_line].text =
-	    (vid_gammatype == 0) ? (png_charp) "Classic Doom" : (png_charp) "ZDoom";
+	    (vid_gammatype == 0) ? const_cast<png_charp>("Classic Doom") : const_cast<png_charp>("ZDoom");
 	text_line++;
 
 	png_set_text(png_ptr, info_ptr, pngtext, PNG_TEXT_LINES);
@@ -205,14 +203,14 @@ static void SetPNGComments(PNGStrings& out, png_struct* png_ptr, png_info* info_
 //
 static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 {
-	FILE* fp = fopen(filename.c_str(), "wb");
+	auto fp = uqFile(fopen(filename.c_str(), "wb"));
 	png_struct *png_ptr;
 	png_info *info_ptr;
 	time_t now = time(NULL); // used for PNG text comments
 
 	if (fp == NULL)
 	{
-		Printf(PRINT_WARNING, "I_SavePNG: Could not open %s for writing\n", filename.c_str());
+		(PrintFmt(PRINT_WARNING, "I_SavePNG: Could not open {} for writing\n", filename));
 		return -1;
 	}
 
@@ -220,8 +218,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
 	if (png_ptr == NULL)
 	{
-		fclose(fp);
-		Printf(PRINT_WARNING, "I_SavePNG: png_create_write_struct failed\n");
+		PrintFmt(PRINT_WARNING, "I_SavePNG: png_create_write_struct failed\n");
 		return -1;
 	}
 
@@ -229,12 +226,11 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	info_ptr = png_create_info_struct(png_ptr);
 	if (info_ptr == NULL)
 	{
-		fclose(fp);
-		png_destroy_write_struct(&png_ptr, (png_infop*)NULL);
-		Printf(PRINT_HIGH, "I_SavePNG: png_create_info_struct failed\n");
+		png_destroy_write_struct(&png_ptr, nullptr);
+		PrintFmt(PRINT_HIGH, "I_SavePNG: png_create_info_struct failed\n");
 		return -1;
 	}
-	
+
 	// libpng instances compiled without PNG_NO_SETJMP expect this;
 	// PNG_ABORT() is invoked instead if PNG_SETJMP_SUPPORTED was not defined
 	// see include/pnglibconf.h for libpng feature support macros
@@ -242,9 +238,8 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	int setjmp_result = setjmp(png_jmpbuf(png_ptr));
 	if (setjmp_result != 0)
 	{
-		fclose(fp);
 		png_destroy_write_struct(&png_ptr, &info_ptr);
-		Printf(PRINT_WARNING, "I_SavePNG: setjmp failed with error code %d\n", setjmp_result);
+		PrintFmt(PRINT_WARNING, "I_SavePNG: setjmp failed with error code {}\n", setjmp_result);
 		return -1;
 	}
 	#endif // PNG_SETJMP_SUPPORTED
@@ -268,13 +263,13 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 
 	// determine bpp mode, allocate memory space for PNG pixel data
 	int png_bpp = (surface->getBitsPerPixel() == 8) ? 1 : 3;
-	png_byte** row_ptrs = (png_byte**)png_malloc(png_ptr, (png_alloc_size_t)(height * sizeof(png_byte*)));
+	png_byte** row_ptrs = static_cast<png_byte**>(png_malloc(png_ptr, static_cast<png_alloc_size_t>(height * sizeof(png_byte*))));
 	png_byte* row;
-	
+
 	for (unsigned int rownum = 0; rownum < height; rownum++)
 	{
-		row = (png_byte*)png_malloc(png_ptr, (png_alloc_size_t)(sizeof(uint8_t) * width * png_bpp));
-		
+		row = static_cast<png_byte*>(png_malloc(png_ptr, static_cast<png_alloc_size_t>(sizeof(uint8_t) * width * png_bpp)));
+
 		if (row != NULL)
 		{
 			row_ptrs[rownum] = row;
@@ -286,19 +281,18 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 
 			png_free(png_ptr, row_ptrs);
 			png_destroy_write_struct(&png_ptr, &info_ptr);
-			fclose(fp);
-			
-			Printf(PRINT_WARNING, "I_SavePNG: Not enough RAM to create PNG file\n");
+
+			PrintFmt(PRINT_WARNING, "I_SavePNG: Not enough RAM to create PNG file\n");
 			return -1;
 		}
 	}
-	
+
 	// write PNG in either paletted or RGB form, according to the current screen mode
 	if (surface->getBitsPerPixel() == 8)
 	{
 		V_SetPNGPalette(png_ptr, info_ptr, surface->getPalette());
-		
-		const palindex_t* source = (palindex_t*)surface->getBuffer();
+
+		const palindex_t* source = surface->getBuffer();
 		const int pitch_remainder = surface->getPitchInPixels() - width;
 
 		for (unsigned int y = 0; y < height; y++)
@@ -311,7 +305,7 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 				// copy it to current pixel of PNG row
 				// note: this assumes that the PNG and SDL surface palettes match
 				palindex_t pixel = *source++;
-				*row++ = (png_byte)pixel;
+				*row++ = static_cast<png_byte>(pixel);
 			}
 
 			source += pitch_remainder;
@@ -319,13 +313,13 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	}
 	else
 	{
-		const argb_t* source = (argb_t*)surface->getBuffer();
+		const argb_t* source = reinterpret_cast<argb_t*>(surface->getBuffer());
 		const int pitch_remainder = surface->getPitchInPixels() - width;
 
 		for (unsigned int y = 0; y < height; y++)
 		{
 			row = row_ptrs[y];
-			
+
 			for (unsigned int x = 0; x < width; x++)
 			{
 				// gather color components from current pixel of SDL surface
@@ -334,18 +328,18 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 
 				// write color components to current pixel of PNG row
 				// note: PNG is a big-endian file format
-				*row++ = (png_byte)pixel.getr();
-				*row++ = (png_byte)pixel.getg();
-				*row++ = (png_byte)pixel.getb();
+				*row++ = pixel.getr();
+				*row++ = pixel.getg();
+				*row++ = pixel.getb();
 			}
 
 			source += pitch_remainder;
 		}
 	}
-	
+
 	// commit PNG image data to file
 	surface->unlock();
-	png_init_io(png_ptr, fp);
+	png_init_io(png_ptr, fp.get());
 
 	// Holds the text strings until the file is written.
 	PNGStrings png_strings;
@@ -357,20 +351,19 @@ static int V_SavePNG(const std::string& filename, IWindowSurface* surface)
 	png_convert_from_time_t(&pngtime, now);
 	png_set_tIME(png_ptr, info_ptr, &pngtime);
 	#else
-	Printf(PRINT_HIGH, "I_SavePNG: Skipping PNG tIME chunk\n");
+	PrintFmt(PRINT_HIGH, "I_SavePNG: Skipping PNG tIME chunk\n");
 	#endif // PNG_tIME_SUPPORTED
-	
+
 	png_set_rows(png_ptr, info_ptr, row_ptrs);
 	png_write_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
-	
+
 	// free allocated PNG image data
 	for (unsigned int y = 0; y < height; y++)
 		png_free(png_ptr, row_ptrs[y]);
 
 	png_free(png_ptr, row_ptrs);
 	png_destroy_write_struct(&png_ptr, &info_ptr);
-	
-	fclose(fp);
+
 	return 0;
 }
 
@@ -393,12 +386,12 @@ void V_ScreenShot(std::string filename)
 	filename = M_ExpandTokens(filename);
 
 	// Turn filename into complete path.
-	std::string pathname = M_GetUserFileName(filename);
+	std::string pathname = M_GetScreenshotFileName(filename, cl_screenshotdir.str());
 
 	// If the file already exists, append numbers.
 	if (!M_FindFreeName(pathname, extension))
 	{
-		Printf(PRINT_WARNING, "I_ScreenShot: Delete some screenshots\n");
+		PrintFmt(PRINT_WARNING, "V_ScreenShot: Delete some screenshots\n");
 		return;
 	}
 
@@ -408,11 +401,11 @@ void V_ScreenShot(std::string filename)
 	int result = V_SavePNG(pathname, primary_surface);
 	if (result != 0)
 	{
-		Printf(PRINT_WARNING, "I_SavePNG Error: Returned error code %d\n", result);
+		PrintFmt(PRINT_WARNING, "V_SavePNG Error: Returned error code {}\n", result);
 		return;
 	}
 
-	Printf(PRINT_HIGH, "Screenshot taken: %s.%s\n", filename.c_str(), extension.c_str());
+	PrintFmt(PRINT_HIGH, "Screenshot taken: {}.{}\n", filename, extension);
 }
 
 

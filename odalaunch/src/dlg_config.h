@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,8 +22,7 @@
 //-----------------------------------------------------------------------------
 
 
-#ifndef DLG_CONFIG_H
-#define DLG_CONFIG_H
+#pragma once
 
 #include "odalaunch.h"
 
@@ -52,13 +51,11 @@ const wxString env_vars[NUM_ENVVARS] = { "DOOMWADDIR", "DOOMWADPATH" };
 class dlgConfig: public wxDialog
 {
 public:
-
 	dlgConfig(wxWindow* parent, wxWindowID id = -1);
 	virtual ~dlgConfig();
 
 	void LoadSettings();
 	void SaveSettings();
-
 	void Show();
 
 protected:
@@ -88,9 +85,8 @@ protected:
 
 	wxCheckBox* m_ChkCtrlGetListOnStart;
 	wxCheckBox* m_ChkCtrlShowBlockedServers;
-	//wxCheckBox* m_ChkCtrlCheckForUpdates;
+	wxCheckBox* m_ChkCtrlCheckForUpdates;
 	wxCheckBox* m_ChkCtrlEnableBroadcasts;
-	//wxCheckBox* m_ChkCtrlLoadChatOnLS;
 	wxCheckBox* m_ChkCtrlFlashTaskBar;
 	wxCheckBox* m_ChkCtrlPlaySystemBeep;
 	wxCheckBox* m_ChkCtrlPlaySoundFile;
@@ -132,5 +128,3 @@ private:
 
 	DECLARE_EVENT_TABLE()
 };
-
-#endif

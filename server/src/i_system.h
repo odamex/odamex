@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -43,7 +43,7 @@ enum
 	LANGIDX_SysPreferred,
 	LANGIDX_SysDefault
 };
-extern DWORD LanguageIDs[4];
+extern uint32_t LanguageIDs[4];
 extern void SetLanguageIDs ();
 
 void I_BeginRead (void);
@@ -56,12 +56,6 @@ void I_Init (void);
 // to get the ammount of memory to malloc
 // for the zone management.
 void *I_ZoneBase (size_t *size);
-
-
-dtime_t I_GetTime();
-dtime_t I_ConvertTimeToMs(dtime_t value);
-dtime_t I_ConvertTimeFromMs(dtime_t value);
-void I_Sleep(dtime_t sleep_time);
 
 // Asynchronous interrupt functions should maintain private queues
 // that are read by the synchronous functions
@@ -78,48 +72,25 @@ ticcmd_t *I_BaseTiccmd (void);
 // Clean exit, displays sell blurb.
 void STACK_ARGS I_Quit (void);
 
-void STACK_ARGS I_Error (const char *error, ...);
-NORETURN void STACK_ARGS I_FatalError(const char *error, ...);
+[[noreturn]] void I_BaseError(const std::string& errortext);
+[[noreturn]] void I_BaseFatalError(const std::string& errortext);
+
+template <typename... ARGS>
+[[noreturn]] void I_Error(fmt::format_string<ARGS...>format, ARGS&&... args)
+{
+	I_BaseError(fmt::format(format, std::forward<ARGS>(args)...));
+}
+
+template <typename... ARGS>
+[[noreturn]] void I_FatalError(fmt::format_string<ARGS...> format, ARGS&&... args)
+{
+	I_BaseFatalError(fmt::format(format, std::forward<ARGS>(args)...));
+}
 
 void addterm (void (STACK_ARGS *func)(void), const char *name);
 #define atterm(t) addterm (t, #t)
 
-// Print a console string
-void I_PrintStr (int x, const char *str, int count, BOOL scroll);
-
-// Set the title string of the startup window
-void I_SetTitleString (const char *title);
-
-std::string I_ConsoleInput (void);
-
-// [RH] Returns millisecond-accurate time
-dtime_t I_MSTime (void);
-
-void I_Yield(void);
-
-// [RH] Title string to display at bottom of console during startup
-extern char DoomStartupTitle[256];
+bool I_ConsoleUseColor();
+std::string I_ConsoleInput();
 
 void I_FinishClockCalibration ();
-
-// Directory searching routines
-
-typedef struct
-{
-    int count;
-    struct dirent **namelist;
-    int current;
-} findstate_t;
-
-long I_FindFirst (char *filespec, findstate_t *fileinfo);
-int I_FindNext (long handle, findstate_t *fileinfo);
-int I_FindClose (long handle);
-int I_FindAttr (findstate_t *fileinfo);
-
-#define I_FindName(a)	((a)->namelist[(a)->current]->d_name)
-
-#define FA_RDONLY	1
-#define FA_HIDDEN	2
-#define FA_SYSTEM	4
-#define FA_DIREC	8
-#define FA_ARCH		16

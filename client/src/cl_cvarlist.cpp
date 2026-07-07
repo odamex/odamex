@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -36,6 +36,9 @@ CVAR(					am_followplayer, "1", "",
 CVAR(					am_rotate, "0", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR_RANGE(				am_thickness, "1", "Scale the thickness of the automap lines by this value. Set to 0 for auto.",
+						CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 6.0f)
+
 CVAR_RANGE(				am_overlay, "0", "",
 						CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
 
@@ -57,7 +60,10 @@ CVAR(					am_classicmapstring, "0", "",
 CVAR(					am_usecustomcolors, "0", "",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
-CVAR(					am_ovshare, "0", "",
+CVAR(					am_showlocked, "0", "Show locked doors on the automap even when custom colors are disabled.",
+						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(					am_ovshare, "0", "Overlay automap uses the same custom colors as the non-overlayed automap.",
 						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(					am_backcolor, "00 00 3a", "",
@@ -171,6 +177,23 @@ CVAR(					am_ovexitcolor, "ff ff 00", "",
 CVAR(					am_ovteleportcolor, "ff a3 00", "",
 						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR(					am_ovminimap, "0", "Overlay minimap enabled",
+						CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(					am_ovbackcolor, "00 00 00", "Overlay minimap background color",
+						CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_RANGE(				am_ovbackalpha, "0.25", "Transparency of overlay minimap background",
+						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(				am_ovscalewidth, "0.25", "Scale width of overlay minimap",
+						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(				am_ovscaleheight, "0.5", "Scale height of overlay minimap",
+						CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
+
+CVAR_RANGE(				am_ovlocation, "1", "Overlay minimap location (0:LeftTop, 1:LeftMid, 2:LeftBot, 3:RightTop, 4:RightMid, 5:RightBot)",
+						CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 5.0f)
 
 // Console
 // -------
@@ -194,6 +217,9 @@ CVAR_RANGE(			con_buffersize, "1024", "Size of console scroll-back buffer",
 
 CVAR(				con_coloredmessages, "1", "Activates colored messages in printed messages",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR_RANGE_FUNC_DECL(con_scaletext, "0", "Scale factor of console text (0 = auto).",
+					CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
 
 CVAR(message_showpickups, "1", "Show item pickup messages on the message line.",
      CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
@@ -260,7 +286,7 @@ CVAR(				cl_disconnectalert, "1", "Plays a sound when a player quits",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE			(cl_chatsounds, "1", "Plays a sound when a chat message appears (0 = never, 1 = always, " \
-					"2 = only teamchat)", 
+					"2 = only teamchat)",
 					CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
 CVAR_RANGE(			cl_switchweapon, "1", "Switch upon weapon pickup (0 = never, 1 = always, " \
@@ -306,7 +332,7 @@ CVAR (joy_turnaxis, "2", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLED
 CVAR (joy_lookaxis, "3", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (joy_sensitivity, "10.0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 CVAR (joy_fastsensitivity, "15.0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
-CVAR (joy_freelook, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
+CVAR_FUNC_DECL (joy_freelook, "0", "Look up or down with the joystick", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 CVAR (joy_invert, "0", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE (joy_deadzone, "0.20", "", CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE,  0.0f, 0.75f)
@@ -340,10 +366,12 @@ CVAR_RANGE (sv_teamsinplay, "2", "Teams that are enabled", CVARTYPE_BYTE, CVAR_S
 // --------------
 
 CVAR(cl_downloadsites,
-     "https://static.allfearthesentinel.net/wads/ https://doomshack.org/wads/ "
+     "https://static.allfearthesentinel.com/wads/ https://doomshack.org/wads/ "
      "http://grandpachuck.org/files/wads/ https://wads.doomleague.org/ "
      "http://files.funcrusher.net/wads/ https://doomshack.org/uploads/ "
-     "https://doom.dogsoft.net/getwad.php?search=",
+     "https://doom.dogsoft.net/getwad.php?search= https://doomshack.org/wadlist.php "
+     "https://wads.firestick.games/ https://euroboros.net/zandronum/wads/ "
+     "https://static.audrealms.org/wads/ https://downloadbox.captainpollutiontv.de/DooM/WADSEEKER/",
      "A list of websites to download WAD files from.  These websites are used if the "
      "server doesn't provide any websites to download files from, or the file can't be "
      "found on any of their sites.  The list of sites is separated by spaces.  These "
@@ -363,8 +391,8 @@ CVAR(				cl_predictweapons, "1", "Draw weapon effects immediately",
 CVAR(				cl_netgraph, "0", "Show a graph of network related statistics",
 					CVARTYPE_BOOL, CVAR_NULL)
 
-CVAR(				cl_serverdownload, "1", "Enable or disable downloading game files and resources from the server" \
-											"(requires downloading enabled on server)",
+CVAR(				cl_serverdownload, "1", "Enable or disable downloading game files and resources from the internet " \
+											"(see cl_downloadsites for more information)",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(				cl_forcedownload, "0", "Forces the client to download the last WAD file when connecting " \
@@ -375,8 +403,8 @@ CVAR(				cl_forcedownload, "0", "Forces the client to download the last WAD file
 // Client Preferences
 // ------------------
 
-#ifdef _XBOX // Because Xbox players may be unable to communicate for now -- Hyper_Eye
-CVAR_FUNC_DECL(		cl_name, "Xbox Player", "",
+#ifdef GCONSOLE // Because Xbox players may be unable to communicate for now -- Hyper_Eye
+CVAR_FUNC_DECL(		cl_name, "Console Player", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 #else
 CVAR_FUNC_DECL(		cl_name, "Player", "",
@@ -384,13 +412,13 @@ CVAR_FUNC_DECL(		cl_name, "Player", "",
 #endif
 
 CVAR(				cl_color, "40 cf 00", "",
-					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE | CVAR_NOSET)
 
-CVAR(				cl_customcolor, "40 cf 00", "",
-					CVARTYPE_STRING, CVAR_CLIENTARCHIVE)
+CVAR_FUNC_DECL(		cl_customcolor, "40 cf 00", "",
+					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(				cl_colorpreset, "custom", "",
-					CVARTYPE_STRING, CVAR_CLIENTARCHIVE)
+					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(				cl_gender, "male", "",
 					CVARTYPE_STRING, CVAR_USERINFO | CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
@@ -407,11 +435,22 @@ CVAR(				chasedemo, "0", "",
 CVAR(				cl_run, "1", "Always run",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)		// Always run? // [Toke - Defaults]
 
-CVAR(in_autosr50, "1", "+strife activates automatic SR50", CVARTYPE_BOOL,
+CVAR(in_autosr50, "1", "+strafe activates automatic SR50", CVARTYPE_BOOL,
      CVAR_CLIENTARCHIVE)
 
 CVAR(				cl_showspawns, "0", "Show spawn points as particle fountains",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_LATCH)
+
+CVAR_FUNC_DECL(		cl_showfriends, "0", "Show an indicator on friendly monsters.",
+					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(cl_showsprees, "1", "Show killing sprees for the display player.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(cl_showmultikills, "1", "Show multi kills for the display player.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(cl_showofflinesprees, "0", "Show killing sprees during single player games and vanilla demo playback. Netdemos are unaffected. Does not supercede cl_showsprees.", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
+CVAR(cl_showofflinemultikills, "0", "Show multi kills during single player games and vanilla demo playback. Netdemos are unaffected. Does not supercede cl_showmultikills", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 // Netdemo Preferences
 // --------------------
@@ -424,12 +463,18 @@ CVAR_FUNC_DECL(		cl_netdemoname, "Odamex_%g_%d_%t_%w_%m",
 					"either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
 					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
+CVAR(				cl_netdemodir, "", "Directory for Odamex to save netdemos to.",
+					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
 // Screenshot format string
 CVAR_FUNC_DECL(		cl_screenshotname, "Odamex_%g_%d_%t",
 					"Default screenshot name.  Parses the following tokens:\n// " \
 					"%d: date in YYYYMMDD format\n// %t: time in HHMMSS format\n// " \
 					"%n: player name\n// %g: gametype\n// %w: WAD file loaded; " \
 					"either the first PWAD or the IWAD\n// %m: Map lump\n// %%: Literal percent sign",
+					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR(				cl_screenshotdir, "", "Directory for Odamex to save screenshots to.",
 					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR(				cl_autorecord, "0", "Automatically record netdemos",
@@ -531,8 +576,8 @@ CVAR(			hud_scale, "1", "HUD scaling",
 CVAR(			hud_scalescoreboard, "0", "Scoreboard scaling",
 				CVARTYPE_FLOAT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-CVAR_RANGE(		hud_scaletext, "2", "Scaling multiplier for chat and midprint",
-                CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 4.0f)
+CVAR_RANGE(		hud_scaletext, "2", "Scaling multiplier for chat and midprint (0 = auto).",
+                CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
 
 CVAR_RANGE(		hud_targetcount, "2", "Number of players to reveal",
                 CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 32.0f)
@@ -577,7 +622,11 @@ CVAR(hud_feedobits, "1", "Show obituaries in the event feed.", CVARTYPE_BOOL,
 
 CVAR(hud_hordeinfo_debug, "0", "Show debugging information for horde.", CVARTYPE_BOOL, CVAR_NULL)
 
-#ifdef _XBOX
+CVAR_RANGE(hud_extendedinfo, "0",
+		   "Show kills, items, and secrets:\n// 0: Off\n// 1: DIGFONT\n// 2: SMALLFONT\n// 3: DIGFONT, vertical arrangement\n// 4: SMALLFONT, vertical arrangement",
+		   CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0, 4.0)
+
+#ifdef GCONSOLE
 CVAR (chatmacro0, "Hi.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                       // A
 CVAR (chatmacro1, "I'm ready to kick butt!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)   // B
 CVAR (chatmacro2, "Help!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                     // X
@@ -587,7 +636,7 @@ CVAR (chatmacro5, "Yes", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLE
 CVAR (chatmacro6, "I'll take care of it.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)     // Left Trigger
 CVAR (chatmacro7, "Come here!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)                // Right Trigger
 CVAR (chatmacro8, "Thanks for the game. Bye.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE) // Start
-CVAR (chatmacro9, "I am on Xbox and can only use chat macros.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE) // Back
+CVAR (chatmacro9, "I am on a game console and can only use chat macros.", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE) // Back
 #else
 // GhostlyDeath <November 2, 2008> -- someone had the order wrong (0-9!)
 CVAR (chatmacro1, "I'm ready to kick butt!", "",	CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
@@ -619,6 +668,8 @@ CVAR_RANGE(		snd_voxtype, "2", "Voice announcer type",
 
 CVAR(			snd_gamesfx, "1", "Game SFX", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
+CVAR(			snd_votesfx, "1", "Enable vote UI sounds", CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
+
 CVAR(			snd_crossover, "0", "Stereo switch",	CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR_RANGE_FUNC_DECL(snd_samplerate, "44100", "Audio samplerate",
@@ -629,6 +680,18 @@ CVAR_RANGE_FUNC_DECL(snd_samplerate, "44100", "Audio samplerate",
 CVAR_RANGE_FUNC_DECL(snd_channels, "32", "Number of channels for sound effects",
                      CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 4.0f,
                      32.0f)
+
+CVAR_RANGE_FUNC_DECL(	snd_oplcore, "0", "OPL emulation quality",
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+
+CVAR_FUNC_DECL(			snd_oplpan, "1", "Full-range OPL panning",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_RANGE_FUNC_DECL(	snd_oplchips, "6", "Number of emulated OPL chips",
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 1.0f, 8.0f)
+
+CVAR_RANGE_FUNC_DECL(	snd_oplbank, "1", "OPL instrument set",
+				CVARTYPE_INT, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
 
 //
 // C_GetDefaultMuiscSystem()
@@ -645,15 +708,19 @@ static char *C_GetDefaultMusicSystem()
 	defaultmusicsystem = MS_AUDIOUNIT;
 	#endif
 
-	#if defined _WIN32 && !defined _XBOX
+	#if defined _WIN32
 	defaultmusicsystem = MS_PORTMIDI;
+	#endif
+
+	#ifdef __linux__
+	defaultmusicsystem = MS_LIBADLMIDI;
 	#endif
 
 	// don't overflow str
 	if (int(defaultmusicsystem) > 999 || int(defaultmusicsystem) < 0)
 		defaultmusicsystem = MS_NONE;
 
-	sprintf(str, "%i", defaultmusicsystem);
+	snprintf(str, 4, "%i", defaultmusicsystem);
 	return str;
 }
 
@@ -671,6 +738,9 @@ CVAR_RANGE(		snd_midireset, "1", "MIDI reset type (0: None, 1: GM, 2: GS, 3: XG)
 
 CVAR_FUNC_DECL(	snd_musicsystem, C_GetDefaultMusicSystem(), "Music subsystem preference",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
+
+CVAR_FUNC_DECL(	snd_nomusic, "0", "Disables music",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			snd_musicdevice, "", "Music output device for the chosen music subsystem",
 				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
@@ -699,6 +769,15 @@ CVAR(			r_flashhom, "0", "Draws flashing colors where there is HOM",
 CVAR(			r_drawflat, "0", "Disables all texturing of walls, floors and ceilings",
 				CVARTYPE_BOOL, CVAR_NULL)
 
+CVAR(			r_clipmaskedspecial, "0", "Vertically clip masked midtextures when surrounding sectors have differing specials (mimics Hexen and DSDA-Doom behavior)",
+				CVARTYPE_BOOL, CVAR_NULL)
+
+CVAR(			r_thingsectorlight, "0", "Things are lit according to the average of the transferred light levels (mimics MBF behavior)",
+				CVARTYPE_BOOL, CVAR_NULL)
+
+CVAR(           r_drawnetcredibility, "0", "Add a particle to each actor indicating how credible the client considers the actor's position",
+                CVARTYPE_BOOL, CVAR_NULL)
+
 #if 0
 CVAR(			r_drawhitboxes, "0", "Draws a box outlining every actor's hitboxes",
 				CVARTYPE_BOOL, CVAR_NULL)
@@ -712,6 +791,9 @@ CVAR(			r_particles, "1", "Draw particles",
 
 CVAR_RANGE_FUNC_DECL(r_stretchsky, "2", "Stretch sky textures. (0 - always off, 1 - always on, 2 - auto)",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)
+
+CVAR(			r_linearsky, "0", "Render skies without horizonal stretching",
+				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 CVAR(			r_skypalette, "0", "Invulnerability sphere changes the palette of the sky",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
@@ -728,16 +810,11 @@ CVAR_FUNC_DECL(	r_forceteamcolor, "0", "Changes the color of all teammates to th
 CVAR_FUNC_DECL(	r_teamcolor, "40 cf 00", "",
 				CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
-#ifdef _XBOX // The burn wipe works better in 720p
-CVAR_RANGE(		r_wipetype, "2", "",
-				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
-#else
 CVAR_RANGE(		r_wipetype, "1", "",
 				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 3.0f)
-#endif
 
-CVAR(			r_showendoom, "0", "Display the ENDDOOM text after quitting",
-				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)   // [ML] 1/5/10: Add endoom support
+CVAR_RANGE(		r_showendoom, "0", "Display the ENDDOOM text after quitting",
+				CVARTYPE_BYTE, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE, 0.0f, 2.0f)   // [ML] 1/5/10: Add endoom support
 
 CVAR(			r_loadicon, "1", "Display the disk icon when loading data from disk",
 				CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)

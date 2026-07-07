@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -42,6 +42,10 @@ IMPLEMENT_APP(Application)
 
 bool Application::OnInit()
 {
+	#ifdef __linux__
+	SetClassName("net.odamex.Odamex.Launcher");
+	#endif
+
 	if(BufferedSocket::InitializeSocketAPI() == false)
 		return false;
 
@@ -53,7 +57,7 @@ bool Application::OnInit()
 	InitXmlResource();
 
 	// create main window, get size dimensions and show it
-	MAIN_DIALOG = new dlgMain(0L);
+	MAIN_DIALOG = new dlgMain(nullptr);
 
 	if(MAIN_DIALOG)
 		MAIN_DIALOG->Show();

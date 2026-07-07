@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -47,9 +47,9 @@ class StatusBarWidget_Base
 	void drawPatch(int x, int y, const Texture* p);
 
   public:
-	int getX() const { return m_x; }
-	int getY() const { return m_y; }
-	
+	[[nodiscard]] int getX() const { return m_x; }
+	[[nodiscard]] int getY() const { return m_y; }
+
 };
 
 // Number widget

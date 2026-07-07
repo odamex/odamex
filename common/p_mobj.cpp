@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -47,13 +47,16 @@
 #include "g_skill.h"
 #include "m_wdlstats.h"
 #include "p_mapformat.h"
+#include "g_musinfo.h"
+#include "r_sky.h"
 
 #ifdef CLIENT_APP
 #include "hu_speedometer.h"
 #endif
+#include <p_boomfspec.h>
 
 void SV_UpdateMobj(AActor* mo);
-void SV_UpdateMobjState(AActor* mo);
+void SV_UpdateMobjState(const AActor* mo);
 
 #define WATER_SINK_FACTOR		3
 #define WATER_SINK_SMALL_FACTOR	4
@@ -64,19 +67,22 @@ extern bool predicting;
 extern fixed_t attackrange;
 extern AActor *shootthing;
 
-void P_SpawnPlayer (player_t &player, mapthing2_t *mthing);
-void P_ShowSpawns(mapthing2_t* mthing);
+void P_SpawnPlayer(player_t &player, const mapthing2_t& mthing);
+void P_ShowSpawns(const mapthing2_t& mthing);
 void P_ExplodeMissile(AActor* mo);
+void SV_SpawnHighPriorityMobj(AActor *mobj);
 void SV_SpawnMobj(AActor *mobj);
-void SV_SendDestroyActor(AActor *);
+void SV_SendDestroyActor(const AActor *);
 void SV_ExplodeMissile(AActor *);
 void SV_UpdateMonsterRespawnCount();
 
 EXTERN_CVAR(sv_freelook)
-EXTERN_CVAR(sv_itemsrespawn) 
+EXTERN_CVAR(sv_itemsrespawn)
 EXTERN_CVAR(sv_respawnsuper)
+EXTERN_CVAR(sv_respawnbarrels)
 EXTERN_CVAR(sv_itemrespawntime)
 EXTERN_CVAR(co_zdoomphys)
+EXTERN_CVAR(co_mbfphys)
 EXTERN_CVAR(co_realactorheight)
 EXTERN_CVAR(sv_teamspawns)
 EXTERN_CVAR(sv_nomonsters)
@@ -87,17 +93,15 @@ EXTERN_CVAR(co_fineautoaim)
 EXTERN_CVAR(sv_allowshowspawns)
 EXTERN_CVAR(sv_teamsinplay)
 EXTERN_CVAR(g_thingfilter)
-
-mapthing2_t     itemrespawnque[ITEMQUESIZE];
-int             itemrespawntime[ITEMQUESIZE];
-int             iquehead;
-int             iquetail;
+EXTERN_CVAR(co_voodooscroller)
 
 NetIDHandler ServerNetID;
 
 // denis - fast netid lookup
 typedef std::map<uint32_t, AActor::AActorPtr> netid_map_t;
 netid_map_t actor_by_netid;
+
+std::vector<AActor::AActorPtr> AActor::s_friendlies;
 
 IMPLEMENT_SERIAL(AActor, DThinker)
 
@@ -124,20 +128,84 @@ void MapThing::Serialize (FArchive &arc)
 	}
 }
 
+inline void CredibilityState::Update(const AActor& mobj)
+{
+    // On the server, just leave the FULLY_CREDIBLE default in place forever and make this
+    // an empty function so that the compiler has the opportunity to no-op any calls to it.
+    //
+#ifdef CLIENT_APP
+    if (not serverside)     // But we still need to check in case we're in single-player.
+    {
+        if (mobj.updatedDuringTic >= 0 and m_credibility != CredibilityEnum::ALWAYS_CREDIBLE)
+        {
+            const int ticsSinceAuthoritativeUpdate = gametic - mobj.updatedDuringTic;
+
+            if (ticsSinceAuthoritativeUpdate == 0)
+            {
+                m_crediblePosition.x = mobj.x;
+                m_crediblePosition.y = mobj.y;
+                m_crediblePosition.z = mobj.z;
+
+                m_credibility             = CredibilityEnum::FULLY_CREDIBLE;
+                m_predictedMotionTicCount = 0;
+            }
+            // In sv_main, we nominally update mobjs every 7 tics.
+            // Allow up to 10 before we stop fully believing it, to allow for jitter plus
+            // some "real world slop" margin.
+            else if (ticsSinceAuthoritativeUpdate < 10)
+            {
+                m_credibility = CredibilityEnum::FULLY_CREDIBLE;
+            }
+            else
+            {
+                if (m_predictedMotionTicCount > 0 or
+                       not (m_crediblePosition.x == mobj.x and
+                            m_crediblePosition.y == mobj.y and
+                            m_crediblePosition.z == mobj.z))
+                {
+                    ++m_predictedMotionTicCount;
+                }
+
+                // Possible weakness to this algorithm:  Suppose the client predicts that
+                // the mobj is dead-still but the server says it's in motion yet it's SEMI_AWARE
+                // or just a lower-priority SEMI_AWARE?  We just have to hope that the server
+                // decides to naturally send an UpdateMobj for it at some point.
+
+                if (m_predictedMotionTicCount < 10 * TICRATE)       // wild-ass guess.  10 seconds okay?
+                {
+                    // In this mode, the client is letting the mobj wander about via dead reckoning.
+                    // We guess that the mobj hasn't wandered TOO far from where the server says it
+                    // should be.
+                    m_credibility = CredibilityEnum::SEMI_CREDIBLE;
+                }
+                else
+                {
+                    if (m_credibility != CredibilityEnum::CHALLENGED_CREDIBILITY)
+                    {
+                        m_credibility = CredibilityEnum::NOT_CREDIBLE;
+                    }
+                }
+            }
+        }
+    }
+#endif
+}
+
 AActor::AActor()
     : x(0), y(0), z(0), prevx(0), prevy(0), prevz(0), snext(NULL), sprev(NULL), angle(0),
       prevangle(0), sprite(SPR_UNKN), frame(0), pitch(0), prevpitch(0), effects(0),
       subsector(NULL), floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0),
       height(0), momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING),
-      info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0), 
-      flags3(0), oflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
+      info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0),
+      flags3(0), oflags(0), statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
-      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
-      rndindex(0), netid(0), tid(0), bmapnode(this), baseline_set(false)
+      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), rndindex(0),
+      spawnRndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
+      netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), spawnTic(gametic),
+      mobjtic(gametic), bmapnode(this)
 {
-	memset(args, 0, sizeof(args));
-	memset(&baseline, 0, sizeof(baseline));
+	args.fill(0);
 	self.init(this);
 }
 
@@ -150,45 +218,47 @@ AActor::AActor(const AActor& other)
       dropoffz(other.dropoffz), floorsector(other.floorsector), radius(other.radius),
       height(other.height), momx(other.momx), momy(other.momy), momz(other.momz),
       validcount(other.validcount), type(other.type), info(other.info), tics(other.tics),
-      state(other.state), damage(other.damage), 
-      flags(other.flags), flags2(other.flags2), flags3(other.flags3), oflags(other.oflags), 
+      state(other.state), damage(other.damage),
+      flags(other.flags), flags2(other.flags2), flags3(other.flags3), oflags(other.oflags),
       special1(other.special1), special2(other.special2),
       health(other.health), movedir(other.movedir), movecount(other.movecount),
       visdir(other.visdir), reactiontime(other.reactiontime), threshold(other.threshold),
-      player(other.player), lastlook(other.lastlook), special(other.special),
+      player(other.player), lastlook(other.lastlook), special(other.special), args(other.args),
       inext(other.inext), iprev(other.iprev), translation(other.translation),
       translucency(other.translucency), waterlevel(other.waterlevel), gear(other.gear),
       onground(other.onground), touching_sectorlist(other.touching_sectorlist),
-      deadtic(other.deadtic), oldframe(other.oldframe), rndindex(other.rndindex),
-      netid(other.netid), tid(other.tid), bmapnode(other.bmapnode), baseline_set(false)
+      deadtic(other.deadtic), rndindex(other.rndindex), spawnRndindex(other.spawnRndindex),
+      friend_playerid(other.friend_playerid), friend_teamid(other.friend_teamid),
+      pursuecount(other.pursuecount), strafecount(other.strafecount), netid(other.netid), tid(other.tid),
+      baseline_set(false), updatedDuringTic(other.updatedDuringTic), spawnTic(other.spawnTic),
+      mobjtic(other.mobjtic), credibility {other.credibility}, bmapnode(other.bmapnode)
 {
-	memcpy(args, other.args, sizeof(args));
 	memcpy(&baseline, &other.baseline, sizeof(baseline));
 	self.init(this);
 }
 
 AActor &AActor::operator= (const AActor &other)
 {
-	x = other.x;
+    x = other.x;
     y = other.y;
     z = other.z;
-	prevx = other.prevx;
-	prevy = other.prevy;
-	prevz = other.prevz;
+    prevx = other.prevx;
+    prevy = other.prevy;
+    prevz = other.prevz;
     snext = other.snext;
     sprev = other.sprev;
     angle = other.angle;
-	prevangle = other.prevangle;
+    prevangle = other.prevangle;
     sprite = other.sprite;
     frame = other.frame;
     pitch = other.pitch;
-	prevpitch = other.prevpitch;
+    prevpitch = other.prevpitch;
     effects = other.effects;
     subsector = other.subsector;
     floorz = other.floorz;
     ceilingz = other.ceilingz;
-	dropoffz = other.dropoffz;
-	floorsector = other.floorsector;
+    dropoffz = other.dropoffz;
+    floorsector = other.floorsector;
     radius = other.radius;
     height = other.height;
     momx = other.momx;
@@ -202,8 +272,9 @@ AActor &AActor::operator= (const AActor &other)
     damage = other.damage;
     flags = other.flags;
     flags2 = other.flags2;
-	flags3 = other.flags3;
-	oflags = other.oflags;
+    flags3 = other.flags3;
+    oflags = other.oflags;
+    statusflags = other.statusflags;
     special1 = other.special1;
     special2 = other.special2;
     health = other.health;
@@ -219,21 +290,31 @@ AActor &AActor::operator= (const AActor &other)
     translation = other.translation;
     translucency = other.translucency;
     waterlevel = other.waterlevel;
-	gear = other.gear;
+    gear = other.gear;
     onground = other.onground;
     touching_sectorlist = other.touching_sectorlist;
     deadtic = other.deadtic;
-    oldframe = other.oldframe;
     rndindex = other.rndindex;
+    spawnRndindex = other.spawnRndindex;
+    friend_playerid = other.friend_playerid;
+    friend_teamid = other.friend_teamid;
+    pursuecount = other.pursuecount;
+    strafecount = other.strafecount;
     netid = other.netid;
     tid = other.tid;
     special = other.special;
-    memcpy(args, other.args, sizeof(args));
-	bmapnode = other.bmapnode;
-	memcpy(&baseline, &other.baseline, sizeof(baseline));
-	baseline_set = other.baseline_set;
+    args = other.args;
 
-	return *this;
+    bmapnode = other.bmapnode;
+    memcpy(&baseline, &other.baseline, sizeof(baseline));
+    baseline_set = other.baseline_set;
+
+    updatedDuringTic = other.updatedDuringTic;
+    spawnTic         = other.spawnTic;
+    mobjtic          = other.mobjtic;
+    credibility      = other.credibility;
+
+    return *this;
 }
 
 //
@@ -242,29 +323,29 @@ AActor &AActor::operator= (const AActor &other)
 //
 //
 
-AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
-    : x(0), y(0), z(0), prevx(0), prevy(0), prevz(0), snext(NULL), sprev(NULL), angle(0),
+AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, int32_t itype)
+    : x(ix), y(iy), z(0), prevx(0), prevy(0), prevz(0), snext(NULL), sprev(NULL), angle(0),
       prevangle(0), sprite(SPR_UNKN), frame(0), pitch(0), prevpitch(0), effects(0),
       subsector(NULL), floorz(0), ceilingz(0), dropoffz(0), floorsector(NULL), radius(0),
-      height(0), momx(0), momy(0), momz(0), validcount(0), type(MT_UNKNOWNTHING),
+      height(0), momx(0), momy(0), momz(0), validcount(0), type(itype),
       info(NULL), tics(0), state(NULL), damage(0), flags(0), flags2(0), flags3(0), oflags(0),
-      special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
+      statusflags(0), special1(0), special2(0), health(0), movedir(0), movecount(0), visdir(0),
       reactiontime(0), threshold(0), player(NULL), lastlook(0), special(0), inext(NULL),
       iprev(NULL), translation(translationref_t()), translucency(0), waterlevel(0),
-      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), oldframe(0),
-      rndindex(0), netid(0), tid(0), bmapnode(this), baseline_set(false)
+      gear(0), onground(false), touching_sectorlist(NULL), deadtic(0), rndindex(0),
+      spawnRndindex(0), friend_playerid(0), friend_teamid(TEAM_NONE), pursuecount(0), strafecount(0),
+      netid(0), tid(0), baseline(), baseline_set(false), updatedDuringTic(-1), spawnTic(gametic),
+      mobjtic(gametic), bmapnode(this)
 {
 	// Fly!!! fix it in P_RespawnSpecial
-	if ((unsigned int)itype >= NUMMOBJTYPES)
+	const auto it = ::mobjinfo.find(itype);
+	if (it == mobjinfo.end())
 	{
-		I_Error ("Tried to spawn actor type %d\n", itype);
+		I_Error("Tried to spawn actor type {}\n", itype);
 	}
 
 	self.init(this);
-	info = &mobjinfo[itype];
-	type = itype;
-	x = ix;
-	y = iy;
+	info = &it->second;
 	radius = info->radius;
 	height = P_ThingInfoHeight(info);
 	damage = info->damage;
@@ -274,6 +355,7 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
 	health = info->spawnhealth;
 	translucency = info->translucency;
 	rndindex = M_Random();
+	spawnRndindex = rndindex;
 
 	if (multiplayer && serverside)
 		netid = ::ServerNetID.obtainNetID();
@@ -288,11 +370,11 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
 
 	// do not set the state with P_SetMobjState,
 	// because action routines can not be called yet
-	state_t* st = &states[info->spawnstate];
-	state = st;
-	tics = st->tics;
-	sprite = st->sprite;
-	frame = st->frame;
+	state_t& st = states[info->spawnstate];
+	state = &st;
+	tics = st.tics;
+	sprite = st.sprite;
+	frame = st.frame;
 	touching_sectorlist = NULL;	// NULL head of sector list // phares 3/13/98
 
 	// set subsector and/or block links
@@ -324,14 +406,74 @@ AActor::AActor(fixed_t ix, fixed_t iy, fixed_t iz, mobjtype_t itype)
 	}
 
 	spawnpoint.type = 0;
-	memset(args, 0, sizeof(args));
-	memset(&baseline, 0, sizeof(baseline));
+	args.fill(0);
 }
 
+void AActor::ResetFlagsToDefault()
+{
+	// First, manage any special states that are strictly tied to any of the flags
+	// which may or may not have changed since construction.
+
+	SetFriendly(this->info->flags & MF_FRIEND, nullptr);
+
+	// Then assign the flags.
+	this->flags = info->flags;
+}
+
+void AActor::ClearFriendly()
+{
+	if (IsFriendly())
+	{
+		this->flags &= ~MF_FRIEND;
+		std::erase_if(s_friendlies, [this] (const AActor::AActorPtr& friendly)
+		                            {
+		                                return friendly == this;
+		                            });
+	}
+}
+
+void AActor::SetFriendly (bool i_isFriendly, const AActor* owner)
+{
+	const bool isAlreadyFriendly = IsFriendly();
+
+	if (i_isFriendly != isAlreadyFriendly)
+	{
+		if (i_isFriendly)
+		{
+			this->flags |= MF_FRIEND;
+			s_friendlies.push_back(ptr());
+
+			P_FriendlyEffects(this);
+		}
+		else
+		{
+			ClearFriendly();
+		}
+	}
+
+	if (owner)
+	{
+		if (owner->player and i_isFriendly)
+		{
+			this->friend_playerid = owner->player->id;
+			this->friend_teamid   = owner->player->userinfo.team;
+		}
+		else if (owner->IsFriendly())
+		{
+			this->friend_playerid = owner->friend_playerid;
+			this->friend_teamid   = owner->friend_teamid;
+		}
+	}
+}
 
 bool P_IsVoodooDoll(const AActor* mo)
 {
-	return mo->player && mo->player->mo != mo;
+	return mo->player and mo->player->mo != mo;
+}
+
+static bool P_IsVoodooDollOrAvatar(const AActor* mo)
+{
+	return mo->type == MT_AVATAR or P_IsVoodooDoll(mo);
 }
 
 //
@@ -365,12 +507,16 @@ void P_ClearAllNetIds()
 //
 AActor* P_FindThingById(uint32_t id)
 {
-	netid_map_t::iterator i = actor_by_netid.find(id);
+	if (id)
+	{
+		netid_map_t::iterator i = actor_by_netid.find(id);
 
-	if(i == actor_by_netid.end())
-		return AActor::AActorPtr();
-	else
-		return i->second;
+		if(i != actor_by_netid.end())
+		{
+			return i->second;
+		}
+	}
+	return nullptr;
 }
 
 //
@@ -379,7 +525,10 @@ AActor* P_FindThingById(uint32_t id)
 void P_SetThingId(AActor *mo, uint32_t newnetid)
 {
 	mo->netid = newnetid;
-	actor_by_netid[newnetid] = mo->ptr();
+	if (newnetid)
+	{
+		actor_by_netid[newnetid] = mo->ptr();
+	}
 }
 
 
@@ -409,24 +558,28 @@ void P_ClearId(uint32_t id)
 //
 void AActor::Destroy ()
 {
+	if (WasDestroyed())
+		return;
+
 	SV_SendDestroyActor(this);
 
 	actor_by_netid.erase(netid);
+	ClearFriendly();
 
 	// Remove from health pool.
 	if (!::savegamerestore)
 		P_RemoveHealthPool(this);
 
     // Add special to item respawn queue if it is destined to be respawned
-	if ((flags & MF_SPECIAL) && !(flags & MF_DROPPED) && spawnpoint.type > 0)
+	// also add barrels
+	if (((flags & MF_SPECIAL) && !(flags & MF_DROPPED) && spawnpoint.type > 0) ||
+		info->type == MT_BARREL)
 	{
-		itemrespawnque[iquehead] = spawnpoint;
-		itemrespawntime[iquehead] = level.time;
-		iquehead = (iquehead+1)&(ITEMQUESIZE-1);
+		itemrespawnque.emplace(spawnpoint, level.time);
 
 		// lose one off the end?
-		if (iquehead == iquetail)
-			iquetail = (iquetail+1)&(ITEMQUESIZE-1);
+		if (demoplayback && itemrespawnque.size() >= 128)
+			itemrespawnque.pop();
 	}
 
 	// [RH] Unlink from tid chain
@@ -449,6 +602,13 @@ void AActor::Destroy ()
 	Super::Destroy ();
 }
 
+void P_CheckTouchy(AActor* mo)
+{
+	/* killough 11/98: touchy objects explode on impact */
+	if (mo->flags & MF_TOUCHY && mo->oflags & MFO_ARMED && mo->health > 0)
+		P_DamageMobj(mo, NULL, NULL, mo->health);
+}
+
 //
 // P_CalculateMinMom
 //
@@ -458,22 +618,50 @@ void AActor::Destroy ()
 // [SL] Factored out of P_MoveActor for reuse and changed to fixed-point math
 // for consistency purposes.
 //
-fixed_t P_CalculateMinMom(AActor *mo)
+fixed_t P_CalculateMinMom(const AActor *mo)
 {
-	fixed_t levelgravity, sectorgravity;
-
-	if (co_zdoomphys)
-	{
-		levelgravity = FixedDiv(FLOAT2FIXED(level.gravity), 100 << FRACBITS);
-		sectorgravity = FLOAT2FIXED(mo->subsector->sector->gravity);
-	}
-	else
-	{
-		levelgravity = GRAVITY * 8;
-		sectorgravity = FLOAT2FIXED(mo->subsector->sector->gravity);
-	}
+	const float   sectorGravityFloat = (mo && mo->subsector) ? mo->subsector->sector->gravity : 1.0f;
+	const fixed_t sectorgravity      = FLOAT2FIXED(sectorGravityFloat);
+	const fixed_t levelgravity       = co_zdoomphys ? FixedDiv(FLOAT2FIXED(level.gravity), 100 << FRACBITS) : GRAVITY * 8;
 
 	return -FixedMul(levelgravity, sectorgravity);
+}
+
+//
+// Floating item bobbing
+//
+// [RV] +FLOATBOB actors use the common ZDoom offset table.  
+// special1 stores the center offset from the floor.
+// The table supplies the visual bob.
+//
+static constexpr fixed_t FloatBobOffsets[64] =
+{
+	0, 51389, 102283, 152192,
+	200636, 247147, 291278, 332604,
+	370727, 405280, 435929, 462380,
+	484378, 501712, 514213, 521763,
+	524287, 521763, 514213, 501712,
+	484378, 462380, 435929, 405280,
+	370727, 332604, 291278, 247147,
+	200636, 152192, 102283, 51389,
+	-1, -51390, -102284, -152193,
+	-200637, -247148, -291279, -332605,
+	-370728, -405281, -435930, -462381,
+	-484380, -501713, -514215, -521764,
+	-524288, -521764, -514214, -501713,
+	-484379, -462381, -435930, -405280,
+	-370728, -332605, -291279, -247148,
+	-200637, -152193, -102284, -51389
+};
+
+static fixed_t P_FloatBobOffset(const AActor* mo)
+{
+	return FloatBobOffsets[(mo->rndindex + level.time) & 63];
+}
+
+static fixed_t P_FloatBobCenterZ(const AActor* mo)
+{
+	return mo->floorz + mo->special1;
 }
 
 //
@@ -529,20 +717,23 @@ void P_MoveActor(AActor *mo)
     BlockingMobj = NULL;
 
 	P_XYMovement(mo);
+	mo->oflags &= ~MFO_ISONCONVEYOR;      // Clear the flag - it will be set again if still on conveyor.
 
-	if (mo->ObjectFlags & OF_MassDestruction)
+	if (mo->ObjectFlags & OF_Destroyed)
 		return;		// actor was destroyed
 
 	if (mo->flags2 & MF2_FLOATBOB)
-	{ // Floating item bobbing motion (special1 is height)
-		mo->z = mo->floorz + mo->special1;
-	}
-	if ((mo->z != mo->floorz) || mo->momz || BlockingMobj)
 	{
-	    // Handle Z momentum and gravity
-		if (P_AllowPassover() && (mo->flags2 & MF2_PASSMOBJ))
+		mo->z = P_FloatBobCenterZ(mo) + P_FloatBobOffset(mo);
+	}
+	if (mo->momz || BlockingMobj ||
+	    (mo->z != mo->floorz &&
+	     (!(mo->flags2 & MF2_FLOATBOB) || P_FloatBobCenterZ(mo) != mo->floorz)))
+	{
+		// Handle Z momentum and gravity
+		if (P_AllowPassover() && ((mo->flags2 & MF2_PASSMOBJ) || (mo->flags & MF_SPECIAL)))
 		{
-		    if (!(onmo = P_CheckOnmobj(mo)))
+			if (!(onmo = P_CheckOnmobj(mo)))
 			{
 				P_ZMovement(mo);
 				if (mo->player && mo->flags2 & MF2_ONMOBJ)
@@ -552,11 +743,11 @@ void P_MoveActor(AActor *mo)
 			}
 			else
 			{
-			    if (mo->player)
+				if (mo->player)
 				{
 					minmom = P_CalculateMinMom(mo);
 
-					if (mo->momz < minmom && !(mo->flags2&MF2_FLY))
+					if (mo->momz < minmom && !(mo->flags2 & MF2_FLY))
 						PlayerLandedOnThing(mo, onmo);
 				}
 				if (onmo->z + onmo->height - mo->z <= 24 * FRACUNIT)
@@ -565,22 +756,49 @@ void P_MoveActor(AActor *mo)
 					{
 						mo->player->viewheight -= onmo->z + onmo->height - mo->z;
 						mo->player->deltaviewheight =
-							(VIEWHEIGHT - mo->player->viewheight)>>3;
+						    (VIEWHEIGHT - mo->player->viewheight) >> 3;
 					}
-					mo->z = onmo->z + onmo->height;
+					if (mo->flags2 & MF2_FLOATBOB)
+					{
+						mo->special1 = onmo->z + onmo->height - mo->floorz;
+						mo->z = P_FloatBobCenterZ(mo) + P_FloatBobOffset(mo);
+					}
+					else
+					{
+						mo->z = onmo->z + onmo->height;
+					}
 				}
 
 				mo->flags2 |= MF2_ONMOBJ;
 				mo->momz = 0;
+				P_CheckTouchy(onmo);
 			}
 		}
-	    else
-	    {
-            P_ZMovement(mo);
-	    }
+		else
+		{
+			P_ZMovement(mo);
+		}
 
-        if (mo->ObjectFlags & OF_MassDestruction)
-            return;		// actor was destroyed
+		if (mo->ObjectFlags & OF_Destroyed)
+			return; // actor was destroyed
+	}
+	else if (!(mo->momx | mo->momy) && !sentient(mo))
+	{                            // non-sentient objects at rest
+		mo->oflags |= MFO_ARMED; // arm a mine which has come to rest
+
+		// killough 9/12/98: objects fall off ledges if they are hanging off
+		// slightly push off of ledge if hanging more than halfway off
+		// [RH] Be more restrictive to avoid pushing monsters/players down steps
+		if (!(mo->flags & MF_NOGRAVITY) && !(mo->flags2 & MF2_FLOATBOB) &&
+			(mo->z > mo->dropoffz) && P_AllowDropOff())
+		{
+			P_ApplyTorque(mo); // Apply torque
+		}
+		else
+		{
+			mo->oflags &= ~MFO_FALLING;
+			mo->gear = 0; // Reset torque
+		}
 	}
 
 	if (mo->subsector)
@@ -620,21 +838,6 @@ void P_MoveActor(AActor *mo)
 		if (!mo->player && map_format.actor_in_special_sector(mo))
 			return;
 	}
-
-	// killough 9/12/98: objects fall off ledges if they are hanging off
-	// slightly push off of ledge if hanging more than halfway off
-	// [RH] Be more restrictive to avoid pushing monsters/players down steps
-	if (!(mo->flags & MF_NOGRAVITY) && !(mo->flags2 & MF2_FLOATBOB) && (mo->z > mo->dropoffz) &&
-		 (mo->health <= 0 || (mo->flags & MF_COUNTKILL && mo->z - mo->dropoffz > 24*FRACUNIT)) &&
-	    P_AllowDropOff())
-	{
-		P_ApplyTorque(mo);   // Apply torque
-	}
-	else
-	{
-		mo->oflags &= ~MFO_FALLING;
-		mo->gear = 0;           // Reset torque
-	}
 }
 
 
@@ -667,6 +870,11 @@ void P_TestActorMovement(AActor *mo, fixed_t tryx, fixed_t tryy, fixed_t tryz,
 	backup.toActor(mo);
 }
 
+void AActor::PostThink()
+{
+	++mobjtic;
+}
+
 //
 // P_MobjThinker
 //
@@ -675,12 +883,26 @@ void AActor::RunThink ()
 	if(!subsector)
 		return;
 
+	// MUSINFO
+	if (type == MT_MUSICSOURCE && clientside)
+	{
+		if (musinfo.mapthing != this
+		    && displayplayer().mo->subsector
+		    && subsector->sector == displayplayer().mo->subsector->sector)
+		{
+			musinfo.lastmapthing = musinfo.mapthing;
+			musinfo.mapthing = this->ptr();
+			musinfo.tics = 30;
+		}
+		return;
+	}
+
 	prevx = x;
 	prevy = y;
 	prevz = z;
 
-	if (!player)
-	{
+	if (!player || P_IsVoodooDoll(this))    // True voodoo dolls have non-null player pointers, but we still want
+	{                                       // to update the dolls' previous angles, so check for that.
 		prevangle = angle;
 		prevpitch = pitch;
 	}
@@ -738,6 +960,7 @@ void AActor::RunThink ()
 	else
 #endif
 	{
+		credibility.Update(*this);
 		P_MoveActor(this);
 	}
 
@@ -763,7 +986,7 @@ void AActor::RunThink ()
 		if (!(flags & MF_COUNTKILL) || !respawnmonsters)
 			return;
 
-		// Ch0wW - Let the server handle it alone. 
+		// Ch0wW - Let the server handle it alone.
 		// (CHECKME: Does that interfere with vanilla demos?)
 		if ((multiplayer && clientside && !serverside))
 			return;
@@ -793,8 +1016,8 @@ void AActor::RunThink ()
 
 void AActor::Serialize (FArchive &arc)
 {
-	const DWORD TLATE_NONE = 0xFFFFFFFF;
-	const DWORD TLATE_BOSS = 0xFFFFFFFE;
+	static constexpr uint32_t TLATE_NONE = 0xFFFFFFFF;
+	static constexpr uint32_t TLATE_BOSS = 0xFFFFFFFE;
 
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
@@ -829,6 +1052,7 @@ void AActor::Serialize (FArchive &arc)
 			<< flags2
 			<< flags3
 			<< oflags
+			<< statusflags
 			<< special1
 			<< special2
 			<< health
@@ -843,17 +1067,23 @@ void AActor::Serialize (FArchive &arc)
 			<< lastlook
 			<< tracer
 			<< tid
-            << special
+			<< special
 			<< args[0]
 			<< args[1]
 			<< args[2]
 			<< args[3]
 			<< args[4]
 			/*<< goal ? goal->netid : 0*/
-			<< (unsigned)0
+			<< 0_u32
 			<< translucency
 			<< waterlevel
-			<< gear;
+			<< gear
+			<< rndindex
+			<< spawnRndindex
+			<< updatedDuringTic
+			<< spawnTic
+			<< mobjtic
+			<< credibility;
 
 		// NOTE(jsd): This is pretty awful right here:
 		//       [AM] I am now part of the problem.
@@ -865,7 +1095,7 @@ void AActor::Serialize (FArchive &arc)
 			}
 			else
 			{
-				arc << (DWORD)(translation.getTable() - ::translationtables);
+				arc << static_cast<uint32_t>(translation.getTable() - ::translationtables);
 			}
 		}
 		else
@@ -908,9 +1138,10 @@ void AActor::Serialize (FArchive &arc)
 			>> tics
 			>> state
 			>> flags
-			>> flags2 
+			>> flags2
 			>> flags3
 			>> oflags
+			>> statusflags
 			>> special1
 			>> special2
 			>> health
@@ -935,13 +1166,19 @@ void AActor::Serialize (FArchive &arc)
 			>> dummy
 			>> translucency
 			>> waterlevel
-			>> gear;
+			>> gear
+			>> rndindex
+			>> spawnRndindex
+			>> updatedDuringTic
+			>> spawnTic
+			>> mobjtic
+			>> credibility;
 
 		tracer.init(tmptracer);
 
 		P_SetThingId(this, newnetid);
 
-		DWORD trans;
+		uint32_t trans;
 		arc >> trans;
 		if (trans == TLATE_NONE)
 		{
@@ -964,15 +1201,19 @@ void AActor::Serialize (FArchive &arc)
 		}
 		spawnpoint.Serialize (arc);
 		baseline.Serialize(arc);
-		if(type >= NUMMOBJTYPES)
-			I_Error("Unknown object type in saved game");
-		if(sprite >= NUMSPRITES)
-			I_Error("Unknown sprite in saved game");
+		if (!mobjinfo.contains(type))
+		{
+			I_Error("AActor::Serialize: Unknown object type ({}) in saved game", type);
+		}
+		if (!sprnames.contains(sprite))
+		{
+			I_Error("AActor::Serialize: Unknown sprite ({}) in saved game", sprite);
+		}
 		info = &mobjinfo[type];
 		touching_sectorlist = NULL;
 
 		LinkToWorld ();
-		floorsector = subsector->sector;
+		floorsector = subsector ? subsector->sector : nullptr;
 
 		AddToHash ();
 		if(playerid && validplayer(idplayer(playerid)))
@@ -980,6 +1221,18 @@ void AActor::Serialize (FArchive &arc)
 			player = &idplayer(playerid);
 			player->mo = ptr();
 			player->camera = player->mo;
+		}
+
+		if (type == MT_AVATAR)
+		{
+			for (auto& voodoo : ::voodoostarts)
+			{
+				if (voodoo.mapThing == spawnpoint)
+				{
+					voodoo.mobj = ptr();
+					break;
+				}
+			}
 		}
 	}
 }
@@ -1004,31 +1257,33 @@ int P_ThingInfoHeight(mobjinfo_t *mi)
 // [AM] Taken from Crispy Doom, with a smaller limit - 10,000 iterations
 //      still seems like a lot to me.
 
-#define MOBJ_CYCLE_LIMIT 10000
+#define MOBJ_CYCLE_LIMIT 512
 
 // P_SetMobjState
 //
 // Returns true if the mobj is still present.
-bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
+bool P_SetMobjState(AActor *mobj, int32_t state, bool cl_update)
 {
 	state_t* st;
 	int cycle_counter = 0;
 
 	do
 	{
-		if (state >= ARRAY_LENGTH(states) || state < 0)
+		if (!states.contains(state))
 		{
-			I_Error("P_SetMobjState: State %d does not exist in state table.", state);
+			I_Error("P_SetMobjState: State {} does not exist in state table.", state);
 		}
 
+		// strongly typed enum
 		if (state == S_NULL)
 		{
-			mobj->state = (state_t *) S_NULL;
+			mobj->state = &states[S_NULL];
 			mobj->Destroy();
 			return false;
 		}
 
 		st = &states[state];
+
 		mobj->state = st;
 		mobj->tics = st->tics;
 		mobj->sprite = st->sprite;
@@ -1045,7 +1300,9 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 		// Modified handling.
 		// Call action functions when the state is set
 		if (st->action)
+		{
 			st->action(mobj);
+		}
 
 		state = st->nextstate;
 
@@ -1053,8 +1310,8 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 		// [AM] A slightly different heruistic that doesn't involve global state.
 		if (cycle_counter++ > MOBJ_CYCLE_LIMIT)
 		{
-			I_Error("P_SetMobjState: Infinite state cycle detected for %s at state %d.",
-			        mobj->info->name, state);
+			I_Error("P_SetMobjState: Infinite state cycle detected for {} at state {}.",
+			        mobj->info->name ? mobj->info->name : fmt::format("thing {}", mobj->info->type), state);
 		}
 	} while (!mobj->tics);
 
@@ -1074,10 +1331,12 @@ bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update)
 //
 static void P_WindThrustActor(AActor* mo)
 {
-	if (mo->flags2 & MF2_WINDTHRUST)
+	if (   mo
+	    && mo->subsector
+	    && (mo->flags2 & MF2_WINDTHRUST))
 	{
-		static const int windTab[3] = {2048*5, 2048*10, 2048*25};
-		int special = mo->subsector->sector->special;
+		static constexpr int windTab[3] = {2048*5, 2048*10, 2048*25};
+		const int special = mo->subsector->sector->special;
 		switch (special)
 		{
 			case 40: case 41: case 42: // Wind_East
@@ -1093,6 +1352,46 @@ static void P_WindThrustActor(AActor* mo)
 				P_ThrustMobj (mo, ANG180, windTab[special - 49]);
 				break;
 		}
+	}
+}
+
+static void P_WallBouncy(AActor* mo)
+{
+	if (mo->flags & MF_BOUNCES ||
+	    (!mo->player && BlockingLine &&
+	     mo->z <= mo->floorz && P_GetFriction(mo, NULL) > ORIG_FRICTION))
+	{
+		if (BlockingLine)
+		{
+			fixed_t r = ((BlockingLine->dx >> FRACBITS) * mo->momx +
+			             (BlockingLine->dy >> FRACBITS) * mo->momy) /
+			            ((BlockingLine->dx >> FRACBITS) * (BlockingLine->dx >> FRACBITS) +
+			             (BlockingLine->dy >> FRACBITS) * (BlockingLine->dy >> FRACBITS));
+			fixed_t x = FixedMul(r, BlockingLine->dx);
+			fixed_t y = FixedMul(r, BlockingLine->dy);
+
+			// reflect momentum away from wall
+
+			mo->momx = x * 2 - mo->momx;
+			mo->momy = y * 2 - mo->momy;
+
+			// if under gravity, slow down in
+			// direction perpendicular to wall.
+
+			if (!(mo->flags & MF_NOGRAVITY))
+			{
+				mo->momx = (mo->momx + x) / 2;
+				mo->momy = (mo->momy + y) / 2;
+			}
+		}
+		else
+		{
+			mo->momx = mo->momy = 0;
+		}
+	}
+	else
+	{
+		mo->momx = mo->momy = 0;
 	}
 }
 
@@ -1198,7 +1497,7 @@ static void P_ActorSlideAgainstActor(AActor* mo, fixed_t ptryx, fixed_t ptryy)
 {
 	// try sliding in the x direction
 	fixed_t tx = 0, ty = ptryy - mo->y;
-	
+
 	bool walkplane = P_CheckSlopeWalk(mo, tx, ty);
 
 	if (P_TryMove(mo, mo->x + tx, mo->y + ty, true, walkplane))
@@ -1228,7 +1527,7 @@ static void P_ApplyXYFriction(AActor* mo)
 {
 	// No friction for missiles ever
 	if (mo->flags & (MF_MISSILE | MF_SKULLFLY))
-		return; 	
+		return;
 
 	// Apply air friction
 	if (mo->z > mo->floorz && !(mo->flags2 & (MF2_ONMOBJ | MF2_FLY)) && mo->waterlevel == 0)
@@ -1244,7 +1543,8 @@ static void P_ApplyXYFriction(AActor* mo)
   // killough 8/11/98: add bouncers
 	// killough 9/15/98: add objects falling off ledges
 	// killough 11/98: only include bouncers hanging off ledges
-	if (((mo->flags & MF_BOUNCES && mo->z > mo->dropoffz) || mo->flags & MF_CORPSE) &&
+	if (((mo->flags & MF_BOUNCES && mo->z > mo->dropoffz) || mo->flags & MF_CORPSE ||
+	     mo->oflags & MFO_FALLING) &&
 	    (mo->momx > FRACUNIT / 4 || mo->momx < -FRACUNIT / 4 || mo->momy > FRACUNIT / 4 ||
 	     mo->momy < -FRACUNIT / 4) &&
 	    mo->floorz != mo->subsector->sector->floorheight)
@@ -1253,22 +1553,32 @@ static void P_ApplyXYFriction(AActor* mo)
 	// keep corpses sliding if halfway off a step with some momentum
 	if ((mo->flags & MF_CORPSE) && (abs(mo->momx) > FRACUNIT/4 || abs(mo->momy) > FRACUNIT/4))
 	{
-		if (mo->floorz > P_FloorHeight(mo))
+		if (mo->floorz != P_FloorHeight(mo))
 			return;
 	}
 
-	bool stationary_player = mo->player &&
-			(mo->player->cmd.forwardmove == 0 && mo->player->cmd.sidemove == 0);
+	const bool isPlayer                 = mo->player != nullptr;
+	const bool isVoodooOrAvatar         = P_IsVoodooDollOrAvatar(mo);
+	const bool isRealPlayer             = isPlayer and not isVoodooOrAvatar;
+	const bool isUserCommandingMotion   = mo->player and (mo->player->cmd.forwardmove != 0 or
+	                                                      mo->player->cmd.sidemove != 0);
+	const bool isOnConveyor             = mo->oflags & MFO_ISONCONVEYOR;
+	const bool isSuperSlowVoodoo        = isVoodooOrAvatar and co_voodooscroller;
+
+	const bool keepInMotion = (isOnConveyor and not isSuperSlowVoodoo)
+	                           or
+	                          (isRealPlayer and isUserCommandingMotion);
 
 	// killough 11/98: Stop voodoo dolls that have come to rest,
 	// despite any moving corresponding player:
-	if (abs(mo->momx) < STOPSPEED && abs(mo->momy) < STOPSPEED &&
-		(!mo->player || stationary_player || P_IsVoodooDoll(mo)))
+	if (abs(mo->momx) < STOPSPEED and abs(mo->momy) < STOPSPEED and not keepInMotion)
 	{
 		// if in a walking frame, stop moving
 		// killough 10/98: Don't affect main player when voodoo dolls stop:
-		if (mo->player && !P_IsVoodooDoll(mo) && (unsigned)((mo->state - states) - S_PLAY_RUN1) < 4)
+		if (isRealPlayer and static_cast<uint32_t>((mo->state->statenum) - S_PLAY_RUN1) < 4)
+		{
 			P_SetMobjState(mo, S_PLAY);
+		}
 
 		mo->momx = mo->momy = 0;
 	}
@@ -1335,7 +1645,7 @@ void P_XYMovement(AActor *mo)
 			ptryx = mo->x + xmove;
 			ptryy = mo->y + ymove;
 		}
-		else if (!co_zdoomphys && (xmove > maxmove || ymove > maxmove))
+		else if (!co_zdoomphys && ((xmove > maxmove || ymove > maxmove) || (co_mbfphys && (xmove < -maxmove || ymove < -maxmove))))
 		{
 			ptryx = mo->x + xmove / 2;
 			ptryy = mo->y + ymove / 2;
@@ -1364,6 +1674,10 @@ void P_XYMovement(AActor *mo)
 			{
 				if (!P_ExplodeMissileAgainstWall(mo))
 					return;
+			}
+			else if (!(mo->flags & (MF_MISSILE | MF_SKULLFLY)) && P_IsMBFCompatMode())
+			{
+				P_WallBouncy(mo);
 			}
 			else
 			{
@@ -1453,7 +1767,7 @@ static void P_PlayerSmoothStepUp(AActor* mo)
 static fixed_t P_CalculateActorGravityDoom(AActor* mo)
 {
 	fixed_t velocity_change = FLOAT2FIXED(level.gravity * mo->subsector->sector->gravity) / 800;
-			
+
 	if (mo->momz == 0)
 		velocity_change *= 2;
 	if (mo->flags2 & MF2_LOGRAV)
@@ -1472,11 +1786,11 @@ static fixed_t P_CalculateActorGravityDoom(AActor* mo)
 //
 static fixed_t P_CalculateActorGravityZDoom(AActor* mo)
 {
-	fixed_t velocity_change = (fixed_t)(level.gravity * mo->subsector->sector->gravity * 81.92f);
+	fixed_t velocity_change = static_cast<fixed_t>(level.gravity * mo->subsector->sector->gravity * 81.92f);
 
 	if (mo->flags2 & MF2_LOGRAV)
 		velocity_change >>= 3;
- 
+
 	return velocity_change;
 }
 
@@ -1688,10 +2002,8 @@ static void P_ActorFakeSectorTriggers(AActor* mo, fixed_t oldz)
 	}
 }
 
-void P_ApplyBouncyPhysics(AActor *mo)
+static void P_ApplyBouncyPhysics(AActor *mo)
 {
-	bool sentient = mo->health > 0 && mo->info->seestate;
-
 	if (mo->flags & MF_BOUNCES && mo->momz)
 	{
 		mo->z += mo->momz;
@@ -1707,9 +2019,9 @@ void P_ApplyBouncyPhysics(AActor *mo)
 					               ? // floaters fall slowly
 					               mo->flags & MF_DROPOFF
 					                   ? // DROPOFF indicates rate
-					                   FixedMul(mo->momz, (fixed_t)(FRACUNIT * .85))
-					                   : FixedMul(mo->momz, (fixed_t)(FRACUNIT * .70))
-					               : FixedMul(mo->momz, (fixed_t)(FRACUNIT * .45));
+					                   FixedMul(mo->momz, static_cast<fixed_t>(FRACUNIT * .85))
+					                   : FixedMul(mo->momz, static_cast<fixed_t>(FRACUNIT * .70))
+					               : FixedMul(mo->momz, static_cast<fixed_t>(FRACUNIT * .45));
 
 					// Bring it to rest below a certain speed
 					if (abs(mo->momz) <= mo->info->mass * (GRAVITY * 4 / 256))
@@ -1723,7 +2035,7 @@ void P_ApplyBouncyPhysics(AActor *mo)
 			mo->z = mo->ceilingz - mo->height;
 			if (mo->momz > 0)
 			{
-				if (R_ResourceIdIsSkyFlat(mo->subsector->sector->ceiling_res_id))
+				if (!R_ResourceIdIsSkyFlat(mo->subsector->sector->ceiling_res_id))
 					mo->momz = -mo->momz; // always bounce off non-sky ceiling
 				else if (mo->flags & MF_MISSILE)
 					mo->Destroy(); // missiles don't bounce off skies
@@ -1768,11 +2080,19 @@ void P_ApplyBouncyPhysics(AActor *mo)
 //
 void P_ZMovement(AActor *mo)
 {
+	// This check also protects a bunch of static functions that are only used
+	// as part of Z-Movement.
+	if (not (mo && mo->subsector))
+	{
+		return;
+	}
+
 	fixed_t oldz = mo->z;
 
 	if (mo->flags & MF_BOUNCES && mo->momz)
 	{
 		P_ApplyBouncyPhysics(mo);
+		P_CheckTouchy(mo);
 		return;
 	}
 
@@ -1784,6 +2104,9 @@ void P_ZMovement(AActor *mo)
 		P_ApplyGravity(mo, P_CalculateActorGravityZDoom(mo));
 
 	mo->z += mo->momz;
+
+	if (mo->momz < 0)
+		P_CheckTouchy(mo);
 
 	if (mo->flags & MF_FLOAT)
 		P_AdjustMonsterFloat(mo);
@@ -1831,7 +2154,7 @@ void PlayerLandedOnThing(AActor *mo, AActor *onmobj)
 		// [SL] 2011-06-16 - ZDoom Oomphiness
 		if (mo->health > 0)
 		{
-			if (mo->momz < (fixed_t)(level.gravity * mo->subsector->sector->gravity * -983.04f))
+			if (mo->momz < static_cast<fixed_t>(level.gravity * mo->subsector->sector->gravity * -983.04f))
 				UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/land1", ATTN_NORM);
 
 			UV_SoundAvoidPlayer(mo, CHAN_VOICE, "player/male/land1", ATTN_NORM);
@@ -1869,7 +2192,7 @@ void P_NightmareRespawn (AActor *mobj)
 	mo = new AActor(
         mobj->x,
         mobj->y,
-        P_FloorHeight(mobj),
+        P_FloorHeight(mobj) + INT2FIXED(gameinfo.telefogHeight),
         MT_TFOG
     );
 	// initiate teleport sound
@@ -1880,7 +2203,7 @@ void P_NightmareRespawn (AActor *mobj)
     ss = P_PointInSubsector (x,y);
 
 	// spawn a teleport fog at the new spot
-    mo = new AActor (x, y,  P_FloorHeight(x, y, ss->sector), MT_TFOG);
+    mo = new AActor (x, y,  P_FloorHeight(x, y, ss->sector) + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
     if (clientside)
         S_Sound (mo, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 
@@ -2082,7 +2405,7 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z)
 		// [SL] 2012-10-02 - Allow a client to predict their own bullet puffs
 		// so don't send the puffs to the client already predicting
 		if (shootthing && shootthing->player && shootthing->player->userinfo.predict_weapons)
-			puff->players_aware.set(shootthing->player->id);
+			puff->playersAware.Set(shootthing->player->id, AwarenessEnum::FULLY_AWARE); // Short-circuit the spawn message.
 
 		SV_SpawnMobj(puff);
 	}
@@ -2091,7 +2414,7 @@ void P_SpawnPuff (fixed_t x, fixed_t y, fixed_t z)
 //
 // P_SpawnTracerPuff
 //
-// Does not pay any attention to shootthing, because revenants do not 
+// Does not pay any attention to shootthing, because revenants do not
 // set that pointer, thus any decision-making based on that pointer will
 // be complete nonsense.
 //
@@ -2157,13 +2480,13 @@ bool P_HitFloor (AActor *thing)
 }
 
 
-bool SV_AwarenessUpdate(player_t &pl, AActor* mo);
+bool SV_AwarenessUpdate(player_t& player, AActor* mo, AwarenessEnum requestedAwarenessLevel);
 //
 // P_CheckMissileSpawn
 // Moves the missile forward a bit
 //	and possibly explodes it right there.
 //
-bool P_CheckMissileSpawn (AActor* th)
+bool P_CheckMissileSpawn (AActor* th, AActor* parent)
 {
 	if (!th)
 		return false;
@@ -2186,9 +2509,16 @@ bool P_CheckMissileSpawn (AActor* th)
 	// [SL] 2011-06-02 - If a missile explodes immediatley upon firing,
 	// make sure we spawn the missile first, send it to all clients immediately
 	// instead of queueing it, then explode it.
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (auto& player : players)
 	{
-		SV_AwarenessUpdate(*it, th);
+		// Inherit the parent's base awareness level, unless the client is only barely aware of the parent.
+		// In that case, we just let it default to NOT_AWARE and let the throttling algorithm update the
+		// player's awareness naturally.
+		const AwarenessEnum baseAwareness = parent ? parent->playersAware.Get(player.id) : AwarenessEnum::FULLY_AWARE;
+		if (baseAwareness != AwarenessEnum::BARELY_AWARE)
+		{
+			SV_AwarenessUpdate(player, th, baseAwareness);
+		}
 	}
 
 	if (!P_TryMove (th, th->x, th->y, false))
@@ -2339,16 +2669,20 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
     an = P_PointToAngle (source->x, source->y, dest_x, dest_y);
 
 	// Horde boss? Make their projectiles look bossy
-	if (source->oflags & MFO_BOSSPOOL)
+	if (source->oflags & MFO_ISHORDEBOSS)
 	{
 		th->oflags |= MFO_FULLBRIGHT;
-		th->effects = FX_YELLOWFOUNTAIN;
+		th->effects |= FX_YELLOWFOUNTAIN;
 		th->translation = translationref_t(&bosstable[0]);
+	}
+	else if (source->flags & MF_FRIEND)
+	{
+		th->translation = translationref_t(&friendtable[0]);
 	}
 
     // fuzzy player
     if (dest_flags & MF_SHADOW)
-		an += P_RandomDiff()<<20;
+		an += P_RandomDiff(th)<<20;
 
     th->angle = an;
     an >>= ANGLETOFINESHIFT;
@@ -2363,7 +2697,7 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 
     th->momz = (dest_z - source->z) / dist;
 
-    P_CheckMissileSpawn (th);
+    P_CheckMissileSpawn (th, source);
 
     return th;
 }
@@ -2372,10 +2706,11 @@ AActor* P_SpawnMissile (AActor *source, AActor *dest, mobjtype_t type)
 // P_SpawnPlayerMissile
 // Tries to aim at a nearby monster
 //
-void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
+AActor* P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 {
+	AActor* th = AActor::AActorPtr();
 	if(!serverside)
-		return;
+		return th;
 
 	fixed_t slope;
 	fixed_t pitchslope = finetangent[FINEANGLES/4 - (source->pitch>>ANGLETOFINESHIFT)];
@@ -2403,7 +2738,7 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 		slope = pitchslope;
 	}
 
-	AActor *th = new AActor (source->x, source->y, source->z + 4*8*FRACUNIT, type);
+	th = new AActor (source->x, source->y, source->z + 4*8*FRACUNIT, type);
 
 	if (th->info->seesound)
 		S_Sound (th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
@@ -2433,7 +2768,9 @@ void P_SpawnPlayerMissile (AActor *source, mobjtype_t type)
 		th->momz = FixedMul(th->info->speed, slope);
 	}
 
-	P_CheckMissileSpawn (th);
+	P_CheckMissileSpawn (th, source);
+
+	return th;
 }
 
 
@@ -2480,9 +2817,9 @@ void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle, f
 		S_Sound(th, CHAN_VOICE, th->info->seesound, 1, ATTN_NORM);
 
 	th->target = source->ptr();
-	an += (angle_t)(((int64_t)angle << 16) / 360);
+	an += static_cast<angle_t>((static_cast<int64_t>(angle) << 16) / 360);
 	th->angle = an;
-	
+
 	if (co_zdoomphys)
 	{
 		v3float_t velocity;
@@ -2520,7 +2857,7 @@ void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle, f
 
 	SV_UpdateMobjState(th);
 
-	P_CheckMissileSpawn(th);
+	P_CheckMissileSpawn(th, source);
 }
 
 //
@@ -2528,15 +2865,6 @@ void P_SpawnMBF21PlayerMissile(AActor* source, mobjtype_t type, fixed_t angle, f
 //
 void P_RespawnSpecials (void)
 {
-	fixed_t 			x;
-	fixed_t 			y;
-	fixed_t 			z;
-
-	AActor* 			mo;
-	mapthing2_t* 		mthing;
-
-	int 				i;
-
 	// clients do no control respawning of items
 	if(!serverside)
 		return;
@@ -2546,73 +2874,58 @@ void P_RespawnSpecials (void)
 		return;
 
 	// nothing left to respawn?
-	if (iquehead == iquetail)
+	if (itemrespawnque.empty())
 		return;
+
+	const auto& [mthing, respawntime] = itemrespawnque.front();
 
 	// wait a certain number of seconds before respawning this special
-	if (level.time - itemrespawntime[iquetail] < sv_itemrespawntime*TICRATE)
+	if (level.time - respawntime < sv_itemrespawntime * TICRATE)
 		return;
 
-	mthing = &itemrespawnque[iquetail];
-
-	x = mthing->x << FRACBITS;
-	y = mthing->y << FRACBITS;
+	const fixed_t x = mthing.x << FRACBITS;
+	const fixed_t y = mthing.y << FRACBITS;
 
 	// find which type to spawn
-	for (i=0 ; i< NUMMOBJTYPES ; i++)
+	auto it = spawn_map.find(mthing.type);
+	if (it == spawn_map.end() ||
+		// Allow or not Partial Invisibility & Invulnerability from respawning
+	    (!sv_respawnsuper && (mthing.type == 2022 || mthing.type == 2024)) ||
+		// pop barrels as well if needed
+		(!sv_respawnbarrels && mthing.type == 2035))
 	{
-		if (mthing->type == mobjinfo[i].doomednum)
-		{
-			// Allow or not Partial Invisibility & Invulnerability from respawning 
-			if (!sv_respawnsuper && (mthing->type == 2022 || mthing->type == 2024))
-			{
-				iquetail = (iquetail + 1)&(ITEMQUESIZE - 1);
-				return;
-			} else {
-				break;
-			}
-		}
-	}
-
-	// [Fly] crashes sometimes without it
-	if (i >= NUMMOBJTYPES)
-	{
-		// pull it from the que
-		iquetail = (iquetail+1)&(ITEMQUESIZE-1);
+		// pull it from the queue
+		itemrespawnque.pop();
 		return;
 	}
 
-	if (mobjinfo[i].flags & MF_SPAWNCEILING)
-		z = ONCEILINGZ;
-	else
-		z = ONFLOORZ;
+	const fixed_t z = it->second->flags & MF_SPAWNCEILING ? ONCEILINGZ : ONFLOORZ;
 
 	// spawn a teleport fog at the new spot
-	mo = new AActor (x, y, z, MT_IFOG);
+	AActor* mo = new AActor (x, y, z, MT_IFOG);
 	SV_SpawnMobj(mo);
 	if (clientside)
 		S_Sound (mo, CHAN_VOICE, "misc/spawn", 1, ATTN_IDLE);
 
 	// spawn it
-	mo = new AActor (x, y, z, (mobjtype_t)i);
-	mo->spawnpoint = *mthing;
-	mo->angle = ANG45 * (mthing->angle/45);
+	mo = new AActor (x, y, z, it->second->type);
+	mo->spawnpoint = mthing;
+	mo->angle = ANG45 * (mthing.angle / 45);
 
 	if (z == ONFLOORZ)
-		mo->z += mthing->z << FRACBITS;
+		mo->z += mthing.z << FRACBITS;
 	else if (z == ONCEILINGZ)
-		mo->z -= mthing->z << FRACBITS;
+		mo->z -= mthing.z << FRACBITS;
 
 	if (mo->flags2 & MF2_FLOATBOB)
-	{ // Seed random starting index for bobbing motion
-		mo->health = M_Random();
-		mo->special1 = mthing->z << FRACBITS;
+	{
+		mo->special1 = mthing.z << FRACBITS;
 	}
 
 	mo->special = 0;
 
 	// pull it from the que
-	iquetail = (iquetail+1)&(ITEMQUESIZE-1);
+	itemrespawnque.pop();
 
 	SV_SpawnMobj(mo);
 
@@ -2694,14 +3007,11 @@ void P_ThrustMobj (AActor *mo, angle_t angle, fixed_t move)
 //
 // Returns the player number for a coop player start mapthing
 //
-size_t P_GetMapThingPlayerNumber(mapthing2_t *mthing)
+size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing)
 {
-	if (!mthing)
-		return 0;
-
-	return mthing->type <= 4 ?
-			mthing->type - 1 :
-			(mthing->type - 4001 + 4) % MAXPLAYERSTARTS;
+	return mthing.type <= 4 ?
+			mthing.type - 1 :
+			(mthing.type - 4001 + 4) % MAXPLAYERSTARTS;
 }
 
 int P_IsPickupableThing(short type)
@@ -2716,36 +3026,56 @@ int P_IsPickupableThing(short type)
 
 //
 // P_SpawnMapThing
+// This function spawns a thing that originates from the map itself.
 // The fields of the mapthing should
 // already be in host byte order.
 //
 // [RH] position is used to weed out unwanted start spots
 //
-void P_SpawnMapThing (mapthing2_t *mthing, int position)
+void P_SpawnMapThing (mapthing2_t& mthing, int position)
 {
-	int i = -1;
+	int32_t type = -1;
 
-	if (mthing->type == 0 || mthing->type == -1)
+	if (mthing.type == 0 || mthing.type == -1)
 		return;
 
 	if (sv_allowshowspawns)
 		P_ShowSpawns(mthing);
 
+	const bool isPlayerSpawnPoint = (mthing.type >=    1 && mthing.type <=    4) ||
+	                                (mthing.type >= 4001 && mthing.type <= 4001 + MAXPLAYERSTARTS - 4);
+	const bool isTeleportDest = mthing.type == 14;
+	const bool isSecAct = (mthing.type >= 9982 && mthing.type <= 9983) ||
+	                      (mthing.type >= 9992 && mthing.type <= 9999);
+	const bool isSoundSource = (mthing.type >= 14001 && mthing.type <= 14065);
+	const bool isMusicChanger = (mthing.type >= 14100 && mthing.type <= 14165);
+
 	// only servers control spawning of items
-    // EXCEPT the client must spawn Type 14 (teleport exit).
-	// otherwise teleporters won't work well.
-	if (!serverside && (mthing->type != 14))
+	// EXCEPT the client must spawn Type 14 (teleport exit) and player spawn points for avatars.
+	// otherwise teleporters or avatars won't work well.
+	// Also spawn sector special things, fixes some other teleport issues.
+	if (!serverside && !(isPlayerSpawnPoint || isTeleportDest || isSecAct || isSoundSource || isMusicChanger))
+	{
 		return;
+	}
+
+	//
+	// Clients also exclusively handle spawning of ambient sounds and music changers
+	//
+	if (!clientside && (isSoundSource || isMusicChanger))
+	{
+		return;
+	}
 
 	// count deathmatch start positions
-	if (mthing->type == 11 || (!sv_teamspawns && mthing->type >= 5080 && mthing->type <= 5082))
+	if (mthing.type == 11 || (!sv_teamspawns && mthing.type >= 5080 && mthing.type <= 5082))
 	{
 		// [Nes] Maximum vanilla demo starts are fixed at 10.
 		if (DeathMatchStarts.size() >= 10 && demoplayback)
 			return;
 
 		M_LogWDLPlayerSpawn(mthing);
-		DeathMatchStarts.push_back(*mthing);
+		DeathMatchStarts.push_back(mthing);
 		return;
 	}
 
@@ -2753,11 +3083,11 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 		{
-			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+			TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(iTeam));
 
-			if (mthing->type == teamInfo->TeamSpawnThingNum)
+			if (mthing.type == teamInfo->TeamSpawnThingNum)
 			{
-				teamInfo->Starts.push_back(*mthing);
+				teamInfo->Starts.push_back(mthing);
 				M_LogWDLPlayerSpawn(mthing);
 				return;
 			}
@@ -2767,42 +3097,41 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	// [RH] Record polyobject-related things
 	if (HexenHack)
 	{
-		switch (mthing->type)
+		switch (mthing.type)
 		{
 		case PO_HEX_ANCHOR_TYPE:
-			mthing->type = PO_ANCHOR_TYPE;
+			mthing.type = PO_ANCHOR_TYPE;
 			break;
 		case PO_HEX_SPAWN_TYPE:
-			mthing->type = PO_SPAWN_TYPE;
+			mthing.type = PO_SPAWN_TYPE;
 			break;
 		case PO_HEX_SPAWNCRUSH_TYPE:
-			mthing->type = PO_SPAWNCRUSH_TYPE;
+			mthing.type = PO_SPAWNCRUSH_TYPE;
 			break;
 		}
 	}
 
-	if (mthing->type == PO_ANCHOR_TYPE ||
-		mthing->type == PO_SPAWN_TYPE ||
-		mthing->type == PO_SPAWNCRUSH_TYPE)
+	if (mthing.type == PO_ANCHOR_TYPE ||
+		mthing.type == PO_SPAWN_TYPE ||
+		mthing.type == PO_SPAWNCRUSH_TYPE)
 	{
 		polyspawns_t *polyspawn = new polyspawns_t;
 		polyspawn->next = polyspawns;
-		polyspawn->x = mthing->x << FRACBITS;
-		polyspawn->y = mthing->y << FRACBITS;
-		polyspawn->angle = mthing->angle;
-		polyspawn->type = mthing->type;
+		polyspawn->x = mthing.x << FRACBITS;
+		polyspawn->y = mthing.y << FRACBITS;
+		polyspawn->angle = mthing.angle;
+		polyspawn->type = mthing.type;
 		polyspawns = polyspawn;
-		if (mthing->type != PO_ANCHOR_TYPE)
+		if (mthing.type != PO_ANCHOR_TYPE)
 			po_NumPolyobjs++;
 		return;
 	}
 
 	// check for players specially
-	if ((mthing->type <= 4 && mthing->type > 0)
-		|| (mthing->type >= 4001 && mthing->type <= 4001 + MAXPLAYERSTARTS - 4))
+	if (isPlayerSpawnPoint)
 	{
 		// [RH] Only spawn spots that match position.
-		if (mthing->args[0] != position)
+		if (mthing.args[0] != position)
 			return;
 
 		if ((G_IsCoopGame() || G_UsesCoopSpawns()) && !G_IsHordeMode())
@@ -2813,25 +3142,25 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		// search for spots that already are for this player number
 		for (size_t i = 0; i < playerstarts.size(); i++)
 		{
-			size_t otherplayernum = P_GetMapThingPlayerNumber(&playerstarts[i]);
+			const size_t otherplayernum = P_GetMapThingPlayerNumber(playerstarts[i]);
 
 			if (otherplayernum == playernum)
 			{
 				// consider playerstarts[i] to be a voodoo doll start
-				M_RemoveWDLPlayerSpawn(&playerstarts[i]);
-				voodoostarts.push_back(playerstarts[i]);
+				M_RemoveWDLPlayerSpawn(playerstarts[i]);
+				voodoostarts.emplace_back(playerstarts[i]);
 				playerstarts.erase(playerstarts.begin() + i);
 				break;
 			}
 		}
 
 		// save spots for respawning in network games
-		playerstarts.push_back(*mthing);
+		playerstarts.push_back(mthing);
 		player_t &p = idplayer(playernum+1);
 
 		if (clientside && G_IsCoopGame() && (validplayer(p) && p.ingame()))
 		{
-			P_SpawnPlayer (p, mthing);
+			P_SpawnPlayer(p, mthing);
 			return;
 		}
 
@@ -2839,120 +3168,150 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// Filter mapthings based on the gamemode
-	if (!multiplayer)
+	if (!multiplayer && g_thingfilter != -1 && !G_GetCurrentSkill().spawn_multi)
 	{
-		if (!(mthing->flags & MTF_SINGLE))
+		if (!(mthing.flags & MTF_SINGLE))
 			return;
 	}
 	else if (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM)
 	{
-		if (!(mthing->flags & MTF_DEATHMATCH))
+		if (!(mthing.flags & MTF_DEATHMATCH))
 			return;
 	}
 	else if (G_IsCoopGame())
 	{
-		if (!(mthing->flags & MTF_COOPERATIVE))
+		if (!(mthing.flags & MTF_COOPERATIVE))
 			return;
 	}
 
-	if (g_thingfilter == 3 && P_IsPickupableThing(mthing->type))
+	if (g_thingfilter == 3 && P_IsPickupableThing(mthing.type))
 		return;
 
 	// check for appropriate skill level
-	if (!(mthing->flags & G_GetCurrentSkill().spawn_filter))
+	if (!(mthing.flags & G_GetCurrentSkill().spawn_filter))
 		return;
 
 	// [RH] sound sequence overrides
-	if (mthing->type >= 1400 && mthing->type < 1410)
+	if (mthing.type >= 1400 && mthing.type < 1410)
 	{
-		P_PointInSubsector (mthing->x<<FRACBITS,
-			mthing->y<<FRACBITS)->sector->seqType = mthing->type - 1400;
+		subsector_t* sub = P_PointInSubsector(mthing.x << FRACBITS, mthing.y << FRACBITS);
+		sub->sector->seqType = mthing.type - 1400;
 		return;
 	}
-	else if (mthing->type == 1411)
+	else if (mthing.type == 1411)
 	{
-		int type;
+		int seqtype;
 
-		if (mthing->args[0] == 255)
-			type = -1;
+		if (mthing.args[0] == 255)
+			seqtype = -1;
 		else
-			type = mthing->args[0];
+			seqtype = mthing.args[0];
 
-		if (type > 63)
+		if (seqtype > 63)
 		{
-			Printf (PRINT_WARNING, "Sound sequence %d out of range\n", type);
+			PrintFmt(PRINT_WARNING, "Sound sequence {} out of range\n", seqtype);
 		}
 		else
 		{
-			P_PointInSubsector (mthing->x << FRACBITS,
-				mthing->y << FRACBITS)->sector->seqType = type;
+			subsector_t* sub = P_PointInSubsector(mthing.x << FRACBITS, mthing.y << FRACBITS);
+			sub->sector->seqType = seqtype;
 		}
 		return;
 	}
 
-	if (P_IsHordeThing(mthing->type))
+	if (P_IsHordeThing(mthing.type))
 	{
-		i = MT_HORDESPAWN;
+		type = MT_HORDESPAWN;
 		::level.detected_gametype = GM_HORDE;
+	}
+
+	if (mthing.type == 9081)
+	{
+		type = MT_SKYPICKER;
+	}
+	else if (mthing.type == 9080)
+	{
+		type = MT_SKYVIEWPOINT;
+	}
+	else if (mthing.type == 9082)
+	{
+		type = MT_SECTORSILENCER;
 	}
 
 	// [RH] Determine if it is an old ambient thing, and if so,
 	//		map it to MT_AMBIENT with the proper parameter.
-	if (mthing->type >= 14001 && mthing->type <= 14064)
+	if (mthing.type >= 14001 && mthing.type <= 14064)
 	{
-		mthing->args[0] = mthing->type - 14000;
-		mthing->type = 14065;
-		i = MT_AMBIENT;
+		mthing.args[0] = mthing.type - 14000;
+		mthing.type = mobjinfo[MT_AMBIENT].doomednum;
+		type = MT_AMBIENT;
 	}
 
 	// [ML] Determine if it is a musicchanger thing, and if so,
 	//		map it to MT_MUSICSOURCE with the proper parameter.
-	if (mthing->type >= 14101 && mthing->type <= 14164)
+	if (mthing.type >= 14100 && mthing.type <= 14164)
 	{
-		mthing->args[0] = mthing->type - 14100;
-		mthing->type = 14165;
-		i = MT_MUSICSOURCE;
+		mthing.args[0] = mthing.type - 14100;
+		mthing.type = mobjinfo[MT_MUSICSOURCE].doomednum;
+		type = MT_MUSICSOURCE;
 	}
 
-	// [RH] Check if it's a particle fountain
-	if (mthing->type >= 9027 && mthing->type <= 9033)
+	// [CMB] find the value in the mobjinfo table if we asked for a specific type; otherwise check the spawn table
+	mobjinfo_t* info = nullptr;
+	if (type == -1)
 	{
-		mthing->args[0] = mthing->type - 9026;
-		i = MT_FOUNTAIN;
+		auto spawn_it = spawn_map.find(mthing.type);
+		if (spawn_it != spawn_map.end())
+		{
+			info = spawn_it->second;
+			// set this for further down
+			type = info->type;
+		}
+		// [RH] Check if it's a particle fountain
+		if (type == -1 && mthing.type >= 9027 && mthing.type <= 9033)
+		{
+			mthing.args[0] = mthing.type - 9026;
+			type = MT_FOUNTAIN;
+			info = &mobjinfo[type]; // mt_fountain guaranteed to exist
+		}
+	}
+	else
+	{
+		auto mobj_it = mobjinfo.find(type);
+		if (mobj_it != mobjinfo.end())
+		{
+			info = &mobj_it->second;
+			// set this for further down
+			type = info->type;
+		}
 	}
 
-	if (i == -1)	// we have to search for the type
-	{
-		// find which type to spawn
-		for (i = 0; i < NUMMOBJTYPES; i++)
-			if (mthing->type == mobjinfo[i].doomednum)
-				break;
-	}
-
-	if (i >= NUMMOBJTYPES || i < 0)
+	if (info == nullptr)
 	{
 		// [RH] Don't die if the map tries to spawn an unknown thing
-		Printf (PRINT_WARNING, "Unknown type %i at (%i, %i)\n",
-			mthing->type,
-			mthing->x, mthing->y);
-		i = MT_UNKNOWNTHING;
+		PrintFmt(PRINT_WARNING, "P_SpawnMapThing: Unknown type {} at {}, {})\n",
+		         mthing.type,
+		         mthing.x, mthing.y);
+		info = &mobjinfo[MT_UNKNOWNTHING]; // [CMB] odamex specific MT_UNKNOWNTHING
+		type = MT_UNKNOWNTHING;
 	}
 	// [RH] If the thing's corresponding sprite has no frames, also map
 	//		it to the unknown thing.
-	else if (sprites[states[mobjinfo[i].spawnstate].sprite].numframes == 0)
+	else if (sprites[states[info->spawnstate].sprite].numframes == 0)
 	{
-		Printf (PRINT_WARNING, "Type %i at (%i, %i) has no frames\n",
-				mthing->type, mthing->x, mthing->y);
-		i = MT_UNKNOWNTHING;
+		PrintFmt(PRINT_WARNING, "P_SpawnMapThing: Type {} at {}, {} has no frames\n",
+		         mthing.type, mthing.x, mthing.y);
+		info = &mobjinfo[MT_UNKNOWNTHING];
+		type = MT_UNKNOWNTHING;
 	}
 
 	// don't spawn keycards and players in deathmatch
-	if (!G_IsCoopGame() && mobjinfo[i].flags & MF_NOTDMATCH)
+	if (!G_IsCoopGame() && info->flags & MF_NOTDMATCH)
 		return;
 
 	// don't spawn deathmatch weapons in offline single player mode
 	{
-		switch (i)
+		switch (type)
 		{
 		case MT_CHAINGUN:
 		case MT_SHOTGUN:
@@ -2961,14 +3320,14 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 		case MT_MISC26: // chainsaw
 		case MT_MISC27: // rocket launcher
 		case MT_MISC28: // plasma gun
-			if (!multiplayer)
+			if (!multiplayer && g_thingfilter != -1 && !G_GetCurrentSkill().spawn_multi)
 			{
-				if ((mthing->flags & (MTF_DEATHMATCH | MTF_SINGLE)) == MTF_DEATHMATCH)
+				if ((mthing.flags & (MTF_DEATHMATCH | MTF_SINGLE)) == MTF_DEATHMATCH)
 					return;
 			}
 			else
 			{
-				if ((mthing->flags & (MTF_FILTER_COOPWPN)))
+				if ((mthing.flags & (MTF_FILTER_COOPWPN)))
 					return;
 			}
 			break;
@@ -2979,96 +3338,156 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	// [csDoom] don't spawn any monsters
 	if (sv_nomonsters || !serverside)
 	{
-		if (i == MT_SKULL || (mobjinfo[i].flags & MF_COUNTKILL) )
+		if (type == MT_SKULL || (info->flags & MF_COUNTKILL) )
 		{
 			return;
 		}
 	}
 
     // [SL] 2011-05-31 - Moved so that clients get right level.total_items, etc
-	if (i == MT_SECRETTRIGGER)
+	if (type == MT_SECRETTRIGGER)
 		level.total_secrets++;
-	if (mobjinfo[i].flags & MF_COUNTKILL)
+	if (info->flags & MF_COUNTKILL)
 		level.total_monsters++;
-	if (mobjinfo[i].flags & MF_COUNTITEM)
+	if (info->flags & MF_COUNTITEM)
 		level.total_items++;
 
 	// spawn it
-	const fixed_t x = mthing->x << FRACBITS;
-	const fixed_t y = mthing->y << FRACBITS;
-	const fixed_t z = (mobjinfo[i].flags & MF_SPAWNCEILING) ? ONCEILINGZ : ONFLOORZ;
+	const fixed_t x = mthing.x << FRACBITS;
+	const fixed_t y = mthing.y << FRACBITS;
+	const fixed_t z = (info->flags & MF_SPAWNCEILING) ? ONCEILINGZ : ONFLOORZ;
 
-	if (i == MT_WATERZONE)
+	if (type == MT_WATERZONE)
 	{
 		sector_t *sec = P_PointInSubsector (x, y)->sector;
 		sec->waterzone = 1;
 		return;
 	}
 
-	AActor* mobj = new AActor(x, y, z, (mobjtype_t)i);
+	AActor* mobj = new AActor(x, y, z, info->type);
 
-	if (i == MT_HORDESPAWN)
+	if (type == MT_HORDESPAWN)
 	{
 		// Store the spawn type for later.
-		mobj->special1 = mthing->type;
-		if (mthing->type == 5301) // Supply cache
-			M_LogWDLItemSpawn(mobj, WDL_PICKUP_CAREPACKAGE);
-		else if (mthing->type == 5307)
-			M_LogWDLItemSpawn(mobj, WDL_PICKUP_POWERUPSPAWNER);
+		// [CMB] specific types must be checked; otherwise they won't spawn correctly
+		mobj->special1 = mthing.type;
+		if (mthing.type == 5301) // Supply cache (5301)
+			M_LogWDLItemSpawn(*mobj, WDL_PICKUP_CAREPACKAGE);
+		else if (mthing.type == 5307) // Horde Powerup (5307)
+			M_LogWDLItemSpawn(*mobj, WDL_PICKUP_POWERUPSPAWNER);
 	}
 
 	if (z == ONFLOORZ)
-		mobj->z += mthing->z << FRACBITS;
+		mobj->z += mthing.z << FRACBITS;
 	else if (z == ONCEILINGZ)
-		mobj->z -= mthing->z << FRACBITS;
-	mobj->spawnpoint = *mthing;
+		mobj->z -= mthing.z << FRACBITS;
+	mobj->spawnpoint = mthing;
 
 	if (mobj->flags2 & MF2_FLOATBOB)
-	{ // Seed random starting index for bobbing motion
-		mobj->health = M_Random();
-		mobj->special1 = mthing->z << FRACBITS;
+	{
+		mobj->special1 = mthing.z << FRACBITS;
 	}
 
 	// [RH] Set the thing's special
-	mobj->special = mthing->special;
-	memcpy (mobj->args, mthing->args, sizeof(mobj->args));
+	mobj->special = mthing.special;
+	mobj->args    = mthing.args;
 
 	// [RH] If it's an ambient sound, activate it
-	if (i == MT_AMBIENT)
+	if (type == MT_AMBIENT)
 		S_ActivateAmbient (mobj, mobj->args[0]);
 
 	// [RH] If a fountain and not dormant, start it
-	if (i == MT_FOUNTAIN && !(mthing->flags & MTF_DORMANT))
+	if (type == MT_FOUNTAIN && !(mthing.flags & MTF_DORMANT))
 		mobj->effects = mobj->args[0] << FX_FOUNTAINSHIFT;
 
 	// [SL] ZDoom Custom Bridge Things
-	if (i == MT_ZDOOMBRIDGE)
+	if (type == MT_ZDOOMBRIDGE)
 	{
 		mobj->radius = mobj->args[0] << FRACBITS;
 		mobj->height = mobj->args[1] << FRACBITS;
 	}
 
 	// [AM] Adjust monster health based on server setting
-	if ((i == MT_SKULL || (mobjinfo[i].flags & MF_COUNTKILL)) && sv_monstershealth != 1.0f)
+	if ((type == MT_SKULL || (info->flags & MF_COUNTKILL)) && sv_monstershealth != 1.0f)
 		mobj->health *= sv_monstershealth;
 
 	if (mobj->tics > 0)
-		mobj->tics = 1 + (P_Random () % mobj->tics);
+		mobj->tics = 1 + (P_Random(mobj) % mobj->tics);
 
-	if (i != MT_SPARK)
-		mobj->angle = ANG45 * (mthing->angle/45);
+	if (type != MT_SPARK)
+		mobj->angle = ANG45 * (mthing.angle/45);
 
-	if (mthing->flags & MTF_AMBUSH)
+	if (mthing.flags & MTF_AMBUSH)
 		mobj->flags |= MF_AMBUSH;
 
+	if (mthing.flags & MTF_FRIENDLY)
+	{
+		mobj->SetFriendly(true, nullptr);       // Friendly, but no owner.
+	}
+
 	// [RH] Add ThingID to mobj and link it in with the others
-	mobj->tid = mthing->thingid;
+	mobj->tid = mthing.thingid;
 	mobj->AddToHash ();
 
-	SV_SpawnMobj(mobj);
+	// "Solid" things like monsters and props we want to be handled like anything else
+	// that's visible - let the mobj sorter send it to clients at the appropriate time.
+	// Sometimes things that are not solid can also affect some important parts of the
+	// client state, including the renderer.  We want to send those things to clients
+	// through the higher-priority SV_SpawnMobj queue.
+	if (info->flags & MF_SOLID)
+	{
+		SV_SpawnMobj(mobj);
+	}
+	else
+	{
+		SV_SpawnHighPriorityMobj(mobj);
+	}
 
-	if ((mthing->type >= 9992 && mthing->type <= 9999) ||
-		(mthing->type >= 9982 && mthing->type <= 9983)) {
+	if (mobj->type == MT_SKYVIEWPOINT)
+	{
+		mobj->angle = mthing.angle;
+		// If this actor has no TID, make it the default sky box
+		if (mobj->tid == 0)
+		{
+			int j;
+
+			for (j = 0; j < numsectors; j++)
+			{
+				if (sectors[j].Skybox == NULL)
+				{
+					sectors[j].Skybox = mobj->ptr();
+				}
+			}
+		}
+	}
+
+	if (mobj->type == MT_SKYPICKER)
+	{
+		sector_t* sector = mobj->subsector->sector;
+		if (mthing.args[0] == 0)
+		{
+			sector->Skybox = AActor::AActorPtr();
+		}
+		else
+			{
+				TActorIterator<AActor> iterator (mthing.args[0]);
+			    AActor* box = iterator.Next();
+
+				if (box != NULL && box->type == MT_SKYVIEWPOINT)
+				{
+				    sector->Skybox = box->ptr();
+				}
+				else
+				{
+					PrintFmt ("Can't find SkyViewpoint {} for sector {}\n", mthing.args[0],
+				           sector - sectors);
+				}
+			}
+			mobj->Destroy ();
+	}
+
+	if ((mthing.type >= 9992 && mthing.type <= 9999) ||
+		(mthing.type >= 9982 && mthing.type <= 9983)) {
 		// Add ourselves to this sector's list of actions.
 		if (mobj->subsector->sector->SecActTarget != NULL) {
 			mobj->tracer = mobj->subsector->sector->SecActTarget->ptr();
@@ -3080,8 +3499,8 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	{
 		for (int iTeam = 0; iTeam < sv_teamsinplay; iTeam++)
 		{
-			TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
-			if (mthing->type == teamInfo->FlagThingNum)
+			TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(iTeam));
+			if (mthing.type == teamInfo->FlagThingNum)
 			{
 				SpawnFlag(mthing, teamInfo->Team);
 				M_LogWDLFlagLocation(mthing, teamInfo->Team);
@@ -3091,21 +3510,21 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
 	}
 
 	// [RH] Go dormant as needed
-	if (mthing->flags & MTF_DORMANT)
-		P_DeactivateMobj (mobj);
+	if (mthing.flags & MTF_DORMANT)
+		P_DeactivateMobj(mobj);
 
 	// [Blair] This looks like an item we'd want to log.
 	// Check it and log it if so.
-	WDLPowerups typetocheck = M_GetWDLItemByMobjType(mobj->type);
+	WDLPowerups typetocheck = M_GetWDLItemByMobjType(static_cast<mobjtype_t>(mobj->type));
 	if (typetocheck != WDL_PICKUP_UNKNOWN)
 	{
-		M_LogWDLItemSpawn(mobj, typetocheck);
+		M_LogWDLItemSpawn(*mobj, typetocheck);
 	}
 }
 
 /**
  * @brief Spawn all avatars.  Must have spawned other items first.
- * 
+ *
  * @detail An avatar is an mobj that attempts to take the place of a voodoo
  *         doll in multiplayer.  Instead of pretending to be any player in
  *         particular, it is a mere mobj, but with special handling in order
@@ -3114,21 +3533,24 @@ void P_SpawnMapThing (mapthing2_t *mthing, int position)
  */
 void P_SpawnAvatars()
 {
-	if (clientside || !G_IsCoopGame())
+	if ((clientside and serverside) or not G_IsCoopGame())
 	{
-		// Voodoo dolls are handled in local games.
+		// Use voodoo dolls proper in local games, not avatars.
 		return;
 	}
 
-	for (std::vector<mapthing2_t>::iterator it = ::voodoostarts.begin();
-	     it != ::voodoostarts.end(); ++it)
+	for (auto& voodoo : ::voodoostarts)
 	{
-		new AActor(it->x << FRACBITS, it->y << FRACBITS, it->z << FRACBITS, MT_AVATAR);
+		voodoo.mobj = (new AActor(voodoo.mapThing.x << FRACBITS, voodoo.mapThing.y << FRACBITS, ONFLOORZ, MT_AVATAR))->ptr();
+
+		// Assign spawnpoint so that it gets archived and can be matched back up with voodoostarts after deserialization.
+		voodoo.mobj->spawnpoint = voodoo.mapThing;
+		voodoo.mobj->credibility.Lionize();
 	}
 }
 
 
-void SpawnFlag(mapthing2_t* mthing, team_t flag)
+void SpawnFlag(const mapthing2_t& mthing, team_t flag)
 {
 	if (GetTeamInfo(flag)->FlagData.flaglocated)
 		return;
@@ -3144,21 +3566,21 @@ void SpawnFlag(mapthing2_t* mthing, team_t flag)
 // Returns true if mo is currently in any player's field of view
 //
 
-bool P_VisibleToPlayers(AActor *mo)
+bool P_VisibleToPlayers(const AActor *mo)
 {
 	if (!mo)
 		return false;
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (const auto& player : players)
 	{
 		// players aren't considered visible to themselves
-		if (mo->player && mo->player->id == it->id)
+		if (mo->player && mo->player->id == player.id)
 			continue;
 
-		if (!(it->mo) || it->spectator)
+		if (!(player.mo) || player.spectator)
 			continue;
 
-		if (P_CheckSightEdges(it->mo, mo, 5.0))
+		if (P_CheckSightEdges(player.mo, mo, 5.0))
 			return true;
 	}
 
@@ -3175,7 +3597,7 @@ void P_SetMobjBaseline(AActor& mo)
 
 	mo.baseline.pos.x = mo.x;
 	mo.baseline.pos.y = mo.y;
-	mo.baseline.pos.z = mo.z;
+	mo.baseline.pos.z = (mo.flags2 & MF2_FLOATBOB) ? P_FloatBobCenterZ(&mo) : mo.z;
 	mo.baseline.mom.x = mo.momx;
 	mo.baseline.mom.y = mo.momy;
 	mo.baseline.mom.z = mo.momz;
@@ -3190,9 +3612,9 @@ void P_SetMobjBaseline(AActor& mo)
 }
 
 /**
- * @brief Generate flags that lists which fields are different 
+ * @brief Generate flags that lists which fields are different
  */
-uint32_t P_GetMobjBaselineFlags(AActor& mo)
+uint32_t P_GetMobjBaselineFlags(const AActor& mo)
 {
 	uint32_t flags = 0;
 
@@ -3204,7 +3626,8 @@ uint32_t P_GetMobjBaselineFlags(AActor& mo)
 	{
 		flags |= baseline_t::POSY;
 	}
-	if (mo.baseline.pos.z != mo.z)
+	const fixed_t z = (mo.flags2 & MF2_FLOATBOB) ? P_FloatBobCenterZ(&mo) : mo.z;
+	if (mo.baseline.pos.z != z)
 	{
 		flags |= baseline_t::POSZ;
 	}
@@ -3254,29 +3677,24 @@ BEGIN_COMMAND(cheat_mobjs)
 {
 	if (argc < 2)
 	{
-		Printf("Missing MT_* mobj type\n");
+		PrintFmt("Missing MT_* mobj type\n");
 		return;
 	}
 
 	const char* mobj_type = argv[1];
-	ptrdiff_t mobj_index = -1;
+	auto it = std::find_if(mobjinfo.begin(), mobjinfo.end(), [&](const auto& it){
+		return iequals(it.second.name, mobj_type);
+	});
 
-	for (size_t i = 0; i < ARRAY_LENGTH(::mobjinfo); i++)
+	if (it == mobjinfo.end())
 	{
-		if (stricmp(::mobjinfo[i].name, mobj_type) == 0)
-		{
-			mobj_index = i;
-			break;
-		}
-	}
-
-	if (mobj_index < 0)
-	{
-		Printf("Unknown MT_* mobj type\n");
+		PrintFmt("Unknown MT_* mobj type\n");
 		return;
 	}
 
-	Printf("== %s ==", mobj_type);
+	const int32_t mobj_index = it->first;
+
+	PrintFmt("== {} ==", mobj_type);
 
 	AActor* mo;
 	TThinkerIterator<AActor> iterator;
@@ -3284,9 +3702,9 @@ BEGIN_COMMAND(cheat_mobjs)
 	{
 		if (mo->type == mobj_index)
 		{
-			Printf("ID: %d\n", mo->netid);
-			Printf("  %.1f, %.1f, %.1f\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
-			       FIXED2FLOAT(mo->z));
+			PrintFmt("ID: {}\n", mo->netid);
+			PrintFmt("  {:.1f}, {:.1f}, {:.1f}\n", FIXED2FLOAT(mo->x), FIXED2FLOAT(mo->y),
+			         FIXED2FLOAT(mo->z));
 		}
 	}
 }

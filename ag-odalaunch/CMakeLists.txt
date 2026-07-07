@@ -37,11 +37,12 @@ if(LibAgar_FOUND)
   target_link_libraries(ag-odalaunch ${LibAgar_LIBRARIES})
 
   set(MACOSX_BUNDLE_BUNDLE_NAME AG-OdaLaunch)
-  set(MACOSX_BUNDLE_INFO_STRING "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")
+  set(MACOSX_BUNDLE_COPYRIGHT "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")
   set(MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION}")
   set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}")
   set(MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}")
   set(MACOSX_BUNDLE_ICON_FILE odalaunch.icns)
+  set(MACOSX_BUNDLE_GUI_IDENTIFIER net.odamex.ag-odalaunch)
 
   if(APPLE)
     add_custom_command(

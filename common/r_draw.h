@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,7 +26,7 @@
 #include "r_intrin.h"
 #include "r_defs.h"
 
-typedef struct 
+typedef struct
 {
 	const palindex_t*	source;
 	uint8_t*			destination;
@@ -38,7 +38,7 @@ typedef struct
 	int					x;
 	int					yl;
 	int					yh;
-	
+
 	fixed_t				iscale;
 	fixed_t				texturemid;
 	fixed_t				texturefrac;
@@ -94,6 +94,23 @@ typedef struct
 extern "C" drawspan_t dspan;
 
 
+//
+// R_PixelCeil
+//
+// ceil(num / den) in whole pixels, for raw fixed-point numbers where
+// num >= 0 and den > 0.
+// 
+// For when you need to ceiling divide 16.16 floating point numbers and NOT
+// discard remainders after a certain quotient.
+//
+// Used for calculating texturefrac post coordinates.
+//
+static inline int R_PixelCeil(fixed_t num, fixed_t den)
+{
+	return static_cast<int>((static_cast<int64_t>(num) + den - 1) / den);
+}
+
+
 // [RH] Temporary buffer for column drawing
 
 void R_RenderColumnRange(int start, int stop, const int* top, const int* bottom,
@@ -117,6 +134,9 @@ extern void (*R_DrawTranslucentColumn)(void);
 extern void (*R_DrawTranslatedColumn)(void);
 
 extern void (*R_DrawTlatedLucentColumn)(void);
+
+// [EB] Draw sky foreground with palette 0 transparency
+extern void (*R_DrawSkyForegroundColumn)(void);
 
 // Span blitting for rows, floor/ceiling.
 // No Sepctre effect needed.
@@ -188,8 +208,11 @@ extern void (*R_DrawSpanD)(void);
 extern void (*R_DrawSlopeSpanD)(void);
 extern void (*r_dimpatchD)(IWindowSurface* surface, argb_t color, int alpha, int x1, int y1, int w, int h);
 
-extern byte bosstable[256];
-extern byte*			translationtables;
+inline byte bosstable[256];
+inline byte friendtable[256];
+inline byte greentable[MAXPLAYERS+1][256];
+inline byte redtable[MAXPLAYERS + 1][256];
+inline byte*			translationtables;
 extern argb_t           translationRGB[MAXPLAYERS+1][16];
 
 enum
@@ -206,7 +229,7 @@ enum
 
 #define TRANSLATION(a,b)	(((a)<<8)|(b))
 
-const int MAX_ACS_TRANSLATIONS = 32;
+constexpr int MAX_ACS_TRANSLATIONS = 32;
 
 
 // Initialize color translation tables,
@@ -215,9 +238,10 @@ void R_InitTranslationTables (void);
 void R_FreeTranslationTables (void);
 
 void R_CopyTranslationRGB (int fromplayer, int toplayer);
+void R_RebuildPlayerTintTables(int player);
 
 // [RH] Actually create a player's translation table.
-void R_BuildPlayerTranslation(int player, argb_t dest_color);
+void R_BuildPlayerTranslation(int player, argb_t dest_color, int colorpreset);
 
 // [Nes] Classic player translation table.
 void R_BuildClassicPlayerTranslation(int player, int color);

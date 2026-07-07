@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,7 +17,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//  Old version of the server query protocol, kept for clients and older 
+//  Old version of the server query protocol, kept for clients and older
 //  launchers
 //
 //-----------------------------------------------------------------------------
@@ -29,6 +29,7 @@
 #include "d_main.h"
 #include "d_player.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "p_ctf.h"
 #include "g_gametype.h"
 #include "resources/res_main.h"
@@ -45,8 +46,8 @@ EXTERN_CVAR (sv_maxclients)
 EXTERN_CVAR (port)
 
 //bond===========================
-EXTERN_CVAR (sv_timelimit)			
-EXTERN_CVAR (sv_fraglimit)			
+EXTERN_CVAR (sv_timelimit)
+EXTERN_CVAR (sv_fraglimit)
 EXTERN_CVAR (sv_email)
 EXTERN_CVAR (sv_itemsrespawn)
 EXTERN_CVAR (sv_weaponstay)
@@ -58,7 +59,6 @@ EXTERN_CVAR (sv_monstersrespawn)
 EXTERN_CVAR (sv_fastmonsters)
 EXTERN_CVAR (sv_allowjump)
 EXTERN_CVAR (sv_freelook)
-EXTERN_CVAR (sv_waddownload)
 EXTERN_CVAR (sv_emptyreset)
 EXTERN_CVAR (sv_fragexitswitch)
 //bond===========================
@@ -78,8 +78,8 @@ EXTERN_CVAR (sv_natport)
 //
 struct token_t
 {
-	DWORD id;
-	QWORD issued;
+	uint32_t id;
+	uint64_t issued;
 	netadr_t from;
 };
 
@@ -89,15 +89,15 @@ static std::vector<token_t> connect_tokens;
 //
 // SV_NewToken
 //
-DWORD SV_NewToken()
+uint32_t SV_NewToken()
 {
-	QWORD now = I_MSTime() * TICRATE / 1000;
+	uint64_t now = I_MSTime() * TICRATE / 1000;
 
 	token_t token;
 	token.id = rand()*time(0);
 	token.issued = now;
 	token.from = net_from;
-	
+
 	// find an old token to replace
 	for(size_t i = 0; i < connect_tokens.size(); i++)
 	{
@@ -116,9 +116,9 @@ DWORD SV_NewToken()
 //
 // SV_ValidToken
 //
-bool SV_IsValidToken(DWORD token)
+bool SV_IsValidToken(uint32_t token)
 {
-	QWORD now = I_MSTime() * TICRATE / 1000;
+	uint64_t now = I_MSTime() * TICRATE / 1000;
 
 	for(size_t i = 0; i < connect_tokens.size(); i++)
 	{
@@ -131,21 +131,19 @@ bool SV_IsValidToken(DWORD token)
 			return true;
 		}
 	}
-	
+
 	return false;
 }
 
 //
 // SV_SendServerInfo
-// 
+//
 // Sends server info to a launcher
 // TODO: Clean up and reinvent.
 void SV_SendServerInfo()
 {
-	size_t i;
-
 	SZ_Clear(&ml_message);
-	
+
 	MSG_WriteLong(&ml_message, MSG_CHALLENGE);
 	MSG_WriteLong(&ml_message, SV_NewToken());
 
@@ -153,12 +151,12 @@ void SV_SendServerInfo()
 	if(MSG_BytesLeft() == 4)
 		MSG_WriteLong(&ml_message, MSG_ReadLong());
 
-	MSG_WriteString(&ml_message, (char *)sv_hostname.cstring());
+	MSG_WriteString(&ml_message, sv_hostname.cstring());
 
 	byte playersingame = 0;
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (const auto& player : players)
 	{
-		if (it->ingame())
+		if (player.ingame())
 			playersingame++;
 	}
 
@@ -172,33 +170,31 @@ void SV_SendServerInfo()
 
 	size_t resource_file_count = std::min<size_t>(resource_file_names.size(), 255);
 
-	MSG_WriteByte(&ml_message, resource_file_count - 1);
-
-	for (i = 1; i < resource_file_count; ++i)
-		MSG_WriteString(&ml_message, Res_CleanseFilename(resource_file_names[i]).c_str());
+	for (size_t i = 1; i < numwads; ++i)
+		MSG_WriteString(&ml_message, wadfiles[i].getBasename().c_str());
 
 	MSG_WriteBool(&ml_message, (sv_gametype == GM_DM || sv_gametype == GM_TEAMDM));
 	MSG_WriteByte(&ml_message, sv_skill.asInt());
 	MSG_WriteBool(&ml_message, (sv_gametype == GM_TEAMDM));
 	MSG_WriteBool(&ml_message, (sv_gametype == GM_CTF));
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (const auto& player : players)
 	{
-		if (it->ingame())
+		if (player.ingame())
 		{
-			MSG_WriteString(&ml_message, it->userinfo.netname.c_str());
-			MSG_WriteShort(&ml_message, it->fragcount);
-			MSG_WriteLong(&ml_message, it->ping);
+			MSG_WriteString(&ml_message, player.userinfo.netname.c_str());
+			MSG_WriteShort(&ml_message, player.fragcount);
+			MSG_WriteLong(&ml_message, player.ping);
 
 			if (G_IsTeamGame())
-				MSG_WriteByte(&ml_message, it->userinfo.team);
+				MSG_WriteByte(&ml_message, player.userinfo.team);
 			else
 				MSG_WriteByte(&ml_message, TEAM_NONE);
 		}
 	}
 
-	for (i = 1; i < resource_file_count; ++i)
-		MSG_WriteString(&ml_message, resource_file_hashes[i].getHexCStr());
+	for (size_t i = 1; i < numwads; ++i)
+		MSG_WriteString(&ml_message, ::wadfiles[i].getMD5().getHexCStr());
 
 	// [AM] Used to be sv_website - sv_downloadsites can have multiple sites.
 	MSG_WriteString(&ml_message, sv_downloadsites.cstring());
@@ -206,29 +202,29 @@ void SV_SendServerInfo()
 	if (G_IsTeamGame())
 	{
 		MSG_WriteLong(&ml_message, sv_scorelimit.asInt());
-		
+
 		for(size_t i = 0; i < NUMTEAMS; i++)
 		{
 			if ((sv_gametype == GM_CTF && i < 2) || (sv_gametype != GM_CTF && i < sv_teamsinplay)) {
 				MSG_WriteByte(&ml_message, 1);
-				MSG_WriteLong(&ml_message, GetTeamInfo((team_t)i)->Points);
+				MSG_WriteLong(&ml_message, GetTeamInfo(static_cast<team_t>(i))->Points);
 			} else {
 				MSG_WriteByte(&ml_message, 0);
 			}
 		}
 	}
-	
+
 	MSG_WriteShort(&ml_message, VERSION);
 
 //bond===========================
-	MSG_WriteString(&ml_message, (char *)sv_email.cstring());
+	MSG_WriteString(&ml_message, sv_email.cstring());
 
-	int timeleft = (int)(sv_timelimit - level.time/(TICRATE*60));
-	if (timeleft<0) timeleft=0;
+	int timeleft = (sv_timelimit.asInt() - level.time/(TICRATE*60));
+	if (timeleft < 0) timeleft = 0;
 
-	MSG_WriteShort(&ml_message,sv_timelimit.asInt());
-	MSG_WriteShort(&ml_message,timeleft);
-	MSG_WriteShort(&ml_message,sv_fraglimit.asInt());
+	MSG_WriteShort(&ml_message, sv_timelimit.asInt());
+	MSG_WriteShort(&ml_message, timeleft);
+	MSG_WriteShort(&ml_message, sv_fraglimit.asInt());
 
 	MSG_WriteBool(&ml_message, (sv_itemsrespawn ? true : false));
 	MSG_WriteBool(&ml_message, (sv_weaponstay ? true : false));
@@ -240,46 +236,50 @@ void SV_SendServerInfo()
 	MSG_WriteBool(&ml_message, (sv_fastmonsters ? true : false));
 	MSG_WriteBool(&ml_message, (sv_allowjump ? true : false));
 	MSG_WriteBool(&ml_message, (sv_freelook ? true : false));
-	MSG_WriteBool(&ml_message, (sv_waddownload ? true : false));
+	MSG_WriteBool(&ml_message, false);		// used to be sv_waddownload
 	MSG_WriteBool(&ml_message, (sv_emptyreset ? true : false));
 	MSG_WriteBool(&ml_message, false);		// used to be sv_cleanmaps
 	MSG_WriteBool(&ml_message, (sv_fragexitswitch ? true : false));
 
-	for (Players::iterator it = players.begin();it != players.end();++it)
+	for (const auto& player : players)
 	{
-		if (it->ingame())
+		if (player.ingame())
 		{
-			MSG_WriteShort(&ml_message, it->killcount);
-			MSG_WriteShort(&ml_message, it->deathcount);
-			
-			int timeingame = (time(NULL) - it->JoinTime)/60;
+			MSG_WriteShort(&ml_message, player.killcount);
+			MSG_WriteShort(&ml_message, player.deathcount);
+
+			int timeingame = (time(NULL) - player.JoinTime)/60;
 			if (timeingame<0) timeingame=0;
 				MSG_WriteShort(&ml_message, timeingame);
 		}
 	}
-	
+
 //bond===========================
 
-    MSG_WriteLong(&ml_message, (DWORD)0x01020304);
+    MSG_WriteLong(&ml_message, 0x01020304_u32);
     MSG_WriteShort(&ml_message, sv_maxplayers.asInt());
-    
-    for (Players::iterator it = players.begin();it != players.end();++it)
+
+    for (const auto& player : players)
     {
-        if (it->ingame())
+        if (player.ingame())
         {
-            MSG_WriteBool(&ml_message, (it->spectator ? true : false));
+            MSG_WriteBool(&ml_message, player.spectator);
         }
     }
 
-    MSG_WriteLong(&ml_message, (DWORD)0x01020305);
+    MSG_WriteLong(&ml_message, 0x01020305_u32);
     MSG_WriteShort(&ml_message, strlen(join_password.cstring()) ? 1 : 0);
-    
+
     // GhostlyDeath -- Send Game Version info
     MSG_WriteLong(&ml_message, GAMEVER);
 
-	// [SL] DEH/BEX patch file names used to be sent separately.
-	// Just write 0 now.
-	MSG_WriteByte(&ml_message, 0);
+    MSG_WriteByte(&ml_message, patchfiles.size());
+
+	for (const auto& file : patchfiles)
+	{
+		MSG_WriteString(&ml_message,
+		                D_CleanseFileName(file.getBasename()).c_str());
+	}
 
 	NET_SendPacket(ml_message, net_from);
 }

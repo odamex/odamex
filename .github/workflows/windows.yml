@@ -1,6 +1,21 @@
 name: Windows
 
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore:
+    - 'release/[0-9]+.[0-9]+.[0-9]+'
+    paths-ignore:
+    - "**/*.md"
+    - README
+    - LICENSE
+    - MAINTAINERS
+    - CHANGELOG
+    - 3RD-PARTY-LICENSES
+    - config-samples/*
+    - documentation/**
+    - tools/**
+  pull_request:
+
 
 jobs:
   pre_job:
@@ -10,7 +25,7 @@ jobs:
       should_skip: ${{ steps.check_skip.outputs.should_skip }}
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
@@ -21,11 +36,11 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Install Python packages
-      uses: BSFishy/pip-action@v1
+      uses: insightsengineering/pip-action@v2
       with:
         packages: |
           b2sdk
@@ -36,34 +51,58 @@ jobs:
       uses: ammaraskar/msvc-problem-matcher@master
     - name: Run build
       run: cmake --build .\build\ --config RelWithDebInfo --parallel
+    - name: Run unit tests
+      run: .\build\tests\unit-tests\RelWithDebInfo\odagtest
     - name: Prepare artifact
       run: .\ci\win-artifact.ps1
     - name: Stage artifacts for testing
       run: .\ci\win-prepare-demotest.ps1
     - name: Download OdaTests and Testing Resources
+      id: get-odatests
       run: .\ci\win-get-demotester.ps1
       env:
         DEMOTESTER_URL: ${{ vars.DEMOTESTER_DOWNLOAD_URL }}
         DEMORESOURCES_URL: ${{ vars.DEMORESOURCES_DOWNLOAD_URL }}
       continue-on-error: true
     - name: Decrypt IWADs
+      if: steps.get-odatests.outcome == 'success'
       run: |
         python .\secret.py decrypt plutonia
         python .\secret.py decrypt tnt
         python .\secret.py decrypt doom
         python .\secret.py decrypt doom1
         python .\secret.py decrypt doom2
-        python .\secret.py decrypt hacx
       env:
         SECRET_KEY: ${{ secrets.DEMOTESTER_IWAD_KEY }}
       working-directory: .\build\demotester
-      continue-on-error: true
     - name: Run OdaTests
-      run: python .\odatestcases.py
+      id: odatests
+      if: steps.get-odatests.outcome == 'success'
+      shell: pwsh
+      run: |
+        python .\odatestcases.py
       env:
         ODAMEX_BIN: ..\demotest\odamex.exe
       working-directory: .\build\demotester
       continue-on-error: true
+    - name: Read OdaTests results
+      if: steps.odatests.conclusion == 'success'
+      id: odatests-results
+      shell: pwsh
+      run: |
+        $csvData = Import-Csv -Path .\odatests_results_summary.csv
+        echo "tests_total=$($csvData[0].total)" >> $env:GITHUB_OUTPUT
+        echo "tests_passed=$($csvData[0].passed)" >> $env:GITHUB_OUTPUT
+      working-directory: .\build\demotester
+    - name: Notify Discord
+      if: env.DISCORD_URL != '' && steps.odatests.conclusion == 'success'
+      uses: ./.github/actions/odatests-notify
+      with:
+        demos-run: ${{ steps.odatests-results.outputs.tests_total }}
+        demos-passed: ${{ steps.odatests-results.outputs.tests_passed }}
+        discord-url: ${{ env.DISCORD_URL }}
+      env:
+        DISCORD_URL: ${{ secrets.ODATESTS_WEBHOOK_URL }}
     - name: Upload artifact to B2
       run: python .\ci\upload-b2.py .\build\archive Win-x64
       env:
@@ -71,20 +110,22 @@ jobs:
         B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
         B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Upload artifact to Github
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Win-x64
         path: 'build/artifact/*'
   build-x32:
     name: Build (Visual Studio, 32-bit)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: windows-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Install Python packages
-      uses: BSFishy/pip-action@v1
+      uses: insightsengineering/pip-action@v2
       with:
         packages: |
           b2sdk
@@ -101,16 +142,16 @@ jobs:
         B2_BUCKET_ID: ${{ secrets.B2_BUCKET_ID }}
         B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
     - name: Upload artifact to Github
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Win-x32
-        path: 'build/artifact/*'
+        path: 'build-x32/artifact/*'
   # build-mingw:
   #   name: Build (MinGW)
   #   runs-on: windows-latest
   #   steps:
   #   - name: Checkout source
-  #     uses: actions/checkout@v2
+  #     uses: actions/checkout@v6
   #   - name: Checkout submodules
   #     run: git submodule update --init --recursive
   #   - name: Install packages

@@ -1,11 +1,15 @@
 include(OdamexCopyLibs)
-include(OdamexCopyWad)
 include(OdamexTargetSettings)
 
 # use unquoted #defines
 if(COMMAND cmake_policy)
   cmake_policy(SET CMP0005 NEW)
 endif(COMMAND cmake_policy)
+
+if(APPLE)
+  set(CMAKE_FIND_FRAMEWORK LAST)
+  set(CMAKE_FIND_APPBUNDLE LAST)
+endif()
 
 # Enable default SIMD settings for standard builds.
 option(USE_DEFAULT_SIMD "Use default SIMD optimization settings" ON)
@@ -25,17 +29,13 @@ if(WIN32)
   list(APPEND CLIENT_SDL_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/client.rc")
 endif()
 
-# Include console folders if compiling 
+# Include console folders if compiling
 if (GCONSOLE)
   if (NSWITCH)
     set(CLIENT_DIR ${CLIENT_DIR} switch)  # Nintendo Switch
     file(GLOB CLIENT_HEADERS ${CLIENT_HEADERS} switch/*.h)
     file(GLOB CLIENT_SOURCES ${CLIENT_SOURCES} switch/*.cpp)
     odamex_target_settings_nx(CLIENT_DIR GLOB)
-  elseif (VWII)
-    set(CLIENT_DIR ${CLIENT_DIR} vwii)  # Nintendo Wii/vWII
-    file(GLOB CLIENT_HEADERS ${CLIENT_HEADERS} vwii/*.h)
-    file(GLOB CLIENT_SOURCES ${CLIENT_SOURCES} vwii/*.cpp)
   endif()
 endif()
 
@@ -60,6 +60,7 @@ if(WIN32)
 endif()
 
 # X11 configuration
+# TODO: do we need to update this at all for wayland?
 if(UNIX AND NOT APPLE)
   find_package(X11)
   if(X11_FOUND)
@@ -79,7 +80,7 @@ if(ENABLE_PORTMIDI)
     set(PORTMIDI_LIBRARY "portmidi")
     set(PORTMIDI_LIBRARIES ${PORTMIDI_LIBRARY})
     set(PORTMIDI_DIR ../libraries/portmidi)
-    set(PORTMIDI_INCLUDE_DIR ${PORTMIDI_DIR}/pm_common/ ${PORTMIDI_DIR}/porttime/)  
+    set(PORTMIDI_INCLUDE_DIR ${PORTMIDI_DIR}/pm_common/ ${PORTMIDI_DIR}/porttime/)
 
     if(APPLE)
       find_library(COREFOUNDATION_LIBRARY CoreFoundation)
@@ -114,7 +115,7 @@ if(ENABLE_PORTMIDI)
 
     add_library(${PORTMIDI_LIBRARY} STATIC ${PORTMIDI_SOURCES} ${PORTMIDI_HEADERS})
     target_link_libraries(${PORTMIDI_LIBRARY} ${PM_NEEDED_LIBS})
-    message(STATUS "portmidi will be built and staticaly linked when compiling the client application.")
+    message(STATUS "portmidi will be built and statically linked when compiling the client application.")
   endif()
 
   add_definitions(-DPORTMIDI)
@@ -139,7 +140,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     set(TEXTSCREEN_LIBRARY "textscreen")
     set(TEXTSCREEN_DIR ../libraries/textscreen)
     set(TEXTSCREEN_HEADERS ${TEXTSCREEN_DIR}/txt_sdl.h ${TEXTSCREEN_DIR}/txt_main.h)
-    set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.c)
+    set(TEXTSCREEN_SOURCES ${TEXTSCREEN_DIR}/txt_sdl.cpp)
 
     include_directories(${TEXTSCREEN_DIR})
     add_library(${TEXTSCREEN_LIBRARY} STATIC ${TEXTSCREEN_SOURCES} ${TEXTSCREEN_HEADERS})
@@ -160,7 +161,7 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   add_executable(odamex MACOSX_BUNDLE WIN32
     ${CLIENT_SOURCES} ${CLIENT_SDL_SOURCES} ${COMMON_SOURCES} ${CLIENT_GUI_SOURCES})
   odamex_target_settings(odamex)
-  set_property(TARGET odamex PROPERTY CXX_STANDARD 98)
+  odamex_target_errors(odamex)
 
   if(USE_DEFAULT_SIMD)
     if(ODAMEX_TARGET_ARCH STREQUAL "amd64")
@@ -184,13 +185,18 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     message(STATUS "Default SIMD flags not used on user request")
   endif()
 
+  if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    message(STATUS "GNU Detected, forcing GCC to link math.h")
+    target_compile_options(odamex PRIVATE -lm)
+  endif()
+
   if(MSVC)
     # We supply our own manifest, don't use the default one.
     set_target_properties(odamex PROPERTIES LINK_FLAGS "/MANIFEST:NO")
   endif()
 
   target_link_libraries(odamex ${TEXTSCREEN_LIBRARY})
-  target_link_libraries(odamex odamex-common odaproto)
+  target_link_libraries(odamex odamex-common odaproto tinylibs)
   if(TARGET SDL::SDL)
     target_link_libraries(odamex SDL::SDL)
     if(TARGET SDL::SDLmain)
@@ -204,17 +210,30 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     endif()
     target_link_libraries(odamex SDL2::mixer)
   endif()
-  target_link_libraries(odamex ${PNG_LIBRARY} ${ZLIB_LIBRARY} CURL::libcurl)
+
   if(NOT GCONSOLE)
     target_include_directories(odamex PRIVATE gui)
-    target_link_libraries(odamex fltk fltk_images)
+    if(USE_INTERNAL_FLTK)
+      target_link_libraries(odamex fltk::fltk fltk::images)
+    else()
+      find_package(FLTK 1.4 CONFIG REQUIRED)
+      target_link_libraries(odamex fltk::fltk-shared fltk::images-shared)
+    endif()
+  endif()
+
+  if(USE_INTERNAL_JSONCPP)
+    target_link_libraries(odamex jsoncpp_static)
+  else()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(JSONCPP jsoncpp REQUIRED IMPORTED_TARGET)
+    target_link_libraries(odamex PkgConfig::JSONCPP)
   endif()
 
   if(ENABLE_PORTMIDI)
     target_link_libraries(odamex ${PORTMIDI_LIBRARY})
   endif()
 
-  target_link_libraries(odamex ZLIB::ZLIB PNG::PNG)
+  target_link_libraries(odamex ZLIB::ZLIB PNG::PNG fmt::fmt minilzo cpptrace::cpptrace libADLMIDI::ADLMIDI_static curl_interface)
 
   if(WIN32)
     target_link_libraries(odamex winmm wsock32 shlwapi)
@@ -222,10 +241,6 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     target_link_libraries(odamex ${APPLE_FRAMEWORKS})
   elseif(NSWITCH)
     target_link_libraries(odamex SDL2 mpg123 modplug vorbisfile vorbis opusfile opus ogg EGL glapi drm_nouveau nx m)
-  elseif(VWII)
-    # Ch0wW : this is UGLY, please fix it ASAP !!
-    target_link_libraries(odamex -L$ENV{DEVKITPRO}/libogc/lib/wii -L$ENV{DEVKITPRO}/portlibs/ppc/lib -L$ENV{DEVKITPRO}/portlibs/wii/lib)
-    target_link_libraries(odamex SDL_mixer SDL smpeg png png16 vorbisidec z fat wiiuse bte ogc ogg m wiikeyboard)
   elseif(SOLARIS)
     target_link_libraries(odamex socket nsl)
   endif()
@@ -238,14 +253,14 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
   endif()
 
   odamex_copy_libs(odamex)
-  odamex_copy_wad(odamex)
 
   set(MACOSX_BUNDLE_BUNDLE_NAME ${CMAKE_PROJECT_NAME})
-  set(MACOSX_BUNDLE_INFO_STRING "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")
+  set(MACOSX_BUNDLE_COPYRIGHT "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")
   set(MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION}")
   set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}")
   set(MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}")
   set(MACOSX_BUNDLE_ICON_FILE odamex.icns)
+  set(MACOSX_BUNDLE_GUI_IDENTIFIER net.odamex.odamex)
 
   if(APPLE)
     add_custom_command(
@@ -308,10 +323,6 @@ if(TARGET SDL2::SDL2 OR TARGET SDL::SDL)
     endif()
   elseif(NSWITCH)
     odamex_target_postcompile_nx(odamex)
-  elseif(VWII)
-    message(${CMAKE_BINARY_DIR})
-    add_custom_command( TARGET odamex POST_BUILD
-    COMMAND elf2dol ${CMAKE_BINARY_DIR}/client/odamex ${CMAKE_BINARY_DIR}/boot.dol )
   elseif(WIN32)
     install(TARGETS odamex
       RUNTIME DESTINATION .

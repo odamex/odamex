@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -43,7 +43,7 @@ extern "C" int			viewheight;
 extern bool				g_ValidLevel;
 
 extern int				numsprites;
-extern spritedef_t* 	sprites;
+extern OHashTable<int32_t, spritedef_t> sprites;
 
 extern int				numvertexes;
 extern vertex_t*		vertexes;
@@ -66,18 +66,32 @@ extern line_t*			lines;
 extern int				numsides;
 extern side_t*			sides;
 
+inline std::span<vertex_t>    R_GetVertices() { return std::span(vertexes, numvertexes); }
+
+inline std::span<seg_t>       R_GetSegs() { return std::span(segs, numsegs); }
+
+inline std::span<sector_t>    R_GetSectors() { return std::span(sectors, numsectors); }
+
+inline std::span<subsector_t> R_GetSubsectors() { return std::span(subsectors, numsubsectors); }
+
+inline std::span<node_t>      R_GetNodes() { return std::span(nodes, numnodes); }
+
+inline std::span<line_t>      R_GetLines() { return std::span(lines, numlines); }
+
+inline std::span<side_t>      R_GetSides() { return std::span(sides, numsides); }
+
 extern std::vector<int> originalLightLevels;
 
 inline FArchive &operator<< (FArchive &arc, sector_t *sec)
 {
 	if (sec)
-		return arc << (WORD)(sec - sectors);
+		return arc << static_cast<uint16_t>(sec - sectors);
 	else
-		return arc << (WORD)0xffff;
+		return arc << static_cast<uint16_t>(0xffff);
 }
 inline FArchive &operator>> (FArchive &arc, sector_t *&sec)
 {
-	WORD ofs;
+	uint16_t ofs;
 	arc >> ofs;
 	if (ofs == 0xffff)
 		sec = NULL;
@@ -89,13 +103,13 @@ inline FArchive &operator>> (FArchive &arc, sector_t *&sec)
 inline FArchive &operator<< (FArchive &arc, line_t *line)
 {
 	if (line)
-		return arc << (WORD)(line - lines);
+		return arc << static_cast<uint16_t>(line - lines);
 	else
-		return arc << (WORD)0xffff;
+		return arc << static_cast<uint16_t>(0xffff);
 }
 inline FArchive &operator>> (FArchive &arc, line_t *&line)
 {
-	WORD ofs;
+	uint16_t ofs;
 	arc >> ofs;
 	if (ofs == 0xffff)
 		line = NULL;
@@ -117,13 +131,15 @@ struct LocalView
 //
 // POV data.
 //
-extern fixed_t			viewx;
-extern fixed_t			viewy;
-extern fixed_t			viewz;
+inline fixed_t			viewx;
+inline fixed_t			viewy;
+inline fixed_t			viewz;
 
-extern angle_t			viewangle;
-extern LocalView		localview;
-extern AActor*			camera;		// [RH] camera instead of viewplayer
+inline angle_t			viewangle;
+inline sector_t*		viewsector;
+
+inline LocalView		localview;
+inline AActor*			camera;		// [RH] camera to draw from. doesn't have to be a player
 
 extern angle_t			clipangle;
 

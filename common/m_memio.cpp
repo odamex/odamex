@@ -1,11 +1,11 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 2005 by Simon Howard
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,7 +24,7 @@
 //
 // DESCRIPTION:
 //
-//	Emulates the IO functions in C stdio.h reading and writing to 
+//	Emulates the IO functions in C stdio.h reading and writing to
 //	memory.
 //
 //	[Russell] - Added some functions and cleaned up a few areas
@@ -58,9 +58,9 @@ MEMFILE *mem_fopen_read(void *buf, size_t buflen)
 {
 	MEMFILE *file;
 
-	file = (MEMFILE *)Z_Malloc(sizeof(MEMFILE), PU_STATIC, 0);
+	file = Z_Malloc<MEMFILE>(PU_STATIC);
 
-	file->buf = (unsigned char *) buf;
+	file->buf = static_cast<unsigned char*>(buf);
 	file->buflen = buflen;
 	file->position = 0;
 	file->mode = MODE_READ;
@@ -76,27 +76,27 @@ size_t mem_fread(void *buf, size_t size, size_t nmemb, MEMFILE *stream)
 
 	if (stream->mode != MODE_READ)
 	{
-		Printf(PRINT_HIGH, "mem_fread: not a read stream\n");
+		PrintFmt(PRINT_HIGH, "mem_fread: not a read stream\n");
 		return 0;
 	}
 
 	// Trying to read more bytes than we have left?
-	
+
 	items = nmemb;
 
-	if (items * size > stream->buflen - stream->position) 
+	if (items * size > stream->buflen - stream->position)
 	{
 		items = (stream->buflen - stream->position) / size;
 	}
-	
+
 	// Copy bytes to buffer
-	
+
 	memcpy(buf, stream->buf + stream->position, items * size);
 
 	// Update position
 
 	stream->position += items * size;
-	
+
 	return items;
 }
 
@@ -106,10 +106,10 @@ MEMFILE *mem_fopen_write(void)
 {
 	MEMFILE *file;
 
-	file = (MEMFILE *)Z_Malloc(sizeof(MEMFILE), PU_STATIC, 0);
+	file = Z_Malloc<MEMFILE>(PU_STATIC);
 
 	file->alloced = 1024;
-	file->buf = (unsigned char *)Z_Malloc(file->alloced, PU_STATIC, 0);
+	file->buf = Z_Malloc<byte>(file->alloced, PU_STATIC);
 	file->buflen = 0;
 	file->position = 0;
 	file->mode = MODE_WRITE;
@@ -127,17 +127,17 @@ size_t mem_fwrite(const void *ptr, size_t size, size_t nmemb, MEMFILE *stream)
 	{
 		return 0;
 	}
-	
+
 	// More bytes than can fit in the buffer?
 	// If so, reallocate bigger.
 
 	bytes = size * nmemb;
-	
+
 	while (bytes > stream->alloced - stream->position)
 	{
 		unsigned char *newbuf;
 
-		newbuf = (unsigned char *)Z_Malloc(stream->alloced * 2, PU_STATIC, 0);
+		newbuf = Z_Malloc<byte>(stream->alloced * 2, PU_STATIC);
 		memcpy(newbuf, stream->buf, stream->alloced);
 		Z_Free(stream->buf);
 		stream->buf = newbuf;
@@ -145,7 +145,7 @@ size_t mem_fwrite(const void *ptr, size_t size, size_t nmemb, MEMFILE *stream)
 	}
 
 	// Copy into buffer
-	
+
 	memcpy(stream->buf + stream->position, ptr, bytes);
 	stream->position += bytes;
 
@@ -183,15 +183,15 @@ int mem_fseek(MEMFILE *stream, signed long position, mem_rel_t whence)
 	switch (whence)
 	{
 		case MEM_SEEK_SET:
-			newpos = (int) position;
+			newpos = static_cast<int>(position);
 			break;
 
 		case MEM_SEEK_CUR:
-			newpos = (int) (stream->position + position);
+			newpos = static_cast<int>(stream->position + position);
 			break;
-			
+
 		case MEM_SEEK_END:
-			newpos = (int) (stream->buflen + position);
+			newpos = static_cast<int>(stream->buflen + position);
 			break;
 		default:
 			return -1;
@@ -204,7 +204,7 @@ int mem_fseek(MEMFILE *stream, signed long position, mem_rel_t whence)
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "mem_fseek: Error seeking to %i\n", newpos);
+		PrintFmt(PRINT_HIGH, "mem_fseek: Error seeking to {}\n", newpos);
 		return -1;
 	}
 }
@@ -216,7 +216,7 @@ size_t mem_fsize(MEMFILE *stream) // [Russell] - get size of stream
 
 char *mem_fgetbuf(MEMFILE *stream) // [Russell] - return stream buffer
 {
-    return (char *)stream->buf;
+    return reinterpret_cast<char*>(stream->buf);
 }
 
 VERSION_CONTROL (memio_cpp, "$Id$")

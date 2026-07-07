@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -27,6 +27,9 @@
 
 // Standard libc/STL includes we use in countless places
 
+#include <limits>
+#include <span>
+
 #include "version.h"
 #include "errors.h"
 
@@ -41,29 +44,9 @@
 // For __BIG_ENDIAN__ macro, requires forceinline
 #include "m_swap.h"
 
-#ifdef GEKKO
-	#include <gctypes.h>
-#endif
+using byte = uint8_t;
 
-#ifdef _MSC_VER
-	#define FORMAT_PRINTF(index, first_arg)
-#else
-	#define FORMAT_PRINTF(index, first_arg) __attribute__ ((format(printf, index, first_arg)))
-#endif
-
-#ifdef _MSC_VER
-	#define NORETURN __declspec(noreturn)
-#else
-	#define NORETURN __attribute__ ((noreturn))
-#endif
-
-// [RH] Some windows includes already define this
-#if !defined(_WINDEF_) && !defined(__wtypes_h__) && !defined(GEKKO)
-typedef int BOOL;
-#endif
-
-typedef unsigned char byte;
-typedef unsigned int uint;
+using OByteSpan = std::span<byte>;
 
 #if defined(_MSC_VER) || defined(__WATCOMC__)
 	#define STACK_ARGS __cdecl
@@ -72,7 +55,7 @@ typedef unsigned int uint;
 #endif
 
 // Predefined with some OS.
-#if !defined(UNIX) && !defined(_WIN32) && !defined(GEKKO)
+#if !defined(UNIX) && !defined(_WIN32)
 	#include <limits.h>
 	#include <float.h>
 #endif
@@ -85,95 +68,39 @@ typedef unsigned int uint;
 	#define __int64 long
 #endif
 
-#if (defined _XBOX || defined _MSC_VER)
+#if defined _MSC_VER
 	#define DBL_EPSILON 2.2204460492503131e-016
 	#define FLT_EPSILON 1.192092896e-07F
-
-	#define PRI_SIZE_PREFIX "I"
 #else
 	#include <float.h>
-
-	#define PRI_SIZE_PREFIX "z"
 #endif
-
-// Format constants for ssize_t/size_t.
-
-#define PRIdSIZE PRI_SIZE_PREFIX "d"
-#define PRIiSIZE PRI_SIZE_PREFIX "i"
-#define PRIuSIZE PRI_SIZE_PREFIX "u"
-#define PRIoSIZE PRI_SIZE_PREFIX "o"
-#define PRIxSIZE PRI_SIZE_PREFIX "x"
-#define PRIXSIZE PRI_SIZE_PREFIX "X"
 
 #ifdef UNIX
 	#define stricmp strcasecmp
 	#define strnicmp strncasecmp
 #endif
 
-#ifndef MAXCHAR
-	#define MAXCHAR 		((char)0x7f)
-#endif
-#ifndef MAXSHORT
-	#define MAXSHORT		((short)0x7fff)
-#endif
+namespace limits
+{
+	inline constexpr char         MAXCHAR  = std::numeric_limits<char>::max();
+	inline constexpr short        MAXSHORT = std::numeric_limits<short>::max();
+	inline constexpr int          MAXINT   = std::numeric_limits<int>::max();
+	inline constexpr unsigned int MAXUINT  = std::numeric_limits<unsigned int>::max();
+	// todo: do we even want to be using long here instead of int32_t/int64_t
+	// this feels like a remnant from before 64 bit
+	inline constexpr long         MAXLONG  = std::numeric_limits<long>::max();
 
-// Max pos 32-bit int.
-#ifndef MAXINT
-	#define MAXINT			(0x7fffffff)
-#endif
-#ifndef MAXUINT
-	#define MAXUINT			(0xffffffff)
-#endif
+	inline constexpr char         MINCHAR  = std::numeric_limits<char>::min();
+	inline constexpr short        MINSHORT = std::numeric_limits<short>::min();
+	inline constexpr int          MININT   = std::numeric_limits<int>::min();
+	inline constexpr unsigned int MINUINT  = std::numeric_limits<unsigned int>::min();
+	inline constexpr long         MINLONG  = std::numeric_limits<long>::min();
 
-#ifndef MAXLONG
-	#ifndef ALPHA
-		#define MAXLONG 		((long)0x7fffffff)
-	#else
-		#define MAXLONG			((long)0x7fffffffffffffff)
-	#endif
-#endif
-
-#ifndef MINCHAR
-	#define MINCHAR 		((char)0x80)
-#endif
-#ifndef MINSHORT
-	#define MINSHORT		((short)0x8000)
-#endif
-
-// Max negative 32-bit integer.
-#ifndef MININT
-	#define MININT			((int)0x80000000)
-#endif
-#ifndef MINLONG
-	#ifndef ALPHA
-		#define MINLONG 		((long)0x80000000)
-	#else
-		#define MINLONG			((long)0x8000000000000000)
-	#endif
-#endif
-
-#define MINFIXED		(signed)(0x80000000)
-#define MAXFIXED		(signed)(0x7fffffff)
-
-typedef unsigned char		BYTE;
-typedef signed char			SBYTE;
-
-typedef unsigned short		WORD;
-typedef signed short		SWORD;
-
-// denis - todo - this 64 bit fix conflicts with windows' idea of long
-#ifndef _WIN32
-typedef unsigned int		DWORD;
-typedef signed int			SDWORD;
-#else
-typedef unsigned long		DWORD;
-typedef signed long			SDWORD;
-#endif
-
-typedef unsigned __int64	QWORD;
-typedef signed __int64		SQWORD;
-
-typedef DWORD				BITFIELD;
+	inline constexpr int32_t      MAXFIXED = std::numeric_limits<int32_t>::max();
+	inline constexpr int32_t      MINFIXED = std::numeric_limits<int32_t>::min();
+	inline constexpr int64_t      MAXFIXED64 = std::numeric_limits<int64_t>::max();
+	inline constexpr int64_t      MINFIXED64 = std::numeric_limits<int64_t>::min();
+}
 
 typedef uint64_t			dtime_t;
 
@@ -196,48 +123,14 @@ typedef uint64_t			dtime_t;
 
 /**
  * @brief Returns a bitfield with a range of bits set from a to b, inclusive.
- * 
+ *
  * @param a Low bit in the mask.
- * @param b High bit in the mask. 
+ * @param b High bit in the mask.
  */
-static inline uint32_t BIT_MASK(uint32_t a, uint32_t b)
+static constexpr uint32_t BIT_MASK(uint32_t a, uint32_t b)
 {
     return (static_cast<uint32_t>(-1) >> (31 - b)) & ~(BIT(a) - 1);
 }
-
-// [RH] This gets used all over; define it here:
-FORMAT_PRINTF(1, 2) int STACK_ARGS Printf(const char* format, ...);
-FORMAT_PRINTF(2, 3) int STACK_ARGS Printf(int printlevel, const char* format, ...);
-// [Russell] Prints a bold green message to the console
-FORMAT_PRINTF(1, 2) int STACK_ARGS Printf_Bold(const char* format, ...);
-// [RH] Same here:
-FORMAT_PRINTF(1, 2) int STACK_ARGS DPrintf(const char* format, ...);
-
-/**
- * @brief Print to all clients in a server, or to the local player offline.
- *
- * @note This could really use a new name, like "ServerPrintf".
- *
- * @param format printf-style format string.
- * @param ... printf-style arguments.
- */
-void STACK_ARGS SV_BroadcastPrintf(const char* format, ...) FORMAT_PRINTF(1, 2);
-
-/**
- * @brief Print to all clients in a server, or to the local player offline.
- *
- * @note This could really use a new name, like "ServerPrintf".
- *
- * @param printlevel PRINT_* constant designating what kind of print this is.
- * @param format printf-style format string.
- * @param ... printf-style arguments.
- */
-void STACK_ARGS SV_BroadcastPrintf(int printlevel, const char* format, ...)
-    FORMAT_PRINTF(2, 3);
-
-#ifdef SERVER_APP
-void STACK_ARGS SV_BroadcastPrintfButPlayer(int printlevel, int player_id, const char* format, ...);
-#endif
 
 // game print flags
 typedef enum {
@@ -254,7 +147,8 @@ typedef enum {
 
 	PRINT_NORCON,		// Do NOT send the message to any rcon client.
 
-	PRINT_FILTERCHAT,	// Filter the message to not be displayed ingame, but only in the console (ugly hack)		
+	PRINT_FILTERCHAT,	// Filter the message to not be displayed ingame, but only in the console (ugly hack)
+	PRINT_FILTERHIGH,	// Filter the message to not be displayed ingame, but only in the console (ugly hack)
 
 	PRINT_MAXPRINT
 } printlevel_t;
@@ -268,7 +162,7 @@ typedef enum {
 	#undef MIN
 #endif
 template<class T>
-forceinline const T MIN (const T a, const T b)
+forceinline constexpr T MIN(const T a, const T b)
 {
 	return a < b ? a : b;
 }
@@ -282,7 +176,7 @@ forceinline const T MIN (const T a, const T b)
 	#undef MAX
 #endif
 template<class T>
-forceinline const T MAX (const T a, const T b)
+forceinline constexpr T MAX (const T a, const T b)
 {
 	return a > b ? a : b;
 }
@@ -299,7 +193,7 @@ forceinline const T MAX (const T a, const T b)
 	#undef clamp
 #endif
 template<class T>
-forceinline T clamp (const T in, const T min, const T max)
+forceinline constexpr T clamp(const T in, const T min, const T max)
 {
 	return in <= min ? min : in >= max ? max : in;
 }
@@ -308,21 +202,12 @@ forceinline T clamp (const T in, const T min, const T max)
 // ARRAY_LENGTH
 //
 // Safely counts the number of items in an C array.
-// 
-// https://www.drdobbs.com/cpp/counting-array-elements-at-compile-time/197800525?pgno=1
 //
-#define ARRAY_LENGTH(arr) ( \
-	0 * sizeof(reinterpret_cast<const ::Bad_arg_to_ARRAY_LENGTH*>(arr)) + \
-	0 * sizeof(::Bad_arg_to_ARRAY_LENGTH::check_type((arr), &(arr))) + \
-	sizeof(arr) / sizeof((arr)[0]) )
-
-struct Bad_arg_to_ARRAY_LENGTH {
-	class Is_pointer; // incomplete
-	class Is_array {};
-	template <typename T>
-	static Is_pointer check_type(const T*, const T* const*);
-	static Is_array check_type(const void*, const void*);
-};
+template <typename T, size_t N>
+constexpr size_t ARRAY_LENGTH(T (&arr)[N])
+{
+	return std::extent_v<T[N]>;
+}
 
 
 // ----------------------------------------------------------------------------
@@ -382,7 +267,7 @@ public:
 	{	a_num = _a; r_num = _r; g_num = _g; b_num = _b;	}
 
 private:
-	static uint8_t a_num, r_num, g_num, b_num;
+	static inline uint8_t a_num, r_num, g_num, b_num;
 
 	union
 	{
@@ -415,7 +300,14 @@ public:
 	{	seta(_a); setr(_r); setg(_g); setb(_b);	}
 
 	inline operator argb_t () const
-	{	return argb_t((uint8_t)(a * 255.0f), (uint8_t)(r * 255.0f), (uint8_t)(g * 255.0f), (uint8_t)(b * 255.0f));	}
+	{
+		return argb_t(
+			static_cast<uint8_t>(a * 255.0f),
+			static_cast<uint8_t>(r * 255.0f),
+			static_cast<uint8_t>(g * 255.0f),
+			static_cast<uint8_t>(b * 255.0f)
+		);
+	}
 
 	inline float geta() const
 	{	return a;	}
@@ -505,7 +397,6 @@ class translationref_t
 
 public:
 	translationref_t();
-	translationref_t(const translationref_t &other);
 	translationref_t(const palindex_t *table);
 	translationref_t(const palindex_t *table, const int player_id);
 
@@ -565,7 +456,6 @@ public:
 
 public:
 	shaderef_t();
-	shaderef_t(const shaderef_t &other);
 	shaderef_t(const shademap_t * const colors, const int mapnum);
 
 	// Determines if m_colors is NULL
@@ -581,7 +471,7 @@ public:
 
 	argb_t tlate(const translationref_t &translation, const byte c) const;
 
-	bool operator==(const shaderef_t &other) const;
+	[[nodiscard]] bool operator==(const shaderef_t &other) const;
 };
 
 forceinline bool shaderef_t::isValid() const

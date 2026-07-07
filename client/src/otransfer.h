@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,35 +22,29 @@
 
 #pragma once
 
-
+#ifndef CURL_STATICLIB
 #define CURL_STATICLIB
+#endif
 #include "curl/curl.h"
 
 struct OTransferProgress
 {
-	ptrdiff_t dltotal;
-	ptrdiff_t dlnow;
-
-	OTransferProgress() : dltotal(0), dlnow(0)
-	{
-	}
+	ptrdiff_t dltotal = 0;
+	ptrdiff_t dlnow   = 0;
 };
 
 struct OTransferInfo
 {
-	int code;
-	curl_off_t speed;
+	int code         = 0;
+	curl_off_t speed = 0;
 	std::string url;
 	std::string contentType;
 
-	OTransferInfo() : code(0), speed(0), url(""), contentType("")
-	{
-	}
 	bool hydrate(CURL* curl);
 };
 
-typedef void (*OTransferDoneProc)(const OTransferInfo& info);
-typedef void (*OTransferErrorProc)(const char* msg);
+using OTransferDoneProc  = void (*)(const OTransferInfo& info);
+using OTransferErrorProc = void (*)(const char* msg);
 
 /**
  * @brief Encapsulates an HTTP check to see if a specific remote file exists.
@@ -103,8 +97,8 @@ class OTransfer
 	bool m_shouldCheckAgain;
 
 	OTransfer(const OTransfer&);
-	static int curlProgress(void* clientp, double dltotal, double dlnow, double ultotal,
-	                        double ulnow);
+	static int curlProgress(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
+	                        curl_off_t ulnow);
 
   public:
 	OTransfer(OTransferDoneProc done, OTransferErrorProc err)
@@ -133,7 +127,7 @@ class OTransfer
 	bool start();
 	void stop();
 	bool tick();
-	bool shouldCheckAgain() const;
-	std::string getFilename() const;
-	OTransferProgress getProgress() const;
+	[[nodiscard]] bool shouldCheckAgain() const;
+	[[nodiscard]] std::string getFilename() const;
+	[[nodiscard]] OTransferProgress getProgress() const;
 };

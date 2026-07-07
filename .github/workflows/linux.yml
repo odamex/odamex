@@ -1,6 +1,21 @@
 name: Linux
 
-on: [push, pull_request]
+on:
+  push:
+    branches-ignore:
+    - 'release/[0-9]+.[0-9]+.[0-9]+'
+    paths-ignore:
+    - "**/*.md"
+    - README
+    - LICENSE
+    - MAINTAINERS
+    - CHANGELOG
+    - 3RD-PARTY-LICENSES
+    - config-samples/*
+    - documentation/**
+    - tools/**
+  pull_request:
+
 
 jobs:
   pre_job:
@@ -10,7 +25,7 @@ jobs:
       should_skip: ${{ steps.check_skip.outputs.should_skip }}
     steps:
       - name: Checkout source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v6
       - name: Check for build skip
         id: check_skip
         run: bash ci/check-skip.sh
@@ -21,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build
@@ -30,29 +45,15 @@ jobs:
       uses: ammaraskar/gcc-problem-matcher@master
     - name: Run build
       run: cmake --build ./build/
+    - name: Run unit tests
+      run: ./build/tests/unit-tests/odagtest --gtest_color=yes
     - name: Prepare artifact
       run: bash ci/ubuntu-artifact.sh
     - name: Upload artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v7
       with:
         name: Odamex-Linux-x86_64
         path: 'build/artifact/*'
-  build-sdl12:
-    name: Build (SDL 1.2)
-    needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
-    runs-on: ubuntu-latest
-    env:
-      USE_SDL12: 1
-    steps:
-    - name: Checkout source
-      uses: actions/checkout@v2
-    - name: Checkout submodules
-      run: git submodule update --init --recursive
-    - name: Prepare build
-      run: bash ci/ubuntu-buildgen.sh
-    - name: Run build
-      run: cmake --build ./build/
   build-clang:
     name: Build (Clang)
     needs: pre_job
@@ -63,34 +64,113 @@ jobs:
       CXX: /usr/bin/clang++
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Prepare build
       run: bash ci/ubuntu-buildgen.sh
     - name: Run build
       run: cmake --build ./build/
-  build-centos:
-    name: Build (CentOS 7)
+    - name: Run unit tests
+      run: ./build/tests/unit-tests/odagtest --gtest_color=yes
+  build-arm:
+    name: Build (ARM64)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v6
+    - name: Checkout submodules
+      run: git submodule update --init --recursive
+    - name: Prepare build
+      run: bash ci/ubuntu-buildgen.sh
+    - name: Turn on problem matcher
+      uses: ammaraskar/gcc-problem-matcher@master
+    - name: Run build
+      run: cmake --build ./build/
+    - name: Run unit tests
+      run: ./build/tests/unit-tests/odagtest --gtest_color=yes
+  build-fedora:
+    name: Build (Fedora 34)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Run build
-      run: bash ci/centos-buildgen.sh
-  build-ubuntu-bionic:
-    name: Build (Ubuntu 18.04 LTS)
+      run: bash ci/fedora-buildgen.sh
+  build-ubuntu-jammy:
+    name: Build (Ubuntu 22.04 LTS)
     needs: pre_job
     if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
     - name: Checkout source
-      uses: actions/checkout@v2
+      uses: actions/checkout@v6
     - name: Checkout submodules
       run: git submodule update --init --recursive
     - name: Run build
-      run: bash ci/ubuntu-bionic-buildgen.sh
+      run: bash ci/ubuntu-jammy-buildgen.sh
+  build-flatpak:
+    name: Build Flatpak (Ubuntu Latest)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      options: --privileged
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v6
+      with:
+        submodules: recursive
+    - name: Update metainfo dates
+      shell: bash
+      run: |
+        DATE=$(date +'%Y-%m-%d')
+        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.releases.xml
+    - name: Create escaped branch name
+      env:
+        name: "${{ github.ref_name }}"
+      run: |
+        echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
+    - name: Build Flatpak
+      uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+      with:
+        manifest-path: packaging/flatpak/net.odamex.Odamex.yml
+        bundle: odamex.flatpak
+        branch: ${{ env.MODIFIED_BRANCH_NAME }}
+  build-flatpak-arm:
+    name: Build Flatpak (Ubuntu 24.04 ARM)
+    needs: pre_job
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    runs-on: ubuntu-24.04-arm
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-25.08
+      options: --privileged
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v6
+      with:
+        submodules: recursive
+    - name: Update metainfo dates
+      shell: bash
+      run: |
+        DATE=$(date +'%Y-%m-%d')
+        sed -i "s/YYYY-MM-DD/$DATE/g" packaging/linux/net.odamex.Odamex.releases.xml
+    - name: Create escaped branch name
+      env:
+        name: "${{ github.ref_name }}"
+      run: |
+        echo "MODIFIED_BRANCH_NAME=${name/\//-}" >> $GITHUB_ENV
+    - name: Build Flatpak
+      uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+      with:
+        manifest-path: packaging/flatpak/net.odamex.Odamex.yml
+        arch: aarch64
+        bundle: odamex.flatpak
+        branch: ${{ env.MODIFIED_BRANCH_NAME }}

@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -39,29 +39,17 @@ public:
 	virtual ~Vote() { };
 	const char* name;
 	const cvar_t* cvar;
-	unsigned int get_countdown() const
-	{
-		return this->countdown;
-	}
-	std::string get_error() const
-	{
-		return this->error;
-	}
-	vote_result_t get_result() const
-	{
-		return this->result;
-	}
-	std::string get_votestring() const
-	{
-		return this->votestring;
-	}
+	[[nodiscard]] unsigned int get_countdown() const { return this->countdown; }
+	[[nodiscard]] std::string get_error() const { return this->error; }
+	[[nodiscard]] vote_result_t get_result() const { return this->result; }
+	[[nodiscard]] std::string get_votestring() const { return this->votestring; }
 	vote_result_t check();
-	size_t count_yes() const;
-	size_t count_no() const;
-	size_t count_abs() const;
-	size_t calc_yes(const bool noabs = false) const;
-	size_t calc_no() const;
-	vote_state_t serialize() const;
+	[[nodiscard]] size_t count_yes() const;
+	[[nodiscard]] size_t count_no() const;
+	[[nodiscard]] size_t count_abs() const;
+	[[nodiscard]] size_t calc_yes(const bool noabs = false) const;
+	[[nodiscard]] size_t calc_no() const;
+	[[nodiscard]] vote_state_t serialize() const;
 	void ev_disconnect(player_t &player);
 	bool ev_tic();
 	bool init(const std::vector<std::string> &args, const player_t &player);
@@ -91,7 +79,15 @@ public:
 	}
 };
 
-void SV_Callvote(player_t &player);
+namespace odaproto
+{
+    namespace clc
+    {
+        class CallVote;
+    }
+}
+
+void SV_Callvote(player_t &player, const odaproto::clc::CallVote& msg);
 void SV_VoteCmd(player_t& player, const std::vector<std::string>& args);
 void Vote_Disconnect(player_t &player);
 void Vote_Runtic();

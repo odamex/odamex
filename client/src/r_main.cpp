@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,8 +30,10 @@
 #include <math.h>
 #include "m_random.h"
 #include "p_local.h"
+#include "gi.h"
 #include "r_local.h"
 #include "r_sky.h"
+#include "r_interp.h"
 #include "st_stuff.h"
 #include "v_video.h"
 #include "stats.h"
@@ -42,10 +44,6 @@
 #include "cl_demo.h"
 
 extern NetDemo netdemo;
-
-void R_BeginInterpolation(fixed_t amount);
-void R_EndInterpolation();
-void R_InterpolateCamera(fixed_t amount, bool use_localview);
 
 #define DISTMAP			2
 
@@ -74,43 +72,13 @@ fixed_t			fovtan;
 float			focratio;
 float			ifocratio;
 
-// increment every time a check is made
-int 			validcount = 1;
-
 // [RH] colormap currently drawing with
 shaderef_t		basecolormap;
 int				fixedlightlev;
 shaderef_t		fixedcolormap;
 
-int 			centerx;
-int				centery;
-
-fixed_t 		centerxfrac;
-fixed_t 		centeryfrac;
-fixed_t			yaspectmul;
-
 // just for profiling purposes
 int 			framecount;
-int 			linecount;
-int 			loopcount;
-
-fixed_t 		viewx;
-fixed_t 		viewy;
-fixed_t 		viewz;
-
-angle_t 		viewangle;
-LocalView		localview;
-
-fixed_t 		viewcos;
-fixed_t 		viewsin;
-
-AActor			*camera;	// [RH] camera to draw from. doesn't have to be a player
-
-//
-// precalculated math tables
-//
-
-const fixed_t	*finecosine = &finesine[FINEANGLES/4];
 
 int				scalelight[LIGHTLEVELS][MAXLIGHTSCALE];
 int				scalelightfixed[MAXLIGHTSCALE];
@@ -119,12 +87,6 @@ int				zlight[LIGHTLEVELS][MAXLIGHTZ];
 // [RH] used to keep hires modes dark enough
 int				lightscalexmul;
 int				lightscaleymul;
-
-// bumped light from gun blasts
-int 			extralight;
-
-// [RH] ignore extralight and fullbright
-BOOL			foggy;
 
 static bool		setsizeneeded = true;
 int				setblocks;
@@ -145,9 +107,10 @@ void (*spanslopefunc) (void);
 int FieldOfView = 2048;
 int CorrectFieldOfView = 2048;
 
-fixed_t			render_lerp_amount;
-
 static void R_InitViewWindow();
+
+IWindowSurface* screenblocks_surface;
+IWindowSurface* scaled_screenblocks_surface;
 
 
 //
@@ -182,7 +145,7 @@ IWindowSurface* R_GetRenderingSurface()
 // R_PointOnSide
 //
 // Determines which side of a line the point (x, y) is on.
-// Returns side 0 (front) or 1 (back) 
+// Returns side 0 (front) or 1 (back)
 //
 int R_PointOnSide(fixed_t x, fixed_t y, fixed_t xl, fixed_t yl, fixed_t xh, fixed_t yh)
 {
@@ -201,7 +164,7 @@ int R_PointOnSide(fixed_t x, fixed_t y, fixed_t xl, fixed_t yl, fixed_t xh, fixe
 //
 int R_PointOnSide(fixed_t x, fixed_t y, const node_t *node)
 {
-	return R_PointOnSide(x, y, node->x, node->y, node->x + node->dx, node->y + node->dy); 
+	return R_PointOnSide(x, y, node->x, node->y, node->x + node->dx, node->y + node->dy);
 }
 
 //
@@ -313,7 +276,7 @@ fixed_t R_PointToDist2(fixed_t dx, fixed_t dy)
 void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 {
 	int index = ang >> ANGLETOFINESHIFT;
-	
+
 	tx = FixedMul(x, finecosine[index]) - FixedMul(y, finesine[index]);
 	ty = FixedMul(x, finesine[index]) + FixedMul(y, finecosine[index]);
 }
@@ -327,7 +290,7 @@ void R_RotatePoint(fixed_t x, fixed_t y, angle_t ang, fixed_t &tx, fixed_t &ty)
 // right endpoint is rclip percent of the way between the left and right
 // endpoints
 //
-void R_ClipLine(const v2fixed_t* in1, const v2fixed_t* in2, 
+void R_ClipLine(const v2fixed_t* in1, const v2fixed_t* in2,
 				int32_t lclip, int32_t rclip,
 				v2fixed_t* out1, v2fixed_t* out2)
 {
@@ -335,17 +298,17 @@ void R_ClipLine(const v2fixed_t* in1, const v2fixed_t* in2,
 	const fixed_t dy = in2->y - in1->y;
 	const fixed_t x = in1->x;
 	const fixed_t y = in1->y;
-	out1->x = x + FixedMul30(lclip, dx);
-	out2->x = x + FixedMul30(rclip, dx);
-	out1->y = y + FixedMul30(lclip, dy);
-	out2->y = y + FixedMul30(rclip, dy);
+	out1->x = x + FixedMulN<30>(lclip, dx);
+	out2->x = x + FixedMulN<30>(rclip, dx);
+	out1->y = y + FixedMulN<30>(lclip, dy);
+	out2->y = y + FixedMulN<30>(rclip, dy);
 }
 
 void R_ClipLine(const vertex_t* in1, const vertex_t* in2,
 				int32_t lclip, int32_t rclip,
 				v2fixed_t* out1, v2fixed_t* out2)
 {
-	R_ClipLine((const v2fixed_t*)in1, (const v2fixed_t*)in2, lclip, rclip, out1, out2);
+	R_ClipLine(reinterpret_cast<const v2fixed_t*>(in1), reinterpret_cast<const v2fixed_t*>(in2), lclip, rclip, out1, out2);
 }
 
 //
@@ -363,27 +326,27 @@ void R_ClipLine(const vertex_t* in1, const vertex_t* in2,
 //
 bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipdist, int32_t& lclip, int32_t& rclip)
 {
-	static const int32_t CLIPUNIT = 1 << 30;
+	static constexpr int32_t CLIPUNIT = 1 << 30;
 	v2fixed_t p1 = *v1, p2 = *v2;
 
 	lclip = 0;
-	rclip = CLIPUNIT; 
+	rclip = CLIPUNIT;
 
 	// Clip portions of the line that are behind the view plane
 	if (p1.y < clipdist)
-	{      
+	{
 		// reject the line entirely if the whole thing is behind the view plane.
 		if (p2.y < clipdist)
 			return false;
 
 		// clip the line at the point where p1.y == clipdist
-		lclip = FixedDiv30(clipdist - p1.y, p2.y - p1.y);
+		lclip = FixedDivN<30>(clipdist - p1.y, p2.y - p1.y);
 	}
 
 	if (p2.y < clipdist)
 	{
 		// clip the line at the point where p2.y == clipdist
-		rclip = FixedDiv30(clipdist - p1.y, p2.y - p1.y);
+		rclip = FixedDivN<30>(clipdist - p1.y, p2.y - p1.y);
 	}
 
 	int32_t unclipped_amount = rclip - lclip;
@@ -412,20 +375,20 @@ bool R_ClipLineToFrustum(const v2fixed_t* v1, const v2fixed_t* v2, fixed_t clipd
 		if (den == 0)
 			return false;
 
-		int32_t t = FixedDiv30(-yc1 - p1.x, den);
-		lclip += FixedMul30(t, unclipped_amount);
+		int32_t t = FixedDivN<30>(-yc1 - p1.x, den);
+		lclip += FixedMulN<30>(t, unclipped_amount);
 	}
 
 	// is the right vertex off the right side of the screen?
 	if (p2.x > yc2)
 	{
 		// clip line at right edge of the screen
-		fixed_t den = p2.x - p1.x - yc2 + yc1;	
+		fixed_t den = p2.x - p1.x - yc2 + yc1;
 		if (den == 0)
 			return false;
 
-		int32_t t = FixedDiv30(yc1 - p1.x, den);
-		rclip -= FixedMul30(CLIPUNIT - t, unclipped_amount);
+		int32_t t = FixedDivN<30>(yc1 - p1.x, den);
+		rclip -= FixedMulN<30>(CLIPUNIT - t, unclipped_amount);
 	}
 
 	if (lclip > rclip)
@@ -484,7 +447,7 @@ bool R_CheckProjectionY(int &y1, int &y2)
 {
 	y1 = MAX(y1, 0);
 	y2 = MIN(y2, viewheight - 1);
-	return (y1 <= y2);
+	return y1 <= viewheight - 1 || y2 >= 0;
 }
 
 
@@ -522,10 +485,10 @@ void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 	// convert from camera-space to screen-space
 	int lclip, rclip;
 
-	if (!R_ClipLineToFrustum((v2fixed_t*)&pt1, (v2fixed_t*)&pt2, NEARCLIP, lclip, rclip))
+	if (!R_ClipLineToFrustum(reinterpret_cast<v2fixed_t*>(&pt1), reinterpret_cast<v2fixed_t*>(&pt2), NEARCLIP, lclip, rclip))
 		return;
 
-	R_ClipLine((v2fixed_t*)&pt1, (v2fixed_t*)&pt2, lclip, rclip, (v2fixed_t*)&pt1, (v2fixed_t*)&pt2);
+	R_ClipLine(reinterpret_cast<v2fixed_t*>(&pt1), reinterpret_cast<v2fixed_t*>(&pt2), lclip, rclip, reinterpret_cast<v2fixed_t*>(&pt1), reinterpret_cast<v2fixed_t*>(&pt2));
 
 	int x1 = clamp(R_ProjectPointX(pt1.x, pt1.y), 0, viewwidth - 1);
 	int x2 = clamp(R_ProjectPointX(pt2.x, pt2.y), 0, viewwidth - 1);
@@ -572,7 +535,7 @@ void R_DrawLine(const v3fixed_t* inpt1, const v3fixed_t* inpt2, byte color)
 		{
 			R_DrawPixel(x, y, color);
 			if (y == y2)
-				return;		
+				return;
 
 			if (d >= 0)
 			{
@@ -612,7 +575,7 @@ void R_SetViewSize(int blocks)
 
 CVAR_FUNC_IMPL(screenblocks)
 {
-	R_SetViewSize((int)var);
+	R_SetViewSize(var.asInt());
 }
 
 
@@ -623,7 +586,7 @@ CVAR_FUNC_IMPL(screenblocks)
 void R_Init()
 {
 	R_InitData();
-	R_SetViewSize((int)screenblocks);
+	R_SetViewSize(screenblocks.asInt());
 	R_InitPlanes();
 	R_InitTranslationTables();
 
@@ -639,6 +602,11 @@ void R_Init()
 void STACK_ARGS R_Shutdown()
 {
     R_FreeTranslationTables();
+
+	R_ClearSkyDefs();
+    I_FreeSurface(screenblocks_surface);
+    I_FreeSurface(scaled_screenblocks_surface);
+
 }
 
 
@@ -668,6 +636,20 @@ subsector_t *R_PointInSubsector (fixed_t x, fixed_t y)
 	}
 
 	return &subsectors[nodenum & ~NF_SUBSECTOR];
+}
+
+//
+//
+// R_SetViewAngle
+//
+//
+
+void R_SetViewAngle(angle_t ang)
+{
+	viewangle = ang;
+
+	viewsin = finesine[ang >> ANGLETOFINESHIFT];
+	viewcos = finecosine[ang >> ANGLETOFINESHIFT];
 }
 
 //
@@ -778,30 +760,6 @@ void R_SetupFrame (player_t *player)
 	    (consolePlayer.id == displayplayer().id && consolePlayer.health > 0 &&
 	     !consolePlayer.mo->reactiontime && !netdemo.isPlaying() && !demoplayback);
 
-	if (player->cheats & CF_CHASECAM)
-	{
-		// [RH] Use chasecam view
-		P_AimCamera (camera);
-		viewx = CameraX;
-		viewy = CameraY;
-		viewz = CameraZ;
-		viewangle = camera->angle;
-	}
-	else
-	{
-		if (render_lerp_amount < FRACUNIT)
-		{
-			R_InterpolateCamera(render_lerp_amount, use_localview);
-		}
-		else
-		{
-			viewx = camera->x;
-			viewy = camera->y;
-			viewz = camera->player ? camera->player->viewz : camera->z;
-			viewangle = camera->angle;
-		}
-	}
-
 	if (camera->player && camera->player->xviewshift && !paused)
 	{
 		int intensity = camera->player->xviewshift;
@@ -816,10 +774,9 @@ void R_SetupFrame (player_t *player)
 
 	// [SL] Change to a different sector blend color (or colormap in 8bpp mode)
 	// if entering a heightsec (via TransferHeight line special)
-	if (camera->subsector->sector->heightsec &&
-		!(camera->subsector->sector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
+	if (viewsector->heightsec && !(viewsector->heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC))
 	{
-		const sector_t* sec = camera->subsector->sector->heightsec;
+		const sector_t* sec = viewsector->heightsec;
 
 		argb_t new_sector_blend_color;
 		if (viewz < P_FloorHeight(viewx, viewy, sec))
@@ -871,7 +828,7 @@ void R_SetupFrame (player_t *player)
 		memset (scalelightfixed, 0, MAXLIGHTSCALE*sizeof(*scalelightfixed));
 	}
 
-	if (use_localview && !::localview.skippitch)
+	if ((use_localview && !::localview.skippitch) || netdemo.isPaused())
 	{
 		R_ViewShear(clamp(camera->pitch - ::localview.pitch, -ANG(32), ANG(56)));
 	}
@@ -1001,6 +958,21 @@ void R_SetTranslatedLucentDrawFuncs()
 	}
 }
 
+void R_SetSkyForegroundDrawFuncs()
+{
+	if (nodrawers)
+	{
+		R_SetBlankDrawFuncs();
+	}
+	else if (r_drawflat)
+	{
+		R_SetFlatDrawFuncs();
+	}
+	else
+	{
+		colfunc = R_DrawSkyForegroundColumn;
+	}
+}
 
 //
 // R_RenderPlayerView
@@ -1015,6 +987,8 @@ void R_RenderPlayerView(player_t* player)
 		setsizeneeded = false;
 	}
 
+	OInterpolation::getInstance().interpolateView(player, render_lerp_amount);
+
 	if (!viewactive)
 		return;
 
@@ -1024,7 +998,7 @@ void R_RenderPlayerView(player_t* player)
 	R_ClearClipSegs();
 	R_ClearDrawSegs();
 	R_ClearOpenings();
-	R_ClearPlanes();
+	R_ClearPlanes(true);
 	R_ClearSprites();
 
 	R_ResetDrawFuncs();
@@ -1036,12 +1010,12 @@ void R_RenderPlayerView(player_t* player)
 	{
 		argb_t color = gametic & 8 ? argb_t(0, 0, 0) : argb_t(0, 0, 255);
 		int x1 = viewwindowx, y1 = viewwindowy;
-		int x2 = viewwindowx + viewwidth - 1, y2 = viewwindowy + viewheight - 1; 
+		int x2 = viewwindowx + viewwidth - 1, y2 = viewwindowy + viewheight - 1;
 
 		surface->getDefaultCanvas()->Clear(x1, y1, x2, y2, color);
 	}
 
-	R_BeginInterpolation(render_lerp_amount);
+	OInterpolation::getInstance().beginGameInterpolation(render_lerp_amount);
 
 	// [RH] Setup particles for this frame
 	R_FindParticleSubsectors();
@@ -1053,13 +1027,13 @@ void R_RenderPlayerView(player_t* player)
 		int flags2_backup = camera->flags2;
 		camera->flags2 |= MF2_DONTDRAW;
 		R_RenderBSPNode(numnodes - 1);
-		camera->flags2 = flags2_backup; 
+		camera->flags2 = flags2_backup;
 	}
 	else
 		R_RenderBSPNode(numnodes - 1);	// The head node is the last node output.
 
 	R_DrawPlanes();
-
+	R_DrawSkyBoxes();
 	R_DrawMasked();
 
 	// NOTE(jsd): Full-screen status color blending:
@@ -1070,7 +1044,7 @@ void R_RenderPlayerView(player_t* player)
 						viewwindowx, viewwindowy, viewwidth, viewheight);
 	}
 
-	R_EndInterpolation();
+	OInterpolation::getInstance().endGameInterpolation();
 }
 
 
@@ -1176,14 +1150,14 @@ static void R_InitViewWindow()
 
 	surface->lock();
 
-	// Calculate viewwidth & viewheight based on the amount of window border 
+	// Calculate viewwidth & viewheight based on the amount of window border
 	viewwidth = R_ViewWidth(surface_width, surface_height);
 	viewheight = R_ViewHeight(surface_width, surface_height);
 	viewwindowx = R_ViewWindowX(surface_width, surface_height);
 	viewwindowy = R_ViewWindowY(surface_width, surface_height);
 
 	if (setblocks == 10 || setblocks == 11 || setblocks == 12)
-		freelookviewheight = surface_height; 
+		freelookviewheight = surface_height;
 	else
 		freelookviewheight = ((setblocks * surface_height) / 10) & ~7;
 
@@ -1251,7 +1225,7 @@ static void R_InitViewWindow()
 	for (int i = 0; i < surface_width; i++)
 	{
 		negonearray[i] = -1;
-		viewheightarray[i] = (int)viewheight;
+		viewheightarray[i] = static_cast<int>(viewheight);
 	}
 
 	R_InitLightTables(surface_width, surface_height);
@@ -1265,7 +1239,7 @@ static void R_InitViewWindow()
 	surface->unlock();
 
 	char temp_str[16];
-	sprintf(temp_str, "%d x %d", viewwidth, viewheight);
+	snprintf(temp_str, 16, "%d x %d", viewwidth, viewheight);
 	r_viewsize.ForceSet(temp_str);
 
 	// [SL] clear many renderer variables

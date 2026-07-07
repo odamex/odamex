@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2022 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,7 +30,6 @@
 #include "d_player.h"
 #include "m_fixed.h"
 #include "r_defs.h"
-#include <map>
 
 class ClientReplay
 {
@@ -47,10 +46,10 @@ public:
 private:
   std::vector<std::pair<int, uint32_t> > itemReplayStack;			// Used to replay item pickups for items the clients can't find.
   static const uint32_t MAX_REPLAY_TIC_LENGTH = TICRATE * 3;	// Should be plenty of time.
-  bool replayed = false;
-  uint32_t replayDoneCounter = TICRATE * 7;
-  uint32_t firstReadyTic = 0;
+  bool replayed;
+  uint32_t replayDoneCounter;
+  uint32_t firstReadyTic;
 	// <int, uint32_t> = <gametic, itemid>
-	ClientReplay() { }											// private contsructor (part of Singleton)
-	ClientReplay(const ClientReplay& rhs);	// private copy constructor
+  ClientReplay();                         // private contsructor (part of Singleton)
+	ClientReplay(const ClientReplay& rhs);  // private copy constructor
 };

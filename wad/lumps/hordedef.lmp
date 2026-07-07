@@ -110,6 +110,9 @@ define "Death From Above"
 
 	addpowerup "Berserk"
 	addpowerup "GreenArmor"
+	addpowerup "Chaingun" {
+		chance = 0.3
+	}
 
 	addmonster "ZombieMan"
 	addmonster "Cacodemon"

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,22 +32,9 @@
 #include "r_state.h"
 #include "cl_main.h"
 
-// The default preference ordering when the player runs out of one type of ammo.
-// Vanilla Doom compatible.
-const byte UserInfo::weapon_prefs_default[NUMWEAPONS] = {
-	0, // wp_fist
-	4, // wp_pistol
-	5, // wp_shotgun
-	6, // wp_chaingun
-	1, // wp_missile
-	8, // wp_plasma
-	2, // wp_bfg
-	3, // wp_chainsaw
-	7  // wp_supershotgun
-};
-
 EXTERN_CVAR (cl_autoaim)
 EXTERN_CVAR (cl_name)
+EXTERN_CVAR (cl_colorpreset)
 EXTERN_CVAR (cl_color)
 EXTERN_CVAR (cl_gender)
 EXTERN_CVAR (cl_team)
@@ -83,16 +70,16 @@ CVAR_FUNC_IMPL(cl_name)
 		var.Set(newname.c_str());
 }
 
-
-
 gender_t D_GenderByName (const char *gender)
 {
 	if (!stricmp (gender, "female"))
 		return GENDER_FEMALE;
-	else if (!stricmp (gender, "cyborg"))
-		return GENDER_NEUTER;
-	else
+	else if (!stricmp (gender, "male"))
 		return GENDER_MALE;
+	else if (!stricmp (gender, "cyborg"))
+		return GENDER_CYBORG;
+	else
+		return GENDER_OTHER;
 }
 
 //
@@ -103,9 +90,9 @@ team_t D_TeamByName (const char *team)
 {
 	for (int i = 0; i < NUMTEAMS; i++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 		if (stricmp(team, teamInfo->ColorString.c_str()) == 0)
-			return (team_t)i;
+			return static_cast<team_t>(i);
 	}
 
 	if (strcmp(team, "0") == 0)
@@ -120,16 +107,18 @@ team_t D_TeamByName (const char *team)
 
 colorpreset_t D_ColorPreset (const char *colorpreset)
 {
-	if (!stricmp(colorpreset, "blue"))
-		return COLOR_BLUE;
+	if (!stricmp(colorpreset, "green"))
+		return COLOR_GREEN;
 	else if (!stricmp(colorpreset, "indigo"))
 		return COLOR_INDIGO;
-	else if (!stricmp(colorpreset, "green"))
-		return COLOR_GREEN;
 	else if (!stricmp(colorpreset, "brown"))
 		return COLOR_BROWN;
 	else if (!stricmp(colorpreset, "red"))
 		return COLOR_RED;
+	else if (!stricmp(colorpreset, "blue"))
+		return COLOR_BLUE;
+	else if (!stricmp(colorpreset, "orange"))
+		return COLOR_ORANGE;
 	else if (!stricmp(colorpreset, "gold"))
 		return COLOR_GOLD;
 	else if (!stricmp(colorpreset, "jungle green"))
@@ -146,9 +135,17 @@ colorpreset_t D_ColorPreset (const char *colorpreset)
 
 
 static cvar_t *weaponpref_cvar_map[NUMWEAPONS] = {
-	&cl_weaponpref_fst, &cl_weaponpref_pis, &cl_weaponpref_sg, &cl_weaponpref_cg,
-	&cl_weaponpref_rl, &cl_weaponpref_pls, &cl_weaponpref_bfg, &cl_weaponpref_csw,
-	&cl_weaponpref_ssg };
+	&cl_weaponpref_fst,
+	&cl_weaponpref_pis,
+	&cl_weaponpref_sg,
+	&cl_weaponpref_cg,
+	&cl_weaponpref_rl,
+	&cl_weaponpref_pls,
+	&cl_weaponpref_bfg,
+	&cl_weaponpref_csw,
+	&cl_weaponpref_ssg,
+	nullptr,            // wp_none
+};
 
 //
 // D_PrepareWeaponPreferenceUserInfo
@@ -158,17 +155,25 @@ static cvar_t *weaponpref_cvar_map[NUMWEAPONS] = {
 //
 void D_PrepareWeaponPreferenceUserInfo()
 {
-	byte *prefs = consoleplayer().userinfo.weapon_prefs;
+	auto& prefs = consoleplayer().userinfo.weapon_prefs;
 
 	for (size_t i = 0; i < NUMWEAPONS; i++)
 	{
 		// sanitize the weapon preferences
-		if (weaponpref_cvar_map[i]->asInt() < 0)
-			weaponpref_cvar_map[i]->ForceSet(0.0f);
-		if (weaponpref_cvar_map[i]->asInt() >= NUMWEAPONS)
-			weaponpref_cvar_map[i]->ForceSet(float(NUMWEAPONS - 1));
+		if (weaponpref_cvar_map[i])
+		{
+			if (weaponpref_cvar_map[i]->asInt() < 0)
+				weaponpref_cvar_map[i]->ForceSet(0.0f);
+			if (weaponpref_cvar_map[i]->asInt() >= NUMWEAPONS)
+				weaponpref_cvar_map[i]->ForceSet(float(NUMWEAPONS - 1));
 
-		prefs[i] = weaponpref_cvar_map[i]->asInt();
+			prefs[i] = weaponpref_cvar_map[i]->asInt();
+		}
+		else
+		{
+			// Bottom priority - Lower than the lowest value that can be set via the UI.
+			prefs[i] = -1;
+		}
 	}
 }
 
@@ -178,7 +183,7 @@ void D_SetupUserInfo(void)
 
 	std::string netname(cl_name.str());
 	StripColorCodes(netname);
-	
+
 	if (netname.length() > MAXPLAYERNAME)
 		netname.erase(MAXPLAYERNAME);
 
@@ -192,27 +197,25 @@ void D_SetupUserInfo(void)
 	coninfo->netname			= netname;
 	coninfo->team				= newteam; // [Toke - Teams]
 	coninfo->gender				= D_GenderByName (cl_gender.cstring());
-	coninfo->aimdist			= (fixed_t)(cl_autoaim * 16384.0);
+	coninfo->aimdist			= static_cast<fixed_t>(cl_autoaim * 16384.0);
 	coninfo->predict_weapons	= (cl_predictweapons != 0);
 
 	// sanitize the weapon switching choice
 	if (cl_switchweapon >= WPSW_NUMTYPES || cl_switchweapon < 0)
 		cl_switchweapon.ForceSet(WPSW_ALWAYS);
-	coninfo->switchweapon	= (weaponswitch_t)cl_switchweapon.asInt();
+	coninfo->switchweapon = cl_switchweapon.asEnum<weaponswitch_t>();
 
 	// Copies the updated cl_weaponpref* cvars to coninfo->weapon_prefs[]
 	D_PrepareWeaponPreferenceUserInfo();
 
+	coninfo->colorpreset = D_ColorPreset (cl_colorpreset.cstring());
+
 	// set the color in a pixel-format neutral way
-	argb_t color = V_GetColorFromString(cl_color);
-	coninfo->color[0] = color.geta();
-	coninfo->color[1] = color.getr();
-	coninfo->color[2] = color.getg(); 
-	coninfo->color[3] = color.getb(); 
+	coninfo->color = V_GetColorFromString(cl_color);
 
 	// update color translation
 	if (!demoplayback && !connected)
-		R_BuildPlayerTranslation(consoleplayer_id, color);
+		R_BuildPlayerTranslation(consoleplayer_id, coninfo->color, coninfo->colorpreset);
 }
 
 void D_UserInfoChanged (cvar_t *cvar)
@@ -221,66 +224,35 @@ void D_UserInfoChanged (cvar_t *cvar)
 		D_SetupUserInfo();
 
 	if (connected)
-		CL_SendUserInfo();
+		CL_SendUserInfo(messenger.ReliableBuf().Obtain());
 }
 
 FArchive &operator<< (FArchive &arc, UserInfo &info)
 {
-	char netname[MAXPLAYERNAME + 1];
-	memset(netname, 0, MAXPLAYERNAME + 1);
-	strncpy(netname, info.netname.c_str(), MAXPLAYERNAME);
-	arc.Write(netname, MAXPLAYERNAME + 1);
-
-	arc.Write(&info.team, sizeof(info.team));  // [Toke - Teams]
-	arc.Write(&info.gender, sizeof(info.gender));
-
+	arc << info.netname;
+	arc << info.team;
 	arc << info.aimdist;
-	arc << info.color[0] << info.color[1] << info.color[2] << info.color[3];
-
-	// [SL] use place-holders for deprecated client options
-	// so old save games and netdemos continue to function
-	unsigned int skin = 0;
-	bool unlag = true;
-	byte update_rate = 0;
-	arc << skin;
-	arc << unlag;
-	arc << update_rate;
-
-	arc.Write(&info.switchweapon, sizeof(info.switchweapon));
-	arc.Write(info.weapon_prefs, sizeof(info.weapon_prefs));
-
-	int terminator = 0;
- 	arc << terminator;
+	arc << info.predict_weapons;
+	arc << info.colorpreset;
+	arc << info.color;
+	arc << info.gender;
+	arc << info.switchweapon;
+	arc << info.weapon_prefs;
 
 	return arc;
 }
 
 FArchive &operator>> (FArchive &arc, UserInfo &info)
 {
-	char netname[MAXPLAYERNAME + 1];
-	arc.Read(netname, MAXPLAYERNAME + 1);
-	info.netname = netname;
-
-	arc.Read(&info.team, sizeof(info.team));  // [Toke - Teams]
-	arc.Read(&info.gender, sizeof(info.gender));
-
+	arc >> info.netname;
+	arc >> info.team;
 	arc >> info.aimdist;
-	arc >> info.color[0] >> info.color[1] >> info.color[2] >> info.color[3];
-
-	// [SL] use place-holders for deprecated client options
-	// so old save games and netdemos continue to function.
-	unsigned int skin;
-	bool unlag;
-	byte update_rate;
-	arc >> skin;
-	arc >> unlag;
-	arc >> update_rate;
-
-	arc.Read(&info.switchweapon, sizeof(info.switchweapon));
-	arc.Read(info.weapon_prefs, sizeof(info.weapon_prefs));
-
-	int terminator;
-	arc >> terminator;	// 0
+	arc >> info.predict_weapons;
+	arc >> info.colorpreset;
+	arc >> info.color;
+	arc >> info.gender;
+	arc >> info.switchweapon;
+	arc >> info.weapon_prefs;
 
 	return arc;
 }

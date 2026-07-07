@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,6 +30,7 @@
 #include "i_musicsystem.h"
 #include "i_sdl.h"
 #include "i_system.h"
+#include "i_time.h"
 #include "mus2midi.h"
 #include "resources/res_identifier.h"
 
@@ -75,7 +76,7 @@ static double I_CalculateMsPerMidiClock(int timeDivision, double tempo = 120.0)
 //
 // ============================================================================
 
-void MusicSystem::startSong(byte* data, size_t length, bool loop)
+void MusicSystem::startSong(byte* data, size_t length, bool loop, int order)
 {
 	m_isPlaying = true;
 	m_isPaused = false;
@@ -132,23 +133,22 @@ static MidiSong* I_RegisterMidiSong(byte* data, size_t length)
 		mus = mem_fopen_read(data, length);
 		midi = mem_fopen_write();
 
-		int result = mus2mid(mus, midi);
-		if (result == 0)
+		if (!mus2mid(mus, midi))
 		{
-			regdata = (byte*)mem_fgetbuf(midi);
+			regdata = reinterpret_cast<byte*>(mem_fgetbuf(midi));
 			reglength = mem_fsize(midi);
 		}
 		else
 		{
-			Printf(PRINT_WARNING, "I_RegisterMidiSong: MUS is not valid\n");
+			PrintFmt(PRINT_WARNING, "I_RegisterMidiSong: MUS is not valid\n");
 			regdata = NULL;
 			reglength = 0;
 		}
 	}
 	else if (!Res_MusicIsMidi(data, length))
 	{
-		Printf(PRINT_WARNING, "I_RegisterMidiSong: Only midi music formats are supported "
-		                      "with the selected music system.\n");
+		PrintFmt(PRINT_WARNING, "I_RegisterMidiSong: Only midi music formats are supported "
+		                        "with the selected music system.\n");
 		return NULL;
 	}
 
@@ -182,7 +182,7 @@ static void I_UnregisterMidiSong(MidiSong* midisong)
 
 MidiMusicSystem::MidiMusicSystem()
 	: MusicSystem(), m_useResetDelay(false), m_midiSong(NULL), m_songItr(),
-	  m_loop(false), m_timeDivision(96), msperclock(0.0), m_useFallback(false),
+	  m_loop(false), msperclock(0.0), m_useFallback(false),
 	  m_fallback(), m_lastEventTime(0), m_prevClockTime(0)
 {
 }
@@ -215,7 +215,7 @@ void MidiMusicSystem::_DisableFallback()
 	m_useFallback = false;
 }
 
-void MidiMusicSystem::startSong(byte* data, size_t length, bool loop)
+void MidiMusicSystem::startSong(byte* data, size_t length, bool loop, int order)
 {
 	if (!isInitialized())
 		return;
@@ -240,7 +240,7 @@ void MidiMusicSystem::startSong(byte* data, size_t length, bool loop)
 	m_prevClockTime = 0;
 	m_lastEventTime = I_MSTime();
 
-	MusicSystem::startSong(data, length, loop);
+	MusicSystem::startSong(data, length, loop, order);
 }
 
 void MidiMusicSystem::stopSong()

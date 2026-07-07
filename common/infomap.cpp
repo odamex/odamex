@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2021 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,6 +26,8 @@
 
 #include "hashtable.h"
 
+#include "c_dispatch.h"
+
 typedef OHashTable<std::string, mobjtype_t> MobjMap;
 
 /**
@@ -45,11 +47,12 @@ static MobjMap g_MonsterMap;
 
 static void MapMobj(const mobjtype_t type, const std::string& name, const uint32_t flags)
 {
-	::g_MonsterMap.insert(MobjMap::value_type(name, type));
+	::g_MonsterMap.emplace(name, type);
 }
 
-static void InitMap()
+void P_InitMobjNameMap()
 {
+	::g_MonsterMap.clear();
 	MapMobj(MT_PLAYER, "DoomPlayer", MC_NONE);
 	MapMobj(MT_POSSESSED, "ZombieMan", MC_NONE);
 	MapMobj(MT_SHOTGUY, "ShotgunGuy", MC_NONE);
@@ -198,6 +201,8 @@ static void InitMap()
 	MapMobj(MT_AVATAR, "PlayerAvatar", MC_NONE);
 	MapMobj(MT_HORDESPAWN, "HordeSpawn", MC_NONE);
 	MapMobj(MT_CAREPACK, "CarePackage", MC_NONE);
+	MapMobj(MT_EXTRALIFE, "ExtraLifePowerUp", MC_NONE);
+	MapMobj(MT_RESTEAMMATE, "ResurrectTeammatePowerUp", MC_NONE);
 	// [AM] Deh_Actor_145-149 are reserved.
 	MapMobj(MT_EXTRA00, "Deh_Actor_150", MC_NONE);
 	MapMobj(MT_EXTRA01, "Deh_Actor_151", MC_NONE);
@@ -302,35 +307,70 @@ static void InitMap()
 }
 
 /**
+ * @brief Add a new DeHackEd thing to the map (for ID24 DEHTHING_x strings)
+ */
+void P_MapDehThing(const mobjtype_t type, const std::string& name)
+{
+	if (::g_MonsterMap.empty())
+	{
+		P_InitMobjNameMap();
+	}
+
+	MapMobj(type, name, MC_NONE);
+}
+
+/**
  * @brief Convert a UMAPINFO/ZDoom class name to a MT Mobj index.
  */
 mobjtype_t P_NameToMobj(const std::string& name)
 {
 	if (::g_MonsterMap.empty())
 	{
-		InitMap();
+		P_InitMobjNameMap();
 	}
 
 	MobjMap::iterator it = ::g_MonsterMap.find(name);
-	if (it == ::g_MonsterMap.end())
+
+	if (it == ::g_MonsterMap.end() || mobjinfo.find(it->second) == mobjinfo.end())
 	{
 		return MT_NULL;
 	}
 	return it->second;
 }
 
-std::string P_MobjToName(const mobjtype_t name)
+/**
+ * @brief Convert a UMAPINFO/ZDoom class name to a MT Mobj index. Case insensitive for
+ * UMAPINFO
+ */
+mobjtype_t P_INameToMobj(const std::string& name)
 {
 	if (::g_MonsterMap.empty())
 	{
-		InitMap();
+		P_InitMobjNameMap();
 	}
 
-	for (MobjMap::iterator it = ::g_MonsterMap.begin(); it != ::g_MonsterMap.end(); ++it)
+	for (const auto& [mapname, type] : ::g_MonsterMap)
 	{
-		if (it->second == name)
+		if (iequals(mapname, name) && mobjinfo.find(type) != mobjinfo.end())
 		{
-			return it->first.c_str();
+			return type;
+		}
+	}
+	return MT_NULL;
+}
+
+std::string P_MobjToName(const mobjtype_t type)
+{
+	if (::g_MonsterMap.empty())
+	{
+		P_InitMobjNameMap();
+	}
+
+	for (const auto& [name, maptype] : ::g_MonsterMap)
+	{
+		if (type == maptype)
+		{
+			return name;
 		}
 	}
 
@@ -378,3 +418,43 @@ weapontype_t P_NameToWeapon(const std::string& name)
 
 	return wp_none;
 }
+
+typedef std::pair<std::string, mobjtype_t> MobjPair;
+
+// Hashtables don't work with std::sort
+// This is a half measure to sort it without
+// Messing with the internals of hashtable.
+std::vector<MobjPair> OrderedMobjMap()
+{
+	std::vector<MobjPair> orderedVector;
+
+	for (const auto& pair : ::g_MonsterMap)
+	{
+		orderedVector.push_back(pair);
+	}
+
+	std::sort(orderedVector.begin(), orderedVector.end(),
+			[](const auto& left, const auto& right) {
+		    return left.second < right.second;
+			});
+
+	return orderedVector;
+}
+
+BEGIN_COMMAND(dumpactors)
+{
+	if (::g_MonsterMap.empty())
+	{
+		P_InitMobjNameMap();
+	}
+
+	std::vector<MobjPair> infomap = OrderedMobjMap();
+
+	PrintFmt(PRINT_HIGH, "Total amount of actors: {}\n", infomap.size());
+
+	for (const auto& [name, _] : infomap)
+	{
+		PrintFmt(PRINT_HIGH, "{}\n", name);
+	}
+}
+END_COMMAND(dumpactors)

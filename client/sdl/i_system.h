@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,7 +41,7 @@ enum
 	LANGIDX_SysPreferred,
 	LANGIDX_SysDefault
 };
-extern DWORD LanguageIDs[4];
+extern uint32_t LanguageIDs[4];
 extern void SetLanguageIDs ();
 
 void I_BeginRead (void);
@@ -56,18 +56,6 @@ void I_Endoom(void);
 // to get the ammount of memory to malloc
 // for the zone management.
 void *I_ZoneBase (size_t *size);
-
-
-// returns current time in nanoseconds.
-dtime_t I_GetTime();
-
-dtime_t I_ConvertTimeToMs(dtime_t value);
-dtime_t I_ConvertTimeFromMs(dtime_t value);
-
-// yields to the OS for the specified time (in nanoseconds)
-void I_Sleep(dtime_t);
-// yields to the OS for 1 millisecond
-void I_Yield();
 
 //
 // Called by D_DoomLoop,
@@ -92,9 +80,27 @@ std::string I_GetBinaryDir();
 // Clean exit, displays sell blurb.
 void STACK_ARGS I_Quit (void);
 
-void STACK_ARGS I_Warning(const char *warning, ...);
-void STACK_ARGS I_Error (const char *error, ...);
-NORETURN void STACK_ARGS I_FatalError(const char *error, ...);
+void I_BaseWarning(const std::string& errortext);
+[[noreturn]] void I_BaseError(const std::string& errortext);
+[[noreturn]] void I_BaseFatalError(const std::string& errortext);
+
+template <typename... ARGS>
+void I_Warning(fmt::format_string<ARGS...> format, ARGS&&... args)
+{
+	I_BaseWarning(fmt::format(format, std::forward<ARGS>(args)...));
+}
+
+template <typename... ARGS>
+[[noreturn]] void I_Error(fmt::format_string<ARGS...> format, ARGS&&... args)
+{
+	I_BaseError(fmt::format(format, std::forward<ARGS>(args)...));
+}
+
+template <typename... ARGS>
+[[noreturn]] void I_FatalError(fmt::format_string<ARGS...> format, ARGS&&... args)
+{
+	I_BaseFatalError(fmt::format(format, std::forward<ARGS>(args)...));
+}
 
 void addterm (void (STACK_ARGS *func)(void), const char *name);
 #define atterm(t) addterm (t, #t)
@@ -102,22 +108,8 @@ void addterm (void (STACK_ARGS *func)(void), const char *name);
 // Repaint the pre-game console
 void I_PaintConsole (void);
 
-// Print a console string
-void I_PrintStr (int x, const char *str, int count, BOOL scroll);
-
-// Set the title string of the startup window
-void I_SetTitleString (const char *title);
-
-std::string I_ConsoleInput (void);
-
 // Returns true if there will be no application window
 bool I_IsHeadless();
-
-// [RH] Returns millisecond-accurate time
-dtime_t I_MSTime (void);
-
-// [RH] Title string to display at bottom of console during startup
-extern char DoomStartupTitle[256];
 
 void I_FinishClockCalibration ();
 
@@ -129,21 +121,3 @@ std::string I_GetClipboardText();
  * @param message Contents of the message box.
  */
 void I_ErrorMessageBox(const char* message);
-
-// Directory searching routines
-
-typedef struct _finddata_t findstate_t;
-
-long I_FindFirst (char *filespec, findstate_t *fileinfo);
-int I_FindNext (long handle, findstate_t *fileinfo);
-int I_FindClose (long handle);
-std::string I_GetCWD();
-
-#define I_FindName(a)	((a)->name)
-#define I_FindAttr(a)	((a)->attrib)
-
-#define FA_RDONLY	_A_RDONLY
-#define FA_HIDDEN	_A_HIDDEN
-#define FA_SYSTEM	_A_SYSTEM
-#define FA_DIREC	_A_SUBDIR
-#define FA_ARCH		_A_ARCH

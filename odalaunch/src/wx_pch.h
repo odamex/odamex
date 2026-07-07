@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -47,7 +47,6 @@
 #include "net_io.h"
 #include "net_packet.h"
 #include "net_utils.h"
-#include "typedefs.h"
 
 #include "oda_defs.h"
 #include "lst_custom.h"

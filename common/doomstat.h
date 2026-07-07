@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,7 +30,6 @@
 #pragma once
 
 #include "doomdata.h"
-#include "d_net.h"
 #include "g_level.h"
 
 // We also need the definition of a cvar
@@ -40,7 +39,7 @@
 // ------------------------
 // Command line parameters.
 //
-extern	BOOL			devparm;		// DEBUG: launched with -devparm
+inline	bool			devparm;		// DEBUG: launched with -devparm
 
 
 // -----------------------------------------------------
@@ -50,24 +49,22 @@ extern GameMode_t		gamemode;
 extern GameMission_t	gamemission;
 
 // Set if homebrew PWAD stuff has been added.
-extern	BOOL			modifiedgame;
+extern	bool			modifiedgame;
 
 
 // -------------------------------------------
 // Selected skill type, map etc.
 //
 
-extern	char			startmap[9];		// [RH] Actual map name now
+inline OLumpName startmap; // [RH] Actual map name now
 
-extern	BOOL 			autostart;
+extern bool autostart;
 
 // Selected by user.
 EXTERN_CVAR (sv_skill)
 
-// Bot game? Like netgame, but doesn't involve network communication.
-extern	BOOL			multiplayer;
-
-extern BOOL            network_game;
+inline bool network_game;			// Describes if a network game is being played
+inline bool multiplayer;			// Describes if this is a multiplayer game or not
 
 // Game mode
 EXTERN_CVAR (sv_gametype)
@@ -103,13 +100,13 @@ EXTERN_CVAR (sv_maxplayers)
 // Depending on view size - no status bar?
 // Note that there is no way to disable the
 //	status bar explicitely.
-extern	BOOL			statusbaractive;
+extern	bool			statusbaractive;
 
-extern	BOOL			menuactive; 	// Menu overlayed?
-extern	BOOL			paused; 		// Game Pause?
+inline	bool			menuactive; 	// Menu overlayed?
+inline	bool			paused; 		// Game Pause?
 
 
-extern	BOOL			viewactive;
+inline	bool			viewactive;
 
 extern	bool	 		nodrawers;
 extern	bool	 		noblit;
@@ -127,12 +124,12 @@ extern level_locals_t level;
 // DEMO playback/recording related stuff.
 // No demo, there is a human player in charge?
 // Disable save/end game?
-extern	BOOL			usergame;
+extern	bool			usergame;
 
-extern	BOOL			demoplayback;
+inline	bool			demoplayback;
 
 // Quit after playing a demo from cmdline.
-extern	BOOL			singledemo;
+extern	bool			singledemo;
 
 
 
@@ -156,9 +153,20 @@ extern	int 			gametic;
 extern std::vector<mapthing2_t> DeathMatchStarts;
 
 // Player spawn spots.
+struct VoodooStartInfoType
+{
+	mapthing2_t         mapThing;
+	AActor::AActorPtr   mobj;       // Map-lifetime pointer.
+
+	explicit VoodooStartInfoType(const mapthing2_t& i_mapThing) :
+		mapThing (i_mapThing)
+	{
+	}
+};
+
 #define MAXPLAYERSTARTS		64
-extern std::vector<mapthing2_t> playerstarts;
-extern std::vector<mapthing2_t> voodoostarts;
+extern std::vector<mapthing2_t>         playerstarts;
+extern std::vector<VoodooStartInfoType> voodoostarts;
 
 // ----------------------------------------------
 
@@ -169,14 +177,14 @@ extern	struct wbstartstruct_s wminfo;
 
 // LUT of ammunition limits for each kind.
 // This doubles with BackPack powerup item.
-extern	int 			maxammo[NUMAMMO];
+extern std::array<int, NUMAMMO> maxammo;
 
 //-----------------------------------------
 // Internal parameters, used for engine.
 //
 
 // if true, load all graphics at level load
-extern	BOOL	 		precache;
+extern	bool	 		precache;
 
 // wipegamestate can be set to -1
 //	to force a wipe on the next draw
@@ -184,27 +192,34 @@ extern gamestate_t wipegamestate;
 
 EXTERN_CVAR (mouse_sensitivity) // removeme // ?
 
+// Needed to store the number of the dummy sky flat.
+// Used for rendering,
+//	as well as tracking projectiles etc.
+inline int				skyflatnum;
+
 // ---- [RH] ----
 EXTERN_CVAR (developer) // removeme
 
 // [RH] Miscellaneous info for DeHackEd support
 struct DehInfo
 {
-	int StartHealth;
-	int StartBullets;
-	int MaxHealth;
-	int MaxArmor;
-	int GreenAC;
-	int BlueAC;
-	int MaxSoulsphere;
-	int SoulsphereHealth;
-	int MegasphereHealth;
-	int GodHealth;
-	int FAArmor;
-	int FAAC;
-	int KFAArmor;
-	int KFAAC;
-	int BFGCells;
-	int Infight;
+	int StartHealth      = 100;
+	int StartBullets     = 50;
+	int MaxHealth        = 100;
+	int MaxArmor         = 200;
+	int GreenAC          = 1;
+	int BlueAC           = 2;
+	int MaxSoulsphere    = 200;
+	int SoulsphereHealth = 100;
+	int MegasphereHealth = 200;
+	int GodHealth        = 100;
+	int FAArmor          = 200;
+	int FAAC             = 2;
+	int KFAArmor         = 200;
+	int KFAAC            = 2;
+	int BFGCells         = 40;
+	int Infight          = 0;
+	bool ZDAmmo          = false;
+	int32_t helper       = MT_NULL;
 };
-extern struct DehInfo deh;
+inline DehInfo deh{};

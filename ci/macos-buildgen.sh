@@ -8,11 +8,12 @@ IFS=$'\n\t'
 set -x
 
 # Install packages
-brew install ninja sdl2 sdl2_mixer wxwidgets
+brew install ninja sdl2 sdl2_mixer wxwidgets zstd python
 
 # Generate build
 mkdir -p build && cd build
 cmake .. -GNinja \
     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
     -DBUILD_OR_FAIL=1 -DBUILD_CLIENT=1 -DBUILD_SERVER=1 \
-    -DBUILD_MASTER=1 -DBUILD_LAUNCHER=1
+    -DBUILD_MASTER=0 -DBUILD_LAUNCHER=1 \
+    -DUSE_INTERNAL_ZLIB=1 -DUSE_INTERNAL_PNG=1

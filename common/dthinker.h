@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,16 +26,17 @@
 
 #pragma once
 
+#include <optional>
 #include <stdlib.h>
 #include "dobject.h"
 
 class AActor;
-class player_s;
+class player_t;
 struct pspdef_s;
 
 typedef void (*actionf_v)();
 typedef void (*actionf_p1)( AActor* );
-typedef void (*actionf_p2)( player_s*, pspdef_s* );
+typedef void (*actionf_p2)( player_t*, pspdef_s* );
 
 typedef union
 {
@@ -59,9 +60,10 @@ class DThinker : public DObject
 public:
 	DThinker ();
 	void Orphan();
-	virtual void Destroy ();
-	virtual ~DThinker ();
+	void Destroy () override;
+	~DThinker () override;
 	virtual void RunThink () {}
+	virtual void PostThink () {}
 
 	void *operator new (size_t size);
 	void operator delete (void *block);
@@ -78,7 +80,12 @@ public:
 
 	size_t refCount;
 
+	static const std::vector<DThinker*>& GetThinkerVectorRef() { return s_thinkers; }
 private:
+
+	static std::vector<DThinker*> s_thinkers;
+
+	std::optional<size_t> m_optionalVectorIndex;
 	DThinker *m_Next, *m_Prev;
 	bool destroyed;
 

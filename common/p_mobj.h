@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,17 +32,17 @@
 // Very simple, very fast.
 // Does not iterate when releasing a netid.
 // Does not iterate when obtaining a netid unless all pooled ids are taken.
-// (in which case does one allocation and does not iterate more than 
+// (in which case does one allocation and does not iterate more than
 //  MEMPOOLSIZE times)
-// Only downside is that it won't detect double-releasing, but shouldn't be 
+// Only downside is that it won't detect double-releasing, but shouldn't be
 // a problem.
 //
-// Thanks to [Dash|RD] for noticing the efficiency problem, hard work on other 
+// Thanks to [Dash|RD] for noticing the efficiency problem, hard work on other
 // versions of this class and giving me this great idea.
 //
 //-----------------------------------------------------------------------------
 
-// [SL] 2012-04-04 
+// [SL] 2012-04-04
 // Modified to use a std::queue, popping from the front of the queue to assign
 // new netids and pushing newly freed netids on the back of the queue.  This is
 // to avoid reassigning a recently freed netid to a different actor.  Otherwise
@@ -82,7 +82,7 @@ class NetIDHandler
 	{
 		if (m_nextID == MAX_NETID)
 		{
-			I_Error("Exceeded maximum number of netids (%u)", MAX_NETID);
+			I_Error("Exceeded maximum number of netids ({})", MAX_NETID);
 		}
 
 		m_nextID += 1;
@@ -118,21 +118,21 @@ inline static fixed_t DegToSlope(fixed_t a)
 	if (a >= 0)
 		return AngleToSlope(FixedToAngle(a));
 	else
-		return AngleToSlope(-(int)FixedToAngle(-a));
+		return AngleToSlope(-static_cast<int>(FixedToAngle(-a)));
 }
 
-extern NetIDHandler ServerNetID;
+// killough 11/98:
+// Whether an object is "sentient" or not. Used for environmental influences.
+#define sentient(actor) ((actor)->health > 0 && (actor)->info->seestate)
 
-// All oflag mods that are sent to horde bosses.
-const uint32_t hordeBossModMask = MFO_INFIGHTINVUL | MFO_UNFLINCHING | MFO_ARMOR |
-                                  MFO_QUICK | MFO_NORAISE | MFO_FULLBRIGHT;
+extern NetIDHandler ServerNetID;
 
 void P_ClearAllNetIds();
 AActor* P_FindThingById(uint32_t id);
 void P_SetThingId(AActor* mo, uint32_t newnetid);
 void P_ClearId(uint32_t id);
 
-bool P_SetMobjState(AActor *mobj, statenum_t state, bool cl_update);
+bool P_SetMobjState(AActor *mobj, int32_t state, bool cl_update);
 void P_XYMovement(AActor *mo);
 void P_ZMovement(AActor *mo);
 void PlayerLandedOnThing(AActor *mo, AActor *onmobj); // [CG] Used to be 'static'
@@ -140,17 +140,18 @@ void P_NightmareRespawn(AActor *mo);
 void P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z);
 void P_SpawnTracerPuff(fixed_t x, fixed_t y, fixed_t z);
 void P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, angle_t dir, int damage);
-bool P_CheckMissileSpawn(AActor* th);
+bool P_CheckMissileSpawn(AActor* th, AActor* parent);
 AActor* P_SpawnMissile(AActor *source, AActor *dest, mobjtype_t type);
-void P_SpawnPlayerMissile(AActor *source, mobjtype_t type);
-bool P_VisibleToPlayers(AActor *mo);
+AActor* P_SpawnPlayerMissile(AActor* source, mobjtype_t type);
+size_t P_GetMapThingPlayerNumber(const mapthing2_t& mthing);
+bool P_VisibleToPlayers(const AActor *mo);
 void P_SetMobjBaseline(AActor& mo);
-uint32_t P_GetMobjBaselineFlags(AActor& mo);
+uint32_t P_GetMobjBaselineFlags(const AActor& mo);
 
 // [ML] From EE
 int P_ThingInfoHeight(mobjinfo_t *mi);
 bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound);
-void SpawnFlag(mapthing2_t* mthing, team_t flag);
+void SpawnFlag(const mapthing2_t& mthing, team_t flag);
 
 // From MBF
 bool P_SeekerMissile(AActor* actor, AActor* seekTarget, angle_t thresh, angle_t turnMax, bool seekcenter);

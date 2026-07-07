@@ -48,6 +48,7 @@ if(wxWidgets_FOUND)
   # Attempt to compile all of the XRC files with custom commands.
   add_custom_command(
     OUTPUT "${XRCRES_HEADER}"
+    DEPENDS "${XRCRES_DIR}/icons.xrc" "${XRCRES_DIR}/xrc_resource.xrc"
     COMMAND "${wxWidgets_wxrc_EXECUTABLE}" -c -o "${XRCRES_HEADER}"
     "${XRCRES_DIR}/icons.xrc" "${XRCRES_DIR}/xrc_resource.xrc"
     VERBATIM)
@@ -67,11 +68,12 @@ if(wxWidgets_FOUND)
   odalaunch_copy_libs(odalaunch)
 
   set(MACOSX_BUNDLE_BUNDLE_NAME OdaLaunch)
-  set(MACOSX_BUNDLE_INFO_STRING "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")
+  set(MACOSX_BUNDLE_COPYRIGHT "ODAMEX and its likeness © ${PROJECT_COPYRIGHT} Odamex team.")
   set(MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION}")
   set(MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}")
   set(MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}")
   set(MACOSX_BUNDLE_ICON_FILE odalaunch.icns)
+  set(MACOSX_BUNDLE_GUI_IDENTIFIER net.odamex.odalaunch)
 
   if(APPLE)
     add_custom_command(
@@ -81,6 +83,12 @@ if(wxWidgets_FOUND)
       COMMAND "${CMAKE_COMMAND}" -E copy "${CMAKE_SOURCE_DIR}/media/${MACOSX_BUNDLE_ICON_FILE}" "${CMAKE_CURRENT_BINARY_DIR}/odalaunch.app/Contents/Resources/"
       VERBATIM
     )
+
+    install(CODE "
+      include(BundleUtilities)
+      fixup_bundle(\"${CMAKE_CURRENT_BINARY_DIR}/odalaunch.app\" \"\" \"${wxWidgets_LIBRARY_DIRS}\")
+      "
+      COMPONENT Runtime)
 
     set_directory_properties(
       PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES

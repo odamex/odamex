@@ -34,10 +34,7 @@ namespace hud {
 // Round float to short integer.  Used by the scaling function.
 short roundToShort(float f)
 {
-	if (f >= 0.0f)
-		return (short)(f + 0.5f);
-	else
-		return (short)(f - 0.5f);
+	return static_cast<short>(std::round(f));
 }
 
 // Return the number of scaled available horizontal pixels to draw on.
@@ -275,8 +272,8 @@ void DrawTextureStretched(int x, int y,
 	if (!use_patch_offsets)
 	{
 		// Negate scaled patch offsets.
-		x += (roundToShort(texture->mOffsetX * ((float)w / texture->mWidth))) * x_scale;
-		y += (roundToShort(texture->mOffsetY * ((float)h / texture->mHeight))) * y_scale;
+		x += (roundToShort(patch->leftoffset() * (static_cast<float>(w) / patch->width()))) * x_scale;
+		y += (roundToShort(patch->topoffset() * (static_cast<float>(h) / patch->height()))) * y_scale;
 	}
 
 	if (force_opaque)
@@ -295,8 +292,8 @@ void DrawTextureScaled(const int x, const int y,
                      const bool use_patch_offsets)
 {
 	// Calculate aspect ratios of patch and destination.
-	float patch_aspect = float(texture->mWidth) / float(texture->mHeight);
-	float dest_aspect = w / (float)h;
+	float patch_aspect = patch->width() / static_cast<float>(patch->height());
+	float dest_aspect = w / static_cast<float>(h);
 
 	if (patch_aspect < dest_aspect) {
 		// Destination is wider than patch.  Keep height, calculate width.

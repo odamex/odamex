@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2022 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -54,6 +54,13 @@ ClientReplay::~ClientReplay()
 	ClientReplay::reset();
 }
 
+ClientReplay::ClientReplay()
+{
+	replayed = false;
+	replayDoneCounter = TICRATE * 7;
+	firstReadyTic = 0;
+}
+
 //
 // ClientReplay::reset
 //
@@ -95,7 +102,7 @@ bool ClientReplay::wasReplayed()
 //
 void ClientReplay::recordReplayItem(int tic, const uint32_t netId)
 {
-	itemReplayStack.push_back(std::make_pair(tic, netId));
+	itemReplayStack.emplace_back(tic, netId);
 }
 
 //
@@ -124,7 +131,7 @@ void ClientReplay::removeReplayItem(const std::pair<int, uint32_t> replayItem)
 // ClientReplay::itemReplayThink
 //
 // Runs logic for the current tic
-// 
+//
 void ClientReplay::itemReplay()
 {
 	if (itemReplayStack.empty() || !consoleplayer().mo || !enabled() ||
@@ -133,7 +140,7 @@ void ClientReplay::itemReplay()
 
 	player_t& player = consoleplayer();
 
-	weaponstate_t state = P_GetWeaponState(&player);
+	weaponstate_t state = P_GetWeaponState(player);
 
 	if (state == readystate && firstReadyTic <= 0)
 	{
@@ -153,7 +160,7 @@ void ClientReplay::itemReplay()
 	std::vector<std::pair<int, uint32_t> >::iterator it = itemReplayStack.begin();
 	while (it != itemReplayStack.end())
 	{
-		if (it->first + MAX_REPLAY_TIC_LENGTH < ::last_svgametic)
+		if (it->first + MAX_REPLAY_TIC_LENGTH < static_cast<uint32_t>(::last_svgametic))
 		{
 			it = itemReplayStack.erase(it);
 			continue;
@@ -175,11 +182,15 @@ void ClientReplay::itemReplay()
 			continue;
 		}
 
-		std::string weaponname = P_MobjToName(mo->type);
-		weapontype_t weapontype = P_NameToWeapon(weaponname);
-		bool weaponSwitch = P_CheckSwitchWeapon(&player, weapontype);
+		const std::string weaponname = P_MobjToName(static_cast<mobjtype_t>(mo->type));
+		const weapontype_t weapontype = P_NameToWeapon(weaponname);
+		const bool weaponSwitch = P_CheckSwitchWeapon(player, weapontype);
 
-		P_GiveSpecial(&player, mo);
+		const ItemEquipVal giveResult = P_GiveSpecial(player, *mo);
+		if (giveResult == IEV_EquipRemove)
+		{
+			mo->Destroy();
+		}
 
 		replayed = true;
 
@@ -190,11 +201,11 @@ void ClientReplay::itemReplay()
 		// Cycle the raise/lower by the tics elapsed since to get us up to current
 		// But have special logic here to not skip ahead,
 		// and do nothing if it wasn't going to switch our weapon anyway.
-		if (P_SpecialIsWeapon(mo) && state == readystate && weaponSwitch)
+		if (P_SpecialIsWeapon(*mo) && state == readystate && weaponSwitch)
 		{
 			for (int i = 0; i < ticDelta; ++i)
 			{
-					P_MovePsprites(&player);
+				P_MovePsprites(player);
 			}
 		}
 

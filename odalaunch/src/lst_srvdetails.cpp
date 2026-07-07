@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,13 +32,13 @@ using namespace odalpapi;
 
 IMPLEMENT_DYNAMIC_CLASS(LstOdaSrvDetails, wxListCtrl)
 
-typedef enum
+enum srvdetails_fields_t
 {
 	srvdetails_field_name
 	,srvdetails_field_value
 
 	,max_srvdetails_fields
-} srvdetails_fields_t;
+};
 
 LstOdaSrvDetails::LstOdaSrvDetails()
 {
@@ -191,7 +191,7 @@ void LstOdaSrvDetails::ToggleGameStatusSection(const Server& In)
 void LstOdaSrvDetails::LoadDetailsFromServer(const Server& In)
 {
 	wxString Revision;
-	
+
 	DeleteAllItems();
 	DeleteAllColumns();
 
@@ -210,7 +210,7 @@ void LstOdaSrvDetails::LoadDetailsFromServer(const Server& In)
 	{
 		Revision = wxString::Format(" (r%u)", In.Info.VersionRevision);
 	}
-	
+
 	// Version
 	InsertLine("Version", wxString::Format("%u.%u.%u%s",
 	           In.Info.VersionMajor,

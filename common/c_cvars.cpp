@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -31,7 +31,6 @@
 #include "c_console.h"
 #include "c_dispatch.h"
 #include "m_alloc.h"
-
 
 #include "d_netinf.h"
 
@@ -66,19 +65,19 @@ cvar_t* GetFirstCvar(void)
 int cvar_defflags;
 
 cvar_t::cvar_t(const char* var_name, const char* def, const char* help, cvartype_t type,
-		DWORD flags, float minval, float maxval)
+		uint32_t flags, float minval, float maxval)
 {
 	InitSelf(var_name, def, help, type, flags, NULL, minval, maxval);
 }
 
 cvar_t::cvar_t(const char* var_name, const char* def, const char* help, cvartype_t type,
-		DWORD flags, void (*callback)(cvar_t &), float minval, float maxval)
+		uint32_t flags, void (*callback)(cvar_t &), float minval, float maxval)
 {
 	InitSelf(var_name, def, help, type, flags, callback, minval, maxval);
 }
 
 void cvar_t::InitSelf(const char* var_name, const char* def, const char* help, cvartype_t type,
-		DWORD var_flags, void (*callback)(cvar_t &), float minval, float maxval)
+		uint32_t var_flags, void (*callback)(cvar_t &), float minval, float maxval)
 {
 	cvar_t* dummy;
 	cvar_t* var = FindCVar(var_name, &dummy);
@@ -149,19 +148,19 @@ cvar_t::~cvar_t ()
 	}
 }
 
-void cvar_t::ForceSet(const char* valstr)
+void cvar_t::ForceSet(std::string_view valstr)
 {
 	// [SL] 2013-04-16 - Latched CVARs do not change values until the next map.
 	// Servers and single-player games should abide by this behavior but
 	// multiplayer clients should just do what the server tells them.
-	if (m_Flags & CVAR_LATCH && serverside && 
+	if (m_Flags & CVAR_LATCH && serverside &&
 		(gamestate == GS_LEVEL || gamestate == GS_INTERMISSION))
 	{
 		m_Flags |= CVAR_MODIFIED;
-		if (valstr)
-			m_LatchedString = valstr;
-		else
+		if (valstr.empty())
 			m_LatchedString.clear();
+		else
+			m_LatchedString = valstr;
 	}
 	else
 	{
@@ -171,28 +170,26 @@ void cvar_t::ForceSet(const char* valstr)
 		bool integral_type = m_Type == CVARTYPE_BOOL || m_Type == CVARTYPE_BYTE ||
 					m_Type == CVARTYPE_WORD || m_Type == CVARTYPE_INT;
 		bool floating_type = m_Type == CVARTYPE_FLOAT;
-		float valf = numerical_value ? atof(valstr) : 0.0f;
+		float valf = numerical_value ? ParseNum<float>(valstr).value_or(0.0f) : 0.0f;
 
 		// perform rounding to nearest integer for integral types
 		if (integral_type)
-			valf = floor(valf + 0.5f);
+			valf = std::round(valf);
 
 		valf = clamp(valf, m_MinValue, m_MaxValue);
 
 		if (numerical_value || integral_type || floating_type)
 		{
 			// generate m_String based on the clamped valf value
-			char tmp[32];
-			sprintf(tmp, "%g", valf);
-			m_String = tmp;
+			m_String = fmt::format("{:g}", valf);
 		}
 		else
 		{
 			// just set m_String to valstr
-			if (valstr)
-				m_String = valstr;
-			else
+			if (valstr.empty())
 				m_String.clear();
+			else
+				m_String = valstr;
 		}
 
 		m_Value = valf;
@@ -213,14 +210,14 @@ void cvar_t::ForceSet(const char* valstr)
 void cvar_t::ForceSet(float val)
 {
 	char string[32];
-	sprintf(string, "%g", val);
+	snprintf(string, 32, "%g", val);
 	ForceSet(string);
 }
 
-void cvar_t::Set (const char *val)
+void cvar_t::Set(std::string_view val)
 {
 	if (!(m_Flags & CVAR_NOSET) || !m_DoNoSet)
-		ForceSet (val);
+		ForceSet(val);
 }
 
 void cvar_t::Set (float val)
@@ -229,7 +226,7 @@ void cvar_t::Set (float val)
 		ForceSet (val);
 }
 
-void cvar_t::SetDefault (const char *val)
+void cvar_t::SetDefault(const char *val)
 {
 	if(val)
 		m_Default = val;
@@ -312,50 +309,73 @@ void cvar_t::EnableCallbacks ()
 	}
 }
 
-static int STACK_ARGS sortcvars (const void *a, const void *b)
-{
-	return strcmp (((*(cvar_t **)a))->name(), ((*(cvar_t **)b))->name());
-}
-
-void cvar_t::FilterCompactCVars (TArray<cvar_t *> &cvars, DWORD filter)
+void cvar_t::FilterCompactCVars (std::vector<cvar_t *> &cvars, uint32_t filter)
 {
 	cvar_t *cvar = ad.GetCVars();
 	while (cvar)
 	{
 		if (cvar->m_Flags & filter)
-			cvars.Push (cvar);
+			cvars.push_back(cvar);
 		cvar = cvar->m_Next;
 	}
-	if (cvars.Size () > 0)
-	{
-		qsort (&cvars[0], cvars.Size (), sizeof(cvar_t *), sortcvars);
-	}
+	std::sort(cvars.begin(), cvars.end(), [](const cvar_t* a, const cvar_t* b){ return a->name().compare(b->name()); });
 }
 
-void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, bool compact)
+// Uses snprintf's return value (number of chars written) to advance
+// a pointer of an array of chars to write out a packed byte array
+// of cvars, subtracting the base array size from the total after
+// each advancement.
+void cvar_t::C_WriteCVars (byte **demo_p, uint32_t filter, size_t array_size, bool compact)
 {
-	cvar_t *cvar = ad.GetCVars();
+	if (array_size <= 0)
+		return;
+
 	byte *ptr = *demo_p;
+	int chars;
 
 	if (compact)
 	{
-		TArray<cvar_t *> cvars;
-		ptr += sprintf ((char *)ptr, "\\\\%ux", (unsigned int)filter);
-		FilterCompactCVars (cvars, filter);
-		while (cvars.Pop (cvar))
+		std::vector<cvar_t *> cvars;
+		chars = snprintf(reinterpret_cast<char*>(ptr), array_size, "\\\\%ux", static_cast<unsigned int>(filter));
+
+		ptr += chars;
+		array_size -= chars;
+
+		FilterCompactCVars(cvars, filter);
+		for (const cvar_t* cvar : cvars)
 		{
-			ptr += sprintf ((char *)ptr, "\\%s", cvar->cstring());
+			if (array_size <= 0)
+			{
+				PrintFmt(PRINT_WARNING, "Warning: Saved Cvars exceed {} bytes, no more cvars will be written.\n", array_size);
+				return;
+			}
+
+			chars = snprintf (reinterpret_cast<char *>(ptr), array_size, "\\%s", cvar->cstring());
+
+			ptr += chars;
+			array_size -= chars;
 		}
 	}
 	else
 	{
-		cvar = ad.GetCVars();
+		cvar_t *cvar = ad.GetCVars();
 		while (cvar)
 		{
 			if (cvar->m_Flags & filter)
 			{
-				ptr += sprintf ((char *)ptr, "\\%s\\%s",
-								cvar->name(), cvar->cstring());
+				if (array_size <= 0)
+				{
+					PrintFmt(PRINT_WARNING, "Saved Cvars exceed {} bytes, no more "
+					         "cvars will be written.\n",
+					         array_size);
+					return;
+				}
+
+				chars = snprintf(reinterpret_cast<char*>(ptr), array_size, "\\%s\\%s",
+								cvar->name().c_str(), cvar->cstring());
+
+				ptr += chars;
+				array_size -= chars;
 			}
 			cvar = cvar->m_Next;
 		}
@@ -366,7 +386,7 @@ void cvar_t::C_WriteCVars (byte **demo_p, DWORD filter, bool compact)
 
 void cvar_t::C_ReadCVars (byte **demo_p)
 {
-	char *ptr = *((char **)demo_p);
+	char *ptr = *(reinterpret_cast<char**>(demo_p));
 	char *breakpt;
 
 	if (*ptr++ != '\\')
@@ -374,9 +394,8 @@ void cvar_t::C_ReadCVars (byte **demo_p)
 
 	if (*ptr == '\\')
 	{	// compact mode
-		TArray<cvar_t *> cvars;
-		cvar_t *cvar;
-		DWORD filter;
+		std::vector<cvar_t *> cvars;
+		uint32_t filter;
 
 		ptr++;
 		breakpt = strchr (ptr, '\\');
@@ -387,7 +406,7 @@ void cvar_t::C_ReadCVars (byte **demo_p)
 
 		FilterCompactCVars (cvars, filter);
 
-		while (cvars.Pop (cvar))
+		for (cvar_t* cvar : cvars)
 		{
 			breakpt = strchr (ptr, '\\');
 			if (breakpt)
@@ -427,7 +446,7 @@ void cvar_t::C_ReadCVars (byte **demo_p)
 			}
 		}
 	}
-	*demo_p += strlen (*((char **)demo_p)) + 1;
+	*demo_p += strlen (*(reinterpret_cast<char**>(demo_p))) + 1;
 }
 
 static struct backup_s
@@ -457,7 +476,7 @@ void cvar_t::C_BackupCVars (unsigned int bitflag)
 		if (cvar->m_Flags & bitflag)
 		{
 			if (backup == &CVarBackups[MAX_BACKUPCVARS])
-				I_Error ("C_BackupDemoCVars: Too many cvars to save (%d)", MAX_BACKUPCVARS);
+				I_Error("C_BackupDemoCVars: Too many cvars to save ({})", MAX_BACKUPCVARS);
 			backup->name = cvar->m_Name;
 			backup->string = cvar->m_String;
 			backup++;
@@ -481,15 +500,15 @@ void cvar_t::C_RestoreCVars (void)
 	UnlatchCVars();
 }
 
-cvar_t *cvar_t::FindCVar (const char *var_name, cvar_t **prev)
+cvar_t *cvar_t::FindCVar (std::string_view var_name, cvar_t **prev)
 {
 	cvar_t *var;
 
-	if (var_name == NULL)
-		return NULL;
+	if (var_name.empty())
+		return nullptr;
 
 	var = ad.GetCVars();
-	*prev = NULL;
+	*prev = nullptr;
 	while (var)
 	{
 		if (iequals(var->m_Name, var_name))
@@ -555,8 +574,8 @@ void cvar_t::C_ArchiveCVars (void *f)
 		if ((baseapp == client && (cvar->m_Flags & CVAR_CLIENTARCHIVE))
 			|| (baseapp == server && (cvar->m_Flags & CVAR_SERVERARCHIVE)))
 		{
-			fprintf ((FILE *)f, "// %s\n", cvar->helptext());
-			fprintf ((FILE *)f, "set %s %s\n\n", C_QuoteString(cvar->name()).c_str(), C_QuoteString(cvar->cstring()).c_str());
+			fmt::print(static_cast<FILE*>(f), "// {}\n", cvar->helptext());
+			fmt::print(static_cast<FILE*>(f), "set {} {}\n\n", C_QuoteString(cvar->name()), C_QuoteString(cvar->str()));
 		}
 		cvar = cvar->m_Next;
 	}
@@ -572,7 +591,7 @@ void cvar_t::cvarlist()
 		unsigned flags = var->m_Flags;
 
 		count++;
-		Printf (PRINT_HIGH, "%c%c%c%c %s \"%s\"\n",
+		PrintFmt(PRINT_HIGH, "{:c}{:c}{:c}{:c} {} \"{}\"\n",
 				flags & CVAR_ARCHIVE ? 'A' :
 					flags & CVAR_CLIENTARCHIVE ? 'C' :
 					flags & CVAR_SERVERARCHIVE ? 'S' : ' ',
@@ -582,10 +601,10 @@ void cvar_t::cvarlist()
 					flags & CVAR_LATCH ? 'L' :
 					flags & CVAR_UNSETTABLE ? '*' : ' ',
 				var->name(),
-				var->cstring());
+				var->str());
 		var = var->m_Next;
 	}
-	Printf (PRINT_HIGH, "%d cvars\n", count);
+	PrintFmt(PRINT_HIGH, "{} cvars\n", count);
 }
 
 
@@ -600,7 +619,7 @@ static std::string C_GetValueString(const cvar_t* var)
 	if (atof(var->cstring()) == 0.0f)
 		return "disabled";
 	else
-		return "enabled";	
+		return "enabled";
 }
 
 static std::string C_GetLatchedValueString(const cvar_t* var)
@@ -613,9 +632,7 @@ static std::string C_GetLatchedValueString(const cvar_t* var)
 
 	if (var->flags() & CVAR_NOENABLEDISABLE)
 	{
-		std::string str = "";
-		StrFormat(str, "\"%s\"", var->latched());
-		return str;
+		return fmt::sprintf("\"%s\"", var->latched());
 	}
 
 	if (atof(var->latched()) == 0.0f)
@@ -628,7 +645,7 @@ BEGIN_COMMAND (set)
 {
 	if (argc != 3)
 	{
-		Printf (PRINT_HIGH, "usage: set <variable> <value>\n");
+		PrintFmt(PRINT_HIGH, "usage: set <variable> <value>\n");
 	}
 	else
 	{
@@ -636,16 +653,23 @@ BEGIN_COMMAND (set)
 
 		var = cvar_t::FindCVar (argv[1], &prev);
 		if (!var)
-			var = new cvar_t(argv[1], NULL, "", CVARTYPE_NONE,  CVAR_AUTO | CVAR_UNSETTABLE | cvar_defflags);
+		{
+			const std::string description = "Unsupported in Odamex v" + std::string(NiceVersion());
+			var = new cvar_t(argv[1], argv[2], description.c_str(), CVARTYPE_NONE,
+			                 CVAR_NOENABLEDISABLE |         // If we got here due to LoadDefaults, make sure we save the value back out as-is.
+			                 CVAR_AUTO |
+			                 CVAR_UNSETTABLE |
+			                 cvar_defflags);
+		}
 
 		if (var->flags() & CVAR_NOSET)
 		{
-			Printf(PRINT_HIGH, "%s is write protected.\n", argv[1]);
+			PrintFmt(PRINT_HIGH, "{} is write protected.\n", argv[1]);
 			return;
 		}
 		else if (multiplayer && baseapp == client && (var->flags() & CVAR_SERVERINFO))
 		{
-			Printf (PRINT_HIGH, "%s is under server control.\n", argv[1]);
+			PrintFmt(PRINT_HIGH, "{} is under server control.\n", argv[1]);
 			return;
 		}
 
@@ -657,12 +681,12 @@ BEGIN_COMMAND (set)
 			if (strcmp("enabled", argv[2]) == 0 ||
 			    strcmp("true", argv[2]) == 0)
 			{
-				argv[2] = (char *)"1";
+				argv[2] = const_cast<char*>("1");
 			}
 			else if (strcmp("disabled", argv[2]) == 0 ||
 			         strcmp("false", argv[2]) == 0)
 			{
-				argv[2] = (char *)"0";
+				argv[2] = const_cast<char*>("0");
 			}
 		}
 
@@ -670,7 +694,7 @@ BEGIN_COMMAND (set)
 		{
 			// if new value is different from current value and latched value
 			if (strcmp(var->cstring(), argv[2]) && strcmp(var->latched(), argv[2]) && gamestate == GS_LEVEL)
-				Printf(PRINT_HIGH, "%s will be changed for next game.\n", argv[1]);
+				PrintFmt(PRINT_HIGH, "{} will be changed for next game.\n", argv[1]);
 		}
 
 		var->Set(argv[2]);
@@ -685,7 +709,7 @@ BEGIN_COMMAND (get)
 
     if (argc < 2)
 	{
-		Printf (PRINT_HIGH, "usage: get <variable>\n");
+		PrintFmt(PRINT_HIGH, "usage: get <variable>\n");
         return;
 	}
 
@@ -700,16 +724,16 @@ BEGIN_COMMAND (get)
 
 		// [Russell] - Don't make the user feel inadequate, tell
 		// them its either enabled, disabled or its other value
-		Printf(PRINT_HIGH, "\"%s\" is %s%s.\n",
-				var->name(), C_GetValueString(var).c_str(), control.c_str());
+		PrintFmt(PRINT_HIGH, "\"{}\" is {}{}.\n",
+		         var->name(), C_GetValueString(var), control);
 
 		if (var->flags() & CVAR_LATCH && var->flags() & CVAR_MODIFIED)
-			Printf(PRINT_HIGH, "\"%s\" will be changed to %s.\n",
-					var->name(), C_GetLatchedValueString(var).c_str());
+			PrintFmt(PRINT_HIGH, "\"{}\" will be changed to {}.\n",
+			         var->name(), C_GetLatchedValueString(var));
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
+		PrintFmt(PRINT_HIGH, "\"{}\" is unset.\n", argv[1]);
 	}
 }
 END_COMMAND (get)
@@ -721,7 +745,7 @@ BEGIN_COMMAND (toggle)
 
     if (argc < 2)
 	{
-		Printf (PRINT_HIGH, "usage: toggle <variable>\n");
+		PrintFmt(PRINT_HIGH, "usage: toggle <variable>\n");
         return;
 	}
 
@@ -729,11 +753,21 @@ BEGIN_COMMAND (toggle)
 
 	if (!var)
 	{
-		Printf(PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
+		PrintFmt(PRINT_HIGH, "\"{}\" is unset.\n", argv[1]);
 	}
 	else if (var->flags() & CVAR_NOENABLEDISABLE)
 	{
-		Printf(PRINT_HIGH, "\"%s\" cannot be toggled.\n", argv[1]);
+		PrintFmt(PRINT_HIGH, "\"{}\" cannot be toggled.\n", argv[1]);
+	}
+	else if (var->flags() & CVAR_NOSET)
+	{
+		PrintFmt(PRINT_HIGH, "{} is write protected.\n", argv[1]);
+		return;
+	}
+	else if (multiplayer && baseapp == client && (var->flags() & CVAR_SERVERINFO))
+	{
+		PrintFmt(PRINT_HIGH, "{} is under server control.\n", argv[1]);
+		return;
 	}
 	else
 	{
@@ -744,12 +778,12 @@ BEGIN_COMMAND (toggle)
 
 		// [Russell] - Don't make the user feel inadequate, tell
 		// them its either enabled, disabled or its other value
-		Printf(PRINT_HIGH, "\"%s\" is %s.\n",
-				var->name(), C_GetValueString(var).c_str());
+		PrintFmt(PRINT_HIGH, "\"{}\" is {}.\n",
+		         var->name(), C_GetValueString(var));
 
 		if (var->flags() & CVAR_LATCH && var->flags() & CVAR_MODIFIED)
-			Printf(PRINT_HIGH, "\"%s\" will be changed to %s.\n",
-					var->name(), C_GetLatchedValueString(var).c_str());
+			PrintFmt(PRINT_HIGH, "\"{}\" will be changed to {}.\n",
+			         var->name(), C_GetLatchedValueString(var));
 	}
 }
 END_COMMAND (toggle)
@@ -767,7 +801,7 @@ BEGIN_COMMAND (help)
 
     if (argc < 2)
     {
-		Printf (PRINT_HIGH, "usage: help <variable>\n");
+		PrintFmt(PRINT_HIGH, "usage: help <variable>\n");
         return;
     }
 
@@ -775,11 +809,11 @@ BEGIN_COMMAND (help)
 
     if (!var)
     {
-        Printf (PRINT_HIGH, "\"%s\" is unset.\n", argv[1]);
+        PrintFmt(PRINT_HIGH, "\"{}\" is unset.\n", argv[1]);
         return;
     }
 
-    Printf(PRINT_HIGH, "Help: %s - %s\n", var->name(), var->helptext());
+    PrintFmt(PRINT_HIGH, "Help: {} - {}\n", var->name(), var->helptext());
 }
 END_COMMAND (help)
 
@@ -798,7 +832,7 @@ END_COMMAND(fatalout)
 BEGIN_COMMAND(exceptout)
 {
 	std::string crashma = "What's crashma?";
-	Printf("%crashma game, lmao.\n", crashma.at(std::string::npos));
+	fmt::sprintf("%crashma game, lmao.\n", crashma.at(std::string::npos));
 }
 END_COMMAND(exceptout)
 

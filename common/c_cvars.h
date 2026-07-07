@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,7 +26,6 @@
 //Uncomment to allow for latency simulation - see sv_latency in sv_cvarlist.cpp
 //Note: When compiling for linux you will have link against pthread manually
 //#define SIMULATE_LATENCY
-#include "tarray.h"
 
 #include <cfloat>
 
@@ -65,7 +64,7 @@ CVARS (console variables)
 #define CVAR_LATCH BIT(4)
 
 /**
- * Can unset this var from console. 
+ * Can unset this var from console.
  */
 #define CVAR_UNSETTABLE BIT(5)
 
@@ -118,41 +117,63 @@ typedef enum
 
     ,CVARTYPE_MAX = 255
 } cvartype_t;
-
+// TODO: make cvar_t an abstract class with subclasses for string/float/integral type
 class cvar_t
 {
 public:
 	cvar_t(const char* name, const char* def, const char* help, cvartype_t,
-			DWORD flags, float minval = -FLT_MAX, float maxval = FLT_MAX);
+			uint32_t flags, float minval = -FLT_MAX, float maxval = FLT_MAX);
 	cvar_t(const char* name, const char* def, const char* help, cvartype_t,
-			DWORD flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
+			uint32_t flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
 	virtual ~cvar_t ();
 
-	const char *cstring() const {return m_String.c_str(); }
-	const std::string& str() const { return m_String; }
-	const char *name() const { return m_Name.c_str(); }
-	const char *helptext() const {return m_HelpText.c_str(); }
-	const char *latched() const { return m_LatchedString.c_str(); }
-	float value() const { return m_Value; }
-	operator float () const { return m_Value; }
-	operator const std::string& () const { return m_String; }
-	unsigned int flags() const { return m_Flags; }
-    cvartype_t type() const { return m_Type; }
-	const std::string& getDefault() const { return m_Default; }
-	float getMinValue() const { return m_MinValue; }
-	float getMaxValue() const { return m_MaxValue; }
+	[[nodiscard]] const char *cstring() const {return m_String.c_str(); }
+	[[nodiscard]] const std::string& str() const { return m_String; }
+	[[nodiscard]] const std::string& name() const { return m_Name; }
+	[[nodiscard]] const char *helptext() const {return m_HelpText.c_str(); }
+	[[nodiscard]] const char *latched() const { return m_LatchedString.c_str(); }
+	[[nodiscard]] float value() const { return m_Value; }
+	[[nodiscard]] operator float () const { return m_Value; }
+	[[nodiscard]] operator const std::string& () const { return m_String; }
+	[[nodiscard]] unsigned int flags() const { return m_Flags; }
+    [[nodiscard]] cvartype_t type() const { return m_Type; }
+	[[nodiscard]] const std::string& getDefault() const { return m_Default; }
+	[[nodiscard]] float getMinValue() const { return m_MinValue; }
+	[[nodiscard]] float getMaxValue() const { return m_MaxValue; }
 
 	// return m_Value as an int, rounded to the nearest integer because
 	// casting truncates instead of rounding
-	int asInt() const { return static_cast<int>(m_Value >= 0.0f ? m_Value + 0.5f : m_Value - 0.5f); }
+	[[nodiscard]] int asInt() const { return static_cast<int>(std::round(m_Value)); }
+	[[nodiscard]] bool asBool() const { return m_Value != 0; }
+
+	template <typename E>
+		requires std::is_enum_v<E>
+	[[nodiscard]] E asEnum() const { return static_cast<E>(asInt()); }
+
+	template <typename E>
+		requires std::is_enum_v<E> || std::is_integral_v<E>
+	[[nodiscard]] auto operator<=>(E e) const
+	{
+		return static_cast<E>(asInt()) <=> e;
+	}
+
+
+	template <typename E>
+		requires std::is_enum_v<E> || std::is_integral_v<E>
+	[[nodiscard]] bool operator==(E e) const
+	{
+		return static_cast<E>(asInt()) == e;
+	}
+
+	[[nodiscard]] explicit operator bool () const { return asBool(); }
 
 	inline void Callback (){ if (m_Callback) m_Callback (*this); }
 
 	void SetDefault (const char *value);
 	void RestoreDefault ();
-	void Set (const char *value);
+	void Set (std::string_view value);
 	void Set (float value);
-	void ForceSet (const char *value);
+	void ForceSet (std::string_view value);
 	void ForceSet (float value);
 
 	static void Transfer(const char *fromname, const char *toname);
@@ -164,7 +185,7 @@ public:
 
 	// Writes all cvars that could effect demo sync to *demo_p. These are
 	// cvars that have either CVAR_SERVERINFO or CVAR_DEMOSAVE set.
-	static void C_WriteCVars (byte **demo_p, DWORD filter, bool compact=false);
+	static void C_WriteCVars (byte **demo_p, uint32_t filter, size_t array_size, bool compact=false);
 
 	// Read all cvars from *demo_p and set them appropriately.
 	static void C_ReadCVars (byte **demo_p);
@@ -182,7 +203,7 @@ public:
 	static void C_RestoreCVars (void);
 
 	// Finds a named cvar
-	static cvar_t *FindCVar (const char *var_name, cvar_t **prev);
+	static cvar_t *FindCVar (std::string_view var_name, cvar_t **prev);
 
 	// Called from G_InitNew()
 	static void UnlatchCVars (void);
@@ -196,9 +217,9 @@ public:
 	// the filtering.
 	static void C_SetCVarsToDefaults (unsigned int bitflag = 0xFFFFFFFF);
 
-	static bool SetServerVar (const char *name, const char *value);
+	static bool SetServerVar (std::string_view name, const char *value);
 
-	static void FilterCompactCVars (TArray<cvar_t *> &cvars, DWORD filter);
+	static void FilterCompactCVars (std::vector<cvar_t *> &cvars, uint32_t filter);
 
 	// console variable interaction
 	static cvar_t *cvar_set (const char *var_name, const char *value);
@@ -217,7 +238,7 @@ private:
 	cvar_t(const cvar_t &var) { }
 
 	void InitSelf(const char* name, const char* def, const char* help, cvartype_t,
-				DWORD flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
+				uint32_t flags, void (*callback)(cvar_t &), float minval = -FLT_MAX, float maxval = FLT_MAX);
 
 	void (*m_Callback)(cvar_t &);
 	cvar_t *m_Next;

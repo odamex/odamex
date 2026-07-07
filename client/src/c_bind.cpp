@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -61,17 +61,18 @@ OBinding DefaultBindings[] =
 	{"leftalt", "+strafe"},
 	{"leftshift", "+speed"},
 	{"rightshift", "+speed"},
+	{"capslock", "togglerun"},
 	{"space", "+use"},
 	{"e", "+use"},
 	{"uparrow", "+forward"},
-	{"backarrow", "+back"},
+	{"downarrow", "+back"},
 	{"rightarrow", "+right"},
 	{"leftarrow", "+left"},
 	{"w", "+forward"},
 	{"s", "+back"},
 	{"a", "+moveleft"},
 	{"d", "+moveright"},
-#ifdef _XBOX
+#ifdef GCONSOLE
 	{"hat1right", "messagemode2"},
 	{"hat1left", "spynext"},
 	{"hat1up", "messagemode"},
@@ -197,7 +198,7 @@ void OKeyBindings::UnbindKey(const char* key)
 	if (keycode)
 		Binds.erase(keycode);
 	else
-		Printf(PRINT_WARNING, "Unknown key %s\n", C_QuoteString(key).c_str());
+		PrintFmt(PRINT_WARNING, "Unknown key {:s}\n", C_QuoteString(key));
 }
 
 void OKeyBindings::UnbindAll()
@@ -213,25 +214,23 @@ void OKeyBindings::BindAKey(size_t argc, char** argv, const char* msg)
 		int key = I_GetKeyFromName(key_name);
 		if (!key)
 		{
-			Printf(PRINT_HIGH, "Unknown key %s\n", C_QuoteString(argv[1]).c_str());
+			PrintFmt(PRINT_HIGH, "Unknown key {:s}\n", C_QuoteString(argv[1]));
 		}
 		else
 		{
 			if (argc == 2)
-				Printf(PRINT_HIGH, "%s = %s\n", key_name.c_str(), C_QuoteString(Binds[key]).c_str());
+				PrintFmt(PRINT_HIGH, "{:s} = {:s}\n", key_name, C_QuoteString(Binds[key]));
 			else
 				Binds[key] = argv[2];
 		}
 	}
 	else
 	{
-		Printf(PRINT_HIGH, "%s\n", msg);
-		for (BindingTable::const_iterator it = Binds.begin(); it != Binds.end(); ++it)
+		PrintFmt(PRINT_HIGH, "{:s}\n", msg);
+		for (const auto& [key, binding] : Binds)
 		{
-			int key = it->first;
-			const std::string& binding = it->second;
 			if (!binding.empty())
-				Printf(PRINT_HIGH, "%s = %s\n", I_GetKeyName(key).c_str(), C_QuoteString(binding).c_str());
+				PrintFmt(PRINT_HIGH, "{:s} = {:s}\n", I_GetKeyName(key), C_QuoteString(binding));
 		}
 	}
 }
@@ -262,28 +261,28 @@ void OKeyBindings::SetBinds(const OBinding* binds)
 // NetDemo playback.  Returns false if the key pressed is not
 // bound to any netdemo command.
 //
-bool C_DoNetDemoKey (event_t *ev)
+bool C_DoNetDemoKey(const event_t& ev)
 {
 	if (!netdemo.isPlaying() && !netdemo.isPaused())
 		return false;
 
-	std::string *binding;
+	const std::string *binding = nullptr;
 
-	if (ev->type != ev_keydown && ev->type != ev_keyup)
+	if (ev.type != ev_keydown && ev.type != ev_keyup)
 		return false;
 
-	binding = &NetDemoBindings.Binds[ev->data1];
+	binding = &NetDemoBindings.Binds[ev.data1];
 
 	// hardcode the pause key to also control netpause
-	if (iequals(Bindings.Binds[ev->data1], "pause"))
+	if (iequals(Bindings.Binds[ev.data1], "pause"))
 		binding = &NetDemoBindings.Binds[I_GetKeyFromName("space")];
 
 	// nothing bound to this key specific to netdemos?
 	if (binding->empty())
 		return false;
 
-	if (ev->type == ev_keydown)
-		AddCommandString(*binding, ev->data1);
+	if (ev.type == ev_keydown)
+		AddCommandString(*binding, ev.data1);
 
 	return true;
 }
@@ -296,7 +295,7 @@ bool C_DoNetDemoKey (event_t *ev)
 // or during NetDemo playback.  Returns false if the key pressed is not
 // bound to any spectating command such as spynext.
 //
-bool C_DoSpectatorKey (event_t *ev)
+bool C_DoSpectatorKey (const event_t& ev)
 {
 	if (G_IsLivesGame())
 	{
@@ -310,14 +309,14 @@ bool C_DoSpectatorKey (event_t *ev)
 		return false;
 	}
 
-	if (ev->type == ev_keydown && Key_IsSpyPrevKey(ev->data1))
+	if (ev.type == ev_keydown && Key_IsSpyPrevKey(ev.data1))
 	{
-		AddCommandString("spyprev", ev->data1);
+		AddCommandString("spyprev", ev.data1);
 		return true;
 	}
-	if (ev->type == ev_keydown && Key_IsSpyNextKey(ev->data1))
+	if (ev.type == ev_keydown && Key_IsSpyNextKey(ev.data1))
 	{
-		AddCommandString("spynext", ev->data1);
+		AddCommandString("spynext", ev.data1);
 		return true;
 	}
 
@@ -325,16 +324,16 @@ bool C_DoSpectatorKey (event_t *ev)
 }
 
 
-bool C_DoKey(event_t* ev, OKeyBindings* binds, OKeyBindings* doublebinds)
+bool C_DoKey(const event_t& ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 {
-	if (ev->type != ev_keydown && ev->type != ev_keyup)
+	if (ev.type != ev_keydown && ev.type != ev_keyup)
 		return false;
 
 	const std::string* binding = NULL;
-	int key = ev->data1;
+	int key = ev.data1;
 
 	KeyState& key_state = KeyStates[key];
-	if (doublebinds != NULL && ev->type == ev_keydown && key_state.double_click_time > level.time)
+	if (doublebinds != NULL && ev.type == ev_keydown && key_state.double_click_time > level.time)
 	{
 		// Key pressed for a double click
 		binding = &doublebinds->Binds[key];
@@ -342,7 +341,7 @@ bool C_DoKey(event_t* ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 	}
 	else
 	{
-		if (ev->type == ev_keydown)
+		if (ev.type == ev_keydown)
 		{
 			// Key pressed for a normal press
 			binding = &binds->Binds[key];
@@ -365,12 +364,12 @@ bool C_DoKey(event_t* ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 
 	if (!binding->empty() && (HU_ChatMode() == CHAT_INACTIVE || key < 256))
 	{
-		if (ev->type == ev_keydown)
+		if (ev.type == ev_keydown)
 		{
 			AddCommandString(*binding, key);
 			key_state.key_down = true;
 		}
-		else if (ev->type == ev_keyup)
+		else if (ev.type == ev_keyup)
 		{
 			key_state.key_down = false;
 
@@ -400,10 +399,8 @@ bool C_DoKey(event_t* ev, OKeyBindings* binds, OKeyBindings* doublebinds)
 //
 void C_ReleaseKeys()
 {
-	for (KeyStateTable::iterator it = KeyStates.begin(); it != KeyStates.end(); ++it)
+	for (auto& [key, key_state] : KeyStates)
 	{
-		int key = it->first;
-		KeyState& key_state = it->second;
 		if (key_state.key_down)
 		{
 			key_state.key_down = false;
@@ -426,12 +423,10 @@ void C_ReleaseKeys()
 
 void OKeyBindings::ArchiveBindings(FILE* f)
 {
-	for (BindingTable::const_iterator it = Binds.begin(); it != Binds.end(); ++it)
+	for (const auto& [key, binding] : Binds)
 	{
-		const int key = it->first;
-		const std::string& binding = it->second;
 		if (!binding.empty())
-			fprintf(f, "%s %s %s\n", command.c_str(), C_QuoteString(I_GetKeyName(key)).c_str(), C_QuoteString(binding).c_str());
+			fmt::print(f, "{} {} {}\n", command, C_QuoteString(I_GetKeyName(key)), C_QuoteString(binding));
 	}
 }
 
@@ -441,10 +436,8 @@ int OKeyBindings::GetKeysForCommand(const char* cmd, int* first, int* second)
 	int c = 0;
 	*first = *second = 0;
 
-	for (BindingTable::const_iterator it = Binds.begin(); it != Binds.end(); ++it)
+	for (const auto& [key, binding] : Binds)
 	{
-		int key = it->first;
-		const std::string& binding = it->second;
 		if (!binding.empty() && stricmp(cmd, binding.c_str()) == 0)
 		{
 			c++;
@@ -586,14 +579,12 @@ END_COMMAND(bind)
 BEGIN_COMMAND(unbind)
 {
 	if (argc < 2) {
-		Printf(PRINT_WARNING, "Unbinds a key. \"all\" unbinds every key.\n");
-		Printf(PRINT_WARNING, "Usage: unbind <key>\n");
+		PrintFmt(PRINT_WARNING, "Unbinds a key. \"all\" unbinds every key.\n");
+		PrintFmt(PRINT_WARNING, "Usage: unbind <key>\n");
 		return;
 	}
 
-	std::string lostr = StdStringToLower(argv[1]);
-
-	if (iequals(lostr, "all"))
+	if (iequals(argv[1], "all"))
 		Bindings.UnbindAll();
 	else
 		Bindings.UnbindKey(argv[1]);
@@ -612,14 +603,12 @@ BEGIN_COMMAND(undoublebind)
 {
 	if (argc < 2)
 	{
-		Printf(PRINT_WARNING, "Unbinds a doublekey. \"all\" unbinds every doublebind key.\n");
-		Printf(PRINT_WARNING, "Usage: undoublebind <key>\n");
+		PrintFmt(PRINT_WARNING, "Unbinds a doublekey. \"all\" unbinds every doublebind key.\n");
+		PrintFmt(PRINT_WARNING, "Usage: undoublebind <key>\n");
 		return;
 	}
 
-	std::string lostr = StdStringToLower(argv[1]);
-
-	if (iequals(lostr, "all"))
+	if (iequals(argv[1], "all"))
 		DoubleBindings.UnbindAll();
 	else
 		DoubleBindings.UnbindKey(argv[1]);
@@ -637,18 +626,16 @@ BEGIN_COMMAND(unambind)
 {
 	if (argc < 2)
 	{
-		Printf(PRINT_WARNING, "Unbinds an automap key. \"all\" unbinds every automap key.\n");
-		Printf(PRINT_WARNING, "Usage: unambind <key>\n");
+		PrintFmt(PRINT_WARNING, "Unbinds an automap key. \"all\" unbinds every automap key.\n");
+		PrintFmt(PRINT_WARNING, "Usage: unambind <key>\n");
 		return;
 	}
 
-	if (argc > 1) {
-
-		std::string lostr = StdStringToLower(argv[1]);
-
-		if (iequals(lostr, "all"))
+	if (argc > 1)
+	{
+		if (iequals(argv[1], "all"))
 			AutomapBindings.UnbindAll();
-		else 
+		else
 			AutomapBindings.UnbindKey(argv[1]);
 	}
 }
@@ -665,18 +652,15 @@ BEGIN_COMMAND(unnetdemobind)
 {
 	if (argc < 2)
 	{
-		Printf(PRINT_WARNING,
-		       "Unbinds a netdemo key. \"all\" unbinds every existing netdemo key.\n");
-		Printf(PRINT_WARNING, "Usage: unnetdemobind <key>\n");
+		PrintFmt(PRINT_WARNING,
+		         "Unbinds a netdemo key. \"all\" unbinds every existing netdemo key.\n");
+		PrintFmt(PRINT_WARNING, "Usage: unnetdemobind <key>\n");
 		return;
 	}
 
 	if (argc > 1)
 	{
-
-		std::string lostr = StdStringToLower(argv[1]);
-
-		if (iequals(lostr, "all"))
+		if (iequals(argv[1], "all"))
 			NetDemoBindings.UnbindAll();
 		else
 			NetDemoBindings.UnbindKey(argv[1]);

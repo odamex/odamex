@@ -1,9 +1,9 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -39,7 +39,8 @@ typedef enum
 	MS_NONE			= 0,
 	MS_SDLMIXER		= 1,
 	MS_AUDIOUNIT	= 2,
-	MS_PORTMIDI		= 3
+	MS_PORTMIDI		= 3,
+	MS_LIBADLMIDI		= 4
 } MusicSystemType;
 
 //
@@ -50,7 +51,7 @@ EXTERN_CVAR(snd_musicsystem)
 // [ML] Keep track of the currently loaded music lump name
 extern std::string currentmusic;
 
-void I_InitMusic(MusicSystemType musicsystem_type = (MusicSystemType)snd_musicsystem.asInt());
+void I_InitMusic(MusicSystemType musicsystem_type = snd_musicsystem.asEnum<MusicSystemType>());
 void STACK_ARGS I_ShutdownMusic(void);
 // Volume.
 void I_SetMusicVolume (float volume);
@@ -61,7 +62,7 @@ void I_ResumeSong();
 //  plays a song, and when the song is done,
 //  starts playing it again in an endless loop.
 // Horrible thing to do, considering.
-void I_PlaySong(byte* data, size_t length, bool loop);
+void I_PlaySong(const OByteSpan data, const bool loop, const int order);
 // Stops a song over 3 seconds.
 void I_StopSong();
 void I_UpdateMusic();

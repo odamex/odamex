@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -46,7 +46,7 @@
 
 struct FakeCmap
 {
-	std::string name;
+	OLumpName name;
 	argb_t blend_color;
 };
 
@@ -71,13 +71,13 @@ void R_ForceDefaultColormap(const char* name)
 	BuildDefaultShademap(V_GetDefaultPalette(), realcolormaps);
 #endif
 
-	fakecmaps[0].name = StdStringToUpper(name, 8); 	// denis - todo - string limit?
+	fakecmaps[0].name = name;
 	fakecmaps[0].blend_color = argb_t(0, 255, 255, 255);
 }
 
 void R_SetDefaultColormap(const char* name)
 {
-	if (strnicmp(fakecmaps[0].name.c_str(), name, 8) != 0)
+	if (fakecmaps[0].name == name)
 		R_ForceDefaultColormap(name);
 }
 
@@ -86,7 +86,7 @@ void R_ReinitColormap()
 	if (fakecmaps == NULL)
 		return;
 
-	std::string name = fakecmaps[0].name;
+	OLumpName name = fakecmaps[0].name;
 	if (name.empty())
 		name = "COLORMAP";
 
@@ -118,7 +118,6 @@ void R_ShutdownColormaps()
 		delete [] fakecmaps;
 		fakecmaps = NULL;
 	}
-
 }
 
 //
@@ -133,8 +132,8 @@ void R_InitColormaps()
 	ResourcePathList paths = Res_ListResourceDirectory(colormaps_directory_name);
 	numfakecmaps = std::max<int>(paths.size(), 1);
 
-	realcolormaps.colormap = (byte*)Z_Malloc(256*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC,0);
-	realcolormaps.shademap = (argb_t*)Z_Malloc(256*sizeof(argb_t)*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC,0);
+	realcolormaps.colormap = Z_Malloc<byte>(256*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC);
+	realcolormaps.shademap = Z_Malloc<argb_t>(256*(NUMCOLORMAPS+1)*numfakecmaps, PU_STATIC);
 
 	delete[] fakecmaps;
 	fakecmaps = new FakeCmap[numfakecmaps];
@@ -269,13 +268,20 @@ void R_PrecacheLevel()
 		Res_CacheTexture(sides[i].bottomtexture);
 	}
 
-	// TODO: Cache sky textures
+	// Activate and cache skies used by the level.
+#ifdef CLIENT_APP
+	R_ActivateSkies();
+#endif
 
 	// Cache sprites
 	AActor* actor;
 	TThinkerIterator<AActor> iterator;
 	while ( (actor = iterator.Next ()) )
-		R_CacheSprite(sprites + actor->sprite);
+	{
+		auto it = sprites.find(actor->sprite);
+		if (it != sprites.end())
+			R_CacheSprite(&it->second);
+	}
 
 	DPrintf("Level Pre-Cache end\n");
 }

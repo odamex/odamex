@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -35,10 +35,11 @@
 
 
 // State.
+#include "gi.h"
 #include "r_state.h"
 
 
-extern void P_CalcHeight (player_t *player);
+void P_CalcHeight (player_t& player);
 
 // [AM] From ZDoom SVN, modified for use with Odamex and without the
 //      buggy 2.0.x teleport behavior compatibility fix.  Thanks to both
@@ -64,7 +65,7 @@ static AActor* SelectTeleDest(int tid, int tag)
 			if (searcher->tid != tid)
 				continue;
 
-			if (tag == 0 || searcher->subsector->sector->tag == tag)
+			if (tag == 0 || (searcher->subsector && searcher->subsector->sector->tag == tag))
 				count++;
 		}
 
@@ -108,7 +109,7 @@ static AActor* SelectTeleDest(int tid, int tag)
 					continue;
 				if (searcher->tid != tid)
 					continue;
-				if (tag == 0 || searcher->subsector->sector->tag == tag)
+				if (tag == 0 || (searcher->subsector && searcher->subsector->sector->tag == tag))
 					count--;
 			}
 		}
@@ -134,7 +135,7 @@ static AActor* SelectTeleDest(int tid, int tag)
 				if (!(searcher->type == MT_TELEPORTMAN || searcher->type == MT_TELEPORTMAN2))
 					continue;
 
-				if (searcher->subsector->sector == sectors + secnum)
+				if (searcher->subsector && searcher->subsector->sector == sectors + secnum)
 					return searcher;
 			}
 		}
@@ -143,18 +144,18 @@ static AActor* SelectTeleDest(int tid, int tag)
 	return NULL;
 }
 
+static bool UseFinalDoomTeleportZBug()
+{
+	EXTERN_CVAR(co_boomphys);
+	return ((demoplayback || !co_boomphys) &&
+	        (gamemission == pack_tnt || gamemission == pack_plut));
+}
+
 //
 // TELEPORTATION
 //
-BOOL EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop)
+bool EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop)
 {
-	AActor *m;
-	unsigned	an;
-	fixed_t 	oldx;
-	fixed_t 	oldy;
-	fixed_t 	oldz;
-	player_t	*player;
-
 	// don't teleport missiles
 	// TODO: Allow projectile activated missiles to teleport
 	if (thing->flags & MF_MISSILE)
@@ -165,31 +166,31 @@ BOOL EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop
 		return false;
 
 	// [AM] Use modern ZDoom teleport destination selection.
-	m = SelectTeleDest(tid, tag);
+	AActor* m = SelectTeleDest(tid, tag);
 	if (m == NULL)
 		return false;
 
 	// killough 5/12/98: exclude voodoo dolls:
-	player = thing->player;
+	player_t* player = thing->player;
 	if (player && player->mo != thing)
 		player = NULL;
 
-	oldx = thing->x;
-	oldy = thing->y;
-	oldz = thing->z;
+	const fixed_t oldx = thing->x;
+	const fixed_t oldy = thing->y;
+	const fixed_t oldz = thing->z;
 
-	fixed_t destz = (m->type == MT_TELEPORTMAN) ? P_FloorHeight(m) : m->z;
+	const fixed_t destz = (m->type == MT_TELEPORTMAN) ? P_FloorHeight(m) : m->z;
 
 	if (!P_TeleportMove (thing, m->x, m->y, destz, false))
 		return false;
 
-	// fraggle: this was changed in final doom, 
+	// fraggle: this was changed in final doom,
 	// problem between normal doom2 1.9 and final doom
 	// Note that although chex.exe is based on Final Doom,
 	// it does not have this quirk.
 	// [AM] For z-teleports, the destination sets the height, don't
 	//      override it here.
-	if (m->type == MT_TELEPORTMAN && (gamemission < pack_tnt || gamemission == chex))
+	if (m->type == MT_TELEPORTMAN && !UseFinalDoomTeleportZBug())
 		thing->z = thing->floorz;
 
 	if (player)
@@ -197,18 +198,31 @@ BOOL EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop
 
 	// spawn teleport fog at source and destination
 	// [RK] but account for nosourcefog and nostop fog arguments
-	if(serverside && !(player && player->spectator))
+	if (serverside && !(player && player->spectator))
 	{
+		AActor* oldloc = new AActor(oldx, oldy, oldz + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
+
 		if (arg0 == 0)
-			S_Sound (new AActor (oldx, oldy, oldz, MT_TFOG), CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
-		
-		an = m->angle >> ANGLETOFINESHIFT;
+			S_Sound(oldloc, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+
+		const unsigned an = m->angle >> ANGLETOFINESHIFT;
+
 		// emit sound at new spot
 		// [RK] reduce the fog flicker during no stop
 		if (nostop == 1)
-			S_Sound(new AActor(m->x+5*finecosine[an], m->y+5*finesine[an], thing->z, MT_TFOG), CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+		{
+			AActor* newloc = new AActor(m->x + 5 * finecosine[an],
+			                            m->y + 5 * finesine[an],
+			                            thing->z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
+			S_Sound(newloc, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+		}
 		else
-			S_Sound(new AActor(m->x+20*finecosine[an], m->y+20*finesine[an], thing->z, MT_TFOG), CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+		{
+			AActor* newloc = new AActor(m->x + 20 * finecosine[an],
+			                            m->y + 20 * finesine[an],
+			                            thing->z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
+			S_Sound(newloc, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+		}
 	}
 
 	// don't move for a bit
@@ -223,7 +237,7 @@ BOOL EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop
 
 	thing->momx = thing->momy = thing->momz = 0;
 	thing->angle = m->angle;
-	
+
 	// [RK] we keep the player's pitch if it's a no stop teleport
 	if(nostop == 0)
 		thing->pitch = 0;
@@ -232,17 +246,9 @@ BOOL EV_Teleport(int tid, int tag, int arg0, int side, AActor *thing, int nostop
 }
 
 // [ML] Original vanilla-style EV_Teleport, based on code from chocolate doom
-BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
+bool EV_LineTeleport (line_t *line, int side, AActor *thing)
 {
 	AActor *m;
-	unsigned	an;
-	int		i;
-	int		tag;
-	fixed_t 	oldx;
-	fixed_t 	oldy;
-	fixed_t 	oldz;
-	player_t	*player;
-	sector_t*	sector;
 	TThinkerIterator<AActor> iterator;
 
     // don't teleport missiles
@@ -251,12 +257,12 @@ BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
 
     // Don't teleport if hit back of line,
     //  so you can get out of teleporter.
-    if (side == 1)		
-		return false;	
+    if (side == 1)
+		return false;
 
-	tag = line->id;
+	const int tag = line->id;
 	// Yeah, cycle through all of them...
-	for (i = 0; i < numsectors; i++)
+	for (int i = 0; i < numsectors; i++)
 	{
 		if (sectors[ i ].tag == tag )
 		{
@@ -265,24 +271,27 @@ BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
 				// not a teleportman
 				if (m->type != MT_TELEPORTMAN)
 					continue;
-				
-				sector = m->subsector->sector;
+
+				if (not m->subsector)
+					continue;
+
+				sector_t* sector = m->subsector->sector;
 				// wrong sector
 				if (sector-sectors != i )
 					continue;
-									
+
 				// killough 5/12/98: exclude voodoo dolls:
-				player = thing->player;
+				player_t* player = thing->player;
 				if (player && player->mo != thing)
 					player = NULL;
 
-				oldx = thing->x;
-				oldy = thing->y;
-				oldz = thing->z;
+				const fixed_t oldx = thing->x;
+				const fixed_t oldy = thing->y;
+				const fixed_t oldz = thing->z;
 
 				fixed_t destz;
 
-				if (demoplayback && (gamemission == pack_tnt || gamemission == pack_plut || gamemission == chex))
+				if (UseFinalDoomTeleportZBug())
 					destz = m->z;	// Make sure we have the original Z-Height bug on Final Doom.
 				else
 					destz = (m->type == MT_TELEPORTMAN) ? P_FloorHeight(m) : m->z;
@@ -290,11 +299,11 @@ BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
 				if (!P_TeleportMove (thing, m->x, m->y, destz, false))
 					return false;
 
-				// fraggle: this was changed in final doom, 
+				// fraggle: this was changed in final doom,
 				// problem between normal doom2 1.9 and final doom
 				// Note that although chex.exe is based on Final Doom,
 				// it does not have this quirk.
-				if (gamemission < pack_tnt || gamemission == chex)
+				if (!UseFinalDoomTeleportZBug())
 						thing->z = thing->floorz;
 
 				if (player)
@@ -303,10 +312,16 @@ BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
 				// spawn teleport fog at source and destination
 				if(serverside && !(player && player->spectator))
 				{
-					S_Sound (new AActor (oldx, oldy, oldz, MT_TFOG), CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
-					an = m->angle >> ANGLETOFINESHIFT;
+					AActor* oldloc = new AActor(oldx, oldy, oldz + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
+					S_Sound(oldloc, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+
+					const unsigned an = m->angle >> ANGLETOFINESHIFT;
+					AActor* newloc = new AActor(m->x + 20 * finecosine[an],
+					                   m->y + 20 * finesine[an],
+					                   thing->z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG);
+
 					// emit sound at new spot
-					S_Sound (new AActor (m->x+20*finecosine[an], m->y+20*finesine[an], thing->z, MT_TFOG), CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
+					S_Sound(newloc, CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 				}
 
 				// don't move for a bit
@@ -332,11 +347,9 @@ BOOL EV_LineTeleport (line_t *line, int side, AActor *thing)
 // [RH] Changed to find destination by tid rather than sector
 //
 
-BOOL EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* line,
+bool EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* line,
                        int side, AActor* thing)
 {
-	AActor    *m;
-
 	// don't teleport missiles
 	// Don't teleport if hit back of line,
 	// so you can get out of teleporter.
@@ -346,27 +359,27 @@ BOOL EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* l
 		return false;
 
 	// [AM] Use modern ZDoom teleport destination selection.
-	m = SelectTeleDest(tid, tag);
+	AActor* m = SelectTeleDest(tid, tag);
 	if (m == NULL)
 		return false;
 
 	// Height of thing above ground, in case of mid-air teleports:
-	fixed_t z = thing->z - thing->floorz;
+	const fixed_t z = thing->z - thing->floorz;
 
 	// Get the angle between the exit thing and source linedef.
 	// Rotate 90 degrees, so that walking perpendicularly across
 	// teleporter linedef causes thing to exit in the direction
 	// indicated by the exit thing.
-	angle_t angle =
+	const angle_t angle =
 		P_PointToAngle(0, 0, line->dx, line->dy) - m->angle + ANG90;
 
 	// Sine, cosine of angle adjustment
-	fixed_t s = finesine[angle>>ANGLETOFINESHIFT];
-	fixed_t c = finecosine[angle>>ANGLETOFINESHIFT];
+	const fixed_t s = finesine[angle>>ANGLETOFINESHIFT];
+	const fixed_t c = finecosine[angle>>ANGLETOFINESHIFT];
 
 	// Momentum of thing crossing teleporter linedef
-	fixed_t momx = thing->momx;
-	fixed_t momy = thing->momy;
+	const fixed_t momx = thing->momx;
+	const fixed_t momy = thing->momy;
 
 	// Whether this is a player, and if so, a pointer to its player_t
 	player_t *player = thing->player;
@@ -387,13 +400,13 @@ BOOL EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* l
 	if (player && player->mo == thing)
 	{
 		// Save the current deltaviewheight, used in stepping
-		fixed_t deltaviewheight = player->deltaviewheight;
+		const fixed_t deltaviewheight = player->deltaviewheight;
 
 		// Clear deltaviewheight, since we don't want any changes
 		player->deltaviewheight = 0;
 
 		// Set player's view according to the newly set parameters
-		P_CalcHeight(player);
+		P_CalcHeight(*player);
 
 		// Reset the delta to have the same dynamics as before
 		player->deltaviewheight = deltaviewheight;
@@ -412,16 +425,15 @@ BOOL EV_SilentTeleport(int tid, int useangle, int tag, int keepheight, line_t* l
 #define FUDGEFACTOR 10
 
 // [RH] Modified to support different source and destination ids.
-BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
-							BOOL reverse)
+bool EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
+							bool reverse)
 {
-	int i;
 	line_t *l;
 
 	if (thing->flags & MF_MISSILE || !line)
 		return false;
 
-	for (i = -1; (i = P_FindLineFromID (id, i)) >= 0;)
+	for (int i = -1; (i = P_FindLineFromID (id, i)) >= 0;)
 		if ((l=lines+i) != line && l->backsector)
 		{
 			// Get the thing's position along the source linedef
@@ -432,17 +444,17 @@ BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 			// Get the angle between the two linedefs, for rotating
 			// orientation and momentum. Rotate 180 degrees, and flip
 			// the position across the exit linedef, if reversed.
-			angle_t angle = (reverse ? pos = FRACUNIT-pos, 0 : ANG180) +
-				P_PointToAngle(0, 0, l->dx, l->dy) -
-				P_PointToAngle(0, 0, line->dx, line->dy);
+			const angle_t angle = (reverse ? pos = FRACUNIT-pos, 0 : ANG180) +
+			                      P_PointToAngle(0, 0, l->dx, l->dy) -
+			                      P_PointToAngle(0, 0, line->dx, line->dy);
 
 			// Interpolate position across the exit linedef
 			fixed_t x = l->v2->x - FixedMul(pos, l->dx);
 			fixed_t y = l->v2->y - FixedMul(pos, l->dy);
 
 			// Sine, cosine of angle adjustment
-			fixed_t s = finesine[angle>>ANGLETOFINESHIFT];
-			fixed_t c = finecosine[angle>>ANGLETOFINESHIFT];
+			const fixed_t s = finesine[angle>>ANGLETOFINESHIFT];
+			const fixed_t c = finecosine[angle>>ANGLETOFINESHIFT];
 
 			// Maximum distance thing can be moved away from interpolated
 			// exit, to ensure that it is on the correct side of exit linedef
@@ -454,10 +466,10 @@ BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 				thing->player : NULL;
 
 			// Height of thing above ground
-			fixed_t z = thing->z -
-						P_FloorHeight(thing->x, thing->y, sides[line->sidenum[1]].sector) +
-						P_FloorHeight(x, y, sides[l->sidenum[0]].sector);		
-	
+			const fixed_t z = thing->z -
+			                  P_FloorHeight(thing->x, thing->y, sides[line->sidenum[1]].sector) +
+			                  P_FloorHeight(x, y, sides[l->sidenum[0]].sector);
+
 			// Side to exit the linedef on positionally.
 			//
 			// Notes:
@@ -480,7 +492,7 @@ BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 			// Exiting on side 1 slightly improves player viewing
 			// when going down a step on a non-reversed teleporter.
 
-			int side = reverse;
+			const int side = reverse;
 
 			// Make sure we are on correct side of exit linedef.
 			while (P_PointOnLineSide(x, y, l) != side && --fudge>=0)
@@ -511,13 +523,13 @@ BOOL EV_SilentLineTeleport (line_t *line, int side, AActor *thing, int id,
 			if (player)
 			{
 				// Save the current deltaviewheight, used in stepping
-				fixed_t deltaviewheight = player->deltaviewheight;
+				const fixed_t deltaviewheight = player->deltaviewheight;
 
 				// Clear deltaviewheight, since we don't want any changes now
 				player->deltaviewheight = 0;
 
 				// Set player's view according to the newly set parameters
-				P_CalcHeight(player);
+				P_CalcHeight(*player);
 
 				// Reset the delta to have the same dynamics as before
 				player->deltaviewheight = deltaviewheight;

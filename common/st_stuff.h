@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -40,7 +40,7 @@ extern int ST_WIDTH;
 extern int ST_X;
 extern int ST_Y;
 
-int ST_StatusBarWidth(int surface_width, int surface_height);
+short ST_StatusBarWidth(int surface_width, int surface_height);
 int ST_StatusBarHeight(int surface_width, int surface_height);
 int ST_StatusBarX(int surface_width, int surface_height);
 int ST_StatusBarY(int surface_width, int surface_height);
@@ -55,7 +55,7 @@ extern const Texture* negminus;
 //
 
 // Called by main loop.
-bool ST_Responder(event_t* ev);
+bool ST_Responder(const event_t& ev);
 
 // Called by main loop.
 void ST_Ticker();
@@ -90,6 +90,12 @@ void PushToast(const toast_t& toast);
 // [AM] HUD for showing level state
 void LevelStateHUD();
 
+// HUD showing Multi Kill messages.
+void MultiKillHud();
+
+// HUD showing Spree messages.
+void SpreeHud();
+
 // [AM] Spectator HUD
 void SpectatorHUD();
 
@@ -97,5 +103,3 @@ void SpectatorHUD();
 void DoomHUD();
 
 }
-
-bool ST_Responder(event_t* ev);

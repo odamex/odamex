@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -26,7 +26,7 @@
 #include "d_event.h"
 #include "m_resfile.h"
 
-extern std::string LOG_FILE;
+inline std::string LOG_FILE;
 
 //
 // D_DoomMain()
@@ -36,12 +36,18 @@ extern std::string LOG_FILE;
 //
 void D_DoomMain(void);
 
-void D_LoadResourceFiles(const std::vector<std::string>& resource_file_names);
-void D_ReloadResourceFiles(const std::vector<std::string>& new_resource_file_names);
+//
+// D_InitializeDoomObjectTables()
+// Initialize all the doom objects: MobjInfo, SprNames, SoundMap, etc.
+//
+void D_InitializeDoomObjectTables();
+
+void D_LoadResourceFiles(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles);
+bool D_DoomWadReboot(const OWantFiles& newwadfiles, const OWantFiles& newpatchfiles);
 void D_UnloadResourceFiles();
 
-// Called by IO functions when input is detected.
-void D_PostEvent(const event_t* ev);
+    // Called by IO functions when input is detected.
+void D_PostEvent(const event_t& ev);
 
 //
 // BASE LEVEL
@@ -54,6 +60,14 @@ void D_DisplayTicker(void);
 
 // [RH] Set this to something to draw an icon during the next screen refresh.
 extern const char *D_DrawIcon;
+
+void D_LoadResolvedPatches(bool reloadStrings = false);
+std::string D_CleanseFileName(const std::string &filename, const std::string &ext = "");
+
+extern OResFiles wadfiles;
+extern OResFiles patchfiles;
+extern OWantFiles missingfiles;
+
 
 extern bool capfps;
 extern float maxfps;

@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -42,138 +42,164 @@
 // readystate
 // atkstate, i.e. attack/fire/hit frame
 // flashstate, muzzle flash
+// droptype
+// ammouse
+// minammo
+// mbf21 flags
+// ammopershot
+// internal flags
 //
-weaponinfo_t	weaponinfo[NUMWEAPONS+1] =
+std::array<weaponinfo_t, NUMWEAPONS> weaponinfo =
 {
-	{
+	weaponinfo_t{
 		// fist
-		am_noammo,
-		S_PUNCHUP,
-		S_PUNCHDOWN,
-		S_PUNCH,
-		S_PUNCH1,
-		S_NULL,
-		(mobjtype_t)0,
-		0,
-		0,
-		WPF_FLEEMELEE | WPF_AUTOSWITCHFROM | WPF_NOAUTOSWITCHTO
-		},	
+		.ammotype      = am_noammo,
+		.upstate       = S_PUNCHUP,
+		.downstate     = S_PUNCHDOWN,
+		.readystate    = S_PUNCH,
+		.atkstate      = S_PUNCH1,
+		.flashstate    = S_NULL,
+		.droptype      = MT_PLAYER, // TODO: should this be MT_NULL instead of MT_PLAYER??
+		.ammouse       = 0,
+		.minammo       = 0,
+		.flags         = WPF_FLEEMELEE | WPF_AUTOSWITCHFROM | WPF_NOAUTOSWITCHTO,
+		.ammopershot   = 1,
+		.internalflags = WIF_NOFLAG
+	},
 	{
 		// pistol
-		am_clip,
-		S_PISTOLUP,
-		S_PISTOLDOWN,
-		S_PISTOL,
-		S_PISTOL1,
-		S_PISTOLFLASH,
-		MT_CLIP,
-		1,
-		1,
-		WPF_AUTOSWITCHFROM
-	},	
+		.ammotype      = am_clip,
+		.upstate       = S_PISTOLUP,
+		.downstate     = S_PISTOLDOWN,
+		.readystate    = S_PISTOL,
+		.atkstate      = S_PISTOL1,
+		.flashstate    = S_PISTOLFLASH,
+		.droptype      = MT_CLIP,
+		.ammouse       = 1,
+		.minammo       = 1,
+		.flags         = WPF_AUTOSWITCHFROM,
+		.ammopershot   = 1,
+		.internalflags = WIF_NOFLAG
+	},
 	{
 		// shotgun
-		am_shell,
-		S_SGUNUP,
-		S_SGUNDOWN,
-		S_SGUN,
-		S_SGUN1,
-		S_SGUNFLASH1,
-		MT_SHOTGUN,
-		1,
-		1,
-		WPF_NOFLAG
+		.ammotype      = am_shell,
+		.upstate       = S_SGUNUP,
+		.downstate     = S_SGUNDOWN,
+		.readystate    = S_SGUN,
+		.atkstate      = S_SGUN1,
+		.flashstate    = S_SGUNFLASH1,
+		.droptype      = MT_SHOTGUN,
+		.ammouse       = 1,
+		.minammo       = 1,
+		.flags         = WPF_NOFLAG,
+		.ammopershot   = 1,
+		.internalflags = WIF_NOFLAG
 	},
 	{
 		// chaingun
-		am_clip,
-		S_CHAINUP,
-		S_CHAINDOWN,
-		S_CHAIN,
-		S_CHAIN1,
-		S_CHAINFLASH1,
-		MT_CHAINGUN,
-		1,
-		1,
-		WPF_NOFLAG
+		.ammotype      = am_clip,
+		.upstate       = S_CHAINUP,
+		.downstate     = S_CHAINDOWN,
+		.readystate    = S_CHAIN,
+		.atkstate      = S_CHAIN1,
+		.flashstate    = S_CHAINFLASH1,
+		.droptype      = MT_CHAINGUN,
+		.ammouse       = 1,
+		.minammo       = 1,
+		.flags         = WPF_NOFLAG,
+		.ammopershot   = 1,
+		.internalflags = WIF_NOFLAG
 	},
 	{
 		// missile launcher
-		am_misl,
-		S_MISSILEUP,
-		S_MISSILEDOWN,
-		S_MISSILE,
-		S_MISSILE1,
-		S_MISSILEFLASH1,
-		MT_MISC27,
-		1,
-		1,
-		WPF_NOAUTOFIRE
+		.ammotype      = am_misl,
+		.upstate       = S_MISSILEUP,
+		.downstate     = S_MISSILEDOWN,
+		.readystate    = S_MISSILE,
+		.atkstate      = S_MISSILE1,
+		.flashstate    = S_MISSILEFLASH1,
+		.droptype      = MT_MISC27,
+		.ammouse       = 1,
+		.minammo       = 1,
+		.flags         = WPF_NOAUTOFIRE,
+		.ammopershot   = 1,
+		.internalflags = WIF_NOFLAG
 	},
 	{
 		// plasma rifle
-		am_cell,
-		S_PLASMAUP,
-		S_PLASMADOWN,
-		S_PLASMA,
-		S_PLASMA1,
-		S_PLASMAFLASH1,
-		MT_MISC28,
-		1,
-		1,
-		WPF_NOFLAG
+		.ammotype      = am_cell,
+		.upstate       = S_PLASMAUP,
+		.downstate     = S_PLASMADOWN,
+		.readystate    = S_PLASMA,
+		.atkstate      = S_PLASMA1,
+		.flashstate    = S_PLASMAFLASH1,
+		.droptype      = MT_MISC28,
+		.ammouse       = 1,
+		.minammo       = 1,
+		.flags         = WPF_NOFLAG,
+		.ammopershot   = 1,
+		.internalflags = WIF_NOFLAG
 	},
 	{
 		// bfg 9000
-		am_cell,
-		S_BFGUP,
-		S_BFGDOWN,
-		S_BFG,
-		S_BFG1,
-		S_BFGFLASH1,
-		MT_MISC25,
-		40,
-		40,
-		WPF_NOAUTOFIRE
+		.ammotype      = am_cell,
+		.upstate       = S_BFGUP,
+		.downstate     = S_BFGDOWN,
+		.readystate    = S_BFG,
+		.atkstate      = S_BFG1,
+		.flashstate    = S_BFGFLASH1,
+		.droptype      = MT_MISC25,
+		.ammouse       = 40,
+		.minammo       = 40,
+		.flags         = WPF_NOAUTOFIRE,
+		.ammopershot   = 40,
+		.internalflags = WIF_NOFLAG
 	},
 	{
 		// chainsaw
-		am_noammo,
-		S_SAWUP,
-		S_SAWDOWN,
-		S_SAW,
-		S_SAW1,
-		S_NULL,
-		MT_MISC26,
-		0,
-		0,
-		WPF_NOTHRUST | WPF_FLEEMELEE | WPF_NOAUTOSWITCHTO
+		.ammotype      = am_noammo,
+		.upstate       = S_SAWUP,
+		.downstate     = S_SAWDOWN,
+		.readystate    = S_SAW,
+		.atkstate      = S_SAW1,
+		.flashstate    = S_NULL,
+		.droptype      = MT_MISC26,
+		.ammouse       = 0,
+		.minammo       = 0,
+		.flags         = WPF_NOTHRUST | WPF_FLEEMELEE | WPF_NOAUTOSWITCHTO,
+		.ammopershot   = 1,
+		.internalflags = WIF_NOFLAG
 	},
 	{
 		// super shotgun
-		am_shell,
-		S_DSGUNUP,
-		S_DSGUNDOWN,
-		S_DSGUN,
-		S_DSGUN1,
-		S_DSGUNFLASH1,
-		MT_SUPERSHOTGUN,
-		2,
-		2,
-		WPF_NOFLAG
+		.ammotype      = am_shell,
+		.upstate       = S_DSGUNUP,
+		.downstate     = S_DSGUNDOWN,
+		.readystate    = S_DSGUN,
+		.atkstate      = S_DSGUN1,
+		.flashstate    = S_DSGUNFLASH1,
+		.droptype      = MT_SUPERSHOTGUN,
+		.ammouse       = 2,
+		.minammo       = 2,
+		.flags         = WPF_NOFLAG,
+		.ammopershot   = 2,
+		.internalflags = WIF_NOFLAG
 	},
 	{
-		//NUMWEAPONS (player has no weapon including fist, ClearInventory)
-		am_noammo,
-		S_NOWEAPONUP,
-		S_NOWEAPONDOWN,
-		S_NOWEAPON,
-		S_NOWEAPON,
-		S_NOWEAPON,
-		MT_MISC26,
-		0,
-		0,
-		WPF_NOFLAG
+		// wp_none (player has no weapon including fist, ClearInventory)
+		.ammotype      = am_noammo,
+		.upstate       = S_NOWEAPONUP,
+		.downstate     = S_NOWEAPONDOWN,
+		.readystate    = S_NOWEAPON,
+		.atkstate      = S_NOWEAPON,
+		.flashstate    = S_NOWEAPON,
+		.droptype      = MT_MISC26,
+		.ammouse       = 0,
+		.minammo       = 0,
+		.flags         = WPF_NOAUTOSWITCHTO,    // Never autoswitch to wp_none!
+		.ammopershot   = 0,
+		.internalflags = WIF_NOFLAG
 	},
 };
 
@@ -241,7 +267,7 @@ gitem_t* FindCardItem(card_t card)
 
 	it = itemlist;
 	for (i = 0; i < num_items; i++, it++)
-		if (it->flags == IT_KEY && (card_t)it->offset == card)
+		if (it->flags == IT_KEY && static_cast<card_t>(it->offset) == card)
 			return it;
 
 	return NULL;
@@ -322,7 +348,7 @@ gitem_t itemlist[] = {
 		0,
 		"Pistol"
 	},
-	
+
 	{
 		"weapon_shotgun",
 		NULL,
@@ -562,8 +588,8 @@ gitem_t itemlist[] = {
 		0,
 		"Blue Flag"
 	},
-	
-	
+
+
 	{
 		"red_flag",
 		NULL,

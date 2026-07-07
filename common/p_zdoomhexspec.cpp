@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -109,7 +109,7 @@ bool P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
 	return buttonSuccess;
 }
 
-const LineActivationType P_LineActivationTypeForSPACFlag(const unsigned int activationType)
+LineActivationType P_LineActivationTypeForSPACFlag(const unsigned int activationType)
 {
 	if (activationType & (ML_SPAC_CROSS | ML_SPAC_MCROSS | ML_SPAC_PCROSS | ML_SPAC_CROSSTHROUGH))
 		return LineCross;
@@ -123,7 +123,7 @@ const LineActivationType P_LineActivationTypeForSPACFlag(const unsigned int acti
 	return LineUse;
 }
 
-void P_CollectSecretZDoom(sector_t* sector, player_t* player)
+void P_CollectSecretZDoom(sector_t& sector, player_t& player)
 {
 	P_CollectSecretCommon(sector, player);
 }
@@ -136,7 +136,7 @@ bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
 	lineActivation = line->flags & ML_SPAC_MASK;
 
 	if (line->special == Teleport &&
-	    (lineActivation & ML_SPAC_CROSS | ML_SPAC_CROSSTHROUGH) &&
+	    (lineActivation & ML_SPAC_CROSS || lineActivation & ML_SPAC_CROSSTHROUGH) &&
 	    activationType & ML_SPAC_PCROSS && mo && mo->flags & MF_MISSILE)
 	{ // Let missiles use regular player teleports
 		lineActivation |= ML_SPAC_PCROSS;
@@ -150,7 +150,7 @@ bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
 		}
 	}
 
-	if (mo && !mo->player && mo->type != MT_AVATAR && !(mo->flags & MF_MISSILE) &&
+	if (mo && !P_IsPlayerOrAvatar(*mo) && !(mo->flags & MF_MISSILE) &&
 	    !(line->flags & ML_MONSTERSCANACTIVATE) &&
 	    (!(activationType & ML_SPAC_MCROSS) || !(lineActivation & ML_SPAC_MCROSS)))
 	{
@@ -184,6 +184,7 @@ bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
 				case Door_Raise:
 					if (line->args[1] >= 64)
 						break;
+					[[fallthrough]];
 				case Teleport:
 				case Teleport_NoFog:
 				case Teleport_Line:
@@ -217,159 +218,182 @@ bool P_TestActivateZDoomLine(line_t* line, AActor* mo, int side,
 // that the player origin is in a special sector
 // Only runs in ZDoom Doom in Hexen format
 //
-void P_PlayerInZDoomSector(player_t* player)
+void P_PlayerInZDoomSector(player_t& player)
 {
 	// Spectators should not be affected by special sectors
-	if (player->spectator)
+	if (player.spectator)
+		return;
+
+	// Sanity check - could have nulls just immediately after a disconnect.
+	if (not (player.mo && player.mo->subsector))
 		return;
 
 	// Falling, not all the way down yet?
-	if (player->mo->z != P_FloorHeight(player->mo) && !player->mo->waterlevel)
+	if (player.mo->z != P_FloorHeight(player.mo) && !player.mo->waterlevel)
 		return;
 
-	sector_t* sector = player->mo->subsector->sector;
+	sector_t& sectorRef = *player.mo->subsector->sector;
 
-	static const int heretic_carry[5] = {2048 * 5, 2048 * 10, 2048 * 25, 2048 * 30,
-	                                     2048 * 35};
+	static constexpr int heretic_carry[5] = {2048 * 5, 2048 * 10, 2048 * 25, 2048 * 30,
+	                                         2048 * 35};
 
-	static const int hexen_carry[3] = {2048 * 5, 2048 * 10, 2048 * 25};
+	static constexpr int hexen_carry[3] = {2048 * 5, 2048 * 10, 2048 * 25};
 
-	if (sector->damageamount > 0)
+	if (sectorRef.damageamount > 0)
 	{
-		if (sector->flags & SECF_ENDGODMODE)
+		// Some maps, like rjspace9f, abuse the fact that "end sector damage" will actually
+		// not damage the player beyond 1hp, but won't trigger the exit because they're not damaged.
+		const int oldhealth = player.health;
+
+		if (sectorRef.flags & SECF_ENDGODMODE)
 		{
-			player->cheats &= ~CF_GODMODE;
+			player.cheats &= ~CF_GODMODE;
 		}
 
-		if (sector->flags & SECF_DMGUNBLOCKABLE || !player->powers[pw_ironfeet] ||
-		    (sector->leakrate && P_Random(player->mo) < sector->leakrate))
+		if (sectorRef.flags & SECF_DMGUNBLOCKABLE || !player.powers[pw_ironfeet] ||
+		    (sectorRef.leakrate && P_Random(player.mo) < sectorRef.leakrate))
 		{
-			if (sector->flags & SECF_HAZARD)
+			if (sectorRef.flags & SECF_HAZARD)
 			{
-				player->hazardcount += sector->damageamount;
-				player->hazardinterval = sector->damageinterval;
+				player.hazardcount += sectorRef.damageamount;
+				player.hazardinterval = sectorRef.damageinterval;
 			}
-			else
+
+			if (sectorRef.special == 0) // ZDoom Static Init Damage
 			{
-				if (level.time % sector->damageinterval == 0)
+				if (sectorRef.damageamount < 20)
 				{
-					P_DamageMobj(player->mo, NULL, NULL, sector->damageamount);
-
-					if (sector->flags & SECF_ENDLEVEL && player->health <= 10)
-					{
-						if (serverside && sv_allowexit)
-						{
-							G_ExitLevel(0, 1);
-						}
-					}
-
-					if (sector->flags & SECF_DMGTERRAINFX)
-					{
-						// MAP_FORMAT_TODO: damage special effects
-					}
+					P_ApplySectorDamageNoRandom(player, sectorRef.damageamount,
+					 MOD_UNKNOWN);
 				}
+				else if (sectorRef.damageamount < 50)
+				{
+					P_ApplySectorDamage(player, sectorRef.damageamount, 5, MOD_UNKNOWN);
+				}
+				else
+				{
+					P_ApplySectorDamageNoWait(player, sectorRef.damageamount,
+					 MOD_UNKNOWN);
+				}
+			}
+			else if (level.time % sectorRef.damageinterval == 0)
+			{
+				P_DamageMobj(player.mo, NULL, NULL, sectorRef.damageamount);
+			}
+
+			if (sectorRef.flags & SECF_ENDLEVEL && player.health <= 10 && oldhealth != player.health)
+			{
+				if (serverside && sv_allowexit)
+				{
+					G_ExitLevel(0, 1);
+				}
+			}
+
+			if (sectorRef.flags & SECF_DMGTERRAINFX)
+			{
+				// MAP_FORMAT_TODO: damage special effects
 			}
 		}
 	}
 
-	switch (sector->special)
+	switch (sectorRef.special)
 	{
 	case dScroll_EastLavaDamage:
-		P_ThrustMobj(player->mo, 0, 2048 * 28);
+		P_ThrustMobj(player.mo, 0, 2048 * 28);
 		break;
 	case Scroll_Strife_Current:
 		int anglespeed;
 		fixed_t carryspeed;
 		angle_t angle;
 
-		anglespeed = sector->tag - 100;
+		anglespeed = sectorRef.tag - 100;
 		carryspeed = (anglespeed % 10) * 4096;
 		angle = (anglespeed / 10) * ANG45;
-		P_ThrustMobj(player->mo, angle, carryspeed);
+		P_ThrustMobj(player.mo, angle, carryspeed);
 		break;
 	case Scroll_Carry_East5:
 	case Scroll_Carry_East10:
 	case Scroll_Carry_East25:
 	case Scroll_Carry_East30:
 	case Scroll_Carry_East35:
-		P_ThrustMobj(player->mo, 0, heretic_carry[sector->special - Scroll_Carry_East5]);
+		P_ThrustMobj(player.mo, 0, heretic_carry[sectorRef.special - Scroll_Carry_East5]);
 		break;
 	case Scroll_Carry_North5:
 	case Scroll_Carry_North10:
 	case Scroll_Carry_North25:
 	case Scroll_Carry_North30:
 	case Scroll_Carry_North35:
-		P_ThrustMobj(player->mo, ANG90,
-		             heretic_carry[sector->special - Scroll_Carry_North5]);
+		P_ThrustMobj(player.mo, ANG90,
+		             heretic_carry[sectorRef.special - Scroll_Carry_North5]);
 		break;
 	case Scroll_Carry_South5:
 	case Scroll_Carry_South10:
 	case Scroll_Carry_South25:
 	case Scroll_Carry_South30:
 	case Scroll_Carry_South35:
-		P_ThrustMobj(player->mo, ANG270,
-		             heretic_carry[sector->special - Scroll_Carry_South5]);
+		P_ThrustMobj(player.mo, ANG270,
+		             heretic_carry[sectorRef.special - Scroll_Carry_South5]);
 		break;
 	case Scroll_Carry_West5:
 	case Scroll_Carry_West10:
 	case Scroll_Carry_West25:
 	case Scroll_Carry_West30:
 	case Scroll_Carry_West35:
-		P_ThrustMobj(player->mo, ANG180,
-		             heretic_carry[sector->special - Scroll_Carry_West5]);
+		P_ThrustMobj(player.mo, ANG180,
+		             heretic_carry[sectorRef.special - Scroll_Carry_West5]);
 		break;
 	case Scroll_North_Slow:
 	case Scroll_North_Medium:
 	case Scroll_North_Fast:
-		P_ThrustMobj(player->mo, ANG90, hexen_carry[sector->special - Scroll_North_Slow]);
+		P_ThrustMobj(player.mo, ANG90, hexen_carry[sectorRef.special - Scroll_North_Slow]);
 		break;
 	case Scroll_East_Slow:
 	case Scroll_East_Medium:
 	case Scroll_East_Fast:
-		P_ThrustMobj(player->mo, 0, hexen_carry[sector->special - Scroll_East_Slow]);
+		P_ThrustMobj(player.mo, 0, hexen_carry[sectorRef.special - Scroll_East_Slow]);
 		break;
 	case Scroll_South_Slow:
 	case Scroll_South_Medium:
 	case Scroll_South_Fast:
-		P_ThrustMobj(player->mo, ANG270,
-		             hexen_carry[sector->special - Scroll_South_Slow]);
+		P_ThrustMobj(player.mo, ANG270,
+		             hexen_carry[sectorRef.special - Scroll_South_Slow]);
 		break;
 	case Scroll_West_Slow:
 	case Scroll_West_Medium:
 	case Scroll_West_Fast:
-		P_ThrustMobj(player->mo, ANG180, hexen_carry[sector->special - Scroll_West_Slow]);
+		P_ThrustMobj(player.mo, ANG180, hexen_carry[sectorRef.special - Scroll_West_Slow]);
 		break;
 	case Scroll_NorthWest_Slow:
 	case Scroll_NorthWest_Medium:
 	case Scroll_NorthWest_Fast:
-		P_ThrustMobj(player->mo, ANG135,
-		             hexen_carry[sector->special - Scroll_NorthWest_Slow]);
+		P_ThrustMobj(player.mo, ANG135,
+		             hexen_carry[sectorRef.special - Scroll_NorthWest_Slow]);
 		break;
 	case Scroll_NorthEast_Slow:
 	case Scroll_NorthEast_Medium:
 	case Scroll_NorthEast_Fast:
-		P_ThrustMobj(player->mo, ANG45,
-		             hexen_carry[sector->special - Scroll_NorthEast_Slow]);
+		P_ThrustMobj(player.mo, ANG45,
+		             hexen_carry[sectorRef.special - Scroll_NorthEast_Slow]);
 		break;
 	case Scroll_SouthEast_Slow:
 	case Scroll_SouthEast_Medium:
 	case Scroll_SouthEast_Fast:
-		P_ThrustMobj(player->mo, ANG315,
-		             hexen_carry[sector->special - Scroll_SouthEast_Slow]);
+		P_ThrustMobj(player.mo, ANG315,
+		             hexen_carry[sectorRef.special - Scroll_SouthEast_Slow]);
 		break;
 	case Scroll_SouthWest_Slow:
 	case Scroll_SouthWest_Medium:
 	case Scroll_SouthWest_Fast:
-		P_ThrustMobj(player->mo, ANG225,
-		             hexen_carry[sector->special - Scroll_SouthWest_Slow]);
+		P_ThrustMobj(player.mo, ANG225,
+		             hexen_carry[sectorRef.special - Scroll_SouthWest_Slow]);
 		break;
 	default:
 		break;
 	}
 
-	if (sector->flags & SECF_SECRET)
+	if (sectorRef.flags & SECF_SECRET)
 	{
-		P_CollectSecretZDoom(sector, player);
+		P_CollectSecretZDoom(sectorRef, player);
 	}
 }
 
@@ -540,7 +564,7 @@ void P_SpawnZDoomSectorSpecial(sector_t* sector)
 			break;
 		P_SetupSectorDamage(sector, 20, 32, 0,
 		                    SECF_ENDGODMODE | SECF_ENDLEVEL | SECF_DMGUNBLOCKABLE);
-		sector->special = 0;
+		//sector->special = 0;
 		break;
 	case Damage_InstantDeath:
 		if (IgnoreSpecial)
@@ -657,7 +681,7 @@ void P_SpawnZDoomExtra(int i)
 	// support for drawn heights coming from different sector
 	case Transfer_Heights:
 		sec = sides[*lines[i].sidenum].sector;
-		DPrintf("Sector tagged %d: TransferHeights \n", sec->tag);
+		DPrintFmt("Sector tagged {}: TransferHeights \n", sec->tag);
 		if (sv_forcewater)
 		{
 			sec->waterzone = 2;
@@ -669,29 +693,29 @@ void P_SpawnZDoomExtra(int i)
 		if (lines[i].args[1] & 4)
 		{
 			sec->MoreFlags |= SECF_CLIPFAKEPLANES;
-			DPrintf("Sector tagged %d: CLIPFAKEPLANES \n", sec->tag);
+			DPrintFmt("Sector tagged {}: CLIPFAKEPLANES \n", sec->tag);
 		}
 		if (lines[i].args[1] & 8)
 		{
 			sec->waterzone = 1;
-			DPrintf("Sector tagged %d: Sets waterzone=1 \n", sec->tag);
+			DPrintFmt("Sector tagged {}: Sets waterzone=1 \n", sec->tag);
 		}
 		if (lines[i].args[1] & 16)
 		{
 			sec->MoreFlags |= SECF_IGNOREHEIGHTSEC;
-			DPrintf("Sector tagged %d: IGNOREHEIGHTSEC \n", sec->tag);
+			DPrintFmt("Sector tagged {}: IGNOREHEIGHTSEC \n", sec->tag);
 		}
 		if (lines[i].args[1] & 32)
 		{
 			sec->MoreFlags |= SECF_NOFAKELIGHT;
-			DPrintf("Sector tagged %d: NOFAKELIGHTS \n", sec->tag);
+			DPrintFmt("Sector tagged {}: NOFAKELIGHTS \n", sec->tag);
 		}
 		for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0], s)) >= 0;)
 		{
 			sectors[s].heightsec = sec;
 		}
 
-		DPrintf("Sector tagged %d: MoreFlags: %u \n", sec->tag, sec->MoreFlags);
+		DPrintFmt("Sector tagged {}: MoreFlags: {} \n", sec->tag, sec->MoreFlags);
 		break;
 
 	// killough 3/16/98: Add support for setting
@@ -718,7 +742,7 @@ void P_SpawnZDoomExtra(int i)
 			if (IgnoreSpecial)
 				break;
 			float grav =
-			    ((float)P_AproxDistance(lines[i].dx, lines[i].dy)) / (FRACUNIT * 100.0f);
+			    (static_cast<float>(P_AproxDistance(lines[i].dx, lines[i].dy))) / (FRACUNIT * 100.0f);
 			for (s = -1; (s = P_FindSectorFromTag(lines[i].args[0], s)) >= 0;)
 				sectors[s].gravity = grav;
 		}
@@ -804,7 +828,7 @@ void P_SpawnZDoomScroller(line_t* l, int i)
 
 	switch (special)
 	{
-		register int s;
+		int s;
 
 	case Scroll_Ceiling:
 		if (IgnoreSpecial)
@@ -858,7 +882,7 @@ void P_SpawnZDoomScroller(line_t* l, int i)
 		else
 		{
 			if (l->id == 0)
-				Printf(PRINT_HIGH, "Line %d is missing a tag!", i);
+				PrintFmt(PRINT_HIGH, "Line {} is missing a tag!", i);
 
 			if (l->args[0] > 1024)
 				control = sides[*l->sidenum].sector - sectors;
@@ -944,7 +968,7 @@ void P_SpawnZDoomFriction(line_t* l)
 
 void P_SpawnZDoomPusher(line_t* l)
 {
-	register int s;
+	int s;
 
 	switch (l->special)
 	{
@@ -1015,14 +1039,14 @@ void P_PostProcessZDoomSidedefSpecial(side_t* sd, mapsidedef_t* msd, sector_t* s
 			if (fog != 0x000000 || color != 0xffffff)
 			{
 				dyncolormap_t* colormap =
-				    GetSpecialLights(((argb_t)color).getr(), ((argb_t)color).getg(),
-				                     ((argb_t)color).getb(), ((argb_t)fog).getr(),
-				                     ((argb_t)fog).getg(), ((argb_t)fog).getb());
+				    GetSpecialLights((static_cast<argb_t>(color)).getr(), (static_cast<argb_t>(color)).getg(),
+				                     (static_cast<argb_t>(color)).getb(), (static_cast<argb_t>(fog)).getr(),
+				                     (static_cast<argb_t>(fog)).getg(), (static_cast<argb_t>(fog)).getb());
 
-				for (int s = 0; s < numsectors; s++)
+				for (sector_t& sector : R_GetSectors())
 				{
-					if (sectors[s].tag == sd->tag)
-						sectors[s].colormap = colormap;
+					if (sector.tag == sd->tag)
+						sector.colormap = colormap;
 				}
 			}
 		}
@@ -1054,18 +1078,18 @@ bool P_ExecuteZDoomLineSpecial(int special, short* args, line_t* line, int side,
 		                                args[4]);
 }
 
-const unsigned int P_TranslateZDoomLineFlags(const unsigned int flags)
+unsigned int P_TranslateZDoomLineFlags(const unsigned int flags)
 {
 	unsigned int result = flags & 0x1ff;
 
-	const unsigned int spac_to_flags[8] = {ML_SPAC_CROSS,
-	                                        ML_SPAC_USE,
-	                                        ML_SPAC_MCROSS,
-	                                        ML_SPAC_IMPACT,
-	                                        ML_SPAC_PUSH,
-	                                        ML_SPAC_PCROSS,
-	                                        ML_SPAC_USE | ML_PASSUSE,
-	                                        ML_SPAC_IMPACT | ML_SPAC_PCROSS};
+	static constexpr unsigned int spac_to_flags[8] = {ML_SPAC_CROSS,
+	                                                  ML_SPAC_USE,
+	                                                  ML_SPAC_MCROSS,
+	                                                  ML_SPAC_IMPACT,
+	                                                  ML_SPAC_PUSH,
+	                                                  ML_SPAC_PCROSS,
+	                                                  ML_SPAC_USE | ML_PASSUSE,
+	                                                  ML_SPAC_IMPACT | ML_SPAC_PCROSS};
 
 	// from zdoom-in-hexen to Odamex
 
@@ -1103,11 +1127,11 @@ void P_PostProcessZDoomLinedefSpecial(line_t* line)
 #else
 	                      // [RH] Second arg controls how opaque it is.
 		if (!line->args[0])
-			line->lucency = (byte)line->args[1];
+			line->lucency = static_cast<byte>(line->args[1]);
 		else
 			for (j = 0; j < numlines; j++)
 				if (lines[j].id == line->args[0])
-					lines[j].lucency = (byte)line->args[1];
+					lines[j].lucency = static_cast<byte>(line->args[1]);
 #endif
 		line->special = 0;
 		break;

@@ -72,7 +72,7 @@ class OStringIndexer
 		if (it == indexes.end())
 		{
 			index = m_inverse.size();
-			indexes.insert(std::make_pair(str, index));
+			indexes.emplace(str, index);
 			m_inverse.push_back(str);
 		}
 		else
@@ -98,7 +98,7 @@ class OStringIndexer
 	 */
 	void setIndex(const uint32_t idx, const std::string& str)
 	{
-		indexes.insert(std::make_pair(str, idx));
+		indexes.emplace(str, idx);
 		if (m_inverse.size() <= idx)
 			m_inverse.resize(idx + 1);
 		m_inverse.at(idx) = str;

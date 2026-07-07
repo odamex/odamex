@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -73,30 +73,10 @@ void CTF_CheckFlags (player_t &player)
 		if(player.flags[i])
 		{
 			player.flags[i] = false;
-			GetTeamInfo((team_t)i)->FlagData.flagger = 0;
+			GetTeamInfo(static_cast<team_t>(i))->FlagData.flagger = nullplayer_id;
 		}
 	}
 }
-
-//
-//	CTF_TossFlag
-//																					[Toke - CTF - Toss]
-//	Player tosses the flag
-/* [ML] 04/4/06: Remove flagtossing, too buggy
-void CTF_TossFlag (void)
-{
-	MSG_WriteMarker (&net_buffer, clc_ctfcommand);
-
-	if (CTFdata.BlueScreen)	CTFdata.BlueScreen	= false;
-	if (CTFdata.RedScreen)	CTFdata.RedScreen	= false;
-}
-
-BEGIN_COMMAND	(flagtoss)
-{
-	CTF_TossFlag ();
-}
-END_COMMAND		(flagtoss)
-*/
 
 //
 //	[Toke - CTF] CTF_CarryFlag
@@ -128,18 +108,18 @@ void CTF_MoveFlags ()
 	// denis - flag is now a boolean
 	for(size_t i = 0; i < NUMTEAMS; i++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 
 		if(teamInfo->FlagData.flagger && teamInfo->FlagData.actor)
 		{
-			player_t &player = idplayer(teamInfo->FlagData.flagger);
+			const player_t &player = idplayer(teamInfo->FlagData.flagger);
 			AActor *flag = teamInfo->FlagData.actor;
 
 			if (!validplayer(player) || !player.mo)
 			{
 				// [SL] 2012-12-13 - Remove a flag if it's being carried but
 				// there's not a valid player carrying it (should not happen)
-				teamInfo->FlagData.flagger = 0;
+				teamInfo->FlagData.flagger = nullplayer_id;
 				teamInfo->FlagData.state = flag_home;
 				if(teamInfo->FlagData.actor)
 					teamInfo->FlagData.actor->Destroy();
@@ -204,7 +184,7 @@ void CTF_RunTics (void)
 	// Don't draw the flag the display player is carrying as it blocks the view.
 	for (size_t flag = 0; flag < NUMTEAMS; flag++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)flag);
+		TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(flag));
 
 		if (!teamInfo->FlagData.actor)
 			continue;
@@ -237,7 +217,7 @@ void CTF_DrawHud (void)
 	player_t &player = displayplayer();
 	for(size_t i = 0; i < NUMTEAMS; i++)
 	{
-		TeamInfo* teamInfo = GetTeamInfo((team_t)i);
+		TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(i));
 
 		if(teamInfo->FlagData.state == flag_carried && teamInfo->FlagData.flagger == player.id)
 		{
@@ -297,7 +277,7 @@ void CTF_DrawHud (void)
 FArchive &operator<< (FArchive &arc, flagdata &flag)
 {
 	int netid = flag.actor ? flag.actor->netid : 0;
-	
+
 	arc << flag.flaglocated
 		<< netid
 		<< flag.flagger
@@ -306,7 +286,7 @@ FArchive &operator<< (FArchive &arc, flagdata &flag)
 		<< flag.timeout
 		<< static_cast<byte>(flag.state)
 		<< flag.sb_tick;
-		
+
 	arc << 0;
 
 	return arc;
@@ -317,7 +297,7 @@ FArchive &operator>> (FArchive &arc, flagdata &flag)
 	int netid;
 	byte state;
 	int dummy;
-	
+
 	arc >> flag.flaglocated
 		>> netid
 		>> flag.flagger
@@ -326,9 +306,9 @@ FArchive &operator>> (FArchive &arc, flagdata &flag)
 		>> flag.timeout
 		>> state
 		>> flag.sb_tick;
-		
+
 	arc >> dummy;
-	
+
 	flag.state = static_cast<flag_state_t>(state);
 	flag.actor = AActor::AActorPtr();
 
@@ -423,18 +403,18 @@ void CTF_Sound(team_t flag, team_t team, flag_score_t ev)
 				break;
 			}
 		}
-		// fallthrough
+		[[fallthrough]];
 	case 1:
 	{
 		int sound = flag;
 		if (ev == SCORE_CAPTURE)
 			sound = team;
 
-		if (S_FindSound(flag_sound[ev][4 + sound]) != -1) 
+		if (S_FindSound(flag_sound[ev][4 + sound]) != -1)
 			S_Sound(CHAN_ANNOUNCER, flag_sound[ev][4 + sound], 1, ATTN_NONE);
 		break;
 	}
-		// fallthrough
+		[[fallthrough]];
 	default:
 		break;
 	}
@@ -534,12 +514,12 @@ void CTF_Message(team_t flag, team_t team, flag_score_t ev)
 				break;
 			}
 		}
-		// fallthrough
+		[[fallthrough]];
 	case 1:
 		if (ev == SCORE_CAPTURE)
-			C_GMidPrint(flag_message[ev][2 + team], V_GetTextColor(GetTeamInfo(team)->TextColor.c_str()), 0);
+			C_GMidPrint(flag_message[ev][2 + team], V_GetTextColor(GetTeamInfo(team)->TextColor), 0);
 		else
-			C_GMidPrint(flag_message[ev][2 + flag], V_GetTextColor(GetTeamInfo(flag)->TextColor.c_str()), 0);
+			C_GMidPrint(flag_message[ev][2 + flag], V_GetTextColor(GetTeamInfo(flag)->TextColor), 0);
 		break;
 	default:
 		break;

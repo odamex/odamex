@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,6 +22,9 @@
 //-----------------------------------------------------------------------------
 
 #pragma once
+
+#include <cstdint> // bit.hpp is supposed to include this itself, but a bug in 2.0.0 prevents it
+#include <nonstd/bit.hpp>
 
 #if TARGET_CPU_X86 || TARGET_CPU_X86_64
 #ifdef __BIG_ENDIAN__
@@ -41,142 +44,76 @@
 #endif
 #endif
 
-// Endianess handling.
-// WAD files are stored little endian.
-#ifdef __BIG_ENDIAN__
-
-// Swap 16bit, that is, MSB and LSB byte.
-// No masking with 0xFF should be necessary.
-
-inline static unsigned short LESHORT(unsigned short x)
+inline static uint16_t LESHORT(const uint16_t x) noexcept
 {
-	return (unsigned short)((x >> 8) | (x << 8));
+	return nonstd::bit::as_little_endian(x);
 }
 
-inline static short LESHORT(short x)
+inline static int16_t LESHORT(const int16_t x) noexcept
 {
-	return (short)((((unsigned short)x) >> 8) | (((unsigned short)x) << 8));
+	return nonstd::bit::as_little_endian(x);
 }
 
-// Swapping 32bit.
-inline static unsigned int LELONG(unsigned int x)
+inline static uint32_t LELONG(const uint32_t x) noexcept
 {
-	return (unsigned int)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
-	                      (x << 24));
+	return nonstd::bit::as_little_endian(x);
 }
 
-inline static int LELONG(int x)
+inline static int32_t LELONG(const int32_t x) noexcept
 {
-	return (int)((((unsigned int)x) >> 24) | ((((unsigned int)x) >> 8) & 0xff00) |
-	             ((((unsigned int)x) << 8) & 0xff0000) | (((unsigned int)x) << 24));
+	return nonstd::bit::as_little_endian(x);
 }
 
-inline static unsigned long LELONG(unsigned long x)
+inline static uint64_t LELONGLONG(const uint64_t x) noexcept
 {
-	return (unsigned long)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
-	                       (x << 24));
+	return nonstd::bit::as_little_endian(x);
 }
 
-inline static long LELONG(long x)
+inline static int64_t LELONGLONG(const int64_t x) noexcept
 {
-	return (long)((((unsigned int)x) >> 24) | ((((unsigned int)x) >> 8) & 0xff00) |
-	              ((((unsigned int)x) << 8) & 0xff0000) | (((unsigned int)x) << 24));
+	return nonstd::bit::as_little_endian(x);
 }
 
-inline static unsigned short BESHORT(unsigned short x)
+template <typename T>
+requires std::is_integral_v<T>
+inline static T LESWAP(const T x) noexcept
 {
-	return x;
+	return nonstd::bit::as_little_endian(x);
 }
 
-inline static short BESHORT(short x)
+inline static uint16_t BESHORT(const uint16_t x) noexcept
 {
-	return x;
+	return nonstd::bit::as_big_endian(x);
 }
 
-inline static unsigned int BELONG(unsigned int x)
+inline static int16_t BESHORT(const int16_t x) noexcept
 {
-	return x;
+	return nonstd::bit::as_big_endian(x);
 }
 
-inline static int BELONG(int x)
+inline static uint32_t BELONG(const uint32_t x) noexcept
 {
-	return x;
+	return nonstd::bit::as_big_endian(x);
 }
 
-inline static unsigned long BELONG(unsigned long x)
+inline static int32_t BELONG(const int32_t x) noexcept
 {
-	return x;
+	return nonstd::bit::as_big_endian(x);
 }
 
-inline static long BELONG(long x)
+inline static uint64_t BELONGLONG(const uint64_t x) noexcept
 {
-	return x;
+	return nonstd::bit::as_big_endian(x);
 }
 
-#else
-
-inline static unsigned short LESHORT(unsigned short x)
+inline static int64_t BELONGLONG(const int64_t x) noexcept
 {
-	return x;
+	return nonstd::bit::as_big_endian(x);
 }
 
-inline static short LESHORT(short x)
+template <typename T>
+requires std::is_integral_v<T>
+inline static T BESWAP(const T x) noexcept
 {
-	return x;
+	return nonstd::bit::as_big_endian(x);
 }
-
-inline static unsigned int LELONG(unsigned int x)
-{
-	return x;
-}
-
-inline static int LELONG(int x)
-{
-	return x;
-}
-
-inline static unsigned long LELONG(unsigned long x)
-{
-	return x;
-}
-
-inline static long LELONG(long x)
-{
-	return x;
-}
-
-inline static unsigned short BESHORT(unsigned short x)
-{
-	return (unsigned short)((x >> 8) | (x << 8));
-}
-
-inline static short BESHORT(short x)
-{
-	return (short)((((unsigned short)x) >> 8) | (((unsigned short)x) << 8));
-}
-
-inline static unsigned int BELONG(unsigned int x)
-{
-	return (unsigned int)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
-	                      (x << 24));
-}
-
-inline static int BELONG(int x)
-{
-	return (int)((((unsigned int)x) >> 24) | ((((unsigned int)x) >> 8) & 0xff00) |
-	             ((((unsigned int)x) << 8) & 0xff0000) | (((unsigned int)x) << 24));
-}
-
-inline static unsigned long BELONG(unsigned long x)
-{
-	return (unsigned long)((x >> 24) | ((x >> 8) & 0xff00) | ((x << 8) & 0xff0000) |
-	                       (x << 24));
-}
-
-inline static long BELONG(long x)
-{
-	return (long)((((unsigned int)x) >> 24) | ((((unsigned int)x) >> 8) & 0xff00) |
-	              ((((unsigned int)x) << 8) & 0xff0000) | (((unsigned int)x) << 24));
-}
-
-#endif

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -86,8 +86,6 @@ void I_SetPalette(const argb_t* palette);
 void I_BeginUpdate();
 void I_FinishUpdate();
 
-void I_WaitVBL(int count);
-
 void I_SetWindowCaption(const std::string& caption = "");
 void I_SetWindowIcon();
 
@@ -98,6 +96,8 @@ const PixelFormat* I_Get8bppPixelFormat();
 const PixelFormat* I_Get32bppPixelFormat();
 
 void I_DrawLoadingIcon();
+
+int I_GetAspectCorrectWidth(int surface_height, int asset_height, int asset_width);
 
 
 // ****************************************************************************
@@ -120,51 +120,8 @@ public:
 	bool isFullScreen() const
 	{	return window_mode != WINDOW_Windowed;	}
 
-	bool operator==(const IVideoMode& other) const
-	{
-		return width == other.width && height == other.height &&
-			bpp == other.bpp && 
-			window_mode == other.window_mode &&
-			vsync == other.vsync &&
-			stretch_mode == other.stretch_mode;
-	}
-
-	bool operator!=(const IVideoMode& other) const
-	{
-		return !(operator==(other));
-	}
-
-	bool operator<(const IVideoMode& other) const
-	{
-		if (width != other.width)
-			return width < other.width;
-		if (height != other.height)
-			return height < other.height;
-		if (bpp != other.bpp)
-			return bpp < other.bpp;
-		if (window_mode != other.window_mode)
-			return (int)window_mode < (int)other.window_mode;
-		if (vsync != other.vsync)
-			return (int)vsync < (int)other.vsync;
-		if (stretch_mode != other.stretch_mode)
-			return stretch_mode < other.stretch_mode;
-		return false;
-	}
-
-	bool operator>(const IVideoMode& other) const
-	{
-		return !operator==(other) && !operator<(other);
-	}
-
-	bool operator<=(const IVideoMode& other) const
-	{
-		return operator<(other) || operator==(other);
-	}
-
-	bool operator>=(const IVideoMode& other) const
-	{
-		return operator>(other) || operator==(other);
-	}
+	[[nodiscard]]
+	auto operator<=>(const IVideoMode& other) const = default;
 
 	bool isValid() const
 	{
@@ -225,28 +182,18 @@ public:
 	virtual bool supportsWindowed() const
 	{	return getDisplayType() == DISPLAY_WindowOnly || getDisplayType() == DISPLAY_Both;	}
 
-	virtual const EDisplayType getDisplayType() const = 0;
+	virtual EDisplayType getDisplayType() const = 0;
 
 	virtual bool supports8bpp() const
 	{
 		const IVideoModeList* modelist = getSupportedVideoModes();
-		for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
-		{
-			if (it->bpp == 8)
-				return true;
-		}
-		return false;
+		return std::any_of(modelist->cbegin(), modelist->cend(), [](const auto& mode){ return mode.bpp == 8; });
 	}
 
 	virtual bool supports32bpp() const
 	{
 		const IVideoModeList* modelist = getSupportedVideoModes();
-		for (IVideoModeList::const_iterator it = modelist->begin(); it != modelist->end(); ++it)
-		{
-			if (it->bpp == 32)
-				return true;
-		}
-		return false;
+		return std::any_of(modelist->cbegin(), modelist->cend(), [](const auto& mode){ return mode.bpp == 32; });
 	}
 
 	virtual const IVideoMode& getNativeMode() const = 0;
@@ -272,7 +219,7 @@ public:
 	virtual const IVideoModeList* getSupportedVideoModes() const
 	{	return &mModeList;	}
 
-	virtual const EDisplayType getDisplayType() const
+	virtual EDisplayType getDisplayType() const
 	{	return DISPLAY_WindowOnly;	}
 
 	virtual const IVideoMode& getNativeMode() const
@@ -316,7 +263,7 @@ public:
 
 	inline uint8_t* getBuffer()
 	{
-		return const_cast<uint8_t*>(static_cast<const IWindowSurface&>(*this).getBuffer());
+		return const_cast<uint8_t*>(std::as_const(*this).getBuffer());
 	}
 
 	inline const uint8_t* getBuffer(uint16_t x, uint16_t y) const
@@ -326,7 +273,7 @@ public:
 
 	inline uint8_t* getBuffer(uint16_t x, uint16_t y)
 	{
-		return const_cast<uint8_t*>(static_cast<const IWindowSurface&>(*this).getBuffer(x, y));
+		return const_cast<uint8_t*>(std::as_const(*this).getBuffer(x, y));
 	}
 
 	inline uint16_t getWidth() const
@@ -357,6 +304,9 @@ public:
 	{	return mPalette;	}
 
 	void blit(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
+			int destx, int desty, int destw, int desth);
+
+	void blitcrop(const IWindowSurface* source, int srcx, int srcy, int srcw, int srch,
 			int destx, int desty, int destw, int desth);
 
 	void clear();
@@ -419,7 +369,7 @@ public:
 
 	virtual IWindowSurface* getWindowSurface()
 	{
-		return const_cast<IWindowSurface*>(static_cast<const IWindowSurfaceManager&>(*this).getWindowSurface());
+		return const_cast<IWindowSurface*>(std::as_const(*this).getWindowSurface());
 	}
 
 	virtual void lockSurface() { }
@@ -442,7 +392,8 @@ class IDummyWindowSurfaceManager : public IWindowSurfaceManager
 {
 public:
 	IDummyWindowSurfaceManager()
-	{	mSurface = I_AllocateSurface(320, 200, 8);	}
+		: mSurface(I_AllocateSurface(320, 200, 8))
+	{}
 
 	virtual ~IDummyWindowSurfaceManager()
 	{	delete mSurface;	}
@@ -486,7 +437,7 @@ public:
 
 	virtual IWindowSurface* getPrimarySurface()
 	{
-		return const_cast<IWindowSurface*>(static_cast<const IWindow&>(*this).getPrimarySurface());
+		return const_cast<IWindowSurface*>(std::as_const(*this).getPrimarySurface());
 	}
 
 	virtual uint16_t getWidth() const
@@ -629,7 +580,7 @@ public:
 
 	virtual IWindow* getWindow()
 	{
-		return const_cast<IWindow*>(static_cast<const IVideoSubsystem&>(*this).getWindow());
+		return const_cast<IWindow*>(std::as_const(*this).getWindow());
 	}
 
 	virtual int getMonitorCount() const

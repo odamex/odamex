@@ -72,6 +72,49 @@ const Texture* Res_CacheTexture(const OString& lump_name, TextureSearchOrdering 
 
 // ============================================================================
 //
+// Transitional patch-handle API
+//
+// ============================================================================
+//
+// Maps the old lump/patch caching interface onto the resource manager so
+// UI code written against W_CachePatchHandle/W_ResolvePatchHandle works
+// with ResourceIds and cached Textures. A ResourceId remains valid across
+// resource file reloads the same way the generation-tagged lump handles did:
+// resolving simply produces the current texture (or the not-found
+// placeholder).
+//
+typedef ResourceId lumpHandle_t;
+
+inline lumpHandle_t W_CachePatchHandle(const char* name, zoneTag_e tag = PU_CACHE,
+                                       TextureSearchOrdering ordering = PATCH)
+{
+	return Res_GetTextureResourceId(OStringToUpper(name, 8), ordering);
+}
+
+inline lumpHandle_t W_CachePatchHandle(const OString& name, zoneTag_e tag = PU_CACHE,
+                                       TextureSearchOrdering ordering = PATCH)
+{
+	return W_CachePatchHandle(name.c_str(), tag, ordering);
+}
+
+inline const Texture* W_ResolvePatchHandle(const lumpHandle_t handle)
+{
+	return Res_CacheTexture(handle);
+}
+
+inline const Texture* W_CachePatch(const char* name, zoneTag_e tag = PU_CACHE)
+{
+	return Res_CacheTexture(OStringToUpper(name, 8), PATCH, tag);
+}
+
+inline const Texture* W_CachePatch(const OString& name, zoneTag_e tag = PU_CACHE)
+{
+	return W_CachePatch(name.c_str(), tag);
+}
+
+
+// ============================================================================
+//
 // Texture
 //
 // ============================================================================
@@ -102,11 +145,18 @@ public:
 	{
 		return FixedMul(mHeight << FRACBITS, mScaleY);
 	}
-	
+
 	fixed_t getScaledWidth() const
 	{
 		return FixedMul(mWidth << FRACBITS, mScaleX);
 	}
+
+	// Accessors mirroring the old patch_t interface, so code written
+	// against patches can work with cached textures unmodified.
+	short width() const { return mWidth; }
+	short height() const { return mHeight; }
+	short leftoffset() const { return mOffsetX; }
+	short topoffset() const { return mOffsetY; }
 
 	const palindex_t* getColumn(int col) const
 	{	

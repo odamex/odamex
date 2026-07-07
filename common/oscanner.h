@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -22,12 +22,14 @@
 
 #pragma once
 
+#include "i_system.h"
 
 struct OScannerConfig
 {
-	const char* lumpName;
-	bool semiComments;
-	bool cComments;
+	OLumpName lumpName;
+	bool semiComments = false;
+	bool cComments    = false;
+	bool hashComments = false;
 };
 
 class OScanner
@@ -70,18 +72,30 @@ class OScanner
 	void mustScanBool();
 	void unScan();
 
-	std::string getToken() const;
-	int getTokenInt() const;
-	float getTokenFloat() const;
-	bool getTokenBool() const;
+	[[nodiscard]] std::string getToken() const;
+	[[nodiscard]] int getTokenInt() const;
+	[[nodiscard]] float getTokenFloat() const;
+	[[nodiscard]] bool getTokenBool() const;
 
 	bool &crossed();
-	bool isQuotedString() const;
-	bool isIdentifier() const;
-	void assertTokenIs(const char* string) const;
-	void assertTokenNoCaseIs(const char* string) const;
-	bool compareToken(const char* string) const;
-	bool compareTokenNoCase(const char* string) const;
-	void STACK_ARGS warning(const char* message, ...) const;
-	void STACK_ARGS error(const char* message, ...) const;
+	[[nodiscard]] bool isQuotedString() const;
+	[[nodiscard]] bool isIdentifier() const;
+	void assertTokenIs(std::string_view string) const;
+	void assertTokenNoCaseIs(std::string_view string) const;
+	[[nodiscard]] bool compareToken(std::string_view string) const;
+	[[nodiscard]] bool compareTokenNoCase(std::string_view string) const;
+
+	template <typename... ARGS>
+	void warning(fmt::format_string<ARGS...> format, ARGS&&... args) const
+	{
+		PrintFmt(PRINT_WARNING, "Parse Warning: {}:{}: {}\n", m_config.lumpName,
+		       m_lineNumber, fmt::format(format, std::forward<ARGS>(args)...));
+	}
+
+	template <typename... ARGS>
+	[[noreturn]] void error(fmt::format_string<ARGS...> format, ARGS&&... args) const
+	{
+		I_Error("Parse Error: {}:{}: {}", m_config.lumpName, m_lineNumber,
+		        fmt::format(format, std::forward<ARGS>(args)...));
+	}
 };

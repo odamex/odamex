@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 2000-2006 by Sergey Makovkin (CSDoom .62).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -33,6 +33,11 @@
 
 extern bool keysfound[NUMCARDS];
 
+// The server tracks ping up until 999 msec.  This is the most that we record into
+// the player structure and the point at which we turn off reliable message
+// retransmissions.
+constexpr int MAX_PING = 999;
+
 class client_c
 {
 public:
@@ -44,43 +49,94 @@ public:
 extern client_c clients;
 
 void SV_InitNetwork (void);
-void SV_SendDisconnectSignal();
-void SV_SendReconnectSignal();
+void SV_SendAndFlushDisconnectSignal();
+void SV_SendAndFlushReconnectSignal();
 void SV_ExitLevel();
 void SV_DrawScores();
 
 void SV_ServerSettingChange();
-bool SV_IsPlayerAllowedToSee(player_t &pl, AActor *mobj);
+bool SV_IsPlayerAllowedToSee(const player_t &pl, const AActor *mobj);
 
-void STACK_ARGS SV_ClientPrintf (client_t *cl, int level, const char *fmt, ...);
-void STACK_ARGS SV_SpectatorPrintf (int level, const char *fmt, ...);
-void STACK_ARGS SV_PlayerPrintf (int level, int who, const char *fmt, ...);
+void SV_BasePrint(client_t* cl, const int printlevel, const std::string& str);
+
+// Print directly to a specific player.
+template <typename... ARGS>
+void SV_PlayerPrintFmt(int level, int player_id, fmt::format_string<ARGS...> format, ARGS&&... args)
+{
+	client_t* cl = &idplayer(player_id).client;
+	SV_ClientPrintFmt(cl, level, format, std::forward<ARGS>(args)...);
+}
+
+// Print to all spectators
+template <typename... ARGS>
+void SV_SpectatorPrintFmt(int level, fmt::format_string<ARGS...> format, ARGS&&... args)
+{
+	std::string string = fmt::format(format, std::forward<ARGS>(args)...);
+	PrintFmt(level, "{}", string);  // print to the console
+
+	for (auto& player : players)
+	{
+		client_t* cl = &(player.client);
+
+		bool spectator = player.spectator || !player.ingame();
+		if (spectator)
+		{
+			SV_BasePrint(cl, level, string);
+		}
+	}
+}
+
+template <typename... ARGS>
+void SV_TeamPrintFmt(int level, int who, fmt::format_string<ARGS...> format, ARGS&&... args)
+{
+	if (sv_gametype != GM_TEAMDM && sv_gametype != GM_CTF)
+		return;
+
+	std::string string = fmt::format(format, std::forward<ARGS>(args)...);
+	PrintFmt(level, "{}", string);  // print to the console
+
+	const team_t& team = idplayer(who).userinfo.team;
+
+	for (auto& player : players)
+	{
+		if (player.userinfo.team != team)
+			continue;
+
+		bool spectator = player.spectator || !player.ingame();
+		if (spectator)
+			continue;
+
+		client_t* cl = &(player.client);
+
+		if (cl->allow_rcon) // [mr.crispy -- sept 23 2013] RCON guy already got it when it printed to the console
+			continue;
+
+		SV_BasePrint(cl, level, string);
+	}
+}
+
 void SV_CheckTimeouts (void);
 void SV_ConnectClient(void);
 void SV_ConnectClient2(player_t& player);
 void SV_WriteCommands(void);
-void SV_ClearClientsBPS(void);
-bool SV_SendPacket(player_t &pl);
-void SV_AcknowledgePacket(player_t &player);
+MessageResultEnum SV_SendPacket(player_t &pl);
 void SV_DisplayTics();
 void SV_RunTics();
 void SV_ParseCommands(player_t &player);
-void SV_UpdateFrags (player_t &player);
+void SV_UpdateFrags (const player_t &player);
 void SV_RemoveCorpses (void);
-#define SV_DropClient(who) SV_DropClient2(who, __FILE__, __LINE__)
-void SV_DropClient2(player_t& who, const char* file, const int line);
+void SV_DropClient(player_t& who);
 void SV_PlayerTriedToCheat(player_t &player);
-void SV_ActorTarget(AActor *actor);
-void SV_ActorTracer(AActor *actor);
 void SV_ForceSetTeam(player_t &who, team_t team);
 void SV_CheckTeam(player_t &player);
-void SV_SendUserInfo(player_t &player, client_t* cl);
+void SV_SendUserInfo(const player_t &player, client_t* cl);
 void SV_Suicide(player_t &player);
 void SV_SpawnMobj(AActor *mo);
-void SV_TouchSpecial(AActor *special, player_t *player);
+void SV_SpawnHighPriorityMobj(AActor *mo);
+void SV_TouchSpecial(AActor& special, player_t& player);
 
-void SV_Sound (AActor *mo, byte channel, const char *name, byte attenuation);
-void SV_Sound(player_t& pl, AActor* mo, const byte channel, const char* name, const byte attenuation);
+void SV_Sound (const AActor *mo, byte channel, const char *name, byte attenuation);
+void SV_Sound(player_t& pl, const AActor* mo, const byte channel, const char* name, const byte attenuation);
 void SV_Sound (fixed_t x, fixed_t y, byte channel, const char *name, byte attenuation);
 void SV_SoundTeam (byte channel, const char* name, byte attenuation, int t);
 
@@ -89,13 +145,13 @@ void SV_MidPrint (const char *msg, player_t *p, int msgtime=0);
 extern std::vector<std::string> wadnames;
 
 void SV_SendPlayerInfo(player_t& player);
-void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
-void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, int armorDamage);
+void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill);
+void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
 // Tells clients to remove an actor from the world as it doesn't exist anymore
-void SV_SendDestroyActor(AActor *mo);
+void SV_SendDestroyActor(const AActor *mo);
 
-bool M_ReadJSON(Json::Value &json, const char *filename);
+bool M_ReadJSON(Json::Value &json, const std::string& filename);
 bool M_WriteJSON(const char *filename, Json::Value &value, bool styled);
 
 // [AM] Coinflip
@@ -117,14 +173,14 @@ void SV_RemovePlayerFromQueue(player_t* player);
 void SV_UpdatePlayerQueueLevelChange(const WinInfo& win);
 void SV_UpdatePlayerQueuePositions(JoinTest joinTest, player_t* disconnectPlayer);
 void SV_SendPlayerQueuePositions(player_t* dest, bool initConnect);
-void SV_SendPlayerQueuePosition(player_t* source, player_t* dest);
+void SV_SendPlayerQueuePosition(const player_t* source, player_t* dest);
 void SV_ClearPlayerQueue();
 
 void SV_UpdateSecretCount(player_t & player);
 void SV_UpdateMonsterRespawnCount();
-void SV_SendExecuteLineSpecial(byte special, line_t* line, AActor* activator, int arg0,
+void SV_SendExecuteLineSpecial(byte special, const line_t* line, const AActor* activator, int arg0,
                                int arg1, int arg2, int arg3, int arg4);
-void SV_ACSExecuteSpecial(byte special, AActor* activator, const char* print,
+void SV_ACSExecuteSpecial(byte special, const AActor* activator, const char* print,
                           bool playerOnly,
                           const std::vector<int>& args = std::vector<int>());
 

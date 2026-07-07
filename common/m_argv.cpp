@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,6 +29,7 @@
 #include "cmdlib.h"
 #include "m_fileio.h"
 #include "m_argv.h"
+#include "m_alloc.h"
 
 IMPLEMENT_CLASS (DArgs, DObject)
 
@@ -144,6 +145,17 @@ const std::vector<std::string> DArgs::GetArgList (size_t start) const
 	return out;
 }
 
+std::vector<const char*> DArgs::GetArgv() const
+{
+	std::vector<const char*> rvo;
+	rvo.reserve(args.size());
+	for (auto& arg : args)
+	{
+		rvo.push_back(arg.c_str());
+	}
+	return rvo;
+}
+
 size_t DArgs::NumArgs () const
 {
 	return args.size();
@@ -159,7 +171,7 @@ void DArgs::AppendArg (const char *arg)
 // IsParam
 //
 // Helper function to return if the given argument number i is a parameter
-// 
+//
 static bool IsParam(const std::vector<std::string>& args, size_t i)
 {
 	return i < args.size() && (args[i][0] == '-' || args[i][0] == '+');
@@ -238,8 +250,8 @@ void DArgs::SetArgs(const char *cmdline)
 	if (!*cmdline)
 		return;
 
-	outputline = (char *)Malloc((strlen(cmdline) + 1) * sizeof(char));
-	outputargv = (char **)Malloc(((strlen(cmdline) + 1) / 2) * sizeof(char *));
+	outputline = static_cast<char*>(M_Malloc((strlen(cmdline) + 1) * sizeof(char)));
+	outputargv = static_cast<char**>(M_Malloc(((strlen(cmdline) + 1) / 2) * sizeof(char *)));
 
 	const char *p = cmdline;
 	q = outputline;
@@ -340,63 +352,55 @@ void M_FindResponseFile (void)
 	{
 		if (Args.GetArg(i)[0] == '@')
 		{
-			char	**argv;
-			char	*file;
-			int		argc;
-			int		argcinresp;
-			FILE	*handle;
-			int 	size;
-			long	argsize;
+			std::unique_ptr<char[]> file;
 			size_t 	index;
 
 			// READ THE RESPONSE FILE INTO MEMORY
-			handle = fopen (Args.GetArg(i) + 1,"rb");
+			auto handle = uqFile(fopen(Args.GetArg(i) + 1,"rb"));
 			if (!handle)
 			{ // [RH] Make this a warning, not an error.
-				Printf (PRINT_WARNING,"No such response file (%s)!", Args.GetArg(i) + 1);
+				PrintFmt(PRINT_WARNING,"No such response file ({})!", Args.GetArg(i) + 1);
 				continue;
 			}
 
-			Printf (PRINT_HIGH,"Found response file %s!\n", Args.GetArg(i) + 1);
-			fseek (handle, 0, SEEK_END);
-			size = ftell (handle);
-			fseek (handle, 0, SEEK_SET);
-			file = new char[size+1];
-			size_t readlen = fread (file, size, 1, handle);
+			PrintFmt(PRINT_HIGH,"Found response file {}!\n", Args.GetArg(i) + 1);
+			fseek (handle.get(), 0, SEEK_END);
+			auto size = ftell (handle.get());
+			fseek (handle.get(), 0, SEEK_SET);
+			file = std::make_unique<char[]>(size+1);
+			size_t readlen = fread (file.get(), size, 1, handle.get());
 			if (readlen < 1)
 			{
-				Printf (PRINT_HIGH,"Failed to read response file %s.\n", Args.GetArg(i) + 1);
+				PrintFmt(PRINT_HIGH,"Failed to read response file {}.\n", Args.GetArg(i) + 1);
 			}
 			file[size] = 0;
-			fclose (handle);
 
-			argsize = ParseCommandLine (file, &argcinresp, NULL);
-			argc = argcinresp + Args.NumArgs() - 1;
+			int	argcinresp;
+			const auto argsize = ParseCommandLine(file.get(), &argcinresp, nullptr);
+			const size_t argc = argcinresp + Args.NumArgs() - 1;
 
 			if (argc != 0)
 			{
-				argv = (char **)Malloc (argc*sizeof(char *) + argsize);
-				argv[i] = (char *)argv + argc*sizeof(char *);
-				ParseCommandLine (file, NULL, argv+i);
+				char **argv = static_cast<char**>(M_Malloc(argc*sizeof(char *) + argsize));
+				argv[i] = reinterpret_cast<char*>(argv) + argc*sizeof(char *);
+				ParseCommandLine (file.get(), NULL, argv+i);
 
 				for (index = 0; index < i; ++index)
-					argv[index] = (char*)Args.GetArg (index);
+					argv[index] = const_cast<char*>(Args.GetArg(index));
 
 				for (index = i + 1, i += argcinresp; index < Args.NumArgs (); ++index)
-					argv[i++] = (char*)Args.GetArg (index);
+					argv[i++] = const_cast<char*>(Args.GetArg(index));
 
 				DArgs newargs (i, argv);
 				Args = newargs;
-				
+
 				M_Free(argv);
 			}
 
-			delete[] file;
-		
 			// DISPLAY ARGS
-			Printf("%" PRIuSIZE " command-line args:\n", Args.NumArgs());
+			PrintFmt("{} command-line args:\n", Args.NumArgs());
 			for (size_t k = 1; k < Args.NumArgs (); k++)
-				Printf (PRINT_HIGH,"%s\n", Args.GetArg (k));
+				PrintFmt(PRINT_HIGH,"{}\n", Args.GetArg (k));
 
 			break;
 		}
@@ -486,7 +490,7 @@ static long ParseCommandLine (const char *args, int *argc, char **argv)
 	{
 		*argc = count;
 	}
-	return (long)(buffplace - (char *)0);
+	return static_cast<long>(reinterpret_cast<uintptr_t>(buffplace));
 }
 
 

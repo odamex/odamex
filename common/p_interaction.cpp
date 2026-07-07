@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -40,8 +40,10 @@
 #include "svc_message.h"
 #include "p_horde.h"
 #include "com_misc.h"
+#include "gi.h"
 #include "g_skill.h"
 #include "p_mapformat.h"
+#include "p_unlag.h"
 
 #ifdef SERVER_APP
 #include "sv_main.h"
@@ -56,6 +58,7 @@ EXTERN_CVAR(sv_monsterdamage)
 EXTERN_CVAR(sv_fraglimit)
 EXTERN_CVAR(sv_fragexitswitch) // [ML] 04/4/06: Added compromise for older exit method
 EXTERN_CVAR(sv_friendlyfire)
+EXTERN_CVAR(sv_friendlymonsterfire)
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_forcerespawn)
 EXTERN_CVAR(sv_forcerespawntime)
@@ -63,6 +66,7 @@ EXTERN_CVAR(co_zdoomphys)
 EXTERN_CVAR(cl_predictpickup)
 EXTERN_CVAR(co_zdoomsound)
 EXTERN_CVAR(co_globalsound)
+EXTERN_CVAR(co_helpfriends)
 EXTERN_CVAR(g_lives)
 
 // sapientlion - experimental
@@ -72,36 +76,36 @@ int MeansOfDeath;
 
 // a weapon is found with two clip loads,
 // a big item has five clip loads
-int maxammo[NUMAMMO] = {200, 50, 300, 50};
-int clipammo[NUMAMMO] = {10, 4, 20, 1};
+std::array<int, NUMAMMO> maxammo  {200, 50, 300, 50};
+std::array<int, NUMAMMO> clipammo { 10,  4,  20,  1};
 
 void AM_Stop(void);
 void SV_SpawnMobj(AActor *mobj);
 void SV_UpdateFrags(player_t &player);
 void SV_CTFEvent(team_t f, flag_score_t event, player_t &who);
-void SV_TouchSpecial(AActor *special, player_t *player);
+void SV_TouchSpecial(AActor& special, player_t& player);
 ItemEquipVal SV_FlagTouch(player_t &player, team_t f, bool firstgrab);
 void SV_SocketTouch(player_t &player, team_t f);
-void SV_SendKillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill);
-void SV_SendDamagePlayer(player_t *player, AActor* inflictor, int healthDamage, int armorDamage);
+void SV_SendKillMobj(const AActor *source, const AActor *target, const AActor *inflictor, bool joinkill);
+void SV_SendDamagePlayer(player_t *player, const AActor* inflictor, int healthDamage, int armorDamage);
 void SV_SendDamageMobj(AActor *target, int pain);
-void SV_ActorTarget(AActor *actor);
-void PickupMessage(AActor *toucher, const char *message);
-void WeaponPickupMessage(AActor *toucher, weapontype_t &Weapon);
+void SV_UpdateMobj(AActor* mo);
+void PickupMessage(const AActor *toucher, const char *message);
+void WeaponPickupMessage(const AActor *toucher, const weapontype_t &Weapon);
 
 #ifdef SERVER_APP
-void SV_ShareKeys(card_t card, player_t& player);
+void SV_ShareKeys(card_t card, const player_t& player);
 #endif
 
-static void PersistPlayerDamage(player_t& p)
+static void PersistPlayerDamage(const player_t& p)
 {
 	// Send this information to everybody.
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	for (auto& player : ::players)
 	{
-		if (!it->ingame())
+		if (!player.ingame())
 			continue;
 
-		MSG_WriteSVC(&it->client.netbuf, SVC_PlayerMembers(p, SVC_PM_DAMAGE));
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerMembers(p, SVC_PM_DAMAGE));
 	}
 }
 
@@ -123,12 +127,12 @@ static void PersistPlayerScore(player_t& p, const bool lives, const bool score)
 		flags |= SVC_PM_SCORE;
 
 	// Send this information to everybody.
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	for (auto& player : players)
 	{
-		if (!it->ingame())
+		if (!player.ingame())
 			continue;
 
-		MSG_WriteSVC(&it->client.netbuf, SVC_PlayerMembers(p, flags));
+		MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerMembers(p, flags));
 	}
 }
 
@@ -139,11 +143,11 @@ static void PersistTeamScore(team_t team)
 		return;
 
 	// Send this information to everybody.
-	for (Players::iterator it = ::players.begin(); it != ::players.end(); ++it)
+	for (auto& player : players)
 	{
-		if (!it->ingame())
+		if (!player.ingame())
 			continue;
-		MSG_WriteSVC(&it->client.netbuf, SVC_TeamMembers(team));
+		MSG_WriteSVC(player.client.messenger.NetBuf(), SVC_TeamMembers(team));
 	}
 }
 
@@ -152,96 +156,96 @@ static void PersistTeamScore(team_t team)
 //
 
 // Give frags to a player
-bool P_GiveFrags(player_t* player, int num)
+bool P_GiveFrags(player_t& player, int num)
 {
 	if (!G_CanScoreChange())
 		return false;
 
-	player->fragcount += num;
+	player.fragcount += num;
 
 	if (G_IsRoundsGame() && !G_IsDuelGame() && !(sv_gametype == GM_CTF))
-		player->totalpoints += num;
+		player.totalpoints += num;
 
 	return true;
 }
 
 // Give coop kills to a player
-bool P_GiveKills(player_t* player, int num)
+bool P_GiveKills(player_t& player, int num)
 {
 	if (!G_CanScoreChange())
 		return false;
 
-	player->killcount += num;
+	player.killcount += num;
 	return true;
 }
 
 // Give coop kills to a player
-bool P_GiveDeaths(player_t* player, int num)
+bool P_GiveDeaths(player_t& player, int num)
 {
 	if (!G_CanScoreChange())
 		return false;
 
-	player->deathcount += num;
+	player.deathcount += num;
 
 	if (G_IsRoundsGame() && !G_IsDuelGame())
-		player->totaldeaths += num;
+		player.totaldeaths += num;
 
 	return true;
 }
 
-bool P_GiveMonsterDamage(player_t* player, int num)
+bool P_GiveMonsterDamage(player_t& player, int num)
 {
 	if (!G_CanScoreChange())
 		return false;
 
-	player->monsterdmgcount += num;
+	player.monsterdmgcount += num;
 	return true;
 }
 
 // Give a specific number of points to a player's team
-bool P_GiveTeamPoints(player_t* player, int num)
+bool P_GiveTeamPoints(const player_t& player, int num)
 {
 	if (!G_CanScoreChange())
 		return false;
 
-	GetTeamInfo(player->userinfo.team)->Points += num;
+	GetTeamInfo(player.userinfo.team)->Points += num;
 	return true;
 }
 
 /**
  * @brief Give lives to a player...or take them away.
  */
-bool P_GiveLives(player_t* player, int num)
+bool P_GiveLives(player_t& player, int num)
 {
 	if (!G_CanLivesChange())
 		return false;
 
-	player->lives += num;
+	player.lives += num;
 	return true;
 }
 
-int P_GetFragCount(const player_t* player)
+int P_GetFragCount(const player_t& player)
 {
 	if (G_IsRoundsGame() && !G_IsDuelGame())
-		return player->totalpoints;
+		return player.totalpoints;
 
-	return player->fragcount;
+	return player.fragcount;
 }
 
-int P_GetPointCount(const player_t* player)
+int P_GetPointCount(const player_t& player)
 {
 	if (G_IsRoundsGame())
-		return player->totalpoints;
+		return player.totalpoints;
 
-	return player->points;
+	return player.points;
 }
 
-int P_GetDeathCount(const player_t* player)
+int P_GetDeathCount(const player_t& player)
 {
 	if (G_IsRoundsGame())
-		return player->totaldeaths;
+		return player.totaldeaths;
 
-	return player->deathcount;
+	return player.deathcount;
 }
 
 //
@@ -252,61 +256,60 @@ int P_GetDeathCount(const player_t* player)
 //
 
 // mbf21: take into account new weapon autoswitch flags
-static ItemEquipVal P_GiveAmmoAutoSwitch(player_t* player, ammotype_t ammo, int oldammo)
+static ItemEquipVal P_GiveAmmoAutoSwitch(player_t& player, ammotype_t ammo, int oldammo)
 {
-	int i;
-
 	// Keep the original behaviour while playbacking demos only.
 	if (demoplayback)
 	{
 		switch (ammo)
 		{
 		case am_clip:
-			if (player->readyweapon == wp_fist)
+			if (player.readyweapon == wp_fist)
 			{
-				if (player->weaponowned[wp_chaingun])
-					player->pendingweapon = wp_chaingun;
+				if (player.weaponowned[wp_chaingun])
+					player.pendingweapon = wp_chaingun;
 				else
-					player->pendingweapon = wp_pistol;
+					player.pendingweapon = wp_pistol;
 			}
 			break;
 
 		case am_shell:
-			if (player->readyweapon == wp_fist || player->readyweapon == wp_pistol)
+			if (player.readyweapon == wp_fist || player.readyweapon == wp_pistol)
 			{
-				if (player->weaponowned[wp_shotgun])
-					player->pendingweapon = wp_shotgun;
+				if (player.weaponowned[wp_shotgun])
+					player.pendingweapon = wp_shotgun;
 			}
 			break;
 
 		case am_cell:
-			if (player->readyweapon == wp_fist || player->readyweapon == wp_pistol)
-				if (player->weaponowned[wp_plasma])
-					player->pendingweapon = wp_plasma;
+			if (player.readyweapon == wp_fist || player.readyweapon == wp_pistol)
+				if (player.weaponowned[wp_plasma])
+					player.pendingweapon = wp_plasma;
 			break;
 
 		case am_misl:
-			if (player->readyweapon == wp_fist)
-				if (player->weaponowned[wp_missile])
-					player->pendingweapon = wp_missile;
+			if (player.readyweapon == wp_fist)
+				if (player.weaponowned[wp_missile])
+					player.pendingweapon = wp_missile;
 		default:
 			break;
 		}
 	}
-	else if (player->userinfo.switchweapon != WPSW_NEVER)
+	else if (player.userinfo.switchweapon != WPSW_NEVER)
 	{
-		if (weaponinfo[player->readyweapon].flags & WPF_AUTOSWITCHFROM &&
-		    player->ammo[weaponinfo[player->readyweapon].ammotype] != ammo)
+		if (weaponinfo[player.readyweapon].flags & WPF_AUTOSWITCHFROM &&
+			(weaponinfo[player.readyweapon].ammotype == am_noammo ||
+		     player.ammo[weaponinfo[player.readyweapon].ammotype] != ammo))
 		{
-			for (i = NUMWEAPONS - 1; i > player->readyweapon; --i)
+			for (int i = NUMWEAPONS - 1; i > player.readyweapon; --i)
 			{
-				if (player->weaponowned[i] &&
+				if (player.weaponowned[i] &&
 				    !(weaponinfo[i].flags & WPF_NOAUTOSWITCHTO) &&
 				    weaponinfo[i].ammotype == ammo &&
-				    weaponinfo[i].ammouse > oldammo &&
-				    weaponinfo[i].ammouse <= player->ammo[ammo])
+				    weaponinfo[i].ammopershot > oldammo &&
+				    weaponinfo[i].ammopershot <= player.ammo[ammo])
 				{
-					player->pendingweapon = (weapontype_t)i;
+					player.pendingweapon = static_cast<weapontype_t>(i);
 					break;
 				}
 			}
@@ -315,7 +318,7 @@ static ItemEquipVal P_GiveAmmoAutoSwitch(player_t* player, ammotype_t ammo, int 
 	return IEV_EquipRemove;
 }
 
-ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, float num)
+ItemEquipVal P_GiveAmmo(player_t& player, ammotype_t ammotype, float num)
 {
 	if (ammotype == am_noammo)
     {
@@ -324,10 +327,10 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, float num)
 
 	if (ammotype < 0 || ammotype > NUMAMMO)
     {
-		I_Error("P_GiveAmmo: bad type %i", ammotype);
+		I_Error("P_GiveAmmo: bad type {}", ammotype);
     }
 
-	if (player->ammo[ammotype] == player->maxammo[ammotype])
+	if (player.ammo[ammotype] == player.maxammo[ammotype])
     {
 		return IEV_NotEquipped;
     }
@@ -352,13 +355,13 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, float num)
 		num *= G_GetCurrentSkill().ammo_factor;
 	}
 
-	const int oldammotype = player->ammo[ammotype];
-	player->ammo[ammotype] += static_cast<int>(num);
+	const int oldammotype = player.ammo[ammotype];
+	player.ammo[ammotype] += static_cast<int>(num);
 
-	if (player->ammo[ammotype] > player->maxammo[ammotype])
-    {
-		player->ammo[ammotype] = player->maxammo[ammotype];
-    }
+	if (player.ammo[ammotype] > player.maxammo[ammotype])
+	{
+		player.ammo[ammotype] = player.maxammo[ammotype];
+	}
 
 	// If non zero ammo,
 	// don't change up weapons,
@@ -377,34 +380,20 @@ ItemEquipVal P_GiveAmmo(player_t *player, ammotype_t ammotype, float num)
 }
 
 //
-// P_GiveWeapon
-// The weapon name may have a MF_DROPPED flag ored in.
+// P_GiveWeapon and helpers.
 //
-ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
+
+/// Handles the case where the weapon being given to a player is the result of touching
+/// a non-dropped weaponstay weapon.  If this function handled the case, then then result
+/// is returned.  Otherwise, nullopt is returned.
+static ItemEquipVal PickupMultiplayerWeaponStayWeapon(player_t& player, weapontype_t weapon)
 {
-	bool gaveammo;
-	bool gaveweapon;
-
-	// [RH] Don't get the weapon if no graphics for it
-	state_t *state = states + weaponinfo[weapon].readystate;
-	if ((state->frame & FF_FRAMEMASK) >= sprites[state->sprite].numframes)
+	if (not player.weaponowned[weapon])
 	{
-		return IEV_NotEquipped;
-	}
+		player.weaponowned[weapon] = true;
+		player.bonuscount = BONUSADD;
 
-	// [Toke - dmflags] old location of DF_WEAPONS_STAY
-	if (multiplayer && sv_weaponstay && !dropped)
-	{
-		// leave placed weapons forever on net games
-		if (player->weaponowned[weapon])
-		{
-			return IEV_NotEquipped;
-		}
-
-		player->bonuscount = BONUSADD;
-		player->weaponowned[weapon] = true;
-
-		if (!G_IsCoopGame())
+		if (not G_IsCoopGame())
 		{
 			P_GiveAmmo(player, weaponinfo[weapon].ammotype, 5);
 		}
@@ -414,66 +403,95 @@ ItemEquipVal P_GiveWeapon(player_t *player, weapontype_t weapon, BOOL dropped)
 		}
 
 		if (P_CheckSwitchWeapon(player, weapon))
-			player->pendingweapon = weapon;
+			player.pendingweapon = weapon;
 
-		WeaponPickupMessage(player->mo, weapon);
+		WeaponPickupMessage(player.mo, weapon);
 
-		return IEV_EquipStay;
-	}
+		return IEV_EquipStay;   // leave placed weapons forever on net games
+    }
+	return IEV_NotEquipped;
+}
+
+
+/// Handles the case where a weapon is given to a player as standard weapon pickup.
+/// The return value indicates whether the weapon was not picked up, or if it was
+/// picked up, whether the item should stay where it is or be removed.
+static ItemEquipVal PickupStandardWeapon(player_t& player, weapontype_t weapon, bool wasDropped)
+{
+	ItemEquipVal result = IEV_NotEquipped;
 
 	if (weaponinfo[weapon].ammotype != am_noammo)
 	{
 		// give one clip with a dropped weapon,
 		// two clips with a found weapon
-		if (dropped)
+		const float clipCount = wasDropped ? 1.0f : 2.0f;
+		if ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, clipCount)) != 0)
 		{
-			gaveammo = ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, 1)) != 0);
+			result = IEV_EquipRemove;
+		}
+	}
+
+	if (not player.weaponowned[weapon])
+	{
+		player.weaponowned[weapon] = true;
+		if (P_CheckSwitchWeapon(player, weapon))
+		{
+			player.pendingweapon = weapon;
+		}
+
+		result = IEV_EquipRemove;
+	}
+
+	return result;
+}
+
+ItemEquipVal P_GiveWeapon(player_t& player, weapontype_t weapon, bool wasDropped)
+{
+	ItemEquipVal result = IEV_NotEquipped;
+
+	// [RH] Don't get the weapon if no graphics for it
+	const state_t& state            = states[weaponinfo[weapon].readystate];
+	const bool     hasValidGraphics = (state.frame & FF_FRAMEMASK) < sprites[state.sprite].numframes;
+
+	if (hasValidGraphics)
+	{
+		// [Toke - dmflags] old location of DF_WEAPONS_STAY
+		if (multiplayer and sv_weaponstay and not wasDropped)
+		{
+			result = PickupMultiplayerWeaponStayWeapon(player, weapon);
 		}
 		else
 		{
-			gaveammo = ((P_GiveAmmo(player, weaponinfo[weapon].ammotype, 2)) != 0);
+			result = PickupStandardWeapon(player, weapon, wasDropped);
+		}
+
+		// If we are not playing as the server, make sure we ask the real server to confirm our pickup.
+		if (not serverside and result != IEV_NotEquipped)
+		{
+			player.RequestInventoryCheckFromServer(gametic);
 		}
 	}
-	else
-	{
-		gaveammo = false;
-	}
 
-	if (player->weaponowned[weapon])
-	{
-		gaveweapon = false;
-	}
-	else
-	{
-		gaveweapon = true;
-		player->weaponowned[weapon] = true;
-		if (P_CheckSwitchWeapon(player, weapon))
-			player->pendingweapon = weapon;
-	}
-
-	if (gaveweapon || gaveammo)
-		return IEV_EquipRemove;
-
-	return IEV_NotEquipped;
+	return result;
 }
 
 //
 // P_GiveBody
 // Returns false if the body isn't needed at all
 //
-ItemEquipVal P_GiveBody(player_t *player, int num)
+ItemEquipVal P_GiveBody(player_t& player, int num)
 {
-	if (player->health >= MAXHEALTH)
+	if (player.health >= MAXHEALTH)
 	{
 		return IEV_NotEquipped;
 	}
 
-	player->health += static_cast<int>(static_cast<float>(num) * G_GetCurrentSkill().health_factor);
-	if (player->health > MAXHEALTH)
+	player.health += static_cast<int>(static_cast<float>(num) * G_GetCurrentSkill().health_factor);
+	if (player.health > MAXHEALTH)
 	{
-		player->health = MAXHEALTH;
+		player.health = MAXHEALTH;
 	}
-	player->mo->health = player->health;
+	player.mo->health = player.health;
 
 	return IEV_EquipRemove;
 }
@@ -483,20 +501,20 @@ ItemEquipVal P_GiveBody(player_t *player, int num)
 // Returns false if the armor is worse
 // than the current armor.
 //
-ItemEquipVal P_GiveArmor(player_t *player, int armortype)
+ItemEquipVal P_GiveArmor(player_t& player, int armortype)
 {
 	const int hits = armortype * 100;
-	if (player->armorpoints >= hits)
+	if (player.armorpoints >= hits)
 	{
 		return IEV_NotEquipped;	// don't pick up
 	}
 
 	const int hits_real = static_cast<int>(static_cast<float>(hits) * G_GetCurrentSkill().armor_factor);
 
-	player->armortype = armortype;
-	player->armorpoints += hits_real;
-	if (player->armorpoints > hits)
-		player->armorpoints = hits;
+	player.armortype = armortype;
+	player.armorpoints += hits_real;
+	if (player.armorpoints > hits)
+		player.armorpoints = hits;
 
 	return IEV_EquipRemove;
 }
@@ -504,21 +522,21 @@ ItemEquipVal P_GiveArmor(player_t *player, int armortype)
 //
 // P_GiveCard
 //
-ItemEquipVal P_GiveCard(player_t *player, card_t card)
+ItemEquipVal P_GiveCard(player_t& player, card_t card)
 {
-	if (player->cards[card])
+	if (player.cards[card])
 	{
 		return IEV_NotEquipped;
 	}
 
-	player->bonuscount = BONUSADD;
-	player->cards[card] = 1;
+	player.bonuscount = BONUSADD;
+	player.cards[card] = 1;
 
 	if (multiplayer)
 	{
 #ifdef SERVER_APP
 		// Register the key
-		SV_ShareKeys(card, *player);	
+		SV_ShareKeys(card, player);
 #endif
 
 
@@ -531,64 +549,136 @@ ItemEquipVal P_GiveCard(player_t *player, card_t card)
 //
 // P_GivePower
 //
-ItemEquipVal P_GivePower(player_t *player, int /*powertype_t*/ power)
+ItemEquipVal P_GivePower(player_t& player, int /*powertype_t*/ power)
 {
 	if (power == pw_invulnerability)
 	{
-		player->powers[power] = INVULNTICS;
+		player.powers[power] = INVULNTICS;
 		return IEV_EquipRemove;
 	}
 
 	if (power == pw_invisibility)
 	{
-		player->powers[power] = INVISTICS;
-		player->mo->flags |= MF_SHADOW;
+		player.powers[power] = INVISTICS;
+		player.mo->flags |= MF_SHADOW;
 		return IEV_EquipRemove;
 	}
 
 	if (power == pw_infrared)
 	{
-		player->powers[power] = INFRATICS;
+		player.powers[power] = INFRATICS;
 		return IEV_EquipRemove;
 	}
 
 	if (power == pw_ironfeet)
 	{
-		player->powers[power] = IRONTICS;
+		player.powers[power] = IRONTICS;
 		return IEV_EquipRemove;
 	}
 
 	if (power == pw_strength)
 	{
 		P_GiveBody(player, 100);
-		player->powers[power] = 1;
+		player.powers[power] = 1;
 		return IEV_EquipRemove;
 	}
 
-	if (player->powers[power])
+	if (player.powers[power])
 	{
 		return IEV_NotEquipped;	// already got it
 	}
 
-	player->powers[power] = 1;
+	player.powers[power] = 1;
 	return IEV_EquipRemove;
 }
 
 #include "v_textcolors.h"
+#include "g_multikill.h"
+#include "g_spree.h"
+
+	/*
+ * @brief Player grabbed a resurrect player powerup
+ */
+static void P_ResurrectPlayerPowerUp(player_t& player)
+{
+	if (!::serverside)
+		return;
+
+	// Not lives game? Nothing to do.
+	if (!G_IsLivesGame())
+		return;
+
+	// Grab all the players in game, make a list of their ids, then pick one at random
+	PlayersView ingame = PlayerQuery().notHasLives().execute().players;
+	std::vector<int> ingameplayers;
+	for (const auto& p : ingame)
+	{
+		if (p->id != player.id)
+			ingameplayers.push_back(p->id);
+	}
+
+	if (ingameplayers.empty())
+	{
+		SV_BroadcastPrintFmt("{} tried to resurrect someone, but everyone is alive!\n",
+		                   player.userinfo.netname);
+		return;
+	}
+
+	int arrayindex = M_RandomInt(ingameplayers.size());
+
+	int playerid = ingameplayers.at(arrayindex);
+
+	player_t* pl = &idplayer(playerid);
+
+	if (!validplayer(*pl))
+		return;
+
+	pl->lives += 1;
+	pl->playerstate = PST_REBORN;
+
+	G_ResetLastPlayer();
+
+	SV_BroadcastPrintFmt("{} has brought {} back into the fight!\n",
+	                   player.userinfo.netname, pl->userinfo.netname);
+
+	// Send a res sound directly to this player.
+	MSG_WriteSVC(pl->client.messenger.ReliableBuf(), SVC_PlayerInfo(*pl));
+	S_PlayerSound(pl, NULL, CHAN_INTERFACE, "misc/plraise", ATTN_NONE);
+
+	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(*pl, SVC_PM_LIVES),
+	                 playerid);
+}
+
+/*
+ * @brief Player grabbed an extra life powerup
+ */
+static void P_AwardExtraLifePowerUp(player_t& player)
+{
+	if (!::serverside)
+		return;
+
+	// Not lives game? Nothing to do.
+	if (!G_IsLivesGame())
+		return;
+
+	SV_BroadcastPrintFmt("{} was awarded an extra life!\n",
+	                   player.userinfo.netname);
+
+	player.lives += 1;
+	MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_PlayerInfo(player));
+	MSG_BroadcastSVC(CLBUF_RELIABLE, SVC_PlayerMembers(player, SVC_PM_LIVES),
+	                 player.id);
+}
 
 /**
  * @brief Give the player a care package.
- * 
+ *
  * @detail A care package gives you a small collection of items based on what
  *         you're already holding.  TODO: These messages should be LANGUAGE'ed.
  */
-static void P_GiveCarePack(player_t* player)
+static void P_GiveCarePack(player_t& player)
 {
-	const int ammomulti[NUMAMMO] = {2, 1, 1, 2};
-
-	// [AM] There is way too much going on in here to accurately predict.
-	if (!::serverside)
-		return;
+	constexpr int ammomulti[NUMAMMO] = {2, 1, 1, 2};
 
 	// Which weapons will we need ammo for?
 	bool hasWeap[NUMAMMO] = {false, false, false, false};
@@ -599,7 +689,7 @@ static void P_GiveCarePack(player_t* player)
 		{
 			continue;
 		}
-		if (player->weaponowned[i])
+		if (player.weaponowned[i])
 		{
 			hasWeap[ammo] = true;
 		}
@@ -611,7 +701,7 @@ static void P_GiveCarePack(player_t* player)
 
 	// Players who are extremely low on health always get an initial health
 	// boost.
-	if (blocks >= 1 && player->mo->health < 25)
+	if (blocks >= 1 && player.mo->health < 25)
 	{
 		P_GiveBody(player, 25);
 		blocks -= 1;
@@ -620,9 +710,8 @@ static void P_GiveCarePack(player_t* player)
 	// Players who are extremely low on ammo for a weapon they are holding
 	// always get ammo for that weapon.
 	const hordeDefine_t::ammos_t& ammos = P_HordeAmmos();
-	for (size_t i = 0; i < ammos.size(); i++)
+	for (const auto ammo : ammos)
 	{
-		const ammotype_t ammo = ammos.at(i);
 		if (blocks < 1)
 		{
 			break;
@@ -638,7 +727,7 @@ static void P_GiveCarePack(player_t* player)
 		const int lowLimit = ammomulti[ammo] * 2;
 		const float giveAmount = static_cast<float>(ammomulti[ammo] * 5);
 
-		if (player->ammo[ammo] < ::clipammo[ammo] * lowLimit)
+		if (player.ammo[ammo] < ::clipammo[ammo] * lowLimit)
 		{
 			P_GiveAmmo(player, ammo, giveAmount);
 			blocks -= 1;
@@ -646,7 +735,7 @@ static void P_GiveCarePack(player_t* player)
 	}
 
 	// Players who have less than 100 health at this point get another health pack.
-	if (blocks >= 1 && player->mo->health < 100)
+	if (blocks >= 1 && player.mo->health < 100)
 	{
 		P_GiveBody(player, 25);
 		blocks -= 1;
@@ -656,26 +745,26 @@ static void P_GiveCarePack(player_t* player)
 	if (blocks >= 1)
 	{
 		const hordeDefine_t::weapons_t& weapons = P_HordeWeapons();
-		for (size_t i = 0; i < weapons.size(); i++)
+		for (const auto weapon : weapons)
 		{
 			// No weapon is a special case that means give the player
 			// berserk strength (without the health).
-			if (weapons.at(i) == wp_none && player->powers[pw_strength] < 1)
+			if (weapon == wp_none && player.powers[pw_strength] < 1)
 			{
-				player->powers[pw_strength] = 1;
+				player.powers[pw_strength] = 1;
 				blocks -= 1;
 
 				message = "You found a berserk stim in this supply cache!";
 				midmessage = "Got berserk";
 				break;
 			}
-			else if (weapons.at(i) != wp_none && !player->weaponowned[weapons.at(i)])
+			else if (weapon != wp_none && !player.weaponowned[weapon])
 			{
-				P_GiveWeapon(player, weapons.at(i), false);
+				P_GiveWeapon(player, weapon, false);
 				blocks -= 1;
 
 				message = "You found a weapon in this supply cache!";
-				switch (weapons.at(i))
+				switch (weapon)
 				{
 				case wp_chainsaw:
 					midmessage = "Got Chainsaw";
@@ -703,8 +792,13 @@ static void P_GiveCarePack(player_t* player)
 				case wp_supershotgun:
 					midmessage = "Got Super Shotgun";
 					break;
+				case wp_none:
+				case wp_fist:
+				case wp_nochange:
+				case NUMWEAPONS:
+					break;
 				}
-				
+
 				break;
 			}
 		}
@@ -731,16 +825,16 @@ static void P_GiveCarePack(player_t* player)
 	}
 
 	// We got this far, why not top off players armor?
-	if (blocks >= 1 && player->armorpoints + 10 < 95)
+	if (blocks >= 1 && player.armorpoints + 10 < 95)
 	{
-		player->armorpoints += 10;
-		if (player->armorpoints > ::deh.MaxArmor)
+		player.armorpoints += 10;
+		if (player.armorpoints > ::deh.MaxArmor)
 		{
-			player->armorpoints = ::deh.MaxArmor;
+			player.armorpoints = ::deh.MaxArmor;
 		}
-		if (!player->armortype)
+		if (!player.armortype)
 		{
-			player->armortype = ::deh.GreenAC;
+			player.armortype = ::deh.GreenAC;
 		}
 
 		blocks -= 1;
@@ -749,44 +843,26 @@ static void P_GiveCarePack(player_t* player)
 	if (message.empty())
 		message = "Picked up a supply cache full of health and ammo!";
 
-	if (!::clientside)
+	PrintFmt(PRINT_PICKUP, "{}\n", message.c_str());
+	if (!midmessage.empty())
 	{
-		// [AM] FIXME: This gives players their inventory, with no
-		//             background flash.
-		MSG_WriteSVC(&player->client.reliablebuf, SVC_PlayerInfo(*player));
-		MSG_WriteSVC(&player->client.reliablebuf, SVC_Print(PRINT_PICKUP, message + "\n"));
-		if (!midmessage.empty())
-		{
-			std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
-			MSG_WriteSVC(&player->client.reliablebuf, SVC_MidPrint(buf, 0));
-		}
-	}
-	else
-	{
-		Printf(PRINT_PICKUP, "%s\n", message.c_str());
-		if (!midmessage.empty())
-		{
-			std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
-			C_MidPrint(buf.c_str(), NULL, 0);
-		}
+		std::string buf = std::string(TEXTCOLOR_GREEN) + midmessage;
+		C_MidPrint(buf.c_str(), NULL, 0);
 	}
 }
 
-bool P_SpecialIsWeapon(AActor *special)
+bool P_SpecialIsWeapon(const AActor& special)
 {
-	if (!special)
-		return false;
-
-	return (special->type == MT_CHAINGUN ||
-			special->type == MT_SHOTGUN  ||
-			special->type == MT_SUPERSHOTGUN ||
-			special->type == MT_MISC25 ||
-			special->type == MT_MISC26 ||
-			special->type == MT_MISC27 ||
-			special->type == MT_MISC28);
+	return (special.type == MT_CHAINGUN ||
+			special.type == MT_SHOTGUN  ||
+			special.type == MT_SUPERSHOTGUN ||
+			special.type == MT_MISC25 ||
+			special.type == MT_MISC26 ||
+			special.type == MT_MISC27 ||
+			special.type == MT_MISC28);
 }
 
-void P_PickupSound(AActor *ent, int channel, const char *name)
+void P_PickupSound(const AActor *ent, int channel, const char *name)
 {
 	if (serverside && co_globalsound) //Send pickup sound to all other players
 		UV_SoundAvoidPlayer(ent, channel, name, co_zdoomsound ? ATTN_NORM : ATTN_NONE);
@@ -794,529 +870,561 @@ void P_PickupSound(AActor *ent, int channel, const char *name)
 		S_Sound(ent, channel, name, 1, ATTN_NONE);
 }
 
-void P_GiveSpecial(player_t *player, AActor *special)
+ItemEquipVal P_GiveSpecial(player_t& player, AActor& special)
 {
-	if (!player || !player->mo || !special)
-		return;
+	if (!player.mo)
+		return IEV_NotEquipped;
 
-	AActor *toucher = player->mo;
-	int sound = 0;
+	AActor *toucher = player.mo;
+	enum class SpecialSound
+	{
+		None,
+		Item,
+		Weapon,
+		PowerUp,
+	} sound = SpecialSound::Item;
 	const OString* msg = NULL;
 	ItemEquipVal val = IEV_EquipRemove;
 	bool dropped = false;
 
 	// Identify by sprite.
-	switch (special->sprite)
+	switch (special.sprite)
 	{
 		// armor
-	    case SPR_ARM1:
+		case SPR_ARM1:
 			val = P_GiveArmor(player, deh.GreenAC);
 			msg = &GOTARMOR;
-		    if (val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_GREENARMOR, false);
-		    }
-            break;
+			if (val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_GREENARMOR, false);
+			}
+			break;
 
-	    case SPR_ARM2:
+		case SPR_ARM2:
 			val = P_GiveArmor(player, deh.BlueAC);
 			msg = &GOTMEGA;
-		    if (val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_BLUEARMOR, false);
-		    }
-            break;
+			if (val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BLUEARMOR, false);
+			}
+			break;
 
 		// bonus items
-	    case SPR_BON1:
-            player->health += static_cast<int>(G_GetCurrentSkill().health_factor); // can go over 100%
-            if (player->health > deh.MaxSoulsphere)
-            {
-                player->health = deh.MaxSoulsphere;
-            }
-            player->mo->health = player->health;
+		case SPR_BON1:
+			player.health += static_cast<int>(G_GetCurrentSkill().health_factor); // can go over 100%
+			if (player.health > deh.MaxSoulsphere)
+			{
+				player.health = deh.MaxSoulsphere;
+			}
+			player.mo->health = player.health;
 			msg = &GOTHTHBONUS;
-		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_HEALTHBONUS, false);
-            break;
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_HEALTHBONUS, false);
+			break;
 
-	    case SPR_BON2:
-            player->armorpoints += static_cast<int>(G_GetCurrentSkill().armor_factor); // can go over 100%
-            if (player->armorpoints > deh.MaxArmor)
-            {
-                player->armorpoints = deh.MaxArmor;
-            }
-            if (!player->armortype)
-            {
-                player->armortype = deh.GreenAC;
-            }
+		case SPR_BON2:
+			player.armorpoints += static_cast<int>(G_GetCurrentSkill().armor_factor); // can go over 100%
+			if (player.armorpoints > deh.MaxArmor)
+			{
+				player.armorpoints = deh.MaxArmor;
+			}
+			if (!player.armortype)
+			{
+				player.armortype = deh.GreenAC;
+			}
 			msg = &GOTARMBONUS;
-		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_ARMORBONUS, false);
-            break;
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_ARMORBONUS, false);
+			break;
 
-	    case SPR_SOUL:
-            player->health += static_cast<int>(static_cast<float>(deh.SoulsphereHealth) * G_GetCurrentSkill().health_factor);
-            if (player->health > deh.MaxSoulsphere)
-            {
-                player->health = deh.MaxSoulsphere;
-            }
-            player->mo->health = player->health;
+		case SPR_SOUL:
+			player.health += static_cast<int>(static_cast<float>(deh.SoulsphereHealth) * G_GetCurrentSkill().health_factor);
+			if (player.health > deh.MaxSoulsphere)
+			{
+			    player.health = deh.MaxSoulsphere;
+			}
+			player.mo->health = player.health;
 			msg = &GOTSUPER;
-            sound = 1;
-		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_SOULSPHERE, false);
-            break;
+			sound = SpecialSound::PowerUp;
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_SOULSPHERE, false);
+			break;
 
-	    case SPR_MEGA:
-            player->health = static_cast<int>(static_cast<float>(deh.MegasphereHealth) * G_GetCurrentSkill().health_factor);
-            player->mo->health = player->health;
-            P_GiveArmor(player,deh.BlueAC);
+		case SPR_MEGA:
+			player.health = static_cast<int>(static_cast<float>(deh.MegasphereHealth) * G_GetCurrentSkill().health_factor);
+			player.mo->health = player.health;
+			P_GiveArmor(player,deh.BlueAC);
 			msg = &GOTMSPHERE;
-            sound = 1;
-		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_MEGASPHERE, false);
-            break;
+			sound = SpecialSound::PowerUp;
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_MEGASPHERE, false);
+			break;
 
 		// cards
-	    case SPR_BKEY:
+		case SPR_BKEY:
 			val = P_GiveCard(player, it_bluecard);
 			msg = &GOTBLUECARD;
-            sound = 3;
-		    if (val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_BLUEKEY, false);
-		    }
-            break;
+			sound = SpecialSound::Item;
+			if (val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BLUEKEY, false);
+			}
+			break;
 
-	    case SPR_YKEY:
-            val = P_GiveCard(player, it_yellowcard);
+		case SPR_YKEY:
+			val = P_GiveCard(player, it_yellowcard);
 			msg = &GOTYELWCARD;
-            sound = 3;
-		    if (val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_YELLOWKEY, false);
-		    }
-            break;
+			sound = SpecialSound::Item;
+			if (val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_YELLOWKEY, false);
+			}
+			break;
 
-	    case SPR_RKEY:
-            val = P_GiveCard(player, it_redcard);
+		case SPR_RKEY:
+			val = P_GiveCard(player, it_redcard);
 			msg = &GOTREDCARD;
-            sound = 3;
-		    if (val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_REDKEY, false);
-		    }
-            break;
+			sound = SpecialSound::Item;
+			if (val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_REDKEY, false);
+			}
+			break;
 
-	    case SPR_BSKU:
-            val = P_GiveCard(player, it_blueskull);
+		case SPR_BSKU:
+			val = P_GiveCard(player, it_blueskull);
 			msg = &GOTBLUESKUL;
-            sound = 3;
-		    if (val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_BLUESKULL, false);
-		    }
-            break;
+			sound = SpecialSound::Item;
+			if (val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BLUESKULL, false);
+			}
+			break;
 
-	    case SPR_YSKU:
-            val = P_GiveCard(player, it_yellowskull);
+		case SPR_YSKU:
+			val = P_GiveCard(player, it_yellowskull);
 			msg = &GOTYELWSKUL;
-            sound = 3;
-		    if (val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_YELLOWSKULL, false);
-		    }
-            break;
+			sound = SpecialSound::Item;
+			if (val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_YELLOWSKULL, false);
+			}
+			break;
 
-	    case SPR_RSKU:
-            val = P_GiveCard(player, it_redskull);
+		case SPR_RSKU:
+			val = P_GiveCard(player, it_redskull);
 			msg = &GOTREDSKUL;
-            sound = 3;
-		    if (val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_REDSKULL, false);
-		    }
-            break;
+			sound = SpecialSound::Item;
+			if (val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_REDSKULL, false);
+			}
+			break;
 
 		// medikits, heals
-	    case SPR_STIM:
+		case SPR_STIM:
 			val = P_GiveBody(player, 10);
 			msg = &GOTSTIM;
-		    if (val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_STIMPACK, false);
-		    }
-            break;
+			if (val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_STIMPACK, false);
+			}
+			break;
 
-	    case SPR_MEDI:
-            if (player->health < 25)
-            {
+		case SPR_MEDI:
+			if (player.health < 25)
+			{
 				msg = &GOTMEDINEED;
-            }
-            else if (player->health < 100)
-            {
-                msg = &GOTMEDIKIT;
-            }
+			}
+			else if (player.health < 100)
+			{
+				msg = &GOTMEDIKIT;
+			}
 			val = P_GiveBody(player, 25);
-		    if (val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_MEDKIT, false);
-		    }
-            break;
+			if (val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_MEDKIT, false);
+			}
+			break;
 
 		// power ups
-	    case SPR_PINV:
-            val = P_GivePower(player, pw_invulnerability);
+		case SPR_PINV:
+			val = P_GivePower(player, pw_invulnerability);
 			msg = &GOTINVUL;
-            sound = 1;
-		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_INVULNSPHERE, false);
-            break;
+			sound = SpecialSound::PowerUp;
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_INVULNSPHERE, false);
+			break;
 
-	    case SPR_PSTR:
+		case SPR_PSTR:
 			val = P_GivePower(player, pw_strength);
 			msg = &GOTBERSERK;
-            if (player->readyweapon != wp_fist)
-            {
-                player->pendingweapon = wp_fist;
-            }
-            sound = 1;
-			M_LogWDLPickupEvent(player, special, WDL_PICKUP_BERSERK, false);
-            break;
+			if (player.readyweapon != wp_fist)
+			{
+				player.pendingweapon = wp_fist;
+			}
+			sound = SpecialSound::PowerUp;
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BERSERK, false);
+			break;
 
-	    case SPR_PINS:
-            val = P_GivePower(player, pw_invisibility);
+		case SPR_PINS:
+			val = P_GivePower(player, pw_invisibility);
 			msg = &GOTINVIS;
-            sound = 1;
-		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_INVISSPHERE, false);
-            break;
+			sound = SpecialSound::PowerUp;
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_INVISSPHERE, false);
+			break;
 
-	    case SPR_SUIT:
-            val = P_GivePower(player, pw_ironfeet);
+		case SPR_SUIT:
+			val = P_GivePower(player, pw_ironfeet);
 			msg = &GOTSUIT;
-            sound = 1;
-		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_RADSUIT, false);
-            break;
+			sound = SpecialSound::PowerUp;
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_RADSUIT, false);
+			break;
 
-	    case SPR_PMAP:
+		case SPR_PMAP:
 			val = P_GivePower(player, pw_allmap);
 			msg = &GOTMAP;
-            sound = 1;
-		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_COMPUTERMAP, false);
-            break;
+			sound = SpecialSound::PowerUp;
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_COMPUTERMAP, false);
+			break;
 
-	    case SPR_PVIS:
-            val = P_GivePower(player, pw_infrared);
+		case SPR_PVIS:
+			val = P_GivePower(player, pw_infrared);
 			msg = &GOTVISOR;
-            sound = 1;
-		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_GOGGLES, false);
-            break;
+			sound = SpecialSound::PowerUp;
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_GOGGLES, false);
+			break;
 
 		// ammo
-	    case SPR_CLIP:
-            if (special->flags & MF_DROPPED)
-            {
+		case SPR_CLIP:
+			if (special.flags & MF_DROPPED)
+			{
 				val = P_GiveAmmo(player, am_clip, 0);
-			    dropped = true;
-            }
-            else
-            {
+				dropped = true;
+			}
+			else
+			{
 				val = P_GiveAmmo(player, am_clip, 1);
-            }
+			}
 			msg = &GOTCLIP;
-		    if (val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_CLIP, dropped);
-		    }
-            break;
+			if (val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_CLIP, dropped);
+			}
+			break;
 
-	    case SPR_AMMO:
+		case SPR_AMMO:
 			val = P_GiveAmmo(player, am_clip, 5);
 			msg = &GOTCLIPBOX;
-		    if (val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_AMMOBOX, false);
-		    }
-            break;
+			if (val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_AMMOBOX, false);
+			}
+			break;
 
-	    case SPR_ROCK:
-            val = P_GiveAmmo(player, am_misl, 1);
+		case SPR_ROCK:
+			val = P_GiveAmmo(player, am_misl, 1);
 			msg = &GOTROCKET;
-		    if (val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_ROCKET, false);
-		    }
-            break;
+			if (val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_ROCKET, false);
+			}
+			break;
 
-	    case SPR_BROK:
-            val = P_GiveAmmo(player, am_misl, 5);
+		case SPR_BROK:
+			val = P_GiveAmmo(player, am_misl, 5);
 			msg = &GOTROCKBOX;
-		    if (val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_ROCKETBOX, false);
-		    }
-            break;
+			if (val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_ROCKETBOX, false);
+			}
+			break;
 
-	    case SPR_CELL:
-            val = P_GiveAmmo(player, am_cell, 1);
+		case SPR_CELL:
+			val = P_GiveAmmo(player, am_cell, 1);
 			msg = &GOTCELL;
-		    if (val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_CELL, false);
-		    }
-            break;
+			if (val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_CELL, false);
+			}
+			break;
 
-	    case SPR_CELP:
-            val = P_GiveAmmo(player, am_cell, 5);
+		case SPR_CELP:
+			val = P_GiveAmmo(player, am_cell, 5);
 			msg = &GOTCELLBOX;
-		    if (val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_CELLPACK, false);
-		    }
-            break;
+			if (val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_CELLPACK, false);
+			}
+			break;
 
-	    case SPR_SHEL:
-		    if (special->flags & MF_DROPPED)
-		    {
-			    dropped = true;
-		    }
-		    val = P_GiveAmmo(player, am_shell, 1);
-		    msg = &GOTSHELLS;
-		    if (val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_SHELLS, dropped);
-		    }
-            break;
+		case SPR_SHEL:
+			if (special.flags & MF_DROPPED)
+			{
+				dropped = true;
+			}
+			val = P_GiveAmmo(player, am_shell, 1);
+			msg = &GOTSHELLS;
+			if (val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_SHELLS, dropped);
+			}
+			break;
 
-	    case SPR_SBOX:
+		case SPR_SBOX:
 			val = P_GiveAmmo(player, am_shell, 5);
 			msg = &GOTSHELLBOX;
-		    if (val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_SHELLBOX, false);
-		    }
-            break;
+			if (val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_SHELLBOX, false);
+			}
+			break;
 
-	    case SPR_BPAK:
-            if (!player->backpack)
-            {
-                for (int i=0 ; i<NUMAMMO ; i++)
-                {
-                    player->maxammo[i] *= 2;
-                }
-                player->backpack = true;
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_BACKPACK, false);
-            }
-            for (int i=0 ; i<NUMAMMO ; i++)
-            {
-                P_GiveAmmo(player, (ammotype_t)i, 1);
-            }
+		case SPR_BPAK:
+			if (!player.backpack)
+			{
+				for (int i = 0; i < NUMAMMO; i++)
+				{
+					player.maxammo[i] *= 2;
+				}
+				player.backpack = true;
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BACKPACK, false);
+			}
+			for (int i = 0; i < NUMAMMO; i++)
+			{
+				P_GiveAmmo(player, static_cast<ammotype_t>(i), 1);
+			}
 			msg = &GOTBACKPACK;
 			break;
 
 		case SPR_CARE:
 			// Care package.  What does it contian?
 			P_GiveCarePack(player);
-		    M_LogWDLPickupEvent(player, special, WDL_PICKUP_CAREPACKAGE, false);
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_CAREPACKAGE, false);
+			break;
+
+		case SPR_O1UP:
+			// Award an extra life to the player who collects this
+			P_AwardExtraLifePowerUp(player);
+			sound = SpecialSound::PowerUp;
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_EXTRALIFE, false);
+			break;
+
+		case SPR_RSTM:
+			// Resurrect a player with this power up
+			P_ResurrectPlayerPowerUp(player);
+			sound = SpecialSound::PowerUp;
+			M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_RESTEAMMATE, false);
 			break;
 
 		// weapons
-	    case SPR_BFUG:
-            val = P_GiveWeapon(player, wp_bfg, special->flags & MF_DROPPED);
+		case SPR_BFUG:
+			val = P_GiveWeapon(player, wp_bfg, special.flags & MF_DROPPED);
 			msg = &GOTBFG9000;
-            sound = 2;
-		    if (val == IEV_EquipStay || val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_BFG,
-			                        special->flags & MF_DROPPED);
-		    }
-            break;
+			sound = SpecialSound::Weapon;
+			if (val == IEV_EquipStay || val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_BFG,
+				                    special.flags & MF_DROPPED);
+			}
+			break;
 
-	    case SPR_MGUN:
-            val = P_GiveWeapon(player, wp_chaingun, special->flags & MF_DROPPED);
+		case SPR_MGUN:
+			val = P_GiveWeapon(player, wp_chaingun, special.flags & MF_DROPPED);
 			msg = &GOTCHAINGUN;
-            sound = 2;
-		    if (val == IEV_EquipStay || val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_CHAINGUN,
-			                        special->flags & MF_DROPPED);
-		    }
-            break;
+			sound = SpecialSound::Weapon;
+			if (val == IEV_EquipStay || val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_CHAINGUN,
+				                    special.flags & MF_DROPPED);
+			}
+			break;
 
-	    case SPR_CSAW:
-			val = P_GiveWeapon(player, wp_chainsaw, special->flags & MF_DROPPED);
+		case SPR_CSAW:
+			val = P_GiveWeapon(player, wp_chainsaw, special.flags & MF_DROPPED);
 			msg = &GOTCHAINSAW;
-            sound = 2;
-		    if (val == IEV_EquipStay || val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_CHAINSAW,
-			                        special->flags & MF_DROPPED);
-		    }
-            break;
+			sound = SpecialSound::Weapon;
+			if (val == IEV_EquipStay || val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_CHAINSAW,
+				                    special.flags & MF_DROPPED);
+			}
+			break;
 
-	    case SPR_LAUN:
-            val = P_GiveWeapon(player, wp_missile, special->flags & MF_DROPPED);
+		case SPR_LAUN:
+			val = P_GiveWeapon(player, wp_missile, special.flags & MF_DROPPED);
 			msg = &GOTLAUNCHER;
-            sound = 2;
-		    if (val == IEV_EquipStay || val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_ROCKETLAUNCHER,
-			                        special->flags & MF_DROPPED);
-		    }
-            break;
+			sound = SpecialSound::Weapon;
+			if (val == IEV_EquipStay || val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_ROCKETLAUNCHER,
+				                    special.flags & MF_DROPPED);
+			}
+			break;
 
-	    case SPR_PLAS:
-			val = P_GiveWeapon(player, wp_plasma, special->flags & MF_DROPPED);
+		case SPR_PLAS:
+			val = P_GiveWeapon(player, wp_plasma, special.flags & MF_DROPPED);
 			msg = &GOTPLASMA;
-            sound = 2;
-		    if (val == IEV_EquipStay || val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_PLASMAGUN,
-			                        special->flags & MF_DROPPED);
-		    }
-            break;
+			sound = SpecialSound::Weapon;
+			if (val == IEV_EquipStay || val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_PLASMAGUN,
+				                    special.flags & MF_DROPPED);
+			}
+			break;
 
-	    case SPR_SHOT:
-            val = P_GiveWeapon(player, wp_shotgun, special->flags & MF_DROPPED);
+		case SPR_SHOT:
+			val = P_GiveWeapon(player, wp_shotgun, special.flags & MF_DROPPED);
 			msg = &GOTSHOTGUN;
-            sound = 2;
-		    if (val == IEV_EquipStay || val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_SHOTGUN,
-			                        special->flags & MF_DROPPED);
-		    }
-            break;
+			sound = SpecialSound::Weapon;
+			if (val == IEV_EquipStay || val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_SHOTGUN,
+				                    special.flags & MF_DROPPED);
+			}
+			break;
 
-	    case SPR_SGN2:
-			val = P_GiveWeapon(player, wp_supershotgun, special->flags & MF_DROPPED);
+		case SPR_SGN2:
+			val = P_GiveWeapon(player, wp_supershotgun, special.flags & MF_DROPPED);
 			msg = &GOTSHOTGUN2;
-            sound = 2;
-		    if (val == IEV_EquipStay || val == IEV_EquipRemove)
-		    {
-			    M_LogWDLPickupEvent(player, special, WDL_PICKUP_SUPERSHOTGUN,
-			                        special->flags & MF_DROPPED);
-		    }
-            break;
+			sound = SpecialSound::Weapon;
+			if (val == IEV_EquipStay || val == IEV_EquipRemove)
+			{
+				M_LogWDLPickupEvent(&player, &special, WDL_PICKUP_SUPERSHOTGUN,
+				                    special.flags & MF_DROPPED);
+			}
+			break;
 
         default:
 		{
 			bool teamItemSuccess = false;
 			for (int iTeam = 0; iTeam < NUMTEAMS; iTeam++)
 			{
-				TeamInfo* teamInfo = GetTeamInfo((team_t)iTeam);
+				TeamInfo* teamInfo = GetTeamInfo(static_cast<team_t>(iTeam));
 
-				if (teamInfo->FlagSprite == special->sprite || teamInfo->FlagDownSprite == special->sprite)
+				if (teamInfo->FlagSprite == special.sprite || teamInfo->FlagDownSprite == special.sprite)
 				{
-					val = SV_FlagTouch(*player, teamInfo->Team, teamInfo->FlagSprite == special->sprite);
-					sound = -1;
+					val = SV_FlagTouch(player, teamInfo->Team, teamInfo->FlagSprite == special.sprite);
+					sound = SpecialSound::None;
 					teamItemSuccess = true;
 					break;
 				}
 
-				if (teamInfo->FlagSocketSprite == special->sprite)
+				if (teamInfo->FlagSocketSprite == special.sprite)
 				{
-					SV_SocketTouch(*player, teamInfo->Team);
-					return;
+					SV_SocketTouch(player, teamInfo->Team);
+					return val;
 				}
 			}
 
 			if (!teamItemSuccess)
 			{
-				Printf(PRINT_HIGH, "P_SpecialThing: Unknown gettable thing %d: %s\n", special->sprite, special->info->name);
-				return;
+				PrintFmt(PRINT_HIGH, "P_SpecialThing: Unknown gettable thing {}: {}\n", special.sprite, special.info->name);
+				return val;
 			}
 		}
 	}
 
-	if (special->flags & MF_COUNTITEM)
+	if (special.flags & MF_COUNTITEM)
 	{
-		player->itemcount++;
+		player.itemcount++;
 		level.found_items++;
 	}
 
 	if (val == IEV_NotEquipped)
-		return;
+		return val;
 
 	//the player equipped/picked up an item
-	player->bonuscount = BONUSADD;
+	player.bonuscount = BONUSADD;
 	SV_TouchSpecial(special, player);
 
 	if (msg != NULL)
 		PickupMessage(toucher, GStrings(*msg));
 
-	if (val == IEV_EquipRemove)
-		special->Destroy();
-
-	AActor *ent = player->mo;
+	const AActor *ent = player.mo;
 	switch (sound)
 	{
-	case 0:
-	case 3:
+	case SpecialSound::Item:
 		P_PickupSound(ent, CHAN_ITEM, "misc/i_pkup");
 		break;
-	case 1:
+	case SpecialSound::PowerUp:
 		P_PickupSound(ent, CHAN_ITEM, "misc/p_pkup");
 		break;
-	case 2:
+	case SpecialSound::Weapon:
 		P_PickupSound(ent, CHAN_ITEM, "misc/w_pkup");
 		break;
+	case SpecialSound::None:
+		break; // do nothing, just for silencing warnings
+	default:
+		OUtil::unreachable();
 	}
+	return val;
 }
 
 
 //
 // P_TouchSpecialThing
 //
-void P_TouchSpecialThing(AActor *special, AActor *toucher)
+void P_TouchSpecialThing(AActor& special, AActor& toucher)
 {
-	// Somebody passed null pointers. [Toke - fix99]
-	if (!toucher || !special)
-		return;
-
 	// Spectators shouldn't be able to touch things.
-	if (toucher->player && toucher->player->spectator)
+	if (toucher.player && toucher.player->spectator)
 		return;
 
 	// Touchers that aren't players or avatars need not apply.
-	if (!toucher->player && toucher->type != MT_AVATAR)
+	if (!P_IsPlayerOrAvatar(toucher))
 		return;
 
+	// Don't touch things during a non-canonical prediction.
 	if (predicting)
 		return;
 
 	// Dead thing touching.
 	// Can happen with a sliding player corpse.
-	if (toucher->health <= 0)
+	if (toucher.health <= 0)
 		return;
 
 	// out of reach?
-	fixed_t delta = special->z - toucher->z;
-	fixed_t lowerbound = co_zdoomphys ? -32*FRACUNIT : -8*FRACUNIT;
+	const fixed_t delta = special.z - toucher.z;
+	const fixed_t lowerbound = co_zdoomphys ? -32*FRACUNIT : -8*FRACUNIT;
 
-	if (delta > toucher->height || delta < lowerbound)
+	if (delta > toucher.height || delta < lowerbound)
 		return;
 
-	// Only allow clients to predict touching weapons, not health, armor, etc
-	if (!serverside && (!cl_predictpickup || !P_SpecialIsWeapon(special)))
+	// Only allow clients to predict touching weapons, not health, armor, etc.
+	// Furthermore, they can only predict for themselves, no one else.
+	if (not serverside && not  (cl_predictpickup
+	                            and P_SpecialIsWeapon(special)
+	                            and toucher.player
+	                            and toucher.player->id == consoleplayer_id))
 		return;
 
 	// [Blair] Execute ZDoom thing specials on items that are picked up.
 	// (Then remove the special.)
-	if (special->special)
+	if (special.special)
 	{
-		LineSpecials[special->special](NULL, toucher, special->args[0], special->args[1],
-		                               special->args[2], special->args[3],
-		                               special->args[4]);
-		special->special = 0;
+		LineSpecials[special.special](nullptr, &toucher, special.args[0], special.args[1],
+		                               special.args[2], special.args[3],
+		                               special.args[4]);
+		special.special = 0;
 	}
 
-	if (toucher->type == MT_AVATAR)
+	if (toucher.type == MT_AVATAR)
 	{
+		bool mustBeDestroyed = false;
 		PlayersView pr = PlayerQuery().execute().players;
-		for (PlayersView::iterator it = pr.begin(); it != pr.end(); ++it)
+		for (const auto& player : pr)
 		{
-			P_GiveSpecial(*it, special);
+			const ItemEquipVal giveResult = P_GiveSpecial(*player, special);
+			mustBeDestroyed = mustBeDestroyed or giveResult == IEV_EquipRemove;
+		}
+		if (mustBeDestroyed)
+		{
+			special.Destroy();
 		}
 	}
-	else if (toucher->player)
+	else if (toucher.player)
 	{
-		P_GiveSpecial(toucher->player, special);
+		const ItemEquipVal giveResult = P_GiveSpecial(*toucher.player, special);
+		if (giveResult == IEV_EquipRemove)
+		{
+			special.Destroy();
+		}
 	}
 }
 
@@ -1325,27 +1433,22 @@ void P_TouchSpecialThing(AActor *special, AActor *toucher)
 // SexMessage: Replace parts of strings with gender-specific pronouns
 //
 // The following expansions are performed:
-//		%g -> he/she/it
-//		%h -> him/her/it
-//		%p -> his/her/its
+//		%g -> he/she/it/they
+//		%h -> him/her/it/them
+//		%p -> his/her/its/their
 //		%o -> other (victim)
 //		%k -> killer
+//		%s -> spree
 //
-void SexMessage (const char *from, char *to, int gender, const char *victim, const char *killer)
+void SexMessage (const char *from, char *to, gender_t gender, std::string_view victim, std::string_view killer, std::string_view spree)
 {
-	static const char *genderstuff[3][3] =
+	static constexpr std::string_view genderstuff[4][3] =
 	{
 		{ "he",  "him", "his" },
 		{ "she", "her", "her" },
-		{ "it",  "it",  "its" }
+		{ "it",  "it",  "its" },
+		{ "they",  "them",  "their" },
 	};
-	static const int gendershift[3][3] =
-	{
-		{ 2, 3, 3 },
-		{ 3, 3, 3 },
-		{ 2, 2, 3 }
-	};
-	const char *subst = NULL;
 
 	do
 	{
@@ -1356,6 +1459,7 @@ void SexMessage (const char *from, char *to, int gender, const char *victim, con
 		else
 		{
 			int gendermsg = -1;
+			std::string_view subst{};
 
 			switch (from[1])
 			{
@@ -1364,14 +1468,13 @@ void SexMessage (const char *from, char *to, int gender, const char *victim, con
 			case 'p':	gendermsg = 2;	break;
 			case 'o':	subst = victim;	break;
 			case 'k':	subst = killer;	break;
+			case 's':	subst = spree;	break;
 			}
-			if (subst != NULL)
+			if (!subst.empty())
 			{
-				int len = strlen (subst);
-				memcpy (to, subst, len);
-				to += len;
+				strncpy(to, subst.data(), subst.length());
+				to += subst.length();
 				from++;
-				subst = NULL;
 			}
 			else if (gendermsg < 0)
 			{
@@ -1379,8 +1482,8 @@ void SexMessage (const char *from, char *to, int gender, const char *victim, con
 			}
 			else
 			{
-				strcpy (to, genderstuff[gender][gendermsg]);
-				to += gendershift[gender][gendermsg];
+				strncpy(to, genderstuff[gender][gendermsg].data(), genderstuff[gender][gendermsg].length());
+				to += genderstuff[gender][gendermsg].length();
 				from++;
 			}
 		}
@@ -1391,7 +1494,7 @@ void SexMessage (const char *from, char *to, int gender, const char *victim, con
 // [RH]
 // ClientObituary: Show a message when a player dies
 //
-static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
+static void ClientObituary(AActor* self, const AActor* inflictor, AActor* attacker)
 {
 	char gendermessage[1024];
 
@@ -1402,7 +1505,7 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 	if (!G_CanShowObituary() || gamestate != GS_LEVEL)
 		return;
 
-	int gender = self->player->userinfo.gender;
+	gender_t gender = self->player->userinfo.gender;
 
 	// Treat voodoo dolls as unknown deaths
 	if (inflictor && inflictor->player == self->player)
@@ -1578,9 +1681,9 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 
 	if (message)
 	{
-		SexMessage(message, gendermessage, gender, self->player->userinfo.netname.c_str(),
-		           self->player->userinfo.netname.c_str());
-		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
+		SexMessage(message, gendermessage, gender, self->player->userinfo.netname,
+		           self->player->userinfo.netname, "");
+		SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
 
 		toast_t toast;
 		toast.flags = toast_t::ICON | toast_t::RIGHT_PID;
@@ -1654,23 +1757,28 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 
 	if (message && attacker && attacker->player)
 	{
-		SexMessage(message, gendermessage, gender, self->player->userinfo.netname.c_str(),
-		           attacker->player->userinfo.netname.c_str());
-		SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
+		SexMessage(message, gendermessage, gender, self->player->userinfo.netname,
+		           attacker->player->userinfo.netname, "");
+		SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
 
 		toast_t toast;
 		toast.flags = toast_t::LEFT_PID | toast_t::ICON | toast_t::RIGHT_PID;
 		toast.left_pid = attacker->player->id;
 		toast.icon = mod;
 		toast.right_pid = self->player->id;
+		if (SpreeManager::getInstance().hasSpree(toast.left_pid))
+		{
+			toast.flags |= toast_t::SPREE;
+			toast.points = SpreeManager::getInstance().getPoints(toast.left_pid);
+			toast.spree_color = SpreeManager::getInstance().getSpreeRecord(toast.left_pid).spree.color;
+		}
 		COM_PushToast(toast);
 		return;
 	}
 
 	SexMessage(GStrings(OB_DEFAULT), gendermessage, gender,
-	           self->player->userinfo.netname.c_str(),
-	           self->player->userinfo.netname.c_str());
-	SV_BroadcastPrintf(PRINT_OBITUARY, "%s\n", gendermessage);
+	           self->player->userinfo.netname, self->player->userinfo.netname, "");
+	SV_BroadcastPrintFmt(PRINT_OBITUARY, "{}\n", gendermessage);
 
 	toast_t toast;
 	toast.flags = toast_t::ICON | toast_t::RIGHT_PID;
@@ -1682,7 +1790,7 @@ static void ClientObituary(AActor* self, AActor* inflictor, AActor* attacker)
 //
 // P_KillMobj
 //
-void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill)
+void P_KillMobj(AActor *source, AActor *target, const AActor *inflictor, bool joinkill)
 {
 	SV_SendKillMobj(source, target, inflictor, joinkill);
 	AActor *mo;
@@ -1732,7 +1840,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	}
 	else
 	{
-		splayer = 0;
+		splayer = nullptr;
 	}
 
 	tplayer = target->player;
@@ -1744,7 +1852,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		tplayer->attacker = source ? source->ptr() : AActor::AActorPtr();
 	}
 
-	if (source && source->player)
+	if (splayer)
 	{
 		// Don't count any frags at level start, because they're just telefrags
 		// resulting from insufficient deathmatch starts, and it wouldn't be
@@ -1755,11 +1863,11 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			{
 				if (target->player == source->player) // [RH] Cumulative frag count
 				{
-					sendScore |= P_GiveFrags(splayer, -1);
+					sendScore |= P_GiveFrags(*splayer, -1);
 					// [Toke] Minus a team frag for suicide
 					if (sv_gametype == GM_TEAMDM)
 					{
-						sendTeamScore |= P_GiveTeamPoints(splayer, -1);
+						sendTeamScore |= P_GiveTeamPoints(*splayer, -1);
 					}
 				}
 				// [Toke] Minus a team frag for killing teammate
@@ -1767,33 +1875,34 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 				         (splayer->userinfo.team == tplayer->userinfo.team))
 				{
 					// [Toke - Teamplay || deathz0r - updated]
-					sendScore |= P_GiveFrags(splayer, -1);
+					sendScore |= P_GiveFrags(*splayer, -1);
 					if (sv_gametype == GM_TEAMDM)
 					{
-						sendTeamScore |= P_GiveTeamPoints(splayer, -1);
+						sendTeamScore |= P_GiveTeamPoints(*splayer, -1);
 					}
 					else if (sv_gametype == GM_CTF)
 					{
-						SV_CTFEvent((team_t)0, SCORE_BETRAYAL, *splayer);
+						SV_CTFEvent(static_cast<team_t>(0), SCORE_BETRAYAL, *splayer);
 					}
 				}
 				else
 				{
-					sendScore |= P_GiveFrags(splayer, 1);
+					sendScore |= P_GiveFrags(*splayer, 1);
 					// [Toke] Add a team frag
 					if (sv_gametype == GM_TEAMDM)
 					{
-						sendTeamScore |= P_GiveTeamPoints(splayer, 1);
+						sendTeamScore |= P_GiveTeamPoints(*splayer, 1);
 					}
 					else if (sv_gametype == GM_CTF)
 					{
 						if (tplayer->flags[splayer->userinfo.team])
 						{
-							SV_CTFEvent((team_t)0, SCORE_CARRIERKILL, *splayer);
+							// TODO: why is this not just TEAM_BLUE??
+							SV_CTFEvent(static_cast<team_t>(0), SCORE_CARRIERKILL, *splayer);
 						}
 						else
 						{
-							SV_CTFEvent((team_t)0, SCORE_KILL, *splayer);
+							SV_CTFEvent(static_cast<team_t>(0), SCORE_KILL, *splayer);
 						}
 					}
 				}
@@ -1808,7 +1917,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		if (G_IsCoopGame() &&
 		    ((target->flags & MF_COUNTKILL) || (target->type == MT_SKULL)))
 		{
-			if (P_GiveKills(splayer, 1))
+			if (P_GiveKills(*splayer, 1))
 				PersistPlayerScore(*splayer, sendLives, sendScore);
 		}
 	}
@@ -1822,10 +1931,10 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			CTF_CheckFlags(*target->player);
 
 		if (!joinkill)
-			sendScore |= P_GiveDeaths(tplayer, 1);
+			sendScore |= P_GiveDeaths(*tplayer, 1);
 
 		if (!joinkill && tplayer->lives > 0)
-			sendLives |= P_GiveLives(tplayer, -1);
+			sendLives |= P_GiveLives(*tplayer, -1);
 
 		// Death script execution, care of Skull Tag
 		if (level.behavior != NULL)
@@ -1837,7 +1946,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 		if (!source && !joinkill)
 		{
 			// [RH] Cumulative frag count
-			sendScore |= P_GiveFrags(tplayer, -1);
+			sendScore |= P_GiveFrags(*tplayer, -1);
 		}
 
 		// [NightFang] - Added this, thought it would be cooler
@@ -1849,7 +1958,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 
 		target->flags &= ~MF_SOLID;
 		target->player->playerstate = PST_DEAD;
-		P_DropWeapon(target->player);
+		P_DropWeapon(*target->player);
 
 		tplayer->suicidedelay = SuicideDelay;
 		tplayer->death_time = level.time;
@@ -1859,6 +1968,15 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 			// don't die in auto map, switch view prior to dying
 			AM_Stop();
 		}
+
+		// Clear unlagged history as the player is now dead
+		if (serverside)
+		{
+			Unlag::getInstance().clearPlayerHistory(tplayer->id);
+		}
+
+		P_ProcessMultiKills(source, target->player);
+		P_ProcessSpreeKill(source, target->player);
 	}
 
 	if (target->health > 0) // denis - when this function is used standalone
@@ -1869,7 +1987,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	P_RemoveHealthPool(target);
 	P_QueueCorpseForDestroy(target);
 
-    if (target->info->xdeathstate && target->health < target->info->gibhealth)
+    if (target->info->xdeathstate &&
+		static_cast<float>(target->health) < static_cast<float>(target->info->gibhealth) * gameinfo.gibFactor)
     {
         P_SetMobjState(target, target->info->xdeathstate);
     }
@@ -1895,8 +2014,8 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 
 	// [AM] Save the "out of lives" message until after the obit.
 	if (g_lives && tplayer && tplayer->lives <= 0)
-		SV_BroadcastPrintf("%s is out of lives.\n",
-		                   tplayer->userinfo.netname.c_str());
+		SV_BroadcastPrintFmt("{} is out of lives.\n",
+		                     tplayer->userinfo.netname.c_str());
 
 	// Check sv_fraglimit.
 	if (source && source->player && target->player && level.time)
@@ -1914,15 +2033,10 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	if (target->player && level.time)
 		G_LivesCheckEndGame();
 
-	if (gamemode == retail_chex)	// [ML] Chex Quest mode - monsters don't drop items
-    {
-		return;
-    }
-
 	// Drop stuff.
 	// This determines the kind of object spawned
 	// during the death frame of a thing.
-	mobjtype_t item = (mobjtype_t)0;
+	int32_t item = 0;
 
 	//
 	// sapientlion - if player killed themselves or were killed by the other
@@ -1996,7 +2110,7 @@ void P_KillMobj(AActor *source, AActor *target, AActor *inflictor, bool joinkill
 	}
 }
 
-static bool P_InfightingImmune(AActor* target, AActor* source)
+bool P_InfightingImmune(AActor* target, AActor* source)
 {
 	return // not default behaviour, and same group
 		mobjinfo[target->type].infighting_group != IG_DEFAULT &&
@@ -2016,11 +2130,8 @@ static bool P_InfightingImmune(AActor* target, AActor* source)
 // and other environmental stuff.
 //
 // [Toke] This is no longer needed client-side
-void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage, int mod, int flags)
+void P_DamageMobj(AActor *target, const AActor *inflictor, AActor *source, int damage, int mod, int flags)
 {
-    unsigned	ang;
-	int 		saved = 0;
-
 	if (!serverside)
     {
 		return;
@@ -2050,9 +2161,19 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
     }
 
 	// [AM] Target is invulnerable to infighting from any non-player source.
-	if (source && source->player == NULL && target->oflags & MFO_INFIGHTINVUL)
+	// Unless it is friendly (and thus hostile to bosses)
+	if (source && target->oflags & MFO_INFIGHTINVUL && (source->player == NULL && P_IsFriendlyThing(source, target)))
 	{
 		return;
+	}
+
+	// No damage with sv_friendlymonsterfire
+	if (!sv_friendlymonsterfire && source && target != source && mod != MOD_TELEFRAG)
+	{
+		if (source->flags & MF_FRIEND && P_IsFriendlyThing(source, target))
+		{
+			return;
+		}
 	}
 
 	MeansOfDeath = mod;
@@ -2072,7 +2193,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 			{
 				if ((*player).flags[i])
 				{
-					f = (team_t)i;
+					f = static_cast<team_t>(i);
 				}
 			}
 		}
@@ -2098,21 +2219,20 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 	// inflict thrust and push the victim out of reach,
 	// thus kick away unless using the chainsaw.
 
-	if (inflictor && 
-		!(target->flags & MF_NOCLIP) && 
+	if (inflictor &&
+		!(target->flags & MF_NOCLIP) &&
 	    (!source || !source->player || !(weaponinfo[source->player->readyweapon].flags & WPF_NOTHRUST)) &&
 	    !(inflictor->flags2 & MF2_NODMGTHRUST))
 	{
 
 		unsigned int ang = P_PointToAngle(inflictor->x, inflictor->y, target->x, target->y);
 
-		fixed_t thrust = damage * (FRACUNIT >> 3) * 100 / target->info->mass;
+		fixed_t thrust = damage * (FRACUNIT >> 3) * gameinfo.defKickback / target->info->mass;
 
 		// make fall forwards sometimes
 		if (damage < 40
 			&& damage > target->health
-			&& target->z - inflictor->z > 64 * FRACUNIT
-			&& (P_Random() & 1))
+			&& target->z - inflictor->z > 64 * FRACUNIT && (P_Random(target) & 1))
 		{
 			ang += ANG180;
 			thrust *= 4;
@@ -2121,6 +2241,10 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		ang >>= ANGLETOFINESHIFT;
 		target->momx += FixedMul(thrust, finecosine[ang]);
 		target->momy += FixedMul(thrust, finesine[ang]);
+
+		/* killough 11/98: thrust objects hanging off ledges */
+		if (target->oflags & MFO_FALLING && target->gear >= MAXGEAR)
+			target->gear = 0;
 	}
 
 	// player specific
@@ -2135,8 +2259,9 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		// end of game hell hack
 		if (sv_gametype == GM_COOP || sv_allowexit)
 		{
-			if ((target->subsector->sector->special & 255) == special
-				&& damage >= target->health)
+			if (   target->subsector
+			    && (target->subsector->sector->special & 255) == special
+			    && damage >= target->health)
 			{
 				damage = target->health - 1;
 			}
@@ -2154,7 +2279,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		if (!sv_friendlyfire && source && source->player && target != source &&
 			mod != MOD_TELEFRAG)
 		{
-			if (G_IsCoopGame() || 
+			if (G_IsCoopGame() ||
 				(G_IsTeamGame() && player->userinfo.team == source->player->userinfo.team))
 			{
 				damage = 0;
@@ -2181,8 +2306,8 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 
 		// WDL damage events - they have to be up here to ensure we know how
 		// much armor is subtracted.
-		int low = std::max(target->health - damage, 0);
-		int actualdamage = target->health - low;
+		const int low = std::max(target->health - damage, 0);
+		const int actualdamage = target->health - low;
 
 		angle_t sangle = 0;
 
@@ -2252,7 +2377,7 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 			else
 			{
 				player->health = 0;
-			} 
+			}
 		}
 
 		player->attacker = source ? source->ptr() : AActor::AActorPtr();
@@ -2284,8 +2409,8 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 			}
 
 			// Calculate amount of HP to take away from the boss pool
-			int low = std::max(target->health - damage, 0);
-			int actualdamage = target->health - low;
+			const int low = std::max(target->health - damage, 0);
+			const int actualdamage = target->health - low;
 
 			P_AddDamagePool(target, actualdamage);
 
@@ -2294,13 +2419,19 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 			{
 				if (target->health < 0)
 				{
-					if (P_GiveMonsterDamage(splayer, damage + target->health))
+					if (P_GiveMonsterDamage(*splayer, damage + target->health))
+					{
 						PersistPlayerDamage(*splayer);
+						P_ProcessSpreeDamage(splayer, damage + target->health);
+					}
 				}
 				else
 				{
-					if (P_GiveMonsterDamage(splayer, damage))
+					if (P_GiveMonsterDamage(*splayer, damage))
+					{
 						PersistPlayerDamage(*splayer);
+						P_ProcessSpreeDamage(splayer, damage);
+					}
 				}
 			}
 		}
@@ -2332,9 +2463,15 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		return;
 	}
 
-    if (!(target->flags2 & MF2_DORMANT))
+	 /* If target is a player, set player's target to source,
+	 * so that a friend can tell who's hurting a player
+	 */
+	if (source && player && co_helpfriends)
+		target->target = source->ptr();
+
+	if (!(target->flags2 & MF2_DORMANT))
 	{
-		int pain = P_Random();
+		int pain = P_Random(target);
 
 		if (target->oflags & MFO_UNFLINCHING)
 		{
@@ -2370,7 +2507,10 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
 		    !(source->flags3 & MF3_DMGIGNORED) &&
 		    !(source->oflags & MFO_INFIGHTINVUL) &&
 		    (!target->threshold || target->flags3 & MF3_NOTHRESHOLD) &&
-		    !P_InfightingImmune(target, source))
+		    !P_InfightingImmune(target, source) &&
+		    !((level.flags2 & LEVEL2_INFIGHTINGMASK) ?
+			    level.flags2 & LEVEL2_NOINFIGHTING :
+			    G_GetCurrentSkill().flags & SKILL_NOINFIGHTING))
 		{
 			// if not intent on another player, chase after this one
 			// [AM] Infight invul monsters will never provoke attacks.
@@ -2391,13 +2531,17 @@ void P_DamageMobj(AActor *target, AActor *inflictor, AActor *source, int damage,
             {
 				P_SetMobjState(target, target->info->seestate);
             }
-            SV_ActorTarget(target);
+            SV_UpdateMobj(target);
 		}
+	}
+	else
+	{
+		SV_UpdateMobj(target);
 	}
 }
 
 //The player has left the game (in-game to spectator, or in-game disconnect)
-void P_PlayerLeavesGame(player_s* player)
+void P_PlayerLeavesGame(player_t* player)
 {
 	if (level.behavior)
 	{
@@ -2420,21 +2564,27 @@ void P_PlayerLeavesGame(player_s* player)
 			{
 				if ((*player).flags[i])
 				{
-					f = (team_t)i;
+					f = static_cast<team_t>(i);
 				}
 			}
 		}
-	}
 
-	if (targethasflag)
-	{
-		M_LogWDLEvent(WDL_EVENT_CARRIERKILL, player, player, f, 0, MOD_EXIT, 0);
+		// We need to check if the player already exists here
+		// Because some clients can disconnect before they fully join the game, and we
+		// don't want to log disconnects for players that never fully joined.
+		if (M_CheckIfPlayerInLogs(player->id))
+		{
+			if (targethasflag)
+			{
+				M_LogWDLEvent(WDL_EVENT_CARRIERKILL, player, player, f, 0, MOD_EXIT, 0);
+			}
+			else
+			{
+				M_LogWDLEvent(WDL_EVENT_KILL, player, player, 0, 0, MOD_EXIT, 0);
+			}
+			M_LogWDLEvent(WDL_EVENT_DISCONNECT, player, NULL, current, 0, 0, 0);
+		}
 	}
-	else
-	{
-		M_LogWDLEvent(WDL_EVENT_KILL, player, player, 0, 0, MOD_EXIT, 0);
-	}
-	M_LogWDLEvent(WDL_EVENT_DISCONNECT, player, NULL, current, 0, 0, 0);
 
 	// Playercount changes can cause end-of-game conditions.
 	G_AssertValidPlayerCount();
@@ -2449,12 +2599,12 @@ void P_HealMobj(AActor* mo, int num)
 
 	if (player)
 	{
-		P_GiveBody(player, num);
+		P_GiveBody(*player, num);
 		return;
 	}
 	else
 	{
-		int max = mobjinfo[mo->type].spawnhealth;
+		const int max = mobjinfo[mo->type].spawnhealth;
 
 		mo->health += num;
 		if (mo->health > max)

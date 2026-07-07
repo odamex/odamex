@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -315,12 +315,10 @@ void LstOdaServerList::AddServerToList(const Server& s,
 	bool LineHighlight;
 	wxString HighlightColour;
 
-	wxInt32 i = 0;
 	wxListItem li;
 
 	wxUint64 Ping = 0;
 	wxString GameType = "";
-	size_t WadCount = 0;
 
 	li.m_mask = wxLIST_MASK_TEXT;
 
@@ -337,7 +335,7 @@ void LstOdaServerList::AddServerToList(const Server& s,
 		ClearItemCells(index);
 
 		li.m_itemId = index;
-		
+
         // Reset line text colour to control text colour
         SetItemTextColour(li.GetId(), GetTextColour());
 	}
@@ -357,7 +355,7 @@ void LstOdaServerList::AddServerToList(const Server& s,
         ConfigInfo.Read(CSHLCOLOUR, &HighlightColour, ODA_UICSHSHIGHLIGHTCOLOUR);
 
 		Colour.Set(HighlightColour);
-        
+
         if (LineHighlight)
             SetItemTextColour(li.GetId(), Colour);
     }
@@ -380,7 +378,7 @@ void LstOdaServerList::AddServerToList(const Server& s,
 	Ping = s.GetPing();
 
 	li.m_col = serverlist_field_ping;
-	li.m_text = wxString::Format("%lu", (wxInt32)Ping);
+	li.m_text = wxString::Format("%llu", Ping);
 
 	SetItem(li);
 
@@ -407,7 +405,7 @@ void LstOdaServerList::AddServerToList(const Server& s,
 	SetItem(li);
 
 	// WAD files column
-	WadCount = s.Info.Wads.size();
+	const size_t WadCount = s.Info.Wads.size();
 
 	// build a list of pwads
 	if(WadCount)
@@ -416,7 +414,7 @@ void LstOdaServerList::AddServerToList(const Server& s,
 		std::string wadlist;
 		std::string pwad;
 
-		for(i = 2; i < WadCount; ++i)
+		for(size_t i = 2; i < WadCount; ++i)
 		{
 			pwad = s.Info.Wads[i].Name.substr(0, s.Info.Wads[i].Name.find('.'));
 

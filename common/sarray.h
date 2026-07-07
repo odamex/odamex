@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -17,7 +17,7 @@
 //
 // DESCRIPTION:
 //
-// A static array implementation utilizing unique IDs for access. 
+// A static array implementation utilizing unique IDs for access.
 //
 //-----------------------------------------------------------------------------
 
@@ -26,13 +26,11 @@
 #include <algorithm>
 #include <iterator>
 #include <cassert>
-
-#include <cstdlib>
-#include <ctime>
+#include <random>
 
 // ============================================================================
 //
-// SArray 
+// SArray
 //
 // Lightweight fixed-size array implementation with iterator.
 // The class provides many desirable characteristics:
@@ -43,7 +41,7 @@
 //		Iterators that are STL conformant for use with <algorithm>
 //
 // ------------------------------------------------------------------------
-// 
+//
 // Notes:
 //
 // There are a fixed number of slots for the array, between 1 and MAX_SIZE.
@@ -67,25 +65,29 @@
 //
 // ============================================================================
 
-typedef unsigned int SArrayId;
+using SArrayId = size_t;
 
 // ----------------------------------------------------------------------------
-// SArray interface & inline implementation
+// SArray interface & implementation
 // ----------------------------------------------------------------------------
 
 template <typename VT, int N = 16>
+// VT has to be default constructible, but this check breaks OString
+// see https://www.open-std.org/JTC1/SC22/WG21/docs/cwg_active.html#2335
+// requires std::is_default_constructible_v<VT>
 class SArray
 {
 private:
-	typedef SArray<VT, N> SArrayType;
-	typedef unsigned int SlotNumber;
-
 	struct ItemRecord
 	{
 		VT				mItem;
-		SArrayId		mId;
+		SArrayId		mId = NOT_FOUND;
 	};
 
+	using ItemRecords = std::vector<ItemRecord>;
+	using SizeType = typename ItemRecords::size_type;
+	using SArrayType = SArray<VT, N>;
+	using SlotNumber = SizeType;
 public:
 	// ------------------------------------------------------------------------
 	// SArray::iterator & const_iterator implementation
@@ -96,7 +98,7 @@ public:
 	typedef generic_iterator<const VT, const SArrayType> const_iterator;
 
 	template <typename IVT, typename ISAT>
-	class generic_iterator : public std::iterator<std::forward_iterator_tag, SArray>
+	class generic_iterator
 	{
 	private:
 		// typedef for easier-to-read code
@@ -104,102 +106,102 @@ public:
 		typedef generic_iterator<const IVT, const ISAT> ConstThisClass;
 
 	public:
-		generic_iterator(ISAT& sarray) :
+		using iterator_category = std::forward_iterator_tag;
+		using value_type = IVT;
+		using difference_type = std::ptrdiff_t;
+		using pointer = value_type*;
+		using reference = value_type&;
+
+		generic_iterator(ISAT& sarray) noexcept :
 			mSArray(sarray), mSlot(NOT_FOUND)
 		{ }
 
-		generic_iterator(ISAT& sarray, SArrayId id) :
+		generic_iterator(ISAT& sarray, SArrayId id) noexcept :
 			mSArray(sarray), mSlot(NOT_FOUND)
 		{
 			if (id != NOT_FOUND)
 				mSlot = mSArray.getSlot(id);
 		}
 
-		generic_iterator(ISAT& sarray, const VT& item) :
+		generic_iterator(ISAT& sarray, const VT& item) noexcept :
 			mSArray(sarray)
 		{
 			mSlot = mSArray.getSlot(item);
 		}
 
 		// allow implicit converstion from iterator to const_iterator
-		inline operator ConstThisClass() const
+		operator ConstThisClass() const noexcept
 		{
 			return ConstThisClass(mSArray, mSlot);
 		}
 
-		inline bool operator== (const ThisClass& other) const
+		[[nodiscard]]
+		bool operator== (const ThisClass& other) const noexcept
 		{
 			return &mSArray == &other.mSArray && mSlot == other.mSlot;
 		}
 
-		inline bool operator!= (const ThisClass& other) const
+		bool operator!= (const ThisClass& other) const noexcept
 		{
 			return !(operator==(other));
 		}
 
-		inline IVT& operator* ()
+		reference operator* () noexcept
 		{
 			return mSArray.mItemRecords[mSlot].mItem;
 		}
 
-		inline IVT* operator-> ()
+		reference operator* () const noexcept
+		{
+			return mSArray.mItemRecords[mSlot].mItem;
+		}
+
+		pointer operator-> () noexcept
 		{
 			return &(mSArray.mItemRecords[mSlot].mItem);
 		}
 
-		inline ThisClass& operator++ ()
+		pointer operator-> () const noexcept
+		{
+			return &(mSArray.mItemRecords[mSlot].mItem);
+		}
+
+		ThisClass& operator++ () noexcept
 		{
 			mSlot = mSArray.nextUsed(++mSlot);
 			return *this;
 		}
 
-		inline ThisClass operator++ (int)
+		ThisClass operator++ (int) noexcept
 		{
 			generic_iterator temp(*this);
 			return temp.operator++ ();
 		}
 
-		inline ThisClass& operator+= (unsigned int n)
+		ThisClass& operator+= (difference_type n) noexcept
 		{
 			while (n--)
 				operator++ ();
 			return *this;
 		}
 
-		inline ThisClass operator+ (unsigned int n) const
+		ThisClass operator+ (difference_type n) const noexcept
 		{
 			generic_iterator temp(*this);
 			return temp.operator+= (n);
 		}
 
-		inline IVT& operator[] (unsigned int n)
+		reference operator[] (difference_type n) noexcept
 		{
 			generic_iterator temp(operator+ (n));
 			return temp.operator* ();
 		}
 
-		inline bool operator< (const ThisClass& other) const
+		[[nodiscard]]
+		auto operator<=>(const ThisClass& other) const noexcept
 		{
 			assert(&mSArray == &other.mSArray);
-			return mSlot < other.mSlot;
-		}
-
-		inline bool operator<= (const ThisClass& other) const
-		{
-			assert(&mSArray == &other.mSArray);
-			return mSlot <= other.mSlot;
-		}
-
-		inline bool operator> (const ThisClass& other) const
-		{
-			assert(&mSArray == &other.mSArray);
-			return mSlot > other.mSlot;
-		}
-
-		inline bool operator>= (const ThisClass& other) const
-		{
-			assert(&mSArray == &other.mSArray);
-			return mSlot >= other.mSlot;
+			return mSlot <=> other.mSlot;
 		}
 
 	private:
@@ -218,8 +220,8 @@ public:
 	//
 	// Initializes the container to the specified size.
 	//
-	SArray(unsigned int size) :
-		mItemRecords(NULL), mSize(0)
+	explicit SArray(SizeType size) :
+		mSize(0)
 	{
 		clear();
 		resize(size > MAX_SIZE ? MAX_SIZE : size);
@@ -231,7 +233,7 @@ public:
 	// Initializes the container as a copy of the given SArray
 	//
 	SArray(const SArrayType& other) :
-		mItemRecords(NULL), mSize(0)
+		mSize(0)
 	{
 		clear();
 		resize(other.mSize);
@@ -239,14 +241,23 @@ public:
 	}
 
 	//
+	// SArray:SArray
+	//
+	// Initializes the container by moving from the given SArray
+	//
+	SArray(SArrayType&& other) :
+		mSize(other.mSize)
+	{
+		clear();
+		moveFrom(std::move(other));
+	}
+
+	//
 	// SArray::~SArray
 	//
 	// Frees the memory used by the storage container.
 	//
-	~SArray()
-	{
-		delete [] mItemRecords;
-	}
+	~SArray() {}
 
 	//
 	// SArray::operator=
@@ -255,13 +266,28 @@ public:
 	//
 	SArray& operator= (const SArrayType& other)
 	{
+		if (&other == this)
+		{
+			return *this;
+		}
+
 		if (mSize != other.mSize)
 		{
-			delete [] mItemRecords;
-			mItemRecords = new ItemRecord[other.mSize];
+			mItemRecords.resize(other.mItemRecords.size());
 		}
 
 		copyFrom(other);
+		return *this;
+	}
+
+	//
+	// SArray::operator=
+	//
+	// Moves the contents of the given SArray to this one.
+	//
+	SArray& operator= (SArrayType&& other) noexcept
+	{
+		moveFrom(std::move(other));
 		return *this;
 	}
 
@@ -279,11 +305,15 @@ public:
 
 		// Set mIdKey to a random value to further help stale IDs handed out
 		// before clear was called.
-		srand(time(NULL));
-		mIdKey = MIN_KEY + (rand() % (MAX_KEY - MIN_KEY));
+		static std::mt19937 rng(std::random_device{}());
+		std::uniform_int_distribution<decltype(mIdKey)> dist(MIN_KEY, MAX_KEY - 1);
+		mIdKey = dist(rng);
 
-		for (unsigned int i = 0; i < mSize; i++)
-			mItemRecords[i].mId = NOT_FOUND;
+		// make sure destructors are called
+		// the standard guarantees that this
+		// will not (de)allocate the vector storage
+		mItemRecords.clear();
+		mItemRecords.resize(mSize);
 	}
 
 	//
@@ -291,7 +321,7 @@ public:
 	//
 	// Returns true if the container is empty.
 	//
-	inline bool empty() const
+	bool empty() const noexcept
 	{
 		return mUsed == 0;
 	}
@@ -301,7 +331,7 @@ public:
 	//
 	// Returns the number of items currently stored in the container.
 	//
-	inline size_t size() const
+	size_t size() const noexcept
 	{
 		return mUsed;
 	}
@@ -312,7 +342,7 @@ public:
 	// Returns the maximum size that the container can grow to. This number
 	// is directly based on the template parameter N.
 	//
-	inline size_t max_size() const
+	static constexpr size_t max_size() noexcept
 	{
 		return MAX_SIZE;
 	}
@@ -324,7 +354,7 @@ public:
 	// the storage container is resized to accommodate additional insertions,
 	// up to a maximum capacity dictated by the max_size function.
 	//
-	inline size_t capacity() const
+	size_t capacity() const noexcept
 	{
 		return mSize;
 	}
@@ -334,7 +364,7 @@ public:
 	//
 	// Returns an iterator to the first item stored in the container.
 	//
-	inline iterator begin()
+	iterator begin() noexcept
 	{
 		if (empty())
 			return end();
@@ -344,7 +374,7 @@ public:
 	//
 	// SArray::begin
 	//
-	inline const_iterator begin() const
+	const_iterator begin() const noexcept
 	{
 		if (empty())
 			return end();
@@ -354,7 +384,7 @@ public:
 	//
 	// SArray::end
 	//
-	inline iterator end()
+	iterator end() noexcept
 	{
 		return iterator(*this, NOT_FOUND);
 	}
@@ -362,10 +392,10 @@ public:
 	//
 	// SArray::end
 	//
-	inline const_iterator end() const
+	const_iterator end() const noexcept
 	{
 		return const_iterator(*this, NOT_FOUND);
-	}	
+	}
 
 	//
 	// SArray::validate
@@ -373,7 +403,7 @@ public:
 	// Indicates whether the given ID represents a valid item in the
 	// storage container.
 	//
-	inline bool validate(const SArrayId id) const
+	bool validate(const SArrayId id) const noexcept
 	{
 		return getSlot(id) != NOT_FOUND;
 	}
@@ -383,7 +413,7 @@ public:
 	//
 	// Returns an iterator to the item matching the given ID.
 	//
-	inline iterator find(const SArrayId id)
+	iterator find(const SArrayId id) noexcept
 	{
 		return iterator(*this, id);
 	}
@@ -391,7 +421,7 @@ public:
 	//
 	// SArray::find
 	//
-	inline const_iterator find(const SArrayId id) const
+	const_iterator find(const SArrayId id) const noexcept
 	{
 		return const_iterator(*this, id);
 	}
@@ -402,7 +432,7 @@ public:
 	// Returns the item matching the given ID. Note that passing an invalid ID
 	// results in undefined behavior.
 	//
-	inline VT& get(const SArrayId id)
+	VT& get(const SArrayId id) noexcept
 	{
 		SlotNumber slot = getSlot(id);
 		assert(slot != NOT_FOUND);
@@ -412,24 +442,24 @@ public:
 	//
 	// SArray::get
 	//
-	inline const VT& get(const SArrayId id) const
+	const VT& get(const SArrayId id) const noexcept
 	{
 		SlotNumber slot = getSlot(id);
 		assert(slot != NOT_FOUND);
 		return mItemRecords[slot].mItem;
 	}
-		
+
 	//
 	// SArray::operator[]
 	//
 	// Returns the item matching the given ID. Note that passing an invalid ID
 	// results in undefined behavior.
-	inline VT& operator[](const SArrayId id)
+	VT& operator[](const SArrayId id) noexcept
 	{
 		return get(id);
 	}
 
-	inline const VT& operator[](const SArrayId id) const
+	const VT& operator[](const SArrayId id) const noexcept
 	{
 		return get(id);
 	}
@@ -441,7 +471,7 @@ public:
 	// a reference to an item obtained through the get accessor results in
 	// undefined behavior.
 	//
-	inline SArrayId getId(const VT& item) const
+	SArrayId getId(const VT& item) const noexcept
 	{
 		assert(getSlot(item) != NOT_FOUND);
 		return mItemRecords[getSlot(item)].mId;
@@ -453,7 +483,7 @@ public:
 	// Inserts an uninitialized item into the container and returns the ID for
 	// the item.
 	//
-	inline SArrayId insert()
+	SArrayId insert()
 	{
 		SlotNumber slot = insertSlot();
 		return mItemRecords[slot].mId;
@@ -465,10 +495,23 @@ public:
 	// Inserts a copy of the given item into the container and returns the ID
 	// for the item.
 	//
-	inline SArrayId insert(const VT& item)
+	SArrayId insert(const VT& item)
 	{
 		SlotNumber slot = insertSlot();
 		mItemRecords[slot].mItem = item;
+		return mItemRecords[slot].mId;
+	}
+
+	//
+	// SArray::insert
+	//
+	// Moves the given item into the container and returns the ID
+	// for the item.
+	//
+	SArrayId insert(VT&& item)
+	{
+		SlotNumber slot = insertSlot();
+		mItemRecords[slot].mItem = std::move(item);
 		return mItemRecords[slot].mId;
 	}
 
@@ -479,9 +522,9 @@ public:
 	// item's destructor will not be called until this SArray instance is
 	// deleted or goes out of scope.
 	//
-	inline void erase(const SArrayId id)
+	void erase(const SArrayId id) noexcept
 	{
-		SlotNumber slot = getSlot(id);
+		const SlotNumber slot = getSlot(id);
 		assert(slot != NOT_FOUND);
 		eraseSlot(slot);
 	}
@@ -494,9 +537,9 @@ public:
 	// Additionally, passing an item that is not a reference to an item obtained
 	// through the get accessor results in undefined behavior.
 	//
-	inline void erase(const VT& item)
+	void erase(const VT& item) noexcept
 	{
-		SlotNumber slot = getSlot(item);
+		const SlotNumber slot = getSlot(item);
 		assert(slot != NOT_FOUND);
 		eraseSlot(slot);
 	}
@@ -508,7 +551,7 @@ public:
 	// destructor will not be called until this SArray instance is deleted or
 	// goes out of scope.
 	//
-	inline void erase(iterator it)
+	void erase(iterator it) noexcept
 	{
 		assert(it.slot != NOT_FOUND);
 		eraseSlot(it.mSlot);
@@ -519,9 +562,9 @@ public:
 	//
 	// Remove all of the items between the given iterators, inclusive. Note that
 	// the items' destructors will not be called until this SArray instance is
-	// deleted or goes out of scope.
+	// deleted, goes out of scope, or is cleared.
 	//
-	inline void erase(iterator it1, iterator it2)
+	void erase(iterator it1, iterator it2) noexcept
 	{
 		while (it1 != it2)
 		{
@@ -534,26 +577,14 @@ private:
 	//
 	// SArray::resize
 	//
-	// Resizes the storage array mItemReocrds to the new specified size.
+	// Resizes the storage array mItemRecords to the new specified size.
 	//
-	inline void resize(unsigned int newsize)
+	void resize(SizeType newsize)
 	{
-		assert(newsize > mSize);
 		assert(newsize <= MAX_SIZE);
-
-		ItemRecord* newitemrecords = new ItemRecord[newsize];
-		for (SlotNumber i = 0; i < mNextUnused; i++)
-		{
-			newitemrecords[i].mItem = mItemRecords[i].mItem;
-			newitemrecords[i].mId = mItemRecords[i].mId;
-		}
-		for (SlotNumber i = mNextUnused; i < newsize; i++)
-			newitemrecords[i].mId = NOT_FOUND;
-		
-		delete [] mItemRecords;
 		mSize = newsize;
-		mItemRecords = newitemrecords;
-		assert(mItemRecords != NULL);
+		mItemRecords.resize(newsize);
+		assert(!mItemRecords.empty());
 	}
 
 	//
@@ -562,7 +593,7 @@ private:
 	// Returns the slot portion of the given ID, verifying that the key portion
 	// of the ID is correct.
 	//
-	inline SlotNumber getSlot(const SArrayId id) const
+	SlotNumber getSlot(const SArrayId id) const noexcept
 	{
 		SlotNumber slot = id & SLOT_MASK;
 		assert(slot < mSize);
@@ -577,9 +608,9 @@ private:
 	// Returns the slot occupied by the given item. The item must be a reference
 	// returned by one of the class's accessor functions.
 	//
-	inline SlotNumber getSlot(const VT& item) const
+	SlotNumber getSlot(const VT& item) const noexcept
 	{
-		SlotNumber slot = (ItemRecord*)(&item) - mItemRecords;
+		SlotNumber slot = reinterpret_cast<const ItemRecord*>(std::addressof(item)) - mItemRecords.data();
 		if (slot < mSize && slotUsed(slot))
 			return slot;
 		return NOT_FOUND;
@@ -591,10 +622,10 @@ private:
 	// Creates a new ID number from a combination of mIdKey and the
 	// given slot number. mIdKey is then incremented, handling wrap-around.
 	//
-	inline SArrayId generateId(SlotNumber slot)
+	SArrayId generateId(SlotNumber slot) noexcept
 	{
 		assert(slot < mSize);
-		SArrayId id = (mIdKey << SLOT_BITS) | slot;
+		const SArrayId id = (mIdKey << SLOT_BITS) | slot;
 		mIdKey++;
 		if (mIdKey > MAX_KEY)
 			mIdKey = MIN_KEY;
@@ -606,7 +637,7 @@ private:
 	//
 	// Indicates if the given slot is currently in use.
 	//
-	inline bool slotUsed(SlotNumber slot) const
+	bool slotUsed(SlotNumber slot) const noexcept
 	{
 		return ((mItemRecords[slot].mId >> SLOT_BITS) >= MIN_KEY);
 	}
@@ -616,7 +647,7 @@ private:
 	//
 	// Returns the slot number for the next slot in use following given slot.
 	//
-	inline SlotNumber nextUsed(SlotNumber slot) const
+	SlotNumber nextUsed(SlotNumber slot) const noexcept
 	{
 		while (slot < mNextUnused && !slotUsed(slot))
 			slot++;
@@ -629,7 +660,7 @@ private:
 	//
 	// Returns the slot number for the slot in use that preceeds the given slot.
 	//
-	inline SlotNumber prevUsed(SlotNumber slot) const
+	SlotNumber prevUsed(SlotNumber slot) const noexcept
 	{
 		while (slot > 0 && !slotUsed(slot))
 			slot--;
@@ -646,12 +677,12 @@ private:
 	// Tracking variables mFreeHead and mNextUnused are updated as needed.
 	// The number of the slot availible for insertion is returned.
 	//
-	inline SlotNumber insertSlot()
+	SlotNumber insertSlot()
 	{
 		// need to resize?
 		if (mUsed == mSize)
 		{
-			unsigned int newsize = 2 * mSize > MAX_SIZE ? MAX_SIZE : 2 * mSize;
+			const SizeType newsize = 2 * mSize > MAX_SIZE ? MAX_SIZE : 2 * mSize;
 			// is it full and not able to be resized?
 			assert(mSize != newsize);
 			if (mSize == newsize)
@@ -665,7 +696,7 @@ private:
 			mFreeHead = mItemRecords[slot].mId;
 		else
 			slot = mNextUnused++;
-		
+
 		assert(slot < mSize);
 		mItemRecords[slot].mId = generateId(slot);
 		mUsed++;
@@ -678,7 +709,7 @@ private:
 	// Marks the given slot as being unused and updates the tracking variables
 	// mFreeHead and mUsed.
 	//
-	inline void eraseSlot(SlotNumber slot)
+	void eraseSlot(SlotNumber slot) noexcept
 	{
 		assert(slot < mSize);
 		if (slotUsed(slot))
@@ -695,10 +726,10 @@ private:
 	// Helper function for the assignment operator and copy constructor. Handles
 	// copying the contents of another SArray to this one.
 	//
-	inline void copyFrom(const SArrayType& other)
+	void copyFrom(const SArrayType& other) noexcept(std::is_nothrow_copy_assignable_v<VT>)
 	{
 		mSize = other.mSize;
-		for (SlotNumber i = 0; i < mNextUnused; i++)
+		for (SlotNumber i = 0; i < other.mNextUnused; i++)
 		{
 			mItemRecords[i].mItem = other.mItemRecords[i].mItem;
 			mItemRecords[i].mId = other.mItemRecords[i].mId;
@@ -710,23 +741,43 @@ private:
 		mIdKey = other.mIdKey;
 	}
 
-	static const unsigned int SLOT_BITS = N; 
-	static const unsigned int KEY_BITS = 32 - SLOT_BITS;
-	static const unsigned int MAX_SIZE = 1 << SLOT_BITS;
+	//
+	// SArray::moveFrom
+	//
+	// Helper function for the move assignment operator and move constructor. Handles
+	// copying the contents of another SArray to this one.
+	//
+	void moveFrom(SArrayType&& other) noexcept
+	{
+		mSize = other.mSize;
+		mItemRecords = std::move(other.mItemRecords);
 
-	static const unsigned int MIN_KEY = 2;
-	static const unsigned int MAX_KEY = (1 << KEY_BITS) - 1;
+		mUsed = other.mUsed;
+		mNextUnused = other.mNextUnused;
+		mFreeHead = other.mFreeHead;
+		mIdKey = other.mIdKey;
+		// make sure other members get reset to valid states
+		// that correspond with the now-empty vector
+		other.clear();
+	}
 
-	static const unsigned int MIN_SLOT = 0;
-	static const unsigned int MAX_SLOT = (1 << SLOT_BITS) - 1; 
-	static const unsigned int SLOT_MASK = (1 << SLOT_BITS) - 1;
+	static constexpr SizeType SLOT_BITS = N;
+	static constexpr SizeType KEY_BITS = 32 - SLOT_BITS;
+	static constexpr SizeType MAX_SIZE = 1 << SLOT_BITS;
 
-	static const unsigned int NOT_FOUND = (1 << SLOT_BITS) | MAX_SLOT;
+	static constexpr SizeType MIN_KEY = 2;
+	static constexpr SizeType MAX_KEY = (1 << KEY_BITS) - 1;
 
-	ItemRecord*		mItemRecords;
-	unsigned int	mSize;
-	unsigned int	mUsed;
-	SlotNumber		mNextUnused;
-	SlotNumber		mFreeHead;
-	unsigned int	mIdKey;
+	static constexpr SizeType MIN_SLOT = 0;
+	static constexpr SizeType MAX_SLOT = (1 << SLOT_BITS) - 1;
+	static constexpr SizeType SLOT_MASK = (1 << SLOT_BITS) - 1;
+
+	static constexpr SizeType NOT_FOUND = (1 << SLOT_BITS) | MAX_SLOT;
+
+	ItemRecords  mItemRecords;
+	SizeType     mSize;
+	SizeType     mUsed;
+	SlotNumber   mNextUnused;
+	SlotNumber   mFreeHead;
+	SizeType     mIdKey;
 };

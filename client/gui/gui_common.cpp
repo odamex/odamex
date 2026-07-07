@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,7 +28,15 @@
 
 #include "gui_resource.h"
 
-#if defined(_WIN32) && !defined(_XBOX)
+Fl_Image* GUIRes::icon_odamex_128()
+{
+	static Fl_Image* image = new Fl_PNG_Image("icon_odamex_128", __icon_odamex_128_png,
+	                                          __icon_odamex_128_png_len);
+	return image;
+}
+
+
+#if defined(_WIN32)
 
 #include "FL/x.H"
 #include "win32inc.h"
@@ -41,13 +49,10 @@ void GUI_SetIcon(Fl_Window* win)
 
 #else
 
-void GUI_SetIcon(Fl_Window* win) { }
+void GUI_SetIcon(Fl_Window* win)
+{
+	win->icon(static_cast<const Fl_RGB_Image*>(GUIRes::icon_odamex_128()));
+}
 
 #endif
 
-Fl_Image* GUIRes::icon_odamex_128()
-{
-	static Fl_Image* image = new Fl_PNG_Image("icon_odamex_128", __icon_odamex_128_png,
-	                                          __icon_odamex_128_png_len);
-	return image;
-}

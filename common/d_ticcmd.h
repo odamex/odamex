@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -55,7 +55,7 @@ struct ticcmd_t
 	}
   public:
 
-	static const size_t SERIALIZED_SIZE = 2 + sizeof(short) * 5;
+	static constexpr size_t SERIALIZED_SIZE = 2 + sizeof(short) * 5;
 
 	ticcmd_t()
 	{
@@ -73,7 +73,7 @@ struct ticcmd_t
 		impulse = 0;
 	}
 
-	void serialize(std::string& out)
+	void serialize(std::string& out) const
 	{
 		out.resize(SERIALIZED_SIZE);
 		writeByte(out.begin(), buttons);
@@ -97,8 +97,6 @@ struct ticcmd_t
 		readShort(in.begin() + 9, upmove);
 		readByte(in.begin() + 11, impulse);
 	}
-
-	int		tic;	// the client's tic when this cmd was sent
 
 	byte	buttons;
 	short	pitch;			// up/down. currently just a y-sheering amount
@@ -159,7 +157,7 @@ inline FArchive &operator<< (FArchive &arc, ticcmd_t &cmd)
 	}
 
 	byte len = ptr - buf;
-	arc << (byte)(len + 1) << flags;
+	arc << static_cast<byte>(len + 1) << flags;
 	arc.Write(buf, len);
 
 	return arc;

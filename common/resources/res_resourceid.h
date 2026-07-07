@@ -49,6 +49,17 @@ public:
 		return mValue;
 	}
 
+	// Convenience helpers mirroring the old lumpHandle_t interface.
+	bool empty() const
+	{
+		return mValue == static_cast<uint32_t>(-1);
+	}
+
+	void clear()
+	{
+		mValue = static_cast<uint32_t>(-1);
+	}
+
 	static const ResourceId INVALID_ID;
 
 private:

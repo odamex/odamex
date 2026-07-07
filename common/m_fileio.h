@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,8 +29,8 @@
 #include "m_ostring.h"
 
 extern std::ofstream LOG;
-extern std::ifstream CON;
 
+std::string M_JoinPath(std::string_view path1, std::string_view path2);
 void M_ExpandHomeDir(std::string& path);
 std::string M_FindUserFileName(const std::string& file, const char* ext);
 void M_FixPathSep(std::string& path);
@@ -38,11 +38,82 @@ std::string M_GetCWD();
 
 SDWORD M_FileLength (FILE *f);
 SDWORD M_FileLength(const std::string& filename);
+template <typename ElementType>
+bool M_ReadLE(std::istream& io_stream, ElementType& o_data)
+{
+	if (io_stream.good())
+	{
+		io_stream.read(reinterpret_cast<char*>(&o_data), sizeof(o_data));
+		if (io_stream.gcount() == sizeof(o_data))
+		{
+			using namespace nonstd::bit;
+			o_data = to_native_endian(o_data,
+			                          little_endian_type());    // from
+			return true;
+		}
+        else
+        {
+            // We enter this condition if everything was good(), but we tried to read past the
+            // end-of-file.  In that case, both the eofbit and the failbit are set, either of
+            // which invalidate the .good() check.
+            //
+            // We want to be able to seek back from the EOF, and the seekg function clears
+            // the eofbit but not the failbit, preventing further reads from working.  Therefore
+            // we want to clear just the failbit here.  We're still safeguarded from past-EOF
+            // reads by the eofbit, so we're okay to do this.
+            //
+            // The end result is that the stream is left in the state as though the last read
+            // was successful (even though it really wasn't) and left us right at the EOF.
+            io_stream.clear(std::ios_base::eofbit);
+        }
+	}
+	return false;
+}
+
+template <typename ElementType, size_t N>
+bool M_ReadLE(std::istream& io_stream, ElementType (&o_dataArray)[N])
+{
+	for (size_t i = 0; i < N; ++i)
+	{
+		if (not M_ReadLE(io_stream, o_dataArray[i]))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+template <typename ElementType>
+bool M_WriteLE(std::ostream& io_stream, const ElementType& i_data)
+{
+	if (io_stream.good())
+	{
+		ElementType temp = nonstd::bit::as_little_endian(i_data);
+		io_stream.write(reinterpret_cast<char*>(&temp), sizeof(temp));
+		return true;
+	}
+	return false;
+}
+
+template <typename ElementType, size_t N>
+bool M_WriteLE(std::ostream& io_stream, const ElementType (&i_dataArray)[N])
+{
+	for (size_t i = 0; i < N; ++i)
+	{
+		if (not M_WriteLE(io_stream, i_dataArray[i]))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+uintmax_t M_FileLength (std::istream& f);
 bool M_FileExists(const std::string& filename);
 bool M_FileExistsExt(const std::string& filename, const char* ext);
 
-BOOL M_WriteFile(std::string filename, void *source, QWORD length);
-QWORD M_ReadFile(std::string filename, BYTE **buffer);
+bool M_WriteFile(std::string filename, void *source, size_t length);
+size_t M_ReadFile(const std::string& filename, byte **buffer);
 
 std::string M_AppendExtension(const std::string& filename, const std::string& ext, bool if_needed = true);
 
@@ -65,9 +136,9 @@ std::string M_GetBinaryDir();
 
 /**
  * @brief Get the home directory of the passed user - or the current user.
- * 
+ *
  * @param user Name of the user to look up, or blank if no user.
- * @return 
+ * @return
  */
 std::string M_GetHomeDir(const std::string& user = "");
 
@@ -85,10 +156,17 @@ std::string M_GetUserDir();
 std::string M_GetWriteDir();
 
 /**
+ * @brief Get the directory that downloaded wads and other files
+ *        shall be written into. If the directory does not exist, it will
+ *        be created.
+ */
+std::string M_GetDownloadDir();
+
+/**
  * @brief Resolve a file name into a user directory.
- * 
+ *
  * @detail This function is OS-specific.
- * 
+ *
  *         Aboslute and relative paths that begin with "." and ".." should
  *         be resolved relative to the Odamex binary.  Otherwise, the file
  *         is resolved relative to a platform and user specific directory
@@ -97,17 +175,53 @@ std::string M_GetWriteDir();
  *         The resolution process will create a user home directory if it
  *         doesn't exist, but otherwise this process is blind and does not
  *         consider the existence of the file in question.
- * 
+ *
  * @param file Filename to resolve.
  * @return An absolute path pointing to the resolved file.
  */
 std::string M_GetUserFileName(const std::string& file);
 
 /**
- * @brief Attempt to find a file in a directory - case insensitive.
- * 
+ * @brief Resolve a file name into a user screenshot directory.
+ *
  * @detail This function is OS-specific.
- * 
+ *
+ *         The file is resolved relative to a platform and
+ *         user specific directory in their home directory.
+ *
+ *         The resolution process will create a user home directory and screenshot subdirectory
+ *         if it doesn't exist, but otherwise this process is blind and does not
+ *         consider the existence of the file in question.
+ *
+ * @param file Filename to resolve.
+ * @param altpath Optional alternate screenshot directory
+ * @return An absolute path pointing to the resolved file.
+ */
+std::string M_GetScreenshotFileName(const std::string& file, const std::string& altpath = "");
+
+/**
+ * @brief Resolve a file name into a user netdemo directory.
+ *
+ * @detail This function is OS-specific.
+ *
+ *         The file is resolved relative to a platform and
+ *         user specific directory in their home directory.
+ *
+ *         The resolution process will create a user home directory and netdemo subdirectory
+ *         if it doesn't exist, but otherwise this process is blind and does not
+ *         consider the existence of the file in question.
+ *
+ * @param file Filename to resolve.
+ * @param altpath Optional alternate netdemo directory
+ * @return An absolute path pointing to the resolved file.
+ */
+std::string M_GetNetDemoFileName(const std::string& file, const std::string& altpath = "");
+
+/**
+ * @brief Attempt to find a file in a directory - case insensitive.
+ *
+ * @detail This function is OS-specific.
+ *
  * @param dir Directory to search.
  * @param file File to search, without extension.
  * @param exts Extensions to search, including initial dot - must be capitalized.
@@ -120,10 +234,10 @@ std::string M_BaseFileSearchDir(std::string dir, const std::string& file,
 
 /**
  * @brief Attempt to find multiple files in a directory - case insensitive.
- * 
+ *
  * @detail Unlike M_BaseFileSearchDir, this scans the entire directory and
  *         doesn't care about hashes or hashed files.
- * 
+ *
  * @param dir Directory to search.
  * @param files Files to search, with extension.
  * @return Filenames of any found files.
@@ -132,10 +246,10 @@ std::vector<std::string> M_BaseFilesScanDir(std::string dir, std::vector<OString
 
 /**
  * @brief Attempt to find multiple PWAD files in a directory - case insensitive.
- * 
+ *
  * @detail Unlike M_BaseFileSearchDir, this scans the entire directory and
  *         doesn't care about hashes or hashed files.
- * 
+ *
  * @param dir Directory to search.
  * @return Filenames of any found files.
  */
@@ -143,7 +257,7 @@ std::vector<std::string> M_PWADFilesScanDir(std::string dir);
 
 /**
  * @brief Get absolute path from passed path.
- * 
+ *
  * @param path Path to make absolute.
  * @param out Resulting path.
  * @return True if the path was made absolute successfully.
@@ -153,3 +267,12 @@ bool M_GetAbsPath(const std::string& path, std::string& out);
 bool M_IsDirectory(const std::string& path);
 bool M_IsFile(const std::string& path);
 std::vector<std::string> M_ListDirectoryContents(const std::string& path, size_t max_depth = 1);
+struct FileDeleter
+{
+    void operator()(FILE* f) const
+    {
+        fclose(f);
+    }
+};
+
+using uqFile = std::unique_ptr<FILE, FileDeleter>;

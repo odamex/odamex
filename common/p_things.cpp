@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -32,8 +32,9 @@
 #include "tables.h"
 #include "m_random.h"
 #include "c_console.h"
+#include "gi.h"
 
-EXTERN_CVAR (sv_nomonsters)
+EXTERN_CVAR(sv_nomonsters)
 
 // List of spawnable things for the Thing_Spawn and Thing_Projectile specials.
 
@@ -193,17 +194,20 @@ int SpawnableThings[] = {
 
 const int NumSpawnableThings = sizeof(SpawnableThings)/sizeof(*SpawnableThings);
 
-BOOL P_Thing_Spawn (int tid, int type, angle_t angle, BOOL fog)
+bool P_Thing_Spawn (int tid, int type, angle_t angle, bool fog)
 {
 	fixed_t z;
 	int rtn = 0;
 	int kind;
-	AActor *spot = NULL, *mobj;
+	AActor *spot = NULL;
+
+	// type is doomednum
+	// kind is the mobjtype
 
 	if (type >= NumSpawnableThings)
 		return false;
 
-	if ( (kind = SpawnableThings[type]) == 0)
+	if ((kind = SpawnableThings[type]) == 0)
 		return false;
 
 	if ((mobjinfo[kind].flags & MF_COUNTKILL) && sv_nomonsters == 1)
@@ -216,7 +220,7 @@ BOOL P_Thing_Spawn (int tid, int type, angle_t angle, BOOL fog)
 		else
 			z = spot->z;
 
-		mobj = new AActor (spot->x, spot->y, z, (mobjtype_t)kind);
+		AActor* mobj = new AActor(spot->x, spot->y, z, static_cast<mobjtype_t>(kind));
 
 		if (mobj)
 		{
@@ -225,7 +229,7 @@ BOOL P_Thing_Spawn (int tid, int type, angle_t angle, BOOL fog)
 				rtn++;
 				mobj->angle = angle;
 				if (fog)
-					S_Sound (new AActor (spot->x, spot->y, spot->z, MT_TFOG),
+					S_Sound (new AActor (spot->x, spot->y, spot->z + INT2FIXED(gameinfo.telefogHeight), MT_TFOG),
 							 CHAN_VOICE, "misc/teleport", 1, ATTN_NORM);
 				mobj->flags |= MF_DROPPED;	// Don't respawn
 				if (mobj->flags2 & MF2_FLOATBOB)
@@ -244,8 +248,8 @@ BOOL P_Thing_Spawn (int tid, int type, angle_t angle, BOOL fog)
 	return rtn != 0;
 }
 
-BOOL P_Thing_Projectile (int tid, int type, angle_t angle,
-						 fixed_t speed, fixed_t vspeed, BOOL gravity)
+bool P_Thing_Projectile (int tid, int type, angle_t angle,
+						 fixed_t speed, fixed_t vspeed, bool gravity)
 {
 	int rtn = 0;
 	int kind;
@@ -265,7 +269,7 @@ BOOL P_Thing_Projectile (int tid, int type, angle_t angle,
 		if (spot->type != MT_MAPSPOT && spot->type != MT_MAPSPOTGRAVITY)
 			continue;
 
-		mobj = new AActor (spot->x, spot->y, spot->z, (mobjtype_t)kind);
+		mobj = new AActor (spot->x, spot->y, spot->z, static_cast<mobjtype_t>(kind));
 
 		if (mobj)
 		{
@@ -286,16 +290,16 @@ BOOL P_Thing_Projectile (int tid, int type, angle_t angle,
 			mobj->momz = vspeed;
 			mobj->flags |= MF_DROPPED;
 			if (mobj->flags & MF_MISSILE)
-				rtn = P_CheckMissileSpawn (mobj);
+				rtn = P_CheckMissileSpawn (mobj, spot);
 			else if (!P_TestMobjLocation (mobj))
 				mobj->Destroy ();
-		} 
+		}
 	}
 
 	return rtn;
 }
 
-BOOL P_ActivateMobj (AActor *mobj, AActor *activator)
+bool P_ActivateMobj (AActor *mobj, AActor *activator)
 {
 	if (mobj->flags & MF_COUNTKILL)
 	{
@@ -315,7 +319,7 @@ BOOL P_ActivateMobj (AActor *mobj, AActor *activator)
 					count = 32;
 
 				P_DrawSplash (count, mobj->x, mobj->y, mobj->z, mobj->angle, 1);
-				sprintf (sound, "world/spark%d", 1+(M_Random() % 3));
+				snprintf (sound, 16, "world/spark%d", 1+(M_Random() % 3));
 				S_Sound (mobj, CHAN_AUTO, sound, 1, ATTN_STATIC);
 				break;
 			}
@@ -348,7 +352,7 @@ BOOL P_ActivateMobj (AActor *mobj, AActor *activator)
 	return false;
 }
 
-BOOL P_DeactivateMobj (AActor *mobj)
+bool P_DeactivateMobj (AActor *mobj)
 {
 	if (mobj->flags & MF_COUNTKILL)
 	{

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,8 +23,6 @@
 
 
 #include "odamex.h"
-
-#include <map>
 
 #include "p_local.h"
 #include "p_lnspec.h"
@@ -48,7 +46,7 @@ class DActiveButton : public DThinker
 {
 	DECLARE_SERIAL (DActiveButton, DThinker);
 public:
-	enum EWhere
+	enum EWhere : uint8_t
 	{
 		BUTTON_Top,
 		BUTTON_Middle,
@@ -59,22 +57,13 @@ public:
 	DActiveButton ();
 	DActiveButton (line_t *, EWhere, ResourceId res_id, SDWORD time, fixed_t x, fixed_t y);
 
-	void RunThink ();
+	void RunThink () override;
 
 	line_t	*m_Line;
 	EWhere	m_Where;
 	ResourceId m_ResId;
 	SDWORD	m_Timer;
 	fixed_t	m_X, m_Y;	// Location of timer sound
-
-	friend FArchive &operator<< (FArchive &arc, EWhere where)
-	{
-		return arc << (BYTE)where;
-	}
-	friend FArchive &operator>> (FArchive &arc, EWhere &out)
-	{
-		BYTE in; arc >> in; out = (EWhere)in; return arc;
-	}
 };
 
 static ResourceId* switchlist;
@@ -247,7 +236,7 @@ bool P_SetButtonInfo(line_t *line, unsigned state, unsigned time)
 	{
 		if (button->m_Line == line)
 		{
-			button->m_Where = (DActiveButton::EWhere)state;
+			button->m_Where = static_cast<DActiveButton::EWhere>(state);
 			button->m_Timer = time;
 			return true;
 		}
@@ -276,7 +265,7 @@ void P_UpdateButtons(client_t *cl)
 		// record that we acted on this line:
 		actedlines[l] = true;
 
-		MSG_WriteSVC(&cl->reliablebuf, SVC_Switch(lines[l], state, timer));
+		MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_Switch(lines[l], state, timer));
 	}
 
 	for (int l=0; l<numlines; l++)
@@ -284,7 +273,7 @@ void P_UpdateButtons(client_t *cl)
 		// update all button state except those that have actors assigned:
 		if (!actedlines[l] && lines[l].wastoggled)
 		{
-			MSG_WriteSVC(&cl->reliablebuf, SVC_Switch(lines[l], 0, 0));
+			MSG_WriteSVC(cl->messenger.ReliableBuf(), SVC_Switch(lines[l], 0, 0));
 		}
 	}
 }

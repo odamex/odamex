@@ -1,8 +1,10 @@
-# CMake 3.13 needed for -S and -B params in library compilation.
+# CMake >= 3.13 needed for -S and -B params in library compilation.
+# CMake >= 3.19 needed for policy CMP0112: target-dependent generator expressions
+#               do not implicitly add target-level dependencies.
 #
 # Note that if you are running Linux, there are many ways to get newer
 # versions of CMake.
-# 
+#
 # - Kitware offers binary downloads direct from their website, which you can
 #   extract to /usr/local or ~/.local.
 # - Ubuntu LTS users can install the CMake snap, and Kitware also runs an
@@ -12,9 +14,9 @@
 # - If you have Python installed, you can install CMake through pip.
 #
 
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.19)
 
-project(Odamex VERSION 10.5.0)
+project(Odamex VERSION 13.0.0)
 
 include(CMakeDependentOption)
 
@@ -22,6 +24,11 @@ include(CMakeDependentOption)
 set(CMAKE_INSTALL_BINDIR "bin")
 set(CMAKE_INSTALL_DATADIR "share")
 include(GNUInstallDirs OPTIONAL)
+
+option(ODAMEX_NO_GITVER "Don't include git versioning information" 0)
+if(ODAMEX_NO_GITVER)
+  add_definitions(-DODAMEX_NO_GITVER)
+endif()
 
 add_definitions(-DINSTALL_BINDIR="${CMAKE_INSTALL_BINDIR}")
 add_definitions(-DINSTALL_DATADIR="${CMAKE_INSTALL_DATADIR}")
@@ -41,28 +48,40 @@ endif()
 option(BUILD_CLIENT "Build client target" 1)
 option(BUILD_SERVER "Build server target" 1)
 option(BUILD_LAUNCHER "Build launcher target" 1)
+option(BUILD_TESTS "Build unit test target" 1)
 option(BUILD_MASTER "Build master server target" 0)
 option(BUILD_OR_FAIL "Must build the BUILD_* targets or else generation will fail" 0)
-option(USE_INTERNAL_DEUTEX "Use internal DeuTex" ${USE_INTERNAL_LIBS})
 option(USE_LTO "Build Release builds with Link Time Optimization" 1)
-cmake_dependent_option( USE_INTERNAL_ZLIB "Use internal zlib" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
+option(USE_EXTERNAL_LIBDWARF "Use external libdwarf for cpptrace" 0)
+cmake_dependent_option( USE_INTERNAL_ZLIB "Use internal zlib" ${USE_INTERNAL_LIBS} "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS" 0 )
+cmake_dependent_option( USE_INTERNAL_ZSTD "Use internal zstd" ${USE_INTERNAL_LIBS} "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS" 0 )
 cmake_dependent_option( USE_INTERNAL_PNG "Use internal libpng" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
-cmake_dependent_option( USE_INTERNAL_CURL "Use internal libcurl" ${USE_INTERNAL_LIBS} BUILD_CLIENT 0 )
-cmake_dependent_option( USE_INTERNAL_JSONCPP "Use internal JsonCpp" 1 BUILD_SERVER 0 )
+cmake_dependent_option( USE_INTERNAL_CURL "Use internal libcurl" ${USE_INTERNAL_LIBS} "BUILD_CLIENT OR BUILD_TESTS" 0 )
+cmake_dependent_option( USE_INTERNAL_JSONCPP "Use internal JsonCpp" 1 "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS" 0 )
+cmake_dependent_option( USE_INTERNAL_CPPTRACE "Use internal cpptrace" 1 "BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS" 0 )
+cmake_dependent_option( USE_INTERNAL_FLTK "Use internal FLTK" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_INTERNAL_WXWIDGETS "Use internal wxWidgets" ${USE_INTERNAL_LIBS} BUILD_LAUNCHER 0 )
+cmake_dependent_option( USE_INTERNAL_GTEST "Use internal GoogleTest" 1 BUILD_TESTS 0 )
 cmake_dependent_option( ENABLE_PORTMIDI "Enable portmidi support" 1 BUILD_CLIENT 0 )
 cmake_dependent_option( USE_MINIUPNP "Build with UPnP support" 1 BUILD_SERVER 0 )
 cmake_dependent_option( USE_INTERNAL_MINIUPNP "Use internal MiniUPnP" 1 USE_MINIUPNP 0 )
+cmake_dependent_option( USE_INTERNAL_LIBADLMIDI "Use internal libADLMIDI" 1 BUILD_CLIENT 0 )
 
-set(PROJECT_COPYRIGHT "2006-2024")
-set(PROJECT_RC_VERSION "10,5,0,0")
+set(ODAMEX_INSTALL_BINDIR "/usr/local/bin" CACHE PATH "Smart default for bin dir location")
+set(ODAMEX_INSTALL_DATADIR "/usr/local/share" CACHE PATH "Smart default for data dir location")
+
+if(NOT APPLE AND NOT WIN32)
+  add_definitions(-DODAMEX_INSTALL_BINDIR="${ODAMEX_INSTALL_BINDIR}")
+  add_definitions(-DODAMEX_INSTALL_DATADIR="${ODAMEX_INSTALL_DATADIR}")
+endif()
+
+set(PROJECT_COPYRIGHT "2006-2026")
+set(PROJECT_RC_VERSION "13,0,0,0")
 set(PROJECT_COMPANY "The Odamex Team")
 
 # Include early required commands for specific systems
 if (NSWITCH)
 	include("switch.cmake" REQUIRED)  # Nintendo Switch
-elseif(VWII)
-  include("wii.cmake" REQUIRED)     # Wii/vWii
 endif()
 
 # Ensure that we can use folders in projects.
@@ -123,7 +142,14 @@ if(NOT MSVC)
   set(USE_STATIC_STDLIB OFF CACHE BOOL
     "Statically link against the C and C++ Standard Library.")
   set(USE_SANITIZE_ADDRESS OFF CACHE BOOL
-    "Turn on Address Sanitizer in Debug builds, requires GCC >= 4.8 or Clang >= 3.1")
+    "Turn on Address Sanitizer in Debug builds.")
+  set(USE_SANITIZE_THREAD OFF CACHE BOOL
+    "Turn on Thread Sanitizer in Debug builds.")
+  if(USE_SANITIZE_ADDRESS AND USE_SANITIZE_THREAD)
+    message(FATAL_ERROR "USE_SANITIZE_ADDRESS and USE_SANITIZE_THREAD are mutually exclusive options.")
+  endif()
+  set(USE_SANITIZE_UNDEFINED OFF CACHE BOOL
+    "Turn on Undefined Behavior Sanitizer in Debug builds.")
 endif()
 
 if(${CMAKE_SYSTEM_NAME} MATCHES SunOS )
@@ -158,11 +184,8 @@ string(REGEX REPLACE "^(heads\/|tags\/)(.+)(-0-g)([0-9a-f]+)"
 # Libraries
 add_subdirectory(libraries)
 
-# WAD building
-add_subdirectory(wad)
-
 # Subdirectories for Odamex projects
-if(BUILD_CLIENT OR BUILD_SERVER)
+if(BUILD_CLIENT OR BUILD_SERVER OR BUILD_TESTS)
   add_subdirectory(common)
   add_subdirectory(odaproto)
 endif()
@@ -171,6 +194,16 @@ if(BUILD_CLIENT)
 endif()
 if(BUILD_SERVER)
   add_subdirectory(server)
+endif()
+if(BUILD_TESTS)
+  if(USE_INTERNAL_GTEST)
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    set(INSTALL_GTEST OFF)
+    add_subdirectory(libraries/googletest)
+  else()
+    find_package(GTest REQUIRED)
+  endif()
+  add_subdirectory(tests/unit-tests)
 endif()
 if(BUILD_MASTER)
   add_subdirectory(master)
@@ -181,6 +214,12 @@ endif()
 if(NOT BUILD_CLIENT AND NOT BUILD_SERVER AND NOT BUILD_MASTER AND NOT BUILD_LAUNCHER)
   message(FATAL_ERROR "No target chosen, doing nothing.")
 endif()
+
+# WAD building
+add_subdirectory(wad)
+
+# Bash completion
+add_subdirectory(completion)
 
 # Disable the ag-odalaunch target completely: -DNO_AG-ODALAUNCH_TARGET
 # This is only really useful when setting up a universal build.

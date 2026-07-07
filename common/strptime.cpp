@@ -30,7 +30,7 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
-#if defined(_WIN32) || defined (GEKKO)
+#if defined(_WIN32)
 
 #include <cctype>
 #include <cstdlib>
@@ -105,12 +105,12 @@ static const char *ampm[] = {
  */
 
 static int
-match_string (const char **buf, const char **strs)
+match_string(const char **buf, const char **strs)
 {
     int i = 0;
     for (i = 0; strs[i] != NULL; ++i) {
-		int len = (int)strlen (strs[i]);
-		if (strncasecmp (*buf, strs[i], len) == 0) {
+		size_t len = strlen(strs[i]);
+		if (strncasecmp(*buf, strs[i], len) == 0) {
 			*buf += len;
 			return i;
 		}
@@ -439,7 +439,7 @@ strptime (const char *buf, const char *fmt, struct tm *timeptr)
 		return NULL;
 	}
     }
-    return (char *)buf;
+    return const_cast<char*>(buf);
 }
 
 #endif /* WIN32 */

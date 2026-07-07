@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -47,6 +47,7 @@
 
 
 #include "farchive.h"
+#include "m_fixed.h"
 
 //
 // denis
@@ -60,7 +61,8 @@ extern bool clientside, serverside;
 enum baseapp_t
 {
 	client,		// Odamex.exe
-	server		// Odasrv.exe
+	server,		// Odasrv.exe
+	test,		// Odagtest.exe
 };
 
 extern baseapp_t baseapp;
@@ -92,10 +94,34 @@ extern baseapp_t baseapp;
 #define SERVER_ONLY(expr)
 #endif
 
-// 
+#define DO_PRAGMA(x) _Pragma(#x)
+
+#ifdef __GNUC__
+/**
+ * @brief Disables the passed warning/error on GCC/clang
+ *
+ * Must be paired with `END_DISABLE_WARNING_GNU`
+ */
+#define BEGIN_DISABLE_WARNING_GNU(w) \
+    DO_PRAGMA(GCC diagnostic push) \
+    DO_PRAGMA(GCC diagnostic ignored w)
+
+#define END_DISABLE_WARNING_GNU \
+    DO_PRAGMA(GCC diagnostic pop)
+#else
+/**
+ * @brief Disables the passed warning/error on GCC/clang
+ *
+ * Must be paired with `END_DISABLE_WARNING_GNU`
+ */
+#define BEGIN_DISABLE_WARNING_GNU(w)
+#define END_DISABLE_WARNING_GNU
+#endif
+
+//
 // Environment Platform
-// 
-enum gameplatform_t 
+//
+enum gameplatform_t
 {
 	PF_PC,
 	PF_XBOX,
@@ -134,11 +160,22 @@ enum GameMission_t
   pack_tnt, 			// TNT mission pack
   pack_plut,			// Plutonia pack
   chex,					// Chex Quest
+  chex3,				// Chex Quest 3 v2.0
+  chex3v,				// Chex Quest 3 Vanilla Edition
+  chex3d2,              // Chex Quest 3 Vanilla Edition Modding Version
   retail_freedoom,
   commercial_freedoom,	// FreeDoom
   commercial_hacx,		// HACX
   none
 };
+
+inline bool IsChexMission(GameMission_t mission)
+{
+	return mission == chex ||
+	       mission == chex3 ||
+	       mission == chex3v ||
+	       mission == chex3d2;
+}
 
 // If rangecheck is undefined,
 // most parameter validation debugging code will not be compiled
@@ -149,7 +186,7 @@ enum GameMission_t
 #define MAXPLAYERS_VANILLA		4
 
 // Margin of error used when calculating percentages against player numbers.
-#define MPEPSILON				(float)1 / (MAXPLAYERS * 2)
+#define MPEPSILON				1.0f / (MAXPLAYERS * 2)
 
 // State updates, number of tics / second.
 #define TICRATE 		35
@@ -157,7 +194,7 @@ enum GameMission_t
 #define SPEED(a) ((a) * (FRACUNIT / 8))
 #define TICS(a) (((a)*TICRATE) / 35)
 #define OCTICS(a) (((a)*TICRATE) / 8)
-#define BYTEANGLE(a) ((angle_t)((a) << 24))
+#define BYTEANGLE(a) (static_cast<angle_t>((a) << 24))
 
 // [RH] Equivalents for BOOM's generalized sector types
 
@@ -290,42 +327,54 @@ enum GameMission_t
 
 // Speeds for ceilings/crushers (x/8 units per tic)
 //	(Hexen crushers go up at half the speed that they go down)
-#define C_SLOW 8
-#define C_NORMAL 16
-#define C_FAST 32
-#define C_TURBO 64
-
-#define CEILWAIT 150
+namespace ceilings
+{
+	inline constexpr int16_t SLOW   = 8;
+	inline constexpr int16_t NORMAL = 16;
+	inline constexpr int16_t FAST   = 32;
+	inline constexpr int16_t TURBO  = 64;
+	inline constexpr int16_t WAIT   = 150;
+}
 
 // Speeds for floors (x/8 units per tic)
-#define F_SLOW 8
-#define F_NORMAL 16
-#define F_FAST 32
-#define F_TURBO 64
+namespace floors
+{
+	inline constexpr int16_t SLOW   = 8;
+	inline constexpr int16_t NORMAL = 16;
+	inline constexpr int16_t FAST   = 32;
+	inline constexpr int16_t TURBO  = 64;
+}
 
 // Speeds for doors (x/8 units per tic)
-#define D_SLOW 16
-#define D_NORMAL 32
-#define D_FAST 64
-#define D_TURBO 128
-
-#define VDOORWAIT 150
-#define VDOORSPEED (FRACUNIT * 2)
+namespace doors
+{
+	inline constexpr int16_t SLOW   = 16;
+	inline constexpr int16_t NORMAL = 32;
+	inline constexpr int16_t FAST   = 64;
+	inline constexpr int16_t TURBO  = 128;
+	inline constexpr int16_t WAIT   = 150;
+	inline constexpr fixed_t SPEED  = FRACUNIT * 2;
+}
 
 // Speeds for stairs (x/8 units per tic)
-#define S_SLOW 2
-#define S_NORMAL 4
-#define S_FAST 16
-#define S_TURBO 32
+namespace stairs
+{
+	inline constexpr int16_t SLOW   = 2;
+	inline constexpr int16_t NORMAL = 4;
+	inline constexpr int16_t FAST   = 16;
+	inline constexpr int16_t TURBO  = 32;
+}
 
 // Speeds for plats (Hexen plats stop 8 units above the floor)
-#define P_SLOW 8
-#define P_NORMAL 16
-#define P_FAST 32
-#define P_TURBO 64
-
-#define PLATWAIT 105
-#define PLATSPEED FRACUNIT
+namespace plats
+{
+	inline constexpr int16_t SLOW   = 8;
+	inline constexpr int16_t NORMAL = 16;
+	inline constexpr int16_t FAST   = 32;
+	inline constexpr int16_t TURBO  = 64;
+	inline constexpr int16_t WAIT   = 105;
+	inline constexpr fixed_t SPEED  = FRACUNIT;
+}
 
 #define ELEVATORSPEED 32
 
@@ -376,7 +425,7 @@ enum skill_t
 //
 // Key cards.
 //
-enum card_t
+enum card_t : uint8_t
 {
 	it_bluecard,
 	it_yellowcard,
@@ -412,22 +461,11 @@ enum ItemEquipVal
 };
 
 
-inline FArchive &operator<< (FArchive &arc, card_t i)
-{
-	return arc << (BYTE)i;
-}
-inline FArchive &operator>> (FArchive &arc, card_t &i)
-{
-	BYTE in; arc >> in; i = (card_t)in; return arc;
-}
-
-
 // The defined weapons,
 //	including a marker indicating
 //	user has not changed weapon.
-enum weapontype_t
+enum weapontype_t : int8_t
 {
-	wp_none = -1,
 	wp_fist,
 	wp_pistol,
 	wp_shotgun,
@@ -437,6 +475,7 @@ enum weapontype_t
 	wp_bfg,
 	wp_chainsaw,
 	wp_supershotgun,
+	wp_none,
 
 	NUMWEAPONS,
 
@@ -444,18 +483,13 @@ enum weapontype_t
 	wp_nochange
 };
 
-inline FArchive &operator<< (FArchive &arc, weapontype_t i)
+inline auto format_as(weapontype_t eWeaponType)
 {
-	return arc << (BYTE)i;
+	return fmt::underlying(eWeaponType);
 }
-inline FArchive &operator>> (FArchive &arc, weapontype_t &i)
-{
-	BYTE in; arc >> in; i = (weapontype_t)in; return arc;
-}
-
 
 // Ammunition types defined.
-enum ammotype_t
+enum ammotype_t : int8_t
 {
 	am_clip,	// Pistol / chaingun ammo.
 	am_shell,	// Shotgun / double barreled shotgun.
@@ -466,19 +500,16 @@ enum ammotype_t
 
 };
 
-inline FArchive &operator<< (FArchive &arc, ammotype_t i)
+inline auto format_as(ammotype_t eAmmoType)
 {
-	return arc << (BYTE)i;
-}
-inline FArchive &operator>> (FArchive &arc, ammotype_t &i)
-{
-	BYTE in; arc >> in; i = (ammotype_t)in; return arc;
+	return fmt::underlying(eAmmoType);
 }
 
 
 // Power up artifacts.
-enum powertype_t
+enum powertype_t : int8_t
 {
+	pw_none = -1,
 	pw_invulnerability,
 	pw_strength,
 	pw_invisibility,
@@ -487,16 +518,6 @@ enum powertype_t
 	pw_infrared,
 	NUMPOWERS
 };
-
-inline FArchive &operator<< (FArchive &arc, powertype_t i)
-{
-	return arc << (BYTE)i;
-}
-inline FArchive &operator>> (FArchive &arc, powertype_t &i)
-{
-	BYTE in; arc >> in; i = (powertype_t)in; return arc;
-}
-
 
 //
 // Power up durations, how many tics till expiration.
@@ -528,7 +549,7 @@ inline FArchive &operator>> (FArchive &arc, powertype_t &i)
 
 // Factor to scale scrolling effect into mobj-carrying properties = 3/32.
 // (This is so scrolling floors and objects on them can move at same speed.)
-#define CARRYFACTOR ((fixed_t)(FRACUNIT * .09375))
+#define CARRYFACTOR (static_cast<fixed_t>(FRACUNIT * .09375))
 
 #ifndef __BIG_ENDIAN__
 #define MAKE_ID(a,b,c,d)	((a)|((b)<<8)|((c)<<16)|((d)<<24))

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// Copyright (C) 2006-2021 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -29,31 +29,32 @@
 #include "g_mapinfo.h" // G_MapNameToLevelNum
 #include "resources/res_main.h"
 
-int ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NULL)
+bool ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NULL)
 {
 	// Check if the given map name can be expressed as a gameepisode/gamemap pair and be
 	// reconstructed from it.
-	char lumpname[9];
+	OLumpName lumpname;
 	int epi = -1, map = -1;
 
 	if (gamemode != commercial)
 	{
 		if (sscanf(mapname.c_str(), "E%dM%d", &epi, &map) != 2)
-			return 0;
-		snprintf(lumpname, 9, "E%dM%d", epi, map);
+			return false;
+		lumpname = fmt::format("E{}M{}", epi, map);
 	}
 	else
 	{
 		if (sscanf(mapname.c_str(), "MAP%d", &map) != 1)
-			return 0;
-		snprintf(lumpname, 9, "MAP%02d", map);
+			return false;
+		lumpname = fmt::format("MAP{:02d}", map);
 		epi = 1;
 	}
+
 	if (pEpi)
 		*pEpi = epi;
 	if (pMap)
 		*pMap = map;
-	return !strcmp(mapname.c_str(), lumpname);
+	return mapname == lumpname;
 }
 
 // used for munching the strings in UMAPINFO
@@ -101,14 +102,38 @@ void MustGetIdentifier(OScanner& os)
 	}
 }
 
-int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
+enum struct player_action_t
+{
+	DISALLOW,
+	ALLOW,
+	REQUIRE,
+};
+
+player_action_t ParsePlayerAction(OScanner& os)
+{
+	MustGetIdentifier(os);
+	if (os.compareTokenNoCase("disallow"))
+		return player_action_t::DISALLOW;
+
+	if (os.compareTokenNoCase("allow"))
+		return player_action_t::ALLOW;
+
+	if (os.compareTokenNoCase("require"))
+		return player_action_t::REQUIRE;
+
+	os.error("Expected 'disable', 'allow' or 'require', got '{}'.", os.getToken());
+}
+
+bool pnamemodified;
+
+bool ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 {
 	// find the next line with content.
 	// this line is no property.
 
 	if (!os.isIdentifier())
 	{
-		os.error("Expected identifier, got \"%s\".", os.getToken().c_str());
+		os.error("Expected identifier, got \"{}\".", os.getToken());
 	}
 	std::string pname = os.getToken();
 	os.mustScan();
@@ -118,7 +143,8 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		os.mustScan();
 		mape->level_name = os.getToken();
-		mape->pname.clear();
+		if (!pnamemodified) // only want to clear pname if its *not* from the umapinfo
+			mape->pname.clear();
 	}
 	else if (!stricmp(pname.c_str(), "label"))
 	{
@@ -140,24 +166,25 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	else if (!stricmp(pname.c_str(), "next"))
 	{
 		ParseOLumpName(os, mape->nextmap);
-		if (!ValidateMapName(mape->nextmap.c_str()))
+		if (!ValidateMapName(mape->nextmap))
 		{
-			os.error("Invalid map name %s.", mape->nextmap.c_str());
-			return 0;
+			os.error("Invalid map name {}", mape->nextmap);
+			return false;
 		}
 	}
 	else if (!stricmp(pname.c_str(), "nextsecret"))
 	{
 		ParseOLumpName(os, mape->secretmap);
-		if (!ValidateMapName(mape->secretmap.c_str()))
+		if (!ValidateMapName(mape->secretmap))
 		{
-			os.error("Invalid map name %s", mape->nextmap.c_str());
-			return 0;
+			os.error("Invalid map name {}", mape->nextmap);
+			return false;
 		}
 	}
 	else if (!stricmp(pname.c_str(), "levelpic"))
 	{
 		ParseOLumpName(os, mape->pname);
+		pnamemodified = true;
 	}
 	else if (!stricmp(pname.c_str(), "skytexture"))
 	{
@@ -213,6 +240,14 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	{
 		ParseOLumpName(os, mape->enterpic);
 	}
+	else if (!stricmp(pname.c_str(), "exitanim"))
+	{
+		ParseOLumpName(os, mape->exitanim);
+	}
+	else if (!stricmp(pname.c_str(), "enteranim"))
+	{
+		ParseOLumpName(os, mape->enteranim);
+	}
 	else if (!stricmp(pname.c_str(), "nointermission"))
 	{
 		os.mustScanBool();
@@ -224,20 +259,20 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	else if (!stricmp(pname.c_str(), "partime"))
 	{
 		os.mustScanInt();
-		mape->partime = TICRATE * os.getTokenInt();
+		mape->partime = os.getTokenInt();
 	}
 	else if (!stricmp(pname.c_str(), "intertext"))
 	{
 		const std::string lname = ParseMultiString(os);
 		if (lname.empty())
-			return 0;
+			return false;
 		mape->intertext = lname;
 	}
 	else if (!stricmp(pname.c_str(), "intertextsecret"))
 	{
 		const std::string lname = ParseMultiString(os);
 		if (lname.empty())
-			return 0;
+			return false;
 		mape->intertextsecret = lname;
 	}
 	else if (!stricmp(pname.c_str(), "interbackdrop"))
@@ -261,7 +296,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 
 		const std::string lname = ParseMultiString(os);
 		if (lname.empty())
-			return 0;
+			return false;
 
 		if (lname == "-") // means "clear"
 		{
@@ -271,11 +306,15 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		{
 			const StringTokens tokens = TokenizeString(lname, "\n");
 
-			if (episodenum >= 8)
-				return 0;
+			if (episodenum >= MAX_EPISODES)
+			{
+				os.error("Maximum episode definitions ({}) exceeded.", MAX_EPISODES);
+				return false;
+			}
 
 			EpisodeMaps[episodenum] = mape->mapname;
-			EpisodeInfos[episodenum].name = tokens[0];
+			EpisodeInfos[episodenum].pic_name = tokens[0];
+			EpisodeInfos[episodenum].menu_name = tokens[1];
 			EpisodeInfos[episodenum].fulltext = false;
 			EpisodeInfos[episodenum].noskillmenu = false;
 			EpisodeInfos[episodenum].key = (tokens.size() > 2) ? tokens[2][0] : 0;
@@ -294,11 +333,11 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 		else
 		{
 			const std::string actor_name = os.getToken();
-			const mobjtype_t i = P_NameToMobj(actor_name);
+			const mobjtype_t i = P_INameToMobj(actor_name);
 			if (i == MT_NULL)
 			{
-				os.error("Unknown thing type %s", os.getToken().c_str());
-				return 0;
+				os.error("Unknown thing type {}", os.getToken());
+				return false;
 			}
 
 			// skip comma token
@@ -325,6 +364,93 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 			}
 		}
 	}
+	else if (!stricmp(pname.c_str(), "bossactionednum"))
+	{
+		os.mustScan();
+
+		if (os.compareTokenNoCase("clear"))
+		{
+			// mark level free of boss actions
+			mape->bossactions.clear();
+		}
+		else
+		{
+			const int actor_ednum = os.getTokenInt();
+			const auto it = spawn_map.find(actor_ednum);
+			int32_t type;
+			if (it == spawn_map.end())
+			{
+				os.error("Unknown thing ednum {}", os.getToken());
+				return 0;
+			}
+			else
+			{
+				type = it->second->type;
+			}
+
+			// skip comma token
+			os.mustScan();
+			os.assertTokenNoCaseIs(",");
+			os.mustScanInt();
+			const int special = os.getTokenInt();
+			os.mustScan();
+			os.assertTokenNoCaseIs(",");
+			os.mustScanInt();
+			const int tag = os.getTokenInt();
+			// allow no 0-tag specials here, unless a level exit.
+			if (tag != 0 || special == 11 || special == 51 || special == 52 ||
+			    special == 124)
+			{
+				bossaction_t new_bossaction;
+
+				new_bossaction.special = static_cast<short>(special);
+				new_bossaction.tag = static_cast<short>(tag);
+
+				new_bossaction.type = type;
+
+				mape->bossactions.push_back(new_bossaction);
+			}
+		}
+	}
+	else if (!stricmp(pname.c_str(), "jumping"))
+	{
+		switch (ParsePlayerAction(os))
+		{
+		case player_action_t::DISALLOW:
+			mape->flags |= LEVEL_JUMP_NO;
+			mape->flags &= ~LEVEL_JUMP_YES;
+			break;
+		case player_action_t::ALLOW:
+			mape->flags &= ~(LEVEL_JUMP_NO | LEVEL_JUMP_YES);
+			break;
+		case player_action_t::REQUIRE:
+			mape->flags &= ~LEVEL_JUMP_NO;
+			mape->flags |= LEVEL_JUMP_YES;
+			break;
+		}
+	}
+	else if (!stricmp(pname.c_str(), "freeaim"))
+	{
+		switch (ParsePlayerAction(os))
+		{
+		case player_action_t::DISALLOW:
+			mape->flags |= LEVEL_FREELOOK_NO;
+			mape->flags &= ~LEVEL_FREELOOK_YES;
+			break;
+		case player_action_t::ALLOW:
+			mape->flags &= ~(LEVEL_FREELOOK_NO | LEVEL_FREELOOK_YES);
+			break;
+		case player_action_t::REQUIRE:
+			mape->flags &= ~LEVEL_FREELOOK_NO;
+			mape->flags |= LEVEL_FREELOOK_YES;
+			break;
+		}
+	}
+	else if (!stricmp(pname.c_str(), "crouching"))
+	{
+		if (ParsePlayerAction(os) == player_action_t::REQUIRE)
+			os.warning("Crouching is not supported in Odamex. Map {} may not work as intended.", mape->mapname);
+	}
 	else
 	{
 		do
@@ -339,7 +465,7 @@ int ParseStandardUmapInfoProperty(OScanner& os, level_pwad_info_t* mape)
 	return 1;
 }
 
-void ParseUMapInfoLump(const ResourceId res_id, const std::string& lumpname)
+void ParseUMapInfoLump(const ResourceId res_id, const OLumpName& lumpname)
 {
 	LevelInfos& levels = getLevelInfos();
 
@@ -356,7 +482,7 @@ void ParseUMapInfoLump(const ResourceId res_id, const std::string& lumpname)
 	{
 		if (!os.compareTokenNoCase("map"))
 		{
-			os.error("Expected map definition, got %s", os.getToken().c_str());
+			os.error("Expected map definition, got {}", os.getToken());
 		}
 
 		os.mustScan(8);
@@ -364,7 +490,7 @@ void ParseUMapInfoLump(const ResourceId res_id, const std::string& lumpname)
 
 		if (!ValidateMapName(mapname))
 		{
-			os.error("Invalid map name %s", mapname.c_str());
+			os.error("Invalid map name {}", mapname);
 		}
 
 		// Find the level.
@@ -372,17 +498,20 @@ void ParseUMapInfoLump(const ResourceId res_id, const std::string& lumpname)
 			? levels.findByName(mapname)
 			: levels.create();
 
-		// for maps above 32, if no sky is defined, it will show texture 0 (aastinky)
+		// if no sky is defined, it will show texture 0 (aastinky/aashitty)
 		// so instead, lets just try to give it the first defined sky in the level set.
-		if (levels.size() > 0)
+		if (levels.size() > 0 && info.skypic.empty())
 		{
 			level_pwad_info_t& def = levels.at(0);
 			info.skypic = def.skypic;
 		}
 
+		pnamemodified = false;
+
 		info.mapname = mapname;
 
 		G_MapNameToLevelNum(info);
+		G_MapNameToID24LevelNum(info);
 
 		os.mustScan();
 		os.assertTokenNoCaseIs("{");
@@ -390,6 +519,7 @@ void ParseUMapInfoLump(const ResourceId res_id, const std::string& lumpname)
 		os.scan();
 		while (!os.compareToken("}"))
 		{
+			// TODO: should this be actually checking the return value here?
 			ParseStandardUmapInfoProperty(os, &info);
 		}
 
@@ -429,21 +559,23 @@ void ParseUMapInfoLump(const ResourceId res_id, const std::string& lumpname)
 			}
 			else
 			{
-				char arr[9] = "";
 				int ep, map;
-				ValidateMapName(info.mapname.c_str(), &ep, &map);
+				ValidateMapName(info.mapname, &ep, &map);
 				map++;
 				if (gamemode == commercial)
 				{
-					sprintf(arr, "MAP%02d", map);
+					info.nextmap = fmt::format("MAP{:02d}", map);
 				}
 				else
 				{
-					sprintf(arr, "E%dM%d", ep, map);
+					info.nextmap = fmt::format("E{}M{}", ep, map);
 				}
-				info.nextmap = arr;
 			}
 		}
+	}
+	// if an episode title patch is missing or invalid, fall back on text name
+	for (auto& episode : EpisodeInfos) {
+		episode.fulltext = episode.pic_name.empty() || W_CheckNumForName(episode.pic_name) == -1;
 	}
 }
 

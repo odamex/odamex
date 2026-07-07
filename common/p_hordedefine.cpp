@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2021 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -28,12 +28,16 @@
 #include "c_cvars.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"
+#include "d_player.h"
 #include "i_system.h"
 #include "infomap.h"
 #include "m_random.h"
 #include "oscanner.h"
-#include "w_wad.h"
 #include "v_textcolors.h"
+#include "w_wad.h"
+
+#include <limits>
+#include <math.h>
 
 EXTERN_CVAR(g_horde_mintotalhp)
 EXTERN_CVAR(g_horde_maxtotalhp)
@@ -127,43 +131,65 @@ const char* hordeDefine_t::difficulty(const bool colored) const
 StringTokens hordeDefine_t::weaponStrings(player_t* player) const
 {
 	StringTokens rvo;
-	for (size_t i = 0; i < weapons.size(); i++)
+	for (const auto& weapon : weapons)
 	{
-		if (!(player == NULL || !player->weaponowned[weapons[i]]))
+		if (player == nullptr)
+			continue;
+
+		// wp_none is basically always-owned as per weaponowned, but because
+		// we're co-opting wp_none to mean Berserk as a weapon in this one case,
+		// we check that against the powers table.
+		const bool alreadyHasWeapon = (weapon == wp_none ? player->powers[pw_strength] :
+		                                                   player->weaponowned[weapon]);
+		if (alreadyHasWeapon)
 		{
 			continue;
 		}
 
-		switch (weapons[i])
+		switch (weapon)
 		{
 		case wp_none:
-			rvo.push_back("BSK");
+			rvo.emplace_back("BSK");
 			break;
 		case wp_chainsaw:
-			rvo.push_back("1+");
+			rvo.emplace_back("1+");
 			break;
 		case wp_shotgun:
-			rvo.push_back("3");
+			rvo.emplace_back("3");
 			break;
 		case wp_supershotgun:
-			rvo.push_back("3+");
+			rvo.emplace_back("3+");
 			break;
 		case wp_chaingun:
-			rvo.push_back("4");
+			rvo.emplace_back("4");
 			break;
 		case wp_missile:
-			rvo.push_back("5");
+			rvo.emplace_back("5");
 			break;
 		case wp_plasma:
-			rvo.push_back("6");
+			rvo.emplace_back("6");
 			break;
 		case wp_bfg:
-			rvo.push_back("7");
+			rvo.emplace_back("7");
+			break;
+		case wp_fist:
+		case wp_pistol:
+		case wp_nochange:
+		case NUMWEAPONS:
 			break;
 		}
 	}
 
 	return rvo;
+}
+
+/**
+ * @brief Return the number of monsters of a given type horde has spawned.
+ */
+int P_HordeMobjCount(const mobjCounts_t& counts, const mobjtype_t type)
+{
+	mobjCounts_t::const_iterator it = counts.find(type);
+	return it != counts.end() ? it->second : 0;
 }
 
 /**
@@ -177,7 +203,7 @@ size_t P_HordePickDefine(const int current, const int total)
 {
 	if (::WAVE_DEFINES.empty())
 	{
-		I_Error("%s: No wave defines found.\n", __FUNCTION__);
+		I_Error("{}: No wave defines found.\n", __FUNCTION__);
 	}
 
 	if (total > 0)
@@ -188,7 +214,7 @@ size_t P_HordePickDefine(const int current, const int total)
 		const float section_size = static_cast<float>(::WAVE_DEFINES.size()) / total;
 		const float section_offset = (current - 1) * section_size;
 		const float section_choice = M_RandomFloat() * section_size;
-		const float section_limit = NextAfter(section_offset + section_size, 0.0f);
+		const float section_limit = nextafter(section_offset + section_size, 0.0f);
 		return MIN<size_t>(section_offset + section_choice, section_limit);
 	}
 	else if (current <= 1)
@@ -201,7 +227,7 @@ size_t P_HordePickDefine(const int current, const int total)
 	else
 	{
 		// Endless mode, and the gloves are off.
-		return M_RandomInt(::WAVE_DEFINES.size());
+		return M_RandomInt(static_cast<uint32_t>(::WAVE_DEFINES.size()));
 	}
 }
 
@@ -213,16 +239,13 @@ size_t P_HordePickDefine(const int current, const int total)
  * @param wantBoss Caller wants a boss.
  */
 bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
-                        const bool wantBoss)
+                        const bool wantBoss, const mobjCounts_t& monsterCounts)
 {
 	std::vector<const hordeDefine_t::monster_t*> monsters;
 
 	// Figure out which monster we want to spawn.
-	for (size_t i = 0; i < define.monsters.size(); i++)
+	for (const auto& waveMon : define.monsters)
 	{
-		const hordeDefine_t::monster_t& waveMon = define.monsters.at(i);
-		const mobjinfo_t& info = ::mobjinfo[waveMon.mobj];
-
 		// Boss spawns have to spawn boss things.
 		if (wantBoss && waveMon.monster == hordeDefine_t::RM_NORMAL)
 			continue;
@@ -239,21 +262,50 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 		return false;
 
 	// Randomly select a monster to spawn.
-	const hordeDefine_t::monster_t* const monster =
-	    P_RandomFloatWeighted(monsters, MonsterChance);
+	const hordeDefine_t::monster_t* monster = nullptr;
+	std::optional<int> limit = std::nullopt;
+	for (size_t i = 0; i < 5; i++)
+	{
+		monster = P_RandomFloatWeighted(monsters, MonsterChance);
+		if (monster->config.limit <= 0)
+		{
+			// No limit, we're good.
+			break;
+		}
+
+		// Scale the limit, but whatever number we come up with must end
+		// up as an integer anyway.
+		limit.emplace(ceilf(monster->config.limit * SkillScaler()));
+		const int numAlive = P_HordeMobjCount(monsterCounts, monster->mobj);
+		if (numAlive < *limit)
+		{
+			// We have limit enough to spawn the monster.
+			break;
+		}
+
+		// Can't fit this monster.
+		monster = nullptr;
+		limit.reset();
+	}
+
+	if (monster == nullptr)
+	{
+		// We can't spawn a monster.
+		out.count = -1;
+		return false;
+	}
 
 	const mobjtype_t outType = monster->mobj;
 	const bool outIsBoss = monster->monster != hordeDefine_t::RM_NORMAL;
-	const hordeDefine_t::monConfig_t* config = &monster->config;
+	const hordeDefine_t::monConfig_t& config = monster->config;
 
-	int outCount = 0;
 	const int health = ::mobjinfo[outType].spawnhealth;
 
 	// Maximum health.
 	int maxHealth = -1;
-	if (config->maxGroupHealth >= 0)
+	if (config.maxGroupHealth >= 0)
 	{
-		maxHealth = config->maxGroupHealth;
+		maxHealth = config.maxGroupHealth;
 	}
 	else if (wantBoss)
 	{
@@ -266,9 +318,9 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 
 	// Minimum health.
 	int minHealth = -1;
-	if (config->minGroupHealth >= 0)
+	if (config.minGroupHealth >= 0)
 	{
-		minHealth = config->minGroupHealth;
+		minHealth = config.minGroupHealth;
 	}
 	else if (wantBoss)
 	{
@@ -279,9 +331,28 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 		minHealth = define.minGroupHealth;
 	}
 
-	const int upper = MAX(maxHealth / health, 1);
+	int upper = MAX(maxHealth / health, 1);
 	const int lower = MAX(minHealth / health, 1);
 
+	int outTotalCount;
+	if (upper <= lower)
+	{
+		// Only one possibility.
+		outTotalCount = upper;
+	}
+	else
+	{
+		// Randomly select a possibility.
+		outTotalCount = P_RandomInt(upper - lower + 1) + lower;
+	}
+
+	// If we have a limit, reduce the maxHealth to that.
+	if (limit)
+		maxHealth = MIN(maxHealth, *limit * health);
+
+	upper = MAX(maxHealth / health, 1);
+
+	int outCount;
 	if (upper <= lower)
 	{
 		// Only one possibility.
@@ -290,11 +361,13 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
 	else
 	{
 		// Randomly select a possibility.
-		outCount = P_RandomInt(upper - lower) + lower;
+		outCount = P_RandomInt(upper - lower + 1) + lower;
 	}
 
 	out.type = outType;
 	out.count = outCount;
+	out.limit = limit.value_or(0);
+	out.totalCount = MAX(outTotalCount, outCount);
 	out.isBoss = outIsBoss;
 
 	return true;
@@ -308,7 +381,7 @@ bool P_HordeSpawnRecipe(hordeRecipe_t& out, const hordeDefine_t& define,
  * @param name Partial name to search for.
  * @return True if the define was found, otherwise false.
  */
-bool P_HordeDefineNamed(int& out, const std::string& name)
+bool P_HordeDefineNamed(size_t& out, const std::string& name)
 {
 	for (size_t i = 0; i < ::WAVE_DEFINES.size(); i++)
 	{
@@ -335,8 +408,7 @@ static void PrintDefines(const std::vector<hordeDefine_t>::const_iterator& begin
 	for (; it != end; ++it)
 	{
 		const ptrdiff_t idx = it - ::WAVE_DEFINES.begin();
-		Printf("%" PRIdSIZE ": %s (Group HP: %d)\n", idx, it->name.c_str(),
-		       it->maxGroupHealth);
+		PrintFmt("{}: {} (Group HP: {})\n", idx, it->name, it->maxGroupHealth);
 	}
 }
 
@@ -371,48 +443,48 @@ BEGIN_COMMAND(hordedefine)
 						const float section_size =
 						    static_cast<float>(::WAVE_DEFINES.size()) / total;
 						const float section_offset = (current - 1) * section_size;
-						const float section_choice = NextAfter(1.0f, 0.0f) * section_size;
+						const float section_choice = nextafter(1.0f, 0.0f) * section_size;
 						const float section_limit =
-						    NextAfter(section_offset + section_size, 0.0f);
+						    nextafter(section_offset + section_size, 0.0f);
 						const size_t start = static_cast<size_t>(section_offset);
 						const size_t end =
 						    MIN<size_t>(section_offset + section_choice, section_limit);
-						Printf("[Wave %d/%d - Start:%" PRIuSIZE " End:%" PRIuSIZE "]\n",
-						       current, total, start, end);
+						PrintFmt("[Wave {}/{} - Start:{} End:{}]\n",
+						         current, total, start, end);
 						PrintDefines(::WAVE_DEFINES.begin() + start,
 						             ::WAVE_DEFINES.begin() + end + 1);
 						return;
 					}
 					else
 					{
-						Printf("error: Total waves must be > 0.");
+						PrintFmt("error: Total waves must be > 0.");
 						return;
 					}
 				}
 				else
 				{
-					Printf("error: Must pass a valid wave number.");
+					PrintFmt("error: Must pass a valid wave number.");
 					return;
 				}
 			}
 			else
 			{
-				Printf("error: Must pass a wave number.");
+				PrintFmt("error: Must pass a wave number.");
 				return;
 			}
 		}
 		else
 		{
-			Printf("error: Unknown command.");
+			PrintFmt("error: Unknown command.");
 			return;
 		}
 	}
 
-	Printf("Commands:\n");
-	Printf("  all\n");
-	Printf("    Show all defines.\n");
-	Printf("  wave <NUMBER> [TOTAL]\n");
-	Printf("    Show potential waves for wave NUMBER of [TOTAL].  If omitted, [TOTAL] "
-	       "defaults to the cvar `g_horde_waves`.\n");
+	PrintFmt("Commands:\n");
+	PrintFmt("  all\n");
+	PrintFmt("    Show all defines.\n");
+	PrintFmt("  wave <NUMBER> [TOTAL]\n");
+	PrintFmt("    Show potential waves for wave NUMBER of [TOTAL].  If omitted, [TOTAL] "
+	         "defaults to the cvar `g_horde_waves`.\n");
 }
 END_COMMAND(hordedefine)

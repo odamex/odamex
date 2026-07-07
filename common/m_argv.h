@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -56,6 +56,7 @@ public:
 	const char *CheckValue (const char *check) const;
 	const char *GetArg (size_t arg) const;
 	const std::vector<std::string> GetArgList (size_t start) const;
+	std::vector<const char*> GetArgv() const;
 	size_t NumArgs () const;
 	void FlushArgs ();
 
@@ -67,9 +68,9 @@ private:
 
 };
 
-extern DArgs Args;
+inline DArgs Args;
 
 void M_FindResponseFile(void);
 int M_GetParmValue(const char* name);
 
-extern bool DefaultsLoaded; 
+extern bool DefaultsLoaded;

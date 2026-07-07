@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -41,6 +41,11 @@ CVAR_RANGE(sv_gametype, "0",
            4.0f)
 
 CVAR(				sv_friendlyfire, "1", "When set, players can injure others on the same team, " \
+					"it is ignored in deathmatch",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR(				sv_friendlymonsterfire, "1",
+					"When set, players and other friendly monsters can injure friendly monsters on the same team, "
 					"it is ignored in deathmatch",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
@@ -102,7 +107,10 @@ CVAR(				sv_infiniteammo, "0", "Infinite ammo for all players",
 CVAR(				sv_itemsrespawn, "0", "Items will respawn after a fixed period, see sv_itemrespawntime",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
-CVAR(				sv_respawnsuper, "0", "Allows Invisibility/Invulnerability spheres from respawning (need sv_itemsrespawn set to 1)",
+CVAR(				sv_respawnsuper, "0", "Allows Invisibility/Invulnerability spheres to respawn (requires sv_itemsrespawn set to 1)",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
+CVAR(				sv_respawnbarrels, "0", "Allows barrels to respawn. (requires sv_itemsrespawn set to 1)",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
 CVAR_RANGE(			sv_itemrespawntime, "30", "If sv_itemsrespawn is set, items will respawn after this " \
@@ -145,7 +153,7 @@ CVAR(				sv_keepkeys, "0", "Keep keys on death",
 CVAR_FUNC_DECL(		sv_sharekeys, "0", "Share keys found to every player.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
-CVAR_RANGE(			sv_maxunlagtime, "1.0", "Cap the maxiumum time allowed for player reconciliation (in seconds)",
+CVAR_RANGE(			sv_maxunlagtime, "1.0", "Cap the maximum time allowed for player reconciliation (in seconds)",
 					CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 1.0f)
 
 CVAR(				sv_allowmovebob, "1", "Allow weapon & view bob changing",
@@ -155,6 +163,9 @@ CVAR(				sv_allowredscreen, "1","Allow clients to adjust amount of red pain scre
 					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
 
 CVAR(				sv_allowpwo, "0", "Allow clients to set their preferences for automatic weapon switching",
+					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
+
+CVAR(				sv_allowfov, "0", "Allow clients to set their field of view",
 					CVARTYPE_BOOL, CVAR_SERVERINFO | CVAR_SERVERARCHIVE)
 
 CVAR_FUNC_DECL(		sv_allowwidescreen, "1", "Allow clients to use true widescreen",
@@ -175,8 +186,21 @@ CVAR_RANGE(			sv_spawndelaytime, "0.0", "Force a player to wait a period (in sec
 CVAR(				sv_unblockplayers, "0", "Allows players to walk through other players, and player projectiles to pass through teammates.",
 					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
 
+CVAR(				sv_unblockfriendly, "0", "Allows players and friendly monsters to walk through other friendly monsters, and player and friendly"
+						" projectiles to pass thru players and other friendlies.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_LATCH | CVAR_SERVERINFO)
+
 CVAR(				sv_hostname, "Untitled Odamex Server", "Server name to appear on masters, clients and launchers",
 					CVARTYPE_STRING, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE | CVAR_SERVERINFO)
+
+CVAR(				sv_showplayerpowerups, "0", "Show which powerup each player has. (1 = Show all powerups to clients. 0 = Only show Invisibility (vanilla)",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
+CVAR(				sv_showsprees, "0", "Enable killing spree announcements. When disabled, clients will not display or announce sprees.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
+
+CVAR(				sv_showmultikills, "0", "Enable multi kill announcements. When disabled, clients will not display or announce multi kills.",
+					CVARTYPE_BOOL, CVAR_SERVERARCHIVE | CVAR_SERVERINFO)
 
 CVAR(sv_downloadsites, "",
      "A list of websites to download WAD files from, separated by spaces",
@@ -246,12 +270,13 @@ CVAR(g_postroundtime, "3", "Amount of time after a round before the next round/e
      CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR_RANGE(g_thingfilter, "0", "Removes some things from the map. Values are:\n" \
-	"// 0 - All things are retained (default).\n" \
-	"// 1 - Only Coop weapons are removed.\n" \
-        "// 2 - All Coop things are removed.\n" \
-	"// 3 - All pickupable things are removed.",
+           "// -1 - Multiplayer things are added in singleplayer.\n" \
+           "// 0 - All things are retained (default).\n" \
+           "// 1 - Only Coop weapons are removed.\n" \
+           "// 2 - All Coop things are removed.\n" \
+           "// 3 - All pickupable things are removed.\n",
            CVARTYPE_BYTE, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE | CVAR_LATCH,
-           0.0f, 3.0f)
+           -1.0f, 3.0f)
 
 CVAR(g_resetinvonexit, "0",
      "Always reset players to their starting inventory on level exit", CVARTYPE_BOOL,
@@ -289,6 +314,16 @@ CVAR_RANGE(g_horde_spawnfull_max, "6",
            CVARTYPE_INT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 1,
            60)
 
+CVAR_RANGE(g_horde_extralife, "0.0", "Chance to spawn an `extra life powerup` in Horde.\n" \
+     "The value is the chance this spawns when a powerup is awarded, capped at 4x as likely.\n" \
+     "If `g_lives` isn't greater than 0, this cvar has no effect.",
+     CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
+
+CVAR_RANGE(g_horde_resurrect, "0.0", "Chance to spawn a `resurrect teammate powerup` in Horde.\n" \
+     "The value is the chance this spawns when a powerup is awarded, capped at 4x as likely.\n" \
+     "If `g_lives` isn't greater than 0, this cvar has no effect.",
+     CVARTYPE_FLOAT, CVAR_SERVERARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 4.0f)
+
 // Game mode options commonized from the server
 //     At some point, replace "sv_" with "g_"
 // -------------------------------------------------------------------------
@@ -322,6 +357,11 @@ CVAR_RANGE(sv_countdown, "5",
 	CVAR(			co_blockmapfix, "0", "Fix the blockmap collision bug",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
+	CVAR(			co_novileghosts, "0", "Disables vanilla's ghost monster quirk that lets Arch-viles resurrect crushed monsters as unshootable ghosts",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
+
+	CVAR(           co_archvilefirefix, "0", "Fix the vanilla bug where Arch-vile fire is spawned in the wrong location, causing motion and interpolation column-of-fire-type visual glitches",
+	                CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	// Boom-compatibility changes
 	//------------------------------
@@ -329,16 +369,75 @@ CVAR_RANGE(sv_countdown, "5",
 					"sectors and lines",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
-	CVAR(			co_allowdropoff, "0", "Allow monsters can get pushed or thrusted off of ledges",
+	CVAR(			co_allowdropoff, "0", "Allow monsters can get pushed or thrusted off of ledges.",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
 
-	CVAR(			co_novileghosts, "0", "Disables vanilla's ghost monster quirk that lets Arch-viles resurrect crushed monsters as unshootable ghosts",
-					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH)
-	
 	CVAR(			co_removesoullimit, "0", "Allows pain elementals to still spawn lost souls if more than 20 are present",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
+	// MBF-compatibility changes
+	//------------------------------
 
+	CVAR(			co_pursuit, "0",
+					"Use MBF comp_pursuit behavior -- monsters will change targets "
+					"if their current target is out of sight and a new valid target is in sight.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	CVAR(			co_helpfriends, "0",
+					"Use MBF help_friends behavior -- monsters will help friends under 50% health.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	CVAR(			co_monsterbacking, "0",
+					"Use MBF monster_backing behavior -- monsters can strafe or retreat.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	CVAR(			co_monsterfriction, "0",
+					"Use MBF monster_friction behavior -- monster movement is affected by ice and sludge.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	CVAR_RANGE(co_friend_distance, "128",
+					"Use MBF distfriend behavior -- friendlies will try to maintain this distance in mapblocks.",
+					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_NOENABLEDISABLE, 0.0f, 2048.0f)
+
+	CVAR(			co_avoidhazards, "0",
+					"Use MBF monster_avoid_hazards behavior -- monsters will avoid some damaging sectors and crushers.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	CVAR(			co_monstersclimbsteep, "0",
+					"Use MBF monkeys behavior -- monsters will step up or down to 24 units.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	CVAR(			co_staylift, "0",
+					"Use MBF comp_staylift behavior -- monsters will try to stay on the same lift their target is on.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	CVAR(			co_friend_ledgejumping, "0",
+					"Use MBF dog_jumping behavior -- friendly monsters will drop off high ledges "
+					"if the target is immediately on the other side.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	CVAR_RANGE(co_friend_playerhelpers, "0",
+					"Use MBF player_helpers behavior -- amount of friendly things to spawn at map start.\n" \
+					"// If in an online game, dogs spawn only once on map start per helper per player.\n" \
+					"// The helper type is defined in BEX or through the cvar co_friend_helpertype.",
+					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_SERVERINFO | CVAR_LATCH | CVAR_NOENABLEDISABLE, 0.0f, 64.0f)
+
+	CVAR(			co_friend_helpertype, "",
+					"Name of the actor type to spawn as a helper.\n" \
+					"// Spawnable actors can be found using the ccmd `dumpactors`\n" \
+					"// If empty, it uses the defined default friend in Dehacked (BEX).\n" \
+					"// If the actor name can't be found, an MBF helper dog will be spawned\n",
+					CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
+
+	CVAR(			co_mbfphys, "0", "Use MBF's movement code. Fixes mancubus fireball clipping and linedef skips.",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	// MBF21-defined compatibility changes
+	// -----------------------------------
+
+	CVAR(co_voodooscroller, "0",
+	     "Use MBF21's comp_voodooscroller behavior -- Enable voodoo dolls on slow scrollers to move too slowly.",
+	     CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	// ZDoom-compatibility changes
 	//------------------------------
@@ -346,6 +445,9 @@ CVAR_RANGE(sv_countdown, "5",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	CVAR(			co_zdoomsound, "0", "Enable sound attenuation curve + attenuation of switch sounds with distance",
+					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
+
+	CVAR(			co_zdoomammo, "0", "Enable/disable ZDoom 1.23b33-based ammo checks",
 					CVARTYPE_BOOL, CVAR_ARCHIVE | CVAR_SERVERINFO)
 
 	CVAR(			co_fineautoaim, "0", "Increase precision of vertical auto-aim",
@@ -392,7 +494,7 @@ CVAR(               cl_waddownloaddir, "", "Set custom WAD download directory",
 					CVARTYPE_STRING, CVAR_CLIENTARCHIVE | CVAR_NOENABLEDISABLE)
 
 CVAR				(r_softinvulneffect, "1",
-					"Change invuln to enable light googles and invert the pallete on the weapon sprite only.",
+					"Change invuln to enable light goggles and invert the palette on the weapon sprite only.",
 					CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
 
 // Misc stuff
@@ -400,6 +502,9 @@ CVAR				(r_softinvulneffect, "1",
 
 CVAR(				developer, "0", "Debugging mode",
 					CVARTYPE_BOOL, CVAR_NULL)
+
+CVAR(			log_packetdebug, "0", "Print debugging messages for each packet sent",
+				CVARTYPE_BOOL, CVAR_ARCHIVE)
 
 CVAR(debug_disconnect, "0", "Show source file:line where a disconnect happens",
      CVARTYPE_BOOL, CVAR_CLIENTARCHIVE)
@@ -421,14 +526,6 @@ CVAR(				lookspring, "1", "Generate centerview when mlook encountered",
 
 CVAR(				waddirs, "", "Allow custom WAD directories to be specified",
 					CVARTYPE_STRING, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE)
-
-CVAR_RANGE_FUNC_DECL(net_rcvbuf, "131072", "Net receive buffer size in bytes",
-					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE,
-					1500.0f, 256.0f * 1024.0f * 1024.0f)
-
-CVAR_RANGE_FUNC_DECL(net_sndbuf, "131072", "Net send buffer size in bytes",
-					CVARTYPE_INT, CVAR_ARCHIVE | CVAR_NOENABLEDISABLE,
-					1500.0f, 256.0f * 1024.0f * 1024.0f)
 
 // Experimental settings (all categories)
 // =======================================

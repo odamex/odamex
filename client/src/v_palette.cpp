@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -36,6 +36,7 @@
 #include "i_video.h"
 #include "c_dispatch.h"
 #include "cmdlib.h"
+#include "oscanner.h"
 
 #include "v_palette.h"
 
@@ -95,11 +96,6 @@ translationref_t::translationref_t() :
 {
 }
 
-translationref_t::translationref_t(const translationref_t &other) :
-	m_table(other.m_table), m_player_id(other.m_player_id)
-{
-}
-
 translationref_t::translationref_t(const byte *table) :
 	m_table(table), m_player_id(-1)
 {
@@ -115,12 +111,6 @@ shaderef_t::shaderef_t() :
 {
 }
 
-shaderef_t::shaderef_t(const shaderef_t &other) :
-	m_colors(other.m_colors), m_mapnum(other.m_mapnum),
-	m_colormap(other.m_colormap), m_shademap(other.m_shademap), m_dyncolormap(other.m_dyncolormap)
-{
-}
-
 shaderef_t::shaderef_t(const shademap_t* const colors, const int mapnum) :
 	m_colors(colors), m_mapnum(mapnum)
 {
@@ -128,9 +118,7 @@ shaderef_t::shaderef_t(const shademap_t* const colors, const int mapnum) :
 	// NOTE(jsd): Arbitrary value picked here because we don't record the max number of colormaps for dynamic ones... or do we?
 	if (m_mapnum >= 8192)
 	{
-		char tmp[100];
-		sprintf(tmp, "32bpp: shaderef_t::shaderef_t() called with mapnum = %d, which looks too large", m_mapnum);
-		throw CFatalError(tmp);
+		throw CFatalError(fmt::format("32bpp: shaderef_t::shaderef_t() called with mapnum = {}, which looks too large", m_mapnum));
 	}
 	#endif
 
@@ -211,17 +199,17 @@ public:
 class DoomGammaStrategy : public GammaStrategy
 {
 public:
-	float min() const
+	float min() const override
 	{
 		return 0.0f;
 	}
 
-	float max() const
+	float max() const override
 	{
 		return 7.0f;
 	}
 
-	float increment(float level) const
+	float increment(float level) const override
 	{
 		level += 1.0f;
 		if (level > max())
@@ -229,7 +217,7 @@ public:
 		return level;
 	}
 
-	void generateGammaTable(byte* table, float level) const
+	void generateGammaTable(byte* table, float level) const override
 	{
 		// [SL] Use vanilla Doom's gamma table
 		//
@@ -239,28 +227,28 @@ public:
 		// This generates a 1:1 match with the original gammatable but also
 		// allows for intermediate values.
 
-		const double basefac = pow(2.0, (double)level) * (255.0/256.0);
+		const double basefac = pow(2.0, static_cast<double>(level)) * (255.0/256.0);
 		const double exp = 1.0 - 0.125 * level;
 
 		for (int i = 0; i < 256; i++)
-			table[i] = (byte)(0.5 + basefac * pow(double(i) + 1.0, exp));
+			table[i] = static_cast<byte>(0.5 + basefac * pow(static_cast<double>(i) + 1.0, exp));
 	}
 };
 
 class ZDoomGammaStrategy : public GammaStrategy
 {
 public:
-	float min() const
+	float min() const override
 	{
 		return 0.5f;
 	}
 
-	float max() const
+	float max() const override
 	{
 		return 3.0f;
 	}
 
-	float increment(float level) const
+	float increment(float level) const override
 	{
 		level += 0.1f;
 		if (level > max())
@@ -268,17 +256,17 @@ public:
 		return level;
 	}
 
-	void generateGammaTable(byte* table, float level) const
+	void generateGammaTable(byte* table, float level) const override
 	{
 		// [SL] Use ZDoom 1.22 gamma correction
 
 		// [RH] I found this formula on the web at
 		// http://panda.mostang.com/sane/sane-gamma.html
 
-		double invgamma = 1.0 / level;
+		const double invgamma = 1.0 / level;
 
 		for (int i = 0; i < 256; i++)
-			table[i] = (byte)(255.0 * pow(double(i) / 255.0, invgamma));
+			table[i] = static_cast<byte>(255.0 * pow(double(i) / 255.0, invgamma));
 	}
 };
 
@@ -391,9 +379,9 @@ BEGIN_COMMAND(bumpgamma)
 	V_IncrementGammaLevel();
 
 	if (gammalevel.value() == 0.0f)
-	    Printf (PRINT_HIGH, "Gamma correction off\n");
+	    PrintFmt(PRINT_HIGH, "Gamma correction off\n");
 	else
-	    Printf (PRINT_HIGH, "Gamma correction level %g\n", gammalevel.value());
+	    PrintFmt(PRINT_HIGH, "Gamma correction level {:g}\n", gammalevel.value());
 }
 END_COMMAND(bumpgamma)
 
@@ -414,7 +402,7 @@ void V_RestoreScreenPalette()
 //
 palindex_t V_BestColor(const argb_t* palette_colors, int r, int g, int b)
 {
-	int bestdistortion = MAXINT;
+	int bestdistortion = limits::MAXINT;
 	int bestcolor = 0;		/// let any color go to 0 as a last resort
 
 	for (int i = 0; i < 256; i++)
@@ -453,7 +441,7 @@ palindex_t V_BestColor(const argb_t* palette_colors, argb_t color)
 //
 void V_ClosestColors(const argb_t* palette_colors, palindex_t& color1, palindex_t& color2)
 {
-	int bestdistortion = MAXINT;
+	int bestdistortion = limits::MAXINT;
 
 	color1 = color2 = 0;	// go to color 0 as a last resort
 
@@ -461,9 +449,13 @@ void V_ClosestColors(const argb_t* palette_colors, palindex_t& color1, palindex_
 	{
 		for (int y = x + 1; y < 256; y++)
 		{
-			int dr = (int)palette_colors[y].getr() - (int)palette_colors[x].getr();
-			int dg = (int)palette_colors[y].getg() - (int)palette_colors[x].getg();
-			int db = (int)palette_colors[y].getb() - (int)palette_colors[x].getb();
+			// don't compare a color with itself
+			if (x == y)
+				continue;
+
+			int dr = static_cast<int>(palette_colors[y].getr()) - static_cast<int>(palette_colors[x].getr());
+			int dg = static_cast<int>(palette_colors[y].getg()) - static_cast<int>(palette_colors[x].getg());
+			int db = static_cast<int>(palette_colors[y].getb()) - static_cast<int>(palette_colors[x].getb());
 			int distortion = dr*dr + dg*dg + db*db;
 			if (distortion < bestdistortion)
 			{
@@ -475,7 +467,6 @@ void V_ClosestColors(const argb_t* palette_colors, palindex_t& color1, palindex_
 		}
 	}
 }
-
 
 //
 // V_GetColorStringByName
@@ -498,40 +489,45 @@ static std::string V_GetColorStringByName(const std::string& name)
 
 	if (rgbNames == NULL)
 	{
-		Printf(PRINT_HIGH, "X11R6RGB lump not found\n");
+		PrintFmt(PRINT_HIGH, "X11R6RGB lump not found\n");
 		return "";
 	}
 
-	// skip past the header line
-	data = strchr(rgbNames, '\n');
-	step = 0;
+	const char* buffer = W_CacheLumpName<char>("X11R6RGB", PU_CACHE);
 
-	while ( (data = COM_Parse (data)) )
+	OScannerConfig config = {
+		"X11R6RGB", // lumpName
+		false,      // semiComments
+		false,      // cComments
+	};
+	OScanner os = OScanner::openBuffer(config, buffer, buffer + W_LumpLength(lumpnum));
+
+
+	while (os.scan() && !os.crossed());
+	os.unScan();
+
+	int c[3];
+	bool notEOF = os.scan();
+	while (notEOF)
 	{
-		if (step < 3)
+		for (int& i : c)
 		{
-			c[step++] = atoi (com_token);
+			i = os.getTokenInt();
+			os.scan();
 		}
-		else
+
+		std::string colorname = os.getToken();
+		while((notEOF = os.scan()) && !os.crossed())
 		{
-			step = 0;
-			if (*data >= ' ')		// In case this name contains a space...
-			{
-				char *newchar = com_token + strlen(com_token);
-
-				while (*data >= ' ')
-					*newchar++ = *data++;
-				*newchar = 0;
-			}
-
-			if (!stricmp(com_token, name.c_str()))
-			{
-				sprintf(descr, "%04x %04x %04x",
-						 (c[0] << 8) | c[0],
-						 (c[1] << 8) | c[1],
-						 (c[2] << 8) | c[2]);
-				return descr;
-			}
+			colorname += " ";
+			colorname += os.getToken();
+		}
+		if (iequals(name, colorname))
+		{
+			return fmt::format("{:04x} {:04x} {:04x}",
+			                   (c[0] << 8) | c[0],
+			                   (c[1] << 8) | c[1],
+			                   (c[2] << 8) | c[2]);
 		}
 	}
 
@@ -701,15 +697,14 @@ static void V_DoBlending(argb_t* dest, const argb_t* source, argb_t color)
 }
 
 
-static const float lightScale(float a)
+static float lightScale(float a)
 {
 	// NOTE(jsd): Revised inverse logarithmic scale; near-perfect match to COLORMAP lump's scale
 	// 1 - ((Exp[1] - Exp[a*2 - 1]) / (Exp[1] - Exp[-1]))
 	static float e1 = exp(1.0f);
 	static float e1sube0 = e1 - exp(-1.0f);
 
-	float newa = clamp(1.0f - (e1 - (float)exp(a * 2.0f - 1.0f)) / e1sube0, 0.0f, 1.0f);
-	return newa;
+	return clamp(1.0f - (e1 - static_cast<float>(exp(a * 2.0f - 1.0f))) / e1sube0, 0.0f, 1.0f);
 }
 
 void BuildLightRamp (shademap_t &maps)
@@ -718,7 +713,7 @@ void BuildLightRamp (shademap_t &maps)
 	// Build light ramp:
 	for (l = 0; l < 256; ++l)
 	{
-		int a = (int)(255 * lightScale(l / 255.0f));
+		int a = static_cast<int>(255 * lightScale(l / 255.0f));
 		maps.ramp[l] = a;
 	}
 }
@@ -732,7 +727,7 @@ void BuildDefaultColorAndShademap(const palette_t* pal, shademap_t& maps)
 
 	const argb_t* palette = pal->basecolors;
 	argb_t fadecolor(level.fadeto_color[0], level.fadeto_color[1], level.fadeto_color[2], level.fadeto_color[3]);
-	
+
 	palindex_t* colormap = maps.colormap;
 	argb_t* shademap = maps.shademap;
 
@@ -756,14 +751,14 @@ void BuildDefaultColorAndShademap(const palette_t* pal, shademap_t& maps)
 	// build special maps (e.g. invulnerability)
 	for (int c = 0; c < 256; c++)
 	{
-		int grayint = (int)(255.0f * clamp(1.0f -
+		int grayint = static_cast<int>(255.0f * clamp(1.0f -
 						(palette[c].getr() * 0.00116796875f +
 						 palette[c].getg() * 0.00229296875f +
 			 			 palette[c].getb() * 0.0005625f), 0.0f, 1.0f));
 
-		argb_t color(255, grayint, grayint, grayint); 
+		argb_t color(255, grayint, grayint, grayint);
 		colormap[c] = V_BestColor(palette, color);
-		shademap[c] = V_GammaCorrect(color); 
+		shademap[c] = V_GammaCorrect(color);
 	}
 }
 
@@ -776,7 +771,7 @@ void BuildDefaultShademap(const palette_t* pal, shademap_t& maps)
 
 	const argb_t* palette = pal->basecolors;
 	argb_t fadecolor(level.fadeto_color[0], level.fadeto_color[1], level.fadeto_color[2], level.fadeto_color[3]);
-	
+
 	argb_t* shademap = maps.shademap;
 
 	for (int i = 0; i < NUMCOLORMAPS; i++, shademap += 256)
@@ -798,16 +793,17 @@ void BuildDefaultShademap(const palette_t* pal, shademap_t& maps)
 	// build special maps (e.g. invulnerability)
 	for (int c = 0; c < 256; c++)
 	{
-		int grayint = (int)(255.0f * clamp(1.0f -
+		int grayint = static_cast<int>(255.0f * clamp(1.0f -
 						(palette[c].getr() * 0.00116796875f +
 						 palette[c].getg() * 0.00229296875f +
 			 			 palette[c].getb() * 0.0005625f), 0.0f, 1.0f));
 
-		argb_t color(255, grayint, grayint, grayint); 
-		shademap[c] = V_GammaCorrect(color); 
+		argb_t color(255, grayint, grayint, grayint);
+		shademap[c] = V_GammaCorrect(color);
 	}
 }
 
+static void V_RefreshSpecialLights();
 
 //
 // V_RefreshColormaps
@@ -820,6 +816,8 @@ void V_RefreshColormaps()
 	NormalLight.color = argb_t(255, 255, 255, 255);
 	NormalLight.fade = argb_t(level.fadeto_color[0], level.fadeto_color[1],
 							level.fadeto_color[2], level.fadeto_color[3]);
+
+	V_RefreshSpecialLights();
 
 	R_ReinitColormap();
 }
@@ -906,13 +904,13 @@ BEGIN_COMMAND (testblend)
 {
 	if (argc < 3)
 	{
-		Printf (PRINT_HIGH, "testblend <color> <amount>\n");
+		PrintFmt(PRINT_HIGH, "testblend <color> <amount>\n");
 	}
 	else
 	{
 		argb_t color(V_GetColorFromString(argv[1]));
 
-		int alpha = 255.0 * clamp((float)atof(argv[2]), 0.0f, 1.0f);
+		int alpha = 255.0 * clamp(static_cast<float>(atof(argv[2])), 0.0f, 1.0f);
 		R_SetSectorBlend(argb_t(alpha, color.getr(), color.getg(), color.getb()));
 	}
 }
@@ -922,7 +920,7 @@ BEGIN_COMMAND (testfade)
 {
 	if (argc < 2)
 	{
-		Printf (PRINT_HIGH, "testfade <color>\n");
+		PrintFmt(PRINT_HIGH, "testfade <color>\n");
 	}
 	else
 	{
@@ -961,7 +959,7 @@ fahsv_t V_RGBtoHSV(const fargb_t &color)
 	float largest = std::max(std::max(r, g), b);
 	float delta = largest - smallest;
 
-	if (delta == 0.0f)	
+	if (delta == 0.0f)
 		return fahsv_t(a, 0, 0, largest);
 
 	float hue;
@@ -1023,13 +1021,15 @@ fargb_t V_HSVtoRGB(const fahsv_t &color)
 
 // Builds NUMCOLORMAPS colormaps lit with the specified color
 static void BuildColoredLights(shademap_t* maps, const int lr, const int lg, const int lb,
-                               const int fr, const int fg, const int fb)
+                               const int fr, const int fg, const int fb,
+                               const bool build_colormap = true)
 {
 	// The default palette is assumed to contain the maps for white light.
 	if (!maps)
 		return;
 
-	BuildLightRamp(*maps);
+	if (build_colormap)
+		BuildLightRamp(*maps);
 
 	const argb_t* palette_colors = V_GetDefaultPalette()->basecolors;
 
@@ -1037,7 +1037,7 @@ static void BuildColoredLights(shademap_t* maps, const int lr, const int lg, con
 	for (unsigned int l = 0; l < NUMCOLORMAPS; l++)
 	{
 		// Build the colormap and shademap:
-		palindex_t* colormap = maps->colormap + 256 * l;
+		palindex_t* colormap = build_colormap ? maps->colormap + 256 * l : nullptr;
 		argb_t* shademap = maps->shademap + 256 * l;
 		for (unsigned int c = 0; c < 256; c++)
 		{
@@ -1053,8 +1053,22 @@ static void BuildColoredLights(shademap_t* maps, const int lr, const int lg, con
 			argb_t color(255, r * lr / 255, g * lg / 255, b * lb / 255);
 
 			shademap[c] = V_GammaCorrect(color);
-			colormap[c] = V_BestColor(palette_colors, color);
+
+			if (build_colormap)
+				colormap[c] = V_BestColor(palette_colors, color);
 		}
+	}
+}
+
+static void V_RefreshSpecialLights()
+{
+	for (dyncolormap_t* colormap = NormalLight.next; colormap; colormap = colormap->next)
+	{
+		// Gamma changes only affect the 32-bit shademap.
+		BuildColoredLights(const_cast<shademap_t*>(colormap->maps.map()),
+				colormap->color.getr(), colormap->color.getg(), colormap->color.getb(),
+				colormap->fade.getr(), colormap->fade.getg(), colormap->fade.getb(),
+				false);
 	}
 }
 
@@ -1079,11 +1093,11 @@ dyncolormap_t* GetSpecialLights(int lr, int lg, int lb, int fr, int fg, int fb)
 	}
 
 	// Not found. Create it.
-	colormap = (dyncolormap_t*)Z_Malloc(sizeof(*colormap), PU_LEVEL, 0);
+	colormap = Z_Malloc<dyncolormap_t>(PU_LEVEL);
 
 	shademap_t* maps = new shademap_t();
-	maps->colormap = (palindex_t*)Z_Malloc(NUMCOLORMAPS * 256 * sizeof(palindex_t), PU_LEVEL, 0);
-	maps->shademap = (argb_t*)Z_Malloc(NUMCOLORMAPS * 256 * sizeof(argb_t), PU_LEVEL, 0);
+	maps->colormap = Z_Malloc<palindex_t>(NUMCOLORMAPS * 256, PU_LEVEL);
+	maps->shademap = Z_Malloc<argb_t>(NUMCOLORMAPS * 256, PU_LEVEL);
 
 	colormap->maps = shaderef_t(maps, 0);
 	colormap->color = color;
@@ -1100,13 +1114,13 @@ BEGIN_COMMAND (testcolor)
 {
 	if (argc < 2)
 	{
-		Printf (PRINT_HIGH, "testcolor <color>\n");
+		PrintFmt(PRINT_HIGH, "testcolor <color>\n");
 	}
 	else
 	{
 		argb_t color(V_GetColorFromString(argv[1]));
 
-		BuildColoredLights((shademap_t*)NormalLight.maps.map(),
+		BuildColoredLights(const_cast<shademap_t*>(NormalLight.maps.map()),
 				color.getr(), color.getg(), color.getb(),
 				level.fadeto_color[1], level.fadeto_color[2], level.fadeto_color[3]);
 	}
@@ -1129,19 +1143,19 @@ void V_DoPaletteEffects()
 	{
 		int palette_num = 0;
 
-		float red_count = (float)plyr->damagecount;
+		float red_count = static_cast<float>(plyr->damagecount);
 		if (!multiplayer || sv_allowredscreen)
 			red_count *= r_painintensity;
 
 		// slowly fade the berzerk out
 		if (plyr->powers[pw_strength])
-			red_count = MAX(red_count, 12.0f - float(plyr->powers[pw_strength] >> 6));
+			red_count = MAX(red_count, 12.0f - static_cast<float>(plyr->powers[pw_strength] >> 6));
 
 		if (red_count > 0.0f)
 		{
-			palette_num = ((int)red_count + 7) >> 3;
+			palette_num = (static_cast<int>(red_count) + 7) >> 3;
 
-			if (gamemode == retail_chex)
+			if (IsChexMission(gamemission))
 				palette_num = RADIATIONPAL;
 			else
 			{
@@ -1189,24 +1203,10 @@ void V_DoPaletteEffects()
 		V_AddBlend(blend, R_GetSectorBlend());
 		V_AddBlend(blend, plyr->blend_color);
 
-		float greendamagecolor;
-		float reddamagecolor;
-
-		if (gamemode == retail_chex)
-		{
-			reddamagecolor = 0.0f;
-			greendamagecolor = 255.0f / 255.0f;
-		}
-		else
-		{
-			reddamagecolor = 255.0f / 255.0f;
-			greendamagecolor = 0.0f;
-		}
-
 		// red tint for pain / berzerk power
 		if (plyr->damagecount || plyr->powers[pw_strength])
 		{
-			float red_amount = (float)plyr->damagecount;
+			float red_amount = static_cast<float>(plyr->damagecount);
 			if (!multiplayer || sv_allowredscreen)
 				red_amount *= r_painintensity;
 
@@ -1219,9 +1219,9 @@ void V_DoPaletteEffects()
 				red_amount = MIN(red_amount, 56.0f);
 				float alpha = (red_amount + 8.0f) / 72.0f;
 
-				static const float red = reddamagecolor;
-				static const float green = greendamagecolor;
-				static const float blue = 0.0f;
+				const float red = IsChexMission(gamemission) ? 0.0f : 1.0f;
+				const float green = IsChexMission(gamemission) ? 1.0f : 0.0f;
+				static constexpr float blue = 0.0f;
 				V_AddBlend(blend, fargb_t(alpha, red, green, blue));
 			}
 		}
@@ -1229,15 +1229,15 @@ void V_DoPaletteEffects()
 		// yellow tint for item pickup
 		if (plyr->bonuscount)
 		{
-			float bonus_amount = (float)plyr->bonuscount;
+			float bonus_amount = static_cast<float>(plyr->bonuscount);
 			if (bonus_amount > 0.0f)
 			{
 				bonus_amount = MIN(bonus_amount, 24.0f);
-				float alpha = (bonus_amount + 8.0f) / 64.0f;				
+				float alpha = (bonus_amount + 8.0f) / 64.0f;
 
-				static const float red = 215.0f / 255.0f;
-				static const float green = 186.0f / 255.0f;
-				static const float blue = 69.0f / 255.0f;
+				static constexpr float red = 215.0f / 255.0f;
+				static constexpr float green = 186.0f / 255.0f;
+				static constexpr float blue = 69.0f / 255.0f;
 				V_AddBlend(blend, fargb_t(alpha, red, green, blue));
 			}
 		}
@@ -1245,10 +1245,10 @@ void V_DoPaletteEffects()
 		// green tint for radiation suit
 		if (plyr->powers[pw_ironfeet] > 4*32 || plyr->powers[pw_ironfeet] & 8)
 		{
-			static const float alpha = 1.0f / 8.0f;
-			static const float red = 0.0f;
-			static const float green = 255.0f / 255.0f;
-			static const float blue = 0.0f;
+			static constexpr float alpha = 1.0f / 8.0f;
+			static constexpr float red = 0.0f;
+			static constexpr float green = 255.0f / 255.0f;
+			static constexpr float blue = 0.0f;
 			V_AddBlend(blend, fargb_t(alpha, red, green, blue));
 		}
 
@@ -1268,7 +1268,7 @@ void V_ResetPalette()
 	{
 		game_palette = default_palette;
 		I_SetPalette(game_palette.colors);
-		fargb_t blend(0.0f, 0.0f, 0.0f, 0.0f);
+		const fargb_t blend(0.0f, 0.0f, 0.0f, 0.0f);
 		V_SetBlend(blend);
 	}
 }

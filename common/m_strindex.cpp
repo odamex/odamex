@@ -49,7 +49,7 @@ OStringIndexer OStringIndexer::maplistFactory()
 	{
 		for (int m = 1; m <= 9; m++)
 		{
-			StrFormat(buf, "E%dM%d", e, m);
+			buf = fmt::sprintf("E%dM%d", e, m);
 			stridx.getIndex(buf);
 		}
 	}
@@ -57,7 +57,7 @@ OStringIndexer OStringIndexer::maplistFactory()
 	// 32 for DOOM II/Final Doom.
 	for (int i = 1; i <= 32; i++)
 	{
-		StrFormat(buf, "MAP%02d", i);
+		buf = fmt::sprintf("MAP%02d", i);
 		stridx.getIndex(buf);
 	}
 

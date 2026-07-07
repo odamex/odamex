@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -45,11 +45,25 @@
 
 static IWindowSurface* cast_surface = NULL;
 
+// Draw finale flats/textures on a
+// (320 < patch_width)x(200 < patch_height)
+// canvas and scale them.
+// Also used for endpics
+static IWindowSurface* finale_surface = NULL;
+
+// Draw the bunny scroll on 2 surfaces
+// and clip them against the screen
+static IWindowSurface* bunny1_surface = NULL;
+static IWindowSurface* bunny2_surface = NULL;
+
 // Stage of animation:
 //	0 = text, 1 = art screen, 2 = character cast
 unsigned int	finalestage;
 
 int	finalecount;
+
+static int finale_height;
+static int finale_width;
 
 #define TEXTSPEED		2
 #define TEXTWAIT		250
@@ -61,15 +75,44 @@ enum finale_lump_t
 	FINALE_GRAPHIC,
 };
 
-const char* finaletext;
-const char* finalelump;
+std::string finaletext;
+OLumpName finalelump;
 finale_lump_t finalelumptype = FINALE_NONE;
 
-void	F_StartCast (void);
-void	F_CastTicker (void);
-BOOL	F_CastResponder (event_t *ev);
-void	F_CastDrawer (void);
+void	F_StartCast();
+void	F_CastTicker();
+bool	F_CastResponder(const event_t&ev);
+void	F_CastDrawer();
 
+
+//
+// F_GetCWidth
+//
+// Returns the width of the area that the intermission screen will be
+// drawn to. The intermisison screen should be 4:3, except in 320x200 mode.
+// Except with widescreen assets
+//
+static int F_GetCWidth()
+{
+	const int surface_width = I_GetPrimarySurface()->getWidth();
+	const int surface_height = I_GetPrimarySurface()->getHeight();
+
+	// Using widescreen assets? It may go off screen.
+	// Preserve the aspect ratio and make the box big
+	// Maybe too big? (it will be cropped if so)
+	if (finale_width > 320)
+	{
+		return I_GetAspectCorrectWidth(surface_height, finale_height, finale_width);
+	}
+
+	if (I_IsProtectedResolution(I_GetVideoWidth(), I_GetVideoHeight()))
+		return surface_width;
+
+	if (surface_width * 3 >= surface_height * 4)
+		return surface_height * 4 / 3;
+	else
+		return surface_width;
+}
 
 //
 // F_GetWidth
@@ -130,29 +173,23 @@ void F_StartFinale(finale_options_t& options)
 	//  determined in G_WorldDone() based on data in
 	//  a level_info_t and a cluster_info_t.
 
-	if (options.music == NULL)
+	if (options.music.empty())
 	{
 		::currentmusic = ::gameinfo.finaleMusic.c_str();
-		S_ChangeMusic(
-			::currentmusic.c_str(),
-			!(::gameinfo.flags & GI_NOLOOPFINALEMUSIC)
-		);
+		S_ChangeMusic(::currentmusic, !::gameinfo.noLoopFinaleMusic);
 	}
 	else
 	{
-		::currentmusic = options.music;
-		S_ChangeMusic(
-			::currentmusic,
-			!(::gameinfo.flags & GI_NOLOOPFINALEMUSIC)
-		);
+		::currentmusic = options.music.c_str();
+		S_ChangeMusic(::currentmusic, !::gameinfo.noLoopFinaleMusic);
 	}
 
-	if (options.pic != NULL)
+	if (!options.pic.empty())
 	{
 		::finalelumptype = FINALE_GRAPHIC;
 		::finalelump = options.pic;
 	}
-	else if (options.flat != NULL)
+	else if (!options.flat.empty())
 	{
 		::finalelumptype = FINALE_FLAT;
 		::finalelump = options.flat;
@@ -160,10 +197,10 @@ void F_StartFinale(finale_options_t& options)
 	else
 	{
 		::finalelumptype = FINALE_FLAT;
-		::finalelump = gameinfo.finaleFlat.c_str();
+		::finalelump = gameinfo.finaleFlat;
 	}
 
-	if (options.text)
+	if (!options.text.empty())
 	{
 		::finaletext = options.text;
 	}
@@ -193,13 +230,16 @@ void F_StartFinale(finale_options_t& options)
 void STACK_ARGS F_ShutdownFinale()
 {
 	I_FreeSurface(cast_surface);
+	I_FreeSurface(finale_surface);
+	I_FreeSurface(bunny1_surface);
+	I_FreeSurface(bunny2_surface);
 }
 
 
-BOOL F_Responder (event_t *event)
+bool F_Responder(const event_t& event)
 {
 	if (finalestage == 2)
-		return F_CastResponder (event);
+		return F_CastResponder(event);
 
 	return false;
 }
@@ -278,21 +318,47 @@ void F_TextWrite ()
 
 	const int width = F_GetWidth();
 	const int height = F_GetHeight();
-	const int x = (primary_surface->getWidth() - width) / 2;
+
+	// Draw screenblocks to a 320x200 surface and scale it based on viewport height
+	// If it doesn't reach the side edges of viewport or over, scale it via
+	// top of surface and spill over the bottom and right
+	int screenblockHeight = height;
+	int screenblockWidth = I_GetAspectCorrectWidth(screenblockHeight, 200.0f, 320);
+
+	const int x = (primary_surface->getWidth() - screenblockWidth) / 2;
 	const int y = (primary_surface->getHeight() - height) / 2;
 
 	ResourceId res_id;
 	switch (finalelumptype)
 	{
 	case FINALE_GRAPHIC:
-		res_id = Res_GetResourceId(finalelump, NS_GRAPHICS);
-		if (Res_CheckResource(res_id))
-			screen->DrawTextureFullScreen(Res_CacheTexture(res_id, PU_CACHE));
+		lump = W_CheckNumForName(finalelump, ns_global);
+		if (lump >= 0)
+		{
+			screen->DrawPatchFullScreen(W_CachePatch(lump, PU_CACHE), true);
+		}
 		break;
 	case FINALE_FLAT:
-		res_id = Res_GetResourceId(finalelump, NS_FLATS);
-		if (Res_CheckResource(res_id))
-			screen->FlatFill(Res_CacheTexture(res_id, PU_CACHE), x, y, width + x, height + y);
+		lump = W_CheckNumForName(finalelump, ns_flats);
+		if (lump >= 0)
+		{
+			// Support high resolution flats
+			unsigned int length = W_LumpLength(lump);
+
+			I_FreeSurface(finale_surface);
+			finale_surface = I_AllocateSurface(320, 200, 8);
+
+			finale_surface->lock();
+
+			finale_surface->getDefaultCanvas()->FlatFill(
+			    0, 0, 320, 200, length,
+			    W_CacheLumpNum<byte>(lump, PU_CACHE));
+
+			primary_surface->blitcrop(finale_surface, 0, 0, 320, 200,
+			    x, y, screenblockWidth, screenblockHeight);
+
+			finale_surface->unlock();
+		}
 		break;
 	default:
 		break;
@@ -301,22 +367,22 @@ void F_TextWrite ()
 	V_MarkRect(x, y, width, height);
 
 	// draw some of the text onto the screen
-	int cx = 10, cy = 10;
-	const char* ch = finaletext;
+	int cx = gameinfo.textScreenX, cy = gameinfo.textScreenY;
+	const char* ch = finaletext.c_str();
 
-	if (finalecount < 11)
+	if (finalecount < gameinfo.textScreenY + 1)
 		return;
 
 	int count = (finalecount - 10) / TEXTSPEED;
-	for ( ; count ; count-- )
+	for ( ; count; count-- )
 	{
 		int c = *ch++;
 		if (!c)
 			break;
 		if (c == '\n')
 		{
-			cx = 10;
-			cy += 11;
+			cx = gameinfo.textScreenX;
+			cy += 11; // (gamemission == heretic) ? 10 : 11;
 			continue;
 		}
 
@@ -327,14 +393,14 @@ void F_TextWrite ()
 			continue;
 		}
 
-		int w = hu_font[c]->mWidth;
+		const Texture* chr = W_ResolvePatchHandle(hu_font[c]);
+
+		const int w = chr->width();
 		if (cx + w > width)
 			break;
-
-		screen->DrawTextureClean(hu_font[c], cx, cy);
+		screen->DrawPatchClean(chr, cx, cy);
 		cx += w;
 	}
-
 }
 
 //
@@ -348,7 +414,7 @@ typedef struct
 	mobjtype_t	type;
 } castinfo_t;
 
-castinfo_t		castorder[] = {
+castinfo_t castorder[] = {
 	{NULL, MT_POSSESSED},
 	{NULL, MT_SHOTGUY},
 	{NULL, MT_CHAINGUY},
@@ -370,14 +436,13 @@ castinfo_t		castorder[] = {
 	{NULL, MT_UNKNOWNTHING}
 };
 
-static int 			castnum;
-static int 			casttics;
-static int			castsprite;
-static state_t*		caststate;
-static BOOL	 		castdeath;
-static int 			castframes;
-static int 			castonmelee;
-static BOOL	 		castattacking;
+static int 		castnum;
+static int 		casttics;
+static state_t*	caststate;
+static bool	 	castdeath;
+static int 		castframes;
+static int 		castonmelee;
+static bool	 	castattacking;
 
 
 //
@@ -410,7 +475,6 @@ void F_StartCast()
 	wipegamestate = GS_FORCEWIPE;
 	castnum = 0;
 	caststate = &states[mobjinfo[castorder[castnum].type].seestate];
-	castsprite = caststate->sprite;
 	casttics = caststate->tics;
 	castdeath = false;
 	finalestage = 2;
@@ -441,11 +505,10 @@ void F_CastTicker()
 			castnum = 0;
 		if (mobjinfo[castorder[castnum].type].seesound)
 		{
-			const int atten = ATTN_NONE;
+			static constexpr int atten = ATTN_NONE;
 			S_Sound (CHAN_VOICE, mobjinfo[castorder[castnum].type].seesound, 1, atten);
 		}
 		caststate = &states[mobjinfo[castorder[castnum].type].seestate];
-		castsprite = caststate->sprite;
 		castframes = 0;
 	}
 	else
@@ -504,18 +567,16 @@ void F_CastTicker()
 		// go into attack frame
 		castattacking = true;
 		if (castonmelee)
-			caststate=&states[mobjinfo[castorder[castnum].type].meleestate];
+			caststate = &states[mobjinfo[castorder[castnum].type].meleestate];
 		else
-			caststate=&states[mobjinfo[castorder[castnum].type].missilestate];
+			caststate = &states[mobjinfo[castorder[castnum].type].missilestate];
 		castonmelee ^= 1;
 		if (caststate == &states[S_NULL])
 		{
 			if (castonmelee)
-				caststate=
-					&states[mobjinfo[castorder[castnum].type].meleestate];
+				caststate = &states[mobjinfo[castorder[castnum].type].meleestate];
 			else
-				caststate=
-					&states[mobjinfo[castorder[castnum].type].missilestate];
+				caststate = &states[mobjinfo[castorder[castnum].type].missilestate];
 		}
 	}
 
@@ -541,9 +602,9 @@ void F_CastTicker()
 // F_CastResponder
 //
 
-BOOL F_CastResponder (event_t* ev)
+bool F_CastResponder(const event_t& ev)
 {
-	if (ev->type != ev_keydown)
+	if (ev.type != ev_keydown)
 		return false;
 
 	if (castdeath)
@@ -571,27 +632,35 @@ void F_CastDrawer()
 
 	const Texture* background_texture = Res_CacheTexture("BOSSBACK", PATCH);
 
+	finale_width = background_patch->width();
+	finale_height = background_patch->height() + (background_patch->height() / 5);
+
+	I_FreeSurface(cast_surface);
+	cast_surface = I_AllocateSurface(background_patch->width(), background_patch->height(), 8);
+
 	// draw the background to the surface
 	cast_surface->lock();
 
 	cast_surface->getDefaultCanvas()->DrawTexture(background_texture, 0, 0);
 
 	// draw the current frame in the middle of the screen
-	const spritedef_t* sprdef = &sprites[castsprite];
+	const spritedef_t* sprdef = &sprites[caststate->sprite];
 	const spriteframe_t* sprframe = &sprdef->spriteframes[caststate->frame & FF_FRAMEMASK];
 
-	const Texture* sprite_texture = Res_CacheTexture(sprframe->resource[0]);
-	if (sprframe->flip[0])
-		cast_surface->getDefaultCanvas()->DrawTextureFlipped(sprite_texture, 160, 170);
-	else
-		cast_surface->getDefaultCanvas()->DrawTexture(sprite_texture, 160, 170);
+	int scaled_x = (finale_width - 320) / 2;
 
-	const int width = F_GetWidth();
+	const Texture* sprite_patch = W_CachePatch(sprframe->lump[0]);
+	if (sprframe->flip[0])
+		cast_surface->getDefaultCanvas()->DrawPatchFlipped(sprite_patch, 160 + scaled_x, 170);
+	else
+		cast_surface->getDefaultCanvas()->DrawPatch(sprite_patch, 160 + scaled_x, 170);
+
+	const int width = F_GetCWidth();
 	const int height = F_GetHeight();
 	const int x = (primary_surface->getWidth() - width) / 2;
 	const int y = (primary_surface->getHeight() - height) / 2;
 
-	primary_surface->blit(cast_surface, 0, 0, 320, 200, x, y, width, height);
+	primary_surface->blitcrop(cast_surface, 0, 0, finale_width, finale_height, x, y, width, height);
 
 	cast_surface->unlock();
 
@@ -603,199 +672,65 @@ void F_CastDrawer()
 
 
 //
-// F_DrawPatchCol
-//
-
-// Palettized version 8bpp
-
-void F_DrawTextureColP(int x, const Texture* texture, int col)
-{
-	IWindowSurface* surface = I_GetPrimarySurface();
-	const int surface_width = surface->getWidth(), surface_height = surface->getHeight();
-
-	// [RH] figure out how many times to repeat this column
-	// (for screens wider than 320 pixels)
-	const float mul = static_cast<float>(surface_width) / 320.0f;
-	const float fx = static_cast<float>(x);
-	const int repeat = static_cast<int>(floor(mul * (fx + 1)) - floor(mul * fx));
-	if (repeat == 0)
-		return;
-
-	// [RH] Remap virtual-x to real-x
-	x = static_cast<int>(floor(mul * x));
-
-	// [RH] Figure out per-row fixed-point step
-	const unsigned int step = (200<<16) / surface_height;
-	const unsigned int invstep = (surface_height<<16) / 200;
-	
-	byte* desttop = surface->getBuffer() + x;
-	const int pitch = surface->getPitchInPixels();
-
-	// step through the posts in a column
-
-	const byte* source = texture->getColumn(col);
-	byte* dest = desttop;
-	unsigned int count = (texture->mHeight * invstep) >> 16;
-	int c = 0;
-	palindex_t p;
-
-	switch (repeat) {
-		case 1:
-			do {
-				*dest = source[c>>16];
-				dest += pitch;
-				c += step;
-			} while (--count);
-			break;
-		case 2:
-			do {
-				p = source[c>>16];
-				dest[0] = p;
-				dest[1] = p;
-				dest += pitch;
-				c += step;
-			} while (--count);
-			break;
-		case 3:
-			do {
-				p = source[c>>16];
-				dest[0] = p;
-				dest[1] = p;
-				dest[2] = p;
-				dest += pitch;
-				c += step;
-			} while (--count);
-			break;
-		case 4:
-			do {
-				p = source[c>>16];
-				dest[0] = p;
-				dest[1] = p;
-				dest[2] = p;
-				dest[3] = p;
-				dest += pitch;
-				c += step;
-			} while (--count);
-			break;
-		default:
-			{
-				int count2;
-
-				do {
-					p = source[c>>16];
-					for (count2 = repeat; count2; count2--) {
-						dest[count2] = p;
-					}
-					dest += pitch;
-					c += step;
-				} while (--count);
-			}
-			break;
-	}
-}
-
-// Direct version 32bpp:
-
-void F_DrawTextureColD(int x, const Texture* texture, int col)
-{
-	IWindowSurface* surface = I_GetPrimarySurface();
-	const int surface_width = surface->getWidth(), surface_height = surface->getHeight();
-
-	// [RH] figure out how many times to repeat this column
-	// (for screens wider than 320 pixels)
-	const float mul = static_cast<float>(surface_width) / 320.0f;
-	const float fx = static_cast<float>(x);
-	const int repeat = static_cast<int>(floor(mul * (fx + 1)) - floor(mul * fx));
-	if (repeat == 0)
-		return;
-
-	// [RH] Remap virtual-x to real-x
-	x = static_cast<int>(floor(mul * x));
-
-	// [RH] Figure out per-row fixed-point step
-	const unsigned step = (200<<16) / surface_height;
-	const unsigned invstep = (surface_height<<16) / 200;
-
-	argb_t* desttop = (argb_t *)surface->getBuffer() + x;
-	const int pitch = surface->getPitchInPixels();
-
-	const shaderef_t pal = shaderef_t(&V_GetDefaultPalette()->maps, 0);
-
-	const byte* source = texture->getColumn(col);
-	argb_t* dest = desttop;
-	unsigned count = (texture->mHeight * invstep) >> 16;
-	int c = 0;
-	argb_t p;
-
-	switch (repeat) {
-		case 1:
-			do {
-				*dest = pal.shade(source[c>>16]);
-				dest += pitch;
-				c += step;
-			} while (--count);
-			break;
-		case 2:
-			do {
-				p = pal.shade(source[c>>16]);
-				dest[0] = p;
-				dest[1] = p;
-				dest += pitch;
-				c += step;
-			} while (--count);
-			break;
-		case 3:
-			do {
-				p = pal.shade(source[c>>16]);
-				dest[0] = p;
-				dest[1] = p;
-				dest[2] = p;
-				dest += pitch;
-				c += step;
-			} while (--count);
-			break;
-		case 4:
-			do {
-				p = pal.shade(source[c>>16]);
-				dest[0] = p;
-				dest[1] = p;
-				dest[2] = p;
-				dest[3] = p;
-				dest += pitch;
-				c += step;
-			} while (--count);
-			break;
-		default:
-			{
-				int count2;
-
-				do {
-					p = pal.shade(source[c>>16]);
-					for (count2 = repeat; count2; count2--) {
-						dest[count2] = p;
-					}
-					dest += pitch;
-					c += step;
-				} while (--count);
-			}
-			break;
-	}
-}
-
-
-//
 // F_BunnyScroll
 //
+// Rewritten to use 2 canvases and create the scroll
+// by cropping the 2 canvas positions to the screen.
 void F_BunnyScroll()
 {
-	int 		x;
-	char		name[10];
 	static int	laststage;
 
-	const Texture* texture1 = Res_CacheTexture("PFUB2", PATCH);
-	const Texture* texture2 = Res_CacheTexture("PFUB1", PATCH);
+	const Texture* p1 = W_CachePatch("PFUB1");
+	const Texture* p2 = W_CachePatch("PFUB2");
 
+	I_FreeSurface(bunny1_surface);
+	I_FreeSurface(bunny2_surface);
+
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
+
+	int surface_width  = primary_surface->getWidth(),
+	    surface_height = primary_surface->getHeight();
+
+	primary_surface->clear();
+
+	// Support widescreen bunny scroll
+	// PFUB2 and PFUB1 should be the same width
+
+	int bunnywidth = p1->width();
+	int bunnyheight = p1->height() + (p1->height() / 5);
+
+	bunny1_surface = I_AllocateSurface(p1->width(), p1->height(), 8);
+	bunny2_surface = I_AllocateSurface(p2->width(), p2->height(), 8);
+
+	DCanvas* c1 = bunny1_surface->getDefaultCanvas();
+	DCanvas* c2 = bunny2_surface->getDefaultCanvas();
+
+	bunny1_surface->lock();
+	c1->DrawPatch(p1, 0, 0);
+	bunny1_surface->unlock();
+
+	bunny2_surface->lock();
+	c2->DrawPatch(p2, 0, 0);
+	bunny2_surface->unlock();
+
+	int bunnyextra = bunnywidth - 320;
+
+	float aspect_scale_ratio = static_cast<float>(surface_height) / static_cast<float>(bunnyheight);
+	int frame_width = aspect_scale_ratio * bunnywidth;
+
+	int bunnyoverlap = bunnyextra * aspect_scale_ratio;
+
+	int initialp1x = surface_width - frame_width;
+	int initialp2x = surface_width - (frame_width * 2 - bunnyoverlap);
+
+	float scrollstep = static_cast<float>(abs(initialp2x)) / 320.0f;
+
+	// Does this actually do anything?
 	V_MarkRect (0, 0, I_GetSurfaceWidth(), I_GetSurfaceHeight());
+
+	// We draw both canvases, overlapping where FPUB1 and 2
+	// overlap. We calculate X on both images, and scroll
+	// based on where we are in finalecount
 
 	int scrolled = 320 - (finalecount - 230) / 2;
 	if (scrolled > 320)
@@ -803,30 +738,42 @@ void F_BunnyScroll()
 	if (scrolled < 0)
 		scrolled = 0;
 
-	if (I_GetPrimarySurface()->getBitsPerPixel() == 8)
+	int p1x = initialp1x;
+	int p2x = initialp2x;
+
+	if (scrolled <= 0)
 	{
-		for (int x = 0; x < 320; x++)
-		{
-			if (x+scrolled < 320)
-				F_DrawTextureColP(x, texture1, x+scrolled);
-			else
-				F_DrawTextureColP(x, texture2, x+scrolled - 320);
-		}
+		p2x = 0;
+		p1x = frame_width;
+	}
+	else if (scrolled >= 320)
+	{
+		p1x = initialp1x;
+		p2x = initialp2x;
 	}
 	else
 	{
-		for ( x=0 ; x<320 ; x++)
-		{
-			if (x+scrolled < 320)
-				F_DrawTextureColD(x, texture1, x+scrolled);
-			else
-				F_DrawTextureColD(x, texture2, x+scrolled - 320);
-		}
+		// Progress both scrolls an equal amount
+		int progress = (320 * scrollstep) - (scrolled * scrollstep);
+		p1x = initialp1x + progress;
+		p2x = initialp2x + progress;
 	}
 
-	if (finalecount < 1130)
-		return;
+	bunny1_surface->lock();
+	bunny2_surface->lock();
+	primary_surface->blitcrop(bunny1_surface, 0, 0, bunny1_surface->getWidth(),
+	   bunny1_surface->getHeight(), p1x, 0, frame_width,
+	   surface_height);
+	primary_surface->blitcrop(bunny2_surface, 0, 0, bunny2_surface->getWidth(),
+	   bunny2_surface->getHeight(), p2x, 0, frame_width,
+	   surface_height);
+	bunny1_surface->unlock();
+	bunny2_surface->unlock();
 
+	if (finalecount < 1130)
+	{
+		return;
+	}
 	if (finalecount < 1180)
 	{
 		const Texture* end_texture = Res_CacheTexture("END0", PATCH);
@@ -844,9 +791,50 @@ void F_BunnyScroll()
 		laststage = stage;
 	}
 
-	sprintf (name,"END%i",stage);
-	const Texture* end_texture = Res_CacheTexture(name, PATCH);
-	screen->DrawTextureIndirect(end_texture, (320-13*8)/2, (200-8*8)/2);
+	OLumpName name = fmt::format("END{}", stage);
+	screen->DrawPatchIndirect(W_CachePatch(name), (320-13*8)/2, (200-8*8)/2);
+}
+
+//
+// F_DrawEndPic
+//
+// Draws an endpic on the finale canvas.
+// If using a normal 320x200 endpic,
+// It will be scaled to fit the viewport.
+//
+// If using a widescreen endpic, it will
+// be scaled keeping aspect ratio to fill
+// the screen and may be too wide for the
+// viewport. It will be cropped in that case.
+//
+void F_DrawEndPic(const OLumpName& page)
+{
+	IWindowSurface* primary_surface = I_GetPrimarySurface();
+	primary_surface->clear(); // ensure black background in matted modes
+
+	const Texture* background_patch = W_CachePatch(page);
+
+	finale_width = background_patch->width();
+	finale_height = background_patch->height() + (background_patch->height() / 5);
+
+	I_FreeSurface(finale_surface);
+	finale_surface = I_AllocateSurface(background_patch->width(), background_patch->height(), 8);
+
+	const int width = F_GetCWidth();
+	const int height = primary_surface->getHeight();
+
+	const int x = (primary_surface->getWidth() - width) / 2;
+	const int y = (primary_surface->getHeight() - height) / 2;
+
+	// draw the background to the surface
+	finale_surface->lock();
+
+	finale_surface->getDefaultCanvas()->DrawPatch(background_patch, 0, 0);
+
+	primary_surface->blitcrop(finale_surface, 0, 0, finale_width, finale_height, x, y,
+	   width, height);
+
+	finale_surface->unlock();
 }
 
 
@@ -867,14 +855,13 @@ void F_Drawer (void)
 				default:
 				case '1':
 				{
-					const Texture* texture = Res_CacheTexture(gameinfo.finalePage1, PATCH);
-					screen->DrawTextureIndirect(texture, 0, 0);
+					const OLumpName& page = !level.endpic.empty() ? level.endpic : gameinfo.finalePage[0];
+
+					F_DrawEndPic(page);
 					break;
 				}
 				case '2':
-				{
-					const Texture* texture = Res_CacheTexture(gameinfo.finalePage2, PATCH);
-					screen->DrawTextureIndirect(texture, 0, 0);
+			        F_DrawEndPic(gameinfo.finalePage[1]);
 					break;
 				}
 				case '3':
@@ -883,9 +870,7 @@ void F_Drawer (void)
 					break;
 				}
 				case '4':
-				{
-					const Texture* texture = Res_CacheTexture(gameinfo.finalePage3, PATCH);
-					screen->DrawTextureIndirect(texture, 0, 0);
+			        F_DrawEndPic(gameinfo.finalePage[2]);
 					break;
 				}
 			}

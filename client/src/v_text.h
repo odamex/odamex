@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom 1.22).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -40,7 +40,7 @@ struct OGlobalFont
 	}
 	const Texture* at(const size_t idx)
 	{
-		if (idx < 0 || idx >= HU_FONTSIZE)
+		if (idx >= HU_FONTSIZE)
 			throw std::out_of_range("Out-of-bounds font char");
 
 		return m_fontData[idx];
@@ -75,21 +75,21 @@ void V_SetFont(const char* fontname);
 int V_TextScaleXAmount();
 int V_TextScaleYAmount();
 
-struct brokenlines_s {
+struct brokenlines_t
+{
 	int width;
 	char *string;
 };
-typedef struct brokenlines_s brokenlines_t;
 
 int V_StringWidth(const byte* str);
-inline int V_StringWidth(const char* str) { return V_StringWidth((const byte*)str); }
+inline int V_StringWidth(const char* str) { return V_StringWidth(reinterpret_cast<const byte*>(str)); }
 int V_StringHeight(const char* str);
 int V_LineHeight();
 
 brokenlines_t *V_BreakLines (int maxwidth, const byte *str);
 void V_FreeBrokenLines (brokenlines_t *lines);
-inline brokenlines_t *V_BreakLines (int maxwidth, const char *str) { return V_BreakLines (maxwidth, (const byte *)str); }
+inline brokenlines_t *V_BreakLines (int maxwidth, const char *str) { return V_BreakLines (maxwidth, reinterpret_cast<const byte*>(str)); }
 
-int V_GetTextColor(const char* str);
+int V_GetTextColor(std::string_view str);
 
 extern OGlobalFont hu_font;

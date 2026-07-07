@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// Copyright (C) 2006-2021 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -21,4 +21,5 @@
 #pragma once
 #include "resources/res_main.h"
 
-void ParseUMapInfoLump(const ResourceId res_id, const std::string& lumpname);
+void ParseUMapInfoLump(const ResourceId res_id, const OLumpName& lumpname);
+bool ValidateMapName(const OLumpName& mapname, int* pEpi = NULL, int* pMap = NULL);

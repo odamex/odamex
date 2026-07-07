@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -67,14 +67,16 @@ typedef struct
 
 void W_ConfigureGameInfo(const std::string& iwad_filename);
 bool W_IsIWAD(const std::string& filename);
+bool W_IsIWADDeprecated(const std::string& filename);
+bool W_IsIWADShareware(const std::string& filename);
 
 void W_SetupFileIdentifiers();
 const FileIdentifier* W_GameInfo(const OCRC32Sum& crc32);
 const FileIdentifier* W_GameInfo(const OMD5Hash& md5);
 bool W_IsKnownIWAD(const OWantFile& file);
-
-bool W_IsFilenameCommercialIWAD(const std::string& filename);
-bool W_IsFilehashCommercialIWAD(const OMD5Hash& fileHash);
-bool W_IsIWADDeprecated(const std::string& filename);
-bool W_IsIWADShareware(const std::string& filename);
+bool W_IsIWAD(const OResFile& file);
+bool W_IsFilenameCommercialWAD(const std::string& filename);
+bool W_IsFilehashCommercialWAD(const OMD5Hash& fileHash);
+bool W_IsFileCommercialWAD(const std::string& filename);
+bool W_IsIWADDeprecated(const OResFile& file);
 std::vector<OString> W_GetIWADFilenames();

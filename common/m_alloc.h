@@ -1,10 +1,10 @@
-// Emacs style mode select   -*- C++ -*- 
+// Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -24,20 +24,20 @@
 
 #pragma once
 
-#include <stdlib.h>
+void* M_Malloc (size_t size);
+void* M_Calloc (size_t num, size_t size);
 
-// don't use these, use the macros below instead!
-void *Malloc (size_t size);
-void *Calloc (size_t num, size_t size);
-void *Realloc (void *memblock, size_t size);
-void M_Free2 (void **memblock);
+// don't use this, use the macro below instead!
+void* Realloc (void* memblock, size_t size);
+#define M_Realloc(p,s) Realloc(static_cast<void *>(p), s)
 
-#define M_Malloc(s) Malloc((size_t)s)
-#define M_Calloc(n,s) Calloc((size_t)n, (size_t)s)
-#define M_Realloc(p,s) Realloc((void *)p, (size_t)s)
-
-#define M_Free(p) \
-    if (1) \
-        M_Free2((void **)&p); \
-    else \
-        (void)0
+//
+// M_Free
+//
+// Wraps around the standard free() memory function. This variation is slightly
+// safer, as it nulls the pointer on exit.
+template <typename T>
+inline void M_Free(T*& p) {
+    free(static_cast<void*>(p));
+    p = nullptr;
+}

@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This source is available for distribution and/or modification
 // only under the terms of the DOOM Source Code License as
@@ -104,7 +104,7 @@ public:
 
 	// Text drawing functions
 	// Output a line of text using the console font
-	void PrintStr(int x, int y, const char *s, int default_color = -1, bool use_color_codes = true) const;
+	void PrintStr(int x, int y, const char *s, int default_color = -1, bool use_color_codes = true, int scale = 1) const;
 
 	// Output some text with wad heads-up font
 	inline void DrawText (int normalcolor, int x, int y, const byte *string) const;
@@ -132,7 +132,7 @@ public:
 	inline void DrawTextureClean (const Texture* texture, int x, int y) const;
 	inline void DrawTextureCleanNoMove (const Texture* texture, int x, int y) const;
 
-	void DrawTextureFullScreen(const Texture* texture) const;
+	void DrawTextureFullScreen(const Texture* texture, bool clear = true) const;
 
 	inline void DrawLucentTexture (const Texture* texture, int x, int y) const;
 	inline void DrawLucentTextureStretched (const Texture* texture, int x, int y, int dw, int dh) const;
@@ -169,6 +169,23 @@ public:
 	inline void DrawColoredLucentTextureClean (const Texture* texture, int x, int y) const;
 	inline void DrawColoredLucentTextureCleanNoMove (const Texture* texture, int x, int y) const;
 
+	// Transitional wrappers: patch-drawing names forwarded to the texture
+	// drawers, for code written against the old patch interface.
+	void DrawPatch (const Texture* t, int x, int y) const { DrawTexture(t, x, y); }
+	void DrawPatchStretched (const Texture* t, int x, int y, int dw, int dh) const { DrawTextureStretched(t, x, y, dw, dh); }
+	void DrawPatchDirect (const Texture* t, int x, int y) const { DrawTextureDirect(t, x, y); }
+	void DrawPatchIndirect (const Texture* t, int x, int y) const { DrawTextureIndirect(t, x, y); }
+	void DrawPatchClean (const Texture* t, int x, int y) const { DrawTextureClean(t, x, y); }
+	void DrawPatchCleanNoMove (const Texture* t, int x, int y) const { DrawTextureCleanNoMove(t, x, y); }
+	void DrawPatchFullScreen (const Texture* t, bool clear = true) const { DrawTextureFullScreen(t, clear); }
+	void DrawPatchFlipped (const Texture* t, int x, int y) const { DrawTextureFlipped(t, x, y); }
+	void DrawLucentPatch (const Texture* t, int x, int y) const { DrawLucentTexture(t, x, y); }
+	void DrawLucentPatchStretched (const Texture* t, int x, int y, int dw, int dh) const { DrawLucentTextureStretched(t, x, y, dw, dh); }
+	void DrawTranslatedPatch (const Texture* t, int x, int y) const { DrawTranslatedTexture(t, x, y); }
+	void DrawTranslatedPatchClean (const Texture* t, int x, int y) const { DrawTranslatedTextureClean(t, x, y); }
+	void DrawColoredPatch (const Texture* t, int x, int y) const { DrawColoredTexture(t, x, y); }
+	void DrawColoredLucentPatch (const Texture* t, int x, int y) const { DrawColoredLucentTexture(t, x, y); }
+
 protected:
 	void TextWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;
 	void TextSWrapper (EWrapperCode drawer, int normalcolor, int x, int y, const byte *string) const;
@@ -191,6 +208,8 @@ protected:
 	static void DrawLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
 	static void DrawTranslatedPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
 	static void DrawTlatedLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
+	static void DrawColoredPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
+	static void DrawColorLucentPatchSP (const byte *source, byte *dest, int count, int pitch, int yinc);
 
 	static void DrawPatchD (const byte *source, byte *dest, int count, int pitch);
 	static void DrawLucentPatchD (const byte *source, byte *dest, int count, int pitch);
@@ -203,6 +222,8 @@ protected:
 	static void DrawLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
 	static void DrawTranslatedPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
 	static void DrawTlatedLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
+	static void DrawColoredPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
+	static void DrawColorLucentPatchSD (const byte *source, byte *dest, int count, int pitch, int yinc);
 
 	typedef void (*vdrawfunc) (const byte *source, byte *dest, int count, int pitch);
 	typedef void (*vdrawsfunc) (const byte *source, byte *dest, int count, int pitch, int yinc);
@@ -258,31 +279,31 @@ inline void DCanvas::DrawTextStretchedLuc (int normalcolor, int x, int y, const 
 
 inline void DCanvas::DrawText (int normalcolor, int x, int y, const char *string) const
 {
-	TextWrapper (EWrapper_Translated, normalcolor, x, y, (const byte *)string);
+	TextWrapper (EWrapper_Translated, normalcolor, x, y, reinterpret_cast<const byte*>(string));
 }
 inline void DCanvas::DrawTextLuc (int normalcolor, int x, int y, const char *string) const
 {
-	TextWrapper (EWrapper_TlatedLucent, normalcolor, x, y, (const byte *)string);
+	TextWrapper (EWrapper_TlatedLucent, normalcolor, x, y, reinterpret_cast<const byte*>(string));
 }
 inline void DCanvas::DrawTextClean (int normalcolor, int x, int y, const char *string) const
 {
-	TextSWrapper (EWrapper_Translated, normalcolor, x, y, (const byte *)string);
+	TextSWrapper (EWrapper_Translated, normalcolor, x, y, reinterpret_cast<const byte*>(string));
 }
 inline void DCanvas::DrawTextCleanLuc (int normalcolor, int x, int y, const char *string) const
 {
-	TextSWrapper (EWrapper_TlatedLucent, normalcolor, x, y, (const byte *)string);
+	TextSWrapper (EWrapper_TlatedLucent, normalcolor, x, y, reinterpret_cast<const byte*>(string));
 }
 inline void DCanvas::DrawTextCleanMove (int normalcolor, int x, int y, const char *string) const
 {
-	TextSWrapper (EWrapper_Translated, normalcolor, getCleanX(x), getCleanY(y), (const byte*)string);
+	TextSWrapper (EWrapper_Translated, normalcolor, getCleanX(x), getCleanY(y), reinterpret_cast<const byte*>(string));
 }
 inline void DCanvas::DrawTextStretched (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const
 {
-	TextSWrapper (EWrapper_Translated, normalcolor, x, y, (const byte *)string, scalex, scaley);
+	TextSWrapper (EWrapper_Translated, normalcolor, x, y, reinterpret_cast<const byte *>(string), scalex, scaley);
 }
 inline void DCanvas::DrawTextStretchedLuc (int normalcolor, int x, int y, const char *string, int scalex, int scaley) const
 {
-	TextSWrapper (EWrapper_TlatedLucent, normalcolor, x, y, (const byte *)string, scalex, scaley);
+	TextSWrapper (EWrapper_TlatedLucent, normalcolor, x, y, reinterpret_cast<const byte *>(string), scalex, scaley);
 }
 
 inline void DCanvas::DrawTexture (const Texture* texture, int x, int y) const

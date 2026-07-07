@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -16,7 +16,7 @@
 // GNU General Public License for more details.
 //
 // DESCRIPTION:
-//	
+//
 //
 //-----------------------------------------------------------------------------
 
@@ -25,7 +25,7 @@
 
 #include "i_input_sdl20.h"
 
-#include "i_sdl.h" 
+#include "i_sdl.h"
 #include "i_input.h"
 
 #include "i_video.h"
@@ -34,7 +34,7 @@
 #include <queue>
 #include <cassert>
 
-static const int MAX_SDL_EVENTS_PER_TIC = 8192;
+static constexpr int MAX_SDL_EVENTS_PER_TIC = 8192;
 
 EXTERN_CVAR(joy_deadzone)
 EXTERN_CVAR(joy_lefttrigger_deadzone)
@@ -207,9 +207,9 @@ void ISDL20KeyboardInputDevice::disableTextEntry()
 //
 int ISDL20KeyboardInputDevice::getTextEventValue()
 {
-	const size_t max_events = 32;
+	static constexpr size_t max_events = 32;
 	SDL_Event sdl_events[max_events];
-	
+
 	SDL_PumpEvents();
 	const size_t num_events = SDL_PeepEvents(sdl_events, max_events, SDL_PEEKEVENT, SDL_KEYDOWN, SDL_TEXTINPUT);
 	for (size_t i = 0; i < num_events; i++)
@@ -227,14 +227,14 @@ int ISDL20KeyboardInputDevice::getTextEventValue()
 			const char output_type[] = "UTF-32BE";
 			#else
 			const char output_type[] = "UTF-32LE";
-			#endif 
+			#endif
 
 			const char* src = sdl_events[i].text.text;
 			uint32_t utf32 = 0;
 			char* dst = SDL_iconv_string(output_type, "UTF-8", src, SDL_strlen(src) + 1);
 			if (dst)
 			{
-				utf32 = *((uint32_t *)dst);
+				utf32 = *(reinterpret_cast<uint32_t*>(dst));
 				SDL_free(dst);
 			}
 			return utf32;
@@ -248,7 +248,7 @@ int ISDL20KeyboardInputDevice::getTextEventValue()
 //
 // ISDL20KeyboardInputDevice::translateKey
 //
-// Performs translation of an SDL_Keysym event to 
+// Performs translation of an SDL_Keysym event to
 // to Odamex's internal key representation (which is identical
 // to SDL 2.0's key representation).
 //
@@ -433,12 +433,23 @@ void ISDL20MouseInputDevice::resume()
 {
 	mActive = true;
 	reset();
+
+	// [RV] Always use relative mouse mode and
+	// force unscaled relative motion across supported SDL versions
 	SDL_SetRelativeMouseMode(SDL_TRUE);
+
+	#if SDL_VERSION_ATLEAST(2, 0, 14)
+		SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_SCALING, "0", SDL_HINT_OVERRIDE);
+	#endif
+
+	#if SDL_VERSION_ATLEAST(2, 26, 0)
+		SDL_SetHintWithPriority(SDL_HINT_MOUSE_RELATIVE_SYSTEM_SCALE, "0", SDL_HINT_OVERRIDE);
+	#endif
+
 	SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
 	SDL_EventState(SDL_MOUSEBUTTONDOWN, SDL_ENABLE);
 	SDL_EventState(SDL_MOUSEBUTTONUP, SDL_ENABLE);
 }
-
 
 //
 // ISDL20MouseInputDevice::gatherEvents
@@ -491,7 +502,7 @@ void ISDL20MouseInputDevice::gatherEvents()
 			{
 				ev.type = ev_keydown;
 				int direction = 1;
-				#if (SDL_VERSION >= SDL_VERSIONNUM(2, 0, 4))
+				#if SDL_VERSION_ATLEAST(2, 0, 4)
 				if (sdl_ev.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
 					direction = -1;
 				#endif
@@ -500,6 +511,10 @@ void ISDL20MouseInputDevice::gatherEvents()
 					ev.data1 = OKEY_MWHEELUP;
 				else if (direction * sdl_ev.wheel.y < 0)
 					ev.data1 = OKEY_MWHEELDOWN;
+				else if (direction * sdl_ev.wheel.x > 0)
+					ev.data1 = OKEY_MWHEELRIGHT;
+				else if (direction * sdl_ev.wheel.x < 0)
+					ev.data1 = OKEY_MWHEELLEFT;
 			}
 			else if (sdl_ev.type == SDL_MOUSEBUTTONDOWN || sdl_ev.type == SDL_MOUSEBUTTONUP)
 			{
@@ -561,7 +576,7 @@ ISDL20JoystickInputDevice::ISDL20JoystickInputDevice(int id) :
 	// This turns on automatic event polling for joysticks so that the state
 	// of each button and axis doesn't need to be manually queried each tick. -- Hyper_Eye
 	SDL_GameControllerEventState(SDL_ENABLE);
-	
+
 	resume();
 }
 
@@ -696,12 +711,12 @@ void ISDL20JoystickInputDevice::gatherEvents()
 				if (sdl_ev.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT)
 				{
 					event_t button_event;
-					
+
 					deadzone = (joy_lefttrigger_deadzone * 32767);
-					
+
 					if ((sdl_ev.caxis.value >= deadzone) ||
 					    (sdl_ev.caxis.value <= -deadzone)){
-						bPressed = true;	
+						bPressed = true;
 					}
 
 					button_event.type = bPressed ? ev_keydown : ev_keyup;
@@ -748,11 +763,11 @@ int ISDL20JoystickInputDevice::calcAxisValue(int raw_value)
 	// Normalize.
 	if (raw_value > 0)
 	{
-		value = (float)raw_value / (float)SDL_JOYSTICK_AXIS_MAX;
+		value = static_cast<float>(raw_value) / static_cast<float>(SDL_JOYSTICK_AXIS_MAX);
 	}
 	else if (raw_value < 0)
 	{
-		value = (float)raw_value / (float)abs(SDL_JOYSTICK_AXIS_MIN);
+		value = static_cast<float>(raw_value) / static_cast<float>(abs(SDL_JOYSTICK_AXIS_MIN));
 	}
 	else
 	{
@@ -858,8 +873,7 @@ ISDL20InputSubsystem::~ISDL20InputSubsystem()
 std::vector<IInputDeviceInfo> ISDL20InputSubsystem::getKeyboardDevices() const
 {
 	std::vector<IInputDeviceInfo> devices;
-	devices.push_back(IInputDeviceInfo());
-	IInputDeviceInfo& device_info = devices.back();
+	IInputDeviceInfo& device_info = devices.emplace_back();
 	device_info.mId = 0;
 	device_info.mDeviceName = "SDL 2.0 keyboard";
 	return devices;
@@ -875,13 +889,13 @@ void ISDL20InputSubsystem::initKeyboard(int id)
 
 	const std::vector<IInputDeviceInfo> devices = getKeyboardDevices();
 	std::string device_name;
-	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
+	for (const auto& device : devices)
 	{
-		if (it->mId == id) 
-			device_name = it->mDeviceName;
+		if (device.mId == id)
+			device_name = device.mDeviceName;
 	}
 
-	Printf(PRINT_HIGH, "I_InitInput: intializing %s\n", device_name.c_str());
+	PrintFmt(PRINT_HIGH, "I_InitInput: initializing {:s}\n", device_name);
 
 	setKeyboardInputDevice(new ISDL20KeyboardInputDevice(id));
 	registerInputDevice(getKeyboardInputDevice());
@@ -913,8 +927,7 @@ void ISDL20InputSubsystem::shutdownKeyboard(int id)
 std::vector<IInputDeviceInfo> ISDL20InputSubsystem::getMouseDevices() const
 {
 	std::vector<IInputDeviceInfo> devices;
-	devices.push_back(IInputDeviceInfo());
-	IInputDeviceInfo& sdl_device_info = devices.back();
+	IInputDeviceInfo& sdl_device_info = devices.emplace_back();
 	sdl_device_info.mId = 0;
 	sdl_device_info.mDeviceName = "SDL 2.0 mouse";
 	return devices;
@@ -930,13 +943,13 @@ void ISDL20InputSubsystem::initMouse(int id)
 
 	const std::vector<IInputDeviceInfo> devices = getMouseDevices();
 	std::string device_name;
-	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
+	for (const auto& device : devices)
 	{
-		if (it->mId == id) 
-			device_name = it->mDeviceName;
+		if (device.mId == id)
+			device_name = device.mDeviceName;
 	}
 
-	Printf(PRINT_HIGH, "I_InitInput: intializing %s\n", device_name.c_str());
+	PrintFmt(PRINT_HIGH, "I_InitInput: initializing {:s}\n", device_name);
 
 	setMouseInputDevice(new ISDL20MouseInputDevice(id));
 	assert(getMouseInputDevice() != NULL);
@@ -971,12 +984,10 @@ std::vector<IInputDeviceInfo> ISDL20InputSubsystem::getJoystickDevices() const
 	std::vector<IInputDeviceInfo> devices;
 	for (int i = 0; i < SDL_NumJoysticks(); i++)
 	{
-		devices.push_back(IInputDeviceInfo());
-		IInputDeviceInfo& device_info = devices.back();
+		IInputDeviceInfo& device_info = devices.emplace_back();
 		device_info.mId = i;
-		char name[256];
-		sprintf(name, "SDL 2.0 joystick (%s)", SDL_GameControllerNameForIndex(i));
-		device_info.mDeviceName = name;
+		const char* name = SDL_GameControllerNameForIndex(i);
+		device_info.mDeviceName = fmt::format("SDL 2.0 joystick ({})", name ? name : "unknown");
 	}
 
 	return devices;
@@ -991,13 +1002,13 @@ void ISDL20InputSubsystem::initJoystick(int id)
 
 	const std::vector<IInputDeviceInfo> devices = getJoystickDevices();
 	std::string device_name;
-	for (std::vector<IInputDeviceInfo>::const_iterator it = devices.begin(); it != devices.end(); ++it)
+	for (const auto& device : devices)
 	{
-		if (it->mId == id) 
-			device_name = it->mDeviceName;
+		if (device.mId == id)
+			device_name = device.mDeviceName;
 	}
 
-	Printf(PRINT_HIGH, "I_InitInput: intializing %s\n", device_name.c_str());
+	PrintFmt(PRINT_HIGH, "I_InitInput: initializing {:s}\n", device_name);
 
 	setJoystickInputDevice(new ISDL20JoystickInputDevice(id));
 	registerInputDevice(getJoystickInputDevice());

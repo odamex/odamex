@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -23,11 +23,14 @@
 
 #pragma once
 
+#include <string>
 
 #if defined(CLIENT_APP)
 #define GAMEEXE "odamex"
 #elif defined(SERVER_APP)
 #define GAMEEXE "odasrv"
+#elif defined(TEST_APP)
+#define GAMEEXE "odagtest"
 #else
 #error "Odamex is not client or server"
 #endif
@@ -72,12 +75,12 @@
 // Used by configuration files.  upversion.py will update thie field
 // deterministically and unambiguously so newer versions always compare
 // greater.
-#define CONFIGVERSIONSTR "010050"
+#define CONFIGVERSIONSTR "013000"
 
-#define DOTVERSIONSTR "10.5.0"
-#define GAMEVER (MAKEVER(10, 5, 0))
+#define DOTVERSIONSTR "13.0.0"
+#define GAMEVER (MAKEVER(13, 0, 0))
 
-#define COPYRIGHTSTR "Copyright (C) 2006-2024 The Odamex Team"
+#define COPYRIGHTSTR "Copyright (C) 2006-2026 The Odamex Team"
 
 #define SERVERMAJ (VERMAJ(gameversion))
 #define SERVERMIN (VERMIN(gameversion))
@@ -89,11 +92,11 @@
 // SAVESIG is the save game signature. It should be the minimum version
 // whose savegames this version is compatible with, which could be
 // earlier than this version.  Needs to be exactly 16 chars long.
-// 
+//
 // upversion.py will update thie field deterministically and unambiguously.
-#define SAVESIG "ODAMEXSAVE010050"
+#define SAVESIG "ODAMEXSAVE013000"
 
-#define NETDEMOVER 3
+#define NETDEMOVER 4
 
 int VersionCompat(const int server, const int client);
 std::string VersionMessage(const int server, const int client, const char* email);

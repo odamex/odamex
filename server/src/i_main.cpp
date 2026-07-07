@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -20,7 +20,6 @@
 //	Main program, simply calls D_DoomMain high level loop.
 //
 //-----------------------------------------------------------------------------
-
 
 #include "odamex.h"
 
@@ -40,6 +39,8 @@
 
 #include <stdlib.h>
 
+#include "fmt/color.h"
+
 #include "i_crash.h"
 #include "m_argv.h"
 #include "d_main.h"
@@ -48,12 +49,9 @@
 #include "z_zone.h"
 #include "i_net.h"
 #include "m_fileio.h"
-
-using namespace std;
+#include "m_consolecommandstream.h"
 
 void AddCommandString(std::string cmd);
-
-DArgs Args;
 
 #ifdef _WIN32
 extern UINT TimerPeriod;
@@ -74,35 +72,64 @@ void STACK_ARGS call_terms (void)
 		TermFuncs.top().first(), TermFuncs.pop();
 }
 
-int PrintString(int printlevel, char const* str)
-{
-	std::string sanitized_str(str);
-	StripColorCodes(sanitized_str);
-
-	printf("%s", sanitized_str.c_str());
-	fflush(stdout);
-
-	if (LOG.is_open())
-	{
-		LOG << sanitized_str;
-		LOG.flush();
-	}
-
-	return sanitized_str.length();
-}
+EXTERN_CVAR(log_color)
+static constexpr auto ERROR_STYLE = fmt::emphasis::bold | fg(fmt::color::red);
 
 #ifdef _WIN32
 static HANDLE hEvent;
 
 int ShutdownNow()
 {
-    return (WaitForSingleObject(hEvent, 1) == WAIT_OBJECT_0);
+	return (WaitForSingleObject(hEvent, 0) == WAIT_OBJECT_0);
 }
 
 BOOL WINAPI ConsoleHandlerRoutine(DWORD dwCtrlType)
 {
-    SetEvent(hEvent);
-    return TRUE;
+	SetEvent(hEvent);
+	return true;
+}
+
+class PowerThrottleController
+{
+	public:
+		void Disable(ULONG flag)
+		{
+			PROCESS_POWER_THROTTLING_STATE throttleCommand{};
+			throttleCommand.Version     = PROCESS_POWER_THROTTLING_CURRENT_VERSION;
+			throttleCommand.ControlMask = m_toggledFlags | flag;
+			throttleCommand.StateMask   = 0;
+
+			if (SetProcessInformation(GetCurrentProcess(),
+			                          ProcessPowerThrottling,
+			                          & throttleCommand,
+			                          sizeof(throttleCommand)))
+			{
+				m_toggledFlags |= flag;
+			}
+		}
+
+	protected:
+		// Record the successfully-toggled flags so that we can support successive calls
+		// to SetProcessInformation with a potential mixture of successes and failures,
+		// which is to be expected on Windows versions prior to 11.
+		ULONG m_toggledFlags = 0;
+};
+
+static void DisablePowerThrottling()
+{
+	// Sometime during 2022, Windows 11 was updated to throttle processes' access to
+	// the high-resolution timer, even if processes explicitly requested it.  Throttling
+	// occurs when the process is no longer in the foreground, including when being
+	// obscured by other windows.  When this happens, the server spends excessive time
+	// sleeping in various system API calls, such as kbhit() in the console code and/or
+	// sendto() in the network code.
+	//
+	// Fortunately we can disable this behavior via the SetProcessInformation API.
+
+	PowerThrottleController throttler;
+
+	throttler.Disable(PROCESS_POWER_THROTTLING_EXECUTION_SPEED);
+	throttler.Disable(PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION);
 }
 
 int __cdecl main(int argc, char *argv[])
@@ -112,39 +139,53 @@ int __cdecl main(int argc, char *argv[])
 	I_SetCrashCallbacks();
 #endif
 
-    try
-    {
-        // Handle close box, shutdown and logoff events
-        if (!(hEvent = CreateEvent(NULL, FALSE, FALSE, NULL)))
-            throw CDoomError("Could not create console control event!\n");
+	DisablePowerThrottling();
 
-        if (!SetConsoleCtrlHandler(ConsoleHandlerRoutine, TRUE))
-            throw CDoomError("Could not set console control handler!\n");
+	try
+	{
+		// Handle close box, shutdown and logoff events
+		if (!(hEvent = CreateEvent(NULL, false, false, NULL)))
+			throw CDoomError("Could not create console control event!\n");
 
-        // Disable QuickEdit mode as any text selection will cause all functions
-        // that use stdout (printf etc) to block
-        DWORD lpMode = ENABLE_EXTENDED_FLAGS;
-        
-        if (!SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), lpMode))
-            throw CDoomError("SetConsoleMode failed!\n");
-            
-        // Fixes icon not showing in titlebar and alt-tab menu under windows 7
-        HANDLE hIcon;
+		if (!SetConsoleCtrlHandler(ConsoleHandlerRoutine, true))
+			throw CDoomError("Could not set console control handler!\n");
 
-        hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
+		// Disable QuickEdit mode as any text selection will cause all functions
+		// that use stdout (printf etc) to block
+		// but only try to do so if stdin is actually a terminal
+		// otherwise this will prevent being able to pipe output
+		const auto hIn = GetStdHandle(STD_INPUT_HANDLE);
+		if (GetFileType(hIn) == FILE_TYPE_CHAR)
+		{
+			DWORD consoleMode = 0;
 
-        if(hIcon)
-        {
-            SendMessage(GetConsoleWindow(), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
-            SendMessage(GetConsoleWindow(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
-        }
+			if (!GetConsoleMode(hIn, &consoleMode))
+				throw CDoomError("GetConsoleMode (input) failed!\n");
+
+			consoleMode &= ~ENABLE_QUICK_EDIT_MODE;
+			consoleMode |= ENABLE_EXTENDED_FLAGS;
+
+			if (!SetConsoleMode(hIn, consoleMode))
+				throw CDoomError("SetConsoleMode (input) failed!\n");
+		}
+
+		// Fixes icon not showing in titlebar and alt-tab menu under windows 7
+		HANDLE hIcon;
+
+		hIcon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(IDI_ICON1));
+
+		if(hIcon)
+		{
+			SendMessage(GetConsoleWindow(), WM_SETICON, ICON_SMALL, (LPARAM)hIcon);
+			SendMessage(GetConsoleWindow(), WM_SETICON, ICON_BIG, (LPARAM)hIcon);
+		}
 
 		// [ML] 2007/9/3: From Eternity (originally chocolate Doom) Thanks SoM & fraggle!
 		::Args.SetArgs(argc, argv);
 
 		if (::Args.CheckParm("--version"))
 		{
-			printf("Odamex %s\n", NiceVersion());
+			fmt::print("Odamex {}\n", NiceVersion());
 			exit(EXIT_SUCCESS);
 		}
 
@@ -159,19 +200,18 @@ int __cdecl main(int argc, char *argv[])
 			I_SetCrashDir(writedir.c_str());
 		}
 
-		const char *CON_FILE = Args.CheckValue("-confile");
-		if(CON_FILE)CON.open(CON_FILE, std::ios::in);
+		M_InitConsoleInputFile(Args.CheckValue("-confile"));
 
 		// Set the timer to be as accurate as possible
 		TIMECAPS tc;
 		if (timeGetDevCaps (&tc, sizeof(tc) != TIMERR_NOERROR))
-			TimerPeriod = 1;	// Assume minimum resolution of 1 ms
+			TimerPeriod = 1;    // Assume minimum resolution of 1 ms
 		else
 			TimerPeriod = tc.wPeriodMin;
 
 		timeBeginPeriod (TimerPeriod);
 
-        // Don't call this on windows!
+		// Don't call this on windows!
 		//atexit (call_terms);
 
 		Z_Init();
@@ -183,12 +223,32 @@ int __cdecl main(int argc, char *argv[])
 	}
 	catch (CDoomError& error)
 	{
+		// It's possible that the fatal error was encountered before
+		// loading the config file or setting cvars set from the command line
+		// so we should default to no color unless we know that we have already loaded that
 		if (LOG.is_open())
 		{
-			LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
+			if (DefaultsLoaded && log_color == 2)
+				LOG << fmt::format(ERROR_STYLE, "=== ERROR: {} ===\n\n", error.GetMsg());
+			else
+				LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
 		}
 
-		fprintf(stderr, "=== ERROR: %s ===\n\n", error.GetMsg().c_str());
+		fmt::text_style style;
+		try
+		{
+			// I_ConsoleUseColor can throw on Windows
+			// but we've already gotten another fatal error,
+			// possibly even from another call to it
+			// so lets just ignore that exception since
+			// we're about to exit and log another one anyway
+			if (DefaultsLoaded && log_color && I_ConsoleUseColor())
+				style = ERROR_STYLE;
+		}
+		catch (CDoomError&)
+		{}
+
+		fmt::print(stderr, style, "=== ERROR: {} ===\n\n", error.GetMsg());
 
 		call_terms();
 		exit(EXIT_FAILURE);
@@ -207,32 +267,42 @@ int __cdecl main(int argc, char *argv[])
 //
 void daemon_init(void)
 {
-    int     pid;
-    FILE   *fpid;
-    string  pidfile;
+    PrintFmt(PRINT_HIGH, "Launched into the background\n");
 
-    Printf(PRINT_HIGH, "Launched into the background\n");
-
+	int pid;
     if ((pid = fork()) != 0)
     {
     	call_terms();
     	exit(EXIT_SUCCESS);
     }
 
+    std::string pidfile;
 	const char *forkargs = Args.CheckValue("-fork");
 	if (forkargs)
-		pidfile = string(forkargs);
+		pidfile = std::string(forkargs);
 
     if(!pidfile.size() || pidfile[0] == '-')
     	pidfile = "doomsv.pid";
 
     pid = getpid();
-    fpid = fopen(pidfile.c_str(), "w");
-    fprintf(fpid, "%d\n", pid);
+    FILE* fpid = fopen(pidfile.c_str(), "w");
+    fmt::print(fpid, "{}\n", pid);
     fclose(fpid);
 }
 
-int main (int argc, char **argv)
+static void set_window_title()
+{
+	if (!isatty(STDOUT_FILENO))
+		return;
+
+	const char* term = getenv("TERM");
+	if (!term || strcmp(term, "dumb") == 0)
+		return;
+
+	fmt::print("\033]2;Odamex Server {}\033\\", NiceVersion());
+}
+
+int main(int argc, char **argv)
 {
 	// [AM] Set crash callbacks, so we get something useful from crashes.
 #ifdef NDEBUG
@@ -253,7 +323,7 @@ int main (int argc, char **argv)
 
 		if (::Args.CheckParm("--version"))
 		{
-			printf("Odamex %s\n", NiceVersion());
+			fmt::print("Odamex {}\n", NiceVersion());
 			exit(EXIT_SUCCESS);
 		}
 
@@ -268,9 +338,9 @@ int main (int argc, char **argv)
 			I_SetCrashDir(writedir.c_str());
 		}
 
-		const char* CON_FILE = Args.CheckValue("-confile");
-		if (CON_FILE)
-			CON.open(CON_FILE, std::ios::in);
+		M_InitConsoleInputFile(Args.CheckValue("-confile"));
+
+		set_window_title();
 
 		/*
 		  killough 1/98:
@@ -304,12 +374,21 @@ int main (int argc, char **argv)
 	}
 	catch (CDoomError& error)
 	{
+		// It's possible that the fatal error was encountered before
+		// loading the config file or setting cvars set from the command line
+		// so we should default to no color unless we know that we have already loaded that
 		if (LOG.is_open())
 		{
-			LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
+			if (DefaultsLoaded && log_color == 2)
+				LOG << fmt::format(ERROR_STYLE, "=== ERROR: {} ===\n\n", error.GetMsg());
+			else
+				LOG << "=== ERROR: " << error.GetMsg() << " ===\n\n";
 		}
 
-		fprintf(stderr, "=== ERROR: %s ===\n\n", error.GetMsg().c_str());
+		if (DefaultsLoaded && log_color && I_ConsoleUseColor())
+			fmt::print(stderr, ERROR_STYLE, "=== ERROR: {} ===\n\n", error.GetMsg());
+		else
+			fmt::print(stderr, "=== ERROR: {} ===\n\n", error.GetMsg());
 
 		call_terms();
 		exit(EXIT_FAILURE);

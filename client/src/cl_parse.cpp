@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2021 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -58,11 +58,17 @@
 #include "r_state.h"
 #include "s_sound.h"
 #include "st_stuff.h"
-#include "svc_map.h"
 #include "v_textcolors.h"
 #include "p_mapformat.h"
 #include "infomap.h"
 #include "cl_replay.h"
+#include "r_interp.h"
+#include "m_doomobjcontainer.h"
+#include "cl_netgraph.h"
+#include "g_spree.h"
+#include "g_multikill.h"
+
+#include "PlayerItemDataType.h"
 
 // Extern data from other files.
 
@@ -83,40 +89,44 @@ EXTERN_CVAR(hud_revealsecrets)
 EXTERN_CVAR(mute_enemies)
 EXTERN_CVAR(mute_spectators)
 EXTERN_CVAR(show_messages)
+EXTERN_CVAR(co_novileghosts)
+EXTERN_CVAR(sv_sharekeys)
+EXTERN_CVAR(cl_showsprees)
+EXTERN_CVAR(sv_showsprees)
 
 extern std::string digest;
 extern bool forcenetdemosplit;
 extern int last_svgametic;
 extern int last_player_update;
-extern NetCommand localcmds[MAXSAVETICS];
-extern bool recv_full_update;
+extern bool hasReceivedFullUpdate;
+extern bool isReceivingFullUpdate;
 extern std::map<unsigned short, SectorSnapshotManager> sector_snaps;
 extern std::set<byte> teleported_players;
-int numtextures;
+extern NetGraph netgraph;
 
 void CL_CheckDisplayPlayer(void);
-void CL_ClearPlayerJustTeleported(player_t* player);
+void CL_ClearPlayerJustTeleported(const player_t& player);
 void CL_ClearSectorSnapshots();
 player_t& CL_FindPlayer(size_t id);
 std::string CL_GenerateNetDemoFileName(
-    const std::string& filename = cl_netdemoname.cstring());
-bool CL_PlayerJustTeleported(player_t* player);
-void CL_QuitAndTryDownload(const std::string& missing_file);
+    const std::string& filename = cl_netdemoname.str());
+bool CL_PlayerJustTeleported(const player_t& player);
+void CL_QuitAndTryDownload(const OWantFile& missing_file);
 void CL_ResyncWorldIndex();
 void CL_SpectatePlayer(player_t& player, bool spectate);
 void G_PlayerReborn(player_t& p); // [Toke - todo] clean this function
 void P_DestroyButtonThinkers();
 void P_ExplodeMissile(AActor* mo);
-void P_PlayerLeavesGame(player_s* player);
-void P_SetPsprite(player_t* player, int position, statenum_t stnum);
+void P_PlayerLeavesGame(player_t* player);
+void P_SetPsprite(player_t& player, int position, int32_t stnum);
 void P_SetButtonTexture(line_t* line, const ResourceId new_res_id);
 
 /**
  * @brief Unpack a bitfield into an array of booleans.
  */
-static void UnpackBoolArray(bool* bools, size_t count, uint32_t in)
+static void UnpackBoolArray(std::span<bool> bools, uint32_t in)
 {
-	for (size_t i = 0; i < count; i++)
+	for (size_t i = 0; i < bools.size(); i++)
 	{
 		bools[i] = in & BIT(i);
 	}
@@ -142,11 +152,6 @@ static void ActivateLine(AActor* mo, line_s* line, byte side,
 		// Don't allow client to process it since it screws up interpolation.
 		return;
 	}
-
-	// [SL] 2012-04-25 - Clients will receive updates for sectors so they do not
-	// need to create moving sectors on their own in response to svc_activateline
-	if (line && P_LineSpecialMovesSector(line->special))
-		return;
 
 	s_SpecialFromServer = true;
 
@@ -179,9 +184,9 @@ static void ActivateLine(AActor* mo, line_s* line, byte side,
 }
 
 /**
- * @brief svc_noop - Nothing to see here. Move along.
+ * @brief msg_noop - Nothing to see here. Move along.
  */
-static void CL_Noop(const odaproto::svc::Noop* msg)
+static void CL_Noop(const odaproto::Noop* msg)
 {
 }
 
@@ -190,18 +195,16 @@ static void CL_Noop(const odaproto::svc::Noop* msg)
  */
 static void CL_Disconnect(const odaproto::svc::Disconnect* msg)
 {
-	std::string buffer;
 	if (!msg->message().empty())
 	{
-		StrFormat(buffer, "Disconnected from server: %s", msg->message().c_str());
+		PrintFmt("Disconnected from server: {}", msg->message());
 	}
 	else
 	{
-		StrFormat(buffer, "Disconnected from server\n");
+		PrintFmt("Disconnected from server\n");
 	}
 
-	Printf("%s", msg->message().c_str());
-	CL_QuitNetGame(NQ_SILENT);
+	CL_QuitNetGame(NQ_SERVER_DROP);
 }
 
 /**
@@ -209,71 +212,84 @@ static void CL_Disconnect(const odaproto::svc::Disconnect* msg)
  */
 static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
 {
-	player_t& p = consoleplayer();
+	player_t& player = consoleplayer();
 
-	uint32_t weaponowned = msg->player().weaponowned();
-	UnpackBoolArray(p.weaponowned, NUMWEAPONS, weaponowned);
+	const odaproto::Player& playerInfo = msg->player();
 
-	uint32_t cards = msg->player().cards();
-	UnpackBoolArray(p.cards, NUMCARDS, cards);
+	PlayerItemDataType playerState;
 
-	p.backpack = msg->player().backpack();
+	const size_t ammoElementCount = std::min(playerState.ammo.size(), static_cast<size_t>(playerInfo.ammo_size()));
 
-	for (int i = 0; i < NUMAMMO; i++)
+	std::copy(playerInfo.ammo().begin(),
+	          playerInfo.ammo().begin() + ammoElementCount,
+	          playerState.ammo.begin());
+
+	std::copy(playerInfo.maxammo().begin(),
+	          playerInfo.maxammo().begin() + ammoElementCount,
+	          playerState.maxammo.begin());
+
+	playerState.health        = playerInfo.health();
+	playerState.armorpoints   = playerInfo.armorpoints();
+	playerState.armortype     = playerInfo.armortype();
+	playerState.lives         = playerInfo.lives();
+
+	const size_t powersElementCount = std::min(playerState.powers.size(), static_cast<size_t>(playerInfo.powers_size()));
+	std::copy(playerInfo.powers().begin(),
+	          playerInfo.powers().begin() + powersElementCount,
+	          playerState.powers.begin());
+
+	playerState.readyweapon   = static_cast<weapontype_t>(playerInfo.readyweapon());
+	playerState.pendingweapon = static_cast<weapontype_t>(playerInfo.pendingweapon());
+
+	UnpackBoolArray(playerState.weaponowned, playerInfo.weaponowned());
+	UnpackBoolArray(playerState.cards,       playerInfo.cards());
+
+	playerState.backpack = playerInfo.backpack();
+	playerState.cheats   = playerInfo.cheats();
+
+	const size_t pspriteElementCount = std::min(playerState.psprites.size(), static_cast<size_t>(playerInfo.psprites_size()));
+
+	for (size_t i = 0; i < pspriteElementCount; ++i)
 	{
-		if (i < msg->player().ammo_size())
-			p.ammo[i] = msg->player().ammo(i);
-		else
-			p.ammo[i] = 0;
-
-		if (i < msg->player().maxammo_size())
-			p.maxammo[i] = msg->player().maxammo(i);
-		else
-			p.maxammo[i] = 0;
+		playerState.psprites[i].statenum = static_cast<statenum_t>(playerInfo.psprites(i).statenum());
+		playerState.psprites[i].tics     = static_cast<statenum_t>(playerInfo.psprites(i).tics());
 	}
 
-	p.health = msg->player().health();
-	p.armorpoints = msg->player().armorpoints();
-	p.armortype = msg->player().armortype();
-
-	if (p.lives == 0 && msg->player().lives() > 0)
+	if ((player.lives == 0 && playerInfo.lives() > 0) && !netdemo.isPlaying())
 	{
-		// Stop spying so you know you're back from the dead.
+		// stop spying so you know you're back from the dead.
 		::displayplayer_id = ::consoleplayer_id;
 	}
-	p.lives = msg->player().lives();
 
-	weapontype_t pending = static_cast<weapontype_t>(msg->player().pendingweapon());
-	if (pending != wp_nochange && pending < NUMWEAPONS)
+	// We only rollback after we complete the reception of a full update.
+	// Until then, we just flatly apply the PlayerInfo to the player.
+	if (::hasReceivedFullUpdate)
 	{
-		p.pendingweapon = pending;
-	}
-	weapontype_t readyweapon = static_cast<weapontype_t>(msg->player().readyweapon());
-	if (readyweapon != p.readyweapon && readyweapon < NUMWEAPONS)
-	{
-		p.pendingweapon = readyweapon;
-	}
+		const int oldTic = playerInfo.client_tic();
 
-	// Tic was replayed? Don't try and use the replays's autoswitch at the same tic as weapon correction.
-	if (ClientReplay::getInstance().wasReplayed() && pending == wp_nochange)
-	{
-		p.pendingweapon = wp_nochange;
-	}
-
-	for (int i = 0; i < NUMPOWERS; i++)
-	{
-		if (i < msg->player().powers_size())
+		const RollerResolveEnum result = rollerState.Resolve(oldTic, playerState, player);
+		switch (result)
 		{
-			p.powers[i] = msg->player().powers(i);
-		}
-		else
-		{
-			p.powers[i] = 0;
+			case RollerResolveEnum::HISTORY_CHANGED:
+				DPrintFmt("Reconciled conflicting inventory that diverged on tic {}\n", oldTic);
+				break;
+
+			case RollerResolveEnum::INVALID_TIC:
+				DPrintFmt("Cannot reconcile inventory: tic {} is too far in the past!\n", oldTic);
+				break;
+
+			case RollerResolveEnum::CURRENT_STATE_CHANGED: [[fallthrough]];
+			case RollerResolveEnum::NO_CHANGE:             [[fallthrough]];
+			default:
+				break;
 		}
 	}
+	else
+	{
+		rollerState.Clear();
 
-	if (!p.spectator)
-		p.cheats = msg->player().cheats();
+		playerState.ToPlayer(player);
+	}
 
 	// If a full update was declared, don't try and correct any weapons.
 	ClientReplay::getInstance().reset();
@@ -284,8 +300,8 @@ static void CL_PlayerInfo(const odaproto::svc::PlayerInfo* msg)
  */
 static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 {
-	byte who = msg->player().playerid();
-	player_t* p = &idplayer(who);
+	byte who = msg->playerid();
+	player_t& p = idplayer(who);
 
 	fixed_t x = msg->actor().pos().x();
 	fixed_t y = msg->actor().pos().y();
@@ -299,41 +315,49 @@ static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 	fixed_t momy = msg->actor().mom().y();
 	fixed_t momz = msg->actor().mom().z();
 
-	int invisibility = 0;
-	if (msg->player().powers_size() >= pw_invisibility)
-		invisibility = msg->player().powers().Get(pw_invisibility);
+	// Restore the players' powers
+	for (int i = 0; i < NUMPOWERS; i++)
+	{
+		if (i < msg->powers_size())
+		{
+			p.powers[i] = msg->powers(i);
+		}
+		else
+		{
+			p.powers[i] = 0;
+		}
+	}
 
-	if (!validplayer(*p) || !p->mo)
+	if (!validplayer(p) || !p.mo)
 		return;
 
 	// Mark the gametic this update arrived in for prediction code
-	p->tic = gametic;
+	p.tic = gametic;
+	p.mo->updatedDuringTic = gametic;
 
 	// GhostlyDeath -- Servers will never send updates on spectators
-	if (p->spectator && (p != &consoleplayer()))
-		p->spectator = 0;
+	if (p.spectator && (&p != &consoleplayer()))
+		p.spectator = 0;
 
-	// [Russell] - hack, read and set invisibility flag
-	p->powers[pw_invisibility] = invisibility;
-	if (p->powers[pw_invisibility])
-		p->mo->flags |= MF_SHADOW;
-	else
-		p->mo->flags &= ~MF_SHADOW;
+	// Set powerup statuses (online games)
+	// in here too because PlayerThink doesn't run against other players online
+	// the players don't think, man
+	P_SetPlayerPowerupStatuses(p, p.powers);
 
 	// This is a very bright frame. Looks cool :)
 	if (frame == PLAYER_FULLBRIGHTFRAME)
 		frame = 32773;
 
 	// denis - fixme - security
-	if (!p->mo->sprite ||
-	    (p->mo->frame & FF_FRAMEMASK) >= sprites[p->mo->sprite].numframes)
+	if (!p.mo->sprite ||
+	    (p.mo->frame & FF_FRAMEMASK) >= sprites[p.mo->sprite].numframes)
 		return;
 
-	p->last_received = gametic;
+	p.last_received = gametic;
 	::last_player_update = gametic;
 
 	// [SL] 2012-02-21 - Save the position information to a snapshot
-	int snaptime = ::last_svgametic;
+	const int snaptime = ::last_svgametic;
 	PlayerSnapshot newsnap(snaptime);
 	newsnap.setAuthoritative(true);
 
@@ -352,7 +376,7 @@ static void CL_MovePlayer(const odaproto::svc::MovePlayer* msg)
 	newsnap.setContinuous(!CL_PlayerJustTeleported(p));
 	CL_ClearPlayerJustTeleported(p);
 
-	p->snapshots.addSnapshot(newsnap);
+	p.snapshots.addSnapshot(newsnap);
 }
 
 static void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
@@ -386,8 +410,8 @@ static void CL_UpdateLocalPlayer(const odaproto::svc::UpdateLocalPlayer* msg)
 
 	// Mark the snapshot as continuous unless the player just teleported
 	// and lerping should be disabled
-	newsnapshot.setContinuous(!CL_PlayerJustTeleported(&p));
-	CL_ClearPlayerJustTeleported(&p);
+	newsnapshot.setContinuous(!CL_PlayerJustTeleported(p));
+	CL_ClearPlayerJustTeleported(p);
 
 	consoleplayer().snapshots.addSnapshot(newsnapshot);
 }
@@ -440,8 +464,7 @@ static void CL_LevelLocals(const odaproto::svc::LevelLocals* msg)
 //
 static void CL_PingRequest(const odaproto::svc::PingRequest* msg)
 {
-	MSG_WriteMarker(&net_buffer, clc_pingreply);
-	MSG_WriteLong(&net_buffer, msg->ms_time());
+	MSG_WriteSVC(messenger.NetBuf(), CLC_PingReply(msg->ms_time()));
 }
 
 //
@@ -486,17 +509,27 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 
 	// Read other fields
 
-	uint32_t netid = msg->current().netid();
+	uint32_t netid  = msg->current().netid();
 	mobjtype_t type = static_cast<mobjtype_t>(msg->current().type());
-	statenum_t state = static_cast<statenum_t>(msg->current().statenum());
 
-	if (type < MT_PLAYER || type >= NUMMOBJTYPES)
+	if (!mobjinfo.contains(type))
 		return;
 
 	P_ClearId(netid);
 
-	AActor* mo = new AActor(base.pos.x, base.pos.y, base.pos.z, type);
-	mo->baseline = base;
+	const bool floatbob = (mobjinfo[type].flags2 & MF2_FLOATBOB);
+	// Spawn on the floor first so special1 can store the bob center offset.
+	AActor* mo = new AActor(base.pos.x, base.pos.y, floatbob ? ONFLOORZ : base.pos.z, type);
+	if (floatbob)
+	{
+		mo->UnlinkFromWorld();
+		mo->z = base.pos.z;
+		mo->special1 = mo->z - mo->floorz;
+		mo->LinkToWorld();
+	}
+	mo->baseline         = base;
+	mo->updatedDuringTic = gametic;
+	mo->mobjtic          = msg->timebase_tic();
 
 	P_SetThingId(mo, netid);
 
@@ -526,6 +559,8 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			mo->ceilingz = P_CeilingHeight(mo);
 			mo->dropoffz = mo->floorz;
 			mo->floorsector = mo->subsector->sector;
+			if (floatbob)
+				mo->special1 = mo->z - mo->floorz;
 		}
 	}
 
@@ -565,14 +600,14 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 	}
 
 	// Light up the projectile if it came from a horde boss
-	// This is a hack because oflags are a hack.
-	if (mo->flags & MF_MISSILE && mo->target && mo->target->oflags &&
-	    (mo->target->oflags & hordeBossModMask))
+	if (mo->flags & MF_MISSILE && mo->target && (mo->target->oflags & MFO_ISHORDEBOSS))
 	{
 		mo->oflags |= MFO_FULLBRIGHT;
-		mo->effects = FX_YELLOWFOUNTAIN;
+		mo->effects |= FX_YELLOWFOUNTAIN;
 		mo->translation = translationref_t(&::bosstable[0]);
 	}
+
+	P_FriendlyEffects(mo);
 
 	AActor* tracer = NULL;
 	if (bflags & baseline_t::TRACER)
@@ -613,9 +648,38 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			mo->tics = 1;
 	}
 
-	if (state >= S_NULL && state < NUMSTATES)
+	// FIXME: Rework the following block once we get the tic timestamping refactored and develop
+	//        a clear, easy-to-understand method of reconstructing the mobjs' post-spawned,
+	//        pre-tic state, including any "random tic adjustments" that P_CheckMissileSpawn
+	//        and other spawn-time functions may have applied.
+	//
+	//        Key, top-level requirements:
+	//
+	//          1.  When CL_SpawnMobj is complete, the mobj must proceed into the rest of the tic
+	//              with the same state, anim tics, and mobjtic as the server would on the next
+	//              frame following the SpawnMobj command.
+	//
+	//                  Remember, there are functions like P_CheckMissileSpawn, which may have
+	//                  critically modified animation tics before even running through the first
+	//                  mobj's first think + action calls, and all of that precedes the creation
+	//                  of the SpawnMobj message.
+	//
+	//          2.  If the mobj truly spawned on the server in the same tic as the SpawnMobj,
+	//              any complete state transitions that took place on the mobj must take place
+	//              in this function as well.  That is, any spawn-time action functions due to
+	//              having a spawnstate tics duration of 1 or 0 must also run before we return
+	//              from CL_SpawnMobj.  This allows things like immediate sound effects and
+	//              secondary mobjs to work (think a noisy, instant gib spawner).
+
+	statenum_t statenum = static_cast<statenum_t>(msg->current().statenum());
+
+	if (statenum >= S_NULL && states.contains(statenum))
 	{
-		P_SetMobjState(mo, state);
+		P_SetMobjState(mo, statenum);
+
+		// Set animation tic to ensure that the initial state is consistent with the server.
+		const int32_t tics = msg->current().tics();
+		mo->tics = tics ? tics : -1;
 	}
 
 	if (serverside && mo->flags & MF_COUNTKILL)
@@ -655,17 +719,67 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			mo->height = msg->args().Get(1) << FRACBITS;
 	}
 
+	if (type == MT_SKYVIEWPOINT)
+	{
+		// mo->angle = msg->current().angle(); // done above
+		// If this actor has no TID, make it the default sky box
+		if (mo->tid == 0)
+		{
+			int j;
+
+			for (j = 0; j < numsectors; j++)
+			{
+				if (sectors[j].Skybox == NULL)
+				{
+					sectors[j].Skybox = mo->ptr();
+				}
+			}
+		}
+	}
+
+	if (type == MT_SKYPICKER)
+	{
+		if (!mo || !mo->subsector)
+			return;
+
+		sector_t* sector = mo->subsector->sector;
+		if (mo->args[0] == 0)
+		{
+			sector->Skybox = AActor::AActorPtr();
+		}
+		else
+		{
+			TActorIterator<AActor> iterator(mo->args[0]);
+			AActor* box = iterator.Next();
+
+			if (box != NULL && box->type == MT_SKYVIEWPOINT)
+			{
+				sector->Skybox = box->ptr();
+			}
+			else
+			{
+				PrintFmt("Can't find SkyViewpoint {} for sector {}\n", mo->args[0],
+				         sector - sectors);
+			}
+		}
+		mo->Destroy();
+	}
+
 	if (msg->spawn_flags() & SVC_SM_FLAGS)
 	{
 		mo->flags = msg->current().flags();
+	}
+
+	if (msg->spawn_flags() & SVC_SM_FLAGS2)
+	{
+		mo->flags2 = msg->current().flags2();
 	}
 
 	if (msg->spawn_flags() & SVC_SM_OFLAGS)
 	{
 		mo->oflags = msg->current().oflags();
 
-		// [AM] HACK! Assume that any monster with a flag is a boss.
-		if (mo->oflags)
+		if (mo->oflags & MFO_ISHORDEBOSS)
 		{
 			mo->effects = FX_YELLOWFOUNTAIN;
 			mo->translation = translationref_t(&::bosstable[0]);
@@ -681,7 +795,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 			tics = -1;
 
 		// already spawned as gibs?
-		if (!mo || mo->state - states == S_GIBS)
+		if (!mo || mo->state == &states[S_GIBS])
 			return;
 
 		if ((frame & FF_FRAMEMASK) >= sprites[mo->sprite].numframes)
@@ -695,7 +809,7 @@ static void CL_SpawnMobj(const odaproto::svc::SpawnMobj* msg)
 		mo->flags |= MF_CORPSE | MF_DROPOFF;
 		mo->height >>= 2;
 		mo->flags &= ~MF_SOLID;
-		if (mo->oflags & hordeBossModMask)
+		if (mo->oflags & MFO_ISHORDEBOSS)
 		{
 			mo->effects = 0; // Remove sparkles from boss corpses
 		}
@@ -713,6 +827,12 @@ static void CL_DisconnectClient(const odaproto::svc::DisconnectClient* msg)
 	player_t& player = idplayer(msg->pid());
 	if (players.empty() || !validplayer(player))
 		return;
+
+	if (player.id == consoleplayer().id)
+	{
+		connected = false;
+		return;
+	}
 
 	if (player.mo)
 	{
@@ -759,8 +879,51 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	if (splitnetdemo)
 		netdemo.stopRecording();
 
-	size_t rescount = msg->resnames_size();
-	std::vector<std::string> resource_filenames, resource_filehashes;
+	size_t wadcount = msg->wadnames_size();
+	OWantFiles newwadfiles;
+	newwadfiles.reserve(wadcount);
+	for (size_t i = 0; i < wadcount; i++)
+	{
+		std::string name = msg->wadnames().Get(i).name();
+		std::string hashStr = msg->wadnames().Get(i).hash();
+
+		OMD5Hash hash;
+		OMD5Hash::makeFromHexStr(hash, hashStr);
+
+		OWantFile file;
+		if (!OWantFile::makeWithHash(file, name, OFILE_WAD, hash))
+		{
+			PrintFmt(PRINT_WARNING,
+			         "Could not construct wanted file \"{}\" that server requested.\n",
+			         name);
+			CL_QuitNetGame(NQ_DISCONNECT);
+			return;
+		}
+		newwadfiles.push_back(file);
+	}
+
+	size_t patchcount = msg->patchnames_size();
+	OWantFiles newpatchfiles;
+	newpatchfiles.reserve(patchcount);
+	for (size_t i = 0; i < patchcount; i++)
+	{
+		std::string name = msg->patchnames().Get(i).name();
+		std::string hashStr = msg->patchnames().Get(i).hash();
+
+		OMD5Hash hash;
+		OMD5Hash::makeFromHexStr(hash, hashStr);
+
+		OWantFile file;
+		if (!OWantFile::makeWithHash(file, name, OFILE_DEH, hash))
+		{
+			PrintFmt(PRINT_WARNING,
+			         "Could not construct wanted patch \"{}\" that server requested.\n",
+			         name);
+			CL_QuitNetGame(NQ_DISCONNECT);
+			return;
+		}
+		newpatchfiles.push_back(file);
+	}
 
 	std::string mapname = msg->mapname();
 	int server_level_time = msg->time();
@@ -771,7 +934,15 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 
 	if (!missing_resource_filename.empty())
 	{
-		CL_QuitAndTryDownload(missing_resource_filename);
+		if (::missingCommercialIWAD)
+		{
+			PrintFmt(PRINT_WARNING, "Server requires commercial IWAD that was not found.\n");
+			CL_QuitNetGame(NQ_DISCONNECT);
+			return;
+		}
+
+		OWantFile missing_file = missingfiles.front();
+		CL_QuitAndTryDownload(missing_file);
 		return;
 	}
 
@@ -780,7 +951,7 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	// the music from the old wad continues to play...
 	S_StopMusic();
 
-	G_InitNew(mapname.c_str());
+	G_InitNew(mapname);
 
 	// [AM] Sync the server's level time with the client.
 	::level.time = server_level_time;
@@ -789,8 +960,8 @@ static void CL_LoadMap(const odaproto::svc::LoadMap* msg)
 	::teleported_players.clear();
 
 	CL_ClearSectorSnapshots();
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
-		it->snapshots.clearSnapshots();
+	for (auto& player : players)
+		player.snapshots.clearSnapshots();
 
 	// reset the world_index (force it to sync)
 	CL_ResyncWorldIndex();
@@ -893,16 +1064,21 @@ static void CL_UserInfo(const odaproto::svc::UserInfo* msg)
 
 	p->userinfo.gender = static_cast<gender_t>(msg->gender());
 	if (p->userinfo.gender < 0 || p->userinfo.gender >= NUMGENDER)
-		p->userinfo.gender = GENDER_NEUTER;
+		p->userinfo.gender = GENDER_OTHER;
 
-	p->userinfo.color[0] = 255;
-	p->userinfo.color[1] = msg->color().r();
-	p->userinfo.color[2] = msg->color().g();
-	p->userinfo.color[3] = msg->color().b();
+	p->userinfo.colorpreset = static_cast<colorpreset_t>(msg->colorpreset());
+	if (p->userinfo.colorpreset < 0 || p->userinfo.colorpreset >= NUMCOLOR)
+		p->userinfo.colorpreset = COLOR_CUSTOM;
+
+	p->userinfo.color.seta(255);
+	p->userinfo.color.setr(msg->color().r());
+	p->userinfo.color.setg(msg->color().g());
+	p->userinfo.color.setb(msg->color().b());
 
 	p->GameTime = msg->join_time();
 
-	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(p));
+	R_BuildPlayerTranslation(p->id, CL_GetPlayerColor(*p), p->userinfo.colorpreset);
+	R_RebuildPlayerTintTables(p->id);
 
 	// [SL] 2012-04-30 - Were we looking through a teammate's POV who changed
 	// to the other team?
@@ -915,6 +1091,8 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 	AActor* mo = P_FindThingById(msg->actor().netid());
 	if (!mo)
 		return;
+
+	mo->updatedDuringTic = gametic;
 
 	uint32_t flags = msg->flags();
 
@@ -989,6 +1167,8 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 	else
 	{
 		CL_MoveThing(mo, update.pos.x, update.pos.y, update.pos.z);
+		if ((flags & baseline_t::POSZ) && (mo->flags2 & MF2_FLOATBOB))
+			mo->special1 = mo->z - mo->floorz;
 		mo->angle = update.angle;
 		mo->momx = update.mom.x;
 		mo->momy = update.mom.y;
@@ -1017,65 +1197,78 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 //
 static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 {
-	size_t playernum = msg->pid();
-	size_t netid = msg->actor().netid();
-	player_t* p = &CL_FindPlayer(playernum);
+	const size_t playernum = msg->pid();
+	const size_t netid = msg->actor().netid();
+	player_t& p = CL_FindPlayer(playernum);
 
-	angle_t angle = msg->actor().angle();
-	fixed_t x = msg->actor().pos().x();
-	fixed_t y = msg->actor().pos().y();
-	fixed_t z = msg->actor().pos().z();
+	const angle_t angle = msg->actor().angle();
+	const fixed_t x = msg->actor().pos().x();
+	const fixed_t y = msg->actor().pos().y();
+	const fixed_t z = msg->actor().pos().z();
 
 	P_ClearId(netid);
 
 	// first disassociate the corpse
-	if (p->mo)
+	if (p.mo)
 	{
-		p->mo->player = NULL;
-		p->mo->health = 0;
+		p.mo->player = nullptr;
+		p.mo->health = 0;
 	}
 
-	G_PlayerReborn(*p);
+	G_PlayerReborn(p);
 
 	AActor* mobj = new AActor(x, y, z, MT_PLAYER);
 
 	mobj->momx = mobj->momy = mobj->momz = 0;
 
+	mobj->updatedDuringTic = gametic;
+	mobj->credibility.Lionize();
+
 	// set color translations for player sprites
 	mobj->translation = translationref_t(translationtables + 256 * playernum, playernum);
 	mobj->angle = angle;
 	mobj->pitch = 0;
-	mobj->player = p;
-	mobj->health = p->health;
+	mobj->player = &p;
+	mobj->health = p.health;
 	P_SetThingId(mobj, netid);
 
-	p->mo = p->camera = mobj->ptr();
-	p->fov = 90.0f;
-	p->playerstate = PST_LIVE;
-	p->refire = 0;
-	p->damagecount = 0;
-	p->bonuscount = 0;
-	p->extralight = 0;
-	p->fixedcolormap = 0;
+	SpreeManager::getInstance().erasePoints(p.id);
+	MultiKillManager::getInstance().eraseMultiKills(p.id);
 
-	p->xviewshift = 0;
-	p->viewheight = VIEWHEIGHT;
+	p.mo = p.camera = mobj->ptr();
+	p.fov = 90.0f;
+	p.playerstate = PST_LIVE;
+	p.refire = 0;
+	p.damagecount = 0;
+	p.bonuscount = 0;
+	p.extralight = 0;
+	p.fixedcolormap = 0;
 
-	p->attacker = AActor::AActorPtr();
-	p->viewz = z + VIEWHEIGHT;
+	p.xviewshift = 0;
+	p.viewheight = VIEWHEIGHT;
+
+	p.attacker = AActor::AActorPtr();
+	p.viewz = z + VIEWHEIGHT;
 
 	// spawn a teleport fog
-	// tfog = new AActor (x, y, z, MT_TFOG);
+	// tfog = new AActor (x, y, z + gameinfo.telefogHeight, MT_TFOG);
 
 	// setup gun psprite
 	P_SetupPsprites(p);
 
 	// give all cards in death match mode
 	if (!G_IsCoopGame())
+	{
 		for (size_t i = 0; i < NUMCARDS; i++)
-			p->cards[i] = true;
+			p.cards[i] = true;
+	}
+	else if (sv_sharekeys)
+	{
+		const uint32_t cards = msg->cards();
+		UnpackBoolArray(p.cards, cards);
+	}
 
-	if (p->id == consoleplayer_id)
+	if (p.id == consoleplayer_id)
 	{
 		// denis - if this concerns the local player, restart the status bar
 		ST_Start();
@@ -1086,29 +1279,45 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 
 		// [SL] 2012-04-23 - Clear predicted sectors
 		movingsectors.clear();
+
+		// Rollback history from time-of-respawn to now is full of the dead state.
+		// Instead of doing complex rollbacks, just wipe history and start fresh.
+		// Any intervening updates to important state will come in subsequent
+		// reliable, well-ordered messages.
+		rollerState.Clear();
+		for (int32_t tic = msg->player_tic(); tic <= gametic; ++tic)
+		{
+			rollerState.Record(tic, p);
+		}
+
+		if (!netdemo.isPlaying())
+		{
+				::displayplayer_id = ::consoleplayer_id;
+		}
 	}
 
-	if (p->id == displayplayer().id)
+	if (p.id == displayplayer().id)
 	{
 		// [SL] 2012-03-08 - Resync with the server's incoming tic since we don't care
 		// about players/sectors jumping to new positions when the displayplayer spawns
 		CL_ResyncWorldIndex();
+		OInterpolation::getInstance().resetBobInterpolation();
 	}
 
-	if (level.behavior && !p->spectator && p->playerstate == PST_LIVE)
+	if (level.behavior && !p.spectator && p.playerstate == PST_LIVE)
 	{
-		if (p->deathcount)
-			::level.behavior->StartTypedScripts(SCRIPT_Respawn, p->mo);
+		if (p.deathcount)
+			::level.behavior->StartTypedScripts(SCRIPT_Respawn, p.mo);
 		else
-			::level.behavior->StartTypedScripts(SCRIPT_Enter, p->mo);
+			::level.behavior->StartTypedScripts(SCRIPT_Enter, p.mo);
 	}
 
-	int snaptime = last_svgametic;
+	const int snaptime = msg->server_tic();
 	PlayerSnapshot newsnap(snaptime, p);
 	newsnap.setAuthoritative(true);
 	newsnap.setContinuous(false);
-	p->snapshots.clearSnapshots();
-	p->snapshots.addSnapshot(newsnap);
+	p.snapshots.clearSnapshots();
+	p.snapshots.addSnapshot(newsnap);
 }
 
 //
@@ -1116,12 +1325,13 @@ static void CL_SpawnPlayer(const odaproto::svc::SpawnPlayer* msg)
 //
 static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 {
-	uint32_t netid = msg->netid();
-	uint32_t attackerid = msg->inflictorid();
-	int healthDamage = msg->health_damage();
-	int armorDamage = msg->armor_damage();
-	int health = msg->player().health();
-	int armorpoints = msg->player().armorpoints();
+	const uint32_t  netid        = msg->netid();
+	const uint32_t  attackerid   = msg->inflictorid();
+	const int       healthDamage = msg->health_damage();
+	//const int armorDamage = msg->armor_damage(); // unused for now...
+	const int       health       = msg->player_health();
+	const int       armorpoints  = msg->player_armorpoints();
+	const int       oldTic       = msg->client_tic();
 
 	AActor* actor = P_FindThingById(netid);
 	AActor* attacker = P_FindThingById(attackerid);
@@ -1129,40 +1339,49 @@ static void CL_DamagePlayer(const odaproto::svc::DamagePlayer* msg)
 	if (!actor || !actor->player)
 		return;
 
-	player_t* p = actor->player;
-	p->health = MIN(p->health, health);
-	p->armorpoints = MIN(p->armorpoints, armorpoints);
-	p->mo->health = p->health;
+	player_t& player = *actor->player;
 
 	if (attacker != NULL)
-		p->attacker = attacker->ptr();
+		player.attacker = attacker->ptr();
 
-	if (p->health < 0)
+	if (player.id == consoleplayer_id)
 	{
-		if (p->cheats & CF_BUDDHA)
+		rollerState.ResolveHealth      (oldTic, health,      player);
+		rollerState.ResolveArmorpoints (oldTic, armorpoints, player);
+	}
+	else
+	{
+		player.health = MIN(player.health, health);
+		player.armorpoints = MIN(player.armorpoints, armorpoints);
+		player.mo->health = player.health;
+
+		if (player.health < 0)
 		{
-			p->health = 1;
-			p->mo->health = 1;
+			if (player.cheats & CF_BUDDHA)
+			{
+				player.health = 1;
+				player.mo->health = 1;
+			}
+			else
+				player.health = 0;
 		}
-		else 
-			p->health = 0;
+
+		if (player.armorpoints < 0)
+			player.armorpoints = 0;
 	}
 
-	if (p->armorpoints < 0)
-		p->armorpoints = 0;
-
-	if (p->armorpoints == 0)
-		p->armortype = 0;
+	if (player.armorpoints == 0)
+		player.armortype = 0;
 
 	if (healthDamage > 0)
 	{
-		p->damagecount += healthDamage;
+		player.damagecount += healthDamage;
 
-		if (p->damagecount > 100)
-			p->damagecount = 100;
+		if (player.damagecount > 100)
+			player.damagecount = 100;
 
-		if (p->mo->info->painstate)
-			P_SetMobjState(p->mo, p->mo->info->painstate);
+		if (player.mo->info->painstate)
+			P_SetMobjState(player.mo, player.mo->info->painstate);
 	}
 }
 
@@ -1173,13 +1392,12 @@ extern int MeansOfDeath;
 //
 static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 {
-	uint32_t srcid = msg->source_netid();
-	uint32_t tgtid = msg->target().netid();
-	uint32_t infid = msg->inflictor_netid();
-	int health = msg->health();
-	//::MeansOfDeath = msg->mod();
-	bool joinkill = msg->joinkill();
-	int lives = msg->lives();
+	const uint32_t srcid    = msg->source_netid();
+	const uint32_t tgtid    = msg->target_netid();
+	const uint32_t infid    = msg->inflictor_netid();
+	const int      health   = msg->health();
+	const bool     joinkill = msg->joinkill();
+	const int      lives    = msg->lives();
 
 	AActor* source = P_FindThingById(srcid);
 	AActor* target = P_FindThingById(tgtid);
@@ -1190,7 +1408,7 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 
 	// This used to be bundled with a svc_movemobj and svc_mobjspeedangle,
 	// so emulate them here.
-	target->rndindex = msg->target().rndindex();
+	target->rndindex = msg->target_rndindex();
 
 	if (target->player)
 	{
@@ -1199,25 +1417,27 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 		PlayerSnapshot newsnap(snaptime);
 		newsnap.setAuthoritative(true);
 
-		newsnap.setX(msg->target().pos().x());
-		newsnap.setY(msg->target().pos().y());
-		newsnap.setZ(msg->target().pos().z());
-		newsnap.setAngle(msg->target().angle());
-		newsnap.setMomX(msg->target().mom().x());
-		newsnap.setMomY(msg->target().mom().y());
-		newsnap.setMomZ(msg->target().mom().z());
+		newsnap.setX(msg->target_pos().x());
+		newsnap.setY(msg->target_pos().y());
+		newsnap.setZ(msg->target_pos().z());
+		newsnap.setAngle(msg->target_angle());
+		newsnap.setMomX(msg->target_mom().x());
+		newsnap.setMomY(msg->target_mom().y());
+		newsnap.setMomZ(msg->target_mom().z());
 
 		target->player->snapshots.addSnapshot(newsnap);
 	}
 	else
 	{
-		target->x = msg->target().pos().x();
-		target->y = msg->target().pos().y();
-		target->z = msg->target().pos().z();
-		target->angle = msg->target().angle();
-		target->momx = msg->target().mom().x();
-		target->momy = msg->target().mom().y();
-		target->momz = msg->target().mom().z();
+		target->x = msg->target_pos().x();
+		target->y = msg->target_pos().y();
+		target->z = msg->target_pos().z();
+		target->angle = msg->target_angle();
+		target->momx = msg->target_mom().x();
+		target->momy = msg->target_mom().y();
+		target->momz = msg->target_mom().z();
+
+		target->updatedDuringTic = gametic;
 	}
 
 	target->health = health;
@@ -1229,7 +1449,7 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 	{
 		ClientReplay::getInstance().reset();
 		for (size_t i = 0; i < MAXSAVETICS; i++)
-			localcmds[i].clear();
+			localcmds[i].Clear();
 	}
 
 	if (target->player && lives >= 0)
@@ -1238,34 +1458,48 @@ static void CL_KillMobj(const odaproto::svc::KillMobj* msg)
 	P_KillMobj(source, target, inflictor, joinkill);
 }
 
-///////////////////////////////////////////////////////////
-///// CL_Fire* called when someone uses a weapon  /////////
-///////////////////////////////////////////////////////////
-
-// [tm512] attempt at squashing weapon desyncs.
-// The server will send us what weapon we fired, and if that
-// doesn't match the weapon we have up at the moment, fix it
-// and request that we get a full update of playerinfo - apr 14 2012
-static void CL_FireWeapon(const odaproto::svc::FireWeapon* msg)
+//
+// CL_RaiseMobj
+//
+static void CL_RaiseMobj(const odaproto::svc::RaiseMobj* msg)
 {
-	player_t* p = &consoleplayer();
+	uint32_t srcid = msg->source_netid();
+	uint32_t cpsid = msg->corpse().netid();
 
-	weapontype_t firedweap = static_cast<weapontype_t>(msg->readyweapon());
-	if (firedweap < 0 || firedweap > wp_nochange)
-	{
-		Printf("CL_FireWeapon: unknown weapon %d\n", firedweap);
+	AActor* source = P_FindThingById(srcid);
+	AActor* corpsehit = P_FindThingById(cpsid);
+
+	if (!corpsehit)
 		return;
-	}
-	int servertic = msg->servertic();
 
-	if (firedweap != p->readyweapon)
+	corpsehit->x = msg->corpse().pos().x();
+	corpsehit->y = msg->corpse().pos().y();
+	corpsehit->z = msg->corpse().pos().z();
+	corpsehit->angle = msg->corpse().angle();
+	corpsehit->momx = msg->corpse().mom().x();
+	corpsehit->momy = msg->corpse().mom().y();
+	corpsehit->momz = msg->corpse().mom().z();
+
+	corpsehit->updatedDuringTic = gametic;
+
+	mobjinfo_t* info = corpsehit->info;
+
+	P_SetMobjState(corpsehit, info->raisestate);
+
+	// [Nes] - Classic demo compatability: Ghost monster bug.
+	if (co_novileghosts)
 	{
-		DPrintf("CL_FireWeapon: weapon misprediction\n");
-		A_ForceWeaponFire(p->mo, firedweap, servertic);
-
-		// Request the player's ammo status from the server
-		MSG_WriteMarker(&net_buffer, clc_getplayerinfo);
+		corpsehit->height = P_ThingInfoHeight(info); // [RH] Use real mobj height
+		corpsehit->radius = info->radius;            // [RH] Use real radius
 	}
+	else
+	{
+		corpsehit->height <<= 2;
+	}
+
+	corpsehit->flags = info->flags;
+	corpsehit->health = info->spawnhealth;
+	corpsehit->target = AActor::AActorPtr();
 }
 
 //
@@ -1312,7 +1546,7 @@ static void CL_UpdateSector(const odaproto::svc::UpdateSector* msg)
 static void CL_Print(const odaproto::svc::Print* msg)
 {
 	byte level = msg->level();
-	const char* str = msg->message().c_str();
+	const std::string& str = msg->message();
 
 	// Disallow getting NORCON messages
 	if (level == PRINT_NORCON)
@@ -1320,13 +1554,13 @@ static void CL_Print(const odaproto::svc::Print* msg)
 
 	// TODO : Clientchat moved, remove that but PRINT_SERVERCHAT
 	if (level == PRINT_CHAT)
-		Printf(level, "%s*%s", TEXTCOLOR_ESCAPE, str);
+		PrintFmt(level, "{:c}*{}", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_TEAMCHAT)
-		Printf(level, "%s!%s", TEXTCOLOR_ESCAPE, str);
+		PrintFmt(level, "{:c}!{}", TEXTCOLOR_ESCAPE, str);
 	else if (level == PRINT_SERVERCHAT)
-		Printf(level, "%s%s", TEXTCOLOR_YELLOW, str);
+		PrintFmt(level, "{:s}{}", TEXTCOLOR_YELLOW, str);
 	else
-		Printf(level, "%s", str);
+		PrintFmt(level, "{}", str);
 
 	if (show_messages)
 	{
@@ -1418,168 +1652,209 @@ static void CL_ActivateLine(const odaproto::svc::ActivateLine* msg)
 }
 
 //
-// CL_UpdateMovingSector
-// Updates floorheight and ceilingheight of a sector.
+// Sector movers
 //
-static void CL_MovingSector(const odaproto::svc::MovingSector* msg)
+
+static void CL_MovingSectorElevator(const odaproto::svc::MovingSectorElevator* msg)
 {
 	int sectornum = msg->sector();
 
-	fixed_t ceilingheight = msg->ceiling_height();
-	fixed_t floorheight = msg->floor_height();
+	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
+		return;
 
-	uint32_t movers = msg->movers();
-	movertype_t ceiling_mover = static_cast<movertype_t>(movers & BIT_MASK(0, 3));
-	movertype_t floor_mover = static_cast<movertype_t>((movers & BIT_MASK(4, 7)) >> 4);
+    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	SectorSnapshot snap(serverTic);
 
-	if (ceiling_mover == SEC_ELEVATOR)
-	{
-		floor_mover = SEC_INVALID;
-	}
-	if (ceiling_mover == SEC_PILLAR)
-	{
-		floor_mover = SEC_INVALID;
-	}
+	// Elevators
+	snap.setCeilingHeight       (msg->ceiling_height());
+	snap.setCeilingMoverType    (SEC_ELEVATOR);
+	snap.setCeilingType         (static_cast<DElevator::EElevator>(msg->ceil_type()));
+	snap.setCeilingStatus       (msg->ceil_status());
+	snap.setCeilingDirection    (msg->ceil_dir());
+	snap.setCeilingDestination  (msg->ceil_dest());
+	snap.setCeilingSpeed        (msg->ceil_speed());
 
-	SectorSnapshot snap(::last_svgametic);
+	snap.setFloorMoverType  (SEC_ELEVATOR);
+	snap.setFloorHeight     (msg->floor_height());
+	snap.setFloorDestination(msg->floor_dest());
 
-	snap.setCeilingHeight(ceilingheight);
-	snap.setFloorHeight(floorheight);
+	// The following floor attributes simply match the ceiling's.
+	snap.setFloorType       (snap.getCeilingType());
+	snap.setFloorStatus     (snap.getCeilingStatus());
+	snap.setFloorDirection  (snap.getCeilingDirection());
+	snap.setFloorSpeed      (snap.getCeilingSpeed());
 
-	if (floor_mover == SEC_FLOOR)
-	{
-		const odaproto::svc::MovingSector_Snapshot& floor = msg->floor_mover();
+	snap.setSector(&::sectors[sectornum]);
 
-		// Floors/Stairbuilders
-		snap.setFloorMoverType(SEC_FLOOR);
-		snap.setFloorType(static_cast<DFloor::EFloor>(floor.floor_type()));
-		snap.setFloorStatus(floor.floor_status());
-		snap.setFloorCrush(floor.floor_crush());
-		snap.setFloorDirection(floor.floor_dir());
-		snap.setFloorSpecial(floor.floor_speed());
-		snap.setFloorTexture(floor.floor_tex());
-		snap.setFloorDestination(floor.floor_dest());
-		snap.setFloorSpeed(floor.floor_speed());
-		snap.setResetCounter(floor.reset_counter());
-		snap.setOrgHeight(floor.orig_height());
-		snap.setDelay(floor.delay());
-		snap.setPauseTime(floor.pause_time());
-		snap.setStepTime(floor.step_time());
-		snap.setPerStepTime(floor.per_step_time());
-		snap.setFloorOffset(floor.floor_offset());
-		snap.setFloorChange(floor.floor_change());
+	sector_snaps[sectornum].addSnapshot(snap);
+}
 
-		int LineIndex = floor.floor_line();
-
-		if (!lines || LineIndex >= numlines || LineIndex < 0)
-			snap.setFloorLine(NULL);
-		else
-			snap.setFloorLine(&lines[LineIndex]);
-	}
-
-	if (floor_mover == SEC_PLAT)
-	{
-		const odaproto::svc::MovingSector_Snapshot& floor = msg->floor_mover();
-
-		// Platforms/Lifts
-		snap.setFloorMoverType(SEC_PLAT);
-		snap.setFloorSpeed(floor.floor_speed());
-		snap.setFloorLow(floor.floor_low());
-		snap.setFloorHigh(floor.floor_high());
-		snap.setFloorWait(floor.floor_wait());
-		snap.setFloorCounter(floor.floor_counter());
-		snap.setFloorStatus(floor.floor_status());
-		snap.setOldFloorStatus(floor.floor_old_status());
-		snap.setFloorCrush(floor.floor_crush());
-		snap.setFloorTag(floor.floor_tag());
-		snap.setFloorType(floor.floor_type());
-		snap.setFloorOffset(floor.floor_offset());
-		snap.setFloorLip(floor.floor_lip());
-	}
-
-	if (ceiling_mover == SEC_CEILING)
-	{
-		const odaproto::svc::MovingSector_Snapshot& ceil = msg->ceiling_mover();
-
-		// Ceilings / Crushers
-		snap.setCeilingMoverType(SEC_CEILING);
-		snap.setCeilingType(ceil.ceil_type());
-		snap.setCeilingLow(ceil.ceil_low());
-		snap.setCeilingHigh(ceil.ceil_high());
-		snap.setCeilingSpeed(ceil.ceil_speed());
-		snap.setCrusherSpeed1(ceil.crusher_speed_1());
-		snap.setCrusherSpeed2(ceil.crusher_speed_2());
-		snap.setCeilingCrush(ceil.ceil_crush());
-		snap.setSilent(ceil.silent());
-		snap.setCeilingDirection(ceil.ceil_dir());
-		snap.setCeilingTexture(ceil.ceil_tex());
-		snap.setCeilingSpecial(ceil.ceil_new_special());
-		snap.setCeilingTag(ceil.ceil_tag());
-		snap.setCeilingOldDirection(ceil.ceil_old_dir());
-	}
-
-	if (ceiling_mover == SEC_DOOR)
-	{
-		const odaproto::svc::MovingSector_Snapshot& ceil = msg->ceiling_mover();
-
-		// Doors
-		snap.setCeilingMoverType(SEC_DOOR);
-		snap.setCeilingType(static_cast<DDoor::EVlDoor>(ceil.ceil_type()));
-		snap.setCeilingHigh(ceil.ceil_height());
-		snap.setCeilingSpeed(ceil.ceil_speed());
-		snap.setCeilingWait(ceil.ceil_wait());
-		snap.setCeilingCounter(ceil.ceil_counter());
-		snap.setCeilingStatus(ceil.ceil_status());
-
-		int LineIndex = ceil.ceil_line();
-
-		// If the moving sector's line is -1, it is likely a type 666 door
-		if (!lines || LineIndex >= numlines || LineIndex < 0)
-			snap.setCeilingLine(NULL);
-		else
-			snap.setCeilingLine(&lines[LineIndex]);
-	}
-
-	if (ceiling_mover == SEC_ELEVATOR)
-	{
-		const odaproto::svc::MovingSector_Snapshot& ceil = msg->ceiling_mover();
-
-		// Elevators
-		snap.setCeilingMoverType(SEC_ELEVATOR);
-		snap.setFloorMoverType(SEC_ELEVATOR);
-		snap.setCeilingType(static_cast<DElevator::EElevator>(ceil.ceil_type()));
-		snap.setFloorType(snap.getCeilingType());
-		snap.setCeilingStatus(ceil.ceil_status());
-		snap.setFloorStatus(snap.getCeilingStatus());
-		snap.setCeilingDirection(ceil.ceil_dir());
-		snap.setFloorDirection(snap.getCeilingDirection());
-		snap.setFloorDestination(ceil.floor_dest());
-		snap.setCeilingDestination(ceil.ceil_dest());
-		snap.setCeilingSpeed(ceil.ceil_speed());
-		snap.setFloorSpeed(snap.getCeilingSpeed());
-	}
-
-	if (ceiling_mover == SEC_PILLAR)
-	{
-		const odaproto::svc::MovingSector_Snapshot& ceil = msg->ceiling_mover();
-
-		// Pillars
-		snap.setCeilingMoverType(SEC_PILLAR);
-		snap.setFloorMoverType(SEC_PILLAR);
-		snap.setCeilingType(static_cast<DPillar::EPillar>(ceil.ceil_type()));
-		snap.setFloorType(snap.getCeilingType());
-		snap.setCeilingStatus(ceil.ceil_status());
-		snap.setFloorStatus(snap.getCeilingStatus());
-		snap.setFloorSpeed(ceil.floor_speed());
-		snap.setCeilingSpeed(ceil.ceil_speed());
-		snap.setFloorDestination(ceil.floor_dest());
-		snap.setCeilingDestination(ceil.ceil_dest());
-		snap.setCeilingCrush(ceil.ceil_crush());
-		snap.setFloorCrush(snap.getCeilingCrush());
-	}
+static void CL_MovingSectorPillar(const odaproto::svc::MovingSectorPillar* msg)
+{
+	int sectornum = msg->sector();
 
 	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
 		return;
+
+    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	SectorSnapshot snap(serverTic);
+
+		// Pillars
+	snap.setCeilingHeight       (msg->ceiling_height());
+	snap.setCeilingMoverType    (SEC_PILLAR);
+	snap.setCeilingType         (static_cast<DPillar::EPillar>(msg->ceil_type()));
+	snap.setCeilingStatus       (msg->ceil_status());
+	snap.setCeilingSpeed        (msg->ceil_speed());
+	snap.setCeilingDestination  (msg->ceil_dest());
+	snap.setCeilingCrush        (msg->ceil_crush());
+
+	snap.setFloorHeight     (msg->floor_height());
+	snap.setFloorMoverType  (SEC_PILLAR);
+	snap.setFloorSpeed      (msg->floor_speed());
+	snap.setFloorDestination(msg->floor_dest());
+
+	// The following floor attributes simply match the ceiling's.
+	snap.setFloorType   (snap.getCeilingType());
+	snap.setFloorStatus (snap.getCeilingStatus());
+	snap.setFloorCrush  (snap.getCeilingCrush());
+
+	snap.setSector(&::sectors[sectornum]);
+
+	sector_snaps[sectornum].addSnapshot(snap);
+}
+
+static void CL_MovingSectorCeiling(const odaproto::svc::MovingSectorCeiling* msg)
+{
+	int sectornum = msg->sector();
+
+	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
+		return;
+
+    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	SectorSnapshot snap(serverTic);
+
+	// Ceilings / Crushers
+	snap.setCeilingHeight       (msg->ceiling_height());
+	snap.setCeilingMoverType    (SEC_CEILING);
+	snap.setCeilingType         (msg->ceil_type());
+	snap.setCeilingLow          (msg->ceil_low());
+	snap.setCeilingHigh         (msg->ceil_high());
+	snap.setCeilingSpeed        (msg->ceil_speed());
+	snap.setCrusherSpeed1       (msg->crusher_speed_1());
+	snap.setCrusherSpeed2       (msg->crusher_speed_2());
+	snap.setCeilingCrush        (msg->ceil_crush());
+	snap.setSilent              (msg->silent());
+	snap.setCeilingDirection    (msg->ceil_dir());
+	snap.setCeilingTexture      (msg->ceil_tex());
+	snap.setCeilingSpecial      (msg->ceil_new_special());
+	snap.setCeilingTag          (msg->ceil_tag());
+	snap.setCeilingOldDirection (msg->ceil_old_dir());
+
+	snap.setSector(&::sectors[sectornum]);
+
+	sector_snaps[sectornum].addSnapshot(snap);
+}
+
+static void CL_MovingSectorDoor(const odaproto::svc::MovingSectorDoor* msg)
+{
+	int sectornum = msg->sector();
+
+	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
+		return;
+
+    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	SectorSnapshot snap(serverTic);
+
+	// Doors
+	snap.setCeilingHeight   (msg->ceiling_height());
+	snap.setCeilingMoverType(SEC_DOOR);
+	snap.setCeilingType     (static_cast<DDoor::EVlDoor>(msg->ceil_type()));
+	snap.setCeilingHigh     (msg->ceil_height());
+	snap.setCeilingSpeed    (msg->ceil_speed());
+	snap.setCeilingWait     (msg->ceil_wait());
+	snap.setCeilingCounter  (msg->ceil_counter());
+	snap.setCeilingStatus   (msg->ceil_status());
+
+	int LineIndex = msg->ceil_line();
+
+	// If the moving sector's line is -1, it is likely a type 666 door
+	if (!lines || LineIndex >= numlines || LineIndex < 0)
+		snap.setCeilingLine(NULL);
+	else
+		snap.setCeilingLine(&lines[LineIndex]);
+
+	snap.setSector(&::sectors[sectornum]);
+
+	sector_snaps[sectornum].addSnapshot(snap);
+}
+
+static void CL_MovingSectorFloor(const odaproto::svc::MovingSectorFloor* msg)
+{
+	int sectornum = msg->sector();
+
+	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
+		return;
+
+    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	SectorSnapshot snap(serverTic);
+
+	// Floors/Stairbuilders
+	snap.setFloorHeight     (msg->floor_height());
+	snap.setFloorMoverType  (SEC_FLOOR);
+	snap.setFloorType       (static_cast<DFloor::EFloor>(msg->floor_type()));
+	snap.setFloorStatus     (msg->floor_status());
+	snap.setFloorCrush      (msg->floor_crush());
+	snap.setFloorDirection  (msg->floor_dir());
+	snap.setFloorSpecial    (msg->floor_new_special());
+	snap.setFloorTexture    (msg->floor_tex());
+	snap.setFloorDestination(msg->floor_dest());
+	snap.setFloorSpeed      (msg->floor_speed());
+	snap.setResetCounter    (msg->reset_counter());
+	snap.setOrgHeight       (msg->orig_height());
+	snap.setDelay           (msg->delay());
+	snap.setPauseTime       (msg->pause_time());
+	snap.setStepTime        (msg->step_time());
+	snap.setPerStepTime     (msg->per_step_time());
+	snap.setFloorOffset     (msg->floor_offset());
+	snap.setFloorChange     (msg->floor_change());
+
+	int LineIndex = msg->floor_line();
+
+	if (!lines || LineIndex >= numlines || LineIndex < 0)
+		snap.setFloorLine(NULL);
+	else
+		snap.setFloorLine(&lines[LineIndex]);
+
+	snap.setSector(&::sectors[sectornum]);
+
+	sector_snaps[sectornum].addSnapshot(snap);
+}
+
+static void CL_MovingSectorPlat(const odaproto::svc::MovingSectorPlat* msg)
+{
+	int sectornum = msg->sector();
+
+	if (!::sectors || sectornum < 0 || sectornum >= ::numsectors)
+		return;
+
+    const int serverTic = msg->has_server_tic() ? msg->server_tic() : ::last_svgametic;
+	SectorSnapshot snap(serverTic);
+
+	// Platforms/Lifts
+	snap.setFloorHeight     (msg->floor_height());
+	snap.setFloorMoverType  (SEC_PLAT);
+	snap.setFloorSpeed      (msg->floor_speed());
+	snap.setFloorLow        (msg->floor_low());
+	snap.setFloorHigh       (msg->floor_high());
+	snap.setFloorWait       (msg->floor_wait());
+	snap.setFloorCounter    (msg->floor_counter());
+	snap.setFloorStatus     (msg->floor_status());
+	snap.setOldFloorStatus  (msg->floor_old_status());
+	snap.setFloorCrush      (msg->floor_crush());
+	snap.setFloorTag        (msg->floor_tag());
+	snap.setFloorType       (msg->floor_type());
+	snap.setFloorOffset     (msg->floor_offset());
+	snap.setFloorLip        (msg->floor_lip());
 
 	snap.setSector(&::sectors[sectornum]);
 
@@ -1620,7 +1895,7 @@ static void CL_PlaySound(const odaproto::svc::PlaySound* msg)
 
 static void CL_Reconnect(const odaproto::svc::Reconnect* msg)
 {
-	CL_Reconnect();
+	CL_Reconnect(NQ_SERVER_DROP);
 }
 
 static void CL_ExitLevel(const odaproto::svc::ExitLevel* msg)
@@ -1638,7 +1913,8 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 	uint32_t id = msg->netid();
 	AActor* mo = P_FindThingById(id);
 
-	if (!consoleplayer().mo)
+	player_t& player = consoleplayer();
+	if (not player.mo)
 		return;
 
 	if (!mo)
@@ -1648,7 +1924,34 @@ static void CL_TouchSpecial(const odaproto::svc::TouchSpecial* msg)
 		return;
 	}
 
-	P_GiveSpecial(&consoleplayer(), mo);
+	// Do a switcheroo of the new state for the historical state at the time of the pickup
+	// so that we can run the actual P_GiveSpecial function and let it produce the result
+	// of the pickup *at that old point in time*.  With that result in hand, we undo the
+	// switcheroo and resolve the potentially-modified history.
+
+	const int oldTic = msg->player_tic();
+	auto optionalHistory = rollerState.GetStateAtTic(oldTic);
+	const PlayerItemDataType currentClientSideState {player};
+
+	if (optionalHistory)
+	{
+		optionalHistory->get().ToPlayer(player);
+	}
+
+	const ItemEquipVal giveResult = P_GiveSpecial(player, *mo);
+	if (giveResult == IEV_EquipRemove)
+	{
+		mo->Destroy();
+	}
+
+	if (optionalHistory)
+	{
+		const PlayerItemDataType modifiedHistory {player};
+
+		currentClientSideState.ToPlayer(player);
+
+		rollerState.Resolve(oldTic, modifiedHistory, player);
+	}
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -1698,12 +2001,12 @@ static void CL_Switch(const odaproto::svc::Switch* msg)
 		else
 			repeat = P_IsSpecialBoomRepeatable(lines[l].special);
 
-		P_ChangeSwitchTexture(&lines[l], repeat, recv_full_update);
+		P_ChangeSwitchTexture(&lines[l], repeat, hasReceivedFullUpdate);
 	}
 
 	// Only accept texture change from server while receiving the full update
 	// - this is to fix warmup switch desyncs
-	if (!recv_full_update && texture)
+	if (!hasReceivedFullUpdate && texture)
 	{
 		P_SetButtonTexture(&lines[l], texture);
 	}
@@ -1740,16 +2043,16 @@ static void CL_Say(const odaproto::svc::Say* msg)
 			filtermessage = true;
 	}
 
-	const char* name = player.userinfo.netname.c_str();
+	const std::string& name = player.userinfo.netname;
 	printlevel_t publicmsg = filtermessage ? PRINT_FILTERCHAT : PRINT_CHAT;
 	printlevel_t publicteammsg = filtermessage ? PRINT_FILTERCHAT : PRINT_TEAMCHAT;
 
 	if (message_visibility == 0)
 	{
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(publicmsg, "* %s %s\n", name, &message[4]);
+			PrintFmt(publicmsg, "* {} {}\n", name, &message[4]);
 		else
-			Printf(publicmsg, "%s: %s\n", name, message);
+			PrintFmt(publicmsg, "{}: {}\n", name, message);
 
 		if (show_messages && !filtermessage)
 		{
@@ -1760,9 +2063,9 @@ static void CL_Say(const odaproto::svc::Say* msg)
 	else if (message_visibility == 1)
 	{
 		if (strnicmp(message, "/me ", 4) == 0)
-			Printf(publicteammsg, "* %s %s\n", name, &message[4]);
+			PrintFmt(publicteammsg, "* {} {}\n", name, &message[4]);
 		else
-			Printf(publicteammsg, "%s: %s\n", name, message);
+			PrintFmt(publicteammsg, "{}: {}\n", name, message);
 
 		if (show_messages && cl_chatsounds && !filtermessage)
 			S_Sound(CHAN_INTERFACE, "misc/teamchat", 1, ATTN_NONE);
@@ -1772,11 +2075,11 @@ static void CL_Say(const odaproto::svc::Say* msg)
 static void CL_CTFRefresh(const odaproto::svc::CTFRefresh* msg)
 {
 	// clear player flags client may have imagined
-	for (Players::iterator it = players.begin(); it != players.end(); ++it)
+	for (auto& player : players)
 	{
 		for (size_t i = 0; i < NUMTEAMS; i++)
 		{
-			it->flags[i] = false;
+			player.flags[i] = false;
 		}
 	}
 
@@ -1785,7 +2088,7 @@ static void CL_CTFRefresh(const odaproto::svc::CTFRefresh* msg)
 		team_t team = static_cast<team_t>(i);
 		TeamInfo* teamInfo = GetTeamInfo(team);
 
-		if (i < msg->team_info_size())
+		if (i < static_cast<size_t>(msg->team_info_size()))
 		{
 			const odaproto::svc::CTFRefresh_TeamInfo& info = msg->team_info().Get(i);
 
@@ -1921,8 +2224,8 @@ static void CL_CTFEvent(const odaproto::svc::CTFEvent* msg)
 static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 {
 	player_t& player = idplayer(msg->pid());
-	size_t sectornum = msg->sectornum();
-	short special = msg->sector().special();
+	int sectornum = static_cast<int>(msg->sectornum());
+	//short special = msg->sector().special();
 
 	if (!::sectors || sectornum >= numsectors)
 		return;
@@ -1939,10 +2242,8 @@ static void CL_SecretEvent(const odaproto::svc::SecretEvent* msg)
 	if (!::hud_revealsecrets || ::hud_revealsecrets > 2)
 		return;
 
-	std::string buf;
-	StrFormat(buf, "%s%s %sfound a secret!\n", TEXTCOLOR_YELLOW,
-	          player.userinfo.netname.c_str(), TEXTCOLOR_NORMAL);
-	Printf("%s", buf.c_str());
+	PrintFmt("{}{} {}found a secret!\n", TEXTCOLOR_YELLOW,
+	                player.userinfo.netname, TEXTCOLOR_NORMAL);
 
 	if (::hud_revealsecrets == 1)
 		S_Sound(CHAN_INTERFACE, "misc/secret", 1, ATTN_NONE);
@@ -2013,17 +2314,12 @@ static void CL_MidPrint(const odaproto::svc::MidPrint* msg)
 // [SL] 2011-05-11
 static void CL_ServerGametic(const odaproto::svc::ServerGametic* msg)
 {
-	byte t = msg->tic();
+	::last_svgametic = msg->tic();
 
-	int newtic = (::last_svgametic & 0xFFFFFF00) + t;
-
-	if (::last_svgametic > newtic + 127)
-		newtic += 256;
-
-	::last_svgametic = newtic;
+	netgraph.addServerSideMetrics(msg->reliable_messages_in_flight(), msg->throttle());
 
 #ifdef _WORLD_INDEX_DEBUG_
-	Printf(PRINT_HIGH, "Gametic %i, received world index %i\n", gametic, last_svgametic);
+	PrintFmt(PRINT_HIGH, "Gametic {}, received world index {}\n", gametic, last_svgametic);
 #endif // _WORLD_INDEX_DEBUG_
 }
 
@@ -2044,7 +2340,8 @@ static void CL_IntTimeLeft(const odaproto::svc::IntTimeLeft* msg)
 //
 static void CL_FullUpdateDone(const odaproto::svc::FullUpdateDone* msg)
 {
-	::recv_full_update = true;
+	::hasReceivedFullUpdate = true;
+	::isReceivingFullUpdate = false;
 }
 
 //
@@ -2095,8 +2392,8 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 	{
 		if (i < msg->player().psprites_size())
 		{
-			unsigned int state = msg->player().psprites().Get(i).statenum();
-			if (state >= NUMSTATES)
+			const int32_t state = msg->player().psprites().Get(i).statenum();
+            if (!states.contains(state))
 			{
 				continue;
 			}
@@ -2135,16 +2432,18 @@ static void CL_PlayerState(const odaproto::svc::PlayerState* msg)
 		player.cards[i] = cardBits[i];
 
 	if (!player.weaponowned[weap])
-		P_GiveWeapon(&player, weap, false);
+		P_GiveWeapon(player, weap, false);
 
 	for (int i = 0; i < NUMAMMO; i++)
 		player.ammo[i] = ammo[i];
 
 	for (int i = 0; i < NUMPSPRITES; i++)
-		P_SetPsprite(&player, i, stnum[i]);
+		P_SetPsprite(player, i, stnum[i]);
 
 	for (int i = 0; i < NUMPOWERS; i++)
 		player.powers[i] = powerups[i];
+
+	P_SetPlayerPowerupStatuses(player, powerups);
 
 	if (!player.spectator)
 		player.cheats = cheats;
@@ -2165,6 +2464,8 @@ static void CL_LevelState(const odaproto::svc::LevelState* msg)
 	sls.last_wininfo_id = msg->last_wininfo_id();
 	::levelstate.unserialize(sls);
 }
+
+void P_SpawnAvatars();
 
 static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 {
@@ -2208,13 +2509,19 @@ static void CL_ResetMap(const odaproto::svc::ResetMap* msg)
 	P_DestroyScrollerThinkers();
 
 	P_DestroyLightThinkers();
-	
+
 	// You don't get to keep cards.  This isn't communicated anywhere else.
 	if (sv_gametype == GM_COOP)
 		P_ClearPlayerCards(consoleplayer());
 
+	// Now before we write the netdemo map change, spawn fresh avatars so that
+	// the "new map" snapshot has them in the correct position right from the
+	// get-go. This is key for ensuring that maps that rely on tic-1 avatar
+	// actions behave correctly.
+	P_SpawnAvatars();
+
 	// write the map index to the netdemo
-	if (netdemo.isRecording() && recv_full_update)
+	if (netdemo.isRecording() && hasReceivedFullUpdate)
 		netdemo.writeMapChange();
 }
 
@@ -2227,11 +2534,11 @@ static void CL_PlayerQueuePos(const odaproto::svc::PlayerQueuePos* msg)
 	{
 		if (queuePos > 0 && player.QueuePosition == 0)
 		{
-			Printf(PRINT_HIGH, "Position in line to play: %u\n", queuePos);
+			PrintFmt(PRINT_HIGH, "Position in line to play: {}\n", queuePos);
 		}
 		else if (player.spectator && queuePos == 0 && player.QueuePosition > 0)
 		{
-			Printf(PRINT_HIGH, "You have been removed from the queue.\n");
+			PrintFmt(PRINT_HIGH, "You have been removed from the queue.\n");
 		}
 	}
 
@@ -2240,7 +2547,8 @@ static void CL_PlayerQueuePos(const odaproto::svc::PlayerQueuePos* msg)
 
 static void CL_FullUpdateStart(const odaproto::svc::FullUpdateStart* msg)
 {
-	::recv_full_update = false;
+	::hasReceivedFullUpdate = false;
+	::isReceivingFullUpdate = true;
 }
 
 static void CL_LineUpdate(const odaproto::svc::LineUpdate* msg)
@@ -2327,6 +2635,9 @@ static void CL_SectorProperties(const odaproto::svc::SectorProperties* msg)
 			sector->base_ceiling_yoffs = msg->sector().base_ceiling_yoffs();
 			sector->base_floor_angle = msg->sector().base_floor_angle();
 			sector->base_floor_yoffs = msg->sector().base_floor_yoffs();
+			break;
+		case SPC_Special:
+			sector->special = msg->sector().special();
 		default:
 			break;
 		}
@@ -2378,7 +2689,7 @@ static void CL_SetMobjState(const odaproto::svc::MobjState* msg)
 	AActor* mo = P_FindThingById(msg->netid());
 	int s = msg->mostate();
 
-	if (mo == NULL || s < 0 || s >= NUMSTATES)
+    if (mo == NULL || !states.contains(s))
 		return;
 
 	P_SetMobjState(mo, static_cast<statenum_t>(s));
@@ -2503,7 +2814,7 @@ static void CL_ExecuteACSSpecial(const odaproto::svc::ExecuteACSSpecial* msg)
 		break;
 
 	default:
-		Printf(PRINT_HIGH, "Invalid ACS special: %d", special);
+		PrintFmt(PRINT_HIGH, "Invalid ACS special: {}", special);
 		break;
 	}
 }
@@ -2668,10 +2979,9 @@ static void CL_MaplistUpdate(const odaproto::svc::MaplistUpdate* msg)
 	OStringIndexer indexer = OStringIndexer::maplistFactory();
 
 	// Parse our dictionary first.
-	google::protobuf::Map<uint32_t, std::string>::const_iterator it;
-	for (it = msg->dict().begin(); it != msg->dict().end(); ++it)
+	for (const auto& [idx, str] : msg->dict())
 	{
-		indexer.setIndex(it->first, it->second);
+		indexer.setIndex(idx, str);
 	}
 
 	// Load our maps into the local cache.
@@ -2681,9 +2991,11 @@ static void CL_MaplistUpdate(const odaproto::svc::MaplistUpdate* msg)
 	{
 		const odaproto::svc::MaplistUpdate::Row& row = msg->maplist().Get(i);
 		const std::string& map = indexer.getString(row.map());
+		const std::string& lastmap = indexer.getString(row.lastmap());
 
 		maplist_entry_t maplist_entry;
 		maplist_entry.map = map;
+		maplist_entry.lastmap = lastmap;
 		for (int j = 0; j < row.wads_size(); j++)
 		{
 			const std::string& wad = indexer.getString(row.wads().Get(j));
@@ -2720,6 +3032,8 @@ static void CL_Toast(const odaproto::svc::Toast* msg)
 	toast.right = msg->right();
 	toast.right_pid = msg->right_pid();
 	toast.icon = msg->icon();
+	toast.points = msg->points();
+	toast.spree_color = msg->spree_color();
 
 	COM_PushToast(toast);
 }
@@ -2742,62 +3056,253 @@ static void CL_HordeInfo(const odaproto::svc::HordeInfo* msg)
 	P_SetHordeInfo(info);
 }
 
-static void CL_NetdemoCap(const odaproto::svc::NetdemoCap* msg)
+static void CL_Spree(const odaproto::svc::Spree* msg)
 {
-	player_t* clientPlayer = &consoleplayer();
-	fixed_t x, y, z;
-	fixed_t momx, momy, momz;
-	fixed_t pitch, viewz, viewheight, deltaviewheight;
-	angle_t angle;
-	int jumpTics, reactiontime;
-	byte waterlevel;
+	int playerId = msg->pid();
+	int spreeLevel = msg->spree_level();
 
-	clientPlayer->cmd.clear();
-	clientPlayer->cmd.unserialize(msg->player_cmd());
+	bool update = SpreeManager::getInstance().setRawSpree(playerId, spreeLevel);
 
-	waterlevel = msg->actor().waterlevel();
-	x = msg->actor().pos().x();
-	y = msg->actor().pos().y();
-	z = msg->actor().pos().z();
-	momx = msg->actor().mom().x();
-	momy = msg->actor().mom().y();
-	momz = msg->actor().mom().z();
-	angle = msg->actor().angle();
-	pitch = msg->actor().pitch();
-	viewz = msg->player().viewz();
-	viewheight = msg->player().viewheight();
-	deltaviewheight = msg->player().deltaviewheight();
-	jumpTics = msg->player().jumptics();
-	reactiontime = msg->actor().reactiontime();
-	clientPlayer->readyweapon = static_cast<weapontype_t>(msg->player().readyweapon());
-	clientPlayer->pendingweapon =
-	    static_cast<weapontype_t>(msg->player().pendingweapon());
-
-	if (clientPlayer->mo)
+	// No need to check cl_showofflinesprees here since this will only fire online or during a netdemo.
+	if (cl_showsprees && sv_showsprees && displayplayer_id == playerId && update)
 	{
-		clientPlayer->mo->x = x;
-		clientPlayer->mo->y = y;
-		clientPlayer->mo->z = z;
-		clientPlayer->mo->momx = momx;
-		clientPlayer->mo->momy = momy;
-		clientPlayer->mo->momz = momz;
-		clientPlayer->mo->angle = angle;
-		clientPlayer->mo->pitch = pitch;
-		clientPlayer->viewz = viewz;
-		clientPlayer->viewheight = viewheight;
-		clientPlayer->deltaviewheight = deltaviewheight;
-		clientPlayer->jumpTics = jumpTics;
-		clientPlayer->mo->reactiontime = reactiontime;
-		clientPlayer->mo->waterlevel = waterlevel;
+		// Play the sound for the new multi kill
+		// S_Sound(CHAN_ANNOUNCER, '', 1, ATTN_NONE);
 	}
 }
 
-static void CL_NetDemoStop(const odaproto::svc::NetDemoStop* msg)
+static void CL_SpreeBreaker(const odaproto::svc::SpreeBreaker* msg)
+{
+	SpreeBreaker_t breaker;
+
+	breaker.spreeEndedPlayerId = msg->victim_pid();
+	breaker.spreeEndedName = msg->victim_name();
+	breaker.spreeEnderPlayerId = msg->source_pid();
+	breaker.spreeEnderName = msg->source_name();
+	breaker.endedPoints = msg->spree_points();
+	SpreeBreakerType type = static_cast<SpreeBreakerType>(msg->spree_breaker_type());
+	int level = msg->spree_level();
+
+	SpreeManager::getInstance().setRawSpreeBreaker(breaker, level, type);
+}
+
+static void CL_NoiseAlert(const odaproto::svc::NoiseAlert* msg)
+{
+	const uint32_t sectorIndex = msg->sectornum();
+
+	if (sectorIndex < static_cast<uint32_t>(::numsectors))
+	{
+		sector_t& sector = ::sectors[sectorIndex];
+
+		AActor* soundtarget = P_FindThingById(msg->soundtarget_netid());
+
+		if (soundtarget)
+		{
+			P_NoiseAlert(*soundtarget, sector);
+		}
+	}
+}
+
+static void CL_PlayerAmmo(const odaproto::svc::PlayerAmmo* msg)
+{
+	std::array<int, NUMAMMO> ammo;
+	std::copy(msg->ammo().begin(),
+	          msg->ammo().end(),
+	          ammo.begin());
+
+	if (rollerState.ResolveAmmo(msg->player_tic(), ammo, consoleplayer()))
+	{
+		DPrintFmt("Reconciled ammo on tic {}\n",
+		          msg->player_tic());
+	}
+}
+
+static void CL_PlayerMaxAmmo(const odaproto::svc::PlayerMaxAmmo* msg)
+{
+	std::array<int, NUMAMMO> maxammo;
+	std::copy(msg->maxammo().begin(),
+	          msg->maxammo().end(),
+	          maxammo.begin());
+
+	if (rollerState.ResolveMaxAmmo(msg->player_tic(),
+	                               maxammo,
+	                               consoleplayer()))
+	{
+		DPrintFmt("Reconciled maxammo on tic {}\n",
+		          msg->player_tic());
+	}
+}
+
+static void CL_PlayerWeaponOwned(const odaproto::svc::PlayerWeaponOwned* msg)
+{
+	std::array<bool, NUMWEAPONS> weaponowned;
+	std::copy(msg->weaponowned().begin(),
+	          msg->weaponowned().end(),
+	          weaponowned.begin());
+
+	if (rollerState.ResolveWeaponOwned(msg->player_tic(),
+	                                   weaponowned,
+	                                   consoleplayer()))
+	{
+		DPrintFmt("Reconciled weaponowned on tic {}\n",
+		          msg->player_tic());
+	}
+}
+
+static void CL_PlayerWeaponSelection(const odaproto::svc::PlayerWeaponSelection* msg)
+{
+	if (rollerState.ResolveWeaponSelection(msg->player_tic(),
+	                                       static_cast<weapontype_t>(msg->readyweapon()),
+	                                       static_cast<weapontype_t>(msg->pendingweapon()),
+	                                       consoleplayer()))
+	{
+		DPrintFmt("Reconciled weapon selection on tic {}\n",
+		          msg->player_tic());
+	}
+}
+
+static void CL_PlayerPowers(const odaproto::svc::PlayerPowers* msg)
+{
+	std::array<int, NUMPOWERS> powers;
+	std::copy(msg->powers().begin(),
+	          msg->powers().end(),
+	          powers.begin());
+
+	if (rollerState.ResolvePowers(msg->player_tic(),
+	                              powers,
+	                              consoleplayer()))
+	{
+		DPrintFmt("Reconciled powers on tic {}\n",
+		          msg->player_tic());
+	}
+
+}
+
+static void CL_PlayerPsprites(const odaproto::svc::PlayerPsprites* msg)
+{
+	std::array<PspriteStateType, NUMPSPRITES> psprites;
+
+	for (size_t i = 0; i < psprites.size(); ++i)
+	{
+	    psprites[i].statenum = static_cast<statenum_t>(msg->psprites(i).statenum());
+	    psprites[i].tics     = msg->psprites(i).tics();
+	}
+
+	if (rollerState.ResolvePsprites(msg->player_tic(),
+	                                psprites,
+	                                consoleplayer()))
+	{
+		DPrintFmt("Reconciled psprites on tic {}\n",
+		          msg->player_tic());
+	}
+}
+
+static void CL_ConfigureAvatar(const odaproto::svc::ConfigureAvatar* msg)
+{
+    MapThing avatarMapthing;
+
+    const odaproto::MapThing& mapthing = msg->avatar_mapthing();
+
+    avatarMapthing.thingid  = mapthing.thingid();
+    avatarMapthing.x        = mapthing.x();
+    avatarMapthing.y        = mapthing.y();
+    avatarMapthing.z        = mapthing.z();
+    avatarMapthing.angle    = mapthing.angle();
+    avatarMapthing.type     = mapthing.type();
+    avatarMapthing.flags    = mapthing.flags();
+    avatarMapthing.special  = mapthing.special();
+
+	const size_t argCount = std::min(avatarMapthing.args.size(), static_cast<size_t>(mapthing.args_size()));
+	std::copy(mapthing.args().begin(),
+	          mapthing.args().begin() + argCount,
+	          avatarMapthing.args.begin());
+
+	const uint32_t netid = msg->netid();
+
+	const auto avatarIter = std::find_if(::voodoostarts.begin(),
+	                                     ::voodoostarts.end(),
+	                                     [&avatarMapthing](const auto& voodooStart)
+	                                     {
+	                                         return voodooStart.mapThing == avatarMapthing;
+	                                     });
+
+	if (avatarIter == ::voodoostarts.end())
+	{
+		PrintFmt(PRINT_WARNING, "Cannot find Avatar at pos ({}, {}, {}), id {}, angle {}, type {}, flags {}, special {}\n",
+		        avatarMapthing.x,
+		        avatarMapthing.y,
+		        avatarMapthing.z,
+		        avatarMapthing.thingid,
+		        avatarMapthing.angle,
+		        avatarMapthing.type,
+		        avatarMapthing.flags,
+		        int(avatarMapthing.special));
+		return;
+	}
+
+	if (AActor* mo = P_FindThingById(msg->netid()))
+	{
+		if (mo != avatarIter->mobj)
+		{
+			PrintFmt(PRINT_WARNING, "Netid {} cannot be assigned to avatar: already assigned to a mobj of type {}\n",
+			        netid,
+			        mo->type);
+		}
+	}
+	else
+	{
+		// There was a bug that caused avatar mobjs to not get linked back to voodoostarts when
+		// unarchiving the mobj.  The avatar mobj still exists, but we can't get to it through
+		// the voodoostart structure.  We can dodge the crash that was caused by just checking
+		// for null.
+		if (avatarIter->mobj)
+		{
+			P_SetThingId(avatarIter->mobj, netid);
+		}
+	}
+}
+
+static void CL_NetdemoCap(const odaproto::clc::NetdemoCap* msg)
+{
+	odaproto::clc::PlayerInput& currentInputMessage = localcmds[gametic % MAXSAVETICS];
+	currentInputMessage.ParseFromString(msg->packed_player_input());
+
+	player_t& clientPlayer = consoleplayer();
+
+	// Note clientPlayer->viewz should not be set with the value from the demo here
+	// it is an aggregate value and will be set correctly later
+
+	// We do not assign the tic here - that must come from the UpdateLocalPlayer message
+	// as part of the overall prediction algorithm.
+	CLC_UnpackPlayerInputMessageToPlayer(currentInputMessage, clientPlayer);
+
+	clientPlayer.readyweapon   = static_cast<weapontype_t>(msg->readyweapon());
+	clientPlayer.pendingweapon = static_cast<weapontype_t>(msg->pendingweapon());
+
+	if (clientPlayer.mo)
+	{
+		clientPlayer.mo->x             = msg->actor().pos().x();
+		clientPlayer.mo->y             = msg->actor().pos().y();
+		clientPlayer.mo->z             = msg->actor().pos().z();
+		clientPlayer.mo->momx          = msg->actor().mom().x();
+		clientPlayer.mo->momy          = msg->actor().mom().y();
+		clientPlayer.mo->momz          = msg->actor().mom().z();
+		clientPlayer.mo->angle         = msg->actor().angle();
+		clientPlayer.mo->pitch         = msg->actor().pitch();
+		clientPlayer.viewheight        = msg->viewheight();
+		clientPlayer.deltaviewheight   = msg->deltaviewheight();
+		clientPlayer.jumpTics          = msg->jumptics();
+		clientPlayer.mo->reactiontime  = msg->actor().reactiontime();
+		clientPlayer.mo->waterlevel    = msg->actor().waterlevel();;
+	}
+}
+
+static void CL_NetDemoStop(const odaproto::clc::NetDemoStop* msg)
 {
 	::netdemo.stopPlaying();
 }
 
-static void CL_NetDemoLoadSnap(const odaproto::svc::NetDemoLoadSnap* msg)
+static void CL_NetDemoLoadSnap(const odaproto::clc::NetDemoLoadSnap* msg)
 {
 	AddCommandString("netprevmap");
 }
@@ -2808,19 +3313,19 @@ static void CL_NetDemoLoadSnap(const odaproto::svc::NetDemoLoadSnap* msg)
 
 Protos protos;
 
-static void RecordProto(const svc_t header, google::protobuf::Message* msg)
+static void RecordProto(const msg_t header, google::protobuf::Message* msg)
 {
 	static int protostic;
 
-	if (protostic != ::level.time)
+	if (protostic != last_received)
 	{
 		::protos.clear();
-		protostic = ::level.time;
+		protostic = last_received;
 	}
 
 	Proto proto;
 	proto.header = header;
-	proto.name = ::svc_info[(byte)header].getName();
+	proto.name = ::msg_info[static_cast<byte>(header)].getName();
 	if (msg)
 	{
 		proto.size = msg->ByteSizeLong();
@@ -2844,81 +3349,62 @@ const Protos& CL_GetTicProtos()
 	return ::protos;
 }
 
-/**
- * @brief Given a message type and buffer, return a decoded message in "out".
- *
- * @param out Output message - will not be modified unless successful.
- * @param cmd Command to parse out.
- * @param buffer Buffer to parse, not including the header or initial size.
- * @param size Length of the buffer to parse.
- * @return Error condition, or OK (0) if successful.
- */
-parseError_e CL_ParseMessage(google::protobuf::Message*& out, const byte cmd,
-                             const void* buffer, const size_t size)
-{
-	// A message factory + Descriptor gives us the proper message.
-	google::protobuf::MessageFactory* factory =
-	    google::protobuf::MessageFactory::generated_factory();
-	const google::protobuf::Descriptor* desc = SVC_ResolveHeader(static_cast<svc_t>(cmd));
-	if (desc == NULL)
-	{
-		return PERR_UNKNOWN_HEADER;
-	}
-
-	// Can we get the mssage prototype from the descriptor?
-	const google::protobuf::Message* defmsg = factory->GetPrototype(desc);
-	if (defmsg == NULL)
-	{
-		return PERR_UNKNOWN_MESSAGE;
-	}
-
-	// Allocated with "new" - can't be null, and we own it.
-	google::protobuf::Message* msg = defmsg->New();
-	if (!msg->ParseFromArray(buffer, size))
-	{
-		return PERR_BAD_DECODE;
-	}
-
-	out = msg;
-	return PERR_OK;
-}
-
-#define SV_MSG(header, func, type)           \
-	case header:                             \
-		func(static_cast<const type*>(msg)); \
-		break
 
 /**
  * @brief Read a server message off the wire.
  */
-parseError_e CL_ParseCommand()
+ParseResultType CL_ParseCommand()
 {
+	ParseResultType result;
+
 	// What type of message we have.
-	byte cmd = MSG_ReadByte();
+	result.cmd = static_cast<msg_t>(MSG_ReadUnVarint());
 
-	// Size of the message.
-	size_t size = MSG_ReadUnVarint();
-
-	// The message itself.
-	void* data = MSG_ReadChunk(size);
-
-	// Turn the message into a protobuf.
-	google::protobuf::Message* msg = NULL;
-	parseError_e err = CL_ParseMessage(msg, cmd, data, size);
-	if (err)
+	if (result.cmd == msg_ack)
 	{
-		return err;
+		// Special case: the ack handling happens here, not in ProcessCommand.
+		// The reason for this is that we don't want to leave this function without
+		// having advanced the underlying packet read buffer to the next encoded
+		// message, and the data payload that we report back from this function is
+		// fundamentally a protobuf message, which acks are not, so we don't have a
+		// proper way of defering ack handling to ProcessCommand.  It's just a lot
+		// easier and less complication overall to say that acks get special handling,
+		// especially as something that has to operate as part of the protocol itself.
+		const int sequence = MSG_ReadLong();
+		messenger.Acknowledge(sequence);
+		result.code = PERR_OK;
+		return result;
 	}
 
-	// Delete pointer on scope exit.
-	// [AM] Should be unique_ptr as of C++11.
-	std::auto_ptr<google::protobuf::Message> autoMSG(msg);
+	// Turn the message into a protobuf.
+	google::protobuf::Message* msg = nullptr;
+	result.code = MSG_ParseMessage(msg, result.cmd);
+	result.msg.reset(msg);                      // This does the right thing even if nullptr.
 
+	// Because the result type contains a unique_ptr, which is uncopyable,
+	// we can be sure that either copy elision or a move happens here.
+	return result;
+}
+
+#define SV_MSG(header, func, type)           \
+	case header:                             \
+		func(static_cast<const type*>(parsedCommand.msg.get())); \
+		break
+
+parseError_e CL_ProcessCommand(const ParseResultType& parsedCommand)
+{
 	// Run the proper message function.
-	switch (cmd)
+	switch (parsedCommand.cmd)
 	{
+		// Acknowledgements are handled specially at parse time, so if we get here,
+		// we know all's good... We also intentionally DON'T add this to the Protos
+		// history vector because we don't want to clutter it up when reviewing
+		// netdemos.
+		case msg_ack:
+			return PERR_OK;
+
 		/* clang-format off */
-		SV_MSG(svc_noop, CL_Noop, odaproto::svc::Noop);
+		SV_MSG(msg_noop, CL_Noop, odaproto::Noop);
 		SV_MSG(svc_disconnect, CL_Disconnect, odaproto::svc::Disconnect);
 		SV_MSG(svc_playerinfo, CL_PlayerInfo, odaproto::svc::PlayerInfo);
 		SV_MSG(svc_moveplayer, CL_MovePlayer, odaproto::svc::MovePlayer);
@@ -2937,13 +3423,20 @@ parseError_e CL_ParseCommand()
 		SV_MSG(svc_spawnplayer, CL_SpawnPlayer, odaproto::svc::SpawnPlayer);
 		SV_MSG(svc_damageplayer, CL_DamagePlayer, odaproto::svc::DamagePlayer);
 		SV_MSG(svc_killmobj, CL_KillMobj, odaproto::svc::KillMobj);
-		SV_MSG(svc_fireweapon, CL_FireWeapon, odaproto::svc::FireWeapon);
+		SV_MSG(svc_raisemobj, CL_RaiseMobj, odaproto::svc::RaiseMobj);
 		SV_MSG(svc_updatesector, CL_UpdateSector, odaproto::svc::UpdateSector);
 		SV_MSG(svc_print, CL_Print, odaproto::svc::Print);
 		SV_MSG(svc_playermembers, CL_PlayerMembers, odaproto::svc::PlayerMembers);
 		SV_MSG(svc_teammembers, CL_TeamMembers, odaproto::svc::TeamMembers);
 		SV_MSG(svc_activateline, CL_ActivateLine, odaproto::svc::ActivateLine);
-		SV_MSG(svc_movingsector, CL_MovingSector, odaproto::svc::MovingSector);
+
+		SV_MSG(svc_movingsectorelevator, CL_MovingSectorElevator, odaproto::svc::MovingSectorElevator);
+		SV_MSG(svc_movingsectorpillar,   CL_MovingSectorPillar,   odaproto::svc::MovingSectorPillar);
+		SV_MSG(svc_movingsectorceiling,  CL_MovingSectorCeiling,  odaproto::svc::MovingSectorCeiling);
+		SV_MSG(svc_movingsectordoor,     CL_MovingSectorDoor,     odaproto::svc::MovingSectorDoor);
+		SV_MSG(svc_movingsectorfloor,    CL_MovingSectorFloor,    odaproto::svc::MovingSectorFloor);
+		SV_MSG(svc_movingsectorplat,     CL_MovingSectorPlat,     odaproto::svc::MovingSectorPlat);
+
 		SV_MSG(svc_playsound, CL_PlaySound, odaproto::svc::PlaySound);
 		SV_MSG(svc_reconnect, CL_Reconnect, odaproto::svc::Reconnect);
 		SV_MSG(svc_exitlevel, CL_ExitLevel, odaproto::svc::ExitLevel);
@@ -2980,14 +3473,26 @@ parseError_e CL_ParseCommand()
 		SV_MSG(svc_maplist_index, CL_MaplistIndex, odaproto::svc::MaplistIndex);
 		SV_MSG(svc_toast, CL_Toast, odaproto::svc::Toast);
 		SV_MSG(svc_hordeinfo, CL_HordeInfo, odaproto::svc::HordeInfo);
-		SV_MSG(svc_netdemocap, CL_NetdemoCap, odaproto::svc::NetdemoCap);
-		SV_MSG(svc_netdemostop, CL_NetDemoStop, odaproto::svc::NetDemoStop);
-		SV_MSG(svc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::svc::NetDemoLoadSnap);
+		SV_MSG(svc_spree, CL_Spree, odaproto::svc::Spree);
+		SV_MSG(svc_spreebreaker, CL_SpreeBreaker, odaproto::svc::SpreeBreaker);
+		SV_MSG(svc_noisealert, CL_NoiseAlert, odaproto::svc::NoiseAlert);
+		SV_MSG(svc_playerammo, CL_PlayerAmmo, odaproto::svc::PlayerAmmo);
+		SV_MSG(svc_playermaxammo, CL_PlayerMaxAmmo, odaproto::svc::PlayerMaxAmmo);
+		SV_MSG(svc_playerweaponowned, CL_PlayerWeaponOwned, odaproto::svc::PlayerWeaponOwned);
+		SV_MSG(svc_playerweaponselection, CL_PlayerWeaponSelection, odaproto::svc::PlayerWeaponSelection);
+		SV_MSG(svc_playerpowers, CL_PlayerPowers, odaproto::svc::PlayerPowers);
+		SV_MSG(svc_playerpsprites, CL_PlayerPsprites, odaproto::svc::PlayerPsprites);
+		SV_MSG(svc_configureavatar, CL_ConfigureAvatar, odaproto::svc::ConfigureAvatar);
+		SV_MSG(clc_netdemocap, CL_NetdemoCap, odaproto::clc::NetdemoCap);
+		SV_MSG(clc_netdemostop, CL_NetDemoStop, odaproto::clc::NetDemoStop);
+		SV_MSG(clc_netdemoloadsnap, CL_NetDemoLoadSnap, odaproto::clc::NetDemoLoadSnap);
 		/* clang-format on */
 	default:
 		return PERR_UNKNOWN_HEADER;
 	}
 
-	RecordProto(static_cast<svc_t>(cmd), msg);
+	RecordProto(static_cast<msg_t>(parsedCommand.cmd), parsedCommand.msg.get());
 	return PERR_OK;
 }
+
+VERSION_CONTROL (cl_parse_cpp, "$Id$")

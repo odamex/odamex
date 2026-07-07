@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -57,9 +57,9 @@ static size_t curlHeader(char* buffer, size_t size, size_t nitems, void* userdat
 	if (pos == 0)
 	{
 		// Found Content-Type, see if it's the correct one.
-		for (size_t i = 0; i < ARRAY_LENGTH(WANTED_TYPES); i++)
+		for (const auto& wantedtype : WANTED_TYPES)
 		{
-			size_t pos2 = str.find(WANTED_TYPES[i]);
+			size_t pos2 = str.find(wantedtype);
 			if (pos2 == 0)
 			{
 				// Ding, right answer.
@@ -74,32 +74,32 @@ static size_t curlHeader(char* buffer, size_t size, size_t nitems, void* userdat
 	return nitems;
 }
 
+////
+//// https://curl.haxx.se/libcurl/c/CURLOPT_DEBUGFUNCTION.html
+////
+//static int curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
+//                     void* userptr)
+//{
+//	std::string str = std::string(data, size);
 //
-// https://curl.haxx.se/libcurl/c/CURLOPT_DEBUGFUNCTION.html
+//	switch (type)
+//	{
+//	case CURLINFO_TEXT:
+//		Printf("curl | %s\n", str.c_str());
+//		break;
+//	case CURLINFO_HEADER_IN:
+//		Printf("curl < %s\n", str.c_str());
+//		break;
+//	case CURLINFO_HEADER_OUT:
+//		Printf("curl > %s\n", str.c_str());
+//		break;
+//	default:
+//		// Don't print data/binary SSL stuff.
+//		break;
+//	}
 //
-static int curlDebug(CURL* handle, curl_infotype type, char* data, size_t size,
-                     void* userptr)
-{
-	std::string str = std::string(data, size);
-
-	switch (type)
-	{
-	case CURLINFO_TEXT:
-		Printf("curl | %s\n", str.c_str());
-		break;
-	case CURLINFO_HEADER_IN:
-		Printf("curl < %s\n", str.c_str());
-		break;
-	case CURLINFO_HEADER_OUT:
-		Printf("curl > %s\n", str.c_str());
-		break;
-	default:
-		// Don't print data/binary SSL stuff.
-		break;
-	}
-
-	return 0;
-}
+//	return 0;
+//}
 
 // // OTransferInfo // //
 
@@ -109,8 +109,8 @@ bool OTransferInfo::hydrate(CURL* curl)
 	if (curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &resCode) != CURLE_OK)
 		return false;
 
-	double speed;
-	if (curl_easy_getinfo(curl, CURLINFO_SPEED_DOWNLOAD, &speed) != CURLE_OK)
+	curl_off_t speed;
+	if (curl_easy_getinfo(curl, CURLINFO_SPEED_DOWNLOAD_T, &speed) != CURLE_OK)
 		return false;
 
 	const char* url;
@@ -256,7 +256,12 @@ bool OTransferCheck::tick()
 	}
 
 	// Make sure we didn't find an HTML file - those are only okay on redirects.
-	if (stricmp(info.contentType.c_str(), "text/html") == 0)
+	std::string_view contentType = info.contentType;
+	const auto semiPos = contentType.find(';');
+	if (semiPos != std::string_view::npos)
+		contentType = contentType.substr(0, semiPos);
+	contentType = TrimStringView(contentType);
+	if (iequals(contentType, "text/html"))
 	{
 		m_errorProc("Only found an HTML file");
 		return false;
@@ -273,8 +278,8 @@ bool OTransferCheck::tick()
 //
 // https://curl.haxx.se/libcurl/c/CURLOPT_PROGRESSFUNCTION.html
 //
-int OTransfer::curlProgress(void* clientp, double dltotal, double dlnow, double ultotal,
-                            double ulnow)
+int OTransfer::curlProgress(void* clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
+                            curl_off_t ulnow)
 {
 	static_cast<OTransfer*>(clientp)->m_progress.dltotal = dltotal;
 	static_cast<OTransfer*>(clientp)->m_progress.dlnow = dlnow;
@@ -334,7 +339,7 @@ bool OTransfer::start()
 	curl_easy_setopt(m_curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(m_curl, CURLOPT_CONNECTTIMEOUT, 5L);
 	curl_easy_setopt(m_curl, CURLOPT_NOPROGRESS, 0L); // turns on xferinfo
-	curl_easy_setopt(m_curl, CURLOPT_PROGRESSFUNCTION, OTransfer::curlProgress);
+	curl_easy_setopt(m_curl, CURLOPT_XFERINFOFUNCTION, OTransfer::curlProgress);
 	curl_easy_setopt(m_curl, CURLOPT_PROGRESSDATA, this);
 	curl_easy_setopt(m_curl, CURLOPT_HEADERFUNCTION, curlHeader);
 	curl_easy_setopt(m_curl, CURLOPT_USERAGENT, ::ODAMEX_USERAGENT);
@@ -426,12 +431,12 @@ bool OTransfer::tick()
 	m_file = NULL;
 
 	// Verify that the file is what the server wants and is not a renamed
-	// commercial IWAD.
+	// commercial WAD.
 	OMD5Hash actualHash = Res_MD5(m_filePart);
-	if (W_IsFilehashCommercialIWAD(actualHash))
+	if (W_IsFilehashCommercialWAD(actualHash))
 	{
 		remove(m_filePart.c_str());
-		m_errorProc("Accidentally downloaded a commercial IWAD - file removed");
+		m_errorProc("Accidentally downloaded a commercial WAD - file removed");
 		return false;
 	}
 	else if (!m_expectHash.empty() && m_expectHash != actualHash)
@@ -449,12 +454,9 @@ bool OTransfer::tick()
 		std::string path, base, ext, fallback;
 		M_ExtractFilePath(m_filename, path);
 		M_ExtractFileBase(m_filename, base);
-		if (M_ExtractFileExtension(m_filename, ext))
-		{
-			ext = std::string(".") + ext;
-		}
-		StrFormat(fallback, "%s%s%s.%s%s", path.c_str(), PATHSEP, base.c_str(),
-		          actualHash.getHexStr().substr(0, 6).c_str(), ext.c_str());
+		M_ExtractFileExtension(m_filename, ext);
+		fallback = fmt::sprintf("%s%s%s.%s%s", path, PATHSEP, base,
+		                        actualHash.getHexStr().substr(0, 6), ext);
 
 		// Try one more time.
 		ok = rename(m_filePart.c_str(), fallback.c_str());
@@ -463,18 +465,17 @@ bool OTransfer::tick()
 			// Something is seriously wrong with our writable directory.
 			m_shouldCheckAgain = false;
 
-			std::string buf;
-			StrFormat(buf, "File %s could not be renamed to %s - %s", m_filePart.c_str(),
-			          m_filename.c_str(), strerror(errno));
+			std::string buf = fmt::sprintf("File %s could not be renamed to %s - %s", m_filePart,
+			                               m_filename, strerror(errno));
 			m_errorProc(buf.c_str());
 			return false;
 		}
 
-		Printf("Saved to fallback location \"%s\".\n", fallback.c_str());
+		PrintFmt("Saved to fallback location \"{}\".\n", fallback);
 	}
 	else
 	{
-		Printf("Saved to location \"%s\".\n", m_filename.c_str());
+		PrintFmt("Saved to location \"{}\".\n", m_filename);
 	}
 
 	m_shouldCheckAgain = false;

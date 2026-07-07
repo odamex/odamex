@@ -4,7 +4,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -94,11 +94,11 @@ class DSeqActorNode : public DSeqNode
 	DECLARE_SERIAL (DSeqActorNode, DSeqNode)
 public:
 	DSeqActorNode (AActor *actor, int sequence);
-	~DSeqActorNode ();
-	void MakeSound () { S_SoundID (m_Actor, CHAN_BODY, m_CurrentSoundID, m_Volume, m_Atten); }
-	void MakeLoopedSound () { S_LoopedSoundID (m_Actor, CHAN_BODY, m_CurrentSoundID, m_Volume, m_Atten); }
-	bool IsPlaying () { return S_GetSoundPlayingInfo (m_Actor, m_CurrentSoundID); }
-	void *Source () { return m_Actor; }
+	~DSeqActorNode () override;
+	void MakeSound () override { S_SoundID (m_Actor, CHAN_BODY, m_CurrentSoundID, m_Volume, m_Atten); }
+	void MakeLoopedSound () override { S_LoopedSoundID (m_Actor, CHAN_BODY, m_CurrentSoundID, m_Volume, m_Atten); }
+	bool IsPlaying () override { return S_GetSoundPlayingInfo (m_Actor, m_CurrentSoundID); }
+	void *Source () override { return m_Actor; }
 	virtual void DestroyedPointer(DObject *obj);
 private:
 	DSeqActorNode () {}
@@ -110,11 +110,11 @@ class DSeqPolyNode : public DSeqNode
 	DECLARE_SERIAL (DSeqPolyNode, DSeqNode)
 public:
 	DSeqPolyNode (polyobj_t *poly, int sequence);
-	~DSeqPolyNode ();
-	void MakeSound () { S_SoundID (&m_Poly->startSpot[0], CHAN_BODY, m_CurrentSoundID, m_Volume, m_Atten); }
-	void MakeLoopedSound () { S_LoopedSoundID (&m_Poly->startSpot[0], CHAN_BODY, m_CurrentSoundID, m_Volume, m_Atten); }
-	bool IsPlaying () { return S_GetSoundPlayingInfo (&m_Poly->startSpot[0], m_CurrentSoundID); }
-	void *Source () { return m_Poly; }
+	~DSeqPolyNode () override;
+	void MakeSound () override { S_SoundID (&m_Poly->startSpot[0], CHAN_BODY, m_CurrentSoundID, m_Volume, m_Atten); }
+	void MakeLoopedSound () override { S_LoopedSoundID (&m_Poly->startSpot[0], CHAN_BODY, m_CurrentSoundID, m_Volume, m_Atten); }
+	bool IsPlaying () override { return S_GetSoundPlayingInfo (&m_Poly->startSpot[0], m_CurrentSoundID); }
+	void *Source () override { return m_Poly; }
 private:
 	DSeqPolyNode () {}
 	polyobj_t *m_Poly;
@@ -125,11 +125,11 @@ class DSeqSectorNode : public DSeqNode
 	DECLARE_SERIAL (DSeqSectorNode, DSeqNode)
 public:
 	DSeqSectorNode (sector_t *sec, int sequence);
-	~DSeqSectorNode ();
-	void MakeSound () { S_SoundID (&m_Sector->soundorg[0], CHAN_BODY, m_CurrentSoundID, m_Volume, m_Atten); }
-	void MakeLoopedSound () { S_LoopedSoundID (&m_Sector->soundorg[0], CHAN_BODY, m_CurrentSoundID, m_Volume, m_Atten); }
-	bool IsPlaying () { return S_GetSoundPlayingInfo (m_Sector->soundorg, m_CurrentSoundID); }
-	void *Source () { return m_Sector; }
+	~DSeqSectorNode () override;
+	void MakeSound () override { S_SoundID (&m_Sector->soundorg[0], CHAN_BODY, m_CurrentSoundID, m_Volume, m_Atten); }
+	void MakeLoopedSound () override { S_LoopedSoundID (&m_Sector->soundorg[0], CHAN_BODY, m_CurrentSoundID, m_Volume, m_Atten); }
+	bool IsPlaying () override { return S_GetSoundPlayingInfo (m_Sector->soundorg, m_CurrentSoundID); }
+	void *Source () override { return m_Sector; }
 private:
 	DSeqSectorNode() {}
 	sector_t *m_Sector;
@@ -184,8 +184,7 @@ static const hexenseq_t HexenSequences[] = {
 	{ "DoorCreak",		{ HexenDoorSeq(3), HexenLastSeq } },
 	{ "DoorMetal2",		{ HexenDoorSeq(9), HexenLastSeq } },
 	{ "Wind",			{ HexenEnvSeq(10), HexenLastSeq } },
-	{ NULL, }
-};
+    {NULL, {0,0,0,0}}};
 
 static int SeqTrans[64*3];
 static unsigned int *ScriptTemp;
@@ -225,7 +224,7 @@ void DSeqNode::Serialize (FArchive &arc)
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
 	{
-		arc << (DWORD)SN_GetSequenceOffset (m_Sequence, m_SequencePtr)
+		arc << static_cast<uint32_t>(SN_GetSequenceOffset(m_Sequence, m_SequencePtr))
 			<< m_DelayTics
 			<< m_Volume
 			<< m_Atten
@@ -261,7 +260,7 @@ void DSeqNode::Serialize (FArchive &arc)
 			}
 		}
 		if (i == NumSequences)
-			I_Error ("Unknown sound sequence '%s'\n", seqName.c_str());
+			I_Error("Unknown sound sequence '{}'\n", seqName);
 
 		ChangeData (seqOffset, delayTics, volume, S_FindSound (soundName.c_str()));
 	}
@@ -290,10 +289,10 @@ void DSeqPolyNode::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
 	if (arc.IsStoring ())
-		arc << (WORD)(m_Poly - polyobjs);
+		arc << static_cast<uint16_t>(m_Poly - polyobjs);
 	else
 	{
-		WORD ofs;
+		uint16_t ofs;
 		arc >> ofs;
 		m_Poly = polyobjs + ofs;
 	}
@@ -321,7 +320,7 @@ static void VerifySeqPtr (int pos, int need)
 	if (pos + need > ScriptTempSize)
 	{
 		ScriptTempSize *= 2;
-		ScriptTemp = (unsigned int *)Realloc (ScriptTemp, ScriptTempSize * sizeof(*ScriptTemp));
+		ScriptTemp = static_cast<unsigned int *>(M_Realloc(ScriptTemp, ScriptTempSize * sizeof(*ScriptTemp)));
 	}
 }
 
@@ -415,8 +414,7 @@ void S_ParseSndSeq()
 	// denis - reboot safe
 	if(Sequences)
 	{
-		free(Sequences);
-		Sequences = 0;
+		M_Free(Sequences);
 		MaxSequences = 0;
 	}
 
@@ -426,7 +424,7 @@ void S_ParseSndSeq()
 
 	memset (SeqTrans, -1, sizeof(SeqTrans));
 	name[MAX_SNDNAME] = 0;
-	ScriptTemp = (unsigned int *)Malloc (MAX_SEQSIZE * sizeof(*ScriptTemp));
+	ScriptTemp = static_cast<unsigned int *>(M_Malloc(MAX_SEQSIZE * sizeof(*ScriptTemp)));
 	ScriptTempSize = MAX_SEQSIZE;
 
 	const ResourceIdList res_ids = Res_GetAllResourceIds(ResourcePath("/GLOBAL/SNDSEQ"));
@@ -467,7 +465,7 @@ void S_ParseSndSeq()
 				if (NumSequences > MaxSequences)
 				{
 					MaxSequences = MaxSequences ? MaxSequences * 2 : 64;
-					Sequences = (sndseq_t **)Realloc (Sequences, MaxSequences * sizeof(*Sequences));
+					Sequences = static_cast<sndseq_t**>(M_Realloc(Sequences, MaxSequences * sizeof(*Sequences)));
 				}
 				memset (ScriptTemp, 0, sizeof(*ScriptTemp) * ScriptTempSize);
 				stopsound = -1;
@@ -558,9 +556,9 @@ void S_ParseSndSeq()
 					break;
 
 				case SS_STRING_END:
-					Sequences[curseq] = (sndseq_t *)Z_Malloc (sizeof(sndseq_t) + sizeof(int)*cursize, PU_STATIC, 0);
-					strcpy (Sequences[curseq]->name, name);
-					memcpy (Sequences[curseq]->script, ScriptTemp, sizeof(int)*cursize);
+					Sequences[curseq] = static_cast<sndseq_t*>(Z_Malloc(sizeof(sndseq_t) + sizeof(int)*cursize, PU_STATIC));
+					M_StringCopy(Sequences[curseq]->name, name, MAX_SNDNAME + 1);
+					memcpy(Sequences[curseq]->script, ScriptTemp, sizeof(int)*cursize);
 					Sequences[curseq]->script[cursize] = SS_CMD_END;
 					Sequences[curseq]->stopsound = stopsound;
 					curseq = -1;
@@ -701,9 +699,7 @@ void SN_StartSequence (polyobj_t *poly, int sequence, seqtype_t type)
 
 void SN_StartSequence (AActor *actor, const char *name)
 {
-	int i;
-
-	for (i = 0; i < NumSequences; i++)
+	for (int i = 0; i < NumSequences; i++)
 	{
 		if (!stricmp (name, Sequences[i]->name))
 		{
@@ -715,9 +711,7 @@ void SN_StartSequence (AActor *actor, const char *name)
 
 void SN_StartSequence (sector_t *sec, const char *name)
 {
-	int i;
-
-	for (i = 0; i < NumSequences; i++)
+	for (int i = 0; i < NumSequences; i++)
 	{
 		if (!stricmp (name, Sequences[i]->name))
 		{
@@ -729,9 +723,7 @@ void SN_StartSequence (sector_t *sec, const char *name)
 
 void SN_StartSequence (polyobj_t *poly, const char *name)
 {
-	int i;
-
-	for (i = 0; i < NumSequences; i++)
+	for (int i = 0; i < NumSequences; i++)
 	{
 		if (!stricmp (name, Sequences[i]->name))
 		{
@@ -747,22 +739,22 @@ void SN_StartSequence (polyobj_t *poly, const char *name)
 //
 //==========================================================================
 
-void SN_StopSequence (AActor *actor)
+void SN_StopSequence (const AActor *actor)
 {
 	SN_DoStop (actor);
 }
 
-void SN_StopSequence (sector_t *sector)
+void SN_StopSequence (const sector_t *sector)
 {
 	SN_DoStop (sector);
 }
 
-void SN_StopSequence (polyobj_t *poly)
+void SN_StopSequence (const polyobj_t *poly)
 {
 	SN_DoStop (poly);
 }
 
-void SN_DoStop (void *source)
+void SN_DoStop (const void *source)
 {
 	DSeqNode *node;
 
@@ -852,7 +844,7 @@ void DSeqNode::RunThink ()
 	case SS_CMD_PLAYLOOP:
 		m_CurrentSoundID = GetData(*m_SequencePtr);
 		MakeLoopedSound ();
-		m_DelayTics = -(signed)GetData(*(m_SequencePtr+1));
+		m_DelayTics = -static_cast<signed>(GetData(*(m_SequencePtr+1)));
 		break;
 
 	case SS_CMD_DELAY:
@@ -887,7 +879,7 @@ void DSeqNode::RunThink ()
 		Destroy ();
 		break;
 
-	default:	
+	default:
 		break;
 	}
 }
@@ -924,7 +916,7 @@ void SN_StopAllSequences (void)
 		node = next;
 	}
 }
-	
+
 //==========================================================================
 //
 //  SN_GetSequenceOffset
@@ -946,11 +938,8 @@ ptrdiff_t SN_GetSequenceOffset (int sequence, unsigned int *sequencePtr)
 void SN_ChangeNodeData (int nodeNum, int seqOffset, int delayTics, float volume,
 	int currentSoundID)
 {
-	int i;
-	DSeqNode *node;
-
-	i = 0;
-	node = DSeqNode::FirstSequence();
+	int i = 0;
+	DSeqNode* node = DSeqNode::FirstSequence();
 	while (node && i < nodeNum)
 	{
 		node = node->NextSequence();

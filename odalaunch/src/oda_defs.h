@@ -3,7 +3,7 @@
 //
 // $Id$
 //
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -20,8 +20,7 @@
 //
 //-----------------------------------------------------------------------------
 
-#ifndef __ODA_DEFS_H__
-#define __ODA_DEFS_H__
+#pragma once
 
 #include "odalaunch.h"
 
@@ -80,11 +79,12 @@
 // ---------------
 
 // Default list of master servers, usually official ones
-static const char* def_masterlist[] =
+inline constexpr const char* def_masterlist[] =
 {
 	"master1.odamex.net:15000"
 	,"voxelsoft.com:15000"
-	,NULL
+	,"odamex.electricbrass.net:15000"
+	,nullptr
 };
 
 // Master server timeout
@@ -163,5 +163,3 @@ static const char* def_masterlist[] =
 // Miscellaneous
 // -------------
 
-
-#endif // __ODA_DEFS_H__

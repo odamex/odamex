@@ -5,7 +5,7 @@
 // $Id$
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -68,15 +68,18 @@
 
 #include "p_boomfspec.h"
 #include "p_zdoomhexspec.h"
+#include "p_mobj.h"
 
 EXTERN_CVAR(sv_allowexit)
 EXTERN_CVAR(sv_fragexitswitch)
+EXTERN_CVAR(co_boomphys)
 
 std::list<movingsector_t> movingsectors;
+std::list<sector_t*> specialdoors;
 bool s_SpecialFromServer;
 
 int P_FindSectorFromLineTag(int tag, int start);
-BOOL EV_DoDoor(DDoor::EVlDoor type, line_t* line, AActor* thing, int tag, int speed,
+bool EV_DoDoor(DDoor::EVlDoor type, line_t* line, const AActor* thing, int tag, int speed,
                int delay, card_t lock);
 bool P_ShootCompatibleSpecialLine(AActor* thing, line_t* line);
 bool P_ActivateZDoomLine(line_t* line, AActor* mo, int side,
@@ -89,13 +92,7 @@ bool P_UseCompatibleSpecialLine(AActor* thing, line_t* line, int side,
 //
 std::list<movingsector_t>::iterator P_FindMovingSector(sector_t *sector)
 {
-	std::list<movingsector_t>::iterator itr;
-	for (itr = movingsectors.begin(); itr != movingsectors.end(); ++itr)
-		if (sector == itr->sector)
-			return itr;
-
-	// not found
-	return movingsectors.end();
+	return std::find_if(movingsectors.begin(), movingsectors.end(), [sector](const auto& it){ return it.sector == sector; });
 }
 
 fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f)
@@ -103,9 +100,9 @@ fixed_t P_ArgsToFixed(fixed_t arg_i, fixed_t arg_f)
 	return (arg_i << FRACBITS) + (arg_f << FRACBITS) / 100;
 }
 
-int P_ArgToCrushMode(byte arg, bool slowdown)
+crushmode_e P_ArgToCrushMode(byte arg, bool slowdown)
 {
-	static const crushmode_e map[] = {crushDoom, crushHexen, crushSlowdown};
+	static constexpr crushmode_e map[] = {crushDoom, crushHexen, crushSlowdown};
 
 	if (arg >= 1 && arg <= 3)
 		return map[arg - 1];
@@ -116,7 +113,7 @@ int P_ArgToCrushMode(byte arg, bool slowdown)
 int P_FindSectorFromLineTag(const line_t* line, int start)
 {
 	start = start >= 0 ? sectors[start].nexttag
-	                   : sectors[(unsigned)line->id % (unsigned)numsectors].firsttag;
+	                   : sectors[static_cast<unsigned>(line->id) % static_cast<unsigned>(numsectors)].firsttag;
 	while (start >= 0 && sectors[start].tag != line->id)
 		start = sectors[start].nexttag;
 	return start;
@@ -126,7 +123,7 @@ int P_FindSectorFromLineTag(const line_t* line, int start)
 int P_FindLineFromLineTag(const line_t* line, int start)
 {
 	start = start >= 0 ? lines[start].nextid
-	                   : lines[(unsigned)line->id % (unsigned)numlines].firstid;
+	                   : lines[static_cast<unsigned>(line->id) % static_cast<unsigned>(numlines)].firstid;
 	while (start >= 0 && lines[start].id != line->id)
 		start = lines[start].nextid;
 	return start;
@@ -135,13 +132,13 @@ int P_FindLineFromLineTag(const line_t* line, int start)
 int P_FindLineFromTag(int tag, int start)
 {
 	start = start >= 0 ? lines[start].nextid
-	                   : lines[(unsigned)tag % (unsigned)numlines].firstid;
+	                   : lines[static_cast<unsigned>(tag) % static_cast<unsigned>(numlines)].firstid;
 	while (start >= 0 && lines[start].id != tag)
 		start = lines[start].nextid;
 	return start;
 }
 
-const unsigned int P_ResetSectorTransferFlags(const unsigned int flags)
+unsigned int P_ResetSectorTransferFlags(const unsigned int flags)
 {
 	return (flags & ~SECF_TRANSFERMASK);
 }
@@ -181,7 +178,7 @@ void P_TransferSectorFlags(unsigned int* dest, unsigned int source)
 
 byte P_ArgToChange(byte arg)
 {
-	static const byte ChangeMap[8] = {0, 1, 5, 3, 7, 2, 6, 0};
+	static constexpr byte ChangeMap[8] = {0, 1, 5, 3, 7, 2, 6, 0};
 
 	return (arg < 8) ? ChangeMap[arg] : 0;
 }
@@ -199,14 +196,14 @@ int P_ArgToCrush(byte arg)
  * Returns nonzero if the object is under damage based on
  * their current position.
  */
-int P_IsUnderDamage(AActor* actor)
+int P_IsUnderDamage(const AActor* actor)
 {
 	const struct msecnode_s* seclist;
 	const DCeiling* cr; // Crushing ceiling
 	int dir = 0;
 	for (seclist = actor->touching_sectorlist; seclist; seclist = seclist->m_tnext)
 	{
-		if ((cr = (DCeiling*)seclist->m_sector->ceilingdata) && cr->m_Status == 2) // Down
+		if ((cr = static_cast<DCeiling*>(seclist->m_sector->ceilingdata)) && cr->m_Status == 2) // Down
 		{
 			cr->m_Crush > NO_CRUSH ? dir = 1 : dir = 0;
 		}
@@ -215,35 +212,65 @@ int P_IsUnderDamage(AActor* actor)
 }
 
 /*
-* 
+*
 * P_IsFriendlyThing
 * @brief Helper function to determine if a particular thing is of friendly origin.
-* 
-* @param actor Source actor
-* @param friendshiptest Thing to test friendliness
+*
+* @param actor - Source actor
+* @param friendshiptest - Thing to test friendliness
 */
-bool P_IsFriendlyThing(AActor* actor, AActor* friendshiptest)
+bool P_IsFriendlyThing(const AActor* actor, const AActor* friendshiptest)
 {
+	if (!actor || !friendshiptest)
+	{
+		return true;
+	}
+
 	if (friendshiptest->flags & MF_FRIEND)
 	{
 		if (G_IsCoopGame())
 		{
+			if (actor->flags & MF_FRIEND)
+				return true;
+		}
+		else if (actor->player)
+		{
+			if (actor->player->id == friendshiptest->friend_playerid)
+			{
+				// Don't attack me, I love you!
+				return true;
+			}
+			else if (G_IsTeamGame())
+			{
+				if (actor->player->userinfo.team == friendshiptest->friend_teamid)
+				{
+				   return true;
+				}
+			}
+		}
+		else if (actor->friend_playerid == 0 || friendshiptest->friend_playerid == 0 ||
+		         actor->friend_playerid == friendshiptest->friend_playerid)
+		{
+			// Fellow friend (or general friend)
+			// Do not attack.
 			return true;
 		}
-		else if (actor->player && friendshiptest->target && friendshiptest->target->player &&
-		    actor->player->userinfo.team == friendshiptest->target->player->userinfo.team)
+		else if (G_IsTeamGame())
 		{
-			return true;
-		}
-		else
-		{
-			return false;
+			if (actor->friend_teamid == friendshiptest->friend_teamid)
+			{
+				// Friendly is of the same team as this friendly.
+				// Don't attack
+				return true;
+			}
 		}
 	}
 	else
 	{
-		return false;
+		if (!(actor->flags & MF_FRIEND))
+			return true;
 	}
+	return false;
 }
 
 //
@@ -268,8 +295,7 @@ void P_AddMovingCeiling(sector_t *sector)
 	}
 	else
 	{
-		movingsectors.push_back(movingsector_t());
-		movesec = &(movingsectors.back());
+		movesec = &(movingsectors.emplace_back());
 	}
 
 	movesec->sector = sector;
@@ -303,8 +329,7 @@ void P_AddMovingFloor(sector_t *sector)
 	}
 	else
 	{
-		movingsectors.push_back(movingsector_t());
-		movesec = &(movingsectors.back());
+		movesec = &(movingsectors.emplace_back());
 	}
 
 	movesec->sector = sector;
@@ -420,10 +445,6 @@ EXTERN_CVAR (sv_allowexit)
 IMPLEMENT_SERIAL (DScroller, DThinker)
 IMPLEMENT_SERIAL (DPusher, DThinker)
 
-DScroller::DScroller ()
-{
-}
-
 void DScroller::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
@@ -449,11 +470,6 @@ void DScroller::Serialize (FArchive &arc)
 	}
 }
 
-DPusher::DPusher () : m_Type(p_push), m_Xmag(0), m_Ymag(0), m_Magnitude(0),
-    m_Radius(0), m_X(0), m_Y(0), m_Affectee(0)
-{
-}
-
 void DPusher::Serialize (FArchive &arc)
 {
 	Super::Serialize (arc);
@@ -465,7 +481,10 @@ void DPusher::Serialize (FArchive &arc)
 	else
 	{
 		arc >> m_Type;
-		arc.ReadObject((DObject*&)*m_Source, DPusher::StaticType());
+		// [CMB] copy ctr and assignment operator to m_Source was previously causing an unlinking issue resulting in a nullptr
+		DObject* temp = nullptr;
+		arc.ReadObject(temp, DPusher::StaticType());
+		m_Source = temp ? static_cast<AActor*>(temp)->ptr() : AActor::AActorPtr();
 		arc >> m_Xmag >> m_Ymag >> m_Magnitude >> m_Radius >> m_X >> m_Y >> m_Affectee;
 	}
 }
@@ -621,9 +640,17 @@ bool P_CheckTag(line_t* line)
 	case 51:
 	case 124:
 	case 198:
+	case 2069:
+	case 2070:
+	case 2071:
+	case 2072:
+	case 2073:
+	case 2074:
 
 	case 48: // Scrolling walls
 	case 85:
+	case 2082:
+	case 2083:
 		return true; // zero tag allowed
 
 	default:
@@ -648,7 +675,7 @@ fixed_t P_FindHighestFloorSurrounding (sector_t *sec)
 	int i;
 	line_t *check;
 	sector_t *other;
-	fixed_t height = MININT;
+	fixed_t height = limits::MINFIXED;
 
 	for (i = 0; i < sec->linecount; i++)
 	{
@@ -658,15 +685,10 @@ fixed_t P_FindHighestFloorSurrounding (sector_t *sec)
 		if (!other)
 			continue;
 
-		fixed_t v1height =
-			P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-		fixed_t v2height =
-			P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v1height = P_FloorHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v2height = P_FloorHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
 
-		if (v1height > height)
-			height = v1height;
-		if (v2height > height)
-			height = v2height;
+		height = std::max({ height, v1height, v2height });
 	}
 	return height;
 }
@@ -686,7 +708,7 @@ fixed_t P_FindNextHighestFloor (sector_t *sec)
 {
 	sector_t *other;
 	fixed_t ogheight = P_FloorHeight(sec);
-	fixed_t height = MAXINT;
+	fixed_t height = limits::MAXFIXED;
 
     for (int i = 0; i < sec->linecount; i++)
     {
@@ -706,7 +728,7 @@ fixed_t P_FindNextHighestFloor (sector_t *sec)
         }
     }
 
-    if (height == MAXINT)
+    if (height == limits::MAXFIXED)
     	height = ogheight;
 
     return height;
@@ -729,7 +751,7 @@ fixed_t P_FindNextLowestFloor(sector_t *sec)
 {
 	sector_t *other;
 	fixed_t ogheight = P_FloorHeight(sec);
-	fixed_t height = MININT;
+	fixed_t height = limits::MINFIXED;
 
     for (int i = 0; i < sec->linecount; i++)
     {
@@ -749,7 +771,7 @@ fixed_t P_FindNextLowestFloor(sector_t *sec)
         }
     }
 
-    if (height == MININT)
+    if (height == limits::MINFIXED)
     	height = ogheight;
 
     return height;
@@ -771,7 +793,7 @@ fixed_t P_FindNextLowestCeiling (sector_t *sec)
 {
 	sector_t *other;
 	fixed_t ogheight = P_CeilingHeight(sec);
-	fixed_t height = MININT;
+	fixed_t height = limits::MINFIXED;
 
     for (int i = 0; i < sec->linecount; i++)
     {
@@ -791,7 +813,7 @@ fixed_t P_FindNextLowestCeiling (sector_t *sec)
         }
     }
 
-    if (height == MININT)
+    if (height == limits::MINFIXED)
     	height = ogheight;
 
     return height;
@@ -814,7 +836,7 @@ fixed_t P_FindNextHighestCeiling (sector_t *sec)
 {
 	sector_t *other;
 	fixed_t ogheight = P_CeilingHeight(sec);
-	fixed_t height = MAXINT;
+	fixed_t height = limits::MAXFIXED;
 
     for (int i = 0; i < sec->linecount; i++)
     {
@@ -834,7 +856,7 @@ fixed_t P_FindNextHighestCeiling (sector_t *sec)
         }
     }
 
-    if (height == MAXINT)
+    if (height == limits::MAXFIXED)
     	height = ogheight;
 
     return height;
@@ -848,7 +870,7 @@ fixed_t P_FindLowestCeilingSurrounding (sector_t *sec)
 	int i;
 	line_t *check;
 	sector_t *other;
-	fixed_t height = MAXINT;
+	fixed_t height = limits::MAXFIXED;
 
 	for (i = 0; i < sec->linecount; i++)
 	{
@@ -858,15 +880,10 @@ fixed_t P_FindLowestCeilingSurrounding (sector_t *sec)
 		if (!other)
 			continue;
 
-		fixed_t v1height =
-			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-		fixed_t v2height =
-			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v1height = P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v2height = P_CeilingHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
 
-		if (v1height < height)
-			height = v1height;
-		if (v2height < height)
-			height = v2height;
+		height = std::min({ height, v1height, v2height });
 	}
 	return height;
 }
@@ -880,7 +897,7 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 	int i;
 	line_t *check;
 	sector_t *other;
-	fixed_t height = MININT;
+	fixed_t height = limits::MINFIXED;
 
 	for (i = 0; i < sec->linecount; i++)
 	{
@@ -890,15 +907,10 @@ fixed_t P_FindHighestCeilingSurrounding (sector_t *sec)
 		if (!other)
 			continue;
 
-		fixed_t v1height =
-			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
-		fixed_t v2height =
-			P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v1height = P_CeilingHeight(sec->lines[i]->v1->x, sec->lines[i]->v1->y, other);
+		const fixed_t v2height = P_CeilingHeight(sec->lines[i]->v2->x, sec->lines[i]->v2->y, other);
 
-		if (v1height > height)
-			height = v1height;
-		if (v2height > height)
-			height = v2height;
+		height = std::max({ height, v1height, v2height });
 	}
 	return height;
 }
@@ -936,9 +948,12 @@ static fixed_t P_GetDefaultTextureHeight()
 //
 fixed_t P_FindShortestTextureAround(sector_t *sec)
 {
-	int minsize = MAXINT;
+	int minsize = limits::MAXINT;
 	fixed_t default_texture_height = P_GetDefaultTextureHeight();
 	side_t *side;
+	// [EB] Boom excludes untextured tiers from the shortest-texture search
+	// unless vanilla shorttex compatibility is requested
+	const bool skipmissing = co_boomphys && !(level.flags & LEVEL_COMPAT_SHORTTEX);
 
 	for (int i = 0; i < sec->linecount; i++)
 	{
@@ -950,7 +965,7 @@ fixed_t P_FindShortestTextureAround(sector_t *sec)
 				const Texture* texture = Res_CacheTexture(side->bottomtexture);
 				minsize = std::min<int>(minsize, texture->mHeight << FRACBITS);
 			}
-			else
+			else if (!skipmissing)
 			{
 				minsize = std::min<int>(minsize, default_texture_height);
 			}
@@ -960,7 +975,7 @@ fixed_t P_FindShortestTextureAround(sector_t *sec)
 				const Texture* texture = Res_CacheTexture(side->bottomtexture);
 				minsize = std::min<int>(minsize, texture->mHeight << FRACBITS);
 			}
-			else
+			else if (!skipmissing)
 			{
 				minsize = std::min<int>(minsize, default_texture_height);
 			}
@@ -983,9 +998,12 @@ fixed_t P_FindShortestTextureAround(sector_t *sec)
 //
 fixed_t P_FindShortestUpperAround(sector_t *sec)
 {
-	int minsize = MAXINT;
+	int minsize = limits::MAXINT;
 	fixed_t default_texture_height = P_GetDefaultTextureHeight();
 	side_t *side;
+	// [EB] Boom excludes untextured tiers from the shortest-texture search
+	// unless vanilla shorttex compatibility is requested
+	const bool skipmissing = co_boomphys && !(level.flags & LEVEL_COMPAT_SHORTTEX);
 
 	for (int i = 0; i < sec->linecount; i++)
 	{
@@ -997,7 +1015,7 @@ fixed_t P_FindShortestUpperAround(sector_t *sec)
 				const Texture* texture = Res_CacheTexture(side->toptexture);
 				minsize = std::min<int>(minsize, texture->mHeight << FRACBITS);
 			}
-			else
+			else if (!skipmissing)
 			{
 				minsize = std::min<int>(minsize, default_texture_height);
 			}
@@ -1007,7 +1025,7 @@ fixed_t P_FindShortestUpperAround(sector_t *sec)
 				const Texture* texture = Res_CacheTexture(side->toptexture);
 				minsize = std::min<int>(minsize, texture->mHeight << FRACBITS);
 			}
-			else
+			else if (!skipmissing)
 			{
 				minsize = std::min<int>(minsize, default_texture_height);
 			}
@@ -1100,7 +1118,7 @@ sector_t *P_FindModelCeilingSector (fixed_t ceildestheight, sector_t *sec)
 int P_FindSectorFromTag (int tag, int start)
 {
 	start = start >= 0 ? sectors[start].nexttag :
-		sectors[(unsigned) tag % (unsigned) numsectors].firsttag;
+		sectors[static_cast<unsigned>(tag) % static_cast<unsigned>(numsectors)].firsttag;
 	while (start >= 0 && sectors[start].tag != tag)
 		start = sectors[start].nexttag;
 	return start;
@@ -1111,7 +1129,7 @@ int P_FindSectorFromTag (int tag, int start)
 int P_FindLineFromID (int id, int start)
 {
 	start = start >= 0 ? lines[start].nextid :
-		lines[(unsigned) id % (unsigned) numlines].firstid;
+		lines[static_cast<unsigned>(id) % static_cast<unsigned>(numlines)].firstid;
 	while (start >= 0 && lines[start].id != id)
 		start = lines[start].nextid;
 	return start;
@@ -1176,7 +1194,7 @@ int P_FindSectorFromTagOrLine(int tag, const line_t* line, int start)
 
 /*
 * @brief checks to see if a ZDoom-style door can be unlocked.
-* 
+*
 * @param player: Player to key check
 * @param lock: ZDoom lock type
 * All ZDoom lock types are supported but Odamex is missing
@@ -1510,7 +1528,7 @@ bool P_CanUnlockGenDoor(line_t* line, player_t* player)
 //	Returns true if the player has the desired key,
 //	false otherwise.
 
-BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
+bool P_CheckKeys (player_t *p, card_t lock, bool remote)
 {
 	if ((lock & 0x7f) == NoKey)
 		return true;
@@ -1519,10 +1537,10 @@ BOOL P_CheckKeys (player_t *p, card_t lock, BOOL remote)
 		return false;
 
 	const OString* msg = NULL;
-	BOOL bc, rc, yc, bs, rs, ys;
-	BOOL equiv = lock & 0x80;
+	bool bc, rc, yc, bs, rs, ys;
+	bool equiv = lock & 0x80;
 
-        lock = (card_t)(lock & 0x7f);
+        lock = static_cast<card_t>(lock & 0x7f);
 
 	bc = p->cards[it_bluecard];
 	rc = p->cards[it_redcard];
@@ -1703,7 +1721,7 @@ void P_ShootSpecialLine(AActor*	thing, line_t* line)
 		if (thing->flags & MF_MISSILE)
 			return;
 
-		if (map_format.getZDoom() && !thing->player && thing->type != MT_AVATAR &&
+		if (map_format.getZDoom() && !P_IsPlayerOrAvatar(*thing) &&
 		    !(line->flags & ML_MONSTERSCANACTIVATE))
 			return;
 	}
@@ -1756,7 +1774,7 @@ bool P_UseSpecialLine(AActor* thing, line_t* line, int side, bool bossaction)
 	if(!bossaction && thing)
 	{
 		// Switches that other things can activate.
-		if (!thing->player && thing->type != MT_AVATAR)
+		if (!P_IsPlayerOrAvatar(*thing))
 		{
 			// not for monsters?
 			if (map_format.getZDoom() && !(line->flags & ML_MONSTERSCANACTIVATE))
@@ -1829,7 +1847,7 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
 			return false;
 
 		// Switches that other things can activate.
-		if (!thing->player && thing->type != MT_AVATAR)
+		if (!P_IsPlayerOrAvatar(*thing))
 		{
 			// not for monsters?
 			if (!(line->flags & ML_MONSTERSCANACTIVATE))
@@ -1876,22 +1894,34 @@ bool P_PushSpecialLine(AActor* thing, line_t* line, int side)
     return true;
 }
 
-void P_ApplySectorDamage(player_t* player, int damage, int leak, int mod)
+void P_ApplySectorDamageNoWait(player_t& player, int damage, int mod)
 {
-	if (!player->powers[pw_ironfeet] || (leak && P_Random(player->mo)<leak))
-		if (!(level.time & 0x1f))
-			P_DamageMobj(player->mo, NULL, NULL, damage, mod);
+	P_DamageMobj(player.mo, NULL, NULL, damage, mod);
 }
 
-void P_ApplySectorDamageEndLevel(player_t* player)
+void P_ApplySectorDamageNoRandom(player_t& player, int damage, int mod)
+{
+	if (!player.powers[pw_ironfeet])
+		if (!(level.time & 0x1f))
+			P_DamageMobj(player.mo, NULL, NULL, damage, mod);
+}
+
+void P_ApplySectorDamage(player_t& player, int damage, int leak, int mod)
+{
+	if (!player.powers[pw_ironfeet] || (leak && P_Random(player.mo)<leak))
+		if (!(level.time & 0x1f))
+			P_DamageMobj(player.mo, NULL, NULL, damage, mod);
+}
+
+void P_ApplySectorDamageEndLevel(player_t& player)
 {
 	//if (comp[comp_god])
-	player->cheats &= ~CF_GODMODE;
+	player.cheats &= ~CF_GODMODE;
 
 	if (!(level.time & 0x1f))
-		P_DamageMobj(player->mo, NULL, NULL, 20);
+		P_DamageMobj(player.mo, NULL, NULL, 20);
 
-	if (player->health <= 10)
+	if (player.health <= 10)
 		if (sv_allowexit)
 			G_ExitLevel(0, 1);
 }
@@ -1900,24 +1930,24 @@ void P_ApplySectorDamageEndLevel(player_t* player)
 void SV_UpdateSecret(sector_t& sector, player_t &player);
 #endif
 
-void P_CollectSecretCommon(sector_t* sector, player_t* player)
+void P_CollectSecretCommon(sector_t& sector, player_t& player)
 {
-	player->secretcount++;
+	player.secretcount++;
 	level.found_secrets++;
-	sector->flags &= ~SECF_SECRET;
+	sector.flags &= ~SECF_SECRET;
 
 #ifdef SERVER_APP
-	SV_UpdateSecret(*sector, *player); // Update the sector to all clients so that they
-	                                   // don't discover an already found secret.
-#else
-	if (player->mo == consoleplayer().camera)
+	SV_UpdateSecret(sector, player); // Update the sector to all clients so that they
+	                                 // don't discover an already found secret.
+#elif defined(CLIENT_APP)
+	if (player.mo == consoleplayer().camera)
 		C_RevealSecret(); // Display the secret revealed message
 #endif
 }
 
-void P_CollectSecretVanilla(sector_t* sector, player_t* player)
+void P_CollectSecretVanilla(sector_t& sector, player_t& player)
 {
-	sector->special = 0;
+	sector.special = 0;
 	P_CollectSecretCommon(sector, player);
 }
 
@@ -1929,6 +1959,12 @@ void P_CollectSecretVanilla(sector_t* sector, player_t* player)
 void P_UpdateSpecials()
 {
 	Res_UpdateTextureAnimations();
+
+	sky2columnoffset += sky2scrolldelta & 0xffffff;
+
+	#ifdef CLIENT_APP
+	R_UpdateSkies();
+	#endif
 }
 
 
@@ -1941,16 +1977,15 @@ CVAR_FUNC_IMPL (sv_forcewater)
 {
 	if (gamestate == GS_LEVEL)
 	{
-		int i;
 		byte set = var ? 2 : 0;
 
-		for (i = 0; i < numsectors; i++)
+		for (sector_t& sector : R_GetSectors())
 		{
-			if (sectors[i].heightsec &&
-				!(sectors[i].heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
-				sectors[i].heightsec->waterzone != 1)
+			if (sector.heightsec &&
+				!(sector.heightsec->MoreFlags & SECF_IGNOREHEIGHTSEC) &&
+				sector.heightsec->waterzone != 1)
 
-				sectors[i].heightsec->waterzone = set;
+				sector.heightsec->waterzone = set;
 		}
 	}
 }
@@ -1962,14 +1997,10 @@ CVAR_FUNC_IMPL (sv_forcewater)
 */
 void P_SetupWorldState(void)
 {
-	sector_t* sector;
-	int i;
-
 	//	Init special SECTORs.
-	sector = sectors;
-	for (i = 0; i < numsectors; i++, sector++)
+	for (sector_t& sector : R_GetSectors())
 	{
-		map_format.init_sector_special(sector);
+		map_format.init_sector_special(&sector);
 	}
 
 	// Init other misc stuff
@@ -1986,6 +2017,8 @@ void P_SetupWorldState(void)
 	{
 		level.behavior->StartTypedScripts(SCRIPT_Open, NULL, 0, 0, 0, false);
 	}
+
+	P_FriendlyEffects(); // Mark any new friendly monsters with an effect
 }
 
 void P_AddSectorSecret(sector_t* sector)
@@ -2215,18 +2248,19 @@ void DScroller::RunThink ()
 			height = P_HighestHeightOfFloor(sec);
 			waterheight = sec->heightsec &&
 				P_HighestHeightOfFloor(sec->heightsec) > height ?
-				P_HighestHeightOfFloor(sec->heightsec) : MININT;
+				P_HighestHeightOfFloor(sec->heightsec) : limits::MINFIXED;
 
 			for (node = sec->touching_thinglist; node; node = node->m_snext)
 				if (!((thing = node->m_thing)->flags & MF_NOCLIP) &&
 					(!(thing->flags & MF_NOGRAVITY || thing->z > height) ||
 					 thing->z < waterheight))
-				  {
+					{
 					// Move objects only if on floor or underwater,
 					// non-floating, and clipped.
-					thing->momx += dx;
-					thing->momy += dy;
-				  }
+					thing->momx   += dx;
+					thing->momy   += dy;
+					thing->oflags |= MFO_ISONCONVEYOR;
+					}
 			break;
 		}
 
@@ -2310,10 +2344,9 @@ DScroller::DScroller (fixed_t dx, fixed_t dy, const line_t *l,
 // Initialize the scrollers
 static void P_SpawnScrollers(void)
 {
-	int i;
 	line_t *l = lines;
 
-	for (i = 0; i < numlines; i++, l++)
+	for (int i = 0; i < numlines; i++, l++)
 	{
 		map_format.spawn_scroller(l, i);
 	}
@@ -2321,7 +2354,7 @@ static void P_SpawnScrollers(void)
 
 fixed_t P_ArgToSpeed(byte arg)
 {
-	return (fixed_t)arg * FRACUNIT / 8;
+	return static_cast<fixed_t>(arg) * FRACUNIT / 8;
 }
 
 bool P_ArgToCrushType(byte arg)
@@ -2384,12 +2417,9 @@ bool P_ArgToCrushType(byte arg)
 
 static void P_SpawnFriction(void)
 {
-	int i;
-	line_t *l = lines;
-
-	for (i = 0 ; i < numlines ; i++,l++)
+	for (line_t& l : R_GetLines())
 	{
-		map_format.spawn_friction(l);
+		map_format.spawn_friction(&l);
 	}
 }
 
@@ -2528,16 +2558,33 @@ DPusher::DPusher (DPusher::EPusher type, line_t *l, int magnitude, int angle,
 
 DPusher *tmpusher; // pusher structure for blockmap searches
 
-BOOL PIT_PushThing (AActor *thing)
+bool PIT_PushThing (AActor *thing)
 {
-	if (thing->player &&
-		!(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
+	if (!P_IsMBFCompatMode() ?
+			thing->player && !(thing->flags & (MF_NOGRAVITY | MF_NOCLIP)) :
+			(sentient(thing) || thing->flags & MF_SHOOTABLE) &&
+			!(thing->flags & MF_NOCLIP))
 	{
 		int sx = tmpusher->m_X;
 		int sy = tmpusher->m_Y;
 		int dist = P_AproxDistance (thing->x - sx,thing->y - sy);
 		int speed = (tmpusher->m_Magnitude -
 					((dist>>FRACBITS)>>1))<<(FRACBITS-PUSH_FACTOR-1);
+
+		// killough 10/98: make magnitude decrease with square
+		// of distance, making it more in line with real nature,
+		// so long as it's still in range with original formula.
+		//
+		// Removes angular distortion, and makes effort required
+		// to stay close to source, grow increasingly hard as you
+		// get closer, as expected. Still, it doesn't consider z :(
+
+		if (speed > 0 && P_IsMBFCompatMode())
+		{
+			int x = (thing->x - sx) >> FRACBITS;
+			int y = (thing->y - sy) >> FRACBITS;
+			speed = static_cast<int>((static_cast<uint64_t>(tmpusher->m_Magnitude) << 23) / (x * x + y * y + 1));
+		}
 
 		// If speed <= 0, you're outside the effective radius. You also have
 		// to be able to see the push/pull source point.
@@ -2628,7 +2675,7 @@ void DPusher::RunThink ()
 	for ( ; node ; node = node->m_snext)
 	{
 		thing = node->m_thing;
-		if (!thing->player || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
+		if (!P_IsPlayerOrAvatar(*thing) || (thing->flags & (MF_NOGRAVITY | MF_NOCLIP)))
 			continue;
 		if (m_Type == p_wind)
 		{
@@ -2725,12 +2772,9 @@ AActor *P_GetPushThing (int s)
 
 static void P_SpawnPushers(void)
 {
-	int i;
-	line_t *l = lines;
-
-	for (i = 0; i < numlines; i++, l++)
+	for (line_t& l : R_GetLines())
 	{
-		map_format.spawn_pusher(l);
+		map_format.spawn_pusher(&l);
 	}
 }
 

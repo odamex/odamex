@@ -5,7 +5,7 @@
 //
 // Copyright (C) 1997-2000 by id Software Inc.
 // Copyright (C) 1998-2006 by Randy Heit (ZDoom).
-// Copyright (C) 2006-2020 by The Odamex Team.
+// Copyright (C) 2006-2026 by The Odamex Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -30,8 +30,8 @@
 #include <stdlib.h>
 
 #include <ctime>
+#include <cctype>
 #include <functional>
-#include <map>
 #include <sstream>
 
 #include "win32inc.h"
@@ -39,17 +39,33 @@
 #include "i_system.h"
 #include "cmdlib.h"
 
-#ifdef GEKKO
-#include "i_wii.h"
-#endif
+#include "fmt/ranges.h"
 
 #ifdef __SWITCH__
 #include "nx_system.h"
 #endif
 
+// Safe string copy function that works like OpenBSD's strlcpy().
+// Returns true if the string was not truncated.
+// from Chocolate Doom m_misc.cpp
 
-char		com_token[8192];
-BOOL		com_eof;
+bool M_StringCopy(char *dest, const char *src, size_t dest_size)
+{
+    size_t len;
+
+    if (dest_size >= 1)
+    {
+        dest[dest_size - 1] = '\0';
+        strncpy(dest, src, dest_size - 1);
+    }
+    else
+    {
+        return false;
+    }
+
+    len = strlen(dest);
+    return src[len] == '\0';
+}
 
 std::string progdir, startdir; // denis - todo - maybe move this into Args
 
@@ -66,8 +82,9 @@ char *copystring (const char *s)
 	char *b;
 	if (s)
 	{
-		b = new char[strlen(s)+1];
-		strcpy (b, s);
+		size_t len = strlen(s) + 1;
+		b = new char[len];
+		M_StringCopy(b, s, len);
 	}
 	else
 	{
@@ -75,85 +92,6 @@ char *copystring (const char *s)
 		b[0] = '\0';
 	}
 	return b;
-}
-
-
-//
-// COM_Parse
-//
-// Parse a token out of a string
-//
-char *COM_Parse (char *data) // denis - todo - security com_token overrun needs expert check, i have just put simple bounds on len
-{
-	int			c;
-	size_t		len;
-
-	len = 0;
-	com_token[0] = 0;
-
-	if (!data)
-		return NULL;
-
-// skip whitespace
-skipwhite:
-	while ( (c = *data) <= ' ')
-	{
-		if (c == 0)
-		{
-			com_eof = true;
-			return NULL;			// end of file;
-		}
-		data++;
-	}
-
-// skip // comments
-	if (c=='/' && data[1] == '/')
-	{
-		while (*data && *data != '\n')
-			data++;
-		goto skipwhite;
-	}
-
-
-// handle quoted strings specially
-	if (c == '\"')
-	{
-		data++;
-		do
-		{
-			c = *data++;
-			if (c=='\"')
-			{
-				com_token[len] = 0;
-				return data;
-			}
-			com_token[len] = c;
-			len++;
-		} while (len < sizeof(com_token) + 2);
-	}
-
-// parse single characters
-	if (c=='{' || c=='}'|| c==')'|| c=='(' || c=='\'' || c==':' || /*[RH]*/c=='=')
-	{
-		com_token[len] = c;
-		len++;
-		com_token[len] = 0;
-		return data+1;
-	}
-
-// parse a regular word
-	do
-	{
-		com_token[len] = c;
-		data++;
-		len++;
-		c = *data;
-	if (c=='{' || c=='}'|| c==')'|| c=='(' || c=='\'' || c==':' || c=='=')
-			break;
-	} while (c>32 && len < sizeof(com_token) + 2);
-
-	com_token[len] = 0;
-	return data;
 }
 
 //
@@ -174,7 +112,7 @@ int ParseHex(const char* hex)
 		else if (*str >= 'A' && *str <= 'F')
 			num += 10 + *str-'A';
 		else {
-			DPrintf("Bad hex number: %s\n",hex);
+			DPrintFmt("Bad hex number: {}\n",hex);
 			return 0;
 		}
 		str++;
@@ -195,7 +133,6 @@ int ParseNum(const char* str)
 	return atol(str);
 }
 
-
 // [RH] Returns true if the specified string is a valid decimal number
 
 bool IsNum(const char* str)
@@ -214,6 +151,17 @@ bool IsNum(const char* str)
 	return result;
 }
 
+bool IsNum(std::string_view str)
+{
+	return std::all_of(str.begin(), str.end(), [](char c)
+	{
+		if (((c < '0') || (c > '9')) && (c != '-'))
+		{
+			return false;
+		}
+		return true;
+	});
+}
 
 //
 // IsRealNum
@@ -248,11 +196,44 @@ bool IsRealNum(const char* str)
 	return true;
 }
 
+//
+// IsRealNum
+//
+// [SL] Returns true if the specified string is a valid real number
+//
+bool IsRealNum(std::string_view str)
+{
+	bool seen_decimal = false;
+
+	if (str.empty())
+		return false;
+
+	if (str.starts_with('+') || str.starts_with('-'))
+		str.remove_prefix(1);
+
+	for (char c : str)
+	{
+		if (c == '.')
+		{
+			if (seen_decimal)
+				return false;		// second decimal point
+			else
+				seen_decimal = true;
+		}
+		else if (c < '0' || c > '9')
+			return false;
+	}
+
+	return true;
+}
+
 // [Russell] Returns 0 if strings are the same, optional parameter for case
 // sensitivity
-bool iequals(const std::string& s1, const std::string& s2)
+bool iequals(std::string_view s1, std::string_view s2)
 {
-	return stricmp(s1.c_str(), s2.c_str()) == 0;
+	if (s1.size() != s2.size())
+		return false;
+	return strnicmp(s1.data(), s2.data(), s1.size()) == 0;
 }
 
 size_t StdStringFind(const std::string& haystack, const std::string& needle,
@@ -277,13 +258,13 @@ size_t StdStringFind(const std::string& haystack, const std::string& needle,
 }
 
 size_t StdStringFind(const std::string& haystack, const std::string& needle,
-    size_t pos = 0, size_t n = std::string::npos, bool CIS = false)
+    size_t pos, size_t n, bool CIS)
 {
     return StdStringFind(haystack, needle, pos, n, CIS, false);
 }
 
 size_t StdStringRFind(const std::string& haystack, const std::string& needle,
-    size_t pos = 0, size_t n = std::string::npos, bool CIS = false)
+    size_t pos, size_t n, bool CIS)
 {
     return StdStringFind(haystack, needle, pos, n, CIS, true);
 }
@@ -343,15 +324,7 @@ std::vector<std::string> VectorArgs(size_t argc, char **argv) {
 
 // [AM] Return a joined string based on a vector of strings
 std::string JoinStrings(const std::vector<std::string> &pieces, const std::string &glue) {
-	std::ostringstream result;
-	for (std::vector<std::string>::const_iterator it = pieces.begin();
-		 it != pieces.end();++it) {
-		result << *it;
-		if (it != (pieces.end() - 1)) {
-			result << glue;
-		}
-	}
-	return result.str();
+	return fmt::format("{}", fmt::join(pieces, glue));
 }
 
 // Tokenize a string
@@ -367,60 +340,15 @@ StringTokens TokenizeString(const std::string& str, const std::string& delim) {
 	while (delimPos != std::string::npos) {
 		delimPos = str.find(delim, prevDelim);
 		tokens.push_back(str.substr(prevDelim, delimPos - prevDelim));
-		prevDelim = delimPos + 1;
+		prevDelim = delimPos + delim.length();
 	}
 
 	return tokens;
 }
 
-//
-// A quick and dirty std::string formatting that uses snprintf under the covers.
-//
-FORMAT_PRINTF(2, 3) void STACK_ARGS StrFormat(std::string& out, const char* fmt, ...)
-{
-	va_list va;
-	va_start(va, fmt);
-	VStrFormat(out, fmt, va);
-	va_end(va);
-}
-
-//
-// A quick and dirty std::string formatting that uses snprintf under the covers.
-//
-void STACK_ARGS VStrFormat(std::string& out, const char* fmt, va_list va)
-{
-	va_list va2;
-	va_copy(va2, va);
-
-	// Get desired length of buffer.
-	int chars = vsnprintf(NULL, 0, fmt, va);
-	if (chars < 0)
-	{
-		I_Error("Encoding error detected in StrFormat\n");
-	}
-	size_t len = (size_t)chars + sizeof('\0');
-
-	// Allocate the buffer.
-	char* buf = (char*)malloc(len);
-	if (buf == NULL)
-	{
-		I_Error("Could not allocate StrFormat buffer\n");
-	}
-
-	// Actually write to the buffer.
-	int ok = vsnprintf(buf, len, fmt, va2);
-	if (ok != chars)
-	{
-		I_Error("Truncation detected in StrFormat\n");
-	}
-
-	out = buf;
-	free(buf);
-}
-
 /**
- * @brief Format passed number of bytes with a byte multiple suffix. 
- * 
+ * @brief Format passed number of bytes with a byte multiple suffix.
+ *
  * @param out Output string buffer.
  * @param bytes Number of bytes to format.
  */
@@ -442,11 +370,12 @@ void StrFormatBytes(std::string& out, size_t bytes)
 	}
 
 	if (magnitude)
-		StrFormat(out, "%.2f %s", checkbytes, BYTE_MAGS[magnitude]);
+		out = fmt::sprintf("%.2f %s", checkbytes, BYTE_MAGS[magnitude]);
 	else
-		StrFormat(out, "%.0f %s", checkbytes, BYTE_MAGS[magnitude]);
+		out = fmt::sprintf("%.0f %s", checkbytes, BYTE_MAGS[magnitude]);
 }
 
+// TODO: update these to use c++20 std::chrono types and drop strptime
 // [AM] Format a tm struct as an ISO8601-compliant extended format string.
 //      Assume that the input time is in UTC.
 bool StrFormatISOTime(std::string& s, const tm* utc_tm) {
@@ -538,10 +467,7 @@ bool StrToTime(std::string str, time_t &tim) {
 		i = j;
 
 		// Push to tokens vector
-		token_t token;
-		token.first = num;
-		token.second = timeword;
-		tokens.push_back(token);
+		tokens.emplace_back(num, timeword);
 
 		// Skip whitespace and commas.
 		while ((str[i] == ' ' || str[i] == ',') && i < size) {
@@ -549,25 +475,25 @@ bool StrToTime(std::string str, time_t &tim) {
 		}
 	}
 
-	for (tokens_t::iterator it = tokens.begin();it != tokens.end();++it) {
-		if (it->second.compare(std::string("seconds").substr(0, it->second.size())) == 0) {
-			tim += it->first;
-		} else if (it->second.compare("secs") == 0) {
-			tim += it->first;
-		} else if (it->second.compare(std::string("minutes").substr(0, it->second.size())) == 0) {
-			tim += it->first * 60;
-		} else if (it->second.compare("mins") == 0) {
-			tim += it->first * 60;
-		} else if (it->second.compare(std::string("hours").substr(0, it->second.size())) == 0) {
-			tim += it->first * 3600;
-		} else if (it->second.compare(std::string("days").substr(0, it->second.size())) == 0) {
-			tim += it->first * 86400;
-		} else if (it->second.compare(std::string("weeks").substr(0, it->second.size())) == 0) {
-			tim += it->first * 604800;
-		} else if (it->second.compare(std::string("months").substr(0, it->second.size())) == 0) {
-			tim += it->first * 2592000;
-		} else if (it->second.compare(std::string("years").substr(0, it->second.size())) == 0) {
-			tim += it->first * 31536000;
+	for (const auto& [count, timeword] : tokens) {
+		if (timeword.compare(std::string("seconds").substr(0, timeword.size())) == 0) {
+			tim += count;
+		} else if (timeword.compare("secs") == 0) {
+			tim += count;
+		} else if (timeword.compare(std::string("minutes").substr(0, timeword.size())) == 0) {
+			tim += count * 60;
+		} else if (timeword.compare("mins") == 0) {
+			tim += count * 60;
+		} else if (timeword.compare(std::string("hours").substr(0, timeword.size())) == 0) {
+			tim += count * 3600;
+		} else if (timeword.compare(std::string("days").substr(0, timeword.size())) == 0) {
+			tim += count * 86400;
+		} else if (timeword.compare(std::string("weeks").substr(0, timeword.size())) == 0) {
+			tim += count * 604800;
+		} else if (timeword.compare(std::string("months").substr(0, timeword.size())) == 0) {
+			tim += count * 2592000;
+		} else if (timeword.compare(std::string("years").substr(0, timeword.size())) == 0) {
+			tim += count * 31536000;
 		} else {
 			// Unrecognized timeword
 			return false;
@@ -579,7 +505,7 @@ bool StrToTime(std::string str, time_t &tim) {
 
 /**
  * @brief Turn the given number of tics into a time.
- * 
+ *
  * @param str String buffer to write into.
  * @param time Number of tics to turn into a time.
  * @param ceil Round up to the nearest second.
@@ -621,23 +547,17 @@ void TicsToTime(OTimespan& span, int time, bool ceilsec)
 	span.csecs = (span.tics * 100) / TICRATE;
 }
 
-// [SL] Reimplement std::isspace
-static int _isspace(int c)
-{
-	return (c == ' ' || c == '\n' || c == '\t' || c == '\v' || c == '\f' || c == '\r');
-}
-
 // Trim whitespace from the start of a string
 std::string &TrimStringStart(std::string &s)
 {
-	s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(_isspace))));
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char c) { return !std::isspace(c); }));
 	return s;
 }
 
 // Trim whitespace from the end of a string
 std::string &TrimStringEnd(std::string &s)
 {
-	s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(_isspace))).base(), s.end());
+	s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char c) { return !std::isspace(c); }).base(), s.end());
 	return s;
 }
 
@@ -647,12 +567,39 @@ std::string &TrimString(std::string &s)
 	return TrimStringStart(TrimStringEnd(s));
 }
 
+// Trim whitespace from the start of a string_view
+std::string_view TrimStringViewStart(std::string_view str)
+{
+	const auto it = std::find_if(str.begin(), str.end(), [](unsigned char c){
+		return !std::isspace(c);
+	});
+
+    str.remove_prefix(std::distance(str.begin(), it));
+    return str;
+}
+
+// Trim whitespace from the end of a string_view
+std::string_view TrimStringViewEnd(std::string_view str)
+{
+	const auto it = std::find_if(str.rbegin(), str.rend(), [](unsigned char c){
+		return !std::isspace(c);
+	});
+
+    str.remove_suffix(std::distance(str.rbegin(), it));
+    return str;
+}
+
+// Trim whitespace from the start and end of a string
+std::string_view TrimStringView(std::string_view str)
+{
+	return TrimStringViewStart(TrimStringViewEnd(str));
+}
+
 // Ensure that a string only has valid viewable ASCII in it.
 bool ValidString(const std::string& s)
 {
-	for (std::string::const_iterator it = s.begin();it != s.end();++it)
+	for (const auto c : s)
 	{
-		const char c = *it;
 		if (c < ' ' || c > '~')
 			return false;
 	}
@@ -664,11 +611,11 @@ bool IsHexString(const std::string& str, const size_t len)
 	if (str.length() != len)
 		return false;
 
-	for (std::string::const_iterator it = str.begin(); it != str.end(); ++it)
+	for (const auto c : str)
 	{
-		if (*it >= '0' && *it <= '9')
+		if (c >= '0' && c <= '9')
 			continue;
-		if (*it >= 'A' && *it <= 'F')
+		if (c >= 'A' && c <= 'F')
 			continue;
 		return false;
 	}
@@ -807,54 +754,19 @@ double Remap(const double value, const double low1, const double high1, const do
 uint32_t Log2(uint32_t n)
 {
 	#define LT(n) n, n, n, n, n, n, n, n, n, n, n, n, n, n, n, n
-	static const signed char LogTable256[256] = 
+	static constexpr signed char LogTable256[256] =
 	{
 		-1, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
 		LT(4), LT(5), LT(5), LT(6), LT(6), LT(6), LT(6),
 		LT(7), LT(7), LT(7), LT(7), LT(7), LT(7), LT(7), LT(7)
 	};
 
-	register unsigned int t, tt;		// temporaries
+	unsigned int t, tt;		// temporaries
 
 	if ((tt = (n >> 16)))
 		return (t = (tt >> 8)) ? 24 + LogTable256[t] : 16 + LogTable256[tt];
 	else
 		return (t = (n >> 8)) ? 8 + LogTable256[t] : LogTable256[n];
-}
-
-/**
- * This file has no copyright assigned and is placed in the Public Domain.
- * This file is part of the mingw-w64 runtime package.
- * No warranty is given; refer to the file DISCLAIMER.PD within this package.
- */
-
-/**
- * @brief Returns the next representable value of from in the direction of to.
- */
-float NextAfter(const float from, const float to)
-{
-	const float x = from;
-	const float y = to;
-	union {
-		float f;
-		unsigned int i;
-	} u;
-	if (isnan(y) || isnan(x))
-		return x + y;
-	if (x == y)
-		/* nextafter (0.0, -O.0) should return -0.0.  */
-		return y;
-	u.f = x;
-	if (x == 0.0F)
-	{
-		u.i = 1;
-		return y > 0.0F ? u.f : -u.f;
-	}
-	if (((x > 0.0F) ^ (y > x)) == 0)
-		u.i++;
-	else
-		u.i--;
-	return u.f;
 }
 
 VERSION_CONTROL (cmdlib_cpp, "$Id$")
