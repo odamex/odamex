@@ -591,9 +591,20 @@ void R_InitTextures()
 		char *name_p = names+4;
 
 		numpatches = LELONG ( *((int *)names) );
-		first_tx = W_CheckNumForName("TX_START") + 1;
-		const int last_tx  = W_CheckNumForName("TX_END") - 1;
-		tx_numtextures = last_tx - first_tx + 1;
+
+		// Put a guard here in case one of the pair is missing.
+		const int tx_startlump = W_CheckNumForName("TX_START");
+		const int tx_endlump = W_CheckNumForName("TX_END");
+		if (tx_startlump != -1 && tx_endlump != -1 && tx_endlump > tx_startlump)
+		{
+			first_tx = tx_startlump + 1;
+			tx_numtextures = tx_endlump - tx_startlump - 1;
+		}
+		else
+		{
+			first_tx = 0;
+			tx_numtextures = 0;
+		}
 
 		patchlookup.resize(numpatches);
 
