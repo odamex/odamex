@@ -165,7 +165,7 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 
 		if (dcol.texturefrac < 0)
 		{
-			int cnt = (FixedDiv(-dcol.texturefrac, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
+			int cnt = R_PixelCeil(-dcol.texturefrac, dcol.iscale);
 			dcol.yl += cnt;
 			dcol.texturefrac += cnt * dcol.iscale;
 		}
@@ -175,7 +175,7 @@ void R_BlastSpriteColumn(void (*drawfunc)())
 
 		if (endfrac >= maxfrac)
 		{
-			int cnt = (FixedDiv(endfrac - maxfrac - 1, dcol.iscale) + FRACUNIT - 1) >> FRACBITS;
+			int cnt = R_PixelCeil(endfrac - maxfrac + 1, dcol.iscale);
 			dcol.yh -= cnt;
 		}
 

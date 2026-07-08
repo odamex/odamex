@@ -3575,6 +3575,7 @@ void P_SpawnAvatars()
 
 		// Assign spawnpoint so that it gets archived and can be matched back up with voodoostarts after deserialization.
 		voodoo.mobj->spawnpoint = voodoo.mapThing;
+		voodoo.mobj->angle      = ANG45 * (voodoo.mapThing.angle/45);
 		voodoo.mobj->credibility.Lionize();
 	}
 }

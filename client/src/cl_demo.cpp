@@ -1393,8 +1393,6 @@ void NetDemo::writeSnapshotData(std::vector<byte>& buf)
 	byte check = 0x1d;
 	arc << check;          // consistancy marker
 
-	gameaction = ga_nothing;
-
 	arc.Close();
 
 	// Resize the snapshot buffer to hold our snapshot size.

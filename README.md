@@ -98,7 +98,6 @@ Please visit the following websites for more information about the development o
 
 * [**Odamex Website**](https://odamex.net)
 * [Wiki](https://github.com/odamex/odamex/wiki)
-* [Forums](https://odamex.net/boards/)
 * [Discord](https://discord.gg/aMUzcZE)
 * [Twitter](https://twitter.com/odamex)
 
