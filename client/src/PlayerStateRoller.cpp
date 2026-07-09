@@ -26,7 +26,7 @@
 #include <iso646.h>
 
 #include "odamex.h"
-
+#include "s_sound.h"
 
 PlayerStateRoller::PlayerStateRoller() :
 	m_history       (TICRATE * 2),  // at least 2 seconds of history
@@ -599,8 +599,6 @@ RollerResolveEnum PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataT
 		const bool cardsRequiredRoll        = RollbackCards         (*historyIter, i_itemData.cards);
 		const bool cheatsRequiredRoll       = RollbackCheats        (*historyIter, i_itemData.cheats);
 
-        // Before we change history, 
-
 		const bool historyWasChanged = ammoRequiredRoll or
 		                               maxammoRequiredRoll or
 		                               weaponOwnedRequiredRoll or
@@ -618,6 +616,12 @@ RollerResolveEnum PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataT
 		if (historyWasChanged)
 		{
 			m_currentState.ToPlayer(io_player);
+
+            if (m_itemSoundCancelationTic >= 0)
+            {
+                S_StopSound(io_player.mo, CHAN_ITEM);
+                m_itemSoundCancelationTic = -1;
+            }
 
 			return RollerResolveEnum::HISTORY_CHANGED;
 		}
