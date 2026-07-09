@@ -205,10 +205,41 @@ bool PlayerStateRoller::RollbackMaxAmmo(HistoryTableType::iterator i_historyIter
 
 bool PlayerStateRoller::RollbackWeaponOwned(HistoryTableType::iterator i_historyIter, const std::array<bool, NUMWEAPONS>& i_weaponOwned)
 {
+    m_itemSoundCancelationTic = -1;
 	if (i_historyIter->second.weaponowned != i_weaponOwned)
 	{
-		Roll(i_historyIter->first, [&i_weaponOwned](auto& rollingState)
+        HistoryTableType::iterator rollingIter  = i_historyIter;
+        HistoryTableType::iterator previousIter = m_history.end();
+        bool weaponWasAdded                    = false;
+		Roll(i_historyIter->first, [&](auto& rollingState)
 			{
+                if (not weaponWasAdded)
+                {
+                    for (size_t i = 0; i < NUMWEAPONS; ++i)
+                    {
+                        if (rollingState.weaponowned[i] and not i_weaponOwned[i])
+                        {
+                            m_itemSoundCancelationTic = rollingIter->first;
+                        }
+                        else if (i_weaponOwned[i] and not rollingState.weaponowned[i])
+                        {
+                            weaponWasAdded = true;
+                            m_itemSoundCancelationTic = -1;
+                            break;
+                        }
+                        else if (previousIter != m_history.end())
+                        {
+                            if (rollingState.weaponowned[i] and not previousIter->second.weaponowned[i])
+                            {
+                                weaponWasAdded = true;
+                                m_itemSoundCancelationTic = -1;
+                                break;
+                            }
+                        }
+                    }
+                    previousIter = rollingIter;
+                }
+                ++rollingIter;
 				rollingState.weaponowned = i_weaponOwned;
 			});
 		return true;
@@ -567,6 +598,8 @@ RollerResolveEnum PlayerStateRoller::Resolve(int i_oldTic, const PlayerItemDataT
 		const bool backpackRequiredRoll     = RollbackBackpack      (*historyIter, i_itemData.backpack);
 		const bool cardsRequiredRoll        = RollbackCards         (*historyIter, i_itemData.cards);
 		const bool cheatsRequiredRoll       = RollbackCheats        (*historyIter, i_itemData.cheats);
+
+        // Before we change history, 
 
 		const bool historyWasChanged = ammoRequiredRoll or
 		                               maxammoRequiredRoll or

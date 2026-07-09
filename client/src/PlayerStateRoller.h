@@ -189,4 +189,5 @@ class PlayerStateRoller
 
 		int m_mostRecentTic;
 		int m_oldestTic;
+		int m_itemSoundCancelationTic;
 };
