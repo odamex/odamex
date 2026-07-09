@@ -139,16 +139,17 @@ message UserInfo
 	int32 colorpreset = 7;
 }
 
+// Keep this enumeration in sync with its counterpart in info.h!
 enum MobjModeEnum
 {
-    MOBJ_SPAWN   = 0;
-    MOBJ_SEE     = 1;
-    MOBJ_PAIN    = 2;
-    MOBJ_MELEE   = 3;
-    MOBJ_MISSILE = 4;
-    MOBJ_DEATH   = 5;
-    MOBJ_XDEATH  = 6;
-    MOBJ_RAISE   = 7;
+	MOBJ_SPAWN   = 0;
+	MOBJ_SEE     = 1;
+	MOBJ_PAIN    = 2;
+	MOBJ_MELEE   = 3;
+	MOBJ_MISSILE = 4;
+	MOBJ_DEATH   = 5;
+	MOBJ_XDEATH  = 6;
+	MOBJ_RAISE   = 7;
 }
 
 

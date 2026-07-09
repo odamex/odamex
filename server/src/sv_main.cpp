@@ -3202,8 +3202,8 @@ void SV_UpdateMobjBestEffort(AActor* mo)
 
 void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound)
 {
-    for (auto& player : players)
-    {
+	for (auto& player : players)
+	{
 		if (SV_IsPlayerAllowedToSee(player, mo) and player.ingame())
 		{
 			switch (mo->playersAware.Get(player.id))
@@ -3216,8 +3216,8 @@ void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound)
 					MSG_WriteSVC(player.client.messenger.ReliableBuf(), SVC_WakeupMobj(mo, mustPlaySeeSound));
 					break;
 			}
-        }
-    }
+		}
+	}
 }
 
 // Update the given actors state immediately.

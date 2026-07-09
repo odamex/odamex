@@ -1191,39 +1191,39 @@ static void CL_UpdateMobj(const odaproto::svc::UpdateMobj* msg)
 	else
 		mo->tracer = AActor::AActorPtr();
 
-    const MobjModeEnum mode = static_cast<MobjModeEnum>(msg->mode());
-    if (mode != mo->mode)
-    {
-        switch (mode)
-        {
-            case MobjModeEnum::SPAWN:
-                P_SetMobjState(mo, mo->info->spawnstate);
-                break;
-            case MobjModeEnum::SEE:
-                P_SetMobjState(mo, mo->info->seestate);
-                break;
-            case MobjModeEnum::PAIN:
-                P_SetMobjState(mo, mo->info->painstate);
-                break;
-            case MobjModeEnum::MELEE:
-                P_SetMobjState(mo, mo->info->meleestate);
-                break;
-            case MobjModeEnum::MISSILE:
-                P_SetMobjState(mo, mo->info->missilestate);
-                break;
-            case MobjModeEnum::DEATH:
-                P_SetMobjState(mo, mo->info->deathstate);
-                break;
-            case MobjModeEnum::XDEATH:
-                P_SetMobjState(mo, mo->info->xdeathstate);
-                break;
-            case MobjModeEnum::RAISE:
-                P_SetMobjState(mo, mo->info->raisestate);
-                break;
-            default:
-                break;
-        }
-    }
+	const MobjModeEnum mode = static_cast<MobjModeEnum>(msg->mode());
+	if (mode != mo->mode)
+	{
+		switch (mode)
+		{
+			case MobjModeEnum::SPAWN:
+				P_SetMobjState(mo, mo->info->spawnstate);
+				break;
+			case MobjModeEnum::SEE:
+				P_SetMobjState(mo, mo->info->seestate);
+				break;
+			case MobjModeEnum::PAIN:
+				P_SetMobjState(mo, mo->info->painstate);
+				break;
+			case MobjModeEnum::MELEE:
+				P_SetMobjState(mo, mo->info->meleestate);
+				break;
+			case MobjModeEnum::MISSILE:
+				P_SetMobjState(mo, mo->info->missilestate);
+				break;
+			case MobjModeEnum::DEATH:
+				P_SetMobjState(mo, mo->info->deathstate);
+				break;
+			case MobjModeEnum::XDEATH:
+				P_SetMobjState(mo, mo->info->xdeathstate);
+				break;
+			case MobjModeEnum::RAISE:
+				P_SetMobjState(mo, mo->info->raisestate);
+				break;
+			default:
+				break;
+		}
+	}
 }
 
 //
@@ -2719,48 +2719,46 @@ static void CL_WakeupMobj(const odaproto::svc::WakeupMobj* msg)
 {
 	AActor* mo = P_FindThingById(msg->netid());
 
-    // It is tempting to try to verify that the current state is somewhere in the set of
-    // truly "idle", passively-spawnstate states, but that can get tricky if we have any
-    // monsters that have any complexity to those states.
-    if (mo == nullptr or mo->state == nullptr)
-    {
-        return;
-    }
+	// It is tempting to try to verify that the current state is somewhere in the set of
+	// truly "idle", passively-spawnstate states, but that can get tricky if we have any
+	// monsters that have any complexity to those states.
+	if (mo == nullptr or mo->state == nullptr)
+	{
+		return;
+	}
 
 	if (AActor* target = P_FindThingById(msg->targetid()))
-    {
+	{
 		mo->target = target->ptr();
-    }
-    else
-    {
+	}
+	else
+	{
 		mo->target = AActor::AActorPtr();
-    }
+	}
 
 	if (AActor* goal = P_FindThingById(msg->goalid()))
-    {
+	{
 		mo->goal = goal->ptr();
-    }
-    else
-    {
+	}
+	else
+	{
 		mo->goal = AActor::AActorPtr();
-    }
+	}
 
-    mo->angle = msg->angle();
-    mo->lastlook = msg->lastlook();
-    mo->movecount = msg->movecount();
-    mo->movedir = msg->movedir();
-    mo->pursuecount = msg->pursuecount();
-    mo->reactiontime = msg->reactiontime();
-    mo->special      = msg->special();
-    mo->strafecount  = msg->strafecount();
-    mo->threshold    = msg->threshold();
+	mo->angle = msg->angle();
+	mo->lastlook = msg->lastlook();
+	mo->movecount = msg->movecount();
+	mo->movedir = msg->movedir();
+	mo->pursuecount = msg->pursuecount();
+	mo->reactiontime = msg->reactiontime();
+	mo->special      = msg->special();
+	mo->strafecount  = msg->strafecount();
+	mo->threshold    = msg->threshold();
 
-    if (msg->seesound())
-    {
-        P_PlayWakeupSound(mo);
-    }
-
-    //P_SetMobjState(mo, mo->info->seestate);
+	if (msg->seesound())
+	{
+		P_PlayWakeupSound(mo);
+	}
 }
 
 //
@@ -2771,7 +2769,7 @@ static void CL_SetMobjState(const odaproto::svc::MobjState* msg)
 	AActor* mo = P_FindThingById(msg->netid());
 	int s = msg->mostate();
 
-    if (mo == NULL || !states.contains(s))
+	if (mo == NULL || !states.contains(s))
 		return;
 
 	P_SetMobjState(mo, static_cast<statenum_t>(s));

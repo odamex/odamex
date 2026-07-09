@@ -1560,18 +1560,11 @@ bool P_PlayWakeupSound(AActor* actor)
 //
 void A_Look (AActor *actor)
 {
-    // A_Chase has logic in it that can allow a client to go back to spawnstate.  If that
-    // happens, it first clears mobj->target.  If we're clientside-only, and find ourselves
-    // here with a target, then it's because we locally cleared target, then got an
-    // UpdateMobj that set it back to whatever it's supposed to be.
-    //
-    // When that happens, it's time to go back to seestate and act as though we woke back up.
-
-    // IMPORTANT NOTE:  Because we no longer predict this function on the client side,
-    //
-    //  ****    ANY actor variable that we set directly or indirectly       ****
-    //  ****    as a result of this function MUST be sent to the clients    ****
-    //  ****    in the MobjWakeup message to keep prediction accurate!      ****
+	// IMPORTANT NOTE:  Because we no longer predict this function on the client side,
+	//
+	//  ****    ANY actor variable that we set directly or indirectly as a          ****
+	//  ****    result of this function MUST be sent to the clients in the          ****
+	//  ****    MobjWakeup message to keep initial seestate prediction accurate!    ****
 
 	if (not (serverside and actor and actor->subsector))
 		return;

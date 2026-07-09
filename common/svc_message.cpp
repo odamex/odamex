@@ -1488,28 +1488,26 @@ odaproto::svc::LineSideUpdate SVC_LineSideUpdate(const line_t& line, const int s
 
 odaproto::svc::WakeupMobj SVC_WakeupMobj(const AActor* mo, bool mustPlaySeeSound)
 {
-    odaproto::svc::WakeupMobj msg;
+	odaproto::svc::WakeupMobj msg;
 
-    // This message implies the transition of statenum to mo->info->seestate.
+	msg.set_netid(mo->netid);
+	msg.set_seesound(mustPlaySeeSound);
+	msg.set_angle(mo->angle);
+	if (mo->goal)
+	{
+		msg.set_goalid(mo->goal->netid);
+	}
+	msg.set_lastlook(mo->lastlook);
+	msg.set_movecount(mo->movecount);
+	msg.set_movedir(mo->movedir);
+	msg.set_pursuecount(mo->pursuecount);
+	msg.set_reactiontime(mo->reactiontime);
+	msg.set_special(mo->special);
+	msg.set_strafecount(mo->strafecount);
+	msg.set_targetid(mo->target->netid);
+	msg.set_threshold(mo->threshold);
 
-    msg.set_netid(mo->netid);
-    msg.set_seesound(mustPlaySeeSound);
-    msg.set_angle(mo->angle);
-    if (mo->goal)
-    {
-        msg.set_goalid(mo->goal->netid);
-    }
-    msg.set_lastlook(mo->lastlook);
-    msg.set_movecount(mo->movecount);
-    msg.set_movedir(mo->movedir);
-    msg.set_pursuecount(mo->pursuecount);
-    msg.set_reactiontime(mo->reactiontime);
-    msg.set_special(mo->special);
-    msg.set_strafecount(mo->strafecount);
-    msg.set_targetid(mo->target->netid);
-    msg.set_threshold(mo->threshold);
-
-    return msg;
+	return msg;
 }
 
 odaproto::svc::MobjState SVC_MobjState(const AActor* mo)

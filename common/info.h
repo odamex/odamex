@@ -1739,16 +1739,20 @@ enum splash_group_t
 	SG_END
 };
 
+/// This enum describes the top-level mode of operation of the mobj based on transitions into the
+/// main top-level states as captured in the mobjinfo_t below.
+//
+// KEEP THIS IN SYNC WITH ITS COUNTERPART IN server.proto!
 enum class MobjModeEnum
 {
-    SPAWN,
-    SEE,
-    PAIN,
-    MELEE,
-    MISSILE,
-    DEATH,
-    XDEATH,
-    RAISE,
+	SPAWN,
+	SEE,
+	PAIN,
+	MELEE,
+	MISSILE,
+	DEATH,
+	XDEATH,
+	RAISE,
 };
 
 struct mobjinfo_t

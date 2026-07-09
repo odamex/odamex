@@ -1252,6 +1252,20 @@ int P_ThingInfoHeight(mobjinfo_t *mi)
        mi->cdheight : mi->height);
 }
 
+static std::optional<MobjModeEnum> IdentifyMode(const AActor& mobj, int32_t state)
+{
+	if (state == mobj.info->spawnstate)     return MobjModeEnum::SPAWN;
+	if (state == mobj.info->seestate)       return MobjModeEnum::SEE;
+	if (state == mobj.info->painstate)      return MobjModeEnum::PAIN;
+	if (state == mobj.info->meleestate)     return MobjModeEnum::MELEE;
+	if (state == mobj.info->missilestate)   return MobjModeEnum::MISSILE;
+	if (state == mobj.info->deathstate)     return MobjModeEnum::DEATH;
+	if (state == mobj.info->xdeathstate)    return MobjModeEnum::XDEATH;
+	if (state == mobj.info->raisestate)     return MobjModeEnum::RAISE;
+
+	return std::nullopt;
+}
+
 // Use a heuristic approach to detect infinite state cycles: Count the number
 // of times the loop in P_SetMobjState() executes and exit with an error once
 // an arbitrary very large limit is reached.
@@ -1260,22 +1274,6 @@ int P_ThingInfoHeight(mobjinfo_t *mi)
 //      still seems like a lot to me.
 
 #define MOBJ_CYCLE_LIMIT 512
-
-void A_Look (AActor *actor);
-
-static std::optional<MobjModeEnum> IdentifyMode(const AActor& mobj, int32_t state)
-{
-    if (state == mobj.info->spawnstate)     return MobjModeEnum::SPAWN;
-    if (state == mobj.info->seestate)       return MobjModeEnum::SEE;
-    if (state == mobj.info->painstate)      return MobjModeEnum::PAIN;
-    if (state == mobj.info->meleestate)     return MobjModeEnum::MELEE;
-    if (state == mobj.info->missilestate)   return MobjModeEnum::MISSILE;
-    if (state == mobj.info->deathstate)     return MobjModeEnum::DEATH;
-    if (state == mobj.info->xdeathstate)    return MobjModeEnum::XDEATH;
-    if (state == mobj.info->raisestate)     return MobjModeEnum::RAISE;
-
-    return std::nullopt;
-}
 
 // P_SetMobjState
 //
@@ -1302,17 +1300,16 @@ bool P_SetMobjState(AActor *mobj, int32_t state, bool cl_update)
 
 		st = &states[state];
 
-        if (const auto newMode = IdentifyMode(*mobj, state))
-        {
-            if (mobj->mode != newMode.value())
-            {
-                mobj->mode = newMode.value();
-                cl_update = true;
-            }
-        }
-        // When going from non-look to look, the server must force the clients to follow along.
-        //const bool isEnteringLook = st->action == A_Look and mobj->state->action != A_Look;
-        //cl_update = cl_update or isEnteringLook;
+		// If we're transitioning the mobj into an entirely new top-level mode,
+		// make sure we inform the clients about it.
+		if (const auto newMode = IdentifyMode(*mobj, state))
+		{
+			if (mobj->mode != newMode.value())
+			{
+				mobj->mode = newMode.value();
+				cl_update = true;
+			}
+		}
 
 		mobj->state = st;
 		mobj->tics = st->tics;
