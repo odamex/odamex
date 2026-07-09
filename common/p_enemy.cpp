@@ -1642,7 +1642,6 @@ void A_Look (AActor *actor)
 		SV_WakeupMobj(actor, mustPlaySeeSound);
 
 		P_SetMobjState(actor, actor->info->seestate);
-		SV_UpdateMobj(actor);
 	}
 }
 #include "m_vectors.h"
@@ -1722,10 +1721,9 @@ void A_Chase (AActor *actor)
 			}
 			else
 			{
-				P_SetMobjState(actor, actor->info->spawnstate,
-				               true); // denis - todo - this sometimes leads to a stack
-				                      // overflow due to infinite recursion:
-				                      // A_Chase->SetMobjState->A_Look->SetMobjState
+				P_SetMobjState(actor, actor->info->spawnstate); // denis - todo - this sometimes leads to a stack
+				                                                // overflow due to infinite recursion:
+				                                                // A_Chase->SetMobjState->A_Look->SetMobjState
 				return;
 			}
 		}
@@ -1754,7 +1752,7 @@ void A_Chase (AActor *actor)
 				actor->goal = AActor::AActorPtr();
 
 			actor->target = AActor::AActorPtr();
-			P_SetMobjState (actor, actor->info->spawnstate, true);
+			P_SetMobjState (actor, actor->info->spawnstate);
 			return;
 		}
 		goto nomissile;
@@ -1767,7 +1765,7 @@ void A_Chase (AActor *actor)
 			S_Sound (actor, CHAN_WEAPON, actor->info->attacksound, 1, ATTN_NORM);
 
 		if (serverside)
-			P_SetMobjState (actor, actor->info->meleestate, true);
+			P_SetMobjState (actor, actor->info->meleestate);
 
 		if (!actor->info->missilestate)
 			actor->flags |= MF_JUSTHIT;
@@ -1787,7 +1785,7 @@ void A_Chase (AActor *actor)
 			goto nomissile;
 
 		if (serverside)
-			P_SetMobjState (actor, actor->info->missilestate, true);
+			P_SetMobjState (actor, actor->info->missilestate);
 		actor->flags |= MF_JUSTATTACKED;
 		return;
 	}
@@ -1982,7 +1980,7 @@ void A_CPosRefire (AActor *actor)
 		|| stop
         )
 	{
-		P_SetMobjState (actor, actor->info->seestate, true);
+		P_SetMobjState (actor, actor->info->seestate);
 	}
 }
 
@@ -2008,7 +2006,7 @@ void A_SpidRefire (AActor *actor)
 		|| stop
         )
 	{
-		P_SetMobjState (actor, actor->info->seestate, true);
+		P_SetMobjState (actor, actor->info->seestate);
 	}
 }
 
@@ -2940,7 +2938,7 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 					A_FaceTarget(actor);
 					actor->target = temp;
 
-					P_SetMobjState(actor, static_cast<statenum_t>(healstate), true);
+					P_SetMobjState(actor, static_cast<statenum_t>(healstate));
 
 					if (!clientside)
 						SV_Sound(corpsehit, CHAN_BODY, SoundMap[healsound].c_str(), ATTN_IDLE);
@@ -3911,7 +3909,7 @@ void A_SpawnFly (AActor *mo)
 	newmobj->SetFriendly(mo->IsFriendly(), mo);
 
 	if (P_LookForTargets (newmobj, true))
-		P_SetMobjState (newmobj, newmobj->info->seestate, true);
+		P_SetMobjState (newmobj, newmobj->info->seestate);
 
 	// telefrag anything in this spot
 	P_TeleportMove (newmobj, newmobj->x, newmobj->y, newmobj->z, true);
@@ -4043,7 +4041,7 @@ void A_PlaySound(AActor* mo)
 void A_RandomJump(AActor* mo)
 {
 	if (P_Random(mo) < mo->state->misc2)
-		P_SetMobjState(mo, static_cast<statenum_t>(mo->state->misc1));
+		P_SetMobjState(mo, static_cast<statenum_t>(mo->state->misc1), true);
 }
 
 //
