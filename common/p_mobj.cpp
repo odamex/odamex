@@ -487,7 +487,7 @@ void P_AnimationTick(AActor *mo)
 
 		// you can cycle through multiple states in a tic
 		if (!mo->tics)
-			if (!P_SetMobjState (mo, mo->state->nextstate) )
+			if (P_SetMobjState (mo, mo->state->nextstate) == SetMobStateResultEnum::DESTROYED)
 				return;         // freed itself
 	}
 }
@@ -1278,7 +1278,7 @@ static std::optional<MobjModeEnum> IdentifyMode(const AActor& mobj, int32_t stat
 // P_SetMobjState
 //
 // Returns true if the mobj is still present.
-bool P_SetMobjState(AActor *mobj, int32_t state, bool cl_update)
+SetMobStateResultEnum P_SetMobjState(AActor *mobj, int32_t state, bool cl_update)
 {
 	state_t* st;
 	int cycle_counter = 0;
@@ -1295,7 +1295,7 @@ bool P_SetMobjState(AActor *mobj, int32_t state, bool cl_update)
 		{
 			mobj->state = &states[S_NULL];
 			mobj->Destroy();
-			return false;
+			return SetMobStateResultEnum::DESTROYED;
 		}
 
 		st = &states[state];
@@ -1346,10 +1346,13 @@ bool P_SetMobjState(AActor *mobj, int32_t state, bool cl_update)
 	// [AM] Now broadcast the final state of the mobj after all actions
 	//      have run.
 	if (cl_update)
+	{
 		SV_UpdateMobj(mobj);
+		return SetMobStateResultEnum::SUCCESSFUL_AND_CLIENTS_UPDATED;
+	}
 #endif
 
-	return true;
+	return SetMobStateResultEnum::SUCCESSFUL;
 }
 
 

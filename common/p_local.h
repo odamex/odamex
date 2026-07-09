@@ -122,7 +122,14 @@ inline std::queue<std::pair<mapthing2_t, int>> itemrespawnque;
 void 	P_ThrustMobj (AActor *mo, angle_t angle, fixed_t move);
 void	P_RespawnSpecials (void);
 
-bool	P_SetMobjState (AActor* mobj, int32_t state, bool cl_update = false);
+enum class SetMobStateResultEnum
+{
+	DESTROYED,
+	SUCCESSFUL,
+	SUCCESSFUL_AND_CLIENTS_UPDATED,
+};
+
+SetMobStateResultEnum P_SetMobjState (AActor* mobj, int32_t state, bool cl_update = false);
 
 void	P_SpawnBlood (fixed_t x, fixed_t y, fixed_t z, int damage);
 AActor* P_SpawnMissile (AActor* source, AActor* dest, mobjtype_t type);
