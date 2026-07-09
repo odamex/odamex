@@ -103,6 +103,7 @@ void SV_BroadcastSector(int sectornum) {}
 void SV_UpdateMobj(AActor* mo) {}
 void SV_UpdateMobjBestEffort(AActor* mo) {}
 void SV_UpdateMobjState(const AActor* mo) {}
+void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound) {};
 
 void CTF_RememberFlagPos(const mapthing2_t& mthing) {}
 void CTF_SpawnFlag(team_t f) {}

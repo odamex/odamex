@@ -626,6 +626,10 @@ public:
 	baseline_t		baseline;		// Baseline data for mobj sent to clients
 	bool			baseline_set;	// Have we set our baseline yet?
 
+	// Server: The primary mode that the mobj is in.  Dictated by top-level state transitions.
+	// Client: Latched primary mode.  If different from the server, the state is transitioned to follow along accordingly.
+	MobjModeEnum mode;
+
 	// Server: The tic on which this mobj was sent an UpdateMobj.
 	// Client: the tic on which this mobj received an UpdateMobj.
 	int updatedDuringTic;
@@ -634,7 +638,6 @@ public:
 	//          state and rnd index to send to clients.  *Not communicated to the client.*
 	int spawnTic;
 
-	//
 	// Client:  The monotonic "gametic" for this mobj - use this to perform mobj-internal timed operations
 	//          so that the predictions occur with the same order and delay that they do on the server.
 	int mobjtic;

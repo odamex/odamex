@@ -115,13 +115,14 @@ void A_Mushroom (AActor *actor);
 void A_Fall (AActor *actor);
 
 
-void SV_UpdateMonsterRespawnCount();
+void SV_BroadcastNoiseAlert(const sector_t& sector);
 void SV_SendRaiseMobj(const AActor* source, const AActor* corpse);
-void SV_UpdateMobj(AActor* mo);
-void SV_UpdateMobjBestEffort(AActor* mo);
 void SV_Sound(const AActor* mo, byte channel, const char* name, byte attenuation);
 void SV_SpawnMobj(AActor* mobj);
-void SV_BroadcastNoiseAlert(const sector_t& sector);
+void SV_UpdateMobj(AActor* mo);
+void SV_UpdateMobjBestEffort(AActor* mo);
+void SV_UpdateMonsterRespawnCount();
+void SV_WakeupMobj(const AActor* mo, bool mustPlaySeeSound);
 
 extern bool isFast;
 
@@ -1622,6 +1623,32 @@ void A_RandomWalk(AActor* actor)
 	}
 }
 
+
+bool P_PlayWakeupSound(AActor* actor)
+{
+	if (actor->info->seesound)
+	{
+		char sound[MAX_SNDNAME];
+
+		M_StringCopy(sound, actor->info->seesound, MAX_SNDNAME);
+
+		if (sound[strlen(sound) - 1] == '1')
+		{
+			sound[strlen(sound) - 1] = P_Random(actor)%3 + '1';
+			if (S_FindSound (sound) == -1)
+				sound[strlen(sound) - 1] = '1';
+		}
+
+		if (!co_zdoomsound && (actor->flags2 & MF2_BOSS || actor->flags3 & MF3_FULLVOLSOUNDS))
+			S_Sound(CHAN_VOICE, sound, 1, ATTN_NORM);
+		else
+			S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
+
+		return true;
+	}
+	return false;
+}
+
 //
 // A_Look
 // Stay in state until a player is sighted.
@@ -1629,23 +1656,26 @@ void A_RandomWalk(AActor* actor)
 //
 void A_Look (AActor *actor)
 {
-	AActor *targ;
-	AActor *newgoal;
+	// IMPORTANT NOTE:  Because we no longer predict this function on the client side,
+	//
+	//  ****    ANY actor variable that we set directly or indirectly as a          ****
+	//  ****    result of this function MUST be sent to the clients in the          ****
+	//  ****    MobjWakeup message to keep initial seestate prediction accurate!    ****
 
-	if(not (actor && actor->subsector))
+	if (not (serverside and actor and actor->subsector))
 		return;
 
 	// [RH] Set goal now if appropriate
 	if (actor->special == Thing_SetGoal && actor->args[0] == 0)
 	{
 		actor->special = 0;
-		newgoal = AActor::FindGoal (NULL, actor->args[1], MT_PATHNODE);
+		AActor* newgoal = AActor::FindGoal (NULL, actor->args[1], MT_PATHNODE);
 		actor->goal = newgoal->ptr();
 		actor->reactiontime = actor->args[2] * TICRATE + level.time;
 	}
 
 	actor->threshold = 0;		// any shot will wake up
-	targ = actor->subsector->sector->soundtarget;
+	AActor* targ = actor->subsector->sector->soundtarget;
 
 	if (targ && targ->player && (targ->player->cheats & CF_NOTARGET))
 		return;
@@ -1673,24 +1703,26 @@ void A_Look (AActor *actor)
 
 		if (actor->flags & MF_AMBUSH)
 		{
-		if (P_CheckSight(actor, actor->target))
+			if (P_CheckSight(actor, actor->target))
 				goto seeyou;
 		}
 		else
-		goto seeyou;
+			goto seeyou;
 	}
 
 	if (actor->flags & MF_FRIEND || !P_LookForTargets(actor, false))
 		return;
 
 	// go into chase state
-  seeyou:
+	seeyou:
 
-  	// GhostlyDeath -- Can't see spectators
-  	if (actor->target->player && actor->target->player->spectator)
+	bool mustPlaySeeSound = false;
+
+	// GhostlyDeath -- Can't see spectators
+	if (actor->target->player && actor->target->player->spectator)
 	{
 		actor->target = AActor::AActorPtr();
-  		//return;
+		//return;
 	}
 	// [RH] Don't start chasing after a goal if it isn't time yet.
 	if (actor->target == actor->goal)
@@ -1698,27 +1730,17 @@ void A_Look (AActor *actor)
 		if (actor->reactiontime > level.time)
 			actor->target = AActor::AActorPtr();
 	}
-	else if (actor->info->seesound)
+	else
 	{
-		char sound[MAX_SNDNAME];
-
-		M_StringCopy(sound, actor->info->seesound, MAX_SNDNAME);
-
-		if (sound[strlen(sound) - 1] == '1')
-		{
-			sound[strlen(sound) - 1] = P_Random(actor)%3 + '1';
-			if (S_FindSound (sound) == -1)
-				sound[strlen(sound) - 1] = '1';
-		}
-
-		if (!co_zdoomsound && (actor->flags2 & MF2_BOSS || actor->flags3 & MF3_FULLVOLSOUNDS))
-			S_Sound(CHAN_VOICE, sound, 1, ATTN_NORM);
-		else
-			S_Sound (actor, CHAN_VOICE, sound, 1, ATTN_NORM);
+		mustPlaySeeSound = P_PlayWakeupSound(actor);
 	}
 
 	if (actor->target)
-		P_SetMobjState (actor, actor->info->seestate, true);
+	{
+		SV_WakeupMobj(actor, mustPlaySeeSound);
+
+		P_SetMobjState(actor, actor->info->seestate);
+	}
 }
 #include "m_vectors.h"
 
@@ -1797,10 +1819,9 @@ void A_Chase (AActor *actor)
 			}
 			else
 			{
-				P_SetMobjState(actor, actor->info->spawnstate,
-				               true); // denis - todo - this sometimes leads to a stack
-				                      // overflow due to infinite recursion:
-				                      // A_Chase->SetMobjState->A_Look->SetMobjState
+				P_SetMobjState(actor, actor->info->spawnstate); // denis - todo - this sometimes leads to a stack
+				                                                // overflow due to infinite recursion:
+				                                                // A_Chase->SetMobjState->A_Look->SetMobjState
 				return;
 			}
 		}
@@ -1829,7 +1850,7 @@ void A_Chase (AActor *actor)
 				actor->goal = AActor::AActorPtr();
 
 			actor->target = AActor::AActorPtr();
-			P_SetMobjState (actor, actor->info->spawnstate, true);
+			P_SetMobjState (actor, actor->info->spawnstate);
 			return;
 		}
 		goto nomissile;
@@ -1842,7 +1863,7 @@ void A_Chase (AActor *actor)
 			S_Sound (actor, CHAN_WEAPON, actor->info->attacksound, 1, ATTN_NORM);
 
 		if (serverside)
-			P_SetMobjState (actor, actor->info->meleestate, true);
+			P_SetMobjState (actor, actor->info->meleestate);
 
 		if (!actor->info->missilestate)
 			actor->flags |= MF_JUSTHIT;
@@ -1862,7 +1883,7 @@ void A_Chase (AActor *actor)
 			goto nomissile;
 
 		if (serverside)
-			P_SetMobjState (actor, actor->info->missilestate, true);
+			P_SetMobjState (actor, actor->info->missilestate);
 		actor->flags |= MF_JUSTATTACKED;
 		return;
 	}
@@ -2057,7 +2078,7 @@ void A_CPosRefire (AActor *actor)
 		|| stop
         )
 	{
-		P_SetMobjState (actor, actor->info->seestate, true);
+		P_SetMobjState (actor, actor->info->seestate);
 	}
 }
 
@@ -2083,7 +2104,7 @@ void A_SpidRefire (AActor *actor)
 		|| stop
         )
 	{
-		P_SetMobjState (actor, actor->info->seestate, true);
+		P_SetMobjState (actor, actor->info->seestate);
 	}
 }
 
@@ -3016,7 +3037,7 @@ bool P_HealCorpse(AActor* actor, int radius, int healstate, int healsound)
 					A_FaceTarget(actor);
 					actor->target = temp;
 
-					P_SetMobjState(actor, static_cast<statenum_t>(healstate), true);
+					P_SetMobjState(actor, static_cast<statenum_t>(healstate));
 
 					if (!clientside)
 						SV_Sound(corpsehit, CHAN_BODY, SoundMap[healsound].c_str(), ATTN_IDLE);
@@ -3995,7 +4016,7 @@ void A_SpawnFly (AActor *mo)
 	newmobj->UpdateActorLists();
 
 	if (P_LookForTargets (newmobj, true))
-		P_SetMobjState (newmobj, newmobj->info->seestate, true);
+		P_SetMobjState (newmobj, newmobj->info->seestate);
 
 	// telefrag anything in this spot
 	P_TeleportMove (newmobj, newmobj->x, newmobj->y, newmobj->z, true);
@@ -4128,7 +4149,7 @@ void A_PlaySound(AActor* mo)
 void A_RandomJump(AActor* mo)
 {
 	if (P_Random(mo) < mo->state->misc2)
-		P_SetMobjState(mo, static_cast<statenum_t>(mo->state->misc1));
+		P_SetMobjState(mo, static_cast<statenum_t>(mo->state->misc1), true);
 }
 
 //
